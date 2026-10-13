@@ -80,6 +80,10 @@ install_prerequisites() {
     # package exists there); Debian/Ubuntu ship it in libglib2.0-bin.
     case "${DISTRO_ID}" in
         fedora)
+            # NOTE: virtio_snd.ko (UTM/virtio-sound-pci) lives in
+            # 'kernel-modules', which slim Fedora cloud/VM images do NOT install
+            # (they only ship 'kernel-modules-core'); install_audio_virtio()
+            # pulls it in below.
             dnf install -y \
                 wayland-devel \
                 gtk4-devel \
@@ -103,6 +107,7 @@ install_prerequisites() {
                 gcc-c++ \
                 pkg-config \
                 lz4 \
+                alsa-utils \
                 xdg-desktop-portal-gtk \
                 xdg-desktop-portal
             ;;
@@ -134,6 +139,7 @@ install_prerequisites() {
                 pkg-config \
                 liblz4-dev \
                 libglib2.0-bin \
+                alsa-utils \
                 xdg-desktop-portal-gtk \
                 xdg-desktop-portal
             ;;
@@ -144,6 +150,56 @@ install_prerequisites() {
     esac
 
     log_info "Prerequisites installed"
+}
+
+# ── Step 0b: Virtio Sound (UTM "virtio-sound-pci" audio device) ──────────
+# The UTM VM config exposes a virtio-sound-pci device (see
+# vm/build-vm-image.sh -> config.plist "Sound"). The guest binds it with the
+# virtio_snd kernel module (CONFIG_SND_VIRTIO=m, source sound/virtio/). On
+# Fedora that module ships in 'kernel-modules' — NOT 'kernel-modules-core',
+# which is all a slim cloud image has — so /proc/asound is empty and there is
+# no audio until it is installed. This step installs it, loads the driver, and
+# reports the ALSA card. Verified working: aplay plays through
+# /proc/asound/card0 with the QEMU audiodev bridged to UTM CoreAudio.
+install_audio_virtio() {
+    log_info "Preparing virtio-sound (UTM audio device)..."
+    local kver
+    kver="$(uname -r)"
+    case "${DISTRO_ID}" in
+        fedora)
+            # Match the running kernel so the .ko actually loads against it.
+            dnf install -y "kernel-modules-${kver}" 2>/dev/null \
+                || dnf install -y kernel-modules 2>/dev/null || true
+            dnf install -y alsa-utils 2>/dev/null || true
+            ;;
+        debian|ubuntu)
+            apt-get install -y "linux-modules-extra-${kver}" alsa-utils 2>/dev/null || true
+            ;;
+    esac
+
+    # Act only if a virtio-snd function is really present. Its virtio device
+    # id is 25 (0x0019); match on the id, not on a device name.
+    local dev id found=0
+    for dev in /sys/bus/virtio/devices/*; do
+        [ -r "${dev}/device" ] || continue
+        id="$(cat "${dev}/device" 2>/dev/null)"
+        if [ "${id}" = "0x0019" ] || [ "${id}" = "0x19" ]; then
+            found=1
+            break
+        fi
+    done
+
+    if [ "${found}" -eq 1 ]; then
+        modprobe virtio_snd 2>/dev/null || true
+        if grep -qi "virtio-snd" /proc/asound/cards 2>/dev/null; then
+            log_info "  [OK] virtio-snd ALSA card present:"
+            log_info "        $(grep -m1 'SoundCard' /proc/asound/cards 2>/dev/null)"
+        else
+            log_warn "  virtio-snd device present but no ALSA card yet (reboot required)"
+        fi
+    else
+        log_info "  No virtio-snd device attached to this VM — skipping audio setup."
+    fi
 }
 
 # ── Step 1: Create nuxel User ────────────────────────────────────────────
@@ -1824,6 +1880,16 @@ verify_installation() {
         fi
     done
 
+    # Audio: the UTM virtio-sound-pci device must enumerate as an ALSA card
+    # (driver virtio_snd). Absent only when the sound device is not attached.
+    if grep -qi "virtio-snd" /proc/asound/cards 2>/dev/null; then
+        log_info "  [OK] audio (virtio-snd): $(grep -m1 SoundCard /proc/asound/cards | sed 's/^ *//')"
+    elif [ ! -e /proc/asound/cards ]; then
+        log_info "  [--] audio: no ALSA (/proc/asound absent; no virtio-snd device)"
+    else
+        log_warn "  [WARN] audio: ALSA present but no virtio-snd card"
+    fi
+
     # Portal D-Bus Ping (briq-v1): org.nuxel.Portal.Ping must respond.
     if command -v gdbus &>/dev/null && systemctl is-active --quiet nuxel-portal.service 2>/dev/null; then
         local ping_out
@@ -1907,6 +1973,10 @@ main() {
     echo ""
     echo "─── Step 0: Install Prerequisites ───"
     install_prerequisites
+
+    echo ""
+    echo "─── Step 0b: Virtio Sound (UTM audio) ───"
+    install_audio_virtio
 
     # Flatpak runtime (network-fallback per briq-4) right after prerequisites.
     install_flatpak_runtime

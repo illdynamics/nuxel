@@ -203,9 +203,9 @@ changelog.
 | Pixel 10 Pro XL (mustang) | 5% | Public mustang Linux is UART/initramfs-level only; no boot artifact built yet |
 | Galaxy S10+ (beyond2lte) | 30% | Downstream 4.14 boot image **built and pushed to the device** with heimdall (BOOT 100%); boot not yet confirmed |
 | Moto G7 Power (ocean) | 35% | Boot + ext4 rootfs images **built** (touch-driver fix), lk2nd/QCDT tooling; not yet flashed/proven on hardware |
-| UTM VM | 65% | A genuine **Nuxel UTM bundle exists and boots** — Fedora 43 + Phosh at 720×1440 (live screenshots), Nuxel services + PWA on the desktop, guest SSH + **internet verified working**; bundle is a local artifact (`artifacts/vm/`, gitignored, not committed) and audio passthrough is not yet enabled |
+| UTM VM | 70% | A genuine **Nuxel UTM bundle exists and boots** — Fedora 43 + Phosh at 720×1440 (live screenshots), Nuxel services + PWA on the desktop, guest SSH + **internet verified working**, and **sound works** via a `virtio-sound-pci` device (`virtio_snd` ALSA card, in-guest playback verified); bundle is a local artifact (`artifacts/vm/`, gitignored, not committed) |
 
-**Overall: ~35–40% MVP scaffold. 2 of 3 phones have built (unflashed/unproven) boot images; 0 of 3 verified booting. The UTM VM demo boots and works (display + network).**
+**Overall: ~35–40% MVP scaffold. 2 of 3 phones have built (unflashed/unproven) boot images; 0 of 3 verified booting. The UTM VM demo boots and works (display + network + sound).**
 
 ### What this repo IS:
 - A well-documented architecture blueprint for a Linux phone OS
@@ -221,6 +221,14 @@ changelog.
 - A **bootable UTM VM** — Fedora 43 + Phosh at 720×1440, Nuxel services + PWA
   live on the desktop, guest SSH reachable and **internet working** (bundle is a
   local, gitignored artifact under `artifacts/vm/`)
+- **Working VM audio** — the UTM bundle exposes a `virtio-sound-pci` device
+  (`Sound` → `Hardware: virtio-sound-pci` in `config.plist`); the guest binds it
+  with `virtio_snd` and enumerates it as ALSA card 0
+  (`[SoundCard] virtio-snd — VirtIO SoundCard`). Playback was verified in-guest
+  (`aplay` → exit 0, PCM state `RUNNING`, `hw_ptr` advancing), bridged to the
+  host through QEMU's audiodev → UTM/CoreAudio. Setup lives in
+  `vm/build-vm-image.sh` (device) and `vm/nuxel-vm-bootstrap.sh`
+  (`install_audio_virtio`)
 - **Built, checksummed boot images for two of three phones** — `g7power`
   (`nuxel-ocean-boot.img`, `nuxel-ocean-rootfs.img`, `lk2nd.img`, sha256-verified
   against the build manifest) and `s10plus` (`nuxel-beyond2lte-boot.img`,

@@ -325,6 +325,8 @@ verify_image() {
 #      - Display device "virtio-gpu-gl-pci" at 720x1440 portrait
 #      - Drive disk-0.qcow2 on virtio + Network shared/virtio-net-pci
 #      - Sharing/Input disabled (no host->guest leakage)
+#      - Sound device "virtio-sound-pci" (guest runs snd/virtio_snd -> QEMU
+#        audiodev -> UTM CoreAudio; needs kernel-modules for virtio_snd.ko)
 #------------------------------------------------------------------------------
 write_config_plist() {
   local tmp="$1"
@@ -419,7 +421,11 @@ cfg = {
   # SPCR serial console forced Plymouth into text/details mode, blacking out the
   # graphical display). Guest SSH runs over virtio-net, so serial is not needed.
   "Serial": [],
-  "Sound": [],
+  "Sound": [
+    {
+      "Hardware": "virtio-sound-pci",
+    },
+  ],
 }
 with open(f"{out}/config.plist", "wb") as f:
     plistlib.dump(cfg, f, sort_keys=False)
