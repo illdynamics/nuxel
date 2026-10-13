@@ -361,10 +361,24 @@ cat > "${BOOT_OUT}/build-manifest.json" <<JSON
   "avb": false,
   "phase": 1,
   "build_timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
-  "notes": "Phase 1 bring-up image: rootfs writable, no dm-verity/AVB; A-only eMMC (boot/system/vendor/dtbo/userdata/recovery); boot chain PBL -> stock ABOOT -> lk2nd -> mainline Linux -> initramfs -> rootfs; modem/camera/sensors deferred; load addresses from docs/g7power-device-inventory.md (Phase 0)."
+  "notes": "Phase 1 bring-up image: rootfs writable, no dm-verity/AVB; A/B eMMC (boot_a/boot_b, dtbo_a/dtbo_b; fastboot targets the current slot; rootfs -> shared userdata); boot chain PBL -> stock ABOOT -> lk2nd -> mainline Linux -> initramfs -> rootfs; modem/camera/sensors deferred; load addresses from docs/g7power-device-inventory.md (Phase 0)."
 }
 JSON
 log "Build manifest: ${BOOT_OUT}/build-manifest.json"
+
+# --- 8. Per-artifact checksums (sha256sums.txt) -----------------------------
+# Release consumers verify each flashed image before writing it to the device.
+_sha256_of() {
+    if command -v sha256sum >/dev/null 2>&1; then sha256sum "$@"; else shasum -a 256 "$@"; fi
+}
+( cd "${BOOT_OUT}"
+  : > sha256sums.txt
+  for f in nuxel-ocean-boot.img nuxel-ocean-rootfs.img lk2nd.img; do
+      if [ -f "${f}" ]; then _sha256_of "${f}" >> sha256sums.txt; fi
+  done
+  : )
+log "Checksums: ${BOOT_OUT}/sha256sums.txt"
+cat "${BOOT_OUT}/sha256sums.txt" | sed 's/^/  /'
 
 log "Done. Artifacts under ${BOOT_OUT}:"
 ls -lh "${BOOT_OUT}" | sed 's/^/  /'

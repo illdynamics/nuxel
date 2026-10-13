@@ -60,7 +60,7 @@ Extract it and you get `g7power/`:
 | `g7power/nuxel-ocean-boot.img` | mainline kernel `Image.gz` + Nuxel initramfs + `sdm632-motorola-ocean.dtb`, packed as an Android **boot header v1** (page 2048) | `boot` (phase 2, lk2nd fastboot) |
 | `g7power/nuxel-ocean-rootfs.img` | Nuxel userspace, plain **ext4**, writable (Phase-1, no dm-verity/AVB) | `userdata` |
 | `g7power/build-manifest.json` | device key, kernel commit, load addresses used, timestamps | — |
-| `g7power/sha256sums.txt` | checksums for the files above | — |
+| `g7power/sha256sums.txt` | per-file checksums you verify before flashing | — |
 
 > **Not in the archive:** `dtbo.img`. You flash **your own backed-up stock
 > `dtbo`** in phase 1 (see §5, §6.1). There is no Nuxel DTBO for this device.
@@ -178,6 +178,9 @@ fastboot getvar unlocked            # -> unlocked: yes
 
 ```bash
 cd /x/nuxel
+# 1) Verify the downloaded archive against the release's SHA256SUMS.txt asset:
+sha256sum -c SHA256SUMS.txt          # macOS: shasum -a 256 -c SHA256SUMS.txt
+# 2) Unpack and verify each image against the archive's own per-file checksums:
 tar -xzf nuxel-v0.3.0-alpha-g7power.tar.gz
 cd g7power
 sha256sum -c sha256sums.txt          # macOS: shasum -a 256 -c sha256sums.txt

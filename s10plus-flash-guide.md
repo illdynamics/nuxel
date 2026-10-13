@@ -49,7 +49,7 @@ Extract it to get `s10plus/`:
 | `s10plus/nuxel-beyond2lte-boot.img` | downstream Samsung **Linux 4.14.253** kernel `Image.gz` + Nuxel initramfs + **merged board DTB** (`exynos9820.dtb` + `exynos9820-beyond2lte_eur_open_<rev>.dtbo`), packed as an Android **boot header v1** (page 2048, `ANDROID!`) | `BOOT` |
 | `s10plus/nuxel-beyond2lte-rootfs.img` | Nuxel userspace, plain **ext4**, writable (Phase 1, no dm-verity/AVB) | `SYSTEM` (proven) or `userdata` |
 | `s10plus/build-manifest.json` | device key, kernel commit, DTB used, load addresses, timestamps | — |
-| `s10plus/sha256sums.txt` | checksums for the files above | — |
+| `s10plus/sha256sums.txt` | per-file checksums you verify before flashing | — |
 
 Boot image facts (Android boot header v1, page 2048):
 
@@ -155,6 +155,9 @@ heimdall version       # MUST print vX.Y.Z — NOT the heimdall-rs crypto tool
 
 ```bash
 cd /x/nuxel
+# 1) Verify the downloaded archive against the release's SHA256SUMS.txt asset:
+sha256sum -c SHA256SUMS.txt          # macOS: shasum -a 256 -c SHA256SUMS.txt
+# 2) Unpack and verify each image against the archive's own per-file checksums:
 tar -xzf nuxel-v0.3.0-alpha-s10plus.tar.gz
 cd s10plus
 sha256sum -c sha256sums.txt          # macOS: shasum -a 256 -c sha256sums.txt

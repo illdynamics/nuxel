@@ -415,10 +415,24 @@ cat > "${BOOT_OUT}/build-manifest.json" <<JSON
   "avb": false,
   "phase": 1,
   "build_timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
-  "notes": "Phase 1 bring-up image: rootfs writable, no dm-verity/AVB, modem/camera/sensors deferred. Load addresses are PLACEHOLDER until Phase 0 inventory (docs/s10plus-device-inventory.md)."
+  "notes": "Phase 1 bring-up image: rootfs writable, no dm-verity/AVB, modem/camera/sensors deferred. Boot load addresses come from docs/s10plus-device-inventory.md (Phase 0); the board DTB is base exynos9820.dtb + highest-rev board DTBO merged with fdtoverlay."
 }
 JSON
 log "Build manifest: ${BOOT_OUT}/build-manifest.json"
+
+# --- 7. Per-artifact checksums (sha256sums.txt) -----------------------------
+# Release consumers verify each flashed image before writing it to the device.
+_sha256_of() {
+    if command -v sha256sum >/dev/null 2>&1; then sha256sum "$@"; else shasum -a 256 "$@"; fi
+}
+( cd "${BOOT_OUT}"
+  : > sha256sums.txt
+  for f in nuxel-beyond2lte-boot.img nuxel-beyond2lte-rootfs.img u-boot-beyond2lte.img; do
+      if [ -f "${f}" ]; then _sha256_of "${f}" >> sha256sums.txt; fi
+  done
+  : )
+log "Checksums: ${BOOT_OUT}/sha256sums.txt"
+cat "${BOOT_OUT}/sha256sums.txt" | sed 's/^/  /'
 
 log "Done. Artifacts under ${BOOT_OUT}:"
 ls -lh "${BOOT_OUT}" | sed 's/^/  /'

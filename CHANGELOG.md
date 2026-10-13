@@ -23,6 +23,12 @@ kernel / initramfs / boot image / rootfs is missing or invalid.
   any other device key out (with a warning) and fails if nothing supported is
   requested. `images/build.sh` still refuses non-mustang devices except in the
   new initramfs-only mode.
+- **Per-device `sha256sums.txt` in every release archive.**
+  `images/g7power/build.sh` and `images/s10plus/build.sh` now emit
+  `sha256sums.txt` alongside the images, so the flash guides can verify each
+  flashed artifact (`nuxel-ocean-boot.img`, `nuxel-ocean-rootfs.img`, `lk2nd.img`
+  / `nuxel-beyond2lte-boot.img`, `nuxel-beyond2lte-rootfs.img`) before writing
+  it to the device.
 - **Version bump to `v0.3.0-alpha`** across `VERSION`, README/design/docs,
   APKBUILDs, PWA/shell manifests, services and the OTA builder.
 
