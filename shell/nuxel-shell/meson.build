@@ -1,5 +1,5 @@
 project('nuxel-shell', 'c',
-  version: '0.2.2-alpha',
+  version: '0.3.0-alpha',
   meson_version: '>= 0.60.0',
   default_options: ['warning_level=2', 'c_std=c11'],
 )

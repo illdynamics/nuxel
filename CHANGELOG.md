@@ -8,6 +8,63 @@ and the OTA builder (see *Versioning* below).
 
 ---
 
+## [v0.3.0-alpha] — 2026-10-13
+
+**Theme:** make the release pipeline **fail-closed and genuinely green** for the
+two bring-up phones (**G7 Power** `g7power`/ocean and **Galaxy S10+**
+`s10plus`/beyond2lte). Every build/release step for both phones now actually
+produces its artifact, and the workflow can no longer report success when a
+kernel / initramfs / boot image / rootfs is missing or invalid.
+
+### Changed
+
+- **`mustang` (Google Pixel 10 Pro XL) removed from the release workflow** for
+  now. The build matrix is `g7power` + `s10plus` only; the `prepare` job filters
+  any other device key out (with a warning) and fails if nothing supported is
+  requested. `images/build.sh` still refuses non-mustang devices except in the
+  new initramfs-only mode.
+- **Version bump to `v0.3.0-alpha`** across `VERSION`, README/design/docs,
+  APKBUILDs, PWA/shell manifests, services and the OTA builder.
+
+### Fixed
+
+- **Release workflow no longer goes green on a failed build.** All
+  `continue-on-error: true` flags were removed from the build matrix, the
+  "Package device artifact" step is no longer `if: always()` + best-effort, the
+  upload step uses `if-no-files-found: error`, and the `publish release` job now
+  runs only when the whole build matrix succeeded (`if: needs.build.result ==
+  'success'`). A device whose kernel/images fail leaves the run **red** and no
+  GitHub Release is created.
+- **New strict artifact gate `tools/verify-artifacts.sh`.** After the image
+  build, CI verifies (per device) that the kernel `Image.gz` is a real
+  gzip-compressed **ARM64 Linux Image** (`0x644d5241`), that the board DTB is a
+  valid FDT (`0xd00dfeed`), that the boot image carries the `ANDROID!` header,
+  that the rootfs is `ext4` (`0x53EF` superblock magic), and — on G7 Power —
+  that `lk2nd.img` is present. Any miss fails the job with `::error::`.
+- **S10+ boot image now builds in CI.** The downstream Exynos 9820 tree ships
+  only the SoC base DTB (`dts/exynos/exynos9820.dtb`) plus per-revision overlays
+  (`dts/samsung/exynos9820-beyond2lte_eur_open_<rev>.dtbo`); the previous build
+  looked for a board `.dtb` that is never produced, so `images/s10plus/build.sh`
+  aborted with "No beyond2lte DTB found". It now merges base + highest-revision
+  overlay into `exynos9820-beyond2lte.dtb` with `fdtoverlay`
+  (`device-tree-compiler`) before packing, matching the previously-built local
+  artifact byte-for-byte (376101 bytes, rev 26).
+- **Shared initramfs is now a first-class step.** `images/build.sh` gained
+  `--initramfs-only`, which assembles the device-agnostic initramfs, mirrors it
+  to `build/boot-artifact/` and exits 0 — instead of the old "mustang dispatcher"
+  invocation that exited 3 whenever the (now-removed) mustang kernel was absent.
+- **G7 Power `lk2nd.img` is now built in CI.** New
+  `boot/g7power/lk2nd/build-lk2nd.sh` clones `msm8916-mainline/lk2nd` and builds
+  `lk2nd-msm8953` with the `arm-none-eabi` toolchain, producing the
+  `lk2nd.img` that `images/g7power/build.sh` copies into the release. Without it
+  the G7 Power artifact set was silently incomplete.
+
+### Notes
+
+- `g7power` kernel build time varies with runner speed (~25–47 min for the full
+  mainline `msm8953` tree: `Image.gz` + `dtbs` + `modules`); both bounds are
+  normal. The `s10plus` downstream 4.14 kernel builds in ~15 min.
+
 ## [v0.2.2-alpha] — 2026-10-13
 
 **Theme:** pre-release fix on top of v0.2.1-alpha — make the **S10+** and the

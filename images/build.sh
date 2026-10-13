@@ -55,6 +55,15 @@ PKG="${HERE}/bootpack"
 # so it defaults to mustang when no explicit --device/NUXEL_DEVICE is given
 # (the shared selector itself never silently guesses). Other devices have
 # their own images/${NUXEL_DEVICE_DIR}/build.sh and are refused here.
+# --initramfs-only builds ONLY the shared (device-agnostic) initramfs and exits
+# 0. The initramfs payload is identical for every Nuxel device, so this mode is
+# exempt from the mustang-only device guard below; it is what the release
+# workflow uses to seed boot/boot.img/initramfs.cpio.gz + build/boot-artifact/.
+INITRAMFS_ONLY=0
+for _a in "$@"; do
+    [ "${_a}" = "--initramfs-only" ] && INITRAMFS_ONLY=1
+done
+
 if [ -z "${NUXEL_DEVICE:-}" ] && [[ "$*" != *--device* ]]; then
     export NUXEL_DEVICE="mustang"
 fi
@@ -93,11 +102,13 @@ log_ok(){ echo -e "${GREEN}[OK]${NC}    $1"; }
 log_warn(){ echo -e "${YELLOW}[WARN]${NC}  $1"; }
 log_err(){ echo -e "${RED}[ERROR]${NC} $1"; }
 
-[ "${NUXEL_DEVICE_KEY}" = "mustang" ] || {
-    log_err "images/build.sh builds ONLY mustang (got '${NUXEL_DEVICE_KEY}')."
-    log_err "Use images/${NUXEL_DEVICE_DIR}/build.sh for that device."
-    exit 1
-}
+if [ "${INITRAMFS_ONLY}" -eq 0 ]; then
+    [ "${NUXEL_DEVICE_KEY}" = "mustang" ] || {
+        log_err "images/build.sh builds ONLY mustang (got '${NUXEL_DEVICE_KEY}')."
+        log_err "Use images/${NUXEL_DEVICE_DIR}/build.sh for that device."
+        exit 1
+    }
+fi
 
 usage(){ sed -n '0,/^# ==== FORMAT/p' "$0" | grep '^#' | sed 's/^# \{0,1\}//' | sed '/^$/d' | head -40; }
 
@@ -105,6 +116,7 @@ while [ $# -gt 0 ]; do
     case "$1" in
         --device) shift 2 ;;   # validated + resolved by the selector above
         --quick) QUICK=1; shift ;;
+        --initramfs-only) INITRAMFS_ONLY=1; shift ;;
         --android) DO_ANDROID=1; shift ;;
         --output) OUT_DIR="$2"; shift 2 ;;
         --skip-shadow) SKIP_SHADOW=1; shift ;;
@@ -229,6 +241,17 @@ if ! "${PY}" "${PKG}/assembler.py" "${ASSEMBLER_ARGS[@]}"; then
     exit 1
 fi
 chmod 0644 "${BOOT_DIR}/initramfs.cpio.gz"
+
+# --initramfs-only: the shared initramfs is the whole deliverable. Mirror it to
+# build/boot-artifact/ (the path the Makefile + per-device scripts look for) and
+# exit 0. No kernel is required for a real, complete initramfs.
+if [ "${INITRAMFS_ONLY}" -eq 1 ]; then
+    mkdir -p "${OUT_DIR}"
+    cp -f "${BOOT_DIR}/initramfs.cpio.gz" "${OUT_DIR}/initramfs.cpio.gz"
+    log_ok "initramfs-only: ${BOOT_DIR}/initramfs.cpio.gz"
+    log_ok "initramfs-only: mirrored to ${OUT_DIR}/initramfs.cpio.gz"
+    exit 0
+fi
 
 # clear our own old boot.img if we're regenerating from scratch (never clobber
 # a real Android image silently unless --force allows rebuild)

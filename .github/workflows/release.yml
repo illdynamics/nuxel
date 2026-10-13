@@ -2,28 +2,27 @@
 # Nuxel — build images and publish a GitHub Release
 #
 # Triggers
-#   * push a tag matching v*     -> build every device, publish the release
+#   * push a tag matching v*     -> build every supported device, publish release
 #   * manual (workflow_dispatch) -> choose tag + devices, then publish
 #
-# Pipeline
-#   prepare  resolves the release tag (and the device list to build)
-#   build    matrix over devices; for each device runs the repo's own scripts:
-#              make assets                      -> single-source PWA assets
-#              images/build.sh --device mustang -> shared initramfs
-#              kernel/<dev>/build-kernel.sh     -> per-device kernel + dtbs
-#              images/<dev>/build.sh            -> per-device boot/rootfs images
-#            then tools/package-release.sh packs build/out/<dev>/ into
-#            nuxel-<ver>-<dev>.tar.gz and uploads it as a workflow artifact.
-#   release  downloads every device artifact, writes SHA256SUMS.txt +
-#            RELEASE-NOTES.md (tools/package-release.sh --from-assets) and
-#            creates/updates the GitHub Release with the archives attached.
+# Supported devices (for now): g7power, s10plus.
+#   mustang / google-pixel-10-pro-xl is intentionally NOT built here yet; it is
+#   removed from the matrix until the two bring-up phones are proven end to end.
+#
+# Pipeline (per device, on its own runner):
+#   make assets                          -> single-source PWA assets
+#   images/build.sh --initramfs-only     -> shared (device-agnostic) initramfs
+#   kernel/<dev>/build-kernel.sh --clone -> per-device Image.gz + DTBs (+ modules)
+#   boot/g7power/lk2nd/build-lk2nd.sh    -> lk2nd.img (g7power only; required to boot)
+#   images/<dev>/build.sh --device <dev> -> per-device boot + rootfs images
+#   tools/verify-artifacts.sh --device   -> FAIL-CLOSED artifact verification
+#   tools/package-release.sh             -> nuxel-<ver>-<dev>.tar.gz artifact
 #
 # Notes
-#   * Device builds run with continue-on-error: a device whose kernel source or
-#     toolchain is unavailable in CI does not block releasing the others. Check
-#     the job log + the release notes to see which devices actually shipped.
-#   * The mustang kernel falls back to the public GKI tree when the private
-#     vendor branch (android-gs-mustang-6.12) is not reachable.
+#   * There is NO continue-on-error anywhere in the build matrix. If a device's
+#     initramfs, kernel, or images are missing/invalid, the job goes RED and the
+#     release job is skipped (a release is only ever published from a fully green
+#     build). tools/verify-artifacts.sh is the explicit gate for that.
 # =============================================================================
 name: Release
 
@@ -34,13 +33,13 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Release tag (e.g. v0.2.2-alpha). Empty => v<VERSION>.'
+        description: 'Release tag (e.g. v0.3.0-alpha). Empty => v<VERSION>.'
         required: false
         default: ''
       devices:
-        description: 'Space-separated device keys (mustang g7power s10plus).'
+        description: 'Space-separated device keys (g7power s10plus).'
         required: false
-        default: 'mustang g7power s10plus'
+        default: 'g7power s10plus'
 
 permissions:
   contents: write
@@ -71,8 +70,19 @@ jobs:
             tag="v$(cat VERSION 2>/dev/null || echo 0.0.0)"
           fi
           devs="${{ github.event.inputs.devices }}"
-          [ -n "$devs" ] || devs="mustang g7power s10plus"
-          json="$(python3 -c 'import json,sys; print(json.dumps(sys.argv[1].split()))' "$devs")"
+          [ -n "$devs" ] || devs="g7power s10plus"
+          # Only g7power + s10plus are supported for now.
+          allowed=" g7power s10plus "
+          filtered=""
+          for d in $devs; do
+            case "$allowed" in
+              *" $d "*) filtered="${filtered} ${d}" ;;
+              *) echo "::warning::ignoring unsupported device '${d}' (supported: g7power s10plus)" ;;
+            esac
+          done
+          filtered="${filtered# }"
+          [ -n "${filtered}" ] || { echo "::error::no supported device requested"; exit 1; }
+          json="$(python3 -c 'import json,sys; print(json.dumps(sys.argv[1].split()))' "$filtered")"
           echo "tag=${tag}" >> "$GITHUB_OUTPUT"
           echo "devices=${json}" >> "$GITHUB_OUTPUT"
           echo "Release tag : ${tag}"
@@ -83,7 +93,6 @@ jobs:
     needs: prepare
     runs-on: ubuntu-24.04
     timeout-minutes: 360
-    continue-on-error: true
     strategy:
       fail-fast: false
       matrix:
@@ -99,6 +108,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
             build-essential gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu \
+            gcc-arm-none-eabi binutils-arm-none-eabi \
             bc bison flex libssl-dev libelf-dev libncurses-dev \
             cpio gzip xz-utils zstd lz4 zip unzip rsync file kmod \
             python3 python3-pip git curl wget ca-certificates \
@@ -107,40 +117,35 @@ jobs:
 
       - name: Populate single-source PWA assets
         run: make assets
-        continue-on-error: true
 
-      - name: Build shared initramfs (mustang dispatcher)
-        run: bash images/build.sh --device mustang
-        continue-on-error: true
+      - name: Build shared initramfs
+        run: bash images/build.sh --initramfs-only
 
       - name: Build kernel (${{ matrix.device }})
         run: |
-          set -x
           case "${{ matrix.device }}" in
-            mustang) bash kernel/build-kernel.sh --device mustang ;;
             g7power) bash kernel/g7power/build-kernel.sh --clone ;;
             s10plus) bash kernel/s10plus/build-kernel.sh --clone ;;
+            *) echo "::error::unsupported device ${{ matrix.device }}"; exit 1 ;;
           esac
-        continue-on-error: true
+
+      - name: Build lk2nd bootloader (g7power)
+        if: matrix.device == 'g7power'
+        run: bash boot/g7power/lk2nd/build-lk2nd.sh
 
       - name: Build images (${{ matrix.device }})
         run: |
-          set -x
           case "${{ matrix.device }}" in
-            mustang) bash images/google-pixel-10-pro-xl/build.sh ;;
             g7power) bash images/g7power/build.sh --device g7power ;;
             s10plus) bash images/s10plus/build.sh --device s10plus ;;
+            *) echo "::error::unsupported device ${{ matrix.device }}"; exit 1 ;;
           esac
-        continue-on-error: true
+
+      - name: Verify artifacts (${{ matrix.device }})
+        run: bash tools/verify-artifacts.sh --device "${{ matrix.device }}"
 
       - name: Package device artifact
-        if: ${{ always() }}
         run: |
-          if [ ! -d "build/out/${{ matrix.device }}" ]; then
-            echo "::warning::build/out/${{ matrix.device }} missing — nothing to package"
-            exit 0
-          fi
-          mkdir -p dist
           bash tools/package-release.sh \
             --version "${{ needs.prepare.outputs.tag }}" \
             --device "${{ matrix.device }}" \
@@ -148,20 +153,22 @@ jobs:
           # keep only this device's tarball for the per-device artifact
           find dist -maxdepth 1 -type f -name '*.tar.gz' \
             ! -name "nuxel-*-${{ matrix.device }}.tar.gz" -delete
+          test -n "$(find dist -maxdepth 1 -type f -name "nuxel-*-${{ matrix.device }}.tar.gz")" \
+            || { echo "::error::no release tarball produced for ${{ matrix.device }}"; exit 1; }
 
       - name: Upload device artifact
-        if: ${{ always() }}
         uses: actions/upload-artifact@v4
         with:
           name: nuxel-${{ matrix.device }}
           path: dist/*.tar.gz
-          if-no-files-found: warn
+          if-no-files-found: error
           retention-days: 14
 
   release:
     name: publish release
     needs: [prepare, build]
-    if: ${{ always() }}
+    # Only publish from a fully successful build — never from a red/partial one.
+    if: ${{ needs.build.result == 'success' }}
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout
@@ -180,6 +187,19 @@ jobs:
           bash tools/package-release.sh \
             --version "${{ needs.prepare.outputs.tag }}" \
             --from-assets --out dist
+
+      - name: Verify every expected device shipped
+        run: |
+          expected="$(echo '${{ needs.prepare.outputs.devices }}' | tr -d '[]"' | tr ',' ' ')"
+          missing=0
+          for dev in $expected; do
+            if ! ls dist/nuxel-*-"${dev}".tar.gz >/dev/null 2>&1; then
+              echo "::error::missing release archive for device '${dev}'"
+              missing=1
+            fi
+          done
+          [ "${missing}" -eq 0 ] || exit 1
+          echo "All expected devices present: ${expected}"
 
       - name: Create or update GitHub Release
         env:

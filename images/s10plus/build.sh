@@ -141,14 +141,41 @@ KERNEL_IMG="${KERNEL_OUT}/arch/arm64/boot/Image.gz"
     exit 1
 }
 
-# A beyond2lte DTB under .../arch/arm64/boot/dts/exynos/ (e.g.
-# exynos9820-beyond2lte.dtb). find(1) is used instead of a shell glob so the
-# search is quiet and deterministic even when no DTB exists yet.
-# Downstream Samsung kernels put the S10+ DTs under dts/samsung/ (named
-# exynos9820-beyond2lte_eur_open_<rev>.dtb); a mainline tree would use
-# dts/exynos/. Search samsung first (highest board revision), then exynos.
-DTB="$(find "${KERNEL_OUT}/arch/arm64/boot/dts/samsung" -maxdepth 1 \
-    -name 'exynos9820-beyond2lte_*.dtb' 2>/dev/null | sort -V | tail -1 || true)"
+# --- build the board DTB (SoC base + board-revision overlay) ----------------
+# The downstream Samsung Exynos 9820 tree ships ONLY the SoC base DTB
+# (dts/exynos/exynos9820.dtb) plus per-board-revision overlays
+# (dts/samsung/exynos9820-beyond2lte_eur_open_<rev>.dtbo). S-Boot normally
+# applies the overlay from the DTBO partition at boot; for a self-contained
+# boot.img we merge base + overlay into a single exynos9820-beyond2lte.dtb with
+# fdtoverlay (device-tree-compiler). Highest available board revision is used;
+# the device's S-Boot still applies its own matching DTBO at runtime.
+DTB_BASE="${KERNEL_OUT}/arch/arm64/boot/dts/exynos/exynos9820.dtb"
+DTB_SAMSUNG_DIR="${KERNEL_OUT}/arch/arm64/boot/dts/samsung"
+DTB_MERGED="${DTB_SAMSUNG_DIR}/exynos9820-beyond2lte.dtb"
+if [ ! -s "${DTB_MERGED}" ] && [ -s "${DTB_BASE}" ]; then
+    _overlay="$(find "${DTB_SAMSUNG_DIR}" -maxdepth 1 \
+        -name 'exynos9820-beyond2lte_eur_open_*.dtbo' 2>/dev/null | sort -V | tail -1 || true)"
+    if [ -n "${_overlay}" ] && command -v fdtoverlay >/dev/null 2>&1; then
+        log "Merging board DTB: exynos9820.dtb + $(basename "${_overlay}") -> exynos9820-beyond2lte.dtb"
+        if ! fdtoverlay -i "${DTB_BASE}" -o "${DTB_MERGED}" "${_overlay}"; then
+            err "fdtoverlay failed to merge ${_overlay} onto ${DTB_BASE}"
+            exit 1
+        fi
+    else
+        warn "Cannot build merged board DTB (overlay='${_overlay}' fdtoverlay=$(command -v fdtoverlay || echo missing))"
+    fi
+fi
+
+# Board DTB search. Prefer the merged standalone DTB (exynos9820-beyond2lte.dtb)
+# under dts/samsung/, then any exynos9820-beyond2lte*.dtb, then a mainline-style
+# dts/exynos/ board DTB. find(1) is used so the search is quiet and
+# deterministic even when no DTB exists yet.
+DTB="$(find "${DTB_SAMSUNG_DIR}" -maxdepth 1 \
+    -name 'exynos9820-beyond2lte.dtb' 2>/dev/null | head -1 || true)"
+if [ -z "${DTB}" ]; then
+    DTB="$(find "${DTB_SAMSUNG_DIR}" -maxdepth 1 \
+        -name 'exynos9820-beyond2lte*.dtb' 2>/dev/null | sort -V | tail -1 || true)"
+fi
 if [ -z "${DTB}" ]; then
     DTB="$(find "${KERNEL_OUT}/arch/arm64/boot/dts/exynos" -maxdepth 1 \
         -name '*beyond2lte*.dtb' 2>/dev/null | sort -V | tail -1 || true)"

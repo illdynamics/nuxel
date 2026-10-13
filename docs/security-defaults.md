@@ -1,6 +1,6 @@
 # Nuxel Security Defaults
 
-> **Nuxel v0.2.2-alpha** — Consolidated "secure by default" policy applied to every
+> **Nuxel v0.3.0-alpha** — Consolidated "secure by default" policy applied to every
 > PWA and native app at install/launch time. Companion to
 > [`docs/security-model.md`](security-model.md), which describes the overall
 > threat model and layered architecture. This document lists the *prescriptive

@@ -99,6 +99,6 @@
     ],
     "app_type": "home",
     "native_fallback": false,
-    "bridge_version": "0.2.2-alpha"
+    "bridge_version": "0.3.0-alpha"
   }
 }

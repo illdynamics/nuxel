@@ -3,7 +3,7 @@
 
 ![Nuxel](./nuxel.jpg)
 
-**v0.2.2-alpha** — _Build the bunker first. Add the rave lights later._
+**v0.3.0-alpha** — _Build the bunker first. Add the rave lights later._
 
 A hardened, GrapheneOS-spirited **Linux phone operating system** built from
 scratch on a pure Linux substrate. **Zero Android dependencies.** Immutable OS.
@@ -147,6 +147,35 @@ NUXEL_DEVICE=mustang bash boot/flash.sh --unlock --wipe
 | `ci/` | Build validation |
 | `assets/` | Wallpaper + boot animation |
 
+## What's new in v0.3.0-alpha
+
+A release-pipeline release: the GitHub **Release** workflow is now **fail-closed
+and genuinely green** for the two bring-up phones; full detail in
+**[CHANGELOG.md](CHANGELOG.md)**.
+
+- **Every build/release step now actually produces its artifact, and a failed
+  build can no longer go green.** All `continue-on-error` flags were removed
+  from the build matrix, and a new strict gate
+  `tools/verify-artifacts.sh` asserts (per device) that the kernel `Image.gz` is
+  a real gzip'd **ARM64 Linux Image**, the board DTB is a valid FDT, the boot
+  image carries the `ANDROID!` header, the rootfs is `ext4`, and — on G7 Power —
+  that `lk2nd.img` exists. The `publish release` job runs only when the whole
+  matrix succeeded, so a red run never creates a release.
+- **`mustang` (Pixel 10 Pro XL) removed from the workflow** for now — the matrix
+  is `g7power` + `s10plus` only.
+- **S10+ boot image now builds in CI.** The downstream Exynos 9820 tree ships
+  only the SoC base DTB + per-revision `.dtbo` overlays; `images/s10plus/build.sh`
+  now merges base + highest-rev overlay into `exynos9820-beyond2lte.dtb` with
+  `fdtoverlay` before packing (previously it aborted with "No beyond2lte DTB
+  found"). The Nuxel **rootfs** is now produced by the same workflow.
+- **G7 Power `lk2nd.img` is now built in CI** (`boot/g7power/lk2nd/build-lk2nd.sh`,
+  `msm8916-mainline/lk2nd` → `lk2nd-msm8953`), so the flashed boot chain is
+  complete. The shared initramfs is now built by a first-class
+  `images/build.sh --initramfs-only` step instead of the old mustang dispatcher.
+- **Version bump to v0.3.0-alpha** across `VERSION`, README, docs/design
+  headers, the shell apps, the PWA manifest, the device `APKBUILD`s, the VM
+  tooling and the OTA builder.
+
 ## What's new in v0.2.2-alpha
 
 A small pre-release on top of **v0.2.1-alpha**; full detail in
@@ -171,7 +200,7 @@ A small pre-release on top of **v0.2.1-alpha**; full detail in
   the mustang dispatcher also gained a `-Wno-error`/`-Wno-error=parentheses`
   KCFLAGS relaxation (the GKI `CONFIG_WERROR=y` dies on
   `fs/fuse/dev.c:458` `[-Werror=parentheses]` under GCC 13).
-- **Version bump to v0.2.2-alpha** across `VERSION`, README, docs/design
+- **Version bump to v0.3.0-alpha** across `VERSION`, README, docs/design
   headers, the shell apps, the PWA manifest, the device `APKBUILD`s, the VM
   tooling and the OTA builder.
 
@@ -246,7 +275,7 @@ image.** The honest
 per-area breakdown is the table below; the "what's left" list is in the
 changelog.
 
-## Honest Status — v0.2.2-alpha
+## Honest Status — v0.3.0-alpha
 
 **Nuxel is a design scaffold with three device bring-ups in progress and a bootable UTM VM proving out the architecture. No phone has yet booted a Nuxel-built image.**
 
@@ -260,7 +289,7 @@ changelog.
 | D-Bus bridge/portal | 30% | Python parses, dev-grade auth, not integration-tested |
 | Sandbox/security | 20% | Configs exist, enforcement not wired end-to-end |
 | Build system | 20% | Per-device dispatchers + inventory gates; still unproven on hardware |
-| Flashable images | 45% | Real, checksummed boot artifacts built for **g7power** (lk2nd + boot + ext4 rootfs — **flashed to hardware**) and **s10plus** (boot + merged boot — **boot partition flashed** via heimdall); **0 of 3 verified booting** |
+| Flashable images | 50% | Real, checksummed artifacts built **in CI** for **g7power** (lk2nd + boot + ext4 rootfs, all verified) and **s10plus** (boot with merged DTB + ext4 rootfs, verified); **0 of 2 verified booting** |
 | Pixel 10 Pro XL (mustang) | 5% | Public mustang Linux is UART/initramfs-level only; no boot artifact built yet |
 | Galaxy S10+ (beyond2lte) | 30% | Downstream 4.14 boot image built; **only the boot partition flashed** with heimdall (BOOT 100%). Download Mode is balky — manual flash attempt in progress; boot not yet confirmed |
 | Moto G7 Power (ocean) | 40% | Boot + ext4 rootfs images **flashed to hardware** (touch-driver fix, lk2nd/QCDT chainloader); device powers on but hangs at a **black/flashy screen** — not yet booting Nuxel |
@@ -458,7 +487,7 @@ The other two bring-up targets are the **Samsung Galaxy S10+** (Exynos 9820,
 
 | Document | Description |
 |---|---|
-| [CHANGELOG.md](CHANGELOG.md) | Release notes — everything from v0.1.0 to v0.2.2-alpha + readiness |
+| [CHANGELOG.md](CHANGELOG.md) | Release notes — everything from v0.1.0 to v0.3.0-alpha + readiness |
 | [prompts/QUICKSTART.md](prompts/QUICKSTART.md) | Get running in 5 minutes |
 | [design/nuxel-linux-phone-design.md](design/nuxel-linux-phone-design.md) | Design bible — the full vision |
 | [design/Nuxel Phone OS Project Plan and Architecture.md](design/Nuxel%20Phone%20OS%20Project%20Plan%20and%20Architecture.md) | Technical architecture + component map |
@@ -491,8 +520,8 @@ The other two bring-up targets are the **Samsung Galaxy S10+** (Exynos 9820,
 Build outputs (`build/out/<device>/`) are git-ignored — they are produced by the
 scripts in `images/` and `kernel/`, not committed. To publish them on GitHub:
 
-* **Automated (recommended):** push a version tag (`git tag v0.2.2-alpha && git push
-  origin v0.2.2-alpha`). [`.github/workflows/release.yml`](.github/workflows/release.yml)
+* **Automated (recommended):** push a version tag (`git tag v0.3.0-alpha && git push
+  origin v0.3.0-alpha`). [`.github/workflows/release.yml`](.github/workflows/release.yml)
   builds every device on an Ubuntu runner (`make assets`, the shared initramfs,
   each `kernel/<dev>/build-kernel.sh`, then `images/<dev>/build.sh`), packages
   each `build/out/<device>/` directory and creates a GitHub Release with the
