@@ -329,7 +329,7 @@ create_about_page(NuxelSettings *app)
     adw_preferences_page_add(ADW_PREFERENCES_PAGE(page), legal_group);
     
     adw_preferences_group_add(ADW_PREFERENCES_GROUP(legal_group),
-        create_action_row("Open Source Licenses", "GNU GPLv3", NULL));
+        create_action_row("Open Source Licenses", "MIT License", NULL));
     adw_preferences_group_add(ADW_PREFERENCES_GROUP(legal_group),
         create_action_row("Privacy Policy", "No data collected", NULL));
     

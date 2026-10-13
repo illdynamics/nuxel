@@ -126,7 +126,7 @@ This document defines:
 
 **License / provenance gate:** before any submission, verify every file's source
 is GPL-2.0-compatible and has a clean provenance (no re-export of
-closed-source vendor code). The `LICENSE` (Apache-2.0) project license applies
+closed-source vendor code). The `LICENSE` (MIT) project license applies
 to Nuxel userspace; kernel patches must be GPL-2.0.
 
 ---

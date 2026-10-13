@@ -5,7 +5,7 @@ pkgrel="0"
 pkgdesc="Google Pixel 10 Pro XL (mustang) — Nuxel Phone OS"
 url="https://nuxel.org"
 arch="aarch64"
-license="Apache-2.0"
+license="MIT"
 options="!check !archcheck"
 depends="
 	linux-mustang

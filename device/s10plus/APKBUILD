@@ -19,7 +19,7 @@ pkgrel="0"
 pkgdesc="Samsung Galaxy S10+ (beyond2lte, Exynos 9820) — Nuxel Phone OS"
 url="https://nuxel.org"
 arch="aarch64"
-license="Apache-2.0"
+license="MIT"
 options="!check !archcheck"
 
 # postmarketOS kernel this device package targets (verified hardware fact).
