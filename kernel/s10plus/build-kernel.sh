@@ -51,9 +51,17 @@ DEFCONFIG="exynos9820-beyond2lte_defconfig"
 # native aarch64 host build).
 CROSS_COMPILE="${CROSS_COMPILE:-aarch64-linux-gnu-}"
 
-# GCC 14/15 changed several diagnostics to hard errors by default; the 4.14
-# downstream tree predates that. Relax them (this is exactly the class of fix
-# the postmarketOS downstream-kernel tooling applies).
+# GCC 14/15 turned several C diagnostics into hard errors; the 4.14 downstream
+# tree predates that. We relax them (the class of fix the postmarketOS
+# downstream-kernel tooling applies) - but this list is only a *wish list*: the
+# per-compiler filter below drops any flag the selected compiler does not
+# understand. That matters because `-Wno-error=<x>` is itself a HARD ERROR when
+# the compiler has no `-W<x>` (e.g. `-Wno-error=return-mismatch`, whose
+# `-Wreturn-mismatch` only exists in GCC >= 14, while CI ships GCC 13). The
+# downstream tree appends $(KCFLAGS) to KBUILD_CFLAGS (Makefile:963), so one
+# unknown flag also breaks every `cc-option` probe - including
+# prepare-compiler-check, which then reports the misleading
+# "Cannot use CONFIG_CC_STACKPROTECTOR_STRONG: ... not supported by compiler".
 DEFAULT_KCFLAGS="-fcommon -Wno-error=incompatible-pointer-types -Wno-error=implicit-function-declaration -Wno-error=int-conversion -Wno-error=implicit-int -Wno-error=return-mismatch -Wno-error=discarded-qualifiers -Wno-error=pointer-sign"
 
 DO_CLONE=0
@@ -82,10 +90,25 @@ source "${NUXEL_ROOT}/tools/nuxel-device-select.sh"
 KSRC="${NUXEL_ROOT}/kernel/s10plus/.build/src"
 KOUT="${NUXEL_ROOT}/kernel/s10plus/.build/out"
 
+# --- toolchain flag probe -------------------------------------------------
+# Keep only the DEFAULT_KCFLAGS the selected compiler actually accepts.
+# `echo | $(CC) <flag> -c -x c - -o /dev/null` exits non-zero for an unknown
+# option, so unsupported relaxations are dropped instead of poisoning the build.
+KCFLAGS=""
+_CC="${CROSS_COMPILE}gcc"
+for _f in ${DEFAULT_KCFLAGS}; do
+    if echo | "${_CC}" "${_f}" -c -x c - -o /dev/null >/dev/null 2>&1; then
+        KCFLAGS="${KCFLAGS:+${KCFLAGS} }${_f}"
+    else
+        echo "[nuxel-s10plus-kernel] note: dropping flag unsupported by ${_CC}: ${_f}"
+    fi
+done
+
 echo "[nuxel-s10plus-kernel] Device: ${DEVICE_KEY} (beyond2lte, Exynos 9820)"
 echo "[nuxel-s10plus-kernel] Kernel: ${DOWNSTREAM_REPO##*/}@${DOWNSTREAM_COMMIT:0:12} (Linux 4.14.253 downstream)"
 echo "[nuxel-s10plus-kernel] Cross:   ${CROSS_COMPILE:-<native, empty>}"
 echo "[nuxel-s10plus-kernel] Defconfig: ${DEFCONFIG}"
+echo "[nuxel-s10plus-kernel] KCFLAGS: ${KCFLAGS:-<none>}"
 echo "[nuxel-s10plus-kernel] Output:  ${KOUT}"
 
 [[ $DO_CLEAN -eq 1 ]] && { echo "[kernel] Cleaning ${KOUT}"; rm -rf "${KOUT}"; }
@@ -105,12 +128,12 @@ fi
 # --- configure ---
 cd "${KSRC}"
 make O="${KOUT}" ARCH=arm64 CROSS_COMPILE="${CROSS_COMPILE}" \
-    KCFLAGS="${DEFAULT_KCFLAGS}" "${DEFCONFIG}"
+    KCFLAGS="${KCFLAGS}" "${DEFCONFIG}"
 
 # --- build ---
 echo "[kernel] Building Image.gz + dtbs (jobs=${JOBS})..."
 make O="${KOUT}" ARCH=arm64 CROSS_COMPILE="${CROSS_COMPILE}" \
-    -j"${JOBS}" KCFLAGS="${DEFAULT_KCFLAGS}" Image.gz dtbs
+    -j"${JOBS}" KCFLAGS="${KCFLAGS}" Image.gz dtbs
 
 echo "[kernel] Done."
 ls -lh "${KOUT}/arch/arm64/boot/Image.gz" 2>/dev/null || echo "[kernel] WARN: Image.gz missing"

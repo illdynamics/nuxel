@@ -40,6 +40,19 @@ succeed in CI. No other behaviour changes; the readiness picture is unchanged.
   invocation, so the command-line assignment overrides the tree's `?=` default.
   `--cross <prefix>` is now honoured (previously accepted and silently ignored),
   and `--cross ''`/`CROSS_COMPILE=` yields a native aarch64 host build.
+- **S10+ kernel build, second toolchain bug: version-specific `KCFLAGS`.**
+  With the toolchain path fixed, the build still died at the same
+  `prepare-compiler-check` — but no longer because of a missing compiler.
+  `DEFAULT_KCFLAGS` contained `-Wno-error=return-mismatch`, and `-Wno-error=<x>`
+  is a **hard error** when the compiler has no `-W<x>` (GCC 13 does not know
+  `-Wreturn-mismatch`; it is GCC >= 14). The downstream tree appends `$(KCFLAGS)`
+  to `KBUILD_CFLAGS` (`Makefile:963`), so the unknown flag made **every**
+  `cc-option` probe fail — producing the misleading
+  `Cannot use CONFIG_CC_STACKPROTECTOR_STRONG: -fstack-protector-strong not
+  supported by compiler`. The wrapper now probes each relaxation flag against the
+  selected compiler (`echo | $(CC) <flag> -c -x c - -o /dev/null`) and keeps only
+  the supported ones: GCC 13 drops `-Wno-error=return-mismatch`; GCC 15 keeps it.
+  Verified against GCC 13.4 (probe fails before, passes after) and GCC 15.2.
 
 ### Changed
 
