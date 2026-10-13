@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#1a1a2e">
+    <meta name="nuxel-app-id" content="org.nuxel.Calendar">
+    <link rel="manifest" href="manifest.json">
+    <title>Nuxel Calendar</title>
+    <link rel="stylesheet" href="css/calendar.css">
+</head>
+<body>
+    <div class="top-bar">
+        <h1 id="cal-title">May 2026</h1>
+        <div class="top-actions">
+            <button id="today-btn" class="btn-secondary">Today</button>
+            <button id="add-event-btn" class="icon-btn">+</button>
+        </div>
+    </div>
+    
+    <div id="calendar-view" class="calendar-view">
+        <!-- Weekday headers -->
+        <div class="weekday-header">
+            <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
+        </div>
+        <!-- Day grid -->
+        <div id="day-grid" class="day-grid"></div>
+    </div>
+
+    <!-- Month navigation -->
+    <div class="month-nav">
+        <button id="prev-month" class="icon-btn">◀</button>
+        <span id="month-label" class="month-label">May 2026</span>
+        <button id="next-month" class="icon-btn">▶</button>
+    </div>
+
+    <!-- Events for selected day -->
+    <div id="events-panel" class="events-panel">
+        <h3 id="selected-date">Today's Events</h3>
+        <div id="events-list" class="events-list">
+            <div class="empty-state">No events</div>
+        </div>
+    </div>
+
+    <!-- Event editor -->
+    <div id="event-editor" class="event-editor hidden">
+        <div class="editor-header">
+            <button id="editor-back" class="icon-btn">←</button>
+            <h2 id="editor-title">New Event</h2>
+            <button id="editor-save" class="btn-primary">Save</button>
+        </div>
+        <div class="editor-form">
+            <input type="text" id="event-title" placeholder="Event title" class="editor-input title">
+            <input type="date" id="event-date" class="editor-input">
+            <div class="time-row">
+                <input type="time" id="event-start" class="editor-input time">
+                <span>to</span>
+                <input type="time" id="event-end" class="editor-input time">
+            </div>
+            <textarea id="event-desc" placeholder="Description" class="editor-textarea"></textarea>
+            <div class="color-picker">
+                <span class="color-opt selected" data-color="#E91E63" style="background:#E91E63"></span>
+                <span class="color-opt" data-color="#FF9800" style="background:#FF9800"></span>
+                <span class="color-opt" data-color="#2196F3" style="background:#2196F3"></span>
+                <span class="color-opt" data-color="#4CAF50" style="background:#4CAF50"></span>
+                <span class="color-opt" data-color="#9C27B0" style="background:#9C27B0"></span>
+                <span class="color-opt" data-color="#607D8B" style="background:#607D8B"></span>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="../../nuxel-common/bridge.js"></script>
+    <script src="js/calendar.js"></script>
+</body>
+</html>

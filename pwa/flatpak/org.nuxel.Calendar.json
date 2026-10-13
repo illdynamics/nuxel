@@ -1,0 +1,38 @@
+{
+  "id": "org.nuxel.Calendar",
+  "runtime": "org.nuxel.Platform",
+  "runtime-version": "46",
+  "sdk": "org.gnome.Sdk",
+  "command": "nuxel-calendar",
+  "finish-args": [
+    "--share=ipc",
+    "--socket=x11",
+    "--socket=wayland",
+    "--device=dri",
+    "--share=network",
+    "--talk-name=org.nuxel.Bridge",
+    "--filesystem=/var/lib/nuxel/.api-token"
+  ],
+  "modules": [
+    {
+      "name": "nuxel-calendar",
+      "buildsystem": "simple",
+      "build-commands": [
+        "mkdir -p /app/nuxel/calendar",
+        "cp -r . /app/nuxel/calendar/",
+        "install -Dm755 nuxel-launcher.sh /app/bin/nuxel-calendar"
+      ],
+      "sources": [
+        {
+          "type": "dir",
+          "path": "../nuxel-apps/calendar"
+        },
+        {
+          "type": "file",
+          "path": "nuxel-launcher.sh",
+          "dest-filename": "nuxel-launcher.sh"
+        }
+      ]
+    }
+  ]
+}

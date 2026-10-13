@@ -1,0 +1,33 @@
+#!/sbin/openrc-run
+# Nuxel AppArmor enforce init script (briq-15, mustang / Alpine-pmOS)
+# Installed to /etc/init.d/nuxel-apparmor
+
+description="Nuxel AppArmor profile enforcement (enforce mode)"
+
+depend() {
+    need localmount
+    after bootmisc
+    before default
+}
+
+start() {
+    ebegin "Enforcing Nuxel AppArmor profiles"
+    local any=0
+    for p in /etc/apparmor.d/nuxel-* /etc/apparmor.d/usr.bin.nuxel-* /etc/apparmor.d/usr.lib.flatpak; do
+        [ -f "$p" ] || continue
+        # -Q: validate the profile before loading; skip broken profiles.
+        if apparmor_parser -Q -O enforce "$p" 2>/dev/null; then
+            aa-enforce "$p" 2>/dev/null || true
+            any=1
+        else
+            eerror "invalid AppArmor profile skipped: $p"
+        fi
+    done
+    eend $any "-- AppArmor enforce mode active (Nuxel)"
+    return 0
+}
+
+stop() {
+    # Leave profiles active; AppArmor is best left enforced on a hardened OS.
+    return 0
+}

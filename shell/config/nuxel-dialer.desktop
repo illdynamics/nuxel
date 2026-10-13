@@ -1,0 +1,13 @@
+[Desktop Entry]
+Name=Phone
+Comment=Make phone calls
+Exec=/usr/bin/nuxel-sandbox --cgroup nuxel-dialer /usr/bin/nuxel-dialer
+Icon=dialer
+Terminal=false
+Type=Application
+Categories=GTK;GNOME;Telephony;
+Keywords=phone;call;dialer;
+StartupNotify=true
+DBusActivatable=true
+X-GNOME-SingleWindow=false
+X-GNOME-UsesNotifications=true

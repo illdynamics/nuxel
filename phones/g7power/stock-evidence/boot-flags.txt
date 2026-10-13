@@ -1,0 +1,11 @@
+
+green
+enforcing
+_b
+qcom
+unknown
+ocean
+motorola/ocean_retail/ocean:10/QPO30.52-5/58b45:user/release-keys
+0x32
+
+

@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# Nuxel Home Native Launcher
+# Runs the GTK4/libadwaita Home shell
+set -euo pipefail
+NUXEL_HOME="${NUXEL_HOME:-$HOME/nuxel}"
+exec python3 "${NUXEL_HOME}/shell/nuxel-home-native/nuxel_home/main.py" "$@"

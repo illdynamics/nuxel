@@ -1,0 +1,44 @@
+# AppArmor profile for nuxel-portal daemon
+# Portal daemon with broad D-Bus access for hardware mediation
+
+profile nuxel-portal /usr/local/libexec/nuxel-portal.py flags=(attach_disconnected) {
+    #include <abstractions/base>
+    #include <abstractions/python>
+    #include <abstractions/dbus>
+    #include <abstractions/gtk4>
+    
+    /usr/local/libexec/nuxel-portal.py r,
+    /usr/local/libexec/** r,
+    /usr/lib/python3*/** r,
+    
+    # GTK for consent dialogs
+    /usr/lib/** r,
+    /usr/share/** r,
+    /etc/fonts/** r,
+    /etc/gtk-4.0/** r,
+    
+    # Permission storage
+    /var/lib/nuxel/permissions/** rw,
+    /var/log/nuxel/** rw,
+    
+    # D-Bus system bus
+    /run/dbus/system_bus_socket rw,
+    
+    dbus bind bus=system name=org.nuxel.Portal,
+    dbus receive bus=system,
+    
+    # Send to nuxel-bridge for capability checks
+    dbus send bus=system path=/org/nuxel/Bridge
+         interface=org.nuxel.Bridge
+         member=*,
+    
+    # Wayland display for dialogs
+    /run/user/*/wayland-* rw,
+    
+    # Session bus for GNOME notifications
+    /run/user/*/bus rw,
+    
+    deny network,
+    deny /dev/** rwk,
+    deny ptrace,
+}

@@ -1,0 +1,104 @@
+# Nuxel Device Info — postmarketOS format
+# Samsung Galaxy S10+ (SM-G975F, Exynos 9820)
+# Codename: beyond2lte
+#
+# CORRECTED 2026-10-11 against the real pmaports port (device/testing/
+# device-samsung-beyond1lte) and the real vendor firmware source
+# (Linux4/proprietary_vendor_samsung). Key corrections vs. the older docs:
+#   * kernel is the DOWNSTREAM Samsung fork, not "linux-postmarketos-exynos9820"
+#     (that package/repo does not exist);
+#   * WiFi is Samsung `bcmdhd` (Broadcom), not mainline `brcmfmac`;
+#   * NFC is S3NRN82, not S3FWRN5;
+#   * the proven flash method is heimdall BOOT+SYSTEM (no U-Boot needed);
+#   * boot-image load addresses are base 0x10000000, not 0x80000000.
+
+deviceinfo_format_version="2"
+deviceinfo_name="Samsung Galaxy S10+"
+deviceinfo_manufacturer="Samsung"
+deviceinfo_codename="beyond2lte"
+deviceinfo_year="2019"
+deviceinfo_arch="aarch64"
+deviceinfo_chassis="handset"
+
+# SoC
+deviceinfo_soc="Samsung Exynos 9820"
+deviceinfo_soc_family="exynos9820"
+deviceinfo_cpu="2x Mongoose M4 + 2x Cortex-A75 + 4x Cortex-A55 (8nm)"
+
+# GPU — Mali-G76 MP12 (Bifrost). Vendor userspace (libmali) is the working
+# path on the downstream kernel; mainline Panfrost only applies to the
+# (stretch) mainline/U-Boot path.
+deviceinfo_gpu="Mali-G76 MP12 (Bifrost)"
+deviceinfo_gpu_driver="mali"
+
+# Display
+deviceinfo_display="6.4\" Dynamic AMOLED 3040x1440 HDR10+"
+deviceinfo_screen_width="1440"
+deviceinfo_screen_height="3040"
+deviceinfo_screen_refresh_rate="60"
+deviceinfo_display_ddic="S6E3HA9"
+
+# Touch — Samsung S6SY761 (sec_ts). Firmware is embedded in the downstream
+# sec_ts driver (no separate /vendor/firmware/tsp_sec file on this device).
+deviceinfo_touchscreen="Samsung S6SY761 (sec_ts)"
+deviceinfo_touchscreen_driver="sec_ts"
+deviceinfo_touchscreen_i2c_bus="hsi2c_10"
+deviceinfo_touchscreen_i2c_addr="0x48"
+
+# Modem — integrated Shannon LTE. NOT ModemManager-ready in Phase 1.
+deviceinfo_modem="Samsung Shannon LTE (Exynos 9820 integrated, Cat 20, no 5G)"
+deviceinfo_modem_interface="integrated"
+deviceinfo_modem_driver="UNKNOWN_NOT_MM_READY"
+
+# Connectivity — Samsung bcmdhd (Broadcom BCM4375) + btbcm BT
+deviceinfo_wifi="Broadcom BCM4375 (Wi-Fi 6 / 802.11ax)"
+deviceinfo_wifi_driver="bcmdhd"
+deviceinfo_bluetooth="5.0"
+deviceinfo_bluetooth_driver="btbcm"
+deviceinfo_nfc="Samsung S3NRN82"
+deviceinfo_nfc_i2c_addr="0x27"
+
+# Storage — UFS 2.1
+deviceinfo_storage="UFS 2.1"
+deviceinfo_storage_driver="ufshcd"
+deviceinfo_storage_path="/dev/block/platform/13d60000.ufs"
+deviceinfo_storage_filesystem="ext4"
+
+# Memory
+deviceinfo_ram="8GB LPDDR4X"
+
+# Battery
+deviceinfo_battery="4100mAh"
+deviceinfo_battery_charging="15W wired, 12-15W wireless Qi"
+
+# Audio
+deviceinfo_audio_codec="Cirrus Logic CS47L93 (MADERA)"
+deviceinfo_audio_amps="2x Cirrus Logic CS35L40"
+
+# Sensors / camera — confirm on the real unit (Phase 0)
+deviceinfo_sensors="UNKNOWN — confirm via adb shell getevent -pl on the unit"
+deviceinfo_camera_front="UNKNOWN — confirm via dmesg (fimc-is) on the unit"
+deviceinfo_camera_rear="UNKNOWN — confirm via dmesg (fimc-is) on the unit"
+
+# Boot configuration — legacy v1 boot image, page 2048, A-only.
+deviceinfo_boot_header_version="1"
+deviceinfo_boot_page_size="2048"
+deviceinfo_boot_slots="none"
+deviceinfo_boot_note="A-only. Proven path: S-Boot -> downstream Linux 4.14 (v1 boot.img) flashed by heimdall to BOOT+SYSTEM. Mainline/U-Boot is the stretch path."
+deviceinfo_flash_method="heimdall-bootimg"
+deviceinfo_flash_note="heimdall BOOT+SYSTEM (proven) or TWRP adb+dd. NO fastboot."
+deviceinfo_flash_sparse="true"
+deviceinfo_flash_heimdall_partition_kernel="BOOT"
+deviceinfo_flash_heimdall_partition_rootfs="SYSTEM"
+deviceinfo_bootimg_custom_args="--header_version 1 --os_version 12.0.0 --os_patch_level 2021-12"
+
+# Load addresses (SOURCED from pmaports device-samsung-beyond1lte/deviceinfo;
+# CONFIRM from the unit's stock boot.img before flashing).
+deviceinfo_flash_offset_base="0x10000000"
+deviceinfo_flash_offset_kernel="0x00008000"
+deviceinfo_flash_offset_ramdisk="0x01000000"
+deviceinfo_flash_offset_tags="0x00000100"
+
+# Kernel — downstream Samsung Exynos 9820 fork (Linux 4.14.253)
+deviceinfo_kernel="linux-samsung-beyond2lte"
+deviceinfo_kernel_cmdline="buildvariant=userdebug nuxel.device=s10plus root=/dev/block/platform/13d60000.ufs/by-name/userdata rootfstype=ext4 rootwait rw"

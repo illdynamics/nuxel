@@ -1,0 +1,418 @@
+/* Nuxel Home - Status Bar Styles */
+
+.status-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: var(--status-bar-height);
+    background: rgba(26, 26, 46, 0.95);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
+    z-index: 100;
+    font-size: 12px;
+    color: var(--text-primary);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+    padding-top: env(safe-area-inset-top, 0);
+}
+
+.status-left, .status-center, .status-right {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.status-center {
+    gap: 8px;
+}
+
+#status-time {
+    font-weight: 600;
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.5px;
+}
+
+/* Status icons */
+.status-icon {
+    width: 16px;
+    height: 16px;
+    display: inline-block;
+    position: relative;
+}
+
+/* Signal bars */
+.signal-icon {
+    display: flex;
+    align-items: flex-end;
+    gap: 1px;
+}
+
+.signal-icon::before,
+.signal-icon::after {
+    content: '';
+    display: block;
+}
+
+.signal-icon::before {
+    width: 14px;
+    height: 10px;
+    background: 
+        linear-gradient(to top, transparent 0%, transparent 60%, var(--text-primary) 60%);
+    /* Will be set by JS */
+}
+
+.signal-icon::after {
+    display: none;
+}
+
+/* Let's use a simpler approach */
+.signal-bars {
+    display: flex;
+    align-items: flex-end;
+    gap: 2px;
+    height: 12px;
+}
+
+.signal-bar {
+    width: 3px;
+    border-radius: 1px;
+    background: var(--text-secondary);
+    transition: background var(--transition-fast);
+}
+
+.signal-bar.active {
+    background: var(--success);
+}
+
+.signal-bar:nth-child(1) { height: 4px; }
+.signal-bar:nth-child(2) { height: 7px; }
+.signal-bar:nth-child(3) { height: 10px; }
+.signal-bar:nth-child(4) { height: 13px; }
+
+/* WiFi icon */
+.wifi-icon {
+    position: relative;
+    width: 16px;
+    height: 16px;
+}
+
+.wifi-icon::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--text-primary);
+}
+
+.wifi-icon::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 3px;
+    width: 10px;
+    height: 10px;
+    border: 2px solid var(--text-primary);
+    border-radius: 50%;
+    border-bottom-color: transparent;
+    border-left-color: transparent;
+}
+
+/* Battery icon */
+.battery-icon {
+    position: relative;
+    width: 22px;
+    height: 11px;
+    border: 1.5px solid var(--text-primary);
+    border-radius: 2px;
+    display: inline-block;
+}
+
+.battery-icon::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    right: -4px;
+    transform: translateY(-50%);
+    width: 3px;
+    height: 5px;
+    background: var(--text-primary);
+    border-radius: 0 1px 1px 0;
+}
+
+.battery-icon .battery-level {
+    position: absolute;
+    top: 1px;
+    left: 1px;
+    bottom: 1px;
+    background: var(--success);
+    border-radius: 1px;
+    transition: width var(--transition-normal);
+}
+
+.battery-icon .battery-level.warning {
+    background: var(--warning);
+}
+
+.battery-icon .battery-level.critical {
+    background: var(--error);
+}
+
+#status-battery-pct {
+    font-size: 11px;
+    color: var(--text-secondary);
+    min-width: 32px;
+    text-align: right;
+}
+
+/* Quick Settings Panel */
+.quick-settings {
+    position: fixed;
+    top: var(--status-bar-height);
+    left: 0;
+    right: 0;
+    background: var(--bg-secondary);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    padding: 16px;
+    z-index: 99;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    animation: slideDown 0.25s ease;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+@keyframes slideDown {
+    from { transform: translateY(-100%); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+.qs-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.qs-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 12px 4px;
+    border-radius: var(--button-radius);
+    background: var(--bg-accent);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    min-height: 64px;
+    justify-content: center;
+}
+
+.qs-item:active {
+    transform: scale(0.95);
+}
+
+.qs-item[data-enabled="true"] {
+    background: var(--accent-light);
+}
+
+.qs-item[data-enabled="true"] .qs-icon {
+    color: var(--text-accent);
+}
+
+.qs-icon {
+    width: 24px;
+    height: 24px;
+    font-size: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.qs-label {
+    font-size: 11px;
+    color: var(--text-secondary);
+    text-align: center;
+}
+
+/* Phone status overlay */
+.phone-status {
+    position: fixed;
+    top: var(--status-bar-height);
+    left: 0;
+    right: 0;
+    background: var(--success);
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    z-index: 99;
+    animation: slideDown var(--transition-fast) ease;
+}
+
+.call-status-text {
+    font-size: 14px;
+    font-weight: 600;
+    color: white;
+}
+
+.call-status-btn {
+    background: var(--error);
+    color: white;
+    border: none;
+    padding: 6px 16px;
+    border-radius: var(--button-radius);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+/* Recents view */
+.recents-view {
+    position: fixed;
+    top: var(--status-bar-height);
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--bg-primary);
+    z-index: 50;
+    animation: fadeIn var(--transition-normal) ease;
+}
+
+.recents-list {
+    padding: 20px var(--grid-padding);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.recents-card {
+    background: var(--bg-card);
+    border-radius: var(--card-radius);
+    overflow: hidden;
+    height: 200px;
+    display: flex;
+    flex-direction: column;
+}
+
+.recents-card .recents-preview {
+    flex: 1;
+    background: var(--bg-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-secondary);
+    font-size: 14px;
+}
+
+.recents-card .recents-label {
+    padding: 8px 12px;
+    font-size: 13px;
+    color: var(--text-primary);
+}
+
+/* Search overlay */
+.search-overlay {
+    position: fixed;
+    top: var(--status-bar-height);
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--bg-primary);
+    z-index: 90;
+    animation: fadeIn var(--transition-fast) ease;
+}
+
+.search-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px var(--grid-padding);
+    background: var(--bg-secondary);
+}
+
+.search-input {
+    flex: 1;
+    background: var(--bg-accent);
+    border: none;
+    border-radius: var(--button-radius);
+    padding: 12px 16px;
+    color: var(--text-primary);
+    font-size: 16px;
+    outline: none;
+    font-family: var(--font-family);
+}
+
+.search-input::placeholder {
+    color: var(--text-secondary);
+}
+
+.search-close {
+    background: none;
+    border: none;
+    color: var(--text-accent);
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 8px;
+}
+
+.search-results {
+    padding: var(--grid-padding);
+}
+
+.search-result-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    border-radius: var(--button-radius);
+    cursor: pointer;
+    transition: background var(--transition-fast);
+}
+
+.search-result-item:active {
+    background: var(--bg-accent);
+}
+
+.search-result-item .result-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+}
+
+.search-result-item .result-text {
+    flex: 1;
+}
+
+.search-result-item .result-name {
+    font-size: 15px;
+    font-weight: 500;
+}
+
+.search-result-item .result-desc {
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+/* Gesture hint */
+.gesture-hint {
+    position: fixed;
+    bottom: 100px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: var(--text-secondary);
+    font-size: 12px;
+    opacity: 0.5;
+}

@@ -1,0 +1,106 @@
+#!/sbin/openrc-run
+# OpenRC init script for nuxel-firstboot
+# First-boot setup wizard for Nuxel phone OS
+# Runs ONCE on first boot, then disables itself
+# Google Pixel 10 Pro XL (mustang) — Serial 58211FDCQ001LA
+
+description="Nuxel First-Boot Setup Wizard"
+name="nuxel-firstboot"
+command="/usr/bin/nuxel-firstboot"
+command_background="no"
+command_user="root:root"
+firstboot_marker="/var/lib/nuxel/.firstboot-complete"
+firstboot_dir="$(dirname "$firstboot_marker")"
+
+depend() {
+	need dbus
+	need localmount
+	after display-manager
+	after phosh
+	after nuxel-bridge
+	after networkmanager
+}
+
+start() {
+	# Ensure the marker's parent directory exists so the marker can be read
+	# and removed (briq-22).
+	checkpath --directory --owner root:root --mode 0755 "$firstboot_dir"
+
+	if [ ! -f "$firstboot_marker" ]; then
+		einfo "First-boot already completed. Skipping."
+		if command -v rc-update >/dev/null 2>&1; then
+			rc-update del nuxel-firstboot boot 2>/dev/null || true
+		fi
+		return 0
+	fi
+
+	if [ ! -x "$command" ]; then
+		ewarn "nuxel-firstboot binary not found — running minimal setup"
+
+		if ! id nuxel >/dev/null 2>&1; then
+			adduser -D -h /var/home/nuxel -s /bin/bash nuxel
+			adduser nuxel wheel audio video input dialout netdev bluetooth
+			passwd -d nuxel
+			einfo "Created nuxel user account"
+		fi
+
+		rm -f "$firstboot_marker"
+		einfo "First-boot minimal setup complete"
+		return 0
+	fi
+
+	checkpath --directory --owner nuxel:nuxel --mode 0755 /run/nuxel
+
+	local retries=10
+	while ! [ -S /run/user/1000/wayland-0 ] && [ $retries -gt 0 ]; do
+		einfo "Waiting for Wayland display..."
+		sleep 2
+		retries=$((retries - 1))
+	done
+
+	ebegin "Starting Nuxel first-boot wizard"
+	start-stop-daemon --start --background --make-pidfile \
+		--pidfile /run/nuxel/firstboot.pid \
+		--user root --group root \
+		--exec "$command"
+
+	local timeout=120
+	while [ $timeout -gt 0 ] && [ -f "$firstboot_marker" ]; do
+		sleep 1
+		timeout=$((timeout - 1))
+	done
+
+	if [ -f "$firstboot_marker" ]; then
+		ewarn "First-boot wizard did not complete in time"
+		ewarn "Will retry on next boot"
+	else
+		einfo "First-boot setup completed"
+		if command -v rc-update >/dev/null 2>&1; then
+			rc-update del nuxel-firstboot boot 2>/dev/null || true
+		fi
+	fi
+
+	eend 0
+	return 0
+}
+
+stop() {
+	ebegin "Stopping first-boot wizard"
+	if [ -f /run/nuxel/firstboot.pid ]; then
+		start-stop-daemon --stop --pidfile /run/nuxel/firstboot.pid --retry 3
+	fi
+	eend 0
+}
+
+status() {
+	if [ -f "$firstboot_marker" ]; then
+		einfo "First-boot setup has NOT been run yet"
+		if [ -f /run/nuxel/firstboot.pid ] && kill -0 "$(cat /run/nuxel/firstboot.pid)" 2>/dev/null; then
+			einfo "First-boot wizard is currently running"
+		fi
+		return 1
+	else
+		einfo "First-boot setup has been completed"
+		return 0
+	fi
+}

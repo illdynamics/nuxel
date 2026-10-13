@@ -1,0 +1,39 @@
+# Nuxel G7 Power Boot Configuration
+# Stock ABOOT -> lk2nd (msm8916-mainline/lk2nd, msm8953) -> mainline Linux -> Nuxel
+# Boot image format: legacy Android boot image header v1 (page 2048)
+# Flash: fastboot (2-phase: stock ABOOT then lk2nd fastboot)
+
+device=g7power
+codename=ocean
+soc=sdm632
+soc_family=msm8953
+emmc_path=/dev/block/bootdevice/by-name
+
+# lk2nd source: https://github.com/msm8916-mainline/lk2nd
+# lk2nd target: msm8953
+# lk2nd build output: build-msm8953/lk2nd.img
+
+# Kernel load addresses (VERIFY from real device stock boot.img):
+kernel_addr=0x80008000
+ramdisk_addr=0x81000000
+tags_addr=0x80000100
+page_size=2048
+
+# DTB: arch/arm64/boot/dts/qcom/sdm632-motorola-ocean.dtb
+# Kernel cmdline:
+cmdline="console=ttyMSM0,115200 earlycon=msm_geni_serial,0xa88000 nuxel.device=g7power root=/dev/block/bootdevice/by-name/userdata rootfstype=ext4 rootwait rw"
+
+# CRITICAL FLASH ORDER — dtbo BEFORE lk2nd, ALWAYS:
+# 1. fastboot flash dtbo dtbo.img           (stock ABOOT fastboot)
+# 2. fastboot flash boot lk2nd.img          (stock ABOOT fastboot)
+# 3. fastboot reboot bootloader             (enter lk2nd fastboot)
+# 4. fastboot flash boot nuxel-boot.img     (lk2nd fastboot)
+# 5. fastboot flash userdata rootfs.img     (lk2nd fastboot)
+# 6. fastboot reboot
+
+# Protected partitions — NEVER flash:
+# modemst1 modemst2 fsg fsc ddr persist misc
+
+# Recovery: EDL (Qualcomm 9008) — power off, hold Vol Down + Vol Up, plug USB
+# Check: lsusb | grep "05C6:9008"
+# Tool: pip install edl; edl --port /dev/ttyUSB0 flash boot stock-boot.img

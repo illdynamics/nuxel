@@ -1,0 +1,32 @@
+# AppArmor profile for nuxel-permissions (native GTK4 permissions manager)
+# Reads /etc/nuxel + /var/lib/nuxel permissions DB and talks to the portal.
+
+profile nuxel-permissions /usr/bin/nuxel-permissions flags=(attach_disconnected) {
+    #include <abstractions/base>
+    #include <abstractions/gtk4>
+    #include <abstractions/dbus>
+
+    /usr/bin/nuxel-permissions r,
+    /usr/lib/** r,
+    /usr/share/** r,
+    /etc/fonts/** r,
+    /etc/gtk-4.0/** r,
+
+    # Permissions database (read for display, write for granting)
+    /etc/nuxel/** r,
+    /var/lib/nuxel/permissions/** rw,
+    /var/app/nuxel-permissions/data/** rw,
+
+    /run/user/*/wayland-* rw,
+    /run/user/*/bus rw,
+
+    dbus send bus=system path=/org/nuxel/Bridge
+         interface=org.nuxel.Bridge
+         member=*,
+
+    deny /dev/** rwk,
+    deny /sys/** r,
+    deny /proc/*/mem rw,
+    deny ptrace,
+    deny network,
+}

@@ -1,0 +1,268 @@
+/* Nuxel Home - Launcher & App Grid Styles */
+
+/* App Grid */
+.app-grid {
+    position: absolute;
+    top: var(--status-bar-height);
+    left: 0;
+    right: 0;
+    bottom: var(--dock-height);
+    padding: 8px var(--grid-padding) 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+}
+
+.app-grid-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 4px 20px;
+}
+
+.app-grid-title {
+    font-size: 28px;
+    font-weight: 700;
+    background: linear-gradient(135deg, #60a5fa, #122952);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.app-grid-indicator {
+    display: flex;
+    gap: 6px;
+}
+
+.app-grid-indicator .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--text-secondary);
+    opacity: 0.4;
+    transition: opacity var(--transition-fast);
+}
+
+.app-grid-indicator .dot.active {
+    opacity: 1;
+    background: var(--text-accent);
+}
+
+/* App List */
+.app-list {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px 8px;
+    padding-bottom: 20px;
+}
+
+.app-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform var(--transition-fast);
+}
+
+.app-item:active {
+    transform: scale(0.88);
+}
+
+.app-item .app-icon {
+    width: var(--app-icon-size);
+    height: var(--app-icon-size);
+    border-radius: var(--app-icon-radius);
+    background: var(--bg-card);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    color: var(--text-primary);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    position: relative;
+    overflow: hidden;
+    transition: box-shadow var(--transition-fast);
+}
+
+.app-item:hover .app-icon {
+    box-shadow: 0 6px 20px rgba(233, 69, 96, 0.2);
+}
+
+.app-item .app-icon img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: var(--app-icon-radius);
+}
+
+.app-item .app-label {
+    font-size: 11px;
+    color: var(--text-secondary);
+    text-align: center;
+    max-width: var(--app-icon-size);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    line-height: 1.3;
+}
+
+/* App badge (notification count) */
+.app-item .app-badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    border-radius: 9px;
+    background: var(--text-accent);
+    color: white;
+    font-size: 10px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 6px rgba(233, 69, 96, 0.4);
+    animation: fadeIn var(--transition-fast) ease;
+}
+
+/* App category colors */
+.app-category-communication .app-icon { background: linear-gradient(135deg, #667eea, #764ba2); }
+.app-category-productivity .app-icon { background: linear-gradient(135deg, #f093fb, #f5576c); }
+.app-category-media .app-icon { background: linear-gradient(135deg, #4facfe, #00f2fe); }
+.app-category-tools .app-icon { background: linear-gradient(135deg, #43e97b, #38f9d7); }
+.app-category-system .app-icon { background: linear-gradient(135deg, #fa709a, #fee140); }
+
+/* Dock */
+.dock {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: var(--dock-height);
+    background: var(--bg-secondary);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 20px;
+    padding-bottom: env(safe-area-inset-bottom, 0);
+}
+
+.dock-items {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+}
+
+.dock .app-item .app-icon {
+    width: 56px;
+    height: 56px;
+    font-size: 24px;
+}
+
+.dock .app-item .app-label {
+    display: none;
+}
+
+/* Widget area (future) */
+.widget-area {
+    padding: 8px 0 16px;
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x mandatory;
+}
+
+.widget-area::-webkit-scrollbar {
+    display: none;
+}
+
+.widget-card {
+    min-width: 280px;
+    padding: 16px;
+    background: var(--bg-card);
+    border-radius: var(--card-radius);
+    scroll-snap-align: start;
+}
+
+.widget-card h3 {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+}
+
+/* Page indicator dots */
+.page-dots {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px 0 4px;
+}
+
+.page-dots .dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--text-secondary);
+    opacity: 0.3;
+    transition: all var(--transition-fast);
+}
+
+.page-dots .dot.active {
+    width: 16px;
+    border-radius: 3px;
+    opacity: 1;
+    background: var(--text-accent);
+}
+
+/* App install/uninstall animation */
+.app-item.installing {
+    animation: pulse 1s ease infinite;
+}
+
+.app-item.removing {
+    animation: fadeOut 0.3s ease forwards;
+}
+
+@keyframes fadeOut {
+    to { opacity: 0; transform: scale(0.5); }
+}
+
+/* ── Drag and drop ───────────────────────────────────────────────── */
+
+.app-item.dragging {
+    opacity: 0.3;
+    transform: scale(0.95);
+    transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.drag-ghost {
+    width: 64px;
+    height: 64px;
+    pointer-events: none;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    border-radius: 16px;
+}
+
+body.launcher-dragging {
+    user-select: none;
+    -webkit-user-select: none;
+    cursor: grabbing;
+}
+
+body.launcher-dragging .app-item {
+    transition: transform 0.15s ease;
+}
+
+.app-item.drag-over {
+    outline: 2px dashed rgba(59,130,246,0.6);
+    outline-offset: 4px;
+    border-radius: 16px;
+}

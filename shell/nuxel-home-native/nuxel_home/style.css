@@ -1,0 +1,134 @@
+/* Nuxel Home — GTK CSS for mobile-phone look */
+
+/* ── Root window ──────────────────────────────────────────────── */
+.nuxel-home-window {
+    background: #0f0f1a;
+}
+
+/* ── Status bar ───────────────────────────────────────────────── */
+.status-bar {
+    background: rgba(15, 15, 26, 0.92);
+    padding: 4px 16px;
+    min-height: 36px;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.status-bar box {
+    spacing: 8px;
+}
+
+.status-time {
+    font-weight: 600;
+    font-size: 14px;
+    color: #ffffff;
+    min-width: 48px;
+}
+
+.status-network-icon {
+    font-size: 14px;
+    min-width: 20px;
+}
+
+.status-battery-icon {
+    font-size: 14px;
+    min-width: 20px;
+}
+
+.status-battery-level {
+    font-size: 12px;
+    color: #aaaaaa;
+    min-width: 36px;
+}
+
+.status-notification-count {
+    background: #e53935;
+    color: #ffffff;
+    border-radius: 10px;
+    padding: 0 6px;
+    font-size: 11px;
+    font-weight: 700;
+    min-width: 18px;
+    min-height: 18px;
+}
+
+.status-battery-critical {
+    color: #e53935;
+}
+
+.status-battery-warning {
+    color: #ff9800;
+}
+
+/* ── App grid header ──────────────────────────────────────────── */
+.app-grid-header {
+    font-size: 22px;
+    font-weight: 700;
+    color: #ffffff;
+    padding: 16px 24px 8px;
+}
+
+/* ── Launcher FlowBox ─────────────────────────────────────────── */
+.launcher-grid {
+    padding: 8px 16px 24px;
+}
+
+.launcher-grid flowboxchild {
+    padding: 8px;
+    border-radius: 16px;
+    transition: all 150ms ease;
+}
+
+.launcher-grid flowboxchild:selected {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.app-card {
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 16px;
+    padding: 12px 8px 8px;
+    min-width: 72px;
+    min-height: 80px;
+}
+
+.app-card:drop(active) {
+    background: rgba(255, 255, 255, 0.12);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+.app-icon {
+    font-size: 28px;
+    min-width: 48px;
+    min-height: 48px;
+}
+
+.app-label {
+    font-size: 11px;
+    color: #dddddd;
+    font-weight: 500;
+    padding-top: 4px;
+}
+
+/* ── Toast overlay ────────────────────────────────────────────── */
+.toast-overlay {
+    background: rgba(0, 0, 0, 0.6);
+    border-radius: 24px;
+    padding: 12px 24px;
+    margin-bottom: 64px;
+}
+
+.toast-label {
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+/* ── Scrollable grid container ────────────────────────────────── */
+.grid-scroll {
+    background: transparent;
+}
+
+.grid-scroll undershoot,
+.grid-scroll overshoot {
+    background: transparent;
+}

@@ -1,0 +1,43 @@
+# Nuxel mustang-specific udev rules
+# Google Pixel 10 Pro XL (mustang, Tensor G5 / gs501)
+#
+# Canonical source for the rules shipped by device-google-mustang
+# (device/google-pixel-10-pro-xl/APKBUILD installs THIS file; it is no longer
+# generated inline). Tags/symlinks are what the Nuxel userspace services key
+# off; hardware IDs marked UNKNOWN are filled from the Phase-0 inventory
+# (docs/pixel10proxl-device-inventory.md) once the device is in hand.
+
+# Modem: Samsung Exynos 5500 via MHI/PCIe
+SUBSYSTEM=="mhi", KERNEL=="mhi_*", GROUP="dialout", MODE="0660"
+
+# Touchscreen: Samsung S6SY791 (optical under-display panel touch)
+SUBSYSTEM=="input", KERNEL=="event*", ATTRS{name}=="*s6sy791*", SYMLINK+="input/touchscreen", TAG+="nuxel-touch"
+SUBSYSTEM=="input", KERNEL=="event*", ATTRS{name}=="*S6SY791*", SYMLINK+="input/touchscreen", TAG+="nuxel-touch"
+
+# Display: Samsung AMB655X LTPO panel (DRM connector)
+SUBSYSTEM=="drm", KERNEL=="card*", TAG+="nuxel-gpu"
+
+# Sensors (Bosch BMI270, ST LSM6DSV, AMS TCS3710, Bosch BMP280)
+SUBSYSTEM=="iio", KERNEL=="iio:device*", GROUP="sensors", MODE="0660", TAG+="nuxel-sensors"
+
+# Goodix GF3636 optical fingerprint
+SUBSYSTEM=="input", KERNEL=="event*", ATTRS{name}=="*gf3636*", GROUP="input", MODE="0660", TAG+="nuxel-fingerprint"
+
+# WiFi: Broadcom BCM4390 (brcmfmac)
+SUBSYSTEM=="net", KERNEL=="wlan*", DRIVERS=="brcmfmac", TAG+="nuxel-wifi"
+
+# Bluetooth: BCM4390 (hci_bcm)
+SUBSYSTEM=="bluetooth", KERNEL=="hci*", TAG+="nuxel-bluetooth"
+
+# Storage: UFS 4.0
+SUBSYSTEM=="block", KERNEL=="sd[a-z]*", TAG+="nuxel-storage"
+
+# Power management
+SUBSYSTEM=="power_supply", KERNEL=="battery", GROUP="power", MODE="0660"
+SUBSYSTEM=="power_supply", KERNEL=="charger", GROUP="power", MODE="0660"
+
+# USB Type-C (dwc3 + DP Alt Mode)
+SUBSYSTEM=="typec", KERNEL=="port*", GROUP="plugdev", MODE="0660"
+
+# NFC: NXP SN220 — UNKNOWN bus/i2c address; add after Phase-0 inventory
+# SUBSYSTEM=="i2c", ...   # TBD

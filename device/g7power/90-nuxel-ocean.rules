@@ -1,0 +1,22 @@
+# Ilitek ILI2117 hardware, handled by the mainline ili210x driver
+# (registered input name is "ILI210x Touchscreen"; there is no "ili210x" driver)
+SUBSYSTEM=="input", ATTRS{name}=="ILI210x Touchscreen", TAG+="nuxel-touch"
+SUBSYSTEM=="input", ATTRS{name}=="ili210x*", TAG+="nuxel-touch"
+
+# TI LM3697 backlight
+SUBSYSTEM=="backlight", KERNEL=="lm3697*", TAG+="nuxel-backlight"
+
+# Adreno 506 / freedreno DRM
+SUBSYSTEM=="drm", KERNEL=="card*", ATTRS{driver}=="msm", TAG+="nuxel-gpu"
+
+# WCN3680B WiFi (wcn36xx)
+SUBSYSTEM=="net", KERNEL=="wlan*", DRIVERS=="wcn36xx", TAG+="nuxel-wifi"
+
+# WCN3680B BT (hci_qca)
+SUBSYSTEM=="bluetooth", KERNEL=="hci*", TAG+="nuxel-bluetooth"
+
+# eMMC block device
+SUBSYSTEM=="block", KERNEL=="mmcblk0*", TAG+="nuxel-storage"
+
+# Camera and fingerprint — UNKNOWN, add after Phase 0 inventory
+# SUBSYSTEM=="video4linux", ...  # TBD

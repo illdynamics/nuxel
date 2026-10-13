@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <!-- Navy background rounded rect -->
+  <rect width="128" height="128" rx="24" ry="24" fill="#0a1628"/>
+  <!-- Outer glow ring -->
+  <rect x="4" y="4" width="120" height="120" rx="20" ry="20" fill="none" stroke="#1a3a6a" stroke-width="2" opacity="0.5"/>
+  <!-- House / home shape -->
+  <polygon points="64,22 24,56 28,56 28,100 52,100 52,74 76,74 76,100 100,100 100,56 104,56" fill="#ffffff"/>
+  <!-- Roof highlight -->
+  <polygon points="64,22 24,56 104,56" fill="none" stroke="#4fc3f7" stroke-width="1.5" opacity="0.6"/>
+  <!-- Door -->
+  <rect x="56" y="80" width="16" height="20" fill="#0a1628" rx="2"/>
+  <!-- Chimney -->
+  <rect x="76" y="26" width="10" height="16" fill="#ffffff" rx="1"/>
+  <!-- Chimney highlight -->
+  <rect x="76" y="26" width="10" height="16" fill="none" stroke="#4fc3f7" stroke-width="1" opacity="0.4"/>
+</svg>

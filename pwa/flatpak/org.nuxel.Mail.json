@@ -1,0 +1,39 @@
+{
+  "id": "org.nuxel.Mail",
+  "runtime": "org.nuxel.Platform",
+  "runtime-version": "46",
+  "sdk": "org.gnome.Sdk",
+  "command": "nuxel-mail",
+  "finish-args": [
+    "--share=ipc",
+    "--socket=x11",
+    "--socket=wayland",
+    "--device=dri",
+    "--share=network",
+    "--talk-name=org.nuxel.Bridge",
+    "--filesystem=/var/lib/nuxel/.api-token",
+    "--talk-name=org.freedesktop.Notifications"
+  ],
+  "modules": [
+    {
+      "name": "nuxel-mail",
+      "buildsystem": "simple",
+      "build-commands": [
+        "mkdir -p /app/nuxel/mail",
+        "cp -r . /app/nuxel/mail/",
+        "install -Dm755 nuxel-launcher.sh /app/bin/nuxel-mail"
+      ],
+      "sources": [
+        {
+          "type": "dir",
+          "path": "../nuxel-apps/mail"
+        },
+        {
+          "type": "file",
+          "path": "nuxel-launcher.sh",
+          "dest-filename": "nuxel-launcher.sh"
+        }
+      ]
+    }
+  ]
+}

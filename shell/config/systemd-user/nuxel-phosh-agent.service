@@ -1,0 +1,22 @@
+[Unit]
+Description=Nuxel Phosh Agent — user-session D-Bus permission portal + signal-driven notification relay
+Documentation=https://nuxel.org/docs/phosh-agent
+After=default.target
+
+# The agent is registered under org.nuxel.PhoshAgent on the SESSION bus.
+# Use Type=dbus so systemd tracks the name; fall back to Restart=always if
+# the bus name claim is not strictly a one-shot activation.
+
+[Service]
+Type=dbus
+BusName=org.nuxel.PhoshAgent
+ExecStart=/usr/local/bin/nuxel-phosh-agent
+Restart=always
+RestartSec=5
+Environment=XDG_SESSION_TYPE=wayland
+Environment=XDG_RUNTIME_DIR=%t
+# Ensure the session bus address is available when D-Bus activates this unit.
+Environment=DBUS_SESSION_BUS_ADDRESS=unix:path=%t/bus
+
+[Install]
+WantedBy=default.target

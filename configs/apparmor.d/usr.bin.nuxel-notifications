@@ -1,0 +1,36 @@
+# AppArmor profile for nuxel-notifications daemon
+# Bridges desktop notifications to PWAs via nuxel-bridge
+
+profile nuxel-notifications /usr/local/libexec/nuxel-notifications.py flags=(attach_disconnected) {
+    #include <abstractions/base>
+    #include <abstractions/python>
+    #include <abstractions/dbus>
+    
+    /usr/local/libexec/nuxel-notifications.py r,
+    /usr/local/libexec/** r,
+    /usr/lib/python3*/** r,
+    
+    # D-Bus session bus (for org.freedesktop.Notifications)
+    /run/user/*/bus rw,
+    
+    # D-Bus system bus (for nuxel-bridge)
+    /run/dbus/system_bus_socket rw,
+    
+    # Own org.freedesktop.Notifications
+    dbus bind bus=session name=org.freedesktop.Notifications,
+    dbus receive bus=session,
+    
+    # Send to nuxel-bridge
+    dbus send bus=system path=/org/nuxel/Bridge
+         interface=org.nuxel.Bridge
+         member=*,
+    
+    # Logging
+    /var/log/nuxel/** rw,
+    /tmp/** rw,
+    
+    deny /dev/** rwk,
+    deny /sys/** r,
+    deny ptrace,
+    deny network,
+}

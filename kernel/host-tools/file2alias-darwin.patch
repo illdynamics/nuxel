@@ -1,0 +1,44 @@
+From: Nuxel Project <nuxel@nuxel.org>
+Date: Wed, 12 Aug 2026 00:00:00 +0000
+Subject: [PATCH] HOST: fix file2alias.c uuid_t clash on Darwin
+
+On macOS (Darwin) the system <sys/_types/_uuid_t.h>, pulled in through
+<ctype.h>/<stdbool.h>/<stdint.h>, already defines `uuid_t` as a typedef
+for `__darwin_uuid_t` (= unsigned char[16]).  scripts/mod/file2alias.c
+unconditionally re-defines its own host-side `uuid_t` as a struct, which
+is a redefinition error, and `struct tee_client_device_id.uuid` (declared
+in include/linux/mod_devicetable.h) then refers to the Apple array type,
+breaking `uuid->b[...]`.
+
+Fix by renaming the kernel host-side type to `nuxel_host_uuid_t` through a
+preprocessor alias introduced *after* the Apple system headers and
+*before* the kernel mod_devicetable.h include.  The rename therefore only
+affects the host tool's own typedef plus the kernel struct field in
+mod_devicetable.h, and never disturbs Apple's public `uuid_t`.
+
+Only applied by kernel/build-kernel.sh on Darwin hosts.
+
+Signed-off-by: Nuxel Project <nuxel@nuxel.org>
+---
+diff --git a/scripts/mod/file2alias.c b/scripts/mod/file2alias.c
+index 721e0e9f1..93253f2eb 100644
+--- a/scripts/mod/file2alias.c
++++ b/scripts/mod/file2alias.c
+@@ -40,6 +40,17 @@ typedef struct {
+ 	__u8 b[16];
+ } guid_t;
+ 
++/*
++ * macOS/Darwin host fix (briq-k1): the Apple system libc (pulled in by
++ * <ctype.h>/<stdbool.h>/<stdint.h> above) already defines `uuid_t` as a
++ * typedef for `__darwin_uuid_t` (unsigned char[16]).  Defining our own
++ * `uuid_t` struct here is therefore a redefinition error and, worse, makes
++ * `struct tee_client_device_id.uuid` resolve to the Apple array type,
++ * breaking `uuid->b[...]`.  Alias the kernel host-side type to a unique
++ * name that cannot collide with any system header.
++ */
++#define uuid_t nuxel_host_uuid_t
++
+ typedef struct {
+ 	__u8 b[16];
+ } uuid_t;

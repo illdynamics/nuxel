@@ -1,0 +1,98 @@
+# Nuxel Device Info — postmarketOS format
+# Motorola Moto G7 Power (XT1955)
+# Codename: ocean
+
+deviceinfo_format_version="2"
+deviceinfo_name="Motorola Moto G7 Power"
+deviceinfo_manufacturer="Motorola"
+deviceinfo_codename="ocean"
+deviceinfo_year="2019"
+deviceinfo_arch="aarch64"
+deviceinfo_chassis="handset"
+
+# SoC
+deviceinfo_soc="Qualcomm Snapdragon 632 (SDM632)"
+deviceinfo_soc_family="msm8953"
+deviceinfo_cpu="4x Kryo 250 Gold (Cortex-A73) + 4x Kryo 250 Silver (Cortex-A53) @ 1.8 GHz (14nm)"
+
+# GPU — Adreno 506 mainline freedreno
+deviceinfo_gpu="Qualcomm Adreno 506"
+deviceinfo_gpu_driver="freedreno"
+deviceinfo_gpu_driver_config="CONFIG_DRM_MSM=y"
+
+# Display — IPS LCD 1520x720
+deviceinfo_display="6.2\" IPS LCD 1520x720 19:9"
+deviceinfo_screen_width="720"
+deviceinfo_screen_height="1520"
+deviceinfo_screen_refresh_rate="60"
+deviceinfo_display_ddic="UNKNOWN — collect LCM name from real device (stock vendor tree)"
+deviceinfo_backlight="TI LM3697"
+deviceinfo_backlight_i2c_bus="i2c_5"
+deviceinfo_backlight_i2c_addr="0x36"
+
+# Touch — Ilitek ILI2117 (mainline)
+deviceinfo_touchscreen="Ilitek ILI2117"
+deviceinfo_touchscreen_driver="ili210x"
+deviceinfo_touchscreen_i2c_bus="i2c_3"
+deviceinfo_touchscreen_i2c_addr="0x41"
+deviceinfo_touchscreen_irq="tlmm 65"
+deviceinfo_touchscreen_inverted_x="true"
+deviceinfo_touchscreen_note="ILI2117 hardware, bound by mainline ili210x (CONFIG_TOUCHSCREEN_ILI210X) via compatible \"ilitek,ili2117\". Stock Android uses the vendor ILITEK_TDDI driver instead — touch on Nuxel is unproven until first boot."
+
+# WiFi / BT — WCN3680B (wcn36xx, NOT ath10k)
+deviceinfo_wifi="Qualcomm WCN3680B (802.11 b/g/n, 2.4 GHz)"
+deviceinfo_wifi_driver="wcn36xx"
+deviceinfo_wifi_note="CONFIG_QCOM_WCNSS_PIL required. NOT ath10k. b/g/n 2.4 GHz only."
+
+deviceinfo_bluetooth="4.2 (WCN3680B)"
+deviceinfo_bluetooth_driver="hci_qca"
+
+# Modem — X9 LTE, NOT MM-ready in Phase 1
+deviceinfo_modem="Qualcomm Snapdragon X9 LTE (integrated, SDM632, no 5G)"
+deviceinfo_modem_driver="NOT_MM_READY"
+deviceinfo_modem_note="No upstream ModemManager plugin for X9 LTE on msm8953. Phase 1: WiFi only."
+
+# NFC
+deviceinfo_nfc="none (most ocean variants — verify on physical device)"
+
+# Storage — eMMC
+deviceinfo_storage="eMMC (32 or 64 GB) + microSD"
+deviceinfo_storage_driver="mmc_core"
+deviceinfo_storage_path="/dev/block/bootdevice/by-name"
+deviceinfo_storage_filesystem="ext4"
+
+# Memory
+deviceinfo_ram="3 or 4 GB LPDDR3 (variant-dependent)"
+
+# Battery
+deviceinfo_battery="5000 mAh"
+deviceinfo_battery_charging="15W TurboPower (Qualcomm QC 3.0)"
+
+# Audio
+deviceinfo_audio_codec="Qualcomm WCD9335 (cajon-v2)"
+deviceinfo_audio_driver="wcd9335"
+
+# Sensors (verified from pmOS wiki XT1955-5)
+deviceinfo_sensor_accel_gyro="Bosch BMI160"
+deviceinfo_sensor_mag="MEMSIC MMC3630KJ"
+deviceinfo_sensor_prox_als="AMS TMD2725"
+deviceinfo_sensor_fingerprint="UNKNOWN — rear-mounted, collect from real device"
+
+# Camera — UNKNOWN; collect from real device
+deviceinfo_camera_front="UNKNOWN — collect from real device"
+deviceinfo_camera_rear="UNKNOWN — collect from real device"
+
+# Boot configuration
+deviceinfo_boot_header_version="1"
+deviceinfo_boot_page_size="2048"
+deviceinfo_boot_slots="none"
+deviceinfo_boot_note="A/B device (verified: boot_a/boot_b, dtbo_a/dtbo_b, system_a/b, vendor_a/b, vbmeta_a/b, shared userdata; reference unit on slot _b). Stock ABOOT -> lk2nd (msm8916-mainline/lk2nd, msm8953 target) -> mainline Linux via EFI. dtbo MUST be flashed before lk2nd."
+
+# Flash
+deviceinfo_flash_method="fastboot"
+deviceinfo_flash_note="fastboot (stock ABOOT + lk2nd). EDL (Qualcomm 9008) for unbrick. Unlock via fastboot oem get_unlock_data -> Motorola portal."
+
+# Kernel
+deviceinfo_kernel="linux-postmarketos-qcom-msm8953"
+deviceinfo_kernel_source="https://github.com/msm8953-mainline/linux"
+deviceinfo_kernel_cmdline="console=ttyMSM0,115200 earlycon=msm_geni_serial,0xa88000 nuxel.device=g7power root=PLACEHOLDER_fill_from_device rootfstype=ext4 rootwait rw"

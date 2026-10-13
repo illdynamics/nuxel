@@ -1,0 +1,360 @@
+# Maintainer: Nuxel Project <nuxel@nuxel.org>
+#
+# Nuxel device package — Samsung Galaxy S10+ (SM-G975F, Exynos 9820)
+# Codename: beyond2lte   |   Device key: s10plus
+#
+# Verified hardware facts only (see phones/s10plus/s10plus-requirements.md §4). Nothing is
+# copied from any other device package. Camera and sensor
+# component names are UNKNOWN — collect from the real device via Phase 0
+# inventory (docs/s10plus-device-inventory.md) and fill them in below.
+#
+# Flash method: TWRP (adb + dd) and Download Mode (Odin/heimdall). There is
+# NO fastboot on this device — never add fastboot to this package.
+
+# shellcheck shell=bash
+# shellcheck disable=SC2034,SC2148,SC2154
+pkgname="device-samsung-beyond2lte"
+pkgver="0.2.0"
+pkgrel="0"
+pkgdesc="Samsung Galaxy S10+ (beyond2lte, Exynos 9820) — Nuxel Phone OS"
+url="https://nuxel.org"
+arch="aarch64"
+license="Apache-2.0"
+options="!check !archcheck"
+
+# postmarketOS kernel this device package targets (verified hardware fact).
+_pmb_kernel="linux-postmarketos-exynos9820"
+
+# DTB name for the beyond2lte board.
+# TODO(operator): verify "exynos9820-beyond2lte.dtb" against the pmOS
+# linux-postmarketos-exynos9820 tree (arch/arm64/boot/dts/exynos/,
+# exynos9820-beyond2lte.dts) before the first kernel build. The generic
+# samsung-exynos9820 port covers beyond0lte/beyond1lte/beyond2lte.
+_pmb_dtb="exynos9820-beyond2lte.dtb"
+
+# Dependencies: the pmOS Exynos 9820 kernel + the S10+ firmware stub
+# (firmware/s10plus/) + device-agnostic Nuxel userspace.
+# NOTE: modemmanager is intentionally NOT a dependency. The integrated
+# Shannon LTE modem is NOT ModemManager-ready in Phase 1 (WiFi-only bring-up);
+# modem bring-up is deferred to Phase 7.
+depends="
+	linux-postmarketos-exynos9820
+	firmware-samsung-beyond2lte
+	boot-deploy
+	networkmanager
+	phosh
+	phoc
+	calls
+	chatty
+	phosh-settings
+	nuxel-bridge
+	nuxel-portal
+	nuxel-notifications
+	nuxel-dialer
+	nuxel-messages
+	nuxel-contacts
+	nuxel-settings
+	nuxel-permissions
+	nuxel-firstboot
+	nuxel-home-pwa
+	nuxel-mail-pwa
+	nuxel-calendar-pwa
+	nuxel-notes-pwa
+	nuxel-files-pwa
+	nuxel-camera-pwa
+	flatpak
+	bubblewrap
+	webkitgtk-6.0
+	pipewire
+	wireplumber
+	apparmor
+	hardened-malloc
+	nftables
+	"
+makedepends="
+	meson
+	ninja
+	pkgconfig
+	gtk4.0-dev
+	libadwaita-dev
+	dbus-dev
+	glib-dev
+	"
+source="deviceinfo
+	90-nuxel-beyond2lte.rules
+	nuxel-beyond2lte.conf"
+subpackages="
+	$pkgname-kernel:kernel
+	$pkgname-firmware:firmware
+	$pkgname-nonfree-firmware:nonfree_firmware
+	"
+# Install triggers: abuild packages these scripts into the .apk control
+# section when listed in install=; the files must exist next to this
+# APKBUILD (abuild.in: [ -e "$startdir/$i" ] || die).
+install="
+	$pkgname.post-install
+	$pkgname.pre-upgrade
+	$pkgname.post-upgrade
+	"
+
+# install_kernel() — install the kernel image + DTB for the S10+.
+# Adapted for the TWRP flash method: there is no fastboot on this device.
+# The kernel is packed into a legacy Android boot image (header v1, page
+# 2048) by boot/s10plus/pack-boot-v1.sh and flashed via TWRP (adb push + dd
+# to /dev/block/platform/13d60000.ufs/by-name/boot) or Download Mode
+# (heimdall). S-Boot chainloads a custom U-Boot (chiffathefox/u-boot,
+# exynos9820_defconfig) which boots this kernel via EFI.
+install_kernel() {
+	local _bootdir="$1"
+
+	# Reference defconfig for the Exynos 9820 build (kernel/s10plus/).
+	install -Dm644 "$srcdir/../kernel/s10plus/defconfig" \
+		"$_bootdir/nuxel-exynos9820-beyond2lte.config"
+
+	# Real Image.gz + DTB come from kernel/s10plus/build-kernel.sh
+	# (outputs under kernel/s10plus/.build/out/). They may be absent during
+	# the bring-up scaffold — pack-boot-v1.sh consumes them later, so do not
+	# hard-fail here if the kernel has not been built yet.
+	if [ -f "$srcdir/../kernel/s10plus/.build/out/arch/arm64/boot/Image.gz" ]; then
+		install -Dm644 "$srcdir/../kernel/s10plus/.build/out/arch/arm64/boot/Image.gz" \
+			"$_bootdir/Image.gz"
+	fi
+	if [ -f "$srcdir/../kernel/s10plus/.build/out/arch/arm64/boot/dts/exynos/exynos9820-beyond2lte.dtb" ]; then
+		install -Dm644 "$srcdir/../kernel/s10plus/.build/out/arch/arm64/boot/dts/exynos/exynos9820-beyond2lte.dtb" \
+			"$_bootdir/exynos9820-beyond2lte.dtb"
+	fi
+}
+
+# install_initfs() — install the Nuxel initramfs configuration for the S10+.
+# The initramfs is built from the SHARED, device-agnostic boot/initramfs/
+# tree (init.sh reads nuxel.device= from the kernel cmdline and selects the
+# s10plus UFS by-name root). It is packed into the v1 boot image by
+# boot/s10plus/pack-boot-v1.sh — never flashed via fastboot (none exists).
+install_initfs() {
+	local _dest="$1"
+
+	install -Dm644 "$srcdir/../boot/s10plus/boot-config.txt" \
+		"$_dest/nuxel-s10plus-boot-config.txt"
+
+	# Reference copy of the shared initramfs init script for auditing.
+	if [ -f "$srcdir/../boot/initramfs/init.sh" ]; then
+		install -Dm644 "$srcdir/../boot/initramfs/init.sh" \
+			"$_dest/init.sh"
+	fi
+
+	cat > "$_dest/initramfs-s10plus.conf" <<'INITFS'
+# Nuxel initramfs config — Samsung Galaxy S10+ (beyond2lte)
+NUXEL_DEVICE=s10plus
+NUXEL_INITRAMFS_SOURCE=../boot/initramfs
+NUXEL_BOOT_IMAGE=legacy-v1-page-2048
+NUXEL_FLASH_METHOD=twrp-adb
+INITFS
+}
+
+build() {
+	# Compile any device-specific helpers
+	cd "$builddir" || return 1
+
+	# Build the nuxel-sandbox helper
+	if [ -d "$srcdir/../shell/nuxel-shell/nuxel-sandbox" ]; then
+		make -C "$srcdir/../shell/nuxel-shell/nuxel-sandbox" \
+			CC="${CC:-gcc}" \
+			CFLAGS="${CFLAGS:--O2}" \
+			PREFIX=/usr
+	fi
+
+	# Build PWA launcher
+	if [ -d "$srcdir/../pwa/launcher" ]; then
+		meson setup build "$srcdir/../pwa/launcher" \
+			--prefix=/usr \
+			--buildtype=release
+		ninja -C build
+	fi
+}
+
+package() {
+	cd "$builddir" || return 1
+
+	# Install device-info
+	install -Dm644 "$srcdir/deviceinfo" \
+		"$pkgdir/etc/deviceinfo"
+
+	# Install the Nuxel device configuration (device key + hardware paths)
+	install -Dm644 "$srcdir/nuxel-beyond2lte.conf" \
+		"$pkgdir/etc/nuxel/beyond2lte.conf"
+
+	# Install udev rules (touch / NFC / WiFi; camera + sensors UNKNOWN)
+	install -Dm644 "$srcdir/90-nuxel-beyond2lte.rules" \
+		"$pkgdir/etc/udev/rules.d/90-nuxel-beyond2lte.rules"
+
+	# Install nuxel-device-info helper
+	install -Dm755 "$srcdir/../device/nuxel-device-info.sh" \
+		"$pkgdir/usr/bin/nuxel-device-info" 2>/dev/null || true
+
+	# Boot config (legacy v1 boot image, TWRP flash method)
+	install -Dm644 "$srcdir/../boot/s10plus/boot-config.txt" \
+		"$pkgdir/etc/nuxel/boot-config.txt"
+
+	# Firmware manifest (S10+ manifest only — never another device's)
+	install -Dm644 "$srcdir/../firmware/s10plus/manifest.yml" \
+		"$pkgdir/usr/share/nuxel/firmware-manifest.yml"
+
+	# Flash helper (TWRP adb+dd; NO fastboot)
+	install -Dm755 "$srcdir/../boot/s10plus/flash.sh" \
+		"$pkgdir/usr/bin/nuxel-flash"
+
+	# Recovery script (TWRP / Download Mode via heimdall)
+	install -Dm755 "$srcdir/../boot/s10plus/recovery.sh" \
+		"$pkgdir/usr/sbin/nuxel-recovery"
+
+	# Kernel + initramfs deployment (TWRP-adapted, see functions above)
+	install_kernel "$pkgdir/boot"
+	install_initfs "$pkgdir/etc/initramfs"
+
+	# Install AppArmor profiles
+	mkdir -p "$pkgdir/etc/apparmor.d"
+	if [ -d "$srcdir/../configs/apparmor.d" ]; then
+		for profile in "$srcdir/../configs/apparmor.d"/*; do
+			install -Dm644 "$profile" \
+				"$pkgdir/etc/apparmor.d/$(basename "$profile")"
+		done
+	fi
+
+	# Install nftables rules
+	install -Dm644 "$srcdir/../configs/nftables/nuxel-app-firewall.nft" \
+		"$pkgdir/usr/share/nftables.d/nuxel-app-firewall.nft"
+
+	# Install hardened_malloc config
+	install -Dm644 "$srcdir/../configs/hardened-malloc.conf" \
+		"$pkgdir/etc/hardened-malloc.conf"
+
+	# Install OpenRC services
+	mkdir -p "$pkgdir/etc/init.d"
+	if [ -d "$srcdir/../shell/config/openrc" ]; then
+		for svc in "$srcdir/../shell/config/openrc"/*; do
+			if [ -f "$svc" ]; then
+				install -Dm755 "$svc" \
+					"$pkgdir/etc/init.d/$(basename "$svc")"
+			fi
+		done
+	fi
+
+	# Install PWA launcher binary
+	if [ -d "$srcdir/../pwa/launcher" ]; then
+		DESTDIR="$pkgdir" ninja -C build install
+	fi
+
+	# Install sandbox helper
+	if [ -d "$srcdir/../shell/nuxel-shell/nuxel-sandbox" ]; then
+		make -C "$srcdir/../shell/nuxel-shell/nuxel-sandbox" \
+			DESTDIR="$pkgdir" PREFIX=/usr install
+	fi
+
+	# Install sandbox profiles
+	mkdir -p "$pkgdir/usr/share/nuxel/sandbox-profiles"
+	if [ -d "$srcdir/../shell/nuxel-shell/nuxel-sandbox/profiles" ]; then
+		for profile in "$srcdir/../shell/nuxel-shell/nuxel-sandbox/profiles"/*.json; do
+			install -Dm644 "$profile" \
+				"$pkgdir/usr/share/nuxel/sandbox-profiles/$(basename "$profile")"
+		done
+	fi
+
+	# Install first-boot marker directory
+	mkdir -p "$pkgdir/etc/nuxel"
+
+	# Install modprobe config for beyond2lte modules.
+	# Module names below follow the mainline / pmOS exynos9820 tree; verify
+	# each against the built kernel before first boot. Camera and sensor
+	# module names are UNKNOWN — collect from the real device (Phase 0).
+	mkdir -p "$pkgdir/etc/modprobe.d"
+	cat > "$pkgdir/etc/modprobe.d/nuxel-beyond2lte.conf" << 'MODPROBE'
+# Nuxel beyond2lte kernel module autoloading (Exynos 9820)
+# TODO(operator): verify module names in the linux-postmarketos-exynos9820 tree
+
+# GPU
+panfrost
+
+# Display
+drm_kms_helper
+exynos_drm
+exynos_drm_dsi
+
+# Touch
+sec_ts
+
+# WiFi / BT
+brcmfmac
+brcmfmac_sdio
+btbcm
+hci_uart
+
+# Audio (MADERA)
+snd_soc_madera
+snd_soc_cs47l93
+snd_soc_cs35l40
+
+# Storage
+ufshcd
+ufshcd_platform
+
+# NFC
+# TODO: sec-nfc module name UNKNOWN — collect from real device
+MODPROBE
+}
+
+kernel() {
+	pkgdesc="Linux kernel for Samsung Galaxy S10+ (beyond2lte, Exynos 9820)"
+	depends="kmod linux-firmware"
+
+	mkdir -p "$subpkgdir/boot"
+	mkdir -p "$subpkgdir/lib/modules"
+	mkdir -p "$subpkgdir/usr/share/nuxel/kernel"
+
+	# Install kernel config for reference (Exynos 9820 fragment)
+	install -Dm644 "$srcdir/../kernel/s10plus/defconfig" \
+		"$subpkgdir/usr/share/nuxel/kernel/exynos9820-beyond2lte_defconfig"
+
+	# Install kernel patches
+	mkdir -p "$subpkgdir/usr/share/nuxel/kernel/patches"
+	if [ -d "$srcdir/../kernel/s10plus/patches" ]; then
+		for patch in "$srcdir/../kernel/s10plus/patches"/*; do
+			[ -f "$patch" ] || continue
+			install -Dm644 "$patch" \
+				"$subpkgdir/usr/share/nuxel/kernel/patches/$(basename "$patch")"
+		done
+	fi
+}
+
+firmware() {
+	pkgdesc="Firmware files for Samsung Galaxy S10+ (beyond2lte)"
+
+	mkdir -p "$subpkgdir/lib/firmware"
+	mkdir -p "$subpkgdir/usr/share/nuxel/firmware"
+
+	# Install firmware extraction helper (S10+ manifest only)
+	install -Dm755 "$srcdir/../firmware/s10plus/install-firmware.sh" \
+		"$subpkgdir/usr/bin/nuxel-install-firmware"
+
+	# Create firmware placeholder directories.
+	# NOTE: real blobs are extracted from the physical device via TWRP
+	# (adb pull of /vendor/firmware, /vendor/lib/modules, /vendor/etc/firmware,
+	# /system/lib64) using firmware/s10plus/install-firmware.sh --twrp-pull.
+	# Checksums are UNKNOWN until then; nothing here is fabricated.
+	mkdir -p "$subpkgdir/lib/firmware/brcm"
+	mkdir -p "$subpkgdir/lib/firmware/tsp_sec"
+	mkdir -p "$subpkgdir/lib/firmware/cirrus"
+	mkdir -p "$subpkgdir/lib/firmware/samsung"
+}
+
+nonfree_firmware() {
+	pkgdesc="Non-free firmware blobs for Samsung Galaxy S10+ (beyond2lte)"
+	depends="$pkgname-firmware"
+	# Extracted from the physical device or the Samsung AP tarball by the user.
+	# This subpackage exists to separate license concerns.
+}
+
+sha512sums="
+SKIP
+SKIP
+SKIP
+"

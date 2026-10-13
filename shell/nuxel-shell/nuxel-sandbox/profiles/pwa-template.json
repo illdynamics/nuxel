@@ -1,0 +1,26 @@
+{
+    "app_id": "org.nuxel.PWA",
+    "name": "PWA Template",
+    "category": "pwa",
+    "flags": [],
+    "data_dir": "/var/app/APP_ID/data",
+    "cgroup_name": "app-APP_ID",
+    "cgroup_classid": 16974000,
+    "allowed_ro_paths": ["/usr", "/usr/share"],
+    "allowed_rw_paths": ["/var/app/APP_ID/data"],
+    "dbus_access": ["org.nuxel.Bridge"],
+    "devices": [],
+    "seccomp_profile": "pwa-strict",
+    "landlock_rules": {
+        "read_only": ["/usr", "/usr/share", "/etc/fonts", "/etc/gtk-4.0"],
+        "read_write": ["/var/app/APP_ID/data"],
+        "deny": ["/dev", "/sys", "/proc/*/mem", "/var/app/"]
+    },
+    "network_policy": {
+        "default": "deny",
+        "allow_dns": true,
+        "allow_tcp_outbound": false,
+        "allow_udp_outbound": false,
+        "allow_inbound": false
+    }
+}

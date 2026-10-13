@@ -1,0 +1,123 @@
+# =============================================================================
+# Nuxel msm8953/SDM632 defconfig fragment for Motorola Moto G7 Power (ocean)
+# Applied on top of linux-postmarketos-qcom-msm8953 base config
+# Kernel source: https://github.com/msm8953-mainline/linux
+# =============================================================================
+
+# GPU — Adreno 506, mainline freedreno
+CONFIG_DRM=y
+CONFIG_DRM_MSM=y
+CONFIG_DRM_MSM_GPU_STATE=y
+# CONFIG_DRM_PANFROST is not set   # Mali only; not on SDM632
+# CONFIG_DRM_POWERVR is not set    # Imagination only; not on SDM632
+
+# Display — MSM DSI (mainline)
+CONFIG_DRM_PANEL_SIMPLE=y          # may be needed for IPS LCD panel
+# Backlight — TI LM3697 (mainline symbol is LEDS_LM3697, not BACKLIGHT_TI_*)
+CONFIG_LEDS_LM3697=y               # mainline; I2C i2c_5 @ 0x36
+
+# Touch — Ilitek ILI2117 hardware, driven by mainline ili210x.
+# There is NO CONFIG_TOUCHSCREEN_ILI210X symbol: drivers/input/touchscreen/
+# ili210x.c matches compatible "ilitek,ili2117" -> ili211x_chip (43-byte
+# ILI211x frame, 10 contacts, no firmware blob). Requesting the non-existent
+# symbol silently dropped it via olddefconfig and left ILI210X unset.
+# Built-in (=y) on purpose: the Phase-1 rootfs has no udev/module autoload,
+# so a module would never load. Use =m only for reload/debug bring-up.
+CONFIG_TOUCHSCREEN_ILI210X=y       # ILI2117: I2C i2c_3 @ 0x41, IRQ tlmm 65, inverted-x
+# Not needed (wrong chips for this device):
+# CONFIG_TOUCHSCREEN_SAMSUNG_SEC_TS is not set   # S10+ touch only
+# CONFIG_TOUCHSCREEN_SAMSUNG_S6SY791 is not set  # mustang touch only
+
+# WiFi — WCN3680B via wcn36xx (NOT ath10k; NOT brcmfmac)
+CONFIG_WCN36XX=y
+CONFIG_QCOM_WCNSS_PIL=y
+CONFIG_WCNSS_CORE=y
+# CONFIG_ATH10K is not set         # NOT the right driver for WCN3680B
+# CONFIG_BRCMFMAC is not set       # Broadcom only; not on SDM632
+
+# Bluetooth — WCN3680B via hci_qca
+CONFIG_BT=y
+CONFIG_BT_HCIUART=y
+CONFIG_BT_HCIUART_QCA=y
+# CONFIG_BT_HCIUART_BCM is not set # Broadcom only; not on SDM632
+
+# Audio — WCD9335 cajon-v2 ASoC
+CONFIG_SND=y
+CONFIG_SND_SOC=y
+CONFIG_SND_SOC_WCD9335=y          # WCD9335 cajon-v2
+CONFIG_SND_SOC_MSM8916_WCD_IRCODEC=y  # verify availability in msm8953 tree
+CONFIG_SND_SOC_QCOM=y
+# CONFIG_SND_SOC_CS47L93 is not set   # S10+ audio only
+# CONFIG_SND_SOC_CS42L43 is not set   # mustang audio only
+
+# Sensors (mainline IIO)
+CONFIG_IIO=y
+CONFIG_BMI160_I2C=y                # Bosch BMI160 accel+gyro (mainline)
+CONFIG_BMI160_SPI=n
+# MMC3630KJ magnetometer — verify driver name in msm8953 tree
+# CONFIG_MMC35240 or CONFIG_IIO_MMC3630KJ — TBD from kernel tree
+# TMD2725 prox+ALS — verify driver name in msm8953 tree
+# CONFIG_APDS9960 or CONFIG_TMD2725 — TBD from kernel tree
+
+# Storage — eMMC
+CONFIG_MMC=y
+CONFIG_MMC_BLOCK=y
+CONFIG_MMC_SDHCI=y
+CONFIG_MMC_SDHCI_MSM=y
+
+# Filesystems
+CONFIG_EXT4_FS=y
+CONFIG_F2FS_FS=y
+CONFIG_VFAT_FS=y                   # microSD
+
+# USB — dwc3 (fastboot gadget)
+CONFIG_USB_DWC3=y
+CONFIG_USB_DWC3_QCOM=y
+CONFIG_USB_GADGET=y
+CONFIG_USB_CONFIGFS=y
+
+# Diagnostics (bring-up). i2c-dev gives userspace i2cdetect/i2cget on the bus.
+# CONFIG_DYNAMIC_DEBUG is deliberately NOT enabled here: it changes the whole
+# kernel image and forces a full rebuild. Add it as a one-off when you need
+#   echo 'file drivers/input/touchscreen/ili210x.c +p' > /sys/kernel/debug/dynamic_debug/control
+CONFIG_I2C_CHARDEV=y        # built-in: the Phase-1 rootfs loads no modules
+
+# Device nodes
+CONFIG_DEVTMPFS=y
+CONFIG_DEVTMPFS_MOUNT=y
+
+# Qualcomm IPC / RPM
+CONFIG_QCOM_SMD=y
+CONFIG_QCOM_SMEM=y
+CONFIG_RPMSG=y
+CONFIG_RPMSG_QCOM_SMD=y
+CONFIG_QCOM_COMMAND_DB=y
+CONFIG_QCOM_RPM=y
+
+# Security — where supported by msm8953 tree
+CONFIG_SECURITY=y
+CONFIG_SECURITY_APPARMOR=y
+CONFIG_SECCOMP=y
+CONFIG_USER_NS=y
+CONFIG_NET_NS=y
+CONFIG_PID_NS=y
+CONFIG_IPC_NS=y
+CONFIG_UTS_NS=y
+CONFIG_NAMESPACES=y
+
+# Nuxel phone features (conditional; only if patch applies to msm8953 tree)
+# CONFIG_NUXEL=y       # apply only if 0001-nuxel-phone-features.patch compiles clean
+# CONFIG_NUXEL_PHONE=y
+# CONFIG_NUXEL_BOOT_PARAM=y
+
+# --- Symbols explicitly NOT present in linux-postmarketos-qcom-msm8953 ---
+# CONFIG_DRM_POWERVR      — mustang PowerVR GPU; not in msm8953 tree
+# CONFIG_DRM_PANFROST     — S10+ Mali GPU; not on SDM632
+# CONFIG_DRM_PANEL_SAMSUNG_AMB655X  — mustang display
+# CONFIG_DRM_PANEL_SAMSUNG_S6E3HA9  — S10+ display
+# CONFIG_BRCMFMAC         — Broadcom WiFi; not on SDM632
+# CONFIG_MFD_MADERA       — S10+ audio; not on SDM632
+# CONFIG_SND_SOC_CS47L93  — S10+ codec
+# CONFIG_SND_SOC_CS35L40  — S10+ amp
+# CONFIG_SCSI_UFSHCD      — UFS; G7 Power uses eMMC, not UFS
+# CONFIG_MHI_BUS_PCI_GENERIC — mustang modem; not on msm8953

@@ -1,0 +1,79 @@
+#!/sbin/openrc-run
+# OpenRC init script for nuxel-bridge
+# D-Bus service mediating between PWAs and native phone functions
+# Google Pixel 10 Pro XL (mustang) — Serial 58211FDCQ001LA
+
+description="Nuxel Bridge D-Bus Service"
+name="nuxel-bridge"
+command="/usr/bin/nuxel-bridge"
+command_background="yes"
+pidfile="/run/nuxel/bridge.pid"
+command_user="nuxel-bridge:nuxel-bridge"
+
+depend() {
+	need dbus
+	need localmount
+	after nuxel-portal
+	after modemmanager
+	after networkmanager
+}
+
+start() {
+	checkpath --directory --owner nuxel-bridge:nuxel-bridge \
+		--mode 0755 /run/nuxel
+	checkpath --directory --owner root:root \
+		--mode 0700 /var/lib/nuxel/permissions
+
+	if [ ! -x "$command" ]; then
+		eerror "nuxel-bridge binary not found at $command"
+		return 1
+	fi
+
+	if [ -f /etc/dbus-1/system.d/org.nuxel.Bridge.conf ]; then
+		dbus-send --system --type=method_call \
+			--dest=org.freedesktop.DBus \
+			/org/freedesktop/DBus \
+			org.freedesktop.DBus.ReloadConfig 2>/dev/null || true
+	fi
+
+	ebegin "Starting nuxel-bridge for mustang (Pixel 10 Pro XL)"
+	start-stop-daemon --start --background --make-pidfile \
+		--pidfile "$pidfile" \
+		--user nuxel-bridge --group nuxel-bridge \
+		--exec "$command"
+
+	local timeout=10
+	while [ $timeout -gt 0 ]; do
+		if dbus-send --system --type=method_call --print-reply \
+			--dest=org.nuxel.Bridge \
+			/org/nuxel/Bridge \
+			org.nuxel.Bridge.Ping \
+			string:"healthcheck" >/dev/null 2>&1; then
+			eend 0
+			return 0
+		fi
+		sleep 1
+		timeout=$((timeout - 1))
+	done
+
+	eerror "nuxel-bridge failed to register on D-Bus within 10 seconds"
+	return 1
+}
+
+stop() {
+	ebegin "Stopping nuxel-bridge"
+	start-stop-daemon --stop --pidfile "$pidfile" --retry 5
+	rm -f /run/nuxel/bridge.pid
+	rm -f /run/nuxel/bridge.sock 2>/dev/null || true
+	eend $?
+}
+
+status() {
+	if [ -f "$pidfile" ] && kill -0 "$(cat "$pidfile")" 2>/dev/null; then
+		einfo "nuxel-bridge is running (PID: $(cat "$pidfile"))"
+		return 0
+	else
+		einfo "nuxel-bridge is not running"
+		return 1
+	fi
+}

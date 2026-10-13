@@ -1,0 +1,32 @@
+# AppArmor profile for nuxel-messages - native GTK4 SMS app
+# Only needs ModemManager SMS D-Bus
+
+profile nuxel-messages /usr/bin/nuxel-messages flags=(attach_disconnected) {
+    #include <abstractions/base>
+    #include <abstractions/gtk4>
+    #include <abstractions/dbus>
+    
+    /usr/bin/nuxel-messages r,
+    /usr/lib/** r,
+    /usr/share/** r,
+    /etc/fonts/** r,
+    
+    # App data
+    /var/app/nuxel-messages/data/** rw,
+    
+    # D-Bus system bus
+    /run/dbus/system_bus_socket rw,
+    
+    # D-Bus: ModemManager for SMS
+    dbus send bus=system path=/org/freedesktop/ModemManager1/*
+         interface=org.freedesktop.ModemManager1.Messaging
+         member=*,
+    dbus send bus=system path=/org/freedesktop/ModemManager1
+         interface=org.freedesktop.DBus.Properties
+         member=GetAll,
+    
+    deny network,
+    deny ptrace,
+    deny /dev/** rwk,
+    deny /sys/** r,
+}

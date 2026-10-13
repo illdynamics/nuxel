@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Nuxel Home
+Comment=Launch Nuxel Home Shell
+Exec=/usr/bin/nuxel-home
+Icon=nuxel-home
+Terminal=false
+Categories=Utility;
+StartupNotify=false

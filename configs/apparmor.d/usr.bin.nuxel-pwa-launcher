@@ -1,0 +1,47 @@
+# AppArmor profile for the nuxel-pwa-launcher (WebKitGTK hardened PWA runner)
+# Confines the PWA tab to its isolated WebContext + bridge socket.
+
+profile nuxel-pwa-launcher /usr/bin/nuxel-pwa-launcher flags=(attach_disconnected) {
+    #include <abstractions/base>
+    #include <abstractions/dbus>
+    #include <abstractions/gtk4>
+    #include <abstractions/nameservice>
+
+    /usr/bin/nuxel-pwa-launcher rix,
+    /usr/lib/nuxel/pwa/** r,
+    /usr/lib/webkit*/** r,
+    /usr/lib/** r,
+    /usr/share/webkit*/** r,
+    /etc/fonts/** r,
+    /etc/gtk-4.0/** r,
+
+    # Per-app WebKit data (isolated WebContext), cache, sqlite
+    /var/app/*/data/** rw,
+    /var/app/*/data/cache/** rw,
+
+    # Bridge socket to nuxel-bridge
+    /run/nuxel/bridge/*.sock rw,
+    /run/nuxel/** rw,
+
+    # Wayland + PipeWire
+    /run/user/*/wayland-* rw,
+    /run/user/*/pipewire-* rw,
+    /run/user/*/bus rw,
+
+    # DNS stub (DoH via system resolver)
+    /etc/resolv.conf r,
+
+    # Network: DNS + app-specific bridge; outbound restricted by nftables cgroup
+    network inet stream,
+    network inet6 stream,
+    network inet dgram,
+
+    dbus send bus=system path=/org/nuxel/Bridge
+         interface=org.nuxel.Bridge
+         member=*,
+
+    deny /dev/** rwk,
+    deny /sys/** r,
+    deny /proc/*/mem rw,
+    deny ptrace,
+}

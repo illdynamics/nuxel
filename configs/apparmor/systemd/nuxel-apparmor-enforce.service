@@ -1,0 +1,47 @@
+# Nuxel AppArmor enforce service (briq-15)
+# Installed to /etc/systemd/system/nuxel-apparmor-enforce.service
+# Loads every configs/apparmor.d profile for a nuxel-* binary and enforces it
+# at boot so runtime failures are treated as audit/deny as designed.
+#
+# VM/kernel without AppArmor (e.g. Fedora Cloud guest with no apparmor in the
+# kernel, or userspace tooling not installed): the unit exits 0 with a logged
+# SKIP so a missing capability is recorded as evidence instead of breaking
+# boot with a failed unit.
+
+[Unit]
+Description=Nuxel AppArmor profile enforcement
+Documentation=file:/home/nuxel/nuxel/docs/security-defaults.md
+DefaultDependencies=no
+After=local-fs.target
+Before=basic.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+# Load profiles in enforce mode. apparmor_parser -Q validates each profile
+# before it is loaded; profiles that fail to parse are logged and skipped so a
+# single bad profile does not break boot. When the kernel or userspace lacks
+# AppArmor support we log a SKIP with the exact reason and exit 0 (the
+# profiles remain installed at /etc/apparmor.d and take effect on a kernel
+# that supports them).
+ExecStart=/usr/bin/bash -c 'set -euo pipefail; \
+  if [ ! -d /sys/module/apparmor ]; then \
+    echo "SKIP: AppArmor kernel support not present (no /sys/module/apparmor); profiles installed but not enforced"; \
+    exit 0; \
+  fi; \
+  if ! command -v apparmor_parser >/dev/null 2>&1 || ! command -v aa-enforce >/dev/null 2>&1; then \
+    echo "SKIP: AppArmor userspace tooling (apparmor_parser/aa-enforce) not installed; profiles installed but not enforced"; \
+    exit 0; \
+  fi; \
+  for p in /etc/apparmor.d/nuxel-* /etc/apparmor.d/usr.bin.nuxel-* /etc/apparmor.d/usr.lib.flatpak; do \
+    [ -f "$p" ] || continue; \
+    if apparmor_parser -Q -O enforce "$p"; then \
+      aa-enforce "$p"; \
+    else \
+      echo "WARN: skipping invalid AppArmor profile $p"; \
+    fi; \
+  done'
+ExecStartPost=/usr/bin/bash -c 'if command -v aa-status >/dev/null 2>&1; then aa-status --enforced | head -40; else echo "aa-status not installed - enforcement status not listed"; fi'
+
+[Install]
+WantedBy=multi-user.target

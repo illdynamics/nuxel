@@ -1,0 +1,15 @@
+[Unit]
+Description=Launch Native Nuxel Home
+After=default.target
+Wants=nuxel-web.service
+
+[Service]
+Type=simple
+ExecStartPre=/bin/sleep 8
+ExecStart=/usr/local/bin/nuxel-home
+Restart=on-failure
+RestartSec=5
+Environment=XDG_SESSION_TYPE=wayland
+
+[Install]
+WantedBy=default.target

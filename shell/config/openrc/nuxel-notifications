@@ -1,0 +1,84 @@
+#!/sbin/openrc-run
+# OpenRC init script for nuxel-notifications
+# Notification daemon for the Nuxel phone OS
+# Google Pixel 10 Pro XL (mustang) — Serial 58211FDCQ001LA
+
+description="Nuxel Notification Daemon"
+name="nuxel-notifications"
+command="/usr/bin/nuxel-notifications"
+command_background="yes"
+pidfile="/run/nuxel/notifications.pid"
+command_user="nuxel-notifications:nuxel-notifications"
+
+depend() {
+	need dbus
+	need localmount
+	after nuxel-bridge
+	after pipewire
+	after wireplumber
+}
+
+start() {
+	checkpath --directory --owner nuxel-notifications:nuxel-notifications \
+		--mode 0755 /run/nuxel
+	checkpath --directory --owner nuxel-notifications:nuxel-notifications \
+		--mode 0755 /var/log/nuxel
+	# Canonical single-file notification history store (briq-07). Create the
+	# parent dir so the daemon can write /var/lib/nuxel/notifications.json.
+	checkpath --directory --owner nuxel-notifications:nuxel-notifications \
+		--mode 0755 /var/lib/nuxel
+
+	if [ ! -x "$command" ]; then
+		eerror "nuxel-notifications binary not found at $command"
+		return 1
+	fi
+
+	# Pin the canonical persistence path (env override wins in the daemon).
+	export NUXEL_NOTIFICATIONS_FILE="/var/lib/nuxel/notifications.json"
+	export NUXEL_NOTIFICATIONS_HISTORY_CAP="200"
+
+	if [ -f /etc/dbus-1/system.d/org.nuxel.Notifications.conf ]; then
+		dbus-send --system --type=method_call \
+			--dest=org.freedesktop.DBus \
+			/org/freedesktop/DBus \
+			org.freedesktop.DBus.ReloadConfig 2>/dev/null || true
+	fi
+
+	ebegin "Starting nuxel-notifications"
+	start-stop-daemon --start --background --make-pidfile \
+		--pidfile "$pidfile" \
+		--user nuxel-notifications --group nuxel-notifications \
+		--exec "$command"
+
+	local timeout=10
+	while [ $timeout -gt 0 ]; do
+		if dbus-send --system --type=method_call --print-reply \
+			--dest=org.nuxel.Notifications \
+			/org/nuxel/Notifications \
+			org.freedesktop.DBus.Peer.Ping >/dev/null 2>&1; then
+			eend 0
+			return 0
+		fi
+		sleep 1
+		timeout=$((timeout - 1))
+	done
+
+	eerror "nuxel-notifications failed to register on D-Bus"
+	return 1
+}
+
+stop() {
+	ebegin "Stopping nuxel-notifications"
+	start-stop-daemon --stop --pidfile "$pidfile" --retry 5
+	eend $?
+}
+
+status() {
+	if [ -f "$pidfile" ] && kill -0 "$(cat "$pidfile")" 2>/dev/null; then
+		einfo "nuxel-notifications is running (PID: $(cat "$pidfile"))"
+		return 0
+	else
+		einfo "nuxel-notifications is not running"
+		return 1
+	fi
+}

@@ -1,0 +1,37 @@
+# Nuxel phone-call PipeWire configuration (fragment)
+#
+# This is a `.part` fragment included from the session-wide
+# `pipewire.conf.d/40-nuxel-phone.conf` on mustang and from the VM profile.
+# It tunes the phone audio path for voice calls: it anchors the sampling rate
+# and documents how the UCM2 "VoiceCall" route is selected alongside the
+# WirePlumber "voice-call" profile.
+#
+# NOTE: the JACK session manager toggle does NOT belong here. PipeWire has
+# no `wireplumber.jack-session` context property. JACK session-manager
+# support is enabled/disabled in the WirePlumber configuration
+# (configs/wireplumber/nuxel-voice-call.lua.d/). See that file.
+#
+# Install:
+#   sudo mkdir -p /etc/pipewire/pipewire.conf.d
+#   sudo install -m0644 nuxel-phone.conf.part \
+#       /etc/pipewire/pipewire.conf.d/40-nuxel-phone.conf
+#   systemctl --user restart pipewire pipewire-pulse wireplumber
+
+context.properties = {
+    ## Phone / voice-call focus: use a 48 kHz target typical of Cirrus codecs.
+    default.clock.rate          = 48000
+    default.clock.allowed-rates = [ 44100 48000 96000 ]
+
+    ## Keep the audio DSP busy to minimise glitches during calls.
+    default.clock.quantum       = 1024
+}
+
+context.modules = [
+    # PipeWire-JACK compat so JACK-aware apps can pull the voice stream.
+    { name = libpipewire-module-jack
+        args = { node.name = "nuxel-jack-session" }
+        flags = [ ifexists nofail ] }
+]
+
+# The actual phone route (Speaker / VoiceCall UCM, mic) is selected by
+# WirePlumber profile, see configs/wireplumber/nuxel-voice-call.lua.d/.

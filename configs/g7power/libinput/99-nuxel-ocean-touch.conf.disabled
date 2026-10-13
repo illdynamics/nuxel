@@ -1,0 +1,28 @@
+# Ilitek ILI2117 touch — Xorg InputClass for G7 Power (ocean)
+#
+# DISABLED ON PURPOSE for first bring-up (filename ends in .disabled, so Xorg
+# does not load it). Reason: the DTS already declares `touchscreen-inverted-x`
+# on touchscreen@41, and mainline ili210x.c reports coordinates through the
+# generic touchscreen-property helpers. The kernel therefore ALREADY inverts X.
+# The previous version of this file also applied
+#   Option "TransformationMatrix" "-1 0 1 0 1 0 0 0 1"
+# which would invert X a second time (touch mirrored) once the name matched.
+#
+# To re-enable after touch is confirmed working: rename to drop `.disabled`
+# and re-verify a four-corner test. Do NOT re-add a TransformationMatrix
+# unless you first remove touchscreen-inverted-x from the device tree.
+Section "InputClass"
+    Identifier "nuxel-g7power-touch"
+    MatchIsTouchscreen "on"
+    MatchDevicePath "/dev/input/event*"
+    # Kernel input name registered by mainline ili210x.c
+    MatchProduct "ILI210x Touchscreen"
+    Driver "libinput"
+    # No TransformationMatrix on purpose — see note above.
+EndSection
+
+# Verify on device:
+#   evtest /dev/input/eventX        # X should increase left->right
+#   libinput debug-events --device /dev/input/eventX
+# The event node is the one whose udev NAME is "ILI210x Touchscreen"
+# (grep -A12 -i 'ILI210x' /proc/bus/input/devices).

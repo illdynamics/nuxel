@@ -1,0 +1,19 @@
+{
+  "name": "nuxel-common-bridge",
+  "version": "0.2.0",
+  "description": "Shared Nuxel bridge client used by all PWA surfaces",
+  "main": "bridge.js",
+  "module": "bridge.js",
+  "type": "module",
+  "exports": {
+    ".": "./bridge.js"
+  },
+  "scripts": {
+    "test": "node test-bridge.js && node verify-wiring.js",
+    "verify-wiring": "node verify-wiring.js"
+  },
+  "license": "MIT",
+  "bin": {
+    "nuxel-verify-pwa-wiring": "./verify-wiring.js"
+  }
+}

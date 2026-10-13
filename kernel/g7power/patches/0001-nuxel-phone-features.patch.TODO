@@ -1,0 +1,89 @@
+# TODO — unported sections of 0001-nuxel-phone-features.patch for
+#        linux-postmarketos-qcom-msm8953
+#
+# This file records the sections of the Nuxel phone-features patch that are
+# NOT yet ported to the msm8953 tree, and WHY they cannot apply as-is.
+# Once each section is ported, delete this .TODO file and replace
+# patches/0001-nuxel-phone-features.patch with the real ported patch.
+#
+# Missing upstream symbol/context (the blocker):
+#   The msm8953-mainline tree has NO drivers/nuxel/ directory and NO
+#   CONFIG_NUXEL / CONFIG_NUXEL_PHONE / CONFIG_NUXEL_BOOT_PARAM Kconfig
+#   symbols. The original patch (6.12 GKI tree) adds all three from scratch,
+#   and its drivers/Kconfig + drivers/Makefile wiring hunks rely on context
+#   lines whose surrounding content differs between the 6.12 GKI tree and the
+#   5.x-era msm8953 tree. `git apply --check` against the cloned tree decides
+#   whether the context still matches; the hunks below are expected to need a
+#   manual re-base.
+
+# ---------------------------------------------------------------------------
+# Section 1 — drivers/Kconfig wiring hunk (unported)
+# ---------------------------------------------------------------------------
+# Upstream diff (approx.):
+#   --- a/drivers/Kconfig
+#   +++ b/drivers/Kconfig
+#   @@ ... @@
+#    source "drivers/opp/Kconfig"
+#   +source "drivers/nuxel/Kconfig"
+#    source "drivers/siox/Kconfig"
+#
+# Why it fails / what is missing:
+#   Context-dependent. The msm8953 branch has its own drivers/Kconfig history;
+#   the opp/siox context lines may not be adjacent. Re-base by hand if needed.
+#   The symbol that must exist afterwards: CONFIG_NUXEL (new, drivers/nuxel/Kconfig).
+
+# ---------------------------------------------------------------------------
+# Section 2 — drivers/Makefile wiring hunk (unported)
+# ---------------------------------------------------------------------------
+# Upstream diff (approx.):
+#   --- a/drivers/Makefile
+#   +++ b/drivers/Makefile
+#   @@ ... @@
+#    obj-$(CONFIG_DPLL)               += dpll/
+#   +obj-$(CONFIG_NUXEL)              += nuxel/
+#
+# Why it fails / what is missing:
+#   Context-dependent (same as Section 1). The msm8953 Makefile may order
+#   entries differently. The symbol that must exist afterwards: obj-$(CONFIG_NUXEL)
+#   pointing at drivers/nuxel/.
+
+# ---------------------------------------------------------------------------
+# Section 3 — drivers/nuxel/Kconfig (unported; new file)
+# ---------------------------------------------------------------------------
+# Adds the three Nuxel symbols. Required content for the port:
+#   config NUXEL
+#       tristate "Nuxel device support"
+#       default y
+#       help
+#         Nuxel phone framework. Parses nuxel.device= (mustang / s10plus /
+#         g7power) and nuxel.boot=1 on the kernel command line.
+#   config NUXEL_PHONE
+#       bool "Nuxel phone feature set"
+#       depends on NUXEL
+#   config NUXEL_BOOT_PARAM
+#       bool "Nuxel boot-parameter parsing"
+#       depends on NUXEL
+#
+# Missing upstream symbol: none of CONFIG_NUXEL / CONFIG_NUXEL_PHONE /
+# CONFIG_NUXEL_BOOT_PARAM exist in the msm8953 tree.
+
+# ---------------------------------------------------------------------------
+# Section 4 — drivers/nuxel/Makefile (unported; new file)
+# ---------------------------------------------------------------------------
+#   obj-$(CONFIG_NUXEL) += nuxel-core.o
+
+# ---------------------------------------------------------------------------
+# Section 5 — drivers/nuxel/nuxel-core.c (unported; new file)
+# ---------------------------------------------------------------------------
+# The C driver uses struct proc_ops (mainline since v5.6) and
+# saved_command_line (exported by init/do_mounts.c) — both expected to exist
+# in the 5.x-era msm8953 tree, so this section is expected to port with only
+# the help/description strings changed (mustang -> g7power). Verify after the
+# wiring hunks apply.
+
+# ---------------------------------------------------------------------------
+# How to check current status (after `bash kernel/g7power/build-kernel.sh --clone`):
+#   git -C kernel/g7power/.build/src apply --check \
+#       kernel/g7power/patches/0001-nuxel-phone-features.patch
+# If it applies cleanly: port done — delete this file and uncomment the
+# CONFIG_NUXEL* lines in kernel/g7power/defconfig.

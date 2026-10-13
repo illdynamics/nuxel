@@ -1,0 +1,27 @@
+# Nuxel PWA Runtime Configuration
+# Hardened defaults — all dangerous APIs disabled
+
+# Default capability grants for new PWAs
+pwa_default_network=@pwa_default_network@
+pwa_default_camera=@pwa_default_camera@
+pwa_default_mic=@pwa_default_mic@
+pwa_default_location=@pwa_default_location@
+pwa_default_notifications=@pwa_default_notifications@
+
+# WebKit feature flags — disabled for security
+webkit_disable_webrtc=true
+webkit_disable_webusb=true
+webkit_disable_webbluetooth=true
+webkit_disable_webnfc=true
+webkit_disable_webhid=true
+webkit_disable_webserial=true
+webkit_disable_webmidi=true
+webkit_disable_fullscreen=true
+webkit_disable_encrypted_media=true
+webkit_disable_hyperlink_auditing=true
+webkit_disable_java=true
+webkit_disable_plugins=true
+
+# Performance
+webkit_enable_jit=true
+webkit_enable_sandbox=true

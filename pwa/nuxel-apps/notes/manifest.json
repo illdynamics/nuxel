@@ -1,0 +1,14 @@
+{
+  "name": "Nuxel Notes",
+  "short_name": "Notes",
+  "description": "Markdown notes with local storage",
+  "start_url": "/pwa/nuxel-apps/notes/index.html",
+  "display": "standalone",
+  "background_color": "#1a1a2e",
+  "theme_color": "#607D8B",
+  "icons": [
+    {"src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png"},
+    {"src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png"}
+  ],
+  "nuxel": {"capabilities": [], "app_type": "notes"}
+}

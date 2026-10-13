@@ -1,0 +1,39 @@
+[Unit]
+Description=Nuxel Notification Hub
+Documentation=https://nuxel.org/docs/notifications
+Wants=dbus.service
+After=dbus.service
+Before=nuxel-bridge.service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/nuxel-notifications
+Restart=on-failure
+RestartSec=5
+RestartMaxDelaySec=30
+StartLimitIntervalSec=120
+StartLimitBurst=15
+User=nuxel-notifications
+Group=nuxel-notifications
+# Persist notification history to the canonical single JSON file (briq-07).
+# The resolver in notifications.py reads NUXEL_NOTIFICATIONS_FILE (env first,
+# then the built-in default), so pin it explicitly to the canonical path.
+Environment=NUXEL_NOTIFICATIONS_FILE=/var/lib/nuxel/notifications.json
+Environment=NUXEL_NOTIFICATIONS_HISTORY_CAP=200
+
+# Security hardening
+ProtectSystem=full
+ProtectHome=yes
+PrivateTmp=yes
+NoNewPrivileges=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+RestrictAddressFamilies=AF_UNIX
+MemoryDenyWriteExecute=yes
+
+# Needs D-Bus + data storage
+ReadWritePaths=/var/lib/nuxel /var/log/nuxel
+ReadOnlyPaths=/etc/dbus-1
+
+[Install]
+WantedBy=graphical-session.target

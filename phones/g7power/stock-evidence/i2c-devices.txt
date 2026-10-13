@@ -1,0 +1,15 @@
+total 0
+lrwxrwxrwx 1 root root 0 2021-01-09 23:23 1-005a -> ../../../devices/platform/soc/78b5000.i2c/i2c-1/1-005a
+lrwxrwxrwx 1 root root 0 2021-01-09 23:23 1-007f -> ../../../devices/platform/soc/78b5000.i2c/i2c-1/1-007f
+lrwxrwxrwx 1 root root 0 2021-01-09 23:23 2-0020 -> ../../../devices/platform/soc/78b6000.i2c/i2c-2/2-0020
+lrwxrwxrwx 1 root root 0 2021-01-09 23:23 2-0028 -> ../../../devices/platform/soc/78b6000.i2c/i2c-2/2-0028
+lrwxrwxrwx 1 root root 0 2021-01-09 23:23 2-0034 -> ../../../devices/platform/soc/78b6000.i2c/i2c-2/2-0034
+lrwxrwxrwx 1 root root 0 2021-01-09 23:23 3-0038 -> ../../../devices/platform/soc/78b7000.i2c/i2c-3/3-0038
+lrwxrwxrwx 1 root root 0 2021-01-09 23:23 3-0041 -> ../../../devices/platform/soc/78b7000.i2c/i2c-3/3-0041
+lrwxrwxrwx 1 root root 0 2021-01-09 23:23 3-0062 -> ../../../devices/platform/soc/78b7000.i2c/i2c-3/3-0062
+lrwxrwxrwx 1 root root 0 2021-01-09 23:23 5-0036 -> ../../../devices/platform/soc/7af5000.i2c/i2c-5/5-0036
+lrwxrwxrwx 1 root root 0 2021-01-09 23:23 5-0037 -> ../../../devices/platform/soc/7af5000.i2c/i2c-5/5-0037
+lrwxrwxrwx 1 root root 0 2021-01-09 23:23 i2c-1 -> ../../../devices/platform/soc/78b5000.i2c/i2c-1
+lrwxrwxrwx 1 root root 0 2021-01-09 23:23 i2c-2 -> ../../../devices/platform/soc/78b6000.i2c/i2c-2
+lrwxrwxrwx 1 root root 0 2021-01-09 23:23 i2c-3 -> ../../../devices/platform/soc/78b7000.i2c/i2c-3
+lrwxrwxrwx 1 root root 0 2021-01-09 23:23 i2c-5 -> ../../../devices/platform/soc/7af5000.i2c/i2c-5

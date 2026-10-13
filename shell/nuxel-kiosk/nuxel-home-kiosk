@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Nuxel Home Kiosk Launcher
+# Opens nuxel-home PWA in fullscreen kiosk mode on boot
+# Waits for the web server, then launches Chromium or Firefox
+
+URL="http://127.0.0.1:8000/pwa/nuxel-home/index.html?kiosk=$(date +%s)"
+
+# Wait for static web server (up to 60s)
+for i in $(seq 1 60); do
+    if curl -fsS "http://127.0.0.1:8000/pwa/nuxel-home/index.html" >/dev/null 2>&1; then
+        break
+    fi
+    sleep 1
+done
+
+if command -v chromium-browser >/dev/null 2>&1; then
+    exec chromium-browser \
+        --kiosk "$URL" \
+        --no-first-run \
+        --disable-infobars \
+        --disable-session-crashed-bubble \
+        --user-data-dir="$HOME/.cache/nuxel-home-chromium" \
+        --ozone-platform=wayland
+elif command -v chromium >/dev/null 2>&1; then
+    exec chromium \
+        --kiosk "$URL" \
+        --no-first-run \
+        --disable-infobars \
+        --disable-session-crashed-bubble \
+        --user-data-dir="$HOME/.cache/nuxel-home-chromium" \
+        --ozone-platform=wayland
+else
+    exec firefox --kiosk "$URL"
+fi

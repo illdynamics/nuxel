@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Copyright 2026 Nuxel Contributors -->
+<component type="desktop-application">
+  <id>org.nuxel.Home</id>
+  <name>Nuxel Home</name>
+  <summary>Nuxel Phone Home Screen</summary>
+  <developer id="org.nuxel">
+    <name>Nuxel Contributors</name>
+  </developer>
+
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>Apache-2.0</project_license>
+
+  <description>
+    <p>
+      A fullscreen GTK4/libadwaita home screen for the Nuxel phone platform.
+      Displays a status bar with time, network, battery, and notification
+      indicators, along with a launcher grid of PWA and native apps.
+    </p>
+    <p>
+      Supports drag-to-reorder apps, tap-to-launch PWAs via Chromium,
+      and native-placeholder stubs for future built-in apps.
+    </p>
+  </description>
+
+  <categories>
+    <category>GNOME</category>
+    <category>GTK</category>
+    <category>System</category>
+  </categories>
+
+  <keywords>
+    <keyword>nuxel</keyword>
+    <keyword>phone</keyword>
+    <keyword>home</keyword>
+    <keyword>launcher</keyword>
+  </keywords>
+
+  <url type="homepage">https://nuxel.org</url>
+  <url type="bugtracker">https://github.com/nuxel-org/nuxel/issues</url>
+
+  <screenshots>
+    <screenshot type="default">
+      <caption>The Nuxel Home main screen</caption>
+      <image>https://nuxel.org/screenshots/nuxel-home.png</image>
+    </screenshot>
+  </screenshots>
+
+  <releases>
+    <release version="0.2.0" date="2026-10-13">
+      <url>https://github.com/nuxel-org/nuxel/releases/tag/v0.2.0</url>
+      <description>
+        <p>Nuxel Home v0.2.0 — version bump aligned with Nuxel Phone OS v0.2.0
+        (multi-device bring-up: mustang scaffold, S10+ and G7 Power bring-up).</p>
+        <ul>
+          <li>Version bumped in lockstep with the Nuxel OS v0.2.0 release</li>
+          <li>Unchanged shell surface: status bar, launcher grid, PWA launch, notifications</li>
+          <li>Device doc bundles reorganised under phones/</li>
+        </ul>
+      </description>
+    </release>
+    <release version="0.1.0" date="2026-05-10">
+      <url>https://github.com/nuxel-org/nuxel/releases/tag/v0.1.0</url>
+      <description>
+        <p>Initial release of the Nuxel Home native GTK4 shell.</p>
+        <ul>
+          <li>Fullscreen status bar with time, network, battery</li>
+          <li>App launcher grid with drag-reorder</li>
+          <li>PWA launch via Chromium --app=URL</li>
+          <li>D-Bus notification polling</li>
+        </ul>
+      </description>
+    </release>
+  </releases>
+
+  <content_rating type="oars-1.1">
+    <content_attribute id="social-info">mild</content_attribute>
+  </content_rating>
+
+  <launchable type="desktop-id">org.nuxel.Home.desktop</launchable>
+
+  <provides>
+    <mediatype>application/x-nuxel-home</mediatype>
+  </provides>
+</component>

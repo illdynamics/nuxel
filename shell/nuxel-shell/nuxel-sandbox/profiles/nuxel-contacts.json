@@ -1,0 +1,18 @@
+{
+    "app_id": "nuxel-contacts",
+    "name": "Contacts",
+    "category": "native",
+    "flags": [],
+    "capabilities": ["contacts", "storage"],
+    "network_class": "isolated",
+    "data_dir": "/var/app/nuxel-contacts/data",
+    "cgroup_name": "app-nuxel-contacts",
+    "cgroup_classid": 16973827,
+    "allowed_ro_paths": ["/usr", "/etc"],
+    "allowed_rw_paths": ["/var/app/nuxel-contacts/data"],
+    "dbus_access": [
+        "org.nuxel.Bridge",
+        "org.gnome.evolution.dataserver.Sources"
+    ],
+    "devices": []
+}

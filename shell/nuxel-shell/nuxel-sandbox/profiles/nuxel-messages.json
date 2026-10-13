@@ -1,0 +1,18 @@
+{
+    "app_id": "nuxel-messages",
+    "name": "Messages",
+    "category": "native",
+    "flags": [],
+    "capabilities": ["network", "sms", "contacts"],
+    "network_class": "public",
+    "data_dir": "/var/app/nuxel-messages/data",
+    "cgroup_name": "app-nuxel-messages",
+    "cgroup_classid": 16973826,
+    "allowed_ro_paths": ["/usr", "/etc"],
+    "allowed_rw_paths": ["/var/app/nuxel-messages/data"],
+    "dbus_access": [
+        "org.freedesktop.ModemManager1",
+        "org.nuxel.Bridge"
+    ],
+    "devices": []
+}

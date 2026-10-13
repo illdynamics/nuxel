@@ -1,0 +1,18 @@
+{
+    "app_id": "nuxel-permissions",
+    "name": "Permissions",
+    "category": "native",
+    "flags": [],
+    "capabilities": ["storage", "contacts"],
+    "network_class": "isolated",
+    "data_dir": "/var/app/nuxel-permissions/data",
+    "cgroup_name": "app-nuxel-permissions",
+    "cgroup_classid": 16973829,
+    "allowed_ro_paths": ["/usr", "/etc"],
+    "allowed_rw_paths": ["/var/app/nuxel-permissions/data", "/var/lib/nuxel/permissions"],
+    "dbus_access": [
+        "org.nuxel.Bridge",
+        "org.freedesktop.Accounts"
+    ],
+    "devices": []
+}

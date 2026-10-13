@@ -1,0 +1,11 @@
+[Desktop Entry]
+Name=Settings
+Comment=Change system settings
+Exec=/usr/bin/nuxel-sandbox --cgroup nuxel-settings /usr/bin/nuxel-settings
+Icon=settings
+Terminal=false
+Type=Application
+Categories=GTK;GNOME;Settings;
+Keywords=settings;preferences;
+StartupNotify=true
+DBusActivatable=true

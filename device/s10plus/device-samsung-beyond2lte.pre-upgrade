@@ -1,0 +1,9 @@
+#!/bin/sh
+# Nuxel pre-upgrade trigger — Samsung Galaxy S10+ (beyond2lte, Exynos 9820).
+# Listed in install= in device/s10plus/APKBUILD; abuild packages this file as
+# the package's .pre-upgrade control script.
+
+echo "Backing up permissions database..."
+if [ -d /var/lib/nuxel/permissions ]; then
+	cp -a /var/lib/nuxel/permissions /tmp/nuxel-permissions-backup
+fi

@@ -1,0 +1,20 @@
+{
+    "app_id": "nuxel-settings",
+    "name": "Settings",
+    "category": "native",
+    "flags": [],
+    "capabilities": ["network", "storage"],
+    "network_class": "public",
+    "data_dir": "/var/app/nuxel-settings/data",
+    "cgroup_name": "app-nuxel-settings",
+    "cgroup_classid": 16973828,
+    "allowed_ro_paths": ["/usr", "/etc"],
+    "allowed_rw_paths": ["/var/app/nuxel-settings/data"],
+    "dbus_access": [
+        "org.freedesktop.NetworkManager",
+        "org.freedesktop.UPower",
+        "org.freedesktop.ModemManager1",
+        "org.gnome.SettingsDaemon"
+    ],
+    "devices": []
+}

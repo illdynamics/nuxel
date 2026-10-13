@@ -1,0 +1,68 @@
+# Nuxel Boot Configuration — Google Pixel 10 Pro XL (mustang)
+# Google ABL -> Linux 6.12 LTS (android-gs-mustang-6.12, gs501_defconfig)
+#             -> Nuxel initramfs (init_boot.img) -> dm-verity system -> Phosh
+# Boot image format: Android boot image header v4 + vendor_boot + init_boot
+# Flash: fastboot / fastbootd (A/B slots on a super dynamic partition)
+
+device=mustang
+codename=mustang
+soc=tensor_g5
+soc_family=gs501
+serial=58211FDCQ001LA
+ufs_path=/dev/disk/by-partlabel
+
+# Boot image format (mustang is header v4 + split ramdisk; NOT v1)
+boot_header_version=4
+page_size=4096
+init_boot_required=true          # Android 13+ split-ramdisk; boot fails without it
+avb=2.0                          # enforced against Titan M3 root of trust
+slots=a/b
+
+# Load addresses — sourced from boot/boot.img/mustang-boot-config.txt
+# (mkbootimg parameters for the v4 boot image).
+base_address=0x10000000
+kernel_offset=0x00008000
+ramdisk_offset=0x01000000
+second_offset=0x00f00000
+tags_offset=0x00000100
+dtb_offset=0x01f00000
+kernel_addr=0x10008000
+ramdisk_addr=0x11000000
+tags_addr=0x10000100
+
+# Kernel cmdline (mustang). nuxel.device MUST be mustang; nuxel.slot selects
+# the root partition via /dev/disk/by-partlabel/system_${SLOT}.
+cmdline="quiet loglevel=3 init=/init nuxel.boot=1 nuxel.device=mustang nuxel.serial=58211FDCQ001LA root=/dev/disk/by-partlabel/system_a rootwait ro rootfstype=ext4"
+
+# Kernel source:
+#   PRIVATE vendor tree: https://android.googlesource.com/kernel/google-modules/gs
+#     branch android-gs-mustang-6.12  (ships arch/arm64/configs/gs501_defconfig)
+#   PUBLIC GKI scaffold (NOT hardware-bootable): kernel/common android16-6.12
+
+# Flash sequence (development, AVB disabled) — see boot/google-pixel-10-pro-xl/flash.sh:
+# 1. fastboot flash vbmeta_a --disable-verity --disable-verification vbmeta.img
+# 2. fastboot flash dtbo_a        dtbo.img
+# 3. fastboot flash boot_a        boot.img
+# 4. fastboot flash init_boot_a   init_boot.img
+# 5. fastboot flash vendor_boot_a vendor_boot.img
+# 6. fastboot reboot fastboot     (fastbootd; dynamic partitions)
+# 7. fastboot flash system_a      system.img
+# 8. fastboot set_active a && fastboot reboot
+
+# Partition sizes (mustang):
+#   boot_a/b         96MB     header v4
+#   vendor_boot_a/b  96MB     vendor ramdisk + DTBO
+#   init_boot_a/b    8MB      generic ramdisk (REQUIRED)
+#   dtbo_a/b         16MB     device tree overlay
+#   vbmeta_a/b       64KB     AVB 2.0
+#   super            ~8GB     system/system_ext/product/vendor (dynamic)
+#   modem_a/b        200MB    Exynos 5500 baseband
+#   persist          32MB     NEVER wipe
+#   metadata         64MB     dynamic partition metadata
+
+# Protected partitions — NEVER flash/erase: persist, metadata (outside an
+# explicit clean install), and the bootloader/radio unless unlock_critical.
+
+# Recovery: fastboot reboot recovery  (Vol Up + Power during boot), or the
+# stock factory flash-all.sh from mustang-bp1a.250405.001-factory-*.zip.
+# Nuxel revert: boot/google-pixel-10-pro-xl/flash.sh --revert

@@ -1,0 +1,47 @@
+{
+  "id": "org.nuxel.Home",
+  "runtime": "org.nuxel.Platform",
+  "runtime-version": "46",
+  "sdk": "org.gnome.Sdk",
+  "sdk-extensions": [
+    "org.freedesktop.Sdk.Extension.webkitgtk-6.0"
+  ],
+  "command": "nuxel-launcher",
+  "finish-args": [
+    "--share=ipc",
+    "--socket=x11",
+    "--socket=wayland",
+    "--device=dri",
+    "--share=network",
+    "--talk-name=org.nuxel.Bridge",
+    "--filesystem=/var/lib/nuxel/.api-token",
+    "--talk-name=org.freedesktop.Notifications",
+    "--talk-name=org.freedesktop.GeoClue2",
+    "--socket=pulseaudio",
+    "--filesystem=host-os",
+    "--env=GDK_DPI_SCALE=0.5",
+    "--env=GTK_OVERLAY_SCROLLING=1"
+  ],
+  "modules": [
+    {
+      "name": "nuxel-home",
+      "buildsystem": "simple",
+      "build-commands": [
+        "mkdir -p /app/nuxel/home",
+        "cp -r . /app/nuxel/home/",
+        "install -Dm755 nuxel-launcher.sh /app/bin/nuxel-launcher"
+      ],
+      "sources": [
+        {
+          "type": "dir",
+          "path": "../nuxel-home"
+        },
+        {
+          "type": "file",
+          "path": "nuxel-launcher.sh",
+          "dest-filename": "nuxel-launcher.sh"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,1 @@
+**Path A — you already have the images somewhere.** They were built by `wicked@infranux` (I can see a sibling build here). If you built `build/out/g7power/` on that machine or in the UTM VM, just copy the four files over; then I can flash immediately, because the bootloader is unlocked and USB works.

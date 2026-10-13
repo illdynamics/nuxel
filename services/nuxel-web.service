@@ -1,0 +1,37 @@
+[Unit]
+Description=Nuxel PWA Static Web Server (nuxel-home launcher on :8000)
+Documentation=https://nuxel.org
+After=network.target nuxel-http-bridge.service
+Wants=nuxel-http-bridge.service
+ConditionPathExists=/home/nuxel/nuxel/pwa/nuxel-home/index.html
+
+[Service]
+Type=simple
+# Serve the FULL Nuxel PWA tree from the repo mirror the deploy staged at
+# /home/nuxel/nuxel. Serving from the repo ROOT (not pwa/nuxel-home) is
+# REQUIRED so the shared bridge client pwa/nuxel-common/bridge.js resolves via
+# the PWA's relative `../nuxel-common/bridge.js` reference (the design enforced
+# by pwa/nuxel-common/verify-wiring.js). The home launcher is therefore served
+# at /pwa/nuxel-home/index.html. Runs as the nuxel user so the PWA tree is
+# readable.
+User=nuxel
+Group=nuxel
+WorkingDirectory=/home/nuxel/nuxel
+ExecStart=/usr/bin/python3 -m http.server 8000 --bind 127.0.0.1
+Restart=on-failure
+RestartSec=2
+StartLimitIntervalSec=60
+StartLimitBurst=5
+
+# Hardening (localhost-only; PWA static content is read-only)
+ProtectSystem=strict
+ProtectHome=read-only
+PrivateTmp=yes
+PrivateDevices=yes
+NoNewPrivileges=yes
+RestrictAddressFamilies=AF_INET AF_INET6
+ReadOnlyPaths=/
+ReadWritePaths=/home/nuxel/nuxel /home/nuxel/nuxel/pwa
+
+[Install]
+WantedBy=multi-user.target

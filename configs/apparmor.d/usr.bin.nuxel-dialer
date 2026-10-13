@@ -1,0 +1,36 @@
+# AppArmor profile for nuxel-dialer - native GTK4 call app
+# Only needs ModemManager D-Bus + audio access
+
+profile nuxel-dialer /usr/bin/nuxel-dialer flags=(attach_disconnected) {
+    #include <abstractions/base>
+    #include <abstractions/gtk4>
+    #include <abstractions/dbus>
+    
+    /usr/bin/nuxel-dialer r,
+    /usr/lib/** r,
+    /usr/share/** r,
+    /etc/fonts/** r,
+    /etc/gtk-4.0/** r,
+    
+    # App data
+    /var/app/nuxel-dialer/data/** rw,
+    
+    # D-Bus system bus
+    /run/dbus/system_bus_socket rw,
+    
+    # D-Bus: ModemManager for calls
+    dbus send bus=system path=/org/freedesktop/ModemManager1/*
+         interface=org.freedesktop.ModemManager1.*
+         member=*,
+    
+    # PipeWire audio for calls
+    /run/user/*/pipewire-0 rw,
+    /run/pipewire/** rw,
+    
+    # Deny
+    deny network,
+    deny /dev/snd/** rw,        # Audio via PipeWire only
+    deny /dev/dri/** rw,        # Display via Wayland only
+    deny /sys/** r,
+    deny ptrace,
+}

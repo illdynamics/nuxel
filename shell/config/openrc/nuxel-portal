@@ -1,0 +1,78 @@
+#!/sbin/openrc-run
+# OpenRC init script for nuxel-portal
+# System portal daemon — mediates hardware access through user-consent dialogs
+# Google Pixel 10 Pro XL (mustang) — Serial 58211FDCQ001LA
+
+description="Nuxel Portal D-Bus Service"
+name="nuxel-portal"
+command="/usr/bin/nuxel-portal"
+command_background="yes"
+pidfile="/run/nuxel/portal.pid"
+command_user="nuxel-portal:nuxel-portal"
+
+depend() {
+	need dbus
+	need localmount
+	after nuxel-bridge
+	after modemmanager
+	after networkmanager
+}
+
+start() {
+	checkpath --directory --owner nuxel-portal:nuxel-portal \
+		--mode 0755 /run/nuxel
+	checkpath --directory --owner nuxel-portal:nuxel-portal \
+		--mode 0755 /var/lib/nuxel/permissions
+
+	if [ ! -x "$command" ]; then
+		eerror "nuxel-portal binary not found at $command"
+		return 1
+	fi
+
+	if [ -f /etc/dbus-1/system.d/org.nuxel.Portal.conf ]; then
+		dbus-send --system --type=method_call \
+			--dest=org.freedesktop.DBus \
+			/org/freedesktop/DBus \
+			org.freedesktop.DBus.ReloadConfig 2>/dev/null || true
+	fi
+
+	ebegin "Starting nuxel-portal for mustang (Pixel 10 Pro XL)"
+	start-stop-daemon --start --background --make-pidfile \
+		--pidfile "$pidfile" \
+		--user nuxel-portal --group nuxel-portal \
+		--exec "$command"
+
+	local timeout=15
+	while [ $timeout -gt 0 ]; do
+		if dbus-send --system --type=method_call --print-reply \
+			--dest=org.nuxel.Portal \
+			/org/nuxel/Portal \
+			org.nuxel.Portal.Ping \
+			string:"healthcheck" >/dev/null 2>&1; then
+			eend 0
+			return 0
+		fi
+		sleep 1
+		timeout=$((timeout - 1))
+	done
+
+	eerror "nuxel-portal failed to register on D-Bus within 15 seconds"
+	return 1
+}
+
+stop() {
+	ebegin "Stopping nuxel-portal"
+	start-stop-daemon --stop --pidfile "$pidfile" --retry 5
+	rm -f /run/nuxel/portal.pid
+	eend $?
+}
+
+status() {
+	if [ -f "$pidfile" ] && kill -0 "$(cat "$pidfile")" 2>/dev/null; then
+		einfo "nuxel-portal is running (PID: $(cat "$pidfile"))"
+		return 0
+	else
+		einfo "nuxel-portal is not running"
+		return 1
+	fi
+}

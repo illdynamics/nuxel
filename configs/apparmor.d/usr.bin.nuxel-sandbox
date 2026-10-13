@@ -1,0 +1,39 @@
+# AppArmor profile for the nuxel-sandbox launcher (briq-15)
+# The sandbox launcher itself must be allowed to create per-app cgroups and
+# exec the confined target, so it gets network+sysfs access to the nuxel
+# cgroup hierarchy. Per-app confinement is applied to the launched binary by
+# the kernel using the (separate) app profile labels below.
+
+profile nuxel-sandbox /usr/local/bin/nuxel-sandbox flags=(attach_disconnected) {
+    #include <abstractions/base>
+    #include <abstractions/dbus>
+    #include <abstractions/nameservice>
+
+    /usr/local/bin/nuxel-sandbox ix,
+    /usr/lib/nuxel/sandbox/** r,
+    /etc/nuxel/** r,
+    /var/app/** rw,
+    /run/nuxel/** rw,
+
+    # cgroupv2 management for per-app network isolation (Layer 4)
+    /sys/fs/cgroup/cgroup.subtree_control w,
+    /sys/fs/cgroup/nuxel/{,*/} rw,
+    /sys/fs/cgroup/** rw,
+
+    # Exec the confined binary inside the sandbox
+    /usr/local/bin/** ix,
+    /usr/bin/** ix,
+    /bin/** ix,
+
+    # Wayland / PipeWire for GUI apps
+    /run/user/*/wayland-* rw,
+    /run/user/*/pipewire-* rw,
+
+    # Network: the launcher talks to nftables (netlink) and DNS for the child
+    network inet stream,
+    network inet6 stream,
+    network netlink raw,
+
+    deny /proc/*/mem rw,
+    deny ptrace,
+}

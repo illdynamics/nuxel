@@ -1,0 +1,177 @@
+# Maintainer: Nuxel Project <nuxel@nuxel.org>
+#
+# Nuxel device package — Motorola Moto G7 Power (XT1955, Snapdragon 632)
+# Codename: ocean   |   Device key: g7power
+#
+# Verified hardware facts only (see phones/g7power/g7power-requirements.md and
+# phones/g7power/g7power-prompt.md TASK 2). Camera, fingerprint and the exact DDIC/LCM
+# name are UNKNOWN — collect from the real device via Phase 0 inventory
+# (docs/g7power-device-inventory.md) and fill them in below. Nothing is
+# copied from any other device package.
+#
+# Flash method: two-phase fastboot via lk2nd (msm8916-mainline/lk2nd,
+# msm8953 target). The stock Motorola ABOOT cannot accept mainline DTBs or
+# cmdline, so lk2nd chainloads mainline Linux. EDL (Qualcomm 9008) is the
+# unbrick path. Unlock via `fastboot oem get_unlock_data` -> Motorola
+# unlock portal (operator-supplied unlock code).
+
+# shellcheck shell=bash
+# shellcheck disable=SC2034,SC2148,SC2154
+pkgname="device-motorola-ocean"
+pkgver="0.2.0"
+pkgrel="0"
+pkgdesc="Motorola Moto G7 Power (ocean, SDM632/msm8953) — Nuxel Phone OS"
+url="https://nuxel.org"
+arch="aarch64"
+license="Apache-2.0"
+options="!check !archcheck"
+
+# postmarketOS kernel this device package targets (verified hardware fact).
+_pmb_kernel="linux-postmarketos-qcom-msm8953"
+
+# DTB name for the ocean board (mainline msm8953 tree).
+# TODO(operator): verify "qcom/sdm632-motorola-ocean.dtb" against the
+# msm8953-mainline linux tree (arch/arm64/boot/dts/qcom/sdm632-motorola-ocean.dts)
+# before the first kernel build — the tree is not cloned in this environment.
+_pmb_dtb="qcom/sdm632-motorola-ocean.dtb"
+
+# Dependencies: the pmOS msm8953 kernel + the G7 Power firmware stub
+# (firmware/g7power/) + the lk2nd bootloader stub (boot/g7power/lk2nd/).
+# NOTE: modemmanager is intentionally NOT a dependency. The integrated
+# Snapdragon X9 LTE modem is NOT ModemManager-ready in Phase 1 (WiFi-only
+# bring-up); modem bring-up is deferred to Phase 7 (documented, not
+# implemented in this pass).
+depends="
+	$_pmb_kernel
+	firmware-motorola-ocean
+	lk2nd-msm8953
+	"
+makedepends=""
+
+source="deviceinfo
+	90-nuxel-ocean.rules
+	nuxel-ocean.conf"
+
+build() {
+	# No device-local sources to compile: this package ships configuration
+	# and documentation only. The kernel, boot image and rootfs are built by
+	# kernel/g7power/build-kernel.sh + boot/g7power/pack-boot-v1.sh +
+	# images/g7power/build.sh, then flashed interactively with
+	# boot/g7power/flash.sh (never inside this pmOS package).
+	echo "device-motorola-ocean: nothing to compile."
+	return 0
+}
+
+# install_kernel() — documents the two-phase lk2nd flash sequence for the
+# G7 Power (A/B eMMC, shared userdata). This function NEVER flashes anything itself: it
+# installs reference copies of the kernel artifacts (when already built by
+# kernel/g7power/build-kernel.sh) and writes a human-readable two-phase
+# flash guide into the boot directory. The actual flashing is done
+# interactively by boot/g7power/flash.sh.
+install_kernel() {
+	local _bootdir="$1"
+
+	# Reference defconfig for the SDM632/msm8953 build (kernel/g7power/).
+	if [ -f "$srcdir/../kernel/g7power/defconfig" ]; then
+		install -Dm644 "$srcdir/../kernel/g7power/defconfig" \
+			"$_bootdir/nuxel-msm8953-ocean.config"
+	fi
+
+	# Real Image.gz + DTB come from kernel/g7power/build-kernel.sh (outputs
+	# under kernel/g7power/.build/out/). They may be absent during the
+	# bring-up scaffold — pack-boot-v1.sh consumes them later, so do not
+	# hard-fail here if the kernel has not been built yet.
+	if [ -f "$srcdir/../kernel/g7power/.build/out/arch/arm64/boot/Image.gz" ]; then
+		install -Dm644 "$srcdir/../kernel/g7power/.build/out/arch/arm64/boot/Image.gz" \
+			"$_bootdir/Image.gz"
+	fi
+	if [ -f "$srcdir/../kernel/g7power/.build/out/arch/arm64/boot/dts/qcom/sdm632-motorola-ocean.dtb" ]; then
+		install -Dm644 "$srcdir/../kernel/g7power/.build/out/arch/arm64/boot/dts/qcom/sdm632-motorola-ocean.dtb" \
+			"$_bootdir/sdm632-motorola-ocean.dtb"
+	fi
+
+	# Two-phase lk2nd flash sequence — DOCUMENTED GUIDANCE ONLY.
+	# TODO(operator): this is reference documentation, not an installer.
+	# Perform the actual flashing with boot/g7power/flash.sh (fastboot), or
+	# boot/g7power/lk2nd/README.md for the lk2nd build + EDL unbrick path.
+	cat > "$_bootdir/nuxel-ocean-two-phase-flash.txt" <<'FLASH'
+Two-phase fastboot flash sequence — Motorola Moto G7 Power (ocean)
+
+Boot chain: PBL -> stock ABOOT -> lk2nd (msm8953) -> mainline Linux ->
+Nuxel initramfs -> rootfs.
+
+Phase 1 — stock ABOOT fastboot (bootloader already unlocked):
+  1. fastboot flash dtbo <dtbo.img>        # dtbo MUST be flashed FIRST
+  2. fastboot flash boot <lk2nd.img>       # lk2nd.img built for msm8953
+  3. fastboot reboot bootloader            # boots back into lk2nd fastboot
+
+Phase 2 — lk2nd fastboot:
+  4. fastboot flash boot <nuxel-ocean-boot.img>       # mainline v1 boot image
+  5. fastboot flash userdata <nuxel-ocean-rootfs.img> # ext4 rootfs
+
+Notes:
+- Never flash protected partitions: modemst1 modemst2 fsg fsc ddr persist misc.
+- dtbo before lk2nd prevents the classic msm8953 soft-brick.
+- EDL (Qualcomm 9008) is the unbrick path — see boot/g7power/lk2nd/README.md.
+FLASH
+}
+
+# install_initfs() — install the Nuxel initramfs configuration for the G7
+# Power. The initramfs is built from the SHARED, device-agnostic
+# boot/initramfs/ tree (init.sh selects the ocean eMMC root from
+# nuxel.device=g7power on the kernel cmdline) and packed into the legacy v1
+# boot image by boot/g7power/pack-boot-v1.sh.
+install_initfs() {
+	local _dest="$1"
+
+	if [ -f "$srcdir/../boot/g7power/boot-config.txt" ]; then
+		install -Dm644 "$srcdir/../boot/g7power/boot-config.txt" \
+			"$_dest/nuxel-ocean-boot-config.txt"
+	fi
+
+	# Reference copy of the shared initramfs init script for auditing.
+	if [ -f "$srcdir/../boot/initramfs/init.sh" ]; then
+		install -Dm644 "$srcdir/../boot/initramfs/init.sh" \
+			"$_dest/init.sh"
+	fi
+
+	cat > "$_dest/initramfs-ocean.conf" <<'INITFS'
+# Nuxel initramfs config — Motorola Moto G7 Power (ocean)
+NUXEL_DEVICE=g7power
+NUXEL_INITRAMFS_SOURCE=../boot/initramfs
+NUXEL_BOOT_IMAGE=legacy-v1-page-2048
+NUXEL_FLASH_METHOD=fastboot-lk2nd
+INITFS
+}
+
+package() {
+	# Install device-info (postmarketOS format v2)
+	install -Dm644 "$srcdir/deviceinfo" \
+		"$pkgdir/etc/deviceinfo"
+
+	# Install udev rules (touch / backlight / GPU / WiFi / BT / storage;
+	# camera + fingerprint are UNKNOWN — see the rules file for TBD stubs)
+	install -Dm644 "$srcdir/90-nuxel-ocean.rules" \
+		"$pkgdir/usr/lib/udev/rules.d/90-nuxel-ocean.rules"
+
+	# Install the Nuxel device configuration (device key + hardware paths;
+	# firmware filenames and boot addresses are UNKNOWN/PLACEHOLDER until
+	# Phase 0 inventory fills them from the physical device)
+	install -Dm644 "$srcdir/nuxel-ocean.conf" \
+		"$pkgdir/etc/nuxel/nuxel-ocean.conf"
+
+	# Kernel + initramfs reference artifacts and two-phase flash guide
+	install_kernel "$pkgdir/boot"
+	install_initfs "$pkgdir/etc/initramfs"
+
+	# TODO(operator): camera/fingerprint/exact DDIC are UNKNOWN — add udev
+	# rules, media profiles and firmware paths after Phase 0 inventory
+	# (docs/g7power-device-inventory.md) reports the real device names.
+	return 0
+}
+
+sha512sums="
+SKIP
+SKIP
+SKIP
+"

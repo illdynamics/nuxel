@@ -1,0 +1,162 @@
+# Nuxel Device Information — Google Pixel 10 Pro XL (mustang)
+# Serial: 58211FDCQ001LA | HW: MP1.0 | SKU: G45RY
+
+device:
+  name: "Google Pixel 10 Pro XL"
+  codename: "mustang"
+  manufacturer: "Google"
+  year: 2025
+  serial: "58211FDCQ001LA"
+  hw_version: "MP1.0"
+  sku: "G45RY"
+  chassis: "handset"
+
+soc:
+  identifier: "tensor_g5"
+  name: "Google Tensor G5"
+  family: "gs501"
+  cpu: "ARM Cortex-X5 + Cortex-A730 + Cortex-A530"
+  arch: "armv9.2"
+  process: "Samsung 3nm GAA"
+
+memory:
+  ram: "16GB LPDDR5X"
+  storage: "256GB UFS 4.0"
+  storage_driver: "ufshcd"
+  storage_fs: "f2fs"
+
+display:
+  panel: "Samsung AMB655X LTPO OLED"
+  resolution: "3120x1440"
+  refresh_rate: 120
+  driver: "panel_samsung_amb655x"
+  dsi_controller: "google-dsi"
+  cutout: "punch-hole centered"
+
+gpu:
+  name: "Imagination PowerVR DXT-72-2304"
+  driver: "powervr"
+  kernel_module: "pvr_dxt_km"
+  mesa_driver: "powervr"
+  vulkan: "powervr_vulkan"
+  opengl: "powervr_gallium"
+
+touch:
+  controller: "Samsung S6SY791"
+  driver: "samsung_s6sy791"
+  bus: "i2c"
+  multitouch: 10
+  features:
+    - palm_rejection
+    - glove_mode
+    - edge_rejection
+
+modem:
+  name: "Samsung Exynos 5500"
+  type: "5G NR (SA/NSA)"
+  interface: "PCIe Gen3"
+  driver: "mhi_pci_generic"
+  plugin: "mhi_samsung"
+  mhi_version: 2
+  vendor_id: "0x144d"
+  device_id: "0xa800"
+  firmware_size: "200MB"
+  firmware_partition: "modem_a/modem_b"
+
+connectivity:
+  wifi:
+    chipset: "Broadcom BCM4390"
+    standard: "WiFi 7 (802.11be)"
+    driver: "brcmfmac"
+    firmware: "brcmfmac4390-pcie.bin"
+  bluetooth:
+    version: "5.4"
+    chipset: "Broadcom BCM4390"
+    driver: "btbcm"
+  nfc:
+    chipset: "NXP SN220"
+    driver: "nfc_nxp_nci"
+  uwb: "available"
+
+audio:
+  codec: "Cirrus Logic CS42L43"
+  speaker_amp: "Cirrus Logic CS35L45"
+  microphones: 4
+  speakers: 2
+  headphone: "USB-C audio"
+  dsp: "Qualcomm Hexagon (optional)"
+
+sensors:
+  imu: "Bosch BMI270"
+  imu2: "ST LSM6DSV"
+  als_prox: "AMS TCS3710"
+  barometer: "Bosch BMP280"
+  magnetometer: "AKM AK09911"
+  fingerprint: "Goodix GF3636 (optical under-display)"
+
+camera:
+  rear_primary: "Sony IMX (50MP)"
+  rear_ultrawide: "Samsung (12MP)"
+  rear_telephoto: "Samsung (48MP, 5x optical)"
+  front: "Sony IMX (12MP)"
+  flash: "Dual LED"
+  isp: "Google Pixel Visual Core (proprietary)"
+
+power:
+  battery: "5300mAh Li-Po"
+  charger: "TI BQ2597x fast charge"
+  fuel_gauge: "Maxim MAX1720x"
+  pmic: "Maxim MAX77729 + MAX77826"
+  wireless_charging: "Qi 2.0 (15W)"
+  wired_charging: "USB-PD 3.0 (45W)"
+
+usb:
+  version: "USB 3.2 Gen2"
+  connector: "Type-C"
+  alt_modes:
+    - "DisplayPort Alt Mode"
+    - "USB-PD"
+
+security:
+  secure_element: "Titan M3"
+  verified_boot: "AVB 2.0"
+  boot_chain: "Boot ROM → Titan M3 → Google ABL → Linux"
+  keystore: "TEE-backed (Trusty TEE)"
+  disk_encryption: "LUKS2 + dm-verity"
+
+boot:
+  bootloader: "Google ABL (mustang variant)"
+  header_version: 4
+  slots: "a/b"
+  base_address: "0x10000000"
+  kernel_offset: "0x00008000"
+  ramdisk_offset: "0x01000000"
+  page_size: 4096
+  partitions:
+    boot: "96MB"
+    vendor_boot: "96MB"
+    init_boot: "8MB"
+    dtbo: "16MB"
+    vbmeta: "64KB"
+    super: "8GB (dynamic)"
+    userdata: "remaining"
+    modem: "200MB each"
+    dsp: "64MB each"
+
+kernel:
+  source: "android-gs-mustang-6.12"
+  version: "6.12 LTS"
+  defconfig: "gs501_defconfig"
+  cmdline: "console=ttyGSI0,115200 earlycon=gsihvc0 loglevel=3 init=/init nuxel.boot=1 nuxel.device=mustang nuxel.serial=58211FDCQ001LA root=/dev/disk/by-partlabel/system_a rootwait ro rootfstype=ext4"
+
+nuxel:
+  immutable_os: true
+  dm_verity: true
+  atomic_updates: true
+  pwafirst: true
+  no_android: true
+  wayland_only: true
+  shell: "Phosh + GTK4/libadwaita"
+  portal_daemon: "nuxel-portal"
+  bridge_daemon: "nuxel-bridge"
+  app_sandbox: "bubblewrap + namespaces + seccomp + Landlock + AppArmor + nftables"

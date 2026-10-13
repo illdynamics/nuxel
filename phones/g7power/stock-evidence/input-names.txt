@@ -1,0 +1,8 @@
+/sys/class/input/input0 :: cat: /sys/class/input/input0/name: Permission denied
+/sys/class/input/input1 :: cat: /sys/class/input/input1/name: Permission denied
+/sys/class/input/input2 :: cat: /sys/class/input/input2/name: Permission denied
+/sys/class/input/input3 :: cat: /sys/class/input/input3/name: Permission denied
+/sys/class/input/input4 :: cat: /sys/class/input/input4/name: Permission denied
+/sys/class/input/input5 :: cat: /sys/class/input/input5/name: Permission denied
+/sys/class/input/input6 :: cat: /sys/class/input/input6/name: Permission denied
+/sys/class/input/input7 :: cat: /sys/class/input/input7/name: Permission denied

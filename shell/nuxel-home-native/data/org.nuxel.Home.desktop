@@ -1,0 +1,13 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Nuxel Home
+Comment=Nuxel Phone Home Screen
+Exec=/usr/local/bin/nuxel-home
+Icon=nuxel-home
+Terminal=false
+Categories=GNOME;GTK;System;
+StartupNotify=true
+DBusActivatable=false
+Keywords=nuxel;phone;home;launcher
+X-GNOME-UsesNotifications=true

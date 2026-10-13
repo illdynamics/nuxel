@@ -1,0 +1,126 @@
+{
+    "id": "org.nuxel.Platform",
+    "runtime": "org.gnome.Platform",
+    "runtime-version": "46",
+    "sdk": "org.gnome.Sdk",
+    "sdk-version": "46",
+
+    "name": "Nuxel Hardened PWA Runtime",
+    "description": "Isolated WebKitGTK runtime for hardened PWA execution. Each PWA runs in its own WebContext with separate storage, cookies, and ServiceWorker registrations. No shared browser state, no ambient access. The bundled nuxel-pwa-launcher reads NUXXEL_API_TOKEN_FILE (default /var/lib/nuxel/.api-token) and injects it into each PWA as window.__NUXEL_TOKEN__ so the shared bridge client authenticates to the HTTP bridge without re-bootstrapping.",
+
+    "build-extension": true,
+    "separate-locales": false,
+
+    "modules": [
+        {
+            "name": "webkitgtk",
+            "buildsystem": "cmake-ninja",
+            "config-opts": [
+                "-DCMAKE_BUILD_TYPE=Release",
+                "-DPORT=GTK",
+                "-DUSE_GTK4=ON",
+                "-DUSE_SYSTEMD=ON",
+                "-DENABLE_JIT=ON",
+                "-DENABLE_SPELLCHECK=OFF",
+                "-DENABLE_FULLSCREEN_API=OFF",
+                "-DENABLE_GAMEPAD=OFF",
+                "-DENABLE_WEBDRIVER=OFF",
+                "-DENABLE_WEB_AUTHN=ON",
+                "-DENABLE_WEB_RTC=ON",
+                "-DENABLE_MEDIA_STREAM=ON",
+                "-DENABLE_ENCRYPTED_MEDIA=OFF",
+                "-DENABLE_BUBBLEWRAP_SANDBOX=ON",
+                "-DENABLE_DOCUMENTATION=OFF",
+                "-DENABLE_INTROSPECTION=ON",
+                "-DUSE_WOFF2=OFF",
+                "-DUSE_SOUP2=OFF",
+                "-DUSE_AVIF=ON",
+                "-DUSE_JPEGXL=OFF",
+                "-DUSE_WPE_RENDERER=OFF",
+                "-DENABLE_THUNDER=OFF"
+            ],
+            "sources": [
+                {
+                    "type": "git",
+                    "url": "https://github.com/WebKit/WebKit.git",
+                    "tag": "WebKitGTK-2.46.5"
+                }
+            ],
+            "cleanup-commands": [
+                "rm -rf /app/include",
+                "rm -rf /app/share/glib-2.0/schemas"
+            ]
+        },
+
+        {
+            "name": "nuxel-common-bridge",
+            "buildsystem": "simple",
+            "build-commands": [
+                "install -Dm644 bridge.js /app/share/nuxel/bridge.js"
+            ],
+            "sources": [
+                {
+                    "type": "file",
+                    "path": "../nuxel-common/bridge.js"
+                }
+            ]
+        },
+
+        {
+            "name": "nuxel-pwa-launcher",
+            "buildsystem": "meson",
+            "config-opts": ["-Dbuildtype=release"],
+            "sources": [
+                {
+                    "type": "dir",
+                    "path": "../launcher"
+                }
+            ],
+            "cleanup-commands": [
+                "rm -rf /app/share/doc",
+                "rm -rf /app/share/man",
+                "rm -rf /app/share/gtk-doc",
+                "rm -rf /app/libexec/installed-tests",
+                "rm -rf /app/share/installed-tests"
+            ]
+        },
+
+        {
+            "name": "nuxel-pwa-preferences",
+            "buildsystem": "simple",
+            "build-commands": [
+                "install -Dm644 /dev/null /app/etc/nuxel-pwa.conf",
+                "echo 'pwa_default_network=false' > /app/etc/nuxel-pwa.conf",
+                "echo 'pwa_default_camera=false' >> /app/etc/nuxel-pwa.conf",
+                "echo 'pwa_default_mic=false' >> /app/etc/nuxel-pwa.conf",
+                "echo 'pwa_default_location=false' >> /app/etc/nuxel-pwa.conf",
+                "echo 'pwa_default_notifications=false' >> /app/etc/nuxel-pwa.conf",
+                "echo 'webkit_disable_webrtc=true' >> /app/etc/nuxel-pwa.conf",
+                "echo 'webkit_disable_webusb=true' >> /app/etc/nuxel-pwa.conf",
+                "echo 'webkit_disable_webbluetooth=true' >> /app/etc/nuxel-pwa.conf",
+                "echo 'webkit_disable_webnfc=true' >> /app/etc/nuxel-pwa.conf",
+                "echo 'webkit_disable_fullscreen=true' >> /app/etc/nuxel-pwa.conf",
+                "echo 'webkit_disable_encrypted_media=true' >> /app/etc/nuxel-pwa.conf",
+                "echo 'webkit_disable_hyperlink_auditing=true' >> /app/etc/nuxel-pwa.conf"
+            ]
+        }
+    ],
+
+    "cleanup-commands": [
+        "rm -rf /app/lib/systemd",
+        "rm -rf /app/share/bash-completion",
+        "rm -rf /app/share/zsh",
+        "rm -rf /app/share/man",
+        "rm -rf /app/share/gtk-doc",
+        "rm -rf /app/share/vala"
+    ],
+
+    "renviron": [
+        "WEBKIT_DISABLE_COMPOSITING_MODE=1",
+        "WEBKIT_FORCE_SANDBOX=1",
+        "NUXXEL_PWA_RUNTIME=1",
+        "GDK_BACKEND=wayland",
+        "GDK_DEBUG=portals",
+        "NUXXEL_API_TOKEN_FILE=/var/lib/nuxel/.api-token"
+    ]
+}

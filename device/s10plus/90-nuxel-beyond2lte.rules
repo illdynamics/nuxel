@@ -1,0 +1,26 @@
+# Nuxel udev rules — Samsung Galaxy S10+ (beyond2lte, Exynos 9820)
+# Device key: s10plus (per tools/nuxel-device-select.sh).
+#
+# Stub: touch / NFC / WiFi are verified hardware facts; camera and sensor
+# rules are UNKNOWN until Phase 0 inventory (docs/s10plus-device-inventory.md)
+# reports the real device names.
+
+# Touchscreen: Samsung S6SY761 (sec_ts driver, I2C hsi2c_10 @ 0x48)
+# The mainline sec_ts input device registers as "sec_touchscreen".
+SUBSYSTEM=="input", KERNEL=="event*", ATTRS{name}=="sec_touchscreen", SYMLINK+="input/touchscreen", TAG+="uaccess"
+
+# NFC: Samsung sec-nfc (S3FWRN5-family, I2C @ 0x27)
+# NOTE: no GROUP="nfc" — 'nfc' is not a standard group on Alpine/pmOS and
+# udev would drop the assignment with a warning ("Unknown group nfc").
+# Minimal SUBSYSTEM match per spec + stable symlink; access via uaccess
+# (logind grants the active session, same as the touchscreen rule above).
+SUBSYSTEM=="nfc", KERNEL=="nfc*", SYMLINK+="input/nfc", TAG+="uaccess"
+
+# WiFi: Broadcom BCM4375 (brcmfmac SDIO) — interface name from brcmfmac is wlan*
+SUBSYSTEM=="net", KERNEL=="wlan*", ENV{NM_UNMANAGED}="0"
+
+# --- Camera and sensors: UNKNOWN — collect from real device (Phase 0) ---
+# Template (fill in after `adb shell getevent -pl` + dmesg inventory):
+#   SUBSYSTEM=="input", KERNEL=="event*", ATTRS{name}=="<sensor_name>", SYMLINK+="input/<role>"
+#   SUBSYSTEM=="video4linux", KERNEL=="video*", ATTR{name}=="<camera_name>", GROUP="video", MODE="0660"
+#   SUBSYSTEM=="iio", KERNEL=="iio:device*", GROUP="sensors", MODE="0660"

@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <schema id="org.nuxel.settings" path="/org/nuxel/settings/">
+    
+    <!-- Display settings -->
+    <key name="brightness" type="d">
+      <default>0.8</default>
+      <summary>Screen brightness</summary>
+      <description>Current screen brightness level (0.0 to 1.0)</description>
+    </key>
+    <key name="auto-brightness" type="b">
+      <default>true</default>
+      <summary>Adaptive brightness</summary>
+      <description>Automatically adjust screen brightness based on ambient light</description>
+    </key>
+    <key name="font-size" type="d">
+      <default>16.0</default>
+      <summary>Interface font size</summary>
+      <description>Base font size for the system UI</description>
+    </key>
+    <key name="night-light" type="b">
+      <default>false</default>
+      <summary>Night light</summary>
+      <description>Reduce blue light emission in evening hours</description>
+    </key>
+    
+    <!-- Sound settings -->
+    <key name="volume" type="d">
+      <default>0.7</default>
+      <summary>System volume</summary>
+      <description>Master output volume level (0.0 to 1.0)</description>
+    </key>
+    <key name="silent-mode" type="b">
+      <default>false</default>
+      <summary>Silent mode</summary>
+      <description>Mute all sounds except alarms</description>
+    </key>
+    <key name="vibrate" type="b">
+      <default>true</default>
+      <summary>Vibrate on ring</summary>
+      <description>Vibrate device when receiving calls</description>
+    </key>
+    
+    <!-- Network settings -->
+    <key name="wifi-enabled" type="b">
+      <default>true</default>
+      <summary>Wi-Fi enabled</summary>
+      <description>Whether Wi-Fi is currently enabled</description>
+    </key>
+    <key name="bluetooth-enabled" type="b">
+      <default>false</default>
+      <summary>Bluetooth enabled</summary>
+      <description>Whether Bluetooth is currently enabled</description>
+    </key>
+    <key name="mobile-data-enabled" type="b">
+      <default>true</default>
+      <summary>Mobile data</summary>
+      <description>Whether mobile data is enabled</description>
+    </key>
+    
+    <!-- Privacy settings -->
+    <key name="location-enabled" type="b">
+      <default>true</default>
+      <summary>Location services</summary>
+      <description>Allow apps to access device location</description>
+    </key>
+    
+    <!-- Notifications -->
+    <key name="do-not-disturb" type="b">
+      <default>false</default>
+      <summary>Do not disturb</summary>
+      <description>Silence all notifications</description>
+    </key>
+    
+
+    <!-- App permissions (briq-31) -->
+    <key name="permissions" type="a(ssb)">
+      <default>[]</default>
+      <summary>Per-app permission grants</summary>
+      <description>List of tuples (app-id, capability, granted) recording whether
+      each app has been granted a given capability (network, sms, call, contacts,
+      storage, camera, mic, location). Managed by the nuxel-permissions app and
+      enforced by the per-app sandbox profiles.</description>
+    </key>
+    
+  </schema>
+</schemalist>

@@ -1,0 +1,52 @@
+[Unit]
+Description=Nuxel Bridge - PWA to Native Phone Service Mediator
+Documentation=https://github.com/nuxel/nuxel/docs/architecture.md
+Wants=dbus.service modemmanager.service
+After=dbus.service modemmanager.service network-online.target
+Before=phosh.service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/nuxel-bridge
+Restart=on-failure
+RestartSec=5
+RestartMaxDelaySec=30
+StartLimitIntervalSec=120
+StartLimitBurst=10
+
+# Security hardening
+User=nuxel-bridge
+Group=nuxel-bridge
+ProtectSystem=full
+ProtectHome=true
+PrivateTmp=true
+NoNewPrivileges=true
+CapabilityBoundingSet=
+AmbientCapabilities=
+SecureBits=keep-caps
+MemoryDenyWriteExecute=true
+RestrictRealtime=true
+RestrictNamespaces=true
+SystemCallArchitectures=native
+SystemCallFilter=@system-service @dbus
+SystemCallErrorNumber=EPERM
+LockPersonality=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+ProtectProc=invisible
+ProcSubset=pid
+RemoveIPC=true
+DevicePolicy=closed
+KeyringMode=private
+RuntimeDirectory=nuxel-bridge
+StateDirectory=nuxel-bridge
+CacheDirectory=nuxel-bridge
+
+# D-Bus access
+# Sockets: D-Bus uses system bus socket, no extra sockets needed
+
+[Install]
+WantedBy=multi-user.target

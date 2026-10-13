@@ -1,0 +1,115 @@
+device: g7power
+codename: ocean
+soc: sdm632
+soc_family: msm8953
+flash_method: fastboot+lk2nd
+
+# Acquisition: adb pull from device (Android) or TWRP/recovery
+# adb pull /vendor/firmware           firmware/g7power/blobs/vendor-firmware/
+# adb pull /vendor/firmware_mnt       firmware/g7power/blobs/vendor-firmware-mnt/
+# adb pull /vendor/lib/modules        firmware/g7power/blobs/vendor-modules/
+# adb pull /vendor/etc/firmware       firmware/g7power/blobs/vendor-etc-firmware/
+
+firmware_files:
+  gpu_adreno:
+    - source_path: "vendor/firmware/a506_zap.mbn"
+      dest: "/lib/firmware/qcom/a506_zap.mbn"
+      description: "Adreno 506 GPU security firmware (zap shader; freedreno requires it)"
+      required: true
+      checksum: "UNKNOWN — collect from device"
+    - source_path: "vendor/firmware/a506*.elf"
+      dest: "/lib/firmware/qcom/"
+      description: "Adreno 506 microcode ELF (if present)"
+      required: false
+      checksum: "UNKNOWN"
+
+  wifi_bt:
+    # WCN3680B WiFi via wcn36xx + WCNSS_PIL
+    # Firmware path varies: /vendor/firmware/wlan/prima/ or /vendor/firmware/
+    - source_path: "vendor/firmware/wlan/prima/WCNSS_qcom_cfg.ini"
+      dest: "/lib/firmware/wlan/prima/WCNSS_qcom_cfg.ini"
+      description: "WCNSS WiFi configuration (wcn36xx)"
+      required: true
+      checksum: "UNKNOWN — collect from device"
+    - source_path: "vendor/firmware/wlan/prima/WCNSS_qcom_wlan_nv.bin"
+      dest: "/lib/firmware/wlan/prima/WCNSS_qcom_wlan_nv.bin"
+      description: "WCNSS NVRAM calibration blob"
+      required: true
+      checksum: "UNKNOWN"
+    - source_path: "vendor/firmware/WCNSS_*.img"
+      dest: "/lib/firmware/"
+      description: "WCNSS firmware images (PIL segments — filenames vary)"
+      required: true
+      checksum: "UNKNOWN — verify filenames via: adb shell ls /vendor/firmware/WCNSS*"
+    - source_path: "vendor/firmware/wlan_mac.bin"
+      dest: "/lib/firmware/wlan_mac.bin"
+      description: "WiFi MAC address file"
+      required: false
+      checksum: "UNKNOWN"
+    # Bluetooth HCI firmware via hci_qca
+    - source_path: "vendor/firmware/qca/UNKNOWN_BT_FW.bin"
+      dest: "/lib/firmware/qca/"
+      description: "WCN3680B Bluetooth firmware (hci_qca) — filename TBD from device"
+      required: true
+      checksum: "UNKNOWN — collect: adb shell ls /vendor/firmware/qca/"
+
+  audio:
+    # WCD9335 cajon-v2 codec
+    - source_path: "vendor/firmware/wcd9335*"
+      dest: "/lib/firmware/"
+      description: "WCD9335 codec firmware blobs"
+      required: false
+      checksum: "UNKNOWN"
+    - source_path: "vendor/etc/firmware/wcd9335*"
+      dest: "/lib/firmware/"
+      description: "WCD9335 codec firmware (etc/firmware path)"
+      required: false
+      checksum: "UNKNOWN"
+
+  display:
+    - source_path: "UNKNOWN — collect LCM firmware from vendor tree"
+      dest: "UNKNOWN"
+      description: "LCD panel init firmware (LCM; DDIC name unknown; framebuffer passed from lk2nd)"
+      required: false
+      checksum: "UNKNOWN"
+
+  touch:
+    # Ilitek ILI2117 hardware, mainline ili210x driver.
+    # There is no touch firmware request in the ili210x ILI211x path (only the
+    # unrelated ILI251x path loads ilitek/ili251x.bin). Nothing to ship.
+    # Do NOT install ilitek/ili251x.bin for this device.
+    - source_path: "NONE REQUIRED (mainline ili210x ILI211x path requests no firmware)"
+      dest: "—"
+      description: "ILI2117 touch firmware: not required by mainline ili210x"
+      required: false
+      checksum: "n/a"
+
+  sensors:
+    - source_path: "UNKNOWN — BMI160, MMC3630KJ, TMD2725 are mainline IIO drivers"
+      dest: "UNKNOWN"
+      description: "Sensor firmware (likely not needed for mainline drivers)"
+      required: false
+      checksum: "UNKNOWN"
+
+  camera:
+    - source_path: "UNKNOWN — collect ISP/sensor firmware from real device"
+      dest: "UNKNOWN"
+      description: "Camera ISP firmware (Phase 7 stretch)"
+      required: false
+      checksum: "UNKNOWN"
+
+  modem:
+    # CRITICAL: Do NOT flash modemst1/modemst2/fsg/fsc from here.
+    # X9 LTE modem on SDM632 is not MM-ready. Phase 1: WiFi only.
+    - source_path: "PLACEHOLDER — X9 LTE modem firmware path TBD"
+      dest: "DO NOT INSTALL — modem bring-up is Phase 7"
+      description: "Snapdragon X9 LTE modem firmware — NOT for Phase 1"
+      required: false
+      checksum: "UNKNOWN"
+
+  fingerprint:
+    - source_path: "UNKNOWN — collect from real device; rear-mounted sensor TBD"
+      dest: "UNKNOWN"
+      description: "Fingerprint sensor firmware (Phase 6+)"
+      required: false
+      checksum: "UNKNOWN"

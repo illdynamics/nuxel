@@ -1,0 +1,11 @@
+#!/bin/sh
+# Nuxel post-upgrade trigger — Samsung Galaxy S10+ (beyond2lte, Exynos 9820).
+# Listed in install= in device/s10plus/APKBUILD; abuild packages this file as
+# the package's .post-upgrade control script.
+
+if [ -d /tmp/nuxel-permissions-backup ]; then
+	cp -a /tmp/nuxel-permissions-backup/* /var/lib/nuxel/permissions/ 2>/dev/null || true
+	rm -rf /tmp/nuxel-permissions-backup
+fi
+
+echo "Nuxel updated. Reboot recommended."

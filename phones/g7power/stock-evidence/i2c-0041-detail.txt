@@ -1,0 +1,12 @@
+=== /sys/bus/i2c/devices/3-0041 ===
+name: cat: /sys/bus/i2c/devices/3-0041/name: Permission denied
+modalias: cat: /sys/bus/i2c/devices/3-0041/modalias: Permission denied
+driver: /sys/bus/i2c/drivers/ILITEK_TDDI
+=== /sys/bus/i2c/devices/3-0038 ===
+name: cat: /sys/bus/i2c/devices/3-0038/name: Permission denied
+modalias: cat: /sys/bus/i2c/devices/3-0038/modalias: Permission denied
+driver: /sys/bus/i2c/drivers/focaltech_ts
+=== /sys/bus/i2c/devices/3-0062 ===
+name: cat: /sys/bus/i2c/devices/3-0062/name: Permission denied
+modalias: cat: /sys/bus/i2c/devices/3-0062/modalias: Permission denied
+driver: /sys/devices/platform/soc/78b7000.i2c/i2c-3/3-0062/driver

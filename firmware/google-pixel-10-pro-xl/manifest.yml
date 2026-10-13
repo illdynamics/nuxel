@@ -1,0 +1,370 @@
+# Nuxel Firmware Manifest for Google Pixel 10 Pro XL (mustang)
+# Target: mustang - Pixel 10 Pro XL
+# SoC: Google Tensor G5 (gs501)
+# Modem: Samsung Exynos 5500
+# Hardware Version: MP1.0
+# SKU: G45RY
+#
+# Lists all required firmware blobs for mustang.
+# These must be extracted from the stock factory image or vendor partition
+# and placed in the appropriate locations in the rootfs.
+
+device: mustang
+soc: tensor_g5
+modem: exynos_5500
+
+firmware_sources:
+  stock_factory_image:
+    url: "https://developers.google.com/android/images#mustang"
+    version: "BP1A.250405.001"
+    vendor_url: "https://dl.google.com/dl/android/aosp/mustang-bp1a.250405.001-factory-*.zip"
+    filename: "mustang-bp1a.250405.001-factory-xxxxxxxx.zip"
+    # The *single blocking acquisition command*: Google publishes Pixel 10
+    # factory images only as a signed zip behind the dual tab / consent flow at
+    # the URL above. Because the exact build zip is user/region gated, the zip
+    # itself cannot be fetched deterministically inside an automated sandbox.
+    # Operator step (unchanged upstream):
+    #   cd /tmp && wget "https://dl.google.com/dl/android/aosp/mustang-bp1a.250405.001-factory-<xxxxx>.zip"
+    #   unzip mustang-bp1a.250405.001-factory-<xxxxx>.zip
+    #   ./firmware/install-firmware.sh mustang-bp1a.250405.001-factory-<xxxxx>.zip --output-dir ./firmware-out
+    extraction_method: "unzip -j factory.zip */image-*/vendor.img && simg2img vendor*.img vendor.raw && mount -o loop vendor.raw /mnt/vendor && cp -r /mnt/vendor/firmware ./"
+    # Locate the blob-packaging partitions inside the factory image:
+    #   vendor.img  -> vendor/firmware/*   (BCM4390 WiFi/BT, PowerVR GPU, sensors, NFC, PMIC, charger, audio, display, touch, fingerprint)
+    #   modem_*.img -> modem partition    (Exynos 5500 baseband)
+    #   dsp_*.img   -> dsp partition      (DSP firmware)
+    blob_partitions:
+      modem: "modem_*.img (Exynos 5500 baseband)"
+      wifi: "vendor.img -> vendor/firmware/brcm/ (BCM4390 802.11be)"
+      bt: "vendor.img -> vendor/firmware/BCM4390.hcd"
+      gpu: "vendor.img -> vendor/firmware/img/ (PowerVR DXT-72-2304)"
+      display_touch_audio_sensors: "vendor.img -> vendor/firmware/"
+
+firmware_files:
+  # Exynos 5500 Modem firmware (200MB partition)
+  modem:
+    - source_path: "vendor/firmware/modem.bin"
+      dest: "/lib/firmware/modem.bin"
+      description: "Exynos 5500 baseband firmware (CP image) - Samsung 5G modem"
+      required: true
+      checksum: "sha256:verify_against_stock"
+
+    - source_path: "vendor/firmware/modem_pr.bin"
+      dest: "/lib/firmware/modem_pr.bin"
+      description: "Primary modem firmware for Exynos 5500"
+      required: true
+
+    - source_path: "vendor/firmware/modem_cal.bin"
+      dest: "/lib/firmware/modem_cal.bin"
+      description: "Modem calibration data (Exynos 5500 specific)"
+      required: true
+
+    - source_path: "vendor/firmware/modem_cfg.txt"
+      dest: "/lib/firmware/modem_cfg.txt"
+      description: "Exynos 5500 modem configuration"
+      required: true
+
+    - source_path: "vendor/firmware/ramdump.bin"
+      dest: "/lib/firmware/ramdump.bin"
+      description: "Modem ramdump (debug)"
+      required: false
+
+    - source_path: "vendor/firmware/modem_debug.bin"
+      dest: "/lib/firmware/modem_debug.bin"
+      description: "Modem debug firmware"
+      required: false
+
+    - source_path: "vendor/firmware/exynos5500_shm.bin"
+      dest: "/lib/firmware/exynos5500_shm.bin"
+      description: "Exynos 5500 shared memory firmware"
+      required: true
+
+  # Broadcom BCM4390 WiFi 7 firmware
+  # Verification: firmware/verify-firmware.sh compares the sha256 of each blob
+  # against the `checksum.sha256` value. Fill these in after extraction from the
+  # vendor partition. `*` values are placeholders meaning "must be filled".
+  wifi:
+    - source_path: "vendor/firmware/brcmfmac4390.bin"
+      dest: "/lib/firmware/brcm/brcmfmac4390.bin"
+      description: "Broadcom BCM4390 WiFi 7 (SDIO variant) firmware"
+      required: true
+      checksum:
+        sha256: "PLACEHOLDER_SDIO"
+
+    - source_path: "vendor/firmware/brcmfmac4390-pcie.bin"
+      dest: "/lib/firmware/brcm/brcmfmac4390-pcie.bin"
+      description: "Broadcom BCM4390 WiFi 7 PCIe firmware (brings up 802.11be)"
+      required: true
+      checksum:
+        sha256: "PLACEHOLDER_PCIE"
+
+    - source_path: "vendor/firmware/brcmfmac4390-pcie.clm_blob"
+      dest: "/lib/firmware/brcm/brcmfmac4390-pcie.clm_blob"
+      description: "WiFi 7 PCIe CLM blob (regulatory domain / 6GHz)"
+      required: true
+      checksum:
+        sha256: "PLACEHOLDER_PCIE_CLM"
+
+    - source_path: "vendor/firmware/brcmfmac4390.clm_blob"
+      dest: "/lib/firmware/brcm/brcmfmac4390.clm_blob"
+      description: "WiFi 7 CLM blob (legacy SDIO) (regulatory domain)"
+      required: true
+      checksum:
+        sha256: "PLACEHOLDER_CLM"
+
+    - source_path: "vendor/firmware/brcmfmac4390.nvm"
+      dest: "/lib/firmware/brcm/brcmfmac4390.nvm"
+      description: "WiFi 7 NVM configuration"
+      required: true
+      checksum:
+        sha256: "PLACEHOLDER_NVM"
+
+  # Broadcom BCM4390 Bluetooth 5.4 firmware
+  bluetooth:
+    - source_path: "vendor/firmware/BCM4390.hcd"
+      dest: "/lib/firmware/brcm/BCM4390.hcd"
+      description: "Bluetooth 5.4 firmware (BCM4390)"
+      required: true
+
+  # Imagination PowerVR DXT-72-2304 GPU firmware
+  gpu:
+    - source_path: "vendor/firmware/pvr_drv.so"
+      dest: "/lib/firmware/img/pvr_drv.so"
+      description: "Imagination PowerVR DXT-72-2304 GPU driver firmware"
+      required: true
+
+    - source_path: "vendor/firmware/pvr_rogue_km.fw"
+      dest: "/lib/firmware/img/pvr_rogue_km.fw"
+      description: "PowerVR Rogue kernel mode firmware"
+      required: true
+
+    - source_path: "vendor/firmware/pvr_dxt_fw.fw"
+      dest: "/lib/firmware/img/pvr_dxt_fw.fw"
+      description: "PowerVR DXT firmware"
+      required: true
+
+    - source_path: "vendor/firmware/pvr_rogue_csf.fw"
+      dest: "/lib/firmware/img/pvr_rogue_csf.fw"
+      description: "PowerVR Rogue CSF firmware"
+      required: true
+
+  # Samsung AMB655X LTPO display panel firmware
+  display:
+    - source_path: "vendor/firmware/amb655x_fw.bin"
+      dest: "/lib/firmware/samsung/amb655x_fw.bin"
+      description: "Samsung AMB655X LTPO display panel firmware"
+      required: true
+
+    - source_path: "vendor/firmware/amb655x_gamma.bin"
+      dest: "/lib/firmware/samsung/amb655x_gamma.bin"
+      description: "Display gamma calibration for AMB655X"
+      required: true
+
+    - source_path: "vendor/firmware/s6sy791_touch_fw.bin"
+      dest: "/lib/firmware/samsung/s6sy791_touch_fw.bin"
+      description: "Samsung S6SY791 touch controller firmware"
+      required: true
+
+  # Audio: Cirrus Logic
+  audio:
+    - source_path: "vendor/firmware/cs35l45_fw.bin"
+      dest: "/lib/firmware/cirrus/cs35l45_fw.bin"
+      description: "Cirrus Logic CS35L45 speaker amp firmware"
+      required: true
+
+    - source_path: "vendor/firmware/cs35l45_dsp.bin"
+      dest: "/lib/firmware/cirrus/cs35l45_dsp.bin"
+      description: "CS35L45 DSP configuration"
+      required: true
+
+    - source_path: "vendor/firmware/cs42l43_fw.bin"
+      dest: "/lib/firmware/cirrus/cs42l43_fw.bin"
+      description: "Cirrus Logic CS42L43 audio codec firmware"
+      required: true
+
+  # Sensors firmware
+  sensors:
+    - source_path: "vendor/firmware/bmi270_fw.bin"
+      dest: "/lib/firmware/bosch/bmi270_fw.bin"
+      description: "Bosch BMI270 IMU firmware"
+      required: true
+
+    - source_path: "vendor/firmware/lsm6dsv_fw.bin"
+      dest: "/lib/firmware/st/lsm6dsv_fw.bin"
+      description: "ST LSM6DSV IMU firmware"
+      required: true
+
+    - source_path: "vendor/firmware/tcs3710_fw.bin"
+      dest: "/lib/firmware/ams/tcs3710_fw.bin"
+      description: "AMS TCS3710 ALS/proximity sensor firmware"
+      required: true
+
+  # NFC: NXP SN220
+  nfc:
+    - source_path: "vendor/firmware/sn220_fw.bin"
+      dest: "/lib/firmware/nxp/sn220_fw.bin"
+      description: "NXP SN220 NFC controller firmware"
+      required: true
+
+  # Fingerprint: Goodix gf3636
+  fingerprint:
+    - source_path: "vendor/firmware/gf3636_fw.bin"
+      dest: "/lib/firmware/goodix/gf3636_fw.bin"
+      description: "Goodix gf3636 optical fingerprint sensor firmware"
+      required: true
+
+  # PMIC firmware
+  pmic:
+    - source_path: "vendor/firmware/max77729_fw.bin"
+      dest: "/lib/firmware/maxim/max77729_fw.bin"
+      description: "Maxim MAX77729 PMIC firmware"
+      required: true
+
+    - source_path: "vendor/firmware/max77826_fw.bin"
+      dest: "/lib/firmware/maxim/max77826_fw.bin"
+      description: "Maxim MAX77826 PMIC firmware"
+      required: true
+
+  # Charger firmware
+  charger:
+    - source_path: "vendor/firmware/bq2597x_fw.bin"
+      dest: "/lib/firmware/ti/bq2597x_fw.bin"
+      description: "TI BQ2597x fast charger firmware"
+      required: true
+
+    - source_path: "vendor/firmware/max1720x_fw.bin"
+      dest: "/lib/firmware/maxim/max1720x_fw.bin"
+      description: "Maxim MAX1720x fuel gauge firmware"
+      required: true
+
+extraction_script: |
+  #!/usr/bin/env bash
+  # Extract firmware blobs from stock Pixel 10 Pro XL factory image
+  set -euo pipefail
+  
+  FACTORY_ZIP="$1"
+  OUTPUT_DIR="${2:-./extracted-firmware}"
+  DEVICE="mustang"
+  
+  if [ -z "${FACTORY_ZIP}" ]; then
+      echo "Usage: $0 <factory-image.zip> [output-dir]"
+      echo ""
+      echo "Download factory image from: https://developers.google.com/android/images"
+      echo "For mustang (Pixel 10 Pro XL): Select the latest stable build"
+      echo "Expected build: BP1A.250405.001 or newer"
+      exit 1
+  fi
+  
+  mkdir -p "${OUTPUT_DIR}"
+  WORKDIR="$(mktemp -d)"
+  
+  echo "[*] Extracting factory image for ${DEVICE}..."
+  unzip -q "${FACTORY_ZIP}" -d "${WORKDIR}"
+  
+  # Find vendor image (may be in a subdirectory or inside super.img)
+  VENDOR_IMG=$(find "${WORKDIR}" -name "vendor*img" -type f | head -1)
+  
+  if [ -z "${VENDOR_IMG}" ]; then
+      echo "[!] vendor.img not found in factory image"
+      echo "[*] Looking for super.img instead..."
+      SUPER_IMG=$(find "${WORKDIR}" -name "super*img" -type f | head -1)
+      
+      if [ -n "${SUPER_IMG}" ]; then
+          echo "[*] Extracting vendor from super image..."
+          simg2img "${SUPER_IMG}" "${WORKDIR}/super.raw"
+          lpunpack "${WORKDIR}/super.raw" "${WORKDIR}/super-out/"
+          VENDOR_IMG=$(find "${WORKDIR}/super-out" -name "vendor*img" -type f | head -1)
+      fi
+  fi
+  
+  if [ -z "${VENDOR_IMG}" ]; then
+      echo "[!] Could not find vendor image"
+      echo "[*] Looking for vendor_boot.img for DTBO..."
+      VENDOR_BOOT_IMG=$(find "${WORKDIR}" -name "vendor_boot*img" -type f | head -1)
+      if [ -n "${VENDOR_BOOT_IMG}" ]; then
+          echo "[*] Extracting DTBO from vendor_boot.img..."
+          mkdir -p "${OUTPUT_DIR}/dtbo"
+          cp "${VENDOR_BOOT_IMG}" "${OUTPUT_DIR}/dtbo/"
+      fi
+      rm -rf "${WORKDIR}"
+      exit 1
+  fi
+  
+  # Convert sparse to raw if needed
+  if file "${VENDOR_IMG}" | grep -q "sparse"; then
+      echo "[*] Converting sparse vendor image..."
+      simg2img "${VENDOR_IMG}" "${WORKDIR}/vendor.raw"
+      VENDOR_IMG="${WORKDIR}/vendor.raw"
+  fi
+  
+  # Mount and extract firmware
+  echo "[*] Mounting vendor partition..."
+  mkdir -p "${WORKDIR}/mnt"
+  mount -o loop,ro "${VENDOR_IMG}" "${WORKDIR}/mnt"
+  
+  echo "[*] Extracting firmware files..."
+  if [ -d "${WORKDIR}/mnt/firmware" ]; then
+      cp -rv "${WORKDIR}/mnt/firmware"/* "${OUTPUT_DIR}/"
+  fi
+  
+  if [ -d "${WORKDIR}/mnt/lib/firmware" ]; then
+      cp -rv "${WORKDIR}/mnt/lib/firmware"/* "${OUTPUT_DIR}/"
+  fi
+  
+  if [ -d "${WORKDIR}/mnt/etc/firmware" ]; then
+      cp -rv "${WORKDIR}/mnt/etc/firmware"/* "${OUTPUT_DIR}/"
+  fi
+  
+  if [ -d "${WORKDIR}/mnt/vendor/firmware" ]; then
+      cp -rv "${WORKDIR}/mnt/vendor/firmware"/* "${OUTPUT_DIR}/"
+  fi
+  
+  if [ -d "${WORKDIR}/mnt/vendor/lib/firmware" ]; then
+      cp -rv "${WORKDIR}/mnt/vendor/lib/firmware"/* "${OUTPUT_DIR}/"
+  fi
+  
+  # Extract modem firmware from modem partition
+  MODEM_IMG=$(find "${WORKDIR}" -name "modem*img" -type f | head -1)
+  if [ -n "${MODEM_IMG}" ]; then
+      echo "[*] Extracting Exynos 5500 modem firmware..."
+      if file "${MODEM_IMG}" | grep -q "sparse"; then
+          simg2img "${MODEM_IMG}" "${WORKDIR}/modem.raw"
+          MODEM_IMG="${WORKDIR}/modem.raw"
+      fi
+      mkdir -p "${WORKDIR}/mnt-modem"
+      mount -o loop,ro "${MODEM_IMG}" "${WORKDIR}/mnt-modem" 2>/dev/null || true
+      if mountpoint -q "${WORKDIR}/mnt-modem"; then
+          mkdir -p "${OUTPUT_DIR}/modem"
+          cp -rv "${WORKDIR}/mnt-modem"/* "${OUTPUT_DIR}/modem/"
+          umount "${WORKDIR}/mnt-modem"
+      fi
+  fi
+  
+  # Extract DSP firmware
+  DSP_IMG=$(find "${WORKDIR}" -name "dsp*img" -type f | head -1)
+  if [ -n "${DSP_IMG}" ]; then
+      echo "[*] Extracting DSP firmware..."
+      if file "${DSP_IMG}" | grep -q "sparse"; then
+          simg2img "${DSP_IMG}" "${WORKDIR}/dsp.raw"
+          DSP_IMG="${WORKDIR}/dsp.raw"
+      fi
+      mkdir -p "${WORKDIR}/mnt-dsp"
+      mount -o loop,ro "${DSP_IMG}" "${WORKDIR}/mnt-dsp" 2>/dev/null || true
+      if mountpoint -q "${WORKDIR}/mnt-dsp"; then
+          mkdir -p "${OUTPUT_DIR}/dsp"
+          cp -rv "${WORKDIR}/mnt-dsp"/* "${OUTPUT_DIR}/dsp/"
+          umount "${WORKDIR}/mnt-dsp"
+      fi
+  fi
+  
+  umount "${WORKDIR}/mnt"
+  rm -rf "${WORKDIR}"
+  
+  echo "[*] Firmware extraction complete!"
+  echo "    Output: ${OUTPUT_DIR}"
+  echo ""
+  echo "Files extracted:"
+  find "${OUTPUT_DIR}" -type f | sort
+  echo ""
+  echo "Install firmware:"
+  echo "  sudo mkdir -p /lib/firmware"
+  echo "  sudo cp -rv ${OUTPUT_DIR}/* /lib/firmware/"

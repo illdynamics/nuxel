@@ -1,0 +1,36 @@
+# Template AppArmor profile for Flatpak app confinement
+# All Flatpak apps (including PWAs) inherit from this
+
+profile nuxel-flatpak /usr/lib/flatpak/** flags=(attach_disconnected) {
+    #include <abstractions/base>
+    #include <abstractions/dbus>
+    
+    # Flatpak runtime
+    /usr/lib/flatpak/** rix,
+    /var/lib/flatpak/** r,
+    
+    # Bubblewrap for sandbox
+    /usr/bin/bwrap rix,
+    
+    # Wayland display
+    /run/user/*/wayland-* rw,
+    
+    # PipeWire audio
+    /run/user/*/pipewire-0 rw,
+    
+    # Per-app bridge socket
+    /run/nuxel/bridge/*.sock rw,
+    
+    # App data directory
+    /var/app/** rw,
+    
+    # D-Bus: only nuxel-bridge
+    dbus send bus=system path=/org/nuxel/Bridge
+         interface=org.nuxel.Bridge
+         member=*,
+    
+    deny /dev/** rwk,
+    deny /sys/** r,
+    deny ptrace,
+    deny network,
+}

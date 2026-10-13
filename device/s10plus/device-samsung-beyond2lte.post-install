@@ -1,0 +1,44 @@
+#!/bin/sh
+# Nuxel post-install trigger — Samsung Galaxy S10+ (beyond2lte, Exynos 9820).
+# Listed in install= in device/s10plus/APKBUILD; abuild packages this file as
+# the package's .post-install control script. This is the authoritative copy
+# of the post-install behavior (the APKBUILD no longer carries dead
+# post_install() function bodies).
+
+# Install OpenRC services to runlevels
+if command -v rc-update >/dev/null 2>&1; then
+	rc-update add nuxel-bridge default
+	rc-update add nuxel-notifications default
+	rc-update add nuxel-firstboot boot
+fi
+
+# Set up AppArmor
+if command -v aa-enforce >/dev/null 2>&1; then
+	for profile in /etc/apparmor.d/usr.bin.nuxel-*; do
+		[ -f "$profile" ] && aa-enforce "$profile"
+	done
+fi
+
+# Load nftables rules
+if command -v nft >/dev/null 2>&1; then
+	nft -f /usr/share/nftables.d/nuxel-app-firewall.nft 2>/dev/null || true
+fi
+
+# Enable hardened_malloc
+if [ -f /usr/lib/libhardened_malloc.so ]; then
+	echo "/usr/lib/libhardened_malloc.so" >> /etc/ld.so.preload
+fi
+
+echo ""
+echo "╔══════════════════════════════════════════════════════════╗"
+echo "║  Nuxel — Samsung Galaxy S10+ (beyond2lte) installed     ║"
+echo "║  Exynos 9820 | 8GB LPDDR4X | UFS 2.1 | 6.4\" AMOLED      ║"
+echo "║                                                        ║"
+echo "║  Next steps:                                            ║"
+echo "║  1. Run Phase 0 inventory (s10plus-device-inventory.md) ║"
+echo "║  2. nuxel-install-firmware --twrp-pull                  ║"
+echo "║  3. kernel/s10plus/build-kernel.sh (exynos9820)         ║"
+echo "║  4. images/s10plus/build.sh                             ║"
+echo "║  5. Flash via TWRP/heimdall (NO fastboot)               ║"
+echo "╚══════════════════════════════════════════════════════════╝"
+echo ""

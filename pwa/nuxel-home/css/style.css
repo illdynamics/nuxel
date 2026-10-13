@@ -1,0 +1,274 @@
+/* Nuxel Home - Base Styles
+   Mobile-first PWA launcher for Nuxel Phone OS
+   Target: 1440x3120, 512dpi
+*/
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+:root {
+    /* Nuxel theme — deep navy + blue + white */
+    --bg-primary: #0a1628;
+    --bg-secondary: #0d1f3c;
+    --bg-card: #122952;
+    --bg-card-hover: #1a3466;
+    --bg-accent: rgba(18, 41, 82, 0.85);
+    --text-primary: #ffffff;
+    --text-secondary: #b8c7e0;
+    --text-accent: #60a5fa;
+    --accent: #1e40af;
+    --accent-light: #3b82f6;
+    --accent-glow: rgba(59, 130, 246, 0.35);
+    --border-subtle: rgba(59, 130, 246, 0.15);
+    --success: #4caf50;
+    --warning: #ff9800;
+    --error: #f44336;
+    --info: #2196f3;
+    
+    --status-bar-height: 36px;
+    --dock-height: 80px;
+    --search-bar-height: 56px;
+    --grid-padding: 16px;
+    --app-icon-size: 64px;
+    --app-icon-radius: 16px;
+    --card-radius: 16px;
+    --button-radius: 12px;
+    
+    --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, 
+                   Ubuntu, Cantarell, sans-serif;
+    --font-mono: 'SF Mono', 'Fira Code', monospace;
+    
+    --transition-fast: 150ms ease;
+    --transition-normal: 250ms ease;
+    --transition-slow: 400ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    font-family: var(--font-family);
+    /* Background: tries deployed path first, falls back to repo-relative for dev server */
+    background-color: #1a1a2e;
+    background-image: url('../assets/nuxel-background.png');
+    /* In deployed OS, the wallpaper is at /usr/share/nuxel/wallpapers/.
+       For dev testing with http.server, copy nuxel-background.png to pwa/nuxel-home/assets/ */
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    color: var(--text-primary);
+    font-size: 16px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+    width: 3px;
+}
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+::-webkit-scrollbar-thumb {
+    background: var(--accent-light);
+    border-radius: 2px;
+}
+
+/* Utility classes */
+.hidden {
+    display: none !important;
+}
+
+.fade-in {
+    animation: fadeIn var(--transition-normal) ease forwards;
+}
+
+.slide-up {
+    animation: slideUp var(--transition-normal) ease forwards;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideUp {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* Loading states */
+.loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+    color: var(--text-secondary);
+}
+
+.loading::after {
+    content: '';
+    width: 24px;
+    height: 24px;
+    border: 2px solid var(--accent-light);
+    border-top-color: var(--text-accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin-left: 12px;
+}
+
+/* Empty state */
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    text-align: center;
+    color: var(--text-secondary);
+}
+
+.empty-state .empty-icon {
+    width: 64px;
+    height: 64px;
+    margin-bottom: 16px;
+    opacity: 0.5;
+    background: var(--accent-light);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.empty-state h3 {
+    font-size: 18px;
+    margin-bottom: 8px;
+    color: var(--text-primary);
+}
+
+.empty-state p {
+    font-size: 14px;
+    max-width: 280px;
+}
+
+/* Toast notifications */
+.toast {
+    position: fixed;
+    bottom: 100px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--bg-card);
+    color: var(--text-primary);
+    padding: 12px 24px;
+    border-radius: var(--button-radius);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+    z-index: 1000;
+    animation: slideUp 0.3s ease;
+    font-size: 14px;
+    max-width: 90%;
+    text-align: center;
+}
+
+/* Press effects */
+.press-effect {
+    transition: transform var(--transition-fast);
+}
+.press-effect:active {
+    transform: scale(0.92);
+}
+
+/* Safe area handling */
+@supports (padding-top: env(safe-area-inset-top)) {
+    .status-bar {
+        padding-top: env(safe-area-inset-top);
+    }
+}
+
+/* Responsive adjustments for different screen sizes */
+@media (max-width: 480px) {
+    :root {
+        --app-icon-size: 56px;
+        --grid-padding: 12px;
+    }
+}
+
+@media (min-width: 768px) {
+    :root {
+        --app-icon-size: 72px;
+    }
+}
+
+/* Nuxel VM app-container fix */
+.pwa-frame {
+    position: fixed !important;
+    inset: 0 !important;
+    width: 100vw !important;
+    height: 100dvh !important;
+    min-width: 100vw !important;
+    min-height: 100dvh !important;
+    border: 0 !important;
+    z-index: 9999 !important;
+    background: #071426 !important;
+    display: block !important;
+}
+
+.pwa-close-btn {
+    position: fixed !important;
+    z-index: 10000 !important;
+}
+
+/* ── Boot animation splash ───────────────────────────────────────────────
+   Fullscreen nuxel-boot-animation.mp4 overlay shown while the home PWA
+   boots. Faded out by js/app.js (body.ready) once the app is initialized
+   and the animation has had a chance to play. */
+#boot-splash {
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #0a1628;
+    opacity: 1;
+    visibility: visible;
+    transition: opacity 0.6s ease 0.25s, visibility 0s linear 0.9s;
+}
+#boot-splash video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+body.ready #boot-splash {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+}
+@media (prefers-reduced-motion: reduce) {
+    #boot-splash {
+        display: none;
+    }
+}

@@ -1,0 +1,30 @@
+ls: /vendor/lib/modules//rdbg.ko: Permission denied
+ls: /vendor/lib/modules//g_serial.ko: Permission denied
+ls: /vendor/lib/modules//hid-apple.ko: Permission denied
+ls: /vendor/lib/modules//mpq-dmx-hw-plugin.ko: Permission denied
+ls: /vendor/lib/modules//g_ffs.ko: Permission denied
+ls: /vendor/lib/modules//g_acm_ms.ko: Permission denied
+ls: /vendor/lib/modules//efivarfs.ko: Permission denied
+ls: /vendor/lib/modules//br_netfilter.ko: Permission denied
+ls: /vendor/lib/modules//ums-eneub6250.ko: Permission denied
+ls: /vendor/lib/modules//g_mass_storage.ko: Permission denied
+ls: /vendor/lib/modules//modules.alias: Permission denied
+ls: /vendor/lib/modules//hid-elecom.ko: Permission denied
+ls: /vendor/lib/modules//g_hid.ko: Permission denied
+ls: /vendor/lib/modules//mpq-adapter.ko: Permission denied
+ls: /vendor/lib/modules//cdc-wdm.ko: Permission denied
+ls: /vendor/lib/modules//modules.dep: Permission denied
+ls: /vendor/lib/modules//xpad.ko: Permission denied
+ls: /vendor/lib/modules//g_webcam.ko: Permission denied
+ls: /vendor/lib/modules//hid-magicmouse.ko: Permission denied
+ls: /vendor/lib/modules//g_zero.ko: Permission denied
+ls: /vendor/lib/modules//g_multi.ko: Permission denied
+ls: /vendor/lib/modules//gadgetfs.ko: Permission denied
+ls: /vendor/lib/modules//g_cdc.ko: Permission denied
+ls: /vendor/lib/modules//g_audio.ko: Permission denied
+ls: /vendor/lib/modules//usb_f_ss_lb.ko: Permission denied
+ls: /vendor/lib/modules//uas.ko: Permission denied
+/vendor/lib/modules/:
+total 28
+drwxr-xr-x 2 root shell  4096 2009-01-01 01:00 .
+drwxr-xr-x 9 root shell 20480 2009-01-01 01:00 ..

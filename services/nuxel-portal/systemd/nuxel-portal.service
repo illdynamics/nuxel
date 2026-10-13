@@ -1,0 +1,45 @@
+[Unit]
+Description=Nuxel Portal Daemon
+Documentation=https://nuxel.org/docs/portal
+After=network.target dbus.service
+Before=phosh.service nuxel-bridge.service
+Wants=dbus.service
+
+# Portal must be running before any apps or bridge can request permissions
+# It mediates ALL hardware access through user-consent GTK4 dialogs
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/nuxel-portal
+Restart=on-failure
+RestartSec=5
+User=nuxel-portal
+Group=nuxel-portal
+
+# Security hardening for portal daemon
+# relaxed from strict to full — GTK4/Wayland/DBus need /usr access
+ProtectSystem=full
+ProtectHome=yes
+PrivateTmp=yes
+NoNewPrivileges=yes
+PrivateDevices=no
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+RestrictRealtime=yes
+LockPersonality=yes
+
+# Portal needs D-Bus, GTK4, libadwaita, Wayland, and /var/lib/nuxel
+ReadWritePaths=/var/lib/nuxel/permissions /run/user
+ReadOnlyPaths=/etc/dbus-1 /usr/share
+
+# Wayland/GTK display
+Environment=GDK_BACKEND=wayland
+Environment=NUXEL_PORTAL_TIMEOUT_SECONDS=30
+
+# AppArmor
+AppArmorProfile=usr.bin.nuxel-portal
+
+[Install]
+WantedBy=graphical-session.target

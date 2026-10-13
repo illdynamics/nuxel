@@ -1,0 +1,46 @@
+# AppArmor profile for nuxel-settings - native GTK4 settings app
+# GSettings + selected system configs
+
+profile nuxel-settings /usr/bin/nuxel-settings flags=(attach_disconnected) {
+    #include <abstractions/base>
+    #include <abstractions/gtk4>
+    #include <abstractions/dbus>
+    
+    /usr/bin/nuxel-settings r,
+    /usr/lib/** r,
+    /usr/share/** r,
+    /etc/fonts/** r,
+    /etc/gtk-4.0/** r,
+    
+    # App data
+    /var/app/nuxel-settings/data/** rw,
+    
+    # GSettings
+    /usr/share/glib-2.0/schemas/ r,
+    /etc/dconf/** rw,
+    /run/user/*/dconf rw,
+    
+    # D-Bus system bus for system settings
+    /run/dbus/system_bus_socket rw,
+    
+    dbus send bus=system path=/org/freedesktop/NetworkManager
+         interface=org.freedesktop.DBus.Properties
+         member=*,
+    dbus send bus=system path=/org/freedesktop/UPower
+         interface=org.freedesktop.UPower
+         member=*,
+    dbus send bus=system path=/org/freedesktop/ModemManager1
+         interface=org.freedesktop.DBus.Properties
+         member=*,
+    
+    # Session bus for GNOME settings
+    /run/user/*/bus rw,
+    dbus send bus=session path=/org/gnome/SettingsDaemon/**
+         interface=org.gnome.SettingsDaemon.*
+         member=*,
+    
+    deny network,
+    deny ptrace,
+    deny /dev/** rwk,
+    deny /sys/** r,
+}

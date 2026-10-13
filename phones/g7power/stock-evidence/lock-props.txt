@@ -1,0 +1,11 @@
+[dalvik.vm.dex2oat-max-image-block-size]: [524288]
+[dalvik.vm.lockprof.threshold]: [500]
+[ro.frp.pst]: [/dev/block/platform/soc/7824900.sdhci/by-name/frp]
+[ro.setupwizard.rotation_locked]: [true]
+[sys.oem_unlock_allowed]: [1]
+
+1
+
+enforcing
+
+

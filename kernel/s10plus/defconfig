@@ -1,0 +1,26 @@
+# ============================================================================
+# Nuxel S10+ kernel config — Samsung Galaxy S10+ (beyond2lte, Exynos 9820)
+# ============================================================================
+#
+# CORRECTION (2026-10-11): the S10+ kernel is NOT `linux-postmarketos-exynos9820`
+# (that repo/package does not exist) and is NOT a mainline tree with a Kconfig
+# fragment. The real, proven kernel is the DOWNSTREAM Samsung Exynos 9820 fork:
+#
+#   https://github.com/Linux4/android_kernel_samsung_exynos9820
+#   commit f7194c1d15eded1c2a1a4dc63825b26103435cc0   (Linux 4.14.253)
+#   in-tree defconfig: arch/arm64/configs/exynos9820-beyond2lte_defconfig
+#
+# The downstream tree brings its own complete defconfig (it already enables
+# exynos DRM/DSI, sec_ts touch, bcmdhd WiFi, madera/SLSI audio, S3NRN82 NFC,
+# FIMC-IS camera, UFS, etc.). Do NOT merge a fragment on top of it.
+#
+# Therefore this file is INTENTIONALLY INFORMATIONAL — the build wrapper
+# (kernel/s10plus/build-kernel.sh) uses the in-tree
+# exynos9820-beyond2lte_defconfig directly, not a merge.
+#
+# To actually build the kernel, run:
+#   NUXEL_DEVICE=s10plus bash kernel/s10plus/build-kernel.sh --clone
+#
+# (For reference, a build on a native aarch64 Linux host with a modern GCC
+# needs CROSS_COMPILE= and -Wno-error downgrades for the GCC 14/15 diagnostics
+# that the 4.14 tree predates — the wrapper already applies these.)

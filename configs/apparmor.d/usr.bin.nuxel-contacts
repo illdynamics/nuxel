@@ -1,0 +1,29 @@
+# AppArmor profile for nuxel-contacts - native GTK4 contacts app
+# Only EDS D-Bus access
+
+profile nuxel-contacts /usr/bin/nuxel-contacts flags=(attach_disconnected) {
+    #include <abstractions/base>
+    #include <abstractions/gtk4>
+    #include <abstractions/dbus>
+    
+    /usr/bin/nuxel-contacts r,
+    /usr/lib/** r,
+    /usr/share/** r,
+    /etc/fonts/** r,
+    
+    # App data
+    /var/app/nuxel-contacts/data/** rw,
+    
+    # D-Bus session bus for EDS
+    /run/user/*/bus rw,
+    
+    # D-Bus: Evolution Data Server
+    dbus send bus=session path=/org/gnome/evolution/dataserver/*
+         interface=org.gnome.evolution.dataserver.*
+         member=*,
+    
+    deny network,
+    deny ptrace,
+    deny /dev/** rwk,
+    deny /sys/** r,
+}

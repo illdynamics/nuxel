@@ -1,0 +1,283 @@
+# Maintainer: Nuxel Project <nuxel@nuxel.org>
+pkgname="device-google-mustang"
+pkgver="0.2.0"
+pkgrel="0"
+pkgdesc="Google Pixel 10 Pro XL (mustang) — Nuxel Phone OS"
+url="https://nuxel.org"
+arch="aarch64"
+license="Apache-2.0"
+options="!check !archcheck"
+depends="
+	linux-mustang
+	boot-deploy
+	modemmanager
+	networkmanager
+	phosh
+	phoc
+	calls
+	chatty
+	phosh-settings
+	nuxel-bridge
+	nuxel-portal
+	nuxel-notifications
+	nuxel-dialer
+	nuxel-messages
+	nuxel-contacts
+	nuxel-settings
+	nuxel-permissions
+	nuxel-firstboot
+	nuxel-home-pwa
+	nuxel-mail-pwa
+	nuxel-calendar-pwa
+	nuxel-notes-pwa
+	nuxel-files-pwa
+	nuxel-camera-pwa
+	flatpak
+	bubblewrap
+	webkitgtk-6.0
+	pipewire
+	wireplumber
+	apparmor
+	hardened-malloc
+	nftables
+	"
+makedepends="
+	meson
+	ninja
+	pkgconfig
+	gtk4.0-dev
+	libadwaita-dev
+	dbus-dev
+	glib-dev
+	"
+source="nuxel-device-info
+	90-nuxel-mustang.rules
+	nuxel-mustang.conf"
+subpackages="
+	$pkgname-kernel:kernel
+	$pkgname-firmware:firmware
+	$pkgname-nonfree-firmware:nonfree_firmware
+	"
+install="
+	$pkgname.post-install
+	$pkgname.pre-upgrade
+	$pkgname.post-upgrade
+	"
+
+build() {
+	# Compile any device-specific helpers
+	cd "$builddir"
+	
+	# Build the nuxel-sandbox helper
+	if [ -d "$srcdir/../shell/nuxel-shell/nuxel-sandbox" ]; then
+		make -C "$srcdir/../shell/nuxel-shell/nuxel-sandbox" \
+			CC="${CC:-gcc}" \
+			CFLAGS="${CFLAGS:--O2}" \
+			PREFIX=/usr
+	fi
+	
+	# Build PWA launcher
+	if [ -d "$srcdir/../pwa/launcher" ]; then
+		meson setup build "$srcdir/../pwa/launcher" \
+			--prefix=/usr \
+			--buildtype=release
+		ninja -C build
+	fi
+}
+
+package() {
+	cd "$builddir"
+	
+	# Install device-info
+	install -Dm644 "$srcdir/deviceinfo" \
+		"$pkgdir/etc/deviceinfo"
+	
+	# Install nuxel-device-info helper
+	install -Dm755 "$srcdir/../device/nuxel-device-info.sh" \
+		"$pkgdir/usr/bin/nuxel-device-info"
+	
+	# Install boot config
+	install -Dm644 "$srcdir/../boot/boot.img/mustang-boot-config.txt" \
+		"$pkgdir/etc/nuxel/boot-config.txt"
+	
+	# Install firmware manifest
+	install -Dm644 "$srcdir/../firmware/manifest.yml" \
+		"$pkgdir/usr/share/nuxel/firmware-manifest.yml"
+	
+	# Install flash helper
+	install -Dm755 "$srcdir/../boot/flash.sh" \
+		"$pkgdir/usr/bin/nuxel-flash"
+	
+	# Recovery script
+	install -Dm755 "$srcdir/../boot/recovery.sh" \
+		"$pkgdir/usr/sbin/nuxel-recovery"
+	
+	# Install AppArmor profiles
+	mkdir -p "$pkgdir/etc/apparmor.d"
+	if [ -d "$srcdir/../configs/apparmor.d" ]; then
+		for profile in "$srcdir/../configs/apparmor.d"/*; do
+			install -Dm644 "$profile" \
+				"$pkgdir/etc/apparmor.d/$(basename "$profile")"
+		done
+	fi
+	
+	# Install nftables rules
+	install -Dm644 "$srcdir/../configs/nftables/nuxel-app-firewall.nft" \
+		"$pkgdir/usr/share/nftables.d/nuxel-app-firewall.nft"
+	
+	# Install hardened_malloc config
+	install -Dm644 "$srcdir/../configs/hardened-malloc.conf" \
+		"$pkgdir/etc/hardened-malloc.conf"
+	
+	# Install OpenRC services
+	mkdir -p "$pkgdir/etc/init.d"
+	if [ -d "$srcdir/../shell/config/openrc" ]; then
+		for svc in "$srcdir/../shell/config/openrc"/*; do
+			if [ -f "$svc" ]; then
+				install -Dm755 "$svc" \
+					"$pkgdir/etc/init.d/$(basename "$svc")"
+			fi
+		done
+	fi
+	
+	# Install PWA launcher binary
+	if [ -d "$srcdir/../pwa/launcher" ]; then
+		DESTDIR="$pkgdir" ninja -C build install
+	fi
+	
+	# Install sandbox helper
+	if [ -d "$srcdir/../shell/nuxel-shell/nuxel-sandbox" ]; then
+		make -C "$srcdir/../shell/nuxel-shell/nuxel-sandbox" \
+			DESTDIR="$pkgdir" PREFIX=/usr install
+	fi
+	
+	# Install sandbox profiles
+	mkdir -p "$pkgdir/usr/share/nuxel/sandbox-profiles"
+	if [ -d "$srcdir/../shell/nuxel-shell/nuxel-sandbox/profiles" ]; then
+		for profile in "$srcdir/../shell/nuxel-shell/nuxel-sandbox/profiles"/*.json; do
+			install -Dm644 "$profile" \
+				"$pkgdir/usr/share/nuxel/sandbox-profiles/$(basename "$profile")"
+		done
+	fi
+	
+	# Install first-boot marker directory
+	mkdir -p "$pkgdir/etc/nuxel"
+	
+	# Device-specific udev rules
+	# Canonical file: device/google-pixel-10-pro-xl/90-nuxel-mustang.rules
+	mkdir -p "$pkgdir/etc/udev/rules.d"
+	install -Dm644 "$srcdir/90-nuxel-mustang.rules" \
+		"$pkgdir/etc/udev/rules.d/90-nuxel-mustang.rules"
+
+	# Modprobe config for mustang modules
+	# Canonical file: device/google-pixel-10-pro-xl/nuxel-mustang.conf
+	mkdir -p "$pkgdir/etc/modprobe.d"
+	install -Dm644 "$srcdir/nuxel-mustang.conf" \
+		"$pkgdir/etc/modprobe.d/nuxel-mustang.conf"
+}
+
+kernel() {
+	pkgdesc="Linux kernel for Google Pixel 10 Pro XL (mustang)"
+	depends="kmod linux-firmware"
+	
+	mkdir -p "$subpkgdir/boot"
+	mkdir -p "$subpkgdir/lib/modules"
+	mkdir -p "$subpkgdir/usr/share/nuxel/kernel"
+	
+	# Install kernel config for reference
+	install -Dm644 "$srcdir/../kernel/defconfig" \
+		"$subpkgdir/usr/share/nuxel/kernel/gs501_defconfig"
+	
+	# Install kernel patches
+	mkdir -p "$subpkgdir/usr/share/nuxel/kernel/patches"
+	install -Dm644 "$srcdir/../kernel/patches/0001-nuxel-phone-features.patch" \
+		"$subpkgdir/usr/share/nuxel/kernel/patches/0001-nuxel-phone-features.patch"
+}
+
+firmware() {
+	pkgdesc="Firmware files for Google Pixel 10 Pro XL (mustang)"
+	
+	mkdir -p "$subpkgdir/lib/firmware"
+	mkdir -p "$subpkgdir/usr/share/nuxel/firmware"
+	
+	# Install firmware extraction helper
+	install -Dm755 "$srcdir/../firmware/install-firmware.sh" \
+		"$subpkgdir/usr/bin/nuxel-install-firmware"
+	
+	# Create firmware placeholder directories
+	mkdir -p "$subpkgdir/lib/firmware/brcm"
+	mkdir -p "$subpkgdir/lib/firmware/samsung"
+	mkdir -p "$subpkgdir/lib/firmware/powervr"
+	mkdir -p "$subpkgdir/lib/firmware/cirrus"
+	mkdir -p "$subpkgdir/lib/firmware/goodix"
+	
+	# Note: actual firmware blobs are extracted from factory image
+	# using nuxel-install-firmware at first setup time
+}
+
+nonfree_firmware() {
+	pkgdesc="Non-free firmware blobs for Google Pixel 10 Pro XL (mustang)"
+	depends="$pkgname-firmware"
+	# Extracted from Google factory image by the user
+	# This subpackage exists to separate license concerns
+}
+
+sha512sums="
+SKIP
+"
+
+post_install() {
+	# Install OpenRC services to runlevels
+	if command -v rc-update >/dev/null 2>&1; then
+		rc-update add nuxel-bridge default
+		rc-update add nuxel-notifications default
+		rc-update add nuxel-firstboot boot
+	fi
+	
+	# Set up AppArmor
+	if command -v aa-enforce >/dev/null 2>&1; then
+		for profile in /etc/apparmor.d/usr.bin.nuxel-*; do
+			[ -f "$profile" ] && aa-enforce "$profile"
+		done
+	fi
+	
+	# Load nftables rules
+	if command -v nft >/dev/null 2>&1; then
+		nft -f /usr/share/nftables.d/nuxel-app-firewall.nft 2>/dev/null || true
+	fi
+	
+	# Enable hardened_malloc
+	if [ -f /usr/lib/libhardened_malloc.so ]; then
+		echo "/usr/lib/libhardened_malloc.so" >> /etc/ld.so.preload
+	fi
+	
+	echo ""
+	echo "╔══════════════════════════════════════════════════════════╗"
+	echo "║  Nuxel — Google Pixel 10 Pro XL (mustang) installed     ║"
+	echo "║  Serial: 58211FDCQ001LA | HW: MP1.0 | SKU: G45RY       ║"
+	echo "║                                                        ║"
+	echo "║  Next steps:                                            ║"
+	echo "║  1. nuxel-install-firmware <factory-image.zip>         ║"
+	echo "║  2. Build kernel with gs501_defconfig                   ║"
+	echo "║  3. Build rootfs with mkrootfs.sh                       ║"
+	echo "║  4. Sign images with sign-image.sh                      ║"
+	echo "║  5. Flash with nuxel-flash.sh                           ║"
+	echo "╚══════════════════════════════════════════════════════════╝"
+	echo ""
+}
+
+pre_upgrade() {
+	echo "Backing up permissions database..."
+	if [ -d /var/lib/nuxel/permissions ]; then
+		cp -a /var/lib/nuxel/permissions /tmp/nuxel-permissions-backup
+	fi
+}
+
+post_upgrade() {
+	if [ -d /tmp/nuxel-permissions-backup ]; then
+		cp -a /tmp/nuxel-permissions-backup/* /var/lib/nuxel/permissions/ 2>/dev/null || true
+		rm -rf /tmp/nuxel-permissions-backup
+	fi
+	
+	echo "Nuxel updated. Reboot recommended."
+}

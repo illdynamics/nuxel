@@ -1,0 +1,57 @@
+/* Nuxel Lockscreen Theme — Phosh GTK CSS v0.1.1
+   Dark navy + blue + white theme
+   Wallpaper: nuxel-background.png
+   Boot animation: nuxel-boot-animation.mp4 */
+
+/* Lock screen background — Nuxel wallpaper */
+.phosh-lockscreen {
+    background: url('/usr/share/backgrounds/nuxel/lockscreen.png') center/cover no-repeat;
+    background-color: #0a1628;
+}
+
+/* Lock screen clock styling */
+.phosh-lockscreen-clock {
+    font-size: 72px;
+    font-weight: 300;
+    color: #ffffff;
+    text-shadow: 0 2px 12px rgba(0,0,0,0.6);
+}
+
+.phosh-lockscreen-date {
+    font-size: 18px;
+    color: #b8c7e0;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.6);
+}
+
+/* Lock screen notifications */
+.phosh-lockscreen-notifications {
+    background: rgba(10,22,40,0.75);
+    backdrop-filter: blur(24px);
+    border-radius: 16px;
+    margin: 8px 16px;
+    border: 1px solid rgba(59,130,246,0.15);
+}
+
+/* Unlock arrow/indicator */
+.phosh-lockscreen-arrow {
+    color: rgba(255,255,255,0.5);
+}
+
+/* Media player on lock screen */
+.phosh-lockscreen-media {
+    background: rgba(10,22,40,0.55);
+    backdrop-filter: blur(12px);
+    border-radius: 12px;
+    margin: 8px 16px;
+}
+
+/* Boot splash — dark navy while animation loads */
+.phosh-boot-splash {
+    background: #060d18;
+}
+
+.phosh-boot-splash video {
+    object-fit: contain;
+    width: 100%;
+    height: 100%;
+}

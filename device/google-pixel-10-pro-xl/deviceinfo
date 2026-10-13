@@ -1,0 +1,109 @@
+# Nuxel Device Info — postmarketOS format
+# Google Pixel 10 Pro XL (mustang)
+# Serial: 58211FDCQ001LA | HW: MP1.0 | SKU: G45RY
+
+deviceinfo_format_version="2"
+deviceinfo_name="Google Pixel 10 Pro XL"
+deviceinfo_manufacturer="Google"
+deviceinfo_codename="mustang"
+deviceinfo_year="2025"
+deviceinfo_arch="aarch64"
+deviceinfo_chassis="handset"
+
+# SoC
+deviceinfo_soc="Google Tensor G5"
+deviceinfo_soc_family="gs501"
+deviceinfo_cpu="ARM Cortex-X5 + Cortex-A730 + Cortex-A530 (Armv9.2)"
+
+# GPU
+deviceinfo_gpu="Imagination Technologies PowerVR DXT-72-2304"
+deviceinfo_gpu_driver="powervr"
+
+# Display
+deviceinfo_display="Samsung AMB655X LTPO OLED 3120x1440@120Hz"
+deviceinfo_screen_width="1440"
+deviceinfo_screen_height="3120"
+deviceinfo_screen_refresh_rate="120"
+
+# Touch
+deviceinfo_touchscreen="Samsung S6SY791"
+deviceinfo_touchscreen_driver="samsung_s6sy791"
+
+# Modem
+deviceinfo_modem="Samsung Exynos 5500 (5G NR)"
+deviceinfo_modem_interface="pcie"
+deviceinfo_modem_driver="mhi_pci_generic"
+
+# Connectivity
+deviceinfo_wifi="Broadcom BCM4390 (WiFi 7)"
+deviceinfo_wifi_driver="brcmfmac"
+deviceinfo_bluetooth="5.4"
+deviceinfo_nfc="NXP SN220"
+deviceinfo_uwb="Available"
+
+# Storage
+deviceinfo_storage="256GB UFS 4.0"
+deviceinfo_storage_driver="ufshcd"
+deviceinfo_storage_filesystem="f2fs"
+
+# Memory
+deviceinfo_ram="16GB LPDDR5X"
+
+# Battery
+deviceinfo_battery="5300mAh Li-Po"
+deviceinfo_battery_charger="TI BQ2597x + Maxim MAX77729"
+
+# Audio
+deviceinfo_audio="Cirrus Logic CS35L45 speaker amp + CS42L43 codec"
+
+# Sensors
+deviceinfo_sensors="Bosch BMI270 (IMU), ST LSM6DSV (IMU), AMS TCS3710 (ALS/prox), Bosch BMP280 (barometer)"
+deviceinfo_fingerprint="Goodix GF3636 (optical under-display)"
+
+# Camera
+deviceinfo_camera_rear="Sony IMX (primary) + Samsung (ultrawide) + Samsung (telephoto)"
+deviceinfo_camera_front="Sony IMX"
+deviceinfo_camera_flash="Dual LED"
+
+# USB
+deviceinfo_usb="USB 3.2 Gen2 Type-C with DP Alt Mode"
+
+# PMIC
+deviceinfo_pmic="Maxim MAX77729 + MAX77826"
+
+# Kernel
+deviceinfo_kernel="Linux 6.12 LTS (android-gs-mustang-6.12)"
+deviceinfo_kernel_defconfig="gs501_defconfig"
+deviceinfo_kernel_cmdline="console=ttyGSI0,115200 earlycon=gsihvc0 loglevel=3 init=/init nuxel.boot=1 nuxel.device=mustang nuxel.serial=58211FDCQ001LA root=/dev/disk/by-partlabel/system_a rootwait ro rootfstype=ext4"
+
+# Boot
+deviceinfo_bootloader="Google ABL (Android Bootloader) — mustang variant"
+deviceinfo_boot_header_version="4"
+deviceinfo_boot_avb="AVB 2.0 with Titan M3"
+deviceinfo_boot_slots="a/b"
+deviceinfo_boot_partitions="boot_a/boot_b:96MB, vendor_boot_a/vendor_boot_b:96MB, init_boot_a/init_boot_b:8MB, dtbo_a/dtbo_b:16MB, vbmeta_a/vbmeta_b:64KB, super:8GB(dynamic)"
+
+# Partitions
+deviceinfo_flash_method="fastboot"
+deviceinfo_flash_fastboot_partition_kernel="boot"
+deviceinfo_flash_fastboot_partition_system="system"
+deviceinfo_flash_fastboot_partition_vendor="vendor"
+deviceinfo_flash_fastboot_partition_dtbo="dtbo"
+deviceinfo_flash_fastboot_partition_vbmeta="vbmeta"
+deviceinfo_flash_fastboot_partition_init_boot="init_boot"
+deviceinfo_flash_fastboot_partition_vendor_boot="vendor_boot"
+
+# Verified boot
+deviceinfo_avb_disable="fastboot --disable-verity --disable-verification flash vbmeta"
+deviceinfo_avb_enable="fastboot flash vbmeta vbmeta_signed.img"
+
+# Recovery
+deviceinfo_recovery_method="fastboot reboot recovery"
+deviceinfo_recovery_key_combo="Volume Up + Power during boot"
+
+# Nuxel-specific
+deviceinfo_nuxel_serial="58211FDCQ001LA"
+deviceinfo_nuxel_hw_version="MP1.0"
+deviceinfo_nuxel_sku="G45RY"
+deviceinfo_nuxel_secure_element="Titan M3"
+deviceinfo_nuxel_boot_chain="Boot ROM → Titan M3 → Google ABL → Nuxel-signed Linux → dm-verity system"

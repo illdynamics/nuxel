@@ -1,0 +1,73 @@
+# AppArmor profile for nuxel-bridge D-Bus service
+# Mediator between PWAs and system services
+# Has broad D-Bus access but restricted filesystem
+
+profile nuxel-bridge /usr/local/libexec/nuxel-bridge.py flags=(attach_disconnected) {
+    #include <abstractions/base>
+    #include <abstractions/python>
+    #include <abstractions/nameservice>
+    #include <abstractions/dbus>
+    
+    # Binary and Python libs
+    /usr/local/libexec/nuxel-bridge.py r,
+    /usr/lib/nuxel/bridge/*.py r,
+    /usr/local/libexec/** r,
+    /usr/lib/python3*/** r,
+    
+    # Config files
+    /etc/nuxel/bridge.conf r,
+    /var/lib/nuxel/permissions/** rw,
+    
+    # D-Bus system bus access
+    /run/dbus/system_bus_socket rw,
+    
+    # D-Bus: own and receive on our name
+    dbus bind bus=system name=org.nuxel.Bridge,
+    dbus receive bus=system,
+    
+    # D-Bus: send to ModemManager
+    dbus send bus=system path=/org/freedesktop/ModemManager1/*
+         interface=org.freedesktop.ModemManager1.*
+         member=*,
+    dbus send bus=system path=/org/freedesktop/ModemManager1
+         interface=org.freedesktop.DBus.Properties
+         member=*,
+    
+    # D-Bus: send to NetworkManager
+    dbus send bus=system path=/org/freedesktop/NetworkManager
+         interface=org.freedesktop.DBus.Properties
+         member=*,
+    
+    # D-Bus: send to GeoClue
+    dbus send bus=system path=/org/freedesktop/GeoClue2/*
+         interface=org.freedesktop.GeoClue2.*
+         member=*,
+    
+    # D-Bus: send to Notifications
+    dbus send bus=system path=/org/freedesktop/Notifications
+         interface=org.freedesktop.Notifications
+         member=*,
+    
+    # D-Bus: send to Portal
+    dbus send bus=system path=/org/nuxel/Portal
+         interface=org.nuxel.Portal
+         member=*,
+    
+    # Logging
+    /var/log/nuxel/** rw,
+    
+    # Unix sockets for app bridge
+    /run/nuxel/bridge/** rw,
+    /run/nuxel/ r,
+    
+    # Temp
+    /tmp/** rw,
+    
+    # Deny
+    deny /dev/** rwk,
+    deny /sys/** r,
+    deny /proc/*/mem rw,
+    deny ptrace,
+    deny network inet stream,
+    deny network inet dgram,
+}

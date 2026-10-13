@@ -1,0 +1,25 @@
+# 0001-nuxel-phone-features — port hint (read by build-kernel.sh WARN path)
+
+Status: STUB — not yet ported to linux-postmarketos-exynos9820.
+
+The original patch (in kernel/google-pixel-10-pro-xl/patches/) adds
+drivers/nuxel/ with CONFIG_NUXEL / CONFIG_NUXEL_PHONE / CONFIG_NUXEL_BOOT_PARAM
+and parses nuxel.boot=1 / nuxel.device= on the kernel command line.
+
+Why it is a stub here:
+- The two wiring hunks (drivers/Kconfig, drivers/Makefile) are context-dependent
+  and must be verified against the cloned exynos9820 tree.
+- The patch text hardcodes nuxel.device=mustang in help/description strings;
+  the port must accept s10plus as well.
+- The C driver itself is NOT 6.12-only (struct proc_ops since v5.6,
+  saved_command_line long-standing), so a clean port is likely but unproven.
+
+Check before porting (after `bash kernel/s10plus/build-kernel.sh --clone`):
+
+    git -C kernel/s10plus/.build/src apply --check \
+        kernel/s10plus/patches/0001-nuxel-phone-features.patch
+
+If it fails, re-base the two wiring hunks by hand, generalize mustang
+references to s10plus, then uncomment CONFIG_NUXEL* in
+kernel/s10plus/defconfig. Until then the stub stands and the defconfig keeps
+the Nuxel symbols commented with TODO.

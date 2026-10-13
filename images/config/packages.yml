@@ -1,0 +1,217 @@
+# Nuxel Package Configuration
+# Packages to include in the system image for Google Pixel 10 Pro XL (mustang)
+# Organized by category for the immutable rootfs builder
+
+core_system:
+  # Init and boot
+  - systemd
+  - systemd-sysupdate
+  - util-linux
+  - coreutils
+  - bash
+  - busybox
+
+  # Filesystem
+  - e2fsprogs
+  - f2fs-tools
+  - dosfstools
+  - squashfs-tools
+  - cryptsetup
+  - lvm2
+
+  # Hardware support
+  - udev
+  - kmod
+  - usbutils
+  - pciutils
+
+  # Networking core
+  - networkmanager
+  - iwd
+  - wpa_supplicant
+  - iptables-nft
+  - nftables
+  - iproute2
+  - dhcpcd
+
+  # Telephony
+  - modemmanager
+  - libqmi
+  - libmbim
+  - mobile-broadband-provider-info
+
+  # Audio
+  - pipewire
+  - wireplumber
+  - alsa-ucm-conf
+  - alsa-utils
+
+  # Bluetooth
+  - bluez
+  - bluez-obexd
+
+  # Location
+  - geoclue2
+
+  # Time
+  - chrony
+
+  # Logging
+  - systemd-journal-remote
+
+display_shell:
+  # Wayland
+  - wayland
+  - wayland-protocols
+  - mesa
+  - mesa-dri-gallium
+  - mesa-vulkan-drivers
+
+  # Phosh shell
+  - phosh
+  - phoc
+  - squeekboard
+  - feedbackd
+  - calls
+  - chatty
+  - phosh-settings
+  - gnome-contacts
+  - gnome-clocks
+  - gnome-weather
+
+  # GTK/libadwaita
+  - gtk4
+  - libadwaita
+  - glib-networking
+  - gsettings-desktop-schemas
+  - gnome-keyring
+
+  # Fonts
+  - cantarell-fonts
+  - noto-fonts-emoji
+  - adwaita-icon-theme
+
+portal_stack:
+  - xdg-desktop-portal
+  - xdg-desktop-portal-gtk
+  - xdg-desktop-portal-gnome
+
+security_hardening:
+  # Sandboxing
+  - bubblewrap
+  - flatpak
+  - apparmor
+  - apparmor-utils
+  - libseccomp
+
+  # Hardened allocator
+  - hardened_malloc
+
+  # Encryption
+  - openssl
+  - libsodium
+  - gnupg2
+
+  # Firewall
+  - nftables
+  - conntrack-tools
+
+nuxel_core:
+  # Bridge daemon
+  - nuxel-bridge
+  - nuxel-portal
+  - nuxel-notifications
+
+  # Native apps
+  - nuxel-dialer
+  - nuxel-messages
+  - nuxel-contacts
+  - nuxel-settings
+  - nuxel-permissions
+  - nuxel-firstboot
+
+  # Sandbox
+  - nuxel-sandbox
+  - nuxel-sandbox-profiles
+
+  # Uninstall helper
+  - nuxel-uninstall-helper
+
+pwa_runtime:
+  # Web engine
+  - webkitgtk-6.0
+  - webkitgtk-6.0-lang
+
+  # PWA launcher
+  - nuxel-pwa-launcher
+
+  # Pre-installed PWAs
+  - nuxel-home-pwa
+  - nuxel-mail-pwa
+  - nuxel-calendar-pwa
+  - nuxel-notes-pwa
+  - nuxel-files-pwa
+  - nuxel-camera-pwa
+
+  # PWA runtime Flatpak
+  - org.nuxel.PWARuntime
+
+device_specific:
+  # Kernel
+  - linux-mustang-6.12
+  - linux-mustang-modules
+  - linux-firmware
+
+  # Mustang-specific
+  - device-google-mustang
+  - mustang-firmware
+  - mustang-nonfree-firmware
+
+  # GPU firmware
+  - powervr-firmware
+  - powervr-drivers
+
+development:
+  # Debugging
+  - gdb
+  - strace
+  - ltrace
+  - tcpdump
+  - htop
+  - vim
+  - git
+  - curl
+  - wget
+
+  # Serial console
+  - minicom
+  - screen
+
+  # These are NOT included in production images
+  dev_only: true
+
+excluded:
+  # Explicitly NOT included
+  - android-tools           # Only needed on host, not device
+  - waydroid                # No Android compatibility layer
+  - anbox                   # No Android compatibility layer
+  - libhybris               # No Android HAL bridge
+  - halium                  # No Android HAL reuse
+  - xorg-server             # Wayland only
+  - xwayland                # No X11 compatibility
+  - plasma-mobile           # Phosh/GTK only (KDE may come later)
+  - plasma-desktop          # Phone only
+  - qt6-base                # GTK4/libadwaita only
+  - gnome-shell             # Phosh only for mobile
+  - gnome-desktop           # Phosh only for mobile
+  - gdm                     # Phosh handles login
+  - firefox                 # Use PWA runtime instead
+  - chromium                # Use WebKitGTK PWA runtime instead
+
+boot_animation:
+  # Plymouth animated boot screen
+  - plymouth
+  - plymouth-plugin-script
+  - plymouth-themes
+
+  # ffmpeg — build-time only for frame extraction (handled in mkrootfs.sh)

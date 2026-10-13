@@ -1,0 +1,6 @@
+ls: /sys/firmware//fdt: Permission denied
+total 0
+drwxr-xr-x 3 root root 0 1970-02-19 16:11 devicetree
+---
+total 0
+drwxr-xr-x 16 root root 0 1970-02-19 16:11 base

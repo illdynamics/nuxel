@@ -1,0 +1,11 @@
+[Desktop Entry]
+Name=Contacts
+Comment=Manage your contacts
+Exec=/usr/bin/nuxel-sandbox --cgroup nuxel-contacts /usr/bin/nuxel-contacts
+Icon=contacts
+Terminal=false
+Type=Application
+Categories=GTK;GNOME;Office;
+Keywords=contacts;addressbook;
+StartupNotify=true
+DBusActivatable=true

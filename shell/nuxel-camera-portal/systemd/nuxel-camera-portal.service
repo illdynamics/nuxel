@@ -1,0 +1,36 @@
+# Nuxel Camera Portal backend
+#
+# Minimal org.freedesktop.portal.Camera backend that publishes a PipeWire
+# camera node (synthetic color bars on the VM, real v4l2src on mustang).
+#
+# Install (VM / Fedora systemd):
+#   sudo install -m 0644 shell/nuxel-camera-portal/systemd/nuxel-camera-portal.service \
+#       /etc/systemd/system/nuxel-camera-portal.service
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now nuxel-camera-portal
+#
+# mustang / Alpine pmOS runs the OpenRC wrapper at boot; see docs.
+
+[Unit]
+Description=Nuxel Camera Portal (xdg-desktop-portal Camera backend)
+Documentation=file:///docs/camera-geolocation-design.md
+# Start after the graphics / pipewire session is available. We are session-scoped,
+# so keep it alongside the user bus where PipeWire and xdg-desktop-portal live.
+After=graphical-session.target
+Wants=graphical-session.target
+
+[Service]
+Type=simple
+# Unit is installed in the user manager (graphical-session.target), so it runs
+# in the current graphical session user's D-Bus namespace. No User= directive
+# here: in the user manager, User= would require the root template with "%I"
+# (which expands empty in a non-instantiated unit) or an explicit name. Relying
+# on the user manager avoids the empty/root User= trap.
+ExecStart=/usr/bin/python3 /opt/nuxel/camera-portal/nuxel_camera_portal.py --synthetic
+Restart=on-failure
+RestartSec=2
+# The portal should never escape its own slice.
+NoNewPrivileges=true
+
+[Install]
+WantedBy=graphical-session.target

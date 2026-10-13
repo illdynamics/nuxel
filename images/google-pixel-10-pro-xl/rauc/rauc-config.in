@@ -1,0 +1,69 @@
+# Nuxel RAUC bundle manifest TEMPLATE for mustang / postmarketOS
+#
+# This is a `rauc bundle` build descriptor template. `images/build-ota.sh`
+# expands the @@...@@ substitution markers with concrete artifact paths and
+# then invokes `rauc bundle` to produce an installable `.raucb` bundle.
+#
+# Usage (after expansion by images/build-ota.sh):
+#   rauc bundle \
+#       --cert keys/rauc-cert.pem \
+#       --key  keys/rauc-dev.key.pem \
+#       <expanded-directory>/rauc-config \
+#       build/out/nuxel-mustang-<ver>.raucb
+#
+# See docs/update-strategy.md section 1.
+
+[update]
+# MUST equal the [system] compatible on the device or RAUC refuses the bundle.
+compatible=nuxel-mustang
+
+# Human-readable description shown by `rauc info`.
+description=Nuxel mustang (Pixel 10 Pro XL) atomic update bundle
+
+# A version is carried in the bundle name; referencing it here aids auditing.
+version=@@VERSION@@
+
+[bundle]
+# `verity` format makes the rootfs payload dm-verity protected inside the
+# bundle itself, giving another layer of rootfs integrity checking beyond the
+# device's own dm-verity.
+format=verity
+
+#
+# Bundle payloads
+#
+# The root filesystem image (ext4/erofs). @@IMG_ROOTFS@@ is substituted by
+# images/build-ota.sh.
+[image.rootfs]
+# Required: the image is used as the contents of the rootfs slot.
+filename=@@IMG_ROOTFS@@
+sha256=@@IMG_ROOTFS_SHA256@@
+# Slot target: rootfs.0 or rootfs.1 (both are identical images).
+# RAUC installs to whichever slot is inactive.
+slot=rootfs.0:rootfs.1
+
+#
+# The boot image is optional but recommended so a single bundle updates both
+# the kernel/bootloader chain and the rootfs together atomically.
+[image.boot]
+filename=@@IMG_BOOT@@
+sha256=@@IMG_BOOT_SHA256@@
+slot=boot.0:boot.1
+
+# Additional optional images (firmware, wifi, modem blobs).
+# [image.firmware]
+# filename=@@IMG_FIRMWARE@@
+# sha256=@@IMG_FIRMWARE_SHA256@@
+# slot=firmware.0:firmware.1
+
+[hooks]
+filename=@@HOOKS_TAR@@
+sha256=@@HOOKS_SHA256@@
+install-first=
+install-commit=
+
+#
+# Legacy fallback for `rauc bundle` versions that require a global [keyring]
+# section; normally the on-device keyring is referenced by the system.conf.
+#[keyring]
+#path=/etc/rauc/keyring.pem

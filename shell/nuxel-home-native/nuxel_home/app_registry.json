@@ -1,0 +1,14 @@
+{
+  "version": "1.0.0",
+  "apps": [
+    {"id": "org.nuxel.Notes", "name": "Notes", "icon": "📝", "kind": "pwa", "url": "http://127.0.0.1:8000/pwa/nuxel-apps/notes/index.html", "native_binary": null, "color": "#607D8B", "category": "productivity", "capabilities": []},
+    {"id": "org.nuxel.Files", "name": "Files", "icon": "📁", "kind": "pwa", "url": "http://127.0.0.1:8000/pwa/nuxel-apps/files/index.html", "native_binary": null, "color": "#3F51B5", "category": "tools", "capabilities": []},
+    {"id": "org.nuxel.Calendar", "name": "Calendar", "icon": "📅", "kind": "pwa", "url": "http://127.0.0.1:8000/pwa/nuxel-apps/calendar/index.html", "native_binary": null, "color": "#E91E63", "category": "productivity", "capabilities": ["notifications:send"]},
+    {"id": "org.nuxel.Mail", "name": "Mail", "icon": "✉️", "kind": "pwa", "url": "http://127.0.0.1:8000/pwa/nuxel-apps/mail/index.html", "native_binary": null, "color": "#FF9800", "category": "productivity", "capabilities": ["notifications:send", "notifications:receive"]},
+    {"id": "org.nuxel.Camera", "name": "Camera", "icon": "📷", "kind": "pwa", "url": "http://127.0.0.1:8000/pwa/nuxel-apps/camera-gallery/index.html", "native_binary": null, "color": "#795548", "category": "media", "capabilities": ["camera:capture"]},
+    {"id": "org.nuxel.Settings", "name": "Settings", "icon": "⚙️", "kind": "native-placeholder", "url": "", "native_binary": "/usr/bin/nuxel-settings", "color": "#78909C", "category": "system", "capabilities": []},
+    {"id": "org.nuxel.Phone", "name": "Phone", "icon": "📞", "kind": "native-placeholder", "url": "", "native_binary": "/usr/bin/nuxel-dialer", "color": "#4CAF50", "category": "communication", "capabilities": ["call:initiate", "call:end"]},
+    {"id": "org.nuxel.Messages", "name": "Messages", "icon": "💬", "kind": "native-placeholder", "url": "", "native_binary": "/usr/bin/nuxel-messages", "color": "#2196F3", "category": "communication", "capabilities": ["sms:send", "sms:receive"]},
+    {"id": "org.nuxel.Contacts", "name": "Contacts", "icon": "👤", "kind": "native-placeholder", "url": "", "native_binary": "/usr/bin/nuxel-contacts", "color": "#9C27B0", "category": "communication", "capabilities": ["contacts:read", "contacts:write"]}
+  ]
+}

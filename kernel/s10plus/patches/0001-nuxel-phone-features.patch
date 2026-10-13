@@ -1,0 +1,24 @@
+# STUB — Nuxel phone features patch for linux-postmarketos-exynos9820
+#
+# TODO: port the Nuxel drivers/nuxel patch (see patches/README.md and
+# patches/0001-nuxel-phone-features.README for the full analysis).
+#
+# The original 0001-nuxel-phone-features.patch (the Pixel 10 Pro XL / Tensor
+# G5 6.12 GKI tree, see kernel/google-pixel-10-pro-xl/patches/) is NOT copied
+# here. Its C code is expected to compile on the exynos9820 tree (it uses
+# struct proc_ops and saved_command_line, neither of which is 6.12-only), but
+# its drivers/Kconfig and drivers/Makefile wiring hunks are context-dependent
+# and it hardcodes nuxel.device=mustang. Until the port is verified against
+# the cloned tree this file intentionally contains NO diff hunks, so
+# `git apply` reports "No valid patches" rather than a silent success.
+#
+# Port checklist (see patches/README.md):
+#   [ ] drivers/nuxel/Kconfig (NUXEL, NUXEL_PHONE, NUXEL_BOOT_PARAM)
+#   [ ] drivers/nuxel/Makefile (nuxel-core.o when CONFIG_NUXEL=y)
+#   [ ] drivers/nuxel/nuxel-core.c (nuxel.boot=1 / nuxel.device=s10plus)
+#   [ ] drivers/Kconfig: source "drivers/nuxel/Kconfig"
+#   [ ] drivers/Makefile: obj-$(CONFIG_NUXEL) += nuxel/
+#   [ ] git -C kernel/s10plus/.build/src apply --check \
+#       kernel/s10plus/patches/0001-nuxel-phone-features.patch  (must pass)
+#   [ ] kernel/s10plus/defconfig: uncomment CONFIG_NUXEL / CONFIG_NUXEL_PHONE /
+#       CONFIG_NUXEL_BOOT_PARAM once the port compiles

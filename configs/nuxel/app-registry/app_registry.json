@@ -1,0 +1,118 @@
+{
+  "schema_version": 1,
+  "generated": "2026-08-12T00:00:00Z",
+  "path": "/etc/nuxel/app-registry/app_registry.json",
+  "cgroup_rule": "socket cgroupv2 level 2 app-*",
+  "apps": [
+    {
+      "app_id": "nuxel-dialer",
+      "name": "Dialer",
+      "type": "native",
+      "executable": "/usr/bin/nuxel-dialer",
+      "cgroup_name": "app-nuxel-dialer",
+      "cgroup_classid": 16973825,
+      "network_class": "public",
+      "default_capabilities": ["phone", "sms", "contacts", "network", "audio"],
+      "capabilities": ["phone", "sms", "contacts", "network", "audio", "mic", "location"],
+      "data_dir": "/var/app/nuxel-dialer/data",
+      "allowed_ro_paths": ["/usr/share"],
+      "allowed_rw_paths": ["/var/app/nuxel-dialer/data"],
+      "dbus_access": ["org.freedesktop.ModemManager1", "org.nuxel.Bridge"],
+      "devices": ["/dev/snd/"]
+    },
+    {
+      "app_id": "nuxel-contacts",
+      "name": "Contacts",
+      "type": "native",
+      "executable": "/usr/bin/nuxel-contacts",
+      "cgroup_name": "app-nuxel-contacts",
+      "cgroup_classid": 16973827,
+      "network_class": "isolated",
+      "default_capabilities": ["contacts", "storage"],
+      "capabilities": ["contacts", "storage"],
+      "data_dir": "/var/app/nuxel-contacts/data",
+      "allowed_ro_paths": ["/usr"],
+      "allowed_rw_paths": ["/var/app/nuxel-contacts/data"],
+      "dbus_access": ["org.nuxel.Bridge", "org.gnome.evolution.dataserver.Sources"],
+      "devices": []
+    },
+    {
+      "app_id": "nuxel-messages",
+      "name": "Messages",
+      "type": "native",
+      "executable": "/usr/bin/nuxel-messages",
+      "cgroup_name": "app-nuxel-messages",
+      "cgroup_classid": 16973826,
+      "network_class": "public",
+      "default_capabilities": ["sms", "contacts", "network"],
+      "capabilities": ["sms", "contacts", "network", "notifications"],
+      "data_dir": "/var/app/nuxel-messages/data",
+      "allowed_ro_paths": ["/usr"],
+      "allowed_rw_paths": ["/var/app/nuxel-messages/data"],
+      "dbus_access": ["org.freedesktop.ModemManager1", "org.nuxel.Bridge"],
+      "devices": []
+    },
+    {
+      "app_id": "nuxel-settings",
+      "name": "Settings",
+      "type": "native",
+      "executable": "/usr/bin/nuxel-settings",
+      "cgroup_name": "app-nuxel-settings",
+      "cgroup_classid": 16973828,
+      "network_class": "public",
+      "default_capabilities": ["network", "storage"],
+      "capabilities": ["network", "storage", "bluetooth", "usb"],
+      "data_dir": "/var/app/nuxel-settings/data",
+      "allowed_ro_paths": ["/usr"],
+      "allowed_rw_paths": ["/var/app/nuxel-settings/data"],
+      "dbus_access": [
+        "org.freedesktop.NetworkManager",
+        "org.freedesktop.UPower",
+        "org.freedesktop.ModemManager1",
+        "org.gnome.SettingsDaemon"
+      ],
+      "devices": []
+    },
+    {
+      "app_id": "nuxel-permissions",
+      "name": "Permissions",
+      "type": "native",
+      "executable": "/usr/bin/nuxel-permissions",
+      "cgroup_name": "app-nuxel-permissions",
+      "cgroup_classid": 16973829,
+      "network_class": "isolated",
+      "default_capabilities": ["storage", "contacts"],
+      "capabilities": ["storage", "contacts"],
+      "data_dir": "/var/app/nuxel-permissions/data",
+      "allowed_ro_paths": ["/usr"],
+      "allowed_rw_paths": ["/var/app/nuxel-permissions/data", "/var/lib/nuxel/permissions"],
+      "dbus_access": ["org.nuxel.Bridge", "org.freedesktop.Accounts"],
+      "devices": []
+    },
+    {
+      "app_id": "org.nuxel.PWA",
+      "name": "PWA Template",
+      "type": "template",
+      "executable": "/usr/bin/nuxel-webapp",
+      "cgroup_name": "app-org-nuxel-pwa",
+      "cgroup_classid": 16974000,
+      "network_class": "isolated",
+      "default_capabilities": [],
+      "capabilities": [
+        "network", "storage", "camera", "mic", "location",
+        "notifications", "background", "bluetooth", "usb", "display"
+      ],
+      "data_dir": "/var/app/org.nuxel.PWA/data",
+      "allowed_ro_paths": ["/usr/share", "/etc/fonts", "/etc/gtk-4.0"],
+      "allowed_rw_paths": ["/var/app/org.nuxel.PWA/data"],
+      "dbus_access": ["org.nuxel.Bridge"],
+      "devices": [],
+      "network_policy": {
+        "allow_dns": true,
+        "allow_tcp_outbound": false,
+        "allow_udp_outbound": false,
+        "allow_inbound": false
+      }
+    }
+  ]
+}

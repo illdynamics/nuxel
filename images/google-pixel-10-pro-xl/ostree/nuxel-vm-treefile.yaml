@@ -1,0 +1,50 @@
+#==============================================================================
+# Nuxel Fedora ARM64 UTM VM OSTree treefile
+#
+# Consumed by images/build-ota.sh --target fedora
+#   (`rpm-ostree compose tree --repo=<repo> images/ostree/nuxel-vm-treefile.yaml`)
+#
+# Pins a full /usr snapshot for the Fedora 41 ARM64 UTM VM (quinn), including
+# the Nuxel native services. This file intentionally does NOT use any
+# `include:` files, so the compose pipeline has a single self-contained source
+# of truth (no external nuxel-vm-extra.yaml dependency).
+#
+# Userdata (home, /etc, caches) lives on a separate LV (nuxel-userdata) so the
+# OSTree deployment owns /usr read-only and updates never touch user data.
+#==============================================================================
+
+ref: nuxel/fedora/arm64/utm
+document: fedora.org/image/v1
+releasever: "41"
+rojig:
+  name: nuxel-vm
+  summary: Nuxel Fedora ARM64 UTM VM image
+  license: MIT
+repos:
+  - fedora
+  - updates
+
+# --- base kernel / system stack ---
+packages:
+  - kernel
+  - systemd
+  - NetworkManager
+  - phosh
+  - tinydm
+  - pipewire
+  - pipewire-pulse
+  - wireplumber
+  # Nuxel native services
+  - nuxel-bridge
+  - nuxel-portal
+  - nuxel-notifications
+
+# Keep the image lean — squash docs/headers.
+default-packages:
+  - fedora-release
+  - bash
+  - coreutils
+  - procps-ng
+  - util-linux
+
+# /usr is mounted read-only by OSTree; userdata is a separate LV.

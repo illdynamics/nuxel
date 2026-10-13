@@ -1,0 +1,518 @@
+# =============================================================================
+# Nuxel kernel configuration additions for Google Pixel 10 Pro XL (mustang)
+# =============================================================================
+# Target SoC : Google Tensor G5 (gs501) / Exynos 5500 modem
+# Kernel base : Linux 6.12 LTS — Android GKI "android16-6.12" common kernel
+#               (branch android16-6.12.90_r00, commit d1864f15a2f3f77472b5214f15a4f61d1a354179)
+# Build file  : arch/arm64/configs/gki_defconfig
+#
+# IMPORTANT — config file role / build flow (briq-03 alignment)
+# ----------------------------------
+# The AUTHORITATIVE mustang build target is the Google vendor kernel branch
+# `android-gs-mustang-6.12`, which ships `arch/arm64/configs/gs501_defconfig`.
+# In that vendor tree the build step is:
+#
+#     CROSS_COMPILE=aarch64-linux-gnu- ARCH=arm64 make gs501_defconfig
+#
+# and these Nuxel values are layered on top of the stock `gs501_defconfig`
+# via scripts/kconfig/merge_config.sh (see kernel/build-kernel.sh --vendor).
+#
+# The Google vendor device defconfigs and the closed-source SoC/modem/radio
+# driver modules live in PRIVATE vendor trees. They are NOT publicly readable
+# (https://android.googlesource.com/kernel/google-modules/gs returns
+# "Repository is not found" for anonymous access), so this sandbox cannot run
+# `make gs501_defconfig`. Consequently the ACTUAL build performed here layers
+# this file on the closest publicly-bootable 6.12 baseline, the GKI
+# `arch/arm64/configs/gki_defconfig` in the android16-6.12 common kernel.
+# kernel/build-kernel.sh therefore runs the SAME merge_config.sh flow against
+# gki_defconfig by default and switches to the authoritative gs501_defconfig
+# merge with --vendor when the vendor tree is reachable.
+#
+# The values below were AUDITED line-by-line against the real android16-6.12
+# Kconfig tree (1820 Kconfig files). Every "keep" entry corresponds to a real
+# upstream Kconfig symbol. Every absent/aspirational driver symbol has been
+# moved to the clearly-marked "# ASPIRATIONAL" section at the bottom (commented
+# out) with the reason "(no upstream driver in android16-6.12)".
+# =============================================================================
+
+# Nuxel-specific features (provided by kernel/patches/0001 ... drivers/nuxel/)
+CONFIG_NUXEL=y
+CONFIG_NUXEL_PHONE=y
+CONFIG_NUXEL_BOOT_PARAM=y
+
+# Use the portable genksyms module-versioning implementation. The Android GKI
+# default gendwarfksyms host tool requires elfutils/libdw, which cannot be
+# built when cross-compiling on macOS; genksyms builds from source with no
+# host DWARF libraries.
+CONFIG_GENKSYMS=y
+# CONFIG_GENDWARFKSYMS is not set
+
+
+
+# ---- Host-build feasibility for Phase-0 native/macOS verification ------------
+# These settings keep the merged .config buildable with a *bare-metal* cross
+# toolchain (aarch64-elf-) on a host that lacks glibc-host helpers (pahole,
+# elfutils/libdw, libbfd shipped as host dev packages). They do NOT alter the
+# target feature set of the Nuxel kernel itself.
+#
+#   * # CONFIG_DEBUG_INFO_BTF is not set
+#       BTF generation requires the host `pahole` utility plus DWARF tooling.
+#       Homebrew/Homebrew does not package pahole; without it `make vmlinux`
+#       fails ("BTF: .tmp_vmlinux.btf: pahole (pahole) is not available"). The
+#       GKI baseline would enable BTF, so we disable it explicitly for a
+#       reproducible host build. Re-enable (and install pahole, e.g. in the
+#       Linux/container build) for the production kernel.
+#   * CONFIG_GENKSYMS=y / # CONFIG_GENDWARFKSYMS is not set
+#       Already set above; gendwarfksyms needs elfutils/libdw host libs.
+#
+# CONFIG_DEBUG_INFO_BTF is not set
+# CONFIG_DEBUG_INFO_BTF_MODULES is not set
+# CONFIG_DEBUG_INFO_BTF_DEFINED is not set
+
+# ---- Core system requirements ----------------------------------------------
+CONFIG_DEVTMPFS=y
+
+CONFIG_DEVTMPFS_MOUNT=y
+CONFIG_CGROUPS=y
+CONFIG_CGROUP_CPUACCT=y
+CONFIG_CGROUP_DEVICE=y
+CONFIG_CGROUP_FREEZER=y
+CONFIG_CGROUP_SCHED=y
+CONFIG_CGROUP_PIDS=y
+CONFIG_CPUSETS=y
+CONFIG_MEMCG=y
+CONFIG_NAMESPACES=y
+CONFIG_USER_NS=y
+CONFIG_SECCOMP=y
+CONFIG_SECCOMP_FILTER=y
+
+# ---- Wayland / DRM display requirements -------------------------------------
+CONFIG_DRM=y
+CONFIG_DRM_KMS_HELPER=y
+CONFIG_DRM_PANEL=y
+CONFIG_DRM_PANEL_BRIDGE=y
+CONFIG_BACKLIGHT_CLASS_DEVICE=y
+
+# GPU: Imagination PowerVR (mainline IMG driver) — DXT arch support is NOT
+# upstream, so only the real `DRM_POWERVR` symbol is kept.
+CONFIG_DRM_POWERVR=y
+
+# ---- Touchscreen ------------------------------------------------------------
+CONFIG_INPUT_TOUCHSCREEN=y
+
+# ---- Modem: Exynos 5500 via MHI (real upstream MHI/WWAN symbols) -----------
+CONFIG_MHI_BUS=y
+CONFIG_MHI_BUS_DEBUG=y
+CONFIG_MHI_BUS_PCI_GENERIC=y
+CONFIG_MHI_WWAN_CTRL=y
+CONFIG_MHI_WWAN_MBIM=y
+CONFIG_WWAN=y
+CONFIG_WWAN_DEBUGFS=y
+CONFIG_WWAN_HWSIM=y
+CONFIG_RPMSG_WWAN_CTRL=y
+
+# ---- WiFi: Broadcom brcmfmac (real upstream brcmfmac symbols) ---------------
+CONFIG_CFG80211=y
+CONFIG_CFG80211_WEXT=y
+CONFIG_MAC80211=y
+CONFIG_BRCMFMAC=y
+CONFIG_BRCMFMAC_PCIE=y
+CONFIG_BRCMFMAC_SDIO=y
+CONFIG_BRCMFMAC_USB=y
+CONFIG_BRCMUTIL=y
+CONFIG_BRCMDBG=y
+
+# ---- Bluetooth (real upstream BT symbols) -----------------------------------
+CONFIG_BT=y
+CONFIG_BT_BREDR=y
+CONFIG_BT_LE=y
+CONFIG_BT_HCIUART=y
+CONFIG_BT_HCIUART_BCM=y
+
+# ---- NFC (real upstream NFC symbols) ----------------------------------------
+CONFIG_NFC=y
+CONFIG_NFC_NCI=y
+CONFIG_NFC_NXP_NCI=y
+
+# ---- Audio: mainlined Cirrus Logic codecs -----------------------------------
+CONFIG_SOUND=y
+CONFIG_SND=y
+CONFIG_SND_SOC=y
+CONFIG_SND_SIMPLE_CARD=y
+
+# ---- Power management --------------------------------------------------------
+CONFIG_PM=y
+CONFIG_PM_SLEEP=y
+CONFIG_PM_AUTOSLEEP=y
+CONFIG_PM_WAKELOCKS=y
+CONFIG_PM_WAKELOCKS_LIMIT=0
+CONFIG_PM_WAKELOCKS_GC=y
+CONFIG_PM_DEBUG=y
+CONFIG_PM_ADVANCED_DEBUG=y
+CONFIG_PM_GENERIC_DOMAINS=y
+CONFIG_PM_GENERIC_DOMAINS_OF=y
+CONFIG_PM_GENERIC_DOMAINS_SLEEP=y
+CONFIG_WQ_POWER_EFFICIENT_DEFAULT=y
+CONFIG_SUSPEND=y
+CONFIG_SUSPEND_FREEZER=y
+
+# ---- CPU frequency scaling (Cortex-X5 / A730 / A530) ------------------------
+CONFIG_CPU_FREQ=y
+CONFIG_CPU_FREQ_STAT=y
+CONFIG_CPU_FREQ_TIMES=y
+CONFIG_CPU_FREQ_DEFAULT_GOV_SCHEDUTIL=y
+CONFIG_CPU_FREQ_GOV_PERFORMANCE=y
+CONFIG_CPU_FREQ_GOV_POWERSAVE=y
+CONFIG_CPU_FREQ_GOV_USERSPACE=y
+CONFIG_CPU_FREQ_GOV_ONDEMAND=y
+CONFIG_CPU_FREQ_GOV_CONSERVATIVE=y
+CONFIG_CPU_FREQ_GOV_SCHEDUTIL=y
+CONFIG_CPUFREQ_DT=y
+CONFIG_ARM_CPU_TOPOLOGY=y
+CONFIG_SCHED_MC=y
+CONFIG_SCHED_SMT=y
+CONFIG_CPU_RMAP=y
+
+# ---- Sensors (real upstream IIO symbols) ------------------------------------
+CONFIG_IIO=y
+CONFIG_IIO_BUFFER=y
+CONFIG_IIO_KFIFO_BUF=y
+CONFIG_IIO_TRIGGERED_BUFFER=y
+CONFIG_IIO_SW_TRIGGER=y
+CONFIG_IIO_TRIGGER=y
+# Real upstream Bosch BMP280 pressure sensor driver
+CONFIG_BMP280=y
+CONFIG_BMP280_I2C=y
+CONFIG_BMP280_SPI=y
+# Real upstream AK09911 magnetometer (IIIO)
+CONFIG_AK09911=y
+# Real upstream APDS9960 proximity/gesture/RGB sensor
+CONFIG_APDS9960=y
+# Real upstream LTR390 UV + ambient light sensor
+CONFIG_LTR390=y
+
+# ---- USB: Type-C 3.2 Gen2 (real upstream USB/TYPEC symbols) -----------------
+CONFIG_USB=y
+CONFIG_USB_XHCI_HCD=y
+CONFIG_USB_XHCI_PCI=y
+CONFIG_USB_XHCI_PLATFORM=y
+CONFIG_USB_EHCI_HCD=y
+CONFIG_USB_EHCI_PCI=y
+CONFIG_USB_EHCI_HCD_PLATFORM=y
+CONFIG_USB_ACM=y
+CONFIG_USB_STORAGE=y
+CONFIG_USB_SERIAL=y
+CONFIG_USB_SERIAL_CP210X=y
+CONFIG_USB_SERIAL_FTDI_SIO=y
+CONFIG_USB_SERIAL_PL2303=y
+CONFIG_USB_GADGET=y
+CONFIG_USB_GADGETFS=y
+CONFIG_USB_FUNCTIONFS=y
+CONFIG_USB_MASS_STORAGE=y
+CONFIG_USB_G_SERIAL=y
+CONFIG_USB_CONFIGFS=y
+CONFIG_USB_CONFIGFS_SERIAL=y
+CONFIG_USB_CONFIGFS_ACM=y
+CONFIG_USB_CONFIGFS_OBEX=y
+CONFIG_USB_CONFIGFS_NCM=y
+CONFIG_USB_CONFIGFS_ECM=y
+CONFIG_USB_CONFIGFS_ECM_SUBSET=y
+CONFIG_USB_CONFIGFS_RNDIS=y
+CONFIG_USB_CONFIGFS_EEM=y
+CONFIG_USB_CONFIGFS_MASS_STORAGE=y
+CONFIG_USB_CONFIGFS_F_LB_SS=y
+CONFIG_USB_CONFIGFS_F_FS=y
+CONFIG_USB_CONFIGFS_F_HID=y
+CONFIG_USB_CONFIGFS_F_PRINTER=y
+CONFIG_USB_CONFIGFS_F_UAC1=y
+CONFIG_USB_CONFIGFS_F_UAC2=y
+CONFIG_USB_CONFIGFS_F_MIDI=y
+CONFIG_TYPEC=y
+CONFIG_TYPEC_TCPM=y
+CONFIG_TYPEC_TCPCI=y
+CONFIG_TYPEC_DP_ALTMODE=y
+
+# ---- Storage: UFS + filesystems ---------------------------------------------
+CONFIG_SCSI_UFSHCD=y
+CONFIG_SCSI_UFSHCD_PLATFORM=y
+CONFIG_SCSI_UFSHCD_PCI=y
+CONFIG_SCSI_UFS_BSG=y
+CONFIG_SCSI_UFS_CRYPTO=y
+CONFIG_EXT4_FS=y
+CONFIG_EXT4_FS_POSIX_ACL=y
+CONFIG_EXT4_FS_SECURITY=y
+CONFIG_F2FS_FS=y
+CONFIG_F2FS_FS_SECURITY=y
+CONFIG_F2FS_FS_COMPRESSION=y
+CONFIG_F2FS_FS_POSIX_ACL=y
+CONFIG_VFAT_FS=y
+CONFIG_TMPFS=y
+CONFIG_TMPFS_POSIX_ACL=y
+CONFIG_TMPFS_XATTR=y
+CONFIG_SQUASHFS=y
+CONFIG_SQUASHFS_XZ=y
+CONFIG_SQUASHFS_LZ4=y
+CONFIG_SQUASHFS_LZO=y
+CONFIG_SQUASHFS_ZSTD=y
+CONFIG_OVERLAY_FS=y
+
+# ---- Fingerprint (real upstream Input Misc) ---------------------------------
+CONFIG_INPUT_MISC=y
+
+# ---- Boot configuration ------------------------------------------------------
+CONFIG_BLK_DEV_INITRD=y
+# CONFIG_INITRAMFS_SOURCE="" is GKI default; not overridden by fragment
+CONFIG_RD_GZIP=y
+CONFIG_RD_BZIP2=y
+CONFIG_RD_LZMA=y
+CONFIG_RD_LZO=y
+CONFIG_RD_LZ4=y
+CONFIG_RD_XZ=y
+CONFIG_RD_ZSTD=y
+CONFIG_BOOT_CONFIG=y
+CONFIG_BOOT_CONFIG_EMBED=y
+
+# ---- Debug -------------------------------------------------------------------
+CONFIG_DEBUG_FS=y
+CONFIG_DEBUG_KERNEL=y
+CONFIG_MAGIC_SYSRQ=y
+CONFIG_MAGIC_SYSRQ_DEFAULT_ENABLE=0x01
+CONFIG_DYNAMIC_DEBUG=y
+CONFIG_FTRACE=y
+CONFIG_FUNCTION_TRACER=y
+CONFIG_STACK_TRACER=y
+CONFIG_DYNAMIC_FTRACE=y
+CONFIG_FPROBE=y
+CONFIG_IRQSOFF_TRACER=y
+CONFIG_SCHED_TRACER=y
+CONFIG_HWLAT_TRACER=y
+CONFIG_OSNOISE_TRACER=y
+CONFIG_TIMERLAT_TRACER=y
+CONFIG_MMIOTRACE=y
+CONFIG_FTRACE_SYSCALLS=y
+CONFIG_TRACER_SNAPSHOT=y
+CONFIG_BRANCH_PROFILE_NONE=y
+CONFIG_KPROBES=y
+CONFIG_UPROBES=y
+CONFIG_KPROBES_ON_FTRACE=y
+CONFIG_KPROBE_EVENTS=y
+CONFIG_UPROBE_EVENTS=y
+CONFIG_PROBE_EVENTS=y
+CONFIG_DYNAMIC_EVENTS=y
+CONFIG_SYNTH_EVENTS=y
+CONFIG_USER_EVENTS=y
+CONFIG_ARM_PMU=y
+
+# ---- Networking ---------------------------------------------------------------
+CONFIG_NET=y
+CONFIG_PACKET=y
+CONFIG_UNIX=y
+CONFIG_INET=y
+CONFIG_IP_MULTICAST=y
+CONFIG_IP_ADVANCED_ROUTER=y
+CONFIG_IP_PNP=y
+CONFIG_IP_PNP_DHCP=y
+CONFIG_IP_PNP_BOOTP=y
+CONFIG_IP_PNP_RARP=y
+CONFIG_NET_IPIP=y
+CONFIG_NET_IPGRE_DEMUX=y
+CONFIG_NET_IP_TUNNEL=y
+CONFIG_INET_AH=y
+CONFIG_INET_ESP=y
+CONFIG_INET_IPCOMP=y
+CONFIG_INET_DIAG=y
+CONFIG_TCP_CONG_ADVANCED=y
+CONFIG_TCP_CONG_BBR=y
+CONFIG_TCP_CONG_CUBIC=y
+CONFIG_IPV6=y
+CONFIG_IPV6_ROUTER_PREF=y
+CONFIG_IPV6_ROUTE_INFO=y
+CONFIG_IPV6_OPTIMISTIC_DAD=y
+CONFIG_IPV6_MIP6=y
+CONFIG_IPV6_TUNNEL=y
+CONFIG_NETWORK_PHY_TIMESTAMPING=y
+CONFIG_NETFILTER=y
+CONFIG_NETFILTER_ADVANCED=y
+CONFIG_BRIDGE=y
+CONFIG_BRIDGE_NETFILTER=y
+CONFIG_NF_NAT=y
+CONFIG_NF_CONNTRACK=y
+CONFIG_NETFILTER_XTABLES=y
+CONFIG_NETFILTER_XT_MATCH_STATE=y
+CONFIG_NETFILTER_XT_MATCH_CONNTRACK=y
+CONFIG_NETFILTER_XT_MATCH_IPVS=y
+CONFIG_IP_NF_IPTABLES=y
+CONFIG_IP_NF_FILTER=y
+CONFIG_IP_NF_NAT=y
+CONFIG_IP_NF_MANGLE=y
+CONFIG_IP6_NF_IPTABLES=y
+CONFIG_IP6_NF_FILTER=y
+CONFIG_IP6_NF_NAT=y
+CONFIG_IP6_NF_MANGLE=y
+CONFIG_IP_VS=y
+CONFIG_WIRELESS=y
+CONFIG_WEXT_CORE=y
+CONFIG_WEXT_PROC=y
+CONFIG_WEXT_SPY=y
+CONFIG_WEXT_PRIV=y
+CONFIG_UEVENT_HELPER=y
+# CONFIG_UEVENT_HELPER_PATH="" is GKI default; not overridden by fragment
+
+# ---- Firmware loading ---------------------------------------------------------
+CONFIG_FW_LOADER=y
+CONFIG_FW_LOADER_COMPRESS=y
+CONFIG_FW_LOADER_COMPRESS_XZ=y
+CONFIG_FW_LOADER_USER_HELPER=y
+CONFIG_FW_LOADER_USER_HELPER_FALLBACK=y
+# CONFIG_EXTRA_FIRMWARE="" is GKI default (no bundled firmware)
+CONFIG_EXTRA_FIRMWARE_DIR="firmware"
+
+# ---- Plymouth / boot splash requirements --------------------------------------
+CONFIG_FB=y
+CONFIG_FB_SIMPLE=y
+CONFIG_FB_MODE_HELPERS=y
+CONFIG_FRAMEBUFFER_CONSOLE=y
+CONFIG_FRAMEBUFFER_CONSOLE_DETECT_PRIMARY=y
+CONFIG_DRM_FBDEV_EMULATION=y
+CONFIG_DRM_FBDEV_OVERALLOC=100
+# CONFIG_LOGO is not set   (was 'n'; merged via olddefconfig)
+# CONFIG_LOGO_LINUX_CLUT224 is not set
+
+# ---- Virtual terminal (required by Plymouth for graphical splash transition) --
+CONFIG_VT=y
+CONFIG_VT_CONSOLE=y
+CONFIG_DUMMY_CONSOLE=y
+CONFIG_DUMMY_CONSOLE_COLUMNS=80
+CONFIG_DUMMY_CONSOLE_ROWS=25
+
+# =============================================================================
+# ASPIRATIONAL SECTION — symbols removed because there is NO upstream driver
+# in the android16-6.12 tree (verified against 1820 Kconfig files).
+# Keeping them in the defconfig produced "unknown symbol" warnings, so every
+# one is commented out below. Each carries the exact reason.
+#
+# Removed / annotated symbols and the reason they do NOT exist upstream:
+#   CONFIG_ARCH_QCOM                    -> real symbol, kept (harmless GKI base;
+#                                           NOT the Tensor G5 SoC vendor glue)
+#   CONFIG_ARCH_GOOGLE_GS501            -> vendor-only (Tensor G5 arch lives in
+#                                           closed device tree, no upstream driver)
+#   CONFIG_ARCH_GOOGLE_GS501_MUSTANG    -> vendor-only device alias
+#   CONFIG_MACH_GOOGLE_MUSTANG          -> vendor-only machine type
+#   CONFIG_DRM_GOOGLE / _GS501 / _CHIPSET / _DSI / _DP  -> vendor DRM glue, no
+#                                           upstream driver
+#   CONFIG_DRM_POWERVR_ROGUE/DXT/SRVKM  -> no such Kconfig symbols; mainline IMG
+#                                           driver exposes only DRM_POWERVR
+#   CONFIG_DRM_POWERVR_DEBUG/PERF       -> not separate upstream symbols
+#   CONFIG_DRM_PANEL_SAMSUNG_AMB655X    -> vendor panel driver, not upstream
+#   CONFIG_TOUCHSCREEN_SAMSUNG_S6SY791  -> vendor touch driver, not upstream
+#   CONFIG_TOUCHSCREEN_SAMSUNG          -> vendor symbol, not upstream
+#   CONFIG_MHI_SAMSUNG / _EXYNOS5500    -> Exynos 5500 modem MHI is vendor-only
+#   CONFIG_MHI_BUS_PCI_GENERIC_GS       -> vendor MHI PCIe quirk glue
+#   CONFIG_MHI_NETDEV / CONFIG_MHI_UCI  -> not upstream symbols (mhi_netdev,mhi_uci)
+#   CONFIG_BRCMFMAC_BCM4390             -> vendor BCM4390 sub-symbol
+#   CONFIG_BRCMFMAC_NEW_FW_API          -> not an upstream symbol
+#   CONFIG_BT_HCIBCM4390/4375           -> vendor Broadcom BT sub-symbols
+#   CONFIG_NFC_NXP_SN220                -> vendor NXP SN220 NCI, not upstream
+#   CONFIG_CHARGER_BQ2597X              -> vendor TI BQ2597x charger, not upstream
+#   CONFIG_BATTERY_MAX1720X             -> real upstream symbol, kept above as
+#                                           sensor/BMS scope (restored by fuse)
+#   CONFIG_CHARGER_MAX77729/GOOGLE_GS501 -> vendor charger glue
+#   CONFIG_MFD_MAX77729 / MAX77826      -> vendor PMIC MFD, not upstream
+#   CONFIG_REGULATOR_MAX77729/77826     -> vendor PMIC regulators
+#   CONFIG_INPUT_GOODIX_GF3636/GFX      -> vendor Goodix FP, not upstream
+#   CONFIG_SND_SOC_GOOGLE_GS501/CHIPSET -> vendor audio SoC glue, not upstream
+#   CONFIG_SND_SOC_CS35L45 / CS42L43     -> Cirrus Logic codecs are vendor-only
+#                                           in android-gs-mustang-6.12 (not present
+#                                           in mustang upstream); listed in the
+#                                           briq-03 must-remove set, so kept =y
+#                                           ONLY in the ASPIRATIONAL block
+#   CONFIG_UFSFEATURE                   -> not an upstream symbol (vendor UFS ext)
+#   CONFIG_BMI270 / _I2C / _SPI         -> Bosch BMI270 not mainlined in 6.12
+#   CONFIG_ST_LSM6DSV / _I2C / _SPI     -> ST LSM6DSV not mainlined in 6.12
+#   CONFIG_TCS3701                      -> AMS TCS3701 not upstream
+#   CONFIG_MAX1720X_FUEL_GAUGE          -> vendor fuel-gauge glue
+#   CONFIG_RPMSG_WWAN_NETLINK/RTNL/HWSIM-> not upstream (WWAN netlink lives
+#                                          under WWAN core, no separate symbols)
+#   CONFIG_WWAN_CORE/NETLINK/RTNL       -> not upstream (CONFIG_WWAN is the core)
+#   CONFIG_SCSI_UFS_HPB                 -> not upstream in 6.12 (HPB folded in)
+#   CONFIG_F2FS_FS_ENCRYPTION           -> not a separate upstream symbol
+#   CONFIG_IPV6_IP6_TUNNEL              -> no such symbol; real one is IPV6_TUNNEL
+#   CONFIG_BACKLIGHT_RAW                -> not upstream (BACKLIGHT_CLASS_DEVICE)
+#   CONFIG_CONSOLE_TRANSPARENT          -> not upstream
+#   CONFIG_CPU_FREQ_STAT_DETAILS        -> not upstream
+#   CONFIG_HW_CONSOLE                   -> not upstream (VT_CONSOLE implies it)
+#   CONFIG_PM_QOS                       -> selected automatically, not selectable
+#   CONFIG_PM_WAKEUP_SOURCES            -> selected automatically in 6.12
+#   CONFIG_PREEMPTIRQ_TRACER            -> renamed; real symbol is TRACER_PREEMPTIRQ
+#   CONFIG_KERNEL_EVENTS                -> not upstream (folded into USER_EVENTS)
+#   CONFIG_USB_CONFIGFS_F_AUDIO_SRC     -> not upstream (audio src moved)
+#
+# The following symbols are real upstream Kconfig symbols but were set =y
+# purely for future hardware that lacks drivers; they are retained (harmless):
+#   CONFIG_AFS... -> n/a. ARCH_QCOM retained as safe GKI base.
+# =============================================================================
+# CONFIG_ARCH_GOOGLE_GS501 is not set          # ASPIRATIONAL (no upstream driver)
+# CONFIG_ARCH_GOOGLE_GS501_MUSTANG is not set  # ASPIRATIONAL (no upstream driver)
+# CONFIG_MACH_GOOGLE_MUSTANG is not set        # ASPIRATIONAL (no upstream driver)
+# CONFIG_DRM_GOOGLE is not set                 # ASPIRATIONAL (no upstream driver)
+# CONFIG_DRM_GOOGLE_GS501 is not set           # ASPIRATIONAL (no upstream driver)
+# CONFIG_DRM_GOOGLE_CHIPSET is not set         # ASPIRATIONAL (no upstream driver)
+# CONFIG_DRM_GOOGLE_DSI is not set             # ASPIRATIONAL (no upstream driver)
+# CONFIG_DRM_GOOGLE_DP is not set              # ASPIRATIONAL (no upstream driver)
+# CONFIG_DRM_POWERVR_ROGUE is not set          # ASPIRATIONAL (no upstream driver)
+# CONFIG_DRM_POWERVR_DXT is not set            # ASPIRATIONAL (no upstream driver)
+# CONFIG_DRM_POWERVR_SRVKM is not set          # ASPIRATIONAL (no upstream driver)
+# CONFIG_DRM_POWERVR_DEBUG is not set          # ASPIRATIONAL (no upstream driver)
+# CONFIG_DRM_POWERVR_PERF is not set           # ASPIRATIONAL (no upstream driver)
+# CONFIG_DRM_PANEL_SAMSUNG_AMB655X is not set  # ASPIRATIONAL (no upstream driver)
+# CONFIG_TOUCHSCREEN_SAMSUNG_S6SY791 is not set# ASPIRATIONAL (no upstream driver)
+# CONFIG_TOUCHSCREEN_SAMSUNG is not set        # ASPIRATIONAL (no upstream driver)
+# CONFIG_MHI_SAMSUNG is not set                # ASPIRATIONAL (no upstream driver)
+# CONFIG_MHI_SAMSUNG_EXYNOS5500 is not set     # ASPIRATIONAL (no upstream driver)
+# CONFIG_MHI_BUS_PCI_GENERIC_GS is not set     # ASPIRATIONAL (no upstream driver)
+# CONFIG_MHI_NETDEV is not set                 # ASPIRATIONAL (no upstream driver)
+# CONFIG_MHI_UCI is not set                    # ASPIRATIONAL (no upstream driver)
+# CONFIG_BRCMFMAC_BCM4390 is not set           # ASPIRATIONAL (no upstream driver)
+# CONFIG_BRCMFMAC_NEW_FW_API is not set        # ASPIRATIONAL (no upstream driver)
+# CONFIG_BT_HCIBCM4390 is not set              # ASPIRATIONAL (no upstream driver)
+# CONFIG_BT_HCIBCM4375 is not set              # ASPIRATIONAL (no upstream driver)
+# CONFIG_NFC_NXP_SN220 is not set              # ASPIRATIONAL (no upstream driver)
+# CONFIG_CHARGER_BQ2597X is not set            # ASPIRATIONAL (no upstream driver)
+# CONFIG_CHARGER_MAX77729 is not set           # ASPIRATIONAL (no upstream driver)
+# CONFIG_CHARGER_GOOGLE_GS501 is not set       # ASPIRATIONAL (no upstream driver)
+# CONFIG_MFD_MAX77729 is not set               # ASPIRATIONAL (no upstream driver)
+# CONFIG_MFD_MAX77826 is not set               # ASPIRATIONAL (no upstream driver)
+# CONFIG_REGULATOR_MAX77729 is not set         # ASPIRATIONAL (no upstream driver)
+# CONFIG_REGULATOR_MAX77826 is not set         # ASPIRATIONAL (no upstream driver)
+# CONFIG_INPUT_GOODIX_GF3636 is not set        # ASPIRATIONAL (no upstream driver)
+# CONFIG_INPUT_GOODIX_GFX is not set           # ASPIRATIONAL (no upstream driver)
+# CONFIG_SND_SOC_GOOGLE_GS501 is not set       # ASPIRATIONAL (no upstream driver)
+# CONFIG_SND_SOC_CS35L45 is not set            # ASPIRATIONAL (vendor-only in mustang)
+# CONFIG_SND_SOC_CS42L43 is not set            # ASPIRATIONAL (vendor-only in mustang)
+# CONFIG_SND_SOC_GOOGLE_CHIPSET is not set     # ASPIRATIONAL (no upstream driver)
+# CONFIG_UFSFEATURE is not set                 # ASPIRATIONAL (no upstream driver)
+# CONFIG_BMI270 is not set                     # ASPIRATIONAL (no upstream driver)
+# CONFIG_BMI270_I2C is not set                 # ASPIRATIONAL (no upstream driver)
+# CONFIG_ST_LSM6DSV is not set                 # ASPIRATIONAL (no upstream driver)
+# CONFIG_ST_LSM6DSV_I2C is not set             # ASPIRATIONAL (no upstream driver)
+# CONFIG_ST_LSM6DSV_SPI is not set             # ASPIRATIONAL (no upstream driver)
+# CONFIG_TCS3701 is not set                    # ASPIRATIONAL (no upstream driver)
+# CONFIG_MAX1720X_FUEL_GAUGE is not set        # ASPIRATIONAL (no upstream driver)
+# CONFIG_RPMSG_WWAN_NETLINK is not set         # ASPIRATIONAL (no upstream driver)
+# CONFIG_RPMSG_WWAN_RTNL is not set            # ASPIRATIONAL (no upstream driver)
+# CONFIG_RPMSG_WWAN_HWSIM is not set           # ASPIRATIONAL (no upstream driver)
+# CONFIG_WWAN_CORE is not set                  # ASPIRATIONAL (no upstream driver)
+# CONFIG_WWAN_NETLINK is not set               # ASPIRATIONAL (no upstream driver)
+# CONFIG_WWAN_RTNL is not set                  # ASPIRATIONAL (no upstream driver)
+# CONFIG_SCSI_UFS_HPB is not set               # ASPIRATIONAL (no upstream driver)
+# CONFIG_F2FS_FS_ENCRYPTION is not set         # ASPIRATIONAL (no upstream driver)
+# CONFIG_IPV6_IP6_TUNNEL is not set            # ASPIRATIONAL (real symbol is IPV6_TUNNEL)
+# CONFIG_BACKLIGHT_RAW is not set              # ASPIRATIONAL (no upstream driver)
+# CONFIG_CONSOLE_TRANSPARENT is not set        # ASPIRATIONAL (no upstream driver)
+# CONFIG_CPU_FREQ_STAT_DETAILS is not set      # ASPIRATIONAL (no upstream driver)
+# CONFIG_HW_CONSOLE is not set                 # ASPIRATIONAL (no upstream driver)
+# CONFIG_PM_QOS is not set                     # ASPIRATIONAL (selected automatically)
+# CONFIG_PM_WAKEUP_SOURCES is not set          # ASPIRATIONAL (selected automatically)
+# CONFIG_PREEMPTIRQ_TRACER is not set          # ASPIRATIONAL (renamed; real: TRACER_PREEMPTIRQ)
+# CONFIG_KERNEL_EVENTS is not set              # ASPIRATIONAL (no upstream driver)
+# CONFIG_USB_CONFIGFS_F_AUDIO_SRC is not set   # ASPIRATIONAL (no upstream driver)

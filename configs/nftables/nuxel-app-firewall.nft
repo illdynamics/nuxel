@@ -1,0 +1,178 @@
+#!/usr/sbin/nft -f
+# Nuxel App Firewall — Per-app network isolation via nftables + cgroupv2
+#
+# Ruleset for per-app network control on Nuxel (mustang)
+# Target: Linux 6.12 LTS with cgroupv2 + nftables
+#
+# Architecture:
+#   - Default: drop all traffic from app cgroups
+#   - Allow: only if app has `network` capability granted
+#   - DNS: Allow DNS (port 53) for all for name resolution
+#   - VPN: Route through VPN interface if enabled
+#   - Per-app rules: socket cgroupv2 level 2 "app-*" accept
+
+flush ruleset
+
+table inet nuxel_app_firewall {
+    # Input chain: restrict incoming traffic
+    chain input {
+        type filter hook input priority -100; policy drop;
+        
+        # Allow established connections (responses to outbound)
+        ct state established,related accept
+        
+        # Allow loopback
+        iif lo accept
+        
+        # Allow ICMP (ping, path MTU discovery)
+        icmp type {
+            echo-request,
+            echo-reply,
+            destination-unreachable,
+            time-exceeded,
+            parameter-problem
+        } limit rate 10/second accept
+        
+        icmpv6 type {
+            echo-request,
+            echo-reply,
+            destination-unreachable,
+            time-exceeded,
+            parameter-problem,
+            neighbor-solicit,
+            neighbor-advertise,
+            router-solicit,
+            router-advertise
+        } accept
+        
+        # Drop everything else
+        log prefix "NUXXEL-INPUT-DROP: " limit rate 10/minute
+    }
+    
+    # Forward chain: no routing between interfaces by default
+    chain forward {
+        type filter hook forward priority -100; policy drop;
+        
+        # Allow forwarding through VPN interface
+        iif tun0 accept
+        oif tun0 accept
+        
+        log prefix "NUXXEL-FWD-DROP: " limit rate 10/minute
+    }
+    
+    # Output chain: per-app network control via cgroupv2
+    #
+    # Posture (briq-se1): this chain defaults to DROP for ALL outbound sockets
+    # at the earliest filter priority (-100). That is the security posture —
+    # an app (or rogue process) gets network ONLY if it matches an explicit
+    # ACCEPT rule. The per-app socket ACCEPT rules are injected at runtime by
+    # nuxel-sandbox / nftables.sh using the deterministic app-id -> cgroup
+    # mapping ("socket cgroupv2 level 2 'app-<id>'") that MUST equal the
+    # registry cgroup_name for the same app_id (see
+    # configs/nuxel/app-registry/* and tools/app-registry-check.sh).
+    #
+    # CONSEQUENCE: any system service that must talk out (ModemManager data,
+    # NetworkManager, packagekit, portals) needs an explicit ACCEPT rule here
+    # or in a lower-priority allow table, because this chain is evaluated
+    # before the nuxel_system table (priority -90) below. The current ruleset
+    # deliberately favors least-privilege: only DHCP client, DNS, ICMP and
+    # established/related traffic are accepted broadly.
+    chain output {
+        type filter hook output priority -100; policy drop;
+        
+        # Allow established connections
+        ct state established,related accept
+        
+        # Allow loopback
+        oif lo accept
+        
+        # Allow DHCP client
+        udp sport 68 udp dport 67 accept
+        
+        # Allow DNS (always for name resolution)
+        udp dport 53 accept
+        tcp dport 53 accept
+        
+        # Allow ICMP
+        icmp type { echo-request, echo-reply, destination-unreachable,
+                     time-exceeded, parameter-problem } accept
+        icmpv6 type { echo-request, echo-reply, destination-unreachable,
+                       time-exceeded, parameter-problem,
+                       neighbor-solicit, neighbor-advertise } accept
+        
+        # Per-app allow rules — cgroupv2 socket matching (briq-14)
+        # Added dynamically by nftables.sh / sandbox.c using a deterministic
+        # app-id mapping: app-id is lowercased, restricted to [a-z0-9-] and
+        # prefixed "app-" so it always matches the "app-*" pattern here.
+        #   socket cgroupv2 level 2 "app-org-nuxel-mail" accept
+        #   (must equal app-registry cgroup_name for app_id org.nuxel.Mail)
+        # Verify with: nft list ruleset
+        
+        # If VPN is active, only allow through VPN interface
+        # (kill switch — added/removed dynamically)
+        # oif != "tun0" drop
+        
+        # Log dropped traffic
+        log prefix "NUXXEL-OUTPUT-DROP: " limit rate 10/minute
+    }
+    
+    # NAT chains
+    chain prerouting {
+        type nat hook prerouting priority -100; policy accept;
+    }
+    
+    chain postrouting {
+        type nat hook postrouting priority 100; policy accept;
+        
+        # MASQUERADE for VPN traffic
+        oif tun0 masquerade
+    }
+    
+    # Dynamic rule set for per-app management.
+    # On cgroupv2 the launcher inserts ACCEPT rules directly into the output
+    # chain using "socket cgroupv2 level 2 "app-..."" matches, so this chain
+    # is intentionally empty; it exists as the enum/debug anchor.
+    chain app_allowed {
+        # (rules injected into the output chain at runtime)
+    }
+    
+    chain app_denied {
+        # Placeholder: no rules needed (default drop policy)
+    }
+}
+
+# Also set up IPv4/IPv6 raw tables for additional hardening
+table inet nuxel_raw {
+    chain prerouting {
+        type filter hook prerouting priority -300; policy accept;
+        
+        # Drop invalid packets
+        ct state invalid drop
+        
+        # Drop spoofed packets
+        iif lo ip daddr != 127.0.0.0/8 drop
+        iif lo ip6 daddr != ::1/128 drop
+    }
+}
+
+# Rules for the system (non-app) traffic
+table inet nuxel_system {
+    chain output {
+        type filter hook output priority -90; policy accept;
+        
+        # System services always have network access
+        # (ModemManager, NetworkManager, etc.)
+        
+        # Logging here is optional — no restrictions
+    }
+}
+
+# Logging configuration
+table inet nuxel_log {
+    chain input {
+        type filter hook input priority -50; policy accept;
+        
+        # Rate-limited logging for debugging
+        log prefix "NUXXEL-FW: " limit rate 5/minute
+    }
+}

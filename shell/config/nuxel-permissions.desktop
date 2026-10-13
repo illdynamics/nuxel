@@ -1,0 +1,11 @@
+[Desktop Entry]
+Name=Permissions
+Comment=Manage app permissions
+Exec=/usr/bin/nuxel-sandbox --cgroup nuxel-permissions /usr/bin/nuxel-permissions
+Icon=permissions
+Terminal=false
+Type=Application
+Categories=GTK;GNOME;Settings;Security;
+Keywords=permissions;privacy;security;
+StartupNotify=true
+DBusActivatable=true

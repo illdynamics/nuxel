@@ -1,0 +1,37 @@
+# AppArmor profile for the Nuxel home launcher (native GTK4 app)
+# Confines the Phosh home/launcher to its own data + Wayland.
+
+profile nuxel-home /usr/bin/nuxel-home flags=(attach_disconnected) {
+    #include <abstractions/base>
+    #include <abstractions/gtk4>
+    #include <abstractions/dbus>
+    #include <abstractions/nameservice>
+
+    /usr/bin/nuxel-home r,
+    /usr/lib/nuxel/nuxel-home-native/** r,
+    /usr/lib/** r,
+    /usr/share/** r,
+    /etc/fonts/** r,
+    /etc/gtk-4.0/** r,
+
+    # App data + PWA registry
+    /var/app/nuxel-home/data/** rw,
+    /var/lib/nuxel/apps/** rw,
+    /run/nuxel/** rw,
+
+    # Wayland + PipeWire
+    /run/user/*/wayland-* rw,
+    /run/user/*/pipewire-* rw,
+    /run/user/*/bus rw,
+
+    # D-Bus: system bus + session + bridge
+    /run/dbus/system_bus_socket rw,
+    dbus send bus=system path=/org/nuxel/Bridge
+         interface=org.nuxel.Bridge
+         member=*,
+
+    deny /dev/** rwk,
+    deny /sys/** r,
+    deny /proc/*/mem rw,
+    deny ptrace,
+}

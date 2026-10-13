@@ -1,0 +1,43 @@
+# Nuxel DNS privacy — stubby DoT/DoH for the mustang / OpenRC image (briq-se1)
+# Installed to /etc/stubby/stubby.yml on Alpine/pure-OpenRC mustang builds.
+#
+# On the mustang build NetworkManager is configured with dns=none and stubby
+# owns /etc/resolv.conf (127.0.0.1:53). Stubby forwards every query encrypted
+# (DoT) to the pinned upstream. This is the OpenRC counterpart to the
+# systemd-resolved drop-in used on the Fedora ARM64 VM.
+
+resolution_type: GETDNS_RESOLUTION_STUB
+
+dns_transport_list:
+  - GETDNS_TRANSPORT_TLS
+  - GETDNS_TRANSPORT_HTTPS
+
+tls_authentication: GETDNS_AUTHENTICATION_REQUIRED
+
+tls_query_padding_blocksize: 128
+
+edns_client_subnet_private: 1
+
+round_robin_upstreams: 1
+
+idle_timeout: 10000
+
+listen_addresses:
+  - 127.0.0.1
+  - 0::1
+
+dnssec: GETDNS_EXTENSION_TRUE
+
+appdata_dir: "/var/lib/stubby"
+
+upstream_recursive_servers:
+  # IPv4 Cloudflare DoT.
+  - address_data: 1.1.1.1
+    tls_auth_name: "1dot1dot1dot1.cloudflare-dns.com"
+  - address_data: 1.0.0.1
+    tls_auth_name: "1dot1dot1dot1.cloudflare-dns.com"
+  # IPv6 Cloudflare DoT.
+  - address_data: 2606:4700:4700::1111
+    tls_auth_name: "1dot1dot1dot1.cloudflare-dns.com"
+  - address_data: 2606:4700:4700::1001
+    tls_auth_name: "1dot1dot1dot1.cloudflare-dns.com"
