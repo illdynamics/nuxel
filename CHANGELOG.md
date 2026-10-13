@@ -54,6 +54,18 @@ succeed in CI. No other behaviour changes; the readiness picture is unchanged.
   the supported ones: GCC 13 drops `-Wno-error=return-mismatch`; GCC 15 keeps it.
   Verified against GCC 13.4 (probe fails before, passes after) and GCC 15.2.
 
+- **S10+ kernel build, third issue: the tree's global `-Werror`.** With the
+  probe flag fixed the kernel finally compiled (`CC arch/arm64/...`), then died
+  on a real warning promoted to an error:
+  `arch/arm64/mm/fault.c: ... error: format '%lx' expects argument of type
+  'long unsigned int', but argument 5 has type 'phys_addr_t' ... [-Werror=format=]`.
+  The downstream Makefile compiles with a global `-Werror` (`Makefile:428`), so
+  any `-Wall` warning is fatal. `DEFAULT_KCFLAGS` now ends with a bare
+  `-Wno-error`; because `$(KCFLAGS)` is appended **last** to `KBUILD_CFLAGS`
+  (`Makefile:963`), it downgrades the tree's `-Werror` (and its earlier
+  `-Werror=<...>` set) back to warnings - while the specific
+  `-Wno-error=<diag>` relaxations still cover GCC 14+ default-errors.
+
 ### Changed
 
 - **Repository-wide version bump v0.2.0 → v0.2.1-alpha** in: `VERSION`,

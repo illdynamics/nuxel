@@ -62,7 +62,12 @@ CROSS_COMPILE="${CROSS_COMPILE:-aarch64-linux-gnu-}"
 # unknown flag also breaks every `cc-option` probe - including
 # prepare-compiler-check, which then reports the misleading
 # "Cannot use CONFIG_CC_STACKPROTECTOR_STRONG: ... not supported by compiler".
-DEFAULT_KCFLAGS="-fcommon -Wno-error=incompatible-pointer-types -Wno-error=implicit-function-declaration -Wno-error=int-conversion -Wno-error=implicit-int -Wno-error=return-mismatch -Wno-error=discarded-qualifiers -Wno-error=pointer-sign"
+# The bare trailing `-Wno-error` is also required: the downstream tree compiles
+# with a global `-Werror` (Makefile:428), so ordinary warnings such as
+# -Wformat= become hard errors (e.g. arch/arm64/mm/fault.c using %lx with a
+# phys_addr_t). KCFLAGS is appended last to KBUILD_CFLAGS (Makefile:963), so the
+# trailing -Wno-error downgrades those back to warnings.
+DEFAULT_KCFLAGS="-fcommon -Wno-error=incompatible-pointer-types -Wno-error=implicit-function-declaration -Wno-error=int-conversion -Wno-error=implicit-int -Wno-error=return-mismatch -Wno-error=discarded-qualifiers -Wno-error=pointer-sign -Wno-error"
 
 DO_CLONE=0
 DO_CLEAN=0

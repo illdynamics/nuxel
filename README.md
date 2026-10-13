@@ -152,8 +152,8 @@ NUXEL_DEVICE=mustang bash boot/flash.sh --unlock --wipe
 A small pre-release on top of **v0.2.0**; full detail in
 **[CHANGELOG.md](CHANGELOG.md)**.
 
-- **S10+ kernel build fixed.** Two toolchain bugs killed
-  `kernel/s10plus/build-kernel.sh` before it compiled anything: (1) the
+- **S10+ kernel build fixed.** Three toolchain/tooling issues killed
+  `kernel/s10plus/build-kernel.sh` before it produced an `Image.gz`: (1) the
   downstream Samsung Exynos 9820 Makefile hardcodes its internal Android
   toolchain as the default `CROSS_COMPILE` (`.../aarch64-linux-android-`), which
   is not shipped, so `make` reported
@@ -165,8 +165,12 @@ A small pre-release on top of **v0.2.0**; full detail in
   tree appends `$(KCFLAGS)` to `KBUILD_CFLAGS`, so the unknown flag made every
   `cc-option` probe fail and produced the misleading
   `Cannot use CONFIG_CC_STACKPROTECTOR_STRONG: -fstack-protector-strong not
-  supported by compiler`. The wrapper now probes each relaxation against the
-  selected compiler and drops unsupported ones.
+  supported by compiler` — the wrapper now probes each relaxation against the
+  selected compiler and drops unsupported ones; and (3) the downstream Makefile
+  compiles with a global `-Werror`, so ordinary warnings (e.g. `-Wformat=` on
+  `phys_addr_t` in `arch/arm64/mm/fault.c`) aborted the build — the wrapper now
+  appends a bare `-Wno-error` (last, via `KCFLAGS`) to downgrade the tree's
+  `-Werror` back to warnings.
 - **Version bump to v0.2.1-alpha** across `VERSION`, README, docs/design headers, the
   shell apps, the PWA manifest, the device `APKBUILD`s, the VM tooling and the
   OTA builder.
