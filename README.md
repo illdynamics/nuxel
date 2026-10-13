@@ -179,13 +179,15 @@ release. Full detail, per area, is in **[CHANGELOG.md](CHANGELOG.md)**.
   shell apps (meson + metainfo), the PWA manifest, the device `APKBUILD`s, the
   VM tooling and the OTA builder.
 
-**Readiness at a glance:** still a scaffold — **0% verified flashable**, ~30–35%
-MVP, ~40–45% patchable VM demo. The honest per-area breakdown is the table
-below; the "what's left" list is in the changelog.
+**Readiness at a glance:** a documented scaffold with a **bootable UTM VM
+demo** and **built — though not yet hardware-proven — flash images for two of
+three phones**. **0 of 3 phones have booted a Nuxel-built image.** The honest
+per-area breakdown is the table below; the "what's left" list is in the
+changelog.
 
 ## Honest Status — v0.2.0
 
-**Nuxel is a design scaffold and code prototype with three device bring-ups in progress. It is not a flashable phone OS yet.**
+**Nuxel is a design scaffold with three device bring-ups in progress and a bootable UTM VM proving out the architecture. No phone has yet booted a Nuxel-built image.**
 
 | Area | Score | Notes |
 |---|---|---|
@@ -197,13 +199,13 @@ below; the "what's left" list is in the changelog.
 | D-Bus bridge/portal | 30% | Python parses, dev-grade auth, not integration-tested |
 | Sandbox/security | 20% | Configs exist, enforcement not wired end-to-end |
 | Build system | 20% | Per-device dispatchers + inventory gates; still unproven on hardware |
-| Flashable images | 0% | No verified boot artifact set produced |
-| Pixel 10 Pro XL (mustang) | 5% | Public mustang Linux is UART/initramfs-level only |
-| Galaxy S10+ (beyond2lte) | 10% | Bring-up: device package, gates, docs — no boot yet |
-| Moto G7 Power (ocean) | 15% | Bring-up: touchscreen-driver fix, stock evidence, lk2nd/QCDT tooling |
-| UTM VM | 25% | Scripts/docs exist, no VM image artifact produced |
+| Flashable images | 40% | Real, checksummed boot artifacts built for **g7power** (lk2nd + boot + ext4 rootfs) and **s10plus** (boot + merged boot, flashed via heimdall); **0 of 3 verified booting** |
+| Pixel 10 Pro XL (mustang) | 5% | Public mustang Linux is UART/initramfs-level only; no boot artifact built yet |
+| Galaxy S10+ (beyond2lte) | 30% | Downstream 4.14 boot image **built and pushed to the device** with heimdall (BOOT 100%); boot not yet confirmed |
+| Moto G7 Power (ocean) | 35% | Boot + ext4 rootfs images **built** (touch-driver fix), lk2nd/QCDT tooling; not yet flashed/proven on hardware |
+| UTM VM | 65% | A genuine **Nuxel UTM bundle exists and boots** — Fedora 43 + Phosh at 720×1440 (live screenshots), Nuxel services + PWA on the desktop, guest SSH + **internet verified working**; bundle is a local artifact (`artifacts/vm/`, gitignored, not committed) and audio passthrough is not yet enabled |
 
-**Overall: ~30–35% MVP scaffold. 0% verified flashable OS. ~40–45% patchable VM demo.**
+**Overall: ~35–40% MVP scaffold. 2 of 3 phones have built (unflashed/unproven) boot images; 0 of 3 verified booting. The UTM VM demo boots and works (display + network).**
 
 ### What this repo IS:
 - A well-documented architecture blueprint for a Linux phone OS
@@ -213,14 +215,23 @@ below; the "what's left" list is in the changelog.
 - Flatpak manifests + a PWA launcher (`pwa/flatpak/`, `pwa/launcher/`)
 - Complete security configuration files (AppArmor, nftables, hardened_malloc)
 - Build/flash/sign/recovery scripts as architectural planning material
-- UTM VM testing scripts for early architecture validation
+- UTM VM testing scripts, plus a **booted UTM VM** (local artifact) running Phosh + the Nuxel service stack at phone resolution
+
+### What this repo HAS now (verified this cycle):
+- A **bootable UTM VM** — Fedora 43 + Phosh at 720×1440, Nuxel services + PWA
+  live on the desktop, guest SSH reachable and **internet working** (bundle is a
+  local, gitignored artifact under `artifacts/vm/`)
+- **Built, checksummed boot images for two of three phones** — `g7power`
+  (`nuxel-ocean-boot.img`, `nuxel-ocean-rootfs.img`, `lk2nd.img`, sha256-verified
+  against the build manifest) and `s10plus` (`nuxel-beyond2lte-boot.img`,
+  `nuxel-beyond2lte-boot-merged.img`, pushed to the device with heimdall)
 
 ### What this repo IS NOT YET:
-- A bootable OS image
-- A flashable Pixel ROM
-- A working phone
+- A phone that boots Nuxel on real hardware (no target has booted a Nuxel-built
+  image)
+- A flashable Pixel ROM (`mustang` has no boot artifact yet)
+- A daily-driver phone
 - A built Flatpak PWA runtime
-- Integration-tested
 - Hardware-validated
 
 ### Measured code footprint (accuracy note)
@@ -296,9 +307,9 @@ Nuxel supports multiple hardware targets. Select via `NUXEL_DEVICE` or `--device
 
 | Key | Device | Codename | Status |
 |---|---|---|---|
-| `mustang` | Google Pixel 10 Pro XL | mustang | Scaffold (0% flashable) |
-| `s10plus` | Samsung Galaxy S10+ (Exynos) | beyond2lte | Bring-up in progress |
-| `g7power` | Motorola Moto G7 Power (ocean) | ocean | Bring-up in progress |
+| `mustang` | Google Pixel 10 Pro XL | mustang | Scaffold — no boot artifact yet |
+| `s10plus` | Samsung Galaxy S10+ (Exynos) | beyond2lte | Boot image built + flashed (heimdall); boot unconfirmed |
+| `g7power` | Motorola Moto G7 Power (ocean) | ocean | Boot + rootfs images built; not yet flashed |
 
 Every device-specific **build** artifact lives under a per-device directory
 keyed by `NUXEL_DEVICE`: `google-pixel-10-pro-xl/` (mustang), `s10plus/`,
@@ -313,11 +324,14 @@ quickstart, go-guide and — for the G7 Power — the on-device stock-evidence
 capture) lives under [`phones/`](phones/): `phones/pixel10proxl/`,
 `phones/s10plus/` and `phones/g7power/`.
 
-None of the three targets is flashable/verified yet. The S10+ (Exynos 9820, no
-fastboot; TWRP + Download Mode/heimdall only) is a bring-up in progress gated
-on the Phase 0 device inventory, and the G7 Power (SDM632/msm8953, fastboot +
-lk2nd + EDL) is a bring-up in progress gated on the same Phase 0 inventory.
-The mustang path remains a scaffold (0% flashable).
+Two of the three targets now have real, checksummed boot artifacts, but **none
+has been verified to boot Nuxel on hardware**. The S10+ (Exynos 9820, no
+fastboot; TWRP + Download Mode/heimdall only) has a downstream-kernel boot image
+that has been pushed to the device with heimdall; the G7 Power (SDM632/msm8953,
+fastboot + lk2nd + EDL) has a boot image, a writable ext4 rootfs and an lk2nd
+chainloader built but not yet flashed. Neither bring-up has completed the Phase 0
+device-inventory gate for a full flash. The mustang path remains a scaffold with
+no boot artifact.
 
 See `docs/s10plus-bringup.md` for the S10+ bring-up guide,
 `docs/g7power-bringup.md` for the G7 Power bring-up guide, and the per-device
