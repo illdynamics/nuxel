@@ -2,7 +2,7 @@
 
 **Device:** Motorola Moto G7 Power **XT1955** (Qualcomm Snapdragon 632 / SDM632,
 msm8953 family, codename **`ocean`**)
-**Nuxel:** `v0.3.0-alpha` · **Guide written:** 2026-10-13
+**Nuxel:** `v0.3.1-alpha` · **Guide written:** 2026-10-13
 **Authoritative repo docs:** this file is the "do it now" checklist. Background:
 `phones/g7power/g7power-go-guide.md`, `phones/g7power/moto-g7-power-quickstart.md`,
 `docs/g7power-bringup.md`, `docs/g7power-device-inventory.md`.
@@ -45,11 +45,11 @@ bash boot/g7power/flash.sh --device g7power \
 
 ## 1. What you are flashing (artifact inventory)
 
-`v0.3.0-alpha` is built **by the GitHub release workflow** (Actions → “Release”,
-tag `v0.3.0-alpha`). The G7 Power release archive is:
+`v0.3.1-alpha` is built **by the GitHub release workflow** (Actions → “Release”,
+tag `v0.3.1-alpha`). The G7 Power release archive is:
 
 ```
-nuxel-v0.3.0-alpha-g7power.tar.gz
+nuxel-v0.3.1-alpha-g7power.tar.gz
 ```
 
 Extract it and you get `g7power/`:
@@ -64,6 +64,15 @@ Extract it and you get `g7power/`:
 
 > **Not in the archive:** `dtbo.img`. You flash **your own backed-up stock
 > `dtbo`** in phase 1 (see §5, §6.1). There is no Nuxel DTBO for this device.
+
+> **No `userdata.img`.** In Phase 1 the rootfs image *is* the userdata payload:
+> `nuxel-ocean-rootfs.img` is flashed to the **shared `userdata`** partition
+> (see §6.2). No separate `userdata.img` is produced or needed.
+>
+> **`lk2nd` is specific to this phone.** It is required here because the stock
+> Motorola ABOOT cannot load a mainline DTB/cmdline; that is **not** a
+> general Nuxel bootloader. The Galaxy S10+ (`s10plus`) does **not** use `lk2nd`
+> at all — do not mix the two devices' bootloaders.
 
 Boot image facts (Android boot header v1, page size 2048):
 
@@ -181,7 +190,7 @@ cd /x/nuxel
 # 1) Verify the downloaded archive against the release's SHA256SUMS.txt asset:
 sha256sum -c SHA256SUMS.txt          # macOS: shasum -a 256 -c SHA256SUMS.txt
 # 2) Unpack and verify each image against the archive's own per-file checksums:
-tar -xzf nuxel-v0.3.0-alpha-g7power.tar.gz
+tar -xzf nuxel-v0.3.1-alpha-g7power.tar.gz
 cd g7power
 sha256sum -c sha256sums.txt          # macOS: shasum -a 256 -c sha256sums.txt
 python3 ../tools/read-boot-header-v1.py nuxel-ocean-boot.img
@@ -428,9 +437,9 @@ clean Ubuntu runner, for `g7power`:
 4. the boot + rootfs images (`images/g7power/build.sh`),
 
 then **verifies** them (`tools/verify-artifacts.sh`) and only then packages
-`nuxel-v0.3.0-alpha-g7power.tar.gz`. A missing or invalid artifact makes the run **red**
+`nuxel-v0.3.1-alpha-g7power.tar.gz`. A missing or invalid artifact makes the run **red**
 and no release is published.
 
 ---
 
-*Build the bunker first. Add the rave lights later. — Nuxel v0.3.0-alpha*
+*Build the bunker first. Add the rave lights later. — Nuxel v0.3.1-alpha*

@@ -1,4 +1,4 @@
-<!-- Nuxel v0.3.0-alpha -->
+<!-- Nuxel v0.3.1-alpha -->
 # Nuxel PWA Application Model — Hardened Runtime
 
 > **Each PWA runs in its own isolated WebKitGTK instance. No shared state. No ambient access.**

@@ -78,10 +78,18 @@ EOF
 # --help exits before any gate work (device selection + inventory gate).
 # --no-uboot is parsed here too; it only skips the U-Boot boot image.
 NO_UBOOT=0
+# U-Boot (chiffathefox/u-boot, exynos9820) is ONLY needed for the mainline
+# kernel stretch. The proven Phase-1 downstream/heimdall path flashes
+# nuxel-beyond2lte-boot.img straight to BOOT and does NOT involve U-Boot, so
+# by default the downstream set (boot.img + rootfs.img) is the complete
+# artifact set. Set NUXEL_S10PLUS_UBOOT=1 (or pass --require-uboot) to make
+# u-boot-beyond2lte.img a hard requirement (mainline builds / release gating).
+UBOOT_REQUIRED="${NUXEL_S10PLUS_UBOOT:-0}"
 for arg in "$@"; do
     case "$arg" in
         --help|-h) usage; exit 0 ;;
         --no-uboot) NO_UBOOT=1 ;;
+        --require-uboot) UBOOT_REQUIRED=1 ;;
     esac
 done
 
@@ -256,13 +264,17 @@ python3 "${PACKER}" \
     "${PACK_ADDR_ARGS[@]}" \
     --output "${BOOT_OUT}/nuxel-beyond2lte-boot.img"
 
-# u-boot-beyond2lte.img is a promised artifact, so u-boot.bin is a required
-# input for a real build: abort (pointing at the U-Boot chainload builder)
-# unless the operator explicitly opts out with --no-uboot.
+# u-boot-beyond2lte.img is a mainline-only artifact. It is packed whenever a
+# u-boot.bin is available, and it is a HARD requirement only when the caller
+# asks for the mainline set (NUXEL_S10PLUS_UBOOT=1 / --require-uboot). The
+# supported Phase-1 downstream path never flashes it.
 UBOOT_BIN="${UBOOT_BUILD_DIR}/u-boot.bin"
 if [ "${NO_UBOOT}" -eq 1 ]; then
-    warn "--no-uboot: skipping u-boot-beyond2lte.img — output will be INCOMPLETE."
-    warn "Build U-Boot with: NUXEL_DEVICE=s10plus bash boot/s10plus/uboot-chainload.sh"
+    if [ "${UBOOT_REQUIRED}" -eq 1 ]; then
+        err "--no-uboot conflicts with a required U-Boot set (NUXEL_S10PLUS_UBOOT=1)."
+        exit 1
+    fi
+    log "--no-uboot: skipping u-boot-beyond2lte.img (mainline-only artifact)."
 elif [ -f "${UBOOT_BIN}" ]; then
     log "Packing U-Boot boot image (u-boot.bin as v1 kernel slot)..."
     python3 "${PACKER}" \
@@ -271,12 +283,15 @@ elif [ -f "${UBOOT_BIN}" ]; then
         --cmdline "" \
         "${PACK_ADDR_ARGS[@]}" \
         --output "${BOOT_OUT}/u-boot-beyond2lte.img"
+elif [ "${UBOOT_REQUIRED}" -eq 1 ]; then
+    err "U-Boot binary not found: ${UBOOT_BIN}"
+    err "NUXEL_S10PLUS_UBOOT=1 requires u-boot-beyond2lte.img. Build it with:"
+    err "  NUXEL_DEVICE=s10plus bash boot/s10plus/uboot-chainload.sh"
+    exit 1
 else
-    warn "U-Boot binary not found: ${UBOOT_BIN}"
-    warn "Skipping u-boot-beyond2lte.img (the proven downstream/heimdall flash"
-    warn "path does NOT need U-Boot; it flashes nuxel-beyond2lte-boot.img to BOOT"
-    warn "and the rootfs to SYSTEM). Build U-Boot only for the mainline stretch"
-    warn "path: NUXEL_DEVICE=s10plus bash boot/s10plus/uboot-chainload.sh"
+    log "u-boot-beyond2lte.img not built (mainline-only artifact; not required"
+    log "  for the supported downstream/heimdall path). Enable with"
+    log "  NUXEL_S10PLUS_UBOOT=1 after running boot/s10plus/uboot-chainload.sh."
 fi
 
 # --- 3. Userspace rootfs via the device-agnostic builder --------------------
@@ -377,7 +392,10 @@ _bake_rootfs_image() {
 
     size_m="$(du -sm "${ROOTFS_STAGING}" | awk '{print $1}')"
     img_m=$(( size_m + size_m / 4 + 64 ))
-    [ "${img_m}" -lt 512 ] && img_m=512
+    # Small floor only: the old 512 MB floor combined with a resize2fs -M that
+    # cannot always minimise (many small files) shipped an unshrunk 512 MB
+    # image. Size from real content instead.
+    [ "${img_m}" -lt 64 ] && img_m=64
     log "Baking ext4 rootfs image (${img_m} MB) from staging ${ROOTFS_STAGING} ..."
     rm -f "${rootfs_img}"
     if command -v fakeroot >/dev/null 2>&1; then
@@ -436,8 +454,11 @@ cat "${BOOT_OUT}/sha256sums.txt" | sed 's/^/  /'
 
 log "Done. Artifacts under ${BOOT_OUT}:"
 ls -lh "${BOOT_OUT}" | sed 's/^/  /'
+if [ "${UBOOT_REQUIRED}" -eq 1 ] && [ ! -f "${BOOT_OUT}/u-boot-beyond2lte.img" ]; then
+    err "MISSING REQUIRED ARTIFACT: u-boot-beyond2lte.img (mainline set)."
+    err "Build U-Boot with: NUXEL_DEVICE=s10plus bash boot/s10plus/uboot-chainload.sh"
+    exit 1
+fi
 if [ ! -f "${BOOT_OUT}/u-boot-beyond2lte.img" ]; then
-    warn "MISSING ARTIFACT: u-boot-beyond2lte.img — the output above is INCOMPLETE."
-    warn "Build U-Boot with: NUXEL_DEVICE=s10plus bash boot/s10plus/uboot-chainload.sh"
-    warn "Then re-run this build (without --no-uboot) for the full artifact set."
+    log "Note: u-boot-beyond2lte.img absent (mainline-only; downstream set complete)."
 fi

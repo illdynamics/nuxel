@@ -3,7 +3,7 @@
 
 ![Nuxel](./nuxel.jpg)
 
-**v0.3.0-alpha** — _Build the bunker first. Add the rave lights later._
+**v0.3.1-alpha** — _Build the bunker first. Add the rave lights later._
 
 A hardened, GrapheneOS-spirited **Linux phone operating system** built from
 scratch on a pure Linux substrate. **Zero Android dependencies.** Immutable OS.
@@ -147,6 +147,27 @@ NUXEL_DEVICE=mustang bash boot/flash.sh --unlock --wipe
 | `ci/` | Build validation |
 | `assets/` | Wallpaper + boot animation |
 
+## What's new in v0.3.1-alpha
+
+A correctness release: the bring-up rootfs now actually contains a userspace, and
+the artifact gate can no longer pass a near-empty image off as "complete". Full
+detail in **[CHANGELOG.md](CHANGELOG.md)**.
+
+- **`images/mkrootfs.sh` actually runs now.** Its userspace steps were defined
+  but never called, so every "rootfs" was only the per-device config overlay
+  (the S10+ archive shipped a 44 KB, 10-file image). The builder now populates
+  the core services, security configs, assets and init files.
+- **`tools/verify-artifacts.sh` is fail-closed on content, not just magic.** It
+  parses the Android boot header (kernel/ramdisk/dtb must be non-empty) and reads
+  the ext4 rootfs with `debugfs` to require the device payload and
+  `/usr/bin/nuxel-bridge`. The v0.3.0-alpha S10+ image would now fail the gate.
+- **No more 512 MB rootfs.** Rootfs images are sized from real content
+  (64 MB floor) instead of the old 512 MB floor.
+- **S10+ no longer reports a phantom `INCOMPLETE`** for the mainline-only U-Boot
+  artifact; the downstream set (`boot.img` + `rootfs.img`) is complete as
+  documented, and `NUXEL_S10PLUS_UBOOT=1` makes U-Boot required for mainline.
+- **Version bump to v0.3.1-alpha.**
+
 ## What's new in v0.3.0-alpha
 
 A release-pipeline release: the GitHub **Release** workflow is now **fail-closed
@@ -275,7 +296,7 @@ image.** The honest
 per-area breakdown is the table below; the "what's left" list is in the
 changelog.
 
-## Honest Status — v0.3.0-alpha
+## Honest Status — v0.3.1-alpha
 
 **Nuxel is a design scaffold with three device bring-ups in progress and a bootable UTM VM proving out the architecture. No phone has yet booted a Nuxel-built image.**
 
@@ -493,7 +514,7 @@ The other two bring-up targets are the **Samsung Galaxy S10+** (Exynos 9820,
 
 | Document | Description |
 |---|---|
-| [CHANGELOG.md](CHANGELOG.md) | Release notes — everything from v0.1.0 to v0.3.0-alpha + readiness |
+| [CHANGELOG.md](CHANGELOG.md) | Release notes — everything from v0.1.0 to v0.3.1-alpha + readiness |
 | [prompts/QUICKSTART.md](prompts/QUICKSTART.md) | Get running in 5 minutes |
 | [design/nuxel-linux-phone-design.md](design/nuxel-linux-phone-design.md) | Design bible — the full vision |
 | [design/Nuxel Phone OS Project Plan and Architecture.md](design/Nuxel%20Phone%20OS%20Project%20Plan%20and%20Architecture.md) | Technical architecture + component map |
@@ -526,8 +547,8 @@ The other two bring-up targets are the **Samsung Galaxy S10+** (Exynos 9820,
 Build outputs (`build/out/<device>/`) are git-ignored — they are produced by the
 scripts in `images/` and `kernel/`, not committed. To publish them on GitHub:
 
-* **Automated (recommended):** push a version tag (`git tag v0.3.0-alpha && git push
-  origin v0.3.0-alpha`). [`.github/workflows/release.yml`](.github/workflows/release.yml)
+* **Automated (recommended):** push a version tag (`git tag v0.3.1-alpha && git push
+  origin v0.3.1-alpha`). [`.github/workflows/release.yml`](.github/workflows/release.yml)
   builds every device on an Ubuntu runner (`make assets`, the shared initramfs,
   each `kernel/<dev>/build-kernel.sh`, then `images/<dev>/build.sh`), packages
   each `build/out/<device>/` directory and creates a GitHub Release with the

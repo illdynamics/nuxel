@@ -305,7 +305,10 @@ _bake_rootfs_image() {
 
     size_m="$(du -sm "${ROOTFS_STAGING}" | awk '{print $1}')"
     img_m=$(( size_m + size_m / 4 + 64 ))
-    [ "${img_m}" -lt 512 ] && img_m=512
+    # Small floor only: the old 512 MB floor combined with a resize2fs -M that
+    # cannot always minimise (many small files, e.g. kernel modules) shipped an
+    # unshrunk 512 MB image. Size the filesystem from real content instead.
+    [ "${img_m}" -lt 64 ] && img_m=64
     log "Baking ext4 rootfs image (${img_m} MB) from staging ${ROOTFS_STAGING} ..."
     rm -f "${rootfs_img}"
     if command -v fakeroot >/dev/null 2>&1; then

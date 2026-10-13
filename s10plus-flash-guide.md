@@ -1,7 +1,7 @@
 # Nuxel — Samsung Galaxy S10+ manual flash guide
 
 **Device:** Samsung Galaxy S10+ **SM-G975F** (Exynos 9820, codename `beyond2lte`)
-**Nuxel:** `v0.3.0-alpha` · **Guide written:** 2026-10-13
+**Nuxel:** `v0.3.1-alpha` · **Guide written:** 2026-10-13
 **Authoritative repo docs:** this file is the "do it now" checklist. Background:
 `phones/s10plus/s10plus-go-guide.md`, `docs/s10plus-bringup.md`,
 `docs/s10plus-device-inventory.md`.
@@ -35,11 +35,11 @@ heimdall flash --BOOT build/out/s10plus/nuxel-beyond2lte-boot.img
 
 ## 1. What you are flashing (artifact inventory)
 
-`v0.3.0-alpha` is built **by the GitHub release workflow** (Actions → “Release”,
-tag `v0.3.0-alpha`). The S10+ archive is:
+`v0.3.1-alpha` is built **by the GitHub release workflow** (Actions → “Release”,
+tag `v0.3.1-alpha`). The S10+ archive is:
 
 ```
-nuxel-v0.3.0-alpha-s10plus.tar.gz
+nuxel-v0.3.1-alpha-s10plus.tar.gz
 ```
 
 Extract it to get `s10plus/`:
@@ -73,6 +73,22 @@ release.
 
 The S10+ is **A-only** (no A/B slots). The UFS partition path is
 `/dev/block/platform/13d60000.ufs/by-name`.
+
+### No `lk2nd`, no `u-boot.img`, no `userdata.img` — by design
+
+- **`lk2nd` is G7 Power-only.** It is an `msm8953` second-stage bootloader; the
+  S10+ is **Exynos 9820** and never uses it. Do **not** flash
+  `boot/g7power/lk2nd/lk2nd.img` (or any `lk2nd` build) to an S10+. Its chain is
+  stock **S-Boot** → `nuxel-beyond2lte-boot.img`.
+- **U-Boot (`u-boot-beyond2lte.img`) is mainline-stretch only** and is **not**
+  part of this archive. The supported Phase-1 chain boots the downstream Samsung
+  kernel straight from `nuxel-beyond2lte-boot.img`. (A mainline build can opt in
+  with `NUXEL_S10PLUS_UBOOT=1`, which then makes the U-Boot image a required
+  artifact — see `boot/s10plus/uboot-chainload.sh`.)
+- **There is no `userdata.img`.** In Phase 1 the rootfs image *is* the userdata
+  payload: you flash `nuxel-beyond2lte-rootfs.img` to `SYSTEM` (proven) or
+  `userdata`, and the boot cmdline roots from `userdata`. No separate
+  `userdata.img` is produced or needed.
 
 ---
 
@@ -158,7 +174,7 @@ cd /x/nuxel
 # 1) Verify the downloaded archive against the release's SHA256SUMS.txt asset:
 sha256sum -c SHA256SUMS.txt          # macOS: shasum -a 256 -c SHA256SUMS.txt
 # 2) Unpack and verify each image against the archive's own per-file checksums:
-tar -xzf nuxel-v0.3.0-alpha-s10plus.tar.gz
+tar -xzf nuxel-v0.3.1-alpha-s10plus.tar.gz
 cd s10plus
 sha256sum -c sha256sums.txt          # macOS: shasum -a 256 -c sha256sums.txt
 python3 ../tools/read-boot-header-v1.py nuxel-beyond2lte-boot.img
@@ -439,7 +455,7 @@ clean Ubuntu runner, for `s10plus`:
    base DTB + highest-rev board DTBO into `exynos9820-beyond2lte.dtb` first),
 
 then **verifies** them (`tools/verify-artifacts.sh`) and only then packages
-`nuxel-v0.3.0-alpha-s10plus.tar.gz`. A missing or invalid artifact makes the run **red**
+`nuxel-v0.3.1-alpha-s10plus.tar.gz`. A missing or invalid artifact makes the run **red**
 and no release is published.
 
 ### 11.4 Command cheat-sheet
@@ -465,4 +481,4 @@ heimdall flash --BOOT ~/s10plus-backup/nuxel-backup/boot.img
 
 ---
 
-*Build the bunker first. Add the rave lights later. — Nuxel v0.3.0-alpha*
+*Build the bunker first. Add the rave lights later. — Nuxel v0.3.1-alpha*

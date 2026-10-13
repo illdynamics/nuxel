@@ -594,8 +594,14 @@ print_summary() {
     log_info "======================================"
     echo ""
     log_info "Rootfs size: $(du -sh "$ROOTFS_DIR" | awk '{print $1}')"
-    log_info "System image: $(du -h "$SYSTEM_IMG" | awk '{print $1}')"
-    log_info "Verity data: $(du -h ${SYSTEM_IMG}.verity | awk '{print $1}')"
+    if [ -f "$SYSTEM_IMG" ]; then
+        log_info "System image: $(du -h "$SYSTEM_IMG" | awk '{print $1}')"
+    else
+        log_info "System image: not built (NUXEL_MKROOTFS_IMAGE=0)"
+    fi
+    if [ -f "${SYSTEM_IMG}.verity" ]; then
+        log_info "Verity data: $(du -h "${SYSTEM_IMG}.verity" | awk '{print $1}')"
+    fi
     echo ""
     log_info "Contents:"
     log_info "  Services: nuxel-bridge, nuxel-portal, nuxel-notifications"
@@ -607,3 +613,91 @@ print_summary() {
     log_info "  2. ./vm/nuxel-vm-bootstrap.sh    (VM boot test)"
     echo ""
 }
+
+# =============================================================================
+# Portable `install -D` shim
+# -----------------------------------------------------------------------------
+# Every install below uses GNU coreutils' `install -Dm<mode> <src> <dst>`
+# (create parent dirs + set mode). BSD/macOS install(1) has no -D, which meant
+# the staging tree could only be produced on a GNU host. Provide a compatible
+# shim so the same builder works on macOS dev boxes and Linux CI.
+# =============================================================================
+if ! install --version 2>/dev/null | grep -q 'GNU coreutils'; then
+    install() {
+        local mode="" make_dirs=0
+        while [ $# -gt 0 ]; do
+            case "$1" in
+                -D)      make_dirs=1; shift ;;
+                -Dm*)    make_dirs=1; mode="${1#-Dm}"; shift ;;
+                -m)      mode="$2"; shift 2 ;;
+                -o|-g)   shift 2 ;;
+                -p|-c|-b|-S|-f|-v) shift ;;
+                -*)      shift ;;
+                *)       break ;;
+            esac
+        done
+        [ $# -ge 2 ] || { echo "install(shim): expected <src> <dst>" >&2; return 1; }
+        local dest src n=$#
+        # GNU semantics: last argument is the destination.
+        eval "dest=\${$n}"
+        local i s
+        for (( i=1; i<n; i++ )); do
+            eval "src=\${$i}"
+            if [ -d "$src" ]; then
+                mkdir -p "$dest"
+                cp -R "$src/." "$dest/" 2>/dev/null || return 1
+            else
+                mkdir -p "$(dirname "$dest")"
+                cp "$src" "$dest" || return 1
+                [ -n "$mode" ] && chmod "$mode" "$dest"
+            fi
+        done
+        return 0
+    }
+fi
+
+# =============================================================================
+# Main — build the device-agnostic Nuxel userspace staging tree.
+# -----------------------------------------------------------------------------
+# Output: ${ROOTFS_DIR} (build/out/rootfs), the staging tree the per-device
+# image builders bake into an ext4 rootfs.
+#
+# The dm-verity `system.img` step (create_system_image) needs root privileges
+# (loop mount) + veritysetup, so it is opt-in via NUXEL_MKROOTFS_IMAGE=1; the
+# Phase-1 phone images bake their own writable ext4 from this staging tree.
+#
+# Steps are individually non-fatal: a missing optional tool (flatpak, GTK4,
+# plymouth, ...) degrades the tree, it does not abort the build. Genuine
+# incompleteness is caught by tools/verify-artifacts.sh, which is fail-closed.
+# =============================================================================
+main() {
+    run_step() {
+        local name="$1"; shift
+        if "$@"; then
+            return 0
+        fi
+        log_warn "step '${name}' failed — continuing (verify-artifacts.sh is the gate)"
+        return 0
+    }
+
+    run_step "clean"                 clean
+    run_step "flatpak-base"          install_flatpak_base
+    run_step "core-services"         install_core_services
+    run_step "native-apps"           install_native_apps
+    run_step "security-configs"      install_security_configs
+    run_step "assets"                install_assets
+    run_step "plymouth-theme"        install_plymouth_theme
+    run_step "directories"           setup_directories
+
+    if [ "${NUXEL_MKROOTFS_IMAGE:-0}" = "1" ]; then
+        run_step "dm-verity-image"   create_system_image
+    else
+        log_info "[6/7] Skipping dm-verity system.img (Phase-1 images bake their own ext4;"
+        log_info "      set NUXEL_MKROOTFS_IMAGE=1 to also emit build/out/system.img)"
+    fi
+
+    print_summary
+    return 0
+}
+
+main "$@"

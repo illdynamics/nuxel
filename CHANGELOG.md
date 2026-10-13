@@ -8,6 +8,63 @@ and the OTA builder (see *Versioning* below).
 
 ---
 
+## [v0.3.1-alpha] — 2026-10-13
+
+**Theme:** make the bring-up rootfs **actually contain a userspace**, and make
+the artifact gate stop a near-empty image from ever being published as
+"complete".
+
+Reported symptom: the S10+ release archive was only ~21 MB (a 22 MB boot image
+plus a 26 MB rootfs holding a **44 KB / 10-file** overlay), while a local build's
+rootfs was ~60 MB+. Root cause: `images/mkrootfs.sh` declared every userspace
+step but **never called them** — the script was a no-op that exited 0, so every
+"rootfs" was only the per-device config overlay.
+
+### Fixed
+
+- **`images/mkrootfs.sh` now actually builds the userspace.** Added the missing
+  driver (`main`): clean -> Flatpak/fallback base -> core services -> native apps
+  -> security configs -> assets -> Plymouth theme -> directory/permission setup
+  -> optional dm-verity image -> summary. Previously none of these ran, so
+  `/usr/bin/nuxel-bridge`, `/etc/nuxel/paths.conf`, the AppArmor/nftables/sysctl
+  configs and the boot theme were absent from every rootfs image.
+- **`tools/verify-artifacts.sh` is now genuinely fail-closed.** It no longer
+  accepts an image on a magic number alone:
+  - boot images must carry a real kernel + ramdisk + device tree (Android v1
+    header sizes must be non-zero) — an empty/placeholder header fails;
+  - rootfs images must contain the expected payload (per-device config plus the
+    Nuxel userspace core `/usr/bin/nuxel-bridge`), verified by reading the ext4
+    contents with `debugfs` — the 44 KB S10+ image that shipped in
+    v0.3.0-alpha is now a hard failure;
+  - `NUXEL_S10PLUS_UBOOT=1` makes `u-boot-beyond2lte.img` a required artifact.
+- **Rootfs images are sized from real content.** The 512 MB minimum floor in
+  both device builders, combined with a `resize2fs -M` that cannot always shrink
+  a many-small-file filesystem, produced a **512 MB** G7 Power rootfs in CI. The
+  floor is now 64 MB and the image is sized from the staging tree (content + 25%
+  + slack).
+- **The S10+ build no longer reports a phantom `INCOMPLETE`.** U-Boot is a
+  mainline-stretch artifact; the supported Phase-1 downstream/heimdall set is
+  `boot.img` + `rootfs.img`, exactly as the flash guide documents. U-Boot is
+  built when present and only fails the build when explicitly required
+  (`NUXEL_S10PLUS_UBOOT=1`).
+- **Version bump to `v0.3.1-alpha`** across `VERSION`, README/design/docs, the
+  flash guides, PWA/shell manifests, VM tooling and the OTA builder.
+
+### Notes
+
+- **There is no `userdata.img`** by design in Phase 1: the rootfs image *is* the
+  userdata payload (G7 Power: shared `userdata`; S10+: `SYSTEM`/`userdata`), so
+  the archive ships `nuxel-*-rootfs.img`, not a separate `userdata.img`.
+- **`lk2nd` is G7 Power-only** (`msm8953`). The S10+ is Exynos and never uses
+  `lk2nd`; its chain is stock `S-Boot` -> (optional `u-boot-beyond2lte.img`) ->
+  `nuxel-beyond2lte-boot.img`.
+- Device-proprietary vendor blobs (`firmware/*/blobs/vendor-*`) remain
+  **unshippable** (gitignored): CI builds the rootfs from repo sources only, so a
+  CI image is smaller than a local one that has pulled those blobs. The gate
+  verifies the repo-provided payload, not the non-redistributable firmware.
+
+---
+
 ## [v0.3.0-alpha] — 2026-10-13
 
 **Theme:** make the release pipeline **fail-closed and genuinely green** for the
