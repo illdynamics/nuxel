@@ -1,4 +1,4 @@
-<!-- Nuxel v0.3.1-alpha -->
+<!-- Nuxel v0.3.2-alpha -->
 # Nuxel OS Milestone Tracking
 
 > **Status:** Active development — tracking progress against the design document's

@@ -14,6 +14,10 @@
 #   * rootfs images must be valid ext4 AND contain the expected payload
 #     (device configs + the Nuxel userspace core), so an empty/thin image that
 #     merely has an ext4 magic number can never pass;
+#   * rootfs images must carry the boot splash: the boot-animation MP4 and the
+#     generated Plymouth theme (nuxel.plymouth + frame PNGs). This is the exact
+#     content that went missing in CI (no ffmpeg -> theme step silently
+#     skipped -> a ~20 MB rootfs instead of the ~60 MB local build);
 #   * the s10plus U-Boot image is required only when the mainline set is
 #     requested (NUXEL_S10PLUS_UBOOT=1) — matching images/s10plus/build.sh.
 #
@@ -122,6 +126,29 @@ _require_ext4_path() {
     fi
 }
 
+# require an ext4 image whose PATH exists and is at least MIN bytes. Guards
+# against a placeholder/missing payload (e.g. an empty boot animation) passing.
+_require_ext4_size_ge() {
+    local f="$1" path="$2" min="$3" label="$4"
+    [ -s "${f}" ] || { _fail "missing artifact: ${label} (${f})"; return 1; }
+    if ! command -v debugfs >/dev/null 2>&1; then
+        _fail "debugfs is required to verify rootfs content (${label}); install e2fsprogs"
+        return 1
+    fi
+    local sz
+    sz="$(debugfs -R "stat ${path}" "${f}" 2>/dev/null \
+        | sed -n 's/.*Size: \([0-9][0-9]*\).*/\1/p' | head -1)"
+    if [ -z "${sz}" ]; then
+        _fail "${label}: expected payload ${path} is missing from the image"
+        return 1
+    fi
+    if [ "${sz}" -lt "${min}" ] 2>/dev/null; then
+        _fail "${label}: ${path} is only ${sz} bytes (< ${min}) — payload not populated"
+        return 1
+    fi
+    _ok "${label}: ${path} present (${sz} bytes >= ${min})"
+}
+
 KOUT="${NUXEL_ROOT}/kernel/${DEVICE}/.build/out"
 OUT="${NUXEL_ROOT}/build/out/${DEVICE}"
 
@@ -137,6 +164,9 @@ case "${DEVICE}" in
         _require_ext4_path "${OUT}/nuxel-ocean-rootfs.img" "/etc/nuxel/device/g7power" "nuxel-ocean-rootfs.img"
         _require_ext4_path "${OUT}/nuxel-ocean-rootfs.img" "/etc/nuxel/nuxel-ocean.conf" "nuxel-ocean-rootfs.img"
         _require_ext4_path "${OUT}/nuxel-ocean-rootfs.img" "/usr/bin/nuxel-bridge" "nuxel-ocean-rootfs.img (userspace)"
+        _require_ext4_size_ge "${OUT}/nuxel-ocean-rootfs.img" "/usr/share/nuxel/boot/nuxel-boot-animation.mp4" 1000000 "nuxel-ocean-rootfs.img (boot animation)"
+        _require_ext4_path "${OUT}/nuxel-ocean-rootfs.img" "/usr/share/plymouth/themes/nuxel/nuxel.plymouth" "nuxel-ocean-rootfs.img (plymouth theme)"
+        _require_ext4_path "${OUT}/nuxel-ocean-rootfs.img" "/usr/share/plymouth/themes/nuxel/frame-0001.png" "nuxel-ocean-rootfs.img (plymouth frames)"
         ;;
     s10plus)
         _require_arm64_image "${KOUT}/arch/arm64/boot/Image.gz" "kernel Image.gz"
@@ -146,6 +176,9 @@ case "${DEVICE}" in
         _require_ext4_path "${OUT}/nuxel-beyond2lte-rootfs.img" "/etc/nuxel/device/s10plus" "nuxel-beyond2lte-rootfs.img"
         _require_ext4_path "${OUT}/nuxel-beyond2lte-rootfs.img" "/etc/nuxel/nuxel-beyond2lte.conf" "nuxel-beyond2lte-rootfs.img"
         _require_ext4_path "${OUT}/nuxel-beyond2lte-rootfs.img" "/usr/bin/nuxel-bridge" "nuxel-beyond2lte-rootfs.img (userspace)"
+        _require_ext4_size_ge "${OUT}/nuxel-beyond2lte-rootfs.img" "/usr/share/nuxel/boot/nuxel-boot-animation.mp4" 1000000 "nuxel-beyond2lte-rootfs.img (boot animation)"
+        _require_ext4_path "${OUT}/nuxel-beyond2lte-rootfs.img" "/usr/share/plymouth/themes/nuxel/nuxel.plymouth" "nuxel-beyond2lte-rootfs.img (plymouth theme)"
+        _require_ext4_path "${OUT}/nuxel-beyond2lte-rootfs.img" "/usr/share/plymouth/themes/nuxel/frame-0001.png" "nuxel-beyond2lte-rootfs.img (plymouth frames)"
         if [ "${NUXEL_S10PLUS_UBOOT:-0}" = "1" ]; then
             _require_boot_image "${OUT}/u-boot-beyond2lte.img" "u-boot-beyond2lte.img (mainline set)"
         fi

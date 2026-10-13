@@ -367,7 +367,7 @@ verify_image() {
     if [ ! -f "$path" ]; then
         log_error "${name} NOT FOUND at ${path}"
         log_error "Cannot flash without ${name}. Run 'images/build.sh' first."
-        log_error "Nuxel v0.3.1-alpha does NOT produce real flashable images yet."
+        log_error "Nuxel v0.3.2-alpha does NOT produce real flashable images yet."
         log_error "This flash script is for development/testing only."
         exit 3
     fi
@@ -598,7 +598,7 @@ main() {
         log_error "============================================"
         log_error "  CANNOT FLASH: Required images missing"
         log_error "  Run: bash images/build.sh"
-        log_error "  Nuxel v0.3.1-alpha produces DEV STUBS only."
+        log_error "  Nuxel v0.3.2-alpha produces DEV STUBS only."
         log_error "  Do NOT flash to hardware."
         log_error "============================================"
         exit 2

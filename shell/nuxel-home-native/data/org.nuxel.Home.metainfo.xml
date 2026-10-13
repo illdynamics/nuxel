@@ -47,6 +47,17 @@
   </screenshots>
 
   <releases>
+    <release version="0.3.2-alpha" date="2026-10-13">
+      <url>https://github.com/nuxel-org/nuxel/releases/tag/v0.3.2-alpha</url>
+      <description>
+        <p>Nuxel Home v0.3.2-alpha — pre-release aligned with Nuxel Phone OS v0.3.2-alpha
+        (release CI now ships the full rootfs incl. the Plymouth boot splash).</p>
+        <ul>
+          <li>Version bumped in lockstep with the Nuxel OS v0.3.2-alpha pre-release</li>
+          <li>No shell surface changes</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.3.0-alpha" date="2026-10-13">
       <url>https://github.com/nuxel-org/nuxel/releases/tag/v0.3.0-alpha</url>
       <description>

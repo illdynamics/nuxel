@@ -8,6 +8,54 @@ and the OTA builder (see *Versioning* below).
 
 ---
 
+## [v0.3.2-alpha] — 2026-10-13
+
+**Theme:** make the release CI build the **same complete rootfs** a local build
+does — the boot splash is no longer silently dropped.
+
+Reported symptom: the S10+ rootfs published by CI still held only ~20 MB of
+content while a local build's staging tree was ~60 MB. Root cause:
+`images/mkrootfs.sh` builds the Plymouth boot theme through
+`tools/build-nuxel-boot-theme.sh`, which needs **`ffmpeg`** to extract the
+animation frames. `.github/workflows/release.yml` never installed `ffmpeg`, and
+that step is deliberately non-fatal, so it logged a warning and continued — the
+rootfs shipped without the ~50 MB frame sequence (96 PNGs) and the
+`nuxel.plymouth` / `nuxel.script` descriptors. `tools/verify-artifacts.sh`
+passed because it never checked for the theme.
+
+Verified against the artifacts: a local rootfs image carries 96 `frame-*.png`
+files (99 PNG signatures incl. wallpapers) and a `plymouth/` payload; the
+v0.3.1-alpha CI image carried 2 PNGs (wallpapers only) and no `plymouth` payload
+at all — i.e. 19.9 MB of non-zero inode data vs ~88 MB locally.
+
+### Fixed
+
+- **CI installs `ffmpeg`.** The Release workflow build dependencies now include
+  `ffmpeg`, so `images/mkrootfs.sh` -> `tools/build-nuxel-boot-theme.sh`
+  produces the Plymouth theme (96 PNG frames + `nuxel.plymouth` / `nuxel.script`)
+  in CI exactly as it does on a dev box. This closes the local-vs-CI rootfs gap.
+- **`tools/verify-artifacts.sh` is fail-closed on the boot splash.** For both
+  `g7power` and `s10plus` it now requires, inside the ext4 rootfs:
+  - `/usr/share/nuxel/boot/nuxel-boot-animation.mp4` (size-checked via `debugfs`,
+    must be >= 1 MB), and
+  - the generated Plymouth theme
+    (`/usr/share/plymouth/themes/nuxel/nuxel.plymouth` + `frame-0001.png`).
+
+  A rootfs that silently lost its theme — the exact v0.3.1-alpha CI failure — is
+  now a hard failure instead of a green build.
+- **Version bump to `v0.3.2-alpha`** across `VERSION`, README/design/docs, the
+  flash guides, the device `APKBUILD`s, the shell/PWA manifests, the VM tooling
+  and the OTA builder. The device `APKBUILD`s and shell/PWA `meson.build`s, which
+  the previous bump left at `0.3.0-alpha`, are now in lockstep.
+
+### Notes
+
+- No hardware/boot status changed: still **0 of 3 phones verified booting**.
+- The G7 Power rootfs gains the boot splash in CI too (same shared builder), so
+  both bring-up phones now ship the full userspace + theme.
+
+---
+
 ## [v0.3.1-alpha] — 2026-10-13
 
 **Theme:** make the bring-up rootfs **actually contain a userspace**, and make

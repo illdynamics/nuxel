@@ -3,7 +3,7 @@
 
 ![Nuxel](./nuxel.jpg)
 
-**v0.3.1-alpha** — _Build the bunker first. Add the rave lights later._
+**v0.3.2-alpha** — _Build the bunker first. Add the rave lights later._
 
 A hardened, GrapheneOS-spirited **Linux phone operating system** built from
 scratch on a pure Linux substrate. **Zero Android dependencies.** Immutable OS.
@@ -146,6 +146,27 @@ NUXEL_DEVICE=mustang bash boot/flash.sh --unlock --wipe
 | `firmware/` | Per-device firmware manifests, install/verify, blobs |
 | `ci/` | Build validation |
 | `assets/` | Wallpaper + boot animation |
+
+## What's new in v0.3.2-alpha
+
+A **rootfs-completeness** release: the release CI now builds the *same* rootfs a
+local build does. Full detail in **[CHANGELOG.md](CHANGELOG.md)**.
+
+- **Boot splash restored in CI.** `images/mkrootfs.sh` builds the Plymouth boot
+  theme through `tools/build-nuxel-boot-theme.sh`, which needs **`ffmpeg`** to
+  extract the animation frames. The release workflow never installed it, so the
+  (deliberately non-fatal) theme step silently degraded: the published S10+
+  rootfs carried ~20 MB of content instead of the ~60 MB a local build produces
+  (96 frame PNGs ≈ 50 MB plus the boot-animation MP4 were gone). `ffmpeg` is now
+  a required CI build dependency.
+- **The artifact gate is fail-closed on the boot splash.**
+  `tools/verify-artifacts.sh` now requires the boot-animation MP4 (≥ 1 MB) and
+  the generated Plymouth theme (`nuxel.plymouth` + `frame-0001.png`) inside each
+  device rootfs image, so a build that silently drops them goes **red** instead
+  of shipping a thin image.
+- **Version bump to v0.3.2-alpha** across `VERSION`, README/design/docs, the
+  flash guides, the device `APKBUILD`s, the shell/PWA manifests, the VM tooling
+  and the OTA builder.
 
 ## What's new in v0.3.1-alpha
 
@@ -296,7 +317,7 @@ image.** The honest
 per-area breakdown is the table below; the "what's left" list is in the
 changelog.
 
-## Honest Status — v0.3.1-alpha
+## Honest Status — v0.3.2-alpha
 
 **Nuxel is a design scaffold with three device bring-ups in progress and a bootable UTM VM proving out the architecture. No phone has yet booted a Nuxel-built image.**
 
@@ -309,7 +330,7 @@ changelog.
 | Native GTK apps | 25–35% | C source exists, not proven buildable on aarch64 |
 | D-Bus bridge/portal | 30% | Python parses, dev-grade auth, not integration-tested |
 | Sandbox/security | 20% | Configs exist, enforcement not wired end-to-end |
-| Build system | 55% | Per-device dispatchers + inventory gates; the **fail-closed release CI is green end-to-end for `g7power` + `s10plus`** — `tools/verify-artifacts.sh` asserts a real gzip'd ARM64 `Image.gz`, a valid FDT, the boot image `ANDROID!` header, an `ext4` rootfs and (G7 Power) `lk2nd.img` before anything can go green. Still unproven on hardware |
+| Build system | 55% | Per-device dispatchers + inventory gates; the **fail-closed release CI is green end-to-end for `g7power` + `s10plus`** — `tools/verify-artifacts.sh` asserts a real gzip'd ARM64 `Image.gz`, a valid FDT, the boot image `ANDROID!` header, an `ext4` rootfs **with its boot splash** (animation MP4 + Plymouth theme) and (G7 Power) `lk2nd.img` before anything can go green. Still unproven on hardware |
 | Flashable images | 65% | Real, checksummed artifacts built **reproducibly in a green, fail-closed CI** for **g7power** (lk2nd + boot + ext4 rootfs, all verified + `sha256sums.txt`) and **s10plus** (boot with merged DTB + ext4 rootfs, verified + `sha256sums.txt`); **0 of 2 verified booting** |
 | Pixel 10 Pro XL (mustang) | 5% | Public mustang Linux is UART/initramfs-level only; no boot artifact built yet |
 | Galaxy S10+ (beyond2lte) | 35% | Downstream 4.14 boot image now **builds reproducibly in CI** (base DTB + rev-26 `.dtbo` merged with `fdtoverlay`); **only the boot partition flashed** with heimdall (BOOT 100%). Download Mode is balky — manual flash attempt in progress; boot not yet confirmed |
@@ -514,7 +535,7 @@ The other two bring-up targets are the **Samsung Galaxy S10+** (Exynos 9820,
 
 | Document | Description |
 |---|---|
-| [CHANGELOG.md](CHANGELOG.md) | Release notes — everything from v0.1.0 to v0.3.1-alpha + readiness |
+| [CHANGELOG.md](CHANGELOG.md) | Release notes — everything from v0.1.0 to v0.3.2-alpha + readiness |
 | [prompts/QUICKSTART.md](prompts/QUICKSTART.md) | Get running in 5 minutes |
 | [design/nuxel-linux-phone-design.md](design/nuxel-linux-phone-design.md) | Design bible — the full vision |
 | [design/Nuxel Phone OS Project Plan and Architecture.md](design/Nuxel%20Phone%20OS%20Project%20Plan%20and%20Architecture.md) | Technical architecture + component map |
@@ -547,8 +568,8 @@ The other two bring-up targets are the **Samsung Galaxy S10+** (Exynos 9820,
 Build outputs (`build/out/<device>/`) are git-ignored — they are produced by the
 scripts in `images/` and `kernel/`, not committed. To publish them on GitHub:
 
-* **Automated (recommended):** push a version tag (`git tag v0.3.1-alpha && git push
-  origin v0.3.1-alpha`). [`.github/workflows/release.yml`](.github/workflows/release.yml)
+* **Automated (recommended):** push a version tag (`git tag v0.3.2-alpha && git push
+  origin v0.3.2-alpha`). [`.github/workflows/release.yml`](.github/workflows/release.yml)
   builds every device on an Ubuntu runner (`make assets`, the shared initramfs,
   each `kernel/<dev>/build-kernel.sh`, then `images/<dev>/build.sh`), packages
   each `build/out/<device>/` directory and creates a GitHub Release with the

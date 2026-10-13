@@ -44,7 +44,7 @@ BOLD='\033[1m'
 NC='\033[0m'
 
 # ── Recovery version ────────────────────────────────────────────────────────
-RECOVERY_VERSION="0.3.1-alpha"
+RECOVERY_VERSION="0.3.2-alpha"
 
 # ── Utility functions ───────────────────────────────────────────────────────
 

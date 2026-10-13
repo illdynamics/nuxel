@@ -40,7 +40,7 @@ RAUC_CONFIG="${NUXXEL_ROOT}/images/${NUXEL_DEVICE_DIR}/rauc/mustang-system-bundl
 RAUC_TEMPLATE="${NUXXEL_ROOT}/images/${NUXEL_DEVICE_DIR}/rauc/rauc-config.in"
 
 TARGET=""
-VERSION="0.3.1-alpha"
+VERSION="0.3.2-alpha"
 KEY=""
 ROOTFS_IMG=""
 BOOT_IMG=""
@@ -54,7 +54,7 @@ Usage: images/build-ota.sh [options]
 Options:
   --device <key>           device key (default: mustang)
   --target <pmos|fedora>   Update mechanism to build
-  --version <ver>          Version string, e.g. 0.1.1 (default: 0.3.1-alpha)
+  --version <ver>          Version string, e.g. 0.1.1 (default: 0.3.2-alpha)
   --key <path>             Signing key (RAUC private key or OSTree GPG keyring)
   --rootfs <path>          Root filesystem image (pmos only)
   --boot <path>            Boot image (pmos only, optional)
