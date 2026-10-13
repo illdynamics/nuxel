@@ -1,0 +1,77 @@
+.codeseeq/
+.DS_Store
+__pycache__/
+
+# Qq
+.qq**
+.qq
+.qq/**
+*.pyc
+._*
+.env
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Single-source PWA assets (briq-23): the canonical media lives in assets/ and
+# is copied at build time by tools/dedupe-assets.sh. The boot animation
+# (nuxel-boot-animation.mp4) IS the Nuxel boot animation and is checked in —
+# canonical copy plus per-app copies — so it is never ignored. Only the
+# wallpaper copies are generated at build time and not checked in.
+pwa/nuxel-home/assets/nuxel-background.png
+pwa/nuxel-apps/calendar/assets/nuxel-background.png
+pwa/nuxel-apps/camera-gallery/assets/nuxel-background.png
+pwa/nuxel-apps/mail/assets/nuxel-background.png
+pwa/nuxel-apps/notes/assets/nuxel-background.png
+pwa/nuxel-apps/files/assets/nuxel-background.png
+
+# Kernel source trees staged under per-device .build dirs (shallow clones,
+# not git submodules). Previously an untracked-but-broken gitlink caused
+# "git add -A" exit 128 ("no submodule mapping found in .gitmodules"). Kept
+# out of the index. Covers the legacy kernel/.build path as well as the
+# per-device layout kernel/<device-dir>/.build used by the device dispatchers.
+kernel/.build/linux-6.12/
+kernel/*/.build/
+kernel/google-pixel-10-pro-xl/.build/
+kernel/s10plus/.build/
+kernel/g7power/.build/
+
+# Per-device build outputs (build/out/<device-key>/) are regenerable
+# artifacts produced by images/*/build.sh and images/build.sh --quick.
+build/out/*/
+
+# UTM/VM working artifacts — VM disk images, UTM bundles, EFI blobs and the
+# generated cloud-init ISO are large and/or regenerable and must NEVER be
+# committed (they were stripped from git history too; the local copies live
+# under artifacts/vm for UTM runs). Small config/scripts under artifacts/vm/
+# (ci-seed/, .utm/config.plist, .utm/scripts/) remain tracked.
+artifacts/
+artifacts/**
+artifacts/vm/*.qcow2
+artifacts/vm/*.img
+artifacts/vm/*.fd
+artifacts/vm/*.utm/Data.utm/Images/
+artifacts/vm/ci-seed.iso
+**.qcow2
+
+# Temp / backup / editor junk
+*.tmp
+*.temp
+*.bak
+*~
+*.swp
+*.swo
+*.orig
+*.rej
+*.pyo
+.coverage
+.coverage.*
+.tox/
+*.egg-info/
+Thumbs.db
+
+# --- G7 Power boot-window artifacts (regenerable) ---
+boot/g7power/lk2nd/.build/
+boot/g7power/lk2nd/*.img
+boot/initramfs/*.cpio.gz
+kernel/g7power/.build/
