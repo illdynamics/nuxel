@@ -45,6 +45,8 @@ __pycache__/
 *.swo
 
 # --- Build tree (fully regenerable) -----------------------------------------
+# dist/ is produced by tools/package-release.sh (release asset staging).
+dist/
 # build/out/<device>/, build/output/, build/boot-artifact/ (Image.gz +
 # initramfs.cpio.gz) and build/native-shell/ are all produced by a build.
 build/

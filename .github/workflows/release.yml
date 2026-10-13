@@ -1,0 +1,201 @@
+# =============================================================================
+# Nuxel — build images and publish a GitHub Release
+#
+# Triggers
+#   * push a tag matching v*     -> build every device, publish the release
+#   * manual (workflow_dispatch) -> choose tag + devices, then publish
+#
+# Pipeline
+#   prepare  resolves the release tag (and the device list to build)
+#   build    matrix over devices; for each device runs the repo's own scripts:
+#              make assets                      -> single-source PWA assets
+#              images/build.sh --device mustang -> shared initramfs
+#              kernel/<dev>/build-kernel.sh     -> per-device kernel + dtbs
+#              images/<dev>/build.sh            -> per-device boot/rootfs images
+#            then tools/package-release.sh packs build/out/<dev>/ into
+#            nuxel-<ver>-<dev>.tar.gz and uploads it as a workflow artifact.
+#   release  downloads every device artifact, writes SHA256SUMS.txt +
+#            RELEASE-NOTES.md (tools/package-release.sh --from-assets) and
+#            creates/updates the GitHub Release with the archives attached.
+#
+# Notes
+#   * Device builds run with continue-on-error: a device whose kernel source or
+#     toolchain is unavailable in CI does not block releasing the others. Check
+#     the job log + the release notes to see which devices actually shipped.
+#   * The mustang kernel falls back to the public GKI tree when the private
+#     vendor branch (android-gs-mustang-6.12) is not reachable.
+# =============================================================================
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag (e.g. v0.2.0). Empty => v<VERSION>.'
+        required: false
+        default: ''
+      devices:
+        description: 'Space-separated device keys (mustang g7power s10plus).'
+        required: false
+        default: 'mustang g7power s10plus'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    name: resolve tag + devices
+    runs-on: ubuntu-24.04
+    outputs:
+      tag: ${{ steps.v.outputs.tag }}
+      devices: ${{ steps.v.outputs.devices }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Resolve tag and device list
+        id: v
+        run: |
+          if [ -n "${{ github.event.inputs.tag }}" ]; then
+            tag="${{ github.event.inputs.tag }}"
+          elif [ "${GITHUB_REF_TYPE}" = "tag" ]; then
+            tag="${GITHUB_REF_NAME}"
+          else
+            tag="v$(cat VERSION 2>/dev/null || echo 0.0.0)"
+          fi
+          devs="${{ github.event.inputs.devices }}"
+          [ -n "$devs" ] || devs="mustang g7power s10plus"
+          json="$(python3 -c 'import json,sys; print(json.dumps(sys.argv[1].split()))' "$devs")"
+          echo "tag=${tag}" >> "$GITHUB_OUTPUT"
+          echo "devices=${json}" >> "$GITHUB_OUTPUT"
+          echo "Release tag : ${tag}"
+          echo "Devices     : ${json}"
+
+  build:
+    name: build ${{ matrix.device }}
+    needs: prepare
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    continue-on-error: true
+    strategy:
+      fail-fast: false
+      matrix:
+        device: ${{ fromJSON(needs.prepare.outputs.devices) }}
+    env:
+      NUXEL_DEVICE: ${{ matrix.device }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu \
+            bc bison flex libssl-dev libelf-dev libncurses-dev \
+            cpio gzip xz-utils zstd lz4 zip unzip rsync file kmod \
+            python3 python3-pip git curl wget ca-certificates \
+            device-tree-compiler e2fsprogs fakeroot dosfstools \
+            android-sdk-libsparse-utils uuid-runtime
+
+      - name: Populate single-source PWA assets
+        run: make assets
+        continue-on-error: true
+
+      - name: Build shared initramfs (mustang dispatcher)
+        run: bash images/build.sh --device mustang
+        continue-on-error: true
+
+      - name: Build kernel (${{ matrix.device }})
+        run: |
+          set -x
+          case "${{ matrix.device }}" in
+            mustang) bash kernel/build-kernel.sh --device mustang ;;
+            g7power) bash kernel/g7power/build-kernel.sh --clone ;;
+            s10plus) bash kernel/s10plus/build-kernel.sh --clone ;;
+          esac
+        continue-on-error: true
+
+      - name: Build images (${{ matrix.device }})
+        run: |
+          set -x
+          case "${{ matrix.device }}" in
+            mustang) bash images/google-pixel-10-pro-xl/build.sh ;;
+            g7power) bash images/g7power/build.sh --device g7power ;;
+            s10plus) bash images/s10plus/build.sh --device s10plus ;;
+          esac
+        continue-on-error: true
+
+      - name: Package device artifact
+        if: ${{ always() }}
+        run: |
+          if [ ! -d "build/out/${{ matrix.device }}" ]; then
+            echo "::warning::build/out/${{ matrix.device }} missing — nothing to package"
+            exit 0
+          fi
+          mkdir -p dist
+          bash tools/package-release.sh \
+            --version "${{ needs.prepare.outputs.tag }}" \
+            --device "${{ matrix.device }}" \
+            --out dist
+          # keep only this device's tarball for the per-device artifact
+          find dist -maxdepth 1 -type f -name '*.tar.gz' \
+            ! -name "nuxel-*-${{ matrix.device }}.tar.gz" -delete
+
+      - name: Upload device artifact
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: nuxel-${{ matrix.device }}
+          path: dist/*.tar.gz
+          if-no-files-found: warn
+          retention-days: 14
+
+  release:
+    name: publish release
+    needs: [prepare, build]
+    if: ${{ always() }}
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Collect device artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: nuxel-*
+          merge-multiple: true
+          path: dist
+
+      - name: Assemble release assets (checksums + notes)
+        run: |
+          ls -lh dist || true
+          bash tools/package-release.sh \
+            --version "${{ needs.prepare.outputs.tag }}" \
+            --from-assets --out dist
+
+      - name: Create or update GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          tag="${{ needs.prepare.outputs.tag }}"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            gh release upload "$tag" dist/*.tar.gz dist/SHA256SUMS.txt --clobber
+            gh release edit "$tag" \
+              --title "Nuxel ${tag}" \
+              --notes-file dist/RELEASE-NOTES.md
+          else
+            gh release create "$tag" \
+              dist/*.tar.gz dist/SHA256SUMS.txt \
+              --title "Nuxel ${tag}" \
+              --notes-file dist/RELEASE-NOTES.md
+          fi
+          echo "### Published ${tag}" >> "$GITHUB_STEP_SUMMARY"
+          gh release view "$tag" --json url -q .url >> "$GITHUB_STEP_SUMMARY" || true

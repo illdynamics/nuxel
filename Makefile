@@ -34,8 +34,9 @@ DEDUPE     := $(NUXEL_ROOT)/tools/dedupe-assets.sh
 BUILD_SCRIPT := $(NUXEL_ROOT)/images/build.sh
 VALIDATE   := $(NUXEL_ROOT)/ci/validate-build.sh
 VERIFY_PWA := $(NUXEL_ROOT)/tools/verify-pwa-assets.sh
+RELEASE    := $(NUXEL_ROOT)/tools/package-release.sh
 
-.PHONY: all build assets validate ci clean clean-output
+.PHONY: all build assets validate ci release clean clean-output
 
 all: build
 
@@ -74,6 +75,11 @@ ci: build
 	@if [ -x "$(VERIFY_PWA)" ]; then bash "$(VERIFY_PWA)" --quiet; 	else echo "[warn] $(VERIFY_PWA) not found — skipping single-source asset verify"; fi
 	@echo "==> CI gate: validating real build artifacts"
 	@bash "$(VALIDATE)"
+
+# Package build/out/** into release assets under dist/ (see .github/workflows/release.yml).
+release:
+	@echo "==> Packaging release assets (tools/package-release.sh -> dist/)"
+	@bash "$(RELEASE)" --version "$$(cat $(NUXEL_ROOT)/VERSION 2>/dev/null || echo unknown)" --out "$(NUXEL_ROOT)/dist"
 
 clean-output:
 	@rm -rf "$(OUTPUT_DIR)"

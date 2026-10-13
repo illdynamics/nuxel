@@ -402,6 +402,7 @@ The other two bring-up targets are the **Samsung Galaxy S10+** (Exynos 9820,
 | [docs/app-store.md](docs/app-store.md) | App distribution model (Flatpak + portals, signed packages) |
 | [docs/pwa-model.md](docs/pwa-model.md) | Hardened PWA runtime spec |
 | [docs/build-guide.md](docs/build-guide.md) | Full build pipeline |
+| [.github/workflows/release.yml](.github/workflows/release.yml) | Tag-triggered build → GitHub Release pipeline |
 | [docs/device-setup.md](docs/device-setup.md) | Mustang hardware setup |
 | [docs/bootloader-unlock-guide.md](docs/bootloader-unlock-guide.md) | Unlock + relock guide |
 | [docs/driver-status.md](docs/driver-status.md) | Hardware driver matrix |
@@ -419,6 +420,29 @@ The other two bring-up targets are the **Samsung Galaxy S10+** (Exynos 9820,
 | [phones/g7power/g7power-go-guide.md](phones/g7power/g7power-go-guide.md) | G7 Power (ocean) "do it now" flash checklist |
 | [phones/s10plus/s10plus-go-guide.md](phones/s10plus/s10plus-go-guide.md) | S10+ (beyond2lte) "do it now" flash checklist |
 | [phones/pixel10proxl/pixel10proxl-go-guide.md](phones/pixel10proxl/pixel10proxl-go-guide.md) | Pixel 10 Pro XL (mustang) "do it now" flash checklist |
+
+## Releasing
+
+Build outputs (`build/out/<device>/`) are git-ignored — they are produced by the
+scripts in `images/` and `kernel/`, not committed. To publish them on GitHub:
+
+* **Automated (recommended):** push a version tag (`git tag v0.2.0 && git push
+  origin v0.2.0`). [`.github/workflows/release.yml`](.github/workflows/release.yml)
+  builds every device on an Ubuntu runner (`make assets`, the shared initramfs,
+  each `kernel/<dev>/build-kernel.sh`, then `images/<dev>/build.sh`), packages
+  each `build/out/<device>/` directory and creates a GitHub Release with the
+  archives + `SHA256SUMS.txt` attached. Devices whose toolchain/kernel source is
+  unavailable in CI are skipped without blocking the others.
+* **Manually / locally:** run the packager against an existing build tree, then
+  upload the archives yourself:
+
+  ```bash
+  tools/package-release.sh --version "$(cat VERSION)"   # -> dist/
+  ```
+
+  Add `--device g7power` to package a single device, or `--from-assets` to
+  (re)generate `SHA256SUMS.txt` + `RELEASE-NOTES.md` over archives already in
+  `dist/`.
 
 ## License
 
