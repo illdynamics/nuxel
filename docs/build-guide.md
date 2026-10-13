@@ -1,4 +1,4 @@
-<!-- Nuxel v0.2.0 -->
+<!-- Nuxel v0.2.1-alpha -->
 # Nuxel Build Guide — Immutable Image Assembly
 
 > **No pmbootstrap. No Alpine packages. No `apk add`.**

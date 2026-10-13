@@ -3,7 +3,7 @@
 
 ![Nuxel](./nuxel.jpg)
 
-**v0.2.0** — _Build the bunker first. Add the rave lights later._
+**v0.2.1-alpha** — _Build the bunker first. Add the rave lights later._
 
 A hardened, GrapheneOS-spirited **Linux phone operating system** built from
 scratch on a pure Linux substrate. **Zero Android dependencies.** Immutable OS.
@@ -147,6 +147,23 @@ NUXEL_DEVICE=mustang bash boot/flash.sh --unlock --wipe
 | `ci/` | Build validation |
 | `assets/` | Wallpaper + boot animation |
 
+## What's new in v0.2.1-alpha
+
+A small pre-release on top of **v0.2.0**; full detail in
+**[CHANGELOG.md](CHANGELOG.md)**.
+
+- **S10+ kernel build fixed.** The downstream Samsung Exynos 9820 Makefile
+  hardcodes its internal Android toolchain as the default `CROSS_COMPILE`
+  (`.../aarch64-linux-android-`), so the build died with
+  `aarch64-linux-android-gcc: No such file or directory` and
+  `Cannot use CONFIG_CC_STACKPROTECTOR_STRONG`. `kernel/s10plus/build-kernel.sh`
+  now always passes an explicit `CROSS_COMPILE` (default `aarch64-linux-gnu-`,
+  overridable with `--cross` / `$CROSS_COMPILE`) on the make command line, which
+  overrides the tree default and matches the toolchain CI installs.
+- **Version bump to v0.2.1-alpha** across `VERSION`, README, docs/design headers, the
+  shell apps, the PWA manifest, the device `APKBUILD`s, the VM tooling and the
+  OTA builder.
+
 ## What's new in v0.2.0
 
 Everything below landed between **v0.1.0** (the mustang-only scaffold) and this
@@ -166,10 +183,14 @@ release. Full detail, per area, is in **[CHANGELOG.md](CHANGELOG.md)**.
   bundle captured (`phones/g7power/stock-evidence/`); lk2nd boot chain worked
   out — including a QCDT boot-image packer (`tools/build-qcdt-boot.py`) that
   fixes the "lk2nd menu then black screen" packaging bug — plus a two-phase
-  fastboot flash flow and an EDL unbrick path.
-- **S10+ bring-up scaffolded.** Documented Exynos boot chain (S-Boot → U-Boot →
-  Linux), the no-fastboot reality (TWRP + Download Mode/heimdall), Knox-tripped
-  constraints, anti-cross-flash rules, and a Phase 0 inventory template.
+  fastboot flash flow and an EDL unbrick path; the images are now **flashed to
+  the device**, which powers on but still hangs at a black/flashy screen
+  (display init not yet resolved).
+- **S10+ bring-up scaffolded, boot partition flashed.** Documented Exynos boot
+  chain (S-Boot → U-Boot → Linux), the no-fastboot reality (TWRP + Download
+  Mode/heimdall), Knox-tripped constraints, anti-cross-flash rules, and a Phase 0
+  inventory template; only the **boot partition** is on the device so far
+  (heimdall BOOT 100%), with Download Mode balky and a manual flash attempt next.
 - **Pixel/mustang prep.** Phase 0 inventory template + build gate and a
   reconciliation of the mustang path against the multi-device layout.
 - **Repo hygiene.** Device documentation bundles were consolidated under
@@ -180,12 +201,13 @@ release. Full detail, per area, is in **[CHANGELOG.md](CHANGELOG.md)**.
   VM tooling and the OTA builder.
 
 **Readiness at a glance:** a documented scaffold with a **bootable UTM VM
-demo** and **built — though not yet hardware-proven — flash images for two of
-three phones**. **0 of 3 phones have booted a Nuxel-built image.** The honest
+demo** and **built flash images for two of three phones — both partly pushed to
+hardware, neither booting Nuxel yet**. **0 of 3 phones have booted a Nuxel-built
+image.** The honest
 per-area breakdown is the table below; the "what's left" list is in the
 changelog.
 
-## Honest Status — v0.2.0
+## Honest Status — v0.2.1-alpha
 
 **Nuxel is a design scaffold with three device bring-ups in progress and a bootable UTM VM proving out the architecture. No phone has yet booted a Nuxel-built image.**
 
@@ -199,13 +221,13 @@ changelog.
 | D-Bus bridge/portal | 30% | Python parses, dev-grade auth, not integration-tested |
 | Sandbox/security | 20% | Configs exist, enforcement not wired end-to-end |
 | Build system | 20% | Per-device dispatchers + inventory gates; still unproven on hardware |
-| Flashable images | 40% | Real, checksummed boot artifacts built for **g7power** (lk2nd + boot + ext4 rootfs) and **s10plus** (boot + merged boot, flashed via heimdall); **0 of 3 verified booting** |
+| Flashable images | 45% | Real, checksummed boot artifacts built for **g7power** (lk2nd + boot + ext4 rootfs — **flashed to hardware**) and **s10plus** (boot + merged boot — **boot partition flashed** via heimdall); **0 of 3 verified booting** |
 | Pixel 10 Pro XL (mustang) | 5% | Public mustang Linux is UART/initramfs-level only; no boot artifact built yet |
-| Galaxy S10+ (beyond2lte) | 30% | Downstream 4.14 boot image **built and pushed to the device** with heimdall (BOOT 100%); boot not yet confirmed |
-| Moto G7 Power (ocean) | 35% | Boot + ext4 rootfs images **built** (touch-driver fix), lk2nd/QCDT tooling; not yet flashed/proven on hardware |
+| Galaxy S10+ (beyond2lte) | 30% | Downstream 4.14 boot image built; **only the boot partition flashed** with heimdall (BOOT 100%). Download Mode is balky — manual flash attempt in progress; boot not yet confirmed |
+| Moto G7 Power (ocean) | 40% | Boot + ext4 rootfs images **flashed to hardware** (touch-driver fix, lk2nd/QCDT chainloader); device powers on but hangs at a **black/flashy screen** — not yet booting Nuxel |
 | UTM VM | 70% | A genuine **Nuxel UTM bundle exists and boots** — Fedora 43 + Phosh at 720×1440 (live screenshots), Nuxel services + PWA on the desktop, guest SSH + **internet verified working**, and **sound works** via a `virtio-sound-pci` device (`virtio_snd` ALSA card, in-guest playback verified); bundle is a local artifact (`artifacts/vm/`, gitignored, not committed) |
 
-**Overall: ~35–40% MVP scaffold. 2 of 3 phones have built (unflashed/unproven) boot images; 0 of 3 verified booting. The UTM VM demo boots and works (display + network + sound).**
+**Overall: ~35–40% MVP scaffold. 2 of 3 phones have built boot images and both have been pushed to hardware (G7 Power flashed but stuck at a black/flashy screen; S10+ boot partition only); 0 of 3 verified booting. The UTM VM demo boots and works (display + network + sound).**
 
 ### What this repo IS:
 - A well-documented architecture blueprint for a Linux phone OS
@@ -229,10 +251,12 @@ changelog.
   host through QEMU's audiodev → UTM/CoreAudio. Setup lives in
   `vm/build-vm-image.sh` (device) and `vm/nuxel-vm-bootstrap.sh`
   (`install_audio_virtio`)
-- **Built, checksummed boot images for two of three phones** — `g7power`
-  (`nuxel-ocean-boot.img`, `nuxel-ocean-rootfs.img`, `lk2nd.img`, sha256-verified
-  against the build manifest) and `s10plus` (`nuxel-beyond2lte-boot.img`,
-  `nuxel-beyond2lte-boot-merged.img`, pushed to the device with heimdall)
+- **Built, checksummed, and partly flashed boot images for two of three phones**
+  — `g7power` (`nuxel-ocean-boot.img`, `nuxel-ocean-rootfs.img`, `lk2nd.img`,
+  sha256-verified against the build manifest) is **flashed to hardware** but so
+  far only reaches a black/flashy screen; `s10plus` (`nuxel-beyond2lte-boot.img`,
+  `nuxel-beyond2lte-boot-merged.img`) has had **only its boot partition pushed**
+  with heimdall while Download Mode stays flaky
 
 ### What this repo IS NOT YET:
 - A phone that boots Nuxel on real hardware (no target has booted a Nuxel-built
@@ -316,8 +340,8 @@ Nuxel supports multiple hardware targets. Select via `NUXEL_DEVICE` or `--device
 | Key | Device | Codename | Status |
 |---|---|---|---|
 | `mustang` | Google Pixel 10 Pro XL | mustang | Scaffold — no boot artifact yet |
-| `s10plus` | Samsung Galaxy S10+ (Exynos) | beyond2lte | Boot image built + flashed (heimdall); boot unconfirmed |
-| `g7power` | Motorola Moto G7 Power (ocean) | ocean | Boot + rootfs images built; not yet flashed |
+| `s10plus` | Samsung Galaxy S10+ (Exynos) | beyond2lte | Boot partition flashed only via heimdall (Download Mode flaky); boot unconfirmed |
+| `g7power` | Motorola Moto G7 Power (ocean) | ocean | **Flashed to hardware** — powers on but stuck at a black/flashy screen |
 
 Every device-specific **build** artifact lives under a per-device directory
 keyed by `NUXEL_DEVICE`: `google-pixel-10-pro-xl/` (mustang), `s10plus/`,
@@ -332,14 +356,16 @@ quickstart, go-guide and — for the G7 Power — the on-device stock-evidence
 capture) lives under [`phones/`](phones/): `phones/pixel10proxl/`,
 `phones/s10plus/` and `phones/g7power/`.
 
-Two of the three targets now have real, checksummed boot artifacts, but **none
-has been verified to boot Nuxel on hardware**. The S10+ (Exynos 9820, no
-fastboot; TWRP + Download Mode/heimdall only) has a downstream-kernel boot image
-that has been pushed to the device with heimdall; the G7 Power (SDM632/msm8953,
-fastboot + lk2nd + EDL) has a boot image, a writable ext4 rootfs and an lk2nd
-chainloader built but not yet flashed. Neither bring-up has completed the Phase 0
-device-inventory gate for a full flash. The mustang path remains a scaffold with
-no boot artifact.
+Two of the three targets now have real, checksummed boot artifacts, and **both
+have been pushed to hardware — but none has been verified to boot Nuxel**. The
+G7 Power (SDM632/msm8953, fastboot + lk2nd + EDL) is further along: its boot
+image, writable ext4 rootfs and lk2nd chainloader are **flashed to the device**,
+which now powers on but hangs at a black/flashy screen (display init unresolved).
+The S10+ (Exynos 9820, no fastboot; TWRP + Download Mode/heimdall only) has had
+**only its boot partition flashed** with heimdall (BOOT 100%); Download Mode is
+currently balky, so a manual flash is the next step. Neither bring-up has
+completed the Phase 0 device-inventory gate for a full flash. The mustang path
+remains a scaffold with no boot artifact.
 
 See `docs/s10plus-bringup.md` for the S10+ bring-up guide,
 `docs/g7power-bringup.md` for the G7 Power bring-up guide, and the per-device
@@ -393,7 +419,7 @@ The other two bring-up targets are the **Samsung Galaxy S10+** (Exynos 9820,
 
 | Document | Description |
 |---|---|
-| [CHANGELOG.md](CHANGELOG.md) | Release notes — everything from v0.1.0 to v0.2.0 + readiness |
+| [CHANGELOG.md](CHANGELOG.md) | Release notes — everything from v0.1.0 to v0.2.1-alpha + readiness |
 | [prompts/QUICKSTART.md](prompts/QUICKSTART.md) | Get running in 5 minutes |
 | [design/nuxel-linux-phone-design.md](design/nuxel-linux-phone-design.md) | Design bible — the full vision |
 | [design/Nuxel Phone OS Project Plan and Architecture.md](design/Nuxel%20Phone%20OS%20Project%20Plan%20and%20Architecture.md) | Technical architecture + component map |
@@ -426,8 +452,8 @@ The other two bring-up targets are the **Samsung Galaxy S10+** (Exynos 9820,
 Build outputs (`build/out/<device>/`) are git-ignored — they are produced by the
 scripts in `images/` and `kernel/`, not committed. To publish them on GitHub:
 
-* **Automated (recommended):** push a version tag (`git tag v0.2.0 && git push
-  origin v0.2.0`). [`.github/workflows/release.yml`](.github/workflows/release.yml)
+* **Automated (recommended):** push a version tag (`git tag v0.2.1-alpha && git push
+  origin v0.2.1-alpha`). [`.github/workflows/release.yml`](.github/workflows/release.yml)
   builds every device on an Ubuntu runner (`make assets`, the shared initramfs,
   each `kernel/<dev>/build-kernel.sh`, then `images/<dev>/build.sh`), packages
   each `build/out/<device>/` directory and creates a GitHub Release with the

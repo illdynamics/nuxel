@@ -21,7 +21,7 @@
 #
 # Usage:
 #   NUXEL_DEVICE=s10plus bash kernel/s10plus/build-kernel.sh [--clone] [--clean]
-#       [--jobs N] [--help]
+#       [--jobs N] [--cross <prefix>] [--help]
 #
 # Outputs (under kernel/s10plus/.build/out/):
 #   arch/arm64/boot/Image.gz
@@ -38,6 +38,19 @@ DOWNSTREAM_REPO="https://github.com/Linux4/android_kernel_samsung_exynos9820"
 DOWNSTREAM_COMMIT="f7194c1d15eded1c2a1a4dc63825b26103435cc0"
 DEFCONFIG="exynos9820-beyond2lte_defconfig"
 
+# The downstream Samsung Makefile hardcodes its internal Android toolchain as
+# the default CROSS_COMPILE:
+#   CROSS_COMPILE ?= $(srctree)/toolchain/gcc-cfp/.../aarch64-linux-android-
+# That toolchain is not shipped with the source, so a bare `make` dies with
+#   .../aarch64-linux-android-gcc: No such file or directory
+#   Cannot use CONFIG_CC_STACKPROTECTOR_STRONG: ... not supported by compiler
+# We therefore always pass CROSS_COMPILE explicitly on the make command line
+# (command-line assignments override the Makefile's `?=` default). The default
+# matches the Debian/Ubuntu `gcc-aarch64-linux-gnu` package used in CI; override
+# with --cross / $CROSS_COMPILE for another toolchain (or `--cross ''` for a
+# native aarch64 host build).
+CROSS_COMPILE="${CROSS_COMPILE:-aarch64-linux-gnu-}"
+
 # GCC 14/15 changed several diagnostics to hard errors by default; the 4.14
 # downstream tree predates that. Relax them (this is exactly the class of fix
 # the postmarketOS downstream-kernel tooling applies).
@@ -53,7 +66,7 @@ while [[ $# -gt 0 ]]; do
         --clone) DO_CLONE=1; shift ;;
         --clean) DO_CLEAN=1; shift ;;
         --jobs)  JOBS="$2"; shift 2 ;;
-        --cross) : ;;   # accepted for compatibility; native/CC is used
+        --cross) CROSS_COMPILE="$2"; shift 2 ;;
         --device) export NUXEL_DEVICE="$2"; shift 2 ;;
         *) echo "Unknown: $1"; exit 1 ;;
     esac
@@ -71,6 +84,7 @@ KOUT="${NUXEL_ROOT}/kernel/s10plus/.build/out"
 
 echo "[nuxel-s10plus-kernel] Device: ${DEVICE_KEY} (beyond2lte, Exynos 9820)"
 echo "[nuxel-s10plus-kernel] Kernel: ${DOWNSTREAM_REPO##*/}@${DOWNSTREAM_COMMIT:0:12} (Linux 4.14.253 downstream)"
+echo "[nuxel-s10plus-kernel] Cross:   ${CROSS_COMPILE:-<native, empty>}"
 echo "[nuxel-s10plus-kernel] Defconfig: ${DEFCONFIG}"
 echo "[nuxel-s10plus-kernel] Output:  ${KOUT}"
 
@@ -90,11 +104,13 @@ fi
 
 # --- configure ---
 cd "${KSRC}"
-make O="${KOUT}" ARCH=arm64 KCFLAGS="${DEFAULT_KCFLAGS}" "${DEFCONFIG}"
+make O="${KOUT}" ARCH=arm64 CROSS_COMPILE="${CROSS_COMPILE}" \
+    KCFLAGS="${DEFAULT_KCFLAGS}" "${DEFCONFIG}"
 
 # --- build ---
 echo "[kernel] Building Image.gz + dtbs (jobs=${JOBS})..."
-make O="${KOUT}" ARCH=arm64 -j"${JOBS}" KCFLAGS="${DEFAULT_KCFLAGS}" Image.gz dtbs
+make O="${KOUT}" ARCH=arm64 CROSS_COMPILE="${CROSS_COMPILE}" \
+    -j"${JOBS}" KCFLAGS="${DEFAULT_KCFLAGS}" Image.gz dtbs
 
 echo "[kernel] Done."
 ls -lh "${KOUT}/arch/arm64/boot/Image.gz" 2>/dev/null || echo "[kernel] WARN: Image.gz missing"

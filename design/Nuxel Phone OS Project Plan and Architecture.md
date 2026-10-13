@@ -1,4 +1,4 @@
-<!-- Nuxel v0.2.0 -->
+<!-- Nuxel v0.2.1-alpha -->
 # Nuxel Phone OS Project Plan and Architecture
 
 ## Executive Summary

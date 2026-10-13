@@ -34,7 +34,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Release tag (e.g. v0.2.0). Empty => v<VERSION>.'
+        description: 'Release tag (e.g. v0.2.1-alpha). Empty => v<VERSION>.'
         required: false
         default: ''
       devices:

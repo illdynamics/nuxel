@@ -47,6 +47,17 @@
   </screenshots>
 
   <releases>
+    <release version="0.2.1-alpha" date="2026-10-13">
+      <url>https://github.com/nuxel-org/nuxel/releases/tag/v0.2.1-alpha</url>
+      <description>
+        <p>Nuxel Home v0.2.1-alpha — pre-release aligned with Nuxel Phone OS v0.2.1-alpha
+        (S10+ kernel build fix).</p>
+        <ul>
+          <li>Version bumped in lockstep with the Nuxel OS v0.2.1-alpha pre-release</li>
+          <li>No shell surface changes</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.2.0" date="2026-10-13">
       <url>https://github.com/nuxel-org/nuxel/releases/tag/v0.2.0</url>
       <description>

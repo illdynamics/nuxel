@@ -14,7 +14,7 @@
 # shellcheck shell=bash
 # shellcheck disable=SC2034,SC2148,SC2154
 pkgname="device-samsung-beyond2lte"
-pkgver="0.2.0"
+pkgver="0.2.1-alpha"
 pkgrel="0"
 pkgdesc="Samsung Galaxy S10+ (beyond2lte, Exynos 9820) — Nuxel Phone OS"
 url="https://nuxel.org"

@@ -13,7 +13,7 @@
 # It is deliberately self-contained (pure bash + tar/sha256sum) so it runs both
 # in GitHub Actions and locally against an existing build/out tree:
 #
-#   tools/package-release.sh --version v0.2.0
+#   tools/package-release.sh --version v0.2.1-alpha
 #   tools/package-release.sh --version "$(cat VERSION)" --out build/dist
 #
 # Exit code is non-zero if no device output was found (nothing to release).

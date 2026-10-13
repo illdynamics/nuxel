@@ -80,7 +80,7 @@ create_snapshot_utm() {
     "created_at": "SNAPSHOT_DATE",
     "vm_name": "VM_NAME",
     "tool": "nuxel-vm-snapshot.sh",
-    "nuxel_version": "0.2.0"
+    "nuxel_version": "0.2.1-alpha"
 }
 METADATA
     sed -i '' "s/SNAPSHOT_NAME/${NAME}/g" "${SNAPSHOT_PATH}/metadata.json"
@@ -220,7 +220,7 @@ create_snapshot_inguest() {
     "description": "${DESC:-}",
     "created_at": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
     "kernel": "$(uname -r)",
-    "nuxel_version": "0.2.0",
+    "nuxel_version": "0.2.1-alpha",
     "type": "guest-marker"
 }
 JSONEOF

@@ -8,6 +8,59 @@ and the OTA builder (see *Versioning* below).
 
 ---
 
+## [v0.2.1-alpha] — 2026-10-13
+
+**Theme:** pre-release fix on top of v0.2.0 — make the **S10+ kernel build**
+succeed in CI. No other behaviour changes; the readiness picture is unchanged.
+
+### Fixed
+
+- **S10+ kernel build (CI / any non-Samsung host).**
+  `kernel/s10plus/build-kernel.sh` never overrode the downstream Samsung tree's
+  hardcoded toolchain. The Exynos 9820 `Makefile` line 316 sets
+
+  ```
+  CROSS_COMPILE ?= $(srctree)/toolchain/gcc-cfp/gcc-cfp-jopp-only/aarch64-linux-android-4.9/bin/aarch64-linux-android-
+  ```
+
+  a tree-internal Android GCC that is **not** shipped with the source. A bare
+  `make` therefore failed before compiling anything:
+
+  ```
+  make[1]: .../aarch64-linux-android-gcc: No such file or directory
+  Cannot use CONFIG_CC_STACKPROTECTOR_STRONG: -fstack-protector-strong not supported by compiler
+  make[1]: *** [Makefile:1267: prepare-compiler-check] Error 1
+  ```
+
+  which cascaded into `[nuxel-s10plus-build][error] Kernel image not found:
+  .../arch/arm64/boot/Image.gz` and an empty `build/out/s10plus/` (the GitHub
+  Actions job logged the kernel step as exit 2 and packaged nothing). The
+  wrapper now sets `CROSS_COMPILE` (default `aarch64-linux-gnu-`, matching the
+  `gcc-aarch64-linux-gnu` package CI installs) and passes it on **every** `make`
+  invocation, so the command-line assignment overrides the tree's `?=` default.
+  `--cross <prefix>` is now honoured (previously accepted and silently ignored),
+  and `--cross ''`/`CROSS_COMPILE=` yields a native aarch64 host build.
+
+### Changed
+
+- **Repository-wide version bump v0.2.0 → v0.2.1-alpha** in: `VERSION`,
+  `README.md`, `docs/*.md` and `design/*.md` headers, the shell apps
+  (`shell/nuxel-shell`, `shell/nuxel-home-native` — meson project version,
+  `__init__`, runtime banner, settings About label and AppStream metainfo with a
+  new 0.2.1-alpha release entry), the PWA manifest
+  (`pwa/nuxel-home/manifest.json` `bridge_version`), the device `APKBUILD`s
+  (`pkgver`), the VM tooling (`vm/deploy-vm-manifest.txt`,
+  `vm/nuxel-vm-snapshot.sh`), and the OTA builder (`images/build-ota.sh`).
+- `README.md` gains a short *What's new in v0.2.1-alpha* section.
+
+### Versioning
+
+- Canonical version file: [`VERSION`](VERSION) = `v0.2.1-alpha`.
+- Historical run logs (under `vm/logs/`) and the point-in-time VM recon report
+  (`vm/utm-state-report.md`) are left untouched as record.
+
+---
+
 ## [v0.2.0] — 2026-10-13
 
 **Theme:** from a single mustang-only scaffold to a **three-target bring-up

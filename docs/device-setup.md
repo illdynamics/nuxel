@@ -1,4 +1,4 @@
-<!-- Nuxel v0.2.0 -->
+<!-- Nuxel v0.2.1-alpha -->
 # Nuxel Device Setup — Google Pixel 10 Pro XL (mustang)
 
 > **No Halium. No libhybris. No Android HAL reuse. Pure mainline Linux.**
