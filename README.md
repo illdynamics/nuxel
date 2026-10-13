@@ -401,12 +401,12 @@ The other two bring-up targets are the **Samsung Galaxy S10+** (Exynos 9820,
 ## License
 
 Nuxel is released under the **MIT License**. See [LICENSE](LICENSE) for the
-full text.
+full text. Maintained by [RikkeTik](https://rikketik.dev).
 
 ```text
 MIT License
 
-Copyright (c) 2026 Ricky van Poppel
+Copyright (c) 2026 RikkeTik (https://rikketik.dev)
 ```
 
 **Third-party components keep their own licenses** and are *not* covered by the
@@ -415,7 +415,7 @@ MIT grant above. This includes, but is not limited to:
 | Component | License |
 |---|---|
 | Linux kernel and patches | GPL-2.0-only |
-| `external/avbtool` (AOSP) | Apache-2.0 |
+| `external/avbtool` (AOSP) | MIT |
 | `bin/toybox` | 0BSD |
 
 Any file that carries an explicit `SPDX-License-Identifier` or copyright header
