@@ -1,4 +1,4 @@
-// Nuxel Status Bar — v0.2.1-alpha
+// Nuxel Status Bar — v0.2.2-alpha
 // Real-wired to the HTTP bridge (/api/v1/phone/status) and to the same
 // notification JSON source the daemon persists (/var/lib/nuxel/notifications.json,
 // surfaced via the bridge as `notifications/list`). Polls every 5 seconds in

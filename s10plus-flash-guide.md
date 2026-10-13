@@ -1,7 +1,7 @@
 # Nuxel — Samsung Galaxy S10+ manual flash guide
 
 **Device:** Samsung Galaxy S10+ **SM-G975F** (Exynos 9820, codename `beyond2lte`)
-**Nuxel:** v0.2.1-alpha · **Guide written:** 2026-10-13
+**Nuxel:** v0.2.2-alpha · **Guide written:** 2026-10-13
 **Authoritative repo docs:** this file is the "do it now" checklist; background is in
 `phones/s10plus/s10plus-go-guide.md`, `docs/s10plus-bringup.md`, `docs/s10plus-device-inventory.md`.
 
@@ -379,4 +379,4 @@ python3 boot/s10plus/pack-boot-v1.sh \
 
 ---
 
-*Build the bunker first. Add the rave lights later. — Nuxel v0.2.1-alpha*
+*Build the bunker first. Add the rave lights later. — Nuxel v0.2.2-alpha*

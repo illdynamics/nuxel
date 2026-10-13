@@ -149,6 +149,32 @@ fi
 TC_GCC="$("${TC}gcc" --version 2>/dev/null | head -1)"
 echo "== toolchain: ${TC}gcc  -> ${TC_GCC}"
 
+# --- Compiler-diagnostic relaxations (GCC-version robustness) ------------------
+# The Android GKI tree builds with CONFIG_WERROR=y, which injects a global
+# -Werror via KBUILD_CPPFLAGS (scripts/Makefile.extrawarn). Newer GCCs
+# promote diagnostics that the tree predates to errors, e.g. under GCC 15 the
+# 6.12 common kernel dies on a legitimate-looking warning the compiler now
+# dislikes:
+#     fs/fuse/dev.c:458:55: error: suggest parentheses around arithmetic in
+#         operand of '|' [-Werror=parentheses]
+#     cc1: all warnings being treated as errors
+# KCFLAGS is appended to KBUILD_CFLAGS (Makefile:1079), i.e. AFTER the
+# -Werror that CONFIG_WERROR puts in KBUILD_CPPFLAGS, so -Wno-error here wins.
+# `-Wno-error=parentheses` targets the specific GCC-15 diagnostic; the trailing
+# bare `-Wno-error` neutralizes the tree-wide -Werror for any other
+# version-induced warning. Each flag is probed against the selected compiler
+# (an unknown `-Wno-error=<x>` is itself a hard error) and dropped if unsupported.
+DEFAULT_KCFLAGS="-Wno-error=parentheses -Wno-error"
+KCFLAGS=""
+for _f in ${DEFAULT_KCFLAGS}; do
+    if echo | "${TC}gcc" "${_f}" -c -x c - -o /dev/null >/dev/null 2>&1; then
+        KCFLAGS="${KCFLAGS:+${KCFLAGS} }${_f}"
+    else
+        echo "== note: dropping KCFLAG unsupported by ${TC}gcc: ${_f}"
+    fi
+done
+echo "== KCFLAGS (target CFLAGS relaxations): ${KCFLAGS:-<none>}"
+
 mkdir -p "${OUT}"
 
 # --- Source tree (vendor preferred, common fallback) --------------------------
@@ -212,6 +238,16 @@ if [ "$(uname -s)" = "Darwin" ]; then
             || { echo "error: file2alias-darwin patch neither applied nor applicable" >&2; exit 1; }
     fi
 fi
+
+# --- GCC-version warning hardening (root-cause fix) --------------------------
+# The tree's per-directory Makefiles append -Werror to ccflags-y/EXTRA_CFLAGS
+# (e.g. arch/arm64/kernel/vdso32 `VDSO_CFLAGS += -Werror=...`, aic7xxx/lpfc),
+# which land *after* KBUILD_CFLAGS on the cc command line and therefore outrank
+# the KCFLAGS relaxation above. Strip those hard-coded -Werror tokens from the
+# scratch tree's source Makefiles (idempotent; kbuild-internal scripts and the
+# CONFIG_WERROR-driven KBUILD_CPPFLAGS path that KCFLAGS already neutralises are
+# left alone). See tools/kernel-relax-werror.sh.
+bash "${ROOT}/tools/kernel-relax-werror.sh" "${TREE}"
 
 if [ "${DO_CLEAN}" -eq 1 ]; then
     echo "== make mrproper"
@@ -309,8 +345,17 @@ if [ "${AUDIT_FAIL}" -ne 0 ]; then
 fi
 echo "== defconfig<->Kconfig audit: all CONFIG_NUXEL* lines are Kconfig-backed =="
 
-# --- archprepare (explicit host-tool gate, briq-k1/k2) -------------------------
-ARCHPREP=("${MAKE}" ARCH=arm64 CROSS_COMPILE="${TC}" HOSTCFLAGS="${HOSTCFLAGS}" archprepare)
+# --- generated asm headers + archprepare (explicit host-tool gate, briq-k1/k2) -
+# `asm-generic` MUST run before `archprepare`. It generates the arch uapi
+# wrappers (e.g. arch/arm64/include/generated/uapi/asm/types.h) that the host
+# tool scripts/selinux/genheaders -- built by `scripts`, an archprepare
+# prerequisite that is expanded BEFORE archprepare's own `asm-generic`
+# prerequisite -- pulls in transitively via include/uapi/linux/types.h. A bare
+# `make archprepare` on a pristine tree therefore dies with:
+#     include/uapi/linux/types.h:5:10: fatal error: 'asm/types.h' file not found
+# Listing `asm-generic` as the first goal fixes the ordering: make builds
+# multiple goals left to right when it is not running them in parallel.
+ARCHPREP=("${MAKE}" ARCH=arm64 CROSS_COMPILE="${TC}" HOSTCFLAGS="${HOSTCFLAGS}" asm-generic archprepare)
 echo "== ${ARCHPREP[*]}"
 "${ARCHPREP[@]}" >"${OUT}/archprepare.log" 2>&1
 APRC=$?
@@ -337,7 +382,7 @@ echo "== archprepare exit code: ${APRC}"
 # Primary, verifiable kernel targets first: Image.gz / Image / dtbs. This
 # target set is what determines the recorded exit code -- it is fully
 # buildable with a bare-metal toolchain (freestanding -ffreestanding).
-BUILDCMD=("${MAKE}" ARCH=arm64 CROSS_COMPILE="${TC}" HOSTCFLAGS="${HOSTCFLAGS}" "-j${JOBS}" Image.gz Image dtbs)
+BUILDCMD=("${MAKE}" ARCH=arm64 CROSS_COMPILE="${TC}" HOSTCFLAGS="${HOSTCFLAGS}" KCFLAGS="${KCFLAGS}" "-j${JOBS}" Image.gz Image dtbs)
 echo "== ${BUILDCMD[*]}"
 echo "== build log: ${OUT}/build.log"
 set +e
@@ -357,7 +402,7 @@ MODULES_OK=0
 if [ "${EXIT_CODE}" -eq 0 ]; then
     echo "== attempting 'modules' target (best-effort; see modules sections in build.log)"
     set +e
-    "${MAKE}" ARCH=arm64 CROSS_COMPILE="${TC}" HOSTCFLAGS="${HOSTCFLAGS}" "-j${JOBS}" modules >>"${OUT}/build.log" 2>&1
+    "${MAKE}" ARCH=arm64 CROSS_COMPILE="${TC}" HOSTCFLAGS="${HOSTCFLAGS}" KCFLAGS="${KCFLAGS}" "-j${JOBS}" modules >>"${OUT}/build.log" 2>&1
     MOD_EXIT=$?
     set -e
     if [ "${MOD_EXIT}" -eq 0 ]; then

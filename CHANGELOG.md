@@ -8,6 +8,88 @@ and the OTA builder (see *Versioning* below).
 
 ---
 
+## [v0.2.2-alpha] — 2026-10-13
+
+**Theme:** pre-release fix on top of v0.2.1-alpha — make the **S10+** and the
+**Pixel 10 Pro XL (`mustang`)** kernel builds actually produce an `Image.gz` in
+CI. No other behaviour changes; the readiness picture is unchanged.
+
+### Fixed
+
+- **S10+ kernel build (CI).** v0.2.1-alpha forced `CROSS_COMPILE` and dropped
+  compiler-unsupported KCFLAGS, but the build still failed on the runner's GCC 13
+  because the downstream 4.14 Exynos 9820 tree hard-codes `-Werror` in two places
+  a `KCFLAGS` relaxation cannot reach:
+  - **per-category promotions** in the top `Makefile`
+    (`KBUILD_CFLAGS += $(call cc-option,-Werror=strict-prototypes)` and friends,
+    `Makefile:935-947`). GCC's "the more specific option wins, independently of
+    order" rule means the generic `-Wno-error` appended via KCFLAGS does **not**
+    downgrade them, so the build died on
+    `block/blk-crypt.c:213: error: function declaration isn't a prototype
+    [-Werror=strict-prototypes]`;
+  - **per-directory flags appended after `KBUILD_CFLAGS`** on the cc command
+    line — the bcmdhd Wi-Fi driver's
+    `DHDCFLAGS += -Wall -Werror -Wstrict-prototypes` → `EXTRA_CFLAGS` →
+    `ccflags-y`. That re-enables a general `-Werror`, so the build died on
+    `drivers/net/wireless/broadcom/bcmdhd_101_16/wl_android.c:12016: error: the
+    comparison will always evaluate as ‘true’ … [-Werror=address]`
+    (`cc1: all warnings being treated as errors`).
+
+  `kernel/s10plus/build-kernel.sh` now runs the new
+  `tools/kernel-relax-werror.sh`, which strips the `-Werror` /
+  `-Werror=<diag>` / `-Werror-<diag>` tokens (and whole
+  `$(call cc-option,-Werror=...)` expressions) from the scratch tree's **source**
+  Makefiles — leaving `-Wno-error…` untouched and avoiding the kbuild-internal
+  `scripts/Makefile.*` feature-probe helpers. `DEFAULT_KCFLAGS` also gains
+  `-Wno-error=strict-prototypes`, `-Wno-error=date-time` and
+  `-Wno-error=designated-init` (each still probed against the selected compiler
+  and dropped if unsupported). Idempotent; the tree is a throwaway clone.
+- **Pixel 10 Pro XL (`mustang`) kernel build — patch.** The committed
+  `kernel/google-pixel-10-pro-xl/patches/0001-nuxel-phone-features.patch`
+  declared `@@ -0,0 +1,108 @@` for a hunk that adds only 107 lines
+  (`drivers/nuxel/nuxel-core.c`), so `git apply --check` failed
+  (`error: corrupt patch`) and `kernel/build-kernel.sh` aborted with
+  `error: patch not applied and does not apply` before it ever configured or
+  built. The hunk header is corrected to `@@ -0,0 +1,107 @@`; the patch now applies
+  cleanly to the `android16-6.12` GKI common tree.
+- **Pixel 10 Pro XL (`mustang`) compiler-diagnostics relaxation.**
+  `kernel/build-kernel.sh` now neutralises the GKI tree's global
+  `CONFIG_WERROR=y` (which lands in `KBUILD_CPPFLAGS` via
+  `scripts/Makefile.extrawarn`) with a probe-checked
+  `DEFAULT_KCFLAGS="-Wno-error=parentheses -Wno-error"` — KCFLAGS is appended to
+  `KBUILD_CFLAGS`, i.e. *after* the `-Werror`, so it wins — fixing e.g.
+  `fs/fuse/dev.c:458: … [-Werror=parentheses]`. It also runs
+  `tools/kernel-relax-werror.sh` to strip the per-directory `-Werror`
+  (`arch/arm64/kernel/vdso32`, aic7xxx, lpfc). The generated asm/uapi headers are
+  now produced before `archprepare` (`make asm-generic archprepare`) so the
+  host-tool gate builds on a pristine tree.
+
+### Added
+
+- `tools/kernel-relax-werror.sh` — idempotent helper that strips hard-coded
+  `-Werror` from a kernel source tree's Makefiles (used by the `mustang` and
+  S10+ kernel dispatchers).
+
+### Changed
+
+- **Repository-wide version bump v0.2.1-alpha → v0.2.2-alpha** in: `VERSION`,
+  `README.md`, `docs/*.md` and `design/*.md` headers, the shell apps
+  (`shell/nuxel-shell`, `shell/nuxel-home-native` — meson project version,
+  `__init__`, runtime banner, settings About label and AppStream metainfo with a
+  new 0.2.2-alpha release entry), the PWA manifest
+  (`pwa/nuxel-home/manifest.json` `bridge_version`), the device `APKBUILD`s
+  (`pkgver`), the VM tooling (`vm/deploy-vm-manifest.txt`,
+  `vm/nuxel-vm-snapshot.sh`) and the OTA builder (`images/build-ota.sh`).
+- `README.md` gains a short *What's new in v0.2.2-alpha* section.
+
+### Versioning
+
+- Canonical version file: [`VERSION`](VERSION) = `v0.2.2-alpha`.
+- Historical run logs (under `vm/logs/`) and the point-in-time VM recon report
+  (`vm/utm-state-report.md`) are left untouched as record.
+
+---
+
 ## [v0.2.1-alpha] — 2026-10-13
 
 **Theme:** pre-release fix on top of v0.2.0 — make the **S10+ kernel build**

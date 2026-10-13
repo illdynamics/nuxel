@@ -106,7 +106,7 @@ new file mode 100644
 index 000000000..3e4d1d3d4
 --- /dev/null
 +++ b/drivers/nuxel/nuxel-core.c
-@@ -0,0 +1,108 @@
+@@ -0,0 +1,107 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +/*
 + * Nuxel phone OS core support — mustang (Pixel 10 Pro XL / Tensor G5)

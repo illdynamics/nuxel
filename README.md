@@ -3,7 +3,7 @@
 
 ![Nuxel](./nuxel.jpg)
 
-**v0.2.1-alpha** — _Build the bunker first. Add the rave lights later._
+**v0.2.2-alpha** — _Build the bunker first. Add the rave lights later._
 
 A hardened, GrapheneOS-spirited **Linux phone operating system** built from
 scratch on a pure Linux substrate. **Zero Android dependencies.** Immutable OS.
@@ -147,6 +147,34 @@ NUXEL_DEVICE=mustang bash boot/flash.sh --unlock --wipe
 | `ci/` | Build validation |
 | `assets/` | Wallpaper + boot animation |
 
+## What's new in v0.2.2-alpha
+
+A small pre-release on top of **v0.2.1-alpha**; full detail in
+**[CHANGELOG.md](CHANGELOG.md)**.
+
+- **S10+ kernel build fixed for real in CI.** Forcing `CROSS_COMPILE` and
+  dropping the compiler-unsupported KCFLAGS (v0.2.1-alpha) was not enough: on
+  the runner's GCC 13 the downstream 4.14 tree still hard-codes `-Werror` in two
+  places a `KCFLAGS` relaxation cannot reach — per-category
+  `$(call cc-option,-Werror=<diag>)` promotions in the top `Makefile`
+  (`block/blk-crypt.c:213: error: function declaration isn't a prototype
+  [-Werror=strict-prototypes]`) and per-directory flags that land *after*
+  `KBUILD_CFLAGS` (the bcmdhd Wi-Fi driver's `DHDCFLAGS += -Wall -Werror ...`,
+  `wl_android.c:12016: error: the comparison will always evaluate as 'true' ...
+  [-Werror=address]`). The wrapper now strips those tokens from its scratch tree
+  via the new `tools/kernel-relax-werror.sh`, so the build compiles past both.
+- **Pixel 10 Pro XL (`mustang`) kernel build fixed.** The
+  `0001-nuxel-phone-features.patch` carried a corrupt hunk header
+  (`@@ -0,0 +1,108 @@` for a 107-line `drivers/nuxel/nuxel-core.c`), so `git apply`
+  failed with `error: corrupt patch` and the build never started. The header is
+  corrected and the patch now applies cleanly to the `android16-6.12` GKI tree;
+  the mustang dispatcher also gained a `-Wno-error`/`-Wno-error=parentheses`
+  KCFLAGS relaxation (the GKI `CONFIG_WERROR=y` dies on
+  `fs/fuse/dev.c:458` `[-Werror=parentheses]` under GCC 13).
+- **Version bump to v0.2.2-alpha** across `VERSION`, README, docs/design
+  headers, the shell apps, the PWA manifest, the device `APKBUILD`s, the VM
+  tooling and the OTA builder.
+
 ## What's new in v0.2.1-alpha
 
 A small pre-release on top of **v0.2.0**; full detail in
@@ -218,7 +246,7 @@ image.** The honest
 per-area breakdown is the table below; the "what's left" list is in the
 changelog.
 
-## Honest Status — v0.2.1-alpha
+## Honest Status — v0.2.2-alpha
 
 **Nuxel is a design scaffold with three device bring-ups in progress and a bootable UTM VM proving out the architecture. No phone has yet booted a Nuxel-built image.**
 
@@ -430,7 +458,7 @@ The other two bring-up targets are the **Samsung Galaxy S10+** (Exynos 9820,
 
 | Document | Description |
 |---|---|
-| [CHANGELOG.md](CHANGELOG.md) | Release notes — everything from v0.1.0 to v0.2.1-alpha + readiness |
+| [CHANGELOG.md](CHANGELOG.md) | Release notes — everything from v0.1.0 to v0.2.2-alpha + readiness |
 | [prompts/QUICKSTART.md](prompts/QUICKSTART.md) | Get running in 5 minutes |
 | [design/nuxel-linux-phone-design.md](design/nuxel-linux-phone-design.md) | Design bible — the full vision |
 | [design/Nuxel Phone OS Project Plan and Architecture.md](design/Nuxel%20Phone%20OS%20Project%20Plan%20and%20Architecture.md) | Technical architecture + component map |
@@ -463,8 +491,8 @@ The other two bring-up targets are the **Samsung Galaxy S10+** (Exynos 9820,
 Build outputs (`build/out/<device>/`) are git-ignored — they are produced by the
 scripts in `images/` and `kernel/`, not committed. To publish them on GitHub:
 
-* **Automated (recommended):** push a version tag (`git tag v0.2.1-alpha && git push
-  origin v0.2.1-alpha`). [`.github/workflows/release.yml`](.github/workflows/release.yml)
+* **Automated (recommended):** push a version tag (`git tag v0.2.2-alpha && git push
+  origin v0.2.2-alpha`). [`.github/workflows/release.yml`](.github/workflows/release.yml)
   builds every device on an Ubuntu runner (`make assets`, the shared initramfs,
   each `kernel/<dev>/build-kernel.sh`, then `images/<dev>/build.sh`), packages
   each `build/out/<device>/` directory and creates a GitHub Release with the

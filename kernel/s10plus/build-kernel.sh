@@ -67,7 +67,7 @@ CROSS_COMPILE="${CROSS_COMPILE:-aarch64-linux-gnu-}"
 # -Wformat= become hard errors (e.g. arch/arm64/mm/fault.c using %lx with a
 # phys_addr_t). KCFLAGS is appended last to KBUILD_CFLAGS (Makefile:963), so the
 # trailing -Wno-error downgrades those back to warnings.
-DEFAULT_KCFLAGS="-fcommon -Wno-error=incompatible-pointer-types -Wno-error=implicit-function-declaration -Wno-error=int-conversion -Wno-error=implicit-int -Wno-error=return-mismatch -Wno-error=discarded-qualifiers -Wno-error=pointer-sign -Wno-error"
+DEFAULT_KCFLAGS="-fcommon -Wno-error=incompatible-pointer-types -Wno-error=implicit-function-declaration -Wno-error=int-conversion -Wno-error=implicit-int -Wno-error=strict-prototypes -Wno-error=date-time -Wno-error=designated-init -Wno-error=return-mismatch -Wno-error=discarded-qualifiers -Wno-error=pointer-sign -Wno-error"
 
 DO_CLONE=0
 DO_CLEAN=0
@@ -129,6 +129,21 @@ if [[ $DO_CLONE -eq 1 || ! -d "${KSRC}/.git" ]]; then
         git -C "${KSRC}" checkout "${DOWNSTREAM_COMMIT}"
     fi
 fi
+
+# --- GCC-13 warning hardening (root-cause fix) ------------------------------
+# The downstream 4.14 tree hard-codes -Werror in two places a KCFLAGS
+# relaxation cannot reach: per-category `$(call cc-option,-Werror=<diag>)` in
+# the top Makefile (specific beats the generic -Wno-error regardless of order)
+# and per-directory flags appended after KBUILD_CFLAGS, e.g. bcmdhd's
+# `DHDCFLAGS += -Wall -Werror ... -> EXTRA_CFLAGS` (which lands *after* KCFLAGS
+# on the cc command line). On CI's GCC 13 that turns ordinary warnings such as
+#     block/blk-crypt.c:213: error: function declaration isn't a prototype
+#         [-Werror=strict-prototypes]
+#     drivers/net/wireless/broadcom/bcmdhd_101_16/wl_android.c:12016: error:
+#         the comparison will always evaluate as 'true' ... [-Werror=address]
+# into fatal errors. tools/kernel-relax-werror.sh strips those tokens from the
+# scratch tree's source Makefiles (idempotent; kbuild-internal scripts/* kept).
+bash "${NUXEL_ROOT}/tools/kernel-relax-werror.sh" "${KSRC}"
 
 # --- configure ---
 cd "${KSRC}"
