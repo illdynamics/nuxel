@@ -288,14 +288,14 @@ changelog.
 | Native GTK apps | 25–35% | C source exists, not proven buildable on aarch64 |
 | D-Bus bridge/portal | 30% | Python parses, dev-grade auth, not integration-tested |
 | Sandbox/security | 20% | Configs exist, enforcement not wired end-to-end |
-| Build system | 20% | Per-device dispatchers + inventory gates; still unproven on hardware |
-| Flashable images | 50% | Real, checksummed artifacts built **in CI** for **g7power** (lk2nd + boot + ext4 rootfs, all verified) and **s10plus** (boot with merged DTB + ext4 rootfs, verified); **0 of 2 verified booting** |
+| Build system | 55% | Per-device dispatchers + inventory gates; the **fail-closed release CI is green end-to-end for `g7power` + `s10plus`** — `tools/verify-artifacts.sh` asserts a real gzip'd ARM64 `Image.gz`, a valid FDT, the boot image `ANDROID!` header, an `ext4` rootfs and (G7 Power) `lk2nd.img` before anything can go green. Still unproven on hardware |
+| Flashable images | 65% | Real, checksummed artifacts built **reproducibly in a green, fail-closed CI** for **g7power** (lk2nd + boot + ext4 rootfs, all verified + `sha256sums.txt`) and **s10plus** (boot with merged DTB + ext4 rootfs, verified + `sha256sums.txt`); **0 of 2 verified booting** |
 | Pixel 10 Pro XL (mustang) | 5% | Public mustang Linux is UART/initramfs-level only; no boot artifact built yet |
-| Galaxy S10+ (beyond2lte) | 30% | Downstream 4.14 boot image built; **only the boot partition flashed** with heimdall (BOOT 100%). Download Mode is balky — manual flash attempt in progress; boot not yet confirmed |
+| Galaxy S10+ (beyond2lte) | 35% | Downstream 4.14 boot image now **builds reproducibly in CI** (base DTB + rev-26 `.dtbo` merged with `fdtoverlay`); **only the boot partition flashed** with heimdall (BOOT 100%). Download Mode is balky — manual flash attempt in progress; boot not yet confirmed |
 | Moto G7 Power (ocean) | 40% | Boot + ext4 rootfs images **flashed to hardware** (touch-driver fix, lk2nd/QCDT chainloader); device powers on but hangs at a **black/flashy screen** — not yet booting Nuxel |
 | UTM VM | 70% | A genuine **Nuxel UTM bundle exists and boots** — Fedora 43 + Phosh at 720×1440 (live screenshots), Nuxel services + PWA on the desktop, guest SSH + **internet verified working**, and **sound works** via a `virtio-sound-pci` device (`virtio_snd` ALSA card, in-guest playback verified); bundle is a local artifact (`artifacts/vm/`, gitignored, not committed) |
 
-**Overall: ~35–40% MVP scaffold. 2 of 3 phones have built boot images and both have been pushed to hardware (G7 Power flashed but stuck at a black/flashy screen; S10+ boot partition only); 0 of 3 verified booting. The UTM VM demo boots and works (display + network + sound).**
+**Overall: ~40–45% MVP scaffold. 2 of 3 phones now produce built, checksummed boot images from a green, fail-closed CI and both have been pushed to hardware (G7 Power flashed but stuck at a black/flashy screen; S10+ boot partition only); 0 of 3 verified booting. The UTM VM demo boots and works (display + network + sound).**
 
 ### What this repo IS:
 - A well-documented architecture blueprint for a Linux phone OS
@@ -311,6 +311,12 @@ changelog.
 - A **bootable UTM VM** — Fedora 43 + Phosh at 720×1440, Nuxel services + PWA
   live on the desktop, guest SSH reachable and **internet working** (bundle is a
   local, gitignored artifact under `artifacts/vm/`)
+- **A green, fail-closed release CI.** The `Release` workflow run for tag
+  `v0.3.0-alpha` completed **success** for the `g7power` + `s10plus` matrix (the
+  `mustang` job is not in the matrix), including the strict
+  `tools/verify-artifacts.sh` gate. Artifacts are reproducible per device and
+  shipped with a per-device `sha256sums.txt`; a red run can no longer create a
+  release.
 - **Working VM audio** — the UTM bundle exposes a `virtio-sound-pci` device
   (`Sound` → `Hardware: virtio-sound-pci` in `config.plist`); the guest binds it
   with `virtio_snd` and enumerates it as ALSA card 0
