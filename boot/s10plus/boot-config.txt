@@ -14,9 +14,9 @@ codename=beyond2lte
 ufs_path=/dev/block/platform/13d60000.ufs/by-name
 
 # Boot image format: legacy Android boot image header v1, page 2048.
-# heimdall partition names (pmOS deviceinfo): BOOT (kernel) + SYSTEM (rootfs).
+# Nuxel phase-1 partition plan: BOOT (kernel) + USERDATA (rootfs).
 heimdall_partition_kernel=BOOT
-heimdall_partition_rootfs=SYSTEM
+heimdall_partition_rootfs=USERDATA
 
 # Load addresses — SOURCED from pmaports device/testing/device-samsung-beyond1lte/deviceinfo
 # (flash_offset_base=0x10000000, kernel=0x00008000, ramdisk=0x01000000, tags=0x00000100).

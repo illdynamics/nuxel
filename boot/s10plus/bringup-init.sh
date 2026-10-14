@@ -43,26 +43,31 @@ setup_acm() {
 }
 setup_acm && log 'USB ACM gadget bound' || log 'USB ACM unavailable (not a fatal error)'
 
-# Framebuffer probe; without a display driver this must not block boot.
-if [ -c /dev/fb0 ]; then
-    log "framebuffer: $(cat /sys/class/graphics/fb0/virtual_size 2>/dev/null)"
-    # A 4096-byte RGB565/BGRA navy pattern is included in this bring-up root;
-    # don't claim that a frame was painted if the driver has no framebuffer.
-    case "$(cat /sys/class/graphics/fb0/bits_per_pixel 2>/dev/null)" in
-        16) pattern=/usr/lib/nuxel/fb-navy-rgb565.bin ;;
-        32) pattern=/usr/lib/nuxel/fb-navy-bgra32.bin ;;
-        *)  pattern= ;;
-    esac
-    if [ -n "$pattern" ] && [ -f "$pattern" ]; then
-        dd if="$pattern" of=/dev/fb0 bs=4096 count=1 2>/dev/null || true
-        log 'wrote diagnostic framebuffer pattern (first 4096 bytes only)'
+# Early Nuxel phone first-light screen; this is an explicitly diagnostic
+# framebuffer UI, not Phosh. It uses a static ARM64 binary with no libc.
+# We cannot make the Samsung panel driver appear from userland. If the kernel
+# exposes no /dev/fb0, record a precise failure instead of claiming success.
+fb_attempt=0
+fb_ok=0
+while [ "$fb_attempt" -lt 20 ]; do
+    if [ -c /dev/fb0 ] || [ -c /dev/graphics/fb0 ]; then
+        if [ -x /usr/bin/nuxel-fb-phone ]; then
+            /usr/bin/nuxel-fb-phone > /run/nuxel-fb-status 2>&1 && fb_ok=1
+        fi
+        break
     fi
+    fb_attempt=$((fb_attempt+1))
+    sleep 1
+done
+if [ "$fb_ok" -eq 1 ]; then
+    log 'first-light framebuffer write completed; actual panel visibility unverified'
 else
-    log 'no /dev/fb0; display driver not verified'
+    log 'first-light display unavailable: no driver, unsupported mode or framebuffer write failure'
+    cat /run/nuxel-fb-status >/dev/console 2>/dev/null || true
 fi
 
-# This filesystem only contains Nuxel source/overlays. Its Python, OpenRC and
-# Phosh dependencies are not present.  Do not pretend services launched.
+# This small diagnostic filesystem does NOT have Python/OpenRC/Phosh installed.
+# Full phone UI needs build-phone-rootfs-fedora.sh and verified driver support.
 if [ ! -x /usr/bin/python3 ] || [ ! -x /sbin/openrc-init ]; then
     log 'minimal bring-up root: no full Python/OpenRC/Phosh runtime'
 fi

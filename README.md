@@ -319,6 +319,20 @@ changelog.
 
 ## Honest Status — v0.3.2-alpha
 
+
+**S10+ October 14 Fedora phone-runtime update:** Read [S10PLUS-PROGRESS.md](S10PLUS-PROGRESS.md)
+for area-by-area percentages and evidence. The merged boot and cleaned ARM64
+rootfs images are **offline-verified only**; a static framebuffer Nuxel phone
+screen is included for hardware diagnostics, but the bundled rootfs does **not**
+contain Fedora Python/systemd/Phosh/Phoc runtime binaries. To construct those
+from genuine Fedora 43 ARM64 RPM packages on a network-connected Apple Silicon
+Mac with Docker Desktop, run `bash images/s10plus/build-phone-rootfs-fedora.sh`.
+This is an unexecuted, fail-closed builder in the offline artifact environment;
+OpenRC belongs to the optional legacy Alpine route, not the Fedora image. No S10+ successful
+hardware boot or Phosh display has been demonstrated. Read
+[the final Mac guide](macbook-s10plus-flash-guide-final-full.md) before flashing.
+
+
 **Nuxel is a design scaffold with three device bring-ups in progress and a bootable UTM VM proving out the architecture. No phone has yet booted a Nuxel-built image.**
 
 | Area | Score | Notes |
@@ -333,11 +347,11 @@ changelog.
 | Build system | 55% | Per-device dispatchers + inventory gates; the **fail-closed release CI is green end-to-end for `g7power` + `s10plus`** — `tools/verify-artifacts.sh` asserts a real gzip'd ARM64 `Image.gz`, a valid FDT, the boot image `ANDROID!` header, an `ext4` rootfs **with its boot splash** (animation MP4 + Plymouth theme) and (G7 Power) `lk2nd.img` before anything can go green. Still unproven on hardware |
 | Flashable images | 65% | Real, checksummed artifacts built **reproducibly in a green, fail-closed CI** for **g7power** (lk2nd + boot + ext4 rootfs, all verified + `sha256sums.txt`) and **s10plus** (boot with merged DTB + ext4 rootfs, verified + `sha256sums.txt`); **0 of 2 verified booting** |
 | Pixel 10 Pro XL (mustang) | 5% | Public mustang Linux is UART/initramfs-level only; no boot artifact built yet |
-| Galaxy S10+ (beyond2lte) | 35% | Downstream 4.14 boot image now **builds reproducibly in CI** (base DTB + rev-26 `.dtbo` merged with `fdtoverlay`); **only the boot partition flashed** with heimdall (BOOT 100%). Download Mode is balky — manual flash attempt in progress; boot not yet confirmed |
+| Galaxy S10+ (beyond2lte) | 38% | Downstream 4.14 boot image now **builds reproducibly in CI** (base DTB + rev-26 `.dtbo` merged with `fdtoverlay`); **BOOT and USERDATA transfers have each reached 100%**, but Heimdall session-end confirmation failed; boot and on-device storage verification remain unknown |
 | Moto G7 Power (ocean) | 40% | Boot + ext4 rootfs images **flashed to hardware** (touch-driver fix, lk2nd/QCDT chainloader); device powers on but hangs at a **black/flashy screen** — not yet booting Nuxel |
 | UTM VM | 70% | A genuine **Nuxel UTM bundle exists and boots** — Fedora 43 + Phosh at 720×1440 (live screenshots), Nuxel services + PWA on the desktop, guest SSH + **internet verified working**, and **sound works** via a `virtio-sound-pci` device (`virtio_snd` ALSA card, in-guest playback verified); bundle is a local artifact (`artifacts/vm/`, gitignored, not committed) |
 
-**Overall: ~40–45% MVP scaffold. 2 of 3 phones now produce built, checksummed boot images from a green, fail-closed CI and both have been pushed to hardware (G7 Power flashed but stuck at a black/flashy screen; S10+ boot partition only); 0 of 3 verified booting. The UTM VM demo boots and works (display + network + sound).**
+**Overall: ~40–45% MVP scaffold. 2 of 3 phones now produce built, checksummed boot images from a green, fail-closed CI and both have been pushed to hardware (G7 Power flashed but stuck at a black/flashy screen; S10+ BOOT+USERDATA transfer reported 100% but lacked session-end confirmation); 0 of 3 verified booting. The UTM VM demo boots and works (display + network + sound).**
 
 ### What this repo IS:
 - A well-documented architecture blueprint for a Linux phone OS

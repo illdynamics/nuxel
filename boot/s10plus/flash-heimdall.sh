@@ -5,7 +5,7 @@
 # This is the PROVEN flash path (it is exactly how postmarketOS installs the
 # S10/S10e): Download Mode + heimdall, flashing
 #     BOOT   <- the legacy v1 boot.img (kernel Image.gz + initramfs + DTB)
-#     SYSTEM <- the rootfs image
+#     USERDATA <- the rootfs image (DESTRUCTIVE: overwrites user data)
 #
 # It does NOT use Android-bootloader-mode flashing (there is none on Exynos)
 # and it does NOT need U-Boot (that is only for the mainline stretch path).
@@ -18,9 +18,9 @@
 # Options:
 #   --device s10plus          REQUIRED (any other key is refused).
 #   --boot <img>              v1 boot.img to flash to BOOT.
-#   --rootfs <img>            rootfs image to flash to SYSTEM.
+#   --rootfs <img>            rootfs image to flash to USERDATA.
 #   --partition-kernel <n>    heimdall name for the kernel partition (default BOOT).
-#   --partition-rootfs <n>    heimdall name for the rootfs partition (default SYSTEM).
+#   --partition-rootfs <n>    only USERDATA is accepted (safety).
 #   --boot <img> only         flash only the boot partition (fast revert/test).
 #   --dry-run                 print the heimdall commands; flash nothing.
 #   --force                   skip the confirmation prompt.
@@ -37,8 +37,8 @@ NUXEL_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 PROTECTED_PARTITIONS="efs efsg persist param up_param steady keystorage carrier cp_debug misc"
 
 DEVICE_KEY=""; BOOT_IMG=""; ROOTFS_IMG=""
-PART_KERNEL="BOOT"; PART_ROOTFS="SYSTEM"
-DRY_RUN=0; FORCE=0
+PART_KERNEL="BOOT"; PART_ROOTFS="USERDATA"
+DRY_RUN=0; FORCE=0; NO_REBOOT=0; PIT_TEXT=""
 
 log()  { echo "[s10plus-heimdall] $*"; }
 err()  { echo "[s10plus-heimdall][error] $*" >&2; }
@@ -54,6 +54,8 @@ while [[ $# -gt 0 ]]; do
         --partition-kernel) PART_KERNEL="$2"; shift 2 ;;
         --partition-rootfs) PART_ROOTFS="$2"; shift 2 ;;
         --dry-run) DRY_RUN=1; shift ;;
+        --pit-text) PIT_TEXT="$2"; shift 2 ;;
+        --no-reboot) NO_REBOOT=1; shift ;;
         --force) FORCE=1; shift ;;
         *) err "unknown option: $1"; usage; exit 1 ;;
     esac
@@ -64,6 +66,10 @@ done
 source "${NUXEL_ROOT}/tools/nuxel-device-select.sh" --device "${DEVICE_KEY}"
 [ "${NUXEL_DEVICE_KEY}" = "s10plus" ] || { err "device key mismatch"; exit 1; }
 
+# This S10+ release is scoped strictly to BOOT + USERDATA. Never use an
+# operator-supplied partition alias to bypass checks or write SYSTEM.
+[ "${PART_KERNEL}" = "BOOT" ] || { err "BOOT is the only allowed kernel target"; exit 1; }
+[ "${PART_ROOTFS}" = "USERDATA" ] || { err "USERDATA is the only allowed rootfs target"; exit 1; }
 # protected-partition denylist
 for p in ${PROTECTED_PARTITIONS}; do
     [ "${PART_KERNEL}" = "${p}" ] && { err "refusing: ${PART_KERNEL} is protected"; exit 1; }
@@ -87,21 +93,50 @@ done
 [ -n "${HEIMDALL}" ] || { err "heimdall (flash tool) not found. Install heimdall-flash (see phones/s10plus/s10plus-go-guide.md)"; exit 1; }
 log "heimdall: ${HEIMDALL} ($(${HEIMDALL} version 2>/dev/null | head -1))"
 
+if [ -n "$PIT_TEXT" ]; then
+    [ -f "$PIT_TEXT" ] || { err "PIT text not found: $PIT_TEXT"; exit 1; }
+    PIT_CMD=(python3 "${NUXEL_ROOT}/tools/s10plus/check-device-pit.py" "$PIT_TEXT")
+    [ -z "$BOOT_IMG" ] || PIT_CMD+=(--boot "$BOOT_IMG")
+    [ -z "$ROOTFS_IMG" ] || PIT_CMD+=(--rootfs "$ROOTFS_IMG")
+    "${PIT_CMD[@]}" || { err "PIT preflight failed: refusing flash"; exit 1; }
+else
+    log 'WARNING: --pit-text not set. The current phone PIT was not checked by this run.'
+fi
+
 ARGS=(flash)
 [ -z "${BOOT_IMG}" ]   || ARGS+=("--${PART_KERNEL}" "${BOOT_IMG}")
 [ -z "${ROOTFS_IMG}" ] || ARGS+=("--${PART_ROOTFS}" "${ROOTFS_IMG}")
 
+[ "$NO_REBOOT" -eq 0 ] || ARGS+=(--no-reboot)
 log "Put the S10+ in Download Mode:  Vol Down + Bixby + Power (hold)."
+log 'NOTE: a PIT cannot verify the merged DTB board rev; first verify exact handset hardware.'
+log 'NOTE: --no-reboot changes reboot behavior, NOT the Odin EndSession handshake.' 
 log "Command: ${HEIMDALL} ${ARGS[*]}"
 if [ "${DRY_RUN}" -eq 1 ]; then log "[dry-run] not flashing."; exit 0; fi
 
 "${HEIMDALL}" detect || { err "no Download-Mode device detected"; exit 1; }
 
 if [ "${FORCE}" -eq 0 ]; then
-    read -rp "Flash BOOT='${BOOT_IMG:-<skip>}' SYSTEM='${ROOTFS_IMG:-<skip>}'? [y/N] " c
+    read -rp "Flash BOOT='${BOOT_IMG:-<skip>}' USERDATA='${ROOTFS_IMG:-<skip>}'? [y/N] " c
     [[ "$c" =~ ^[Yy]$ ]] || { err "aborted"; exit 1; }
 fi
 
-"${HEIMDALL}" "${ARGS[@]}"
-log "Done. Reboot the device."
-log "Revert to stock at any time: ${HEIMDALL} flash --BOOT <stock-boot.img>"
+mkdir -p "${NUXEL_ROOT}/build/logs/s10plus"
+STAMP="$(date -u +%Y%m%dT%H%M%SZ)"
+RUN_LOG="${NUXEL_ROOT}/build/logs/s10plus/heimdall-${STAMP}.log"
+set +e
+"${HEIMDALL}" "${ARGS[@]}" 2>&1 | tee "$RUN_LOG"
+RC=${PIPESTATUS[0]}
+set -e
+if [ "$RC" -ne 0 ] || grep -qiE 'ERROR:|Failed to receive session end confirmation' "$RUN_LOG"; then
+    err "FLASH NOT CONFIRMED (exit=$RC): inspect log $RUN_LOG"
+    if grep -q 'Failed to receive session end confirmation' "$RUN_LOG"; then
+        err 'Heimdall failed to receive Odin EndSession acknowledgement. BOOT and USERDATA 100% DO NOT prove committed writes.'
+        err 'Do not immediately loop/reflash. Validate handset state, USB transfer, matching firmware/bootloader and trusted restoration route.'
+        err 'If this repeats on macOS and Fedora, try a different flashing implementation (e.g. Odin on Windows) only after full model verification.'
+    fi
+    exit 5
+fi
+log "Heimdall returned success. Log: $RUN_LOG"
+log 'This is a transfer result only, NOT confirmation of hardware boot or visible Nuxel phone UI.'
+log 'For stock recovery use an exact model-matched official image and verified recovery procedure.' 

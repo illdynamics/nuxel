@@ -39,7 +39,7 @@ err()  { echo "[nuxel-s10plus-build][error] $*" >&2; }
 
 usage() {
     cat <<'EOF'
-Usage: NUXEL_DEVICE=s10plus bash images/s10plus/build.sh [--device s10plus] [--help] [--no-uboot]
+Usage: NUXEL_DEVICE=s10plus bash images/s10plus/build.sh [--device s10plus] [--help] [--no-uboot] [--phone-rootfs]
 
 Builds the S10+ (beyond2lte, Exynos 9820) boot + rootfs artifacts into
 build/out/s10plus/:
@@ -67,6 +67,8 @@ bring-up. Phase 0 device inventory (docs/s10plus-device-inventory.md) must be
 filled before a real build; --help is exempt.
 
 Options:
+  --phone-rootfs Build the separate Fedora ARM64 Nuxel PHONE userspace with Docker,
+                 without rebuilding the kernel. Does not imply real hardware boot.
   --no-uboot    skip u-boot-beyond2lte.img when u-boot.bin is absent; the
                 final summary marks the artifact set INCOMPLETE.
 
@@ -78,6 +80,7 @@ EOF
 # --help exits before any gate work (device selection + inventory gate).
 # --no-uboot is parsed here too; it only skips the U-Boot boot image.
 NO_UBOOT=0
+PHONE_ROOTFS_ONLY=0
 # U-Boot (chiffathefox/u-boot, exynos9820) is ONLY needed for the mainline
 # kernel stretch. The proven Phase-1 downstream/heimdall path flashes
 # nuxel-beyond2lte-boot.img straight to BOOT and does NOT involve U-Boot, so
@@ -89,6 +92,7 @@ for arg in "$@"; do
     case "$arg" in
         --help|-h) usage; exit 0 ;;
         --no-uboot) NO_UBOOT=1 ;;
+        --phone-rootfs) PHONE_ROOTFS_ONLY=1 ;;
         --require-uboot) UBOOT_REQUIRED=1 ;;
     esac
 done
@@ -105,6 +109,13 @@ source "${NUXEL_ROOT}/tools/nuxel-device-select.sh" "$@"
     err "images/s10plus/build.sh is ONLY for s10plus. Got: ${NUXEL_DEVICE_KEY}"
     exit 1
 }
+
+# New supported release pathway: Fedora aarch64 phone userspace, separate
+# from the old Flatpak-based staging flow below. Never let a skeleton rootfs
+# masquerade as the deliverable when building for an actual S10+.
+if [ "$PHONE_ROOTFS_ONLY" -eq 1 ]; then
+    exec bash "${NUXEL_ROOT}/images/s10plus/build-phone-rootfs-fedora.sh"
+fi
 
 # Per-device tree (selector-verified: == s10plus).
 DEVICE_DIR="${NUXEL_DEVICE_DIR}"
@@ -160,19 +171,23 @@ KERNEL_IMG="${KERNEL_OUT}/arch/arm64/boot/Image.gz"
 DTB_BASE="${KERNEL_OUT}/arch/arm64/boot/dts/exynos/exynos9820.dtb"
 DTB_SAMSUNG_DIR="${KERNEL_OUT}/arch/arm64/boot/dts/samsung"
 DTB_MERGED="${DTB_SAMSUNG_DIR}/exynos9820-beyond2lte.dtb"
-if [ ! -s "${DTB_MERGED}" ] && [ -s "${DTB_BASE}" ]; then
-    _overlay="$(find "${DTB_SAMSUNG_DIR}" -maxdepth 1 \
-        -name 'exynos9820-beyond2lte_eur_open_*.dtbo' 2>/dev/null | sort -V | tail -1 || true)"
-    if [ -n "${_overlay}" ] && command -v fdtoverlay >/dev/null 2>&1; then
-        log "Merging board DTB: exynos9820.dtb + $(basename "${_overlay}") -> exynos9820-beyond2lte.dtb"
-        if ! fdtoverlay -i "${DTB_BASE}" -o "${DTB_MERGED}" "${_overlay}"; then
-            err "fdtoverlay failed to merge ${_overlay} onto ${DTB_BASE}"
-            exit 1
-        fi
-    else
-        warn "Cannot build merged board DTB (overlay='${_overlay}' fdtoverlay=$(command -v fdtoverlay || echo missing))"
-    fi
+# Explicit revision is mandatory for a board-specific merged image. Choosing
+# the highest available overlay is NOT a safe substitute for knowing the
+# physical board hw_rev. No silent use of an old premerged DTB either.
+BOARD_REV="${NUXEL_S10PLUS_BOARD_REV:-}"
+if [[ ! "${BOARD_REV}" =~ ^[0-9]+$ ]]; then
+    err "NUXEL_S10PLUS_BOARD_REV must be set from your physical device inventory"
+    err "Refusing to guess or reuse a potentially wrong merged board DTB."
+    exit 1
 fi
+_overlay="${DTB_SAMSUNG_DIR}/exynos9820-beyond2lte_eur_open_${BOARD_REV}.dtbo"
+[ -s "${DTB_BASE}" ] || { err "missing base DTB: ${DTB_BASE}"; exit 1; }
+[ -s "${_overlay}" ] || { err "missing exact board overlay: ${_overlay}"; exit 1; }
+command -v fdtoverlay >/dev/null 2>&1 || { err "fdtoverlay is required"; exit 1; }
+log "Merging verified board revision ${BOARD_REV}: ${_overlay}"
+fdtoverlay -i "${DTB_BASE}" -o "${DTB_MERGED}" "${_overlay}" || {
+    err "device-tree merge failed"; exit 1;
+}
 
 # Board DTB search. Prefer the merged standalone DTB (exynos9820-beyond2lte.dtb)
 # under dts/samsung/, then any exynos9820-beyond2lte*.dtb, then a mainline-style
@@ -299,9 +314,10 @@ fi
 # (Flatpak runtime + Nuxel services/apps/security configs). It is invoked
 # as-is and populates build/out/rootfs (and, when its bake step runs,
 # build/out/system.img). OpenRC is the phone-target init (pmOS-style).
-log "Assembling Nuxel userspace with images/mkrootfs.sh (device-agnostic)..."
-export NUXEL_INIT="${NUXEL_INIT:-openrc}"
-bash "${NUXEL_ROOT}/images/mkrootfs.sh"
+err 'Legacy S10+ Flatpak/OpenRC rootfs bake is disabled to prevent incorrect architecture/runtime artifacts.'
+err 'Build the Fedora 43 phone rootfs with: bash images/s10plus/build.sh --device s10plus --phone-rootfs'
+err 'The new independent boot repacker is tools/s10plus/patch-boot-from-upload.py.'
+exit 2
 
 # --- 4. Overlay device-specific content into the rootfs staging ------------
 # All S10+ content is installed AFTER the shared userspace build so nothing
@@ -360,6 +376,27 @@ else
     warn "       O=\"${KERNEL_OUT}\" modules_install INSTALL_MOD_PATH=\"${KERNEL_OUT}\""
 fi
 
+# --- Phase-1 static ARM64 bring-up PID 1 (only with explicit opt-in) -----
+# Use the validated prebuilt rootfs for flashing.  When rebuilding manually,
+# NUXEL_S10PLUS_BRINGUP=1 creates an intentionally minimal ARM64 bring-up root,
+# NOT a full Phosh/OpenRC Nuxel installation. It must never silently mask a
+# missing full distro or copy host-architecture binaries.
+if [ "${NUXEL_S10PLUS_BRINGUP:-0}" = 1 ]; then
+    TOYBOX="${NUXEL_ROOT}/images/initramfs/bin/toybox"
+    [ -s "${TOYBOX}" ] || { err "ARM64 toybox missing: ${TOYBOX}"; exit 1; }
+    grep -q 'aarch64' <(file "${TOYBOX}") || { err "Toybox not aarch64"; exit 1; }
+    mkdir -p "${ROOTFS_STAGING}/sbin" "${ROOTFS_STAGING}/bin"
+    cp "${NUXEL_ROOT}/boot/s10plus/bringup-init.sh" "${ROOTFS_STAGING}/sbin/init"
+    chmod 0755 "${ROOTFS_STAGING}/sbin/init"
+    cp "${TOYBOX}" "${ROOTFS_STAGING}/bin/toybox"
+    chmod 0755 "${ROOTFS_STAGING}/bin/toybox"
+    ln -sfn toybox "${ROOTFS_STAGING}/bin/sh"
+    for applet in mount mkdir cat ls dd sleep grep head; do
+        ln -sfn toybox "${ROOTFS_STAGING}/bin/${applet}"
+    done
+    warn "Creating experimental S10+ bring-up rootfs, not complete desktop"
+fi
+
 # --- 5. Emit rootfs image ---------------------------------------------------
 # Phase 1: plain ext4, writable. NO dm-verity/AVB yet — the bring-up rootfs
 # must stay writable (U-Boot chainload + kernel + userspace are not stable
@@ -367,6 +404,17 @@ fi
 # phase. The image is baked from the final staging dir so the S10+ firmware,
 # configs and kernel modules are included.
 _bake_rootfs_image() {
+    # Do not silently ship a skeleton/other-device rootfs. The full desktop
+    # requires actual ARM64 runtime, while Phase-1 has a separately identified
+    # minimal bring-up image. Keep these two artifacts distinctly labeled.
+    if [ ! -e "${ROOTFS_STAGING}/sbin/init" ]; then
+        err "staging has no /sbin/init; refusing to advertise a bootable rootfs"
+        return 1
+    fi
+    if [ ! -e "${ROOTFS_STAGING}/bin/sh" ]; then
+        err "staging has no /bin/sh; refusing to advertise a bootable rootfs"
+        return 1
+    fi
     local rootfs_img="${BOOT_OUT}/nuxel-beyond2lte-rootfs.img"
     local size_m img_m
 
@@ -408,7 +456,7 @@ _bake_rootfs_image() {
     else
         mke2fs -q -t ext4 -L nuxel-beyond2lte -d "${ROOTFS_STAGING}" "${rootfs_img}" "${img_m}M"
     fi
-    e2fsck -fy "${rootfs_img}" >/dev/null 2>&1 || true
+    e2fsck -fy "${rootfs_img}" >/dev/null 2>&1 || { err "rootfs fsck failed"; return 1; }
     resize2fs -M "${rootfs_img}" >/dev/null 2>&1 || true
     log "Rootfs image: ${rootfs_img} (ext4, writable, NO dm-verity/AVB — Phase 1)"
 }

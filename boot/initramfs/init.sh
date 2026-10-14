@@ -196,9 +196,38 @@ find_root() {
     return 1
 }
 
+# The Samsung downstream Linux kernel does not necessarily create Android's
+# /dev/block/platform/.../by-name symlinks.  Those are normally made by
+# Android userspace (ueventd).  devtmpfs exposes /dev/sdXn, and the kernel's
+# uevent files expose PARTNAME.  Never guess a partition number.
+s10plus_userdata_device() {
+    # Existing Android-style links or udev-created links, when available.
+    for candidate in \
+        /dev/block/platform/13d60000.ufs/by-name/userdata \
+        /dev/block/by-name/userdata \
+        /dev/disk/by-partlabel/userdata \
+        /dev/disk/by-partlabel/USERDATA; do
+        [ -b "$candidate" ] && { printf '%s\n' "$candidate"; return 0; }
+    done
+    # mdev populates /dev when devtmpfs alone has no partition node; it does
+    # not magically create Android by-name links, so use sysfs PARTNAME below.
+    command -v mdev >/dev/null 2>&1 && mdev -s 2>/dev/null || true
+    for uevent in /sys/class/block/*/uevent; do
+        [ -f "$uevent" ] || continue
+        if grep -iq '^PARTNAME=userdata$' "$uevent" 2>/dev/null; then
+            blockname="${uevent%/uevent}"
+            blockname="${blockname##*/}"
+            [ -b "/dev/$blockname" ] && {
+                printf '/dev/%s\n' "$blockname"; return 0;
+            }
+        fi
+    done
+    return 1
+}
+
 # Dispatch on nuxel.device= — each target resolves its own root device:
 #   mustang / vm / ""   -> existing A/B dynamic-partition probe (unchanged)
-#   s10plus             -> A-only UFS probe: root= > userdata > system
+#   s10plus             -> A-only UFS probe: root= > userdata ONLY (not SYSTEM)
 #   g7power             -> eMMC probe: root= > userdata > system_a > system
 ROOT_DEV=""
 case "${DEVICE}" in
@@ -210,22 +239,31 @@ case "${DEVICE}" in
         ;;
     s10plus)
         # S10+ A-only UFS layout:
-        # Boot -> U-Boot -> Linux. Root is on userdata (or system) partition.
+        # Boot -> Samsung downstream kernel Linux. Root is on USERDATA only.
         # UFS path: /dev/block/platform/13d60000.ufs/by-name/
-        # Probe order: explicit root= cmdline > userdata > system
-        UFS_BASE="/dev/block/platform/13d60000.ufs/by-name"
-        if [ -n "${ROOT_SPEC}" ]; then
+        # Probe order: explicit USERDATA root= > PARTNAME=userdata
+        # Only USERDATA is expected in this image's flashing plan. Do NOT
+        # silently fall back to SYSTEM, which may hold unrelated user data.
+        # A root= by-name/userdata path is a hint, not proof it exists.
+        if [ -n "${ROOT_SPEC}" ] && [ -b "${ROOT_SPEC}" ]; then
             ROOT_DEV="${ROOT_SPEC}"
-        elif [ -b "${UFS_BASE}/userdata" ]; then
-            ROOT_DEV="${UFS_BASE}/userdata"
-        elif [ -b "${UFS_BASE}/system" ]; then
-            ROOT_DEV="${UFS_BASE}/system"
+        elif [ -z "${ROOT_SPEC}" ] || [ "${ROOT_SPEC##*/}" = userdata ]; then
+            tries=0
+            while [ "$tries" -lt 30 ]; do
+                ROOT_DEV="$(s10plus_userdata_device)" && [ -n "$ROOT_DEV" ] && break
+                tries=$((tries + 1))
+                sleep 1
+            done
         else
-            err "s10plus: cannot find root partition under ${UFS_BASE}"
-            err "Available: $(ls "${UFS_BASE}" 2>/dev/null | tr '\n' ' ')"
-            emergency_shell
+            err "s10plus: explicit root= is not a block device: ${ROOT_SPEC}"
         fi
-        log "s10plus: root → ${ROOT_DEV} (fstype: ${ROOT_FSTYPE:-ext4})"
+        if [ -z "${ROOT_DEV}" ] || [ ! -b "${ROOT_DEV}" ]; then
+            err "s10plus: USERDATA not found after probe; refusing SYSTEM fallback"
+            emergency_shell
+            # PID 1 must never continue into a guessed partition or exit.
+            while :; do sleep 60; done
+        fi
+        log "s10plus: root -> ${ROOT_DEV} (fstype: ${ROOT_FSTYPE:-ext4})"
         ;;
     g7power)
         # G7 Power eMMC layout (A/B device, shared userdata)
@@ -288,7 +326,14 @@ fi
 [ -z "${FS_TYPE}" ] && FS_TYPE=ext4
 
 # --- mount root ----------------------------------------------------------------
-if ! mount -t "${FS_TYPE}" -o ro "${ROOT_DEV}" "${ROOT_MNT}" 2>/dev/null; then
+# Fedora phone userspace expects a writable /var, /etc and journal. Keep the
+# minimal phase-1 image safe on first mount, but for s10plus + rw kernel
+# command line prefer rw. Never turn a mount failure into a SYSTEM fallback.
+ROOT_MOUNT_MODE=ro
+if [ "$DEVICE" = s10plus ]; then
+    case " ${CMDLINE} " in *' rw '*) ROOT_MOUNT_MODE=rw ;; esac
+fi
+if ! mount -t "${FS_TYPE}" -o "${ROOT_MOUNT_MODE}" "${ROOT_DEV}" "${ROOT_MNT}" 2>/dev/null; then
     # retry as rw (some boot flows mount rw transiently)
     if ! mount -t "${FS_TYPE}" -o rw "${ROOT_DEV}" "${ROOT_MNT}" 2>/dev/null; then
         err "failed to mount ${ROOT_DEV} as ${FS_TYPE}"
@@ -308,10 +353,10 @@ if ! mount -t "${FS_TYPE}" -o ro "${ROOT_DEV}" "${ROOT_MNT}" 2>/dev/null; then
             reboot -f 2>/dev/null || true
         fi
     fi
-    # remount read-only for a safe root
-    ( mount -o remount,ro "${ROOT_MNT}" 2>/dev/null ) || true
+    # Preserve writable mode for Fedora systemd; other paths retain legacy ro.
+    ( mount -o remount,"${ROOT_MOUNT_MODE}" "${ROOT_MNT}" 2>/dev/null ) || true
 fi
-log "root mounted: ${ROOT_DEV} (${FS_TYPE}, ro)"
+log "root mounted: ${ROOT_DEV} (${FS_TYPE}, mode=${ROOT_MOUNT_MODE})"
 
 # --- validate that the root really is a Nuxel OS ----------------------------------
 if [ ! -f "${ROOT_MNT}/sbin/init" ] && [ ! -f "${ROOT_MNT}/init" ] && [ ! -f "${ROOT_MNT}/bin/sh" ]; then

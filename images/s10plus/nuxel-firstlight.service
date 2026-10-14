@@ -1,0 +1,15 @@
+[Unit]
+Description=Nuxel S10+ first-light framebuffer hardware probe (not Phosh)
+ConditionPathExists=/dev/fb0
+After=systemd-udev-settle.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/nuxel-fb-phone
+StandardOutput=journal
+StandardError=journal
+RemainAfterExit=yes
+TimeoutStartSec=20
+
+[Install]
+WantedBy=multi-user.target

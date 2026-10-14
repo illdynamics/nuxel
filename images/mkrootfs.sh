@@ -35,6 +35,15 @@ SYSTEM_IMG_SIZE_MB=4096  # Default 4GB, will be resized
 # scripts under shell/config/openrc are installed instead.
 export NUXEL_INIT="${NUXEL_INIT:-systemd}"
 
+# S10+ must never re-use the host-architecture Flatpak fallback. A complete
+# Fedora ARM64 PHONE runtime is built from RPMs instead.
+# This is intentionally fail-closed; see images/s10plus/build-phone-rootfs-fedora.sh.
+if [ "${NUXEL_DEVICE:-}" = s10plus ]; then
+    echo '[nuxel][error] S10+ phone rootfs cannot be built from a host Flatpak runtime.' >&2
+    echo '[nuxel][error] Run: bash images/s10plus/build-phone-rootfs-fedora.sh' >&2
+    exit 2
+fi
+
 # Clean build directory
 clean() {
     log_info "Cleaning build directory..."
