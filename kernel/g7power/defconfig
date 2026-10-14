@@ -12,9 +12,16 @@ CONFIG_DRM_MSM_GPU_STATE=y
 # CONFIG_DRM_POWERVR is not set    # Imagination only; not on SDM632
 
 # Display — MSM DSI (mainline)
-CONFIG_DRM_PANEL_SIMPLE=y          # may be needed for IPS LCD panel
+# consume lk2nd's /chosen simple-framebuffer (720x1520)
+CONFIG_DRM_SIMPLEDRM=y
+# fbcon on the simpledrm /dev/fb0 -> visible panel
+CONFIG_FRAMEBUFFER_CONSOLE=y
+CONFIG_DRM_FBDEV_EMULATION=y
+# may be needed for IPS LCD panel
+CONFIG_DRM_PANEL_SIMPLE=y
 # Backlight — TI LM3697 (mainline symbol is LEDS_LM3697, not BACKLIGHT_TI_*)
-CONFIG_LEDS_LM3697=y               # mainline; I2C i2c_5 @ 0x36
+# mainline; I2C i2c_5 @ 0x36
+CONFIG_LEDS_LM3697=y
 
 # Touch — Ilitek ILI2117 hardware, driven by mainline ili210x.
 # There is NO CONFIG_TOUCHSCREEN_ILI210X symbol: drivers/input/touchscreen/
@@ -23,7 +30,8 @@ CONFIG_LEDS_LM3697=y               # mainline; I2C i2c_5 @ 0x36
 # symbol silently dropped it via olddefconfig and left ILI210X unset.
 # Built-in (=y) on purpose: the Phase-1 rootfs has no udev/module autoload,
 # so a module would never load. Use =m only for reload/debug bring-up.
-CONFIG_TOUCHSCREEN_ILI210X=y       # ILI2117: I2C i2c_3 @ 0x41, IRQ tlmm 65, inverted-x
+# ILI2117: I2C i2c_3 @ 0x41, IRQ tlmm 65, inverted-x
+CONFIG_TOUCHSCREEN_ILI210X=y
 # Not needed (wrong chips for this device):
 # CONFIG_TOUCHSCREEN_SAMSUNG_SEC_TS is not set   # S10+ touch only
 # CONFIG_TOUCHSCREEN_SAMSUNG_S6SY791 is not set  # mustang touch only
@@ -44,15 +52,18 @@ CONFIG_BT_HCIUART_QCA=y
 # Audio — WCD9335 cajon-v2 ASoC
 CONFIG_SND=y
 CONFIG_SND_SOC=y
-CONFIG_SND_SOC_WCD9335=y          # WCD9335 cajon-v2
-CONFIG_SND_SOC_MSM8916_WCD_IRCODEC=y  # verify availability in msm8953 tree
+# WCD9335 cajon-v2
+CONFIG_SND_SOC_WCD9335=y
+# verify availability in msm8953 tree
+CONFIG_SND_SOC_MSM8916_WCD_IRCODEC=y
 CONFIG_SND_SOC_QCOM=y
 # CONFIG_SND_SOC_CS47L93 is not set   # S10+ audio only
 # CONFIG_SND_SOC_CS42L43 is not set   # mustang audio only
 
 # Sensors (mainline IIO)
 CONFIG_IIO=y
-CONFIG_BMI160_I2C=y                # Bosch BMI160 accel+gyro (mainline)
+# Bosch BMI160 accel+gyro (mainline)
+CONFIG_BMI160_I2C=y
 CONFIG_BMI160_SPI=n
 # MMC3630KJ magnetometer — verify driver name in msm8953 tree
 # CONFIG_MMC35240 or CONFIG_IIO_MMC3630KJ — TBD from kernel tree
@@ -68,7 +79,8 @@ CONFIG_MMC_SDHCI_MSM=y
 # Filesystems
 CONFIG_EXT4_FS=y
 CONFIG_F2FS_FS=y
-CONFIG_VFAT_FS=y                   # microSD
+# microSD
+CONFIG_VFAT_FS=y
 
 # USB — dwc3 (fastboot gadget)
 CONFIG_USB_DWC3=y
@@ -80,7 +92,8 @@ CONFIG_USB_CONFIGFS=y
 # CONFIG_DYNAMIC_DEBUG is deliberately NOT enabled here: it changes the whole
 # kernel image and forces a full rebuild. Add it as a one-off when you need
 #   echo 'file drivers/input/touchscreen/ili210x.c +p' > /sys/kernel/debug/dynamic_debug/control
-CONFIG_I2C_CHARDEV=y        # built-in: the Phase-1 rootfs loads no modules
+# built-in: the Phase-1 rootfs loads no modules
+CONFIG_I2C_CHARDEV=y
 
 # Device nodes
 CONFIG_DEVTMPFS=y

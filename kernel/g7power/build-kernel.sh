@@ -100,7 +100,14 @@ make -C "${KSRC}" ARCH=arm64 CROSS_COMPILE="${CROSS_COMPILE}" \
     O="${KOUT}" msm8953_defconfig 2>/dev/null || \
 make -C "${KSRC}" ARCH=arm64 CROSS_COMPILE="${CROSS_COMPILE}" \
     O="${KOUT}" defconfig
-"${KSRC}/scripts/kconfig/merge_config.sh" -m \
+# NOTE: -O "${KOUT}" is REQUIRED. Without it merge_config.sh derives
+# KCONFIG_CONFIG from its -O option (default ".") and writes the merged
+# fragment to ./.config in the *current* directory, NOT to ${KOUT}/.config.
+# The subsequent `make olddefconfig` then reads the un-merged ${KOUT}/.config
+# and every fragment override (CONFIG_DRM_SIMPLEDRM, CONFIG_TOUCHSCREEN_ILI210X,
+# CONFIG_LEDS_LM3697, ...) is silently dropped. This bug shipped the earlier
+# "-final" images with no touch driver, no backlight and no DRM_SIMPLEDRM.
+"${KSRC}/scripts/kconfig/merge_config.sh" -m -O "${KOUT}" \
     "${KOUT}/.config" "${DEFCONFIG}"
 make -C "${KSRC}" ARCH=arm64 CROSS_COMPILE="${CROSS_COMPILE}" \
     O="${KOUT}" olddefconfig

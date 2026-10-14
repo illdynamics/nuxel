@@ -9,12 +9,16 @@ mount -t sysfs -o noexec,nosuid,nodev none /sys  2>/dev/null
 mount -t devtmpfs none /dev 2>/dev/null
 mkdir -p /dev/pts /dev/mapper /dev/disk/by-partlabel /run /tmp /sys/kernel/config
 mount -t devpts none /dev/pts 2>/dev/null
-if [ ! -e /bin/sh ] && [ -x /bin/toybox ]; then
-    ln -sf toybox /bin/sh
+# Ensure the toybox applet symlinks exist. NOTE: previously this block was
+# guarded by `[ ! -e /bin/sh ]`, which meant that as soon as /bin/sh existed
+# (as it must, for this script's own #!/bin/sh shebang to be honoured) the
+# whole loop was skipped and mount/blkid/switch_root/etc. never appeared ->
+# PID 1 died -> bootloop. Guard on toybox only, and never clobber real files.
+if [ -x /bin/toybox ]; then
     for c in mount umount switch_root modprobe insmod mknod ls cat printf echo \
              sed grep awk find sleep date ps df du sh sync reboot poweroff dd cp \
              mv rm mkdir ln chown chmod dmesg blkid head tail tr cut wc uname; do
-        ln -sf toybox "/bin/$c" 2>/dev/null
+        [ -e "/bin/$c" ] || ln -sf toybox "/bin/$c" 2>/dev/null
     done
 fi
 CON=/dev/console
