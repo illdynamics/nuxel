@@ -118,8 +118,35 @@ def assemble(stage, width=720, height=1280, with_splash=True,
         shutil.copy2(INIT_SHD, os.path.join(stage, "init"))
         os.chmod(os.path.join(stage, "init"), 0o0755)
 
-    # fallback: if we only wind up with a plain shell-less tree, keep it usable
-    # (init.sh detects toybox at runtime and wires /bin/sh automatically)
+    # CRITICAL: /init starts with #!/bin/sh.  Linux requires its interpreter
+    # to exist *before* running any init instructions.  Creating /bin/sh from
+    # within /init is too late; fail closed if no static interpreter exists.
+    bindir = os.path.join(stage, "bin")
+    os.makedirs(bindir, exist_ok=True)
+    toybox = os.path.join(bindir, "toybox")
+    busybox = os.path.join(bindir, "busybox")
+    if os.path.isfile(toybox):
+        interpreter = "toybox"
+    elif os.path.isfile(busybox):
+        interpreter = "busybox"
+    else:
+        raise RuntimeError("missing static Toybox/Busybox in initramfs; refuse unbootable build")
+    if not os.access(os.path.join(bindir, interpreter), os.X_OK):
+        raise RuntimeError("initramfs interpreter is not executable")
+    link = os.path.join(bindir, "sh")
+    if os.path.lexists(link):
+        os.unlink(link)
+    os.symlink(interpreter, link)
+    # Explicit applet links: PATH alone does not make multicall applets
+    # available as commands on a fresh, immutable initramfs.
+    for name in ("mount", "umount", "switch_root", "mkdir", "ln", "cat",
+                 "grep", "ls", "sleep", "mdev", "dmesg", "blkid", "dd",
+                 "mountpoint", "date", "tr", "reboot", "sync", "head",
+                 "modprobe", "printf", "cp", "awk"):
+        link = os.path.join(bindir, name)
+        if not os.path.lexists(link):
+            os.symlink(interpreter, link)
+
     for sub in ("proc", "sys", "dev", "run", "tmp", "newroot", "etc", "boot", "lib/modules"):
         os.makedirs(os.path.join(stage, sub), exist_ok=True)
 
