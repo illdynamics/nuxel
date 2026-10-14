@@ -1,0 +1,36 @@
+From a48193f64b8d144e514d2b4bbea831e2a2dddfb6 Mon Sep 17 00:00:00 2001
+From: Nuxel <nuxel@localhost>
+Date: Wed, 14 Oct 2026 18:29:32 +0200
+Subject: [PATCH 4/5] nuxel: identify the instrumented build
+
+heimdall version now prints v2.2.2-nuxel and the release banner states the
+build carries end-session tracing, bounded timeouts and classified exit codes.
+This lets a captured log prove which binary produced it.
+---
+ heimdall/source/Interface.cpp | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/heimdall/source/Interface.cpp b/heimdall/source/Interface.cpp
+index bc04e9e..1a34823 100644
+--- a/heimdall/source/Interface.cpp
++++ b/heimdall/source/Interface.cpp
+@@ -42,13 +42,14 @@ using namespace Heimdall;
+ map<string, Interface::ActionInfo> actionMap;
+ bool stdoutErrors = false;
+ 
+-const char *version = "v2.2.2";
++const char *version = "v2.2.2-nuxel";
+ const char *actionUsage = "Usage: heimdall <action> <action arguments>\n";
+ 
+ const char *releaseInfo = "Heimdall %s\n\n\
+ Copyright (c) 2010-2017 Benjamin Dobell, Glass Echidna https://glassechidna.com.au\n\
+ Copyright (c) 2021-2024 Henrik Grimler\n\
+-This software is provided free of charge. Copying and redistribution is encouraged.\n\n";
++This software is provided free of charge. Copying and redistribution is encouraged.\n\
++Nuxel instrumented build: Odin end-session tracing, bounded timeouts, classified exit codes.\n\n";
+ 
+ static const char *extraInfo = "Heimdall utilises libusb for all USB communication:\n\
+     https://www.libusb.info/\n\
+-- 
+2.56.0
+

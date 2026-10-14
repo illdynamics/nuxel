@@ -1,0 +1,568 @@
+From 75d11a232e57fdc0637076aa0799e984e3b83c64 Mon Sep 17 00:00:00 2001
+From: Nuxel <nuxel@localhost>
+Date: Wed, 14 Oct 2026 18:29:03 +0200
+Subject: [PATCH 1/5] nuxel: add testable Odin end-session state machine
+
+Adds a libusb-free state machine for the EndSession/reboot handshake with
+precise failure classification (timeout, USB disconnect, malformed packet,
+rejected command, delayed acknowledgement, missing acknowledgement). This is
+the piece the Nuxel unit tests exercise with mocked session outcomes.
+---
+ heimdall/source/NuxelSession.cpp | 406 +++++++++++++++++++++++++++++++
+ heimdall/source/NuxelSession.h   | 131 ++++++++++
+ 2 files changed, 537 insertions(+)
+ create mode 100644 heimdall/source/NuxelSession.cpp
+ create mode 100644 heimdall/source/NuxelSession.h
+
+diff --git a/heimdall/source/NuxelSession.cpp b/heimdall/source/NuxelSession.cpp
+new file mode 100644
+index 0000000..24cbd17
+--- /dev/null
++++ b/heimdall/source/NuxelSession.cpp
+@@ -0,0 +1,406 @@
++/* Nuxel additions to Heimdall v2.2.2 -- see NUXEL-README.md */
++
++#include "NuxelSession.h"
++
++#include <chrono>
++#include <cstring>
++
++namespace Heimdall
++{
++	namespace
++	{
++		// Bounded retry for a missing acknowledgement. Bounded on purpose: an
++		// unbounded retry loop is how a "stuck" flash turns into a reflash of a
++		// half-committed device.
++		enum { kNuxelAckAttempts = 3 };
++
++		// The zero-length transfer timeout upstream uses (kDefaultTimeoutEmptyTransfer).
++		enum { kNuxelEmptyTransferTimeout = 100 };
++
++		void PackLE32(unsigned char *p, unsigned int value)
++		{
++			p[0] = static_cast<unsigned char>(value & 0xFF);
++			p[1] = static_cast<unsigned char>((value >> 8) & 0xFF);
++			p[2] = static_cast<unsigned char>((value >> 16) & 0xFF);
++			p[3] = static_cast<unsigned char>((value >> 24) & 0xFF);
++		}
++
++		unsigned int UnpackLE32(const unsigned char *p)
++		{
++			return (static_cast<unsigned int>(p[0])) |
++			       (static_cast<unsigned int>(p[1]) << 8) |
++			       (static_cast<unsigned int>(p[2]) << 16) |
++			       (static_cast<unsigned int>(p[3]) << 24);
++		}
++
++		long NowMs(void)
++		{
++			using namespace std::chrono;
++			return static_cast<long>(duration_cast<milliseconds>(
++				steady_clock::now().time_since_epoch()).count());
++		}
++
++		SessionFailure ClassifyReceiveError(int error)
++		{
++			switch (error)
++			{
++				case -7:  return kSessionFailureTimeout;         // LIBUSB_ERROR_TIMEOUT
++				case -4:  return kSessionFailureDisconnected;    // LIBUSB_ERROR_NO_DEVICE
++				case -9:  return kSessionFailureDisconnected;    // LIBUSB_ERROR_PIPE (endpoint stall)
++				case -1:  return kSessionFailureDisconnected;    // LIBUSB_ERROR_IO
++				case -10: return kSessionFailureTimeout;         // LIBUSB_ERROR_INTERRUPTED
++				default:  return kSessionFailureTransportError;  // everything else
++			}
++		}
++
++		bool SendControlPacket(IPacketTransport &transport, unsigned int request,
++		                       int timeoutMs, int emptyTransferFlags,
++		                       bool verbose, SessionReport *report)
++		{
++			unsigned char packet[kNuxelControlPacketSize];
++
++			memset(packet, 0, sizeof(packet));
++			PackLE32(packet, kNuxelEndSessionControlType);
++			PackLE32(packet + 4, request);
++
++			if (emptyTransferFlags & kNuxelEmptyTransferBefore)
++			{
++				int empty = transport.SendRaw(nullptr, 0, kNuxelEmptyTransferTimeout);
++				report->emptyTransferResult = empty;
++
++				if (verbose && empty < 0)
++				{
++					transport.TraceNote("empty bulk transfer before control packet did not complete (ignored, as upstream does)");
++				}
++			}
++
++			transport.TraceTx(packet, sizeof(packet));
++
++			int sent = transport.SendRaw(packet, sizeof(packet), timeoutMs);
++
++			if (sent < 0)
++			{
++				report->lastLibusbError = sent;
++
++				if (verbose)
++					transport.TraceNote(NuxelLibusbErrorName(sent));
++
++				return (false);
++			}
++
++			if (sent != static_cast<int>(sizeof(packet)))
++			{
++				report->lastLibusbError = 0;
++
++				if (verbose)
++					transport.TraceNote("short control write");
++
++				return (false);
++			}
++
++			if (emptyTransferFlags & kNuxelEmptyTransferAfter)
++			{
++				int empty = transport.SendRaw(nullptr, 0, kNuxelEmptyTransferTimeout);
++				report->emptyTransferResult = empty;
++
++				if (verbose && empty < 0)
++				{
++					transport.TraceNote("empty bulk transfer after control packet did not complete (ignored, as upstream does)");
++				}
++			}
++
++			return (true);
++		}
++
++		// Read one 8-byte control response and classify the outcome precisely.
++		SessionFailure ReceiveAck(IPacketTransport &transport, int timeoutMs,
++		                          bool verbose, int *bytesTransferred,
++		                          unsigned int *responseType, bool *responseTypeKnown,
++		                          long *elapsedMs, int *attempts, int *libusbError)
++		{
++			unsigned char ack[kNuxelAckPacketSize];
++
++			*bytesTransferred = 0;
++			*responseType = 0;
++			*responseTypeKnown = false;
++			*elapsedMs = 0;
++			*attempts = 0;
++			*libusbError = 0;
++
++			for (int attempt = 1; attempt <= kNuxelAckAttempts; attempt++)
++			{
++				memset(ack, 0, sizeof(ack));
++
++				long start = NowMs();
++				int received = transport.ReceiveRaw(ack, sizeof(ack), timeoutMs);
++				long elapsed = NowMs() - start;
++
++				*attempts = attempt;
++				*elapsedMs = elapsed;
++
++				if (received < 0)
++				{
++					*libusbError = received;
++
++					if (verbose)
++						transport.TraceNote(NuxelLibusbErrorName(received));
++
++					SessionFailure failure = ClassifyReceiveError(received);
++
++					// Only a timeout is worth retrying. A disconnect or an IO
++					// error means the endpoint state is unknown, so surface it.
++					if (failure != kSessionFailureTimeout)
++						return (failure);
++
++					continue;
++				}
++
++				*bytesTransferred = received;
++				transport.TraceRx(ack, received);
++
++				if (received == 0)
++				{
++					// Zero bytes inside the timeout is a missing acknowledgement.
++					if (verbose)
++						transport.TraceNote("empty response while waiting for acknowledgement");
++
++					continue;
++				}
++
++				if (received < 4)
++				{
++					if (verbose)
++						transport.TraceNote("response shorter than a 4-byte response type");
++
++					return (kSessionFailureMalformedPacket);
++				}
++
++				*responseType = UnpackLE32(ack);
++				*responseTypeKnown = true;
++
++				if (received != static_cast<int>(sizeof(ack)))
++					return (kSessionFailureMalformedPacket);
++
++				if (*responseType != kNuxelEndSessionControlType)
++					return (kSessionFailureUnexpectedResponse);
++
++				return (kSessionFailureNone);
++			}
++
++			return (kSessionFailureTimeout);
++		}
++	}
++
++	SessionReport::SessionReport(void)
++	{
++		Reset();
++	}
++
++	void SessionReport::Reset(void)
++	{
++		failure = kSessionFailureNone;
++		rebootRequested = false;
++		endSessionSent = false;
++		endSessionAckReceived = false;
++		rebootSent = false;
++		rebootAckReceived = false;
++		devicePresenceChecked = false;
++		deviceStillPresent = false;
++		ackResponseTypeKnown = false;
++		ackResponseType = 0;
++		ackBytesTransferred = 0;
++		rebootBytesTransferred = 0;
++		rebootResponseType = 0;
++		rebootResponseTypeKnown = false;
++		lastLibusbError = 0;
++		ackElapsedMs = 0;
++		ackAttempts = 0;
++		emptyTransferResult = 0;
++	}
++
++	const char *SessionReport::FailureName(void) const
++	{
++		switch (failure)
++		{
++			case kSessionFailureNone:                 return "none";
++			case kSessionFailureSendFailed:           return "end_session_send_failed";
++			case kSessionFailureTimeout:              return "missing_acknowledgement_timeout";
++			case kSessionFailureDisconnected:         return "usb_disconnect";
++			case kSessionFailureMalformedPacket:      return "malformed_packet";
++			case kSessionFailureUnexpectedResponse:   return "rejected_command_unexpected_response";
++			case kSessionFailureTransportError:       return "usb_transport_error";
++			case kSessionFailureRebootTimeout:        return "reboot_ack_timeout";
++			case kSessionFailureRebootDisconnected:   return "reboot_disconnect_unconfirmed";
++			case kSessionFailureStillInDownloadMode:  return "still_in_download_mode";
++			case kSessionFailureInternal:             return "internal_error";
++		}
++
++		return "unknown";
++	}
++
++	const char *SessionReport::ResultToken(void) const
++	{
++		if (failure == kSessionFailureNone)
++			return (DelayedAck() ? "ok_delayed_ack" : "ok_acknowledged");
++
++		switch (failure)
++		{
++			case kSessionFailureTimeout:             return "timeout";
++			case kSessionFailureDisconnected:        return "usb_disconnect";
++			case kSessionFailureMalformedPacket:     return "malformed_packet";
++			case kSessionFailureUnexpectedResponse:  return "rejected_command";
++			case kSessionFailureTransportError:      return "usb_transport_error";
++			case kSessionFailureRebootTimeout:       return "reboot_timeout";
++			case kSessionFailureRebootDisconnected:  return "reboot_disconnect";
++			case kSessionFailureStillInDownloadMode: return "still_in_download_mode";
++			case kSessionFailureSendFailed:          return "send_failed";
++			default:                                 return "failed";
++		}
++	}
++
++	bool SessionReport::PositivelyAcknowledged(void) const
++	{
++		if (!endSessionSent || !endSessionAckReceived || !ackResponseTypeKnown)
++			return (false);
++
++		if (ackResponseType != kNuxelEndSessionControlType)
++			return (false);
++
++		if (rebootRequested && (!rebootSent || !rebootAckReceived))
++			return (false);
++
++		return (true);
++	}
++
++	bool SessionReport::DelayedAck(void) const
++	{
++		return (ackAttempts > 1 && endSessionAckReceived);
++	}
++
++	const char *NuxelLibusbErrorName(int error)
++	{
++		switch (error)
++		{
++			case 0:   return "no libusb error";
++			case -1:  return "libusb error -1 (LIBUSB_ERROR_IO)";
++			case -2:  return "libusb error -2 (LIBUSB_ERROR_INVALID_PARAM)";
++			case -3:  return "libusb error -3 (LIBUSB_ERROR_ACCESS)";
++			case -4:  return "libusb error -4 (LIBUSB_ERROR_NO_DEVICE)";
++			case -5:  return "libusb error -5 (LIBUSB_ERROR_NOT_FOUND)";
++			case -6:  return "libusb error -6 (LIBUSB_ERROR_BUSY)";
++			case -7:  return "libusb error -7 (LIBUSB_ERROR_TIMEOUT)";
++			case -8:  return "libusb error -8 (LIBUSB_ERROR_OVERFLOW)";
++			case -9:  return "libusb error -9 (LIBUSB_ERROR_PIPE)";
++			case -10: return "libusb error -10 (LIBUSB_ERROR_INTERRUPTED)";
++			case -11: return "libusb error -11 (LIBUSB_ERROR_NO_MEM)";
++			case -12: return "libusb error -12 (LIBUSB_ERROR_NOT_SUPPORTED)";
++			default:  return "libusb error (LIBUSB_ERROR_OTHER)";
++		}
++	}
++
++	bool NuxelRunEndSession(IPacketTransport &transport,
++	                        bool reboot,
++	                        int sendTimeoutMs,
++	                        int receiveTimeoutMs,
++	                        int rebootReceiveTimeoutMs,
++	                        int emptyTransferFlags,
++	                        bool verbose,
++	                        SessionReport *report)
++	{
++		if (report == nullptr)
++			return (false);
++
++		report->Reset();
++		report->rebootRequested = reboot;
++
++		// Step 1: request end of session (control request 0).
++		if (!SendControlPacket(transport, 0, sendTimeoutMs, emptyTransferFlags, verbose, report))
++		{
++			report->failure = (report->lastLibusbError == -7) ? kSessionFailureTimeout
++			                                                   : kSessionFailureSendFailed;
++			return (false);
++		}
++
++		report->endSessionSent = true;
++
++		// Step 2: wait for the 0x67 acknowledgement.
++		unsigned int responseType = 0;
++		bool responseTypeKnown = false;
++		long elapsedMs = 0;
++		int attempts = 0;
++		int libusbError = 0;
++
++		SessionFailure ackFailure = ReceiveAck(transport, receiveTimeoutMs, verbose,
++		                                       &report->ackBytesTransferred, &responseType,
++		                                       &responseTypeKnown, &elapsedMs, &attempts,
++		                                       &libusbError);
++
++		report->ackResponseType = responseType;
++		report->ackResponseTypeKnown = responseTypeKnown;
++		report->ackElapsedMs = elapsedMs;
++		report->ackAttempts = attempts;
++
++		if (libusbError != 0)
++			report->lastLibusbError = libusbError;
++
++		if (ackFailure != kSessionFailureNone)
++		{
++			report->failure = ackFailure;
++			return (false);
++		}
++
++		report->endSessionAckReceived = true;
++
++		if (!reboot)
++			return (true);
++
++		// Step 3: request reboot (control request 1). The reply is the same
++		// 0x67 response type, but the device frequently disappears before it can
++		// answer because it is already rebooting. That is NOT success.
++		if (!SendControlPacket(transport, 1, sendTimeoutMs, emptyTransferFlags, verbose, report))
++		{
++			report->failure = (report->lastLibusbError == -7) ? kSessionFailureRebootTimeout
++			                                                   : kSessionFailureSendFailed;
++			return (false);
++		}
++
++		report->rebootSent = true;
++
++		responseType = 0;
++		responseTypeKnown = false;
++		elapsedMs = 0;
++		attempts = 0;
++		libusbError = 0;
++
++		SessionFailure rebootFailure = ReceiveAck(transport, rebootReceiveTimeoutMs, verbose,
++		                                          &report->rebootBytesTransferred, &responseType,
++		                                          &responseTypeKnown, &elapsedMs, &attempts,
++		                                          &libusbError);
++
++		report->rebootResponseType = responseType;
++		report->rebootResponseTypeKnown = responseTypeKnown;
++
++		if (libusbError != 0)
++			report->lastLibusbError = libusbError;
++
++		if (rebootFailure == kSessionFailureNone)
++		{
++			report->rebootAckReceived = true;
++			return (true);
++		}
++
++		if (rebootFailure == kSessionFailureDisconnected)
++		{
++			// Device vanished. It may well have rebooted, but we did not receive
++			// the acknowledgement. Report it as unconfirmed, never as success.
++			report->failure = kSessionFailureRebootDisconnected;
++			return (false);
++		}
++
++		report->failure = (rebootFailure == kSessionFailureTimeout)
++			? kSessionFailureRebootTimeout
++			: rebootFailure;
++
++		return (false);
++	}
++}
+diff --git a/heimdall/source/NuxelSession.h b/heimdall/source/NuxelSession.h
+new file mode 100644
+index 0000000..eacf1be
+--- /dev/null
++++ b/heimdall/source/NuxelSession.h
+@@ -0,0 +1,131 @@
++/* Nuxel additions to Heimdall v2.2.2 -- see NUXEL-README.md
++ *
++ * This header defines a transport-agnostic state machine for the Odin
++ * EndSession / reboot handshake, plus a precise failure classification.
++ *
++ * It exists because upstream Heimdall v2.2.2 collapses every EndSession
++ * problem into one message ("Failed to receive session end confirmation!")
++ * and then reports a bare exit status. On Exynos 9820 (Galaxy S10+) devices
++ * an upload can reach 100% and the session can still fail to close, and it is
++ * impossible to tell a timeout from a USB disconnect, a malformed reply, a
++ * rejected command or a silently-missing acknowledgement.
++ *
++ * The state machine is deliberately free of libusb so it can be unit tested
++ * with mocked session outcomes.
++ */
++#ifndef NUXELSESSION_H
++#define NUXELSESSION_H
++
++namespace Heimdall
++{
++	// Odin protocol constants used by the end-session handshake.
++	enum
++	{
++		kNuxelEndSessionControlType = 0x67,
++		kNuxelControlPacketSize = 1024,
++		kNuxelAckPacketSize = 8
++	};
++
++	// Empty (zero-length) bulk OUT transfer placement. Upstream Heimdall sends
++	// one after control packets; it routinely times out and upstream only logs
++	// it as a warning. It is kept configurable because we cannot yet prove it
++	// is harmless on every S-Boot revision.
++	enum
++	{
++		kNuxelEmptyTransferNone = 0,
++		kNuxelEmptyTransferBefore = 1,
++		kNuxelEmptyTransferAfter = 2
++	};
++
++	enum SessionFailure
++	{
++		kSessionFailureNone = 0,
++		kSessionFailureSendFailed,          // host could not push the control packet
++		kSessionFailureTimeout,             // no acknowledgement inside the bounded timeout (missing ack)
++		kSessionFailureDisconnected,        // LIBUSB no-device / pipe / IO: device left or endpoint stalled
++		kSessionFailureMalformedPacket,     // reply was not a well-formed 8-byte control response
++		kSessionFailureUnexpectedResponse,  // 8-byte reply, but response type != 0x67 (command rejected)
++		kSessionFailureTransportError,      // any other libusb error
++		kSessionFailureRebootTimeout,       // reboot request acknowledged-request but no reply
++		kSessionFailureRebootDisconnected,  // device vanished right after reboot request (unconfirmed)
++		kSessionFailureStillInDownloadMode, // handshake acked, but the phone never left Download Mode
++		kSessionFailureInternal
++	};
++
++	struct SessionReport
++	{
++		SessionFailure failure;
++
++		bool rebootRequested;
++		bool endSessionSent;
++		bool endSessionAckReceived;
++		bool rebootSent;
++		bool rebootAckReceived;
++
++		bool devicePresenceChecked;
++		bool deviceStillPresent;
++
++		bool ackResponseTypeKnown;
++		unsigned int ackResponseType;
++
++		int  ackBytesTransferred;
++		int  rebootBytesTransferred;
++		unsigned int rebootResponseType;
++		bool rebootResponseTypeKnown;
++
++		int  lastLibusbError;
++		long ackElapsedMs;
++		int  ackAttempts;
++		int  emptyTransferResult;
++
++		SessionReport(void);
++		void Reset(void);
++
++		// Stable, machine-parsable token for a one-line result summary.
++		const char *ResultToken(void) const;
++		const char *FailureName(void) const;
++
++		// True only when the device positively acknowledged every step. Never set
++		// by a timeout, a disconnect or a malformed reply.
++		bool PositivelyAcknowledged(void) const;
++		bool DelayedAck(void) const;
++	};
++
++	// Transport abstraction. Implementations return:
++	//   > = 0 : number of bytes transferred
++	//   < 0   : a negative libusb-style error code (e.g. -7 == LIBUSB_ERROR_TIMEOUT)
++	// A length of 0 models the zero-length "empty" bulk transfer.
++	class IPacketTransport
++	{
++		public:
++
++			virtual ~IPacketTransport(void) {}
++
++			virtual int SendRaw(const unsigned char *data, int length, int timeoutMs) = 0;
++			virtual int ReceiveRaw(unsigned char *data, int length, int timeoutMs) = 0;
++
++			virtual void TraceTx(const unsigned char *data, int length) = 0;
++			virtual void TraceRx(const unsigned char *data, int length) = 0;
++			virtual void TraceNote(const char *message) = 0;
++	};
++
++	// Human name for a libusb error code, used in the trace and report.
++	const char *NuxelLibusbErrorName(int error);
++
++	// Run the EndSession (+ optional reboot) handshake.
++	//
++	// Returns true only when the device positively acknowledged. A missing
++	// acknowledgement, a disconnect or a malformed reply always returns false
++	// and always sets report->failure. callers must never treat the absence of
++	// an acknowledgement as success, and must never silently skip this step.
++	bool NuxelRunEndSession(IPacketTransport &transport,
++	                        bool reboot,
++	                        int sendTimeoutMs,
++	                        int receiveTimeoutMs,
++	                        int rebootReceiveTimeoutMs,
++	                        int emptyTransferFlags,
++	                        bool verbose,
++	                        SessionReport *report);
++}
++
++#endif
+-- 
+2.56.0
+

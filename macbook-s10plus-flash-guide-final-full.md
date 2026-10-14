@@ -11,7 +11,7 @@
 - **No:** BOOT's 14,080 PIT blocks cannot be turned into a reliable size in *bytes* without independently establishing the partition block unit; USERDATA's PIT block count is **0** (extends to disk end). Do not assume the image fits merely from those counts.
 - **Yes:** The newly packaged boot image preserves the original ARM64 Exynos kernel and merged DTB, has `/bin/sh` and a USERDATA PARTNAME resolver, and now mounts the root writable on the supplied `rw` command line. This only passes *offline* tests, not handset boot.
 - **Yes:** The supplied `nuxel-beyond2lte-rootfs-diagnostic-fixed.img` is a clean S10+ bring-up root with Motorola-specific configuration removed. It contains a static first-light framebuffer diagnostic and Nuxel Home *assets*, but it **does not** contain the full Fedora phone environment.
-- **No:** The Heimdall 100%-then-`Failed to receive session end confirmation!` problem is **not resolved by these images**. This is a missing Odin protocol EndSession reply. A 100% progress bar by itself does not prove data committed on flash. The wrapper logs and explicitly fails rather than asserting success.
+- **Partly:** The Heimdall 100%-then-session-does-not-close problem is now **instrumented, classified and unable to report a false success** (see `external/heimdall-nuxel/` and `docs/s10plus-heimdall-endsession-investigation.md`). It is still **UNRESOLVED** as a fix: the exact cause needs the physical handset and, for the protocol-mismatch class, a USB capture of a successful Odin flash. A 100% progress bar by itself never proves data committed.
 - **Yes:** There is now a Fedora 43 **aarch64 RPM** build recipe for real Python 3 + systemd + Phosh + Phoc. It must be executed on a network-connected Mac running Docker. This sandbox could not run it and **no full Fedora phone rootfs binary is included**. OpenRC was used by the abandoned Alpine path; Fedora uses **systemd**.
 
 If your requirement is *a guarantee that the device displays a working touchscreen Nuxel phone UI immediately after the next flash*, **none of these files yet meets that requirement**. Actual kernel panel/DRM/GPU/touch, bootloader DTBO, and a hardware boot test remain necessary.
@@ -143,20 +143,44 @@ heimdall print-pit --no-reboot | tee s10plus-pit-current.txt
 
 Use your actual downloaded PIT to compare with the included `docs/` reference. The `print-pit` operation can leave Heimdall in a session that requires deliberately re-entering Download Mode before the next command.
 
-**Heimdall error interpretation:**
+**Build the instrumented Heimdall v2.2.2 fork first.** The stock binary collapses
+every EndSession problem into one message and a bare exit code; it cannot tell a
+timeout from a disconnect, a malformed reply or a rejected command. The fork adds
+that classification, bounded timeouts, packet tracing, a write gate and a
+post-session presence check.
 
-```text
-Uploading BOOT 100%                  # host transfer reached 100%
-BOOT upload successful               # host says transfer completed
-Uploading USERDATA 100%              # host transfer reached 100%
-USERDATA upload successful           # host says transfer completed
-Ending session...
-ERROR: Failed to receive session end confirmation!  # FLASH NOT CONFIRMED
+```bash
+# macOS (Apple Silicon): brew install cmake libusb pkgconf
+# Fedora 43: sudo dnf install -y gcc-c++ cmake make pkgconf-pkg-config libusb1-devel git
+external/heimdall-nuxel/scripts/build-and-test.sh
+build/heimdall-nuxel/out/heimdall-nuxel version   # -> v2.2.2-nuxel
 ```
 
-This final error is an Odin/Heimdall session protocol acknowledgment problem. It has been reported even when the flashed image was **not installed**. Changing ext4/rootfs files does not repair this protocol. `--no-reboot` avoids a host-initiated reboot request, but is **not a proven workaround** for the missing EndSession reply. Do not repeatedly overwrite an unverified phone just to make the progress bar disappear.
+Full details: `external/heimdall-nuxel/README.md`.
 
-The patched wrapper captures the full Heimdall log and exits nonzero when the session fails. If the same failure repeats with Mac and Fedora 43, an independently validated Samsung Odin flashing process on Windows, or a recovery-mode installation after verifying actual block-device identities, may be more appropriate; neither is automatically safe or guaranteed on this device.
+**Heimdall result interpretation (classified):** the wrapper parses
+`NUXEL_SESSION_RESULT=` from the fork and maps it to an action. Summary of the
+decision tree (full version in `docs/s10plus-heimdall-endsession-investigation.md`):
+
+```text
+timeout                 -> no acknowledgement inside the bound; retry once with a longer
+                           --session-timeout, else you need an Odin USB capture
+usb_disconnect          -> cable/port; confirm the phone left Download Mode before any retry
+malformed_packet        -> save the [nuxel] RX hex; protocol/desync class
+rejected_command        -> well-formed reply with the wrong type (the #518/#503 class)
+still_in_download_mode  -> transfer + handshake fine, phone refused to leave:
+                           suspect the image/DTBO/board rev, NOT the USB code
+ok_acknowledged         -> session closed and phone left Download Mode (still NOT proof of boot)
+```
+
+A missing acknowledgement is **never** treated as success. The binary additionally
+refuses to write to any device unless `NUXEL_ALLOW_DEVICE_WRITE=1`, which only the
+wrapper sets, after explicit confirmation. `--no-reboot` leaves the phone in
+Download Mode by design and is **not** a workaround for a failed end-session.
+
+If the failure is the protocol-mismatch class, an independently validated Samsung
+Odin flash on Windows plus a USB capture is the evidence needed; it is not
+automatically available or safe here.
 
 ## 5. Controlled diagnostic flash (only after all hard-stop checks pass)
 
@@ -166,10 +190,17 @@ The patched wrapper captures the full Heimdall log and exits nonzero when the se
 bash boot/s10plus/flash-heimdall.sh \
   --device s10plus \
   --pit-text docs/s10plus-device-pit-2026-10-14.txt \
+  --board-rev 26 --image-overlay "BEYOND2LTE EUR OPEN 26" \
+  --verified-block-bytes 4096 \
   --boot build/out/s10plus/nuxel-beyond2lte-boot-merged-fixed.img \
   --rootfs build/out/s10plus/nuxel-beyond2lte-rootfs-diagnostic-fixed.img \
   --dry-run
 ```
+
+The preflight prints three **separate** verdicts — PIT structure, BOOT/USERDATA
+**capacity in bytes**, and **board revision** — and refuses to flash unless every
+required verdict is positively verified (override only with
+`--allow-unverified-board`). It never upgrades an "unknown" to a "pass".
 
 After verifying the **physical board revision**, independent partition byte capacities, clean filesystem, bootloader unlock state, complete backups and actual recovery path, remove `--dry-run` if you accept the risk of an unverified hardware flash. The wrapper asks for confirmation and refuses partition aliases other than BOOT and USERDATA.
 
@@ -180,6 +211,14 @@ build/out/s10plus/nuxel-beyond2lte-rootfs-fedora-phone-fixed.img
 ```
 
 If you are unable to confirm the board revision, **STOP**; flashing the wrong merged DTB can prevent boot. An image can be internally valid and completely wrong for the actual board.
+
+## 5b. What "success" now means
+
+Only `NUXEL_SESSION_RESULT=ok_acknowledged` (or `ok_delayed_ack`) **and**
+`NUXEL_DEVICE_STILL_PRESENT=0` is a closed session. Even then the flashed image is
+still unproven: you must capture a real kernel/boot log and a first-light result.
+`ok_delayed_ack` means the acknowledgement arrived late (host-stack timing), not
+that anything was fixed.
 
 ## 6. If Download Mode remains at 100%
 
@@ -201,7 +240,10 @@ Until step 5 succeeds, the device is in **bring-up**, not a completed Fedora Nux
 
 ## 8. Sources for external protocol/distro facts
 
-- Heimdall `BridgeManager.cpp` implements EndSession with `SendPacket` and `ReceivePacket` (upstream): https://github.com/Benjamin-Dobell/Heimdall/blob/master/heimdall/source/BridgeManager.cpp
+- Heimdall v2.2.2 source (the version in use): https://git.sr.ht/~grimler/Heimdall (tag `v2.2.2`, commit `d9554e7…`)
+- `BridgeManager.cpp` implements EndSession with `SendPacket` and `ReceivePacket`: https://git.sr.ht/~grimler/Heimdall/tree/v2.2.2/item/heimdall/source/BridgeManager.cpp
+- Instrumented fork, tests and captured trace: `external/heimdall-nuxel/`
+- Full investigation, decision tree and verdict: `docs/s10plus-heimdall-endsession-investigation.md`
 - Recorded Heimdall EndSession failures where 100% upload did not install recovery: https://gitlab.com/BenjaminDobell/Heimdall/-/issues/486
 - Fedora Phosh ARM64 RPM: https://packages.fedoraproject.org/pkgs/phosh/phosh/
 - Fedora Phoc package: https://packages.fedoraproject.org/pkgs/phoc/phoc/

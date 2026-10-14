@@ -13,7 +13,7 @@ import sys
 from ext4lite import Ext4
 
 BINARIES=(
-    '/usr/bin/python3', '/usr/bin/phosh', '/usr/bin/phoc',
+    '/usr/bin/python3', '/usr/libexec/phosh', '/usr/bin/phoc',
     '/usr/lib/systemd/systemd', '/sbin/init',
     '/usr/bin/nuxel-fb-phone',
 )

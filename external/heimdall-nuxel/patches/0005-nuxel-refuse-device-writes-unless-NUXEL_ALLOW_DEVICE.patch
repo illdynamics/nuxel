@@ -1,0 +1,72 @@
+From d12a6ef1b020776a505c09d2b6425bf8513e0bb6 Mon Sep 17 00:00:00 2001
+From: Nuxel <nuxel@localhost>
+Date: Wed, 14 Oct 2026 18:30:53 +0200
+Subject: [PATCH 5/5] nuxel: refuse device writes unless
+ NUXEL_ALLOW_DEVICE_WRITE=1
+
+A bare 'heimdall flash --BOOT x' can overwrite a phone that the operator did
+not know was attached. This diagnostic build now refuses to write to any
+device unless the wrapper explicitly opts in after confirmation, and prints a
+warning when it does.
+---
+ heimdall/source/FlashAction.cpp  | 22 ++++++++++++++++++++++
+ heimdall/source/NuxelExitCodes.h |  3 ++-
+ 2 files changed, 24 insertions(+), 1 deletion(-)
+
+diff --git a/heimdall/source/FlashAction.cpp b/heimdall/source/FlashAction.cpp
+index dc71b94..caee08c 100644
+--- a/heimdall/source/FlashAction.cpp
++++ b/heimdall/source/FlashAction.cpp
+@@ -20,6 +20,8 @@
+ 
+ // C Standard Library
+ #include <stdio.h>
++#include <cstdlib>
++#include <cstring>
+ 
+ // Heimdall
+ #include "Arguments.h"
+@@ -622,6 +624,26 @@ int FlashAction::Execute(int argc, char **argv)
+ 		return (kNuxelExitGenericFailure);
+ 	}
+ 
++	// Nuxel safety gate. This diagnostic build refuses to write to any device
++	// unless the operator explicitly opted in via the environment. A bare
++	// `heimdall flash --BOOT x` (which is exactly how a real device gets
++	// overwritten by accident when tooling assumes nothing is attached) is
++	// refused before a single byte is written. The sanctioned wrapper sets this
++	// variable only after its own explicit confirmation step.
++	const char *writePermit = getenv("NUXEL_ALLOW_DEVICE_WRITE");
++
++	if (writePermit == nullptr || strcmp(writePermit, "1") != 0)
++	{
++		Interface::PrintError("Refusing to flash: NUXEL_ALLOW_DEVICE_WRITE is not set to 1.\n");
++		Interface::PrintError("This instrumented Heimdall build blocks device writes by default.\n");
++		Interface::PrintError("Flash only through the guarded wrapper:\n");
++		Interface::PrintError("  bash boot/s10plus/flash-heimdall.sh --device s10plus ...\n");
++
++		return (kNuxelExitWriteNotPermitted);
++	}
++
++	Interface::PrintWarning("NUXEL_ALLOW_DEVICE_WRITE=1: this run WILL write to a device if one is present.\n");
++
+ 	if (arguments.GetArgument("stdout-errors") != nullptr)
+ 		Interface::SetStdoutErrors(true);
+ 
+diff --git a/heimdall/source/NuxelExitCodes.h b/heimdall/source/NuxelExitCodes.h
+index f2cc8b9..4c73e8f 100644
+--- a/heimdall/source/NuxelExitCodes.h
++++ b/heimdall/source/NuxelExitCodes.h
+@@ -31,7 +31,8 @@ namespace Heimdall
+ 		kNuxelExitStillInDownloadMode      = 21,
+ 
+ 		kNuxelExitFlashStepFailed          = 22,
+-		kNuxelExitInternalError            = 23
++		kNuxelExitInternalError            = 23,
++		kNuxelExitWriteNotPermitted        = 24
+ 	};
+ 
+ 	inline int NuxelExitCodeForFailure(SessionFailure failure)
+-- 
+2.56.0
+

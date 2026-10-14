@@ -1,0 +1,372 @@
+From dadd1daaea7ecddb01a572805f5981714af30faa Mon Sep 17 00:00:00 2001
+From: Nuxel <nuxel@localhost>
+Date: Wed, 14 Oct 2026 18:29:03 +0200
+Subject: [PATCH 3/5] nuxel: classify end-session failures, add exit codes and
+ presence check
+
+flash now emits NUXEL_* result lines, returns a distinct exit code per failure
+class, and (when a reboot was requested) refuses to treat a device that is
+still in Download Mode as a completed flash. A missing end-session
+acknowledgement is never success.
+---
+ heimdall/source/FlashAction.cpp  | 214 ++++++++++++++++++++++++++++++-
+ heimdall/source/NuxelExitCodes.h |  58 +++++++++
+ 2 files changed, 266 insertions(+), 6 deletions(-)
+ create mode 100644 heimdall/source/NuxelExitCodes.h
+
+diff --git a/heimdall/source/FlashAction.cpp b/heimdall/source/FlashAction.cpp
+index c2aa92b..dc71b94 100644
+--- a/heimdall/source/FlashAction.cpp
++++ b/heimdall/source/FlashAction.cpp
+@@ -30,6 +30,7 @@
+ #include "FlashAction.h"
+ #include "Heimdall.h"
+ #include "Interface.h"
++#include "NuxelExitCodes.h"
+ #include "SessionSetupResponse.h"
+ #include "TotalBytesPacket.h"
+ #include "Utility.h"
+@@ -44,6 +45,11 @@ Arguments:\n\
+     [--<partition identifier> <filename> ...]\n\
+     [--pit <filename>] [--verbose] [--no-reboot] [--resume] [--stdout-errors]\n\
+     [--usb-log-level <none/error/warning/debug>] [--skip-size-check] [--wait]\n\
++    [--nuxel-trace-packets] [--nuxel-session-timeout <ms>]\n\
++    [--nuxel-send-timeout <ms>] [--nuxel-receive-timeout <ms>]\n\
++    [--nuxel-reboot-timeout <ms>] [--nuxel-presence-timeout <ms>]\n\
++    [--nuxel-empty-transfers <none/before/after/both>]\n\
++    [--no-nuxel-presence-check]\n\
+   or:\n\
+     --repartition --pit <filename> [--<partition name> <filename> ...]\n\
+     [--<partition identifier> <filename> ...] [--verbose] [--no-reboot]\n\
+@@ -54,6 +60,10 @@ Description: Flashes one or more firmware files to your phone. Partition names\n
+     With --wait Heimdall waits until a compatible device is connected.\n\
+     T-Flash mode allows to flash the inserted SD-card instead of the internal MMC.\n\
+     Use --skip-size-check to not verify that files fit in the specified partition.\n\
++    Nuxel options trace the Odin end-session handshake and give it bounded,\n\
++    configurable timeouts. A missing end-session acknowledgement is NEVER\n\
++    reported as success, and a post-session presence check refuses to treat\n\
++    still-in-Download-Mode as a completed flash.\n\
+ Note: --no-reboot causes the device to remain in download mode after the action\n\
+       is completed. If you wish to perform another action whilst remaining in\n\
+       download mode, then the following action must specify the --resume flag.\n\
+@@ -465,6 +475,42 @@ static bool enableTFlash(BridgeManager *bridgeManager)
+ 	return true;
+ }
+ 
++static const char *NuxelEmptyTransferName(int flags)
++{
++	if (flags == kNuxelEmptyTransferNone)
++		return ("none");
++
++	if (flags == kNuxelEmptyTransferBefore)
++		return ("before");
++
++	if (flags == kNuxelEmptyTransferAfter)
++		return ("after");
++
++	return ("both");
++}
++
++static int NuxelReadTimeout(const Arguments& arguments, const char *name, int fallback, bool *valid)
++{
++	const StringArgument *argument = static_cast<const StringArgument *>(arguments.GetArgument(name));
++
++	if (!argument)
++		return (fallback);
++
++	unsigned int value = 0;
++
++	if (Utility::ParseUnsignedInt(value, argument->GetValue().c_str()) != kNumberParsingStatusSuccess ||
++	    value < 50 || value > 600000)
++	{
++		Interface::PrintError("Invalid value for --%s: %s (expected 50..600000 ms)\n",
++			name, argument->GetValue().c_str());
++		*valid = false;
++
++		return (fallback);
++	}
++
++	return (static_cast<int>(value));
++}
++
+ int FlashAction::Execute(int argc, char **argv)
+ {
+ 	// Setup argument types
+@@ -483,6 +529,15 @@ int FlashAction::Execute(int argc, char **argv)
+ 	argumentTypes["tflash"] = kArgumentTypeFlag;
+ 	argumentTypes["skip-size-check"] = kArgumentTypeFlag;
+ 
++	argumentTypes["nuxel-session-timeout"] = kArgumentTypeString;
++	argumentTypes["nuxel-send-timeout"] = kArgumentTypeString;
++	argumentTypes["nuxel-receive-timeout"] = kArgumentTypeString;
++	argumentTypes["nuxel-reboot-timeout"] = kArgumentTypeString;
++	argumentTypes["nuxel-presence-timeout"] = kArgumentTypeString;
++	argumentTypes["nuxel-empty-transfers"] = kArgumentTypeString;
++	argumentTypes["nuxel-trace-packets"] = kArgumentTypeFlag;
++	argumentTypes["no-nuxel-presence-check"] = kArgumentTypeFlag;
++
+ 	argumentTypes["pit"] = kArgumentTypeString;
+ 	shortArgumentAliases["pit"] = "pit";
+ 
+@@ -514,6 +569,59 @@ int FlashAction::Execute(int argc, char **argv)
+ 	// If we are flashing to sdcard we can ignore size of partition in PIT
+ 	bool skipSizeCheck = (arguments.GetArgument("skip-size-check") != nullptr) || tflash;
+ 
++	// Nuxel instrumentation options.
++	bool nuxelOptionsValid = true;
++	bool nuxelTracePackets = arguments.GetArgument("nuxel-trace-packets") != nullptr;
++	bool nuxelPresenceCheck = arguments.GetArgument("no-nuxel-presence-check") == nullptr;
++
++	int nuxelSendTimeout = NuxelReadTimeout(arguments, "nuxel-send-timeout",
++	                                        BridgeManager::kDefaultTimeoutSend, &nuxelOptionsValid);
++	int nuxelReceiveTimeout = NuxelReadTimeout(arguments, "nuxel-receive-timeout",
++	                                           BridgeManager::kDefaultTimeoutReceive, &nuxelOptionsValid);
++	int nuxelRebootTimeout = nuxelReceiveTimeout;
++	int nuxelPresenceTimeout = 5000;
++
++	int nuxelSessionTimeout = NuxelReadTimeout(arguments, "nuxel-session-timeout", 0, &nuxelOptionsValid);
++	if (nuxelSessionTimeout != 0)
++	{
++		nuxelReceiveTimeout = nuxelSessionTimeout;
++		nuxelRebootTimeout = nuxelSessionTimeout;
++	}
++
++	nuxelRebootTimeout = NuxelReadTimeout(arguments, "nuxel-reboot-timeout",
++	                                      nuxelRebootTimeout, &nuxelOptionsValid);
++	nuxelPresenceTimeout = NuxelReadTimeout(arguments, "nuxel-presence-timeout",
++	                                        5000, &nuxelOptionsValid);
++
++	int nuxelEmptyTransferFlags = kNuxelEmptyTransferAfter;
++	const StringArgument *nuxelEmptyArgument =
++		static_cast<const StringArgument *>(arguments.GetArgument("nuxel-empty-transfers"));
++
++	if (nuxelEmptyArgument)
++	{
++		const std::string& value = nuxelEmptyArgument->GetValue();
++
++		if (value == "none")
++			nuxelEmptyTransferFlags = kNuxelEmptyTransferNone;
++		else if (value == "before")
++			nuxelEmptyTransferFlags = kNuxelEmptyTransferBefore;
++		else if (value == "after")
++			nuxelEmptyTransferFlags = kNuxelEmptyTransferAfter;
++		else if (value == "both")
++			nuxelEmptyTransferFlags = kNuxelEmptyTransferBefore | kNuxelEmptyTransferAfter;
++		else
++		{
++			Interface::PrintError("Invalid value for --nuxel-empty-transfers: %s\n", value.c_str());
++			nuxelOptionsValid = false;
++		}
++	}
++
++	if (!nuxelOptionsValid)
++	{
++		Interface::Print(FlashAction::usage);
++		return (kNuxelExitGenericFailure);
++	}
++
+ 	if (arguments.GetArgument("stdout-errors") != nullptr)
+ 		Interface::SetStdoutErrors(true);
+ 
+@@ -590,13 +698,34 @@ int FlashAction::Execute(int argc, char **argv)
+ 
+ 	BridgeManager *bridgeManager = new BridgeManager(verbose, waitForDevice);
+ 	bridgeManager->SetUsbLogLevel(usbLogLevel);
++	bridgeManager->SetNuxelSendTimeout(nuxelSendTimeout);
++	bridgeManager->SetNuxelReceiveTimeout(nuxelReceiveTimeout);
++	bridgeManager->SetNuxelRebootReceiveTimeout(nuxelRebootTimeout);
++	bridgeManager->SetNuxelEmptyTransferFlags(nuxelEmptyTransferFlags);
++	bridgeManager->SetNuxelTracePackets(nuxelTracePackets);
++
++	Interface::Print("[nuxel] send-timeout=%dms receive-timeout=%dms reboot-timeout=%dms empty-transfers=%s trace=%s\n",
++		bridgeManager->GetNuxelSendTimeout(), bridgeManager->GetNuxelReceiveTimeout(),
++		nuxelRebootTimeout, NuxelEmptyTransferName(nuxelEmptyTransferFlags),
++		nuxelTracePackets ? "on" : "off");
+ 
+-	if (bridgeManager->Initialise(resume) != BridgeManager::kInitialiseSucceeded || !bridgeManager->BeginSession())
++	int initialiseResult = bridgeManager->Initialise(resume);
++
++	if (initialiseResult != BridgeManager::kInitialiseSucceeded)
+ 	{
+ 		closeFiles(partitionFiles, pitFile);
+ 		delete bridgeManager;
+ 
+-		return (1);
++		return (initialiseResult == BridgeManager::kInitialiseDeviceNotDetected
++			? kNuxelExitNoDevice : kNuxelExitInitialiseFailed);
++	}
++
++	if (!bridgeManager->BeginSession())
++	{
++		closeFiles(partitionFiles, pitFile);
++		delete bridgeManager;
++
++		return (kNuxelExitBeginSessionFailed);
+ 	}
+ 
+ 	if (tflash && !enableTFlash(bridgeManager))
+@@ -604,7 +733,7 @@ int FlashAction::Execute(int argc, char **argv)
+ 		closeFiles(partitionFiles, pitFile);
+ 		delete bridgeManager;
+ 
+-		return (1);
++		return (kNuxelExitGenericFailure);
+ 	}
+ 
+ 	bool success = sendTotalTransferSize(bridgeManager, partitionFiles, pitFile, repartition);
+@@ -623,12 +752,85 @@ int FlashAction::Execute(int argc, char **argv)
+ 		delete pitData;
+ 	}
+ 
+-	if (!bridgeManager->EndSession(reboot))
+-		success = false;
++	// Always perform the end-session handshake. It is the only host-side step
++	// that can distinguish "the phone accepted the session" from "the phone is
++	// still sitting in Download Mode". It is never skipped, and a missing
++	// acknowledgement is never success.
++	SessionReport sessionReport;
++	bool sessionOk = bridgeManager->EndSessionEx(reboot, &sessionReport);
++
++	// Conservative post-session verification: if we asked the phone to reboot
++	// and it positively acknowledged, it must actually leave Download Mode.
++	int presence = -1;
++
++	if (sessionOk && reboot && nuxelPresenceCheck)
++	{
++		Interface::Print("Verifying the device left Download Mode...\n");
++
++		for (int waited = 0; waited <= nuxelPresenceTimeout; waited += 250)
++		{
++			presence = BridgeManager::DownloadModeDevicePresence();
++
++			if (presence != 1)
++				break;
++
++			Sleep(250);
++		}
++
++		sessionReport.devicePresenceChecked = true;
++
++		if (presence == 1)
++		{
++			sessionReport.deviceStillPresent = true;
++			sessionReport.failure = kSessionFailureStillInDownloadMode;
++			sessionOk = false;
++
++			Interface::PrintError("The phone still reports a Download Mode device after the reboot request.\n");
++			Interface::PrintError("The transfer completed but the flash is NOT confirmed. Do not reflash blindly.\n");
++		}
++		else if (presence == 0)
++		{
++			Interface::Print("The device is no longer present in Download Mode (rebooted).\n");
++		}
++		else
++		{
++			Interface::PrintWarning("Could not determine device presence after the session.\n");
++		}
++	}
+ 
+ 	delete bridgeManager;
+ 
+ 	closeFiles(partitionFiles, pitFile);
+ 
+-	return (success ? 0 : 1);
++	// Machine-readable session summary. The wrapper and CI parse these lines
++	// instead of matching English error strings.
++	Interface::Print("[nuxel] NUXEL_SESSION_RESULT=%s\n", sessionReport.ResultToken());
++	Interface::Print("[nuxel] NUXEL_FAILURE_CLASS=%s\n", sessionReport.FailureName());
++	Interface::Print("[nuxel] NUXEL_END_SESSION_ACK_RECEIVED=%d\n", sessionReport.endSessionAckReceived ? 1 : 0);
++	Interface::Print("[nuxel] NUXEL_ACK_RESPONSE_TYPE=0x%02x\n", sessionReport.ackResponseType & 0xFF);
++	Interface::Print("[nuxel] NUXEL_ACK_BYTES=%d\n", sessionReport.ackBytesTransferred);
++	Interface::Print("[nuxel] NUXEL_ACK_ATTEMPTS=%d\n", sessionReport.ackAttempts);
++	Interface::Print("[nuxel] NUXEL_ACK_ELAPSED_MS=%ld\n", sessionReport.ackElapsedMs);
++	Interface::Print("[nuxel] NUXEL_LAST_LIBUSB_ERROR=%d\n", sessionReport.lastLibusbError);
++	Interface::Print("[nuxel] NUXEL_REBOOT_ACK_RECEIVED=%d\n", sessionReport.rebootAckReceived ? 1 : 0);
++	Interface::Print("[nuxel] NUXEL_DEVICE_STILL_PRESENT=%d\n", sessionReport.deviceStillPresent ? 1 : (presence < 0 ? -1 : 0));
++
++	int exitCode;
++
++	if (!success)
++		exitCode = kNuxelExitFlashStepFailed;
++	else if (!sessionOk)
++		exitCode = NuxelExitCodeForFailure(sessionReport.failure);
++	else
++		exitCode = kNuxelExitSuccess;
++
++	Interface::Print("[nuxel] NUXEL_EXIT_CODE=%d\n", exitCode);
++
++	if (exitCode == kNuxelExitSuccess)
++	{
++		Interface::Print("[nuxel] End-session handshake acknowledged AND the device left Download Mode.\n");
++		Interface::Print("[nuxel] This still does not prove the flashed image is bootable; verify kernel/boot logs next.\n");
++	}
++
++	return (exitCode);
+ }
+diff --git a/heimdall/source/NuxelExitCodes.h b/heimdall/source/NuxelExitCodes.h
+new file mode 100644
+index 0000000..f2cc8b9
+--- /dev/null
++++ b/heimdall/source/NuxelExitCodes.h
+@@ -0,0 +1,58 @@
++/* Nuxel additions to Heimdall v2.2.2 -- see NUXEL-README.md
++ *
++ * Stable exit codes so the Nuxel wrapper (and CI) can act on the *class* of
++ * failure instead of grepping English error text. Upstream Heimdall only ever
++ * returns 0 or 1 for `flash`.
++ */
++#ifndef NUXELEXITCODES_H
++#define NUXELEXITCODES_H
++
++#include "NuxelSession.h"
++
++namespace Heimdall
++{
++	enum
++	{
++		kNuxelExitSuccess                  = 0,
++		kNuxelExitGenericFailure           = 1,
++
++		kNuxelExitNoDevice                 = 10,
++		kNuxelExitInitialiseFailed         = 11,
++		kNuxelExitBeginSessionFailed       = 12,
++
++		kNuxelExitEndSessionSendFailed     = 13,
++		kNuxelExitEndSessionTimeout        = 14,
++		kNuxelExitEndSessionDisconnect     = 15,
++		kNuxelExitEndSessionMalformed      = 16,
++		kNuxelExitEndSessionRejected       = 17,
++		kNuxelExitEndSessionTransportError = 18,
++		kNuxelExitRebootTimeout            = 19,
++		kNuxelExitRebootDisconnect         = 20,
++		kNuxelExitStillInDownloadMode      = 21,
++
++		kNuxelExitFlashStepFailed          = 22,
++		kNuxelExitInternalError            = 23
++	};
++
++	inline int NuxelExitCodeForFailure(SessionFailure failure)
++	{
++		switch (failure)
++		{
++			case kSessionFailureNone:                 return (kNuxelExitSuccess);
++			case kSessionFailureSendFailed:           return (kNuxelExitEndSessionSendFailed);
++			case kSessionFailureTimeout:              return (kNuxelExitEndSessionTimeout);
++			case kSessionFailureDisconnected:         return (kNuxelExitEndSessionDisconnect);
++			case kSessionFailureMalformedPacket:      return (kNuxelExitEndSessionMalformed);
++			case kSessionFailureUnexpectedResponse:   return (kNuxelExitEndSessionRejected);
++			case kSessionFailureTransportError:       return (kNuxelExitEndSessionTransportError);
++			case kSessionFailureRebootTimeout:        return (kNuxelExitRebootTimeout);
++			case kSessionFailureRebootDisconnected:   return (kNuxelExitRebootDisconnect);
++			case kSessionFailureStillInDownloadMode:  return (kNuxelExitStillInDownloadMode);
++			case kSessionFailureInternal:             return (kNuxelExitInternalError);
++		}
++
++		return (kNuxelExitGenericFailure);
++	}
++}
++
++#endif
+-- 
+2.56.0
+

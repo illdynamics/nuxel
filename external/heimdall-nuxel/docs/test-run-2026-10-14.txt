@@ -1,0 +1,20 @@
+Nuxel Heimdall end-session unit tests — captured run 2026-10-14
+host: Darwin 24.6.0 arm64, compiler: Apple clang version 17.0.0 (clang-1700.6.3.2)
+upstream: git.sr.ht/~grimler/Heimdall v2.2.2 (d9554e7fa30a00abed7f0ac86b10e63c2c3b8e20)
+
+[heimdall-nuxel] compiling tests (plain) with c++
+[heimdall-nuxel] running tests (plain)
+    Nuxel Heimdall session-handshake tests
+    --------------------------------------
+    --------------------------------------
+    checks: 53, failures: 0
+    RESULT: PASS
+[heimdall-nuxel] compiling tests (sanitized) with c++
+[heimdall-nuxel] running tests (sanitized)
+    Nuxel Heimdall session-handshake tests
+    --------------------------------------
+    --------------------------------------
+    checks: 53, failures: 0
+    RESULT: PASS
+
+result: exit 0

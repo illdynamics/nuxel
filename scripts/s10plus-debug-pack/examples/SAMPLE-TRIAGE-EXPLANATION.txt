@@ -1,0 +1,10 @@
+EXAMPLE ONLY — fabricated log signatures, not actual S10+ diagnosis.
+
+If an actual pstore log contains:
+  Kernel panic - not syncing: VFS: Unable to mount root fs on unknown-block(0,0)
+
+Then the root mount or block-device path is a leading hypothesis.
+Inspect previous-boot logs, initramfs /init, DTB, storage driver and rootfs together.
+
+If the only dmesg is from TWRP recovery, it is NOT proof that the Nuxel kernel
+booted successfully. Empty pstore and absent last_kmsg leave boot stage unknown.

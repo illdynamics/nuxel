@@ -1,0 +1,60 @@
+Captured Odin end-session trace — instrumented fork, macOS arm64, 2026-10-14
+==========================================================================
+This trace was captured from a real attached Download-Mode device during the
+investigation (see docs/s10plus-heimdall-endsession-investigation.md, incident
+section). It is retained because it is the only real packet-level EndSession
+trace we have, and it shows the handshake *succeeding* on this host stack.
+
+Binary: build/heimdall-nuxel/out/heimdall-nuxel (v2.2.2-nuxel)
+Command shape: heimdall-nuxel flash --BOOT <img> --nuxel-trace-packets ...
+
+[nuxel] send-timeout=3000ms receive-timeout=8000ms reboot-timeout=8000ms empty-transfers=after trace=on
+Initialising connection...
+Detecting device...
+Claiming interface...
+Initialising protocol...
+Protocol initialisation successful.
+
+Beginning session...
+Session begun.
+
+Downloading device's PIT file...
+PIT file download successful.
+
+Uploading BOOT
+100%
+BOOT upload successful
+
+Ending session...
+    [nuxel] TX len=1024 type=0x67 hex=67000000000000000000000000000000...   <- EndSession request (request=0)
+    [nuxel] RX len=8    type=0x67 hex=6700000000000000                      <- 0x67 acknowledged (attempt 1)
+    [nuxel] TX len=1024 type=0x67 hex=67000000010000000000000000000000...   <- reboot request (request=1)
+    [nuxel] RX len=8    type=0x67 hex=6700000000000000                      <- 0x67 acknowledged
+Verifying the device left Download Mode...
+The device is no longer present in Download Mode (rebooted).
+Releasing device interface...
+
+[nuxel] NUXEL_SESSION_RESULT=ok_acknowledged
+[nuxel] NUXEL_FAILURE_CLASS=none
+[nuxel] NUXEL_END_SESSION_ACK_RECEIVED=1
+[nuxel] NUXEL_ACK_RESPONSE_TYPE=0x67
+[nuxel] NUXEL_ACK_BYTES=8
+[nuxel] NUXEL_ACK_ATTEMPTS=1
+[nuxel] NUXEL_ACK_ELAPSED_MS=7
+[nuxel] NUXEL_LAST_LIBUSB_ERROR=0
+[nuxel] NUXEL_REBOOT_ACK_RECEIVED=1
+[nuxel] NUXEL_DEVICE_STILL_PRESENT=0
+[nuxel] NUXEL_EXIT_CODE=0
+
+Interpretation
+--------------
+1. The device CAN answer EndSession with the expected 0x67 response, and did so
+   on the first attempt in ~7 ms. This falsifies "this S-Boot never acks 0x67"
+   as a universal statement.
+2. It confirms the EndSession + reboot handshake can complete on macOS/libusb
+   while the same class of device produced "Failed to receive session end
+   confirmation" on the operator's Linux/Docker stack. That points at a
+   host-stack / timing difference (candidate H-C: delayed acknowledgement, or
+   the zero-length OUT transfer's 100 ms timeout interacting with the host).
+3. It is NOT proof that the flashed image boots. `NuxelExitCode=0` only means the
+   session closed and the phone left Download Mode.

@@ -1,0 +1,338 @@
+From e7dafb74663181bca6bb04ccba9b180c0a9f8e6c Mon Sep 17 00:00:00 2001
+From: Nuxel <nuxel@localhost>
+Date: Wed, 14 Oct 2026 18:29:03 +0200
+Subject: [PATCH 2/5] nuxel: instrument BridgeManager's end-session handshake
+
+Adds EndSessionEx() which always performs the full handshake (never skips it),
+raw bulk transfers that surface libusb error codes, bounded configurable
+timeouts, optional hex packet tracing, and a post-session Download-Mode
+presence probe. Upstream EndSession() is left untouched.
+---
+ heimdall/CMakeLists.txt           |   1 +
+ heimdall/source/BridgeManager.cpp | 227 ++++++++++++++++++++++++++++++
+ heimdall/source/BridgeManager.h   |  38 +++++
+ 3 files changed, 266 insertions(+)
+
+diff --git a/heimdall/CMakeLists.txt b/heimdall/CMakeLists.txt
+index 758ee1e..4c26f73 100644
+--- a/heimdall/CMakeLists.txt
++++ b/heimdall/CMakeLists.txt
+@@ -34,6 +34,7 @@ set(HEIMDALL_SOURCE_FILES
+     source/InfoAction.cpp
+     source/Interface.cpp
+     source/main.cpp
++    source/NuxelSession.cpp
+     source/PrintPitAction.cpp
+     source/Utility.cpp
+     source/VersionAction.cpp)
+diff --git a/heimdall/source/BridgeManager.cpp b/heimdall/source/BridgeManager.cpp
+index 7337aab..4f15b8e 100644
+--- a/heimdall/source/BridgeManager.cpp
++++ b/heimdall/source/BridgeManager.cpp
+@@ -398,6 +398,12 @@ BridgeManager::BridgeManager(bool verbose, bool waitForDevice)
+ 	fileTransferSequenceTimeout = kFileTransferSequenceTimeoutDefault;
+ 
+ 	usbLogLevel = UsbLogLevel::Default;
++
++	nuxelSendTimeout = kDefaultTimeoutSend;
++	nuxelReceiveTimeout = kDefaultTimeoutReceive;
++	nuxelRebootReceiveTimeout = kDefaultTimeoutReceive;
++	nuxelEmptyTransferFlags = kNuxelEmptyTransferAfter;
++	nuxelTracePackets = false;
+ }
+ 
+ BridgeManager::~BridgeManager()
+@@ -613,6 +619,227 @@ bool BridgeManager::EndSession(bool reboot) const
+ 	return (true);
+ }
+ 
++namespace
++{
++	// Adapts BridgeManager's libusb bulk transfers to the testable session
++	// state machine in NuxelSession.h.
++	class BridgePacketTransport : public IPacketTransport
++	{
++		public:
++
++			explicit BridgePacketTransport(const BridgeManager *bridge)
++			{
++				this->bridge = bridge;
++			}
++
++			int SendRaw(const unsigned char *data, int length, int timeoutMs)
++			{
++				return (bridge->SendRawPacket(data, length, timeoutMs));
++			}
++
++			int ReceiveRaw(unsigned char *data, int length, int timeoutMs)
++			{
++				return (bridge->ReceiveRawPacket(data, length, timeoutMs));
++			}
++
++			void TraceTx(const unsigned char *data, int length)
++			{
++				bridge->TracePacket("TX", data, length);
++			}
++
++			void TraceRx(const unsigned char *data, int length)
++			{
++				bridge->TracePacket("RX", data, length);
++			}
++
++			void TraceNote(const char *message)
++			{
++				bridge->TraceNote(message);
++			}
++
++		private:
++
++			const BridgeManager *bridge;
++	};
++}
++
++static int NuxelClampTimeout(int timeoutMs)
++{
++	if (timeoutMs < 50)
++		return (50);
++
++	if (timeoutMs > 600000)
++		return (600000);
++
++	return (timeoutMs);
++}
++
++void BridgeManager::SetNuxelSendTimeout(int timeoutMs)
++{
++	nuxelSendTimeout = NuxelClampTimeout(timeoutMs);
++}
++
++void BridgeManager::SetNuxelReceiveTimeout(int timeoutMs)
++{
++	nuxelReceiveTimeout = NuxelClampTimeout(timeoutMs);
++}
++
++void BridgeManager::SetNuxelRebootReceiveTimeout(int timeoutMs)
++{
++	nuxelRebootReceiveTimeout = NuxelClampTimeout(timeoutMs);
++}
++
++void BridgeManager::SetNuxelEmptyTransferFlags(int flags)
++{
++	nuxelEmptyTransferFlags = flags;
++}
++
++void BridgeManager::SetNuxelTracePackets(bool enabled)
++{
++	nuxelTracePackets = enabled;
++}
++
++int BridgeManager::SendRawPacket(const unsigned char *data, int length, int timeout) const
++{
++	int dataTransferred = 0;
++	int result = libusb_bulk_transfer(deviceHandle, outEndpoint,
++		const_cast<unsigned char *>(data), length, &dataTransferred, timeout);
++
++	if (result != LIBUSB_SUCCESS)
++		return (result);
++
++	return (dataTransferred);
++}
++
++int BridgeManager::ReceiveRawPacket(unsigned char *data, int length, int timeout) const
++{
++	// Same zero-length quirk as ReceiveBulkTransfer(): WinUSB ignores
++	// zero-length reads, so substitute a one-byte buffer.
++	static unsigned char dummyData;
++
++	unsigned char *buffer = data;
++	int bufferLength = length;
++
++	if (buffer == nullptr)
++	{
++		buffer = &dummyData;
++		bufferLength = 1;
++	}
++
++	int dataTransferred = 0;
++	int result = libusb_bulk_transfer(deviceHandle, inEndpoint, buffer, bufferLength,
++		&dataTransferred, timeout);
++
++	if (result != LIBUSB_SUCCESS)
++		return (result);
++
++	return (dataTransferred);
++}
++
++void BridgeManager::TracePacket(const char *direction, const unsigned char *data, int length) const
++{
++	if (!nuxelTracePackets)
++		return;
++
++	if (length < 0)
++		length = 0;
++
++	char hex[3 * 16 + 1];
++	int shown = (length < 16) ? length : 16;
++	int position = 0;
++
++	for (int i = 0; i < shown; i++)
++		position += snprintf(hex + position, sizeof(hex) - position, "%02x", data[i]);
++
++	hex[position] = '\0';
++
++	unsigned int type = 0;
++	bool haveType = (data != nullptr && length >= 4);
++
++	if (haveType)
++	{
++		type = static_cast<unsigned int>(data[0]) |
++		       (static_cast<unsigned int>(data[1]) << 8) |
++		       (static_cast<unsigned int>(data[2]) << 16) |
++		       (static_cast<unsigned int>(data[3]) << 24);
++	}
++
++	Interface::Print("    [nuxel] %s len=%d type=0x%02x hex=%s%s\n",
++		direction, length, haveType ? (type & 0xFF) : 0, hex,
++		(length > shown) ? "..." : "");
++}
++
++void BridgeManager::TraceNote(const char *message) const
++{
++	if (!nuxelTracePackets)
++		return;
++
++	Interface::Print("    [nuxel] %s\n", message ? message : "");
++}
++
++bool BridgeManager::EndSessionEx(bool reboot, SessionReport *report)
++{
++	Interface::Print("Ending session...\n");
++
++	BridgePacketTransport transport(this);
++
++	bool success = NuxelRunEndSession(transport, reboot,
++		nuxelSendTimeout, nuxelReceiveTimeout, nuxelRebootReceiveTimeout,
++		nuxelEmptyTransferFlags, verbose, report);
++
++	if (!success)
++	{
++		Interface::PrintError("Failed to receive session end confirmation!\n");
++
++		if (report != nullptr)
++		{
++			Interface::PrintError("Session failure class: %s (%s)\n",
++				report->FailureName(), report->ResultToken());
++		}
++	}
++
++	return (success);
++}
++
++int BridgeManager::DownloadModeDevicePresence(void)
++{
++	libusb_context *context = nullptr;
++
++	if (libusb_init(&context) != LIBUSB_SUCCESS)
++		return (-1);
++
++	libusb_device **devices = nullptr;
++	ssize_t deviceCount = libusb_get_device_list(context, &devices);
++	int found = 0;
++
++	if (deviceCount >= 0)
++	{
++		for (ssize_t deviceIndex = 0; deviceIndex < deviceCount && !found; deviceIndex++)
++		{
++			libusb_device_descriptor descriptor;
++
++			if (libusb_get_device_descriptor(devices[deviceIndex], &descriptor) != LIBUSB_SUCCESS)
++				continue;
++
++			for (unsigned int i = 0; i < BridgeManager::kSupportedDeviceCount; i++)
++			{
++				if (descriptor.idVendor == supportedDevices[i].vendorId &&
++				    descriptor.idProduct == supportedDevices[i].productId)
++				{
++					found = 1;
++					break;
++				}
++			}
++		}
++
++		libusb_free_device_list(devices, 1);
++	}
++
++	libusb_exit(context);
++
++	return (found);
++}
++
+ bool BridgeManager::SendBulkTransfer(unsigned char *data, int length, int timeout, bool retry) const
+ {
+ 	int dataTransferred;
+diff --git a/heimdall/source/BridgeManager.h b/heimdall/source/BridgeManager.h
+index 55819b3..702beee 100644
+--- a/heimdall/source/BridgeManager.h
++++ b/heimdall/source/BridgeManager.h
+@@ -26,6 +26,7 @@
+ 
+ // Heimdall
+ #include "Heimdall.h"
++#include "NuxelSession.h"
+ 
+ struct libusb_context;
+ struct libusb_device;
+@@ -134,6 +135,13 @@ namespace Heimdall
+ 
+ 			UsbLogLevel usbLogLevel;
+ 
++			// Nuxel: bounded, configurable timeouts and optional packet tracing.
++			int nuxelSendTimeout;
++			int nuxelReceiveTimeout;
++			int nuxelRebootReceiveTimeout;
++			int nuxelEmptyTransferFlags;
++			bool nuxelTracePackets;
++
+ 			int FindDeviceInterface(void);
+ 			bool ClaimDeviceInterface(void);
+ 			bool SetupDeviceInterface(void);
+@@ -155,6 +163,36 @@ namespace Heimdall
+ 			bool BeginSession(void);
+ 			bool EndSession(bool reboot) const;
+ 
++			// Nuxel: instrumented variant of EndSession(). It always performs the
++			// full handshake (never skips it) and reports the precise outcome.
++			bool EndSessionEx(bool reboot, SessionReport *report);
++
++			// Nuxel: raw bulk transfers that return a libusb-style error code
++			// (>= 0 bytes transferred, < 0 error) instead of a bool. Used by the
++			// instrumented session state machine.
++			int SendRawPacket(const unsigned char *data, int length, int timeout) const;
++			int ReceiveRawPacket(unsigned char *data, int length, int timeout) const;
++
++			// Nuxel: verbose hex trace of a control packet.
++			void TracePacket(const char *direction, const unsigned char *data, int length) const;
++			void TraceNote(const char *message) const;
++
++			// Nuxel: bounded timeout configuration (clamped to [50, 600000] ms).
++			void SetNuxelSendTimeout(int timeoutMs);
++			void SetNuxelReceiveTimeout(int timeoutMs);
++			void SetNuxelRebootReceiveTimeout(int timeoutMs);
++			void SetNuxelEmptyTransferFlags(int flags);
++			void SetNuxelTracePackets(bool enabled);
++
++			int GetNuxelSendTimeout(void) const { return (nuxelSendTimeout); }
++			int GetNuxelReceiveTimeout(void) const { return (nuxelReceiveTimeout); }
++
++			// Nuxel: post-session presence probe.
++			//   1  = a supported Download-Mode device is still present
++			//   0  = no such device (it left Download Mode / rebooted)
++			//  -1  = could not determine (libusb init failed)
++			static int DownloadModeDevicePresence(void);
++
+ 			bool SendPacket(OutboundPacket *packet, int timeout = kDefaultTimeoutSend, int emptyTransferFlags = kEmptyTransferAfter) const;
+ 			bool ReceivePacket(InboundPacket *packet, int timeout = kDefaultTimeoutReceive, int emptyTransferFlags = kEmptyTransferNone) const;
+ 
+-- 
+2.56.0
+

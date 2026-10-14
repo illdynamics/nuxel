@@ -10,7 +10,7 @@ completion and not probabilities of successful boot.
 |---|---:|---|---|
 | Device source configuration | 90% | Exynos S10+ overlays/config, S10+ udev, user-provided PIT with 41 entries | Exact physical hw_rev, DTBO effective merge, firmware provenance |
 | Android v1 boot packaging | 88% | ARM64 4.14 kernel preserved, merged DTB, repacked newc + `/bin/sh`, USERDATA resolution, writable-root handoff | Samsung S-Boot acceptance, real boot log, DTBO board match |
-| Host transfer workflow | 70% | Heimdall v2.2.2 reported both 100% | Missing EndSession confirmation and readback/boot evidence; NOT solved by rootfs changes |
+| Host transfer workflow | 70% | Heimdall v2.2.2 reported both 100%; instrumented fork classifies the end-session outcome; unit tests pass | EndSession root cause not fixed (verdict UNRESOLVED): needs on-device run + Odin USB capture; NOT solved by rootfs changes |
 | ARM64 diagnostic rootfs | 88% | Verified ext4 traversal, static Toybox, S10-specific rules, Motorola removed, ARM64 framebuffer test | Real e2fsck and PID1 running on handset |
 | Fedora 43 full-runtime build automation | 65% | Docker aarch64 DNF RPM recipe, fail-closed package checks and symlink-aware verifier | Not run: no Docker/DNS/package repository in build sandbox |
 | Fedora ARM64 Python3/systemd/Phosh/Phoc **inside delivered diagnostic image** | **0%** | Image explicitly contains no Fedora RPM runtime | Build on connected Mac and run strict verifier |
@@ -45,9 +45,22 @@ phone readiness in the absence of on-device results.
 
 Heimdall success messages at 100% acknowledge file transmission at the host,
 not a durable on-device commit. `Failed to receive session end confirmation`
-is produced by an absent Odin protocol EndSession response; editing boot.img
-or ext4 content cannot reliably resolve it. The wrapper now preserves logs,
-returns a distinct error and never advertises that result as success.
+is produced by an absent or unexpected Odin protocol EndSession response; editing
+boot.img or ext4 content cannot reliably resolve it.
+
+An instrumented fork now lives in `external/heimdall-nuxel/`. It distinguishes
+timeout / USB disconnect / malformed packet / rejected command / delayed
+acknowledgement / still-in-Download-Mode, emits `NUXEL_*` result lines and
+distinct exit codes, refuses to write to a device unless explicitly permitted,
+and unit-tests all of these classes with mocked session outcomes (53 assertions,
+plain + ASan/UBSan). The wrapper (`boot/s10plus/flash-heimdall.sh`) uses it and
+never advertises success without a positive acknowledgement *and* confirmation
+that the phone left Download Mode.
+
+This is instrumentation, not a fix: the root cause is **UNRESOLVED** and cannot
+be confirmed without the handset and (for the protocol-mismatch class) a USB
+capture of a successful Odin flash of the same device. See
+`docs/s10plus-heimdall-endsession-investigation.md`.
 
 ## Hard stop / evidence to gather
 

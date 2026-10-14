@@ -1,0 +1,18 @@
+test_full_collection_with_fake_adb (test_pack.TestPack.test_full_collection_with_fake_adb) ... ok
+test_pstore_listing_alone_is_not_boot_evidence (test_pack.TestPack.test_pstore_listing_alone_is_not_boot_evidence) ... ok
+test_readback_is_readonly_and_hashes_match (test_pack.TestPack.test_readback_is_readonly_and_hashes_match) ... ok
+test_share_bundle_masks_serial (test_pack.TestPack.test_share_bundle_masks_serial) ... ok
+test_shell_syntax (test_pack.TestPack.test_shell_syntax) ... ok
+test_triage_no_pstore_not_success (test_pack.TestPack.test_triage_no_pstore_not_success) ... ok
+test_triage_previous_boot_classification (test_pack.TestPack.test_triage_previous_boot_classification) ... ok
+
+----------------------------------------------------------------------
+Ran 7 tests in 2.121s
+
+OK
+Status: NO_PREVIOUS_BOOT_LOGS_AVAILABLE; 2 files; 0 signature hit(s)
+Triage report: /tmp/tmp3nw3prym/TRIAGE.md
+Status: NO_PREVIOUS_BOOT_LOGS_AVAILABLE; 1 files; 0 signature hit(s)
+Triage report: /tmp/tmpy6znaj1y/TRIAGE.md
+Status: EVIDENCE_CAPTURED_NEEDS_REVIEW; 2 files; 2 signature hit(s)
+Triage report: /tmp/tmp1tpo15be/TRIAGE.md

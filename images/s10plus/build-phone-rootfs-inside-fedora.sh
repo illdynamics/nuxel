@@ -15,11 +15,11 @@ trap 'rm -f "$OUT" "$OUT.sha256"' ERR
 # A dependency error must abort, rather than emitting a deceptive bare /etc tree.
 dnf -y install e2fsprogs findutils coreutils file rpm shadow-utils python3
 # Required in the target: real binaries and shared libraries, not .desktop shims.
-dnf -y --installroot="$STAGE" --releasever=43 --setopt=install_weak_deps=False install \
+dnf -y --installroot="$STAGE" --releasever=43 --use-host-config --setopt=install_weak_deps=False install \
     basesystem filesystem setup fedora-release glibc glibc-langpack-en \
     bash coreutils util-linux findutils grep sed gawk \
     systemd systemd-udev systemd-networkd dbus-broker dbus-daemon \
-    python3 phosh phoc squeekboard \
+    python3 phosh phoc stevia stevia-phosh-osk-provider \
     NetworkManager ModemManager \
     mesa-dri-drivers mesa-libEGL mesa-libgbm libinput \
     polkit greetd \

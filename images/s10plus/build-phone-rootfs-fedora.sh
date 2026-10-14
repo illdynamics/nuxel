@@ -17,7 +17,7 @@ Package-complete != physically boot tested; framebuffer/GPU/DTBO compatibility u
 USAGE
  exit 0
 fi
-command -v docker >/dev/null 2>&1 || { echo 'ERROR: Docker Desktop or Docker Engine is required' >&2; exit 2; }
+command -v podman >/dev/null 2>&1 || { echo 'ERROR: Docker Desktop or Docker Engine is required' >&2; exit 2; }
 command -v python3 >/dev/null 2>&1 || { echo 'ERROR: Python3 needed for artifact validation' >&2; exit 2; }
 case "$OUT" in /*) ;; *) echo 'ERROR: NUXEL_S10PLUS_OUTPUT must be absolute' >&2; exit 2;; esac
 MB="${NUXEL_S10PLUS_IMAGE_MB:-4096}"
@@ -27,7 +27,7 @@ mkdir -p "$(dirname "$OUT")"
 OUTDIR="$(cd "$(dirname "$OUT")" && pwd)"
 NAME="$(basename "$OUT")"
 echo "[nuxel] Fedora 43 aarch64 mobile image -> $OUT ($MB MiB)"
-docker run --rm --platform linux/arm64 --user root \
+podman run --rm --platform linux/arm64 --user root \
   --mount "type=bind,source=$ROOT,target=/nuxel,readonly" \
   --mount "type=bind,source=$OUTDIR,target=/deliver" \
   -e "NUXEL_IMAGE_NAME=$NAME" -e "NUXEL_IMAGE_MB=$MB" \
