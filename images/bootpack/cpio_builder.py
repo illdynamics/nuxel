@@ -68,7 +68,7 @@ class _Node:
             self.ftype = b"s"
         else:
             raise ValueError(f"unsupported file type in initramfs: {rel}")
-        self.size = len(self.body) if (stat.S_ISREG(m) or stat.S_ISLNK(m)) else 0
+        self.size = len(self.body) if stat.S_ISREG(m) else 0
 
 
 def build_cpio(stage: str, out: io.BytesIO, fixed_mtime: int = None) -> int:

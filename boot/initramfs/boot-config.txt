@@ -1,0 +1,45 @@
+# Nuxel S10+ Boot Configuration
+# Samsung Galaxy S10+ (SM-G975F, Exynos 9820), codename beyond2lte
+#
+# Two supported boot chains (see phones/s10plus/s10plus-go-guide.md):
+#   (A) PROVEN (postmarketOS):  S-Boot -> downstream Linux 4.14 kernel (v1 boot.img)
+#                               flashed with heimdall to BOOT + SYSTEM. No U-Boot.
+#   (B) STRETCH (mainline):     S-Boot -> chiffathefox/u-boot (exynos9820) -> mainline
+#                               kernel, flashed with TWRP adb+dd to boot/userdata.
+#
+# Device key: s10plus   (tools/nuxel-device-select.sh)
+
+device=s10plus
+codename=beyond2lte
+ufs_path=/dev/block/platform/13d60000.ufs/by-name
+
+# Boot image format: legacy Android boot image header v1, page 2048.
+# heimdall partition names (pmOS deviceinfo): BOOT (kernel) + SYSTEM (rootfs).
+heimdall_partition_kernel=BOOT
+heimdall_partition_rootfs=SYSTEM
+
+# Load addresses — SOURCED from pmaports device/testing/device-samsung-beyond1lte/deviceinfo
+# (flash_offset_base=0x10000000, kernel=0x00008000, ramdisk=0x01000000, tags=0x00000100).
+# CONFIRM from your unit's stock boot.img before flashing
+# (python3 tools/read-boot-header-v1.py stock-boot.img).
+kernel_addr=0x10008000
+ramdisk_addr=0x11000000
+tags_addr=0x10000100
+page_size=2048
+
+# Kernel cmdline for the v1 boot image.
+cmdline_base="buildvariant=userdebug nuxel.device=s10plus"
+cmdline_root="root=/dev/block/platform/13d60000.ufs/by-name/userdata rootfstype=ext4 rootwait rw"
+
+# Kernel source (downstream, the kernel postmarketOS actually uses):
+#   https://github.com/Linux4/android_kernel_samsung_exynos9820 @ f7194c1d (Linux 4.14.253)
+#   defconfig: exynos9820-beyond2lte_defconfig
+#
+# U-Boot source (mainline stretch path only):
+#   https://github.com/chiffathefox/u-boot branch exynos9820 (exynos9820_defconfig)
+
+# Protected partitions — NEVER flash:
+# efs efsg persist param up_param steady keystorage carrier cp_debug misc
+
+# Recovery: Download Mode (Vol Down + Bixby + Power)
+# heimdall flash --BL BL.tar.md5 --AP AP.tar.md5 --CP CP.tar.md5 --CSC CSC.tar.md5
