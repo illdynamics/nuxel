@@ -18,6 +18,10 @@
 #     generated Plymouth theme (nuxel.plymouth + frame PNGs). This is the exact
 #     content that went missing in CI (no ffmpeg -> theme step silently
 #     skipped -> a ~20 MB rootfs instead of the ~60 MB local build);
+#   * the s10plus rootfs is the Fedora 43 ARM64 phone userspace (built by
+#     images/s10plus/build-phone-rootfs-fedora.sh), verified with
+#     tools/s10plus/verify-fedora-phone-rootfs.py — the shared Plymouth/Flatpak
+#     rootfs is intentionally disabled for s10plus;
 #   * the s10plus U-Boot image is required only when the mainline set is
 #     requested (NUXEL_S10PLUS_UBOOT=1) — matching images/s10plus/build.sh.
 #
@@ -170,15 +174,40 @@ case "${DEVICE}" in
         ;;
     s10plus)
         _require_arm64_image "${KOUT}/arch/arm64/boot/Image.gz" "kernel Image.gz"
-        _require_magic "${KOUT}/arch/arm64/boot/dts/samsung/exynos9820-beyond2lte.dtb" 0 "d0 0d fe ed" "beyond2lte DTB"
-        _require_boot_image "${OUT}/nuxel-beyond2lte-boot.img" "nuxel-beyond2lte-boot.img"
-        _require_magic "${OUT}/nuxel-beyond2lte-rootfs.img" 1080 "53 ef" "nuxel-beyond2lte-rootfs.img (ext4)"
-        _require_ext4_path "${OUT}/nuxel-beyond2lte-rootfs.img" "/etc/nuxel/device/s10plus" "nuxel-beyond2lte-rootfs.img"
-        _require_ext4_path "${OUT}/nuxel-beyond2lte-rootfs.img" "/etc/nuxel/nuxel-beyond2lte.conf" "nuxel-beyond2lte-rootfs.img"
-        _require_ext4_path "${OUT}/nuxel-beyond2lte-rootfs.img" "/usr/bin/nuxel-bridge" "nuxel-beyond2lte-rootfs.img (userspace)"
-        _require_ext4_size_ge "${OUT}/nuxel-beyond2lte-rootfs.img" "/usr/share/nuxel/boot/nuxel-boot-animation.mp4" 1000000 "nuxel-beyond2lte-rootfs.img (boot animation)"
-        _require_ext4_path "${OUT}/nuxel-beyond2lte-rootfs.img" "/usr/share/plymouth/themes/nuxel/nuxel.plymouth" "nuxel-beyond2lte-rootfs.img (plymouth theme)"
-        _require_ext4_path "${OUT}/nuxel-beyond2lte-rootfs.img" "/usr/share/plymouth/themes/nuxel/frame-0001.png" "nuxel-beyond2lte-rootfs.img (plymouth frames)"
+        _require_magic "${KOUT}/arch/arm64/boot/dts/samsung/exynos9820-beyond2lte.dtb" 0 "d0 0d fe ed" "beyond2lte merged board DTB"
+        _require_boot_image "${OUT}/nuxel-beyond2lte-boot.img" "nuxel-beyond2lte-boot.img (merged board DTB embedded)"
+        # The S10+ deliverable rootfs is the Fedora 43 ARM64 phone userspace
+        # (real Python/systemd/Phosh/Phoc RPM binaries), built by
+        # images/s10plus/build-phone-rootfs-fedora.sh. The shared
+        # Plymouth/Flatpak/OpenRC rootfs is intentionally disabled for s10plus
+        # (see images/s10plus/build.sh), so this verifies the Fedora image's
+        # contents — never a thin skeleton — and then runs the strict S10+
+        # userspace verifier against the ext4 image.
+        s10_rootfs=""
+        for s10_cand in "${OUT}"/nuxel-beyond2lte-rootfs-fedora-phone*.img; do
+            [ -s "${s10_cand}" ] || continue
+            s10_rootfs="${s10_cand}"
+            break
+        done
+        if [ -z "${s10_rootfs}" ]; then
+            _fail "missing S10+ Fedora phone rootfs: ${OUT}/nuxel-beyond2lte-rootfs-fedora-phone*.img"
+        else
+            s10_label="$(basename "${s10_rootfs}")"
+            _require_magic "${s10_rootfs}" 1080 "53 ef" "${s10_label} (ext4)"
+            _require_ext4_path "${s10_rootfs}" "/etc/nuxel/phone-runtime-status" "${s10_label} (runtime status)"
+            _require_ext4_path "${s10_rootfs}" "/etc/nuxel/nuxel-beyond2lte.conf" "${s10_label} (device config)"
+            _require_ext4_path "${s10_rootfs}" "/usr/share/nuxel/nuxel-home/index.html" "${s10_label} (Nuxel Home)"
+            _require_ext4_path "${s10_rootfs}" "/usr/lib/systemd/systemd" "${s10_label} (Fedora systemd)"
+            if command -v python3 >/dev/null 2>&1; then
+                if python3 "${NUXEL_ROOT}/tools/s10plus/verify-fedora-phone-rootfs.py" --ext4 "${s10_rootfs}"; then
+                    _ok "${s10_label}: Fedora ARM64 phone runtime verifier passed"
+                else
+                    _fail "${s10_label}: Fedora ARM64 phone runtime verifier FAILED"
+                fi
+            else
+                _fail "python3 is required to run tools/s10plus/verify-fedora-phone-rootfs.py (${s10_label})"
+            fi
+        fi
         if [ "${NUXEL_S10PLUS_UBOOT:-0}" = "1" ]; then
             _require_boot_image "${OUT}/u-boot-beyond2lte.img" "u-boot-beyond2lte.img (mainline set)"
         fi

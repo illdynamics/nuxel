@@ -10,7 +10,7 @@ completion and not probabilities of successful boot.
 |---|---:|---|---|
 | Device source configuration | 90% | Exynos S10+ overlays/config, S10+ udev, user-provided PIT with 41 entries | Exact physical hw_rev, DTBO effective merge, firmware provenance |
 | Android v1 boot packaging | 88% | ARM64 4.14 kernel preserved, merged DTB, repacked newc + `/bin/sh`, USERDATA resolution, writable-root handoff | Samsung S-Boot acceptance, real boot log, DTBO board match |
-| Host transfer workflow | 70% | Heimdall v2.2.2 reported both 100%; instrumented fork classifies the end-session outcome; unit tests pass | EndSession root cause not fixed (verdict UNRESOLVED): needs on-device run + Odin USB capture; NOT solved by rootfs changes |
+| Host transfer workflow | 85% | **The full image set (merged boot + Fedora 43 rootfs) is written to BOOT + USERDATA over ADB and read back byte-for-byte** — flashing/transfer is proven on this handset; the instrumented heimdall fork still classifies the separate EndSession outcome | Boot is unresolved: the device **bootloops on the Samsung logo**, so S-Boot handoff, kernel bring-up and the UFS root mount are still unverified |
 | ARM64 diagnostic rootfs | 88% | Verified ext4 traversal, static Toybox, S10-specific rules, Motorola removed, ARM64 framebuffer test | Real e2fsck and PID1 running on handset |
 | Fedora 43 full-runtime build automation | 65% | Docker aarch64 DNF RPM recipe, fail-closed package checks and symlink-aware verifier | Not run: no Docker/DNS/package repository in build sandbox |
 | Fedora ARM64 Python3/systemd/Phosh/Phoc **inside delivered diagnostic image** | **0%** | Image explicitly contains no Fedora RPM runtime | Build on connected Mac and run strict verifier |
@@ -18,11 +18,13 @@ completion and not probabilities of successful boot.
 | First-light panel probe | 35% | Static ARM64 framebuffer probe, service recipe | Compatible fbdev/DRM and panel output not tested |
 | Nuxel Home app assets | 80% | PWA assets and service source included | WebKit/mobile runtime, launch and touch UI integration |
 | WiFi, calls, mobile data, audio, sensors, camera | 10% | Some documented device config and mappings | Working kernel drivers, proprietary blobs and physical feature tests |
-| **Verified working S10+ Nuxel phone** | **0%** | No handset booted into a complete Nuxel phone shell | All hardware tests above |
+| **Verified working S10+ Nuxel phone** | **~8%** | Full image set flashed over ADB (byte-for-byte readback) and the handset **reaches the Samsung boot logo** before bootlooping — a real, repeatable boot attempt | No handset has booted into a complete Nuxel phone shell; S-Boot/kernel/init handoff unresolved |
 
-**Overall practical S10+ progress estimate: ~39%** (tracking estimate, not
-validated user experience). Updating source scripts does not justify raising
-phone readiness in the absence of on-device results.
+**Overall practical S10+ progress estimate: ~52%** (tracking estimate, not
+validated user experience). Flashing is now **hardware-proven** (both
+partitions written and read back byte-for-byte) and the handset reaches the
+Samsung logo; readiness beyond that still requires on-device boot results, so
+the userspace/session rows stay near zero.
 
 ## Release contents and truth in labeling
 
@@ -41,12 +43,21 @@ phone readiness in the absence of on-device results.
 - `macbook-s10plus-flash-guide-final-full.md`: guarded instructions and
   handling for incomplete Heimdall EndSession handshake.
 
-## Flashing-session limit
+## Flashing status (updated 2026-10-14)
 
-Heimdall success messages at 100% acknowledge file transmission at the host,
-not a durable on-device commit. `Failed to receive session end confirmation`
-is produced by an absent or unexpected Odin protocol EndSession response; editing
-boot.img or ext4 content cannot reliably resolve it.
+The current path is **ADB (TWRP `dd`/readback)** and it is now **proven on the
+handset**: the merged boot image and the Fedora 43 rootfs were written to BOOT
+and USERDATA and **read back byte-for-byte**, and the phone reboots into a
+repeatable **Samsung-logo bootloop**. That moves the blocker off transfer and
+onto the boot chain (S-Boot handoff / kernel / UFS root mount / init). The
+read-only bootloop debug pack in `scripts/s10plus-debug-pack/` exists to capture
+pstore/`last_kmsg`, recovery logs and partition state for that work.
+
+The separate heimdall caveat still stands for the Download-Mode path: success
+messages at 100% acknowledge file transmission at the host, not a durable
+on-device commit. `Failed to receive session end confirmation` is produced by an
+absent or unexpected Odin protocol EndSession response; editing boot.img or ext4
+content cannot reliably resolve it.
 
 An instrumented fork now lives in `external/heimdall-nuxel/`. It distinguishes
 timeout / USB disconnect / malformed packet / rejected command / delayed
@@ -68,8 +79,9 @@ capture of a successful Odin flash of the same device. See
    `BEYOND2LTE EUR OPEN 26`; PIT alone cannot do this.
 2. Verify device partition **sizes in bytes** and retain exact firmware/recovery
    path; PIT text has count=0 for USERDATA and no trustworthy byte unit.
-3. Obtain a confirmed successful flash and bootloader handoff; restore known
-   stock firmware if an unverified flash cannot boot.
+3. Transfer is confirmed (byte-for-byte readback) — now obtain the actual
+   **bootloader/kernel handoff**: resolve the Samsung-logo bootloop, and if an
+   image cannot be made to boot, restore known stock firmware.
 4. Collect actual kernel boot log, PARTNAME resolution, framebuffer/DRM status.
 5. Run Fedora ARM64 full-runtime builder; prove systemd, Python, Phosh and Phoc
    are real RPM binaries. Do not auto-enable graphical login until DRM verified.

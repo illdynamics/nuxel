@@ -8,6 +8,59 @@ and the OTA builder (see *Versioning* below).
 
 ---
 
+## [v0.3.3-alpha] — 2026-10-14
+
+**Theme:** flashing is **proven** on the Galaxy S10+ — the full Nuxel image set
+now writes to the handset and verifies on the device. The phone reaches the
+Samsung logo and **bootloops**; boot-chain bring-up is the remaining work.
+
+The S10+ **full image set** — the merged-DTB boot image
+(`nuxel-beyond2lte-boot.img`) and the Fedora 43 aarch64 phone rootfs
+(`nuxel-beyond2lte-rootfs-fedora-phone.img`, real Python / systemd / Phosh /
+Phoc RPM binaries) — was written to **BOOT + USERDATA over ADB** and **read back
+byte-for-byte** from the device. So flashing/transfer, partition sizing and the
+storage handoff are no longer open questions: the device now **bootloops on the
+Samsung logo**, which points at S-Boot handoff, kernel bring-up or the root
+mount (systemd/init) rather than the flash.
+
+### Added
+
+- **S10+ bootloop debug pack** (`scripts/s10plus-debug-pack/`): a standalone,
+  **read-only** observability toolkit (no `adb push`, `dd of=`, `flash`,
+  `reboot`, `remount`, `mount`, `wipe` or `setprop`). It captures pstore /
+  `/proc/last_kmsg`, TWRP recovery logs, partition/mount maps and an offline
+  Android-boot-image + Fedora-rootfs inspection, produces an evidence-based
+  `TRIAGE.md`, and ships an opt-in, best-effort redacted share bundle. See
+  `docs/BOOTLOOP-DECISION-TREE.md`.
+- **`images/s10plus/build.sh --boot-images-only`**: packs the S10+ boot image(s)
+  and per-artifact checksums without invoking the (intentionally disabled)
+  legacy shared rootfs bake, so the real Fedora rootfs can be built separately.
+
+### Changed
+
+- **The S10+ release job now builds the real image set.**
+  `.github/workflows/release.yml` builds the merged board-DTB boot image (with an
+  explicit board revision, `NUXEL_S10PLUS_BOARD_REV`) and the Fedora 43 ARM64
+  phone rootfs via `images/s10plus/build-phone-rootfs-fedora.sh` in an arm64
+  container, instead of the retired `images/s10plus/build.sh --device s10plus`
+  path (which now fails closed rather than emit a skeleton/"incorrect-runtime"
+  rootfs). Only the `s10plus` job changed; `g7power` is untouched.
+- **`tools/verify-artifacts.sh` verifies the S10+ image set for what it is**:
+  the merged board DTB, the `ANDROID!` boot image, and the Fedora ARM64 phone
+  rootfs (via `tools/s10plus/verify-fedora-phone-rootfs.py --ext4`) — not the
+  Plymouth-boot-splash payload that the legacy shared rootfs carried.
+
+### Docs / version
+
+- README status: **S10+ 38% → 55%**, **Flashable images 65% → 80%**, overall
+  **~40–45% → ~45–50%**; S10+ row now states flashing is proven and the device
+  bootloops on the Samsung logo. `S10PLUS-PROGRESS.md` updated to match.
+- **Version bump to v0.3.3-alpha** across `VERSION`, README/design/docs, the
+  flash guides, the device `APKBUILD`s, the shell/PWA manifests + meson, the
+  services, the VM tooling and the OTA builder.
+
+---
+
 ## [v0.3.2-alpha] — 2026-10-13
 
 **Theme:** make the release CI build the **same complete rootfs** a local build

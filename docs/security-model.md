@@ -1,4 +1,4 @@
-<!-- Nuxel v0.3.2-alpha -->
+<!-- Nuxel v0.3.3-alpha -->
 # Nuxel Security Model
 
 > **Target: GrapheneOS-level hardening on a Linux-native substrate**

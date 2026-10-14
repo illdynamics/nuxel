@@ -1,7 +1,7 @@
 # Nuxel — Samsung Galaxy S10+ manual flash guide
 
 **Device:** Samsung Galaxy S10+ **SM-G975F** (Exynos 9820, codename `beyond2lte`)
-**Nuxel:** `v0.3.2-alpha` · **Guide written:** 2026-10-13
+**Nuxel:** `v0.3.3-alpha` · **Guide written:** 2026-10-13
 **Authoritative repo docs:** this file is the "do it now" checklist. Background:
 `phones/s10plus/s10plus-go-guide.md`, `docs/s10plus-bringup.md`,
 `docs/s10plus-device-inventory.md`.
@@ -35,11 +35,11 @@ heimdall flash --BOOT build/out/s10plus/nuxel-beyond2lte-boot.img
 
 ## 1. What you are flashing (artifact inventory)
 
-`v0.3.2-alpha` is built **by the GitHub release workflow** (Actions → “Release”,
-tag `v0.3.2-alpha`). The S10+ archive is:
+`v0.3.3-alpha` is built **by the GitHub release workflow** (Actions → “Release”,
+tag `v0.3.3-alpha`). The S10+ archive is:
 
 ```
-nuxel-v0.3.2-alpha-s10plus.tar.gz
+nuxel-v0.3.3-alpha-s10plus.tar.gz
 ```
 
 Extract it to get `s10plus/`:
@@ -174,7 +174,7 @@ cd /x/nuxel
 # 1) Verify the downloaded archive against the release's SHA256SUMS.txt asset:
 sha256sum -c SHA256SUMS.txt          # macOS: shasum -a 256 -c SHA256SUMS.txt
 # 2) Unpack and verify each image against the archive's own per-file checksums:
-tar -xzf nuxel-v0.3.2-alpha-s10plus.tar.gz
+tar -xzf nuxel-v0.3.3-alpha-s10plus.tar.gz
 cd s10plus
 sha256sum -c sha256sums.txt          # macOS: shasum -a 256 -c sha256sums.txt
 python3 ../tools/read-boot-header-v1.py nuxel-beyond2lte-boot.img
@@ -455,7 +455,7 @@ clean Ubuntu runner, for `s10plus`:
    base DTB + highest-rev board DTBO into `exynos9820-beyond2lte.dtb` first),
 
 then **verifies** them (`tools/verify-artifacts.sh`) and only then packages
-`nuxel-v0.3.2-alpha-s10plus.tar.gz`. A missing or invalid artifact makes the run **red**
+`nuxel-v0.3.3-alpha-s10plus.tar.gz`. A missing or invalid artifact makes the run **red**
 and no release is published.
 
 ### 11.4 Command cheat-sheet
@@ -481,4 +481,4 @@ heimdall flash --BOOT ~/s10plus-backup/nuxel-backup/boot.img
 
 ---
 
-*Build the bunker first. Add the rave lights later. — Nuxel v0.3.2-alpha*
+*Build the bunker first. Add the rave lights later. — Nuxel v0.3.3-alpha*

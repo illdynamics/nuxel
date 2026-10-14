@@ -39,7 +39,7 @@ err()  { echo "[nuxel-s10plus-build][error] $*" >&2; }
 
 usage() {
     cat <<'EOF'
-Usage: NUXEL_DEVICE=s10plus bash images/s10plus/build.sh [--device s10plus] [--help] [--no-uboot] [--phone-rootfs]
+Usage: NUXEL_DEVICE=s10plus bash images/s10plus/build.sh [--device s10plus] [--help] [--no-uboot] [--boot-images-only] [--phone-rootfs]
 
 Builds the S10+ (beyond2lte, Exynos 9820) boot + rootfs artifacts into
 build/out/s10plus/:
@@ -69,6 +69,11 @@ filled before a real build; --help is exempt.
 Options:
   --phone-rootfs Build the separate Fedora ARM64 Nuxel PHONE userspace with Docker,
                  without rebuilding the kernel. Does not imply real hardware boot.
+  --boot-images-only
+                pack ONLY the boot image(s) (kernel + initramfs + merged board
+                DTB) + manifest/checksums and exit 0. Used by the release CI to
+                build the real S10+ boot image; the Fedora 43 ARM64 phone rootfs
+                is produced separately with --phone-rootfs.
   --no-uboot    skip u-boot-beyond2lte.img when u-boot.bin is absent; the
                 final summary marks the artifact set INCOMPLETE.
 
@@ -81,6 +86,7 @@ EOF
 # --no-uboot is parsed here too; it only skips the U-Boot boot image.
 NO_UBOOT=0
 PHONE_ROOTFS_ONLY=0
+BOOT_IMAGES_ONLY=0
 # U-Boot (chiffathefox/u-boot, exynos9820) is ONLY needed for the mainline
 # kernel stretch. The proven Phase-1 downstream/heimdall path flashes
 # nuxel-beyond2lte-boot.img straight to BOOT and does NOT involve U-Boot, so
@@ -92,6 +98,7 @@ for arg in "$@"; do
     case "$arg" in
         --help|-h) usage; exit 0 ;;
         --no-uboot) NO_UBOOT=1 ;;
+        --boot-images-only) BOOT_IMAGES_ONLY=1 ;;
         --phone-rootfs) PHONE_ROOTFS_ONLY=1 ;;
         --require-uboot) UBOOT_REQUIRED=1 ;;
     esac
@@ -309,6 +316,8 @@ else
     log "  NUXEL_S10PLUS_UBOOT=1 after running boot/s10plus/uboot-chainload.sh."
 fi
 
+if [ "${BOOT_IMAGES_ONLY}" -eq 0 ]; then
+
 # --- 3. Userspace rootfs via the device-agnostic builder --------------------
 # images/mkrootfs.sh is the shared, device-agnostic userspace builder
 # (Flatpak runtime + Nuxel services/apps/security configs). It is invoked
@@ -461,6 +470,12 @@ _bake_rootfs_image() {
     log "Rootfs image: ${rootfs_img} (ext4, writable, NO dm-verity/AVB — Phase 1)"
 }
 _bake_rootfs_image
+
+else
+    log "--boot-images-only: boot image(s) packed; skipping the (disabled) shared"
+    log "  rootfs bake and the S10+ rootfs overlay. Build the real phone userspace"
+    log "  separately with: bash images/s10plus/build.sh --device s10plus --phone-rootfs"
+fi
 
 # --- 6. Build manifest ------------------------------------------------------
 KERNEL_COMMIT="unknown"

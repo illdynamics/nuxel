@@ -3,7 +3,7 @@
 
 ![Nuxel](./nuxel.jpg)
 
-**v0.3.2-alpha** — _Build the bunker first. Add the rave lights later._
+**v0.3.3-alpha** — _Build the bunker first. Add the rave lights later._
 
 A hardened, GrapheneOS-spirited **Linux phone operating system** built from
 scratch on a pure Linux substrate. **Zero Android dependencies.** Immutable OS.
@@ -146,6 +146,29 @@ NUXEL_DEVICE=mustang bash boot/flash.sh --unlock --wipe
 | `firmware/` | Per-device firmware manifests, install/verify, blobs |
 | `ci/` | Build validation |
 | `assets/` | Wallpaper + boot animation |
+
+## What's new in v0.3.3-alpha
+
+A **flashing-proven** release: the full Nuxel image set now writes to the Galaxy
+S10+ and verifies on the device — the phone reaches the Samsung boot logo. Full
+detail in **[CHANGELOG.md](CHANGELOG.md)**.
+
+- **The S10+ full-image flash is proven on hardware.** The merged-DTB boot image
+  (`nuxel-beyond2lte-boot.img`) and the Fedora 43 aarch64 phone rootfs
+  (`nuxel-beyond2lte-rootfs-fedora-phone.img`) were written to BOOT + USERDATA
+  over ADB and read back **byte-for-byte** from the device. Flashing is no longer
+  in question; the handset now **bootloops on the Samsung logo**, so the
+  remaining work is boot-chain / kernel / root-mount bring-up, not transfer.
+- **The S10+ release job builds the real image set.** `.github/workflows/release.yml`
+  now builds the merged board-DTB boot image (with an explicit board revision)
+  and the Fedora 43 ARM64 phone rootfs in an arm64 container, then verifies both
+  with `tools/s10plus/verify-fedora-phone-rootfs.py` — never a skeleton rootfs.
+- **A bootloop debug pack ships** (`scripts/s10plus-debug-pack/`): read-only
+  ADB/TWRP capture of pstore/last_kmsg, recovery logs, partition maps and an
+  offline boot-image/rootfs inspection, for isolating the Samsung-logo loop.
+- **Version bump to v0.3.3-alpha** across `VERSION`, README/design/docs, the
+  flash guides, the device `APKBUILD`s, the shell/PWA manifests, the VM tooling
+  and the OTA builder.
 
 ## What's new in v0.3.2-alpha
 
@@ -317,19 +340,20 @@ image.** The honest
 per-area breakdown is the table below; the "what's left" list is in the
 changelog.
 
-## Honest Status — v0.3.2-alpha
+## Honest Status — v0.3.3-alpha
 
 
-**S10+ October 14 Fedora phone-runtime update:** Read [S10PLUS-PROGRESS.md](S10PLUS-PROGRESS.md)
-for area-by-area percentages and evidence. The merged boot and cleaned ARM64
-rootfs images are **offline-verified only**; a static framebuffer Nuxel phone
-screen is included for hardware diagnostics, but the bundled rootfs does **not**
-contain Fedora Python/systemd/Phosh/Phoc runtime binaries. To construct those
-from genuine Fedora 43 ARM64 RPM packages on a network-connected Apple Silicon
-Mac with Docker Desktop, run `bash images/s10plus/build-phone-rootfs-fedora.sh`.
-This is an unexecuted, fail-closed builder in the offline artifact environment;
-OpenRC belongs to the optional legacy Alpine route, not the Fedora image. No S10+ successful
-hardware boot or Phosh display has been demonstrated. Read
+**S10+ October 14 status — flashing is proven, boot is not.** Read
+[S10PLUS-PROGRESS.md](S10PLUS-PROGRESS.md) for area-by-area percentages and
+evidence. The **full Nuxel image set** — the merged-DTB boot image plus the
+Fedora 43 aarch64 phone rootfs (real Python, systemd, Phosh and Phoc RPM
+binaries, built by `images/s10plus/build-phone-rootfs-fedora.sh`) — has been
+**written to the handset over ADB and read back byte-for-byte**. The device now
+**bootloops on the Samsung logo**: transfer, partition sizing and the storage
+handoff are no longer the problem — S-Boot/kernel/root-mount bring-up is. That
+is exactly what the new bootloop debug pack (`scripts/s10plus-debug-pack/`)
+exists to isolate. No successful hardware boot or Phosh display has been
+demonstrated yet. Read
 [the final Mac guide](macbook-s10plus-flash-guide-final-full.md) before flashing.
 
 
@@ -344,14 +368,14 @@ hardware boot or Phosh display has been demonstrated. Read
 | Native GTK apps | 25–35% | C source exists, not proven buildable on aarch64 |
 | D-Bus bridge/portal | 30% | Python parses, dev-grade auth, not integration-tested |
 | Sandbox/security | 20% | Configs exist, enforcement not wired end-to-end |
-| Build system | 55% | Per-device dispatchers + inventory gates; the **fail-closed release CI is green end-to-end for `g7power` + `s10plus`** — `tools/verify-artifacts.sh` asserts a real gzip'd ARM64 `Image.gz`, a valid FDT, the boot image `ANDROID!` header, an `ext4` rootfs **with its boot splash** (animation MP4 + Plymouth theme) and (G7 Power) `lk2nd.img` before anything can go green. Still unproven on hardware |
-| Flashable images | 65% | Real, checksummed artifacts built **reproducibly in a green, fail-closed CI** for **g7power** (lk2nd + boot + ext4 rootfs, all verified + `sha256sums.txt`) and **s10plus** (boot with merged DTB + ext4 rootfs, verified + `sha256sums.txt`); **0 of 2 verified booting** |
+| Build system | 58% | Per-device dispatchers + inventory gates; the **fail-closed release CI builds `g7power` + `s10plus`** — the S10+ job now produces the merged board-DTB boot image and the Fedora 43 ARM64 phone rootfs (arm64 container) and gates them with `tools/verify-artifacts.sh` + `tools/s10plus/verify-fedora-phone-rootfs.py`; G7 Power keeps its lk2nd + boot + ext4 chain. Still unproven on hardware |
+| Flashable images | 80% | Real, checksummed artifacts for **g7power** (lk2nd + boot + ext4 rootfs) and **s10plus** (merged-DTB boot + Fedora 43 ARM64 phone rootfs). Both are **flashed to hardware**; the **S10+ full image set was read back byte-for-byte** (transfer proven) — **0 of 2 verified booting** |
 | Pixel 10 Pro XL (mustang) | 5% | Public mustang Linux is UART/initramfs-level only; no boot artifact built yet |
-| Galaxy S10+ (beyond2lte) | 38% | Downstream 4.14 boot image now **builds reproducibly in CI** (base DTB + rev-26 `.dtbo` merged with `fdtoverlay`); **BOOT and USERDATA transfers have each reached 100%**, but Heimdall session-end confirmation failed; boot and on-device storage verification remain unknown |
+| Galaxy S10+ (beyond2lte) | 55% | Downstream 4.14 boot image builds with the rev-26 board DTBO merged via `fdtoverlay`; the merged boot image + Fedora 43 ARM64 phone rootfs (Python/systemd/Phosh/Phoc) are **flashed over ADB and read back byte-for-byte** — **flashing proven**. The phone now **bootloops on the Samsung logo**; S-Boot handoff, kernel bring-up and root mount remain unverified |
 | Moto G7 Power (ocean) | 40% | Boot + ext4 rootfs images **flashed to hardware** (touch-driver fix, lk2nd/QCDT chainloader); device powers on but hangs at a **black/flashy screen** — not yet booting Nuxel |
 | UTM VM | 70% | A genuine **Nuxel UTM bundle exists and boots** — Fedora 43 + Phosh at 720×1440 (live screenshots), Nuxel services + PWA on the desktop, guest SSH + **internet verified working**, and **sound works** via a `virtio-sound-pci` device (`virtio_snd` ALSA card, in-guest playback verified); bundle is a local artifact (`artifacts/vm/`, gitignored, not committed) |
 
-**Overall: ~40–45% MVP scaffold. 2 of 3 phones now produce built, checksummed boot images from a green, fail-closed CI and both have been pushed to hardware (G7 Power flashed but stuck at a black/flashy screen; S10+ BOOT+USERDATA transfer reported 100% but lacked session-end confirmation); 0 of 3 verified booting. The UTM VM demo boots and works (display + network + sound).**
+**Overall: ~45–50% MVP scaffold. 2 of 3 phones produce built, checksummed images from a fail-closed CI and both are flashed to hardware; the S10+ full image set is now transfer-proven (byte-for-byte readback) and bootloops on the Samsung logo, while G7 Power hangs at a black screen. 0 of 3 verified booting. The UTM VM demo boots and works (display + network + sound).**
 
 ### What this repo IS:
 - A well-documented architecture blueprint for a Linux phone OS
@@ -381,12 +405,13 @@ hardware boot or Phosh display has been demonstrated. Read
   host through QEMU's audiodev → UTM/CoreAudio. Setup lives in
   `vm/build-vm-image.sh` (device) and `vm/nuxel-vm-bootstrap.sh`
   (`install_audio_virtio`)
-- **Built, checksummed, and partly flashed boot images for two of three phones**
+- **Built, checksummed, and flashed images for two of three phones**
   — `g7power` (`nuxel-ocean-boot.img`, `nuxel-ocean-rootfs.img`, `lk2nd.img`,
   sha256-verified against the build manifest) is **flashed to hardware** but so
-  far only reaches a black/flashy screen; `s10plus` (`nuxel-beyond2lte-boot.img`,
-  `nuxel-beyond2lte-boot-merged.img`) has had **only its boot partition pushed**
-  with heimdall while Download Mode stays flaky
+  far only reaches a black/flashy screen; `s10plus` (`nuxel-beyond2lte-boot.img`
+  + the Fedora 43 ARM64 `nuxel-beyond2lte-rootfs-fedora-phone.img`) is **flashed
+  over ADB and read back byte-for-byte** and now **bootloops on the Samsung
+  logo** — transfer proven, boot not yet
 
 ### What this repo IS NOT YET:
 - A phone that boots Nuxel on real hardware (no target has booted a Nuxel-built
@@ -491,11 +516,11 @@ have been pushed to hardware — but none has been verified to boot Nuxel**. The
 G7 Power (SDM632/msm8953, fastboot + lk2nd + EDL) is further along: its boot
 image, writable ext4 rootfs and lk2nd chainloader are **flashed to the device**,
 which now powers on but hangs at a black/flashy screen (display init unresolved).
-The S10+ (Exynos 9820, no fastboot; TWRP + Download Mode/heimdall only) has had
-**only its boot partition flashed** with heimdall (BOOT 100%); Download Mode is
-currently balky, so a manual flash is the next step. Neither bring-up has
-completed the Phase 0 device-inventory gate for a full flash. The mustang path
-remains a scaffold with no boot artifact.
+The S10+ (Exynos 9820, no fastboot; TWRP + Download Mode/heimdall) has the
+**full image set flashed over ADB** (merged-DTB boot + Fedora 43 ARM64 phone
+rootfs), read back byte-for-byte; it now **bootloops on the Samsung logo**, so
+the remaining work is boot-chain and root-mount bring-up, not transfer. The
+mustang path remains a scaffold with no boot artifact.
 
 See `docs/s10plus-bringup.md` for the S10+ bring-up guide,
 `docs/g7power-bringup.md` for the G7 Power bring-up guide, and the per-device
@@ -549,7 +574,7 @@ The other two bring-up targets are the **Samsung Galaxy S10+** (Exynos 9820,
 
 | Document | Description |
 |---|---|
-| [CHANGELOG.md](CHANGELOG.md) | Release notes — everything from v0.1.0 to v0.3.2-alpha + readiness |
+| [CHANGELOG.md](CHANGELOG.md) | Release notes — everything from v0.1.0 to v0.3.3-alpha + readiness |
 | [prompts/QUICKSTART.md](prompts/QUICKSTART.md) | Get running in 5 minutes |
 | [design/nuxel-linux-phone-design.md](design/nuxel-linux-phone-design.md) | Design bible — the full vision |
 | [design/Nuxel Phone OS Project Plan and Architecture.md](design/Nuxel%20Phone%20OS%20Project%20Plan%20and%20Architecture.md) | Technical architecture + component map |
@@ -582,8 +607,8 @@ The other two bring-up targets are the **Samsung Galaxy S10+** (Exynos 9820,
 Build outputs (`build/out/<device>/`) are git-ignored — they are produced by the
 scripts in `images/` and `kernel/`, not committed. To publish them on GitHub:
 
-* **Automated (recommended):** push a version tag (`git tag v0.3.2-alpha && git push
-  origin v0.3.2-alpha`). [`.github/workflows/release.yml`](.github/workflows/release.yml)
+* **Automated (recommended):** push a version tag (`git tag v0.3.3-alpha && git push
+  origin v0.3.3-alpha`). [`.github/workflows/release.yml`](.github/workflows/release.yml)
   builds every device on an Ubuntu runner (`make assets`, the shared initramfs,
   each `kernel/<dev>/build-kernel.sh`, then `images/<dev>/build.sh`), packages
   each `build/out/<device>/` directory and creates a GitHub Release with the

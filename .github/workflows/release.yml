@@ -14,7 +14,12 @@
 #   images/build.sh --initramfs-only     -> shared (device-agnostic) initramfs
 #   kernel/<dev>/build-kernel.sh --clone -> per-device Image.gz + DTBs (+ modules)
 #   boot/g7power/lk2nd/build-lk2nd.sh    -> lk2nd.img (g7power only; required to boot)
-#   images/<dev>/build.sh --device <dev> -> per-device boot + rootfs images
+#   images/g7power/build.sh --device     -> g7power boot + ext4 rootfs images
+#   images/s10plus/build.sh --boot-images-only
+#                                        -> s10plus merged board-DTB boot image
+#   images/s10plus/build.sh --phone-rootfs
+#                                        -> s10plus Fedora 43 ARM64 phone rootfs
+#                                           (arm64 container: podman + qemu binfmt)
 #   tools/verify-artifacts.sh --device   -> FAIL-CLOSED artifact verification
 #   tools/package-release.sh             -> nuxel-<ver>-<dev>.tar.gz artifact
 #
@@ -23,6 +28,10 @@
 #     initramfs, kernel, or images are missing/invalid, the job goes RED and the
 #     release job is skipped (a release is only ever published from a fully green
 #     build). tools/verify-artifacts.sh is the explicit gate for that.
+#   * The S10+ image set is the same one that was flashed to the handset: the
+#     merged board-DTB boot image (NUXEL_S10PLUS_BOARD_REV) plus the Fedora 43
+#     ARM64 phone userspace. The retired shared Plymouth/Flatpak rootfs is
+#     intentionally NOT built for s10plus (images/s10plus/build.sh fails closed).
 # =============================================================================
 name: Release
 
@@ -33,7 +42,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Release tag (e.g. v0.3.2-alpha). Empty => v<VERSION>.'
+        description: 'Release tag (e.g. v0.3.3-alpha). Empty => v<VERSION>.'
         required: false
         default: ''
       devices:
@@ -99,6 +108,10 @@ jobs:
         device: ${{ fromJSON(needs.prepare.outputs.devices) }}
     env:
       NUXEL_DEVICE: ${{ matrix.device }}
+      # S10+ board revision for the base-DTB + board-DTBO merge (fdtoverlay).
+      # Rev 26 / EUR OPEN is the merged board DTB in the locally flashed image.
+      # Ignored by the g7power job.
+      NUXEL_S10PLUS_BOARD_REV: '26'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -119,6 +132,21 @@ jobs:
             device-tree-compiler e2fsprogs fakeroot dosfstools \
             android-sdk-libsparse-utils uuid-runtime \
             ffmpeg
+
+      - name: Install arm64 emulation + podman (s10plus)
+        if: matrix.device == 's10plus'
+        run: |
+          # The S10+ rootfs is a Fedora 43 ARM64 phone userspace built by
+          # images/s10plus/build-phone-rootfs-fedora.sh, which runs
+          #   podman run --platform linux/arm64 fedora:43 ...
+          # On the x86_64 runner that needs podman + qemu binfmt so the arm64
+          # image can execute (DNF resolves/installs real aarch64 RPMs).
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            podman qemu-user-static binfmt-support
+          podman --version
+          ls /proc/sys/fs/binfmt_misc/ 2>/dev/null | grep -i aarch64 \
+            || echo "::warning::no aarch64 binfmt handler visible; arm64 podman run may fail"
 
       - name: Populate single-source PWA assets
         run: make assets
@@ -141,8 +169,19 @@ jobs:
       - name: Build images (${{ matrix.device }})
         run: |
           case "${{ matrix.device }}" in
-            g7power) bash images/g7power/build.sh --device g7power ;;
-            s10plus) bash images/s10plus/build.sh --device s10plus ;;
+            g7power)
+              bash images/g7power/build.sh --device g7power
+              ;;
+            s10plus)
+              # 1) The merged board-DTB boot image (kernel + initramfs + board
+              #    DTB) — this is the BOOT image that was flashed to the handset.
+              bash images/s10plus/build.sh --device s10plus --no-uboot --boot-images-only
+              # 2) The real Fedora 43 ARM64 phone userspace (Python/systemd/
+              #    Phosh/Phoc RPM binaries) that is written to USERDATA. This is
+              #    NOT the retired shared Plymouth/Flatpak rootfs.
+              NUXEL_S10PLUS_OUTPUT="$PWD/build/out/s10plus/nuxel-beyond2lte-rootfs-fedora-phone.img" \
+                bash images/s10plus/build.sh --device s10plus --phone-rootfs
+              ;;
             *) echo "::error::unsupported device ${{ matrix.device }}"; exit 1 ;;
           esac
 
