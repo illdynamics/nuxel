@@ -1,0 +1,450 @@
+=== nuxel boot report ===
+cmdline:  console=ram loglevel=4 sec_debug.pcb_offset=7346944 sec_debug.smd_offset=7348992 sec_debug.lpddr4_size=8 sec_debug.dram_info=01,06,03,8G sec_debug.pwrsrc_rs=0x0000000820000000 sec_debug.reset_reason=7 sec_reset.reset_reason=7 sec_debug.reset_rwc=0 sec_debug.level=0 sec_watchdog.sec_pet=5 androidboot.debug_level=0x4f4c androidboot.force_upload=0x0 softdog.soft_margin=100 softdog.soft_panic=1 sec_debug.dump_sink=0x0 sec_debug.upload_count=0 androidboot.dram_info=01,06,03,8G androidboot.fmm_lock=48 sec_debug.fmm_lock_offset=7340600 sec_debug.sjl=1 androidboot.sn.param.offset=7343024 androidboot.prototype.param.offset=7351040 androidboot.recovery_offset=7355136 printk.devkmsg=on ess_setup=0xfd900000 sec_avc_log=0x40000@0x91202000 sec_tsp_log=0x40000@0x91244000 sec_disp_log=0x100000@0x91286000 sec_debug_next=0x800000@0x91388000 charging_mode=0x3030 s3cfb.bootloaderfb=0xca000000 lcdtype=10555411 androidboot.carrierid.param.offset=7340608 androidboot.carrierid=PHN consoleblank=0 ehci_hcd.park=3 oops=panic pmic_info=43 ccic_info=1 fg_reset=0 androidboot.emmc_checksum=3 androidboot.sales.param.offset=7340572 sales_code=PHN androidboot.odin_download=1 androidboot.bootloader=G975FXXSEFUL1 androidboot.selinux=enforcing androidboot.ucs_mode=0 androidboot.revision=26 androidboot.hardware=exynos9820 androidboot.warranty_bit=1 androidboot.wb.hs=0e03 androidboot.rp=14 androidboot.wb.snapQB=34489444R sec_debug.bin=A androidboot.hmac_mismatch=0 androidboot.sec_atd.tty=/dev/ttySAC0 androidboot.serialno=R58M75KDB2X androidboot.ap_serial=0x10764E6460BA snd_soc_core.pmdown_time=1000 androidboot.cp_reserved_mem=off rootwait ro init=/init root=/dev/sda25 androidboot.dtbo_idx=9 androidboot.fmp_config=0 androidboot.em.did=2010764e6460ba11 androidboot.em.model=SM-G975F androidboot.em.status=0x0 androidboot.sb.debug0=0x0 androidboot.verifiedbootstate=orange androidboot.svb.ver=SVB1.0 bcm_setup= reserve-fimc= firmware_class.path=/vendor/firmware ecd_setup=disable region1=EUR region2=OPEN factory_mode=0 androidboot.ulcnt=1 android.nonce=33876a3f029570e9bb692b299d6db3e8 root=PARTUUID=52444E41-494F-2044-7379-7374656D0000 
+kernel:  Linux version 4.14.253 (root@) (gcc version 15.3.1 20260722 (Red Hat 15.3.1-1) (GCC)) #4 SMP PREEMPT Thu Oct 15 15:32:35 UTC 2026
+start:   uptime=7.61s
+--- t=5s uptime=12.61s
+is-system-running: initializing
+--- failed units ---
+  UNIT LOAD ACTIVE SUB DESCRIPTION
+
+0 loaded units listed.
+--- running services ---
+  UNIT                     LOAD   ACTIVE SUB     DESCRIPTION
+  systemd-journald.service loaded active running Journal Service
+
+Legend: LOAD   → Reflects whether the unit definition was properly loaded.
+        ACTIVE → The high-level unit activation state, i.e. generalization of SUB.
+        SUB    → The low-level unit activation state, values depend on unit type.
+
+1 loaded units listed.
+--- recent warnings ---
+Sep 15 00:00:02 fedora kernel: sec_ts 4-0048: [sec_input] sec_ts_start_device: already power on
+Sep 15 00:00:02 fedora kernel: sec_ts 4-0048: [sec_input] sec_ts_input_open: Failed to start device
+Sep 15 00:00:02 fedora kernel: [SSPBBD]: ssp_down == true. returning
+Sep 15 00:00:02 fedora kernel: [SSP]: ssp_send_cmd - command 0xd1 failed -1
+Sep 15 00:00:03 fedora unknown: NUXEL_FB_ANIM_DONE frames=12
+Sep 15 00:00:03 fedora unknown: NUXEL_FB_DRAW_SUCCESS first-light frame + penguin animation written; panel visibility still needs the operator
+Sep 15 00:00:03 fedora unknown: NUXEL_MARKER FIRSTLIGHT_ANIMATION_DONE
+Sep 15 00:00:03 fedora unknown: NUXEL_FB_HOLD_START
+Sep 15 00:00:03 fedora kernel: [STUI] stui_notifier_callback is not state TUI
+Sep 15 00:00:03 fedora kernel: decon-0 already ON state
+Sep 15 00:00:03 fedora kernel: sec_ts 4-0048: [sec_input] sec_ts_start_device: already power on
+Sep 15 00:00:03 fedora kernel: sec_ts 4-0048: [sec_input] sec_ts_input_open: Failed to start device
+Sep 15 00:00:03 fedora kernel: [SSPBBD]: ssp_down == true. returning
+Sep 15 00:00:03 fedora kernel: [SSP]: ssp_send_cmd - command 0xd1 failed -1
+Sep 15 00:00:03 fedora kernel: [STUI] stui_notifier_callback is not state TUI
+Sep 15 00:00:03 fedora kernel: decon-0 already ON state
+Sep 15 00:00:03 fedora kernel: sec_ts 4-0048: [sec_input] sec_ts_start_device: already power on
+Sep 15 00:00:03 fedora kernel: sec_ts 4-0048: [sec_input] sec_ts_input_open: Failed to start device
+Sep 15 00:00:03 fedora kernel: [SSPBBD]: ssp_down == true. returning
+Sep 15 00:00:03 fedora kernel: [SSP]: ssp_send_cmd - command 0xd1 failed -1
+Sep 15 00:00:03 fedora kernel: [STUI] stui_notifier_callback is not state TUI
+Sep 15 00:00:03 fedora kernel: decon-0 already ON state
+Sep 15 00:00:03 fedora kernel: sec_ts 4-0048: [sec_input] sec_ts_start_device: already power on
+Sep 15 00:00:03 fedora kernel: sec_ts 4-0048: [sec_input] sec_ts_input_open: Failed to start device
+Sep 15 00:00:03 fedora kernel: [SSPBBD]: ssp_down == true. returning
+Sep 15 00:00:03 fedora kernel: [SSP]: ssp_send_cmd - command 0xd1 failed -1
+Sep 15 00:00:03 fedora kernel: [STUI] stui_notifier_callback is not state TUI
+Sep 15 00:00:03 fedora kernel: decon-0 already ON state
+Sep 15 00:00:03 fedora kernel: sec_ts 4-0048: [sec_input] sec_ts_start_device: already power on
+Sep 15 00:00:03 fedora kernel: sec_ts 4-0048: [sec_input] sec_ts_input_open: Failed to start device
+Sep 15 00:00:03 fedora kernel: [SSPBBD]: ssp_down == true. returning
+Sep 15 00:00:03 fedora kernel: [SSP]: ssp_send_cmd - command 0xd1 failed -1
+Sep 15 00:00:04 fedora kernel: [STUI] stui_notifier_callback is not state TUI
+Sep 15 00:00:04 fedora kernel: decon-0 already ON state
+Sep 15 00:00:04 fedora kernel: sec_ts 4-0048: [sec_input] sec_ts_start_device: already power on
+Sep 15 00:00:04 fedora kernel: sec_ts 4-0048: [sec_input] sec_ts_input_open: Failed to start device
+Sep 15 00:00:04 fedora kernel: [SSPBBD]: ssp_down == true. returning
+Sep 15 00:00:04 fedora kernel: [SSP]: ssp_send_cmd - command 0xd1 failed -1
+Sep 15 00:00:04 fedora kernel: [STUI] stui_notifier_callback is not state TUI
+Sep 15 00:00:04 fedora kernel: decon-0 already ON state
+Sep 15 00:00:04 fedora kernel: sec_ts 4-0048: [sec_input] sec_ts_start_device: already power on
+Sep 15 00:00:04 fedora kernel: sec_ts 4-0048: [sec_input] sec_ts_input_open: Failed to start device
+Sep 15 00:00:04 fedora kernel: [SSPBBD]: ssp_down == true. returning
+Sep 15 00:00:04 fedora kernel: [SSP]: ssp_send_cmd - command 0xd1 failed -1
+Sep 15 00:00:04 fedora kernel: watchdog: watchdog0: watchdog did not stop!
+Sep 15 00:00:04 fedora kernel: usb: dwc3_gadget_linksts_change_interrupt : evtinfo = 0x15 link state = 5
+Sep 15 00:00:04 fedora kernel: usb: dwc3_gadget_linksts_change_interrupt : evtinfo = 0x17 link state = 7
+Sep 15 00:00:04 fedora kernel: [STUI] stui_notifier_callback is not state TUI
+Sep 15 00:00:04 fedora kernel: decon-0 already ON state
+Sep 15 00:00:04 fedora kernel: sec_ts 4-0048: [sec_input] sec_ts_start_device: already power on
+Sep 15 00:00:04 fedora kernel: sec_ts 4-0048: [sec_input] sec_ts_input_open: Failed to start device
+Sep 15 00:00:04 fedora kernel: [SSPBBD]: ssp_down == true. returning
+Sep 15 00:00:04 fedora kernel: [SSP]: ssp_send_cmd - command 0xd1 failed -1
+Sep 15 00:00:04 fedora kernel: usb: dwc3_gadget_linksts_change_interrupt : evtinfo = 0x19 link state = 9
+Sep 15 00:00:05 fedora kernel: [STUI] stui_notifier_callback is not state TUI
+Sep 15 00:00:05 fedora kernel: decon-0 already ON state
+Sep 15 00:00:05 fedora kernel: sec_ts 4-0048: [sec_input] sec_ts_start_device: already power on
+Sep 15 00:00:05 fedora kernel: sec_ts 4-0048: [sec_input] sec_ts_input_open: Failed to start device
+Sep 15 00:00:05 fedora kernel: [SSPBBD]: ssp_down == true. returning
+Sep 15 00:00:05 fedora kernel: [SSP]: ssp_send_cmd - command 0xd1 failed -1
+--- spawn failures seen this boot ---
+1
+--- cgroup ---
+controllers: memory pids
+self: 0::/init.scope
+--- state files ---
+STAGE=SYSTEM_STARTING
+ANIM_STAGE=FIRST_LIGHT
+=== live shell still available on ttyGS0 (if the gadget bound) ===
+=== end report ===
+                                                                                                                                                                                 === nuxel boot report ===
+cmdline:  console=ram loglevel=4 sec_debug.pcb_offset=7346944 sec_debug.smd_offset=7348992 sec_debug.lpddr4_size=8 sec_debug.dram_info=01,06,03,8G sec_debug.pwrsrc_rs=0x0000000820000000 sec_debug.reset_reason=7 sec_reset.reset_reason=7 sec_debug.reset_rwc=0 sec_debug.level=0 sec_watchdog.sec_pet=5 androidboot.debug_level=0x4f4c androidboot.force_upload=0x0 softdog.soft_margin=100 softdog.soft_panic=1 sec_debug.dump_sink=0x0 sec_debug.upload_count=0 androidboot.dram_info=01,06,03,8G androidboot.fmm_lock=48 sec_debug.fmm_lock_offset=7340600 sec_debug.sjl=1 androidboot.sn.param.offset=7343024 androidboot.prototype.param.offset=7351040 androidboot.recovery_offset=7355136 printk.devkmsg=on ess_setup=0xfd900000 sec_avc_log=0x40000@0x91202000 sec_tsp_log=0x40000@0x91244000 sec_disp_log=0x100000@0x91286000 sec_debug_next=0x800000@0x91388000 charging_mode=0x3030 s3cfb.bootloaderfb=0xca000000 lcdtype=10555411 androidboot.carrierid.param.offset=7340608 androidboot.carrierid=PHN consoleblank=0 ehci_hcd.park=3 oops=panic pmic_info=43 ccic_info=1 fg_reset=0 androidboot.emmc_checksum=3 androidboot.sales.param.offset=7340572 sales_code=PHN androidboot.odin_download=1 androidboot.bootloader=G975FXXSEFUL1 androidboot.selinux=enforcing androidboot.ucs_mode=0 androidboot.revision=26 androidboot.hardware=exynos9820 androidboot.warranty_bit=1 androidboot.wb.hs=0e03 androidboot.rp=14 androidboot.wb.snapQB=34489444R sec_debug.bin=A androidboot.hmac_mismatch=0 androidboot.sec_atd.tty=/dev/ttySAC0 androidboot.serialno=R58M75KDB2X androidboot.ap_serial=0x10764E6460BA snd_soc_core.pmdown_time=1000 androidboot.cp_reserved_mem=off rootwait ro init=/init root=/dev/sda25 androidboot.dtbo_idx=9 androidboot.fmp_config=0 androidboot.em.did=2010764e6460ba11 androidboot.em.model=SM-G975F androidboot.em.status=0x0 androidboot.sb.debug0=0x0 androidboot.verifiedbootstate=orange androidboot.svb.ver=SVB1.0 bcm_setup= reserve-fimc= firmware_class.path=/vendor/firmware ecd_setup=disable region1=EUR region2=OPEN factory_mode=0 androidboot.ulcnt=1 android.nonce=096d85f5a3370c7d8ae14021da3402cc root=PARTUUID=52444E41-494F-2044-7379-7374656D0000 
+kernel:  Linux version 4.14.253 (root@) (gcc version 15.3.1 20260722 (Red Hat 15.3.1-1) (GCC)) #5 SMP PREEMPT Thu Oct 15 15:49:08 UTC 2026
+start:   uptime=52.35s
+--- t=5s uptime=57.37s
+is-system-running: initializing
+--- failed units ---
+  UNIT LOAD ACTIVE SUB DESCRIPTION
+
+0 loaded units listed.
+--- running services ---
+  UNIT                     LOAD   ACTIVE SUB     DESCRIPTION
+  systemd-journald.service loaded active running Journal Service
+
+Legend: LOAD   → Reflects whether the unit definition was properly loaded.
+        ACTIVE → The high-level unit activation state, i.e. generalization of SUB.
+        SUB    → The low-level unit activation state, values depend on unit type.
+
+1 loaded units listed.
+--- recent warnings ---
+Sep 15 00:00:02 fedora kernel: [SSP]: ssp_send_cmd - command 0xd1 failed -1
+Sep 15 00:00:02 fedora nuxel-console: waiting for /dev/ttyGS0 / /sys/class/tty/ttyGS0/dev (5 s)
+Sep 15 00:00:02 fedora nuxel-console: waiting for /dev/ttyGS0 / /sys/class/tty/ttyGS0/dev (5 s)
+Sep 15 00:00:02 fedora kernel: [STUI] stui_notifier_callback is not state TUI
+Sep 15 00:00:02 fedora kernel: decon-0 already ON state
+Sep 15 00:00:02 fedora kernel: sec_ts 4-0048: [sec_input] sec_ts_start_device: already power on
+Sep 15 00:00:02 fedora kernel: sec_ts 4-0048: [sec_input] sec_ts_input_open: Failed to start device
+Sep 15 00:00:02 fedora kernel: [SSPBBD]: ssp_down == true. returning
+Sep 15 00:00:02 fedora kernel: [SSP]: ssp_send_cmd - command 0xd1 failed -1
+Sep 15 00:00:02 fedora kernel: [STUI] stui_notifier_callback is not state TUI
+Sep 15 00:00:02 fedora kernel: decon-0 already ON state
+Sep 15 00:00:02 fedora kernel: sec_ts 4-0048: [sec_input] sec_ts_start_device: already power on
+Sep 15 00:00:02 fedora kernel: sec_ts 4-0048: [sec_input] sec_ts_input_open: Failed to start device
+Sep 15 00:00:02 fedora kernel: [SSPBBD]: ssp_down == true. returning
+Sep 15 00:00:02 fedora kernel: [SSP]: ssp_send_cmd - command 0xd1 failed -1
+Sep 15 00:00:03 fedora kernel: [STUI] stui_notifier_callback is not state TUI
+Sep 15 00:00:03 fedora kernel: decon-0 already ON state
+Sep 15 00:00:03 fedora kernel: sec_ts 4-0048: [sec_input] sec_ts_start_device: already power on
+Sep 15 00:00:03 fedora kernel: sec_ts 4-0048: [sec_input] sec_ts_input_open: Failed to start device
+Sep 15 00:00:03 fedora kernel: [SSPBBD]: ssp_down == true. returning
+Sep 15 00:00:03 fedora kernel: [SSP]: ssp_send_cmd - command 0xd1 failed -1
+Sep 15 00:00:03 fedora kernel: [STUI] stui_notifier_callback is not state TUI
+Sep 15 00:00:03 fedora kernel: decon-0 already ON state
+Sep 15 00:00:03 fedora kernel: sec_ts 4-0048: [sec_input] sec_ts_start_device: already power on
+Sep 15 00:00:03 fedora kernel: sec_ts 4-0048: [sec_input] sec_ts_input_open: Failed to start device
+Sep 15 00:00:03 fedora kernel: [SSPBBD]: ssp_down == true. returning
+Sep 15 00:00:03 fedora kernel: [SSP]: ssp_send_cmd - command 0xd1 failed -1
+Sep 15 00:00:03 fedora kernel: [STUI] stui_notifier_callback is not state TUI
+Sep 15 00:00:03 fedora kernel: decon-0 already ON state
+Sep 15 00:00:03 fedora kernel: sec_ts 4-0048: [sec_input] sec_ts_start_device: already power on
+Sep 15 00:00:03 fedora kernel: sec_ts 4-0048: [sec_input] sec_ts_input_open: Failed to start device
+Sep 15 00:00:03 fedora kernel: [SSPBBD]: ssp_down == true. returning
+Sep 15 00:00:03 fedora kernel: [SSP]: ssp_send_cmd - command 0xd1 failed -1
+Sep 15 00:00:04 fedora kernel: [STUI] stui_notifier_callback is not state TUI
+Sep 15 00:00:04 fedora kernel: decon-0 already ON state
+Sep 15 00:00:04 fedora kernel: sec_ts 4-0048: [sec_input] sec_ts_start_device: already power on
+Sep 15 00:00:04 fedora kernel: sec_ts 4-0048: [sec_input] sec_ts_input_open: Failed to start device
+Sep 15 00:00:04 fedora kernel: [SSPBBD]: ssp_down == true. returning
+Sep 15 00:00:04 fedora kernel: [SSP]: ssp_send_cmd - command 0xd1 failed -1
+Sep 15 00:00:04 fedora kernel: [STUI] stui_notifier_callback is not state TUI
+Sep 15 00:00:04 fedora kernel: decon-0 already ON state
+Sep 15 00:00:04 fedora kernel: sec_ts 4-0048: [sec_input] sec_ts_start_device: already power on
+Sep 15 00:00:04 fedora kernel: sec_ts 4-0048: [sec_input] sec_ts_input_open: Failed to start device
+Sep 15 00:00:04 fedora kernel: [SSPBBD]: ssp_down == true. returning
+Sep 15 00:00:04 fedora kernel: [SSP]: ssp_send_cmd - command 0xd1 failed -1
+Sep 15 00:00:04 fedora unknown: [5B blob data]
+Sep 15 00:00:04 fedora kernel: [STUI] stui_notifier_callback is not state TUI
+Sep 15 00:00:04 fedora kernel: decon-0 already ON state
+Sep 15 00:00:04 fedora kernel: sec_ts 4-0048: [sec_input] sec_ts_start_device: already power on
+Sep 15 00:00:04 fedora kernel: sec_ts 4-0048: [sec_input] sec_ts_input_open: Failed to start device
+Sep 15 00:00:04 fedora kernel: [SSPBBD]: ssp_down == true. returning
+Sep 15 00:00:04 fedora kernel: [SSP]: ssp_send_cmd - command 0xd1 failed -1
+Sep 15 00:00:05 fedora nuxel-console: waiting for /dev/ttyGS0 / /sys/class/tty/ttyGS0/dev (10 s)
+Sep 15 00:00:05 fedora nuxel-console: waiting for /dev/ttyGS0 / /sys/class/tty/ttyGS0/dev (10 s)
+Sep 15 00:00:05 fedora kernel: [STUI] stui_notifier_callback is not state TUI
+Sep 15 00:00:05 fedora kernel: decon-0 already ON state
+Sep 15 00:00:05 fedora kernel: sec_ts 4-0048: [sec_input] sec_ts_start_device: already power on
+Sep 15 00:00:05 fedora kernel: sec_ts 4-0048: [sec_input] sec_ts_input_open: Failed to start device
+Sep 15 00:00:05 fedora kernel: [SSPBBD]: ssp_down == true. returning
+Sep 15 00:00:05 fedora kernel: [SSP]: ssp_send_cmd - command 0xd1 failed -1
+--- spawn failures seen this boot ---
+1
+--- cgroup ---
+controllers: memory pids
+self: 0::/init.scope
+--- state files ---
+STAGE=SYSTEM_STARTING
+ANIM_STAGE=FIRST_LIGHT
+=== live shell still available on ttyGS0 (if the gadget bound) ===
+=== end report ===
+=== nuxel boot report ===
+cmdline:  console=ram loglevel=4 sec_debug.pcb_offset=7346944 sec_debug.smd_offset=7348992 sec_debug.lpddr4_size=8 sec_debug.dram_info=01,06,03,8G sec_debug.pwrsrc_rs=0x0000000820000000 sec_debug.reset_reason=7 sec_reset.reset_reason=7 sec_debug.reset_rwc=0 sec_debug.level=0 sec_watchdog.sec_pet=5 androidboot.debug_level=0x4f4c androidboot.force_upload=0x0 softdog.soft_margin=100 softdog.soft_panic=1 sec_debug.dump_sink=0x0 sec_debug.upload_count=0 androidboot.dram_info=01,06,03,8G androidboot.fmm_lock=48 sec_debug.fmm_lock_offset=7340600 sec_debug.sjl=1 androidboot.sn.param.offset=7343024 androidboot.prototype.param.offset=7351040 androidboot.recovery_offset=7355136 printk.devkmsg=on ess_setup=0xfd900000 sec_avc_log=0x40000@0x91202000 sec_tsp_log=0x40000@0x91244000 sec_disp_log=0x100000@0x91286000 sec_debug_next=0x800000@0x91388000 charging_mode=0x3030 s3cfb.bootloaderfb=0xca000000 lcdtype=10555411 androidboot.carrierid.param.offset=7340608 androidboot.carrierid=PHN consoleblank=0 ehci_hcd.park=3 oops=panic pmic_info=43 ccic_info=1 fg_reset=0 androidboot.emmc_checksum=3 androidboot.sales.param.offset=7340572 sales_code=PHN androidboot.odin_download=1 androidboot.bootloader=G975FXXSEFUL1 androidboot.selinux=enforcing androidboot.ucs_mode=0 androidboot.revision=26 androidboot.hardware=exynos9820 androidboot.warranty_bit=1 androidboot.wb.hs=0e03 androidboot.rp=14 androidboot.wb.snapQB=34489444R sec_debug.bin=A androidboot.hmac_mismatch=0 androidboot.sec_atd.tty=/dev/ttySAC0 androidboot.serialno=R58M75KDB2X androidboot.ap_serial=0x10764E6460BA snd_soc_core.pmdown_time=1000 androidboot.cp_reserved_mem=off rootwait ro init=/init root=/dev/sda25 androidboot.dtbo_idx=9 androidboot.fmp_config=0 androidboot.em.did=2010764e6460ba11 androidboot.em.model=SM-G975F androidboot.em.status=0x0 androidboot.sb.debug0=0x0 androidboot.verifiedbootstate=orange androidboot.svb.ver=SVB1.0 bcm_setup= reserve-fimc= firmware_class.path=/vendor/firmware ecd_setup=disable region1=EUR region2=OPEN factory_mode=0 androidboot.ulcnt=1 android.nonce=89406c336beda245745d41b1b65ff2b0 root=PARTUUID=52444E41-494F-2044-7379-7374656D0000 
+kernel:  Linux version 4.14.253 (root@) (gcc version 15.3.1 20260722 (Red Hat 15.3.1-1) (GCC)) #5 SMP PREEMPT Thu Oct 15 15:49:08 UTC 2026
+start:   uptime=51.19s
+--- t=5s uptime=56.21s
+is-system-running: initializing
+--- failed units ---
+  UNIT LOAD ACTIVE SUB DESCRIPTION
+
+0 loaded units listed.
+--- running services ---
+  UNIT                     LOAD   ACTIVE SUB     DESCRIPTION
+  systemd-journald.service loaded active running Journal Service
+
+Legend: LOAD   → Reflects whether the unit definition was properly loaded.
+        ACTIVE → The high-level unit activation state, i.e. generalization of SUB.
+        SUB    → The low-level unit activation state, values depend on unit type.
+
+1 loaded units listed.
+--- recent warnings ---
+Sep 15 00:00:02 fedora kernel: [SSPBBD]: ssp_down == true. returning
+Sep 15 00:00:02 fedora kernel: [SSP]: ssp_send_cmd - command 0xd1 failed -1
+Sep 15 00:00:02 fedora nuxel-console: waiting for /dev/ttyGS0 / /sys/class/tty/ttyGS0/dev (5 s)
+Sep 15 00:00:02 fedora nuxel-console: waiting for /dev/ttyGS0 / /sys/class/tty/ttyGS0/dev (5 s)
+Sep 15 00:00:02 fedora kernel: [STUI] stui_notifier_callback is not state TUI
+Sep 15 00:00:02 fedora kernel: decon-0 already ON state
+Sep 15 00:00:02 fedora kernel: sec_ts 4-0048: [sec_input] sec_ts_start_device: already power on
+Sep 15 00:00:02 fedora kernel: sec_ts 4-0048: [sec_input] sec_ts_input_open: Failed to start device
+Sep 15 00:00:02 fedora kernel: [SSPBBD]: ssp_down == true. returning
+Sep 15 00:00:02 fedora kernel: [SSP]: ssp_send_cmd - command 0xd1 failed -1
+Sep 15 00:00:03 fedora kernel: [STUI] stui_notifier_callback is not state TUI
+Sep 15 00:00:03 fedora kernel: decon-0 already ON state
+Sep 15 00:00:03 fedora kernel: sec_ts 4-0048: [sec_input] sec_ts_start_device: already power on
+Sep 15 00:00:03 fedora kernel: sec_ts 4-0048: [sec_input] sec_ts_input_open: Failed to start device
+Sep 15 00:00:03 fedora kernel: [SSPBBD]: ssp_down == true. returning
+Sep 15 00:00:03 fedora kernel: [SSP]: ssp_send_cmd - command 0xd1 failed -1
+Sep 15 00:00:03 fedora kernel: [STUI] stui_notifier_callback is not state TUI
+Sep 15 00:00:03 fedora kernel: decon-0 already ON state
+Sep 15 00:00:03 fedora kernel: sec_ts 4-0048: [sec_input] sec_ts_start_device: already power on
+Sep 15 00:00:03 fedora kernel: sec_ts 4-0048: [sec_input] sec_ts_input_open: Failed to start device
+Sep 15 00:00:03 fedora kernel: [SSPBBD]: ssp_down == true. returning
+Sep 15 00:00:03 fedora kernel: [SSP]: ssp_send_cmd - command 0xd1 failed -1
+Sep 15 00:00:03 fedora kernel: [STUI] stui_notifier_callback is not state TUI
+Sep 15 00:00:03 fedora kernel: decon-0 already ON state
+Sep 15 00:00:03 fedora kernel: sec_ts 4-0048: [sec_input] sec_ts_start_device: already power on
+Sep 15 00:00:03 fedora kernel: sec_ts 4-0048: [sec_input] sec_ts_input_open: Failed to start device
+Sep 15 00:00:03 fedora kernel: [SSPBBD]: ssp_down == true. returning
+Sep 15 00:00:03 fedora kernel: [SSP]: ssp_send_cmd - command 0xd1 failed -1
+Sep 15 00:00:03 fedora kernel: [STUI] stui_notifier_callback is not state TUI
+Sep 15 00:00:03 fedora kernel: decon-0 already ON state
+Sep 15 00:00:03 fedora kernel: sec_ts 4-0048: [sec_input] sec_ts_start_device: already power on
+Sep 15 00:00:03 fedora kernel: sec_ts 4-0048: [sec_input] sec_ts_input_open: Failed to start device
+Sep 15 00:00:03 fedora kernel: [SSPBBD]: ssp_down == true. returning
+Sep 15 00:00:03 fedora kernel: [SSP]: ssp_send_cmd - command 0xd1 failed -1
+Sep 15 00:00:04 fedora kernel: [STUI] stui_notifier_callback is not state TUI
+Sep 15 00:00:04 fedora kernel: decon-0 already ON state
+Sep 15 00:00:04 fedora kernel: sec_ts 4-0048: [sec_input] sec_ts_start_device: already power on
+Sep 15 00:00:04 fedora kernel: sec_ts 4-0048: [sec_input] sec_ts_input_open: Failed to start device
+Sep 15 00:00:04 fedora kernel: [SSPBBD]: ssp_down == true. returning
+Sep 15 00:00:04 fedora kernel: [SSP]: ssp_send_cmd - command 0xd1 failed -1
+Sep 15 00:00:04 fedora kernel: [STUI] stui_notifier_callback is not state TUI
+Sep 15 00:00:04 fedora kernel: decon-0 already ON state
+Sep 15 00:00:04 fedora kernel: sec_ts 4-0048: [sec_input] sec_ts_start_device: already power on
+Sep 15 00:00:04 fedora kernel: sec_ts 4-0048: [sec_input] sec_ts_input_open: Failed to start device
+Sep 15 00:00:04 fedora kernel: [SSPBBD]: ssp_down == true. returning
+Sep 15 00:00:04 fedora kernel: [SSP]: ssp_send_cmd - command 0xd1 failed -1
+Sep 15 00:00:04 fedora kernel: [STUI] stui_notifier_callback is not state TUI
+Sep 15 00:00:04 fedora kernel: decon-0 already ON state
+Sep 15 00:00:04 fedora kernel: sec_ts 4-0048: [sec_input] sec_ts_start_device: already power on
+Sep 15 00:00:04 fedora kernel: sec_ts 4-0048: [sec_input] sec_ts_input_open: Failed to start device
+Sep 15 00:00:04 fedora kernel: [SSPBBD]: ssp_down == true. returning
+Sep 15 00:00:04 fedora kernel: [SSP]: ssp_send_cmd - command 0xd1 failed -1
+Sep 15 00:00:04 fedora nuxel-console: waiting for /dev/ttyGS0 / /sys/class/tty/ttyGS0/dev (10 s)
+Sep 15 00:00:04 fedora nuxel-console: waiting for /dev/ttyGS0 / /sys/class/tty/ttyGS0/dev (10 s)
+Sep 15 00:00:05 fedora kernel: [STUI] stui_notifier_callback is not state TUI
+Sep 15 00:00:05 fedora kernel: decon-0 already ON state
+Sep 15 00:00:05 fedora kernel: sec_ts 4-0048: [sec_input] sec_ts_start_device: already power on
+Sep 15 00:00:05 fedora kernel: sec_ts 4-0048: [sec_input] sec_ts_input_open: Failed to start device
+Sep 15 00:00:05 fedora kernel: [SSPBBD]: ssp_down == true. returning
+Sep 15 00:00:05 fedora kernel: [SSP]: ssp_send_cmd - command 0xd1 failed -1
+--- spawn failures seen this boot ---
+1
+--- cgroup ---
+controllers: memory pids
+self: 0::/init.scope
+--- state files ---
+STAGE=SYSTEM_STARTING
+ANIM_STAGE=FIRST_LIGHT
+=== live shell still available on ttyGS0 (if the gadget bound) ===
+=== end report ===
+=== nuxel boot report ===
+cmdline:  console=ram loglevel=4 sec_debug.pcb_offset=7346944 sec_debug.smd_offset=7348992 sec_debug.lpddr4_size=8 sec_debug.dram_info=01,06,03,8G sec_debug.pwrsrc_rs=0x0000000820000000 sec_debug.reset_reason=7 sec_reset.reset_reason=7 sec_debug.reset_rwc=0 sec_debug.level=0 sec_watchdog.sec_pet=5 androidboot.debug_level=0x4f4c androidboot.force_upload=0x0 softdog.soft_margin=100 softdog.soft_panic=1 sec_debug.dump_sink=0x0 sec_debug.upload_count=0 androidboot.dram_info=01,06,03,8G androidboot.fmm_lock=48 sec_debug.fmm_lock_offset=7340600 sec_debug.sjl=1 androidboot.sn.param.offset=7343024 androidboot.prototype.param.offset=7351040 androidboot.recovery_offset=7355136 printk.devkmsg=on ess_setup=0xfd900000 sec_avc_log=0x40000@0x91202000 sec_tsp_log=0x40000@0x91244000 sec_disp_log=0x100000@0x91286000 sec_debug_next=0x800000@0x91388000 charging_mode=0x3030 s3cfb.bootloaderfb=0xca000000 lcdtype=10555411 androidboot.carrierid.param.offset=7340608 androidboot.carrierid=PHN consoleblank=0 ehci_hcd.park=3 oops=panic pmic_info=43 ccic_info=1 fg_reset=0 androidboot.emmc_checksum=3 androidboot.sales.param.offset=7340572 sales_code=PHN androidboot.odin_download=1 androidboot.bootloader=G975FXXSEFUL1 androidboot.selinux=enforcing androidboot.ucs_mode=0 androidboot.revision=26 androidboot.hardware=exynos9820 androidboot.warranty_bit=1 androidboot.wb.hs=0e03 androidboot.rp=14 androidboot.wb.snapQB=34489444R sec_debug.bin=A androidboot.hmac_mismatch=0 androidboot.sec_atd.tty=/dev/ttySAC0 androidboot.serialno=R58M75KDB2X androidboot.ap_serial=0x10764E6460BA snd_soc_core.pmdown_time=1000 androidboot.cp_reserved_mem=off rootwait ro init=/init root=/dev/sda25 androidboot.dtbo_idx=9 androidboot.fmp_config=0 androidboot.em.did=2010764e6460ba11 androidboot.em.model=SM-G975F androidboot.em.status=0x0 androidboot.sb.debug0=0x0 androidboot.verifiedbootstate=orange androidboot.svb.ver=SVB1.0 bcm_setup= reserve-fimc= firmware_class.path=/vendor/firmware ecd_setup=disable region1=EUR region2=OPEN factory_mode=0 androidboot.ulcnt=1 android.nonce=461240a0f3db4763dc74fdede1cc2889 root=PARTUUID=52444E41-494F-2044-7379-7374656D0000 
+kernel:  Linux version 4.14.253 (root@) (gcc version 15.3.1 20260722 (Red Hat 15.3.1-1) (GCC)) #6 SMP PREEMPT Thu Oct 15 17:01:25 UTC 2026
+start:   uptime=7.33s
+--- t=5s uptime=12.33s
+is-system-running: initializing
+--- failed units ---
+  UNIT LOAD ACTIVE SUB DESCRIPTION
+
+0 loaded units listed.
+--- running services ---
+  UNIT                     LOAD   ACTIVE SUB     DESCRIPTION
+  systemd-journald.service loaded active running Journal Service
+
+Legend: LOAD   → Reflects whether the unit definition was properly loaded.
+        ACTIVE → The high-level unit activation state, i.e. generalization of SUB.
+        SUB    → The low-level unit activation state, values depend on unit type.
+
+1 loaded units listed.
+--- recent warnings ---
+Sep 15 00:00:02 fedora kernel: [SSP]: ssp_send_cmd - command 0xd1 failed -1
+Sep 15 00:00:02 fedora unknown: [5B blob data]
+Sep 15 00:00:02 fedora kernel: [STUI] stui_notifier_callback is not state TUI
+Sep 15 00:00:02 fedora kernel: decon-0 already ON state
+Sep 15 00:00:02 fedora kernel: sec_ts 4-0048: [sec_input] sec_ts_start_device: already power on
+Sep 15 00:00:02 fedora kernel: sec_ts 4-0048: [sec_input] sec_ts_input_open: Failed to start device
+Sep 15 00:00:02 fedora kernel: [SSPBBD]: ssp_down == true. returning
+Sep 15 00:00:02 fedora kernel: [SSP]: ssp_send_cmd - command 0xd1 failed -1
+Sep 15 00:00:03 fedora kernel: panel_check_start screen is black in first 100 frame 1 100 2
+Sep 15 00:00:03 fedora unknown: NUXEL_FB_ANIM_DONE frames=12
+Sep 15 00:00:03 fedora unknown: NUXEL_FB_DRAW_SUCCESS first-light frame + penguin animation written; panel visibility still needs the operator
+Sep 15 00:00:03 fedora unknown: NUXEL_MARKER FIRSTLIGHT_ANIMATION_DONE
+Sep 15 00:00:03 fedora unknown: NUXEL_FB_HOLD_START
+Sep 15 00:00:03 fedora kernel: [STUI] stui_notifier_callback is not state TUI
+Sep 15 00:00:03 fedora kernel: decon-0 already ON state
+Sep 15 00:00:03 fedora kernel: sec_ts 4-0048: [sec_input] sec_ts_start_device: already power on
+Sep 15 00:00:03 fedora kernel: sec_ts 4-0048: [sec_input] sec_ts_input_open: Failed to start device
+Sep 15 00:00:03 fedora kernel: [SSPBBD]: ssp_down == true. returning
+Sep 15 00:00:03 fedora kernel: [SSP]: ssp_send_cmd - command 0xd1 failed -1
+Sep 15 00:00:03 fedora kernel: [STUI] stui_notifier_callback is not state TUI
+Sep 15 00:00:03 fedora kernel: decon-0 already ON state
+Sep 15 00:00:03 fedora kernel: sec_ts 4-0048: [sec_input] sec_ts_start_device: already power on
+Sep 15 00:00:03 fedora kernel: sec_ts 4-0048: [sec_input] sec_ts_input_open: Failed to start device
+Sep 15 00:00:03 fedora kernel: [SSPBBD]: ssp_down == true. returning
+Sep 15 00:00:03 fedora kernel: [SSP]: ssp_send_cmd - command 0xd1 failed -1
+Sep 15 00:00:03 fedora kernel: [STUI] stui_notifier_callback is not state TUI
+Sep 15 00:00:03 fedora kernel: decon-0 already ON state
+Sep 15 00:00:03 fedora kernel: sec_ts 4-0048: [sec_input] sec_ts_start_device: already power on
+Sep 15 00:00:03 fedora kernel: sec_ts 4-0048: [sec_input] sec_ts_input_open: Failed to start device
+Sep 15 00:00:03 fedora kernel: [SSPBBD]: ssp_down == true. returning
+Sep 15 00:00:03 fedora kernel: [SSP]: ssp_send_cmd - command 0xd1 failed -1
+Sep 15 00:00:04 fedora kernel: [STUI] stui_notifier_callback is not state TUI
+Sep 15 00:00:04 fedora kernel: decon-0 already ON state
+Sep 15 00:00:04 fedora kernel: sec_ts 4-0048: [sec_input] sec_ts_start_device: already power on
+Sep 15 00:00:04 fedora kernel: sec_ts 4-0048: [sec_input] sec_ts_input_open: Failed to start device
+Sep 15 00:00:04 fedora kernel: [SSPBBD]: ssp_down == true. returning
+Sep 15 00:00:04 fedora kernel: [SSP]: ssp_send_cmd - command 0xd1 failed -1
+Sep 15 00:00:04 fedora kernel: [STUI] stui_notifier_callback is not state TUI
+Sep 15 00:00:04 fedora kernel: decon-0 already ON state
+Sep 15 00:00:04 fedora kernel: sec_ts 4-0048: [sec_input] sec_ts_start_device: already power on
+Sep 15 00:00:04 fedora kernel: sec_ts 4-0048: [sec_input] sec_ts_input_open: Failed to start device
+Sep 15 00:00:04 fedora kernel: [SSPBBD]: ssp_down == true. returning
+Sep 15 00:00:04 fedora kernel: [SSP]: ssp_send_cmd - command 0xd1 failed -1
+Sep 15 00:00:04 fedora kernel: [STUI] stui_notifier_callback is not state TUI
+Sep 15 00:00:04 fedora kernel: decon-0 already ON state
+Sep 15 00:00:04 fedora kernel: sec_ts 4-0048: [sec_input] sec_ts_start_device: already power on
+Sep 15 00:00:04 fedora kernel: sec_ts 4-0048: [sec_input] sec_ts_input_open: Failed to start device
+Sep 15 00:00:04 fedora kernel: [SSPBBD]: ssp_down == true. returning
+Sep 15 00:00:04 fedora kernel: [SSP]: ssp_send_cmd - command 0xd1 failed -1
+Sep 15 00:00:04 fedora kernel: watchdog: watchdog0: watchdog did not stop!
+Sep 15 00:00:04 fedora kernel: [STUI] stui_notifier_callback is not state TUI
+Sep 15 00:00:04 fedora kernel: decon-0 already ON state
+Sep 15 00:00:04 fedora kernel: sec_ts 4-0048: [sec_input] sec_ts_start_device: already power on
+Sep 15 00:00:04 fedora kernel: sec_ts 4-0048: [sec_input] sec_ts_input_open: Failed to start device
+Sep 15 00:00:04 fedora kernel: [SSPBBD]: ssp_down == true. returning
+Sep 15 00:00:04 fedora kernel: usb: dwc3_gadget_linksts_change_interrupt : evtinfo = 0x15 link state = 5
+Sep 15 00:00:04 fedora kernel: usb: dwc3_gadget_linksts_change_interrupt : evtinfo = 0x17 link state = 7
+Sep 15 00:00:04 fedora kernel: [SSP]: ssp_send_cmd - command 0xd1 failed -1
+Sep 15 00:00:05 fedora nuxel-console: waiting for /dev/ttyGS0 / /sys/class/tty/ttyGS0/dev (10 s)
+Sep 15 00:00:05 fedora nuxel-console: waiting for /dev/ttyGS0 / /sys/class/tty/ttyGS0/dev (10 s)
+--- spawn failures seen this boot ---
+1
+--- cgroup ---
+controllers: memory pids
+self: 0::/init.scope
+--- state files ---
+STAGE=SYSTEM_STARTING
+ANIM_STAGE=FIRST_LIGHT
+=== live shell still available on ttyGS0 (if the gadget bound) ===
+=== end report ===
+=== nuxel boot report ===
+cmdline:  console=ram loglevel=4 sec_debug.pcb_offset=7346944 sec_debug.smd_offset=7348992 sec_debug.lpddr4_size=8 sec_debug.dram_info=01,06,03,8G sec_debug.pwrsrc_rs=0x0000000820000000 sec_debug.reset_reason=7 sec_reset.reset_reason=7 sec_debug.reset_rwc=0 sec_debug.level=0 sec_watchdog.sec_pet=5 androidboot.debug_level=0x4f4c androidboot.force_upload=0x0 softdog.soft_margin=100 softdog.soft_panic=1 sec_debug.dump_sink=0x0 sec_debug.upload_count=0 androidboot.dram_info=01,06,03,8G androidboot.fmm_lock=48 sec_debug.fmm_lock_offset=7340600 sec_debug.sjl=1 androidboot.sn.param.offset=7343024 androidboot.prototype.param.offset=7351040 androidboot.recovery_offset=7355136 printk.devkmsg=on ess_setup=0xfd900000 sec_avc_log=0x40000@0x91202000 sec_tsp_log=0x40000@0x91244000 sec_disp_log=0x100000@0x91286000 sec_debug_next=0x800000@0x91388000 charging_mode=0x3030 s3cfb.bootloaderfb=0xca000000 lcdtype=10555411 androidboot.carrierid.param.offset=7340608 androidboot.carrierid=PHN consoleblank=0 ehci_hcd.park=3 oops=panic pmic_info=43 ccic_info=1 fg_reset=0 androidboot.emmc_checksum=3 androidboot.sales.param.offset=7340572 sales_code=PHN androidboot.odin_download=1 androidboot.bootloader=G975FXXSEFUL1 androidboot.selinux=enforcing androidboot.ucs_mode=0 androidboot.revision=26 androidboot.hardware=exynos9820 androidboot.warranty_bit=1 androidboot.wb.hs=0e03 androidboot.rp=14 androidboot.wb.snapQB=34489444R sec_debug.bin=A androidboot.hmac_mismatch=0 androidboot.sec_atd.tty=/dev/ttySAC0 androidboot.serialno=R58M75KDB2X androidboot.ap_serial=0x10764E6460BA snd_soc_core.pmdown_time=1000 androidboot.cp_reserved_mem=off rootwait ro init=/init root=/dev/sda25 androidboot.dtbo_idx=9 androidboot.fmp_config=0 androidboot.em.did=2010764e6460ba11 androidboot.em.model=SM-G975F androidboot.em.status=0x0 androidboot.sb.debug0=0x0 androidboot.verifiedbootstate=orange androidboot.svb.ver=SVB1.0 bcm_setup= reserve-fimc= firmware_class.path=/vendor/firmware ecd_setup=disable region1=EUR region2=OPEN factory_mode=0 androidboot.ulcnt=1 android.nonce=1e67a4417d3cb2f6681fcd45bcaed4a9 root=PARTUUID=52444E41-494F-2044-7379-7374656D0000 
+kernel:  Linux version 4.14.253 (root@) (gcc version 15.3.1 20260722 (Red Hat 15.3.1-1) (GCC)) #7 SMP PREEMPT Thu Oct 15 17:37:43 UTC 2026
+start:   uptime=7.48s
+--- t=5s uptime=12.48s
+is-system-running: initializing
+--- failed units ---
+  UNIT LOAD ACTIVE SUB DESCRIPTION
+
+0 loaded units listed.
+--- running services ---
+  UNIT                     LOAD   ACTIVE SUB     DESCRIPTION
+  systemd-journald.service loaded active running Journal Service
+
+Legend: LOAD   → Reflects whether the unit definition was properly loaded.
+        ACTIVE → The high-level unit activation state, i.e. generalization of SUB.
+        SUB    → The low-level unit activation state, values depend on unit type.
+
+1 loaded units listed.
+--- recent warnings ---
+Sep 15 00:00:01 fedora unknown: NUXEL_ANIM_TAKEOVER_ATTEMPTS=0
+Sep 15 00:00:01 fedora unknown: NUXEL_ANIM_TAKEOVER_SCAN_RC=0
+Sep 15 00:00:01 fedora unknown: NUXEL_ANIM_TAKEOVER_KILLED=0
+Sep 15 00:00:01 fedora unknown: NUXEL_ANIM_BG_INDEX=238
+Sep 15 00:00:01 fedora unknown: NUXEL_ANIM_BG_SRC565=32
+Sep 15 00:00:01 fedora unknown: NUXEL_ANIM_BG_DST=1024
+Sep 15 00:00:01 fedora unknown: NUXEL_ANIM_MARKER FIRST_FRAME_COMMITTED
+Sep 15 00:00:01 fedora unknown: NUXEL_ANIM_MARKER_ORIGINAL_MP4_ANIMATION_FRAMES=192
+Sep 15 00:00:01 fedora nuxel-init: ANIMATION ownership: MP4 first frame committed after 1s
+Sep 15 00:00:01 fedora nuxel-init: NUXEL_MARKER MP4_FIRST_FRAME_READY
+Sep 15 00:00:01 fedora nuxel-init: NUXEL_MARKER MP4_PLAYER_ACTIVE
+Sep 15 00:00:01 fedora nuxel-init: ROOTFS_HANDOFF_STARTED -> /newroot
+Sep 15 00:00:01 fedora nuxel-init: NUXEL_MARKER ROOTFS_HANDOFF_STARTED
+Sep 15 00:00:01 fedora nuxel-init: switching root -> /newroot
+Sep 15 00:00:01 fedora SELinux:  Could not open policy file <= /etc/selinux/targeted/policy/policy.35:  No such file or directory
+Sep 15 00:00:01 fedora systemd[1]: Failed to find module 'autofs4'
+Sep 15 00:00:01 fedora systemd[1]: Unable to determine whether tmpfs supports 'usrquota' mount option, assuming not: Function not implemented
+Sep 15 00:00:01 fedora systemd[1]: Warning! Reported kernel version 4.14.253 is older than systemd's required baseline kernel version 5.7. Your mileage may vary.
+Sep 15 00:00:01 fedora kernel: CFG80211-INFO2) wl_cfg80211_netdev_notifier_call : wdev null. Do nothing
+Sep 15 00:00:01 fedora kernel: CFG80211-INFO2) wl_cfg80211_netdev_notifier_call : wdev null. Do nothing
+Sep 15 00:00:01 fedora kernel: exynos-ufs 13d60000.ufs: ufshcd_ioctl: Illegal ufs-IOCTL cmd 19461
+Sep 15 00:00:01 fedora kernel: exynos-ufs 13d60000.ufs: ufshcd_ioctl: Illegal ufs-IOCTL cmd -2146954624
+Sep 15 00:00:01 fedora kernel: exynos-ufs 13d60000.ufs: ufshcd_ioctl: Illegal ufs-IOCTL cmd -2144861675
+Sep 15 00:00:01 fedora kernel: exynos-ufs 13d60000.ufs: ufshcd_ioctl: User buffer is NULL!
+Sep 15 00:00:01 fedora kernel: exynos-ufs 13d60000.ufs: ufshcd_ioctl: Illegal ufs-IOCTL cmd 21397
+Sep 15 00:00:01 fedora kernel: exynos-ufs 13d60000.ufs: ufshcd_ioctl: Illegal ufs-IOCTL cmd -2147216764
+Sep 15 00:00:01 fedora systemd[1]: tmp.mount: x-systemd.graceful-option=usrquota specified, but cannot determine availability, suppressing: Function not implemented
+Sep 15 00:00:01 fedora kernel: <keyctl> add_key succeeded(0). type: user, desc: invocation_id
+Sep 15 00:00:01 fedora kernel: <keyctl> add_key succeeded(0). type: user, desc: invocation_id
+Sep 15 00:00:01 fedora kernel: <keyctl> add_key succeeded(0). type: user, desc: invocation_id
+Sep 15 00:00:01 fedora kernel: <keyctl> add_key succeeded(0). type: user, desc: invocation_id
+Sep 15 00:00:01 fedora kernel: <keyctl> add_key succeeded(0). type: user, desc: invocation_id
+Sep 15 00:00:01 fedora systemd[1]: Attaching device control BPF program to cgroup /system.slice/systemd-journald.service failed: Argument list too long
+Sep 15 00:00:01 fedora systemd[1]: Unit systemd-journald.service configures device ACL, but the local system doesn't seem to support the BPF-based device controller.
+Sep 15 00:00:01 fedora systemd[1]: Proceeding WITHOUT applying ACL (all devices will be accessible)!
+Sep 15 00:00:01 fedora systemd[1]: (This warning is only shown for the first loaded unit using device ACL.)
+Sep 15 00:00:01 fedora systemd[1]: systemd-journald.service: bpf-firewall: Attaching egress BPF program to cgroup /sys/fs/cgroup/system.slice/systemd-journald.service failed: Argument list too long
+Sep 15 00:00:01 fedora kernel: <keyctl> add_key succeeded(0). type: user, desc: invocation_id
+Sep 15 00:00:01 fedora kernel: <keyctl> add_key succeeded(0). type: user, desc: invocation_id
+Sep 15 00:00:01 fedora kernel: <keyctl> add_key succeeded(0). type: user, desc: invocation_id
+Sep 15 00:00:01 fedora kernel: <keyctl> add_key succeeded(0). type: user, desc: invocation_id
+Sep 15 00:00:01 fedora kernel: <keyctl> add_key succeeded(0). type: user, desc: invocation_id
+Sep 15 00:00:01 fedora kernel: <keyctl> add_key succeeded(0). type: user, desc: invocation_id
+Sep 15 00:00:01 fedora kernel: <keyctl> add_key succeeded(0). type: user, desc: invocation_id
+Sep 15 00:00:01 fedora kernel: <keyctl> add_key succeeded(0). type: user, desc: invocation_id
+Sep 15 00:00:01 fedora kernel: <keyctl> add_key succeeded(0). type: user, desc: invocation_id
+Sep 15 00:00:01 fedora kernel: <keyctl> add_key succeeded(0). type: user, desc: invocation_id
+Sep 15 00:00:01 fedora systemd[1]: Attaching device control BPF program to cgroup /system.slice/systemd-userdbd.service failed: Argument list too long
+Sep 15 00:00:01 fedora systemd[1]: systemd-userdbd.service: bpf-firewall: Attaching egress BPF program to cgroup /sys/fs/cgroup/system.slice/systemd-userdbd.service failed: Argument list too long
+Sep 15 00:00:01 fedora kernel: <keyctl> add_key succeeded(0). type: user, desc: invocation_id
+Sep 15 00:00:01 fedora kernel: EXT4-fs (sda31): errors=remount-ro for active namespaces on umount 2
+Sep 15 00:00:00 fedora systemd-sysctl[3546]: Couldn't write '0' to 'kernel/yama/ptrace_scope', ignoring: No such file or directory
+Sep 15 00:00:00 fedora systemd-userdbd[3556]: Failed to watch child 3557: Function not implemented
+Sep 15 00:00:00 fedora systemd-userdbd[3556]: Failed to start up daemon: Function not implemented
+Sep 15 00:00:01 fedora kernel: <keyctl> add_key succeeded(0). type: user, desc: invocation_id
+Sep 15 00:00:01 fedora systemd-journald[3541]: File /var/log/journal/b8ad6098c76847d181f06e221ca43e0f/system.journal corrupted or uncleanly shut down, renaming and replacing.
+Sep 15 00:00:03 fedora kernel: watchdog: watchdog0: watchdog did not stop!
+Sep 15 00:00:03 fedora kernel: usb: dwc3_gadget_linksts_change_interrupt : evtinfo = 0x15 link state = 5
+Sep 15 00:00:03 fedora kernel: usb: dwc3_gadget_linksts_change_interrupt : evtinfo = 0x17 link state = 7
+Sep 15 00:00:03 fedora kernel: usb: dwc3_gadget_linksts_change_interrupt : evtinfo = 0x19 link state = 9
+--- spawn failures seen this boot ---
+1
+--- cgroup ---
+controllers: memory pids
+self: 0::/init.scope
+--- state files ---
+STAGE=SYSTEM_STARTING
+ANIM_STAGE=MP4_PLAYER_ACTIVE
+=== live shell still available on ttyGS0 (if the gadget bound) ===
+=== end report ===

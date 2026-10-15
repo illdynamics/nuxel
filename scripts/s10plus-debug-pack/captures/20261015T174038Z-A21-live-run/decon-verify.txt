@@ -1,0 +1,116 @@
+
+@@@ CMD: cut -d' ' -f1 /proc/uptime
+cut -d' ' -f1 /proc/uptime
+6,9146,382314054,-;s3c2410-wdt 10050000.watchdog_cl0: Watchdog cluster 0 keepalive!, wtcnt = fff5
+ SUBSYSTEM=platform
+ DEVICE=+platform:10050000.watchdog_cl0
+6,9147,382314075,-;Watchdog: s3c2410wdt_keepalive RTC 2026-09-15 00:06:13 UTC
+2,9148,382314105,-;watchdog: watchdog0: watchdog did not stop!
+6,9149,382314123,-;s3c2410-wdt 10050000.watchdog_cl0: Watchdog cluster 0 keepalive!, wtcnt = fff5
+ SUBSYSTEM=platform
+ DEVICE=+platform:10050000.watchdog_cl0
+6,9150,382314131,-;Watchdog: s3c2410wdt_keepalive RTC 2026-09-15 00:06:13 UTC
+echo @@E@@
+6,9151,385718959,-;sec_ts 4-0048: [sec_input] sec_ts_read_event: STATUS 1d 69 0 0 0 0 0 0
+ SUBSYSTEM=i2c
+ DEVICE=+i2c:4-0048
+6,9152,385766959,-;[SSP]: debug_work_func(0) - Sensor state: 0x3feff, RC: 0(0, 0, 0), CC: 0, TC: 0 NSC: 0 EC: 0 GPS: false
+
+@@@ CMD: dmesg | grep -c 'UNBLANK missed'
+dmesg | grep -c 'UNBLANK missed'
+12,9155,387677344,-;NUXEL_ANIM_HEARTBEAT_FRAMES=9120
+12,9156,387677382,-;NUXEL_ANIM_HEARTBEAT_MS=379971
+12,9157,387677405,-;NUXEL_ANIM_HEARTBEAT_SKIPS=0
+12,9158,387677426,-;NUXEL_ANIM_HEARTBEAT_LOOPS=47
+12,9159,387677447,-;NUXEL_ANIM_EXPECTED_MS=373920
+12,9160,389807875,-;NUXEL_ANIM_LOOP=48
+6,9161,390004098,-;sec_ts 4-0048: [sec_input] sec_ts_read_event: STATUS 1d 69 0 0 0 0 0 0
+ SUBSYSTEM=i2c
+ DEVICE=+i2c:4-0048
+6,9162,390117529,-;sec_ts 4-0048: [sec_input] mode:0202 tc:0 noise:0 wet:0 wc:0 lp:(0) D0C000 fn:0061/0061 // v:0233 cal:A2(00) C01T0226.LCIA.L Cal_flag:Success fail_cnt:0 // id(0,0) // #2 1
+ SUBSYSTEM=i2c
+ DEVICE=+i2c:4-0048
+6,9163,390506430,-;sec_ts 4-0048: [sec_input] sec_ts_read_event: STATUS 1d 69 1 0 0 0 0 0
+ SUBSYSTEM=i2c
+ DEVICE=+i2c:4-0048
+echo @@E@@
+6,9164,391911159,-;[SSP]: debug_work_func(0) - Sensor state: 0x3feff, RC: 0(0, 0, 0), CC: 0, TC: 0 NSC: 0 EC: 0 GPS: false
+6,9165,392315970,-;s3c2410-wdt 10050000.watchdog_cl0: Watchdog cluster 0 keepalive!, wtcnt = fff5
+ SUBSYSTEM=platform
+ DEVICE=+platform:10050000.watchdog_cl0
+6,9166,392315994,-;Watchdog: s3c2410wdt_keepalive RTC 2026-09-15 00:06:23 UTC
+2,9167,392316026,-;watchdog: watchdog0: watchdog did not stop!
+6,9168,392316046,-;s3c2410-wdt 10050000.watchdog_cl0: Watchdog cluster 0 keepalive!, wtcnt = fff5
+ SUBSYSTEM=platform
+ DEVICE=+platform:10050000.watchdog_cl0
+6,9169,392316055,-;Watchdog: s3c2410wdt_keepalive RTC 2026-09-15 00:06:23 UTC
+
+@@@ CMD: dmesg | grep 'UNBLANK missed' | tail -1
+dmesg | grep 'UNBLANK missed' | tail -1
+6,9170,393633484,-;[sec_input] gpio_keys_gpio_report_event: 116 (1/0)
+6,9171,393641489,-;[sec_input] gpio_keys_gpio_report_event: 114 (1/0)
+6,9172,393641518,-;hard_reset_hook : hrtimer_start
+6,9173,394529443,-;[FG] 0080h,ff9bh,7f80h,ff01h,1900h,0f88h,6400h,5f05h,2080h,d870h,fff3h,0002h,001dh,699ah,64dah,0fa9h,0f8ch,ffffh,3200h,5f00h,0242h,0148h,2128h,003dh,0f76h,d87bh,2713h,d89eh,18f3h,0314h,0500h,0f8dh,0000h,6200h,1c00h,0eb2h,1403h,1e05h,2388h,7f26h,2616h,cea4h,043ch,0890h,e3e1h,290eh,0400h,0001h,31f7h,587eh,0b82h,ffffh,1e4dh,0f88h,0c0fh,05e0h,0038h,1527h,a7e2h,0142h,1680h,1408h,0c76h,e000h,07fch,0002h,0902h,02cch,d872h,00b2h,0977h,0124h,682fh,2241h,0f77h,03a9h,0f90h,0f9ch,8e13h,0fa9h,0000h,6c3ch,0006h,2d72h,7f80h,0005h,0a2ch,0647h,0000h,006bh,090ch,0055h,0000h,0204h,000eh,0000h,17f6h,0000h,0000h,0000h,0000h,0000h,0000h,0000h,0000h,0000h,0000h,0010h,001dh,ffffh,64d4h,0f8ch,1cb5h,0292h,06b8h,0008h,167eh,0000h,7fffh,ffffh,4b4eh,0008h,46a8h,0000h,4000h,0000h,7d00h,0620h,ffffh,ffffh,ffffh,ffffh,20a6h,0000h,0000h,fe77h,3f93h,5bf8h,0005h,d87ah,002fh,2913h,d870h,684ah,
+6,9174,394533280,-;max77705_fg_read_qh : QH(3996000)
+6,9175,394533289,-;[FG power] ISYS(863mA),ISYSAVG(301mA),VSYS(4329mV),IIN(766mA),VBYP(4958mV) QH(3996000 uah)
+7,9176,394534280,-;max77705_fg_read_current: current=-4mA
+7,9177,394534962,-;max77705_fg_read_avg_current: avg_current=0mA
+6,9178,394537329,-;sec-battery battery: sec_bat_get_value_by_adc:[2] Temp(319), Temp-ADC(1709)
+ SUBSYSTEM=platform
+ DEVICE=+platform:battery
+6,9179,394538985,-;sec-battery battery: sec_bat_get_value_by_adc:[12] Temp(321), Temp-ADC(1689)
+ SUBSYSTEM=platform
+ DEVICE=+platform:battery
+6,9180,394539909,-;sec-battery battery: sec_bat_get_value_by_adc:[6] Temp(342), Temp-ADC(1587)
+ SUBSYSTEM=platform
+ DEVICE=+platform:battery
+6,9181,394540568,-;sec-battery battery: sec_bat_get_value_by_adc:[10] Temp(319), Temp-ADC(1709)
+ SUBSYSTEM=platform
+ DEVICE=+platform:battery
+7,9182,394540717,-;max77705_fg_write_temp: temperature to (319, 0x1fe6)
+7,9183,394542877,-;max77705_fg_read_avg_current: avg_current=0mA
+7,9184,394542885,-;max77705_get_fuelgauge_soc: soc(1000)
+6,9185,394542893,-;max77705_fg_get_scaled_capacity : capacity_max (1000) scaled capacity(100.0), raw_soc(100.0)
+7,9186,394543339,-;max77705_fg_read_rawsoc: raw capacity (0.01%) (10000)
+6,9187,394544199,-;max77705_fg_read_qh : QH(3996000)
+7,9188,394544207,-;max77705_fg_get_atomic_capacity : NOW(100), OLD(100)
+6,9189,394544218,-;sec_bat_get_battery_info:Vnow(4328mV),Vavg(4329mV),Inow(-4mA),Iavg(0mA),Isysavg(301mA),Imax(3000mA),Ichg(2850mA),SOC(100%),Tbat(319),Tusb(321),Tchg(342),Twpc(319)
+6,9190,394544236,-;sec_bat_check_step_charging
+6,9191,394544247,-;sec-battery battery: sec_bat_check_recharge: recharging voltage (4280)
+ SUBSYSTEM=platform
+ DEVICE=+platform:battery
+6,9192,394544256,-;sec_bat_swelling_check: swelling highblock(410), highrecov(390)
+7,9193,394544812,-;max77705_get_float_voltage: battery cv reg : 0x13, float voltage val : 4350
+6,9194,394544841,-;sec_bat_swelling_check: status(Full), swell_mode(Swelling None), chg_block(1), low_temp_event(0x0), vfloat(4350)mV, temp(319)'C
+6,9195,394544864,-;sec_bat_set_current_event: current event before(0x100), after(0x100)
+6,9196,394544886,-;sec_bat_check_mix_temp: mix_limit(0), temp(319), chg_temp(342), input_current(3000)
+6,9197,394544904,-;sec_bat_check_pdic_temp: cable_type(19), chg_limit(0)
+6,9198,394544922,-;sec_bat_get_charging_current_by_siop: incurr(3000), chgcurr(2850)
+6,9199,394551449,-;max77705 : [0xb1]0x1a, [0xb2]0xdf, [0xb3]0xe0, [0xb4]0x38, [0xb5]0x00, [0xb6]0xff, [0xb7]0x14, [0xb8]0x38, [0xb9]0x79, [0xba]0x9d, [0xbb]0x13, [0xbc]0x6c, [0xbd]0x6c, [0xbe]0x34, [0xbf]0x02, [0xc0]0xf7, [0xc1]0x14, [0xc2]0x00, [0xc3]0x68, 
+6,9200,394551876,-;max77705_chg_monitor_work: [CHG] MODE(0x4), B2SOVRC(0xc), otg_on(0)
+6,9201,394551916,-;sec_bat_monitor_work: Status(Full), mode(None), Health(Good), Cable(PDIC, PDIC, 0, 0), rp(3), level(100%), lcd(0), slate_mode(0), store_mode(0), HV(PDIC, 0), sleep_mode(0), Cycle(-1)
+6,9202,394551948,-;sec-battery battery: sec_bat_set_polling: Polling time 30/30 sec.
+ SUBSYSTEM=platform
+ DEVICE=+platform:battery
+6,9203,394552011,-;sec_bat_get_property cable type = 19 sleep_mode = 0
+7,9204,394552235,-;max77705_fg_read_current: current=6mA
+7,9205,394552653,-;max77705_fg_read_avg_current: avg_current=0mA
+echo @@E@@
+12,9206,397775841,-;NUXEL_ANIM_LOOP=49
+12,9207,397792585,-;NUXEL_ANIM_HEARTBEAT_FRAMES=9360
+12,9208,397792596,-;NUXEL_ANIM_HEARTBEAT_MS=390115
+12,9209,397792601,-;NUXEL_ANIM_HEARTBEAT_SKIPS=0
+12,9210,397792605,-;NUXEL_ANIM_HEARTBEAT_LOOPS=49
+12,9211,397792610,-;NUXEL_ANIM_EXPECTED_MS=383760
+6,9212,397798724,-;[SSP]: debug_work_func(0) - Sensor state: 0x3feff, RC: 0(0, 0, 0), CC: 0, TC: 0 NSC: 0 EC: 0 GPS: false
+6,9213,397798754,-;fps_qbt2000_work_func_debug: ldo:0,ipc:0,wuhb:0,tz:1,type:qbt2000,int:0,0
+
+@@@ CMD: dmesg | grep 'NUXEL_ANIM_HEARTBEAT_FRAMES' | tail -1
+Traceback (most recent call last):
+  File "/Users/wicked/x/nuxel/.scratch/console3.py", line 22, in <module>
+    print("\n@@@ CMD: %s" % line); sys.stdout.write(run(line)); sys.stdout.flush()
+                                                    ^^^^^^^^^
+  File "/Users/wicked/x/nuxel/.scratch/console3.py", line 19, in run
+    os.write(fd, b"echo @@E@@\r"); time.sleep(0.3)
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+OSError: [Errno 6] Device not configured

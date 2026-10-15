@@ -1,0 +1,77 @@
+# NEXT-ACTION — cycle 9 / candidate A21 (2026-10-15)
+
+```
+STATE              = AWAITING_BOOT_RESULT
+CANDIDATE          = A21   "ONE PENGUIN / CORRECT COLOURS / SMOOTH PLAYBACK"
+BOOT.img sha256    = 153807621cf9fa22c10edcd4f74078fc022cf55e5d3ed1e4940378b50a749173
+KERNEL sha256      = e34b7b4bf2dfe4ecc626ff442a0cb1a2531623b19c95f45618b9766986ebc2b4 (Image-A21)
+INITRAMFS sha256   = a492a385554b0aee21b6c5993c714f44d8f158906ef76a63bdd2a8298c738597
+REBOOT_AT          = 2026-10-15T17:40:40Z
+FLASH              = BOOT-only, dd, full 51,587,072-byte SHA-256 readback PASS
+LIVE_USB_GADGET    = enumerated as /dev/cu.usbmodem201 within ~40 s and stayed up
+PERMANENT AGREEMENT: if the operator has returned the phone to TWRP, this attempt
+FAILED — capture the new evidence and continue. No further confirmation needed.
+```
+
+## 1. What the operator saw on A20, and what each artefact actually was
+
+The A20 photograph ("almost got 2 penguins now woops haha and red") is now fully
+explained by the code, with measurements (see `ANIMATION-RENDERING.md`,
+`FRAMEBUFFER-OWNERSHIP.md`, `COLOR-FORMAT-VERIFICATION.md`):
+
+| Photograph | Cause | Fixed in A21 by |
+|---|---|---|
+| red background + circuitry (artwork is near-black/blue: 0.16 % red, 1.21 % blue) | raw **RGB565** palette value written into a **32-bpp** pixel, so the artwork's blue landed in the red field | `DSTPIX[]` built once from the driver's own red/green/blue bitfields |
+| **second** blue-and-white penguin | the resident `nuxel-fb-phone hold` painter, still repainting at 4 Hz over the MP4 | deferred resident painter + identity-checked takeover |
+| **rectangle** behind the centre penguin | that painter's opaque 2·half × 2·half sprite square (`bg = pack(10,32,58)`) | same |
+| Nuxel logo and terminal-style text | genuine original artwork | preserved unchanged |
+
+Root cause of "nothing could stop the penguin": `openat("/proc", O_RDONLY|O_DIRECTORY)`
+was written as `0x10000`, which on this board is **`O_DIRECT`** (`O_DIRECTORY` is
+`040000`), and procfs returns `EINVAL` for `O_DIRECT`; on top of that the scan ran after
+`switch_root` had moved `/proc` away. Hardware log: `NUXEL_ANIM_TAKEOVER no /proc`.
+
+## 2. What to look for now (A21)
+
+On the S10+ AMOLED, in order:
+
+1. the first-light frame (deep blue field, 4 colour bars, `NUXEL`, penguin) for ~8 s;
+2. then the **original MP4 artwork**: a near-black field, blue circuitry that lights up
+   around t≈4.7 s, white terminal-style text, and the small red/white Nuxel mark at the
+   centre — **one** penguin, **no** rectangle, **no red field**, then it loops;
+3. the animation must keep running (it has no timer; it stops only on an explicit
+   request).
+
+| Observation | Meaning | Next |
+|---|---|---|
+| original animation, correct colours, one penguin, loops | **WoNQ PRIORITY 1 COMPLETE** | go to priority 2 (live console) |
+| still red / still two penguins | the fix did not take effect — capture and compare `NUXEL_ANIM_FB_RED_OFF` and the takeover lines | re-derive from the new evidence |
+| black screen | player claimed the panel and the commit failed | read `NUXEL_ANIM_UNBLANK_rc/_ACTIVATE_rc/_PAN_rc` and `FIRST_FRAME_COMMITTED` |
+| only the penguin, no MP4 | the fallback ran (container or player missing) | read `ANIMATION_CONTAINER_MISSING` / `MP4_PLAYER_ACTIVE_TIMEOUT` |
+| phone back on TWRP / rebooted | boot failed | capture, classify `BOOT_RESULT=FAILED_USER_RETURNED_TO_TWRP`, continue |
+
+## 3. Live evidence available while A21 runs
+
+The Nuxel USB gadget is bound (`/dev/cu.usbmodem201`). If it carries data,
+`uname -a`, `id`, `cat /etc/os-release`, `systemctl --failed` can be read **live**; the
+zero-byte data path is priority 2 (`LIVE-DEBUG-CONNECTIVITY.md`).
+
+Persistent evidence after a TWRP return, in this order:
+
+1. `<userdata>/var/log/journal` → `journalctl -b 0` (the A20 boot's own kernel log was
+   recovered this way; the journal now holds the full `NUXEL_ANIM_*` record);
+2. `<userdata>/var/log/nuxel-bootreport.txt` (one section per boot);
+3. `<userdata>/var/lib/nuxel/{fb-anim.pid,fb-anim-ready,fb-anim-starting,fb-hold.pid,animation}`;
+4. `/proc/last_kmsg` and `/sys/fs/pstore` (the ram ring is only ~2 MB and the 4 Hz
+   painter spam used to evict everything before t≈570 s — it should now be quiet);
+5. `logs/A21`-equivalent readback receipt in the flash capture directory.
+
+## 4. Standing rules unchanged
+
+* Never overwrite RECOVERY. Never touch EFS/SEC_EFS, PIT, bootloader, radio, DTBO.
+* A BOOT-only flash is only meaningful together with a kernel rebuilt against that
+  candidate's initramfs (`tools/s10plus/a21/kbuild-a21.sh`).
+* Longest-lived proof kernel stays at `debug-candidates/A19/Image-A19`; A16 stays as the
+  display regression test; A20's boot.img stays as the "before" image for the artefact.
+* The rootfs copy of the player (`/usr/bin/nuxel-anim-player`, A20 vintage) is NOT used
+  at boot; it is refreshed when the phone-UI work needs it.

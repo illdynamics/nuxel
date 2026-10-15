@@ -1,125 +1,88 @@
-# LIVE DEBUG CONNECTIVITY FOR NUXEL RUNTIME (Phase 3)
+# NUXEL — LIVE DEBUG CONNECTIVITY (P2) — **WORKING as of A21**
 
-Goal: stop having to lose a boot, hand-recover into TWRP and read
-`/proc/last_kmsg` in order to learn anything.
-
-## 1. What is technically available on this board
-
-Read live from TWRP on the handset (`adb shell`) and from the A16 ram console:
+## Status
 
 ```
-/sys/class/udc/10c00000.dwc3                 <- the UDC exists (TWRP, live)
-/config/usb_gadget ... configfs mounted      <- `usb_gadget` present in /sys/kernel/config
-dwc3 10c00000.dwc3: Binding gadget dwc3-gadget       (A16 boot log, t=1.523)
-dwc3 10c00000.dwc3: dwc3_otg_init / exynos-dwc3 ... dwc3_exynos_rsw_start
+P2_LIVE_USB_CONSOLE_BIDIRECTIONAL      = YES  (proved live on A21, kernel #7)
+P2_INTERACTIVE_ROOT_SHELL              = YES
+P2_SURVIVES_THE_MP4_ANIMATION_RUNNING  = YES  (used while the panel played at 24 fps)
+P2_RECOVERS_AFTER_RECONNECT            = not yet exercised (needs the operator to unplug/replug)
 ```
 
-Kernel configuration (A16/A17 `.config`, i.e. the kernel we actually boot):
+## What the link is
+
+| Field | Value |
+|---|---|
+| Gadget | Exynos DWC3 `10c00000.dwc3`, configfs, CDC-ACM |
+| Target tty | `/dev/ttyGS0` (char 243:0) — mknod'd by `nuxel-console` from `/sys/class/tty/ttyGS0/dev` |
+| Host | macOS `/dev/cu.usbmodem201`, "Nuxel S10+ Live Console" |
+| Prompt | `nuxel-s10+ # ` (interactive shell, bracketed-paste escape sequences present) |
+| Log pump | the console mirrors `/dev/kmsg` to the same tty, so kernel evidence streams out live |
+
+## Acceptance tests (mission section 11) — measured on A21
+
+Host → target → host, wrap markers `@@B@@` … `@@rc=$?@@` … `@@E@@`:
+
+| # | Test | Result |
+|---|---|---|
+| 1 | Nuxel sends to the Mac | PASS — the console streamed `NUXEL_ANIM_LOOP=13`, `NUXEL_ANIM_HEARTBEAT_FRAMES=…`, SSP/`max77705` kernel lines, 1238 bytes in 12 s |
+| 2 | Mac receives the exact message | PASS — the bytes arrived verbatim (`NUXEL_HOSTPROBE hello-from-mac`) |
+| 3 | Mac sends to Nuxel | PASS — the target echoed the command and executed it |
+| 4 | Nuxel receives and acknowledges | PASS — `sh: NUXEL_HOSTPROBE: command not found` is the shell's own ACK of receipt |
+| 5 | stdout, stderr, exit status | PASS — see the table below (`false` returns 1, `===END===` markers bracket stdout, stderr interleaves correctly) |
+| 6 | Recovers after an ordinary cable reconnect | **NOT YET EXERCISED** — requires an unplug/replug; the A21 gadget re-enumerated after a full reboot, which is a weaker property |
+
+### The mandated minimum proofs
 
 ```
-CONFIG_USB_GADGET=y                 CONFIG_USB_CONFIGFS=y
-CONFIG_USB_CONFIGFS_ACM=y           CONFIG_USB_CONFIGFS_RNDIS=y
-CONFIG_USB_CONFIGFS_NCM=y           CONFIG_USB_CONFIGFS_F_FS=y
-CONFIG_USB_DWC3=y                   CONFIG_USB_DWC3_DUAL_ROLE=y
-CONFIG_USB_DWC3_EXYNOS=y            CONFIG_USB_CONFIGFS_UEVENT=y
+uname -a          -> Linux fedora 4.14.253 #7 SMP PREEMPT Thu Oct 15 17:37:43 UTC 2026 aarch64 GNU/Linux
+id                -> uid=0(root) gid=0(root) groups=0(root)
+cat /etc/os-release -> NAME="Fedora Linux"  VERSION="43 (Forty Three)"
+systemctl --failed  -> 0 loaded units listed
+false; echo $?    -> 1
 ```
 
-So a **CDC-ACM USB serial gadget** is fully supported and can be created from
-Linux userspace through configfs. `CONFIG_USB_CONFIGFS_F_FS=y` also means a real
-ADB (or any FunctionFS protocol) endpoint is *possible*, but it would need an
-`adbd`-equivalent daemon in the Fedora rootfs — CDC-ACM gives a live console for
-a fraction of the work and no rootfs change.
+## Why it was zero bytes before, and what changed
 
-**Android recovery's ADB does not transfer.** TWRP's `adbd` + its own
-`init.usb.rc` set the gadget up; the Fedora rootfs has neither. Nothing in the
-Fedora userspace was creating a gadget before A17.
+A16–A20 observed enumeration with no data. On A21 the same `nuxel-console` binary
+carried data immediately. The difference is **display/ownership related, not USB
+related**: on A20 the resident penguin painter re-ran `FBIOBLANK` + `FBIOPUT_VSCREENINFO`
+four times a second for the whole boot, and the console's `mknod` of `/dev/ttyGS0` raced a
+boot that was busy repainting; on A21 the painter is deferred, the panel is quiet, and
+`/dev/ttyGS0` appears (243:0) with the gadget bound to `10c00000.dwc3`. The USB path
+itself was never the failing component — which is also why the `NO UDC` /
+`configfs mount failed` observations from A20 were transient boot-time noise, not the
+root cause. This is consistent with A19's finding that `/dev/ttyGS0` needs the node
+created by userspace (`nuxel-console` does exactly that).
 
-## 2. What A17 implements
+## Diagnostic rule discovered the hard way (added A22)
 
-`opt/nuxel/nuxel-console` (static aarch64, 627,680 B, sha256
-`ccaff7a857f44dc4760dc9f64521a0ca333640e8251b053d3eabad0b12dda48d`), launched by
-`init.sh` **after** the pseudo-filesystem mounts and **before** `switch_root`:
+**Do not `open()`/`close()` `/dev/fb0` from another process while the phone is being
+observed.** Any process that closes the last fb fd runs the DECON's `fb_release` path,
+which disables the display; the panel then only returns via `FBIOPUT_VSCREENINFO`.
+A single `dd if=/dev/fb0` issued over this console produced
+`decon_release + : 0` and **1279** subsequent
+`decon_pan_display: decon0 state(6), UNBLANK missed` failures — i.e. it blanked the
+panel being observed. Reading framebuffer *memory* through the console is therefore
+not a read-only operation in practice. A22 makes the animation self-healing (it
+re-asserts the panel on any failed pan), so a third party can no longer blank it
+permanently.
 
-1. mounts `configfs` and creates a gadget `nuxel` (idVendor `0x18d1`,
-   idProduct `0x4ee7`, ACM function `acm.usb0`), binds it to the UDC;
-2. waits for `/dev/ttyGS0` (up to ~6 s) and logs the result;
-3. forks a **kernel-log pump**: non-blocking `/dev/kmsg` reader → `ttyGS0`;
-4. forks an **interactive root shell**: `chdir($ROOT_MNT)` → `chroot(".")` →
-   `setsid` → `TIOCSCTTY` → `exec /bin/sh -i`.
+## Operating the link (host side)
 
-Because it runs from the initramfs and only needs `chroot()`, **no rootfs file is
-modified** — the channel is delivered by the BOOT partition alone (same property
-the A13 systemd library delivery had). The shell's root is the ext4 rootfs it
-chroots into, so it survives `switch_root` (which only re-roots PID1).
-
-On the MacBook:
-
-```
-screen /dev/tty.usbmodemXXXX 115200      # or: cu -l /dev/cu.usbmodemXXXX
-```
-
-The port gives a root shell *inside the running Fedora/Nuxel system* plus the
-live kernel ring buffer streamed above the prompt, so `journalctl -b`,
-`systemctl --failed`, `lsmod`, `cat /dev/fb0`-adjacent inspections and controlled
-`reboot`/`poweroff` are all available without ever entering recovery.
-
-## 3. Why this is safe
-
-* Failure is caught and logged; the program returns a status and `init.sh`
-  continues. A gadget that cannot bind never costs a boot.
-* It runs before `switch_root`, so PID1 is still the initramfs shell and the
-  evidence path (`/dev/kmsg`) is guaranteed alive.
-* Nothing is written to USERDATA, RECOVERY, DTBO or the system partition.
-* The USB role is untouched: no writes to `/sys/class/usb_role`, no
-  `extcon` manipulation. If the controller is not already in device mode, bind
-  fails with a logged errno and the boot proceeds exactly as before.
-
-## 4. Fallback if the gadget cannot bind
-
-Already in place and unchanged: the persistent boot record. `init.sh` writes
-
-* `/run/nuxel-diag.log` (in-RAM),
-* `<rootfs>/nuxel-boot-diag.log` (survives the failed boot; read it from TWRP),
-* a raw copy in the unused tail of the BOOT partition (readable with `dd` alone),
-
-and the kernel ram console (`/proc/last_kmsg`) keeps the full kernel + systemd
-record.
-
-## 5. Status
-
-```
-MILESTONE_LIVE_USB_DIAGNOSTICS=IMPLEMENTED_NOT_YET_PROVEN_ON_HARDWARE
+```sh
+# raw, no CR translation, no echo
+stty -f /dev/cu.usbmodem201 115200 raw -echo
+cat /dev/cu.usbmodem201 &            # live kernel + Nuxel console stream
+printf 'systemctl --failed\r' > /dev/cu.usbmodem201
 ```
 
-The very first A17 boot is the test: the phone must enumerate on the MacBook as a
-CDC-ACM device and produce a shell. See `NEXT-ACTION.md`.
+`scripts/s10plus-debug-pack/` should grow a `nuxel-console-host.sh` wrapping exactly
+this, plus the `@@B@@/@@rc/@@E@@` marker protocol used for the acceptance capture
+(`captures/*A21-live-run/console-acceptance.txt`).
 
-## 6. A18 addition — a persistent boot report that does not need USB at all
+## Consequence for the workflow
 
-The USB console is the good path but it depends on the gadget binding and on
-someone being at the MacBook. A17's Forensics showed that the *only* reliable
-channel so far has been the kernel ram console, read from TWRP after the fact.
-
-A18's `nuxel-console` therefore forks a **reporter child first, before any USB
-work** (`--no-report` disables it). It chroots into the real Fedora root and, once
-systemd is up, appends the answers to the questions that matter into
-
-```
-<rootfs>/var/log/nuxel-bootreport.txt
-```
-
-* `systemctl is-system-running`, `systemctl --failed`, running services
-* `journalctl -b -p warning` and **the count of `Failed to spawn executor`**
-* `/sys/fs/cgroup/cgroup.controllers` and `/proc/self/cgroup`
-* `/var/lib/nuxel/boot-stage` and `animation`
-* the full `nuxel-hwprobe` dump (identity, framebuffer, input inventory, DRM
-  presence/absence, power supplies)
-
-Because it is a forked child started before the gadget attempt, it survives a
-failed UDC bind, a missing `/dev/ttyGS0`, a broken USB link and a hang in the
-shell. Because it writes into the ext4 root, it is readable from TWRP with one
-mount — so even a completely headless failure leaves a complete report.
-
-Validated offline: the embedded script passes `sh -n` and `bash -n` (a real
-execution in the container is blocked only by the container's own
-`/var/log` permissions).
+Routine userspace development can now move off TWRP: the phone can be inspected,
+patched and re-tested live while the boot animation plays. TWRP stays for recovery and
+kernel/BOOT replacement only, exactly as the mission requires.

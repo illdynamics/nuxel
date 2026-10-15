@@ -1,0 +1,74 @@
+NUXEL_HOSTPROBE hello-from-mac
+[?2004lsh: NUXEL_HOSTPROBE: command not found
+[?2004hnuxel-s10+ # 6,7010,121831231,-;[SSP]: debug_work_func(0) - Sensor state: 0x3feff, RC: 0(0, 0, 0), CC: 0, TC: 0 NSC: 0 EC: 0 GPS: false
+6,7011,122246049,-;s3c2410-wdt 10050000.watchdog_cl0: Watchdog cluster 0 keepalive!, wtcnt = fff5
+ SUBSYSTEM=platform
+ DEVICE=+platform:10050000.watchdog_cl0
+6,7012,122246088,-;Watchdog: s3c2410wdt_keepalive RTC 2026-09-15 00:01:53 UTC
+2,7013,122246163,-;watchdog: watchdog0: watchdog did not stop!
+6,7014,122246193,-;s3c2410-wdt 10050000.watchdog_cl0: Watchdog cluster 0 keepalive!, wtcnt = fff5
+ SUBSYSTEM=platform
+ DEVICE=+platform:10050000.watchdog_cl0
+6,7015,122246216,-;Watchdog: s3c2410wdt_keepalive RTC 2026-09-15 00:01:53 UTC
+6,7016,122841454,-;[FG] 0080h,ff9bh,7f80h,ff01h,1900h,0f88h,6400h,5f05h,2300h,d870h,000dh,0004h,001dh,696eh,64dah,0fa9h,0f8ch,ffffh,3200h,5f00h,0242h,0148h,235ch,003dh,0f76h,d87dh,2713h,d89eh,18f3h,0314h,0500h,0f8dh,0000h,6200h,1c00h,0eb2h,1403h,1e05h,2388h,7f28h,2616h,cea4h,043ch,0890h,e3e1h,290eh,0400h,0001h,31f7h,587eh,0b82h,ffffh,1e4bh,0f88h,0c0fh,05e0h,0038h,1527h,a7e2h,0142h,1680h,1408h,066ch,e000h,07fch,0002h,0902h,026ch,d872h,00b2h,0977h,0124h,682fh,2241h,0f7eh,02bah,0f90h,0f9ch,7a60h,0fa9h,0000h,6c56h,0006h,2f81h,7f80h,0005h,0a2ch,0647h,0000h,006bh,090ch,0055h,0003h,0204h,000eh,0000h,04d8h,0000h,0000h,0000h,0000h,0000h,0000h,0000h,0000h,0000h,0000h,0010h,001dh,ffffh,64d4h,0f8ch,1dd3h,0005h,e484h,05e0h,3c80h,0000h,00b4h,0002h,4b4eh,0008h,46a8h,0000h,4000h,0000h,7d00h,0620h,ffffh,ffffh,ffffh,ffffh,20a8h,0000h,0000h,fd3ch,3f94h,5bfah,fffch,d87bh,002eh,2913h,d870h,684ah,
+6,7017,122842806,-;max77705_fg_read_isys: isys_current=171mA
+6,7018,122843030,-;max77705_fg_read_isys_avg: isys_avg_current=217mA
+6,7019,122843431,-;max77705_fg_read_vsys: VSYS(4333), data(0x6c56)
+7,7020,122843762,-;max77705_fg_read_iin: iin_current=155mA
+6,7021,122844138,-;max77705_fg_read_vbyp: VBYP(5183), data(0x2f81)
+6,7022,122844492,-;max77705_fg_read_qh : QH(3996000)
+6,7023,122844517,-;[FG power] ISYS(171mA),ISYSAVG(217mA),VSYS(4333mV),IIN(155mA),VBYP(5183mV) QH(3996000 uah)
+7,7024,122844875,-;max77705_fg_read_current: current=-3mA
+6,7025,122845611,-;max77705_fg_read_vcell: VCELL(4330)mV, data(0xd882)
+7,7026,122845636,-;max77705_fg_read_avg_current: avg_current=1mA
+6,7027,122847113,-;sec-battery battery: sec_bat_get_value_by_adc:[2] Temp(347), Temp-ADC(1596)
+ SUBSYSTEM=platform
+ DEVICE=+platform:battery
+6,7028,122847877,-;sec-battery battery: sec_bat_get_value_by_adc:[12] Temp(341), Temp-ADC(1610)
+ SUBSYSTEM=platform
+ DEVICE=+platform:battery
+6,7029,122848593,-;sec-battery battery: sec_bat_get_value_by_adc:[6] Temp(367), Temp-ADC(1488)
+ SUBSYSTEM=platform
+ DEVICE=+platform:battery
+6,7030,122849402,-;sec-battery battery: sec_bat_get_value_by_adc:[10] Temp(347), Temp-ADC(1597)
+ SUBSYSTEM=platform
+ DEVICE=+platform:battery
+7,7031,122849568,-;max77705_fg_write_temp: temperature to (347, 0x22b3)
+7,7032,122850431,-;max77705_fg_read_avg_current: avg_current=1mA
+7,7033,122850442,-;max77705_get_fuelgauge_soc: soc(1000)
+6,7034,122850453,-;max77705_fg_get_scaled_capacity : capacity_max (1000) scaled capacity(100.0), raw_soc(100.0)
+7,7035,122850677,-;max77705_fg_read_rawsoc: raw capacity (0.01%) (10000)
+6,7036,122851113,-;max77705_fg_read_qh : QH(3996000)
+7,7037,122851127,-;max77705_fg_get_atomic_capacity : NOW(100), OLD(100)
+6,7038,122851143,-;sec_bat_get_battery_info:Vnow(4328mV),Vavg(4329mV),Inow(-3mA),Iavg(1mA),Isysavg(217mA),Imax(3000mA),Ichg(2850mA),SOC(100%),Tbat(347),Tusb(341),Tchg(367),Twpc(347)
+6,7039,122851173,-;sec_bat_check_step_charging
+6,7040,122851190,-;sec-battery battery: sec_bat_check_recharge: recharging voltage (4280)
+ SUBSYSTEM=platform
+ DEVICE=+platform:battery
+6,7041,122851204,-;sec_bat_swelling_check: swelling highblock(410), highrecov(390)
+7,7042,122852198,-;max77705_get_float_voltage: battery cv reg : 0x13, float voltage val : 4350
+6,7043,122852221,-;sec_bat_swelling_check: status(Full), swell_mode(Swelling None), chg_block(1), low_temp_event(0x0), vfloat(4350)mV, temp(347)'C
+6,7044,122852241,-;sec_bat_set_current_event: current event before(0x100), after(0x100)
+6,7045,122852258,-;sec_bat_check_mix_temp: mix_limit(0), temp(347), chg_temp(367), input_current(3000)
+6,7046,122852269,-;sec_bat_check_pdic_temp: cable_type(19), chg_limit(0)
+6,7047,122852280,-;sec_bat_get_charging_current_by_siop: incurr(3000), chgcurr(2850)
+6,7048,122854850,-;fps_qbt2000_work_func_debug: ldo:0,ipc:0,wuhb:0,tz:1,type:qbt2000,int:0,0
+6,7049,122877513,-;max77705 : [0xb1]0x1a, [0xb2]0xdf, [0xb3]0xe0, [0xb4]0x38, [0xb5]0x00, [0xb6]0xff, [0xb7]0x14, [0xb8]0x38, [0xb9]0x79, [0xba]0x9d, [0xbb]0x13, [0xbc]0x6c, [0xbd]0x6c, [0xbe]0x34, [0xbf]0x02, [0xc0]0xf7, [0xc1]0x14, [0xc2]0x00, [0xc3]0x68, 
+6,7050,122879116,-;max77705_chg_monitor_work: [CHG] MODE(0x4), B2SOVRC(0xc), otg_on(0)
+6,7051,122879170,-;sec_bat_monitor_work: Status(Full), mode(None), Health(Good), Cable(PDIC, PDIC, 0, 0), rp(3), level(100%), lcd(0), slate_mode(0), store_mode(0), HV(PDIC, 0), sleep_mode(0), Cycle(-1)
+6,7052,122879208,-;sec-battery battery: sec_bat_set_polling: Polling time 30/30 sec.
+ SUBSYSTEM=platform
+ DEVICE=+platform:battery
+6,7053,122879282,-;sec_bat_get_property cable type = 19 sleep_mode = 0
+7,7054,122879531,-;max77705_fg_read_current: current=-3mA
+7,7055,122879974,-;max77705_fg_read_avg_current: avg_current=1mA
+12,7056,127173640,-;NUXEL_ANIM_LOOP=15
+12,7057,127677179,-;NUXEL_ANIM_HEARTBEAT_FRAMES=2880
+12,7058,127677198,-;NUXEL_ANIM_HEARTBEAT_MS=119998
+12,7059,127677268,-;NUXEL_ANIM_HEARTBEAT_SKIPS=0
+12,7060,127677277,-;NUXEL_ANIM_HEARTBEAT_LOOPS=15
+12,7061,127677284,-;NUXEL_ANIM_EXPECTED_MS=118080
+6,7062,127975160,-;[SSP]: debug_work_func(0) - Sensor state: 0x3feff, RC: 0(0, 0, 0), CC: 0, TC: 0 NSC: 0 EC: 0 GPS: false
+6,7063,130023034,-;sec_ts 4-0048: [sec_input] mode:0202 tc:0 noise:0 wet:0 wc:0 lp:(0) D0C000 fn:0061/0061 // v:0233 cal:A2(00) C01T0226.LCIA.L Cal_flag:Success fail_cnt:0 // id(0,0) // #5 5
+ SUBSYSTEM=i2c
+ DEVICE=+i2c:4-0048

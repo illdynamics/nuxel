@@ -1,0 +1,113 @@
+
+@@@ CMD: echo BEFORE; cat /sys/class/graphics/fb0/blank; echo 0 > /sys/class/graphics/fb0/blank; echo 'unblank-write-rc='$?; cat /sys/class/graphics/fb0/blank; dmesg | grep -c 'UNBLANK missed'; sleep 2; dmesg | grep 'UNBLANK missed' | tail -2
+echo BEFORE; cat /sys/class/graphics/fb0/blank; echo 0 > /sys/class//graphics/fb0/blank; echo 'unblank-write-rc='$?; cat /sys/class/graphics/fb0/blannk; dmesg | grep -c 'UNBLANK missed'; sleep 2; dmesg | grep 'UNBLANK missed' | taail -2
+[?2004lBEFORE
+unblank-write-rc=0
+6,8954,338840555,-;PANEL:INFO:panel_fb_notifier:EARLY UNBLANK
+3,8955,338840577,-;[STUI] stui_notifier_callback is not state TUI
+6,8956,338840590,-;[SSP] copr_fb_notifier_callback: early_blank = 1, fb_blank = 0
+6,8957,338840604,-;decon-0 UNBLANK mode: 0 type (0: DSI, 1: eDP, 2:DP, 3: WB)
+6,8958,338840619,-;decon-0 decon_enable +
+4,8959,338840638,-;exynos-decon 19030000.decon_f: pm_stay_awake
+ SUBSYSTEM=platform
+ DEVICE=+platform:19030000.decon_f
+6,8960,338840804,-;dsim-0 dsim_enable +
+6,8961,338841277,-;PANEL:INFO:panel_core_ioctl:PANEL_IOC_SET_POWER
+6,8962,338842067,-;PANEL:INFO:panel_regulator_set_short_detection:set regulator(elvss) SSD:2000uA, state:1 enable:true
+6,8963,338842911,-;enable regulator(0:vdd5)
+6,8964,338843733,-;enable regulator(1:vdd2)
+6,8965,338845413,-;enable regulator(2:vdd1)
+6,8966,338860688,-;__set_panel_power, power(on) gpio_reset(high)
+6,8967,338860700,-;panel_power_on panel_state:OFF -> ON
+6,8968,338861101,-;PANEL:INFO:panel_core_ioctl:PANEL_IOC_SLEEP_OUT
+6,8969,338861116,-;PANEL:INFO:panel_sleep_out:ub connected
+6,8970,338866369,-;getidx_resolution_table : mres_mode : 1
+6,8971,338876823,-;========== SHOW PANEL [0Fh:SELF_DIAG] INFO ==========
+6,8972,338876835,-;* Reg Value : 0x80, Result : GOOD
+6,8973,338876840,-;=====================================================
+6,8974,338877251,-;getidx_resolution_table : mres_mode : 1
+6,8975,338877519,-;getidx_resolution_table : mres_mode : 1
+6,8976,338877648,-;getidx_resolution_table : mres_mode : 1
+6,8977,338879161,-;==============================================
+6,8978,338879173,-;[00h]  0x05 0x3F 0x3F 0x00 0x00 0x00 0x00 0x00
+6,8979,338879183,-;[08h]  0x00 0x00 0x03 0x3F 0x00 0x00 0x00 0x00
+6,8980,338879192,-;[10h]  0x05 0x9F 0x00 0x53 0x00 0x00 0x00 0x54
+6,8981,338879200,-;[18h]  0x05 0x9F 0x00 0xB8 0x00 0x00 0x00 0xB9
+6,8982,338879209,-;[20h]  0x05 0x9F 0x0A 0xE7 0x00 0x00 0x0A 0xE8
+6,8983,338879218,-;[28h]  0x05 0x9F 0x0B 0x8F 0x03 0xC9 0x00 0xA5
+6,8984,338879226,-;[30h]  0x03 0xF0 0x00 0xC5 0x03 0xC9 0x00 0xA5
+6,8985,338879233,-;[38h]  0x03 0xF0 0x00 0xC5
+6,8986,338879238,-;==============================================
+6,8987,338879280,-;aod_init_panel was called
+6,8988,338879975,-;PANEL:INFO:__panel_seq_init:check disp det .. success
+6,8989,338879982,-;panel_sleep_out panel_state:ON -> NORMAL
+6,8990,338879989,-;dsim-0 dsim_enable - (state:OFF -> ON)
+6,8991,338880078,-;xres 1440 yres 3040 win_start_pos 0 win_end_pos bdf059f
+6,8992,338880085,-;pixel_count(4377600), whole_w(1440), whole_h(3040), x(0), y(0)
+6,8993,338880161,-;decon-0 decon_enable - (state:OFF -> ON)
+6,8994,338880167,-;decon_blank -
+6,8995,338880221,-;PANEL:INFO:panel_fb_notifier:UNBLANK
+6,8996,338880232,-;sec_ts 4-0048: [sec_input] sec_ts_start_device
+ SUBSYSTEM=i2c
+ DEVICE=+i2c:4-0048
+6,8997,338880245,-;sec_ts 4-0048: [sec_input] sec_ts_pinctrl_configure: ACTIVE
+ SUBSYSTEM=i2c
+ DEVICE=+i2c:4-0048
+3,8998,338880257,-;sec_ts 4-0048: [sec_input] sec_ts_start_device: already power on
+ SUBSYSTEM=i2c
+ DEVICE=+i2c:4-0048
+3,8999,338880267,-;sec_ts 4-0048: [sec_input] sec_ts_input_open: Failed to start device
+ SUBSYSTEM=i2c
+ DEVICE=+i2c:4-0048
+6,9000,338880573,-;sec_ts 4-0048: [sec_input] sec_ts_set_temp temperature:32
+ SUBSYSTEM=i2c
+ DEVICE=+i2c:4-0048
+6,9001,338880611,-;sec_ts 4-0048: [sec_input] mode:0202 tc:0 noise:0 wet:0 wc:0 lp:(0) D0C000 fn:0061/0061 // v:0233 cal:A2(00) C01T0226.LCIA.L Cal_flag:Success fail_cnt:0 // id(0,0) // #1 1
+ SUBSYSTEM=i2c
+ DEVICE=+i2c:4-0048
+6,9002,338880635,-;[SSP] copr_fb_notifier_callback: early_blank = 0, fb_blank = 0
+3,9003,338880643,-;[SSPBBD]: ssp_down == true. returning
+6,9004,338885521,-;sec_ts 4-0048: [sec_input] sec_ts_read_event: STATUS 1d 3 2 2 8 0 0 0
+ SUBSYSTEM=i2c
+ DEVICE=+i2c:4-0048
+3,9005,338885658,-;[SSP]: ssp_send_cmd - command 0xd1 failed -1
+3,9006,338885690,-;mdnie mdnie: mdnie is off state
+ SUBSYSTEM=mdnie
+ DEVICE=+mdnie:mdnie
+6,9007,338895283,-;PANEL:INFO:panel_core_ioctl:FRAME_DONE (panel_state:NORMAL, display on)
+6,9008,338895299,-;panel_set_mdnie, do mdnie-seq (mode:scenario, afc:off)
+6,9009,338895451,-;getidx_mdnie_trans_mode_maptbl mdnie trans_mode off
+6,9010,338895532,-;mdnie mdnie: mdnie_enable: done
+ SUBSYSTEM=mdnie
+ DEVICE=+mdnie:mdnie
+6,9011,338895581,-;copr_enable +
+6,9012,338895586,-;copr_enable -
+6,9013,338895611,-;panel_condition_handler: after normal disp on
+6,9014,338895702,-;========== SHOW PANEL [0Ah:RDDPM] INFO ==========
+6,9015,338895707,-;* Reg Value : 0x9c, Result : GOOD
+6,9016,338895711,-;* Bootster Mode : ON (GD)
+6,9017,338895714,-;* Idle Mode     : OFF (GD)
+6,9018,338895718,-;* Partial Mode  : OFF
+6,9019,338895721,-;* Sleep Mode    : OUT (GD)
+6,9020,338895724,-;* Normal Mode   : OK (GD)
+6,9021,338895727,-;* Display ON    : ON (GD)
+6,9022,338895730,-;=================================================
+6,9023,338896043,-;show_copr_value: copr(frame_cnt=1) -> cur:0 avg:511 roi:0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+1289
+6,9024,339211686,-;panel_condition_handler: check normal in 100frames
+6,9025,339213007,-;show_copr_value: copr(frame_cnt=10) -> cur:3 avg:3 roi:0 2 0 0 2 0 21 15 12 0 3 0 0 3 0
+[  338.786267] decon_pan_display: decon0 state(6), UNBLANK missed
+[  338.825845] decon_pan_display: decon0 state(6), UNBLANK missed
+[?2004hnuxel-s10+ # echo @@E@@
+[?2004l@@E@@
+[?2004hnuxel-s10+ # 12,9026,342059500,-;NUXEL_ANIM_LOOP=42
+6,9027,342305887,-;s3c2410-wdt 10050000.watchdog_cl0: Watchdog cluster 0 keepalive!, wtcnt = fff5
+ SUBSYSTEM=platform
+ DEVICE=+platform:10050000.watchdog_cl0
+6,9028,342305922,-;Watchdog: s3c2410wdt_keepalive RTC 2026-09-15 00:05:33 UTC
+2,9029,342305976,-;watchdog: watchdog0: watchdog did not stop!
+6,9030,342306010,-;s3c2410-wdt 10050000.watchdog_cl0: Watchdog cluster 0 keepalive!, wtcnt = fff4
+ SUBSYSTEM=platform
+ DEVICE=+platform:10050000.watchdog_cl0
+6,9031,342306029,-;Watchdog: s3c2410wdt_keepalive RTC 2026-09-15 00:05:33 UTC
+6,9032,342759073,-;fps_qbt2000_work_func_debug: ldo:0,ipc:0,wuhb:0,tz:1,type:qbt2000,int:0,0

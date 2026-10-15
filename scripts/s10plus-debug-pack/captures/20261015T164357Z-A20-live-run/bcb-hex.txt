@@ -1,0 +1,16 @@
+=== misc[0..128] ===
+od: invalid option -- t
+BusyBox v1.22.1  (2021-03-19 10:37 +0200) multi-call binary.
+
+Usage: od [-aBbcDdeFfHhIiLlOovXx] [FILE]
+
+Print FILE (or stdin) unambiguously, as octal bytes by default
+
+=== param[0..128] ===
+od: invalid option -- t
+BusyBox v1.22.1  (2021-03-19 10:37 +0200) multi-call binary.
+
+Usage: od [-aBbcDdeFfHhIiLlOovXx] [FILE]
+
+Print FILE (or stdin) unambiguously, as octal bytes by default
+

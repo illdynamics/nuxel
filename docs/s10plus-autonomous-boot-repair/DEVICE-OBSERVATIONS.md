@@ -497,3 +497,81 @@ record `TOUCHSCREEN=FAILED` from an LPM boot.
 
 `grep -cE '^CONFIG_.*=m$'` on the kernel config is **0** — nothing is built as a
 module. The `modprobe@drm.service` failure in A16 was therefore always a no-op.
+
+---
+
+# CYCLE 9 HARDWARE OBSERVATIONS (A21/A22, 2026-10-15)
+
+## The panel and its framebuffer (measured in Nuxel, kernel #7, not in TWRP)
+
+```
+NUXEL_ANIM_FB_WIDTH=1440  HEIGHT=3040  VIRTUAL_HEIGHT=6080  STRIDE=5760  BPP=32  BUFFERS=2
+NUXEL_ANIM_FB_RED_OFF=16  RED_LEN=8   GREEN_OFF=8 GREEN_LEN=8   BLUE_OFF=0 BLUE_LEN=8
+NUXEL_ANIM_FB_TRANSP_OFF=24 TRANSP_LEN=8
+smem_start=0x10000000  smem_len=35020800 (= 5760 × 6080, two buffers)
+```
+TWRP reports the identical layout, so the two kernels agree and the TWRP pre-flight
+measurements are representative of the production display path.
+
+## arm64 fcntl values on this board (a standing trap)
+
+```
+O_DIRECTORY = 040000 (16384)      O_NOFOLLOW = 0100000      O_DIRECT = 0200000 (0x10000)
+```
+`arch/arm64/include/uapi/asm/fcntl.h` overrides the asm-generic values, and glibc for
+aarch64 matches. **`0x10000` is `O_DIRECT`, not `O_DIRECTORY`.** procfs rejects `O_DIRECT`
+with `EINVAL`, which is why a "directory open" failed on `/proc` and on the Fedora state
+directory. Any freestanding Nuxel tool must use `040000` or a plain `O_RDONLY`.
+
+## DECON lifecycle
+
+* `FBIOBLANK(FB_BLANK_UNBLANK)` + `FBIOPUT_VSCREENINFO(activate=NOW)` + `FBIOPAN_DISPLAY`
+  all return 0 — the driver accepts the commit, and `FRAME_DONE (panel_state:NORMAL,
+  display on)` follows.
+* **Any `close()` of the last `/dev/fb0` fd disables the display** (`decon_release`), and
+  after that every pan fails with `UNBLANK missed`. Recovery requires
+  `FBIOPUT_VSCREENINFO`; `fb_blank(UNBLANK)` alone re-powers the panel but does not
+  restart the pan path.
+* `/sys/class/graphics/fb0/blank` exists but reads empty on this kernel.
+
+## Ram console behaviour
+
+The `/proc/last_kmsg` ring is ~2 MB and text-formatted. On A20 the 4 Hz painter spam
+(16 244 lines in 325 s) evicted everything before t≈569 s, which is why the boot's own
+`NUXEL_*` markers were never visible in a capture. On A21 the ring keeps the boot's
+evidence because the painter is deferred — but the ring still only holds the tail
+(≈40 heartbeat lines), so the **persistent journal** remains the primary source:
+
+```
+journalctl -D <mounted rootfs>/var/log/journal -b 0     # recovered the A20 boot in full
+```
+
+A 2026-10-15 addition: journald derives a syslog identifier by splitting the kernel
+message at the first `": "`, which is why `/dev/kmsg` lines appear as
+`nuxel-init: …`, `NUXEL_FB_INFO: …` or `unknown: …`. Numeric lines from the (now fixed)
+`wrn/wru` helpers appear as `unknown:` and are greppable by their tag.
+
+## Readings taken live on A21
+
+```
+root mount        /dev/sda31 ext4 rw,relatime,errors=remount-ro,data=ordered
+cgroup2           rw,relatime,nsdelegate            (unified hierarchy, as systemd 258 needs)
+systemctl --failed            0 loaded units
+systemd-journald/udevd/dbus   active
+/dev/ttyGS0                   crw------- 243,0
+/sys/class/udc/               10c00000.dwc3
+sec_ts                        still refuses to start: ssp_down == true (input driver open path)
+uptime                        219 s at first inspection, gadget up the whole time
+```
+
+## The A21 run's end
+
+```
+Internal error: Oops - BUG: 0 [#1] PREEMPT SMP
+pc : hard_reset_hook_callback+0x144/0x150     <- the operator's POWER+VOLUMEDOWN hook
+Kernel panic - not syncing: Fatal exception in interrupt -> sec_reboot (0, panic)
+```
+t=400 s. Identical signature to the A20 run's end, and *not* a spontaneous fault: this is
+the vendor's deliberate hard-reset hook (`brk #0`) used by the operator to return the
+handset to TWRP. A Nuxel attempt that ends this way must be classified as
+`FAILED_USER_RETURNED_TO_TWRP`, and it must never be reported as a kernel crash.

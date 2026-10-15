@@ -1,0 +1,16 @@
+drwxr-xr-x    2 root     root          4096 Jan  4 12:26 .
+drwxr-xr-x   17 root     root          4096 Jan  4 10:19 ..
+-rw-r--r--    1 root     root            29 Jan  4 12:26 animation
+-rw-r--r--    1 root     root            38 Jan  4 12:26 boot-context
+-rw-r--r--    1 root     root            22 Jan  4 12:26 boot-stage
+-rw-------    1 root     root            26 Jan  4 12:26 fb-anim-ready
+-rw-------    1 root     root            15 Jan  4 12:26 fb-anim-starting
+-rw-------    1 root     root             5 Jan  4 12:26 fb-anim.pid
+-rw-r--r--    1 root     root            41 Jan  4 11:47 fb-hold.pid
+/mnt/nx/var/lib/nuxel/animation=ANIM_STAGE=MP4_PLAYER_ACTIVE
+/mnt/nx/var/lib/nuxel/boot-context=root=/dev/sda31 device=s10plus slot=a
+/mnt/nx/var/lib/nuxel/boot-stage=STAGE=SYSTEM_STARTING
+/mnt/nx/var/lib/nuxel/fb-anim-ready=MP4_FIRST_FRAME_COMMITTED
+/mnt/nx/var/lib/nuxel/fb-anim-starting=PLAYER_RUNNING
+/mnt/nx/var/lib/nuxel/fb-anim.pid=3500
+/mnt/nx/var/lib/nuxel/fb-hold.pid=unresolved-by-shell(player-publishes-it)

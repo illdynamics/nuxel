@@ -1,0 +1,40 @@
+MOUNT_RC=0
+drwxr-xr-x   20 root     root          4096 Jan  4 06:04 .
+drwxr-xr-x    4 root     system          80 Jan  4 11:09 ..
+drwxr-xr-x    2 root     root          4096 Jan  4 10:19 .nuxel-patches
+dr-xr-xr-x    2 root     root          4096 Jul 30  2025 afs
+lrwxrwxrwx    1 root     root             7 Jul 30  2025 bin -> usr/bin
+dr-xr-xr-x    2 root     root          4096 Jul 30  2025 boot
+drwxr-xr-x    2 root     root          4096 Oct 14  2026 dev
+drwxr-xr-x   69 root     root          4096 Oct 14  2026 etc
+drwxr-xr-x    3 root     root          4096 Oct 14  2026 home
+lrwxrwxrwx    1 root     root             7 Jul 30  2025 lib -> usr/lib
+lrwxrwxrwx    1 root     root             9 Jul 30  2025 lib64 -> usr/lib64
+drwx------    2 root     root         16384 Oct 14  2026 lost+found
+drwxr-xr-x    3 root     root          4096 Jan  3 11:52 media
+drwxr-xr-x    2 root     root          4096 Jul 30  2025 mnt
+-rw-r--r--    1 root     root          3193 Jan  4 10:36 nuxel-boot-diag.log
+drwxr-xr-x    2 root     root          4096 Jul 30  2025 opt
+dr-xr-xr-x    2 root     root          4096 Oct 14  2026 proc
+dr-xr-x---    2 root     root          4096 Jul 30  2025 root
+drwxr-xr-x    7 root     root          4096 Oct 14  2026 run
+lrwxrwxrwx    1 root     root             8 Jul 30  2025 sbin -> usr/sbin
+drwxr-xr-x    2 root     root          4096 Jul 30  2025 srv
+dr-xr-xr-x    3 root     root          4096 Jan  4 08:10 sys
+drwxrwxrwt    3 root     root          4096 Sep 15  2026 tmp
+drwxr-xr-x   13 root     root          4096 Oct 14  2026 usr
+drwxr-xr-x   18 root     root          4096 Oct 14  2026 var
+=== var/log ===
+drwxr-xr-x    3 root     root          4096 Jan  4 10:19 .
+drwxr-xr-x   18 root     root          4096 Oct 14  2026 ..
+-rw-r--r--    1 root     root        179770 Oct 14  2026 dnf5.log
+-rw-r--r--    1 root     root       1048774 Oct 14  2026 dnf5.log.1
+drwxr-xr-x    3 root     root          4096 Sep 15  2026 journal
+-rw-r--r--    1 root     root         16134 Sep 15  2026 nuxel-bootreport.txt
+=== var/lib/nuxel ===
+drwxr-xr-x    2 root     root          4096 Jan  4 10:19 .
+drwxr-xr-x   17 root     root          4096 Jan  4 10:19 ..
+-rw-r--r--    1 root     root            23 Jan  4 10:36 animation
+-rw-r--r--    1 root     root            38 Jan  4 10:36 boot-context
+-rw-r--r--    1 root     root            22 Jan  4 10:36 boot-stage
+-rw-r--r--    1 root     root             1 Jan  4 10:36 fb-hold.pid

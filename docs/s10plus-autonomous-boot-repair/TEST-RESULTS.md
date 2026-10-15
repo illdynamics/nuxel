@@ -274,3 +274,62 @@ successfully or the shell/keeper are still not attached. **The ram console will 
 which** (`nuxel-console: created /dev/ttyGS0 from …` vs
 `waiting for /dev/ttyGS0 / /sys/class/tty/ttyGS0/dev` vs `never became available`,
 plus `shell tty fd=…`). Do not guess further until that is read.
+
+---
+
+# CYCLE 9 — A21 (2026-10-15) — the cycle that made every number readable
+
+## Offline (no handset)
+
+| Test | Command | Result |
+|---|---|---|
+| Decoder still bit-exact after every A21/A22 edit | `cc -DNUXEL_HOST … nuxel-anim-player.c` vs an independent Python decoder, 192 frames | **PASS 192/192** (`scratch/a21-c-crc.txt == a21-py-crc.txt`) |
+| Colour conversion faithful, ARGB8888 | `tools/s10plus/test-anim-colour.sh` | **PASS** max channel error 0 |
+| Colour conversion faithful, ABGR8888 | same | **PASS** max channel error 0 |
+| A20 conversion explains the photograph | same | **PASS** frame 0 mean red 38.2 vs mean blue 0.0 |
+| Artwork has no red background | same | **PASS** 0.17 % red pixels, 2.04 % blue |
+| Release gate refuses a bad image | `build-candidate.sh` on a cpio with dev nodes already present | **PASS (fail-closed)** — refused with "duplicate member 'dev/console'" |
+
+## On hardware, in TWRP (pre-flash validation of the exact shipping binaries)
+
+| Test | Result |
+|---|---|
+| First-light renderer runs, prints real geometry | PASS — `red.off=0x10 green.off=0x8 blue.off=0x0`, `stride=5760`, `smem_len=35020800`, `BUFFERS_PAINTED=2` |
+| Deterministic colour round-trip in framebuffer memory | PASS — R/G/B/W/K expected == readback for all five |
+| Driver accepts the commit | PASS — `UNBLANK_rc=0 ACTIVATE_rc=0 PAN_rc=0` |
+| Resident painter publishes its own pid | PASS — `fb-hold.pid=5229` |
+| Player finds it by identity and kills it | PASS — `TAKEOVER_PID=5229`, `KILLED=1`, `STOPPED=1` (bounded ≤1 s, re-verified via `/proc/<pid>/comm`) |
+| State files land in the state directory | PASS — all five files created **in the statedir**, not in `/` |
+| Playback rate | PASS — 145 frames / 6 s = 24.2 fps, `LAG_SKIPS=0`, `LOOPS=1` |
+| `git`-independent proof the fix is in the binary | the shipped player's `PAL0_SRC565=65535 → DST=16777215` and the EINVAL/plain-open pair |
+
+## On hardware, A21 boot (kernel #7) — live over the USB console
+
+| Test | Result |
+|---|---|
+| `NUXEL_INIT_REV=A21-one-penguin-correct-colours` | PASS — the A21 init ran |
+| First light then MP4 takeover | PASS — `FIRSTLIGHT exit=0`, `ANIMATION_HOLD_DEFERRED`, `FIRST_FRAME_COMMITTED` at t=7.60 s, `ANIM_STAGE=MP4_PLAYER_ACTIVE` |
+| Exactly one renderer | PASS — `pgrep -a nuxel-fb-phone` → NO_PENGUIN_PAINTER_RUNNING throughout |
+| Playback rate, whole run | PASS — 39 heartbeats × 240 frames; `SKIPS=0` every time; 5520 frames / 229.97 s = **24.00 fps** |
+| Panel colour layout re-measured in Nuxel (not TWRP) | PASS — `RED_OFF=16 GREEN_OFF=8 BLUE_OFF=0 TRANSP_OFF=24` |
+| `uname -a` / `id` / `/etc/os-release` / `systemctl --failed` | PASS — kernel #7, uid=0, Fedora 43, **0 failed units** |
+| exit status propagation | PASS — `false; echo $?` → 1 |
+| cgroup v2 in the final namespace | PASS — `cgroup2 rw,relatime,nsdelegate` |
+| rootfs mounted rw | PASS — `/dev/sda31 ext4 rw,relatime,errors=remount-ro,data=ordered` |
+| journald / udevd / dbus-broker | PASS — `active` |
+| `/dev/ttyGS0` exists, UDC bound | PASS — char 243:0, `10c00000.dwc3` |
+| **The operator's visual verdict** | **FAILED — returned to TWRP at t=400 s** (see below) |
+| Cause of the run's end | operator hard-reset hook (`hard_reset_hook_callback+0x144`, `brk #0`), not a fault of the candidate |
+
+## The one honest negative
+
+The operator returned the phone to TWRP, so A21 is recorded as a **failed attempt** under
+the standing agreement. Two facts must be kept separate:
+
+* the candidate did what it claimed *in every measurable way* — MP4 frames at 24.00 fps,
+  0 drops, one renderer, state files correct, live console working;
+* the observation window was degraded **by our own diagnostics**: a `dd if=/dev/fb0`
+  released the DECON and left 1279 pans failing, and a second short player instance
+  released it again. The panel was verifiably correct from t≈7.5 s to t≈321 s.
+* A22 therefore fixes the *observed* defect (self-healing re-assert) rather than
+  re-shipping A21 unchanged.

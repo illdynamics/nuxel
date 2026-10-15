@@ -1,0 +1,10 @@
+8:nuxel-init: FIRSTLIGHT hold started pid=
+--- first 6 lines ---
+nuxel-init: FB_NODE /dev/fb0 is a character device
+nuxel-init: FB_SYSFS /sys/class/graphics/fb0/name=
+nuxel-init: FB_SYSFS /sys/class/graphics/fb0/bits_per_pixel=32
+nuxel-init: FB_SYSFS /sys/class/graphics/fb0/stride=5760
+nuxel-init: FB_SYSFS /sys/class/graphics/fb0/virtual_size=1440,6080
+nuxel-init: FB_SYSFS /sys/class/graphics/fb0/modes=U:1440x3040p-0
+--- total lines ---
+21 /mnt/nx/nuxel-boot-diag.log

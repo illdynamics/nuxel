@@ -1,0 +1,82 @@
+# NEXT-ACTION — cycle 8 / candidate A20 (2026-10-15)
+
+```
+STATE              = AWAITING_BOOT_RESULT
+CANDIDATE          = A20
+BOOT.img sha256    = 8edd97b79b43e21bf411ce7645cc91635c25da8ee529b7e4ba6fabf23c9e2650
+KERNEL sha256      = cdb974a89068efe7cd623a0f1da718c853303edaf212adb7ebace2e93bc9e962 (Image-A20)
+REBOOT_AT          = 2026-10-15T17:02:31Z
+PERMANENT AGREEMENT: if the operator has returned the phone to TWRP, this attempt
+FAILED — capture the new evidence and continue. No further confirmation needed.
+```
+
+## 1. The one thing that is outstanding: the operator's eyes
+
+The mission is explicit — *"a `NUXEL_FB_DRAW_SUCCESS`-style log line is not proof
+of visible output. Only the operator's observation of the panel counts."*
+
+As of **17:05:49Z** the handset had been running for **3 min 18 s** after
+`REBOOT_AT`, with the Nuxel USB gadget staying enumerated the whole time
+(`/dev/cu.usbmodem201`). Previous candidates died in ~96 s and came back as TWRP.
+
+**Question for the operator:** on the S10+ AMOLED, is the **original Nuxel boot
+animation** playing (the dark, 8-second, 24 fps artwork from
+`assets/nuxel-boot-animation.mp4`, 1080×1920 scaled to 1440×2560 and centred on the
+1440×3040 panel), and does it **loop**?
+
+| Observation | Meaning | Next |
+|---|---|---|
+| the animation plays and loops | **PRIORITY ONE COMPLETE** | go to priority 2 (live console) |
+| the penguin/first-light screen is still there | the player did not take over | read `<userdata>/var/lib/nuxel/` (below) |
+| a black screen | player ran, panel/commit problem | read the `NUXEL_ANIM_*` lines |
+| the phone is still on TWRP / rebooted | boot failed | capture and continue |
+
+## 2. If TWRP is back, read these first
+
+Mount USERDATA read-only and read, in this order:
+
+1. `<userdata>/var/lib/nuxel/fb-anim.pid` — **present = the player started**.
+2. `<userdata>/var/lib/nuxel/animation` — `ANIM_STAGE=ORIGINAL_MP4_ANIMATION`.
+3. `<userdata>/var/lib/nuxel/fb-hold.pid` — the pid the player displaced (the
+   penguin). Empty = the player did not get as far as the takeover.
+4. `<userdata>/var/log/nuxel-bootreport.txt` — a new section per boot; the last
+   section's `state files` block repeats 1–3, and `running services` says whether
+   systemd got going.
+5. `/proc/last_kmsg` → look for, in order:
+   * `NUXEL_INIT_REV=A20-original-mp4-animation` — **proves the A20 init ran**
+     (the marker added after the three wasted A20 flashes);
+   * `NUXEL_MARKER FEDORA_MOUNTED`, `NUXEL_MARKER ORIGINAL_MP4_ANIMATION_STARTING`;
+   * `NUXEL_ANIM_PLAYER start`, `NUXEL_ANIM_FILE`, `NUXEL_ANIM_FB_WIDTH/HEIGHT/
+     VIRTUAL_HEIGHT/STRIDE/BPP/BUFFERS`;
+   * `NUXEL_ANIM_SRC_*` / `NUXEL_ANIM_DEST_*` (the fitted rect and its offset);
+   * `NUXEL_ANIM_TAKEOVER_KILLED` / `NUXEL_ANIM_TAKEOVER_PID` (the penguin);
+   * `NUXEL_ANIM_UNBLANK_rc` / `_ACTIVATE_rc` / `_PAN_rc` (0 = the Samsung driver
+     accepted the commit);
+   * `NUXEL_ANIM_MARKER FIRST_FRAME_COMMITTED`;
+   * any `NUXEL_ANIM_*` error token — each names the exact failure.
+
+## 3. Standing rules unchanged
+
+* Never overwrite RECOVERY. Never touch EFS/SEC_EFS, PIT, bootloader, radio, DTBO.
+* Longest-lived proof kernel stays at `debug-candidates/A19/Image-A19`; A16 stays
+  as the display regression test.
+* **New rule from `INITRAMFS-DELIVERY-ROOT-CAUSE.md`:** a BOOT-only flash is only
+  meaningful together with a kernel rebuilt against that candidate's initramfs.
+  `--compress` is cosmetic on this board.
+
+## 4. After priority one
+
+1. **Priority 2 — zero-byte console.** The gadget binds and survives; `/dev/ttyGS0`
+   never appears and the host receives 0 bytes. `NO UDC in /sys/class/udc` and
+   `configfs mount: No such file or directory` were seen in one A20 boot and
+   `waiting for /dev/ttyGS0` in others — the function instance is not being created
+   reliably. Probe target→host (`NUXEL_TX_PROBE`), then host→target
+   (`NUXEL_RX_PROBE`), then a full exchange, before any interactive shell. If CDC
+   ACM cannot be repaired cheaply, evaluate NCM/ECM + SSH (both `CONFIG_USB_CONFIGFS_*`
+   are =y).
+2. **Priority 3 — Fedora userspace.** The A18/A19 service-execution evidence still
+   stands; re-verify `systemctl --failed`, `journalctl -b`, udev, logind, D-Bus and
+   persistent logging from the live console once it works.
+3. **Priority 4 — interactive UI.** fbdev-native first (`PHONE-UI-HANDOFF.md`
+   Path B); the animation already stops only on an explicit signal, so the handoff
+   primitive exists. `sec_ts` still refuses to start (`ssp_down == true`).

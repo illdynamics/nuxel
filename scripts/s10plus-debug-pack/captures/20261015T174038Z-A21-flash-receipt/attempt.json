@@ -1,0 +1,32 @@
+{
+  "candidate": "A21",
+  "purpose": "ONE PENGUIN + CORRECT COLOURS + smooth playback: renderer-ownership handshake and driver-bitfield colour conversion for the ORIGINAL Nuxel MP4 boot animation",
+  "boot_img": "build/out/s10plus/debug-candidates/A21/boot.img",
+  "boot_img_bytes": 51587072,
+  "boot_img_sha256": "153807621cf9fa22c10edcd4f74078fc022cf55e5d3ed1e4940378b50a749173",
+  "kernel": "build/out/s10plus/debug-candidates/A21/Image-A21",
+  "kernel_bytes": 48781320,
+  "kernel_sha256": "e34b7b4bf2dfe4ecc626ff442a0cb1a2531623b19c95f45618b9766986ebc2b4",
+  "initramfs_cpio_sha256": "a492a385554b0aee21b6c5993c714f44d8f158906ef76a63bdd2a8298c738597",
+  "kernel_embedded_initramfs_verified": "gzip stream at offset 33809680 inflates to exactly the A21 cpio (8905080 bytes), byte-identical",
+  "nuxel_anim_player_sha256": "c35b2db4b309cb236880b63f02f9bf9c92356cde613e9b40ed47518ba1001903",
+  "nuxel_fb_phone_sha256": "8539cde1f2556206100320ae88ae060b3bd25f747c74bad26487975be3d19c62",
+  "animation_container_sha256_on_device": "7d296871f04a3d5ed18e77a5eaa99fe22dcf49f8a81f435ace80e22716f031b4",
+  "partitions_written": ["BOOT /dev/block/sda14 (dd in-place, full 51,587,072-byte SHA-256 readback verified)"],
+  "partitions_untouched": ["RECOVERY","USERDATA","EFS","SEC_EFS","PIT","bootloader","radio","DTBO"],
+  "boot_backup_before_write": ["backups/nuxel-adb/20261015T173839Z-R58M75KDB2X","backups/nuxel-adb/20261015T173846Z-R58M75KDB2X"],
+  "flash_readback": "PASS 153807621cf9fa22c10edcd4f74078fc022cf55e5d3ed1e4940378b50a749173",
+  "offline_validation": {
+    "decoder_bit_exact_vs_python": "192/192 frames PASS",
+    "colour_conversion_faithful_ARGB8888": "max channel error 0",
+    "colour_conversion_faithful_ABGR8888": "max channel error 0",
+    "A20_conversion_explains_red": "frame 0 mean red channel 38.2 vs mean blue 0.0 (ABGR layout)"
+  },
+  "hardware_prevalidation_in_twrp": {
+    "takeover_killed_resident_painter": 1,
+    "takeover_stopped_acknowledged": 1,
+    "frames_drawn_6s": 145,
+    "lag_skips": 0,
+    "state_files_written_to_statedir": true
+  }
+}

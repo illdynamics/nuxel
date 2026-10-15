@@ -1,0 +1,16 @@
+ls: /data/var/lib/nuxel/: No such file or directory
+--- ui-build ---
+cat: can't open '/data/var/lib/nuxel/ui-build': No such file or directory
+--- ui-stage ---
+cat: can't open '/data/var/lib/nuxel/ui-stage': No such file or directory
+--- ui-fb-ready ---
+cat: can't open '/data/var/lib/nuxel/ui-fb-ready': No such file or directory
+--- animation ---
+cat: can't open '/data/var/lib/nuxel/animation': No such file or directory
+--- ui.log ---
+tail: can't open '/data/var/lib/nuxel/ui.log': No such file or directory
+tail: no files
+--- ui.pid ---
+cat: can't open '/data/var/lib/nuxel/ui.pid': No such file or directory
+--- fb-anim.pid ---
+cat: can't open '/data/var/lib/nuxel/fb-anim.pid': No such file or directory

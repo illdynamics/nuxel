@@ -1,0 +1,55 @@
+drwxr-xr-x    2 root     root          4096 Jan  4 12:36 .
+drwxr-xr-x   17 root     root          4096 Jan  4 10:19 ..
+-rw-r--r--    1 root     root            29 Jan  4 12:36 animation
+-rw-r--r--    1 root     root            38 Jan  4 12:36 boot-context
+-rw-r--r--    1 root     root            22 Jan  4 12:36 boot-stage
+-rw-------    1 root     root            26 Jan  4 12:36 fb-anim-ready
+-rw-------    1 root     root            15 Jan  4 12:36 fb-anim-starting
+-rw-------    1 root     root             5 Jan  4 12:36 fb-anim.pid
+/mnt/nx/var/lib/nuxel/animation=ANIM_STAGE=MP4_PLAYER_ACTIVE
+/mnt/nx/var/lib/nuxel/boot-context=root=/dev/sda31 device=s10plus slot=a
+/mnt/nx/var/lib/nuxel/boot-stage=STAGE=SYSTEM_STARTING
+/mnt/nx/var/lib/nuxel/fb-anim-ready=MP4_FIRST_FRAME_COMMITTED
+/mnt/nx/var/lib/nuxel/fb-anim-starting=PLAYER_RUNNING
+/mnt/nx/var/lib/nuxel/fb-anim.pid=3498
+--- bootreport tail ---
+Sep 15 00:00:01 fedora systemd[1]: (This warning is only shown for the first loaded unit using device ACL.)
+Sep 15 00:00:01 fedora systemd[1]: systemd-journald.service: bpf-firewall: Attaching egress BPF program to cgroup /sys/fs/cgroup/system.slice/systemd-journald.service failed: Argument list too long
+Sep 15 00:00:01 fedora kernel: <keyctl> add_key succeeded(0). type: user, desc: invocation_id
+Sep 15 00:00:01 fedora kernel: <keyctl> add_key succeeded(0). type: user, desc: invocation_id
+Sep 15 00:00:01 fedora kernel: <keyctl> add_key succeeded(0). type: user, desc: invocation_id
+Sep 15 00:00:01 fedora kernel: <keyctl> add_key succeeded(0). type: user, desc: invocation_id
+Sep 15 00:00:01 fedora kernel: <keyctl> add_key succeeded(0). type: user, desc: invocation_id
+Sep 15 00:00:01 fedora kernel: <keyctl> add_key succeeded(0). type: user, desc: invocation_id
+Sep 15 00:00:01 fedora kernel: <keyctl> add_key succeeded(0). type: user, desc: invocation_id
+Sep 15 00:00:01 fedora kernel: <keyctl> add_key succeeded(0). type: user, desc: invocation_id
+Sep 15 00:00:01 fedora kernel: <keyctl> add_key succeeded(0). type: user, desc: invocation_id
+Sep 15 00:00:01 fedora kernel: <keyctl> add_key succeeded(0). type: user, desc: invocation_id
+Sep 15 00:00:01 fedora kernel: <keyctl> add_key succeeded(0). type: user, desc: invocation_id
+Sep 15 00:00:01 fedora kernel: <keyctl> add_key succeeded(0). type: user, desc: invocation_id
+Sep 15 00:00:01 fedora kernel: <keyctl> add_key succeeded(0). type: user, desc: invocation_id
+Sep 15 00:00:01 fedora kernel: <keyctl> add_key succeeded(0). type: user, desc: invocation_id
+Sep 15 00:00:01 fedora kernel: <keyctl> add_key succeeded(0). type: user, desc: invocation_id
+Sep 15 00:00:01 fedora systemd[1]: Attaching device control BPF program to cgroup /system.slice/systemd-userdbd.service failed: Argument list too long
+Sep 15 00:00:01 fedora systemd[1]: systemd-userdbd.service: bpf-firewall: Attaching egress BPF program to cgroup /sys/fs/cgroup/system.slice/systemd-userdbd.service failed: Argument list too long
+Sep 15 00:00:01 fedora kernel: <keyctl> add_key succeeded(0). type: user, desc: invocation_id
+Sep 15 00:00:01 fedora kernel: EXT4-fs (sda31): errors=remount-ro for active namespaces on umount 2
+Sep 15 00:00:00 fedora systemd-sysctl[3545]: Couldn't write '0' to 'kernel/yama/ptrace_scope', ignoring: No such file or directory
+Sep 15 00:00:00 fedora systemd-userdbd[3555]: Failed to watch child 3556: Function not implemented
+Sep 15 00:00:00 fedora systemd-userdbd[3555]: Failed to start up daemon: Function not implemented
+Sep 15 00:00:01 fedora kernel: <keyctl> add_key succeeded(0). type: user, desc: invocation_id
+Sep 15 00:00:01 fedora systemd-journald[3540]: File /var/log/journal/b8ad6098c76847d181f06e221ca43e0f/system.journal corrupted or uncleanly shut down, renaming and replacing.
+Sep 15 00:00:03 fedora kernel: watchdog: watchdog0: watchdog did not stop!
+Sep 15 00:00:03 fedora kernel: usb: dwc3_gadget_linksts_change_interrupt : evtinfo = 0x15 link state = 5
+Sep 15 00:00:03 fedora kernel: usb: dwc3_gadget_linksts_change_interrupt : evtinfo = 0x17 link state = 7
+Sep 15 00:00:03 fedora kernel: usb: dwc3_gadget_linksts_change_interrupt : evtinfo = 0x19 link state = 9
+--- spawn failures seen this boot ---
+1
+--- cgroup ---
+controllers: memory pids
+self: 0::/init.scope
+--- state files ---
+STAGE=SYSTEM_STARTING
+ANIM_STAGE=MP4_PLAYER_ACTIVE
+=== live shell still available on ttyGS0 (if the gadget bound) ===
+=== end report ===

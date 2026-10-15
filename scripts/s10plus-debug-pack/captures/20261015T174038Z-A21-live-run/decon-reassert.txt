@@ -1,0 +1,68 @@
+
+@@@ CMD: echo '--- fb0/state ---'; cat /sys/class/graphics/fb0/state; echo '--- panel state lines ---'; dmesg | grep -i 'panel_state\|decon_enable\|dsim_enable\|decon_release\|decon_blank' | tail -8
+echo '--- fb0/state ---'; cat /sys/class/graphics/fb0/state; echo '---- panel state lines ---'; dmesg | grep -i 'panel_state\|decon_enable\|dsim_enabble\|decon_release\|decon_blank' | tail -8
+[?2004l--- fb0/state ---
+0
+--- panel state lines ---
+[  338.840619] decon-0 decon_enable +
+[  338.840804] dsim-0 dsim_enable +
+[  338.860700] panel_power_on panel_state:OFF -> ON
+[  338.879982] panel_sleep_out panel_state:ON -> NORMAL
+[  338.879989] dsim-0 dsim_enable - (state:OFF -> ON)
+[  338.880161] decon-0 decon_enable - (state:OFF -> ON)
+[  338.880167] decon_blank -
+[  338.895283] PANEL:INFO:panel_core_ioctl:FRAME_DONE (panel_state:NORMAL, display on)
+[?2004hnuxel-s10+ # 6,9046,353767013,-;fps_qbt2000_work_func_debug: ldo:0,ipc:0,wuhb:0,tz:1,type:qbt2000,int:0,0
+6,9047,355815162,-;[SSP]: debug_work_func(0) - Sensor state: 0x3feff, RC: 0(0, 0, 0), CC: 0, TC: 0 NSC: 0 EC: 0 GPS: false
+echo @@E@@
+[?2004l@@E@@
+[?2004hnuxel-s10+ # 12,9048,357677321,-;NUXEL_ANIM_HEARTBEAT_FRAMES=8400
+12,9049,357677364,-;NUXEL_ANIM_HEARTBEAT_MS=349975
+12,9050,357677390,-;NUXEL_ANIM_HEARTBEAT_SKIPS=0
+12,9051,357677413,-;NUXEL_ANIM_HEARTBEAT_LOOPS=43
+12,9052,357677434,-;NUXEL_ANIM_EXPECTED_MS=344400
+12,9053,357970798,-;NUXEL_ANIM_LOOP=44
+
+@@@ CMD: echo '--- re-asserting the DECON with a 1-second second player instance ---'; /usr/bin/nuxel-anim-player --file=/usr/share/nuxel/boot/nuxel-animation.nux --verbose --secs=1 2>&1 | grep -a 'UNBLANK_rc\|ACTIVATE_rc\|PAN_rc\|DRAWN_FRAMES' ; sleep 2; echo '--- pans after re-assert (last 3) ---'; dmesg | grep 'decon_pan_display' | tail -3; date +%s
+echo '--- re-asserting the DECON with a 1-second second player instaance ---'; /usr/bin/nuxel-anim-player --file=/usr/share/nuxel/boot/nuxel-animatioon.nux --verbose --secs=1 2>&1 | grep -a 'UNBLANK_rc\|ACTIVATE_rc\|PAN_rc\|DRAWN__FRAMES' ; sleep 2; echo '--- pans after re-assert (last 3) ---'; dmesg | grep 'ddecon_pan_display' | tail -3; date +%s
+[?2004l--- re-asserting the DECON with a 1-second second player instance ---
+6,9054,359209068,-;PANEL:INFO:panel_fb_notifier:EARLY UNBLANK
+3,9055,359209085,-;[STUI] stui_notifier_callback is not state TUI
+6,9056,359209093,-;[SSP] copr_fb_notifier_callback: early_blank = 1, fb_blank = 0
+6,9057,359209102,-;decon-0 UNBLANK mode: 0 type (0: DSI, 1: eDP, 2:DP, 3: WB)
+4,9058,359209110,-;decon-0 already ON state
+6,9059,359209114,-;decon_blank -
+6,9060,359209267,-;PANEL:INFO:panel_fb_notifier:UNBLANK
+6,9061,359209286,-;sec_ts 4-0048: [sec_input] sec_ts_start_device
+ SUBSYSTEM=i2c
+ DEVICE=+i2c:4-0048
+6,9062,359209299,-;sec_ts 4-0048: [sec_input] sec_ts_pinctrl_configure: ACTIVE
+ SUBSYSTEM=i2c
+ DEVICE=+i2c:4-0048
+3,9063,359209309,-;sec_ts 4-0048: [sec_input] sec_ts_start_device: already power on
+ SUBSYSTEM=i2c
+ DEVICE=+i2c:4-0048
+3,9064,359209318,-;sec_ts 4-0048: [sec_input] sec_ts_input_open: Failed to start device
+ SUBSYSTEM=i2c
+ DEVICE=+i2c:4-0048
+6,9065,359209729,-;sec_ts 4-0048: [sec_input] sec_ts_set_temp temperature:32
+ SUBSYSTEM=i2c
+ DEVICE=+i2c:4-0048
+6,9066,359209771,-;sec_ts 4-0048: [sec_input] mode:0202 tc:0 noise:0 wet:0 wc:0 lp:(0) D0C000 fn:0061/0061 // v:0233 cal:A2(00) C01T0226.LCIA.L Cal_flag:Success fail_cnt:0 // id(0,0) // #1 1
+ SUBSYSTEM=i2c
+ DEVICE=+i2c:4-0048
+6,9067,359209790,-;[SSP] copr_fb_notifier_callback: early_blank = 0, fb_blank = 0
+3,9068,359209800,-;[SSPBBD]: ssp_down == true. returning
+3,9069,359214807,-;[SSP]: ssp_send_cmd - command 0xd1 failed -1
+6,9070,359214826,-;panel_set_mdnie, do mdnie-seq (mode:scenario, afc:off)
+6,9071,361959168,-;[SSP]: debug_work_func(0) - Sensor state: 0x3feff, RC: 0(0, 0, 0), CC: 0, TC: 0 NSC: 0 EC: 0 GPS: false
+echo @@E@@
+6,9072,362310341,-;s3c2410-wdt 10050000.watchdog_cl0: Watchdog cluster 0 keepalive!, wtcnt = fff5
+ SUBSYSTEM=platform
+ DEVICE=+platform:10050000.watchdog_cl0
+6,9073,362310367,-;Watchdog: s3c2410wdt_keepalive RTC 2026-09-15 00:05:53 UTC
+2,9074,362310412,-;watchdog: watchdog0: watchdog did not stop!
+6,9075,362310436,-;s3c2410-wdt 10050000.watchdog_cl0: Watchdog cluster 0 keepalive!, wtcnt = fff5
+ SUBSYSTEM=platform
+ DEVICE=+platform:10050000.watchdog_cl0
+6,9076,362310448,-;Watchdog: s3c2410wdt_keepalive RTC 2026-09-15 00:05:53 UTC

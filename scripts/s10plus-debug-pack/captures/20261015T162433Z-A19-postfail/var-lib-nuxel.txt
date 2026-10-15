@@ -1,0 +1,8 @@
+--- animation ---
+ANIM_STAGE=FIRST_LIGHT
+--- boot-context ---
+root=/dev/sda31 device=s10plus slot=a
+--- boot-stage ---
+STAGE=SYSTEM_STARTING
+--- fb-hold.pid ---
+

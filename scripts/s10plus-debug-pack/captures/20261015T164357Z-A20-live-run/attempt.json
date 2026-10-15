@@ -1,0 +1,34 @@
+{
+  "animation_container": "build/out/s10plus/nuxel-animation.nux",
+  "animation_container_bytes": 18481546,
+  "animation_container_sha256": "7d296871f04a3d5ed18e77a5eaa99fe22dcf49f8a81f435ace80e22716f031b4",
+  "boot_img": "build/out/s10plus/debug-candidates/A20/boot.img",
+  "boot_img_bytes": 51587072,
+  "boot_img_bytes_final": 53028864,
+  "boot_img_sha256": "0a22a570616a570b14e2493454c78ddab483a1f34e6e711d9e3cc48de6ed274e",
+  "boot_img_sha256_final": "b8b596e770c72e3e1b9aaf1b268cb367572779188a78b32aac9b788a37379d2a",
+  "candidate": "A20",
+  "container_deployed_to": "/usr/share/nuxel/boot/nuxel-animation.nux (USERDATA /dev/sda31, live write, sha256 re-verified on device)",
+  "flash_readback": "PASS 0a22a570616a570b14e2493454c78ddab483a1f34e6e711d9e3cc48de6ed274e",
+  "initramfs_cpio_sha256": "ada67b3aab23cf4265d4314798f862062e348fe28a36c0583a7ee727de70aeab",
+  "initramfs_cpio_sha256_final": "b2b9492ddeada8cdbd06054d38ee2b8a927dd60e348440c30d1cd70c9f02fde2",
+  "kernel": "build/out/s10plus/debug-candidates/A19/Image-A19 (unchanged from A19)",
+  "kernel_sha256": "2d67d3d88d5a8bb4382ef66fbd87fd8312f1e38183ada02069cd77d0a9dd1768",
+  "partitions_untouched": [
+    "RECOVERY",
+    "USERDATA(image)",
+    "EFS",
+    "SEC_EFS",
+    "PIT",
+    "bootloader",
+    "radio",
+    "DTBO"
+  ],
+  "partitions_written": [
+    "BOOT /dev/block/sda14 (dd, full 51,587,072-byte readback verified)"
+  ],
+  "player_sha256": "87f755f4938b13a76ad9c4b41b6d3d729b26c2c7194db5032037581d26f7f42a",
+  "purpose": "restore the ORIGINAL Nuxel MP4 boot animation on the S10+ AMOLED (WoNQ priority 1)",
+  "ramdisk_container": "gzip (LZMA external ramdisk is REJECTED by this kernel's unpack_to_rootfs)",
+  "root_cause_of_first_attempts": "The kernel carries a BUILT-IN initramfs (gzip cpio) = the A19 initramfs; the external LZMA ramdisk was rejected as 'junk in compressed archive', so A20's /init never ran. Fixed by shipping the external ramdisk as gzip."
+}

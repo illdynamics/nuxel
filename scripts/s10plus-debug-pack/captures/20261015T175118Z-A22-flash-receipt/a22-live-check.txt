@@ -1,0 +1,173 @@
+
+@@@ CMD: cut -d' ' -f1 /proc/uptime
+cut -d' ' -f1 /proc/uptime
+[?2004l58.90
+[?2004hnuxel-s10+ # echo @@E@@
+[?2004l@@E@@
+[?2004hnuxel-s10+ # 6,6908,61923677,-;[SSP]: debug_work_func(0) - Sensor state: 0x3feff, RC: 0(0, 0, 0), CC: 0, TC: 0 NSC: 0 EC: 0 GPS: false
+6,6909,62232304,-;s3c2410-wdt 10050000.watchdog_cl0: Watchdog cluster 0 keepalive!, wtcnt = fff5
+ SUBSYSTEM=platform
+ DEVICE=+platform:10050000.watchdog_cl0
+6,6910,62232344,-;Watchdog: s3c2410wdt_keepalive RTC 2026-09-15 00:00:53 UTC
+2,6911,62232420,-;watchdog: watchdog0: watchdog did not stop!
+6,6912,62232461,-;s3c2410-wdt 10050000.watchdog_cl0: Watchdog cluster 0 keepalive!, wtcnt = fff5
+ SUBSYSTEM=platform
+ DEVICE=+platform:10050000.watchdog_cl0
+6,6913,62232484,-;Watchdog: s3c2410wdt_keepalive RTC 2026-09-15 00:00:53 UTC
+6,6914,62435133,-;samsung-abox 18c50000.abox: abox_enable
+ SUBSYSTEM=platform
+ DEVICE=+platform:18c50000.abox
+6,6915,62435160,-;samsung-abox-gic 18cf1000.abox-gic: abox_gic_enable_irq
+ SUBSYSTEM=platform
+ DEVICE=+platform:18cf1000.abox-gic
+6,6916,62435188,-;samsung-abox 18c50000.abox: abox_qos_request_aud(0xab0cdefa, 1180000)
+ SUBSYSTEM=platform
+ DEVICE=+platform:18c50000.abox
+3,6917,62435605,-;samsung-vts 15510000.vts: Failed to request firmware
+ SUBSYSTEM=platform
+ DEVICE=+platform:15510000.vts
+6,6918,62435703,-;applying qos(22, 1180000kHz): 1180000kHz
+6,6919,62435975,-;samsung-abox-gic 18cf1000.abox-gic: abox_gic_init_gic
+ SUBSYSTEM=platform
+ DEVICE=+platform:18cf1000.abox-gic
+6,6920,62436367,-;samsung-abox-core 18c55000.abox-core: calliope_sram.bin isn't loaded yet
+ SUBSYSTEM=platform
+ DEVICE=+platform:18c55000.abox-core
+6,6921,62436388,-;samsung-abox 18c50000.abox: abox_qos_request_aud(0xab0cdefa, 0)
+ SUBSYSTEM=platform
+ DEVICE=+platform:18c50000.abox
+4,6922,62436489,-;samsung-abox-core 18c55000.abox-core: Direct firmware load for calliope_sram.bin failed with error -2
+ SUBSYSTEM=platform
+ DEVICE=+platform:18c55000.abox-core
+4,6923,62436507,-;samsung-abox-core 18c55000.abox-core: Falling back to user helper
+ SUBSYSTEM=platform
+ DEVICE=+platform:18c55000.abox-core
+6,6924,62438098,-;samsung-abox 18c50000.abox: pm qos aud: 295000kHz
+ SUBSYSTEM=platform
+ DEVICE=+platform:18c50000.abox
+6,6925,62438240,-;applying qos(22, 0kHz): 295000kHz
+6,6926,62493918,-;[FG] 0080h,ff9bh,7f80h,ff01h,1900h,0f88h,6403h,5f05h,1f00h,d882h,fff6h,0005h,001dh,69c9h,64e1h,0faah,0f8dh,ffffh,3200h,5f00h,0240h,0148h,1ed8h,003dh,0f76h,d88ch,2713h,d89eh,18f3h,0314h,0500h,0f8eh,0000h,6200h,1c00h,0eb2h,1403h,1e05h,1eb1h,7f24h,2616h,cea4h,043ch,0890h,e3e1h,290eh,0400h,0001h,3263h,597ah,0b82h,ffffh,1e4eh,0f88h,0c0fh,05e0h,0038h,1527h,a7e2h,00fdh,1680h,1408h,133fh,e000h,07fch,0002h,0902h,046ch,d87fh,00b2h,0977h,0185h,682fh,2241h,0f71h,034bh,0f90h,0f9dh,44fch,0faah,0000h,6c53h,0006h,2f0ch,7f80h,0005h,0a2ch,0647h,0000h,006bh,090ch,0055h,0006h,0204h,000eh,0000h,097ah,0000h,0000h,0000h,0000h,0000h,0000h,0000h,0000h,0000h,0000h,0010h,001dh,ffffh,64dah,0f8dh,1cd2h,2c4fh,eaadh,581eh,0011h,ffb1h,d3b1h,5800h,4b4eh,0008h,46a8h,0000h,4000h,0000h,7d00h,0620h,ffffh,ffffh,ffffh,ffffh,20ach,0000h,0000h,f72dh,3f92h,5c06h,0007h,d87dh,0030h,2910h,d89eh,684ah,
+6,6927,62496838,-;max77705_fg_read_isys: isys_current=353mA
+6,6928,62497438,-;max77705_fg_read_isys_avg: isys_avg_current=263mA
+6,6929,62498178,-;max77705_fg_read_vsys: VSYS(4332), data(0x6c4e)
+7,6930,62498784,-;max77705_fg_read_iin: iin_current=147mA
+6,6931,62499398,-;max77705_fg_read_vbyp: VBYP(5208), data(0x2fbb)
+6,6932,62500046,-;max77705_fg_read_qh : QH(3997000)
+6,6933,62500068,-;[FG power] ISYS(353mA),ISYSAVG(263mA),VSYS(4332mV),IIN(147mA),VBYP(5208mV) QH(3997000 uah)
+7,6934,62500611,-;max77705_fg_read_current: current=8mA
+6,6935,62501649,-;max77705_fg_read_vcell: VCELL(4332)mV, data(0xd89e)
+7,6936,62501670,-;max77705_fg_read_avg_current: avg_current=1mA
+6,6937,62505416,-;sec-battery battery: sec_bat_get_value_by_adc:[2] Temp(308), Temp-ADC(1751)
+ SUBSYSTEM=platform
+ DEVICE=+platform:battery
+6,6938,62508298,-;sec-battery battery: sec_bat_get_value_by_adc:[12] Temp(310), Temp-ADC(1730)
+ SUBSYSTEM=platform
+ DEVICE=+platform:battery
+6,6939,62509135,-;sec-battery battery: sec_bat_get_value_by_adc:[6] Temp(346), Temp-ADC(1571)
+ SUBSYSTEM=platform
+ DEVICE=+platform:battery
+6,6940,62510041,-;sec-battery battery: sec_bat_get_value_by_adc:[10] Temp(308), Temp-ADC(1752)
+ SUBSYSTEM=platform
+ DEVICE=+platform:battery
+7,6941,62510233,-;max77705_fg_write_temp: temperature to (308, 0x1ecd)
+7,6942,62511273,-;max77705_fg_read_avg_current: avg_current=1mA
+7,6943,62511287,-;max77705_get_fuelgauge_soc: soc(1000)
+6,6944,62511301,-;max77705_fg_get_scaled_capacity : capacity_max (1000) scaled capacity(100.0), raw_soc(100.0)
+7,6945,62511579,-;max77705_fg_read_rawsoc: raw capacity (0.01%) (10001)
+6,6946,62512120,-;max77705_fg_read_qh : QH(3997000)
+7,6947,62512135,-;max77705_fg_get_atomic_capacity : NOW(100), OLD(100)
+6,6948,62512153,-;sec_bat_get_battery_info:Vnow(4330mV),Vavg(4330mV),Inow(8mA),Iavg(1mA),Isysavg(263mA),Imax(3000mA),Ichg(2850mA),SOC(100%),Tbat(308),Tusb(310),Tchg(346),Twpc(308)
+6,6949,62512193,-;sec_bat_check_step_charging
+6,6950,62512213,-;sec-battery battery: sec_bat_check_recharge: recharging voltage (4280)
+ SUBSYSTEM=platform
+ DEVICE=+platform:battery
+6,6951,62512230,-;sec_bat_swelling_check: swelling highblock(410), highrecov(390)
+7,6952,62512491,-;max77705_get_float_voltage: battery cv reg : 0x13, float voltage val : 4350
+6,6953,62512507,-;sec_bat_swelling_check: status(Full), swell_mode(Swelling None), chg_block(1), low_temp_event(0x0), vfloat(4350)mV, temp(308)'C
+6,6954,62512523,-;sec_bat_set_current_event: current event before(0x100), after(0x100)
+6,6955,62512539,-;sec_bat_check_mix_temp: mix_limit(0), temp(308), chg_temp(346), input_current(3000)
+6,6956,62512551,-;sec_bat_check_pdic_temp: cable_type(19), chg_limit(0)
+6,6957,62512562,-;sec_bat_get_charging_current_by_siop: incurr(3000), chgcurr(2850)
+6,6958,62520610,-;max77705 : [0xb1]0x1a, [0xb2]0xdf, [0xb3]0xe0, [0xb4]0x38, [0xb5]0x00, [0xb6]0xff, [0xb7]0x14, [0xb8]0x38, [0xb9]0x79, [0xba]0x9d, [0xbb]0x13, [0xbc]0x6c, [0xbd]0x6c, [0xbe]0x34, [0xbf]0x02, [0xc0]0xf7, [0xc1]0x14, [0xc2]0x00, [0xc3]0x68, 
+6,6959,62521056,-;max77705_chg_monitor_work: [CHG] MODE(0x4), B2SOVRC(0xc), otg_on(0)
+6,6960,62521104,-;sec_bat_monitor_work: Status(Full), mode(None), Health(Good), Cable(PDIC, PDIC, 0, 0), rp(3), level(100%), lcd(0), slate_mode(0), store_mode(0), HV(PDIC, 0), sleep_mode(0), Cycle(-1)
+6,6961,62521137,-;sec-battery battery: sec_bat_set_polling: Polling time 30/30 sec.
+ SUBSYSTEM=platform
+ DEVICE=+platform:battery
+6,6962,62521199,-;sec_bat_get_property cable type = 19 sleep_mode = 0
+7,6963,62521434,-;max77705_fg_read_current: current=8mA
+7,6964,62522256,-;max77705_fg_read_avg_current: avg_current=1mA
+6,6965,62946102,-;samsung-abox 18c50000.abox: abox_disable
+ SUBSYSTEM=platform
+ DEVICE=+platform:18c50000.abox
+6,6966,62946142,-;samsung-abox-gic 18cf1000.abox-gic: abox_gic_disable_irq
+ SUBSYSTEM=platform
+ DEVICE=+platform:18cf1000.abox-gic
+12,6967,63443904,-;NUXEL_ANIM_LOOP=7
+
+@@@ CMD: dmesg | grep -a 'NUXEL_INIT_REV\|FIRST_FRAME_COMMITTED\|ANIM ownership\|HEARTBEAT_FRAMES\|PAN_REASSERT\|PAN_FAILED' | tail -6
+dmesg | grep -a 'NUXEL_INIT_REV\|FIRST_FRAME_COMMITTED\|ANIM ownershhip\|HEARTBEAT_FRAMES\|PAN_REASSERT\|PAN_FAILED' | tail -6
+[?2004l[    7.602877] NUXEL_ANIM_MARKER FIRST_FRAME_COMMITTED
+[   17.621213] NUXEL_ANIM_HEARTBEAT_FRAMES=240
+[   27.612788] NUXEL_ANIM_HEARTBEAT_FRAMES=480
+[   37.620670] NUXEL_ANIM_HEARTBEAT_FRAMES=720
+[   47.611784] NUXEL_ANIM_HEARTBEAT_FRAMES=960
+[   57.619479] NUXEL_ANIM_HEARTBEAT_FRAMES=1200
+[?2004hnuxel-s10+ # 6,6968,67603544,-;PANEL:INFO:panel_fb_notifier:EARLY UNBLANK
+3,6969,67603575,-;[STUI] stui_notifier_callback is not state TUI
+6,6970,67603596,-;[SSP] copr_fb_notifier_callback: early_blank = 1, fb_blank = 0
+6,6971,67603619,-;decon-0 UNBLANK mode: 0 type (0: DSI, 1: eDP, 2:DP, 3: WB)
+4,6972,67603639,-;decon-0 already ON state
+6,6973,67603654,-;decon_blank -
+6,6974,67603791,-;PANEL:INFO:panel_fb_notifier:UNBLANK
+6,6975,67603825,-;sec_ts 4-0048: [sec_input] sec_ts_start_device
+ SUBSYSTEM=i2c
+ DEVICE=+i2c:4-0048
+6,6976,67603857,-;sec_ts 4-0048: [sec_input] sec_ts_pinctrl_configure: ACTIVE
+ SUBSYSTEM=i2c
+ DEVICE=+i2c:4-0048
+3,6977,67603889,-;sec_ts 4-0048: [sec_input] sec_ts_start_device: already power on
+ SUBSYSTEM=i2c
+ DEVICE=+i2c:4-0048
+3,6978,67603919,-;sec_ts 4-0048: [sec_input] sec_ts_input_open: Failed to start device
+ SUBSYSTEM=i2c
+ DEVICE=+i2c:4-0048
+6,6979,67604134,-;sec_ts 4-0048: [sec_input] sec_ts_set_temp temperature:30
+ SUBSYSTEM=i2c
+ DEVICE=+i2c:4-0048
+6,6980,67604181,-;sec_ts 4-0048: [sec_input] mode:0202 tc:0 noise:0 wet:0 wc:0 lp:(0) D0F000 fn:0061/0061 // v:0233 cal:A2(00) C01T0226.LCIA.L Cal_flag:Success fail_cnt:0 // id(0,0) // #1 1
+ SUBSYSTEM=i2c
+ DEVICE=+i2c:4-0048
+6,6981,67604205,-;[SSP] copr_fb_notifier_callback: early_blank = 0, fb_blank = 0
+3,6982,67604215,-;[SSPBBD]: ssp_down == true. returning
+3,6983,67609227,-;[SSP]: ssp_send_cmd - command 0xd1 failed -1
+6,6984,67609247,-;panel_set_mdnie, do mdnie-seq (mode:scenario, afc:off)
+12,6985,67610593,-;NUXEL_ANIM_HEARTBEAT_FRAMES=1440
+12,6986,67610607,-;NUXEL_ANIM_HEARTBEAT_MS=59990
+12,6987,67610616,-;NUXEL_ANIM_HEARTBEAT_SKIPS=0
+12,6988,67610624,-;NUXEL_ANIM_HEARTBEAT_LOOPS=7
+12,6989,67610633,-;NUXEL_ANIM_EXPECTED_MS=59040
+echo @@E@@
+[?2004l@@E@@
+[?2004hnuxel-s10+ # 6,6990,67810749,-;fps_qbt2000_work_func_debug: ldo:0,ipc:0,wuhb:0,tz:1,type:qbt2000,int:0,0
+6,6991,67811489,-;[SSP]: debug_work_func(0) - Sensor state: 0x3feff, RC: 0(0, 0, 0), CC: 0, TC: 0 NSC: 0 EC: 0 GPS: false
+
+@@@ CMD: cat /var/lib/nuxel/animation; pgrep -a nuxel-fb-phone || echo NO_PENGUIN_PAINTER
+cat /var/lib/nuxel/animation; pgrep -a nuxel-fb-phone || echo NO_PENNGUIN_PAINTER
+[?2004lANIM_STAGE=MP4_PLAYER_ACTIVE
+NO_PENGUIN_PAINTER
+[?2004hnuxel-s10+ # 12,6992,71394033,-;NUXEL_ANIM_LOOP=8
+6,6993,72235113,-;s3c2410-wdt 10050000.watchdog_cl0: Watchdog cluster 0 keepalive!, wtcnt = fff5
+ SUBSYSTEM=platform
+ DEVICE=+platform:10050000.watchdog_cl0
+6,6994,72235135,-;Watchdog: s3c2410wdt_keepalive RTC 2026-09-15 00:01:03 UTC
+2,6995,72235163,-;watchdog: watchdog0: watchdog did not stop!
+6,6996,72235182,-;s3c2410-wdt 10050000.watchdog_cl0: Watchdog cluster 0 keepalive!, wtcnt = fff5
+ SUBSYSTEM=platform
+ DEVICE=+platform:10050000.watchdog_cl0
+6,6997,72235190,-;Watchdog: s3c2410wdt_keepalive RTC 2026-09-15 00:01:03 UTC
+6,6998,72680813,-;max77705_muic: max77705_muic_print_reg_log USBC1:0x27, USBC2:0x31, BC:0x82, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:2
+6,6999,72680840,-;max77705_muic: max77705_muic_print_reg_log UIC_INT_M:0x0, CC_INT_M:0x20, PD_INT_M:0x0, VDM_INT_M:0xf0, PMIC_MASK:0x2, WDT:0, POR:0
+echo @@E@@
+[?2004l@@E@@
+[?2004hnuxel-s10+ # 6,7000,73954578,-;[SSP]: debug_work_func(0) - Sensor state: 0x3feff, RC: 0(0, 0, 0), CC: 0, TC: 0 NSC: 0 EC: 0 GPS: false

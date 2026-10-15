@@ -1,0 +1,10 @@
+=== reset reason ===
+[0:       1.182] [RERE] show_reset_reason_rawdata: 
+[0:       1.182] [RERE] set_reset_reason: set_reset_reason: set RR_THIS as RP(7)
+[0:       1.194] [DPHI] update_total_rr: reset_reason is invalid
+[0:       1.194] [DPHI] update_total_rr: : re-initialize total reset reason count
+[0:       1.202] [SECD] store_reset_reason_to_param: set param reset_reason as (7, R)
+=== pstore ===
+drwxr-x---    2 root     root             0 Jan  4 11:30 .
+drwxr-xr-x   13 root     root             0 Jan  4 11:30 ..
+-r--r--r--    1 root     root          4744 Sep 15  2026 dmesg-ramoops-0.enc.z

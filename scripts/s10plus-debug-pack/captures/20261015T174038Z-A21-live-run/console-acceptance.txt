@@ -1,0 +1,383 @@
+
+########## kernel
+Watchdog: s3c2410wdt_keepalive RTC 2026-09-15 00:02:33 UTC
+2,7146,162256330,-;watchdog: watchdog0: watchdog did not stop!
+6,7147,162256348,-;s3c2410-wdt 10050000.watchdog_cl0: Watchdog cluster 0 keepalive!, wtcnt = fff5
+ SUBSYSTEM=platform
+ DEVICE=+platform:10050000.watchdog_cl0
+6,7148,162256358,-;Watchdog: s3c2410wdt_keepalive RTC 2026-09-15 00:02:33 UTC
+6,7149,163813593,-;[SSP]: debug_work_func(0) - Sensor state: 0x3feff, RC: 0(0, 0, 0), CC: 0, TC: 0 NSC: 0 EC: 0 GPS: false
+6,7150,166887283,-;fps_qbt2000_work_func_debug: ldo:0,ipc:0,wuhb:0,tz:1,type:qbt2000,int:0,0
+12,7151,166973090,-;NUXEL_ANIM_LOOP=20
+12,7152,167677331,-;NUXEL_ANIM_HEARTBEAT_FRAMES=3840
+12,7153,167677373,-;NUXEL_ANIM_HEARTBEAT_MS=159982
+12,7154,167677397,-;NUXEL_ANIM_HEARTBEAT_SKIPS=0
+12,7155,167677420,-;NUXEL_ANIM_HEARTBEAT_LOOPS=20
+12,7156,167677442,-;NUXEL_ANIM_EXPECTED_MS=157440
+6,7157,169959007,-;[SSP]: debug_work_func(0) - Sensor state: 0x3feff, RC: 0(0, 0, 0), CC: 0, TC: 0 NSC: 0 EC: 0 GPS: false
+echo @@B@@; uname -r; echo @@rc=$?@@; echo @@E@@
+[?2004l@@B@@
+4.14.253
+@@rc=0@@
+@@E@@
+[?2004hnuxel-s10+ # 6,7158,172258668,-;s3c2410-wdt 10050000.watchdog_cl0: Watchdog cluster 0 keepalive!, wtcnt = fff5
+ SUBSYSTEM=platform
+ DEVICE=+platform:10050000.watchdog_cl0
+6,7159,172258711,-;Watchdog: s3c2410wdt_keepalive RTC 2026-09-15 00:02:43 UTC
+2,7160,172258774,-;watchdog: watchdog0: watchdog did not stop!
+6,7161,172258815,-;s3c2410-wdt 10050000.watchdog_cl0: Watchdog cluster 0 keepalive!, wtcnt = fff5
+ SUBSYSTEM=platform
+ DEVICE=+platform:10050000.watchdog_cl0
+6,7162,172258838,-;Watchdog: s3c2410wdt_keepalive RTC 2026-09-15 00:02:43 UTC
+
+########## identity
+echo @@B@@; id; echo @@rc=$?@@; echo @@E@@
+[?2004l@@B@@
+uid=0(root) gid=0(root) groups=0(root)
+@@rc=0@@
+@@E@@
+[?2004hnuxel-s10+ # 12,7163,174923465,-;NUXEL_ANIM_LOOP=21
+6,7164,175847366,-;[SSP]: debug_work_func(0) - Sensor state: 0x3feff, RC: 0(0, 0, 0), CC: 0, TC: 0 NSC: 0 EC: 0 GPS: false
+
+########## os
+echo @@B@@; cat /etc/os-release | head -2; echo @@rc=$?@@; echo @@E@@@
+[?2004l@@B@@
+NAME="Fedora Linux"
+VERSION="43 (Forty Three)"
+@@rc=0@@
+@@E@@
+[?2004hnuxel-s10+ # 12,7165,177677436,-;NUXEL_ANIM_HEARTBEAT_FRAMES=4080
+12,7166,177677464,-;NUXEL_ANIM_HEARTBEAT_MS=169991
+12,7167,177677476,-;NUXEL_ANIM_HEARTBEAT_SKIPS=0
+12,7168,177677486,-;NUXEL_ANIM_HEARTBEAT_LOOPS=21
+12,7169,177677496,-;NUXEL_ANIM_EXPECTED_MS=167280
+6,7170,177895035,-;fps_qbt2000_work_func_debug: ldo:0,ipc:0,wuhb:0,tz:1,type:qbt2000,int:0,0
+
+########## failed units
+echo @@B@@; systemctl --failed --no-pager --no-legend | wc -l; echo  @@rc=$?@@; echo @@E@@
+[?2004l@@B@@
+0
+@@rc=0@@
+@@E@@
+[?2004hnuxel-s10+ # 6,7171,181991229,-;[SSP]: debug_work_func(0) - Sensor state: 0x3feff, RC: 0(0, 0, 0), CC: 0, TC: 0 NSC: 0 EC: 0 GPS: false
+6,7172,182262378,-;s3c2410-wdt 10050000.watchdog_cl0: Watchdog cluster 0 keepalive!, wtcnt = fff5
+ SUBSYSTEM=platform
+ DEVICE=+platform:10050000.watchdog_cl0
+6,7173,182262421,-;Watchdog: s3c2410wdt_keepalive RTC 2026-09-15 00:02:53 UTC
+2,7174,182262487,-;watchdog: watchdog0: watchdog did not stop!
+6,7175,182262528,-;s3c2410-wdt 10050000.watchdog_cl0: Watchdog cluster 0 keepalive!, wtcnt = fff5
+ SUBSYSTEM=platform
+ DEVICE=+platform:10050000.watchdog_cl0
+6,7176,182262551,-;Watchdog: s3c2410wdt_keepalive RTC 2026-09-15 00:02:53 UTC
+
+########## failed unit list
+echo @@B@@; systemctl --failed --no-pager --no-legend | head -10; eccho @@rc=$?@@; echo @@E@@
+[?2004l@@B@@
+@@rc=0@@
+@@E@@
+[?2004hnuxel-s10+ # 12,7177,182890402,-;NUXEL_ANIM_LOOP=22
+6,7178,183233471,-;[FG] 0080h,ff9bh,7f80h,ff01h,1900h,0f88h,6400h,5f05h,2266h,d878h,fffdh,0005h,0088h,6974h,64dah,0fa9h,0f21h,ffffh,3200h,5f00h,0242h,0148h,22f4h,003dh,0f76h,d87ah,2713h,d89eh,18f3h,0314h,0500h,0f21h,0000h,6200h,1c00h,0eb2h,1403h,1e05h,2388h,7f32h,2616h,cea4h,043ch,0890h,e3e1h,290eh,0400h,0001h,31f7h,587eh,0b82h,ffffh,1e41h,0f88h,0c0fh,05e0h,0038h,1527h,a7e2h,0142h,1680h,1408h,07c4h,e000h,07fch,0002h,0902h,0246h,d872h,00b2h,0977h,0124h,682fh,2241h,0f7dh,0312h,0f90h,0f9ch,7f45h,0fa9h,0000h,6c49h,0006h,2fb8h,7f80h,0005h,0a2ch,0647h,0000h,006bh,090ch,0055h,0000h,0204h,000eh,0000h,051ch,0000h,0000h,0000h,0000h,0000h,0000h,0000h,0000h,0000h,0000h,0010h,001dh,ffffh,64d4h,0f8ch,1217h,0002h,02e0h,0000h,0048h,0007h,0000h,000bh,4b4eh,0008h,46a8h,0000h,4000h,0000h,ab90h,0620h,ffffh,ffffh,ffffh,ffffh,20a3h,0000h,0300h,ef51h,3f99h,5befh,0003h,d87bh,002eh,2910h,d868h,684ah,
+6,7179,183236118,-;max77705_fg_read_isys: isys_current=181mA
+6,7180,183236344,-;max77705_fg_read_isys_avg: isys_avg_current=245mA
+6,7181,183236566,-;max77705_fg_read_vsys: VSYS(4331), data(0x6c49)
+7,7182,183237001,-;max77705_fg_read_iin: iin_current=163mA
+6,7183,183237652,-;max77705_fg_read_vbyp: VBYP(5207), data(0x2fb8)
+6,7184,183239531,-;max77705_fg_read_qh : QH(3996000)
+6,7185,183239544,-;[FG power] ISYS(181mA),ISYSAVG(245mA),VSYS(4331mV),IIN(163mA),VBYP(5207mV) QH(3996000 uah)
+7,7186,183239867,-;max77705_fg_read_current: current=4mA
+6,7187,183240316,-;max77705_fg_read_vcell: VCELL(4328)mV, data(0xd868)
+7,7188,183240325,-;max77705_fg_read_avg_current: avg_current=1mA
+6,7189,183242207,-;sec-battery battery: sec_bat_get_value_by_adc:[2] Temp(341), Temp-ADC(1620)
+ SUBSYSTEM=platform
+ DEVICE=+platform:battery
+6,7190,183242913,-;sec-battery battery: sec_bat_get_value_by_adc:[12] Temp(337), Temp-ADC(1626)
+ SUBSYSTEM=platform
+ DEVICE=+platform:battery
+6,7191,183244347,-;sec-battery battery: sec_bat_get_value_by_adc:[6] Temp(359), Temp-ADC(1517)
+ SUBSYSTEM=platform
+ DEVICE=+platform:battery
+6,7192,183255651,-;sec-battery battery: sec_bat_get_value_by_adc:[10] Temp(341), Temp-ADC(1620)
+ SUBSYSTEM=platform
+ DEVICE=+platform:battery
+7,7193,183256034,-;max77705_fg_write_temp: temperature to (341, 0x2219)
+7,7194,183257184,-;max77705_fg_read_avg_current: avg_current=1mA
+7,7195,183257195,-;max77705_get_fuelgauge_soc: soc(1000)
+6,7196,183257523,-;max77705_fg_get_scaled_capacity : capacity_max (1000) scaled capacity(100.0), raw_soc(100.0)
+7,7197,183258006,-;max77705_fg_read_rawsoc: raw capacity (0.01%) (10000)
+6,7198,183258641,-;max77705_fg_read_qh : QH(3996000)
+7,7199,183258656,-;max77705_fg_get_atomic_capacity : NOW(100), OLD(100)
+6,7200,183258672,-;sec_bat_get_battery_info:Vnow(4329mV),Vavg(4329mV),Inow(4mA),Iavg(1mA),Isysavg(245mA),Imax(3000mA),Ichg(2850mA),SOC(100%),Tbat(341),Tusb(337),Tchg(359),Twpc(341)
+6,7201,183258704,-;sec_bat_check_step_charging
+6,7202,183258722,-;sec-battery battery: sec_bat_check_recharge: recharging voltage (4280)
+ SUBSYSTEM=platform
+ DEVICE=+platform:battery
+6,7203,183258738,-;sec_bat_swelling_check: swelling highblock(410), highrecov(390)
+7,7204,183258962,-;max77705_get_float_voltage: battery cv reg : 0x13, float voltage val : 4350
+6,7205,183258976,-;sec_bat_swelling_check: status(Full), swell_mode(Swelling None), chg_block(1), low_temp_event(0x0), vfloat(4350)mV, temp(341)'C
+6,7206,183258991,-;sec_bat_set_current_event: current event before(0x100), after(0x100)
+6,7207,183259004,-;sec_bat_check_mix_temp: mix_limit(0), temp(341), chg_temp(359), input_current(3000)
+6,7208,183259013,-;sec_bat_check_pdic_temp: cable_type(19), chg_limit(0)
+6,7209,183259023,-;sec_bat_get_charging_current_by_siop: incurr(3000), chgcurr(2850)
+6,7210,183263615,-;max77705 : [0xb1]0x1a, [0xb2]0xdf, [0xb3]0xe0, [0xb4]0x38, [0xb5]0x00, [0xb6]0xff, [0xb7]0x14, [0xb8]0x38, [0xb9]0x79, [0xba]0x9d, [0xbb]0x13, [0xbc]0x6c, [0xbd]0x6c, [0xbe]0x34, [0xbf]0x02, [0xc0]0xf7, [0xc1]0x14, [0xc2]0x00, [0xc3]0x68, 
+6,7211,183264057,-;max77705_chg_monitor_work: [CHG] MODE(0x4), B2SOVRC(0xc), otg_on(0)
+6,7212,183264106,-;sec_bat_monitor_work: Status(Full), mode(None), Health(Good), Cable(PDIC, PDIC, 0, 0), rp(3), level(100%), lcd(0), slate_mode(0), store_mode(0), HV(PDIC, 0), sleep_mode(0), Cycle(-1)
+6,7213,183264135,-;sec-battery battery: sec_bat_set_polling: Polling time 30/30 sec.
+ SUBSYSTEM=platform
+ DEVICE=+platform:battery
+6,7214,183264199,-;sec_bat_get_property cable type = 19 sleep_mode = 0
+7,7215,183264431,-;max77705_fg_read_current: current=4mA
+7,7216,183264858,-;max77705_fg_read_avg_current: avg_current=1mA
+
+########## is-system-running
+echo @@B@@; systemctl is-system-running; echo @@rc=$?@@; echo @@E@@ [A  nuxel-s10+ # echo @@B@@; systemctl is-system-running; echo @@rc=$?@@; echo @@E@[K   @
+[?2004l@@B@@
+initializing
+@@rc=1@@
+@@E@@
+[?2004hnuxel-s10+ # 
+########## exit status test
+echo @@B@@; false; echo rc-of-false=$?; echo @@rc=$?@@; echo @@E@@
+[?2004l@@B@@
+rc-of-false=1
+@@rc=0@@
+@@E@@
+[?2004hnuxel-s10+ # 12,7217,187693562,-;NUXEL_ANIM_HEARTBEAT_FRAMES=4320
+12,7218,187693571,-;NUXEL_ANIM_HEARTBEAT_MS=180016
+12,7219,187693574,-;NUXEL_ANIM_HEARTBEAT_SKIPS=0
+12,7220,187693577,-;NUXEL_ANIM_HEARTBEAT_LOOPS=22
+12,7221,187693580,-;NUXEL_ANIM_EXPECTED_MS=177120
+6,7222,187877667,-;[SSP]: debug_work_func(0) - Sensor state: 0x3feff, RC: 0(0, 0, 0), CC: 0, TC: 0 NSC: 0 EC: 0 GPS: false
+6,7223,188902959,-;fps_qbt2000_work_func_debug: ldo:0,ipc:0,wuhb:0,tz:1,type:qbt2000,int:0,0
+
+########## root mount
+echo @@B@@; findmnt -no SOURCE,FSTYPE,OPTIONS /; echo @@rc=$?@@; echho @@E@@
+[?2004l@@B@@
+/dev/sda31 ext4 rw,relatime,errors=remount-ro,data=ordered
+@@rc=0@@
+@@E@@
+[?2004hnuxel-s10+ # 12,7224,190840091,-;NUXEL_ANIM_LOOP=23
+3,7225,190882698,-;<keyctl> add_key succeeded(0). type: user, desc: invocation_id
+3,7226,191285739,-;EXT4-fs (sda31): errors=remount-ro for active namespaces on umount 2
+6,7227,191462940,-;sec_ts 4-0048: [sec_input] mode:0202 tc:0 noise:0 wet:0 wc:0 lp:(0) D0C000 fn:0061/0061 // v:0233 cal:A2(00) C01T0226.LCIA.L Cal_flag:Success fail_cnt:0 // id(0,0) // #7 7
+ SUBSYSTEM=i2c
+ DEVICE=+i2c:4-0048
+6,7228,192265597,-;s3c2410-wdt 10050000.watchdog_cl0: Watchdog cluster 0 keepalive!, wtcnt = fff5
+ SUBSYSTEM=platform
+ DEVICE=+platform:10050000.watchdog_cl0
+6,7229,192265630,-;Watchdog: s3c2410wdt_keepalive RTC 2026-09-15 00:03:03 UTC
+2,7230,192265667,-;watchdog: watchdog0: watchdog did not stop!
+6,7231,192265689,-;s3c2410-wdt 10050000.watchdog_cl0: Watchdog cluster 0 keepalive!, wtcnt = fff5
+ SUBSYSTEM=platform
+ DEVICE=+platform:10050000.watchdog_cl0
+6,7232,192265700,-;Watchdog: s3c2410wdt_keepalive RTC 2026-09-15 00:03:03 UTC
+
+########## remount-ro check
+echo @@B@@; grep -c 'remount-ro' /proc/mounts; echo @@rc=$?@@; echo  @@E@@
+[?2004l@@B@@
+1
+@@rc=0@@
+@@E@@
+[?2004hnuxel-s10+ # 6,7233,193766970,-;[SSP]: debug_work_func(0) - Sensor state: 0x3feff, RC: 0(0, 0, 0), CC: 0, TC: 0 NSC: 0 EC: 0 GPS: false
+
+########## anim state files
+echo @@B@@; ls -la /var/lib/nuxel/ && for f in /var/lib/nuxel/*; do  echo "$f=$(cat $f)"; done; echo @@rc=$?@@; echo @@E@@
+[?2004l@@B@@
+total 36
+drwxr-xr-x  2 root root 4096 Jan  4  2019 .
+drwxr-xr-x 17 root root 4096 Jan  4  2019 ..
+-rw-r--r--  1 root root   29 Jan  4  2019 animation
+-rw-r--r--  1 root root   38 Jan  4  2019 boot-context
+-rw-r--r--  1 root root   22 Jan  4  2019 boot-stage
+-rw-------  1 root root   26 Jan  4  2019 fb-anim-ready
+-rw-------  1 root root   15 Jan  4  2019 fb-anim-starting
+-rw-------  1 root root    5 Jan  4  2019 fb-anim.pid
+-rw-r--r--  1 root root   41 Jan  4  2019 fb-hold.pid
+/var/lib/nuxel/animation=ANIM_STAGE=MP4_PLAYER_ACTIVE
+/var/lib/nuxel/boot-context=root=/dev/sda31 device=s10plus slot=a
+/var/lib/nuxel/boot-stage=STAGE=SYSTEM_STARTING
+/var/lib/nuxel/fb-anim-ready=MP4_FIRST_FRAME_COMMITTED
+/var/lib/nuxel/fb-anim-starting=PLAYER_RUNNING
+/var/lib/nuxel/fb-anim.pid=3500
+/var/lib/nuxel/fb-hold.pid=unresolved-by-shell(player-publishes-it)
+@@rc=0@@
+@@E@@
+[?2004hnuxel-s10+ # 6,7234,195561332,-;max77705_muic: max77705_muic_print_reg_log USBC1:0x27, USBC2:0x31, BC:0x82, CC0:0x71, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:2
+6,7235,195561339,-;max77705_muic: max77705_muic_print_reg_log UIC_INT_M:0x0, CC_INT_M:0x20, PD_INT_M:0x0, VDM_INT_M:0xf0, PMIC_MASK:0x2, WDT:0, POR:0
+12,7236,197677323,-;NUXEL_ANIM_HEARTBEAT_FRAMES=4560
+12,7237,197677367,-;NUXEL_ANIM_HEARTBEAT_MS=189974
+12,7238,197677392,-;NUXEL_ANIM_HEARTBEAT_SKIPS=0
+12,7239,197677414,-;NUXEL_ANIM_HEARTBEAT_LOOPS=23
+12,7240,197677436,-;NUXEL_ANIM_EXPECTED_MS=186960
+
+########## player pid
+echo @@B@@; cat /var/lib/nuxel/fb-anim.pid; ps -o pid,ppid,stime,commm -p $(cat /var/lib/nuxel/fb-anim.pid) 2>/dev/null; echo @@rc=$?@@; echo @@E@@
+[?2004l@@B@@
+3500
+    PID    PPID STIME COMMAND
+   3500       1 Sep14 nuxel-anim-play
+@@rc=0@@
+@@E@@
+[?2004hnuxel-s10+ # 12,7241,198806639,-;NUXEL_ANIM_LOOP=24
+6,7242,199910951,-;[SSP]: debug_work_func(0) - Sensor state: 0x3feff, RC: 0(0, 0, 0), CC: 0, TC: 0 NSC: 0 EC: 0 GPS: false
+6,7243,199910983,-;fps_qbt2000_work_func_debug: ldo:0,ipc:0,wuhb:0,tz:1,type:qbt2000,int:0,0
+
+########## penguin painter
+echo @@B@@; pgrep -a nuxel-fb-phone || echo NO_PENGUIN_PAINTER_RUNNIING; echo @@rc=$?@@; echo @@E@@
+[?2004l@@B@@
+NO_PENGUIN_PAINTER_RUNNING
+@@rc=0@@
+@@E@@
+[?2004hnuxel-s10+ # 6,7244,202267917,-;s3c2410-wdt 10050000.watchdog_cl0: Watchdog cluster 0 keepalive!, wtcnt = fff5
+ SUBSYSTEM=platform
+ DEVICE=+platform:10050000.watchdog_cl0
+6,7245,202267938,-;Watchdog: s3c2410wdt_keepalive RTC 2026-09-15 00:03:13 UTC
+2,7246,202267971,-;watchdog: watchdog0: watchdog did not stop!
+6,7247,202267988,-;s3c2410-wdt 10050000.watchdog_cl0: Watchdog cluster 0 keepalive!, wtcnt = fff5
+ SUBSYSTEM=platform
+ DEVICE=+platform:10050000.watchdog_cl0
+6,7248,202267997,-;Watchdog: s3c2410wdt_keepalive RTC 2026-09-15 00:03:13 UTC
+
+########## fb geometry+colour
+echo @@B@@; dmesg | grep -a 'NUXEL_ANIM_FB_' | tail -12; echo @@rc=$$?@@; echo @@E@@
+[?2004l@@B@@
+[    7.485276] NUXEL_ANIM_FB_VIRTUAL_HEIGHT=6080
+[    7.485278] NUXEL_ANIM_FB_STRIDE=5760
+[    7.485281] NUXEL_ANIM_FB_BPP=32
+[    7.485283] NUXEL_ANIM_FB_BUFFERS=2
+[    7.485286] NUXEL_ANIM_FB_RED_OFF=16
+[    7.485288] NUXEL_ANIM_FB_RED_LEN=8
+[    7.485290] NUXEL_ANIM_FB_GREEN_OFF=8
+[    7.485293] NUXEL_ANIM_FB_GREEN_LEN=8
+[    7.485295] NUXEL_ANIM_FB_BLUE_OFF=0
+[    7.485298] NUXEL_ANIM_FB_BLUE_LEN=8
+[    7.485300] NUXEL_ANIM_FB_TRANSP_OFF=24
+[    7.485302] NUXEL_ANIM_FB_TRANSP_LEN=8
+@@rc=0@@
+@@E@@
+[?2004hnuxel-s10+ # 6,7249,205799257,-;[SSP]: debug_work_func(0) - Sensor state: 0x3feff, RC: 0(0, 0, 0), CC: 0, TC: 0 NSC: 0 EC: 0 GPS: false
+
+########## takeover evidence
+echo @@B@@; dmesg | grep -a 'NUXEL_ANIM_TAKEOVER\|NUXEL_ANIM_STATEDIIR_FD\|NUXEL_ANIM_OPT' | head -12; echo @@rc=$?@@; echo @@E@@
+[?2004l@@B@@
+[    7.485175] NUXEL_ANIM_OPT_SECS=0
+[    7.485177] NUXEL_ANIM_OPT_LOOPS=0
+[    7.485180] NUXEL_ANIM_OPT_HAS_STOPFILE=1
+[    7.485182] NUXEL_ANIM_OPT_HAS_STATE=1
+[    7.485185] NUXEL_ANIM_OPT_HAS_PIDFILE=1
+[    7.485196] NUXEL_ANIM_STATEDIR_FD_OK=1
+[    7.485199] NUXEL_ANIM_STATEDIR_FD_RC=3
+[    7.485249] NUXEL_ANIM_STATEDIR_FD=1
+[    7.561682] NUXEL_ANIM_TAKEOVER_ATTEMPTS=0
+[    7.561686] NUXEL_ANIM_TAKEOVER_SCAN_RC=0
+[    7.561689] NUXEL_ANIM_TAKEOVER_KILLED=0
+@@rc=0@@
+@@E@@
+[?2004hnuxel-s10+ # 12,7250,206756054,-;NUXEL_ANIM_LOOP=25
+12,7251,207677008,-;NUXEL_ANIM_HEARTBEAT_FRAMES=4800
+12,7252,207677032,-;NUXEL_ANIM_HEARTBEAT_MS=199999
+12,7253,207677041,-;NUXEL_ANIM_HEARTBEAT_SKIPS=0
+12,7254,207677049,-;NUXEL_ANIM_HEARTBEAT_LOOPS=25
+12,7255,207677056,-;NUXEL_ANIM_EXPECTED_MS=196800
+
+########## ttyGS0
+echo @@B@@; ls -la /dev/ttyGS0; cat /sys/class/tty/ttyGS0/dev; echo  @@rc=$?@@; echo @@E@@
+[?2004l@@B@@
+crw------- 1 root root 243, 0 Sep 15  2026 /dev/ttyGS0
+243:0
+@@rc=0@@
+@@E@@
+[?2004hnuxel-s10+ # 6,7256,210918872,-;fps_qbt2000_work_func_debug: ldo:0,ipc:0,wuhb:0,tz:1,type:qbt2000,int:0,0
+
+########## udc
+echo @@B@@; ls /sys/class/udc/; echo @@rc=$?@@; echo @@E@@
+[?2004l@@B@@
+10c00000.dwc3
+@@rc=0@@
+@@E@@
+[?2004hnuxel-s10+ # 6,7257,211942803,-;[SSP]: debug_work_func(0) - Sensor state: 0x3feff, RC: 0(0, 0, 0), CC: 0, TC: 0 NSC: 0 EC: 0 GPS: false
+6,7258,212269788,-;s3c2410-wdt 10050000.watchdog_cl0: Watchdog cluster 0 keepalive!, wtcnt = fff5
+ SUBSYSTEM=platform
+ DEVICE=+platform:10050000.watchdog_cl0
+6,7259,212269811,-;Watchdog: s3c2410wdt_keepalive RTC 2026-09-15 00:03:23 UTC
+2,7260,212269844,-;watchdog: watchdog0: watchdog did not stop!
+6,7261,212269864,-;s3c2410-wdt 10050000.watchdog_cl0: Watchdog cluster 0 keepalive!, wtcnt = fff5
+ SUBSYSTEM=platform
+ DEVICE=+platform:10050000.watchdog_cl0
+6,7262,212269874,-;Watchdog: s3c2410wdt_keepalive RTC 2026-09-15 00:03:23 UTC
+6,7263,213425627,-;[FG] 0080h,ff9bh,7f80h,ff01h,1900h,0f88h,6400h,5f05h,2219h,d88ah,ffe3h,0004h,0088h,697eh,64dah,0fa9h,0f21h,ffffh,3200h,5f00h,0242h,0148h,22b5h,003dh,0f76h,d879h,2713h,d89eh,18f3h,0314h,0500h,0f21h,0000h,6200h,1c00h,0eb2h,1403h,1e05h,2388h,7f2ah,2616h,cea4h,043ch,0890h,e3e1h,290eh,0400h,0001h,31f7h,587eh,0b82h,ffffh,1e4bh,0f88h,0c0fh,05e0h,0038h,1527h,a7e2h,0142h,1680h,1408h,0870h,e000h,07fch,0002h,0902h,01f4h,d872h,00b2h,0977h,0124h,682fh,2241h,0f7ch,0331h,0f90h,0f9ch,81f5h,0fa9h,0000h,6c56h,0006h,2fc6h,7f80h,0005h,0a2ch,0647h,0000h,006bh,090ch,0055h,0000h,0204h,000eh,0000h,04f4h,0000h,0000h,0000h,0000h,0000h,0000h,0000h,0000h,0000h,0000h,0010h,001dh,ffffh,64d4h,0f8ch,1d1ch,0000h,ec1bh,0004h,0001h,fffeh,0002h,0000h,4b4eh,0008h,46a8h,0000h,4000h,0000h,ab90h,0620h,ffffh,ffffh,ffffh,ffffh,20a4h,0000h,0400h,f484h,3f96h,5bf8h,fffah,d87bh,002eh,2910h,d87ch,684ah,
+6,7264,213429139,-;max77705_fg_read_qh : QH(3996000)
+6,7265,213429170,-;[FG power] ISYS(156mA),ISYSAVG(255mA),VSYS(4334mV),IIN(158mA),VBYP(5185mV) QH(3996000 uah)
+7,7266,213429670,-;max77705_fg_read_current: current=-5mA
+7,7267,213430448,-;max77705_fg_read_avg_current: avg_current=0mA
+6,7268,213431947,-;sec-battery battery: sec_bat_get_value_by_adc:[2] Temp(338), Temp-ADC(1632)
+ SUBSYSTEM=platform
+ DEVICE=+platform:battery
+6,7269,213432828,-;sec-battery battery: sec_bat_get_value_by_adc:[12] Temp(335), Temp-ADC(1634)
+ SUBSYSTEM=platform
+ DEVICE=+platform:battery
+6,7270,213433924,-;sec-battery battery: sec_bat_get_value_by_adc:[6] Temp(356), Temp-ADC(1531)
+ SUBSYSTEM=platform
+ DEVICE=+platform:battery
+6,7271,213434698,-;sec-battery battery: sec_bat_get_value_by_adc:[10] Temp(338), Temp-ADC(1632)
+ SUBSYSTEM=platform
+ DEVICE=+platform:battery
+7,7272,213434876,-;max77705_fg_write_temp: temperature to (338, 0x21cd)
+7,7273,213435864,-;max77705_fg_read_avg_current: avg_current=0mA
+7,7274,213435875,-;max77705_get_fuelgauge_soc: soc(1000)
+6,7275,213435885,-;max77705_fg_get_scaled_capacity : capacity_max (1000) scaled capacity(100.0), raw_soc(100.0)
+7,7276,213436138,-;max77705_fg_read_rawsoc: raw capacity (0.01%) (10000)
+6,7277,213436642,-;max77705_fg_read_qh : QH(3996000)
+7,7278,213436654,-;max77705_fg_get_atomic_capacity : NOW(100), OLD(100)
+6,7279,213436669,-;sec_bat_get_battery_info:Vnow(4330mV),Vavg(4329mV),Inow(-5mA),Iavg(0mA),Isysavg(255mA),Imax(3000mA),Ichg(2850mA),SOC(100%),Tbat(338),Tusb(335),Tchg(356),Twpc(338)
+6,7280,213436702,-;sec_bat_check_step_charging
+6,7281,213436718,-;sec-battery battery: sec_bat_check_recharge: recharging voltage (4280)
+ SUBSYSTEM=platform
+ DEVICE=+platform:battery
+6,7282,213436732,-;sec_bat_swelling_check: swelling highblock(410), highrecov(390)
+7,7283,213436969,-;max77705_get_float_voltage: battery cv reg : 0x13, float voltage val : 4350
+6,7284,213436983,-;sec_bat_swelling_check: status(Full), swell_mode(Swelling None), chg_block(1), low_temp_event(0x0), vfloat(4350)mV, temp(338)'C
+6,7285,213436996,-;sec_bat_set_current_event: current event before(0x100), after(0x100)
+6,7286,213437009,-;sec_bat_check_mix_temp: mix_limit(0), temp(338), chg_temp(356), input_current(3000)
+6,7287,213437019,-;sec_bat_check_pdic_temp: cable_type(19), chg_limit(0)
+6,7288,213437027,-;sec_bat_get_charging_current_by_siop: incurr(3000), chgcurr(2850)
+6,7289,213442596,-;max77705 : [0xb1]0x1a, [0xb2]0xdf, [0xb3]0xe0, [0xb4]0x38, [0xb5]0x00, [0xb6]0xff, [0xb7]0x14, [0xb8]0x38, [0xb9]0x79, [0xba]0x9d, [0xbb]0x13, [0xbc]0x6c, [0xbd]0x6c, [0xbe]0x34, [0xbf]0x02, [0xc0]0xf7, [0xc1]0x14, [0xc2]0x00, [0xc3]0x68, 
+6,7290,213443371,-;max77705_chg_monitor_work: [CHG] MODE(0x4), B2SOVRC(0xc), otg_on(0)
+6,7291,213443423,-;sec_bat_monitor_work: Status(Full), mode(None), Health(Good), Cable(PDIC, PDIC, 0, 0), rp(3), level(100%), lcd(0), slate_mode(0), store_mode(0), HV(PDIC, 0), sleep_mode(0), Cycle(-1)
+6,7292,213443460,-;sec-battery battery: sec_bat_set_polling: Polling time 30/30 sec.
+ SUBSYSTEM=platform
+ DEVICE=+platform:battery
+6,7293,213443534,-;sec_bat_get_property cable type = 19 sleep_mode = 0
+7,7294,213443921,-;max77705_fg_read_current: current=-5mA
+7,7295,213444606,-;max77705_fg_read_avg_current: avg_current=0mA
+
+########## cgroup2
+echo @@B@@; findmnt -no FSTYPE,OPTIONS /sys/fs/cgroup; echo @@rc=$?@@@; echo @@E@@
+[?2004l@@B@@
+cgroup2 rw,relatime,nsdelegate
+cgroup2 rw,nosuid,nodev,noexec,relatime,nsdelegate
+@@rc=0@@
+@@E@@
+[?2004hnuxel-s10+ # 12,7296,214722508,-;NUXEL_ANIM_LOOP=26
+
+########## journald
+echo @@B@@; systemctl is-active systemd-journald systemd-udevd dbus--broker 2>&1; echo @@rc=$?@@; echo @@E@@
+[?2004l@@B@@
+active
+inactive
+inactive
+@@rc=0@@
+@@E@@
+[?2004hnuxel-s10+ # 12,7297,217677252,-;NUXEL_ANIM_HEARTBEAT_FRAMES=5040
+12,7298,217677280,-;NUXEL_ANIM_HEARTBEAT_MS=209990
+12,7299,217677290,-;NUXEL_ANIM_HEARTBEAT_SKIPS=0
+12,7300,217677299,-;NUXEL_ANIM_HEARTBEAT_LOOPS=26
+12,7301,217677308,-;NUXEL_ANIM_EXPECTED_MS=206640
+6,7302,217831072,-;[SSP]: debug_work_func(0) - Sensor state: 0x3feff, RC: 0(0, 0, 0), CC: 0, TC: 0 NSC: 0 EC: 0 GPS: false
+
+########## uptime
+echo @@B@@; cat /proc/uptime; echo @@rc=$?@@; echo @@E@@
+[?2004l@@B@@
+219.44 1644.82
+@@rc=0@@
+@@E@@
+[?2004hnuxel-s10+ # 6,7303,221927031,-;fps_qbt2000_work_func_debug: ldo:0,ipc:0,wuhb:0,tz:1,type:qbt2000,int:0,0

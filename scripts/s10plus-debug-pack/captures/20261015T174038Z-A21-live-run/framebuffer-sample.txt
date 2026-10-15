@@ -1,0 +1,435 @@
+
+@@@ CMD: echo '--- letterbox row 100 (expect the artwork background colour) ---'; dd if=/dev/fb0 bs=5760 count=1 skip=100 2>/dev/null | od -An -tu4 -v | tr -s ' ' '\n' | sort | uniq -c | sort -rn | head -5
+echo '--- letterbox row 100 (expect the artwork background colour) ----'; dd if=/dev/fb0 bs=5760 count=1 skip=100 2>/dev/null | od -An -tu4 -v | tr --s ' ' '\n' | sort | uniq -c | sort -rn | head -5
+[?2004l--- letterbox row 100 (expect the artwork background colour) ---
+6,7474,285399580,-;decon_release + : 0
+6,7475,285399607,-;decon-0 decon_disable +
+6,7476,285399614,-;_decon_disable: elapsed time to flush decon-0 thread: 0usec, remaining_frame: 0
+6,7477,285433123,-;_decon_disable elapsed time to disable interrupt: 33506usec
+6,7478,285433256,-;_decon_disable: elapsed time to stop decon reg: 33641usec
+6,7479,285433281,-;_decon_disable: elapsed time to stop dpp: 33667usec
+6,7480,285433949,-;dsim-0 dsim_disable +
+6,7481,285433959,-;PANEL:INFO:panel_core_ioctl:PANEL_IOC_SLEEP_IN
+6,7482,285433968,-;copr_disable +
+6,7483,285433974,-;copr_disable -
+6,7484,285433988,-;mdnie mdnie: mdnie_disable: done
+ SUBSYSTEM=mdnie
+ DEVICE=+mdnie:mdnie
+6,7485,285455440,-;========== SHOW PANEL [EEh:ERR_FG] INFO ==========
+6,7486,285455454,-;* Reg Value : 0x00, Result : GOOD
+6,7487,285455463,-;==================================================
+6,7488,285456339,-;========== SHOW PANEL [05h:DSIE_CNT] INFO ==========
+6,7489,285456352,-;* Reg Value : 0x00, Result : GOOD
+6,7490,285456361,-;====================================================
+6,7491,285577893,-;panel_sleep_in panel_state:NORMAL -> ON
+6,7492,285578012,-;PANEL:INFO:panel_core_ioctl:PANEL_IOC_SET_POWER
+6,7493,285579544,-;disable regulator(2:vdd1)
+6,7494,285580516,-;disable regulator(1:vdd2)
+6,7495,285581511,-;disable regulator(0:vdd5)
+6,7496,285581543,-;__set_panel_power, power(off) gpio_reset(low)
+6,7497,285581563,-;AOD:INFO:aod_power_off : was called
+6,7498,285581580,-;panel_power_off panel_state:ON -> OFF
+6,7499,285582357,-;dsim-0 dsim_disable - (state:ON -> OFF)
+6,7500,285582381,-;_decon_disable: elapsed time to disable dsim: 182763usec
+4,7501,285582413,-;exynos-decon 19030000.decon_f: pm_relax
+ SUBSYSTEM=platform
+ DEVICE=+platform:19030000.decon_f
+6,7502,285582456,-;_decon_disable: totol elapsed time: 182839usec
+6,7503,285582470,-;decon-0 decon_disable - (state:ON -> OFF)
+6,7504,285582484,-;decon_release - : 0
+4,7505,285582578,-;decon_pan_display: decon0 state(6), UNBLANK missed
+[?2004hnuxel-s10+ # 4,7506,285593998,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7507,285601088,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7508,285609161,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7509,285616442,-;decon_pan_display: decon0 state(6), UNBLANK missed
+6,7510,285617724,-;sec_ts 4-0048: [sec_input] sec_ts_read_event: STATUS 1d 3 4 1 8 0 0 0
+ SUBSYSTEM=i2c
+ DEVICE=+i2c:4-0048
+4,7511,285643234,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7512,285684014,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7513,285726712,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7514,285766347,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7515,285809996,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7516,285851729,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7517,285896097,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7518,285936103,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7519,285977556,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7520,286019546,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7521,286061450,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7522,286102051,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7523,286145184,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7524,286184087,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7525,286335639,-;decon_pan_display: decon0 state(6), UNBLANK missed
+12,7526,286335683,-;NUXEL_ANIM_LOOP=35
+4,7527,286339921,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7528,286344738,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7529,286349370,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7530,286354240,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7531,286393724,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7532,286434915,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7533,286476706,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7534,286519104,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7535,286564035,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7536,286606895,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7537,286650134,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7538,286690384,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7539,286735475,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7540,286782878,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7541,286825757,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7542,286868126,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7543,286908789,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7544,286948202,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7545,286989366,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7546,287035373,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7547,287074595,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7548,287123127,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7549,287161765,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7550,287203860,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7551,287242218,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7552,287285520,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7553,287327177,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7554,287367726,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7555,287409512,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7556,287454870,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7557,287493591,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7558,287536157,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7559,287574977,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7560,287621655,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7561,287658287,-;decon_pan_display: decon0 state(6), UNBLANK missed
+12,7562,287677283,-;NUXEL_ANIM_HEARTBEAT_FRAMES=6720
+12,7563,287677297,-;NUXEL_ANIM_HEARTBEAT_MS=279981
+12,7564,287677306,-;NUXEL_ANIM_HEARTBEAT_SKIPS=0
+12,7565,287677315,-;NUXEL_ANIM_HEARTBEAT_LOOPS=35
+12,7566,287677324,-;NUXEL_ANIM_EXPECTED_MS=275520
+4,7567,287700397,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7568,287737994,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7569,287780803,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7570,287823328,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7571,287867670,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7572,287903861,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7573,287946849,-;decon_pan_display: decon0 state(6), UNBLANK missed
+6,7574,287975053,-;fps_qbt2000_work_func_debug: ldo:0,ipc:0,wuhb:0,tz:1,type:qbt2000,int:0,0
+4,7575,287987985,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7576,288027933,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7577,288069777,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7578,288113256,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7579,288154307,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7580,288198489,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7581,288235729,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7582,288278447,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7583,288320990,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7584,288363488,-;decon_pan_display: decon0 state(6), UNBLANK missed
+echo @@E@@
+[?2004l@@E@@
+[?2004hnuxel-s10+ # 4,7585,288403112,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7586,288448118,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7587,288487623,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7588,288535483,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7589,288574437,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7590,288616959,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7591,288656278,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7592,288700124,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7593,288740172,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7594,288782218,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7595,288824639,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7596,288873051,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7597,288906008,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7598,288947991,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7599,288988322,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7600,289031425,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7601,289073777,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7602,289116670,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7603,289154858,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7604,289200043,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7605,289235920,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7606,289280718,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7607,289320212,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7608,289363570,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7609,289408762,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7610,289449278,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7611,289491825,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7612,289535024,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7613,289574043,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7614,289612077,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7615,289655812,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7616,289697044,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7617,289743290,-;decon_pan_display: decon0 state(6), UNBLANK missed
+6,7618,289767304,-;[SSP]: debug_work_func(0) - Sensor state: 0x3feff, RC: 0(0, 0, 0), CC: 0, TC: 0 NSC: 0 EC: 0 GPS: false
+4,7619,289783887,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7620,289823944,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7621,289871064,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7622,289906777,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7623,289950093,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7624,289990675,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7625,290032616,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7626,290070325,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7627,290117375,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7628,290157813,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7629,290202192,-;decon_pan_display: decon0 state(6), UNBLANK missed
+
+@@@ CMD: echo '--- artwork row 2000 ---'; dd if=/dev/fb0 bs=5760 count=1 skip=2000 2>/dev/null | od -An -tu4 -v | tr -s ' ' '\n' | sort | uniq -c | sort -rn | head -8
+echo '--- artwork row 2000 ---'; dd if=/dev/fb0 bs=5760 count=1 skipp=2000 2>/dev/null | od -An -tu4 -v | tr -s ' ' '\n' | sort | uniq -c | sort -rn  | head -8
+[?2004l--- artwork row 2000 ---
+[?2004hnuxel-s10+ # 6,7647,290931334,-;decon_release + : 0
+4,7648,290931347,-;decon-0 already OFF state
+6,7649,290931351,-;decon_release - : 0
+4,7650,290958502,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7651,291001018,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7652,291034539,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7653,291087352,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7654,291139129,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7655,291164200,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7656,291203457,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7657,291244172,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7658,291299598,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7659,291330373,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7660,291364577,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7661,291406366,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7662,291442126,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7663,291487651,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7664,291542821,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7665,291590962,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7666,291617106,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7667,291650951,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7668,291691079,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7669,291730277,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7670,291774957,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7671,291812690,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7672,291856181,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7673,291894234,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7674,291936330,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7675,291978810,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7676,292021970,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7677,292062331,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7678,292103855,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7679,292145754,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7680,292189035,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7681,292229620,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7682,292271404,-;decon_pan_display: decon0 state(6), UNBLANK missed
+6,7683,292288695,-;s3c2410-wdt 10050000.watchdog_cl0: Watchdog cluster 0 keepalive!, wtcnt = fff5
+ SUBSYSTEM=platform
+ DEVICE=+platform:10050000.watchdog_cl0
+6,7684,292288731,-;Watchdog: s3c2410wdt_keepalive RTC 2026-09-15 00:04:43 UTC
+2,7685,292288799,-;watchdog: watchdog0: watchdog did not stop!
+6,7686,292288841,-;s3c2410-wdt 10050000.watchdog_cl0: Watchdog cluster 0 keepalive!, wtcnt = fff5
+ SUBSYSTEM=platform
+ DEVICE=+platform:10050000.watchdog_cl0
+6,7687,292288863,-;Watchdog: s3c2410wdt_keepalive RTC 2026-09-15 00:04:43 UTC
+4,7688,292311133,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7689,292358336,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7690,292394898,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7691,292440638,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7692,292477428,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7693,292524332,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7694,292562842,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7695,292605958,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7696,292646722,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7697,292688274,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7698,292730773,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7699,292770955,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7700,292811660,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7701,292854724,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7702,292895909,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7703,292936988,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7704,292976632,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7705,293019423,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7706,293060579,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7707,293102957,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7708,293143247,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7709,293187569,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7710,293228459,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7711,293268426,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7712,293310449,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7713,293354519,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7714,293396029,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7715,293437630,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7716,293477789,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7717,293521440,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7718,293562007,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7719,293604617,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7720,293643301,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7721,293685916,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7722,293727412,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7723,293768890,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7724,293810825,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7725,293853204,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7726,293895330,-;decon_pan_display: decon0 state(6), UNBLANK missed
+echo @@E@@
+[?2004l@@E@@
+[?2004hnuxel-s10+ # 4,7727,293938143,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7728,293976723,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7729,294019911,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7730,294059919,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7731,294102595,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7732,294143761,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7733,294290941,-;decon_pan_display: decon0 state(6), UNBLANK missed
+12,7734,294290973,-;NUXEL_ANIM_LOOP=36
+4,7735,294295154,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7736,294300028,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7737,294304497,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7738,294309017,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7739,294348200,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7740,294393457,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7741,294435476,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7742,294480249,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7743,294522689,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7744,294565791,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7745,294606840,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7746,294651723,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7747,294696223,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7748,294741905,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7749,294784887,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7750,294824683,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7751,294864202,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7752,294907945,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7753,294948073,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7754,294989950,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7755,295034913,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7756,295075865,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7757,295119723,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7758,295160362,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7759,295200457,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7760,295243071,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7761,295280099,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7762,295320679,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7763,295365401,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7764,295413073,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7765,295452268,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7766,295499312,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7767,295537337,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7768,295578276,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7769,295614598,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7770,295657856,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7771,295698972,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7772,295740914,-;decon_pan_display: decon0 state(6), UNBLANK missed
+
+@@@ CMD: echo '--- hex of the first 8 pixels of letterbox row 100 ---'; dd if=/dev/fb0 bs=5760 count=1 skip=100 2>/dev/null | od -An -tx4 -N 32
+echo '--- hex of the first 8 pixels of letterbox row 100 ---'; dd iff=/dev/fb0 bs=5760 count=1 skip=100 2>/dev/null | od -An -tx4 -N 32
+[?2004l--- hex of the first 8 pixels of letterbox row 100 ---
+[?2004hnuxel-s10+ # 6,7791,296460406,-;decon_release + : 0
+4,7792,296460437,-;decon-0 already OFF state
+6,7793,296460445,-;decon_release - : 0
+4,7794,296492879,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7795,296534179,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7796,296573576,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7797,296616449,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7798,296658248,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7799,296697176,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7800,296740044,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7801,296781773,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7802,296830512,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7803,296866584,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7804,296909310,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7805,296950240,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7806,296989954,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7807,297033782,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7808,297075903,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7809,297116952,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7810,297164026,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7811,297197413,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7812,297239549,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7813,297278598,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7814,297324672,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7815,297364006,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7816,297407041,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7817,297448786,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7818,297493734,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7819,297533580,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7820,297573586,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7821,297614541,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7822,297658675,-;decon_pan_display: decon0 state(6), UNBLANK missed
+12,7823,297677259,-;NUXEL_ANIM_HEARTBEAT_FRAMES=6960
+12,7824,297677272,-;NUXEL_ANIM_HEARTBEAT_MS=289981
+12,7825,297677280,-;NUXEL_ANIM_HEARTBEAT_SKIPS=0
+12,7826,297677288,-;NUXEL_ANIM_HEARTBEAT_LOOPS=36
+12,7827,297677296,-;NUXEL_ANIM_EXPECTED_MS=285360
+4,7828,297699566,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7829,297743412,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7830,297779385,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7831,297822083,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7832,297860908,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7833,297901255,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7834,297947362,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7835,297994330,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7836,298032575,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7837,298077747,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7838,298117759,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7839,298161186,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7840,298201389,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7841,298242620,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7842,298283103,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7843,298326289,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7844,298368834,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7845,298412907,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7846,298458257,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7847,298507830,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7848,298546960,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7849,298586236,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7850,298628905,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7851,298665348,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7852,298715989,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7853,298764705,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7854,298801656,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7855,298835148,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7856,298878806,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7857,298916201,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7858,298950979,-;decon_pan_display: decon0 state(6), UNBLANK missed
+6,7859,298981525,-;fps_qbt2000_work_func_debug: ldo:0,ipc:0,wuhb:0,tz:1,type:qbt2000,int:0,0
+4,7860,299005462,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7861,299049027,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7862,299079356,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7863,299118732,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7864,299163573,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7865,299203426,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7866,299250862,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7867,299289014,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7868,299329390,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7869,299370028,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7870,299405110,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7871,299449779,-;decon_pan_display: decon0 state(6), UNBLANK missed
+echo @@E@@
+[?2004l@@E@@
+[?2004hnuxel-s10+ # 4,7872,299495889,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7873,299537869,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7874,299572686,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7875,299610580,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7876,299654781,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7877,299693197,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7878,299734125,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7879,299774224,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7880,299817356,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7881,299860478,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7882,299901437,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7883,299941519,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7884,299982720,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7885,300021371,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7886,300063004,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7887,300103580,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7888,300153905,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7889,300190815,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7890,300232928,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7891,300273002,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7892,300314853,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7893,300353031,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7894,300397937,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7895,300437159,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7896,300480958,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7897,300521342,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7898,300563791,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7899,300604347,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7900,300646270,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7901,300686879,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7902,300731176,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7903,300769637,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7904,300814441,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7905,300853660,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7906,300895627,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7907,300935279,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7908,300976941,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7909,301018636,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7910,301060772,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7911,301102512,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7912,301146882,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7913,301187587,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7914,301227971,-;decon_pan_display: decon0 state(6), UNBLANK missed
+4,7915,301268361,-;decon_pan_display: decon0 state(6), UNBLANK missed

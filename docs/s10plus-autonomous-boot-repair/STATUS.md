@@ -1,147 +1,61 @@
-# STATUS — cycle 7 / candidate A17 (2026-10-15)
+# STATUS — cycle 12 / candidate A25 (2026-10-15)
 
-**Mission:** boot Nuxel (Fedora 43 aarch64) on Samsung Galaxy S10+ SM-G975F
-(`beyond2lte`), Exynos 9820 rev 26, bootloader G975FXXSEFUL1, TWRP 3.7.0_9-2,
-ADB serial R58M75KDB2X.
-Previous snapshots: `STATUS.md.cycle3`, `.cycle4-pre-A13`, `.cycle4-final`,
-`.cycle5-pre-A16`, `.cycle6-pre-A17`.
+Previous snapshot: `A24-POSTMORTEM.md`, `NUXEL-BOOT-STALL.md`, `NUXEL-INTERACTIVE-UI.md`.
 
 ## Headline
 
-**The penguin is real, and the reason nothing else worked is now a two-line bug
-in a library — not a mystery.**
+**The Nuxel phone UI now RUNS on the handset as a real Fedora userspace process, commits a
+real framebuffer frame and hands over from the boot animation — and the reason it never
+did before is not a renderer at all: the Fedora boot graph on this image never completes.**
 
-A16 was physically observed rendering the Nuxel first-light screen and the
-animated penguin on the AMOLED panel. Forensics on the A16 ram console
-(`captures/20261015T143625Z-A16-postfail/`, full write-up in `A16-POSTMORTEM.md`)
-then established, with evidence:
+Three independent discoveries this cycle, all measured on hardware:
 
-1. **A16 never rebooted itself.** It booted once, ran 168 s, and was ended by the
-   operator's Samsung hard-reset hook. `RESET_CAUSE=SEC_HARD_RESET_HOOK(operator)`.
-   The animation *is* an intentional infinite loop; the mission's warning about
-   mislabelling it a bootloop was correct.
-2. **systemd 258 really runs** (PID 1, unit graph built, `basic.target` reached).
-3. **Every service was marked failed while its process was already running.** The
-   A13 `posix_spawn` fallback works; the very next statement,
-   `pidref_set_pid()`, calls `pidfd_open()` (Linux **5.3**+), gets `ENOSYS` on this
-   4.14 kernel, and returns `-ENOSYS` for a process it just started successfully.
-   `udevd` then ran for 161 s while `systemd-udevd.service` was "failed".
-4. **A second, independent blocker:** the cgroup2 mount was hidden by a later
-   `mount -t sysfs sysfs /sys`, so in the final namespace `/sys/fs/cgroup` was an
-   empty sysfs directory and no unit cgroup could be created.
+1. **The boot stalls.** On A23, six minutes after `switch_root`,
+   `systemctl is-system-running` was still `initializing` and *every* job was in state
+   `waiting` (sysinit, basic, local-fs, multi-user, udevd, getty, dbus-broker...). Nothing
+   was running, so no normally-enabled service could start -- which is why a UI unit in
+   `multi-user.target.wants` stayed `inactive` and `systemctl start nuxel-ui` blocked
+   forever. This is the real answer to "the spinning penguin never becomes a phone UI".
+   Full measurement: `NUXEL-BOOT-STALL.md`.
+2. **The panel's real colour order is ABGR_8888** (R on bits 0..7), proven from the
+   driver's own commit path (`decon_pan_display` hard-codes
+   `DECON_PIXEL_FORMAT_ABGR_8888` while `decon_check_var` declares red@16), corroborated
+   by the A20 photograph. Every frame from A16 to A22 was red/blue swapped.
+   Full proof: `NUXEL-COLOUR-ORDER.md`.
+3. **The live console was single-use**: when the Mac closed the port, SIGHUP killed the
+   shell for the rest of the boot. Fixed with a respawning supervisor plus a
+   `trap '' HUP` re-exec (an ignored disposition survives `execve`).
 
-Both are now fixed and **verified offline** (`SYSTEMD-COMPATIBILITY.md` §4):
-against a stub that emulates a pidfd-less 4.14 kernel, the A17 library makes
-`posix_spawn_wrapper()` return `rc=0` where the A13/A16 shim returns
-`rc=-38 ENOSYS`. A17 also adds a live USB CDC-ACM diagnostic console
-(`LIVE-DEBUG-CONNECTIVITY.md`) delivered by the BOOT partition alone.
-
-## Headline update — the two-year-class blocker is GONE
-
-**A18 proved on hardware that Fedora's systemd now executes services on the S10+**
-(`A18-MILESTONE-FEDORA-SERVICES.md`):
-
-* `Failed to spawn executor` **29 → 0**, `Failed at step CGROUP` **61 → 0**,
-  `Failed with result` **28 → 0**, and
-  `systemd-journald.service loaded active running`, with
-  `systemctl --failed` reporting **0 loaded units** from inside the running system.
-* Off-device: the root cause was `pidref_set_pid()` returning `ENOSYS` for
-  `pidfd_open()` on Linux 4.14, after `posix_spawn()` had already started the
-  process; plus a cgroup2 mount that was shadowed by a later sysfs mount.
-* A18 also delivered the first Nuxel-built USB interface (`Nuxel S10+ Live Console`,
-  0x18d1/0x4ee7) and a persistent in-rootfs boot report.
-
-**Three toybox 0.8.14 defects** were found and are now documented and worked
-around: an empty `case` alternative is a wildcard (this killed A17), `if/elif/else`
-also runs the `else` when the first condition is true, and `$!` is never set.
-
-Current candidate: **A19** (flashed 15:50:39Z, readback-verified `7a24c04a…`), which
-mknods `/dev/ttyGS0` from `/sys/class/tty/ttyGS0/dev` — the gadget tty exists only in
-sysfs until userspace creates the node, and Nuxel runs no mdev/udev. Its live
-console is not yet confirmed.
-
-## A18 — current state (supersedes A17)
-
-```
-CANDIDATE=A18
-boot.img       51,456,000 B  sha256 6a8d2587c4e47cd0d059c80130ba731421a02370490b8c7071b956dd28b24a38
-Image-A18      48,715,784 B  sha256 8ffd98f6dba0714f92e7bc4b15423652d378ff1279de7fe13aa1757e8b9c6f5f
-initramfs.cpio  8,640,476 B  sha256 4e763933e6af39a2d32930f6be4879e2cc13e66703180add7924f30f357bed5a
-FLASHED to BOOT (/dev/block/sda14) with full SHA-256 readback VERIFIED
-REBOOT_AT=2026-10-15T15:33:59Z
-```
-
-**A17 FAILED and its cause is now known and fixed** (`A17-POSTMORTEM.md`): toybox
-0.8.14 treats an **empty `case` alternative as a wildcard**, so
-`case "${DEVICE}" in mustang|vm|"") ... s10plus) ...` always took the generic
-branch; this board's root resolution then depended on a fragile rescue that A17
-lost, and the boot died at t = 7.27 s with `[FATAL] no root block device found`
-— before `switch_root`, i.e. **the A17 service-execution fix has still never run**.
-
-A18 fixes the root resolution (explicit `if/elif` dispatch, `grep`-based cmdline
-matching, a heartbeat wait for `/dev/sda31`), emits the full cmdline to the kernel
-log in 200-byte chunks, adds `nuxel-hwprobe`, and adds a **persistent in-rootfs
-boot report** (`/var/log/nuxel-bootreport.txt`) that survives a failed gadget bind.
-
-**A18 has already achieved one new hardware milestone:** its own USB CDC-ACM
-gadget enumerated on the MacBook as `Nuxel S10+ Live Console` (0x18d1/0x4ee7) on
-`/dev/cu.usbmodem201` — the first Nuxel-built USB interface. The console *data*
-path is still silent (0 bytes), so the boot verdict must come from the ram console
-plus the persistent report after a TWRP return.
-
-## A17 — current state
-
-```
-CANDIDATE=A17
-boot.img        51,193,856 B  sha256 911a72e9fbe7f8b591e36fc72bac2d296f7a53b4ff2f9992eedea98e9c6582c2
-Image-A17       48,453,640 B  sha256 f9529cd739c6deb97025429a6f7dc79c21010fc79298ba708c011506ca37a745
-initramfs.cpio   8,011,812 B  sha256 3e0ca12e8dccd134215a0964cf153054d7a6935ba54084bbdad00c780c5f0ea5
-FLASHED to BOOT (/dev/block/sda14) with full SHA-256 readback VERIFIED
-REBOOT_AT=2026-10-15T15:07:35Z
-STATE=AWAITING_BOOT_RESULT
-USERDATA / RECOVERY / DTBO: not written
-```
-
-A16 is preserved untouched at `debug-candidates/A16/` and two full BOOT backups
-were taken from the device before writing (`backups/s10plus/20261015T145711Z-…`,
-`scripts/nuxel-adb-flash-pack/backups/nuxel-adb/20261015T145717Z-…`).
-
-## Milestones (evidence-backed; "hardware" = measured on the handset)
+## Milestones
 
 | Milestone | State |
 |---|---|
-| S-Boot executes Nuxel kernel | PROVEN |
-| ARM64 kernel runs | PROVEN |
-| Built-in initramfs executes | PROVEN |
-| USERDATA discovered / Fedora ext4 mounts rw | PROVEN |
-| Fedora systemd PID 1 executes | PROVEN |
-| Nuxel renders on AMOLED | **PROVEN A16** |
-| Animated penguin visible | **PROVEN A16 — USER OBSERVED** |
-| A16 runtime stability | **PROVEN for the 168 s window** (no self-reboot; operator reset only) |
-| Fedora service execution | **FIXED in A17, awaiting hardware confirmation** |
-| cgroup v2 usable in the final namespace | **FIXED in A17, awaiting hardware confirmation** |
-| Live USB diagnostics in Nuxel | **IMPLEMENTED in A17, awaiting hardware confirmation** |
-| Animation hold supervision / handoff primitive | IMPLEMENTED (PID published, stage files) |
-| DRM/KMS compositor backend | NOT AVAILABLE (`# CONFIG_DRM is not set`) |
-| Phoc / Phosh / touchscreen / interactive UI | NOT PROVEN |
+| Nuxel kernel executes / Fedora rootfs mounts / systemd PID 1 | PROVEN (unchanged) |
+| systemd services execute, cgroup2, journald | PROVEN A18 (unchanged) |
+| Nuxel renders on AMOLED, spinning penguin | PROVEN A16 (unchanged) |
+| Original MP4 animating at 24.00 fps, 0 skips | PROVEN A21/A22 (unchanged) |
+| **Interactive live shell with root, verified** | **PROVEN** -- A21 acceptance suite; A24 added disconnect survival |
+| **Fedora userspace UI process** | **PROVEN A24** (`UI_STARTED`, pid, `ui.log`, state files) |
+| **Real framebuffer commit by that process** | **PROVEN A24** (`FIRST_FRAME_COMMITTED fbio_pan rc=0`, `ui-fb-ready`) |
+| **Animation -> UI handoff** | **PROVEN A24** (`ANIMATION_STOP_SIGNALLED pid=3525`, `anim-stop` written, `PHONE_UI_READY`) |
+| UI visible to a human / interactive by touch | NOT YET (A25 on the phone, awaiting a power cycle) |
+| Touchscreen events | NOT YET -- every boot so far was `androidboot.mode=charger`, where no touch input device exists |
+| MP4 playback with the A23 colour order | NOT YET observed by a human (player + first-light verified in code + offline) |
+| Boot graph completes (root cause of the stall) | NOT YET named; `bootreport.txt` now instruments it |
+| DRM/KMS, Phoc/Phosh | NOT AVAILABLE on this kernel (`# CONFIG_DRM is not set`); separate porting track |
+| Stable usable Nuxel phone | NOT YET |
 
 ## Blockers, in order
 
-1. **Confirm the A17 service fix on hardware** — does `systemd-udevd.service`,
-   `systemd-journald.service`, `dbus-broker.service` reach `active`?
-2. **Get the live console or the ram console out of the A17 boot.** No USB device
-   enumerated on the MacBook after the A17 reboot, so either the gadget bind
-   failed, the boot stalled before it, or the panel is showing something and the
-   operator has not recovered yet.
-3. **Then** the graphical backend decision (`PHONE-UI-HANDOFF.md`): fbdev-native
-   transitional UI now, DRM/KMS porting in parallel. Phoc cannot start on this
-   kernel as it stands.
-4. Touchscreen/input enumeration, seat and permission model for phone services.
+1. **A power cycle** to boot A25 (the phone is in TWRP; nothing can proceed without it).
+2. Name and fix the stalled systemd job (`bootreport.txt` is on the next boot).
+3. Touch on a non-charger boot.
+4. Human observation of the UI and of the MP4's colours.
 
 ## Rules being kept
 
-* RECOVERY is never written. EFS/SEC_EFS, PIT, bootloader, radio, Knox: untouched.
-* USERDATA is only written with a stated reason (not in A17).
-* A16 is never overwritten; every candidate is separately versioned.
-* No milestone is claimed from file presence or from a userspace buffer write.
-* Marker files are no longer accepted as proof of deployment (`A17-INIT-2`).
+* RECOVERY untouched; EFS/SEC_EFS, PIT, bootloader, radio untouched; BOOT-only flashes with
+  full SHA-256 readback; previous images and every candidate preserved.
+* No milestone claimed from a marker, a buffer write or a file's existence: every PROVEN
+  line above names a hardware observation.
+* The penguin never stops on a timer: the UI stops it only after committing its own frame.

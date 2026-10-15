@@ -1,0 +1,20 @@
+6,6995,109799140,-;[SSP]: debug_work_func(0) - Sensor state: 0x3feff, RC: 0(0, 0, 0), CC: 0, TC: 0 NSC: 0 EC: 0 GPS: false
+12,6996,111256934,-;NUXEL_ANIM_LOOP=13
+6,6997,111847002,-;fps_qbt2000_work_func_debug: ldo:0,ipc:0,wuhb:0,tz:1,type:qbt2000,int:0,0
+6,6998,112243107,-;s3c2410-wdt 10050000.watchdog_cl0: Watchdog cluster 0 keepalive!, wtcnt = fff5
+ SUBSYSTEM=platform
+ DEVICE=+platform:10050000.watchdog_cl0
+6,6999,112243133,-;Watchdog: s3c2410wdt_keepalive RTC 2026-09-15 00:01:43 UTC
+2,7000,112243163,-;watchdog: watchdog0: watchdog did not stop!
+6,7001,112243182,-;s3c2410-wdt 10050000.watchdog_cl0: Watchdog cluster 0 keepalive!, wtcnt = fff5
+ SUBSYSTEM=platform
+ DEVICE=+platform:10050000.watchdog_cl0
+6,7002,112243190,-;Watchdog: s3c2410wdt_keepalive RTC 2026-09-15 00:01:43 UTC
+6,7003,115941511,-;[SSP]: debug_work_func(0) - Sensor state: 0x3feff, RC: 0(0, 0, 0), CC: 0, TC: 0 NSC: 0 EC: 0 GPS: false
+12,7004,117677346,-;NUXEL_ANIM_HEARTBEAT_FRAMES=2640
+12,7005,117677391,-;NUXEL_ANIM_HEARTBEAT_MS=109972
+12,7006,117677416,-;NUXEL_ANIM_HEARTBEAT_SKIPS=0
+12,7007,117677437,-;NUXEL_ANIM_HEARTBEAT_LOOPS=13
+12,7008,117677459,-;NUXEL_ANIM_EXPECTED_MS=108240
+12,7009,119223635,-;NUXEL_ANIM_LOOP=14
+read-exit=124

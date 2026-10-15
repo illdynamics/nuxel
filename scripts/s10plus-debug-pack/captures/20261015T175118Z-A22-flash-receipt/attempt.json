@@ -1,0 +1,24 @@
+{
+  "candidate": "A22",
+  "purpose": "A21 + self-healing DECON re-assert (the DECON can be released by ANY process that opens and closes /dev/fb0) + opt-in --colourtest for a photographable channel check",
+  "boot_img": "build/out/s10plus/debug-candidates/A22/boot.img",
+  "boot_img_bytes": 51587072,
+  "boot_img_sha256": "3d35aedc1abb539afb593b835e12263796980f4b4a541dcdca624a0213ccc978",
+  "kernel": "build/out/s10plus/debug-candidates/A22/Image-A22",
+  "kernel_sha256": "c77afcd27cc3acc4973d20092db01aa381cde3016baa3f91083f22d5d003b044",
+  "initramfs_cpio_sha256": "507b812f90bf3b6c8dd866b416d9a7faddee5121033bab17f4d986927834c549",
+  "kernel_embedded_initramfs_verified": true,
+  "nuxel_anim_player_sha256": "c7def23e4fd690808b6266e9e4ee0023b9c5c1447bccd4915f2d8057c97ca5dc",
+  "nuxel_fb_phone_sha256": "8539cde1f2556206100320ae88ae060b3bd25f747c74bad26487975be3d19c62",
+  "init_sha256": "841fb8b0f5f7ab3c09f0dea8b95cdb614b4a2a4eb0a5e6f3f31d101562854a8b",
+  "partitions_written": ["BOOT /dev/block/sda14 (dd in-place, full 51,587,072-byte SHA-256 readback verified)"],
+  "partitions_untouched": ["RECOVERY","USERDATA","EFS","SEC_EFS","PIT","bootloader","radio","DTBO"],
+  "boot_backup_before_write": ["backups/nuxel-adb/20261015T175036Z-R58M75KDB2X"],
+  "flash_readback": "PASS 3d35aedc1abb539afb593b835e12263796980f4b4a541dcdca624a0213ccc978",
+  "changes_vs_A21": [
+    "player: re-issue FBIOBLANK+FBIOUPT_VSCREENINFO whenever FBIOPAN_DISPLAY fails, and every 240 frames unconditionally (self-healing panel)",
+    "player: new opt-in --colourtest[=secs] painting red/green/blue/white/black bars packed with the driver bitfields",
+    "init.sh: clear stale fb-hold.pid/fb-anim.pid at boot"
+  ],
+  "operator_rule": "do NOT open or close /dev/fb0 from another process while observing: fb_release disables the DECON (measured: 1279 failed pans after a single dd read of /dev/fb0)"
+}

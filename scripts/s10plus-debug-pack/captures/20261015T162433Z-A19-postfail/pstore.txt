@@ -1,0 +1,4 @@
+drwxr-x---    2 root     root             0 Jan  4 11:08 .
+drwxr-xr-x   13 root     root             0 Jan  4 11:08 ..
+-r--r--r--    1 root     root         27229 Jan  4 11:08 dmesg-ramoops-0
+== /sys/fs/pstore/dmesg-ramoops-0 ==

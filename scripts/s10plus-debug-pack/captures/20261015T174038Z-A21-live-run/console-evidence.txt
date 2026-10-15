@@ -1,0 +1,145 @@
+
+@@@ CMD: dmesg -c > /tmp/nx-dmesg-evidence.txt 2>/dev/null; grep -a 'NUXEL_ANIM_FB_\|NUXEL_ANIM_STATEDIR\|NUXEL_ANIM_TAKEOVER\|NUXEL_ANIM_PROC_OPEN\|NUXEL_ANIM_OPT\|NUXEL_ANIM_BG_\|NUXEL_ANIM_PAL0\|NUXEL_ANIM_MARKER\|NUXEL_INIT_REV\|FIRSTLIGHT\|ANIMATION' /tmp/nx-dmesg-evidence.txt | head -60
+dmesg -c > /tmp/nx-dmesg-evidence.txt 2>/dev/null; grep -a 'NUXEL_ANNIM_FB_\|NUXEL_ANIM_STATEDIR\|NUXEL_ANIM_TAKEOVER\|NUXEL_ANIM_PROC_OPEN\|NUXEL_ANNIM_OPT\|NUXEL_ANIM_BG_\|NUXEL_ANIM_PAL0\|NUXEL_ANIM_MARKER\|NUXEL_INIT_REV\|FIRSSTLIGHT\|ANIMATION' /tmp/nx-dmesg-evidence.txt | head -60
+[?2004l[    2.215928] nuxel-init: NUXEL_INIT_REV=A21-one-penguin-correct-colours
+[    7.180917] NUXEL_MARKER FIRSTLIGHT_ANIMATION_DONE
+[    7.345817] nuxel-init: FIRSTLIGHT exit=0
+[    7.345906] nuxel-init: NUXEL_MARKER FIRSTLIGHT_FRAME_WRITTEN
+[    7.346032] nuxel-init: FIRSTLIGHT frame painted; resident penguin painter DEFERRED until the MP4 decision
+[    7.346096] nuxel-init: NUXEL_MARKER ANIMATION_HOLD_DEFERRED
+[    7.484506] nuxel-init: NUXEL_MARKER ORIGINAL_MP4_ANIMATION_STARTING
+[    7.484672] nuxel-init: ANIMATION player launched: original Nuxel MP4 artwork on the fbdev path
+[    7.485175] NUXEL_ANIM_OPT_SECS=0
+[    7.485177] NUXEL_ANIM_OPT_LOOPS=0
+[    7.485180] NUXEL_ANIM_OPT_HAS_STOPFILE=1
+[    7.485182] NUXEL_ANIM_OPT_HAS_STATE=1
+[    7.485185] NUXEL_ANIM_OPT_HAS_PIDFILE=1
+[    7.485196] NUXEL_ANIM_STATEDIR_FD_OK=1
+[    7.485199] NUXEL_ANIM_STATEDIR_FD_RC=3
+[    7.485239] NUXEL_ANIM_STATEDIR
+[    7.485249] NUXEL_ANIM_STATEDIR_FD=1
+[    7.485271] NUXEL_ANIM_FB_WIDTH=1440
+[    7.485274] NUXEL_ANIM_FB_HEIGHT=3040
+[    7.485276] NUXEL_ANIM_FB_VIRTUAL_HEIGHT=6080
+[    7.485278] NUXEL_ANIM_FB_STRIDE=5760
+[    7.485281] NUXEL_ANIM_FB_BPP=32
+[    7.485283] NUXEL_ANIM_FB_BUFFERS=2
+[    7.485286] NUXEL_ANIM_FB_RED_OFF=16
+[    7.485288] NUXEL_ANIM_FB_RED_LEN=8
+[    7.485290] NUXEL_ANIM_FB_GREEN_OFF=8
+[    7.485293] NUXEL_ANIM_FB_GREEN_LEN=8
+[    7.485295] NUXEL_ANIM_FB_BLUE_OFF=0
+[    7.485298] NUXEL_ANIM_FB_BLUE_LEN=8
+[    7.485300] NUXEL_ANIM_FB_TRANSP_OFF=24
+[    7.485302] NUXEL_ANIM_FB_TRANSP_LEN=8
+[    7.485874] NUXEL_ANIM_PAL0_SRC565=65535
+[    7.485881] NUXEL_ANIM_PAL0_DST=16777215
+[    7.559489] NUXEL_ANIM_PROC_OPEN_RC_PLAIN=6
+[    7.559492] NUXEL_ANIM_PROC_OPEN_RC_DIRECTORY=18446744073709551594
+[    7.561682] NUXEL_ANIM_TAKEOVER_ATTEMPTS=0
+[    7.561686] NUXEL_ANIM_TAKEOVER_SCAN_RC=0
+[    7.561689] NUXEL_ANIM_TAKEOVER_KILLED=0
+[    7.580359] NUXEL_ANIM_BG_INDEX=238
+[    7.580368] NUXEL_ANIM_BG_SRC565=32
+[    7.580371] NUXEL_ANIM_BG_DST=1024
+[    7.676615] NUXEL_ANIM_MARKER FIRST_FRAME_COMMITTED
+[    7.676701] NUXEL_ANIM_MARKER_ORIGINAL_MP4_ANIMATION_FRAMES=192
+[    8.486063] nuxel-init: ANIMATION ownership: MP4 first frame committed after 1s
+[?2004hnuxel-s10+ # 6,7319,232274107,-;s3c2410-wdt 10050000.watchdog_cl0: Watchdog cluster 0 keepalive!, wtcnt = fff5
+ SUBSYSTEM=platform
+ DEVICE=+platform:10050000.watchdog_cl0
+6,7320,232274128,-;Watchdog: s3c2410wdt_keepalive RTC 2026-09-15 00:03:43 UTC
+2,7321,232274154,-;watchdog: watchdog0: watchdog did not stop!
+6,7322,232274171,-;s3c2410-wdt 10050000.watchdog_cl0: Watchdog cluster 0 keepalive!, wtcnt = fff5
+ SUBSYSTEM=platform
+ DEVICE=+platform:10050000.watchdog_cl0
+6,7323,232274179,-;Watchdog: s3c2410wdt_keepalive RTC 2026-09-15 00:03:43 UTC
+6,7324,232934861,-;fps_qbt2000_work_func_debug: ldo:0,ipc:0,wuhb:0,tz:1,type:qbt2000,int:0,0
+echo @@E@@
+[?2004l@@E@@
+[?2004hnuxel-s10+ # 6,7325,235749896,-;[SSP]: debug_work_func(0) - Sensor state: 0x3feff, RC: 0(0, 0, 0), CC: 0, TC: 0 NSC: 0 EC: 0 GPS: false
+
+@@@ CMD: systemctl is-active systemd-journald systemd-udevd dbus-broker NetworkManager logind 2>&1 | tr '\n' ' '; echo; systemctl is-failed systemd-journald 2>&1
+systemctl is-active systemd-journald systemd-udevd dbus-broker NetwoorkManager logind 2>&1 | tr '\n' ' '; echo; systemctl is-failed systemd-journald  2>&1
+[?2004lactive inactive inactive inactive inactive 
+active
+[?2004hnuxel-s10+ # 12,7328,237677343,-;NUXEL_ANIM_HEARTBEAT_FRAMES=5520
+12,7329,237677386,-;NUXEL_ANIM_HEARTBEAT_MS=229973
+12,7330,237677412,-;NUXEL_ANIM_HEARTBEAT_SKIPS=0
+12,7331,237677434,-;NUXEL_ANIM_HEARTBEAT_LOOPS=28
+12,7332,237677455,-;NUXEL_ANIM_EXPECTED_MS=226320
+12,7333,238587579,-;NUXEL_ANIM_LOOP=29
+echo @@E@@
+[?2004l@@E@@
+[?2004hnuxel-s10+ # 6,7334,241894814,-;[SSP]: debug_work_func(0) - Sensor state: 0x3feff, RC: 0(0, 0, 0), CC: 0, TC: 0 NSC: 0 EC: 0 GPS: false
+
+@@@ CMD: grep -a 'NUXEL_FB_COLOR_PACK\|red.off\|red.len\|NUXEL_FB_BUFFERS' /tmp/nx-dmesg-evidence.txt | head -20
+grep -a 'NUXEL_FB_COLOR_PACK\|red.off\|red.len\|NUXEL_FB_BUFFERS' /ttmp/nx-dmesg-evidence.txt | head -20
+[?2004l[    2.246322]   red.len=8
+[    2.246330]   red.off=0x10
+[    2.354017] NUXEL_FB_BUFFERS_PAINTED=2
+[    2.354027] NUXEL_FB_COLOR_PACK_R_expected=16711680
+[    2.354030] NUXEL_FB_COLOR_PACK_R_readback=16711680
+[    2.354032] NUXEL_FB_COLOR_PACK_G_expected=65280
+[    2.354035] NUXEL_FB_COLOR_PACK_G_readback=65280
+[    2.354038] NUXEL_FB_COLOR_PACK_B_expected=255
+[    2.354040] NUXEL_FB_COLOR_PACK_B_readback=255
+[    2.354043] NUXEL_FB_COLOR_PACK_W_expected=16777215
+[    2.354046] NUXEL_FB_COLOR_PACK_W_readback=16777215
+[    2.354048] NUXEL_FB_COLOR_PACK_K_expected=0
+[    2.354051] NUXEL_FB_COLOR_PACK_K_readback=0
+[?2004hnuxel-s10+ # 6,7340,243593342,-;[FG] 0080h,ff9bh,7f80h,ff01h,1900h,0f88h,6400h,5f05h,21cdh,d878h,001eh,0003h,0088h,6984h,64dah,0fa9h,0f21h,ffffh,3200h,5f00h,0242h,0148h,2273h,003dh,0f76h,d879h,2713h,d89eh,18f3h,0314h,0500h,0f21h,0000h,6200h,1c00h,0eb2h,1403h,1e05h,2388h,7f2eh,2616h,cea4h,043ch,0890h,e3e1h,290eh,0400h,0001h,31f7h,587eh,0b82h,ffffh,1e46h,0f88h,0c0fh,05e0h,0038h,1527h,a7e2h,0142h,1680h,1408h,091ch,e000h,07fch,0002h,0902h,02e4h,d872h,00b2h,0977h,0124h,682fh,2241h,0f7ah,02d8h,0f90h,0f9ch,8467h,0fa9h,0000h,6c30h,0006h,2ecah,7f80h,0005h,0a2ch,0647h,0000h,006bh,090ch,0055h,0001h,0204h,000eh,0000h,13eah,0000h,0000h,0000h,0000h,0000h,0000h,0000h,0000h,0000h,0000h,0010h,001dh,ffffh,64d4h,0f8ch,0388h,0000h,e670h,18f3h,0011h,0000h,21cdh,2713h,4b4eh,0008h,46a8h,0000h,4000h,0000h,ab90h,0620h,ffffh,ffffh,ffffh,ffffh,20a5h,0000h,0400h,fbfbh,3f97h,5bfdh,fff9h,d87ah,002eh,2910h,d888h,684ah,
+6,7341,243595232,-;max77705_fg_read_isys: isys_current=727mA
+6,7342,243595580,-;max77705_fg_read_isys_avg: isys_avg_current=235mA
+6,7343,243595926,-;max77705_fg_read_vsys: VSYS(4330), data(0x6c45)
+7,7344,243596274,-;max77705_fg_read_iin: iin_current=376mA
+6,7345,243596618,-;max77705_fg_read_vbyp: VBYP(5083), data(0x2e97)
+6,7346,243596962,-;max77705_fg_read_qh : QH(3996000)
+6,7347,243596988,-;[FG power] ISYS(727mA),ISYSAVG(235mA),VSYS(4330mV),IIN(376mA),VBYP(5083mV) QH(3996000 uah)
+7,7348,243597419,-;max77705_fg_read_current: current=-6mA
+6,7349,243598787,-;max77705_fg_read_vcell: VCELL(4330)mV, data(0xd888)
+7,7350,243598809,-;max77705_fg_read_avg_current: avg_current=0mA
+6,7351,243600425,-;sec-battery battery: sec_bat_get_value_by_adc:[2] Temp(335), Temp-ADC(1642)
+ SUBSYSTEM=platform
+ DEVICE=+platform:battery
+6,7352,243601350,-;sec-battery battery: sec_bat_get_value_by_adc:[12] Temp(333), Temp-ADC(1642)
+ SUBSYSTEM=platform
+ DEVICE=+platform:battery
+6,7353,243602888,-;sec-battery battery: sec_bat_get_value_by_adc:[6] Temp(353), Temp-ADC(1544)
+ SUBSYSTEM=platform
+ DEVICE=+platform:battery
+6,7354,243603857,-;sec-battery battery: sec_bat_get_value_by_adc:[10] Temp(335), Temp-ADC(1642)
+ SUBSYSTEM=platform
+ DEVICE=+platform:battery
+7,7355,243604035,-;max77705_fg_write_temp: temperature to (335, 0x2180)
+7,7356,243605594,-;max77705_fg_read_avg_current: avg_current=0mA
+7,7357,243605603,-;max77705_get_fuelgauge_soc: soc(1000)
+6,7358,243605613,-;max77705_fg_get_scaled_capacity : capacity_max (1000) scaled capacity(100.0), raw_soc(100.0)
+7,7359,243606084,-;max77705_fg_read_rawsoc: raw capacity (0.01%) (10000)
+6,7360,243606998,-;max77705_fg_read_qh : QH(3996000)
+7,7361,243607008,-;max77705_fg_get_atomic_capacity : NOW(100), OLD(100)
+6,7362,243607021,-;sec_bat_get_battery_info:Vnow(4329mV),Vavg(4329mV),Inow(-6mA),Iavg(0mA),Isysavg(235mA),Imax(3000mA),Ichg(2850mA),SOC(100%),Tbat(335),Tusb(333),Tchg(353),Twpc(335)
+6,7363,243607045,-;sec_bat_check_step_charging
+6,7364,243607058,-;sec-battery battery: sec_bat_check_recharge: recharging voltage (4280)
+ SUBSYSTEM=platform
+ DEVICE=+platform:battery
+6,7365,243607069,-;sec_bat_swelling_check: swelling highblock(410), highrecov(390)
+7,7366,243607344,-;max77705_get_float_voltage: battery cv reg : 0x13, float voltage val : 4350
+6,7367,243607356,-;sec_bat_swelling_check: status(Full), swell_mode(Swelling None), chg_block(1), low_temp_event(0x0), vfloat(4350)mV, temp(335)'C
+6,7368,243607367,-;sec_bat_set_current_event: current event before(0x100), after(0x100)
+6,7369,243607377,-;sec_bat_check_mix_temp: mix_limit(0), temp(335), chg_temp(353), input_current(3000)
+6,7370,243607385,-;sec_bat_check_pdic_temp: cable_type(19), chg_limit(0)
+6,7371,243607393,-;sec_bat_get_charging_current_by_siop: incurr(3000), chgcurr(2850)
+6,7372,243611289,-;max77705 : [0xb1]0x1a, [0xb2]0xdf, [0xb3]0xe0, [0xb4]0x38, [0xb5]0x00, [0xb6]0xff, [0xb7]0x14, [0xb8]0x38, [0xb9]0x79, [0xba]0x9d, [0xbb]0x13, [0xbc]0x6c, [0xbd]0x6c, [0xbe]0x34, [0xbf]0x02, [0xc0]0xf7, [0xc1]0x14, [0xc2]0x00, [0xc3]0x68, 
+6,7373,243611696,-;max77705_chg_monitor_work: [CHG] MODE(0x4), B2SOVRC(0xc), otg_on(0)
+6,7374,243611724,-;sec_bat_monitor_work: Status(Full), mode(None), Health(Good), Cable(PDIC, PDIC, 0, 0), rp(3), level(100%), lcd(0), slate_mode(0), store_mode(0), HV(PDIC, 0), sleep_mode(0), Cycle(-1)
+6,7375,243611742,-;sec-battery battery: sec_bat_set_polling: Polling time 30/30 sec.
+ SUBSYSTEM=platform
+ DEVICE=+platform:battery
+6,7376,243611783,-;sec_bat_get_property cable type = 19 sleep_mode = 0
+7,7377,243611990,-;max77705_fg_read_current: current=-6mA
+7,7378,243612379,-;max77705_fg_read_avg_current: avg_current=0mA
+6,7379,243942968,-;fps_qbt2000_work_func_debug: ldo:0,ipc:0,wuhb:0,tz:1,type:qbt2000,int:0,0
+echo @@E@@
+[?2004l@@E@@
+[?2004hnuxel-s10+ # 12,7380,246553948,-;NUXEL_ANIM_LOOP=30

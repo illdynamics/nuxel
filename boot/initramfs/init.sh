@@ -6,6 +6,8 @@
 # builtins are used, so the markers work even if the initramfs is incomplete.
 #   INITRAMFS_EXECUTED     /init reached main under this kernel
 #   USERDATA_DISCOVERED    USERDATA partition resolved (never SYSTEM)
+#   FEDORA_MOUNTED         Fedora rootfs mounted read-write
+#   ORIGINAL_MP4_ANIMATION_STARTING  the real Nuxel MP4 animation took the panel
 #   ROOTFS_MOUNTED         Fedora rootfs mounted read-write
 #   ROOTFS_HANDOFF_STARTED about to switch_root into the real root
 #   ROOTFS_IDENTITY_OK     /usr/lib/os-release really is Fedora/Nuxel
@@ -74,6 +76,7 @@ nuxel_marker() { nuxel_say "NUXEL_MARKER $1"; }
 # kernel's watchdog, which is a hardware safety mechanism and not implicated.
 NUXEL_WATCHDOG_PID=""
 
+nuxel_say "NUXEL_INIT_REV=A24-postboot-supervisor"
 nuxel_marker INITRAMFS_EXECUTED
 # =============================================================================
 # Nuxel initramfs init — PID 1 for the Nuxel phone OS.
@@ -497,33 +500,53 @@ nuxel_first_light() {
     diag "FIRSTLIGHT exit=${_fbrc}"
     [ "${_fbrc}" = 0 ] && nuxel_marker FIRSTLIGHT_FRAME_WRITTEN
 
-    # 2) Resident painter: keeps the penguin spinning on the real AMOLED panel
-    #    for the rest of the boot, independent of systemd, Phosh and every
-    #    ENOSYS-failing service.  It logs one line per ~10 s so it can never
-    #    drown the boot markers in the ram console.  If the handoff terminates
-    #    it, the last committed frame stays in framebuffer memory and the DECON
-    #    keeps scanning it.
-    /opt/nuxel/nuxel-fb-phone hold > /dev/kmsg 2>&1 &
-    # A19: toybox does not set $! for background jobs (measured - the marker has
-    # been empty in A16, A17 and A18), so resolve the animator through /proc.
+    # 2) Resident painter: DEFERRED to nuxel_start_hold_painter() (A21).
+    #
+    #    A16..A20 started it unconditionally, right here, and then handed the panel
+    #    to nuxel-anim-player minutes later.  The player could not stop it: it runs
+    #    its /proc takeover AFTER the rootfs handoff, and by then switch_root has
+    #    moved /proc into the new root and deleted the old one, so the scan failed
+    #    (hardware log, A20: "NUXEL_ANIM_TAKEOVER no /proc").  The penguin painter
+    #    therefore kept repainting its opaque sprite rectangle over the MP4 frames
+    #    4x/second for the whole boot -- the second penguin and the rectangle behind
+    #    it in the operator's photograph.
+    #
+    #    The static first-light frame painted above STAYS on the panel (the DECON
+    #    keeps scanning framebuffer memory), so the screen is never black while the
+    #    animation player is starting.  The painter now runs only when the MP4 is
+    #    unavailable -- which is exactly its documented fallback role.
+    NUXEL_HOLD_AVAILABLE=1
+    # A16..A19 all logged `FIRSTLIGHT hold started pid=` EMPTY.  Two separate
+    # measured defects caused that: toybox does not set $! for background jobs, and
+    # the `for _p in /proc/[0-9]*` bracket glob never matched in this shell, so the
+    # 20-iteration scan always ran to completion -- 20 s of dead boot time per
+    # attempt and never a pid.  The shell no longer guesses: nuxel-anim-player walks
+    # /proc with getdents64, takes the framebuffer over from the penguin and
+    # publishes the pid it displaced to /var/lib/nuxel/fb-hold.pid.  If the animation
+    # container is missing the penguin simply keeps the panel, exactly as before.
     NUXEL_HOLD_PID=""
-    _n=0
-    while [ "${_n}" -lt 20 ]; do
-        for _p in /proc/[0-9]*; do
-            if [ "$(cat "${_p}/comm" 2>/dev/null)" = "nuxel-fb-phone" ]; then
-                _cl="$(cat "${_p}/cmdline" 2>/dev/null | tr '\0' ' ')"
-                case "${_cl}" in
-                    *hold*) NUXEL_HOLD_PID="${_p#/proc/}"; break ;;
-                esac
-            fi
-        done
-        [ -n "${NUXEL_HOLD_PID}" ] && break
-        _n=$((_n + 1))
-        sleep 1
-    done
-    diag "FIRSTLIGHT hold started pid=${NUXEL_HOLD_PID}"
-    nuxel_marker "ANIMATION_HOLD_PID=${NUXEL_HOLD_PID}"
+    diag "FIRSTLIGHT frame painted; resident penguin painter DEFERRED until the MP4 decision"
+    nuxel_marker ANIMATION_HOLD_DEFERRED
 
+    return 0
+}
+
+# --- the deferred first-light painter (fallback only) -------------------------------
+# Started ONLY when the original MP4 animation cannot own the panel, so that exactly
+# one renderer is ever painting (mission section 7).  The painter publishes its own
+# pid and honours a stop file, so it is stoppable without relying on `$!` (which
+# toybox never sets on this shell).
+nuxel_start_hold_painter() {
+    [ "${NUXEL_HOLD_AVAILABLE:-0}" = 1 ] || return 0
+    [ -x /opt/nuxel/nuxel-fb-phone ] || return 0
+    if [ -n "${NUXEL_STATE_DIR:-}" ] && [ -d "${NUXEL_STATE_DIR}" ]; then
+        /opt/nuxel/nuxel-fb-phone "--statedir=${NUXEL_STATE_DIR}" hold > /dev/kmsg 2>&1 &
+    else
+        /opt/nuxel/nuxel-fb-phone hold > /dev/kmsg 2>&1 &
+    fi
+    NUXEL_HOLD_PID="painter-publishes-own-pid"
+    nuxel_marker FIRST_LIGHT_FALLBACK_ACTIVE
+    diag "FIRSTLIGHT resident penguin painter started (fallback: no MP4 on the panel)"
     return 0
 }
 nuxel_first_light
@@ -1151,10 +1174,12 @@ mkdir -p "${NUXEL_STATE_DIR}" 2>/dev/null
 if [ -d "${NUXEL_STATE_DIR}" ]; then
     printf 'STAGE=SYSTEM_STARTING\n'   > "${NUXEL_STATE_DIR}/boot-stage"   2>/dev/null
     printf 'ANIM_STAGE=FIRST_LIGHT\n'  > "${NUXEL_STATE_DIR}/animation"    2>/dev/null
-    printf '%s\n' "${NUXEL_HOLD_PID:-}"  > "${NUXEL_STATE_DIR}/fb-hold.pid" 2>/dev/null
     printf 'root=%s device=%s slot=%s\n' "${ROOT_DEV}" "${DEVICE:-unknown}" "${SLOT}" \
         > "${NUXEL_STATE_DIR}/boot-context" 2>/dev/null
-    diag "BOOT_STAGE written ${NUXEL_STATE_DIR}/boot-stage=SYSTEM_STARTING hold_pid=${NUXEL_HOLD_PID:-none}"
+    rm -f "${NUXEL_STATE_DIR}/fb-anim-ready" "${NUXEL_STATE_DIR}/fb-anim-starting" \
+          "${NUXEL_STATE_DIR}/fb-anim-failed" "${NUXEL_STATE_DIR}/fb-hold-stop" \
+          "${NUXEL_STATE_DIR}/fb-hold.pid" "${NUXEL_STATE_DIR}/fb-anim.pid" 2>/dev/null
+    diag "BOOT_STAGE written ${NUXEL_STATE_DIR}/boot-stage=SYSTEM_STARTING"
     nuxel_marker BOOT_STAGE_SYSTEM_STARTING
 else
     diag "BOOT_STAGE could not create ${NUXEL_STATE_DIR}"
@@ -1224,6 +1249,201 @@ if [ -x /opt/nuxel/nuxel-console ]; then
     nuxel_marker LIVE_CONSOLE_STARTED
 else
     diag "LIVE_CONSOLE binary missing from the initramfs"
+fi
+
+# --- the PHONE UI: deliver it from the BOOT candidate into the real rootfd ---------
+# Mission section 7/11: the interactive Nuxel interface is a userspace service, and
+# a BOOT-only flash must be able to ship it.  The 4 GiB rootfs is NOT rewritten; the
+# initramfs carries /opt/nuxel/nuxel-ui (+ its units), and this step installs them
+# into the mounted Fedora root atomically, with the previous binary kept as
+# /usr/lib/nuxel/nuxel-ui.prev so a bad UI can be rolled back from the live shell.
+#
+# It also RETIRES the A-old one-shot diagnostic painter (nuxel-firstlight.service):
+# two renderers must never own the DECON at once (that is exactly the A20 "two
+# penguins" defect).  The unit file stays on disk for rollback.
+#
+# Every step is fail-open: a UI problem must never cost us a boot.
+nuxel_install_ui() {
+    if [ ! -x /opt/nuxel/nuxel-ui ]; then
+        diag "UI_BINARY_MISSING (no /opt/nuxel/nuxel-ui in this initramfs) — Fedora root untouched"
+        nuxel_marker UI_BINARY_MISSING
+        return 0
+    fi
+    _want="$(cat /opt/nuxel/nuxel-ui.rev 2>/dev/null)"
+    [ -n "${_want}" ] || _want=unknown
+    _dst="${ROOT_MNT}/usr/bin/nuxel-ui"
+    _rev="${ROOT_MNT}/usr/lib/nuxel/ui.rev"
+    _have="$(cat "${_rev}" 2>/dev/null)"
+    mkdir -p "${ROOT_MNT}/usr/bin" "${ROOT_MNT}/usr/lib/nuxel" "${ROOT_MNT}/etc/systemd/system/multi-user.target.wants" 2>/dev/null
+
+    if [ "${_want}" != "${_have}" ]; then
+        if [ -f "${_dst}" ]; then
+            if cp -f "${_dst}" "${ROOT_MNT}/usr/lib/nuxel/nuxel-ui.prev" 2>/dev/null; then
+                diag "UI_BACKUP previous binary kept as /usr/lib/nuxel/nuxel-ui.prev (rev '${_have:-unknown}')"
+            fi
+        fi
+        if cp -f /opt/nuxel/nuxel-ui "${_dst}" 2>/dev/null; then
+            chmod 0755 "${_dst}" 2>/dev/null
+            printf '%s\n' "${_want}" > "${_rev}" 2>/dev/null
+            diag "UI_INSTALLED rev='${_want}' (was '${_have:-none}') -> ${_dst}"
+            nuxel_marker UI_INSTALLED
+        else
+            diag "UI_INSTALL_FAILED could not write ${_dst}"
+            nuxel_marker UI_INSTALL_FAILED
+            return 0
+        fi
+    else
+        diag "UI_UP_TO_DATE rev='${_want}'"
+    fi
+
+    # The rootfs copy of the player is refreshed too: it carries the A23 hardware
+    # colour order, and the fallback unit plus any manual run use it.
+    if [ -x /opt/nuxel/nuxel-anim-player ]; then
+        cp -f /opt/nuxel/nuxel-anim-player "${ROOT_MNT}/usr/bin/nuxel-anim-player" 2>/dev/null && \
+            chmod 0755 "${ROOT_MNT}/usr/bin/nuxel-anim-player" 2>/dev/null && \
+            diag "PLAYER_INSTALLED /usr/bin/nuxel-anim-player (A23 colour order)"
+    fi
+
+    for _u in nuxel-ui.service nuxel-ui-fallback.service; do
+        if [ -f "/opt/nuxel/${_u}" ]; then
+            if cp -f "/opt/nuxel/${_u}" "${ROOT_MNT}/etc/systemd/system/${_u}" 2>/dev/null; then
+                diag "UI_UNIT_INSTALLED /etc/systemd/system/${_u}"
+            else
+                diag "UI_UNIT_INSTALL_FAILED ${_u}"
+            fi
+        fi
+    done
+
+    # A24: enable in BOTH targets.  multi-user.target is the normal path; sysinit.target
+    # is reached earlier and does not depend on local-fs.target, which is where this
+    # image's boot graph stalls (see A23 measurements in NUXEL-BOOT-STALL.md).
+    ln -sf /etc/systemd/system/nuxel-ui.service \
+        "${ROOT_MNT}/etc/systemd/system/multi-user.target.wants/nuxel-ui.service" 2>/dev/null && \
+        diag "UI_SERVICE_ENABLED nuxel-ui.service (multi-user.target)" || \
+        diag "UI_SERVICE_ENABLE_FAILED"
+    ln -sf /etc/systemd/system/nuxel-ui.service \
+        "${ROOT_MNT}/etc/systemd/system/sysinit.target.wants/nuxel-ui.service" 2>/dev/null && \
+        diag "UI_SERVICE_ENABLED nuxel-ui.service (sysinit.target)" || \
+        diag "UI_SERVICE_SYSINIT_ENABLE_FAILED"
+
+    # the post-handoff supervisor (runs in the new root after switch_root)
+    if cp -f /opt/nuxel/nuxel-postboot.sh "${ROOT_MNT}/usr/lib/nuxel/nuxel-postboot.sh" 2>/dev/null; then
+        chmod 0755 "${ROOT_MNT}/usr/lib/nuxel/nuxel-postboot.sh" 2>/dev/null
+        diag "POSTBOOT_SUPERVISOR_INSTALLED /usr/lib/nuxel/nuxel-postboot.sh"
+    else
+        diag "POSTBOOT_SUPERVISOR_INSTALL_FAILED"
+    fi
+
+    if rm -f "${ROOT_MNT}/etc/systemd/system/multi-user.target.wants/nuxel-firstlight.service" 2>/dev/null; then
+        diag "FIRSTLIGHT_PAINTER_RETIRED (nuxel-firstlight.service unlinked; unit file kept)"
+    fi
+
+    printf 'UI_REV=%s\nINSTALLED_AT_BOOT=1\n' "${_want}" > "${NUXEL_STATE_DIR}/ui-build" 2>/dev/null
+    if [ "${_want}" != "${_have}" ]; then
+        printf 'STAGE=PHONE_UI_INSTALLED\nREV=%s\n' "${_want}" > "${NUXEL_STATE_DIR}/boot-stage" 2>/dev/null
+    fi
+    nuxel_marker PHONE_UI_INSTALLED
+}
+nuxel_install_ui
+
+# --- the ORIGINAL Nuxel MP4 boot animation (WoNQ priority 1) -----------------------
+# The real Nuxel boot animation is an H.264 MP4 (assets/nuxel-boot-animation.mp4,
+# 1080x1920, 24 fps, 192 frames).  On the desktop and VM builds it is rendered by a
+# Plymouth "script" theme; Plymouth needs DRM/KMS and this Samsung 4.14 kernel has
+# `# CONFIG_DRM is not set`, so it cannot run here at all.  The MP4 is therefore
+# re-encoded at BUILD time by tools/s10plus/nuxel-anim-pack.py into a 256-colour
+# palette plus a changed-span stream (18.5 MB, 38 dB PSNR) and decoded by
+# tools/s10plus/nuxel-anim-player.c straight onto the DECON fbdev.
+#
+# THE ARTWORK IS THE ORIGINAL ONE.  Nothing is redrawn, substituted or invented;
+# the diagnostic penguin stays only as the fallback when the container is absent.
+#
+# Delivery split, exactly as the mission requires:
+#   * the player binary (66 KB) rides in the initramfs, i.e. on the BOOT partition;
+#   * the ~18.5 MB animation container lives in the Fedora rootfs, so the kernel
+#     image is not enlarged by animation data.
+# The player takes the framebuffer over from the penguin itself and loops until it
+# is signalled or the stop file appears - never on a timer.
+nuxel_start_animation() {
+    NUXEL_ANIM_FILE="${ROOT_MNT}/usr/share/nuxel/boot/nuxel-animation.nux"
+    if [ ! -x /opt/nuxel/nuxel-anim-player ]; then
+        diag "ANIMATION player absent from the initramfs — first-light penguin stays"
+        nuxel_marker ANIMATION_PLAYER_MISSING
+        nuxel_start_hold_painter
+        return 0
+    fi
+    if [ ! -f "${NUXEL_ANIM_FILE}" ]; then
+        diag "ANIMATION container absent at ${NUXEL_ANIM_FILE} — first-light penguin stays"
+        nuxel_marker ANIMATION_CONTAINER_MISSING
+        nuxel_start_hold_painter
+        return 0
+    fi
+    nuxel_marker FEDORA_MOUNTED
+    printf 'ANIM_STAGE=MP4_PLAYER_STARTING\n' > "${NUXEL_STATE_DIR}/animation" 2>/dev/null
+    rm -f "${ROOT_MNT}/var/lib/nuxel/anim-stop" \
+          "${NUXEL_STATE_DIR}/fb-anim-ready" "${NUXEL_STATE_DIR}/fb-anim-failed" 2>/dev/null
+    # The player takes the panel over FIRST and only then does init hand the rootfs
+    # to systemd, so its /proc scan and every absolute path are still valid.
+    /opt/nuxel/nuxel-anim-player \
+        "--file=${NUXEL_ANIM_FILE}" \
+        "--statedir=${NUXEL_STATE_DIR}" \
+        "--state=animation" \
+        "--pid=fb-anim.pid" \
+        "--stopfile=anim-stop" \
+        "--holdpid=fb-hold.pid" \
+        --verbose > /dev/kmsg 2>&1 &
+    nuxel_marker ORIGINAL_MP4_ANIMATION_STARTING
+    diag "ANIMATION player launched: original Nuxel MP4 artwork on the fbdev path"
+
+    # --- bounded handshake: MP4 owns the panel, or the penguin fallback does ---
+    # A renderer may not claim the panel until it has COMMITTED a frame (mission
+    # section 7), and init may not switch_root until the claim is resolved, because
+    # switch_root invalidates the player's view of /proc.
+    _anim_wait=0
+    while [ "${_anim_wait}" -lt "${NUXEL_ANIM_WAIT:-8}" ]; do
+        if [ -f "${NUXEL_STATE_DIR}/fb-anim-ready" ]; then
+            diag "ANIMATION ownership: MP4 first frame committed after ${_anim_wait}s"
+            nuxel_marker MP4_FIRST_FRAME_READY
+            nuxel_marker MP4_PLAYER_ACTIVE
+            printf 'ANIM_STAGE=MP4_PLAYER_ACTIVE\n' > "${NUXEL_STATE_DIR}/animation" 2>/dev/null
+            return 0
+        fi
+        if [ -f "${NUXEL_STATE_DIR}/fb-anim-failed" ]; then
+            diag "ANIMATION player reported a NAMED failure before the first frame"
+            nuxel_marker MP4_PLAYER_FAILED
+            break
+        fi
+        _anim_wait=$((_anim_wait+1))
+        sleep 1 2>/dev/null || sleep 1
+    done
+    diag "ANIMATION player did not commit a frame within ${_anim_wait}s — penguin fallback"
+    nuxel_marker FIRST_LIGHT_STOPPED
+    nuxel_marker MP4_PLAYER_ACTIVE_TIMEOUT
+    printf 'ANIM_STAGE=FIRST_LIGHT_FALLBACK\n' > "${NUXEL_STATE_DIR}/animation" 2>/dev/null
+    nuxel_start_hold_painter
+    return 0
+}
+nuxel_start_animation
+
+# --- post-handoff supervisor: survives switch_root, reports and self-repairs --------
+# A23 measured that the Fedora boot graph stalls with every job "waiting", so no
+# target-ordered unit ever starts.  This child is started from the initramfs (it
+# outlives switch_root exactly like nuxel-console) and waits for the REAL root to
+# appear before it execs the Fedora shell -- so its diagnostics and its
+# `systemctl start nuxel-ui` run against the live system, not against an image.
+if [ -f /opt/nuxel/nuxel-postboot.sh ]; then
+    (
+        _pb=0
+        while [ "${_pb}" -lt 90 ]; do
+            [ -x /usr/bin/systemctl ] && break
+            _pb=$((_pb+1)); sleep 1 2>/dev/null
+        done
+        exec /bin/sh /usr/lib/nuxel/nuxel-postboot.sh 20
+    ) >/dev/kmsg 2>&1 &
+    diag "POSTBOOT supervisor started pid=$! (reports to /var/lib/nuxel/bootreport.txt)"
+    nuxel_marker POSTBOOT_SUPERVISOR_STARTED
+else
+    diag "POSTBOOT supervisor absent from this initramfs"
 fi
 
 diag "ROOTFS_HANDOFF_STARTED -> ${ROOT_MNT}"

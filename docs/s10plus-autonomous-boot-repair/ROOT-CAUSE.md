@@ -656,3 +656,97 @@ nothing could ever stop or supervise the animator, and there was no boot-state
 record for a future UI to read. A17 publishes `ANIMATION_HOLD_PID=<pid>`,
 `/var/lib/nuxel/fb-hold.pid`, `/var/lib/nuxel/boot-stage` and
 `/var/lib/nuxel/animation`.
+
+---
+
+# CYCLE 9 ROOT CAUSES (A21/A22, 2026-10-15)
+
+Five defects, every one found from hardware evidence and each independently reproducible.
+
+## RC-9-1 — the red artwork: RGB565 written into a 32-bpp pixel
+
+`nuxel-anim-player.c` stored the container's raw `u16` RGB565 palette value straight
+into a 32-bit DECON pixel (`fill_span(..., PAL565[idx])`). A 16-bit colour value is not
+"a 32-bit colour with zeros on top": its bits land in whichever channels the driver maps
+to bits 0..15. Measured layout of this panel: `red.off=16 green.off=8 blue.off=0`,
+8 bits each.
+
+* Under a red-at-bits-0..7 layout the artwork's **blue** circuitry floods the **red**
+  channel: frame 0 mean red **38.2**, mean blue **0.0** (`tools/s10plus/test-anim-colour.sh`).
+  The artwork itself is 0.17 % red and 2.04 % blue — it has no red background.
+* Under the layout this panel actually reports (red at bits 16..23) the **red field is
+  dead** (always 0), so the artwork's red accents vanish and the picture is blue/cyan.
+
+Either way the mapping is destroyed. Fixed by expanding the palette once into `DSTPIX[]`
+via `packcol()` using the runtime `fb_var` bitfields — the same maths the hardware-proven
+first-light renderer uses. Faithfulness proved offline (max channel error 0 for both
+layouts) and on-device (R/G/B/W/K expected == readback).
+
+## RC-9-2 — the second penguin and the rectangle
+
+`nuxel-fb-phone hold` repaints its opaque `2·half × 2·half` sprite square with
+`bg = pack(10,32,58)` every 250 ms: that is the rectangle. The A20 player's attempt to
+displace it failed for two reasons:
+
+1. **`O_DIRECTORY` is `040000` on this board, not `0x10000`** —
+   `arch/arm64/include/uapi/asm/fcntl.h` overrides the asm-generic values; glibc for
+   aarch64 agrees (`__O_DIRECTORY 040000`). The code's `0x10000` is **`O_DIRECT`**, and
+   **procfs returns `EINVAL` for `O_DIRECT`**. Measured on the handset:
+   `openat(/proc,040000)=3 errno=0`, `openat(/proc,0x10000)=-1 errno=22 EINVAL`.
+   Hardware log: `NUXEL_ANIM_TAKEOVER no /proc`.
+2. The scan ran **after `switch_root`**, which had already moved `/proc` out of the
+   player's namespace.
+
+Fixed by (a) opening directories with a plain `O_RDONLY`, (b) an init.sh handshake that
+does not hand the rootfs over until the player has committed a frame, and (c) deferring
+the resident painter entirely unless the MP4 cannot own the panel.
+
+## RC-9-3 — the missing state files (same cause as RC-9-2.1)
+
+`STATEDIR_FD` was opened with the same broken `0x10000`, so it was `-EINVAL`.
+`open_at()` then fell back to `AT_FDCWD`, and every state file was created relative to
+the *initramfs* root: `/fb-anim.pid`, `/fb-anim-ready`, `/fb-anim-starting`, `/animation`
+were found in the TWRP root after the run, while `<userdata>/var/lib/nuxel/fb-anim.pid`
+stayed absent and `ANIM_STAGE` stayed `FIRST_LIGHT`. Fixed; A21's boot wrote all of them
+into the Fedora rootfs and `ANIM_STAGE=MP4_PLAYER_ACTIVE` persisted there.
+
+## RC-9-4 — every numeric evidence line was corrupt
+
+```c
+static void wrn(const char*tag,u64 v){ char b[96]; int i=0; while(tag[i])i++; b[i++]='='; … }
+```
+`i` was advanced **past** the tag but the tag bytes were never copied into `b`, so the
+message consisted of uninitialised stack memory followed by the digits. Hexdump of a
+live run of the shipping binary:
+
+```
+4e 55 58 45 4c 5f 46 42 5f 49 4e 46 4f 3a 0a 00   NUXEL_FB_INFO:..
+00 00 00 00 00 3d 31 34 34 30 0a                  …\0\0\0=1440\n      <- "  xres=1440"
+```
+
+That is why no capture in this project ever contained a readable geometry value, and why
+`NUXEL_ANIM_PID`, `fb-anim.pid` and every `*_rc` line were invisible. Fixed in both
+binaries; A21's geometry, colour round-trip and pid evidence are legible for the first
+time.
+
+## RC-9-5 — dead option parsing
+
+`parse_args()` compares a pre-`=` key length `klen`; `--secs` (4) and `--stopfile` (8) were
+compared against `5`, so they were silently ignored. The player therefore had **no**
+working graceful stop mechanism — only signals. Fixed, and the parsed option set is now
+logged every boot (`NUXEL_ANIM_OPT_*`, `NUXEL_ANIM_ARG_PARSE_REV`) so this class of bug
+cannot hide again.
+
+## RC-9-6 (found during the A21 run) — closing `/dev/fb0` blanks the panel
+
+`fb_release` → `decon_release` **disables the display**. A single `dd if=/dev/fb0` issued
+over the live console produced `decon_release + : 0` and then **1279**
+`decon_pan_display: decon0 state(6), UNBLANK missed`. `echo 0 > /sys/class/graphics/fb0/blank`
+re-enabled the panel (`panel_state:OFF -> ON`, `decon_enable - (state:OFF -> ON)`,
+`FRAME_DONE … display on`) but did **not** make the pans succeed again — only a
+`FBIOPUT_VSCREENINFO` did. Consequences:
+
+* any tool that reads `/dev/fb0` (`nuxel-hwprobe`, `nuxel-diag`, `show_boot_splash()`'s
+  shell redirect, and our own diagnostics) can blank the panel;
+* a long-running animation must re-assert the DECON rather than assume the one-shot
+  bring-up at startup is permanent → **A22**.

@@ -32,11 +32,20 @@ static long sys(long n,long a,long b,long c,long d,long e,long f){
 static long op(const char*s){return sys(56,-100,(long)s,2,0,0,0);}          /* openat O_RDWR */
 static int  io(long fd,long request,void* p){return (int)sys(29,fd,request,(long)p,0,0,0);}
 static void closefd(long fd){sys(57,fd,0,0,0,0,0);}
+static long mkfile(const char*p){return sys(56,-100,(long)p,0x241,0600,0,0);} /* openat CREAT|TRUNC|WRONLY */
+static int  fexists(const char*p){long f=sys(56,-100,(long)p,0,0,0,0); if(f<0)return 0; closefd(f); return 1;}
+static long getpid_(void){return sys(172,0,0,0,0,0,0);}
+static void cat2(char*d,const char*a,const char*b){int i=0;while(a[i]){d[i]=a[i];i++;}int j=0;while(b[j]){d[i++]=b[j++];}d[i]=0;}
 static void quit(int code){sys(93,code,0,0,0,0,0);for(;;){}}
 static void sleep_ms(long ms){long ts[2];ts[0]=ms/1000;ts[1]=(ms%1000)*1000000L;sys(101,(long)ts,0,0,0,0,0);}
 static void wr(const char*s){u64 n=0;while(s[n])n++;if(n)sys(64,2,(long)s,n,0,0,0);}
-static void wrn(const char*tag,u64 v){char b[96];int i=0;while(tag[i])i++;b[i++]='=';char d[24];int k=0;if(!v)d[k++]='0';while(v){d[k++]='0'+(int)(v%10);v/=10;}while(k)b[i++]=d[--k];b[i++]='\n';sys(64,2,(long)b,i,0,0,0);}
-static void wrh(const char*tag,u64 v){char b[96];int i=0;while(tag[i])i++;b[i++]='=';b[i++]='0';b[i++]='x';char d[20];int k=0;if(!v)d[k++]='0';while(v){int h=(int)(v&15);d[k++]=h<10?('0'+h):('a'+h-10);v>>=4;}while(k)b[i++]=d[--k];b[i++]='\n';sys(64,2,(long)b,i,0,0,0);}
+/* A21 FIX: A16..A20 counted the tag length but NEVER COPIED the tag bytes into
+   the buffer, so every numeric evidence line (xres/stride/smem_len/READBACK)
+   reached the ram console as uninitialised stack memory + the digits.  The
+   measurement was always taken correctly; only the label was garbage, which is
+   why no capture in this project ever contained a readable geometry value. */
+static void wrn(const char*tag,u64 v){char b[96];int i=0;while(tag[i]&&i<72){b[i]=tag[i];i++;}b[i++]='=';char d[24];int k=0;if(!v)d[k++]='0';while(v){d[k++]='0'+(int)(v%10);v/=10;}while(k)b[i++]=d[--k];b[i++]='\n';sys(64,2,(long)b,i,0,0,0);}
+static void wrh(const char*tag,u64 v){char b[96];int i=0;while(tag[i]&&i<70){b[i]=tag[i];i++;}b[i++]='=';b[i++]='0';b[i++]='x';char d[20];int k=0;if(!v)d[k++]='0';while(v){int h=(int)(v&15);d[k++]=h<10?('0'+h):('a'+h-10);v>>=4;}while(k)b[i++]=d[--k];b[i++]='\n';sys(64,2,(long)b,i,0,0,0);}
 
 struct fb_bitfield{u32 offset,length,msb_right;};
 struct fb_var{u32 xres,yres,xres_virtual,yres_virtual,xoffset,yoffset,bits_per_pixel,grayscale;
@@ -48,6 +57,7 @@ static u8 *fb;          /* mmap base of the whole virtual framebuffer */
 static u8 *base;        /* current paint target (fb + TOFF*STRIDE)      */
 static u64 mapped;
 static u32 W,H,YVIR,STRIDE,BPP,TOFF;
+static const char *STATE_DIR;   /* A21: where the hold painter publishes its pid and looks for a stop */
 static struct fb_var V;
 
 static u32 pack(u32 r,u32 g,u32 b){
@@ -220,15 +230,22 @@ __asm__(
 void nuxel_start(long *sp){
  long argc=sp[0];
  char **argv=(char**)&sp[1];
- int hold=0; long hold_secs=0;
+ int hold=0; long hold_secs=0; STATE_DIR=0; int FBVAR_ORDER=0;
  for(long i=1;i<argc;i++){
    const char*a=argv[i];
+   if(a[0]=='-'&&a[1]=='-'&&a[2]=='s'&&a[3]=='t'&&a[4]=='a'&&a[5]=='t'&&a[6]=='e'&&a[7]=='d'&&a[8]=='i'&&a[9]=='r'&&a[10]=='='){
+     STATE_DIR=a+11; continue;
+   }
+   if(a[0]=='-'&&a[1]=='-'&&a[2]=='f'&&a[3]=='b'&&a[4]=='v'&&a[5]=='a'&&a[6]=='r'&&a[7]=='-'
+      &&a[8]=='o'&&a[9]=='r'&&a[10]=='d'&&a[11]=='e'&&a[12]=='r'){ FBVAR_ORDER=1; continue; }
    if(a[0]=='h'&&a[1]=='o'&&a[2]=='l'&&a[3]=='d'&&a[4]==0){
      hold=1;
      if(i+1<argc){ const char*n=argv[i+1]; int ok=n[0]!=0; long v=0;
        for(int j=0;n[j];j++){ if(n[j]<'0'||n[j]>'9'){ok=0;break;} v=v*10+(n[j]-'0'); }
        if(ok) hold_secs=v; }
-     break;
+     /* A21: do NOT break here -- the option scan must keep going so that
+        `--statedir=...` is honoured wherever it appears in argv. */
+     continue;
    }
  }
 
@@ -238,6 +255,10 @@ void nuxel_start(long *sp){
  for(u64 i=0;i<sizeof(V);i++)((u8*)&V)[i]=0;
  if(io(fd,FBIOGET_VSCREENINFO,&V)<0||io(fd,FBIOGET_FSCREENINFO,&F)<0){wr("NUXEL_FB_IOCTL_FAILED\n");quit(3);}
  W=V.xres;H=V.yres;YVIR=V.yres_virtual?V.yres_virtual:V.yres;STRIDE=F.line_length;BPP=V.bits_per_pixel;
+ /* A23: hardware colour order unless --fbvar-order was given. */
+ if(!FBVAR_ORDER&&BPP==32){ V.red.offset=0; V.green.offset=8; V.blue.offset=16;
+   V.red.length=8; V.green.length=8; V.blue.length=8;
+   wr("NUXEL_FB_HW_ORDER=abgr8888 R@0 G@8 B@16 (overrides fb_var)\n"); }
  /* Geometry sanity: refuse anything we cannot reason about, and never trust a
     yres_virtual that is wildly larger than the panel (S10+ reports 2x, 6080). */
  if(STRIDE==0){wr("NUXEL_FB_ZERO_STRIDE\n");quit(7);}
@@ -249,6 +270,28 @@ void nuxel_start(long *sp){
  wrh("  smem_start",F.smem_start); wrn("  smem_len",F.smem_len);
  wrh("  mmio_start",F.mmio_start); wrn("  mmio_len",F.mmio_len);
  wrn("  red.len",V.red.length); wrn("  green.len",V.green.length); wrn("  blue.len",V.blue.length);
+ wrh("  red.off",V.red.offset);   wrh("  green.off",V.green.offset);
+ wrh("  blue.off",V.blue.offset); wrh("  transp.off",V.transp.offset);
+ wrn("  transp.len",V.transp.length);
+
+/* ============================================================================
+ * A23 -- THE PANEL'S REAL CHANNEL ORDER.
+ *
+ * The values just logged are what decon_check_var() DECLARES (red@16, blue@0).
+ * They are not what the panel does.  decon_pan_display() -- the only path that
+ * programs a DECON window on this board, drivers/video/fbdev/exynos/dpu20/
+ * decon_dsi.c ~line 1204 -- hard-codes
+ *     case 24: case 32: config.format = DECON_PIXEL_FORMAT_ABGR_8888;
+ * and include/dt-bindings/display/exynos-display.h numbers those formats in the
+ * DRM fourcc order (ARGB_8888=0, ABGR_8888=1, RGBA_8888=2, BGRA_8888=3, ...),
+ * where ABGR8888 is the memory word A[31:24] B[23:16] G[15:8] R[7:0].
+ * So the glass reads RED from bits 0..7.  Packing with V's offsets put red and
+ * blue in each other's place: A16-A22's first-light frames and the A20
+ * photograph ("red background with circuitry") are both explained by this.
+ * We therefore OVERRIDE the declared fields with the hardware truth before any
+ * colour is packed.  --fbvar-order (below) restores the old behaviour for A/B.
+ * ==========================================================================*/
+
  if(W<64||H<64||W>10000||H>10000||(BPP!=16&&BPP!=24&&BPP!=32)||!V.red.length||!V.green.length||!V.blue.length){
    wr("NUXEL_FB_UNSUPPORTED_PIXEL_FORMAT\n");quit(4);}
  u64 need=(u64)STRIDE*H;
@@ -268,6 +311,20 @@ void nuxel_start(long *sp){
  /* Prove the store actually landed in the mapped memory the DECON scans. */
  wrh("NUXEL_FB_READBACK_px0",*(volatile u32*)(fb+0));
  wrh("NUXEL_FB_READBACK_center",*(volatile u32*)(fb+(u64)(H/2)*STRIDE+(u64)(W/2)*(BPP/8)));
+ /* A21: deterministic colour round-trip.  Packs pure red/green/blue/white/black
+    with the driver-declared bitfields and reads the u32 back, so the packing that
+    the animation player now shares is provable from the console alone. */
+ {
+   u32 cR=pack(255,0,0),cG=pack(0,255,0),cB=pack(0,0,255),cW=pack(255,255,255),cK=pack(0,0,0);
+   volatile u32*probe=(volatile u32*)(fb+(u64)(H-4)*STRIDE);
+   probe[0]=cR; probe[1]=cG; probe[2]=cB; probe[3]=cW; probe[4]=cK;
+   wrn("NUXEL_FB_COLOR_PACK_R_expected",cR); wrn("NUXEL_FB_COLOR_PACK_R_readback",probe[0]);
+   wrn("NUXEL_FB_COLOR_PACK_G_expected",cG); wrn("NUXEL_FB_COLOR_PACK_G_readback",probe[1]);
+   wrn("NUXEL_FB_COLOR_PACK_B_expected",cB); wrn("NUXEL_FB_COLOR_PACK_B_readback",probe[2]);
+   wrn("NUXEL_FB_COLOR_PACK_W_expected",cW); wrn("NUXEL_FB_COLOR_PACK_W_readback",probe[3]);
+   wrn("NUXEL_FB_COLOR_PACK_K_expected",cK); wrn("NUXEL_FB_COLOR_PACK_K_readback",probe[4]);
+ }
+
 
  PCX=(int)W/2; PCY=(int)(H*55/100);
  PSIZE=(int)W/9; if(PSIZE<40)PSIZE=40;
@@ -280,8 +337,28 @@ void nuxel_start(long *sp){
 
  if(hold){
    wr("NUXEL_FB_HOLD_START\n");
+   /* A21: publish our own pid and honour a stop file, so the resident painter can
+      be stopped deterministically.  A16..A20 relied on `$!`, which toybox never
+      sets, and on a /proc scan performed after switch_root had already moved
+      /proc -- so nothing could ever stop this painter. */
+   char holdpid_path[160]; char stop_path[160]; char ready_path[160];
+   holdpid_path[0]=0; stop_path[0]=0; ready_path[0]=0;
+   if(STATE_DIR){ cat2(holdpid_path,STATE_DIR,"/fb-hold.pid");
+                  cat2(stop_path,STATE_DIR,"/fb-hold-stop");
+                  cat2(ready_path,STATE_DIR,"/fb-anim-ready"); }
+   if(holdpid_path[0]){ long pf=mkfile(holdpid_path); if(pf>=0){
+       /* write the pid INTO the file as well as to the log: init.sh and the MP4
+          player must be able to stop this painter deterministically. */
+       u64 v=(u64)getpid_(); char pd[24]; int kk=0; if(!v) pd[kk++]='0';
+       while(v){ pd[kk++]='0'+(int)(v%10); v/=10; }
+       { char pb[24]; int q=0; while(kk) pb[q++]=pd[--kk]; pb[q++]='\n';
+         sys(64,pf,(long)pb,q,0,0,0); }
+       closefd(pf); }
+     wrn("NUXEL_FB_HOLD_PID",(u64)getpid_()); }
    int f=0; unsigned long fr=0;
    for(;;){
+     if(STATE_DIR && (fr%4)==0 && (fexists(stop_path)||fexists(ready_path))){
+        wr("NUXEL_FB_HOLD_STOPPED stop-file-or-mp4-ready\n"); break; }
      f=(f+1)%12; if(f==0) f=1;
      spin_frame(f); scanout_commit(fd,0);
      fr++;

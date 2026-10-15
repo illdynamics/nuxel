@@ -919,3 +919,104 @@ writes never leave the gadget. The device-side answer is in the ram console
 
 **Therefore every A18 result that matters — root resolution, `switch_root`,
 systemd service execution, cgroup v2 — is still pending a TWRP round trip.**
+
+## CYCLE 8 — A20 (original Nuxel MP4 animation)
+
+### A20 attempt 1/2 — INEFFECTIVE (not a boot failure: nothing ran)
+| Field | Value |
+|---|---|
+| Candidates | `A20/boot.img` sha256 `490e86b5…` (lzma), then `0a22a570…` (lzma, `--statedir` fix) |
+| Target | BOOT `/dev/block/sda14` only, full readback PASS both times |
+| Reboot | 16:44:03Z |
+| Result | the device **re-entered recovery** — bootloader log `s5p_check_keypad: 0x10110000` / `recovery mode set!` / `recovery: Loading entire partition`. `misc` and `param` are all-zero, so no stale BCB; a key was down at power-on. The candidate never executed. |
+| Evidence | `captures/20261015T164357Z-A20-live-run/` |
+
+### A20 attempt 3 — INEFFECTIVE (candidate ran, but not our `/init`)
+| Field | Value |
+|---|---|
+| Candidate | `A20/boot.img` sha256 `b8b596e7…` (gzip external ramdisk) |
+| Reboot | 16:58:05Z |
+| Result | BOOT loaded correctly, **no keypad recovery**, kernel received the ramdisk (`Freeing initrd memory: 3776K`) and **still rejected it** (`junk in compressed archive`). The boot ran A19's `/init` from the kernel's built-in initramfs: old `FIRSTLIGHT hold started pid=`, the 42 s shell scan, no `fb-anim.pid`, `ANIM_STAGE=FIRST_LIGHT`. Ended in a hard-reset-triggered panic at ~51 s. |
+| Root cause | `INITRAMFS-DELIVERY-ROOT-CAUSE.md` — the bootloader advertises an initrd it never populates; only a kernel-embedded initramfs is used, and `lzma`, `gzip` and any other external container are equally ignored. |
+
+### A20 attempt 4 — DELIVERED (kernel-embedded initramfs)
+| Field | Value |
+|---|---|
+| Kernel | rebuilt in container `nuxel-kb` as `Image-A20`, 48,781,320 B, sha256 `cdb974a89068efe7cd623a0f1da718c853303edaf212adb7ebace2e93bc9e962`, `CONFIG_INITRAMFS_SOURCE=/b/a17/initramfs-a20.cpio` (verified: embedded archive 8,843,324 B contains `NUXEL_INIT_REV`, `nuxel_start_animation`, `nuxel-anim-player`, `ORIGINAL_MP4`) |
+| boot.img | 51,587,072 B sha256 `8edd97b79b43e21bf411ce7645cc91635c25da8ee529b7e4ba6fabf23c9e2650` |
+| Preflight/gate | `build-candidate.sh` release gate **PASS**, `partition_slack` 6,084,608 |
+| Backup to Mac | `backups/s10plus/20261015T170155Z-R58M75KDB2X/boot-before.img` |
+| Write | dd → `/dev/block/sda14`, 51,587,072 B |
+| Readback | **VERIFIED BOOT: `8edd97b7…` (full re-read == local image)** |
+| Reboot | **2026-10-15T17:02:31Z** |
+| Observation window | at 17:05:49Z still running (3 min 18 s) with `/dev/cu.usbmodem201` continuously enumerated. Previous candidates died in ~96 s. **No TWRP return.** |
+| State | `AWAITING_BOOT_RESULT` (operator visual confirmation) |
+| Not written | RECOVERY, USERDATA image, EFS, SEC_EFS, PIT, bootloader, radio, DTBO |
+
+The animation container was deployed separately, by a **live write into the
+mounted Fedora rootfs** (no 4 GiB reflash):
+`/usr/share/nuxel/boot/nuxel-animation.nux` (18,481,546 B, sha256 `7d296871…`,
+re-verified on device) and a copy of the player at `/usr/bin/nuxel-anim-player`
+(66,120 B, sha256 `87f755f4…`).
+
+---
+
+# A21 — 2026-10-15 (cycle 9) — one penguin / correct colours / smooth playback
+
+```
+boot.img       build/out/s10plus/debug-candidates/A21/boot.img
+               51,587,072 B  sha256 153807621cf9fa22c10edcd4f74078fc022cf55e5d3ed1e4940378b50a749173
+Image-A21      48,781,320 B  sha256 e34b7b4bf2dfe4ecc626ff442a0cb1a2531623b19c95f45618b9766986ebc2b4
+initramfs      8,905,080 B   sha256 a492a385554b0aee21b6c5993c714f44d8f158906ef76a63bdd2a8298c738597
+  kernel-embedded initramfs verified: gzip @33809680 inflates to exactly that cpio
+nuxel-anim-player 66,152 B  sha256 c35b2db4b309cb236880b63f02f9bf9c92356cde613e9b40ed47518ba1001903
+nuxel-fb-phone    68,240 B  sha256 8539cde1f2556206100320ae88ae060b3bd25f747c74bad26487975be3d19c62
+FLASHED  BOOT /dev/block/sda14  full 51,587,072-byte SHA-256 readback PASS
+BACKUP   backups/nuxel-adb/20261015T173839Z-R58M75KDB2X, …1746Z-…
+REBOOT   REBOOT_AT=2026-10-15T17:40:40Z
+RESULT   BOOT_RESULT=FAILED_USER_RETURNED_TO_TWRP at 17:49:19Z (operator hard-reset at t=400 s)
+```
+
+What was different from A20 (all measured on the boot): the palette is expanded into the
+destination pixel format with the driver's bitfields; the resident painter is deferred
+and, when it does run, stoppable by pid-file + stop-file + identity-checked SIGTERM; the
+numeric evidence channel works; `--secs`/`--stopfile` actually parse; state files land in
+the Fedora rootfs.
+
+Live (over the USB console, while the animation played):
+`24.00 fps, 0 skips over 5520 frames`, `NO_PENGUIN_PAINTER_RUNNING`,
+`ANIM_STAGE=MP4_PLAYER_ACTIVE`, `systemctl --failed = 0`.
+
+New hardware hazard found during the run (our fault, now fixed in A22):
+`decon_release` disables the panel on **any** `close()` of `/dev/fb0`, and 1279 pans then
+failed with `UNBLANK missed`. `fb_blank` alone does not recover it; `FBIOPUT_VSCREENINFO`
+does.
+
+# A22 — 2026-10-15 (cycle 9) — self-healing panel + opt-in colour test
+
+```
+boot.img       build/out/s10plus/debug-candidates/A22/boot.img
+               51,587,072 B  sha256 3d35aedc1abb539afb593b835e12263796980f4b4a541dcdca624a0213ccc978
+Image-A22      48,781,320 B  sha256 c77afcd27cc3acc4973d20092db01aa381cde3016baa3f91083f22d5d003b044
+initramfs      8,905,080 B   sha256 507b812f90bf3b6c8dd866b416d9a7faddee5121033bab17f4d986927834c549
+init (init.sh) 68,468 B      sha256 841fb8b0f5f7ab3c09f0dea8b95cdb614b4a2a4eb0a5e6f3f31d101562854a8b
+nuxel-anim-player 66,152 B  sha256 c7def23e4fd690808b6266e9e4ee0023b9c5c1447bccd4915f2d8057c97ca5dc
+  kernel-embedded initramfs verified: gzip @33809680 inflates to exactly that cpio
+FLASHED  BOOT /dev/block/sda14  full 51,587,072-byte SHA-256 readback PASS
+BACKUP   backups/nuxel-adb/20261015T175036Z-R58M75KDB2X
+REBOOT   REBOOT_AT=2026-10-15T17:51:18Z
+RESULT   AWAITING_BOOT_RESULT
+```
+
+Changes vs A21 — each one justified by an A21 measurement, not by speculation:
+
+1. player re-issues `FBIOBLANK(UNBLANK)` + `FBIOPUT_VSCREENINFO` on any failed
+   `FBIOPAN_DISPLAY`, and unconditionally every 240 frames; logs
+   `NUXEL_ANIM_PAN_FAILED_TOTAL`, `NUXEL_ANIM_PAN_LAST_RC`, `NUXEL_ANIM_PAN_REASSERTED`;
+2. player gains opt-in `--colourtest[=secs]` (red/green/blue/white/black bars packed with
+   the driver bitfields, expected + read-back u32 logged) — never used by the boot path;
+3. `init.sh` clears stale `fb-hold.pid` / `fb-anim.pid` at boot.
+
+Live check at t=59 s: `HEARTBEAT_FRAMES` 240/480/720/960/1200 exactly 10 s apart = 24.0 fps,
+`NO_PENGUIN_PAINTER`, `ANIM_STAGE=MP4_PLAYER_ACTIVE`, `PAN_FAILED` count zero (the console
+was used read-only this time: **no `/dev/fb0` access**).
