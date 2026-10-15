@@ -1,0 +1,2 @@
+debugfs 1.47.4 (6-Mar-2025)
+/etc/fstab: File not found by ext2_lookup 

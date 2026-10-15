@@ -86,3 +86,34 @@ capture of a successful Odin flash of the same device. See
 5. Run Fedora ARM64 full-runtime builder; prove systemd, Python, Phosh and Phoc
    are real RPM binaries. Do not auto-enable graphical login until DRM verified.
 6. Test visible display, touch, Nuxel Home, radio and power on hardware.
+
+---
+
+# UPDATE 2026-10-15 (cycle 5, candidate A15) — hardware-measured status
+
+The earlier "bootloops on the Samsung logo / boot handoff unresolved" statements
+above are **superseded**. The measured state on the real SM-G975F is now:
+
+| Milestone | Status | Evidence |
+|---|---|---|
+| S-Boot loads and executes the Nuxel ARM64 kernel | PROVEN | S-Boot records + kernel `linux_banner` in the ram console |
+| Embedded initramfs executes | PROVEN | `NUXEL_MARKER INITRAMFS_EXECUTED` |
+| Persistent kernel logging (ram console + pstore) | PROVEN | `/proc/last_kmsg` 2 MiB, `/sys/fs/pstore/dmesg-ramoops-0.enc.z` |
+| Nuxel `/init` executes, USERDATA discovered | PROVEN | `USERDATA_FALLBACK /dev/sda31`, `USERDATA_DISCOVERED` |
+| Fedora ext4 rootfs mounts | PROVEN | `ROOTFS_MOUNTED /dev/sda31 ext4` |
+| `switch_root` → Fedora systemd 258 PID 1 | PROVEN | `systemd[1]: systemd 258.11-1.fc43 … arm64` |
+| systemd builds the full unit graph | PROVEN | A15: `Reached target basic.target` at t=3.579 s |
+| Fedora binary execution from the real root | PROVEN (A14) | `FEDORA_EXEC_OK uid=0` |
+| Kernel primitives measured on-device | PROVEN | `NUXEL-SYSCALL` / `NUXEL-SPAWN-PROBE` tables |
+| **Stable boot without a spontaneous reset** | **PROVEN (A15)** | A15 ran **1892 s** with no software reboot; the reset was the operator's Samsung `sec_hard_reset_hook` (mission §5 case) |
+| **Normal Fedora child service execution** | **NOT PROVEN** | A15: all **28** units die `Failed to spawn executor: Function not implemented`; A14's single `systemd-udevd` success did not repeat |
+| systemd units attach to cgroups | NOT PROVEN | cgroup2 is mounted (`CGROUP2_MOUNTED`) but per-unit cgroup dirs are never created because nothing spawns |
+| Functional framebuffer / DRM scanout | NOT PROVEN | panel/DSIM/DECON/fb all probe and register, but no `decon_enable`/UNBLANK/FRAME_DONE in 1892 s |
+| Frame visible on the S10+ AMOLED | **NOT PROVEN** | A15's `FIRSTLIGHT_FRAME_WRITTEN` came with no `NUXEL_FB_INFO`/`ANIM` line — the shell swallowed them, so it is not display evidence. A16 (flashed, awaiting observation) fixes the logging and forces a DECON commit |
+| Spinning penguin on the panel | **NOT PROVEN** | implemented and now resident in A16, needs an eye and a working scanout |
+| Phoc / Phosh / touch phone UI | BLOCKED | needs visible output + real service execution; `# CONFIG_DRM is not set` in this 4.14 tree |
+
+Progress percentages in the table at the top of this file are left as historical
+estimates; the milestone table above is the evidence-based truth. Note in
+particular that "no ADB after boot" is expected: the Fedora rootfs contains no
+`adbd`, so ADB availability cannot be used as a boot-success signal.

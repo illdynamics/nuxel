@@ -272,3 +272,72 @@ the cgroup tree was created, and only the pidfd-based spawn path failed.
 | H-C4-G | `/dev/fb0` exists and is writable, so first light is an fbdev write, not a DRM problem | OPEN | `FIRSTLIGHT …` lines; `nuxel-fb-phone` prints a named `NUXEL_FB_*` reason on every failure path |
 | H-C4-H | The panel may be driven by the bootloader's DECON and ignore kernel fb writes | OPEN — this is the main first-light risk | operator-visible result; a zero exit with no visible change confirms it |
 | H-C4-I | cgroup v2 / BPF gaps are cosmetic for service startup on 4.14 | OPEN | BPF attach failures were already non-fatal in A12 (`Proceeding WITHOUT applying ACL`); check whether any *unit* fails for a cgroup reason after the repair |
+
+---
+
+# CYCLE 5 HYPOTHESES (A15)
+
+## H-C5-1 — the A14 spontaneous reboot was our own initramfs dead-man watchdog — **CONFIRMED (hardware)**
+
+*Prediction:* if the watchdog is the cause, the reboot request appears at exactly
+`arm_time + NUXEL_BOOT_WATCHDOG` and comes from an initramfs-lineage process
+(comm inherited `init`), with the *normal* reboot magic and no panic.
+*Measurement:* probe error at t=47.163135 s, reboot notifier at t=47.171346 s
+(armed t≈2.15 s, `NUXEL_BOOT_WATCHDOG=45`) from PIDs 3557/3558/3561, comm `init`,
+`sec_debug: set magic code (0x0)`, `debug-snapshot: normal reboot starting`, no
+panic/BUG, HW watchdog petted every 10 s. A12 showed the same pattern with its
+30 s deadline (single rebooting PID 3466, comm `init`, t=31.971 s).
+*Residual uncertainty (recorded honestly):* the script's `*) exit 0` branch
+*should* have made an empty PID-1 probe exit silently, and three tasks rebooted
+within 8 ms where one `sync; reboot -f` was expected. The empty-string `case`
+behaviour of this toybox `sh` (0.8.14) cannot be tested off-hardware, and the
+watchdog's own evidence lines were discarded to `/dev/null`. What is *not* in
+doubt is that the reboot originates in the initramfs shell lineage at the
+watchdog's deadline — hence P-C5-1 removes the block rather than "fixing" it, and
+A15's log will show whether any reboot request remains.
+
+## H-C5-2 — mounting cgroup v2 lets systemd actually start services
+
+*Prediction:* with `/sys/fs/cgroup` a cgroup2 mount inside the new root,
+`Failed to attach to cgroup /system.slice/…` disappears, `system.slice` and
+`init.scope` are created, and units progress from `Failed at step CGROUP` to
+either running or failing for a *different*, readable reason.
+*Supporting evidence:* kernel has `CONFIG_CGROUPS=y` + all controllers
+(A15 config); A14's failure message is a missing destination, and A14's own probe
+reported `cgroup2_unified=absent`.
+*Falsifier:* `CGROUP2_MOUNT_FAILED` in the A15 log, or the same
+`Failed at step CGROUP` after a successful mount (which would move the
+investigation to controller delegation).
+
+## H-C5-3 — the panel is black because the DECON scans a buffer we do not paint
+
+*Prediction:* painting **both** halves of the 1440×6080 virtual framebuffer makes
+the frame appear even though A14's single-buffer paint did not.
+*Alternative (D2/D3 in DISPLAY-BRINGUP.md):* the DECON window is simply not
+enabled, in which case no amount of fbdev writing helps and the next cycle must
+work in `drivers/video/fbdev/exynos/decon/`.
+
+## H-C5-4 — the A14 black screen is not a userspace failure at all
+
+*Prediction:* with the watchdog gone and cgroup v2 present, the boot continues
+long past 47 s; the only open question is the panel.
+*Falsifier:* a new reboot or a new fatal error before the handoff.
+
+---
+
+# CYCLE 6 — hypotheses (A16)
+
+| ID | Hypothesis | Status | Evidence / test |
+|---|---|---|---|
+| H-C6-A | The A15 reset is Samsung's operator hard-reset hook, not a boot defect | **CONFIRMED** | `kernel BUG at drivers/samsung/sec_hard_reset_hook.c:157!` + `hard_reset_hook_callback` in the panic stack; no other panic/watchdog/reboot line in 1892 s |
+| H-C6-B | The A15 initramfs watchdog removal was correct | **CONFIRMED** | 1892 s uptime with HW watchdog keepalives throughout; A14's `normal reboot starting` at t=47.171 s is absent |
+| H-C6-C | `FIRSTLIGHT_FRAME_WRITTEN` in A15 was not display evidence | **CONFIRMED** | the A15 log contains `FIRSTLIGHT exit=0` and *no* `NUXEL_FB_INFO`/`NUXEL_FB_ANIM`; the shell's `read` cannot run in this toybox, which is logged verbatim |
+| H-C6-D | A command-mode DECON needs an explicit fbdev commit before a paint is visible | **OPEN — instrumented in A16** | `NUXEL_FB_UNBLANK_rc` / `NUXEL_FB_ACTIVATE_rc` / `NUXEL_FB_PAN_rc` return codes are now logged; ABOLISHED if the panel is still black with all three rc=0 |
+| H-C6-E | The DECON scans a buffer other than the one A14/A15 painted | **OPEN — instrumented in A16** | A16 paints every virtual buffer (max 4) and animates in all of them; `NUXEL_FB_BUFFERS_PAINTED` reports how many |
+| H-C6-F | The fbdev memory is scanout for the DECON at all | **OPEN** | if A16 shows a coloured panel, yes; if the panel is still black with `NUXEL_FB_DRAW_SUCCESS`, the scanout source is elsewhere and `decon_initial_display` must be inspected |
+| H-C6-G | The A13 `posix_spawn` fallback is not in effect despite the rootfs tag | **OPEN** | local image has no `.nuxel-patches` tag and a third library hash; needs USERDATA readback + on-device library dump |
+| H-C6-H | `ERRNO_IS_NOT_SUPPORTED()` does not catch glibc's positive ENOSYS in the patched wrapper | **OPEN** | source-level: inspect `src/basic/errno-util.h` for the 258.11 revision before changing anything |
+
+| H-C6-G | The A13 `posix_spawn` fallback is not in effect despite the rootfs tag | **CONFIRMED, root cause identified** | `libsystemd-core-258.11-1.fc43.so` contains both `exec_spawn` and its own `posix_spawn_wrapper`, but the installer only replaces `libsystemd-shared-*.so`; see ROOT-CAUSE RC-6.4 |
+| H-C6-H | `ERRNO_IS_NOT_SUPPORTED()` fails to catch glibc's positive ENOSYS | **REFUTED** | `_DEFINE_ABS_WRAPPER` → `ERRNO_IS_NEG_##name(-ABS(r))`, and `ERRNO_IS_NEG_NOT_SUPPORTED()` includes `-ENOSYS` |
+| H-C6-I | A build with `HAVE_PIDFD_SPAWN=0` removes the failure without any source patch | **OPEN, promising** | `process-util.c` `#if HAVE_PIDFD_SPAWN` … `#else` uses plain `posix_spawn()` + caller `cg_attach()` |

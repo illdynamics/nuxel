@@ -1,0 +1,99 @@
+# STATUS — cycle 5 / candidate A15 (2026-10-15)
+
+**Mission:** boot Nuxel (Fedora 43 aarch64) on Samsung Galaxy S10+ SM-G975F
+(`beyond2lte`), Exynos 9820 rev 26, bootloader G975FXXSEFUL1, TWRP 3.7.0_9-2,
+ADB serial R58M75KDB2X. Earlier cycles: `STATUS.md.cycle3`,
+`STATUS.md.cycle4-pre-A13`, `STATUS.md.cycle4-final`.
+
+## Headline
+
+**A14 is the best hardware result so far and it changes the mission completely:**
+the Fedora rootfs mounted, `switch_root` started Fedora systemd 258.11 as PID 1,
+and — new in A14 — **real Fedora child processes executed**: `systemd-udevd`
+runs and processes kernel uevents. The A13 `pidfd_spawn`→`posix_spawn` library
+repair worked; `Failed to spawn executor: Function not implemented` is gone.
+
+Two blockers remain, both now identified with hardware evidence:
+
+1. **The spontaneous reboot is ours.** The initramfs dead-man watchdog fires at
+   its 45 s deadline and force-reboots a *healthy, running* Fedora. Measured in
+   the A14 ram console: the watchdog's PID-1 probe fails with
+   `sh: 1/comm: No such file or directory` at t=47.163135 s and three processes
+   in this initramfs's own shell lineage (comm `init`, PIDs 3557/3558/3561) run
+   the reboot notifier at t=47.171346 s, with the *normal* reboot magic `0x0` —
+   no panic, no watchdog bite, HW watchdog petted throughout. Full analysis:
+   `scripts/s10plus-debug-pack/captures/20261015T130509Z-A14-postfail/ANALYSIS-A14.md`.
+2. **The next real blocker is cgroups, not exec.** Every systemd unit dies with
+   `Failed to attach to cgroup …: No such file or directory` / `Failed at step
+   CGROUP spawning …`, because no cgroup hierarchy was mounted at all
+   (`cgroup2_unified=absent`). The kernel does support cgroup v2 with the
+   controllers systemd needs (verified in the A15 build config:
+   `CONFIG_CGROUPS=y CONFIG_MEMCG=y CONFIG_CGROUP_SCHED=y CONFIG_CGROUP_PIDS=y
+   CONFIG_CGROUP_FREEZER=y CONFIG_CPUSETS=y`).
+
+## Milestones (evidence-backed; "hardware" = measured on the handset)
+
+| # | Milestone | State | Evidence |
+|---|---|---|---|
+| 1 | S-Boot starts the Nuxel kernel | **ACHIEVED** (A2) | S-Boot records + `Starting kernel...` |
+| 2 | ARM64 kernel runs, persistent logging works | **ACHIEVED** (A2) | pstore `linux_banner: Linux version 4.14.253` |
+| 3 | Initramfs unpacks | **ACHIEVED** (A7) | `NUXEL-KDIAG unpack verdict: state=7` |
+| 4 | Nuxel `/init` executes | **ACHIEVED** (A8) | its own `nuxel-init:` lines in the ram console |
+| 5 | USERDATA discovered | **ACHIEVED** (A12) | `USERDATA_FALLBACK /dev/sda31` |
+| 6 | Fedora ext4 mounts | **ACHIEVED** (A12/A14) | `ROOTFS_MOUNTED /dev/sda31 ext4` |
+| 7 | `switch_root` → Fedora PID 1 | **ACHIEVED** (A12/A14) | `systemd[1]: systemd 258.11-1.fc43 … arm64` |
+| 8 | systemd builds its unit graph | **ACHIEVED** (A12) | `sysinit.target`/`basic.target`, `multi-user` queued |
+| 9 | Exact ENOSYS cause | **ACHIEVED** (source-exact, cycle 4) | `pidfd_spawn` → glibc `__clone_pidfd_supported` → `waitid(P_PIDFD)` = Linux 5.4 |
+| 10 | **A core systemd service really runs** | **ACHIEVED (A14)** | `systemd-udevd[3483…3539]` executing, processing uevents |
+| 11 | Fedora binary executes on hardware | **ACHIEVED (A14)** | `NUXEL_MARKER FEDORA_BINARY_EXECUTED` (`FEDORA_EXEC_OK uid=0`) |
+| 12 | Kernel-primitive measurement on hardware | **ACHIEVED (A14)** | `NUXEL-SYSCALL …` + `NUXEL-SPAWN-PROBE …` table |
+| 13 | Nuxel first-light **code** executes | **ACHIEVED (A14)** | `FIRSTLIGHT_FRAME_WRITTEN`, exit=0, frame written to `/dev/fb0` |
+| 14 | **Actual AMOLED output** | **UNVERIFIED** | operator saw a black screen; the panel *is* powered and the DECON *does* probe (`s6e3ha9_beyond2_a3_s0_default`, `panel_power_on … NORMAL`, `exynos-decon 19030000.decon_f`, 35,020,800 B window = 1440x6080x32) — but a successful fbdev write is not proof of scanout |
+| 15 | Boot survives past the 47 s mark (no reboot) | **A15 TARGET** | A14 was killed at 47.17 s by our own watchdog |
+| 16 | systemd services start (cgroup v2) | **A15 TARGET** | A14: `Failed at step CGROUP` for every unit |
+| 17 | Spinning penguin on the panel | **A15 TARGET** | 12-frame rotation, needs the operator's eye |
+| 18 | Phoc / Phosh / touch phone UI | **BLOCKED** | needs 14, 16 and 17 first |
+
+Milestones 1–13 are hardware-proven. A14 is a *regression in exactly one
+respect* vs A12 — A12 rebooted at 31.97 s (same watchdog, shorter deadline),
+A14 at 47.17 s. Both reboots are ours, not the kernel's.
+
+## What A15 changes (BOOT partition only, initramfs only)
+
+| Piece | Why |
+|---|---|
+| **dead-man watchdog removed** (`boot/initramfs/init.sh`) | it is the measured cause of the A14 reboot; a watchdog that can kill a healthy Fedora is worse than none |
+| **cgroup2 mounted into the new root before `switch_root`** | fixes `Failed at step CGROUP` for every systemd unit (A14 measurement) |
+| **first light re-done** (`tools/s10plus/nuxel-fb-phone.c`) | logs every fb geometry field to kmsg; paints *every* buffer of the 1440x6080 virtual framebuffer; unmistakable bright frame (colour bars + big NUXEL wordmark + white-outlined penguin on deep blue, no full-white AMOLED frame); 12-frame spinning penguin; prints `NUXEL_FB_ANIM_DONE` so the init logs `FIRSTLIGHT_ANIMATION_DONE` |
+| kernel source/defconfig/DTB/header | **unchanged** from A12 → the only kernel difference is the embedded initramfs |
+
+## Build-environment defect found and fixed (cycle 5)
+
+The container's kernel trees `/b/src` and `/b/src2` are **silently truncated
+extractions** — `scripts/Kbuild.include` was 0 bytes, which is exactly why any
+`make … defconfig` failed with `make: *** empty variable name. Stop.`
+(`build := -f $(srctree)/scripts/Makefile.build obj` lives in that file, so
+`$(build)` expanded to nothing and kbuild ran `make =scripts/basic`). The A15
+kernel was therefore built from a **fresh extraction of `/b/kernel.tar.gz`**
+(69,687 files) with verified non-empty critical files.
+
+Also: `tools/kernel-relax-werror.sh` deletes `-Werror` tokens, leaving dangling
+backslash continuations in the top-level Makefile, and a naive
+`-Werror`→`-Wno-error` rewrite yields `-Wno-error-implicit-function-declaration`,
+which GCC 15 rejects as an **unknown option (a hard error)**. A15 uses a
+structure-preserving rewrite (`.scratch/s10plus-cycle4/a13/relax-werror.sh`).
+
+## Attempt ledger (cycle 5)
+
+| ID | Change | Gate | Write/readback | Boot result |
+|---|---|---|---|---|
+| A14 | first light at ~2 s, 12 s root-discovery stall removed, `/dev/sda31` auto-identify | PASS | verified `5aff1a10…` | **milestones 10–13**: systemd child services execute, Fedora binary executes, first light runs; **failed**: killed at 47.17 s by our own watchdog |
+| A15 | watchdog removed, cgroup2 mounted, first light instrumented + penguin animation | see FLASH-ATTEMPTS.md | — | *in progress* |
+
+## Standing risks
+* No real stock BOOT backup (`backups/s10plus/boot-original.img` is a `DUMMY`).
+  RECOVERY is untouched and backed up; every write is BOOT-only; USERDATA has
+  never been written (A13/A14 write *into* the mounted Fedora rootfs, never to
+  the raw image).
+* `reboot -f` is the escalation path if a test hangs; the operator's
+  POWER+VOLUMEDOWN combo and TWRP remain available.

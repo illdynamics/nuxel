@@ -1,0 +1,19 @@
+debugfs 1.47.4 (6-Mar-2025)
+   1319   40755 (2)      0      0    4096 14-Oct-2026 17:45 .
+   1317   40755 (2)      0      0    4096 14-Oct-2026 17:45 ..
+   1320   40755 (2)      0      0    4096 14-Oct-2026 17:45 basic.target.wants
+   1322  120777 (7)      0      0      37 14-Oct-2026 17:45 ctrl-alt-del.target
+   1323  120777 (7)      0      0      44 14-Oct-2026 17:45 dbus-org.freedesktop.ModemManager1.service
+   1324  120777 (7)      0      0      57 14-Oct-2026 17:45 dbus-org.freedesktop.nm-dispatcher.service
+   1325  120777 (7)      0      0      43 14-Oct-2026 17:45 dbus.service
+   1326  120777 (7)      0      0      41 14-Oct-2026 17:45 default.target
+   1327   40755 (2)      0      0    4096 14-Oct-2026 17:45 factory-reset.target.wants
+   1329   40755 (2)      0      0    4096 14-Oct-2026 17:45 getty.target.wants
+   1331   40755 (2)      0      0    4096 14-Oct-2026 17:45 multi-user.target.wants
+   1337   40755 (2)      0      0    4096 14-Oct-2026 17:45 network-online.target.wants
+   1339  100644 (1)      0      0     324 14-Oct-2026 17:45 nuxel-firstlight.service
+   1340   40755 (2)      0      0    4096 14-Oct-2026 17:45 sockets.target.wants
+   1344   40755 (2)      0      0    4096 14-Oct-2026 17:45 sysinit.target.wants
+   1350   40755 (2)      0      0    4096 14-Oct-2026 17:45 systemd-journald.service.wants
+   1352   40755 (2)      0      0    4096 14-Oct-2026 17:45 timers.target.wants
+

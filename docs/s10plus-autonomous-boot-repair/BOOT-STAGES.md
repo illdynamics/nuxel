@@ -106,3 +106,61 @@ between them). Claims must be attributed per instance:
 
 `grep -c` over the whole file therefore mixes sessions. The A12 conclusions above
 were taken only from lines 10358–17630.
+
+---
+
+# CYCLE 5 UPDATE — where A14 actually reached (hardware-measured)
+
+| Stage | A12 | A13 | A14 | A15 target |
+|---|---|---|---|---|
+| S-Boot starts our kernel | yes | yes | yes | yes |
+| kernel runs, ram console works | yes | yes | yes | yes |
+| initramfs unpacks | yes | yes | yes | yes |
+| `/init` executes | yes | yes | yes | yes |
+| first-light payload runs | no | (stalled) | **yes, t=2.363 s** | yes + geometry log |
+| USERDATA discovered | yes | no | yes | yes |
+| Fedora ext4 mounted | yes | no | yes | yes |
+| syscall/spawn probes | no | no | **yes** | yes |
+| Fedora binary executes | no | no | **yes** | yes |
+| `switch_root` → systemd PID 1 | yes | no | yes | yes |
+| systemd unit graph | to `basic.target` | no | yes | yes |
+| a real child service runs | **no** (ENOSYS) | no | **yes** (`systemd-udevd`) | yes |
+| units attach to cgroups | n/a | n/a | **no** (`Failed at step CGROUP`) | yes |
+| boot survives past 30–47 s | no (our watchdog, 31.97 s) | no (operator reset) | **no (our watchdog, 47.17 s)** | yes |
+| frame visible on the panel | no | no | **unverified (operator: black)** | operator confirms |
+| penguin animation | no | no | no | yes |
+
+---
+
+# CYCLE 6 UPDATE — where A15 actually reached (hardware-measured, 1892 s)
+
+| Stage | A12 | A13 | A14 | **A15** | A16 (on device) |
+|---|---|---|---|---|---|
+| S-Boot starts our kernel | yes | yes | yes | yes | yes |
+| kernel runs, ram console works | yes | yes | yes | yes | yes |
+| initramfs unpacks | yes | yes | yes | yes | yes |
+| `/init` executes | yes | yes | yes | yes | yes |
+| first-light payload runs | no | (stalled) | yes, t=2.363 s | exit 0 at t=2.147 s but **verdict log swallowed** | verdict written straight to `/dev/kmsg` |
+| USERDATA discovered | yes | no | yes | yes | yes |
+| Fedora ext4 mounted | yes | no | yes | yes | yes |
+| syscall/spawn probes | no | no | yes | yes | yes |
+| Fedora binary executes | no | no | yes | yes | yes |
+| `switch_root` → systemd PID 1 | yes | no | yes | yes | yes |
+| systemd unit graph | to `basic.target` | no | yes | **yes, basic.target t=3.579 s** | yes |
+| a real child service runs | no (ENOSYS) | no | yes (`systemd-udevd`) | **no — 28/28 units ENOSYS** | no |
+| units attach to cgroups | n/a | n/a | no | **no** (`cgroup2` mounted, dirs never created) | no |
+| boot survives past 30–47 s | no (our watchdog, 31.97 s) | no (operator reset) | no (our watchdog, 47.17 s) | **YES — 1892 s, zero software resets** | pending |
+| frame visible on the panel | no | no | unverified | **no (operator: black)** | pending |
+| penguin animation | no | no | no | no | implemented, resident |
+
+### The reset question is answered
+
+A15 was never reset by software. The single `BUG` in the log is
+`drivers/samsung/sec_hard_reset_hook.c:157` from `hard_reset_hook_callback`, the
+AP's operator-forced-reset path. `debug-snapshot: normal reboot starting` and
+`Restarting system` do not appear anywhere in the A15 boot. So "stage: survives
+past 30–47 s" moves from *no* to *yes*, and the mission's Priority-1 question
+("identify whether the restart is explicitly requested by software, caused by a
+kernel panic, initiated by a watchdog, or still undetermined") is answered:
+**none of those — it was the operator's hard-reset hook, i.e. the human recovery
+action under the standing agreement.**

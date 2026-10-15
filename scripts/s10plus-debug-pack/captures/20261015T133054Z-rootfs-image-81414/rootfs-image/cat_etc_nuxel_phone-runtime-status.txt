@@ -1,0 +1,12 @@
+debugfs 1.47.4 (6-Mar-2025)
+NUXEL_DEVICE=s10plus
+NUXEL_CODENAME=beyond2lte
+BASE_OS=fedora-43-aarch64
+INIT_SYSTEM=systemd
+PYTHON3=RPM-installed
+PHOSH=RPM-installed
+PHOC=RPM-installed
+GRAPHICAL_PHONE_SESSION=not-enabled-until-on-device-drm-testing
+MOTOROLA_OVERLAY=absent
+HARDWARE_BOOT_VERIFIED=false
+DISPLAY_DRIVER_VERIFIED=false

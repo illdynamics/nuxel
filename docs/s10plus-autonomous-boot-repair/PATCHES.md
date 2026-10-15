@@ -341,3 +341,107 @@ never loaded (head bytes = kernel console text). Documented in ROOT-CAUSE.md.
 | `nuxel-spawn-probe` | `5f72b673aaccf5a16e22808dd35717c0e1fa811377ab43c26002169d2f84836e` |
 | `nuxel-spawn-probe-static` | `6adbf30d631f30dc7f83ed6d2afd1971ce367105a7a24f93b1b7771dd4b9cabe` |
 | A12 baseline `boot.img` (unchanged, re-verified) | `68217cdd59d047108f9e28de6d008fb8360dc9a5654b338df0c7bad4c26054ed` |
+
+---
+
+# CYCLE 5 PATCHES (A15) — 2026-10-15
+
+## P-C5-1 — remove the initramfs dead-man watchdog (root-cause fix for the A14 reboot)
+
+*File:* `boot/initramfs/init.sh` (was `c433ddd976f6903861ccc16872a4e077d120e3ec76ae3f1056cd07038b2c6709`,
+now `c2cc306dc1e3ab4d66ddc97f39da48902477b8aa5dbf5b3f0f8022159849dd3d`).
+*Evidence:* A14 ram console — watchdog probe ENOENT at t=47.163135 s, three
+comm-`init` processes run the reboot notifier at t=47.171346 s with the normal
+reboot magic `0x0`, while Fedora systemd (comm `systemd`, PID 1) is already
+spawning services. Analysis: `captures/20261015T130509Z-A14-postfail/ANALYSIS-A14.md`.
+*Change:* the `( cd /proc … sleep ${NUXEL_BOOT_WATCHDOG:-45} … sync; reboot -f ) &`
+block is deleted and replaced by a comment that records the measurement;
+`NUXEL_WATCHDOG_PID=""` keeps the existing `[ -n … ] && kill …` disarm line
+working.
+*Why removal and not repair:* the invariant it tries to enforce ("PID 1 comm is
+still the initramfs shell") is unenforceable — `switch_root … /sbin/init` makes
+Fedora's systemd PID 1 with comm `init` as well; its procfs pin runs before
+`/proc` is mounted so its own probe can never succeed; and its evidence went to
+fd 1 (=`/dev/null`). The mission's standing rule is to avoid aggressive software
+watchdogs that obscure the original problem. The vendor **hardware** watchdog is
+deliberately left alone (the `softdog keeper` still feeds it).
+*Tests:* `sh boot/s10plus/tests/test-init-cmdline-independence.sh` (init must stay
+cmdline-independent); a source-level assertion that no `reboot -f`/`poweroff`
+remains reachable on the *post-handoff* path (remaining `reboot -f` calls are all
+pre-handoff fatal-error paths that cannot run after a successful `switch_root`).
+
+## P-C5-2 — mount cgroup v2 (unified hierarchy) before `switch_root`
+
+*File:* `boot/initramfs/init.sh`, immediately before the "mark boot complete"
+section.
+*Evidence:* A14 — every unit fails with
+`Failed to attach to cgroup /system.slice/<unit>: No such file or directory` /
+`Failed at step CGROUP spawning <binary>`; the A14 spawn probe reports
+`cgroup2_unified=absent`. The kernel supports it: `CONFIG_CGROUPS=y
+CONFIG_MEMCG=y CONFIG_CGROUP_SCHED=y CONFIG_CGROUP_PIDS=y CONFIG_CGROUP_FREEZER=y
+CONFIG_CPUSETS=y` (A15 build config).
+*Change:* `mkdir -p "${ROOT_MNT}/sys/fs/cgroup"` then
+`mount -t cgroup2 none "${ROOT_MNT}/sys/fs/cgroup"`, with
+`NUXEL_MARKER CGROUP2_MOUNTED` / `CGROUP2_MOUNT_FAILED`. Only v2 is mounted:
+systemd ≥ 257 requires the unified hierarchy and refuses hybrid mode, so mounting
+v1 controllers would be worse than mounting nothing.
+*Risk:* if the kernel had refused, the marker makes the failure explicit instead
+of leaving systemd to fail with a second-order error.
+
+## P-C5-3 — first-light payload: instrument the fbdev, paint every buffer, add the penguin
+
+*File:* `tools/s10plus/nuxel-fb-phone.c` → `nuxel-fb-phone-aarch64`
+(`f1a0d975ecb10d2dea911ba3515286d4e04ea5a3ade35eb4e11030c4ea3cf843`, 8,784 B,
+built in the container with `gcc -O2 -static -nostdlib -ffreestanding
+-fno-stack-protector -fno-builtin -Wl,-e,_start`).
+*Evidence for the change:* A14 reached `FIRSTLIGHT_FRAME_WRITTEN` with exit 0 and
+the operator still saw a black panel — i.e. the program's success says nothing
+about scanout, and A14 logged **no** geometry at all. `virtual_size=1440,6080`
+with `stride=5760` on the live device means the fb is double-buffered, so a
+single-buffer paint can land on the buffer the DECON is not scanning.
+*Changes:* (1) log `xres/yres/yres_virtual/xoffset/yoffset/bpp/stride/smem_start/
+smem_len/mmio_start/mmio_len/colour bit lengths` to fd 2 (=`/dev/kmsg` in the
+initramfs); (2) paint **every** buffer of the virtual framebuffer and report the
+count; (3) strict `smem_len` bounds check before `mmap` (never map past the
+driver's allocation) and correct `munmap` (the A14 build called syscall 11 =
+`listxattr`, not `munmap`); (4) unmistakable bright design — 4 vivid colour bars,
+large white `NUXEL` wordmark, white-outlined penguin on deep blue — never a
+full-white AMOLED frame (burn-in); (5) 12-frame spinning penguin at 250 ms with
+per-frame `NUXEL_FB_ANIM frame=N` and `NUXEL_FB_ANIM_DONE`.
+*Files touched for the marker:* `boot/initramfs/init.sh` also emits
+`FIRSTLIGHT_ANIMATION_DONE` when the payload reports the animation.
+
+## P-C5-4 — build environment: fresh kernel extraction + structure-preserving relax
+
+*Files:* `.scratch/s10plus-cycle4/a13/relax-werror.sh` (new),
+`.scratch/s10plus-cycle4/a13/build-a15-kernel2.sh` (new).
+*Evidence:* `make … defconfig` in `/b/src` and `/b/src2` fails with
+`make: *** empty variable name.  Stop.` because `scripts/Kbuild.include` in both
+trees is **0 bytes** (`build := -f $(srctree)/scripts/Makefile.build obj` lives
+there, so `$(build)` expanded to nothing and kbuild ran `make =scripts/basic`).
+`/b/kernel.tar.gz` contains the intact tree (74,469 entries); a fresh extraction
+has a 17,410-byte `scripts/Kbuild.include` and configures normally.
+*Change:* build from a fresh extraction (`/b/k15`), and relax `-Werror`
+*structurally*: `-Werror-implicit-function-declaration` →
+`-Wno-error=implicit-function-declaration`, `-Werror=<d>` → `-Wno-error=<d>`,
+`-Werror-<d>` → removed, bare `-Werror` → `-Wno-error`, skipping `scripts/` and
+`tools/` so kbuild's own `$(CC) -Werror` feature probes keep working. The
+repo's `tools/kernel-relax-werror.sh` deletes tokens (leaving dangling
+continuations) and a naive `-Werror`→`-Wno-error` rewrite emits
+`-Wno-error-implicit-function-declaration`, which GCC 15 rejects as an unknown
+option.
+*Note:* inside the container, stdin piping (`sh .scratch/kb.sh sh -c 'cat > f'`)
+silently yields 0-byte files; use `podman cp` and verify with `sha256sum`.
+
+---
+
+# CYCLE 6 — patch/change ledger (A16, BOOT partition only)
+
+| ID | File | Change | Why (evidence) | sha256 |
+|---|---|---|---|---|
+| P-C6-1 | `tools/s10plus/nuxel-fb-phone.c` | argv `hold [secs]`; freestanding entry stub reading argc/argv off the process stack; geometry sanity (`NUXEL_FB_ZERO_STRIDE`, `NUXEL_FB_YVIR_CLAMPED_from`); paint **all** virtual buffers, bounded to 4; mmap read-back of px0 and centre; `scanout_commit()` logging `NUXEL_FB_UNBLANK_rc`/`NUXEL_FB_ACTIVATE_rc`/`NUXEL_FB_PAN_rc`; resident animation loop logging 1 line / ~10 s | A15's frame was invisible and its verdict was swallowed; no `decon_enable` in 1892 s; A14/A15 painted only the active buffer | binary `fed8f9c9acf3287db09a2ee3a6fa46ff0bbd289e180ac63f42d720c045cae158` (9792 B) |
+| P-C6-2 | `boot/initramfs/init.sh` | `nuxel_first_light()` writes the program's stdout+stderr **straight to `/dev/kmsg`** (no subshell, no `read`); logs `/dev/fb*` presence and `fb0` sysfs `name/bits_per_pixel/stride/virtual_size/smem_len/modes`; re-runs the painter with `hold` in the background | the A15 log proves the pipeline swallowed every verdict line; `read` cannot run in this toybox | `b209c3e996dc2cf93aa26888aa34859e839f5852925f2da850ce7491fa799ab0` |
+
+Unchanged on purpose: kernel source (`/b/k15`), appended DTB (`bcdef39c…`), kernel
+cmdline, USERDATA (sda31), RECOVERY (sda15), DTBO, VBMETA, modem, bootloader.
+Previous candidates A2–A15 are preserved untouched.

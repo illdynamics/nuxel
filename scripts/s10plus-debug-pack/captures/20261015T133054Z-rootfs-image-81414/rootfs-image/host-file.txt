@@ -1,0 +1,1 @@
+build/out/s10plus/nuxel-beyond2lte-rootfs-fedora-phone-fixed.img: Linux rev 1.0 ext4 filesystem data, UUID=72d8e10e-62ae-4e01-9ead-4619be775ad3, volume name "nuxel-beyond2lte" (extents) (64bit) (large files) (huge files)

@@ -51,18 +51,28 @@ nuxel_marker() { nuxel_say "NUXEL_MARKER $1"; }
 #
 # It reboots only while PID 1 is still this shell; once systemd owns PID 1 the
 # boot belongs to the real root and the watchdog exits silently.
-( cd /proc 2>/dev/null || exit 0
-  sleep "${NUXEL_BOOT_WATCHDOG:-45}"
-  _c=""
-  IFS= read -r _c < 1/comm 2>/dev/null || _c="$(cat 1/comm 2>/dev/null)"
-  case "${_c}" in
-      init|sh|busybox|toybox|ash|dash) : ;;
-      *) exit 0 ;;   # PID 1 is no longer the initramfs shell: the handoff worked
-  esac
-  printf 'nuxel-init: NUXEL_MARKER WATCHDOG_FIRED %ss no handoff\n' "${NUXEL_BOOT_WATCHDOG:-45}"
-  printf 'nuxel-init: WATCHDOG: %ss elapsed and PID 1 is still the initramfs shell - rebooting\n' "${NUXEL_BOOT_WATCHDOG:-45}"
-  sync; reboot -f ) >/dev/null &
-NUXEL_WATCHDOG_PID=$!
+# A15 (2026-10-15): THE BOOT-TIME REBOOT WATCHDOG IS REMOVED.  It is the
+# hardware-measured cause of the A14 "black screen then spontaneous reboot":
+#   * it slept 45 s from PID-1 start and then re-tested "is PID 1 still the
+#     initramfs shell?".  Its procfs pin (`cd /proc`) runs BEFORE /proc is
+#     mounted (the mount happens further down this file), so it pinned the
+#     initramfs's plain /proc *directory*; the later `read < 1/comm` then failed
+#     with ENOENT - visible in the A14 ram console as
+#     `[47.163135] [2: init: 3308] sh: 1/comm: No such file or directory`.
+#   * both "WATCHDOG_FIRED" printf lines went to fd 1, which this block redirects
+#     to /dev/null, so a firing left no reason in the log at all.
+#   * the reboot it issued is a *normal* reboot in the ram console
+#     (`debug-snapshot: normal reboot starting`, `sec_debug: set magic code
+#     (0x0)`, no panic, HW watchdog still being petted) by PIDs 3557/3558/3561 -
+#     processes in THIS script's lineage (children inherit comm `init`) - at
+#     t=47.163-47.171 s, i.e. exactly the 45 s deadline, while Fedora's systemd
+#     was already running and spawning services.
+# A watchdog that can kill a healthy Fedora is worse than none.  Removed, not
+# re-armed: a failed boot now simply leaves its evidence in the ram console and
+# the BOOT slack, and the operator's POWER+VOLUMEDOWN combo remains available.
+# The `softdog keeper` further down is deliberately KEPT: it feeds the vendor
+# kernel's watchdog, which is a hardware safety mechanism and not implicated.
+NUXEL_WATCHDOG_PID=""
 
 nuxel_marker INITRAMFS_EXECUTED
 # =============================================================================
@@ -429,18 +439,48 @@ if [ "${BOOT_ANIM}" -eq 1 ]; then show_boot_splash; fi
 # program that writes a distinctive NUXEL pattern over fbdev, and every failure
 # path prints a named NUXEL_FB_* reason, so "cannot execute" is never confused
 # with "no /dev/fb0" or "unsupported pixel format".
+# A16 (2026-10-15): the A15 capture recorded FIRSTLIGHT_FRAME_WRITTEN while the
+# panel stayed black, and NOT ONE of the program's own verdict lines survived.
+# Cause, measured in the A15 ram console: the output was read back through
+#     printf '%s\n' "${_fbout}" | while IFS= read -r _l
+# and this toybox shell cannot run `read` -- the log contains
+#     sh: <...>read: No such file or directory
+# so NUXEL_FB_INFO / NUXEL_FB_ANIM / NUXEL_FB_UNAVAILABLE were all silently
+# dropped and only the exit status was recorded.  The program's stdout+stderr now
+# go STRAIGHT to /dev/kmsg: nothing can swallow them, and a silent exit is
+# impossible.  FIRSTLIGHT_FRAME_WRITTEN is only ever emitted on exit 0, and the
+# A16 program is the first one that also forces the DECON to commit a frame.
 nuxel_first_light() {
     if [ ! -x /opt/nuxel/nuxel-fb-phone ]; then
         diag "FIRSTLIGHT binary missing from the initramfs"
         return 0
     fi
-    _fbout="$(/opt/nuxel/nuxel-fb-phone 2>&1)"
-    _fbrc=$?
-    printf '%s\n' "${_fbout}" | while IFS= read -r _l; do
-        [ -n "${_l}" ] && diag "FIRSTLIGHT ${_l}"
+
+    # Independent evidence about the fbdev itself, recorded whether or not the
+    # program is happy.  Deliberately no pipelines: this shell cannot run `read`.
+    for _n in /dev/fb0 /dev/graphics/fb0; do
+        [ -c "${_n}" ] && diag "FB_NODE ${_n} is a character device"
     done
+    for _f in name bits_per_pixel stride virtual_size smem_len modes; do
+        [ -r "/sys/class/graphics/fb0/${_f}" ] && \
+            diag "FB_SYSFS /sys/class/graphics/fb0/${_f}=$(cat "/sys/class/graphics/fb0/${_f}" 2>/dev/null)"
+    done
+
+    # 1) Fully-logged synchronous paint: every NUXEL_FB_* line reaches the ram
+    #    console, so the next capture always states what the panel got.
+    /opt/nuxel/nuxel-fb-phone > /dev/kmsg 2>&1
+    _fbrc=$?
     diag "FIRSTLIGHT exit=${_fbrc}"
     [ "${_fbrc}" = 0 ] && nuxel_marker FIRSTLIGHT_FRAME_WRITTEN
+
+    # 2) Resident painter: keeps the penguin spinning on the real AMOLED panel
+    #    for the rest of the boot, independent of systemd, Phosh and every
+    #    ENOSYS-failing service.  It logs one line per ~10 s so it can never
+    #    drown the boot markers in the ram console.  If the handoff terminates
+    #    it, the last committed frame stays in framebuffer memory and the DECON
+    #    keeps scanning it.
+    /opt/nuxel/nuxel-fb-phone hold > /dev/kmsg 2>&1 &
+    diag "FIRSTLIGHT hold started pid=$!"
     return 0
 }
 nuxel_first_light
@@ -930,6 +970,24 @@ if [ -f /boot/nuxel-boot-splash.raw ] || [ -f /boot/nuxel-boot-animation.mp4 ]; 
         cp /boot/nuxel-boot-splash.raw "${ROOT_MNT}/usr/share/nuxel/boot/nuxel-boot-splash.raw" 2>/dev/null
     [ -f /boot/nuxel-boot-animation.mp4 ] && \
         cp /boot/nuxel-boot-animation.mp4 "${ROOT_MNT}/usr/share/nuxel/boot/nuxel-boot-animation.mp4" 2>/dev/null
+fi
+
+# --- cgroup v2 (unified hierarchy) for systemd 258 --------------------------------
+# A14 measured the ONLY remaining systemd blocker after the pidfd_spawn repair:
+# every unit's executor child died with
+#   Failed to attach to cgroup /system.slice/<unit>: No such file or directory
+#   Failed at step CGROUP spawning /usr/lib/systemd/<bin>: No such file or dir
+# because NO cgroup hierarchy was mounted at all (`cgroup2_unified=absent` in the
+# A14 spawn probe).  systemd >= 257 requires the *unified* (v2) hierarchy; mounting
+# v1 controllers instead would put the kernel in hybrid mode, which it refuses.
+# So: mount v2 only, into the new root's /sys/fs/cgroup, and say loudly if it fails.
+mkdir -p "${ROOT_MNT}/sys/fs/cgroup" 2>/dev/null
+if mount -t cgroup2 none "${ROOT_MNT}/sys/fs/cgroup" 2>/dev/null; then
+    diag "CGROUP2_MOUNTED ${ROOT_MNT}/sys/fs/cgroup (unified hierarchy for systemd 258)"
+    nuxel_marker CGROUP2_MOUNTED
+else
+    diag "CGROUP2_MOUNT_FAILED mount -t cgroup2 none ${ROOT_MNT}/sys/fs/cgroup - systemd services cannot attach"
+    nuxel_marker CGROUP2_MOUNT_FAILED
 fi
 
 # --- mark boot complete -------------------------------------------------------------

@@ -516,3 +516,182 @@ Two readings remain possible and only the operator's panel can separate them:
 (`.scratch/s10plus-cycle4/a13/monitor/a14-adb-watch.log`). No further writes are
 issued while the phone is out of recovery. If the device reappears in TWRP this is
 recorded as a failed boot under the standing agreement and the capture follows.
+
+---
+
+# FLASH ATTEMPT A14 — RESULT (recorded 2026-10-15, cycle 5)
+
+`BOOT_RESULT=FAILED_USER_RETURNED_TO_TWRP` · `RECOVERY_ACCESS=RESTORED`
+
+* `CANDIDATE=A14`, `boot.img sha256=5aff1a109147d33eb017c30423c8ef3bb16d14217d509e829d65d5848d4b4009`
+  (50,604,032 B, gate PASS), write + full SHA-256 readback verified before reboot.
+* `REBOOT_AT=2026-10-15T11:18:53Z`; the phone was found back in TWRP with root ADB.
+* Fresh capture: `scripts/s10plus-debug-pack/captures/20261015T130509Z-A14-postfail/`
+  (`prev-boot/last_kmsg.raw` 2,097,152 B `1d449401…`, `pstore/dmesg-ramoops-0.raw`
+  27,215 B `1889a6a9…`, `recovery/recovery-metadata.txt`, `ANALYSIS-A14.md`).
+* **New milestones reached on hardware:** systemd child services execute
+  (`systemd-udevd` running and processing uevents → milestone 10), Fedora binary
+  executes (`FEDORA_EXEC_OK`), the freestanding syscall/spawn probes ran, and
+  `FIRSTLIGHT_FRAME_WRITTEN` (nuxel-fb-phone exit=0) was recorded at t=2.363 s.
+* **Failure classification:** the attempt was ended by **our own initramfs
+  dead-man watchdog**, not by the kernel — a normal `reboot()` (magic `0x0`) at
+  t=47.171346 s from comm-`init` processes in the initramfs's own shell lineage,
+  0.4 ms after its PID-1 probe errored (`sh: 1/comm: No such file or directory`).
+  Answer to Phase 2: **explicitly requested by software**; no panic, no watchdog
+  bite, HW watchdog petted throughout.
+* **Earliest newly demonstrated failure:** the watchdog's `cd /proc` runs before
+  `/proc` is mounted, so its "is PID 1 still the initramfs shell?" test can never
+  succeed; it reported ambiguity as "no handoff" and rebooted a running Fedora.
+
+---
+
+# FLASH ATTEMPT A15 — 2026-10-15 (cycle 5)
+
+## Hypothesis being tested
+
+> A14's Fedora systemd was healthy at t=47 s and was killed by this initramfs's
+> own dead-man watchdog. With that watchdog removed, the boot should survive
+> indefinitely; with cgroup v2 additionally mounted before `switch_root`, the
+> `Failed at step CGROUP` failures should disappear and real services should
+> start. The panel should show an unmistakable Nuxel first-light frame with a
+> spinning penguin.
+
+## What changed vs A14 (same kernel source, defconfig, DTB and header layout)
+
+1. `boot/initramfs/init.sh`: the dead-man watchdog block is **deleted** (replaced
+   by the measured explanation and `NUXEL_WATCHDOG_PID=""`), so nothing in the
+   initramfs can reboot the phone after `switch_root`.
+2. `boot/initramfs/init.sh`: **cgroup v2 is mounted** into the new root
+   (`mount -t cgroup2 none ${ROOT_MNT}/sys/fs/cgroup`) before `switch_root`, with
+   loud `CGROUP2_MOUNTED` / `CGROUP2_MOUNT_FAILED` markers.
+3. `boot/initramfs/init.sh`: the first-light record now also emits
+   `FIRSTLIGHT_ANIMATION_DONE` when the payload reports the animation.
+4. `tools/s10plus/nuxel-fb-phone.c` → `nuxel-fb-phone-aarch64`
+   (sha256 `f1a0d975ecb10d2dea911ba3515286d4e04ea5a3ade35eb4e11030c4ea3cf843`,
+   8,784 B): logs every fb geometry field (`xres/yres/yres_virtual/xoffset/
+   yoffset/bpp/stride/smem_start/smem_len/mmio_*`, colour bit lengths) to fd 2 =
+   `/dev/kmsg`; paints **every** buffer of the virtual framebuffer
+   (`NUXEL_FB_BUFFERS_PAINTED`); draws bright colour bars + a big white NUXEL
+   wordmark + a white-outlined penguin on deep blue (never a black-looking
+   screen, and no full-white AMOLED frame); spins the penguin through 12 frames
+   at 250 ms (`NUXEL_FB_ANIM frame=N`, `NUXEL_FB_ANIM_DONE frames=12`).
+
+## Artifacts
+
+| Artifact | sha256 |
+|---|---|
+| `A15/initramfs.cpio` (6,750,448 B) | `f31b96a536d3f4be36326fa5172d63fb15fdf397bdbabcf539194c43c01280f8` |
+| `tools/s10plus/nuxel-fb-phone-aarch64` | `f1a0d975ecb10d2dea911ba3515286d4e04ea5a3ade35eb4e11030c4ea3cf843` |
+| `boot/initramfs/init.sh` | `c2cc306dc1e3ab4d66ddc97f39da48902477b8aa5dbf5b3f0f8022159849dd3d` |
+| `A15/Image-A15` | *see build receipt below* |
+| `A15/boot.img` | *see build receipt below* |
+
+A12 (`68217cdd…`), A13 (`bdc06dfe…`), A14 (`5aff1a10…`) are preserved untouched.
+
+## Preconditions (re-verified live before writing)
+
+| Check | Value |
+|---|---|
+| device | `R58M75KDB2X`, `Galaxy S10+`, `beyond2lte`, TWRP `3.7.0_9-2` |
+| root ADB | yes (`uid=0(root) … context=u:r:su:s0`) |
+| partition map | `boot -> /dev/block/sda14` (57,671,680 B), `recovery -> /dev/block/sda15`, `userdata -> /dev/block/sda31` |
+| scope | `--boot-only`; USERDATA (sda31) never written, RECOVERY (sda15) never written |
+| BOOT backup | `backups/s10plus/<stamp>-R58M75KDB2X` taken before the write |
+
+## A15 write and readback (2026-10-15, cycle 5)
+
+```
+PREFLIGHT PASS: boot -> /dev/block/sda14 size=57,671,680 bytes; image 50,604,032 bytes
+BACKUP  BOOT -> /Users/wicked/x/nuxel/backups/s10plus/20261015T132433Z-R58M75KDB2X
+FLASHING BOOT: 50,604,032 bytes -> /dev/block/sda14
+VERIFIED BOOT: e23d004d083b3137bc8ff1819b7b954c50700abe9ae8fd971e4cc8bf854fc966 (50,604,032 bytes)
+PASS: every written partition matches its local image by full SHA256 readback.
+```
+
+* `CANDIDATE=A15`
+* `A15/boot.img` sha256 `e23d004d083b3137bc8ff1819b7b954c50700abe9ae8fd971e4cc8bf854fc966` (50,604,032 B, gate PASS, slack 7,067,648 B)
+* `A15/Image-A15` sha256 `6fe28b694a5def8cbb1712af08ceae87b21b6bc6cc77b5df868521c461ff46c1` (47,929,352 B), kernel banner `#1 SMP PREEMPT Thu Oct 15 13:23:12 UTC 2026`
+* `A15/initramfs.cpio` sha256 `f31b96a536d3f4be36326fa5172d63fb15fdf397bdbabcf539194c43c01280f8` (6,750,448 B)
+* embedded-initramfs proof: `out/usr/initramfs_data.cpio.gz` (2,929,016 B) gunzips to
+  sha256 `f31b96a5…` = the A15 cpio, that gzip stream is present in the Image at
+  offset 33,809,680, and the embedded cpio contains `NUXEL_WATCHDOG_PID` /
+  `CGROUP2_MOUNTED` / `NUXEL_FB_ANIM_DONE` — i.e. the new files really are in the
+  kernel, not a stale build.
+* USERDATA (sda31) and RECOVERY (sda15) were **not** written; DTB/DTBO/VBMETA/
+  modem/bootloader untouched.
+* `REBOOT_AT=2026-10-15T13:24:59Z` (`adb reboot` from TWRP after the verified write); `STATE=AWAITING_BOOT_RESULT`.
+
+---
+
+# CYCLE 6 — candidate A16 (2026-10-15), BOOT-only
+
+**Problem under test:** A15 was proven running (1892 s, no software reboot) but the
+panel stayed black and *not one* of `nuxel-fb-phone`'s verdict lines reached the
+ram console, so we could not tell whether the paint landed. A16 makes the
+first-light verdict unswallowable and forces the DECON to commit a frame.
+
+**Root-cause hypotheses (from `captures/20261015T135737Z-A15-postfail/ANALYSIS-A15.md`):**
+1. `init.sh` read the program's output through `printf | while IFS= read -r`,
+   which this toybox shell cannot run (`sh: <...>read: No such file or directory`),
+   so `NUXEL_FB_INFO` / `NUXEL_FB_ANIM` were dropped. → fix by writing straight to `/dev/kmsg`.
+2. The DECON in command mode only latches a frame when the fbdev asks it to; the
+   A15 boot shows `decon_initial_display` but **no** `decon_enable`/FRAME_DONE for
+   1892 s. → add `FBIOBLANK(UNBLANK)` + `FBIOPUT_VSCREENINFO(FB_ACTIVATE_NOW)` +
+   `FBIOPAN_DISPLAY`, logging every return code.
+3. A14/A15 painted only the active buffer. → paint every virtual buffer, and
+   animate in every painted buffer.
+
+**Change set (BOOT partition only; no rootfs, no USERDATA, no RECOVERY, no DTBO):**
+* `tools/s10plus/nuxel-fb-phone.c` — argv `hold [secs]`, geometry sanity
+  (`NUXEL_FB_ZERO_STRIDE`, `NUXEL_FB_YVIR_CLAMPED_from`), paint all buffers (bounded
+  to 4), mmap read-back of px0/centre, `scanout_commit()` logging
+  `NUXEL_FB_UNBLANK_rc` / `NUXEL_FB_ACTIVATE_rc` / `NUXEL_FB_PAN_rc`, and a
+  resident animation loop that logs one line per ~10 s.
+  Compiled freestanding aarch64; **9792 B** sha256 `fed8f9c9acf3287db09a2ee3a6fa46ff0bbd289e180ac63f42d720c045cae158`.
+* `boot/initramfs/init.sh` — `nuxel_first_light()` no longer uses a subshell or
+  `read`; the program's stdout+stderr go to `/dev/kmsg` directly; fbdev facts are
+  logged from sysfs; the painter is then re-run in `hold` mode in the background.
+  sha256 `b209c3e996dc2cf93aa26888aa34859e839f5852925f2da850ce7491fa799ab0`.
+
+**Candidate A16**
+| Artifact | bytes | sha256 |
+|---|---|---|
+| `A16/initramfs.cpio` | 6,753,220 | `f3bd9cbe5dae176b2c82bc0c782906f6d70f87a07ee3463b4bdcef32ef67bbd4` |
+| `A16/Image-A16` | 47,929,352 | `72e47f8821235cb06f54b7a372be22e217ddc72777a71085e0f93456ea497811` |
+| `A16/boot.img` | 50,604,032 | `603c2e9a3fd434d451aea0b614fe5978a9ad6178ade6edc1831afc708ee36222` |
+
+**Offline verification performed**
+* cpio round-trip: extracted `init` and `opt/nuxel/nuxel-fb-phone` hash-identical to
+  `boot/initramfs/init.sh` (`b209c3e9…`) and `tools/s10plus/nuxel-fb-phone-aarch64` (`fed8f9c9…`).
+* embedded-initramfs proof: the gzip stream at **offset 33,809,680** in `Image-A16`
+  decompresses (6,753,220 B) to sha256 `f3bd9cbe…` = `A16/initramfs.cpio`. The
+  current build is **not** stale. (Same method re-validated A15: `f31b96a5…` at the
+  same offset.)
+* `build-candidate.sh` release gate: **PASS** (header_field40=1, header_size=1648,
+  kernel_size=47,929,352, ramdisk lzma 2,293,760 B, cpio `/init` mode 0o100755 size
+  51,833, partition slack 7,067,648 B). Base is the hardware-proven A5 DTB image,
+  so the appended DTB is unchanged (`bcdef39c…`).
+* binary executed in the aarch64 container: all three invocations (`-`, `hold`,
+  `hold 5`) print `NUXEL_FB_UNAVAILABLE no /dev/fb0` and exit 2 — argv/entry work.
+
+**Flash receipt**
+```
+Device: R58M75KDB2X model=Galaxy S10+ codename=beyond2lte TWRP=3.7.0_9-2 slot=none
+BOOT:   boot -> /dev/block/sda14 size=57,671,680 bytes
+PREFLIGHT PASS
+BACKUP  BOOT -> backups/s10plus/20261015T140626Z-R58M75KDB2X
+FLASHING BOOT: 50,604,032 bytes -> /dev/block/sda14
+VERIFIED BOOT: 603c2e9a3fd434d451aea0b614fe5978a9ad6178ade6edc1831afc708ee36222 (50,604,032 bytes)
+PASS: every written partition matches its local image by full SHA256 readback.
+```
+USERDATA (sda31) and RECOVERY (sda15) were not written. No automatic reboot was
+issued by the flasher.
+
+`REBOOT_AT=2026-10-15T14:07Z` (`adb reboot` from TWRP) · `STATE=AWAITING_BOOT_RESULT`
+
+**Expected outcome if the display hypothesis is right:** the Samsung logo is
+replaced within ~2-3 s by a deep-blue NUXEL screen with colour bars, a white NUXEL
+wordmark and a spinning penguin that keeps moving for the rest of the boot — with
+**no reboot** (A15 already proved the reset is only the operator's hard-reset hook).
+**Falsifier:** screen stays black → the capture will now contain the exact
+`NUXEL_FB_*` verdict and the three ioctl return codes, which is itself new evidence.

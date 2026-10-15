@@ -478,3 +478,120 @@ also absent, so no shim can synthesise one. **The fallback belongs in systemd.**
 It does not claim the whole Fedora 43 userspace is 4.14-compatible — only that
 this specific, source-proven defect is fixed. Whatever the *next* blocker is can
 only be found by running the repaired stack, which is what A13 does.
+
+---
+
+# CYCLE 6 — ROOT-CAUSE LEDGER (A15 evidence)
+
+## RC-6.1 — The A15 "spontaneous reboot" is the operator's Samsung hard-reset hook. CLOSED.
+
+```
+[1891.962448] kernel BUG at drivers/samsung/sec_hard_reset_hook.c:157!
+[1891.962635] Internal error: Oops - BUG: 0 [#1] PREEMPT SMP
+[1891.971066] CPU: 0 PID: 0 Comm: swapper/0 Tainted: G S  4.14.253 #1
+[1891.971169] pc : hard_reset_hook_callback+0x144/0x150
+             hard_reset_hook_callback -> el1_dbg -> do_debug_exception -> brk_handler
+             -> call_break_hook -> bug_handler -> die -> panic
+             (invoked from __hrtimer_run_queues / exynos4_mct_tick_isr, i.e. a timer)
+```
+
+`drivers/samsung/sec_hard_reset_hook.c` deliberately executes a BRK when the PMIC
+power key is held together with the volume key, which panics and resets the AP.
+Everything else in the 1892 s log is healthy: HW watchdog keepalives every 10 s,
+systemd alive, `debug-snapshot: normal reboot starting` ABSENT, `Restarting system`
+ABSENT. The mission's "prolonged black screen, then reboot after 1–2 min or
+longer" is therefore: black screen from t≈2.1 s + operator forcing recovery.
+**Do not attribute this to the boot; do not treat it as a watchdog failure.**
+
+## RC-6.2 — The panel never lights during a Nuxel boot. OPEN (instrumented in A16).
+
+Panel/DSIM/DECON probe correctly, framebuffer registers, and the S-Boot-drawn
+samsung logo is on the panel at handoff. Then the Nuxel boot never performs
+`decon_enable` / UNBLANK / FRAME_DONE, unlike the TWRP session which does. Three
+candidate mechanisms, all now instrumented:
+(a) DECON in command mode needs an explicit fbdev commit (`FBIOPAN_DISPLAY` /
+`FBIOPUT_VSCREENINFO`) that A14/A15 never issued;
+(b) the paint went to the wrong buffer of the 1440×6080 virtual framebuffer;
+(c) the paint never happened and the program's output was lost by the shell.
+Mechanism (c) is proven to have corrupted the *evidence* even if the paint was fine:
+`init.sh` used `printf … | while IFS= read -r`, and this toybox shell cannot run
+`read` (`sh: <...>read: No such file or directory` appears in the A15 log exactly
+where the verdict lines should be).
+
+## RC-6.3 — systemd 258 cannot spawn any service on Linux 4.14. OPEN.
+
+`pidfd_spawn()` in glibc ≥ 2.39 requires `waitid(P_PIDFD)` (Linux ≥ 5.4) and
+returns ENOSYS unconditionally below that, which is what
+`NUXEL-SPAWN-PROBE pidfd_spawn(...) rc=38 ENOSYS` measures. `exec_spawn()` in
+systemd's `src/core/execute.c:599` reports it as
+`Failed to spawn executor: %m`. The A13 backport of upstream's own
+`posix_spawn` fallback (`.scratch/s10plus-cycle4/nuxel-0001-pidfd-spawn-fallback.patch`)
+is deployed to the handset's rootfs (tag `.nuxel-patches/pidfd-spawn-fallback-A13`
+present → `SYSTEMD_PATCH_PRESENT`), **yet the failure is unchanged in A15**.
+Newly observed inconsistency to resolve: the *local* rootfs image
+`build/out/s10plus/nuxel-beyond2lte-rootfs-fedora-phone-fixed.img` contains
+**neither** that tag **nor** a `.nuxel-orig` backup, and its
+`usr/lib64/systemd/libsystemd-shared-258.11-1.fc43.so` is neither the pristine
+nor the patched build (`3d0da20f…` vs patched `502507a7…`). So either the
+handset's USERDATA has diverged from the local image, or the patch is present but
+does not cover the failing path. Both can be settled by (i) a read-only USERDATA
+readback and (ii) dumping the on-device library and diffing it against
+`502507a7…`.
+
+## RC-6.4 — WHY the A13 systemd patch never worked: it patches the wrong library. FOUND.
+
+Offline inspection of the Fedora 43 rootfs (read-only, via `tools/s10plus/ext4lite.py`):
+
+| file in `nuxel-beyond2lte-rootfs-fedora-phone-fixed.img` | bytes | contains `posix_spawn_wrapper` | contains `exec_spawn` | contains `pidfd_spawn` |
+|---|---|---|---|---|
+| `usr/lib64/systemd/libsystemd-core-258.11-1.fc43.so` | 2,585,568 | **yes** | **yes** | no |
+| `usr/lib64/systemd/libsystemd-shared-258.11-1.fc43.so` | 5,071,376 | yes | no | yes |
+| `usr/lib/systemd/systemd` | 201,024 | no | no | no |
+| `usr/lib/systemd/systemd-executor` | 1,400,024 | no | no | no |
+
+Fedora's `libsystemd-core.so` is linked against the **static** shared library, so it
+carries its **own compiled copy** of `posix_spawn_wrapper()` next to `exec_spawn()`.
+PID 1 calls `exec_spawn()` → `posix_spawn_wrapper()` **inside libsystemd-core**, not
+through `libsystemd-shared.so`.
+
+The A13/A14/A15 repair installs only
+`usr/lib64/systemd/libsystemd-shared-258.11-1.fc43.so`
+(`boot/initramfs/init.sh`, `NUXEL_SD_LIB`). `libsystemd-core-*.so` is therefore
+**never replaced**, so the unpatched double-`pidfd_spawn()` retry is what actually
+runs — which is exactly the measured behaviour:
+
+```
+NUXEL-SPAWN-PROBE pidfd_spawn(...) rc=38 ENOSYS
+systemd[1]: <unit>: Failed to spawn executor: Function not implemented   (28 units)
+```
+
+and it explains why `SYSTEMD_PATCH_PRESENT` is logged while nothing changes.
+
+Supporting source facts (all checked in `.scratch/s10plus-cycle4/src/systemd-258.11`):
+
+* `src/core/execute.c:581` calls `posix_spawn_wrapper(...)` for the pinned
+  `systemd-executor`; `:599` is the `Failed to spawn executor: %m` line.
+* `src/basic/process-util.c` (unpatched) retries **`pidfd_spawn()` again** after
+  clearing `POSIX_SPAWN_SETCGROUP` — it never falls back to `posix_spawn()`.
+  glibc's `pidfd_spawn()` returns ENOSYS for any flags when the kernel lacks
+  `waitid(P_PIDFD)`, so the retry is guaranteed to fail on Linux 4.14.
+* `ERRNO_IS_NOT_SUPPORTED()` is **not** the problem: `_DEFINE_ABS_WRAPPER` expands to
+  `ERRNO_IS_NEG_##name(-ABS(r))` and `ERRNO_IS_NEG_NOT_SUPPORTED()` includes
+  `-ENOSYS`, so a positive 38 is correctly classified. (H-C6-H is REFUTED.)
+
+### Fix for the next cycle (do not flash the rootfs yet)
+
+1. Rebuild the patched systemd **and keep all four artifacts**, specifically
+   `libsystemd-core-258.11-1.fc43.so` — that is the file that matters.
+2. Ship it in the initramfs as `opt/nuxel/libsystemd-core-258.11-1.fc43.so` and
+   extend the Phase-2 installer to replace **both** libraries under one tag
+   (`pidfd-spawn-fallback-A16`), keeping a `.nuxel-orig` backup of each and
+   verifying each replacement by SHA256 before `switch_root`.
+3. Because the tag `pidfd-spawn-fallback-A13` already exists on the handset, the
+   new tag must be **different** — the old one will otherwise short-circuit the
+   install exactly as it did in A15.
+4. Alternative, lower-risk variant worth considering: build with
+   `HAVE_PIDFD_SPAWN` forced to 0, which removes the whole pidfd path at compile
+   time and therefore cannot regress; either way `libsystemd-core` must be replaced.
+5. Either approach still touches USERDATA, so it is a separate, explicitly versioned
+   rootfs change with a clean ext4 verification — not part of the BOOT-only A16 test.

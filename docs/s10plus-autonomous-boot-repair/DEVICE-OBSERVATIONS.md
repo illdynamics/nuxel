@@ -188,3 +188,103 @@ reaches the ram console.
   go through `posix_spawn_wrapper()` worked fine on this kernel.
 * `SELinux: Could not open policy file <= /etc/selinux/targeted/policy/policy.35`
   — no policy installed, so SELinux is not enforcing.
+
+---
+
+# CYCLE 5 DEVICE OBSERVATIONS
+
+## A14 boot attempt (operator report + capture, 2026-10-15 11:18:53Z → TWRP)
+
+* Samsung logo → screen goes black → stays black for 1–2 minutes → spontaneous
+  reboot; entering recovery became difficult; operator recovered to TWRP manually.
+* The capture *explains* the report exactly: the screen was black because the
+  DECON never displayed our frame (see DISPLAY-BRINGUP.md), and the phone stayed
+  black for ~60 s *after* a userspace `reboot()` was issued at t=47.17 s while the
+  kernel spent that time shutting devices down (abox, PCIe, UFS, panel;
+  `reboot: Restarting system` finally at t=107.804 s).
+* The operator's forced recovery produced no `hard_reset_hook` BUG in this
+  capture (unlike A13), i.e. recovery entry this time happened without the
+  Samsung hard-reset path firing.
+* Battery health is `Full`, `Health(Good)`, `Vnow 4329 mV`, `SOC 100%`,
+  `Temp 246` (0.1 °C = 24.6 °C) with `sec_bat_check_recharge`, and the charge path
+  was `PDIC`/`cable_type 19` before detach. There is **no** evidence of a
+  depleted battery or a power-safety event; the low-battery glyph seen in an
+  earlier attempt is not reproduced here.
+* `/proc/uptime` in the recovery session at capture time: 4469 s, root ADB fine,
+  `sec_debug.reset_reason=7` (= the normal-reboot/SWRESET path, consistent with
+  the userspace reboot in the log, *not* a watchdog/panic reset).
+
+## Device state verified before the A15 write
+
+* `adb devices -l` → `R58M75KDB2X recovery usb:... product:omni_beyond2lte
+  model:Galaxy_S10_ device:beyond2lte transport_id:15`
+* `adb shell id` → `uid=0(root) … context=u:r:su:s0`
+* `ro.product.device` → `beyond2lte`; `ro.twrp.version` → `3.7.0_9-2`
+* `/dev/block/by-name/` map read live: `boot -> sda14`, `recovery -> sda15`,
+  `userdata -> sda31` (unchanged from the A12–A14 cycles).
+
+## A15 boot attempt — live observation (2026-10-15, cycle 5)
+
+* `CANDIDATE=A15`, `boot.img sha256=e23d004d083b3137bc8ff1819b7b954c50700abe9ae8fd971e4cc8bf854fc966`,
+  write + full SHA-256 readback PASS, `REBOOT_AT=2026-10-15T13:24:59Z`.
+* Monitoring (`adb devices` + USB, 5 min from 13:25:04Z):
+  **ADB absent for the whole window — the device did NOT return to TWRP.**
+  For comparison A13 returned to TWRP 3.4 min after its reboot; A14 also stayed
+  away 5 min. A TWRP return would have been the agreement's failure signal; it did
+  not happen.
+* `system_profiler SPUSBDataType` / `ioreg -p IOUSB`: **no Samsung USB device
+  enumerated** (the recovery ADB gadget is gone).
+* Important calibration fact measured offline from the rootfs image: there is
+  **no `adbd` in the Fedora rootfs at all** (`/usr/lib/systemd/system` contains no
+  adb unit; grep of the image finds none). Therefore "no ADB" is the *expected*
+  state of a successful Nuxel boot and must never by itself be read as failure —
+  nor as success.
+* The boot's own state can only be read back from TWRP (ram console
+  `/proc/last_kmsg` + BOOT slack) or from the panel. `STATE=AWAITING_OPERATOR_OBSERVATION`.
+* Rootfs composition confirmed from the image (offline): `nuxel-firstlight.service`
+  exists in `/etc/systemd/system`; `/etc/greetd/config.toml` still starts
+  `agreety --cmd /bin/sh` (not a Phosh session); `/etc/fstab` **absent**; no
+  serial console is configured (`serial-getty@.service` is available but unused),
+  which is the obvious next observability channel.
+* Status re-check after the 5-minute window: still no ADB device, still no
+  Samsung USB node. `STATE=AWAITING_OPERATOR_OBSERVATION`.
+
+---
+
+# CYCLE 6 — device observations
+
+* 2026-10-15T13:57Z — handset in TWRP after the operator manually recovered it.
+  `adb devices`: `R58M75KDB2X recovery product:omni_beyond2lte model:Galaxy_S10_`;
+  `adb shell id` → `uid=0(root) … context=u:r:su:s0`; `ro.product.device=beyond2lte`;
+  `ro.twrp.version=3.7.0_9-2`; `ro.boot.bootloader=G975FXXSEFUL1`;
+  `ro.boot.hardware=exynos9820`; `ro.boot.revision=26`; `ro.boot.dtbo_idx=9`.
+* 2026-10-15T13:57Z — pstore holds exactly one record,
+  `dmesg-ramoops-0.enc.z` (5084 B, Samsung `.enc.z` naming = encrypted+compressed).
+  It was copied off the phone, **never cleared**.
+* 2026-10-15T13:57Z — `/proc/last_kmsg` 2,097,152 B read and archived.
+* 2026-10-15T13:57Z — BOOT readback identity: 50,604,032-byte prefix of
+  `/dev/block/by-name/boot` hashes to `e23d004d…` = A15. **A15 was genuinely flashed.**
+* Operator report triage: "screen black, device stays black for a prolonged period,
+  then reboots after 1–2 min or longer, recovery entry became difficult" is
+  consistent with a healthy 31.5-minute boot on a black panel that the operator
+  then force-reset. Difficulty entering recovery is explained by the same hook:
+  the force-reset hook needs the power+volume combination held long enough, and a
+  black screen gives no feedback that the phone is alive.
+* Battery during the A15 session: `level(100%)`, `Health(Good)`,
+  `Status(Full)`, `Vnow(4327mV)`, `Cycle(-1)` — the "low-battery-looking icon" is
+  **not** a depleted battery. TWRP agrees. Do not act on the icon.
+* Thermal: `Tbat(263)` (26.3 °C), `Tusb(275)` at t=1723 s — no thermal event.
+  No thermal/power protection was touched.
+* 2026-10-15T14:06Z — A16 BOOT flash with automatic BOOT backup
+  (`backups/s10plus/20261015T140626Z-R58M75KDB2X`), readback verified.
+  USERDATA and RECOVERY not written.
+* 2026-10-15T14:07:20Z — single controlled `adb reboot` issued; device left ADB
+  within 5 s (`adb devices` empty) — expected, the Fedora rootfs has no ADB daemon.
+* 2026-10-15T14:07:20Z→14:17:29Z — passive watch (`NUXEL_WATCH_SECONDS=600`,
+  `NUXEL_WATCH_INTERVAL=5`, capture `captures/20261015T140729Z-adb-watch-84130`):
+  `adb devices` returned **no device for the entire 10 minutes**, and the macOS USB
+  tree showed no change. This is the expected signature of a Nuxel boot and is
+  **not** a success or failure signal — the Fedora rootfs ships no `adbd`, so ADB
+  absence cannot distinguish "black but alive" from "black and dead". Only the
+  operator's observation (or the handset returning to TWRP) settles it.
+  For reference, A15 stayed alive and healthy for 1892 s in exactly this state.

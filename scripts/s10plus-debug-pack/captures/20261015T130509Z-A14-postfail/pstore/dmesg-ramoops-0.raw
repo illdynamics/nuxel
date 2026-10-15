@@ -1,0 +1,210 @@
+Panic#2 Part1
+<6>[   16.674454] I[0:      swapper/0:    0]     2360        0        0       1723125223 I(1026)   7  ffffff80080e3220                0  ffffffc95bb22100 *  typec_manager_e [rescuer_thread]
+<6>[   16.674465] I[0:      swapper/0:    0]     2361        0        0       1723165992 I(1026)   6  ffffff80080e3220                0  ffffffc95bb20000 *  typec_manager_m [rescuer_thread]
+<6>[   16.674476] I[0:      swapper/0:    0]     2362        0        0       1731692454 I(1026)   7  ffffff80080e3220                0  ffffffc96cd31080 *      max77705_pd [rescuer_thread]
+<6>[   16.674486] I[0:      swapper/0:    0]     2373        0        0       1736878800 S(1)   7  ffffff800813f2cc                0  ffffffc95ba71080 *  irq/438-sx9330_ [irq_thread]
+<6>[   16.674497] I[0:      swapper/0:    0]     2379        0        0       1737385992 I(1026)   6  ffffff80080e3220                0  ffffffc96c971080 *       bcm477x_wq [rescuer_thread]
+<6>[   16.674508] I[0:      swapper/0:    0]     2386        0        0       1737979146 I(1026)   4  ffffff80080e3220                0  ffffffc96cf8c200 *  ssp_bbd_on_pack [rescuer_thread]
+<6>[   16.674519] I[0:      swapper/0:    0]     2387        0        0       3529751101 I(1026)   6  ffffff80080e33c0                0  ffffffc96cf8d280 *      kworker/6:2 [worker_thread]
+<6>[   16.674529] I[0:      swapper/0:    0]     2388        0        0       1738016492 I(1026)   7  ffffff80080e3220                0  ffffffc96ca3d280 *  ssp_bbd_mcu_rea [rescuer_thread]
+<6>[   16.674540] I[0:      swapper/0:    0]     2423        0        0       1740276646 I(1026)   6  ffffff80080e3220                0  ffffffc95bb23180 *     ssp_debug_wq [rescuer_thread]
+<6>[   16.674550] I[0:      swapper/0:    0]     2440        0        0       1740743108 I(1026)   7  ffffff80080e3220                0  ffffffc96c4b3180 *     ssp_batch_wq [rescuer_thread]
+<6>[   16.674561] I[0:      swapper/0:    0]     2441        0        0       1740877800 I(1026)   7  ffffff80080e3220                0  ffffffc96abdc200 *     ssp_motor_wq [rescuer_thread]
+<6>[   16.674572] I[0:      swapper/0:    0]     2442        0        0       1740929992 I(1026)   6  ffffff80080e3220                0  ffffffc96c6c4200 *   BBD_LHD_KILLER [rescuer_thread]
+<6>[   16.674583] I[0:      swapper/0:    0]     2446        0        0       1742416223 S(1)   6  ffffff80080e8adc                0  ffffffc96c6c6300 *       sec_haptic [kthread_worker_fn]
+<6>[   16.674593] I[0:      swapper/0:    0]     2460        0        0       1743750300 S(1)   7  ffffff800813f2cc                0  ffffffc96c9ca100 *  irq/421-cs35l41 [irq_thread]
+<6>[   16.674604] I[0:      swapper/0:    0]     2462        0        0       1813941338 S(1)   0  ffffff800813f2cc                0  ffffffc95bb24200 *  irq/421-cs35l41 [irq_thread]
+<6>[   16.674614] I[0:      swapper/0:    0]     2463        0        0       1988530568 I(1026)   0  ffffff80080e33c0                0  ffffffc96cdf9080 *      kworker/0:2 [worker_thread]
+<6>[   16.674625] I[0:      swapper/0:    0]     2475        0        0       1896247646 S(1)   6  ffffff800813f2cc                0  ffffffc96cdfe300 *  irq/444-1551000 [irq_thread]
+<6>[   16.674635] I[0:      swapper/0:    0]     2476        0        0       1896434723 S(1)   7  ffffff800813f2cc                0  ffffffc96c6e6300 *  irq/445-1551000 [irq_thread]
+<6>[   16.674645] I[0:      swapper/0:    0]     2477        0        0       1896533030 S(1)   6  ffffff800813f2cc                0  ffffffc96cdfd280 *  irq/446-1551000 [irq_thread]
+<6>[   16.674656] I[0:      swapper/0:    0]     2478        0        0       1896621761 S(1)   7  ffffff800813f2cc                0  ffffffc96cd92100 *  irq/447-1551000 [irq_thread]
+<6>[   16.674666] I[0:      swapper/0:    0]     2479        0        0       1896705761 S(1)   6  ffffff800813f2cc                0  ffffffc96c6c0000 *  irq/448-1551000 [irq_thread]
+<6>[   16.674676] I[0:      swapper/0:    0]     2480        0        0       1896787684 S(1)   7  ffffff800813f2cc                0  ffffffc96cd96300 *  irq/449-1551000 [irq_thread]
+<6>[   16.674686] I[0:      swapper/0:    0]     2481        0        0       1896866800 S(1)   6  ffffff800813f2cc                0  ffffffc96c6c2100 *  irq/450-1551000 [irq_thread]
+<6>[   16.674696] I[0:      swapper/0:    0]     2482        0        0       1896949876 S(1)   7  ffffff800813f2cc                0  ffffffc96cd91080 *  irq/451-1551000 [irq_thread]
+<6>[   16.674706] I[0:      swapper/0:    0]     2483        0        0       1897029530 S(1)   6  ffffff800813f2cc                0  ffffffc96c57b180 *  irq/452-1551000 [irq_thread]
+<6>[   16.674716] I[0:      swapper/0:    0]     2484        0        0       1897109530 S(1)   7  ffffff800813f2cc                0  ffffffc96cd95280 *  irq/453-1551000 [irq_thread]
+<6>[   16.674727] I[0:      swapper/0:    0]     2496        0  4000000      12272540837 I(1026)   7  ffffff80080e33c0                0  ffffffc96a465280 *      kworker/7:2 [worker_thread]
+<6>[   16.674737] I[0:      swapper/0:    0]     2499        0        0       1899907569 I(1026)   7  ffffff80080e3220                0  ffffffc95bb08000 *         abox_ipc [rescuer_thread]
+<6>[   16.674748] I[0:      swapper/0:    0]     2500        0        0       1909197799 I(1026)   6  ffffff80080e3220                0  ffffffc969dd0000 *         abox_qos [rescuer_thread]
+<6>[   16.674758] I[0:      swapper/0:    0]     2530        0        0       1913701723 S(1)   4  ffffff800813f2cc                0  ffffffc969dd5280 *  irq/437-wpc-irq [irq_thread]
+<6>[   16.674769] I[0:      swapper/0:    0]     2538        0        0       1975869799 I(1026)   4  ffffff80080e33c0                0  ffffffc96ce0d280 *      kworker/4:2 [worker_thread]
+<6>[   16.674779] I[0:      swapper/0:    0]     2578        0        0      12149960799 I(1026)   4  ffffff80080e33c0                0  ffffffc95bb50000 *      kworker/4:3 [worker_thread]
+<6>[   16.674789] I[0:      swapper/0:    0]     2579        0        0       1931867838 I(1026)   4  ffffff80080e33c0                0  ffffffc95bb52100 *      kworker/4:4 [worker_thread]
+<6>[   16.674799] I[0:      swapper/0:    0]     2580        0        0       1975126607 I(1026)   4  ffffff80080e33c0                0  ffffffc95a8bb180 *      kworker/4:5 [worker_thread]
+<6>[   16.674810] I[0:      swapper/0:    0]     2625        0        0       1977018607 I(1026)   7  ffffff80080e3220                0  ffffffc96ca38000 *    ipv6_addrconf [rescuer_thread]
+<6>[   16.674820] I[0:      swapper/0:    0]     3130        0        0       2016976107 I(1026)   7  ffffff80080e3220                0  ffffffc959ca6300 *         dsim0-wq [rescuer_thread]
+<6>[   16.674832] I[0:      swapper/0:    0]     3134        0        0       2020268414 S(1)   6  ffffff800856d988                0  ffffffc95a3cd280 *  panel-bl-thread [panel_bl_thread]
+<6>[   16.674843] I[0:      swapper/0:    0]     3140        0        0       2021205261 I(1026)   7  ffffff80080e3220                0  ffffffc95a369080 *  130b0000.displa [rescuer_thread]
+<6>[   16.674853] I[0:      swapper/0:    0]     3141        0        0       2021252491 I(1026)   6  ffffff80080e3220                0  ffffffc95a3ce300 *  130b0000.displa [rescuer_thread]
+<6>[   16.674865] I[0:      swapper/0:    0]     3148        0        0       2186187837 S(1)   6  ffffff80085c20e0                0  ffffffc95a362100 *   devfreq_change [decon_devfreq_change_task]
+<6>[   16.674876] I[0:      swapper/0:    0]     3149        0        0       2186169683 S(1)   6  ffffff80085c278c                0  ffffffc95a392100 *     decon0-vsync [decon_vsync_thread]
+<6>[   16.674887] I[0:      swapper/0:    0]     3150        0        0       2022052838 S(1)   6  ffffff80085c28ec                0  ffffffc95a33e300 *     decon0-fsync [decon_fsync_thread]
+<6>[   16.674898] I[0:      swapper/0:    0]     3151        0        0       2022204799 S(1)   7  ffffff80085c2cb0                0  ffffffc95a360000 *  decon_doze_susp [decon_doze_suspend_thread]
+<6>[   16.674909] I[0:      swapper/0:    0]     3152        0        0       2022250414 S(1)   6  ffffff80085c2ad0                0  ffffffc95a33c200 *  decon_doze_wake [decon_doze_wake_thread]
+<6>[   16.674920] I[0:      swapper/0:    0]     3153        0        0       2022294414 S(1)   6  ffffff80085c4c6c                0  ffffffc95a33b180 *      decon_hiber [decon_hiber_thread]
+<6>[   16.674931] I[0:      swapper/0:    0]     3155        0        0       2031297876 S(1)   6  ffffff80080e8adc                0  ffffffc95a339080 *           decon0 [kthread_worker_fn]
+<6>[   16.674944] I[0:      swapper/0:    0]     3157        0        0       2032111337 S(1)   7  ffffff80085ae2dc                0  ffffffc95a366300 *     decon2-vsync [decon_displayport_vsync_thread]
+<6>[   16.674955] I[0:      swapper/0:    0]     3159        0        0       2033037107 S(1)   6  ffffff80080e8adc                0  ffffffc95a338000 *           decon2 [kthread_worker_fn]
+<6>[   16.674965] I[0:      swapper/0:    0]     3195        0 20000000      13869838331 I(1026)   7  ffffff80080e33c0                0  ffffffc96cda6300 *      kworker/7:3 [worker_thread]
+<6>[   16.674976] I[0:      swapper/0:    0]     3200        0        0       2058350107 I(1026)   5  ffffff80080e3220                0  ffffffc95a395280 *       usb_notify [rescuer_thread]
+<6>[   16.674986] I[0:      swapper/0:    0]     3205        0        0       2058493222 S(1)   4  ffffff800813f2cc                0  ffffffc95a393180 *  irq/459-flip_co [irq_thread]
+<6>[   16.674997] I[0:      swapper/0:    0]     3211        0        0       2058822837 S(1)   4  ffffff800813f2cc                0  ffffffc959c34200 *  irq/460-certify [irq_thread]
+<6>[   16.675006] I[0:      swapper/0:    0]     3234        0        0       2063862760 I(1026)   7  ffffff80080e3220                0  ffffffc96abda100 *          battery [rescuer_thread]
+<6>[   16.675019] I[0:      swapper/0:    0]     3250        0        0       2103586799 S(1)   5  ffffff8008d4e820                0  ffffffc95a3ca100 *   score_mmu_free [score_mmu_free]
+<6>[   16.675030] I[0:      swapper/0:    0]     3251        0        0       2103624530 S(1)   7  ffffff80080e8adc                0  ffffffc96c9cc200 *  score_unmap_wor [kthread_worker_fn]
+<6>[   16.675040] I[0:      swapper/0:    0]     3252        0        0       2103663568 S(1)   4  ffffff80080e8adc                0  ffffffc95a3c9080 *        score_scq [kthread_worker_fn]
+<6>[   16.675051] I[0:      swapper/0:    0]     3259        0        0       2104340222 I(1026)   7  ffffff80080e3220                0  ffffffc96abdd280 *  blkdev_flush_wq [rescuer_thread]
+<6>[   16.675062] I[0:      swapper/0:    0]     3282        0        0       2132518183 S(1)   6  ffffff80080c7438           468b30  ffffffc969da9080 *             init [do_wait]
+<6>[   16.675073] I[0:      swapper/0:    0]     3283        0        0       2132683645 S(1)   4  ffffff8008159518           468b30  ffffffc96c9c9080 *             init [hrtimer_nanosleep]
+<6>[   16.675083] I[0:      swapper/0:    0]     3298        0        0      12139524222 S(1)   6  ffffff80080c7438           468b30  ffffffc95a36d280 *             init [do_wait]
+<6>[   16.675095] I[0:      swapper/0:    0]     3349        0        0       2454051605 S(1)   7  ffffff8008131710                0  ffffffc959c31080 *  dhd_rx_pktpool_ [down_interruptible]
+<6>[   16.675106] I[0:      swapper/0:    0]     3350        0        0       2454124028 S(1)   7  ffffff8008131710                0  ffffffc959c33180 *  dhd_watchdog_th [down_interruptible]
+<6>[   16.675117] I[0:      swapper/0:    0]     3351        0        0       2454209182 S(1)   7  ffffff8008131710                0  ffffffc959c36300 *  dhd_rpm_state_t [down_interruptible]
+<6>[   16.675128] I[0:      swapper/0:    0]     3352        0        0       2457204874 S(1)   7  ffffff8008131710                0  ffffffc959c35280 *  dhd_logtrace_th [down_interruptible]
+<6>[   16.675138] I[0:      swapper/0:    0]     3361        0        0      16449773090 I(1026)   0  ffffff80080e33c0                0  ffffffc96c6e5280 *    kworker/u17:2 [worker_thread]
+<6>[   16.675149] I[0:      swapper/0:    0]     3367        0        0       8929896350 I(1026)   6  ffffff80080e33c0                0  ffffffc96cda1080 *     kworker/6:1H [worker_thread]
+<6>[   16.675159] I[0:      swapper/0:    0]     3368        0        0      14817825943 I(1026)   6  ffffff80080e33c0                0  ffffffc96cda5280 *     kworker/6:2H [worker_thread]
+<6>[   16.675171] I[0:      swapper/0:    0]     3369        0        0       8934786350 S(1)   6  ffffff80083908c8                0  ffffffc959ca4200 *     jbd2/sda31-8 [kjournald2]
+<6>[   16.675182] I[0:      swapper/0:    0]     3370        0        0       3369054794 I(1026)   7  ffffff80080e3220                0  ffffffc96cd35280 *  ext4-rsv-conver [rescuer_thread]
+<6>[   16.675193] I[0:      swapper/0:    0]     3375        0        0       3561098447 I(1026)   7  ffffff80080e33c0                0  ffffffc96cd36300 *     kworker/7:1H [worker_thread]
+<6>[   16.675203] I[0:      swapper/0:    0]     3405        0        0      13765825600 I(1026)   6  ffffff80080e33c0                0  ffffffc96ce0b180 *      kworker/6:3 [worker_thread]
+<6>[   16.675213] I[0:      swapper/0:    0]     3406        0        0       3514677255 I(1026)   6  ffffff80080e33c0                0  ffffffc95a363180 *      kworker/6:4 [worker_thread]
+<6>[   16.675223] I[0:      swapper/0:    0]     3425        0        0       3557686755 I(1026)   6  ffffff80080e33c0                0  ffffffc96c6d9080 *      kworker/6:5 [worker_thread]
+<6>[   16.675234] I[0:      swapper/0:    0]     3426        0        0       4069225676 I(1026)   7  ffffff80080e33c0                0  ffffffc95bb0c200 *     kworker/7:2H [worker_thread]
+<6>[   16.675245] I[0:      swapper/0:    0]     3450 40000000 44000000       4114757522 S(1)   7  ffffff80082d2720       7f9a50b1a0  ffffffc002106300 *    systemd-udevd [SyS_epoll_wait]
+<6>[   16.675256] I[0:      swapper/0:    0]     3472 44000000 28000000       4114691983 S(1)   6  ffffff80082d2720       7fb6c4b1a0  ffffffc0021e0000 *    systemd-udevd [SyS_epoll_wait]
+<6>[   16.675267] I[0:      swapper/0:    0]     3482 48000000 32000000       4115603368 S(1)   5  ffffff80082d2720       7f86d2b1a0  ffffffc96aab0000 *    systemd-udevd [SyS_epoll_wait]
+<6>[   16.675278] I[0:      swapper/0:    0]     3493 36000000 36000000       3951098522 S(1)   6  ffffff80082d2720       7f83ccb1a0  ffffffc0021b3180 *    systemd-udevd [SyS_epoll_wait]
+<6>[   16.675289] I[0:      swapper/0:    0]     3504 36000000 36000000       3974190984 S(1)   6  ffffff80082d2720       7fabe3b1a0  ffffffc002154200 *    systemd-udevd [SyS_epoll_wait]
+<6>[   16.675299] I[0:      swapper/0:    0]     3515        0        0       4138361406 I(1026)   1  ffffff80080e33c0                0  ffffffc95bb0b180 *      kworker/1:2 [worker_thread]
+<6>[   16.675310] I[0:      swapper/0:    0]     3516        0        0       6882351742 I(1026)   3  ffffff80080e33c0                0  ffffffc95bb0d280 *     kworker/3:1H [worker_thread]
+<6>[   16.675321] I[0:      swapper/0:    0]     3517        0        0      12139639145 S(1)   7  ffffff8008159518           468b30  ffffffc002181080 *             init [hrtimer_nanosleep]
+<6>[   16.675327] I[0:      swapper/0:    0]  ----------------------------------------------------------------------------------------------------------------------------
+<0>[   16.675333] I[0:      swapper/0:    0] linux_banner: Linux version 4.14.253 (root@) (gcc version 15.3.1 20260722 (Red Hat 15.3.1-1) (GCC)) #8 SMP PREEMPT Thu Oct 15 11:17:18 UTC 2026
+<0>[   16.675333] I[0:      swapper/0:    0] 
+<0>[   16.675343] I[0:      swapper/0:    0] sec_debug: sec_debug_panic_handler
+<0>[   16.675361] I[0:      swapper/0:    0] sec_debug: set magic code (0x66262564)
+<0>[   16.675371] I[0:      swapper/0:    0] sec_debug: set upload cause (0x66)
+<6>[   16.675382] I[0:      swapper/0:    0] 
+<6>[   16.675390] I[0:      swapper/0:    0] cpu   user:65 	nice:0 	system:238 	idle:12481 	iowait:15 	irq:0 	softirq:3 	 0 0 0
+<6>[   16.675396] I[0:      swapper/0:    0] -------------------------------------------------------------------------------------------------------------
+<6>[   16.675404] I[0:      swapper/0:    0] cpu0  user:2 	nice:0 	system:58 	idle:1533 	iowait:0 	irq:0 	softirq:0 	 0 0 0
+<6>[   16.675411] I[0:      swapper/0:    0] cpu1  user:2 	nice:0 	system:48 	idle:1548 	iowait:0 	irq:0 	softirq:1 	 0 0 0
+<6>[   16.675418] I[0:      swapper/0:    0] cpu2  user:1 	nice:0 	system:36 	idle:1562 	iowait:0 	irq:0 	softirq:0 	 0 0 0
+<6>[   16.675424] I[0:      swapper/0:    0] cpu3  user:0 	nice:0 	system:10 	idle:1589 	iowait:0 	irq:0 	softirq:0 	 0 0 0
+<6>[   16.675431] I[0:      swapper/0:    0] cpu4  user:8 	nice:0 	system:14 	idle:1577 	iowait:0 	irq:0 	softirq:0 	 0 0 0
+<6>[   16.675438] I[0:      swapper/0:    0] cpu5  user:10 	nice:0 	system:8 	idle:1582 	iowait:0 	irq:0 	softirq:0 	 0 0 0
+<6>[   16.675445] I[0:      swapper/0:    0] cpu6  user:24 	nice:0 	system:36 	idle:1532 	iowait:10 	irq:0 	softirq:0 	 0 0 0
+<6>[   16.675452] I[0:      swapper/0:    0] cpu7  user:15 	nice:0 	system:26 	idle:1556 	iowait:4 	irq:0 	softirq:0 	 0 0 0
+<6>[   16.675457] I[0:      swapper/0:    0] -------------------------------------------------------------------------------------------------------------
+<6>[   16.675462] I[0:      swapper/0:    0] 
+<6>[   16.675467] I[0:      swapper/0:    0] irq : 27886
+<6>[   16.675470] I[0:      swapper/0:    0] -------------------------------------------------------------------------------------------------------------
+<6>[   16.675485] I[0:      swapper/0:    0] irq-7    :      833 mct_tick0
+<6>[   16.675491] I[0:      swapper/0:    0] irq-8    :      602 mct_tick1
+<6>[   16.675498] I[0:      swapper/0:    0] irq-9    :      569 mct_tick2
+<6>[   16.675504] I[0:      swapper/0:    0] irq-10   :      479 mct_tick3
+<6>[   16.675510] I[0:      swapper/0:    0] irq-11   :      565 mct_tick4
+<6>[   16.675516] I[0:      swapper/0:    0] irq-12   :      467 mct_tick5
+<6>[   16.675523] I[0:      swapper/0:    0] irq-13   :     1246 mct_tick6
+<6>[   16.675530] I[0:      swapper/0:    0] irq-14   :      695 mct_tick7
+<6>[   16.675549] I[0:      swapper/0:    0] irq-83   :        1 10430000.pinctrl
+<6>[   16.675555] I[0:      swapper/0:    0] irq-84   :       12 10830000.pinctrl
+<6>[   16.675573] I[0:      swapper/0:    0] irq-141  :        2 158d0000.exynos-adv_tracer
+<6>[   16.675584] I[0:      swapper/0:    0] irq-171  :        1 18500000.mali
+<6>[   16.675591] I[0:      swapper/0:    0] irq-172  :       19 arm-pmu
+<6>[   16.675597] I[0:      swapper/0:    0] irq-173  :       10 arm-pmu
+<6>[   16.675604] I[0:      swapper/0:    0] irq-174  :        6 arm-pmu
+<6>[   16.675610] I[0:      swapper/0:    0] irq-175  :        3 arm-pmu
+<6>[   16.675616] I[0:      swapper/0:    0] irq-176  :       96 arm-pmu
+<6>[   16.675622] I[0:      swapper/0:    0] irq-177  :       89 arm-pmu
+<6>[   16.675628] I[0:      swapper/0:    0] irq-178  :      368 arm-pmu
+<6>[   16.675634] I[0:      swapper/0:    0] irq-179  :      237 arm-pmu
+<6>[   16.675641] I[0:      swapper/0:    0] irq-182  :        2 tzdev_iwi_event
+<6>[   16.675647] I[0:      swapper/0:    0] irq-184  :     1121 ufshcd
+<6>[   16.675655] I[0:      swapper/0:    0] irq-198  :       61 19080000.dsim
+<6>[   16.675663] I[0:      swapper/0:    0] irq-213  :      700 104f0000.hsi2c
+<6>[   16.675669] I[0:      swapper/0:    0] irq-217  :      366 10920000.hsi2c
+<6>[   16.675676] I[0:      swapper/0:    0] irq-219  :     1304 109a0000.hsi2c
+<6>[   16.675682] I[0:      swapper/0:    0] irq-220  :       94 15d30000.hsi2c
+<6>[   16.675689] I[0:      swapper/0:    0] irq-221  :       62 15d50000.hsi2c
+<6>[   16.675695] I[0:      swapper/0:    0] irq-222  :     2583 15d60000.hsi2c
+<6>[   16.675701] I[0:      swapper/0:    0] irq-223  :        2 15d70000.hsi2c
+<6>[   16.675710] I[0:      swapper/0:    0] irq-239  :       60 15c40000.adc
+<6>[   16.675716] I[0:      swapper/0:    0] irq-240  :       47 dw-mci
+<6>[   16.675724] I[0:      swapper/0:    0] irq-254  :        9 seclog
+<6>[   16.675729] I[0:      swapper/0:    0] irq-256  :        8 ufs-srpmb
+<6>[   16.675741] I[0:      swapper/0:    0] irq-286  :        1 chgin-irq
+<6>[   16.675747] I[0:      swapper/0:    0] irq-289  :        7 usbc-apcmd-irq
+<6>[   16.675753] I[0:      swapper/0:    0] irq-291  :        1 cc-vsafe0v-irq
+<6>[   16.675759] I[0:      swapper/0:    0] irq-293  :        1 cc-vconnsc-irq
+<6>[   16.675765] I[0:      swapper/0:    0] irq-294  :        1 cc-ccpinstat-irq
+<6>[   16.675771] I[0:      swapper/0:    0] irq-295  :        1 cc-ccistat-irq
+<6>[   16.675777] I[0:      swapper/0:    0] irq-297  :        1 cc-ccstat-irq
+<6>[   16.675785] I[0:      swapper/0:    0] irq-305  :        1 pd-pdmsg-irq
+<6>[   16.675791] I[0:      swapper/0:    0] irq-306  :        1 pd-psrdy-irq
+<6>[   16.675796] I[0:      swapper/0:    0] irq-307  :        1 pd-datarole-irq
+<6>[   16.675803] I[0:      swapper/0:    0] irq-318  :        8 max77705-irq
+<6>[   16.675828] I[0:      swapper/0:    0] irq-420  :        1 panel0:conn-det
+<6>[   16.675834] I[0:      swapper/0:    0] irq-422  :       11 madera IRQ
+<6>[   16.675841] I[0:      swapper/0:    0] irq-423  :        1 BOOT_DONE
+<6>[   16.675848] I[0:      swapper/0:    0] irq-424  :        1 sec-nfc
+<6>[   16.675854] I[0:      swapper/0:    0] irq-425  :        1 sec-nfc
+<6>[   16.675861] I[0:      swapper/0:    0] irq-427  :        2 gpio-keys: KEY_WINK
+<6>[   16.675867] I[0:      swapper/0:    0] irq-428  :        5 gpio-keys: KEY_VOLUMEDOWN
+<6>[   16.675873] I[0:      swapper/0:    0] irq-429  :        4 gpio-keys: KEY_VOLUMEUP
+<6>[   16.675879] I[0:      swapper/0:    0] irq-430  :        5 gpio-keys: KEY_POWER
+<6>[   16.675885] I[0:      swapper/0:    0] irq-432  :        1 bt_host_wake
+<6>[   16.675891] I[0:      swapper/0:    0] irq-433  :        1 tflash_det
+<6>[   16.675898] I[0:      swapper/0:    0] irq-436  :        1 wpd-det-irq
+<6>[   16.675904] I[0:      swapper/0:    0] irq-438  :        1 sx9330_irq
+<6>[   16.675911] I[0:      swapper/0:    0] irq-441  :        1 ssp-shub-int
+<6>[   16.675920] I[0:      swapper/0:    0] irq-454  :       11 19030000.decon_f
+<6>[   16.675927] I[0:      swapper/0:    0] irq-456  :        1 HPDET
+<6>[   16.675933] I[0:      swapper/0:    0] irq-457  :        1 JACKDET rise
+<6>[   16.675945] I[0:      swapper/0:    0] -------------------------------------------------------------------------------------------------------------
+<6>[   16.675950] I[0:      swapper/0:    0] 
+<6>[   16.675956] I[0:      swapper/0:    0] softirq : 15687
+<6>[   16.675959] I[0:      swapper/0:    0] -------------------------------------------------------------------------------------------------------------
+<6>[   16.675966] I[0:      swapper/0:    0] softirq-1 :     4246 TIMER
+<6>[   16.675972] I[0:      swapper/0:    0] softirq-4 :     1012 BLOCK
+<6>[   16.675978] I[0:      swapper/0:    0] softirq-6 :       26 TASKLET
+<6>[   16.675983] I[0:      swapper/0:    0] softirq-7 :     3403 SCHED
+<6>[   16.675988] I[0:      swapper/0:    0] softirq-9 :     7000 RCU
+<6>[   16.675993] I[0:      swapper/0:    0] -------------------------------------------------------------------------------------------------------------
+<6>[   16.676001] I[0:      swapper/0:    0] debug-snapshot: panic_notifier_list -> dbg_snapshot_panic_handler call -
+<6>[   16.676008] I[0:      swapper/0:    0] debug-snapshot: panic_notifier_list -> hung_task_panic call +
+<6>[   16.676015] I[0:      swapper/0:    0] debug-snapshot: panic_notifier_list -> hung_task_panic call -
+<6>[   16.676024] I[0:      swapper/0:    0] debug-snapshot: panic_notifier_list -> s3c2410wdt_panic_handler call +
+<6>[   16.676037] I[0:      swapper/0:    0] s3c2410-wdt 10050000.watchdog_cl0: Watchdog cluster 0 keepalive!, wtcnt = fff5
+<6>[   16.676045] I[0:      swapper/0:    0] Watchdog: s3c2410wdt_keepalive RTC 2026-09-15 00:00:13 UTC
+<6>[   16.676054] I[0:      swapper/0:    0] debug-snapshot: panic_notifier_list -> s3c2410wdt_panic_handler call -
+<6>[   16.676062] I[0:      swapper/0:    0] debug-snapshot: panic_notifier_list -> dump_kernel_offset call +
+<0>[   16.676069] I[0:      swapper/0:    0] Kernel Offset: 0x18000 from 0xffffff8008000000
+<6>[   16.676076] I[0:      swapper/0:    0] debug-snapshot: panic_notifier_list -> dump_kernel_offset call -
+<6>[   16.676082] I[0:      swapper/0:    0] debug-snapshot: panic_notifier_list -> dump_cpu_hwcaps call +
+<0>[   16.676089] I[0:      swapper/0:    0] CPU features: 0x1802230
+<6>[   16.676095] I[0:      swapper/0:    0] debug-snapshot: panic_notifier_list -> dump_cpu_hwcaps call -
+<6>[   16.676102] I[0:      swapper/0:    0] debug-snapshot: panic_notifier_list -> dump_mem_limit call +
+<0>[   16.676107] I[0:      swapper/0:    0] Memory Limit: none
+<6>[   16.676113] I[0:      swapper/0:    0] debug-snapshot: panic_notifier_list -> dump_mem_limit call -
+<6>[   16.676122] I[0:      swapper/0:    0] debug-snapshot: panic_notifier_list -> itmon_logging_panic_handler call +
+<6>[   16.676133] I[0:      swapper/0:    0] No found error in itmon_logging_panic_handler
+<6>[   16.676140] I[0:      swapper/0:    0] debug-snapshot: panic_notifier_list -> itmon_logging_panic_handler call -
+<6>[   16.676151] I[0:      swapper/0:    0] debug-snapshot: panic_notifier_list -> fimc_is_panic_handler call +
+<7>[   16.676157] I[0:      swapper/0:    0] [@]### fimc_is_resource_dump dump start ###
+<7>[   16.676164] I[0:      swapper/0:    0] [@]### fimc_is_resource_dump dump end ###
+<6>[   16.676171] I[0:      swapper/0:    0] debug-snapshot: panic_notifier_list -> fimc_is_panic_handler call -
+<6>[   16.676179] I[0:      swapper/0:    0] debug-snapshot: panic_notifier_list -> vts_panic_handler call +
+<6>[   16.676185] I[0:      swapper/0:    0] vts_is_on : 0
+<6>[   16.676192] I[0:      swapper/0:    0] samsung-vts 15510000.vts: exynos_vts_panic_handler: dump is skipped due to no power
+<6>[   16.676199] I[0:      swapper/0:    0] debug-snapshot: panic_notifier_list -> vts_panic_handler call -
+<6>[   16.676208] I[0:      swapper/0:    0] debug-snapshot: panic_notifier_list -> abox_panic_handler call +
+<6>[   16.676217] I[0:      swapper/0:    0] samsung-abox 18c50000.abox: exynos_abox_panic_handler: dump is skipped due to no power
+<6>[   16.676225] I[0:      swapper/0:    0] debug-snapshot: panic_notifier_list -> abox_panic_handler call -
+<6>[   16.676235] I[0:      swapper/0:    0] debug-snapshot: panic_notifier_list -> beyond_madera_panic_cb call +
+<6>[   16.676242] I[0:      swapper/0:    0] debug-snapshot: panic_notifier_list -> beyond_madera_panic_cb call -
+<6>[   16.676250] I[0:      swapper/0:    0] debug-snapshot: panic_notifier_list -> exynos_ehld_panic_handler call +
+<6>[   16.676257] I[0:      swapper/0:    0] debug-snapshot: panic_notifier_list -> exynos_ehld_panic_handler call -

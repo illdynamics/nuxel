@@ -1,0 +1,101 @@
+# NEXT-ACTION — cycle 5, candidate A15 (2026-10-15)
+
+## Where the boot stands
+
+| Milestone | State |
+|---|---|
+| 1 S-Boot starts our kernel | ACHIEVED |
+| 2 kernel runs + persistent logging | ACHIEVED |
+| 3 initramfs unpacks | ACHIEVED |
+| 4 Nuxel `/init` executes | ACHIEVED |
+| 5 USERDATA discovered | ACHIEVED |
+| 6 Fedora rootfs mounts (ext4, sda31) | ACHIEVED |
+| 7 `switch_root` → Fedora systemd 258 PID 1 | ACHIEVED |
+| 8 systemd builds its unit graph | ACHIEVED |
+| 9 exact ENOSYS cause | ACHIEVED (source-exact) |
+| 10 a core systemd service really runs | **ACHIEVED (A14)** — `systemd-udevd` |
+| 11 Fedora binary executes | **ACHIEVED (A14)** — `FEDORA_EXEC_OK` |
+| 12 kernel-primitive table from the device | **ACHIEVED (A14)** |
+| 13 first-light program runs | **ACHIEVED (A14)** — `FIRSTLIGHT_FRAME_WRITTEN` |
+| 14 **frame visible on the AMOLED** | **A15: operator must confirm** |
+| 15 no spontaneous reboot past 47 s | **A15 TARGET** |
+| 16 real systemd services start (cgroup v2) | **A15 TARGET** |
+| 17 spinning penguin (visible) | **A15 TARGET** |
+| 18 Phoc / Phosh / touch UI | BLOCKED on 14+16 and on a DRM/KMS kernel |
+
+## Reading the A15 result
+
+Everything lands in the ram console (read as `/proc/last_kmsg` from TWRP).
+Look for, in order:
+
+1. `NUXEL_MARKER INITRAMFS_EXECUTED`, then the new `FIRSTLIGHT …` block:
+   `NUXEL_FB_INFO` + one `=value` line per geometry field, then
+   `NUXEL_FB_BUFFERS_PAINTED=2`, `NUXEL_FB_ANIM frame=1..11`,
+   `NUXEL_FB_ANIM_DONE frames=12`, `NUXEL_FB_DRAW_SUCCESS`,
+   `NUXEL_MARKER FIRSTLIGHT_ANIMATION_DONE` and
+   `NUXEL_MARKER FIRSTLIGHT_FRAME_WRITTEN`. **Record the geometry lines
+   verbatim** — they are the only hardware description of the fbdev we have
+   (compare `smem_start`/`smem_len` with the DECON's 35,020,800-byte window[5]).
+2. `NUXEL_MARKER ROOTFS_MOUNTED`, the syscall/spawn probe tables,
+   `NUXEL_MARKER FEDORA_BINARY_EXECUTED`, `NUXEL_MARKER SYSTEMD_PATCH_PRESENT`.
+3. **`NUXEL_MARKER CGROUP2_MOUNTED`** (or `CGROUP2_MOUNT_FAILED`).
+4. `NUXEL_MARKER ROOTFS_HANDOFF_STARTED`, then `systemd[1]:` lines.
+5. **The absence of any reboot request.** The decisive test: does the log reach
+   t ≥ 60 s with no `debug-snapshot: normal reboot starting`? A14's appeared at
+   t=47.171 s. If A15 shows a reboot at ~47 s again, the watchdog was not the
+   (only) cause and the next hypothesis is the kernel-side vendor watchdog path.
+6. Whether the `Failed at step CGROUP` / `Failed to attach to cgroup` messages
+   are gone. If they are gone and units now execute, milestone 16 is met; if they
+   are replaced by a *different* unit failure, read the exact errno and unit
+   before changing anything.
+
+Interpretation rules
+* `FIRSTLIGHT_FRAME_WRITTEN` without an operator-visible image is a **display
+  driver** result, not a process-execution result. It has already been achieved
+  once (A14) and may not be claimed twice as progress.
+* If the phone returns to TWRP: record
+  `BOOT_RESULT=FAILED_USER_RETURNED_TO_TWRP`, capture `last_kmsg` + pstore into
+  `scripts/s10plus-debug-pack/captures/<stamp>-A15-postfail/`, compare with A14
+  and continue. Do not re-run an identical candidate.
+* If the frame *is* visible: the next two steps are (a) hold the frame steady and
+  (b) start Phoc/Phosh investigation, which needs DRM/KMS (5.4+ Exynos 9820 port)
+  and therefore does not belong in the same cycle as a display fix.
+
+## Reproducing this cycle's pipeline (all committed and gated)
+
+```
+# 0. kernel tree MUST be a fresh extraction: /b/src and /b/src2 in the podman
+#    container are silently truncated (scripts/Kbuild.include was 0 bytes).
+sh .scratch/kb.sh sh -c 'rm -rf /b/k15 && mkdir -p /b/k15 && \
+  tar xzf /b/kernel.tar.gz -C /b/k15 --strip-components=1'
+podman cp boot/initramfs/init.sh      nuxel-kb:/b/a15/initramfs-src-init.sh   # reference
+# 1. initramfs (macOS side, proven newc.py edits, fails loudly on a missing anchor)
+sed -e 's|/A14$|/A15|' .scratch/s10plus-cycle4/a13/build-a14-initramfs.sh \
+  > .scratch/s10plus-cycle4/a13/build-a15-initramfs.sh
+sh .scratch/s10plus-cycle4/a13/build-a15-initramfs.sh
+# 2. first-light payload (container compiles aarch64 natively)
+podman cp tools/s10plus/nuxel-fb-phone.c nuxel-kb:/b/a15/nuxel-fb-phone.c
+sh .scratch/kb.sh sh -c 'cd /b/a15 && gcc -O2 -static -nostdlib -ffreestanding \
+  -fno-stack-protector -fno-builtin -Wl,-e,_start -o nuxel-fb-phone-aarch64 \
+  nuxel-fb-phone.c'
+podman cp nuxel-kb:/b/a15/nuxel-fb-phone-aarch64 tools/s10plus/nuxel-fb-phone-aarch64
+# 3. kernel with the initramfs embedded (container)
+podman cp build/out/s10plus/debug-candidates/A15/initramfs.cpio nuxel-kb:/b/a15/initramfs.cpio
+podman cp .scratch/s10plus-cycle4/a13/relax-werror.sh  nuxel-kb:/b/a15/relax-werror.sh
+podman cp .scratch/s10plus-cycle4/a13/build-a15-kernel2.sh nuxel-kb:/b/a15/kbuild.sh
+sh .scratch/kb.sh sh -c 'sh /b/a15/kbuild.sh'
+# 4. boot container + gates
+boot/s10plus/build-candidate.sh --kernel <Image-A15> --initramfs-cpio <A15 cpio> \
+  --init none --no-dev-nodes --compress lzma --out build/out/s10plus/debug-candidates/A15/boot.img
+sh boot/s10plus/tests/test-boot-image-gates.sh
+sh boot/s10plus/tests/test-init-cmdline-independence.sh
+```
+
+Rules that held for this cycle: `podman machine start` is never used (the gvproxy
+socket path resets the VM and truncates files mid-copy); writes into the
+container go through `podman cp` (stdin piping silently produces 0-byte files);
+every artifact copied out is hash-verified.
+
+## Standing risks
+* No real stock BOOT backup exists. RECOVERY untouched; every write BOOT-only.
+* A12 is the regression baseline and is never overwritten.

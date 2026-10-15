@@ -1,0 +1,7 @@
+ro.boot.bootloader=G975FXXSEFUL1
+ro.boot.baseband=
+ro.boot.hardware=exynos9820
+ro.boot.revision=26
+ro.boot.dtbo_idx=9
+ro.boot.battery.health=
+ro.recovery.resetreason=

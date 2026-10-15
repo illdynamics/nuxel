@@ -127,3 +127,69 @@ hardware record rather than a description of it:
   artifact was hash-verified after copying out of the VM.
 * The container build path used is `podman machine ssh` + `podman exec` inside the
   VM (the stable path). The Podman API/gvproxy socket path was not used.
+
+---
+
+# CYCLE 5 TEST RESULTS (A14 hardware evidence)
+
+| # | What was measured | Where | Result |
+|---|---|---|---|
+| T-C5-1 | A14 wrote and readback-verified byte-for-byte | `FLASH-ATTEMPTS.md` (A13/A14) | `5aff1a10…` = local `boot.img` |
+| T-C5-2 | initramfs executed | `prev-boot/last_kmsg.raw` line ~2926 | `NUXEL_MARKER INITRAMFS_EXECUTED` t=2.152 s |
+| T-C5-3 | first-light payload ran and exited 0 | same | `FIRSTLIGHT_FRAME_WRITTEN` t=2.363 s; no `NUXEL_FB_*` failure line |
+| T-C5-4 | rootfs mounted, identity gate | same | `NUXEL_MARKER ROOTFS_MOUNTED` t=3.398 s |
+| T-C5-5 | kernel primitives, on the device | same | `NUXEL-SYSCALL` table: `clone(SIGCHLD)+execve` ret=0; `waitid(P_PIDFD)` EINVAL; `pidfd_spawn` ENOSYS; `posix_spawn` rc=0 child_status=7; `cgroup2_unified=absent` |
+| T-C5-6 | Fedora binary executes from the real root | same | `NUXEL_MARKER FEDORA_BINARY_EXECUTED`, `FEDORA_EXEC_OK uid=0` |
+| T-C5-7 | systemd 258.11 PIC 1 up | same | `systemd[1]: systemd 258.11-1.fc43 running in system mode`, `Detected architecture arm64` |
+| T-C5-8 | **a core child service really executes** | same, t=3.9–105 s | `systemd-udevd[3483/3505/3527/3539]` processing kernel uevents and logging `Using default interface naming scheme 'v258'` |
+| T-C5-9 | the A12 `Failed to spawn executor: Function not implemented` error | whole capture | **absent** — the A13 pidfd_spawn repair works |
+| T-C5-10 | next blocker is cgroups | t=3.820–3.915 s | 18 × `Failed to attach to cgroup /system.slice/…: No such file or directory` + `Failed at step CGROUP` |
+| T-C5-11 | udevd worker creation | t=32.3–62.5 s | `systemd-udevd[…]: Failed to create worker object: Function not implemented` (pidfd/clone3 primitive missing in 4.14) |
+| T-C5-12 | **reboot cause** | t=47.163–107.804 s | runconsole: `sh: 1/comm: No such file or directory` (pid 3308) → `debug-snapshot: normal reboot starting` + `sec_debug: set magic code (0x0)` from PIDs 3557/3558/3561 (comm `init`) → `Freezing user space processes` t=107.489 → `reboot: Restarting system` t=107.804. No panic, no BUG, HW watchdog petted every 10 s. |
+| T-C5-13 | A14 = 3 identical Nuxel sessions in the ram console | `last_kmsg.raw` | the phone rebooted more than once before recovery (each session: first light 2.36 s, handoff 3.44 s, reboot request 47.17 s) |
+| T-C5-14 | pstore record | `pstore/dmesg-ramoops-0.raw` | `Panic#2 Part1` from an older session with magic `0x66262564` (a genuine panic, not this boot) — proves the *normal* `0x0` magic in T-C5-12 is meaningful |
+| T-C5-15 | device identity/partition map at capture time | `recovery/recovery-metadata.txt` | root ADB, `boot -> sda14`, `recovery -> sda15`, `userdata -> sda31`, `androidboot.dtbo_idx=9`, `sec_debug.reset_reason=7` |
+
+---
+
+# CYCLE 6 TEST RESULTS
+
+## Offline / build-time tests (all on the Mac, no device writes)
+
+| # | Test | Result |
+|---|---|---|
+| 1 | `sh -n boot/initramfs/init.sh` after the first-light rewrite | PASS |
+| 2 | freestanding aarch64 build of `nuxel-fb-phone.c` in the aarch64 container (`gcc -O2 -static -nostdlib -nostartfiles -ffreestanding`) | PASS, 9792 B, ELF EXEC AArch64, entry `_start` |
+| 3 | binary runs in the container with argv forms `-`, `hold`, `hold 5` | PASS — all three print `NUXEL_FB_UNAVAILABLE no /dev/fb0`, exit 2 (argv/entry path exercised) |
+| 4 | cpio round-trip: extracted `init` and `opt/nuxel/nuxel-fb-phone` re-hash | PASS — `b209c3e9…` and `fed8f9c9…`, identical to the sources |
+| 5 | embedded-initramfs staleness check: gunzip the stream at offset 33,809,680 of `Image-A16` | PASS — 6,753,220 B, sha256 `f3bd9cbe…` = `A16/initramfs.cpio`. (A15 re-checked the same way: `f31b96a5…`) |
+| 6 | `build-candidate.sh` release gate on `A16/boot.img` | PASS — header_field40=1, header_size=1648, kernel_size=47,929,352, ramdisk lzma 2,293,760 B aligned, cpio `/init` 0o100755 51,833 B, partition slack 7,067,648 B |
+| 7 | kernel rebuild with the A16 cpio (incremental, object reuse from the A15 build tree) | PASS — `GEN usr/initramfs_data.cpio.gz` observed, `A16_KERNEL_BUILD_OK`, Image 47,929,352 B |
+| 8 | pre-flight against the live handset (`--action preflight --boot-only`) | PASS — `beyond2lte`, TWRP 3.7.0_9-2, `boot -> /dev/block/sda14` 57,671,680 B |
+| 9 | flashed-image identity of A15 *before* overwriting (`dd` prefix hash) | PASS — `e23d004d…` = `A15/boot.img`, so the A15 capture is provably A15's |
+
+## Hardware test A16
+
+| Field | Value |
+|---|---|
+| Candidate | A16 (BOOT-only) |
+| boot.img sha256 | `603c2e9a3fd434d451aea0b614fe5978a9ad6178ade6edc1831afc708ee36222` |
+| Backup | `backups/s10plus/20261015T140626Z-R58M75KDB2X` |
+| Readback | PASS — full-partition SHA256 of the written range matches the local image |
+| Reboot | `2026-10-15T14:07:20Z` (`adb reboot` from TWRP, single command) |
+| Partitions written | BOOT (sda14) only |
+| Result | pending operator observation / post-fail capture |
+
+## Ram-console structure of the A15 capture (method note, reusable)
+
+`/proc/last_kmsg` from TWRP held **three** boots back to back; identify them by
+`Samsung S-Boot 4.0` banners and `Starting kernel...`:
+
+| Lines | Boot | Sentinel |
+|---|---|---|
+| 1–4548 | previous TWRP session | `init: Reboot start, reason: reboot,adb` |
+| 4549–17571 | **NUXEL A15** | kernel banner at 5286, `#1 SMP PREEMPT Thu Oct 15 13:23:12 UTC 2026` |
+| 17572–18303 | current TWRP | `recovery: Loading entire partition` |
+
+Never attribute a `BUG`/hard-reset record to the boot until its position inside
+this map is established — that mistake is exactly what RC-6.1 corrects.
