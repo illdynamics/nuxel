@@ -100,3 +100,151 @@ Write + readback **VERIFIED**; reboot 2026-10-15T07:31:59Z.
 | 2 | The DTB the packer embeds inherits `/chosen/linux,initrd-start/end` placeholders (`0x84000000`/`0x841fffff`) that misdescribe the initrd to the kernel. | **patching DTB in A5** |
 | 3 | The packer's example/default kernel input is `Image.gz`; on this unit S-Boot jumps straight to `kernel_addr`, so a gzip payload is executed as code (7 silent loads). Only a raw `Image` works. | **fixed** (A2+); `pack-boot-v1.sh` should reject/warn on gzip kernels |
 | 4 | `tools/s10plus/patch-boot-from-upload.py` reads header offset 40 as the DTB length and assumes the legacy layout, so it cannot consume `--v1-spec` images. | **open** |
+
+---
+
+# PATCHES — cycle 3 (2026-10-15)
+
+## P-C3-1 — REMOVE THE REGRESSION GENERATOR from the direct S10+ boot path (source-level)
+**Files:** `boot/s10plus/build-debug-candidate.sh` (rewritten),
+`boot/s10plus/build-candidate.sh` (new), `boot/s10plus/pack-boot-v1.sh` (`--strict`).
+
+**Defect.** `build-debug-candidate.sh` defaulted to
+`build/out/s10plus/nuxel-beyond2lte-boot-merged-fixed.img` — the image that
+already produced seven silent loads — and piped it through
+`tools/s10plus/patch-boot-from-upload.py`, which unconditionally
+* re-writes the ramdisk with `gzip_bytes(..., 9)` (**gzip kernel? no — gzip
+  ramdisk, but it also copies the input's gzip kernel**), and
+* calls `pack-boot-v1.sh` **without** `--v1-spec`, so the DTB size lands at header
+  offset 40 again (legacy header).
+
+Together those are exactly the two hardware-proven fatal defects of attempt A1.
+`patch-boot-from-upload.py` also *requires* `nuxel.device=s10plus` to be present
+in the boot-image cmdline, which S-Boot discards, and it forces `/bin/sh` to be a
+toybox symlink.
+
+**Fix.**
+* `boot/s10plus/build-candidate.sh` (new, gated) is the only path that produces
+  BOOT candidates. It unpacks a **hardware-proven base image**
+  (default: the A5 candidate) into kernel / ramdisk / DTB, optionally replaces
+  `/init`, inserts device nodes, recompresses the ramdisk, repacks with
+  `pack-boot-v1.sh --v1-spec --strict`, and then requires a **PASS** from
+  `tools/s10plus/verify-boot-image.py`. It refuses to overwrite an existing
+  candidate (so hardware-tested images are never clobbered) and writes a report.
+* `build-debug-candidate.sh` is now a thin wrapper over it and no longer calls
+  `patch-boot-from-upload.py`.
+* `pack-boot-v1.sh --strict` turns a gzip kernel payload into a hard error (and
+  warns loudly without `--strict`, so other callers keep working).
+
+## P-C3-2 — `tools/s10plus/verify-boot-image.py`: fail-closed release gates (new, source-level)
+Encodes the hardware facts instead of a description of them:
+
+| Gate | Failure it prevents |
+|---|---|
+| file size <= BOOT partition (57,671,680 B) | unwritable/truncated flashes |
+| `ANDROID!` magic, `page_size == 2048` | wrong container family |
+| `header_version == 1` at offset 40 (+ names the legacy DTB-size defect when the value is > 4096), `header_size == 1648` | A1/A2 legacy header (S-Boot `HDR V376101`) |
+| kernel payload != gzip; `ARM\x64` present at offset 0x38; plausible `text_offset`/`image_size`/`flags` | A1/legacy silent-load class |
+| ramdisk offset == `page + round_up(kernel_size, page)`; region inside the image | mis-set offsets S-Boot would read from the wrong place |
+| ramdisk container decode: lzma-alone (incl. the EOS-marker variant the device uses), gzip, xz, bzip2, raw cpio | un-decodable payloads |
+| cpio: `TRAILER!!!` reached, no absolute/`..` names, trailer padding all zero | A3's truncation and any hand-mangled archive |
+| `/init` present, regular, mode & 0111; `#!` interpreter present in the archive | kernel would fall back to `prepare_namespace()` and mount SYSTEM |
+| warning when `/dev/console` is absent | the silent-evidence trap (P-C3-3) |
+| appended DTB magic + declared size; warns about `/chosen/linux,initrd-*` placeholders | stale-placeholder "experiments" |
+| prints SHA-256 of image, kernel, ramdisk, decompressed cpio | provenance |
+
+## P-C3-3 — the initramfs had no console: `dev/console`, `dev/null`, and real milestone markers
+**Files:** `boot/initramfs/init.sh`, `boot/s10plus/build-candidate.sh`.
+
+`populate_rootfs()` is a `rootfs_initcall`; when it succeeds and `/init` exists,
+`kernel_init_freeable()` skips `prepare_namespace()`, so devtmpfs is never mounted
+and `/dev/console` must come from the archive. Our cpio had an **empty** `dev/`
+directory while every panic chain shows
+`Warning: unable to open an initial console.` — so PID 1 had no working stdio and
+no initramfs text could ever be captured. `build-candidate.sh` now inserts
+`dev/console` (char 5:1, 0600) and `dev/null` (char 1:3, 0666).
+
+`init.sh` now emits the mission's milestone markers from **executing** code as the
+very first statement (shell builtins only, so they work even with a broken PATH):
+`INITRAMFS_EXECUTED`, then `USERDATA_DISCOVERED`, `ROOTFS_MOUNTED`,
+`ROOTFS_HANDOFF_STARTED`, written to `/dev/console` and to the in-RAM diagnostic
+record. It also logs the `chosen/linux,initrd-start|end` the bootloader actually
+handed this kernel, which is the single unknown that made A2-A5 ambiguous.
+
+## P-C3-4 — `tools/s10plus/newc.py` (new, source-level)
+Dependency-free newc reader/replacer/inserter (macOS has no `cpio`). Guarantees
+that replacing a member with identical bytes reproduces the archive
+**byte-for-byte** (verified in the test suite) and refuses archives without
+`TRAILER!!!`.
+
+## P-C3-5 — candidate A6: the device's own proven ramdisk container shape
+**Built by:** `boot/s10plus/build-candidate.sh --compress lzma`
+**Candidate:** `build/out/s10plus/debug-candidates/A6/boot.img`
+sha256 `ba4f70c6384bd018e5d7d29bf0c28db458f5d0f2671410837649c6ab548ebc49`
+(51,390,464 B).
+
+* kernel `Image` and appended DTB: **byte-identical to A5** (the container whose
+  kernel is hardware-proven to execute, `14b64847…` / `bcdef39c…`).
+* ramdisk: LZMA-alone, properties byte `0x5d` (lc=3 lp=0 pb=2), dictionary
+  8 MiB, uncompressed-size field `0xffffffffffffffff` => end-of-stream marker —
+  **the exact container shape of the TWRP ramdisk that this S-Boot delivers and
+  this kernel unpacks** — zero-padded to an exact multiple of 65,536 bytes
+  (6,029,312 B) so that any S-Boot rounding rule (up, down, or exact) yields a
+  length that contains the whole stream.
+* initramfs: 68 records, decompresses to 8,260,060 B, `TRAILER!!!` record at
+  8,194,400 (logical end 8,194,524) followed by exactly 65,536 zero bytes inside
+  the stream; `/init` = 26,413 B mode 0100755 **byte-identical to
+  `boot/initramfs/init.sh`**; `/bin/sh -> toybox`; `dev/console`, `dev/null`.
+* gate: PASS. Report: `build/out/s10plus/debug-candidates/A6/BUILD-REPORT.txt`.
+
+## P-C3-6 — kernel rebuilt with a BUILT-IN initramfs + delivery diagnostics (A7, hardware-proven)
+**Files:** `boot/s10plus/build-kernel-a7-embedded-initramfs.sh` (new),
+`kernel/s10plus/patches/0003-nuxel-initramfs-delivery-diagnostics.patch` (new),
+plus A7 artifacts under `build/out/s10plus/debug-candidates/A7/`.
+**Source:** `Linux4/android_kernel_samsung_exynos9820@f7194c1d` (Linux 4.14.253),
+in-tree `exynos9820-beyond2lte_defconfig` **unmodified** (no foreign fragment).
+**Toolchain:** Fedora 43 container, native aarch64, `gcc 15.3.1 20260722 (Red Hat
+15.3.1-1)` — the same compiler as the hardware-proven kernel's banner.
+**Config delta:** `CONFIG_INITRAMFS_SOURCE="/b/initramfs.cpio"`,
+`CONFIG_INITRAMFS_COMPRESSION=".gz"`, `CONFIG_INITRAMFS_FORCE` **off**.
+**Diagnostics:** `pr_alert` in `init/initramfs.c` reporting the built-in and
+external initrd addresses/sizes, the first 16 bytes at `initrd_start`,
+`decompress_method()` per attempt, and the final `message`/`state`.
+**Result (hardware):** built-in archive `state=7` (success); `/init` executed;
+the external initrd is published at `0x89000000` with our header's length but was
+never loaded (head bytes = kernel console text). Documented in ROOT-CAUSE.md.
+
+## P-C3-7 — evidence channel `/dev/kmsg`, `/dev/kmsg` node, and a boot watchdog (A8)
+**Files:** `boot/initramfs/init.sh`, `boot/s10plus/build-candidate.sh` payload.
+* `/dev/console` is **ENODEV** on this handset (`console=ram` has no tty), so
+  `nuxel_say()`/`nuxel_marker()` now write to `/dev/kmsg` first and fall back to
+  `/dev/console` and then stdout. S-Boot's cmdline sets `printk.devkmsg=on`, so
+  `/dev/kmsg` writes land in the Samsung ram console and survive the bootloop.
+* The initramfs ships `dev/kmsg` (char 1:11, 0600) so the node exists before
+  devtmpfs is mounted.
+* `NUXEL_BOOT_WATCHDOG` (default **45 s**) persists evidence then `reboot -f`; it is
+  disarmed immediately before `switch_root`. Measured requirement: A7's boots were
+  killed by the vendor kernel at 37 s / 68 s (`hard_reset_hook`) and 242 s
+  (`hung_task`), so the initramfs must finish inside ~40 s.
+* An **early heartbeat** runs as soon as `diag_persist()` is defined, writing the
+  BOOT-partition slack record and printing the block devices found in `/dev`, so a
+  later reset still leaves a readable record (one `dd` from recovery).
+
+## P-C3-8 — repository hygiene from this cycle
+* `boot/s10plus/tests/test-boot-image-gates.sh` — 11 regression tests; the gate
+  fails the two hardware-falsified images (A1/legacy, gzip kernel + offset-40
+  header) and passes the two hardware-proven ones (A5, TWRP recovery).
+* `tools/s10plus/{verify-boot-image,newc,unpack-boot-image}.py` — gate, cpio tool,
+  section splitter; the cpio tool round-trips byte-identically and the gate now
+  also rejects duplicate archive members (a doubled `/init` or `/dev/console`).
+* `boot/s10plus/build-debug-candidate.sh` — no longer calls
+  `tools/s10plus/patch-boot-from-upload.py` (the gzip-kernel + legacy-header
+  regression path); it delegates to the gated builder.
+
+## Verified artifacts produced this cycle
+| Artifact | sha256 |
+|---|---|
+| `A7/Image-A7` (kernel, embedded initramfs + KDIAG) | `d5e64b0fcdf4ede056aeb172fa546deda92b481e56a4170e9033dc0d6a4fce1a` |
+| `A7/boot.img` | `f8587521655191b8927ab21f8126864472def6e8f802f17a85da2627b2cf98da` |
+| `A8/Image-A8` (adds `/dev/kmsg` initramfs + watchdog init) | `f887030acd5c394b97ccd154db7e6252adc21b457b957177fe56287202d8b876` |
+| `A8/boot.img` | `314d5e532f3e0a25d324c87e844110b173db20306d42ca83d67c2684fa6f026a` |

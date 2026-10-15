@@ -1,27 +1,36 @@
 #!/usr/bin/env bash
-# Build the S10+ BOOT diagnostic/fix candidate (cmdline-independent init).
+# =============================================================================
+# build-debug-candidate.sh — build the S10+ BOOT diagnostic candidate (gated)
 #
-# What it does: takes the last verified boot image (kernel + merged DTB are
-# preserved byte-for-byte), replaces only the initramfs /init with the current
-# boot/initramfs/init.sh, and repacks an Android v1 boot image with the load
-# addresses taken from the input header (0x10008000/0x11000000/0x10000100 —
-# identical to this unit's TWRP recovery image, which S-Boot boots).
+# REWRITTEN 2026-10-15.  The previous version defaulted to the ORIGINAL,
+# hardware-falsified image
+#     build/out/s10plus/nuxel-beyond2lte-boot-merged-fixed.img
+# and piped it through tools/s10plus/patch-boot-from-upload.py, which produced a
+# container with (a) a GZIP kernel payload and (b) the DTB size written at header
+# offset 40 where boot_img_hdr_v1 requires `header_version`.  Both defects are
+# hardware-proven to stop this handset dead (attempt A1: seven silent loads).
+# That is a *regression generator* and it has been removed from this path.
 #
-# Why /init changed: Samsung S-Boot replaces /chosen/bootargs and drops the boot
-# image header `cmdline`, so the initramfs must identify the device from the
-# device tree and resolve USERDATA by the kernel's PARTNAME uevent instead of
-# relying on `nuxel.device=`/`root=`. Failures are persisted to
-# <rootfs>/nuxel-boot-diag.log and to the BOOT partition tail, including dmesg.
+# The default base is now the last hardware-proven container and every build is
+# checked by tools/s10plus/verify-boot-image.py before it is reported.
 #
-# Usage: boot/s10plus/build-debug-candidate.sh [INPUT_IMG] [OUTPUT_IMG]
+# Usage: boot/s10plus/build-debug-candidate.sh [OUTPUT_IMG] [--compress MODE]
+# =============================================================================
 set -euo pipefail
 HERE=$(cd "$(dirname "$0")" && pwd)
 ROOT=$(cd "$HERE/../.." && pwd)
-IN="${1:-$ROOT/build/out/s10plus/nuxel-beyond2lte-boot-merged-fixed.img}"
-OUT="${2:-$ROOT/build/out/s10plus/debug-candidates/nuxel-beyond2lte-boot-diag-cmdline-free.img}"
-[ -f "$IN" ] || { echo "input image not found: $IN" >&2; exit 2; }
-mkdir -p "$(dirname "$OUT")"
-sh "$ROOT/boot/s10plus/tests/test-init-cmdline-independence.sh"
-python3 "$ROOT/tools/s10plus/patch-boot-from-upload.py" "$IN" "$OUT"
-echo "built: $OUT"
-shasum -a 256 "$OUT" 2>/dev/null || sha256sum "$OUT"
+
+OUT="$ROOT/build/out/s10plus/debug-candidates/nuxel-beyond2lte-boot-diag-gated.img"
+MODE="${NUXEL_CANDIDATE_COMPRESS:-none}"
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --compress) MODE="$2"; shift 2 ;;
+    -h|--help) sed -n '2,20p' "$0"; exit 0 ;;
+    *) OUT="$1"; shift ;;
+  esac
+done
+
+echo "build-debug-candidate: NOTE this legacy entry point now delegates to"
+echo "  boot/s10plus/build-candidate.sh (fail-closed, gated).  Prefer calling it directly."
+echo "  For an LZMA ramdisk:  --compress lzma"
+exec "$HERE/build-candidate.sh" --compress "$MODE" --out "$OUT"

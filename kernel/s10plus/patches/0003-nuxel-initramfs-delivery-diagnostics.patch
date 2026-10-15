@@ -1,0 +1,60 @@
+--- a/init/initramfs.c
++++ b/init/initramfs.c
+@@ -483,6 +483,9 @@
+ 		}
+ 		this_header = 0;
+ 		decompress = decompress_method(buf, len, &compress_name);
++		pr_alert("NUXEL-KDIAG unpack attempt: first=0x%02x this_header=%lld remaining=%lu method=%s\n",
++			 (unsigned char)*buf, (long long)this_header, len,
++			 compress_name ? compress_name : "(none)");
+ 		pr_debug("Detected %s compressed data\n", compress_name);
+ 		if (decompress) {
+ 			int res = decompress(buf, len, NULL, flush_buffer, NULL,
+@@ -504,6 +507,8 @@
+ 		buf += my_inptr;
+ 		len -= my_inptr;
+ 	}
++	pr_alert("NUXEL-KDIAG unpack verdict: message=%s state=%d\n",
++		 message ? message : "(none)", (int)state);
+ 	dir_utime();
+ 	kfree(name_buf);
+ 	kfree(symlink_buf);
+@@ -622,6 +627,38 @@
+ static int __init populate_rootfs(void)
+ {
+ 	char *err;
++
++	/*
++	 * NUXEL-KDIAG (2026-10-15): pr_alert, not pr_info, so Samsung's
++	 * loglevel=4 console filter cannot hide these.  The handset advertises
++	 * /chosen/linux,initrd-start|end and hands the kernel a length that
++	 * tracks our header, yet unpack_to_rootfs() rejects the bytes; these
++	 * lines make "was the payload delivered, and where" decidable from the
++	 * kernel ram console alone.  Only the bootloader-declared initrd region
++	 * and this kernel's own built-in initramfs are inspected.
++	 */
++	pr_alert("NUXEL-KDIAG populate_rootfs: builtin=%llx builtin_size=%lu external_initrd=%d start=%llx end=%llx len=%llu\n",
++		 (unsigned long long)(unsigned long)__initramfs_start,
++		 (unsigned long)__initramfs_size,
++		 initrd_start ? 1 : 0,
++		 (unsigned long long)initrd_start,
++		 (unsigned long long)initrd_end,
++		 (unsigned long long)(initrd_start ? initrd_end - initrd_start : 0));
++	if (initrd_start && (initrd_end - initrd_start) >= 16) {
++		unsigned char *p = (unsigned char *)initrd_start;
++		pr_alert("NUXEL-KDIAG initrd head: %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x\n",
++			 p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7],
++			 p[8], p[9], p[10], p[11], p[12], p[13], p[14], p[15]);
++		pr_alert("NUXEL-KDIAG initrd head ascii: %c%c%c%c%c%c%c%c\n",
++			 p[0] >= 32 && p[0] < 127 ? p[0] : '.',
++			 p[1] >= 32 && p[1] < 127 ? p[1] : '.',
++			 p[2] >= 32 && p[2] < 127 ? p[2] : '.',
++			 p[3] >= 32 && p[3] < 127 ? p[3] : '.',
++			 p[4] >= 32 && p[4] < 127 ? p[4] : '.',
++			 p[5] >= 32 && p[5] < 127 ? p[5] : '.',
++			 p[6] >= 32 && p[6] < 127 ? p[6] : '.',
++			 p[7] >= 32 && p[7] < 127 ? p[7] : '.');
++	}
+ 
+ 	if (do_skip_initramfs) {
+ 		if (initrd_start)

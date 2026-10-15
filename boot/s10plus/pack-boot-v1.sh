@@ -109,10 +109,21 @@ def addresses_from_device(stock_img, script_dir):
     return (info["kernel_addr"], info["ramdisk_addr"], info["tags_addr"])
 
 
-def pack(kernel, ramdisk, dtb, cmdline, output, kernel_addr, ramdisk_addr, tags_addr, v1_spec=False):
+def pack(kernel, ramdisk, dtb, cmdline, output, kernel_addr, ramdisk_addr, tags_addr, v1_spec=False, strict=False):
     kernel_data = read_file(kernel, "kernel")
     ramdisk_data = read_file(ramdisk, "ramdisk")
     dtb_data = read_file(dtb, "dtb") if dtb else b""
+
+    # Hardware-proven on beyond2lte: Samsung S-Boot jumps to kernel_addr and does
+    # NOT decompress, so a gzip kernel payload is executed as code (attempt A1
+    # produced seven silent loads).  --strict makes that a hard error.
+    if kernel_data[:2] == b"\x1f\x8b":
+        msg = ("kernel payload is GZIP; S-Boot jumps to kernel_addr without "
+               "decompressing — ship the raw arm64 Image instead")
+        if strict:
+            sys.stderr.write("pack-boot-v1: ERROR " + msg + "\n")
+            sys.exit(1)
+        sys.stderr.write("pack-boot-v1: WARNING " + msg + "\n")
 
     # cmdline is a fixed 512-byte asciiz field
     cmdline_field = cmdline.encode("utf-8", "replace")[:511] + b"\x00"
@@ -183,6 +194,9 @@ def main(argv):
                         help="tags/DTB load address (e.g. 0x80000100); overrides the default")
     parser.add_argument("--addresses-from-device", metavar="STOCK_BOOT_IMG",
                         help="read kernel/ramdisk/tags load addresses from a stock v1 boot.img")
+    parser.add_argument("--strict", action="store_true",
+                        help="fail closed on container defects that are proven to "
+                             "break the S10+ boot path (gzip kernel payload)")
     parser.add_argument("--v1-spec", action="store_true",
                         help="write a spec-compliant boot_img_hdr_v1 (header_version=1 at "
                              "offset 40, os_version at 44, header_size=1648) instead of the "
@@ -223,7 +237,8 @@ def main(argv):
         parser.error("--kernel, --ramdisk and --output are required (--dtb optional).")
 
     pack(args.kernel, args.ramdisk, args.dtb, args.cmdline, args.output,
-         kernel_addr, ramdisk_addr, tags_addr, v1_spec=args.v1_spec)
+         kernel_addr, ramdisk_addr, tags_addr, v1_spec=args.v1_spec,
+         strict=args.strict)
     return 0
 
 

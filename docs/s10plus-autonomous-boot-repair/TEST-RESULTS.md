@@ -34,3 +34,66 @@ the kernel executes. Only the hardware boot test can.
 | diagnostics slot 57,606,144 | untouched by a 53 MiB write |
 | sha256 | `57ff4d5e7064305908068c19f1beead2c33e77ecc480add7b9c6f9c910ba4f6e` |
 | device write + readback | **VERIFIED BOOT: `57ff4d5e…`** via `03-flash.sh --boot-only --execute` |
+
+---
+
+## T-GATES — `boot/s10plus/tests/test-boot-image-gates.sh` (2026-10-15, Mac, offline)
+**11 passed, 0 failed, 0 skipped.** Proves the new release gate reproduces the
+hardware record rather than a description of it:
+
+| Fixture | Expectation | Reason it is a meaningful fixture |
+|---|---|---|
+| `nuxel-beyond2lte-boot-diag-cmdline-free.img` (A1) | FAIL | gzip kernel + legacy header 376101 — 7 silent loads on hardware |
+| `nuxel-beyond2lte-boot-merged-fixed.img` | FAIL | same two defects (the old builder's default input) |
+| `nuxel-beyond2lte-boot-A2-uncompressed.img` | FAIL | raw kernel but still legacy header 376101 |
+| `nuxel-beyond2lte-boot-A5-dtb-fix.img` | PASS | hardware-proven: its kernel executed and panicked in pstore |
+| `twrp-recovery-original.img` | PASS | the only ramdisk S-Boot is observed to deliver AND unpack |
+| synthetic gzip kernel through the packer | refused | `pack-boot-v1.sh --strict` |
+| synthetic legacy header | FAIL | DTB size at offset 40 |
+| ramdisk with `/init` removed | FAIL | kernel would fall back to SYSTEM |
+| ramdisk truncated to 8,192,000 B | FAIL | reproduces the A3 failure mode exactly |
+| image larger than the BOOT partition | FAIL | capacity gate |
+| `newc.py replace` with identical bytes | identical | no silent archive corruption |
+
+## T-A6-offline — A6 validation (2026-10-15, Mac, no device)
+| Check | Result |
+|---|---|
+| gate (`verify-boot-image.py`) | **PASS** |
+| image size / fit | 51,390,464 B vs BOOT 57,671,680 B -> 6,281,216 B slack; diag slot 57,606,144 untouched |
+| header | `ANDROID!`, page 2048, `header_version=1`, `os_version=0x18000171`, `header_size=1648`, `second_size=0` |
+| kernel `Image` | 44,980,232 B, `ARMd` @0x38, **byte-identical to A5/A4/A3/A2** sha256 `14b64847…` |
+| appended DTB | **byte-identical to A5**, FDT totalsize 376,689 B, no `/chosen/linux,initrd-*` placeholder |
+| ramdisk container | LZMA-alone, props `0x5d`, dict `0x800000`, size `0xffffffffffffffff` — **identical shape to TWRP's** |
+| ramdisk size | 6,029,312 B = 92 x 65536 (= 1472 x 4096 = 2944 x 2048) -> every rounding rule is a no-op |
+| ramdisk decompression | independent `lzma.LZMADecompressor(FORMAT_ALONE)` -> 8,260,060 B, `eof=True`, starts `070701` |
+| cpio | 68 records, `TRAILER!!!` record at 8,194,400 (logical end 8,194,524) + 65,536 zero bytes inside the stream |
+| `/init` | 26,413 B, mode 0o100755, sha256 `8aba1434…` == `boot/initramfs/init.sh` |
+| initramfs additions | `dev/console` (char 5:1, 0600), `dev/null` (char 1:3, 0666), `bin/sh -> toybox` |
+| sha256 | `ba4f70c6384bd018e5d7d29bf0c28db458f5d0f2671410837649c6ab548ebc49` |
+| device preflight | **PREFLIGHT PASS** (BOOT -> /dev/block/sda14, 57,671,680 B, no USERDATA target) |
+
+---
+
+## T-A7-device — A7 hardware result (2026-10-15, Mac + handset)
+| Check | Result |
+|---|---|
+| flash + readback | **VERIFIED `f8587521…`** (46,409,728 B) |
+| S-Boot parsed the new container | `kernel size = 0x2b66000, ramdisk size = 0x80000` (524,288 = the LZMA ramdisk exactly) |
+| built-in initramfs unpacks | **`NUXEL-KDIAG unpack verdict: message=(none) state=7`** -> success, twice per boot |
+| external initrd | `external_initrd=1 start=ffffffc009000000 end=ffffffc009080000 len=524288`; head bytes `5b 20 20 20 20 31 2e 30 …` = kernel console text; `method=(none)`; `message=junk in compressed archive` |
+| `/init` executed | `RAMDISK:`=0, `SAR_RD`=0, `init group exit`=0, `Failed to execute /init`=0 -> `/init` present, `prepare_namespace()` skipped, exec succeeded |
+| `/dev/console` usability (measured live) | `echo > /dev/console` -> `No such device` (ENODEV); `echo > /dev/kmsg` -> rc=0 |
+| why the boot ended | `hard_reset_hook_callback` -> `Fatal exception in interrupt` at t=37 s and t=68 s; `hung_task: blocked tasks` panic at t=242 s |
+| progress vs cycle 2 | kernel lifetime 2 s (A2-A5) -> 37/68/242 s |
+
+## T-A8-offline — A8 validation (2026-10-15, Mac + container, no device)
+| Check | Result |
+|---|---|
+| gate | **PASS**; `A8/boot.img` 46,409,728 B, slack 11,261,952 B |
+| embedded initramfs | 551,027 B sha256 `56ef85f9…`, verified **byte-for-byte inside `Image-A8`** at `0x203E510` |
+| archive members | `init` (28,236 B, sha256 `28a4834d…` == `boot/initramfs/init.sh`), `bin/sh -> toybox`, `bin/toybox`, `dev/console`, **`dev/kmsg`**, `dev/null`; 67 records; no duplicates |
+| `/init` content check | 5 occurrences of `nuxel_say`; `sh -n` clean; existing 8-test init suite still passes |
+| kernel | `Image-A8` sha256 `f887030a…`; `ARMd` @0x38, `text_offset=0x80000`, `image_size=0x333c000`, `flags=0xa` |
+| DTB | byte-identical to the hardware-proven A5 DTB (`bcdef39c…`) |
+| candidate sha256 | `314d5e532f3e0a25d324c87e844110b173db20306d42ca83d67c2684fa6f026a` |
+| preflight | **PREFLIGHT PASS** |

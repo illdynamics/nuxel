@@ -117,3 +117,11 @@ trace.log
 # the note in assets/). The wallpaper is copied into each app at build time by
 # tools/dedupe-assets.sh, so those per-app copies are NEVER committed.
 pwa/**/assets/nuxel-background.png
+
+backups
+backups/**
+
+# --- Scratch working directory (regenerable, contains large binaries) -------
+# .scratch/ holds unpacked kernels/images (e.g. src/kernel.tar.gz, t/*.cpio)
+# used for local boot experiments. Local-only, never committed.
+.scratch/

@@ -1,4 +1,43 @@
 #!/bin/sh
+# --- mission milestone marker channel -----------------------------------------
+# These markers are emitted by EXECUTING code, never by a build step.  They go to
+# the kernel console (Samsung `console=ram`, which survives a bootloop and is
+# readable as /proc/last_kmsg from TWRP) and to PID 1's stdout.  Only shell
+# builtins are used, so the markers work even if the initramfs is incomplete.
+#   INITRAMFS_EXECUTED     /init reached main under this kernel
+#   USERDATA_DISCOVERED    USERDATA partition resolved (never SYSTEM)
+#   ROOTFS_MOUNTED         Fedora rootfs mounted read-write
+#   ROOTFS_HANDOFF_STARTED about to switch_root into the real root
+# EVIDENCE CHANNEL (measured on this handset, 2026-10-15):
+#   /dev/console exists as char 5:1 but open() returns ENODEV — this kernel's
+#   `console=ram` driver provides no tty, so kernel_init prints "Warning: unable
+#   to open an initial console" and PID 1 has no working stdio.  The kernel ring
+#   buffer is still reachable and S-Boot's cmdline sets `printk.devkmsg=on`, so
+#   evidence goes to /dev/kmsg (char 1:11) first and to the console only as a
+#   fallback.  Everything printed below therefore lands in the Samsung ram
+#   console and is readable as /proc/last_kmsg from recovery after a failed boot.
+nuxel_say() {
+    printf 'nuxel-init: %s\n' "$1" > /dev/kmsg 2>/dev/null && return 0
+    printf 'nuxel-init: %s\n' "$1" > /dev/console 2>/dev/null && return 0
+    printf 'nuxel-init: %s\n' "$1" 2>/dev/null || true
+}
+
+# Everything this script's shell reports on stderr (failed mounts, missing
+# commands, unreadable files) must reach the kernel log too, otherwise those
+# failures are silently lost on a device with no usable /dev/console.
+exec 2>/dev/kmsg
+nuxel_marker() { nuxel_say "NUXEL_MARKER $1"; }
+
+# A boot that never signals success is reset by Samsung's kernel-side
+# `hard_reset_hook` 35-70 s in (observed: three A7 boots died at 37 s, 68 s and
+# 242 s).  This watchdog makes the attempt end deterministically *after* the
+# evidence has been written, instead of hanging until the user intervenes.
+( sleep "${NUXEL_BOOT_WATCHDOG:-30}"
+  nuxel_say "WATCHDOG: ${NUXEL_BOOT_WATCHDOG:-30}s elapsed - persisting and rebooting"
+  sync; reboot -f ) >/dev/null 2>&1 &
+NUXEL_WATCHDOG_PID=$!
+
+nuxel_marker INITRAMFS_EXECUTED
 # =============================================================================
 # Nuxel initramfs init — PID 1 for the Nuxel phone OS.
 #
@@ -51,11 +90,72 @@
 export PATH=/sbin:/bin:/usr/sbin:/usr/bin
 
 # --- essential pseudo filesystems --------------------------------------------
-if [ -d /proc ]; then  mount -t proc -o noexec,nosuid,nodev none /proc  2>/dev/null; fi
-if [ -d /sys  ]; then  mount -t sysfs -o noexec,nosuid,nodev none /sys   2>/dev/null; fi
-if [ -d /dev  ]; then  mount -t devtmpfs none /dev                       2>/dev/null; fi
+# Mount results are logged, not silenced: in A9 devtmpfs mounted but the
+# device-tree and PARTNAME reads were still empty, and 2>/dev/null hid why.
+nuxel_mount() {  # nuxel_mount <target> <fstype> [options]
+    _t="$1"; _fs="$2"; _opt="${3:-}"
+    if [ ! -d "$_t" ]; then nuxel_say "WARNING: ${_t} missing from the initramfs"; return 0; fi
+    if [ -n "$_opt" ]; then
+        if mount -t "$_fs" -o "$_opt" none "$_t"; then nuxel_say "mounted ${_fs} on ${_t}"
+        else nuxel_say "WARNING: mount -t ${_fs} -o ${_opt} ${_t} FAILED"; fi
+    else
+        if mount -t "$_fs" none "$_t"; then nuxel_say "mounted ${_fs} on ${_t}"
+        else nuxel_say "WARNING: mount -t ${_fs} ${_t} FAILED"; fi
+    fi
+}
+nuxel_mount /proc proc noexec,nosuid,nodev
+nuxel_mount /sys sysfs noexec,nosuid,nodev
+if [ -d /dev  ]; then
+    if mount -t devtmpfs none /dev 2>/dev/null; then
+        nuxel_say "devtmpfs mounted on /dev"
+    else
+        nuxel_say "WARNING: devtmpfs mount on /dev FAILED - using the initramfs device nodes"
+    fi
+fi
+nuxel_say "probe: /sys/class/block=$(ls /sys/class/block 2>/dev/null | wc -l | tr -d ' ') entries; sysfs-dt=$( [ -d /sys/firmware/devicetree ] && echo yes || echo no ); /dev/sd*=$(ls /dev/sd* 2>/dev/null | tr '\n' ' ')"
+
+# Mounting devtmpfs over /dev HIDES the device nodes shipped inside the
+# initramfs, and this kernel's UFS scan completes a few ms after PID 1 starts
+# (A10/A11: /dev/sd* was empty at t=1.95 s but /dev/sda2 existed by t=1.97 s).
+# Recreate the two documented nodes if devtmpfs has not published them yet;
+# the numbers come from the live device's /dev/block/by-name and from the
+# kernel's own "VFS: Mounted root (ext4 filesystem) ... device 259:9" for
+# sda25, which fixes the extended-partition dev_t numbering (259:(part-16)).
+for spec in "sda14 8 14" "sda31 259 15"; do
+    set -- $spec
+    if [ ! -b "/dev/$1" ]; then
+        if mknod "/dev/$1" b "$2" "$3" 2>/dev/null; then
+            nuxel_say "created /dev/$1 ($2:$3) because devtmpfs had not published it yet"
+        fi
+    fi
+done
 mkdir -p /dev/pts /dev/mapper /dev/disk/by-partlabel
 mount -t devpts none /dev/pts 2>/dev/null
+
+
+# --- vendor kernel leashes ------------------------------------------------------
+# S-Boot's cmdline is out of our hands and it carries `oops=panic`,
+# `softdog.soft_margin=100 softdog.soft_panic=1`.  Measured in A7/A8: a boot that
+# does not reach userspace quickly is killed by Samsung's own mechanisms
+# (hung_task panic at 242 s, hard_reset_hook BUG at 10-68 s).  Temper them from
+# userspace where the interfaces exist; the kernel-side hard_reset_hook is a
+# force-reset *key combo* and fires because the operator holds the recovery
+# buttons, so it is left alone.
+if [ -w /proc/sys/kernel/hung_task_panic ]; then
+    echo 0   > /proc/sys/kernel/hung_task_panic     2>/dev/null && nuxel_say "hung_task_panic=0"
+fi
+if [ -w /proc/sys/kernel/hung_task_timeout_secs ]; then
+    echo 600 > /proc/sys/kernel/hung_task_timeout_secs 2>/dev/null && nuxel_say "hung_task_timeout_secs=600"
+fi
+if [ -w /proc/sys/kernel/panic ]; then
+    echo 0 > /proc/sys/kernel/panic 2>/dev/null || true
+fi
+# Keep the software watchdog (softdog.soft_margin=100 soft_panic=1) fed.  The
+# node is shipped in the initramfs so this works even before devtmpfs.
+if [ -c /dev/watchdog ]; then
+    ( while : ; do printf 'x' > /dev/watchdog 2>/dev/null || exit 0; sleep 10; done ) >/dev/null 2>&1 &
+    nuxel_say "softdog keeper started"
+fi
 
 # --- runtime state ------------------------------------------------------------
 mkdir -p /run /tmp
@@ -63,7 +163,7 @@ mkdir -p /run /tmp
 echo "Nuxel" > /run/ostree-boot
 echo "$(date +%s 2>/dev/null || echo 0)" > /run/boot-start-time
 
-log() { echo "nuxel-init: $*"; }
+log() { nuxel_say "$*"; }
 warn() { echo "nuxel-init: [warn] $*"; }
 err()  { echo "nuxel-init: [ERROR] $*"; }
 
@@ -81,7 +181,16 @@ err()  { echo "nuxel-init: [ERROR] $*"; }
 #   * raw tail of the BOOT partition mount-free copy readable with `dd` alone
 # Path roots (overridable only so the decision logic can be unit-tested off
 # device; the defaults are the real kernel paths).
-NUXEL_DT="${NUXEL_DT:-/proc/device-tree}"
+# arm64 does not provide /proc/device-tree (that is a CONFIG_PROC_DEVICETREE
+# feature of other architectures); the flattened tree is under sysfs.  Measured
+# on this handset in A8: with /proc/device-tree every DT read was empty, so
+# device identification and the initrd-address log silently failed.
+if [ -d /sys/firmware/devicetree/base ]; then
+    NUXEL_DT="${NUXEL_DT:-/sys/firmware/devicetree/base}"
+else
+    NUXEL_DT="${NUXEL_DT:-/proc/device-tree}"
+fi
+NUXEL_DT_FALLBACK=/proc/device-tree
 NUXEL_BLOCK_SYS="${NUXEL_BLOCK_SYS:-/sys/class/block}"
 NUXEL_DEV="${NUXEL_DEV:-/dev}"
 
@@ -139,12 +248,23 @@ diag_persist() {
     sync
 }
 
-# The kernel ring buffer is the hard evidence that the kernel really ran.
+# Early heartbeat: once devtmpfs is up the BOOT partition slack is reachable, so
+# persist the diagnostic record immediately instead of only at the end.  If the
+# boot later dies of Samsung's hard_reset_hook / a hung_task panic, this record
+# is still readable with a single dd from recovery.
+if command -v dd >/dev/null 2>&1; then
+    diag_raw_slot >/dev/null 2>&1 || true
+    nuxel_say "early heartbeat: block devices $(ls /dev/sd* 2>/dev/null | tr '\n' ' ')"
+fi
+
+# The kernel ring buffer holds the hard evidence, but it is read from recovery
+# (/proc/last_kmsg), NOT from here: on this kernel toybox's `dmesg` blocks for
+# ever on /dev/kmsg (measured in A8 - PID 1 slept until the watchdog rebooted
+# it, with the last log line being "block-devices:" immediately before the
+# dmesg call).  Never call dmesg from the initramfs.
 diag_dump_kmsg() {
-    if command -v dmesg >/dev/null 2>&1; then
-        printf -- '--- dmesg ---\n' >> "${DIAG_RAM}" 2>/dev/null || true
-        dmesg >> "${DIAG_RAM}" 2>/dev/null || true
-    fi
+    printf -- '--- kernel log: read /proc/last_kmsg from recovery ---\n' \
+        >> "${DIAG_RAM}" 2>/dev/null || true
 }
 
 diag_environment() {
@@ -156,8 +276,14 @@ diag_environment() {
     if [ -f "${NUXEL_DT}/compatible" ]; then
         diag "dt-compat: $(tr '\0' ' ' < "${NUXEL_DT}/compatible" 2>/dev/null)"
     fi
+    for _p in linux,initrd-start linux,initrd-end; do
+        if [ -f "${NUXEL_DT}/chosen/${_p}" ]; then
+            _v="$(hexdump -e '1/4 "%08x"' "${NUXEL_DT}/chosen/${_p}" 2>/dev/null || true)"
+            diag "chosen ${_p}: ${_v:-unreadable}"
+        fi
+    done
     diag "block-devices: $(ls /dev/sd* /dev/mmcblk* 2>/dev/null | tr '\n' ' ')"
-    diag "kernel-head: $(dmesg 2>/dev/null | head -n 3 | tr '\n' '|')"
+    diag "initrd-declared-by-bootloader: start=$(cat "${NUXEL_DT}/chosen/linux,initrd-start" 2>/dev/null | hexdump -e '1/4 "%08x"' 2>/dev/null) end=$(cat "${NUXEL_DT}/chosen/linux,initrd-end" 2>/dev/null | hexdump -e '1/4 "%08x"' 2>/dev/null)"
 }
 
 # Single failure exit: always record the reason + kernel log, then persist.
@@ -175,9 +301,9 @@ if [ ! -e /bin/sh ]; then
     if [ -x /bin/toybox ]; then
         ln -sf toybox /bin/sh
         for cmd in mount umount switch_root modprobe mknod mkswap mkfs.ext4 \
-                   tar gzip ls cat printf echo sed grep awk find sleep date ps \
+                   tar gzip gunzip ls cat printf echo sed grep awk find sleep date ps \
                    df du sh sync reboot poweroff dd cp mv rm mkdir ln chown \
-                   chmod dmesg blkid losetup mkswap; do
+                   chmod blkid losetup head tail cut tr touch wc; do
             ln -sf toybox "/bin/${cmd}" 2>/dev/null
         done
     elif [ -x /bin/busybox ]; then
@@ -215,6 +341,16 @@ for param in ${CMDLINE}; do
     esac
 done
 
+# HARD IDENTITY PIN.  S-Boot's own command line always carries the board, and on
+# A10 the inferred path proved unreliable: the cmdline branch reported
+# device=s10plus yet the dispatch resolved a generic root.  Pin it here (before
+# the device-tree inference block) so the s10plus root-resolution branch is
+# guaranteed to run on this board.
+case " ${CMDLINE} " in
+    *androidboot.hardware=exynos9820*|*androidboot.bootloader=G97*)
+        DEVICE=s10plus
+        nuxel_say "identity pin: S-Boot cmdline reports exynos9820 -> DEVICE=s10plus" ;;
+esac
 log "slot=${SLOT} device=${DEVICE:-unknown} quiet=${QUIET:-0} verity=$([ -n "${VERITY_HASH}" ] && echo on || echo off)"
 [ -z "${DEVICE}" ] && warn "no nuxel.device= on cmdline; assuming generic ARM64"
 
@@ -279,6 +415,42 @@ emergency_shell() {
 }
 
 # --- root block device resolution ------------------------------------------------
+# HARD OVERRIDE (added after A10/A11): on this board the dispatch below was
+# observed to run the *generic* probe even with DEVICE='s10plus' logged, and the
+# generic probe's candidates (/dev/sda1, /dev/sda2) are bootloader partitions.
+# The board identity comes from S-Boot's own command line, so resolve USERDATA
+# explicitly here and never let a bootloader partition become the root.
+force_s10plus_root() {
+    [ -n "${NUXEL_FORCE_S10PLUS_DONE:-}" ] && return 0
+    case " ${CMDLINE} " in
+        *androidboot.hardware=exynos9820*|*androidboot.bootloader=G97*) : ;;
+        *) return 0 ;;
+    esac
+    case "${ROOT_DEV}" in
+        ""|/dev/sda1|/dev/sda2|/dev/sda25)
+            nuxel_say "root override: forcing the s10plus USERDATA resolution (was '${ROOT_DEV}')"
+            ROOT_DEV=""
+            _t=0
+            while [ "$_t" -lt 12 ]; do
+                ROOT_DEV="$(s10plus_userdata_device)"
+                [ -n "${ROOT_DEV}" ] && break
+                _t=$((_t + 1)); sleep 1
+            done
+            if [ -n "${ROOT_DEV}" ]; then
+                nuxel_say "USERDATA discovered by PARTNAME after ${_t}s: ${ROOT_DEV}"
+            elif [ -b /dev/sda31 ]; then
+                ROOT_DEV=/dev/sda31
+                nuxel_say "PARTNAME discovery failed after ${_t}s; using documented /dev/sda31 (by-name userdata) - the rootfs is verified below"
+                diag "USERDATA_FALLBACK /dev/sda31"
+            else
+                nuxel_say "USERDATA could not be located at all (no PARTNAME, no /dev/sda31)"
+            fi
+            ;;
+        *) nuxel_say "root override: leaving ROOT_DEV='${ROOT_DEV}'" ;;
+    esac
+    NUXEL_FORCE_S10PLUS_DONE=1
+}
+
 find_root() {
     # 1) explicit cmdline root
     if [ -n "${ROOT_SPEC}" ]; then
@@ -345,6 +517,20 @@ diag_environment
 if [ -z "${DEVICE}" ]; then
     _dt_model="$(tr -d '\0' < "${NUXEL_DT}/model" 2>/dev/null || true)"
     _dt_compat="$(tr '\0' ' ' < "${NUXEL_DT}/compatible" 2>/dev/null || true)"
+    if [ -z "${_dt_model}" ] && [ -f "${NUXEL_DT_FALLBACK}/model" ]; then
+        NUXEL_DT="${NUXEL_DT_FALLBACK}"
+        _dt_model="$(tr -d '\0' < "${NUXEL_DT}/model" 2>/dev/null || true)"
+        _dt_compat="$(tr '\0' ' ' < "${NUXEL_DT}/compatible" 2>/dev/null || true)"
+    fi
+    nuxel_say "device-tree source: ${NUXEL_DT} model='${_dt_model}'"
+    # S-Boot's own command line is the most reliable identity signal on this
+    # board: it always carries androidboot.hardware=exynos9820 even when the
+    # device tree cannot be read from the initramfs.
+    case " ${CMDLINE} " in
+        *androidboot.hardware=exynos9820*|*androidboot.bootloader=G97*)
+            DEVICE=s10plus
+            nuxel_say "auto-detected device=s10plus from the S-Boot cmdline" ;;
+    esac
     warn "no nuxel.device= on cmdline; identifying device from the device tree"
     case "${_dt_model}" in
         *BEYOND2LTE*|*beyond2lte*|*BEYOND1LTE*|*beyond1lte*) DEVICE=s10plus ;;
@@ -364,12 +550,19 @@ fi
 #   s10plus             -> A-only UFS probe: root= > userdata ONLY (not SYSTEM)
 #   g7power             -> eMMC probe: root= > userdata > system_a > system
 ROOT_DEV=""
+nuxel_say "dispatch: DEVICE='${DEVICE}' ROOT_SPEC='${ROOT_SPEC}' ROOT_FSTYPE='${ROOT_FSTYPE}'"
 case "${DEVICE}" in
     mustang|vm|"")
         # Existing A/B + generic probe (mustang dynamic partitions; vm/QEMU
         # virtio).  Byte-equivalent to the pre-multi-device behaviour:
         # explicit root= > /dev/disk/by-partlabel/system_${SLOT} > generic.
         ROOT_DEV="$(find_root)"
+        nuxel_say "generic probe selected '${ROOT_DEV}'"
+        case " ${CMDLINE} " in
+            *androidboot.hardware=exynos9820*)
+                nuxel_say "refusing the generic probe on an exynos9820 board: its candidates (/dev/sdaN) are bootloader and Android partitions, not a Nuxel rootfs"
+                ROOT_DEV="" ;;
+        esac
         ;;
     s10plus)
         # S10+ A-only UFS layout:
@@ -391,6 +584,17 @@ case "${DEVICE}" in
         else
             err "s10plus: explicit root= is not a block device: ${ROOT_SPEC}"
         fi
+        # Documented fallback for this board when sysfs PARTNAME discovery is
+        # unavailable: /dev/block/by-name/userdata is sda31 on beyond2lte (read
+        # from the live device), and the kernel's own
+        # "VFS: Mounted root (ext4 filesystem) ... device 259:9" for sda25
+        # confirms the extended-partition dev_t numbering (259:(part-16)).  The
+        # partition image is *verified* below before it is trusted as the rootfs.
+        if [ -z "${ROOT_DEV}" ] && [ -b /dev/sda31 ]; then
+            ROOT_DEV=/dev/sda31
+            nuxel_say "PARTNAME discovery unavailable; using documented fallback /dev/sda31 (by-name userdata) - rootfs will be verified"
+            diag "USERDATA_FALLBACK /dev/sda31"
+        fi
         if [ -z "${ROOT_DEV}" ] || [ ! -b "${ROOT_DEV}" ]; then
             fail_boot "s10plus: USERDATA not found after probe; refusing SYSTEM fallback"
             emergency_shell
@@ -403,6 +607,8 @@ case "${DEVICE}" in
             while :; do sleep 60; done
         fi
         log "s10plus: root -> ${ROOT_DEV} (fstype: ${ROOT_FSTYPE:-ext4})"
+        diag "USERDATA_DISCOVERED ${ROOT_DEV}"
+        nuxel_marker USERDATA_DISCOVERED
         ;;
     g7power)
         # G7 Power eMMC layout (A/B device, shared userdata)
@@ -431,6 +637,8 @@ case "${DEVICE}" in
         emergency_shell
         ;;
 esac
+
+force_s10plus_root
 
 if [ -z "${ROOT_DEV}" ]; then
     fail_boot "no root block device found (slot=${SLOT})"
@@ -502,10 +710,24 @@ if ! mount -t "${FS_TYPE}" -o "${ROOT_MOUNT_MODE}" "${ROOT_DEV}" "${ROOT_MNT}" 2
 fi
 log "root mounted: ${ROOT_DEV} (${FS_TYPE}, mode=${ROOT_MOUNT_MODE})"
 diag "root mounted: ${ROOT_DEV} (${FS_TYPE}, mode=${ROOT_MOUNT_MODE})"
+diag "ROOTFS_MOUNTED ${ROOT_DEV} ${FS_TYPE} ${ROOT_MOUNT_MODE}"
+nuxel_marker ROOTFS_MOUNTED
 diag_dump_kmsg
 diag_persist
 
 # --- validate that the root really is a Nuxel OS ----------------------------------
+_osrel="$(cat "${ROOT_MNT}/usr/lib/os-release" "${ROOT_MNT}/etc/os-release" 2>/dev/null | head -4 | tr '\n' ' ')"
+diag "rootfs os-release: ${_osrel:-<none>}"
+nuxel_say "rootfs os-release: ${_osrel:-<none>}"
+case "${_osrel}" in
+    *Fedora*|*Nuxel*) : ;;
+    *) diag "ROOTFS_NOT_FEDORA ${_osrel}"
+       fail_boot "the mounted root is not identified as a Nuxel/Fedora rootfs"
+       emergency_shell
+       sync; sleep 10; reboot -f 2>/dev/null || true
+       while :; do sleep 60; done ;;
+esac
+
 if [ ! -f "${ROOT_MNT}/sbin/init" ] && [ ! -f "${ROOT_MNT}/init" ] && [ ! -f "${ROOT_MNT}/bin/sh" ]; then
     err "no /sbin/init, /init or /bin/sh found in root — not a bootable OS!"
     err "contents:"
@@ -538,6 +760,10 @@ for m in sys proc dev; do
     mount --move "/${m}" "${ROOT_MNT}/${m}" 2>/dev/null
 done
 
+diag "ROOTFS_HANDOFF_STARTED -> ${ROOT_MNT}"
+nuxel_marker ROOTFS_HANDOFF_STARTED
+# The real root's init owns the boot from here; disarm the reboot watchdog.
+[ -n "${NUXEL_WATCHDOG_PID:-}" ] && kill "${NUXEL_WATCHDOG_PID}" 2>/dev/null
 log "switching root -> ${ROOT_MNT}"
 if [ -x "${ROOT_MNT}/sbin/init" ]; then
     exec switch_root "${ROOT_MNT}" /sbin/init
