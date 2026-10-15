@@ -1,0 +1,27 @@
+USB:
+
+    USB 3.1 Bus:
+
+      Host Controller Driver: AppleT6000USBXHCI
+
+    USB 3.1 Bus:
+
+      Host Controller Driver: AppleT6000USBXHCI
+
+    USB 3.1 Bus:
+
+      Host Controller Driver: AppleT6000USBXHCI
+
+        Galaxy S10+:
+
+          Product ID: 0x6860
+          Vendor ID: 0x04e8  (Samsung Electronics Co., Ltd.)
+          Version: 4.14
+          Serial Number: R58M75KDB2X
+          Speed: Up to 5 Gb/s
+          Manufacturer: samsung
+          Location ID: 0x00200000 / 1
+          Current Available (mA): 900
+          Current Required (mA): 0
+          Extra Operating Current (mA): 0
+

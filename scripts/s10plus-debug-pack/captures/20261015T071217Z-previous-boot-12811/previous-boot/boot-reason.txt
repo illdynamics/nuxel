@@ -1,0 +1,7 @@
+sec_debug.reset_reason=7
+sec_reset.reset_reason=7
+bootmode=2
+androidboot.revision=26
+androidboot.hardware=exynos9820
+androidboot.dtbo_idx=9
+androidboot.verifiedbootstate=orange

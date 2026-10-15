@@ -1,0 +1,14 @@
+rootfs / rootfs rw,seclabel 0 0
+tmpfs /dev tmpfs rw,seclabel,nosuid,relatime,size=3569324k,nr_inodes=892331,mode=755 0 0
+devpts /dev/pts devpts rw,seclabel,relatime,mode=600,ptmxmode=000 0 0
+proc /proc proc rw,relatime,gid=3009,hidepid=2 0 0
+sysfs /sys sysfs rw,seclabel,relatime 0 0
+selinuxfs /sys/fs/selinux selinuxfs rw,relatime 0 0
+tmpfs /mnt tmpfs rw,seclabel,nosuid,nodev,noexec,relatime,size=3569324k,nr_inodes=892331,mode=755,gid=1000 0 0
+none /acct cgroup rw,relatime,cpuacct 0 0
+tmpfs /tmp tmpfs rw,seclabel,relatime,size=3569324k,nr_inodes=892331 0 0
+none /sys/kernel/config configfs rw,relatime 0 0
+adb /dev/usb-ffs/adb functionfs rw,relatime 0 0
+mtp /dev/usb-ffs/mtp functionfs rw,relatime 0 0
+pstore /sys/fs/pstore pstore rw,seclabel,relatime 0 0
+/dev/block/by-name/userdata /tmp/ud ext4 ro,seclabel,relatime,data=ordered 0 0

@@ -1,0 +1,366 @@
+{
+  "path": "/Users/wicked/x/nuxel/build/out/s10plus/debug-candidates/nuxel-beyond2lte-boot-diag-cmdline-free.img",
+  "bytes": 22433792,
+  "sha256": "eb77d658fb4fa95930fd13166970a00d6c9ab49dd439c6517b1da349a36e14e5",
+  "header_style": "Samsung/legacy Android header (interpreted as v0 with dt_size)",
+  "page_size": 2048,
+  "kernel_size": 16030259,
+  "kernel_offset": 2048,
+  "ramdisk_size": 6022352,
+  "ramdisk_offset": 16033792,
+  "second_size": 0,
+  "dt_size": 376101,
+  "dt_offset": 22056960,
+  "board_name": "nuxel-s10plus",
+  "cmdline": "buildvariant=userdebug nuxel.device=s10plus root=/dev/block/platform/13d60000.ufs/by-name/userdata rootfstype=ext4 rootwait rw",
+  "detected_fdt": [
+    {
+      "offset": 22056960,
+      "bytes": 376101,
+      "file": "fdt-00-at-22056960.dtb",
+      "model": "Samsung BEYOND2LTE EUR OPEN 26 board based on EXYNOS9820",
+      "compatible": "samsung,armv8 samsung,exynos9820"
+    }
+  ],
+  "ramdisk_files": [
+    {
+      "name": "README.toybox.md",
+      "mode": "0o100644",
+      "size": 1114
+    },
+    {
+      "name": "bin",
+      "mode": "0o40755",
+      "size": 0
+    },
+    {
+      "name": "bin/awk",
+      "mode": "0o120755",
+      "size": 6
+    },
+    {
+      "name": "bin/blkid",
+      "mode": "0o120755",
+      "size": 6
+    },
+    {
+      "name": "bin/cat",
+      "mode": "0o120755",
+      "size": 6
+    },
+    {
+      "name": "bin/chmod",
+      "mode": "0o120755",
+      "size": 6
+    },
+    {
+      "name": "bin/chown",
+      "mode": "0o120755",
+      "size": 6
+    },
+    {
+      "name": "bin/cp",
+      "mode": "0o120755",
+      "size": 6
+    },
+    {
+      "name": "bin/cut",
+      "mode": "0o120755",
+      "size": 6
+    },
+    {
+      "name": "bin/date",
+      "mode": "0o120755",
+      "size": 6
+    },
+    {
+      "name": "bin/dd",
+      "mode": "0o120755",
+      "size": 6
+    },
+    {
+      "name": "bin/df",
+      "mode": "0o120755",
+      "size": 6
+    },
+    {
+      "name": "bin/dmesg",
+      "mode": "0o120755",
+      "size": 6
+    },
+    {
+      "name": "bin/du",
+      "mode": "0o120755",
+      "size": 6
+    },
+    {
+      "name": "bin/e2fsck",
+      "mode": "0o120755",
+      "size": 6
+    },
+    {
+      "name": "bin/echo",
+      "mode": "0o120755",
+      "size": 6
+    },
+    {
+      "name": "bin/false",
+      "mode": "0o120755",
+      "size": 6
+    },
+    {
+      "name": "bin/find",
+      "mode": "0o120755",
+      "size": 6
+    },
+    {
+      "name": "bin/grep",
+      "mode": "0o120755",
+      "size": 6
+    },
+    {
+      "name": "bin/gunzip",
+      "mode": "0o120755",
+      "size": 6
+    },
+    {
+      "name": "bin/gzip",
+      "mode": "0o120755",
+      "size": 6
+    },
+    {
+      "name": "bin/head",
+      "mode": "0o120755",
+      "size": 6
+    },
+    {
+      "name": "bin/ln",
+      "mode": "0o120755",
+      "size": 6
+    },
+    {
+      "name": "bin/losetup",
+      "mode": "0o120755",
+      "size": 6
+    },
+    {
+      "name": "bin/ls",
+      "mode": "0o120755",
+      "size": 6
+    },
+    {
+      "name": "bin/mdev",
+      "mode": "0o120755",
+      "size": 6
+    },
+    {
+      "name": "bin/mkdir",
+      "mode": "0o120755",
+      "size": 6
+    },
+    {
+      "name": "bin/mkfs.ext4",
+      "mode": "0o120755",
+      "size": 6
+    },
+    {
+      "name": "bin/mknod",
+      "mode": "0o120755",
+      "size": 6
+    },
+    {
+      "name": "bin/mkswap",
+      "mode": "0o120755",
+      "size": 6
+    },
+    {
+      "name": "bin/modprobe",
+      "mode": "0o120755",
+      "size": 6
+    },
+    {
+      "name": "bin/mount",
+      "mode": "0o120755",
+      "size": 6
+    },
+    {
+      "name": "bin/mountpoint",
+      "mode": "0o120755",
+      "size": 6
+    },
+    {
+      "name": "bin/mv",
+      "mode": "0o120755",
+      "size": 6
+    },
+    {
+      "name": "bin/poweroff",
+      "mode": "0o120755",
+      "size": 6
+    },
+    {
+      "name": "bin/printf",
+      "mode": "0o120755",
+      "size": 6
+    },
+    {
+      "name": "bin/ps",
+      "mode": "0o120755",
+      "size": 6
+    },
+    {
+      "name": "bin/reboot",
+      "mode": "0o120755",
+      "size": 6
+    },
+    {
+      "name": "bin/rm",
+      "mode": "0o120755",
+      "size": 6
+    },
+    {
+      "name": "bin/sed",
+      "mode": "0o120755",
+      "size": 6
+    },
+    {
+      "name": "bin/sh",
+      "mode": "0o120755",
+      "size": 6
+    },
+    {
+      "name": "bin/sleep",
+      "mode": "0o120755",
+      "size": 6
+    },
+    {
+      "name": "bin/switch_root",
+      "mode": "0o120755",
+      "size": 6
+    },
+    {
+      "name": "bin/sync",
+      "mode": "0o120755",
+      "size": 6
+    },
+    {
+      "name": "bin/tail",
+      "mode": "0o120755",
+      "size": 6
+    },
+    {
+      "name": "bin/tar",
+      "mode": "0o120755",
+      "size": 6
+    },
+    {
+      "name": "bin/toybox",
+      "mode": "0o100755",
+      "size": 838240
+    },
+    {
+      "name": "bin/tr",
+      "mode": "0o120755",
+      "size": 6
+    },
+    {
+      "name": "bin/true",
+      "mode": "0o120755",
+      "size": 6
+    },
+    {
+      "name": "bin/umount",
+      "mode": "0o120755",
+      "size": 6
+    },
+    {
+      "name": "boot",
+      "mode": "0o40755",
+      "size": 0
+    },
+    {
+      "name": "boot/nuxel-boot-animation.mp4",
+      "mode": "0o100644",
+      "size": 5474699
+    },
+    {
+      "name": "boot/nuxel-boot-splash.raw",
+      "mode": "0o100644",
+      "size": 1843200
+    },
+    {
+      "name": "dev",
+      "mode": "0o40755",
+      "size": 0
+    },
+    {
+      "name": "etc",
+      "mode": "0o40755",
+      "size": 0
+    },
+    {
+      "name": "init",
+      "mode": "0o100755",
+      "size": 25039
+    },
+    {
+      "name": "lib",
+      "mode": "0o40755",
+      "size": 0
+    },
+    {
+      "name": "lib/modules",
+      "mode": "0o40755",
+      "size": 0
+    },
+    {
+      "name": "luks",
+      "mode": "0o40755",
+      "size": 0
+    },
+    {
+      "name": "luks/userdata.crypttab.in",
+      "mode": "0o100644",
+      "size": 2224
+    },
+    {
+      "name": "newroot",
+      "mode": "0o40755",
+      "size": 0
+    },
+    {
+      "name": "proc",
+      "mode": "0o40755",
+      "size": 0
+    },
+    {
+      "name": "run",
+      "mode": "0o40755",
+      "size": 0
+    },
+    {
+      "name": "sys",
+      "mode": "0o40755",
+      "size": 0
+    },
+    {
+      "name": "tmp",
+      "mode": "0o40755",
+      "size": 0
+    }
+  ],
+  "warnings": [],
+  "ramdisk_compression": "gzip",
+  "ramdisk_decompressed_bytes": 8193024,
+  "init_first_line": "#!/bin/sh",
+  "init_references": {
+    "switch_root": true,
+    "pivot_root": false,
+    "sda31": false,
+    "userdata": true,
+    "PARTUUID": false,
+    "/sbin/init": true,
+    "root=": true,
+    "devtmpfs": true
+  }
+}

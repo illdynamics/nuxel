@@ -1,0 +1,31 @@
+{
+  "action": "flash",
+  "boot_backup_sha256": "a09c51aedde3312d7a5258c412b194e60e79564f2275856699a4896a7042798d",
+  "boot_only": true,
+  "boot_readback_sha256": "9ba1bd210d8859ea91e90bbce19ce3a57d9b1513ece66380d7424dcdaade7738",
+  "date_utc": "2026-10-15T07:13:00.813109+00:00",
+  "device": {
+    "bootmode": "unknown",
+    "device": "beyond2lte",
+    "model": "Galaxy S10+",
+    "serial": "R58M75KDB2X",
+    "slot_suffix": "",
+    "twrp": "3.7.0_9-2"
+  },
+  "images": {
+    "boot": {
+      "bytes": 51384320,
+      "path": "/Users/wicked/x/nuxel/build/out/s10plus/debug-candidates/nuxel-beyond2lte-boot-A2-uncompressed.img",
+      "sha256": "9ba1bd210d8859ea91e90bbce19ce3a57d9b1513ece66380d7424dcdaade7738",
+      "type": "android-boot"
+    }
+  },
+  "partitions": {
+    "boot": {
+      "capacity": 57671680,
+      "device": "/dev/block/sda14",
+      "name": "boot"
+    }
+  },
+  "state": "FLASH_AND_READBACK_VERIFIED"
+}

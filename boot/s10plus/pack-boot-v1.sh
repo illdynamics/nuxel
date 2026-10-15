@@ -65,6 +65,10 @@ import sys
 MAGIC = b"ANDROID!"
 PAGE_SIZE = 2048
 HEADER_SIZE = 1632
+# Real boot_img_hdr_v1 header size, written to the v1 `header_size` field when
+# --v1-spec is used.  Mirrors this unit's TWRP recovery.img (0x18000171 = 12.0.0).
+HEADER_SIZE_V1 = 1648
+OS_VERSION_DEFAULT = 0x18000171
 NAME = b"nuxel-s10plus"
 
 # PLACEHOLDER — verify from real device boot.img (Phase 0 inventory).
@@ -105,7 +109,7 @@ def addresses_from_device(stock_img, script_dir):
     return (info["kernel_addr"], info["ramdisk_addr"], info["tags_addr"])
 
 
-def pack(kernel, ramdisk, dtb, cmdline, output, kernel_addr, ramdisk_addr, tags_addr):
+def pack(kernel, ramdisk, dtb, cmdline, output, kernel_addr, ramdisk_addr, tags_addr, v1_spec=False):
     kernel_data = read_file(kernel, "kernel")
     ramdisk_data = read_file(ramdisk, "ramdisk")
     dtb_data = read_file(dtb, "dtb") if dtb else b""
@@ -121,14 +125,21 @@ def pack(kernel, ramdisk, dtb, cmdline, output, kernel_addr, ramdisk_addr, tags_
         0, 0,                              # second_size, second_addr
         tags_addr & 0xFFFFFFFF,
         PAGE_SIZE,
-        len(dtb_data),
-        0,                                 # os_version
+        # offset 40: real header v1 = `header_version`; the legacy (non-spec)
+        # layout this tool shipped with put the DTB size here instead.
+        (1 if v1_spec else len(dtb_data)),
+        (OS_VERSION_DEFAULT if v1_spec else 0),   # offset 44: os_version
         NAME.ljust(16, b"\x00"),
         cmdline_field,
         *([0] * 8),                        # id
         b"".ljust(1024, b"\x00"),          # extra_cmdline
     )
     assert len(header) == HEADER_SIZE
+    if v1_spec:
+        # boot_img_hdr_v1 tail: recovery_dtbo_size=0, recovery_dtbo_offset=0,
+        # header_size=1648.  Both dtbo fields stay zero because S-Boot builds
+        # the device tree from the dtb partition + DTBO overlay on this unit.
+        header += struct.pack("<IQI", 0, 0, HEADER_SIZE_V1)
 
     with open(output, "wb") as fh:
         fh.write(header.ljust(PAGE_SIZE, b"\x00"))
@@ -147,6 +158,8 @@ def pack(kernel, ramdisk, dtb, cmdline, output, kernel_addr, ramdisk_addr, tags_
     print(f"  kernel_size={len(kernel_data)} kernel_addr=0x{kernel_addr:08x}")
     print(f"  ramdisk_size={len(ramdisk_data)} ramdisk_addr=0x{ramdisk_addr:08x}")
     print(f"  dt_size={len(dtb_data)} tags_addr=0x{tags_addr:08x} page_size={PAGE_SIZE}")
+    if v1_spec:
+        print(f"  header_version=1 os_version=0x{OS_VERSION_DEFAULT:08x} header_size={HEADER_SIZE_V1}")
     print(f"  name={NAME.decode()} cmdline='{cmdline}'")
 
 
@@ -170,6 +183,10 @@ def main(argv):
                         help="tags/DTB load address (e.g. 0x80000100); overrides the default")
     parser.add_argument("--addresses-from-device", metavar="STOCK_BOOT_IMG",
                         help="read kernel/ramdisk/tags load addresses from a stock v1 boot.img")
+    parser.add_argument("--v1-spec", action="store_true",
+                        help="write a spec-compliant boot_img_hdr_v1 (header_version=1 at "
+                             "offset 40, os_version at 44, header_size=1648) instead of the "
+                             "legacy layout that stored the DTB size at offset 40")
     args = parser.parse_args(argv)
 
     script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -206,7 +223,7 @@ def main(argv):
         parser.error("--kernel, --ramdisk and --output are required (--dtb optional).")
 
     pack(args.kernel, args.ramdisk, args.dtb, args.cmdline, args.output,
-         kernel_addr, ramdisk_addr, tags_addr)
+         kernel_addr, ramdisk_addr, tags_addr, v1_spec=args.v1_spec)
     return 0
 
 

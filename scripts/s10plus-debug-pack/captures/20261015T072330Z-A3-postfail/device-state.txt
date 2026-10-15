@@ -1,0 +1,9 @@
+beyond2lte
+3.7.0_9-2
+38.97 275.06
+drwxr-x---    2 root     root             0 Jan  4 02:08 .
+drwxr-xr-x   13 root     root             0 Jan  4 02:08 ..
+-r--r--r--    1 root     root         27248 Jan  4 02:07 dmesg-ramoops-0
+sec_debug.reset_reason=7
+sec_reset.reset_reason=7
+androidboot.ulcnt=1

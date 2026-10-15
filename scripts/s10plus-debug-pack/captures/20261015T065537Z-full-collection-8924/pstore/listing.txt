@@ -1,0 +1,2 @@
+drwxr-x---    2 root     root           0 Jan  4 01:02 .
+drwxr-xr-x   13 root     root           0 Jan  4 01:02 ..

@@ -1,0 +1,15 @@
+=== /dev/dri ===
+ls: /dev/dri: No such file or directory
+=== /dev/fb* ===
+ls: /dev/fb*: No such file or directory
+/dev/graphics:
+drwxr-xr-x    2 root     root            80 Jan  4 01:02 .
+drwxr-xr-x   10 root     root          6520 Jan  4 01:02 ..
+crw-rw----    1 root     graphics   29,   0 Jan  4 01:02 fb0
+crw-rw----    1 root     graphics   29,   1 Jan  4 01:02 fb1
+=== decon/dsim/drm in sysfs ===
+ls: /sys/class/drm: No such file or directory
+=== panel procfs ===
+ls: /proc/panel*: No such file or directory
+=== nuxel test writes? check userdata mounted ===
+sda31 NOT mounted (good)

@@ -1,0 +1,328 @@
+{
+  "status": "EVIDENCE_CAPTURED_NEEDS_REVIEW",
+  "files_scanned": 37,
+  "previous_boot_candidate_files": 1,
+  "matches": [
+    {
+      "file": "host-ioreg-usb.txt",
+      "line": 11,
+      "category": "kernel_watchdog",
+      "priority": "urgent",
+      "source": "current_recovery_or_host",
+      "excerpt": "|   \"IOKitDiagnostics\" = {\"Instance allocation\"=10027736,\"Container allocation\"=6513171,\"Pageable allocation\"=796622896,\"Classes\"={\"AppleJPEGWrapperControlV8\"=0,\"KDISecondaryEncoding\"=0,\"RTBuddyFirmwareBundle\"=0,\"ApplePMPThermal\"=0,\"IOSkywalkPacketPoller\"=0,\"I"
+    },
+    {
+      "file": "kernel/cmdline.txt",
+      "line": 1,
+      "category": "kernel_watchdog",
+      "priority": "urgent",
+      "source": "current_recovery_or_host",
+      "excerpt": "console=ram loglevel=4 sec_debug.pcb_offset=7346944 sec_debug.smd_offset=7348992 sec_debug.lpddr4_size=8 sec_debug.dram_info=01,06,03,8G sec_debug.pwrsrc_rs=0x0000100140010000 sec_debug.reset_reason=9 sec_reset.reset_reason=9 sec_debug.reset_rwc=0 bootmode=2 s"
+    },
+    {
+      "file": "recovery/current-recovery-dmesg.txt",
+      "line": 726,
+      "category": "selinux",
+      "priority": "medium",
+      "source": "current_recovery_or_host",
+      "excerpt": "<6>[    7.470022]  [6:           init:    1] SELinux: the above unknown classes and permissions will be denied"
+    },
+    {
+      "file": "recovery/current-recovery-dmesg.txt",
+      "line": 906,
+      "category": "selinux",
+      "priority": "medium",
+      "source": "current_recovery_or_host",
+      "excerpt": "<11>[    7.675054]  [5:           init:    1] selinux: avc:  denied  { set } for property=twrp.crash_counter pid=4877 uid=0 gid=0 scontext=u:r:recovery:s0 tcontext=u:object_r:default_prop:s0 tclass=property_service permissive=1"
+    },
+    {
+      "file": "recovery/current-recovery-dmesg.txt",
+      "line": 913,
+      "category": "display",
+      "priority": "medium",
+      "source": "current_recovery_or_host",
+      "excerpt": "<3>[    7.679629]  [7:       recovery: 4877] [SSP] send_panel_information, failed to send panel information"
+    },
+    {
+      "file": "recovery/current-recovery-dmesg.txt",
+      "line": 1167,
+      "category": "display",
+      "priority": "medium",
+      "source": "current_recovery_or_host",
+      "excerpt": "<3>[    7.843098]  [4:  kworker/u16:4:  765] set_panel_poc, failed to read dim partition"
+    },
+    {
+      "file": "recovery/current-recovery-dmesg.txt",
+      "line": 1168,
+      "category": "display",
+      "priority": "medium",
+      "source": "current_recovery_or_host",
+      "excerpt": "<3>[    7.843101]  [4:  kworker/u16:4:  765] panel_update_dim_type, failed to read gamma flash(ret -11)"
+    },
+    {
+      "file": "recovery/current-recovery-dmesg.txt",
+      "line": 1170,
+      "category": "display",
+      "priority": "medium",
+      "source": "current_recovery_or_host",
+      "excerpt": "<3>[    7.843107]  [4:  kworker/u16:4:  765] PANEL:ERR:panel_update_dim_type failed to check dim_flash exist"
+    },
+    {
+      "file": "recovery/current-recovery-dmesg.txt",
+      "line": 1174,
+      "category": "display",
+      "priority": "medium",
+      "source": "current_recovery_or_host",
+      "excerpt": "<3>[    7.843116]  [4:  kworker/u16:4:  765] set_panel_poc, failed to read MTP partition"
+    },
+    {
+      "file": "recovery/current-recovery-dmesg.txt",
+      "line": 1175,
+      "category": "display",
+      "priority": "medium",
+      "source": "current_recovery_or_host",
+      "excerpt": "<3>[    7.843119]  [4:  kworker/u16:4:  765] panel_update_dim_type, failed to read mtp flash(ret -11)"
+    },
+    {
+      "file": "recovery/current-recovery-dmesg.txt",
+      "line": 1177,
+      "category": "display",
+      "priority": "medium",
+      "source": "current_recovery_or_host",
+      "excerpt": "<3>[    7.843125]  [4:  kworker/u16:4:  765] PANEL:ERR:__panel_seq_dim_flash_res_init, failed to seqtbl(PANEL_DIM_FLASH_RES_INIT_SEQ)"
+    },
+    {
+      "file": "recovery/current-recovery-dmesg.txt",
+      "line": 1178,
+      "category": "display",
+      "priority": "medium",
+      "source": "current_recovery_or_host",
+      "excerpt": "<3>[    7.843127]  [4:  kworker/u16:4:  765] panel_update_dim_type, failed to resource init"
+    },
+    {
+      "file": "recovery/current-recovery-dmesg.txt",
+      "line": 1180,
+      "category": "display",
+      "priority": "medium",
+      "source": "current_recovery_or_host",
+      "excerpt": "<3>[    7.843134]  [4:  kworker/u16:4:  765] panel_update_dim_type, failed to copy resource dim_flash_mtp_offset (ret -22)"
+    },
+    {
+      "file": "recovery/current-recovery-dmesg.txt",
+      "line": 1201,
+      "category": "display",
+      "priority": "medium",
+      "source": "current_recovery_or_host",
+      "excerpt": "<3>[    7.843196]  [4:  kworker/u16:4:  765] panel_bl_set_brightness, failed to write seqtbl"
+    },
+    {
+      "file": "recovery/current-recovery-dmesg.txt",
+      "line": 1202,
+      "category": "display",
+      "priority": "medium",
+      "source": "current_recovery_or_host",
+      "excerpt": "<3>[    7.843199]  [4:  kworker/u16:4:  765] panel_update_brightness, failed to set_brightness (ret -5)"
+    },
+    {
+      "file": "recovery/current-recovery-dmesg.txt",
+      "line": 1710,
+      "category": "selinux",
+      "priority": "medium",
+      "source": "current_recovery_or_host",
+      "excerpt": "<11>[    9.818354]  [7:           init:    1] selinux: avc:  denied  { set } for property=sys.usb.config pid=4877 uid=0 gid=0 scontext=u:r:recovery:s0 tcontext=u:object_r:system_radio_prop:s0 tclass=property_service permissive=1"
+    },
+    {
+      "file": "recovery/current-recovery-dmesg.txt",
+      "line": 2400,
+      "category": "filesystem",
+      "priority": "high",
+      "source": "current_recovery_or_host",
+      "excerpt": "<3>[   26.479785]  [7:       recovery: 4877] EXT4-fs (sda31): errors=remount-ro for active namespaces on umount 0"
+    },
+    {
+      "file": "recovery/current-recovery-dmesg.txt",
+      "line": 3084,
+      "category": "display",
+      "priority": "medium",
+      "source": "current_recovery_or_host",
+      "excerpt": "<3>[  116.449301]  [2:  kworker/u16:0:    5] [SSP] send_panel_information, failed to send panel information"
+    },
+    {
+      "file": "recovery/current-recovery-dmesg.txt",
+      "line": 3092,
+      "category": "display",
+      "priority": "medium",
+      "source": "current_recovery_or_host",
+      "excerpt": "<3>[  118.455125]  [2:       recovery: 4877] [SSP] send_panel_information, failed to send panel information"
+    },
+    {
+      "file": "recovery/current-recovery-dmesg.txt",
+      "line": 3130,
+      "category": "display",
+      "priority": "medium",
+      "source": "current_recovery_or_host",
+      "excerpt": "<3>[  118.624852]  [1:       recovery: 4877] panel_bl_set_brightness, failed to write seqtbl"
+    },
+    {
+      "file": "recovery/current-recovery-dmesg.txt",
+      "line": 3131,
+      "category": "display",
+      "priority": "medium",
+      "source": "current_recovery_or_host",
+      "excerpt": "<3>[  118.624871]  [1:       recovery: 4877] panel_update_brightness, failed to set_brightness (ret -5)"
+    },
+    {
+      "file": "recovery/current-recovery-dmesg.txt",
+      "line": 5381,
+      "category": "display",
+      "priority": "medium",
+      "source": "current_recovery_or_host",
+      "excerpt": "<3>[  576.269022]  [2:    kworker/2:2: 5026] [SSP] send_panel_information, failed to send panel information"
+    },
+    {
+      "file": "recovery/current-recovery-dmesg.txt",
+      "line": 5397,
+      "category": "display",
+      "priority": "medium",
+      "source": "current_recovery_or_host",
+      "excerpt": "<3>[  576.472740]  [3:       recovery: 4877] [SSP] send_panel_information, failed to send panel information"
+    },
+    {
+      "file": "recovery/current-recovery-dmesg.txt",
+      "line": 5431,
+      "category": "display",
+      "priority": "medium",
+      "source": "current_recovery_or_host",
+      "excerpt": "<3>[  576.629331]  [0:       recovery: 4877] panel_bl_set_brightness, failed to write seqtbl"
+    },
+    {
+      "file": "recovery/current-recovery-dmesg.txt",
+      "line": 5432,
+      "category": "display",
+      "priority": "medium",
+      "source": "current_recovery_or_host",
+      "excerpt": "<3>[  576.629343]  [0:       recovery: 4877] panel_update_brightness, failed to set_brightness (ret -5)"
+    },
+    {
+      "file": "recovery/current-recovery-dmesg.txt",
+      "line": 5528,
+      "category": "display",
+      "priority": "medium",
+      "source": "current_recovery_or_host",
+      "excerpt": "<3>[  577.645477]  [2:    kworker/2:2: 5026] [SSP] send_panel_information, failed to send panel information"
+    },
+    {
+      "file": "recovery/current-recovery-dmesg.txt",
+      "line": 5575,
+      "category": "display",
+      "priority": "medium",
+      "source": "current_recovery_or_host",
+      "excerpt": "<3>[  577.838363]  [5:       recovery: 4877] [SSP] send_panel_information, failed to send panel information"
+    },
+    {
+      "file": "recovery/current-recovery-dmesg.txt",
+      "line": 5611,
+      "category": "display",
+      "priority": "medium",
+      "source": "current_recovery_or_host",
+      "excerpt": "<3>[  577.996137]  [1:       recovery: 4877] panel_bl_set_brightness, failed to write seqtbl"
+    },
+    {
+      "file": "recovery/current-recovery-dmesg.txt",
+      "line": 5612,
+      "category": "display",
+      "priority": "medium",
+      "source": "current_recovery_or_host",
+      "excerpt": "<3>[  577.996148]  [1:       recovery: 4877] panel_update_brightness, failed to set_brightness (ret -5)"
+    },
+    {
+      "file": "recovery/current-recovery-dmesg.txt",
+      "line": 5681,
+      "category": "display",
+      "priority": "medium",
+      "source": "current_recovery_or_host",
+      "excerpt": "<3>[  578.058317]  [1:  kworker/u18:0: 1446] [SSP] send_panel_information, failed to send panel information"
+    },
+    {
+      "file": "recovery/current-recovery-dmesg.txt",
+      "line": 6182,
+      "category": "display",
+      "priority": "medium",
+      "source": "current_recovery_or_host",
+      "excerpt": "<3>[  641.495155]  [2:  kworker/u16:4:  765] [SSP] send_panel_information, failed to send panel information"
+    },
+    {
+      "file": "recovery/current-recovery-dmesg.txt",
+      "line": 6197,
+      "category": "display",
+      "priority": "medium",
+      "source": "current_recovery_or_host",
+      "excerpt": "<3>[  643.405582]  [2:       recovery: 4877] [SSP] send_panel_information, failed to send panel information"
+    },
+    {
+      "file": "recovery/current-recovery-dmesg.txt",
+      "line": 6235,
+      "category": "display",
+      "priority": "medium",
+      "source": "current_recovery_or_host",
+      "excerpt": "<3>[  643.575562]  [0:       recovery: 4877] panel_bl_set_brightness, failed to write seqtbl"
+    },
+    {
+      "file": "recovery/current-recovery-dmesg.txt",
+      "line": 6236,
+      "category": "display",
+      "priority": "medium",
+      "source": "current_recovery_or_host",
+      "excerpt": "<3>[  643.575576]  [0:       recovery: 4877] panel_update_brightness, failed to set_brightness (ret -5)"
+    },
+    {
+      "file": "recovery/current-recovery-dmesg.txt",
+      "line": 7774,
+      "category": "display",
+      "priority": "medium",
+      "source": "current_recovery_or_host",
+      "excerpt": "<3>[  950.406170]  [2:  kworker/u16:1: 5060] [SSP] send_panel_information, failed to send panel information"
+    },
+    {
+      "file": "recovery/current-recovery-dmesg.txt",
+      "line": 8153,
+      "category": "display",
+      "priority": "medium",
+      "source": "current_recovery_or_host",
+      "excerpt": "<3>[ 1013.108254]  [3:  kworker/u16:4:  765] [SSP] send_panel_information, failed to send panel information"
+    },
+    {
+      "file": "recovery/current-recovery-dmesg.txt",
+      "line": 8161,
+      "category": "display",
+      "priority": "medium",
+      "source": "current_recovery_or_host",
+      "excerpt": "<3>[ 1015.114122]  [1:       recovery: 4877] [SSP] send_panel_information, failed to send panel information"
+    },
+    {
+      "file": "recovery/current-recovery-dmesg.txt",
+      "line": 8199,
+      "category": "display",
+      "priority": "medium",
+      "source": "current_recovery_or_host",
+      "excerpt": "<3>[ 1015.283632]  [1:       recovery: 4877] panel_bl_set_brightness, failed to write seqtbl"
+    },
+    {
+      "file": "recovery/current-recovery-dmesg.txt",
+      "line": 8200,
+      "category": "display",
+      "priority": "medium",
+      "source": "current_recovery_or_host",
+      "excerpt": "<3>[ 1015.283651]  [1:       recovery: 4877] panel_update_brightness, failed to set_brightness (ret -5)"
+    },
+    {
+      "file": "recovery/current-recovery-dmesg.txt",
+      "line": 8764,
+      "category": "display",
+      "priority": "medium",
+      "source": "current_recovery_or_host",
+      "excerpt": "<3>[ 1175.078496]  [3:  kworker/u16:1: 5060] [SSP] send_panel_information, failed to send panel information"
+    }
+  ],
+  "note": "Regex hits are hypotheses, not confirmed root causes. Current recovery logs do not describe the earlier Nuxel kernel."
+}

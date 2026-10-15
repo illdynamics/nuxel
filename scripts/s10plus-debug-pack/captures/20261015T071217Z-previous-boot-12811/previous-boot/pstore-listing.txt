@@ -1,0 +1,3 @@
+drwxr-x---    2 root     root           0 Jan  4 01:46 .
+drwxr-xr-x   13 root     root           0 Jan  4 01:46 ..
+-r--r--r--    1 root     root        1.2K Jan  4 01:46 pmsg-ramoops-0

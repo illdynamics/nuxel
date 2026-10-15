@@ -1,0 +1,16 @@
+beyond2lte
+3.7.0_9-2
+43.96 308.58
+--- last_kmsg size ---
+767365 /proc/last_kmsg
+--- pstore ---
+drwxr-x---    2 root     root             0 Jan  4 01:59 .
+drwxr-xr-x   13 root     root             0 Jan  4 01:59 ..
+-r--r--r--    1 root     root         27174 Jan  4 01:59 dmesg-ramoops-0
+--- reset ---
+sec_debug.reset_reason=7
+sec_reset.reset_reason=7
+bootmode=2
+androidboot.revision=26
+androidboot.dtbo_idx=9
+androidboot.ulcnt=1

@@ -1,0 +1,14 @@
+=== boot -> /dev/block/sda14 ===
+57671680
+=== userdata -> /dev/block/sda31 ===
+119126622208
+=== recovery -> /dev/block/sda15 ===
+67633152
+=== dtb -> /dev/block/sda12 ===
+8388608
+=== dtbo -> /dev/block/sda13 ===
+8388608
+=== system -> /dev/block/sda25 ===
+5976883200
+=== vendor -> /dev/block/sda26 ===
+1153433600

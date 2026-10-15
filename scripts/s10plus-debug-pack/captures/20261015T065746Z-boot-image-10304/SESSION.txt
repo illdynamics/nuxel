@@ -1,0 +1,5 @@
+Nuxel S10+ read-only debug collection
+Captured UTC: 2026-10-15T06:57:46Z
+Host OS: Darwin infranux 24.6.0 Darwin Kernel Version 24.6.0: Tue Jul 21 20:51:05 PDT 2026; root:xnu-11417.140.69.711.44~1/RELEASE_ARM64_T6000 arm64
+NOTE: Logs may contain serial numbers, IP addresses, credentials or private information.
+No device partitions were written or mounted by this kit.

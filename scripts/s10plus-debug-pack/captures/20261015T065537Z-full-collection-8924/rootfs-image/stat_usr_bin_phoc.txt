@@ -1,0 +1,17 @@
+debugfs 1.47.4 (6-Mar-2025)
+Inode: 1812   Type: regular    Mode:  0755   Flags: 0x80000
+Generation: 0    Version: 0x00000000:00000000
+User:     0   Group:     0   Project:     0   Size: 606136
+File ACL: 0
+Links: 1   Blockcount: 1072
+Fragment:  Address: 0    Number: 0    Size: 0
+ ctime: 0x6acfa39f:00000000 -- Wed Oct 14 17:45:35 2026
+ atime: 0x6acfa3a6:00000000 -- Wed Oct 14 17:45:42 2026
+ mtime: 0x69e56c80:00000000 -- Mon Apr 20 02:00:00 2026
+crtime: 0x6acfa3a8:00000000 -- Wed Oct 14 17:45:44 2026
+Size of extra inode fields: 32
+Extended attributes:
+  security.selinux (47)
+Inode checksum: 0x784b1664
+EXTENTS:
+(0-125):19835-19960, (140-147):19961-19968

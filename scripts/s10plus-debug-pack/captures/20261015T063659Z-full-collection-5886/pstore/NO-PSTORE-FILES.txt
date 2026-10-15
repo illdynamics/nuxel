@@ -1,0 +1,1 @@
+No readable files in /sys/fs/pstore. This does not prove the kernel never started.

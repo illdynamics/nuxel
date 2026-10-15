@@ -1,0 +1,54 @@
+=== /sys/class/block sda sample uevents ===
+--- sda ---
+MAJOR=8
+MINOR=0
+DEVNAME=sda
+DEVTYPE=disk
+--- sda12 ---
+MAJOR=8
+MINOR=12
+DEVNAME=sda12
+DEVTYPE=partition
+PARTN=12
+PARTNAME=dtb
+--- sda13 ---
+MAJOR=8
+MINOR=13
+DEVNAME=sda13
+DEVTYPE=partition
+PARTN=13
+PARTNAME=dtbo
+--- sda14 ---
+MAJOR=8
+MINOR=14
+DEVNAME=sda14
+DEVTYPE=partition
+PARTN=14
+PARTNAME=boot
+--- sda15 ---
+MAJOR=8
+MINOR=15
+DEVNAME=sda15
+DEVTYPE=partition
+PARTN=15
+PARTNAME=recovery
+--- sda31 ---
+MAJOR=259
+MINOR=15
+DEVNAME=sda31
+DEVTYPE=partition
+PARTN=31
+PARTNAME=userdata
+=== /dev/disk/by-partlabel ===
+ls: /dev/disk/by-partlabel: No such file or directory
+=== /dev/block listing ===
+drwxr-xr-x    4 root     root          1320 Jan  4 01:02 .
+drwxr-xr-x   10 root     root          6520 Jan  4 01:02 ..
+drwxr-xr-x    2 root     root           680 Jan  4 01:02 by-name
+brw-------    1 root     root        7,   0 Jan  4 01:02 loop0
+brw-------    1 root     root        7,   8 Jan  4 01:02 loop1
+brw-------    1 root     root        7,  16 Jan  4 01:02 loop2
+brw-------    1 root     root        7,  24 Jan  4 01:02 loop3
+brw-------    1 root     root        7,  32 Jan  4 01:02 loop4
+brw-------    1 root     root        7,  40 Jan  4 01:02 loop5
+brw-------    1 root     root        7,  48 Jan  4 01:02 loop6

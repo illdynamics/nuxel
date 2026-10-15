@@ -37,6 +37,14 @@
 #   * `nuxel.noverity`      bypass dm-verity (development only)
 #   * `nuxel.console=`      preferred serial console
 #   * `nuxel.noanim`        disable the framebuffer boot splash
+#
+# CMDLINE INDEPENDENCE (2026-10-15): on Samsung S-Boot the kernel cmdline is
+# built by the bootloader, which REPLACES /chosen/bootargs and drops the Android
+# boot image header `cmdline` field. nuxel.device=/root= must therefore not be
+# required: the device is auto-detected from /proc/device-tree/model|compatible
+# (exynos9820/beyond2lte => s10plus) and the root is resolved by the kernel's
+# PARTNAME=userdata uevent. Every failure is persisted (rootfs file
+# /nuxel-boot-diag.log + raw copy in the BOOT partition tail) before rebooting.
 # =============================================================================
 
 # toybox usually needs no PATH override, but keep a sane default for busybox.
@@ -58,6 +66,107 @@ echo "$(date +%s 2>/dev/null || echo 0)" > /run/boot-start-time
 log() { echo "nuxel-init: $*"; }
 warn() { echo "nuxel-init: [warn] $*"; }
 err()  { echo "nuxel-init: [ERROR] $*"; }
+
+# --- persistent boot diagnostics --------------------------------------------------
+# Samsung S-Boot REPLACES /chosen/bootargs with its own command line and does not
+# propagate the Android boot image header `cmdline` field (device-verified on
+# beyond2lte: TWRP's own "buildvariant=eng" never reaches /proc/cmdline). The
+# Nuxel kernel therefore cannot be configured through the cmdline alone, and the
+# Samsung persistent log buffer is cleared by S-Boot on the *next* boot, so a
+# failed attempt normally leaves no evidence at all.
+#
+# Everything below exists so that a failed boot still produces hard evidence:
+#   * /run/nuxel-diag.log            in-RAM working copy (always)
+#   * <rootfs>/nuxel-boot-diag.log   written once the root is mounted
+#   * raw tail of the BOOT partition mount-free copy readable with `dd` alone
+# Path roots (overridable only so the decision logic can be unit-tested off
+# device; the defaults are the real kernel paths).
+NUXEL_DT="${NUXEL_DT:-/proc/device-tree}"
+NUXEL_BLOCK_SYS="${NUXEL_BLOCK_SYS:-/sys/class/block}"
+NUXEL_DEV="${NUXEL_DEV:-/dev}"
+
+DIAG_RAM=/run/nuxel-diag.log
+: > "${DIAG_RAM}" 2>/dev/null || DIAG_RAM=/tmp/nuxel-diag.log
+: > "${DIAG_RAM}" 2>/dev/null || true
+
+diag() {
+    printf 'nuxel-init: %s\n' "$*" >> "${DIAG_RAM}" 2>/dev/null || true
+    log "$*"
+}
+
+# Find a block device by the kernel-provided PARTNAME uevent. devtmpfs does not
+# create Android's /dev/block/platform/.../by-name links (those are made by
+# Android userspace/ueventd), so detect the partition by identity, never by
+# guessing a partition number.
+block_by_partname() {
+    _pn="$1"
+    for _u in "${NUXEL_BLOCK_SYS}"/*/uevent; do
+        [ -f "$_u" ] || continue
+        if grep -qx "PARTNAME=${_pn}" "$_u" 2>/dev/null; then
+            _b="${_u%/uevent}"; _b="${_b##*/}"
+            if [ -b "${NUXEL_DEV}/${_b}" ]; then printf '%s/%s\n' "${NUXEL_DEV}" "${_b}"; return 0; fi
+        fi
+    done
+    return 1
+}
+
+# Mount-free diagnostic slot: the unused tail of the BOOT partition (the boot
+# image occupies ~22 MiB of a ~55 MiB partition). Read it back from recovery:
+#   dd if=/dev/block/by-name/boot bs=512 skip=$(( $(cat /sys/class/block/sda14/size) - 128 )) 2>/dev/null | head -c 4096
+diag_raw_slot() {
+    _boot="$(block_by_partname boot 2>/dev/null)" || return 1
+    [ -n "${_boot}" ] || return 1
+    _blk="${_boot##*/}"
+    _sec="$(cat "${NUXEL_BLOCK_SYS}/${_blk}/size" 2>/dev/null)" || return 1
+    case "${_sec}" in ''|*[!0-9]*) return 1 ;; esac
+    [ "${_sec}" -gt 1024 ] || return 1
+    printf '%s %s\n' "${_boot}" "$(( (_sec - 128) * 512 ))"
+}
+
+diag_persist() {
+    if [ -n "${ROOT_MNT:-}" ] && [ -d "${ROOT_MNT}" ]; then
+        cp "${DIAG_RAM}" "${ROOT_MNT}/nuxel-boot-diag.log" 2>/dev/null || true
+    fi
+    _slot="$(diag_raw_slot 2>/dev/null)" || return 0
+    [ -n "${_slot}" ] || return 0
+    _dev="${_slot%% *}"; _off="${_slot##* }"
+    # The free tail is 128 sectors; never write more than 120 of them, and keep
+    # the head of the record (version/cmdline/device-tree/reason) if it is long.
+    if [ -b "${_dev}" ]; then
+        head -c 61440 "${DIAG_RAM}" 2>/dev/null \
+            | dd of="${_dev}" bs=512 seek="$(( _off / 512 ))" conv=notrunc 2>/dev/null || true
+    fi
+    sync
+}
+
+# The kernel ring buffer is the hard evidence that the kernel really ran.
+diag_dump_kmsg() {
+    if command -v dmesg >/dev/null 2>&1; then
+        printf -- '--- dmesg ---\n' >> "${DIAG_RAM}" 2>/dev/null || true
+        dmesg >> "${DIAG_RAM}" 2>/dev/null || true
+    fi
+}
+
+diag_environment() {
+    diag "version: $(cat /proc/version 2>/dev/null)"
+    diag "cmdline: $(cat /proc/cmdline 2>/dev/null)"
+    if [ -f "${NUXEL_DT}/model" ]; then
+        diag "dt-model: $(tr -d '\0' < "${NUXEL_DT}/model" 2>/dev/null)"
+    fi
+    if [ -f "${NUXEL_DT}/compatible" ]; then
+        diag "dt-compat: $(tr '\0' ' ' < "${NUXEL_DT}/compatible" 2>/dev/null)"
+    fi
+    diag "block-devices: $(ls /dev/sd* /dev/mmcblk* 2>/dev/null | tr '\n' ' ')"
+    diag "kernel-head: $(dmesg 2>/dev/null | head -n 3 | tr '\n' '|')"
+}
+
+# Single failure exit: always record the reason + kernel log, then persist.
+fail_boot() {
+    diag "[FATAL] $*"
+    diag_dump_kmsg
+    diag_persist
+    err "$*"
+}
 
 # --- command provider ----------------------------------------------------------
 # Prefer toybox, then busybox.  If neither is present we still carry on using
@@ -212,18 +321,43 @@ s10plus_userdata_device() {
     # mdev populates /dev when devtmpfs alone has no partition node; it does
     # not magically create Android by-name links, so use sysfs PARTNAME below.
     command -v mdev >/dev/null 2>&1 && mdev -s 2>/dev/null || true
-    for uevent in /sys/class/block/*/uevent; do
+    for uevent in "${NUXEL_BLOCK_SYS}"/*/uevent; do
         [ -f "$uevent" ] || continue
         if grep -iq '^PARTNAME=userdata$' "$uevent" 2>/dev/null; then
             blockname="${uevent%/uevent}"
             blockname="${blockname##*/}"
-            [ -b "/dev/$blockname" ] && {
-                printf '/dev/%s\n' "$blockname"; return 0;
+            [ -b "${NUXEL_DEV}/$blockname" ] && {
+                printf '%s/%s\n' "${NUXEL_DEV}" "$blockname"; return 0;
             }
         fi
     done
     return 1
 }
+
+# --- device identity without the kernel cmdline ------------------------------------
+# nuxel.device= may be absent on a perfectly good boot because S-Boot rewrote
+# /chosen/bootargs (see the diagnostics note above). Identify the platform from
+# the device tree the bootloader actually handed us, instead of falling through
+# to the generic A/B probe, which cannot resolve this device's root (there is no
+# /dev/disk/by-partlabel here, and the early /dev/sdaN candidates are bootloader
+# partitions).
+diag_environment
+if [ -z "${DEVICE}" ]; then
+    _dt_model="$(tr -d '\0' < "${NUXEL_DT}/model" 2>/dev/null || true)"
+    _dt_compat="$(tr '\0' ' ' < "${NUXEL_DT}/compatible" 2>/dev/null || true)"
+    warn "no nuxel.device= on cmdline; identifying device from the device tree"
+    case "${_dt_model}" in
+        *BEYOND2LTE*|*beyond2lte*|*BEYOND1LTE*|*beyond1lte*) DEVICE=s10plus ;;
+    esac
+    if [ -z "${DEVICE}" ]; then
+        case " ${_dt_compat} " in
+            *exynos9820*|*exynos9*) DEVICE=s10plus ;;
+        esac
+    fi
+    if [ -n "${DEVICE}" ]; then
+        log "auto-detected device=${DEVICE} from device tree ('${_dt_model}')"
+    fi
+fi
 
 # Dispatch on nuxel.device= — each target resolves its own root device:
 #   mustang / vm / ""   -> existing A/B dynamic-partition probe (unchanged)
@@ -258,9 +392,14 @@ case "${DEVICE}" in
             err "s10plus: explicit root= is not a block device: ${ROOT_SPEC}"
         fi
         if [ -z "${ROOT_DEV}" ] || [ ! -b "${ROOT_DEV}" ]; then
-            err "s10plus: USERDATA not found after probe; refusing SYSTEM fallback"
+            fail_boot "s10plus: USERDATA not found after probe; refusing SYSTEM fallback"
             emergency_shell
-            # PID 1 must never continue into a guessed partition or exit.
+            # The diagnostic record is already persisted; reboot so the operator
+            # can read it from recovery instead of hanging forever. PID 1 must
+            # never continue into a guessed partition, and must never exit.
+            sync
+            sleep 15 || true
+            reboot -f 2>/dev/null || true
             while :; do sleep 60; done
         fi
         log "s10plus: root -> ${ROOT_DEV} (fstype: ${ROOT_FSTYPE:-ext4})"
@@ -294,10 +433,10 @@ case "${DEVICE}" in
 esac
 
 if [ -z "${ROOT_DEV}" ]; then
-    err "no root block device found (slot=${SLOT})"
+    fail_boot "no root block device found (slot=${SLOT})"
     emergency_shell
     echo "=== NUXXEL PANIC: no root device ==="
-    sleep 60 || true
+    sleep 15 || true
     echo "reboot..." ; reboot -f 2>/dev/null || true
 fi
 
@@ -331,7 +470,12 @@ fi
 # command line prefer rw. Never turn a mount failure into a SYSTEM fallback.
 ROOT_MOUNT_MODE=ro
 if [ "$DEVICE" = s10plus ]; then
-    case " ${CMDLINE} " in *' rw '*) ROOT_MOUNT_MODE=rw ;; esac
+    # Fedora/systemd needs the root writable (journal, /var, /etc) and the
+    # diagnostic record is written into it. This cannot come from the kernel
+    # cmdline: S-Boot replaces /chosen/bootargs and drops the boot image header
+    # cmdline. Default to rw here, still overridable with an explicit `ro`.
+    ROOT_MOUNT_MODE=rw
+    case " ${CMDLINE} " in *' ro '*) ROOT_MOUNT_MODE=ro ;; esac
 fi
 if ! mount -t "${FS_TYPE}" -o "${ROOT_MOUNT_MODE}" "${ROOT_DEV}" "${ROOT_MNT}" 2>/dev/null; then
     # retry as rw (some boot flows mount rw transiently)
@@ -346,10 +490,10 @@ if ! mount -t "${FS_TYPE}" -o "${ROOT_MOUNT_MODE}" "${ROOT_DEV}" "${ROOT_MNT}" 2
             done
         fi
         if ! mountpoint -q "${ROOT_MNT}" 2>/dev/null; then
-            err "mount of root failed."
+            fail_boot "root mount failed"
             emergency_shell
             err "=== NUXXEL PANIC: root mount failed ==="
-            sleep 60 || true
+            sleep 15 || true
             reboot -f 2>/dev/null || true
         fi
     fi
@@ -357,15 +501,20 @@ if ! mount -t "${FS_TYPE}" -o "${ROOT_MOUNT_MODE}" "${ROOT_DEV}" "${ROOT_MNT}" 2
     ( mount -o remount,"${ROOT_MOUNT_MODE}" "${ROOT_MNT}" 2>/dev/null ) || true
 fi
 log "root mounted: ${ROOT_DEV} (${FS_TYPE}, mode=${ROOT_MOUNT_MODE})"
+diag "root mounted: ${ROOT_DEV} (${FS_TYPE}, mode=${ROOT_MOUNT_MODE})"
+diag_dump_kmsg
+diag_persist
 
 # --- validate that the root really is a Nuxel OS ----------------------------------
 if [ ! -f "${ROOT_MNT}/sbin/init" ] && [ ! -f "${ROOT_MNT}/init" ] && [ ! -f "${ROOT_MNT}/bin/sh" ]; then
     err "no /sbin/init, /init or /bin/sh found in root — not a bootable OS!"
     err "contents:"
     ls -la "${ROOT_MNT}" 2>/dev/null
+    diag "root listing: $(ls -la "${ROOT_MNT}" 2>/dev/null | tr '\n' '|')"
+    fail_boot "invalid root: no /sbin/init, /init or /bin/sh"
     emergency_shell
     err "=== NUXXEL PANIC: invalid root ==="
-    sleep 60 || true
+    sleep 15 || true
     reboot -f 2>/dev/null || true
 fi
 
