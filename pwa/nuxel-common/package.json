@@ -1,6 +1,6 @@
 {
   "name": "nuxel-common-bridge",
-  "version": "0.3.3-alpha",
+  "version": "0.4.0-alpha",
   "description": "Shared Nuxel bridge client used by all PWA surfaces",
   "main": "bridge.js",
   "module": "bridge.js",

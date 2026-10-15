@@ -15,8 +15,14 @@
 #   kernel/<dev>/build-kernel.sh --clone -> per-device Image.gz + DTBs (+ modules)
 #   boot/g7power/lk2nd/build-lk2nd.sh    -> lk2nd.img (g7power only; required to boot)
 #   images/g7power/build.sh --device     -> g7power boot + ext4 rootfs images
-#   images/s10plus/build.sh --boot-images-only
-#                                        -> s10plus merged board-DTB boot image
+#   images/s10plus/build-a25-boot.sh     -> THE A25 BOOT IMAGE that runs on the
+#                                           handset: repo-source initramfs
+#                                           (tools/s10plus/build-a25-initramfs.sh)
+#                                           EMBEDDED in a RAW arm64 kernel Image
+#                                           (CONFIG_INITRAMFS_SOURCE) + merged
+#                                           board DTB + legacy v1 boot.img.
+#                                           Verify-boot-image.py-style gate:
+#                                           tools/s10plus/verify-a25-boot.py.
 #   images/s10plus/build.sh --phone-rootfs
 #                                        -> s10plus Fedora 43 ARM64 phone rootfs
 #                                           (arm64 container: podman + qemu binfmt)
@@ -28,10 +34,14 @@
 #     initramfs, kernel, or images are missing/invalid, the job goes RED and the
 #     release job is skipped (a release is only ever published from a fully green
 #     build). tools/verify-artifacts.sh is the explicit gate for that.
-#   * The S10+ image set is the same one that was flashed to the handset: the
-#     merged board-DTB boot image (NUXEL_S10PLUS_BOARD_REV) plus the Fedora 43
-#     ARM64 phone userspace. The retired shared Plymouth/Flatpak rootfs is
-#     intentionally NOT built for s10plus (images/s10plus/build.sh fails closed).
+#   * The S10+ image set is the A25 set that runs on the handset. Two properties
+#     are non-negotiable on this board (docs/s10plus-autonomous-boot-repair/
+#     INITRAMFS-DELIVERY-ROOT-CAUSE.md): the BOOT container carries a RAW arm64
+#     Image (never Image.gz — S-Boot executes a gzip payload as code) and that
+#     Image has the initramfs EMBEDDED, because S-Boot advertises the initrd
+#     memory to the kernel without ever filling it. tools/s10plus/verify-a25-boot.py
+#     fails the job if either is untrue. The retired shared Plymouth/Flatpak
+#     rootfs is intentionally NOT built for s10plus (build.sh fails closed).
 # =============================================================================
 name: Release
 
@@ -42,7 +52,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Release tag (e.g. v0.3.3-alpha). Empty => v<VERSION>.'
+        description: 'Release tag (e.g. v0.4.0-alpha). Empty => v<VERSION>.'
         required: false
         default: ''
       devices:
@@ -151,8 +161,14 @@ jobs:
       - name: Populate single-source PWA assets
         run: make assets
 
-      - name: Build shared initramfs
-        run: bash images/build.sh --initramfs-only
+      - name: Build shared initramfs (g7power)
+        if: matrix.device == 'g7power'
+        run: |
+          # The shared (device-agnostic) initramfs is the g7power chain's payload.
+          # The S10+ does NOT use it: its initramfs is built from repo sources by
+          # tools/s10plus/build-a25-initramfs.sh and embedded in the kernel Image,
+          # because this bootloader never executes an external ramdisk.
+          bash images/build.sh --initramfs-only
 
       - name: Build kernel (${{ matrix.device }})
         run: |
@@ -173,9 +189,12 @@ jobs:
               bash images/g7power/build.sh --device g7power
               ;;
             s10plus)
-              # 1) The merged board-DTB boot image (kernel + initramfs + board
-              #    DTB) — this is the BOOT image that was flashed to the handset.
-              bash images/s10plus/build.sh --device s10plus --no-uboot --boot-images-only
+              # 1) THE A25 BOOT IMAGE — the image that runs on the handset.
+              #    repo-source initramfs -> RAW arm64 kernel Image with the
+              #    archive EMBEDDED (CONFIG_INITRAMFS_SOURCE) -> legacy v1
+              #    boot.img with the merged board DTB. The script runs
+              #    tools/s10plus/verify-a25-boot.py fail-closed before it exits 0.
+              bash images/s10plus/build-a25-boot.sh
               # 2) The real Fedora 43 ARM64 phone userspace (Python/systemd/
               #    Phosh/Phoc RPM binaries) that is written to USERDATA. This is
               #    NOT the retired shared Plymouth/Flatpak rootfs.

@@ -8,6 +8,84 @@ and the OTA builder (see *Versioning* below).
 
 ---
 
+## [v0.4.0-alpha] — 2026-10-15
+
+**Theme:** the Galaxy S10+ **boots Nuxel** — and the release CI now builds the
+exact image that runs on the handset. The earlier "bootloops on the Samsung logo"
+status is **superseded**.
+
+### Proven on hardware (SM-G975F), each step with a device marker
+
+| Step | Evidence |
+|---|---|
+| S-Boot loads and executes the Nuxel ARM64 kernel | S-Boot record + `linux_banner` in the ram console |
+| Embedded Nuxel initramfs executes | `NUXEL_MARKER INITRAMFS_EXECUTED` |
+| Nuxel `/init` runs, USERDATA discovered | `USERDATA_FALLBACK /dev/sda31`, `USERDATA_DISCOVERED` |
+| Fedora ext4 rootfs mounts | `ROOTFS_MOUNTED /dev/sda31 ext4` |
+| `switch_root` → Fedora systemd 258 PID 1 | `systemd[1]: systemd 258.11-1.fc43 … arm64` |
+| systemd builds its unit graph / services execute / cgroup2 / journald | `Reached target basic.target` (A15); A18 spawn-failure fix |
+| Stable boot without spontaneous reset | A15 ran 1892 s (operator reset only) |
+| Nuxel renders on the AMOLED panel; spinning penguin | A16 first light on the DECON fbdev path |
+| Original MP4 boot animation, 24.00 fps, 0 skipped frames | A21/A22 measurements |
+| Panel colour order | ABGR_8888 proven from the driver commit path (A23) |
+| Interactive live root console over USB | A21 acceptance suite; A24/A25 disconnect survival (HUP-proof, respawning supervisor) |
+| Fedora userspace UI process + real framebuffer commit | A24 `UI_STARTED`, `FIRST_FRAME_COMMITTED fbio_pan rc=0` |
+| Animation → UI handoff | A24 `ANIMATION_STOP_SIGNALLED`, `PHONE_UI_READY` |
+| A25 (single-instance UI + console-owned postboot supervisor) | flashed to BOOT with full 51,718,144-byte SHA-256 readback PASS; boot is the next observation |
+
+### Added
+
+- **`tools/s10plus/build-a25-initramfs.sh`** — builds the A25 initramfs **from
+  repo sources** (no local candidate base): freestanding aarch64 binaries
+  (`nuxel-ui`, `nuxel-anim-player`, `nuxel-fb-phone`, `nuxel-syscall-probe`),
+  static-glibc binaries (`nuxel-console`, `nuxel-hwprobe`, `nuxel-verify`), toybox
+  + applets, `/init`, the systemd units, the post-boot supervisor and the pinned
+  `libsystemd-shared`. Every member is re-extracted and hash-compared before the
+  script reports success.
+- **`tools/s10plus/mkinitramfs-cpio.py`** — deterministic newc packer used by the
+  builder (works on macOS and Linux; no host `cpio`).
+- **`images/s10plus/build-a25-boot.sh`** — the A25 BOOT image pipeline: build the
+  initramfs → merge the board DTB (`fdtoverlay`) → **rebuild the kernel with
+  `CONFIG_INITRAMFS_SOURCE`** → pack a legacy v1 `boot.img` with the **raw arm64
+  `Image`** → gate the result.
+- **`tools/s10plus/verify-a25-boot.py`** — fail-closed verifier: container
+  structure (delegated to `verify-boot-image.py`, including the partition budget),
+  raw (non-gzip) arm64 Image, the initramfs really embedded, the embedded archive
+  identical member-by-member to the built one, the pinned systemd payload, and the
+  ramdisk copy carrying the same archive.
+- **`boot/s10plus/payload/libsystemd-shared-258.11-1.fc43.so`** (+ provenance
+  README) — the kernel-4.14 `pidfd_spawn`/`pidref` patched library `/init` installs
+  into the Fedora rootfs, SHA-256 pinned (`848149cf…`) by both the payload README
+  and `boot/initramfs/init.sh`.
+
+### Changed
+
+- **`.github/workflows/release.yml`**: the S10+ job now builds the A25 image
+  (`images/s10plus/build-a25-boot.sh`) instead of the legacy
+  `--boot-images-only` `Image.gz` + external-ramdisk boot image; the shared
+  initramfs step is now g7power-only; the Fedora 43 ARM64 phone rootfs step is
+  unchanged.
+- **`tools/verify-artifacts.sh`**: the s10plus branch no longer requires
+  `Image.gz`; it requires the A25 contract (`Image-A25` + `initramfs-A25.cpio` +
+  `nuxel-beyond2lte-boot.img`) through `tools/s10plus/verify-a25-boot.py`.
+- **Docs/README status + scoreboard** updated to the proven state: build system
+  58% → 85%, S10+ bring-up 55% → 85%, flashable images 80% → 90%, overall
+  ~45–50% → ~60%.
+- **Version bump to v0.4.0-alpha** across `VERSION`, README/design/docs, the flash
+  guides, the device `APKBUILD`s, the shell/PWA manifests, the VM tooling and the
+  OTA builder.
+
+### Still open (unchanged in kind)
+
+- Touch input: every boot so far was `androidboot.mode=charger` (no touch device).
+- Human-visible confirmation of the UI and of the animation colours.
+- The Fedora boot graph stalls before `multi-user.target`; `bootreport.txt` now
+  instruments which job stalls.
+- Phosh/Phoc need DRM/KMS — this 4.14 vendor tree has `# CONFIG_DRM is not set`.
+- Moto G7 Power still hangs at a black/flashy screen.
+
+---
+
 ## [v0.3.3-alpha] — 2026-10-14
 
 **Theme:** flashing is **proven** on the Galaxy S10+ — the full Nuxel image set

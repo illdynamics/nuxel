@@ -1,5 +1,5 @@
 project('nuxel-home-native',
-    version: '0.3.3-alpha',
+    version: '0.4.0-alpha',
     meson_version: '>= 0.53.0',
 )
 

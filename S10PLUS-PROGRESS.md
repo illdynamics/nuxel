@@ -1,4 +1,4 @@
-# Nuxel S10+ Exynos 9820 — evidence-based integration status (2026-10-14)
+# Nuxel S10+ Exynos 9820 — evidence-based integration status (2026-10-15, cycle 12 / candidate A25)
 
 Nuxel is a **Fedora-based Linux PHONE OS**. Fedora's native init system is
 **systemd**; the previous S10+ Alpine/OpenRC builder is deprecated. It was
@@ -6,25 +6,34 @@ incorrect to call the small ARM64 framebuffer bring-up image a finished phone
 runtime. Progress percentages below are **engineering estimates**, not measured
 completion and not probabilities of successful boot.
 
+**2026-10-15 — the phone now BOOTS Nuxel.** The "bootloops on the Samsung logo"
+statements below are historical and superseded: S-Boot loads the Nuxel ARM64
+kernel, the **embedded** Nuxel initramfs runs, USERDATA is discovered, the
+Fedora 43 ext4 rootfs mounts, `switch_root` hands over to **systemd 258 as
+PID 1**, the panel shows the **boot animation** and a **live root console** runs
+over USB. Per-step evidence: `docs/s10plus-autonomous-boot-repair/STATUS.md`,
+`NEXT-ACTION.md` and the cycle documents next to them.
+
 | Component | Engineering progress | Evidence available | Still unverified / blocked |
 |---|---:|---|---|
-| Device source configuration | 90% | Exynos S10+ overlays/config, S10+ udev, user-provided PIT with 41 entries | Exact physical hw_rev, DTBO effective merge, firmware provenance |
-| Android v1 boot packaging | 88% | ARM64 4.14 kernel preserved, merged DTB, repacked newc + `/bin/sh`, USERDATA resolution, writable-root handoff | Samsung S-Boot acceptance, real boot log, DTBO board match |
-| Host transfer workflow | 85% | **The full image set (merged boot + Fedora 43 rootfs) is written to BOOT + USERDATA over ADB and read back byte-for-byte** — flashing/transfer is proven on this handset; the instrumented heimdall fork still classifies the separate EndSession outcome | Boot is unresolved: the device **bootloops on the Samsung logo**, so S-Boot handoff, kernel bring-up and the UFS root mount are still unverified |
-| ARM64 diagnostic rootfs | 88% | Verified ext4 traversal, static Toybox, S10-specific rules, Motorola removed, ARM64 framebuffer test | Real e2fsck and PID1 running on handset |
-| Fedora 43 full-runtime build automation | 65% | Docker aarch64 DNF RPM recipe, fail-closed package checks and symlink-aware verifier | Not run: no Docker/DNS/package repository in build sandbox |
-| Fedora ARM64 Python3/systemd/Phosh/Phoc **inside delivered diagnostic image** | **0%** | Image explicitly contains no Fedora RPM runtime | Build on connected Mac and run strict verifier |
-| Actual Phosh phone session | **0%** | No successful DRM/GPU/seat session on S10+ | Device driver bring-up, greetd/user session test, touch input |
-| First-light panel probe | 35% | Static ARM64 framebuffer probe, service recipe | Compatible fbdev/DRM and panel output not tested |
-| Nuxel Home app assets | 80% | PWA assets and service source included | WebKit/mobile runtime, launch and touch UI integration |
+| Device source configuration | 90% | Exynos S10+ overlays/config, S10+ udev, user-provided PIT with 41 entries; rev-26 board DTBO merged with `fdtoverlay` | Exact physical hw_rev vs. the merged overlay, firmware provenance |
+| Android v1 boot packaging | 96% | The **A25 boot.img that is on the handset**: a **raw arm64 `Image` with the initramfs embedded** (`CONFIG_INITRAMFS_SOURCE`) + merged board DTB in a legacy v1 header, flashed BOOT-only with a full 51,718,144-byte SHA-256 readback PASS | Each newly built Image must be re-observed on hardware |
+| Host transfer workflow | 95% | BOOT-only ADB `dd` flashes with full-partition SHA-256 readback; the instrumented heimdall fork classifies timeout/disconnect/malformed/rejected/delayed/still-in-Download-Mode | The heimdall EndSession protocol mismatch is **UNRESOLVED** (separate Download-Mode path) |
+| ARM64 diagnostic rootfs | 95% | `/init` runs on-device: devtmpfs, toybox, watchdog leash, USERDATA discovery (`/dev/sda31`), ext4 root mount, `switch_root` | — |
+| Fedora 43 full-runtime build automation | 85% | Fail-closed CI builds the Fedora 43 ARM64 phone userspace in an arm64 container (podman + qemu binfmt) and gates it with `verify-fedora-phone-rootfs.py` | The kernel-4.14 `libsystemd` patch is **carried in the initramfs** (pinned payload), not rebuilt by the rootfs job |
+| Fedora ARM64 systemd inside the delivered image | 85% | `systemd[1]: systemd 258.11-1.fc43 … arm64` as PID 1, unit graph built, **services execute** (A18: spawn failures 29 → 0), cgroup2 mounted, journald active | The graph **stalls before `multi-user.target`** — root cause not yet named (`bootreport.txt` instruments it) |
+| Phosh / Phoc phone session | **0%** | — | Needs DRM/KMS: this 4.14 vendor tree has `# CONFIG_DRM is not set` |
+| Display / first light | 95% | First light on the DECON fbdev path (A16), the **original MP4 at 24.00 fps with 0 skipped frames** (A21/A22), ABGR_8888 colour order proven from the driver's own commit path (A23), the **UI process commits real frames** (A24) | Human-visible confirmation of the UI and of the animation colours |
+| Interactive live console | 95% | Root shell over the USB CDC-ACM gadget, verified by the A21 acceptance suite; **HUP-proof and respawning** after a host disconnect (A24/A25) | — |
+| Nuxel Home app assets | 90% | PWA assets + the fbdev-native `nuxel-ui` binary that runs on the panel (status bar, home, settings, logs, reboot/shutdown) | WebKit/mobile runtime on the phone; touch-driven UI integration |
 | WiFi, calls, mobile data, audio, sensors, camera | 10% | Some documented device config and mappings | Working kernel drivers, proprietary blobs and physical feature tests |
-| **Verified working S10+ Nuxel phone** | **~8%** | Full image set flashed over ADB (byte-for-byte readback) and the handset **reaches the Samsung boot logo** before bootlooping — a real, repeatable boot attempt | No handset has booted into a complete Nuxel phone shell; S-Boot/kernel/init handoff unresolved |
+| **Verified working S10+ Nuxel phone** | **~70%** | Nuxel boots on the SM-G975F as a real Fedora userspace: kernel → embedded initramfs → ext4 rootfs → systemd → panel animation → UI process → live root console, all flashed with full SHA-256 readback; A25 (single-instance UI + console-owned postboot supervisor) is on BOOT awaiting a power cycle | Not yet an **interactive** phone: no touch evidence (charger-mode boots), no human-confirmed UI, stalled systemd graph, no radio/modem, no Phosh |
 
-**Overall practical S10+ progress estimate: ~52%** (tracking estimate, not
-validated user experience). Flashing is now **hardware-proven** (both
-partitions written and read back byte-for-byte) and the handset reaches the
-Samsung logo; readiness beyond that still requires on-device boot results, so
-the userspace/session rows stay near zero.
+**Overall practical S10+ progress estimate: ~80%** (tracking estimate, not a
+validated user experience). The boot chain is now **hardware-proven end to end**
+and every claim above names a device observation; what keeps this short of an
+interactive phone is touch input, human-visible confirmation, the stalled systemd
+job, radio/modem bring-up and DRM/Phosh.
 
 ## Release contents and truth in labeling
 

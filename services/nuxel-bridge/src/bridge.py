@@ -557,7 +557,7 @@ class NuxelBridgeService(dbus.service.Object):
     def Ping(self, message):
         return json.dumps({
             'status': 'ok', 'service': 'nuxel-bridge',
-            'version': '0.3.3-alpha', 'session': self.session_id,
+            'version': '0.4.0-alpha', 'session': self.session_id,
             'echo': message
         })
     
@@ -715,7 +715,7 @@ class NuxelBridgeService(dbus.service.Object):
 
 
 def main():
-    logger.info("Starting Nuxel Bridge v0.3.3-alpha...")
+    logger.info("Starting Nuxel Bridge v0.4.0-alpha...")
     
     dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
     bus = dbus.SystemBus()

@@ -454,7 +454,7 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
             self._send_json({
                 "success": True,
                 "service": "nuxel-http-bridge",
-                "version": "0.3.3-alpha",
+                "version": "0.4.0-alpha",
                 "timestamp": time.time(),
             })
 

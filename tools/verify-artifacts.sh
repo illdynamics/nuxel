@@ -18,6 +18,12 @@
 #     generated Plymouth theme (nuxel.plymouth + frame PNGs). This is the exact
 #     content that went missing in CI (no ffmpeg -> theme step silently
 #     skipped -> a ~20 MB rootfs instead of the ~60 MB local build);
+#   * the s10plus BOOT image must be the A25 one: a RAW arm64 Image (never
+#     Image.gz — S-Boot executes a gzip payload as code) with the initramfs
+#     EMBEDDED (the bootloader never fills the initrd memory it advertises), plus
+#     the merged board DTB. tools/s10plus/verify-a25-boot.py is the gate, and it
+#     also proves the embedded archive is byte-identical to the archive the build
+#     just produced;
 #   * the s10plus rootfs is the Fedora 43 ARM64 phone userspace (built by
 #     images/s10plus/build-phone-rootfs-fedora.sh), verified with
 #     tools/s10plus/verify-fedora-phone-rootfs.py — the shared Plymouth/Flatpak
@@ -153,6 +159,24 @@ _require_ext4_size_ge() {
     _ok "${label}: ${path} present (${sz} bytes >= ${min})"
 }
 
+# require the A25 BOOT contract through the dedicated verifier (fail-closed).
+_require_a25_boot() {
+    local out="$1"
+    local img="${out}/nuxel-beyond2lte-boot.img"
+    local ker="${out}/Image-A25"
+    local cpio="${out}/initramfs-A25.cpio"
+    [ -s "${img}" ]  || { _fail "missing A25 boot image: ${img}"; return 1; }
+    [ -s "${ker}" ]  || { _fail "missing A25 raw kernel Image: ${ker}"; return 1; }
+    [ -s "${cpio}" ] || { _fail "missing A25 initramfs archive: ${cpio}"; return 1; }
+    if python3 "${NUXEL_ROOT}/tools/s10plus/verify-a25-boot.py" \
+            --boot-image "${img}" --kernel "${ker}" --initramfs "${cpio}" \
+            --partition-bytes "${NUXEL_BOOT_PARTITION_BYTES:-57671680}" --quiet; then
+        _ok "nuxel-beyond2lte-boot.img: A25 contract verified (raw Image, embedded initramfs, merged DTB)"
+    else
+        _fail "nuxel-beyond2lte-boot.img: A25 contract verification FAILED (see the verifier output above)"
+    fi
+}
+
 KOUT="${NUXEL_ROOT}/kernel/${DEVICE}/.build/out"
 OUT="${NUXEL_ROOT}/build/out/${DEVICE}"
 
@@ -173,9 +197,10 @@ case "${DEVICE}" in
         _require_ext4_path "${OUT}/nuxel-ocean-rootfs.img" "/usr/share/plymouth/themes/nuxel/frame-0001.png" "nuxel-ocean-rootfs.img (plymouth frames)"
         ;;
     s10plus)
-        _require_arm64_image "${KOUT}/arch/arm64/boot/Image.gz" "kernel Image.gz"
         _require_magic "${KOUT}/arch/arm64/boot/dts/samsung/exynos9820-beyond2lte.dtb" 0 "d0 0d fe ed" "beyond2lte merged board DTB"
-        _require_boot_image "${OUT}/nuxel-beyond2lte-boot.img" "nuxel-beyond2lte-boot.img (merged board DTB embedded)"
+        # The deliverable BOOT image is the A25 image: raw arm64 Image with the
+        # initramfs embedded (NOT Image.gz, NOT a container-only ramdisk).
+        _require_a25_boot "${OUT}"
         # The S10+ deliverable rootfs is the Fedora 43 ARM64 phone userspace
         # (real Python/systemd/Phosh/Phoc RPM binaries), built by
         # images/s10plus/build-phone-rootfs-fedora.sh. The shared

@@ -47,6 +47,19 @@
   </screenshots>
 
   <releases>
+    <release version="0.4.0-alpha" date="2026-10-15">
+      <url>https://github.com/nuxel-org/nuxel/releases/tag/v0.4.0-alpha</url>
+      <description>
+        <p>Nuxel Home v0.4.0-alpha — pre-release aligned with Nuxel Phone OS v0.4.0-alpha
+        (the Galaxy S10+ boots Nuxel: kernel, Nuxel initramfs, Fedora 43 rootfs, systemd,
+        the panel boot animation, a live root console and the Nuxel UI process).</p>
+        <ul>
+          <li>Version bumped in lockstep with the Nuxel OS v0.4.0-alpha pre-release</li>
+          <li>Aligned with the first hardware-proven Nuxel boot (Galaxy S10+)</li>
+          <li>No shell surface changes</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.3.3-alpha" date="2026-10-14">
       <url>https://github.com/nuxel-org/nuxel/releases/tag/v0.3.3-alpha</url>
       <description>
