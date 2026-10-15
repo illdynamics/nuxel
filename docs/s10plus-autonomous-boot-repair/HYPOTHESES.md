@@ -195,3 +195,80 @@ small Fedora process can be shown to execute.
 * **H-CHOSEN-PLACEHOLDER** — S-Boot overwrites `/chosen/linux,initrd-*`.
 * **H-PADDING-ONLY** — immaterial: the raw `newc` cpio cannot fail with "junk in
   compressed archive" if it is present in memory at all.
+
+---
+
+# HYPOTHESES — cycle 4 (2026-10-15, after A12)
+
+## H-PIDFD-SPAWN-ENOSYS — CONFIRMED (source-exact, hardware-consistent); fix = A13
+`posix_spawn_wrapper()` in systemd 258.11, built with glibc ≥ 2.39
+(`HAVE_PIDFD_SPAWN`), calls `pidfd_spawn()` **only** and retries the same
+function. glibc's `pidfd_spawn()` requires `waitid(P_PIDFD)` (Linux **5.4**) and
+returns `ENOSYS` with **no fallback** on this 4.14.253 kernel. Result: every
+unit spawn fails with `Failed to spawn executor: Function not implemented`.
+Fix: backport upstream's `pidfd_spawn` → `posix_spawn` fallback. Details,
+including why this is *not* clone3, in ROOT-CAUSE.md (cycle 4).
+
+## H-WATCHDOG-SELF-REBOOT — CONFIRMED (A12, hardware)
+A12's boot was **ended by our own initramfs watchdog**, not by the vendor:
+`NUXEL_BOOT_WATCHDOG=30` was armed at t≈1.97 s, and a process with comm `init`
+(only the pre-`switch_root` subshells inherit that comm) called `reboot(RB_AUTOBOOT)`
+at t=31.971 s (`debug-snapshot: normal reboot starting`, `sec_debug: set magic
+code (0x0)`). The intended disarm before `switch_root`
+(`kill "$NUXEL_WATCHDOG_PID"`, init.sh:766) evidently did not take effect.
+Prime suspect: the initramfs carries no `kill` applet/builtin (the toybox applet
+list in `init.sh` symlinks `sync reboot poweroff dd ...` but **not `kill`**), and
+the failure is invisible because that line redirects stderr to /dev/null.
+Consequence: A12's systemd had only ~18 s of life, and evidence after t≈14.4 s
+was destroyed. A13 must (a) ship/verify `kill`, (b) re-arm the watchdog for a
+realistic window, (c) keep the kmsg fd open so a firing watchdog *always* leaves
+a marker, and (d) keep the softdog fed across the handoff via a held fd.
+
+## H-FB0-PRESENT — CONFIRMED (A12 log, hardware)
+`show_boot_splash()` reached its "no splash data — showing navy boot screen"
+branch, which is only reachable when `/dev/fb0` or `/dev/graphics/fb0` exists as
+a character device. So **a framebuffer node is present** at t≈1.96 s on this
+kernel. S-Boot's own log shows the panel path being brought up before the kernel
+(`s6e3ha9_panel_read_id READ ID : A1 10 13`, `init_decon: xres 1440 yres 3040`,
+`reset_panel:system rev : 26`) and passes `s3cfb.bootloaderfb=0xca000000
+lcdtype=10555411`, i.e. the kernel reuses the bootloader's framebuffer. First
+light is therefore an fbdev write, not a DRM/KMS bring-up.
+
+## H-NO-DRM — CONFIRMED (shipping kernel config)
+`# CONFIG_DRM is not set` in the config embedded in the A12 `Image`
+(IKCFG_ST, 6123 lines). There is no KMS path on this kernel ⇒ **no
+`/dev/dri/card*`**, so Phoc/Phosh (Wayland/DRM) cannot run on this kernel even
+after systemd is repaired. fbdev first light is the achievable next milestone;
+a DRM/KMS phone session needs a different kernel (see Option C, Phase 2).
+
+## H-WRITABLE-ROOT — SUPPORTED (offline, needs hardware confirmation)
+The USERDATA ext4 superblock's incompat mask is `0x000022c2`
+(FILETYPE|EXTENTS|64BIT|FLEX_BG|CSUM_SEED) and its ro_compat mask `0x0000046b`
+(SPARSE_SUPER|LARGE_FILE|DIR_NLINK|EXTRA_ISIZE|BTREE_DIR|METADATA_CSUM) — every
+bit is in this kernel's `EXT4_FEATURE_INCOMPAT_SUPP`/`RO_COMPAT_SUPP`
+(`fs/ext4/ext4.h`). `s_state=1` (clean), 716,137 of 1,048,576 blocks free.
+A read-write mount is therefore supported in principle; A12 rendered `ro` only
+because `ROOT_MOUNT_MODE` was `ro` (the code path that logs `mode=` prints the
+*variable*), which is itself a diagnostic defect to fix in A13.
+
+## H-SYSTEMD-4.14 (cycle 3) — superseded by H-PIDFD-SPAWN-ENOSYS
+The version mismatch is real (systemd warns about the 5.7 baseline) but it is
+**not** a blanket incompatibility: PID 1 ran to `basic.target`, generators ran,
+the cgroup tree was created, and only the pidfd-based spawn path failed.
+
+
+---
+
+# HYPOTHESES — cycle 4 (A13), added after the A12 read-through
+
+| ID | Hypothesis | Status | How A13 discriminates |
+|---|---|---|---|
+| H-C4-A | `Failed to spawn executor: ENOSYS` is glibc `pidfd_spawn()` gated on `waitid(P_PIDFD)` (Linux 5.4) | **CONFIRMED at source level**; hardware confirmation in A13 | `NUXEL-SPAWN-PROBE … waitid(P_PIDFD,…) errno=22 EINVAL`, `posix_spawn rc=0`, `pidfd_spawn rc=38 ENOSYS` |
+| H-C4-B | The pidfd_spawn→posix_spawn backport makes services start | OPEN | `systemd-journald.service` starts instead of `Failed to spawn executor` |
+| H-C4-C | The A12 `os-release: <none>` came from a defective read, not from a bad rootfs | OPEN (mechanism unexplained; the rootfs is offline-verified Fedora) | new `ROOTFS_IDENTITY_RAW file=… text=…` line names the file and its content; `nuxel_marker ROOTFS_IDENTITY_OK` |
+| H-C4-D | A12's reset was our watchdog, not `hard_reset_hook` | **CONFIRMED** | t=31.971 s, `comm=init`, `set magic code (0x0)`; `NUXEL_BOOT_WATCHDOG=30` armed at t≈1.97 s |
+| H-C4-E | The watchdog survived `switch_root` because toybox has no `kill` applet | **CONFIRMED** | `strings toybox-a12` lists `killall` but not `kill` |
+| H-C4-F | Our `mount --move /dev` severed the evidence channel | **CONFIRMED as the mechanism** for the missing watchdog message | A13 mounts fresh `/proc`, `/sys`, `/dev` inside the new root |
+| H-C4-G | `/dev/fb0` exists and is writable, so first light is an fbdev write, not a DRM problem | OPEN | `FIRSTLIGHT …` lines; `nuxel-fb-phone` prints a named `NUXEL_FB_*` reason on every failure path |
+| H-C4-H | The panel may be driven by the bootloader's DECON and ignore kernel fb writes | OPEN — this is the main first-light risk | operator-visible result; a zero exit with no visible change confirms it |
+| H-C4-I | cgroup v2 / BPF gaps are cosmetic for service startup on 4.14 | OPEN | BPF attach failures were already non-fatal in A12 (`Proceeding WITHOUT applying ACL`); check whether any *unit* fails for a cgroup reason after the repair |

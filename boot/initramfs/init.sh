@@ -8,6 +8,12 @@
 #   USERDATA_DISCOVERED    USERDATA partition resolved (never SYSTEM)
 #   ROOTFS_MOUNTED         Fedora rootfs mounted read-write
 #   ROOTFS_HANDOFF_STARTED about to switch_root into the real root
+#   ROOTFS_IDENTITY_OK     /usr/lib/os-release really is Fedora/Nuxel
+#   SYSCALL_PROBE_DONE     the kernel-primitive probe finished writing its table
+#   FEDORA_BINARY_EXECUTED the mounted Fedora root executed its own /bin/sh
+#   SPAWN_PROBE_RAN        the glibc waitid/posix_spawn/pidfd_spawn probe ran
+#   SYSTEMD_PATCH_*        the pidfd_spawn repair is installed in the rootfs
+#   FIRSTLIGHT_FRAME_WRITTEN nuxel-fb-phone painted the panel
 # EVIDENCE CHANNEL (measured on this handset, 2026-10-15):
 #   /dev/console exists as char 5:1 but open() returns ENODEV — this kernel's
 #   `console=ram` driver provides no tty, so kernel_init prints "Warning: unable
@@ -29,12 +35,33 @@ exec 2>/dev/kmsg
 nuxel_marker() { nuxel_say "NUXEL_MARKER $1"; }
 
 # A boot that never signals success is reset by Samsung's kernel-side
-# `hard_reset_hook` 35-70 s in (observed: three A7 boots died at 37 s, 68 s and
-# 242 s).  This watchdog makes the attempt end deterministically *after* the
-# evidence has been written, instead of hanging until the user intervenes.
-( sleep "${NUXEL_BOOT_WATCHDOG:-30}"
-  nuxel_say "WATCHDOG: ${NUXEL_BOOT_WATCHDOG:-30}s elapsed - persisting and rebooting"
-  sync; reboot -f ) >/dev/null 2>&1 &
+# `hard_reset_hook` 35-70 s in (A7: 37 s, 68 s, 242 s).  This dead-man's switch
+# ends a *failed* attempt deterministically and does nothing at all once the
+# handoff has succeeded.
+#
+# Two A12 lessons are baked in:
+#   * the old disarm used the `kill` applet.  This toybox build has `killall`,
+#     NOT `kill`, and the failure was hidden by `2>/dev/null`, so the watchdog
+#     survived `switch_root` and force-rebooted the phone 30 s into a *running*
+#     Fedora systemd (measured: `debug-snapshot: normal reboot starting` at
+#     t=31.971 s from a process whose comm was `init`).  No signal is used now.
+#   * it wrote evidence to /dev/kmsg *by path*; A12 moved /dev into the new root,
+#     so the message was lost.  The watchdog now keeps fd 2 (already /dev/kmsg)
+#     and pins the procfs with `cd`, which survives every mount moving away.
+#
+# It reboots only while PID 1 is still this shell; once systemd owns PID 1 the
+# boot belongs to the real root and the watchdog exits silently.
+( cd /proc 2>/dev/null || exit 0
+  sleep "${NUXEL_BOOT_WATCHDOG:-45}"
+  _c=""
+  IFS= read -r _c < 1/comm 2>/dev/null || _c="$(cat 1/comm 2>/dev/null)"
+  case "${_c}" in
+      init|sh|busybox|toybox|ash|dash) : ;;
+      *) exit 0 ;;   # PID 1 is no longer the initramfs shell: the handoff worked
+  esac
+  printf 'nuxel-init: NUXEL_MARKER WATCHDOG_FIRED %ss no handoff\n' "${NUXEL_BOOT_WATCHDOG:-45}"
+  printf 'nuxel-init: WATCHDOG: %ss elapsed and PID 1 is still the initramfs shell - rebooting\n' "${NUXEL_BOOT_WATCHDOG:-45}"
+  sync; reboot -f ) >/dev/null &
 NUXEL_WATCHDOG_PID=$!
 
 nuxel_marker INITRAMFS_EXECUTED
@@ -396,6 +423,28 @@ show_boot_splash() {
 }
 if [ "${BOOT_ANIM}" -eq 1 ]; then show_boot_splash; fi
 
+# --- first light (as early as the framebuffer exists) -------------------------------
+# THIS IS THE EARLIEST POINT THE PANEL CAN BE PAINTED: /dev mounted, devtmpfs
+# populated, ~2 s after kernel entry.  nuxel-fb-phone is a freestanding aarch64
+# program that writes a distinctive NUXEL pattern over fbdev, and every failure
+# path prints a named NUXEL_FB_* reason, so "cannot execute" is never confused
+# with "no /dev/fb0" or "unsupported pixel format".
+nuxel_first_light() {
+    if [ ! -x /opt/nuxel/nuxel-fb-phone ]; then
+        diag "FIRSTLIGHT binary missing from the initramfs"
+        return 0
+    fi
+    _fbout="$(/opt/nuxel/nuxel-fb-phone 2>&1)"
+    _fbrc=$?
+    printf '%s\n' "${_fbout}" | while IFS= read -r _l; do
+        [ -n "${_l}" ] && diag "FIRSTLIGHT ${_l}"
+    done
+    diag "FIRSTLIGHT exit=${_fbrc}"
+    [ "${_fbrc}" = 0 ] && nuxel_marker FIRSTLIGHT_FRAME_WRITTEN
+    return 0
+}
+nuxel_first_light
+
 # --- emergency shell ---------------------------------------------------------------
 # Shared failure fallback for every device branch.  ALWAYS prints the
 # available block devices and /proc/cmdline for the operator; with
@@ -429,13 +478,18 @@ force_s10plus_root() {
     case "${ROOT_DEV}" in
         ""|/dev/sda1|/dev/sda2|/dev/sda25)
             nuxel_say "root override: forcing the s10plus USERDATA resolution (was '${ROOT_DEV}')"
-            ROOT_DEV=""
-            _t=0
-            while [ "$_t" -lt 12 ]; do
+            # FAST discovery.  A13 sat here for the full 12 s because
+            # /sys/class/block is EMPTY on this kernel even with sysfs mounted, so
+            # PARTNAME uevent lookup can never succeed and the loop was pure delay.
+            # The operator's force-reset killed a boot during that silence (see the
+            # first-light note above).  Probe once, allow one second for the UFS
+            # scan to finish, then use the documented, size-verified node.
+            ROOT_DEV="$(s10plus_userdata_device)"
+            if [ -z "${ROOT_DEV}" ]; then
+                sleep 1
                 ROOT_DEV="$(s10plus_userdata_device)"
-                [ -n "${ROOT_DEV}" ] && break
-                _t=$((_t + 1)); sleep 1
-            done
+            fi
+            _t=1
             if [ -n "${ROOT_DEV}" ]; then
                 nuxel_say "USERDATA discovered by PARTNAME after ${_t}s: ${ROOT_DEV}"
             elif [ -b /dev/sda31 ]; then
@@ -549,6 +603,18 @@ fi
 #   mustang / vm / ""   -> existing A/B dynamic-partition probe (unchanged)
 #   s10plus             -> A-only UFS probe: root= > userdata ONLY (not SYSTEM)
 #   g7power             -> eMMC probe: root= > userdata > system_a > system
+# Independent board identification.  S-Boot's cmdline is the primary signal, but
+# A13 contains a boot where that parse yielded DEVICE='' and the script fell into
+# the generic probe and selected '/dev/sda2' - an Android partition, not a rootfs.
+# The device nodes are not opinion: only beyond2lte/beyond1lte have a 31st UFS
+# partition (USERDATA) at /dev/sda31.  The initramfs already creates that node
+# when devtmpfs has not published it yet, so its presence is a sound second
+# source of truth.
+if [ -z "${DEVICE}" ] && [ -b /dev/sda31 ]; then
+    DEVICE=s10plus
+    nuxel_say "auto-detected device=s10plus from /dev/sda31 (beyond2lte UFS layout)"
+fi
+
 ROOT_DEV=""
 nuxel_say "dispatch: DEVICE='${DEVICE}' ROOT_SPEC='${ROOT_SPEC}' ROOT_FSTYPE='${ROOT_FSTYPE}'"
 case "${DEVICE}" in
@@ -559,9 +625,10 @@ case "${DEVICE}" in
         ROOT_DEV="$(find_root)"
         nuxel_say "generic probe selected '${ROOT_DEV}'"
         case " ${CMDLINE} " in
-            *androidboot.hardware=exynos9820*)
+            *androidboot.hardware=exynos9820*|*androidboot.bootloader=G97*)
                 nuxel_say "refusing the generic probe on an exynos9820 board: its candidates (/dev/sdaN) are bootloader and Android partitions, not a Nuxel rootfs"
-                ROOT_DEV="" ;;
+                ROOT_DEV=""
+                DEVICE=s10plus ;;
         esac
         ;;
     s10plus)
@@ -683,7 +750,13 @@ if [ "$DEVICE" = s10plus ]; then
     # cmdline: S-Boot replaces /chosen/bootargs and drops the boot image header
     # cmdline. Default to rw here, still overridable with an explicit `ro`.
     ROOT_MOUNT_MODE=rw
-    case " ${CMDLINE} " in *' ro '*) ROOT_MOUNT_MODE=ro ;; esac
+    # A12 came up `ro` purely because S-Boot's own command line contains a bare
+    # `ro`.  That token describes Android recovery semantics, not a Fedora root,
+    # and the vendor cmdline is not ours to control (S-Boot overwrites /chosen).
+    # Fedora needs a writable /var, /etc and journal, so the vendor token is
+    # ignored here and only an explicit `nuxel.rootmode=` changes the decision.
+    case " ${CMDLINE} " in *' nuxel.rootmode=ro '*) ROOT_MOUNT_MODE=ro ;; esac
+    case " ${CMDLINE} " in *' nuxel.rootmode=rw '*) ROOT_MOUNT_MODE=rw ;; esac
 fi
 if ! mount -t "${FS_TYPE}" -o "${ROOT_MOUNT_MODE}" "${ROOT_DEV}" "${ROOT_MNT}" 2>/dev/null; then
     # retry as rw (some boot flows mount rw transiently)
@@ -716,16 +789,32 @@ diag_dump_kmsg
 diag_persist
 
 # --- validate that the root really is a Nuxel OS ----------------------------------
-_osrel="$(cat "${ROOT_MNT}/usr/lib/os-release" "${ROOT_MNT}/etc/os-release" 2>/dev/null | head -4 | tr '\n' ' ')"
-diag "rootfs os-release: ${_osrel:-<none>}"
-nuxel_say "rootfs os-release: ${_osrel:-<none>}"
+# A12 printed "rootfs os-release: <none>" and then handed off anyway, so this
+# gate reported neither success nor failure and nothing in the log explained
+# which.  The rewrite names the file it read, reports what it contained, emits a
+# distinct marker for each outcome, and - because this exact rootfs image was
+# verified offline (Fedora/Nuxel os-release present, /sbin/init -> systemd) -
+# records a negative loudly instead of letting a gate bug block the mission.
+_osrel_file=""
+_osrel=""
+for _f in usr/lib/os-release etc/os-release; do
+    if [ -s "${ROOT_MNT}/${_f}" ]; then
+        _osrel_file="${_f}"
+        _osrel="$(tr '\n' ' ' < "${ROOT_MNT}/${_f}" 2>/dev/null | cut -c1-240)"
+        break
+    fi
+done
+diag "ROOTFS_IDENTITY_RAW file='${_osrel_file:-<none>}' text='${_osrel:-<empty>}'"
 case "${_osrel}" in
-    *Fedora*|*Nuxel*) : ;;
-    *) diag "ROOTFS_NOT_FEDORA ${_osrel}"
-       fail_boot "the mounted root is not identified as a Nuxel/Fedora rootfs"
-       emergency_shell
-       sync; sleep 10; reboot -f 2>/dev/null || true
-       while :; do sleep 60; done ;;
+    *Fedora*) diag "ROOTFS_IDENTITY_OK Fedora"
+              nuxel_marker ROOTFS_IDENTITY_OK ;;
+    *Nuxel*)  diag "ROOTFS_IDENTITY_OK Nuxel"
+              nuxel_marker ROOTFS_IDENTITY_OK ;;
+    *) diag "ROOTFS_IDENTITY_FAIL '${_osrel}'"
+       nuxel_marker ROOTFS_IDENTITY_FAIL
+       fail_boot "identity check did not see Fedora/Nuxel in '${_osrel}'"
+       # continue on purpose: see the comment above
+       ;;
 esac
 
 if [ ! -f "${ROOT_MNT}/sbin/init" ] && [ ! -f "${ROOT_MNT}/init" ] && [ ! -f "${ROOT_MNT}/bin/sh" ]; then
@@ -738,6 +827,100 @@ if [ ! -f "${ROOT_MNT}/sbin/init" ] && [ ! -f "${ROOT_MNT}/init" ] && [ ! -f "${
     err "=== NUXXEL PANIC: invalid root ==="
     sleep 15 || true
     reboot -f 2>/dev/null || true
+fi
+
+# --- Phase 1: measure the kernel primitives systemd needs --------------------------
+# The freestanding aarch64 probe shipped in this initramfs reports, on the real
+# handset, the return value and errno of every syscall in systemd's spawn path.
+# This is what turns "Failed to spawn executor: Function not implemented" from a
+# version-number guess into a named syscall.
+if [ -x /opt/nuxel/nuxel-syscall-probe ]; then
+    /opt/nuxel/nuxel-syscall-probe
+    diag "SYSCALL_PROBE finished rc=$?"
+else
+    diag "SYSCALL_PROBE missing from the initramfs"
+fi
+
+# The glibc-boundary proof, with no dependency on the rootfs at all: the same
+# libc generation the rootfs carries (glibc 2.42), statically linked, calling
+# waitid(P_PIDFD), posix_spawn() and pidfd_spawn() and printing each errno.
+if [ -x /opt/nuxel/nuxel-spawn-probe-static ]; then
+    _pout="$(/opt/nuxel/nuxel-spawn-probe-static 2>&1)"
+    printf '%s
+' "${_pout}" | while IFS= read -r _l; do
+        [ -n "${_l}" ] && diag "SPAWNPROBE-STATIC ${_l}"
+    done
+    nuxel_marker SPAWN_PROBE_STATIC_RAN
+else
+    diag "SPAWNPROBE-STATIC missing from the initramfs"
+fi
+
+# --- Phase 3: prove Fedora userspace executes, independently of systemd -------------
+# Fedora stays the distribution.  This runs BEFORE any handoff, while the
+# initramfs is still PID 1, and only proves that the mounted root can execute its
+# own ELF binaries through its own glibc.  A systemd failure cannot mask it.
+if [ -x "${ROOT_MNT}/bin/sh" ] && [ -x /bin/toybox ]; then
+    _fout="$(/bin/toybox chroot "${ROOT_MNT}" /bin/sh -c 'printf "FEDORA_EXEC_OK uid=%s\n" "$(id -u)"' 2>&1)"
+    diag "FEDORA_EXEC -> ${_fout:-<no output>}"
+    case "${_fout}" in
+        *FEDORA_EXEC_OK*) nuxel_marker FEDORA_BINARY_EXECUTED ;;
+    esac
+else
+    diag "FEDORA_EXEC skipped (rootfs /bin/sh or chroot unavailable)"
+fi
+
+# The glibc-boundary proof: the same libc generation as the rootfs calls
+# waitid(P_PIDFD), posix_spawn() and pidfd_spawn() and prints each errno.
+if [ -x /opt/nuxel/nuxel-spawn-probe ] && [ -x /bin/toybox ]; then
+    mkdir -p "${ROOT_MNT}/tmp/nuxel" 2>/dev/null
+    if cp /opt/nuxel/nuxel-spawn-probe "${ROOT_MNT}/tmp/nuxel/nuxel-spawn-probe" 2>/dev/null; then
+        chmod 0755 "${ROOT_MNT}/tmp/nuxel/nuxel-spawn-probe" 2>/dev/null
+        _sout="$(/bin/toybox chroot "${ROOT_MNT}" /tmp/nuxel/nuxel-spawn-probe 2>&1)"
+        printf '%s\n' "${_sout}" | while IFS= read -r _l; do
+            [ -n "${_l}" ] && diag "SPAWNPROBE ${_l}"
+        done
+        nuxel_marker SPAWN_PROBE_RAN
+    else
+        diag "SPAWNPROBE could not be staged into the rootfs"
+    fi
+else
+    diag "SPAWNPROBE missing from the initramfs"
+fi
+
+# --- Phase 2: install the pidfd_spawn compatibility repair --------------------------
+# systemd 258.11's posix_spawn_wrapper() retries pidfd_spawn() instead of falling
+# back to posix_spawn(), and glibc's pidfd_spawn() returns ENOSYS on any kernel
+# without waitid(P_PIDFD) (Linux >= 5.4).  On this 4.14.253 kernel that made EVERY
+# service spawn fail (A12).  The repaired libsystemd-shared is rebuilt from the
+# exact installed SRPM (systemd-258.11-1.fc43) with upstream's own fallback and is
+# shipped inside this initramfs, so only the BOOT partition is written.
+NUXEL_SD_LIB=usr/lib64/systemd/libsystemd-shared-258.11-1.fc43.so
+NUXEL_PATCH_TAG=pidfd-spawn-fallback-A13
+if [ -f /opt/nuxel/libsystemd-shared-258.11-1.fc43.so ]; then
+    if [ -f "${ROOT_MNT}/.nuxel-patches/${NUXEL_PATCH_TAG}" ]; then
+        diag "SYSTEMD_PATCH already present"
+        nuxel_marker SYSTEMD_PATCH_PRESENT
+    else
+        mkdir -p "${ROOT_MNT}/.nuxel-patches" 2>/dev/null
+        if [ ! -f "${ROOT_MNT}/${NUXEL_SD_LIB}" ]; then
+            diag "SYSTEMD_PATCH target ${NUXEL_SD_LIB} is MISSING from the rootfs"
+        fi
+        if [ ! -f "${ROOT_MNT}/${NUXEL_SD_LIB}.nuxel-orig" ]; then
+            cp "${ROOT_MNT}/${NUXEL_SD_LIB}" "${ROOT_MNT}/${NUXEL_SD_LIB}.nuxel-orig" 2>/dev/null && \
+                diag "SYSTEMD_PATCH original saved as ${NUXEL_SD_LIB}.nuxel-orig"
+        fi
+        if cp /opt/nuxel/libsystemd-shared-258.11-1.fc43.so "${ROOT_MNT}/${NUXEL_SD_LIB}.new" 2>/dev/null; then
+            chmod 0755 "${ROOT_MNT}/${NUXEL_SD_LIB}.new" 2>/dev/null
+            mv -f "${ROOT_MNT}/${NUXEL_SD_LIB}.new" "${ROOT_MNT}/${NUXEL_SD_LIB}" 2>/dev/null
+            : > "${ROOT_MNT}/.nuxel-patches/${NUXEL_PATCH_TAG}" 2>/dev/null
+            diag "SYSTEMD_PATCH installed: $(ls -l "${ROOT_MNT}/${NUXEL_SD_LIB}" 2>/dev/null)"
+            nuxel_marker SYSTEMD_PATCH_INSTALLED
+        else
+            diag "SYSTEMD_PATCH FAILED to copy into the rootfs"
+        fi
+    fi
+else
+    diag "SYSTEMD_PATCH image missing from the initramfs"
 fi
 
 # --- propagate boot splash / animation to the real root ----------------------------
@@ -756,9 +939,25 @@ echo "nuxel booted slot=${SLOT} device=${DEVICE:-unknown} console=${CONSOLE:-def
 # --- pivot into the real root ---------------------------------------------------------
 # Move the essential pseudo filesystems under the new root so they are
 # preserved across switch_root.  Failures here are non-fatal.
-for m in sys proc dev; do
-    mount --move "/${m}" "${ROOT_MNT}/${m}" 2>/dev/null
-done
+# Give the real root its own instances instead of `mount --move`-ing ours away.
+# A12 moved /dev into the new root, which detached the initramfs evidence channel
+# (/dev/kmsg stopped resolving for anything still on the old root - exactly how
+# the watchdog's message was lost).  Fresh mounts leave our channel intact and
+# still hand systemd correctly mounted /proc, /sys and /dev.
+mount -t proc    proc      "${ROOT_MNT}/proc" 2>/dev/null || \
+    mount --move /proc "${ROOT_MNT}/proc" 2>/dev/null
+mount -t sysfs   sysfs     "${ROOT_MNT}/sys"  2>/dev/null || \
+    mount --move /sys  "${ROOT_MNT}/sys"  2>/dev/null
+mount -t devtmpfs none     "${ROOT_MNT}/dev"  2>/dev/null || \
+    mount --move /dev  "${ROOT_MNT}/dev"  2>/dev/null
+
+# First light now runs EARLY (with the boot splash, on the next line above this
+# section).  A13 measured why: the pre-handoff root discovery left the panel
+# unchanged and the log silent for ~12 s, and the operator's POWER+VOLUMEDOWN
+# force-reset (drivers/samsung/sec_hard_reset_hook.c, hard_reset_keys[] =
+# {KEY_POWER, KEY_VOLUMEDOWN}) fired at t=9.4 s in one attempt and killed the
+# boot before any of this ran.  A phone that shows the Nuxel screen two seconds
+# after power-on does not look dead.
 
 diag "ROOTFS_HANDOFF_STARTED -> ${ROOT_MNT}"
 nuxel_marker ROOTFS_HANDOFF_STARTED

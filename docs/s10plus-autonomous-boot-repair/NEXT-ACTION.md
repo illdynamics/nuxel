@@ -1,80 +1,113 @@
-# NEXT-ACTION (after A12)
+# NEXT-ACTION (after A13 is flashed)
 
-## Where the boot stands (all hardware-measured)
+## Where the boot stands (hardware-measured unless marked)
+
 | Milestone | State |
 |---|---|
 | 1 S-Boot starts our kernel | ACHIEVED |
 | 2 kernel runs + persistent logging | ACHIEVED |
-| 3 initramfs unpacks | **ACHIEVED (A7)** — `message=(none) state=7`, twice per boot |
-| 4 Nuxel `/init` executes | **ACHIEVED (A8)** — its own lines in the ram console |
-| 5 USERDATA discovered | **ACHIEVED (A12)** — `USERDATA_FALLBACK /dev/sda31` |
-| 6 Fedora rootfs mounts | **ACHIEVED (A12)** — `EXT4-fs (sda31): mounted filesystem ...` + `ROOTFS_MOUNTED` |
-| 7 Fedora userspace runs | HANDOFF STARTED (A12) — `switch_root -> /newroot` executed; nothing observable after it |
-| 8-14 (init system, services, display, Phoc, Phosh, UI) | NOT REACHED |
+| 3 initramfs unpacks | ACHIEVED (A7) |
+| 4 Nuxel `/init` executes | ACHIEVED (A8) |
+| 5 USERDATA discovered | ACHIEVED (A12) |
+| 6 Fedora rootfs mounts | ACHIEVED (A12) |
+| 7 `switch_root` → Fedora PID 1 | ACHIEVED (A12) |
+| 8 systemd reaches `basic.target` | ACHIEVED (A12) |
+| 9 exact ENOSYS cause | **ACHIEVED, source-exact** (cycle 4) — measured on hardware by A13 |
+| 10 a core service really runs | A13 |
+| 11 Fedora binary executes | A13 |
+| 12 first light executes / panel shows it | A13 |
+| 13 Phoc / Phosh / phone UI | BLOCKED: `# CONFIG_DRM is not set` |
 
-**Root cause of the whole cycle-1/2 blocker (measured, see ROOT-CAUSE.md):** on a
-normal BOOT-partition boot S-Boot writes `/chosen/linux,initrd-start = 0x89000000`
-and `initrd-end = start + round_up(header ramdisk_size, 2048)` but **never loads
-the payload** — the bytes there are the kernel's own console text or zeros. No
-container-format change could ever have fixed that. Embedding the initramfs in the
-kernel (`CONFIG_INITRAMFS_SOURCE`) removed the handoff from the critical path.
+## The A13 candidate
 
-## Immediate next steps (in order)
-1. **Open a channel that survives `switch_root`.** Everything after the handoff is
-   currently invisible: the kernel log stops at `switching root`, Fedora's systemd
-   writes to a `/dev/console` that does not exist on this device, and the shipped
-   diagnostics never reached `diag_persist()`. Two cheap options, both
-   initramfs-only:
-   * write a `pre-handoff` record into the **BOOT partition slack** *unconditionally*
-     just before `exec switch_root` (currently only the failure paths persist it),
-     so every attempt leaves a readable breadcrumb;
-   * have the staged rootfs's `/sbin/init` (or a `sysinit` unit) write to
-     `/dev/kmsg` early, which is the only console-independent channel this kernel
-     offers.
-2. **Verify the root before trusting it.** A12 logged `rootfs os-release: <none>`
-   (the mount was `ro`), so the Fedora/Nuxel identity gate had no data and the
-   handoff proceeded unverified. Mount read-write, read
-   `/usr/lib/os-release` (or `/etc/os-release`), require `Fedora`/`Nuxel`, and only
-   then `switch_root`.
-3. **Explain two kernel-side oddities** that the logs expose and that will bite the
-   rootfs too: `/sys/class/block` is empty (with sysfs mounted) so
-   `PARTNAME=userdata` discovery always fails, and `/proc/device-tree` does not
-   exist on this arm64 kernel (the DT is readable under `/sys/firmware/devicetree`,
-   but `/sys/firmware/devicetree/base` was absent — A9 fell through to the
-   `/proc` path). Fixing `/sys/class/block` would restore identity-based
-   discovery and remove the need for the `sda31` fallback.
-4. **Fedora 43 systemd 258.11 vs Linux 4.14.253** — the known hard risk. It needs
-   `>= 5.4` and cgroup v2 (no cgroup v1 support). Before fighting it, prove the
-   rootfs with a *small* Fedora binary (`/bin/sh -c 'echo marker > /dev/kmsg'`
-   from a diagnostic init) and then choose a supported init strategy while keeping
-   Fedora as the distribution. Do not silently swap in Alpine/OpenRC.
-5. **Vendor leashes**: the boot is still time-limited — `hard_reset_hook` fires as
-   a force-reset key combo (10-75 s in) and `softdog.soft_margin=100
-   soft_panic=1` is armed from S-Boot's cmdline. A12 temperes them from userspace
-   (`hung_task_panic=0`, 600 s timeout, softdog keeper). If they still cut a valid
-   boot short, patch `drivers/samsung/sec_hard_reset_hook.c` in the kernel build
-   (the tree and toolchain are now in place and an incremental rebuild is ~90 s).
+* `build/out/s10plus/debug-candidates/A13/boot.img`
+  `sha256 bdc06dfe8a8cabe2de904e6224403741eb43fcd1d36eb491e699911f090df086`
+  (50,604,032 B, partition slack 7,067,648 B, gate PASS)
+* `Image-A13` `sha256 aa28769a95303ce42e79ecc212936418f27a5b68a6631ee8f0b95abac7871bd7`
+* `initramfs.cpio` `sha256 f1333d79e403dcd0ad832db6eb6af1184b566eb42913b25b69e7a30ef498bc96`
+* carries `opt/nuxel/libsystemd-shared-258.11-1.fc43.so`
+  `sha256 502507a7b6237a03cfcff49e389d2a38836916abdea40e36e5ba4653e9bc1234`
+  (rebuilt from `systemd-258.11-1.fc43.src.rpm`, fallback verified present by
+  disassembly: `posix_spawn_wrapper` now calls `posix_spawn@plt` as well as
+  `pidfd_spawn@plt`)
 
-## Reproducing the pipeline (everything is committed and gated)
+A13 is **BOOT-only**: the kernel source, defconfig, board-revision-26 DTB and
+header layout are unchanged from A12; the sole kernel difference is the embedded
+initramfs. USERDATA is not written; the repair is copied into the mounted rootfs
+at boot, with the original library preserved as `…so.nuxel-orig`.
+
+## Reading the A13 result
+
+Everything the attempt proves lands in the Samsung ram console, readable as
+`/proc/last_kmsg` from TWRP. Look for, in order:
+
+1. `NUXEL_MARKER SYSCALL_PROBE_DONE` and the `NUXEL-SYSCALL …` table
+   (`waitid(P_PIDFD…)`, `clone3`, `pidfd_open`, `clone(PIDFD)`,
+   `clone(SIGCHLD)+execve(/bin/sh)`, `fsopen`, `fspick`, `open_tree`, `memfd_create`).
+2. `ROOTFS_IDENTITY_RAW … text='…Fedora…'` and `NUXEL_MARKER ROOTFS_IDENTITY_OK`.
+3. `ROOTFS_MOUNTED /dev/sda31 ext4 rw` (rw, not ro).
+4. `NUXEL_MARKER SPAWN_PROBE_STATIC_RAN` + `SPAWNPROBE-STATIC …` lines, then
+   `NUXEL_MARKER FEDORA_BINARY_EXECUTED` + `FEDORA_EXEC -> FEDORA_EXEC_OK …`, then
+   `NUXEL_MARKER SPAWN_PROBE_RAN` + `SPAWNPROBE … pidfd_spawn … rc=38 ENOSYS`.
+5. `NUXEL_MARKER SYSTEMD_PATCH_INSTALLED` (or `…_PRESENT` on a re-boot).
+6. `FIRSTLIGHT …` lines, `NUXEL_MARKER FIRSTLIGHT_FRAME_WRITTEN`.
+7. `NUXEL_MARKER ROOTFS_HANDOFF_STARTED`, then systemd again — and this time
+   `systemd-journald.service` / `dbus-broker.service` / `systemd-udevd.service`
+   should **start** instead of failing with `Function not implemented`.
+
+Interpretation rules:
+
+* `pidfd_spawn … rc=38 ENOSYS` **plus** `posix_spawn … rc=0` is the measurement
+  that closes milestone 9 and justifies the repair.
+* If services still fail after `SYSTEMD_PATCH_INSTALLED`, the next blocker is a
+  *different* one; read the exact errno and unit before changing anything.
+* If the first-light program exits 0 but the panel does not change, that is a
+  display-driver result, not a process-execution result, and must be recorded as
+  such.
+* If the phone returns to TWRP: record `BOOT_RESULT=FAILED_USER_RETURNED_TO_TWRP`,
+  capture `last_kmsg` + pstore into
+  `scripts/s10plus-debug-pack/captures/<stamp>-A13-postfail/`, compare against A12
+  and continue.
+
+## If systemd services now start, the next questions in order
+
+1. Does the boot reach `multi-user.target` / a login prompt, or does it stall on a
+   unit that needs a cgroup-v2 or BPF feature this 4.14 kernel lacks?
+2. `/sys/class/block` is empty with sysfs mounted, so `PARTNAME=userdata`
+   discovery always fails and the `sda31` fallback carries the boot. Fix or
+   permanently document.
+3. Rootfs writability: `/etc/machine-id` exists, `/etc/fstab` does not. Decide
+   whether to add one (and what systemd should remount).
+4. Then, and only then, the compositor question: **this kernel has no DRM/KMS**
+   (`# CONFIG_DRM is not set`), so Phoc/Phosh cannot run. Milestones 15-16 need a
+   5.4+ Exynos 9820 port that keeps UFS, rev-26 DTB, DECON/DSIM, AMOLED, panel
+   power, USB and touchscreen working (Option C in the mission). That is an
+   engineering project, not a version bump, and it must not replace the
+   known-executing 4.14 kernel until the listed hardware is demonstrated.
+
+## Reproducing this cycle's pipeline (all committed and gated)
+
 ```
-boot/s10plus/build-candidate.sh --kernel <Image> --initramfs-cpio <cpio> \
-    --no-dev-nodes --compress lzma --out <A13/boot.img>       # gate runs automatically
-sh boot/s10plus/tests/test-boot-image-gates.sh                 # 11 regression tests
-sh boot/s10plus/tests/test-init-cmdline-independence.sh         # 8 tests
-kernel/s10plus/patches/0003-nuxel-initramfs-delivery-diagnostics.patch
-boot/s10plus/build-kernel-a7-embedded-initramfs.sh             # run inside the container
+# 1. systemd repair (Fedora 43 aarch64, in container sd258)
+.scratch/s10plus-cycle4/a13/build-systemd3.sh      # -> out3/libsystemd-shared-patched.so
+# 2. probes
+.scratch/s10plus-cycle4/a13/build-probes.sh        # -> probes/nuxel-spawn-probe{,-static}
+aarch64-linux-gnu-gcc -O2 -static -nostdlib -ffreestanding -fno-stack-protector \
+    -fno-builtin -Wl,-e,_start -o tools/s10plus/nuxel-syscall-probe \
+    tools/s10plus/nuxel-syscall-probe.c
+# 3. init script (anchored, fails loudly on a missing anchor)
+python3 .scratch/s10plus-cycle4/a13/edit-init.py
+# 4. initramfs + kernel + container
+sh .scratch/s10plus-cycle4/a13/build-a13-initramfs.sh
+#    (in container a7kb2) /b/kbuild-a13.sh          -> Image-A13
+boot/s10plus/build-candidate.sh --kernel …/A13/Image-A13 \
+    --initramfs-cpio …/A13/initramfs.cpio --init none --no-dev-nodes \
+    --compress lzma --out …/A13/boot.img
+# 5. tests
+sh boot/s10plus/tests/test-boot-image-gates.sh          # 11 tests
+sh boot/s10plus/tests/test-init-cmdline-independence.sh # 8 tests
 ```
-Kernel build host: `podman machine` (now 6 CPU/8 GiB) + container `a7kb2`
-(Fedora 43, native aarch64, gcc 15.3.1 = the same compiler as the proven kernel);
-sources at `/var/tmp/a7/src` in the VM, artifacts copied back to
-`build/out/s10plus/debug-candidates/A{7..12}/`.
-**Host caution:** the macOS data volume is 99% full; a nearly-full host silently
-truncated files inside the VM twice this cycle. Keep >20 GiB free and re-verify
-file sizes after any large copy.
 
 ## Standing risks
-* No real stock BOOT backup exists (`backups/s10plus/boot-original.img` is a
-  `DUMMY`). RECOVERY is untouched and backed up; every write this cycle was
-  BOOT-only, and USERDATA has never been written.
-* `Freeing initrd memory: <N>K` reports reclaimed pages only — it is not evidence
-  that our payload was delivered. The KDIAG lines are the evidence.
+* No real stock BOOT backup exists. RECOVERY untouched; every write is BOOT-only.
+* A12 remains the regression baseline and is never overwritten.

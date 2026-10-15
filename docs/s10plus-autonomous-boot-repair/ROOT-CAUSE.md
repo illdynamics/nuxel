@@ -307,3 +307,174 @@ terms instead of racing the vendor reset.
 Unchanged and still open: the rootfs ships systemd 258.11, which requires
 Linux >= 5.4 and cgroup v2; this tree is 4.14.253 and predates eBPF/cgroup-v2
 features systemd now assumes. Not addressable until `/init` is observable.
+
+---
+
+# ROOT CAUSE — cycle 4 (2026-10-15): the systemd "Failed to spawn executor: ENOSYS"
+
+**Status: identified in the exact sources of the *installed* versions, consistent
+with every line of the A12 hardware log. Hardware confirmation of the individual
+syscalls is prepared (A13 probe).**
+
+## The observed failure (A12, hardware)
+```
+[14.343739] systemd[1]: dev-mqueue.mount: Failed to spawn executor: Function not implemented
+[14.350702] systemd[1]: systemd-journald.service: Failed to spawn executor: Function not implemented
+[14.372524] systemd[1]: nuxel-firstlight.service: Failed to spawn executor: Function not implemented
+<14.376912> systemd[1]: Too many messages being logged to kmsg, ignoring
+```
+Every unit spawn fails, with the same errno; PID 1 itself, its generators and
+its own in-memory target graph are all fine (`Reached target sysinit.target/basic.target`,
+`Queued start job for multi-user.target`). So the incompatibility is **not** in
+PID 1's startup, the unit files, the cgroup tree or the rootfs: it is inside
+systemd's single process-spawning function.
+
+## The exact call chain (source-level, version-exact)
+Fedora 43 rootfs: `systemd 258.11-1.fc43`, `glibc 2.42` (`/usr/lib64/libc.so.6`).
+
+1. `src/core/execute.c:exec_spawn()` → `posix_spawn_wrapper()` (execute.c:580).
+2. `src/basic/process-util.c:posix_spawn_wrapper()` compiles **the `HAVE_PIDFD_SPAWN`
+   branch** because glibc ≥ 2.39 declares `pidfd_spawn()` (meson.build:590).
+   The branch calls **`pidfd_spawn()`** and never calls plain `posix_spawn()`.
+3. glibc 2.42 `sysdeps/unix/sysv/linux/spawni.c:__spawni()`:
+   ```c
+   bool use_pidfd = xflags & SPAWN_XFLAGS_RET_PIDFD;
+   /* ...without proper waitid support, pidfd_spawn can not be used... */
+   if (use_pidfd && !__clone_pidfd_supported ())
+     return ENOSYS;
+   ```
+4. `__clone_pidfd_supported()` (`sysdeps/unix/sysv/linux/clone-pidfd-support.c`)
+   probes **`waitid(P_PIDFD, ...)`** and treats anything but `EBADF` as
+   "unsupported". **`P_PIDFD` was added in Linux 5.4.** This kernel is
+   **4.14.253**, so the probe sees `EINVAL` ⇒ unsupported ⇒ **`pidfd_spawn()`
+   returns `ENOSYS` unconditionally**, before it ever reaches clone3.
+5. back in systemd: `ERRNO_IS_NOT_SUPPORTED(ENOSYS)` is true, and because
+   `cgtarget != NULL` the `POSIX_SPAWN_SETCGROUP` clause fires. It clears the
+   flag and **retries `pidfd_spawn()`** — which is *still* `pidfd_spawn()`
+   (glibc's `use_pidfd` is a property of the function, not of the attribute) and
+   therefore returns `ENOSYS` again.
+6. `if (r != 0) return -r;` ⇒ `execute.c` logs
+   `"Failed to spawn executor: %m"` ⇒ **`Failed to spawn executor: Function not
+   implemented`**, exactly as captured.
+
+**The comment in that fallback is wrong for this case**: it says the retry
+"disables POSIX_SPAWN_SETCGROUP, which is what redirects to clone3()". True for
+`posix_spawn()`, but with `HAVE_PIDFD_SPAWN` the retry is still `pidfd_spawn()`,
+which needs pidfd support *regardless of any attribute*. There is therefore no
+path in 258.11 from `HAVE_PIDFD_SPAWN` back to the plain `posix_spawn()`
+implementation — that is the defect.
+
+## Why it is *not* clone3 (verified against the same sources)
+Plain `posix_spawn()` works on this kernel: `spawni.c` calls `__clone3()`, and on
+`ENOSYS|EINVAL` it falls back to `__clone_internal_fallback()` → `clone()`
+(`clone3.c`), clearing clone3-only flags; with `POSIX_SPAWN_SETCGROUP` *not* set
+it does not take the "no fallback for POSIX_SPAWN_SETCGROUP" path. So the only
+missing kernel feature is `waitid(P_PIDFD)` (Linux 5.4), i.e. **pidfd support** —
+*not* `clone3` (5.3) and *not* `CLONE_INTO_CGROUP` (5.7).
+
+Corroboration from the same boot (A12): the parts of systemd that do **not** use
+`posix_spawn_wrapper` work on hardware — `systemd-gpt-auto-generator` really
+executed (PID 3450, `exynos-ufs ... ufshcd_ioctl` from that process), and systemd
+serialized its state (the `memfd`-backed serialization stream succeeded, since
+the failure is *after* `finish_serialization_file()`).
+
+## Upstream has already fixed this
+systemd `main` `posix_spawn_wrapper()` ends with the same three-step logic, with
+the comment *"pidfd_spawn unavailable (libc or kernel missing) — fall back to
+plain posix_spawn."* Cycle 4 backports exactly that behaviour to 258.11 (see
+PATCHES.md, `nuxel-0001-pidfd-spawn-fallback.patch`).
+
+## What this does **not** claim
+* It does not claim the whole Fedora 43 userspace is 4.14-compatible; it claims
+  one *specific, source-proven* defect and its minimal repair. The next blocker
+  (if any) can only be found by running the repaired stack (milestone: "a core
+  systemd service actually runs").
+* It does not depend on `CONFIG_DRM` (absent in this kernel: `# CONFIG_DRM is
+  not set`) — first light is an **fbdev** path (`/dev/fb0`), not DRM/KMS.
+
+
+---
+
+# ROOT CAUSE — cycle 4 FINAL: the ENOSYS is `pidfd_spawn()` → `waitid(P_PIDFD)`
+
+**Status: source-exact and independently reproducible. Hardware measurement is
+prepared in A13 (the probes are in the image).** Nothing here depends on Nuxel
+code; both sides are the *installed* versions.
+
+## The measurement A12 left behind
+```
+[14.343739] systemd[1]: dev-mqueue.mount: Failed to spawn executor: Function not implemented
+[14.350702] systemd[1]: systemd-journald.service: Failed to spawn executor: Function not implemented
+[14.372524] systemd[1]: nuxel-firstlight.service: Failed to spawn executor: Function not implemented
+```
+Every unit, every task type, one errno. PID 1 itself, its generators, its unit
+graph and its cgroup tree are all healthy. So the defect is inside the single
+process-spawning function.
+
+## The chain, with the exact source lines
+
+1. **systemd 258.11** — `src/core/execute.c:exec_spawn()` →
+   `src/basic/process-util.c:posix_spawn_wrapper()` (exported as
+   `posix_spawn_wrapper@@SD_SHARED` from `libsystemd-shared-258.11-1.fc43.so`;
+   `libsystemd-core-258.11-1.fc43.so` merely imports it
+   (`U posix_spawn_wrapper@SD_SHARED`), which is why one file is enough to fix).
+2. The `HAVE_PIDFD_SPAWN` branch is compiled because glibc ≥ 2.39 declares
+   `pidfd_spawn()`. It calls **`pidfd_spawn()`**, and on failure it clears
+   `POSIX_SPAWN_SETCGROUP` and calls **`pidfd_spawn()` again** — not
+   `posix_spawn()`. There is no path back to the working implementation.
+3. **glibc 2.42** — `sysdeps/unix/sysv/linux/spawni.c:__spawnix()`:
+   ```c
+   bool use_pidfd = xflags & SPAWN_XFLAGS_RET_PIDFD;
+   /* ... ENOSYS is returned because without proper waitid support, pidfd_spawn
+      can not be used proporly independently of its arguments. */
+   if (use_pidfd && !__clone_pidfd_supported ())
+     return ENOSYS;
+   ```
+4. `sysdeps/unix/sysv/linux/clone-pidfd-support.c:__clone_pidfd_supported()`
+   probes **`waitid(P_PIDFD, INT_MAX, NULL, WEXITED|WNOHANG)`** and returns
+   "supported" **only** if the result is `EBADF`:
+   ```c
+   int r = INTERNAL_SYSCALL_CALL (waitid, P_PIDFD, INT_MAX, NULL, WEXITED | WNOHANG);
+   state = r == -EBADF ? 1 : -1;
+   ```
+   `P_PIDFD` was added in **Linux 5.4**. This kernel is **4.14.253**, so the
+   syscall returns `EINVAL`, `state = -1`, and `pidfd_spawn()` returns `ENOSYS`
+   **before it ever reaches `clone3()`**.
+
+## Why it is *not* `clone3`, `CLONE_INTO_CGROUP` or cgroup v2
+Plain `posix_spawn()` works on this kernel: `spawni.c` calls `__clone3()` and, on
+`ENOSYS|EINVAL`, takes `__clone_internal_fallback()` → `clone()`
+(`clone3.c` clears the clone3-only flags). It only refuses when
+`POSIX_SPAWN_SETCGROUP` is set, which the fallback also clears. The *only* missing
+kernel feature on the failing path is `waitid(P_PIDFD)`.
+
+Corroboration from the same boot: `systemd-gpt-auto-generator` really executed
+(PID 3450), and systemd's memfd-backed serialization stream succeeded.
+
+## The minimal repair (implemented, not hypothetical)
+Upstream systemd's own later change — *"pidfd_spawn unavailable (libc or kernel
+missing) — fall back to plain posix_spawn."* — is backported onto
+`258.11-1.fc43`. The edit is a single, exact-anchor textual replacement in
+`src/basic/process-util.c` (`nuxel-pidfd-edit.py`), so no patch fuzz is involved.
+
+Disassembly of the rebuilt library proves the change is present: in the original,
+`posix_spawn_wrapper` had exactly one spawn call site (`pidfd_spawn@plt`); in the
+rebuilt one it has two:
+```
+24e008:  bl  77290 <pidfd_spawn@plt>
+24e07c:  bl  7a920 <posix_spawn@plt>     <- the fallback
+```
+`sha256 502507a7b6237a03cfcff49e389d2a38836916abdea40e36e5ba4653e9bc1234`
+(vs the installed original `3d0da20f68bdcdeac3ef900cfeaa990f4df3df3d7ab29d9591ce00649eb888a5`).
+
+## Why a glibc-side workaround is not viable
+Making `__clone_pidfd_supported()` return true would not help: `__spawnix()`
+then passes `CLONE_PIDFD` and `.parent_tid = &args.pidfd`, and since `clone3()`
+is `ENOSYS` on 4.14 the `clone()` fallback cannot produce a pidfd at all, so
+`pidfd_spawn()` could not satisfy its own contract. `pidfd_open()` (Linux 5.3) is
+also absent, so no shim can synthesise one. **The fallback belongs in systemd.**
+
+## What this does not claim
+It does not claim the whole Fedora 43 userspace is 4.14-compatible — only that
+this specific, source-proven defect is fixed. Whatever the *next* blocker is can
+only be found by running the repaired stack, which is what A13 does.

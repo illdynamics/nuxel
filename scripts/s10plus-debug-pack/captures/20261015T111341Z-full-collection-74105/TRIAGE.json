@@ -1,0 +1,312 @@
+{
+  "status": "EVIDENCE_CAPTURED_NEEDS_REVIEW",
+  "files_scanned": 34,
+  "previous_boot_candidate_files": 1,
+  "matches": [
+    {
+      "file": "host-ioreg-usb.txt",
+      "line": 11,
+      "category": "kernel_watchdog",
+      "priority": "urgent",
+      "source": "current_recovery_or_host",
+      "excerpt": "|   \"IOKitDiagnostics\" = {\"Instance allocation\"=11688920,\"Container allocation\"=6784106,\"Pageable allocation\"=1472397360,\"Classes\"={\"AppleJPEGWrapperControlV8\"=0,\"KDISecondaryEncoding\"=0,\"RTBuddyFirmwareBundle\"=0,\"ApplePMPThermal\"=0,\"IOSkywalkPacketPoller\"=0,\""
+    },
+    {
+      "file": "kernel/cmdline.txt",
+      "line": 1,
+      "category": "kernel_watchdog",
+      "priority": "urgent",
+      "source": "current_recovery_or_host",
+      "excerpt": "console=ram loglevel=4 sec_debug.pcb_offset=7346944 sec_debug.smd_offset=7348992 sec_debug.lpddr4_size=8 sec_debug.dram_info=01,06,03,8G sec_debug.pwrsrc_rs=0x0000000840010000 sec_debug.reset_reason=5 sec_reset.reset_reason=5 sec_debug.reset_rwc=0 bootmode=2 s"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 2188,
+      "category": "display",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<3>[    4.189315]  [0:    kworker/0:2: 1895] [SSP] send_panel_information, failed to send panel information"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 3518,
+      "category": "kernel_watchdog",
+      "priority": "urgent",
+      "source": "previous_boot",
+      "excerpt": "<6>[    0.868318]  [0:      swapper/0:    1] s3c2410-wdt 10050000.watchdog_cl0: watchdog cluster 0, inactive, reset disabled, irq disabled"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 3525,
+      "category": "kernel_watchdog",
+      "priority": "urgent",
+      "source": "previous_boot",
+      "excerpt": "<6>[    0.868627]  [0:      swapper/0:    1] s3c2410-wdt 10060000.watchdog_cl2: watchdog cluster 1, inactive, reset disabled, irq disabled"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 3987,
+      "category": "display",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<3>[    1.229551]  [0:      swapper/0:    1] exynos-mipi-phy dphy_m4s4_dsim0@0x19160000: failed to lookup PMU regmap, use PMU interface"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 3990,
+      "category": "display",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<3>[    1.229813]  [0:      swapper/0:    1] exynos-mipi-phy dphy_m4s0_dsim0@0x19161000: failed to lookup PMU regmap, use PMU interface"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 8697,
+      "category": "display",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<3>[    4.271768]  [7:  kworker/u16:1:   67] [SSP] send_panel_information, failed to send panel information"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 9254,
+      "category": "kernel_panic",
+      "priority": "urgent",
+      "source": "previous_boot",
+      "excerpt": "<0>[    9.396762] I[0:      swapper/0:    0] Kernel panic - not syncing: Fatal exception in interrupt"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 9257,
+      "category": "kernel_watchdog",
+      "priority": "urgent",
+      "source": "previous_boot",
+      "excerpt": "<0>[    9.396776] I[0:      swapper/0:    0] watchdog reset is started to 30secs"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 11613,
+      "category": "kernel_watchdog",
+      "priority": "urgent",
+      "source": "previous_boot",
+      "excerpt": "<6>[    0.852669]  [0:      swapper/0:    1] s3c2410-wdt 10050000.watchdog_cl0: watchdog cluster 0, inactive, reset disabled, irq disabled"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 11620,
+      "category": "kernel_watchdog",
+      "priority": "urgent",
+      "source": "previous_boot",
+      "excerpt": "<6>[    0.853203]  [0:      swapper/0:    1] s3c2410-wdt 10060000.watchdog_cl2: watchdog cluster 1, inactive, reset disabled, irq disAblet"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12085,
+      "category": "display",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<3>[    1.232931]  [0:      swapper/0:    1] exynos-mipi-phy dphy_m4s4_dsim0@0x19160000: failed to lookup PMU regmap, use PMU interface"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12088,
+      "category": "display",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<3>[    1.233151]  [0:      swapper/0:    1] exynos-mipi-phy dphy_m4s0_dsim0@0x19161000: failed to lookup PMU regmap, use PMU interface"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 15638,
+      "category": "kernel_watchdog",
+      "priority": "urgent",
+      "source": "previous_boot",
+      "excerpt": "<6>[    0.852598]  [0:      swapper/0:    1] s3c2410-wdt 10050000.watchdog_cl0: watchdog cluster 0, inactive, reset disabled, irq disabled"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 15645,
+      "category": "kernel_watchdog",
+      "priority": "urgent",
+      "source": "previous_boot",
+      "excerpt": "<6>[    0.853127]  [0:      swapper/0:    1] s3c2410-wdt 10060000.watchdog_cl2: watchdog cluster 1, inactive, reset disabled, irq disabled"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 16107,
+      "category": "display",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<3>[    1.218191]  [0:      swapper/0:    1] exynos-mipi-phy dphy_m4s4_dsim0@0x19160000: failed to lookup PMU regmap, use PMU interface"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 16110,
+      "category": "display",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<3>[    1.218410]  [0:      swapper/0:    1] exynos-mipi-phy dphy_m4s0_dsim0@0x19161000: failed to lookup PMU regmap, use PMU interface"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 20832,
+      "category": "display",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<3>[    4.687950]  [7:  kworker/u16:0:    5] [SSP] send_panel_information, failed to send panel information"
+    },
+    {
+      "file": "recovery/current-recovery-dmesg.txt",
+      "line": 546,
+      "category": "kernel_watchdog",
+      "priority": "urgent",
+      "source": "current_recovery_or_host",
+      "excerpt": "<6>[    0.838524]  [0:      swapper/0:    1] s3c2410-wdt 10050000.watchdog_cl0: watchdog cluster 0, inactive, reset disabled, irq disabled"
+    },
+    {
+      "file": "recovery/current-recovery-dmesg.txt",
+      "line": 553,
+      "category": "kernel_watchdog",
+      "priority": "urgent",
+      "source": "current_recovery_or_host",
+      "excerpt": "<6>[    0.839176]  [0:      swapper/0:    1] s3c2410-wdt 10060000.watchdog_cl2: watchdog cluster 1, inactive, reset disabled, irq disabled"
+    },
+    {
+      "file": "recovery/current-recovery-dmesg.txt",
+      "line": 1019,
+      "category": "display",
+      "priority": "medium",
+      "source": "current_recovery_or_host",
+      "excerpt": "<3>[    6.507604]  [0:      swapper/0:    1] exynos-mipi-phy dphy_m4s4_dsim0@0x19160000: failed to lookup PMU regmap, use PMU interface"
+    },
+    {
+      "file": "recovery/current-recovery-dmesg.txt",
+      "line": 1022,
+      "category": "display",
+      "priority": "medium",
+      "source": "current_recovery_or_host",
+      "excerpt": "<3>[    6.507828]  [0:      swapper/0:    1] exynos-mipi-phy dphy_m4s0_dsim0@0x19161000: failed to lookup PMU regmap, use PMU interface"
+    },
+    {
+      "file": "recovery/current-recovery-dmesg.txt",
+      "line": 5142,
+      "category": "selinux",
+      "priority": "medium",
+      "source": "current_recovery_or_host",
+      "excerpt": "<6>[    7.538310]  [7:           init:    1] SELinux: the above unknown classes and permissions will be denied"
+    },
+    {
+      "file": "recovery/current-recovery-dmesg.txt",
+      "line": 5324,
+      "category": "selinux",
+      "priority": "medium",
+      "source": "current_recovery_or_host",
+      "excerpt": "<11>[    7.743576]  [7:           init:    1] selinux: avc:  denied  { set } for property=twrp.crash_counter pid=4882 uid=0 gid=0 scontext=u:r:recovery:s0 tcontext=u:object_r:default_prop:s0 tclass=property_service permissive=1"
+    },
+    {
+      "file": "recovery/current-recovery-dmesg.txt",
+      "line": 5327,
+      "category": "display",
+      "priority": "medium",
+      "source": "current_recovery_or_host",
+      "excerpt": "<3>[    7.748058]  [4:       recovery: 4882] [SSP] send_panel_information, failed to send panel information"
+    },
+    {
+      "file": "recovery/current-recovery-dmesg.txt",
+      "line": 5632,
+      "category": "display",
+      "priority": "medium",
+      "source": "current_recovery_or_host",
+      "excerpt": "<3>[    7.913278]  [7:  kworker/u16:2:   72] set_panel_poc, failed to read dim partition"
+    },
+    {
+      "file": "recovery/current-recovery-dmesg.txt",
+      "line": 5633,
+      "category": "display",
+      "priority": "medium",
+      "source": "current_recovery_or_host",
+      "excerpt": "<3>[    7.913281]  [7:  kworker/u16:2:   72] panel_update_dim_type, failed to read gamma flash(ret -11)"
+    },
+    {
+      "file": "recovery/current-recovery-dmesg.txt",
+      "line": 5635,
+      "category": "display",
+      "priority": "medium",
+      "source": "current_recovery_or_host",
+      "excerpt": "<3>[    7.913286]  [7:  kworker/u16:2:   72] PANEL:ERR:panel_update_dim_type failed to check dim_flash exist"
+    },
+    {
+      "file": "recovery/current-recovery-dmesg.txt",
+      "line": 5639,
+      "category": "display",
+      "priority": "medium",
+      "source": "current_recovery_or_host",
+      "excerpt": "<3>[    7.913294]  [7:  kworker/u16:2:   72] set_panel_poc, failed to read MTP partition"
+    },
+    {
+      "file": "recovery/current-recovery-dmesg.txt",
+      "line": 5640,
+      "category": "display",
+      "priority": "medium",
+      "source": "current_recovery_or_host",
+      "excerpt": "<3>[    7.913297]  [7:  kworker/u16:2:   72] panel_update_dim_type, failed to read mtp flash(ret -11)"
+    },
+    {
+      "file": "recovery/current-recovery-dmesg.txt",
+      "line": 5642,
+      "category": "display",
+      "priority": "medium",
+      "source": "current_recovery_or_host",
+      "excerpt": "<3>[    7.913302]  [7:  kworker/u16:2:   72] PANEL:ERR:__panel_seq_dim_flash_res_init, failed to seqtbl(PANEL_DIM_FLASH_RES_INIT_SEQ)"
+    },
+    {
+      "file": "recovery/current-recovery-dmesg.txt",
+      "line": 5643,
+      "category": "display",
+      "priority": "medium",
+      "source": "current_recovery_or_host",
+      "excerpt": "<3>[    7.913304]  [7:  kworker/u16:2:   72] panel_update_dim_type, failed to resource init"
+    },
+    {
+      "file": "recovery/current-recovery-dmesg.txt",
+      "line": 5645,
+      "category": "display",
+      "priority": "medium",
+      "source": "current_recovery_or_host",
+      "excerpt": "<3>[    7.913310]  [7:  kworker/u16:2:   72] panel_update_dim_type, failed to copy resource dim_flash_mtp_offset (ret -22)"
+    },
+    {
+      "file": "recovery/current-recovery-dmesg.txt",
+      "line": 5666,
+      "category": "display",
+      "priority": "medium",
+      "source": "current_recovery_or_host",
+      "excerpt": "<3>[    7.913368]  [7:  kworker/u16:2:   72] panel_bl_set_brightness, failed to write seqtbl"
+    },
+    {
+      "file": "recovery/current-recovery-dmesg.txt",
+      "line": 5667,
+      "category": "display",
+      "priority": "medium",
+      "source": "current_recovery_or_host",
+      "excerpt": "<3>[    7.913371]  [7:  kworker/u16:2:   72] panel_update_brightness, failed to set_brightness (ret -5)"
+    },
+    {
+      "file": "recovery/current-recovery-dmesg.txt",
+      "line": 6130,
+      "category": "selinux",
+      "priority": "medium",
+      "source": "current_recovery_or_host",
+      "excerpt": "<11>[    9.992274]  [7:           init:    1] selinux: avc:  denied  { set } for property=sys.usb.config pid=4882 uid=0 gid=0 scontext=u:r:recovery:s0 tcontext=u:object_r:system_radio_prop:s0 tclass=property_service permissive=1"
+    },
+    {
+      "file": "recovery/current-recovery-dmesg.txt",
+      "line": 6217,
+      "category": "filesystem",
+      "priority": "high",
+      "source": "current_recovery_or_host",
+      "excerpt": "<3>[   12.971584]  [6:       recovery: 4882] EXT4-fs (sda31): errors=remount-ro for active namespaces on umount 0"
+    }
+  ],
+  "note": "Regex hits are hypotheses, not confirmed root causes. Current recovery logs do not describe the earlier Nuxel kernel."
+}

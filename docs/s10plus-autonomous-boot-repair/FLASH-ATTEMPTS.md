@@ -383,3 +383,136 @@ switching root -> /newroot
   4. `/sys/class/block` being empty and `/proc/device-tree` not existing need
      explanation (both are mountable but appear unpopulated), and the boot is still
      time-limited by the vendor `hard_reset_hook` / softdog.
+
+
+---
+
+# FLASH ATTEMPT A13 — 2026-10-15 (cycle 4)
+
+## Preconditions (all re-verified live before writing)
+| Check | Value |
+|---|---|
+| device | `R58M75KDB2X`, `Galaxy S10+`, `beyond2lte`, TWRP `3.7.0_9-2`, `slot=none` |
+| root ADB | yes (`uid=0(root) … context=u:r:su:s0`) |
+| partition map | `boot -> /dev/block/sda14` (57,671,680 B), `recovery -> /dev/block/sda15`, `userdata -> /dev/block/sda31` |
+| slot semantics | A-only, no `boot_a/boot_b`; `--boot-only` used, USERDATA untouched |
+| preflight | **PASS** (`05-preflight.sh`) — 50,604,032 B image into a 57,671,680 B partition |
+| BOOT backup | `backups/s10plus/20261015T110912Z-R58M75KDB2X` (pre-write content), plus the earlier `…110859Z` |
+| image integrity | `A13/boot.img` sha256 `bdc06dfe8a8cabe2de904e6224403741eb43fcd1d36eb491e699911f090df086` |
+
+## Write and readback
+```
+FLASHING BOOT: 50,604,032 bytes -> /dev/block/sda14
+  write command completed; doing mandatory full readback...
+VERIFIED BOOT: bdc06dfe8a8cabe2de904e6224403741eb43fcd1d36eb491e699911f090df086 (50,604,032 bytes)
+PASS: every written partition matches its local image by full SHA256 readback.
+```
+Write exit status 0, transferred bytes == expected, readback SHA-256 identical to
+the local artifact. **USERDATA (sda31) was never written; RECOVERY (sda15) was never
+written; no DTB/DTBO/VBMETA/modem/bootloader partition was written.**
+
+## What this candidate changes (BOOT partition only)
+1. `Image-A13` — the *same* kernel source/defconfig/DTB as A12, rebuilt only so
+   that the new initramfs is embedded (`CONFIG_INITRAMFS_SOURCE`).
+2. new `/init` (see PATCHES.md P-C4-2 … P-C4-5) — rw root, explicit identity gate,
+   signal-free watchdog, fresh `/proc`/`/sys`/`/dev`, probes, first light.
+3. `/opt/nuxel/libsystemd-shared-258.11-1.fc43.so` — the pidfd_spawn repair,
+   installed into the mounted rootfs at boot with the original kept as
+   `…so.nuxel-orig` (P-C4-1).
+
+## Boot result
+* `CANDIDATE=A13`
+* `boot.img sha256=bdc06dfe8a8cabe2de904e6224403741eb43fcd1d36eb491e699911f090df086`
+* `REBOOT_AT=2026-10-15T11:09:5xZ` (`adb reboot` issued right after the verified write)
+* `STATE=AWAITING_BOOT_RESULT`
+
+Per the standing TWRP = failed-boot agreement: if `R58M75KDB2X` is seen in
+recovery again after this reboot, the A13 Nuxel boot failed; capture
+`last_kmsg`/pstore immediately and continue.
+REBOOT_AT=2026-10-15T11:10:09Z
+
+## A13 boot result — FAILED (operator returned to TWRP)
+
+* `BOOT_RESULT=FAILED_USER_RETURNED_TO_TWRP`
+* `RECOVERY_ACCESS=RESTORED` at 2026-10-15T11:13:34Z (device seen in TWRP 3.4 min after the
+  11:10:09Z reboot; capture
+  `scripts/s10plus-debug-pack/captures/20261015T111341Z-full-collection-74105/`)
+* Write and readback were perfect (`bdc06dfe…`), so this is a boot failure, not a flash failure.
+
+### What the log proves
+| Observation | Evidence |
+|---|---|
+| the new initramfs ran | `NUXEL_MARKER INITRAMFS_EXECUTED` at t=2.12–2.16 s in three separate boot sessions |
+| proc/sysfs/devtmpfs mounts, hung_task tempering, softdog keeper | all logged, identical to A12 |
+| identity pin worked in 2 of 3 sessions | `identity pin: S-Boot cmdline reports exynos9820 -> DEVICE=s10plus` (lines 8032, 20154) |
+| the script then stops, every time, at the same place | `root override: forcing the s10plus USERDATA resolution (was '')` — and nothing after it |
+| why it stops | `force_s10plus_root()` waits **12 x 1 s** for `s10plus_userdata_device()`, which can never succeed because `/sys/class/block` is empty on this kernel |
+| why the attempt ended | the operator's force-reset: `hard_reset_hook : hrtimer_start` t=3.369 s, `kernel BUG at drivers/samsung/sec_hard_reset_hook.c:157!` t=9.369 s, `Kernel panic - not syncing: Fatal exception in interrupt` t=9.396 s |
+| the hook is key-driven, not spontaneous | `drivers/samsung/sec_hard_reset_hook.c`: `hard_reset_keys[] = { KEY_POWER, KEY_VOLUMEDOWN }` — the documented manual recovery combo |
+| **no probe, no first light, no handoff, no systemd** | there is no `NUXEL-SYSCALL`, `SPAWNPROBE`, `FIRSTLIGHT`, `ROOTFS_MOUNTED`, `ROOTFS_IDENTITY` or `switching root` line anywhere in the capture |
+
+So A13 never reached anything new. The A13 repair is untested — the boot died in a
+**pre-existing 12-second silent stall**, before the identity gate, before the
+probes, before first light and before the handoff. One session (the first) even
+took the generic path (`dispatch: DEVICE=''` → `generic probe selected '/dev/sda2'`)
+because the cmdline parse produced no device, which is the same class of defect the
+`/dev/sda31` identification in A14 now guards against.
+
+### Lesson recorded
+A phone that shows an unchanged screen for 12+ seconds reads as a dead phone, and
+the operator's recovery combo then kills a boot that may have been making
+progress. **User-visible output must come first, not last.**
+
+---
+
+# FLASH ATTEMPT A14 — 2026-10-15 (cycle 4 continuation)
+
+## What changed vs A13 (init script only — same kernel source, config and DTB)
+1. **First light moved to the earliest possible point** (`nuxel_first_light`, called
+   with the boot splash at ~2 s, immediately after devtmpfs is up) instead of just
+   before the handoff. The panel now shows the NUXEL pattern two seconds after
+   kernel entry.
+2. **The 12-second root-discovery stall is gone.** `force_s10plus_root()` probes
+   once, allows one second for the UFS scan, then uses the documented node. It also
+   reports `_t=1` so the existing message stays truthful.
+3. **Independent board identification**: if the cmdline parse yields no device but
+   `/dev/sda31` exists (only beyond2lte/beyond1lte have a 31st UFS partition), the
+   device is s10plus. This closes the A13 session-1 failure mode where the generic
+   probe selected `/dev/sda2`.
+4. The generic-probe refusal now also matches `androidboot.bootloader=G97*` and
+   promotes `DEVICE=s10plus` instead of merely clearing `ROOT_DEV`.
+5. Everything else is A13 unchanged: pidfd_spawn repair install, rw root, explicit
+   identity gate, syscall/spawn probes, Fedora-exec chroot probe, fresh
+   `/proc`/`/sys`/`/dev`, signal-free watchdog.
+
+## Artifacts
+| Artifact | sha256 |
+|---|---|
+| `A14/Image-A14` | `b04f808c4777901ccc38174a4c4e7f907b3a9433fa2129d1be641f049af0403b` |
+| `A14/initramfs.cpio` | `063af74dcdc6951a9ee4c937bdaba2c49713ee5d875497ad799c70e6dce7859f` |
+| `A14/boot.img` (50,604,032 B, gate PASS, slack 7,067,648 B) | `5aff1a109147d33eb017c30423c8ef3bb16d14217d509e829d65d5848d4b4009` |
+
+A13 (`bdc06dfe…`) and A12 (`68217cdd…`) are preserved untouched.
+A14 REBOOT_AT=2026-10-15T11:18:53Z
+
+## A14 boot observation (live)
+
+* `A14 REBOOT_AT=2026-10-15T11:18:53Z` (`adb reboot` from TWRP after the verified write)
+* `adb devices` stayed **empty** from 11:19:08Z onward: **5 minutes with no ADB and,
+  critically, no return to TWRP.** A13 came back to TWRP 3.4 minutes after its
+  reboot. A device that neither exposes ADB nor falls back to recovery is *not*
+  bootlooping, which is what A13 did.
+* The changed observable is exactly the one A14 targeted: first light is now
+  painted with the boot splash (~2 s) instead of immediately before the handoff,
+  and the 12-second root-discovery stall is gone.
+
+Two readings remain possible and only the operator's panel can separate them:
+1. **Nuxel is up.** Fedora systemd owns PID 1 (the watchdog exits silently in that
+   case, by design), there is no `adbd` in the Fedora rootfs, and the phone simply
+   sits there running — which is what a successful boot looks like on this device.
+2. The boot hung with an unchanged screen and has not been force-reset yet.
+
+`STATE=AWAITING_OPERATOR_OBSERVATION`; monitoring continues
+(`.scratch/s10plus-cycle4/a13/monitor/a14-adb-watch.log`). No further writes are
+issued while the phone is out of recovery. If the device reappears in TWRP this is
+recorded as a failed boot under the standing agreement and the capture follows.

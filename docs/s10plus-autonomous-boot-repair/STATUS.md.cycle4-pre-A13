@@ -1,0 +1,77 @@
+# STATUS — cycle 4 (2026-10-15)
+
+**Mission:** boot Nuxel (Fedora 43 aarch64) on Samsung Galaxy S10+ SM-G975F
+(`beyond2lte`), Exynos 9820 rev 26, bootloader G975FXXSEFUL1, TWRP 3.7.0_9-2,
+ADB serial R58M75KDB2X. Cycle-3 status is preserved at `STATUS.md.cycle3`.
+
+## Headline — cycle 4
+
+**A12 did far more than "start the rootfs handoff".** Re-read against the raw
+capture (`captures/20261015T100000Z-A12-postfail/last_kmsg.txt`, preserved
+untouched) the boot reached **Fedora systemd PID 1 on real hardware**, ran it as
+PID 1 inside the Fedora root, built its unit graph, reached `sysinit.target` and
+`basic.target` and queued `multi-user.target`. What fails is *only* service
+process creation — systemically, with one errno.
+
+1. **The A12 reset was ours, not Samsung's.** At t=31.971 s a process whose comm
+   is `init` (a pre-`switch_root` initramfs subshell) called
+   `reboot(RB_AUTOBOOT)`: `debug-snapshot: normal reboot starting`,
+   `sec_debug: set magic code (0x0)`. That is `NUXEL_BOOT_WATCHDOG=30`, armed at
+   t≈1.97 s; the disarm before `switch_root` (init.sh:766) did not take (the
+   initramfs ships no `kill` applet, and the line hides its error in
+   `2>/dev/null`). The old `hard_reset_hook` attribution is **withdrawn for A12**.
+2. **The exact ENOSYS is identified in the installed versions' sources.**
+   systemd 258.11 calls `pidfd_spawn()` (glibc ≥ 2.39 branch) and *retries the
+   same function*; glibc's `pidfd_spawn()` requires `waitid(P_PIDFD)` (Linux
+   **5.4**) and returns `ENOSYS` with no fallback on this 4.14.253 kernel.
+   Details in ROOT-CAUSE.md (cycle 4). This is not clone3, and not cgroup v2.
+3. **Upstream has already fixed it** (`fall back to plain posix_spawn`), so
+   cycle 4's repair is a backport of systemd's own fix, rebuilt for Fedora 43
+   aarch64 on the exact installed version 258.11-1.fc43.
+4. **A framebuffer exists**: `show_boot_splash()` reached its "no splash data"
+   branch, which requires `/dev/fb0`/`/dev/graphics/fb0` to be a char device.
+   The bootloader brings the S6E3HA9 panel up itself (`init_decon: xres 1440
+   yres 3040`, `system rev : 26`, `s3cfb.bootloaderfb=0xca000000`). First light
+   is an fbdev write. **`# CONFIG_DRM is not set`** — there is no KMS path, so
+   Phoc/Phosh cannot run on this kernel.
+
+## Milestones (evidence-backed, hardware-verified unless stated)
+
+| # | Milestone | State | Evidence |
+|---|---|---|---|
+| 1 | S-Boot starts the Nuxel kernel | **ACHIEVED** (A2) | S-Boot records + `Starting kernel...` |
+| 2 | Kernel runs, persistent logging works | **ACHIEVED** (A2) | pstore `linux_banner: Linux version 4.14.253` |
+| 3 | Initramfs unpacks | **ACHIEVED** (A7) | `NUXEL-KDIAG unpack verdict: message=(none) state=7` |
+| 4 | Nuxel `/init` executes | **ACHIEVED** (A8) | its own `nuxel-init:` lines in the ram console |
+| 5 | USERDATA discovered | **ACHIEVED** (A12) | `USERDATA_FALLBACK /dev/sda31` |
+| 6 | Fedora ext4 mounts | **ACHIEVED** (A12) | `EXT4-fs (sda31): mounted filesystem with ordered data mode` + `ROOTFS_MOUNTED /dev/sda31 ext4 ro` |
+| 7 | `switch_root` → Fedora PID 1 | **ACHIEVED** (A12) | `nuxel-init: switching root -> /newroot`, then `systemd[1]: systemd 258.11-1.fc43 running in system mode`, `Detected architecture arm64` |
+| 8 | Fedora systemd completes unit/target startup | **PARTIAL (A12)** | `Queued start job for default target multi-user.target`, `Reached target sysinit.target`, `Reached target basic.target` |
+| 9 | **A systemd service actually runs** | **NOT YET** | every spawn: `Failed to spawn executor: Function not implemented` |
+| 10 | Exact ENOSYS cause identified | **ACHIEVED (source-exact)**; hardware probe in A13 | ROOT-CAUSE.md cycle 4 |
+| 11 | Fedora child process launched directly | **NOT YET** | A13 executes a Fedora binary from the mounted rootfs |
+| 12 | Nuxel first-light executes | **NOT YET** | A13 runs the fbdev diagnostic from the initramfs |
+| 13 | Actual AMOLED output (Nuxel pattern) | **NOT YET** | A13: paint `/dev/fb0` with a distinctive pattern; needs an operator-visible confirmation |
+| 14 | Phoc starts | **BLOCKED on this kernel** | `# CONFIG_DRM is not set` → no KMS; needs a different kernel (Option C) |
+| 15 | Phosh / usable Nuxel phone UI | **BLOCKED on 14** | — |
+
+Milestones 1-7 are **hardware-proven**. 8 is partial and evidence-backed. 10 is
+source-exact but will be *measured* on hardware in A13 by a static probe that
+records each syscall's return value and errno. 11-13 are the A13 targets. 14-15
+are blocked by the kernel's lack of DRM, which is a *different* problem from the
+systemd spawn failure and is reported as such.
+
+## Attempt ledger (cycle 4)
+| ID | Change | Gate | Write/readback | Boot result |
+|---|---|---|---|---|
+| A12 | `force_s10plus_root()` override + node re-creation + `wc` applet | PASS | verified `68217cdd…` | **FAILED as a boot, but milestones 5-8**: USERDATA, ext4, switch_root, Fedora systemd PID 1 to `basic.target`; ended at t=31.971 s by **our own watchdog** |
+| A13 | (in progress) rebuilt systemd 258.11 with the pidfd_spawn fallback, bind-mounted over the rootfs; init.sh watchdog/kmsg/fbdev/identity fixes; hardware syscall probe | — | — | — |
+
+## Standing risks
+* `backups/s10plus/boot-original.img` is still a `DUMMY`; there is no real stock
+  BOOT backup. RECOVERY is untouched and backed up; every write so far is
+  BOOT-only and USERDATA has never been written.
+* The host data volume is at 97 % (29 GiB free) — keep >20 GiB free and verify
+  every artifact copied out of the VM (it has silently truncated files before).
+* A12 is the regression baseline and is never overwritten
+  (`sha256 68217cdd59d047108f9e28de6d008fb8360dc9a5654b338df0c7bad4c26054ed`).

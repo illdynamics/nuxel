@@ -1,114 +1,108 @@
-# STATUS — cycle 3 (2026-10-15)
+# STATUS — cycle 4 / candidate A13 (2026-10-15)
 
 **Mission:** boot Nuxel (Fedora 43 aarch64) on Samsung Galaxy S10+ SM-G975F
-(`beyond2lte`), Exynos 9820 rev 26, bootloader G975FXXSEFUL1, TWRP 3.7.0_9-2.
+(`beyond2lte`), Exynos 9820 rev 26, bootloader G975FXXSEFUL1, TWRP 3.7.0_9-2,
+ADB serial R58M75KDB2X. Earlier cycles: `STATUS.md.cycle3`,
+`STATUS.md.cycle4-pre-A13`.
 
-## Headline — cycle 3
-**Milestones 3 and 4 are achieved on hardware.** A7's instrumented kernel shows
-the built-in initramfs unpacks (`message=(none) state=7`) and that `/init` exists
-and is executed (`prepare_namespace()` never ran). It also *measures* the real
-reason cycles 1-2 failed: on a normal BOOT-partition boot S-Boot publishes
-`/chosen/linux,initrd-start = 0x89000000` with a length taken from our header but
-**never loads the payload** — the bytes there are kernel console text or zeros.
-And it exposes the reason nothing was ever visible: **`/dev/console` is ENODEV on
-this device** (no tty behind `console=ram`), so PID 1 has no stdio. A8 re-routes
-all evidence to `/dev/kmsg` (which works) and adds a 45 s watchdog.
+## Headline
 
-## Headline (cycle 2, superseded)
-Cycle 2 fixed the *container* and got the Nuxel kernel to execute on hardware
-(A2-A5 all produced pstore panic dumps naming `nuxel@nuxel-phosh`). The single
-remaining blocker is the **ramdisk handoff**: the kernel is handed the right
-*length* of memory that does not contain our initramfs
-(`rootfs image is not initramfs (junk in compressed archive)`).
+**A12 is the hardware baseline and it went much further than its original write-up:
+the Fedora rootfs mounted, `switch_root` executed Fedora PID 1, and systemd 258.11
+built its unit graph, reached `sysinit.target` and `basic.target` and queued
+`multi-user.target`.** The single remaining blocker is that *no service process
+could ever be created*: every unit failed with one identical errno,
+`Failed to spawn executor: Function not implemented`.
 
-Cycle 3 did three things:
+That errno is now identified **in the exact installed sources** and the repair is
+built, verified and packaged:
 
-1. **Removed the build regression.** `boot/s10plus/build-debug-candidate.sh`
-   defaulted to the hardware-falsified `nuxel-beyond2lte-boot-merged-fixed.img`
-   and piped it through `tools/s10plus/patch-boot-from-upload.py`, which emits a
-   **gzip kernel** and the **legacy header** (DTB size at offset 40). Both defects
-   are hardware-proven fatal (A1: seven silent loads). That path is gone: the
-   candidate builder is now `boot/s10plus/build-candidate.sh`, it is fail-closed,
-   and every build is checked by `tools/s10plus/verify-boot-image.py`.
-2. **Found a second, independent reason no boot ever produced initramfs
-   evidence.** `prepare_namespace()` is skipped when the initramfs supplies
-   `/init`, so the kernel never mounts devtmpfs and `/dev/console` must come from
-   the archive. Our initramfs shipped an *empty* `dev/` directory, and the panic
-   chain shows `Warning: unable to open an initial console.` — so even a
-   successful `populate_rootfs()` + `/init` would have produced **zero console
-   output**, and `grep -c nuxel-init` = 0 was never evidence that `/init` did not
-   run. A6 adds `dev/console` (c 5:1) and `dev/null` (c 1:3) to the archive and
-   emits the mission's `NUXEL_MARKER` lines from executing code.
-3. **A6 is built, gated and flashed.** Nuxel initramfs in the LZMA-alone
-   container shape of the one ramdisk this handset is observed to deliver *and*
-   unpack (TWRP: props `5d`, dict 8 MiB, unknown size => end-of-stream marker),
-   page-aligned so no S-Boot rounding rule can clip the stream.
+* `src/basic/process-util.c:posix_spawn_wrapper()` (systemd 258.11) calls
+  `pidfd_spawn()` because glibc >= 2.39 declares it (`HAVE_PIDFD_SPAWN`).
+* glibc 2.42 `sysdeps/unix/sysv/linux/spawni.c`:
+  `if (use_pidfd && !__clone_pidfd_supported ()) return ENOSYS;`
+* `__clone_pidfd_supported()` probes **`waitid(P_PIDFD, …)`** and treats anything
+  other than `EBADF` as unsupported. `P_PIDFD` is Linux **5.4**. This kernel is
+  **4.14.253**, so the probe sees `EINVAL` and `pidfd_spawn()` returns `ENOSYS`
+  *before any clone is attempted*.
+* 258.11's fallback retried `pidfd_spawn()` (still `pidfd_spawn()`) instead of
+  calling `posix_spawn()`, so there was no path back to the working
+  implementation. Upstream has since fixed exactly this.
 
-## Evidence captured this cycle (S-Boot + device-tree forensics)
-* The bootloader's own live device tree on the *booting* recovery session:
-  `linux,initrd-start = 0x89000000`, `linux,initrd-end = 0x89a66800` =>
-  the delivered initrd length is `0xa66800` = **round_up(header ramdisk_size,
-  2048)** for TWRP, and the ramdisk is placed at a **fixed** 0x89000000, i.e.
-  S-Boot ignores the header's `ramdisk_addr` (0x11000000) on both images.
-* 0x89000000 lies inside `/reserved-memory/sec_rdx_bootdev`
-  (`0x88000000..0x92d00000`), which this kernel deliberately does **not** reserve
-  ("Reserved memory: skip to reserve memory for node 'sec_rdx_bootdev'",
-  `CONFIG_SAMSUNG_PRODUCT_SHIP` + `no-ship`). The initrd itself is still
-  memblock-reserved in `arm64_memblock_init()`.
-* S-Boot log for our images: `[UFDT] BOOT IMG HDR V1.. FINDING DTB ENTRY` ->
-  `Little Find DTB Entry[0]: Rev:(S:0, E:255, X:0, D:26)` -> `DT Overlay
-  Complete!` -> `Updating device tree @0x8a000000` -> `Starting kernel...`.
-  **The appended DTB in our boot image IS used** (it is the UFDT base), so DTB
-  changes are effective experiments; `/chosen/linux,initrd-*` and `bootargs` are
-  overwritten by S-Boot, so changes to those are **not**.
-* `bootmode=` is present as `bootmode=2` only on the recovery boot; a normal
-  BOOT-partition boot has no `bootmode=` token, which is why the kernel then runs
-  Samsung's `SAR_RD` `mount_sar_ramdisk()` fallback (and fails it: 8 MB kmalloc).
+**The repair is a one-file backport of upstream's own fix**, rebuilt for aarch64
+from the exact installed SRPM `systemd-258.11-1.fc43` and shipped **inside the
+initramfs**, so only the BOOT partition is written and USERDATA is never touched.
 
-## Milestones
+Plain `posix_spawn()` is *not* affected: it uses `clone3()` with a `clone()`
+fallback and works on this kernel (`spawni.c:424`), which is why
+`systemd-gpt-auto-generator` really executed during A12 (PID 3450 in the log).
+
+## Milestones (evidence-backed; "hardware" = measured on the handset)
 
 | # | Milestone | State | Evidence |
 |---|---|---|---|
-| 1 | S-Boot starts Nuxel kernel | **ACHIEVED** | S-Boot records + `Starting kernel...` |
-| 2 | Kernel runs, persistent logging works | **ACHIEVED** | pstore `linux_banner: Linux version 4.14.253 (nuxel@nuxel-phosh)` |
-| 3 | External or embedded initramfs unpacks | **ACHIEVED (A7, hardware)** | instrumented kernel: built-in archive `unpack verdict: message=(none) state=7` (success), twice |
-| 4 | Nuxel `/init` executes | **ACHIEVED (A7, hardware)** | `prepare_namespace()` never ran (`RAMDISK:`=0, `SAR_RD`=0, `init group exit`=0) and `Failed to execute /init`=0 ⇒ `/init` existed and exec succeeded. Output was invisible because `/dev/console` is ENODEV on this handset; A8 re-routes evidence to `/dev/kmsg` |
-| 5 | USERDATA rootfs discovered | **ACHIEVED (A12, hardware)** | `USERDATA_FALLBACK /dev/sda31` after the PARTNAME probe failed; logged by executing code |
-| 6 | Fedora rootfs mounts | **ACHIEVED (A12, hardware)** | `EXT4-fs (sda31): mounted filesystem with ordered data mode` + `ROOTFS_MOUNTED` marker |
-| 7 | Fedora userspace process runs | **HANDOFF STARTED (A12)** | `ROOTFS_HANDOFF_STARTED` + `switching root -> /newroot`; nothing observable after `switch_root` yet |
-| 8 | Compatible init system starts | **UNTESTED, known risk** | Fedora 43 systemd 258.11 vs Linux 4.14.253 (see HYPOTHESES H-SYSTEMD-4.14) |
-| 9 | Display usable / first light | PARTIAL (drivers only) | A2 kernel dump has `decon0/2`, `dsim0-wq`, `130b0000.displa`, `panel-bl-thread` |
-| 10 | Phoc / Phosh / usable interface | NOT YET | greetd is configured as `agreety --cmd /bin/sh` |
+| 1 | S-Boot starts the Nuxel kernel | **ACHIEVED** (A2) | S-Boot records + `Starting kernel...` |
+| 2 | ARM64 kernel runs, persistent logging works | **ACHIEVED** (A2) | pstore `linux_banner: Linux version 4.14.253` |
+| 3 | Initramfs unpacks | **ACHIEVED** (A7) | `NUXEL-KDIAG unpack verdict: message=(none) state=7` |
+| 4 | Nuxel `/init` executes | **ACHIEVED** (A8) | its own `nuxel-init:` lines in the ram console |
+| 5 | USERDATA discovered | **ACHIEVED** (A12) | `USERDATA_FALLBACK /dev/sda31` |
+| 6 | Fedora ext4 mounts | **ACHIEVED** (A12) | `EXT4-fs (sda31): mounted filesystem with ordered data mode`; `ROOTFS_MOUNTED /dev/sda31 ext4 ro` |
+| 7 | `switch_root` → Fedora PID 1 | **ACHIEVED** (A12) | `switching root -> /newroot`, then `systemd[1]: systemd 258.11-1.fc43 running in system mode`, `Detected architecture arm64` |
+| 8 | systemd completes target startup | **PARTIAL (A12)** | `Queued start job for default target multi-user.target`; `Reached target sysinit.target`; `Reached target basic.target` |
+| 9 | Exact ENOSYS cause identified | **ACHIEVED (source-exact)** | `pidfd_spawn()` → glibc `__clone_pidfd_supported()` → `waitid(P_PIDFD)` = Linux 5.4; see ROOT-CAUSE.md cycle 4 final |
+| 10 | **A core systemd service actually runs** | **A13 TARGET** | every A12 spawn: `Failed to spawn executor: Function not implemented`; A13 installs the fallback |
+| 11 | Fedora binary executes on hardware | **A13 TARGET** | A13 chroots into the mounted Fedora root and runs `/bin/sh`, then the glibc spawn probe |
+| 12 | Kernel-primitive measurement on hardware | **A13 TARGET** | `NUXEL-SYSCALL …` table from the freestanding probe |
+| 13 | Nuxel first-light executes | **A13 TARGET** | `FIRSTLIGHT …` lines + `FIRSTLIGHT_FRAME_WRITTEN` marker |
+| 14 | Actual AMOLED output | **A13 TARGET, operator-visible** | `/dev/fb0` write; **needs the operator to confirm what the panel shows** |
+| 15 | Phoc starts | **BLOCKED on this kernel** | `# CONFIG_DRM is not set` → no KMS → needs a 5.4+ Exynos port (Option C) |
+| 16 | Phosh / usable Nuxel phone UI | **BLOCKED on 15** | — |
 
-## Attempt ledger (cycle 3)
+Milestones 1–8 and 9 are hardware- or source-proven. 10–14 are what A13 measures.
+
+## A12 post-mortem corrections (the previous write-up was wrong in two places)
+
+1. **A12's reset was ours, not Samsung's.** At t=31.971 s a process whose comm is
+   `init` called `reboot(RB_AUTOBOOT)` (`debug-snapshot: normal reboot starting`,
+   `sec_debug: set magic code (0x0)`), i.e. the `NUXEL_BOOT_WATCHDOG=30` armed at
+   t≈1.97 s. The disarm immediately before `switch_root` used the **`kill` applet,
+   which this toybox build does not have** (it has `killall`), and the error was
+   hidden by `2>/dev/null`. A13 replaces the signal with a dead-man's switch that
+   needs none. The `hard_reset_hook` attribution is withdrawn for A12.
+2. **The evidence channel was severed by our own `mount --move /dev`.** Anything
+   left on the old root loses `/dev/kmsg` *by path* after the move, which is why
+   the watchdog's message never appeared even though it ran. A13 mounts fresh
+   `/proc`, `/sys` and `/dev` inside the new root instead of moving ours away.
+
+## What A13 changes (BOOT partition only)
+
+| Piece | Why |
+|---|---|
+| patched `libsystemd-shared-258.11-1.fc43.so` installed into `ROOT_MNT/usr/lib64/systemd/` at boot (idempotent, original saved as `.nuxel-orig`) | the A13 systemd repair |
+| root mounted **rw** for s10plus; the vendor cmdline's bare `ro` is ignored | Fedora needs a writable `/var`, `/etc`, journal; the A12 `ro` came from S-Boot, not from us |
+| robust, loud identity gate (`ROOTFS_IDENTITY_RAW/OK/FAIL`) | A12 printed `<none>` and then handed off anyway, i.e. the gate reported nothing |
+| dead-man's-switch watchdog (procfs pinned with `cd`, PID-1 `comm` test) | A12's watchdog rebooted a running Fedora |
+| freestanding `NUXEL-SYSCALL` probe | measures the ENOSYS cause on hardware |
+| static + dynamic `NUXEL-SPAWN-PROBE` (glibc 2.42) | proves `waitid(P_PIDFD)`→EINVAL, `posix_spawn()`→OK, `pidfd_spawn()`→ENOSYS |
+| `chroot ROOT_MNT /bin/sh` probe | Fedora-binary execution, independent of systemd |
+| `nuxel-fb-phone` run immediately before the handoff | first light, with a named reason on every failure path |
+| `mount -t proc/sysfs/devtmpfs` into the new root instead of `mount --move` | keeps the initramfs evidence channel alive across the handoff |
+
+## Attempt ledger (cycle 4)
+
 | ID | Change | Gate | Write/readback | Boot result |
 |---|---|---|---|---|
-| A6 | ramdisk -> LZMA-alone (TWRP-shaped), page-aligned; +`dev/console`,`dev/null`; +`NUXEL_MARKER` instrumentation | PASS | verified `ba4f70c6…` | **FAILED** — S-Boot consumed the new size (`ramdisk size = 0x5c0000`) but the kernel still read junk **0.21 ms** after starting => container format refuted, payload not delivered |
-| A7 | **kernel rebuilt with a built-in initramfs (`CONFIG_INITRAMFS_SOURCE`) + `init/initramfs.c` delivery diagnostics (pr_alert)** | PASS | verified `f8587521…` | **FAILED** as a boot, but **milestones 3 + 4 reached**: built-in archive unpacked (`state=7`) and `/init` executed; boot then killed by Samsung's `hard_reset_hook` at 37/68 s and a `hung_task` panic at 242 s |
-| A8 | `/dev/kmsg` evidence channel + `/dev/kmsg` node + 45 s watchdog + early BOOT-slack heartbeat | PASS | verified `314d5e53…` | **FAILED** — but `/init`'s own output appeared in the ram console for the first time: **milestone 4 proven** |
-| A9 | arm64 DT path, no blocking `dmesg`, vendor-leash sysctls, softdog keeper, fallback device nodes | PASS | verified `10e12641…` | **FAILED** — devtmpfs mounts; identity still unknown, so the generic probe chose `/dev/sda2` |
-| A10 | logged mounts, cmdline identity, documented USERDATA fallback, rootfs os-release check | PASS | verified `83aa1ede…` | **FAILED** — identity detected but the dispatch still ran the generic probe |
-| A11 | deterministic identity pin + dispatch logging + generic-probe guard on exynos9820 | PASS | verified `be58121b…` | **FAILED** — proved `DEVICE='s10plus'` at the dispatch yet the generic branch ran |
-| A12 | `force_s10plus_root()` override + `mknod` re-creation of the fallback nodes (devtmpfs shadows them) + `wc` applet | PASS | verified `68217cdd…` | **FAILED as a boot, but reached milestones 5, 6 and the rootfs handoff** |
-
-## Verification states (kept strictly separate)
-* **Source-level fixes:** `boot/s10plus/build-candidate.sh` (new),
-  `boot/s10plus/build-debug-candidate.sh` (rewritten), `boot/s10plus/pack-boot-v1.sh`
-  (`--strict`), `boot/initramfs/init.sh` (markers + initrd logging),
-  `tools/s10plus/verify-boot-image.py` (new), `tools/s10plus/newc.py` (new),
-  `tools/s10plus/unpack-boot-image.py` (new),
-  `boot/s10plus/tests/test-boot-image-gates.sh` (new).
-* **Offline-verified artifacts:** 11/11 gate regression tests pass; A6 passes the
-  full gate, and its kernel + DTB are **byte-identical** to the hardware-proven
-  A5; its ramdisk decompresses to a 68-record cpio whose `/init` is byte-identical
-  to `boot/initramfs/init.sh`.
-* **Hardware-proven behaviour:** only milestones 1-2 above. Nothing about A6 is
-  hardware-proven yet.
+| A12 | `force_s10plus_root()` override + node re-creation + `wc` applet | PASS | verified `68217cdd…` | **milestones 5–8**: USERDATA, ext4, switch_root, Fedora systemd PID 1 to `basic.target`; ended at t=31.971 s by **our own watchdog** |
+| A13 | pidfd_spawn→posix_spawn backport installed at boot; rw root; fixed watchdog; syscall/spawn probes; Fedora-exec probe; first light | PASS | see FLASH-ATTEMPTS.md | *in progress* |
 
 ## Standing risks
-* `backups/s10plus/boot-original.img` is a `DUMMY` placeholder — there is still
-  **no** real stock BOOT backup. RECOVERY is untouched and backed up, so the
-  recovery path stays intact. All writes this cycle remain BOOT-only.
-* `/dev/console` is now in the initramfs, so the next failure will leave *actual
-  text* in the kernel ram console — the observability gap that made A2-A5
-  ambiguous is closed.
+* `backups/s10plus/boot-original.img` is still a `DUMMY`; there is no real stock
+  BOOT backup. RECOVERY is untouched and backed up; every write is BOOT-only and
+  USERDATA has never been written. A13 writes *into* the mounted Fedora rootfs
+  (one shared library + a marker), never to the raw USERDATA image.
+* Host data volume ~98 % (27 GiB free). Keep >20 GiB free; verify every artifact
+  copied out of the VM (it has silently truncated files before). Every artifact in
+  this cycle was hash-verified after copying.
+* A12 is the regression baseline and is never overwritten
+  (`sha256 68217cdd59d047108f9e28de6d008fb8360dc9a5654b338df0c7bad4c26054ed`,
+  re-verified after the A13 build).

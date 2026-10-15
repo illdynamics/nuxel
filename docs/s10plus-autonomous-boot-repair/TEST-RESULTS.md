@@ -97,3 +97,33 @@ hardware record rather than a description of it:
 | DTB | byte-identical to the hardware-proven A5 DTB (`bcdef39c…`) |
 | candidate sha256 | `314d5e532f3e0a25d324c87e844110b173db20306d42ca83d67c2684fa6f026a` |
 | preflight | **PREFLIGHT PASS** |
+
+
+---
+
+## T-A13-offline — A13 validation (2026-10-15, host + Podman containers, no device)
+
+| Check | Result |
+|---|---|
+| systemd repair built | `systemd-258.11-1.fc43` rpmbuild from the exact SRPM; `rpmbuild -bp` verified the fallback text is present in `src/basic/process-util.c` **before** the build |
+| repair present in the binary | `objdump`: `posix_spawn_wrapper` calls `pidfd_spawn@plt` **and** `posix_spawn@plt` (0x24e008 / 0x24e07c); the installed original has only the first |
+| repair scope | `libsystemd-core-258.11-1.fc43.so` imports `posix_spawn_wrapper@SD_SHARED` and contains no `pidfd_spawn` → **one** library replacement is sufficient |
+| syscall probe | `aarch64-linux-gnu-gcc -static -nostdlib -ffreestanding`, 67,136 B, no dynamic section, no undefined symbols |
+| spawn probes | built against `glibc-2.42-17.fc43` (the rootfs generation); `nm -D` shows `pidfd_spawn@GLIBC_2.39` + `posix_spawn@GLIBC_2.17` |
+| artifact transfer integrity | container → host: `libsystemd-shared-patched.so`, `nuxel-spawn-probe`, `nuxel-spawn-probe-static`, `Image-A13` all re-hashed on the host and **identical** (the host disk has truncated files before) |
+| kernel rebuild | incremental, 24 s; only `usr/initramfs_data*` regenerated; source tree, defconfig and DTB **unchanged**; `Image-A13` 47,929,352 B `aa28769a…` |
+| DTB | every candidate still appends `bcdef39cd37621948e9370f619022565bed2a84dc76a540d20f5165b43723671` (byte-identical to A5's rev-26 tree) |
+| `/init` inside the image | extracted from `A13/initramfs.cpio` and **byte-identical** to `boot/initramfs/init.sh` (46,044 B) |
+| payload inside the image | `opt/nuxel/{libsystemd-shared-258.11-1.fc43.so,nuxel-syscall-probe,nuxel-spawn-probe,nuxel-spawn-probe-static,nuxel-fb-phone}` present, modes `0100755`, sizes verified |
+| archive integrity | 77 records, `TRAILER!!!` at 6,742,224, logical end 6,742,348 |
+| release gate | **PASS** — 50,604,032 B, `partition_slack 7,067,648 B`, `header_field40 1`, `header_size 1648`, lzma-alone with EOS marker, dict 8 MiB |
+| gate regression suite | `test-boot-image-gates.sh` — **11 passed, 0 failed** |
+| init regression suite | `test-init-cmdline-independence.sh` — **8 passed, 0 failed** |
+| A12 regression baseline | `A12/boot.img` sha256 re-verified `68217cdd…`; `init.sh.bak-A12` sha256 `85dba795…`; the container keeps `/b/initramfs-A12.cpio` `2beeab5e…` |
+| offline-only claims | first light, Fedora execution and the ENOSYS measurement are **not** proven until A13 runs; they are listed as target, not achieved |
+
+### Environment notes
+* Host data volume ~98 % used (27 GiB free) — above the 20 GiB floor; every large
+  artifact was hash-verified after copying out of the VM.
+* The container build path used is `podman machine ssh` + `podman exec` inside the
+  VM (the stable path). The Podman API/gvproxy socket path was not used.

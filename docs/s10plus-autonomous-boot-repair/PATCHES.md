@@ -248,3 +248,96 @@ never loaded (head bytes = kernel console text). Documented in ROOT-CAUSE.md.
 | `A7/boot.img` | `f8587521655191b8927ab21f8126864472def6e8f802f17a85da2627b2cf98da` |
 | `A8/Image-A8` (adds `/dev/kmsg` initramfs + watchdog init) | `f887030acd5c394b97ccd154db7e6252adc21b457b957177fe56287202d8b876` |
 | `A8/boot.img` | `314d5e532f3e0a25d324c87e844110b173db20306d42ca83d67c2684fa6f026a` |
+
+
+---
+
+# PATCHES — cycle 4 (A13)
+
+## P-C4-1 — systemd 258.11: fall back to plain `posix_spawn()` when `pidfd_spawn()` is unavailable
+
+* **File:** `src/basic/process-util.c` in `systemd-258.11-1.fc43.src.rpm`
+* **Applied by:** `.scratch/s10plus-cycle4/a13/nuxel-pidfd-edit.py`, invoked from
+  `%prep` immediately after `%autosetup` (an exact textual replacement, **not** a
+  context patch — a `--fuzz=0` context patch was attempted first and correctly
+  refused; the deterministic edit removes that failure mode).
+* **Change:** when `pidfd_spawn()` returns a not-supported errno, call plain
+  `posix_spawn()`, register the child with `pidref_set_pid()` and return `0` so the
+  caller attaches it to its cgroup (upstream's own behaviour). Previously the same
+  `pidfd_spawn()` was retried and the ENOSYS propagated.
+* **Delivered as:** `/usr/lib64/systemd/libsystemd-shared-258.11-1.fc43.so`
+  `sha256 502507a7b6237a03cfcff49e389d2a38836916abdea40e36e5ba4653e9bc1234`,
+  *inside the initramfs*, installed by A13's init script into
+  `${ROOT_MNT}/usr/lib64/systemd/` (original kept as `…so.nuxel-orig`). Only the
+  BOOT partition and that one file inside the mounted rootfs are written.
+* **Verified:** disassembly shows two spawn call sites in `posix_spawn_wrapper`
+  where the original had one; `nm -D` on the original confirms
+  `posix_spawn_wrapper@@SD_SHARED` is defined there and only imported by
+  `libsystemd-core`, so no second library needs replacing.
+
+## P-C4-2 — initramfs `init.sh`: watchdog replaced by a signal-free dead-man's switch
+
+* **Files:** `boot/initramfs/init.sh` (A12 baseline preserved as
+  `init.sh.bak-A12`, `sha256 85dba795…`), applied by
+  `.scratch/s10plus-cycle4/a13/edit-init.py`.
+* **Why:** the A12 disarm used the `kill` applet, which this toybox build does not
+  have, so the watchdog force-rebooted a *running* Fedora 30 s after
+  `switch_root`.
+* **How:** the watchdog `cd`s into the procfs (a cwd survives every mount being
+  moved away, a path does not), sleeps, then reads `/proc/1/comm` relatively. It
+  reboots **only** while PID 1 is still the initramfs shell; once systemd owns PID
+  1 it exits silently. No signals, no binaries that may have been deleted by
+  `switch_root`.
+
+## P-C4-3 — initramfs `init.sh`: rw root for s10plus, vendor `ro` ignored
+
+* **Why:** A12 mounted `ROOT_MOUNT_MODE=ro` purely because S-Boot's own command
+  line carries a bare `ro`; the pattern `*' ro '*` matched the *vendor* cmdline,
+  which is not ours to control and describes Android recovery semantics.
+* **How:** only an explicit `nuxel.rootmode=ro|rw` can now select read-only.
+  Before a rw mount the script still runs `e2fsck -p`; the USERDATA filesystem is
+  `Filesystem state: clean` (`dumpe2fs -h`) and was only ever mounted `ro` in A12,
+  so no dirty-filesystem remount is being attempted.
+
+## P-C4-4 — initramfs `init.sh`: identity gate made explicit and loud
+
+* **Why:** A12 printed `rootfs os-release: <none>` and then handed off anyway —
+  neither the success branch nor the failure branch produced a line, so the gate
+  reported nothing at all.
+* **How:** the file is chosen by name (`usr/lib/os-release`, then
+  `etc/os-release`), its content is logged verbatim in
+  `ROOTFS_IDENTITY_RAW file=… text=…`, and each outcome emits a distinct marker
+  (`ROOTFS_IDENTITY_OK` / `ROOTFS_IDENTITY_FAIL`). A negative is recorded loudly
+  and does **not** stop the boot, because this exact rootfs image is offline-
+  verified Fedora/Nuxel and a gate bug must not be able to block the mission.
+
+## P-C4-5 — initramfs `init.sh`: fresh `/proc`, `/sys`, `/dev` instead of `mount --move`
+
+* **Why:** moving our devtmpfs into the new root detached `/dev/kmsg` by path for
+  everything still on the old root — that is how A12's watchdog message vanished.
+* **How:** `mount -t proc|sysfs|devtmpfs` into `${ROOT_MNT}` with the old
+  `mount --move` kept only as a fallback. The initramfs evidence channel survives
+  the handoff.
+
+## P-C4-6 — new probes run on the handset
+
+* `tools/s10plus/nuxel-syscall-probe.c` (freestanding aarch64, raw syscalls) —
+  writes a `NUXEL-SYSCALL <name> ret=… errno=…` table for `waitid(P_PIDFD)`,
+  `waitid(P_PID)`, `clone3`, `pidfd_open`, `clone(CLONE_PIDFD)`,
+  `clone(SIGCHLD)+execve(/bin/sh)`, `fsopen`, `fspick`, `open_tree`, `memfd_create`.
+* `tools/s10plus/nuxel-spawn-probe.c` (glibc 2.42, static **and** dynamic) — calls
+  the same probe glibc uses, then `posix_spawn()` and `pidfd_spawn()`, printing
+  each return value and errno.
+* Both are measurement only; neither is on the boot-critical path.
+
+## Artifacts produced this cycle
+| Artifact | sha256 |
+|---|---|
+| `A13/Image-A13` (kernel, same source/config as A12, new embedded initramfs) | `aa28769a95303ce42e79ecc212936418f27a5b68a6631ee8f0b95abac7871bd7` |
+| `A13/initramfs.cpio` | `f1333d79e403dcd0ad832db6eb6af1184b566eb42913b25b69e7a30ef498bc96` |
+| `A13/boot.img` | `bdc06dfe8a8cabe2de904e6224403741eb43fcd1d36eb491e699911f090df086` |
+| patched `libsystemd-shared-258.11-1.fc43.so` | `502507a7b6237a03cfcff49e389d2a38836916abdea40e36e5ba4653e9bc1234` |
+| `nuxel-syscall-probe` | `c687148cd50f7bac…` (see `A13/` for the full digest) |
+| `nuxel-spawn-probe` | `5f72b673aaccf5a16e22808dd35717c0e1fa811377ab43c26002169d2f84836e` |
+| `nuxel-spawn-probe-static` | `6adbf30d631f30dc7f83ed6d2afd1971ce367105a7a24f93b1b7771dd4b9cabe` |
+| A12 baseline `boot.img` (unchanged, re-verified) | `68217cdd59d047108f9e28de6d008fb8360dc9a5654b338df0c7bad4c26054ed` |

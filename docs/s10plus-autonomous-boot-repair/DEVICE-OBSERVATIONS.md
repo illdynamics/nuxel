@@ -131,3 +131,60 @@ actions (button presses) are never claimed unless a tool result shows them.
 * Interpretation recorded in ROOT-CAUSE.md / HYPOTHESES.md: the ramdisk's contents
   are not at the address the kernel reads on the normal BOOT path. The bootloader
   advertises the initrd (length derived from our header) without populating it.
+
+
+---
+
+# DEVICE-OBSERVATIONS — cycle 4 addendum (from the A12 capture, 2026-10-15)
+
+## 1. A12's reboot was triggered by *our* watchdog, not by Samsung
+Session 3 (kernel `4.14.253 #6`), lines 6263–6275 of the session region:
+```
+[   31.971401]  [6:           init: 3466] debug-snapshot: reboot_notifier_list -> dhd_reboot_callback call +
+[   31.971417]  [6:           init: 3466] debug-snapshot: normal reboot starting
+[   31.971424]  [6:           init: 3466] sec_debug: set magic code (0x0)
+```
+`comm = init`, PID 3466 = the forked watchdog subshell (`NUXEL_BOOT_WATCHDOG=30`
+armed at t≈1.971 s → 31.971 s). `sec_debug: set magic code (0x0)` (a *normal
+reboot*) rather than a panic magic confirms a userspace `reboot(2)`.
+
+**Why the disarm failed:** the initramfs `bin/` has no `kill` applet — the
+initramfs toybox build provides `killall`, `chroot`, `sha256sum`, `setsid`,
+`timeout`, `unshare`, `nsenter`, but **not `kill`** (verified with `strings` on
+`x/toybox-a12`). `[ -n "${NUXEL_WATCHDOG_PID:-}" ] && kill … 2>/dev/null` was a
+silent no-op, so the watchdog outlived `switch_root` — `switch_root` only
+`chroot()`s PID 1; other processes keep running.
+
+**Why its message was lost:** the `mount --move /sys|proc|dev` loop moved the
+devtmpfs out of the old root, so `/dev/kmsg` stopped resolving *by path* for
+anything still on the old root. The watchdog's `nuxel_say` had no working channel
+left — which is exactly why `grep -c WATCHDOG` is 0 despite the reboot happening
+on schedule.
+
+## 2. There is a working framebuffer
+`show_boot_splash()` reached its `no splash data — showing navy boot screen`
+branch, which is only reachable **after** the `for fb in /dev/fb0
+/dev/graphics/fb0; do [ -c "$fb" ]` loop found a character device. So `/dev/fb0`
+(or `/dev/graphics/fb0`) exists at t≈1.96 s. Consistent with the kernel's own
+`decon_event_log_setup`, `s3cfb.bootloaderfb=0xca000000`, `lcdtype=10555411` and
+the panel driver (`s6e3ha9`, `system rev : 26`, `PANEL:INFO:init_decon:xres 1440
+yres 3040`).
+
+The absence of `s3cfb`/`decon` *info* lines from the log is expected, not a
+negative result: the vendor cmdline sets `loglevel=4`, so KERN_INFO(6) never
+reaches the ram console.
+
+## 3. What systemd did before it failed
+* `Unable to determine whether tmpfs supports 'usrquota' mount option, assuming
+  not: Function not implemented` — the **fsopen family** (Linux 5.2) is absent;
+  systemd degrades gracefully.
+* `Attaching device control BPF program to cgroup … failed: Argument list too
+  long` then `Proceeding WITHOUT applying ACL (all devices will be accessible)!` —
+  graceful degradation, not the blocker.
+* `/sys/fs/cgroup/system.slice/…` paths are in use, so a **cgroup2 (unified)**
+  hierarchy was up.
+* `systemd-gpt-auto-generator` **really executed** (PID 3450, `exynos-ufs … ufshcd_ioctl`
+  from that process). This is important evidence: the parts of systemd that do not
+  go through `posix_spawn_wrapper()` worked fine on this kernel.
+* `SELinux: Could not open policy file <= /etc/selinux/targeted/policy/policy.35`
+  — no policy installed, so SELinux is not enforcing.
