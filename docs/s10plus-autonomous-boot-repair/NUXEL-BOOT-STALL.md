@@ -1,4 +1,20 @@
-# NUXEL — WHY THE PENGUIN NEVER BECOMES A PHONE UI (A23/A24, PROVEN ON HARDWARE)
+# NUXEL-BOOT-STALL
+
+> **RESOLVED in A26 (2026-10-15).** The stall recorded below is fixed; the full
+> measurement and the fix are in `A26-SYSTEMD-BOOT-GRAPH-FIX.md`.
+>
+> Short version: `systemd-tmpfiles-setup-dev-early.service` (oneshot,
+> `TimeoutStartUSec=infinity`, `Before=sysinit.target`) blocked the whole
+> transaction on a varlink userdb lookup for the `audio` group. It could never be
+> answered because `systemd-userdbd` cannot start on this 4.14 kernel
+> (`Failed to watch child: Function not implemented` = ENOSYS; systemd 258 needs
+> `pidfd`). A second instance of the same ENOSYS killed `dbus-broker-launch`, and
+> a third made `systemd-udevd` fork 17,723 workers in 50 s.
+>
+> `systemctl is-system-running` is now `running` with 0 failed units, and
+> `nuxel-ui.service` starts by itself. Persisted in
+> `tools/s10plus/a26/nuxel-rootfs-fixes.sh`.
+
 
 ```
 FINDING      = the Fedora userspace on this image NEVER finishes booting

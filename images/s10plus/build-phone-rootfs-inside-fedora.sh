@@ -72,6 +72,15 @@ STATUS
 # No proprietary vendor blobs are silently invented. They require a
 # legitimate device-specific source and matching Samsung kernel modules.
 [[ ! -e "$STAGE/etc/nuxel/device/g7power" ]] || { echo 'ERROR: g7power overlay included' >&2; exit 1; }
+# --- A26: Fedora-on-Linux-4.14 compatibility repairs -------------------------
+# Without these the Fedora systemd boot graph NEVER completes on the Exynos 9820
+# (measured live; see docs/s10plus-autonomous-boot-repair/A26-SYSTEMD-BOOT-GRAPH-FIX.md):
+#   * userdbd/dbus-broker cannot run (sd-event child watching is ENOSYS on 4.14)
+#   * nsswitch's "systemd" module turns every user/group lookup into a varlink
+#     call that hangs forever when userdbd is absent
+#   * systemd-udevd cannot register workers, so it forks unboundedly
+# Applied to the STAGING tree, so the shipped image needs no live fix.
+bash /nuxel/tools/s10plus/a26/nuxel-rootfs-fixes.sh --root "$STAGE"
 python3 /nuxel/tools/s10plus/verify-fedora-phone-rootfs.py --staging "$STAGE"
 # Disk size must fit installed runtime before building; fail rather than truncate.
 USED_KB="$(du -sk "$STAGE" | awk '{print $1}')"
