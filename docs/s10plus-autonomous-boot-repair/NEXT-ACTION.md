@@ -1,66 +1,58 @@
-# NEXT-ACTION — cycle 6, candidate A16 (2026-10-15)
+# NEXT-ACTION — cycle 7, candidate A17 (2026-10-15)
 
-## Where the boot stands
+## State
 
-A15 proved the boot chain is healthy for 1892 s with no software reset. A16 is on
-the device now and targets the *only* thing between us and the penguin: getting a
-frame onto the AMOLED and proving it from logs.
+`STATE=AWAITING_BOOT_RESULT`
+`FLASHED=2026-10-15T15:07:35Z` (BOOT only, readback-verified sha256 `911a72e9…`)
+`PERMANENT AGREEMENT: if the operator has returned the phone to TWRP, this attempt
+FAILED — capture the new evidence and continue. No further confirmation is
+needed.`
 
-## Reading the A16 result
+## 1. Read the A17 result
 
-Everything lands in `/proc/last_kmsg` from TWRP. Look for, in order:
+**Preferred (new):** if the Mac shows `/dev/cu.usbmodem*`, the live console is up:
 
-1. `FB_NODE /dev/fb0 is a character device`, the `FB_SYSFS /sys/class/graphics/fb0/…`
-   block, or `NUXEL_FB_UNAVAILABLE no /dev/fb0`.
-2. `NUXEL_FB_INFO:` + one `  field=value` line per geometry field. **Record
-   `smem_start`, `smem_len`, `stride`, `yres_virtual` verbatim.**
-3. `NUXEL_FB_MAPPED_BYTES`, `NUXEL_FB_BUFFERS_PAINTED`, `NUXEL_FB_READBACK_px0`,
-   `NUXEL_FB_READBACK_center`.
-4. `NUXEL_FB_UNBLANK_rc`, `NUXEL_FB_ACTIVATE_rc`, `NUXEL_FB_PAN_rc`.
-5. `NUXEL_FB_ANIM frame=1..11`, `NUXEL_FB_ANIM_DONE frames=12`,
-   `NUXEL_MARKER FIRSTLIGHT_ANIMATION_DONE`, `NUXEL_FB_DRAW_SUCCESS`.
-6. `NUXEL_FB_HOLD_START` and periodic `NUXEL_FB_HOLD frame=N`.
-7. `NUXEL_MARKER CGROUP2_MOUNTED`, `ROOTFS_HANDOFF_STARTED`, then `systemd[1]:` lines
-   and the absence of any reboot request.
+```sh
+ls /dev/cu.usbmodem*
+screen /dev/cu.usbmodemXXXX 115200
+```
+Then, on the phone: `systemctl is-system-running`, `systemctl --failed`,
+`journalctl -b -p err | tail -50`, `cat /var/lib/nuxel/boot-stage`.
 
-### Decision table
+A monitor is already running and logging to
+`scripts/s10plus-debug-pack/captures/20261015T150726Z-A17-live-run/`
+(`usb-console.log`, `usb-watch.log`).
 
-| Observation | Conclusion | Next step |
+**Fallback (TWRP):** read `/proc/last_kmsg` and `<rootfs>/nuxel-boot-diag.log`,
+and look for, in order:
+
+1. `SYSTEMD_LIB_VERIFIED_PRESENT` or `SYSTEMD_LIB_INSTALLED_VERIFIED` (+ the
+   `NUXEL-VERIFY sha256 … machine=183` lines that prove it).
+2. `CGROUP2_MOUNT_OK` then `CGROUP2_VERIFIED controllers='…'` with a non-empty
+   list, and `CGROUP2_PROC_MOUNTS '… cgroup2 …'`.
+3. `LIVE_CONSOLE_STARTED` and the `nuxel-console: …` lines (UDC name, bind result,
+   `ttyGS0 ready`, shell pid).
+4. `BOOT_STAGE_SYSTEM_STARTING`, `ANIMATION_HOLD_PID=<pid>`.
+5. **count of `Failed to spawn executor`** — must be 0.
+6. `Started systemd-udevd.service`, `Started dbus-broker.service`,
+   `Started systemd-journald.service`, `Started systemd-logind.service`.
+7. any `kernel BUG` / `sec_reboot` / `hard_reset_hook` (operator reset only).
+
+## 2. Decision table
+
+| Observation | Conclusion | Next step (A18) |
 |---|---|---|
-| Panel shows NUXEL + spinning penguin | Milestone 14/17 achieved | hold the frame, then Phosh work; verify with the operator which frame was seen |
-| Panel black, `NUXEL_FB_DRAW_SUCCESS` present, ioctl rcs all 0 | The fbdev memory is **not** the DECON scanout (H-C6-F) | instrument `decon_initial_display`'s window address and the DT `memory-region`; do NOT write a guessed physical address |
-| Panel black, `NUXEL_FB_UNAVAILABLE` | no /dev/fb0 in the initramfs (H-C6-C variant) | find which driver registers fb0 and when; the DECON fb registers at t≈2.034 s so the initramfs must open it later or use `/dev/graphics/fb0` |
-| Panel black, `NUXEL_FB_UNSUPPORTED_PIXEL_FORMAT` / `SIZE_MISMATCH` | wrong format/geometry assumption | fix the painter to the measured geometry |
-| A different `decon_enable`/FRAME_DONE still absent while rcs are 0 | the commit is accepted by the fbdev but the DECON window is not enabled | inspect `decon_initial_display` / the bootloader's window state |
+| Penguins + 0 spawn failures + udevd/dbus/journald active + USB console alive | **Fedora service execution PROVEN** | move to the phone-UI phase: fbdev-native UI (Path B) + input enumeration |
+| 0 spawn failures but services still fail at CGROUP | cgroup fix incomplete | inspect `/proc/self/cgroup`, `cgroup.subtree_control`, `cgroup.kill` live from the console; check `cgroup_no_v1` need on 4.14 |
+| `Failed to spawn executor` still present | third spawn-path incompatibility | from the live shell, run `strace -f` on a `systemctl start` of a trivial unit and/or `sd-executor --deserialize` by hand |
+| No USB device, `LIVE_CONSOLE_STARTED` present, `BIND FAILED` logged | UDC not in device mode | A18: bind the gadget immediately after the devtmpfs mount; try `CONFIG_USB_CONFIGFS_RNDIS` (kernel has it) or nudge the role switch |
+| No `LIVE_CONSOLE_STARTED`, boot ends before it | boot regressed earlier | compare against A16 milestone list; the last `nuxel-init:` line names the stage |
+| Penguins, no reset, services work, but no UI | expected intermediate state | implement the fbdev-native Nuxel phone UI (Path B, PHONE-UI-HANDOFF.md §3) |
 
-## Operator agreement (unchanged)
+## 3. Standing constraints
 
-`BOOT_RESULT=FAILED_USER_RETURNED_TO_TWRP` + `RECOVERY_ACCESS=RESTORED` when the
-handset comes back to TWRP after a pending test; then capture `last_kmsg` + pstore
-into `captures/<stamp>-A16-postfail/`, compare with A15 and continue. Do not repeat
-an identical candidate.
-
-## Priority-2 (parallel, offline-capable, do NOT flash the rootfs yet)
-
-Resolve the systemd ENOSYS contradiction (RC-6.3 / H-C6-G):
-
-1. Read-only USERDATA readback of the first ~64 MiB (contains the superblock and
-   the systemd library inode region if it is early) or of the specific extents of
-   `usr/lib64/systemd/libsystemd-shared-258.11-1.fc43.so`, then compare with
-   `502507a7b6237a03cfcff49e389d2a38836916abdea40e36e5ba4653e9bc1234`.
-2. Confirm *which* library systemd 258 actually loads (RPATH / `ldd` on the device
-   is impossible; instead check `systemd`'s ELF `.dynamic` for `NEEDED`/`RPATH`
-   locally and compare with the rootfs layout).
-3. Read `src/basic/errno-util.h` in the 258.11 tree and confirm
-   `ERRNO_IS_NOT_SUPPORTED()` covers the **positive** ENOSYS that glibc returns
-   from `pidfd_spawn()`; if it does not, that alone explains the unchanged failure
-   and is a one-line, source-exact fix.
-4. Only then decide between: (a) re-cut the rootfs image with the corrected
-   library (a separately versioned image, clean ext4 verification), or (b) the
-   systemd-independent first-light path that A16 already provides.
-
-## Standing risks
-
-* No stock BOOT backup exists; RECOVERY untouched; every write BOOT-only.
-* Host data volume is ~98 % used — every large artifact is hash-verified after
-  copying out of the VM and the podman API/gvproxy socket path stays unused.
+* Never overwrite RECOVERY. Never touch EFS/SEC_EFS, PIT, bootloader, radio, Knox.
+* A16 stays at `debug-candidates/A16/`, untouched, as the display regression test.
+* Prefer BOOT-only updates; a USERDATA write needs a stated reason and a
+  versioned image + ext4 integrity check.
+* No milestone from file presence and none from a userspace buffer write.

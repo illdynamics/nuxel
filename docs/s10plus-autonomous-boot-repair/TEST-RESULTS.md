@@ -193,3 +193,28 @@ hardware record rather than a description of it:
 
 Never attribute a `BUG`/hard-reset record to the boot until its position inside
 this map is established — that mistake is exactly what RC-6.1 corrects.
+
+---
+
+# CYCLE 7 — A17 offline validation (2026-10-15)
+
+No test below is a claim about visible output or hardware behaviour.
+
+| # | Test | Result |
+|---|---|---|
+| 1 | A16 ram-console session segmentation (4 boots in the ram buffer) | PASS — A16 = lines 5785–21122, t = 0→170.21 s |
+| 2 | A16 reset-cause classification | PASS — `kernel BUG at drivers/samsung/sec_hard_reset_hook.c:157`, `sec_reboot (0, panic)`, no watchdog/panic of Nuxel's own |
+| 3 | A16 library forensics: rootfs vs initramfs `libsystemd-shared` | IDENTICAL, `502507a7b6237a03cfcff49e389d2a38836916abdea40e36e5ba4653e9bc1234` |
+| 4 | A13 fallback really compiled in? (`aarch64-elf-objdump -T`) | YES — `posix_spawn@plt` + `pidref_set_pid@plt` present; absent in `.nuxel-orig` |
+| 5 | Offline spawn repro, A13/A16 library, 4.14-emulating stub | `posix_spawn_wrapper rc=-38 ENOSYS`, **child ran** (`childran.txt`) — reproduces A16 |
+| 6 | Offline spawn test, A17 library, same stub | `rc=0`, `pid` set, `fd=-9` (PID-only PidRef), child exited 0 — **fix confirmed** |
+| 7 | `nuxel-verify` behaviour (match/mismatch/elf/non-elf/missing) | 0/1/0/1/2 as specified |
+| 8 | A17 init.sh edit anchors | 6/6 applied; `sh -n` clean |
+| 9 | A17 cpio round-trip (`init`, 4 payloads) | byte-identical to sources |
+| 10 | `Image-A17` embedded initramfs == `A17/initramfs.cpio` | byte-identical, `3e0ca12e…` |
+| 11 | `build-candidate.sh` release gate | PASS (after the gate correctly rejected a duplicate `dev/console`/`dev/null` pack) |
+| 12 | BOOT write + full-partition SHA-256 readback | PASS, `911a72e9…` |
+
+## Hardware results
+
+Pending — `STATE=AWAITING_BOOT_RESULT` for A17 (`REBOOT_AT=2026-10-15T15:07:35Z`).

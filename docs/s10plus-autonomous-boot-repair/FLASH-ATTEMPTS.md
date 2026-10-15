@@ -695,3 +695,127 @@ wordmark and a spinning penguin that keeps moving for the rest of the boot — w
 **no reboot** (A15 already proved the reset is only the operator's hard-reset hook).
 **Falsifier:** screen stays black → the capture will now contain the exact
 `NUXEL_FB_*` verdict and the three ioctl return codes, which is itself new evidence.
+
+---
+
+# CYCLE 7 — candidate A17 (2026-10-15), BOOT-only
+
+## Problem under test
+
+A16 proved the display (first light + animated penguin observed on the panel) and
+proved systemd 258 runs as PID 1, but **not one service started**. Full forensics:
+`A16-POSTMORTEM.md`. Two independent root causes:
+
+1. `src/basic/pidref.c::pidref_set_pid()` returns `-ENOSYS` on this 4.14 kernel
+   because `pidfd_open()` is Linux 5.3+, even though the `posix_spawn()` fallback
+   it follows *did* start the process. PID1 therefore reports
+   `Failed to spawn executor: Function not implemented` for a running executor,
+   fails the unit and orphans it (udevd alive 161 s while "failed").
+2. The cgroup2 mount was stacked over by the later `mount -t sysfs sysfs /sys`, so
+   the final namespace had an empty `/sys/fs/cgroup` and no unit cgroup could be
+   created (`Failed at step CGROUP spawning <bin>: No such file or directory`).
+
+Plus two capability gaps: no live diagnostics (Phase 3) and no animation
+supervision/handoff primitive (Phase 4).
+
+## Change set (BOOT partition only; no rootfs, no USERDATA, no RECOVERY, no DTBO)
+
+* `src/basic/pidref.c` — degrade to a PID-only `PidRef` when `pidfd_open()` is
+  unsupported (new, the decisive fix).
+* `src/basic/process-util.c` — `posix_spawn()` fallback (A13, unchanged).
+  Both compiled into the single delivered object by
+  `.scratch/nx17/nuxel-systemd-edit.py` + `build-systemd4.sh` via `rpmbuild` from
+  `systemd-258.11-1.fc43.src.rpm`. See `SYSTEMD-COMPATIBILITY.md`.
+* `boot/initramfs/init.sh` — six anchored edits (`A17-INIT-1…5`), sha256
+  `74f453d287d38ad37c92e54677ed19cdae0c985ff03359663cba5beac4c4aa19`:
+  cgroup2 mounted after sysfs **and verified**; hash+ELF-verified atomic library
+  deployment with rollback and post-install re-verification; boot-stage records;
+  animation hold PID captured and published; live USB console launched.
+* `opt/nuxel/nuxel-verify` (new, static aarch64) — SHA-256 + ELF verifier so the
+  initramfs can check content without coreutils.
+* `opt/nuxel/nuxel-console` (new, static aarch64) — CDC-ACM gadget + live root
+  shell + kernel-log pump.
+
+## Candidate A17
+
+| Artifact | bytes | sha256 |
+|---|---|---|
+| `A17/initramfs.cpio` | 8,011,812 | `3e0ca12e8dccd134215a0964cf153054d7a6935ba54084bbdad00c780c5f0ea5` |
+| `A17/Image-A17` | 48,453,640 | `f9529cd739c6deb97025429a6f7dc79c21010fc79298ba708c011506ca37a745` |
+| `A17/boot.img` | 51,193,856 | `911a72e9fbe7f8b591e36fc72bac2d296f7a53b4ff2f9992eedea98e9c6582c2` |
+| `A17/libsystemd-shared-258.11-1.fc43.so` | 5,072,280 | `848149cf4b506aef00c0f777840c8e0b5306b65dcf1ae0a1b8c1a63057b4d981` |
+| `A17/nuxel-verify` | 625,504 | `aa798f51bf846dac81aa7687c3fe81c35cf5a4fef3b1cf782ea052b9cba5d803` |
+| `A17/nuxel-console` | 627,680 | `ccaff7a857f44dc4760dc9f64521a0ca333640e8251b053d3eabad0b12dda48d` |
+
+## Offline verification performed (before any write)
+
+* **Spawn-path reproduction and fix, in `podman`/`fedora:43` (aarch64, glibc 2.42
+  — the same libc generation as the rootfs), with a stub that makes
+  `pidfd_spawn`/`pidfd_open` return ENOSYS (a 4.14 kernel emulated on a modern
+  one):**
+
+  | Library | `posix_spawn_wrapper()` | child really ran | PID1 would log |
+  |---|---|---|---|
+  | modern kernel, no stub | `rc=0` | yes | spawn-ok |
+  | A13/A16 shim, 4.14 stub | `rc=-38 ENOSYS` | **yes** | **Failed to spawn executor** |
+  | **A17 library, 4.14 stub** | **`rc=0`** | yes | spawn-ok |
+
+  The middle row reproduces A16 on hardware exactly. Harness: `.scratch/nx17/`.
+* `nuxel-verify` self-test in the container: match→0, mismatch→1, aarch64 ELF→0,
+  non-ELF→1, missing file→2.
+* cpio round-trip: `init` in `A17/initramfs.cpio` is byte-identical to
+  `boot/initramfs/init.sh` (57,858 B, `74f453d2…`); the four `opt/nuxel` payloads
+  match their sources.
+* **embedded-initramfs proof:** the gzip stream inside `Image-A17`
+  (`usr/initramfs_data.cpio.gz`, 3,482,596 B) decompresses to a byte-identical
+  8,011,812-byte archive, sha256 `3e0ca12e…` = `A17/initramfs.cpio`; `strings` on
+  it finds `nuxel-console`, `NUXEL_SD_SHA256`, `nuxel_sd_verify` and the A17
+  library hash `848149cf…`. The build is not stale.
+* `build-candidate.sh` release gate: **PASS** (header_field40=1, header_size=1648,
+  kernel_size 48,453,640, ramdisk lzma 2,359,296 aligned, cpio 79 records,
+  `/init` mode 0o100755 size 57,858, partition slack 6,477,824 B). Base is the
+  hardware-proven A5 DTB image, so the appended DTB is unchanged
+  (`bcdef39c…`). The first pack attempt was **correctly blocked** by the gate for
+  duplicate `dev/console`/`dev/null` records (the packer's own dev-node insertion
+  on top of the base archive's nodes) and re-packed with `--no-dev-nodes`,
+  matching A16.
+
+## Flash receipt
+
+```
+Device: R58M75KDB2X model=Galaxy S10+ codename=beyond2lte TWRP=3.7.0_9-2 slot=none
+BOOT:   boot -> /dev/block/sda14 size=57,671,680 bytes
+PREFLIGHT PASS   (refused once while USERDATA was left mounted read-only by the
+                  A16 forensic read; unmounted, then PASS)
+BACKUP  BOOT -> backups/s10plus/20261015T145711Z-R58M75KDB2X
+BACKUP  BOOT -> scripts/nuxel-adb-flash-pack/backups/nuxel-adb/20261015T145717Z-R58M75KDB2X
+FLASHING BOOT: 51,193,856 bytes -> /dev/block/sda14
+VERIFIED BOOT: 911a72e9fbe7f8b591e36fc72bac2d296f7a53b4ff2f9992eedea98e9c6582c2 (51,193,856 bytes)
+PASS: every written partition matches its local image by full SHA256 readback.
+```
+
+USERDATA (sda31), RECOVERY (sda15) and DTBO were not written. No automatic reboot
+was issued by the flasher.
+
+`REBOOT_AT=2026-10-15T15:07:35Z` (`adb reboot` from TWRP) · `STATE=AWAITING_BOOT_RESULT`
+
+## Expected outcome if the diagnosis is right
+
+* The penguin appears as in A16 (unchanged renderer), within ~2–3 s.
+* `SYSTEMD_LIB_INSTALLED_VERIFIED` (the rootfs currently holds the A13 library,
+  hash `502507a7…`, so A17 will deploy and re-verify the new one) and
+  `CGROUP2_VERIFIED controllers='cpu cpuset ...'` in the ram console.
+* **Zero** `Failed to spawn executor` lines, and `systemd-udevd.service` /
+  `systemd-journald.service` / `dbus-broker.service` reaching `active`.
+* A CDC-ACM USB serial device on the MacBook: `/dev/cu.usbmodem*` with a live
+  root shell and the kernel log streaming.
+
+## Falsifiers / what a failure would mean
+
+* `Failed to spawn executor` still present → a third spawn-path incompatibility;
+  the next step is a full strace-equivalent of `sd-executor` from the live shell.
+* `CGROUP2_VERIFY_FAILED` → the mount ordering was not the (only) cgroup problem;
+  next step is to inspect `/proc/self/cgroup` and `cgroup.subtree_control` live.
+* No USB device enumerated at all → the gadget bind failed or the boot stopped
+  before `nuxel-console` ran; the ram console will show which, and A18 can bind
+  the gadget earlier (right after the devtmpfs mount).

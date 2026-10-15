@@ -595,3 +595,64 @@ Supporting source facts (all checked in `.scratch/s10plus-cycle4/src/systemd-258
    time and therefore cannot regress; either way `libsystemd-core` must be replaced.
 5. Either approach still touches USERDATA, so it is a separate, explicitly versioned
    rootfs change with a clean ext4 verification — not part of the BOOT-only A16 test.
+
+---
+
+# CYCLE 7 — A16 postmortem and the real systemd root cause (2026-10-15)
+
+See `A16-POSTMORTEM.md` for the full evidence chain and `SYSTEMD-COMPATIBILITY.md`
+for the reference. Summary of the corrected root causes:
+
+## RC-A16-1 (RESOLVED) — `pidfd_open()` on Linux 4.14
+
+**Not** "systemd 258's `posix_spawn_wrapper()` retries `pidfd_spawn()`" (that is
+real but was already fixed). The missed one: after the working `posix_spawn()`
+fallback, `posix_spawn_wrapper()` calls `pidref_set_pid()`, which calls
+`pidfd_open()` (Linux **5.3**+, syscall 434). On 4.14 that is `ENOSYS`, and
+`ENOSYS` is not `ERRNO_IS_RESOURCE`, so `pidref_set_pid()` returns `-ENOSYS` for a
+process that started successfully two statements earlier.
+
+(A16's ram console does contain `Kernel panic - not syncing: Fatal exception in
+interrupt` at t=170.198902 — that is the *consequence* of the operator's forced
+reset hook, which raises `BUG` from the hrtimer interrupt, not a Nuxel fault.)
+
+Effect: PID1 logs `Failed to spawn executor: Function not implemented`, fails the
+unit, and **orphans the actually-running executor**. That is exactly why A16 shows
+`systemd-udevd` processes alive for 161 s while `systemd-udevd.service` is
+"failed" — and why making the ram-console text nicer in A13–A16 changed nothing.
+
+Proof: offline repro with a pidfd-less-kernel stub —
+A13/A16 library → `rc=-38` **while the child runs**; A17 library → `rc=0`.
+Fix: degrade to a PID-only `PidRef` (`pidref.h` documents `-EBADF` as a supported
+state; `pidref_acquire_pidfd_id()` already tolerates `NOT_SUPPORTED`). `-vvv`
+Note: A13's marker file was *not* lying — the rootfs library really did match the
+A13 artifact byte for byte. The defect was that a marker of any kind was accepted
+without checking content (fixed in A17 with SHA-256 + ELF verification and
+post-install re-verification).
+
+## RC-A16-2 (RESOLVED) — cgroup2 mount shadowed by the sysfs mount
+
+`CGROUP2_MOUNTED` was logged, but `mount -t sysfs sysfs "${ROOT_MNT}/sys"`, which
+runs *after* it, stacks a fresh sysfs over `/sys` and hides the cgroup2 mount. In
+the final namespace `/sys/fs/cgroup` is an empty sysfs directory: systemd cannot
+create a per-unit cgroup directory, so executors die with
+`Failed to attach to cgroup /system.slice/<unit>: No such file or directory` and
+`Failed at step CGROUP spawning <bin>: No such file or directory`.
+
+This is a **second, independent** blocker: fixing the library alone would still
+not have produced a working boot.
+
+## RC-A16-3 (EXPLAINED, not a defect) — "the phone reboots"
+
+It does not. A16 ran 168 s and was ended by the operator's Samsung
+`sec_hard_reset_hook` (POWER+VOLUMEDOWN). The animation loop is intentional and
+infinite (`nuxel-fb-phone hold &`), independent of systemd. The mission's caution
+against calling this a kernel bootloop was correct.
+
+## RC-A16-4 (RESOLVED in A17) — animation not supervised
+
+A16 logged `FIRSTLIGHT hold started pid=` (empty): `$!` was never captured, so
+nothing could ever stop or supervise the animator, and there was no boot-state
+record for a future UI to read. A17 publishes `ANIMATION_HOLD_PID=<pid>`,
+`/var/lib/nuxel/fb-hold.pid`, `/var/lib/nuxel/boot-stage` and
+`/var/lib/nuxel/animation`.

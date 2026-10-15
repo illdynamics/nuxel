@@ -1,91 +1,94 @@
-# STATUS — cycle 6 / candidate A16 (2026-10-15)
+# STATUS — cycle 7 / candidate A17 (2026-10-15)
 
 **Mission:** boot Nuxel (Fedora 43 aarch64) on Samsung Galaxy S10+ SM-G975F
 (`beyond2lte`), Exynos 9820 rev 26, bootloader G975FXXSEFUL1, TWRP 3.7.0_9-2,
-ADB serial R58M75KDB2X. Earlier cycles: `STATUS.md.cycle3`, `STATUS.md.cycle4-pre-A13`,
-`STATUS.md.cycle4-final`, `STATUS.md.cycle5-pre-A16`.
+ADB serial R58M75KDB2X.
+Previous snapshots: `STATUS.md.cycle3`, `.cycle4-pre-A13`, `.cycle4-final`,
+`.cycle5-pre-A16`, `.cycle6-pre-A17`.
 
 ## Headline
 
-**The A15 "black screen then spontaneous reboot" is solved, and the answer is not
-what it looked like.**
+**The penguin is real, and the reason nothing else worked is now a two-line bug
+in a library — not a mystery.**
 
-* The reboot was **not spontaneous and not a watchdog**. The A15 ram console
-  (`/proc/last_kmsg`, 18,303 lines) ends at t = 1891.96 s with
-  `kernel BUG at drivers/samsung/sec_hard_reset_hook.c:157!` triggered by
-  `hard_reset_hook_callback+0x144` — **Samsung's operator force-reset hook**
-  (power + volume held ~7 s), i.e. the physical recovery action. It is the only
-  BUG/panic in the whole boot; there is no `Restarting system`, no watchdog bite,
-  and the s3c2410 watchdog is petted every 10 s right up to the end.
-* **A15 did not reboot itself even once in 1892 s (~31.5 min).** The A14
-  initramfs dead-man watchdog really was the A14 reboot cause, and its removal in
-  A15 worked. Milestone *stable boot without spontaneous reset* is met for the
-  A15 window.
-* A15 progressed **further than A14**, and the remaining blockers are exactly two:
-  the panel never lights, and systemd cannot spawn a single service.
+A16 was physically observed rendering the Nuxel first-light screen and the
+animated penguin on the AMOLED panel. Forensics on the A16 ram console
+(`captures/20261015T143625Z-A16-postfail/`, full write-up in `A16-POSTMORTEM.md`)
+then established, with evidence:
 
-## The two live blockers
+1. **A16 never rebooted itself.** It booted once, ran 168 s, and was ended by the
+   operator's Samsung hard-reset hook. `RESET_CAUSE=SEC_HARD_RESET_HOOK(operator)`.
+   The animation *is* an intentional infinite loop; the mission's warning about
+   mislabelling it a bootloop was correct.
+2. **systemd 258 really runs** (PID 1, unit graph built, `basic.target` reached).
+3. **Every service was marked failed while its process was already running.** The
+   A13 `posix_spawn` fallback works; the very next statement,
+   `pidref_set_pid()`, calls `pidfd_open()` (Linux **5.3**+), gets `ENOSYS` on this
+   4.14 kernel, and returns `-ENOSYS` for a process it just started successfully.
+   `udevd` then ran for 161 s while `systemd-udevd.service` was "failed".
+4. **A second, independent blocker:** the cgroup2 mount was hidden by a later
+   `mount -t sysfs sysfs /sys`, so in the final namespace `/sys/fs/cgroup` was an
+   empty sysfs directory and no unit cgroup could be created.
 
-1. **Display.** Panel, DSIM and DECON all probe correctly during the Nuxel boot
-   (`dsim_enable` → `panel_sleep_out` "already NORMAL" → `decon_initial_display`
-   → `decon0 registered` → `panel_fb_notifier: FB Registeted`), but there is **no
-   `decon_enable` / UNBLANK / FRAME_DONE for the whole 1892 s** (contrast the TWRP
-   session, which shows that sequence). Worse, *no* `nuxel-fb-phone` verdict line
-   reached the log at all: `init.sh` read the output through
-   `printf … | while IFS= read -r`, which this toybox shell cannot run
-   (`sh: <...>read: No such file or directory`), so `NUXEL_FB_INFO` and every
-   `NUXEL_FB_ANIM` line were dropped and only `FIRSTLIGHT exit=0` survived.
-   `FIRSTLIGHT_FRAME_WRITTEN` therefore **was not display evidence** and is no
-   longer counted as such.
-2. **systemd service execution.** All **28** distinct units still fail with
-   `Failed to spawn executor: Function not implemented` (ENOSYS). cgroup2 *is*
-   mounted in A15 (`CGROUP2_MOUNTED`) but the per-unit cgroup directories are never
-   created, so the secondary `Failed to attach to cgroup … No such file or
-   directory` follows. The A13 `pidfd_spawn→posix_spawn` backport is marked
-   `SYSTEMD_PATCH_PRESENT` (the rootfs tag `.nuxel-patches/pidfd-spawn-fallback-A13`
-   is present on the device) and the local rootfs image does **not** contain that
-   tag, i.e. the handset's USERDATA differs from the local image — so the patch is
-   either deployed-but-ineffective or the two images have diverged. Resolving this
-   needs a USERDATA readback and is the next cycle's Priority-2 task.
+Both are now fixed and **verified offline** (`SYSTEMD-COMPATIBILITY.md` §4):
+against a stub that emulates a pidfd-less 4.14 kernel, the A17 library makes
+`posix_spawn_wrapper()` return `rc=0` where the A13/A16 shim returns
+`rc=-38 ENOSYS`. A17 also adds a live USB CDC-ACM diagnostic console
+(`LIVE-DEBUG-CONNECTIVITY.md`) delivered by the BOOT partition alone.
+
+## A17 — current state
+
+```
+CANDIDATE=A17
+boot.img        51,193,856 B  sha256 911a72e9fbe7f8b591e36fc72bac2d296f7a53b4ff2f9992eedea98e9c6582c2
+Image-A17       48,453,640 B  sha256 f9529cd739c6deb97025429a6f7dc79c21010fc79298ba708c011506ca37a745
+initramfs.cpio   8,011,812 B  sha256 3e0ca12e8dccd134215a0964cf153054d7a6935ba54084bbdad00c780c5f0ea5
+FLASHED to BOOT (/dev/block/sda14) with full SHA-256 readback VERIFIED
+REBOOT_AT=2026-10-15T15:07:35Z
+STATE=AWAITING_BOOT_RESULT
+USERDATA / RECOVERY / DTBO: not written
+```
+
+A16 is preserved untouched at `debug-candidates/A16/` and two full BOOT backups
+were taken from the device before writing (`backups/s10plus/20261015T145711Z-…`,
+`scripts/nuxel-adb-flash-pack/backups/nuxel-adb/20261015T145717Z-…`).
 
 ## Milestones (evidence-backed; "hardware" = measured on the handset)
 
-| # | Milestone | State | Evidence |
-|---|---|---|---|
-| 1 | S-Boot starts the Nuxel kernel | **ACHIEVED** (A2) | S-Boot records + `Starting kernel...` |
-| 2 | ARM64 kernel runs, persistent logging works | **ACHIEVED** (A2) | pstore `linux_banner: Linux version 4.14.253` |
-| 3 | Initramfs unpacks | **ACHIEVED** (A7) | `NUXEL-KDIAG unpack verdict: state=7` |
-| 4 | Nuxel `/init` executes | **ACHIEVED** (A8) | its own `nuxel-init:` lines in the ram console |
-| 5 | USERDATA discovered | **ACHIEVED** (A12) | `USERDATA_FALLBACK /dev/sda31` |
-| 6 | Fedora ext4 mounts | **ACHIEVED** (A12/A14/A15) | `ROOTFS_MOUNTED /dev/sda31 ext4` |
-| 7 | `switch_root` → Fedora PID 1 | **ACHIEVED** (A12/A14/A15) | `systemd[1]: systemd 258.11-1.fc43 … arm64` |
-| 8 | systemd builds its unit graph | **ACHIEVED** (A12/A15) | `Reached target basic.target` at t=3.579 s |
-| 9 | Exact ENOSYS cause | **ACHIEVED** (source-exact) | `pidfd_spawn` → glibc `waitid(P_PIDFD)` needs Linux ≥ 5.4 |
-| 10 | A core systemd service really runs | **REGRESSED in A15** | A15: `systemd-udevd.service: Failed to spawn executor`; only `udevadm`/`modprobe` children ever executed, and then died at step CGROUP |
-| 11 | Fedora binary executes on hardware | **ACHIEVED** (A14) | `NUXEL_MARKER FEDORA_BINARY_EXECUTED` |
-| 12 | Kernel-primitive measurement on hardware | **ACHIEVED** (A14/A15) | `NUXEL-SYSCALL …` + `NUXEL-SPAWN-PROBE …` |
-| 13 | First-light **code** executes | **ACHIEVED but unproven** (A14/A15) | `FIRSTLIGHT exit=0`; the program's own verdict lines were swallowed in A15 |
-| 14 | **Frame visible on the AMOLED** | **NOT ACHIEVED** | panel black for 1892 s |
-| 15 | No spontaneous reboot past 47 s | **ACHIEVED (A15)** | 1892 s uptime; reset was the operator's hard-reset hook |
-| 16 | Real systemd services start (cgroup v2) | **NOT ACHIEVED** | 28/28 units ENOSYS |
-| 17 | Spinning penguin (visible) | **NOT ACHIEVED** | see 14 |
-| 18 | Phoc / Phosh / touch UI | BLOCKED on 14 + 16 | — |
-| 19 | NOXEL_FB/display verdict captured from hardware | **NOT ACHIEVED** | log-swallowing bug found in A15 → fixed in A16 |
+| Milestone | State |
+|---|---|
+| S-Boot executes Nuxel kernel | PROVEN |
+| ARM64 kernel runs | PROVEN |
+| Built-in initramfs executes | PROVEN |
+| USERDATA discovered / Fedora ext4 mounts rw | PROVEN |
+| Fedora systemd PID 1 executes | PROVEN |
+| Nuxel renders on AMOLED | **PROVEN A16** |
+| Animated penguin visible | **PROVEN A16 — USER OBSERVED** |
+| A16 runtime stability | **PROVEN for the 168 s window** (no self-reboot; operator reset only) |
+| Fedora service execution | **FIXED in A17, awaiting hardware confirmation** |
+| cgroup v2 usable in the final namespace | **FIXED in A17, awaiting hardware confirmation** |
+| Live USB diagnostics in Nuxel | **IMPLEMENTED in A17, awaiting hardware confirmation** |
+| Animation hold supervision / handoff primitive | IMPLEMENTED (PID published, stage files) |
+| DRM/KMS compositor backend | NOT AVAILABLE (`# CONFIG_DRM is not set`) |
+| Phoc / Phosh / touchscreen / interactive UI | NOT PROVEN |
 
-## The A16 test now on the device
+## Blockers, in order
 
-`A16/boot.img` sha256 `603c2e9a3fd434d451aea0b614fe5978a9ad6178ade6edc1831afc708ee36222`
-is written and readback-verified on `/dev/block/sda14`; rebooted at
-`2026-10-15T14:07:20Z`. It changes the initramfs only:
+1. **Confirm the A17 service fix on hardware** — does `systemd-udevd.service`,
+   `systemd-journald.service`, `dbus-broker.service` reach `active`?
+2. **Get the live console or the ram console out of the A17 boot.** No USB device
+   enumerated on the MacBook after the A17 reboot, so either the gadget bind
+   failed, the boot stalled before it, or the panel is showing something and the
+   operator has not recovered yet.
+3. **Then** the graphical backend decision (`PHONE-UI-HANDOFF.md`): fbdev-native
+   transitional UI now, DRM/KMS porting in parallel. Phoc cannot start on this
+   kernel as it stands.
+4. Touchscreen/input enumeration, seat and permission model for phone services.
 
-* first-light output goes **straight to `/dev/kmsg`** — a silent exit is impossible;
-* the program logs every fb geometry field, the mmap read-back, and the return
-  codes of `FBIOBLANK(UNBLANK)` / `FBIOPUT_VSCREENINFO(FB_ACTIVATE_NOW)` /
-  `FBIOPAN_DISPLAY` — the three ways to make a command-mode DECON latch a frame;
-* it paints **every** buffer of the virtual framebuffer and animates in all of them;
-* it then re-runs itself in `hold` mode in the background so the penguin keeps
-  spinning on the panel with **no dependency on systemd, Phosh or any service**.
+## Rules being kept
 
-Outcome of A16 is pending the operator's observation and, if the screen stays
-black, the fresh `last_kmsg` capture — which will now contain the exact
-`NUXEL_FB_*` verdict and the ioctl return codes that A15 could not give us.
+* RECOVERY is never written. EFS/SEC_EFS, PIT, bootloader, radio, Knox: untouched.
+* USERDATA is only written with a stated reason (not in A17).
+* A16 is never overwritten; every candidate is separately versioned.
+* No milestone is claimed from file presence or from a userspace buffer write.
+* Marker files are no longer accepted as proof of deployment (`A17-INIT-2`).

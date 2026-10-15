@@ -445,3 +445,60 @@ silently yields 0-byte files; use `podman cp` and verify with `sha256sum`.
 Unchanged on purpose: kernel source (`/b/k15`), appended DTB (`bcdef39c…`), kernel
 cmdline, USERDATA (sda31), RECOVERY (sda15), DTBO, VBMETA, modem, bootloader.
 Previous candidates A2–A15 are preserved untouched.
+
+---
+
+# CYCLE 7 — A17 patches (2026-10-15)
+
+## P17-1 — `src/basic/pidref.c`: `pidref_set_pid()` degrades without `pidfd_open()`
+
+**Why:** decisive fix for `Failed to spawn executor: Function not implemented`
+(A16-POSTMORTEM.md §6, SYSTEMD-COMPATIBILITY.md §1 Blocker 2).
+
+```diff
+         fd = pidfd_open(pid, 0);
+         if (fd < 0) {
+-                /* Graceful fallback in case the kernel is out of fds */
+-                if (!ERRNO_IS_RESOURCE(errno))
++                /* Graceful fallback in case the kernel is out of fds -- or has no pidfd
++                 * support at all.  NUXEL/S10+ (Linux 4.14.253): pidfd_open() was added
++                 * in Linux 5.3, so here it always fails with ENOSYS. ... */
++                if (!ERRNO_IS_RESOURCE(errno) && !ERRNO_IS_NOT_SUPPORTED(errno))
+                         return log_debug_errno(errno, "Failed to open pidfd for pid " PID_FMT ": %m", pid);
+ 
+                 fd = -EBADF;
+         }
+```
+
+## P17-2 — `src/basic/process-util.c`: `posix_spawn_wrapper()` fallback (A13, kept)
+
+Unchanged from A13. `ERRNO_IS_NOT_SUPPORTED(r)` is the absolute-value wrapper, so
+glibc's positive `ENOSYS` return is matched correctly.
+
+## P17-3 — `boot/initramfs/init.sh`, six anchored edits
+
+| id | change |
+|---|---|
+| A17-INIT-1 | cgroup2 block removed from its old position (it was shadowed there); explanation recorded in-file |
+| A17-INIT-1b | cgroup2 mounted **after** the sysfs mount and **verified** by reading `cgroup.controllers` / `cgroup.subtree_control` / `/proc/mounts` |
+| A17-INIT-2 | library deployment is SHA-256 + ELF verified against constants in the file, atomic rename, original preserved, marker written **only** after post-install re-verification, no writes when already correct |
+| A17-INIT-3 | `/var/lib/nuxel/{boot-stage,animation,fb-hold.pid,boot-context}` written before handoff |
+| A17-INIT-4 | `NUXEL_HOLD_PID=$!` captured; `ANIMATION_HOLD_PID=<pid>` marker emitted |
+| A17-INIT-5 | `/opt/nuxel/nuxel-console "${ROOT_MNT}" &` — live USB console, non-fatal |
+
+Editor: `.scratch/nx17/edit-init-a17.py` (anchored, fails loudly if an anchor is
+missing; `sh -n` clean; 1,148 lines, sha256 `74f453d2…`).
+
+## P17-4 — kernel-embedded initramfs rebuild
+
+`CONFIG_INITRAMFS_SOURCE=/b/a17/initramfs.cpio`; the built `Image-A17` embeds a
+gzip archive that decompresses byte-identically to `A17/initramfs.cpio`
+(`3e0ca12e…`). Verified, not assumed — the A16 source edit alone would not have
+changed the kernel.
+
+## P17-5 — new static helpers
+
+`opt/nuxel/nuxel-verify` (SHA-256 + ELF, self-contained) and
+`opt/nuxel/nuxel-console` (CDC-ACM gadget + live root shell + kmsg pump). Sources
+in `.scratch/nx17/`; built with `gcc -Os -static` in `podman`/`fedora:43`
+(aarch64), stripped.

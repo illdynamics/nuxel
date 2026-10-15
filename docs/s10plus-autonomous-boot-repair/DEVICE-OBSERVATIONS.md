@@ -288,3 +288,124 @@ reaches the ram console.
   absence cannot distinguish "black but alive" from "black and dead". Only the
   operator's observation (or the handset returning to TWRP) settles it.
   For reference, A15 stayed alive and healthy for 1892 s in exactly this state.
+
+---
+
+# CYCLE 7 — device observations (2026-10-15)
+
+## Live TWRP re-validation (start of cycle, before anything was written)
+
+| Item | Value |
+|---|---|
+| `adb devices -l` | `R58M75KDB2X recovery usb:2097152X product:omni_beyond2lte model:Galaxy_S10_ device:beyond2lte` |
+| `adb shell id` | `uid=0(root)` `context=u:r:su:s0` |
+| `ro.product.device` / TWRP / bootloader | `beyond2lte` / `3.7.0_9-2` / `G975FXXSEFUL1` |
+| `ro.boot.hardware` / revision / dtbo_idx | `exynos9820` / `26` / `9` |
+| BOOT | `/dev/block/by-name/boot` -> `/dev/block/sda14`, 57,671,680 B (112,640 sectors) |
+| USERDATA | `/dev/block/by-name/userdata` -> `/dev/block/sda31`, 119,126,622,208 B |
+| RECOVERY | `/dev/block/by-name/recovery` -> `/dev/block/sda15` (never written) |
+
+## The Fedora rootfs as it exists on the handset (read-only inspection)
+
+Mounted read-only as part of the A16 forensic capture:
+
+* `/usr/lib64/systemd/libsystemd-shared-258.11-1.fc43.so`
+  sha256 `502507a7b6237a03cfcff49e389d2a38836916abdea40e36e5ba4653e9bc1234`,
+  5,073,168 B — the A13 artifact, hash-identical to what A16's initramfs shipped.
+* `/usr/lib64/systemd/libsystemd-shared-258.11-1.fc43.so.nuxel-orig`
+  5,071,376 B — the pristine Fedora library, preserved for rollback.
+* `/usr/lib64/systemd/systemd` 201,024 B, `/usr/lib64/systemd/systemd-executor`
+  1,400,024 B; only **one** `libsystemd-shared` on the whole filesystem (the
+  "systemd loads a different copy" hypothesis is dead).
+* `.nuxel-patches/pidfd-spawn-fallback-A13` present (the marker-only tag).
+* `nuxel-boot-diag.log` (3,175 B) — the A16 boot record, ending with
+  `FB_SYSFS … modes=U:1440x3040p-0`, `FIRSTLIGHT exit=0`,
+  `FIRSTLIGHT hold started pid=` (empty), `USERDATA_FALLBACK /dev/sda31`.
+
+## UDC / USB gadget availability (live)
+
+```
+$ adb shell ls /sys/class/udc/
+10c00000.dwc3
+$ adb shell ls /sys/kernel/config
+sdcardfs  usb_gadget
+```
+
+A16's own boot log confirms the controller comes up as a gadget controller:
+`dwc3 10c00000.dwc3: Binding gadget dwc3-gadget`, `dwc3_otg_init`,
+`exynos-dwc3 10c00000.usb: dwc3_exynos_rsw_start`.
+
+## Host-side USB inventory
+
+* Before the A17 reboot the Mac saw the TWRP gadget as
+  `Galaxy S10+ · Product ID 0x6860 · Vendor 0x04e8 · Speed 5 Gb/s · Serial R58M75KDB2X`.
+* After `adb reboot` into A17 at 15:07:35Z, **no USB device enumerated at all**
+  over the following minutes (no `0x04e8`, no `0x18d1`, no `/dev/cu.usbmodem*`).
+  This matches the A16 behaviour (a Nuxel boot creates no userspace gadget), and
+  is the open question for A17: did `nuxel-console` bind?
+
+---
+
+# CYCLE 7 — Phase 6 prerequisites measured from the A16 ram console
+
+## The kernel has NO loadable modules at all
+
+`grep -cE '^CONFIG_.*=m$' .config` on the A16/A17 kernel config → **0**.
+Everything is built into the kernel image (`=y`). Consequences:
+
+* The failing `modprobe@drm.service` in A16 is a **non-issue**: there is no `drm`
+  module and no module tree to load from. The Fedora rootfs needs no Samsung
+  modules, so there is no module/hardware version-skew problem to solve.
+* Any future driver we need must be built into the kernel.
+
+## Display driver stack (confirmed, Path B is the only short-term option)
+
+```
+t=0.500  register_common_panel panel:s6e3ha9_beyond2_a3_s0_default id:0xA01011 rev:2
+t=1.242  find_panel_ddi_lut, found s6e3ha9_beyond2 (id:0x00A11013)
+t=1.242  LCD(/s6e3ha9_beyond2) resolution: xres(1440), yres(3040)
+t=1.999  find_common_panel_with_name, found panel:s6e3ha9_beyond2_a3_s0_default
+t=2.001  panel_poc_probe total_size:753670 registered successfully
+t=2.002  mdnie registered successfully / copr_probe registered successfully
+```
+
+There is **no `/dev/dri` and no DRM**: `# CONFIG_DRM is not set`. The only display
+interface is the Samsung DECON/DSIM fbdev path (`/dev/fb0`, 32 bpp,
+`stride=5760`, `virtual_size=1440,6080`). Only `beyond-madera:card0` (an ALSA
+sound card) contains the string "card0" anywhere in the boot log.
+
+**Therefore Phoc/wlroots cannot start on this kernel today.** The transitional
+path is an fbdev-native Nuxel UI (`PHONE-UI-HANDOFF.md` §3, Path B).
+
+## Touchscreen: the driver is present but deliberately declines to init
+
+```
+t=0.955951  __init_sec_tsp_command_history: init done
+t=0.955968  __init_sec_tsp_raw_data: init done
+t=1.534311  [sec_input] sec_ts_init: Do not load driver due to : lpm 1
+```
+
+`CONFIG_TOUCHSCREEN_SEC_TS_Y771=y` (Samsung's TSP driver for the S10+) is built
+in and runs its init, then **returns early because the panel is in LPM=1** (the
+display was never properly brought out of low-power mode by an Android-style
+userspace). That is why the A16 input list stops at:
+
+| node | device |
+|---|---|
+| input0 | `meta_event` (virtual) |
+| input1 | `gpio_keys` (POWER/VOLUME) |
+| input2 | `grip_sensor` (virtual) |
+| input3 | `ssp_context` (virtual) |
+| input4 | `Headset` (madera-extcon) |
+| input5 | `hall` |
+| input6 | `certify_hall` |
+
+**No `sec_touchscreen` / TSP input device exists yet.** So the "touchscreen"
+milestone is not just untested — as of A16 there is no touch input node at all.
+
+Next step for touch (A18/Phase 6): find and clear the LPM gate from userspace
+after the display is up (`/sys/class/lcd/panel/*`, the DECON/panel LPM attribute,
+or the driver's own resume path), then re-trigger `sec_ts` init and confirm
+`/dev/input/event*` for the TSP. The sensor hub itself is healthy
+(`[SSP] ssp_probe` registered accel/gyro/mag/light/prox/step as iio devices at
+t=1.72 s), so input *infrastructure* works — only the touch panel is gated.

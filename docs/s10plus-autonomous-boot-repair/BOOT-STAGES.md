@@ -164,3 +164,42 @@ past 30–47 s" moves from *no* to *yes*, and the mission's Priority-1 question
 kernel panic, initiated by a watchdog, or still undetermined") is answered:
 **none of those — it was the operator's hard-reset hook, i.e. the human recovery
 action under the standing agreement.**
+
+---
+
+# CYCLE 7 — A17 boot stages and the state machine (2026-10-15)
+
+## Measured stages
+
+| Stage | A16 (measured) | A17 (expected / to confirm) |
+|---|---|---|
+| S-Boot executes kernel | t≈0 (S-Boot @5785, `Starting kernel...` @6492) | same |
+| initramfs `/init` runs | t=2.109557 `INITRAMFS_EXECUTED` | same |
+| framebuffer present | t=2.122789 `FB_SYSFS bits_per_pixel=32 stride=5760 virtual_size=1440,6080 modes=U:1440x3040p-0` | same |
+| first light painted | t=7.603860 `FIRSTLIGHT_ANIMATION_DONE` (pid 3316) | same |
+| animation hold resident | t=7.769 (pid published as *empty* — defect) | `ANIMATION_HOLD_PID=<pid>` |
+| rootfs mounted | t=8.794495 `ROOTFS_MOUNTED /dev/sda31 ext4 rw` | same |
+| Fedora userspace executes | t=8.844367 `FEDORA_BINARY_EXECUTED` | same |
+| systemd library verified | t=8.851880 `SYSTEMD_PATCH already present` (marker only) | `SYSTEMD_LIB_VERIFIED_PRESENT` or `SYSTEMD_LIB_INSTALLED_VERIFIED` (SHA-256+ELF) |
+| cgroup2 usable | t=8.852955 `CGROUP2_MOUNTED` — **a lie in the final namespace** | `CGROUP2_MOUNTED` **after** `CGROUP2_VERIFIED controllers=…` post-sysfs-mount |
+| live diagnostics up | not implemented | `LIVE_CONSOLE_STARTED` |
+| handoff | t=8.855582 `ROOTFS_HANDOFF_STARTED` → `switch_root` | same + `BOOT_STAGE_SYSTEM_STARTING` |
+| systemd PID 1 | t=8.915575 `systemd 258.11-1.fc43 running in system mode` | same |
+| unit graph | t=9.195179 `Reached target basic.target` | same, **plus real services active** |
+| service execution | **never**: 29× `Failed to spawn executor: Function not implemented` while the executors ran anyway | **zero** of those; `systemd-udevd`/`systemd-journald`/`dbus-broker` `active` |
+| phone UI | not attempted | not attempted (no DRM/KMS) |
+
+## The A17 state machine
+
+Stage names are written to `<rootfs>/var/lib/nuxel/boot-stage` and mirrored on the
+boot channel:
+
+```
+FIRST_LIGHT ─► SYSTEM_STARTING ─► PHONE_UI_STARTING ─► PHONE_UI_READY ─► ANIMATION_STOPPED
+```
+
+A17 implements `FIRST_LIGHT` and `SYSTEM_STARTING` plus the supervision primitive
+(hold PID published). Transitions past `SYSTEM_STARTING` require evidence
+(§PHONE-UI-HANDOFF.md) and must not be declared from file presence. If a
+graphical session fails, the machine returns to `FIRST_LIGHT` rather than showing
+an unexplained black screen.

@@ -341,3 +341,18 @@ long past 47 s; the only open question is the panel.
 | H-C6-G | The A13 `posix_spawn` fallback is not in effect despite the rootfs tag | **CONFIRMED, root cause identified** | `libsystemd-core-258.11-1.fc43.so` contains both `exec_spawn` and its own `posix_spawn_wrapper`, but the installer only replaces `libsystemd-shared-*.so`; see ROOT-CAUSE RC-6.4 |
 | H-C6-H | `ERRNO_IS_NOT_SUPPORTED()` fails to catch glibc's positive ENOSYS | **REFUTED** | `_DEFINE_ABS_WRAPPER` → `ERRNO_IS_NEG_##name(-ABS(r))`, and `ERRNO_IS_NEG_NOT_SUPPORTED()` includes `-ENOSYS` |
 | H-C6-I | A build with `HAVE_PIDFD_SPAWN=0` removes the failure without any source patch | **OPEN, promising** | `process-util.c` `#if HAVE_PIDFD_SPAWN` … `#else` uses plain `posix_spawn()` + caller `cg_attach()` |
+
+---
+
+# CYCLE 7 — hypotheses resolved (2026-10-15)
+
+| # | Hypothesis (cycle 6) | Verdict | Evidence |
+|---|---|---|---|
+| H1 | A16 reboots itself repeatedly | **REFUTED** | A16 ran 168 s; only reset is `sec_hard_reset_hook` (operator). A16-POSTMORTEM §3 |
+| H2 | The penguin loop hides a bootloop | **REFUTED** | one boot session in the ram console; systemd reached `basic.target` behind the animation |
+| H3 | The A13 `pidfd_spawn` patch was never installed | **REFUTED** | rootfs library hash == A13 artifact hash; `posix_spawn@plt` present in the loaded `.so` |
+| H4 | A marker file can be trusted as proof of deployment | **REFUTED** | the marker was accurate *by luck*; A17 replaces it with SHA-256+ELF verification + post-install re-verification |
+| H5 | Something *else* fails in the spawn path after `posix_spawn()` succeeds | **CONFIRMED** | `pidref_set_pid()` → `pidfd_open()` → `ENOSYS`, reproduced offline and on hardware |
+| H6 | Merely mounting cgroup2 fixes service attachment | **REFUTED** | the mount existed but was shadowed by the later sysfs mount; A17 mounts it last and verifies the result |
+| H7 | The executor never runs at all | **REFUTED** | `sd-executor` ran (its own `Failed at step CGROUP spawning …` lines) and was orphaned |
+| H8 | A live USB diagnostic channel is impossible in Nuxel userspace | **REFUTED (design)** | UDC `10c00000.dwc3` + `CONFIG_USB_CONFIGFS_ACM=y`; `nuxel-console` implements it. Hardware proof pending |
