@@ -119,3 +119,23 @@ The pack is designed for observability and root-cause isolation, **not a promise
 
 - `scripts/16-kernel-config-audit.sh /path/to/kernel/.config` (or `.config.gz`) summarizes storage, initramfs, persistent logging, Samsung display and USB gadget options. Missing Kconfig names may be renamed by vendor patches; this is not a compile-time proof of hardware support.
 - `scripts/17-pstore-decode-offline.sh /path/to/captured/pstore/console-ramoops-0` tries common compression formats **on the Mac copy** and preserves the raw evidence.
+
+## 20-triage-nuxel-boot.py — segment and triage a ram-console record
+
+`/proc/last_kmsg` is a ring buffer holding several boots concatenated; reading it
+as one boot is the easiest way to reach a wrong conclusion (it is what made an
+earlier cycle call an intentional animation loop a bootloop). This tool segments
+it by S-Boot records, finds the Nuxel session(s) by their own markers, and prints
+the A16/A17 decision points with counts and line numbers:
+
+```sh
+python3 scripts/s10plus-debug-pack/scripts/20-triage-nuxel-boot.py \
+        captures/<stamp>-A16-postfail/previous-boot/last_kmsg.clean.txt
+```
+
+It reports, among others: fbdev geometry, first-light markers, the animation hold
+PID marker, `SYSTEMD_LIB_*` verification results, `CGROUP2_VERIFIED`,
+`LIVE_CONSOLE_*`, **the count of `Failed to spawn executor`** (must be 0 after
+A17), the count of `Failed at step CGROUP`, service/target counts, the reset
+cause, and the touchscreen (`sec_ts`) status. `--grep PATTERN` prints matching
+lines with line numbers.

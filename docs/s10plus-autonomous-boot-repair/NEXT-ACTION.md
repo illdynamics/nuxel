@@ -49,6 +49,24 @@ and look for, in order:
 | No `LIVE_CONSOLE_STARTED`, boot ends before it | boot regressed earlier | compare against A16 milestone list; the last `nuxel-init:` line names the stage |
 | Penguins, no reset, services work, but no UI | expected intermediate state | implement the fbdev-native Nuxel phone UI (Path B, PHONE-UI-HANDOFF.md §3) |
 
+## 2b. MANDATORY procedure change for the next hardware test
+
+`sec_bat_is_lpm_check: Low power charging mode: 1` was present in the A16 Nuxel
+boot (its own log line at t = 0), and `lpcharge == 1` makes `sec_ts_init()`
+return `-ENODEV` — no touchscreen, no fingerprint, no wacom. Reboots issued from
+TWRP **while the USB cable is attached** appear to be what produced it.
+
+For A18 and any input-sensitive candidate:
+
+1. from TWRP, `adb reboot` **with the USB cable detached** (or power on by keys
+   with no cable),
+2. confirm `Low power charging mode: 0` and the **absence** of
+   `sec_ts_init: Do not load driver due to : lpm 1`,
+3. attach USB **after** the boot to give the dwc3 role switch a chance to bring
+   up device mode, so the A17 `nuxel-console` channel can bind.
+
+Never record `TOUCHSCREEN=FAILED` from an LPM boot.
+
 ## 3. Standing constraints
 
 * Never overwrite RECOVERY. Never touch EFS/SEC_EFS, PIT, bootloader, radio, Knox.
@@ -56,3 +74,81 @@ and look for, in order:
 * Prefer BOOT-only updates; a USERDATA write needs a stated reason and a
   versioned image + ext4 integrity check.
 * No milestone from file presence and none from a userspace buffer write.
+
+## 4. A18 is one build away (prepared, not built)
+
+Ready and unrun, awaiting a focused hypothesis from the A17 result:
+
+* `tools/s10plus/a17/build-a18-initramfs.sh` — parameterised initramfs builder
+  (default base = the A17 archive that is on the BOOT partition now) that also
+  inserts the new probe.
+* `build/out/s10plus/debug-candidates/A18/nuxel-hwprobe`
+  (625,496 B, sha256 `bff976529790f4bb3207a6ecc53ca5384df6129eb6ac5f78ca355773571dbbff`)
+  — one command that dumps identity + boot mode, `/dev/fb*` geometry, DRM
+  presence/absence, the **full input inventory with capability bitmaps** (is
+  there a `sec_touchscreen` with multitouch ABS?), cgroup v2 state, PID 1/systemd
+  state and the power supplies. It prints absence as loudly as presence, and it
+  is safe to run from the live console or from `init.sh`.
+  Source: `tools/s10plus/nuxel-hwprobe.c`.
+
+Candidate change sets to choose between, once A17's evidence is in:
+
+| If A17 shows | A18 = |
+|---|---|
+| services active, console up | A17 + `nuxel-hwprobe` run from init + begin the fbdev-native UI (Path B) |
+| services fixed, console not bound | A17 + bind the gadget immediately after the devtmpfs mount + `nuxel-hwprobe` |
+| `Failed to spawn executor` still present | A17 + a strace of one `systemctl start` captured over the console; do not guess |
+| `CGROUP2_VERIFY_FAILED` | A17 + live inspection of `/proc/self/cgroup`, `cgroup.subtree_control` and the `cgroup_no_v1` question for 4.14 |
+
+---
+
+# CYCLE 7b — NEXT-ACTION for A18 (2026-10-15)
+
+`STATE=AWAITING_BOOT_RESULT` for A18 (`REBOOT_AT=2026-10-15T15:33:59Z`).
+**The Nuxel USB gadget enumerated on the MacBook** (`Nuxel S10+ Live Console`,
+0x18d1/0x4ee7, `/dev/cu.usbmodem201`) — but carried 0 bytes. So the live channel is
+half-proven and the decisive evidence still needs one TWRP round trip.
+
+## Read, in this order, as soon as TWRP is back
+
+1. `adb shell cat /proc/last_kmsg` → the A18 Nuxel session. Look for:
+   * `CMDLINE_PARTS n bytes=… samsung=yes` (the full cmdline is now recoverable);
+   * `dispatch: DEVICE='s10plus'` followed by **`s10plus: waiting for /dev/sda31`**
+     and `s10plus: USERDATA via documented /dev/sda31 … after Ns`;
+   * `ROOTFS_HANDOFF_STARTED`, `switching root`;
+   * `systemd[1]: systemd 258.11-1.fc43 running in system mode`;
+   * **count of `Failed to spawn executor`** — the whole point of A17/A18;
+   * `Started systemd-udevd.service` / `Started systemd-journald.service` /
+     `Started dbus-broker.service`;
+   * `CGROUP2_MOUNT_OK` + `CGROUP2_VERIFIED controllers='…'`;
+   * `nuxel-console: …` — `ttyGS0 ready` vs `waiting for /dev/ttyGS0 (N s …)` vs
+     `NEVER APPEARED after 60 s`, and `shell tty fd=…`;
+   * `SYSTEMD_LIB_INSTALLED_VERIFIED` or `SYSTEMD_LIB_VERIFIED_PRESENT`.
+   Use `scripts/s10plus-debug-pack/scripts/20-triage-nuxel-boot.py`.
+2. Mount USERDATA read-only and read, in the rootfs:
+   * `/var/log/nuxel-bootreport.txt` — the **persistent report** (systemd verdict,
+     failed units, running services, `journalctl -b -p warning`, spawn-failure
+     count, cgroup state, boot-stage files). This is the answer even if the console
+     never works.
+   * `/var/lib/nuxel/{boot-stage,animation,fb-hold.pid}`.
+   * `usr/lib64/systemd/libsystemd-shared-258.11-1.fc43.so` hash — must be
+     `848149cf…` (A17 library) if the verified deployment ran.
+3. Record `BOOT_RESULT`, `RECOVERY_ACCESS=RESTORED`, and update
+   `FLASH-ATTEMPTS.md` / `TEST-RESULTS.md` / `STATUS.md`.
+
+## Decision table
+
+| Observation | Conclusion | Next (A19) |
+|---|---|---|
+| `Failed to spawn executor` = 0 and udevd/journald/dbus `active` | **the Linux 4.14 service blocker is SOLVED** | move to the phone-UI phase; keep the console work as a side task |
+| services still fail, ram console names the reason | new, specific blocker | fix that one thing; do not guess |
+| `ttyGS0 NEVER APPEARED` / `waiting for /dev/ttyGS0` | console device-side attach failed | A19's console build (already prepared) waits 60 s with per-second logging, opens without `O_CLOEXEC`, has the shell open its own handle, and emits a 10 s heartbeat so a silent link is self-evident |
+| `ttyGS0 ready` + `shell tty fd=…` yet 0 bytes on the host | gadget→host data path issue | investigate `f_acm` line-state/notify behaviour; try the `RNDIS`/`NCM` function (kernel has both) as an alternative channel |
+| root resolution failed again | the fix is incomplete | the chunked `CMDLINE_PART` lines give the exact cmdline for the first time |
+
+## Prepared and unrun
+
+* `tools/s10plus/a19/nuxel-console.c` + `build/out/s10plus/debug-candidates/A19/nuxel-console`
+  — A19 console build (60 s tty wait with per-second klog, no `O_CLOEXEC`, own
+  handle in the shell, 10 s heartbeat).
+* `tools/s10plus/a17/build-a18-initramfs.sh` — parameterised initramfs builder.

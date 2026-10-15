@@ -93,3 +93,33 @@ MILESTONE_LIVE_USB_DIAGNOSTICS=IMPLEMENTED_NOT_YET_PROVEN_ON_HARDWARE
 
 The very first A17 boot is the test: the phone must enumerate on the MacBook as a
 CDC-ACM device and produce a shell. See `NEXT-ACTION.md`.
+
+## 6. A18 addition — a persistent boot report that does not need USB at all
+
+The USB console is the good path but it depends on the gadget binding and on
+someone being at the MacBook. A17's Forensics showed that the *only* reliable
+channel so far has been the kernel ram console, read from TWRP after the fact.
+
+A18's `nuxel-console` therefore forks a **reporter child first, before any USB
+work** (`--no-report` disables it). It chroots into the real Fedora root and, once
+systemd is up, appends the answers to the questions that matter into
+
+```
+<rootfs>/var/log/nuxel-bootreport.txt
+```
+
+* `systemctl is-system-running`, `systemctl --failed`, running services
+* `journalctl -b -p warning` and **the count of `Failed to spawn executor`**
+* `/sys/fs/cgroup/cgroup.controllers` and `/proc/self/cgroup`
+* `/var/lib/nuxel/boot-stage` and `animation`
+* the full `nuxel-hwprobe` dump (identity, framebuffer, input inventory, DRM
+  presence/absence, power supplies)
+
+Because it is a forked child started before the gadget attempt, it survives a
+failed UDC bind, a missing `/dev/ttyGS0`, a broken USB link and a hang in the
+shell. Because it writes into the ext4 root, it is readable from TWRP with one
+mount — so even a completely headless failure leaves a complete report.
+
+Validated offline: the embedded script passes `sh -n` and `bash -n` (a real
+execution in the container is blocked only by the container's own
+`/var/log` permissions).

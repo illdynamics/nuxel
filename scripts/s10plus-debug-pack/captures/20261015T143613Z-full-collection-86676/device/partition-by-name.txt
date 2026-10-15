@@ -1,0 +1,34 @@
+drwxr-xr-x    2 root     root           680 Jan  4 09:20 .
+drwxr-xr-x    4 root     root          1320 Jan  4 09:20 ..
+lrwxrwxrwx    1 root     root            16 Jan  4 09:20 boot -> /dev/block/sda14
+lrwxrwxrwx    1 root     root            15 Jan  4 09:20 bota0 -> /dev/block/sda1
+lrwxrwxrwx    1 root     root            15 Jan  4 09:20 bota1 -> /dev/block/sda2
+lrwxrwxrwx    1 root     root            15 Jan  4 09:20 bota2 -> /dev/block/sda8
+lrwxrwxrwx    1 root     root            16 Jan  4 09:20 bota3 -> /dev/block/sda24
+lrwxrwxrwx    1 root     root            16 Jan  4 09:20 cache -> /dev/block/sda28
+lrwxrwxrwx    1 root     root            16 Jan  4 09:20 cp_debug -> /dev/block/sda30
+lrwxrwxrwx    1 root     root            15 Jan  4 09:20 cpefs -> /dev/block/sdd1
+lrwxrwxrwx    1 root     root            16 Jan  4 09:20 dqmdbg -> /dev/block/sda22
+lrwxrwxrwx    1 root     root            16 Jan  4 09:20 dtb -> /dev/block/sda12
+lrwxrwxrwx    1 root     root            16 Jan  4 09:20 dtbo -> /dev/block/sda13
+lrwxrwxrwx    1 root     root            15 Jan  4 09:20 efs -> /dev/block/sda3
+lrwxrwxrwx    1 root     root            16 Jan  4 09:20 keydata -> /dev/block/sda21
+lrwxrwxrwx    1 root     root            16 Jan  4 09:20 keyrefuge -> /dev/block/sda20
+lrwxrwxrwx    1 root     root            15 Jan  4 09:20 keystorage -> /dev/block/sda6
+lrwxrwxrwx    1 root     root            16 Jan  4 09:20 misc -> /dev/block/sda19
+lrwxrwxrwx    1 root     root            16 Jan  4 09:20 nad_refer -> /dev/block/sda17
+lrwxrwxrwx    1 root     root            16 Jan  4 09:20 omr -> /dev/block/sda29
+lrwxrwxrwx    1 root     root            15 Jan  4 09:20 param -> /dev/block/sda4
+lrwxrwxrwx    1 root     root            16 Jan  4 09:20 persistent -> /dev/block/sda18
+lrwxrwxrwx    1 root     root            16 Jan  4 09:20 product -> /dev/block/sda27
+lrwxrwxrwx    1 root     root            16 Jan  4 09:20 radio -> /dev/block/sda16
+lrwxrwxrwx    1 root     root            16 Jan  4 09:20 recovery -> /dev/block/sda15
+lrwxrwxrwx    1 root     root            15 Jan  4 09:20 sec_efs -> /dev/block/sda7
+lrwxrwxrwx    1 root     root            15 Jan  4 09:20 steady -> /dev/block/sda9
+lrwxrwxrwx    1 root     root            16 Jan  4 09:20 system -> /dev/block/sda25
+lrwxrwxrwx    1 root     root            16 Jan  4 09:20 uh -> /dev/block/sda10
+lrwxrwxrwx    1 root     root            16 Jan  4 09:20 uhcfg -> /dev/block/sda11
+lrwxrwxrwx    1 root     root            15 Jan  4 09:20 up_param -> /dev/block/sda5
+lrwxrwxrwx    1 root     root            16 Jan  4 09:20 userdata -> /dev/block/sda31
+lrwxrwxrwx    1 root     root            16 Jan  4 09:20 vbmeta -> /dev/block/sda23
+lrwxrwxrwx    1 root     root            16 Jan  4 09:20 vendor -> /dev/block/sda26

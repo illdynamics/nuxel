@@ -409,3 +409,91 @@ or the driver's own resume path), then re-trigger `sec_ts` init and confirm
 `/dev/input/event*` for the TSP. The sensor hub itself is healthy
 (`[SSP] ssp_probe` registered accel/gyro/mag/light/prox/step as iio devices at
 t=1.72 s), so input *infrastructure* works — only the touch panel is gated.
+
+---
+
+# CYCLE 7 — WHY THE TOUCHSCREEN IS ABSENT: charger-mode boot (LPM), not a driver bug
+
+This is the single highest-value finding of the cycle for Phase 6, and it is fully
+deterministic.
+
+## The mechanism
+
+`drivers/samsung/misc/sec_batt.c`:
+
+```c
+unsigned int lpcharge;
+static int sec_bat_is_lpm_check(char *str)
+{
+        if (strncmp(str, "charger", 7) == 0)
+                lpcharge = 1;
+        pr_info("%s: Low power charging mode: %d\n", __func__, lpcharge);
+        return lpcharge;
+}
+__setup("androidboot.mode=", sec_bat_is_lpm_check);
+```
+
+`drivers/input/touchscreen/sec_ts/y771/sec_ts.c`:
+
+```c
+static int __init sec_ts_init(void)
+{
+#ifdef CONFIG_BATTERY_SAMSUNG
+        if (lpcharge == 1) {
+                pr_err("%s %s: Do not load driver due to : lpm %d\n", SECLOG, __func__, lpcharge);
+                return -ENODEV;
+        }
+#endif
+        pr_info("%s %s\n", SECLOG, __func__);
+        return i2c_add_driver(&sec_ts_driver);
+}
+```
+
+The same `lpcharge == 1` gate exists in `sec_ts.c:797` (probe), in
+`drivers/fingerprint/qbt2000_common.c:1363` and in
+`drivers/input/wacom/wacom_i2c.c:3281`.
+
+## Proof that A16 booted in that mode
+
+```
+t = 0.000000  sec_bat_is_lpm_check: Low power charging mode: 1      (A16 session, line 66)
+t = 1.534311  [sec_input] sec_ts_init: Do not load driver due to : lpm 1
+```
+
+`androidboot.mode=charger` is consumed by the `__setup` handler, which is why the
+string does not appear in any later `Kernel command line:` printout — but the
+handler's own message at t = 0 is conclusive: **A16 ran with `lpcharge = 1`.**
+
+## Consequences, exactly as observed
+
+`sec_ts_init()` returns `-ENODEV` before `i2c_add_driver()`, so the TSP never
+probes: no `sec_touchscreen` input device can exist. The A16 input list stops at
+`input0..input6` (meta_event, gpio_keys, grip_sensor, ssp_context, Headset, hall,
+certify_hall) — exactly what a charger-mode boot produces. The sensor hub itself
+is healthy, so this is *only* the LPM gate. Fingerprint and S-Pen are gated the
+same way.
+
+## The operational consequence — CHANGE THE REBOOT PROCEDURE
+
+The observed workflow was: phone connected to the MacBook → `adb reboot` from
+TWRP → S-Boot boots the Nuxel kernel with the charger-mode marker → `lpcharge=1`
+→ no touchscreen, no fingerprint, no wacom.
+
+So for any candidate where input matters:
+
+1. **Reboot with USB detached** (or power on from the key combo with no cable),
+   so `androidboot.mode` is not `charger`;
+2. verify `sec_bat_is_lpm_check: Low power charging mode: 0` and the absence of
+   `sec_ts_init: Do not load driver due to : lpm 1` in the ram console, then
+3. **attach USB after the boot** — the dwc3 role switch
+   (`dwc3_exynos_rsw_start`) will then bring up device mode and the A17 CDC-ACM
+   console can bind.
+
+Both A16 and A17 were/are almost certainly LPM boots, so "touchscreen does not
+work" is **not yet a finding about anything**; it is a boot-mode artefact. Do not
+record `TOUCHSCREEN=FAILED` from an LPM boot.
+
+## Also implied: `MODULES` are irrelevant here
+
+`grep -cE '^CONFIG_.*=m$'` on the kernel config is **0** — nothing is built as a
+module. The `modprobe@drm.service` failure in A16 was therefore always a no-op.

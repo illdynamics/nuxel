@@ -1,0 +1,1512 @@
+{
+  "status": "EVIDENCE_CAPTURED_NEEDS_REVIEW",
+  "files_scanned": 35,
+  "previous_boot_candidate_files": 2,
+  "matches": [
+    {
+      "file": "host-ioreg-usb.txt",
+      "line": 11,
+      "category": "kernel_watchdog",
+      "priority": "urgent",
+      "source": "current_recovery_or_host",
+      "excerpt": "|   \"IOKitDiagnostics\" = {\"Instance allocation\"=11211704,\"Container allocation\"=6637520,\"Pageable allocation\"=1065861168,\"Classes\"={\"AppleJPEGWrapperControlV8\"=0,\"KDISecondaryEncoding\"=0,\"RTBuddyFirmwareBundle\"=0,\"ApplePMPThermal\"=0,\"IOSkywalkPacketPoller\"=0,\""
+    },
+    {
+      "file": "kernel/cmdline.txt",
+      "line": 1,
+      "category": "kernel_watchdog",
+      "priority": "urgent",
+      "source": "current_recovery_or_host",
+      "excerpt": "console=ram loglevel=4 sec_debug.pcb_offset=7346944 sec_debug.smd_offset=7348992 sec_debug.lpddr4_size=8 sec_debug.dram_info=01,06,03,8G sec_debug.pwrsrc_rs=0x0000000840010000 sec_debug.reset_reason=5 sec_reset.reset_reason=5 sec_debug.reset_rwc=0 bootmode=2 s"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 831,
+      "category": "ufs",
+      "priority": "high",
+      "source": "previous_boot",
+      "excerpt": "<3>[   22.199161]  [7:scsi_srpmb_work: 1022] exynos-ufs-srpmb ufs-srpmb: Failed to wait request, ret = -19"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 4789,
+      "category": "kernel_watchdog",
+      "priority": "urgent",
+      "source": "previous_boot",
+      "excerpt": "<0>[   83.229721]  [1:           init: 3403] watchdog reset is started to 30secs"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 4794,
+      "category": "kernel_watchdog",
+      "priority": "urgent",
+      "source": "previous_boot",
+      "excerpt": "<0>[   83.229824]  [1:           init: 3403] watchdog reset is started to 30sEcs"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 7046,
+      "category": "kernel_watchdog",
+      "priority": "urgent",
+      "source": "previous_boot",
+      "excerpt": "<6>[    0.868284]  [0:      swapper/0:    1] s3c2410-wdt 10050000.watchdog_cl0: watchdog cluster 0, inactive, reset disabled, irq disabled"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 7053,
+      "category": "kernel_watchdog",
+      "priority": "urgent",
+      "source": "previous_boot",
+      "excerpt": "<6>[    0.868594]  [0:      swapper/0:    1] s3c2410-wdt 10060000.watchdog_cl2: watchdog cluster 1, inactive, reset disabled, irq disabled"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 7507,
+      "category": "display",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<3>[    1.229194]  [0:      swapper/0:    1] exynos-mipi-phy dphy_m4s4_dsim0@0x19160000: failed to lookup PMU regmap, use PMU interface"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 7510,
+      "category": "display",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<3>[    1.229396]  [0:      swapper/0:    1] exynos-mipi-phy dphy_m4s0_dsim0@0x19161000: failed to lookup PMU regmap, use PMU interface"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 11609,
+      "category": "display",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<3>[    2.243464]  [7: nuxel-fb-phone: 3316] [SSP] send_panel_information, failed to send panel information"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12737,
+      "category": "init_services",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<27>[    8.910448]  [6:        systemd:    1] systemd[1]: Failed to find module 'autofs4'"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12795,
+      "category": "root_mount",
+      "priority": "urgent",
+      "source": "previous_boot",
+      "excerpt": "<27>[    9.144018]  [6:        systemd:    1] systemd[1]: dev-mqueue.mount: Failed to spawn executor: Function not implemented"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12796,
+      "category": "root_mount",
+      "priority": "urgent",
+      "source": "previous_boot",
+      "excerpt": "<28>[    9.144036]  [6:        systemd:    1] systemd[1]: dev-mqueue.mount: Failed to spawn 'mount' task: Function not implemented"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12797,
+      "category": "root_mount",
+      "priority": "urgent",
+      "source": "previous_boot",
+      "excerpt": "<28>[    9.144047]  [6:        systemd:    1] systemd[1]: dev-mqueue.mount: Failed with result 'resources'."
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12798,
+      "category": "init_services",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<27>[    9.144229]  [6:        systemd:    1] systemd[1]: Failed to mount dev-mqueue.mount - POSIX Message Queue File System."
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12799,
+      "category": "root_mount",
+      "priority": "urgent",
+      "source": "previous_boot",
+      "excerpt": "<27>[    9.145672]  [4:        systemd:    1] systemd[1]: sys-kernel-debug.mount: Failed to spawn executor: Function not implemented"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12800,
+      "category": "root_mount",
+      "priority": "urgent",
+      "source": "previous_boot",
+      "excerpt": "<28>[    9.145702]  [4:        systemd:    1] systemd[1]: sys-kernel-debug.mount: Failed to spawn 'mount' task: Function not implemented"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12801,
+      "category": "root_mount",
+      "priority": "urgent",
+      "source": "previous_boot",
+      "excerpt": "<28>[    9.145715]  [4:        systemd:    1] systemd[1]: sys-kernel-debug.mount: Failed with result 'resources'."
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12802,
+      "category": "init_services",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<27>[    9.145999]  [4:        systemd:    1] systemd[1]: Failed to mount sys-kernel-debug.mount - Kernel Debug File System."
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12803,
+      "category": "root_mount",
+      "priority": "urgent",
+      "source": "previous_boot",
+      "excerpt": "<27>[    9.147163]  [7:        systemd:    1] systemd[1]: sys-kernel-tracing.mount: Failed to spawn executor: Function not implemented"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12804,
+      "category": "root_mount",
+      "priority": "urgent",
+      "source": "previous_boot",
+      "excerpt": "<28>[    9.147188]  [7:        systemd:    1] systemd[1]: sys-kernel-tracing.mount: Failed to spawn 'mount' task: Function not implemented"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12805,
+      "category": "root_mount",
+      "priority": "urgent",
+      "source": "previous_boot",
+      "excerpt": "<28>[    9.147231]  [7:        systemd:    1] systemd[1]: sys-kernel-tracing.mount: Failed with result 'resources'."
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12806,
+      "category": "init_services",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<27>[    9.147468]  [7:        systemd:    1] systemd[1]: Failed to mount sys-kernel-tracing.mount - Kernel Trace File System."
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12809,
+      "category": "root_mount",
+      "priority": "urgent",
+      "source": "previous_boot",
+      "excerpt": "<27>[    9.148599]  [6:        systemd:    1] systemd[1]: tmp.mount: Failed to spawn executor: Function not implemented"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12810,
+      "category": "root_mount",
+      "priority": "urgent",
+      "source": "previous_boot",
+      "excerpt": "<28>[    9.148629]  [6:        systemd:    1] systemd[1]: tmp.mount: Failed to spawn 'mount' task: Function not implemented"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12811,
+      "category": "root_mount",
+      "priority": "urgent",
+      "source": "previous_boot",
+      "excerpt": "<28>[    9.148643]  [6:        systemd:    1] systemd[1]: tmp.mount: Failed with result 'resources'."
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12812,
+      "category": "init_services",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<27>[    9.148833]  [6:        systemd:    1] systemd[1]: Failed to mount tmp.mount - Temporary Directory /tmp."
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12816,
+      "category": "root_mount",
+      "priority": "urgent",
+      "source": "previous_boot",
+      "excerpt": "<27>[    9.150482]  [6:        systemd:    1] systemd[1]: sys-kernel-config.mount: Failed to spawn executor: Function not implemented"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12817,
+      "category": "root_mount",
+      "priority": "urgent",
+      "source": "previous_boot",
+      "excerpt": "<28>[    9.150500]  [6:        systemd:    1] systemd[1]: sys-kernel-config.mount: Failed to spawn 'mount' task: Function not implemented"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12818,
+      "category": "root_mount",
+      "priority": "urgent",
+      "source": "previous_boot",
+      "excerpt": "<28>[    9.150509]  [6:        systemd:    1] systemd[1]: sys-kernel-config.mount: Failed with result 'resources'."
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12819,
+      "category": "init_services",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<27>[    9.150684]  [6:        systemd:    1] systemd[1]: Failed to mount sys-kernel-config.mount - Kernel Configuration File System."
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12821,
+      "category": "root_mount",
+      "priority": "urgent",
+      "source": "previous_boot",
+      "excerpt": "<27>[    9.151628]  [4:        (mount): 3437] (mount)[3437]: sys-kernel-tracing.mount: Failed to attach to cgroup /sys-kernel-tracing.mount: No such file or directory"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12826,
+      "category": "root_mount",
+      "priority": "urgent",
+      "source": "previous_boot",
+      "excerpt": "\u0000\u0000\u0000<27>[    9.151634]  [5:        (mount): 3436] (mount)[3436]: sys-kernel-debug.mount: Failed to attach to cgroup /sys-kernel-debug.mount: No such file or directory"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12827,
+      "category": "root_mount",
+      "priority": "urgent",
+      "source": "previous_boot",
+      "excerpt": "<27>[    9.151652]  [5:        (mount): 3436] (mount)[3436]: sys-kernel-debug.mount: sys-kernel-debug.mount: Failed at step CGROUP spawning /usr/bin/mount: No such file or directory"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12828,
+      "category": "root_mount",
+      "priority": "urgent",
+      "source": "previous_boot",
+      "excerpt": "<27>[    9.151654]  [4:        (mount): 3437] (mount)[3437]: sys-kernel-tracing.mount: sys-kernel-tracing.mount: Failed at step CGROUP spawning /usr/bin/mount: No such file or directory"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12829,
+      "category": "root_mount",
+      "priority": "urgent",
+      "source": "previous_boot",
+      "excerpt": "<27>[    9.151749]  [7:        (mount): 3438] (mount)[3438]: tmp.mount: Failed to attach to cgroup /system.slice/tmp.mount: No such file or directory"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12830,
+      "category": "root_mount",
+      "priority": "urgent",
+      "source": "previous_boot",
+      "excerpt": "<27>[    9.151772]  [7:        (mount): 3438] (mount)[3438]: tmp.mount: tmp.mount: Failed at step CGROUP spawning /usr/bin/mount: No such file or directory"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12831,
+      "category": "root_mount",
+      "priority": "urgent",
+      "source": "previous_boot",
+      "excerpt": "<27>[    9.151950]  [4:        (mount): 3435] (mount)[3435]: dev-mqueue.mount: Failed to attach to cgroup /dev-mqueue.mount: No such file or directory"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12832,
+      "category": "root_mount",
+      "priority": "urgent",
+      "source": "previous_boot",
+      "excerpt": "<27>[    9.151969]  [4:        (mount): 3435] (mount)[3435]: dev-mqueue.mount: dev-mqueue.mount: Failed at step CGROUP spawning /usr/bin/mount: No such file or directory"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12833,
+      "category": "display",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<27>[    9.152044]  [7:        systemd:    1] systemd[1]: modprobe@drm.service: Failed to spawn executor: Function not implemented"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12834,
+      "category": "display",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<28>[    9.152062]  [7:        systemd:    1] systemd[1]: modprobe@drm.service: Failed to spawn 'start' task: Function not implemented"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12835,
+      "category": "display",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<28>[    9.152206]  [7:        systemd:    1] systemd[1]: modprobe@drm.service: Failed with result 'resources'."
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12836,
+      "category": "init_services",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<27>[    9.152366]  [7:        systemd:    1] systemd[1]: Failed to start modprobe@drm.service - Load Kernel Module drm."
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12838,
+      "category": "root_mount",
+      "priority": "urgent",
+      "source": "previous_boot",
+      "excerpt": "<27>[    9.153813]  [5:        systemd:    1] systemd[1]: sys-fs-fuse-connections.mount: Failed to spawn executor: Function not implemented"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12839,
+      "category": "root_mount",
+      "priority": "urgent",
+      "source": "previous_boot",
+      "excerpt": "<28>[    9.153851]  [5:        systemd:    1] systemd[1]: sys-fs-fuse-connections.mount: Failed to spawn 'mount' task: Function not implemented"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12840,
+      "category": "root_mount",
+      "priority": "urgent",
+      "source": "previous_boot",
+      "excerpt": "<28>[    9.153866]  [5:        systemd:    1] systemd[1]: sys-fs-fuse-connections.mount: Failed with result 'resources'."
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12841,
+      "category": "init_services",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<27>[    9.154195]  [5:        systemd:    1] systemd[1]: Failed to mount sys-fs-fuse-connections.mount - FUSE Control File System."
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12845,
+      "category": "display",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<27>[    9.154992]  [6:     (modprobe): 3440] (modprobe)[3440]: modprobe@drm.service: Failed to attach to cgroup /system.slice/system-modprobe.slice/modprobe@drm.service: No such file or directory"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12846,
+      "category": "display",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<27>[    9.155014]  [6:     (modprobe): 3440] (modprobe)[3440]: modprobe@drm.service: modprobe@drm.service: Failed at step CGROUP spawning modprobe: No such file or directory"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12847,
+      "category": "root_mount",
+      "priority": "urgent",
+      "source": "previous_boot",
+      "excerpt": "<27>[    9.155438]  [4:        (mount): 3439] (mount)[3439]: sys-kernel-config.mount: Failed to attach to cgroup /sys-kernel-config.mount: No such file or directory"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12848,
+      "category": "root_mount",
+      "priority": "urgent",
+      "source": "previous_boot",
+      "excerpt": "<27>[    9.155459]  [4:        (mount): 3439] (mount)[3439]: sys-kernel-config.mount: sys-kernel-config.mount: Failed at step CGROUP spawning /usr/bin/mount: No such file or directory"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12849,
+      "category": "init_services",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<27>[    9.155463]  [5:        systemd:    1] systemd[1]: Attaching device control BPF program to cgroup /system.slice/systemd-journald.service failed: Argument list too long"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12853,
+      "category": "init_services",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<27>[    9.155502]  [5:        systemd:    1] systemd[1]: systemd-journald.service: bpf-firewall: Attaching egress BPF program to cgroup /sys/fs/cgroup/system.slice/systemd-journald.service failed: Argument list too long"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12854,
+      "category": "init_services",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<27>[    9.156178]  [6:        systemd:    1] systemd[1]: systemd-journald.service: Failed to spawn executor: Function not implemented"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12855,
+      "category": "init_services",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<28>[    9.156204]  [6:        systemd:    1] systemd[1]: systemd-journald.service: Failed to spawn 'start' task: Function not implemented"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12856,
+      "category": "root_mount",
+      "priority": "urgent",
+      "source": "previous_boot",
+      "excerpt": "<27>[    9.156356]  [7:        (mount): 3441] (mount)[3441]: sys-fs-fuse-connections.mount: Failed to attach to cgroup /sys-fs-fuse-connections.mount: No such file or directory"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12857,
+      "category": "init_services",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<28>[    9.156360]  [6:        systemd:    1] systemd[1]: systemd-journald.service: Failed with result 'resources'."
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12858,
+      "category": "root_mount",
+      "priority": "urgent",
+      "source": "previous_boot",
+      "excerpt": "<27>[    9.156379]  [7:        (mount): 3441] (mount)[3441]: sys-fs-fuse-connections.mount: sys-fs-fuse-connections.mount: Failed at step CGROUP spawning /usr/bin/mount: No such file or directory"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12859,
+      "category": "init_services",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<27>[    9.156536]  [6:        systemd:    1] systemd[1]: Failed to start systemd-journald.service - Journal Service."
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12861,
+      "category": "init_services",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<27>[    9.158658]  [4:        systemd:    1] systemd[1]: systemd-network-generator.service: Failed to spawn executor: Function not implemented"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12862,
+      "category": "init_services",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<28>[    9.158694]  [4:        systemd:    1] systemd[1]: systemd-network-generator.service: Failed to spawn 'start' task: Function not implemented"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12863,
+      "category": "init_services",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<28>[    9.158877]  [4:        systemd:    1] systemd[1]: systemd-network-generator.service: Failed with result 'resources'."
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12864,
+      "category": "init_services",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<27>[    9.159116]  [4:        systemd:    1] systemd[1]: Failed to start systemd-network-generator.service - Generate Network Units from Kernel Command Line."
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12867,
+      "category": "init_services",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<27>[    9.160279]  [5:        systemd:    1] systemd[1]: systemd-remount-fs.service: Failed to spawn executor: Function not implemented"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12868,
+      "category": "init_services",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<28>[    9.160299]  [5:        systemd:    1] systemd[1]: systemd-remount-fs.service: Failed to spawn 'start' task: Function not implemented"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12869,
+      "category": "init_services",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<28>[    9.160446]  [5:        systemd:    1] systemd[1]: systemd-remount-fs.service: Failed with result 'resources'."
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12870,
+      "category": "init_services",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<27>[    9.160624]  [5:        systemd:    1] systemd[1]: Failed to start systemd-remount-fs.service - Remount Root and Kernel File Systems."
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12875,
+      "category": "init_services",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<27>[    9.162588]  [7:        systemd:    1] systemd[1]: systemd-hwdb-update.service: Failed to spawn executor: Function not implemented"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12876,
+      "category": "init_services",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<28>[    9.162607]  [7:        systemd:    1] systemd[1]: systemd-hwdb-update.service: Failed to spawn 'start' task: Function not implemented"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12877,
+      "category": "init_services",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<28>[    9.162749]  [7:        systemd:    1] systemd[1]: systemd-hwdb-update.service: Failed with result 'resources'."
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12878,
+      "category": "init_services",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<27>[    9.162900]  [7:        systemd:    1] systemd[1]: Failed to start systemd-hwdb-update.service - Rebuild Hardware Database."
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12879,
+      "category": "init_services",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<27>[    9.163710]  [5:        systemd:    1] systemd[1]: systemd-journal-flush.service: Failed to spawn executor: Function not implemented"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12880,
+      "category": "init_services",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<28>[    9.163742]  [5:        systemd:    1] systemd[1]: systemd-journal-flush.service: Failed to spawn 'start' task: Function not implemented"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12883,
+      "category": "init_services",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<28>[    9.163906]  [5:        systemd:    1] systemd[1]: systemd-journal-flush.service: Failed with result 'resources'."
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12884,
+      "category": "init_services",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<27>[    9.164116]  [5:        systemd:    1] systemd[1]: Failed to start systemd-journal-flush.service - Flush Journal to Persistent Storage."
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12885,
+      "category": "init_services",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<27>[    9.165341]  [0:        systemd:    1] systemd[1]: systemd-random-seed.service: Failed to spawn executor: Function not implemented"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12886,
+      "category": "init_services",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<28>[    9.165384]  [0:        systemd:    1] systemd[1]: systemd-random-seed.service: Failed to spawn 'start' task: Function not implemented"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12887,
+      "category": "init_services",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<28>[    9.165742]  [0:        systemd:    1] systemd[1]: systemd-random-seed.service: Failed with result 'resources'."
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12890,
+      "category": "init_services",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<27>[    9.166145]  [0:        systemd:    1] systemd[1]: Failed to start systemd-random-seed.service - Load/Save OS Random Seed."
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12893,
+      "category": "init_services",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<27>[    9.168260]  [6:        systemd:    1] systemd[1]: systemd-sysctl.service: Failed to spawn executor: Function not implemented"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12894,
+      "category": "init_services",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<28>[    9.168281]  [6:        systemd:    1] systemd[1]: systemd-sysctl.service: Failed to spawn 'start' task: Function not implemented"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12895,
+      "category": "init_services",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<28>[    9.168430]  [6:        systemd:    1] systemd[1]: systemd-sysctl.service: Failed with result 'resources'."
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12896,
+      "category": "init_services",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<27>[    9.168602]  [6:        systemd:    1] systemd[1]: Failed to start systemd-sysctl.service - Apply Kernel Variables."
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12899,
+      "category": "init_services",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<27>[    9.169626]  [4:        systemd:    1] systemd[1]: systemd-tmpfiles-setup-dev-early.service: Failed to spawn executor: Function not implemented"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12900,
+      "category": "init_services",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<28>[    9.169656]  [4:        systemd:    1] systemd[1]: systemd-tmpfiles-setup-dev-early.service: Failed to spawn 'start' tasj: Function lot implemented"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12901,
+      "category": "init_services",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<28>[    9.169824]  [4:        systemd:    1] systemd[1]: systemd-tmpfiles-setup-dev-early.service: Failed with result 'resources'."
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12902,
+      "category": "init_services",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<27>[    9.170040]  [4:        systemd:    1] systemd[1]: Failed to start systemd-tmpfiles-setup-dev-early.service - Create Static Device Nodes in /dev gracefully."
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12903,
+      "category": "init_services",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<27>[    9.171252]  [5:        systemd:    1] systemd[1]: systemd-sysusers.service: Failed to spawn executor: Function not implemented"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12905,
+      "category": "init_services",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<28>[    9.171274]  [5:        systemd:    1] systemd[1]: systemd-sysusers.service: Failed to spawn 'start' task: Function not implemented"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12907,
+      "category": "init_services",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<28>[    9.171415]  [5:        systemd:    1] systemd[1]: systemd-sysusers.service: Failed with result 'resources'."
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12908,
+      "category": "init_services",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<27>[    9.171587]  [5:        systemd:    1] systemd[1]: Failed to start systemd-sysusers.service - Create System Users."
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12911,
+      "category": "init_services",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<27>[    9.172584]  [4:        systemd:    1] systemd[1]: systemd-tmpfiles-setup-dev.service: Failed to spawn executor: Function not implemented"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12912,
+      "category": "init_services",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<28>[    9.172604]  [4:        systemd:    1] systemd[1]: systemd-tmpfiles-setup-dev.service: Failed to spawn 'start' task: Function not implemented"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12913,
+      "category": "init_services",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<28>[    9.172749]  [4:        systemd:    1] systemd[1]: systemd-tmpfiles-setup-dev.service: Failed with result 'resources'."
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12914,
+      "category": "init_services",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<27>[    9.172905]  [4:        systemd:    1] systemd[1]: Failed to start systemd-tmpfiles-setup-dev.service - Create Static Device Nodes in /dev."
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12927,
+      "category": "init_services",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<27>[    9.178550]  [7:        systemd:    1] systemd[1]: systemd-tmpfiles-setup.service: Failed to spawn executor: Function not implemented"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12928,
+      "category": "init_services",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<28>[    9.178569]  [7:        systemd:    1] systemd[1]: systemd-tmpfiles-setup.service: Failed to spawn 'start' task: Function not implemented"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12929,
+      "category": "init_services",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<28>[    9.178712]  [7:        systemd:    1] systemd[1]: systemd-tmpfiles-setup.service: Failed with result 'resources'."
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12930,
+      "category": "init_services",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<27>[    9.178869]  [7:        systemd:    1] systemd[1]: Failed to start systemd-tmpfiles-setup.service - Create System Files and Directories."
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12931,
+      "category": "init_services",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<27>[    9.179831]  [4:        systemd:    1] systemd[1]: ldconfig.service: Failed to spawn executor: Function not implemented"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12932,
+      "category": "init_services",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<28>[    9.179860]  [4:        systemd:    1] systemd[1]: ldconfig.service: Failed to spawn 'start' task: Function not implemented"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12933,
+      "category": "init_services",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<28>[    9.180026]  [4:        systemd:    1] systemd[1]: ldconfig.service: Failed with result 'resources'."
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12934,
+      "category": "init_services",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<27>[    9.180256]  [4:        systemd:    1] systemd[1]: Failed to start ldconfig.service - Rebuild Dynamic Linker Cache."
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12937,
+      "category": "init_services",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<27>[    9.181800]  [5:        systemd:    1] systemd[1]: systemd-journal-catalog-update.service: Failed to spawn executor: Function not implemented"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12938,
+      "category": "init_services",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<28>[    9.181826]  [5:        systemd:    1] systemd[1]: systemd-journal-catalog-update.service: Failed to spawn 'start' task: Function not implemented"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12939,
+      "category": "init_services",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<28>[    9.181971]  [5:        systemd:    1] systemd[1]: systemd-journal-catalog-update.service: Failed with result 'resources'."
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12940,
+      "category": "init_services",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<27>[    9.182172]  [5:        systemd:    1] systemd[1]: Failed to start systemd-journal-catalog-update.service - Rebuild Journal Catalog."
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12949,
+      "category": "init_services",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<27>[    9.183524]  [4:        systemd:    1] systemd[1]: systemd-udev-load-credentials.service: Failed to spawn executor: Function not implemented"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12950,
+      "category": "init_services",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<28>[    9.183549]  [4:        systemd:    1] systemd[1]: systemd-udev-load-credentials.service: Failed to spawn 'start' task: Function not implemented"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12951,
+      "category": "init_services",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<28>[    9.183698]  [4:        systemd:    1] systemd[1]: systemd-udev-load-credentials.service: Failed with result 'resources'."
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12952,
+      "category": "init_services",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<27>[    9.183898]  [4:        systemd:    1] systemd[1]: Failed to start systemd-udev-load-credentials.service - Load udev Rules from Credentials."
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12955,
+      "category": "init_services",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<27>[    9.184947]  [5:        systemd:    1] systemd[1]: systemd-udev-trigger.service: Failed to spawn executor: Function not implemented"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12956,
+      "category": "init_services",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<28>[    9.184966]  [5:        systemd:    1] systemd[1]: systemd-udev-trigger.service: Failed to spawn 'start' task: Function not implemented"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12957,
+      "category": "init_services",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<28>[    9.185194]  [4:        systemd:    1] systemd[1]: systemd-udev-trigger.service: Failed with result 'resources'."
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12958,
+      "category": "init_services",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<27>[    9.185404]  [4:        systemd:    1] systemd[1]: Failed to start systemd-udev-trigger.service - Coldplug All udev Devices."
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12959,
+      "category": "init_services",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<27>[    9.185962]  [4:        systemd:    1] systemd[1]: systemd-udevd.service: bpf-firewall: Attaching egress BPF program to cgroup /sys/fs/cgroup/system.slice/systemd-udevd.service failed: Argument list too long"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12962,
+      "category": "init_services",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<27>[    9.186598]  [4:        systemd:    1] systemd[1]: systemd-udevd.service: Failed to spawn executor: Function not implemented"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12963,
+      "category": "init_services",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<28>[    9.186619]  [4:        systemd:    1] systemd[1]: systemd-udevd.service: Failed to spawn 'start' task: Function not implemented"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12964,
+      "category": "init_services",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<28>[    9.186707]  [4:        systemd:    1] systemd[1]: systemd-udevd.service: Failed with result 'resources'."
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12965,
+      "category": "init_services",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<27>[    9.186881]  [4:        systemd:    1] systemd[1]: Failed to start systemd-udevd.service - Rule-based Manager for Device Events and Files."
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12968,
+      "category": "init_services",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<27>[    9.188015]  [5:        systemd:    1] systemd[1]: systemd-update-done.service: Failed to spawn executor: Function not implemented"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12969,
+      "category": "init_services",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<28>[    9.188033]  [5:        systemd:    1] systemd[1]: systemd-update-done.service: Failed to spawn 'start' task: Function not implemented"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12970,
+      "category": "init_services",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<28>[    9.188241]  [7:        systemd:    1] systemd[1]: systemd-update-done.service: Failed with result 'resources'."
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12971,
+      "category": "init_services",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<27>[    9.188435]  [7:        systemd:    1] systemd[1]: Failed to start systemd-update-done.service - Update is Completed."
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12972,
+      "category": "init_services",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<27>[    9.189557]  [4:        systemd:    1] systemd[1]: systemd-update-utmp.service: Failed to spawn executor: Function not implemented"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12973,
+      "category": "init_services",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<28>[    9.189584]  [4:        systemd:    1] systemd[1]: systemd-update-utmp.service: Failed to spawn 'start' task: Function not implemented"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12974,
+      "category": "init_services",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<28>[    9.189760]  [4:        systemd:    1] systemd[1]: systemd-update-utmp.service: Failed with result 'resources'."
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12975,
+      "category": "init_services",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<27>[    9.189988]  [4:        systemd:    1] systemd[1]: Failed to start systemd-update-utmp.service - Record System Boot/Shutdown in UTMP."
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12986,
+      "category": "init_services",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<27>[    9.191878]  [4:        systemd:    1] systemd[1]: Attaching device control BPF program to cgroup /system.slice/dbus-broker.service failed: Argument list too long"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12989,
+      "category": "init_services",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<27>[    9.193489]  [4:        systemd:    1] systemd[1]: dbus-broker.service: Failed to spawn executor: Function not implemented"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12991,
+      "category": "init_services",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<28>[    9.193514]  [4:        systemd:    1] systemd[1]: dbus-broker.service: Failed to spawn 'start' task: Function not implemented"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12992,
+      "category": "init_services",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<28>[    9.193679]  [4:        systemd:    1] systemd[1]: dbus-broker.service: Failed with result 'resources'."
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12993,
+      "category": "init_services",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<27>[    9.193952]  [7:        systemd:    1] systemd[1]: Failed to start dbus-broker.service - D-Bus System Message Bus."
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12994,
+      "category": "init_services",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<28>[    9.193987]  [7:        systemd:    1] systemd[1]: Dependency failed for NetworkManager.service - Network Manager."
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 12995,
+      "category": "init_services",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<29>[    9.194006]  [7:        systemd:    1] systemd[1]: NetworkManager.service: Job NetworkManager.service/start failed with result 'dependency'."
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 13001,
+      "category": "init_services",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<27>[    9.196410]  [6:        systemd:    1] systemd[1]: authselect-apply-changes.service: Failed to spawn executor: Function not implemented"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 13002,
+      "category": "init_services",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<28>[    9.196434]  [6:        systemd:    1] systemd[1]: authselect-apply-changes.service: Failed to spawn 'start' task: Function not implemented"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 13003,
+      "category": "init_services",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<28>[    9.196586]  [6:        systemd:    1] systemd[1]: authselect-apply-changes.service: Failed with result 'resources'."
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 13004,
+      "category": "init_services",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<27>[    9.196752]  [6:        systemd:    1] systemd[1]: Failed to start authselect-apply-changes.service - Apply authselect changes."
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 13007,
+      "category": "init_services",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<27>[    9.197661]  [7:        systemd:    1] systemd[1]: nuxel-firstlight.service: Failed to spawn executor: Function not implemented"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 13008,
+      "category": "init_services",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<28>[    9.197680]  [7:        systemd:    1] systemd[1]: nuxel-firstlight.service: Failed to spawn 'start' task: Function not implemented"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 13009,
+      "category": "init_services",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<28>[    9.197828]  [7:        systemd:    1] systemd[1]: nuxel-firstlight.service: Failed with result 'resources'."
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 13010,
+      "category": "init_services",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<27>[    9.197993]  [7:        systemd:    1] systemd[1]: Failed to start nuxel-firstlight.service - Nuxel S10+ first-light framebuffer hardware probe (not Phosh)."
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 13011,
+      "category": "init_services",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<27>[    9.198545]  [7:        systemd:    1] systemd[1]: Attaching device control BPF program to cgroup /system.slice/polkit.service failed: Argument list too long"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 13021,
+      "category": "root_mount",
+      "priority": "urgent",
+      "source": "previous_boot",
+      "excerpt": "<27>[    9.216826]  [7:        (mount): 3472] (mount)[3472]: tmp.mount: Failed to attach to cgroup /system.slice/tmp.mount: No such file or directory"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 13022,
+      "category": "root_mount",
+      "priority": "urgent",
+      "source": "previous_boot",
+      "excerpt": "<27>[    9.216847]  [7:        (mount): 3472] (mount)[3472]: tmp.mount: tmp.mount: Failed at step CGROUP spawning /usr/bin/mount: No such file or directory"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 13023,
+      "category": "display",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<27>[    9.217726]  [6:     (modprobe): 3473] (modprobe)[3473]: modprobe@drm.service: Failed to attach to cgroup /system.slice/system-modprobe.slice/modprobe@drm.service: No such file or directory"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 13024,
+      "category": "display",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<27>[    9.217745]  [6:     (modprobe): 3473] (modprobe)[3473]: modprobe@drm.service: modprobe@drm.service: Failed at step CGROUP spawning modprobe: No such file or directory"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 13025,
+      "category": "filesystem",
+      "priority": "high",
+      "source": "previous_boot",
+      "excerpt": "<3>[    9.221468]  [0:     (md-udevd): 3457] EXT4-fs (sda31): errors=remount-ro for active namespaces on umount 2"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 13037,
+      "category": "root_mount",
+      "priority": "urgent",
+      "source": "previous_boot",
+      "excerpt": "<27>[    9.237217]  [7:        (mount): 3482] (mount)[3482]: tmp.mount: Failed to attach to cgroup /system.slice/tmp.mount: No such file or directory"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 13038,
+      "category": "root_mount",
+      "priority": "urgent",
+      "source": "previous_boot",
+      "excerpt": "<27>[    9.237240]  [7:        (mount): 3482] (mount)[3482]: tmp.mount: tmp.mount: Failed at step CGROUP spawning /usr/bin/mount: No such file or directory"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 13039,
+      "category": "display",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<27>[    9.238433]  [6:     (modprobe): 3483] (modprobe)[3483]: modprobe@drm.service: Failed to attach to cgroup /system.slice/system-modprobe.slice/modprobe@drm.service: No such file or directory"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 13040,
+      "category": "display",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<27>[    9.238453]  [6:     (modprobe): 3483] (modprobe)[3483]: modprobe@drm.service: modprobe@drm.service: Failed at step CGROUP spawning modprobe: No such file or directory"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 13052,
+      "category": "filesystem",
+      "priority": "high",
+      "source": "previous_boot",
+      "excerpt": "<3>[    9.257291]  [4:     (md-udevd): 3479] EXT4-fs (sda31): errors=remount-ro for active namespaces on umount 2"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 13053,
+      "category": "root_mount",
+      "priority": "urgent",
+      "source": "previous_boot",
+      "excerpt": "<27>[    9.260612]  [6:        (mount): 3493] (mount)[3493]: tmp.mount: Failed to attach to cgroup /system.slice/tmp.mount: No such file or directory"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 13054,
+      "category": "root_mount",
+      "priority": "urgent",
+      "source": "previous_boot",
+      "excerpt": "<27>[    9.260633]  [6:        (mount): 3493] (mount)[3493]: tmp.mount: tmp.mount: Failed at step CGROUP spawning /usr/bin/mount: No such file or directory"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 13055,
+      "category": "display",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<27>[    9.263021]  [5:     (modprobe): 3494] (modprobe)[3494]: modprobe@drm.service: Failed to attach to cgroup /system.slice/system-modprobe.slice/modprobe@drm.service: No such file or directory"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 13056,
+      "category": "display",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<27>[    9.263041]  [5:     (modprobe): 3494] (modprobe)[3494]: modprobe@drm.service: modprobe@drm.service: Failed at step CGROUP spawning modprobe: No such file or directory"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 13059,
+      "category": "filesystem",
+      "priority": "high",
+      "source": "previous_boot",
+      "excerpt": "<3>[    9.269297]  [0:     (md-udevd): 3489] EXT4-fs (sda31): errors=remount-ro for active namespaces on umount 2"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 13069,
+      "category": "root_mount",
+      "priority": "urgent",
+      "source": "previous_boot",
+      "excerpt": "<27>[    9.283536]  [7:        (mount): 3504] (mount)[3504]: tmp.mount: Failed to attach to cgroup /system.slice/tmp.mount: No such file or directory"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 13070,
+      "category": "root_mount",
+      "priority": "urgent",
+      "source": "previous_boot",
+      "excerpt": "<27>[    9.283556]  [7:        (mount): 3504] (mount)[3504]: tmp.mount: tmp.mount: Failed at step CGROUP spawning /usr/bin/mount: No such file or directory"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 13071,
+      "category": "display",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<27>[    9.290607]  [1:     (modprobe): 3505] (modprobe)[3505]: modprobe@drm.service: Failed to attach to cgroup /system.slice/system-modprobe.slice/modprobe@drm.service: No such file or directory"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 13072,
+      "category": "display",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<27>[    9.290650]  [1:     (modprobe): 3505] (modprobe)[3505]: modprobe@drm.service: modprobe@drm.service: Failed at step CGROUP spawning modprobe: No such file or directory"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 13079,
+      "category": "filesystem",
+      "priority": "high",
+      "source": "previous_boot",
+      "excerpt": "<3>[    9.301540]  [3:     (md-udevd): 3500] EXT4-fs (sda31): errors=remount-ro for active namespaces on umount 2"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 13085,
+      "category": "display",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<27>[    9.308447]  [6:     (modprobe): 3516] (modprobe)[3516]: modprobe@drm.service: Failed to attach to cgroup /system.slice/system-modprobe.slice/modprobe@drm.service: No such file or directory"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 13086,
+      "category": "display",
+      "priority": "medium",
+      "source": "previous_boot",
+      "excerpt": "<27>[    9.308468]  [6:     (modprobe): 3516] (modprobe)[3516]: modprobe@drm.service: modprobe@drm.service: Failed at step CGROUP spawning modprobe: No such file or directory"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 13097,
+      "category": "filesystem",
+      "priority": "high",
+      "source": "previous_boot",
+      "excerpt": "<3>[    9.325302]  [4:     (md-udevd): 3511] EXT4-fs (sda31): errors=remount-ro for active namespaces on umount 2"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 20038,
+      "category": "kernel_panic",
+      "priority": "urgent",
+      "source": "previous_boot",
+      "excerpt": "<0>[  170.198902] I[0:      swapper/0:    0] Kernel panic - not syncing: Fatal exception in interrupt"
+    },
+    {
+      "file": "previous-boot/last_kmsg.txt",
+      "line": 20041,
+      "category": "kernel_watchdog",
+      "priority": "urgent",
+      "source": "previous_boot",
+      "excerpt": "<0>[  170.198920] I[0:      swapper/0:    0] watchdog reset is started to 30secs"
+    },
+    {
+      "file": "recovery/current-recovery-dmesg.txt",
+      "line": 546,
+      "category": "kernel_watchdog",
+      "priority": "urgent",
+      "source": "current_recovery_or_host",
+      "excerpt": "<6>[    0.838510]  [0:      swapper/0:    1] s3c2410-wdt 10050000.watchdog_cl0: watchdog cluster 0, inactive, reset disabled, irq disabled"
+    },
+    {
+      "file": "recovery/current-recovery-dmesg.txt",
+      "line": 553,
+      "category": "kernel_watchdog",
+      "priority": "urgent",
+      "source": "current_recovery_or_host",
+      "excerpt": "<6>[    0.839151]  [0:      swapper/0:    1] s3c2410-wdt 10060000.watchdog_cl2: watchdog cluster 1, inactive, reset disabled, irq disabled"
+    },
+    {
+      "file": "recovery/current-recovery-dmesg.txt",
+      "line": 1019,
+      "category": "display",
+      "priority": "medium",
+      "source": "current_recovery_or_host",
+      "excerpt": "<3>[    6.518298]  [0:      swapper/0:    1] exynos-mipi-phy dphy_m4s4_dsim0@0x19160000: failed to lookup PMU regmap, use PMU interface"
+    },
+    {
+      "file": "recovery/current-recovery-dmesg.txt",
+      "line": 1022,
+      "category": "display",
+      "priority": "medium",
+      "source": "current_recovery_or_host",
+      "excerpt": "<3>[    6.518551]  [0:      swapper/0:    1] exynos-mipi-phy dphy_m4s0_dsim0@0x19161000: failed to lookup PMU regmap, use PMU interface"
+    },
+    {
+      "file": "recovery/current-recovery-dmesg.txt",
+      "line": 5135,
+      "category": "selinux",
+      "priority": "medium",
+      "source": "current_recovery_or_host",
+      "excerpt": "<6>[    7.539396]  [7:           init:    1] SELinux: the above unknown classes and permissions will be denied"
+    },
+    {
+      "file": "recovery/current-recovery-dmesg.txt",
+      "line": 5316,
+      "category": "selinux",
+      "priority": "medium",
+      "source": "current_recovery_or_host",
+      "excerpt": "<11>[    7.738694]  [5:           init:    1] selinux: avc:  denied  { set } for property=twrp.crash_counter pid=4884 uid=0 gid=0 scontext=u:r:recovery:s0 tcontext=u:object_r:default_prop:s0 tclass=property_service permissive=1"
+    },
+    {
+      "file": "recovery/current-recovery-dmesg.txt",
+      "line": 5323,
+      "category": "display",
+      "priority": "medium",
+      "source": "current_recovery_or_host",
+      "excerpt": "<3>[    7.743300]  [6:       recovery: 4884] [SSP] send_panel_information, failed to send panel information"
+    },
+    {
+      "file": "recovery/current-recovery-dmesg.txt",
+      "line": 5627,
+      "category": "display",
+      "priority": "medium",
+      "source": "current_recovery_or_host",
+      "excerpt": "<3>[    7.906143]  [6:  kworker/u16:0:    5] set_panel_poc, failed to read dim partition"
+    },
+    {
+      "file": "recovery/current-recovery-dmesg.txt",
+      "line": 5628,
+      "category": "display",
+      "priority": "medium",
+      "source": "current_recovery_or_host",
+      "excerpt": "<3>[    7.906146]  [6:  kworker/u16:0:    5] panel_update_dim_type, failed to read gamma flash(ret -11)"
+    },
+    {
+      "file": "recovery/current-recovery-dmesg.txt",
+      "line": 5630,
+      "category": "display",
+      "priority": "medium",
+      "source": "current_recovery_or_host",
+      "excerpt": "<3>[    7.906151]  [6:  kworker/u16:0:    5] PANEL:ERR:panel_update_dim_type failed to check dim_flash exist"
+    },
+    {
+      "file": "recovery/current-recovery-dmesg.txt",
+      "line": 5634,
+      "category": "display",
+      "priority": "medium",
+      "source": "current_recovery_or_host",
+      "excerpt": "<3>[    7.906160]  [6:  kworker/u16:0:    5] set_panel_poc, failed to read MTP partition"
+    },
+    {
+      "file": "recovery/current-recovery-dmesg.txt",
+      "line": 5635,
+      "category": "display",
+      "priority": "medium",
+      "source": "current_recovery_or_host",
+      "excerpt": "<3>[    7.906162]  [6:  kworker/u16:0:    5] panel_update_dim_type, failed to read mtp flash(ret -11)"
+    },
+    {
+      "file": "recovery/current-recovery-dmesg.txt",
+      "line": 5637,
+      "category": "display",
+      "priority": "medium",
+      "source": "current_recovery_or_host",
+      "excerpt": "<3>[    7.906167]  [6:  kworker/u16:0:    5] PANEL:ERR:__panel_seq_dim_flash_res_init, failed to seqtbl(PANEL_DIM_FLASH_RES_INIT_SEQ)"
+    },
+    {
+      "file": "recovery/current-recovery-dmesg.txt",
+      "line": 5638,
+      "category": "display",
+      "priority": "medium",
+      "source": "current_recovery_or_host",
+      "excerpt": "<3>[    7.906169]  [6:  kworker/u16:0:    5] panel_update_dim_type, failed to resource init"
+    },
+    {
+      "file": "recovery/current-recovery-dmesg.txt",
+      "line": 5640,
+      "category": "display",
+      "priority": "medium",
+      "source": "current_recovery_or_host",
+      "excerpt": "<3>[    7.906175]  [6:  kworker/u16:0:    5] panel_update_dim_type, failed to copy resource dim_flash_mtp_offset (ret -22)"
+    },
+    {
+      "file": "recovery/current-recovery-dmesg.txt",
+      "line": 5661,
+      "category": "display",
+      "priority": "medium",
+      "source": "current_recovery_or_host",
+      "excerpt": "<3>[    7.906233]  [6:  kworker/u16:0:    5] panel_bl_set_brightness, failed to write seqtbl"
+    },
+    {
+      "file": "recovery/current-recovery-dmesg.txt",
+      "line": 5662,
+      "category": "display",
+      "priority": "medium",
+      "source": "current_recovery_or_host",
+      "excerpt": "<3>[    7.906235]  [6:  kworker/u16:0:    5] panel_update_brightness, failed to set_brightness (ret -5)"
+    },
+    {
+      "file": "recovery/current-recovery-dmesg.txt",
+      "line": 6123,
+      "category": "selinux",
+      "priority": "medium",
+      "source": "current_recovery_or_host",
+      "excerpt": "<11>[    9.987179]  [7:           init:    1] selinux: avc:  denied  { set } for property=sys.usb.config pid=4884 uid=0 gid=0 scontext=u:r:recovery:s0 tcontext=u:object_r:system_radio_prop:s0 tclass=property_service permissive=1"
+    },
+    {
+      "file": "recovery/current-recovery-dmesg.txt",
+      "line": 6237,
+      "category": "filesystem",
+      "priority": "high",
+      "source": "current_recovery_or_host",
+      "excerpt": "<3>[   12.983295]  [6:       recovery: 4884] EXT4-fs (sda31): errors=remount-ro for active namespaces on umount 0"
+    }
+  ],
+  "note": "Regex hits are hypotheses, not confirmed root causes. Current recovery logs do not describe the earlier Nuxel kernel."
+}

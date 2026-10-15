@@ -88,6 +88,18 @@ Two parallel paths, in order of cost:
 Until a UI can commit a frame, **`PHONE_UI_READY` must not be claimed** and the
 animator must keep the panel alive.
 
+## 3b. Input has a boot-mode prerequisite (measured, see DEVICE-OBSERVATIONS.md)
+
+`sec_ts_init()` (and the fingerprint and wacom drivers) return `-ENODEV` when
+`lpcharge == 1`, i.e. when S-Boot marks the boot `androidboot.mode=charger`
+("Low power charging mode", set by `__setup` in `drivers/samsung/misc/sec_batt.c`).
+A16 booted that way (its own log line at t = 0 proves it), which is why the input
+list contains no touchscreen at all.
+
+Therefore: **reboot with USB detached, confirm
+`sec_bat_is_lpm_check: Low power charging mode: 0`, then attach USB after boot.**
+Any UI/input test run from an LPM boot measures nothing about the hardware.
+
 ## 4. Explicit non-claims
 
 ```

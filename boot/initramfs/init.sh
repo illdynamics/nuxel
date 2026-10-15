@@ -378,6 +378,15 @@ for param in ${CMDLINE}; do
     esac
 done
 
+# A18: no load-bearing `case` PATTERN test survives in the root-resolution path.
+# toybox 0.8.14 treats an empty alternative as a wildcard (see the dispatch note
+# further down), so the only primitives used here are `[ ... ]` tests and `grep -q`.
+cmdline_matches_samsung() {
+    printf '%s' "${CMDLINE}" | grep -q 'androidboot.hardware=exynos9820' && return 0
+    printf '%s' "${CMDLINE}" | grep -q 'androidboot.bootloader=G97'        && return 0
+    return 1
+}
+
 # HARD IDENTITY PIN.  S-Boot's own command line always carries the board, and on
 # A10 the inferred path proved unreliable: the cmdline branch reported
 # device=s10plus yet the dispatch resolved a generic root.  Pin it here (before
@@ -389,6 +398,21 @@ case " ${CMDLINE} " in
         nuxel_say "identity pin: S-Boot cmdline reports exynos9820 -> DEVICE=s10plus" ;;
 esac
 log "slot=${SLOT} device=${DEVICE:-unknown} quiet=${QUIET:-0} verity=$([ -n "${VERITY_HASH}" ] && echo on || echo off)"
+
+# A18: the Samsung ram console truncates a single printk at ~1 KiB.  That is how the
+# phase-1 captures lost the S-Boot `root=` value and the board tokens at the end of
+# the command line, which made the A17 root-resolution failure much harder to read
+# than it had to be.  Emit it in chunks (head -c / tail -c +N are both available in
+# this toybox) so the full cmdline is always recoverable from /proc/last_kmsg.
+if [ -n "${CMDLINE}" ]; then
+    _cml="${CMDLINE}"; _cmi=0
+    while [ -n "${_cml}" ]; do
+        _cmi=$((_cmi + 1))
+        nuxel_say "CMDLINE_PART ${_cmi}: $(printf '%s' "${_cml}" | head -c 200)"
+        _cml="$(printf '%s' "${_cml}" | tail -c +201)"
+    done
+    nuxel_say "CMDLINE_PARTS ${_cmi} bytes=${#CMDLINE} samsung=$(cmdline_matches_samsung && echo yes || echo no)"
+fi
 [ -z "${DEVICE}" ] && warn "no nuxel.device= on cmdline; assuming generic ARM64"
 
 # --- device-tree / DTB overlay sanity -------------------------------------------
@@ -514,38 +538,60 @@ emergency_shell() {
 # explicitly here and never let a bootloader partition become the root.
 force_s10plus_root() {
     [ -n "${NUXEL_FORCE_S10PLUS_DONE:-}" ] && return 0
-    case " ${CMDLINE} " in
-        *androidboot.hardware=exynos9820*|*androidboot.bootloader=G97*) : ;;
-        *) return 0 ;;
-    esac
-    case "${ROOT_DEV}" in
-        ""|/dev/sda1|/dev/sda2|/dev/sda25)
-            nuxel_say "root override: forcing the s10plus USERDATA resolution (was '${ROOT_DEV}')"
-            # FAST discovery.  A13 sat here for the full 12 s because
-            # /sys/class/block is EMPTY on this kernel even with sysfs mounted, so
-            # PARTNAME uevent lookup can never succeed and the loop was pure delay.
-            # The operator's force-reset killed a boot during that silence (see the
-            # first-light note above).  Probe once, allow one second for the UFS
-            # scan to finish, then use the documented, size-verified node.
-            ROOT_DEV="$(s10plus_userdata_device)"
-            if [ -z "${ROOT_DEV}" ]; then
-                sleep 1
-                ROOT_DEV="$(s10plus_userdata_device)"
-            fi
-            _t=1
-            if [ -n "${ROOT_DEV}" ]; then
-                nuxel_say "USERDATA discovered by PARTNAME after ${_t}s: ${ROOT_DEV}"
-            elif [ -b /dev/sda31 ]; then
-                ROOT_DEV=/dev/sda31
-                nuxel_say "PARTNAME discovery failed after ${_t}s; using documented /dev/sda31 (by-name userdata) - the rootfs is verified below"
-                diag "USERDATA_FALLBACK /dev/sda31"
-            else
-                nuxel_say "USERDATA could not be located at all (no PARTNAME, no /dev/sda31)"
-            fi
-            ;;
-        *) nuxel_say "root override: leaving ROOT_DEV='${ROOT_DEV}'" ;;
-    esac
     NUXEL_FORCE_S10PLUS_DONE=1
+
+    # A18: this is now UNCONDITIONAL evidence-driven rescue, not a pattern test.
+    # It used to be gated on `case " ${CMDLINE} " in *samsung*` and it silently
+    # returned on any pattern mismatch, which is how A17 reached
+    # "[FATAL] no root block device found" while holding a perfectly good cmdline.
+    # The gate is now: a Samsung UFS board is either claimed by the cmdline OR
+    # proven by the presence of the 31st UFS partition.  Nothing else is needed.
+    nuxel_say "root override: enter ROOT_DEV='${ROOT_DEV}' samsung=$(cmdline_matches_samsung && echo yes || echo no)"
+    if cmdline_matches_samsung || [ -b /dev/sda31 ]; then
+        case_ok=1
+    else
+        case_ok=0
+    fi
+    if [ "${case_ok}" = 0 ]; then
+        nuxel_say "root override: not a Samsung UFS board - leaving ROOT_DEV='${ROOT_DEV}'"
+        return 0
+    fi
+
+    case_ok=0
+    for _cand in "" /dev/sda1 /dev/sda2 /dev/sda25; do
+        if [ "${ROOT_DEV}" = "${_cand}" ]; then case_ok=1; fi
+    done
+    if [ "${case_ok}" = 0 ]; then
+        nuxel_say "root override: leaving ROOT_DEV='${ROOT_DEV}' (not a bootloader/Android partition)"
+        return 0
+    fi
+
+    nuxel_say "root override: forcing the s10plus USERDATA resolution (was '${ROOT_DEV}')"
+    # A13 waited here in silence (its PARTNAME loop could never succeed:
+    # /sys/class/block is empty on this kernel even with sysfs mounted), and the
+    # operator force-reset a boot during that silence.  A18 waits for the node to
+    # actually appear, up to 20 s, and says something EVERY second so the screen
+    # and the log never look dead.
+    _t=0
+    while [ "${_t}" -lt 20 ]; do
+        ROOT_DEV="$(s10plus_userdata_device)"
+        if [ -n "${ROOT_DEV}" ]; then
+            nuxel_say "USERDATA discovered by PARTNAME after ${_t}s: ${ROOT_DEV}"
+            break
+        fi
+        if [ -b /dev/sda31 ]; then
+            ROOT_DEV=/dev/sda31
+            nuxel_say "USERDATA_FALLBACK /dev/sda31 after ${_t}s (documented by-name userdata; rootfs verified below)"
+            diag "USERDATA_FALLBACK /dev/sda31"
+            break
+        fi
+        _t=$((_t + 1))
+        nuxel_say "USERDATA waiting t=${_t}s blockdevs='$(ls /dev/sd* 2>/dev/null | tr '\n' ' ')'"
+        sleep 1
+    done
+    if [ -z "${ROOT_DEV}" ]; then
+        nuxel_say "USERDATA could not be located in 20s (no PARTNAME, no /dev/sda31)"
+    fi
 }
 
 find_root() {
@@ -660,8 +706,13 @@ fi
 
 ROOT_DEV=""
 nuxel_say "dispatch: DEVICE='${DEVICE}' ROOT_SPEC='${ROOT_SPEC}' ROOT_FSTYPE='${ROOT_FSTYPE}'"
-case "${DEVICE}" in
-    mustang|vm|"")
+# A18: DEVICE dispatch without any `case` pattern test.
+# toybox 0.8.14 treats `""` in a case list as a WILDCARD, so the old
+# `case "${DEVICE}" in mustang|vm|"") ... s10plus) ...` made the s10plus and
+# g7power branches unreachable: a boot with DEVICE=s10plus matched the
+# generic branch.  Measured on the handset in A16 (survived only via
+# force_s10plus_root) and fatal in A17.  Explicit tests only.
+if [ -z "${DEVICE}" ] || [ "${DEVICE}" = mustang ] || [ "${DEVICE}" = vm ]; then
         # Existing A/B + generic probe (mustang dynamic partitions; vm/QEMU
         # virtio).  Byte-equivalent to the pre-multi-device behaviour:
         # explicit root= > /dev/disk/by-partlabel/system_${SLOT} > generic.
@@ -673,8 +724,7 @@ case "${DEVICE}" in
                 ROOT_DEV=""
                 DEVICE=s10plus ;;
         esac
-        ;;
-    s10plus)
+elif [ "${DEVICE}" = s10plus ]; then
         # S10+ A-only UFS layout:
         # Boot -> Samsung downstream kernel Linux. Root is on USERDATA only.
         # UFS path: /dev/block/platform/13d60000.ufs/by-name/
@@ -700,10 +750,22 @@ case "${DEVICE}" in
         # "VFS: Mounted root (ext4 filesystem) ... device 259:9" for sda25
         # confirms the extended-partition dev_t numbering (259:(part-16)).  The
         # partition image is *verified* below before it is trusted as the rootfs.
-        if [ -z "${ROOT_DEV}" ] && [ -b /dev/sda31 ]; then
-            ROOT_DEV=/dev/sda31
-            nuxel_say "PARTNAME discovery unavailable; using documented fallback /dev/sda31 (by-name userdata) - rootfs will be verified"
-            diag "USERDATA_FALLBACK /dev/sda31"
+        # A18: bounded wait for the UFS node, with a heartbeat every second.
+        # The old code tested /dev/sda31 once and gave up if the UFS scan had not
+        # finished yet (measured: the node appears ~1 s after the first probe).
+        if [ -z "${ROOT_DEV}" ]; then
+            _t=0
+            while [ "${_t}" -lt 20 ]; do
+                if [ -b /dev/sda31 ]; then
+                    ROOT_DEV=/dev/sda31
+                    nuxel_say "s10plus: USERDATA via documented /dev/sda31 (by-name userdata) after ${_t}s; rootfs verified below"
+                    diag "USERDATA_FALLBACK /dev/sda31"
+                    break
+                fi
+                _t=$((_t + 1))
+                nuxel_say "s10plus: waiting for /dev/sda31 t=${_t}s blockdevs='$(ls /dev/sd* 2>/dev/null | tr '\n' ' ')'"
+                sleep 1
+            done
         fi
         if [ -z "${ROOT_DEV}" ] || [ ! -b "${ROOT_DEV}" ]; then
             fail_boot "s10plus: USERDATA not found after probe; refusing SYSTEM fallback"
@@ -719,8 +781,7 @@ case "${DEVICE}" in
         log "s10plus: root -> ${ROOT_DEV} (fstype: ${ROOT_FSTYPE:-ext4})"
         diag "USERDATA_DISCOVERED ${ROOT_DEV}"
         nuxel_marker USERDATA_DISCOVERED
-        ;;
-    g7power)
+elif [ "${DEVICE}" = g7power ]; then
         # G7 Power eMMC layout (A/B device, shared userdata)
         # eMMC path: /dev/block/bootdevice/by-name/
         # lk2nd passes the correct cmdline; root= may be explicit or we probe.
@@ -741,12 +802,10 @@ case "${DEVICE}" in
             emergency_shell
         fi
         log "g7power: root → ${ROOT_DEV} (fstype: ${ROOT_FSTYPE:-ext4})"
-        ;;
-    *)
+else
         err "unknown nuxel.device='${DEVICE}' — cannot resolve a root device"
         emergency_shell
-        ;;
-esac
+fi
 
 force_s10plus_root
 

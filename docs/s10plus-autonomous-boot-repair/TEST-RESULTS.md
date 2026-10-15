@@ -218,3 +218,20 @@ No test below is a claim about visible output or hardware behaviour.
 ## Hardware results
 
 Pending — `STATE=AWAITING_BOOT_RESULT` for A17 (`REBOOT_AT=2026-10-15T15:07:35Z`).
+
+---
+
+# CYCLE 7b — A18 offline validation and live-run result (2026-10-15)
+
+| # | Test | Result |
+|---|---|---|
+| 13 | toybox `case` behaviour with an empty alternative | **BUG CONFIRMED**: `case s10plus in mustang\|vm\|"")` matches. The A17 `DEVICE` dispatch was dead code for every non-generic device |
+| 14 | A17 root-resolution code under the initramfs's own toybox, Samsung cmdline | Reproduces A17: generic probe → refusal → FATAL |
+| 15 | A18 root-resolution code, same harness | `dispatch: DEVICE='s10plus'` → heartbeat wait → `USERDATA via documented /dev/sda31 … after 2s` → `RESULT ROOT_DEV='/dev/sda31'` |
+| 16 | A18 init.sh `sh -n`, helper-before-use ordering | PASS (an ordering mistake was caught here and fixed) |
+| 17 | `Image-A18` embedded initramfs == `A18/initramfs.cpio` | byte-identical, `4e763933…` |
+| 18 | `build-candidate.sh` release gate on A18 | PASS |
+| 19 | A18 BOOT write + full-partition SHA-256 readback | PASS, `6a8d2587…` |
+| 20 | USB gadget creation on hardware (MacBook observation) | **PASS** — `Nuxel S10+ Live Console` 0x18d1/0x4ee7, `/dev/cu.usbmodem201` |
+| 21 | Live console data path | **FAIL / open** — 0 bytes both directions |
+| 22 | Root resolution, switch_root, systemd services on hardware | pending TWRP return |

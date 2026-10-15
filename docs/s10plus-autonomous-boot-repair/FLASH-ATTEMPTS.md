@@ -819,3 +819,103 @@ was issued by the flasher.
 * No USB device enumerated at all → the gadget bind failed or the boot stopped
   before `nuxel-console` ran; the ram console will show which, and A18 can bind
   the gadget earlier (right after the devtmpfs mount).
+
+---
+
+# CYCLE 7b — candidate A18 (2026-10-15), BOOT-only
+
+## Problem under test
+
+**A17 failed before `switch_root`** (`A17-POSTMORTEM.md`): toybox 0.8.14 treats an
+empty `case` alternative (`""`) as a wildcard, so the `DEVICE` dispatch always took
+the generic branch and this board's root resolution depended on `force_s10plus_root`,
+which silently bailed in A17. The boot died at t = 7.27 s with
+`[FATAL] no root block device found (slot=a)`. Consequence: **the A17 systemd fix
+has never run on hardware** — A16's service-execution failure is still the baseline.
+
+## Change set (BOOT partition only)
+
+* `boot/initramfs/init.sh` — five anchored edits (`tools/s10plus/a18/edit-init-a18.py`):
+  `if/elif` dispatch with explicit `[ "$DEVICE" = … ]` tests (no case patterns);
+  `cmdline_matches_samsung()` using `grep -q`, defined before first use;
+  `force_s10plus_root()` rewritten with no `case` patterns and a 20 s heartbeat wait;
+  the `s10plus` branch waits for `/dev/sda31` with a per-second heartbeat; the whole
+  kernel cmdline is emitted to `/dev/kmsg` in 200-byte `CMDLINE_PART n:` chunks
+  (the ram console truncates a single printk at ~1 KiB — that is how A17's cmdline
+  was lost). sha256 `3ea2546cf197b0fbd4a290026b7fd3a089585f69e95f110287ab30a40822ee90`
+* `opt/nuxel/nuxel-hwprobe` (new, 625,496 B) — identity/boot-mode, `/dev/fb*`
+  geometry, DRM presence/absence, full input inventory with capability bitmaps,
+  cgroup state, PID1/systemd state, power supplies.
+* `opt/nuxel/nuxel-console` (A18 build, 627,680 B) — the A17 gadget work **plus a
+  persistent in-rootfs boot reporter** started *before* any USB work, so it
+  survives a failed UDC bind / missing tty / broken link and writes
+  `/var/log/nuxel-bootreport.txt` with `systemctl is-system-running`,
+  `systemctl --failed`, running services, `journalctl -b -p warning` and the count
+  of `Failed to spawn executor`.
+* The A17 systemd library is unchanged and still shipped (sha256 `848149cf…`).
+
+## Candidate A18
+
+| Artifact | bytes | sha256 |
+|---|---|---|
+| `A18/initramfs.cpio` | 8,640,476 | `4e763933e6af39a2d32930f6be4879e2cc13e66703180add7924f30f357bed5a` |
+| `A18/Image-A18` | 48,715,784 | `8ffd98f6dba0714f92e7bc4b15423652d378ff1279de7fe13aa1757e8b9c6f5f` |
+| `A18/boot.img` | 51,456,000 | `6a8d2587c4e47cd0d059c80130ba731421a02370490b8c7071b956dd28b24a38` |
+
+## Offline verification performed (before any write)
+
+* The A18 root-resolution code was extracted **verbatim** and run under the
+  initramfs's own `toybox` in podman with the Samsung cmdline and a delayed
+  `USERDATA` node. Result: `dispatch: DEVICE='s10plus'` → heartbeat wait →
+  `USERDATA via documented /dev/sda31 … after 2s` → `root -> /dev/sda31` →
+  `RESULT ROOT_DEV='/dev/sda31' DEVICE='s10plus'`. The same harness on the A17 code
+  printed the generic-probe refusal and the FATAL. This is the causal proof.
+* `sh -n` clean; the helper is defined before both call sites (asserted
+  programmatically — the first draft got this wrong and it was caught here, not on
+  the phone).
+* cpio round-trip and **embedded-initramfs proof**: the gzip stream in `Image-A18`
+  decompresses to a byte-identical 8,640,476-byte archive,
+  sha256 `4e763933…`; `strings` finds `nuxel-hwprobe`, `cmdline_matches_samsung` and
+  `rootfs boot reporter`.
+* `build-candidate.sh` release gate: **PASS** (header_field40=1, header_size=1648,
+  kernel 48,715,784 B, ramdisk lzma aligned, cpio 80 records, `/init` 0o100755
+  60,889 B, partition slack 6,215,680 B, DTB unchanged `bcdef39c…`).
+
+## Flash receipt
+
+```
+Device: R58M75KDB2X model=Galaxy S10+ codename=beyond2lte TWRP=3.7.0_9-2 slot=none
+BOOT:   boot -> /dev/block/sda14 size=57,671,680 bytes
+PREFLIGHT PASS
+BACKUP  BOOT -> scripts/nuxel-adb-flash-pack/backups/nuxel-adb/20261015T153313Z-R58M75KDB2X
+FLASHING BOOT: 51,456,000 bytes -> /dev/block/sda14
+VERIFIED BOOT: 6a8d2587c4e47cd0d059c80130ba731421a02370490b8c7071b956dd28b24a38 (51,456,000 bytes)
+PASS: every written partition matches its local image by full SHA256 readback.
+```
+
+`REBOOT_AT=2026-10-15T15:33:59Z` · `STATE=AWAITING_BOOT_RESULT`
+
+## Hardware result so far — one new milestone, one open question
+
+**PROVEN:** the boot brought up its own USB CDC-ACM gadget, which enumerated on the
+MacBook as
+
+```
+Nuxel S10+ Live Console  ·  Vendor 0x18d1  Product 0x4ee7  Serial NUXEL-S10PLUS-0001
+/dev/cu.usbmodem201 created
+```
+
+That proves the Exynos 9820 UDC works from plain Linux userspace and that
+`nuxel-console` reached and executed the UDC bind — a first for Nuxel.
+
+**OPEN:** the console carried **0 bytes** in both directions across several host
+configurations (with/without termios reconfiguration, DTR/RTS asserted via
+`TIOCMBIS`, `/dev/tty.*` and `/dev/cu.*`, periodic `CR LF` to elicit a prompt).
+Either `/dev/ttyGS0` never appeared on the device side, or it is attached and its
+writes never leave the gadget. The device-side answer is in the ram console
+(`nuxel-console: …` lines) and, independently, in the persistent report at
+`<userdata>/var/log/nuxel-bootreport.txt`. Full record:
+`captures/20261015T153357Z-A18-live-run/LIVE-RUN-EVIDENCE.md`.
+
+**Therefore every A18 result that matters — root resolution, `switch_root`,
+systemd service execution, cgroup v2 — is still pending a TWRP round trip.**

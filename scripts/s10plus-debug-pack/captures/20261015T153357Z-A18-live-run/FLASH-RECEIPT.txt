@@ -1,0 +1,16 @@
+CANDIDATE=A18
+TIMESTAMP_UTC=20261015T153309Z
+DEVICE=R58M75KDB2X model=Galaxy S10+ codename=beyond2lte TWRP=3.7.0_9-2
+BOOT_PARTITION=/dev/block/by-name/boot -> /dev/block/sda14
+IMAGE=build/out/s10plus/debug-candidates/A18/boot.img bytes=51456000
+IMAGE_SHA256=6a8d2587c4e47cd0d059c80130ba731421a02370490b8c7071b956dd28b24a38
+KERNEL=A18/Image-A18 bytes=48715784 sha256=8ffd98f6dba0714f92e7bc4b15423652d378ff1279de7fe13aa1757e8b9c6f5f
+INITRAMFS_CPIO=A18/initramfs.cpio bytes=8640476 sha256=4e763933e6af39a2d32930f6be4879e2cc13e66703180add7924f30f357bed5a
+INIT_SH=boot/initramfs/init.sh bytes=60889 sha256=3ea2546cf197b0fbd4a290026b7fd3a089585f69e95f110287ab30a40822ee90
+LIBYSTEMD=A17 lib UNCHANGED sha256=848149cf4b506aef00c0f777840c8e0b5306b65dcf1ae0a1b8c1a63057b4d981
+NUXEL_CONSOLE(A18)=sha256 63d4d77c68ccc9f8451df10b9fb39f1927e4023ffdd5ee46d40ae7264855d5fe (+ persistent rootfs boot reporter)
+NUXEL_HWPROBE=sha256 bff976529790f4bb3207a6ecc53ca5384df6129eb6ac5f78ca355773571dbbff
+REASON=A17 died before switch_root: toybox 0.8.14 treats an empty case alternative ('') as a wildcard, so the DEVICE dispatch always took the generic branch and this board's root resolution depended on a fragile rescue that A17 lost.
+FIX=A18 replaces the case-pattern dispatch with explicit tests, makes the USERDATA wait heartbeat + /dev/sda31-aware, and chunks the cmdline into the kernel log.
+USERDATA_WRITTEN=no   RECOVERY_WRITTEN=no   DTBO_WRITTEN=no
+REBOOT_AT=2026-10-15T15:33:59Z

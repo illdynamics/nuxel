@@ -36,6 +36,35 @@ against a stub that emulates a pidfd-less 4.14 kernel, the A17 library makes
 `rc=-38 ENOSYS`. A17 also adds a live USB CDC-ACM diagnostic console
 (`LIVE-DEBUG-CONNECTIVITY.md`) delivered by the BOOT partition alone.
 
+## A18 — current state (supersedes A17)
+
+```
+CANDIDATE=A18
+boot.img       51,456,000 B  sha256 6a8d2587c4e47cd0d059c80130ba731421a02370490b8c7071b956dd28b24a38
+Image-A18      48,715,784 B  sha256 8ffd98f6dba0714f92e7bc4b15423652d378ff1279de7fe13aa1757e8b9c6f5f
+initramfs.cpio  8,640,476 B  sha256 4e763933e6af39a2d32930f6be4879e2cc13e66703180add7924f30f357bed5a
+FLASHED to BOOT (/dev/block/sda14) with full SHA-256 readback VERIFIED
+REBOOT_AT=2026-10-15T15:33:59Z
+```
+
+**A17 FAILED and its cause is now known and fixed** (`A17-POSTMORTEM.md`): toybox
+0.8.14 treats an **empty `case` alternative as a wildcard**, so
+`case "${DEVICE}" in mustang|vm|"") ... s10plus) ...` always took the generic
+branch; this board's root resolution then depended on a fragile rescue that A17
+lost, and the boot died at t = 7.27 s with `[FATAL] no root block device found`
+— before `switch_root`, i.e. **the A17 service-execution fix has still never run**.
+
+A18 fixes the root resolution (explicit `if/elif` dispatch, `grep`-based cmdline
+matching, a heartbeat wait for `/dev/sda31`), emits the full cmdline to the kernel
+log in 200-byte chunks, adds `nuxel-hwprobe`, and adds a **persistent in-rootfs
+boot report** (`/var/log/nuxel-bootreport.txt`) that survives a failed gadget bind.
+
+**A18 has already achieved one new hardware milestone:** its own USB CDC-ACM
+gadget enumerated on the MacBook as `Nuxel S10+ Live Console` (0x18d1/0x4ee7) on
+`/dev/cu.usbmodem201` — the first Nuxel-built USB interface. The console *data*
+path is still silent (0 bytes), so the boot verdict must come from the ram console
+plus the persistent report after a TWRP return.
+
 ## A17 — current state
 
 ```
