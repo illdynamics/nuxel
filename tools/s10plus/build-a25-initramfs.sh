@@ -89,10 +89,38 @@ initsha="$(grep -m1 'NUXEL_SD_SHA256=' "${ROOT}/boot/initramfs/init.sh" | cut -d
 [ "${initsha}" = "${SD_LIB_SHA}" ] || die "init.sh pins ${initsha} but this payload is ${SD_LIB_SHA} — refusing to ship a mismatch"
 log "systemd payload pinned: ${SD_LIB_SHA:0:16}… (matches boot/initramfs/init.sh)"
 
+# Never silently overwrite a candidate directory that already holds a PACKED
+# image (a hardware-proven candidate: Image-A25 + boot.img + this archive). The
+# A25 chain is incremental and evidence-carrying, so clobbering an archive that a
+# flashed Image embeds destroys the only copy of that pairing. Use
+# NUXEL_S10PLUS_A25_FORCE=1 (or a different NUXEL_S10PLUS_A25_DIR) deliberately.
+if [ -s "${OUT}/initramfs.cpio" ] && [ -s "${OUT}/boot.img" ] && [ "${NUXEL_S10PLUS_A25_FORCE:-0}" != "1" ]; then
+    err "refusing to overwrite ${OUT}/initramfs.cpio: ${OUT} holds a packed candidate (boot.img present)."
+    err "Set NUXEL_S10PLUS_A25_FORCE=1 to overwrite, or use another NUXEL_S10PLUS_A25_DIR."
+    exit 2
+fi
+
 BIN="${OUT}/bin"
 STAGE="${OUT}/tree"
 CPIO="${OUT}/initramfs.cpio"
 mkdir -p "${BIN}"
+
+# --- static aarch64 link probe (fail fast, with the actual fix) -------------
+# nuxel-console / nuxel-verify / nuxel-hwprobe are statically linked against the
+# TARGET libc. A cross toolchain installed without the target libc headers/libs
+# still finds the HOST /usr/include and fails deep inside the build with
+#   "/usr/include/features-time64.h: bits/wordsize.h: No such file or directory"
+# (measured on the first v0.4.0-alpha CI run). Catch it here instead.
+if ! printf '#include <stdio.h>\nint main(void){return 0;}\n' \
+        | "${CC}" -static -o "${BIN}/.cc-probe" -x c - 2>"${BIN}/.cc-probe.log"; then
+    err "cannot link a static aarch64 binary with ${CC}:"
+    sed 's/^/    /' "${BIN}/.cc-probe.log" >&2
+    err "the TARGET libc headers/libs are missing. On Debian/Ubuntu install:"
+    err "    sudo apt-get install -y libc6-dev-arm64-cross"
+    exit 2
+fi
+rm -f "${BIN}/.cc-probe" "${BIN}/.cc-probe.log"
+log "static aarch64 link probe OK (${CC})"
 
 # ---------------------------------------------------------------------------
 # 1. userspace binaries

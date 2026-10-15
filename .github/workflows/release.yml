@@ -133,8 +133,17 @@ jobs:
           # the theme step silently degrades and the rootfs/release ships without
           # the ~50 MB splash (the exact local-vs-CI 60 MB vs 20 MB gap).
           sudo apt-get update
+          # libc6-dev-arm64-cross is REQUIRED and is NOT implied by
+          # gcc-aarch64-linux-gnu with --no-install-recommends: without the
+          # target libc headers a cross compiler still finds the HOST
+          # /usr/include and dies on a static link with
+          #   "bits/wordsize.h: No such file or directory"
+          # which is exactly what the A25 initramfs build (nuxel-console,
+          # nuxel-verify, nuxel-hwprobe are statically linked aarch64 binaries)
+          # hit on the first v0.4.0-alpha run.
           sudo apt-get install -y --no-install-recommends \
             build-essential gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu \
+            libc6-dev-arm64-cross \
             gcc-arm-none-eabi binutils-arm-none-eabi \
             bc bison flex libssl-dev libelf-dev libncurses-dev \
             cpio gzip xz-utils zstd lz4 zip unzip rsync file kmod \
