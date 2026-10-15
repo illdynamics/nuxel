@@ -504,7 +504,23 @@ nuxel_first_light() {
     #    it, the last committed frame stays in framebuffer memory and the DECON
     #    keeps scanning it.
     /opt/nuxel/nuxel-fb-phone hold > /dev/kmsg 2>&1 &
-    NUXEL_HOLD_PID=$!
+    # A19: toybox does not set $! for background jobs (measured - the marker has
+    # been empty in A16, A17 and A18), so resolve the animator through /proc.
+    NUXEL_HOLD_PID=""
+    _n=0
+    while [ "${_n}" -lt 20 ]; do
+        for _p in /proc/[0-9]*; do
+            if [ "$(cat "${_p}/comm" 2>/dev/null)" = "nuxel-fb-phone" ]; then
+                _cl="$(cat "${_p}/cmdline" 2>/dev/null | tr '\0' ' ')"
+                case "${_cl}" in
+                    *hold*) NUXEL_HOLD_PID="${_p#/proc/}"; break ;;
+                esac
+            fi
+        done
+        [ -n "${NUXEL_HOLD_PID}" ] && break
+        _n=$((_n + 1))
+        sleep 1
+    done
     diag "FIRSTLIGHT hold started pid=${NUXEL_HOLD_PID}"
     nuxel_marker "ANIMATION_HOLD_PID=${NUXEL_HOLD_PID}"
 
@@ -712,19 +728,11 @@ nuxel_say "dispatch: DEVICE='${DEVICE}' ROOT_SPEC='${ROOT_SPEC}' ROOT_FSTYPE='${
 # g7power branches unreachable: a boot with DEVICE=s10plus matched the
 # generic branch.  Measured on the handset in A16 (survived only via
 # force_s10plus_root) and fatal in A17.  Explicit tests only.
-if [ -z "${DEVICE}" ] || [ "${DEVICE}" = mustang ] || [ "${DEVICE}" = vm ]; then
-        # Existing A/B + generic probe (mustang dynamic partitions; vm/QEMU
-        # virtio).  Byte-equivalent to the pre-multi-device behaviour:
-        # explicit root= > /dev/disk/by-partlabel/system_${SLOT} > generic.
-        ROOT_DEV="$(find_root)"
-        nuxel_say "generic probe selected '${ROOT_DEV}'"
-        case " ${CMDLINE} " in
-            *androidboot.hardware=exynos9820*|*androidboot.bootloader=G97*)
-                nuxel_say "refusing the generic probe on an exynos9820 board: its candidates (/dev/sdaN) are bootloader and Android partitions, not a Nuxel rootfs"
-                ROOT_DEV=""
-                DEVICE=s10plus ;;
-        esac
-elif [ "${DEVICE}" = s10plus ]; then
+# A19: four independent, mutually exclusive `if` statements -- not a
+# chain, because toybox 0.8.14 executes an if/elif/else chain's `else`
+# branch as well when the first condition is true.  The board-specific
+# branch is deliberately first.
+if [ "${DEVICE}" = s10plus ]; then
         # S10+ A-only UFS layout:
         # Boot -> Samsung downstream kernel Linux. Root is on USERDATA only.
         # UFS path: /dev/block/platform/13d60000.ufs/by-name/
@@ -781,7 +789,8 @@ elif [ "${DEVICE}" = s10plus ]; then
         log "s10plus: root -> ${ROOT_DEV} (fstype: ${ROOT_FSTYPE:-ext4})"
         diag "USERDATA_DISCOVERED ${ROOT_DEV}"
         nuxel_marker USERDATA_DISCOVERED
-elif [ "${DEVICE}" = g7power ]; then
+fi
+if [ "${DEVICE}" = g7power ]; then
         # G7 Power eMMC layout (A/B device, shared userdata)
         # eMMC path: /dev/block/bootdevice/by-name/
         # lk2nd passes the correct cmdline; root= may be explicit or we probe.
@@ -802,7 +811,21 @@ elif [ "${DEVICE}" = g7power ]; then
             emergency_shell
         fi
         log "g7power: root → ${ROOT_DEV} (fstype: ${ROOT_FSTYPE:-ext4})"
-else
+fi
+if [ "${DEVICE}" = "" ] || [ "${DEVICE}" = mustang ] || [ "${DEVICE}" = vm ]; then
+        # Existing A/B + generic probe (mustang dynamic partitions; vm/QEMU
+        # virtio).  Byte-equivalent to the pre-multi-device behaviour:
+        # explicit root= > /dev/disk/by-partlabel/system_${SLOT} > generic.
+        ROOT_DEV="$(find_root)"
+        nuxel_say "generic probe selected '${ROOT_DEV}'"
+        case " ${CMDLINE} " in
+            *androidboot.hardware=exynos9820*|*androidboot.bootloader=G97*)
+                nuxel_say "refusing the generic probe on an exynos9820 board: its candidates (/dev/sdaN) are bootloader and Android partitions, not a Nuxel rootfs"
+                ROOT_DEV=""
+                DEVICE=s10plus ;;
+        esac
+fi
+if [ "${DEVICE}" != s10plus ] && [ "${DEVICE}" != g7power ] && [ "${DEVICE}" != "" ] && [ "${DEVICE}" != mustang ] && [ "${DEVICE}" != vm ]; then
         err "unknown nuxel.device='${DEVICE}' — cannot resolve a root device"
         emergency_shell
 fi
@@ -1034,13 +1057,22 @@ nuxel_sd_verify() {
 }
 
 SD_TARGET="${ROOT_MNT}/${NUXEL_SD_LIB}"
-if nuxel_sd_verify "${SD_TARGET}"; then
+# A19: not an if/elif/else chain.  toybox runs the `else` branch as well when the
+# first condition is true (measured: `if true; then echo THEN; elif false; then
+# echo ELIF; else echo ELSE; fi` prints THEN and ELSE), which is why A18's log
+# contains both SYSTEMD_LIB_VERIFIED_PRESENT and SYSTEMD_LIB_IMAGE_MISSING.
+nuxel_sd_verify "${SD_TARGET}"
+NUXEL_SD_STATE=$?
+if [ "${NUXEL_SD_STATE}" = 0 ]; then
     diag "SYSTEMD_LIB already correct: ${NUXEL_SD_LIB} matches ${NUXEL_SD_SHA256} (no write)"
     nuxel_marker SYSTEMD_LIB_VERIFIED_PRESENT
     mkdir -p "${NUXEL_MARKER_DIR}" 2>/dev/null
     : > "${NUXEL_MARKER_DIR}/${NUXEL_PATCH_TAG}" 2>/dev/null
-elif [ -f "${NUXEL_SD_SRC}" ]; then
+fi
+if [ "${NUXEL_SD_STATE}" != 0 ]; then
     diag "SYSTEMD_LIB target needs installation"
+fi
+if [ "${NUXEL_SD_STATE}" != 0 ] && [ -f "${NUXEL_SD_SRC}" ]; then
     nuxel_sd_verify "${NUXEL_SD_SRC}" || diag "SYSTEMD_LIB WARNING: the initramfs copy itself fails verification"
     mkdir -p "${NUXEL_MARKER_DIR}" 2>/dev/null
     if [ -f "${SD_TARGET}" ] && [ ! -f "${SD_TARGET}.nuxel-orig" ]; then
@@ -1048,25 +1080,32 @@ elif [ -f "${NUXEL_SD_SRC}" ]; then
             diag "SYSTEMD_LIB original preserved as ${NUXEL_SD_LIB}.nuxel-orig"
     fi
     rm -f "${SD_TARGET}.new" 2>/dev/null
-    if ! cp "${NUXEL_SD_SRC}" "${SD_TARGET}.new" 2>/dev/null; then
+    NUXEL_SD_COPIED=1
+    cp "${NUXEL_SD_SRC}" "${SD_TARGET}.new" 2>/dev/null || NUXEL_SD_COPIED=0
+    if [ "${NUXEL_SD_COPIED}" = 0 ]; then
         diag "SYSTEMD_LIB FAILED to copy into the rootfs"
         nuxel_marker SYSTEMD_LIB_COPY_FAILED
-    else
+    fi
+    if [ "${NUXEL_SD_COPIED}" = 1 ]; then
         chmod 0755 "${SD_TARGET}.new" 2>/dev/null
         mv -f "${SD_TARGET}.new" "${SD_TARGET}" 2>/dev/null
         sync 2>/dev/null
-        if nuxel_sd_verify "${SD_TARGET}"; then
+        nuxel_sd_verify "${SD_TARGET}"
+        NUXEL_SD_OK=$?
+        if [ "${NUXEL_SD_OK}" = 0 ]; then
             : > "${NUXEL_MARKER_DIR}/${NUXEL_PATCH_TAG}" 2>/dev/null
             diag "SYSTEMD_LIB installed and re-verified: ${NUXEL_SD_LIB}"
             nuxel_marker SYSTEMD_LIB_INSTALLED_VERIFIED
-        else
+        fi
+        if [ "${NUXEL_SD_OK}" != 0 ]; then
             diag "SYSTEMD_LIB POST-INSTALL VERIFICATION FAILED - rolling back"
             [ -f "${SD_TARGET}.nuxel-orig" ] && \
                 cp "${SD_TARGET}.nuxel-orig" "${SD_TARGET}" 2>/dev/null
             nuxel_marker SYSTEMD_LIB_VERIFY_FAILED
         fi
     fi
-else
+fi
+if [ "${NUXEL_SD_STATE}" != 0 ] && [ ! -f "${NUXEL_SD_SRC}" ]; then
     diag "SYSTEMD_LIB image missing from the initramfs"
     nuxel_marker SYSTEMD_LIB_IMAGE_MISSING
 fi

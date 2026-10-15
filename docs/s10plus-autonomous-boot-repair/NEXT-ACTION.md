@@ -152,3 +152,45 @@ half-proven and the decisive evidence still needs one TWRP round trip.
   — A19 console build (60 s tty wait with per-second klog, no `O_CLOEXEC`, own
   handle in the shell, 10 s heartbeat).
 * `tools/s10plus/a17/build-a18-initramfs.sh` — parameterised initramfs builder.
+
+---
+
+# CYCLE 7c — NEXT-ACTION for A19 (2026-10-15)
+
+`STATE=AWAITING_BOOT_RESULT` · `REBOOT_AT=2026-10-15T15:50:39Z` ·
+boot.img `7a24c04a101b93dd7b3df45472f395f85b10d236a2e6a4212b05c2cbee3c1f1b`
+The gadget enumerated (`/dev/cu.usbmodem201`, `Nuxel S10+ Live Console`) but the
+console carried 0 bytes, so the A19 mknod path is unconfirmed.
+
+## The single question to answer from the ram console
+
+`nuxel-console:` lines decide between exactly three states:
+
+| Ram-console line | Meaning | A20 action |
+|---|---|---|
+| `created /dev/ttyGS0 from /sys/class/tty/ttyGS0/dev (M:N)` | the node fix worked | then the shell/keeper did not attach or the link is one-way → test `RNDIS`/`NCM` (`CONFIG_USB_CONFIGFS_RNDIS=y`, `_NCM=y`) as an alternative channel |
+| `waiting for /dev/ttyGS0 / /sys/class/tty/ttyGS0/dev (N s)` | the sysfs tty entry never appeared | the ACM function instance was not created → log/verify the `mkdir functions/acm.usb0` + symlink result (currently unchecked) |
+| `/dev/ttyGS0 never became available` | same as above, after 30 s | as above |
+
+Everything else about A19 is a re-run of A18's proven behaviour, so also confirm:
+
+* `Failed to spawn executor` = 0, `Failed at step CGROUP` = 0, no `Failed with result`;
+* `is-system-running` and `systemctl --failed` from
+  `<userdata>/var/log/nuxel-bootreport.txt` — **A18 left the boot with journald
+  active; the natural A19 goal is `systemctl --failed` empty with more services up**;
+* `ANIMATION_HOLD_PID=<pid>` (A19 resolves it via `/proc` because toybox leaves
+  `$!` empty) and `/var/lib/nuxel/fb-hold.pid` non-empty.
+
+## Standing priorities after that
+
+1. **Keep the service milestone.** A18 proved service execution; do not regress it.
+2. **Give the operator a reason to wait.** The A18 boot was force-reset ~14 s after
+   `switch_root`, before the unit graph completed. The penguin is still the only
+   visible feedback; the next visible step is a progress indicator driven by
+   `/var/lib/nuxel/boot-stage` (PHONE-UI-HANDOFF.md).
+3. **Phase 6 input**: `sec_ts` loads on a non-LPM boot but
+   `sec_ts_input_open: Failed to start device` repeats (`already power on`,
+   SSP `ssp_down == true`) — the TSP opens but will not start. Investigate
+   `/sys/class/sec/tsp/*` and the SSP state before promising touch.
+4. **Display backend**: no DRM on this kernel, so the fbdev-native UI (Path B) is
+   the only short-term route to an interactive Nuxel screen.

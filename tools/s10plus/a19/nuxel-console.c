@@ -37,6 +37,7 @@
 #include <dirent.h>
 #include <signal.h>
 #include <sys/ioctl.h>
+#include <sys/sysmacros.h>
 
 extern char **environ;
 
@@ -192,6 +193,69 @@ static void shell_child(const char *newroot, int ttyfd_in) {
  *
  * It is a forked child, so it cannot delay or fail the boot.
  */
+/* ---------------------------------------------------------------------------
+ * /dev/ttyGS0 does not exist until userspace makes it.
+ *
+ * Measured in the A18 ram console: the ACM gadget bound successfully and macOS
+ * enumerated "Nuxel S10+ Live Console", yet nuxel-console could not open the
+ * serial function and gave up with
+ *     nuxel-console: /dev/ttyGS0 did not appear (No such file or directory)
+ *
+ * Cause, from the kernel source this device runs (Samsung 4.14.253):
+ *   f_acm.c: acm_alloc_instance() -> gserial_alloc_line()
+ *   u_serial.c:1496: tty_port_register_device(...);
+ *     (its own comment there reads: "... and sysfs class devices, so mdev/udev
+ *      make /dev/ttyGS*")
+ * The kernel registers the tty in sysfs and expects userspace (Android ueventd
+ * there, mdev/udev here) to create the node.  A Nuxel initramfs runs neither, so
+ * the node never exists -- the driver is fine.
+ *
+ * Fix: read the major:minor the kernel published at /sys/class/tty/ttyGS0/dev and
+ * mknod it ourselves.  Poll for the sysfs entry first, because it only appears
+ * when the function instance is created (i.e. when functions/acm.usb0 is mkdir'd).
+ */
+static int ensure_tty_node(void) {
+        static const char sysdev[] = "/sys/class/tty/ttyGS0/dev";
+        char buf[64];
+        int i, fd;
+        struct stat st;
+
+        for (i = 0; i < 60; i++) {                 /* up to ~30 s */
+                if (stat(TTY, &st) == 0 && S_ISCHR(st.st_mode)) {
+                        klog("nuxel-console: %s exists (maj:min %u:%u)\n", TTY,
+                             (unsigned)major(st.st_rdev), (unsigned)minor(st.st_rdev));
+                        return 0;
+                }
+                fd = open(sysdev, O_RDONLY | O_CLOEXEC);
+                if (fd >= 0) {
+                        ssize_t n = read(fd, buf, sizeof buf - 1);
+                        close(fd);
+                        if (n > 0) {
+                                unsigned maj = 0, min = 0;
+                                buf[n] = 0;
+                                if (sscanf(buf, "%u:%u", &maj, &min) == 2) {
+                                        if (mknod(TTY, S_IFCHR | 0666,
+                                                  makedev((int)maj, (int)min)) == 0 || errno == EEXIST) {
+                                                klog("nuxel-console: created %s from %s (%u:%u)"
+                                                     " - the kernel only registers the tty in sysfs,"
+                                                     " userspace must mknod it\n", TTY, sysdev, maj, min);
+                                                return 0;
+                                        }
+                                        klog("nuxel-console: mknod %s c %u %u failed: %s\n",
+                                             TTY, maj, min, strerror(errno));
+                                } else {
+                                        klog("nuxel-console: unparsable %s = '%s'\n", sysdev, buf);
+                                }
+                        }
+                }
+                if (i % 5 == 0)
+                        klog("nuxel-console: waiting for %s / %s (%d s)\n", TTY, sysdev, i);
+                usleep(500000);
+        }
+        klog("nuxel-console: %s never became available (no sysfs tty registration)\n", TTY);
+        return -1;
+}
+
 static const char *REPORT_SCRIPT =
     "mkdir -p /var/log 2>/dev/null\n"
     "R=/var/log/nuxel-bootreport.txt\n"
@@ -300,32 +364,17 @@ int main(int argc, char **argv) {
         }
         klog("nuxel-console: ACM gadget BOUND to %s; waiting for %s\n", udc, TTY);
 
-        /* A19: ttyGS0 is created by f_acm when functions/acm.usb0 is instantiated,
-         * i.e. before the UDC bind -- but do not ASSUME it.  Wait up to 60 s,
-         * logging every attempt, because the A18 run gave us a bound, enumerated
-         * USB device on the MacBook and a completely silent console, and the only
-         * way to tell "no tty" from "tty present but nothing attached" was the
-         * ram console.  Make the ram console say it, once per second.
-         *
-         * O_CLOEXEC is deliberately NOT set here: the shell child dup2()s this fd
-         * onto 0/1/2 and execs, and A18 shipped the fd with CLOEXEC set (dup2
-         * clears it on the copies, but nothing else should depend on that). */
-        int ttyfd = -1;
-        for (int i = 0; i < 60; i++) {
-                ttyfd = open(TTY, O_RDWR | O_NONBLOCK);
-                if (ttyfd >= 0) break;
-                if (i % 5 == 0)
-                        klog("nuxel-console: waiting for %s (%d s, errno=%d %s)\n",
-                             TTY, i, errno, strerror(errno));
-                usleep(1000000);
-        }
+        /* A19: make sure the device node exists, then open it.  See
+         * ensure_tty_node() for why the kernel does not create it. */
+        if (ensure_tty_node() != 0)
+                return 1;
+        int ttyfd = open(TTY, O_RDWR | O_NONBLOCK);
         if (ttyfd < 0) {
-                klog("nuxel-console: %s NEVER APPEARED after 60 s (errno=%d %s) - "
-                     "gadget bound but no serial function instantiated\n",
-                     TTY, errno, strerror(errno));
+                klog("nuxel-console: open %s failed: %s\n", TTY, strerror(errno));
                 return 1;
         }
         { int cf = fcntl(ttyfd, F_GETFD); if (cf >= 0) (void)fcntl(ttyfd, F_SETFD, cf & ~FD_CLOEXEC); }
+
         /* keep a blocking-ish duplicate policy: O_NONBLOCK off for the shell tty */
         int fl = fcntl(ttyfd, F_GETFL); if (fl >= 0) (void)fcntl(ttyfd, F_SETFL, fl & ~O_NONBLOCK);
         klog("nuxel-console: %s ready - live channel UP\n", TTY);

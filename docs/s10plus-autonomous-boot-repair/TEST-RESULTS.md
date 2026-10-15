@@ -235,3 +235,42 @@ Pending — `STATE=AWAITING_BOOT_RESULT` for A17 (`REBOOT_AT=2026-10-15T15:07:35
 | 20 | USB gadget creation on hardware (MacBook observation) | **PASS** — `Nuxel S10+ Live Console` 0x18d1/0x4ee7, `/dev/cu.usbmodem201` |
 | 21 | Live console data path | **FAIL / open** — 0 bytes both directions |
 | 22 | Root resolution, switch_root, systemd services on hardware | pending TWRP return |
+
+---
+
+# CYCLE 7c — A19 (2026-10-15)
+
+## What A18 proved on hardware (recorded now that the log exists)
+
+| # | Test | Result |
+|---|---|---|
+| 23 | `ROOTFS_MOUNTED /dev/sda31 ext4 rw` with the A18 init.sh | **PASS** — root resolution fixed on hardware |
+| 24 | `Failed to spawn executor` count in the A18 session | **0** (was 29 in A16) — the `pidfd_open()` fix works |
+| 25 | `Failed at step CGROUP` count | **0** (was 61) — the cgroup2 ordering fix works |
+| 26 | Units failed (`Failed with result`) | **0** (was 28) |
+| 27 | A real service running | **`systemd-journald.service loaded active running`** |
+| 28 | `systemctl --failed` from inside the running system | `0 loaded units listed` (persistent report) |
+| 29 | cgroup2 in the final namespace | `controllers: memory pids`, `self: 0::/init.scope` |
+| 30 | USB gadget enumeration | `Nuxel S10+ Live Console` 0x18d1/0x4ee7 on `/dev/cu.usbmodem201` |
+| 31 | Console data path | **FAIL** — `nuxel-console: /dev/ttyGS0 did not appear` |
+| 32 | Root cause of 31 (kernel source) | `u_serial.c` registers the gadget tty **in sysfs only**; the comment says "so mdev/udev make /dev/ttyGS*". Nuxel runs neither → no node. A19 mknods it from `/sys/class/tty/ttyGS0/dev` |
+
+## A19 offline validation
+
+| # | Test | Result |
+|---|---|---|
+| 33 | A19 root resolution under the initramfs's own toybox | PASS — dispatch → heartbeat wait → `RESULT ROOT_DEV='/dev/sda31'` |
+| 34 | `sh -n` after de-chaining three blocks | PASS |
+| 35 | `if/elif/else` chains remaining in the boot path | none (10 `elif` remain but all in dead/late paths — command provider, g7power, `find_root`, and the `exec`-guarded `switch_root` selection) |
+| 36 | `Image-A19` embeds `A19/initramfs.cpio` | PASS — payload found at offset 33,809,680, content-verified |
+| 37 | Release gate on `A19/boot.img` | PASS |
+| 38 | BOOT write + full readback | PASS, `7a24c04a…` |
+
+## A19 live result (pending the ram console)
+
+`TTY-APPEARED` at 15:51:50Z — the gadget bound again. The console carried **0 bytes**
+in a 45 s window with DTR asserted, so the A19 `mknod` path either did not execute
+successfully or the shell/keeper are still not attached. **The ram console will say
+which** (`nuxel-console: created /dev/ttyGS0 from …` vs
+`waiting for /dev/ttyGS0 / /sys/class/tty/ttyGS0/dev` vs `never became available`,
+plus `shell tty fd=…`). Do not guess further until that is read.

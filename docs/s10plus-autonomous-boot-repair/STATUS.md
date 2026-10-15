@@ -36,6 +36,30 @@ against a stub that emulates a pidfd-less 4.14 kernel, the A17 library makes
 `rc=-38 ENOSYS`. A17 also adds a live USB CDC-ACM diagnostic console
 (`LIVE-DEBUG-CONNECTIVITY.md`) delivered by the BOOT partition alone.
 
+## Headline update — the two-year-class blocker is GONE
+
+**A18 proved on hardware that Fedora's systemd now executes services on the S10+**
+(`A18-MILESTONE-FEDORA-SERVICES.md`):
+
+* `Failed to spawn executor` **29 → 0**, `Failed at step CGROUP` **61 → 0**,
+  `Failed with result` **28 → 0**, and
+  `systemd-journald.service loaded active running`, with
+  `systemctl --failed` reporting **0 loaded units** from inside the running system.
+* Off-device: the root cause was `pidref_set_pid()` returning `ENOSYS` for
+  `pidfd_open()` on Linux 4.14, after `posix_spawn()` had already started the
+  process; plus a cgroup2 mount that was shadowed by a later sysfs mount.
+* A18 also delivered the first Nuxel-built USB interface (`Nuxel S10+ Live Console`,
+  0x18d1/0x4ee7) and a persistent in-rootfs boot report.
+
+**Three toybox 0.8.14 defects** were found and are now documented and worked
+around: an empty `case` alternative is a wildcard (this killed A17), `if/elif/else`
+also runs the `else` when the first condition is true, and `$!` is never set.
+
+Current candidate: **A19** (flashed 15:50:39Z, readback-verified `7a24c04a…`), which
+mknods `/dev/ttyGS0` from `/sys/class/tty/ttyGS0/dev` — the gadget tty exists only in
+sysfs until userspace creates the node, and Nuxel runs no mdev/udev. Its live
+console is not yet confirmed.
+
 ## A18 — current state (supersedes A17)
 
 ```

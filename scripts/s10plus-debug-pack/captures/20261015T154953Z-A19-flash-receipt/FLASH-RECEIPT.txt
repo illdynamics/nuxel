@@ -1,0 +1,8 @@
+CANDIDATE=A19 TIMESTAMP_UTC=20261015T154953Z
+DEVICE=R58M75KDB2X beyond2lte TWRP=3.7.0_9-2
+IMAGE=A19/boot.img bytes=51587072 sha256=7a24c04a101b93dd7b3df45472f395f85b10d236a2e6a4212b05c2cbee3c1f1b
+KERNEL=A19/Image-A19 bytes=48781320 sha256=2d67d3d88d5a8bb4382ef66fbd87fd8312f1e38183ada02069cd77d0a9dd1768 (embeds A19 initramfs at offset 33809680, verified)
+INITRAMFS=b32c7bb92ea103f1c69c510f9e88be68a06a76913ac23b6d990bb6a331208b2a bytes=8774496
+INIT_SH=dbadbb09c51cb7505ec90c43618bb3185ee65c499a6554ae1ffe3a64fcff7e98 bytes=62621
+NUXEL_CONSOLE(A19)=13d1b354a3226b73de1f16d5347d6bd950481388fc801c05fb88a21548bd7e61 bytes=759968
+REASON=A18 proved services start (journald active, 0 failed units) but ttyGS0 never existed: the kernel registers the gadget tty only in sysfs and mdev/udev must mknod it, which Nuxel never does. A19 mknods /dev/ttyGS0 from /sys/class/tty/ttyGS0/dev. A19 also removes every if/elif/else chain and every $! use from the boot path (two more toybox 0.8.14 defects).

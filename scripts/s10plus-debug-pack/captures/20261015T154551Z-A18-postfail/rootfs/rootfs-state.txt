@@ -1,0 +1,65 @@
+=== report tail (after the warnings) ===
+81:--- spawn failures seen this boot ---
+82-1
+83---- cgroup ---
+84-controllers: memory pids
+85-self: 0::/init.scope
+86---- state files ---
+87-STAGE=SYSTEM_STARTING
+88-ANIM_STAGE=FIRST_LIGHT
+89-=== live shell still available on ttyGS0 (if the gadget bound) ===
+90-=== end report ===
+91-
+92-
+93-
+94-
+95-
+96-
+97-
+98-
+99-
+100-
+101-
+102-
+103-
+104-
+105-
+106-
+107-
+108-
+109-
+110-
+111-
+=== state files ===
+drwxr-xr-x    2 root     root          4096 Jan  4 10:19 .
+drwxr-xr-x   17 root     root          4096 Jan  4 10:19 ..
+-rw-r--r--    1 root     root            23 Jan  4 10:29 animation
+-rw-r--r--    1 root     root            38 Jan  4 10:29 boot-context
+-rw-r--r--    1 root     root            22 Jan  4 10:29 boot-stage
+-rw-r--r--    1 root     root             1 Jan  4 10:29 fb-hold.pid
+--- boot-stage
+STAGE=SYSTEM_STARTING
+--- animation
+ANIM_STAGE=FIRST_LIGHT
+--- fb-hold.pid
+
+--- boot-context
+root=/dev/sda31 device=s10plus slot=a
+=== systemd library in the rootfs ===
+848149cf4b506aef00c0f777840c8e0b5306b65dcf1ae0a1b8c1a63057b4d981  /mnt/ud/usr/lib64/systemd/libsystemd-shared-258.11-1.fc43.so
+drwxr-xr-x    2 root     root          4096 Jan  4 10:19 .
+drwxr-xr-x   20 root     root          4096 Jan  4 06:04 ..
+-rw-r--r--    1 root     root             0 Jan  4 06:04 pidfd-spawn-fallback-A13
+-rw-r--r--    1 root     root             0 Jan  4 10:29 systemd-kernel414-verified-A17
+=== journald persistent? ===
+/mnt/ud/var/log/journal/:
+drwxr-xr-x    3 root     root          4096 Sep 15  2026 .
+drwxr-xr-x    3 root     root          4096 Jan  4 10:19 ..
+drwxr-xr-x    2 root     root          4096 Sep 15  2026 b8ad6098c76847d181f06e221ca43e0f
+
+/mnt/ud/var/log/journal/b8ad6098c76847d181f06e221ca43e0f:
+drwxr-xr-x    2 root     root          4096 Sep 15  2026 .
+drwxr-xr-x    3 root     root          4096 Sep 15  2026 ..
+-rw-r-----    1 root     root       8388608 Sep 15  2026 system.journal
+-rw-r-----    1 root     root       8388608 Sep 15  2026 system@00065b7a3b669865-7b3076a11c43667f.journal~
+-rw-r-----    1 root     root      16777216 Sep 15  2026 system@db86e3e5350048628071d216e57c9aa5-0000000000000001-00065b7a3b5c4bad.journal
