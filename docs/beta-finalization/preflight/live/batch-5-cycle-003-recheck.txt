@@ -1,0 +1,10 @@
+uname -a
+tr ' ' '\n' < /proc/cmdline | grep -E 'androidboot.mode|charging_mode|androidboot.em.model'
+systemctl is-system-running; echo "is-system-running_rc=$?"; systemctl --failed --no-pager
+ls -la /dev/input/ 2>&1; echo ---; ls /sys/class/input 2>&1; echo ---; ls /sys/class/sec/tsp 2>&1
+cat /proc/asound/cards 2>&1
+rfkill list 2>&1
+mmcli -L 2>&1 | head -8; echo ---; ls /sys/class/net 2>&1
+df -k / | tail -1
+rpm -qa 2>/dev/null | wc -l
+flatpak list 2>&1 | head -10

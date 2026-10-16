@@ -58,7 +58,15 @@ while [ $# -gt 0 ]; do
   esac
 done
 # The host may be macOS (/dev/cu.usbmodem*) or Linux (/dev/ttyACM*); find either.
-[ -n "$DEV" ] || DEV=$(ls -1 /dev/cu.usbmodem* /dev/ttyACM* 2>/dev/null | head -1)
+# Glob-safe discovery: `ls` on a non-existent glob exits 2, and under `set -o pipefail`
+# that exit status propagates out of the command substitution and `set -e` aborts the
+# script before the diagnostic on the next line can run (observed on Linux, where the
+# macOS /dev/cu.usbmodem* glob never matches).  Test each candidate directly instead.
+if [ -z "$DEV" ]; then
+  for n in /dev/cu.usbmodem* /dev/ttyACM*; do
+    [ -e "$n" ] && { DEV="$n"; break; }
+  done
+fi
 [ -n "$DEV" ] || { echo "no CDC-ACM console node (/dev/cu.usbmodem* or /dev/ttyACM*) — is the phone running Nuxel?" >&2; exit 1; }
 case "$DEV" in
   /dev/ttyACM*)

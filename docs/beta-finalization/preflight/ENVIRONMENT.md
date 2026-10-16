@@ -1004,3 +1004,113 @@ they are never proof that the phone is healthy"*.  Recorded here as an observati
 For contrast, the **actual** device state measured in §13.6 over the live console is: 16 units
 running, one failed unit (`nuxel-touch-arm.service`), the launcher process tree up and holding the
 display.
+
+### 13.23 Repair pass 3 (cycle 3) — the preflight re-verification is now *stored*, and the console tool's default invocation is fixed
+
+**Measured (real clock, `TZ=Europe/Amsterdam` → +02:00):** 2026-10-16T18:25Z (20:25 +02:00) for the
+re-check capture, 18:26Z for the `nuxel-live.sh` verification, 18:26Z for the re-run of the
+regression gate.  This subsection exists because the inspeQtor found that the **previous** pass of
+this same session (§13.21, §13.22) ran checks in the 20:12–20:16 window whose output lived only in
+`/tmp` and in the gitignored `build/out/beta/*.log` — `/tmp/probe-b1.txt` (a 4-command read-only
+live batch), `/tmp/a32suite.txt` and three guard runs — so its numbers could not be audited from the
+repository and revision 6's `PASS=68` entry cited the **19:55:59** capture of the earlier pass rather
+than a capture of that pass's own run.  Nothing on the device or host changed between this pass and
+that one, but the rule the briQ set itself (*"Evidence: store raw captures under
+`docs/beta-finalization/preflight/`"*) is now actually met, and **the stored captures below are the
+authoritative measurements**; un-preserved `/tmp` numbers from the 20:12–20:16 window are superseded
+and are no longer cited.
+
+Raw captures (all under `docs/beta-finalization/preflight/`):
+
+| Capture | What it holds |
+|---------|---------------|
+| `live/batch-5-cycle-003-recheck.out` (+ `live/batch-5-cycle-003-recheck.txt`) | host `date`/`df`/`git rev-parse`/`git status` + the live device batch (10 commands, 10 `sha_ok=yes` frames) |
+| `live/no-dev-discovery-run.out` | `bash -n`, the post-fix no-`--dev` console round trip, and the fail-closed simulation |
+| `gate-regression-guard-cycle003-recheck.txt` | `bash tools/beta/regression-guard.sh` human + `--json`, with exit codes |
+
+Host, at capture time (`2026-10-16T18:25:54Z`):
+
+```
+$ df -k / /tmp
+Filesystem        1K-blocks      Used Available Use% Mounted on
+/dev/mapper/vg-lv 486191160 419371788  66819372  87% /
+tmpfs              16296908   1338308  14958600   9% /tmp
+$ git rev-parse HEAD
+2a1eed53d33218cbf489fd3ec090bb71698abd9f
+$ git status --short
+ M scripts/s10plus-debug-pack/nuxel-live.sh
+?? docs/beta-finalization/preflight/live/batch-5-cycle-003-recheck.txt
+```
+
+Device, over the live CDC-ACM console — this batch was invoked **without `--dev`** (see below),
+10/10 framed round trips `sha_ok=yes`:
+
+| Item | Measured value | Same as §13? |
+|------|----------------|--------------|
+| `uname -a` | `Linux fedora 4.14.253 #15 SMP PREEMPT Thu Oct 15 22:29:25 UTC 2026 aarch64 GNU/Linux` | yes |
+| boot mode (`/proc/cmdline`) | `charging_mode=0x3030`, `androidboot.mode=charger`, `androidboot.em.model=SM-G975F` | yes |
+| `systemctl is-system-running` | `degraded` (`is-system-running_rc=1`); `systemctl --failed` → exactly one: `nuxel-touch-arm.service` (`loaded failed failed`) | yes |
+| input nodes | `/dev/input/event0…event6` (7 evdev nodes, `crw------- root root`); `/sys/class/sec/tsp` → *No such file or directory* (rc=2 in that frame) — so still **no touch node in this charger-mode boot** | yes |
+| ALSA cards | `0 [beyondmadera]`, `1 [aboxvdma]`, `2 [aboxdump]` | yes |
+| `rfkill list` | `0 bcm43xx Bluetooth` (soft-blocked), `1 phy0 WLAN`, `2 brcmfmac-wifi WLAN` (both unblocked) | yes |
+| modem | `mmcli -L` → `No modems were found`; `ls /sys/class/net` → `rmnet0…rmnet7`, `wlan0`, `wlan1`, `p2p0`, `umts_dm0`, … | yes |
+| `df -k /` | `/dev/sda31 4046560 1789652 2047196 47% /` (≈1.95 GiB free) | yes |
+| `rpm -qa \| wc -l` | `410` | yes |
+| `flatpak list` | `sh: flatpak: command not found` | yes |
+
+The batch's aggregate exit status is **1**, not 0: in `--batch` mode the tool returns 1 when *any*
+frame carried a non-zero remote rc, and the deliberate negative check `ls /sys/class/sec/tsp`
+returns rc=2 in its own frame.  Every one of the 10 frames is `sha_ok=yes` and there was no console
+loss, so this is the negative result being reported, not a transport failure.
+
+**The `nuxel-live.sh` device-discovery defect, fixed in this pass (§13.4 defect 2, completed).**
+The tool's **documented default invocation** (auto-discovery, no `--dev`) died silently on Linux:
+line 61 was
+
+```sh
+[ -n "$DEV" ] || DEV=$(ls -1 /dev/cu.usbmodem* /dev/ttyACM* 2>/dev/null | head -1)
+```
+
+under `set -euo pipefail`.  On this host the macOS-only glob never matches, GNU `ls` exits **2**,
+`pipefail` propagates 2 out of the command substitution and `set -e` aborts the script **before**
+line 62 can print the intended *"no CDC-ACM console node … is the phone running Nuxel?"* message.
+Reproduced by the inspeQtor as `rc=2` with **zero bytes** of output, and invisible to INV-10's static
+assertion (which only checks that `/dev/ttyACM` *appears* in the source — it does, and it still does).
+The line is now a glob-safe direct test:
+
+```sh
+if [ -z "$DEV" ]; then
+  for n in /dev/cu.usbmodem* /dev/ttyACM*; do
+    [ -e "$n" ] && { DEV="$n"; break; }
+  done
+fi
+```
+
+`[ -e ]` on a non-matching glob is simply false, so no exit status leaks out; behaviour is now
+identical on macOS and Linux and the fail-closed diagnostic is actually reached.  Verified (raw:
+`live/no-dev-discovery-run.out`): `bash -n` → rc 0; `sudo -n bash
+scripts/s10plus-debug-pack/nuxel-live.sh --run 'uname -r' --timeout 20` **without `--dev`** → resolves
+`/dev/ttyACM0`, prints `4.14.253`, one frame `sha_ok=yes`, rc 0; the same loop with non-matching globs
+prints the exit-1 diagnostic (`fail_closed_rc=1`) while the old one-liner aborts with rc 2 and no
+output.
+
+Because `scripts/s10plus-debug-pack/nuxel-live.sh` is a **pinned protected asset** (INV-10, soft
+pin), the change was registered per `BASELINE-PROTECTION.md` §10 through the guard's `--repin` path,
+which moved the file pin **and** any `sha256` assertion carrying it:
+
+```
+$ bash tools/beta/regression-guard.sh --repin scripts/s10plus-debug-pack/nuxel-live.sh --reason 'briq-00a-repo-preflight revision 7: glob-safe device discovery …'
+  old sha256: 8c413a471051be8d6d226dd818c3d6f780b02236c23dd165353793656a54eb20
+  new sha256: 49a204ddb8f26bf988f32bbd26b18a402bf18605ff9d88d747ac445063ea5a24
+```
+
+The gate re-run on the re-pinned tree (`gate-regression-guard-cycle003-recheck.txt`):
+
+```
+run 20261016T182623Z   PASS=68  FAIL=0  WARN=8  INFO=2   exit=0
+{"tool":"regression-guard","run":"20261016T182625Z","verdict":"PASS","pass":68,"fail":0,"warn":8,"info":2, …}
+```
+
+`scripts/s10plus-debug-pack/nuxel-live.sh  (soft pin held)` at the new hash, INV-10 green.  No pin,
+protected file or device state other than this one file was touched; §13.1–§13.22 are preserved
+unchanged (this section is append-only).

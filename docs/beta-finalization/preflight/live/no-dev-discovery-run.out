@@ -1,0 +1,30 @@
+# nuxel-live.sh device-discovery repair — verification capture
+2026-10-16T18:26:06Z
+Fri Oct 16 20:26:06 CEST 2026
+
+$ bash -n scripts/s10plus-debug-pack/nuxel-live.sh
+bash_n_rc=0
+
+$ sha256sum scripts/s10plus-debug-pack/nuxel-live.sh   # pinned hash before the fix: 8c413a47...
+49a204ddb8f26bf988f32bbd26b18a402bf18605ff9d88d747ac445063ea5a24  scripts/s10plus-debug-pack/nuxel-live.sh
+
+# (1) PRE-FIX reproduction (inspeQtor): 'sudo -n bash scripts/s10plus-debug-pack/nuxel-live.sh --run "uname -r" --timeout 15'
+#     -> rc=2 with zero bytes of output: GNU ls exited 2 on the macOS-only glob, pipefail propagated it, set -e aborted before the diagnostic.
+
+# (2) POST-FIX, no --dev: discovery must find /dev/ttyACM0 on this Linux host
+$ sudo -n bash scripts/s10plus-debug-pack/nuxel-live.sh --run 'uname -r' --timeout 20
+# console /dev/ttyACM0
+# shared lock /tmp/nuxel-live._dev_ttyACM0.lock is not usable by uid 0 ([Errno 13] Permission denied: '/tmp/nuxel-live._dev_ttyACM0.lock') — using private lock /tmp/nuxel-live._dev_ttyACM0.0.lock
+===== uname -r   [rc=0 frame=d4796c3f sha_ok=yes]
+    4.14.253
+rc=0
+
+# (3) POST-FIX fail-closed behaviour for a genuinely missing device (same loop, globs that match nothing):
+#     the exit-1 diagnostic must be REACHED (not an abort with no output).
+$ bash -c 'set -euo pipefail; DEV=""; for n in /dev/cu.usbmodem-none* /dev/ttyACM-none*; do [ -e "$n" ] && { DEV="$n"; break; }; done; [ -n "$DEV" ] || { echo "no CDC-ACM console node ..." >&2; exit 1; }'
+no CDC-ACM console node (/dev/cu.usbmodem* or /dev/ttyACM*) — is the phone running Nuxel?
+fail_closed_rc=1
+
+# (4) old one-liner for contrast (the defect): abort with no diagnostic
+$ bash -c 'set -euo pipefail; DEV=""; [ -n "$DEV" ] || DEV=$(ls -1 /dev/cu.usbmodem-none* /dev/ttyACM-none* 2>/dev/null | head -1); echo reached'
+old_pattern_rc=2

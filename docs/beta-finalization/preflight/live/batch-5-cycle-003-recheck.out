@@ -1,0 +1,119 @@
+# ---- batch-5-cycle-003 host-side section (repair pass, read-only) ----
+$ date -u +%Y-%m-%dT%H:%M:%SZ; date
+2026-10-16T18:25:54Z
+Fri Oct 16 20:25:54 CEST 2026
+
+$ df -k / /x/nuxel /tmp
+Filesystem        1K-blocks      Used Available Use% Mounted on
+/dev/mapper/vg-lv 486191160 419371788  66819372  87% /
+tmpfs              16296908   1338308  14958600   9% /tmp
+
+$ git rev-parse HEAD
+2a1eed53d33218cbf489fd3ec090bb71698abd9f
+
+$ git status --short
+ M scripts/s10plus-debug-pack/nuxel-live.sh
+?? docs/beta-finalization/preflight/live/batch-5-cycle-003-recheck.txt
+
+$ uname -a; cat /etc/os-release | head -2
+Linux dextronux 6.17.1-300.fc43.x86_64 #1 SMP PREEMPT_DYNAMIC Mon Oct  6 15:37:21 UTC 2025 x86_64 GNU/Linux
+NAME="Fedora Linux"
+VERSION="43 (Workstation Edition)"
+
+# ---- batch-5-cycle-003 device section: live console via scripts/s10plus-debug-pack/nuxel-live.sh WITHOUT --dev (glob-safe discovery fix) ----
+$ sudo -n bash scripts/s10plus-debug-pack/nuxel-live.sh --batch docs/beta-finalization/preflight/live/batch-5-cycle-003-recheck.txt --timeout 25
+# console /dev/ttyACM0
+# shared lock /tmp/nuxel-live._dev_ttyACM0.lock is not usable by uid 0 ([Errno 13] Permission denied: '/tmp/nuxel-live._dev_ttyACM0.lock') — using private lock /tmp/nuxel-live._dev_ttyACM0.0.lock
+===== uname -a   [rc=0 frame=a86e6c1d sha_ok=yes]
+    Linux fedora 4.14.253 #15 SMP PREEMPT Thu Oct 15 22:29:25 UTC 2026 aarch64 GNU/Linux
+===== tr ' ' '\n' < /proc/cmdline | grep -E 'androidboot.mode|charging_mode|androidboot.em.model'   [rc=0 frame=d6e36c1e sha_ok=yes]
+    charging_mode=0x3030
+    androidboot.mode=charger
+    androidboot.em.model=SM-G975F
+===== systemctl is-system-running; echo "is-system-running_rc=$?"; systemctl --failed --no-pager   [rc=0 frame=4ca26c1f sha_ok=yes]
+    degraded
+    is-system-running_rc=1
+      UNIT                    LOAD   ACTIVE SUB    DESCRIPTION
+    ● nuxel-touch-arm.service loaded failed failed Nuxel S10+ touchscreen arming (sec_ts stop->start, then hold open)
+    Legend: LOAD   → Reflects whether the unit definition was properly loaded.
+            ACTIVE → The high-level unit activation state, i.e. generalization of SUB.
+            SUB    → The low-level unit activation state, values depend on unit type.
+    1 loaded units listed.
+===== ls -la /dev/input/ 2>&1; echo ---; ls /sys/class/input 2>&1; echo ---; ls /sys/class/sec/tsp 2>&1   [rc=2 frame=d86d6c20 sha_ok=yes]
+    total 0
+    drwxr-xr-x  2 root root    180 Jan  1  1970 .
+    drwxr-xr-x 10 root root   7760 Sep 15 00:00 ..
+    crw-------  1 root root 13, 64 Jan  1  1970 event0
+    crw-------  1 root root 13, 65 Jan  1  1970 event1
+    crw-------  1 root root 13, 66 Jan  1  1970 event2
+    crw-------  1 root root 13, 67 Jan  1  1970 event3
+    crw-------  1 root root 13, 68 Jan  1  1970 event4
+    crw-------  1 root root 13, 69 Jan  1  1970 event5
+    crw-------  1 root root 13, 70 Jan  1  1970 event6
+    ---
+    event0
+    event1
+    event2
+    event3
+    event4
+    event5
+    event6
+    input0
+    input1
+    input2
+    input3
+    input4
+    input5
+    input6
+    ---
+    ls: cannot access '/sys/class/sec/tsp': No such file or directory
+===== cat /proc/asound/cards 2>&1   [rc=0 frame=375b6c21 sha_ok=yes]
+     0 [beyondmadera   ]: beyond-madera - beyond-madera
+                          beyond-madera
+     1 [aboxvdma       ]: abox_vdma - abox_vdma
+                          abox_vdma
+     2 [aboxdump       ]: abox_dump - abox_dump
+                          abox_dump
+===== rfkill list 2>&1   [rc=0 frame=685a6c22 sha_ok=yes]
+    0: bcm43xx Bluetooth: Bluetooth
+    	Soft blocked: yes
+    	Hard blocked: no
+    1: phy0: Wireless LAN
+    	Soft blocked: no
+    	Hard blocked: no
+    2: brcmfmac-wifi: Wireless LAN
+    	Soft blocked: no
+    	Hard blocked: no
+===== mmcli -L 2>&1 | head -8; echo ---; ls /sys/class/net 2>&1   [rc=0 frame=ab406c23 sha_ok=yes]
+    No modems were found
+    ---
+    ip6_vti0
+    ip6tnl0
+    ip_vti0
+    lo
+    mcps0
+    p2p0
+    rmnet0
+    rmnet1
+    rmnet2
+    rmnet3
+    rmnet4
+    rmnet5
+    rmnet6
+    rmnet7
+    sit0
+    umts_dm0
+    wlan0
+    wlan1
+===== df -k / | tail -1   [rc=0 frame=46a06c24 sha_ok=yes]
+    /dev/sda31       4046560 1789652   2047196  47% /
+===== rpm -qa 2>/dev/null | wc -l   [rc=0 frame=d8186c25 sha_ok=yes]
+    410
+===== flatpak list 2>&1 | head -10   [rc=0 frame=77ed6c27 sha_ok=yes]
+    sh: flatpak: command not found
+# ---- batch-5 summary ----
+# frames=10  sha_ok=yes=10  console_rc=1 (aggregate rc is the first non-zero remote rc:
+#   the deliberate negative check `ls /sys/class/sec/tsp` returns rc=2 in its own frame;
+#   no console loss, no mangled frame, rc=0 on every frame the phone actually ran)
+# host git status at capture time: M scripts/s10plus-debug-pack/nuxel-live.sh, ?? .../batch-5-cycle-003-recheck.txt
+# note: this batch was invoked WITHOUT --dev (glob-safe discovery fix); console resolved to /dev/ttyACM0

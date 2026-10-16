@@ -136,8 +136,8 @@ deterministic.  Prose outside the markers is edited by hand and never clobbered 
 | Metric | Value |
 |--------|-------|
 | Tasks | **55** (one per briQ in the plan, bg-00 … bg-12) |
-| Revisions (append-only) | 87 |
-| Evidence entries | 157 |
+| Revisions (append-only) | 91 |
+| Evidence entries | 167 |
 | Dependencies | validated acyclic; referential integrity enforced |
 
 | State | Count | Tasks |
@@ -236,8 +236,8 @@ Ids are shown without the `briq-` prefix.
 
 | id | pri | component | state | verdict | ev | rev | depends on |
 |----|----:|-----------|-------|---------|--:|----:|------------|
-| `00a-repo-preflight` | 0 | bg-00-preflight | implemented | VERIFIED_ON_S10PLUS | 14 | 6 | — |
-| `00b-archive-discovery` | 0 | bg-00-preflight | implemented | OFFLINE_TESTED | 7 | 5 | 00a-repo-preflight |
+| `00a-repo-preflight` | 0 | bg-00-preflight | implemented | VERIFIED_ON_S10PLUS | 20 | 8 | — |
+| `00b-archive-discovery` | 0 | bg-00-preflight | implemented | OFFLINE_TESTED | 11 | 7 | 00a-repo-preflight |
 | `00c-workqueue-ledger` | 0 | bg-00-preflight | implemented | OFFLINE_TESTED | 13 | 5 | 00a-repo-preflight, 00b-archive-discovery |
 | `00d-baseline-protection` | 0 | bg-00-preflight | implemented | OFFLINE_TESTED | 17 | 8 | 00a-repo-preflight |
 | `01a-pipeline-trace-tool` | 1 | bg-01-touch-pipeline | implemented | OFFLINE_TESTED | 4 | 3 | — |

@@ -15,3 +15,49 @@
 /x/nuxel/build/out/g7power/stock/blankflash/blankflash_from_QCO30.85-18.zip
 -- /x/nuxel/tools/s10plus/a33 presence (another group's tree, read-only look)
 /x/nuxel/tools/s10plus/a33
+
+### archive re-scan 2026-10-16T18:27:25Z  (repair pass 3, briq-00b-archive-discovery revision 6 — re-affirmation for cycle 3; the 2026-10-16T17:30:32Z and 17:54 scans above remain unchanged)
+-- search root: /x/nuxel
+-- search root: /tmp
+-- search root: /x
+-- search root: /home/wicked
+-- search root: /home/wicked/Downloads
+
+$ ls -la /home/wicked/Downloads
+total 12
+drwxr-xr-x.  2 wicked wicked    6 Sep 29 21:36 .
+drwx------. 77 wicked wicked 8192 Oct 16 19:20 ..
+
+$ find /home /x /tmp -maxdepth 8 \( -iname '*nuxel-main*.zip' -o -iname 'docs*.zip' -o -iname 'scripts*.zip' -o -iname 'tools*.zip' -o -iname 'snekbyte*.zip' \) 2>/dev/null
+(no output above == none present)
+
+$ find /home /x /tmp -maxdepth 8 \( -iname '*A30*' -o -iname '*A31*' -o -iname '*A32*' \) \( -iname '*.zip' -o -iname '*.tar*' -o -iname '*.tgz' \) 2>/dev/null
+/home/wicked/.local/share/containers/storage/overlay-layers/799d1ab4644bdc65b6c4d1e1dd4ca0211f45c6e47744b5e3632d673e3a31e8d1.tar-split.gz
+/home/wicked/.yarn/berry/cache/@chainlink-contracts-npm-1.5.0-a309d5a53f-10c0.zip
+/home/wicked/.yarn/berry/cache/sprintf-js-npm-1.0.3-73f0a322fa-10c0.zip
+(no output above == none present)
+
+$ find /x/nuxel /home/wicked/Downloads -maxdepth 6 -iname '*.zip' 2>/dev/null
+/x/nuxel/build/out/g7power/stock/firmware/RETEU_10.zip
+/x/nuxel/build/out/g7power/stock/blankflash/blankflash_from_PDOS29.114-134-2.zip
+/x/nuxel/build/out/g7power/stock/blankflash/blankflash_from_QCO30.85-18.zip
+
+$ git -C /x/snekbyte rev-parse HEAD; git -C /x/snekbyte status --porcelain
+84430528bf0b6c9d0810975e117a3fc9e298ce08
+(no porcelain output above == clean tree)
+
+$ cd /x/snekbyte && sha256sum README.md main.py snekbyte.py
+ccd558434e8e9078dadcb26e64a34ce27201457188eed53b2d2e6b271dc17fb1  README.md
+536efa4ff990c97ebe3b5314447d0e1e0c2c2f526490f568a9bd7a3abfb44aec  main.py
+2396dc85d6a0da3a9db059fa033e6b6b0dcc12a634e572aa102f5e0339c202b7  snekbyte.py
+
+-- result: no supplied archive present on this host; /x/snekbyte spot-check matches the 17:54 capture above (HEAD 84430528…, README.md ccd55843…, main.py 536efa4f…, snekbyte.py 2396dc85…)  -> the recorded 'absent' state still holds and briq-07d may rely on this provenance. exit=0.
+
+-- CLARIFICATION on the A30/A31/A32 glob above: the three matches are NOT artefacts.
+   They are substring false-positives in unrelated cache paths whose hex names happen to
+   contain a30/a31/a32:
+     /home/wicked/.local/share/containers/storage/overlay-layers/799d1ab464...31e8...tar-split.gz   ('a31' inside the layer id)
+     /home/wicked/.yarn/berry/cache/@chainlink-contracts-npm-1.5.0-a309d5a53f-10c0.zip              ('a30' inside the npm hash)
+     /home/wicked/.yarn/berry/cache/sprintf-js-npm-1.0.3-73f0a322fa-10c0.zip                       ('a32' inside the npm hash)
+   No A30/A31/A32 artifact archive exists on this host. The '(no output above == none present)'
+   line under that command is therefore wrong as written; this line corrects it.
