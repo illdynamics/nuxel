@@ -134,7 +134,14 @@
     global.__nuxelSafeZoneReport = report;
     // Deterministic evidence: the placement report goes through the launcher
     // host's diagnostic channel (/run/nuxel-home.state), so it can be verified
-    // from the live console instead of from a screenshot.
+    // from the live console instead of from a screenshot.  Only a CHANGED verdict
+    // is reported: the render paths call applyLayout() several times per state
+    // update, and an evidence channel that repeats itself is noise, not evidence.
+    var sig = (preview ? 'preview' : state.profile) + '|' + state.orientation + '|' +
+              activeZones().join(',') + '|' + (state.padding_dp || 0) + '|' + width + '|' +
+              JSON.stringify(report.moved) + JSON.stringify(report.dropped);
+    if (sig === global.__nuxelSafeZoneSig) return report;
+    global.__nuxelSafeZoneSig = sig;
     try {
       if (global.webkit && global.webkit.messageHandlers && global.webkit.messageHandlers.nuxelDiag) {
         global.webkit.messageHandlers.nuxelDiag.postMessage(
