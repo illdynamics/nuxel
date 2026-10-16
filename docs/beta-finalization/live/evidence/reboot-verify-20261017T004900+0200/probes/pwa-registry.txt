@@ -1,0 +1,23 @@
+probe: pwa-registry (20-applications)
+cmd: curl -s http://127.0.0.1:8000/registry.json | head -c 400
+staged: []
+rc: 0 framed: True sha_ok: True
+verdict: FAILED
+reason: the launcher did not serve the registry on 127.0.0.1:8000
+--- observation ---
+<!DOCTYPE HTML>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <style type="text/css">
+            :root {
+                color-scheme: light dark;
+            }
+        </style>
+        <title>Error response</title>
+    </head>
+    <body>
+        <h1>Error response</h1>
+        <p>Error code: 404</p>
+        <p>Message: File not found.</p>
+        <p>Error code explanation: 4

@@ -1,0 +1,8 @@
+pushed={"b64_chars": 2172, "bytes": 1627, "decoded_sha256": "5db32856520d68b1561c508273fad897671a88dd89ef2e2cce1c4efe6fe00fe1", "parts": 1, "path": "/var/tmp/nxl-install-014.sh"}
+ok=True rc=0
+---
+PREV=dd90e8b29e2890afe9bb0cff0d9491ac78c51b094c6a17c212ff7669d58d339d
+/etc/dbus-1/system.d/org.nuxel.Notifications.conf.nuxel-staged: OK
+DECLARED-RELOAD-DEFERRED
+INSTALL-OK
+NXLSCRIPT-RC=0

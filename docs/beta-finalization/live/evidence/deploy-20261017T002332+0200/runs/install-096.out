@@ -1,0 +1,8 @@
+pushed={"b64_chars": 2040, "bytes": 1529, "decoded_sha256": "d1f96e30f4153ddb4ab99c7ed43303d2dbb7e0de206ba11da5cc90d96f682202", "parts": 1, "path": "/var/tmp/nxl-install-096.sh"}
+ok=True rc=0
+---
+PREV=61974ccd1d34a8679734f2503cb18d5e383e8b8c90d99797b34e0a216bd33f54
+/usr/share/nuxel/pwa/nuxel-apps/cleanup/index.html.nuxel-staged: OK
+active
+INSTALL-OK
+NXLSCRIPT-RC=0

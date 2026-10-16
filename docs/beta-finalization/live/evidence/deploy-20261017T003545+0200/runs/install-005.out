@@ -1,0 +1,7 @@
+pushed={"b64_chars": 1932, "bytes": 1447, "decoded_sha256": "e7e82c379b9b6e16d4ea2e04b09c4d5897861473ae6411b984a61f6a8e83e9a1", "parts": 1, "path": "/var/tmp/nxl-install-005.sh"}
+ok=True rc=0
+---
+PREV=cc8ba74195930a3f25274c78da15677bfd28da3d564b8c0c9a5bfe403ca13553
+/usr/lib/nuxel/nuxel-bridge/bridge.py.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

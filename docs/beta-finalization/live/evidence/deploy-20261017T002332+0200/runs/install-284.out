@@ -1,0 +1,8 @@
+pushed={"b64_chars": 2260, "bytes": 1694, "decoded_sha256": "fc26d718e2a09c00dca11b583ca70046edea8b63da0419422b28ca80aa39315a", "parts": 1, "path": "/var/tmp/nxl-install-284.sh"}
+ok=True rc=0
+---
+PREV=09b37f74c611cb00f775180ffc271ef07c8f531ccda6ed63519e9f804cef6945
+/usr/share/nuxel/pwa/nuxel-apps/penguinterface/icons/icon.svg.nuxel-staged: OK
+active
+INSTALL-OK
+NXLSCRIPT-RC=0

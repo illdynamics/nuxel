@@ -1,0 +1,4 @@
+cmd: cat /proc/uptime
+ok: True rc: 0 framed: True sha_ok: True
+---
+202.01 1408.92

@@ -10,7 +10,7 @@
 | Aggregation wall-clock | pass 1 **2026-10-16T14:26:28Z** (16:26 +02:00) · pass 2 **2026-10-16T16:55Z** (18:55 +02:00), `Europe/Amsterdam` — pass 2 = `§10` re-verification, no phone, no VM run |
 | Target | Samsung Galaxy S10+ SM-G975F (`beyond2lte`, Exynos 9820), Fedora 43 ARM64 userspace, Samsung Linux 4.14.253, systemd PID 1 |
 | Work-queue machine view | `docs/beta-finalization/workqueue/*.json` (54 tasks) |
-| **Beta verdict** | **`BETA_CANDIDATE_PENDING_HARDWARE_PROOF`** (see §9) |
+| **Beta verdict** | **`BETA_CANDIDATE_PENDING_HARDWARE_PROOF`** — unchanged; live deploy/touch-pipeline/service-graph evidence added 2026-10-17 (see §9) |
 
 > **Evidence discipline used throughout.** A green unit test is `OFFLINE_TESTED` and never anything
 > more. A registered kernel driver is not proof of working hardware; a writable mixer control is not
@@ -18,6 +18,42 @@
 > this report is `VERIFIED_ON_S10PLUS` unless it carries an **on-device** capture, and the only such
 > items here are inherited from the **A32 record** (a previous cycle's measured evidence), which this
 > run did **not** re-measure because the handset console did not answer (see §7).
+
+
+---
+
+# LIVE DEVICE RESULTS — 2026-10-17 (Task 2: "land it on the phone")
+
+This section supersedes the "repository-only" description above. It was produced **on the real S10+
+over the live USB console** from host `dextronux` (repository `/x/nuxel`, rev
+`77724291253d448a66eb53fba847b8818e6665fb`, `VERSION v0.5.0-beta-rc1`).
+
+| Item | Result |
+|---|---|
+| Console | `REACHABLE` (framed channel, `sha_ok=yes`), node `/dev/ttyACM0` |
+| Boot mode | **non-charger** normal boot: `androidboot.mode` absent; `sec_touchscreen` (event2), `sec_touchpad` (event3), `sec_touchproximity` (event4) registered; `sec_ts` `lpm:0` |
+| systemd | `is-system-running` = **`running`**; `systemctl --failed` = **0 units** |
+| Userspace deploy | **624/624** manifest steps applied (16 newly installed, 0 failures, 0 rollbacks) via `nuxel-live-deploy.py --apply` |
+| Launcher | `http://127.0.0.1:8000/pwa/nuxel-home/index.html` -> **200**; device PWA hashes match repository |
+| HTTP bridge API | `http://127.0.0.1:8080/api/v1/ping` -> **200** |
+| Display | exactly one `/dev/fb0` owner (`nuxel-wl-fb`), `display=on`, ~24 fps, failures=0; handoff chain `BOOT_WAIT_LAUNCHER -> ... -> LAUNCHER_DISPLAY_OWNER` complete |
+| Touch pipeline | sec_ts -> evdev event2 -> phoc/libinput (phoc holds event2/event4) all present; real-finger proof = **NEEDS_OWNER_TEST** |
+| Time/RTC | fixed: `date` now `Sat Oct 17 00:48 CEST 2026`, `hwclock -w -u` persisted, tz `Europe/Amsterdam` |
+| Services | nuxel-bridge/portal/notifications/http-bridge all active; D-Bus names `org.nuxel.Bridge`, `org.nuxel.Portal`, `org.nuxel.Notifications` owned correctly |
+| Reboot | `systemctl reboot` hung on logind D-Bus activation (boot_id unchanged) -> defect fixed (`--reboot-cmd "systemctl reboot --force"`); 3-reboot budget exhausted -> `briq-10c` DEFERRED |
+
+## Service-graph defects fixed on-device (no flashing)
+1. Provisioned `nuxel-bridge`/`nuxel-notifications` users + `/var/lib/nuxel/permissions` + `/var/log/nuxel`
+   (new `tools/s10plus/a33/nuxel-provision-services.sh`).
+2. Installed `python3-dbus`, `python3-gobject`, `python3-gobject-base`, `python3-cairo` (aarch64 RPMs over the console).
+3. Fixed `bridge.py` `dbus.service.property` -> standard `org.freedesktop.DBus.Properties` Get/GetAll.
+4. Fixed `org.nuxel.Bridge.conf` (invalid `<limit name="log_level">` made dbus-daemon reject the file) and added `nuxel-bridge`/`nuxel-notifications` own-name policies.
+5. `nuxel-http-bridge.service` runs as root: the Samsung 4.14 vendor `ncm` module denies AF_INET/AF_INET6 sockets to non-root UIDs (kernel limitation, documented).
+
+## Bounded soak sample (2026-10-17 ~00:51–00:52, two samples 60s apart)
+No reboot; 0 failed units; single fb owner; launcher 200; phoc ~32.5% CPU / 31MB RSS; nuxel-wl-fb ~64.5% CPU / 6.6MB RSS; WebKit 2 procs ~222MB RSS; swap 0; rootfs 48% used. (Preliminary sample, **not** the 8h device tier.)
+
+---
 
 ---
 

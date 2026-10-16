@@ -1,0 +1,9 @@
+probe: sec-ts-irq (01-touchscreen)
+cmd: grep -iE 'sec_ts|sec_touch' /proc/interrupts
+staged: []
+rc: 0 framed: True sha_ok: True
+verdict: DEPLOYED_UNVERIFIED
+reason: sec_ts has a live interrupt counter (sum=61): this proves the controller is mapped, not that a touch is delivered
+--- observation ---
+431:         61          0          0          0          0          0          0          0  exynos7_wkup_irq_chip   0 Level     sec_ts
+

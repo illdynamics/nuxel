@@ -1,0 +1,170 @@
+{
+  "group_order": [
+    {
+      "declared_reload": "systemctl daemon-reload",
+      "declared_reload_source": "group_reload_notes",
+      "group": "session-units",
+      "priority": 2,
+      "restart_service": null,
+      "risk": "high",
+      "risk_rank": 2,
+      "steps": 6
+    }
+  ],
+  "risk_envelope": {
+    "high": 21,
+    "low": 422,
+    "medium": 181
+  },
+  "schema_version": 1,
+  "skipped": [
+    {
+      "component": "kernel/bootloader-adjacent work is NOT deployed",
+      "group": "console-and-kernel-side-followups",
+      "reason": "sec_ts touch-in-charger-mode (lpcharge) needs a kernel/DTB change; the mission forbids flashing, so this stays offline (source patch + offline build + documented procedure) and is reported BLOCKED_KERNEL.",
+      "state": "blocked_kernel",
+      "verdict": "BLOCKED_KERNEL"
+    }
+  ],
+  "steps": [
+    {
+      "backup": "/etc/systemd/system/nuxel-wayland.service.nuxel-rollback",
+      "component": "boot graph / session units",
+      "declared_reload": "systemctl daemon-reload",
+      "group": "session-units",
+      "health_check": "systemctl is-active nuxel-wayland",
+      "install_procedure": null,
+      "mode": "0644",
+      "post": [],
+      "pre": [
+        "systemctl daemon-reload"
+      ],
+      "priority": 2,
+      "risk": "high",
+      "risk_rank": 2,
+      "rollback": "restore the previous unit files from <target>.nuxel-rollback, `systemctl daemon-reload`, restart the affected unit",
+      "service": null,
+      "source": "services/nuxel-session/systemd/nuxel-wayland.service",
+      "source_sha256": "634140ec38b7613294564b7b879654002e3046bd98ac9f0a6e9983a5a8385a00",
+      "staged": "/etc/systemd/system/nuxel-wayland.service.nuxel-staged",
+      "target": "/etc/systemd/system/nuxel-wayland.service",
+      "verify": "sha256sum /etc/systemd/system/nuxel-wayland.service"
+    },
+    {
+      "backup": "/etc/systemd/system/nuxel-wl-fb.service.nuxel-rollback",
+      "component": "boot graph / session units",
+      "declared_reload": "systemctl daemon-reload",
+      "group": "session-units",
+      "health_check": "systemctl is-active nuxel-wayland",
+      "install_procedure": null,
+      "mode": "0644",
+      "post": [],
+      "pre": [
+        "systemctl daemon-reload"
+      ],
+      "priority": 2,
+      "risk": "high",
+      "risk_rank": 2,
+      "rollback": "restore the previous unit files from <target>.nuxel-rollback, `systemctl daemon-reload`, restart the affected unit",
+      "service": null,
+      "source": "services/nuxel-session/systemd/nuxel-wl-fb.service",
+      "source_sha256": "75d7091c864913d3a7b1c9688d97b169239e37fef1aad3c844b9b263f1a48da4",
+      "staged": "/etc/systemd/system/nuxel-wl-fb.service.nuxel-staged",
+      "target": "/etc/systemd/system/nuxel-wl-fb.service",
+      "verify": "sha256sum /etc/systemd/system/nuxel-wl-fb.service"
+    },
+    {
+      "backup": "/etc/systemd/system/nuxel-touch-arm.service.nuxel-rollback",
+      "component": "boot graph / session units",
+      "declared_reload": "systemctl daemon-reload",
+      "group": "session-units",
+      "health_check": "systemctl is-active nuxel-wayland",
+      "install_procedure": null,
+      "mode": "0644",
+      "post": [],
+      "pre": [
+        "systemctl daemon-reload"
+      ],
+      "priority": 2,
+      "risk": "high",
+      "risk_rank": 2,
+      "rollback": "restore the previous unit files from <target>.nuxel-rollback, `systemctl daemon-reload`, restart the affected unit",
+      "service": null,
+      "source": "services/nuxel-session/systemd/nuxel-touch-arm.service",
+      "source_sha256": "85f7f880f9f875059c0d160331f96f93a22d2a2f055a2ca5b3f9c2bba816ab29",
+      "staged": "/etc/systemd/system/nuxel-touch-arm.service.nuxel-staged",
+      "target": "/etc/systemd/system/nuxel-touch-arm.service",
+      "verify": "sha256sum /etc/systemd/system/nuxel-touch-arm.service"
+    },
+    {
+      "backup": "/etc/systemd/system/nuxel-button-manager.service.nuxel-rollback",
+      "component": "boot graph / session units",
+      "declared_reload": "systemctl daemon-reload",
+      "group": "session-units",
+      "health_check": "systemctl is-active nuxel-wayland",
+      "install_procedure": null,
+      "mode": "0644",
+      "post": [],
+      "pre": [
+        "systemctl daemon-reload"
+      ],
+      "priority": 2,
+      "risk": "high",
+      "risk_rank": 2,
+      "rollback": "restore the previous unit files from <target>.nuxel-rollback, `systemctl daemon-reload`, restart the affected unit",
+      "service": null,
+      "source": "services/nuxel-session/systemd/nuxel-button-manager.service",
+      "source_sha256": "c0bc10c448a500efc5fc4edff6d308ae69d583bffc6da6c90604371547b3c1a9",
+      "staged": "/etc/systemd/system/nuxel-button-manager.service.nuxel-staged",
+      "target": "/etc/systemd/system/nuxel-button-manager.service",
+      "verify": "sha256sum /etc/systemd/system/nuxel-button-manager.service"
+    },
+    {
+      "backup": "/etc/systemd/system/seatd.service.nuxel-rollback",
+      "component": "boot graph / session units",
+      "declared_reload": "systemctl daemon-reload",
+      "group": "session-units",
+      "health_check": "systemctl is-active nuxel-wayland",
+      "install_procedure": null,
+      "mode": "0644",
+      "post": [],
+      "pre": [
+        "systemctl daemon-reload"
+      ],
+      "priority": 2,
+      "risk": "high",
+      "risk_rank": 2,
+      "rollback": "restore the previous unit files from <target>.nuxel-rollback, `systemctl daemon-reload`, restart the affected unit",
+      "service": null,
+      "source": "services/nuxel-session/systemd/seatd.service",
+      "source_sha256": "ea2b125001a1e22f50422d28edb2b0feef53fe1a2f3548489b1407adbb13b001",
+      "staged": "/etc/systemd/system/seatd.service.nuxel-staged",
+      "target": "/etc/systemd/system/seatd.service",
+      "verify": "sha256sum /etc/systemd/system/seatd.service"
+    },
+    {
+      "backup": "/etc/systemd/system/nuxel-web.service.nuxel-rollback",
+      "component": "boot graph / session units",
+      "declared_reload": "systemctl daemon-reload",
+      "group": "session-units",
+      "health_check": "systemctl is-active nuxel-wayland",
+      "install_procedure": null,
+      "mode": "0644",
+      "post": [],
+      "pre": [
+        "systemctl daemon-reload"
+      ],
+      "priority": 2,
+      "risk": "high",
+      "risk_rank": 2,
+      "rollback": "restore the previous unit files from <target>.nuxel-rollback, `systemctl daemon-reload`, restart the affected unit",
+      "service": null,
+      "source": "services/nuxel-web.service",
+      "source_sha256": "e4c692b4e14134cef9b75f7b881bc8e068bce32438ffdc9bf9c4924ffcebc903",
+      "staged": "/etc/systemd/system/nuxel-web.service.nuxel-staged",
+      "target": "/etc/systemd/system/nuxel-web.service",
+      "verify": "sha256sum /etc/systemd/system/nuxel-web.service"
+    }
+  ],
+  "violations": []
+}

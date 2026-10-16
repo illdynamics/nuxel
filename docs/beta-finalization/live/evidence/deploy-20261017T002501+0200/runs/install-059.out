@@ -1,0 +1,7 @@
+pushed={"b64_chars": 1916, "bytes": 1437, "decoded_sha256": "3ab3ea23508d647d742fde239485a6828d738df1b26eec67fca45d184653f5ad", "parts": 1, "path": "/var/tmp/nxl-install-059.sh"}
+ok=True rc=0
+---
+PREV=889cb30eafd223f2c2f9291934202e123db6ef7173e1b6d53f8c071b07202e50
+/usr/local/bin/nuxel-boot-stage-verbose.sh.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

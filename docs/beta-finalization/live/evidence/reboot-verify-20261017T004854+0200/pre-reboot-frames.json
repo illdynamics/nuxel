@@ -1,0 +1,82 @@
+[
+  {
+    "elapsed_s": 0.834,
+    "framed": true,
+    "key": "uptime",
+    "ok": true,
+    "rc": 0,
+    "sha_ok": true
+  },
+  {
+    "elapsed_s": 0.081,
+    "framed": true,
+    "key": "boot_id",
+    "ok": true,
+    "rc": 0,
+    "sha_ok": true
+  },
+  {
+    "elapsed_s": 0.126,
+    "framed": true,
+    "key": "boot_count",
+    "ok": true,
+    "rc": 1,
+    "sha_ok": true
+  },
+  {
+    "elapsed_s": 0.21,
+    "framed": true,
+    "key": "units",
+    "ok": true,
+    "rc": 0,
+    "sha_ok": true
+  },
+  {
+    "elapsed_s": 0.096,
+    "framed": true,
+    "key": "failed_units",
+    "ok": true,
+    "rc": 0,
+    "sha_ok": true
+  },
+  {
+    "elapsed_s": 0.123,
+    "framed": true,
+    "key": "fb_owner",
+    "ok": true,
+    "rc": 0,
+    "sha_ok": true
+  },
+  {
+    "elapsed_s": 0.082,
+    "framed": true,
+    "key": "animation",
+    "ok": true,
+    "rc": 0,
+    "sha_ok": true
+  },
+  {
+    "elapsed_s": 0.126,
+    "framed": true,
+    "key": "wl_fb_state",
+    "ok": true,
+    "rc": 0,
+    "sha_ok": true
+  },
+  {
+    "elapsed_s": 0.089,
+    "framed": true,
+    "key": "registry_http",
+    "ok": true,
+    "rc": 0,
+    "sha_ok": true
+  },
+  {
+    "elapsed_s": 0.13,
+    "framed": true,
+    "key": "boot_mode",
+    "ok": true,
+    "rc": 1,
+    "sha_ok": true
+  }
+]

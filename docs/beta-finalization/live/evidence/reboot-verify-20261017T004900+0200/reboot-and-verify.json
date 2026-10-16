@@ -1,0 +1,414 @@
+{
+  "at": "2026-10-17T00:49:00+0200",
+  "blocked_reason": null,
+  "briq": "briq-10c-live-reboot-and-verify",
+  "checklists": {
+    "post": [
+      {
+        "evidence": "{\"rid\": \"dd41a9f9\", \"rc\": 0, \"framed\": true, \"sha_ok\": true, \"elapsed_s\": 0.834, \"raw_len\": 664, \"output_bytes\": 39}",
+        "id": "po-1",
+        "item": "console reconnects and answers a verified frame",
+        "status": "pass"
+      },
+      {
+        "evidence": "0 failed units | units: {\"nuxel-wayland\": \"active\", \"nuxel-wl-fb\": \"active\", \"nuxel-button-manager\": \"active\", \"nuxel-touch-arm\": \"active\", \"seatd\": \"active\"}",
+        "id": "po-2",
+        "item": "boot graph completed without failed units",
+        "status": "pass"
+      },
+      {
+        "evidence": "BOOT_WAIT_LAUNCHER",
+        "id": "po-3",
+        "item": "framebuffer owner is the single Wayland/fb bridge",
+        "status": "fail"
+      },
+      {
+        "evidence": "ANIM_STAGE=ANIMATION_STOPPED",
+        "id": "po-4",
+        "item": "animation handoff receipt present",
+        "status": "pass"
+      },
+      {
+        "evidence": "HTTP 200",
+        "id": "po-5",
+        "item": "launcher serves the registry on :8000",
+        "status": "pass"
+      }
+    ],
+    "pre": [
+      {
+        "evidence": "624 deploy targets audited, 0 refused by assert_userspace_path(); skipped blocked groups: console-and-kernel-side-followups",
+        "id": "pr-1",
+        "item": "no block-device / firmware write this session",
+        "status": "pass"
+      },
+      {
+        "evidence": "2 *.nuxel-rollback file(s) on the device",
+        "id": "pr-2",
+        "item": "rollback copies present for deployed files",
+        "status": "pass"
+      },
+      {
+        "evidence": "MISSING",
+        "id": "pr-3",
+        "item": "known-good userspace rollback path recorded",
+        "status": "warn"
+      },
+      {
+        "evidence": "capability-based reconnect (/dev/ttyACM0); timeout 240.0s, poll 3.0s",
+        "id": "pr-4",
+        "item": "console reconnect procedure ready on the host",
+        "status": "pass"
+      },
+      {
+        "evidence": "/x/nuxel/docs/beta-finalization/live/evidence/baseline-20261017T002026+0200",
+        "id": "pr-5",
+        "item": "baseline bundle captured and hashed",
+        "status": "pass"
+      }
+    ]
+  },
+  "console": {
+    "callout": "/dev/ttyACM0",
+    "match_stage": "explicit"
+  },
+  "diagnostic": "re-read /proc/cmdline androidboot.mode and confirm sec_touchscreen registered, 0 failed units, launcher HTTP 200, bridge/portal/notifications active",
+  "evidence_dir": "/x/nuxel/docs/beta-finalization/live/evidence/reboot-verify-20261017T004900+0200",
+  "exit_code": 0,
+  "history_after": [
+    {
+      "at": "2026-10-16T22:23:57+0200",
+      "corrected_at": "2026-10-16T23:50:00+0200",
+      "correction": "returned_to_nuxel was recorded as false because the Python console client could not verify ANY frame at that time: the target tty ends its lines with CRLF and the frame parser matched bare LF, so every command was reported framed=false/sha_ok=false even though the device answered correctly.  That defect is fixed (CRLF normalisation in tools/beta/live/nuxel_live.py, this session).  The handset DID return to Nuxel: the non-charger baseline docs/beta-finalization/live/evidence/baseline-20261016T222451+0200 shows 41/41 frames verified with androidboot.mode absent, sec_touchscreen registered and nuxel-wayland/nuxel-wl-fb/nuxel-button-manager/nuxel-touch-arm/seatd all active.",
+      "diagnostic": "re-read /proc/cmdline for androidboot.mode and confirm sec_touchscreen is registered",
+      "evidence_after": null,
+      "evidence_before": "/x/nuxel/docs/beta-finalization/live/evidence/reboot-verify-20261016T221922+0200",
+      "n": 1,
+      "reason": "clear LPM/charger-mode boot so sec_ts can initialise",
+      "returned_to_nuxel": true,
+      "rollback_known_good": true
+    },
+    {
+      "at": "2026-10-16T23:50:58+0200",
+      "diagnostic": "after reconnect verify sec_touchscreen is registered and nuxel-touch-arm is active, and read the previous boot's power-key hold from journalctl -b -1",
+      "evidence_after": "/x/nuxel/docs/beta-finalization/live/evidence/reboot-verify-20261016T235033+0200",
+      "evidence_before": "/x/nuxel/docs/beta-finalization/live/evidence/reboot-verify-20261016T235033+0200",
+      "n": 2,
+      "reason": "clear the LPM/charger-mode boot that recurred after an 11.6s hardware POWER-key hold, so sec_ts can initialise",
+      "returned_to_nuxel": true,
+      "rollback_known_good": true
+    },
+    {
+      "at": "2026-10-17T00:49:31+0200",
+      "diagnostic": "re-read /proc/cmdline androidboot.mode and confirm sec_touchscreen registered, 0 failed units, launcher HTTP 200, bridge/portal/notifications active",
+      "evidence_after": "/x/nuxel/docs/beta-finalization/live/evidence/reboot-verify-20261017T004900+0200",
+      "evidence_before": "/x/nuxel/docs/beta-finalization/live/evidence/reboot-verify-20261017T004900+0200",
+      "n": 3,
+      "reason": "validate non-charger normal boot persistence and Nuxel return after live deploy",
+      "returned_to_nuxel": true,
+      "rollback_known_good": true
+    }
+  ],
+  "history_before": [
+    {
+      "at": "2026-10-16T22:23:57+0200",
+      "corrected_at": "2026-10-16T23:50:00+0200",
+      "correction": "returned_to_nuxel was recorded as false because the Python console client could not verify ANY frame at that time: the target tty ends its lines with CRLF and the frame parser matched bare LF, so every command was reported framed=false/sha_ok=false even though the device answered correctly.  That defect is fixed (CRLF normalisation in tools/beta/live/nuxel_live.py, this session).  The handset DID return to Nuxel: the non-charger baseline docs/beta-finalization/live/evidence/baseline-20261016T222451+0200 shows 41/41 frames verified with androidboot.mode absent, sec_touchscreen registered and nuxel-wayland/nuxel-wl-fb/nuxel-button-manager/nuxel-touch-arm/seatd all active.",
+      "diagnostic": "re-read /proc/cmdline for androidboot.mode and confirm sec_touchscreen is registered",
+      "evidence_after": null,
+      "evidence_before": "/x/nuxel/docs/beta-finalization/live/evidence/reboot-verify-20261016T221922+0200",
+      "n": 1,
+      "reason": "clear LPM/charger-mode boot so sec_ts can initialise",
+      "returned_to_nuxel": true,
+      "rollback_known_good": true
+    },
+    {
+      "at": "2026-10-16T23:50:58+0200",
+      "diagnostic": "after reconnect verify sec_touchscreen is registered and nuxel-touch-arm is active, and read the previous boot's power-key hold from journalctl -b -1",
+      "evidence_after": "/x/nuxel/docs/beta-finalization/live/evidence/reboot-verify-20261016T235033+0200",
+      "evidence_before": "/x/nuxel/docs/beta-finalization/live/evidence/reboot-verify-20261016T235033+0200",
+      "n": 2,
+      "reason": "clear the LPM/charger-mode boot that recurred after an 11.6s hardware POWER-key hold, so sec_ts can initialise",
+      "returned_to_nuxel": true,
+      "rollback_known_good": true
+    },
+    {
+      "at": "2026-10-17T00:49:31+0200",
+      "diagnostic": "re-read /proc/cmdline androidboot.mode and confirm sec_touchscreen registered, 0 failed units, launcher HTTP 200, bridge/portal/notifications active",
+      "evidence_after": "/x/nuxel/docs/beta-finalization/live/evidence/reboot-verify-20261017T004900+0200",
+      "evidence_before": "/x/nuxel/docs/beta-finalization/live/evidence/reboot-verify-20261017T004900+0200",
+      "n": 3,
+      "reason": "validate non-charger normal boot persistence and Nuxel return after live deploy",
+      "returned_to_nuxel": true,
+      "rollback_known_good": true
+    }
+  ],
+  "history_path": "/x/nuxel/docs/beta-finalization/live/evidence/reboots.json",
+  "history_verdict": {
+    "allowed": true,
+    "code": "ok",
+    "reason": "budget and prerequisites satisfied"
+  },
+  "post_reboot": {
+    "animation": "ANIM_STAGE=ANIMATION_STOPPED",
+    "boot_count": "cat: /var/lib/nuxel/boot-count: No such file or directory",
+    "boot_id": "a7eec31e-043a-4438-8f98-f916e694159a",
+    "boot_mode": "",
+    "failed_units": "",
+    "fb_owner": "BOOT_WAIT_LAUNCHER",
+    "registry_http": "200",
+    "units": "nuxel-wayland=active",
+    "uptime": "1945.22 13097.87",
+    "wl_fb_state": "1792190968 FRAMES_OK total=15422 fps_1s=21 failures=0 blit_avg_ms=42 out=720x1520 src=720x1520 scale=2 panel=1440x3040 owner=nuxel-wl-fb display=on src_format=0x00000001 colour=R@0,G@8,B@16_abgr8888_override=1"
+  },
+  "pre_reboot": {
+    "animation": "ANIM_STAGE=ANIMATION_STOPPED",
+    "boot_count": "cat: /var/lib/nuxel/boot-count: No such file or directory",
+    "boot_id": "a7eec31e-043a-4438-8f98-f916e694159a",
+    "boot_mode": "",
+    "failed_units": "",
+    "fb_owner": "BOOT_WAIT_LAUNCHER",
+    "registry_http": "200",
+    "units": "nuxel-wayland=active",
+    "uptime": "1916.24 12896.30",
+    "wl_fb_state": "1792190939 FRAMES_OK total=14775 fps_1s=22 failures=0 blit_avg_ms=42 out=720x1520 src=720x1520 scale=2 panel=1440x3040 owner=nuxel-wl-fb display=on src_format=0x00000001 colour=R@0,G@8,B@16_abgr8888_override=1"
+  },
+  "probe": {
+    "at": "2026-10-17T00:49:00+0200",
+    "bytes_in": 54,
+    "dev": "/dev/ttyACM0",
+    "echo_ok": true,
+    "elapsed_s": 0.302,
+    "error": null,
+    "reachable": true,
+    "sample": "\n\u001b[?2004l\u001b[?2004hsh-5.3# \n\u001b[?2004l\u001b[?2004hsh-5.3# "
+  },
+  "probe_summary": {
+    "DEPLOYED_UNVERIFIED": 2,
+    "FAILED": 3,
+    "NEEDS_OWNER_TEST": 1
+  },
+  "probes": [
+    {
+      "area": "01-touchscreen",
+      "cmd": "sh /var/tmp/nuxel-live-probes/nuxel-touch-capture.sh --dry-run --seconds 20",
+      "diagnostic": "nuxel-touch-capture.sh --seconds 90 (finger) / --dry-run (state only)",
+      "failure_symptoms": "no CAPTURE_GATE line; tracer reports a missing node; charger-mode classification",
+      "framed": true,
+      "human_required": true,
+      "id": "touch-pipeline",
+      "log": "probes/touch-pipeline.txt",
+      "observation": "== nuxel-touch-capture ==\nBUNDLE=/var/lib/nuxel/touch-capture/20261016T224936Z\nBUDGET_SECONDS=20 MAX_EVENTS=4000 MAX_BYTES=1048576 DRY_RUN=1\n---- TOUCH SEQUENCE (perform these while the capture is armed) ----------------\n  1. TAP DOWN/UP      one deliberate tap in the centre of the screen (slow, ~0.3 s)\n  2. THREE TAPS       top-left, centre, bottom-right (catches a swapped/inverted axis)\n  3. SWIPE            bottom third -> top third, slowly (>= 1 s), for scroll/gesture\n  4. MULTI-CONTACT    two fingers down together for ~1 s, then lift both\n  5. SELECT AN APP    tap a launcher tile (Terminal or Settings) and let it open\n  6. KEYBOARD         if a text field is reachable, type three keys on the on-screen\n                      keyboard (proves the keyboard's own hit testing)\n  Then, and only then, answer the human half: did the UI actually respond?\n------------------------------------------------------------------------------\nSEQUENCE recorded in $OUT/commands.txt (and above)\n== nuxel-touch-trace --capture  budget=20s max_events=4000 max_bytes=1048576 dry_run=True ==\nBOOT_MODE=normal (no charger/LPM marker present)\nDRY_RUN: no arming, no DOM collector, no writes outside the evidence bundle\nEVDEV_SCAN nodes=11 touch_candidates=1 (/dev/input/event2='sec_touchscreen')\nSYSFS_INPUT root=/sys/class/input entries=11 selected=/dev/input/event2 name='sec_touchscreen' direct=1 mt=1 vendor=0000 product=0000\nNODE_ID ioctl EVIOCGID bustype=0x0018 vendor=0x0000 product=0x0000 version=0x0000 (the node's own answer) | sysfs id bustype=0018 vendor=0000 product=0000; ABS_MT_SLOT claimed=True EVIOCGABS(ABS_MT_SLOT)=(0, 9) -> contact_slots=10\nPANEL=1440x3040 source=/sys/class/graphics/fb0/modes fb=(unreadable) bpp=32 virtual_size=1440x6080 pages=2 output=(unknown) scale=2 transform=normal\nCOORD_MAP mapping=scaled device_range_x=[0, 4095] device_range_y=[0, 4095] range_source=ioctl EVIOCGABS on /dev/input/event2 -> panel 1440x3040 -> output 720x1520\nEVENTS_JSONL=/var/lib/nuxel/touch-ca",
+      "priority": 1,
+      "purpose": "prove how far a touch event travels before something drops it (sec_ts -> IRQ -> evdev -> libinput -> Phoc -> Wayland -> WebKitGTK -> PWA)",
+      "rc": 1,
+      "reason": "the capture wrote its bundle but recorded no finger: a desk run without a touch is not a touchscreen test",
+      "sha_ok": true,
+      "staged": [
+        {
+          "bytes": 12093,
+          "frames": 5,
+          "sha256": "93b7179e2ce7a2171b77fc1284fb7f0dc5bdbb36d8453ac5d945519136de57b4",
+          "source": "tools/s10plus/a33/nuxel-touch-capture.sh",
+          "target": "/var/tmp/nuxel-live-probes/nuxel-touch-capture.sh"
+        },
+        {
+          "bytes": 117050,
+          "frames": 47,
+          "sha256": "dc3a0d61ec4396b0bf55b58297f0801a4d773a120b945aee6bbac06e24709484",
+          "source": "tools/s10plus/a33/nuxel-touch-trace.py",
+          "target": "/var/tmp/nuxel-live-probes/nuxel-touch-trace.py"
+        },
+        {
+          "bytes": 26461,
+          "frames": 11,
+          "sha256": "0019ce964d7499f25df13fbbb2a6c07371139c661780223cae7e17f83ec6fce0",
+          "source": "tools/s10plus/a33/nuxel-bootmode-guard.py",
+          "target": "/var/tmp/nuxel-live-probes/nuxel-bootmode-guard.py"
+        }
+      ],
+      "verdict": "NEEDS_OWNER_TEST"
+    },
+    {
+      "area": "06-audio",
+      "cmd": "sh /var/tmp/nuxel-live-probes/nuxel-audio-diag.sh pipeline --json",
+      "diagnostic": "nuxel-audio-diag.sh pipeline --json; tone 500 --yes (low volume)",
+      "failure_symptoms": "no beyond-madera card; a named first broken stage; DAC never enters the running state",
+      "framed": true,
+      "human_required": true,
+      "id": "audio-abox",
+      "log": "probes/audio-abox.txt",
+      "observation": "{\"schema_version\":1,\"device\":\"beyond2lte\",\"card\":\"beyond-madera\",\"card_index\":0,\"stages\":{\"card\":\"FAIL\",\"pcm\":\"SKIPPED\",\"controls\":\"SKIPPED\",\"dapm\":\"SKIPPED\",\"route\":\"SKIPPED\",\"dac_running\":\"SKIPPED\"},\"pcm_state\":\"unknown\",\"playback_controls\":0,\"firmware\":\"ABSENT\",\"state\":\"BLOCKED_FIRMWARE\",\"first_broken_stage\":\"card\",\"reason\":\"codec DSP firmware absent (cs47l93-dsp1.wmfw cs47l93-dsp2.wmfw cs47l93-dsp.wmfw cs47l93-dsp1.bin cs47l93-dsp2.bin cs35l40-dsp1.wmfw cs35l40-dsp2.wmfw cs35l40-dsp1.bin)\",\"low_volume_cap_percent\":25}",
+      "priority": 3,
+      "purpose": "walk card -> PCM -> mixer -> DAPM -> route -> DAC/ABox and name the first stage that is missing or silent",
+      "rc": 0,
+      "reason": "the walk named the first broken playback stage: {\"schema_version\":1,\"device\":\"beyond2lte\",\"card\":\"beyond-madera\",\"card_index\":0,\"stages\":{\"card\":\"FAIL\",\"pcm\":\"SKIPPED\",\"controls\":\"SKIPPED\",\"dapm\":\"SKIPPED\",\"r",
+      "sha_ok": true,
+      "staged": [
+        {
+          "bytes": 30305,
+          "frames": 12,
+          "sha256": "0d5475367c8b5d9030176d3756f01ffecfddb56417fb8dbcc7a482bca298e21f",
+          "source": "tools/s10plus/a33/nuxel-audio-diag.sh",
+          "target": "/var/tmp/nuxel-live-probes/nuxel-audio-diag.sh"
+        }
+      ],
+      "verdict": "FAILED"
+    },
+    {
+      "area": "02-boot-animation-launcher",
+      "cmd": "cat /var/lib/nuxel/fb-owner; cat /run/nuxel-wl-fb.state",
+      "diagnostic": "cat /var/lib/nuxel/fb-owner /run/nuxel-wl-fb.state",
+      "failure_symptoms": "two owners, an empty receipt, or an owner that is not nuxel-wl-fb",
+      "framed": true,
+      "human_required": false,
+      "id": "fb-owner",
+      "log": "probes/fb-owner.txt",
+      "observation": "BOOT_WAIT_LAUNCHER\nLAUNCHER_READY\nANIMATION_STOP_REQUESTED\nANIMATION_STOP_CONFIRMED\nLAUNCHER_DISPLAY_OWNER\n1792190981 FRAMES_OK total=15738 fps_1s=26 failures=0 blit_avg_ms=42 out=720x1520 src=720x1520 scale=2 panel=1440x3040 owner=nuxel-wl-fb display=on src_format=0x00000001 colour=R@0,G@8,B@16_abgr8888_override=1",
+      "priority": 2,
+      "purpose": "exactly one framebuffer owner after the reboot",
+      "rc": 0,
+      "reason": "the framebuffer owner is not the single Wayland/fb bridge (observed: BOOT_WAIT_LAUNCHER | LAUNCHER_READY | ANIMATION_STOP_REQUESTED | ANIMATION_STOP_CONFIRMED | LAUNCHER_DISPLAY_OWNER | 179)",
+      "sha_ok": true,
+      "staged": [],
+      "verdict": "FAILED"
+    },
+    {
+      "area": "01-touchscreen",
+      "cmd": "grep -iE 'sec_ts|sec_touch' /proc/interrupts",
+      "diagnostic": "grep -iE 'sec_ts|sec_touch' /proc/interrupts",
+      "failure_symptoms": "no sec_ts line, or a line whose counter never moves",
+      "framed": true,
+      "human_required": false,
+      "id": "sec-ts-irq",
+      "log": "probes/sec-ts-irq.txt",
+      "observation": "431:         61          0          0          0          0          0          0          0  exynos7_wkup_irq_chip   0 Level     sec_ts",
+      "priority": 1,
+      "purpose": "the touch controller's interrupt counter after the reboot",
+      "rc": 0,
+      "reason": "sec_ts has a live interrupt counter (sum=61): this proves the controller is mapped, not that a touch is delivered",
+      "sha_ok": true,
+      "staged": [],
+      "verdict": "DEPLOYED_UNVERIFIED"
+    },
+    {
+      "area": "20-applications",
+      "cmd": "curl -s http://127.0.0.1:8000/registry.json | head -c 400",
+      "diagnostic": "curl -s http://127.0.0.1:8000/registry.json | head -c 400",
+      "failure_symptoms": "connection refused, empty body, non-JSON body",
+      "framed": true,
+      "human_required": false,
+      "id": "pwa-registry",
+      "log": "probes/pwa-registry.txt",
+      "observation": "<!DOCTYPE HTML>\n<html lang=\"en\">\n    <head>\n        <meta charset=\"utf-8\">\n        <style type=\"text/css\">\n            :root {\n                color-scheme: light dark;\n            }\n        </style>\n        <title>Error response</title>\n    </head>\n    <body>\n        <h1>Error response</h1>\n        <p>Error code: 404</p>\n        <p>Message: File not found.</p>\n        <p>Error code explanation: 4",
+      "priority": 2,
+      "purpose": "the launcher/app registry is served over :8000 after the reboot",
+      "rc": 0,
+      "reason": "the launcher did not serve the registry on 127.0.0.1:8000",
+      "sha_ok": true,
+      "staged": [],
+      "verdict": "FAILED"
+    },
+    {
+      "area": "01-touchscreen",
+      "cmd": "cat /sys/class/power_supply/*/online 2>/dev/null; dmesg 2>/dev/null | grep -i lpcharge | tail -3",
+      "diagnostic": "dmesg | grep -i lpcharge; tr ' ' '\\n' </proc/cmdline | grep mode",
+      "failure_symptoms": "lpcharge/charger-mode markers in the kernel log on a normal boot",
+      "framed": true,
+      "human_required": false,
+      "id": "charger-mode",
+      "log": "probes/charger-mode.txt",
+      "observation": "0\n4\n0\n0\n1\n0",
+      "priority": 1,
+      "purpose": "the known touch-blocking boot mode that must not be regressed",
+      "rc": 0,
+      "reason": "no charger-mode marker observed on this boot",
+      "sha_ok": true,
+      "staged": [],
+      "verdict": "DEPLOYED_UNVERIFIED"
+    }
+  ],
+  "reason": "validate non-charger normal boot persistence and Nuxel return after live deploy",
+  "reboot": {
+    "command_frame": {
+      "elapsed_s": 6.338,
+      "framed": false,
+      "output_bytes": 370,
+      "raw_len": 7773,
+      "rc": null,
+      "rid": "e73ca9df",
+      "sha_ok": false
+    },
+    "command_output": "_N=e73ca9df;rm -f /var/tmp/nxl-e73ca9df;{ systemctl reboot ;} >/var/tmp/n\nnxl-e73ca9df 2>&1 </dev/null;_R=$?;printf '\\n@@B%s@@\\n' $_N;printf '@@R%s:%s@@\\n'\n' $_N $_R;base64 -w0 </var/tmp/nxl-e73ca9df 2>/dev/null|tr -d '\\n';printf '\\n@@S%\n%s:%s@@\\n' $_N \"$(sha256sum </var/tmp/nxl-e73ca9df 2>/dev/null",
+    "disconnect": "the console never dropped: it is unknown whether the reboot was accepted",
+    "disconnected": false,
+    "issued_at": "2026-10-17T00:49:03+0200",
+    "policy": {
+      "allowed": true,
+      "code": "ok",
+      "reason": "budget and prerequisites satisfied"
+    },
+    "proof": {
+      "boot_count_after": null,
+      "boot_count_before": null,
+      "boot_id_after": "a7eec31e-043a-4438-8f98-f916e694159a",
+      "boot_id_before": "a7eec31e-043a-4438-8f98-f916e694159a",
+      "boot_id_changed": false,
+      "note": "the console answered, but no independent signal shows a power cycle: this is NOT counted as a verified reboot",
+      "rebooted": false,
+      "signals": [],
+      "uptime_after": 1945.22,
+      "uptime_before": 1916.24,
+      "uptime_went_backwards": false
+    },
+    "reconnect_attempts": [
+      {
+        "at": "2026-10-17T00:49:29+0200",
+        "error": null,
+        "frame": {
+          "elapsed_s": 0.834,
+          "framed": true,
+          "output_bytes": 39,
+          "raw_len": 664,
+          "rc": 0,
+          "rid": "dd41a9f9",
+          "sha_ok": true
+        },
+        "node": {
+          "callout": "/dev/ttyACM0",
+          "match_stage": "explicit"
+        },
+        "probe": {
+          "at": "2026-10-17T00:49:29+0200",
+          "bytes_in": 54,
+          "dev": "/dev/ttyACM0",
+          "echo_ok": true,
+          "elapsed_s": 0.303,
+          "error": null,
+          "reachable": true,
+          "sample": "\n\u001b[?2004l\u001b[?2004hsh-5.3# \n\u001b[?2004l\u001b[?2004hsh-5.3# "
+        },
+        "reachable": true
+      }
+    ],
+    "requested": true,
+    "returned_to_nuxel": true,
+    "verdict": "DEPLOYED_UNVERIFIED"
+  },
+  "reboot_cmd": "systemctl reboot",
+  "reboot_requested": true,
+  "simulated": false,
+  "verdict": "FAILED",
+  "verdict_note": "the phone returned to Nuxel; per-item verdicts above are taken from the device's own output, never from the fact that a command exited 0",
+  "verdicts": {
+    "briq-10c-live-reboot-and-verify": "FAILED",
+    "per-item": {
+      "audio-abox": "FAILED",
+      "charger-mode": "DEPLOYED_UNVERIFIED",
+      "fb-owner": "FAILED",
+      "pwa-registry": "FAILED",
+      "sec-ts-irq": "DEPLOYED_UNVERIFIED",
+      "touch-pipeline": "NEEDS_OWNER_TEST"
+    }
+  }
+}

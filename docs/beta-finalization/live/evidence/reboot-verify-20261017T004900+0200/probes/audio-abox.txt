@@ -1,0 +1,9 @@
+probe: audio-abox (06-audio)
+cmd: sh /var/tmp/nuxel-live-probes/nuxel-audio-diag.sh pipeline --json
+staged: [{"bytes": 30305, "frames": 12, "sha256": "0d5475367c8b5d9030176d3756f01ffecfddb56417fb8dbcc7a482bca298e21f", "source": "tools/s10plus/a33/nuxel-audio-diag.sh", "target": "/var/tmp/nuxel-live-probes/nuxel-audio-diag.sh"}]
+rc: 0 framed: True sha_ok: True
+verdict: FAILED
+reason: the walk named the first broken playback stage: {"schema_version":1,"device":"beyond2lte","card":"beyond-madera","card_index":0,"stages":{"card":"FAIL","pcm":"SKIPPED","controls":"SKIPPED","dapm":"SKIPPED","r
+--- observation ---
+{"schema_version":1,"device":"beyond2lte","card":"beyond-madera","card_index":0,"stages":{"card":"FAIL","pcm":"SKIPPED","controls":"SKIPPED","dapm":"SKIPPED","route":"SKIPPED","dac_running":"SKIPPED"},"pcm_state":"unknown","playback_controls":0,"firmware":"ABSENT","state":"BLOCKED_FIRMWARE","first_broken_stage":"card","reason":"codec DSP firmware absent (cs47l93-dsp1.wmfw cs47l93-dsp2.wmfw cs47l93-dsp.wmfw cs47l93-dsp1.bin cs47l93-dsp2.bin cs35l40-dsp1.wmfw cs35l40-dsp2.wmfw cs35l40-dsp1.bin)","low_volume_cap_percent":25}
+

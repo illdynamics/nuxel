@@ -1,0 +1,62 @@
+[
+  {
+    "group": "session-units",
+    "n": 1,
+    "risk": "high",
+    "script": "scripts/001-nuxel-wayland.service.sh",
+    "service": null,
+    "source": "services/nuxel-session/systemd/nuxel-wayland.service",
+    "source_sha256": "634140ec38b7613294564b7b879654002e3046bd98ac9f0a6e9983a5a8385a00",
+    "target": "/etc/systemd/system/nuxel-wayland.service"
+  },
+  {
+    "group": "session-units",
+    "n": 2,
+    "risk": "high",
+    "script": "scripts/002-nuxel-wl-fb.service.sh",
+    "service": null,
+    "source": "services/nuxel-session/systemd/nuxel-wl-fb.service",
+    "source_sha256": "75d7091c864913d3a7b1c9688d97b169239e37fef1aad3c844b9b263f1a48da4",
+    "target": "/etc/systemd/system/nuxel-wl-fb.service"
+  },
+  {
+    "group": "session-units",
+    "n": 3,
+    "risk": "high",
+    "script": "scripts/003-nuxel-touch-arm.service.sh",
+    "service": null,
+    "source": "services/nuxel-session/systemd/nuxel-touch-arm.service",
+    "source_sha256": "85f7f880f9f875059c0d160331f96f93a22d2a2f055a2ca5b3f9c2bba816ab29",
+    "target": "/etc/systemd/system/nuxel-touch-arm.service"
+  },
+  {
+    "group": "session-units",
+    "n": 4,
+    "risk": "high",
+    "script": "scripts/004-nuxel-button-manager.service.sh",
+    "service": null,
+    "source": "services/nuxel-session/systemd/nuxel-button-manager.service",
+    "source_sha256": "c0bc10c448a500efc5fc4edff6d308ae69d583bffc6da6c90604371547b3c1a9",
+    "target": "/etc/systemd/system/nuxel-button-manager.service"
+  },
+  {
+    "group": "session-units",
+    "n": 5,
+    "risk": "high",
+    "script": "scripts/005-seatd.service.sh",
+    "service": null,
+    "source": "services/nuxel-session/systemd/seatd.service",
+    "source_sha256": "ea2b125001a1e22f50422d28edb2b0feef53fe1a2f3548489b1407adbb13b001",
+    "target": "/etc/systemd/system/seatd.service"
+  },
+  {
+    "group": "session-units",
+    "n": 6,
+    "risk": "high",
+    "script": "scripts/006-nuxel-web.service.sh",
+    "service": null,
+    "source": "services/nuxel-web.service",
+    "source_sha256": "e4c692b4e14134cef9b75f7b881bc8e068bce32438ffdc9bf9c4924ffcebc903",
+    "target": "/etc/systemd/system/nuxel-web.service"
+  }
+]

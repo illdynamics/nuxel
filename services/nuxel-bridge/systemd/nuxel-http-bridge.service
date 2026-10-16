@@ -8,8 +8,12 @@ Type=simple
 ExecStart=/usr/bin/nuxel-http-bridge
 Restart=on-failure
 RestartSec=3
-User=nuxel-bridge
-Group=nuxel-bridge
+# S10+ vendor kernel (4.14.253) ncm module denies AF_INET/AF_INET6 socket
+# creation to non-root UIDs; this HTTP API binds 127.0.0.1:8080, so it must
+# run as root (still sandboxed below). Documented kernel limitation, not a
+# relaxed policy choice.
+User=root
+Group=root
 NoNewPrivileges=yes
 PrivateTmp=yes
 ProtectSystem=strict

@@ -31,6 +31,32 @@ command or log path**, **PASS**, **FAIL** and **Current automatic evidence**.
 
 ---
 
+---
+
+# LIVE DEVICE STATUS — 2026-10-17 (added after the on-phone pass)
+
+The following live states were captured on the real S10+ over the USB console on 2026-10-17:
+
+| Area | Live state (device, not a script) | Owner still needed? |
+|---|---|---|
+| 1. Touchscreen | `sec_touchscreen` registered (event2), `sec_ts` `lpm:0`, phoc holds event2/event4. Real finger proof pending. | **YES — run the touch sequence below** |
+| 2. Launcher | Serving 200, device PWA hashes match repo, handoff chain complete. | YES (visual/parity) |
+| 3. Display/boot animation | Single fb owner `nuxel-wl-fb`, ~24 fps, display on. | YES (visual) |
+| 4. Wi-Fi/internet | `wlan0/wlan1/p2p0` present but DOWN; no default route. Association = firmware/owner. | YES |
+| 5. Timekeeping | Fixed to `Sat Oct 17 00:48 CEST 2026`, `hwclock -w` persisted, tz Europe/Amsterdam. Reboot persistence pending. | YES (reboot) |
+| 6. Audio/microphone | `beyond-madera` card present; **codec DSP firmware ABSENT** -> `BLOCKED_FIRMWARE`. | YES (after firmware) |
+| 7. Headphones | pending | YES |
+| 8. Hardware buttons | `nuxel-button-manager` active; physical presses pending. | YES |
+| 9–22. Flashlight/vibration/BT/NFC/GPS/sensors/camera/SIM/calls/microSD/store/apps/VPN | diag scripts deployed; physical confirmation pending | YES |
+| 23. Live Console takeover | console reachable; local-takeover UI pending owner | YES |
+| 24–26. Battery/power/reboot/long-term | normal boot stable; 3-reboot budget exhausted this cycle; `systemctl reboot --force` fix committed | YES |
+
+**Beta verdict remains `BETA_CANDIDATE_PENDING_HARDWARE_PROOF`** until you complete the physical
+acceptance tests below. The engineering report now records the live deploy and service-graph fixes.
+
+---
+
+
 ## How to read this document
 
 ### Verdict legend (what "current automatic evidence" means)

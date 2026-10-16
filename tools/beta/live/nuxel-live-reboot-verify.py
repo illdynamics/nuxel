@@ -643,7 +643,10 @@ def main(argv=None):
     ap.add_argument("--diagnostic", default=None,
                     help="the diagnostic that will run after this reboot (must differ "
                          "from the previous reboot's)")
-    ap.add_argument("--reboot-cmd", default="systemctl reboot",
+    ap.add_argument("--reboot-cmd", default="systemctl reboot --force",
+                    # NOTE: --force keeps this a NORMAL (not recovery/download)
+                    # reboot while bypassing the logind D-Bus activation path that
+                    # hung on the S10+ 4.14 headless console (2026-10-17, briq-10c).
                     help="the normal-reboot command issued on the device (userspace only)")
     ap.add_argument("--reconnect-timeout", type=float, default=240.0)
     ap.add_argument("--poll-interval", type=float, default=3.0)

@@ -1,0 +1,32 @@
+[
+  {
+    "evidence": "{\"rid\": \"dd41a9f9\", \"rc\": 0, \"framed\": true, \"sha_ok\": true, \"elapsed_s\": 0.834, \"raw_len\": 664, \"output_bytes\": 39}",
+    "id": "po-1",
+    "item": "console reconnects and answers a verified frame",
+    "status": "pass"
+  },
+  {
+    "evidence": "0 failed units | units: {\"nuxel-wayland\": \"active\", \"nuxel-wl-fb\": \"active\", \"nuxel-button-manager\": \"active\", \"nuxel-touch-arm\": \"active\", \"seatd\": \"active\"}",
+    "id": "po-2",
+    "item": "boot graph completed without failed units",
+    "status": "pass"
+  },
+  {
+    "evidence": "BOOT_WAIT_LAUNCHER",
+    "id": "po-3",
+    "item": "framebuffer owner is the single Wayland/fb bridge",
+    "status": "fail"
+  },
+  {
+    "evidence": "ANIM_STAGE=ANIMATION_STOPPED",
+    "id": "po-4",
+    "item": "animation handoff receipt present",
+    "status": "pass"
+  },
+  {
+    "evidence": "HTTP 200",
+    "id": "po-5",
+    "item": "launcher serves the registry on :8000",
+    "status": "pass"
+  }
+]

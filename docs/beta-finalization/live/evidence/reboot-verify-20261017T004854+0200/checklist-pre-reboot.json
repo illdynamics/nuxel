@@ -1,0 +1,32 @@
+[
+  {
+    "evidence": "624 deploy targets audited, 0 refused by assert_userspace_path(); skipped blocked groups: console-and-kernel-side-followups",
+    "id": "pr-1",
+    "item": "no block-device / firmware write this session",
+    "status": "pass"
+  },
+  {
+    "evidence": "2 *.nuxel-rollback file(s) on the device",
+    "id": "pr-2",
+    "item": "rollback copies present for deployed files",
+    "status": "pass"
+  },
+  {
+    "evidence": "MISSING",
+    "id": "pr-3",
+    "item": "known-good userspace rollback path recorded",
+    "status": "warn"
+  },
+  {
+    "evidence": "capability-based reconnect (/dev/ttyACM0); timeout 240.0s, poll 3.0s",
+    "id": "pr-4",
+    "item": "console reconnect procedure ready on the host",
+    "status": "pass"
+  },
+  {
+    "evidence": "/x/nuxel/docs/beta-finalization/live/evidence/baseline-20261017T002026+0200",
+    "id": "pr-5",
+    "item": "baseline bundle captured and hashed",
+    "status": "pass"
+  }
+]

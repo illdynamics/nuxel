@@ -1,0 +1,242 @@
+[
+  {
+    "group": "services-runtime",
+    "n": 1,
+    "risk": "medium",
+    "script": "scripts/001-nuxel-bridge.sh",
+    "service": null,
+    "source": "services/nuxel-bridge/bin/nuxel-bridge",
+    "source_sha256": "004847ca71df3ad46007206b9f85128a1d4787a547bdbd8c793df66b61e65e01",
+    "target": "/usr/bin/nuxel-bridge"
+  },
+  {
+    "group": "services-runtime",
+    "n": 2,
+    "risk": "medium",
+    "script": "scripts/002-nuxel-http-bridge.sh",
+    "service": null,
+    "source": "services/nuxel-bridge/bin/nuxel-http-bridge",
+    "source_sha256": "e16c4faff5540d1b3667b7a158983b86ca0d9bd03822689f3fd084fa7236a50f",
+    "target": "/usr/bin/nuxel-http-bridge"
+  },
+  {
+    "group": "services-runtime",
+    "n": 3,
+    "risk": "medium",
+    "script": "scripts/003-org.nuxel.Bridge.conf.sh",
+    "service": null,
+    "source": "services/nuxel-bridge/dbus/org.nuxel.Bridge.conf",
+    "source_sha256": "a0babcaa90164fffcfbc419f486a9445c40a9dc26bfde6ff1955c53f0fd0c3ba",
+    "target": "/etc/dbus-1/system.d/org.nuxel.Bridge.conf"
+  },
+  {
+    "group": "services-runtime",
+    "n": 4,
+    "risk": "medium",
+    "script": "scripts/004-api.py.sh",
+    "service": null,
+    "source": "services/nuxel-bridge/src/api.py",
+    "source_sha256": "cbbca5ae8d48fb3b0bbce842606a287b31e0f481fbbfe21bcc8bf9351e987614",
+    "target": "/usr/lib/nuxel/nuxel-bridge/api.py"
+  },
+  {
+    "group": "services-runtime",
+    "n": 5,
+    "risk": "medium",
+    "script": "scripts/005-bridge.py.sh",
+    "service": null,
+    "source": "services/nuxel-bridge/src/bridge.py",
+    "source_sha256": "5825366e8f8679e732b638866bf6a2fdff10587bc30ee9649d43aabe8be2535c",
+    "target": "/usr/lib/nuxel/nuxel-bridge/bridge.py"
+  },
+  {
+    "group": "services-runtime",
+    "n": 6,
+    "risk": "medium",
+    "script": "scripts/006-capabilities.py.sh",
+    "service": null,
+    "source": "services/nuxel-bridge/src/capabilities.py",
+    "source_sha256": "b8efdd7d021d00a7438d71c66aee477339ec3819e21bdc84bb1637afb68bee8c",
+    "target": "/usr/lib/nuxel/nuxel-bridge/capabilities.py"
+  },
+  {
+    "group": "services-runtime",
+    "n": 7,
+    "risk": "medium",
+    "script": "scripts/007-nuxel-bridge.service.sh",
+    "service": null,
+    "source": "services/nuxel-bridge/systemd/nuxel-bridge.service",
+    "source_sha256": "d8d88b7acac2673e6429c9cffd0f33891400f3b0a788da4c955b4f25d872cd61",
+    "target": "/etc/systemd/system/nuxel-bridge.service"
+  },
+  {
+    "group": "services-runtime",
+    "n": 8,
+    "risk": "medium",
+    "script": "scripts/008-nuxel-http-bridge.service.sh",
+    "service": null,
+    "source": "services/nuxel-bridge/systemd/nuxel-http-bridge.service",
+    "source_sha256": "863a812e5da7e1e01cf7248d2403e754fed8e0d2ab9381c93e3e65af6e3f3898",
+    "target": "/etc/systemd/system/nuxel-http-bridge.service"
+  },
+  {
+    "group": "services-runtime",
+    "n": 9,
+    "risk": "medium",
+    "script": "scripts/009-README.md.sh",
+    "service": null,
+    "source": "services/nuxel-console/README.md",
+    "source_sha256": "b6b0fec2c3759ae3f5a80aafb41f61c5efb3351b856cdf3114e9a6450ed1b657",
+    "target": "/usr/lib/nuxel/nuxel-console/README.md"
+  },
+  {
+    "group": "services-runtime",
+    "n": 10,
+    "risk": "medium",
+    "script": "scripts/010-nuxel-console-free.sh",
+    "service": null,
+    "source": "services/nuxel-console/bin/nuxel-console-free",
+    "source_sha256": "bb46c39dcd8f35ca64189b2cbbd42aa7f3ef516347868bb01651ca61a02ba0b3",
+    "target": "/usr/lib/nuxel/nuxel-console-free"
+  },
+  {
+    "group": "services-runtime",
+    "n": 11,
+    "risk": "medium",
+    "script": "scripts/011-nuxel-console.service.sh",
+    "service": null,
+    "source": "services/nuxel-console/systemd/nuxel-console.service",
+    "source_sha256": "94802ce65133408688877ffde10c97ada244d262d1b8e928cf6f94d4af8e67e1",
+    "target": "/etc/systemd/system/nuxel-console.service"
+  },
+  {
+    "group": "services-runtime",
+    "n": 12,
+    "risk": "medium",
+    "script": "scripts/012-README.md.sh",
+    "service": null,
+    "source": "services/nuxel-notifications/README.md",
+    "source_sha256": "b0bdc5a098e542ed25656d0b92e3d2ed8ef3b6c0b2c67964f47c0f234617098b",
+    "target": "/usr/lib/nuxel/nuxel-notifications/README.md"
+  },
+  {
+    "group": "services-runtime",
+    "n": 13,
+    "risk": "medium",
+    "script": "scripts/013-nuxel-notifications.sh",
+    "service": null,
+    "source": "services/nuxel-notifications/bin/nuxel-notifications",
+    "source_sha256": "d519a53d05c4607eefeaf135a6bf948a023f531c22875ae3bb7e5bcf45c486b7",
+    "target": "/usr/bin/nuxel-notifications"
+  },
+  {
+    "group": "services-runtime",
+    "n": 14,
+    "risk": "medium",
+    "script": "scripts/014-org.nuxel.Notifications.conf.sh",
+    "service": null,
+    "source": "services/nuxel-notifications/dbus/org.nuxel.Notifications.conf",
+    "source_sha256": "3f64f7388bb6f9324f390074372778786a6a40fa375b44c06ebdc96eecc66710",
+    "target": "/etc/dbus-1/system.d/org.nuxel.Notifications.conf"
+  },
+  {
+    "group": "services-runtime",
+    "n": 15,
+    "risk": "medium",
+    "script": "scripts/015-notifications.py.sh",
+    "service": null,
+    "source": "services/nuxel-notifications/src/notifications.py",
+    "source_sha256": "d8b8da4b6ff4e703d92ac9bf0a6c70d449528dcaa53c2905fc42ba36b068e0c4",
+    "target": "/usr/lib/nuxel/nuxel-notifications/notifications.py"
+  },
+  {
+    "group": "services-runtime",
+    "n": 16,
+    "risk": "medium",
+    "script": "scripts/016-nuxel-notifications.service.sh",
+    "service": null,
+    "source": "services/nuxel-notifications/systemd/nuxel-notifications.service",
+    "source_sha256": "275b2ea2f3d789bcf9ceda404bbb82b70b3e7e594c6a731b257deb98b6c1f181",
+    "target": "/etc/systemd/system/nuxel-notifications.service"
+  },
+  {
+    "group": "services-runtime",
+    "n": 17,
+    "risk": "medium",
+    "script": "scripts/017-nuxel-portal.sh",
+    "service": null,
+    "source": "services/nuxel-portal/bin/nuxel-portal",
+    "source_sha256": "c08a58e33ef744356112ba6c25c070d454201bd72e338b6168327f92bcfc7815",
+    "target": "/usr/bin/nuxel-portal"
+  },
+  {
+    "group": "services-runtime",
+    "n": 18,
+    "risk": "medium",
+    "script": "scripts/018-org.nuxel.Portal.conf.sh",
+    "service": null,
+    "source": "services/nuxel-portal/dbus/org.nuxel.Portal.conf",
+    "source_sha256": "ad9db606f303bd0f5c7dc56c7821c52b6ad5214d60de799c4ce3e4eed8233a95",
+    "target": "/etc/dbus-1/system.d/org.nuxel.Portal.conf"
+  },
+  {
+    "group": "services-runtime",
+    "n": 19,
+    "risk": "medium",
+    "script": "scripts/019-portal.py.sh",
+    "service": null,
+    "source": "services/nuxel-portal/src/portal.py",
+    "source_sha256": "7a8295dfcebbc41849b97d1eec8e35b47bf9df286ccc3967ad0af4cde7ec6c28",
+    "target": "/usr/lib/nuxel/nuxel-portal/portal.py"
+  },
+  {
+    "group": "services-runtime",
+    "n": 20,
+    "risk": "medium",
+    "script": "scripts/020-nuxel-portal.service.sh",
+    "service": null,
+    "source": "services/nuxel-portal/systemd/nuxel-portal.service",
+    "source_sha256": "b86401526672305ab3b5cc3a5a05c3528d47d4fc584f3dd5088a062962893832",
+    "target": "/etc/systemd/system/nuxel-portal.service"
+  },
+  {
+    "group": "services-runtime",
+    "n": 21,
+    "risk": "medium",
+    "script": "scripts/021-nuxel-fallback.service.sh",
+    "service": null,
+    "source": "services/nuxel-session/systemd/nuxel-fallback.service",
+    "source_sha256": "cbc1c5d18b365c7ecf7d544a7eb4932171cfef468429c3813df196adaca11233",
+    "target": "/etc/systemd/system/nuxel-fallback.service"
+  },
+  {
+    "group": "services-runtime",
+    "n": 22,
+    "risk": "medium",
+    "script": "scripts/022-10-launcher-primary.conf.sh",
+    "service": null,
+    "source": "services/nuxel-session/systemd/nuxel-ui.service.d-10-launcher-primary.conf",
+    "source_sha256": "b26293afafb65bda1b23d28aaa08e9f066a918009e1c7b7f0e17e36dcef7f296",
+    "target": "/etc/systemd/system/nuxel-ui.service.d/10-launcher-primary.conf"
+  },
+  {
+    "group": "services-runtime",
+    "n": 23,
+    "risk": "medium",
+    "script": "scripts/023-nuxel-web.sh",
+    "service": null,
+    "source": "services/nuxel-web/bin/nuxel-web",
+    "source_sha256": "636d5972d5b8786c2fceed952dc74e75c6d36fd98efe8a32c6c2863362ea7a32",
+    "target": "/usr/bin/nuxel-web"
+  },
+  {
+    "group": "services-runtime",
+    "n": 24,
+    "risk": "medium",
+    "script": "scripts/024-nuxel-web-server.py.sh",
+    "service": null,
+    "source": "services/nuxel-web/bin/nuxel-web-server.py",
+    "source_sha256": "b17fb3e700ed3918691a395895090ca68eab5fe45b1f9a01a63a270f27072520",
+    "target": "/usr/lib/nuxel/nuxel-web-server.py"
+  }
+]

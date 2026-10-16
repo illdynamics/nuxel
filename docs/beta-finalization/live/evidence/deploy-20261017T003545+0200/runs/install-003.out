@@ -1,0 +1,8 @@
+pushed={"b64_chars": 2032, "bytes": 1522, "decoded_sha256": "db478c06cc282386f31ca447dc91c8a517b1cc59e9062dd490c81474850a5452", "parts": 1, "path": "/var/tmp/nxl-install-003.sh"}
+ok=True rc=0
+---
+PREV=0c51d530a6798c966ea82f0438c245aef911f58201a2e8802a30e1aea0242f42
+/etc/dbus-1/system.d/org.nuxel.Bridge.conf.nuxel-staged: OK
+DECLARED-RELOAD-DEFERRED
+INSTALL-OK
+NXLSCRIPT-RC=0

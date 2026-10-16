@@ -1,0 +1,92 @@
+[
+  {
+    "group": "animation-handoff",
+    "n": 1,
+    "risk": "high",
+    "script": "scripts/001-animation-handoff.json.sh",
+    "service": "nuxel-wayland",
+    "source": "configs/nuxel/boot/animation-handoff.json",
+    "source_sha256": "5deb569e5f1049fa2f5689ccb35cfab2758ad717ffd9d5ed9e9efceac856c00c",
+    "target": "/etc/nuxel/boot/animation-handoff.json"
+  },
+  {
+    "group": "animation-handoff",
+    "n": 2,
+    "risk": "high",
+    "script": "scripts/002-verbose-boot.json.sh",
+    "service": "nuxel-wayland",
+    "source": "configs/nuxel/boot/verbose-boot.json",
+    "source_sha256": "16a46b63e6ea82bdaa9528ac1dd553852642e164f02761892d85eeaa3a12f18e",
+    "target": "/etc/nuxel/boot/verbose-boot.json"
+  },
+  {
+    "group": "touch-and-buttons",
+    "n": 3,
+    "risk": "medium",
+    "script": "scripts/003-bootmode-guard.json.sh",
+    "service": "nuxel-touch-arm",
+    "source": "configs/nuxel/touch/bootmode-guard.json",
+    "source_sha256": "705d8bacf98894a0f131318cb9342902b1c8cc90e278111c0e4fe68b2ffcd418",
+    "target": "/etc/nuxel/touch/bootmode-guard.json"
+  },
+  {
+    "group": "touch-and-buttons",
+    "n": 4,
+    "risk": "medium",
+    "script": "scripts/004-reboot-gate.json.sh",
+    "service": "nuxel-touch-arm",
+    "source": "configs/nuxel/buttons/reboot-gate.json",
+    "source_sha256": "1b23b50f22bbcf12452ea1eb5abb0ad24a6184a0e9f5902bd69882e14bbd30fd",
+    "target": "/etc/nuxel/buttons/reboot-gate.json"
+  },
+  {
+    "group": "touch-and-buttons",
+    "n": 5,
+    "risk": "medium",
+    "script": "scripts/005-nuxel-bootmode-guard.service.sh",
+    "service": "nuxel-touch-arm",
+    "source": "configs/nuxel/touch/nuxel-bootmode-guard.service",
+    "source_sha256": "a40e1e6b56da857ffb0fdd04f8092d492c9d4f11c04cfa9debf38f3bda83505d",
+    "target": "/etc/systemd/system/nuxel-bootmode-guard.service"
+  },
+  {
+    "group": "audio-and-network-config",
+    "n": 6,
+    "risk": "medium",
+    "script": "scripts/006-audio.json.sh",
+    "service": "nuxel-audio",
+    "source": "configs/nuxel/audio/audio.json",
+    "source_sha256": "2630cd0afa96737f82fdab262de68f84fea01df6096e9100fbd3a2778b0e0185",
+    "target": "/etc/nuxel/audio/audio.json"
+  },
+  {
+    "group": "audio-and-network-config",
+    "n": 7,
+    "risk": "medium",
+    "script": "scripts/007-jack-routes.json.sh",
+    "service": "nuxel-audio",
+    "source": "configs/nuxel/audio/jack-routes.json",
+    "source_sha256": "4f6117835fb8787d93f5a2e2b0def9962b7056c00b9bc78ffc9ec5ac4fae9309",
+    "target": "/etc/nuxel/audio/jack-routes.json"
+  },
+  {
+    "group": "audio-and-network-config",
+    "n": 8,
+    "risk": "medium",
+    "script": "scripts/008-nuxel-chrony.conf.sh",
+    "service": null,
+    "source": "configs/nuxel/time/nuxel-chrony.conf",
+    "source_sha256": "1d946102f33c56a491cc7d4b89d77466f1ce4301cd80dd17d81cf713054f1ca1",
+    "target": "/etc/nuxel/time/nuxel-chrony.conf"
+  },
+  {
+    "group": "audio-and-network-config",
+    "n": 9,
+    "risk": "medium",
+    "script": "scripts/009-app_registry.json.sh",
+    "service": null,
+    "source": "configs/nuxel/app-registry/app_registry.json",
+    "source_sha256": "984106329ad0fce60b4974aa601946e7ccf9e6dcc7422a70289a835c813b0f2b",
+    "target": "/etc/nuxel/app-registry/app_registry.json"
+  }
+]

@@ -20,5 +20,15 @@
     "reason": "clear the LPM/charger-mode boot that recurred after an 11.6s hardware POWER-key hold, so sec_ts can initialise",
     "returned_to_nuxel": true,
     "rollback_known_good": true
+  },
+  {
+    "at": "2026-10-17T00:49:31+0200",
+    "diagnostic": "re-read /proc/cmdline androidboot.mode and confirm sec_touchscreen registered, 0 failed units, launcher HTTP 200, bridge/portal/notifications active",
+    "evidence_after": "/x/nuxel/docs/beta-finalization/live/evidence/reboot-verify-20261017T004900+0200",
+    "evidence_before": "/x/nuxel/docs/beta-finalization/live/evidence/reboot-verify-20261017T004900+0200",
+    "n": 3,
+    "reason": "validate non-charger normal boot persistence and Nuxel return after live deploy",
+    "returned_to_nuxel": true,
+    "rollback_known_good": true
   }
 ]

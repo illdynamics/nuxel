@@ -6,6 +6,40 @@ The canonical version lives in [`VERSION`](VERSION) and is bumped in lockstep
 across the shell apps, the PWA manifest, the device `APKBUILD`s, the VM tooling
 and the OTA builder (see *Versioning* below).
 
+
+---
+
+## [v0.5.0-beta-rc1] — 2026-10-17 — *live service-graph repair + device evidence (task2 continued)*
+
+**Version still unchanged:** same rationale as above; this pass repairs the live service graph and
+timekeeping rather than adding feature surface.
+
+* **Service graph brought to `systemctl is-system-running` = `running` with 0 failed units.** The
+  hardened units for `nuxel-bridge`, `nuxel-http-bridge`, `nuxel-notifications` and `nuxel-portal`
+  depended on identities/directories that had never been provisioned on the device.
+  - Added idempotent `tools/s10plus/a33/nuxel-provision-services.sh` (users `nuxel-bridge`,
+    `nuxel-notifications`; dirs `/var/lib/nuxel/permissions`, `/var/log/nuxel`).
+  - Installed `python3-dbus`, `python3-gobject`, `python3-gobject-base`, `python3-cairo` on the
+    phone (aarch64 Fedora 43 RPMs, verified over the console, `rpm -i`).
+  - `services/nuxel-bridge/src/bridge.py`: replaced the non-existent `dbus.service.property` with a
+    real `org.freedesktop.DBus.Properties` Get/GetAll implementation.
+  - `org.nuxel.Bridge.conf`: removed the invalid `<limit name="log_level">info</limit>` that made
+    dbus-daemon reject the whole policy file; added `nuxel-bridge` own-name policy. Added
+    `nuxel-notifications` own-name policy to `org.nuxel.Notifications.conf`.
+  - `nuxel-http-bridge.service` runs as root: the Samsung 4.14 vendor `ncm` module denies
+    AF_INET/AF_INET6 socket creation to non-root UIDs (kernel limitation, documented).
+* **Time/RTC repaired.** Device clock was ~1 month behind (`Sep 15`); set to real time
+  (`date -s`), `hwclock -w -u`, timezone `Europe/Amsterdam` via `/etc/localtime`.
+* **Reboot defect found + fixed.** `systemctl reboot` hung on logind D-Bus activation (boot_id
+  unchanged). Default `--reboot-cmd` in `nuxel-live-reboot-verify.py` is now
+  `systemctl reboot --force` (still a normal, non-recovery reboot).
+* **Touch pipeline diagnosed.** `sec_touchscreen` (event2) -> phoc/libinput (phoc holds
+  event2/event4) all present on a non-charger boot; real-finger proof remains `NEEDS_OWNER_TEST`.
+* **Bounded soak sample** (two samples, 60 s apart): no reboot, 0 failed units, single fb owner,
+  launcher 200, no unbounded RSS/CPU growth (preliminary, not the 8 h tier).
+* Evidence: `docs/beta-finalization/live/{BASELINE-CAPTURE.md,DEPLOYMENTS.md}` and
+  `docs/beta-finalization/live/evidence/{baseline,deploy,reboot-verify}-20261017T*`.
+
 ---
 
 ## [v0.5.0-beta-rc1] — 2026-10-16 — *live deployment cycle (task2)*

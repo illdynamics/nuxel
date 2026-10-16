@@ -1,0 +1,132 @@
+[
+  {
+    "group": "boot-animation-runtime",
+    "n": 1,
+    "risk": "high",
+    "script": "scripts/001-nuxel-animation-claim.sh",
+    "service": null,
+    "source": "services/nuxel-animation/bin/nuxel-animation-claim",
+    "source_sha256": "b35e63688242a1b1f1381600ede42f559bcd0fee82c75ebcc87b147eb839a10d",
+    "target": "/usr/lib/nuxel/nuxel-animation-claim"
+  },
+  {
+    "group": "boot-animation-runtime",
+    "n": 2,
+    "risk": "high",
+    "script": "scripts/002-nuxel-animation.service.sh",
+    "service": null,
+    "source": "services/nuxel-animation/systemd/nuxel-animation.service",
+    "source_sha256": "199e1e9805c5b34c3adc8ce5889ea37080dd01f4c2e2ddf09fba2dfddc0b38db",
+    "target": "/etc/systemd/system/nuxel-animation.service"
+  },
+  {
+    "group": "boot-animation-runtime",
+    "n": 3,
+    "risk": "high",
+    "script": "scripts/003-nuxel-boot-animation.mp4.sh",
+    "service": "nuxel-wayland",
+    "source": "assets/nuxel-boot-animation.mp4",
+    "source_sha256": "280e094fb3efe54eaf15f0d964bf8ad834eeebde2e34901e1bf1e3520b95184c",
+    "target": "/usr/share/nuxel/boot/nuxel-boot-animation.mp4"
+  },
+  {
+    "group": "boot-animation-runtime",
+    "n": 4,
+    "risk": "high",
+    "script": "scripts/004-nuxel-background.png.sh",
+    "service": null,
+    "source": "assets/nuxel-background.png",
+    "source_sha256": "6e337ef2d506a16778fd3c79159f0cf053eb07ace40cf43387a33486da76cb29",
+    "target": "/usr/share/nuxel/nuxel-background.png"
+  },
+  {
+    "group": "boot-animation-runtime",
+    "n": 5,
+    "risk": "high",
+    "script": "scripts/005-nuxel-anim-pack.py.sh",
+    "service": null,
+    "source": "tools/s10plus/nuxel-anim-pack.py",
+    "source_sha256": "2c382f6442369815fc11cfd19b9f3bd6f75f6d94ec40a9e048f4dce5a312a567",
+    "target": "/usr/lib/nuxel/nuxel-anim-pack.py"
+  },
+  {
+    "group": "boot-animation-runtime",
+    "n": 6,
+    "risk": "high",
+    "script": "scripts/006-nuxel-background.png.sh",
+    "service": "nuxel-wayland",
+    "source": "assets/nuxel-background.png",
+    "source_sha256": "6e337ef2d506a16778fd3c79159f0cf053eb07ace40cf43387a33486da76cb29",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/nuxel-background.png"
+  },
+  {
+    "group": "boot-animation-runtime",
+    "n": 7,
+    "risk": "high",
+    "script": "scripts/007-nuxel-background.png.sh",
+    "service": "nuxel-wayland",
+    "source": "assets/nuxel-background.png",
+    "source_sha256": "6e337ef2d506a16778fd3c79159f0cf053eb07ace40cf43387a33486da76cb29",
+    "target": "/usr/share/nuxel/pwa/nuxel-apps/calendar/assets/nuxel-background.png"
+  },
+  {
+    "group": "boot-animation-runtime",
+    "n": 8,
+    "risk": "high",
+    "script": "scripts/008-nuxel-background.png.sh",
+    "service": "nuxel-wayland",
+    "source": "assets/nuxel-background.png",
+    "source_sha256": "6e337ef2d506a16778fd3c79159f0cf053eb07ace40cf43387a33486da76cb29",
+    "target": "/usr/share/nuxel/pwa/nuxel-apps/camera-gallery/assets/nuxel-background.png"
+  },
+  {
+    "group": "boot-animation-runtime",
+    "n": 9,
+    "risk": "high",
+    "script": "scripts/009-nuxel-background.png.sh",
+    "service": "nuxel-wayland",
+    "source": "assets/nuxel-background.png",
+    "source_sha256": "6e337ef2d506a16778fd3c79159f0cf053eb07ace40cf43387a33486da76cb29",
+    "target": "/usr/share/nuxel/pwa/nuxel-apps/files/assets/nuxel-background.png"
+  },
+  {
+    "group": "boot-animation-runtime",
+    "n": 10,
+    "risk": "high",
+    "script": "scripts/010-nuxel-background.png.sh",
+    "service": "nuxel-wayland",
+    "source": "assets/nuxel-background.png",
+    "source_sha256": "6e337ef2d506a16778fd3c79159f0cf053eb07ace40cf43387a33486da76cb29",
+    "target": "/usr/share/nuxel/pwa/nuxel-apps/mail/assets/nuxel-background.png"
+  },
+  {
+    "group": "boot-animation-runtime",
+    "n": 11,
+    "risk": "high",
+    "script": "scripts/011-nuxel-background.png.sh",
+    "service": "nuxel-wayland",
+    "source": "assets/nuxel-background.png",
+    "source_sha256": "6e337ef2d506a16778fd3c79159f0cf053eb07ace40cf43387a33486da76cb29",
+    "target": "/usr/share/nuxel/pwa/nuxel-apps/notes/assets/nuxel-background.png"
+  },
+  {
+    "group": "packages-reconcile",
+    "n": 12,
+    "risk": "high",
+    "script": "scripts/012-packages-manifest.json.sh",
+    "service": null,
+    "source": "images/s10plus/packages-manifest.json",
+    "source_sha256": "99f68383be024f8aeeeea4f3af7177df21969b2294edc0b6877da785c2dea7dc",
+    "target": "/usr/lib/nuxel/packages-manifest.json"
+  },
+  {
+    "group": "packages-reconcile",
+    "n": 13,
+    "risk": "high",
+    "script": "scripts/013-verify-packages.py.sh",
+    "service": null,
+    "source": "tools/s10plus/a33/verify-packages.py",
+    "source_sha256": "f1f3fbe962858c473a03f0fb84c936e6b96c6ee9895d745566cd1ce8d8db0cdc",
+    "target": "/usr/local/bin/verify-packages.py"
+  }
+]

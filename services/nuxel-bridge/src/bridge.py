@@ -469,13 +469,30 @@ class NuxelBridgeService(dbus.service.Object):
     # Published as org.nuxel.Bridge.BridgeVersion / .HostVersion
     # (bridge-version.json "dbus_property") so a native consumer can check the
     # contract without parsing Ping()'s JSON.
-    @dbus.service.property(INTERFACE_NAME, signature='s')
-    def BridgeVersion(self):
-        return BRIDGE_PROTOCOL_VERSION
+    @dbus.service.method(dbus.PROPERTIES_IFACE, in_signature='ss', out_signature='v')
+    def Get(self, interface_name, property_name):
+        if interface_name != INTERFACE_NAME:
+            raise dbus.exceptions.DBusException(
+                'org.freedesktop.DBus.Error.UnknownInterface',
+                'Unknown interface: %s' % interface_name)
+        value = {'BridgeVersion': BRIDGE_PROTOCOL_VERSION,
+                 'HostVersion': BRIDGE_HOST_VERSION}.get(property_name)
+        if value is None:
+            raise dbus.exceptions.DBusException(
+                'org.freedesktop.DBus.Error.UnknownProperty',
+                'Unknown property: %s' % property_name)
+        return value
 
-    @dbus.service.property(INTERFACE_NAME, signature='s')
-    def HostVersion(self):
-        return BRIDGE_HOST_VERSION
+    @dbus.service.method(dbus.PROPERTIES_IFACE, in_signature='s', out_signature='a{sv}')
+    def GetAll(self, interface_name):
+        if interface_name != INTERFACE_NAME:
+            raise dbus.exceptions.DBusException(
+                'org.freedesktop.DBus.Error.UnknownInterface',
+                'Unknown interface: %s' % interface_name)
+        return {
+            'BridgeVersion': dbus.types.String(BRIDGE_PROTOCOL_VERSION, variant_level=1),
+            'HostVersion': dbus.types.String(BRIDGE_HOST_VERSION, variant_level=1),
+        }
     
     def _init_connectors(self):
         def _connect():

@@ -1,0 +1,8 @@
+pushed={"b64_chars": 2340, "bytes": 1754, "decoded_sha256": "ddc4027d74df9fc1afe15166483d53308132eee013649178acc705f6a9fd1f42", "parts": 1, "path": "/var/tmp/nxl-install-073.sh"}
+ok=True rc=0
+---
+PREV=bc18ee41af30a1b67f84c74346c5d2e8dd2e43cf8d346bda25073998be18c69c
+/usr/share/nuxel/pwa/nuxel-apps/camera-gallery/icons/icon-192.png.nuxel-staged: OK
+active
+INSTALL-OK
+NXLSCRIPT-RC=0

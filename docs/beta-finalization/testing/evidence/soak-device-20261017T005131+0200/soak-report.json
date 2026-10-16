@@ -1,0 +1,22 @@
+{
+  "blocked_reason": "the live S10+ USB console is not reachable from this execution environment (see docs/beta-finalization/preflight/ENVIRONMENT.md section 6); retry with the handset booted into Nuxel and the live console enumerated",
+  "findings": [
+    {
+      "detail": "the live S10+ USB console is not reachable from this execution environment (see docs/beta-finalization/preflight/ENVIRONMENT.md section 6); retry with the handset booted into Nuxel and the live console enumerated",
+      "id": "S0-no-resource",
+      "severity": "fail"
+    }
+  ],
+  "generated_at": "2026-10-17T00:51:31+0200",
+  "load_average_note": "load1 on the S10+ is dominated by Samsung vendor kernel threads (TrustZone/RPMB/REE time), per the A31 finding; it is recorded but never gated.",
+  "mode": "device",
+  "requested_duration_s": 180,
+  "samples": 0,
+  "schema_version": 1,
+  "soak_doc": "docs/beta-finalization/testing/SOAK-AND-PERFORMANCE.md",
+  "stats": {},
+  "strategy_doc": "docs/beta-finalization/testing/TEST-STRATEGY.md",
+  "terminal_state": "BLOCKED_EXTERNAL_RESOURCE",
+  "tool": "tools/beta/soak.sh",
+  "verdict": "BLOCKED_EXTERNAL_RESOURCE"
+}
