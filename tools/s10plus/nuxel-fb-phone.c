@@ -18,12 +18,28 @@
  *     stays on screen.
  * Still a DISPLAY DIAGNOSTIC, NOT Phosh.
  */
+#ifdef NUXEL_FIRSTLIGHT_HOST
+/* Host build: only the pure NUXSPL01 parser + renderer are exercised, so the
+   raw-syscall layer is replaced by stdio.  See tools/s10plus/a27/test-firstlight.c
+   (same discipline as nuxel-anim-player.c's NUXEL_HOST self-test). */
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#endif
+
 typedef unsigned long u64;
 typedef unsigned int u32;
 typedef unsigned short u16;
 typedef unsigned char u8;
 typedef signed int s32;
 
+#ifdef NUXEL_FIRSTLIGHT_HOST
+/* Host build: the pure parser/renderer never emit to the ram console; the test
+   harness reports with printf. */
+static void wr(const char*t){ fputs(t,stdout); }
+static void wrn(const char*t,u64 v){ printf("%s=%llu\n",t,(unsigned long long)v); }
+static void wrh(const char*t,u64 v){ printf("%s=0x%llx\n",t,(unsigned long long)v); }
+#else
 static long sys(long n,long a,long b,long c,long d,long e,long f){
  register long x0 __asm__("x0")=a,x1 __asm__("x1")=b,x2 __asm__("x2")=c;
  register long x3 __asm__("x3")=d,x4 __asm__("x4")=e,x5 __asm__("x5")=f,x8 __asm__("x8")=n;
@@ -32,6 +48,10 @@ static long sys(long n,long a,long b,long c,long d,long e,long f){
 static long op(const char*s){return sys(56,-100,(long)s,2,0,0,0);}          /* openat O_RDWR */
 static int  io(long fd,long request,void* p){return (int)sys(29,fd,request,(long)p,0,0,0);}
 static void closefd(long fd){sys(57,fd,0,0,0,0,0);}
+static long op_rd(const char*p){return sys(56,-100,(long)p,0,0,0,0);} /* openat O_RDONLY */
+static long seek_end(long fd){return sys(62,fd,0,2,0,0,0);}            /* lseek SEEK_END  */
+static long map_rd(long fd,long len){return sys(222,0,len,1,2,fd,0);}  /* PROT_READ MAP_PRIVATE */
+static void unmap(long p,long len){sys(215,p,len,0,0,0,0);}
 static long mkfile(const char*p){return sys(56,-100,(long)p,0x241,0600,0,0);} /* openat CREAT|TRUNC|WRONLY */
 static int  fexists(const char*p){long f=sys(56,-100,(long)p,0,0,0,0); if(f<0)return 0; closefd(f); return 1;}
 static long getpid_(void){return sys(172,0,0,0,0,0,0);}
@@ -44,8 +64,11 @@ static void wr(const char*s){u64 n=0;while(s[n])n++;if(n)sys(64,2,(long)s,n,0,0,
    reached the ram console as uninitialised stack memory + the digits.  The
    measurement was always taken correctly; only the label was garbage, which is
    why no capture in this project ever contained a readable geometry value. */
+
 static void wrn(const char*tag,u64 v){char b[96];int i=0;while(tag[i]&&i<72){b[i]=tag[i];i++;}b[i++]='=';char d[24];int k=0;if(!v)d[k++]='0';while(v){d[k++]='0'+(int)(v%10);v/=10;}while(k)b[i++]=d[--k];b[i++]='\n';sys(64,2,(long)b,i,0,0,0);}
 static void wrh(const char*tag,u64 v){char b[96];int i=0;while(tag[i]&&i<70){b[i]=tag[i];i++;}b[i++]='=';b[i++]='0';b[i++]='x';char d[20];int k=0;if(!v)d[k++]='0';while(v){int h=(int)(v&15);d[k++]=h<10?('0'+h):('a'+h-10);v>>=4;}while(k)b[i++]=d[--k];b[i++]='\n';sys(64,2,(long)b,i,0,0,0);}
+
+#endif /* NUXEL_FIRSTLIGHT_HOST / syscall layer */
 
 struct fb_bitfield{u32 offset,length,msb_right;};
 struct fb_var{u32 xres,yres,xres_virtual,yres_virtual,xoffset,yoffset,bits_per_pixel,grayscale;
@@ -142,6 +165,176 @@ static void penguin(int cx,int cy,int half,int frame,u32 bgc){
  }
 }
 
+
+/* ============================================================================
+ * A27 — NUXSPL01 FIRST LIGHT: the animation's frame 0 lights the panel.
+ *
+ * WHY: tools/s10plus/a26/make-firstlight-asset.py extracts frame 0 of the ORIGINAL
+ * MP4-derived container (NUXANM01) into a standalone, deterministic asset:
+ *
+ *    0    8  magic "NUXSPL01"
+ *    8    4  u32 width            1080
+ *   12    4  u32 height           1920
+ *   16    4  u32 palette_count    256
+ *   20    4  u32 flags            bit0 = index plane is raw DEFLATE
+ *   24    4  u32 blob_size        size of the index plane as stored
+ *   28    4  u32 reserved
+ *   32  ...  palette            palette_count x RGB565 LE (verbatim from NUXANM01)
+ *   ..  ...  index plane        width*height palette indices
+ *
+ * Everything below is deliberately the SAME maths nuxel-anim-player.c uses for
+ * its first committed frame (palette expansion into the DECON's real ABGR_8888
+ * order, integer nearest-neighbour spans, letterbox filled with the artwork's own
+ * most-frequent colour, every virtual buffer painted).  The consequence is the
+ * property the mission actually needs: the frame that lights the panel at first
+ * light is byte-identical to the frame the player commits seconds later, so the
+ * handoff is not a transition at all -- nothing to flash, no black gap, no colour
+ * change, no second graphics implementation to disagree with.
+ *
+ * The parser is pure (no syscalls, no I/O), so tools/s10plus/a27/test-firstlight.c
+ * exercises it and the renderer against a reference implementation off-device.
+ * ==========================================================================*/
+#define SPL_MAX_DIM 8192
+
+#define SPL_OK            0
+#define SPL_ERR_SHORT     1
+#define SPL_ERR_MAGIC     2
+#define SPL_ERR_RESERVED  3
+#define SPL_ERR_FLAGS     4
+#define SPL_ERR_PALETTE   5
+#define SPL_ERR_DIM       6
+#define SPL_ERR_OVERFLOW  7
+#define SPL_ERR_TRUNC     8
+#define SPL_ERR_SIZE      9
+
+struct spl_frame { u32 w,h,paln,flags,blob; const u8 *pal; const u8 *idx; u64 bytes; };
+
+static u32 spl_rd32(const u8*p){ return (u32)p[0]|((u32)p[1]<<8)|((u32)p[2]<<16)|((u32)p[3]<<24); }
+
+static const char *spl_err_name(int e){
+ switch(e){
+  case SPL_ERR_SHORT:    return "SHORT_HEADER";
+  case SPL_ERR_MAGIC:    return "BAD_MAGIC";
+  case SPL_ERR_RESERVED: return "RESERVED_NOT_ZERO";
+  case SPL_ERR_FLAGS:    return "UNSUPPORTED_FLAGS";
+  case SPL_ERR_PALETTE:  return "BAD_PALETTE";
+  case SPL_ERR_DIM:      return "BAD_DIMENSIONS";
+  case SPL_ERR_OVERFLOW: return "BUFFER_SIZE_OVERFLOW";
+  case SPL_ERR_TRUNC:    return "TRUNCATED_PIXEL_PLANE";
+  case SPL_ERR_SIZE:     return "TRAILING_BYTES";
+  default:               return "OK";
+ }
+}
+
+static int spl_parse(const u8 *d,u64 len,struct spl_frame *f){
+ const char *mg="NUXSPL01";
+ if(len<32) return SPL_ERR_SHORT;
+ for(int i=0;i<8;i++) if(d[i]!=(u8)mg[i]) return SPL_ERR_MAGIC;
+ f->w=spl_rd32(d+8); f->h=spl_rd32(d+12); f->paln=spl_rd32(d+16);
+ f->flags=spl_rd32(d+20); f->blob=spl_rd32(d+24);
+ if(spl_rd32(d+28)) return SPL_ERR_RESERVED;
+ /* bit0 = the index plane is raw DEFLATE.  This freestanding painter has no
+    inflate (the animation player carries the only decoder), so a compressed
+    asset is REJECTED by name instead of being painted as garbage.  The shipped
+    asset is uncompressed on purpose: 1.9 MB vs an 18.5 MB container. */
+ if(f->flags) return SPL_ERR_FLAGS;
+ if(f->paln<2||f->paln>256) return SPL_ERR_PALETTE;
+ if(!f->w||!f->h||f->w>SPL_MAX_DIM||f->h>SPL_MAX_DIM) return SPL_ERR_DIM;
+ if((u64)f->w*(u64)f->h>64000000ull) return SPL_ERR_OVERFLOW;
+ if(f->blob!=(u32)((u64)f->w*(u64)f->h)) return SPL_ERR_DIM;
+ u64 need=32ull+(u64)f->paln*2ull+(u64)f->w*(u64)f->h;
+ if(len<need) return SPL_ERR_TRUNC;
+ if(len>need) return SPL_ERR_SIZE;
+ f->pal=d+32; f->idx=d+32+(u64)f->paln*2ull; f->bytes=need;
+ /* A palette of one single colour (or an all-zero palette) is not the
+    animation's frame 0; refuse it rather than light the panel with a flat
+    rectangle that looks like a hang. */
+ { u16 seen[24]; int n=0;
+   for(u32 i=0;i<f->paln;i++){
+     u16 c=(u16)((u16)f->pal[i*2]|((u16)f->pal[i*2+1]<<8)); int dup=0;
+     for(int j=0;j<n;j++) if(seen[j]==c){ dup=1; break; }
+     if(!dup&&n<24) seen[n++]=c;
+   }
+   if(n<2) return SPL_ERR_PALETTE; }
+ return SPL_OK;
+}
+
+/* Per-source-pixel destination spans: copied verbatim from nuxel-anim-player.c
+   (nuxel_anim_start: "DW=PW; DH=...; for(x) DX0[x]=OX+x*DW/AW ...").  Integer
+   only, so the early frame and the player's first commit cannot differ by a
+   rounding step even in principle. */
+static u32 SPDX0[SPL_MAX_DIM],SPDX1[SPL_MAX_DIM],SPDY0[SPL_MAX_DIM],SPDY1[SPL_MAX_DIM];
+static u32 SPDST[256];
+
+static u32 SPDBG_INDEX,SPDBG_DST,SPLDW,SPLDH,SPLOX,SPLOY;
+
+static void spl_span(u8 *row,u32 x0,u32 x1,u32 color,u32 bytespp){
+ if(bytespp==4){ volatile u32*p=(volatile u32*)(row+(u64)x0*4); for(u32 x=x0;x<x1;x++)*p++=color; }
+ else if(bytespp==2){ volatile u16*p=(volatile u16*)(row+(u64)x0*2); for(u32 x=x0;x<x1;x++)*p++=(u16)color; }
+ else if(bytespp==3){ volatile u8*p=row+(u64)x0*3; for(u32 x=x0;x<x1;x++){p[0]=color&0xff;p[1]=(color>>8)&0xff;p[2]=(color>>16)&0xff;p+=3;} }
+}
+
+/* Render the first-light frame into EVERY virtual buffer of the mapped panel.
+   Returns 0, or a negative reason code.  `mapped` is the byte size actually
+   mapped, so a bogus STRIDE*YVIR can never write outside the mapping. */
+static int spl_render(const struct spl_frame *f,u8 *fbp,u32 W,u32 H,u32 YVIR,
+                      u32 STRIDE,u32 bpp,u64 mapped,u32 bufs){
+ u32 bytespp=bpp/8;
+ if(!bytespp||bytespp>4) return -1;
+ if(f->w>SPL_MAX_DIM||f->h>SPL_MAX_DIM) return -2;
+ if(!W||!H||STRIDE<(u32)((u64)W*bytespp)) return -2;
+ /* palette: RGB565 (verbatim from NUXANM01) expanded ONCE, with the same
+    pack() the rest of this binary uses -- which by now carries the A23 hardware
+    order (R@0 G@8 B@16 for ABGR_8888), not the driver's declared bitfields. */
+ for(u32 i=0;i<f->paln;i++){
+   u32 c=(u32)((u32)f->pal[i*2]|((u32)f->pal[i*2+1]<<8));
+   u32 r=((c>>11)&31u)*255u/31u, g=((c>>5)&63u)*255u/63u, b=(c&31u)*255u/31u;
+   SPDST[i]=pack(r,g,b);
+ }
+ u32 DW=W, DH=(u32)(((u64)f->h*(u64)W)/(u64)f->w);
+ if(DH>H){ DH=H; DW=(u32)(((u64)f->w*(u64)H)/(u64)f->h); }
+ if(!DW||!DH) return -3;
+ u32 OX=(W-DW)/2, OY=(H-DH)/2;
+ u32 maxx=STRIDE/bytespp; if(maxx>W) maxx=W;
+ for(u32 x=0;x<f->w;x++){
+   u32 a=OX+(u32)(((u64)x*(u64)DW)/(u64)f->w);
+   u32 b=OX+(u32)(((u64)(x+1)*(u64)DW)/(u64)f->w);
+   if(b<=a)b=a+1; if(b>W)b=W; if(a>=W)a=W-1; if(b>maxx)b=maxx;
+   SPDX0[x]=a; SPDX1[x]=b;
+ }
+ for(u32 y=0;y<f->h;y++){
+   u32 a=OY+(u32)(((u64)y*(u64)DH)/(u64)f->h);
+   u32 b=OY+(u32)(((u64)(y+1)*(u64)DH)/(u64)f->h);
+   if(b<=a)b=a+1; if(b>H)b=H; if(a>=H)a=H-1;
+   SPDY0[y]=a; SPDY1[y]=b;
+ }
+ /* Letterbox: the artwork's OWN most frequent index, exactly as the player does
+    (an arbitrary black bar would be an invented visible rectangle). */
+ { u64 hist[256]; u32 n=f->paln>256u?256u:f->paln;
+   for(u32 i=0;i<n;i++) hist[i]=0;
+   for(u64 i=0;i<(u64)f->w*(u64)f->h;i++) hist[f->idx[i]&255u]++;
+   u32 best=0; for(u32 i=1;i<n;i++) if(hist[i]>hist[best]) best=i;
+   SPDBG_INDEX=best; SPDBG_DST=SPDST[best]; }
+ for(u32 buf=0;buf<bufs;buf++){
+   u32 y0=buf*H;
+   if((u64)(y0+H)*STRIDE>mapped) break;
+   for(u32 y=0;y<H;y++){
+     u8 *row=fbp+(u64)(y0+y)*STRIDE;
+     spl_span(row,0,maxx,SPDBG_DST,bytespp);
+   }
+   for(u32 sy=0;sy<f->h;sy++){
+     u8 *src=(u8*)f->idx+(u64)sy*(u64)f->w;
+     u32 dy0=SPDY0[sy],dy1=SPDY1[sy];
+     for(u32 y=dy0;y<dy1;y++){
+       u8 *row=fbp+(u64)(y0+y)*STRIDE;
+       for(u32 sx=0;sx<f->w;sx++) spl_span(row,SPDX0[sx],SPDX1[sx],SPDST[src[sx]],bytespp);
+     }
+   }
+ }
+ SPLDW=DW; SPLDH=DH; SPLOX=OX; SPLOY=OY;
+ return 0;
+}
+
 static int paint(void){
  u32 bg=pack(10,32,58), white=pack(236,242,250), orange=pack(255,138,27), black=pack(4,7,12);
  u32 bars[4]; bars[0]=pack(240,240,240); bars[1]=pack(220,40,40); bars[2]=pack(40,190,80); bars[3]=pack(50,110,240);
@@ -160,6 +353,7 @@ static int paint(void){
  return 0;
 }
 
+#ifndef NUXEL_FIRSTLIGHT_HOST
 #define FBIOGET_VSCREENINFO 0x4600
 #define FBIOPUT_VSCREENINFO 0x4601
 #define FBIOGET_FSCREENINFO 0x4602
@@ -215,6 +409,22 @@ static void scanout_commit(long fd,int verbose){
  }
 }
 
+/* A21: deterministic colour round-trip.  Packs pure red/green/blue/white/black
+   with whatever packing is in force and reads the u32 back, so the conversion the
+   animation player shares is provable from the console alone.  A27 moved this
+   into a function so the FIRST-LIGHT path can run it BEFORE the frame is painted:
+   these five pixels live in the letterbox and must not survive on the glass. */
+static void color_probe(void){
+ u32 cR=pack(255,0,0),cG=pack(0,255,0),cB=pack(0,0,255),cW=pack(255,255,255),cK=pack(0,0,0);
+ volatile u32*probe=(volatile u32*)(fb+(u64)(H-4)*STRIDE);
+ probe[0]=cR; probe[1]=cG; probe[2]=cB; probe[3]=cW; probe[4]=cK;
+ wrn("NUXEL_FB_COLOR_PACK_R_expected",cR); wrn("NUXEL_FB_COLOR_PACK_R_readback",probe[0]);
+ wrn("NUXEL_FB_COLOR_PACK_G_expected",cG); wrn("NUXEL_FB_COLOR_PACK_G_readback",probe[1]);
+ wrn("NUXEL_FB_COLOR_PACK_B_expected",cB); wrn("NUXEL_FB_COLOR_PACK_B_readback",probe[2]);
+ wrn("NUXEL_FB_COLOR_PACK_W_expected",cW); wrn("NUXEL_FB_COLOR_PACK_W_readback",probe[3]);
+ wrn("NUXEL_FB_COLOR_PACK_K_expected",cK); wrn("NUXEL_FB_COLOR_PACK_K_readback",probe[4]);
+}
+
 /* entry point: read argc/argv off the initial process stack (there is no libc
    here, so the C `main` convention does not exist). */
 void nuxel_start(long *sp);
@@ -231,6 +441,11 @@ void nuxel_start(long *sp){
  long argc=sp[0];
  char **argv=(char**)&sp[1];
  int hold=0; long hold_secs=0; STATE_DIR=0; int FBVAR_ORDER=0;
+ /* A27: the first-light frame IS frame 0 of the original animation.  The asset
+    carries no compression (flags bit0 = 0), so this freestanding binary needs no
+    inflate; a compressed or malformed asset is rejected BY NAME below and the
+    proven A16 diagnostic frame is painted instead. */
+ const char *FL_PATH="/opt/nuxel/nuxel-firstlight.rawspl"; int FL_ON=1;
  for(long i=1;i<argc;i++){
    const char*a=argv[i];
    if(a[0]=='-'&&a[1]=='-'&&a[2]=='s'&&a[3]=='t'&&a[4]=='a'&&a[5]=='t'&&a[6]=='e'&&a[7]=='d'&&a[8]=='i'&&a[9]=='r'&&a[10]=='='){
@@ -238,6 +453,15 @@ void nuxel_start(long *sp){
    }
    if(a[0]=='-'&&a[1]=='-'&&a[2]=='f'&&a[3]=='b'&&a[4]=='v'&&a[5]=='a'&&a[6]=='r'&&a[7]=='-'
       &&a[8]=='o'&&a[9]=='r'&&a[10]=='d'&&a[11]=='e'&&a[12]=='r'){ FBVAR_ORDER=1; continue; }
+   if(a[0]=='-'&&a[1]=='-'&&a[2]=='f'&&a[3]=='i'&&a[4]=='r'&&a[5]=='s'&&a[6]=='t'
+      &&a[7]=='l'&&a[8]=='i'&&a[9]=='g'&&a[10]=='h'&&a[11]=='t'){
+     if(a[12]=='='&&a[13]) FL_PATH=a+13;
+     else if(a[12]==0&&i+1<argc){ FL_PATH=argv[i+1]; i++; }
+     FL_ON=1; continue;
+   }
+   if(a[0]=='-'&&a[1]=='-'&&a[2]=='n'&&a[3]=='o'&&a[4]=='-'&&a[5]=='f'&&a[6]=='i'
+      &&a[7]=='r'&&a[8]=='s'&&a[9]=='t'&&a[10]=='l'&&a[11]=='i'&&a[12]=='g'
+      &&a[13]=='h'&&a[14]=='t'&&a[15]==0){ FL_ON=0; continue; }
    if(a[0]=='h'&&a[1]=='o'&&a[2]=='l'&&a[3]=='d'&&a[4]==0){
      hold=1;
      if(i+1<argc){ const char*n=argv[i+1]; int ok=n[0]!=0; long v=0;
@@ -304,34 +528,98 @@ void nuxel_start(long *sp){
  fb=(u8*)map;
  wrn("NUXEL_FB_MAPPED_BYTES",mapped);
 
- int nb=paint_all_buffers();
- NBUFS=nb<1?1:nb;
- wrn("NUXEL_FB_BUFFERS_PAINTED",(u64)nb);
+ /* The buffer count the DECON may be scanning, resolved the same way the
+    animation player resolves it (YVIR/PH, 1..4) BEFORE anything is painted: the
+    first-light frame must reach exactly the buffers the player will. */
+ { u32 nbc=YVIR/H; if(nbc<1)nbc=1; if(nbc>4)nbc=4; NBUFS=nbc; }
+ wrn("NUXEL_FB_BUFFERS",(u64)NBUFS);
+
+/* ============================================================================
+ * A27 -- FIRST LIGHT.  Light the panel with the animation's own frame 0.
+ *
+ * The asset is validated in full before a single pixel is written (magic,
+ * reserved, flags, palette count, dimensions, blob/geometry agreement, exact
+ * declared size, non-degenerate palette).  ANY failure falls back to the
+ * hardware-proven A16 diagnostic frame, by name, so "no panel" is never confused
+ * with "bad asset".  On success the frame is painted into every virtual buffer
+ * with the player's own spans/packing, the DECON is committed, and this process
+ * EXITS -- the DECON keeps scanning the buffer, so no framebuffer descriptor is
+ * left open (A21: closing one runs decon_release and powers the panel down).
+ * ==========================================================================*/
+ int FL_DONE=0;
+ if(FL_ON){
+   long afd=op_rd(FL_PATH);
+   if(afd<0){ wr("NUXEL_FIRSTLIGHT_ASSET_MISSING "); wr(FL_PATH);
+              wr(" -> A16 diagnostic fallback\n"); }
+   else {
+     long asz=seek_end(afd);
+     wrn("NUXEL_FIRSTLIGHT_ASSET_BYTES",(u64)(asz<0?0:asz));
+     if(asz<32||asz>(8L*1024*1024)){ wr("NUXEL_FIRSTLIGHT_BAD_ASSET_SIZE -> A16 diagnostic fallback\n"); }
+     else {
+       long am=map_rd(afd,asz);
+       if(am<0){ wr("NUXEL_FIRSTLIGHT_MMAP_FAILED -> A16 diagnostic fallback\n"); }
+       else {
+         static struct spl_frame FLF;
+         int pe=spl_parse((const u8*)am,(u64)asz,&FLF);
+         wrn("NUXEL_FIRSTLIGHT_PARSE_RC",(u64)pe);
+         if(pe!=SPL_OK){
+           wr("NUXEL_FIRSTLIGHT_REJECTED="); wr(spl_err_name(pe));
+           wr(" -> A16 diagnostic fallback\n");
+         } else {
+           wrn("NUXEL_FIRSTLIGHT_SRC_WIDTH",FLF.w);  wrn("NUXEL_FIRSTLIGHT_SRC_HEIGHT",FLF.h);
+           wrn("NUXEL_FIRSTLIGHT_PALETTE",FLF.paln); wrn("NUXEL_FIRSTLIGHT_FLAGS",FLF.flags);
+           wrn("NUXEL_FIRSTLIGHT_INDEX_BYTES",FLF.bytes);
+           color_probe();   /* diagnostics first: painted over by the frame below */
+           int rr=spl_render(&FLF,fb,W,H,YVIR,STRIDE,BPP,mapped,NBUFS);
+           wrn("NUXEL_FIRSTLIGHT_RENDER_RC",(u64)rr);
+           if(rr==0){
+             FL_DONE=1;
+             wrn("NUXEL_FIRSTLIGHT_BG_INDEX",SPDBG_INDEX); wrh("NUXEL_FIRSTLIGHT_BG_DST",SPDBG_DST);
+             wrn("NUXEL_FIRSTLIGHT_DST_WIDTH",SPLDW);  wrn("NUXEL_FIRSTLIGHT_DST_HEIGHT",SPLDH);
+             wrn("NUXEL_FIRSTLIGHT_DST_X",SPLOX);      wrn("NUXEL_FIRSTLIGHT_DST_Y",SPLOY);
+             wrn("NUXEL_FIRSTLIGHT_BUFFERS",(u64)NBUFS);
+             wr("NUXEL_FIRSTLIGHT_FRAME0_PAINTED nuxspl=animation-frame0 (same palette, same spans, same packing as the player)\n");
+           } else {
+             wr("NUXEL_FIRSTLIGHT_RENDER_FAILED -> A16 diagnostic fallback\n");
+           }
+         }
+         unmap(am,asz);
+       }
+     }
+     closefd(afd);
+   }
+ }
+ if(!FL_DONE){
+   int nb=paint_all_buffers();
+   NBUFS=nb<1?1:nb;
+   wrn("NUXEL_FB_BUFFERS_PAINTED",(u64)nb);
+ }
 
  /* Prove the store actually landed in the mapped memory the DECON scans. */
  wrh("NUXEL_FB_READBACK_px0",*(volatile u32*)(fb+0));
  wrh("NUXEL_FB_READBACK_center",*(volatile u32*)(fb+(u64)(H/2)*STRIDE+(u64)(W/2)*(BPP/8)));
- /* A21: deterministic colour round-trip.  Packs pure red/green/blue/white/black
-    with the driver-declared bitfields and reads the u32 back, so the packing that
-    the animation player now shares is provable from the console alone. */
- {
-   u32 cR=pack(255,0,0),cG=pack(0,255,0),cB=pack(0,0,255),cW=pack(255,255,255),cK=pack(0,0,0);
-   volatile u32*probe=(volatile u32*)(fb+(u64)(H-4)*STRIDE);
-   probe[0]=cR; probe[1]=cG; probe[2]=cB; probe[3]=cW; probe[4]=cK;
-   wrn("NUXEL_FB_COLOR_PACK_R_expected",cR); wrn("NUXEL_FB_COLOR_PACK_R_readback",probe[0]);
-   wrn("NUXEL_FB_COLOR_PACK_G_expected",cG); wrn("NUXEL_FB_COLOR_PACK_G_readback",probe[1]);
-   wrn("NUXEL_FB_COLOR_PACK_B_expected",cB); wrn("NUXEL_FB_COLOR_PACK_B_readback",probe[2]);
-   wrn("NUXEL_FB_COLOR_PACK_W_expected",cW); wrn("NUXEL_FB_COLOR_PACK_W_readback",probe[3]);
-   wrn("NUXEL_FB_COLOR_PACK_K_expected",cK); wrn("NUXEL_FB_COLOR_PACK_K_readback",probe[4]);
- }
+ if(!FL_DONE) color_probe();
 
 
  PCX=(int)W/2; PCY=(int)(H*55/100);
  PSIZE=(int)W/9; if(PSIZE<40)PSIZE=40;
 
+ if(FL_DONE){
+   /* The panel already shows frame 0 of the animation: commit it and go.  The
+      DECON scans framebuffer memory, so the image stays without a resident
+      painter -- no competing writer, no open descriptor. */
+   scanout_commit(fd,1);
+   wr("NUXEL_FIRSTLIGHT_MARKER FIRST_LIGHT_IS_ANIMATION_FRAME0\n");
+   if(!hold){
+     wr("NUXEL_FB_EXIT first-light frame committed; exiting without holding a fb descriptor\n");
+     sys(215,(long)fb,mapped,0,0,0,0);
+     closefd(fd); quit(0);
+   }
+ } else {
  scanout_commit(fd,1);
  for(int f=1;f<12;f++){ spin_frame(f); wrn("NUXEL_FB_ANIM frame",(u64)f); scanout_commit(fd,0); sleep_ms(250); }
  wr("NUXEL_FB_ANIM_DONE frames=12\n");
+ }
  wr("NUXEL_FB_DRAW_SUCCESS first-light frame + penguin animation written; panel visibility still needs the operator\n");
  wr("NUXEL_MARKER FIRSTLIGHT_ANIMATION_DONE\n");
 
@@ -359,8 +647,10 @@ void nuxel_start(long *sp){
    for(;;){
      if(STATE_DIR && (fr%4)==0 && (fexists(stop_path)||fexists(ready_path))){
         wr("NUXEL_FB_HOLD_STOPPED stop-file-or-mp4-ready\n"); break; }
-     f=(f+1)%12; if(f==0) f=1;
-     spin_frame(f); scanout_commit(fd,0);
+     /* A27: with the animation's frame 0 on the glass the hold is a STATIC
+        hold -- re-committing the DECON, never repainting the old artwork. */
+     if(!FL_DONE){ f=(f+1)%12; if(f==0) f=1; spin_frame(f); }
+     scanout_commit(fd,0);
      fr++;
      /* keep the ram console usable: one line every ~10 s, not 4 per second */
      if((fr%40)==0) wrn("NUXEL_FB_HOLD frame",(u64)fr);
@@ -374,3 +664,4 @@ void nuxel_start(long *sp){
 }
 
 void *memset(void*dest,int value,u64 len){volatile u8*p=(volatile u8*)dest;while(len--)*p++=(u8)value;return dest;}
+#endif /* !NUXEL_FIRSTLIGHT_HOST (device build) */

@@ -1,0 +1,230 @@
+Panic#2 Part1
+<6>[ 2910.828174] I[7:       nuxel-ui: 5341]     3411        0        0    2157318052693 I(1026)   4  ffffff80081f33c0                0  ffffffc95adb9080 *     kworker/4:1H [worker_thread]
+<6>[ 2910.828179] I[7:       nuxel-ui: 5341]     3440        0 12000000    2907598201638 I(1026)   6  ffffff80081f33c0                0  ffffffc96c69c200 *     kworker/6:2H [worker_thread]
+<6>[ 2910.828186] I[7:       nuxel-ui: 5341]     3441        0 616000000    2907580818215 S(1)   2  ffffff80084a08c8                0  ffffffc96c69b180 *     jbd2/sda31-8 [kjournald2]
+<6>[ 2910.828191] I[7:       nuxel-ui: 5341]     3442        0        0      10096721114 I(1026)   7  ffffff80081f3220                0  ffffffc95b7bc200 *  ext4-rsv-conver [rescuer_thread]
+<6>[ 2910.828195] I[7:       nuxel-ui: 5341]     3450        0        0     251205018272 I(1026)   7  ffffff80081f33c0                0  ffffffc95b7bd280 *     kworker/7:1H [worker_thread]
+<6>[ 2910.828200] I[7:       nuxel-ui: 5341]     3494 68000000 148000000    2909583612784 S(1)   2  ffffff80081d7438       7fb855b1a0  ffffffc959ed5280 *               sh [do_wait]
+<6>[ 2910.828207] I[7:       nuxel-ui: 5341]     3522 64000000 1008000000    2910024831129 S(1)   2  ffffff80083a5450           41a8cc  ffffffc96cd9a100 *    nuxel-console [do_sys_poll]
+<6>[ 2910.828211] I[7:       nuxel-ui: 5341]     3523        0        0      10250443460 S(1)   0  ffffff80081d7438           4190c4  ffffffc96cd9e300 *    nuxel-console [do_wait]
+<6>[ 2910.828216] I[7:       nuxel-ui: 5341]     3524 124000000 364000000     692241604166 S(1)   3  ffffff80083a4bac       7f9657b1a0  ffffffc969fc8000 *               sh [do_select]
+<6>[ 2910.828222] I[7:       nuxel-ui: 5341]     3556 735098112 1305294336    2910322045705 S(1)   3  ffffff80083e2720       7f8642886c  ffffffc0020d8000 *  systemd-journal [SyS_epoll_wait]
+<6>[ 2910.828227] I[7:       nuxel-ui: 5341]     3573        0        0     911588949637 I(1026)   5  ffffff80081f33c0                0  ffffffc969fcd280 *     kworker/5:2H [worker_thread]
+<6>[ 2910.828231] I[7:       nuxel-ui: 5341]     3868        0  4000000    2902942210771 I(1026)   7  ffffff80081f33c0                0  ffffffc959f2c200 *     kworker/7:2H [worker_thread]
+<6>[ 2910.828236] I[7:       nuxel-ui: 5341]     5341 431298048 -2124419072    2910805696203 R(0)   7                 0           40614c  ffffffc96a409080 *         nuxel-ui [0]
+<4>[ 2910.828238] I[7:       nuxel-ui: 5341] Call trace:
+<4>[ 2910.828241] I[7:       nuxel-ui: 5341]  dump_backtrace+0x0/0x1c0
+<4>[ 2910.828244] I[7:       nuxel-ui: 5341]  show_stack+0x14/0x1c
+<4>[ 2910.828248] I[7:       nuxel-ui: 5341]  dbg_snapshot_dump_one_task_info+0x178/0x1bc
+<4>[ 2910.828251] I[7:       nuxel-ui: 5341]  dbg_snapshot_dump_task_info+0x74/0xcc
+<4>[ 2910.828254] I[7:       nuxel-ui: 5341]  dbg_snapshot_panic_handler+0x4c/0xa0
+<4>[ 2910.828257] I[7:       nuxel-ui: 5341]  notifier_call_chain+0x68/0xc8
+<4>[ 2910.828259] I[7:       nuxel-ui: 5341]  atomic_notifier_call_chain+0x2c/0x40
+<4>[ 2910.828262] I[7:       nuxel-ui: 5341]  panic+0x1c0/0x2dc
+<4>[ 2910.828264] I[7:       nuxel-ui: 5341]  die+0x1d8/0x21c
+<4>[ 2910.828267] I[7:       nuxel-ui: 5341]  bug_handler+0x78/0xac
+<4>[ 2910.828270] I[7:       nuxel-ui: 5341]  call_break_hook+0x74/0xa0
+<4>[ 2910.828272] I[7:       nuxel-ui: 5341]  brk_handler+0x2c/0x84
+<4>[ 2910.828274] I[7:       nuxel-ui: 5341]  do_debug_exception+0x84/0x16c
+<4>[ 2910.828277] I[7:       nuxel-ui: 5341]  el1_dbg+0x18/0x74
+<4>[ 2910.828280] I[7:       nuxel-ui: 5341]  hard_reset_hook_callback+0x144/0x150
+<4>[ 2910.828282] I[7:       nuxel-ui: 5341]  __hrtimer_run_queues+0x164/0x3c0
+<4>[ 2910.828285] I[7:       nuxel-ui: 5341]  hrtimer_interrupt+0x98/0x1e0
+<4>[ 2910.828288] I[7:       nuxel-ui: 5341]  exynos4_mct_tick_isr+0x24/0x38
+<4>[ 2910.828290] I[7:       nuxel-ui: 5341]  __handle_irq_event_percpu+0x58/0x2a8
+<4>[ 2910.828293] I[7:       nuxel-ui: 5341]  handle_irq_event+0x5c/0x100
+<4>[ 2910.828295] I[7:       nuxel-ui: 5341]  handle_fasteoi_irq+0x98/0x1c8
+<4>[ 2910.828298] I[7:       nuxel-ui: 5341]  generic_handle_irq+0x64/0xa0
+<4>[ 2910.828300] I[7:       nuxel-ui: 5341]  __handle_domain_irq+0x5c/0xa8
+<4>[ 2910.828302] I[7:       nuxel-ui: 5341]  gic_handle_irq+0x5c/0xc4
+<4>[ 2910.828305] I[7:       nuxel-ui: 5341]  el0_irq_naked+0x4c/0x54
+<6>[ 2910.828307] I[7:       nuxel-ui: 5341] 
+<6>[ 2910.828312] I[7:       nuxel-ui: 5341]     5343 132000000 20000000     911695841406 S(1)   2  ffffff80083e2720       7f8b0db1a0  ffffffc96a40a100 *      dbus-daemon [SyS_epoll_wait]
+<6>[ 2910.828317] I[7:       nuxel-ui: 5341]     5344 44000000 48000000    2204014328476 S(1)   3  ffffff80083a5450       7f91cd886c  ffffffc96a40b180 *   NetworkManager [do_sys_poll]
+<6>[ 2910.828322] I[7:       nuxel-ui: 5341]     5359        0        0    2909010077017 S(1)   3  ffffff80083a5450       7f91cd886c  ffffffc95b58b180              gmain [do_sys_poll]
+<6>[ 2910.828327] I[7:       nuxel-ui: 5341]     5360        0        0      12787038027 S(1)   5  ffffff800827af0c       7f91d378e8  ffffffc0023a8000       pool-spawner [futex_wait_queue_me]
+<6>[ 2910.828332] I[7:       nuxel-ui: 5341]     5361  8000000  8000000      43428462372 S(1)   3  ffffff80083a5450       7f91cd886c  ffffffc0023a9080              gdbus [do_sys_poll]
+<6>[ 2910.828337] I[7:       nuxel-ui: 5341]     5345        0        0      15147354711 I(1026)   5  ffffff80081f33c0                0  ffffffc96a88d280 *      kworker/5:2 [worker_thread]
+<6>[ 2910.828342] I[7:       nuxel-ui: 5341]     5346 32000000 32000000      43429578641 S(1)   3  ffffff80083a5450       7f8061886c  ffffffc96a8c8000 *          polkitd [do_sys_poll]
+<6>[ 2910.828347] I[7:       nuxel-ui: 5341]     5668        0  8000000    2910010301129 S(1)   3  ffffff80083a5450       7f8061886c  ffffffc959de3180              gmain [do_sys_poll]
+<6>[ 2910.828352] I[7:       nuxel-ui: 5341]     5669        0        0      13285318487 S(1)   6  ffffff800827af0c       7f806778e8  ffffffc9524f8000       pool-spawner [futex_wait_queue_me]
+<6>[ 2910.828357] I[7:       nuxel-ui: 5341]     5670        0        0      43429495949 S(1)   3  ffffff80083a5450       7f8061886c  ffffffc9524f9080              gdbus [do_sys_poll]
+<6>[ 2910.828362] I[7:       nuxel-ui: 5341]     5347 60000000 40000000     911696185175 S(1)   2  ffffff80083e2720       7fa38eb1a0  ffffffc96a868000 *   systemd-logind [SyS_epoll_wait]
+<6>[ 2910.828367] I[7:       nuxel-ui: 5341]     5678 44000000 40000000      13491727178 S(1)   6  ffffff80083a5450       7fa81f886c  ffffffc955bac200 *     ModemManager [do_sys_poll]
+<6>[ 2910.828373] I[7:       nuxel-ui: 5341]     5735        0        0      13398708986 S(1)   3  ffffff80083a5450       7fa81f886c  ffffffc9559fd280              gmain [do_sys_poll]
+<6>[ 2910.828377] I[7:       nuxel-ui: 5341]     5737        0        0      13399843333 S(1)   3  ffffff800827af0c       7fa82578e8  ffffffc9515c0000       pool-spawner [futex_wait_queue_me]
+<6>[ 2910.828382] I[7:       nuxel-ui: 5341]     5741        0  4000000      13485263448 S(1)   0  ffffff80083a5450       7fa81f886c  ffffffc9515e9080              gdbus [do_sys_poll]
+<6>[ 2910.828387] I[7:       nuxel-ui: 5341]    22768        0        0     127978863703 I(1026)   6  ffffff80081f33c0                0  ffffffc95591a100 *      kworker/6:3 [worker_thread]
+<6>[ 2910.828392] I[7:       nuxel-ui: 5341]    23639        0        0     728486052374 I(1026)   0  ffffff80081f33c0                0  ffffffc9559fe300 *    kworker/u18:2 [worker_thread]
+<6>[ 2910.828397] I[7:       nuxel-ui: 5341]    23752        0        0    2707502742017 I(1026)   6  ffffff80081f33c0                0  ffffffc95b4d8000 *     kworker/6:0H [worker_thread]
+<6>[ 2910.828401] I[7:       nuxel-ui: 5341]    23811        0 80000000    2897573734253 I(1026)   1  ffffff80081f33c0                0  ffffffc95b4da100 *     kworker/1:2H [worker_thread]
+<6>[ 2910.828406] I[7:       nuxel-ui: 5341]    23859        0  4000000     678912296486 S(1)   4  ffffff80081d7438       7f9e8fb1a0  ffffffc8c3ebc200 *               sh [do_wait]
+<6>[ 2910.828412] I[7:       nuxel-ui: 5341]    23860  4000000        0     678914386602 S(1)   3  ffffff80081e634c       7fabf1b1a0  ffffffc8c3eba100 *          timeout [sigsuspend.isra.0]
+<6>[ 2910.828418] I[7:       nuxel-ui: 5341]    23861        0  4000000     727862566953 S(1)   3  ffffff8008b0dbfc       7fb96cb1a0  ffffffc955b16300 *              cat [evdev_read]
+<6>[ 2910.828423] I[7:       nuxel-ui: 5341]    23899        0        0     728662052219 I(1026)   1  ffffff80081f33c0                0  ffffffc955919080 *    kworker/u18:0 [worker_thread]
+<6>[ 2910.828428] I[7:       nuxel-ui: 5341]    23909        0 132000000    2765657032257 I(1026)   3  ffffff80081f33c0                0  ffffffc95597e300 *      kworker/3:3 [worker_thread]
+<6>[ 2910.828432] I[7:       nuxel-ui: 5341]    23958        0        0    1387095164823 I(1026)   5  ffffff80081f33c0                0  ffffffc95b4db180 *     kworker/5:1H [worker_thread]
+<6>[ 2910.828436] I[7:       nuxel-ui: 5341]    24252        0        0    2718690442782 I(1026)   7  ffffff80081f33c0                0  ffffffc96c5ae300 *      kworker/7:0 [worker_thread]
+<6>[ 2910.828441] I[7:       nuxel-ui: 5341]    24305        0 20000000    2907571885331 I(1026)   0  ffffff80081f33c0                0  ffffffc96c5ab180 *     kworker/0:0H [worker_thread]
+<6>[ 2910.828445] I[7:       nuxel-ui: 5341]    24337        0 192000000    2909154016978 I(1026)   3  ffffff80081f33c0                0  ffffffc95b591080 *    kworker/u16:2 [worker_thread]
+<6>[ 2910.828450] I[7:       nuxel-ui: 5341]    24372        0        0    2157311357846 I(1026)   4  ffffff80081f33c0                0  ffffffc96cd9c200 *     kworker/4:2H [worker_thread]
+<6>[ 2910.828454] I[7:       nuxel-ui: 5341]    24380        0 -1318967296    2806848405369 I(1026)   0  ffffff80081f33c0                0  ffffffc95b595280 *      kworker/0:0 [worker_thread]
+<6>[ 2910.828459] I[7:       nuxel-ui: 5341]    24388        0 12000000    2902924448848 I(1026)   3  ffffff80081f33c0                0  ffffffc96de0c200 *     kworker/3:2H [worker_thread]
+<6>[ 2910.828463] I[7:       nuxel-ui: 5341]    24393        0 60000000    2896024699452 I(1026)   2  ffffff80081f33c0                0  ffffffc95591e300 *      kworker/2:1 [worker_thread]
+<6>[ 2910.828467] I[7:       nuxel-ui: 5341]    24405        0 80000000    2904028063421 I(1026)   1  ffffff80081f33c0                0  ffffffc96cd99080 *      kworker/1:0 [worker_thread]
+<6>[ 2910.828471] I[7:       nuxel-ui: 5341]    24429        0 60000000    2765656355141 I(1026)   3  ffffff80081f33c0                0  ffffffc969f53180 *      kworker/3:0 [worker_thread]
+<6>[ 2910.828476] I[7:       nuxel-ui: 5341]    24439        0  4000000    2667489749823 I(1026)   1  ffffff80081f33c0                0  ffffffc95b593180 *     kworker/1:1H [worker_thread]
+<6>[ 2910.828480] I[7:       nuxel-ui: 5341]    24464        0 112000000    2907874295983 I(1026)   3  ffffff80081f33c0                0  ffffffc96e0bb180 *    kworker/u16:1 [worker_thread]
+<6>[ 2910.828484] I[7:       nuxel-ui: 5341]    24484        0 -1066967296    2910652768588 I(1026)   0  ffffff80081f33c0                0  ffffffc96cd98000 *      kworker/0:1 [worker_thread]
+<6>[ 2910.828489] I[7:       nuxel-ui: 5341]    24489        0        0    2845923582297 I(1026)   3  ffffff80081f33c0                0  ffffffc96c6b0000 *     kworker/3:1H [worker_thread]
+<6>[ 2910.828494] I[7:       nuxel-ui: 5341]    24499        0 36000000    2866029518989 I(1026)   2  ffffff80081f33c0                0  ffffffc9559fc200 *      kworker/2:2 [worker_thread]
+<6>[ 2910.828498] I[7:       nuxel-ui: 5341]    24507        0        0    2873059208462 I(1026)   2  ffffff80081f33c0                0  ffffffc96de0d280 *     kworker/2:2H [worker_thread]
+<6>[ 2910.828503] I[7:       nuxel-ui: 5341]    24509        0 60000000    2879548527861 I(1026)   1  ffffff80081f33c0                0  ffffffc9559f9080 *      kworker/1:2 [worker_thread]
+<6>[ 2910.828508] I[7:       nuxel-ui: 5341]    24513        0  4000000    2907572471523 I(1026)   0  ffffff80081f33c0                0  ffffffc96ce78000 *     kworker/0:2H [worker_thread]
+<6>[ 2910.828513] I[7:       nuxel-ui: 5341]    24528        0 48000000    2909569178361 I(1026)   3  ffffff80081f33c0                0  ffffffc96cb69080 *      kworker/3:1 [worker_thread]
+<6>[ 2910.828517] I[7:       nuxel-ui: 5341]    24542        0        0    2897566587638 I(1026)   1  ffffff80081f33c0                0  ffffffc96c5aa100 *     kworker/1:0H [worker_thread]
+<6>[ 2910.828522] I[7:       nuxel-ui: 5341]    24557        0        0    2707503302325 I(1026)   6  ffffff80081f33c0                0  ffffffc9559fb180 *     kworker/6:1H [worker_thread]
+<6>[ 2910.828527] I[7:       nuxel-ui: 5341]    24560        0        0    2718690505205 I(1026)   7  ffffff80081f33c0                0  ffffffc9559fa100 *      kworker/7:2 [worker_thread]
+<6>[ 2910.828531] I[7:       nuxel-ui: 5341]    24574        0        0    2909568896900 I(1026)   3  ffffff80081f33c0                0  ffffffc969345280 *      kworker/3:2 [worker_thread]
+<6>[ 2910.828536] I[7:       nuxel-ui: 5341]    24587        0 188000000    2910652346819 I(1026)   0  ffffff80081f33c0                0  ffffffc96ce7e300 *      kworker/0:2 [worker_thread]
+<6>[ 2910.828539] I[7:       nuxel-ui: 5341]    24599        0        0    2902923773771 I(1026)   3  ffffff80081f33c0                0  ffffffc96ce7d280 *     kworker/3:0H [worker_thread]
+<6>[ 2910.828544] I[7:       nuxel-ui: 5341]    24607        0 12000000    2910024577937 I(1026)   2  ffffff80081f33c0                0  ffffffc9559f8000 *      kworker/2:0 [worker_thread]
+<6>[ 2910.828548] I[7:       nuxel-ui: 5341]    24610        0        0    2898915235018 I(1026)   2  ffffff80081f33c0                0  ffffffc96ce79080 *     kworker/2:0H [worker_thread]
+<6>[ 2910.828552] I[7:       nuxel-ui: 5341]    24614        0        0    2909561971515 I(1026)   1  ffffff80081f33c0                0  ffffffc96c6b2100 *      kworker/1:1 [worker_thread]
+<6>[ 2910.828557] I[7:       nuxel-ui: 5341]    24621        0        0    2907566436215 S(1)   1  ffffff8008269518           468b30  ffffffc010a3e300 *             init [hrtimer_nanosleep]
+<6>[ 2910.828561] I[7:       nuxel-ui: 5341]    24623        0        0    2907580422831 I(1026)   0  ffffff80081f33c0                0  ffffffc96c5ac200 *     kworker/0:1H [worker_thread]
+<6>[ 2910.828566] I[7:       nuxel-ui: 5341]    24625        0        0    2909584883438 S(1)   3  ffffff8008269518       7fbce0b1a0  ffffffc010a3c200 *            sleep [hrtimer_nanosleep]
+<6>[ 2910.828568] I[7:       nuxel-ui: 5341]  ----------------------------------------------------------------------------------------------------------------------------
+<0>[ 2910.828571] I[7:       nuxel-ui: 5341] linux_banner: Linux version 4.14.253 (root@) (gcc version 15.3.1 20260722 (Red Hat 15.3.1-1) (GCC)) #13 SMP PREEMPT Thu Oct 15 18:41:11 UTC 2026
+<0>[ 2910.828571] I[7:       nuxel-ui: 5341] 
+<0>[ 2910.828575] I[7:       nuxel-ui: 5341] sec_debug: sec_debug_panic_handler
+<0>[ 2910.828582] I[7:       nuxel-ui: 5341] sec_debug: set magic code (0x66262564)
+<0>[ 2910.828587] I[7:       nuxel-ui: 5341] sec_debug: set upload cause (0x66)
+<6>[ 2910.828592] I[7:       nuxel-ui: 5341] 
+<6>[ 2910.828595] I[7:       nuxel-ui: 5341] cpu   user:73013 	nice:0 	system:239507 	idle:1996719 	iowait:301 	irq:0 	softirq:18439 	 0 0 0
+<6>[ 2910.828598] I[7:       nuxel-ui: 5341] -------------------------------------------------------------------------------------------------------------
+<6>[ 2910.828601] I[7:       nuxel-ui: 5341] cpu0  user:247 	nice:0 	system:4072 	idle:268884 	iowait:76 	irq:0 	softirq:17883 	 0 0 0
+<6>[ 2910.828604] I[7:       nuxel-ui: 5341] cpu1  user:298 	nice:0 	system:1850 	idle:288595 	iowait:36 	irq:0 	softirq:310 	 0 0 0
+<6>[ 2910.828607] I[7:       nuxel-ui: 5341] cpu2  user:368 	nice:0 	system:2119 	idle:288413 	iowait:54 	irq:0 	softirq:95 	 0 0 0
+<6>[ 2910.828610] I[7:       nuxel-ui: 5341] cpu3  user:653 	nice:0 	system:3633 	idle:286682 	iowait:59 	irq:0 	softirq:38 	 0 0 0
+<6>[ 2910.828612] I[7:       nuxel-ui: 5341] cpu4  user:705 	nice:0 	system:2377 	idle:287612 	iowait:25 	irq:0 	softirq:81 	 0 0 0
+<6>[ 2910.828615] I[7:       nuxel-ui: 5341] cpu5  user:260 	nice:0 	system:2436 	idle:288078 	iowait:10 	irq:0 	softirq:16 	 0 0 0
+<6>[ 2910.828617] I[7:       nuxel-ui: 5341] cpu6  user:7228 	nice:0 	system:24133 	idle:259628 	iowait:20 	irq:0 	softirq:10 	 0 0 0
+<6>[ 2910.828620] I[7:       nuxel-ui: 5341] cpu7  user:63250 	nice:0 	system:198884 	idle:28823 	iowait:18 	irq:0 	softirq:3 	 0 0 0
+<6>[ 2910.828623] I[7:       nuxel-ui: 5341] -------------------------------------------------------------------------------------------------------------
+<6>[ 2910.828625] I[7:       nuxel-ui: 5341] 
+<6>[ 2910.828627] I[7:       nuxel-ui: 5341] irq : 4584149
+<6>[ 2910.828629] I[7:       nuxel-ui: 5341] -------------------------------------------------------------------------------------------------------------
+<6>[ 2910.828635] I[7:       nuxel-ui: 5341] irq-7    :   171048 mct_tick0
+<6>[ 2910.828638] I[7:       nuxel-ui: 5341] irq-8    :   110280 mct_tick1
+<6>[ 2910.828641] I[7:       nuxel-ui: 5341] irq-9    :   105444 mct_tick2
+<6>[ 2910.828643] I[7:       nuxel-ui: 5341] irq-10   :   141621 mct_tick3
+<6>[ 2910.828645] I[7:       nuxel-ui: 5341] irq-11   :    16340 mct_tick4
+<6>[ 2910.828648] I[7:       nuxel-ui: 5341] irq-12   :    15036 mct_tick5
+<6>[ 2910.828650] I[7:       nuxel-ui: 5341] irq-13   :    98880 mct_tick6
+<6>[ 2910.828653] I[7:       nuxel-ui: 5341] irq-14   :   661168 mct_tick7
+<6>[ 2910.828658] I[7:       nuxel-ui: 5341] irq-83   :        2 10430000.pinctrl
+<6>[ 2910.828660] I[7:       nuxel-ui: 5341] irq-84   :    21337 10830000.pinctrl
+<6>[ 2910.828664] I[7:       nuxel-ui: 5341] irq-141  :        2 158d0000.exynos-adv_tracer
+<6>[ 2910.828668] I[7:       nuxel-ui: 5341] irq-171  :        1 18500000.mali
+<6>[ 2910.828671] I[7:       nuxel-ui: 5341] irq-172  :     8891 arm-pmu
+<6>[ 2910.828673] I[7:       nuxel-ui: 5341] irq-173  :     3424 arm-pmu
+<6>[ 2910.828675] I[7:       nuxel-ui: 5341] irq-174  :     3306 arm-pmu
+<6>[ 2910.828677] I[7:       nuxel-ui: 5341] irq-175  :     5295 arm-pmu
+<6>[ 2910.828680] I[7:       nuxel-ui: 5341] irq-176  :     9901 arm-pmu
+<6>[ 2910.828682] I[7:       nuxel-ui: 5341] irq-177  :     5818 arm-pmu
+<6>[ 2910.828684] I[7:       nuxel-ui: 5341] irq-178  :   160747 arm-pmu
+<6>[ 2910.828686] I[7:       nuxel-ui: 5341] irq-179  :  1479739 arm-pmu
+<6>[ 2910.828689] I[7:       nuxel-ui: 5341] irq-180  :       55 exynos-ocp
+<6>[ 2910.828691] I[7:       nuxel-ui: 5341] irq-182  :        2 tzdev_iwi_event
+<6>[ 2910.828694] I[7:       nuxel-ui: 5341] irq-184  :    33714 ufshcd
+<6>[ 2910.828696] I[7:       nuxel-ui: 5341] irq-186  :     2983 19071000.dpp
+<6>[ 2910.828698] I[7:       nuxel-ui: 5341] irq-187  :     2983 19071000.dpp
+<6>[ 2910.828702] I[7:       nuxel-ui: 5341] irq-198  :    35374 19080000.dsim
+<6>[ 2910.828704] I[7:       nuxel-ui: 5341] irq-200  :     2981 19030000.decon_f
+<6>[ 2910.828706] I[7:       nuxel-ui: 5341] irq-201  :     2980 19030000.decon_f
+<6>[ 2910.828709] I[7:       nuxel-ui: 5341] irq-212  :     3783 104b0000.hsi2c
+<6>[ 2910.828711] I[7:       nuxel-ui: 5341] irq-213  :      700 104f0000.hsi2c
+<6>[ 2910.828714] I[7:       nuxel-ui: 5341] irq-215  :       36 108e0000.hsi2c
+<6>[ 2910.828716] I[7:       nuxel-ui: 5341] irq-217  :      249 10920000.hsi2c
+<6>[ 2910.828718] I[7:       nuxel-ui: 5341] irq-219  :     1304 109a0000.hsi2c
+<6>[ 2910.828721] I[7:       nuxel-ui: 5341] irq-220  :       66 15d30000.hsi2c
+<6>[ 2910.828723] I[7:       nuxel-ui: 5341] irq-221  :      135 15d50000.hsi2c
+<6>[ 2910.828725] I[7:       nuxel-ui: 5341] irq-222  :    64634 15d60000.hsi2c
+<6>[ 2910.828727] I[7:       nuxel-ui: 5341] irq-223  :       42 15d70000.hsi2c
+<6>[ 2910.828730] I[7:       nuxel-ui: 5341] irq-238  :        1 10060000.watchdog_cl2
+<6>[ 2910.828732] I[7:       nuxel-ui: 5341] irq-239  :     2100 15c40000.adc
+<6>[ 2910.828735] I[7:       nuxel-ui: 5341] irq-240  :       50 dw-mci
+<6>[ 2910.828738] I[7:       nuxel-ui: 5341] irq-252  :    27799 10090000.BIG
+<6>[ 2910.828740] I[7:       nuxel-ui: 5341] irq-254  :        9 seclog
+<6>[ 2910.828742] I[7:       nuxel-ui: 5341] irq-256  :        8 ufs-srpmb
+<6>[ 2910.828746] I[7:       nuxel-ui: 5341] irq-285  :        2 wpc-int
+<6>[ 2910.828748] I[7:       nuxel-ui: 5341] irq-289  :        8 usbc-apcmd-irq
+<6>[ 2910.828751] I[7:       nuxel-ui: 5341] irq-305  :        1 pd-pdmsg-irq
+<6>[ 2910.828753] I[7:       nuxel-ui: 5341] irq-306  :        1 pd-psrdy-irq
+<6>[ 2910.828756] I[7:       nuxel-ui: 5341] irq-318  :       11 max77705-irq
+<6>[ 2910.828761] I[7:       nuxel-ui: 5341] irq-420  :        1 panel0:conn-det
+<6>[ 2910.828763] I[7:       nuxel-ui: 5341] irq-422  :       11 madera IRQ
+<6>[ 2910.828766] I[7:       nuxel-ui: 5341] irq-423  :        1 BOOT_DONE
+<6>[ 2910.828768] I[7:       nuxel-ui: 5341] irq-424  :        1 sec-nfc
+<6>[ 2910.828770] I[7:       nuxel-ui: 5341] irq-425  :        1 sec-nfc
+<6>[ 2910.828772] I[7:       nuxel-ui: 5341] irq-426  :     5501 dwc3
+<6>[ 2910.828776] I[7:       nuxel-ui: 5341] irq-427  :        2 gpio-keys: KEY_WINK
+<6>[ 2910.828778] I[7:       nuxel-ui: 5341] irq-428  :        1 gpio-keys: KEY_VOLUMEDOWN
+<6>[ 2910.828781] I[7:       nuxel-ui: 5341] irq-430  :        1 gpio-keys: KEY_POWER
+<6>[ 2910.828783] I[7:       nuxel-ui: 5341] irq-431  :       57 sec_ts
+<6>[ 2910.828786] I[7:       nuxel-ui: 5341] irq-433  :        1 bt_host_wake
+<6>[ 2910.828788] I[7:       nuxel-ui: 5341] irq-434  :        1 tflash_det
+<6>[ 2910.828791] I[7:       nuxel-ui: 5341] irq-437  :        1 wpd-det-irq
+<6>[ 2910.828793] I[7:       nuxel-ui: 5341] irq-438  :        2 wpc-irq
+<6>[ 2910.828795] I[7:       nuxel-ui: 5341] irq-439  :        1 qbt_finger_detect
+<6>[ 2910.828798] I[7:       nuxel-ui: 5341] irq-440  :        1 qbt_ipc
+<6>[ 2910.828800] I[7:       nuxel-ui: 5341] irq-444  :        1 ssp-shub-int
+<6>[ 2910.828803] I[7:       nuxel-ui: 5341] irq-458  :    18426 19030000.decon_f
+<6>[ 2910.828805] I[7:       nuxel-ui: 5341] irq-460  :        1 HPDET
+<6>[ 2910.828808] I[7:       nuxel-ui: 5341] irq-461  :        1 JACKDET rise
+<6>[ 2910.828811] I[7:       nuxel-ui: 5341] -------------------------------------------------------------------------------------------------------------
+<6>[ 2910.828813] I[7:       nuxel-ui: 5341] 
+<6>[ 2910.828815] I[7:       nuxel-ui: 5341] softirq : 3045210
+<6>[ 2910.828817] I[7:       nuxel-ui: 5341] -------------------------------------------------------------------------------------------------------------
+<6>[ 2910.828820] I[7:       nuxel-ui: 5341] softirq-1 :   979574 TIMER
+<6>[ 2910.828822] I[7:       nuxel-ui: 5341] softirq-2 :        1 NET_TX
+<6>[ 2910.828824] I[7:       nuxel-ui: 5341] softirq-4 :    27229 BLOCK
+<6>[ 2910.828826] I[7:       nuxel-ui: 5341] softirq-6 :      110 TASKLET
+<6>[ 2910.828828] I[7:       nuxel-ui: 5341] softirq-7 :  1674038 SCHED
+<6>[ 2910.828830] I[7:       nuxel-ui: 5341] softirq-9 :   364258 RCU
+<6>[ 2910.828832] I[7:       nuxel-ui: 5341] -------------------------------------------------------------------------------------------------------------
+<6>[ 2910.828837] I[7:       nuxel-ui: 5341] debug-snapshot: panic_notifier_list -> dbg_snapshot_panic_handler call -
+<6>[ 2910.828840] I[7:       nuxel-ui: 5341] debug-snapshot: panic_notifier_list -> hung_task_panic call +
+<6>[ 2910.828843] I[7:       nuxel-ui: 5341] debug-snapshot: panic_notifier_list -> hung_task_panic call -
+<6>[ 2910.828848] I[7:       nuxel-ui: 5341] debug-snapshot: panic_notifier_list -> s3c2410wdt_panic_handler call +
+<6>[ 2910.828855] I[7:       nuxel-ui: 5341] s3c2410-wdt 10050000.watchdog_cl0: Watchdog cluster 0 keepalive!, wtcnt = fff5
+<6>[ 2910.828859] I[7:       nuxel-ui: 5341] Watchdog: s3c2410wdt_keepalive RTC 2026-09-15 00:48:19 UTC
+<6>[ 2910.828865] I[7:       nuxel-ui: 5341] debug-snapshot: panic_notifier_list -> s3c2410wdt_panic_handler call -
+<6>[ 2910.828868] I[7:       nuxel-ui: 5341] debug-snapshot: panic_notifier_list -> dump_kernel_offset call +
+<0>[ 2910.828871] I[7:       nuxel-ui: 5341] Kernel Offset: 0x128000 from 0xffffff8008000000
+<6>[ 2910.828874] I[7:       nuxel-ui: 5341] debug-snapshot: panic_notifier_list -> dump_kernel_offset call -
+<6>[ 2910.828877] I[7:       nuxel-ui: 5341] debug-snapshot: panic_notifier_list -> dump_cpu_hwcaps call +
+<0>[ 2910.828880] I[7:       nuxel-ui: 5341] CPU features: 0x1802230
+<6>[ 2910.828884] I[7:       nuxel-ui: 5341] debug-snapshot: panic_notifier_list -> dump_cpu_hwcaps call -
+<6>[ 2910.828888] I[7:       nuxel-ui: 5341] debug-snapshot: panic_notifier_list -> dump_mem_limit call +
+<0>[ 2910.828890] I[7:       nuxel-ui: 5341] Memory Limit: none
+<6>[ 2910.828893] I[7:       nuxel-ui: 5341] debug-snapshot: panic_notifier_list -> dump_mem_limit call -
+<6>[ 2910.828897] I[7:       nuxel-ui: 5341] debug-snapshot: panic_notifier_list -> itmon_logging_panic_handler call +
+<6>[ 2910.828903] I[7:       nuxel-ui: 5341] No found error in itmon_logging_panic_handler
+<6>[ 2910.828906] I[7:       nuxel-ui: 5341] debug-snapshot: panic_notifier_list -> itmon_logging_panic_handler call -
+<6>[ 2910.828912] I[7:       nuxel-ui: 5341] debug-snapshot: panic_notifier_list -> fimc_is_panic_handler call +
+<7>[ 2910.828914] I[7:       nuxel-ui: 5341] [@]### fimc_is_resource_dump dump start ###
+<7>[ 2910.828917] I[7:       nuxel-ui: 5341] [@]### fimc_is_resource_dump dump end ###
+<6>[ 2910.828920] I[7:       nuxel-ui: 5341] debug-snapshot: panic_notifier_list -> fimc_is_panic_handler call -
+<6>[ 2910.828923] I[7:       nuxel-ui: 5341] debug-snapshot: panic_notifier_list -> vts_panic_handler call +
+<6>[ 2910.828926] I[7:       nuxel-ui: 5341] vts_is_on : 0
+<6>[ 2910.828930] I[7:       nuxel-ui: 5341] samsung-vts 15510000.vts: exynos_vts_panic_handler: dump is skipped due to no power
+<6>[ 2910.828933] I[7:       nuxel-ui: 5341] debug-snapshot: panic_notifier_list -> vts_panic_handler call -
+<6>[ 2910.828938] I[7:       nuxel-ui: 5341] debug-snapshot: panic_notifier_list -> abox_panic_handler call +
+<6>[ 2910.828942] I[7:       nuxel-ui: 5341] samsung-abox 18c50000.abox: exynos_abox_panic_handler: dump is skipped due to no power
+<6>[ 2910.828945] I[7:       nuxel-ui: 5341] debug-snapshot: panic_notifier_list -> abox_panic_handler call -
+<6>[ 2910.828950] I[7:       nuxel-ui: 5341] debug-snapshot: panic_notifier_list -> beyond_madera_panic_cb call +
+<6>[ 2910.828953] I[7:       nuxel-ui: 5341] debug-snapshot: panic_notifier_list -> beyond_madera_panic_cb call -
+<6>[ 2910.828957] I[7:       nuxel-ui: 5341] debug-snapshot: panic_notifier_list -> exynos_ehld_panic_handler call +
+<6>[ 2910.828961] I[7:       nuxel-ui: 5341] debug-snapshot: panic_notifier_list -> exynos_ehld_panic_handler call -

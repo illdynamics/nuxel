@@ -22,6 +22,11 @@
  * Safety notes carried over from A21/A24: /dev/fb0 is opened once, held for the
  * whole session and never closed while the panel must stay lit (closing the fd
  * runs decon_release and powers the AMOLED down).
+ *
+ * REVISION A30-single-fb-owner (2026-10-16): the bridge no longer writes the
+ * panel until it has performed a verified framebuffer-ownership handoff with the
+ * initramfs boot-animation player.  See the block above main() - the measured
+ * defect was two concurrent writers of the same scanout memory.
  */
 #define _GNU_SOURCE
 #include <errno.h>
@@ -210,30 +215,159 @@ static void reg_global(void *data, struct wl_registry *r, uint32_t name, const c
 static void reg_remove(void *d, struct wl_registry *r, uint32_t n) { (void)d; (void)r; (void)n; }
 static const struct wl_registry_listener reg_listener = { .global = reg_global, .global_remove = reg_remove };
 
+/* ============================================================================
+ * A30 — SINGLE-FRAMEBUFFER-OWNER HANDOFF
+ *
+ * MEASURED DEFECT (live handset, 2026-10-16):
+ *   Two processes were writing the SAME /dev/fb0 scanout memory at the same
+ *   time for the whole session:
+ *     pid 3523 /opt/nuxel/nuxel-anim-player   <- initramfs MP4 player, looping
+ *                                                 forever (5280 frames, 27 loops)
+ *     pid 5436 /usr/lib/nuxel/nuxel-wl-fb     <- this bridge (5645 frames)
+ *   Nothing in the A29 launcher path ever created /var/lib/nuxel/anim-stop; the
+ *   ONLY writer of that file was nuxel-ui.c, i.e. the A27 framebuffer fallback
+ *   that the port replaced.  Result on the glass: the animation and the launcher
+ *   alternated frame by frame (the "old TL light" flicker) and the launcher was
+ *   never cleanly visible.
+ *
+ * THE FIX (mission 10.2/10.3): this bridge now performs an explicit, verified
+ * ownership handoff before it touches the panel:
+ *
+ *   LAUNCHER_STARTING -> LAUNCHER_READY (page committed, /run/nuxel-launcher-ready)
+ *     -> ANIMATION_STOP_REQUESTED  (write /var/lib/nuxel/anim-stop + fb-hold-stop)
+ *     -> ANIMATION_STOP_CONFIRMED  (/proc/<pid> identity-checked, process gone)
+ *     -> LAUNCHER_DISPLAY_OWNER    (DECON re-asserted, full frame blitted)
+ *
+ *   * It never blits before the handoff, so during the animation it is not a
+ *     second writer at all.
+ *   * The stop is requested by FILE, never by a stale pid file kill: the pid from
+ *     fb-anim.pid is only ever signalled/awaited after /proc/<pid>/comm proves it
+ *     is still the animation player (mission 10.2: verify process identity).
+ *   * A process that closes /dev/fb0 runs decon_release and powers the AMOLED
+ *     down (measured A21/A24) - so immediately after the player has gone, the
+ *     DECON is re-asserted with FBIOPUT_VSCREENINFO and the full frame is
+ *     written, which also replaces every stale animation pixel.
+ *   * If the launcher never becomes ready the bridge exits WITHOUT ever touching
+ *     the panel, leaving the animation/fallback as the sole owner.
+ * ==========================================================================*/
+#define LAUNCHER_READY "/run/nuxel-launcher-ready"
+#define HOME_STATE     "/run/nuxel-home.state"
+#define ANIM_STOP      "/var/lib/nuxel/anim-stop"
+#define ANIM_PID       "/var/lib/nuxel/fb-anim.pid"
+#define ANIM_STATE     "/var/lib/nuxel/animation"
+#define HOLD_STOP      "/var/lib/nuxel/fb-hold-stop"
+#define HOLD_PID       "/var/lib/nuxel/fb-hold.pid"
+#define STAGE_OWNER    "/var/lib/nuxel/fb-owner"
+
+static void wr_state(const char *path, const char *data) {
+  int fd = open(path, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+  if (fd < 0) return;
+  if (write(fd, data, strlen(data)) < 0) { /* best effort */ }
+  close(fd);
+}
+
+static int file_has(const char *path, const char *needle, char *out, size_t outn) {
+  char buf[1024];
+  int fd = open(path, O_RDONLY);
+  if (fd < 0) return 0;
+  ssize_t n = read(fd, buf, sizeof buf - 1);
+  close(fd);
+  if (n <= 0) return 0;
+  buf[n] = 0;
+  if (out && outn) { size_t k = (size_t)n < outn - 1 ? (size_t)n : outn - 1; memcpy(out, buf, k); out[k] = 0; }
+  return needle ? (strstr(buf, needle) != NULL) : 1;
+}
+
+static long read_pid_file(const char *path) {
+  char b[32];
+  if (!file_has(path, NULL, b, sizeof b)) return -1;
+  long v = strtol(b, NULL, 10);
+  return v > 1 ? v : -1;
+}
+
+/* Identity before trust: only ever treat a pid as "the animation painter" when
+   /proc/<pid>/comm still says so (a recycled pid must never be mistaken). */
+static int proc_comm_starts(long pid, const char *prefix) {
+  char p[64], buf[64];
+  snprintf(p, sizeof p, "/proc/%ld/comm", pid);
+  if (!file_has(p, NULL, buf, sizeof buf)) return 0;
+  for (int i = 0; buf[i]; i++) if (buf[i] == '\n') { buf[i] = 0; break; }
+  return strncmp(buf, prefix, strlen(prefix)) == 0;
+}
+
+/* Still painting the panel?  nuxel-anim-player = the initramfs MP4 player,
+   nuxel-fb-phone = the initramfs first-light/hold painter. */
+static int painter_alive(void) {
+  long p = read_pid_file(ANIM_PID);
+  if (p > 0 && proc_comm_starts(p, "nuxel-anim")) return (int)p;
+  p = read_pid_file(HOLD_PID);
+  if (p > 0 && proc_comm_starts(p, "nuxel-fb-phone")) return (int)p;
+  return 0;
+}
+
+static void panel_assert(const char *why) {
+  long r1 = ioctl(fb.fd, FBIOBLANK, FB_BLANK_UNBLANK);
+  fb.var.activate = FB_ACTIVATE_NOW;
+  fb.var.xoffset = 0; fb.var.yoffset = 0;
+  long r2 = ioctl(fb.fd, FBIOPUT_VSCREENINFO, &fb.var);
+  long r3 = ioctl(fb.fd, FBIOPAN_DISPLAY, &fb.var);
+  st("DECON_ASSERT why=%s unblank=%ld vinfo=%ld pan=%ld", why, r1, r2, r3);
+}
+
+/* Wait (bounded) for the launcher's own readiness marker.  /run/nuxel-launcher-ready
+   is written by nuxel-pwa-host only after WebKit COMMITTED the real page, so this
+   is a graphical-readiness test, not a "the process exists" test (mission 10.3). */
+static int wait_launcher_ready(int secs) {
+  const char *env = getenv("NUXEL_HANDOFF_WAIT");
+  if (env) { int v = atoi(env); if (v > 0) secs = v; }
+  for (int i = 0; i <= secs * 4; i++) {
+    if (file_has(LAUNCHER_READY, NULL, NULL, 0)) return 1;
+    if (file_has(HOME_STATE, "NUXEL_HOME_READY", NULL, 0)) return 1;
+    if ((i % 20) == 0) st("HANDOFF_WAIT_LAUNCHER t=%ds", i / 4);
+    usleep(250000);
+  }
+  return 0;
+}
+
+static void frame_blit_once(void) {
+  blit(frame_buf.data, frame_buf.w, frame_buf.h, frame_buf.stride, frame_buf.format);
+}
+
 int main(int argc, char **argv) {
   const char *outname = argc > 1 ? argv[1] : getenv("NUXEL_WL_OUTPUT");
+  (void)outname;
   struct wl_display *dpy = wl_display_connect(NULL);
   if (!dpy) { st("WL_CONNECT_FAIL errno=%d display=%s", errno, getenv("WAYLAND_DISPLAY") ?: "(unset)"); return 1; }
   struct wl_registry *reg = wl_display_get_registry(dpy);
   wl_registry_add_listener(reg, &reg_listener, NULL);
-  for (int i = 0; i < 3; i++) wl_display_roundtrip(dpy);   /* bind + output modes */
-  if (!compositor || !shm || !scm) { st("WL_MISSING_GLOBAL compositor=%p shm=%p screencopy=%p", (void *)compositor, (void *)shm, (void *)scm); return 2; }
+  for (int i = 0; i < 3; i++) wl_display_roundtrip(dpy);
+  if (!compositor || !shm || !scm) { st("WL_MISSING_GLOBAL"); return 2; }
   if (nouts == 0) { st("WL_NO_OUTPUT"); return 3; }
-  if (outname) { int found = 0; for (int i = 0; i < nouts; i++) {} (void)found; }
   struct out *o = &outs[0];
   if (fb_open() < 0) return 4;
-  st("WL_READY display=%s outputs=%d out0=%dx%d scale=%d panel=%ux%u bpp=%u",
-     getenv("WAYLAND_DISPLAY") ?: "wayland-0", nouts, o->w, o->h, o->scale, fb.w, fb.h, fb.bpp);
 
+  /* --- 1. the launcher must be graphically ready before we claim the panel --- */
+  st("LAUNCHER_STARTING panel=%ux%u waiting for %s", fb.w, fb.h, LAUNCHER_READY);
+  if (!wait_launcher_ready(120)) {
+    /* No launcher: the initramfs animation (or nuxel-fallback) keeps the panel.
+       Never become a second writer.  Exit 0 => systemd does not restart us and
+       the fallback's ExecCondition can take over. */
+    st("HANDOFF_NO_LAUNCHER panel untouched, animation stays sole owner");
+    close(fb.fd);
+    return 0;
+  }
+  st("LAUNCHER_READY page_committed");
+  wr_state(STAGE_OWNER, "BOOT_WAIT_LAUNCHER\nLAUNCHER_READY\n");
+
+  /* --- 2. take ONE composited frame and hold it ---------------------------- */
   int frames = 0, failures = 0;
   time_t t0 = time(NULL), last = t0;
-  for (;;) {
-    if (o->w <= 0) { wl_display_roundtrip(dpy); usleep(50000); continue; }
-    struct zwlr_screencopy_frame_v1 *frame =
-      zwlr_screencopy_manager_v1_capture_output(scm, 0, o->wl);
+  int got = 0;
+  for (int tries = 0; tries < 2000 && !got; tries++) {
+    if (o->w <= 0) { wl_display_roundtrip(dpy); if (wl_display_dispatch(dpy) < 0) { st("WL_DISPATCH_FAIL"); return 5; } usleep(20000); continue; }
+    struct zwlr_screencopy_frame_v1 *frame = zwlr_screencopy_manager_v1_capture_output(scm, 0, o->wl);
     frame_ready = frame_failed = have_pending = 0;
     zwlr_screencopy_frame_v1_add_listener(frame, &frame_listener, NULL);
-    /* wait for the buffer event, then copy, then the ready event */
     while (!frame_ready && !frame_failed) {
       if (wl_display_dispatch(dpy) < 0) { st("WL_DISPATCH_FAIL errno=%d", errno); return 5; }
       if (have_pending && !frame_ready && !frame_failed) {
@@ -242,17 +376,78 @@ int main(int argc, char **argv) {
       }
     }
     if (frame_failed) failures++;
-    else {
-      blit(frame_buf.data, frame_buf.w, frame_buf.h, frame_buf.stride, frame_buf.format);
-      frames++;
+    else got = 1;
+    zwlr_screencopy_frame_v1_destroy(frame);
+    if (got) break;
+    if (frame_buf.wl) { wl_buffer_destroy(frame_buf.wl); munmap(frame_buf.data, frame_buf.len); frame_buf.wl = NULL; }
+    usleep(50000);
+  }
+  if (!got) { st("HANDOFF_NO_FRAME failures=%d panel untouched", failures); close(fb.fd); return 6; }
+
+  /* --- 3. ANIMATION_STOP_REQUESTED + ANIMATION_STOP_CONFIRMED -------------- */
+  long pid = painter_alive();
+  panel_assert("pre-stop");            /* our mapping/fd is live before the stop */
+  frame_blit_once();                   /* launcher content staged in scanout mem */
+  wr_state(ANIM_STOP, "ANIMATION_STOP_REQUESTED\n");
+  wr_state(HOLD_STOP, "ANIMATION_STOP_REQUESTED\n");
+  wr_state(STAGE_OWNER, "BOOT_WAIT_LAUNCHER\nLAUNCHER_READY\nANIMATION_STOP_REQUESTED\n");
+  st("ANIMATION_STOP_REQUESTED painter_pid=%ld", pid);
+  int confirmed = 0;
+  for (int i = 0; i < 500; i++) {                 /* <= 10 s */
+    long a = painter_alive();
+    if (!a) { confirmed = 1; break; }
+    if (file_has(ANIM_STATE, "ANIMATION_STOPPED", NULL, 0)) { confirmed = 1; break; }
+    usleep(20000);
+  }
+  if (confirmed) { st("ANIMATION_STOP_CONFIRMED pid=%ld", pid); wr_state(STAGE_OWNER, "BOOT_WAIT_LAUNCHER\nLAUNCHER_READY\nANIMATION_STOP_REQUESTED\nANIMATION_STOP_CONFIRMED\n"); }
+  else st("ANIMATION_STOP_TIMEOUT pid=%ld (still looping) — recovering anyway", pid);
+
+  /* --- 4. LAUNCHER_DISPLAY_OWNER: recover the DECON, replace every stale page */
+  panel_assert("post-stop");
+  frame_blit_once();
+  panel_assert("post-blit");
+  wr_state(ANIM_STATE, "ANIM_STAGE=ANIMATION_STOPPED\nANIM_OWNER=nuxel-wl-fb\n");
+  wr_state(STAGE_OWNER, "BOOT_WAIT_LAUNCHER\nLAUNCHER_READY\nANIMATION_STOP_REQUESTED\nANIMATION_STOP_CONFIRMED\nLAUNCHER_DISPLAY_OWNER\n");
+  st("LAUNCHER_DISPLAY_OWNER stopped=%d out=%dx%d src=%dx%d scale=%d panel=%ux%u",
+     confirmed, o->w, o->h, frame_buf.w, frame_buf.h, o->scale, fb.w, fb.h);
+
+  /* --- 5. normal ownership loop ------------------------------------------- */
+  frames = 1;
+  int fps = 0;
+  time_t now = time(NULL);
+  last = now;
+  for (;;) {
+    struct zwlr_screencopy_frame_v1 *frame = zwlr_screencopy_manager_v1_capture_output(scm, 0, o->wl);
+    frame_ready = frame_failed = have_pending = 0;
+    zwlr_screencopy_frame_v1_add_listener(frame, &frame_listener, NULL);
+    while (!frame_ready && !frame_failed) {
+      if (wl_display_dispatch(dpy) < 0) { st("WL_DISPATCH_FAIL errno=%d", errno); return 5; }
+      if (have_pending && !frame_ready && !frame_failed) {
+        zwlr_screencopy_frame_v1_copy(frame, pending_buf);
+        have_pending = 0;
+      }
     }
+    if (frame_failed) failures++;
+    else { frame_blit_once(); frames++; }
     zwlr_screencopy_frame_v1_destroy(frame);
     if (frame_buf.wl) { wl_buffer_destroy(frame_buf.wl); munmap(frame_buf.data, frame_buf.len); frame_buf.wl = NULL; }
-    time_t now = time(NULL);
+    now = time(NULL);
     if (now != last) {
-      st("FRAMES_OK total=%d fps_1s=%d failures=%d out=%dx%d src=%dx%d scale=%d panel=%ux%u",
-         frames, frames - (int)(last ? 0 : 0), failures, o->w, o->h, o->w, o->h, o->scale, fb.w, fb.h);
+      st("FRAMES_OK total=%d fps_1s=%d failures=%d out=%dx%d src=%dx%d scale=%d panel=%ux%u owner=nuxel-wl-fb",
+         frames, fps, failures, o->w, o->h, o->w, o->h, o->scale, fb.w, fb.h);
+      fps = 0;
       last = now;
+      /* keepalive: any process closing /dev/fb0 releases the DECON (measured A21);
+         re-assert it cheaply rather than trusting a one-shot handoff. */
+      fb.var.activate = FB_ACTIVATE_NOW; fb.var.xoffset = 0; fb.var.yoffset = 0;
+      ioctl(fb.fd, FBIOPUT_VSCREENINFO, &fb.var);
+      if (ioctl(fb.fd, FBIOPAN_DISPLAY, &fb.var) != 0) panel_assert("keepalive");
+      if (painter_alive()) {   /* a painter came back behind us: re-arm the stop */
+        wr_state(ANIM_STOP, "ANIMATION_STOP_REQUESTED\n");
+        wr_state(HOLD_STOP, "ANIMATION_STOP_REQUESTED\n");
+        st("ANIMATION_RESURRECTED stop re-armed");
+      }
     }
+    fps++;
   }
 }

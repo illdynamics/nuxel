@@ -1,0 +1,232 @@
+{
+  "generator": "tools/s10plus/a28/gen-launcher.py",
+  "inputs": {
+    "pwa/nuxel-home/js/apps.js": "54494b7d63a34cdd1702f454c8ca412dcde5b6d825c105ba82e69b657c099196",
+    "pwa/nuxel-home/css/style.css": "39ff68fd920d55cc68733a0f1f1ef0ada2433d6c95946cded95aa084ac156eb4",
+    "shell/nuxel-home-native/nuxel_home/app_registry.json": "722dfd1aae03d9881e835d6bd4972f372c2064b231acbd2e5248ee287765d38e"
+  },
+  "apps": [
+    {
+      "id": "org.nuxel.Calendar",
+      "name": "Calendar",
+      "kind": "pwa",
+      "docked": false,
+      "color": "#E91E63",
+      "icon": "\ud83d\udcc5",
+      "icon_cp": [
+        128197
+      ],
+      "url": "http://127.0.0.1:8000/pwa/nuxel-apps/calendar/index.html",
+      "native_binary": "",
+      "capabilities": [
+        "notifications:send"
+      ]
+    },
+    {
+      "id": "nuxel-camera",
+      "name": "Camera",
+      "kind": "native",
+      "docked": false,
+      "color": "#795548",
+      "icon": "\ud83d\udcf7",
+      "icon_cp": [
+        128247
+      ],
+      "url": "nuxel-camera://",
+      "native_binary": "",
+      "capabilities": [
+        "camera:capture",
+        "camera:preview"
+      ]
+    },
+    {
+      "id": "nuxel-contacts",
+      "name": "Contacts",
+      "kind": "native",
+      "docked": false,
+      "color": "#9C27B0",
+      "icon": "\ud83d\udc64",
+      "icon_cp": [
+        128100
+      ],
+      "url": "nuxel-contacts://",
+      "native_binary": "/usr/bin/nuxel-contacts",
+      "capabilities": [
+        "contacts:read",
+        "contacts:write"
+      ]
+    },
+    {
+      "id": "org.nuxel.Files",
+      "name": "Files",
+      "kind": "pwa",
+      "docked": false,
+      "color": "#3F51B5",
+      "icon": "\ud83d\udcc1",
+      "icon_cp": [
+        128193
+      ],
+      "url": "http://127.0.0.1:8000/pwa/nuxel-apps/files/index.html",
+      "native_binary": "",
+      "capabilities": []
+    },
+    {
+      "id": "org.nuxel.Mail",
+      "name": "Mail",
+      "kind": "pwa",
+      "docked": false,
+      "color": "#FF9800",
+      "icon": "\u2709\ufe0f",
+      "icon_cp": [
+        9993
+      ],
+      "url": "http://127.0.0.1:8000/pwa/nuxel-apps/mail/index.html",
+      "native_binary": "",
+      "capabilities": [
+        "notifications:send",
+        "notifications:receive"
+      ]
+    },
+    {
+      "id": "nuxel-messages",
+      "name": "Messages",
+      "kind": "native",
+      "docked": true,
+      "color": "#2196F3",
+      "icon": "\ud83d\udcac",
+      "icon_cp": [
+        128172
+      ],
+      "url": "nuxel-messages://",
+      "native_binary": "/usr/bin/nuxel-messages",
+      "capabilities": [
+        "sms:send",
+        "sms:receive",
+        "contacts:read"
+      ]
+    },
+    {
+      "id": "org.nuxel.Notes",
+      "name": "Notes",
+      "kind": "pwa",
+      "docked": false,
+      "color": "#607D8B",
+      "icon": "\ud83d\udcdd",
+      "icon_cp": [
+        128221
+      ],
+      "url": "http://127.0.0.1:8000/pwa/nuxel-apps/notes/index.html",
+      "native_binary": "",
+      "capabilities": []
+    },
+    {
+      "id": "nuxel-dialer",
+      "name": "Phone",
+      "kind": "native",
+      "docked": true,
+      "color": "#4CAF50",
+      "icon": "\ud83d\udcde",
+      "icon_cp": [
+        128222
+      ],
+      "url": "nuxel-dialer://",
+      "native_binary": "/usr/bin/nuxel-dialer",
+      "capabilities": [
+        "call:initiate",
+        "call:end",
+        "call:status",
+        "contacts:read"
+      ]
+    },
+    {
+      "id": "nuxel-settings",
+      "name": "Settings",
+      "kind": "native",
+      "docked": true,
+      "color": "#78909C",
+      "icon": "\u2699\ufe0f",
+      "icon_cp": [
+        9881
+      ],
+      "url": "nuxel-settings://",
+      "native_binary": "/usr/bin/nuxel-settings",
+      "capabilities": []
+    }
+  ],
+  "grid": [
+    "Calendar",
+    "Camera",
+    "Contacts",
+    "Files",
+    "Mail",
+    "Notes"
+  ],
+  "dock": [
+    "Messages",
+    "Phone",
+    "Settings"
+  ],
+  "tokens": {
+    "--bg-primary": "#0a1628",
+    "--bg-secondary": "#0d1f3c",
+    "--bg-card": "#122952",
+    "--bg-card-hover": "#1a3466",
+    "--text-primary": "#ffffff",
+    "--text-secondary": "#b8c7e0",
+    "--text-accent": "#60a5fa",
+    "--accent": "#1e40af",
+    "--accent-light": "#3b82f6",
+    "--success": "#4caf50",
+    "--warning": "#ff9800",
+    "--error": "#f44336",
+    "--info": "#2196f3",
+    "--status-bar-height": "36px",
+    "--dock-height": "80px",
+    "--grid-padding": "12px",
+    "--app-icon-size": "56px",
+    "--app-icon-radius": "16px",
+    "--card-radius": "16px",
+    "--button-radius": "12px"
+  },
+  "base_tokens": {
+    "--bg-primary": "#0a1628",
+    "--bg-secondary": "#0d1f3c",
+    "--bg-card": "#122952",
+    "--bg-card-hover": "#1a3466",
+    "--text-primary": "#ffffff",
+    "--text-secondary": "#b8c7e0",
+    "--text-accent": "#60a5fa",
+    "--accent": "#1e40af",
+    "--accent-light": "#3b82f6",
+    "--success": "#4caf50",
+    "--warning": "#ff9800",
+    "--error": "#f44336",
+    "--info": "#2196f3",
+    "--status-bar-height": "36px",
+    "--dock-height": "80px",
+    "--grid-padding": "16px",
+    "--app-icon-size": "64px",
+    "--app-icon-radius": "16px",
+    "--card-radius": "16px",
+    "--button-radius": "12px"
+  },
+  "applied_media": [
+    {
+      "condition": "max-width: 480px",
+      "tokens": {
+        "--app-icon-size": "56px",
+        "--grid-padding": "12px"
+      }
+    }
+  ],
+  "viewport_css_width": 360,
+  "body_bg": "#1a1a2e",
+  "registry_divergences": [
+    {
+      "app": "Camera",
+      "apps_js": "native nuxel-camera://",
+      "app_registry_json": "pwa http://127.0.0.1:8000/pwa/nuxel-apps/camera-gallery/index.html"
+    }
+  ],
+  "out": "tools/s10plus/a28/generated/nuxel-launcher.h"
+}

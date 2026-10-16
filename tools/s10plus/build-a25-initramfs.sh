@@ -15,14 +15,16 @@
 #                                 discovery, Fedora ext4 root mount, switch_root,
 #                                 embedded-anim handoff, live console, UI install)
 #   * /bin/toybox + applet links  images/initramfs/bin/toybox
-#   * /opt/nuxel/nuxel-ui         tools/s10plus/nuxel-ui.c            (freestanding aarch64)
+#   * /opt/nuxel/nuxel-ui         tools/s10plus/nuxel-ui.c            (freestanding aarch64;
+#                                 A28 = the Nuxel Home launcher, registry from
+#                                 pwa/nuxel-home/js/apps.js + css/style.css)
 #   * /opt/nuxel/nuxel-console    tools/s10plus/a24-nuxel-console.c   (HUP-proof live shell)
 #   * /opt/nuxel/nuxel-anim-player tools/s10plus/nuxel-anim-player.c  (MP4 -> DECON fbdev)
 #   * /opt/nuxel/nuxel-fb-phone   tools/s10plus/nuxel-fb-phone.c
 #   * /opt/nuxel/nuxel-postboot.sh tools/s10plus/a24/nuxel-postboot.sh
-#   * /opt/nuxel/nuxel-ui.service  tools/s10plus/a24/nuxel-ui.service
+#   * /opt/nuxel/nuxel-ui.service  tools/s10plus/a28/nuxel-ui.service (A28: launcher)
 #   * /opt/nuxel/nuxel-ui-fallback.service tools/s10plus/a23/nuxel-ui-fallback.service
-#   * /opt/nuxel/nuxel-ui.rev     tools/s10plus/a25/nuxel-ui.rev
+#   * /opt/nuxel/nuxel-ui.rev     tools/s10plus/a28/nuxel-ui.rev     (A28 rev: the
 #   * /opt/nuxel/libsystemd-shared-258.11-1.fc43.so
 #                                 boot/s10plus/payload/ (kernel-4.14 pidfd patch,
 #                                 SHA-256 pinned; see that directory's README)
@@ -230,9 +232,9 @@ for n in nuxel-syscall-probe nuxel-spawn-probe nuxel-spawn-probe-static; do
     [ -s "${BIN}/${n}" ] && install -m 0755 "${BIN}/${n}" "${STAGE}/opt/nuxel/${n}"
 done
 install -m 0755 "${ROOT}/tools/s10plus/a24/nuxel-postboot.sh"        "${STAGE}/opt/nuxel/nuxel-postboot.sh"
-install -m 0755 "${ROOT}/tools/s10plus/a24/nuxel-ui.service"         "${STAGE}/opt/nuxel/nuxel-ui.service"
+install -m 0755 "${ROOT}/tools/s10plus/a28/nuxel-ui.service"         "${STAGE}/opt/nuxel/nuxel-ui.service"
 install -m 0755 "${ROOT}/tools/s10plus/a23/nuxel-ui-fallback.service" "${STAGE}/opt/nuxel/nuxel-ui-fallback.service"
-install -m 0644 "${ROOT}/tools/s10plus/a25/nuxel-ui.rev"             "${STAGE}/opt/nuxel/nuxel-ui.rev"
+install -m 0644 "${ROOT}/tools/s10plus/a28/nuxel-ui.rev"             "${STAGE}/opt/nuxel/nuxel-ui.rev"
 install -m 0755 "${SD_LIB}"                                          "${STAGE}/opt/nuxel/libsystemd-shared-258.11-1.fc43.so"
 
 install -m 0755 "${ROOT}/boot/initramfs/init.sh" "${STAGE}/init"
@@ -293,8 +295,8 @@ check opt/nuxel/nuxel-anim-player "${BIN}/nuxel-anim-player"
 check opt/nuxel/nuxel-fb-phone    "${BIN}/nuxel-fb-phone"
 check opt/nuxel/nuxel-verify      "${BIN}/nuxel-verify"
 check opt/nuxel/nuxel-postboot.sh "${ROOT}/tools/s10plus/a24/nuxel-postboot.sh"
-check opt/nuxel/nuxel-ui.service  "${ROOT}/tools/s10plus/a24/nuxel-ui.service"
-check opt/nuxel/nuxel-ui.rev      "${ROOT}/tools/s10plus/a25/nuxel-ui.rev"
+check opt/nuxel/nuxel-ui.service  "${ROOT}/tools/s10plus/a28/nuxel-ui.service"
+check opt/nuxel/nuxel-ui.rev      "${ROOT}/tools/s10plus/a28/nuxel-ui.rev"
 check opt/nuxel/libsystemd-shared-258.11-1.fc43.so "${SD_LIB}"
 for n in nuxel-syscall-probe nuxel-spawn-probe nuxel-spawn-probe-static; do
     [ -s "${BIN}/${n}" ] && check "opt/nuxel/${n}" "${BIN}/${n}"
