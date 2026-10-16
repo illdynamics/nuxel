@@ -41,7 +41,15 @@ FIRST_FAIL_LAYER=<n|none>
 FIRST_DROP_LAYER=<n|none>
 VERDICT=PIPELINE_DELIVERED | PIPELINE_STOPPED_AT_LAYER=<n> NAME=<name> STATE=<drop|blocked>
 GATE=pass|fail {...machine gate JSON...}
+LAYER_EXIT=<n> NAME=<name> STATE=<state> EXIT=<10+n>      (one per layer)
+EXIT_CODE=<status> (first lossy layer <n> <name> is <drop|blocked>)
 ```
+
+Every layer also has its own exit code — `10 + layer number` (`11` driver … `17` DOM).
+Printing `LAYER_EXIT=` for all seven is unconditional; with `--layer-exit-codes` the
+**process** exit status becomes that number, so a wrapper can branch on the exact hop
+instead of parsing text. Without the flag the historical `0/3/4` statuses are kept, so
+nothing that already parses this tool changes behaviour.
 
 ## 2. Bounded by construction (the live console must never hang)
 
@@ -57,6 +65,91 @@ GATE=pass|fail {...machine gate JSON...}
 Measured on a workstation (no phone): a `--seconds 2 --dry-run` session returns in
 **2.1 s**, printing all seven layer verdicts. A zero or out-of-range budget is
 **refused** rather than run unbounded.
+
+## 2a. Capability discovery, from two independent identities
+
+A node number is not an identity: it depends on probe order and changes between boots
+and between boot modes. So the selection is decided by capability, and the tool reads
+**two** independent identity sources and reports them next to each other:
+
+| Source | What it provides | Role |
+|---|---|---|
+| `/sys/class/input/<node>/device/` | `name`, `id/bustype`+`id/vendor`+`id/product`, the capability bitmaps (`properties`, `capabilities/abs`, `capabilities/key`), and per-axis `absinfo` where the kernel exposes it | independent confirmation of identity and of the capability claims |
+| the evdev ioctls `EVIOCGNAME` / `EVIOCGPROP` / `EVIOCGBIT` / `EVIOCGABS` on every `/dev/input` node | the node's own answer, including the absolute ranges and contact-slot capacity, which sysfs does not carry on this kernel | **authoritative for selection** |
+
+`NUXEL_SYSFS_INPUT_ROOT` (or `--sysfs-root`) redirects the sysfs half at a synthetic
+tree, which is how the offline tests drive the *same* code with the checked-in
+`tests/fixtures/sec-ts-only/` tree — no phone, no `/dev/input`.
+
+If the two disagree the tool prints `SYSFS_IOCTL_DISAGREEMENT` with both readings and
+the raw `properties` value. It never silently "corrects" one to match the other: the
+raw value on this handset is `properties=2`, and the deployed A31 shim uses the
+`INPUT_PROP_DIRECT` constant the same way (as a bit *index*) and accepts that same
+value, so the number is *reported* rather than changed. A divergence must stay
+visible, not be papered over.
+
+Bitmap decoding follows the kernel's printed-word order (highest word first —
+`drivers/input/input.c:input_print_bitmap` loops from `BITS_TO_LONGS(max)-1` down), and
+that decoder is cross-checked at self-test time against the A32 decoder that was
+validated against the live `gpio_keys` line.
+
+## 2b. Coordinate validation against the 1440x3040 DECON panel
+
+Panel geometry is **read, not assumed**:
+
+| Read | Value on this handset |
+|---|---|
+| `/sys/class/graphics/fb0/modes` | `U:1440x3040p-0` — the panel |
+| `/sys/class/graphics/fb0/virtual_size` | `1440,6080` — two panel pages (the animation and the bridge flip between them) |
+| `/sys/class/graphics/fb0/bits_per_pixel` | `32` |
+
+`coordinate-map.json` records the panel, the framebuffer page count, the device range
+**and where that range came from** (`ioctl EVIOCGABS`, `sysfs absinfo`, or an explicit
+`PANEL_FALLBACK` that says it is not a measurement), the output's scale/transform as
+read from the bridge/launcher state, the mapping class (`identity` when the device range
+equals the panel, `scaled` otherwise) and, for the captured points, a verdict:
+
+```
+COORD_MAP mapping=scaled device_range_x=[0, 4095] device_range_y=[0, 4095] range_source=... -> panel 1440x3040
+COORD_VALIDATION points=<n> inside_device_range=<bool> inside_panel_bounds=<bool> verdict=OK|OUT_OF_RANGE|NO_POINTS
+```
+
+`NO_POINTS` is never `OK`, and an out-of-range point is named as `OUT_OF_RANGE` — a
+mirrored, rotated or scale-mismatched mapping shows up as a number, not an opinion.
+The A32 measurement is a headless output at half the panel resolution with `scale 2`,
+so the mapping is validated against both the panel pixels and the output pixels.
+
+## 2c. The bounded owner-tap capture session (`--capture SECONDS`)
+
+`--capture N` is `--live` for `N` seconds with two extra artifacts:
+
+* `events.jsonl` — **one JSON object per input event**, carrying the kernel timeval of
+  the event itself (`ts` and `iso`) rather than the time the tool was scheduled, the
+  decoded kind (`btn_touch` / `down` / `up` / `slot` / `axis` / `frame` / `point`) and,
+  for the per-frame `point` records, the raw coordinates with their mapped panel and
+  output coordinates;
+* `coordinate-map.json` — the map described above, with the captured points validated.
+
+It is bounded exactly like `--live` (hard `signal.alarm` at `--seconds + 15`, an event
+cap, a byte cap, `select()` polling), it always writes the `/sys/class/input` capability
+scan and the panel geometry into the bundle, and it refuses `0` (or anything outside
+`1..900`) instead of running unbounded.
+
+Because the evidence is worth more inside the repository than only on the phone:
+
+```sh
+# on the phone: bounded capture, nothing written outside the bundle
+python3 /usr/libexec/nuxel/nuxel-touch-trace.py --capture 90 --out /var/lib/nuxel/touch-capture/tap
+
+# from the host: land it in docs/beta-finalization/live/evidence/touch-<ts>/
+python3 tools/s10plus/a33/nuxel-touch-trace.py --archive <bundle> \
+        --archive-dir docs/beta-finalization/live/evidence
+```
+
+`--archive` copies the bundle (it never moves or deletes the original), appends a line
+to `INDEX.jsonl` in the archive root, and fails **loudly** with status 4 if the bundle
+does not exist — it never silently archives nothing. `--archive-dir` does the same at
+the end of a `--capture`/`--live` run.
 
 ## 3. No `/dev/input/eventN` anywhere (invariant, enforced)
 
@@ -117,7 +210,14 @@ capture was empty because "touch is broken".
 Full analysis, evidence, the userspace mitigation (`nuxel-bootmode-guard.py`) and the
 not-deployed kernel patch: `docs/beta-finalization/touch/CHARGER-MODE-ROOTCAUSE.md`.
 
-## 6. Two evidence-discipline bugs found and fixed by writing the tests
+## 6. Evidence-discipline bugs found by grading real captures
+
+Four, in total: two found by the earlier cycle grading archived `.scratch` notes, and
+two found **this cycle by grading a live charger-mode capture taken over the console**
+(`docs/beta-finalization/live/evidence/touch-*-p0probe-live-run/`). Every one of them is
+a bug that would have manufactured a pass, and every one is now regression-gated.
+
+### 6a. Fixed earlier: two bugs that manufactured a pass
 
 Both were found by grading real archived captures, and both are the kind of bug that
 manufactures a pass:
@@ -140,6 +240,47 @@ The pattern list is now built from an explicit token list (no `re.X` pitfalls) a
 real state-file line (not a command) and two kernel-printk forms. A regression test
 (`checklist-not-evidence` / `real-state-file` in `tests/test-touch-trace.py`) locks
 both behaviours.
+
+### 6b. Fixed this cycle: a live-console command frame was read as device output
+
+The repository's console client frames every command as the command text plus the
+client's own status:
+
+```
+===== grep -c sec_touchscreen /proc/bus/input/devices; echo "secreg_rc=$?"   [rc=1 frame=1eb660d8 sha_ok=yes]
+    0
+    secreg_rc=1
+```
+
+The first line is a **command wrapper**, not device output. The analyzer's shell-listing
+detector anchors on the first token of the line, so a header starting with `=====` went
+straight through, and `ev.best("sec_touchscreen")` matched the panel name *inside the
+command text*. On a charger-mode boot — where `sec_ts_init` returned `-ENODEV` and no
+touch device exists — layer 3 then reported *"sec_touchscreen appears in the evidence"*.
+It graded `blocked`, not `ok`, but the detail sentence was a claim the capture did not
+support. A frame-marker detector now classifies such headers as commands, while the
+output lines that follow a header (which carry no frame marker) stay device output.
+
+### 6c. Fixed this cycle: the analyzer graded its own previous verdict
+
+The same capture was graded twice, the second time with `--json-out` inside the bundle.
+The second run reported:
+
+```
+LAYER=6 NAME=wayland STATE=ok EVIDENCE=analysis.json DETAIL=wl_touch present in the compositor protocol capture
+```
+
+`analysis.json` was the first run's own output. The tool had promoted **its own
+sentence** to layer-6 evidence with no `wl_touch` anywhere in the capture. Name-based
+exclusion is now backed by a **structural** check (a file containing `LAYER=1 NAME=…`
+or the tool's own JSON tag is a conclusion, whatever it is named), and it applies to
+every pattern search — `first()`, `matches()` and `best()` — not just to `matches()`.
+`named()` deliberately stays unfiltered: it looks up a specific evidence file.
+
+Both of 6b and 6c are asserted in `tests/test-touch-trace.py` (a synthetic framed
+capture and a synthetic bundle carrying a previous verdict), and the live charger-mode
+capture is itself a regression case: it must grade `FIRST_FAIL_LAYER=1` with no layer
+promoted from prose or from a prior verdict.
 
 ## 7. Grading real archived captures (the OFFLINE_TESTED acceptance)
 
@@ -170,14 +311,69 @@ Those captures are historical: they predate the arm-on-open fix and the DOM prob
 they cannot show layers 2 and 4–7. They are used as *grading fixtures* — proof that the
 analyzer classifies real handset output correctly — and never as proof of touch.
 
+### 7a. This cycle's live capture (not historical)
+
+`docs/beta-finalization/live/evidence/touch-20261016T193756+0200-cycl001-p0probe-live-run/`
+is a **live** capture taken this cycle over the USB CDC-ACM console with the repository's
+own client, read-only and bounded (no partition, bootloader, DTB, modem or EFS write; no
+reboot; no arm; no `/dev/fb0` open). Graded result:
+
+```
+FIRST_FAIL_LAYER=1 NAME=driver STATE=blocked
+  cause: "androidboot.mode=charger" and "sec_ts_init: Do not load driver due to : lpm 1"
+LAYER 2..7: blocked (never ok)   GATE=fail   EXIT_CODE=3
+```
+
+It is a first-party measurement of the current device state — the handset is in
+charger/LPM mode, so the touchscreen does not exist on this boot — and it is also the
+regression case for §6b and §6c.
+
+## 7a. The host self-test (`--self-test`)
+
+`python3 nuxel-touch-trace.py --self-test` asserts this tool's own logic and needs no
+phone, no libinput, no `/dev/input` and no root. It is the evidence line a reviewer can
+re-run anywhere. It checks, in this order:
+
+1. the ioctl request numbers by their numeric value (`EVIOCGNAME(64)==0x80404506`,
+   `EVIOCGBIT(EV_ABS,8)==0x80084523`, `EVIOCGABS(ABS_MT_POSITION_X)==0x80184575`,
+   `EVIOCGPROP(8)==0x80084509`) — a wrong number reads the wrong struct **silently**;
+2. `struct input_event` is 24 bytes and the evdev codes match the kernel ABI;
+3. the decoder turns a known byte stream into exactly one down, one up, one point, two
+   `BTN_TOUCH` events and two frames;
+4. the printed-bitmap word order, cross-checked against the A32 device-validated
+   decoder, including the panel's own `ABS` bitmap and the live `gpio_keys` KEY line;
+5. the coordinate mapping: identity keeps panel pixels, `scale 2` halves output
+   coordinates, a half-range device maps as `scaled` and lands on the last panel pixel,
+   and `NO_POINTS` is never `OK`;
+6. the JSONL records carry timestamps and a mapped `point`;
+7. the two evidence-discipline rules — a shell command listing is not device output, and
+   a **previous verdict is never re-graded as evidence**;
+8. the exit-code contract (one distinct code per layer, `10 + layer`);
+9. this file contains no hard-coded input node number;
+10. the bound is enforced (a `0` budget is refused) and the gate cannot be passed
+    without a DOM event.
+
+It prints `SELF-TEST: PASS (40/40 assertions)` and states plainly that it is **not** a
+touch verification.
+
 ## 8. How to run it
 
 ```sh
 # on the phone (bounded, read-only, no writes outside the bundle)
 python3 /usr/libexec/nuxel/nuxel-touch-trace.py --live --seconds 20 --out /var/lib/nuxel/touch-trace
 
+# the bounded owner-tap window with the per-event JSONL stream
+python3 /usr/libexec/nuxel/nuxel-touch-trace.py --capture 90 --out /var/lib/nuxel/touch-capture/tap
+
 # the owner test: bounded, self-terminating, takes an owner-test lock
 nuxel-touch-capture.sh --seconds 90
+
+# assert the tool's own logic on any host (no phone, no /dev/input, no root)
+python3 tools/s10plus/a33/nuxel-touch-trace.py --self-test
+
+# land a finished bundle in the repository archive
+python3 tools/s10plus/a33/nuxel-touch-trace.py --archive /var/lib/nuxel/touch-capture/tap \
+        --archive-dir docs/beta-finalization/live/evidence
 
 # stage the DOM page and print the manual step
 python3 /usr/libexec/nuxel/nuxel-touch-trace.py --stage-probe
@@ -199,7 +395,8 @@ then the item stays `NEEDS_OWNER_TEST` until a human confirms the UI responded.
 
 | Item | Verdict |
 |---|---|
-| tracer, harness, DOM probe, shim, tests | **OFFLINE_TESTED** |
+| tracer (layers, gate, JSONL, coordinate map, self-test), harness, DOM probe, shim, tests | **OFFLINE_TESTED** |
+| live capture this cycle (charger-mode boot, read-only console probe) | **OBSERVED ON DEVICE** — `FIRST_FAIL_LAYER=1`; it proves the boot mode and the absence of the device, and nothing about touch |
 | console/LPM boot mitigation | **OFFLINE_TESTED** (effect only observable after a live normal reboot) |
 | permanent kernel-level LPM fix | **BLOCKED_KERNEL / BOOT_UPDATE_REQUIRED / NOT_DEPLOYED** |
 | physical finger on the glass, end to end | **NEEDS_OWNER_TEST** |

@@ -42,6 +42,73 @@
       "revision": 1,
       "at": "2026-10-16T16:07:13+02:00",
       "by": "construqtor/bg-00-preflight"
+    },
+    {
+      "component": "bg-01-touch-pipeline",
+      "component_title": "Priority 0 - Touchscreen & Reliable Interactive Input",
+      "priority": 1,
+      "risk": "low",
+      "rollback": "git revert the commit(s) touching this task's expected files; the change is repository-only and alters no device state. The live probe was read-only (no partition, bootloader, DTB, modem, EFS write; no reboot; no arm; no /dev/fb0 open)",
+      "source": "construqtor/bg-01-touch-pipeline cycle-001 resume",
+      "by": "construqtor/bg-01-touch-pipeline",
+      "at": "2026-10-16T19:43:49+02:00",
+      "id": "briq-01a-pipeline-trace-tool",
+      "title": "End-to-end touch pipeline tracer with bounded capture session",
+      "state": "implemented",
+      "revision": 2,
+      "dependencies": [],
+      "expected_files": [
+        "tools/s10plus/a33/nuxel-touch-trace.py",
+        "tools/s10plus/a33/README.md",
+        "docs/beta-finalization/touch/PIPELINE-TRACE.md"
+      ],
+      "intended_changes": [
+        "tools/s10plus/a33/nuxel-touch-trace.py: --self-test (40 host assertions), --capture SECONDS (bounded owner-tap window writing events.jsonl with per-event kernel timestamps and mapped coordinates), coordinate-map.json + COORD_VALIDATION against the 1440x3040 DECON panel and the output scale/transform, /sys/class/input capability scan (--sysfs-root), --archive/--archive-dir into docs/beta-finalization/live/evidence/touch-<ts>/, per-layer LAYER_EXIT= and --layer-exit-codes",
+        "tools/s10plus/a33/README.md: new modes, the exact A32 LD_PRELOAD invocation, the anti-self-grading rule",
+        "docs/beta-finalization/touch/PIPELINE-TRACE.md: capability discovery, coordinate validation, the capture session and its bounds, the host self-test, the exit-code contract, and the two evidence-discipline bugs this cycle's live capture exposed",
+        "tools/s10plus/a33/tests/test-touch-trace.py: 67 assertions incl. capture/JSONL/archive/exit-code/capability-scan coverage and the two honesty regressions",
+        "tools/s10plus/a33/tests/run-touch-tests.sh: the shim-invocation suite added to the offline gate"
+      ],
+      "evidence": [
+        {
+          "kind": "offline",
+          "command": "./tools/s10plus/a33/tests/run-touch-tests.sh",
+          "path": "tools/s10plus/a33/tests/run-touch-tests.sh",
+          "result": "TOUCH-TESTS: ALL PASS (239 PASS / 0 FAIL); test-touch-trace.py 67/67",
+          "at": "2026-10-16T19:43:49+02:00"
+        },
+        {
+          "kind": "offline",
+          "command": "python3 tools/s10plus/a33/nuxel-touch-trace.py --self-test",
+          "path": "tools/s10plus/a33/nuxel-touch-trace.py",
+          "result": "SELF-TEST: PASS (40/40 assertions) - ioctl numbers, 24-byte struct input_event, decoder, printed-bitmap word order (cross-checked against the A32 device-validated decoder), raw->panel->output mapping for 1440x3040, JSONL records, both evidence-discipline rules, exit-code contract",
+          "at": "2026-10-16T19:43:49+02:00"
+        },
+        {
+          "kind": "on_device",
+          "command": "nuxel-live.sh --batch (read-only, bounded) then --analyze",
+          "path": "docs/beta-finalization/live/evidence/touch-20261016T193756+0200-cycl001-p0probe-live-run",
+          "result": "graded FIRST_FAIL_LAYER=1 NAME=driver STATE=blocked; cause cited from /proc/cmdline (androidboot.mode=charger) and dmesg (sec_ts_init: Do not load driver due to : lpm 1); layers 2-7 blocked, never ok; GATE=fail",
+          "at": "2026-10-16T19:43:49+02:00"
+        },
+        {
+          "kind": "observation",
+          "path": "tools/s10plus/a33/nuxel-touch-trace.py",
+          "result": "sha256 47ea7fc4dd180c932fbc4dd58d0f3358c64a45a0ec1debaf3f1931863e4c00e4",
+          "at": "2026-10-16T19:43:49+02:00"
+        }
+      ],
+      "tests": [
+        "L1: python3 -m py_compile; bash -n on the harness; shellcheck -S warning clean",
+        "L2/L3 offline: 67 tracer assertions (layers, gate, boundedness, --capture/JSONL, coordinate map, capability scan, archive, per-layer exit codes, the two honesty regressions)",
+        "L3 offline: the live charger-mode capture is graded as a regression case (FIRST_FAIL_LAYER=1, no layer promoted from prose or from a prior verdict)",
+        "L5 live: bounded read-only console probe - six layers report honestly-blocked on a charger-mode boot",
+        "no /dev/input/eventN literal: 27 files checked, 0 failing"
+      ],
+      "verdict": "OFFLINE_TESTED",
+      "offline_ceiling": "OFFLINE_TESTED",
+      "owner_action": "OWNER TEST REQUIRED for the finger half: on a NORMAL boot run nuxel-touch-capture.sh --seconds 90 and perform the printed tap sequence; until then the physical-contact verdict is NEEDS_OWNER_TEST",
+      "note": "Resumed from the rev-1 seed. The tracer gained the modes the briq names (--self-test, --capture SECONDS + JSONL under the repository archive path, sysfs capability discovery, 1440x3040 coordinate validation, per-layer exit codes). Grading a REAL live capture exposed three bugs (a layer-4 crash on a zero-device shim scan, a console command frame read as device output, and the analyzer grading its own previous verdict); all three are fixed and regression-gated. The live device is in charger/LPM mode, so no touch evidence exists on this boot and none is claimed."
     }
   ]
 }

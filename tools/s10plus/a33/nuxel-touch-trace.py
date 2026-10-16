@@ -1538,8 +1538,22 @@ DEVICE_OUTPUT_HINTS = ("last_kmsg", "dmesg", "cmdline", "kernel", "bootreport",
                        "pstore", "console", "ramoops", "journal")
 PRINTK_PREFIX = re.compile(r"(<\d>\[|^\[ *\d+\.\d+\]|kernel:|\[sec_input\]|sec_ts \d-)")
 
-# The analyzer's OWN conclusions must never be mistaken for evidence.
-OWN_OUTPUT = ("verdict.txt", "gate.json", "meta.json", "probe-staging.txt", "HARD-TIMEOUT.txt")
+# The analyzer's OWN conclusions must never be mistaken for evidence.  A bundle that
+# also carries a previous verdict would otherwise be graded against its own sentences:
+# a real charger-mode capture proved it - a second `--analyze` run with `--json-out`
+# inside the bundle reported LAYER=6 ok from the *sentence* "wl_touch present in the
+# compositor protocol capture" that the first run had written there.  Name-based
+# exclusion is backed by a STRUCTURAL check (below) so a copy under any name is still
+# recognised as a conclusion, not as an observation.
+OWN_OUTPUT = ("verdict.txt", "gate.json", "meta.json", "probe-staging.txt", "HARD-TIMEOUT.txt",
+              "analysis.json", "layer-verdicts.txt", "trace.txt")
+
+_OWN_VERDICT_RX = re.compile(r"^\s*LAYER=1 NAME=\w+ STATE=(ok|drop|blocked)", re.M)
+_OWN_TOOL_TAG = '"tool": "nuxel-touch-trace"'
+
+
+def looks_like_own_verdict(txt):
+    return bool(_OWN_VERDICT_RX.search(txt)) or (_OWN_TOOL_TAG in txt)
 
 # A line that is a *shell command listing* rather than device output.  The debug
 # packs and the .scratch notes contain lists of commands to run ("grep -a
@@ -1558,6 +1572,15 @@ SHELL_CMDS = ["#", "echo", "cat", "grep", "ls", "tr", "tail", "head", "systemctl
 # exactly what the evidence discipline forbids, so the pattern is now constructed
 # from an explicit token list and self-tested below.
 SHELL_LINE = re.compile(r"^\s*(?:%s)" % "|".join(re.escape(t) for t in SHELL_CMDS))
+
+# The live-console harness frames every command as the command text followed by its
+# own status: `===== grep -c sec_touchscreen /proc/bus/input/devices   [rc=0 frame=ab12 sha_ok=yes]`.
+# That header is a COMMAND WRAPPER, and the command text inside it must not be
+# graded as device output.  A real charger-mode capture proved the point: the naive
+# match found `sec_touchscreen` inside that header and reported "the panel appears
+# in the evidence" for a boot on which sec_ts_init returned -ENODEV.  The OUTPUT
+# lines that follow a header carry no frame marker, so they stay device output.
+CONSOLE_FRAME = re.compile(r"\[\s*rc=-?\d+\s+frame=[0-9a-f]+\s+sha_ok=(yes|no)\s*\]")
 
 _SHELL_SELF_TEST = [
     (True, 'echo "=== libinput acceptance ==="; grep -a accepted=1 /run/nuxel-libinput-path.state | tail -3'),
@@ -1603,6 +1626,16 @@ class Evidence:
         self.root, self.files = root, files
         self.index = {rel: txt for rel, _p, txt in files}
 
+    @staticmethod
+    def _is_own(rel, txt):
+        """The analyzer's own conclusions are not observations.  `named()` reads a
+        specific evidence file by name and stays unfiltered; every PATTERN search
+        goes through here, otherwise a bundle that also carries a previous verdict
+        grades itself (measured: LAYER=6 reported ok from the sentence
+        "wl_touch present in the compositor protocol capture" written by an earlier
+        run of this very tool into the same directory)."""
+        return os.path.basename(rel) in OWN_OUTPUT or looks_like_own_verdict(txt)
+
     def named(self, name):
         """A bundle file by name (any depth, exact basename)."""
         for rel, _p, txt in self.files:
@@ -1612,10 +1645,10 @@ class Evidence:
 
     def first(self, pattern, prefer=None):
         rx = re.compile(pattern, re.I)
-        order = self.files
+        order = [f for f in self.files if not self._is_own(f[0], f[2])]
         if prefer:
-            order = [f for f in self.files if os.path.basename(f[0]) in prefer] + \
-                    [f for f in self.files if os.path.basename(f[0]) not in prefer]
+            order = [f for f in order if os.path.basename(f[0]) in prefer] + \
+                    [f for f in order if os.path.basename(f[0]) not in prefer]
         for rel, _p, txt in order:
             for line in txt.splitlines():
                 if rx.search(line):
@@ -1630,7 +1663,7 @@ class Evidence:
         rx = re.compile(pattern, re.I)
         out = []
         for rel, _p, txt in self.files:
-            if os.path.basename(rel) in OWN_OUTPUT:
+            if self._is_own(rel, txt):
                 continue
             for line in txt.splitlines():
                 if rx.search(line):
@@ -1638,7 +1671,8 @@ class Evidence:
                     # A shell-command *listing* is not device output.  A line that
                     # carries its own kernel timestamp/prefix is device output even
                     # if a shell-ish token happens to appear in it.
-                    if q != "prose" and SHELL_LINE.match(line) and not PRINTK_PREFIX.search(line):
+                    if q != "prose" and (SHELL_LINE.match(line) or CONSOLE_FRAME.search(line)) \
+                       and not PRINTK_PREFIX.search(line):
                         q = "command"
                     out.append((q, rel, line.strip()))
         order = {"device": 0, "text": 1, "command": 2, "prose": 3}
@@ -1803,14 +1837,32 @@ def analyze(root, json_out=None, layer_codes=False):
     if not li_txt and li_line:
         li_txt, li_rel = li_line, li_rel
     acc = re.search(r"accepted=1", li_txt)
-    rej = re.search(r"accepted=0|PATH_ASSIGN_SEAT", li_txt)
+    # A candidate the shim actually REJECTED (it had something and turned it down)
+    rej = re.search(r"accepted=0", li_txt)
+    # The shim ran but had NOTHING to decide about: ZERO_DEVICES / direct_devices_seen=0
+    # / added=0 without a PATH_ADD line.  That is a blocked layer, not a drop - the
+    # compositor's discovery step never received a device to accept.  (Found by
+    # grading a real charger-mode capture: the old code crashed on
+    # `added=0` with no `accepted=0` line because it assumed the two always co-occur.)
+    empty_scan = re.search(r"direct_devices_seen=0|added=0|ZERO_DEVICES", li_txt) and not re.search(r"PATH_ADD\b", li_txt)
+
+    def _line(rx):
+        m = re.search(rx, li_txt)
+        return m.group(0)[:200] if m else (li_txt.strip().splitlines() or [""])[-1][:200]
     if acc:
         r4 = Result(4, "libinput", "ok", li_rel or ev.root,
-                    "shim accepted the panel: %s" % (re.search(r"[^\n]*accepted=1[^\n]*", li_txt).group(0)[:200]))
+                    "shim accepted the panel: %s" % _line(r"[^\n]*accepted=1[^\n]*"))
     elif rej:
         r4 = Result(4, "libinput", "drop", li_rel or ev.root,
-                    "shim ran and rejected every candidate: %s"
-                    % (re.search(r"[^\n]*accepted=0[^\n]*", li_txt).group(0)[:200]))
+                    "shim ran and rejected a candidate: %s" % _line(r"[^\n]*accepted=0[^\n]*"))
+    elif empty_scan:
+        r4 = Result(4, "libinput", "blocked", li_rel or ev.root,
+                    "the shim ran but the capability scan found NO direct touch device "
+                    "(nothing for libinput to accept): %s" % _line(r"[^\n]*(direct_devices_seen|added|ZERO_DEVICES)[^\n]*"))
+    elif li_txt.strip():
+        r4 = Result(4, "libinput", "blocked", li_rel or ev.root,
+                    "libinput-path.state is present but records neither an acceptance nor a "
+                    "rejection: %s" % _line(r"[^\n]+"))
     else:
         r4 = Result(4, "libinput", "blocked", ev.root, "no libinput-path.state evidence in this capture")
 
@@ -2036,6 +2088,23 @@ def self_test():
     ck(ev_cl.best(r"accepted=1") is None,
        "evidence: a checklist line mentioning accepted=1 is NOT accepted as libinput evidence")
     ck(ev_rf.best(r"accepted=1") is not None, "evidence: real state-file output IS accepted")
+
+    frame = ("===== grep -c sec_touchscreen /proc/bus/input/devices; echo \"secreg_rc=$?\""
+             "   [rc=1 frame=1eb660d8 sha_ok=yes]")
+    ev_fr = Evidence("<selftest>", [("console-probe.txt", None, frame)])
+    ck(ev_fr.best(r"sec_touchscreen") is None,
+       "evidence: a live-console command frame is not graded as device output")
+    real_out = "[    1.638064] [sec_input] sec_ts_init: Do not load driver due to : lpm 1"
+    ev_ro = Evidence("<selftest>", [("console-probe.txt", None, real_out)])
+    ck(ev_ro.best(r"sec_ts_init") is not None,
+       "evidence: the real kernel line in the same capture IS device output")
+
+    own = ("LAYER=1 NAME=driver STATE=ok EVIDENCE=x DETAIL=registration line\n"
+           "LAYER=6 NAME=wayland STATE=ok EVIDENCE=y DETAIL=wl_touch present in the compositor\n")
+    ev_own = Evidence("<selftest>", [("capture-notes.txt", None, own)])
+    ck(ev_own.best(r"wl_touch") is None,
+       "evidence: a previous VERDICT is never re-graded as evidence (no self-feeding pass)")
+    ck(looks_like_own_verdict(own), "evidence: a verdict file is recognised structurally, whatever it is called")
 
     # 7. the exit-code contract
     ck(sorted(LAYER_EXIT_CODES) == list(range(1, 8)) and len(set(LAYER_EXIT_CODES.values())) == 7,

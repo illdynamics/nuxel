@@ -1,0 +1,37 @@
+# /sys/class/input and /dev/input as listed on the device this boot, plus one
+# real sysfs identity read.  Node names here are DEVICE OUTPUT (data under test),
+# not an assumption made by any tool: every tool in this area selects by capability.
+===== grep -c sec_touchscreen /proc/bus/input/devices; echo "secreg_rc=$?"   [rc=0 frame=1eb660d8 sha_ok=yes]
+    0
+    secreg_rc=1
+===== ls /sys/class/input   [rc=0 frame=acb260dc sha_ok=yes]
+    event0
+    event1
+    event2
+    event3
+    event4
+    event5
+    event6
+    input0
+    input1
+    input2
+    input3
+    input4
+    input5
+    input6
+===== ls -la /dev/input   [rc=0 frame=159d60dd sha_ok=yes]
+    total 0
+    drwxr-xr-x  2 root root    180 Jan  1  1970 .
+    drwxr-xr-x 10 root root   7760 Sep 15 00:00 ..
+    crw-------  1 root root 13, 64 Jan  1  1970 event0
+    crw-------  1 root root 13, 65 Jan  1  1970 event1
+    crw-------  1 root root 13, 66 Jan  1  1970 event2
+    crw-------  1 root root 13, 67 Jan  1  1970 event3
+    crw-------  1 root root 13, 68 Jan  1  1970 event4
+    crw-------  1 root root 13, 69 Jan  1  1970 event5
+    crw-------  1 root root 13, 70 Jan  1  1970 event6
+===== cat /sys/class/input/event1/device/name 2>&1   [rc=0 frame=c10360de sha_ok=yes]
+    gpio_keys
+===== cat /sys/class/input/event1/device/id/vendor /sys/class/input/event1/device/id/product 2>&1   [rc=0 frame=1c5f60df sha_ok=yes]
+    0001
+    0001

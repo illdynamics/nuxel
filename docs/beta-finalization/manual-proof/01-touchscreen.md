@@ -9,6 +9,35 @@ Bounded capture harness: `tools/s10plus/a33/nuxel-touch-capture.sh`
 Layer grader: `tools/s10plus/a33/nuxel-touch-trace.py`
 DOM probe: `tools/s10plus/a33/touch-probe.html`
 Offline evidence: `docs/beta-finalization/touch/OFFLINE-TEST-RESULTS.md`
+Live evidence from this cycle: `docs/beta-finalization/live/evidence/touch-*-p0probe-live-run/`
+
+---
+
+## 0. Current measured state — read this before planning the test
+
+A **bounded, read-only** probe of the running phone over the USB CDC-ACM console was
+taken this cycle (transcript and grading:
+`docs/beta-finalization/live/evidence/touch-20261016T193756+0200-cycl001-p0probe-live-run/`).
+It found the handset **booted in charger / low-power mode**:
+
+| Probe | Result on the device right now |
+|---|---|
+| `/proc/cmdline` | `androidboot.mode=charger`, `charging_mode=0x3030` |
+| `dmesg` | `[    1.638064] [sec_input] sec_ts_init: Do not load driver due to : lpm 1` |
+| `grep -c sec_touchscreen /proc/bus/input/devices` | `0` |
+| `/sys/class/sec/tsp` | absent |
+| `/proc/interrupts` | no `sec_ts` line |
+| `nuxel-touch-arm.service` | `failed` |
+| fb0 panel | `U:1440x3040p-0`, virtual_size `1440,6080`, 32 bpp |
+
+**Consequence: this test cannot pass in the current state.** On a charger-mode boot
+the touch controller is not initialised, so no touch device exists and no finger can
+produce an event. The first step of the procedure below fixes that (unplug + normal
+reboot). Everything the tracer grades for this boot is `blocked` — never `ok` — and
+`FIRST_FAIL_LAYER=1`.
+
+The repository side of this item is `OFFLINE_TESTED`; the finger half is
+`NEEDS_OWNER_TEST` and must never be auto-promoted.
 
 ---
 
@@ -56,17 +85,22 @@ and selects the panel **by capability, never by node number**.
 
 ## 4. Exact action
 
-1. Run the bounded capture and touch the screen while it runs:
+1. Run the bounded capture. It prints the touch sequence to perform *before* it arms:
 
    ```sh
    nuxel-touch-capture.sh --seconds 90
    ```
-2. While it is armed, perform, deliberately and slowly:
-   * **one tap** in the middle of the screen;
-   * **three taps** at top-left, centre and bottom-right (to catch an inverted or
-     swapped axis);
-   * **one vertical swipe** from the bottom third to the top third (≥1 s, slowly);
-   * **one tap on a launcher tile** (e.g. Terminal or Settings) and leave it to open.
+2. While it is armed, perform the sequence deliberately and slowly — the harness
+   prints exactly this list at start-up:
+
+   | # | Action | What it proves |
+   |---|---|---|
+   | 1 | **one tap** in the middle of the screen (~0.3 s) | down/up and a plausible coordinate |
+   | 2 | **three taps** at top-left, centre, bottom-right | no swapped or inverted axis |
+   | 3 | **one vertical swipe**, bottom third → top third, slowly (≥1 s) | move delivery, not just taps |
+   | 4 | **two fingers down together** for ~1 s, then lift both | multi-contact / slots + tracking ids |
+   | 5 | **open Settings, then return Home, then open Terminal, then scroll the launcher, then select an app** | the completion definition for the whole touch mission |
+   | 6 | **type three keys on the on-screen keyboard** in a text field | the keyboard's own hit testing on the same pipeline |
 3. If the harness reports that layer 7 has no evidence, open the instrumented page
    once and repeat the taps in it:
 
@@ -93,6 +127,15 @@ and selects the panel **by capability, never by node number**.
 * Coordinates track your finger: top-left taps give small x/y, bottom-right taps give
   large x/y, and the swipe x stays roughly constant while y changes monotonically.
 * The launcher tile you tapped opens, and the probe page draws a ring under your finger.
+* `<BUNDLE>/events.jsonl` exists and contains one JSON record per input event with the
+  kernel timeval (`ts`/`iso`) plus one `point` record per frame carrying both the raw
+  and the mapped coordinates; `<BUNDLE>/coordinate-map.json` records the panel
+  (1440x3040 from `/sys/class/graphics/fb0/modes`), the device range and its source,
+  the output scale/transform, and `validation.verdict`.
+* **Completion definition for the whole touch mission:** a real finger can open
+  Settings, return Home, open Terminal, scroll the launcher, select an app, and use
+  the on-screen keyboard. Steps 5 and 6 above are that definition; anything less is
+  not a finished touch story even if the machine gate passes.
 
 ## 6. Failure symptoms (and what each one means)
 
@@ -123,8 +166,24 @@ dmesg | grep -i -E 'sec_ts|sec_touchscreen|tsp_|is_lpm' | tail -40
 grep -A5 sec_touchscreen /proc/bus/input/devices
 grep -i -E 'sec_ts|4-0048' /proc/interrupts
 grep -a 'accepted=1' /run/nuxel-libinput-path.state | tail -3
-p=$(systemctl show -p MainPID --value nuxel-wayland); ls -l /proc/$p/fd | grep -c input
+p=$(systemctl show -p MainPID --value nuxel-wayland); find /proc/"$p"/fd -maxdepth 1 | grep -c input
 grep -a NUXEL_INPUT /run/nuxel-home.state | tail -10
+```
+
+The same diagnostics as machine-runnable modes (no finger needed, all read-only):
+
+```sh
+# the tool's own logic, on any host (no phone, no /dev/input, no root)
+python3 tools/s10plus/a33/nuxel-touch-trace.py --self-test
+
+# a bounded owner-tap window with the per-event JSONL stream, if you want the
+# capture without the harness wrapper (90 s, always bounded)
+python3 tools/s10plus/a33/nuxel-touch-trace.py --capture 90 --out /var/lib/nuxel/touch-capture/tap
+
+# grade anything, and land a capture in the repository archive
+python3 tools/s10plus/a33/nuxel-touch-trace.py --analyze /var/lib/nuxel/touch-capture/tap
+python3 tools/s10plus/a33/nuxel-touch-trace.py --archive /var/lib/nuxel/touch-capture/tap \
+        --archive-dir docs/beta-finalization/live/evidence
 ```
 
 Log paths:
@@ -140,6 +199,10 @@ Log paths:
 | `<BUNDLE>/compositor-fds.txt` | the compositor's open `/dev/input` fds |
 | `<BUNDLE>/wayland-seat.txt` | bounded journal + seat/focus + `wl_touch` |
 | `<BUNDLE>/dom.txt` | DOM lines from `touch-probe.html` and the launcher's `NUXEL_INPUT` |
+| `<BUNDLE>/events.jsonl` | one JSON record per input event: kernel timestamp, decoded kind, raw + mapped coordinates |
+| `<BUNDLE>/coordinate-map.json` | panel geometry, device range and its source, output scale/transform, and the validation verdict |
+| `<BUNDLE>/sysfs-input.txt` | the `/sys/class/input/*/device` capability scan (identity + capability bitmaps, no node-number assumption) |
+| `<BUNDLE>/panel-geometry.txt` | the framebuffer geometry the coordinate map was built from |
 | `<BUNDLE>/diagnostics.txt`, `<BUNDLE>/bootmode.txt` | the human-readable snapshot above |
 | `/run/nuxel-touch-dom.log` | the tracer's bounded DOM collector |
 | `/run/nuxel-home.state` | the launcher's own relayed DOM events |
@@ -164,9 +227,51 @@ Offline regression for the tooling itself:
 * `CAPTURE_GATE=PASS` alone is **not** the item passing: the item passes when the
   owner confirms the UI acted on the touch.
 
+## 8a. Log evidence vs human proof (which is which)
+
+**Already has log/machine evidence (this cycle, reproducible offline):**
+
+| Item | Evidence |
+|---|---|
+| the tool's own logic (ioctl numbers, decoder, bitmap order, coordinate mapping, gate) | `nuxel-touch-trace.py --self-test` → 40/40 assertions |
+| the tracer names the first lossy layer and never promotes absence | `tests/test-touch-trace.py` |
+| the panel is selected by capability, never by a node number | `tests/test-touch-trace.py` (synthetic `/sys/class/input`), `tests/test-no-eventn-literal.py` (27 files) |
+| the coordinate map honours the 1440x3040 DECON panel and the 0..4095 device range | `tests/test-touch-trace.py` + `coordinate-map.json` |
+| the capture harness is bounded, takes an owner-test lock and cannot litter the repo | `tests/test-capture-harness.py` (33/33) |
+| the shim is preloaded the way the A32 baseline preloads it | `tests/test-libinput-shim-invocation.py` |
+| a charger-mode boot is detected and explained | `tests/test-bootmode-guard.py`; live capture `touch-*-p0probe-live-run/` |
+| the shim survives a zero-device boot without crashing the compositor | live capture: `PATH_ASSIGN_SEAT … direct_devices_seen=0 added=0`, phoc still active |
+| the kernel's own `-ENODEV` line and `/proc/cmdline` on the device right now | live capture `boot-driver.txt`, `console-probe.txt` |
+
+**Requires human proof — no script can produce it:**
+
+| Item | Why a human is required |
+|---|---|
+| a real contact producing down/up/swipe/multi-contact | only a finger can create a touch contact |
+| coordinates tracking the finger (not mirrored/rotated/offset) | needs an eye comparing screen position with where the finger landed |
+| the UI *responding*: Settings opens, Home returns, Terminal opens, launcher scrolls, an app starts | a script sees DOM events, not a usable interface |
+| the on-screen keyboard accepting typed keys | needs a human reading what appeared in the field |
+| the DOM probe ring appearing under the finger | needs eyes on the screen at that moment |
+
+Anything in the second table is `NEEDS_OWNER_TEST` until a human reports it, and it is
+never auto-promoted to `VERIFIED_ON_S10PLUS` by a script run — no matter how green the
+gate is.
+
 ## Current automatic evidence (repository, this build group)
 
-* `./tools/s10plus/a33/tests/run-touch-tests.sh` → **149 PASS, 0 FAIL**; `TOUCH-TESTS: ALL PASS`.
+* `./tools/s10plus/a33/tests/run-touch-tests.sh` → **ALL PASS**; `TOUCH-TESTS: ALL PASS`
+  (counts per suite in `docs/beta-finalization/touch/OFFLINE-TEST-RESULTS.md` §1).
+* `python3 tools/s10plus/a33/nuxel-touch-trace.py --self-test` → **SELF-TEST: PASS (40/40
+  assertions)**: ioctl request numbers, the 24-byte `struct input_event`, the decoder,
+  the printed-bitmap word order (cross-checked against the A32 device-validated
+  decoder), the raw→panel→output mapping against 1440x3040, the JSONL records, the
+  "a checklist line is not evidence" rule, the "a previous verdict is not evidence"
+  rule, and the exit-code contract.
+* **Live capture this cycle** (`touch-20261016T193756+0200-cycl001-p0probe-live-run/`):
+  graded `FIRST_FAIL_LAYER=1 NAME=driver STATE=blocked`, cause cited from the device's
+  own `/proc/cmdline` (`androidboot.mode=charger`) and `dmesg`
+  (`sec_ts_init: Do not load driver due to : lpm 1`). Every other layer is `blocked`,
+  none is `ok`.
   * the owner-test harness itself is covered (`tests/test-capture-harness.py`, 33/33):
     `--commands` arms nothing, `CAPTURE_GATE=PASS` can only come from `gate.json`
     `pass:true`, an empty capture is `FAIL` + NEEDS_OWNER_TEST, and the bundle can

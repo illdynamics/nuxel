@@ -24,7 +24,7 @@ sec_ts (S6SY761, i2c 4-0048)          kernel driver
 
 | File | What it is |
 |---|---|
-| `nuxel-touch-trace.py` | The end-to-end tracer. `--live` runs a **bounded** capture session; `--analyze DIR` grades a bundle *or any archived capture directory*; `--stage-probe` installs the DOM page. Prints one `LAYER=<n> STATE=<ok\|drop\|blocked> EVIDENCE=<path>` line per layer plus `FIRST_FAIL_LAYER=`. |
+| `nuxel-touch-trace.py` | The end-to-end tracer. `--live` runs a **bounded** capture session; `--capture SECONDS` runs the bounded owner-tap window and writes the per-event JSONL stream (`events.jsonl`) plus `coordinate-map.json`; `--analyze DIR` grades a bundle *or any archived capture directory*; `--stage-probe` installs the DOM page; `--self-test` asserts the tool's own logic **on a host** (no phone, no `/dev/input`, no root); `--archive DIR` copies a finished bundle into the repository archive. Prints one `LAYER=<n> STATE=<ok\|drop\|blocked> EVIDENCE=<path>` line per layer, one `LAYER_EXIT=<n> … EXIT=<10+n>` line per layer, and `FIRST_FAIL_LAYER=` (with `--layer-exit-codes` the process status becomes `10 + first lossy layer`). |
 | `touch-probe.html` | Layer 7: the self-contained instrumented page that logs `touchstart x=… y=…` and POSTs to the tracer's bounded collector. |
 | `nuxel-bootmode-guard.py` | Classifies a charger/LPM boot (the state in which `sec_ts` does not exist at all), publishes `/run/nuxel-bootmode.json` for the launcher, and can request **one gated normal reboot**. Never a blind reboot; never a kernel/bootloader change. |
 | `nuxel-touch-capture.sh` | The owner-test harness: takes an owner-test lock, runs the bounded tracer with `--expect-finger`, adds the diagnostics, applies the machine gate and prints `CAPTURE_GATE=PASS\|FAIL\|BLOCKED`. Verdict is always `NEEDS_OWNER_TEST` unless a human confirms the UI. |
@@ -34,6 +34,25 @@ sec_ts (S6SY761, i2c 4-0048)          kernel driver
 | `tests/` | All offline tests (see below). `run-touch-tests.sh` runs the whole set. |
 | `tests/fixtures/` | Synthetic sysfs/uevent trees for the shim, and cmdline/dmesg captures for the boot-mode guard. |
 | `tests/test-capture-harness.py` | Covers `nuxel-touch-capture.sh`: `--commands` arms nothing, `CAPTURE_GATE=PASS` can only come from `gate.json`, and the bundle is never written inside the repository. |
+| `tests/test-libinput-shim-invocation.py` | Pins the deployment chain the A32 baseline uses, so a hardened shim that nothing preloads cannot pass: `LD_PRELOAD=/usr/lib/nuxel/libnuxel-libinput-path.so` on `nuxel-wayland.service`, the build flags of the A31/A32/A33 build scripts, A31/A33 source identity, the single-client tracked table, `ZERO_DEVICES` on absence, and the recorded deployed `.so` SHA-256. |
+
+### The exact invocation the A32 baseline uses
+
+The interposer is preloaded by systemd on the compositor unit — not by a shell wrapper:
+
+```ini
+# services/nuxel-session/systemd/nuxel-wayland.service
+Environment=WLR_BACKENDS=headless,libinput
+Environment=LIBSEAT_BACKEND=noop
+Environment=WLR_LIBINPUT_NO_DEVICES=1
+Environment=LD_PRELOAD=/usr/lib/nuxel/libnuxel-libinput-path.so
+```
+
+`tests/test-libinput-shim-invocation.py` asserts that line and its companions verbatim,
+so bg-02/bg-10 parity checks can verify the chain mechanically. Rollback of a deployed
+object is "restore the recorded SHA-256"; the deployed hash is recorded in
+`docs/s10plus-autonomous-boot-repair/BETA-FINALIZER/09-LIVE-DEPLOYMENTS.md` and is
+echoed by that test.
 
 ## Run the tests (no phone, no root, no /dev/input)
 
@@ -48,11 +67,21 @@ sec_ts (S6SY761, i2c 4-0048)          kernel driver
 # 1. what does the pipeline look like right now?
 python3 /usr/libexec/nuxel/nuxel-touch-trace.py --live --seconds 20 --out /var/lib/nuxel/touch-trace
 
-# 2. the owner test (finger on the glass, 90 s window)
+# 2. the owner test (finger on the glass, 90 s window, per-event JSONL)
 nuxel-touch-capture.sh --seconds 90
 
 # 3. grade a bundle, or any archived capture directory, offline
 python3 /usr/libexec/nuxel/nuxel-touch-trace.py --analyze /var/lib/nuxel/touch-trace
+
+# 4. assert this tool's own logic anywhere (no phone, no /dev/input, no root)
+python3 tools/s10plus/a33/nuxel-touch-trace.py --self-test
+```
+
+Land a finished capture in the repository instead of leaving it on the phone:
+
+```sh
+python3 tools/s10plus/a33/nuxel-touch-trace.py --archive /var/lib/nuxel/touch-capture/tap \
+        --archive-dir docs/beta-finalization/live/evidence      # -> touch-<ts>/
 ```
 
 ## Hard rules
@@ -71,6 +100,13 @@ python3 /usr/libexec/nuxel/nuxel-touch-trace.py --analyze /var/lib/nuxel/touch-t
   hard block rather than a silent relocation.
 * **A passing script is not a finger test.** The harness verdict is
   `NEEDS_OWNER_TEST`; only a human confirming the on-screen result upgrades it.
+* **The tool never grades its own output.** A previous verdict inside a bundle is
+  recognised structurally and excluded from evidence, so a capture cannot feed itself
+  into a pass (a real bug a live charger-mode capture exposed — see §6c of
+  `docs/beta-finalization/touch/PIPELINE-TRACE.md`).
+* **A charger-mode boot is never a touch measurement.** The live probe from this cycle
+  is archived under `docs/beta-finalization/live/evidence/touch-*-p0probe-live-run/`
+  and graded `FIRST_FAIL_LAYER=1`; read it before reporting anything about touch.
 
 See `docs/beta-finalization/touch/` for the pipeline trace, the charger-mode root
 cause, the offline test results and `docs/beta-finalization/manual-proof/01-touchscreen.md`

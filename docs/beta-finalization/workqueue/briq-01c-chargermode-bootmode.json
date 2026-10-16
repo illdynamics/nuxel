@@ -44,6 +44,74 @@
       "revision": 1,
       "at": "2026-10-16T16:07:13+02:00",
       "by": "construqtor/bg-00-preflight"
+    },
+    {
+      "component": "bg-01-touch-pipeline",
+      "component_title": "Priority 0 - Touchscreen & Reliable Interactive Input",
+      "priority": 1,
+      "risk": "low",
+      "rollback": "git revert the commit(s) touching this task's expected files; the change is repository-only and alters no device state. The live probe was read-only (no partition, bootloader, DTB, modem, EFS write; no reboot; no arm; no /dev/fb0 open)",
+      "source": "construqtor/bg-01-touch-pipeline cycle-001 resume",
+      "by": "construqtor/bg-01-touch-pipeline",
+      "at": "2026-10-16T19:43:49+02:00",
+      "id": "briq-01c-chargermode-bootmode",
+      "title": "charger-mode / lpcharge root cause and non-flash mitigation",
+      "state": "implemented",
+      "revision": 2,
+      "dependencies": [
+        "briq-01a-pipeline-trace-tool"
+      ],
+      "expected_files": [
+        "docs/beta-finalization/touch/CHARGER-MODE-ROOTCAUSE.md",
+        "tools/s10plus/a33/nuxel-bootmode-guard.py",
+        "configs/nuxel/bootmode/"
+      ],
+      "intended_changes": [
+        "configs/nuxel/bootmode/ (new): the guard's own configuration subpath - bootmode-guard.json (same gates, install_path /etc/nuxel/bootmode/bootmode-guard.json, legacy path recorded) and README.md (gates table, search order, the no-recovery/no-download statement, the BLOCKED_KERNEL kernel-fix note)",
+        "tools/s10plus/a33/nuxel-bootmode-guard.py: CONFIG_PATHS now searches configs/nuxel/bootmode/ FIRST (then the legacy touch/ paths); status prints CONFIG=<file used>, SETTINGS_STATE=/run/nuxel-bootmode.json and one machine-readable NX_STATUS line for the live console; TOUCH_AVAILABLE is tri-state so an unclassifiable boot is never reported as touch-available",
+        "docs/beta-finalization/touch/CHARGER-MODE-ROOTCAUSE.md: section 1a with the live re-measurement (verbatim probes), the config-subpath note, the tri-state rule, and the json contract pointers",
+        "configs/nuxel/touch/README.md: points at the canonical subpath, keeps the legacy copy for the generated deploy plan",
+        "tools/s10plus/a33/tests/test-bootmode-guard.py: 53 assertions incl. the subpath, the field-by-field agreement between the two configs, NX_STATUS, and TOUCH_AVAILABLE=unknown"
+      ],
+      "evidence": [
+        {
+          "kind": "on_device",
+          "command": "nuxel-live.sh --dev /dev/ttyACM0 --batch <read-only probe>",
+          "path": "docs/beta-finalization/live/evidence/touch-20261016T193756+0200-cycl001-p0probe-live-run/console-probe.txt",
+          "result": "/proc/cmdline: androidboot.mode=charger, charging_mode=0x3030; dmesg: [    1.638064] [sec_input] sec_ts_init: Do not load driver due to : lpm 1; grep -c sec_touchscreen /proc/bus/input/devices = 0; /sys/class/sec/tsp absent; no sec_ts IRQ line; /sys/class/input has no panel; nuxel-touch-arm.service failed; nuxel-libinput-path.state: direct_devices_seen=0 added=0 db_seeded=0 with phoc still running",
+          "at": "2026-10-16T19:43:49+02:00"
+        },
+        {
+          "kind": "on_device",
+          "command": "nuxel-touch-trace.py --analyze <live capture>",
+          "path": "docs/beta-finalization/live/evidence/touch-20261016T193756+0200-cycl001-p0probe-live-run/verdict.txt",
+          "result": "FIRST_FAIL_LAYER=1 NAME=driver STATE=blocked; layers 2-7 blocked; GATE=fail - the device is in charger/LPM mode, so no touch evidence exists on this boot",
+          "at": "2026-10-16T19:43:49+02:00"
+        },
+        {
+          "kind": "offline",
+          "command": "python3 tools/s10plus/a33/tests/test-bootmode-guard.py",
+          "result": "53/53 PASS - LPM markers from four independent sources, the reboot gate suppressed by each of five gates + power safety, the new subpath preferred, both configs agreeing on every gate field, TOUCH_AVAILABLE=unknown for an unclassified boot",
+          "path": "tools/s10plus/a33/tests/test-bootmode-guard.py",
+          "at": "2026-10-16T19:43:49+02:00"
+        },
+        {
+          "kind": "observation",
+          "path": "tools/s10plus/a33/nuxel-bootmode-guard.py",
+          "result": "sha256 0019ce964d7499f25df13fbbb2a6c07371139c661780223cae7e17f83ec6fce0",
+          "at": "2026-10-16T19:43:49+02:00"
+        }
+      ],
+      "tests": [
+        "L1: JSON validity of both guard configs; README statements asserted programmatically",
+        "L2: the reboot decision is a pure function with every branch asserted (no request / no acknowledgement / config deny / owner-test lock / cooldown / uptime floor / unknown charger / all pass / normal boot)",
+        "L5 live: the charger/LPM state was read from the real device this cycle and graded by the tracer",
+        "offline: python3 nuxel-bootmode-guard.py --offline-fixture tests/fixtures/bootmode/lpm-boot --no-write -> CHARGER_LPM, exit 10"
+      ],
+      "verdict": "OFFLINE_TESTED",
+      "offline_ceiling": "BLOCKED_KERNEL",
+      "owner_action": "owner must unplug the charger and perform one NORMAL reboot before any touch test; the guarded automatic reboot path stays disabled behind allow_reboot=false plus the --i-understand-this-reboots-the-phone acknowledgement",
+      "note": "Resumed from the rev-1 seed. The root cause is now re-measured LIVE on the unit (the handset is in charger/LPM mode right now) rather than only quoted from earlier cycles, the guard configuration has its own subpath as the briq asks, and the status output names the config used plus a machine-readable line for the live console. The kernel-level fix remains BLOCKED_KERNEL / BOOT_UPDATE_REQUIRED / NOT_DEPLOYED; no userspace code pretends to resurrect the driver."
     }
   ]
 }

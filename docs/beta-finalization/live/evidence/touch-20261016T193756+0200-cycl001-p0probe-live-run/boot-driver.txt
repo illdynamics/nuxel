@@ -1,0 +1,27 @@
+# console /dev/ttyACM0
+# shared lock /tmp/nuxel-live._dev_ttyACM0.lock is not usable by uid 0 ([Errno 13] Permission denied: '/tmp/nuxel-live._dev_ttyACM0.lock') — using private lock /tmp/nuxel-live._dev_ttyACM0.0.lock
+===== tr ' ' '\n' < /proc/cmdline | grep -E 'androidboot.mode|lpcharge|charging_mode'; echo "cmdline_rc=$?"   [rc=0 frame=4eee60d7 sha_ok=yes]
+    charging_mode=0x3030
+    androidboot.mode=charger
+    cmdline_rc=0
+===== grep -c sec_touchscreen /proc/bus/input/devices; echo "secreg_rc=$?"   [rc=0 frame=1eb660d8 sha_ok=yes]
+    0
+    secreg_rc=1
+===== ls -d /sys/class/sec/tsp 2>&1   [rc=2 frame=5c8e60d9 sha_ok=yes]
+    ls: cannot access '/sys/class/sec/tsp': No such file or directory
+===== grep -i -E 'sec_ts|4-0048' /proc/interrupts | head -5; echo "irq_rc=$?"   [rc=0 frame=b8d060da sha_ok=yes]
+    irq_rc=0
+===== dmesg | grep -i -E 'sec_ts_init|Low power charging' | tail -4   [rc=0 frame=627460db sha_ok=yes]
+    [    1.638064] [sec_input] sec_ts_init: Do not load driver due to : lpm 1
+===== ls /sys/class/input   [rc=0 frame=acb260dc sha_ok=yes]
+    event0
+    event1
+    event2
+    event3
+
+# dmesg (the P0 root cause, this boot):
+[    1.638064] [sec_input] sec_ts_init: Do not load driver due to : lpm 1
+
+# /proc/cmdline (the gate that produced it):
+#   charging_mode=0x3030
+#   androidboot.mode=charger

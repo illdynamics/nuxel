@@ -136,15 +136,15 @@ deterministic.  Prose outside the markers is edited by hand and never clobbered 
 | Metric | Value |
 |--------|-------|
 | Tasks | **54** (one per briQ in the plan, bg-00 … bg-12) |
-| Revisions (append-only) | 73 |
-| Evidence entries | 127 |
+| Revisions (append-only) | 77 |
+| Evidence entries | 141 |
 | Dependencies | validated acyclic; referential integrity enforced |
 
 | State | Count | Tasks |
 |-------|------:|-------|
-| `pending` | 21 | `01d-touch-owner-test`, `03d-headphones-usbc`, `03e-buttons-gestures`, `05d-security-auditor`, `06a-core-app-inventory`, `08b-vibration-haptics`, `08c-flashlight-led`, `08d-bluetooth`, `08e-nfc`, `08f-gps-gnss`, `08g-sensors`, `08h-camera`, `08i-sim-microsd-modem`, `09a-test-strategy-soak`, `09b-reboot-rollback-policy`, `10a-live-reachability-preflight`, `10b-live-deploy-userspace`, `10c-live-reboot-and-verify`, `11a-vm-launcher-parity`, `12a-engineering-report`, `12b-manual-proof-checklist` |
-| `in_progress` | 24 | `01a-pipeline-trace-tool`, `01b-libinput-path-shim`, `01c-chargermode-bootmode`, `03a-wifi`, `03b-time-rtc-timesync`, `03c-audio-speaker`, `04a-fedora-packages`, `04b-service-definitions`, `04c-app-infrastructure`, `05a-permission-manager`, `05b-firewall-app`, `05c-vpn-tor-remote`, `06b-missing-core-apps`, `06c-phone-apps`, `06d-settings-and-keyboard`, `07a-nuxtore`, `07b-devmgmt-cleanup-root`, `07c-media-authenticator-downloader`, `07d-snekbyte`, `07e-live-console-app`, `07f-penguinterface`, `08a-power-management`, `09c-release-deliverables`, `11b-vm-services-verify` |
-| `implemented` | 9 | `00a-repo-preflight`, `00b-archive-discovery`, `00c-workqueue-ledger`, `00d-baseline-protection`, `02a-readiness-handoff`, `02b-verbose-boot-setting`, `02c-fb-colour-conversion`, `02d-launcher-parity`, `02e-safe-zones-statusbar` |
+| `pending` | 20 | `03d-headphones-usbc`, `03e-buttons-gestures`, `05d-security-auditor`, `06a-core-app-inventory`, `08b-vibration-haptics`, `08c-flashlight-led`, `08d-bluetooth`, `08e-nfc`, `08f-gps-gnss`, `08g-sensors`, `08h-camera`, `08i-sim-microsd-modem`, `09a-test-strategy-soak`, `09b-reboot-rollback-policy`, `10a-live-reachability-preflight`, `10b-live-deploy-userspace`, `10c-live-reboot-and-verify`, `11a-vm-launcher-parity`, `12a-engineering-report`, `12b-manual-proof-checklist` |
+| `in_progress` | 21 | `03a-wifi`, `03b-time-rtc-timesync`, `03c-audio-speaker`, `04a-fedora-packages`, `04b-service-definitions`, `04c-app-infrastructure`, `05a-permission-manager`, `05b-firewall-app`, `05c-vpn-tor-remote`, `06b-missing-core-apps`, `06c-phone-apps`, `06d-settings-and-keyboard`, `07a-nuxtore`, `07b-devmgmt-cleanup-root`, `07c-media-authenticator-downloader`, `07d-snekbyte`, `07e-live-console-app`, `07f-penguinterface`, `08a-power-management`, `09c-release-deliverables`, `11b-vm-services-verify` |
+| `implemented` | 13 | `00a-repo-preflight`, `00b-archive-discovery`, `00c-workqueue-ledger`, `00d-baseline-protection`, `01a-pipeline-trace-tool`, `01b-libinput-path-shim`, `01c-chargermode-bootmode`, `01d-touch-owner-test`, `02a-readiness-handoff`, `02b-verbose-boot-setting`, `02c-fb-colour-conversion`, `02d-launcher-parity`, `02e-safe-zones-statusbar` |
 | `blocked` | 0 | — |
 | `deferred` | 0 | — |
 | `reverted` | 0 | — |
@@ -152,12 +152,12 @@ deterministic.  Prose outside the markers is edited by hand and never clobbered 
 | Verdict | Count | Tasks |
 |---------|------:|-------|
 | `VERIFIED_ON_S10PLUS` | 1 | `00a-repo-preflight` |
-| `OFFLINE_TESTED` | 8 | `00b-archive-discovery`, `00c-workqueue-ledger`, `00d-baseline-protection`, `02a-readiness-handoff`, `02b-verbose-boot-setting`, `02c-fb-colour-conversion`, `02d-launcher-parity`, `02e-safe-zones-statusbar` |
-| *(no verdict recorded yet)* | 45 | `01a-pipeline-trace-tool`, `01b-libinput-path-shim`, `01c-chargermode-bootmode`, `01d-touch-owner-test`, `03a-wifi`, `03b-time-rtc-timesync`, `03c-audio-speaker`, `03d-headphones-usbc`, `03e-buttons-gestures`, `04a-fedora-packages`, `04b-service-definitions`, `04c-app-infrastructure`, `05a-permission-manager`, `05b-firewall-app`, `05c-vpn-tor-remote`, `05d-security-auditor`, `06a-core-app-inventory`, `06b-missing-core-apps`, `06c-phone-apps`, `06d-settings-and-keyboard`, `07a-nuxtore`, `07b-devmgmt-cleanup-root`, `07c-media-authenticator-downloader`, `07d-snekbyte`, `07e-live-console-app`, `07f-penguinterface`, `08a-power-management`, `08b-vibration-haptics`, `08c-flashlight-led`, `08d-bluetooth`, `08e-nfc`, `08f-gps-gnss`, `08g-sensors`, `08h-camera`, `08i-sim-microsd-modem`, `09a-test-strategy-soak`, `09b-reboot-rollback-policy`, `09c-release-deliverables`, `10a-live-reachability-preflight`, `10b-live-deploy-userspace`, `10c-live-reboot-and-verify`, `11a-vm-launcher-parity`, `11b-vm-services-verify`, `12a-engineering-report`, `12b-manual-proof-checklist` |
+| `OFFLINE_TESTED` | 12 | `00b-archive-discovery`, `00c-workqueue-ledger`, `00d-baseline-protection`, `01a-pipeline-trace-tool`, `01b-libinput-path-shim`, `01c-chargermode-bootmode`, `01d-touch-owner-test`, `02a-readiness-handoff`, `02b-verbose-boot-setting`, `02c-fb-colour-conversion`, `02d-launcher-parity`, `02e-safe-zones-statusbar` |
+| *(no verdict recorded yet)* | 41 | `03a-wifi`, `03b-time-rtc-timesync`, `03c-audio-speaker`, `03d-headphones-usbc`, `03e-buttons-gestures`, `04a-fedora-packages`, `04b-service-definitions`, `04c-app-infrastructure`, `05a-permission-manager`, `05b-firewall-app`, `05c-vpn-tor-remote`, `05d-security-auditor`, `06a-core-app-inventory`, `06b-missing-core-apps`, `06c-phone-apps`, `06d-settings-and-keyboard`, `07a-nuxtore`, `07b-devmgmt-cleanup-root`, `07c-media-authenticator-downloader`, `07d-snekbyte`, `07e-live-console-app`, `07f-penguinterface`, `08a-power-management`, `08b-vibration-haptics`, `08c-flashlight-led`, `08d-bluetooth`, `08e-nfc`, `08f-gps-gnss`, `08g-sensors`, `08h-camera`, `08i-sim-microsd-modem`, `09a-test-strategy-soak`, `09b-reboot-rollback-policy`, `09c-release-deliverables`, `10a-live-reachability-preflight`, `10b-live-deploy-userspace`, `10c-live-reboot-and-verify`, `11a-vm-launcher-parity`, `11b-vm-services-verify`, `12a-engineering-report`, `12b-manual-proof-checklist` |
 
-* `VERIFIED_ON_S10PLUS` claims: **1** — tasks carrying an `on_device` evidence entry: **1** (`00a-repo-preflight`)
-* Open tasks (resumable remainder): **45** — see the execution order below.
-* Dependency-satisfied (ready to start, or already finished): **18** — `00a-repo-preflight`, `00b-archive-discovery`, `00c-workqueue-ledger`, `00d-baseline-protection`, `01a-pipeline-trace-tool`, `01b-libinput-path-shim`, `10a-live-reachability-preflight`, `02a-readiness-handoff`, `02b-verbose-boot-setting`, `02c-fb-colour-conversion`, `02d-launcher-parity`, `02e-safe-zones-statusbar`, `03a-wifi`, `03b-time-rtc-timesync`, `03c-audio-speaker`, `03e-buttons-gestures`, `04a-fedora-packages`, `09a-test-strategy-soak`
+* `VERIFIED_ON_S10PLUS` claims: **1** — tasks carrying an `on_device` evidence entry: **3** (`00a-repo-preflight`, `01a-pipeline-trace-tool`, `01c-chargermode-bootmode`)
+* Open tasks (resumable remainder): **41** — see the execution order below.
+* Dependency-satisfied (ready to start, or already finished): **20** — `00a-repo-preflight`, `00b-archive-discovery`, `00c-workqueue-ledger`, `00d-baseline-protection`, `01a-pipeline-trace-tool`, `01b-libinput-path-shim`, `01c-chargermode-bootmode`, `01d-touch-owner-test`, `10a-live-reachability-preflight`, `02a-readiness-handoff`, `02b-verbose-boot-setting`, `02c-fb-colour-conversion`, `02d-launcher-parity`, `02e-safe-zones-statusbar`, `03a-wifi`, `03b-time-rtc-timesync`, `03c-audio-speaker`, `03e-buttons-gestures`, `04a-fedora-packages`, `09a-test-strategy-soak`
 * Marked owner-only (`offline_ceiling`/verdict = `NEEDS_OWNER_TEST`): **14** — `01d-touch-owner-test`, `02a-readiness-handoff`, `02b-verbose-boot-setting`, `02c-fb-colour-conversion`, `03d-headphones-usbc`, `08b-vibration-haptics`, `08c-flashlight-led`, `08d-bluetooth`, `08e-nfc`, `08f-gps-gnss`, `08g-sensors`, `08h-camera`, `08i-sim-microsd-modem`, `10b-live-deploy-userspace`
 <!-- END GENERATED: ledger-state -->
 
@@ -181,51 +181,47 @@ the dependency verdicts that are still `null` or unsatisfied.
 
 | # | task | pri | component | state | verdict | ready / waiting on |
 |--:|------|----:|-----------|-------|---------|--------------------|
-| 1 | `01a-pipeline-trace-tool` | 1 | bg-01-touch-pipeline | in_progress | — | ready |
-| 2 | `01b-libinput-path-shim` | 1 | bg-01-touch-pipeline | in_progress | — | ready |
-| 3 | `01c-chargermode-bootmode` | 1 | bg-01-touch-pipeline | in_progress | — | waiting on `01a-pipeline-trace-tool` |
-| 4 | `01d-touch-owner-test` | 1 | bg-01-touch-pipeline | pending | — | waiting on `01a-pipeline-trace-tool` |
-| 5 | `10a-live-reachability-preflight` | 1 | bg-10-live-phone | pending | — | ready |
-| 6 | `03e-buttons-gestures` | 3 | bg-03-connectivity-time-audio-buttons | pending | — | ready |
-| 7 | `03a-wifi` | 3 | bg-03-connectivity-time-audio-buttons | in_progress | — | ready |
-| 8 | `03b-time-rtc-timesync` | 3 | bg-03-connectivity-time-audio-buttons | in_progress | — | ready |
-| 9 | `03c-audio-speaker` | 3 | bg-03-connectivity-time-audio-buttons | in_progress | — | ready |
-| 10 | `04a-fedora-packages` | 4 | bg-04-userspace-completion | in_progress | — | ready |
-| 11 | `08a-power-management` | 7 | bg-08-hardware-subsystems | in_progress | — | waiting on `03e-buttons-gestures` |
-| 12 | `09a-test-strategy-soak` | 8 | bg-09-integration-release | pending | — | ready |
-| 13 | `03d-headphones-usbc` | 3 | bg-03-connectivity-time-audio-buttons | pending | — | waiting on `03c-audio-speaker` |
-| 14 | `04b-service-definitions` | 4 | bg-04-userspace-completion | in_progress | — | waiting on `04a-fedora-packages` |
-| 15 | `08b-vibration-haptics` | 7 | bg-08-hardware-subsystems | pending | — | waiting on `08a-power-management` |
-| 16 | `08c-flashlight-led` | 7 | bg-08-hardware-subsystems | pending | — | waiting on `08a-power-management` |
-| 17 | `08d-bluetooth` | 7 | bg-08-hardware-subsystems | pending | — | waiting on `08a-power-management` |
-| 18 | `08e-nfc` | 7 | bg-08-hardware-subsystems | pending | — | waiting on `08a-power-management` |
-| 19 | `08f-gps-gnss` | 7 | bg-08-hardware-subsystems | pending | — | waiting on `08a-power-management` |
-| 20 | `08g-sensors` | 7 | bg-08-hardware-subsystems | pending | — | waiting on `08a-power-management` |
-| 21 | `08h-camera` | 7 | bg-08-hardware-subsystems | pending | — | waiting on `08a-power-management` |
-| 22 | `08i-sim-microsd-modem` | 7 | bg-08-hardware-subsystems | pending | — | waiting on `08a-power-management` |
-| 23 | `09b-reboot-rollback-policy` | 8 | bg-09-integration-release | pending | — | waiting on `09a-test-strategy-soak` |
-| 24 | `10b-live-deploy-userspace` | 1 | bg-10-live-phone | pending | — | waiting on `10a-live-reachability-preflight`, `01b-libinput-path-shim`, `09b-reboot-rollback-policy` |
-| 25 | `04c-app-infrastructure` | 4 | bg-04-userspace-completion | in_progress | — | waiting on `04b-service-definitions` |
-| 26 | `05b-firewall-app` | 5 | bg-05-security-permissions | in_progress | — | waiting on `04b-service-definitions` |
-| 27 | `09c-release-deliverables` | 8 | bg-09-integration-release | in_progress | — | waiting on `09b-reboot-rollback-policy` |
-| 28 | `10c-live-reboot-and-verify` | 1 | bg-10-live-phone | pending | — | waiting on `10b-live-deploy-userspace`, `01a-pipeline-trace-tool`, `03c-audio-speaker` |
-| 29 | `11b-vm-services-verify` | 2 | bg-11-vm-parity | in_progress | — | waiting on `04b-service-definitions`, `04c-app-infrastructure` |
-| 30 | `05a-permission-manager` | 5 | bg-05-security-permissions | in_progress | — | waiting on `04c-app-infrastructure` |
-| 31 | `05c-vpn-tor-remote` | 5 | bg-05-security-permissions | in_progress | — | waiting on `05b-firewall-app` |
-| 32 | `06a-core-app-inventory` | 6 | bg-06-core-phone-apps | pending | — | waiting on `04c-app-infrastructure` |
-| 33 | `07e-live-console-app` | 7 | bg-07-specialty-apps | in_progress | — | waiting on `04c-app-infrastructure` |
-| 34 | `05d-security-auditor` | 5 | bg-05-security-permissions | pending | — | waiting on `05a-permission-manager` |
-| 35 | `06b-missing-core-apps` | 6 | bg-06-core-phone-apps | in_progress | — | waiting on `06a-core-app-inventory` |
-| 36 | `06c-phone-apps` | 6 | bg-06-core-phone-apps | in_progress | — | waiting on `06a-core-app-inventory` |
-| 37 | `07a-nuxtore` | 7 | bg-07-specialty-apps | in_progress | — | waiting on `06a-core-app-inventory` |
-| 38 | `07b-devmgmt-cleanup-root` | 7 | bg-07-specialty-apps | in_progress | — | waiting on `06a-core-app-inventory` |
-| 39 | `07c-media-authenticator-downloader` | 7 | bg-07-specialty-apps | in_progress | — | waiting on `06a-core-app-inventory` |
-| 40 | `07d-snekbyte` | 7 | bg-07-specialty-apps | in_progress | — | waiting on `06a-core-app-inventory` |
-| 41 | `07f-penguinterface` | 7 | bg-07-specialty-apps | in_progress | — | waiting on `06a-core-app-inventory` |
-| 42 | `11a-vm-launcher-parity` | 2 | bg-11-vm-parity | pending | — | waiting on `06b-missing-core-apps` |
-| 43 | `06d-settings-and-keyboard` | 6 | bg-06-core-phone-apps | in_progress | — | waiting on `06b-missing-core-apps` |
-| 44 | `12a-engineering-report` | 8 | bg-12-reports | pending | — | waiting on `09c-release-deliverables`, `10c-live-reboot-and-verify`, `11a-vm-launcher-parity`, `11b-vm-services-verify` |
-| 45 | `12b-manual-proof-checklist` | 8 | bg-12-reports | pending | — | waiting on `01d-touch-owner-test`, `09c-release-deliverables`, `10c-live-reboot-and-verify`, `11a-vm-launcher-parity`, `11b-vm-services-verify` |
+| 1 | `10a-live-reachability-preflight` | 1 | bg-10-live-phone | pending | — | ready |
+| 2 | `03e-buttons-gestures` | 3 | bg-03-connectivity-time-audio-buttons | pending | — | ready |
+| 3 | `03a-wifi` | 3 | bg-03-connectivity-time-audio-buttons | in_progress | — | ready |
+| 4 | `03b-time-rtc-timesync` | 3 | bg-03-connectivity-time-audio-buttons | in_progress | — | ready |
+| 5 | `03c-audio-speaker` | 3 | bg-03-connectivity-time-audio-buttons | in_progress | — | ready |
+| 6 | `04a-fedora-packages` | 4 | bg-04-userspace-completion | in_progress | — | ready |
+| 7 | `08a-power-management` | 7 | bg-08-hardware-subsystems | in_progress | — | waiting on `03e-buttons-gestures` |
+| 8 | `09a-test-strategy-soak` | 8 | bg-09-integration-release | pending | — | ready |
+| 9 | `03d-headphones-usbc` | 3 | bg-03-connectivity-time-audio-buttons | pending | — | waiting on `03c-audio-speaker` |
+| 10 | `04b-service-definitions` | 4 | bg-04-userspace-completion | in_progress | — | waiting on `04a-fedora-packages` |
+| 11 | `08b-vibration-haptics` | 7 | bg-08-hardware-subsystems | pending | — | waiting on `08a-power-management` |
+| 12 | `08c-flashlight-led` | 7 | bg-08-hardware-subsystems | pending | — | waiting on `08a-power-management` |
+| 13 | `08d-bluetooth` | 7 | bg-08-hardware-subsystems | pending | — | waiting on `08a-power-management` |
+| 14 | `08e-nfc` | 7 | bg-08-hardware-subsystems | pending | — | waiting on `08a-power-management` |
+| 15 | `08f-gps-gnss` | 7 | bg-08-hardware-subsystems | pending | — | waiting on `08a-power-management` |
+| 16 | `08g-sensors` | 7 | bg-08-hardware-subsystems | pending | — | waiting on `08a-power-management` |
+| 17 | `08h-camera` | 7 | bg-08-hardware-subsystems | pending | — | waiting on `08a-power-management` |
+| 18 | `08i-sim-microsd-modem` | 7 | bg-08-hardware-subsystems | pending | — | waiting on `08a-power-management` |
+| 19 | `09b-reboot-rollback-policy` | 8 | bg-09-integration-release | pending | — | waiting on `09a-test-strategy-soak` |
+| 20 | `10b-live-deploy-userspace` | 1 | bg-10-live-phone | pending | — | waiting on `10a-live-reachability-preflight`, `09b-reboot-rollback-policy` |
+| 21 | `04c-app-infrastructure` | 4 | bg-04-userspace-completion | in_progress | — | waiting on `04b-service-definitions` |
+| 22 | `05b-firewall-app` | 5 | bg-05-security-permissions | in_progress | — | waiting on `04b-service-definitions` |
+| 23 | `09c-release-deliverables` | 8 | bg-09-integration-release | in_progress | — | waiting on `09b-reboot-rollback-policy` |
+| 24 | `10c-live-reboot-and-verify` | 1 | bg-10-live-phone | pending | — | waiting on `10b-live-deploy-userspace`, `03c-audio-speaker` |
+| 25 | `11b-vm-services-verify` | 2 | bg-11-vm-parity | in_progress | — | waiting on `04b-service-definitions`, `04c-app-infrastructure` |
+| 26 | `05a-permission-manager` | 5 | bg-05-security-permissions | in_progress | — | waiting on `04c-app-infrastructure` |
+| 27 | `05c-vpn-tor-remote` | 5 | bg-05-security-permissions | in_progress | — | waiting on `05b-firewall-app` |
+| 28 | `06a-core-app-inventory` | 6 | bg-06-core-phone-apps | pending | — | waiting on `04c-app-infrastructure` |
+| 29 | `07e-live-console-app` | 7 | bg-07-specialty-apps | in_progress | — | waiting on `04c-app-infrastructure` |
+| 30 | `05d-security-auditor` | 5 | bg-05-security-permissions | pending | — | waiting on `05a-permission-manager` |
+| 31 | `06b-missing-core-apps` | 6 | bg-06-core-phone-apps | in_progress | — | waiting on `06a-core-app-inventory` |
+| 32 | `06c-phone-apps` | 6 | bg-06-core-phone-apps | in_progress | — | waiting on `06a-core-app-inventory` |
+| 33 | `07a-nuxtore` | 7 | bg-07-specialty-apps | in_progress | — | waiting on `06a-core-app-inventory` |
+| 34 | `07b-devmgmt-cleanup-root` | 7 | bg-07-specialty-apps | in_progress | — | waiting on `06a-core-app-inventory` |
+| 35 | `07c-media-authenticator-downloader` | 7 | bg-07-specialty-apps | in_progress | — | waiting on `06a-core-app-inventory` |
+| 36 | `07d-snekbyte` | 7 | bg-07-specialty-apps | in_progress | — | waiting on `06a-core-app-inventory` |
+| 37 | `07f-penguinterface` | 7 | bg-07-specialty-apps | in_progress | — | waiting on `06a-core-app-inventory` |
+| 38 | `11a-vm-launcher-parity` | 2 | bg-11-vm-parity | pending | — | waiting on `06b-missing-core-apps` |
+| 39 | `06d-settings-and-keyboard` | 6 | bg-06-core-phone-apps | in_progress | — | waiting on `06b-missing-core-apps` |
+| 40 | `12a-engineering-report` | 8 | bg-12-reports | pending | — | waiting on `09c-release-deliverables`, `10c-live-reboot-and-verify`, `11a-vm-launcher-parity`, `11b-vm-services-verify` |
+| 41 | `12b-manual-proof-checklist` | 8 | bg-12-reports | pending | — | waiting on `09c-release-deliverables`, `10c-live-reboot-and-verify`, `11a-vm-launcher-parity`, `11b-vm-services-verify` |
 <!-- END GENERATED: execution-order -->
 
 ---
@@ -243,10 +239,10 @@ Ids are shown without the `briq-` prefix.
 | `00b-archive-discovery` | 0 | bg-00-preflight | implemented | OFFLINE_TESTED | 6 | 4 | 00a-repo-preflight |
 | `00c-workqueue-ledger` | 0 | bg-00-preflight | implemented | OFFLINE_TESTED | 9 | 4 | 00a-repo-preflight, 00b-archive-discovery |
 | `00d-baseline-protection` | 0 | bg-00-preflight | implemented | OFFLINE_TESTED | 12 | 6 | 00a-repo-preflight |
-| `01a-pipeline-trace-tool` | 1 | bg-01-touch-pipeline | in_progress | — | 1 | 1 | — |
-| `01b-libinput-path-shim` | 1 | bg-01-touch-pipeline | in_progress | — | 3 | 1 | — |
-| `01c-chargermode-bootmode` | 1 | bg-01-touch-pipeline | in_progress | — | 1 | 1 | 01a-pipeline-trace-tool |
-| `01d-touch-owner-test` | 1 | bg-01-touch-pipeline | pending | — | 0 | 1 | 01a-pipeline-trace-tool |
+| `01a-pipeline-trace-tool` | 1 | bg-01-touch-pipeline | implemented | OFFLINE_TESTED | 4 | 2 | — |
+| `01b-libinput-path-shim` | 1 | bg-01-touch-pipeline | implemented | OFFLINE_TESTED | 6 | 2 | — |
+| `01c-chargermode-bootmode` | 1 | bg-01-touch-pipeline | implemented | OFFLINE_TESTED | 4 | 2 | 01a-pipeline-trace-tool |
+| `01d-touch-owner-test` | 1 | bg-01-touch-pipeline | implemented | OFFLINE_TESTED | 5 | 2 | 01a-pipeline-trace-tool |
 | `10a-live-reachability-preflight` | 1 | bg-10-live-phone | pending | — | 0 | 1 | 00a-repo-preflight |
 | `10b-live-deploy-userspace` | 1 | bg-10-live-phone | pending | — | 0 | 1 | 10a-live-reachability-preflight, 01b-libinput-path-shim, 02a-readiness-handoff, 09b-reboot-rollback-policy |
 | `10c-live-reboot-and-verify` | 1 | bg-10-live-phone | pending | — | 0 | 1 | 10b-live-deploy-userspace, 01a-pipeline-trace-tool, 03c-audio-speaker |

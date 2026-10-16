@@ -1,0 +1,80 @@
+{
+  "root": "/x/nuxel/docs/beta-finalization/live/evidence/touch-20261016T193756+0200-cycl001-p0probe-live-run",
+  "layers": [
+    {
+      "n": 1,
+      "name": "driver",
+      "state": "blocked",
+      "evidence": "/x/nuxel/docs/beta-finalization/live/evidence/touch-20261016T193756+0200-cycl001-p0probe-live-run",
+      "detail": "charger/LPM boot evidence: cmdline androidboot.mode=charger [console-probe.txt]; dmesg sec_ts_init: Do not load driver due to : lpm 1 [console-probe.txt]"
+    },
+    {
+      "n": 2,
+      "name": "irq",
+      "state": "blocked",
+      "evidence": "/x/nuxel/docs/beta-finalization/live/evidence/touch-20261016T193756+0200-cycl001-p0probe-live-run",
+      "detail": "no interrupts evidence in this capture"
+    },
+    {
+      "n": 3,
+      "name": "evdev",
+      "state": "blocked",
+      "evidence": "/x/nuxel/docs/beta-finalization/live/evidence/touch-20261016T193756+0200-cycl001-p0probe-live-run",
+      "detail": "no evdev evidence in this capture"
+    },
+    {
+      "n": 4,
+      "name": "libinput",
+      "state": "blocked",
+      "evidence": "console-probe.txt",
+      "detail": "the shim ran but the capability scan found NO direct touch device (nothing for libinput to accept): 1789430401 PATH_ASSIGN_SEAT seat='seat0' direct_devices_seen=0 added=0 db_seeded=0"
+    },
+    {
+      "n": 5,
+      "name": "compositor",
+      "state": "blocked",
+      "evidence": "/x/nuxel/docs/beta-finalization/live/evidence/touch-20261016T193756+0200-cycl001-p0probe-live-run",
+      "detail": "no compositor fd evidence in this capture"
+    },
+    {
+      "n": 6,
+      "name": "wayland",
+      "state": "blocked",
+      "evidence": "/x/nuxel/docs/beta-finalization/live/evidence/touch-20261016T193756+0200-cycl001-p0probe-live-run",
+      "detail": "no seat/focus/wl_touch evidence in this capture (WAYLAND_DEBUG was not enabled?)"
+    },
+    {
+      "n": 7,
+      "name": "dom",
+      "state": "blocked",
+      "evidence": "/x/nuxel/docs/beta-finalization/live/evidence/touch-20261016T193756+0200-cycl001-p0probe-live-run",
+      "detail": "no DOM evidence in this capture (the instrumented page never ran)"
+    }
+  ],
+  "first_fail_layer": 1,
+  "gate": {
+    "btn_touch_events": 0,
+    "down": 0,
+    "up": 0,
+    "points": 0,
+    "coords_x": [],
+    "coords_y": [],
+    "device_range_x": null,
+    "device_range_y": null,
+    "coords_plausible": false,
+    "dom_layer_state": "blocked",
+    "pass": false
+  },
+  "raw": {
+    "events": 0,
+    "frames": 0,
+    "downs": 0,
+    "ups": 0,
+    "points": 0,
+    "btn_touch": 0,
+    "xs": [],
+    "ys": [],
+    "slots": [],
+    "tracking_ids": []
+  }
+}

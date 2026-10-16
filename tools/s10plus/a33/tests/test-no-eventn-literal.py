@@ -62,6 +62,11 @@ TARGETS = [
 DATA_UNDER_TEST = [
     "tools/s10plus/a33/tests/test-libinput-path-fixture.py",
     "tools/s10plus/a33/tests/fixtures/",
+    # Archived LIVE captures under docs/beta-finalization/live/evidence/ (e.g.
+    # touch-<ts>-*-live-run/evdev.txt) are raw DEVICE OUTPUT: node names there are
+    # the data under test, not an assumption any tool makes.  They are not scanned,
+    # and they are named here so the exclusion stays reviewable.
+    "docs/beta-finalization/live/evidence/",
 ]
 
 failures = 0

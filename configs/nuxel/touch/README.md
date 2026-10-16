@@ -1,5 +1,14 @@
 # configs/nuxel/touch/ — boot-mode guard for the S10+ touchscreen
 
+> **Canonical location:** the guard configuration now has its own subpath,
+> `configs/nuxel/bootmode/` (`bootmode-guard.json` + `README.md`), and
+> `nuxel-bootmode-guard.py` searches it **first**. The copy here is kept unchanged
+> because an already-generated deploy plan names this path as the source for
+> `/etc/nuxel/touch/bootmode-guard.json`;
+> `tools/s10plus/a33/tests/test-bootmode-guard.py` asserts the two files agree on
+> every gate field, so the duplication is enforced rather than trusted. The systemd
+> units stay here (they are not configuration).
+
 Files
 -----
 | File | Installed to | Purpose |

@@ -5,12 +5,16 @@
 | Item | Verdict |
 |---|---|
 | Root cause identified (source-level) | **YES** — `sec_bat_is_lpm_check()` → `lpcharge=1` → `sec_ts_init()` returns `-ENODEV` |
+| Root cause **re-measured live on the phone this cycle** | **YES** — see §1a: the handset is in charger/LPM mode right now and no touch device exists on this boot |
 | Userspace mitigation (state + gated normal reboot) | **OFFLINE_TESTED**; live effect requires a normal reboot (**DEPLOYED_UNVERIFIED** until then) |
 | Permanent fix (kernel/early-boot) | **BLOCKED_KERNEL / BOOT_UPDATE_REQUIRED / NOT_DEPLOYED** |
 | Finger test after the normal reboot | **NEEDS_OWNER_TEST** |
 
 Tooling: `tools/s10plus/a33/nuxel-bootmode-guard.py`,
-`configs/nuxel/touch/`, tests `tools/s10plus/a33/tests/test-bootmode-guard.py`,
+`configs/nuxel/bootmode/` (the guard's **own configuration subpath**; the legacy
+`configs/nuxel/touch/` copy is retained for the already-generated deploy plan, and the
+test asserts the two agree on every gate field),
+tests `tools/s10plus/a33/tests/test-bootmode-guard.py`,
 offline patch `tools/s10plus/a33/kernel-patches/sec_ts-lpm-initcall-deferred-bind.patch`.
 
 ---
@@ -35,6 +39,52 @@ The condition is not a partial failure: **there is no touch device on that boot*
 Everything the touch pipeline above layer 1 reports is therefore empty by
 construction — which is why cycles that measured "no touch" from a charger-mode
 boot were measuring the bootloader's power state, not the driver.
+
+## 1a. The condition re-measured live, this cycle (read-only console probe)
+
+A bounded, **read-only** probe was run against the running phone over the USB CDC-ACM
+live console (`scripts/s10plus-debug-pack/nuxel-live.sh`: exclusive flock, per-command
+request ids, target-side SHA-256 of the payload verified after decoding, `--timeout 60`
+per command). Nothing was written on the device: no partition, no bootloader, no DTB, no
+modem, no EFS; no reboot; no arming of any input node; no `/dev/fb0` open. Raw transcript
+and its grading:
+
+`docs/beta-finalization/live/evidence/touch-20261016T193756+0200-cycl001-p0probe-live-run/`
+
+| Probe (as run on the device) | Result |
+|---|---|
+| `tr ' ' '\n' < /proc/cmdline \| grep -E 'androidboot.mode\|lpcharge\|charging_mode'` | `charging_mode=0x3030`, `androidboot.mode=charger` |
+| `dmesg \| grep -i -E 'sec_ts_init\|Low power charging'` | `[    1.638064] [sec_input] sec_ts_init: Do not load driver due to : lpm 1` |
+| `grep -c sec_touchscreen /proc/bus/input/devices` | `0` (rc=1) |
+| `ls -d /sys/class/sec/tsp` | `No such file or directory` |
+| `grep -i -E 'sec_ts\|4-0048' /proc/interrupts` | no match |
+| `ls /sys/class/input` | seven `event<N>` entries and seven `input<N>` entries, none of them the panel |
+| `systemctl is-active nuxel-wayland nuxel-touch-arm seatd` | `active` / **`failed`** / `active` |
+| `pgrep -af phoc` | `/usr/sbin/phoc --no-xwayland -C /etc/nuxel/phoc-phone.ini …` (running) |
+| `tail -4 /run/nuxel-libinput-path.state` | `PATH_ASSIGN_SEAT seat='seat0' direct_devices_seen=0 added=0 db_seeded=0` |
+| `cat /sys/class/graphics/fb0/modes` (+ `virtual_size`, `bits_per_pixel`) | `U:1440x3040p-0` / `1440,6080` / `32` |
+
+That is the root cause measured end to end on the actual unit. It also establishes two
+things that are easy to assume and hard to prove:
+
+* **the compositor survives the missing device** — the shim logged
+  `direct_devices_seen=0 added=0` and `phoc` stayed up, so a charger-mode boot does not
+  turn into a display failure;
+* **`nuxel-touch-arm.service` is `failed`** on this boot, exactly as an absent driver
+  predicts — which is why cycles that read "no touch" from a charger-mode boot were
+  measuring the bootloader's power state, not the driver.
+
+Graded with the same rules as any capture:
+
+```
+FIRST_FAIL_LAYER=1 NAME=driver STATE=blocked
+VERDICT=PIPELINE_STOPPED_AT_LAYER=1
+GATE=fail   (layers 2..7: blocked, never ok)
+```
+
+**Action required on the device: unplug the charger and reboot normally** before any
+touch measurement is attempted. Until that happens no touch claim of any kind is
+possible on this unit.
 
 ## 2. Why the boot is in that mode
 
@@ -105,6 +155,18 @@ after `systemctl reboot`:
 
 `mode == "unknown"` (no readable evidence) is **never** presented as a pass: it is
 `graded: false`, and the tool exits 2.
+
+The status output also names the configuration file that won (`CONFIG=…`), the
+launcher/Settings state file (`SETTINGS_STATE=/run/nuxel-bootmode.json`) and one
+machine-readable line for the live console:
+
+```
+NX_STATUS bootmode=charger-lpm touch_available=false permanent_fix="BLOCKED_KERNEL BOOT_UPDATE_REQUIRED NOT_DEPLOYED"
+```
+
+`TOUCH_AVAILABLE` is tri-state (`true` / `false` / `unknown`): an unclassifiable boot is
+reported `unknown`, never as available — matching the launcher JSON, where
+`touch_available` is true only for a normal boot.
 
 The guard cannot be the reason a boot fails: the unit accepts exit codes 0/2/10–13.
 
@@ -187,9 +249,10 @@ report touch results from a charger-mode boot.
   reboot itself is proven (A29b), but the post-reboot touch state on the current
   beta image is `DEPLOYED_UNVERIFIED` until the live group performs a normal reboot.
 * The guard's launcher message is **published**, not rendered: the status-bar /
-  notification surface is owned by the launcher work. `configs/nuxel/touch/README.md`
-  fixes the JSON contract (`mode`, `touch_available`, `message`, `action`,
-  `graded`, `evidence`).
+  notification surface is owned by the launcher work. `configs/nuxel/bootmode/README.md`
+  (canonical subpath) and `configs/nuxel/touch/README.md` (legacy path, kept for the
+  generated deploy plan) fix the JSON contract (`mode`, `touch_available`, `message`,
+  `action`, `graded`, `evidence`).
 * An `androidboot.mode=charger` boot is not a testable state for *anything* in the
   touch pipeline. If the boot-mode check says LPM, every other touch measurement on
   that boot is meaningless, and this document is the reason why.

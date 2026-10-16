@@ -1,0 +1,4 @@
+# /proc/interrupts grepped for sec_ts|4-0048 on the device this boot: NO MATCH
+# (the panel IRQ does not exist because sec_ts_init returned -ENODEV).
+irq_rc=0
+(no sec_ts line present)

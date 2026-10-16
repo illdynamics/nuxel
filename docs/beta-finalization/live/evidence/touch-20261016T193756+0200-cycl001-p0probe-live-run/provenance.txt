@@ -1,0 +1,21 @@
+# Provenance of this capture — read this before quoting anything here.
+#
+# Tool : scripts/s10plus-debug-pack/nuxel-live.sh (the repository's own CDC-ACM
+#        live-console client: exclusive flock, per-command request ids, target-side
+#        SHA-256 of the payload verified after decoding, @@@NXR<id>:<rc>@@@ status)
+# Device: /dev/ttyACM0, USB id 18d1:4ee7, ID_MODEL=Nuxel_S10+_Live_Console,
+#        ID_SERIAL=NUXEL-S10PLUS-0001 (matches the reachability preflight capture)
+# Batch : one read-only command per line.  Nothing was written on the device: no
+#        partition, no bootloader, no service change, no reboot, no arm, no /dev/fb0
+#        open.  dmesg / /proc / /sys reads only.
+# Window: bounded by the harness (--timeout 60 per command, 150 s outer timeout).
+#
+# The raw transcript is console-probe.txt (the kernel mirrors /dev/kmsg onto the
+# same port, so unrelated telemetry lines are interleaved; the harness framing is
+# what separates command output from the kmsg flood).
+
+# Grading (this cycle): nuxel-touch-trace.py --analyze <this dir>
+#   FIRST_FAIL_LAYER=1 NAME=driver STATE=blocked
+#   cause cited from this capture: "androidboot.mode=charger" and
+#   "sec_ts_init: Do not load driver due to : lpm 1"
+#   all other layers blocked (never ok) - absence of evidence is not a pass.

@@ -90,7 +90,7 @@ grep -A3 'PROP=' /var/lib/nuxel/touch-capture/node-scan/evdev.txt
 # 5. did libinput accept it through the shim?
 grep -a 'accepted=1' /run/nuxel-libinput-path.state | tail -3
 # 6. does the compositor hold the input fd?
-p=$(systemctl show -p MainPID --value nuxel-wayland); ls -l /proc/$p/fd | grep -c input
+p=$(systemctl show -p MainPID --value nuxel-wayland); find /proc/"$p"/fd -maxdepth 1 | grep -c input
 # 7. is the launcher's own DOM probe seeing events?
 grep -a NUXEL_INPUT /run/nuxel-home.state | tail -10
 # 8. the full bounded capture (this script):
@@ -154,8 +154,28 @@ if [ -f "$BOOTMODE_GUARD" ]; then
   fi
 fi
 
-# 3. bounded live capture through the one implementation of the logic
-TRACER_ARGS=(--live --out "$OUT" --seconds "$SECONDS_BUDGET"
+# 3. The sequence to perform while the window is open.  Printed BEFORE the capture
+#    starts so the operator has it in front of them (and so the same text is in the
+#    bundle's commands.txt).  One tap sequence = down/up, one swipe, one multi-contact.
+cat <<'SEQ'
+---- TOUCH SEQUENCE (perform these while the capture is armed) ----------------
+  1. TAP DOWN/UP      one deliberate tap in the centre of the screen (slow, ~0.3 s)
+  2. THREE TAPS       top-left, centre, bottom-right (catches a swapped/inverted axis)
+  3. SWIPE            bottom third -> top third, slowly (>= 1 s), for scroll/gesture
+  4. MULTI-CONTACT    two fingers down together for ~1 s, then lift both
+  5. SELECT AN APP    tap a launcher tile (Terminal or Settings) and let it open
+  6. KEYBOARD         if a text field is reachable, type three keys on the on-screen
+                      keyboard (proves the keyboard's own hit testing)
+  Then, and only then, answer the human half: did the UI actually respond?
+------------------------------------------------------------------------------
+SEQ
+echo "SEQUENCE recorded in \$OUT/commands.txt (and above)"
+
+# 3b. bounded capture through the one implementation of the logic.  --capture is used
+#     (not --live) because it guarantees the per-event JSONL stream with kernel
+#     timestamps AND coordinate-map.json, which is exactly what the owner taps are
+#     graded against.
+TRACER_ARGS=(--capture "$SECONDS_BUDGET" --out "$OUT"
              --max-events "$MAX_EVENTS" --max-bytes "$MAX_BYTES")
 [ "$EXPECT_FINGER" = 1 ] && TRACER_ARGS+=(--expect-finger)
 [ "$DRY_RUN" = 1 ] && TRACER_ARGS+=(--dry-run)
@@ -182,7 +202,8 @@ print_commands > "$OUT/commands.txt"
   echo "=== services ==="; systemctl is-active nuxel-wayland nuxel-wl-fb nuxel-button-manager seatd 2>/dev/null
   echo "=== compositor input fds ==="
   p=$(systemctl show -p MainPID --value nuxel-wayland 2>/dev/null)
-  echo "phoc input fds: $(ls -l /proc/$p/fd 2>/dev/null | grep -c input)"
+  # find, not `ls | grep` (SC2010): the count must not depend on filename quirks.
+  echo "phoc input fds: $(find /proc/"$p"/fd -maxdepth 1 2>/dev/null | grep -c input)"
   echo "=== launcher DOM probe ==="; grep -a NUXEL_INPUT /run/nuxel-home.state 2>/dev/null | tail -10
   echo "=== bridge ==="; cat /run/nuxel-wl-fb.state 2>/dev/null
 } > "$OUT/diagnostics.txt" 2>&1
@@ -213,7 +234,10 @@ echo "----------------------------------------------------------------"
 echo "CAPTURE_GATE=$GATE"
 echo "VERDICT=$VERDICT"
 echo "BUNDLE=$OUT"
-echo "EVIDENCE: $OUT/gate.json  $OUT/trace.txt  $OUT/diagnostics.txt  $OUT/raw-touch.bin"
+echo "EVIDENCE: $OUT/gate.json  $OUT/trace.txt  $OUT/events.jsonl  $OUT/coordinate-map.json"
+echo "          $OUT/diagnostics.txt  $OUT/raw-touch.bin  $OUT/touch-events.log"
+echo "ARCHIVE (from the host, so the evidence lands in the repository):"
+echo "  tools/s10plus/a33/nuxel-touch-trace.py --archive $OUT --archive-dir docs/beta-finalization/live/evidence"
 echo "log paths: /run/nuxel-touch-dom.log (DOM), /run/nuxel-libinput-path.state (libinput),"
 echo "           /run/nuxel-home.state (launcher NUXEL_INPUT), $OUT/touch-events.log (raw decode)"
 if [ "$GATE" = "PASS" ]; then

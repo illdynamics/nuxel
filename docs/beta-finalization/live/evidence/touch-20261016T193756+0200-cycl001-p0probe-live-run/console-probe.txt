@@ -1,0 +1,66 @@
+# console /dev/ttyACM0
+# shared lock /tmp/nuxel-live._dev_ttyACM0.lock is not usable by uid 0 ([Errno 13] Permission denied: '/tmp/nuxel-live._dev_ttyACM0.lock') — using private lock /tmp/nuxel-live._dev_ttyACM0.0.lock
+===== tr ' ' '\n' < /proc/cmdline | grep -E 'androidboot.mode|lpcharge|charging_mode'; echo "cmdline_rc=$?"   [rc=0 frame=4eee60d7 sha_ok=yes]
+    charging_mode=0x3030
+    androidboot.mode=charger
+    cmdline_rc=0
+===== grep -c sec_touchscreen /proc/bus/input/devices; echo "secreg_rc=$?"   [rc=0 frame=1eb660d8 sha_ok=yes]
+    0
+    secreg_rc=1
+===== ls -d /sys/class/sec/tsp 2>&1   [rc=2 frame=5c8e60d9 sha_ok=yes]
+    ls: cannot access '/sys/class/sec/tsp': No such file or directory
+===== grep -i -E 'sec_ts|4-0048' /proc/interrupts | head -5; echo "irq_rc=$?"   [rc=0 frame=b8d060da sha_ok=yes]
+    irq_rc=0
+===== dmesg | grep -i -E 'sec_ts_init|Low power charging' | tail -4   [rc=0 frame=627460db sha_ok=yes]
+    [    1.638064] [sec_input] sec_ts_init: Do not load driver due to : lpm 1
+===== ls /sys/class/input   [rc=0 frame=acb260dc sha_ok=yes]
+    event0
+    event1
+    event2
+    event3
+    event4
+    event5
+    event6
+    input0
+    input1
+    input2
+    input3
+    input4
+    input5
+    input6
+===== ls -la /dev/input   [rc=0 frame=159d60dd sha_ok=yes]
+    total 0
+    drwxr-xr-x  2 root root    180 Jan  1  1970 .
+    drwxr-xr-x 10 root root   7760 Sep 15 00:00 ..
+    crw-------  1 root root 13, 64 Jan  1  1970 event0
+    crw-------  1 root root 13, 65 Jan  1  1970 event1
+    crw-------  1 root root 13, 66 Jan  1  1970 event2
+    crw-------  1 root root 13, 67 Jan  1  1970 event3
+    crw-------  1 root root 13, 68 Jan  1  1970 event4
+    crw-------  1 root root 13, 69 Jan  1  1970 event5
+    crw-------  1 root root 13, 70 Jan  1  1970 event6
+===== cat /sys/class/input/event1/device/name 2>&1   [rc=0 frame=c10360de sha_ok=yes]
+    gpio_keys
+===== cat /sys/class/input/event1/device/id/vendor /sys/class/input/event1/device/id/product 2>&1   [rc=0 frame=1c5f60df sha_ok=yes]
+    0001
+    0001
+===== cat /sys/class/graphics/fb0/modes; cat /sys/class/graphics/fb0/virtual_size; cat /sys/class/graphics/fb0/bits_per_pixel   [rc=0 frame=217a60e0 sha_ok=yes]
+    U:1440x3040p-0
+    1440,6080
+    32
+===== systemctl is-active nuxel-wayland nuxel-touch-arm seatd; echo "units_rc=$?"   [rc=0 frame=05d160e1 sha_ok=yes]
+    active
+    failed
+    active
+    units_rc=0
+===== pgrep -af phoc | head -2   [rc=0 frame=b18c60e2 sha_ok=yes]
+    5315 /usr/sbin/phoc --no-xwayland -C /etc/nuxel/phoc-phone.ini -E /usr/lib/nuxel/nuxel-session.sh
+===== ls -la /run/nuxel-libinput-path.state 2>&1; tail -4 /run/nuxel-libinput-path.state 2>&1   [rc=0 frame=52b360e3 sha_ok=yes]
+    -rw-r--r-- 1 root root 177 Sep 15 00:00 /run/nuxel-libinput-path.state
+    1789430401 PATH_CONTEXT_CREATED ctx=0x55c072dc40 udev=0x55c065ca40 (udev daemon not required)
+    1789430401 PATH_ASSIGN_SEAT seat='seat0' direct_devices_seen=0 added=0 db_seeded=0
+===== ls -la /var/lib/nuxel/touch-raw.bin 2>&1   [rc=0 frame=c48f60e4 sha_ok=yes]
+    -rw-r--r-- 1 root root 2928 Sep 15 00:11 /var/lib/nuxel/touch-raw.bin
+===== ls /run/nuxel-home.state /run/nuxel-wl-fb.state 2>&1   [rc=0 frame=e1df60e5 sha_ok=yes]
+    /run/nuxel-home.state
+    /run/nuxel-wl-fb.state

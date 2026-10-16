@@ -354,6 +354,63 @@ def main():
     check(rc == 4 and "ARCHIVE_FAILED" in out,
           "--archive of a missing bundle fails loudly with rc=4", out[-200:])
 
+    # ------------------------------------------------------------------ honesty
+    print("== honesty regressions found by grading a REAL capture this cycle ==")
+    # 1. A live-console command FRAME is a command, not device output.  The real
+    #    charger-mode capture contained the header
+    #      ===== grep -c sec_touchscreen /proc/bus/input/devices   [rc=1 frame=.. sha_ok=yes]
+    #    and the naive match reported "the panel appears in the evidence" for a boot
+    #    where the driver never initialised.
+    d = make_bundle(tmp, "console-frame-is-a-command",
+                    dmesg="[    1.638064] [sec_input] sec_ts_init: Do not load driver due to : lpm 1\n",
+                    cmdline="console=ram androidboot.mode=charger\n",
+                    evdev='===== grep -c sec_touchscreen /proc/bus/input/devices; echo "x_rc=$?"'
+                          '   [rc=1 frame=1eb660d8 sha_ok=yes]\n    0\n',
+                    raw=False)
+    rc, out = run_tracer(["--analyze", d])
+    check(layer_state(out, 1) == "blocked", "framed capture: layer 1 is blocked (charger cause)")
+    check("appears in the evidence" not in out,
+          "framed capture: a command frame mentioning the panel is NOT read as the panel appearing",
+          out[-500:])
+    check(layer_state(out, 3) == "blocked", "framed capture: layer 3 is blocked, never ok")
+
+    # 2. A bundle that also carries a previous VERDICT must not grade itself.  The
+    #    real capture exposed this: a second analyze run with --json-out inside the
+    #    bundle reported LAYER=6 ok from its own earlier sentence.
+    d = make_bundle(tmp, "no-self-feeding", wayland="", raw=False)
+    with open(os.path.join(d, "previous-verdict.txt"), "w") as f:
+        f.write("LAYER=6 NAME=wayland STATE=ok EVIDENCE=x "
+                "DETAIL=wl_touch present in the compositor protocol capture\n"
+                '{"tool": "nuxel-touch-trace", "layers": []}\n')
+    rc, out = run_tracer(["--analyze", d])
+    check(layer_state(out, 6) != "ok",
+          "a previous verdict inside the bundle is never re-graded as evidence",
+          out[-500:])
+
+    # 3. Grade the REAL capture this cycle took on the handset over the live console
+    #    (read-only: /proc/cmdline, dmesg, /sys, /dev/input listings).
+    live_root = os.path.join(ROOT, "docs", "beta-finalization", "live", "evidence")
+    live = []
+    if os.path.isdir(live_root):
+        live = sorted(os.path.join(live_root, n) for n in os.listdir(live_root)
+                      if n.startswith("touch-") and n.endswith("live-run")
+                      and os.path.isdir(os.path.join(live_root, n)))
+    if live:
+        rc, out = run_tracer(["--analyze", live[-1]], timeout=180)
+        check(len([l for l in out.splitlines() if l.startswith("LAYER=")]) == 7,
+              "live capture graded: 7 layer lines", out[-400:])
+        check(first_fail(out) == "1",
+              "live capture graded: FIRST_FAIL_LAYER=1 (the driver, absent on this boot)",
+              out[-400:])
+        check("charger" in out.lower(),
+              "live capture graded: the verdict names the charger/LPM cause")
+        check("sec_ts_init: Do not load driver due to" in out,
+              "live capture graded: the kernel's own -ENODEV line is cited as evidence")
+        check("wl_touch present" not in out,
+              "live capture graded: no layer is promoted from prose or from a prior verdict")
+    else:
+        print("SKIP no live capture under %s" % live_root)
+
     print("== %d failing assertion(s), temp dir %s ==" % (len(failures), tmp))
     return 1 if failures else 0
 

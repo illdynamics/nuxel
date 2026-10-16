@@ -34,6 +34,78 @@
       "revision": 1,
       "at": "2026-10-16T16:07:13+02:00",
       "by": "construqtor/bg-00-preflight"
+    },
+    {
+      "component": "bg-01-touch-pipeline",
+      "component_title": "Priority 0 - Touchscreen & Reliable Interactive Input",
+      "priority": 1,
+      "risk": "low",
+      "rollback": "git revert the commit(s) touching this task's expected files; the change is repository-only and alters no device state. The live probe was read-only (no partition, bootloader, DTB, modem, EFS write; no reboot; no arm; no /dev/fb0 open)",
+      "source": "construqtor/bg-01-touch-pipeline cycle-001 resume",
+      "by": "construqtor/bg-01-touch-pipeline",
+      "at": "2026-10-16T19:43:49+02:00",
+      "id": "briq-01d-touch-owner-test",
+      "title": "Touchscreen finger test - harness, diagnostics and owner instructions",
+      "state": "implemented",
+      "revision": 2,
+      "dependencies": [
+        "briq-01a-pipeline-trace-tool"
+      ],
+      "expected_files": [
+        "tools/s10plus/a33/nuxel-touch-capture.sh",
+        "docs/beta-finalization/manual-proof/01-touchscreen.md"
+      ],
+      "intended_changes": [
+        "tools/s10plus/a33/nuxel-touch-capture.sh: now drives the tracer's --capture mode (per-event JSONL + coordinate-map.json guaranteed), prints the exact tap sequence to perform (tap, three corner taps, swipe, multi-contact, open Settings/return Home/open Terminal/scroll/select an app, on-screen keyboard), reports the JSONL/coordinate-map evidence paths and the host-side --archive command, and is shellcheck-clean (the SC2010 `ls | grep` count replaced by find)",
+        "docs/beta-finalization/manual-proof/01-touchscreen.md: a new section 0 with the live measured state (charger/LPM boot - the test cannot pass right now), the numbered action sequence incl. the mission's completion definition, the JSONL/coordinate-map expected results, the new machine-runnable modes, a log-evidence-vs-human-proof table, and refreshed automatic evidence",
+        "docs/beta-finalization/touch/PIPELINE-TRACE.md: the harness/tool modes and the completion definition cross-referenced"
+      ],
+      "evidence": [
+        {
+          "kind": "offline",
+          "command": "bash -n tools/s10plus/a33/nuxel-touch-capture.sh && shellcheck -S warning tools/s10plus/a33/nuxel-touch-capture.sh",
+          "result": "syntax OK; shellcheck: no findings (rc=0)",
+          "path": "tools/s10plus/a33/nuxel-touch-capture.sh",
+          "at": "2026-10-16T19:43:49+02:00"
+        },
+        {
+          "kind": "offline",
+          "command": "python3 tools/s10plus/a33/tests/test-capture-harness.py",
+          "result": "33/33 PASS - --commands arms nothing, CAPTURE_GATE=PASS can only come from gate.json pass:true, an empty capture is FAIL + NEEDS_OWNER_TEST, the bundle is never written inside the repository",
+          "path": "tools/s10plus/a33/tests/test-capture-harness.py",
+          "at": "2026-10-16T19:43:49+02:00"
+        },
+        {
+          "kind": "offline",
+          "command": "tools/s10plus/a33/nuxel-touch-capture.sh --dry-run --seconds 3 --out /tmp/nx/harn1",
+          "result": "bounded, terminates in ~2 s, prints the sequence, CAPTURE_GATE=FAIL, VERDICT=NEEDS_OWNER_TEST, and the events.jsonl / coordinate-map.json evidence paths",
+          "path": "tools/s10plus/a33/nuxel-touch-capture.sh",
+          "at": "2026-10-16T19:43:49+02:00"
+        },
+        {
+          "kind": "doc",
+          "command": "grep -n 'events.jsonl\\|completion definition\\|NEEDS_OWNER_TEST' docs/beta-finalization/manual-proof/01-touchscreen.md",
+          "result": "the manual-proof fragment carries the sequence, the completion definition, the log paths, PASS/FAIL criteria and the log-evidence-vs-human-proof split",
+          "path": "docs/beta-finalization/manual-proof/01-touchscreen.md",
+          "at": "2026-10-16T19:43:49+02:00"
+        },
+        {
+          "kind": "observation",
+          "path": "tools/s10plus/a33/nuxel-touch-capture.sh",
+          "result": "sha256 93b7179e2ce7a2171b77fc1284fb7f0dc5bdbb36d8453ac5d945519136de57b4",
+          "at": "2026-10-16T19:43:49+02:00"
+        }
+      ],
+      "tests": [
+        "L1: bash -n; shellcheck -S warning clean",
+        "L2/L3: test-capture-harness.py 33/33 (no arming without a finger, machine gate from gate.json only, no repo litter, unwritable --out is a hard block)",
+        "dry-run on the host: bounded, prints the sequence and the evidence paths, never PASS without evidence",
+        "L6: the finger test itself remains NEEDS_OWNER_TEST and is never auto-promoted"
+      ],
+      "verdict": "OFFLINE_TESTED",
+      "offline_ceiling": "NEEDS_OWNER_TEST",
+      "owner_action": "OWNER TEST REQUIRED: on a NORMAL boot (unplug the charger first; the device is currently in charger/LPM mode) run nuxel-touch-capture.sh --seconds 90 and perform the printed sequence; confirm on screen that Settings opens, Home returns, Terminal opens, the launcher scrolls, an app starts and the on-screen keyboard accepts typing. See docs/beta-finalization/manual-proof/01-touchscreen.md section 4",
+      "note": "Resumed from the rev-1 seed (it was still pending). The harness now uses the tracer's --capture mode so the owner taps are recorded as per-event JSONL with kernel timestamps plus a validated coordinate map, and it prints the exact sequence including the mission's completion definition (open Settings, return Home, open Terminal, scroll the launcher, select an app, use the on-screen keyboard). The item terminates at NEEDS_OWNER_TEST: no finger has touched the glass in this cycle and nothing here is promoted to VERIFIED_ON_S10PLUS."
     }
   ]
 }

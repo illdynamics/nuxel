@@ -56,6 +56,81 @@
       "revision": 1,
       "at": "2026-10-16T16:07:13+02:00",
       "by": "construqtor/bg-00-preflight"
+    },
+    {
+      "component": "bg-01-touch-pipeline",
+      "component_title": "Priority 0 - Touchscreen & Reliable Interactive Input",
+      "priority": 1,
+      "risk": "low",
+      "rollback": "git revert the commit(s) touching this task's expected files; the change is repository-only and alters no device state. The live probe was read-only (no partition, bootloader, DTB, modem, EFS write; no reboot; no arm; no /dev/fb0 open)",
+      "source": "construqtor/bg-01-touch-pipeline cycle-001 resume",
+      "by": "construqtor/bg-01-touch-pipeline",
+      "at": "2026-10-16T19:43:49+02:00",
+      "id": "briq-01b-libinput-path-shim",
+      "title": "Harden nuxel-libinput-path shim (capability-based, no eventN)",
+      "state": "implemented",
+      "revision": 2,
+      "dependencies": [],
+      "expected_files": [
+        "tools/s10plus/a33/nuxel-libinput-path.c",
+        "tools/s10plus/a33/build-libinput-shim.sh",
+        "tools/s10plus/a33/tests/"
+      ],
+      "intended_changes": [
+        "tools/s10plus/a33/tests/test-libinput-shim-invocation.py (new, 27 assertions): pins the deployment chain so a hardened shim nothing preloads cannot pass - Environment=LD_PRELOAD=/usr/lib/nuxel/libnuxel-libinput-path.so on services/nuxel-session/systemd/nuxel-wayland.service, the companion WLR_BACKENDS/LIBSEAT_BACKEND/WLR_LIBINPUT_NO_DEVICES lines, the A31/A32/A33 build scripts and their deterministic flags, A31/A33 source identity, the single-client tracked table (dedup by name, bounded, logged when full), the by-path devlink, ZERO_DEVICES on absence, and the recorded deployed .so SHA-256",
+        "tools/s10plus/a33/tests/run-touch-tests.sh: the new suite added to the gate",
+        "tools/s10plus/a33/tests/test-no-eventn-literal.py: the new suite covered by the node-number gate",
+        "tools/s10plus/a33/README.md: the exact A32 invocation block and the rollback-by-hash rule"
+      ],
+      "evidence": [
+        {
+          "kind": "offline",
+          "command": "python3 tools/s10plus/a33/tests/test-libinput-shim-invocation.py",
+          "result": "27/27 PASS; deployed /usr/lib/nuxel/libnuxel-libinput-path.so sha256 f333421fc68549864bc6d8ccc3671b3e04c9ababd21446536f2328087dce936c (A31 record, the rollback hash)",
+          "path": "tools/s10plus/a33/tests/test-libinput-shim-invocation.py",
+          "at": "2026-10-16T19:43:49+02:00"
+        },
+        {
+          "kind": "offline",
+          "command": "./tools/s10plus/a33/build-libinput-shim.sh --selftest",
+          "result": "host selftest built; driven over tests/fixtures/sec-ts-only -> SCAN_RESULT nodes=2 accepted=1, SELFTEST_RC=0. The aarch64 .so was NOT rebuilt in this environment (no aarch64-linux-gnu-gcc; the UTM guest nuxel@192.168.64.3 unreachable) - the object is unchanged and its source hash is unchanged from the recorded build",
+          "path": "build/out/s10plus/a33/nuxel-libinput-path-selftest",
+          "at": "2026-10-16T19:43:49+02:00"
+        },
+        {
+          "kind": "observation",
+          "path": "tools/s10plus/a33/nuxel-libinput-path.c",
+          "result": "sha256 f94240412b731233ad0e93de24d20283f55fc0d0b1f74aa1cddc9f19265e598f (== tools/s10plus/a31/nuxel-libinput-path.c, byte-identical, asserted by test-libinput-parity.py)",
+          "at": "2026-10-16T19:43:49+02:00"
+        },
+        {
+          "kind": "observation",
+          "path": "tools/s10plus/a33/build-libinput-shim.sh",
+          "result": "sha256 667f7fadb7ee475e130688d884e116fc2de12512b03941242fbcb1f6399e300c",
+          "at": "2026-10-16T19:43:49+02:00"
+        },
+        {
+          "kind": "observation",
+          "path": "build/out/s10plus/a33/nuxel-libinput-path-selftest",
+          "result": "sha256 18e7a288c54f2124bd9d927f576a2060122ec95bb6b839bed5a236013f85a884 (host selftest binary; build/ is gitignored, so it is rebuilt, never committed)",
+          "at": "2026-10-16T19:43:49+02:00"
+        },
+        {
+          "kind": "observation",
+          "path": "build/out/s10plus/a33/libnuxel-libinput-path.so",
+          "result": "aarch64 object recorded by the previous cycle: sha256 7b087146e6bb15d546d8c6bb7fa81a4c70eeee3e8fc5ba6a64e83b6f1e021ee7 (source unchanged, so it still corresponds)",
+          "at": "2026-10-16T19:43:49+02:00"
+        }
+      ],
+      "tests": [
+        "L1: shim source/copy byte-identity, interposed symbols present, build flags explicit (-O2 -Wall -Wextra -std=gnu11, no -march=native/-Ofast)",
+        "L2: host selftest over the capability fixtures 19/19",
+        "L3: the deployment chain (unit -> LD_PRELOAD path -> state file -> tracer) is asserted, not assumed"
+      ],
+      "verdict": "OFFLINE_TESTED",
+      "offline_ceiling": "DEPLOYED_UNVERIFIED",
+      "owner_action": "none for the repository side; a flash-free deploy of an unchanged object needs no owner action. If the object is ever rebuilt, record its SHA-256 and update the invocation test",
+      "note": "Resumed from the rev-1 seed. The shim source is unchanged (and stays byte-identical to the deployed A31 copy); this pass added the missing piece the briq asks for - a test that pins the exact A32 LD_PRELOAD invocation chain and records the object hashes. The aarch64 .so could not be rebuilt in THIS environment (no cross compiler, guest unreachable); that is reported, not hidden, and the recorded hash still matches the unchanged source."
     }
   ]
 }
