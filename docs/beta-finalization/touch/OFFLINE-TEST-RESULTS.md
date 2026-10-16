@@ -117,16 +117,17 @@ touch.
 Source and configuration (hashes re-taken after this cycle's changes):
 
 ```
-HASH_TOUCH_TRACE   tools/s10plus/a33/nuxel-touch-trace.py
-HASH_CAPTURE_SH    tools/s10plus/a33/nuxel-touch-capture.sh
-HASH_BOOTMODE_PY   tools/s10plus/a33/nuxel-bootmode-guard.py
-HASH_PROBE_HTML    tools/s10plus/a33/touch-probe.html
-HASH_SHIM_C        tools/s10plus/a33/nuxel-libinput-path.c          (== tools/s10plus/a31/nuxel-libinput-path.c)
-HASH_BUILD_SH      tools/s10plus/a33/build-libinput-shim.sh
+dc3a0d61ec4396b0bf55b58297f0801a4d773a120b945aee6bbac06e24709484  tools/s10plus/a33/nuxel-touch-trace.py
+93b7179e2ce7a2171b77fc1284fb7f0dc5bdbb36d8453ac5d945519136de57b4  tools/s10plus/a33/nuxel-touch-capture.sh
+0019ce964d7499f25df13fbbb2a6c07371139c661780223cae7e17f83ec6fce0  tools/s10plus/a33/nuxel-bootmode-guard.py
+aea597a1b6cb77a5e7af497a63a4900b59000498a8ccedf6d5998ae8371aad21  tools/s10plus/a33/touch-probe.html
+f94240412b731233ad0e93de24d20283f55fc0d0b1f74aa1cddc9f19265e598f  tools/s10plus/a33/nuxel-libinput-path.c          (== tools/s10plus/a31/nuxel-libinput-path.c)
+667f7fadb7ee475e130688d884e116fc2de12512b03941242fbcb1f6399e300c  tools/s10plus/a33/build-libinput-shim.sh
 ```
 
-The concrete values are written by `tools/s10plus/a33/tests/run-touch-tests.sh`
-(`sha256sum` section) and are reproducible with:
+These values are re-taken measurements recorded here (this document is the file that
+carries them; `run-touch-tests.sh` only runs the suites and prints no hashes) and are
+reproducible with:
 
 ```sh
 cd /x/nuxel && sha256sum \

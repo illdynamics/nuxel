@@ -109,6 +109,70 @@
       "offline_ceiling": "OFFLINE_TESTED",
       "owner_action": "OWNER TEST REQUIRED for the finger half: on a NORMAL boot run nuxel-touch-capture.sh --seconds 90 and perform the printed tap sequence; until then the physical-contact verdict is NEEDS_OWNER_TEST",
       "note": "Resumed from the rev-1 seed. The tracer gained the modes the briq names (--self-test, --capture SECONDS + JSONL under the repository archive path, sysfs capability discovery, 1440x3040 coordinate validation, per-layer exit codes). Grading a REAL live capture exposed three bugs (a layer-4 crash on a zero-device shim scan, a console command frame read as device output, and the analyzer grading its own previous verdict); all three are fixed and regression-gated. The live device is in charger/LPM mode, so no touch evidence exists on this boot and none is claimed."
+    },
+    {
+      "component": "bg-01-touch-pipeline",
+      "component_title": "Priority 0 - Touchscreen & Reliable Interactive Input",
+      "priority": 1,
+      "risk": "low",
+      "rollback": "git revert the commit(s) touching this task's expected files; the change is repository-only and alters no device state",
+      "source": "construqtor/bg-01-touch-pipeline cycle-003 repair",
+      "by": "construqtor/bg-01-touch-pipeline",
+      "at": "2026-10-16T20:14:03+02:00",
+      "id": "briq-01a-pipeline-trace-tool",
+      "title": "End-to-end touch pipeline tracer with bounded capture session",
+      "state": "implemented",
+      "revision": 3,
+      "dependencies": [],
+      "expected_files": [
+        "tools/s10plus/a33/nuxel-touch-trace.py",
+        "tools/s10plus/a33/README.md",
+        "docs/beta-finalization/touch/PIPELINE-TRACE.md"
+      ],
+      "intended_changes": [
+        "tools/s10plus/a33/nuxel-touch-trace.py (cycle-002 change, now recorded here): the layer-4 capability/absinfo probe gained EVIOCGID and ABS_MT_SLOT handling; --self-test grew from 40 to 43 assertions",
+        "docs/beta-finalization/touch/OFFLINE-TEST-RESULTS.md section 4: the placeholder tokens (HASH_TOUCH_TRACE, HASH_CAPTURE_SH, HASH_BOOTMODE_PY, HASH_PROBE_HTML, HASH_SHIM_C, HASH_BUILD_SH) were replaced with the real re-taken sha256 values for the six artifacts, and the false sentence claiming the values are 'written by tools/s10plus/a33/tests/run-touch-tests.sh (sha256sum section)' was corrected (that script prints no hashes and never did)"
+      ],
+      "evidence": [
+        {
+          "kind": "observation",
+          "path": "tools/s10plus/a33/nuxel-touch-trace.py",
+          "command": "sha256sum tools/s10plus/a33/nuxel-touch-trace.py",
+          "result": "sha256 dc3a0d61ec4396b0bf55b58297f0801a4d773a120b945aee6bbac06e24709484 (current HEAD file; supersedes the rev-2 value 47ea7fc4...)",
+          "at": "2026-10-16T20:14:03+02:00"
+        },
+        {
+          "kind": "offline",
+          "command": "python3 tools/s10plus/a33/nuxel-touch-trace.py --self-test",
+          "path": "tools/s10plus/a33/nuxel-touch-trace.py",
+          "result": "SELF-TEST: PASS (43/43 assertions) - supersedes the rev-2 40/40 record",
+          "at": "2026-10-16T20:14:03+02:00"
+        },
+        {
+          "kind": "offline",
+          "command": "./tools/s10plus/a33/tests/run-touch-tests.sh",
+          "path": "tools/s10plus/a33/tests/run-touch-tests.sh",
+          "result": "TOUCH-TESTS: ALL PASS (240 PASS / 0 FAIL) - re-measured after this cycle's test-set growth (test-no-eventn-literal.py 27 files, test-libinput-shim-invocation.py in TARGETS); supersedes the rev-2 239 PASS record",
+          "at": "2026-10-16T20:14:03+02:00"
+        },
+        {
+          "kind": "doc",
+          "command": "sha256sum tools/s10plus/a33/nuxel-touch-trace.py tools/s10plus/a33/nuxel-touch-capture.sh tools/s10plus/a33/nuxel-bootmode-guard.py tools/s10plus/a33/touch-probe.html tools/s10plus/a33/nuxel-libinput-path.c tools/s10plus/a31/nuxel-libinput-path.c tools/s10plus/a33/build-libinput-shim.sh",
+          "path": "docs/beta-finalization/touch/OFFLINE-TEST-RESULTS.md",
+          "result": "section 4 now carries the six real sha256 values (nuxel-touch-trace.py dc3a0d61ec4396b0bf55b58297f0801a4d773a120b945aee6bbac06e24709484; nuxel-touch-capture.sh 93b7179e2ce7a2171b77fc1284fb7f0dc5bdbb36d8453ac5d945519136de57b4; nuxel-bootmode-guard.py 0019ce964d7499f25df13fbbb2a6c07371139c661780223cae7e17f83ec6fce0; touch-probe.html aea597a1b6cb77a5e7af497a63a4900b59000498a8ccedf6d5998ae8371aad21; nuxel-libinput-path.c f94240412b731233ad0e93de24d20283f55fc0d0b1f74aa1cddc9f19265e598f == the a31 copy; build-libinput-shim.sh 667f7fadb7ee475e130688d884e116fc2de12512b03941242fbcb1f6399e300c); the placeholder tokens and the non-existent-generator sentence are gone",
+          "at": "2026-10-16T20:14:03+02:00"
+        }
+      ],
+      "tests": [
+        "L1: python3 -m py_compile tools/s10plus/a33/nuxel-touch-trace.py",
+        "L2/L3 offline: 43/43 self-test assertions (ioctl numbers incl. EVIOCGID/ABS_MT_SLOT, decoder, bitmap order, coordinate mapping, gate, exit codes)",
+        "L3 offline: run-touch-tests.sh 240 PASS / 0 FAIL",
+        "doc: OFFLINE-TEST-RESULTS.md section 4 lists the six real hashes and the command that reproduces them"
+      ],
+      "verdict": "OFFLINE_TESTED",
+      "offline_ceiling": "OFFLINE_TESTED",
+      "owner_action": "OWNER TEST REQUIRED for the finger half: on a NORMAL boot run nuxel-touch-capture.sh --seconds 90 and perform the printed tap sequence; until then the physical-contact verdict is NEEDS_OWNER_TEST",
+      "note": "Repair pass. The rev-2 record predated the cycle-002 edit to nuxel-touch-trace.py and the resulting re-measurements, so this revision re-stamps the tracer's current implementation state: file sha256 dc3a0d61ec4396b0bf55b58297f0801a4d773a120b945aee6bbac06e24709484, --self-test 43/43, run-touch-tests.sh 240 PASS / 0 FAIL. It also records the doc fix that put the real artifact hashes into OFFLINE-TEST-RESULTS.md section 4 and removed the claim that run-touch-tests.sh printed them (it does not)."
     }
   ]
 }

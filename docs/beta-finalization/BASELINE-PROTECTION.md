@@ -476,10 +476,17 @@ inspeQtor found that four assets this briQ's own deliverable explicitly enumerat
 | a | `tools/s10plus/a32/nuxelctl` (and `tools/s10plus/a33/nuxelctl`) | only metadata + the abbreviated deployed hash `e4281cab…` in the A32 record; the guard had no assertion on it | **hard** pin + `file_executable` + `sha256` assertion on the a32 copy (`e4281cab8c96a70cc24a79aa10230ae6ab716141893d0c95abdbb1481b2d2c3b` = the full hash behind the abbreviation); the a33 copy is **soft**-pinned (current-cycle tree) |
 | b | `tools/s10plus/a31/nuxel-libinput-path.c` + `tools/s10plus/a33/nuxel-libinput-path.c` (source of `libnuxel-libinput-path.so`) | zero occurrences in the register or the guard — even though `bg-01b` owns/edits the a33 copy in this same run, which is exactly the drift this register exists to catch | **soft** pins (`f94240412b731233…`, byte-identical at pin time) + two soft behavioural assertions (`INPUT_PROP_DIRECT` capability decision, `by-path/nuxel-touchscreen` devlink), each naming `bg-01-touch-pipeline` as owner, so drift is a **named WARN** instead of invisible |
 | c | `assets/nuxel-boot-animation.mp4` + `assets/nuxel-background.png` | no expected-hash constant for the MP4 anywhere in the tree; the wallpaper only covered *indirectly* by the soft A32-suite `wp.py` step | **hard** `sha256` pins (`280e094fb3efe54e…`, `6e337ef2d506a167…`) with matching `sha256` assertions |
-| d | `pwa/nuxel-apps/settings/**`, `pwa/nuxel-apps/terminal/**` | the launcher-registry test only checks that `index.html` + js **exist**, never their bytes | **per-file soft pins** for 18 files (9 per app) + hard `file_exists` assertions on the surfaces (`index.html`, `settings.js`, `terminal.js`, `terminal/sw.js`); owners named per file |
+| d | `pwa/nuxel-apps/settings/**`, `pwa/nuxel-apps/terminal/**` | the launcher-registry test only checks that `index.html` + js **exist**, never their bytes | **per-file soft pins** for **17 files (9 settings + 8 terminal)** — terminal: `index.html`, `app.json`, `manifest.json`, `sw.js`, `terminal.js`, `terminal.css`, `icons/icon-192.png`, `icons/icon-512.png` — + hard `file_exists` assertions on the surfaces (`index.html`, `settings.js`, `terminal.js`, `terminal/sw.js`); owners named per file |
 
 **Deliberately left unpinned, and said so (no silent gap):** the two 0-byte `.keep` placeholders in
 those app directories — pinning an empty file proves nothing and would be noise.
+
+**Count corrected 2026-10-16 (repair pass 2; `briq-00d-baseline-protection` revision 8).**  The
+row above and this revision's own history entry had said *"18 files (9 per app)"* while the
+manifest pins **17** PWA files — **9 under `pwa/nuxel-apps/settings/**` and 8 under
+`pwa/nuxel-apps/terminal/**`** (the 8 terminal names are listed in the row above) — which keeps the
+INV-11 total consistent: **23 files pinned = 6 non-PWA + 9 settings + 8 terminal**.  No pin was
+missing and no hash changed; only the count that contradicted the pins is corrected.
 
 **The gate, re-executed with INV-11 present** (raw capture:
 `docs/beta-finalization/preflight/gate-regression-guard-inv11.txt`):

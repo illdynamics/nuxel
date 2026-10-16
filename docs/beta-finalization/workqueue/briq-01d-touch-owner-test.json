@@ -106,6 +106,73 @@
       "offline_ceiling": "NEEDS_OWNER_TEST",
       "owner_action": "OWNER TEST REQUIRED: on a NORMAL boot (unplug the charger first; the device is currently in charger/LPM mode) run nuxel-touch-capture.sh --seconds 90 and perform the printed sequence; confirm on screen that Settings opens, Home returns, Terminal opens, the launcher scrolls, an app starts and the on-screen keyboard accepts typing. See docs/beta-finalization/manual-proof/01-touchscreen.md section 4",
       "note": "Resumed from the rev-1 seed (it was still pending). The harness now uses the tracer's --capture mode so the owner taps are recorded as per-event JSONL with kernel timestamps plus a validated coordinate map, and it prints the exact sequence including the mission's completion definition (open Settings, return Home, open Terminal, scroll the launcher, select an app, use the on-screen keyboard). The item terminates at NEEDS_OWNER_TEST: no finger has touched the glass in this cycle and nothing here is promoted to VERIFIED_ON_S10PLUS."
+    },
+    {
+      "component": "bg-01-touch-pipeline",
+      "component_title": "Priority 0 - Touchscreen & Reliable Interactive Input",
+      "priority": 1,
+      "risk": "low",
+      "rollback": "git revert the commit(s) touching this task's expected files; the change is repository-only and alters no device state",
+      "source": "construqtor/bg-01-touch-pipeline cycle-003 repair",
+      "by": "construqtor/bg-01-touch-pipeline",
+      "at": "2026-10-16T20:14:14+02:00",
+      "id": "briq-01d-touch-owner-test",
+      "title": "Touchscreen finger test - harness, diagnostics and owner instructions",
+      "state": "implemented",
+      "revision": 3,
+      "dependencies": [
+        "briq-01a-pipeline-trace-tool"
+      ],
+      "expected_files": [
+        "tools/s10plus/a33/nuxel-touch-capture.sh",
+        "docs/beta-finalization/manual-proof/01-touchscreen.md"
+      ],
+      "intended_changes": [
+        "docs/beta-finalization/manual-proof/01-touchscreen.md (cycle-002 edit, now recorded here): the automatic-evidence table re-stamped to the re-measured counts - nuxel-touch-trace.py --self-test 43/43 assertions and the /dev/input/eventN grep gate '27 files checked, 0 failing' (test-libinput-shim-invocation.py in the gate's TARGETS)",
+        "docs/beta-finalization/reports/BETA-MANUAL-PROOF-CHECKLIST.md (cycle-002 edit, now recorded here): area 1 (touchscreen) re-stamped",
+        "docs/beta-finalization/live/evidence/...-p0probe-live-run/ (cycle-002 edit, now recorded here): the evidence bundle was renamed and its verdict.txt/analysis.json regenerated so every EVIDENCE=/JSON_OUT= path resolves; the superseded pre-rename analyzer records were moved out of the bundle into docs/beta-finalization/touch/live-capture-pre-rename-records/ with their audit README",
+        "docs/beta-finalization/touch/live-capture-pre-rename-records/README.md (this repair pass): corrected the quoted git blob for the preserved verdict.pre-rename.txt (was cited as b7c7e86a..., which was the regenerated .../verdict.txt of ce8eb3b) to the blob git actually tracked for that path, fa2f5a90ea5292b3117116c35fbb3e64aa897d01 (== git hash-object of the preserved copy); file contents were already correct and unchanged"
+      ],
+      "evidence": [
+        {
+          "kind": "offline",
+          "command": "python3 tools/s10plus/a33/tests/test-capture-harness.py",
+          "path": "tools/s10plus/a33/nuxel-touch-capture.sh",
+          "result": "33/33 PASS - unchanged harness gate (arms nothing without a finger, CAPTURE_GATE=PASS only from gate.json pass:true, empty capture is FAIL + NEEDS_OWNER_TEST, no repo litter)",
+          "at": "2026-10-16T20:14:14+02:00"
+        },
+        {
+          "kind": "doc",
+          "command": "grep -n '43/43\\|27 files' docs/beta-finalization/manual-proof/01-touchscreen.md",
+          "path": "docs/beta-finalization/manual-proof/01-touchscreen.md",
+          "result": "the cycle-002 re-stamp is in the tree: self-test 43/43 assertions and the eventN grep gate 27 files checked / 0 failing",
+          "at": "2026-10-16T20:14:14+02:00"
+        },
+        {
+          "kind": "observation",
+          "path": "tools/s10plus/a33/nuxel-touch-capture.sh",
+          "command": "sha256sum tools/s10plus/a33/nuxel-touch-capture.sh",
+          "result": "sha256 93b7179e2ce7a2171b77fc1284fb7f0dc5bdbb36d8453ac5d945519136de57b4 (unchanged from rev 2)",
+          "at": "2026-10-16T20:14:14+02:00"
+        },
+        {
+          "kind": "doc",
+          "command": "git ls-tree -r ce8eb3b -- docs/beta-finalization/live/evidence/ | grep p0probe",
+          "path": "docs/beta-finalization/touch/live-capture-pre-rename-records/README.md",
+          "result": "ce8eb3b tracked .../p0probe-live-run/verdict.pre-rename.txt as blob fa2f5a90ea5292b3117116c35fbb3e64aa897d01 and the regenerated .../verdict.txt as blob b7c7e86a52cc47ceacf18d2468de8658d7a1e708; the README now cites them the right way round",
+          "at": "2026-10-16T20:14:14+02:00"
+        }
+      ],
+      "tests": [
+        "L1: bash -n; shellcheck -S warning clean",
+        "L2/L3: test-capture-harness.py 33/33 (unchanged)",
+        "doc: the manual-proof fragment's counts match the re-measured suite (43/43 self-test, 27-file eventN gate)",
+        "L6: the finger test itself remains NEEDS_OWNER_TEST and is never auto-promoted"
+      ],
+      "verdict": "OFFLINE_TESTED",
+      "offline_ceiling": "NEEDS_OWNER_TEST",
+      "owner_action": "OWNER TEST REQUIRED: on a NORMAL boot (unplug the charger first; the device is currently in charger/LPM mode) run nuxel-touch-capture.sh --seconds 90 and perform the printed sequence; confirm on screen that Settings opens, Home returns, Terminal opens, the launcher scrolls, an app starts and the on-screen keyboard accepts typing. See docs/beta-finalization/manual-proof/01-touchscreen.md section 4",
+      "note": "Repair pass. This revision records the cycle-002 documentation edits briq-01d made but did not append to its own queue record: the manual-proof fragment's re-stamped counts (self-test 43/43, eventN gate 27 files), the BETA-MANUAL-PROOF-CHECKLIST area-1 re-stamp, and the evidence-bundle rename plus the pre-rename audit records kept outside the bundle. It also records this pass's correction of the swapped git blob citation in live-capture-pre-rename-records/README.md. The harness and the finger test are unchanged: the item still terminates at NEEDS_OWNER_TEST."
     }
   ]
 }

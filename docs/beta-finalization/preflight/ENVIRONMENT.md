@@ -961,6 +961,20 @@ which cannot execute on this host (§13.2) and belongs to `bg-02` (INV-2).
 >    Corrected in `docs/beta-finalization/workqueue/briq-00a-repo-preflight.json` **revision 5**
 >    (revision 4 is left untouched): **10/10 framed round trips, `sha_ok=yes` on every frame, rc=0**.
 
+> **Second correction appended 2026-10-16 (repair pass 2; `briq-00a-repo-preflight` revision 6).**
+> Correction 1, immediately above, was itself one step stale about *which* measurement is final —
+> the same defect class, one step further along. **The final gate measurement of this pass is
+> `PASS=68 FAIL=0 WARN=8 INFO=2` with INV-11 present** (raw capture:
+> `docs/beta-finalization/preflight/gate-regression-guard-inv11.txt`, `run 20261016T175559Z` =
+> 2026-10-16T19:55:59+02:00, summary line `REGRESSION GUARD: PASS`, `exit=0`). **`PASS=53` was the
+> pre-INV-11 measurement and `PASS=41` the pre-INV-10 one, both within the same session** (53 + the
+> 15 new INV-11 assertions = 68).  The row above (41) and correction 1 (53) are both preserved
+> unchanged — this section is append-only.  INV-11 itself is named in neither of them: it is
+> recorded in `docs/beta-finalization/BASELINE-PROTECTION.md` §11 and, with this final number, in
+> the appended `reverification_log` entry of `docs/beta-finalization/baseline-protection.json`.
+> Re-confirmed on this repair pass's HEAD `3c0264e9112f7ac4e60510e2be6b5783ac3e286a` by re-running
+> `bash tools/beta/regression-guard.sh` -> `PASS=68 FAIL=0 WARN=8 INFO=2`, exit 0.
+
 ### 13.22 Observed tool caveat — `tools/beta/health-check.sh` mis-detects this workstation
 
 Captured (raw: `docs/beta-finalization/preflight/observed-health-check-host.txt`) while validating

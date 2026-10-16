@@ -1084,6 +1084,12 @@
         }
       ],
       "authorising_briq": "briq-00d-baseline-protection revision 5 (bg-00-preflight repair pass), per the regression rule in BASELINE-PROTECTION.md section 10: a protected hash may change only via an explicit work-queue revision that names the authorising briQ."
+    },
+    {
+      "at": "2026-10-16T20:15:17+02:00",
+      "event": "correction",
+      "invariant": "INV-11-a32-enumerated-asset-pins",
+      "detail": "File-count correction (no pin, hash or assertion changed). INV-11 pins 23 files = 6 non-PWA + 9 under pwa/nuxel-apps/settings/** + 8 under pwa/nuxel-apps/terminal/**. The old_to_new row above for pwa/nuxel-apps/terminal/** says '9 files pinned' while naming only 8 (index.html, app.json, manifest.json, sw.js, terminal.js, terminal.css, icons/icon-192.png, icons/icon-512.png), and briq-00d revision 7's note and BASELINE-PROTECTION.md section 11 both said '18 files (9 per app)'. The correct PWA count is 17 (9 + 8); the .keep placeholders remain deliberately unpinned. No terminal file was actually missing from the pins - every one of the 17 real files is pinned and its hash matches - so only the number that contradicted its own evidence is corrected. Recorded in briq-00d-baseline-protection revision 8 and in BASELINE-PROTECTION.md section 11."
     }
   ],
   "vm_host": "nuxel@192.168.64.3",
@@ -1124,6 +1130,17 @@
       "correction": "ENVIRONMENT.md section 13.21 and the first reverification_log entry of this register both quoted the superseded PASS=41 run while citing gate-regression-guard.txt, whose own summary line (2026-10-16T17:36:56Z) reads PASS=53 FAIL=0 WARN=8 INFO=2 and 'REGRESSION GUARD: PASS' (exit=0) \u2014 BASELINE-PROTECTION.md section 9.1 already said 53. The 13.21 row is preserved (append-only) and the correction was appended beneath it by briq-00a revision 5; the entry here records the final number against the same evidence channel.",
       "honest_note": "No protected file changed and no pin moved in the repair pass; this entry only replaces a superseded measurement with the one its own cited capture already carried.",
       "evidence": "docs/beta-finalization/preflight/gate-regression-guard.txt (17:36:56Z), docs/beta-finalization/preflight/ENVIRONMENT.md section 13.21 (appended correction), docs/beta-finalization/workqueue/briq-00a-repo-preflight.json revision 5, docs/beta-finalization/BASELINE-PROTECTION.md section 9.1"
+    },
+    {
+      "at": "2026-10-16T20:15:17+02:00",
+      "by": "construqtor/bg-00-preflight",
+      "briq": "briq-00a-repo-preflight revision 6 (repair pass 2)",
+      "repo_head": "3c0264e9112f7ac4e60510e2be6b5783ac3e286a",
+      "host": "Fedora Linux 43 x86_64 (dextronux) - repair pass 2 of the second session",
+      "guard_result": "PASS=68 FAIL=0 WARN=8 INFO=2 (final, INV-11 present)",
+      "superseded_measurements": "PASS=53 FAIL=0 WARN=8 INFO=2 (pre-INV-11) and PASS=41 FAIL=0 WARN=8 INFO=2 (pre-INV-10) - both within the SAME session; 41 + 12 INV-10 assertions = 53, 53 + 15 INV-11 assertions = 68. Only 68 is this pass's final gate result.",
+      "correction": "The previous reverification_log entry (2026-10-16T19:58:00+02:00) and ENVIRONMENT.md section 13.21 correction 1 both called PASS=53 'the session's final gate result'; that was itself one step stale, because the same pass's LAST gate run - after INV-11 was appended - produced 68 (raw capture docs/beta-finalization/preflight/gate-regression-guard-inv11.txt, run 20261016T175559Z = 2026-10-16T19:55:59+02:00, summary line 'REGRESSION GUARD: PASS', exit 0), as BASELINE-PROTECTION.md section 11 and briq-00d-baseline-protection revision 7 already recorded at 19:56:49+02:00. Existing rows and entries are preserved (append-only); this entry states the final number the row above was missing, and ENVIRONMENT.md section 13.21 carries a matching second correction.",
+      "evidence": "docs/beta-finalization/preflight/gate-regression-guard-inv11.txt (17:55:59+02:00, PASS=68, exit 0), docs/beta-finalization/preflight/gate-regression-guard.txt (PASS=53, superseded), docs/beta-finalization/preflight/ENVIRONMENT.md section 13.21 (appended second correction), docs/beta-finalization/BASELINE-PROTECTION.md section 11, docs/beta-finalization/workqueue/briq-00a-repo-preflight.json revision 6, docs/beta-finalization/workqueue/briq-00d-baseline-protection.json revision 7, re-run on HEAD 3c0264e9: bash tools/beta/regression-guard.sh -> PASS=68 FAIL=0 WARN=8 INFO=2, exit 0"
     }
   ]
 }
