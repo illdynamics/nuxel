@@ -1,0 +1,32 @@
+[
+  {
+    "evidence": "{\"rid\": \"9dd99c40\", \"rc\": 0, \"framed\": true, \"sha_ok\": true, \"elapsed_s\": 0.801, \"raw_len\": 341, \"output_bytes\": 39}",
+    "id": "po-1",
+    "item": "console reconnects and answers a verified frame",
+    "status": "pass"
+  },
+  {
+    "evidence": "\u25cf nuxel-touch-arm.service loaded failed failed Nuxel S10+ touchscreen arming (sec_ts stop->start, then hold open) | units: {\"nuxel-wayland\": \"deactivating\", \"nuxel-wl-fb\": \"inactive\", \"nuxel-button-manager\": \"inactive\", \"nuxel-touch-arm\": \"failed\", \"seatd\": \"active\"}",
+    "id": "po-2",
+    "item": "boot graph completed without failed units",
+    "status": "fail"
+  },
+  {
+    "evidence": "BOOT_WAIT_LAUNCHER",
+    "id": "po-3",
+    "item": "framebuffer owner is the single Wayland/fb bridge",
+    "status": "fail"
+  },
+  {
+    "evidence": "ANIM_STAGE=ANIMATION_STOPPED",
+    "id": "po-4",
+    "item": "animation handoff receipt present",
+    "status": "pass"
+  },
+  {
+    "evidence": "HTTP 000",
+    "id": "po-5",
+    "item": "launcher serves the registry on :8000",
+    "status": "fail"
+  }
+]

@@ -2204,3 +2204,55 @@ corresponding fragments (`apps/LIVE-CONSOLE.md`, `apps/NUXTORE.md`-adjacent mate
 `security/*.md`, `release/REBOOT-ROLLBACK.md`, `testing/SOAK-AND-PERFORMANCE.md`) were not present at
 aggregation time. Every "Current automatic evidence" field above cites a path or a command that was
 actually run; nothing in this document is a human observation, because no human was present.*
+
+---
+
+# UPDATE — LIVE ON-DEVICE PASS (task2.md)
+
+The userspace is now **actually on the phone**. This update tells you what changed for each area and
+what still needs your hands. The device is currently on a **normal boot** (not charger/LPM mode) with
+the touchscreen registered, so the touch tests below can be attempted.
+
+## What is confirmed by device logs (not by a person)
+
+* Launcher served from `/usr/share/nuxel/pwa/nuxel-home/index.html`, hash `a15be137…` = the repository,
+  `HTTP 200`; 25 web apps present and serving (`settings`, `snekbyte`, `clock`, … all `200`).
+* `nuxel-wayland`, `nuxel-wl-fb`, `nuxel-touch-arm`, `nuxel-button-manager`, `seatd` all **active**;
+  `systemctl --failed` empty.
+* Display bridge `/run/nuxel-wl-fb.state` = `FRAMES_OK … owner=nuxel-wl-fb display=on` (one writer).
+* Touchscreen: `sec_ts` on IRQ 431; `sec_touchscreen → event2` with `INPUT_PROP_DIRECT`; libinput shim
+  `PATH_ASSIGN_SEAT … direct_devices_seen=2`.
+* ALSA card 0 `beyond-madera` present. `rpm -qa` = 410 packages. Touch/config/tool files all deployed
+  with verified hashes.
+
+## Area 1 — Touchscreen (PRIORITY, still needs you)
+
+**Why:** a registered driver and a mounted event node are proven; a finger is not.
+
+**Preparation:** leave the phone on (do **not** hold Power — an 11 s hold reboots it, and a
+USB-attached reboot can come back in charger mode, where the touchscreen does not exist).
+
+**Action:** tap the launcher, open Settings, return Home, open Terminal, scroll the launcher, tap an
+app tile, type on the on-screen keyboard.
+
+**PASS:** each action responds. **FAIL:** no response at all (E = pipeline), or wrong coordinates
+(E = mapping). **Diagnostic:**
+`sudo bash scripts/s10plus-debug-pack/nuxel-live.sh --dev /dev/ttyACM0 --batch <touch-reads>.txt`
+and `journalctl -b -u nuxel-touch-arm --no-pager | tail`.
+
+## Area 2 — Launcher / boot animation
+
+Confirmed live: the served launcher is the deployed revision and the display bridge renders. What still
+needs you: that the boot animation hands off cleanly to the launcher and that you see the wallpaper
+colour correctly — record what you actually see, including any black frame or ghost frame.
+
+## Area 26 — Long-term stability
+
+`nuxel-postboot.sh` was seen restart-looping `nuxel-ui` on an earlier boot (≥148 iterations). Watch the
+phone over an hour: if the UI blanks and returns every ~30 s, that loop is still live — capture
+`tail -40 /var/lib/nuxel/bootreport.txt`.
+
+## Newly relevant gap — Timekeeping (area 5)
+
+The device clock is **wrong**: it reads `2026-09-15T00:01Z` while the real date is 2026-10-16. The time
+config is deployed but the clock is not synchronised. Until it is fixed, timestamps in logs are wrong.

@@ -1,0 +1,14 @@
+probe: touch-pipeline (01-touchscreen)
+cmd: sh /var/tmp/nuxel-live-probes/nuxel-touch-capture.sh --dry-run --seconds 20
+staged: [{"bytes": 12093, "frames": 5, "sha256": "93b7179e2ce7a2171b77fc1284fb7f0dc5bdbb36d8453ac5d945519136de57b4", "source": "tools/s10plus/a33/nuxel-touch-capture.sh", "target": "/var/tmp/nuxel-live-probes/nuxel-touch-capture.sh"}, {"bytes": 117050, "frames": 47, "sha256": "dc3a0d61ec4396b0bf55b58297f0801a4d773a120b945aee6bbac06e24709484", "source": "tools/s10plus/a33/nuxel-touch-trace.py", "target": "/var/tmp/nuxel-live-probes/nuxel-touch-trace.py"}, {"bytes": 26461, "frames": 11, "sha256": "0019ce964d7499f25df13fbbb2a6c07371139c661780223cae7e17f83ec6fce0", "source": "tools/s10plus/a33/nuxel-bootmode-guard.py", "target": "/var/tmp/nuxel-live-probes/nuxel-bootmode-guard.py"}]
+rc: 10 framed: True sha_ok: True
+verdict: BLOCKED_KERNEL
+reason: the capture classified a charger/low-power boot: sec_ts is not serviced in that mode — the kernel/DTB fix is offline-only
+--- observation ---
+== nuxel-touch-capture ==
+BUNDLE=/var/lib/nuxel/touch-capture/20260915T011548Z
+BUDGET_SECONDS=20 MAX_EVENTS=4000 MAX_BYTES=1048576 DRY_RUN=1
+!! charger-mode boot detected: the touchscreen does not exist on this boot.
+   Unplug the charger and reboot normally, then re-run this capture.
+CAPTURE_GATE=BLOCKED reason=charger-mode-boot evidence=/var/lib/nuxel/touch-capture/20260915T011548Z/bootmode.txt
+

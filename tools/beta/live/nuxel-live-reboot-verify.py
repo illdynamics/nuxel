@@ -531,7 +531,7 @@ def stage_probe(con, bundle, defn, repo):
         target = os.path.join(PROBE_DIR, os.path.basename(rel))
         info = nl.push_bytes(con, data, target, mode="0755")
         staged.append({"source": rel, "target": target, "bytes": info["bytes"],
-                       "frames": info["frames"], "sha256": info["decoded_sha256"]})
+                       "frames": info.get("parts", info.get("frames")), "sha256": info["decoded_sha256"]})
     if not staged:
         return None, staged
     entry = defn.get("device_path") or defn["push"][0]

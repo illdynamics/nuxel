@@ -1,0 +1,8 @@
+pushed={"b64_chars": 1816, "bytes": 1361, "decoded_sha256": "603bf18dc510e94a64f7a5cabd485332588625de385a42c835d101696fe27667", "parts": 1, "path": "/var/tmp/nxl-install-001.sh"}
+ok=True rc=0
+---
+PREV=NONE
+/etc/nuxel/boot/animation-handoff.json.nuxel-staged: OK
+active
+INSTALL-OK
+NXLSCRIPT-RC=0

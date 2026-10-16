@@ -34,6 +34,55 @@
       "revision": 1,
       "at": "2026-10-16T16:07:13+02:00",
       "by": "construqtor/bg-00-preflight"
+    },
+    {
+      "id": "briq-10a-live-reachability-preflight",
+      "title": "Live phone reachability and baseline capture",
+      "component": "bg-10-live-phone",
+      "component_title": "Live S10+ Deployment, Reboot & On-Device Evidence (serialized)",
+      "priority": 1,
+      "state": "implemented",
+      "dependencies": [
+        "briq-00a-repo-preflight"
+      ],
+      "evidence": [
+        {
+          "kind": "on_device",
+          "path": "/x/nuxel/docs/beta-finalization/live/evidence/baseline-20261016T222451+0200",
+          "what": "normal-boot baseline, 41/41 verified frames"
+        },
+        {
+          "kind": "on_device",
+          "path": "/x/nuxel/docs/beta-finalization/live/evidence/baseline-20261016T235227+0200",
+          "what": "post-2nd-reboot baseline, 40/41 verified frames, sec_touchscreen present"
+        },
+        {
+          "kind": "doc",
+          "path": "/x/nuxel/docs/beta-finalization/live/BASELINE-CAPTURE.md"
+        }
+      ],
+      "intended_changes": [
+        "docs/beta-finalization/live/BASELINE-CAPTURE.md",
+        "docs/beta-finalization/live/evidence/"
+      ],
+      "tests": [
+        "(tests are recorded by the owning briQ when it reports)",
+        "live console baseline over /dev/ttyACM0; every read a SHA-256-verified frame"
+      ],
+      "risk": "medium",
+      "rollback": "git revert the commit(s) touching this task's expected files; the change is repository-only and alters no device state",
+      "verdict": "DEPLOYED_UNVERIFIED",
+      "offline_ceiling": null,
+      "owner_action": "",
+      "expected_files": [
+        "docs/beta-finalization/live/BASELINE-CAPTURE.md",
+        "docs/beta-finalization/live/evidence/"
+      ],
+      "note": "Captured on the real S10+ from this host. Pre-reboot bundle: androidboot.mode=charger, no sec_ts. Post-reboot bundles: normal boot, sec_touchscreen registered (INPUT_PROP_DIRECT), all nuxel units active, 0 failed.",
+      "source": "plan.json",
+      "at": "2026-10-16T23:52:58+02:00",
+      "by": "construqtor",
+      "revision": 2
     }
   ]
 }

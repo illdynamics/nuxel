@@ -1,0 +1,3 @@
+cmd: cat /var/lib/nuxel/fb-owner 2>&1
+ok: False rc: 0 framed: False sha_ok: False
+---

@@ -1,0 +1,4 @@
+cmd: grep -iE 'sec_ts|sec_touch' /proc/interrupts
+ok: True rc: 0 framed: True sha_ok: True
+---
+431:         10          0          0          0          0          0          0          0  exynos7_wkup_irq_chip   0 Level     sec_ts

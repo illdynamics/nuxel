@@ -1,0 +1,8 @@
+[
+  {
+    "expected": "nuxel-wl-fb",
+    "item": "fb-owner",
+    "observed": "",
+    "severity": "regression-signal"
+  }
+]

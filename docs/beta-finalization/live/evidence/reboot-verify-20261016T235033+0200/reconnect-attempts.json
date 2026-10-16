@@ -1,0 +1,30 @@
+[
+  {
+    "at": "2026-10-16T23:50:56+0200",
+    "error": null,
+    "frame": {
+      "elapsed_s": 0.801,
+      "framed": true,
+      "output_bytes": 39,
+      "raw_len": 341,
+      "rc": 0,
+      "rid": "9dd99c40",
+      "sha_ok": true
+    },
+    "node": {
+      "callout": "/dev/ttyACM0",
+      "match_stage": "explicit"
+    },
+    "probe": {
+      "at": "2026-10-16T23:50:56+0200",
+      "bytes_in": 54,
+      "dev": "/dev/ttyACM0",
+      "echo_ok": true,
+      "elapsed_s": 0.304,
+      "error": null,
+      "reachable": true,
+      "sample": "\u001b[?2004l\n\u001b[?2004hsh-5.3# \u001b[?2004l\n\u001b[?2004hsh-5.3# "
+    },
+    "reachable": true
+  }
+]

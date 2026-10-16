@@ -1,0 +1,22 @@
+[
+  {
+    "group": "animation-handoff",
+    "n": 1,
+    "risk": "high",
+    "script": "scripts/001-animation-handoff.json.sh",
+    "service": "nuxel-wayland",
+    "source": "configs/nuxel/boot/animation-handoff.json",
+    "source_sha256": "5deb569e5f1049fa2f5689ccb35cfab2758ad717ffd9d5ed9e9efceac856c00c",
+    "target": "/etc/nuxel/boot/animation-handoff.json"
+  },
+  {
+    "group": "animation-handoff",
+    "n": 2,
+    "risk": "high",
+    "script": "scripts/002-verbose-boot.json.sh",
+    "service": "nuxel-wayland",
+    "source": "configs/nuxel/boot/verbose-boot.json",
+    "source_sha256": "16a46b63e6ea82bdaa9528ac1dd553852642e164f02761892d85eeaa3a12f18e",
+    "target": "/etc/nuxel/boot/verbose-boot.json"
+  }
+]

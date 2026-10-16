@@ -1,0 +1,12 @@
+{
+  "animation": "ANIM_STAGE=ANIMATION_STOPPED\nANIM_OWNER=nuxel-wl-fb\n",
+  "boot_count": "cat: /var/lib/nuxel/boot-count: No such file or directory\n",
+  "boot_id": "1f83eb57-0f49-41a3-9b2b-2eeac0961edf\n",
+  "boot_mode": "androidboot.mode=charger\n",
+  "failed_units": "\u25cf nuxel-portal.service loaded failed failed Nuxel Portal Daemon\n",
+  "fb_owner": "BOOT_WAIT_LAUNCHER\nLAUNCHER_READY\nANIMATION_STOP_REQUESTED\nANIMATION_STOP_CONFIRMED\nLAUNCHER_DISPLAY_OWNER\n",
+  "registry_http": "200\n",
+  "units": "nuxel-wayland=active\nnuxel-wl-fb=active\nnuxel-button-manager=active\nnuxel-touch-arm=activating\nseatd=active\n",
+  "uptime": "4512.52 30328.13\n",
+  "wl_fb_state": "1789434909 FRAMES_OK total=826 fps_1s=25 failures=0 blit_avg_ms=42 out=720x1520 src=720x1520 scale=2 panel=1440x3040 owner=nuxel-wl-fb display=on src_format=0x00000001 colour=R@0,G@8,B@16_abgr8888_override=1\n"
+}

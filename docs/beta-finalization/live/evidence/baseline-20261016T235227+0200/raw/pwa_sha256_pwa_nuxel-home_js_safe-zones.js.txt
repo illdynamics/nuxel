@@ -1,0 +1,4 @@
+cmd: sha256sum /usr/share/nuxel/pwa/nuxel-home/js/safe-zones.js 2>&1
+ok: True rc: 0 framed: True sha_ok: True
+---
+0ef0c91a45b599881f4eea26fca2c08ffdde806ec52dd48472c042ecb5806a0f  /usr/share/nuxel/pwa/nuxel-home/js/safe-zones.js

@@ -1,0 +1,14 @@
+probe: fb-owner (02-boot-animation-launcher)
+cmd: cat /var/lib/nuxel/fb-owner; cat /run/nuxel-wl-fb.state
+staged: []
+rc: 0 framed: True sha_ok: True
+verdict: FAILED
+reason: the framebuffer owner is not the single Wayland/fb bridge (observed: BOOT_WAIT_LAUNCHER | LAUNCHER_READY | ANIMATION_STOP_REQUESTED | ANIMATION_STOP_CONFIRMED | LAUNCHER_DISPLAY_OWNER | 178)
+--- observation ---
+BOOT_WAIT_LAUNCHER
+LAUNCHER_READY
+ANIMATION_STOP_REQUESTED
+ANIMATION_STOP_CONFIRMED
+LAUNCHER_DISPLAY_OWNER
+1789434977 FRAMES_OK total=2393 fps_1s=24 failures=0 blit_avg_ms=42 out=720x1520 src=720x1520 scale=2 panel=1440x3040 owner=nuxel-wl-fb display=on src_format=0x00000001 colour=R@0,G@8,B@16_abgr8888_override=1
+

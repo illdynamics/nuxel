@@ -1,0 +1,9 @@
+pushed={"b64_chars": 1836, "bytes": 1376, "decoded_sha256": "fc6e76d9e4e32a5afa568204674538a46d56aa9198f8eeb2d49ce06ecfb7e9f3", "parts": 1, "path": "/var/tmp/nxl-install-056.sh"}
+ok=True rc=0
+---
+FB_OWNER_ASSERT=PASS owner=nuxel-wl-fb pid=123218 count=1 fb=/dev/fb0
+PREV=NONE
+/usr/lib/nuxel/nuxel-anim-pack.py.nuxel-staged: OK
+FB_OWNER_ASSERT=PASS owner=nuxel-wl-fb pid=123218 count=1 fb=/dev/fb0
+INSTALL-OK
+NXLSCRIPT-RC=0

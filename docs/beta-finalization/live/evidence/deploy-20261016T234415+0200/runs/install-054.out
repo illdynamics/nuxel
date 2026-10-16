@@ -1,0 +1,10 @@
+pushed={"b64_chars": 2140, "bytes": 1603, "decoded_sha256": "8337abd4c6b6acc9f1eea499c4654adcc165c75a05da7e82a91c8522b9109c2d", "parts": 1, "path": "/var/tmp/nxl-install-054.sh"}
+ok=True rc=0
+---
+FB_OWNER_ASSERT=PASS owner=nuxel-wl-fb pid=5386 count=1 fb=/dev/fb0
+PREV=NONE
+/usr/share/nuxel/boot/nuxel-boot-animation.mp4.nuxel-staged: OK
+active
+FB_OWNER_ASSERT=FAIL reason=zero count=0 fb=/dev/fb0
+ROLLED-BACK rc=1
+NXLSCRIPT-RC=1

@@ -1,0 +1,8 @@
+probe: sec-ts-irq (01-touchscreen)
+cmd: grep -iE 'sec_ts|sec_touch' /proc/interrupts
+staged: []
+rc: 1 framed: True sha_ok: True
+verdict: BLOCKED_KERNEL
+reason: no sec_ts/sec_touch line in /proc/interrupts: the touch controller is not in the kernel's interrupt map
+--- observation ---
+

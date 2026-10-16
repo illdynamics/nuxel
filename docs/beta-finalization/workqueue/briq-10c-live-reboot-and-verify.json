@@ -36,6 +36,53 @@
       "revision": 1,
       "at": "2026-10-16T16:07:13+02:00",
       "by": "construqtor/bg-00-preflight"
+    },
+    {
+      "id": "briq-10c-live-reboot-and-verify",
+      "title": "Normal reboot, return-to-Nuxel verification and on-device probes",
+      "component": "bg-10-live-phone",
+      "component_title": "Live S10+ Deployment, Reboot & On-Device Evidence (serialized)",
+      "priority": 1,
+      "state": "implemented",
+      "dependencies": [
+        "briq-10b-live-deploy-userspace",
+        "briq-01a-pipeline-trace-tool",
+        "briq-03c-audio-speaker"
+      ],
+      "evidence": [
+        {
+          "kind": "on_device",
+          "path": "/x/nuxel/docs/beta-finalization/live/evidence/reboot-verify-20261016T235033+0200",
+          "what": "normal reboot issued, console returned, boot_id changed"
+        },
+        {
+          "kind": "on_device",
+          "path": "/x/nuxel/docs/beta-finalization/live/evidence/baseline-20261016T235227+0200",
+          "what": "after reboot: normal boot, all units active, sec_touchscreen present"
+        }
+      ],
+      "intended_changes": [
+        "docs/beta-finalization/live/REBOOT-AND-VERIFY.md",
+        "docs/beta-finalization/live/evidence/"
+      ],
+      "tests": [
+        "(tests are recorded by the owning briQ when it reports)",
+        "systemctl reboot via nuxel-live-reboot-verify.py; boot_id + /proc/cmdline + unit state re-read after reconnect"
+      ],
+      "risk": "medium",
+      "rollback": "git revert the commit(s) touching this task's expected files; the change is repository-only and alters no device state",
+      "verdict": "DEPLOYED_UNVERIFIED",
+      "offline_ceiling": null,
+      "owner_action": "",
+      "expected_files": [
+        "docs/beta-finalization/live/REBOOT-AND-VERIFY.md",
+        "docs/beta-finalization/live/evidence/"
+      ],
+      "note": "Two normal reboots this session. Both cleared LPM/charger mode; the deployed userspace persisted across them (index.html sha256 unchanged after reboot).",
+      "source": "plan.json",
+      "at": "2026-10-16T23:52:58+02:00",
+      "by": "construqtor",
+      "revision": 2
     }
   ]
 }

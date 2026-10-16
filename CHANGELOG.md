@@ -8,6 +8,48 @@ and the OTA builder (see *Versioning* below).
 
 ---
 
+## [v0.5.0-beta-rc1] — 2026-10-16 — *live deployment cycle (task2)*
+
+**Version unchanged on purpose:** this cycle does not add a new feature surface, it moves what was
+already written onto the physical handset. The identifier stays `v0.5.0-beta-rc1` (no silent
+renumber); the release engineering that justifies `-rc1` is unchanged, and the Beta verdict is still
+`BETA_CANDIDATE_PENDING_HARDWARE_PROOF`.
+
+**Landed on the phone (S10+ `beyond2lte`, from host `dextronux`):**
+
+* **Root fix.** The deploy plan now resolves onto `/usr/share/nuxel` — the root the handset actually
+  serves — instead of `/home/nuxel/nuxel`, which does not exist on the device. 440/624 targets were
+  pointed at a tree nothing reads; that was why earlier passes produced "no difference on my phone".
+  Manifest gains a `target_root_map`; `nuxel_live.build_deploy_plan` applies it before guarding.
+* **Applied** the 16-group / 624-step plan (5 runs): launcher + safe zones (22/22), PWA app suite +
+  shared runtime + registry (400/400), configs / a33 tools / services / native-shell sources /
+  touch+buttons / audio+network (185/185), a33 runtime + session units + boot animation + packages
+  (64/64, 4/4 health checks), animation handoff (2/2). Files hash-verified on-device; the served
+  launcher hash equals the repository and 25 apps answer `HTTP 200`.
+* **Boot mode.** Two normal OS reboots cleared the LPM/charger-mode boot and armed the touchscreen
+  (`sec_touchscreen`, `INPUT_PROP_DIRECT`, `sec_ts` IRQ 431, all units active, 0 failed). A recurrence
+  was traced to an 11.6 s hardware POWER-key hold; the offline bootmode guard stays `BLOCKED_KERNEL`.
+* **Persistence.** The deployed userspace survived a reboot (served launcher hash unchanged).
+
+**Live-tooling fixes (each blocked the deploy):** CRLF frame normalisation; sysfs hex `idVendor`
+parsing (Linux console discovery found zero nodes); `MAX_WRAPPER_LEN` raised 480→3800 after measuring
+the real tty limit; `chunk_size_for` now returns the largest fitting chunk; `install_script` no longer
+reverts every successful install via a stray trailing rollback; group health checks run once per group
+rather than inside every file's install; the flash-tool guard no longer matches `pit` inside base64;
+`push_bytes` writes idempotent per-chunk part files and verifies the staged hash on-device; the deploy
+plan validates `--only` against the full manifest; the apply loop auto-reconnects the console and skips
+already-current files (resumable).
+
+**Honest gaps recorded, not hidden:** human touch/audio/button/radio acceptance is `NEEDS_OWNER_TEST`;
+`nuxel-portal`/`nuxel-bridge` are deployed but not enabled; the device clock is wrong
+(`2026-09-15` vs the real `2026-10-16`); `flatpak` is still absent so NuXtore has no backend.
+
+**New artefacts:** `docs/beta-finalization/live/BASELINE-CAPTURE.md`,
+`docs/beta-finalization/live/DEPLOYMENTS.md`, evidence bundles under
+`docs/beta-finalization/live/evidence/{baseline,deploy,reboot-verify}-*`.
+
+---
+
 ## [v0.5.0-beta-rc1] — 2026-10-16
 
 **Theme:** the alpha hardware bring-up becomes a *maintainable* beta candidate.

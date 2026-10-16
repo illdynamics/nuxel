@@ -1,12 +1,24 @@
 [
   {
     "at": "2026-10-16T22:23:57+0200",
+    "corrected_at": "2026-10-16T23:50:00+0200",
+    "correction": "returned_to_nuxel was recorded as false because the Python console client could not verify ANY frame at that time: the target tty ends its lines with CRLF and the frame parser matched bare LF, so every command was reported framed=false/sha_ok=false even though the device answered correctly.  That defect is fixed (CRLF normalisation in tools/beta/live/nuxel_live.py, this session).  The handset DID return to Nuxel: the non-charger baseline docs/beta-finalization/live/evidence/baseline-20261016T222451+0200 shows 41/41 frames verified with androidboot.mode absent, sec_touchscreen registered and nuxel-wayland/nuxel-wl-fb/nuxel-button-manager/nuxel-touch-arm/seatd all active.",
     "diagnostic": "re-read /proc/cmdline for androidboot.mode and confirm sec_touchscreen is registered",
     "evidence_after": null,
     "evidence_before": "/x/nuxel/docs/beta-finalization/live/evidence/reboot-verify-20261016T221922+0200",
     "n": 1,
     "reason": "clear LPM/charger-mode boot so sec_ts can initialise",
-    "returned_to_nuxel": false,
+    "returned_to_nuxel": true,
+    "rollback_known_good": true
+  },
+  {
+    "at": "2026-10-16T23:50:58+0200",
+    "diagnostic": "after reconnect verify sec_touchscreen is registered and nuxel-touch-arm is active, and read the previous boot's power-key hold from journalctl -b -1",
+    "evidence_after": "/x/nuxel/docs/beta-finalization/live/evidence/reboot-verify-20261016T235033+0200",
+    "evidence_before": "/x/nuxel/docs/beta-finalization/live/evidence/reboot-verify-20261016T235033+0200",
+    "n": 2,
+    "reason": "clear the LPM/charger-mode boot that recurred after an 11.6s hardware POWER-key hold, so sec_ts can initialise",
+    "returned_to_nuxel": true,
     "rollback_known_good": true
   }
 ]
