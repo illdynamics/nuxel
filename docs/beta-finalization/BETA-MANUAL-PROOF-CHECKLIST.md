@@ -1836,6 +1836,8 @@ python3 tools/beta/live/nuxel-live-reachability.py --json   # capability + byte-
 python3 tools/s10plus/a33/tests/test-console-protocol.py    # protocol suite (see defect below)
 journalctl -u nuxel-console --no-pager | tail -40
 ```
+
+> **Linux hosts:** pass the node explicitly (`--dev /dev/ttyACM0`) until the glob-safe discovery revision is in your tree - before it the documented bare form above produced no output at all on Linux (the macOS-only glob made the tool abort before its own diagnostic; pinned `INV-10`).
 Evidence path: `docs/beta-finalization/live/evidence/reachability-*/` (`reachability.json`,
 `probe-raw.txt`, `SHA256SUMS`).
 
@@ -2059,6 +2061,8 @@ tr ' ' '\n' < /proc/cmdline | grep androidboot.mode
 bash tools/nuxel-rollback-home.sh              # the known-working rollback path
 scripts/s10plus-debug-pack/nuxel-live.sh --wait-reconnect 60 --run 'uptime; systemctl is-system-running'
 ```
+
+> **Linux hosts:** as above - add `--dev /dev/ttyACM0` to the `nuxel-live.sh` call until the glob-safe discovery revision is in your tree.
 Config/pin paths: `configs/nuxel/buttons/reboot-gate.json`, `tools/nuxel-rollback-home.sh`
 (`b6288c34e1117edfccaa76bd7d764fbb903108a9dc29ea88e9582c27993c1f24`, hard pin `INV-6`),
 `configs/nuxel/touch/nuxel-bootmode-guard.service`, `configs/nuxel/touch/nuxel-bootmode-reboot.service`.

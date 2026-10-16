@@ -621,7 +621,7 @@
       "files": [
         {
           "path": "scripts/s10plus-debug-pack/nuxel-live.sh",
-          "sha256": "49a204ddb8f26bf988f32bbd26b18a402bf18605ff9d88d747ac445063ea5a24",
+          "sha256": "8d5c9afbfe5be068492dc55113d8cdfdccb21fb93e9f5d0eaee682abf8fc8214",
           "exists": true,
           "role": "live USB console host tool (framed, SHA-256-verified round trips to the phone)",
           "hash_mode": "soft"
@@ -648,11 +648,14 @@
           "min_count": 2
         },
         {
-          "type": "regex",
-          "label": "the Linux CDC-ACM node (/dev/ttyACM*) is discovered, not only the macOS one",
+          "type": "program",
+          "label": "the device-discovery path actually RUNS to completion (behavioural: the tool runs its real discover_dev() against a glob that matches nothing and against one that matches), instead of being asserted by grepping for the string /dev/ttyACM - a check the dead path also passed",
           "path": "scripts/s10plus-debug-pack/nuxel-live.sh",
-          "pattern": "/dev/ttyACM",
-          "min_count": 1
+          "args": [
+            "--dry-detect"
+          ],
+          "expect_exit": 0,
+          "require_stdout": "DISCOVERY-OK: 3/3 checks PASS"
         },
         {
           "type": "regex",
@@ -1098,6 +1101,15 @@
       "old_sha256": "8c413a471051be8d6d226dd818c3d6f780b02236c23dd165353793656a54eb20",
       "new_sha256": "49a204ddb8f26bf988f32bbd26b18a402bf18605ff9d88d747ac445063ea5a24",
       "reason": "briq-00a-repo-preflight revision 7: glob-safe device discovery (ls on a non-existent macOS glob exited 2, pipefail propagated it and set -e aborted the tool with zero output before its \"no CDC-ACM console node\" diagnostic; the documented default invocation was broken on Linux). Replaced with a direct [ -e \"$n\" ] loop over /dev/cu.usbmodem* and /dev/ttyACM*; fail-closed behaviour kept (same exit-1 diagnostic reached when no node exists). Evidence: docs/beta-finalization/preflight/live/no-dev-discovery-run.out, live/batch-5-cycle-003-recheck.out.",
+      "sha256_assertions_updated": 0
+    },
+    {
+      "at": "2026-10-16T20:29:03+0200",
+      "event": "repin",
+      "path": "scripts/s10plus-debug-pack/nuxel-live.sh",
+      "old_sha256": "49a204ddb8f26bf988f32bbd26b18a402bf18605ff9d88d747ac445063ea5a24",
+      "new_sha256": "8d5c9afbfe5be068492dc55113d8cdfdccb21fb93e9f5d0eaee682abf8fc8214",
+      "reason": "briq-01a-pipeline-trace-tool revision 4 (bg-01-touch-pipeline repair pass, coordinated with bg-00-preflight's INV-10 pin): added --dry-detect/--glob-root so INV-10's device-discovery claim is BEHAVIOURAL (program assertion: the tool's real discover_dev() run against a glob that matches nothing and one that matches; expect exit 0 + 'DISCOVERY-OK: 3/3 checks PASS') instead of the greppable '/dev/ttyACM' string that the dead discovery path also satisfied. Supersedes bg-00's 8c413a47->49a204dd repin; that glob-safe fix is preserved byte-for-byte in the new revision of the file. Evidence: docs/beta-finalization/touch/live-discovery-selftest.out.",
       "sha256_assertions_updated": 0
     }
   ],

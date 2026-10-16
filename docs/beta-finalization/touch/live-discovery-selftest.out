@@ -1,0 +1,44 @@
+# nuxel-live.sh device-discovery repair - bg-01-touch-pipeline verification capture
+2026-10-16T18:29:18Z
+Fri Oct 16 20:29:18 CEST 2026
+
+# The glob-safe discovery fix itself (glob 8c413a47... -> 49a204dd...) landed in this tree
+# via bg-00-preflight (briq-00a rev 7); its capture is
+# docs/beta-finalization/preflight/live/no-dev-discovery-run.out.  THIS capture covers the
+# bg-01 addition that INV-10 now gates on: the --dry-detect behavioural mode
+# (49a204dd... -> 8d5c9afb...).
+
+$ bash -n scripts/s10plus-debug-pack/nuxel-live.sh
+bash_n_rc=0
+
+$ sha256sum scripts/s10plus-debug-pack/nuxel-live.sh
+8d5c9afbfe5be068492dc55113d8cdfdccb21fb93e9f5d0eaee682abf8fc8214  scripts/s10plus-debug-pack/nuxel-live.sh
+
+# (1) --dry-detect: the real discovery path runs to completion, exit 0
+$ bash scripts/s10plus-debug-pack/nuxel-live.sh --dry-detect
+DISCOVERY-OK: 3/3 checks PASS (root=/dev, real node=/dev/ttyACM0)
+rc=0
+
+# (2) --dry-detect against a glob root that matches nothing: must NOT abort (the defect)
+$ bash scripts/s10plus-debug-pack/nuxel-live.sh --dry-detect --glob-root /nonexistent/nxl
+DISCOVERY-OK: 3/3 checks PASS (root=/nonexistent/nxl, real node=<none>)
+rc=0
+
+# (3) fail-closed is intact: a glob root with no node still reaches the documented
+#     diagnostic and exits 1 (non-dry mode)
+$ bash scripts/s10plus-debug-pack/nuxel-live.sh --glob-root /tmp/nxl-empty-root --run "id" --timeout 5
+no CDC-ACM console node (/tmp/nxl-empty-root/cu.usbmodem* or /tmp/nxl-empty-root/ttyACM*) — is the phone running Nuxel?
+rc=1
+
+# (4) the documented bare form (auto-discovery, NO --dev) now reaches the phone on Linux
+$ sudo -n bash scripts/s10plus-debug-pack/nuxel-live.sh --run "uname -r; head -c 200 /proc/cmdline" --timeout 20
+# console /dev/ttyACM0
+# shared lock /tmp/nuxel-live._dev_ttyACM0.lock is not usable by uid 0 ([Errno 13] Permission denied: '/tmp/nuxel-live._dev_ttyACM0.lock') — using private lock /tmp/nuxel-live._dev_ttyACM0.0.lock
+===== uname -r; head -c 200 /proc/cmdline   [rc=0 frame=bcc86cff sha_ok=yes]
+    4.14.253
+     console=ram loglevel=4 sec_debug.pcb_offset=7346944 sec_debug.smd_offset=7348992 sec_debug.lpddr4_size=8 sec_debug.dram_info=01,06,03,8G sec_debug.pwrsrc_rs=0x0001000840010000 sec_debug.reset_reason=
+rc=0
+
+# (5) regression gate after the change
+$ bash tools/beta/regression-guard.sh
+   REGRESSION GUARD: PASS — the A32 baseline is intact (no failing checks).

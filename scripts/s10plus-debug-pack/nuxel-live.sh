@@ -7,6 +7,7 @@
 #   nuxel-live.sh --pull /var/lib/nuxel/ui.ppm --out /tmp/ui.ppm
 #   nuxel-live.sh --watch                   # just stream the console
 #   nuxel-live.sh --dev /dev/cu.usbmodem201 --run 'id'
+#   nuxel-live.sh --dry-detect [--glob-root DIR]   # offline discovery self-test (opens NO port)
 #
 # WHY THIS IS NOT `screen` (P1 hardening, A26):
 #   The console carries BOTH an interactive shell AND a live mirror of the
@@ -43,6 +44,7 @@
 set -euo pipefail
 PY=${PY:-python3}
 DEV=""; MODE=""; CMD=""; FILE=""; TIMEOUT=""; OUT=""; RECONNECT=""
+GROOT="/dev"          # glob root for console-node discovery (override: --glob-root)
 while [ $# -gt 0 ]; do
   case "$1" in
     --dev) DEV="$2"; shift 2 ;;
@@ -53,7 +55,9 @@ while [ $# -gt 0 ]; do
     --out) OUT="$2"; shift 2 ;;
     --timeout|--wait) TIMEOUT="$2"; shift 2 ;;
     --wait-reconnect) RECONNECT="$2"; shift 2 ;;
-    -h|--help) sed -n '2,32p' "$0"; exit 0 ;;
+    --glob-root) GROOT="$2"; shift 2 ;;
+    --dry-detect) MODE=dry-detect; shift ;;
+    -h|--help) sed -n '2,33p' "$0"; exit 0 ;;
     *) echo "unknown option: $1" >&2; exit 2 ;;
   esac
 done
@@ -62,12 +66,51 @@ done
 # that exit status propagates out of the command substitution and `set -e` aborts the
 # script before the diagnostic on the next line can run (observed on Linux, where the
 # macOS /dev/cu.usbmodem* glob never matches).  Test each candidate directly instead.
-if [ -z "$DEV" ]; then
-  for n in /dev/cu.usbmodem* /dev/ttyACM*; do
-    [ -e "$n" ] && { DEV="$n"; break; }
+discover_dev() { # discover_dev [ROOT] -> first existing console node (or empty); never fails
+  local root="${1:-$GROOT}" n
+  for n in "$root"/cu.usbmodem* "$root"/ttyACM*; do
+    [ -e "$n" ] && { printf '%s\n' "$n"; return 0; }
   done
+  return 0
+}
+if [ -z "$DEV" ]; then
+  DEV="$(discover_dev)"
 fi
-[ -n "$DEV" ] || { echo "no CDC-ACM console node (/dev/cu.usbmodem* or /dev/ttyACM*) — is the phone running Nuxel?" >&2; exit 1; }
+# --dry-detect: behavioural discovery self-test, run by INV-10 in the regression gate.
+# It exercises the very discover_dev() path the tool uses for real, but NEVER opens the
+# serial port and never touches the phone.  It proves the discovery code survives a glob
+# that matches nothing (the Linux-host defect: `ls` on a missing glob exited 2 and `set -e`
+# aborted the tool with zero output) as well as one that matches.  Without it INV-10's
+# Linux claim could only ever be a string check that a dead path would still satisfy.
+if [ "$MODE" = dry-detect ]; then
+  dtx_fail=0
+  dtx_tmp="$(mktemp -d)" || dtx_tmp=""
+  if [ -n "$dtx_tmp" ]; then
+    dtx_got="$(discover_dev "$dtx_tmp")"
+    if [ -n "$dtx_got" ]; then
+      echo "DISCOVERY-FAIL an empty glob root matched '$dtx_got' ($dtx_tmp)" >&2
+      dtx_fail=1
+    fi
+    : > "$dtx_tmp/ttyACM9"
+    dtx_got="$(discover_dev "$dtx_tmp")"
+    if [ "$dtx_got" != "$dtx_tmp/ttyACM9" ]; then
+      echo "DISCOVERY-FAIL the fixture node $dtx_tmp/ttyACM9 was not discovered" >&2
+      dtx_fail=1
+    fi
+    rm -rf "$dtx_tmp"
+  else
+    echo "DISCOVERY-FAIL mktemp -d failed" >&2
+    dtx_fail=1
+  fi
+  dtx_real="$(discover_dev "$GROOT")"
+  if [ "$dtx_fail" = 0 ]; then
+    echo "DISCOVERY-OK: 3/3 checks PASS (root=$GROOT, real node=${dtx_real:-<none>})"
+    exit 0
+  fi
+  echo "DISCOVERY-FAIL the device-discovery path is broken (root=$GROOT)" >&2
+  exit 1
+fi
+[ -n "$DEV" ] || { echo "no CDC-ACM console node ($GROOT/cu.usbmodem* or $GROOT/ttyACM*) — is the phone running Nuxel?" >&2; exit 1; }
 case "$DEV" in
   /dev/ttyACM*)
     # Linux: the node is root:dialout 0660.  Say so instead of a bare EACCES.
