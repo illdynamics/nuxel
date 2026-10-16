@@ -66,3 +66,31 @@
     flicker/black flash remains during the animation-to-launcher handoff.
 14. **Reboot persistence of the *image* path** (the live configuration survived a
     reboot; a freshly built image was not flashed, see item 9).
+
+## Appendix — the load average is NOT the launcher
+
+`/proc/loadavg` sits around 12 on this handset, which looks alarming next to a
+8-core SoC. Measured breakdown (same instant):
+
+```
+ps -eo pcpu,stat,comm --sort=-pcpu
+  68.6 Rs  nuxel-wl-fb        <- the one framebuffer writer, CPU blit, ~28 fps
+  27.6 Ssl phoc               <- pixman compositing of a 720x1520 output
+   6.8 SLl WebKitWebProces
+   1.7 Sl  nuxel-pwa-host
+ps -eo stat,comm | awk '$1 ~ /^D/' | sort | uniq -c
+   8 tz_worker_threa     1 tz_iwsock     1 scsi_srpmb_work     1 ree_time     1 sugov:4
+```
+
+The 11 tasks in `D` state are all Samsung vendor kernel threads (TrustZone
+worker/interworld socket, RPMB secure-storage work, REE time) — they inflate the
+load average on this port and are not part of the Nuxel userspace. Real CPU use of
+the whole launcher stack is ~1 core of 8.
+
+## Console hygiene
+
+The kernel console loglevel was temporarily lowered (`printk 1`) so the
+kmsg-to-USB mirror would not shred the file-transfer framing, and was **restored
+to its original `4 4 1 7`** afterwards. The diagnostic directories created for
+temporary phoc instances were removed. No persistent change was left behind
+except the deployed artifacts listed in doc 09.
