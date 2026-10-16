@@ -48,6 +48,7 @@ MAX_EVENTS=4000
 MAX_BYTES=1048576
 DRY_RUN=0
 OUT=""
+OUT_FROM_ARG=0
 EXPECT_FINGER=1
 PRINT_COMMANDS=0
 
@@ -56,7 +57,7 @@ while [ $# -gt 0 ]; do
     --seconds)      SECONDS_BUDGET="${2:?}"; shift 2 ;;
     --max-events)   MAX_EVENTS="${2:?}"; shift 2 ;;
     --max-bytes)    MAX_BYTES="${2:?}"; shift 2 ;;
-    --out)          OUT="${2:?}"; shift 2 ;;
+    --out)          OUT="${2:?}"; OUT_FROM_ARG=1; shift 2 ;;
     --dry-run)      DRY_RUN=1; shift ;;
     --no-expect-finger) EXPECT_FINGER=0; shift ;;
     --commands)     PRINT_COMMANDS=1; shift ;;
@@ -81,7 +82,9 @@ grep -A5 sec_touchscreen /proc/bus/input/devices
 # 3. the IRQ line (must exist once the driver is bound)
 grep -i -E 'sec_ts|4-0048' /proc/interrupts
 # 4. which node is the panel? by capability, never by number:
-python3 tools/s10plus/a33/nuxel-touch-trace.py --live --dry-run --seconds 5 \
+#    (on the device the tracer is installed at /usr/libexec/nuxel/; from a
+#     checkout use tools/s10plus/a33/nuxel-touch-trace.py)
+python3 /usr/libexec/nuxel/nuxel-touch-trace.py --live --dry-run --seconds 5 \
         --out /var/lib/nuxel/touch-capture/node-scan
 grep -A3 'PROP=' /var/lib/nuxel/touch-capture/node-scan/evdev.txt
 # 5. did libinput accept it through the shim?
@@ -109,7 +112,24 @@ TS="$(date -u +%Y%m%dT%H%M%SZ)"
 if [ -z "$OUT" ]; then
   OUT="/var/lib/nuxel/touch-capture/$TS"
 fi
-mkdir -p "$OUT" 2>/dev/null || { OUT="./touch-capture-$TS"; mkdir -p "$OUT"; }
+# The evidence bundle must NEVER be created inside the repository.  On the
+# phone the default /var/lib/nuxel path always works; on a development host
+# (unprivileged, or a read-only /var) the fallback is ${TMPDIR:-/tmp}, never
+# "./" - Nuxel must not litter its own source tree with capture bundles.
+if ! mkdir -p "$OUT" 2>/dev/null; then
+  # An operator-supplied --out that cannot be created is a hard error: silently
+  # writing somewhere else would break the BUNDLE= contract this script prints.
+  if [ "$OUT_FROM_ARG" = 1 ]; then
+    echo "CAPTURE_GATE=BLOCKED reason=out-dir-unwritable path=$OUT" >&2
+    exit 71
+  fi
+  OUT="${TMPDIR:-/tmp}/nuxel-touch-capture-$TS"
+  if ! mkdir -p "$OUT" 2>/dev/null; then
+    echo "CAPTURE_GATE=BLOCKED reason=out-dir-unwritable path=$OUT (pass --out with a writable directory)" >&2
+    exit 71
+  fi
+  echo "note: the default bundle path is not writable here; bundle goes to $OUT (outside the repository)" >&2
+fi
 
 echo "== nuxel-touch-capture =="
 echo "BUNDLE=$OUT"

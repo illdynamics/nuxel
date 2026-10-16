@@ -1,0 +1,111 @@
+{
+  "schema_version": 1,
+  "comment": "Power-management policy for the Samsung Galaxy S10+ (SM-G975F, beyond2lte). Read by tools/s10plus/a33/nuxel-power-diag.sh (installed as `nuxel-power-diag` / reachable from the Nuxel Settings power surface). Nothing in this file changes a kernel setting by itself: the tool reads the file, applies only the profile the owner selected, and reports what the running system actually exposes. Battery/charging VALUES are inherently owner-verified and are never claimed from a sysfs read alone.",
+  "device": {
+    "model": "Samsung Galaxy S10+ SM-G975F",
+    "codename": "beyond2lte",
+    "soc": "Exynos 9820",
+    "battery_mah": 4100,
+    "charging": "15 W wired / 12-15 W wireless (Samsung spec)"
+  },
+
+  "boot_modes": {
+    "comment": "lpcharge / charger-mode is a DISTINCT boot mode, not a normal boot. A bootloader LPM/charger-mode boot (androidboot.mode=charger) disables sec_ts and other input drivers before userspace runs; there is no userspace workaround on this kernel (CONFIG_KEXEC off, drivers not modular). The correct remedy is an ordinary reboot, never a kernel patch applied from userspace.",
+    "detect": {"kernel_cmdline": "/proc/cmdline", "needle": "androidboot.mode=charger"},
+    "known_modes": {
+      "charger": {"input_expected": false, "state": "blocked_boot_mode",
+                  "remedy": "ordinary reboot into a normal boot; no flashing, no kernel change"},
+      "normal": {"input_expected": true, "state": "ok"}
+    },
+    "dmesg_markers": ["sec_bat_is_lpm_check", "Low power charging mode"]
+  },
+
+  "fuel_gauge": {
+    "comment": "The gauge/charger nodes on this PMIC family are NOT assumed. The tool enumerates /sys/class/power_supply/* and reports the real device names; candidate names below only seed the report. An absent gauge is BLOCKED_KERNEL (no driver bound), not a guessed battery percentage.",
+    "device": "auto",
+    "sysfs_root": "/sys/class/power_supply",
+    "candidates": ["battery", "max77705-charger", "max1720x", "bq2597x", "sm5714-charger", "s2mps19-charger"],
+    "fields": {
+      "capacity": "capacity",
+      "status": "status",
+      "voltage_now": "voltage_now",
+      "current_now": "current_now",
+      "temp": "temp",
+      "health": "health",
+      "charge_full": "charge_full",
+      "charge_full_design": "charge_full_design"
+    },
+    "percent_sanity": {"min": 0, "max": 100},
+    "volt_units": {"micro": 1000000, "milli": 1000},
+    "temp_units": {"deci_celsius": 10, "milli_celsius": 1000},
+    "fresh_window_s": 120,
+    "state_file": "/var/lib/nuxel/power/battery.json"
+  },
+
+  "charger": {
+    "comment": "Charge control writes are NOT performed by this mission. The tool reports the charging state and whether a writable charge-control node exists; it deliberately does not poke voltage/current limits, because a bad write to a charger register is a hardware risk and cannot be verified without the owner watching the phone.",
+    "allow_writes": false,
+    "writable_nodes": ["charge_control_limit", "input_current_limit", "constant_charge_current_max"],
+    "report_only": ["status", "health", "present", "online"]
+  },
+
+  "profiles": {
+    "comment": "Three profiles are defined; exactly one is active at a time and the selection is persisted so a reboot returns to the same profile. Each profile maps to REAL knobs: a cpufreq governor and (where the running kernel exposes it) a cgroup-v2 CPU weight for user.slice. Nothing is claimed about power savings - the profiles are a control surface, and the observed governor/cgroup values are what the tool reports.",
+    "default": "balanced",
+    "persist_file": "/var/lib/nuxel/power/profile.json",
+    "knobs": {
+      "cpufreq_root": "/sys/devices/system/cpu/cpufreq",
+      "governor_file": "policy{policy}/scaling_governor",
+      "available_governors_file": "policy{policy}/scaling_available_governors",
+      "cgroup_root": "/sys/fs/cgroup",
+      "cgroup_v2_weight_file": "/sys/fs/cgroup/user.slice/cpu.weight",
+      "cgroup_v1_weight_file": "/sys/fs/cgroup/cpu/user.slice/cpu.shares",
+      "energy_perf_bias": "/sys/devices/system/cpu/cpu{policy}/cpufreq/energy_performance_preference"
+    },
+    "list": {
+      "adaptive": {
+        "label": "Adaptive",
+        "summary": "Longest runtime. Governor prefers a low-power policy; display and background work are allowed to idle aggressively.",
+        "governor_preference": ["schedutil", "conservative", "powersave", "ondemand", "interactive"],
+        "cgroup_v2_cpu_weight": 50,
+        "cgroup_v1_cpu_shares": 512,
+        "brightness_cap_percent": 70,
+        "background_limit": "restrictive"
+      },
+      "balanced": {
+        "label": "Balanced",
+        "summary": "Default. Governor preference keeps the interactive feel of the launcher without pinning the big cores.",
+        "governor_preference": ["schedutil", "interactive", "ondemand", "conservative"],
+        "cgroup_v2_cpu_weight": 100,
+        "cgroup_v1_cpu_shares": 1024,
+        "brightness_cap_percent": 100,
+        "background_limit": "normal"
+      },
+      "performance": {
+        "label": "Performance",
+        "summary": "Highest responsiveness while charging or when plugged in. Governor is pinned to a performance-class policy when the kernel offers one.",
+        "governor_preference": ["performance", "schedutil", "interactive", "ondemand"],
+        "cgroup_v2_cpu_weight": 200,
+        "cgroup_v1_cpu_shares": 2048,
+        "brightness_cap_percent": 100,
+        "background_limit": "permissive"
+      }
+    },
+    "apply": {
+      "require_available_governor": true,
+      "never_write_unlisted": true,
+      "rollback_file": "/var/lib/nuxel/power/profile.previous.json"
+    }
+  },
+
+  "power_menu": {
+    "reference": "/etc/nuxel/power/power-menu.json",
+    "comment": "The menu table itself lives in power-menu.json so the button FSM (bg-03) and this tool read one source. Recovery and Download Mode ENTRIES EXIST but must never be triggered by an automated path; they are wired only to a confirmation the owner performs in person."
+  },
+
+  "diagnostics": {
+    "log": "/var/log/nuxel/power-diag.log",
+    "service": "/etc/systemd/system/nuxel-power-mode.service",
+    "report_fields": ["boot_mode", "gauge_present", "capacity_percent", "charge_status", "profile_active", "governor", "cgroup_weight", "charger_writable"]
+  }
+}

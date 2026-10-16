@@ -31,8 +31,9 @@ sec_ts (S6SY761, i2c 4-0048)          kernel driver
 | `nuxel-libinput-path.c` | The capability-based libinput interposer (authoritative source; the deployed copy at `tools/s10plus/a31/nuxel-libinput-path.c` must stay byte-identical — enforced by `tests/test-libinput-parity.py`). |
 | `build-libinput-shim.sh` | Builds the host selftest binary (used by the offline tests) and the aarch64 `.so` (cross compiler, or the UTM guest as fallback). |
 | `kernel-patches/` | **Proposals only, never applied.** `sec_ts-lpm-initcall-deferred-bind.patch` is the not-deployed fix for the LPM boot; verdict `BLOCKED_KERNEL / BOOT_UPDATE_REQUIRED`. |
-| `tests/` | All offline tests (see below). |
+| `tests/` | All offline tests (see below). `run-touch-tests.sh` runs the whole set. |
 | `tests/fixtures/` | Synthetic sysfs/uevent trees for the shim, and cmdline/dmesg captures for the boot-mode guard. |
+| `tests/test-capture-harness.py` | Covers `nuxel-touch-capture.sh`: `--commands` arms nothing, `CAPTURE_GATE=PASS` can only come from `gate.json`, and the bundle is never written inside the repository. |
 
 ## Run the tests (no phone, no root, no /dev/input)
 
@@ -64,6 +65,10 @@ python3 /usr/libexec/nuxel/nuxel-touch-trace.py --analyze /var/lib/nuxel/touch-t
 * **No flashing, no partition writes, no bootloader interfaces.** The LPM fix that
   would need a kernel change is documented and marked `BLOCKED_KERNEL`; the
   userspace mitigation is a normal reboot.
+* **The evidence bundle is never written inside this repository.** On the device it
+  goes to `/var/lib/nuxel/touch-capture/<ts>`; where that is not writable the
+  fallback is `${TMPDIR:-/tmp}`, and an explicit `--out` that cannot be created is a
+  hard block rather than a silent relocation.
 * **A passing script is not a finger test.** The harness verdict is
   `NEEDS_OWNER_TEST`; only a human confirming the on-screen result upgrades it.
 

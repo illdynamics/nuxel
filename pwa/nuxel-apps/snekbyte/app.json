@@ -1,0 +1,14 @@
+{
+  "id": "org.nuxel.SnekByte",
+  "name": "SnekByte",
+  "icon": "SB",
+  "color": "#2E7D32",
+  "category": "games",
+  "type": "pwa",
+  "url": "/pwa/nuxel-apps/snekbyte/index.html",
+  "description": "The original SnekByte game, ported and parity-verified",
+  "capabilities": ["input:keyboard", "input:touch"],
+  "docked": false,
+  "network": "none",
+  "provenance": "ported from snekbyte-main.zip — see tools/s10plus/a33/snekbyte/UPSTREAM-PROVENANCE.md"
+}

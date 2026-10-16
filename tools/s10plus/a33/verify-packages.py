@@ -214,24 +214,32 @@ def repo_base(base: str) -> str:
     return base.rstrip("/")
 
 
-def fetch_primary(repo: str, cache_dir: str, offline: bool) -> Tuple[Optional[bytes], Optional[str]]:
-    """Fetch and return the uncompressed primary.xml metadata."""
+def fetch_primary(repo: str, cache_dir: str, offline: bool
+                  ) -> Tuple[Optional[bytes], Optional[str], Dict[str, object]]:
+    """Fetch and return (primary_xml, error, provenance).
+
+    `provenance` is the chain-of-custody record for this repository: which
+    artifact was fetched, from where, and its sha256. It is emitted in the
+    report and in the manifest so a reviewer can re-fetch the exact same
+    metadata and re-derive the package set (evidence discipline: no version in
+    the manifest is unattributable).
+    """
     base = repo_base(repo)
     if base.startswith("file://"):
         local = base[len("file://"):]
         repomd_path = os.path.join(local, "repodata", "repomd.xml")
         if not os.path.exists(repomd_path):
-            return None, "no repomd.xml under %s" % local
+            return None, "no repomd.xml under %s" % local, {}
         with open(repomd_path, "rb") as fh:
             repomd = fh.read()
     else:
         repomd, err = fetch(base + "/repodata/repomd.xml", os.path.join(cache_dir, "repomd.xml"), offline)
         if repomd is None:
-            return None, err
+            return None, err, {}
     try:
         root = ET.fromstring(repomd)
     except ET.ParseError as exc:
-        return None, "repomd.xml is not valid XML: %s" % exc
+        return None, "repomd.xml is not valid XML: %s" % exc, {}
     href = None
     for data in root:
         if data.tag.rsplit("}", 1)[-1] != "data":
@@ -245,23 +253,31 @@ def fetch_primary(repo: str, cache_dir: str, offline: bool) -> Tuple[Optional[by
         if href:
             break
     if not href:
-        return None, "repomd.xml has no <data type=primary>"
+        return None, "repomd.xml has no <data type=primary>", {}
     # Fetch the primary payload (file:// or http).
     if base.startswith("file://"):
         p = os.path.join(base[len("file://"):], href)
         if not os.path.exists(p):
-            return None, "primary metadata %s missing in mirror" % href
+            return None, "primary metadata %s missing in mirror" % href, {}
         with open(p, "rb") as fh:
             raw = fh.read()
     else:
         cache_name = os.path.join(cache_dir, os.path.basename(href))
         raw, err = fetch(base + "/" + href, cache_name, offline)
         if raw is None:
-            return None, err
+            return None, err, {}
     xml, err = _decompress(href, raw)
     if xml is None:
-        return None, "could not decompress %s: %s" % (href, err)
-    return xml, None
+        return None, "could not decompress %s: %s" % (href, err), {}
+    provenance = {
+        "repo": repo_base(repo),
+        "repomd": {"sha256": hashlib.sha256(repomd).hexdigest()},
+        "primary": {"href": href,
+                    "compressed_sha256": hashlib.sha256(raw).hexdigest(),
+                    "compressed_bytes": len(raw),
+                    "decompressed_sha256": hashlib.sha256(xml).hexdigest()},
+    }
+    return xml, None, provenance
 
 
 def parse_primary(xml: bytes) -> Dict[str, List[str]]:
@@ -369,18 +385,28 @@ def main(argv: Optional[List[str]] = None) -> int:
     indices: "List[Tuple[str, Dict[str, List[str]]]]" = []
     errors: List[str] = []
     total = 0
+    provenance: List[dict] = []
     if args.primary_xml:
         with open(args.primary_xml, "rb") as fh:
-            xml, err = _decompress(args.primary_xml, fh.read())
+            raw_px = fh.read()
+        xml, err = _decompress(args.primary_xml, raw_px)
         if xml is None:
             errors.append(err or "could not read --primary-xml")
         else:
             idx = parse_primary(xml)
             total = sum(len(v) for v in idx.values())
             indices.append((args.primary_xml, idx))
+            provenance.append({
+                "repo": args.primary_xml,
+                "primary": {"href": os.path.basename(args.primary_xml),
+                            "compressed_sha256": hashlib.sha256(raw_px).hexdigest(),
+                            "compressed_bytes": len(raw_px),
+                            "decompressed_sha256": hashlib.sha256(xml).hexdigest()},
+                "source": "local primary.xml",
+            })
     else:
         for repo in repos:
-            xml, err = fetch_primary(repo, repo_cache_dir(args.cache_dir, repo), args.offline)
+            xml, err, prov = fetch_primary(repo, repo_cache_dir(args.cache_dir, repo), args.offline)
             if xml is None:
                 errors.append("%s: %s" % (repo, err))
                 continue
@@ -389,6 +415,10 @@ def main(argv: Optional[List[str]] = None) -> int:
             total += n
             log("%s -> %d aarch64/noarch NEVRAs" % (repo, n))
             indices.append((repo, idx))
+            if prov:
+                prov["source"] = "offline cache" if args.offline else "network (dl.fedoraproject.org)"
+                prov["nevra_count"] = n
+                provenance.append(prov)
 
     report = {
         "tool": "verify-packages.py",
@@ -402,6 +432,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         "pin_mismatches": [],
         "resolved": {},
         "carried_patch_systemd_version": carried_patch_systemd_version(),
+        "metadata_provenance": provenance,
         "errors": [],
         "duration_s": 0.0,
     }
@@ -528,6 +559,7 @@ def _write_manifest(report: dict, path: str) -> None:
             "basearch": BASearch,
             "repos": report["repos"],
             "metadata": "repomd.xml -> primary.xml (real repository metadata)",
+            "metadata_provenance": report.get("metadata_provenance", []),
             "package_count": report.get("package_count"),
         },
         "policy": {

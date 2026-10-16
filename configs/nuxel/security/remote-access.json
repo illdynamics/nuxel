@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "updated": "2026-10-16",
+  "enabled": false,
+  "description": "Remote-access policy for Nuxel. OFF by default. When enabled, access is restricted to the owner console path, never to the open network.",
+  "indicator": {
+    "required": true,
+    "file": "/run/nuxel/remote-access.state",
+    "pwa_badge": "privacy/js/privacy.js renders 'REMOTE ACCESS ON' from this file's state via the daemon status API",
+    "note": "If the indicator cannot be rendered, enabling remote access is refused: an invisible remote access path is not acceptable."
+  },
+  "transports": {
+    "ssh_gadget": {
+      "enabled_by_default": false,
+      "service": "sshd-gadget.service",
+      "bind_interface": "usb0",
+      "bind_address": "10.15.19.82",
+      "port": 22,
+      "accepts": ["publickey"],
+      "refuses": ["password", "keyboard-interactive", "root-login-with-password"],
+      "authorized_keys": "/etc/nuxel/security/remote-access/authorized_keys",
+      "note": "The USB gadget interface only. Binding 0.0.0.0 would expose the phone on whatever network it is joined to; the CLI refuses a wildcard bind."
+    },
+    "serial_console": {
+      "always_available": true,
+      "device": "/dev/ttyGS0",
+      "note": "The CDC-ACM console is the recovery path and is never disabled by any network policy (see configs/nftables/nuxel-console-guard.nft)."
+    }
+  },
+  "forbidden": [
+    "binding SSH to 0.0.0.0 or ::",
+    "enabling password authentication",
+    "enabling remote access without the indicator",
+    "remote access over the cellular interface (rmnet0 is disabled in the firewall config)"
+  ],
+  "enforcement_note": "Enforced by the CLI (which refuses the forbidden states) and by the firewall interface policy (configs/nftables/nuxel-firewall-config.json: usb0 is the console interface, rmnet0 is disabled). This is a userspace + nftables boundary against unprivileged apps; root can change anything and is out of scope."
+}

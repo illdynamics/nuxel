@@ -26,6 +26,13 @@ belongs to the live-deployment group (bg-10) and is never claimed here.
 Usage:
     python3 tools/s10plus/a33/verify-service-graph.py
     python3 tools/s10plus/a33/verify-service-graph.py --json build/pkgmeta/service-graph.json
+
+    # validate a *copy* of the tree (fixture / mutation testing): the unit set is
+    # always read as <root>/services/** etc., so a regression test can inject a
+    # synthetic cycle or unsatisfied dependency and prove this validator FAILS.
+    python3 tools/s10plus/a33/verify-service-graph.py --root /tmp/unit-fixture
+
+`tools/s10plus/a33/tests/test-service-graph.py` uses --root exactly that way.
 """
 
 from __future__ import annotations
@@ -37,9 +44,21 @@ import re
 import sys
 from typing import Dict, List, Set, Tuple
 
-ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", ".."))
-BUILDER = os.path.join(ROOT, "images", "s10plus", "build-phone-rootfs-inside-fedora.sh")
-A26_FIXES = os.path.join(ROOT, "tools", "s10plus", "a26", "nuxel-rootfs-fixes.sh")
+REPO_ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", ".."))
+ROOT = REPO_ROOT  # the tree under validation; --root overrides it (fixture testing)
+
+
+def repo_root() -> str:
+    """The tree currently being validated (the repository, or a --root fixture)."""
+    return ROOT
+
+
+def builder_path() -> str:
+    return os.path.join(repo_root(), "images", "s10plus", "build-phone-rootfs-inside-fedora.sh")
+
+
+def a26_fixes_path() -> str:
+    return os.path.join(repo_root(), "tools", "s10plus", "a26", "nuxel-rootfs-fixes.sh")
 
 # Unit files that are part of Nuxel's installed set, with their repo paths.
 UNIT_SOURCES = [
@@ -142,9 +161,10 @@ def installed_units_from_builder() -> Tuple[Set[str], Set[str], List[str]]:
     installed: Set[str] = set()
     enabled: Set[str] = set()
     problems: List[str] = []
-    if not os.path.exists(BUILDER):
-        return installed, enabled, ["builder not found: %s" % BUILDER]
-    text = open(BUILDER, errors="replace").read()
+    builder = builder_path()
+    if not os.path.exists(builder):
+        return installed, enabled, ["builder not found: %s" % builder]
+    text = open(builder, errors="replace").read()
     for m in re.finditer(r"\$STAGE/etc/systemd/system/([A-Za-z0-9@._-]+\.(?:service|socket))", text):
         installed.add(m.group(1))
     for m in re.finditer(r"/etc/systemd/system/multi-user\.target\.wants/([A-Za-z0-9@._-]+)", text):
@@ -159,18 +179,32 @@ def installed_units_from_builder() -> Tuple[Set[str], Set[str], List[str]]:
     return installed, enabled, problems
 
 
-def main(argv=None) -> int:
+def main(argv=None, root: str = None) -> int:
+    global ROOT
     ap = argparse.ArgumentParser()
     ap.add_argument("--json", help="write the report JSON here")
     ap.add_argument("--quiet", action="store_true")
+    ap.add_argument("--root", default=None,
+                    help="validate this tree instead of the repository (fixture/mutation testing)")
     args = ap.parse_args(argv)
+    # ROOT is sticky across in-process calls (the regression test calls main()
+    # repeatedly), so it is always re-resolved: an explicit root wins, otherwise
+    # the repository is validated.
+    chosen = root or args.root
+    if chosen:
+        ROOT = os.path.abspath(chosen)
+        if not os.path.isdir(ROOT):
+            sys.stderr.write("verify-service-graph: --root %s is not a directory\n" % ROOT)
+            return 2
+    else:
+        ROOT = REPO_ROOT
 
     problems: List[str] = []
     warnings: List[str] = []
     units: Dict[str, Dict] = {}
 
     for rel in UNIT_SOURCES:
-        path = os.path.join(ROOT, rel)
+        path = os.path.join(repo_root(), rel)
         if not os.path.exists(path):
             problems.append("declared unit is missing from the repository: %s" % rel)
             continue
@@ -225,7 +259,8 @@ def main(argv=None) -> int:
         problems.append("ordering cycle: %s" % " -> ".join(cyc))
 
     # ---- 3b: the A26 4.14 containment must still be there -------------------
-    a26 = open(A26_FIXES, errors="replace").read() if os.path.exists(A26_FIXES) else ""
+    a26_path = a26_fixes_path()
+    a26 = open(a26_path, errors="replace").read() if os.path.exists(a26_path) else ""
     for needle, label in [
         ("systemd-userdbd.socket", "mask systemd-userdbd.socket"),
         ("systemd-userdbd.service", "mask systemd-userdbd.service"),
@@ -266,7 +301,7 @@ def main(argv=None) -> int:
         "services/nuxel-session/systemd/nuxel-button-manager.service": "tools/s10plus/a32/nuxel-button-manager.service",
     }
     for canonical, shipped in provenance.items():
-        cp, sp = os.path.join(ROOT, canonical), os.path.join(ROOT, shipped)
+        cp, sp = os.path.join(repo_root(), canonical), os.path.join(repo_root(), shipped)
         if not (os.path.exists(cp) and os.path.exists(sp)):
             warnings.append("provenance pair missing: %s vs %s" % (canonical, shipped))
             continue
@@ -283,6 +318,7 @@ def main(argv=None) -> int:
     verdict = "FAILED" if problems else "OFFLINE_TESTED"
     report = {
         "tool": "verify-service-graph.py",
+        "root": repo_root(),
         "units": {n: {"path": i["path"], "execstart": i.get("execstart", [])} for n, i in sorted(units.items())},
         "unit_count": len(units),
         "builder_installed": sorted(installed),

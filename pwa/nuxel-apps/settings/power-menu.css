@@ -1,0 +1,53 @@
+/* Nuxel Settings — Power surface (areas 17/18).
+   Matches the launcher's design language; all sizes in dp-ish px so the same
+   file works on the 1440x3040 handset and inside the UTM/desktop launcher. */
+:root{
+  --bg:#0b0f14; --card:#131a22; --card-2:#182231; --fg:#e8eef6; --dim:#8fa3b8;
+  --accent:#5ac8fa; --ok:#4cd964; --bad:#ff6b6b; --warn:#ffcc66; --line:#22303f;
+  --radius:14px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--fg);
+  font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Ubuntu,sans-serif}
+main{padding:12px 14px calc(24px + env(safe-area-inset-bottom));max-width:760px;margin:0 auto}
+.hdr{position:sticky;top:0;z-index:10;display:flex;align-items:center;gap:8px;
+  padding:12px 14px calc(12px + env(safe-area-inset-top));
+  background:linear-gradient(180deg,rgba(11,15,20,.98),rgba(11,15,20,.86));
+  border-bottom:1px solid var(--line)}
+.hdr h1{font-size:20px;margin:0;flex:1}
+.hdr-actions{display:flex;gap:8px}
+button{font:inherit;color:var(--fg);background:var(--card-2);border:1px solid var(--line);
+  border-radius:12px;padding:10px 12px;cursor:pointer;transition:transform .08s ease,background .15s ease}
+button:active{transform:scale(.98)}
+button.ghost{background:transparent;padding:8px 10px}
+.source{margin:12px 2px;color:var(--dim);font-size:12.5px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+  padding:14px;margin:12px 0}
+.card h2{margin:0 0 10px;font-size:16px;letter-spacing:.2px}
+.hint{color:var(--dim);font-size:12.5px;margin:10px 2px 0}
+.bad{color:var(--bad)} .ok{color:var(--ok)} .warn{color:var(--warn)}
+.kv{display:flex;justify-content:space-between;gap:12px;padding:6px 0;border-bottom:1px dashed var(--line)}
+.kv:last-of-type{border-bottom:0}
+.kv span{color:var(--dim)}
+/* battery modes */
+.modes{display:grid;grid-template-columns:1fr;gap:10px}
+@media (min-width:560px){.modes{grid-template-columns:repeat(3,1fr)}}
+.mode-card{display:flex;flex-direction:column;gap:4px;text-align:left;padding:12px}
+.mode-card.active{border-color:var(--accent);background:#122334;box-shadow:0 0 0 1px rgba(90,200,250,.35) inset}
+.mode-name{font-weight:600}
+.mode-sum{color:var(--dim);font-size:12.5px}
+.mode-cap{color:var(--accent);font-size:11.5px}
+/* power menu */
+.menu-entries{display:grid;grid-template-columns:1fr;gap:8px}
+@media (min-width:560px){.menu-entries{grid-template-columns:1fr 1fr}}
+.menu-entry{display:flex;justify-content:space-between;align-items:center;padding:12px}
+.menu-entry.allowed{border-color:rgba(76,217,100,.5)}
+.menu-entry.refused{opacity:.82}
+.me-state{font-size:12px;color:var(--dim)}
+.menu-entry.allowed .me-state{color:var(--ok)}
+.menu-entry.refused .me-state{color:var(--warn)}
+.status{min-height:1.4em;margin:10px 2px 0;color:var(--dim);font-size:12.5px}
+@keyframes nuxel-shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+.shake{animation:nuxel-shake .4s ease}
+@media (prefers-reduced-motion:reduce){.shake{animation:none}}
+code{background:var(--card-2);border:1px solid var(--line);border-radius:6px;padding:1px 5px;font-size:12px}

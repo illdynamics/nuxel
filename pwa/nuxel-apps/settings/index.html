@@ -145,6 +145,20 @@
       <pre id="dev-state" class="state">—</pre>
     </div>
     <div class="card">
+      <h3>Boot</h3>
+      <p class="hint">Verbose boot shows Nuxel's own boot log on the glass as early as possible
+        and shortens the boot animation while it is on. The choice is stored durably in
+        <code>/etc/nuxel/boot/verbose-boot.json</code>, applies from the <b>next boot</b>, and a
+        package/rootfs update never overwrites it. Turning it on is never recorded as a completed
+        animation cycle: the handoff receipt says <code>reason=verbose_boot_requested</code>.</p>
+      <div class="boot-row">
+        <label><input type="checkbox" id="verbose-boot-toggle"> Verbose boot</label>
+        <button id="reload-boot" class="ghost">Reload</button>
+      </div>
+      <pre id="verbose-boot-state" class="state">—</pre>
+      <p class="hint" id="verbose-boot-override">—</p>
+    </div>
+    <div class="card">
       <h3>Input diagnostics</h3>
       <p class="hint">Touch/key pipeline verdicts recorded by the launcher host and the
         hardware-button manager.</p>

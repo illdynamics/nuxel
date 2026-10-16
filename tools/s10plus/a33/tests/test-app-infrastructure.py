@@ -19,6 +19,7 @@ import os
 import sys
 import threading
 import types
+import re
 import urllib.error
 import urllib.request
 from http.server import HTTPServer
@@ -167,6 +168,44 @@ def main():
               "bridge.js pins the protocol version to %r" % pin["bridge_version"])
         check("NuxelBridgeVersionError" in js, "bridge.js exposes a named version error")
         check("mockMode = true" in js, "bridge.js keeps an explicit mock mode for an unreachable host")
+
+        print("[infra] D-Bus policies (configs/dbus is canonical)")
+        dbus_dir = os.path.join(ROOT, "configs", "dbus")
+        owners = {
+            "org.nuxel.Bridge": ("root", None),
+            "org.nuxel.Portal": ("root", "nuxel"),
+            "org.nuxel.Notifications": ("root", None),
+        }
+        for name, (owner_user, owner_extra) in owners.items():
+            conf = os.path.join(dbus_dir, "%s.conf" % name)
+            body = open(conf).read() if os.path.exists(conf) else ""
+            check(os.path.exists(conf), "configs/dbus/%s.conf is installed by the builder" % name)
+            check('<allow own="%s"/>' % name in body, "%s may be owned (explicit allow, no wildcard)" % name)
+            default_block = re.search(r'<policy context="default">(.*?)</policy>', body, re.S)
+            block = default_block.group(1) if default_block else ""
+            check("allow own=" not in block,
+                  "no other user can OWN %s (ownership is not in the default context)" % name)
+            if name == "org.nuxel.Portal":
+                # The portal IS a consent mediator: any local user may CALL it so
+                # the consent dialog can appear. Only ownership is restricted.
+                check('allow send_destination="org.nuxel.Portal"' in block,
+                      "the portal stays callable by local apps (consent dialog path)")
+            else:
+                check('<deny own="%s"/>' % name in block,
+                      "%s ownership is explicitly denied by default" % name)
+            if owner_extra:
+                check('<policy user="%s">' % owner_extra in body,
+                      "%s allows the %s user it actually runs as" % (name, owner_extra))
+        legacy = {
+            "nuxel-bridge": "org.nuxel.Bridge",
+            "nuxel-portal": "org.nuxel.Portal",
+            "nuxel-notifications": "org.nuxel.Notifications",
+        }
+        for service, name in legacy.items():
+            legacy_path = os.path.join(ROOT, "services", service, "dbus", "%s.conf" % name)
+            if os.path.exists(legacy_path):
+                check(open(legacy_path).read() == open(os.path.join(dbus_dir, "%s.conf" % name)).read(),
+                      "services/%s/dbus copy has not drifted from configs/dbus" % service)
     finally:
         server.shutdown()
         server.server_close()

@@ -50,10 +50,28 @@ from src.poop import Poop  # noqa: E402
 RIGHT, LEFT, UP, DOWN = (1, 0), (-1, 0), (0, -1), (0, 1)
 
 
+def why_over(game_data):
+    """Why the game ended, using the SAME precedence as game_logic: wall, then
+    self, then poop.  The JS engine records this as `cause`, and a divergence in
+    the cause is a divergence in the rules, so it is part of the compared state."""
+    if not game_data["game_over"]:
+        return None
+    head = game_data["snake"].get_head_position()
+    if not (0 <= head[0] < config.GRID_WIDTH and 0 <= head[1] < config.GRID_HEIGHT):
+        return "wall"
+    if head in game_data["snake"].positions[1:]:
+        return "self"
+    for poop in game_data["poops"]:
+        if head == poop.position:
+            return "poop"
+    return "unknown"
+
+
 def snapshot(game_data):
     """The exact state both engines must agree on after every tick."""
     return {
         "tick": game_data["tick"],
+        "cause": why_over(game_data),
         "score": game_data["score"],
         "gameOver": bool(game_data["game_over"]),
         "shitCounter": game_data["shit_counter"],
@@ -169,7 +187,11 @@ class Harness(object):
         if not self.game["poops"]:
             raise SystemExit("scripted WoNQ run did not drop a poop — the scenario is wrong")
         target = self.game["poops"][0].position
-        # walk towards the poop, one axis at a time
+        # Walk towards the poop, one axis at a time, WITHOUT ever asking for an
+        # illegal reversal: the original's snake.turn() silently refuses a 180°
+        # turn when length > 1, so a naive chase would sail into the wall instead
+        # of reaching the obstacle.  When the wanted direction is the reverse of
+        # the current one, step sideways first (the direction with more room).
         for _ in range(4 * (config.GRID_WIDTH + config.GRID_HEIGHT)):
             head = self.game["snake"].get_head_position()
             if head == target:
@@ -179,6 +201,11 @@ class Harness(object):
             else:
                 want = DOWN if target[1] > head[1] else UP
             cur = self.game["snake"].direction
+            if want == (-cur[0], -cur[1]):
+                if cur[0] != 0:
+                    want = UP if head[1] > 2 else DOWN
+                else:
+                    want = RIGHT if head[0] < config.GRID_WIDTH - 3 else LEFT
             if want != cur:
                 self.turn(want)
             self.set_food((0, 0))
@@ -223,11 +250,17 @@ def build():
     poop_sc = scenarios[2]
     if not any(s["tick"]["poops"] for s in poop_sc["steps"]):
         raise SystemExit("WoNQ scenario never dropped a poop")
-    if not any(s["tick"]["gameOver"] and s["tick"]["poops"] for s in poop_sc["steps"]):
-        # the collision must be a poop collision, not a wall one: check the last tick
-        last = poop_sc["steps"][-1]["tick"]
-        if not last["gameOver"]:
-            raise SystemExit("WoNQ scenario did not end the game on a poop")
+    if not any(s["tick"]["poops"] for s in poop_sc["steps"]):
+        raise SystemExit("WoNQ scenario never dropped a poop")
+    if poop_sc["steps"][-1]["tick"]["cause"] != "poop":
+        raise SystemExit("WoNQ scenario ended with cause=%r, not a poop collision — the script is wrong"
+                         % (poop_sc["steps"][-1]["tick"]["cause"],))
+    if scenarios[1]["steps"][-1]["tick"]["cause"] != "self":
+        raise SystemExit("self-collision scenario ended with cause=%r"
+                         % (scenarios[1]["steps"][-1]["tick"]["cause"],))
+    if scenarios[0]["steps"][-1]["tick"]["cause"] != "wall":
+        raise SystemExit("wall scenario ended with cause=%r"
+                         % (scenarios[0]["steps"][-1]["tick"]["cause"],))
     if not scenarios[1]["steps"][-1]["tick"]["gameOver"]:
         raise SystemExit("self-collision scenario did not end the game")
     if scenarios[0]["steps"][-1]["tick"]["gameOver"] is not True:

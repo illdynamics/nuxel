@@ -1,0 +1,15 @@
+# nuxel-keyboard-apply.path — re-apply whenever the keyboard document changes.
+#
+# The Settings app performs an atomic same-directory rename into
+# /etc/nuxel/keyboard/keyboard.json, which is exactly the event this path unit
+# watches. That is why there is no polling timer and no inotify daemon of our
+# own: systemd already owns this.
+[Unit]
+Description=Watch /etc/nuxel/keyboard/keyboard.json for Nuxel keyboard changes
+
+[Path]
+PathChanged=/etc/nuxel/keyboard/keyboard.json
+Unit=nuxel-keyboard-apply.service
+
+[Install]
+WantedBy=graphical-session.target

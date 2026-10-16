@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "comment": "Vibration / haptics policy for the S10+ (beyond2lte). Read by tools/s10plus/a33/nuxel-haptics-diag.sh. The actuator node is ENUMERATED, never assumed: on this vendor kernel the vibrator may appear as a LED-class device, a timed_output device, or neither. A node existing is not proof that anything is felt — that observation is the owner's, and the felt half of this subsystem is NEEDS_OWNER_TEST.",
+  "device": {
+    "model": "Samsung Galaxy S10+ SM-G975F",
+    "codename": "beyond2lte",
+    "actuator": "LRA/ERM haptic driver behind the PMIC (Samsung/TI class), exact node reported at runtime"
+  },
+
+  "node_candidates": {
+    "comment": "All candidates are probed; the FIRST that responds wins and its real path is reported. No /dev/input/eventN or /sys path is hard-coded as truth.",
+    "sysfs": [
+      "/sys/class/leds/vibrator",
+      "/sys/class/leds/sec_vibrator",
+      "/sys/class/timed_output/vibrator",
+      "/sys/class/vibrator/vibrator",
+      "/sys/devices/virtual/timed_output/vibrator",
+      "/sys/devices/virtual/leds/vibrator"
+    ],
+    "globs": ["/sys/class/leds/*vib*", "/sys/class/timed_output/*", "/sys/class/vibrator/*"],
+    "write_files": ["activate", "duration", "brightness", "amplitude", "state"],
+    "strength_files": ["max_brightness", "amplitude_max", "scale"]
+  },
+
+  "global_switch": {
+    "comment": "One persisted switch. When it is off, every path that buzzes (button sounds, notifications, the diagnostic's own test buzz) refuses, and nothing re-enables it at boot.",
+    "state_file": "/var/lib/nuxel/haptics/state.json",
+    "default_enabled": true,
+    "auto_enable_on_boot": false,
+    "kills": ["buttons.haptic_feedback", "notifications.vibrate", "diagnostic.test_buzz"]
+  },
+
+  "intensity": {
+    "default_percent": 55,
+    "levels": {"light": 30, "medium": 55, "strong": 85},
+    "comment": "If the node exposes no amplitude/strength control, intensity is expressed as DURATION only and the tool says so (intensity_mode=duration) instead of pretending a strength write happened."
+  },
+
+  "patterns": {
+    "comment": "Durations in ms. Patterns are pure data: the FSM/notifier passes a name, the tool expands it. Nothing here runs at boot.",
+    "tap":       {"steps": [18]},
+    "double":    {"steps": [18, 60, 18]},
+    "long":      {"steps": [220]},
+    "buzz_test": {"steps": [120, 80, 120]},
+    "notify":    {"steps": [20, 90, 20, 90, 40]},
+    "alarm":     {"steps": [400, 200, 400, 200, 600]},
+    "button":    {"steps": [10]},
+    "gesture":   {"steps": [12, 40, 12]}
+  },
+
+  "consumers": {
+    "buttons": {"note": "bg-03 button FSM consumes `button`/`gesture` patterns through the shared haptics state file; this tool only owns the switch and the API."},
+    "notifications": {"note": "notification daemon consumes `notify`; a notification must never buzz while the global switch is off."}
+  },
+
+  "diagnostics": {
+    "log": "/var/log/nuxel/haptics-diag.log",
+    "test_buzz_max_ms": 1500,
+    "require_explicit_yes": true
+  }
+}

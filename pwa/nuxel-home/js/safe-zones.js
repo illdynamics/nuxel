@@ -134,6 +134,33 @@
     return left;
   }
 
+  // Pure placement planner (A33 hardening, briq-02e).  Given a cluster's natural
+  // rectangle, its alignment and the blocked intervals, decide the shift that puts
+  // it in the nearest FREE interval.  It is extracted here so that applyLayout()
+  // (the real status bar) and the Settings safe-zone editor use ONE implementation:
+  // the editor previously carried a second copy of this arithmetic, and that second
+  // copy still used the A32 one-way push (it moved the right cluster further right,
+  // off the panel, for the S10+ profile).  Two implementations of one geometry
+  // contract is how a preview starts lying about the real bar.
+  function planCluster(natural, align, ivals, width) {
+    var hit = overlaps(natural.left, natural.right, ivals);
+    if (!hit) return { hit: false, shift: 0, zone: null, target: null, narrow: false, reason: 'clear' };
+    var free = freeIntervals(width, ivals);
+    var target = bestFreeInterval(natural, free);
+    if (!target) {
+      return { hit: true, shift: 0, zone: hit.zone, target: null, narrow: false,
+               reason: 'no_free_interval' };
+    }
+    var left = targetLeft(align, natural, target, width);
+    var shift = Math.round(left - natural.left);
+    var w = natural.right - natural.left;
+    return {
+      hit: true, shift: shift, zone: hit.zone, target: target,
+      narrow: (target.end - target.start + 0.5 < w),
+      reason: shift ? 'moved' : 'already_free'
+    };
+  }
+
   function applyLayout() {
     var bar = document.getElementById('status-bar');
     if (!bar) return { blocked: [], placed: [], moved: [], dropped: [] };
@@ -161,8 +188,8 @@
       c.el.style.transform = '';
       c.el.style.paddingRight = '';
       var natural = c.el.getBoundingClientRect();
-      var hit = overlaps(natural.left, natural.right, ivals);
-      if (!hit) { report.placed.push({ cluster: c.el.className, ok: true }); return; }
+      var plan = planCluster(natural, c.align, ivals, width);
+      if (!plan.hit) { report.placed.push({ cluster: c.el.className, ok: true }); return; }
 
       // A33 HARDENING: solve against the FREE intervals, not "left of the first
       // blocked zone" / "right of the last".  A32 only ever pushed one way, so
@@ -173,24 +200,19 @@
       // The contract is unchanged (ten zones, same profile, same padding, still
       // transform-only); the difference is that the item now lands in the nearest
       // free interval and never inside a blocked one.
-      var free = freeIntervals(width, ivals);
-      var target = bestFreeInterval(natural, free);
-      if (!target) {   // the whole bar is blocked: nothing can be placed safely
+      if (plan.reason === 'no_free_interval') {   // the whole bar is blocked
         report.dropped.push({ cluster: c.el.className, reason: 'no_free_interval' });
         return;
       }
-      var left = targetLeft(c.align, natural, target, width);
-      var shift = Math.round(left - natural.left);
-      if (!shift) { report.placed.push({ cluster: c.el.className, ok: true }); return; }
-      c.el.style.transform = 'translateX(' + shift + 'px)';
-      var clusterW = natural.right - natural.left;
-      if (target.end - target.start + 0.5 < clusterW) {
+      if (!plan.shift) { report.placed.push({ cluster: c.el.className, ok: true }); return; }
+      c.el.style.transform = 'translateX(' + plan.shift + 'px)';
+      if (plan.narrow) {
         report.dropped.push({ cluster: c.el.className, reason: 'free_interval_narrower_than_cluster',
-                              free: [Math.round(target.start), Math.round(target.end)],
-                              width: Math.round(clusterW) });
+                              free: [Math.round(plan.target.start), Math.round(plan.target.end)],
+                              width: Math.round(natural.right - natural.left) });
       }
-      report.moved.push({ cluster: c.el.className, shift: shift, zone: hit.zone,
-                          free: [Math.round(target.start), Math.round(target.end)] });
+      report.moved.push({ cluster: c.el.className, shift: plan.shift, zone: plan.zone,
+                          free: [Math.round(plan.target.start), Math.round(plan.target.end)] });
     });
     global.__nuxelSafeZoneReport = report;
     // Deterministic evidence: the placement report goes through the launcher
@@ -270,6 +292,11 @@
     zonesFor: zonesFor,
     activeZones: activeZones,
     blockedIntervals: blockedIntervals,
+    // Pure geometry helpers, shared with the Settings safe-zone editor so the
+    // preview strip and the real status bar place items with the same code.
+    freeIntervals: freeIntervals,
+    overlaps: overlaps,
+    planCluster: planCluster,
     applyLayout: applyLayout,
     presets: function () { return DEFAULTS.presets.slice(); },
     applyPreset: function (name) {

@@ -112,7 +112,7 @@
     var foodPos = placeItem(snake.positions, config, plan, rng);
     return {
       config: config, snake: snake, food: { position: foodPos }, poops: [],
-      score: 0, gameOver: false, shitCounter: 0, ticks: 0, events: []
+      score: 0, gameOver: false, cause: null, shitCounter: 0, ticks: 0, events: []
     };
   }
 
@@ -162,14 +162,17 @@
 
     if (!(head[0] >= 0 && head[0] < config.gridWidth && head[1] >= 0 && head[1] < config.gridHeight)) {
       game.gameOver = true;
+      game.cause = 'wall';
       game.events.push({ tick: game.ticks, type: 'wall', at: head.slice() });
     } else if (snake.positions.slice(1).some(function (p) { return same(p, head); })) {
       game.gameOver = true;
+      game.cause = 'self';
       game.events.push({ tick: game.ticks, type: 'self', at: head.slice() });
     } else if (settings.wonqMode) {
       for (var i = 0; i < game.poops.length; i++) {
-        if (same(head, game.poops[i].position)) {
+        if (same(game.poops[i].position, head)) {
           game.gameOver = true;
+          game.cause = 'poop';
           game.events.push({ tick: game.ticks, type: 'poop', at: head.slice() });
           break;
         }
@@ -201,7 +204,8 @@
 
   function snapshot(game) {
     return {
-      tick: game.ticks, score: game.score, gameOver: game.gameOver, shitCounter: game.shitCounter,
+      tick: game.ticks, score: game.score, gameOver: game.gameOver, cause: game.cause,
+      shitCounter: game.shitCounter,
       snake: { positions: game.snake.positions.map(function (p) { return [p[0], p[1]]; }),
                length: game.snake.length, direction: game.snake.direction.slice() },
       food: game.food.position ? [game.food.position[0], game.food.position[1]] : null,

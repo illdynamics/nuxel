@@ -32,6 +32,7 @@ TARGETS = [
     "tools/s10plus/a33/build-libinput-shim.sh",
     "tools/s10plus/a33/tests/test-touch-trace.py",
     "tools/s10plus/a33/tests/test-bootmode-guard.py",
+    "tools/s10plus/a33/tests/test-capture-harness.py",
     "tools/s10plus/a33/tests/test-no-eventn-literal.py",
     "tools/s10plus/a33/tests/test-libinput-parity.py",
     "tools/s10plus/a33/tests/run-touch-tests.sh",

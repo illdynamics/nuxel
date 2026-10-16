@@ -340,6 +340,16 @@ class Store(object):
         if duration not in VALID_DURATIONS:
             raise ValueError("duration must be one of %s" % (VALID_DURATIONS,))
         enforce = self.registry.enforcement_of(cap_id)
+        # Honesty gate: a capability with no mechanism at all (clipboard on this
+        # kernel, raw modem access, ...) must not be storable. Storing it would
+        # put a green "granted" in the store and in the UI for something nothing
+        # enforces - exactly the cosmetic switch this project forbids. The
+        # limitation text is what the user is shown instead.
+        if enforce["mechanisms"] == ["none"] or enforce["enforces_against"] == "nobody" \
+                and enforce["verdict"] in ("NOT_SUPPORTED_ON_DEVICE",):
+            raise UnsupportedCapability(
+                "%s cannot be enforced on this device: %s"
+                % (cap_id, enforce["limitation"] or "no mechanism exists"))
         grants = self.get_grants(app_id)
         record = {
             "granted_at": _now(),

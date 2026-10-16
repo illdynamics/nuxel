@@ -1,0 +1,6 @@
+#!/bin/sh
+cat <<'O'
+numid=1,iface=MIXER,name='Speaker Volume'
+  ; type=INTEGER,access=rw------,values=2,min=0,max=100,step=1
+  : values=12,12
+O

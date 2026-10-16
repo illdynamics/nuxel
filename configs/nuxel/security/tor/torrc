@@ -1,0 +1,57 @@
+# =============================================================================
+# Nuxel Tor configuration (client only) - installed as /etc/tor/torrc
+# =============================================================================
+# Design decisions, and why they are the honest ones:
+#
+#  * CLIENT ONLY. There is no ExitRelay, no ORPort, no DirPort and no
+#    relay/bridge role. A phone is not an exit node; this also keeps the
+#    operator out of the abuse-report business.
+#
+#  * Loopback only for every port. SOCKS/DNS/TransPort/Control bind to
+#    127.0.0.1 so that nothing on the network (and no app in a different
+#    network namespace) can use the phone as an open proxy.
+#
+#  * ControlPort is enabled WITH CookieAuthentication and WITHOUT
+#    HashedControlPassword. The cookie lives in /run/tor (tmpfs, 0640
+#    debian-tor:debian-tor). This is what lets the privacy tool read real
+#    circuit state (`GETINFO circuit-status`) instead of guessing from the
+#    process being alive - "service running" and "circuit built" are different
+#    claims and the UI must show both.
+#
+#  * DNSPort + AutomapHostsOnResolve: name resolution is meant to happen through
+#    Tor, and the leak probe checks whether plaintext DNS still leaves the
+#    device. A leak is REPORTED, never hidden.
+#
+#  * AvoidDiskWrites 1: flash longevity (a phone, not a server) and fewer
+#    artefacts on disk.
+#
+#  * NO BRIDGES. No bridge lines, no pluggable transports are shipped. On a
+#    censored network the owner adds them at /etc/tor/bridges.conf (see
+#    tools/s10plus/a33/nuxel-vpn-tor.sh bridges-apply). Claiming censorship
+#    resistance without shipping a transport would be a lie.
+#
+#  * SocksPolicy is loopback-only; a malicious local app still needs the
+#    'network' capability grant to use the SOCKS port, and the socket itself is
+#    owned by debian-tor with mode 0600 by default.
+
+User debian-tor
+DataDirectory /var/lib/tor
+SocksPort 127.0.0.1:9050
+SocksPolicy accept 127.0.0.1
+SocksPolicy reject *
+DNSPort 127.0.0.1:9053
+TransPort 127.0.0.1:9040
+ControlPort 127.0.0.1:9051
+CookieAuthentication 1
+CookieAuthFileGroupReadable 1
+AutomapHostsOnResolve 1
+VirtualAddrNetworkIPv4 10.192.0.0/10
+AvoidDiskWrites 1
+Log notice file /var/log/tor/notices.log
+# Exit relay: never.
+ExitRelay 0
+ExitPolicy reject *:*
+# Relaying/bridging: never.
+BridgeRelay 0
+# An identifying nickname is not needed for a client and is one less thing to
+# leak; deliberately unset.

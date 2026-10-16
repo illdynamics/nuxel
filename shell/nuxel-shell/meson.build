@@ -82,9 +82,22 @@ if gtk4_dep.found() and adwaita_dep.found()
       deps += json_glib_dep
     endif
 
-    executable(app_name, src,
+    # The three phone apps share ONE data layer (nuxel-phone-data): contacts,
+    # call log, message threads, vCard import/export, the atomic store and the
+    # honest modem-capability model. It is plain C11 with no external
+    # dependency, so it is compiled directly into each app and is also built as
+    # its own unit-test binary below.
+    app_sources = [src]
+    app_includes = []
+    if app_name == 'nuxel-dialer' or app_name == 'nuxel-contacts' or app_name == 'nuxel-messages'
+      app_sources += 'nuxel-phone-data/nuxel-phone-data.c'
+      app_includes += include_directories('nuxel-phone-data')
+    endif
+
+    executable(app_name, app_sources,
       dependencies: deps,
       c_args: extra_c_args,
+      include_directories: app_includes,
       install: true,
       install_dir: get_option('bindir'),
     )
@@ -93,6 +106,17 @@ else
   warning('GTK4/libadwaita not found — skipping GTK4 native C app build. '
           + 'Install gtk4-devel and libadwaita-devel for native builds.')
 endif
+
+# The phone data layer's own offline test suite (no GTK, no display, no modem):
+# `meson test -C build` runs it, and shell/nuxel-shell/nuxel-phone-data/run-tests.sh
+# runs the same binary without meson at all.
+phone_data_test = executable('nuxel-phone-data-test',
+  ['nuxel-phone-data/nuxel-phone-data.c', 'nuxel-phone-data/nuxel-phone-data-test.c'],
+  include_directories: include_directories('nuxel-phone-data'),
+  c_args: ['-Wall', '-Wextra', '-Werror'],
+  install: false,
+)
+test('nuxel-phone-data', phone_data_test)
 
 # Install shared desktop entries (used by the Phosh app drawer).
 # The canonical .desktop files live in shell/config/; reference them via a

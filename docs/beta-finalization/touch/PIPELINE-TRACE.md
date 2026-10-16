@@ -184,6 +184,10 @@ python3 /usr/libexec/nuxel/nuxel-touch-trace.py --stage-probe
 
 # grade anything, offline
 python3 /usr/libexec/nuxel/nuxel-touch-trace.py --analyze /var/lib/nuxel/touch-trace
+
+# the whole offline gate for this area (tracer, shim, boot-mode guard, owner-test
+# harness, and the /dev/input/eventN grep gate) — no phone, no root, no /dev/input
+./tools/s10plus/a33/tests/run-touch-tests.sh
 ```
 
 Gate for a PASS (and nothing less): ≥1 `BTN_TOUCH` down **and** up, `ABS_MT`

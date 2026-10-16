@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "comment": "NFC policy for the S10+ (beyond2lte). Read by tools/s10plus/a33/nuxel-nfc-diag.sh. The controller is a Samsung sec-nfc (S3FWRN5-family) part at I2C address 0x27 with an embedded secure element. Controller presence, firmware and the userspace stack are ENUMERATED per stage and the FIRST failing stage is reported. Configuration alone is NEVER a working NFC: the terminal verdict is NEEDS_OWNER_TEST until a physical tag is read. If the vendor kernel ships no usable controller driver, the honest verdict is BLOCKED_KERNEL / NOT_SUPPORTED_ON_DEVICE.",
+  "device": {
+    "model": "Samsung Galaxy S10+ SM-G975F",
+    "codename": "beyond2lte",
+    "controller": "Samsung sec-nfc (S3FWRN5-family) @ I2C 0x27 + embedded secure element",
+    "source": "beyond2lte DTS (docs/hardware-ids.md)"
+  },
+
+  "evidence_sources": {
+    "i2c_devices": ["/sys/bus/i2c/devices"],
+    "i2c_address_hints": ["0x27", "27"],
+    "char_devices": ["/dev/nfc0", "/dev/nfc", "/dev/sec-nfc"],
+    "sysfs": ["/sys/class/nfc", "/sys/devices/virtual/nfc"],
+    "modules": ["/proc/modules"],
+    "driver_candidates": ["sec_nfc", "s3fwrn5", "s3fwrn5_fw", "nfc", "nci", "nfc_sec", "sec_nfc_i2c"],
+    "firmware_dirs": ["/lib/firmware/nfc", "/lib/firmware", "/vendor/firmware"],
+    "firmware_candidates": [
+      "sec-nfc.fw", "sec_nfc.fw", "s3fwrn5.fw", "s3fwrn5_firmware.fw",
+      "nfc/sec-nfc.fw", "nfc/s3fwrn5.fw", "sec_nfc_firmware.bin"
+    ],
+    "stack": {
+      "daemon_candidates": ["neard.service", "nfc.service"],
+      "client_candidates": ["nfc-list", "nfc-emulate-forum-tag4", "neard"],
+      "netlink": "/sys/class/nfc"
+    }
+  },
+
+  "first_failing_stage_order": ["controller", "firmware", "subsystem", "stack", "tag"],
+  "verdicts": {
+    "READY_FOR_TAG": "controller enumerated, firmware present, NFC subsystem and a userspace client/daemon available — an owner may tap a tag (still NEEDS_OWNER_TEST)",
+    "BLOCKED_KERNEL": "no NFC controller node and no NFC driver module bound — the vendor kernel did not bring the controller up",
+    "BLOCKED_FIRMWARE": "a controller/module path exists but no NFC firmware blob is present",
+    "BLOCKED_EXTERNAL_RESOURCE": "kernel NFC is up but no userspace stack (neard/nfc-list) can talk to it",
+    "NOT_SUPPORTED_ON_DEVICE": "the shipped kernel/driver set provides no supported path at all for this controller",
+    "PARTIAL": "some stages present, some missing — read the per-stage lines"
+  },
+
+  "tag_test": {
+    "comment": "Owner procedure only. The repository never fabricates a tag UID; it scripts the read and asks the owner to compare the UID printed on the tag.",
+    "tag_required": true,
+    "expected_uid_format": "4 or 7 byte hex (e.g. 04:A1:B2:C3:D4:E5:F6)",
+    "steps": [
+      "have any NFC tag (NTAG213/215/216 or a MIFARE Classic card) on hand",
+      "nuxel-nfc-diag.sh status            # expect verdict READY_FOR_TAG",
+      "start the reader (nfc-list / neard) as instructed by the diagnostic",
+      "place the tag flat on the phone's upper-back area for ~2 seconds",
+      "read the UID and compare it with the UID printed/known for that tag",
+      "record the UID, the tool used and the outcome in this fragment"
+    ],
+    "evidence_required_for_promotion": [
+      "nuxel-nfc-diag.sh status prints controller + firmware stages as present",
+      "the reader reports one tag with a UID matching the physical tag",
+      "a second read of a different tag yields a different UID"
+    ]
+  },
+
+  "diagnostics": { "log": "/var/log/nuxel/nfc-diag.log", "read_timeout_s": 15 }
+}

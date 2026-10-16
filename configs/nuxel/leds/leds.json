@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "comment": "LED / flashlight / notification-LED policy for the S10+ (beyond2lte). Read by tools/s10plus/a33/nuxel-led-diag.sh. Which LED classes the hardware actually exposes is ENUMERATED at runtime and reported truthfully: a class that is absent is NOT_SUPPORTED_ON_DEVICE, never silently emulated. There is an explicit OFF state and nothing is switched on at boot.",
+  "device": {
+    "model": "Samsung Galaxy S10+ SM-G975F",
+    "codename": "beyond2lte",
+    "known_hardware": {
+      "rear_flash": "dual-LED flash (warm/cool) driven by the camera/PMIC LED class",
+      "front_notification": "S10+ carries a front notification LED; whether a Linux LED class is bound is reported, not assumed",
+      "display": "S6E3HA9 AMOLED, curved edges; edge lighting is a SOFTWARE display effect, not a separate LED"
+    }
+  },
+
+  "classes": {
+    "flashlight": {
+      "comment": "Torch/white flash. Candidates are probed in order; the FIRST that responds wins and its real path is reported.",
+      "candidates": [
+        "/sys/class/leds/led:flash_0", "/sys/class/leds/led:flash_1",
+        "/sys/class/leds/led:torch_0", "/sys/class/leds/led:torch_1",
+        "/sys/class/leds/flashlight", "/sys/class/leds/torch",
+        "/sys/class/leds/led:flash_torch", "/sys/class/leds/led:switch_0"
+      ],
+      "globs": ["/sys/class/leds/*torch*", "/sys/class/leds/*flash*"],
+      "write_files": ["brightness", "flash_strobe"],
+      "max_file": "max_brightness",
+      "auto_on_boot": false
+    },
+    "notification": {
+      "comment": "Front notification LED. A notification LED that does not exist on this kernel is NOT_SUPPORTED_ON_DEVICE; the notifier then falls back to the display (a different, honest path).",
+      "candidates": [
+        "/sys/class/leds/led:notification", "/sys/class/leds/notification",
+        "/sys/class/leds/led:rgb", "/sys/class/leds/sec_led",
+        "/sys/class/leds/led:red", "/sys/class/leds/led:green", "/sys/class/leds/led:blue"
+      ],
+      "globs": ["/sys/class/leds/*notif*", "/sys/class/leds/*rgb*", "/sys/class/leds/*red*", "/sys/class/leds/*green*", "/sys/class/leds/*blue*"],
+      "write_files": ["brightness", "blink", "trigger"],
+      "auto_on_boot": false,
+      "colors": {"red": "led:red", "green": "led:green", "blue": "led:blue"}
+    },
+    "edge_lighting": {
+      "comment": "TRUTHFUL: the S10+ has no dedicated edge-lighting LED. Samsung's 'Edge lighting' is a display overlay on the curved AMOLED driven by the display bridge, so this repository models it as a display effect and reports hardware_led=false. It therefore depends on the display bridge (nuxel-wl-fb) and is NOT_VERIFIED.",
+      "kind": "display_overlay",
+      "hardware_led": false,
+      "depends_on": "/run/nuxel-wl-fb.cmd",
+      "fallback": "use the notification LED class if present, else a display overlay when the display bridge is up",
+      "state": "NOT_SUPPORTED_ON_DEVICE_AS_LED"
+    }
+  },
+
+  "safety": {
+    "comment": "Thermal and battery guard for the torch: the torch is a real 1 W-class emitter, so a bounded ON time and an explicit OFF are mandatory, and nothing turns it on automatically.",
+    "max_on_ms": 60000,
+    "require_explicit_yes": true,
+    "auto_on_boot": false,
+    "off_on_exit": true,
+    "state_file": "/var/lib/nuxel/leds/state.json"
+  },
+
+  "diagnostics": {
+    "log": "/var/log/nuxel/led-diag.log",
+    "classes_reported": ["flashlight", "notification", "edge_lighting"]
+  }
+}

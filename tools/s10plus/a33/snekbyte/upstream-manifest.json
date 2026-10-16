@@ -1,4 +1,7 @@
 {
+  "imported_at": "2026-10-16",
+  "imported_by": "tools/s10plus/a33/snekbyte/import-snekbyte.sh",
+  "licence": "The upstream archive contains no LICENSE/COPYING file and no per-file SPDX headers; see UPSTREAM-PROVENANCE.md.",
   "members": {
     ".gitignore": {
       "bytes": 160,
@@ -113,5 +116,8 @@
       "sha256": "c950368974888a711ff826932ce51a9211e7e11a1b764a1d827899e1a946618e"
     }
   },
-  "source_archive": "snekbyte-main.zip"
+  "source_archive": "snekbyte-main.zip",
+  "source_archive_bytes": 22448,
+  "source_archive_duplicate": "snekbyte-main (1).zip \u2014 byte-identical (same SHA-256)",
+  "source_archive_sha256": "97f27d12942c708a7840ea403ebb4d2b9879ba0c6f02040dfaddc799c001f387"
 }

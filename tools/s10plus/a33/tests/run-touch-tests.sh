@@ -40,6 +40,7 @@ run_step "libinput shim: capability fixtures"      python3 "$HERE/test-libinput-
 run_step "libinput shim: A31/A33 parity"           python3 "$HERE/test-libinput-parity.py"
 run_step "touch tracer: layers, gate, boundedness" python3 "$HERE/test-touch-trace.py"
 run_step "boot-mode guard: LPM detection + gates"  python3 "$HERE/test-bootmode-guard.py"
+run_step "capture harness: commands, gate, no repo litter" python3 "$HERE/test-capture-harness.py"
 run_step "no hard-coded /dev/input/event<N> gate"  python3 "$HERE/test-no-eventn-literal.py"
 
 # OPTIONAL cross-check: the A32 baseline regression guard (owned by the preflight
@@ -48,7 +49,8 @@ run_step "no hard-coded /dev/input/event<N> gate"  python3 "$HERE/test-no-eventn
 echo
 echo "==================== A32 baseline regression guard (optional) ===================="
 if [ -x "$ROOT/tools/beta/regression-guard.sh" ]; then
-  bash "$ROOT/tools/beta/regression-guard.sh" --quick
+  # --no-tests keeps this fast (hash-only); run it without it for the full gate.
+  bash "$ROOT/tools/beta/regression-guard.sh" --no-tests
   echo "regression-guard rc=$?"
 else
   echo "SKIP tools/beta/regression-guard.sh not present in this tree"

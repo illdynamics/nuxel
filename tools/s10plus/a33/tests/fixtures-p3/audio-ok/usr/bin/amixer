@@ -1,0 +1,15 @@
+#!/bin/sh
+cat <<'O'
+numid=1,iface=MIXER,name='Speaker Volume'
+  ; type=INTEGER,access=rw------,values=2,min=0,max=100,step=1
+  : values=12,12
+numid=2,iface=MIXER,name='Headphone Volume'
+  ; type=INTEGER,access=rw------,values=2,min=0,max=100,step=1
+  : values=10,10
+numid=3,iface=MIXER,name='DAC Digital Volume'
+  ; type=INTEGER,access=rw------,values=2,min=0,max=255,step=1
+  : values=100,100
+numid=4,iface=MIXER,name='Headphone Jack'
+  ; type=BOOLEAN,access=r-------,values=1
+  : values=off
+O

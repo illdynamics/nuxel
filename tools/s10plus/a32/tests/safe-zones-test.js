@@ -211,5 +211,72 @@ check('the moved cluster reports the free interval it moved into',
       JSON.stringify(pass1.moved));
 Z.cancelPreview();
 
+// --------------------------------------------------------------------------- //
+// A33 (briq-02e): the SHARED pure planner.  The Settings safe-zone editor used
+// to carry a second copy of the placement arithmetic, and that copy still did the
+// A32 one-way push (it moved the right cluster further right, i.e. off the panel,
+// for the S10+ profile [9,10]).  The planner is now exported once and both the
+// real status bar and the editor call it, so these assertions pin the geometry
+// AND the absence of a divergent second copy.
+// --------------------------------------------------------------------------- //
+check('engine exports the pure planner', typeof Z.planCluster === 'function' &&
+      typeof Z.freeIntervals === 'function' && typeof Z.overlaps === 'function');
+
+// zones 9,10 grow with the padding and OVERLAP, so the free space left of the
+// cutout is ONE gap: [0, 8*36 - 12].
+Z.previewZones([9, 10], 'portrait', 'custom');
+const free910 = Z.freeIntervals(W, Z.blockedIntervals(W));
+check('padded zones 9,10 merge into a single free interval',
+      free910.length === 1 && Math.abs(free910[0].start) < 1e-9 &&
+      Math.abs(free910[0].end - (8 * ZONE_W - PAD)) < 1e-9,
+      JSON.stringify(free910));
+
+const right910 = Z.planCluster({ left: 300, right: 360, width: 60 }, 'end', Z.blockedIntervals(W), W);
+check('planner pushes the right cluster LEFT out of the S10+ cutout (never off-panel)',
+      right910.hit === true && right910.zone === 9 && right910.shift < 0 &&
+      right910.reason === 'moved' && right910.narrow === false,
+      JSON.stringify(right910));
+check('the planned right-cluster rectangle lands inside the free interval',
+      300 + right910.shift >= free910[0].start &&
+      360 + right910.shift <= free910[0].end + 0.5,
+      'right edge after shift = ' + (360 + right910.shift));
+
+Z.previewZones([1, 2], 'portrait', 'custom');
+const fb = Z.blockedIntervals(W);
+const left12 = Z.planCluster({ left: 0, right: 60, width: 60 }, 'start', fb, W);
+check('planner pushes the left cluster RIGHT out of zones 1,2 (never off the left edge)',
+      left12.shift > 0 && left12.zone === 1 && left12.reason === 'moved',
+      JSON.stringify(left12));
+check('the planned left-cluster rectangle is clear of every blocked interval',
+      !Z.overlaps(left12.target.start, left12.target.start + 60, fb),
+      JSON.stringify(left12.target) + ' vs ' + JSON.stringify(fb));
+
+Z.previewZones([5, 6], 'portrait', 'custom');
+const centre56 = Z.planCluster({ left: 150, right: 210, width: 60 }, 'center', Z.blockedIntervals(W), W);
+check('planner moves the centre cluster out of zones 5,6',
+      centre56.hit === true && centre56.reason === 'moved' &&
+      centre56.shift + 150 >= 0 && centre56.shift + 150 <= W,
+      JSON.stringify(centre56));
+
+Z.previewZones([9, 10], 'portrait', 'custom');
+const clearCluster = Z.planCluster({ left: 0, right: 60, width: 60 }, 'start', Z.blockedIntervals(W), W);
+check('a cluster already in free space is not moved', clearCluster.hit === false &&
+      clearCluster.shift === 0 && clearCluster.reason === 'clear', JSON.stringify(clearCluster));
+
+Z.previewZones([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], 'portrait', 'custom');
+const hopeless = Z.planCluster({ left: 0, right: 60, width: 60 }, 'start', Z.blockedIntervals(W), W);
+check('a fully blocked bar yields no placement (and is reported, not faked)',
+      hopeless.reason === 'no_free_interval' && hopeless.shift === 0, JSON.stringify(hopeless));
+Z.cancelPreview();
+
+// The drift gate: the Settings editor must CALL the shared planner and must not
+// contain the A32 one-way arithmetic any more.
+const settingsSrc = fs.readFileSync(path.join(__dirname, '../../../../pwa/nuxel-apps/settings/settings.js'), 'utf8');
+check('the Settings editor uses the shared planner (no second copy)',
+      /engine\.planCluster\(/.test(settingsSrc) && /engine\.blockedIntervals\(/.test(settingsSrc) &&
+      !/intervals\[0\]\.a/.test(settingsSrc) && !/intervals\[intervals\.length - 1\]\.b/.test(settingsSrc));
+check('the Settings editor states that the preview needs the launcher engine when it is absent',
+      /placement preview needs the launcher safe-zone engine/.test(settingsSrc));
+
 console.log(failures ? ('\n' + failures + ' FAILURES') : '\nall safe-zone tests passed');
 process.exit(failures ? 1 : 0);

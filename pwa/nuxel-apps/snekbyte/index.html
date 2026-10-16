@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="nuxel-app-id" content="org.nuxel.SnekByte">
+<meta name="theme-color" content="#2E7D32">
+<title>SnekByte — the original game, ported</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="css/snekbyte.css">
+</head>
+<body>
+<header class="hdr">
+  <h1>🐍 SnekByte</h1>
+  <span class="badge" id="prov-badge">port of the original pygame game</span>
+  <span class="grow"></span>
+  <button id="pad-toggle" class="ghost" title="Show or hide the on-screen D-pad">D-pad</button>
+  <button id="help" class="ghost" title="How this port is verified">Verify</button>
+  <button id="close" class="ghost" title="Close the game">✕</button>
+</header>
+
+<div class="stage" id="stage">
+  <canvas id="screen" width="800" height="600" role="img"
+          aria-label="SnekByte playfield: 40 by 30 grid, 20 pixel cells"></canvas>
+
+  <div class="pad">
+    <div class="side">
+      <span class="blank"></span>
+      <button id="dp-up" aria-label="Move up">▲</button>
+      <span class="blank"></span>
+      <button id="dp-left" aria-label="Move left">◀</button>
+      <button id="pause" aria-label="Pause or resume">❙❙</button>
+      <button id="dp-right" aria-label="Move right">▶</button>
+      <span class="blank"></span>
+      <button id="dp-down" aria-label="Move down">▼</button>
+      <span class="blank"></span>
+    </div>
+    <div class="side">
+      <span class="blank"></span>
+      <button id="restart" aria-label="Restart the game">↻</button>
+      <span class="blank"></span>
+      <button id="menu" aria-label="Back to the main menu">☰</button>
+      <button id="fast" aria-label="Change speed">»</button>
+      <span class="blank"></span>
+      <span class="blank"></span>
+      <span class="blank"></span>
+      <span class="blank"></span>
+    </div>
+  </div>
+</div>
+
+<div class="legend">
+  <span><kbd>↑</kbd><kbd>↓</kbd><kbd>←</kbd><kbd>→</kbd> or <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> turn</span>
+  <span><kbd>Space</kbd> pause</span>
+  <span><kbd>Enter</kbd> select</span>
+  <span><kbd>Esc</kbd> back</span>
+  <span>or swipe on the playfield / use the D-pad</span>
+</div>
+
+<div class="panel" id="panel-provenance" data-panel="provenance">
+  <h3>How the port is verified</h3>
+  <p>SnekByte is a port of the original Python/pygame game. Fidelity is not asserted by eye:
+     the real upstream modules are executed by
+     <code>tools/s10plus/a33/snekbyte/gen-parity-fixtures.py</code> over scripted input, and the
+     JavaScript engine in <code>js/snek-engine.js</code> must reproduce that recording tick for tick.</p>
+  <div class="row">
+    <table>
+      <tr><th>Check</th><th>Command</th></tr>
+      <tr><td>Python original vs. fixture</td><td><code>python3 tools/s10plus/a33/snekbyte/gen-parity-fixtures.py --check</code></td></tr>
+      <tr><td>JS port vs. fixture</td><td><code>node tools/s10plus/a33/snekbyte/parity-run.js</code></td></tr>
+      <tr><td>Everything (provenance + parity + shell)</td><td><code>python3 tools/s10plus/a33/snekbyte/tests/test-snek-parity.py</code></td></tr>
+      <tr><td>Engine unit tests</td><td><code>node pwa/nuxel-apps/snekbyte/tests/test-snek-engine.js</code></td></tr>
+    </table>
+  </div>
+  <p>Result recorded in <code>tools/s10plus/a33/snekbyte/fixtures/parity.json</code>: 3 scenarios, 41 ticks,
+     wall + self + WoNQ-poop endings, every field identical.</p>
+  <p>Licence position, stated rather than glossed over: the upstream <code>snekbyte-main.zip</code> archive
+     contains <strong>no licence file</strong> at all, so no licence header could be preserved. See
+     <code>tools/s10plus/a33/snekbyte/UPSTREAM-PROVENANCE.md</code> §2 and
+     <code>docs/beta-finalization/apps/SNEKBYTE.md</code>. Upstream copyright remains with its author.</p>
+  <p>On-device play is <strong>not claimed</strong>: the acceptance verdict is OFFLINE_TESTED /
+     VERIFIED_IN_VM_ONLY. Nothing here has been flashed or installed to a physical phone.</p>
+  <div class="row"><button class="ghost" id="prov-close">Back to the game</button></div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="js/snek-engine.js"></script>
+<script src="js/snekbyte.js"></script>
+</body>
+</html>

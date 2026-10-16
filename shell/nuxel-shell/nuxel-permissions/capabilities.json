@@ -458,6 +458,189 @@
       "limitation": "Mediated by the portal and DAC only. Note the live-console CDC-ACM gadget interface is deliberately reserved for the owner console and is never granted to apps.",
       "verdict": "IMPLEMENTED_NOT_DEPLOYED",
       "test": "tools/s10plus/a33/nuxel-firewall.sh console-verify"
+    },
+    {
+      "id": "input_devices",
+      "aliases": [
+        "input",
+        "input:keyboard",
+        "input:touch",
+        "input:buttons"
+      ],
+      "portal_type": null,
+      "title": "Input device access (touchscreen, buttons, keyboard)",
+      "description": "Read raw input events from the touchscreen, the hardware buttons and any keyboard",
+      "risk": "high",
+      "group": "hardware",
+      "mechanisms": [
+        "file-mode",
+        "apparmor"
+      ],
+      "enforceable": "partial",
+      "enforces_against": "unprivileged-app",
+      "grant_required": true,
+      "limitation": "Reading /dev/input/event* is a keylogger-class capability: with it an app sees every tap, every key and every button. On this kernel the only boundary is DAC (the nodes are owned by the nuxel-ui group, mode 0660) plus AppArmor - and AppArmor only if the vendor 4.14 kernel exposes that LSM (unverified; see ENFORCEMENT-PROOF.md). Landlock, which could deny the path per app, does not exist on 4.14. An app that already belongs to the input group is therefore not stopped by the permission store, and the grant is labelled as a reviewable intent, not a kernel wall.",
+      "verdict": "IMPLEMENTED_NOT_DEPLOYED",
+      "test": "tools/s10plus/a33/verify-permissions.py --app org.nuxel.SnekByte"
+    },
+    {
+      "id": "local_shell",
+      "aliases": [
+        "shell",
+        "shell:local-pty",
+        "terminal"
+      ],
+      "portal_type": null,
+      "title": "Local shell / PTY",
+      "description": "Spawn a local shell or pseudo-terminal on the device",
+      "risk": "high",
+      "group": "system",
+      "mechanisms": [
+        "sandbox-profile",
+        "apparmor"
+      ],
+      "enforceable": "partial",
+      "enforces_against": "unprivileged-app",
+      "grant_required": true,
+      "limitation": "A local shell inherits the app's own uid and runs inside its sandbox (namespaces + seccomp pwa-strict), so it cannot reach root: there is no setuid helper, no sudo policy and no CAP_SYS_ADMIN for the worker. What the shell then does to files the app already owns is outside what a permission grant can express on 4.14 - the sandbox profile's path limits are DAC-only because Landlock is absent.",
+      "verdict": "IMPLEMENTED_NOT_DEPLOYED",
+      "test": "tools/s10plus/a33/verify-permissions.py --app org.nuxel.Terminal"
+    },
+    {
+      "id": "system_inspect",
+      "aliases": [
+        "system",
+        "system:inspect",
+        "system:status"
+      ],
+      "portal_type": null,
+      "title": "System inspection (read-only)",
+      "description": "Read service, package, kernel and hardware state without changing any of it",
+      "risk": "medium",
+      "group": "system",
+      "mechanisms": [
+        "file-mode",
+        "portal"
+      ],
+      "enforceable": "partial",
+      "enforces_against": "unprivileged-app",
+      "grant_required": true,
+      "limitation": "/proc and /sys are world-readable, so most inspection cannot be narrowed per app by any mechanism this kernel has. The parts that are genuinely privileged (systemctl status of root units, other units' journals) go through D-Bus and polkit; polkit's presence on this image is not yet verified, so those reads fail closed instead of being faked by the UI.",
+      "verdict": "IMPLEMENTED_NOT_DEPLOYED",
+      "test": "tools/s10plus/a33/verify-permissions.py --app org.nuxel.DevMgmt"
+    },
+    {
+      "id": "downloads",
+      "aliases": [
+        "download",
+        "download:queue"
+      ],
+      "portal_type": null,
+      "title": "Downloads",
+      "description": "Fetch files into the shared downloads directory",
+      "risk": "medium",
+      "group": "data",
+      "mechanisms": [
+        "file-mode",
+        "nftables"
+      ],
+      "enforceable": "partial",
+      "enforces_against": "unprivileged-app",
+      "grant_required": true,
+      "limitation": "The downloads directory is DAC-scoped to the downloader uid. Egress is constrained only for a sandboxed app through the cgroup v1 net_cls classid rule in configs/nftables/nuxel-app-firewall.nft; a process outside that cgroup (or root) is not constrained by this grant at all.",
+      "verdict": "IMPLEMENTED_NOT_DEPLOYED",
+      "test": "tools/s10plus/a33/verify-permissions.py --app org.nuxel.Downloader"
+    },
+    {
+      "id": "media_library",
+      "aliases": [
+        "media",
+        "media:library",
+        "media:read"
+      ],
+      "portal_type": null,
+      "title": "Media library",
+      "description": "Read the shared music and video library",
+      "risk": "low",
+      "group": "data",
+      "mechanisms": [
+        "file-mode",
+        "sandbox-profile"
+      ],
+      "enforceable": "partial",
+      "enforces_against": "unprivileged-app",
+      "grant_required": true,
+      "limitation": "The library is a DAC-scoped directory owned by the media uid; the sandbox profile mounts nothing else read-write. Because 4.14 has no Landlock, a per-app path allow-list cannot be enforced in the kernel - any process that can already read the directory can read it.",
+      "verdict": "IMPLEMENTED_NOT_DEPLOYED",
+      "test": "tools/s10plus/a33/verify-permissions.py --app org.nuxel.Media"
+    },
+    {
+      "id": "catalog_read",
+      "aliases": [
+        "catalog",
+        "catalog:read",
+        "store:read"
+      ],
+      "portal_type": null,
+      "title": "App catalog (read)",
+      "description": "Read the offline NuxTore catalog of locally available packages",
+      "risk": "low",
+      "group": "system",
+      "mechanisms": [
+        "file-mode",
+        "portal"
+      ],
+      "enforceable": "partial",
+      "enforces_against": "unprivileged-app",
+      "grant_required": true,
+      "limitation": "The catalog is a root-owned index; the app reads a copy in its own data directory and asks the bridge for refreshes. There is no remote catalog and no store account, so this capability grants no network reach at all.",
+      "verdict": "IMPLEMENTED_NOT_DEPLOYED",
+      "test": "tools/s10plus/a33/verify-permissions.py --app org.nuxel.NuxTore"
+    },
+    {
+      "id": "app_install",
+      "aliases": [
+        "app:install",
+        "catalog:install"
+      ],
+      "portal_type": null,
+      "title": "Install an app from the local catalog",
+      "description": "Install a locally staged application package into the Nuxel app tree",
+      "risk": "high",
+      "group": "system",
+      "mechanisms": [
+        "portal",
+        "file-mode",
+        "systemd-cgroup"
+      ],
+      "enforceable": "partial",
+      "enforces_against": "unprivileged-app",
+      "grant_required": true,
+      "limitation": "Installation writes into the root-owned app tree through the nuxel-installer helper, which is the only writer; an app that cannot reach the helper cannot install anything. Sources are local packages only (offline-first, no store submission), and the installed unit is sandboxed by systemd when it starts. The grant expresses the user's intent; the helper enforces the path.",
+      "verdict": "IMPLEMENTED_NOT_DEPLOYED",
+      "test": "tools/s10plus/a33/verify-permissions.py --app org.nuxel.NuxTore"
+    },
+    {
+      "id": "app_remove",
+      "aliases": [
+        "app:remove",
+        "catalog:remove"
+      ],
+      "portal_type": null,
+      "title": "Remove an installed app",
+      "description": "Uninstall an application and delete its private data directory",
+      "risk": "high",
+      "group": "system",
+      "mechanisms": [
+        "portal",
+        "file-mode"
+      ],
+      "enforceable": "partial",
+      "enforces_against": "unprivileged-app",
+      "grant_required": true,
+      "limitation": "Removal deletes the app's unit and its /var/app/<id> tree, which the app itself cannot write outside its sandbox; the deletion is performed by the same root helper that installs. Data deletion is not recoverable from the phone, so the UI requires an explicit confirmation and records it.",
+      "verdict": "IMPLEMENTED_NOT_DEPLOYED",
+      "test": "tools/s10plus/a33/verify-permissions.py --app org.nuxel.NuxTore"
     }
   ],
   "unsupported_manifest_tokens": [
@@ -470,25 +653,42 @@
     "lockdown"
   ],
   "manifest_tokens": {
-    "phone:status": "phone_status",
-    "phone:network": "phone_status",
     "audio:capture": "microphone",
-    "audio:record": "microphone",
+    "audio:output": "audio",
     "audio:playback": "audio",
-    "clock:status": "clock_status",
-    "clock:alarm": "clock_status",
-    "camera:read": "camera",
+    "audio:record": "microphone",
     "camera:capture": "camera",
     "camera:preview": "camera",
-    "location:read": "location",
-    "location:fine": "location",
-    "location:coarse": "location",
-    "storage:read": "storage",
-    "storage:write": "storage",
-    "storage:cache": "storage",
-    "notifications:send": "notifications",
-    "notifications:receive": "notifications",
+    "camera:read": "camera",
+    "catalog:install": "app_install",
+    "catalog:read": "catalog_read",
+    "catalog:remove": "app_remove",
+    "clock:alarm": "clock_status",
+    "clock:status": "clock_status",
+    "display:own": "display",
+    "download:queue": "downloads",
     "files:read": "storage",
-    "files:write": "storage"
+    "files:write": "storage",
+    "input:keyboard": "input_devices",
+    "input:touch": "input_devices",
+    "location:coarse": "location",
+    "location:fine": "location",
+    "location:read": "location",
+    "media:library": "media_library",
+    "network:listen": "network",
+    "network:outbound": "network",
+    "notifications:receive": "notifications",
+    "notifications:send": "notifications",
+    "phone:network": "phone_status",
+    "phone:status": "phone_status",
+    "shell:local-pty": "local_shell",
+    "storage:cache": "storage",
+    "storage:cleanup": "storage",
+    "storage:encrypted": "storage",
+    "storage:persistent": "storage",
+    "storage:read": "storage",
+    "storage:scratch": "storage",
+    "storage:write": "storage",
+    "system:inspect": "system_inspect"
   }
 }

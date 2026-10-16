@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="nuxel-app-id" content="nuxel-settings-power">
+<title>Nuxel Settings — Power</title>
+<link rel="stylesheet" href="power-menu.css">
+</head>
+<body>
+<header class="hdr">
+  <h1>Power</h1>
+  <div class="hdr-actions">
+    <button id="power-refresh" class="ghost" title="Re-read power.json / power-menu.json">Refresh</button>
+    <button id="power-close" class="ghost" title="Back to Home">Close</button>
+  </div>
+</header>
+
+<main>
+  <p id="power-source" class="source">Loading…</p>
+
+  <!-- ── Battery & charging ─────────────────────────────────────────────── -->
+  <section class="card">
+    <h2>Battery &amp; charging</h2>
+    <div id="battery-state" class="battery"><span class="bad">no live battery evidence</span></div>
+    <p class="hint">Read from <code>/sys/class/power_supply/*</code> via
+      <code>nuxel-power-diag.sh status</code>. The gauge device is enumerated,
+      never assumed; no gauge ⇒ <code>BLOCKED_KERNEL</code>, never an invented
+      percentage. Charge-control registers are never written.</p>
+  </section>
+
+  <!-- ── Battery modes (area 18) ────────────────────────────────────────── -->
+  <section class="card">
+    <h2>Battery mode</h2>
+    <p class="hint">Each mode maps to a real cpufreq governor and a cgroup CPU
+      weight, and the choice is persisted so a reboot returns to the same mode.</p>
+    <div id="modes" class="modes" role="radiogroup" aria-label="Battery mode">
+      <!-- mode cards built by power-menu.js -->
+    </div>
+    <p id="mode-status" class="status" role="status" aria-live="polite"></p>
+  </section>
+
+  <!-- ── Power menu (area 17) ───────────────────────────────────────────── -->
+  <section class="card">
+    <h2>Power menu</h2>
+    <p class="hint">The long-press POWER menu. <b>Lock</b> acts. Every other
+      entry is <b>refused at execution time</b> and shows its reason —
+      Recovery and Download Mode are refused by the NO-FLASH invariant and are
+      never triggered by an automated path.</p>
+    <div id="menu-entries" class="menu-entries" role="group" aria-label="Power menu">
+      <!-- entries built by power-menu.js -->
+    </div>
+    <p id="menu-result" class="status" role="status" aria-live="polite"></p>
+  </section>
+</main>
+
+<script src="power-menu.js"></script>
+</body>
+</html>

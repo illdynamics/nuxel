@@ -1,0 +1,29 @@
+# nuxel-keyboard-apply.service — apply the Nuxel keyboard document in the user session.
+#
+# WHY THIS EXISTS (mission area 29 / briq-06d)
+#   /etc/nuxel/keyboard/keyboard.json is written by the Nuxel Settings app
+#   (through NuxelHost.configSet) and by nuxelctl. Both paths end here, so the
+#   OSK provider (stevia / stevia-phosh-osk-provider, or squeekboard in the UTM
+#   VM) is configured from ONE consumer and the Settings UI can probe whether
+#   that consumer ran (status channel 'keyboard-state').
+#
+# It is a USER unit: the OSK lives in the Wayland session (phoc), and gsettings
+# is session-scoped. It changes no system state outside the session and touches
+# no device node, no partition and no bootloader path.
+[Unit]
+Description=Nuxel keyboard apply (OSK provider + input settings from /etc/nuxel/keyboard/keyboard.json)
+Documentation=file:///usr/share/doc/nuxel/keyboard/README.md
+After=xdg-desktop-portal.service phosh.service
+PartOf=graphical-session.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=no
+ExecStart=/usr/libexec/nuxel/nuxel-keyboard-apply apply
+ExecReload=/usr/libexec/nuxel/nuxel-keyboard-apply apply
+# Honest failure: the applier exits 0 when it applied what the stack supports and
+# recorded why it could not apply the rest. It exits non-zero ONLY when the
+# document itself is unusable, so a broken document is visible to the user.
+SuccessExitStatus=0
+StandardOutput=append:/var/log/nuxel/keyboard.log
+StandardError=append:/var/log/nuxel/keyboard.log

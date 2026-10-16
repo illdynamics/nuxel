@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated": "2026-10-16T14:01:35Z",
+  "generated": "2026-10-16T14:17:41Z",
   "source": {
     "distribution": "fedora",
     "release": "43",
@@ -10,6 +10,36 @@
       "https://dl.fedoraproject.org/pub/fedora/linux/updates/43/Everything/aarch64"
     ],
     "metadata": "repomd.xml -> primary.xml (real repository metadata)",
+    "metadata_provenance": [
+      {
+        "repo": "https://dl.fedoraproject.org/pub/fedora/linux/releases/43/Everything/aarch64/os",
+        "repomd": {
+          "sha256": "6431612747d987257399969298151d19cfe87ed26322be6987e7b00cd0ae66a2"
+        },
+        "primary": {
+          "href": "repodata/a29dc3fcc86b6e10fab525e6de0b97e851b5e4e7fc3691d40d72efe6757a733d-primary.xml.zst",
+          "compressed_sha256": "a29dc3fcc86b6e10fab525e6de0b97e851b5e4e7fc3691d40d72efe6757a733d",
+          "compressed_bytes": 14837955,
+          "decompressed_sha256": "02d247f25e10add65533a4e76462fe390ebf2b77fcc4e60fe53c2c172ce2d680"
+        },
+        "source": "network (dl.fedoraproject.org)",
+        "nevra_count": 68135
+      },
+      {
+        "repo": "https://dl.fedoraproject.org/pub/fedora/linux/updates/43/Everything/aarch64",
+        "repomd": {
+          "sha256": "fa6fe9653ba62e44069d27a1f4fb9c410ab6240ea714eddce1e362a3c9cc6623"
+        },
+        "primary": {
+          "href": "repodata/8932760a7b759f80fec97f8c1f5cd95c7b322e5f9955615876dd7ecf421e1aa6-primary.xml.zst",
+          "compressed_sha256": "8932760a7b759f80fec97f8c1f5cd95c7b322e5f9955615876dd7ecf421e1aa6",
+          "compressed_bytes": 5588439,
+          "decompressed_sha256": "68908f389c99b37d479e1fe4383f92c7971a147fd50ab383993ea549000ad329"
+        },
+        "source": "network (dl.fedoraproject.org)",
+        "nevra_count": 25840
+      }
+    ],
     "package_count": 93975
   },
   "policy": {

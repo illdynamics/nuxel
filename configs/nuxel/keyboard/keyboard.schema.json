@@ -1,0 +1,54 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://nuxel.local/schemas/keyboard.schema.json",
+  "title": "Nuxel keyboard document",
+  "description": "Schema of /etc/nuxel/keyboard/keyboard.json. Validated offline by tools/s10plus/a33/tests/test-virtual-keyboard.py against the shipped document AND against every key the Settings model can write, so a setting can never be persisted in a shape the applier does not understand.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "keyboard.enabled",
+    "keyboard.auto_show",
+    "keyboard.layout",
+    "keyboard.numeric_layout",
+    "keyboard.height_dp",
+    "keyboard.key_repeat",
+    "keyboard.haptics",
+    "keyboard.clipboard",
+    "keyboard.hardware_passthrough"
+  ],
+  "properties": {
+    "schema_version": {"const": 1},
+    "comment": {"type": "string"},
+    "consumer": {"type": "string"},
+    "probe": {"type": "string"},
+    "evidence": {
+      "type": "object",
+      "properties": {
+        "state_file": {"type": "string", "pattern": "^/"},
+        "log": {"type": "string", "pattern": "^/"},
+        "probe_page": {"type": "string"}
+      },
+      "additionalProperties": true
+    },
+    "stack": {"type": "object", "additionalProperties": true},
+    "keyboard.enabled": {"type": "boolean"},
+    "keyboard.auto_show": {"type": "boolean"},
+    "keyboard.layout": {"type": "string", "minLength": 2, "maxLength": 16},
+    "keyboard.layouts_available": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"type": "string", "minLength": 2, "maxLength": 16}
+    },
+    "keyboard.numeric_layout": {"type": "boolean"},
+    "keyboard.height_dp": {"type": "integer", "minimum": 160, "maximum": 560},
+    "keyboard.key_repeat": {"type": "boolean"},
+    "keyboard.key_repeat_delay_ms": {"type": "integer", "minimum": 100, "maximum": 2000},
+    "keyboard.key_repeat_interval_ms": {"type": "integer", "minimum": 10, "maximum": 200},
+    "keyboard.haptics": {"type": "boolean"},
+    "keyboard.clipboard": {"type": "boolean"},
+    "keyboard.hardware_passthrough": {"type": "boolean"},
+    "set_by": {"type": "string"},
+    "updated_at": {"type": "number"}
+  },
+  "additionalProperties": true
+}

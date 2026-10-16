@@ -45,8 +45,15 @@ def sha256_file(path):
     return h.hexdigest()
 
 
-def walk_app(app_dir):
-    """Every stageable file under app_dir, as repo-relative dicts sorted by path."""
+def walk_app(app_dir, start=None):
+    """Every stageable file under app_dir, as root-relative dicts sorted by path.
+
+    `start` is the tree the recorded paths are relative to.  It defaults to the
+    real workspace root, which is what the stager wants; the offline test passes
+    the root of its throw-away fixture tree, so a staged fixture produces paths
+    that its verifier root can actually resolve.
+    """
+    base = start or START
     out = []
     for root, dirs, files in os.walk(app_dir):
         dirs[:] = sorted(d for d in dirs if d not in SKIP_DIRS)
@@ -55,7 +62,7 @@ def walk_app(app_dir):
                 continue
             full = os.path.join(root, name)
             out.append({
-                "path": os.path.relpath(full, START).replace(os.sep, "/"),
+                "path": os.path.relpath(full, base).replace(os.sep, "/"),
                 "sha256": sha256_file(full),
                 "size": os.path.getsize(full),
             })

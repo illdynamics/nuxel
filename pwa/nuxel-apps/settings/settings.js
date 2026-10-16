@@ -126,35 +126,37 @@
     renderPreviewZones();
     var engine = layoutEngine();
     var bar = document.getElementById('preview-bar');
-    var report = '—';
-    if (engine) {
-      engine.previewZones(WORK.zones, WORK.orientation, 'custom');
-      report = JSON.stringify(engine.applyLayout(), null, 1);
-      if (engine.preview && engine.preview.zones.length) {
-        var pf = engine.previewZones;  // no-op, keeps the call explicit
-      }
-    }
-    // local mirror of the constraint pass for the preview strip
     var w = bar.clientWidth || 320;
-    var zoneW = w / 10;
-    var pad = (WORK.padding || 0) * 2;
-    var intervals = WORK.zones.map(function (z) {
-      return { a: (z - 1) * zoneW - pad, b: z * zoneW + pad, z: z };
-    });
+    if (!engine) {
+      // No launcher engine reachable (Settings opened outside Nuxel Home).  The
+      // editor shows the zone strip and says the placement preview is unavailable
+      // instead of running a SECOND copy of the placement arithmetic: a duplicate
+      // model is how a preview starts disagreeing with the real status bar (the
+      // A32 copy still pushed the right cluster off the panel for zones 9,10).
+      document.getElementById('preview-report').textContent =
+        'blocked zones: [' + WORK.zones.join(', ') + ']  padding: ' + WORK.padding + ' dp\n' +
+        'placement preview needs the launcher safe-zone engine (open Settings from Nuxel Home)';
+      return;
+    }
+    engine.padding(WORK.padding);
+    engine.previewZones(WORK.zones, WORK.orientation, 'custom');   // drives the REAL bar
+    var report = JSON.stringify(engine.applyLayout(), null, 1);
+    // The preview strip below mirrors the real bar with the SAME planner
+    // (engine.planCluster), bar-relative so the strip's own coordinates are used.
+    var ivals = engine.blockedIntervals(w);
+    var ALIGN = { 'status-left': 'start', 'status-center': 'center', 'status-right': 'end' };
     ['status-left', 'status-center', 'status-right'].forEach(function (cls) {
       var el = bar.querySelector('.' + cls);
       if (!el) return;
-      el.style.transform = '';
+      el.style.transform = '';          // reset BEFORE measuring (no compounding shift)
+      el.classList.remove('moved');
       var r = el.getBoundingClientRect(), br = bar.getBoundingClientRect();
-      var a = r.left - br.left, b = r.right - br.left;
-      var hit = intervals.find(function (iv) { return a < iv.b && b > iv.a; });
-      if (!hit) return;
-      var shift = (cls === 'status-left') ? (intervals[0].a - b - 2)
-                : (cls === 'status-right') ? (intervals[intervals.length - 1].b - a + 2)
-                : ((intervals[0].a > (w - intervals[intervals.length - 1].b)) ? (intervals[0].a - b - 2)
-                                                                            : (intervals[intervals.length - 1].b - a + 2));
-      el.style.transform = 'translateX(' + Math.round(shift) + 'px)';
-      el.classList.add('moved');
+      var natural = { left: r.left - br.left, right: r.right - br.left, width: r.width };
+      var plan = engine.planCluster(natural, ALIGN[cls], ivals, w);
+      if (plan && plan.shift) {
+        el.style.transform = 'translateX(' + plan.shift + 'px)';
+        el.classList.add('moved');
+      }
     });
     document.getElementById('preview-report').textContent =
       'blocked zones: [' + WORK.zones.join(', ') + ']  padding: ' + WORK.padding + ' dp\n' + report;
@@ -334,8 +336,82 @@
   }
   document.getElementById('refresh-dev').addEventListener('click', refreshDev);
 
+  // ---------- verbose boot (briq-02b) ----------
+  // The SAME durable document `nuxelctl verbose-boot on|off` writes and
+  // nuxel-verbose-boot.service reads: /etc/nuxel/boot/verbose-boot.json (through
+  // the host's config channel, which is an atomic same-directory rename).  The
+  // write MERGES into the loaded document, so a key this revision does not know
+  // about survives - an upgrade or a newer/older launcher never clobbers the
+  // operator's choice.
+  var VERBOSE_NAME = 'verbose-boot';
+  function verboseDoc() {
+    return cfgGet(VERBOSE_NAME).then(function (res) {
+      if (res && res.ok && res.text) {
+        try { var d = JSON.parse(res.text); if (d && typeof d === 'object') return d; } catch (e) {}
+      }
+      return {};
+    }, function () { return {}; });
+  }
+  function loadBoot() {
+    var state = document.getElementById('verbose-boot-state');
+    var toggle = document.getElementById('verbose-boot-toggle');
+    var override = document.getElementById('verbose-boot-override');
+    if (!state || !toggle) return Promise.resolve();
+    return verboseDoc().then(function (doc) {
+      toggle.checked = !!doc.verbose_boot;
+      return call('status.read', { name: 'verbose-boot-state' }).then(function (res) {
+        var bootState = (res && res.ok && res.text) ? res.text.trim() : '';
+        var lines = [
+          'verbose_boot: ' + (doc.verbose_boot ? 'ON — applies from the NEXT boot' : 'off (default)'),
+          'stored in: /etc/nuxel/boot/verbose-boot.json',
+          'set_by: ' + (doc.set_by || 'default') + '   schema_version: ' + (doc.schema_version || 1)
+        ];
+        if (doc.migrated_from) lines.push('migrated_from: ' + doc.migrated_from);
+        if (bootState) lines.push('this boot: ' + bootState.split('\n').join(' | '));
+        else lines.push('this boot: (nuxel-verbose-boot has not reported yet)');
+        state.textContent = lines.join('\n');
+        var supported = /OVERRIDE_CAPABILITY=supported/.test(bootState);
+        override.textContent = supported
+          ? 'One-time Bixby-hold override: available on the installed early boot stage.'
+          : 'One-time Bixby-hold override: BOOT_UPDATE_REQUIRED — the installed early boot stage ' +
+            'cannot read the Bixby key state, so the override is refused with a kernel marker ' +
+            '(NUXEL_VERBOSE_BOOT_OVERRIDE_REFUSED) rather than faked behind this switch.';
+      });
+    });
+  }
+  if (document.getElementById('verbose-boot-toggle')) {
+    document.getElementById('verbose-boot-toggle').addEventListener('change', function () {
+      var el = this;
+      var want = !!el.checked;
+      el.disabled = true;
+      verboseDoc().then(function (doc) {
+        doc.schema_version = doc.schema_version || 1;
+        doc.verbose_boot = want;
+        doc.set_by = 'user';
+        doc.updated_at = Date.now();
+        return cfgSet(VERBOSE_NAME, JSON.stringify(doc, null, 2) + '\n');
+      }).then(function (res) {
+        el.disabled = false;
+        if (!res || !res.ok) {
+          el.checked = !want;   // never leave the switch lying about what is stored
+          document.getElementById('verbose-boot-state').textContent =
+            'save failed — the setting was NOT changed (no host channel?)\nwanted verbose_boot=' + want;
+        }
+        return loadBoot();
+      }, function () {
+        el.disabled = false;
+        el.checked = !want;
+        document.getElementById('verbose-boot-state').textContent =
+          'save failed — the setting was NOT changed';
+      });
+    });
+  }
+  if (document.getElementById('reload-boot')) {
+    document.getElementById('reload-boot').addEventListener('click', function () { loadBoot(); });
+  }
+
   // ---------- boot ----------
-  loadZonesDoc().then(loadButtons).then(function () {
+  loadZonesDoc().then(loadButtons).then(loadBoot).then(function () {
     refreshDev();
     setInterval(refreshDev, 4000);
     window.addEventListener('resize', previewLayout);

@@ -47,6 +47,7 @@ A32's handoff silently undid that by stopping the player early.
 | **Minimum full cycle count** before handoff | `min_cycles`, default 1 = one complete play-through of the shipping 192-frame 24 fps MP4 = **8000 ms**; configurable in `configs/nuxel/boot/animation-handoff.json` |
 | Handoff is **auditable after the fact** | Kernel marker `NUXEL_ANIM_HANDOFF receipt=<id> owner=<anim\|ui> stage=… terminal=… loops=n/m reason=…` plus an append-only `/var/lib/nuxel/anim-handoff.log` |
 | **Launcher-not-ready ⇒ the animation resumes** | No scanout write at all, stale stop file unlinked, receipt `owner=anim stage=ANIMATION_RESUMED`, ownership lock released so the first-light fallback can legally take the panel — never a blank or silently static frame |
+| Verbose boot may waive the floor — **only** as a recorded operator choice | Decision 5 of the shared table: if `/run/nuxel/anim-skip.request` says `ANIM_SKIP_REQUESTED` (published by `nuxel-verbose-boot` when the durable verbose-boot setting is ON), the floor is waived for that boot only. The receipt/state records `ANIM_MIN_CYCLE_SKIPPED` / `reason=verbose_boot_requested` with `terminal=0`, so a waiver can never be mistaken for a completed cycle. With no request file this branch is inert |
 | A stalled player must not freeze the boot | Bounded wait (`max_wait_s`, default 24 s) ⇒ `ANIMATION_DEGRADED_STOP` with an explicit `reason` (`anim_min_cycle_timeout` / `anim_clock_unavailable`); the receipt records `terminal=0` and **never** claims a completed cycle |
 
 ### Ownership contract (single writer)
@@ -73,7 +74,9 @@ owner=ui    stage=LAUNCHER_DISPLAY_OWNER
 
 ### Evidence markers the live group greps
 
-`ANIM_MIN_CYCLE` (with `_WAIT` / `_RESULT` / `_DEGRADED` / `_SKIPPED` variants),
+`ANIM_MIN_CYCLE` (with `_WAIT` / `_RESULT` / `_DEGRADED` / `_SKIPPED` variants —
+`ANIM_MIN_CYCLE_SKIPPED` is the *recorded* verbose-boot waiver, `_DEGRADED` is an
+unexpected fault, and they are never conflated),
 `ANIMATION_STOP` (`ANIMATION_STOP_REQUESTED`, `ANIMATION_STOP_CONFIRMED`),
 `LAUNCHER_DISPLAY` (`LAUNCHER_DISPLAY_OWNER`), `NUXEL_ANIM_HANDOFF`, plus the
 player's own `NUXEL_ANIM_LOOP=<n>` and `NUXEL_ANIM_HEARTBEAT_LOOPS=<n>`.
@@ -85,7 +88,7 @@ player's own `NUXEL_ANIM_LOOP=<n>` and `NUXEL_ANIM_HEARTBEAT_LOOPS=<n>`.
 | `tools/s10plus/a33/nuxel-handoff-logic.h` | The pure decision table, shared **verbatim** by the bridge and the offline tests (no divergent copies) |
 | `tools/s10plus/a33/nuxel-wl-fb.c` | The bridge: ownership lock, receipt writer, minimum-cycle wait, colour conversion, screen on/off, paced presentation |
 | `tools/s10plus/a33/nuxel-anim-handoff.py` | `simulate` (replayable timeline), `audit` (verdict on real artefacts, `--root` for a fixture), `selftest` (the full offline proof) |
-| `tools/s10plus/a33/tests/handoff-cases.json` | The shared decision corpus (both implementations are executed against it) |
+| `tools/s10plus/a33/tests/handoff-cases.json` | The shared decision corpus, **22 cases** (both implementations are executed against it; it includes the five verbose-skip rows) |
 | `tools/s10plus/a33/tests/test-handoff-logic.c` | Compiles the header against the corpus and asserts the invariants |
 | `configs/nuxel/boot/animation-handoff.json` | Installs to `/etc/nuxel/boot/animation-handoff.json`; read by the bridge at boot |
 | `tools/s10plus/a33/nuxelctl` | `nuxelctl handoff status\|simulate\|audit` |
@@ -121,7 +124,13 @@ Latest run — 23 checks, 0 failures:
   and the bridge never takes ownership;
 * auditor accepts a correct single-owner handoff and **rejects** (a) a handoff
   with no completed cycle on the glass and (b) a fixture with two different
-  writers (negative control).
+  writers (negative control); it reports `floor_honoured_exactly` separately from
+  the tolerated `verbose_boot_requested` waiver;
+* the verbose-boot waiver never fires without the request file, without a painter,
+  before the launcher is ready, or when the floor was reached anyway (invariant 6,
+  checked exhaustively over 2×2×2×5×4×2 input combinations in the compiled C layer);
+* the consumer that publishes the request file is the same file the bridge reads
+  (the harness greps `nuxel-verbose-boot.py` for `anim-skip.request`).
 
 Simulated timeline (this is the fix as a number):
 
@@ -159,6 +168,10 @@ follow §6.
 * The bridge can only stop the painter (SIGTERM→SIGKILL after identity
   re-verification). If the painter survives, **nothing** is written to the panel:
   the animation keeps sole ownership and the bridge exits non-zero.
+* If the operator enables verbose boot, the bridge deliberately waives the floor
+  and the receipt says `reason=verbose_boot_requested terminal=0`. That is a
+  documented user choice, not evidence that the animation completed — the audit
+  tool keeps the two separate.
 * `mode` in the config is `receipt`. The A31/A32 time-based rule is kept in the
   model for comparison only (it is what `simulate` prints in its first row); it is
   never selected by the shipped configuration, and the shipped config is what the

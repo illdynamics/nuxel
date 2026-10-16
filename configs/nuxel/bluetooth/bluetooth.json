@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "comment": "Bluetooth policy for the S10+ (beyond2lte). Read by tools/s10plus/a33/nuxel-bluetooth-diag.sh. The radio is a Broadcom BCM4375 (BT 5.0) behind the Samsung SDIO/PCIe glue. Adapter presence, rfkill state, module binding and firmware (HCD) load are ENUMERATED and the FIRST failing stage is reported. A registered module is not proof that the radio works and no pairing is claimed from configuration alone: the terminal verdict is NEEDS_OWNER_TEST until a real peer pairs.",
+  "device": {
+    "model": "Samsung Galaxy S10+ SM-G975F",
+    "codename": "beyond2lte",
+    "chip": "Broadcom BCM4375 (Wi-Fi 6 + BT 5.0)",
+    "hcd_filename": "bcm4375B1_semco.hcd"
+  },
+
+  "stack": {
+    "implementation": "BlueZ (bluetoothd) as shipped by Fedora",
+    "config_dropin": "/etc/bluetooth/main.conf.d/60-nuxel.conf",
+    "service": "bluetooth.service",
+    "client": "bluetoothctl",
+    "auto_enable_adapter": false,
+    "comment_auto_enable": "AutoEnable=false: nothing powers the adapter at boot. The owner enables it explicitly, so a failed bring-up can never make the phone behave unexpectedly at startup."
+  },
+
+  "evidence_sources": {
+    "adapters": ["/sys/class/bluetooth", "/sys/class/bluetooth/hci0"],
+    "rfkill": ["/sys/class/rfkill"],
+    "modules": ["/proc/modules"],
+    "hcd_dirs": ["/lib/firmware/brcm", "/lib/firmware", "/usr/lib/firmware/brcm"],
+    "hcd_candidates": [
+      "bcm4375B1_semco.hcd", "BCM4375B1.hcd", "bcm4375b1.hcd", "brcm/BCM4375B1.hcd",
+      "brcm/brcmfmac4375.hcd", "brcmfmac4375.hcd"
+    ],
+    "driver_candidates": ["hci_uart", "btbcm", "btusb", "bluetooth", "bcmdhd", "rfkill", "bcm_bt"]
+  },
+
+  "first_failing_stage_order": ["adapter", "rfkill", "module", "firmware", "service", "pairing"],
+  "verdicts": {
+    "READY_FOR_PAIRING": "adapter enumerated, not rfkill-blocked, bluetoothd active — an owner may pair, still NEEDS_OWNER_TEST",
+    "RFKILL_BLOCKED": "adapter exists but rfkill soft/hard blocks it — a switch, not a code change",
+    "BLOCKED_FIRMWARE": "driver/module path present but no HCD firmware file found in any candidate directory",
+    "BLOCKED_HARDWARE": "no adapter node AND no bluetooth rfkill entry AND no driver module — the radio has not come up at all",
+    "PARTIAL": "some stages present, some missing — read the per-stage lines"
+  },
+
+  "pairing_test": {
+    "comment": "Owner procedure only. The repository scripts the safe parts (enable adapter, scan, list) and never pairs on its own.",
+    "peer_required": true,
+    "steps": [
+      "prepare a second device (phone/laptop/speaker) with Bluetooth on and discoverable",
+      "nuxel-bluetooth-diag.sh on                # power the adapter (explicit owner action)",
+      "nuxel-bluetooth-diag.sh scan 15           # bounded scan; note the peer MAC",
+      "bluetoothctl pair <MAC> && bluetoothctl trust <MAC> && bluetoothctl connect <MAC>",
+      "play 10 s of audio to a speaker, or send a file to a laptop, to prove the DATA path",
+      "nuxel-bluetooth-diag.sh off               # leave the adapter as you found it"
+    ],
+    "evidence_required_for_promotion": [
+      "nuxel-bluetooth-diag.sh status prints adapter=hci0 and an unblocked rfkill line",
+      "the peer appears in `scan` output with its MAC",
+      "pair+connect succeed and the peer shows as connected in bluetoothctl",
+      "the data path is exercised (audio or a file transfer), not just a link"
+    ]
+  },
+
+  "diagnostics": {
+    "log": "/var/log/nuxel/bluetooth-diag.log",
+    "scan_seconds_max": 60
+  }
+}

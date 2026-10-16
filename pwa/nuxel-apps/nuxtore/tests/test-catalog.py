@@ -29,7 +29,14 @@ sys.path.insert(0, TOOLS)
 
 import ed25519_ref as ed            # noqa: E402
 import nuxtore_common as nc         # noqa: E402
-import nuxtore_verify as verify_mod  # noqa: E402
+
+# tools/nuxtore-verify.py is a CLI tool, and its filename cannot be imported as a
+# module name (the hyphen).  Load it by path instead of renaming it: the name is
+# quoted verbatim in the app UI, the report and the operator instructions.
+import importlib.util as _ilu         # noqa: E402
+_spec = _ilu.spec_from_file_location("nuxtore_verify", os.path.join(TOOLS, "nuxtore-verify.py"))
+verify_mod = _ilu.module_from_spec(_spec)
+_spec.loader.exec_module(verify_mod)
 
 PASS, FAIL = [], []
 
@@ -94,7 +101,7 @@ def make_fixture(tmp, signed=True):
     seed = bytes.fromhex("9d61b19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60")
     pub = ed.publickey(seed)
     open(os.path.join(app, "catalog", "keys", "fixture-key.ed25519.pub"), "w").write(pub.hex() + "\n")
-    files = nc.walk_app(app_src)
+    files = nc.walk_app(app_src, root)
     digest = nc.bundle_digest(files)
     pkg = {
         "id": "org.nuxel.Fixture", "name": "Fixture", "version": "1.0.0", "category": "tools",

@@ -140,6 +140,21 @@ function finished() {
   check('the Quick Settings tile drives the same store',
         fs.readFileSync(path.join(ROOT, 'pwa/nuxel-home/js/qs.js'), 'utf8').includes('verboseBoot'));
 
+  // The Settings app is a second UI surface for the same setting: it must write
+  // the SAME document name through the host channel, and it must MERGE (so it can
+  // never drop a key it does not know about).
+  const appHtml = fs.readFileSync(path.join(ROOT, 'pwa/nuxel-apps/settings/index.html'), 'utf8');
+  const appJs = fs.readFileSync(path.join(ROOT, 'pwa/nuxel-apps/settings/settings.js'), 'utf8');
+  check('the Settings app renders a verbose-boot control', /id="verbose-boot-toggle"/.test(appHtml));
+  check('the Settings app shows the durable document and the override status',
+        /id="verbose-boot-state"/.test(appHtml) && /id="verbose-boot-override"/.test(appHtml));
+  check('the Settings app writes the same config name the console writes',
+        /cfgSet\(VERBOSE_NAME/.test(appJs) && /VERBOSE_NAME\s*=\s*'verbose-boot'/.test(appJs));
+  check('the Settings app merges into the loaded document instead of replacing it',
+        /verboseDoc\(\)\.then\(function \(doc\)/.test(appJs) && /doc\.set_by = 'user'/.test(appJs));
+  check('the Settings app reverts the switch if the write fails (no lying UI)',
+        /el\.checked = !want/.test(appJs));
+
   console.log('\n' + (failures ? failures + ' FAILURES' : 'settings-store tests passed'));
   process.exit(failures ? 1 : 0);
 }

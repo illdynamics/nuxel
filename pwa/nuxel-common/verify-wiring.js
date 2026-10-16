@@ -37,6 +37,15 @@ const PWAS = {
     'org.nuxel.Notes': 'nuxel-apps/notes/index.html',
 };
 
+// System surfaces are not third-party apps: the launcher manifest may declare
+// the HOST implementation version instead of the protocol pin, and that is
+// reported as a note rather than failing the wiring check.
+const SYSTEM_SURFACES = new Set(['org.nuxel.Home']);
+
+// The pinned PWA<->host protocol version (briq-04c). Every app manifest must
+// declare `nuxel.bridge_version` equal to it, or the host refuses the app.
+const VERSION_PIN_PATH = resolve(pwaRoot, 'nuxel-common/bridge-version.json');
+
 // Marker patterns for a *vendored duplicate* of the bridge. The shared bridge
 // is the only file allowed to define the class or the token-resolution logic.
 const DUPLICATE_MARKERS = [
@@ -75,6 +84,20 @@ if (!existsSync(SHARED_BRIDGE_ABS)) {
     console.error(`FATAL: shared bridge module missing: ${SHARED_BRIDGE_ABS}`);
     process.exit(1);
 }
+
+let versionPin = null;
+if (existsSync(VERSION_PIN_PATH)) {
+    try {
+        versionPin = JSON.parse(readFileSync(VERSION_PIN_PATH, 'utf8')).bridge_version;
+    } catch (e) {
+        console.error(`FATAL: ${VERSION_PIN_PATH} is not valid JSON: ${e.message}`);
+        process.exit(1);
+    }
+} else {
+    console.error(`FATAL: bridge version pin missing: ${VERSION_PIN_PATH}`);
+    process.exit(1);
+}
+console.log(`[verify-wiring] pinned bridge_version = ${versionPin} (${relative(pwaRoot, VERSION_PIN_PATH)})\n`);
 
 for (const [appId, relHtml] of Object.entries(PWAS)) {
     const absHtml = resolve(pwaRoot, relHtml);
@@ -143,6 +166,32 @@ for (const [appId, relHtml] of Object.entries(PWAS)) {
         fail(`inline/vendored bridge duplicates found:\n        ${dupFiles.join('\n        ')}`);
     } else {
         pass('no inline/vendored bridge duplicate in local js/');
+    }
+
+    // 4. The app manifest must declare the pinned protocol version.
+    const manifestPath = resolve(dirname(absHtml), 'manifest.json');
+    if (!existsSync(manifestPath)) {
+        fail(`no manifest.json next to ${relHtml}`);
+    } else {
+        let mf = null;
+        try {
+            mf = JSON.parse(readFileSync(manifestPath, 'utf8'));
+        } catch (e) {
+            fail(`manifest.json is not valid JSON: ${e.message}`);
+        }
+        if (mf) {
+            const declared = mf.nuxel && mf.nuxel.bridge_version;
+            if (SYSTEM_SURFACES.has(appId)) {
+                console.log(`  i  ${appId} is a system surface; manifest declares bridge_version=${JSON.stringify(declared)} (pin is ${versionPin})`);
+            } else if (declared !== versionPin) {
+                fail(`manifest nuxel.bridge_version is ${JSON.stringify(declared)}, expected the pin ${JSON.stringify(versionPin)}`);
+            } else {
+                pass(`manifest nuxel.bridge_version = ${declared} (matches the pin)`);
+            }
+            if (!SYSTEM_SURFACES.has(appId) && !(mf.nuxel && Array.isArray(mf.nuxel.capabilities))) {
+                fail('manifest has no nuxel.capabilities list');
+            }
+        }
     }
     console.log('');
 }

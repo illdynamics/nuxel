@@ -1,0 +1,76 @@
+{
+  "schema_version": 1,
+  "comment": "Power menu for the S10+ (beyond2lte), installed to /etc/nuxel/power/power-menu.json. Single source of truth for the long-press POWER menu. The graphical Settings power surface (pwa/nuxel-apps/settings/power-menu.js), the console (nuxel-power-diag.sh menu) and the hardware-button FSM all read THIS table, so a finger tap and a console command can never disagree.",
+  "device": "beyond2lte",
+  "invoked_by": {
+    "button": "power_long",
+    "fsm_action": "power-menu",
+    "timeout_ms": 15000,
+    "dismiss_on": ["back", "home", "timeout"]
+  },
+  "entries": [
+    {
+      "id": "lock",
+      "label": "Lock screen",
+      "icon": "lock",
+      "action": "screen-lock",
+      "trigger_allowed": true,
+      "requires_owner_confirmation": false,
+      "channel": "/run/nuxel-wl-fb.cmd",
+      "channel_command": "lock",
+      "note": "Screen off + lock; the display bridge stays the only framebuffer owner. Reversible by a POWER short press."
+    },
+    {
+      "id": "restart",
+      "label": "Restart",
+      "icon": "restart",
+      "action": "restart",
+      "trigger_allowed": false,
+      "gate": "/etc/nuxel/buttons/reboot-gate.json",
+      "execution": "systemctl reboot",
+      "requires_owner_confirmation": true,
+      "refusal_reason": "gated — reboot-gate.json is closed because the owner is absent and no repository-side reboot policy has authorised a restart in this cycle. An ordinary reboot is permitted ONLY with a known-working userspace rollback path and the pre/post-reboot checklist.",
+      "note": "A restart must return to Nuxel. After three failed returns, stop rebooting and change diagnostic strategy."
+    },
+    {
+      "id": "power-off",
+      "label": "Power off",
+      "icon": "power",
+      "action": "poweroff",
+      "trigger_allowed": false,
+      "gate": "/etc/nuxel/buttons/reboot-gate.json",
+      "execution": "systemctl poweroff",
+      "requires_owner_confirmation": true,
+      "refusal_reason": "gated — powering the handset off with no owner present would strand the mission and cannot be undone remotely."
+    },
+    {
+      "id": "recovery",
+      "label": "Recovery",
+      "icon": "recovery",
+      "action": "boot-recovery",
+      "trigger_allowed": false,
+      "requires_owner_confirmation": true,
+      "refusal_reason": "NO_FLASH_INVARIANT — entering Recovery means leaving Linux for the Samsung bootloader. This mission triggers no bootloader interface of any kind.",
+      "note": "The entry exists so the menu is honest about the device's capabilities; it is offline-tested as a REFUSAL and is never triggered by any automated path."
+    },
+    {
+      "id": "download-mode",
+      "label": "Download Mode",
+      "icon": "download",
+      "action": "boot-download-mode",
+      "trigger_allowed": false,
+      "requires_owner_confirmation": true,
+      "refusal_reason": "NO_FLASH_INVARIANT — Download Mode exists only to flash, and this mission performs no flashing of any kind (no Heimdall/Odin/wrappers, no partition writes).",
+      "note": "Present for completeness and offline-tested as a refusal; never triggered."
+    }
+  ],
+  "forbidden_execution_surface": [
+    "heimdall",
+    "odin",
+    "fastboot",
+    "dd to /dev/block/*",
+    "writes to BOOT/USERDATA/SYSTEM/RECOVERY/DTB/DTBO/VBMETA/radio/modem/EFS/SEC_EFS/calibration/IMEI/PIT",
+    "echo b > /proc/sysrq-trigger",
+    "reboot -f"
+  ]
+}

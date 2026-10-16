@@ -56,3 +56,9 @@ label { display: block; margin: 8px 0; font-size: 13px; }
 .preview-zones span { border-right: 1px dashed rgba(255,255,255,.12); font-size: 8px; color: #6b8cc7; }
 .preview-zones span.blocked { background: rgba(239,68,68,.42); }
 .moved { outline: 1px solid #fbbf24; }
+
+/* A33 (briq-02b): the verbose-boot toggle row in the Developer tab. */
+.boot-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 8px; }
+.boot-row label { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 13px; }
+.boot-row input[type=checkbox] { width: 18px; height: 18px; accent-color: var(--accent-light, #3b82f6); }
+#verbose-boot-state { white-space: pre-wrap; }

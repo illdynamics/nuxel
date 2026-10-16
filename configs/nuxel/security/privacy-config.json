@@ -1,0 +1,92 @@
+{
+  "schema_version": 1,
+  "updated": "2026-10-16",
+  "description": "Policy input for tools/s10plus/a33/nuxel-vpn-tor.sh, nuxel-privacyd and the Privacy control centre PWA. Nothing here is applied by itself: this file is read, the tool acts, and the tool prints the evidence of what it did.",
+  "target": {
+    "device": "Samsung Galaxy S10+ SM-G975F (beyond2lte)",
+    "kernel": "4.14.253",
+    "console_interface": "usb0 (CDC-ACM/RNDIS gadget) - the only recovery path; never used for app egress"
+  },
+  "claims": {
+    "vocabulary": [
+      "service_running",
+      "control_port_authenticated",
+      "circuits_built",
+      "tunnel_interface_up",
+      "handshake_observed",
+      "traffic_routed_through_tor",
+      "traffic_routed_through_vpn",
+      "killswitch_armed"
+    ],
+    "levels": ["evidenced", "unproven", "unavailable", "unknown"],
+    "rules": [
+      "A claim is 'evidenced' ONLY with the command output that proves it, quoted next to the claim.",
+      "traffic_routed_through_tor and traffic_routed_through_vpn are 'unproven' by default and stay unproven until an external-vantage leak test passes; the device cannot prove them alone.",
+      "killswitch_armed NEVER implies tunnel_interface_up: they are reported separately, always.",
+      "unknown is a valid answer. No claim is ever upgraded to make a UI look better."
+    ]
+  },
+  "vpn": {
+    "enabled_by_default": false,
+    "profiles_dir": "/etc/nuxel/security/vpn",
+    "backend_order": ["wireguard", "networkmanager"],
+    "wireguard": {
+      "config_dir": "/etc/wireguard",
+      "interface": "wg0",
+      "requires_key_file": "/etc/nuxel/security/vpn/wg0.key",
+      "key_file_mode": "0600 root:root",
+      "note": "The private key is referenced by path and never stored in this repository or in the status output."
+    },
+    "networkmanager": {
+      "connection_name": "nuxel-vpn",
+      "note": "Used when nmcli is present; the tool reports which backend it actually used."
+    },
+    "dns": {
+      "mode": "tunnel",
+      "note": "DNS must be resolved inside the tunnel (resolv.conf pointed at the tunnel's resolver or at 127.0.0.1 for Tor). A plaintext DNS query while a tunnel is up is reported as a LEAK-SUSPECT, not hidden."
+    },
+    "killswitch": {
+      "default": "off",
+      "tunnel_interface": "wg0",
+      "applies_to": "app-classified traffic only (see configs/nftables/nuxel-vpn-killswitch.nft)",
+      "cross_reference": "tools/s10plus/a33/nuxel-firewall.sh vpn-on|vpn-off"
+    }
+  },
+  "tor": {
+    "enabled_by_default": false,
+    "config": "/etc/tor/torrc",
+    "socks": "127.0.0.1:9050",
+    "dns": "127.0.0.1:9053",
+    "trans": "127.0.0.1:9040",
+    "control": "127.0.0.1:9051",
+    "cookie_auth_file": "/run/tor/control.authcookie",
+    "bridges": {
+      "configured": false,
+      "note": "Bridge lines are intentionally absent: this repository ships no bridge addresses and no pluggable-transport binaries. In a censored network the owner adds them at /etc/tor/bridges.conf and reruns 'nuxel-vpn-tor.sh tor bridges-apply'. Until then the tool reports bridges as unconfigured instead of pretending to defeat censorship."
+    },
+    "leak_probe": {
+      "samples": 3,
+      "sample_seconds": 3,
+      "requires_network": true,
+      "verdict_without_network": "BLOCKED_EXTERNAL_RESOURCE",
+      "note": "The probe counts plaintext DNS (udp/tcp 53) and direct outbound connections from the probe process while forcing a name resolution. It is a device-side smoke test, NOT proof of anonymisation: an external vantage point is required for that, and the tool says so in the verdict."
+    }
+  },
+  "remote_access": {
+    "enabled_by_default": false,
+    "config": "/etc/nuxel/security/remote-access.json",
+    "require_indicator": true,
+    "note": "Remote access must be off by default and must show a visible indicator while enabled; the indicator state is written by the CLI and read by the PWA."
+  },
+  "daemon": {
+    "name": "nuxel-privacyd",
+    "bind": "127.0.0.1",
+    "port": 8765,
+    "socket": "/run/nuxel/privacy.sock",
+    "root_token_file": "/run/nuxel/privacy/root.token",
+    "requests_dir": "/var/lib/nuxel/privacy/requests",
+    "evidence_dir": "/var/lib/nuxel/privacy/evidence",
+    "state_dir": "/var/lib/nuxel/privacy/state",
+    "honest_note": "The daemon serves STATUS read-only to any local process and refuses state changes unless the caller presents the root token (a 0600 root-owned file an unprivileged app cannot read). The control-centre PWA therefore queues a request and shows the exact console command; it never silently escalates."
+  }
+}

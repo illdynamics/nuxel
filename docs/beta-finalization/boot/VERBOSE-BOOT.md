@@ -70,7 +70,7 @@ Read by:
 
 | Consumer | Uses |
 |---|---|
-| `/usr/lib/nuxel/nuxel-wl-fb` (bridge) | `/run/nuxel/verbose-boot`, `/run/nuxel/anim-skip.request` before the handoff ⇒ trades the animation for the earliest on-glass log and records `reason=verbose_boot_requested` in the handoff receipt |
+| `/usr/lib/nuxel/nuxel-wl-fb` (bridge) | `/run/nuxel/verbose-boot`, `/run/nuxel/anim-skip.request` before the handoff ⇒ **deliberately waives the minimum-cycle floor** so the boot log is on the glass as early as possible. The verdict comes from decision 5 of the shared handoff table; the bridge emits `ANIM_MIN_CYCLE_SKIPPED`, writes `ANIM_MIN_CYCLE_SKIPPED` to `/var/lib/nuxel/anim-min-cycle.completed`, and the receipt records `reason=verbose_boot_requested` with **`terminal=0`** — a user choice is never reported as a completed animation cycle |
 | `nuxel-pwa-host` + `pwa/nuxel-home/js/bootlog.js` | the boot-log overlay in the launcher (same boot) |
 | `nuxelctl verbose-boot status` | printed effective state, source and override capability |
 
@@ -82,7 +82,7 @@ Effective-state resolution order (first match wins, and the source is recorded):
 | Surface | File | Notes |
 |---|---|---|
 | Quick Settings tile | `pwa/nuxel-home/js/qs.js` | "Verbose boot" tile, created dynamically, synced from the store; toggling writes the same document |
-| Settings app | `pwa/nuxel-apps/settings/` | Developer tab shows the boot state and the override capability |
+| Settings app | `pwa/nuxel-apps/settings/` (Developer → **Boot** card) | A real toggle (`#verbose-boot-toggle`) that writes the same document through the host (`configSet('verbose-boot')`), **merges** into the loaded JSON (so unknown keys survive), sets `set_by=user`/`updated_at`, shows the durable state + `this boot:` line from `/run/nuxel/verbose-boot`, and states the override capability verbatim. If the write fails the switch flips back — the UI never claims a setting it did not store |
 | Settings store | `pwa/nuxel-home/js/settings-store.js` | DOM-free, unit-tested store: one document per setting name, merge-on-write, migration, host→localStorage degradation |
 | Console | `tools/s10plus/a33/nuxelctl` | `verbose-boot status`, `on`, `off`, `override` |
 | Launcher manifest | `pwa/nuxel-home/manifest.json` | `nuxel.settings_documents` lists `/etc/nuxel/boot/verbose-boot.json` |
@@ -155,11 +155,13 @@ Result: **`verbose-boot offline harness passed (upgrade-safe, offline)`** — 30
 
 ### 6.2 The store contract (`settings-store-test.js`)
 
-23 checks, 0 failures: default OFF, one host name (`verbose-boot`), persistence and
+31 checks, 0 failures: default OFF, one host name (`verbose-boot`), persistence and
 round-trip, merge-on-write preserving an unknown key, legacy-flag migration marked
 `set_by=migrated` and **not** overriding a user decision, host transport
 (`configGet`/`configSet('verbose-boot')`), and cross-checks that the boot consumer,
-the launcher manifest and the Quick Settings tile all use the same document.
+the launcher manifest, the Quick Settings tile **and the Settings app's Boot card**
+all use the same document (including that the app merges rather than replaces, and
+reverts its switch when a write fails).
 
 ## 7. Owner test (deferred; recorded in the manual proof checklist, area 3)
 
