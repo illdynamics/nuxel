@@ -125,3 +125,7 @@ backups/**
 # .scratch/ holds unpacked kernels/images (e.g. src/kernel.tar.gz, t/*.cpio)
 # used for local boot experiments. Local-only, never committed.
 .scratch/
+
+# Qq
+.qq**
+*.pyc
