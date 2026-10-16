@@ -240,6 +240,127 @@
       "at": "2026-10-16T19:36:05+02:00",
       "by": "construqtor/bg-00-preflight",
       "revision": 4
+    },
+    {
+      "id": "briq-00a-repo-preflight",
+      "title": "Repository revision, disk and inventory preflight",
+      "component": "bg-00-preflight",
+      "component_title": "Preflight, Discovery, Work Queue & Baseline Protection",
+      "priority": 0,
+      "state": "implemented",
+      "dependencies": [],
+      "evidence": [
+        {
+          "kind": "observation",
+          "path": "docs/beta-finalization/preflight/ENVIRONMENT.md",
+          "command": "test -e docs/beta-finalization/preflight/ENVIRONMENT.md",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "docs/beta-finalization/preflight/ENVIRONMENT.md",
+          "command": "git rev-parse HEAD; df -k /Users/wicked/x/nuxel; command -v python3 adb podman aarch64-linux-gnu-gcc node utmctl; bash tools/s10plus/a32/tests/run-tests.sh",
+          "result": "HEAD=de45917d6d9b2ebaf3f8b81467484637807f2ad0, 22498592 KiB free, A32 gate exit 0",
+          "at": "2026-10-16T15:59:31+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "docs/beta-finalization/preflight/ENVIRONMENT.md",
+          "command": "bash tools/s10plus/a32/tests/run-tests.sh; git rev-parse HEAD; df -k /Users/wicked/x/nuxel",
+          "result": "a32_exit=0 (0 failing suites); HEAD=de45917d6d9b2ebaf3f8b81467484637807f2ad0 unchanged; 21220428 KiB free",
+          "at": "2026-10-16T14:11:44Z"
+        },
+        {
+          "kind": "on_device",
+          "path": "docs/beta-finalization/preflight/live/batch-1-identity.out",
+          "command": "sudo -n bash scripts/s10plus-debug-pack/nuxel-live.sh --dev /dev/ttyACM0 --batch docs/beta-finalization/preflight/live/batch-1-identity.txt --timeout 20",
+          "result": "rc=0, 12/12 framed round trips sha_ok=yes: 'Linux fedora 4.14.253 #15 SMP PREEMPT Thu Oct 15 22:29:25 UTC 2026 aarch64 GNU/Linux'; Fedora release 43 (Forty Three); 'Samsung BEYOND2LTE EUR OPEN 26 board based on EXYNOS9820'; /proc/cmdline carries androidboot.mode=charger + androidboot.em.model=SM-G975F; '/dev/sda31 4046560 1781008 2055840 47% /' (phone free space 2055840 KiB); free -m 7420 MB total, 6416 free",
+          "at": "2026-10-16T19:36:05+02:00"
+        },
+        {
+          "kind": "on_device",
+          "path": "docs/beta-finalization/preflight/live/batch-2-graphics-input.out",
+          "command": "sudo -n bash scripts/s10plus-debug-pack/nuxel-live.sh --dev /dev/ttyACM0 --batch docs/beta-finalization/preflight/live/batch-2-graphics-input.txt --timeout 20",
+          "result": "systemctl is-system-running = degraded, 1 failed unit (nuxel-touch-arm.service exit 2, restart counter 10); 16 units running incl. nuxel-wayland/nuxel-wl-fb/nuxel-button-manager; /dev/fb0 decon_f 1440,6080 32bpp mode U:1440x3040p-0; no /dev/dri; 7 input evdev nodes, none is touch; /sys/class/sec/tsp ABSENT",
+          "at": "2026-10-16T19:36:05+02:00"
+        },
+        {
+          "kind": "on_device",
+          "path": "docs/beta-finalization/preflight/live/batch-4-pkgs-services-receipts.out",
+          "command": "sudo -n bash scripts/s10plus-debug-pack/nuxel-live.sh --dev /dev/ttyACM0 --batch docs/beta-finalization/preflight/live/batch-4-pkgs-services-receipts.txt --timeout 25",
+          "result": "dmesg: '[sec_input] sec_ts_init: Do not load driver due to : lpm 1'; on-device receipts (owner=nuxel-wl-fb, LAUNCHER_DISPLAY_OWNER, ANIMATION_STOP_CONFIRMED, PHONE_UI_FRAME_COMMITTED 1440x3040x32 abgr8888); 410 rpms; pipewire/wireplumber/alsa-utils/flatpak NOT installed; mmcli -L = 'No modems were found'",
+          "at": "2026-10-16T19:36:05+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "docs/beta-finalization/preflight/gate-regression-guard.txt",
+          "command": "bash tools/beta/regression-guard.sh --json",
+          "result": "PASS=53 FAIL=0 WARN=8 INFO=2 (after the repository-hygiene fix)",
+          "at": "2026-10-16T19:36:05+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "docs/beta-finalization/preflight/host-tool-inventory.txt",
+          "command": "uname -a; command -v python3 git jq node adb podman docker aarch64-linux-gnu-gcc qemu-system-aarch64",
+          "result": "host is Fedora 43 x86_64 (dextronux, 6.17.1); 68 349 004 KiB free on /; NO cross toolchain, NO qemu-user, NO binfmt aarch64 handler, NO UTM -> this host cannot execute an aarch64 ELF; adb has no device, the serial console is the only device channel",
+          "at": "2026-10-16T19:36:05+02:00"
+        },
+        {
+          "kind": "observation",
+          "path": "docs/beta-finalization/preflight/ENVIRONMENT.md",
+          "command": "sed -n '/## 13/,$p' docs/beta-finalization/preflight/ENVIRONMENT.md",
+          "result": "section 13 records the whole session-2 re-verification with the quoted command output",
+          "at": "2026-10-16T19:36:05+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "docs/beta-finalization/preflight/gate-regression-guard.txt",
+          "command": "bash tools/beta/regression-guard.sh (re-run in the repair pass)",
+          "result": "PASS=53 FAIL=0 WARN=8 INFO=2, REGRESSION GUARD: PASS, exit=0 - the session FINAL result, INV-10 present (41 + 12 INV-10 assertions = 53). PASS=41 FAIL=0 WARN=8 INFO=2 quoted by ENVIRONMENT.md 13.21 and by revision 4 was the INTERMEDIATE, pre-INV-10 measurement; the cited capture already carried 53.",
+          "at": "2026-10-16T19:58:00+02:00"
+        },
+        {
+          "kind": "on_device",
+          "path": "docs/beta-finalization/preflight/live/batch-1-identity.out",
+          "command": "grep -c ^=====  docs/beta-finalization/preflight/live/batch-1-identity.out ; grep -c sha_ok=yes docs/beta-finalization/preflight/live/batch-1-identity.out",
+          "result": "10 ; 10 - CORRECTION of revision 4: the identity capture carried 10 commands and 10 sha_ok=yes frames (rc=0), not 12/12. The 12/12 figure belongs to docs/beta-finalization/preflight/live/batch-4-pkgs-services-receipts.out (12 commands, 12 sha_ok=yes). No device action was taken in the repair pass; the raw capture is unchanged.",
+          "at": "2026-10-16T19:58:00+02:00"
+        }
+      ],
+      "intended_changes": [
+        "docs/beta-finalization/preflight/ENVIRONMENT.md",
+        "docs/beta-finalization/preflight/ENVIRONMENT.md; .gitignore hardening for docs.zip/scripts.zip/tools.zip/.venv",
+        "docs/beta-finalization/preflight/ENVIRONMENT.md (+\u00a713 this-session re-verification with live captures)",
+        "docs/beta-finalization/preflight/live/* (raw device captures), protected-asset-hashes-20261016.tsv, BACKUP-LIST-20261016.tsv",
+        "scripts/s10plus-debug-pack/nuxel-live.sh (3 Linux-host defects fixed so the console is usable)",
+        ".gitignore (.venv/ -> .venv so the hygiene invariant is true on a fresh clone)",
+        "docs/beta-finalization/preflight/ENVIRONMENT.md (section 13.21: appended correction block; the PASS=41 row is preserved, not rewritten)",
+        "docs/beta-finalization/baseline-protection.json (appended reverification_log entry recording the final PASS=53 result; no pin moved)"
+      ],
+      "tests": [
+        "(tests are recorded by the owning briQ when it reports)",
+        "bash tools/s10plus/a32/tests/run-tests.sh -> exit 0 (frozen baseline gate re-run by the preflight)",
+        "bash scripts/s10plus-debug-pack/nuxel-live.sh --dev /dev/ttyACM0 --batch <4 capture files> --timeout 20 -> rc=0, every frame sha_ok=yes",
+        "bash -n scripts/s10plus-debug-pack/nuxel-live.sh -> clean (the missing PYEOF heredoc terminator fixed)",
+        "bash tools/beta/regression-guard.sh --json -> PASS=53 FAIL=0",
+        "phone side: systemctl is-system-running, --failed, /proc/cmdline, df -k /, /proc/bus/input/devices, /sys/class/graphics/fb0/*, /proc/asound/cards, rfkill list, mmcli -L, timedatectl, iio enumeration",
+        "grep -c '^===== ' docs/beta-finalization/preflight/live/batch-1-identity.out -> 10; grep -c 'sha_ok=yes' -> 10; the same two counts for batch-4-pkgs-services-receipts.out -> 12 / 12",
+        "bash tools/beta/regression-guard.sh -> exit 0, PASS=53 FAIL=0 WARN=8 INFO=2 (final, INV-10 present)"
+      ],
+      "risk": "low",
+      "rollback": "git revert the commit(s) touching this task's expected files; the change is repository-only and alters no device state",
+      "verdict": "VERIFIED_ON_S10PLUS",
+      "offline_ceiling": "OFFLINE_TESTED",
+      "owner_action": "",
+      "expected_files": [
+        "docs/beta-finalization/preflight/ENVIRONMENT.md"
+      ],
+      "note": "REPAIR PASS (revision 5), corrections only - no device action, no protected file touched. Two claims of session 2 were wrong about their own evidence and are corrected in this appended revision (revision 4 is left intact, as append-only requires): (1) the session verdict table quoted the SUPERSEDED regression-guard run PASS=41 FAIL=0 WARN=8 INFO=2 as the final result while citing gate-regression-guard.txt, whose own summary line (2026-10-16T17:36:56Z) reads PASS=53 FAIL=0 WARN=8 INFO=2 and REGRESSION GUARD: PASS (exit=0) - the 41 was the pre-INV-10 measurement (41 + 12 new INV-10 assertions = 53) and BASELINE-PROTECTION.md 9.1 already said 53; the correction is appended beneath the 13.21 table in ENVIRONMENT.md and recorded as an appended reverification_log entry in docs/beta-finalization/baseline-protection.json. (2) the batch-1 on_device evidence claimed 12/12 framed round trips; the capture itself carries 10 commands and 10 sha_ok=yes frames, and 12/12 belongs to batch-4-pkgs-services-receipts.out - corrected above to 10/10, sha_ok=yes on every frame, rc=0. Every other verdict of this briQ is unchanged; nothing was re-run against the handset.",
+      "source": "plan.json",
+      "at": "2026-10-16T19:56:29+02:00",
+      "by": "construqtor/bg-00-preflight",
+      "revision": 5
     }
   ]
 }

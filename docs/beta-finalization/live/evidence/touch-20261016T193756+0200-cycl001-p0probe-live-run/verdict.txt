@@ -1,22 +1,22 @@
-== nuxel-touch-trace --analyze /x/nuxel/docs/beta-finalization/live/evidence/touch-20261016T193756+0200-cycl001-p0probe (archived capture / loose evidence, 8 text file(s)) ==
-LAYER=1 NAME=driver STATE=blocked EVIDENCE=/x/nuxel/docs/beta-finalization/live/evidence/touch-20261016T193756+0200-cycl001-p0probe DETAIL=charger/LPM boot evidence: cmdline androidboot.mode=charger [console-probe.txt]; dmesg sec_ts_init: Do not load driver due to : lpm 1 [console-probe.txt]
-LAYER=2 NAME=irq STATE=blocked EVIDENCE=/x/nuxel/docs/beta-finalization/live/evidence/touch-20261016T193756+0200-cycl001-p0probe DETAIL=no interrupts evidence in this capture
-LAYER=3 NAME=evdev STATE=blocked EVIDENCE=/x/nuxel/docs/beta-finalization/live/evidence/touch-20261016T193756+0200-cycl001-p0probe DETAIL=sec_touchscreen appears in the evidence without a decodable PROP bitmap
+== nuxel-touch-trace --analyze /x/nuxel/docs/beta-finalization/live/evidence/touch-20261016T193756+0200-cycl001-p0probe-live-run (archived capture / loose evidence, 12 text file(s)) ==
+LAYER=1 NAME=driver STATE=blocked EVIDENCE=/x/nuxel/docs/beta-finalization/live/evidence/touch-20261016T193756+0200-cycl001-p0probe-live-run DETAIL=charger/LPM boot evidence: cmdline androidboot.mode=charger [console-probe.txt]; dmesg sec_ts_init: Do not load driver due to : lpm 1 [console-probe.txt]
+LAYER=2 NAME=irq STATE=blocked EVIDENCE=/x/nuxel/docs/beta-finalization/live/evidence/touch-20261016T193756+0200-cycl001-p0probe-live-run DETAIL=no interrupts evidence in this capture
+LAYER=3 NAME=evdev STATE=blocked EVIDENCE=/x/nuxel/docs/beta-finalization/live/evidence/touch-20261016T193756+0200-cycl001-p0probe-live-run DETAIL=no evdev evidence in this capture
 LAYER=4 NAME=libinput STATE=blocked EVIDENCE=console-probe.txt DETAIL=the shim ran but the capability scan found NO direct touch device (nothing for libinput to accept): 1789430401 PATH_ASSIGN_SEAT seat='seat0' direct_devices_seen=0 added=0 db_seeded=0
-LAYER=5 NAME=compositor STATE=blocked EVIDENCE=/x/nuxel/docs/beta-finalization/live/evidence/touch-20261016T193756+0200-cycl001-p0probe DETAIL=no compositor fd evidence in this capture
-LAYER=6 NAME=wayland STATE=blocked EVIDENCE=/x/nuxel/docs/beta-finalization/live/evidence/touch-20261016T193756+0200-cycl001-p0probe DETAIL=no seat/focus/wl_touch evidence in this capture (WAYLAND_DEBUG was not enabled?)
-LAYER=7 NAME=dom STATE=blocked EVIDENCE=/x/nuxel/docs/beta-finalization/live/evidence/touch-20261016T193756+0200-cycl001-p0probe DETAIL=no DOM evidence in this capture (the instrumented page never ran)
+LAYER=5 NAME=compositor STATE=blocked EVIDENCE=/x/nuxel/docs/beta-finalization/live/evidence/touch-20261016T193756+0200-cycl001-p0probe-live-run DETAIL=no compositor fd evidence in this capture
+LAYER=6 NAME=wayland STATE=ok EVIDENCE=analysis.pre-rename.json DETAIL=wl_touch present in the compositor protocol capture
+LAYER=7 NAME=dom STATE=blocked EVIDENCE=/x/nuxel/docs/beta-finalization/live/evidence/touch-20261016T193756+0200-cycl001-p0probe-live-run DETAIL=no DOM evidence in this capture (the instrumented page never ran)
 GATE=fail {"btn_touch_events": 0, "down": 0, "up": 0, "points": 0, "coords_x": [], "coords_y": [], "device_range_x": null, "device_range_y": null, "coords_plausible": false, "dom_layer_state": "blocked", "pass": false}
 FIRST_FAIL_LAYER=1
 FIRST_DROP_LAYER=none
 VERDICT=PIPELINE_STOPPED_AT_LAYER=1 NAME=driver STATE=blocked
-JSON_OUT=docs/beta-finalization/live/evidence/touch-20261016T193756+0200-cycl001-p0probe/analysis.json
+JSON_OUT=/x/nuxel/docs/beta-finalization/live/evidence/touch-20261016T193756+0200-cycl001-p0probe-live-run/analysis.json
 LAYER_EXIT=1 NAME=driver STATE=blocked EXIT=11
 LAYER_EXIT=2 NAME=irq STATE=blocked EXIT=12
 LAYER_EXIT=3 NAME=evdev STATE=blocked EXIT=13
 LAYER_EXIT=4 NAME=libinput STATE=blocked EXIT=14
 LAYER_EXIT=5 NAME=compositor STATE=blocked EXIT=15
-LAYER_EXIT=6 NAME=wayland STATE=blocked EXIT=16
+LAYER_EXIT=6 NAME=wayland STATE=ok EXIT=16
 LAYER_EXIT=7 NAME=dom STATE=blocked EXIT=17
 EXIT_CODE=3 (gate fail; first lossy layer 1 driver is blocked - pass --layer-exit-codes to get 11 here)
 NOTE: an archived capture is graded against the same rules as a live bundle. A layer with no capture is reported 'blocked' (not ok) on purpose, so absence of evidence is never a pass.

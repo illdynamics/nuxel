@@ -709,6 +709,300 @@
           "require_stdout": "matches the JSON store"
         }
       ]
+    },
+    {
+      "id": "INV-11-a32-enumerated-asset-pins",
+      "title": "Every asset the briQ enumerated as protected is actually pinned (nuxelctl, the libinput shim sources, the canonical assets, the Settings/Terminal PWA integration)",
+      "why": "briq-00d's deliverable names the A32 assets that must not regress: nuxel-wl-fb, nuxel-pwa-host, nuxel-button-manager, nuxelctl, libnuxel-libinput-path.so, the ten-zone safe-area configuration, the Nuxel Home/Settings/Terminal PWA integration files, assets/nuxel-background.png and assets/nuxel-boot-animation.mp4. The first register revision pinned the .c/.service, the safe-zone config/engine and part of the Home PWA, but left four enumerated items with NO pin and NO assertion anywhere in the tree: (a) tools/s10plus/a32/nuxelctl - present only as metadata plus the abbreviated deployed hash 'e4281cab\u2026' in the A32 release record, with no guard assertion; (b) the libinput-path shim sources tools/s10plus/a31/nuxel-libinput-path.c and tools/s10plus/a33/nuxel-libinput-path.c - zero occurrences in the register or the guard, even though bg-01b owns and edits the a33 copy in this same run, which is exactly the drift this register exists to catch; (c) assets/nuxel-boot-animation.mp4 - no expected-hash constant existed anywhere in the tree (tools/dedupe-assets.sh only compares copies against the canonical file and is not part of the gate); (d) the Settings/Terminal PWA integration files under pwa/nuxel-apps/settings/ and pwa/nuxel-apps/terminal/ - the launcher-registry test only checks that index.html + js exist, never their bytes. The omission was silent, which this briQ forbids, so INV-11 registers all four explicitly: drift is now a named WARN (shared files) or FAIL (baseline-owned files) instead of an invisible change. Deliberately NOT pinned, and stated so this is not a silent gap: the 0-byte '.keep' placeholder files in the two app directories (pinning an empty file proves nothing and would be noise).",
+      "owner_group": "bg-00-preflight (baseline owner); the soft entries are shared with the groups named per file",
+      "hash_mode": "soft",
+      "files": [
+        {
+          "path": "tools/s10plus/a32/nuxelctl",
+          "sha256": "e4281cab8c96a70cc24a79aa10230ae6ab716141893d0c95abdbb1481b2d2c3b",
+          "exists": true,
+          "role": "A32 CLI (buttons/safe-zones/settings entry point); the A32 record carried only the truncated prefix e4281cab\u2026",
+          "hash_mode": "hard"
+        },
+        {
+          "path": "tools/s10plus/a33/nuxelctl",
+          "sha256": "fb2b49d78bcb0b6b69d9e0feaa0d2928fa8c789004ac974cb251793fbb1ce71c",
+          "exists": true,
+          "role": "current-cycle (a33) copy of the same CLI",
+          "hash_mode": "soft",
+          "owned_by": "tools/s10plus/a33 (current-cycle tree; shared with every group that extends the CLI this run)"
+        },
+        {
+          "path": "tools/s10plus/a31/nuxel-libinput-path.c",
+          "sha256": "f94240412b731233ad0e93de24d20283f55fc0d0b1f74aa1cddc9f19265e598f",
+          "exists": true,
+          "role": "libinput-path shim source (A31) - builds libnuxel-libinput-path.so, the rollback hash f333421f\u2026 in the A31 record",
+          "hash_mode": "soft",
+          "owned_by": "bg-01-touch-pipeline (owns/edits the shim this run)"
+        },
+        {
+          "path": "tools/s10plus/a33/nuxel-libinput-path.c",
+          "sha256": "f94240412b731233ad0e93de24d20283f55fc0d0b1f74aa1cddc9f19265e598f",
+          "exists": true,
+          "role": "libinput-path shim source (A33), byte-identical to A31 at pin time; registered so a hardened-shim drift is a named WARN, not an invisible change",
+          "hash_mode": "soft",
+          "owned_by": "bg-01-touch-pipeline (owns/edits tools/s10plus/a33/nuxel-libinput-path.c this run)"
+        },
+        {
+          "path": "assets/nuxel-background.png",
+          "sha256": "6e337ef2d506a16778fd3c79159f0cf053eb07ace40cf43387a33486da76cb29",
+          "exists": true,
+          "role": "the canonical wallpaper (single source of truth; per-app copies are build-time artefacts of tools/dedupe-assets.sh) - previously covered only indirectly by the soft A32-suite wp.py check",
+          "hash_mode": "hard"
+        },
+        {
+          "path": "assets/nuxel-boot-animation.mp4",
+          "sha256": "280e094fb3efe54eaf15f0d964bf8ad834eeebde2e34901e1bf1e3520b95184c",
+          "exists": true,
+          "role": "the original boot animation MP4 (A21-A23 chain); no expected-hash constant for it existed anywhere in the tree",
+          "hash_mode": "hard"
+        },
+        {
+          "path": "pwa/nuxel-apps/settings/index.html",
+          "sha256": "aa92b815d1d6206788607baac6ee6dfecf167608c2cf9778bcf827e171c1a091",
+          "exists": true,
+          "role": "Settings PWA surface",
+          "hash_mode": "soft",
+          "owned_by": "bg-02-boot-animation-launcher / bg-06-core-phone-apps / bg-08-hardware-subsystems (joint)"
+        },
+        {
+          "path": "pwa/nuxel-apps/settings/app.json",
+          "sha256": "f98e3a070b3748abd6e88d84a4cf63b17968a261e7042694f56c0e4d6905df80",
+          "exists": true,
+          "role": "Settings app descriptor",
+          "hash_mode": "soft",
+          "owned_by": "bg-02-boot-animation-launcher / bg-06-core-phone-apps / bg-08-hardware-subsystems (joint)"
+        },
+        {
+          "path": "pwa/nuxel-apps/settings/manifest.json",
+          "sha256": "de2a3bcdafc2b7616930d2a641a88c3e2eb4780d73ab14bdc4a24d437132a1f2",
+          "exists": true,
+          "role": "Settings PWA manifest (known open gap: no nuxel{} block - recorded in docs/beta-finalization/system/APP-INFRASTRUCTURE.md)",
+          "hash_mode": "soft",
+          "owned_by": "bg-02-boot-animation-launcher / bg-06-core-phone-apps (joint)"
+        },
+        {
+          "path": "pwa/nuxel-apps/settings/settings.js",
+          "sha256": "1ba0ccb1bfa4a543fee6cfa3b6e596d365ba49db2ebc53e3e2adac0e9b39cfab",
+          "exists": true,
+          "role": "Settings front-end (also carries the ten-zone safe-area editor)",
+          "hash_mode": "soft",
+          "owned_by": "bg-02-boot-animation-launcher"
+        },
+        {
+          "path": "pwa/nuxel-apps/settings/settings.css",
+          "sha256": "7a77a6f3b2f2a309df4f6d5b193af57d8a175818dee016b1cfa51846c07a1f18",
+          "exists": true,
+          "role": "Settings styling",
+          "hash_mode": "soft",
+          "owned_by": "bg-02-boot-animation-launcher"
+        },
+        {
+          "path": "pwa/nuxel-apps/settings/settings-model.js",
+          "sha256": "df1fe0cb81d03d9e6a147bc26245592ccebdb92a921fafcfab1a98d708b43c38",
+          "exists": true,
+          "role": "Settings document model (shares configs/nuxel/** with nuxelctl)",
+          "hash_mode": "soft",
+          "owned_by": "bg-02-boot-animation-launcher / bg-06-core-phone-apps (joint)"
+        },
+        {
+          "path": "pwa/nuxel-apps/settings/power-menu.html",
+          "sha256": "e4a0f55becbad9015fd70a6ed2c37790131e93c1ce8032724ef2b1b8dafa052f",
+          "exists": true,
+          "role": "long-press POWER menu surface",
+          "hash_mode": "soft",
+          "owned_by": "bg-08-power-management"
+        },
+        {
+          "path": "pwa/nuxel-apps/settings/power-menu.js",
+          "sha256": "466e768c0a3a174584db62c67b072d3b4e910acab8697b36b8db3fa150c0a40a",
+          "exists": true,
+          "role": "POWER menu behaviour (reads configs/nuxel/power/power-menu.json)",
+          "hash_mode": "soft",
+          "owned_by": "bg-08-power-management"
+        },
+        {
+          "path": "pwa/nuxel-apps/settings/power-menu.css",
+          "sha256": "b649aac15b48d8f5a65115d0a0a79b7b67f5874c805d21561eaace56c7630fdb",
+          "exists": true,
+          "role": "POWER menu styling",
+          "hash_mode": "soft",
+          "owned_by": "bg-08-power-management"
+        },
+        {
+          "path": "pwa/nuxel-apps/terminal/index.html",
+          "sha256": "0a7ebaa79edf66f659b58e2f9d3f49cb77a5cd255f3a22132b399b244b05f2ff",
+          "exists": true,
+          "role": "Terminal PWA surface (opened by the Bixby button action open-terminal)",
+          "hash_mode": "soft",
+          "owned_by": "bg-06-core-phone-apps"
+        },
+        {
+          "path": "pwa/nuxel-apps/terminal/app.json",
+          "sha256": "268a15213e86e1622be46c4abc769a7608e2d12fefa7b6b0c3e5cb5489fbe103",
+          "exists": true,
+          "role": "Terminal app descriptor",
+          "hash_mode": "soft",
+          "owned_by": "bg-06-core-phone-apps"
+        },
+        {
+          "path": "pwa/nuxel-apps/terminal/manifest.json",
+          "sha256": "0b6c57afb613f723db2d8a4eddff18c158ebfd926ff633fed4e5d850b5d21ba4",
+          "exists": true,
+          "role": "Terminal PWA manifest",
+          "hash_mode": "soft",
+          "owned_by": "bg-06-core-phone-apps"
+        },
+        {
+          "path": "pwa/nuxel-apps/terminal/sw.js",
+          "sha256": "a0783f475b6be9845450b6b083430e9db89f07acdbfd9035206ae4b660dda01c",
+          "exists": true,
+          "role": "Terminal service worker (cache namespace)",
+          "hash_mode": "soft",
+          "owned_by": "bg-06-core-phone-apps"
+        },
+        {
+          "path": "pwa/nuxel-apps/terminal/terminal.js",
+          "sha256": "e210d4f27aca5885cbf8ab4e598dc166a58ceef8808cdb4f9be74620cbc71c82",
+          "exists": true,
+          "role": "Terminal front-end (real local PTY via the a33 host)",
+          "hash_mode": "soft",
+          "owned_by": "bg-06-core-phone-apps"
+        },
+        {
+          "path": "pwa/nuxel-apps/terminal/terminal.css",
+          "sha256": "be6132b04a605c6dc0546f8a153da94d0675836b9650c04bcaca5093a2dda41b",
+          "exists": true,
+          "role": "Terminal styling",
+          "hash_mode": "soft",
+          "owned_by": "bg-06-core-phone-apps"
+        },
+        {
+          "path": "pwa/nuxel-apps/terminal/icons/icon-192.png",
+          "sha256": "9e218d5187268dc5f727df51e9dce712f71ee24d5ae3e6968ef41393deffec9c",
+          "exists": true,
+          "role": "Terminal launcher icon",
+          "hash_mode": "soft",
+          "owned_by": "bg-06-core-phone-apps"
+        },
+        {
+          "path": "pwa/nuxel-apps/terminal/icons/icon-512.png",
+          "sha256": "309fb79208eaa00318d02c8e50333fea91891d8c01db826073bc430ccc246a4f",
+          "exists": true,
+          "role": "Terminal launcher icon",
+          "hash_mode": "soft",
+          "owned_by": "bg-06-core-phone-apps"
+        }
+      ],
+      "assertions": [
+        {
+          "type": "file_executable",
+          "label": "the A32 nuxelctl CLI is present and executable",
+          "path": "tools/s10plus/a32/nuxelctl"
+        },
+        {
+          "type": "sha256",
+          "label": "the A32 nuxelctl CLI matches the full hash behind the A32 record's abbreviated e4281cab\u2026",
+          "path": "tools/s10plus/a32/nuxelctl",
+          "expect": "e4281cab8c96a70cc24a79aa10230ae6ab716141893d0c95abdbb1481b2d2c3b",
+          "on_missing": "fail"
+        },
+        {
+          "type": "file_executable",
+          "label": "the current-cycle (a33) nuxelctl CLI is present and executable",
+          "path": "tools/s10plus/a33/nuxelctl"
+        },
+        {
+          "type": "sha256",
+          "label": "the current-cycle (a33) nuxelctl CLI is byte-pinned",
+          "path": "tools/s10plus/a33/nuxelctl",
+          "expect": "fb2b49d78bcb0b6b69d9e0feaa0d2928fa8c789004ac974cb251793fbb1ce71c",
+          "on_missing": "warn",
+          "mode": "soft",
+          "owned_by": "tools/s10plus/a33 (current-cycle tree)"
+        },
+        {
+          "type": "sha256",
+          "label": "the A31 libinput-path shim source is byte-pinned (drift is a WARN naming bg-01, never silent)",
+          "path": "tools/s10plus/a31/nuxel-libinput-path.c",
+          "expect": "f94240412b731233ad0e93de24d20283f55fc0d0b1f74aa1cddc9f19265e598f",
+          "on_missing": "warn",
+          "mode": "soft",
+          "owned_by": "bg-01-touch-pipeline"
+        },
+        {
+          "type": "sha256",
+          "label": "the A33 libinput-path shim source is byte-pinned (drift is a WARN naming bg-01, never silent)",
+          "path": "tools/s10plus/a33/nuxel-libinput-path.c",
+          "expect": "f94240412b731233ad0e93de24d20283f55fc0d0b1f74aa1cddc9f19265e598f",
+          "on_missing": "warn",
+          "mode": "soft",
+          "owned_by": "bg-01-touch-pipeline"
+        },
+        {
+          "type": "regex",
+          "label": "the shim decides from capabilities (INPUT_PROP_DIRECT), never from a hard-coded eventN",
+          "path": "tools/s10plus/a31/nuxel-libinput-path.c",
+          "pattern": "INPUT_PROP_DIRECT",
+          "min_count": 1,
+          "mode": "soft",
+          "owned_by": "bg-01-touch-pipeline"
+        },
+        {
+          "type": "regex",
+          "label": "the shim still publishes the by-path devlink (by-path/nuxel-touchscreen)",
+          "path": "tools/s10plus/a33/nuxel-libinput-path.c",
+          "pattern": "by-path/nuxel-touchscreen",
+          "min_count": 1,
+          "mode": "soft",
+          "owned_by": "bg-01-touch-pipeline"
+        },
+        {
+          "type": "sha256",
+          "label": "the canonical wallpaper is byte-pinned (previously checked only indirectly by the soft A32-suite wallpaper step)",
+          "path": "assets/nuxel-background.png",
+          "expect": "6e337ef2d506a16778fd3c79159f0cf053eb07ace40cf43387a33486da76cb29",
+          "on_missing": "fail"
+        },
+        {
+          "type": "sha256",
+          "label": "the boot animation MP4 is byte-pinned (no expected-hash constant existed anywhere in the tree before INV-11)",
+          "path": "assets/nuxel-boot-animation.mp4",
+          "expect": "280e094fb3efe54eaf15f0d964bf8ad834eeebde2e34901e1bf1e3520b95184c",
+          "on_missing": "fail"
+        },
+        {
+          "type": "file_exists",
+          "label": "the Settings PWA surface (index.html) is present",
+          "path": "pwa/nuxel-apps/settings/index.html"
+        },
+        {
+          "type": "file_exists",
+          "label": "the Settings front-end (settings.js) is present",
+          "path": "pwa/nuxel-apps/settings/settings.js"
+        },
+        {
+          "type": "file_exists",
+          "label": "the Terminal PWA surface (index.html) is present",
+          "path": "pwa/nuxel-apps/terminal/index.html"
+        },
+        {
+          "type": "file_exists",
+          "label": "the Terminal front-end (terminal.js) is present",
+          "path": "pwa/nuxel-apps/terminal/terminal.js"
+        },
+        {
+          "type": "file_exists",
+          "label": "the Terminal service worker (sw.js) is present",
+          "path": "pwa/nuxel-apps/terminal/sw.js"
+        }
+      ],
+      "rollback": "git checkout -- docs/beta-finalization/baseline-protection.json docs/beta-finalization/BASELINE-PROTECTION.md (the register is append-only: removing INV-11 would itself be a pin change that needs an authorising revision); no protected asset is written by this invariant"
     }
   ],
   "history": [
@@ -727,6 +1021,69 @@
       "event": "invariant-added",
       "invariant": "INV-10-console-and-ledger-tooling",
       "detail": "Added by briq-00d revision 4 (bg-00-preflight re-verification, HEAD 6ee6a39c): gates the live-console host tool after three real defects were found and fixed on a Linux host, and requires WORK-QUEUE.md to keep matching the JSON store (program assertion: render --check). Hash mode soft because the live-phone build group is contractually allowed to evolve the tool."
+    },
+    {
+      "at": "2026-10-16T20:02:00+02:00",
+      "event": "invariant-added",
+      "invariant": "INV-11-a32-enumerated-asset-pins",
+      "detail": "Appended by briq-00d-baseline-protection revision 5 (bg-00-preflight repair pass). Closes the silent omission of four assets that this briQ's own deliverable enumerated but the first register revision left unpinned (nuxelctl, the a31/a33 libinput-path shim sources, assets/nuxel-boot-animation.mp4 + assets/nuxel-background.png, and the Settings/Terminal PWA integration files). No existing pin, assertion or history entry was rewritten or deleted; every addition is an appended entry.",
+      "old_to_new": [
+        {
+          "path": "tools/s10plus/a32/nuxelctl",
+          "old": "(unpinned - only the abbreviated deployed hash e4281cab\u2026 in the A32 release record)",
+          "new": "e4281cab8c96a70cc24a79aa10230ae6ab716141893d0c95abdbb1481b2d2c3b",
+          "mode": "hard"
+        },
+        {
+          "path": "tools/s10plus/a33/nuxelctl",
+          "old": "(unpinned)",
+          "new": "fb2b49d78bcb0b6b69d9e0feaa0d2928fa8c789004ac974cb251793fbb1ce71c",
+          "mode": "soft"
+        },
+        {
+          "path": "tools/s10plus/a31/nuxel-libinput-path.c",
+          "old": "(unpinned - zero occurrences in the register or the guard)",
+          "new": "f94240412b731233ad0e93de24d20283f55fc0d0b1f74aa1cddc9f19265e598f",
+          "mode": "soft"
+        },
+        {
+          "path": "tools/s10plus/a33/nuxel-libinput-path.c",
+          "old": "(unpinned)",
+          "new": "f94240412b731233ad0e93de24d20283f55fc0d0b1f74aa1cddc9f19265e598f",
+          "mode": "soft"
+        },
+        {
+          "path": "assets/nuxel-background.png",
+          "old": "(unpinned; covered only indirectly by the soft A32-suite wallpaper step)",
+          "new": "6e337ef2d506a16778fd3c79159f0cf053eb07ace40cf43387a33486da76cb29",
+          "mode": "hard"
+        },
+        {
+          "path": "assets/nuxel-boot-animation.mp4",
+          "old": "(unpinned; no expected-hash constant anywhere in the tree)",
+          "new": "280e094fb3efe54eaf15f0d964bf8ad834eeebde2e34901e1bf1e3520b95184c",
+          "mode": "hard"
+        },
+        {
+          "path": "pwa/nuxel-apps/settings/**",
+          "old": "(unpinned; the launcher-registry test checks only that index.html + js exist)",
+          "new": "9 files pinned (index.html, app.json, manifest.json, settings.js, settings.css, settings-model.js, power-menu.html, power-menu.js, power-menu.css) - full per-file hashes in files[]",
+          "mode": "soft"
+        },
+        {
+          "path": "pwa/nuxel-apps/terminal/**",
+          "old": "(unpinned; same test-only coverage)",
+          "new": "9 files pinned (index.html, app.json, manifest.json, sw.js, terminal.js, terminal.css, icons/icon-192.png, icons/icon-512.png)",
+          "mode": "soft"
+        },
+        {
+          "path": "pwa/nuxel-apps/settings/.keep, pwa/nuxel-apps/terminal/.keep",
+          "old": "(n/a)",
+          "new": "(deliberately left unpinned: 0-byte placeholders; pinning an empty file proves nothing)",
+          "mode": "deferred"
+        }
+      ],
+      "authorising_briq": "briq-00d-baseline-protection revision 5 (bg-00-preflight repair pass), per the regression rule in BASELINE-PROTECTION.md section 10: a protected hash may change only via an explicit work-queue revision that names the authorising briQ."
     }
   ],
   "vm_host": "nuxel@192.168.64.3",
@@ -755,6 +1112,18 @@
         "added INV-10 (console host tooling + work-queue renderer) as a new protected invariant; no existing pin was deleted or rewritten"
       ],
       "evidence": "docs/beta-finalization/preflight/gate-regression-guard.txt, gate-a32-suite.txt, gate-asset-invariant.txt, protected-asset-hashes-20261016.tsv, BACKUP-LIST-20261016.tsv"
+    },
+    {
+      "at": "2026-10-16T19:58:00+02:00",
+      "by": "construqtor/bg-00-preflight",
+      "briq": "briq-00a-repo-preflight revision 5 (repair pass)",
+      "repo_head": "f36646a9d1b3c968498977d3f4d153fc2353306a",
+      "host": "Fedora Linux 43 x86_64 (dextronux) \u2014 repair pass of the second session",
+      "guard_result": "PASS=53 FAIL=0 WARN=8 INFO=2 (final, INV-10 present) as captured in gate-regression-guard.txt",
+      "superseded_measurement": "PASS=41 FAIL=0 WARN=8 INFO=2 \u2014 the intermediate, pre-INV-10 measurement; 41 + the 12 new INV-10 assertions = 53, so the 41 was never this session's final gate result",
+      "correction": "ENVIRONMENT.md section 13.21 and the first reverification_log entry of this register both quoted the superseded PASS=41 run while citing gate-regression-guard.txt, whose own summary line (2026-10-16T17:36:56Z) reads PASS=53 FAIL=0 WARN=8 INFO=2 and 'REGRESSION GUARD: PASS' (exit=0) \u2014 BASELINE-PROTECTION.md section 9.1 already said 53. The 13.21 row is preserved (append-only) and the correction was appended beneath it by briq-00a revision 5; the entry here records the final number against the same evidence channel.",
+      "honest_note": "No protected file changed and no pin moved in the repair pass; this entry only replaces a superseded measurement with the one its own cited capture already carried.",
+      "evidence": "docs/beta-finalization/preflight/gate-regression-guard.txt (17:36:56Z), docs/beta-finalization/preflight/ENVIRONMENT.md section 13.21 (appended correction), docs/beta-finalization/workqueue/briq-00a-repo-preflight.json revision 5, docs/beta-finalization/BASELINE-PROTECTION.md section 9.1"
     }
   ]
 }

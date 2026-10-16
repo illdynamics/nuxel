@@ -484,6 +484,156 @@
       "at": "2026-10-16T19:36:06+02:00",
       "by": "construqtor/bg-00-preflight",
       "revision": 6
+    },
+    {
+      "id": "briq-00d-baseline-protection",
+      "title": "A32 baseline protected-assets register and regression guard",
+      "component": "bg-00-preflight",
+      "component_title": "Preflight, Discovery, Work Queue & Baseline Protection",
+      "priority": 0,
+      "state": "implemented",
+      "dependencies": [
+        "briq-00a-repo-preflight"
+      ],
+      "evidence": [
+        {
+          "kind": "observation",
+          "path": "docs/beta-finalization/BASELINE-PROTECTION.md",
+          "command": "test -e docs/beta-finalization/BASELINE-PROTECTION.md",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "observation",
+          "path": "tools/beta/regression-guard.sh",
+          "command": "test -e tools/beta/regression-guard.sh",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "tools/beta/regression-guard.sh",
+          "command": "bash tools/beta/regression-guard.sh",
+          "result": "PASS=43 FAIL=0 WARN=2 INFO=3 - REGRESSION GUARD: PASS",
+          "at": "2026-10-16T16:10:00+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "tools/beta/tests/test-regression-guard.sh",
+          "command": "bash tools/beta/tests/test-regression-guard.sh",
+          "result": "0 failing self-test(s), 10 passing",
+          "at": "2026-10-16T16:11:00+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "tools/beta/regression-guard.sh",
+          "command": "bash tools/beta/regression-guard.sh --json",
+          "result": "{\"verdict\":\"PASS\",\"pass\":43,\"fail\":0,\"warn\":2,\"info\":2}",
+          "at": "2026-10-16T16:20:00+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "tools/beta/regression-guard.sh",
+          "command": "bash tools/beta/regression-guard.sh --json; bash tools/beta/tests/test-regression-guard.sh",
+          "result": "{\"verdict\":\"PASS\",\"pass\":44,\"fail\":0,\"warn\":4,\"info\":2}; guard self-test 0 failing, 11 passing",
+          "at": "2026-10-16T14:11:48Z"
+        },
+        {
+          "kind": "offline",
+          "path": "docs/beta-finalization/baseline-protection.json",
+          "command": "bash tools/beta/regression-guard.sh --json",
+          "result": "{\"verdict\":\"PASS\",\"pass\":44,\"fail\":0,\"warn\":4,\"info\":2} invariants INV-1..INV-9",
+          "at": "2026-10-16T14:12:31Z"
+        },
+        {
+          "kind": "offline",
+          "path": "docs/beta-finalization/preflight/gate-regression-guard.txt",
+          "command": "bash tools/beta/regression-guard.sh --json",
+          "result": "verdict PASS, pass=53, fail=0, warn=8, info=2; hard pins 10/10 held; warned invariants are the soft pins owned by bg-02 plus the unavailable aarch64 colour selftest (INV-2/INV-9)",
+          "at": "2026-10-16T19:36:05+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "docs/beta-finalization/preflight/gate-regression-guard.txt",
+          "command": "bash tools/beta/tests/test-regression-guard.sh",
+          "result": "== 0 failing self-test(s), 11 passing == (tamper detection, re-pin protocol, --json, missing register)",
+          "at": "2026-10-16T19:36:05+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "docs/beta-finalization/preflight/protected-asset-hashes-20261016.tsv",
+          "command": "python3 - <<'EOF' (recompute sha256 of every registered path and compare with its pin) EOF",
+          "result": "10 hard pins MATCH; 5 soft pins DRIFT (pwa/nuxel-home/sw.js, pwa/nuxel-home/js/apps.js, pwa/nuxel-home/js/safe-zones.js, tools/s10plus/a32/tests/safe-zones-test.js, tools/s10plus/a32/tests/run-tests.sh) - all owned by bg-02-boot-animation-launcher, mid-flight in this parallel run -> WARN naming the owner, never a silent pass",
+          "at": "2026-10-16T19:36:05+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "docs/beta-finalization/preflight/gate-asset-invariant.txt",
+          "command": "bash tools/dedupe-assets.sh --verify",
+          "result": "[VERIFY-OK] All 6 PWA asset dirs are byte-identical to the canonical assets/ tree -> the A32 suite's wallpaper/precache assertions stop failing for a missing gitignored build artefact (3 failing suites -> 1)",
+          "at": "2026-10-16T19:36:05+02:00"
+        },
+        {
+          "kind": "doc",
+          "path": "docs/beta-finalization/BASELINE-PROTECTION.md",
+          "command": "sed -n '/## 9/,$p' docs/beta-finalization/BASELINE-PROTECTION.md",
+          "result": "\u00a79 session-2 re-verification (gate re-run, the one hard FAIL and its fix, the artefact restore, the full pinned-vs-current hash table, the new INV-10) and \u00a710 the regression rule: a protected hash may change only via an explicit work-queue revision naming the authorising briQ",
+          "at": "2026-10-16T19:36:05+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "docs/beta-finalization/preflight/gate-regression-guard-inv11.txt",
+          "command": "bash tools/beta/regression-guard.sh ; echo EXIT=$? ; bash tools/beta/regression-guard.sh --json",
+          "result": "hard pins 13/13 held; PASS=68 FAIL=0 WARN=8 INFO=2; REGRESSION GUARD: PASS; EXIT=0; --json verdict=PASS pass=68 fail=0 warn=8 info=2 (53 pre-existing + 15 new INV-11 assertions = 68). The 8 WARNs are unchanged from the session-2 run (5 soft pins owned by bg-02 + the unavailable aarch64 colour selftest legs).",
+          "at": "2026-10-16T19:55:59+02:00"
+        },
+        {
+          "kind": "observation",
+          "path": "docs/beta-finalization/baseline-protection.json",
+          "command": "jq -r .invariants[-1].id, (.invariants[-1].files|length), (.invariants[-1].assertions|length), .history[-1].invariant",
+          "result": "INV-11-a32-enumerated-asset-pins appended (23 files pinned, 15 assertions); history gained an invariant-added entry carrying the old_to_new table and the authorising briQ. No existing pin, assertion or history entry was rewritten or deleted.",
+          "at": "2026-10-16T20:02:00+02:00"
+        }
+      ],
+      "intended_changes": [
+        "docs/beta-finalization/BASELINE-PROTECTION.md",
+        "tools/beta/regression-guard.sh",
+        "docs/beta-finalization/BASELINE-PROTECTION.md; docs/beta-finalization/baseline-protection.json; tools/beta/regression-guard.sh; tools/beta/tests/test-regression-guard.sh",
+        "docs/beta-finalization/baseline-protection.json: +INV-9-a32-suite, INV-3 suite assertion marked mode:soft; tools/beta/regression-guard.sh: judge() honours mode:soft",
+        "docs/beta-finalization/baseline-protection.json (+INV-10, +history entry, +reverification_log; no existing pin deleted or rewritten)",
+        "docs/beta-finalization/BASELINE-PROTECTION.md (+\u00a79, +\u00a710, banner)",
+        "docs/beta-finalization/workqueue/briq-00d-baseline-protection.json (this revision)",
+        "docs/beta-finalization/baseline-protection.json (appended INV-11 + appended history entry with old->new pairs; append-only)",
+        "docs/beta-finalization/BASELINE-PROTECTION.md (appended section 11 documenting INV-11 and the new gate counts; sections 1-10 untouched)",
+        "docs/beta-finalization/preflight/gate-regression-guard-inv11.txt (new raw capture of the INV-11 gate run)"
+      ],
+      "tests": [
+        "(tests are recorded by the owning briQ when it reports)",
+        "bash tools/beta/tests/test-regression-guard.sh -> 10/10 (tamper detection, repin protocol, --json)",
+        "bash tools/s10plus/a32/tests/run-tests.sh -> exit 0 (the a32 suite the gate re-runs)",
+        "bash tools/beta/tests/test-regression-guard.sh -> 11/11 (adds: mode:soft degrades to WARN and the gate stays PASS)",
+        "bash tools/beta/regression-guard.sh -> PASS=53 FAIL=0 WARN=8 INFO=2",
+        "bash tools/beta/tests/test-regression-guard.sh -> 11 passing / 0 failing",
+        "bash tools/s10plus/a32/tests/run-tests.sh -> 1 failing suite (colour selftest only; needs an aarch64 execution channel this host does not have)",
+        "bash tools/dedupe-assets.sh --verify -> exit 0",
+        "per-asset sha256 recomputation against every pin (protected-asset-hashes-20261016.tsv)",
+        "bash tools/beta/regression-guard.sh -> exit 0, PASS=68 FAIL=0 WARN=8 INFO=2, INV-11 all 15 assertions PASS (raw: docs/beta-finalization/preflight/gate-regression-guard-inv11.txt)",
+        "bash tools/beta/regression-guard.sh --json -> one machine-readable line, verdict PASS"
+      ],
+      "risk": "medium",
+      "rollback": "git revert the commit(s) touching this task's expected files; the change is repository-only and alters no device state",
+      "verdict": "OFFLINE_TESTED",
+      "offline_ceiling": "OFFLINE_TESTED",
+      "owner_action": "",
+      "expected_files": [
+        "docs/beta-finalization/BASELINE-PROTECTION.md",
+        "tools/beta/regression-guard.sh"
+      ],
+      "note": "REPAIR PASS (revision 7). Closing a SILENT omission the inspeQtor found in this briQ's own deliverable: four assets this briQ explicitly enumerates had no pin and no assertion anywhere in the tree - (a) tools/s10plus/a32/nuxelctl (only metadata plus the abbreviated deployed hash e4281cab... in the A32 record) and tools/s10plus/a33/nuxelctl; (b) the libinput-path shim sources tools/s10plus/a31/nuxel-libinput-path.c and tools/s10plus/a33/nuxel-libinput-path.c (zero occurrences in the register or the guard, although bg-01b owns/edits the a33 copy in this same run - the very drift this register exists to catch); (c) assets/nuxel-boot-animation.mp4 (no expected-hash constant anywhere in the tree) and assets/nuxel-background.png (covered only indirectly by the soft A32-suite wallpaper step); (d) the Settings/Terminal PWA integration files under pwa/nuxel-apps/settings/ and pwa/nuxel-apps/terminal/ (the launcher-registry test checks only that index.html + js exist, never their bytes). Appended as INV-11-a32-enumerated-asset-pins: 23 newly pinned files - NEW HARD pins tools/s10plus/a32/nuxelctl e4281cab8c96a70cc24a79aa10230ae6ab716141893d0c95abdbb1481b2d2c3b (== the full hash behind the A32 abbreviation), assets/nuxel-background.png 6e337ef2d506a16778fd3c79159f0cf053eb07ace40cf43387a33486da76cb29, assets/nuxel-boot-animation.mp4 280e094fb3efe54eaf15f0d964bf8ad834eeebde2e34901e1bf1e3520b95184c; NEW SOFT pins tools/s10plus/a33/nuxelctl fb2b49d78bcb0b6b69d9e0feaa0d2928fa8c789004ac974cb251793fbb1ce71c, tools/s10plus/a31/nuxel-libinput-path.c and tools/s10plus/a33/nuxel-libinput-path.c f94240412b731233ad0e93de24d20283f55fc0d0b1f74aa1cddc9f19265e598f (owned by bg-01-touch-pipeline, so their drift is a named WARN, never a FAIL-for-someones-work-in-progress and never silent), and 18 per-file soft pins for pwa/nuxel-apps/settings/** (9) and pwa/nuxel-apps/terminal/** (9) with owners named per file. 15 new assertions, including the hard sha256 assertions that previously existed NOWHERE for the wallpaper and the animation, and two soft behavioural assertions on the shim (INPUT_PROP_DIRECT capability decision; by-path/nuxel-touchscreen devlink). DELIBERATE, STATED DEFERRAL (not silence): the two 0-byte .keep placeholders in those app dirs are left unpinned - pinning an empty file proves nothing. authorising briQ for the appended pins: this revision, per the rule in BASELINE-PROTECTION.md section 10; no protected asset byte was modified, so no re-pin was required and hard pins now read 13/13 held.",
+      "source": "plan.json",
+      "at": "2026-10-16T19:56:49+02:00",
+      "by": "construqtor/bg-00-preflight",
+      "revision": 7
     }
   ]
 }

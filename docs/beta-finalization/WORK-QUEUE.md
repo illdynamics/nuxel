@@ -136,8 +136,8 @@ deterministic.  Prose outside the markers is edited by hand and never clobbered 
 | Metric | Value |
 |--------|-------|
 | Tasks | **54** (one per briQ in the plan, bg-00 … bg-12) |
-| Revisions (append-only) | 77 |
-| Evidence entries | 141 |
+| Revisions (append-only) | 80 |
+| Evidence entries | 146 |
 | Dependencies | validated acyclic; referential integrity enforced |
 
 | State | Count | Tasks |
@@ -235,10 +235,10 @@ Ids are shown without the `briq-` prefix.
 
 | id | pri | component | state | verdict | ev | rev | depends on |
 |----|----:|-----------|-------|---------|--:|----:|------------|
-| `00a-repo-preflight` | 0 | bg-00-preflight | implemented | VERIFIED_ON_S10PLUS | 9 | 4 | — |
-| `00b-archive-discovery` | 0 | bg-00-preflight | implemented | OFFLINE_TESTED | 6 | 4 | 00a-repo-preflight |
+| `00a-repo-preflight` | 0 | bg-00-preflight | implemented | VERIFIED_ON_S10PLUS | 11 | 5 | — |
+| `00b-archive-discovery` | 0 | bg-00-preflight | implemented | OFFLINE_TESTED | 7 | 5 | 00a-repo-preflight |
 | `00c-workqueue-ledger` | 0 | bg-00-preflight | implemented | OFFLINE_TESTED | 9 | 4 | 00a-repo-preflight, 00b-archive-discovery |
-| `00d-baseline-protection` | 0 | bg-00-preflight | implemented | OFFLINE_TESTED | 12 | 6 | 00a-repo-preflight |
+| `00d-baseline-protection` | 0 | bg-00-preflight | implemented | OFFLINE_TESTED | 14 | 7 | 00a-repo-preflight |
 | `01a-pipeline-trace-tool` | 1 | bg-01-touch-pipeline | implemented | OFFLINE_TESTED | 4 | 2 | — |
 | `01b-libinput-path-shim` | 1 | bg-01-touch-pipeline | implemented | OFFLINE_TESTED | 6 | 2 | — |
 | `01c-chargermode-bootmode` | 1 | bg-01-touch-pipeline | implemented | OFFLINE_TESTED | 4 | 2 | 01a-pipeline-trace-tool |
@@ -337,7 +337,7 @@ verdict that is not one of `FAILED`, `BLOCKED_KERNEL`, `BLOCKED_FIRMWARE`, `BLOC
 `BLOCKED_EXTERNAL_RESOURCE`.  `DEFERRED` and `NOT_SUPPORTED_ON_DEVICE` count as resolved
 (they are terminal decisions, not open work).
 
-## 8. What this ledger does **not** claim
+## 9. What this ledger does **not** claim
 
 * It is not evidence that a feature works.  A task's verdict describes the *evidence recorded for
   that task*, nothing more.
@@ -352,7 +352,7 @@ verdict that is not one of `FAILED`, `BLOCKED_KERNEL`, `BLOCKED_FIRMWARE`, `BLOC
   the clock it was read from — where a value was later found to be approximate, bg-00 corrected it
   by appending a revision that names the real measurement window.
 
-## 9. Invariants that apply to every task in this queue (verbatim)
+## 10. Invariants that apply to every task in this queue (verbatim)
 
 NO FLASHING of any kind - no writes to raw partition block devices or to
 BOOT/USERDATA/SYSTEM/RECOVERY/DTB/DTBO/VBMETA/radio/modem/EFS/SEC_EFS/calibration/IMEI/PIT or
@@ -366,7 +366,7 @@ untested hardware works; a passing unit test never yields VERIFIED_ON_S10PLUS.  
 allowed but must return to Nuxel with a known-working userspace rollback path; no blind repeat
 reboots.  After three same-mode failures, change diagnostic strategy.
 
-## 10. Verdicts for this briQ
+## 11. Verdicts for this briQ
 
 | Item | Verdict |
 |------|---------|

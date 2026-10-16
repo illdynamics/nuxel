@@ -265,7 +265,11 @@ input_handling,rendering,rendering_adapter,snake}.py`.
 | `src/game_state.py` | `4064780bd4cdf6f3…` | `src/config.py` | `5bb47077061490df…` |
 | `src/event_handler.py` | `1e88c41a4eb70095…` | `src/utils/constants.py` | `7de4fb7cf9875b2e…` |
 
-Full hashes are in the raw capture; the two invariants worth stating here are the ones the snekbyte
+**Full hashes: `docs/beta-finalization/preflight/snekbyte-source.txt`** — the raw capture written by
+this briQ (its own commands and their verbatim output: `git -C /x/snekbyte rev-parse HEAD`,
+`git status --porcelain`, `git log -3`, and `sha256sum` over the twelve files listed above; captured
+2026-10-16T17:54:43Z, all exit codes 0).  The table above carries 16-hex prefixes of exactly those
+values.  The two invariants worth stating here are the ones the snekbyte
 briQ (`07d-snekbyte`) needs:
 
 * the **`poop.py` + `game_logic.py` pair is present**, i.e. the Poop-obstacle mechanic and the

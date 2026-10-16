@@ -25,21 +25,24 @@ Reproduce everything with:
 | no `/dev/input/eventN` literal | `tests/test-no-eventn-literal.py` | **27 files checked, 0 failing** |
 | A32 baseline regression guard (optional cross-check, other group's file) | `tools/beta/regression-guard.sh --no-tests` | **PASS — `REGRESSION GUARD: PASS — the A32 baseline is intact`** |
 
-Total assertions printed by `run-touch-tests.sh`: **239 PASS, 0 FAIL**.
+Total assertions printed by `run-touch-tests.sh`: **240 PASS, 0 FAIL**
+(67 + 53 + 33 + 27 + 27 + 19 + 6 suite `PASS` lines + the 8 `run_step` summary lines;
+the 239 of the previous revision was the count *before* `test-no-eventn-literal.py`
+grew to 27 files and `test-libinput-shim-invocation.py` joined `TARGETS`).
 `run-touch-tests.sh` exits 0 (`TOUCH-TESTS: ALL PASS`).
 
 The tool's own logic is additionally assertable on any host, with no phone and no
 `/dev/input` at all:
 
 ```sh
-python3 tools/s10plus/a33/nuxel-touch-trace.py --self-test     # -> SELF-TEST: PASS (40/40 assertions)
+python3 tools/s10plus/a33/nuxel-touch-trace.py --self-test     # -> SELF-TEST: PASS (43/43 assertions)
 ```
 
 ## 1a. What this cycle added (and what it found)
 
 | Added | Why |
 |---|---|
-| `--self-test` (40 assertions) | the tool's own decisions (ioctl numbers, decoder, bitmap word order, coordinate mapping, gate, exit codes) are now checkable anywhere, without a phone |
+| `--self-test` (43 assertions) | the tool's own decisions (ioctl numbers incl. `EVIOCGID`/`EVIOCGABS(ABS_MT_SLOT)`, decoder, bitmap word order, coordinate mapping, gate, exit codes) are now checkable anywhere, without a phone |
 | `/sys/class/input/*/device` capability scan (`--sysfs-root`, `NUXEL_SYSFS_INPUT_ROOT`) | a second, independent identity source (name, bustype/vendor/product, capability bitmaps, absinfo) beside the evict ioctls — and driveable offline from `tests/fixtures/sec-ts-only/` |
 | `coordinate-map.json` + `COORD_VALIDATION` | validates every captured point against the device's own range **and** the 1440x3040 DECON panel, naming where the range came from |
 | `--capture SECONDS`, `events.jsonl` | the bounded owner-tap window with one JSON record per input event (kernel timeval) and a `point` record per frame |
@@ -138,7 +141,7 @@ cd /x/nuxel && sha256sum \
 ```
 f94240412b731233ad0e93de24d20283f55fc0d0b1f74aa1cddc9f19265e598f  tools/s10plus/a33/nuxel-libinput-path.c
 f94240412b731233ad0e93de24d20283f55fc0d0b1f74aa1cddc9f19265e598f  tools/s10plus/a31/nuxel-libinput-path.c
-7b087146e6bb15d546d8c6bb7fa81a4c70eeee3e8fc5ba6a64e83b6f1e021ee7  build/out/s10plus/a33/libnuxel-libinput-path.so   (previous cycle's build)
+7b087146e6bb15d546d8c6bb7fa81a4c70eeee3e8fc5ba6a64e83b6f1e021ee7  build/out/s10plus/a33/libnuxel-libinput-path.so   (recorded_from_previous_cycle: NOT present in this tree; build/ is gitignored and the object is rebuilt on demand - this hash is the previous cycle's record, re-verifiable against the unchanged, parity-asserted source)
 f333421fc68549864bc6d8ccc3671b3e04c9ababd21446536f2328087dce936c  the DEPLOYED /usr/lib/nuxel/libnuxel-libinput-path.so (A31 record)
 ```
 
@@ -148,6 +151,13 @@ f333421fc68549864bc6d8ccc3671b3e04c9ababd21446536f2328087dce936c  the DEPLOYED /
 selftest and stopped there with an explicit "cross/VM build UNAVAILABLE" message and
 exit 3. That is reported rather than papered over:
 
+* the **object itself is not in this tree**: `build/out/s10plus/a33/` contains only
+  `nuxel-libinput-path-selftest`, and a find over the tree and `/home` returns no
+  `libnuxel-libinput-path*.so`. The object hash below is therefore typed
+  `recorded_from_previous_cycle` in the briq-01b revision (queue evidence kind `doc`:
+  the queue's schema allows only `offline`/`vm`/`on_device`/`owner_instruction`/
+  `observation`/`doc`, and `observation` would read as if the file were present) — it
+  is a record to rebuild against, not a file a reviewer will find at that path;
 * the **source hash is unchanged** from the build whose object hash is recorded above,
   so the recorded object still corresponds to this source and to the deployed copy
   (which `tests/test-libinput-parity.py` proves is byte-identical);

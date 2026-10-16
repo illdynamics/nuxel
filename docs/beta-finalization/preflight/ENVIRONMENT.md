@@ -941,6 +941,26 @@ which cannot execute on this host (§13.2) and belongs to `bg-02` (INV-2).
 | aarch64 colour selftest (INV-2 binary legs) | **BLOCKED_EXTERNAL_RESOURCE** in this environment (no aarch64 execution channel); owner `bg-02` |
 | Anything requiring a human finger/SIM/card/ear/eyes | **NEEDS_OWNER_TEST** |
 
+> **Corrections appended 2026-10-16 (repair pass; `briq-00a-repo-preflight` revision 5).**  The rows
+> above are preserved unchanged — this section is append-only.  Two claims of this session needed
+> correcting, both recorded here next to the evidence channel that contradicts them:
+>
+> 1. **Regression-guard result.**  The last row above quotes `PASS=41 FAIL=0 WARN=8 INFO=2`.  That was
+>    the **intermediate, pre-INV-10** measurement, not the session's final gate result.  The final
+>    result is **`PASS=53 FAIL=0 WARN=8 INFO=2`** (INV-10 present: 41 + the 12 new INV-10 assertions =
+>    53), captured in `docs/beta-finalization/preflight/gate-regression-guard.txt` (2026-10-16T17:36:56Z,
+>    `REGRESSION GUARD: PASS`, `exit=0`) and re-confirmed by re-running
+>    `bash tools/beta/regression-guard.sh` in this repair pass.  `BASELINE-PROTECTION.md` §9.1 quotes
+>    the same 53; only the cited row here was stale.  The correction is also recorded as an appended
+>    entry in `docs/beta-finalization/baseline-protection.json` → `reverification_log`.
+> 2. **Batch-1 frame count.**  The identity capture's on-device evidence entry (queue record
+>    `briq-00a-repo-preflight` revision 4) said *"12/12 framed round trips"*.  The capture itself,
+>    `live/batch-1-identity.txt` / `.out`, carries **10** commands and **10** `sha_ok=yes` frames
+>    (`grep -c '^===== ' live/batch-1-identity.out` = 10, `grep -c 'sha_ok=yes'` = 10).  The **12/12**
+>    figure belongs to `live/batch-4-pkgs-services-receipts.out` (12 commands, 12 `sha_ok=yes`).
+>    Corrected in `docs/beta-finalization/workqueue/briq-00a-repo-preflight.json` **revision 5**
+>    (revision 4 is left untouched): **10/10 framed round trips, `sha_ok=yes` on every frame, rc=0**.
+
 ### 13.22 Observed tool caveat — `tools/beta/health-check.sh` mis-detects this workstation
 
 Captured (raw: `docs/beta-finalization/preflight/observed-health-check-host.txt`) while validating

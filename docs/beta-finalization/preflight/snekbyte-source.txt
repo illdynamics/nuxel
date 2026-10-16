@@ -1,0 +1,31 @@
+### snekbyte source capture — briq-00b-archive-discovery (session-2 re-scan, repair pass)
+# captured: 2026-10-16T17:54:43Z on dextronux — workspace /x/nuxel
+# purpose: raw evidence channel for the twelve /x/snekbyte source-file hashes quoted (truncated) in
+#          docs/beta-finalization/ARCHIVE-INVENTORY.md section 7.2 — this file is that capture.
+
+$ git -C /x/snekbyte rev-parse HEAD
+84430528bf0b6c9d0810975e117a3fc9e298ce08
+
+$ git -C /x/snekbyte status --porcelain
+(no output above == clean working tree)
+
+$ git -C /x/snekbyte log -3 --format='%H %ad %s' --date=iso-strict
+84430528bf0b6c9d0810975e117a3fc9e298ce08 2025-12-15T03:14:19+01:00 refactor: remove redundant directories and update project name
+60ba2d0cdd105b33ec6a04ac4ac181c7a85e8490 2025-12-15T03:02:38+01:00 docs: update README with WoNQ mode and new structure
+14691ccce087fb8248b1850b1f05f3f56907d812 2025-12-15T02:57:33+01:00 Merge pull request #1 from illdynamics/feat/improvements
+
+$ sha256sum README.md main.py snekbyte.py src/game_logic.py src/game_state.py src/event_handler.py src/snake.py src/poop.py src/ui.py src/game_loop.py src/config.py src/utils/constants.py   # (run with cwd=/x/snekbyte; paths relative to that checkout)
+ccd558434e8e9078dadcb26e64a34ce27201457188eed53b2d2e6b271dc17fb1  README.md
+536efa4ff990c97ebe3b5314447d0e1e0c2c2f526490f568a9bd7a3abfb44aec  main.py
+2396dc85d6a0da3a9db059fa033e6b6b0dcc12a634e572aa102f5e0339c202b7  snekbyte.py
+95492eee4473dc775b2b5180ec4d6305964acc95c1b32e880454f8ed98a38ee4  src/game_logic.py
+4064780bd4cdf6f30f4301fa775ab9ae7f2246004fa053c62861f9b78b39f5b7  src/game_state.py
+1e88c41a4eb70095301364f96b66609bf248b97bace710f6296cb9bb76f0734b  src/event_handler.py
+bb5011ce42fd697a4b6c7cbb5557719bcc2380530f8d453bcb84f676dfd0dd52  src/snake.py
+85d60475da41a8f5dfc476cf03826208485cade3f8aa8712fa25a54c3cd7e64a  src/poop.py
+fd066d55f3eaaf4a0a6cb3885cdb9b1d008626cec6147e1532ca48bad925f348  src/ui.py
+c24d185c926c7a4d0699f2b23f19654701cdcbc812dc1c8c6e99ebabbaa0f715  src/game_loop.py
+5bb47077061490dfc2c0be06d6472e74933847d7578112e43244f8e504b80771  src/config.py
+7de4fb7cf9875b2e715235e96c1e6a8dcb71eb5f3b5f97ffd6cb6c9276499377  src/utils/constants.py
+
+# exit=0 for every command above

@@ -44,11 +44,12 @@ Two things this capture proves beyond the boot-mode finding:
 | `evdev.txt` | `/sys/class/input`, `/dev/input` and one real sysfs identity read |
 | `interrupts-{before,after}.txt` | the `/proc/interrupts` probe (no `sec_ts` line exists this boot) |
 | `verdict.txt`, `layer-verdicts.txt`, `analysis.json` | `nuxel-touch-trace.py --analyze` output for this capture |
+| `verdict.pre-rename.txt`, `analysis.pre-rename.json` | the *original* analyzer records, kept for audit. They were generated while the directory was named `...-p0probe`, before the archive was renamed to `...-p0probe-live-run`, so the `EVIDENCE=` / `JSON_OUT=` paths inside them no longer resolve. `verdict.txt` / `analysis.json` were re-generated with `--analyze` against the stored directory, so every evidence path in them names a file that exists. Both kinds are conclusions (structurally excluded from evidence), never graded as capture output. |
 | `provenance.txt` | how the capture was taken and what was **not** done |
 
 `verdict.txt` / `layer-verdicts.txt` / `analysis.json` are the analyzer's own
 conclusions; the tool refuses to grade its own output as evidence (a real bug this
-capture exposed — see §10 of `docs/beta-finalization/touch/PIPELINE-TRACE.md`).
+capture exposed — see §6c of `docs/beta-finalization/touch/PIPELINE-TRACE.md`).
 
 ## Verdict
 

@@ -24,7 +24,7 @@ sec_ts (S6SY761, i2c 4-0048)          kernel driver
 
 | File | What it is |
 |---|---|
-| `nuxel-touch-trace.py` | The end-to-end tracer. `--live` runs a **bounded** capture session; `--capture SECONDS` runs the bounded owner-tap window and writes the per-event JSONL stream (`events.jsonl`) plus `coordinate-map.json`; `--analyze DIR` grades a bundle *or any archived capture directory*; `--stage-probe` installs the DOM page; `--self-test` asserts the tool's own logic **on a host** (no phone, no `/dev/input`, no root); `--archive DIR` copies a finished bundle into the repository archive. Prints one `LAYER=<n> STATE=<ok\|drop\|blocked> EVIDENCE=<path>` line per layer, one `LAYER_EXIT=<n> … EXIT=<10+n>` line per layer, and `FIRST_FAIL_LAYER=` (with `--layer-exit-codes` the process status becomes `10 + first lossy layer`). |
+| `nuxel-touch-trace.py` | The end-to-end tracer. `--live` runs a **bounded** capture session; `--capture SECONDS` runs the bounded owner-tap window and writes the per-event JSONL stream (`events.jsonl`) plus `coordinate-map.json`; the node is identified by capability and by its own `EVIOCGID`/`EVIOCGBIT`/`EVIOCGABS` answers (including `ABS_MT_SLOT` contact-slot capacity), never by a node number; `--analyze DIR` grades a bundle *or any archived capture directory*; `--stage-probe` installs the DOM page; `--self-test` asserts the tool's own logic **on a host** (no phone, no `/dev/input`, no root); `--archive DIR` copies a finished bundle into the repository archive. Prints one `LAYER=<n> STATE=<ok\|drop\|blocked> EVIDENCE=<path>` line per layer, one `LAYER_EXIT=<n> … EXIT=<10+n>` line per layer, and `FIRST_FAIL_LAYER=` (with `--layer-exit-codes` the process status becomes `10 + first lossy layer`). |
 | `touch-probe.html` | Layer 7: the self-contained instrumented page that logs `touchstart x=… y=…` and POSTs to the tracer's bounded collector. |
 | `nuxel-bootmode-guard.py` | Classifies a charger/LPM boot (the state in which `sec_ts` does not exist at all), publishes `/run/nuxel-bootmode.json` for the launcher, and can request **one gated normal reboot**. Never a blind reboot; never a kernel/bootloader change. |
 | `nuxel-touch-capture.sh` | The owner-test harness: takes an owner-test lock, runs the bounded tracer with `--expect-finger`, adds the diagnostics, applies the machine gate and prints `CAPTURE_GATE=PASS\|FAIL\|BLOCKED`. Verdict is always `NEEDS_OWNER_TEST` unless a human confirms the UI. |
@@ -87,8 +87,19 @@ python3 tools/s10plus/a33/nuxel-touch-trace.py --archive /var/lib/nuxel/touch-ca
 ## Hard rules
 
 * **No `/dev/input/eventN` literal anywhere** in this pipeline: devices are
-  selected by capability (`EVIOCGPROP` / `EVIOCGBIT` / `EVIOCGABS`). The gate is
+  selected by capability (`EVIOCGID` / `EVIOCGPROP` / `EVIOCGBIT` / `EVIOCGABS`,
+  including `EVIOCGBIT(EV_ABS)`+`EVIOCGABS(ABS_MT_SLOT)` for the contact-slot
+  capacity, and `EVIOCGID` for the node's own `struct input_id`). The gate is
   `tests/test-no-eventn-literal.py`.
+* **What `--live` / `--capture` write.** The *capture* is read-only (input nodes
+  opened `O_RDONLY|O_NONBLOCK`, read-only ioctls, no `/dev/fb0`, no arm, no reboot),
+  but a non-dry run arms the layer-7 probe and so writes, in addition to the evidence
+  bundle under `--out`: `touch-probe.html` into the launcher docroot
+  (`/usr/share/nuxel/nuxel-home/`), the staging note `/run/nuxel-touch-probe.staged`,
+  the collector log `/run/nuxel-touch-dom.log`, and it binds `127.0.0.1:8099`
+  (`--dom-port`) with a bounded 200-request daemon-thread collector. `--dry-run` does
+  none of the four and still writes the bundle. `--stage-probe` stages the page and
+  writes the `/run` note without running a capture.
 * **Absence of evidence is never a pass.** A layer with no capture is `blocked`,
   never `ok`; a shell-command checklist line is not device output.
 * **No flashing, no partition writes, no bootloader interfaces.** The LPM fix that

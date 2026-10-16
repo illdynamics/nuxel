@@ -17,7 +17,7 @@ Tests: `tools/s10plus/a33/tests/` (`run-touch-tests.sh` runs them all)
 |---|---|---|---|
 | 1 | `sec_ts` driver binding | the kernel registered `sec_touchscreen` and the i2c client `4-0048` is bound | `dmesg`/ram-console registration line, `/sys/bus/i2c/devices/4-0048`, `sec_ts_init` return path |
 | 2 | IRQ delivery | the `sec_ts` line in `/proc/interrupts` actually counted up while the panel was exercised | two `/proc/interrupts` snapshots ≥2 s apart, delta > 0 |
-| 3 | evdev node production | a **capability-selected** node exists with `INPUT_PROP_DIRECT` + `ABS_MT_POSITION_X/Y` and a non-degenerate range | `EVIOCGNAME`, `EVIOCGPROP`, `EVIOCGBIT(EV_ABS/EV_KEY)`, `EVIOCGABS`; raw events decode into a point |
+| 3 | evdev node production | a **capability-selected** node exists with `INPUT_PROP_DIRECT` + `ABS_MT_POSITION_X/Y`, a non-degenerate range and a contact-slot capacity | `EVIOCGID` (the node's own `struct input_id`), `EVIOCGNAME`, `EVIOCGPROP`, `EVIOCGBIT(EV_ABS/EV_KEY)`, `EVIOCGABS`, `EVIOCGBIT(EV_ABS)`+`EVIOCGABS(ABS_MT_SLOT)` for the contact-slot capacity; raw events decode into a point |
 | 4 | libinput acceptance | the shim handed the node to libinput and libinput returned a device | `/run/nuxel-libinput-path.state` lines with `PATH_ADD … accepted=1` |
 | 5 | phoc input fds | the compositor holds the input node open | `/proc/<nuxel-wayland MainPID>/fd` targets under `/dev/input/` |
 | 6 | Wayland seat / focus | the compositor produced touch events for the seat (`wl_touch`) | bounded `WAYLAND_DEBUG`/journal window, or a launcher DOM line that could only exist from a Wayland touch event |
@@ -75,7 +75,16 @@ and between boot modes. So the selection is decided by capability, and the tool 
 | Source | What it provides | Role |
 |---|---|---|
 | `/sys/class/input/<node>/device/` | `name`, `id/bustype`+`id/vendor`+`id/product`, the capability bitmaps (`properties`, `capabilities/abs`, `capabilities/key`), and per-axis `absinfo` where the kernel exposes it | independent confirmation of identity and of the capability claims |
-| the evdev ioctls `EVIOCGNAME` / `EVIOCGPROP` / `EVIOCGBIT` / `EVIOCGABS` on every `/dev/input` node | the node's own answer, including the absolute ranges and contact-slot capacity, which sysfs does not carry on this kernel | **authoritative for selection** |
+| the evdev ioctls `EVIOCGID` / `EVIOCGNAME` / `EVIOCGPROP` / `EVIOCGBIT` / `EVIOCGABS` on every `/dev/input` node | the node's own answer: its `struct input_id` (`bustype`/`vendor`/`product`/`version`), the absolute ranges, and the **contact-slot capacity** from `EVIOCGBIT(EV_ABS)` (is `ABS_MT_SLOT` claimed at all) plus `EVIOCGABS(ABS_MT_SLOT)` (`max + 1` = simultaneous contacts), which sysfs does not carry on this kernel | **authoritative for selection** |
+
+The evdev identity and the sysfs identity are printed side by side, never merged: in
+`evdev.txt` each candidate carries `ioctl_id=bustype=0x… vendor=0x… product=0x… version=0x…`
+next to `slot_bit` / `slot_range` / `slots`, and the live log prints one
+`NODE_ID ioctl EVIOCGID … | sysfs id bustype=… vendor=… product=…` line so a node whose
+`EVIOCGID` and sysfs `id/*` disagree is visible. Layer 3's `DETAIL` names both the
+node's `EVIOCGID` and its `contact_slots=<n>` (with the raw `ABS_MT_SLOT` range), so the
+briq-named "contact slots and tracking IDs" information is *measured from the node*, not
+inferred from the decoded stream.
 
 `NUXEL_SYSFS_INPUT_ROOT` (or `--sysfs-root`) redirects the sysfs half at a synthetic
 tree, which is how the offline tests drive the *same* code with the checked-in
@@ -135,10 +144,28 @@ cap, a byte cap, `select()` polling), it always writes the `/sys/class/input` ca
 scan and the panel geometry into the bundle, and it refuses `0` (or anything outside
 `1..900`) instead of running unbounded.
 
+**What `--live` / `--capture` write — the exact list, inside and outside the bundle.**
+Earlier revisions of this section said "nothing written outside the bundle". That was
+wrong: the *capture* is read-only (`O_RDONLY | O_NONBLOCK` on the input nodes, read-only
+ioctls, no `/dev/fb0` open, no arm, no reboot), but a non-dry run also arms the layer-7
+probe, so these four writes happen on the phone:
+
+| Write | Where | When | Why |
+|---|---|---|---|
+| the evidence bundle (layer verdicts, `evdev.txt`, `boot-driver.txt`, `interrupts-*.txt`, `sysfs-input.txt`, `evdev.txt`, `events.jsonl`, `coordinate-map.json`, `dom-http.log`, `probe-staging.txt`, …) | `--out DIR` (default `/var/lib/nuxel/touch-trace`) | always | the evidence itself |
+| `touch-probe.html` copied into the launcher docroot (`/usr/share/nuxel/nuxel-home/`, or `/usr/share/nuxel/pwa/nuxel-home/` when that is the docroot present) | the launcher docroot, **outside** the bundle | non-dry `--live`/`--capture` (`stage_probe()`), or `--stage-probe` | the instrumented DOM page that makes layer 7 measurable |
+| `/run/nuxel-touch-probe.staged` — the staging note and the manual step | `/run` | same | so a later command (and the owner) can see that the page was staged |
+| `/run/nuxel-touch-dom.log` — every POST the page makes, plus a bound on `127.0.0.1:<--dom-port>` (default 8099, 200 requests, daemon thread) | `/run` and the bundle's `dom-http.log` | same | layer-7 DOM evidence with coordinates |
+
+`--dry-run` performs none of the four: it prints `DRY_RUN: no arming, no DOM collector,
+no writes outside the evidence bundle` and skips the collector, the staging and the
+capture. It still writes the bundle. No partition, bootloader, DTB, modem or EFS write
+happens in either mode.
+
 Because the evidence is worth more inside the repository than only on the phone:
 
 ```sh
-# on the phone: bounded capture, nothing written outside the bundle
+# on the phone: bounded capture (bundle under --out; see the table above for the four writes)
 python3 /usr/libexec/nuxel/nuxel-touch-trace.py --capture 90 --out /var/lib/nuxel/touch-capture/tap
 
 # from the host: land it in docs/beta-finalization/live/evidence/touch-<ts>/
@@ -328,7 +355,7 @@ It is a first-party measurement of the current device state — the handset is i
 charger/LPM mode, so the touchscreen does not exist on this boot — and it is also the
 regression case for §6b and §6c.
 
-## 7a. The host self-test (`--self-test`)
+## 7b. The host self-test (`--self-test`)
 
 `python3 nuxel-touch-trace.py --self-test` asserts this tool's own logic and needs no
 phone, no libinput, no `/dev/input` and no root. It is the evidence line a reviewer can
@@ -336,7 +363,9 @@ re-run anywhere. It checks, in this order:
 
 1. the ioctl request numbers by their numeric value (`EVIOCGNAME(64)==0x80404506`,
    `EVIOCGBIT(EV_ABS,8)==0x80084523`, `EVIOCGABS(ABS_MT_POSITION_X)==0x80184575`,
-   `EVIOCGPROP(8)==0x80084509`) — a wrong number reads the wrong struct **silently**;
+   `EVIOCGPROP(8)==0x80084509`, `EVIOCGID==0x80084502`,
+   `EVIOCGABS(ABS_MT_SLOT)==0x8018456f`, plus the `struct input_id` decode) — a wrong
+   number reads the wrong struct **silently**;
 2. `struct input_event` is 24 bytes and the evdev codes match the kernel ABI;
 3. the decoder turns a known byte stream into exactly one down, one up, one point, two
    `BTN_TOUCH` events and two frames;
@@ -353,7 +382,7 @@ re-run anywhere. It checks, in this order:
 10. the bound is enforced (a `0` budget is refused) and the gate cannot be passed
     without a DOM event.
 
-It prints `SELF-TEST: PASS (40/40 assertions)` and states plainly that it is **not** a
+It prints `SELF-TEST: PASS (43/43 assertions)` and states plainly that it is **not** a
 touch verification.
 
 ## 8. How to run it

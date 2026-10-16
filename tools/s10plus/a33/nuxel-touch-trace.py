@@ -8,7 +8,8 @@ THE CHAIN THIS WALKS (mission priority 0):
                                  removes the driver entirely (charger/LPM mode)
     2 IRQ delivery               /proc/interrupts delta for the sec_ts line over a 2 s window
     3 evdev node production      /proc/bus/input/devices + a CAPABILITY scan
-                                 (EVIOCGNAME / EVIOCGPROP / EVIOCGBIT / EVIOCGABS)
+                                 (EVIOCGID / EVIOCGNAME / EVIOCGPROP / EVIOCGBIT / EVIOCGABS,
+                                 including ABS_MT_SLOT contact-slot capacity)
     4 libinput acceptance        /run/nuxel-libinput-path.state  'accepted=1'
     5 compositor input fds       /proc/<phoc MainPID>/fd -> how many are /dev/input nodes
     6 Wayland seat / focus       bounded WAYLAND_DEBUG / journal capture of wl_touch + seat state
@@ -66,9 +67,11 @@ CAPABILITY DISCOVERY (never a node number)
         where the kernel exposes it, per-axis absinfo.  NUXEL_SYSFS_INPUT_ROOT (or
         --sysfs-root) redirects this at a synthetic tree so the same code runs
         offline, and the A33 tests do exactly that.
-      * the evdev ioctls (EVIOCGNAME/EVIOCGPROP/EVIOCGBIT/EVIOCGABS) on every
-        /dev/input node, which is what ACTUALLY decides the selection: ranges and
-        contact slots are only obtainable from the ioctl.
+      * the evdev ioctls (EVIOCGID/EVIOCGNAME/EVIOCGPROP/EVIOCGBIT/EVIOCGABS) on
+        every /dev/input node, which is what ACTUALLY decides the selection: the
+        node's own input_id (EVIOCGID), the absolute ranges and the contact-slot
+        capacity (EVIOCGBIT(EV_ABS)+EVIOCGABS(ABS_MT_SLOT)) are only obtainable
+        from the ioctl.
     The raw `properties` value is always printed next to its interpretation.  On
     this handset the panel node reports a raw value whose INPUT_PROP_DIRECT bit
     (used, as everywhere in the A32/A33 baseline, as a BIT INDEX) is set; that
@@ -147,6 +150,7 @@ EVIOCGNAME = 0x80000000 | (64 << 16) | (0x45 << 8) | 0x06
 EVIOCGBIT = lambda ev, ln: 0x80000000 | (ln << 16) | (0x45 << 8) | (0x20 + ev)
 EVIOCGABS = lambda ax: 0x80000000 | (24 << 16) | (0x45 << 8) | (0x40 + ax)
 EVIOCGPROP = lambda ln: 0x80000000 | (ln << 16) | (0x45 << 8) | 0x09
+EVIOCGID = 0x80000000 | (8 << 16) | (0x45 << 8) | 0x02       # struct input_id = 4 x u16
 
 SLACK_SECONDS = 15                             # hard alarm = --seconds + this
 
@@ -451,18 +455,35 @@ def evdev_caps(path):
         keyb = bytearray(fcntl.ioctl(fd, EVIOCGBIT(EV_KEY, 96), b"\0" * 96))
         bit = lambda bits, code: (bits[code // 8] >> (code % 8)) & 1
 
+        # The node's OWN identity, from the node itself: EVIOCGID returns
+        # `struct input_id { __u16 bustype, vendor, product, version; }`.  It is
+        # reported next to the sysfs id/* values as a second, independent identity.
+        try:
+            iid = struct.unpack("<4H", fcntl.ioctl(fd, EVIOCGID, b"\0" * 8))
+            ident = {"bustype": iid[0], "vendor": iid[1], "product": iid[2], "version": iid[3]}
+        except (OSError, struct.error):
+            ident = None
+
         def axis(ax):
             try:
                 v = struct.unpack("6i", fcntl.ioctl(fd, EVIOCGABS(ax), b"\0" * 24))
                 return (v[1], v[2])
             except OSError:
                 return None
-        return {"path": path, "name": name,
+        # Contact-slot capacity: is ABS_MT_SLOT claimed by the node at all
+        # (EVIOCGBIT(EV_ABS)) and, when it is, what the node's own
+        # EVIOCGABS(ABS_MT_SLOT) range says.  max + 1 is the number of
+        # simultaneous contacts the panel reports.
+        slot_bit = bool(bit(absb, ABS_MT_SLOT))
+        slot_range = axis(ABS_MT_SLOT)
+        slots = (slot_range[1] + 1) if slot_range else None
+        return {"path": path, "name": name, "id": ident,
                 "direct": bool(bit(prop, INPUT_PROP_DIRECT)),
                 "mt": bool(bit(absb, ABS_MT_POSITION_X) and bit(absb, ABS_MT_POSITION_Y)),
                 "btn_touch": bool(bit(keyb, BTN_TOUCH)),
                 "x": axis(ABS_MT_POSITION_X), "y": axis(ABS_MT_POSITION_Y),
-                "tracking_id": bool(bit(absb, ABS_MT_TRACKING_ID))}
+                "tracking_id": bool(bit(absb, ABS_MT_TRACKING_ID)),
+                "slot_bit": slot_bit, "slot_range": slot_range, "slots": slots}
     except OSError:
         return None
     finally:
@@ -485,9 +506,15 @@ def scan_input_nodes(bundle):
             lines.append("%-16s unreadable" % e)
             continue
         nodes.append(caps)
-        lines.append("%-16s name=%-24r direct=%d mt=%d btn_touch=%d abs_mt_x=%s abs_mt_y=%s tracking_id=%d"
+        ident = caps["id"]
+        lines.append("%-16s name=%-24r direct=%d mt=%d btn_touch=%d abs_mt_x=%s abs_mt_y=%s tracking_id=%d "
+                     "ioctl_id=%s slot_bit=%s slot_range=%s slots=%s"
                      % (e, caps["name"], caps["direct"], caps["mt"], caps["btn_touch"],
-                        caps["x"], caps["y"], caps["tracking_id"]))
+                        caps["x"], caps["y"], caps["tracking_id"],
+                        ("bustype=0x%04x vendor=0x%04x product=0x%04x version=0x%04x"
+                         % (ident["bustype"], ident["vendor"], ident["product"], ident["version"]))
+                        if ident else "unreadable",
+                        caps["slot_bit"], caps["slot_range"], caps["slots"]))
     proc = read_text("/proc/bus/input/devices")
     panel_line = ""
     for block in proc.split("\n\n"):
@@ -500,7 +527,11 @@ def scan_input_nodes(bundle):
             for line in block.splitlines():
                 if line.startswith("B: KEY="):
                     key_decoded = decode_key_bitmap(line)
-    text = ("# capability scan of %s (selection is by EVIOCGPROP/EVIOCGBIT, never by number)\n%s\n\n"
+    text = ("# capability scan of %s (selection is by EVIOCGPROP/EVIOCGBIT, never by number)\n"
+            "# ioctl_id is the node's OWN EVIOCGID (struct input_id = 4 x u16); compare it with the\n"
+            "# sysfs id/bustype+vendor+product values in sysfs-input.txt (second, independent identity).\n"
+            "# slot_bit / slot_range / slots come from EVIOCGBIT(EV_ABS) + EVIOCGABS(ABS_MT_SLOT);\n"
+            "# slots = the panel's contact-slot capacity (EVIOCGABS max + 1), i.e. simultaneous contacts.\n%s\n\n"
             "# /proc/bus/input/devices (full)\n%s\n\n# %s block\n%s\n\n"
             "# decoded KEY bitmap for %s (shared A32 decoder): BTN_TOUCH=%s present=%s\n"
             % (INPUT_DIR, "\n".join(lines), proc, SEC_TS_NAME, panel_line or "(absent)",
@@ -517,8 +548,14 @@ def classify_evdev(scan, driver_state, charger):
     panel = scan["panel"] or (scan["touch"][0] if scan["touch"] else None)
     if panel is not None and (panel["mt"] and panel["direct"]):
         return Result(3, "evdev", "ok", ev,
-                      "panel %s name=%r PROP=DIRECT ABS_MT=present range x=%s y=%s (selected by capability)"
-                      % (panel["path"], panel["name"], panel["x"], panel["y"]))
+                      "panel %s name=%r PROP=DIRECT ABS_MT=present range x=%s y=%s EVIOCGID %s "
+                      "contact_slots=%s (EVIOCGBIT claims ABS_MT_SLOT=%s, EVIOCGABS(ABS_MT_SLOT)=%s) "
+                      "(selected by capability)"
+                      % (panel["path"], panel["name"], panel["x"], panel["y"],
+                         ("bustype=0x%04x vendor=0x%04x product=0x%04x"
+                          % (panel["id"]["bustype"], panel["id"]["vendor"], panel["id"]["product"]))
+                         if panel.get("id") else "unreadable",
+                         panel.get("slots"), panel.get("slot_bit"), panel.get("slot_range")))
     if panel is not None and not panel["direct"]:
         return Result(3, "evdev", "drop", ev,
                       "panel node %s exists but INPUT_PROP_DIRECT is absent (PROP bitmap lacks bit %d): "
@@ -1406,6 +1443,17 @@ def run_live(args):
            ("%s name=%r direct=%d mt=%d vendor=%s product=%s"
             % (sel["path"], sel["name"], sel["direct"], sel["mt"], sel["vendor"] or "?", sel["product"] or "?"))
            if sel else "none"))
+    node = scan["panel"]
+    if node:
+        nident = node.get("id")
+        say("NODE_ID ioctl EVIOCGID %s (the node's own answer) | sysfs id bustype=%s vendor=%s product=%s"
+            "; ABS_MT_SLOT claimed=%s EVIOCGABS(ABS_MT_SLOT)=%s -> contact_slots=%s"
+            % (("bustype=0x%04x vendor=0x%04x product=0x%04x version=0x%04x"
+                % (nident["bustype"], nident["vendor"], nident["product"], nident["version"]))
+               if nident else "unreadable",
+               (sel or {}).get("bustype") or "?", (sel or {}).get("vendor") or "?",
+               (sel or {}).get("product") or "?",
+               node.get("slot_bit"), node.get("slot_range"), node.get("slots")))
     disagreement = None
     if sel and scan["panel"]:
         if (sel["name"] != scan["panel"]["name"]) or (bool(sel["mt"]) != bool(scan["panel"]["mt"])):
@@ -1988,6 +2036,13 @@ def self_test():
     ck(EVIOCGABS(ABS_MT_POSITION_X) == 0x80184575,
        "EVIOCGABS(ABS_MT_POSITION_X) == 0x80184575", hex(EVIOCGABS(ABS_MT_POSITION_X)))
     ck(EVIOCGPROP(8) == 0x80084509, "EVIOCGPROP(8) == 0x80084509", hex(EVIOCGPROP(8)))
+    ck(EVIOCGID == 0x80084502, "EVIOCGID == 0x80084502 (struct input_id = 4 x u16, 8 bytes)",
+       hex(EVIOCGID))
+    ck(EVIOCGABS(ABS_MT_SLOT) == 0x8018456f,
+       "EVIOCGABS(ABS_MT_SLOT) == 0x8018456f (contact-slot capacity read from the node)",
+       hex(EVIOCGABS(ABS_MT_SLOT)))
+    ck(struct.unpack("<4H", struct.pack("4H", 0x18, 0x04e5, 0x0001, 0x0000)) == (0x18, 0x04e5, 0x0001, 0),
+       "EVIOCGID payload decodes as 4 x u16 (bustype/vendor/product/version)")
     ck(EV_SIZE == 24, "struct input_event is 24 bytes (arm64 Linux 4.14)", EV_SIZE)
     ck((EV_KEY, EV_ABS, ABS_MT_POSITION_X, ABS_MT_POSITION_Y, ABS_MT_TRACKING_ID, BTN_TOUCH)
        == (1, 3, 53, 54, 57, 330), "evdev codes match the kernel ABI")

@@ -461,3 +461,50 @@ Operationally (this is the contract; the guard enforces the mechanical half of i
 5. **Evidence discipline is part of the baseline.**  A green gate is `OFFLINE_TESTED`, never
    `VERIFIED_ON_S10PLUS`; the only thing that yields an on-device verdict is an on-device capture
    (the queue tool refuses anything else).
+
+---
+
+## 11. Repair-pass addition (2026-10-16, `briq-00d-baseline-protection` revision 5): INV-11
+
+Everything in §1–§10 is preserved unchanged.  This section records an **appended** invariant: the
+inspeQtor found that four assets this briQ's own deliverable explicitly enumerates were left with
+**no pin and no assertion anywhere in the tree** — a silent omission, which this briQ forbids.
+`INV-11-a32-enumerated-asset-pins` close that gap.  Nothing was deleted, moved or rewritten.
+
+| # | Item named by the briQ | State before INV-11 | Now |
+|---|------------------------|---------------------|-----|
+| a | `tools/s10plus/a32/nuxelctl` (and `tools/s10plus/a33/nuxelctl`) | only metadata + the abbreviated deployed hash `e4281cab…` in the A32 record; the guard had no assertion on it | **hard** pin + `file_executable` + `sha256` assertion on the a32 copy (`e4281cab8c96a70cc24a79aa10230ae6ab716141893d0c95abdbb1481b2d2c3b` = the full hash behind the abbreviation); the a33 copy is **soft**-pinned (current-cycle tree) |
+| b | `tools/s10plus/a31/nuxel-libinput-path.c` + `tools/s10plus/a33/nuxel-libinput-path.c` (source of `libnuxel-libinput-path.so`) | zero occurrences in the register or the guard — even though `bg-01b` owns/edits the a33 copy in this same run, which is exactly the drift this register exists to catch | **soft** pins (`f94240412b731233…`, byte-identical at pin time) + two soft behavioural assertions (`INPUT_PROP_DIRECT` capability decision, `by-path/nuxel-touchscreen` devlink), each naming `bg-01-touch-pipeline` as owner, so drift is a **named WARN** instead of invisible |
+| c | `assets/nuxel-boot-animation.mp4` + `assets/nuxel-background.png` | no expected-hash constant for the MP4 anywhere in the tree; the wallpaper only covered *indirectly* by the soft A32-suite `wp.py` step | **hard** `sha256` pins (`280e094fb3efe54e…`, `6e337ef2d506a167…`) with matching `sha256` assertions |
+| d | `pwa/nuxel-apps/settings/**`, `pwa/nuxel-apps/terminal/**` | the launcher-registry test only checks that `index.html` + js **exist**, never their bytes | **per-file soft pins** for 18 files (9 per app) + hard `file_exists` assertions on the surfaces (`index.html`, `settings.js`, `terminal.js`, `terminal/sw.js`); owners named per file |
+
+**Deliberately left unpinned, and said so (no silent gap):** the two 0-byte `.keep` placeholders in
+those app directories — pinning an empty file proves nothing and would be noise.
+
+**The gate, re-executed with INV-11 present** (raw capture:
+`docs/beta-finalization/preflight/gate-regression-guard-inv11.txt`):
+
+```
+$ bash tools/beta/regression-guard.sh ; echo EXIT=$?
+   hard pins: 13/13 held
+== summary ==
+   PASS=68  FAIL=0  WARN=8  INFO=2
+   REGRESSION GUARD: PASS — the A32 baseline is intact (no failing checks).
+EXIT=0
+$ bash tools/beta/regression-guard.sh --json
+{"tool":"regression-guard","verdict":"PASS","pass":68,"fail":0,"warn":8,"info":2, ... }
+```
+
+53 (session 2's final count, §9.1) + 15 new INV-11 assertions = **68**; hard pins went 10 → 13
+(a32 `nuxelctl`, the wallpaper, the animation).  The 8 WARNs are the same soft drifts as §9.1
+(owned by `bg-02`), plus the unavailable aarch64 colour selftest — unchanged.
+
+**Authorising record for the appended pins** (regression rule §10): `briq-00d-baseline-protection`
+revision 5, whose appended revision names every old→new pair; the manifest entry is appended in
+`docs/beta-finalization/baseline-protection.json` → `history` (`invariant-added`,
+`INV-11-a32-enumerated-asset-pins`, with the `old_to_new` table).  No protected file's bytes were
+changed by this addition, so no re-pin was required.
+
+**Verdict:** `OFFLINE_TESTED` — the gate ran on this host against the real tree (exit 0).  It is
+still not a claim about any hardware: INV-11 exists so that drift in these A32 assets is *visible*,
+never so that a green gate proves a feature works.

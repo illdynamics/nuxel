@@ -116,9 +116,10 @@
           "at": "2026-10-16T19:43:49+02:00"
         },
         {
-          "kind": "observation",
+          "kind": "doc",
+          "recorded_from_previous_cycle": true,
           "path": "build/out/s10plus/a33/libnuxel-libinput-path.so",
-          "result": "aarch64 object recorded by the previous cycle: sha256 7b087146e6bb15d546d8c6bb7fa81a4c70eeee3e8fc5ba6a64e83b6f1e021ee7 (source unchanged, so it still corresponds)",
+          "result": "recorded_from_previous_cycle (NOT an observation of a file in this tree): aarch64 object recorded by the previous cycle: sha256 7b087146e6bb15d546d8c6bb7fa81a4c70eeee3e8fc5ba6a64e83b6f1e021ee7 (source unchanged, so it still corresponds). Artifact NOT present in this tree: build/ is gitignored and the object is rebuilt on demand (this pass re-checked build/out/s10plus/a33/ and found only nuxel-libinput-path-selftest; a find over the tree and /home returned no libnuxel-libinput-path*.so, and this environment has no aarch64-linux-gnu-gcc, no clang and the UTM guest 192.168.64.3 unreachable, so it could not be rebuilt here). The hash is the previous cycle's record and is re-verifiable against the unchanged, parity-asserted source - it is NOT a file a reviewer will find at that path.",
           "at": "2026-10-16T19:43:49+02:00"
         }
       ],

@@ -233,7 +233,7 @@ Offline regression for the tooling itself:
 
 | Item | Evidence |
 |---|---|
-| the tool's own logic (ioctl numbers, decoder, bitmap order, coordinate mapping, gate) | `nuxel-touch-trace.py --self-test` → 40/40 assertions |
+| the tool's own logic (ioctl numbers incl. `EVIOCGID` and `EVIOCGABS(ABS_MT_SLOT)`, decoder, bitmap order, coordinate mapping, gate) | `nuxel-touch-trace.py --self-test` → 43/43 assertions |
 | the tracer names the first lossy layer and never promotes absence | `tests/test-touch-trace.py` |
 | the panel is selected by capability, never by a node number | `tests/test-touch-trace.py` (synthetic `/sys/class/input`), `tests/test-no-eventn-literal.py` (27 files) |
 | the coordinate map honours the 1440x3040 DECON panel and the 0..4095 device range | `tests/test-touch-trace.py` + `coordinate-map.json` |
@@ -261,7 +261,7 @@ gate is.
 
 * `./tools/s10plus/a33/tests/run-touch-tests.sh` → **ALL PASS**; `TOUCH-TESTS: ALL PASS`
   (counts per suite in `docs/beta-finalization/touch/OFFLINE-TEST-RESULTS.md` §1).
-* `python3 tools/s10plus/a33/nuxel-touch-trace.py --self-test` → **SELF-TEST: PASS (40/40
+* `python3 tools/s10plus/a33/nuxel-touch-trace.py --self-test` → **SELF-TEST: PASS (43/43
   assertions)**: ioctl request numbers, the 24-byte `struct input_event`, the decoder,
   the printed-bitmap word order (cross-checked against the A32 device-validated
   decoder), the raw→panel→output mapping against 1440x3040, the JSONL records, the
@@ -283,7 +283,7 @@ gate is.
   * boot-mode guard: LPM detected from four independent markers, prose not graded as
     evidence, and every reboot gate (ack, config, lock, cooldown, uptime, charger)
     asserted to suppress;
-  * the `/dev/input/eventN` grep gate: **26 files checked, 0 failing**.
+  * the `/dev/input/eventN` grep gate: **27 files checked, 0 failing** (`test-libinput-shim-invocation.py` joined the gate's `TARGETS`).
 * Archived-capture grading (real handset output): `A20`/`A21` → layers 1 and 3 `ok`,
   `FIRST_FAIL_LAYER=2`; `A17`–`A19` and `.scratch/beta` → no usable evidence, honestly
   all-`blocked`. Full table in `docs/beta-finalization/touch/OFFLINE-TEST-RESULTS.md`.
