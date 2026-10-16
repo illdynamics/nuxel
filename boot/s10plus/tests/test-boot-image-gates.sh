@@ -33,9 +33,62 @@ expect_gate() {
   else bad "$label -> $got, expected $want"; python3 "$GATE" --partition-bytes "$part" "$img" | sed 's/^/       /'; fi
 }
 
+# --------------------------------------------------------------------------- #
+# PREREQUISITES — gitignored BUILD ARTEFACTS, not repository files
+#
+# This gate is built around the images the boot repair chain produced, and those
+# images are hardware-proven on the handset, so they can NEVER be synthesised
+# here:
+#
+#   build/out/s10plus/debug-candidates/nuxel-beyond2lte-boot-A5-dtb-fix.img
+#       the A5 base - the one container S-Boot is observed to deliver AND unpack
+#       (documented sha256 below; the whole gate is anchored on it)
+#   build/out/s10plus/debug-candidates/A4/initramfs.cpio
+#       the initramfs container sections 3 and 4 mutate
+#
+# `build/` is gitignored by design, so on a clean checkout neither exists.  That
+# is a missing PREREQUISITE, not a repository regression.  The release gate lists
+# this suite with a `probe:` precondition (tools/beta/run-all-tests.sh,
+# "Prerequisite resolution"), so an unequipped host reports a loud SKIP naming
+# the missing pieces instead of a red FAIL.  Run by hand it exits 3
+# (SKIP-PREREQ) with the same diagnostic - never 0, so it can never be mistaken
+# for a pass.
+# --------------------------------------------------------------------------- #
 A5="$ROOT/build/out/s10plus/debug-candidates/nuxel-beyond2lte-boot-A5-dtb-fix.img"
+A4CPIO="$ROOT/build/out/s10plus/debug-candidates/A4/initramfs.cpio"
+# The A5 candidate is a *named* hardware-proven artefact: its hash is recorded in
+# docs/s10plus-autonomous-boot-repair/FLASH-ATTEMPTS.md ("Image sha256") and in
+# PATCHES.md.  Asserting it keeps this gate honest about WHICH image it proved
+# things about - a substituted file of the same name would otherwise silently
+# "pass" gates that only mean something for the proven container.
+A5_SHA256_EXPECT="6950241c52320688f28bfc1a0c0426f28e3884e5772934853759354aa97a88d1"
+MISSING=""
+for f in "$A5" "$A4CPIO"; do
+  [ -s "$f" ] || MISSING="$MISSING
+  - $f"
+done
+if [ -n "$MISSING" ]; then
+  {
+    echo "test-boot-image-gates: SKIP-PREREQ - the gitignored build artefacts this gate is built on are absent:$MISSING"
+    echo "  This gate proves that tools/s10plus/verify-boot-image.py REFUSES the images hardware-proven NOT"
+    echo "  to boot and ACCEPTS the hardware-proven A5 base.  Those images come from the boot build/repair"
+    echo "  chain (see docs/s10plus-autonomous-boot-repair/), are gitignored build output, and cannot be"
+    echo "  synthesised - a substituted or invented container would prove nothing about the handset."
+    echo "  Expected A5 sha256: $A5_SHA256_EXPECT"
+    echo "  exit 3 = SKIP-PREREQ (never 0: an unrun gate is not a pass, and never 1: a missing artefact"
+    echo "  is not a code regression)."
+  } >&2
+  exit 3
+fi
+if [ "$(sha256sum "$A5" | awk '{print $1}')" != "$A5_SHA256_EXPECT" ]; then
+  echo "test-boot-image-gates: FAIL - $A5 is not the documented hardware-proven A5 candidate" >&2
+  echo "  want sha256 $A5_SHA256_EXPECT" >&2
+  echo "  got  sha256 $(sha256sum "$A5" | awk '{print $1}')" >&2
+  echo "  (the gate may only speak about the container that was actually proven on the unit)" >&2
+  exit 1
+fi
 if ! python3 "$UNPACK" "$A5" "$WORK/base" >/dev/null 2>&1; then
-  echo "test-boot-image-gates: cannot unpack the hardware-proven A5 base" >&2
+  echo "test-boot-image-gates: cannot unpack the hardware-proven A5 base ($A5)" >&2
   exit 1
 fi
 

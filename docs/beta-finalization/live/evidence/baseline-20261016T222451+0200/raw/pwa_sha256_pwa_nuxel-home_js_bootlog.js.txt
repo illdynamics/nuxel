@@ -1,0 +1,4 @@
+cmd: sha256sum /usr/share/nuxel/pwa/nuxel-home/js/bootlog.js 2>&1
+ok: True rc: 1 framed: True sha_ok: True
+---
+sha256sum: /usr/share/nuxel/pwa/nuxel-home/js/bootlog.js: No such file or directory

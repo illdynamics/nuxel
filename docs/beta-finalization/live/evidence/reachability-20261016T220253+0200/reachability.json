@@ -1,0 +1,22 @@
+{
+  "adb_devices": [],
+  "at": "2026-10-16T22:02:53+0200",
+  "blocked_reason": "no CDC-ACM USB serial gadget enumerated on the host (VID 0x18d1 PID 0x4ee7)",
+  "capability": {
+    "pid": "0x4ee7",
+    "serial": "NUXEL-S10PLUS-0001",
+    "vid": "0x18d1"
+  },
+  "evidence_dir": "/x/nuxel/docs/beta-finalization/live/evidence/reachability-20261016T220253+0200",
+  "exit_code": 3,
+  "finished": "2026-10-16T22:02:53+0200",
+  "gadget_descriptor_present": false,
+  "host": "Linux 6.17.1-300.fc43.x86_64",
+  "nodes": [],
+  "reachable": false,
+  "steps": [],
+  "verdict": "BLOCKED_EXTERNAL_RESOURCE",
+  "verdicts": {
+    "briq-10a-live-reachability-preflight": "BLOCKED_EXTERNAL_RESOURCE"
+  }
+}

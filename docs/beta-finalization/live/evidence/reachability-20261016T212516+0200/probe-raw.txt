@@ -1,0 +1,3 @@
+dev=/dev/ttyACM0 bytes_in=0 echo_ok=False error=write failed on /dev/ttyACM0: [Errno 11] Resource temporarily unavailable elapsed=0.000s
+sample:
+

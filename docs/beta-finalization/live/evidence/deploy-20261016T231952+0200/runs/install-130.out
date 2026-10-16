@@ -1,0 +1,7 @@
+pushed={"attempts": 1, "b64_chars": 1872, "bytes": 1402, "decoded_sha256": "dd7119d17cb9bfab33ac09c98fcbd4c935b4c8e8e1f41898140a362cb4b095ab", "frames": 1, "path": "/var/tmp/nxl-install-130.sh"}
+ok=True rc=0
+---
+PREV=NONE
+/usr/lib/nuxel/nuxel-web-server.py.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

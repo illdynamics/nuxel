@@ -1,0 +1,7 @@
+pushed={"attempts": 1, "b64_chars": 1928, "bytes": 1445, "decoded_sha256": "8bd62cc42b63d1a9766bfa6deacecfd8e5e4a8d96af5fbf1d491ab54cedac80a", "frames": 1, "path": "/var/tmp/nxl-install-074.sh"}
+ok=True rc=0
+---
+PREV=NONE
+/usr/lib/nuxel/src/a33/nuxel-button-manager.c.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

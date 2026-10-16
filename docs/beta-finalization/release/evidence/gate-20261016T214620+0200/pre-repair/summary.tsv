@@ -1,0 +1,49 @@
+L1-python-syntax	static	release	PASS	0	2	-	hard		/x/nuxel/build/reports/beta-tests/logs/L1-python-syntax.log
+L1-shell-syntax	static	release	PASS	0	2	-	hard		/x/nuxel/build/reports/beta-tests/logs/L1-shell-syntax.log
+L1-js-syntax	static	release	PASS	0	2	-	hard		/x/nuxel/build/reports/beta-tests/logs/L1-js-syntax.log
+L1-json-valid	static	release	PASS	0	2	-	hard		/x/nuxel/build/reports/beta-tests/logs/L1-json-valid.log
+L1-no-flash-invariants	static	release	PASS	0	2	-	hard		/x/nuxel/build/reports/beta-tests/logs/L1-no-flash-invariants.log
+L1-test-coverage	static	release	PASS	0	2	-	hard		/x/nuxel/build/reports/beta-tests/logs/L1-test-coverage.log
+U-workqueue-schema	unit	bg-00-preflight	FAIL	1	2	-	hard	rc=1	/x/nuxel/build/reports/beta-tests/logs/U-workqueue-schema.log
+U-workqueue-unit	unit	bg-00-preflight	FAIL	1	4	37	hard	rc=1	/x/nuxel/build/reports/beta-tests/logs/U-workqueue-unit.log
+U-regression-guard-selftest	unit	bg-00-preflight	FAIL	1	6	10	hard	rc=1	/x/nuxel/build/reports/beta-tests/logs/U-regression-guard-selftest.log
+U-baseline-regression-guard	cross	bg-00-preflight	FAIL	1	4	101	hard	rc=1	/x/nuxel/build/reports/beta-tests/logs/U-baseline-regression-guard.log
+U-baseline-a32-suite	cross	bg-00-preflight	FAIL	1	2	306	hard	rc=1	/x/nuxel/build/reports/beta-tests/logs/U-baseline-a32-suite.log
+U-boot-s10plus-gates	unit	bg-00-preflight	FAIL	1	2	-	hard	rc=1	/x/nuxel/build/reports/beta-tests/logs/U-boot-s10plus-gates.log
+U-boot-init-cmdline	unit	bg-00-preflight	PASS	0	2	5	hard		/x/nuxel/build/reports/beta-tests/logs/U-boot-init-cmdline.log
+U-touch-a33-suite	cross	bg-01-touch-pipeline	PASS	0	18	339	hard		/x/nuxel/build/reports/beta-tests/logs/U-touch-a33-suite.log
+U-boot-a33-suite	cross	bg-02-boot-animation-launcher	PASS	0	8	641	hard		/x/nuxel/build/reports/beta-tests/logs/U-boot-a33-suite.log
+U-c-protocol-handoff	unit	bg-02-boot-animation-launcher	PASS	0	2	19	hard		/x/nuxel/build/reports/beta-tests/logs/U-c-protocol-handoff.log
+U-p3-a33-suite	cross	bg-03-connectivity-time-audio-buttons	PASS	0	12	573	hard		/x/nuxel/build/reports/beta-tests/logs/U-p3-a33-suite.log
+U-userspace-a33-suite	cross	bg-04-userspace-completion	PASS	0	12	12	hard		/x/nuxel/build/reports/beta-tests/logs/U-userspace-a33-suite.log
+U-verify-service-graph	unit	bg-04-userspace-completion	PASS	0	2	-	hard		/x/nuxel/build/reports/beta-tests/logs/U-verify-service-graph.log
+U-verify-packages	unit	bg-04-userspace-completion	PASS	0	6	-	hard		/x/nuxel/build/reports/beta-tests/logs/U-verify-packages.log
+U-security-firewall	unit	bg-05-security-permissions	PASS	0	4	49	hard		/x/nuxel/build/reports/beta-tests/logs/U-security-firewall.log
+U-security-vpn-tor	unit	bg-05-security-permissions	WARN	3	22	44	hard	IN-FLIGHT CROSS-GROUP ALLOWANCE (bg-05-security-permissions): VPN/Tor/remote surface mid-edit: bg-05 still has unfinished queue records (evidence: docs/beta-finalization/release/evidence/cross-group/U-security-vpn-tor.log) (rc=3)	/x/nuxel/build/reports/beta-tests/logs/U-security-vpn-tor.log
+U-verify-permissions	unit	bg-05-security-permissions	PASS	0	2	1	hard		/x/nuxel/build/reports/beta-tests/logs/U-verify-permissions.log
+U-shell-permissions	unit	bg-05-security-permissions	PASS	0	2	33	hard		/x/nuxel/build/reports/beta-tests/logs/U-shell-permissions.log
+U-verify-app-registry	unit	bg-06-core-phone-apps	PASS	0	2	25	hard		/x/nuxel/build/reports/beta-tests/logs/U-verify-app-registry.log
+U-verify-app-inventory	unit	bg-06-core-phone-apps	WARN	1	2	-	hard	IN-FLIGHT CROSS-GROUP ALLOWANCE (bg-06-core-phone-apps): app inventory mid-edit: bg-06 still has unfinished queue records (evidence: docs/beta-finalization/release/evidence/cross-group/U-verify-app-inventory.log) (rc=1)	/x/nuxel/build/reports/beta-tests/logs/U-verify-app-inventory.log
+U-shell-phone-data	unit	bg-06-core-phone-apps	WARN	1	2	-	hard	IN-FLIGHT CROSS-GROUP ALLOWANCE (bg-06-core-phone-apps): phone-data module mid-edit: bg-06 still has unfinished queue records (evidence: docs/beta-finalization/release/evidence/cross-group/U-shell-phone-data.log) (rc=1)	/x/nuxel/build/reports/beta-tests/logs/U-shell-phone-data.log
+U-pwa-bridge	unit	bg-04-userspace-completion	PASS	0	2	9	hard		/x/nuxel/build/reports/beta-tests/logs/U-pwa-bridge.log
+U-pwa-wiring	unit	bg-04-userspace-completion	PASS	0	2	1	hard		/x/nuxel/build/reports/beta-tests/logs/U-pwa-wiring.log
+U-services-portal	unit	bg-04-userspace-completion	PASS	0	2	34	hard		/x/nuxel/build/reports/beta-tests/logs/U-services-portal.log
+U-services-notifications	unit	bg-04-userspace-completion	PASS	0	2	12	hard		/x/nuxel/build/reports/beta-tests/logs/U-services-notifications.log
+U-snek-parity	unit	bg-07-specialty-apps	WARN	1	2	27	hard	IN-FLIGHT CROSS-GROUP ALLOWANCE (bg-07-specialty-apps): specialty apps mid-edit: bg-07 still has unfinished queue records (evidence: docs/beta-finalization/release/evidence/cross-group/U-snek-parity.log) (rc=1)	/x/nuxel/build/reports/beta-tests/logs/U-snek-parity.log
+U-snek-upstream-pytest	unit	bg-07-specialty-apps	WARN	2	2	-	hard	IN-FLIGHT CROSS-GROUP ALLOWANCE (bg-07-specialty-apps): specialty apps mid-edit: bg-07 still has unfinished queue records (evidence: docs/beta-finalization/release/evidence/cross-group/U-snek-upstream-pytest.log) (rc=2)	/x/nuxel/build/reports/beta-tests/logs/U-snek-upstream-pytest.log
+U-nuxtore-pwa	unit	bg-07-specialty-apps	SKIP	-	0	-	hard	prerequisite file absent: pwa/nuxel-apps/nuxtore/catalog/nuxtore-catalog.json (owner: bg-07-specialty-apps)	/x/nuxel/build/reports/beta-tests/logs/U-nuxtore-pwa.log
+U-apps-js	unit	bg-06-core-phone-apps	PASS	0	2	9	hard		/x/nuxel/build/reports/beta-tests/logs/U-apps-js.log
+U-debug-pack	unit	bg-00-preflight	PASS	0	2	1	hard		/x/nuxel/build/reports/beta-tests/logs/U-debug-pack.log
+U-adb-pack-mock	unit	release	PASS	0	4	19	hard		/x/nuxel/build/reports/beta-tests/logs/U-adb-pack-mock.log
+U-pwa-assets	unit	bg-02-boot-animation-launcher	PASS	0	2	-	hard		/x/nuxel/build/reports/beta-tests/logs/U-pwa-assets.log
+U-soak-harness	unit	release	PASS	0	2	9	hard		/x/nuxel/build/reports/beta-tests/logs/U-soak-harness.log
+U-release-tools-selftest	unit	release	PASS	0	8	20	hard		/x/nuxel/build/reports/beta-tests/logs/U-release-tools-selftest.log
+U-rollback-reboot-scenarios	unit	release	PASS	0	6	22	hard		/x/nuxel/build/reports/beta-tests/logs/U-rollback-reboot-scenarios.log
+L-a27-firstlight	legacy	legacy-per-cycle	SKIP	-	0	-	hard	host/artefact prerequisite unmet: test -s build/out/s10plus/a26/nuxel-firstlight.rawspl && python3 -c 'import numpy' (owner: legacy-per-cycle)	/x/nuxel/build/reports/beta-tests/logs/L-a27-firstlight.log
+L-a27-ui-layout	legacy	legacy-per-cycle	SKIP	-	0	-	hard	host/artefact prerequisite unmet: python3 -c 'import PIL' && command -v aarch64-linux-gnu-gcc (owner: legacy-per-cycle)	/x/nuxel/build/reports/beta-tests/logs/L-a27-ui-layout.log
+L-a28-launcher	legacy	legacy-per-cycle	WARN	1	2	-	soft	soft suite failed (rc=1) — legacy, non-gating	/x/nuxel/build/reports/beta-tests/logs/L-a28-launcher.log
+L-app-registry-check	legacy	legacy-per-cycle	WARN	1	2	2	soft	soft suite failed (rc=1) — legacy, non-gating	/x/nuxel/build/reports/beta-tests/logs/L-app-registry-check.log
+X-live-launcher-acceptance	external	bg-10-live-phone	EXTERNAL	-	0	-	external	external tier: listed, not run here - BLOCKED_EXTERNAL_RESOURCE (needs --external + a reachable resource)	/x/nuxel/build/reports/beta-tests/logs/X-live-launcher-acceptance.log
+X-live-soak	external	bg-10-live-phone	EXTERNAL	-	0	-	external	external tier: listed, not run here - BLOCKED_EXTERNAL_RESOURCE (needs --external + a reachable resource)	/x/nuxel/build/reports/beta-tests/logs/X-live-soak.log
+X-vm-services	external	bg-11-vm-parity	EXTERNAL	-	0	-	external	external tier: listed, not run here - BLOCKED_EXTERNAL_RESOURCE (needs --external + a reachable resource)	/x/nuxel/build/reports/beta-tests/logs/X-vm-services.log
+X-vm-launcher-parity	external	bg-11-vm-parity	EXTERNAL	-	0	-	external	external tier: listed, not run here - BLOCKED_EXTERNAL_RESOURCE (needs --external + a reachable resource)	/x/nuxel/build/reports/beta-tests/logs/X-vm-launcher-parity.log

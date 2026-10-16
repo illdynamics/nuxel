@@ -1,0 +1,7 @@
+pushed={"attempts": 1, "b64_chars": 1488, "bytes": 1115, "decoded_sha256": "5a7f25423fca30e05a4bab79178c3edd8502f6617dbda9a0c20cf618e23e4ba3", "frames": 1, "path": "/var/tmp/nxl-install-044.sh"}
+ok=True rc=0
+---
+PREV=NONE
+/etc/nuxel/nfc/nfc.json.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

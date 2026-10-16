@@ -1,0 +1,7 @@
+pushed={"attempts": 1, "b64_chars": 1796, "bytes": 1347, "decoded_sha256": "006542e7be43a07ba3e1d8ad1ff2e476f64e97208727c5959fd400a3e7a41c19", "frames": 1, "path": "/var/tmp/nxl-install-136.sh"}
+ok=True rc=0
+---
+PREV=NONE
+/usr/lib/nuxel/src/shell/meson.build.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

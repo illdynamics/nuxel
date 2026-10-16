@@ -1,0 +1,47 @@
+$ python3 tools/beta/tests/test_workqueue.py
+PASS add creates the per-task state file
+PASS verify-schema accepts a well-formed queue
+PASS verify-schema --json emits a parseable payload
+PASS duplicate add is refused (exit 2)
+PASS --force re-creates a task deliberately
+PASS a verdict outside the mission vocabulary is rejected by the CLI
+PASS verify-schema rejects a verdict outside the vocabulary even if written directly
+PASS VERIFIED_ON_S10PLUS is refused without an on-device evidence path
+PASS an offline-only 'pass' still cannot produce VERIFIED_ON_S10PLUS
+PASS VERIFIED_ON_S10PLUS is accepted once a real on-device capture is attached
+PASS set-state APPENDS a revision and never rewrites the previous one
+PASS the queue validates with a legitimate on-device verdict present
+PASS silently downgrading a recorded verdict is refused
+PASS a verdict change is accepted when the reason is recorded
+PASS a dependency on an unknown task is refused
+PASS a self-dependency is refused
+PASS a valid dependency chain validates
+PASS a dependency cycle is detected (and named) by verify-schema
+PASS list --json returns parseable rows ordered by priority
+PASS list --ready hides tasks whose dependency is unsatisfied
+PASS verify-schema --strict demands a verdict on every task
+PASS a corrupt state file is reported cleanly instead of crashing the validator
+PASS the per-task writer lock prevents interleaved concurrent writes
+PASS an evidence entry with an unknown kind is refused
+PASS an evidence entry without a path is refused
+PASS a verifier-run (command + result) is accepted
+PASS a test-run (command + result) is accepted
+PASS a defect-found-and-fixed (what + result) is accepted
+PASS a change (what + at) is accepted
+PASS an action entry that names neither a command nor a what is refused
+PASS an action entry with no outcome (result/at) is refused
+PASS render --write replaces every generated block and leaves no stale marker text
+PASS render never touches the prose outside the generated markers
+PASS the rendered ledger-state block carries measured counts from the JSON store
+PASS the execution order lists a dependent after its dependency and flags it as waiting
+PASS the task ledger reflects the effective (latest) revision
+PASS render --check passes when the document matches the JSON store
+PASS render --check detects a new task in the store and writes nothing
+PASS render --stdout prints the regenerated document without touching the file
+PASS render is deterministic (byte-identical across runs, no timestamps in generated blocks)
+PASS render refuses a document without the generated-block markers (and names them)
+PASS render refuses to render the human view from an invalid store (fail closed)
+PASS the seeded repository queue validates (55 tasks, acyclic)
+PASS every VERIFIED_ON_S10PLUS claim in the seeded queue carries an on_device capture (1 claim(s), 0 unbacked)
+== 0 failing case(s), 44 passing ==
+EXIT=0

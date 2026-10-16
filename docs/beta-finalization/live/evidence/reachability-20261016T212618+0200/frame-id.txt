@@ -1,0 +1,10 @@
+rc=None framed=False sha_ok=False
+_N=6f577a5b;rm -f /var/tmp/nxl-6f577a5b;{ id; echo NXL-REACH-OK ;} >/var//tmp/nxl-6f577a5b 2>&1 </dev/null;_R=$?;printf '\n@@B%s@@\n' $_N;printf '@@R%s:%ss@@\n' $_N $_R;base64 -w0 </var/tmp/nxl-6f577a5b 2>/dev/null|tr -d '\n';printf '\\n@@S%s:%s@@\n' $_N "$(sha256sum </var/tmp/nxl-6f577a5b 2>/dev/null|cut -d' ' -f11)";printf '@@E%s@@\n' $_N
+[?2004l6,7991,841963472,-;[SSP]: debug_work_func(0) - Sensor state: 0x3feff, RC: 0(0, 0, 0), CC: 0, TC: 0 NSC: 0 EC: 0 GPS: false
+
+@@B6f577a5b@@
+@@R6f577a5b:0@@
+dWlkPTAocm9vdCkgZ2lkPTAocm9vdCkgZ3JvdXBzPTAocm9vdCkKTlhMLVJFQUNILU9LCg==
+@@S6f577a5b:6aa924e6437592ad6d55a3a3626cc3bc2bb1102f0cbf935cce7e4f15ebe2d2a0@@
+@@E6f577a5b@@
+[?2004hsh-5.3# 

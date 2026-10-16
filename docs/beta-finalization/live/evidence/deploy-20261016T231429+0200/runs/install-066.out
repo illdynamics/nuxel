@@ -1,0 +1,7 @@
+pushed={"attempts": 1, "b64_chars": 1768, "bytes": 1325, "decoded_sha256": "5c7fc0bb351027b33d86d3b0e9b0501844d2d4e88eaf4d71c9fab89eb1ece5ee", "frames": 1, "path": "/var/tmp/nxl-install-066.sh"}
+ok=True rc=0
+---
+PREV=NONE
+/usr/local/bin/build-libinput-shim.sh.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

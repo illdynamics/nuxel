@@ -1,0 +1,7 @@
+pushed={"attempts": 1, "b64_chars": 1788, "bytes": 1340, "decoded_sha256": "b15f4a58549c2347bb55b00e98a9dc922e71e7dcf81ab956d4d0a17d324d817c", "frames": 1, "path": "/var/tmp/nxl-install-083.sh"}
+ok=True rc=0
+---
+PREV=NONE
+/usr/local/bin/nuxel-keyboard-apply.sh.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

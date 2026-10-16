@@ -1,0 +1,7 @@
+pushed={"attempts": 1, "b64_chars": 1668, "bytes": 1250, "decoded_sha256": "309db6b7dce9aceb6a6c29be73d1f3449315a334eda437aa1ff44e61ff4134d2", "frames": 1, "path": "/var/tmp/nxl-install-084.sh"}
+ok=True rc=0
+---
+PREV=NONE
+/usr/local/bin/nuxel-led-diag.sh.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

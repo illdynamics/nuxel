@@ -1,0 +1,3 @@
+cmd: cat /run/nuxel-wl-fb.state 2>&1
+ok: False rc: None framed: False sha_ok: False
+---

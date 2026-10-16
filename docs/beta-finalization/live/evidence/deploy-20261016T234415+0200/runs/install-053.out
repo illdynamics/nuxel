@@ -1,0 +1,9 @@
+pushed={"b64_chars": 2036, "bytes": 1526, "decoded_sha256": "ae8ac691209016fe1e1d374a1d56dea52376ce36faf9fb6ec8556a1f85d49aea", "parts": 1, "path": "/var/tmp/nxl-install-053.sh"}
+ok=True rc=0
+---
+FB_OWNER_ASSERT=PASS owner=nuxel-wl-fb pid=5386 count=1 fb=/dev/fb0
+PREV=NONE
+/etc/systemd/system/nuxel-animation.service.nuxel-staged: OK
+FB_OWNER_ASSERT=PASS owner=nuxel-wl-fb pid=5386 count=1 fb=/dev/fb0
+INSTALL-OK
+NXLSCRIPT-RC=0

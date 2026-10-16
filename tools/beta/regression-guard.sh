@@ -21,6 +21,15 @@
 # assertion that fails is reported as a WARN that names the owner, never as a FAIL and
 # never as a silent pass.  Everything defaults to "hard".
 #
+# The same two-level rule governs FILE pins, and the precedence matters: a files[]
+# entry may declare its own "hash_mode" (hard|soft|self) and THAT decides the verdict
+# for that file.  The invariant-level "hash_mode" is only the DEFAULT for a file that
+# declares none.  A soft file that drifts is therefore a WARN naming the owning group
+# - never a FAIL - and the invariant's hard behavioural assertions (regex / json_eq /
+# program / suite) still have to pass.  (Repaired by briq-02-gate-failure-repair: the
+# guard used to OR the two modes, so INV-6's three bg-04-owned, explicitly soft
+# shell/config/systemd-user/*.service pins failed the gate as "hard-pinned".)
+#
 #   regression-guard.sh                     full gate; exit 0 <=> nothing regressed
 #   regression-guard.sh --quiet             print only the per-invariant summary line
 #   regression-guard.sh --no-tests          skip the test-suite assertions (fast, hash-only);
@@ -253,8 +262,20 @@ while [ "$i" -lt "$n_inv" ]; do
   while [ "$j" -lt "$n_files" ]; do
     fpath="$(jq -r ".invariants[$i].files[$j].path" "$MANIFEST")"
     fexpect="$(jq -r ".invariants[$i].files[$j].sha256 // empty" "$MANIFEST")"
-    fmode="$(jq -r ".invariants[$i].files[$j].hash_mode" "$MANIFEST")"
+    # A file pin may carry its own hash_mode.  The MODE PRECEDENCE is the rule the
+    # register documents in BASELINE-PROTECTION.md section 2 ("soft | the file is
+    # shared - another build group is contractually allowed to evolve it right now
+    # | drift is a WARN") and section 10 rule 3: an explicit per-file mode WINS,
+    # and the invariant-level mode is only the DEFAULT for a file that does not
+    # declare one.  Before briq-02-gate-failure-repair the guard ORed the two, so a
+    # file explicitly marked soft inside a hard invariant (INV-6's three
+    # shell/config/systemd-user/*.service units, owned by bg-04) was reported as a
+    # hard-pin FAIL - i.e. another group's announced mid-flight edit could turn the
+    # gate red, which is exactly what the mode exists to prevent.
+    fmode="$(jq -r ".invariants[$i].files[$j].hash_mode // empty" "$MANIFEST")"
     frule="$(jq -r ".invariants[$i].files[$j].role" "$MANIFEST")"
+    fmode_eff="$fmode"
+    [ -n "$fmode_eff" ] || fmode_eff="$inv_mode"        # invariant mode = the default
     if [ ! -e "$ROOT/$fpath" ]; then
       record FAIL "$inv_id" "protected file MISSING: $fpath" "$frule"
     elif [ "$fmode" = "self" ]; then
@@ -264,14 +285,18 @@ while [ "$i" -lt "$n_inv" ]; do
     else
       factual="$(sha_of "$ROOT/$fpath")"
       if [ "$factual" = "$fexpect" ]; then
-        [ "$fmode" = "hard" ] && { HARD_TOTAL=$((HARD_TOTAL + 1)); HARD_OK=$((HARD_OK + 1)); }
-        say "    ok    $fpath  (${fmode} pin held)"
-        to_log "  -> pin $fpath $fmode OK $factual"
-      elif [ "$fmode" = "hard" ] || [ "$inv_mode" = "hard" ]; then
+        [ "$fmode_eff" = "hard" ] && { HARD_TOTAL=$((HARD_TOTAL + 1)); HARD_OK=$((HARD_OK + 1)); }
+        say "    ok    $fpath  (${fmode_eff} pin held)"
+        to_log "  -> pin $fpath $fmode_eff OK $factual"
+      elif [ "$fmode_eff" = "hard" ]; then
         HARD_TOTAL=$((HARD_TOTAL + 1))
         record FAIL "$inv_id" "hard-pinned file changed: $fpath" "want $fexpect got $factual"
       else
-        record WARN "$inv_id" "soft-pinned file drifted (shared with another build group): $fpath" "was $fexpect now $factual"
+        # soft: the bytes moved under a file another group owns.  A WARN, printed
+        # loudly with the owning group named - never a pass, never a FAIL for
+        # someone else's announced work.
+        record WARN "$inv_id" "soft-pinned file drifted (shared with another build group): $fpath" \
+          "was $fexpect now $factual (invariant owner: $(jq -r ".invariants[$i].owner_group // \"unstated\"" "$MANIFEST"))"
       fi
     fi
     j=$((j + 1))

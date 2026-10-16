@@ -1,0 +1,7 @@
+pushed={"attempts": 1, "b64_chars": 1952, "bytes": 1463, "decoded_sha256": "d2dcd5cddb055d2a104656aa4210e02d6278798ba9133c005d8dca6343d608ba", "frames": 1, "path": "/var/tmp/nxl-install-103.sh"}
+ok=True rc=0
+---
+PREV=NONE
+/usr/share/nuxel/pwa/nuxel-apps/clock/css/clock.css.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

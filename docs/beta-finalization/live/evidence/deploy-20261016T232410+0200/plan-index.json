@@ -1,0 +1,202 @@
+[
+  {
+    "group": "session-units",
+    "n": 1,
+    "risk": "high",
+    "script": "scripts/001-nuxel-wayland.service.sh",
+    "service": null,
+    "source": "services/nuxel-session/systemd/nuxel-wayland.service",
+    "source_sha256": "634140ec38b7613294564b7b879654002e3046bd98ac9f0a6e9983a5a8385a00",
+    "target": "/etc/systemd/system/nuxel-wayland.service"
+  },
+  {
+    "group": "session-units",
+    "n": 2,
+    "risk": "high",
+    "script": "scripts/002-nuxel-wl-fb.service.sh",
+    "service": null,
+    "source": "services/nuxel-session/systemd/nuxel-wl-fb.service",
+    "source_sha256": "75d7091c864913d3a7b1c9688d97b169239e37fef1aad3c844b9b263f1a48da4",
+    "target": "/etc/systemd/system/nuxel-wl-fb.service"
+  },
+  {
+    "group": "session-units",
+    "n": 3,
+    "risk": "high",
+    "script": "scripts/003-nuxel-touch-arm.service.sh",
+    "service": null,
+    "source": "services/nuxel-session/systemd/nuxel-touch-arm.service",
+    "source_sha256": "85f7f880f9f875059c0d160331f96f93a22d2a2f055a2ca5b3f9c2bba816ab29",
+    "target": "/etc/systemd/system/nuxel-touch-arm.service"
+  },
+  {
+    "group": "session-units",
+    "n": 4,
+    "risk": "high",
+    "script": "scripts/004-nuxel-button-manager.service.sh",
+    "service": null,
+    "source": "services/nuxel-session/systemd/nuxel-button-manager.service",
+    "source_sha256": "c0bc10c448a500efc5fc4edff6d308ae69d583bffc6da6c90604371547b3c1a9",
+    "target": "/etc/systemd/system/nuxel-button-manager.service"
+  },
+  {
+    "group": "session-units",
+    "n": 5,
+    "risk": "high",
+    "script": "scripts/005-seatd.service.sh",
+    "service": null,
+    "source": "services/nuxel-session/systemd/seatd.service",
+    "source_sha256": "ea2b125001a1e22f50422d28edb2b0feef53fe1a2f3548489b1407adbb13b001",
+    "target": "/etc/systemd/system/seatd.service"
+  },
+  {
+    "group": "session-units",
+    "n": 6,
+    "risk": "high",
+    "script": "scripts/006-nuxel-web.service.sh",
+    "service": null,
+    "source": "services/nuxel-web.service",
+    "source_sha256": "e4c692b4e14134cef9b75f7b881bc8e068bce32438ffdc9bf9c4924ffcebc903",
+    "target": "/etc/systemd/system/nuxel-web.service"
+  },
+  {
+    "group": "boot-animation-runtime",
+    "n": 7,
+    "risk": "high",
+    "script": "scripts/007-nuxel-animation-claim.sh",
+    "service": null,
+    "source": "services/nuxel-animation/bin/nuxel-animation-claim",
+    "source_sha256": "b35e63688242a1b1f1381600ede42f559bcd0fee82c75ebcc87b147eb839a10d",
+    "target": "/usr/lib/nuxel/nuxel-animation-claim"
+  },
+  {
+    "group": "boot-animation-runtime",
+    "n": 8,
+    "risk": "high",
+    "script": "scripts/008-nuxel-animation.service.sh",
+    "service": null,
+    "source": "services/nuxel-animation/systemd/nuxel-animation.service",
+    "source_sha256": "199e1e9805c5b34c3adc8ce5889ea37080dd01f4c2e2ddf09fba2dfddc0b38db",
+    "target": "/etc/systemd/system/nuxel-animation.service"
+  },
+  {
+    "group": "boot-animation-runtime",
+    "n": 9,
+    "risk": "high",
+    "script": "scripts/009-nuxel-boot-animation.mp4.sh",
+    "service": "nuxel-wayland",
+    "source": "assets/nuxel-boot-animation.mp4",
+    "source_sha256": "280e094fb3efe54eaf15f0d964bf8ad834eeebde2e34901e1bf1e3520b95184c",
+    "target": "/usr/share/nuxel/boot/nuxel-boot-animation.mp4"
+  },
+  {
+    "group": "boot-animation-runtime",
+    "n": 10,
+    "risk": "high",
+    "script": "scripts/010-nuxel-background.png.sh",
+    "service": null,
+    "source": "assets/nuxel-background.png",
+    "source_sha256": "6e337ef2d506a16778fd3c79159f0cf053eb07ace40cf43387a33486da76cb29",
+    "target": "/usr/share/nuxel/nuxel-background.png"
+  },
+  {
+    "group": "boot-animation-runtime",
+    "n": 11,
+    "risk": "high",
+    "script": "scripts/011-nuxel-anim-pack.py.sh",
+    "service": null,
+    "source": "tools/s10plus/nuxel-anim-pack.py",
+    "source_sha256": "2c382f6442369815fc11cfd19b9f3bd6f75f6d94ec40a9e048f4dce5a312a567",
+    "target": "/usr/lib/nuxel/nuxel-anim-pack.py"
+  },
+  {
+    "group": "boot-animation-runtime",
+    "n": 12,
+    "risk": "high",
+    "script": "scripts/012-nuxel-fb-owner-assert.sh.sh",
+    "service": null,
+    "source": "tools/beta/live/nuxel-fb-owner-assert.sh",
+    "source_sha256": "46156b3477247549ff6730c9b9dc1180b71ae1bebcb3d116e1528ab2c12a773e",
+    "target": "/usr/local/bin/nuxel-fb-owner-assert.sh"
+  },
+  {
+    "group": "boot-animation-runtime",
+    "n": 13,
+    "risk": "high",
+    "script": "scripts/013-nuxel-background.png.sh",
+    "service": "nuxel-wayland",
+    "source": "assets/nuxel-background.png",
+    "source_sha256": "6e337ef2d506a16778fd3c79159f0cf053eb07ace40cf43387a33486da76cb29",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/nuxel-background.png"
+  },
+  {
+    "group": "boot-animation-runtime",
+    "n": 14,
+    "risk": "high",
+    "script": "scripts/014-nuxel-background.png.sh",
+    "service": "nuxel-wayland",
+    "source": "assets/nuxel-background.png",
+    "source_sha256": "6e337ef2d506a16778fd3c79159f0cf053eb07ace40cf43387a33486da76cb29",
+    "target": "/usr/share/nuxel/pwa/nuxel-apps/calendar/assets/nuxel-background.png"
+  },
+  {
+    "group": "boot-animation-runtime",
+    "n": 15,
+    "risk": "high",
+    "script": "scripts/015-nuxel-background.png.sh",
+    "service": "nuxel-wayland",
+    "source": "assets/nuxel-background.png",
+    "source_sha256": "6e337ef2d506a16778fd3c79159f0cf053eb07ace40cf43387a33486da76cb29",
+    "target": "/usr/share/nuxel/pwa/nuxel-apps/camera-gallery/assets/nuxel-background.png"
+  },
+  {
+    "group": "boot-animation-runtime",
+    "n": 16,
+    "risk": "high",
+    "script": "scripts/016-nuxel-background.png.sh",
+    "service": "nuxel-wayland",
+    "source": "assets/nuxel-background.png",
+    "source_sha256": "6e337ef2d506a16778fd3c79159f0cf053eb07ace40cf43387a33486da76cb29",
+    "target": "/usr/share/nuxel/pwa/nuxel-apps/files/assets/nuxel-background.png"
+  },
+  {
+    "group": "boot-animation-runtime",
+    "n": 17,
+    "risk": "high",
+    "script": "scripts/017-nuxel-background.png.sh",
+    "service": "nuxel-wayland",
+    "source": "assets/nuxel-background.png",
+    "source_sha256": "6e337ef2d506a16778fd3c79159f0cf053eb07ace40cf43387a33486da76cb29",
+    "target": "/usr/share/nuxel/pwa/nuxel-apps/mail/assets/nuxel-background.png"
+  },
+  {
+    "group": "boot-animation-runtime",
+    "n": 18,
+    "risk": "high",
+    "script": "scripts/018-nuxel-background.png.sh",
+    "service": "nuxel-wayland",
+    "source": "assets/nuxel-background.png",
+    "source_sha256": "6e337ef2d506a16778fd3c79159f0cf053eb07ace40cf43387a33486da76cb29",
+    "target": "/usr/share/nuxel/pwa/nuxel-apps/notes/assets/nuxel-background.png"
+  },
+  {
+    "group": "packages-reconcile",
+    "n": 19,
+    "risk": "high",
+    "script": "scripts/019-packages-manifest.json.sh",
+    "service": null,
+    "source": "images/s10plus/packages-manifest.json",
+    "source_sha256": "99f68383be024f8aeeeea4f3af7177df21969b2294edc0b6877da785c2dea7dc",
+    "target": "/usr/lib/nuxel/packages-manifest.json"
+  },
+  {
+    "group": "packages-reconcile",
+    "n": 20,
+    "risk": "high",
+    "script": "scripts/020-verify-packages.py.sh",
+    "service": null,
+    "source": "tools/s10plus/a33/verify-packages.py",
+    "source_sha256": "f1f3fbe962858c473a03f0fb84c936e6b96c6ee9895d745566cd1ce8d8db0cdc",
+    "target": "/usr/local/bin/verify-packages.py"
+  }
+]

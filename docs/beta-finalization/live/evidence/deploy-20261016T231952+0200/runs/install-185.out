@@ -1,0 +1,7 @@
+pushed={"attempts": 1, "b64_chars": 2016, "bytes": 1512, "decoded_sha256": "5095426b102ab5252e3ee685434ff71186c0e984fd760c875fd40f0ae85a8928", "frames": 1, "path": "/var/tmp/nxl-install-185.sh"}
+ok=True rc=0
+---
+PREV=NONE
+/etc/systemd/system/nuxel-camera-portal.service.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

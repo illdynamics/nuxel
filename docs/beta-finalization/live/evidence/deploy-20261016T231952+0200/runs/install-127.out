@@ -1,0 +1,7 @@
+pushed={"attempts": 1, "b64_chars": 2032, "bytes": 1522, "decoded_sha256": "4b4efb419b3d34eb9dc988f3dc1d1e4e1304897b03f69940f23b65edd1c047dc", "frames": 1, "path": "/var/tmp/nxl-install-127.sh"}
+ok=True rc=0
+---
+PREV=9f410a19465ba94980af55f7d366891c64c48eea201cafe8fc6bda14e48fcd0e
+/etc/systemd/system/nuxel-fallback.service.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

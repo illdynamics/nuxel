@@ -1,0 +1,7 @@
+pushed={"attempts": 1, "b64_chars": 1528, "bytes": 1145, "decoded_sha256": "a5ec8524e9595c2ba7d918664a5ddc7709ddbbb767978c3a278a781090bf72ee", "frames": 1, "path": "/var/tmp/nxl-install-041.sh"}
+ok=True rc=0
+---
+PREV=NONE
+/etc/nuxel/leds/leds.json.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

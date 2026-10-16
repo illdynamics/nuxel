@@ -1,0 +1,17 @@
+#!/bin/sh
+# PWA application suite (pwa/nuxel-apps/**) -> /usr/share/nuxel/pwa/nuxel-apps/nuxtore/js/nuxtore.js (service: nuxel-web, risk: low)
+# staged source: pwa/nuxel-apps/nuxtore/js/nuxtore.js
+# previous-hash: 9b31c07fdea6493edf638795bc143dc04c32e411ceead0a244dc8f0a20d78f74
+set -eu
+mkdir -p "$(dirname /usr/share/nuxel/pwa/nuxel-apps/nuxtore/js/nuxtore.js)"
+if [ -e /usr/share/nuxel/pwa/nuxel-apps/nuxtore/js/nuxtore.js ]; then cp -a /usr/share/nuxel/pwa/nuxel-apps/nuxtore/js/nuxtore.js /usr/share/nuxel/pwa/nuxel-apps/nuxtore/js/nuxtore.js.nuxel-rollback; fi
+test -f /usr/share/nuxel/pwa/nuxel-apps/nuxtore/js/nuxtore.js.nuxel-staged
+printf '%s  %s\n' 9b31c07fdea6493edf638795bc143dc04c32e411ceead0a244dc8f0a20d78f74 /usr/share/nuxel/pwa/nuxel-apps/nuxtore/js/nuxtore.js.nuxel-staged > /var/tmp/nxl-verify.sha256
+sha256sum -c /var/tmp/nxl-verify.sha256
+mv -f /usr/share/nuxel/pwa/nuxel-apps/nuxtore/js/nuxtore.js.nuxel-staged /usr/share/nuxel/pwa/nuxel-apps/nuxtore/js/nuxtore.js
+sha256sum /usr/share/nuxel/pwa/nuxel-apps/nuxtore/js/nuxtore.js | grep -q 9b31c07fdea6493edf638795bc143dc04c32e411ceead0a244dc8f0a20d78f74
+systemctl restart nuxel-web
+systemctl is-active nuxel-web
+test "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8000/pwa/nuxel-apps/settings/index.html)" = 200 && test -s /usr/share/nuxel/pwa/nuxel-apps/clock/index.html
+# rollback (run only if the health check above failed)
+if [ -e /usr/share/nuxel/pwa/nuxel-apps/nuxtore/js/nuxtore.js.nuxel-rollback ]; then cp -a /usr/share/nuxel/pwa/nuxel-apps/nuxtore/js/nuxtore.js.nuxel-rollback /usr/share/nuxel/pwa/nuxel-apps/nuxtore/js/nuxtore.js; systemctl restart nuxel-web; fi

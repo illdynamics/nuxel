@@ -1,0 +1,6 @@
+pushed={"attempts": 1, "b64_chars": 2008, "bytes": 1505, "decoded_sha256": "efb0a5e21ba08e4f6f23401c05617333ff2906607a53eb8ac9f0080505e8c784", "frames": 1, "path": "/var/tmp/nxl-install-017.sh"}
+ok=True rc=0
+---
+/usr/share/nuxel/pwa/nuxel-apps/authenticator/js/totp.js.nuxel-staged: OK
+ROLLED-BACK rc=1
+NXLSCRIPT-RC=1

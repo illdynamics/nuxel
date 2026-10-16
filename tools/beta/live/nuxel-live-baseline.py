@@ -113,9 +113,16 @@ def parse_irq(text):
 
 def snapshot(con, bundle, repo, rels):
     """Read the baseline through verified frames; return the structured dict."""
-    # baseline_probes() prefixes every entry with the on-device docroot
-    # /home/nuxel/nuxel, so the repo-relative path is passed through unchanged.
-    probes = nl.baseline_probes(list(rels))
+    # baseline_probes() prefixes every entry with the on-device docroot.  On the
+    # handset that is /usr/share/nuxel (measured: /home/nuxel/nuxel does not
+    # exist), so detect it once here and hash the bytes the phone actually serves.
+    docroot = "/usr/share/nuxel"
+    for cand in ("/usr/share/nuxel", "/home/nuxel/nuxel"):
+        r = con.run("test -f %s/pwa/nuxel-home/index.html && echo YES || echo NO" % cand)
+        if r.ok and "YES" in r.output:
+            docroot = cand
+            break
+    probes = nl.baseline_probes(list(rels), docroot=docroot)
     raw, frames, pwa_dev = {}, [], {}
     for key, cmd in probes:
         res = con.run(cmd)

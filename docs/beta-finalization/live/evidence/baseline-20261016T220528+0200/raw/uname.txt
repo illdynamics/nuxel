@@ -1,0 +1,3 @@
+cmd: uname -r
+ok: False rc: None framed: False sha_ok: False
+---

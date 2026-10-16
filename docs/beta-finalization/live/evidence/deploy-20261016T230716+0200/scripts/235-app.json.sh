@@ -1,0 +1,19 @@
+#!/bin/sh
+# PWA application suite (pwa/nuxel-apps/**) -> /usr/share/nuxel/pwa/nuxel-apps/notes/app.json (service: nuxel-web, risk: low)
+# staged source: pwa/nuxel-apps/notes/app.json
+# previous-hash: af5b9a70ad952910786ee33eff7cba3e5f8fabb92041ca8708fb5c79175b9400
+set -u
+_NXL_ROLLBACK() { _rc=$?; if [ "$_rc" -ne 0 ]; then if [ -e /usr/share/nuxel/pwa/nuxel-apps/notes/app.json.nuxel-rollback ]; then cp -a /usr/share/nuxel/pwa/nuxel-apps/notes/app.json.nuxel-rollback /usr/share/nuxel/pwa/nuxel-apps/notes/app.json; systemctl restart nuxel-web; fi; echo "ROLLED-BACK rc=$_rc"; fi; }
+trap _NXL_ROLLBACK EXIT
+set -e
+if [ -e /usr/share/nuxel/pwa/nuxel-apps/notes/app.json ]; then printf 'PREV=%s\n' "$(sha256sum /usr/share/nuxel/pwa/nuxel-apps/notes/app.json | cut -d' ' -f1)"; else echo PREV=NONE; fi
+mkdir -p "$(dirname /usr/share/nuxel/pwa/nuxel-apps/notes/app.json)"
+if [ -e /usr/share/nuxel/pwa/nuxel-apps/notes/app.json ] && [ ! -e /usr/share/nuxel/pwa/nuxel-apps/notes/app.json.nuxel-rollback ]; then cp -a /usr/share/nuxel/pwa/nuxel-apps/notes/app.json /usr/share/nuxel/pwa/nuxel-apps/notes/app.json.nuxel-rollback; fi
+test -f /usr/share/nuxel/pwa/nuxel-apps/notes/app.json.nuxel-staged
+printf '%s  %s\n' af5b9a70ad952910786ee33eff7cba3e5f8fabb92041ca8708fb5c79175b9400 /usr/share/nuxel/pwa/nuxel-apps/notes/app.json.nuxel-staged > /var/tmp/nxl-verify.sha256
+sha256sum -c /var/tmp/nxl-verify.sha256
+mv -f /usr/share/nuxel/pwa/nuxel-apps/notes/app.json.nuxel-staged /usr/share/nuxel/pwa/nuxel-apps/notes/app.json
+sha256sum /usr/share/nuxel/pwa/nuxel-apps/notes/app.json | grep -q af5b9a70ad952910786ee33eff7cba3e5f8fabb92041ca8708fb5c79175b9400
+systemctl restart nuxel-web
+systemctl is-active nuxel-web
+echo INSTALL-OK

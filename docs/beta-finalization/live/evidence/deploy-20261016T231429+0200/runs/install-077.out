@@ -1,0 +1,7 @@
+pushed={"attempts": 1, "b64_chars": 1668, "bytes": 1250, "decoded_sha256": "ebe4b6a17cff5b6a2b654b2a0f6b1602404faaeb81e6bb31128d263a373a4671", "frames": 1, "path": "/var/tmp/nxl-install-077.sh"}
+ok=True rc=0
+---
+PREV=NONE
+/usr/local/bin/nuxel-firewall.sh.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

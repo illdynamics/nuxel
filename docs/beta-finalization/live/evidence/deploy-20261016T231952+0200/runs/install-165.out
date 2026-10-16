@@ -1,0 +1,7 @@
+pushed={"attempts": 1, "b64_chars": 1876, "bytes": 1407, "decoded_sha256": "43d042d76df8de30219f979aec4c862406ae52f1aae6762047e8023751bc7d91", "frames": 1, "path": "/var/tmp/nxl-install-165.sh"}
+ok=True rc=0
+---
+PREV=NONE
+/usr/local/bin/nuxel-uninstall-helper.sh.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

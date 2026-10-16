@@ -1,0 +1,8 @@
+pushed={"attempts": 1, "b64_chars": 1552, "bytes": 1162, "decoded_sha256": "63aed13d4bb7255761eac04714729c193d21eee8d69662eba62a0004945bc2f1", "frames": 1, "path": "/var/tmp/nxl-install-129.sh"}
+ok=True rc=0
+---
+PREV=NONE
+/usr/bin/nuxel-web.nuxel-staged: OK
+DECLARED-RELOAD-DEFERRED
+INSTALL-OK
+NXLSCRIPT-RC=0

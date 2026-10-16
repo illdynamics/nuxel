@@ -1,0 +1,16 @@
+$ python3 tools/beta/workqueue.py verify-schema
+== workqueue verify-schema ==  queue: /x/nuxel/docs/beta-finalization/workqueue
+   tasks: 55
+   state   implemented  21
+   state   in_progress  15
+   state   pending      19
+   verdict None                       34
+   verdict OFFLINE_TESTED             20
+   verdict VERIFIED_ON_S10PLUS        1
+
+   schema OK — vocabulary, dependencies (acyclic) and evidence gates all hold
+EXIT=0
+
+$ python3 tools/beta/workqueue.py --root docs/beta-finalization/workqueue render --check
+workqueue: /x/nuxel/docs/beta-finalization/WORK-QUEUE.md matches the JSON store (55 task(s))
+EXIT=0

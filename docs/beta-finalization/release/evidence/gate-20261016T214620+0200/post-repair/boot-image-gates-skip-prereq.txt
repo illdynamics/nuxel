@@ -1,0 +1,12 @@
+$ bash boot/s10plus/tests/test-boot-image-gates.sh   # run by hand: SKIP-PREREQ is exit 3, never 0
+test-boot-image-gates: SKIP-PREREQ - the gitignored build artefacts this gate is built on are absent:
+  - /x/nuxel/build/out/s10plus/debug-candidates/nuxel-beyond2lte-boot-A5-dtb-fix.img
+  - /x/nuxel/build/out/s10plus/debug-candidates/A4/initramfs.cpio
+  This gate proves that tools/s10plus/verify-boot-image.py REFUSES the images hardware-proven NOT
+  to boot and ACCEPTS the hardware-proven A5 base.  Those images come from the boot build/repair
+  chain (see docs/s10plus-autonomous-boot-repair/), are gitignored build output, and cannot be
+  synthesised - a substituted or invented container would prove nothing about the handset.
+  Expected A5 sha256: 6950241c52320688f28bfc1a0c0426f28e3884e5772934853759354aa97a88d1
+  exit 3 = SKIP-PREREQ (never 0: an unrun gate is not a pass, and never 1: a missing artefact
+  is not a code regression).
+EXIT=3

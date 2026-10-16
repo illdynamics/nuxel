@@ -1,0 +1,7 @@
+pushed={"attempts": 1, "b64_chars": 2092, "bytes": 1568, "decoded_sha256": "87ffd1a7cea28bfe1a760a3fc145bfcb1582e6562b488132d5a28d172b8552ba", "frames": 1, "path": "/var/tmp/nxl-install-260.sh"}
+ok=True rc=0
+---
+PREV=NONE
+/usr/share/nuxel/pwa/nuxel-apps/nuxtore/icons/icon-144.png.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

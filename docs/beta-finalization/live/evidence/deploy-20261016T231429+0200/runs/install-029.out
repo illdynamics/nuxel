@@ -1,0 +1,7 @@
+pushed={"attempts": 1, "b64_chars": 1628, "bytes": 1220, "decoded_sha256": "7e647b14a5d652d2f3079c970f71b225abb4d38ae3ef945782dd45e9dbe9715a", "frames": 1, "path": "/var/tmp/nxl-install-029.sh"}
+ok=True rc=0
+---
+PREV=NONE
+/etc/nuxel/gnss/osm-tiles.json.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

@@ -10,8 +10,13 @@ Design contract (mission section 4)
   own task ids, and `set-state` only ever *appends* a revision.  History is never
   rewritten, so a task's full audit trail survives the run.
 * Every revision carries: stable id, priority (mission band), component, current
-  implementation state, dependencies, evidence (path + command + result), intended
-  changes, tests, risk level, rollback method and final verdict.
+  implementation state, dependencies, evidence, intended changes, tests, risk
+  level, rollback method and final verdict.
+* Evidence comes in two shapes and both are checked: *artefact* evidence
+  (`offline`/`vm`/`on_device`/`owner_instruction`/`observation`/`doc`) names a
+  `path` a reviewer can re-open, and *action* evidence (`verifier-run`/`test-run`/
+  `defect-found-and-fixed`/`change`) names what was run or changed plus its
+  outcome.  Neither shape can be empty, and an unknown kind is refused.
 * Verdicts use **exactly** the allowed vocabulary.  A verdict of
   `VERIFIED_ON_S10PLUS` is refused unless the record carries an on-device evidence
   path (kind == "on_device" with a real command and a captured result): a passing
@@ -89,7 +94,31 @@ EVIDENCE_KINDS = [
     "owner_instruction",# documented step for the phone owner to execute
     "observation",      # file/registry inspection; presence is NOT a verdict
     "doc",              # written record that a later reviewer can re-read
+    # ---- action evidence (added by briq-02-gate-failure-repair, cycle 7) -----
+    # Build groups record what they RAN, FOUND or CHANGED, not only which file
+    # they read.  Those entries are real evidence, and the schema had no member
+    # for them, so an honest record could not validate (the 2026-10-16 21:11
+    # gate reported 37 such errors on briq-04a/04b/04c).  Adding the kinds is
+    # NOT a relaxation of the honesty rules: an action entry must still identify
+    # the thing (a `command`, or a `what`) and what came of it (`result`/`at`).
+    "verifier-run",     # a repository verifier / analyser was executed
+    "test-run",         # a test suite was executed
+    "defect-found-and-fixed",  # a defect this task found in the tree and repaired
+    "change",           # a change this task made to the tree
 ]
+
+# Evidence kinds whose subject IS a repository artefact: `path` is mandatory, so a
+# later reviewer can re-open exactly what the entry points at.
+PATH_REQUIRED_KINDS = frozenset(
+    {"offline", "vm", "on_device", "owner_instruction", "observation", "doc"}
+)
+
+# Evidence kinds that record an ACTION.  `path` is optional (a run does not have
+# to leave a file this repository keeps) but the entry must say what was run or
+# changed AND what came of it -- see validate_record().
+ACTION_KINDS = frozenset(
+    {"verifier-run", "test-run", "defect-found-and-fixed", "change"}
+)
 
 # Mission bands.  0 is the repository foundation that has to exist before band 1
 # (preflight / discovery / this ledger / baseline protection) and is deliberately
@@ -330,12 +359,37 @@ def validate_record(rec: dict, known_ids=None) -> list:
         if not isinstance(e, dict):
             errs.append(f"evidence[{i}]: must be an object")
             continue
-        if e.get("kind") not in EVIDENCE_KINDS:
-            errs.append(f"evidence[{i}].kind: {e.get('kind')!r} not in {EVIDENCE_KINDS}")
-        if not isinstance(e.get("path"), str) or not e.get("path", "").strip():
+        kind = e.get("kind")
+        path = e.get("path")
+        has_path = isinstance(path, str) and bool(path.strip())
+        if kind not in EVIDENCE_KINDS:
+            errs.append(f"evidence[{i}].kind: {kind!r} not in {EVIDENCE_KINDS}")
+        if kind in ACTION_KINDS:
+            # Action evidence: name the thing AND its outcome.  A "defect found and
+            # fixed" with no `what`, or a "verifier-run" with no `command`, is not
+            # evidence of anything - refuse it here rather than let it ride.
+            subject = e.get("command") or e.get("what")
+            if not (isinstance(subject, str) and subject.strip()):
+                errs.append(
+                    f"evidence[{i}]: a {kind!r} entry must carry a non-empty "
+                    "'command' (what was run) or 'what' (what was changed/found); "
+                    "'path' is optional and names a file when one backs the entry"
+                )
+            if not (str(e.get("result", "")).strip() or str(e.get("at", "")).strip()):
+                errs.append(
+                    f"evidence[{i}]: a {kind!r} entry must record an outcome "
+                    "('result', or at least an 'at' timestamp)"
+                )
+            if path is not None and not has_path:
+                errs.append(
+                    f"evidence[{i}].path: must be a non-empty string when present"
+                )
+        elif not has_path:
             errs.append(f"evidence[{i}].path: required non-empty string")
         if "command" in e and not isinstance(e["command"], str):
             errs.append(f"evidence[{i}].command: must be a string when present")
+        if "what" in e and not isinstance(e["what"], str):
+            errs.append(f"evidence[{i}].what: must be a string when present")
 
     if "offline_ceiling" in rec and rec["offline_ceiling"] is not None:
         if rec["offline_ceiling"] not in VERDICTS:

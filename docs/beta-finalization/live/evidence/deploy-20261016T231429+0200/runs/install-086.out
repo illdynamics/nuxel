@@ -1,0 +1,7 @@
+pushed={"attempts": 1, "b64_chars": 1748, "bytes": 1310, "decoded_sha256": "c85f348db93613216883c5e4fe10699a39501cf8af4a4ed75ce8f80c6e809496", "frames": 1, "path": "/var/tmp/nxl-install-086.sh"}
+ok=True rc=0
+---
+PREV=NONE
+/usr/local/bin/nuxel-microsd-diag.sh.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

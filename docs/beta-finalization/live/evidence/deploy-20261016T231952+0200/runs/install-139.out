@@ -1,0 +1,7 @@
+pushed={"attempts": 1, "b64_chars": 2036, "bytes": 1527, "decoded_sha256": "d22211e7187cf9e3cb7a90dc4a470ccf72c85f32ef6a8997f996781f6f60d567", "frames": 1, "path": "/var/tmp/nxl-install-139.sh"}
+ok=True rc=0
+---
+PREV=NONE
+/usr/lib/nuxel/src/shell/nuxel-firstboot/main.py.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

@@ -1,0 +1,6 @@
+pushed={"attempts": 1, "b64_chars": 1776, "bytes": 1332, "decoded_sha256": "eea7ed8fa484fd872b26f8a33a016c8186e763c5bfd8cec34061c0f6ed0d4147", "frames": 1, "path": "/var/tmp/nxl-install-018.sh"}
+ok=True rc=0
+---
+/usr/share/nuxel/pwa/nuxel-home/js/safe-zones.js.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

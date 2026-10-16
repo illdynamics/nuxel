@@ -1,0 +1,12 @@
+[
+  {
+    "at": "2026-10-16T22:23:57+0200",
+    "diagnostic": "re-read /proc/cmdline for androidboot.mode and confirm sec_touchscreen is registered",
+    "evidence_after": null,
+    "evidence_before": "/x/nuxel/docs/beta-finalization/live/evidence/reboot-verify-20261016T221922+0200",
+    "n": 1,
+    "reason": "clear LPM/charger-mode boot so sec_ts can initialise",
+    "returned_to_nuxel": false,
+    "rollback_known_good": true
+  }
+]

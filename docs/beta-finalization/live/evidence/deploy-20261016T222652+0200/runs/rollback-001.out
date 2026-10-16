@@ -1,0 +1,5 @@
+pushed={"b64_chars": 332, "bytes": 247, "decoded_sha256": "b40233131746a940b477c9560bdb1d86ab98a2e61dcd6f36b620c4fd1f742a12", "frames": 3, "path": "/var/tmp/nxl-rollback-001.sh"}
+ok=True rc=0
+---
+ROLLED-BACK
+NXLSCRIPT-RC=0

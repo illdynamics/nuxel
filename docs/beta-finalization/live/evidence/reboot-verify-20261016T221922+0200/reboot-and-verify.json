@@ -1,0 +1,345 @@
+{
+  "at": "2026-10-16T22:19:22+0200",
+  "blocked_reason": "the console did not come back within 240s after the reboot: the phone did not return to Nuxel (or the USB console is not serving again) \u2014 no further reboot is attempted",
+  "briq": "briq-10c-live-reboot-and-verify",
+  "checklists": {
+    "pre": [
+      {
+        "evidence": "624 deploy targets audited, 0 refused by assert_userspace_path(); skipped blocked groups: console-and-kernel-side-followups",
+        "id": "pr-1",
+        "item": "no block-device / firmware write this session",
+        "status": "pass"
+      },
+      {
+        "evidence": "could not read the rollback count",
+        "id": "pr-2",
+        "item": "rollback copies present for deployed files",
+        "status": "warn"
+      },
+      {
+        "evidence": "unreadable",
+        "id": "pr-3",
+        "item": "known-good userspace rollback path recorded",
+        "status": "warn"
+      },
+      {
+        "evidence": "capability-based reconnect (/dev/ttyACM0); timeout 240.0s, poll 3.0s",
+        "id": "pr-4",
+        "item": "console reconnect procedure ready on the host",
+        "status": "pass"
+      },
+      {
+        "evidence": "/x/nuxel/docs/beta-finalization/live/evidence/baseline-20261016T220528+0200",
+        "id": "pr-5",
+        "item": "baseline bundle captured and hashed",
+        "status": "pass"
+      }
+    ]
+  },
+  "console": {
+    "callout": "/dev/ttyACM0",
+    "match_stage": "explicit"
+  },
+  "diagnostic": "re-read /proc/cmdline for androidboot.mode and confirm sec_touchscreen is registered",
+  "evidence_dir": "/x/nuxel/docs/beta-finalization/live/evidence/reboot-verify-20261016T221922+0200",
+  "exit_code": 3,
+  "history_before": [
+    {
+      "at": "2026-10-16T22:23:57+0200",
+      "diagnostic": "re-read /proc/cmdline for androidboot.mode and confirm sec_touchscreen is registered",
+      "evidence_after": null,
+      "evidence_before": "/x/nuxel/docs/beta-finalization/live/evidence/reboot-verify-20261016T221922+0200",
+      "n": 1,
+      "reason": "clear LPM/charger-mode boot so sec_ts can initialise",
+      "returned_to_nuxel": false,
+      "rollback_known_good": true
+    }
+  ],
+  "history_path": "/x/nuxel/docs/beta-finalization/live/evidence/reboots.json",
+  "history_verdict": {
+    "allowed": true,
+    "code": "ok",
+    "reason": "budget and prerequisites satisfied"
+  },
+  "pre_reboot": {
+    "animation": "",
+    "boot_count": "",
+    "boot_id": "",
+    "boot_mode": "",
+    "failed_units": "",
+    "fb_owner": "",
+    "registry_http": "",
+    "units": "",
+    "uptime": "",
+    "wl_fb_state": ""
+  },
+  "probe": {
+    "at": "2026-10-16T22:19:23+0200",
+    "bytes_in": 54,
+    "dev": "/dev/ttyACM0",
+    "echo_ok": true,
+    "elapsed_s": 0.302,
+    "error": null,
+    "reachable": true,
+    "sample": "\n\u001b[?2004l\u001b[?2004hsh-5.3# \n\u001b[?2004l\u001b[?2004hsh-5.3# "
+  },
+  "probes": [],
+  "reason": "clear LPM/charger-mode boot so sec_ts can initialise",
+  "reboot": {
+    "command_frame": {
+      "elapsed_s": 0.984,
+      "framed": false,
+      "output_bytes": 2712,
+      "raw_len": 12513,
+      "rc": null,
+      "rid": "892486d7",
+      "sha_ok": false
+    },
+    "command_output": "_N=892486d7;rm -f /var/tmp/nxl-892486d7;{ systemctl reboot ;} >/var/tmp/n\rnxl-892486d7 2>&1 </dev/null;_R=$?;printf '\\n@@B%s@@\\n' $_N;printf '@@R%s:%s@@\\n'\r' $_N $_R;base64 -w0 </var/tmp/nxl-892486d7 2>/dev/null|tr -d '\\n';printf '\\n@@S%\r%s:%s@@\\n' $_N \"$(sha256sum </var/tmp/nxl-892486d7 2>/dev/null",
+    "disconnect": "the console never dropped: it is unknown whether the reboot was accepted",
+    "disconnected": false,
+    "issued_at": "2026-10-16T22:19:35+0200",
+    "policy": {
+      "allowed": true,
+      "code": "ok",
+      "reason": "budget and prerequisites satisfied"
+    },
+    "reconnect_attempts": [
+      {
+        "at": "2026-10-16T22:23:22+0200",
+        "error": "port answered but no verified command frame",
+        "frame": {
+          "elapsed_s": 0.981,
+          "framed": false,
+          "output_bytes": 537,
+          "raw_len": 664,
+          "rc": null,
+          "rid": "bfdb87bb",
+          "sha_ok": false
+        },
+        "node": {
+          "callout": "/dev/ttyACM0",
+          "match_stage": "explicit"
+        },
+        "probe": {
+          "at": "2026-10-16T22:23:23+0200",
+          "bytes_in": 54,
+          "dev": "/dev/ttyACM0",
+          "echo_ok": true,
+          "elapsed_s": 0.303,
+          "error": null,
+          "reachable": true,
+          "sample": "\n\u001b[?2004l\u001b[?2004hsh-5.3# \n\u001b[?2004l\u001b[?2004hsh-5.3# "
+        },
+        "reachable": false
+      },
+      {
+        "at": "2026-10-16T22:23:27+0200",
+        "error": "port answered but no verified command frame",
+        "frame": {
+          "elapsed_s": 0.988,
+          "framed": false,
+          "output_bytes": 537,
+          "raw_len": 664,
+          "rc": null,
+          "rid": "02b287bf",
+          "sha_ok": false
+        },
+        "node": {
+          "callout": "/dev/ttyACM0",
+          "match_stage": "explicit"
+        },
+        "probe": {
+          "at": "2026-10-16T22:23:27+0200",
+          "bytes_in": 54,
+          "dev": "/dev/ttyACM0",
+          "echo_ok": true,
+          "elapsed_s": 0.303,
+          "error": null,
+          "reachable": true,
+          "sample": "\n\u001b[?2004l\u001b[?2004hsh-5.3# \n\u001b[?2004l\u001b[?2004hsh-5.3# "
+        },
+        "reachable": false
+      },
+      {
+        "at": "2026-10-16T22:23:31+0200",
+        "error": "port answered but no verified command frame",
+        "frame": {
+          "elapsed_s": 0.986,
+          "framed": false,
+          "output_bytes": 537,
+          "raw_len": 664,
+          "rc": null,
+          "rid": "277287c3",
+          "sha_ok": false
+        },
+        "node": {
+          "callout": "/dev/ttyACM0",
+          "match_stage": "explicit"
+        },
+        "probe": {
+          "at": "2026-10-16T22:23:31+0200",
+          "bytes_in": 54,
+          "dev": "/dev/ttyACM0",
+          "echo_ok": true,
+          "elapsed_s": 0.302,
+          "error": null,
+          "reachable": true,
+          "sample": "\n\u001b[?2004l\u001b[?2004hsh-5.3# \n\u001b[?2004l\u001b[?2004hsh-5.3# "
+        },
+        "reachable": false
+      },
+      {
+        "at": "2026-10-16T22:23:35+0200",
+        "error": "port answered but no verified command frame",
+        "frame": {
+          "elapsed_s": 1.016,
+          "framed": false,
+          "output_bytes": 537,
+          "raw_len": 758,
+          "rc": null,
+          "rid": "f18587c8",
+          "sha_ok": false
+        },
+        "node": {
+          "callout": "/dev/ttyACM0",
+          "match_stage": "explicit"
+        },
+        "probe": {
+          "at": "2026-10-16T22:23:36+0200",
+          "bytes_in": 54,
+          "dev": "/dev/ttyACM0",
+          "echo_ok": true,
+          "elapsed_s": 0.302,
+          "error": null,
+          "reachable": true,
+          "sample": "\n\u001b[?2004l\u001b[?2004hsh-5.3# \n\u001b[?2004l\u001b[?2004hsh-5.3# "
+        },
+        "reachable": false
+      },
+      {
+        "at": "2026-10-16T22:23:40+0200",
+        "error": "port answered but no verified command frame",
+        "frame": {
+          "elapsed_s": 1.021,
+          "framed": false,
+          "output_bytes": 537,
+          "raw_len": 1332,
+          "rc": null,
+          "rid": "b98287cc",
+          "sha_ok": false
+        },
+        "node": {
+          "callout": "/dev/ttyACM0",
+          "match_stage": "explicit"
+        },
+        "probe": {
+          "at": "2026-10-16T22:23:40+0200",
+          "bytes_in": 54,
+          "dev": "/dev/ttyACM0",
+          "echo_ok": true,
+          "elapsed_s": 0.303,
+          "error": null,
+          "reachable": true,
+          "sample": "\n\u001b[?2004l\u001b[?2004hsh-5.3# \n\u001b[?2004l\u001b[?2004hsh-5.3# "
+        },
+        "reachable": false
+      },
+      {
+        "at": "2026-10-16T22:23:44+0200",
+        "error": "port answered but no verified command frame",
+        "frame": {
+          "elapsed_s": 0.987,
+          "framed": false,
+          "output_bytes": 537,
+          "raw_len": 664,
+          "rc": null,
+          "rid": "e66087d0",
+          "sha_ok": false
+        },
+        "node": {
+          "callout": "/dev/ttyACM0",
+          "match_stage": "explicit"
+        },
+        "probe": {
+          "at": "2026-10-16T22:23:44+0200",
+          "bytes_in": 54,
+          "dev": "/dev/ttyACM0",
+          "echo_ok": true,
+          "elapsed_s": 0.302,
+          "error": null,
+          "reachable": true,
+          "sample": "\n\u001b[?2004l\u001b[?2004hsh-5.3# \n\u001b[?2004l\u001b[?2004hsh-5.3# "
+        },
+        "reachable": false
+      },
+      {
+        "at": "2026-10-16T22:23:48+0200",
+        "error": "port answered but no verified command frame",
+        "frame": {
+          "elapsed_s": 0.981,
+          "framed": false,
+          "output_bytes": 537,
+          "raw_len": 664,
+          "rc": null,
+          "rid": "a74187d4",
+          "sha_ok": false
+        },
+        "node": {
+          "callout": "/dev/ttyACM0",
+          "match_stage": "explicit"
+        },
+        "probe": {
+          "at": "2026-10-16T22:23:48+0200",
+          "bytes_in": 54,
+          "dev": "/dev/ttyACM0",
+          "echo_ok": true,
+          "elapsed_s": 0.303,
+          "error": null,
+          "reachable": true,
+          "sample": "\n\u001b[?2004l\u001b[?2004hsh-5.3# \n\u001b[?2004l\u001b[?2004hsh-5.3# "
+        },
+        "reachable": false
+      },
+      {
+        "at": "2026-10-16T22:23:52+0200",
+        "error": "port answered but no verified command frame",
+        "frame": {
+          "elapsed_s": 0.986,
+          "framed": false,
+          "output_bytes": 837,
+          "raw_len": 964,
+          "rc": null,
+          "rid": "a98887d9",
+          "sha_ok": false
+        },
+        "node": {
+          "callout": "/dev/ttyACM0",
+          "match_stage": "explicit"
+        },
+        "probe": {
+          "at": "2026-10-16T22:23:53+0200",
+          "bytes_in": 54,
+          "dev": "/dev/ttyACM0",
+          "echo_ok": true,
+          "elapsed_s": 0.303,
+          "error": null,
+          "reachable": true,
+          "sample": "\n\u001b[?2004l\u001b[?2004hsh-5.3# \n\u001b[?2004l\u001b[?2004hsh-5.3# "
+        },
+        "reachable": false
+      }
+    ],
+    "requested": true,
+    "returned_to_nuxel": false,
+    "verdict": "BLOCKED_EXTERNAL_RESOURCE"
+  },
+  "reboot_cmd": "systemctl reboot",
+  "reboot_requested": true,
+  "simulated": false,
+  "verdict": null,
+  "verdicts": {
+    "briq-10c-live-reboot-and-verify": null,
+    "per-item": {}
+  }
+}

@@ -1,0 +1,7 @@
+pushed={"attempts": 1, "b64_chars": 1876, "bytes": 1407, "decoded_sha256": "c8a6bbe60f8619b7bb42830cd667c988c0b545a53b35d84493bc1c3fba375f93", "frames": 1, "path": "/var/tmp/nxl-install-151.sh"}
+ok=True rc=0
+---
+PREV=NONE
+/usr/local/bin/nuxel-sandbox-nftables.sh.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

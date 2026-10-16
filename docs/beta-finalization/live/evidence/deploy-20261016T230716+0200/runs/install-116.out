@@ -1,0 +1,7 @@
+pushed={"attempts": 1, "b64_chars": 1952, "bytes": 1463, "decoded_sha256": "7e064913d130e7f0a1a954302bd1f8e747af9c7d1f36cc0461d4b185f730bd8b", "frames": 1, "path": "/var/tmp/nxl-install-116.sh"}
+ok=True rc=0
+---
+PREV=NONE
+/usr/share/nuxel/pwa/nuxel-apps/clock/manifest.json.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

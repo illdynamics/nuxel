@@ -1,0 +1,7 @@
+pushed={"attempts": 1, "b64_chars": 1668, "bytes": 1250, "decoded_sha256": "4994d57c9cb4cff795b55386b8447f14b0321275398c57a718a6668f3b36fc14", "frames": 1, "path": "/var/tmp/nxl-install-064.sh"}
+ok=True rc=0
+---
+PREV=NONE
+/usr/local/bin/build-a33-boot.sh.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

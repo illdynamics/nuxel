@@ -1,0 +1,154 @@
+{
+  "apply": true,
+  "at": "2026-10-16T22:34:56+0200",
+  "blocked_reason": "a deploy step failed and was rolled back to the recorded previous hash; no further writes attempted",
+  "briq": "briq-10b-live-deploy-userspace",
+  "evidence_dir": "/x/nuxel/docs/beta-finalization/live/evidence/deploy-20261016T223456+0200",
+  "exit_code": 5,
+  "groups": [
+    {
+      "declared_reload": null,
+      "declared_reload_source": null,
+      "group": "launcher-pwa",
+      "priority": 2,
+      "restart_service": "nuxel-web",
+      "risk": "low",
+      "risk_rank": 0,
+      "steps": 21
+    },
+    {
+      "declared_reload": null,
+      "declared_reload_source": null,
+      "group": "status-bar-safe-zones",
+      "priority": 2,
+      "restart_service": "nuxel-web",
+      "risk": "low",
+      "risk_rank": 0,
+      "steps": 1
+    }
+  ],
+  "manifest": "tools/beta/live/deploy-manifest.json",
+  "order": "manifest",
+  "probe": {
+    "at": "2026-10-16T22:34:56+0200",
+    "bytes_in": 115,
+    "dev": "/dev/ttyACM0",
+    "echo_ok": true,
+    "elapsed_s": 0.304,
+    "error": null,
+    "reachable": true,
+    "sample": "\n\u001b[?2004lsh: :s^[[?2004hsh-5.3#8,-;sec_bat_set_: substitution failed\n\u001b[?2004hsh-5.3# \n\u001b[?2004l\u001b[?2004hsh-5.3# "
+  },
+  "reconnects": [],
+  "results": [
+    {
+      "already_deployed": true,
+      "declared_reload": null,
+      "group": "launcher-pwa",
+      "health_check": "test \"$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8000/pwa/nuxel-home/index.html)\" = 200",
+      "installed_hash": "a15be137ee268bb15400dc983c29f12a258331862ef17d9732108c19c4ce6443",
+      "mode": "0644",
+      "n": 1,
+      "ok": true,
+      "previous_hash": "a15be137ee268bb15400dc983c29f12a258331862ef17d9732108c19c4ce6443",
+      "risk": "low",
+      "risk_rank": 0,
+      "rollback": null,
+      "rollback_route": "restore each <target>.nuxel-rollback and `systemctl restart nuxel-web`",
+      "service": "nuxel-web",
+      "source": "pwa/nuxel-home/index.html",
+      "source_sha256": "a15be137ee268bb15400dc983c29f12a258331862ef17d9732108c19c4ce6443",
+      "target": "/usr/share/nuxel/pwa/nuxel-home/index.html"
+    },
+    {
+      "already_deployed": true,
+      "declared_reload": null,
+      "group": "launcher-pwa",
+      "health_check": "test \"$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8000/pwa/nuxel-home/index.html)\" = 200",
+      "installed_hash": "bbb2edfa7ef090a6df7d53809eb1540d1f76694b91fb7a889f429ad62bc5606e",
+      "mode": "0644",
+      "n": 2,
+      "ok": true,
+      "previous_hash": "bbb2edfa7ef090a6df7d53809eb1540d1f76694b91fb7a889f429ad62bc5606e",
+      "risk": "low",
+      "risk_rank": 0,
+      "rollback": null,
+      "rollback_route": "restore each <target>.nuxel-rollback and `systemctl restart nuxel-web`",
+      "service": "nuxel-web",
+      "source": "pwa/nuxel-home/manifest.json",
+      "source_sha256": "bbb2edfa7ef090a6df7d53809eb1540d1f76694b91fb7a889f429ad62bc5606e",
+      "target": "/usr/share/nuxel/pwa/nuxel-home/manifest.json"
+    },
+    {
+      "already_deployed": true,
+      "declared_reload": null,
+      "group": "launcher-pwa",
+      "health_check": "test \"$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8000/pwa/nuxel-home/index.html)\" = 200",
+      "installed_hash": "58461b89735f2a820ec1f34d2cf917b5e02cec3e517c2cb43e8a61ffc41582f8",
+      "mode": "0644",
+      "n": 3,
+      "ok": true,
+      "previous_hash": "58461b89735f2a820ec1f34d2cf917b5e02cec3e517c2cb43e8a61ffc41582f8",
+      "risk": "low",
+      "risk_rank": 0,
+      "rollback": null,
+      "rollback_route": "restore each <target>.nuxel-rollback and `systemctl restart nuxel-web`",
+      "service": "nuxel-web",
+      "source": "pwa/nuxel-home/sw.js",
+      "source_sha256": "58461b89735f2a820ec1f34d2cf917b5e02cec3e517c2cb43e8a61ffc41582f8",
+      "target": "/usr/share/nuxel/pwa/nuxel-home/sw.js"
+    },
+    {
+      "declared_reload": null,
+      "group": "launcher-pwa",
+      "health_check": "test \"$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8000/pwa/nuxel-home/index.html)\" = 200",
+      "install": {
+        "framed": false,
+        "output": ".\ufffd\ufffdN:\u06ddu\ufffd\ufffdfk\u001e\ufffd\ufffdN_\ufffd\n\ufffd\ufffd^\ufffd\ufffd^\ufffd\ufffd\ufffdj\u06ebz\ufffd6\ufffd}1\u057e\u001c\ufffdt\u7b79\ufffdn\ufffd\ufffdf\ufffd\ufffd\ufffd\ufffd\ufffd+y\ufffdZ\ufffd\u0007.\ufffd\ufffd\ufffd\ufffd\ufffd\ufffdr\ufffd\ufffdz{u\ufffd\u000e\ufffd\ufffdN\ufffd\u06ddv\ufffd~fk\u001e\ufffd\ufffdN`z\ufffd\ufffdzX\u001a\ufffd\u0007\ufffd\ufffd\ufffd(s]4\u04ee\ufffd\u04fe\ufffd\ufffd]\ufffd\ufffdY\ufffd\u01fe\ufffd\u04d7\ufffd\ufffd\ufffdlq\ufffd^u\u01a9i\u022d\ufffd\u01a9i\u022d\ufffdf\ufffd\ufffdM4\ufffd\u01a5y\ufffd\u001a\ufffd\ufffd\"\ufffd-t\ufffdJ\ufffd\ufffd\ufffd\u001c\ufffdM4\ufffdt\ufffd\ufffdox\ufffdf\ufffd\ufffd\ufffd\ufffd\ufffd+y\ufffdkk\u000b(r\ufffd\ufffdq\ufffdZr+r\ufffdMu\ufffdM5\ufffdt\ufffd\ufffd\ufffd\ufffd}\ufffd\ufffdf\ufffd\ufffd\ufffd\ufffd\ufffd+y\ufffdj\ufffd\u0001\ufffd\ufffd\ufffdt\ufffdN\ufffd\ufffd]:\u06ddw\ufffdM&k\u001e\ufffd\ufffdN_\ufffd\u0007\ufffdj\ufffd&\ufffd\ufffd\u001a\ufffd\ufffd\"\ufffd#N[]48\ufffd\ufffd\ufffdN\ufffd\ufffd]z\u06ddw\ufffd]ly\ufffd\u06b6\u0007\ufffdm\ufffdmz\ufffd\ufffd\ufffd\ufffd\u0015\ufffd\ufffd8\ufffd^\ufffdUV\ufffd\ufffd\ufffd\ufffd\ufffdeH\ufffd\ufffd7\ufffd\u0002\u001a\ufffd\rf\u0000\ufffd2\ufffd\ufffd\ufffd\ufffdm&\u0000\ufffd\ufffd\ufffd}4\ufffd`\br\u00186\ufffd&\u0001#\ufffd\ufffdM\u0013m\ufffdv\ufffdt\uec7d\ufffd\ufffd7!\ufffd}7O\n\\\u06fd\ufffd\ufffdv\ufffdnu\u07cd\ufffd\ufffd\ufffd\u001bj\ufffd!y\ufffd,\ufffd\ufffd\\\ufffd\ufffd\ufffd\ufffdx:\ufffdw\ufffdnu\u07ce=\ufffd\ufffd\u001bj\ufffd^\ufffd&\u06b6\u05eb\ufffd\u01dcm\ufffd\\\ufffd\ufffd$\ufffd\ufffd!j\ufffd\u001e\ufffd\ufffd!j\ufffd\"\ufffd\u000b\ufffd\u05a0{\ufffd\ufffd\ufffd%\u0001I\ufffd\ufffd\u0010\ufffdej\ufffd\ufffd`\ufffdT\ufffd\ufffd\ufffd\ufffdZ\ufffd\ufffd+\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffdu\u3b79\ufffd~:\ufffd\u01dcm\ufffdl\ufffd\ufffde\ufffdx\u001c\ufffd\ufffd$\ufffd\u0007\ufffd\ufffd)\ufffd\ufffd(!nZ\u001c\ufffd\ufffdt\ufffd(!\ufffd\ufffd(\ufffd\u007ft\ufffdu\u7b79\ufffd~\ufffd\ufffdf\ufffd\ufffd\ufffd\ufffd\u0007\ufffd~Z\u001a\ufffd\ufffd%\ufffd\ufffd\u001em\ufffdmz\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\u001dw~Z\u001a\ufffd\ufffd%\ufffd\ufffd\u001e\ufffd\ufffdx\u07dd:\ufffdz\ufffdnu\u07ee\ufffd\ufffd\ufffd\u001bj\ufffd0zYb\ufffd\u0007!y\ufffd,\ufffd\ufffdn\ufffd[\ufffd\ufffd\ufffd\u001e\ufffdY\ufffdu\ufffdzYb\ufffd\u0003h\ufffd\ufffd!\ufffd\ufffdhrMe\ufffd\u000b^\ufffd\ufffd\ufffdz{t\ufffdK\u07d6\ufffd\ufffd\ufffd~t\ufffd[^\ufffd\ufffd\ufffd\ufffd.\ufffd\ufffd^\ufffd\u06ddw\ufffd\ufffd\ufffdy\ufffd\u06b6\u01edr\ufffd\ufffdz{^\ufffd\ufffd\ufffdr\ufffd\ufffdz{^\ufffd\ufffd\ufffdm\ufffd\ufffd\ufffd1\ufffdM\u001a~\u05eb\ufffd\u001dt\u04ee\ufffd\ufffd\u03b6\ufffd]\ufffd\ufffd[\u001eq\ufffd\ufffdr\u0017\ufffd\ufffdh\ufffd\ufffd\u9a5a,e\ufffdh\ufffd\ufffd\u05e6\ufffdn\ufffdr\u0018-zjw\ufffdx\ufffd\ufffd\ufffd\\\ufffd\ufffd\u079e\ufffd\ufffd\ufffdN\ufffd\ufffd_z\u06ddw\ufffd\ufffd,y\ufffd\u06b5\ufffd^rJ]\ufffd\ufffd^\ufffd\ufffd\u001anW\ufffd\u0297\ufffd\ufffd\ufffd`\ufffd)\ufffd\ufffdN\ufffd\ufffdm:\u06ddw\ufffdM\ufffdy\ufffd\u06b6\u0007\ufffdr\u0016\ufffd\ufffd)\ufffdr\ufffd\ufffdz{[\ufffd\u0228\ufffd)\u073a\ufffd\ufffd\ufffdM\u001c\ufffd\u0007.\ufffd\ufffd\ufffd\ufffdN\ufffd\ufffdmz\u06dd|\ufffd\ufffd&k\u001e\ufffd\ufffdNt\u017dt\ufffdV\ufffd\u017d\ufffd\ufffd\ufffd\ufffd\u017d\ufffd\ufffd\ufffd4\u017e4\ufffd\u007f4\u017et\ufffdM4\u017e\ufffd\ufffd\ufffd\ufffd\u017e\ufffd\ufffd^4\u017f4\ufffd\u007f4\u017ft\u01fft\u0176\ufffd\ufffd\ufffdt\u0176\ufffd\ufffd]\ufffd\u01774\u01e74\u0177t\u01e74\u0177\ufffd\ufffd~4\u0177\ufffd\ufffdM\ufffd\ufffd\ufffd4\ufffd\ufffd\ufffd\ufffd\ufffdt\ufffd^4\ufffd\u0374\ufffdM4\ufffd\ufffd\ufffd\u01ef:\ub776\ufffdnu\ufffdy\ufffd\ufffd{\ufffd9r\u0018&\ufffdx\ufffd\ufffd\ufffd(\ufffd@\ufffd\u0018\u00c3\u0013Lx\u0007d\ufffdU\u0010\ufffd\ufffd\ufffd-\ufffd\ufffd\ufffd/usr/share/nuxel/pwa/nuxel-home/colour-test.html.nuxel-staged: OK\nINSTALL-OK\nNXLSCRIPT-RC=0\n:\ub778\ufffdnu\udb37\udf31\ufffd\u001bj\ufffd^\ufffd&\u06b6\u05eb\ufffd\u01dcm\ufffdlz\ufffdh\ufffdX\ufffd\ufffd\ufffd%\ufffd)\ufffd)\ufffd\ufffdO\ufffd\ufffd\u01dcI@Ra$\ufffd2\ufffdZ\ufffd\ufffd+\ufffd1\u0015 !>\ufffdV\ufffd~\ufffd\ufffdm\ufffdmz\ufffd\ufffd\ub779\ufffdnu\ufffdz\ufffd\ufffd\u001bj\ufffd\u001e\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\u019b\ufffd\ufffdr\ufffd\ufffd}\ufffdW\ufffd\ufffdj\u001d{N\ufffd\ufffdn\ufffd\u06dd|\ufffdNfk\u001e\ufffd\ufffdN_\ufffd\ufffd\ufffdu\u02eb\ufffd\ufffd\ufffdr\ufffd\ufffdz{w\ufffd\u000e\ufffd\ufffdn\ufffd\u06dd}\ufffd\ufffd&k\u001e\ufffd\ufffdN_\ufffd\ufffd\ufffdu\ufffd\ufffdr\ufffd\ufffdz{Z\ufffd\u0007.\ufffd\ufffd\ufffd\ufffdY\ufffd",
+        "rc": 0
+      },
+      "installed_hash": null,
+      "mode": "0644",
+      "n": 4,
+      "ok": false,
+      "previous_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "risk": "low",
+      "risk_rank": 0,
+      "rollback": {
+        "output": "ROLLED-BACK\nNXLSCRIPT-RC=0\n",
+        "rc": 0
+      },
+      "rollback_route": "restore each <target>.nuxel-rollback and `systemctl restart nuxel-web`",
+      "service": "nuxel-web",
+      "service_absent": "nuxel-web",
+      "source": "pwa/nuxel-home/colour-test.html",
+      "source_sha256": "1a1f15416829c1c8194ca6c638924156420104ac11095dd94458903b6dba574d",
+      "staged_push": {
+        "bytes": 7307,
+        "frames": 3,
+        "sha256": "1a1f15416829c1c8194ca6c638924156420104ac11095dd94458903b6dba574d"
+      },
+      "target": "/usr/share/nuxel/pwa/nuxel-home/colour-test.html"
+    }
+  ],
+  "risk_envelope": {
+    "high": 22,
+    "low": 422,
+    "medium": 180
+  },
+  "skipped": [
+    {
+      "component": "kernel/bootloader-adjacent work is NOT deployed",
+      "group": "console-and-kernel-side-followups",
+      "reason": "sec_ts touch-in-charger-mode (lpcharge) needs a kernel/DTB change; the mission forbids flashing, so this stays offline (source patch + offline build + documented procedure) and is reported BLOCKED_KERNEL.",
+      "state": "blocked_kernel",
+      "verdict": "BLOCKED_KERNEL"
+    }
+  ],
+  "steps": 22,
+  "verdict": "FAILED",
+  "verdicts": {
+    "briq-10b-live-deploy-userspace": "FAILED"
+  },
+  "violations": []
+}

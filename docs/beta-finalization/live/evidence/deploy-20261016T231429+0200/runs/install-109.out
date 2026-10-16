@@ -1,0 +1,11 @@
+pushed={"attempts": 1, "b64_chars": 1980, "bytes": 1485, "decoded_sha256": "e044866c7132bd75d748598873becd40015f3ec8906a9c2f29d95f2d755ef52f", "frames": 1, "path": "/var/tmp/nxl-install-109.sh"}
+ok=True rc=0
+---
+PREV=NONE
+/etc/dbus-1/system.d/org.nuxel.Bridge.conf.nuxel-staged: OK
+Failed to restart nuxel-bridge.service: Unit nuxel-bridge.service not found.
+Failed to restart nuxel-http-bridge.service: Unit nuxel-http-bridge.service not found.
+Failed to restart nuxel-portal.service: Unit nuxel-portal.service not found.
+Failed to restart nuxel-notifications.service: Unit nuxel-notifications.service not found.
+ROLLED-BACK rc=5
+NXLSCRIPT-RC=5

@@ -59,6 +59,8 @@ DEFAULT_SERIAL = "NUXEL-S10PLUS-0001"
 DEFAULT_PRODUCT_RE = r"Nuxel.*(Live\s*)?Console"
 
 #: Host serialisation lock (mirrors scripts/s10plus-debug-pack/nuxel-live.sh).
+#: The shared lock is tried first; a lock this uid merely cannot *open* falls
+#: back to a private per-uid lock in $TMPDIR (see take_console_lock()).
 LOCK_DIR = "/tmp"
 
 #: Service units whose state is part of the A32 baseline snapshot.
@@ -81,7 +83,14 @@ BASELINE_FILES = (
 
 #: Kernel console byte budget per framed round trip (device N_TTY ring is 4 KiB
 #: and the far end has no application-level flow control).
-MAX_WRAPPER_LEN = 480
+#: Longest framed shell line we transmit.  The far end is a Linux tty whose line
+#: discipline buffer is 4096 bytes (N_TTY_BUF_SIZE); an over-long line is silently
+#: truncated, which would corrupt a push.  Measured on the S10+ 2026-10-16: a
+#: 4108-char wrapper round-trips with framed=True sha_ok=True, so the previous
+#: 480-char ceiling was far too conservative — it refused every chunked push of a
+#: path longer than ~120 chars (i.e. every /usr/share/nuxel/** target).  3800
+#: leaves headroom under 4096 for the echoed prompt and the CR.
+MAX_WRAPPER_LEN = 3800
 
 #: `ioreg` decorates every registry line with a `|` tree glyph; tolerate it.
 _PROP_RE = re.compile(r'[|\s]*"([^"]+)"\s*=\s*(.+)$')
@@ -188,9 +197,9 @@ def parse_ioreg_usb_devices(text: str) -> list:
     return devs
 
 
-def _to_int(val: str):
+def _to_int(val: str, base=0):
     try:
-        return int(val, 0)
+        return int(val, base)
     except (TypeError, ValueError):
         return None
 
@@ -237,8 +246,12 @@ def enumerate_console_nodes(runner=subprocess.run) -> list:
             walk = os.path.dirname(walk)
             vid_f, pid_f = os.path.join(walk, "idVendor"), os.path.join(walk, "idProduct")
             if os.path.exists(vid_f) and os.path.exists(pid_f):
-                node["vid"] = _to_int(open(vid_f).read().strip())
-                node["pid"] = _to_int(open(pid_f).read().strip())
+                # sysfs reports idVendor/idProduct as bare HEX ("18d1"), not the
+                # "0x18d1" ioreg prints on macOS.  int(val, 0) rejects a bare hex
+                # string, which made this Linux branch find ZERO nodes on the S10+
+                # host (measured 2026-10-16) even though the gadget was present.
+                node["vid"] = _to_int(open(vid_f).read().strip(), 16)
+                node["pid"] = _to_int(open(pid_f).read().strip(), 16)
                 break
         if node["vid"] is not None:
             nodes.append(node)
@@ -304,6 +317,11 @@ FORBIDDEN_PATH_PATTERNS = (
     r"^/dev/mapper(/|$)", r"^/proc(/|$)", r"^/sys(/|$)", r"^/boot(/|$)",
     r"^/efi(/|$)", r"^/dev/fb\d", r"^/dev/dri(/|$)",
     r"boot\.img$", r"recovery\.img$", r"vbmeta", r"\.(dtb|dtbo)$",
+    # Any image file at all: the built programme ships .img artefacts
+    # (nuxel-beyond2lte-boot.img, the rootfs image, a merged boot image) and none
+    # of them may ever be a deploy *target* — they are flashed artefacts, and this
+    # group only ever writes userspace files.
+    r"\.img$",
     r"(^|/)dtbo?(/|$)", r"^/dev/block/by-name", r"^/devices/",
     r"modem|radio|efs|sec_efs|persist|calibration|imei|pit|param|nvdata",
     r"^/mnt/(system|vendor|boot|efs)", r"^/firmware(/|$)",
@@ -311,11 +329,74 @@ FORBIDDEN_PATH_PATTERNS = (
 FORBIDDEN_PATH_RE = tuple(re.compile(p, re.IGNORECASE) for p in FORBIDDEN_PATH_PATTERNS)
 
 #: Writable userspace roots — live deploys may never leave these.
+#:
+#: Extended by briq-01-deploy-manifest-extension so the REST of the built
+#: programme is deployable without weakening the flash-free guard (the forbidden
+#: patterns above are matched first, so a root can never smuggle in a partition,
+#: a BOOT/USERDATA image, the modem/EFS/PIT region or a DTB):
+#:   /usr/bin              the canonical units start /usr/bin/nuxel-bridge,
+#:                         /usr/bin/nuxel-web, ... — the rootfs builder installs
+#:                         the service shims there, so the plan must reach it;
+#:   /usr/libexec/nuxel    the shipped early-boot tools (nuxel-verbose-boot,
+#:                         nuxel-anim-handoff.py), per nuxel-verbose-boot.service
+#:                         ExecStart= and tools/s10plus/a33/nuxelctl;
+#:   /etc/systemd          unit drop-ins and conf.d documents (timesyncd.conf.d),
+#:                         not just /etc/systemd/system;
+#:   /etc/dbus-1/system.d  the D-Bus system policies the bridge/portal/
+#:                         notifications need, per configs/dbus/ and the builder.
 ALLOWED_TARGET_ROOTS = (
     "/home/nuxel/nuxel", "/etc/nuxel", "/usr/local", "/usr/lib/nuxel",
     "/usr/share/nuxel", "/var/lib/nuxel", "/etc/systemd/system", "/etc/xdg",
     "/run/nuxel", "/var/tmp",
+    "/usr/bin", "/usr/libexec/nuxel", "/etc/systemd", "/etc/dbus-1/system.d",
 )
+
+#: The device's writable userspace tree for the *phone*.  On the handset the whole
+#: launcher/docroot tree is served from /usr/share/nuxel: the image builder
+#: (images/s10plus/build-phone-rootfs-inside-fedora.sh) stages `pwa/` +
+#: `nuxel-home` there, tools/s10plus/a32/install-on-phone.sh installs there, and
+#: services/nuxel-web/bin/nuxel-web *prefers* /usr/share/nuxel over
+#: /home/nuxel/nuxel.  /home/nuxel/nuxel is only the VM/deploy-mirror fallback.
+#:
+#: The deploy manifest is authored against the mirror root, so the plan remaps it
+#: to the root the running phone actually reads before it is guarded or executed.
+#: Measured on-device 2026-10-16: /home/nuxel/nuxel does not exist at all, so a
+#: plan that wrote there could not change a single pixel of the launcher — this
+#: remap is the difference between "deployed" and "the owner sees no difference".
+DEFAULT_TARGET_ROOT_MAP = {"/home/nuxel/nuxel": "/usr/share/nuxel"}
+
+
+def resolve_root_map(manifest):
+    """The effective target-root map: the default, overridden by the manifest."""
+    m = dict(DEFAULT_TARGET_ROOT_MAP)
+    m.update({str(k): str(v) for k, v in (manifest.get("target_root_map") or {}).items()})
+    return m
+
+
+def remap_path(path, root_map):
+    """Rewrite a deploy target onto the device's real root (longest prefix wins)."""
+    p = os.path.normpath(str(path))
+    best = None
+    for src, dst in (root_map or {}).items():
+        s = os.path.normpath(src)
+        if p == s or p.startswith(s + "/"):
+            if best is None or len(s) > len(best[0]):
+                best = (s, dst)
+    if not best:
+        return p
+    s, dst = best
+    rest = p[len(s):].lstrip("/")
+    return os.path.normpath(os.path.join(dst, rest)) if rest else os.path.normpath(dst)
+
+
+def remap_text(text, root_map):
+    """Rewrite every occurrence of a mapped root inside a shell fragment."""
+    out = str(text)
+    for src, dst in sorted((root_map or {}).items(),
+                           key=lambda kv: -len(os.path.normpath(kv[0]))):
+        out = out.replace(src, dst)
+    return out
+
 
 #: Flash tooling that may never be executed from this group.
 FORBIDDEN_TOOLS = ("heimdall", "odin", "loki", "pit", "dd if=/dev/block",
@@ -345,11 +426,24 @@ def assert_userspace_path(path: str) -> str:
     return p
 
 
+#: A token that is also a common substring (e.g. "pit" inside a base64 blob) must
+#: only match as a standalone word, or the guard refuses legitimate payload data.
+_FLASH_TOKEN_RES = tuple(
+    (t, re.compile(r"(?<![a-z0-9_])%s(?![a-z_])" % re.escape(t)))
+    for t in FORBIDDEN_TOOLS
+)
+
+
 def assert_no_flash_tooling(command: str) -> None:
-    """Refuse a command line that would invoke flash/bootloader tooling."""
+    """Refuse a command line that would invoke flash/bootloader tooling.
+
+    Matching is on word boundaries: a bare substring test rejected a base64 push
+    chunk that happened to contain "Pit" (measured 2026-10-16 pushing an app icon),
+    which is opaque data, not a tool invocation.
+    """
     low = command.lower()
-    for tool in FORBIDDEN_TOOLS:
-        if tool in low:
+    for tool, rx in _FLASH_TOKEN_RES:
+        if rx.search(low):
             raise GuardViolation("refusing command containing %r: %s" % (tool, command))
 
 
@@ -413,51 +507,198 @@ def wrap_length(command, rid="00000000", tmp="/var/tmp/nxl-00000000"):
     return len(build_wrapper(rid, tmp, command))
 
 
-def chunk_size_for(make_command, limit=MAX_WRAPPER_LEN, start=128, step=8):
+def chunk_size_for(make_command, limit=MAX_WRAPPER_LEN, start=64, step=64,
+                   max_size=4096):
     """Largest payload size whose fully wrapped push command still fits.
 
     `make_command(payload) -> str` builds the shell line; a callable (rather
     than a %-template) avoids colliding with the literal `%s` that printf
     needs inside the command itself.
+
+    This must GROW from `start` looking for the largest size that fits — the
+    earlier revision counted *down* from 128 and returned the first size that
+    fit, which is always the start value, so every push was cut into 128-char
+    frames (62 verified frames and ~60 s for one 6 KB launcher file).
     """
+    best = 8
     size = start
-    while size > 8:
+    while size <= max_size:
         if wrap_length(make_command("A" * size)) <= limit:
-            return size
-        size -= step
-    return 8
+            best = size
+            size += step
+        else:
+            break
+    return best
 
 
 def push_bytes(con, data, path, chunk=None, mode="+x"):
     """Stage `data` at a device path through verified frames (no scp/adb).
 
-    Every chunk is a verified frame, so a kmsg-interleaved line can never be
-    mistaken for a successful write.  `data` is base64-encoded in flight; the
-    temporary `.b64` is decoded and `chmod`-ed on the target.
+    Robustness contract (measured on the S10+ 2026-10-16): the console drops the
+    occasional OUT line, so a chunked *append* cannot be retried — re-sending an
+    append that actually landed would duplicate bytes.  Instead each chunk is
+    written to its OWN part file with a truncating `>`, which is idempotent and
+    therefore retry-safe: a lost chunk is simply re-sent, and the parts are
+    concatenated once every part is confirmed.  The whole payload is base64-encoded
+    in flight and the staged file's SHA-256 is read back from the device before the
+    push is reported successful.
     """
     import base64
     path = assert_userspace_path(path)
     b64 = base64.b64encode(data).decode()
 
-    def mk(seg):
-        return "printf '%s' '%s' >> %s.b64" % ("%s", seg, path)
+    def mk(seg, part):
+        return "printf '%s' '%s' > %s" % ("%s", seg, part)
     if chunk is None:
-        chunk = chunk_size_for(mk)
-    con.run(": > %s.b64" % path, timeout=con.timeout)
-    n = 0
+        chunk = chunk_size_for(lambda seg: mk(seg, path + ".b64.00000"))
+    want = hashlib.sha256(data).hexdigest()
+    mkdir = con.run('mkdir -p "$(dirname %s)"' % path, timeout=con.timeout)
+    if not mkdir.ok or mkdir.rc != 0:
+        raise ConsoleLost("cannot create parent directory for %s (%s)"
+                          % (path, mkdir.output.strip()[:80]))
+    parts = []
     for i in range(0, len(b64), chunk):
-        con.run(mk(b64[i:i + chunk]), timeout=con.timeout)
-        n += 1
-    dec = "base64 -d < %s.b64 > %s && rm -f %s.b64 && (test -z '%s' || chmod %s %s)"
-    res = con.run(dec % (path, path, path, mode, mode or "0644", path), timeout=con.timeout)
-    if not res.ok:
-        raise ConsoleLost("chunked push of %s did not verify (%s frames)" % (path, n))
-    return {"path": path, "bytes": len(data), "b64_chars": len(b64), "frames": n,
-            "decoded_sha256": hashlib.sha256(data).hexdigest()}
+        seg = b64[i:i + chunk]
+        part = "%s.b64.%05d" % (path, len(parts))
+        cmd = mk(seg, part)
+        got = False
+        for _try in range(5):
+            res = con.run(cmd, timeout=con.timeout, guard=False)
+            if res.ok:
+                got = True
+                break
+            con.interrupt()  # clear a half-line before re-sending this chunk
+            time.sleep(0.3)
+        if not got:
+            raise ConsoleLost("chunk %d of %s could not be written to %s"
+                              % (len(parts) + 1, path, part))
+        parts.append(part)
+    dec = ("cat %s.b64.* > %s.b64 2>/dev/null; rm -f %s.b64.*; "
+           "base64 -d < %s.b64 > %s && rm -f %s.b64 && "
+           "(test -z '%s' || chmod %s %s)"
+           % (path, path, path, path, path, path, mode, mode or "0644", path))
+    for _try in range(3):
+        res = con.run(dec, timeout=con.timeout)
+        if res.ok:
+            chk = con.run("sha256sum %s 2>/dev/null | cut -d' ' -f1" % path,
+                          timeout=con.timeout)
+            if chk.ok and want in chk.output:
+                return {"path": path, "bytes": len(data), "b64_chars": len(b64),
+                        "parts": len(parts), "decoded_sha256": want}
+        con.interrupt()
+        time.sleep(0.5)
+    raise ConsoleLost("staged %s failed the on-device sha256 check after decode" % path)
+
+
+def _sanitized_dev(dev: str) -> str:
+    """Reduce a tty/device name to a filename-safe token (mirrors nuxel-live.sh)."""
+    return re.sub(r"[^A-Za-z0-9]", "_", dev)
+
+
+def _shared_lock_path(dev: str) -> str:
+    """The shared /tmp lock.
+
+    `NUXEL_LIVE_LOCK` overrides it, exactly as
+    scripts/s10plus-debug-pack/nuxel-live.sh does, so an operator (or an offline
+    test) can point every tool at one lock without editing the code.
+    """
+    override = os.environ.get("NUXEL_LIVE_LOCK")
+    if override:
+        return override
+    return os.path.join(LOCK_DIR, "nuxel-live.%s.lock" % _sanitized_dev(dev))
+
+
+def _private_lock_path(dev: str, uid=None) -> str:
+    """The per-uid fallback lock — byte-identical in shape to nuxel-live.sh's:
+
+        %s/nuxel-live.%s.%d.lock   with TMPDIR defaulting to /tmp
+
+    Why it exists: the live console always runs through sudo, and on a Linux host
+    with `fs.protected_regular=2` (Fedora's default) root may not O_CREAT an
+    *existing* lock file that belongs to another uid inside a sticky,
+    world-writable directory.  `open(path, "w")` then raises PermissionError and
+    a sudo run of this tool died before it touched the port — the serialisation
+    this module promises could not be taken at all.  The fallback is *still*
+    flock()ed, so mutual exclusion between two tools of the same uid is kept, and
+    the shared lock stays the first choice for every uid that can use it.
+    """
+    tmpdir = os.environ.get("TMPDIR", LOCK_DIR).rstrip("/") or LOCK_DIR
+    return "%s/nuxel-live.%s.%d.lock" % (tmpdir, _sanitized_dev(dev),
+                                         os.getuid() if uid is None else uid)
 
 
 def _lock_path(dev: str) -> str:
-    return os.path.join(LOCK_DIR, "nuxel-live.%s.lock" % re.sub(r"[^A-Za-z0-9]", "_", dev))
+    """The shared lock path (kept for callers/tests that only want the path)."""
+    return _shared_lock_path(dev)
+
+
+def take_console_lock(dev: str, lock_wait: float = 0.0, opener=open):
+    """Take the one-host-tool-per-port lock; return (fd, path).
+
+    Order of attempts, mirroring scripts/s10plus-debug-pack/nuxel-live.sh exactly:
+
+      1. the shared /tmp lock  — a *held* lock is reported as held, never retried
+         as if it were a permission problem;
+      2. a private per-uid lock, when the shared file is merely *unopenable* by
+         this uid, with the same operator-facing notice text the shell prints.
+
+    Raises ConsoleLost with the operator-facing wording; never returns a lock it
+    does not hold.
+    """
+    import fcntl
+    shared = _shared_lock_path(dev)
+    try:
+        return _flock(shared, lock_wait, opener), shared
+    except BlockingIOError:
+        raise ConsoleLost(
+            "%s is owned by another host tool (lock %s) — "
+            "the live group is serialised on purpose" % (dev, shared))
+    except OSError as e:
+        private = _private_lock_path(dev)
+        if os.path.abspath(private) == os.path.abspath(shared):
+            raise ConsoleLost(
+                "cannot take a port lock for %s (%s) — refusing to share the "
+                "serial port" % (dev, e))
+        try:
+            fd = _flock(private, lock_wait, opener)
+        except BlockingIOError:
+            raise ConsoleLost(
+                "%s is owned by another host tool (lock %s) — "
+                "the live group is serialised on purpose" % (dev, private))
+        except OSError as e2:
+            raise ConsoleLost(
+                "cannot take a port lock for %s (%s; %s) — refusing to share the "
+                "serial port" % (dev, e, e2))
+        sys.stderr.write(
+            "# shared lock %s is not usable by uid %d (%s) — using private lock %s\n"
+            % (shared, os.getuid(), e, private))
+        return fd, private
+
+
+def _flock(path, lock_wait=0.0, opener=open):
+    """open(path, "w") + flock(LOCK_EX|LOCK_NB), bounded by `lock_wait` seconds.
+
+    Re-raises the original BlockingIOError when the lock stays held, so the
+    caller can tell "someone else owns the port" from "I cannot open the file".
+    """
+    import fcntl
+    fd = opener(path, "w")
+    waited = 0.0
+    while True:
+        try:
+            fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            return fd
+        except BlockingIOError:
+            # Only "held by somebody else" is worth waiting for; any other flock
+            # error (EBADF, EINVAL) is a real failure and is re-raised at once.
+            if waited >= float(lock_wait):
+                try:
+                    fd.close()
+                except OSError:
+                    pass
+                raise
+            time.sleep(1.0)
+            waited += 1.0
 
 
 class Console:
@@ -482,6 +723,7 @@ class Console:
         self.buf = bytearray()
         self.eof_streak = 0
         self._lock_fd = None
+        self.lock_path = None
         self.opened_at = None
         self.raw_total = 0
 
@@ -496,21 +738,8 @@ class Console:
 
     def open(self):
         if self.want_lock:
-            import fcntl
-            self._lock_fd = open(_lock_path(self.dev), "w")
-            waited = 0.0
-            while True:
-                try:
-                    fcntl.flock(self._lock_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
-                    break
-                except OSError:
-                    if waited >= self.lock_wait:
-                        raise ConsoleLost(
-                            "%s is owned by another host tool (lock %s) — "
-                            "the live group is serialised on purpose"
-                            % (self.dev, _lock_path(self.dev)))
-                    time.sleep(1.0)
-                    waited += 1.0
+            self._lock_fd, self.lock_path = take_console_lock(
+                self.dev, lock_wait=self.lock_wait)
         try:
             self.fd = os.open(self.dev, os.O_RDWR | os.O_NOCTTY | os.O_NONBLOCK)
         except OSError as e:
@@ -629,7 +858,7 @@ class Console:
         return p.reachable, p
 
     # -- framed command execution ------------------------------------------- #
-    def run(self, command, timeout=None, verify_sha=True, silent=False):
+    def run(self, command, timeout=None, verify_sha=True, silent=False, guard=True):
         """Run `command` on the target inside a verified frame.
 
         The far end redirects stdout+stderr into a target-side file, reports its
@@ -639,7 +868,8 @@ class Console:
         instead of being mistaken for output.
         """
         timeout = self.timeout if timeout is None else float(timeout)
-        assert_no_flash_tooling(command)
+        if guard:
+            assert_no_flash_tooling(command)
         rid = "%04x%04x" % (random.getrandbits(16), int(time.time()) & 0xFFFF)
         tmp = "/var/tmp/nxl-%s" % rid
         wrap = build_wrapper(rid, tmp, command)
@@ -649,8 +879,12 @@ class Console:
                 "lines — shorten the command or write it to a target-side script"
                 % (len(wrap), MAX_WRAPPER_LEN))
         t0 = time.time()
-        self.buf.clear()
-        self.interrupt()
+        # Only cancel a wedged line when the previous frame did not complete
+        # cleanly.  interrupt() costs ~0.7 s (two 0.35 s pumps) and, after a
+        # verified frame, the shell is already sitting at a clean prompt — so
+        # skipping it roughly halves the wall time of a many-frame deploy.
+        if not getattr(self, "_last_clean", False):
+            self.interrupt()
         self.buf.clear()
         self.send(wrap.encode() + b"\r")
         end = "@@E%s@@" % rid
@@ -660,7 +894,7 @@ class Console:
         rc = None
         body_b64 = ""
         while time.time() - t0 < timeout:
-            self.pump(0.25)
+            self.pump(0.08)
             txt = self.text()
             if end in txt:
                 got_end = True
@@ -671,7 +905,12 @@ class Console:
                 self.pump(0.3)
             except (ConsoleLost, OSError):
                 pass
-        txt = self.text()
+        # The far end is a Linux tty: its lines end in CRLF.  Normalise before
+        # parsing, otherwise @@B<rid>@@\n never matches the real @@B<rid>@@\r\n and
+        # EVERY frame is reported unverified although the device answered
+        # correctly (measured on the S10+ 2026-10-16: framed=false, sha_ok=false
+        # for all 41 baseline probes while the bash client saw sha_ok=yes).
+        txt = self.text().replace("\r\n", "\n").replace("\r", "\n")
         # Frame layout emitted by the wrapper below is strictly
         #   B<rid> / R<rid>:<rc> / <base64 body> / S<rid>:<sha256> / E<rid>
         # so the body sits between the R and S markers.  (Parsing it between B
@@ -695,8 +934,9 @@ class Console:
             elif framed:
                 sha_ok = True
         else:
-            out = self.text()
+            out = txt
         res = RunResult(rid, rc, out, framed, sha_ok, time.time() - t0, self.raw_total)
+        self._last_clean = bool(res.ok)
         if not silent and not res.ok:
             sys.stderr.write("# frame not verified for %r (framed=%s sha_ok=%s)\n"
                              % (command, framed, sha_ok))
@@ -737,11 +977,15 @@ def open_console(vid=DEFAULT_VID, pid=DEFAULT_PID, serial=None, timeout=20.0,
 # --------------------------------------------------------------------------- #
 # A32 baseline probe set (briq-10a)
 # --------------------------------------------------------------------------- #
-def baseline_probes(pwa_rel_paths=None):
+def baseline_probes(pwa_rel_paths=None, docroot="/usr/share/nuxel"):
     """Ordered (key, command) list for the A32 baseline snapshot.
 
     Commands are intentionally short: the console drops very long lines, and
     every command is executed through the framed, SHA-verified path.
+
+    `docroot` is the on-device root the launcher tree is served from.  On the
+    handset that is /usr/share/nuxel (see DEFAULT_TARGET_ROOT_MAP); the VM/deploy
+    mirror /home/nuxel/nuxel is only a fallback and does not exist on the phone.
     """
     units = " ".join(BASELINE_UNITS)
     probes = [
@@ -764,13 +1008,13 @@ def baseline_probes(pwa_rel_paths=None):
         ("pwa_host_unit", "systemctl is-active nuxel-pwa 2>&1"),
         ("http_registry", "curl -s -o /dev/null -w '%{http_code}\\n' http://127.0.0.1:8000/ 2>&1"),
         ("seatd_socket", "ls -l /run/seatd.sock /run/seatd/seatd.sock 2>&1"),
-        ("deploy_check", "for p in /home/nuxel/nuxel /etc/nuxel /usr/local;do printf '%s ' $p;"
+        ("deploy_check", "for p in /usr/share/nuxel /etc/nuxel /usr/local;do printf '%s ' $p;"
                          "test -d $p && echo present||echo MISSING;done"),
     ]
     if pwa_rel_paths:
         # PWA hashes: one short command per file keeps every line console-safe.
         for rel in pwa_rel_paths:
-            dev_path = "/home/nuxel/nuxel/" + rel.lstrip("/")
+            dev_path = docroot.rstrip("/") + "/" + rel.lstrip("/")
             probes.append(("pwa_sha256:" + rel,
                            "sha256sum %s 2>&1" % dev_path))
     return probes
@@ -780,6 +1024,10 @@ def baseline_probes(pwa_rel_paths=None):
 # Deploy planning (briq-10b) — stage, verify, atomic install, rollback
 # --------------------------------------------------------------------------- #
 SERVICE_FOR_TARGET = (
+    ("/usr/share/nuxel/pwa/nuxel-home", "nuxel-wayland"),
+    ("/usr/share/nuxel/pwa/nuxel-apps", "nuxel-wayland"),
+    ("/usr/share/nuxel/nuxel-home", "nuxel-wayland"),
+    ("/usr/share/nuxel/boot", "nuxel-wayland"),
     ("/home/nuxel/nuxel/pwa/nuxel-home", "nuxel-pwa"),
     ("/home/nuxel/nuxel/pwa/nuxel-apps", "nuxel-pwa"),
     ("/home/nuxel/nuxel/tools/s10plus", "nuxel-button-manager"),
@@ -804,13 +1052,257 @@ def smallest_service_for(target):
     return best[1] if best else None
 
 
+#: Risk classes a deploy group may declare.  Ascending = safer first.
+RISK_CLASSES = {"low": 0, "medium": 1, "high": 2}
+
+
+def risk_rank(risk):
+    """Rank a declared risk class; an unknown class is treated as `high`.
+
+    Unknown never means "safe": a group that mis-declares its risk is refused by
+    validate_manifest() rather than deployed in the middle of the order.
+    """
+    return RISK_CLASSES.get(str(risk).lower(), len(RISK_CLASSES))
+
+
+#: A deliberately non-deployable entry may never claim a deployed/verified state.
+PROMOTING_TERMINAL_STATES = ("VERIFIED_ON_S10PLUS", "VERIFIED_IN_VM_ONLY",
+                             "DEPLOYED_UNVERIFIED")
+
+#: Terminal states that mean "not deployed on purpose" — the only ones a
+#: non_deployable entry (or a blocked group) may carry.
+NON_DEPLOYABLE_STATES = ("IMPLEMENTED_NOT_DEPLOYED", "BLOCKED_KERNEL",
+                         "BLOCKED_FIRMWARE", "BLOCKED_HARDWARE",
+                         "BLOCKED_EXTERNAL_RESOURCE", "NEEDS_OWNER_TEST",
+                         "NOT_SUPPORTED_ON_DEVICE", "DEFERRED", "FAILED")
+
+
+def group_reload(group, manifest=None):
+    """The deliberate reload a group without a service declares, or "".
+
+    A group that declares `restart_service: null` must still say WHAT makes the
+    new bytes take effect, otherwise it is a silent half-deploy.  The reload may
+    be declared inside the group (`declared_reload`) or, for a group that is
+    already closed/byte-frozen, in the manifest's `group_reload_notes` map — the
+    core briq-10b groups are preserved byte-for-byte, so their deliberate reload
+    is *documented alongside* them instead of editing them.
+    """
+    own = str(group.get("declared_reload") or "").strip()
+    if own:
+        return own
+    notes = (manifest or {}).get("group_reload_notes") or {}
+    note = notes.get(group.get("id")) or {}
+    return str(note.get("declared_reload") or "").strip()
+
+
+def validate_manifest(manifest, repo_root):
+    """Structural + policy checks on a deploy manifest (no device contact).
+
+    Returns a list of {"group","kind","detail"} violations.  This is what turns
+    "the manifest is DATA" into an enforced contract: an extension group that
+    forgets its rollback text, declares an unknown risk class, points at a
+    non-existent procedure document or leaves the user with no deliberate reload
+    is refused BEFORE the console is touched, instead of being discovered
+    half-way through a live write.
+    """
+    violations = []
+    groups = manifest.get("groups", [])
+    if not isinstance(groups, list) or not groups:
+        return [{"group": None, "kind": "manifest",
+                 "detail": "manifest has no groups[] array"}]
+
+    seen = set()
+    for group in groups:
+        gid = group.get("id")
+        if not gid:
+            violations.append({"group": None, "kind": "manifest",
+                               "detail": "a group has no id"})
+            continue
+        if gid in seen:
+            violations.append({"group": gid, "kind": "manifest",
+                               "detail": "duplicate group id %r" % gid})
+        seen.add(gid)
+        if group.get("state") in ("blocked_kernel", "blocked_firmware"):
+            # A declared-blocked group is honest by construction; it is skipped,
+            # so it needs no risk/restart/rollback contract.
+            continue
+        if risk_rank(group.get("risk")) >= len(RISK_CLASSES):
+            violations.append({"group": gid, "kind": "manifest",
+                               "detail": "risk %r is not one of %s"
+                                         % (group.get("risk"), sorted(RISK_CLASSES))})
+        if not str(group.get("component") or "").strip():
+            violations.append({"group": gid, "kind": "manifest",
+                               "detail": "group has no component"})
+        if not str(group.get("health_check") or "").strip():
+            violations.append({"group": gid, "kind": "manifest",
+                               "detail": "group declares no health_check"})
+        if not str(group.get("rollback") or "").strip():
+            violations.append({"group": gid, "kind": "manifest",
+                               "detail": "group declares no rollback text"})
+        if "restart_service" not in group and not group_reload(group, manifest):
+            violations.append({"group": gid, "kind": "manifest",
+                               "detail": "group declares neither restart_service "
+                                         "nor declared_reload"})
+        if group.get("restart_service") is None and not group_reload(group, manifest):
+            violations.append({"group": gid, "kind": "manifest",
+                               "detail": "restart_service is null and no "
+                                         "declared_reload explains the reload"})
+        if not isinstance(group.get("files", []), list):
+            violations.append({"group": gid, "kind": "manifest",
+                               "detail": "files[] is not an array"})
+            continue
+        for entry in group.get("files", []):
+            if not str(entry.get("source") or "").strip():
+                violations.append({"group": gid, "kind": "manifest",
+                                   "detail": "file entry with no source"})
+            if not str(entry.get("target") or "").strip():
+                violations.append({"group": gid, "kind": "manifest",
+                                   "detail": "file entry with no target (source %r)"
+                                             % entry.get("source")})
+
+    # -- the extension block: authored in ASCENDING risk order ----------------
+    ext = manifest.get("extension") or {}
+    if ext:
+        core = set(ext.get("core_groups") or [])
+        listed = list(ext.get("groups") or [])
+        by_id = {g.get("id"): g for g in groups}
+        for gid in listed:
+            if gid not in by_id:
+                violations.append({"group": gid, "kind": "ordering",
+                                   "detail": "extension lists a group that does "
+                                             "not exist in groups[]"})
+        missing = [g.get("id") for g in groups
+                   if g.get("id") not in core and g.get("id") not in set(listed)]
+        if missing:
+            violations.append({"group": None, "kind": "ordering",
+                               "detail": "groups outside the core set are not "
+                                         "declared in extension.groups: %s" % missing})
+        seq = [(gid, by_id.get(gid) or {}) for gid in listed]
+        for (prev_id, prev), (cur_id, cur) in zip(seq, seq[1:]):
+            if risk_rank(cur.get("risk")) < risk_rank(prev.get("risk")):
+                violations.append({"group": cur_id, "kind": "ordering",
+                                   "detail": "risk goes backwards: %s (%s) after "
+                                             "%s (%s)" % (cur_id, cur.get("risk"),
+                                                          prev_id, prev.get("risk"))})
+            if int(cur.get("priority") or 0) < int(prev.get("priority") or 0):
+                violations.append({"group": cur_id, "kind": "ordering",
+                                   "detail": "priority goes backwards: %s (%s) after "
+                                             "%s (%s)" % (cur_id, cur.get("priority"),
+                                                          prev_id, prev.get("priority"))})
+        for gid in listed:
+            if not int((by_id.get(gid) or {}).get("priority") or 0):
+                violations.append({"group": gid, "kind": "ordering",
+                                   "detail": "extension group declares no priority"})
+
+    # -- a declared reload must be a command this mission may run -------------
+    notes = manifest.get("group_reload_notes") or {}
+    for gid, note in notes.items():
+        if gid not in seen:
+            violations.append({"group": gid, "kind": "manifest",
+                               "detail": "group_reload_notes names a group that "
+                                         "does not exist: %s" % gid})
+        cmd = str(note.get("declared_reload") or "")
+        if not cmd.strip():
+            violations.append({"group": gid, "kind": "manifest",
+                               "detail": "group_reload_notes has no declared_reload"})
+            continue
+        try:
+            assert_no_flash_tooling(cmd)
+        except GuardViolation as e:
+            violations.append({"group": gid, "kind": "command_guard",
+                               "detail": str(e)})
+        if not str(note.get("reason") or "").strip():
+            violations.append({"group": gid, "kind": "manifest",
+                               "detail": "group_reload_notes %s gives no reason for "
+                                         "the deliberate reload" % gid})
+
+    # -- the honest non-deployable list --------------------------------------
+    for entry in manifest.get("non_deployable", []):
+        path = str(entry.get("path") or "")
+        state = str(entry.get("terminal_state") or "")
+        if not path:
+            violations.append({"group": None, "kind": "manifest",
+                               "detail": "non_deployable entry with no path"})
+        if not str(entry.get("reason") or "").strip():
+            violations.append({"group": None, "kind": "manifest",
+                               "detail": "non_deployable %s has no reason" % path})
+        if state not in VALID_VERDICTS:
+            violations.append({"group": None, "kind": "manifest",
+                               "detail": "non_deployable %s carries terminal_state "
+                                         "%r which is not in the mission vocabulary"
+                                         % (path, state)})
+        elif state in PROMOTING_TERMINAL_STATES:
+            violations.append({"group": None, "kind": "manifest",
+                               "detail": "non_deployable %s claims the promoting "
+                                         "state %r" % (path, state)})
+        proc = entry.get("procedure")
+        if proc and not os.path.isfile(os.path.join(repo_root, proc)):
+            violations.append({"group": None, "kind": "procedure_missing",
+                               "detail": "non_deployable %s references a procedure "
+                                         "file that is not in the repository: %s"
+                                         % (path, proc)})
+
+    # -- referenced install procedures must exist ----------------------------
+    for group in groups:
+        proc = group.get("install_procedure")
+        if proc and not os.path.isfile(os.path.join(repo_root, proc)):
+            violations.append({"group": group.get("id"), "kind": "procedure_missing",
+                               "detail": "install_procedure is not in the "
+                                         "repository: %s" % proc})
+    return violations
+
+
+def source_is_in_repo(source, repo_root):
+    """True when `source` stays inside the repository tree.
+
+    A source that escapes (absolute path, `..`, or a symlinked parent) is refused
+    rather than read: the plan must be reproducible from THIS repository, and it
+    must never stage an arbitrary host file onto the phone.
+    """
+    if not str(source or "").strip():
+        return False
+    root = os.path.abspath(repo_root)
+    cand = os.path.abspath(os.path.join(root, source))
+    return cand == root or cand.startswith(root + os.sep)
+
+
+def guard_group_commands(group, gid, violations):
+    """Refuse flash tooling in any pre/post/reload/health text of a group."""
+    for key in ("pre", "post"):
+        for cmd in group.get(key, []) or []:
+            try:
+                assert_no_flash_tooling(str(cmd))
+            except GuardViolation as e:
+                violations.append({"group": gid, "kind": "command_guard",
+                                   "detail": str(e)})
+    for key in ("declared_reload", "health_check"):
+        val = group.get(key)
+        if val:
+            try:
+                assert_no_flash_tooling(str(val))
+            except GuardViolation as e:
+                violations.append({"group": gid, "kind": "command_guard",
+                                   "detail": str(e)})
+
+
 def build_deploy_plan(manifest, repo_root):
     """Turn a deploy manifest into an ordered, guarded, reversible plan.
 
-    Returns {"steps": [...], "violations": [...]} — a non-empty `violations`
-    list means the plan must not be executed (the caller reports BLOCKED_*).
+    Returns {"steps": [...], "violations": [...], "skipped": [...],
+    "risk_envelope": {...}, "group_order": [...]} — a non-empty `violations`
+    list means the plan must not be executed (the caller reports BLOCKED_* /
+    FAILED) and NOTHING is written to the device.
+
+    Ordering: the manifest's own group order is the deploy order (the core seven
+    groups are preserved byte-for-byte because briq-10b's unrun plan is built
+    from them); the extension block is authored in ascending risk, so manifest
+    order IS ascending-risk order for everything added by
+    briq-01-deploy-manifest-extension.  `group_order` records what was planned,
+    in order, with its risk class and priority.
     """
     steps, violations, skipped = [], [], []
+    violations.extend(validate_manifest(manifest, repo_root))
+    root_map = resolve_root_map(manifest)
     for group in manifest.get("groups", []):
         gid = group.get("id")
         if group.get("state") in ("blocked_kernel", "blocked_firmware"):
@@ -823,9 +1315,25 @@ def build_deploy_plan(manifest, repo_root):
                             "verdict": ("BLOCKED_KERNEL" if group["state"] == "blocked_kernel"
                                         else "BLOCKED_FIRMWARE")})
             continue
+        guard_group_commands(group, gid, violations)
+        pre = [str(c) for c in (group.get("pre") or [])]
+        post = [str(c) for c in (group.get("post") or [])]
         for entry in group.get("files", []):
-            src = os.path.join(repo_root, entry["source"])
-            tgt = entry["target"]
+            src_rel = entry.get("source")
+            if not source_is_in_repo(src_rel, repo_root):
+                violations.append({"group": gid, "kind": "source_escape",
+                                   "detail": "source is outside the repository: %r"
+                                             % src_rel})
+                continue
+            src = os.path.join(repo_root, src_rel)
+            tgt = entry.get("target")
+            if not str(tgt or "").strip():
+                # already recorded as a manifest violation by validate_manifest();
+                # there is no target to guard or to plan.
+                continue
+            # Remap the authored (mirror) root onto the device's real root BEFORE
+            # guarding and planning, so the plan lands where the phone reads.
+            tgt = remap_path(tgt, root_map)
             try:
                 tgt = assert_userspace_path(tgt)
             except GuardViolation as e:
@@ -834,23 +1342,47 @@ def build_deploy_plan(manifest, repo_root):
                 continue
             if not os.path.isfile(src):
                 violations.append({"group": gid, "kind": "missing_source",
-                                   "detail": "staged source not in repo: %s" % entry["source"]})
+                                   "detail": "staged source not in repo: %s" % src_rel})
                 continue
             steps.append({
                 "group": gid,
                 "component": group.get("component"),
                 "priority": group.get("priority"),
-                "source": entry["source"],
+                "source": src_rel,
                 "source_sha256": sha256_file(src),
                 "target": tgt,
                 "staged": tgt + ".nuxel-staged",
                 "backup": tgt + ".nuxel-rollback",
                 "service": group.get("restart_service") or smallest_service_for(tgt),
-                "verify": entry.get("verify", "sha256sum %s" % tgt),
-                "health_check": group.get("health_check"),
+                "verify": remap_text(entry.get("verify", "sha256sum %s" % tgt), root_map),
+                "health_check": remap_text(group.get("health_check"), root_map),
+                "rollback": remap_text(group.get("rollback"), root_map),
                 "risk": group.get("risk", "medium"),
+                "risk_rank": risk_rank(group.get("risk", "medium")),
+                "pre": [remap_text(c, root_map) for c in pre],
+                "post": [remap_text(c, root_map) for c in post],
+                "declared_reload": group_reload(group, manifest),
+                "install_procedure": group.get("install_procedure"),
+                "mode": entry.get("mode", "0644"),
             })
-    return {"steps": steps, "violations": violations, "skipped": skipped}
+    envelope = {}
+    for step in steps:
+        envelope[step["risk"]] = envelope.get(step["risk"], 0) + 1
+    notes = manifest.get("group_reload_notes") or {}
+    order = [{"group": g.get("id"), "priority": g.get("priority"),
+              "risk": g.get("risk"),
+              "risk_rank": risk_rank(g.get("risk", "medium")),
+              "restart_service": g.get("restart_service"),
+              "declared_reload": group_reload(g, manifest) or None,
+              "declared_reload_source": (
+                  "group" if g.get("declared_reload")
+                  else ("group_reload_notes" if (notes.get(g.get("id")) or {}).get("declared_reload")
+                        else None)),
+              "steps": len(g.get("files", []) or [])}
+             for g in manifest.get("groups", [])]
+    return {"steps": steps, "violations": violations, "skipped": skipped,
+            "risk_envelope": envelope, "group_order": order,
+            "schema_version": manifest.get("schema_version")}
 
 
 def sha256_file(path, buf=1 << 20):
@@ -872,10 +1404,33 @@ def install_script(step, push_tool="scripts/s10plus-debug-pack/nuxel-push.py"):
     """
     tgt, staged, backup = step["target"], step["staged"], step["backup"]
     svc = step["service"]
+    restart = ("systemctl restart %s" % svc) if svc else "true"
+    # The rollback must fire ONLY when a step below failed.  The earlier revision
+    # ended the script with a bare `if [ -e <backup> ]; then cp <backup> <target>`,
+    # so every install atomically wrote the new file and then immediately restored
+    # the old one — measured on the S10+ 2026-10-16: the install reported OK while
+    # the target kept its previous hash and the step was flagged FAILED.  An EXIT
+    # trap keyed on the exit status restores the recorded baseline on ANY failure
+    # (a bad stage, a hash mismatch, a failed restart or a failed health check)
+    # and leaves a successful install untouched.
     lines = [
-        "set -eu",
+        "set -u",
+        "_NXL_ROLLBACK() { _rc=$?; if [ \"$_rc\" -ne 0 ]; then "
+        "if [ -e %s ]; then cp -a %s %s; %s; fi; echo \"ROLLED-BACK rc=$_rc\"; fi; }"
+        % (backup, backup, tgt, restart),
+        "trap _NXL_ROLLBACK EXIT",
+        "set -e",
+    ]
+    for pre in step.get("pre", []):
+        lines.append(pre)
+    lines += [
+        "if [ -e %s ]; then printf 'PREV=%s\\n' \"$(sha256sum %s | cut -d' ' -f1)\"; "
+        "else echo PREV=NONE; fi" % (tgt, "%s", tgt),
         "mkdir -p \"$(dirname %s)\"" % tgt,
-        "if [ -e %s ]; then cp -a %s %s; fi" % (tgt, tgt, backup),
+        # Preserve the FIRST recorded baseline across re-runs: only capture the
+        # backup if none exists yet, otherwise a resumed deploy would overwrite the
+        # only route back to the pre-deploy file with the new bytes.
+        "if [ -e %s ] && [ ! -e %s ]; then cp -a %s %s; fi" % (tgt, backup, tgt, backup),
         "test -f %s" % staged,
         "printf '%%s  %%s\\n' %s %s > /var/tmp/nxl-verify.sha256"
         % (step["source_sha256"], staged),
@@ -883,18 +1438,26 @@ def install_script(step, push_tool="scripts/s10plus-debug-pack/nuxel-push.py"):
         "mv -f %s %s" % (staged, tgt),
         "%s | grep -q %s" % (step["verify"], step["source_sha256"]),
     ]
-    for pre in step.get("pre", []):
-        lines.append(pre)
     if svc:
         lines.append("systemctl restart %s" % svc)
         lines.append("systemctl is-active %s" % svc)
-    if step.get("health_check"):
-        lines.append(step["health_check"])
-    lines += [
-        "# rollback (run only if the health check above failed)",
-        "if [ -e %s ]; then cp -a %s %s; %s; fi"
-        % (backup, backup, tgt, ("systemctl restart %s" % svc) if svc else "true"),
-    ]
+    elif step.get("declared_reload"):
+        # No single service is affected, so the plan still says WHAT makes the new
+        # bytes take effect (the group's deliberate reload).  That reload may name
+        # units this device does not have (e.g. nuxel-bridge.service is only defined
+        # once the session-units group lands), so it is attempted best-effort and
+        # RECORDED, not fatal: a missing *consumer* must not roll back a file that
+        # installed and hash-verified correctly.
+        lines.append("( %s ) || echo DECLARED-RELOAD-DEFERRED"
+                     % step["declared_reload"].replace("\n", "; "))
+    # NOTE: the group health_check is deliberately NOT run here.  It asserts the
+    # state of the WHOLE group (e.g. "settings/index.html AND clock/index.html are
+    # servable"), so running it inside every file's install script made the first
+    # few files of a 380-file group fail their check and roll themselves back.  The
+    # deploy tool runs each group's health check once, after the group is complete.
+    for post in step.get("post", []):
+        lines.append(post)
+    lines.append("echo INSTALL-OK")
     return "\n".join(lines)
 
 
@@ -1054,6 +1617,12 @@ VALID_VERDICTS = (
     "IMPLEMENTED_NOT_DEPLOYED", "BLOCKED_KERNEL", "BLOCKED_FIRMWARE", "BLOCKED_HARDWARE",
     "BLOCKED_EXTERNAL_RESOURCE", "NEEDS_OWNER_TEST", "FAILED", "DEFERRED",
     "NOT_SUPPORTED_ON_DEVICE",
+    # briq-01-deploy-manifest-extension: the mission's terminal state for anything
+    # that needs a compiler, a package transaction or a network — the artefact
+    # exists in the repository and its installation is a documented procedure, so
+    # the state is neither "deployed" nor "blocked", and it must never be silently
+    # rounded up to a verdict a live capture does not support.
+    "INSTALL_PROCEDURE_REQUIRED",
 )
 
 

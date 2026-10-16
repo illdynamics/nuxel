@@ -1,0 +1,7 @@
+pushed={"attempts": 1, "b64_chars": 2032, "bytes": 1523, "decoded_sha256": "53bec78dc9875dfdecf019d1711adc988701bd723d7368b51261793f8e507ade", "frames": 1, "path": "/var/tmp/nxl-install-205.sh"}
+ok=True rc=0
+---
+PREV=NONE
+/usr/share/nuxel/pwa/nuxel-apps/maps/icons/icon-384.png.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

@@ -1,0 +1,148 @@
+{
+  "apply": true,
+  "at": "2026-10-16T22:25:50+0200",
+  "blocked_reason": "plan refused BEFORE any device contact (nothing was written): [{\"group\": \"pwa-app-suite\", \"kind\": \"ordering\", \"detail\": \"extension lists a group that does not exist in groups[]\"}, {\"group\": \"pwa-shared-runtime\", \"kind\": \"ordering\", \"detail\": \"extension lists a group that does not exist in groups[]\"}, {\"group\": \"app-registry-consumers\", \"kind\": \"ordering\", \"detail\": \"extension lists a group that does not exist in groups[]\"}, {\"group\": \"configs-nuxel-remaining\", \"kind\": \"ordering\", \"detail\": \"extension lists a group that does not exist in groups[]\"}, {\"group\": \"s10plus-a33-runtime\", \"kind\": \"ordering\", \"detail\": \"extension lists a group that does not exist in groups[]\"}, {\"group\": \"services-runtime\", \"kind\": \"ordering\", \"detail\": \"extension lists a group that does not exist in groups[]\"}, {\"group\": \"native-shell-sources\", \"kind\": \"ordering\", \"detail\": \"extension lists a group that does not exist in groups[]\"}, {\"group\": \"boot-animation-runtime\", \"kin",
+  "briq": "briq-10b-live-deploy-userspace",
+  "evidence_dir": "/x/nuxel/docs/beta-finalization/live/evidence/deploy-20261016T222550+0200",
+  "exit_code": 4,
+  "groups": [
+    {
+      "declared_reload": null,
+      "declared_reload_source": null,
+      "group": "launcher-pwa",
+      "priority": 2,
+      "restart_service": "nuxel-web",
+      "risk": "low",
+      "risk_rank": 0,
+      "steps": 21
+    },
+    {
+      "declared_reload": null,
+      "declared_reload_source": null,
+      "group": "status-bar-safe-zones",
+      "priority": 2,
+      "restart_service": "nuxel-web",
+      "risk": "low",
+      "risk_rank": 0,
+      "steps": 1
+    }
+  ],
+  "manifest": "tools/beta/live/deploy-manifest.json",
+  "order": "manifest",
+  "results": [],
+  "risk_envelope": {
+    "low": 22
+  },
+  "skipped": [],
+  "steps": 22,
+  "verdict": "FAILED",
+  "verdicts": {
+    "briq-10b-live-deploy-userspace": "FAILED"
+  },
+  "violation_kinds": [
+    "manifest",
+    "ordering"
+  ],
+  "violations": [
+    {
+      "detail": "extension lists a group that does not exist in groups[]",
+      "group": "pwa-app-suite",
+      "kind": "ordering"
+    },
+    {
+      "detail": "extension lists a group that does not exist in groups[]",
+      "group": "pwa-shared-runtime",
+      "kind": "ordering"
+    },
+    {
+      "detail": "extension lists a group that does not exist in groups[]",
+      "group": "app-registry-consumers",
+      "kind": "ordering"
+    },
+    {
+      "detail": "extension lists a group that does not exist in groups[]",
+      "group": "configs-nuxel-remaining",
+      "kind": "ordering"
+    },
+    {
+      "detail": "extension lists a group that does not exist in groups[]",
+      "group": "s10plus-a33-runtime",
+      "kind": "ordering"
+    },
+    {
+      "detail": "extension lists a group that does not exist in groups[]",
+      "group": "services-runtime",
+      "kind": "ordering"
+    },
+    {
+      "detail": "extension lists a group that does not exist in groups[]",
+      "group": "native-shell-sources",
+      "kind": "ordering"
+    },
+    {
+      "detail": "extension lists a group that does not exist in groups[]",
+      "group": "boot-animation-runtime",
+      "kind": "ordering"
+    },
+    {
+      "detail": "extension lists a group that does not exist in groups[]",
+      "group": "packages-reconcile",
+      "kind": "ordering"
+    },
+    {
+      "detail": "extension group declares no priority",
+      "group": "pwa-app-suite",
+      "kind": "ordering"
+    },
+    {
+      "detail": "extension group declares no priority",
+      "group": "pwa-shared-runtime",
+      "kind": "ordering"
+    },
+    {
+      "detail": "extension group declares no priority",
+      "group": "app-registry-consumers",
+      "kind": "ordering"
+    },
+    {
+      "detail": "extension group declares no priority",
+      "group": "configs-nuxel-remaining",
+      "kind": "ordering"
+    },
+    {
+      "detail": "extension group declares no priority",
+      "group": "s10plus-a33-runtime",
+      "kind": "ordering"
+    },
+    {
+      "detail": "extension group declares no priority",
+      "group": "services-runtime",
+      "kind": "ordering"
+    },
+    {
+      "detail": "extension group declares no priority",
+      "group": "native-shell-sources",
+      "kind": "ordering"
+    },
+    {
+      "detail": "extension group declares no priority",
+      "group": "boot-animation-runtime",
+      "kind": "ordering"
+    },
+    {
+      "detail": "extension group declares no priority",
+      "group": "packages-reconcile",
+      "kind": "ordering"
+    },
+    {
+      "detail": "group_reload_notes names a group that does not exist: session-units",
+      "group": "session-units",
+      "kind": "manifest"
+    },
+    {
+      "detail": "group_reload_notes names a group that does not exist: audio-and-network-config",
+      "group": "audio-and-network-config",
+      "kind": "manifest"
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+pushed={"attempts": 1, "b64_chars": 1648, "bytes": 1235, "decoded_sha256": "2ad676cc2c588bd39fae2d7b005057ec2545ef148b2751dba295fa07bbd2b4bb", "frames": 1, "path": "/var/tmp/nxl-install-055.sh"}
+ok=True rc=0
+---
+PREV=NONE
+/etc/nuxel/sensors/sensors.json.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

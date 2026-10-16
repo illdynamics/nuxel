@@ -1,0 +1,7 @@
+pushed={"attempts": 1, "b64_chars": 2016, "bytes": 1512, "decoded_sha256": "d9d43e2f8ffdbd0d22ad83b47d7a0eecdbed5837f8854be6de4c95f85042e2ce", "frames": 1, "path": "/var/tmp/nxl-install-154.sh"}
+ok=True rc=0
+---
+PREV=NONE
+/etc/nuxel/sandbox/profiles/nuxel-contacts.json.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

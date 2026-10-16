@@ -1,0 +1,7 @@
+pushed={"attempts": 1, "b64_chars": 1608, "bytes": 1205, "decoded_sha256": "6c40ad8be0dea76c1732c4fd844f97977dd17a709573100a25fbf5622395559e", "frames": 1, "path": "/var/tmp/nxl-install-050.sh"}
+ok=True rc=0
+---
+PREV=NONE
+/etc/nuxel/security/README.md.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

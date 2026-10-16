@@ -1,0 +1,282 @@
+{
+  "apply": true,
+  "at": "2026-10-16T23:24:10+0200",
+  "blocked_reason": "a deploy step failed and was rolled back to the recorded previous hash; no further writes attempted",
+  "briq": "briq-10b-live-deploy-userspace",
+  "evidence_dir": "/x/nuxel/docs/beta-finalization/live/evidence/deploy-20261016T232410+0200",
+  "exit_code": 5,
+  "groups": [
+    {
+      "declared_reload": "systemctl daemon-reload",
+      "declared_reload_source": "group_reload_notes",
+      "group": "session-units",
+      "priority": 2,
+      "restart_service": null,
+      "risk": "high",
+      "risk_rank": 2,
+      "steps": 6
+    },
+    {
+      "declared_reload": "systemctl daemon-reload",
+      "declared_reload_source": "group",
+      "group": "boot-animation-runtime",
+      "priority": 4,
+      "restart_service": null,
+      "risk": "high",
+      "risk_rank": 2,
+      "steps": 12
+    },
+    {
+      "declared_reload": "python3 -c \"import json;json.load(open('/usr/lib/nuxel/packages-manifest.json'))\"",
+      "declared_reload_source": "group",
+      "group": "packages-reconcile",
+      "priority": 5,
+      "restart_service": null,
+      "risk": "high",
+      "risk_rank": 2,
+      "steps": 2
+    }
+  ],
+  "manifest": "tools/beta/live/deploy-manifest.json",
+  "order": "manifest",
+  "probe": {
+    "at": "2026-10-16T23:24:11+0200",
+    "bytes_in": 54,
+    "dev": "/dev/ttyACM0",
+    "echo_ok": true,
+    "elapsed_s": 0.302,
+    "error": null,
+    "reachable": true,
+    "sample": "\u001b[?2004l\n\u001b[?2004hsh-5.3# \u001b[?2004l\n\u001b[?2004hsh-5.3# "
+  },
+  "reconnects": [],
+  "results": [
+    {
+      "declared_reload": "systemctl daemon-reload",
+      "group": "session-units",
+      "health_check": "systemctl is-active nuxel-wayland",
+      "install": {
+        "framed": true,
+        "output": "PREV=57b6ab526d26e84b73f35db346f8cd7bd51641fe21c463b3127f142a726e42c4\n/etc/systemd/system/nuxel-wayland.service.nuxel-staged: OK\nINSTALL-OK\nNXLSCRIPT-RC=0\n",
+        "rc": 0
+      },
+      "installed_hash": "634140ec38b7613294564b7b879654002e3046bd98ac9f0a6e9983a5a8385a00",
+      "mode": "0644",
+      "n": 1,
+      "ok": true,
+      "previous_hash": "57b6ab526d26e84b73f35db346f8cd7bd51641fe21c463b3127f142a726e42c4",
+      "risk": "high",
+      "risk_rank": 2,
+      "rollback": null,
+      "rollback_route": "restore the previous unit files from <target>.nuxel-rollback, `systemctl daemon-reload`, restart the affected unit",
+      "service": null,
+      "source": "services/nuxel-session/systemd/nuxel-wayland.service",
+      "source_sha256": "634140ec38b7613294564b7b879654002e3046bd98ac9f0a6e9983a5a8385a00",
+      "staged_push": {
+        "bytes": 2027,
+        "frames": 1,
+        "sha256": "634140ec38b7613294564b7b879654002e3046bd98ac9f0a6e9983a5a8385a00"
+      },
+      "target": "/etc/systemd/system/nuxel-wayland.service",
+      "verify_output": "INSTALL-OK (hash checked in-frame)"
+    },
+    {
+      "declared_reload": "systemctl daemon-reload",
+      "group": "session-units",
+      "health_check": "systemctl is-active nuxel-wayland",
+      "install": {
+        "framed": true,
+        "output": "PREV=babfed30851888c0564b3dae57dd5dfd3d4c7f0981e68d39bbf7cd1c70f2d5a2\n/etc/systemd/system/nuxel-wl-fb.service.nuxel-staged: OK\nINSTALL-OK\nNXLSCRIPT-RC=0\n",
+        "rc": 0
+      },
+      "installed_hash": "75d7091c864913d3a7b1c9688d97b169239e37fef1aad3c844b9b263f1a48da4",
+      "mode": "0644",
+      "n": 2,
+      "ok": true,
+      "previous_hash": "babfed30851888c0564b3dae57dd5dfd3d4c7f0981e68d39bbf7cd1c70f2d5a2",
+      "risk": "high",
+      "risk_rank": 2,
+      "rollback": null,
+      "rollback_route": "restore the previous unit files from <target>.nuxel-rollback, `systemctl daemon-reload`, restart the affected unit",
+      "service": null,
+      "source": "services/nuxel-session/systemd/nuxel-wl-fb.service",
+      "source_sha256": "75d7091c864913d3a7b1c9688d97b169239e37fef1aad3c844b9b263f1a48da4",
+      "staged_push": {
+        "bytes": 636,
+        "frames": 1,
+        "sha256": "75d7091c864913d3a7b1c9688d97b169239e37fef1aad3c844b9b263f1a48da4"
+      },
+      "target": "/etc/systemd/system/nuxel-wl-fb.service",
+      "verify_output": "INSTALL-OK (hash checked in-frame)"
+    },
+    {
+      "declared_reload": "systemctl daemon-reload",
+      "group": "session-units",
+      "health_check": "systemctl is-active nuxel-wayland",
+      "install": {
+        "framed": true,
+        "output": "PREV=4234843a7bf3ac91f4bf01e4b22da8429a90c578e25ab5d7162491729d85a9f3\n/etc/systemd/system/nuxel-touch-arm.service.nuxel-staged: OK\nINSTALL-OK\nNXLSCRIPT-RC=0\n",
+        "rc": 0
+      },
+      "installed_hash": "85f7f880f9f875059c0d160331f96f93a22d2a2f055a2ca5b3f9c2bba816ab29",
+      "mode": "0644",
+      "n": 3,
+      "ok": true,
+      "previous_hash": "4234843a7bf3ac91f4bf01e4b22da8429a90c578e25ab5d7162491729d85a9f3",
+      "risk": "high",
+      "risk_rank": 2,
+      "rollback": null,
+      "rollback_route": "restore the previous unit files from <target>.nuxel-rollback, `systemctl daemon-reload`, restart the affected unit",
+      "service": null,
+      "source": "services/nuxel-session/systemd/nuxel-touch-arm.service",
+      "source_sha256": "85f7f880f9f875059c0d160331f96f93a22d2a2f055a2ca5b3f9c2bba816ab29",
+      "staged_push": {
+        "bytes": 717,
+        "frames": 1,
+        "sha256": "85f7f880f9f875059c0d160331f96f93a22d2a2f055a2ca5b3f9c2bba816ab29"
+      },
+      "target": "/etc/systemd/system/nuxel-touch-arm.service",
+      "verify_output": "INSTALL-OK (hash checked in-frame)"
+    },
+    {
+      "declared_reload": "systemctl daemon-reload",
+      "group": "session-units",
+      "health_check": "systemctl is-active nuxel-wayland",
+      "install": {
+        "framed": true,
+        "output": "PREV=d911babfdbc9fbfe59da9f13317833601ecec4816494d1c672cc5526d3b1f90c\n/etc/systemd/system/nuxel-button-manager.service.nuxel-staged: OK\nINSTALL-OK\nNXLSCRIPT-RC=0\n",
+        "rc": 0
+      },
+      "installed_hash": "c0bc10c448a500efc5fc4edff6d308ae69d583bffc6da6c90604371547b3c1a9",
+      "mode": "0644",
+      "n": 4,
+      "ok": true,
+      "previous_hash": "d911babfdbc9fbfe59da9f13317833601ecec4816494d1c672cc5526d3b1f90c",
+      "risk": "high",
+      "risk_rank": 2,
+      "rollback": null,
+      "rollback_route": "restore the previous unit files from <target>.nuxel-rollback, `systemctl daemon-reload`, restart the affected unit",
+      "service": null,
+      "source": "services/nuxel-session/systemd/nuxel-button-manager.service",
+      "source_sha256": "c0bc10c448a500efc5fc4edff6d308ae69d583bffc6da6c90604371547b3c1a9",
+      "staged_push": {
+        "bytes": 1053,
+        "frames": 1,
+        "sha256": "c0bc10c448a500efc5fc4edff6d308ae69d583bffc6da6c90604371547b3c1a9"
+      },
+      "target": "/etc/systemd/system/nuxel-button-manager.service",
+      "verify_output": "INSTALL-OK (hash checked in-frame)"
+    },
+    {
+      "declared_reload": "systemctl daemon-reload",
+      "group": "session-units",
+      "health_check": "systemctl is-active nuxel-wayland",
+      "install": {
+        "framed": true,
+        "output": "PREV=f99f2aa179742c13adfe6ae06574a6a0083ad6f2678625b45184376c2dae1bda\n/etc/systemd/system/seatd.service.nuxel-staged: OK\nINSTALL-OK\nNXLSCRIPT-RC=0\n",
+        "rc": 0
+      },
+      "installed_hash": "ea2b125001a1e22f50422d28edb2b0feef53fe1a2f3548489b1407adbb13b001",
+      "mode": "0644",
+      "n": 5,
+      "ok": true,
+      "previous_hash": "f99f2aa179742c13adfe6ae06574a6a0083ad6f2678625b45184376c2dae1bda",
+      "risk": "high",
+      "risk_rank": 2,
+      "rollback": null,
+      "rollback_route": "restore the previous unit files from <target>.nuxel-rollback, `systemctl daemon-reload`, restart the affected unit",
+      "service": null,
+      "source": "services/nuxel-session/systemd/seatd.service",
+      "source_sha256": "ea2b125001a1e22f50422d28edb2b0feef53fe1a2f3548489b1407adbb13b001",
+      "staged_push": {
+        "bytes": 1729,
+        "frames": 1,
+        "sha256": "ea2b125001a1e22f50422d28edb2b0feef53fe1a2f3548489b1407adbb13b001"
+      },
+      "target": "/etc/systemd/system/seatd.service",
+      "verify_output": "INSTALL-OK (hash checked in-frame)"
+    },
+    {
+      "declared_reload": "systemctl daemon-reload",
+      "group": "session-units",
+      "health_check": "systemctl is-active nuxel-wayland",
+      "install": {
+        "framed": true,
+        "output": "PREV=NONE\n/etc/systemd/system/nuxel-web.service.nuxel-staged: OK\nINSTALL-OK\nNXLSCRIPT-RC=0\n",
+        "rc": 0
+      },
+      "installed_hash": "e4c692b4e14134cef9b75f7b881bc8e068bce32438ffdc9bf9c4924ffcebc903",
+      "mode": "0644",
+      "n": 6,
+      "ok": true,
+      "previous_hash": "NONE",
+      "risk": "high",
+      "risk_rank": 2,
+      "rollback": null,
+      "rollback_route": "restore the previous unit files from <target>.nuxel-rollback, `systemctl daemon-reload`, restart the affected unit",
+      "service": null,
+      "source": "services/nuxel-web.service",
+      "source_sha256": "e4c692b4e14134cef9b75f7b881bc8e068bce32438ffdc9bf9c4924ffcebc903",
+      "staged_push": {
+        "bytes": 1701,
+        "frames": 1,
+        "sha256": "e4c692b4e14134cef9b75f7b881bc8e068bce32438ffdc9bf9c4924ffcebc903"
+      },
+      "target": "/etc/systemd/system/nuxel-web.service",
+      "verify_output": "INSTALL-OK (hash checked in-frame)"
+    },
+    {
+      "attempts": 3,
+      "declared_reload": "systemctl daemon-reload",
+      "group": "boot-animation-runtime",
+      "health_check": "/usr/local/bin/nuxel-fb-owner-assert.sh --expect nuxel-wl-fb && test -s /usr/share/nuxel/boot/nuxel-boot-animation.mp4 && test -x /usr/lib/nuxel/nuxel-animation-claim",
+      "install": {
+        "framed": true,
+        "output": "/var/tmp/nxl-install-007.sh: line 6: /usr/local/bin/nuxel-fb-owner-assert.sh: No such file or directory\nROLLED-BACK rc=127\nNXLSCRIPT-RC=127\n",
+        "rc": 127
+      },
+      "installed_hash": null,
+      "mode": "0755",
+      "n": 7,
+      "ok": false,
+      "previous_hash": null,
+      "risk": "high",
+      "risk_rank": 2,
+      "rollback": {
+        "output": "NO-BACKUP\nNXLSCRIPT-RC=0\n",
+        "rc": 0
+      },
+      "rollback_route": "restore the previous animation claim/unit/assets from <target>.nuxel-rollback, `systemctl daemon-reload` and re-run the framebuffer owner assertion; the repository's previous asset is kept byte-identical and NOTHING is baked into BOOT",
+      "service": null,
+      "source": "services/nuxel-animation/bin/nuxel-animation-claim",
+      "source_sha256": "b35e63688242a1b1f1381600ede42f559bcd0fee82c75ebcc87b147eb839a10d",
+      "staged_push": {
+        "bytes": 1216,
+        "frames": 1,
+        "sha256": "b35e63688242a1b1f1381600ede42f559bcd0fee82c75ebcc87b147eb839a10d"
+      },
+      "target": "/usr/lib/nuxel/nuxel-animation-claim",
+      "verify_output": "sha256sum: /usr/lib/nuxel/nuxel-animation-claim: No such file or directory"
+    }
+  ],
+  "risk_envelope": {
+    "high": 22,
+    "low": 422,
+    "medium": 180
+  },
+  "skipped": [
+    {
+      "component": "kernel/bootloader-adjacent work is NOT deployed",
+      "group": "console-and-kernel-side-followups",
+      "reason": "sec_ts touch-in-charger-mode (lpcharge) needs a kernel/DTB change; the mission forbids flashing, so this stays offline (source patch + offline build + documented procedure) and is reported BLOCKED_KERNEL.",
+      "state": "blocked_kernel",
+      "verdict": "BLOCKED_KERNEL"
+    }
+  ],
+  "steps": 20,
+  "verdict": "FAILED",
+  "verdicts": {
+    "briq-10b-live-deploy-userspace": "FAILED"
+  },
+  "violations": []
+}

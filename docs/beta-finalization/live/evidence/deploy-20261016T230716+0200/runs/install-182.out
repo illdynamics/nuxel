@@ -1,0 +1,7 @@
+pushed={"attempts": 1, "b64_chars": 1912, "bytes": 1433, "decoded_sha256": "86341645e859f4e99f35ee10d0052f056fe46feda1f6433fafaf855b23d3e1e0", "frames": 1, "path": "/var/tmp/nxl-install-182.sh"}
+ok=True rc=0
+---
+PREV=78c1843d7f0867ffd7d57720fa9dcebffa08eb031d6ca702d934df6c113121ab
+/usr/share/nuxel/pwa/nuxel-apps/mail/css/mail.css.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

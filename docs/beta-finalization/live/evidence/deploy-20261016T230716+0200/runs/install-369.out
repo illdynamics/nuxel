@@ -1,0 +1,7 @@
+pushed={"attempts": 1, "b64_chars": 2092, "bytes": 1568, "decoded_sha256": "173502a2fc6249b27656d0e2ab6a7a989712d565f2235ddf158f4b088d7f2c64", "frames": 1, "path": "/var/tmp/nxl-install-369.sh"}
+ok=True rc=0
+---
+PREV=NONE
+/usr/share/nuxel/pwa/nuxel-apps/weather/icons/icon-144.png.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

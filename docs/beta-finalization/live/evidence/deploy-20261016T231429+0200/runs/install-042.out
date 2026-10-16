@@ -1,0 +1,7 @@
+pushed={"attempts": 1, "b64_chars": 2048, "bytes": 1535, "decoded_sha256": "c5ccb10160f3b769ecd078a5236ab6d5866d5a3e6fb32d1e9932d11bf8a227a1", "frames": 1, "path": "/var/tmp/nxl-install-042.sh"}
+ok=True rc=0
+---
+PREV=NONE
+/etc/systemd/system/nuxel-microsd-automount.service.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

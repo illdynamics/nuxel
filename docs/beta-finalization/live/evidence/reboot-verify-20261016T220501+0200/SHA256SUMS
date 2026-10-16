@@ -1,0 +1,4 @@
+95e9043ad6a58c897aa3bf750a3dc791372ebb0d3faf49e76a9dd2729685174a  checklist-pre-reboot.json
+a182ca0addbaa3b86d893342b79fcce8943f5d3585d96923d128a21a390f0d2c  pre-reboot-frames.json
+e650b1eac46edb8eda57fb7072d54a480f8b9016f7c0847baeea8ac2256e8973  pre-reboot-signals.json
+fe7bbd0cf40e9057ad6a147724be50f582a68b9e33a3e75f0aabd384c55c5896  reboot-and-verify.json

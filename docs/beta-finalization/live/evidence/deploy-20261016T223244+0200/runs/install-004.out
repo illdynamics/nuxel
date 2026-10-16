@@ -1,0 +1,6 @@
+pushed={"attempts": 1, "b64_chars": 1676, "bytes": 1256, "decoded_sha256": "34996976c5a8e192ff3c087ce4234c576310037ccc39b434b106a88353f84fc5", "frames": 1, "path": "/var/tmp/nxl-install-004.sh"}
+ok=True rc=0
+---
+/usr/share/nuxel/pwa/nuxel-home/colour-test.html.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

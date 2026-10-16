@@ -1,0 +1,7 @@
+pushed={"attempts": 1, "b64_chars": 1628, "bytes": 1220, "decoded_sha256": "0effc1429220414fa633dc0e95761dde0e9adddd15bfc6b7203b7cf434defbbe", "frames": 1, "path": "/var/tmp/nxl-install-031.sh"}
+ok=True rc=0
+---
+PREV=NONE
+/etc/nuxel/haptics/bridge.json.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

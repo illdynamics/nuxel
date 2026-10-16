@@ -1,0 +1,7 @@
+pushed={"attempts": 1, "b64_chars": 2240, "bytes": 1680, "decoded_sha256": "05524c540b4f980a282a9a003996d1eaa9ec569ac728888de7c63038ac1767fc", "frames": 1, "path": "/var/tmp/nxl-install-066.sh"}
+ok=True rc=0
+---
+PREV=7f6e2629d1364491f48732a44eed80c6ebc0a650344f6764b058e78c619815fa
+/usr/share/nuxel/pwa/nuxel-apps/calendar/manifest.json.nuxel-staged: OK
+ROLLED-BACK rc=1
+NXLSCRIPT-RC=1

@@ -1,0 +1,7 @@
+pushed={"attempts": 1, "b64_chars": 1608, "bytes": 1205, "decoded_sha256": "d8e770dee7da01eb2560c2d884d4af2ded2f787f3d5bca2b7930fb5d7afae2e8", "frames": 1, "path": "/var/tmp/nxl-install-053.sh"}
+ok=True rc=0
+---
+PREV=NONE
+/etc/nuxel/security/tor/torrc.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

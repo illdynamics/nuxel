@@ -1,0 +1,3 @@
+cmd: hostname
+ok: False rc: None framed: False sha_ok: False
+---

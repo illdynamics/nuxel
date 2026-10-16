@@ -1,0 +1,8 @@
+pushed={"attempts": 1, "b64_chars": 1764, "bytes": 1322, "decoded_sha256": "3f5c90e66ae91fee29e53a4592b5120642aa5926c68c4463218eed51ae8d86f2", "frames": 1, "path": "/var/tmp/nxl-install-002.sh"}
+ok=True rc=0
+---
+PREV=NONE
+/etc/nuxel/buttons/reboot-gate.json.nuxel-staged: OK
+active
+INSTALL-OK
+NXLSCRIPT-RC=0

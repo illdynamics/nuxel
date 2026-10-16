@@ -1,0 +1,3 @@
+cmd: grep -iE 'sec_ts|sec_touch' /proc/interrupts
+ok: False rc: None framed: False sha_ok: False
+---

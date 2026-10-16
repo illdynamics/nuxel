@@ -1,0 +1,7 @@
+pushed={"attempts": 1, "b64_chars": 2360, "bytes": 1770, "decoded_sha256": "439630dc93a111c7788c6235136ec497d70e2e5e4ad4ab882b2a1d4f0613e1d5", "frames": 1, "path": "/var/tmp/nxl-install-082.sh"}
+ok=True rc=0
+---
+PREV=34f3b5c65d22c1e08983f125b8962d3e9e12f35c8964727d1187008a8ead6f80
+/usr/share/nuxel/pwa/nuxel-apps/camera-gallery/manifest.json.nuxel-staged: OK
+ROLLED-BACK rc=1
+NXLSCRIPT-RC=1

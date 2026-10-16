@@ -1,0 +1,7 @@
+pushed={"attempts": 1, "b64_chars": 1648, "bytes": 1235, "decoded_sha256": "1701c8a69337ed7334abf6f212f703c6612ee8cd6ae22845ce9f3d52e4998697", "frames": 1, "path": "/var/tmp/nxl-install-061.sh"}
+ok=True rc=0
+---
+PREV=NONE
+/etc/nuxel/touch/README.md.nuxel-staged: OK
+ROLLED-BACK rc=1
+NXLSCRIPT-RC=1

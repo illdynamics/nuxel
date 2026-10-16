@@ -1,0 +1,19 @@
+#!/bin/sh
+# PWA application suite (pwa/nuxel-apps/**) -> /usr/share/nuxel/pwa/nuxel-apps/authenticator/css/authenticator.css (service: nuxel-web, risk: low)
+# staged source: pwa/nuxel-apps/authenticator/css/authenticator.css
+# previous-hash: 82a1e5b5e80229b9894f04b01a71fc9420d5da39b5fae4e8642474aa1d64247c
+set -u
+_NXL_ROLLBACK() { _rc=$?; if [ "$_rc" -ne 0 ]; then if [ -e /usr/share/nuxel/pwa/nuxel-apps/authenticator/css/authenticator.css.nuxel-rollback ]; then cp -a /usr/share/nuxel/pwa/nuxel-apps/authenticator/css/authenticator.css.nuxel-rollback /usr/share/nuxel/pwa/nuxel-apps/authenticator/css/authenticator.css; systemctl restart nuxel-web; fi; echo "ROLLED-BACK rc=$_rc"; fi; }
+trap _NXL_ROLLBACK EXIT
+set -e
+if [ -e /usr/share/nuxel/pwa/nuxel-apps/authenticator/css/authenticator.css ]; then printf 'PREV=%s\n' "$(sha256sum /usr/share/nuxel/pwa/nuxel-apps/authenticator/css/authenticator.css | cut -d' ' -f1)"; else echo PREV=NONE; fi
+mkdir -p "$(dirname /usr/share/nuxel/pwa/nuxel-apps/authenticator/css/authenticator.css)"
+if [ -e /usr/share/nuxel/pwa/nuxel-apps/authenticator/css/authenticator.css ] && [ ! -e /usr/share/nuxel/pwa/nuxel-apps/authenticator/css/authenticator.css.nuxel-rollback ]; then cp -a /usr/share/nuxel/pwa/nuxel-apps/authenticator/css/authenticator.css /usr/share/nuxel/pwa/nuxel-apps/authenticator/css/authenticator.css.nuxel-rollback; fi
+test -f /usr/share/nuxel/pwa/nuxel-apps/authenticator/css/authenticator.css.nuxel-staged
+printf '%s  %s\n' 82a1e5b5e80229b9894f04b01a71fc9420d5da39b5fae4e8642474aa1d64247c /usr/share/nuxel/pwa/nuxel-apps/authenticator/css/authenticator.css.nuxel-staged > /var/tmp/nxl-verify.sha256
+sha256sum -c /var/tmp/nxl-verify.sha256
+mv -f /usr/share/nuxel/pwa/nuxel-apps/authenticator/css/authenticator.css.nuxel-staged /usr/share/nuxel/pwa/nuxel-apps/authenticator/css/authenticator.css
+sha256sum /usr/share/nuxel/pwa/nuxel-apps/authenticator/css/authenticator.css | grep -q 82a1e5b5e80229b9894f04b01a71fc9420d5da39b5fae4e8642474aa1d64247c
+systemctl restart nuxel-web
+systemctl is-active nuxel-web
+echo INSTALL-OK

@@ -1,0 +1,7 @@
+pushed={"attempts": 1, "b64_chars": 2088, "bytes": 1565, "decoded_sha256": "1ed4b8aa08803cf6cead921f78b83054bb6110688af5b095c4110efe3c023f23", "frames": 1, "path": "/var/tmp/nxl-install-056.sh"}
+ok=True rc=0
+---
+PREV=NONE
+/etc/systemd/timesyncd.conf.d/60-nuxel-timesyncd.conf.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

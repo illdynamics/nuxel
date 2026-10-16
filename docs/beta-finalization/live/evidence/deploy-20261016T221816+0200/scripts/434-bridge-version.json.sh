@@ -1,0 +1,17 @@
+#!/bin/sh
+# app registry consumers/entries + verifiers -> /etc/nuxel/bridge-version.json (service: nuxel-web, risk: low)
+# staged source: pwa/nuxel-common/bridge-version.json
+# previous-hash: 510f0ce31556e175133295715cc822c93c88610e1c6188941b2580771864ad9a
+set -eu
+mkdir -p "$(dirname /etc/nuxel/bridge-version.json)"
+if [ -e /etc/nuxel/bridge-version.json ]; then cp -a /etc/nuxel/bridge-version.json /etc/nuxel/bridge-version.json.nuxel-rollback; fi
+test -f /etc/nuxel/bridge-version.json.nuxel-staged
+printf '%s  %s\n' 510f0ce31556e175133295715cc822c93c88610e1c6188941b2580771864ad9a /etc/nuxel/bridge-version.json.nuxel-staged > /var/tmp/nxl-verify.sha256
+sha256sum -c /var/tmp/nxl-verify.sha256
+mv -f /etc/nuxel/bridge-version.json.nuxel-staged /etc/nuxel/bridge-version.json
+sha256sum /etc/nuxel/bridge-version.json | grep -q 510f0ce31556e175133295715cc822c93c88610e1c6188941b2580771864ad9a
+systemctl restart nuxel-web
+systemctl is-active nuxel-web
+python3 -c "import json;a=json.load(open('/etc/nuxel/app-registry/app_registry.json'));assert a['registry_version']>=4" && test -x /usr/local/bin/verify-app-registry.py
+# rollback (run only if the health check above failed)
+if [ -e /etc/nuxel/bridge-version.json.nuxel-rollback ]; then cp -a /etc/nuxel/bridge-version.json.nuxel-rollback /etc/nuxel/bridge-version.json; systemctl restart nuxel-web; fi

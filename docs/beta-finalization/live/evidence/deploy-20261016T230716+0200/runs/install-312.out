@@ -1,0 +1,7 @@
+pushed={"attempts": 1, "b64_chars": 2032, "bytes": 1523, "decoded_sha256": "aef5f41212796fb7ae62f7872cc8f921d4e604c440a1b4bcf4d86dd98199bbf9", "frames": 1, "path": "/var/tmp/nxl-install-312.sh"}
+ok=True rc=0
+---
+PREV=NONE
+/usr/share/nuxel/pwa/nuxel-apps/recorder/js/recorder.js.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

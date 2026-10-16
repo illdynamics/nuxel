@@ -68,7 +68,7 @@ Representative coverage (the authoritative list is the registry —
 |---|---|---|
 | work queue schema + tool | `U-workqueue-schema`, `U-workqueue-unit` | bg-00 |
 | A32 baseline register (hash pins + behaviour) | `U-baseline-regression-guard`, `U-baseline-a32-suite` | bg-00 |
-| boot image gates (container, initramfs, partition budget) | `U-boot-s10plus-gates`, `U-boot-init-cmdline` | bg-00 |
+| boot image gates (container, initramfs, partition budget) | `U-boot-s10plus-gates` (probe-gated: needs the gitignored, hardware-proven A5 base + A4 initramfs), `U-boot-init-cmdline` | bg-00 |
 | touch pipeline (trace tool, libinput shim, boot-mode guard, capture harness) | `U-touch-a33-suite` | bg-01 |
 | boot/animation/launcher surface, colour order, safe zones | `U-boot-a33-suite`, `U-c-protocol-handoff` | bg-02 |
 | Wi-Fi, time/RTC, audio, headphones, buttons | `U-p3-a33-suite` | bg-03 |
@@ -263,6 +263,20 @@ never a fake failure:
 SKIP L-a27-firstlight  host/artefact prerequisite unmet:
       test -s build/out/s10plus/a26/nuxel-firstlight.rawspl && python3 -c 'import numpy' (owner: legacy-per-cycle)
 ```
+
+The same rule covers the **S10+ boot-image gates** (`U-boot-s10plus-gates`,
+repaired by `briq-02-gate-failure-repair`). That gate is anchored on containers the
+boot repair chain produced and that `build/` keeps out of git —
+`build/out/s10plus/debug-candidates/nuxel-beyond2lte-boot-A5-dtb-fix.img` (the one
+container S-Boot is observed to deliver **and** unpack) and
+`build/out/s10plus/debug-candidates/A4/initramfs.cpio` — and those images are
+hardware-proven, so they can never be synthesised. It carries the same `probe:`
+precondition, asserts the A5 base's documented sha256 so it can only speak about
+the *proven* container, and exits `3` (`SKIP-PREREQ`, never `0`) with the exact
+missing paths and this diagnostic when run by hand. Before that repair the suite
+hard-failed (`exit 1: cannot unpack the hardware-proven A5 base`) on any host
+without the artefacts, which is a missing prerequisite reported as a code
+regression.
 
 With the artefacts built (as the release workflow does), the probes are
 satisfied, the suites run, and they gate **hard**. They can also be run by hand:

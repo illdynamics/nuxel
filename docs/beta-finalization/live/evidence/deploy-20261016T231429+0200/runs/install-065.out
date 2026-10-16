@@ -1,0 +1,7 @@
+pushed={"attempts": 1, "b64_chars": 1728, "bytes": 1295, "decoded_sha256": "cf8ff747c2a2423f0c05cd4351fac1f9e809474fc9ea37cfa1a8cbd70a6e8340", "frames": 1, "path": "/var/tmp/nxl-install-065.sh"}
+ok=True rc=0
+---
+PREV=NONE
+/usr/local/bin/build-a33-buttons.sh.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

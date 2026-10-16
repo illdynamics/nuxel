@@ -1,0 +1,7 @@
+pushed={"attempts": 1, "b64_chars": 1904, "bytes": 1428, "decoded_sha256": "9048bdb3e7f8c01adbec6db2962d72f20d664e48d5005499b26a12bdaa8b4aae", "frames": 1, "path": "/var/tmp/nxl-install-003.sh"}
+ok=True rc=0
+---
+PREV=4234843a7bf3ac91f4bf01e4b22da8429a90c578e25ab5d7162491729d85a9f3
+/etc/systemd/system/nuxel-touch-arm.service.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

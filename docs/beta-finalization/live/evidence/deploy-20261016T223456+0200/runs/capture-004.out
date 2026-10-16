@@ -1,0 +1,5 @@
+pushed={"attempts": 1, "b64_chars": 384, "bytes": 288, "decoded_sha256": "8d7bffc519162e8170d36f8134e1ba4c5790b92e8c9703e562f125340112fbad", "frames": 1, "path": "/var/tmp/nxl-capture-004.sh"}
+ok=True rc=0
+---
+e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+NXLSCRIPT-RC=0

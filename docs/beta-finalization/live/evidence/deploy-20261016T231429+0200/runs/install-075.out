@@ -1,0 +1,7 @@
+pushed={"attempts": 1, "b64_chars": 1728, "bytes": 1295, "decoded_sha256": "ca058d0a5c557b7194a0a90036120f84a594a9b175aee07006b56490c04d84be", "frames": 1, "path": "/var/tmp/nxl-install-075.sh"}
+ok=True rc=0
+---
+PREV=NONE
+/usr/local/bin/nuxel-camera-diag.sh.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

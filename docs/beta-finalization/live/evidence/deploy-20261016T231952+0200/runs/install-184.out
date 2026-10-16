@@ -1,0 +1,7 @@
+pushed={"attempts": 1, "b64_chars": 2216, "bytes": 1662, "decoded_sha256": "8a71d0120dc391e297a5ede9b34654ba4e41efbb616583ce6e4bf15917a475cd", "frames": 1, "path": "/var/tmp/nxl-install-184.sh"}
+ok=True rc=0
+---
+PREV=NONE
+/usr/lib/nuxel/nuxel-camera-portal/nuxel_camera_portal.py.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

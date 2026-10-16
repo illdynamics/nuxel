@@ -1,0 +1,7 @@
+pushed={"attempts": 1, "b64_chars": 1828, "bytes": 1370, "decoded_sha256": "f67ff3d26710e97f963528fc0c56444b6dc3cae2353678b4d3d79d1f106449d3", "frames": 1, "path": "/var/tmp/nxl-install-102.sh"}
+ok=True rc=0
+---
+PREV=NONE
+/usr/share/nuxel/probes/touch-probe.html.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

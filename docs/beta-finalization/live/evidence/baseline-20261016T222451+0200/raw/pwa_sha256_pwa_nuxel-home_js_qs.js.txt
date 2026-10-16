@@ -1,0 +1,4 @@
+cmd: sha256sum /usr/share/nuxel/pwa/nuxel-home/js/qs.js 2>&1
+ok: True rc: 0 framed: True sha_ok: True
+---
+413b3ec74d206d16b813a5e4324f33996df6b02d6dc7eb6d744c7d394f5dc842  /usr/share/nuxel/pwa/nuxel-home/js/qs.js

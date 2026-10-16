@@ -1,0 +1,7 @@
+pushed={"attempts": 1, "b64_chars": 1648, "bytes": 1235, "decoded_sha256": "45147378dfa787df5a00a17578d1adaa5568b3b9e0805ee8a90deb871f6ca280", "frames": 1, "path": "/var/tmp/nxl-install-098.sh"}
+ok=True rc=0
+---
+PREV=NONE
+/usr/local/bin/nuxel-vpn-tor.sh.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

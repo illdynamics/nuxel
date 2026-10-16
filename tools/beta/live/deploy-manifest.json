@@ -12,7 +12,11 @@
     "No Heimdall/Odin/wrapper, no Download Mode, no TWRP, no new kernel on the phone.",
     "Every deploy target must live under an allowed userspace root (assert_userspace_path).",
     "Recovery/Download-Mode power-menu entries may be implemented and offline-tested but are never triggered by this group.",
-    "Stage -> verify SHA-256 -> atomic install -> restart the smallest affected service -> health check -> automatic rollback on failure."
+    "Stage -> verify SHA-256 -> atomic install -> restart the smallest affected service -> health check -> automatic rollback on failure.",
+    "Every group declares a risk class (low|medium|high), a component, a health_check, rollback text, and EITHER a restart_service OR a deliberate reload (declared_reload, or a group_reload_notes entry for a byte-frozen core group). validate_manifest() refuses the plan otherwise, before any device contact.",
+    "Sources must resolve INSIDE this repository (no absolute path, no `..`): nothing is staged from the host filesystem, and a source the repository does not carry is refused rather than silently dropped.",
+    "Nothing may be staged from a gitignored build directory: a compiled artefact is either a tracked file or it is produced by a documented install procedure with its own verdict (INSTALL_PROCEDURE_REQUIRED).",
+    "The extension block is authored in ASCENDING RISK order (low -> medium -> high) with non-decreasing priority; validate_manifest() refuses a backwards step."
   ],
   "groups": [
     {
@@ -241,11 +245,3508 @@
       "state": "blocked_kernel",
       "blocked_reason": "sec_ts touch-in-charger-mode (lpcharge) needs a kernel/DTB change; the mission forbids flashing, so this stays offline (source patch + offline build + documented procedure) and is reported BLOCKED_KERNEL.",
       "files": []
+    },
+    {
+      "id": "pwa-app-suite",
+      "component": "PWA application suite (pwa/nuxel-apps/**)",
+      "priority": 1,
+      "risk": "low",
+      "restart_service": "nuxel-web",
+      "pre": [],
+      "health_check": "test \"$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8000/pwa/nuxel-apps/settings/index.html)\" = 200 && test -s /home/nuxel/nuxel/pwa/nuxel-apps/clock/index.html",
+      "rollback": "restore every <target>.nuxel-rollback copy in reverse order and `systemctl restart nuxel-web`; every target is a file under /home/nuxel/nuxel/pwa/nuxel-apps and no partition is involved",
+      "files": [
+        {
+          "source": "pwa/nuxel-apps/_shared/samples/sys-snapshot.json",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/_shared/samples/sys-snapshot.json",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/_shared/sysinfo.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/_shared/sysinfo.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/authenticator/app.json",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/authenticator/app.json",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/authenticator/css/authenticator.css",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/authenticator/css/authenticator.css",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/authenticator/icons/icon-128.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/authenticator/icons/icon-128.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/authenticator/icons/icon-144.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/authenticator/icons/icon-144.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/authenticator/icons/icon-152.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/authenticator/icons/icon-152.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/authenticator/icons/icon-192.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/authenticator/icons/icon-192.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/authenticator/icons/icon-384.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/authenticator/icons/icon-384.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/authenticator/icons/icon-48.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/authenticator/icons/icon-48.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/authenticator/icons/icon-512.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/authenticator/icons/icon-512.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/authenticator/icons/icon-72.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/authenticator/icons/icon-72.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/authenticator/icons/icon-96.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/authenticator/icons/icon-96.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/authenticator/icons/icon.svg",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/authenticator/icons/icon.svg",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/authenticator/index.html",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/authenticator/index.html",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/authenticator/js/authenticator.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/authenticator/js/authenticator.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/authenticator/js/totp.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/authenticator/js/totp.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/authenticator/js/vault.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/authenticator/js/vault.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/authenticator/manifest.json",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/authenticator/manifest.json",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/authenticator/samples/otpauth-examples.json",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/authenticator/samples/otpauth-examples.json",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/authenticator/sw.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/authenticator/sw.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/browser/app.json",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/browser/app.json",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/browser/css/browser.css",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/browser/css/browser.css",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/browser/icons/icon-128.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/browser/icons/icon-128.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/browser/icons/icon-144.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/browser/icons/icon-144.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/browser/icons/icon-152.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/browser/icons/icon-152.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/browser/icons/icon-192.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/browser/icons/icon-192.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/browser/icons/icon-384.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/browser/icons/icon-384.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/browser/icons/icon-48.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/browser/icons/icon-48.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/browser/icons/icon-512.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/browser/icons/icon-512.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/browser/icons/icon-72.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/browser/icons/icon-72.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/browser/icons/icon-96.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/browser/icons/icon-96.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/browser/index.html",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/browser/index.html",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/browser/js/browser.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/browser/js/browser.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/browser/manifest.json",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/browser/manifest.json",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/browser/sw.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/browser/sw.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/calculator/app.json",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/calculator/app.json",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/calculator/css/calculator.css",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/calculator/css/calculator.css",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/calculator/icons/icon-128.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/calculator/icons/icon-128.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/calculator/icons/icon-144.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/calculator/icons/icon-144.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/calculator/icons/icon-152.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/calculator/icons/icon-152.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/calculator/icons/icon-192.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/calculator/icons/icon-192.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/calculator/icons/icon-384.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/calculator/icons/icon-384.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/calculator/icons/icon-48.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/calculator/icons/icon-48.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/calculator/icons/icon-512.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/calculator/icons/icon-512.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/calculator/icons/icon-72.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/calculator/icons/icon-72.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/calculator/icons/icon-96.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/calculator/icons/icon-96.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/calculator/index.html",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/calculator/index.html",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/calculator/js/calculator.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/calculator/js/calculator.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/calculator/manifest.json",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/calculator/manifest.json",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/calculator/sw.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/calculator/sw.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/calendar/assets/nuxel-boot-animation.mp4",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/calendar/assets/nuxel-boot-animation.mp4",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/calendar/css/calendar.css",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/calendar/css/calendar.css",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/calendar/icons/icon-128.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/calendar/icons/icon-128.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/calendar/icons/icon-144.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/calendar/icons/icon-144.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/calendar/icons/icon-152.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/calendar/icons/icon-152.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/calendar/icons/icon-192.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/calendar/icons/icon-192.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/calendar/icons/icon-384.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/calendar/icons/icon-384.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/calendar/icons/icon-48.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/calendar/icons/icon-48.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/calendar/icons/icon-512.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/calendar/icons/icon-512.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/calendar/icons/icon-72.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/calendar/icons/icon-72.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/calendar/icons/icon-96.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/calendar/icons/icon-96.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/calendar/icons/icon.svg",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/calendar/icons/icon.svg",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/calendar/index.html",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/calendar/index.html",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/calendar/js/calendar.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/calendar/js/calendar.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/calendar/manifest.json",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/calendar/manifest.json",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/calendar/sw.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/calendar/sw.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/camera-gallery/assets/nuxel-boot-animation.mp4",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/camera-gallery/assets/nuxel-boot-animation.mp4",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/camera-gallery/css/camera.css",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/camera-gallery/css/camera.css",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/camera-gallery/icons/icon-128.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/camera-gallery/icons/icon-128.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/camera-gallery/icons/icon-144.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/camera-gallery/icons/icon-144.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/camera-gallery/icons/icon-152.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/camera-gallery/icons/icon-152.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/camera-gallery/icons/icon-192.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/camera-gallery/icons/icon-192.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/camera-gallery/icons/icon-384.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/camera-gallery/icons/icon-384.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/camera-gallery/icons/icon-48.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/camera-gallery/icons/icon-48.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/camera-gallery/icons/icon-512.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/camera-gallery/icons/icon-512.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/camera-gallery/icons/icon-72.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/camera-gallery/icons/icon-72.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/camera-gallery/icons/icon-96.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/camera-gallery/icons/icon-96.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/camera-gallery/icons/icon.svg",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/camera-gallery/icons/icon.svg",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/camera-gallery/index.html",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/camera-gallery/index.html",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/camera-gallery/js/camera.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/camera-gallery/js/camera.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/camera-gallery/manifest.json",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/camera-gallery/manifest.json",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/camera-gallery/sw.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/camera-gallery/sw.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/cleanup/app.json",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/cleanup/app.json",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/cleanup/css/cleanup.css",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/cleanup/css/cleanup.css",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/cleanup/icons/icon-128.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/cleanup/icons/icon-128.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/cleanup/icons/icon-144.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/cleanup/icons/icon-144.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/cleanup/icons/icon-152.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/cleanup/icons/icon-152.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/cleanup/icons/icon-192.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/cleanup/icons/icon-192.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/cleanup/icons/icon-384.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/cleanup/icons/icon-384.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/cleanup/icons/icon-48.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/cleanup/icons/icon-48.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/cleanup/icons/icon-512.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/cleanup/icons/icon-512.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/cleanup/icons/icon-72.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/cleanup/icons/icon-72.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/cleanup/icons/icon-96.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/cleanup/icons/icon-96.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/cleanup/icons/icon.svg",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/cleanup/icons/icon.svg",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/cleanup/index.html",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/cleanup/index.html",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/cleanup/js/cleanup-plan.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/cleanup/js/cleanup-plan.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/cleanup/js/cleanup.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/cleanup/js/cleanup.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/cleanup/js/sample-scan.json",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/cleanup/js/sample-scan.json",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/cleanup/manifest.json",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/cleanup/manifest.json",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/cleanup/sw.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/cleanup/sw.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/clock/app.json",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/clock/app.json",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/clock/css/clock.css",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/clock/css/clock.css",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/clock/icons/icon-128.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/clock/icons/icon-128.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/clock/icons/icon-144.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/clock/icons/icon-144.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/clock/icons/icon-152.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/clock/icons/icon-152.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/clock/icons/icon-192.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/clock/icons/icon-192.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/clock/icons/icon-384.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/clock/icons/icon-384.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/clock/icons/icon-48.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/clock/icons/icon-48.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/clock/icons/icon-512.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/clock/icons/icon-512.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/clock/icons/icon-72.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/clock/icons/icon-72.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/clock/icons/icon-96.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/clock/icons/icon-96.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/clock/icons/icon.svg",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/clock/icons/icon.svg",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/clock/index.html",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/clock/index.html",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/clock/js/clock.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/clock/js/clock.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/clock/manifest.json",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/clock/manifest.json",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/clock/sw.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/clock/sw.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/console/icons/icon-128.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/console/icons/icon-128.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/console/icons/icon-144.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/console/icons/icon-144.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/console/icons/icon-152.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/console/icons/icon-152.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/console/icons/icon-192.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/console/icons/icon-192.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/console/icons/icon-384.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/console/icons/icon-384.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/console/icons/icon-48.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/console/icons/icon-48.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/console/icons/icon-512.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/console/icons/icon-512.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/console/icons/icon-72.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/console/icons/icon-72.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/console/icons/icon-96.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/console/icons/icon-96.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/console/icons/icon.svg",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/console/icons/icon.svg",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/devmgmt/app.json",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/devmgmt/app.json",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/devmgmt/css/devmgmt.css",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/devmgmt/css/devmgmt.css",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/devmgmt/icons/icon-128.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/devmgmt/icons/icon-128.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/devmgmt/icons/icon-144.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/devmgmt/icons/icon-144.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/devmgmt/icons/icon-152.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/devmgmt/icons/icon-152.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/devmgmt/icons/icon-192.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/devmgmt/icons/icon-192.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/devmgmt/icons/icon-384.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/devmgmt/icons/icon-384.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/devmgmt/icons/icon-48.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/devmgmt/icons/icon-48.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/devmgmt/icons/icon-512.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/devmgmt/icons/icon-512.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/devmgmt/icons/icon-72.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/devmgmt/icons/icon-72.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/devmgmt/icons/icon-96.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/devmgmt/icons/icon-96.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/devmgmt/icons/icon.svg",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/devmgmt/icons/icon.svg",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/devmgmt/index.html",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/devmgmt/index.html",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/devmgmt/js/devmgmt-parsers.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/devmgmt/js/devmgmt-parsers.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/devmgmt/js/devmgmt.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/devmgmt/js/devmgmt.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/devmgmt/manifest.json",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/devmgmt/manifest.json",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/devmgmt/sw.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/devmgmt/sw.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/downloader/app.json",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/downloader/app.json",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/downloader/css/downloader.css",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/downloader/css/downloader.css",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/downloader/icons/icon-128.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/downloader/icons/icon-128.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/downloader/icons/icon-144.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/downloader/icons/icon-144.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/downloader/icons/icon-152.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/downloader/icons/icon-152.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/downloader/icons/icon-192.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/downloader/icons/icon-192.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/downloader/icons/icon-384.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/downloader/icons/icon-384.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/downloader/icons/icon-48.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/downloader/icons/icon-48.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/downloader/icons/icon-512.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/downloader/icons/icon-512.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/downloader/icons/icon-72.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/downloader/icons/icon-72.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/downloader/icons/icon-96.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/downloader/icons/icon-96.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/downloader/icons/icon.svg",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/downloader/icons/icon.svg",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/downloader/index.html",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/downloader/index.html",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/downloader/js/download-queue.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/downloader/js/download-queue.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/downloader/js/downloader.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/downloader/js/downloader.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/downloader/manifest.json",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/downloader/manifest.json",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/downloader/samples/queue-examples.json",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/downloader/samples/queue-examples.json",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/downloader/sw.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/downloader/sw.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/files/app.json",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/files/app.json",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/files/assets/nuxel-boot-animation.mp4",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/files/assets/nuxel-boot-animation.mp4",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/files/css/files.css",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/files/css/files.css",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/files/icons/icon-128.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/files/icons/icon-128.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/files/icons/icon-144.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/files/icons/icon-144.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/files/icons/icon-152.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/files/icons/icon-152.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/files/icons/icon-192.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/files/icons/icon-192.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/files/icons/icon-384.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/files/icons/icon-384.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/files/icons/icon-48.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/files/icons/icon-48.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/files/icons/icon-512.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/files/icons/icon-512.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/files/icons/icon-72.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/files/icons/icon-72.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/files/icons/icon-96.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/files/icons/icon-96.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/files/icons/icon.svg",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/files/icons/icon.svg",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/files/index.html",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/files/index.html",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/files/js/files.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/files/js/files.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/files/manifest.json",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/files/manifest.json",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/files/sw.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/files/sw.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/mail/app.json",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/mail/app.json",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/mail/assets/nuxel-boot-animation.mp4",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/mail/assets/nuxel-boot-animation.mp4",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/mail/css/mail.css",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/mail/css/mail.css",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/mail/icons/icon-128.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/mail/icons/icon-128.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/mail/icons/icon-144.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/mail/icons/icon-144.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/mail/icons/icon-152.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/mail/icons/icon-152.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/mail/icons/icon-192.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/mail/icons/icon-192.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/mail/icons/icon-384.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/mail/icons/icon-384.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/mail/icons/icon-48.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/mail/icons/icon-48.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/mail/icons/icon-512.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/mail/icons/icon-512.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/mail/icons/icon-72.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/mail/icons/icon-72.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/mail/icons/icon-96.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/mail/icons/icon-96.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/mail/icons/icon.svg",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/mail/icons/icon.svg",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/mail/index.html",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/mail/index.html",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/mail/js/mail.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/mail/js/mail.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/mail/js/storage.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/mail/js/storage.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/mail/js/transport.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/mail/js/transport.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/mail/manifest.json",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/mail/manifest.json",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/mail/sw.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/mail/sw.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/maps/app.json",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/maps/app.json",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/maps/css/maps.css",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/maps/css/maps.css",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/maps/icons/icon-128.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/maps/icons/icon-128.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/maps/icons/icon-144.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/maps/icons/icon-144.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/maps/icons/icon-152.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/maps/icons/icon-152.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/maps/icons/icon-192.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/maps/icons/icon-192.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/maps/icons/icon-384.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/maps/icons/icon-384.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/maps/icons/icon-48.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/maps/icons/icon-48.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/maps/icons/icon-512.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/maps/icons/icon-512.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/maps/icons/icon-72.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/maps/icons/icon-72.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/maps/icons/icon-96.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/maps/icons/icon-96.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/maps/index.html",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/maps/index.html",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/maps/js/maps.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/maps/js/maps.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/maps/manifest.json",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/maps/manifest.json",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/maps/sw.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/maps/sw.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/media/app.json",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/media/app.json",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/media/css/media.css",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/media/css/media.css",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/media/icons/icon-128.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/media/icons/icon-128.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/media/icons/icon-144.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/media/icons/icon-144.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/media/icons/icon-152.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/media/icons/icon-152.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/media/icons/icon-192.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/media/icons/icon-192.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/media/icons/icon-384.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/media/icons/icon-384.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/media/icons/icon-48.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/media/icons/icon-48.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/media/icons/icon-512.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/media/icons/icon-512.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/media/icons/icon-72.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/media/icons/icon-72.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/media/icons/icon-96.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/media/icons/icon-96.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/media/icons/icon.svg",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/media/icons/icon.svg",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/media/index.html",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/media/index.html",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/media/js/media-library.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/media/js/media-library.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/media/js/media.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/media/js/media.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/media/manifest.json",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/media/manifest.json",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/media/samples/cover-tone.svg",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/media/samples/cover-tone.svg",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/media/samples/library.json",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/media/samples/library.json",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/media/samples/tone-440.wav",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/media/samples/tone-440.wav",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/media/samples/tone-880.wav",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/media/samples/tone-880.wav",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/media/sw.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/media/sw.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/notes/app.json",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/notes/app.json",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/notes/assets/nuxel-boot-animation.mp4",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/notes/assets/nuxel-boot-animation.mp4",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/notes/css/notes.css",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/notes/css/notes.css",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/notes/icons/icon-128.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/notes/icons/icon-128.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/notes/icons/icon-144.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/notes/icons/icon-144.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/notes/icons/icon-152.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/notes/icons/icon-152.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/notes/icons/icon-192.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/notes/icons/icon-192.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/notes/icons/icon-384.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/notes/icons/icon-384.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/notes/icons/icon-48.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/notes/icons/icon-48.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/notes/icons/icon-512.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/notes/icons/icon-512.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/notes/icons/icon-72.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/notes/icons/icon-72.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/notes/icons/icon-96.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/notes/icons/icon-96.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/notes/icons/icon.svg",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/notes/icons/icon.svg",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/notes/index.html",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/notes/index.html",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/notes/js/notes-io.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/notes/js/notes-io.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/notes/js/notes.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/notes/js/notes.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/notes/manifest.json",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/notes/manifest.json",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/notes/sw.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/notes/sw.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/nuxtore/app.json",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/nuxtore/app.json",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/nuxtore/catalog/keys/nuxel-beta-dev.key.txt",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/nuxtore/catalog/keys/nuxel-beta-dev.key.txt",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/nuxtore/catalog/package-sources.json",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/nuxtore/catalog/package-sources.json",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/nuxtore/catalog/schema/bundle.schema.json",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/nuxtore/catalog/schema/bundle.schema.json",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/nuxtore/catalog/schema/nuxtore-catalog.schema.json",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/nuxtore/catalog/schema/nuxtore-catalog.schema.json",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/nuxtore/css/nuxtore.css",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/nuxtore/css/nuxtore.css",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/nuxtore/icons/icon-128.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/nuxtore/icons/icon-128.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/nuxtore/icons/icon-144.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/nuxtore/icons/icon-144.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/nuxtore/icons/icon-152.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/nuxtore/icons/icon-152.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/nuxtore/icons/icon-192.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/nuxtore/icons/icon-192.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/nuxtore/icons/icon-384.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/nuxtore/icons/icon-384.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/nuxtore/icons/icon-48.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/nuxtore/icons/icon-48.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/nuxtore/icons/icon-512.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/nuxtore/icons/icon-512.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/nuxtore/icons/icon-72.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/nuxtore/icons/icon-72.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/nuxtore/icons/icon-96.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/nuxtore/icons/icon-96.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/nuxtore/icons/icon.svg",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/nuxtore/icons/icon.svg",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/nuxtore/index.html",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/nuxtore/index.html",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/nuxtore/js/nuxtore-catalog.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/nuxtore/js/nuxtore-catalog.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/nuxtore/js/nuxtore-crypto.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/nuxtore/js/nuxtore-crypto.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/nuxtore/js/nuxtore.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/nuxtore/js/nuxtore.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/nuxtore/manifest.json",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/nuxtore/manifest.json",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/nuxtore/sw.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/nuxtore/sw.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/penguinterface/icons/icon-128.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/penguinterface/icons/icon-128.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/penguinterface/icons/icon-144.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/penguinterface/icons/icon-144.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/penguinterface/icons/icon-152.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/penguinterface/icons/icon-152.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/penguinterface/icons/icon-192.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/penguinterface/icons/icon-192.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/penguinterface/icons/icon-384.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/penguinterface/icons/icon-384.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/penguinterface/icons/icon-48.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/penguinterface/icons/icon-48.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/penguinterface/icons/icon-512.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/penguinterface/icons/icon-512.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/penguinterface/icons/icon-72.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/penguinterface/icons/icon-72.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/penguinterface/icons/icon-96.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/penguinterface/icons/icon-96.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/penguinterface/icons/icon.svg",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/penguinterface/icons/icon.svg",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/photos/app.json",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/photos/app.json",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/photos/css/photos.css",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/photos/css/photos.css",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/photos/icons/icon-128.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/photos/icons/icon-128.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/photos/icons/icon-144.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/photos/icons/icon-144.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/photos/icons/icon-152.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/photos/icons/icon-152.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/photos/icons/icon-192.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/photos/icons/icon-192.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/photos/icons/icon-384.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/photos/icons/icon-384.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/photos/icons/icon-48.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/photos/icons/icon-48.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/photos/icons/icon-512.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/photos/icons/icon-512.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/photos/icons/icon-72.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/photos/icons/icon-72.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/photos/icons/icon-96.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/photos/icons/icon-96.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/photos/index.html",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/photos/index.html",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/photos/js/photos.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/photos/js/photos.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/photos/manifest.json",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/photos/manifest.json",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/photos/sw.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/photos/sw.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/recorder/app.json",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/recorder/app.json",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/recorder/css/recorder.css",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/recorder/css/recorder.css",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/recorder/icons/icon-128.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/recorder/icons/icon-128.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/recorder/icons/icon-144.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/recorder/icons/icon-144.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/recorder/icons/icon-152.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/recorder/icons/icon-152.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/recorder/icons/icon-192.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/recorder/icons/icon-192.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/recorder/icons/icon-384.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/recorder/icons/icon-384.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/recorder/icons/icon-48.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/recorder/icons/icon-48.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/recorder/icons/icon-512.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/recorder/icons/icon-512.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/recorder/icons/icon-72.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/recorder/icons/icon-72.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/recorder/icons/icon-96.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/recorder/icons/icon-96.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/recorder/index.html",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/recorder/index.html",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/recorder/js/recorder.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/recorder/js/recorder.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/recorder/manifest.json",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/recorder/manifest.json",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/recorder/sw.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/recorder/sw.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/rootcontrol/app.json",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/rootcontrol/app.json",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/rootcontrol/css/rootcontrol.css",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/rootcontrol/css/rootcontrol.css",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/rootcontrol/icons/icon-128.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/rootcontrol/icons/icon-128.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/rootcontrol/icons/icon-144.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/rootcontrol/icons/icon-144.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/rootcontrol/icons/icon-152.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/rootcontrol/icons/icon-152.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/rootcontrol/icons/icon-192.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/rootcontrol/icons/icon-192.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/rootcontrol/icons/icon-384.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/rootcontrol/icons/icon-384.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/rootcontrol/icons/icon-48.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/rootcontrol/icons/icon-48.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/rootcontrol/icons/icon-512.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/rootcontrol/icons/icon-512.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/rootcontrol/icons/icon-72.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/rootcontrol/icons/icon-72.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/rootcontrol/icons/icon-96.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/rootcontrol/icons/icon-96.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/rootcontrol/icons/icon.svg",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/rootcontrol/icons/icon.svg",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/rootcontrol/index.html",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/rootcontrol/index.html",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/rootcontrol/js/privilege-model.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/rootcontrol/js/privilege-model.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/rootcontrol/js/rootcontrol.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/rootcontrol/js/rootcontrol.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/rootcontrol/manifest.json",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/rootcontrol/manifest.json",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/rootcontrol/sw.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/rootcontrol/sw.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/settings/app.json",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/settings/app.json",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/settings/index.html",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/settings/index.html",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/settings/manifest.json",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/settings/manifest.json",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/settings/power-menu.css",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/settings/power-menu.css",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/settings/power-menu.html",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/settings/power-menu.html",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/settings/power-menu.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/settings/power-menu.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/settings/settings-model.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/settings/settings-model.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/settings/settings.css",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/settings/settings.css",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/settings/settings.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/settings/settings.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/snekbyte/app.json",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/snekbyte/app.json",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/snekbyte/css/snekbyte.css",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/snekbyte/css/snekbyte.css",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/snekbyte/icons/icon-128.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/snekbyte/icons/icon-128.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/snekbyte/icons/icon-144.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/snekbyte/icons/icon-144.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/snekbyte/icons/icon-152.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/snekbyte/icons/icon-152.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/snekbyte/icons/icon-192.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/snekbyte/icons/icon-192.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/snekbyte/icons/icon-384.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/snekbyte/icons/icon-384.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/snekbyte/icons/icon-48.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/snekbyte/icons/icon-48.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/snekbyte/icons/icon-512.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/snekbyte/icons/icon-512.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/snekbyte/icons/icon-72.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/snekbyte/icons/icon-72.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/snekbyte/icons/icon-96.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/snekbyte/icons/icon-96.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/snekbyte/icons/icon.svg",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/snekbyte/icons/icon.svg",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/snekbyte/index.html",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/snekbyte/index.html",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/snekbyte/js/snek-engine.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/snekbyte/js/snek-engine.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/snekbyte/js/snekbyte.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/snekbyte/js/snekbyte.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/snekbyte/manifest.json",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/snekbyte/manifest.json",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/snekbyte/sw.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/snekbyte/sw.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/terminal/app.json",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/terminal/app.json",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/terminal/icons/icon-192.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/terminal/icons/icon-192.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/terminal/icons/icon-512.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/terminal/icons/icon-512.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/terminal/index.html",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/terminal/index.html",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/terminal/manifest.json",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/terminal/manifest.json",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/terminal/sw.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/terminal/sw.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/terminal/terminal.css",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/terminal/terminal.css",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/terminal/terminal.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/terminal/terminal.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/weather/app.json",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/weather/app.json",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/weather/css/weather.css",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/weather/css/weather.css",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/weather/icons/icon-128.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/weather/icons/icon-128.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/weather/icons/icon-144.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/weather/icons/icon-144.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/weather/icons/icon-152.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/weather/icons/icon-152.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/weather/icons/icon-192.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/weather/icons/icon-192.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/weather/icons/icon-384.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/weather/icons/icon-384.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/weather/icons/icon-48.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/weather/icons/icon-48.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/weather/icons/icon-512.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/weather/icons/icon-512.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/weather/icons/icon-72.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/weather/icons/icon-72.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/weather/icons/icon-96.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/weather/icons/icon-96.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/weather/index.html",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/weather/index.html",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/weather/js/weather.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/weather/js/weather.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/weather/manifest.json",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/weather/manifest.json",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/weather/sw.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/weather/sw.js",
+          "mode": "0644"
+        }
+      ],
+      "notes": "Every installed PWA under pwa/nuxel-apps/ \u2014 index.html, app.json, manifest.json, sw.js, js/, css/, icons/, assets/, samples/ and the shared _shared/ runtime \u2014 staged to the SAME docroot the existing launcher-pwa group uses (/home/nuxel/nuxel). Repository-only test fixtures are excluded and named in non_deployable."
+    },
+    {
+      "id": "pwa-shared-runtime",
+      "component": "launcher remainder + shared PWA runtime (pwa/nuxel-common)",
+      "priority": 1,
+      "risk": "low",
+      "restart_service": "nuxel-web",
+      "pre": [],
+      "health_check": "test \"$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8000/pwa/nuxel-common/bridge.js)\" = 200 && test -s /home/nuxel/nuxel/pwa/nuxel-home/assets/nuxel-background.png",
+      "rollback": "restore <target>.nuxel-rollback for each file and restart nuxel-web; the launcher's ES module ../nuxel-common/bridge.js resolves again",
+      "files": [
+        {
+          "source": "pwa/nuxel-common/app-registry.json",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-common/app-registry.json",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-common/bridge-version.json",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-common/bridge-version.json",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-common/bridge.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-common/bridge.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-common/geolocation.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-common/geolocation.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/nuxel-boot-animation.mp4",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/nuxel-boot-animation.mp4",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/icons/icon-128.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/icons/icon-128.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/icons/icon-144.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/icons/icon-144.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/icons/icon-152.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/icons/icon-152.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/icons/icon-192.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/icons/icon-192.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/icons/icon-384.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/icons/icon-384.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/icons/icon-48.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/icons/icon-48.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/icons/icon-512.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/icons/icon-512.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/icons/icon-72.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/icons/icon-72.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/icons/icon-96.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/icons/icon-96.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/icons/icon.svg",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/icons/icon.svg",
+          "mode": "0644"
+        }
+      ],
+      "notes": "The core launcher-pwa group covers index.html/manifest.json/sw.js/css/js but NOT the shared ES module the launcher imports (../nuxel-common/bridge.js), the launcher icons or its assets \u2014 a launcher restored from the core plan alone renders without wallpaper (measured A31) or 404s its bridge module (measured A29b). This group closes that gap and carries the registry copy the PWA fetches over HTTP."
+    },
+    {
+      "id": "app-registry-consumers",
+      "component": "app registry consumers/entries + verifiers",
+      "priority": 1,
+      "risk": "low",
+      "restart_service": "nuxel-web",
+      "pre": [],
+      "health_check": "python3 -c \"import json;a=json.load(open('/etc/nuxel/app-registry/app_registry.json'));assert a['registry_version']>=4\" && test -x /usr/local/bin/verify-app-registry.py",
+      "rollback": "restore the previous /etc/nuxel/app-registry/app_registry.json and /etc/nuxel/bridge-version.json from <target>.nuxel-rollback and restart nuxel-web; the native-shell copy is restored from its own backup",
+      "files": [
+        {
+          "source": "pwa/nuxel-common/app-registry.json",
+          "target": "/etc/nuxel/app-registry/app_registry.json",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-common/bridge-version.json",
+          "target": "/etc/nuxel/bridge-version.json",
+          "mode": "0644"
+        },
+        {
+          "source": "shell/nuxel-home-native/nuxel_home/app_registry.json",
+          "target": "/usr/lib/nuxel/nuxel-home-native/nuxel_home/app_registry.json",
+          "mode": "0644"
+        },
+        {
+          "source": "tools/s10plus/a33/verify-app-registry.py",
+          "target": "/usr/lib/nuxel/verify-app-registry.py",
+          "mode": "0755"
+        },
+        {
+          "source": "tools/s10plus/a33/verify-app-inventory.py",
+          "target": "/usr/lib/nuxel/verify-app-inventory.py",
+          "mode": "0755"
+        }
+      ],
+      "notes": "The registry the mission calls 'the app registry' is the SERVED one: pwa/nuxel-common/app-registry.json (registry_version 4) is what the PWA fetches and what pwa/nuxel-common/app-registry.json's own consumers{} block names as the installed copy. The core audio-and-network-config group also installs the older configs/nuxel/app-registry/app_registry.json to the same path; this group runs AFTER it, so the canonical registry is what remains on disk. That deliberate supersession is recorded in target_overrides[] rather than by editing the frozen core group."
+    },
+    {
+      "id": "configs-nuxel-remaining",
+      "component": "remaining /etc/nuxel documents and unit files",
+      "priority": 2,
+      "risk": "medium",
+      "restart_service": null,
+      "declared_reload": "systemctl daemon-reload",
+      "declared_reload_reason": "the group installs DATA documents plus unit/timer/path files; no service holds a document open (each reads it at start), so nothing is restarted here and the deliberate reload is `systemctl daemon-reload` (unit visibility) followed by the shipped consumers re-reading their documents \u2014 the behavioural confirmation is the later verified reboot owned by briq-10c.",
+      "pre": [
+        "systemctl daemon-reload"
+      ],
+      "post": [
+        "systemctl daemon-reload"
+      ],
+      "health_check": "test -s /etc/nuxel/paths.conf && python3 -c \"import json;json.load(open('/etc/nuxel/capabilities/hardware-subsystems.json'));json.load(open('/etc/nuxel/bootmode/bootmode-guard.json'))\"",
+      "rollback": "restore every <target>.nuxel-rollback in reverse order, run `systemctl daemon-reload`, and re-run the health check; each document is independently restorable and no partition is touched",
+      "install_procedure": "docs/beta-finalization/live/procedures/etc-paths-real-locations.md",
+      "files": [
+        {
+          "source": "configs/nuxel/README.md",
+          "target": "/etc/nuxel/README.md",
+          "mode": "0644"
+        },
+        {
+          "source": "configs/nuxel/app-registry/README-app-registry.md",
+          "target": "/etc/nuxel/app-registry/README-app-registry.md",
+          "mode": "0644"
+        },
+        {
+          "source": "configs/nuxel/app-registry/app-registry.schema.json",
+          "target": "/etc/nuxel/app-registry/app-registry.schema.json",
+          "mode": "0644"
+        },
+        {
+          "source": "configs/nuxel/bluetooth/README.md",
+          "target": "/etc/nuxel/bluetooth/README.md",
+          "mode": "0644"
+        },
+        {
+          "source": "configs/nuxel/bluetooth/bluetooth.json",
+          "target": "/etc/nuxel/bluetooth/bluetooth.json",
+          "mode": "0644"
+        },
+        {
+          "source": "configs/nuxel/bluetooth/main.conf.d/60-nuxel.conf",
+          "target": "/etc/nuxel/bluetooth/main.conf.d/60-nuxel.conf",
+          "mode": "0644"
+        },
+        {
+          "source": "configs/nuxel/bootmode/README.md",
+          "target": "/etc/nuxel/bootmode/README.md",
+          "mode": "0644"
+        },
+        {
+          "source": "configs/nuxel/bootmode/bootmode-guard.json",
+          "target": "/etc/nuxel/bootmode/bootmode-guard.json",
+          "mode": "0644"
+        },
+        {
+          "source": "configs/nuxel/buttons.json",
+          "target": "/etc/nuxel/input/buttons.json",
+          "mode": "0644"
+        },
+        {
+          "source": "configs/nuxel/buttons/settings-surface.json",
+          "target": "/etc/nuxel/buttons/settings-surface.json",
+          "mode": "0644"
+        },
+        {
+          "source": "configs/nuxel/camera/README.md",
+          "target": "/etc/nuxel/camera/README.md",
+          "mode": "0644"
+        },
+        {
+          "source": "configs/nuxel/camera/camera.json",
+          "target": "/etc/nuxel/camera/camera.json",
+          "mode": "0644"
+        },
+        {
+          "source": "configs/nuxel/capabilities/connectivity-time-audio-buttons.json",
+          "target": "/etc/nuxel/capabilities/connectivity-time-audio-buttons.json",
+          "mode": "0644"
+        },
+        {
+          "source": "configs/nuxel/capabilities/hardware-subsystems.json",
+          "target": "/etc/nuxel/capabilities/hardware-subsystems.json",
+          "mode": "0644"
+        },
+        {
+          "source": "configs/nuxel/gnss/README.md",
+          "target": "/etc/nuxel/gnss/README.md",
+          "mode": "0644"
+        },
+        {
+          "source": "configs/nuxel/gnss/gnss.json",
+          "target": "/etc/nuxel/gnss/gnss.json",
+          "mode": "0644"
+        },
+        {
+          "source": "configs/nuxel/gnss/osm-tiles.json",
+          "target": "/etc/nuxel/gnss/osm-tiles.json",
+          "mode": "0644"
+        },
+        {
+          "source": "configs/nuxel/haptics/README.md",
+          "target": "/etc/nuxel/haptics/README.md",
+          "mode": "0644"
+        },
+        {
+          "source": "configs/nuxel/haptics/bridge.json",
+          "target": "/etc/nuxel/haptics/bridge.json",
+          "mode": "0644"
+        },
+        {
+          "source": "configs/nuxel/haptics/haptics.json",
+          "target": "/etc/nuxel/haptics/haptics.json",
+          "mode": "0644"
+        },
+        {
+          "source": "configs/nuxel/haptics/nuxel-haptics-bridge.service",
+          "target": "/etc/systemd/system/nuxel-haptics-bridge.service",
+          "mode": "0644"
+        },
+        {
+          "source": "configs/nuxel/input/button-fsm.json",
+          "target": "/etc/nuxel/input/button-fsm.json",
+          "mode": "0644"
+        },
+        {
+          "source": "configs/nuxel/keyboard/README.md",
+          "target": "/etc/nuxel/keyboard/README.md",
+          "mode": "0644"
+        },
+        {
+          "source": "configs/nuxel/keyboard/keyboard.json",
+          "target": "/etc/nuxel/keyboard/keyboard.json",
+          "mode": "0644"
+        },
+        {
+          "source": "configs/nuxel/keyboard/keyboard.schema.json",
+          "target": "/etc/nuxel/keyboard/keyboard.schema.json",
+          "mode": "0644"
+        },
+        {
+          "source": "configs/nuxel/keyboard/nuxel-keyboard-apply.path",
+          "target": "/etc/systemd/system/nuxel-keyboard-apply.path",
+          "mode": "0644"
+        },
+        {
+          "source": "configs/nuxel/keyboard/nuxel-keyboard-apply.service",
+          "target": "/etc/systemd/system/nuxel-keyboard-apply.service",
+          "mode": "0644"
+        },
+        {
+          "source": "configs/nuxel/leds/README.md",
+          "target": "/etc/nuxel/leds/README.md",
+          "mode": "0644"
+        },
+        {
+          "source": "configs/nuxel/leds/leds.json",
+          "target": "/etc/nuxel/leds/leds.json",
+          "mode": "0644"
+        },
+        {
+          "source": "configs/nuxel/modem/nuxel-microsd-automount.service",
+          "target": "/etc/systemd/system/nuxel-microsd-automount.service",
+          "mode": "0644"
+        },
+        {
+          "source": "configs/nuxel/nfc/README.md",
+          "target": "/etc/nuxel/nfc/README.md",
+          "mode": "0644"
+        },
+        {
+          "source": "configs/nuxel/nfc/nfc.json",
+          "target": "/etc/nuxel/nfc/nfc.json",
+          "mode": "0644"
+        },
+        {
+          "source": "configs/nuxel/paths.conf",
+          "target": "/etc/nuxel/paths.conf",
+          "mode": "0644"
+        },
+        {
+          "source": "configs/nuxel/power/README.md",
+          "target": "/etc/nuxel/power/README.md",
+          "mode": "0644"
+        },
+        {
+          "source": "configs/nuxel/power/nuxel-power-mode.service",
+          "target": "/etc/systemd/system/nuxel-power-mode.service",
+          "mode": "0644"
+        },
+        {
+          "source": "configs/nuxel/power/power-menu.json",
+          "target": "/etc/nuxel/power/power-menu.json",
+          "mode": "0644"
+        },
+        {
+          "source": "configs/nuxel/power/power.json",
+          "target": "/etc/nuxel/power/power.json",
+          "mode": "0644"
+        },
+        {
+          "source": "configs/nuxel/security/README.md",
+          "target": "/etc/nuxel/security/README.md",
+          "mode": "0644"
+        },
+        {
+          "source": "configs/nuxel/security/privacy-config.json",
+          "target": "/etc/nuxel/security/privacy-config.json",
+          "mode": "0644"
+        },
+        {
+          "source": "configs/nuxel/security/remote-access.json",
+          "target": "/etc/nuxel/security/remote-access.json",
+          "mode": "0644"
+        },
+        {
+          "source": "configs/nuxel/security/tor/torrc",
+          "target": "/etc/nuxel/security/tor/torrc",
+          "mode": "0644"
+        },
+        {
+          "source": "configs/nuxel/sensors/README.md",
+          "target": "/etc/nuxel/sensors/README.md",
+          "mode": "0644"
+        },
+        {
+          "source": "configs/nuxel/sensors/sensors.json",
+          "target": "/etc/nuxel/sensors/sensors.json",
+          "mode": "0644"
+        },
+        {
+          "source": "configs/nuxel/time/60-nuxel-timesyncd.conf",
+          "target": "/etc/systemd/timesyncd.conf.d/60-nuxel-timesyncd.conf",
+          "mode": "0644"
+        },
+        {
+          "source": "configs/nuxel/time/README.md",
+          "target": "/etc/nuxel/time/README.md",
+          "mode": "0644"
+        },
+        {
+          "source": "configs/nuxel/time/nuxel-rtc-check.service",
+          "target": "/etc/systemd/system/nuxel-rtc-check.service",
+          "mode": "0644"
+        },
+        {
+          "source": "configs/nuxel/time/nuxel-rtc-check.timer",
+          "target": "/etc/systemd/system/nuxel-rtc-check.timer",
+          "mode": "0644"
+        },
+        {
+          "source": "configs/nuxel/time/time.json",
+          "target": "/etc/nuxel/time/time.json",
+          "mode": "0644"
+        },
+        {
+          "source": "configs/nuxel/touch/README.md",
+          "target": "/etc/nuxel/touch/README.md",
+          "mode": "0644"
+        },
+        {
+          "source": "configs/nuxel/touch/nuxel-bootmode-reboot.service",
+          "target": "/etc/systemd/system/nuxel-bootmode-reboot.service",
+          "mode": "0644"
+        }
+      ],
+      "notes": "Canonical consumer paths win where the repository and the tools disagree: statusbar-safezones.json -> /etc/nuxel/display/ (nuxelctl ZONES_FILE and the rootfs builder), buttons.json -> /etc/nuxel/input/ (nuxelctl BUTTONS_FILE, the builder and configs/nuxel/README.md), the timesyncd drop-in -> /etc/systemd/timesyncd.conf.d/ (its real systemd location). The core status-bar-safe-zones group keeps its frozen /etc/nuxel/statusbar-safezones.json target; the canonical path is installed here as well, see target_overrides[]."
+    },
+    {
+      "id": "s10plus-a33-runtime",
+      "component": "S10+ a33 runtime tools, diagnostics and probes",
+      "priority": 2,
+      "risk": "medium",
+      "restart_service": null,
+      "declared_reload": "systemctl daemon-reload",
+      "declared_reload_reason": "this group installs executables, probes and one early-boot unit (nuxel-verbose-boot.service); the unit becomes visible with `systemctl daemon-reload` and the CLI tools need no service at all, so no service is restarted.",
+      "pre": [
+        "systemctl daemon-reload"
+      ],
+      "post": [
+        "systemctl daemon-reload"
+      ],
+      "health_check": "test -x /usr/local/bin/nuxelctl && test -x /usr/libexec/nuxel/nuxel-verbose-boot && test -s /usr/share/nuxel/probes/touch-probe.html && test -x /usr/local/bin/nuxel-fb-owner-assert.sh",
+      "rollback": "restore every <target>.nuxel-rollback and `systemctl daemon-reload`; the tools are leaf executables, so restoring them cannot strand the boot",
+      "install_procedure": "docs/beta-finalization/live/procedures/native-app-binaries.md",
+      "files": [
+        {
+          "source": "tools/s10plus/a33/README.md",
+          "target": "/usr/lib/nuxel/src/a33/README.md",
+          "mode": "0644"
+        },
+        {
+          "source": "tools/s10plus/a33/build-a33-boot.sh",
+          "target": "/usr/local/bin/build-a33-boot.sh",
+          "mode": "0755"
+        },
+        {
+          "source": "tools/s10plus/a33/build-a33-buttons.sh",
+          "target": "/usr/local/bin/build-a33-buttons.sh",
+          "mode": "0755"
+        },
+        {
+          "source": "tools/s10plus/a33/build-libinput-shim.sh",
+          "target": "/usr/local/bin/build-libinput-shim.sh",
+          "mode": "0755"
+        },
+        {
+          "source": "tools/s10plus/a33/keyboard-probe.html",
+          "target": "/usr/share/nuxel/probes/keyboard-probe.html",
+          "mode": "0644"
+        },
+        {
+          "source": "tools/s10plus/a33/nuxel-anim-handoff.py",
+          "target": "/usr/libexec/nuxel/nuxel-anim-handoff.py",
+          "mode": "0755"
+        },
+        {
+          "source": "tools/s10plus/a33/nuxel-audio-diag.sh",
+          "target": "/usr/local/bin/nuxel-audio-diag.sh",
+          "mode": "0755"
+        },
+        {
+          "source": "tools/s10plus/a33/nuxel-bluetooth-diag.sh",
+          "target": "/usr/local/bin/nuxel-bluetooth-diag.sh",
+          "mode": "0755"
+        },
+        {
+          "source": "tools/s10plus/a33/nuxel-boot-stage-verbose.sh",
+          "target": "/usr/local/bin/nuxel-boot-stage-verbose.sh",
+          "mode": "0755"
+        },
+        {
+          "source": "tools/s10plus/a33/nuxel-bootmode-guard.py",
+          "target": "/usr/libexec/nuxel/nuxel-bootmode-guard.py",
+          "mode": "0755"
+        },
+        {
+          "source": "tools/s10plus/a33/nuxel-button-fsm.h",
+          "target": "/usr/lib/nuxel/src/a33/nuxel-button-fsm.h",
+          "mode": "0644"
+        },
+        {
+          "source": "tools/s10plus/a33/nuxel-button-manager.c",
+          "target": "/usr/lib/nuxel/src/a33/nuxel-button-manager.c",
+          "mode": "0644"
+        },
+        {
+          "source": "tools/s10plus/a33/nuxel-camera-diag.sh",
+          "target": "/usr/local/bin/nuxel-camera-diag.sh",
+          "mode": "0755"
+        },
+        {
+          "source": "tools/s10plus/a33/nuxel-console.c",
+          "target": "/usr/lib/nuxel/src/a33/nuxel-console.c",
+          "mode": "0644"
+        },
+        {
+          "source": "tools/s10plus/a33/nuxel-firewall.sh",
+          "target": "/usr/local/bin/nuxel-firewall.sh",
+          "mode": "0755"
+        },
+        {
+          "source": "tools/s10plus/a33/nuxel-gnss-diag.sh",
+          "target": "/usr/local/bin/nuxel-gnss-diag.sh",
+          "mode": "0755"
+        },
+        {
+          "source": "tools/s10plus/a33/nuxel-handoff-logic.h",
+          "target": "/usr/lib/nuxel/src/a33/nuxel-handoff-logic.h",
+          "mode": "0644"
+        },
+        {
+          "source": "tools/s10plus/a33/nuxel-haptics-bridge.py",
+          "target": "/usr/local/bin/nuxel-haptics-bridge.py",
+          "mode": "0755"
+        },
+        {
+          "source": "tools/s10plus/a33/nuxel-haptics-diag.sh",
+          "target": "/usr/local/bin/nuxel-haptics-diag.sh",
+          "mode": "0755"
+        },
+        {
+          "source": "tools/s10plus/a33/nuxel-headphone-diag.sh",
+          "target": "/usr/local/bin/nuxel-headphone-diag.sh",
+          "mode": "0755"
+        },
+        {
+          "source": "tools/s10plus/a33/nuxel-keyboard-apply.sh",
+          "target": "/usr/local/bin/nuxel-keyboard-apply.sh",
+          "mode": "0755"
+        },
+        {
+          "source": "tools/s10plus/a33/nuxel-led-diag.sh",
+          "target": "/usr/local/bin/nuxel-led-diag.sh",
+          "mode": "0755"
+        },
+        {
+          "source": "tools/s10plus/a33/nuxel-libinput-path.c",
+          "target": "/usr/lib/nuxel/src/a33/nuxel-libinput-path.c",
+          "mode": "0644"
+        },
+        {
+          "source": "tools/s10plus/a33/nuxel-microsd-diag.sh",
+          "target": "/usr/local/bin/nuxel-microsd-diag.sh",
+          "mode": "0755"
+        },
+        {
+          "source": "tools/s10plus/a33/nuxel-nfc-diag.sh",
+          "target": "/usr/local/bin/nuxel-nfc-diag.sh",
+          "mode": "0755"
+        },
+        {
+          "source": "tools/s10plus/a33/nuxel-osm-tiles.py",
+          "target": "/usr/local/bin/nuxel-osm-tiles.py",
+          "mode": "0755"
+        },
+        {
+          "source": "tools/s10plus/a33/nuxel-power-diag.sh",
+          "target": "/usr/local/bin/nuxel-power-diag.sh",
+          "mode": "0755"
+        },
+        {
+          "source": "tools/s10plus/a33/nuxel-pwa-host.c",
+          "target": "/usr/lib/nuxel/src/a33/nuxel-pwa-host.c",
+          "mode": "0644"
+        },
+        {
+          "source": "tools/s10plus/a33/nuxel-security-audit.sh",
+          "target": "/usr/local/bin/nuxel-security-audit.sh",
+          "mode": "0755"
+        },
+        {
+          "source": "tools/s10plus/a33/nuxel-sensors-diag.sh",
+          "target": "/usr/local/bin/nuxel-sensors-diag.sh",
+          "mode": "0755"
+        },
+        {
+          "source": "tools/s10plus/a33/nuxel-time.sh",
+          "target": "/usr/local/bin/nuxel-time.sh",
+          "mode": "0755"
+        },
+        {
+          "source": "tools/s10plus/a33/nuxel-touch-capture.sh",
+          "target": "/usr/local/bin/nuxel-touch-capture.sh",
+          "mode": "0755"
+        },
+        {
+          "source": "tools/s10plus/a33/nuxel-touch-trace.py",
+          "target": "/usr/libexec/nuxel/nuxel-touch-trace.py",
+          "mode": "0755"
+        },
+        {
+          "source": "tools/s10plus/a33/nuxel-verbose-boot.py",
+          "target": "/usr/libexec/nuxel/nuxel-verbose-boot",
+          "mode": "0755"
+        },
+        {
+          "source": "tools/s10plus/a33/nuxel-verbose-boot.service",
+          "target": "/etc/systemd/system/nuxel-verbose-boot.service",
+          "mode": "0644"
+        },
+        {
+          "source": "tools/s10plus/a33/nuxel-vpn-tor.sh",
+          "target": "/usr/local/bin/nuxel-vpn-tor.sh",
+          "mode": "0755"
+        },
+        {
+          "source": "tools/s10plus/a33/nuxel-wifi-diag.sh",
+          "target": "/usr/local/bin/nuxel-wifi-diag.sh",
+          "mode": "0755"
+        },
+        {
+          "source": "tools/s10plus/a33/nuxel-wl-fb.c",
+          "target": "/usr/lib/nuxel/src/a33/nuxel-wl-fb.c",
+          "mode": "0644"
+        },
+        {
+          "source": "tools/s10plus/a33/nuxelctl",
+          "target": "/usr/local/bin/nuxelctl",
+          "mode": "0755"
+        },
+        {
+          "source": "tools/s10plus/a33/touch-probe.html",
+          "target": "/usr/share/nuxel/probes/touch-probe.html",
+          "mode": "0644"
+        },
+        {
+          "source": "tools/s10plus/a33/verify-app-inventory.py",
+          "target": "/usr/local/bin/verify-app-inventory.py",
+          "mode": "0755"
+        },
+        {
+          "source": "tools/s10plus/a33/verify-app-registry.py",
+          "target": "/usr/local/bin/verify-app-registry.py",
+          "mode": "0755"
+        },
+        {
+          "source": "tools/s10plus/a33/verify-permissions.py",
+          "target": "/usr/local/bin/verify-permissions.py",
+          "mode": "0755"
+        },
+        {
+          "source": "tools/s10plus/a33/verify-service-graph.py",
+          "target": "/usr/local/bin/verify-service-graph.py",
+          "mode": "0755"
+        },
+        {
+          "source": "tools/beta/live/nuxel-fb-owner-assert.sh",
+          "target": "/usr/local/bin/nuxel-fb-owner-assert.sh",
+          "mode": "0755"
+        }
+      ],
+      "notes": "Paths follow the SHIPPED consumers, not a guess: nuxelctl resolves its sibling diagnostics next to itself and then in /usr/lib/nuxel, /usr/bin, /usr/local/lib/nuxel (tools/s10plus/a33/nuxelctl sibling_script()), so nuxelctl and the nuxel-*.sh diagnostics install together in /usr/local/bin; nuxel-verbose-boot.service ExecStart= and nuxelctl VERBOSE_SVC/ HANDOFF_HARNESS name /usr/libexec/nuxel/; the libinput shim, the button manager and the bridge sources ship to /usr/lib/nuxel/src/a33/ so the documented aarch64 build recipe can be re-run on the device. Compiled aarch64 artefacts are NOT staged from build/ (gitignored): see non_deployable + the procedure."
+    },
+    {
+      "id": "services-runtime",
+      "component": "services/** runtime code, shims, units and D-Bus policies",
+      "priority": 3,
+      "risk": "medium",
+      "restart_service": null,
+      "declared_reload": "systemctl daemon-reload && systemctl restart nuxel-bridge nuxel-http-bridge nuxel-portal nuxel-notifications",
+      "declared_reload_reason": "four independent system services' code changes in this one group; the smallest declared affected set is exactly those four units (nuxel-web is restarted by the PWA groups and is not restarted twice), and the units themselves only become visible with `systemctl daemon-reload`.",
+      "pre": [
+        "systemctl daemon-reload"
+      ],
+      "post": [
+        "systemctl daemon-reload"
+      ],
+      "health_check": "test -x /usr/bin/nuxel-bridge && test -x /usr/bin/nuxel-http-bridge && test -x /usr/bin/nuxel-portal && test -x /usr/bin/nuxel-notifications && test -s /usr/lib/nuxel/nuxel-web-server.py",
+      "rollback": "restore every <target>.nuxel-rollback (code, shims, units, D-Bus policy), `systemctl daemon-reload`, restart the four units, then re-run the health check; the D-Bus policy is restored before any bus reload is attempted",
+      "files": [
+        {
+          "source": "services/nuxel-bridge/bin/nuxel-bridge",
+          "target": "/usr/bin/nuxel-bridge",
+          "mode": "0755"
+        },
+        {
+          "source": "services/nuxel-bridge/bin/nuxel-http-bridge",
+          "target": "/usr/bin/nuxel-http-bridge",
+          "mode": "0755"
+        },
+        {
+          "source": "services/nuxel-bridge/dbus/org.nuxel.Bridge.conf",
+          "target": "/etc/dbus-1/system.d/org.nuxel.Bridge.conf",
+          "mode": "0644"
+        },
+        {
+          "source": "services/nuxel-bridge/src/api.py",
+          "target": "/usr/lib/nuxel/nuxel-bridge/api.py",
+          "mode": "0644"
+        },
+        {
+          "source": "services/nuxel-bridge/src/bridge.py",
+          "target": "/usr/lib/nuxel/nuxel-bridge/bridge.py",
+          "mode": "0644"
+        },
+        {
+          "source": "services/nuxel-bridge/src/capabilities.py",
+          "target": "/usr/lib/nuxel/nuxel-bridge/capabilities.py",
+          "mode": "0644"
+        },
+        {
+          "source": "services/nuxel-bridge/systemd/nuxel-bridge.service",
+          "target": "/etc/systemd/system/nuxel-bridge.service",
+          "mode": "0644"
+        },
+        {
+          "source": "services/nuxel-bridge/systemd/nuxel-http-bridge.service",
+          "target": "/etc/systemd/system/nuxel-http-bridge.service",
+          "mode": "0644"
+        },
+        {
+          "source": "services/nuxel-console/README.md",
+          "target": "/usr/lib/nuxel/nuxel-console/README.md",
+          "mode": "0644"
+        },
+        {
+          "source": "services/nuxel-console/bin/nuxel-console-free",
+          "target": "/usr/lib/nuxel/nuxel-console-free",
+          "mode": "0755"
+        },
+        {
+          "source": "services/nuxel-console/systemd/nuxel-console.service",
+          "target": "/etc/systemd/system/nuxel-console.service",
+          "mode": "0644"
+        },
+        {
+          "source": "services/nuxel-notifications/README.md",
+          "target": "/usr/lib/nuxel/nuxel-notifications/README.md",
+          "mode": "0644"
+        },
+        {
+          "source": "services/nuxel-notifications/bin/nuxel-notifications",
+          "target": "/usr/bin/nuxel-notifications",
+          "mode": "0755"
+        },
+        {
+          "source": "services/nuxel-notifications/dbus/org.nuxel.Notifications.conf",
+          "target": "/etc/dbus-1/system.d/org.nuxel.Notifications.conf",
+          "mode": "0644"
+        },
+        {
+          "source": "services/nuxel-notifications/src/notifications.py",
+          "target": "/usr/lib/nuxel/nuxel-notifications/notifications.py",
+          "mode": "0644"
+        },
+        {
+          "source": "services/nuxel-notifications/systemd/nuxel-notifications.service",
+          "target": "/etc/systemd/system/nuxel-notifications.service",
+          "mode": "0644"
+        },
+        {
+          "source": "services/nuxel-portal/bin/nuxel-portal",
+          "target": "/usr/bin/nuxel-portal",
+          "mode": "0755"
+        },
+        {
+          "source": "services/nuxel-portal/dbus/org.nuxel.Portal.conf",
+          "target": "/etc/dbus-1/system.d/org.nuxel.Portal.conf",
+          "mode": "0644"
+        },
+        {
+          "source": "services/nuxel-portal/src/portal.py",
+          "target": "/usr/lib/nuxel/nuxel-portal/portal.py",
+          "mode": "0644"
+        },
+        {
+          "source": "services/nuxel-portal/systemd/nuxel-portal.service",
+          "target": "/etc/systemd/system/nuxel-portal.service",
+          "mode": "0644"
+        },
+        {
+          "source": "services/nuxel-session/systemd/nuxel-fallback.service",
+          "target": "/etc/systemd/system/nuxel-fallback.service",
+          "mode": "0644"
+        },
+        {
+          "source": "services/nuxel-session/systemd/nuxel-ui.service.d-10-launcher-primary.conf",
+          "target": "/etc/systemd/system/nuxel-ui.service.d/10-launcher-primary.conf",
+          "mode": "0644"
+        },
+        {
+          "source": "services/nuxel-web/bin/nuxel-web",
+          "target": "/usr/bin/nuxel-web",
+          "mode": "0755"
+        },
+        {
+          "source": "services/nuxel-web/bin/nuxel-web-server.py",
+          "target": "/usr/lib/nuxel/nuxel-web-server.py",
+          "mode": "0755"
+        }
+      ],
+      "notes": "Targets are the paths the CANONICAL units start (ExecStart=/usr/bin/nuxel-bridge, /usr/bin/nuxel-web, /usr/bin/nuxel-portal, /usr/bin/nuxel-notifications, /usr/bin/nuxel-bridge) and the paths the rootfs builder installs them to, plus /usr/lib/nuxel/<service>/ for each python module tree and /etc/dbus-1/system.d/ for the canonical system-bus policies from configs/dbus/. The live console unit stays INSTALLED-BUT-NOT-ENABLED exactly as services/nuxel-console/test-console-ownership.py requires."
+    },
+    {
+      "id": "native-shell-sources",
+      "component": "native shell applications (sources, units, profiles)",
+      "priority": 3,
+      "risk": "medium",
+      "restart_service": null,
+      "declared_reload": "systemctl daemon-reload",
+      "declared_reload_reason": "sources + two unit files (nuxel-permd.service, nuxel-camera-portal.service); the compiled aarch64 binaries are built by the documented offline recipe, so no service is restarted by this group \u2014 the units only become visible with `systemctl daemon-reload`.",
+      "pre": [
+        "systemctl daemon-reload"
+      ],
+      "post": [
+        "systemctl daemon-reload"
+      ],
+      "health_check": "test -s /usr/lib/nuxel/nuxel-permissions/nuxel-permd.py && test -s /usr/lib/nuxel/nuxel-permissions/capabilities.json && test -x /usr/local/bin/nuxel-home-kiosk && test -s /usr/local/bin/nuxel-privacy-tor-control.py",
+      "rollback": "restore every <target>.nuxel-rollback and `systemctl daemon-reload`; the staged sources are inert until the documented build runs, so a rollback returns the device to exactly its pre-group state",
+      "install_procedure": "docs/beta-finalization/live/procedures/native-app-binaries.md",
+      "files": [
+        {
+          "source": "shell/nuxel-kiosk/nuxel-home-kiosk",
+          "target": "/usr/local/bin/nuxel-home-kiosk",
+          "mode": "0755"
+        },
+        {
+          "source": "shell/nuxel-kiosk/nuxel-home-kiosk",
+          "target": "/usr/lib/nuxel/nuxel-home-kiosk",
+          "mode": "0755"
+        },
+        {
+          "source": "shell/nuxel-shell/README-cross.md",
+          "target": "/usr/lib/nuxel/src/shell/README-cross.md",
+          "mode": "0644"
+        },
+        {
+          "source": "shell/nuxel-shell/aarch64-cross.ini",
+          "target": "/usr/lib/nuxel/src/shell/aarch64-cross.ini",
+          "mode": "0644"
+        },
+        {
+          "source": "shell/nuxel-shell/build-native-apps.sh",
+          "target": "/usr/lib/nuxel/src/shell/build-native-apps.sh",
+          "mode": "0755"
+        },
+        {
+          "source": "shell/nuxel-shell/meson.build",
+          "target": "/usr/lib/nuxel/src/shell/meson.build",
+          "mode": "0644"
+        },
+        {
+          "source": "shell/nuxel-shell/nuxel-contacts/main.c",
+          "target": "/usr/lib/nuxel/src/shell/nuxel-contacts/main.c",
+          "mode": "0644"
+        },
+        {
+          "source": "shell/nuxel-shell/nuxel-dialer/main.c",
+          "target": "/usr/lib/nuxel/src/shell/nuxel-dialer/main.c",
+          "mode": "0644"
+        },
+        {
+          "source": "shell/nuxel-shell/nuxel-firstboot/main.py",
+          "target": "/usr/lib/nuxel/src/shell/nuxel-firstboot/main.py",
+          "mode": "0644"
+        },
+        {
+          "source": "shell/nuxel-shell/nuxel-messages/main.c",
+          "target": "/usr/lib/nuxel/src/shell/nuxel-messages/main.c",
+          "mode": "0644"
+        },
+        {
+          "source": "shell/nuxel-shell/nuxel-permissions/capabilities.json",
+          "target": "/usr/lib/nuxel/nuxel-permissions/capabilities.json",
+          "mode": "0644"
+        },
+        {
+          "source": "shell/nuxel-shell/nuxel-permissions/main.c",
+          "target": "/usr/lib/nuxel/src/shell/nuxel-permissions/main.c",
+          "mode": "0644"
+        },
+        {
+          "source": "shell/nuxel-shell/nuxel-permissions/nuxel-permd.py",
+          "target": "/usr/lib/nuxel/nuxel-permissions/nuxel-permd.py",
+          "mode": "0755"
+        },
+        {
+          "source": "shell/nuxel-shell/nuxel-permissions/systemd/nuxel-permd.service",
+          "target": "/etc/systemd/system/nuxel-permd.service",
+          "mode": "0644"
+        },
+        {
+          "source": "shell/nuxel-shell/nuxel-phone-data/README.md",
+          "target": "/usr/lib/nuxel/src/shell/nuxel-phone-data/README.md",
+          "mode": "0644"
+        },
+        {
+          "source": "shell/nuxel-shell/nuxel-phone-data/nuxel-phone-data-test.c",
+          "target": "/usr/lib/nuxel/src/shell/nuxel-phone-data/nuxel-phone-data-test.c",
+          "mode": "0644"
+        },
+        {
+          "source": "shell/nuxel-shell/nuxel-phone-data/nuxel-phone-data.c",
+          "target": "/usr/lib/nuxel/src/shell/nuxel-phone-data/nuxel-phone-data.c",
+          "mode": "0644"
+        },
+        {
+          "source": "shell/nuxel-shell/nuxel-phone-data/nuxel-phone-data.h",
+          "target": "/usr/lib/nuxel/src/shell/nuxel-phone-data/nuxel-phone-data.h",
+          "mode": "0644"
+        },
+        {
+          "source": "shell/nuxel-shell/nuxel-phone-data/run-tests.sh",
+          "target": "/usr/lib/nuxel/src/shell/nuxel-phone-data/run-tests.sh",
+          "mode": "0755"
+        },
+        {
+          "source": "shell/nuxel-shell/nuxel-privacy/tor-control.py",
+          "target": "/usr/local/bin/nuxel-privacy-tor-control.py",
+          "mode": "0755"
+        },
+        {
+          "source": "shell/nuxel-shell/nuxel-sandbox/nftables.sh",
+          "target": "/usr/local/bin/nuxel-sandbox-nftables.sh",
+          "mode": "0755"
+        },
+        {
+          "source": "shell/nuxel-shell/nuxel-sandbox/profiles/README.md",
+          "target": "/etc/nuxel/sandbox/profiles/README.md",
+          "mode": "0644"
+        },
+        {
+          "source": "shell/nuxel-shell/nuxel-sandbox/profiles/default.json",
+          "target": "/etc/nuxel/sandbox/profiles/default.json",
+          "mode": "0644"
+        },
+        {
+          "source": "shell/nuxel-shell/nuxel-sandbox/profiles/nuxel-contacts.json",
+          "target": "/etc/nuxel/sandbox/profiles/nuxel-contacts.json",
+          "mode": "0644"
+        },
+        {
+          "source": "shell/nuxel-shell/nuxel-sandbox/profiles/nuxel-dialer.json",
+          "target": "/etc/nuxel/sandbox/profiles/nuxel-dialer.json",
+          "mode": "0644"
+        },
+        {
+          "source": "shell/nuxel-shell/nuxel-sandbox/profiles/nuxel-home.json",
+          "target": "/etc/nuxel/sandbox/profiles/nuxel-home.json",
+          "mode": "0644"
+        },
+        {
+          "source": "shell/nuxel-shell/nuxel-sandbox/profiles/nuxel-messages.json",
+          "target": "/etc/nuxel/sandbox/profiles/nuxel-messages.json",
+          "mode": "0644"
+        },
+        {
+          "source": "shell/nuxel-shell/nuxel-sandbox/profiles/nuxel-permissions.json",
+          "target": "/etc/nuxel/sandbox/profiles/nuxel-permissions.json",
+          "mode": "0644"
+        },
+        {
+          "source": "shell/nuxel-shell/nuxel-sandbox/profiles/nuxel-privacy.json",
+          "target": "/etc/nuxel/sandbox/profiles/nuxel-privacy.json",
+          "mode": "0644"
+        },
+        {
+          "source": "shell/nuxel-shell/nuxel-sandbox/profiles/nuxel-settings.json",
+          "target": "/etc/nuxel/sandbox/profiles/nuxel-settings.json",
+          "mode": "0644"
+        },
+        {
+          "source": "shell/nuxel-shell/nuxel-sandbox/profiles/pwa-template.json",
+          "target": "/etc/nuxel/sandbox/profiles/pwa-template.json",
+          "mode": "0644"
+        },
+        {
+          "source": "shell/nuxel-shell/nuxel-sandbox/sandbox.c",
+          "target": "/usr/lib/nuxel/src/shell/nuxel-sandbox/sandbox.c",
+          "mode": "0644"
+        },
+        {
+          "source": "shell/nuxel-shell/nuxel-sandbox/sandbox.h",
+          "target": "/usr/lib/nuxel/src/shell/nuxel-sandbox/sandbox.h",
+          "mode": "0644"
+        },
+        {
+          "source": "shell/nuxel-shell/nuxel-settings/main.c",
+          "target": "/usr/lib/nuxel/src/shell/nuxel-settings/main.c",
+          "mode": "0644"
+        },
+        {
+          "source": "shell/nuxel-shell/nuxel-uninstall-helper.sh",
+          "target": "/usr/local/bin/nuxel-uninstall-helper.sh",
+          "mode": "0755"
+        },
+        {
+          "source": "shell/nuxel-home-native/README.md",
+          "target": "/home/nuxel/nuxel/shell/nuxel-home-native/README.md",
+          "mode": "0644"
+        },
+        {
+          "source": "shell/nuxel-home-native/data/icons/org.nuxel.Home.svg",
+          "target": "/home/nuxel/nuxel/shell/nuxel-home-native/data/icons/org.nuxel.Home.svg",
+          "mode": "0644"
+        },
+        {
+          "source": "shell/nuxel-home-native/data/org.nuxel.Home.desktop",
+          "target": "/home/nuxel/nuxel/shell/nuxel-home-native/data/org.nuxel.Home.desktop",
+          "mode": "0644"
+        },
+        {
+          "source": "shell/nuxel-home-native/data/org.nuxel.Home.metainfo.xml",
+          "target": "/home/nuxel/nuxel/shell/nuxel-home-native/data/org.nuxel.Home.metainfo.xml",
+          "mode": "0644"
+        },
+        {
+          "source": "shell/nuxel-home-native/install-dev.sh",
+          "target": "/home/nuxel/nuxel/shell/nuxel-home-native/install-dev.sh",
+          "mode": "0644"
+        },
+        {
+          "source": "shell/nuxel-home-native/meson.build",
+          "target": "/home/nuxel/nuxel/shell/nuxel-home-native/meson.build",
+          "mode": "0644"
+        },
+        {
+          "source": "shell/nuxel-home-native/nuxel-home-launcher",
+          "target": "/home/nuxel/nuxel/shell/nuxel-home-native/nuxel-home-launcher",
+          "mode": "0755"
+        },
+        {
+          "source": "shell/nuxel-home-native/nuxel_home/__init__.py",
+          "target": "/home/nuxel/nuxel/shell/nuxel-home-native/nuxel_home/__init__.py",
+          "mode": "0644"
+        },
+        {
+          "source": "shell/nuxel-home-native/nuxel_home/app_launcher.py",
+          "target": "/home/nuxel/nuxel/shell/nuxel-home-native/nuxel_home/app_launcher.py",
+          "mode": "0644"
+        },
+        {
+          "source": "shell/nuxel-home-native/nuxel_home/app_model.py",
+          "target": "/home/nuxel/nuxel/shell/nuxel-home-native/nuxel_home/app_model.py",
+          "mode": "0644"
+        },
+        {
+          "source": "shell/nuxel-home-native/nuxel_home/app_registry.json",
+          "target": "/home/nuxel/nuxel/shell/nuxel-home-native/nuxel_home/app_registry.json",
+          "mode": "0644"
+        },
+        {
+          "source": "shell/nuxel-home-native/nuxel_home/dbus_client.py",
+          "target": "/home/nuxel/nuxel/shell/nuxel-home-native/nuxel_home/dbus_client.py",
+          "mode": "0644"
+        },
+        {
+          "source": "shell/nuxel-home-native/nuxel_home/launcher_grid.py",
+          "target": "/home/nuxel/nuxel/shell/nuxel-home-native/nuxel_home/launcher_grid.py",
+          "mode": "0644"
+        },
+        {
+          "source": "shell/nuxel-home-native/nuxel_home/main.py",
+          "target": "/home/nuxel/nuxel/shell/nuxel-home-native/nuxel_home/main.py",
+          "mode": "0644"
+        },
+        {
+          "source": "shell/nuxel-home-native/nuxel_home/notifications.py",
+          "target": "/home/nuxel/nuxel/shell/nuxel-home-native/nuxel_home/notifications.py",
+          "mode": "0644"
+        },
+        {
+          "source": "shell/nuxel-home-native/nuxel_home/settings_store.py",
+          "target": "/home/nuxel/nuxel/shell/nuxel-home-native/nuxel_home/settings_store.py",
+          "mode": "0644"
+        },
+        {
+          "source": "shell/nuxel-home-native/nuxel_home/style.css",
+          "target": "/home/nuxel/nuxel/shell/nuxel-home-native/nuxel_home/style.css",
+          "mode": "0644"
+        },
+        {
+          "source": "shell/nuxel-home-native/nuxel_home/system_status.py",
+          "target": "/home/nuxel/nuxel/shell/nuxel-home-native/nuxel_home/system_status.py",
+          "mode": "0644"
+        },
+        {
+          "source": "shell/nuxel-camera-portal/nuxel_camera_portal.py",
+          "target": "/usr/lib/nuxel/nuxel-camera-portal/nuxel_camera_portal.py",
+          "mode": "0644"
+        },
+        {
+          "source": "shell/nuxel-camera-portal/systemd/nuxel-camera-portal.service",
+          "target": "/etc/systemd/system/nuxel-camera-portal.service",
+          "mode": "0644"
+        }
+      ],
+      "notes": "The deployed phone surface is the PWA launcher; the native shell is the documented rollback/alternative surface (regression-guard INV-6), so its SOURCES, its systemd units and its launcher script are deployed while the compiled aarch64 binaries come from the procedure (build/ is gitignored, so no artefact can be staged from the repository \u2014 see non_deployable and native-app-binaries.md). shell/nuxel-home-native/** goes to the deploy mirror because its shipped launcher script resolves NUXEL_HOME (default $HOME/nuxel = /home/nuxel/nuxel) and then shell/nuxel-home-native/nuxel_home/main.py \u2014 the mirror path is the one that makes the shipped script work verbatim. shell/config/** and shell/nuxel-phosh-agent/** have no consumer on this image and are not deployed."
+    },
+    {
+      "id": "boot-animation-runtime",
+      "component": "boot-animation userspace runtime + asset placement",
+      "priority": 4,
+      "risk": "high",
+      "restart_service": null,
+      "declared_reload": "systemctl daemon-reload",
+      "declared_reload_reason": "nuxel-animation.service is installed and guarded (ConditionPathExists=!/usr/lib/nuxel/nuxel-wl-fb plus ExecCondition=/usr/lib/nuxel/nuxel-animation-claim), so it stays skipped while the launcher bridge owns the panel; the deliberate reload is `systemctl daemon-reload` and the real behavioural confirmation is the next verified boot (briq-10c).",
+      "pre": [
+        "/usr/local/bin/nuxel-fb-owner-assert.sh --expect nuxel-wl-fb"
+      ],
+      "post": [
+        "/usr/local/bin/nuxel-fb-owner-assert.sh --expect nuxel-wl-fb"
+      ],
+      "health_check": "/usr/local/bin/nuxel-fb-owner-assert.sh --expect nuxel-wl-fb && test -s /usr/share/nuxel/boot/nuxel-boot-animation.mp4 && test -x /usr/lib/nuxel/nuxel-animation-claim",
+      "rollback": "restore the previous animation claim/unit/assets from <target>.nuxel-rollback, `systemctl daemon-reload` and re-run the framebuffer owner assertion; the repository's previous asset is kept byte-identical and NOTHING is baked into BOOT",
+      "files": [
+        {
+          "source": "services/nuxel-animation/bin/nuxel-animation-claim",
+          "target": "/usr/lib/nuxel/nuxel-animation-claim",
+          "mode": "0755"
+        },
+        {
+          "source": "services/nuxel-animation/systemd/nuxel-animation.service",
+          "target": "/etc/systemd/system/nuxel-animation.service",
+          "mode": "0644"
+        },
+        {
+          "source": "assets/nuxel-boot-animation.mp4",
+          "target": "/usr/share/nuxel/boot/nuxel-boot-animation.mp4",
+          "mode": "0644"
+        },
+        {
+          "source": "assets/nuxel-background.png",
+          "target": "/usr/share/nuxel/nuxel-background.png",
+          "mode": "0644"
+        },
+        {
+          "source": "tools/s10plus/nuxel-anim-pack.py",
+          "target": "/usr/lib/nuxel/nuxel-anim-pack.py",
+          "mode": "0755"
+        },
+        {
+          "source": "assets/nuxel-background.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/nuxel-background.png",
+          "mode": "0644"
+        },
+        {
+          "source": "assets/nuxel-background.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/calendar/assets/nuxel-background.png",
+          "mode": "0644"
+        },
+        {
+          "source": "assets/nuxel-background.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/camera-gallery/assets/nuxel-background.png",
+          "mode": "0644"
+        },
+        {
+          "source": "assets/nuxel-background.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/files/assets/nuxel-background.png",
+          "mode": "0644"
+        },
+        {
+          "source": "assets/nuxel-background.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/mail/assets/nuxel-background.png",
+          "mode": "0644"
+        },
+        {
+          "source": "assets/nuxel-background.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/notes/assets/nuxel-background.png",
+          "mode": "0644"
+        }
+      ],
+      "notes": "Asset placement follows the initramfs handoff itself: boot/initramfs/init.sh copies the shipping MP4 to <rootfs>/usr/share/nuxel/boot/nuxel-boot-animation.mp4 and the packed NUXANM01 container is consumed from /usr/share/nuxel/boot/nuxel-animation.nux, so the userspace copy is what this group installs and the container is built by the deployed packer (procedure). The group asserts exactly ONE /dev/fb0 writer named nuxel-wl-fb before and after (nuxel-fb-owner-assert.sh) \u2014 a second writer is the failure this invariant exists to prevent, and BOOT is never written."
+    },
+    {
+      "id": "packages-reconcile",
+      "component": "Fedora 43 package set reconciliation (data + verifier)",
+      "priority": 5,
+      "risk": "high",
+      "restart_service": null,
+      "declared_reload": "python3 -c \"import json;json.load(open('/usr/lib/nuxel/packages-manifest.json'))\"",
+      "declared_reload_reason": "the group installs DATA plus its verifier; the package transaction itself is a separate, owner-visible install (dnf) that the referenced procedure pins to the resolved NEVRAs \u2014 no service is restarted by staging the manifest.",
+      "pre": [],
+      "post": [],
+      "health_check": "python3 -c \"import json;d=json.load(open('/usr/lib/nuxel/packages-manifest.json'));assert d['verdict']=='resolved' and d['pin_mismatches']==[]\" && test -x /usr/local/bin/verify-packages.py",
+      "rollback": "restore the previous /usr/lib/nuxel/packages-manifest.json from <target>.nuxel-rollback; a dnf transaction performed by the procedure is NOT automatically rolled back and the transaction's own `dnf history undo <id>` is recorded in the procedure's output, never left implicit",
+      "install_procedure": "docs/beta-finalization/live/procedures/packages-reconcile.md",
+      "files": [
+        {
+          "source": "images/s10plus/packages-manifest.json",
+          "target": "/usr/lib/nuxel/packages-manifest.json",
+          "mode": "0644"
+        },
+        {
+          "source": "tools/s10plus/a33/verify-packages.py",
+          "target": "/usr/local/bin/verify-packages.py",
+          "mode": "0755"
+        }
+      ],
+      "notes": "Reconcile-and-install group: the manifest is the resolved Fedora 43 aarch64 set (11 groups / 50 resolved packages, verdict=resolved, pin_mismatches=[]) and the device baseline is 410 installed packages. NO KERNEL PACKAGE IS EVER INSTALLED: the plan stages data + verifier only, and the dnf transaction lives in the procedure with the kernel exclusion stated in its command line."
+    }
+  ],
+  "group_reload_notes": {
+    "session-units": {
+      "declared_reload": "systemctl daemon-reload",
+      "reason": "the core session-units group installs only unit files and declares restart_service=null; `systemctl daemon-reload` is what makes them take effect, and the units' own affected services are restarted by the groups that own their code.",
+      "owner": "briq-10b-live-deploy-userspace (group content frozen; documentation added by briq-01-deploy-manifest-extension)",
+      "source": "briq-01-deploy-manifest-extension"
+    },
+    "audio-and-network-config": {
+      "declared_reload": "nuxelctl status >/dev/null 2>&1 || true",
+      "reason": "pure data documents (audio.json, jack-routes.json, chrony conf, the app registry): no service holds one open \u2014 each reads it at start \u2014 so nothing is restarted; the deliberate reload is the shipped consumer re-reading them (nuxelctl), and the behavioural confirmation is the verified reboot in briq-10c.",
+      "owner": "briq-10b-live-deploy-userspace (group content frozen; documentation added by briq-01-deploy-manifest-extension)",
+      "source": "briq-01-deploy-manifest-extension"
+    }
+  },
+  "extension": {
+    "source": "briq-01-deploy-manifest-extension",
+    "core_groups": [
+      "launcher-pwa",
+      "status-bar-safe-zones",
+      "session-units",
+      "animation-handoff",
+      "touch-and-buttons",
+      "audio-and-network-config",
+      "console-and-kernel-side-followups"
+    ],
+    "groups": [
+      "pwa-app-suite",
+      "pwa-shared-runtime",
+      "app-registry-consumers",
+      "configs-nuxel-remaining",
+      "s10plus-a33-runtime",
+      "services-runtime",
+      "native-shell-sources",
+      "boot-animation-runtime",
+      "packages-reconcile"
+    ],
+    "ordering_rule": "manifest order is the deploy order; the core groups above are preserved byte-for-byte (same ids, same files, same order) so briq-10b's unrun plan stays valid, and the extension block that follows them is authored in ascending risk with non-decreasing priority.",
+    "policy": "every extension group declares risk, priority, component, health_check, rollback and restart_service-or-declared_reload; anything needing a compiler, a package transaction or a network carries an install_procedure (see install_procedures[])."
+  },
+  "install_procedures": [
+    {
+      "id": "native-app-binaries",
+      "path": "docs/beta-finalization/live/procedures/native-app-binaries.md",
+      "for": [
+        "build/ (aarch64 ELFs)",
+        "tools/s10plus/a33/*.c",
+        "shell/nuxel-shell/**",
+        "pwa/launcher/",
+        "tools/s10plus/a33/snekbyte/"
+      ],
+      "what": "cross-build/on-device build recipe for the aarch64 userspace binaries, with the ELF-architecture check, the installed SHA-256 and the behavioural check each binary needs"
+    },
+    {
+      "id": "packages-reconcile",
+      "path": "docs/beta-finalization/live/procedures/packages-reconcile.md",
+      "for": [
+        "images/s10plus/packages-manifest.json"
+      ],
+      "what": "reconcile the resolved Fedora 43 set against `rpm -qa` and install only the verified-missing packages, never a kernel"
+    },
+    {
+      "id": "etc-paths-real-locations",
+      "path": "docs/beta-finalization/live/procedures/etc-paths-real-locations.md",
+      "for": [
+        "configs/nuxel/** whose canonical consumer path differs from /etc/nuxel/**"
+      ],
+      "what": "where each staged document is really read from (NetworkManager, nftables, tor, sandbox, phoc) and the hash-verified copy for the ones outside the plan's userspace roots"
+    },
+    {
+      "id": "modem-and-storage-mirror",
+      "path": "docs/beta-finalization/live/procedures/modem-and-storage-mirror.md",
+      "for": [
+        "configs/nuxel/modem/**"
+      ],
+      "what": "the guard's modem/EFS/PIT path-family collision, and the hash-verified manual install of the modem/microSD documents that must never be renamed into the guard's blind spot"
+    },
+    {
+      "id": "nuxtore-and-flatpak",
+      "path": "docs/beta-finalization/live/procedures/nuxtore-and-flatpak.md",
+      "for": [
+        "pwa/flatpak/",
+        "pwa/nuxel-apps/nuxtore/tools/"
+      ],
+      "what": "NuXtore's honest state (flatpak absent on the 410-package baseline) and the exact package-path install that would change it"
+    },
+    {
+      "id": "boot-container-boundary",
+      "path": "docs/beta-finalization/live/procedures/boot-container-boundary.md",
+      "for": [
+        "boot/",
+        "images/s10plus/*.img"
+      ],
+      "what": "why the BOOT container, the kernel and the packed animation are outside this plan (BLOCKED_FIRMWARE) and what an owner-authorised BOOT update would require"
+    }
+  ],
+  "non_deployable": [
+    {
+      "path": "configs/nuxel/modem/90-nuxel-microsd.rules",
+      "reason": "the flash-free guard refuses any path whose segments match the modem/radio/EFS/SEC_EFS/PIT/calibration/IMEI/nvdata family, and /etc/nuxel/modem/** is one of them: the guard is deliberately over-broad and must not be loosened, so this userspace document is staged by hand via the referenced procedure (hash-verified) instead.",
+      "terminal_state": "INSTALL_PROCEDURE_REQUIRED",
+      "procedure": "docs/beta-finalization/live/procedures/modem-and-storage-mirror.md"
+    },
+    {
+      "path": "configs/nuxel/modem/README.md",
+      "reason": "the flash-free guard refuses any path whose segments match the modem/radio/EFS/SEC_EFS/PIT/calibration/IMEI/nvdata family, and /etc/nuxel/modem/** is one of them: the guard is deliberately over-broad and must not be loosened, so this userspace document is staged by hand via the referenced procedure (hash-verified) instead.",
+      "terminal_state": "INSTALL_PROCEDURE_REQUIRED",
+      "procedure": "docs/beta-finalization/live/procedures/modem-and-storage-mirror.md"
+    },
+    {
+      "path": "configs/nuxel/modem/microsd.json",
+      "reason": "the flash-free guard refuses any path whose segments match the modem/radio/EFS/SEC_EFS/PIT/calibration/IMEI/nvdata family, and /etc/nuxel/modem/** is one of them: the guard is deliberately over-broad and must not be loosened, so this userspace document is staged by hand via the referenced procedure (hash-verified) instead.",
+      "terminal_state": "INSTALL_PROCEDURE_REQUIRED",
+      "procedure": "docs/beta-finalization/live/procedures/modem-and-storage-mirror.md"
+    },
+    {
+      "path": "configs/nuxel/modem/modem.json",
+      "reason": "the flash-free guard refuses any path whose segments match the modem/radio/EFS/SEC_EFS/PIT/calibration/IMEI/nvdata family, and /etc/nuxel/modem/** is one of them: the guard is deliberately over-broad and must not be loosened, so this userspace document is staged by hand via the referenced procedure (hash-verified) instead.",
+      "terminal_state": "INSTALL_PROCEDURE_REQUIRED",
+      "procedure": "docs/beta-finalization/live/procedures/modem-and-storage-mirror.md"
+    },
+    {
+      "path": "tools/s10plus/a33/nuxel-button-manager.service",
+      "reason": "a second definition of the SAME unit target as the canonical services/nuxel-session/systemd/nuxel-button-manager.service that the core session-units group installs and the rootfs builder installs (tools/s10plus/a33/verify-service-graph.py checks the services/** copy). Staging both to /etc/systemd/system/nuxel-button-manager.service would be a conflicting duplicate write, so the A33 refinement stays in the repository and its activation is a documented change to the canonical unit.",
+      "terminal_state": "IMPLEMENTED_NOT_DEPLOYED"
+    },
+    {
+      "path": "tools/s10plus/a33/nuxel-modem-diag.sh",
+      "reason": "the flash-free guard refuses any path segment matching modem|radio|efs|persist|calibration|imei|pit|param|nvdata, and this diagnostic's own name is one of them; the guard must not be loosened, so the tool is installed by the referenced procedure (hash-verified, no device write).",
+      "terminal_state": "INSTALL_PROCEDURE_REQUIRED",
+      "procedure": "docs/beta-finalization/live/procedures/modem-and-storage-mirror.md"
+    },
+    {
+      "path": "services/nuxel-bridge/test-launcher-activation.py",
+      "reason": "repository-side test for its own service (offline gate input); it is not a runtime artefact and has no consumer on the phone",
+      "terminal_state": "IMPLEMENTED_NOT_DEPLOYED"
+    },
+    {
+      "path": "services/nuxel-console/test-console-ownership.py",
+      "reason": "repository-side test for its own service (offline gate input); it is not a runtime artefact and has no consumer on the phone",
+      "terminal_state": "IMPLEMENTED_NOT_DEPLOYED"
+    },
+    {
+      "path": "services/nuxel-notifications/test-notifications-persistence.py",
+      "reason": "repository-side test for its own service (offline gate input); it is not a runtime artefact and has no consumer on the phone",
+      "terminal_state": "IMPLEMENTED_NOT_DEPLOYED"
+    },
+    {
+      "path": "services/nuxel-portal/test-portal-policy.py",
+      "reason": "repository-side test for its own service (offline gate input); it is not a runtime artefact and has no consumer on the phone",
+      "terminal_state": "IMPLEMENTED_NOT_DEPLOYED"
+    },
+    {
+      "path": "shell/nuxel-shell/nuxel-permissions/tests/run-tests.sh",
+      "reason": "repository-side test/fixture for the native shell (offline gate input), not a runtime artefact",
+      "terminal_state": "IMPLEMENTED_NOT_DEPLOYED"
+    },
+    {
+      "path": "shell/nuxel-shell/nuxel-permissions/tests/test-permissions.py",
+      "reason": "repository-side test/fixture for the native shell (offline gate input), not a runtime artefact",
+      "terminal_state": "IMPLEMENTED_NOT_DEPLOYED"
+    },
+    {
+      "path": "shell/nuxel-phosh-agent/nuxel-phosh-agent.py",
+      "reason": "phosh session / openrc / .desktop / gsettings material: the deployed image runs the Wayland launcher surface (phoc + nuxel-wl-fb + nuxel-pwa-host), not a phosh session, so these files have no consumer here and their canonical paths (/usr/share/applications, /etc/xdg/autostart, /etc/init.d) are outside the plan's userspace roots",
+      "terminal_state": "IMPLEMENTED_NOT_DEPLOYED"
+    },
+    {
+      "path": "shell/config/icons/contacts.svg",
+      "reason": "phosh session / openrc / .desktop / gsettings material: the deployed image runs the Wayland launcher surface (phoc + nuxel-wl-fb + nuxel-pwa-host), not a phosh session, so these files have no consumer here and their canonical paths (/usr/share/applications, /etc/xdg/autostart, /etc/init.d) are outside the plan's userspace roots",
+      "terminal_state": "IMPLEMENTED_NOT_DEPLOYED"
+    },
+    {
+      "path": "shell/config/icons/dialer.svg",
+      "reason": "phosh session / openrc / .desktop / gsettings material: the deployed image runs the Wayland launcher surface (phoc + nuxel-wl-fb + nuxel-pwa-host), not a phosh session, so these files have no consumer here and their canonical paths (/usr/share/applications, /etc/xdg/autostart, /etc/init.d) are outside the plan's userspace roots",
+      "terminal_state": "IMPLEMENTED_NOT_DEPLOYED"
+    },
+    {
+      "path": "shell/config/icons/messages.svg",
+      "reason": "phosh session / openrc / .desktop / gsettings material: the deployed image runs the Wayland launcher surface (phoc + nuxel-wl-fb + nuxel-pwa-host), not a phosh session, so these files have no consumer here and their canonical paths (/usr/share/applications, /etc/xdg/autostart, /etc/init.d) are outside the plan's userspace roots",
+      "terminal_state": "IMPLEMENTED_NOT_DEPLOYED"
+    },
+    {
+      "path": "shell/config/icons/settings.svg",
+      "reason": "phosh session / openrc / .desktop / gsettings material: the deployed image runs the Wayland launcher surface (phoc + nuxel-wl-fb + nuxel-pwa-host), not a phosh session, so these files have no consumer here and their canonical paths (/usr/share/applications, /etc/xdg/autostart, /etc/init.d) are outside the plan's userspace roots",
+      "terminal_state": "IMPLEMENTED_NOT_DEPLOYED"
+    },
+    {
+      "path": "shell/config/nuxel-contacts.desktop",
+      "reason": "phosh session / openrc / .desktop / gsettings material: the deployed image runs the Wayland launcher surface (phoc + nuxel-wl-fb + nuxel-pwa-host), not a phosh session, so these files have no consumer here and their canonical paths (/usr/share/applications, /etc/xdg/autostart, /etc/init.d) are outside the plan's userspace roots",
+      "terminal_state": "IMPLEMENTED_NOT_DEPLOYED"
+    },
+    {
+      "path": "shell/config/nuxel-dialer.desktop",
+      "reason": "phosh session / openrc / .desktop / gsettings material: the deployed image runs the Wayland launcher surface (phoc + nuxel-wl-fb + nuxel-pwa-host), not a phosh session, so these files have no consumer here and their canonical paths (/usr/share/applications, /etc/xdg/autostart, /etc/init.d) are outside the plan's userspace roots",
+      "terminal_state": "IMPLEMENTED_NOT_DEPLOYED"
+    },
+    {
+      "path": "shell/config/nuxel-home.desktop",
+      "reason": "phosh session / openrc / .desktop / gsettings material: the deployed image runs the Wayland launcher surface (phoc + nuxel-wl-fb + nuxel-pwa-host), not a phosh session, so these files have no consumer here and their canonical paths (/usr/share/applications, /etc/xdg/autostart, /etc/init.d) are outside the plan's userspace roots",
+      "terminal_state": "IMPLEMENTED_NOT_DEPLOYED"
+    },
+    {
+      "path": "shell/config/nuxel-messages.desktop",
+      "reason": "phosh session / openrc / .desktop / gsettings material: the deployed image runs the Wayland launcher surface (phoc + nuxel-wl-fb + nuxel-pwa-host), not a phosh session, so these files have no consumer here and their canonical paths (/usr/share/applications, /etc/xdg/autostart, /etc/init.d) are outside the plan's userspace roots",
+      "terminal_state": "IMPLEMENTED_NOT_DEPLOYED"
+    },
+    {
+      "path": "shell/config/nuxel-permissions.desktop",
+      "reason": "phosh session / openrc / .desktop / gsettings material: the deployed image runs the Wayland launcher surface (phoc + nuxel-wl-fb + nuxel-pwa-host), not a phosh session, so these files have no consumer here and their canonical paths (/usr/share/applications, /etc/xdg/autostart, /etc/init.d) are outside the plan's userspace roots",
+      "terminal_state": "IMPLEMENTED_NOT_DEPLOYED"
+    },
+    {
+      "path": "shell/config/nuxel-settings.desktop",
+      "reason": "phosh session / openrc / .desktop / gsettings material: the deployed image runs the Wayland launcher surface (phoc + nuxel-wl-fb + nuxel-pwa-host), not a phosh session, so these files have no consumer here and their canonical paths (/usr/share/applications, /etc/xdg/autostart, /etc/init.d) are outside the plan's userspace roots",
+      "terminal_state": "IMPLEMENTED_NOT_DEPLOYED"
+    },
+    {
+      "path": "shell/config/openrc/nuxel-bridge",
+      "reason": "phosh session / openrc / .desktop / gsettings material: the deployed image runs the Wayland launcher surface (phoc + nuxel-wl-fb + nuxel-pwa-host), not a phosh session, so these files have no consumer here and their canonical paths (/usr/share/applications, /etc/xdg/autostart, /etc/init.d) are outside the plan's userspace roots",
+      "terminal_state": "IMPLEMENTED_NOT_DEPLOYED"
+    },
+    {
+      "path": "shell/config/openrc/nuxel-firstboot",
+      "reason": "phosh session / openrc / .desktop / gsettings material: the deployed image runs the Wayland launcher surface (phoc + nuxel-wl-fb + nuxel-pwa-host), not a phosh session, so these files have no consumer here and their canonical paths (/usr/share/applications, /etc/xdg/autostart, /etc/init.d) are outside the plan's userspace roots",
+      "terminal_state": "IMPLEMENTED_NOT_DEPLOYED"
+    },
+    {
+      "path": "shell/config/openrc/nuxel-notifications",
+      "reason": "phosh session / openrc / .desktop / gsettings material: the deployed image runs the Wayland launcher surface (phoc + nuxel-wl-fb + nuxel-pwa-host), not a phosh session, so these files have no consumer here and their canonical paths (/usr/share/applications, /etc/xdg/autostart, /etc/init.d) are outside the plan's userspace roots",
+      "terminal_state": "IMPLEMENTED_NOT_DEPLOYED"
+    },
+    {
+      "path": "shell/config/openrc/nuxel-portal",
+      "reason": "phosh session / openrc / .desktop / gsettings material: the deployed image runs the Wayland launcher surface (phoc + nuxel-wl-fb + nuxel-pwa-host), not a phosh session, so these files have no consumer here and their canonical paths (/usr/share/applications, /etc/xdg/autostart, /etc/init.d) are outside the plan's userspace roots",
+      "terminal_state": "IMPLEMENTED_NOT_DEPLOYED"
+    },
+    {
+      "path": "shell/config/phosh/nuxel-lockscreen.css",
+      "reason": "phosh session / openrc / .desktop / gsettings material: the deployed image runs the Wayland launcher surface (phoc + nuxel-wl-fb + nuxel-pwa-host), not a phosh session, so these files have no consumer here and their canonical paths (/usr/share/applications, /etc/xdg/autostart, /etc/init.d) are outside the plan's userspace roots",
+      "terminal_state": "IMPLEMENTED_NOT_DEPLOYED"
+    },
+    {
+      "path": "shell/config/phosh/nuxel-phosh-override.ini",
+      "reason": "phosh session / openrc / .desktop / gsettings material: the deployed image runs the Wayland launcher surface (phoc + nuxel-wl-fb + nuxel-pwa-host), not a phosh session, so these files have no consumer here and their canonical paths (/usr/share/applications, /etc/xdg/autostart, /etc/init.d) are outside the plan's userspace roots",
+      "terminal_state": "IMPLEMENTED_NOT_DEPLOYED"
+    },
+    {
+      "path": "shell/config/schemas/org.nuxel.settings.gschema.xml",
+      "reason": "phosh session / openrc / .desktop / gsettings material: the deployed image runs the Wayland launcher surface (phoc + nuxel-wl-fb + nuxel-pwa-host), not a phosh session, so these files have no consumer here and their canonical paths (/usr/share/applications, /etc/xdg/autostart, /etc/init.d) are outside the plan's userspace roots",
+      "terminal_state": "IMPLEMENTED_NOT_DEPLOYED"
+    },
+    {
+      "path": "shell/config/systemd-user/nuxel-home-kiosk.service",
+      "reason": "phosh session / openrc / .desktop / gsettings material: the deployed image runs the Wayland launcher surface (phoc + nuxel-wl-fb + nuxel-pwa-host), not a phosh session, so these files have no consumer here and their canonical paths (/usr/share/applications, /etc/xdg/autostart, /etc/init.d) are outside the plan's userspace roots",
+      "terminal_state": "IMPLEMENTED_NOT_DEPLOYED"
+    },
+    {
+      "path": "shell/config/systemd-user/nuxel-home-native.service",
+      "reason": "phosh session / openrc / .desktop / gsettings material: the deployed image runs the Wayland launcher surface (phoc + nuxel-wl-fb + nuxel-pwa-host), not a phosh session, so these files have no consumer here and their canonical paths (/usr/share/applications, /etc/xdg/autostart, /etc/init.d) are outside the plan's userspace roots",
+      "terminal_state": "IMPLEMENTED_NOT_DEPLOYED"
+    },
+    {
+      "path": "shell/config/systemd-user/nuxel-phosh-agent.service",
+      "reason": "phosh session / openrc / .desktop / gsettings material: the deployed image runs the Wayland launcher surface (phoc + nuxel-wl-fb + nuxel-pwa-host), not a phosh session, so these files have no consumer here and their canonical paths (/usr/share/applications, /etc/xdg/autostart, /etc/init.d) are outside the plan's userspace roots",
+      "terminal_state": "IMPLEMENTED_NOT_DEPLOYED"
+    },
+    {
+      "path": "pwa/nuxel-apps/*/tests/",
+      "reason": "repository-side PWA unit tests (node --check / fixture runners) with no on-device consumer",
+      "terminal_state": "IMPLEMENTED_NOT_DEPLOYED"
+    },
+    {
+      "path": "pwa/nuxel-apps/_shared/make-app-icons.py",
+      "reason": "build-time icon generator that runs on a development host, not on the phone",
+      "terminal_state": "IMPLEMENTED_NOT_DEPLOYED"
+    },
+    {
+      "path": "pwa/nuxel-apps/nuxtore/tools/",
+      "reason": "NuXtore catalogue staging/signing tools that need python3 + ed25519 tooling on the host",
+      "terminal_state": "INSTALL_PROCEDURE_REQUIRED",
+      "procedure": "docs/beta-finalization/live/procedures/nuxtore-and-flatpak.md"
+    },
+    {
+      "path": "pwa/nuxel-apps/*/.keep",
+      "reason": "0-byte git placeholders, not runtime assets",
+      "terminal_state": "IMPLEMENTED_NOT_DEPLOYED"
+    },
+    {
+      "path": "pwa/nuxel-common/test-bridge.js",
+      "reason": "repository-side test for the shared bridge client",
+      "terminal_state": "IMPLEMENTED_NOT_DEPLOYED"
+    },
+    {
+      "path": "pwa/nuxel-common/verify-wiring.js",
+      "reason": "repository-side ES-module wiring verifier",
+      "terminal_state": "IMPLEMENTED_NOT_DEPLOYED"
+    },
+    {
+      "path": "pwa/nuxel-common/package.json",
+      "reason": "npm metadata for the repository-side verifier; no node run-time on the deployed image",
+      "terminal_state": "NOT_SUPPORTED_ON_DEVICE"
+    },
+    {
+      "path": "pwa/flatpak/",
+      "reason": "Flatpak manifests for the NuXtore/Flatpak delivery path; flatpak is NOT installed on the handset today (410-package baseline) and installing it needs a package transaction plus a network",
+      "terminal_state": "BLOCKED_EXTERNAL_RESOURCE",
+      "procedure": "docs/beta-finalization/live/procedures/nuxtore-and-flatpak.md"
+    },
+    {
+      "path": "pwa/launcher/",
+      "reason": "meson-built native PWA launcher (nuxel-pwa-launcher.c); the deployed surface launches through /usr/lib/nuxel/nuxel-pwa-host, and this alternative needs a meson/aarch64 build",
+      "terminal_state": "INSTALL_PROCEDURE_REQUIRED",
+      "procedure": "docs/beta-finalization/live/procedures/native-app-binaries.md"
+    },
+    {
+      "path": "shell/config/",
+      "reason": "phosh session, openrc scripts, .desktop entries and gsettings schemas: the deployed image is the Wayland launcher surface (phoc + nuxel-wl-fb), not a phosh session, and their canonical paths (/usr/share/applications, /etc/xdg/autostart, /etc/init.d) are outside the plan's userspace roots",
+      "terminal_state": "IMPLEMENTED_NOT_DEPLOYED"
+    },
+    {
+      "path": "shell/nuxel-phosh-agent/",
+      "reason": "phosh session agent with no consumer on the deployed launcher image",
+      "terminal_state": "IMPLEMENTED_NOT_DEPLOYED"
+    },
+    {
+      "path": "tools/s10plus/a33/kernel-patches/",
+      "reason": "kernel/DTB proposals only \u2014 never applied, and the mission forbids flashing or installing a kernel",
+      "terminal_state": "BLOCKED_KERNEL",
+      "procedure": "docs/beta-finalization/live/procedures/native-app-binaries.md"
+    },
+    {
+      "path": "tools/s10plus/a33/tests/",
+      "reason": "offline gate tests and synthetic sysfs fixtures",
+      "terminal_state": "IMPLEMENTED_NOT_DEPLOYED"
+    },
+    {
+      "path": "tools/s10plus/a33/snekbyte/",
+      "reason": "vendored upstream game + parity harness; the shipped surface is pwa/nuxel-apps/snekbyte and the python port needs a python/pygame runtime",
+      "terminal_state": "INSTALL_PROCEDURE_REQUIRED",
+      "procedure": "docs/beta-finalization/live/procedures/native-app-binaries.md"
+    },
+    {
+      "path": "tools/s10plus/a33/security-fixtures/",
+      "reason": "mock nft/ip/ss/systemctl fixtures used by the offline security suites",
+      "terminal_state": "IMPLEMENTED_NOT_DEPLOYED"
+    },
+    {
+      "path": "tools/s10plus/a33/security-tests/",
+      "reason": "offline security suite drivers",
+      "terminal_state": "IMPLEMENTED_NOT_DEPLOYED"
+    },
+    {
+      "path": "build/",
+      "reason": "gitignored build output: the aarch64 ELFs (nuxel-wl-fb, nuxel-button-manager, nuxel-pwa-host, nuxel-console, libnuxel-libinput-path.so, the a33 selftest binaries) cannot be staged from the repository, so they are built by the documented offline recipe and installed with hash verification",
+      "terminal_state": "INSTALL_PROCEDURE_REQUIRED",
+      "procedure": "docs/beta-finalization/live/procedures/native-app-binaries.md"
+    },
+    {
+      "path": "boot/",
+      "reason": "the BOOT container (initramfs, nuxel-anim-player, the packed NUXANM01 animation, the kernel image) is a flashed artefact: changing it requires a BOOT update, which this mission forbids",
+      "terminal_state": "BLOCKED_FIRMWARE",
+      "procedure": "docs/beta-finalization/live/procedures/boot-container-boundary.md"
+    },
+    {
+      "path": "images/s10plus/*.img",
+      "reason": "boot/rootfs images are flashed artefacts, never deploy targets (the guard refuses .img targets outright)",
+      "terminal_state": "BLOCKED_FIRMWARE",
+      "procedure": "docs/beta-finalization/live/procedures/boot-container-boundary.md"
+    },
+    {
+      "path": "docs/beta-finalization/boot/ANIMATION-HANDOFF.md",
+      "reason": "documentation referenced by the deployed units' Documentation= lines; documents are not runtime artefacts and are not part of the deploy plan",
+      "terminal_state": "IMPLEMENTED_NOT_DEPLOYED"
+    },
+    {
+      "path": "pwa/(nuxel-apps|nuxel-home|nuxel-common)/**/__pycache__/",
+      "reason": "interpreter caches",
+      "terminal_state": "IMPLEMENTED_NOT_DEPLOYED"
+    }
+  ],
+  "target_overrides": [
+    {
+      "target": "/etc/nuxel/app-registry/app_registry.json",
+      "installed_by": [
+        "audio-and-network-config (configs/nuxel/app-registry/app_registry.json)",
+        "app-registry-consumers (pwa/nuxel-common/app-registry.json)"
+      ],
+      "effective": "pwa/nuxel-common/app-registry.json (registry_version 4) \u2014 the group that runs later wins, and it is the registry the PWA actually fetches",
+      "why": "the frozen core group predates the canonical served registry; the conflict is recorded here instead of silently rewording a closed group"
+    },
+    {
+      "target": "/etc/nuxel/statusbar-safezones.json",
+      "installed_by": [
+        "status-bar-safe-zones (configs/nuxel/statusbar-safezones.json)"
+      ],
+      "effective": "unchanged",
+      "why": "the canonical consumer path /etc/nuxel/display/statusbar-safezones.json is installed by configs-nuxel-remaining as well; both are written from the same source bytes, so the device ends up consistent with nuxelctl ZONES_FILE"
     }
   ],
   "missing_sources_skipped": [
     "configs/nuxel/time/timesync.conf"
   ],
   "component": "briq-10b live userspace deploy manifest",
-  "note": "Every source path is a real file in the repository (verified at build time; missing sources are listed in missing_sources_skipped and are refused by build_deploy_plan instead of being silently dropped). Targets are confined to userspace roots by assert_userspace_path()."
+  "note": "Every source path is a real, TRACKED file in the repository (verified at build time; a missing or escaping source is refused by build_deploy_plan instead of being silently dropped). Targets are confined to userspace roots by assert_userspace_path(); no target can resolve onto a raw partition, an .img, a DTB/DTBO, the modem/EFS/PIT calibration region or the BOOT container. The extension block makes the remainder of the built programme deployable under the same stage->verify->install->restart->health->rollback discipline, and names everything deliberately NOT deployable in non_deployable[] with a reason and a terminal state.",
+  "target_root_map": {
+    "/home/nuxel/nuxel": "/usr/share/nuxel"
+  },
+  "target_root_map_note": "On the S10+ the launcher/docroot tree is served from /usr/share/nuxel (image builder + tools/s10plus/a32/install-on-phone.sh + services/nuxel-web all agree; /home/nuxel/nuxel is only the VM/deploy-mirror fallback and does NOT exist on the phone). Every target authored under /home/nuxel/nuxel is remapped here before it is guarded, planned or executed, so a deploy actually changes what the running phone reads."
 }

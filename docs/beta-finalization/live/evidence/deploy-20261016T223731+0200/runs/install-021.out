@@ -1,0 +1,6 @@
+pushed={"attempts": 1, "b64_chars": 1776, "bytes": 1332, "decoded_sha256": "af9bb9ba938e2111bb39d7eec66558868ad4e846113795bda39f18c0e7ced72c", "frames": 1, "path": "/var/tmp/nxl-install-021.sh"}
+ok=True rc=0
+---
+/usr/share/nuxel/pwa/nuxel-home/js/status-bar.js.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

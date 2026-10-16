@@ -1,0 +1,7 @@
+pushed={"attempts": 1, "b64_chars": 2156, "bytes": 1617, "decoded_sha256": "aefb190bd00e28c8d5030abdbf5c599a4c09f78d9ad8f14d1cfd91e79f67d9ab", "frames": 1, "path": "/var/tmp/nxl-install-149.sh"}
+ok=True rc=0
+---
+PREV=NONE
+/usr/lib/nuxel/src/shell/nuxel-phone-data/run-tests.sh.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

@@ -1,0 +1,7 @@
+pushed={"attempts": 1, "b64_chars": 1768, "bytes": 1325, "decoded_sha256": "fa973ed500dd6330c5d19a5512c0fc9c0a8c2831a74c1cf177e97d4a362d8a1a", "frames": 1, "path": "/var/tmp/nxl-install-094.sh"}
+ok=True rc=0
+---
+PREV=NONE
+/usr/local/bin/nuxel-touch-capture.sh.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

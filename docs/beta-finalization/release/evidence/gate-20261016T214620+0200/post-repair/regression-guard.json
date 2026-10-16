@@ -1,0 +1,13 @@
+{
+  "tool": "regression-guard",
+  "run": "20261016T195317Z",
+  "verdict": "PASS",
+  "pass": 68,
+  "fail": 0,
+  "warn": 14,
+  "info": 2,
+  "failed_invariants": "",
+  "warned_invariants": "INV-1-launcher-cache-invalidation INV-1-launcher-cache-invalidation INV-3-ten-zone-safe-areas INV-3-ten-zone-safe-areas INV-6-userspace-rollback INV-6-userspace-rollback INV-6-userspace-rollback INV-9-a32-suite INV-11-a32-enumerated-asset-pins INV-11-a32-enumerated-asset-pins INV-11-a32-enumerated-asset-pins INV-2-colour-conversion INV-2-colour-conversion INV-11-a32-enumerated-asset-pins",
+  "log": "/x/nuxel/build/out/beta/regression-guard-20261016T195317Z.log",
+  "baseline_commit": "0102b6009d5ac561fe15c85b25a58942404d081d"
+}

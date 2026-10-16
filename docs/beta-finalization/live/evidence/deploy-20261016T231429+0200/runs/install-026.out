@@ -1,0 +1,7 @@
+pushed={"attempts": 1, "b64_chars": 1988, "bytes": 1490, "decoded_sha256": "3f611d674ffae72cdf5359ba79dd9dcf5c58c39b6f1a2f2f774abf05e1074732", "frames": 1, "path": "/var/tmp/nxl-install-026.sh"}
+ok=True rc=0
+---
+PREV=NONE
+/etc/nuxel/capabilities/hardware-subsystems.json.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

@@ -1,0 +1,102 @@
+[
+  {
+    "detail": "extension lists a group that does not exist in groups[]",
+    "group": "pwa-app-suite",
+    "kind": "ordering"
+  },
+  {
+    "detail": "extension lists a group that does not exist in groups[]",
+    "group": "pwa-shared-runtime",
+    "kind": "ordering"
+  },
+  {
+    "detail": "extension lists a group that does not exist in groups[]",
+    "group": "app-registry-consumers",
+    "kind": "ordering"
+  },
+  {
+    "detail": "extension lists a group that does not exist in groups[]",
+    "group": "configs-nuxel-remaining",
+    "kind": "ordering"
+  },
+  {
+    "detail": "extension lists a group that does not exist in groups[]",
+    "group": "s10plus-a33-runtime",
+    "kind": "ordering"
+  },
+  {
+    "detail": "extension lists a group that does not exist in groups[]",
+    "group": "services-runtime",
+    "kind": "ordering"
+  },
+  {
+    "detail": "extension lists a group that does not exist in groups[]",
+    "group": "native-shell-sources",
+    "kind": "ordering"
+  },
+  {
+    "detail": "extension lists a group that does not exist in groups[]",
+    "group": "boot-animation-runtime",
+    "kind": "ordering"
+  },
+  {
+    "detail": "extension lists a group that does not exist in groups[]",
+    "group": "packages-reconcile",
+    "kind": "ordering"
+  },
+  {
+    "detail": "extension group declares no priority",
+    "group": "pwa-app-suite",
+    "kind": "ordering"
+  },
+  {
+    "detail": "extension group declares no priority",
+    "group": "pwa-shared-runtime",
+    "kind": "ordering"
+  },
+  {
+    "detail": "extension group declares no priority",
+    "group": "app-registry-consumers",
+    "kind": "ordering"
+  },
+  {
+    "detail": "extension group declares no priority",
+    "group": "configs-nuxel-remaining",
+    "kind": "ordering"
+  },
+  {
+    "detail": "extension group declares no priority",
+    "group": "s10plus-a33-runtime",
+    "kind": "ordering"
+  },
+  {
+    "detail": "extension group declares no priority",
+    "group": "services-runtime",
+    "kind": "ordering"
+  },
+  {
+    "detail": "extension group declares no priority",
+    "group": "native-shell-sources",
+    "kind": "ordering"
+  },
+  {
+    "detail": "extension group declares no priority",
+    "group": "boot-animation-runtime",
+    "kind": "ordering"
+  },
+  {
+    "detail": "extension group declares no priority",
+    "group": "packages-reconcile",
+    "kind": "ordering"
+  },
+  {
+    "detail": "group_reload_notes names a group that does not exist: session-units",
+    "group": "session-units",
+    "kind": "manifest"
+  },
+  {
+    "detail": "group_reload_notes names a group that does not exist: audio-and-network-config",
+    "group": "audio-and-network-config",
+    "kind": "manifest"
+  }
+]

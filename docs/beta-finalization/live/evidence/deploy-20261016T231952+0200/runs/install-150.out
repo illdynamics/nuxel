@@ -1,0 +1,7 @@
+pushed={"attempts": 1, "b64_chars": 1936, "bytes": 1452, "decoded_sha256": "8c979584fdee232a710255000e14fd441a37760e144c6d092d07f05ca04c053f", "frames": 1, "path": "/var/tmp/nxl-install-150.sh"}
+ok=True rc=0
+---
+PREV=NONE
+/usr/local/bin/nuxel-privacy-tor-control.py.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

@@ -1,0 +1,7 @@
+pushed={"attempts": 1, "b64_chars": 1808, "bytes": 1355, "decoded_sha256": "1384e5009a55d71c4abcc186ba24d8da6f73d1908f3be6ac038d211df48df800", "frames": 1, "path": "/var/tmp/nxl-install-095.sh"}
+ok=True rc=0
+---
+PREV=NONE
+/usr/libexec/nuxel/nuxel-touch-trace.py.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

@@ -1,0 +1,163 @@
+$ bash tools/beta/regression-guard.sh   # raw transcript, cycle-7 repair pass
+
+== regression-guard ==  manifest: docs/beta-finalization/baseline-protection.json
+   root:     /x/nuxel
+   run:      20261016T195314Z
+   log:      /x/nuxel/build/out/beta/regression-guard-20261016T195314Z.log
+   register generated: 2026-10-16T16:01:03+0200
+   baseline commit:    0102b6009d5ac561fe15c85b25a58942404d081d
+    PASS  repository hygiene: supplied archives and .venv stay gitignored  [docs.zip scripts.zip tools.zip .venv]
+    PASS  sha256 assertions agree with the file pins (a --repin moves both)
+
+== 1. hash pins (hard = FAIL on drift, soft = WARN on drift) ==
+    WARN  soft-pinned file drifted (shared with another build group): pwa/nuxel-home/sw.js  [was d7fd084352f8fafa377d6f0ac28a4dd576fb842d03fd7292924609f6538ded30 now 58461b89735f2a820ec1f34d2cf917b5e02cec3e517c2cb43e8a61ffc41582f8 (invariant owner: bg-02-boot-animation-launcher)]
+    ok    pwa/nuxel-home/js/app.js  (soft pin held)
+    WARN  soft-pinned file drifted (shared with another build group): pwa/nuxel-home/js/apps.js  [was 029c9331f45a1b52344baaf53c8d23eae985a549a3b39bdab6784c7e8abac401 now df08dfaf5d17c3685bee4abb94d24f3f059ed2289edb13bf5159ad162aafcf72 (invariant owner: bg-02-boot-animation-launcher)]
+    ok    tools/s10plus/a32/nuxel-pwa-host.c  (hard pin held)
+    ok    tools/s10plus/a32/nuxel-wl-fb.c  (hard pin held)
+    WARN  soft-pinned file drifted (shared with another build group): pwa/nuxel-home/js/safe-zones.js  [was ca99df1a9da4d94c75d83b91b5962b3d6aafd3b3ec76af5b5cf2b2c9b97cdb93 now 0ef0c91a45b599881f4eea26fca2c08ffdde806ec52dd48472c042ecb5806a0f (invariant owner: bg-02-boot-animation-launcher)]
+    ok    configs/nuxel/statusbar-safezones.json  (soft pin held)
+    WARN  soft-pinned file drifted (shared with another build group): tools/s10plus/a32/tests/safe-zones-test.js  [was aae114a6ee7481fd59382ce7a4ce02889d9a45811abb801c82d6fe05ccfe898d now ae722d6cd3e9bd26618e6d5bd8ee1195d6eb7ee2c96978115d80c0e5edde6da4 (invariant owner: bg-02-boot-animation-launcher)]
+    ok    tools/s10plus/a32/nuxel-button-manager.c  (hard pin held)
+    ok    tools/s10plus/a32/nuxel-button-manager.service  (hard pin held)
+    ok    configs/nuxel/buttons.json  (soft pin held)
+    ok    tools/s10plus/a24-nuxel-console.c  (hard pin held)
+    ok    scripts/s10plus-debug-pack/nuxel-console-host.sh  (hard pin held)
+    ok    boot/initramfs/init.sh  (hard pin held)
+    ok    tools/nuxel-rollback-home.sh  (hard pin held)
+    WARN  soft-pinned file drifted (shared with another build group): shell/config/systemd-user/nuxel-home-kiosk.service  [was 18c24f92a417251eae14de154dd17cb2a07c4f58f1393e9565f55d304c13b8f8 now 8bb1391fc276e29c573735cc007e7ca9cd631a4e3e3ec25341aef89257803f50 (invariant owner: bg-04-userspace-completion / bg-09-integration-release)]
+    WARN  soft-pinned file drifted (shared with another build group): shell/config/systemd-user/nuxel-home-native.service  [was 08ef67de38fdeda878556e0652ba915653e6d9c95745473bba060d3b7a91ade0 now c008546ead71ee79161c958c96ed6e66255142c95c6df593612be73b2760cd59 (invariant owner: bg-04-userspace-completion / bg-09-integration-release)]
+    WARN  soft-pinned file drifted (shared with another build group): shell/config/systemd-user/nuxel-phosh-agent.service  [was e4ac569e0a6f0bf4fff2981a7669e38a254069363c7b6df8fc10d30e12829c72 now f2f20742f56fd8e702fe260bd079291f4bdbc6a1fbe39a75f707a810eca48ce9 (invariant owner: bg-04-userspace-completion / bg-09-integration-release)]
+    ok    docs/s10plus-autonomous-boot-repair/BETA-HARDWARE-FINALIZER/13-RELEASE-NOTES-A32.md  (hard pin held)
+    ok    docs/s10plus-autonomous-boot-repair/BETA-HARDWARE-FINALIZER/00-BASELINE.md  (hard pin held)
+    INFO  self-referential pin skipped (the register cannot be pinned to its own hash): docs/beta-finalization/BASELINE-PROTECTION.md  [this register]
+    WARN  soft-pinned file drifted (shared with another build group): tools/s10plus/a32/tests/run-tests.sh  [was cc9c79701e2848f9eafe737927fdafc799d8c9e644f3ff8403ba0e1aac77ef58 now f0edfd3bbff8bbed879ce10d599b3f8e2288885798c24176d68b8e62f652feaf (invariant owner: bg-00-preflight)]
+    ok    scripts/s10plus-debug-pack/nuxel-live.sh  (soft pin held)
+    ok    tools/s10plus/a32/nuxelctl  (hard pin held)
+    WARN  soft-pinned file drifted (shared with another build group): tools/s10plus/a33/nuxelctl  [was fb2b49d78bcb0b6b69d9e0feaa0d2928fa8c789004ac974cb251793fbb1ce71c now b002daf2e1c79ef6cd9a60f7f868470534bec592e01d1c945ab447bb4203bf1b (invariant owner: bg-00-preflight (baseline owner); the soft entries are shared with the groups named per file)]
+    ok    tools/s10plus/a31/nuxel-libinput-path.c  (soft pin held)
+    ok    tools/s10plus/a33/nuxel-libinput-path.c  (soft pin held)
+    ok    assets/nuxel-background.png  (hard pin held)
+    ok    assets/nuxel-boot-animation.mp4  (hard pin held)
+    WARN  soft-pinned file drifted (shared with another build group): pwa/nuxel-apps/settings/index.html  [was aa92b815d1d6206788607baac6ee6dfecf167608c2cf9778bcf827e171c1a091 now 32e648d67203a43043374c72609aeb7b0a3c313c8a6b61db8da8db537b769050 (invariant owner: bg-00-preflight (baseline owner); the soft entries are shared with the groups named per file)]
+    ok    pwa/nuxel-apps/settings/app.json  (soft pin held)
+    ok    pwa/nuxel-apps/settings/manifest.json  (soft pin held)
+    WARN  soft-pinned file drifted (shared with another build group): pwa/nuxel-apps/settings/settings.js  [was 1ba0ccb1bfa4a543fee6cfa3b6e596d365ba49db2ebc53e3e2adac0e9b39cfab now c243ab16e61458afc07685858ee30be857fe32590c2e6e47c3344b24ba8e517d (invariant owner: bg-00-preflight (baseline owner); the soft entries are shared with the groups named per file)]
+    ok    pwa/nuxel-apps/settings/settings.css  (soft pin held)
+    ok    pwa/nuxel-apps/settings/settings-model.js  (soft pin held)
+    ok    pwa/nuxel-apps/settings/power-menu.html  (soft pin held)
+    ok    pwa/nuxel-apps/settings/power-menu.js  (soft pin held)
+    ok    pwa/nuxel-apps/settings/power-menu.css  (soft pin held)
+    ok    pwa/nuxel-apps/terminal/index.html  (soft pin held)
+    ok    pwa/nuxel-apps/terminal/app.json  (soft pin held)
+    ok    pwa/nuxel-apps/terminal/manifest.json  (soft pin held)
+    ok    pwa/nuxel-apps/terminal/sw.js  (soft pin held)
+    ok    pwa/nuxel-apps/terminal/terminal.js  (soft pin held)
+    ok    pwa/nuxel-apps/terminal/terminal.css  (soft pin held)
+    ok    pwa/nuxel-apps/terminal/icons/icon-192.png  (soft pin held)
+    ok    pwa/nuxel-apps/terminal/icons/icon-512.png  (soft pin held)
+   hard pins: 13/13 held
+
+== 2. behavioural assertions ==
+
+-- INV-1-launcher-cache-invalidation : Launcher/PWA cache invalidation (A32 briq A31)
+    PASS  SW cache namespace is explicitly versioned  [matches=1]
+    PASS  SW activate deletes the previous cache namespaces  [matches=3]
+    PASS  SW activate handler present  [matches=3]
+    PASS  launcher registers the service worker  [matches=4]
+    PASS  launcher reacts to a new SW becoming available  [matches=1]
+    PASS  host purges the launcher caches at startup  [matches=2]
+    PASS  host purges the SW cache namespaces on disk  [matches=2]
+    PASS  launcher URL carries a version stamp  [matches=5]
+
+-- INV-2-colour-conversion : XRGB8888 -> DECON ABGR8888 colour conversion
+    PASS  source XRGB8888 handled explicitly  [matches=8]
+    PASS  destination ABGR_8888 order documented in the source  [matches=5]
+    PASS  R<->B swap constant present (red must land in the blue byte slot)  [matches=1]
+    PASS  selftest entry point retained  [matches=1]
+    WARN  aarch64 colour selftest (real binary) passes  [binary absent or not executable: build/out/s10plus/a32/nuxel-wl-fb (rebuild with bash tools/s10plus/a32/build-a32.sh)]
+    WARN  built bridge hash == the hash deployed and verified on the phone in A32  [artefact absent: build/out/s10plus/a32/nuxel-wl-fb (gitignored build output; rebuild with bash tools/s10plus/a32/build-a32.sh)]
+
+-- INV-3-ten-zone-safe-areas : Ten-zone status-bar safe areas, S10+ preset = zones 9,10 in portrait
+    PASS  persisted document declares ten zones  [.zones = 10]
+    PASS  S10+ portrait preset blocks zones 9,10  [.profiles.s10plus.portrait = [9,10]]
+    PASS  S10+ landscape_left blocks nothing  [.profiles.s10plus.landscape_left = []]
+    PASS  persisted document carries schema_version  [.schema_version = 1]
+    PASS  engine preset for s10plus is [9,10] in portrait  [matches=1]
+    PASS  device profile detection keys on the real hardware identity  [matches=1]
+    PASS  safe-zone engine assertions (node)  [exit=0]
+
+-- INV-4-button-manager : Hardware button manager is the single owner of power/volume/assistant
+    PASS  key device resolved by capability/name, not by a hard-coded eventN  [matches=2]
+    PASS  assistant/Bixby key 703 handled  [matches=1]
+    PASS  unit starts the manager binary  [matches=1]
+    PASS  unit restarts the manager  [matches=1]
+    PASS  power short press maps to screen-toggle  [matches=1]
+    PASS  assistant key maps to an action, not a dead key  [matches=1]
+
+-- INV-5-live-usb-console : Live USB console stays reachable and respawning
+    PASS  console supervisor respawns the shell after SIGHUP  [matches=1]
+    PASS  console runs in a forked child so it cannot delay boot  [matches=5]
+    PASS  initramfs starts the console before switch_root  [matches=2]
+    PASS  console host script is executable  [scripts/s10plus-debug-pack/nuxel-console-host.sh]
+    PASS  host script enumerates the CDC-ACM node  [matches=4]
+    INFO  console node presence (informational; a live phone is not required)  [no CDC-ACM console node enumerated right now]
+
+-- INV-6-userspace-rollback : Userspace rollback route back to the known-working kiosk launcher
+    PASS  rollback script is executable  [tools/nuxel-rollback-home.sh]
+    PASS  rollback re-enables the kiosk home unit  [matches=2]
+    PASS  kiosk unit is restart-guarded  [matches=1]
+    PASS  phosh agent unit is complete  [matches=1]
+
+-- INV-7-a32-release-record : The A32 release record stays byte-identical
+    PASS  A32 record still carries the deployed nuxel-wl-fb hash  [matches=1]
+    PASS  A32 record still states what is NOT claimed  [matches=1]
+
+-- INV-8-no-flash-invariant-recorded : The NO-FLASHING invariant is recorded in the protected-asset register
+    PASS  register states the NO FLASHING constraint  [matches=2]
+    PASS  register states the .qq / RUN_ROOT read-only constraint  [matches=1]
+    PASS  register states the evidence discipline  [matches=5]
+
+-- INV-9-a32-suite : The full A32 offline suite still runs (soft signal while other groups edit shared suites)
+    PASS  full A32 offline suite (colour selftest, keycode bitmap, safe zones, launcher registry, wallpaper)  [exit=0]
+
+-- INV-10-console-and-ledger-tooling : Live-console host tooling and the work-queue renderer stay usable and honest
+    PASS  the console tool stays executable  [scripts/s10plus-debug-pack/nuxel-live.sh]
+    PASS  the heredoc that carries the Python body is opened AND terminated  [matches=1]
+    PASS  the interpreter call and its terminator both use PYEOF  [matches=2]
+    PASS  the device-discovery path actually RUNS to completion (behavioural: the tool runs its real discover_dev() against a glob that matches nothing and against one that matches), instead of being asserted by grepping for the string /dev/ttyACM - a check the dead path also passed  [1 PASS line(s) on host]
+    PASS  the port lock can be redirected when the shared /tmp one is unusable  [matches=1]
+    PASS  the fs.protected_regular root-vs-shared-/tmp case is documented in the tool  [matches=1]
+    PASS  the session-2 environment preflight exists  [docs/beta-finalization/preflight/ENVIRONMENT.md]
+    PASS  the session-2 device captures are preserved as evidence  [docs/beta-finalization/preflight/live/batch-1-identity.out]
+    PASS  the session-2 backup list (pre-change blobs) exists  [docs/beta-finalization/preflight/BACKUP-LIST-20261016.tsv]
+    PASS  workqueue.py is runnable as a program (so the render check below can execute it)  [tools/beta/workqueue.py]
+    PASS  the work queue has a renderer for its human view  [matches=1]
+    PASS  WORK-QUEUE.md still matches the JSON store (render --check)  [0 PASS line(s) on host]
+
+-- INV-11-a32-enumerated-asset-pins : Every asset the briQ enumerated as protected is actually pinned (nuxelctl, the libinput shim sources, the canonical assets, the Settings/Terminal PWA integration)
+    PASS  the A32 nuxelctl CLI is present and executable  [tools/s10plus/a32/nuxelctl]
+    PASS  the A32 nuxelctl CLI matches the full hash behind the A32 record's abbreviated e4281cab…  [e4281cab8c96a70cc24a79aa10230ae6ab716141893d0c95abdbb1481b2d2c3b]
+    PASS  the current-cycle (a33) nuxelctl CLI is present and executable  [tools/s10plus/a33/nuxelctl]
+    WARN  the current-cycle (a33) nuxelctl CLI is byte-pinned (soft: tools/s10plus/a33 (current-cycle tree))  [want fb2b49d78bcb0b6b69d9e0feaa0d2928fa8c789004ac974cb251793fbb1ce71c got b002daf2e1c79ef6cd9a60f7f868470534bec592e01d1c945ab447bb4203bf1b]
+    PASS  the A31 libinput-path shim source is byte-pinned (drift is a WARN naming bg-01, never silent)  [f94240412b731233ad0e93de24d20283f55fc0d0b1f74aa1cddc9f19265e598f]
+    PASS  the A33 libinput-path shim source is byte-pinned (drift is a WARN naming bg-01, never silent)  [f94240412b731233ad0e93de24d20283f55fc0d0b1f74aa1cddc9f19265e598f]
+    PASS  the shim decides from capabilities (INPUT_PROP_DIRECT), never from a hard-coded eventN  [matches=9]
+    PASS  the shim still publishes the by-path devlink (by-path/nuxel-touchscreen)  [matches=1]
+    PASS  the canonical wallpaper is byte-pinned (previously checked only indirectly by the soft A32-suite wallpaper step)  [6e337ef2d506a16778fd3c79159f0cf053eb07ace40cf43387a33486da76cb29]
+    PASS  the boot animation MP4 is byte-pinned (no expected-hash constant existed anywhere in the tree before INV-11)  [280e094fb3efe54eaf15f0d964bf8ad834eeebde2e34901e1bf1e3520b95184c]
+    PASS  the Settings PWA surface (index.html) is present  [pwa/nuxel-apps/settings/index.html]
+    PASS  the Settings front-end (settings.js) is present  [pwa/nuxel-apps/settings/settings.js]
+    PASS  the Terminal PWA surface (index.html) is present  [pwa/nuxel-apps/terminal/index.html]
+    PASS  the Terminal front-end (terminal.js) is present  [pwa/nuxel-apps/terminal/terminal.js]
+    PASS  the Terminal service worker (sw.js) is present  [pwa/nuxel-apps/terminal/sw.js]
+
+== summary ==
+   PASS=68  FAIL=0  WARN=14  INFO=2
+   warned invariants: INV-1-launcher-cache-invalidation INV-1-launcher-cache-invalidation INV-3-ten-zone-safe-areas INV-3-ten-zone-safe-areas INV-6-userspace-rollback INV-6-userspace-rollback INV-6-userspace-rollback INV-9-a32-suite INV-11-a32-enumerated-asset-pins INV-11-a32-enumerated-asset-pins INV-11-a32-enumerated-asset-pins INV-2-colour-conversion INV-2-colour-conversion INV-11-a32-enumerated-asset-pins
+   (soft = a parallel build group changed a shared, protected file, or an assertion
+    marked mode:soft could not be satisfied by the in-flight tree.  The hard behavioural
+    assertions above are the actual gate; a soft signal is never a pass and never a
+    baseline regression.)
+   REGRESSION GUARD: PASS — the A32 baseline is intact (no failing checks).
+EXIT=0

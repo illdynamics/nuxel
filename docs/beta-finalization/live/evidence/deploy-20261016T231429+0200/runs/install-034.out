@@ -1,0 +1,7 @@
+pushed={"attempts": 1, "b64_chars": 1668, "bytes": 1250, "decoded_sha256": "6b9c92dafdddc26491678de10a6a0a3b4c5d8a249a95dbe4d7073d2223327179", "frames": 1, "path": "/var/tmp/nxl-install-034.sh"}
+ok=True rc=0
+---
+PREV=NONE
+/etc/nuxel/input/button-fsm.json.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

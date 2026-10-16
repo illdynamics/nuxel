@@ -1,0 +1,7 @@
+pushed={"b64_chars": 1856, "bytes": 1392, "decoded_sha256": "fa476bff92dcae08c0ad0b6ade1a41a8fec9315e8e6f1f182c312ecad39c0dbb", "parts": 1, "path": "/var/tmp/nxl-install-051.sh"}
+ok=True rc=0
+---
+PREV=NONE
+/usr/local/bin/nuxel-fb-owner-assert.sh.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

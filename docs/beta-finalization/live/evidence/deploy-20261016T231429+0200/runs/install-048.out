@@ -1,0 +1,7 @@
+pushed={"attempts": 1, "b64_chars": 1668, "bytes": 1250, "decoded_sha256": "c74785bdd02bb88e2de63f8f3f51e94e8d1c17fb4461c6cd9b78296b597caff9", "frames": 1, "path": "/var/tmp/nxl-install-048.sh"}
+ok=True rc=0
+---
+PREV=NONE
+/etc/nuxel/power/power-menu.json.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

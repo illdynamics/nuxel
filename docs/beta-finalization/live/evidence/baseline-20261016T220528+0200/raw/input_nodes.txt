@@ -1,0 +1,3 @@
+cmd: ls -l /dev/input/by-path/ 2>&1
+ok: False rc: None framed: False sha_ok: False
+---

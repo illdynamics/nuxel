@@ -1,0 +1,248 @@
+[
+  {
+    "elapsed_s": 0.987,
+    "key": "uptime",
+    "ok": false,
+    "rc": null
+  },
+  {
+    "elapsed_s": 0.983,
+    "key": "uname",
+    "ok": false,
+    "rc": null
+  },
+  {
+    "elapsed_s": 0.987,
+    "key": "hostname",
+    "ok": false,
+    "rc": null
+  },
+  {
+    "elapsed_s": 1.002,
+    "key": "cmdline",
+    "ok": false,
+    "rc": null
+  },
+  {
+    "elapsed_s": 0.988,
+    "key": "boot_mode",
+    "ok": false,
+    "rc": null
+  },
+  {
+    "elapsed_s": 0.963,
+    "key": "units",
+    "ok": false,
+    "rc": null
+  },
+  {
+    "elapsed_s": 1.049,
+    "key": "failed_units",
+    "ok": false,
+    "rc": null
+  },
+  {
+    "elapsed_s": 0.976,
+    "key": "fb_owner",
+    "ok": false,
+    "rc": null
+  },
+  {
+    "elapsed_s": 0.983,
+    "key": "animation",
+    "ok": false,
+    "rc": null
+  },
+  {
+    "elapsed_s": 1.003,
+    "key": "wl_fb_state",
+    "ok": false,
+    "rc": null
+  },
+  {
+    "elapsed_s": 0.988,
+    "key": "touch_devices",
+    "ok": false,
+    "rc": null
+  },
+  {
+    "elapsed_s": 0.983,
+    "key": "input_nodes",
+    "ok": false,
+    "rc": null
+  },
+  {
+    "elapsed_s": 0.978,
+    "key": "alsa_cards",
+    "ok": false,
+    "rc": null
+  },
+  {
+    "elapsed_s": 0.986,
+    "key": "alsa_beyond_madera",
+    "ok": false,
+    "rc": null
+  },
+  {
+    "elapsed_s": 0.986,
+    "key": "fb_devices",
+    "ok": false,
+    "rc": null
+  },
+  {
+    "elapsed_s": 0.966,
+    "key": "irq_sec_ts",
+    "ok": false,
+    "rc": null
+  },
+  {
+    "elapsed_s": 1.0,
+    "key": "pwa_host_unit",
+    "ok": false,
+    "rc": null
+  },
+  {
+    "elapsed_s": 0.959,
+    "key": "http_registry",
+    "ok": false,
+    "rc": null
+  },
+  {
+    "elapsed_s": 0.989,
+    "key": "seatd_socket",
+    "ok": false,
+    "rc": null
+  },
+  {
+    "elapsed_s": 0.988,
+    "key": "deploy_check",
+    "ok": false,
+    "rc": null
+  },
+  {
+    "elapsed_s": 0.992,
+    "key": "pwa_sha256:pwa/nuxel-home/index.html",
+    "ok": false,
+    "rc": null
+  },
+  {
+    "elapsed_s": 0.987,
+    "key": "pwa_sha256:pwa/nuxel-home/manifest.json",
+    "ok": false,
+    "rc": null
+  },
+  {
+    "elapsed_s": 1.015,
+    "key": "pwa_sha256:pwa/nuxel-home/sw.js",
+    "ok": false,
+    "rc": null
+  },
+  {
+    "elapsed_s": 0.985,
+    "key": "pwa_sha256:pwa/nuxel-home/colour-test.html",
+    "ok": false,
+    "rc": null
+  },
+  {
+    "elapsed_s": 0.985,
+    "key": "pwa_sha256:pwa/nuxel-home/css/launcher.css",
+    "ok": false,
+    "rc": null
+  },
+  {
+    "elapsed_s": 0.986,
+    "key": "pwa_sha256:pwa/nuxel-home/css/search.css",
+    "ok": false,
+    "rc": null
+  },
+  {
+    "elapsed_s": 0.995,
+    "key": "pwa_sha256:pwa/nuxel-home/css/status-bar.css",
+    "ok": false,
+    "rc": null
+  },
+  {
+    "elapsed_s": 0.997,
+    "key": "pwa_sha256:pwa/nuxel-home/css/style.css",
+    "ok": false,
+    "rc": null
+  },
+  {
+    "elapsed_s": 0.989,
+    "key": "pwa_sha256:pwa/nuxel-home/js/app.js",
+    "ok": false,
+    "rc": null
+  },
+  {
+    "elapsed_s": 0.985,
+    "key": "pwa_sha256:pwa/nuxel-home/js/apps.js",
+    "ok": false,
+    "rc": null
+  },
+  {
+    "elapsed_s": 0.978,
+    "key": "pwa_sha256:pwa/nuxel-home/js/bootlog.js",
+    "ok": false,
+    "rc": null
+  },
+  {
+    "elapsed_s": 0.985,
+    "key": "pwa_sha256:pwa/nuxel-home/js/bridge.js",
+    "ok": false,
+    "rc": null
+  },
+  {
+    "elapsed_s": 0.991,
+    "key": "pwa_sha256:pwa/nuxel-home/js/host-bridge.js",
+    "ok": false,
+    "rc": null
+  },
+  {
+    "elapsed_s": 0.985,
+    "key": "pwa_sha256:pwa/nuxel-home/js/launcher.js",
+    "ok": false,
+    "rc": null
+  },
+  {
+    "elapsed_s": 1.018,
+    "key": "pwa_sha256:pwa/nuxel-home/js/osd.js",
+    "ok": false,
+    "rc": null
+  },
+  {
+    "elapsed_s": 0.987,
+    "key": "pwa_sha256:pwa/nuxel-home/js/qs.js",
+    "ok": false,
+    "rc": null
+  },
+  {
+    "elapsed_s": 0.984,
+    "key": "pwa_sha256:pwa/nuxel-home/js/recents.js",
+    "ok": false,
+    "rc": null
+  },
+  {
+    "elapsed_s": 0.997,
+    "key": "pwa_sha256:pwa/nuxel-home/js/safe-zones.js",
+    "ok": false,
+    "rc": null
+  },
+  {
+    "elapsed_s": 0.979,
+    "key": "pwa_sha256:pwa/nuxel-home/js/search.js",
+    "ok": false,
+    "rc": null
+  },
+  {
+    "elapsed_s": 1.0,
+    "key": "pwa_sha256:pwa/nuxel-home/js/settings-store.js",
+    "ok": false,
+    "rc": null
+  },
+  {
+    "elapsed_s": 0.981,
+    "key": "pwa_sha256:pwa/nuxel-home/js/status-bar.js",
+    "ok": false,
+    "rc": null
+  }
+]

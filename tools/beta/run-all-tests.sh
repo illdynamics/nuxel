@@ -512,8 +512,19 @@ add_suite U-baseline-regression-guard cross bg-00-preflight 2400 hard bash \
 add_suite U-baseline-a32-suite cross bg-00-preflight 1800 hard bash \
   "the full A32 offline suite still runs (colour, safe zones, wallpaper, registry)" \
   'bash tools/s10plus/a32/tests/run-tests.sh'
-add_suite U-boot-s10plus-gates unit bg-00-preflight 600 hard bash \
-  "boot-image gates: container structure, initramfs embedding, partition budget" \
+# The boot-image gate is built on hardware-proven containers that the boot build
+# chain produced and that are gitignored build output (build/out/s10plus/
+# debug-candidates/): the A5 base S-Boot actually delivered + unpacked, and the
+# A4 initramfs sections 3/4 mutate.  They cannot be synthesised (a substituted
+# container would prove nothing about the handset), so the suite is
+# precondition-gated exactly like the legacy A27 gates: an unequipped host gets a
+# loud SKIP naming both missing artefacts, never a fake FAIL and never a silent
+# pass.  With the artefacts present the suite runs and gates hard (and now also
+# asserts the A5 base's documented sha256, so it can only speak about the proven
+# image).  Repaired by briq-02-gate-failure-repair.
+add_suite U-boot-s10plus-gates unit bg-00-preflight 600 hard \
+  "probe:test -s build/out/s10plus/debug-candidates/nuxel-beyond2lte-boot-A5-dtb-fix.img && test -s build/out/s10plus/debug-candidates/A4/initramfs.cpio" \
+  "boot-image gates: container structure, initramfs embedding, partition budget (needs the gitignored, hardware-proven A5 base + A4 initramfs)" \
   'bash boot/s10plus/tests/test-boot-image-gates.sh'
 add_suite U-boot-init-cmdline unit bg-00-preflight 300 hard bash \
   "init/cmdline independence (no board-specific hard-coding in the initramfs)" \

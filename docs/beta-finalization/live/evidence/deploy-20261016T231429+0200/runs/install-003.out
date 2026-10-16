@@ -1,0 +1,8 @@
+pushed={"attempts": 1, "b64_chars": 2024, "bytes": 1517, "decoded_sha256": "bb7c2219ab693f6f1fa4a6eb03b0cbe0ec36cf6e6cd7f415021710017cc492a5", "frames": 1, "path": "/var/tmp/nxl-install-003.sh"}
+ok=True rc=0
+---
+PREV=NONE
+/etc/systemd/system/nuxel-bootmode-guard.service.nuxel-staged: OK
+active
+INSTALL-OK
+NXLSCRIPT-RC=0

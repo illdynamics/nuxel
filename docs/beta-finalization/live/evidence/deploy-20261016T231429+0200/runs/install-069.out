@@ -1,0 +1,7 @@
+pushed={"attempts": 1, "b64_chars": 1708, "bytes": 1280, "decoded_sha256": "49a90bc4e27a3a2b9d0ea16ab4381bbb62835a96834944ecb185e37282f9e513", "frames": 1, "path": "/var/tmp/nxl-install-069.sh"}
+ok=True rc=0
+---
+PREV=NONE
+/usr/local/bin/nuxel-audio-diag.sh.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

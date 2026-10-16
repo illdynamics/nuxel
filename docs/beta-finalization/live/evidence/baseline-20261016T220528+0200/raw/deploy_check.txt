@@ -1,0 +1,3 @@
+cmd: for p in /home/nuxel/nuxel /etc/nuxel /usr/local;do printf '%s ' $p;test -d $p && echo present||echo MISSING;done
+ok: False rc: None framed: False sha_ok: False
+---

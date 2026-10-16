@@ -1,0 +1,7 @@
+pushed={"attempts": 1, "b64_chars": 2132, "bytes": 1598, "decoded_sha256": "e474ee9ca63782c5707ed230a8fe49ce6f0c301fbae556541c239d499c3cb883", "frames": 1, "path": "/var/tmp/nxl-install-230.sh"}
+ok=True rc=0
+---
+PREV=NONE
+/usr/share/nuxel/pwa/nuxel-apps/media/samples/cover-tone.svg.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

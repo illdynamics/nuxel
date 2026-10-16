@@ -1,0 +1,9 @@
+pushed={"attempts": 1, "b64_chars": 1612, "bytes": 1207, "decoded_sha256": "ecb2192d4b948b96cfea198a1c1f642882d2fcd191542346e0c24451b3a9235b", "frames": 1, "path": "/var/tmp/nxl-install-123.sh"}
+ok=True rc=0
+---
+PREV=NONE
+/usr/bin/nuxel-portal.nuxel-staged: OK
+Failed to restart nuxel-portal.service: Unit nuxel-portal.service not found.
+DECLARED-RELOAD-DEFERRED
+INSTALL-OK
+NXLSCRIPT-RC=0

@@ -1,0 +1,16 @@
+$ bash tools/beta/tests/test-regression-guard.sh
+PASS clean sandbox -> exit 0 and verdict PASS
+PASS tampered pinned file -> exit 1 and FAIL names the drift
+PASS a file explicitly pinned soft inside a hard invariant -> WARN, gate stays PASS
+PASS a file with no hash_mode inherits a hard invariant -> still a hard-pin FAIL
+PASS broken behavioural assertion -> exit 1 even though the byte pin matches
+PASS mode:soft assertion -> WARN naming the owning group, and the gate stays PASS
+PASS re-pin stores the new hash and appends a history entry
+PASS run after re-pin is green again (exit 0)
+PASS re-pin without --reason -> exit 2
+PASS re-pin of an unregistered path -> exit 2
+PASS missing register -> exit 2
+PASS --json emits exactly one machine-readable line (and still fails on the current drift)
+PASS real repository: regression guard green on the untouched tree (exit 0)
+== 0 failing self-test(s), 13 passing ==
+EXIT=0

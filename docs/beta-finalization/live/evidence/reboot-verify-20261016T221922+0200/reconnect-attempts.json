@@ -1,0 +1,1447 @@
+[
+  {
+    "at": "2026-10-16T22:19:56+0200",
+    "error": "port answered but no verified command frame",
+    "frame": {
+      "elapsed_s": 0.993,
+      "framed": false,
+      "output_bytes": 537,
+      "raw_len": 664,
+      "rc": null,
+      "rid": "bb1286ec",
+      "sha_ok": false
+    },
+    "node": {
+      "callout": "/dev/ttyACM0",
+      "match_stage": "explicit"
+    },
+    "probe": {
+      "at": "2026-10-16T22:19:56+0200",
+      "bytes_in": 54,
+      "dev": "/dev/ttyACM0",
+      "echo_ok": true,
+      "elapsed_s": 0.304,
+      "error": null,
+      "reachable": true,
+      "sample": "\n\u001b[?2004l\u001b[?2004hsh-5.3# \n\u001b[?2004l\u001b[?2004hsh-5.3# "
+    },
+    "reachable": false
+  },
+  {
+    "at": "2026-10-16T22:20:00+0200",
+    "error": "port answered but no verified command frame",
+    "frame": {
+      "elapsed_s": 0.993,
+      "framed": false,
+      "output_bytes": 537,
+      "raw_len": 664,
+      "rc": null,
+      "rid": "c12f86f0",
+      "sha_ok": false
+    },
+    "node": {
+      "callout": "/dev/ttyACM0",
+      "match_stage": "explicit"
+    },
+    "probe": {
+      "at": "2026-10-16T22:20:00+0200",
+      "bytes_in": 54,
+      "dev": "/dev/ttyACM0",
+      "echo_ok": true,
+      "elapsed_s": 0.304,
+      "error": null,
+      "reachable": true,
+      "sample": "\n\u001b[?2004l\u001b[?2004hsh-5.3# \n\u001b[?2004l\u001b[?2004hsh-5.3# "
+    },
+    "reachable": false
+  },
+  {
+    "at": "2026-10-16T22:20:04+0200",
+    "error": "port answered but no verified command frame",
+    "frame": {
+      "elapsed_s": 0.991,
+      "framed": false,
+      "output_bytes": 537,
+      "raw_len": 664,
+      "rc": null,
+      "rid": "89ac86f5",
+      "sha_ok": false
+    },
+    "node": {
+      "callout": "/dev/ttyACM0",
+      "match_stage": "explicit"
+    },
+    "probe": {
+      "at": "2026-10-16T22:20:05+0200",
+      "bytes_in": 54,
+      "dev": "/dev/ttyACM0",
+      "echo_ok": true,
+      "elapsed_s": 0.304,
+      "error": null,
+      "reachable": true,
+      "sample": "\n\u001b[?2004l\u001b[?2004hsh-5.3# \n\u001b[?2004l\u001b[?2004hsh-5.3# "
+    },
+    "reachable": false
+  },
+  {
+    "at": "2026-10-16T22:20:09+0200",
+    "error": "port answered but no verified command frame",
+    "frame": {
+      "elapsed_s": 0.992,
+      "framed": false,
+      "output_bytes": 537,
+      "raw_len": 664,
+      "rc": null,
+      "rid": "377f86f9",
+      "sha_ok": false
+    },
+    "node": {
+      "callout": "/dev/ttyACM0",
+      "match_stage": "explicit"
+    },
+    "probe": {
+      "at": "2026-10-16T22:20:09+0200",
+      "bytes_in": 54,
+      "dev": "/dev/ttyACM0",
+      "echo_ok": true,
+      "elapsed_s": 0.304,
+      "error": null,
+      "reachable": true,
+      "sample": "\n\u001b[?2004l\u001b[?2004hsh-5.3# \n\u001b[?2004l\u001b[?2004hsh-5.3# "
+    },
+    "reachable": false
+  },
+  {
+    "at": "2026-10-16T22:20:13+0200",
+    "error": "port answered but no verified command frame",
+    "frame": {
+      "elapsed_s": 1.006,
+      "framed": false,
+      "output_bytes": 1081,
+      "raw_len": 1332,
+      "rc": null,
+      "rid": "b88a86fd",
+      "sha_ok": false
+    },
+    "node": {
+      "callout": "/dev/ttyACM0",
+      "match_stage": "explicit"
+    },
+    "probe": {
+      "at": "2026-10-16T22:20:13+0200",
+      "bytes_in": 54,
+      "dev": "/dev/ttyACM0",
+      "echo_ok": true,
+      "elapsed_s": 0.303,
+      "error": null,
+      "reachable": true,
+      "sample": "\n\u001b[?2004l\u001b[?2004hsh-5.3# \n\u001b[?2004l\u001b[?2004hsh-5.3# "
+    },
+    "reachable": false
+  },
+  {
+    "at": "2026-10-16T22:20:17+0200",
+    "error": "port answered but no verified command frame",
+    "frame": {
+      "elapsed_s": 0.988,
+      "framed": false,
+      "output_bytes": 537,
+      "raw_len": 664,
+      "rc": null,
+      "rid": "355b8702",
+      "sha_ok": false
+    },
+    "node": {
+      "callout": "/dev/ttyACM0",
+      "match_stage": "explicit"
+    },
+    "probe": {
+      "at": "2026-10-16T22:20:18+0200",
+      "bytes_in": 54,
+      "dev": "/dev/ttyACM0",
+      "echo_ok": true,
+      "elapsed_s": 0.304,
+      "error": null,
+      "reachable": true,
+      "sample": "\n\u001b[?2004l\u001b[?2004hsh-5.3# \n\u001b[?2004l\u001b[?2004hsh-5.3# "
+    },
+    "reachable": false
+  },
+  {
+    "at": "2026-10-16T22:20:22+0200",
+    "error": "write failed on /dev/ttyACM0: [Errno 5] Input/output error",
+    "node": {
+      "callout": "/dev/ttyACM0",
+      "match_stage": "explicit"
+    },
+    "probe": {
+      "at": "2026-10-16T22:20:22+0200",
+      "bytes_in": 23,
+      "dev": "/dev/ttyACM0",
+      "echo_ok": true,
+      "elapsed_s": 0.302,
+      "error": null,
+      "reachable": true,
+      "sample": "\u001b[?2004h\u001b[?2004l\n\n\n"
+    },
+    "reachable": false
+  },
+  {
+    "at": "2026-10-16T22:20:25+0200",
+    "error": "cannot open /dev/ttyACM0: [Errno 2] No such file or directory: '/dev/ttyACM0'",
+    "node": null,
+    "reachable": false
+  },
+  {
+    "at": "2026-10-16T22:20:28+0200",
+    "error": "cannot open /dev/ttyACM0: [Errno 2] No such file or directory: '/dev/ttyACM0'",
+    "node": null,
+    "reachable": false
+  },
+  {
+    "at": "2026-10-16T22:20:31+0200",
+    "error": "cannot open /dev/ttyACM0: [Errno 2] No such file or directory: '/dev/ttyACM0'",
+    "node": null,
+    "reachable": false
+  },
+  {
+    "at": "2026-10-16T22:20:34+0200",
+    "error": "cannot open /dev/ttyACM0: [Errno 2] No such file or directory: '/dev/ttyACM0'",
+    "node": null,
+    "reachable": false
+  },
+  {
+    "at": "2026-10-16T22:20:37+0200",
+    "error": "cannot open /dev/ttyACM0: [Errno 2] No such file or directory: '/dev/ttyACM0'",
+    "node": null,
+    "reachable": false
+  },
+  {
+    "at": "2026-10-16T22:20:40+0200",
+    "error": "cannot open /dev/ttyACM0: [Errno 2] No such file or directory: '/dev/ttyACM0'",
+    "node": null,
+    "reachable": false
+  },
+  {
+    "at": "2026-10-16T22:20:43+0200",
+    "error": "cannot open /dev/ttyACM0: [Errno 2] No such file or directory: '/dev/ttyACM0'",
+    "node": null,
+    "reachable": false
+  },
+  {
+    "at": "2026-10-16T22:20:46+0200",
+    "error": "cannot open /dev/ttyACM0: [Errno 2] No such file or directory: '/dev/ttyACM0'",
+    "node": null,
+    "reachable": false
+  },
+  {
+    "at": "2026-10-16T22:20:49+0200",
+    "error": "cannot open /dev/ttyACM0: [Errno 2] No such file or directory: '/dev/ttyACM0'",
+    "node": null,
+    "reachable": false
+  },
+  {
+    "at": "2026-10-16T22:20:52+0200",
+    "error": "port answered but no verified command frame",
+    "frame": {
+      "elapsed_s": 0.969,
+      "framed": false,
+      "output_bytes": 537,
+      "raw_len": 856,
+      "rc": null,
+      "rid": "d6cc8724",
+      "sha_ok": false
+    },
+    "node": {
+      "callout": "/dev/ttyACM0",
+      "match_stage": "explicit"
+    },
+    "probe": {
+      "at": "2026-10-16T22:20:52+0200",
+      "bytes_in": 246,
+      "dev": "/dev/ttyACM0",
+      "echo_ok": true,
+      "elapsed_s": 0.328,
+      "error": null,
+      "reachable": true,
+      "sample": "^[[?2004hsh-5.3#7,6i\n\u001b[?2004lsh: :s^[[?2004hsh-5.3#7,6i: substitution failed\n\u001b[?2004hsh-5.3# \n\u001b[?2004l\u001b[?2004hsh-5.3# 6,6650,14049613,-;[SSP]: debug_work_func(0) - Sensor state: 0x3feff, RC: 0(0, 0, 0), CC: 0, TC: 0 NSC: 0 EC: 0 GPS: false\n"
+    },
+    "reachable": false
+  },
+  {
+    "at": "2026-10-16T22:20:56+0200",
+    "error": "port answered but no verified command frame",
+    "frame": {
+      "elapsed_s": 1.008,
+      "framed": false,
+      "output_bytes": 537,
+      "raw_len": 702,
+      "rc": null,
+      "rid": "7bb68729",
+      "sha_ok": false
+    },
+    "node": {
+      "callout": "/dev/ttyACM0",
+      "match_stage": "explicit"
+    },
+    "probe": {
+      "at": "2026-10-16T22:20:57+0200",
+      "bytes_in": 54,
+      "dev": "/dev/ttyACM0",
+      "echo_ok": true,
+      "elapsed_s": 0.302,
+      "error": null,
+      "reachable": true,
+      "sample": "\n\u001b[?2004l\u001b[?2004hsh-5.3# \n\u001b[?2004l\u001b[?2004hsh-5.3# "
+    },
+    "reachable": false
+  },
+  {
+    "at": "2026-10-16T22:21:01+0200",
+    "error": "port answered but no verified command frame",
+    "frame": {
+      "elapsed_s": 0.989,
+      "framed": false,
+      "output_bytes": 630,
+      "raw_len": 757,
+      "rc": null,
+      "rid": "b36e872d",
+      "sha_ok": false
+    },
+    "node": {
+      "callout": "/dev/ttyACM0",
+      "match_stage": "explicit"
+    },
+    "probe": {
+      "at": "2026-10-16T22:21:01+0200",
+      "bytes_in": 54,
+      "dev": "/dev/ttyACM0",
+      "echo_ok": true,
+      "elapsed_s": 0.302,
+      "error": null,
+      "reachable": true,
+      "sample": "\n\u001b[?2004l\u001b[?2004hsh-5.3# \n\u001b[?2004l\u001b[?2004hsh-5.3# "
+    },
+    "reachable": false
+  },
+  {
+    "at": "2026-10-16T22:21:05+0200",
+    "error": "port answered but no verified command frame",
+    "frame": {
+      "elapsed_s": 0.966,
+      "framed": false,
+      "output_bytes": 537,
+      "raw_len": 664,
+      "rc": null,
+      "rid": "03018731",
+      "sha_ok": false
+    },
+    "node": {
+      "callout": "/dev/ttyACM0",
+      "match_stage": "explicit"
+    },
+    "probe": {
+      "at": "2026-10-16T22:21:05+0200",
+      "bytes_in": 54,
+      "dev": "/dev/ttyACM0",
+      "echo_ok": true,
+      "elapsed_s": 0.302,
+      "error": null,
+      "reachable": true,
+      "sample": "\n\u001b[?2004l\u001b[?2004hsh-5.3# \n\u001b[?2004l\u001b[?2004hsh-5.3# "
+    },
+    "reachable": false
+  },
+  {
+    "at": "2026-10-16T22:21:09+0200",
+    "error": "port answered but no verified command frame",
+    "frame": {
+      "elapsed_s": 0.977,
+      "framed": false,
+      "output_bytes": 5242,
+      "raw_len": 5492,
+      "rc": null,
+      "rid": "2acd8735",
+      "sha_ok": false
+    },
+    "node": {
+      "callout": "/dev/ttyACM0",
+      "match_stage": "explicit"
+    },
+    "probe": {
+      "at": "2026-10-16T22:21:09+0200",
+      "bytes_in": 54,
+      "dev": "/dev/ttyACM0",
+      "echo_ok": true,
+      "elapsed_s": 0.302,
+      "error": null,
+      "reachable": true,
+      "sample": "\n\u001b[?2004l\u001b[?2004hsh-5.3# \n\u001b[?2004l\u001b[?2004hsh-5.3# "
+    },
+    "reachable": false
+  },
+  {
+    "at": "2026-10-16T22:21:13+0200",
+    "error": "port answered but no verified command frame",
+    "frame": {
+      "elapsed_s": 0.981,
+      "framed": false,
+      "output_bytes": 537,
+      "raw_len": 1768,
+      "rc": null,
+      "rid": "abb1873a",
+      "sha_ok": false
+    },
+    "node": {
+      "callout": "/dev/ttyACM0",
+      "match_stage": "explicit"
+    },
+    "probe": {
+      "at": "2026-10-16T22:21:14+0200",
+      "bytes_in": 54,
+      "dev": "/dev/ttyACM0",
+      "echo_ok": true,
+      "elapsed_s": 0.302,
+      "error": null,
+      "reachable": true,
+      "sample": "\n\u001b[?2004l\u001b[?2004hsh-5.3# \n\u001b[?2004l\u001b[?2004hsh-5.3# "
+    },
+    "reachable": false
+  },
+  {
+    "at": "2026-10-16T22:21:18+0200",
+    "error": "port answered but no verified command frame",
+    "frame": {
+      "elapsed_s": 0.976,
+      "framed": false,
+      "output_bytes": 537,
+      "raw_len": 664,
+      "rc": null,
+      "rid": "f58e873e",
+      "sha_ok": false
+    },
+    "node": {
+      "callout": "/dev/ttyACM0",
+      "match_stage": "explicit"
+    },
+    "probe": {
+      "at": "2026-10-16T22:21:18+0200",
+      "bytes_in": 54,
+      "dev": "/dev/ttyACM0",
+      "echo_ok": true,
+      "elapsed_s": 0.302,
+      "error": null,
+      "reachable": true,
+      "sample": "\n\u001b[?2004l\u001b[?2004hsh-5.3# \n\u001b[?2004l\u001b[?2004hsh-5.3# "
+    },
+    "reachable": false
+  },
+  {
+    "at": "2026-10-16T22:21:22+0200",
+    "error": "port answered but no verified command frame",
+    "frame": {
+      "elapsed_s": 0.991,
+      "framed": false,
+      "output_bytes": 537,
+      "raw_len": 787,
+      "rc": null,
+      "rid": "70498742",
+      "sha_ok": false
+    },
+    "node": {
+      "callout": "/dev/ttyACM0",
+      "match_stage": "explicit"
+    },
+    "probe": {
+      "at": "2026-10-16T22:21:22+0200",
+      "bytes_in": 177,
+      "dev": "/dev/ttyACM0",
+      "echo_ok": true,
+      "elapsed_s": 0.349,
+      "error": null,
+      "reachable": true,
+      "sample": "\n\u001b[?2004l\u001b[?2004hsh-5.3# \n\u001b[?2004l\u001b[?2004hsh-5.3# 6,6861,44001724,-;[SSP]: debug_work_func(0) - Sensor state: 0x3feff, RC: 0(0, 0, 0), CC: 0, TC: 0 NSC: 0 EC: 0 GPS: false\n"
+    },
+    "reachable": false
+  },
+  {
+    "at": "2026-10-16T22:21:26+0200",
+    "error": "port answered but no verified command frame",
+    "frame": {
+      "elapsed_s": 0.988,
+      "framed": false,
+      "output_bytes": 537,
+      "raw_len": 664,
+      "rc": null,
+      "rid": "ae9e8747",
+      "sha_ok": false
+    },
+    "node": {
+      "callout": "/dev/ttyACM0",
+      "match_stage": "explicit"
+    },
+    "probe": {
+      "at": "2026-10-16T22:21:27+0200",
+      "bytes_in": 54,
+      "dev": "/dev/ttyACM0",
+      "echo_ok": true,
+      "elapsed_s": 0.303,
+      "error": null,
+      "reachable": true,
+      "sample": "\n\u001b[?2004l\u001b[?2004hsh-5.3# \n\u001b[?2004l\u001b[?2004hsh-5.3# "
+    },
+    "reachable": false
+  },
+  {
+    "at": "2026-10-16T22:21:31+0200",
+    "error": "port answered but no verified command frame",
+    "frame": {
+      "elapsed_s": 0.967,
+      "framed": false,
+      "output_bytes": 537,
+      "raw_len": 664,
+      "rc": null,
+      "rid": "293e874b",
+      "sha_ok": false
+    },
+    "node": {
+      "callout": "/dev/ttyACM0",
+      "match_stage": "explicit"
+    },
+    "probe": {
+      "at": "2026-10-16T22:21:31+0200",
+      "bytes_in": 54,
+      "dev": "/dev/ttyACM0",
+      "echo_ok": true,
+      "elapsed_s": 0.302,
+      "error": null,
+      "reachable": true,
+      "sample": "\n\u001b[?2004l\u001b[?2004hsh-5.3# \n\u001b[?2004l\u001b[?2004hsh-5.3# "
+    },
+    "reachable": false
+  },
+  {
+    "at": "2026-10-16T22:21:35+0200",
+    "error": "port answered but no verified command frame",
+    "frame": {
+      "elapsed_s": 0.981,
+      "framed": false,
+      "output_bytes": 537,
+      "raw_len": 664,
+      "rc": null,
+      "rid": "a2e5874f",
+      "sha_ok": false
+    },
+    "node": {
+      "callout": "/dev/ttyACM0",
+      "match_stage": "explicit"
+    },
+    "probe": {
+      "at": "2026-10-16T22:21:35+0200",
+      "bytes_in": 54,
+      "dev": "/dev/ttyACM0",
+      "echo_ok": true,
+      "elapsed_s": 0.303,
+      "error": null,
+      "reachable": true,
+      "sample": "\n\u001b[?2004l\u001b[?2004hsh-5.3# \n\u001b[?2004l\u001b[?2004hsh-5.3# "
+    },
+    "reachable": false
+  },
+  {
+    "at": "2026-10-16T22:21:39+0200",
+    "error": "port answered but no verified command frame",
+    "frame": {
+      "elapsed_s": 0.985,
+      "framed": false,
+      "output_bytes": 1650,
+      "raw_len": 1900,
+      "rc": null,
+      "rid": "d0618753",
+      "sha_ok": false
+    },
+    "node": {
+      "callout": "/dev/ttyACM0",
+      "match_stage": "explicit"
+    },
+    "probe": {
+      "at": "2026-10-16T22:21:39+0200",
+      "bytes_in": 54,
+      "dev": "/dev/ttyACM0",
+      "echo_ok": true,
+      "elapsed_s": 0.303,
+      "error": null,
+      "reachable": true,
+      "sample": "\n\u001b[?2004l\u001b[?2004hsh-5.3# \n\u001b[?2004l\u001b[?2004hsh-5.3# "
+    },
+    "reachable": false
+  },
+  {
+    "at": "2026-10-16T22:21:43+0200",
+    "error": "port answered but no verified command frame",
+    "frame": {
+      "elapsed_s": 0.997,
+      "framed": false,
+      "output_bytes": 537,
+      "raw_len": 664,
+      "rc": null,
+      "rid": "1e7c8758",
+      "sha_ok": false
+    },
+    "node": {
+      "callout": "/dev/ttyACM0",
+      "match_stage": "explicit"
+    },
+    "probe": {
+      "at": "2026-10-16T22:21:44+0200",
+      "bytes_in": 54,
+      "dev": "/dev/ttyACM0",
+      "echo_ok": true,
+      "elapsed_s": 0.303,
+      "error": null,
+      "reachable": true,
+      "sample": "\n\u001b[?2004l\u001b[?2004hsh-5.3# \n\u001b[?2004l\u001b[?2004hsh-5.3# "
+    },
+    "reachable": false
+  },
+  {
+    "at": "2026-10-16T22:21:48+0200",
+    "error": "port answered but no verified command frame",
+    "frame": {
+      "elapsed_s": 0.993,
+      "framed": false,
+      "output_bytes": 537,
+      "raw_len": 664,
+      "rc": null,
+      "rid": "d68f875c",
+      "sha_ok": false
+    },
+    "node": {
+      "callout": "/dev/ttyACM0",
+      "match_stage": "explicit"
+    },
+    "probe": {
+      "at": "2026-10-16T22:21:48+0200",
+      "bytes_in": 54,
+      "dev": "/dev/ttyACM0",
+      "echo_ok": true,
+      "elapsed_s": 0.302,
+      "error": null,
+      "reachable": true,
+      "sample": "\n\u001b[?2004l\u001b[?2004hsh-5.3# \n\u001b[?2004l\u001b[?2004hsh-5.3# "
+    },
+    "reachable": false
+  },
+  {
+    "at": "2026-10-16T22:21:52+0200",
+    "error": "port answered but no verified command frame",
+    "frame": {
+      "elapsed_s": 0.982,
+      "framed": false,
+      "output_bytes": 537,
+      "raw_len": 664,
+      "rc": null,
+      "rid": "bc5c8760",
+      "sha_ok": false
+    },
+    "node": {
+      "callout": "/dev/ttyACM0",
+      "match_stage": "explicit"
+    },
+    "probe": {
+      "at": "2026-10-16T22:21:52+0200",
+      "bytes_in": 54,
+      "dev": "/dev/ttyACM0",
+      "echo_ok": true,
+      "elapsed_s": 0.303,
+      "error": null,
+      "reachable": true,
+      "sample": "\n\u001b[?2004l\u001b[?2004hsh-5.3# \n\u001b[?2004l\u001b[?2004hsh-5.3# "
+    },
+    "reachable": false
+  },
+  {
+    "at": "2026-10-16T22:21:56+0200",
+    "error": "port answered but no verified command frame",
+    "frame": {
+      "elapsed_s": 1.025,
+      "framed": false,
+      "output_bytes": 537,
+      "raw_len": 757,
+      "rc": null,
+      "rid": "dd7f8765",
+      "sha_ok": false
+    },
+    "node": {
+      "callout": "/dev/ttyACM0",
+      "match_stage": "explicit"
+    },
+    "probe": {
+      "at": "2026-10-16T22:21:57+0200",
+      "bytes_in": 54,
+      "dev": "/dev/ttyACM0",
+      "echo_ok": true,
+      "elapsed_s": 0.303,
+      "error": null,
+      "reachable": true,
+      "sample": "\n\u001b[?2004l\u001b[?2004hsh-5.3# \n\u001b[?2004l\u001b[?2004hsh-5.3# "
+    },
+    "reachable": false
+  },
+  {
+    "at": "2026-10-16T22:22:01+0200",
+    "error": "port answered but no verified command frame",
+    "frame": {
+      "elapsed_s": 0.987,
+      "framed": false,
+      "output_bytes": 537,
+      "raw_len": 892,
+      "rc": null,
+      "rid": "6f7e8769",
+      "sha_ok": false
+    },
+    "node": {
+      "callout": "/dev/ttyACM0",
+      "match_stage": "explicit"
+    },
+    "probe": {
+      "at": "2026-10-16T22:22:01+0200",
+      "bytes_in": 282,
+      "dev": "/dev/ttyACM0",
+      "echo_ok": true,
+      "elapsed_s": 0.311,
+      "error": null,
+      "reachable": true,
+      "sample": "\n\u001b[?2004l\u001b[?2004hsh-5.3# \n\u001b[?2004l\u001b[?2004hsh-5.3# 6,6951,82915063,-;sec_ts 4-0048: [sec_input] mode:0202 tc:0 noise:0 wet:0 wc:0 lp:(0) D0F000 fn:0061/0061 // v:0233 cal:A2(00) C01T0226.LCIA.L Cal_flag:Success fail_cnt:0 // id(0,0) // #3 3\n SUBSYSTEM=i2c\n DEVICE=+i2c:4-0048\n"
+    },
+    "reachable": false
+  },
+  {
+    "at": "2026-10-16T22:22:05+0200",
+    "error": "port answered but no verified command frame",
+    "frame": {
+      "elapsed_s": 0.982,
+      "framed": false,
+      "output_bytes": 537,
+      "raw_len": 664,
+      "rc": null,
+      "rid": "91da876d",
+      "sha_ok": false
+    },
+    "node": {
+      "callout": "/dev/ttyACM0",
+      "match_stage": "explicit"
+    },
+    "probe": {
+      "at": "2026-10-16T22:22:05+0200",
+      "bytes_in": 54,
+      "dev": "/dev/ttyACM0",
+      "echo_ok": true,
+      "elapsed_s": 0.303,
+      "error": null,
+      "reachable": true,
+      "sample": "\n\u001b[?2004l\u001b[?2004hsh-5.3# \n\u001b[?2004l\u001b[?2004hsh-5.3# "
+    },
+    "reachable": false
+  },
+  {
+    "at": "2026-10-16T22:22:09+0200",
+    "error": "port answered but no verified command frame",
+    "frame": {
+      "elapsed_s": 1.023,
+      "framed": false,
+      "output_bytes": 537,
+      "raw_len": 1326,
+      "rc": null,
+      "rid": "36fc8772",
+      "sha_ok": false
+    },
+    "node": {
+      "callout": "/dev/ttyACM0",
+      "match_stage": "explicit"
+    },
+    "probe": {
+      "at": "2026-10-16T22:22:10+0200",
+      "bytes_in": 54,
+      "dev": "/dev/ttyACM0",
+      "echo_ok": true,
+      "elapsed_s": 0.304,
+      "error": null,
+      "reachable": true,
+      "sample": "\n\u001b[?2004l\u001b[?2004hsh-5.3# \n\u001b[?2004l\u001b[?2004hsh-5.3# "
+    },
+    "reachable": false
+  },
+  {
+    "at": "2026-10-16T22:22:14+0200",
+    "error": "port answered but no verified command frame",
+    "frame": {
+      "elapsed_s": 0.979,
+      "framed": false,
+      "output_bytes": 537,
+      "raw_len": 664,
+      "rc": null,
+      "rid": "10978776",
+      "sha_ok": false
+    },
+    "node": {
+      "callout": "/dev/ttyACM0",
+      "match_stage": "explicit"
+    },
+    "probe": {
+      "at": "2026-10-16T22:22:14+0200",
+      "bytes_in": 54,
+      "dev": "/dev/ttyACM0",
+      "echo_ok": true,
+      "elapsed_s": 0.303,
+      "error": null,
+      "reachable": true,
+      "sample": "\n\u001b[?2004l\u001b[?2004hsh-5.3# \n\u001b[?2004l\u001b[?2004hsh-5.3# "
+    },
+    "reachable": false
+  },
+  {
+    "at": "2026-10-16T22:22:18+0200",
+    "error": "port answered but no verified command frame",
+    "frame": {
+      "elapsed_s": 1.014,
+      "framed": false,
+      "output_bytes": 537,
+      "raw_len": 758,
+      "rc": null,
+      "rid": "27ef877a",
+      "sha_ok": false
+    },
+    "node": {
+      "callout": "/dev/ttyACM0",
+      "match_stage": "explicit"
+    },
+    "probe": {
+      "at": "2026-10-16T22:22:18+0200",
+      "bytes_in": 54,
+      "dev": "/dev/ttyACM0",
+      "echo_ok": true,
+      "elapsed_s": 0.302,
+      "error": null,
+      "reachable": true,
+      "sample": "\n\u001b[?2004l\u001b[?2004hsh-5.3# \n\u001b[?2004l\u001b[?2004hsh-5.3# "
+    },
+    "reachable": false
+  },
+  {
+    "at": "2026-10-16T22:22:22+0200",
+    "error": "port answered but no verified command frame",
+    "frame": {
+      "elapsed_s": 0.989,
+      "framed": false,
+      "output_bytes": 537,
+      "raw_len": 664,
+      "rc": null,
+      "rid": "03cc877f",
+      "sha_ok": false
+    },
+    "node": {
+      "callout": "/dev/ttyACM0",
+      "match_stage": "explicit"
+    },
+    "probe": {
+      "at": "2026-10-16T22:22:23+0200",
+      "bytes_in": 54,
+      "dev": "/dev/ttyACM0",
+      "echo_ok": true,
+      "elapsed_s": 0.302,
+      "error": null,
+      "reachable": true,
+      "sample": "\n\u001b[?2004l\u001b[?2004hsh-5.3# \n\u001b[?2004l\u001b[?2004hsh-5.3# "
+    },
+    "reachable": false
+  },
+  {
+    "at": "2026-10-16T22:22:27+0200",
+    "error": "port answered but no verified command frame",
+    "frame": {
+      "elapsed_s": 0.981,
+      "framed": false,
+      "output_bytes": 537,
+      "raw_len": 664,
+      "rc": null,
+      "rid": "05718783",
+      "sha_ok": false
+    },
+    "node": {
+      "callout": "/dev/ttyACM0",
+      "match_stage": "explicit"
+    },
+    "probe": {
+      "at": "2026-10-16T22:22:27+0200",
+      "bytes_in": 54,
+      "dev": "/dev/ttyACM0",
+      "echo_ok": true,
+      "elapsed_s": 0.303,
+      "error": null,
+      "reachable": true,
+      "sample": "\n\u001b[?2004l\u001b[?2004hsh-5.3# \n\u001b[?2004l\u001b[?2004hsh-5.3# "
+    },
+    "reachable": false
+  },
+  {
+    "at": "2026-10-16T22:22:31+0200",
+    "error": "port answered but no verified command frame",
+    "frame": {
+      "elapsed_s": 1.001,
+      "framed": false,
+      "output_bytes": 537,
+      "raw_len": 893,
+      "rc": null,
+      "rid": "7c618787",
+      "sha_ok": false
+    },
+    "node": {
+      "callout": "/dev/ttyACM0",
+      "match_stage": "explicit"
+    },
+    "probe": {
+      "at": "2026-10-16T22:22:31+0200",
+      "bytes_in": 54,
+      "dev": "/dev/ttyACM0",
+      "echo_ok": true,
+      "elapsed_s": 0.303,
+      "error": null,
+      "reachable": true,
+      "sample": "\n\u001b[?2004l\u001b[?2004hsh-5.3# \n\u001b[?2004l\u001b[?2004hsh-5.3# "
+    },
+    "reachable": false
+  },
+  {
+    "at": "2026-10-16T22:22:35+0200",
+    "error": "port answered but no verified command frame",
+    "frame": {
+      "elapsed_s": 0.976,
+      "framed": false,
+      "output_bytes": 537,
+      "raw_len": 664,
+      "rc": null,
+      "rid": "7f77878b",
+      "sha_ok": false
+    },
+    "node": {
+      "callout": "/dev/ttyACM0",
+      "match_stage": "explicit"
+    },
+    "probe": {
+      "at": "2026-10-16T22:22:35+0200",
+      "bytes_in": 54,
+      "dev": "/dev/ttyACM0",
+      "echo_ok": true,
+      "elapsed_s": 0.304,
+      "error": null,
+      "reachable": true,
+      "sample": "\n\u001b[?2004l\u001b[?2004hsh-5.3# \n\u001b[?2004l\u001b[?2004hsh-5.3# "
+    },
+    "reachable": false
+  },
+  {
+    "at": "2026-10-16T22:22:39+0200",
+    "error": "port answered but no verified command frame",
+    "frame": {
+      "elapsed_s": 1.028,
+      "framed": false,
+      "output_bytes": 537,
+      "raw_len": 1332,
+      "rc": null,
+      "rid": "8b628790",
+      "sha_ok": false
+    },
+    "node": {
+      "callout": "/dev/ttyACM0",
+      "match_stage": "explicit"
+    },
+    "probe": {
+      "at": "2026-10-16T22:22:40+0200",
+      "bytes_in": 54,
+      "dev": "/dev/ttyACM0",
+      "echo_ok": true,
+      "elapsed_s": 0.302,
+      "error": null,
+      "reachable": true,
+      "sample": "\n\u001b[?2004l\u001b[?2004hsh-5.3# \n\u001b[?2004l\u001b[?2004hsh-5.3# "
+    },
+    "reachable": false
+  },
+  {
+    "at": "2026-10-16T22:22:44+0200",
+    "error": "port answered but no verified command frame",
+    "frame": {
+      "elapsed_s": 0.978,
+      "framed": false,
+      "output_bytes": 537,
+      "raw_len": 664,
+      "rc": null,
+      "rid": "06a68794",
+      "sha_ok": false
+    },
+    "node": {
+      "callout": "/dev/ttyACM0",
+      "match_stage": "explicit"
+    },
+    "probe": {
+      "at": "2026-10-16T22:22:44+0200",
+      "bytes_in": 54,
+      "dev": "/dev/ttyACM0",
+      "echo_ok": true,
+      "elapsed_s": 0.303,
+      "error": null,
+      "reachable": true,
+      "sample": "\n\u001b[?2004l\u001b[?2004hsh-5.3# \n\u001b[?2004l\u001b[?2004hsh-5.3# "
+    },
+    "reachable": false
+  },
+  {
+    "at": "2026-10-16T22:22:48+0200",
+    "error": "port answered but no verified command frame",
+    "frame": {
+      "elapsed_s": 0.994,
+      "framed": false,
+      "output_bytes": 537,
+      "raw_len": 664,
+      "rc": null,
+      "rid": "4f228798",
+      "sha_ok": false
+    },
+    "node": {
+      "callout": "/dev/ttyACM0",
+      "match_stage": "explicit"
+    },
+    "probe": {
+      "at": "2026-10-16T22:22:48+0200",
+      "bytes_in": 54,
+      "dev": "/dev/ttyACM0",
+      "echo_ok": true,
+      "elapsed_s": 0.303,
+      "error": null,
+      "reachable": true,
+      "sample": "\n\u001b[?2004l\u001b[?2004hsh-5.3# \n\u001b[?2004l\u001b[?2004hsh-5.3# "
+    },
+    "reachable": false
+  },
+  {
+    "at": "2026-10-16T22:22:52+0200",
+    "error": "port answered but no verified command frame",
+    "frame": {
+      "elapsed_s": 0.983,
+      "framed": false,
+      "output_bytes": 537,
+      "raw_len": 664,
+      "rc": null,
+      "rid": "c993879d",
+      "sha_ok": false
+    },
+    "node": {
+      "callout": "/dev/ttyACM0",
+      "match_stage": "explicit"
+    },
+    "probe": {
+      "at": "2026-10-16T22:22:53+0200",
+      "bytes_in": 54,
+      "dev": "/dev/ttyACM0",
+      "echo_ok": true,
+      "elapsed_s": 0.303,
+      "error": null,
+      "reachable": true,
+      "sample": "\n\u001b[?2004l\u001b[?2004hsh-5.3# \n\u001b[?2004l\u001b[?2004hsh-5.3# "
+    },
+    "reachable": false
+  },
+  {
+    "at": "2026-10-16T22:22:57+0200",
+    "error": "port answered but no verified command frame",
+    "frame": {
+      "elapsed_s": 0.979,
+      "framed": false,
+      "output_bytes": 537,
+      "raw_len": 664,
+      "rc": null,
+      "rid": "4aa087a1",
+      "sha_ok": false
+    },
+    "node": {
+      "callout": "/dev/ttyACM0",
+      "match_stage": "explicit"
+    },
+    "probe": {
+      "at": "2026-10-16T22:22:57+0200",
+      "bytes_in": 54,
+      "dev": "/dev/ttyACM0",
+      "echo_ok": true,
+      "elapsed_s": 0.303,
+      "error": null,
+      "reachable": true,
+      "sample": "\n\u001b[?2004l\u001b[?2004hsh-5.3# \n\u001b[?2004l\u001b[?2004hsh-5.3# "
+    },
+    "reachable": false
+  },
+  {
+    "at": "2026-10-16T22:23:01+0200",
+    "error": "port answered but no verified command frame",
+    "frame": {
+      "elapsed_s": 0.983,
+      "framed": false,
+      "output_bytes": 537,
+      "raw_len": 664,
+      "rc": null,
+      "rid": "587187a5",
+      "sha_ok": false
+    },
+    "node": {
+      "callout": "/dev/ttyACM0",
+      "match_stage": "explicit"
+    },
+    "probe": {
+      "at": "2026-10-16T22:23:01+0200",
+      "bytes_in": 54,
+      "dev": "/dev/ttyACM0",
+      "echo_ok": true,
+      "elapsed_s": 0.302,
+      "error": null,
+      "reachable": true,
+      "sample": "\n\u001b[?2004l\u001b[?2004hsh-5.3# \n\u001b[?2004l\u001b[?2004hsh-5.3# "
+    },
+    "reachable": false
+  },
+  {
+    "at": "2026-10-16T22:23:05+0200",
+    "error": "port answered but no verified command frame",
+    "frame": {
+      "elapsed_s": 0.982,
+      "framed": false,
+      "output_bytes": 537,
+      "raw_len": 664,
+      "rc": null,
+      "rid": "94c787a9",
+      "sha_ok": false
+    },
+    "node": {
+      "callout": "/dev/ttyACM0",
+      "match_stage": "explicit"
+    },
+    "probe": {
+      "at": "2026-10-16T22:23:05+0200",
+      "bytes_in": 54,
+      "dev": "/dev/ttyACM0",
+      "echo_ok": true,
+      "elapsed_s": 0.303,
+      "error": null,
+      "reachable": true,
+      "sample": "\n\u001b[?2004l\u001b[?2004hsh-5.3# \n\u001b[?2004l\u001b[?2004hsh-5.3# "
+    },
+    "reachable": false
+  },
+  {
+    "at": "2026-10-16T22:23:09+0200",
+    "error": "port answered but no verified command frame",
+    "frame": {
+      "elapsed_s": 1.025,
+      "framed": false,
+      "output_bytes": 537,
+      "raw_len": 1332,
+      "rc": null,
+      "rid": "34ec87ae",
+      "sha_ok": false
+    },
+    "node": {
+      "callout": "/dev/ttyACM0",
+      "match_stage": "explicit"
+    },
+    "probe": {
+      "at": "2026-10-16T22:23:10+0200",
+      "bytes_in": 54,
+      "dev": "/dev/ttyACM0",
+      "echo_ok": true,
+      "elapsed_s": 0.302,
+      "error": null,
+      "reachable": true,
+      "sample": "\n\u001b[?2004l\u001b[?2004hsh-5.3# \n\u001b[?2004l\u001b[?2004hsh-5.3# "
+    },
+    "reachable": false
+  },
+  {
+    "at": "2026-10-16T22:23:14+0200",
+    "error": "port answered but no verified command frame",
+    "frame": {
+      "elapsed_s": 0.977,
+      "framed": false,
+      "output_bytes": 537,
+      "raw_len": 758,
+      "rc": null,
+      "rid": "ff9a87b2",
+      "sha_ok": false
+    },
+    "node": {
+      "callout": "/dev/ttyACM0",
+      "match_stage": "explicit"
+    },
+    "probe": {
+      "at": "2026-10-16T22:23:14+0200",
+      "bytes_in": 148,
+      "dev": "/dev/ttyACM0",
+      "echo_ok": true,
+      "elapsed_s": 0.332,
+      "error": null,
+      "reachable": true,
+      "sample": "\n\u001b[?2004l\u001b[?2004hsh-5.3# \n\u001b[?2004l\u001b[?2004hsh-5.3# 6,7118,155874391,-;fps_qbt2000_work_func_debug: ldo:0,ipc:0,wuhb:0,tz:1,type:qbt2000,int:0,0\n"
+    },
+    "reachable": false
+  },
+  {
+    "at": "2026-10-16T22:23:18+0200",
+    "error": "port answered but no verified command frame",
+    "frame": {
+      "elapsed_s": 0.968,
+      "framed": false,
+      "output_bytes": 537,
+      "raw_len": 664,
+      "rc": null,
+      "rid": "9e8587b6",
+      "sha_ok": false
+    },
+    "node": {
+      "callout": "/dev/ttyACM0",
+      "match_stage": "explicit"
+    },
+    "probe": {
+      "at": "2026-10-16T22:23:18+0200",
+      "bytes_in": 54,
+      "dev": "/dev/ttyACM0",
+      "echo_ok": true,
+      "elapsed_s": 0.302,
+      "error": null,
+      "reachable": true,
+      "sample": "\n\u001b[?2004l\u001b[?2004hsh-5.3# \n\u001b[?2004l\u001b[?2004hsh-5.3# "
+    },
+    "reachable": false
+  },
+  {
+    "at": "2026-10-16T22:23:22+0200",
+    "error": "port answered but no verified command frame",
+    "frame": {
+      "elapsed_s": 0.981,
+      "framed": false,
+      "output_bytes": 537,
+      "raw_len": 664,
+      "rc": null,
+      "rid": "bfdb87bb",
+      "sha_ok": false
+    },
+    "node": {
+      "callout": "/dev/ttyACM0",
+      "match_stage": "explicit"
+    },
+    "probe": {
+      "at": "2026-10-16T22:23:23+0200",
+      "bytes_in": 54,
+      "dev": "/dev/ttyACM0",
+      "echo_ok": true,
+      "elapsed_s": 0.303,
+      "error": null,
+      "reachable": true,
+      "sample": "\n\u001b[?2004l\u001b[?2004hsh-5.3# \n\u001b[?2004l\u001b[?2004hsh-5.3# "
+    },
+    "reachable": false
+  },
+  {
+    "at": "2026-10-16T22:23:27+0200",
+    "error": "port answered but no verified command frame",
+    "frame": {
+      "elapsed_s": 0.988,
+      "framed": false,
+      "output_bytes": 537,
+      "raw_len": 664,
+      "rc": null,
+      "rid": "02b287bf",
+      "sha_ok": false
+    },
+    "node": {
+      "callout": "/dev/ttyACM0",
+      "match_stage": "explicit"
+    },
+    "probe": {
+      "at": "2026-10-16T22:23:27+0200",
+      "bytes_in": 54,
+      "dev": "/dev/ttyACM0",
+      "echo_ok": true,
+      "elapsed_s": 0.303,
+      "error": null,
+      "reachable": true,
+      "sample": "\n\u001b[?2004l\u001b[?2004hsh-5.3# \n\u001b[?2004l\u001b[?2004hsh-5.3# "
+    },
+    "reachable": false
+  },
+  {
+    "at": "2026-10-16T22:23:31+0200",
+    "error": "port answered but no verified command frame",
+    "frame": {
+      "elapsed_s": 0.986,
+      "framed": false,
+      "output_bytes": 537,
+      "raw_len": 664,
+      "rc": null,
+      "rid": "277287c3",
+      "sha_ok": false
+    },
+    "node": {
+      "callout": "/dev/ttyACM0",
+      "match_stage": "explicit"
+    },
+    "probe": {
+      "at": "2026-10-16T22:23:31+0200",
+      "bytes_in": 54,
+      "dev": "/dev/ttyACM0",
+      "echo_ok": true,
+      "elapsed_s": 0.302,
+      "error": null,
+      "reachable": true,
+      "sample": "\n\u001b[?2004l\u001b[?2004hsh-5.3# \n\u001b[?2004l\u001b[?2004hsh-5.3# "
+    },
+    "reachable": false
+  },
+  {
+    "at": "2026-10-16T22:23:35+0200",
+    "error": "port answered but no verified command frame",
+    "frame": {
+      "elapsed_s": 1.016,
+      "framed": false,
+      "output_bytes": 537,
+      "raw_len": 758,
+      "rc": null,
+      "rid": "f18587c8",
+      "sha_ok": false
+    },
+    "node": {
+      "callout": "/dev/ttyACM0",
+      "match_stage": "explicit"
+    },
+    "probe": {
+      "at": "2026-10-16T22:23:36+0200",
+      "bytes_in": 54,
+      "dev": "/dev/ttyACM0",
+      "echo_ok": true,
+      "elapsed_s": 0.302,
+      "error": null,
+      "reachable": true,
+      "sample": "\n\u001b[?2004l\u001b[?2004hsh-5.3# \n\u001b[?2004l\u001b[?2004hsh-5.3# "
+    },
+    "reachable": false
+  },
+  {
+    "at": "2026-10-16T22:23:40+0200",
+    "error": "port answered but no verified command frame",
+    "frame": {
+      "elapsed_s": 1.021,
+      "framed": false,
+      "output_bytes": 537,
+      "raw_len": 1332,
+      "rc": null,
+      "rid": "b98287cc",
+      "sha_ok": false
+    },
+    "node": {
+      "callout": "/dev/ttyACM0",
+      "match_stage": "explicit"
+    },
+    "probe": {
+      "at": "2026-10-16T22:23:40+0200",
+      "bytes_in": 54,
+      "dev": "/dev/ttyACM0",
+      "echo_ok": true,
+      "elapsed_s": 0.303,
+      "error": null,
+      "reachable": true,
+      "sample": "\n\u001b[?2004l\u001b[?2004hsh-5.3# \n\u001b[?2004l\u001b[?2004hsh-5.3# "
+    },
+    "reachable": false
+  },
+  {
+    "at": "2026-10-16T22:23:44+0200",
+    "error": "port answered but no verified command frame",
+    "frame": {
+      "elapsed_s": 0.987,
+      "framed": false,
+      "output_bytes": 537,
+      "raw_len": 664,
+      "rc": null,
+      "rid": "e66087d0",
+      "sha_ok": false
+    },
+    "node": {
+      "callout": "/dev/ttyACM0",
+      "match_stage": "explicit"
+    },
+    "probe": {
+      "at": "2026-10-16T22:23:44+0200",
+      "bytes_in": 54,
+      "dev": "/dev/ttyACM0",
+      "echo_ok": true,
+      "elapsed_s": 0.302,
+      "error": null,
+      "reachable": true,
+      "sample": "\n\u001b[?2004l\u001b[?2004hsh-5.3# \n\u001b[?2004l\u001b[?2004hsh-5.3# "
+    },
+    "reachable": false
+  },
+  {
+    "at": "2026-10-16T22:23:48+0200",
+    "error": "port answered but no verified command frame",
+    "frame": {
+      "elapsed_s": 0.981,
+      "framed": false,
+      "output_bytes": 537,
+      "raw_len": 664,
+      "rc": null,
+      "rid": "a74187d4",
+      "sha_ok": false
+    },
+    "node": {
+      "callout": "/dev/ttyACM0",
+      "match_stage": "explicit"
+    },
+    "probe": {
+      "at": "2026-10-16T22:23:48+0200",
+      "bytes_in": 54,
+      "dev": "/dev/ttyACM0",
+      "echo_ok": true,
+      "elapsed_s": 0.303,
+      "error": null,
+      "reachable": true,
+      "sample": "\n\u001b[?2004l\u001b[?2004hsh-5.3# \n\u001b[?2004l\u001b[?2004hsh-5.3# "
+    },
+    "reachable": false
+  },
+  {
+    "at": "2026-10-16T22:23:52+0200",
+    "error": "port answered but no verified command frame",
+    "frame": {
+      "elapsed_s": 0.986,
+      "framed": false,
+      "output_bytes": 837,
+      "raw_len": 964,
+      "rc": null,
+      "rid": "a98887d9",
+      "sha_ok": false
+    },
+    "node": {
+      "callout": "/dev/ttyACM0",
+      "match_stage": "explicit"
+    },
+    "probe": {
+      "at": "2026-10-16T22:23:53+0200",
+      "bytes_in": 54,
+      "dev": "/dev/ttyACM0",
+      "echo_ok": true,
+      "elapsed_s": 0.303,
+      "error": null,
+      "reachable": true,
+      "sample": "\n\u001b[?2004l\u001b[?2004hsh-5.3# \n\u001b[?2004l\u001b[?2004hsh-5.3# "
+    },
+    "reachable": false
+  }
+]

@@ -1,0 +1,7 @@
+pushed={"attempts": 1, "b64_chars": 1688, "bytes": 1265, "decoded_sha256": "0125b7ca680a806f0f84d3cddc8003873a4cbe1438760284c14dceba005f2dfe", "frames": 1, "path": "/var/tmp/nxl-install-099.sh"}
+ok=True rc=0
+---
+PREV=NONE
+/usr/local/bin/nuxel-wifi-diag.sh.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

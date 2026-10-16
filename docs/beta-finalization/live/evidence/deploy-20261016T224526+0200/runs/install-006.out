@@ -1,0 +1,7 @@
+pushed={"attempts": 1, "b64_chars": 2256, "bytes": 1690, "decoded_sha256": "ab8bf5e88dcc2f91cebd808309f14721ab67cecf705be7f753f2ba192cd3b1e6", "frames": 1, "path": "/var/tmp/nxl-install-006.sh"}
+ok=True rc=0
+---
+/usr/share/nuxel/pwa/nuxel-apps/authenticator/icons/icon-144.png.nuxel-staged: OK
+Failed to restart nuxel-web.service: Unit nuxel-web.service not found.
+ROLLED-BACK rc=5
+NXLSCRIPT-RC=5

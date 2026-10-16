@@ -1,0 +1,10 @@
+pushed={"attempts": 1, "b64_chars": 1852, "bytes": 1387, "decoded_sha256": "840be964548ff1564b84ec077a06dc9d2142417b59a8e3c7250471f9ad60ba7a", "frames": 1, "path": "/var/tmp/nxl-install-116.sh"}
+ok=True rc=0
+---
+PREV=NONE
+/usr/lib/nuxel/nuxel-console-free.nuxel-staged: OK
+Failed to restart nuxel-portal.service: Unit nuxel-portal.service not found.
+Failed to restart nuxel-notifications.service: Unit nuxel-notifications.service not found.
+DECLARED-RELOAD-DEFERRED
+INSTALL-OK
+NXLSCRIPT-RC=0

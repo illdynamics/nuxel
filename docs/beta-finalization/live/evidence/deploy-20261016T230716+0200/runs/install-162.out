@@ -1,0 +1,7 @@
+pushed={"attempts": 1, "b64_chars": 1892, "bytes": 1418, "decoded_sha256": "0e273650fec2ae673b49ede8b903254782ffd5e3bfbb28bb1addb7c0f1b462e4", "frames": 1, "path": "/var/tmp/nxl-install-162.sh"}
+ok=True rc=0
+---
+PREV=NONE
+/usr/share/nuxel/pwa/nuxel-apps/downloader/sw.js.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

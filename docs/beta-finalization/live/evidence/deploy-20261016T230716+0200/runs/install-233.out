@@ -1,0 +1,7 @@
+pushed={"attempts": 1, "b64_chars": 2092, "bytes": 1568, "decoded_sha256": "6ef7985e6fea31b9f0751303d030ce8f70938e27fc2bcd888fa384b7334b3255", "frames": 1, "path": "/var/tmp/nxl-install-233.sh"}
+ok=True rc=0
+---
+PREV=NONE
+/usr/share/nuxel/pwa/nuxel-apps/media/samples/tone-880.wav.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

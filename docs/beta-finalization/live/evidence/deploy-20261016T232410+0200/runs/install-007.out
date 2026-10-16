@@ -1,0 +1,6 @@
+pushed={"attempts": 1, "b64_chars": 1896, "bytes": 1421, "decoded_sha256": "6b79a7e05dc26c3b514ab2ee9cc879283083de27e638437980448aa941b10b61", "frames": 1, "path": "/var/tmp/nxl-install-007.sh"}
+ok=True rc=0
+---
+/var/tmp/nxl-install-007.sh: line 6: /usr/local/bin/nuxel-fb-owner-assert.sh: No such file or directory
+ROLLED-BACK rc=127
+NXLSCRIPT-RC=127

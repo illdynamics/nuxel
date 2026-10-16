@@ -1,0 +1,7 @@
+pushed={"attempts": 1, "b64_chars": 2092, "bytes": 1568, "decoded_sha256": "b76fd9539a5ae8401a268d196f0ccdc43b39551bdba9c15aebd379eb54ced0d0", "frames": 1, "path": "/var/tmp/nxl-install-354.sh"}
+ok=True rc=0
+---
+PREV=NONE
+/usr/share/nuxel/pwa/nuxel-apps/snekbyte/js/snek-engine.js.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

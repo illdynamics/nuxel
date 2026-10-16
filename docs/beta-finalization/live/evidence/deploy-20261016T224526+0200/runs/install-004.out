@@ -1,0 +1,6 @@
+pushed={"attempts": 1, "b64_chars": 2200, "bytes": 1648, "decoded_sha256": "8454e5d126326604b1d7657b9aa3446f482b444eeb740a6be58239a23504b5fe", "frames": 1, "path": "/var/tmp/nxl-install-004.sh"}
+ok=True rc=0
+---
+/usr/share/nuxel/pwa/nuxel-apps/authenticator/css/authenticator.css.nuxel-staged: OK
+ROLLED-BACK rc=1
+NXLSCRIPT-RC=1

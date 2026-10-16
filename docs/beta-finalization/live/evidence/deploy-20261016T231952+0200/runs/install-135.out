@@ -1,0 +1,7 @@
+pushed={"attempts": 1, "b64_chars": 1976, "bytes": 1482, "decoded_sha256": "e6e2c95a8334193d33944780ecd9b9f0795050835070b15aa999732257ddb147", "frames": 1, "path": "/var/tmp/nxl-install-135.sh"}
+ok=True rc=0
+---
+PREV=NONE
+/usr/lib/nuxel/src/shell/build-native-apps.sh.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

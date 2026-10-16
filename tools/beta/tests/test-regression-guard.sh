@@ -10,6 +10,10 @@
 #
 #   1. matching file, no drift              -> exit 0, verdict PASS
 #   2. one byte changed in a pinned file    -> exit 1, verdict FAIL, file named
+#   2b. a file explicitly pinned soft inside a HARD invariant -> WARN, exit 0
+#       (mode precedence: the per-file hash_mode wins, the invariant mode is only
+#        the default - BASELINE-PROTECTION.md section 2 / section 10 rule 3)
+#   2c. a file with no hash_mode inherits the invariant mode -> still exit 1
 #   3. assertion regex broken in the file   -> exit 1, verdict FAIL
 #   3b. same assertion marked mode:"soft"   -> exit 0, verdict PASS + WARN naming the owner
 #   4. --repin <path> --reason ...          -> exit 0, new hash stored, history appended
@@ -87,6 +91,58 @@ if [ "$RC" = "1" ] && printf '%s' "$OUT" | grep -q 'REGRESSION GUARD: FAIL' \
 else
   bad "tampered pinned file -> exit $RC (expected 1/FAIL): $(printf '%s' "$OUT" | tail -2 | tr '\n' ' ')"
 fi
+
+# --- 2b/2c. hash_mode precedence (file mode wins; invariant mode is the default) --
+cp "$PROT.orig" "$PROT"
+run_case --repin "docs/beta-finalization/tools/s10plus/a32/nuxel-wl-fb.c" --reason "precedence case setup" >/dev/null
+python3 - "$SB/docs/beta-finalization/baseline-protection.json" <<'PYSNIP'
+import json, sys
+d = json.load(open(sys.argv[1]))
+d['invariants'][0]['hash_mode'] = 'hard'                # invariant default: hard
+d['invariants'][0]['files'][0]['hash_mode'] = 'soft'    # the FILE is explicitly soft
+for a in d['invariants'][0]['assertions']:              # keep the case about the FILE pin
+    if a.get('type') == 'sha256':
+        a['mode'] = 'soft'
+        a['owned_by'] = 'bg-04-self-test'
+json.dump(d, open(sys.argv[1], 'w'), indent=2)
+PYSNIP
+printf 'soft-owned drift\n' >> "$PROT"
+run_case
+if [ "$RC" = "0" ] && printf '%s' "$OUT" | grep -q 'soft-pinned file drifted'; then
+  ok "a file explicitly pinned soft inside a hard invariant -> WARN, gate stays PASS"
+else
+  bad "per-file soft mode ignored: rc=$RC $(printf '%s' "$OUT" | grep -E 'FAIL |WARN ' | head -2 | tr '\n' ' ')"
+fi
+
+cp "$PROT.orig" "$PROT"
+run_case --repin "docs/beta-finalization/tools/s10plus/a32/nuxel-wl-fb.c" --reason "fallback case setup" >/dev/null
+python3 - "$SB/docs/beta-finalization/baseline-protection.json" <<'PYSNIP'
+import json, sys
+d = json.load(open(sys.argv[1]))
+d['invariants'][0]['hash_mode'] = 'hard'
+d['invariants'][0]['files'][0].pop('hash_mode', None)   # no per-file mode at all
+json.dump(d, open(sys.argv[1], 'w'), indent=2)
+PYSNIP
+printf 'unowned drift\n' >> "$PROT"
+run_case
+if [ "$RC" = "1" ] && printf '%s' "$OUT" | grep -q 'hard-pinned file changed'; then
+  ok "a file with no hash_mode inherits a hard invariant -> still a hard-pin FAIL"
+else
+  bad "invariant-mode fallback wrong: rc=$RC $(printf '%s' "$OUT" | tail -2 | tr '\n' ' ')"
+fi
+# teardown: pristine bytes, file-level hard pin back, invariant mode back to hard
+cp "$PROT.orig" "$PROT"
+run_case --repin "docs/beta-finalization/tools/s10plus/a32/nuxel-wl-fb.c" --reason "precedence case teardown" >/dev/null
+python3 - "$SB/docs/beta-finalization/baseline-protection.json" <<'PYSNIP'
+import json, sys
+d = json.load(open(sys.argv[1]))
+d['invariants'][0]['files'][0]['hash_mode'] = 'hard'
+for a in d['invariants'][0]['assertions']:
+    if a.get('type') == 'sha256':
+        a['mode'] = 'hard'
+        a.pop('owned_by', None)
+json.dump(d, open(sys.argv[1], 'w'), indent=2)
+PYSNIP
 
 # --- 3. behavioural assertion broken, bytes re-pinned so only the regex fails --
 run_case --repin "docs/beta-finalization/tools/s10plus/a32/nuxel-wl-fb.c" --reason "self-test re-pin" >/dev/null

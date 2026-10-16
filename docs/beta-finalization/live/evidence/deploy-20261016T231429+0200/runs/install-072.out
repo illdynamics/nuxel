@@ -1,0 +1,7 @@
+pushed={"attempts": 1, "b64_chars": 1868, "bytes": 1400, "decoded_sha256": "c808f410fa1588f611e7683e6b22e75747184a05da5c61dab59c895c5d021476", "frames": 1, "path": "/var/tmp/nxl-install-072.sh"}
+ok=True rc=0
+---
+PREV=NONE
+/usr/libexec/nuxel/nuxel-bootmode-guard.py.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

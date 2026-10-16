@@ -1,0 +1,7 @@
+pushed={"attempts": 1, "b64_chars": 1588, "bytes": 1190, "decoded_sha256": "b48b57e202e7cac30c4db330023261bce716cd4ba7fa3e3a2c4ea8e187026cbd", "frames": 1, "path": "/var/tmp/nxl-install-030.sh"}
+ok=True rc=0
+---
+PREV=NONE
+/etc/nuxel/haptics/README.md.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

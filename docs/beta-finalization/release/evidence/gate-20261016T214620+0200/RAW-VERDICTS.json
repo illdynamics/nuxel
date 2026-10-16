@@ -1,0 +1,167 @@
+{
+  "schema_version": 1,
+  "bundle": "docs/beta-finalization/release/evidence/gate-20261016T214620+0200",
+  "briq": "briq-02-gate-failure-repair",
+  "group": "bg-00-preflight (cycle 7 gate repair)",
+  "produced_by": "construqtor host Linux x86_64",
+  "produced_at": "2026-10-16T21:56:59+02:00",
+  "pre_repair": {
+    "summary": "pre-repair/summary.json",
+    "generated_at": "2026-10-16T21:11:37+0200",
+    "git_head": "466551c3c354dafbb368de84270b021c3b368e05",
+    "gate": "red",
+    "verdict": "OFFLINE_TESTED_FAIL",
+    "raw_gate": "red",
+    "raw_verdict": "OFFLINE_TESTED_FAIL",
+    "raw_fail_count": 11,
+    "counts": {
+      "total": 49,
+      "pass": 29,
+      "fail": 6,
+      "warn": 7,
+      "warn_cross_group": 5,
+      "skip": 3,
+      "external": 4
+    },
+    "failure_ids": [
+      "U-workqueue-schema",
+      "U-workqueue-unit",
+      "U-regression-guard-selftest",
+      "U-baseline-regression-guard",
+      "U-baseline-a32-suite",
+      "U-boot-s10plus-gates"
+    ],
+    "logs": {
+      "U-workqueue-schema": "pre-repair/logs/U-workqueue-schema.log",
+      "U-workqueue-unit": "pre-repair/logs/U-workqueue-unit.log",
+      "U-regression-guard-selftest": "pre-repair/logs/U-regression-guard-selftest.log",
+      "U-baseline-regression-guard": "pre-repair/logs/U-baseline-regression-guard.log",
+      "U-baseline-a32-suite": "pre-repair/logs/U-baseline-a32-suite.log",
+      "U-boot-s10plus-gates": "pre-repair/logs/U-boot-s10plus-gates.log"
+    }
+  },
+  "post_repair": {
+    "summary": "post-repair/summary.json",
+    "transcripts": [
+      "post-repair/regression-guard.txt",
+      "post-repair/regression-guard.json",
+      "post-repair/a32-suite.txt",
+      "post-repair/boot-image-gates-skip-prereq.txt",
+      "post-repair/workqueue-schema-and-render.txt",
+      "post-repair/test_workqueue.txt",
+      "post-repair/test-regression-guard.txt"
+    ],
+    "expected": {
+      "gate": "green",
+      "verdict": "OFFLINE_TESTED",
+      "raw_gate": "red (the 5 documented cross-group allowances for bg-05/bg-06/bg-07, whose queue records are still unfinished \u2014 preserved verbatim, never turned into passes)"
+    },
+    "skips_are_not_passes": [
+      "L-a27-firstlight",
+      "L-a27-ui-layout",
+      "U-boot-s10plus-gates",
+      "U-nuxtore-pwa"
+    ],
+    "warns_are_not_passes": [
+      "L-a28-launcher",
+      "L-app-registry-check",
+      "U-security-vpn-tor (bg-05 allowance)",
+      "U-verify-app-inventory (bg-06 allowance)",
+      "U-shell-phone-data (bg-06 allowance)",
+      "U-snek-parity (bg-07 allowance)",
+      "U-snek-upstream-pytest (bg-07 allowance)"
+    ]
+  },
+  "hard_failures": [
+    {
+      "id": "U-workqueue-schema",
+      "raw_verdict": "FAIL (rc=1) \u2014 37 schema errors: 'verifier-run', 'test-run', 'defect-found-and-fixed', 'change' evidence kinds are not in EVIDENCE_KINDS, their entries have no 'path', and briq-04c carries the invented verdict 'OFFLINE_TESTED_WITH_DEFERRALS'",
+      "root_cause": "repository defect in tools/beta/workqueue.py (evidence vocabulary too narrow for the evidence six groups actually record) PLUS one record-level defect (briq-04c's invented verdict token)",
+      "class": "FIXED_IN_REPO",
+      "fix": "EVIDENCE_KINDS extended with the four action kinds and the path rule made kind-aware (artefact kinds need a path; action kinds need command/what + result/at); briq-04c's verdict normalised to OFFLINE_TESTED by an append-only revision 3 that keeps the deferrals. The verdict vocabulary stays closed: no VERIFIED_ON_S10PLUS without a real on_device capture.",
+      "files": [
+        "tools/beta/workqueue.py",
+        "docs/beta-finalization/workqueue/briq-04c-app-infrastructure.json"
+      ],
+      "re_verified": "python3 tools/beta/workqueue.py verify-schema -> exit 0, 'schema OK'; post-repair/workqueue-schema-and-render.txt"
+    },
+    {
+      "id": "U-workqueue-unit",
+      "raw_verdict": "FAIL (rc=1) \u2014 1 failing case: 'real queue invalid' (same 37 errors)",
+      "root_cause": "same as U-workqueue-schema (the suite asserts the real queue validates)",
+      "class": "FIXED_IN_REPO",
+      "fix": "same root fix, plus four new cases locking the action-evidence rules in both directions",
+      "files": [
+        "tools/beta/workqueue.py",
+        "tools/beta/tests/test_workqueue.py"
+      ],
+      "re_verified": "python3 tools/beta/tests/test_workqueue.py -> 0 failing, 44 passing; post-repair/test_workqueue.txt"
+    },
+    {
+      "id": "U-regression-guard-selftest",
+      "raw_verdict": "FAIL (rc=1) \u2014 1 failing case: 'real repository gate is not green: exit 1' (the self-test's own acceptance criterion, run against the real tree)",
+      "root_cause": "not an assertion defect: the self-test refuses to be green while the real gate is red. Its redness had three causes, all fixed below (mode precedence, stale WORK-QUEUE.md) \u2014 the case is deliberately red again if any of them returns.",
+      "class": "FIXED_IN_REPO (by fixing what it measures) + HARDENED",
+      "fix": "the guard's file-pin mode precedence repaired; WORK-QUEUE.md re-rendered; two new self-test cases (2b/2c) lock the precedence rule in both directions",
+      "files": [
+        "tools/beta/regression-guard.sh",
+        "tools/beta/tests/test-regression-guard.sh"
+      ],
+      "re_verified": "bash tools/beta/tests/test-regression-guard.sh -> 0 failing, 13 passing; post-repair/test-regression-guard.txt"
+    },
+    {
+      "id": "U-baseline-regression-guard",
+      "raw_verdict": "FAIL (rc=1) \u2014 4 FAILs: NOTE the guard printed these as 'hard-pinned file changed' for three files whose own register entry says hash_mode=soft (INV-6's shell/config/systemd-user/*.service, owned by bg-04), plus 'WORK-QUEUE.md still matches the JSON store (render --check)' (INV-10). 66 PASS / 12 WARN recorded.",
+      "root_cause": "repository defect in tools/beta/regression-guard.sh: the pin loop ORed the per-file hash_mode with the invariant default, so an explicitly soft file inside a hard invariant was FAILED instead of WARNed \u2014 contradicting BASELINE-PROTECTION.md sections 2 and 10 rule 3. Separately, the ledger's human view was stale because four revisions appended by briq-04a/04b/04c were never rendered.",
+      "class": "FIXED_IN_REPO",
+      "fix": "per-file hash_mode now wins (invariant mode is only the default) and the soft WARN names the owning group; WORK-QUEUE.md re-rendered from the JSON store. NO pin was moved and no assertion was relaxed: 13/13 hard pins still gated, and a file with no declared mode still inherits a hard invariant (locked by self-test case 2c).",
+      "files": [
+        "tools/beta/regression-guard.sh",
+        "tools/beta/tests/test-regression-guard.sh",
+        "docs/beta-finalization/WORK-QUEUE.md"
+      ],
+      "re_verified": "bash tools/beta/regression-guard.sh -> exit 0, PASS=68 FAIL=0 WARN=14 INFO=2, hard pins 13/13; post-repair/regression-guard.txt + regression-guard.json"
+    },
+    {
+      "id": "U-baseline-a32-suite",
+      "raw_verdict": "FAIL (rc=1) \u2014 1 failing suite: 'FAIL colour conversion (build the a32 binaries first)'; the other legs (keycode bitmap, safe zones, launcher registry, wallpaper, A33 colour-order golden bytes, handoff, verbose boot, settings store, boot-surface contract) all PASSED (306 PASS-shaped lines).",
+      "root_cause": "HOST limitation reported as a code regression: tools/s10plus/a32/tests/run-tests.sh required build/out/s10plus/a32/nuxel-wl-fb (gitignored, built on the UTM guest) and had no fallback, while BASELINE-PROTECTION.md section 9.3 records that this host has no aarch64 execution channel at all and INV-2's own program assertion is mode soft / exec_fallback vm.",
+      "class": "FIXED_IN_REPO",
+      "fix": "the colour leg now states and implements its two channels: (a) the real aarch64 --colour-selftest (run here or on the guest) and (b) the source-level golden-bytes test tools/s10plus/a33/tests/test-colour-order.py, which still gates the conversion HARD. With (a) unavailable the suite prints and counts a WARN naming the missing channel and the exact rebuild command, reports it in its summary line, and exits 0. A real selftest failure, or an artefact that is not an aarch64 ELF, is still a hard FAIL.",
+      "hardware_note": "This is a host/repository fact. It is NOT evidence about the phone: the aarch64 selftest remains unrun in this session and the register still reports INV-2's binary assertion as a WARN.",
+      "files": [
+        "tools/s10plus/a32/tests/run-tests.sh"
+      ],
+      "re_verified": "bash tools/s10plus/a32/tests/run-tests.sh -> exit 0, '== 0 failing suite(s) ==', 1 printed+counted WARN; post-repair/a32-suite.txt"
+    },
+    {
+      "id": "U-boot-s10plus-gates",
+      "raw_verdict": "FAIL (rc=1) \u2014 'test-boot-image-gates: cannot unpack the hardware-proven A5 base' (the suite's first line; it never reached its assertions)",
+      "root_cause": "repository/tooling defect: the suite is anchored on gitignored, hardware-proven build artefacts (build/out/s10plus/debug-candidates/nuxel-beyond2lte-boot-A5-dtb-fix.img and .../A4/initramfs.cpio) that cannot be synthesised, and it reported their absence as a code regression (exit 1) instead of using the repository's own 'probe:' prerequisite mechanism.",
+      "class": "FIXED_IN_REPO (the reporting defect) \u2014 the gate itself still CANNOT RUN here",
+      "fix": "the suite now names every missing prerequisite and exits 3 (SKIP-PREREQ: never 0, so an unrun gate can never read as a pass; never 1, so a missing artefact is not a code regression); the registry lists it with the matching probe:, so the release gate reports SKIP with the missing paths in the committed summary. It also asserts the A5 base's documented sha256 (6950241c...a88d1) so it can only ever speak about the container proven on the unit.",
+      "raw_state_after": "SKIP \u2014 NOT RUN, NOT VERIFIED. Recorded as 'host/artefact prerequisite unmet: test -s build/out/s10plus/debug-candidates/nuxel-beyond2lte-boot-A5-dtb-fix.img && test -s build/out/s10plus/debug-candidates/A4/initramfs.cpio (owner: bg-00-preflight)'. Rebuild the containers, re-run, and it gates hard again.",
+      "files": [
+        "boot/s10plus/tests/test-boot-image-gates.sh",
+        "tools/beta/run-all-tests.sh"
+      ],
+      "re_verified": "bash boot/s10plus/tests/test-boot-image-gates.sh -> exit 3 SKIP-PREREQ; run-all-tests.sh --only U-boot-s10plus-gates -> SKIP; post-repair/boot-image-gates-skip-prereq.txt"
+    }
+  ],
+  "device_claims": {
+    "any": false,
+    "note": "This briQ is device-free by design. No phone was touched, no on-device artefact was produced, and NOTHING here is evidence about the handset: the green gate is OFFLINE_TESTED, the boot-image gate is SKIP (not run), and the aarch64 colour selftest is unrun (host has no aarch64 execution channel)."
+  },
+  "repair_pass_worktree_hashes": {
+    "tools/beta/workqueue.py": "2d28605d0f3bdb825e3763276ed51da4404399f39b038409352bbf1645175793",
+    "tools/beta/run-all-tests.sh": "6562b1989978dadcf620d95d1af664742c5770afb0835668672723a7b43b7176",
+    "tools/beta/regression-guard.sh": "976288cbf14cde4c982d3df44a38a8041d7c1a04bf7e413f8cae140ce313a593",
+    "tools/beta/tests/test_workqueue.py": "945a3ebcc55e8f66d7f2f1ba34bfd5f63142ceaf28917746730c25073d4a7bfd",
+    "tools/beta/tests/test-regression-guard.sh": "25328d7b07430529ee64b5d64c0243ddd783aa4e74af60dd9ebcded61c4d8d07",
+    "tools/s10plus/a32/tests/run-tests.sh": "f0edfd3bbff8bbed879ce10d599b3f8e2288885798c24176d68b8e62f652feaf",
+    "boot/s10plus/tests/test-boot-image-gates.sh": "bdf4190e19ba3881c7626cfd866111c569753256ea6824e23a7ff620590b0d56",
+    "docs/beta-finalization/WORK-QUEUE.md": "2a9758aa66382b8648bfd6c40814f13699b80450d0d785391eb10d0b6cbdfeb4",
+    "docs/beta-finalization/BASELINE-PROTECTION.md": "cf073156f46c30a5b87a2836139c00eb3c8ffcd14c1c3b797480a3d94a8d8419",
+    "docs/beta-finalization/workqueue/briq-04c-app-infrastructure.json": "256619a046edc2530f127da75a7147828477a052c0f79a9aa4366023dad919a7"
+  }
+}

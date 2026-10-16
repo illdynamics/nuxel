@@ -1,0 +1,3 @@
+cmd: cat /proc/uptime
+ok: False rc: None framed: False sha_ok: False
+---

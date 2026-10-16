@@ -1,0 +1,122 @@
+{
+  "at": "2026-10-16T22:05:28+0200",
+  "baseline_deltas": [
+    {
+      "expected": "active",
+      "item": "unit:nuxel-wayland",
+      "observed": null,
+      "severity": "regression-signal"
+    },
+    {
+      "expected": "active",
+      "item": "unit:nuxel-wl-fb",
+      "observed": null,
+      "severity": "regression-signal"
+    },
+    {
+      "expected": "active",
+      "item": "unit:nuxel-button-manager",
+      "observed": null,
+      "severity": "regression-signal"
+    },
+    {
+      "expected": "active",
+      "item": "unit:nuxel-touch-arm",
+      "observed": null,
+      "severity": "regression-signal"
+    },
+    {
+      "expected": "active",
+      "item": "unit:seatd",
+      "observed": null,
+      "severity": "regression-signal"
+    },
+    {
+      "expected": "nuxel-wl-fb",
+      "item": "fb-owner",
+      "observed": "_N=634a838f;rm -f /var/tmp/nxl-634a838f;{ cat /var/lib/nuxel/fb-owner 2>&",
+      "severity": "regression-signal"
+    },
+    {
+      "expected": "contains beyond-madera",
+      "item": "alsa-card",
+      "observed": "_N=f0aa8394;rm -f /var/tmp/nxl-f0aa8394;{ cat /proc/asound/cards ;} >/var\nr/tmp/nxl-f0aa8394 2>&1 </dev/null;_R=$?;printf '\\n@@B%s@@\\n' $_N;printf '@@R%s:%\n%s@@\\n' $_N $_R;base64 -w0 </var/tmp/nxl-f0aa8394 2>/dev/null|tr -d '\\n';printf '\n'\\n@@S%s:%s@@\\n' $_N \"$(sha256sum </var/tmp/nxl-f0aa8394 2>/dev/null|cut -d' ' -f\nf1)\";printf '@@E%s@@\\n' $_N\n\u001b[?2004l\n@@Bf0aa8394@@\n@@Rf0aa8394:0@@\nIDAgW2JleW9uZG1hZGVyYSAgIF06IGJleW9uZC1tYWRlcmEgLSBiZXlvbmQtbWFkZXJhCiAgICAgICAgICAgICAgICAgICAgICBiZXlvbmQtbWFkZXJhCiAxIFthYm94dmRtYSAgICAgICBdOiBhYm94X3ZkbWEgLSBhYm94X3ZkbWEKICAgICAgICAgICAgICAgICAgICAgIGFib3hfdmRtYQogMiBbYWJveGR1bXAgICAgICAgXTogYWJveF9kdW1wIC0gYWJveF9kdW1wCiAgICAgICAgICAgICAgICAgICAgICBhYm94X2R1bXAK\n@@Sf0aa8394:565a92c71542ec0d0917412c9dec19a7648d582251c6f75bce4df899a053ddb0@@\n@@Ef0aa8394@@\n\u001b[?2004hsh-5.3#",
+      "severity": "regression-signal"
+    },
+    {
+      "expected": "HTTP 200",
+      "item": "pwa-registry",
+      "observed": "_N=509d8399;rm -f /var/tmp/nxl-509d8399;{ curl -s -o /dev/null -w '%{http",
+      "severity": "regression-signal"
+    },
+    {
+      "expected": "0",
+      "item": "failed-units",
+      "observed": [
+        "_N=601b838e;rm -f /var/tmp/nxl-601b838e;{ systemctl --failed --no-legend",
+        " --no-pager ;} >/var/tmp/nxl-601b838e 2>&1 </dev/null;_R=$?;printf '\\n@@B%s@@\\n'",
+        " $_N;printf '@@R%s:%s@@\\n' $_N $_R;base64 -w0 </var/tmp/nxl-601b838e 2>/dev/null|",
+        "|tr -d '\\n';printf '\\n@@S%s:%s@@\\n' $_N \"$(sha256sum </var/tmp/nxl-601b838e 2>/de",
+        "ev/null|cut -d' ' -f1)\";printf '@@E%s@@\\n' $_N",
+        "\u001b[?2004l",
+        "@@B601b838e@@",
+        "@@R601b838e:0@@",
+        "4pePIG51eGVsLXRvdWNoLWFybS5zZXJ2aWNlIGxvYWRlZCBmYWlsZWQgZmFpbGVkIE51eGVsIFMxMCsgdG91Y2hzY3JlZW4gYXJtaW5nIChzZWNfdHMgc3RvcC0+c3RhcnQsIHRoZW4gaG9sZCBvcGVuKQo=",
+        "@@S601b838e:a91f6dc230824f6fc4ee0db052f3b9cf34045a4ff178611836a3b75bd3f1e04a@@",
+        "@@E601b838e@@",
+        "\u001b[?2004hsh-5.3#"
+      ],
+      "severity": "regression-signal"
+    }
+  ],
+  "blocked_reason": null,
+  "briq": "briq-10a-live-reachability-preflight",
+  "console": {
+    "callout": "/dev/ttyACM0",
+    "match_stage": "explicit"
+  },
+  "evidence_dir": "/x/nuxel/docs/beta-finalization/live/evidence/baseline-20261016T220528+0200",
+  "exit_code": 0,
+  "fake_console": false,
+  "incomplete_frames": 41,
+  "probe": {
+    "at": "2026-10-16T22:05:28+0200",
+    "bytes_in": 54,
+    "dev": "/dev/ttyACM0",
+    "echo_ok": true,
+    "elapsed_s": 0.302,
+    "error": null,
+    "reachable": true,
+    "sample": "\n\u001b[?2004l\u001b[?2004hsh-5.3# \n\u001b[?2004l\u001b[?2004hsh-5.3# "
+  },
+  "pwa_drift": [],
+  "pwa_files": [
+    "pwa/nuxel-home/index.html",
+    "pwa/nuxel-home/manifest.json",
+    "pwa/nuxel-home/sw.js",
+    "pwa/nuxel-home/colour-test.html",
+    "pwa/nuxel-home/css/launcher.css",
+    "pwa/nuxel-home/css/search.css",
+    "pwa/nuxel-home/css/status-bar.css",
+    "pwa/nuxel-home/css/style.css",
+    "pwa/nuxel-home/js/app.js",
+    "pwa/nuxel-home/js/apps.js",
+    "pwa/nuxel-home/js/bootlog.js",
+    "pwa/nuxel-home/js/bridge.js",
+    "pwa/nuxel-home/js/host-bridge.js",
+    "pwa/nuxel-home/js/launcher.js",
+    "pwa/nuxel-home/js/osd.js",
+    "pwa/nuxel-home/js/qs.js",
+    "pwa/nuxel-home/js/recents.js",
+    "pwa/nuxel-home/js/safe-zones.js",
+    "pwa/nuxel-home/js/search.js",
+    "pwa/nuxel-home/js/settings-store.js",
+    "pwa/nuxel-home/js/status-bar.js"
+  ],
+  "reachable": true,
+  "verdict": "DEPLOYED_UNVERIFIED",
+  "verdict_note": "baseline read from the running device; this is a read-only observation and proves nothing about hardware that reports no evidence (e.g. a registered sec_ts driver is not proof of a working touchscreen)",
+  "verdicts": {
+    "briq-10a-live-reachability-preflight": "DEPLOYED_UNVERIFIED"
+  }
+}

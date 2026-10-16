@@ -1,0 +1,7 @@
+pushed={"attempts": 1, "b64_chars": 1788, "bytes": 1340, "decoded_sha256": "da03691dc524604de981fbf0425db0db30e7415b1314946ca5f0f1653ba8fd07", "frames": 1, "path": "/var/tmp/nxl-install-082.sh"}
+ok=True rc=0
+---
+PREV=NONE
+/usr/local/bin/nuxel-headphone-diag.sh.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

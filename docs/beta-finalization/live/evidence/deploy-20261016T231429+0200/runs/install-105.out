@@ -1,0 +1,7 @@
+pushed={"attempts": 1, "b64_chars": 1748, "bytes": 1310, "decoded_sha256": "6a9ddee5c8ce1e20e1740ab42bc89e235df2a2067b415e7b569dad3bbac74518", "frames": 1, "path": "/var/tmp/nxl-install-105.sh"}
+ok=True rc=0
+---
+PREV=NONE
+/usr/local/bin/verify-permissions.py.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

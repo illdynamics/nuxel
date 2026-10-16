@@ -1,0 +1,7 @@
+pushed={"attempts": 1, "b64_chars": 2436, "bytes": 1827, "decoded_sha256": "2cb6640a03f80b7172e01ce3fbaab4246edebb3ec4070f0f4bb4300dcbb664e1", "frames": 1, "path": "/var/tmp/nxl-install-178.sh"}
+ok=True rc=0
+---
+PREV=NONE
+/usr/share/nuxel/shell/nuxel-home-native/nuxel_home/launcher_grid.py.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

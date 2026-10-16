@@ -1,0 +1,7 @@
+pushed={"attempts": 1, "b64_chars": 1688, "bytes": 1265, "decoded_sha256": "22ff5b5635a7524ad796165e599817c4abfeaf991bafe4cbbde7012ecf88d6e8", "frames": 1, "path": "/var/tmp/nxl-install-088.sh"}
+ok=True rc=0
+---
+PREV=NONE
+/usr/local/bin/nuxel-osm-tiles.py.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

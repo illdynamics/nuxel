@@ -1,0 +1,8 @@
+cmd: cat /var/lib/nuxel/fb-owner 2>&1
+ok: True rc: 0 framed: True sha_ok: True
+---
+BOOT_WAIT_LAUNCHER
+LAUNCHER_READY
+ANIMATION_STOP_REQUESTED
+ANIMATION_STOP_CONFIRMED
+LAUNCHER_DISPLAY_OWNER

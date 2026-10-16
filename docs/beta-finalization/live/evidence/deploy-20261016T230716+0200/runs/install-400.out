@@ -1,0 +1,7 @@
+pushed={"attempts": 1, "b64_chars": 1692, "bytes": 1268, "decoded_sha256": "57ed2913cd918e0b06f5dd2c3cabef286daa9f7bf47d3a3c8d05f0ae0eaf8a45", "frames": 1, "path": "/var/tmp/nxl-install-400.sh"}
+ok=True rc=0
+---
+PREV=NONE
+/usr/lib/nuxel/verify-app-inventory.py.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

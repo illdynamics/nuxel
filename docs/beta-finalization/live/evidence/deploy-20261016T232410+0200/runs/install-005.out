@@ -1,0 +1,7 @@
+pushed={"attempts": 1, "b64_chars": 1704, "bytes": 1278, "decoded_sha256": "4c7603af95bffffaa3b303b9b9740168def51def8b28a1a02e0be9bd1ffb6d73", "frames": 1, "path": "/var/tmp/nxl-install-005.sh"}
+ok=True rc=0
+---
+PREV=f99f2aa179742c13adfe6ae06574a6a0083ad6f2678625b45184376c2dae1bda
+/etc/systemd/system/seatd.service.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

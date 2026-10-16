@@ -1,0 +1,6 @@
+pushed={"attempts": 1, "b64_chars": 2096, "bytes": 1570, "decoded_sha256": "550357fc0ff7fe7b19d24bdb719799f088a752c1b48d50dc91fbc9a9fdc9604f", "frames": 1, "path": "/var/tmp/nxl-install-039.sh"}
+ok=True rc=0
+---
+/usr/share/nuxel/pwa/nuxel-apps/calculator/icons/icon-128.png.nuxel-staged: OK
+ROLLED-BACK rc=1
+NXLSCRIPT-RC=1

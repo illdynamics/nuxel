@@ -9,6 +9,10 @@ What is proven:
   * add / list / show / set-state / verify-schema work end to end
   * records are APPEND-ONLY (history grows; the previous revision is never rewritten)
   * the verdict vocabulary is closed (nothing outside the mission list is accepted)
+  * evidence has exactly two legal shapes and both are checked: ARTEFACT evidence
+    (offline/vm/on_device/owner_instruction/observation/doc) must name a path, and
+    ACTION evidence (verifier-run/test-run/defect-found-and-fixed/change) must say
+    what ran/was found or changed AND what came of it
   * VERIFIED_ON_S10PLUS is REFUSED without an on-device evidence path
     (a passing unit test can never produce it), accepted with one
   * dependencies must exist, must not be self-referential, and must be acyclic
@@ -459,6 +463,38 @@ def case_evidence_shape(q: Queue):
         ok("an evidence entry without a path is refused")
     else:
         bad(f"pathless evidence not refused rc={p.returncode}: {p.stderr.strip()}")
+
+    # The action-evidence family (added by briq-02-gate-failure-repair): a run, a
+    # defect or a change IS evidence, and it is not enough to name a file for it -
+    # the entry has to say what happened.
+    for ev, label in (
+        ({"kind": "verifier-run", "command": "python3 tools/x/verify.py", "result": "rc 0, 12 checks"},
+         "a verifier-run (command + result) is accepted"),
+        ({"kind": "test-run", "command": "python3 tests/test-x.py", "result": "all assertions pass"},
+         "a test-run (command + result) is accepted"),
+        ({"kind": "defect-found-and-fixed", "what": "a stale cache changed a verdict", "result": "version guard added"},
+         "a defect-found-and-fixed (what + result) is accepted"),
+        ({"kind": "change", "what": "the schema gained action kinds", "result": "records validate",
+          "at": "2026-10-16T22:00:00+02:00"},
+         "a change (what + at) is accepted"),
+    ):
+        p = q.run("set-state", "t-a", "--evidence", json.dumps(ev))
+        if p.returncode == 0:
+            ok(label)
+        else:
+            bad(f"{label[:-11]} refused rc={p.returncode}: {p.stderr.strip()}")
+
+    p = q.run("set-state", "t-a", "--evidence", json.dumps({"kind": "verifier-run", "result": "rc 0"}))
+    if p.returncode == 1 and "command" in p.stderr:
+        ok("an action entry that names neither a command nor a what is refused")
+    else:
+        bad(f"nameless action evidence not refused rc={p.returncode}: {p.stderr.strip()}")
+
+    p = q.run("set-state", "t-a", "--evidence", json.dumps({"kind": "change", "what": "something"}))
+    if p.returncode == 1 and "outcome" in p.stderr:
+        ok("an action entry with no outcome (result/at) is refused")
+    else:
+        bad(f"outcome-less action evidence not refused rc={p.returncode}: {p.stderr.strip()}")
 
 
 # --------------------------------------------------------------------------- #

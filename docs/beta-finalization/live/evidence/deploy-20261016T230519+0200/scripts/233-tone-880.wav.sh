@@ -1,0 +1,20 @@
+#!/bin/sh
+# PWA application suite (pwa/nuxel-apps/**) -> /usr/share/nuxel/pwa/nuxel-apps/media/samples/tone-880.wav (service: nuxel-web, risk: low)
+# staged source: pwa/nuxel-apps/media/samples/tone-880.wav
+# previous-hash: 25420ab3170596a7a85dd12b84abe7062b3f0c28693e995b9dfb4bc5752b46f6
+set -u
+_NXL_ROLLBACK() { _rc=$?; if [ "$_rc" -ne 0 ]; then if [ -e /usr/share/nuxel/pwa/nuxel-apps/media/samples/tone-880.wav.nuxel-rollback ]; then cp -a /usr/share/nuxel/pwa/nuxel-apps/media/samples/tone-880.wav.nuxel-rollback /usr/share/nuxel/pwa/nuxel-apps/media/samples/tone-880.wav; systemctl restart nuxel-web; fi; echo "ROLLED-BACK rc=$_rc"; fi; }
+trap _NXL_ROLLBACK EXIT
+set -e
+if [ -e /usr/share/nuxel/pwa/nuxel-apps/media/samples/tone-880.wav ]; then printf 'PREV=%s\n' "$(sha256sum /usr/share/nuxel/pwa/nuxel-apps/media/samples/tone-880.wav | cut -d' ' -f1)"; else echo PREV=NONE; fi
+mkdir -p "$(dirname /usr/share/nuxel/pwa/nuxel-apps/media/samples/tone-880.wav)"
+if [ -e /usr/share/nuxel/pwa/nuxel-apps/media/samples/tone-880.wav ] && [ ! -e /usr/share/nuxel/pwa/nuxel-apps/media/samples/tone-880.wav.nuxel-rollback ]; then cp -a /usr/share/nuxel/pwa/nuxel-apps/media/samples/tone-880.wav /usr/share/nuxel/pwa/nuxel-apps/media/samples/tone-880.wav.nuxel-rollback; fi
+test -f /usr/share/nuxel/pwa/nuxel-apps/media/samples/tone-880.wav.nuxel-staged
+printf '%s  %s\n' 25420ab3170596a7a85dd12b84abe7062b3f0c28693e995b9dfb4bc5752b46f6 /usr/share/nuxel/pwa/nuxel-apps/media/samples/tone-880.wav.nuxel-staged > /var/tmp/nxl-verify.sha256
+sha256sum -c /var/tmp/nxl-verify.sha256
+mv -f /usr/share/nuxel/pwa/nuxel-apps/media/samples/tone-880.wav.nuxel-staged /usr/share/nuxel/pwa/nuxel-apps/media/samples/tone-880.wav
+sha256sum /usr/share/nuxel/pwa/nuxel-apps/media/samples/tone-880.wav | grep -q 25420ab3170596a7a85dd12b84abe7062b3f0c28693e995b9dfb4bc5752b46f6
+systemctl restart nuxel-web
+systemctl is-active nuxel-web
+test "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8000/pwa/nuxel-apps/settings/index.html)" = 200 && test -s /usr/share/nuxel/pwa/nuxel-apps/clock/index.html
+echo INSTALL-OK

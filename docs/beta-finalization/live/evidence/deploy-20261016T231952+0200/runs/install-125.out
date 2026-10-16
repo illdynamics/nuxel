@@ -1,0 +1,9 @@
+pushed={"attempts": 1, "b64_chars": 1932, "bytes": 1447, "decoded_sha256": "595201fb1ecf856e0e6081ab863c8514826541088bacf9dd64c8dea52d4a03aa", "frames": 1, "path": "/var/tmp/nxl-install-125.sh"}
+ok=True rc=0
+---
+PREV=fe6c6894479fe5a596c30154dbe06210bf7358adea802db62e545ec13c3122d4
+/usr/lib/nuxel/nuxel-portal/portal.py.nuxel-staged: OK
+Failed to restart nuxel-portal.service: Unit nuxel-portal.service not found.
+DECLARED-RELOAD-DEFERRED
+INSTALL-OK
+NXLSCRIPT-RC=0

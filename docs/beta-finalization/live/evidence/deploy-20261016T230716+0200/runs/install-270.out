@@ -1,0 +1,7 @@
+pushed={"attempts": 1, "b64_chars": 2152, "bytes": 1613, "decoded_sha256": "b304074462c14e6b17df8768ec44743dfcf7035f2ff185ec2c7b5a4f0daa6e01", "frames": 1, "path": "/var/tmp/nxl-install-270.sh"}
+ok=True rc=0
+---
+PREV=NONE
+/usr/share/nuxel/pwa/nuxel-apps/nuxtore/js/nuxtore-catalog.js.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

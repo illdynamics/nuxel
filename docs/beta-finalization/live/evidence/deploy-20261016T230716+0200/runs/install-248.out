@@ -1,0 +1,7 @@
+pushed={"attempts": 1, "b64_chars": 1892, "bytes": 1418, "decoded_sha256": "1ae0bad0b05fad1e9f7a1c9857a84df6b8fda57134b698dfcc1ff9447ac1b5aa", "frames": 1, "path": "/var/tmp/nxl-install-248.sh"}
+ok=True rc=0
+---
+PREV=41a888a1fecfaadc3c595b689de8815b6c6589b3f3e1c00e7652a09defb362c7
+/usr/share/nuxel/pwa/nuxel-apps/notes/index.html.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

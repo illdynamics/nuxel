@@ -1,0 +1,7 @@
+pushed={"attempts": 1, "b64_chars": 1644, "bytes": 1233, "decoded_sha256": "4e6ea819d677f0c1e8f27763583b0378e2947680413689d567e0ded61e484fcb", "frames": 1, "path": "/var/tmp/nxl-install-005.sh"}
+ok=True rc=0
+---
+PREV=NONE
+/etc/nuxel/audio/jack-routes.json.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

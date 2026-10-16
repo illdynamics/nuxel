@@ -1,0 +1,10 @@
+pushed={"attempts": 1, "b64_chars": 2212, "bytes": 1657, "decoded_sha256": "f0fe0385e8b9a9bbcd474494194ee86e3eb5e0b18ce76ef839f7ee496c074bf4", "frames": 1, "path": "/var/tmp/nxl-install-121.sh"}
+ok=True rc=0
+---
+PREV=f1a0eb21bc3b1bd4c8f090e3141908457b4a6e202d013e63e6f8e41b41cb54ca
+/usr/lib/nuxel/nuxel-notifications/notifications.py.nuxel-staged: OK
+Failed to restart nuxel-portal.service: Unit nuxel-portal.service not found.
+Failed to restart nuxel-notifications.service: Unit nuxel-notifications.service not found.
+DECLARED-RELOAD-DEFERRED
+INSTALL-OK
+NXLSCRIPT-RC=0

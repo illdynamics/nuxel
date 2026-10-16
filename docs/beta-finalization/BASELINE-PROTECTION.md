@@ -515,3 +515,153 @@ changed by this addition, so no re-pin was required.
 **Verdict:** `OFFLINE_TESTED` — the gate ran on this host against the real tree (exit 0).  It is
 still not a claim about any hardware: INV-11 exists so that drift in these A32 assets is *visible*,
 never so that a green gate proves a feature works.
+
+---
+
+## 12. Repair-pass 3 (2026-10-16, `briq-02-gate-failure-repair`, cycle 7): the red gate
+
+Everything in §1–§11 is preserved unchanged.  This section records what the
+**pre-existing red gate** was, what was actually defective, and what was
+deliberately *not* touched.  Raw capture of the pre-repair state (the 21:11 run's
+`summary.json` plus all six failing logs, copied out of gitignored `build/` before
+any edit) lives in
+`docs/beta-finalization/release/evidence/gate-20261016T214620+0200/pre-repair/`;
+the post-repair run is beside it in `.../post-repair/`.  Machine-readable:
+`RAW-VERDICTS.json` in the same bundle.
+
+**Raw state before the repair** (`build/reports/beta-tests/summary.json`,
+2026-10-16T21:11:37+0200, `git_head 466551c`): `gate=red`,
+`verdict=OFFLINE_TESTED_FAIL`, `raw_fail_count=11`, **6 hard failures** owned by
+`bg-00-preflight` (`U-workqueue-schema`, `U-workqueue-unit`,
+`U-regression-guard-selftest`, `U-baseline-regression-guard`,
+`U-baseline-a32-suite`, `U-boot-s10plus-gates`) plus 5 cross-group allowances
+(bg-05/06/07) and 7 warnings.  None of the six was caused by another group.
+
+### 12.1 The gate defect: file-pin mode precedence (3 of the 6 failures)
+
+`INV-6-userspace-rollback` is `hash_mode: hard` at the invariant level, and its
+three `shell/config/systemd-user/*.service` pins carry an **explicit**
+`"hash_mode": "soft"` (they are owned by `bg-04`, which §2 says is allowed to
+evolve them).  The guard's pin loop *ORed* the two modes
+(`[ "$fmode" = "hard" ] || [ "$inv_mode" = "hard" ]`), so an explicitly soft file
+inside a hard invariant was reported as `FAIL hard-pinned file changed: …` — i.e.
+another group's announced edit turned the release gate red, the exact outcome
+§2 and §10 rule 3 exist to prevent.  §9.4 already listed those three pins as
+**soft**.
+
+**Fixed** in `tools/beta/regression-guard.sh`: the per-file `hash_mode` now wins
+and the invariant mode is only the default for a file that declares none
+(`fmode_eff`).  **Nothing was relaxed**: hard files under a soft invariant stay
+hard, files with no mode still inherit their invariant's mode, and the WARN now
+names the owning group.  The self-test
+(`tools/beta/tests/test-regression-guard.sh`) gained two cases that pin the rule
+in both directions (explicitly-soft-inside-hard → WARN + exit 0; no-mode-inside-hard
+→ FAIL + exit 1), so the precedence cannot silently invert again.
+
+**No pin was moved.**  The three bg-04 units remain drifted-soft (a WARN naming
+`bg-04-userspace-completion / bg-09-integration-release`), exactly like the bg-02
+soft drifts §9.1 records; the pin stays the last-known-good A32 byte set.
+
+### 12.2 The ledger was stale, and one record carried an invented verdict
+
+* `INV-10`'s program assertion (`workqueue.py render --check`) failed: the human
+  view `docs/beta-finalization/WORK-QUEUE.md` did not match the JSON store because
+  four revisions appended by `briq-04a/04b/04c` (previous cycle) were never
+  rendered (`105 → 109` revisions, `223 → 245` evidence entries).  Re-rendered with
+  `python3 tools/beta/workqueue.py render --write`; `render --check` is now the
+  gate's PASS again.  The renderer only rewrites its machine-owned blocks.
+* `briq-04c-app-infrastructure` carried the invented verdict token
+  `OFFLINE_TESTED_WITH_DEFERRALS`, which is not in the mission vocabulary (the
+  verdict list is closed — §10 rule 5 and the tool's own header say so, and
+  widening it is not an option).  Normalised to `OFFLINE_TESTED` by an
+  **appended** revision 3 (`--note`, `--evidence`), which also records the
+  deferrals verbatim: the two cross-group application trees (bg-06/bg-07) are not
+  landed, `offline_ceiling` is unchanged, and nothing was promoted.
+* The schema itself was genuinely missing a family of evidence: six groups record
+  *what they ran, found or changed* (`verifier-run`, `test-run`,
+  `defect-found-and-fixed`, `change`), and `EVIDENCE_KINDS` had no member for any
+  of them, so **36 errors** across `briq-04a/04b/04c` were unavoidable for an
+  honest record.  `tools/beta/workqueue.py` now accepts those four kinds, with the
+  rule made explicit and enforced: an *artefact* entry (`offline`/`vm`/`on_device`/
+  `owner_instruction`/`observation`/`doc`) must name a `path`, and an *action*
+  entry must name the thing (`command` or `what`) **and** its outcome
+  (`result`/`at`).  An empty entry, an unknown kind, and a nameless action entry
+  are all still refused — four new cases in `tools/beta/tests/test_workqueue.py`
+  hold that.  This *adds* evidence kinds to the schema's evidence vocabulary; it
+  does **not** widen the verdict vocabulary, and `VERIFIED_ON_S10PLUS` still
+  requires a real `on_device` capture.
+
+### 12.3 The A32 colour leg: a host limitation reported as a code regression
+
+`tools/s10plus/a32/tests/run-tests.sh` hard-failed with
+`FAIL colour conversion (build the a32 binaries first)` when
+`build/out/s10plus/a32/nuxel-wl-fb` (gitignored, built on the UTM guest by
+`build-a32.sh`) is absent — while **§9.3 already records that this host has no
+aarch64 execution channel at all** and INV-2's own program assertion is
+`mode: soft` / `exec_fallback: vm`, i.e. the register reports the same fact as a
+**WARN**.  The suite contradicted the register and kept the whole release gate red
+for an artefact this host cannot produce.
+
+**Fixed**: the leg now has the two channels it always had in theory, stated
+explicitly in the file — (a) the real aarch64 `--colour-selftest`, run here or on
+the guest, and (b) the source-level golden-bytes test
+(`tools/s10plus/a33/tests/test-colour-order.py`), which needs no aarch64 channel
+and still gates the conversion **hard**.  When (a) is unavailable the suite prints
+and counts a WARN naming the missing channel and the exact rebuild command
+(`bash tools/s10plus/a32/build-a32.sh`), reports it in its own summary line, and
+still exits 0; a real selftest failure (`rc != 0`, not an exec-format error) is
+still a hard FAIL, and an artefact that is not an aarch64 ELF is still a hard FAIL.
+Nothing about the conversion was accepted without a passing test.
+
+### 12.4 The boot-image gates: a missing build artefact reported as a failure
+
+`boot/s10plus/tests/test-boot-image-gates.sh` began with
+`cannot unpack the hardware-proven A5 base` → `exit 1`.  Both artefacts it is
+anchored on (`build/out/s10plus/debug-candidates/nuxel-beyond2lte-boot-A5-dtb-fix.img`
+and `.../A4/initramfs.cpio`) are gitignored build output, and they are
+**hardware-proven containers that cannot be synthesised** — a substituted image
+would prove nothing about the handset.  That is a missing prerequisite, not a
+regression, and every other artefact-dependent gate in this repository handles it
+with a `probe:` precondition (§ TEST-STRATEGY.md section 5).
+
+**Fixed**: the suite now reports every missing prerequisite in one diagnostic and
+exits **3** (`SKIP-PREREQ` — never 0, so an unrun gate can never read as a pass,
+and never 1, so a missing artefact is not reported as a code regression), and the
+registry lists it with the matching `probe:` so the release gate reports
+`SKIP host/artefact prerequisite unmet: …` in the committed summary.  It also now
+asserts the A5 base's documented sha256
+(`6950241c52320688f28bfc1a0c0426f28e3884e5772934853759354aa97a88d1`, FLASH-ATTEMPTS.md
+/ PATCHES.md), so it can only ever speak about the container that was actually
+proven on the unit.  **The gate did not run in this session** and is recorded as
+`SKIP`, not as a pass.
+
+### 12.5 Re-run, raw counts, and what is still not claimed
+
+```
+$ bash tools/beta/regression-guard.sh ; echo EXIT=$?
+   hard pins: 13/13 held
+== summary ==
+   PASS=68  FAIL=0  WARN=14  INFO=2
+   REGRESSION GUARD: PASS — the A32 baseline is intact (no failing checks).
+EXIT=0
+
+$ bash tools/beta/run-all-tests.sh
+run-all-tests: 49 suites  pass=34 fail=0 warn=7 (cross-group=5) skip=4 external=4
+gate: green   verdict: OFFLINE_TESTED   (OFFLINE_TESTED only — never VERIFIED_ON_S10PLUS)
+raw gate (--strict, no cross-group allowances): red  fail=5
+```
+
+The 14 WARNs are soft drifts and host limitations, named and owned (§9.1 + §12.1:
+two INV-1, two INV-3, three INV-6, three INV-11 and one INV-9 soft drifts plus two
+INV-2 host-channel warnings);
+the 5 raw strict failures are the **cross-group allowances** for bg-05/bg-06/bg-07,
+whose records are still unfinished — they are preserved verbatim in the summary
+(`allowances_applied`, `raw_gate`) and are **not** passes.  The 4 SKIPs are unmet
+`probe:` prerequisites (two legacy A27 gates and `U-boot-s10plus-gates`); a SKIP is
+not a pass either.
+
+**No verdict in this section is a hardware claim.**  Every item repaired here was a
+repository/tooling/host fact: no device was touched, no on-device verdict is added
+or changed, and the green gate is `OFFLINE_TESTED` — the same terminal state §11
+had.  The one thing this pass can no longer hide is the raw red
+(`docs/beta-finalization/release/evidence/gate-20261016T214620+0200/`).

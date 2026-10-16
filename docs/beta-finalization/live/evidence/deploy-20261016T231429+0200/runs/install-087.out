@@ -1,0 +1,7 @@
+pushed={"attempts": 1, "b64_chars": 1668, "bytes": 1250, "decoded_sha256": "1990145e0b9738520317cd96afa5590439659b3e5e306a2a258a7aeeb4621d0f", "frames": 1, "path": "/var/tmp/nxl-install-087.sh"}
+ok=True rc=0
+---
+PREV=NONE
+/usr/local/bin/nuxel-nfc-diag.sh.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

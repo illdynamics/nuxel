@@ -1,0 +1,7 @@
+pushed={"attempts": 1, "b64_chars": 1628, "bytes": 1220, "decoded_sha256": "8513e0f4f0e6478398f2a6c8cb6a90d352cd3d1e6c58ea7f513a64d9bd958c9e", "frames": 1, "path": "/var/tmp/nxl-install-016.sh"}
+ok=True rc=0
+---
+PREV=NONE
+/etc/nuxel/bluetooth/README.md.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

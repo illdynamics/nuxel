@@ -1,0 +1,6 @@
+pushed={"attempts": 1, "b64_chars": 2336, "bytes": 1752, "decoded_sha256": "dc0d84e4dfb6546648d6d66713129faddb7be4ae481301e5b3e32fe20f5134f7", "frames": 1, "path": "/var/tmp/nxl-install-020.sh"}
+ok=True rc=0
+---
+/usr/share/nuxel/pwa/nuxel-apps/authenticator/samples/otpauth-examples.json.nuxel-staged: OK
+ROLLED-BACK rc=1
+NXLSCRIPT-RC=1

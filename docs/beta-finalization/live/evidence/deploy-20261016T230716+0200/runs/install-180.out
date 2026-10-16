@@ -1,0 +1,7 @@
+pushed={"attempts": 1, "b64_chars": 1832, "bytes": 1373, "decoded_sha256": "282f2c43abce087487b0110016978adc891677a36bb4c7ea66131a6526883a65", "frames": 1, "path": "/var/tmp/nxl-install-180.sh"}
+ok=True rc=0
+---
+PREV=NONE
+/usr/share/nuxel/pwa/nuxel-apps/mail/app.json.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

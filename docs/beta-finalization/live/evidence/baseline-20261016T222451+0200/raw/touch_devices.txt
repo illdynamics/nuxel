@@ -1,0 +1,15 @@
+cmd: grep -A4 sec_touchscreen /proc/bus/input/devices
+ok: True rc: 0 framed: True sha_ok: True
+---
+N: Name="sec_touchscreen"
+P: Phys=sec_touchscreen/input1
+S: Sysfs=/devices/platform/104b0000.hsi2c/i2c-4/4-0048/input/input2
+U: Uniq=
+H: Handlers=sec_key_notifier event2 
+B: PROP=2
+--
+P: Phys=sec_touchscreen/input1
+S: Sysfs=/devices/platform/104b0000.hsi2c/i2c-4/4-0048/input/input3
+U: Uniq=
+H: Handlers=sec_key_notifier event3 
+B: PROP=1

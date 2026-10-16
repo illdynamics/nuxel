@@ -1,0 +1,7 @@
+pushed={"attempts": 1, "b64_chars": 2152, "bytes": 1613, "decoded_sha256": "d662908aaacf3cdf118cbebb19eabe9d550ddf89440600717bed022a74a764ec", "frames": 1, "path": "/var/tmp/nxl-install-141.sh"}
+ok=True rc=0
+---
+PREV=NONE
+/usr/share/nuxel/pwa/nuxel-apps/devmgmt/js/devmgmt-parsers.js.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

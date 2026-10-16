@@ -1,0 +1,3 @@
+cmd: grep -i madera /proc/asound/cards
+ok: False rc: None framed: False sha_ok: False
+---

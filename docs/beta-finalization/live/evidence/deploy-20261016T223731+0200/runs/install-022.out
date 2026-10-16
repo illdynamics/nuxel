@@ -1,0 +1,6 @@
+pushed={"attempts": 1, "b64_chars": 1492, "bytes": 1117, "decoded_sha256": "fd30a6fdbac154d3fac0522369603cce6a980b67837d3027650244a6c6db7b13", "frames": 1, "path": "/var/tmp/nxl-install-022.sh"}
+ok=True rc=0
+---
+/etc/nuxel/statusbar-safezones.json.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

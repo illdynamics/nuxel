@@ -1,0 +1,7 @@
+pushed={"attempts": 1, "b64_chars": 1908, "bytes": 1430, "decoded_sha256": "69af71587f673eaf0ccdb1fb49bbd908b682c0a65e0cac1c8a60d79cbe5fab27", "frames": 1, "path": "/var/tmp/nxl-install-079.sh"}
+ok=True rc=0
+---
+PREV=NONE
+/usr/lib/nuxel/src/a33/nuxel-handoff-logic.h.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

@@ -1,0 +1,111 @@
+{
+  "at": "2026-10-16T22:24:51+0200",
+  "baseline_deltas": [
+    {
+      "expected": "nuxel-wl-fb",
+      "item": "fb-owner",
+      "observed": "BOOT_WAIT_LAUNCHER",
+      "severity": "regression-signal"
+    }
+  ],
+  "blocked_reason": null,
+  "briq": "briq-10a-live-reachability-preflight",
+  "console": {
+    "callout": "/dev/ttyACM0",
+    "match_stage": "explicit"
+  },
+  "evidence_dir": "/x/nuxel/docs/beta-finalization/live/evidence/baseline-20261016T222451+0200",
+  "exit_code": 0,
+  "fake_console": false,
+  "probe": {
+    "at": "2026-10-16T22:24:52+0200",
+    "bytes_in": 54,
+    "dev": "/dev/ttyACM0",
+    "echo_ok": true,
+    "elapsed_s": 0.302,
+    "error": null,
+    "reachable": true,
+    "sample": "\n\u001b[?2004l\u001b[?2004hsh-5.3# \n\u001b[?2004l\u001b[?2004hsh-5.3# "
+  },
+  "pwa_drift": [
+    {
+      "device": "f7eb859a488ab0237bf42d261971e922470dfd1509f042601d95a82749290adf",
+      "file": "pwa/nuxel-home/index.html",
+      "repo": "a15be137ee268bb15400dc983c29f12a258331862ef17d9732108c19c4ce6443"
+    },
+    {
+      "device": "bae245b77334ceb0eddcb3e653212d35a57436ae28de26ca409c4370929cb6bd",
+      "file": "pwa/nuxel-home/manifest.json",
+      "repo": "bbb2edfa7ef090a6df7d53809eb1540d1f76694b91fb7a889f429ad62bc5606e"
+    },
+    {
+      "device": "816bad131efc727cb8740f03bc2020b90c0f691669128e2027b28d697f631a87",
+      "file": "pwa/nuxel-home/sw.js",
+      "repo": "58461b89735f2a820ec1f34d2cf917b5e02cec3e517c2cb43e8a61ffc41582f8"
+    },
+    {
+      "device": "sha256sum:",
+      "file": "pwa/nuxel-home/colour-test.html",
+      "repo": "1a1f15416829c1c8194ca6c638924156420104ac11095dd94458903b6dba574d"
+    },
+    {
+      "device": "029c9331f45a1b52344baaf53c8d23eae985a549a3b39bdab6784c7e8abac401",
+      "file": "pwa/nuxel-home/js/apps.js",
+      "repo": "df08dfaf5d17c3685bee4abb94d24f3f059ed2289edb13bf5159ad162aafcf72"
+    },
+    {
+      "device": "sha256sum:",
+      "file": "pwa/nuxel-home/js/bootlog.js",
+      "repo": "d2f766a1e3e128fef72389bf99ff43953c0cea7fd54cdf78edd37a612e52ea3b"
+    },
+    {
+      "device": "413b3ec74d206d16b813a5e4324f33996df6b02d6dc7eb6d744c7d394f5dc842",
+      "file": "pwa/nuxel-home/js/qs.js",
+      "repo": "2391b5683361415cefbfdb7465457b813fd7f5a320a5662fa6030147642c1777"
+    },
+    {
+      "device": "ca99df1a9da4d94c75d83b91b5962b3d6aafd3b3ec76af5b5cf2b2c9b97cdb93",
+      "file": "pwa/nuxel-home/js/safe-zones.js",
+      "repo": "0ef0c91a45b599881f4eea26fca2c08ffdde806ec52dd48472c042ecb5806a0f"
+    },
+    {
+      "device": "sha256sum:",
+      "file": "pwa/nuxel-home/js/settings-store.js",
+      "repo": "383e068515aba43da0026d6dc1e0250f34cd87f8f1d7014db2c7831cd18c9c1d"
+    },
+    {
+      "device": "390393dbe9eaa11cf122199170b3b0b4bc55c6bbdc85e9b67df183ac37716dbb",
+      "file": "pwa/nuxel-home/js/status-bar.js",
+      "repo": "7a2f02eacff1fe904c73ad631d1882406c4a9c9d4512e9cfceee6f4ff6606723"
+    }
+  ],
+  "pwa_files": [
+    "pwa/nuxel-home/index.html",
+    "pwa/nuxel-home/manifest.json",
+    "pwa/nuxel-home/sw.js",
+    "pwa/nuxel-home/colour-test.html",
+    "pwa/nuxel-home/css/launcher.css",
+    "pwa/nuxel-home/css/search.css",
+    "pwa/nuxel-home/css/status-bar.css",
+    "pwa/nuxel-home/css/style.css",
+    "pwa/nuxel-home/js/app.js",
+    "pwa/nuxel-home/js/apps.js",
+    "pwa/nuxel-home/js/bootlog.js",
+    "pwa/nuxel-home/js/bridge.js",
+    "pwa/nuxel-home/js/host-bridge.js",
+    "pwa/nuxel-home/js/launcher.js",
+    "pwa/nuxel-home/js/osd.js",
+    "pwa/nuxel-home/js/qs.js",
+    "pwa/nuxel-home/js/recents.js",
+    "pwa/nuxel-home/js/safe-zones.js",
+    "pwa/nuxel-home/js/search.js",
+    "pwa/nuxel-home/js/settings-store.js",
+    "pwa/nuxel-home/js/status-bar.js"
+  ],
+  "reachable": true,
+  "verdict": "DEPLOYED_UNVERIFIED",
+  "verdict_note": "baseline read from the running device; this is a read-only observation and proves nothing about hardware that reports no evidence (e.g. a registered sec_ts driver is not proof of a working touchscreen)",
+  "verdicts": {
+    "briq-10a-live-reachability-preflight": "DEPLOYED_UNVERIFIED"
+  }
+}

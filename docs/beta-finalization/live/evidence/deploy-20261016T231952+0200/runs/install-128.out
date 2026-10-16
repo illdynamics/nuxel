@@ -1,0 +1,8 @@
+pushed={"attempts": 1, "b64_chars": 2452, "bytes": 1837, "decoded_sha256": "c16f58b5d81b51f71286627428bd107f0377e4eac5163896b77295a87549be58", "frames": 1, "path": "/var/tmp/nxl-install-128.sh"}
+ok=True rc=0
+---
+PREV=9abb859cdaf24f3137dac0c5aaacf85ffd1fd381ee25d0320549b09c394f5a63
+/etc/systemd/system/nuxel-ui.service.d/10-launcher-primary.conf.nuxel-staged: OK
+DECLARED-RELOAD-DEFERRED
+INSTALL-OK
+NXLSCRIPT-RC=0

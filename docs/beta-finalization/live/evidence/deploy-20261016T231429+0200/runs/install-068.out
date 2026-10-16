@@ -1,0 +1,7 @@
+pushed={"attempts": 1, "b64_chars": 1828, "bytes": 1370, "decoded_sha256": "5bcaf3d4fa8966ff571007c55792f647c33519d9689def28baae47b9a83b39db", "frames": 1, "path": "/var/tmp/nxl-install-068.sh"}
+ok=True rc=0
+---
+PREV=NONE
+/usr/libexec/nuxel/nuxel-anim-handoff.py.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

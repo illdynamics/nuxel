@@ -1,0 +1,10 @@
+pushed={"attempts": 1, "b64_chars": 2172, "bytes": 1627, "decoded_sha256": "a7e4a4f9204ac6f2593ad147743f6b06def595f2ce06f744d0993bb8e6e362aa", "frames": 1, "path": "/var/tmp/nxl-install-120.sh"}
+ok=True rc=0
+---
+PREV=NONE
+/etc/dbus-1/system.d/org.nuxel.Notifications.conf.nuxel-staged: OK
+Failed to restart nuxel-portal.service: Unit nuxel-portal.service not found.
+Failed to restart nuxel-notifications.service: Unit nuxel-notifications.service not found.
+DECLARED-RELOAD-DEFERRED
+INSTALL-OK
+NXLSCRIPT-RC=0

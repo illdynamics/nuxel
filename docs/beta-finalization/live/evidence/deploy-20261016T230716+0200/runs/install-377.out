@@ -1,0 +1,7 @@
+pushed={"attempts": 1, "b64_chars": 1932, "bytes": 1448, "decoded_sha256": "095c73a4af97c19a5de8cb54d51ffb39d4f6d55d82516d81b8738c003868853a", "frames": 1, "path": "/var/tmp/nxl-install-377.sh"}
+ok=True rc=0
+---
+PREV=NONE
+/usr/share/nuxel/pwa/nuxel-apps/weather/index.html.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

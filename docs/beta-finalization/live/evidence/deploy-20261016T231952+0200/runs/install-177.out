@@ -1,0 +1,7 @@
+pushed={"attempts": 1, "b64_chars": 2396, "bytes": 1797, "decoded_sha256": "6da54d8ffee6cb846998cc1aa4452684ec9c8379b509af8739ce8040cb753cb6", "frames": 1, "path": "/var/tmp/nxl-install-177.sh"}
+ok=True rc=0
+---
+PREV=NONE
+/usr/share/nuxel/shell/nuxel-home-native/nuxel_home/dbus_client.py.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

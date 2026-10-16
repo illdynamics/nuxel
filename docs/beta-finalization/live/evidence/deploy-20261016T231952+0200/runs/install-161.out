@@ -1,0 +1,7 @@
+pushed={"attempts": 1, "b64_chars": 1976, "bytes": 1482, "decoded_sha256": "9b5be6208850527813f0e2da88caa64fb0a2d591c3a000ce7e98b8f6b33e4239", "frames": 1, "path": "/var/tmp/nxl-install-161.sh"}
+ok=True rc=0
+---
+PREV=NONE
+/etc/nuxel/sandbox/profiles/pwa-template.json.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

@@ -1,0 +1,7 @@
+pushed={"attempts": 1, "b64_chars": 1976, "bytes": 1482, "decoded_sha256": "8a8345c46817f97c435ee02c1700e0fdaf5acb44bd07ce8a5131e7bb4a322652", "frames": 1, "path": "/var/tmp/nxl-install-155.sh"}
+ok=True rc=0
+---
+PREV=NONE
+/etc/nuxel/sandbox/profiles/nuxel-dialer.json.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

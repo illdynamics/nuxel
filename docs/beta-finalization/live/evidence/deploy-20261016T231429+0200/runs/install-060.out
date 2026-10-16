@@ -1,0 +1,7 @@
+pushed={"attempts": 1, "b64_chars": 1528, "bytes": 1145, "decoded_sha256": "10b241e6924e302aa5db3d5aa4f193548c94175cb3fdf25d7777be74e15fcb23", "frames": 1, "path": "/var/tmp/nxl-install-060.sh"}
+ok=True rc=0
+---
+PREV=NONE
+/etc/nuxel/time/time.json.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

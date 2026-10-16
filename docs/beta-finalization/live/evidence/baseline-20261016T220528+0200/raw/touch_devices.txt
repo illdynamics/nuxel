@@ -1,0 +1,3 @@
+cmd: grep -A4 sec_touchscreen /proc/bus/input/devices
+ok: False rc: None framed: False sha_ok: False
+---

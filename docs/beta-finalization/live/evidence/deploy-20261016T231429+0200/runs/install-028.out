@@ -1,0 +1,7 @@
+pushed={"attempts": 1, "b64_chars": 1528, "bytes": 1145, "decoded_sha256": "c45b8d72d8657d4a7978122d8a3eb2d8b527e213fd4888b46c86a997c4365c45", "frames": 1, "path": "/var/tmp/nxl-install-028.sh"}
+ok=True rc=0
+---
+PREV=NONE
+/etc/nuxel/gnss/gnss.json.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

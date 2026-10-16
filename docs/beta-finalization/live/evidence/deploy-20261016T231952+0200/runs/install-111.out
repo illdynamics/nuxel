@@ -1,0 +1,12 @@
+pushed={"attempts": 1, "b64_chars": 1932, "bytes": 1447, "decoded_sha256": "05c852dd550685925122c055fb448d0333e0835509b33f65351cc8738a1c48bd", "frames": 1, "path": "/var/tmp/nxl-install-111.sh"}
+ok=True rc=0
+---
+PREV=b20c9ce1810d8d4198c41a69932bf6ed1f6861884dea8b5e1e5e914775e37efc
+/usr/lib/nuxel/nuxel-bridge/bridge.py.nuxel-staged: OK
+Failed to restart nuxel-bridge.service: Unit nuxel-bridge.service not found.
+Failed to restart nuxel-http-bridge.service: Unit nuxel-http-bridge.service not found.
+Failed to restart nuxel-portal.service: Unit nuxel-portal.service not found.
+Failed to restart nuxel-notifications.service: Unit nuxel-notifications.service not found.
+DECLARED-RELOAD-DEFERRED
+INSTALL-OK
+NXLSCRIPT-RC=0
