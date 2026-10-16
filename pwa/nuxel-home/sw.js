@@ -5,7 +5,7 @@
 // controlled migration path for the cache-first static strategy below: a new
 // worker installs its own cache namespace and 'activate' deletes the old ones,
 // so a redeployed launcher is never served from a stale cache (briq A31).
-const CACHE_VERSION = 'v2';
+const CACHE_VERSION = 'v3-a32';
 const CACHE_NAME = 'nuxel-home-' + CACHE_VERSION;
 const STATIC_CACHE = 'nuxel-static-' + CACHE_VERSION;
 const DYNAMIC_CACHE = 'nuxel-dynamic-' + CACHE_VERSION;
@@ -29,6 +29,9 @@ const PRECACHE_ASSETS = [
     './js/bridge.js',
     './js/recents.js',
     './js/qs.js',
+    './js/host-bridge.js',
+    './js/safe-zones.js',
+    './js/osd.js',
     './js/app.js',
     './icons/icon-192.png',
     './icons/icon-512.png',
@@ -117,7 +120,29 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
-    // Cache first for static assets
+    // A32: CODE assets (js/css/html) are NETWORK FIRST on this device.  The
+    // launcher is served by a local static server that is always up, so a stale
+    // cache can only ever hurt: an earlier revision served the launcher from a
+    // cache-first path and a redeployed index.html/js was invisible on the glass
+    // until the cache namespace changed under it.  Images/video stay cache-first
+    // (large, immutable, and re-validated through HTTP when they do change).
+    const isCode = /\.(js|css|json|html|webmanifest)(\?|$)/i.test(request.url) ||
+                   request.url.includes('/pwa/nuxel-home/js/') ||
+                   request.url.includes('/pwa/nuxel-apps/');
+    if (isCode) {
+        event.respondWith(
+            fetch(request).then((response) => {
+                if (response.status === 200) {
+                    const clone = response.clone();
+                    caches.open(DYNAMIC_CACHE).then((cache) => { cache.put(request, clone); });
+                }
+                return response;
+            }).catch(() => caches.match(request).then((cached) => cached || new Response('Offline', { status: 503 })))
+        );
+        return;
+    }
+
+    // Cache first for immutable static assets (images, video, fonts)
     event.respondWith(
         caches.match(request).then((cached) => {
             if (cached) return cached;

@@ -72,14 +72,31 @@ install -d "$STAGE/etc/nuxel" "$STAGE/usr/lib/nuxel"
 # process supervision, and the libinput path shim that gives phoc the real
 # touchscreen on a kernel with no VT and no usable udev daemon.
 install -m 0755 /nuxel/tools/s10plus/a29/nuxel-touch-arm "$STAGE/usr/lib/nuxel/nuxel-touch-arm"
-for _b in /nuxel/build/out/s10plus/a31/nuxel-wl-fb \
-          /nuxel/build/out/s10plus/a31/nuxel-pwa-host \
-          /nuxel/build/out/s10plus/a31/libnuxel-libinput-path.so; do
-  [ -f "$_b" ] || { echo "ERROR: missing A31 artifact $_b - run tools/s10plus/a31/build-a31.sh (builds on the live UTM VM) before building this image" >&2; exit 1; }
+# A32 is the shipped revision (beta hardware finalizer): explicit XRGB8888 ->
+# DECON ABGR_8888 colour conversion in the display bridge, minimum-full-animation
+# hand-off gate, screen off/on control FIFO, the launcher host API (settings /
+# logical actions / real PTY terminal) with stale-frontend invalidation, and the
+# hardware-button manager (power short = display toggle, volume = real ALSA mixer,
+# assistant/Bixby key = Nuxel Terminal, remappable in Settings).
+for _b in /nuxel/build/out/s10plus/a32/nuxel-wl-fb \
+          /nuxel/build/out/s10plus/a32/nuxel-pwa-host \
+          /nuxel/build/out/s10plus/a32/nuxel-button-manager \
+          /nuxel/build/out/s10plus/a32/libnuxel-libinput-path.so; do
+  [ -f "$_b" ] || { echo "ERROR: missing A32 artifact $_b - run tools/s10plus/a32/build-a32.sh (builds on the live UTM VM) before building this image" >&2; exit 1; }
 done
-install -m 0755 /nuxel/build/out/s10plus/a31/nuxel-wl-fb              "$STAGE/usr/lib/nuxel/nuxel-wl-fb"
-install -m 0755 /nuxel/build/out/s10plus/a31/nuxel-pwa-host           "$STAGE/usr/lib/nuxel/nuxel-pwa-host"
-install -m 0755 /nuxel/build/out/s10plus/a31/libnuxel-libinput-path.so "$STAGE/usr/lib/nuxel/libnuxel-libinput-path.so"
+install -m 0755 /nuxel/build/out/s10plus/a32/nuxel-wl-fb              "$STAGE/usr/lib/nuxel/nuxel-wl-fb"
+install -m 0755 /nuxel/build/out/s10plus/a32/nuxel-pwa-host           "$STAGE/usr/lib/nuxel/nuxel-pwa-host"
+install -m 0755 /nuxel/build/out/s10plus/a32/nuxel-button-manager     "$STAGE/usr/lib/nuxel/nuxel-button-manager"
+install -m 0755 /nuxel/build/out/s10plus/a32/libnuxel-libinput-path.so "$STAGE/usr/lib/nuxel/libnuxel-libinput-path.so"
+# console control for the same configuration the Settings app uses
+install -m 0755 /nuxel/tools/s10plus/a32/nuxelctl                     "$STAGE/usr/bin/nuxelctl"
+install -m 0644 /nuxel/tools/s10plus/a32/nuxel-button-manager.service \
+    "$STAGE/etc/systemd/system/nuxel-button-manager.service"
+# default device configuration: the S10+ port starts from its own profile, and a
+# full rebuild must reproduce what the live deployment installed
+install -d "$STAGE/etc/nuxel/display" "$STAGE/etc/nuxel/input"
+install -m 0644 /nuxel/configs/nuxel/statusbar-safezones.json "$STAGE/etc/nuxel/display/statusbar-safezones.json"
+install -m 0644 /nuxel/configs/nuxel/buttons.json             "$STAGE/etc/nuxel/input/buttons.json"
 install -m 0755 /nuxel/tools/s10plus/a29/nuxel-session.sh            "$STAGE/usr/lib/nuxel/nuxel-session.sh"
 install -m 0755 /nuxel/tools/s10plus/a29/nuxel-wait-wayland          "$STAGE/usr/lib/nuxel/nuxel-wait-wayland"
 install -m 0755 /nuxel/tools/s10plus/a29/nuxel-launcher-ready-wait.sh "$STAGE/usr/lib/nuxel/nuxel-launcher-ready-wait"
@@ -103,7 +120,7 @@ ln -sf ../nuxel-touch-arm.service "$STAGE/etc/systemd/system/multi-user.target.w
 # FRAMES_OK ... panel=1440x3040, 217 TOUCH_POINTs delivered from the panel to a
 # userspace reader - see UTM-LAUNCHER-PORT/A29-PORT-RECORD.md §6-§8.
 if [ "${NUXEL_ENABLE_LAUNCHER:-1}" = "1" ]; then
-  for u in nuxel-wayland nuxel-wl-fb nuxel-fallback; do
+  for u in nuxel-wayland nuxel-wl-fb nuxel-fallback nuxel-button-manager; do
     ln -sf "../$u.service" "$STAGE/etc/systemd/system/multi-user.target.wants/$u.service"
   done
 fi

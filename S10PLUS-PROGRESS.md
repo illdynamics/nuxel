@@ -126,3 +126,29 @@ Progress percentages in the table at the top of this file are left as historical
 estimates; the milestone table above is the evidence-based truth. Note in
 particular that "no ADB after boot" is expected: the Fedora rootfs contains no
 `adbd`, so ADB availability cannot be used as a boot-success signal.
+
+## A32 — BETA HARDWARE & LAUNCHER FINALIZER (2026-10-16)
+
+Full record: `docs/s10plus-autonomous-boot-repair/BETA-HARDWARE-FINALIZER/`.
+
+* **Touchscreen**: root cause measured — the phone was booted in charger/LPM mode
+  (`androidboot.mode=charger`), which makes `sec_ts_init()` bail out with `-ENODEV`;
+  no touch device existed at all.  After a normal reboot: `input: sec_touchscreen`
+  (`PROP=2`), libinput `accepted=1`, phoc holds the device, `nuxel-touch-arm` active.
+* **Launcher parity**: same PWA on both targets; the real difference was a stale
+  service-worker cache (fixed by SW namespace bump + network-first code assets +
+  host-side purge) and two registry entries without a frontend (Settings and Terminal
+  are now real PWAs under `/pwa/nuxel-apps/`, same registry ids).
+* **Colour**: `nuxel-wl-fb` copied XRGB8888 straight into an ABGR_8888 panel (red/blue
+  swapped).  Explicit conversion added, proven by `--colour-selftest` on aarch64.
+* **Animation**: the bridge hands the panel over only after the animation completes
+  full cycles (`NUXEL_ANIM_LOOP=1,2` → `ANIMATION_STOPPED` at 21 s) instead of ~2 s in.
+* **Status bar**: ten-zone camera/cutout safe-area system (presets, orientations,
+  per-device profiles, live preview, JSON config, `nuxelctl` fallback); the S10+ preset
+  moves the battery cluster 112 px out of zones 9–10.
+* **Buttons**: new `nuxel-button-manager` — POWER 116 short = display off/on through the
+  display bridge (single fb owner kept), VOLUME 114/115 = real ALSA mixer
+  (`Left AMP PCM Gain`) with OSD, assistant key **703** = Nuxel Terminal (one instance),
+  all remappable in Settings or with `nuxelctl buttons set`.
+* **Not claimed**: audio output (no player/complete UCM in the image), camera, modem,
+  WLAN; the physical finger/button acceptance tests are the user’s.

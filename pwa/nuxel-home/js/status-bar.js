@@ -57,6 +57,28 @@ class StatusBar {
         if (typeof bridge !== 'undefined' && bridge.on) {
             bridge.on('status:update', (data) => this._onStatusUpdate(data));
         }
+
+        // A32 — camera/cutout safe zones: the item row is re-solved whenever the
+        // set changes or the viewport does, so no indicator can stay inside a
+        // blocked zone just because it was laid out earlier.
+        this._applySafeZones();
+        window.addEventListener('resize', () => this._applySafeZones());
+        window.addEventListener('orientationchange', () => setTimeout(() => this._applySafeZones(), 120));
+        document.addEventListener('nuxel:safezones-changed', () => this._applySafeZones());
+    }
+
+    _applySafeZones() {
+        if (window.NuxelSafeZones && typeof window.NuxelSafeZones.applyLayout === 'function') {
+            // two frames: the item widths must be measured after the DOM update
+            requestAnimationFrame(() => {
+                try {
+                    window.NuxelSafeZones.applyLayout();
+                    requestAnimationFrame(() => {
+                        try { window.NuxelSafeZones.applyLayout(); } catch (e) {}
+                    });
+                } catch (e) { console.warn('safe zones:', e.message || e); }
+            });
+        }
     }
 
     _updateTime() {
@@ -82,6 +104,7 @@ class StatusBar {
         }
         html += '</span>';
         this.elements.signal.innerHTML = html;
+        this._applySafeZones();
     }
 
     _renderWifi() {
@@ -109,6 +132,7 @@ class StatusBar {
         if (this.elements.batteryPct) {
             this.elements.batteryPct.textContent = level + '%';
         }
+        this._applySafeZones();
     }
 
     async _pollPhoneStatus() {
@@ -172,6 +196,7 @@ class StatusBar {
         this._renderSignal();
         this._renderWifi();
         this._renderBattery();
+        this._applySafeZones();
     }
 
     // ---- Notifications (same JSON source as the daemon) ----

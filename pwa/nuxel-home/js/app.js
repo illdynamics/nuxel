@@ -151,6 +151,17 @@ class NuxelHome {
             this._launchNative(app, url);
         });
 
+        // A32 — logical actions from the Nuxel hardware buttons / host API.
+        // The button manager and the Settings app never poke the DOM directly:
+        // they emit the same logical action, which is resolved here.
+        document.addEventListener('nuxel:action', (event) => {
+            const action = event.detail && event.detail.action;
+            console.log('[Nuxel] logical action:', action);
+            if (action === 'home') this._closeOverlays();
+            else if (action === 'search' && this.components.search) this.components.search.open();
+            else if (action === 'settings') appRegistry.launchApp('nuxel-settings');
+        });
+
         // Keyboard shortcuts
         document.addEventListener('keydown', (e) => {
             // Ctrl+F or / for search

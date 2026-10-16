@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "bixby_short": "open-terminal",
+  "bixby_long": "disabled",
+  "power_short": "screen-toggle",
+  "power_long": "power-menu",
+  "volume_up": "volume-up",
+  "volume_down": "volume-down"
+}

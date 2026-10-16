@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="nuxel-app-id" content="nuxel-settings">
+<title>Nuxel Settings</title>
+<link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="settings.css">
+</head>
+<body>
+<header class="hdr">
+  <h1>Settings</h1>
+  <button id="close" class="ghost" title="Back to Home">Close</button>
+</header>
+
+<nav class="tabs">
+  <button class="tab active" data-tab="display">Display</button>
+  <button class="tab" data-tab="sound">Sound</button>
+  <button class="tab" data-tab="buttons">Buttons &amp; Gestures</button>
+  <button class="tab" data-tab="dev">Developer</button>
+</nav>
+
+<main>
+  <!-- ── DISPLAY ─────────────────────────────────────────────────────── -->
+  <section id="tab-display" class="panel active">
+    <h2>Display</h2>
+    <div class="card">
+      <h3>Screen on / off</h3>
+      <p class="hint">The display bridge (nuxel-wl-fb) stays the only framebuffer owner; these
+        buttons drive its control channel, exactly like a short POWER press.</p>
+      <div class="row">
+        <button data-action="screen-off">Screen off</button>
+        <button data-action="screen-on">Screen on</button>
+        <button data-action="screen-toggle">Toggle</button>
+      </div>
+      <pre id="display-state" class="state">—</pre>
+    </div>
+
+    <div class="card">
+      <h3>Status Bar → Camera &amp; Cutout Areas</h3>
+      <p class="hint">Ten zones, left to right. A <b>blocked</b> zone becomes an excluded
+        interval: no status item (time, battery, battery %, signal, Wi-Fi, notifications) may be
+        placed inside it.</p>
+
+      <div class="row wrap">
+        <label>Preset
+          <select id="preset">
+            <option value="none">No cutout</option>
+            <option value="right_camera">Right-side camera cutout</option>
+            <option value="center_camera">Center camera cutout</option>
+            <option value="left_camera">Left-side camera cutout</option>
+            <option value="custom">Custom / manual</option>
+          </select>
+        </label>
+        <label>Orientation
+          <select id="orientation">
+            <option value="portrait">Portrait</option>
+            <option value="landscape_left">Landscape (left)</option>
+            <option value="landscape_right">Landscape (right)</option>
+          </select>
+        </label>
+        <label>Safety padding
+          <input id="padding" type="range" min="0" max="24" step="1" value="6">
+          <output id="padding-val">6 dp</output>
+        </label>
+      </div>
+
+      <div id="zones" class="zones" role="group" aria-label="Status bar zones">
+        <!-- ten boxes built by settings.js -->
+      </div>
+
+      <h4>Live preview</h4>
+      <div class="preview-wrap">
+        <div id="preview-bar" class="preview-bar">
+          <span class="pv status-left"><span class="pv-time">09:41</span></span>
+          <span class="pv status-center"><span class="pv-sig">▂▄▆</span><span class="pv-wifi">wifi</span></span>
+          <span class="pv status-right"><span class="pv-bat">🔋</span><span class="pv-pct">100%</span></span>
+        </div>
+        <div id="preview-zones" class="preview-zones"></div>
+      </div>
+      <p id="preview-report" class="state">—</p>
+
+      <div class="row">
+        <button id="save-zones" class="primary">Save</button>
+        <button id="cancel-zones">Cancel</button>
+        <button id="apply-zones">Apply to real status bar (preview)</button>
+      </div>
+      <p class="hint">Saved to the Nuxel device configuration
+        (<code>/etc/nuxel/display/statusbar-safezones.json</code>); the same file is used by
+        <code>nuxelctl statusbar</code> on the live console. Changes need no reboot.</p>
+    </div>
+  </section>
+
+  <!-- ── SOUND ────────────────────────────────────────────────────────── -->
+  <section id="tab-sound" class="panel">
+    <h2>Sound</h2>
+    <div class="card">
+      <h3>Output volume</h3>
+      <p class="hint">Wired to the real ALSA mixer of this device (the manager logs every
+        control it uses). If the audio path exposes no writable playback control the OSD says so
+        instead of pretending.</p>
+      <div class="row">
+        <button data-action="volume-down">Volume −</button>
+        <button data-action="volume-up">Volume +</button>
+        <button data-action="volume-mute">Mute</button>
+      </div>
+      <pre id="volume-state" class="state">—</pre>
+    </div>
+  </section>
+
+  <!-- ── BUTTONS ──────────────────────────────────────────────────────── -->
+  <section id="tab-buttons" class="panel">
+    <h2>Buttons &amp; Gestures</h2>
+    <div class="card">
+      <h3>Power button</h3>
+      <label>Short press <select id="power-short"></select></label>
+      <label>Long press <select id="power-long"></select></label>
+    </div>
+    <div class="card">
+      <h3>Bixby / assistant button</h3>
+      <p class="hint">Default: one short press opens the Nuxel Terminal (one instance; a second
+        press focuses the existing shell).</p>
+      <label>Short press <select id="bixby-short"></select></label>
+      <label>Long press <select id="bixby-long"></select></label>
+    </div>
+    <div class="card">
+      <h3>Volume buttons</h3>
+      <label>Volume up <select id="vol-up"></select></label>
+      <label>Volume down <select id="vol-down"></select></label>
+    </div>
+    <div class="row">
+      <button id="save-buttons" class="primary">Save button mapping</button>
+      <button id="reload-buttons">Reload</button>
+    </div>
+    <p id="buttons-report" class="state">—</p>
+  </section>
+
+  <!-- ── DEVELOPER ────────────────────────────────────────────────────── -->
+  <section id="tab-dev" class="panel">
+    <h2>Developer</h2>
+    <div class="card">
+      <h3>Live state</h3>
+      <div class="row"><button id="refresh-dev">Refresh</button></div>
+      <pre id="dev-state" class="state">—</pre>
+    </div>
+    <div class="card">
+      <h3>Input diagnostics</h3>
+      <p class="hint">Touch/key pipeline verdicts recorded by the launcher host and the
+        hardware-button manager.</p>
+      <pre id="dev-input" class="state">—</pre>
+    </div>
+  </section>
+</main>
+
+<script src="settings.js"></script>
+</body>
+</html>

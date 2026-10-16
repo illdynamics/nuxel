@@ -1,0 +1,14 @@
+{
+  "name": "Nuxel Settings",
+  "short_name": "Settings",
+  "description": "Nuxel system settings (display, status bar cutout safe zones, sound, hardware buttons)",
+  "start_url": "./index.html",
+  "display": "fullscreen",
+  "orientation": "portrait-primary",
+  "scope": "./",
+  "background_color": "#0a1628",
+  "theme_color": "#0a1628",
+  "lang": "en",
+  "dir": "ltr",
+  "icons": [{ "src": "../calendar/icons/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+}

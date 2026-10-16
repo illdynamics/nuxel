@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="nuxel-app-id" content="org.nuxel.Terminal">
+<title>Nuxel Terminal</title>
+<link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="terminal.css">
+</head>
+<body>
+<header class="hdr">
+  <span class="dot"></span><span id="title">nuxel terminal</span>
+  <span class="grow"></span>
+  <button id="clear" class="ghost">Clear</button>
+  <button id="close" class="ghost">Close</button>
+</header>
+<pre id="screen" class="screen" tabindex="0"></pre>
+<div id="osk" class="osk"></div>
+<div id="notice" class="notice hidden"></div>
+<script src="terminal.js"></script>
+</body>
+</html>

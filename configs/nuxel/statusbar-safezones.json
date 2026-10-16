@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "zones": 10,
+  "profiles": {
+    "s10plus": { "portrait": [9, 10], "landscape_left": [], "landscape_right": [] },
+    "pixel_center": { "portrait": [5, 6], "landscape_left": [], "landscape_right": [] },
+    "none": { "portrait": [], "landscape_left": [], "landscape_right": [] },
+    "left_camera": { "portrait": [1, 2], "landscape_left": [1, 2], "landscape_right": [9, 10] },
+    "right_camera": { "portrait": [9, 10], "landscape_left": [9, 10], "landscape_right": [1, 2] }
+  },
+  "padding_dp": 6,
+  "profile": "s10plus",
+  "orientation": "portrait",
+  "custom": { "portrait": [], "landscape_left": [], "landscape_right": [] }
+}

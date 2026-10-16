@@ -109,9 +109,28 @@ const NUXEL_APPS = {
         icon: '⚙️',
         color: '#78909C',
         category: 'system',
-        type: 'native',
-        url: 'nuxel-settings://',
+        // A32: the native GTK4 placeholder (nuxel-settings://) has no implementation
+        // on the handset OR in the VM, so the authoritative Settings surface is the
+        // Nuxel Settings PWA under the same registry id: Display (status bar /
+        // camera cutout safe zones, screen on/off), Sound (real ALSA volume),
+        // Buttons & Gestures (Power/Bixby remapping) and Developer status.
+        type: 'pwa',
+        url: '/pwa/nuxel-apps/settings/index.html',
         description: 'System settings',
+        capabilities: [],
+        docked: true,
+    },
+    'org.nuxel.Terminal': {
+        id: 'org.nuxel.Terminal',
+        name: 'Terminal',
+        icon: '🖥️',
+        color: '#263238',
+        category: 'system',
+        // A32: the Nuxel Terminal — a real PTY (/bin/sh through the launcher host),
+        // one instance only.  The Bixby button opens this by default (mission 13).
+        type: 'pwa',
+        url: '/pwa/nuxel-apps/terminal/index.html',
+        description: 'Nuxel shell console',
         capabilities: [],
         docked: true,
     },
@@ -328,3 +347,6 @@ class AppRegistry {
 
 // Create global instance
 const appRegistry = new AppRegistry();
+// A32: expose the registry to the launcher host (hardware-button remapping needs
+// the authoritative app list) and to same-origin PWA iframes (Settings).
+try { window.appRegistry = appRegistry; } catch (e) { /* ignore */ }

@@ -1,0 +1,14 @@
+{
+  "name": "Nuxel Terminal",
+  "short_name": "Terminal",
+  "description": "Nuxel Terminal — a real PTY on the device, driven by the launcher host",
+  "start_url": "./index.html",
+  "display": "fullscreen",
+  "orientation": "portrait-primary",
+  "scope": "./",
+  "background_color": "#05080f",
+  "theme_color": "#05080f",
+  "lang": "en",
+  "dir": "ltr",
+  "icons": [{ "src": "../calendar/icons/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+}
