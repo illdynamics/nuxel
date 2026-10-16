@@ -67,9 +67,20 @@ single ownership is a correctness property, not a style choice.
    ```sh
    dmesg | grep -E 'NUXEL_ANIM|ANIM_MIN_CYCLE|ANIMATION_STOP|LAUNCHER_DISPLAY|NUXEL_FB_OWNER_BUSY'
    ```
-4. **Colour order:** open the launcher, display a full-screen **pure red** image (the launcher
-   can be driven from the console: `nuxelctl display test-pattern red`, or open any full-screen
-   red page). The glass must be **red**.
+4. **Colour order:** display the shipped full-screen test page through the *real* pipeline
+   (WebKitGTK → Phoc/Wayland → `nuxel-wl-fb` → `/dev/fb0` → DECON):
+
+   ```sh
+   sudo systemctl set-environment NUXEL_HOME_URL=http://127.0.0.1:8000/pwa/nuxel-home/colour-test.html
+   sudo systemctl restart nuxel-pwa-host          # the launcher view now shows the colour test
+   # the glass must be RED; tapping the screen cycles RED/GREEN/BLUE/WHITE/BLACK/GREY/THIRDS
+   sudo systemctl unset-environment NUXEL_HOME_URL
+   sudo systemctl restart nuxel-pwa-host          # back to the normal launcher
+   ```
+
+   The page (`pwa/nuxel-home/colour-test.html`) fills the screen with the named colour and shows
+   a bottom bar in **red | green | blue** order. In a VM/desktop browser it is also directly
+   openable at `http://127.0.0.1:8000/pwa/nuxel-home/colour-test.html`.
 5. **Verbose boot:** `nuxelctl verbose-boot status` → note the durable value, source and
    override capability. Then enable it (`nuxelctl verbose-boot on`) and reboot once more, and
    confirm the boot log appears on the glass early. Turn it back off afterwards
@@ -135,12 +146,18 @@ python3 tools/s10plus/a33/nuxel-verbose-boot.py --selftest   # offline durabilit
 | 3.1 complete animation cycle before handoff | ☐ PASS ☐ FAIL | `nuxel-anim-handoff.py selftest`: decision table over 22 cases + compiled C layer; `simulate` prints the legacy cut (negative control) next to the A33 behaviour (0 skipped frames) |
 | 3.2 single framebuffer owner | ☐ PASS ☐ FAIL | bridge takes `/run/nuxel-fb-owner.lock`, identity-verifies the holder, refuses to be a second writer (`FB_OWNER_BUSY`); `audit` **rejects** a fixture with two different writers |
 | 3.3 launcher-not-ready ⇒ animation resumes | ☐ PASS ☐ FAIL | `selftest`: “launcher never ready ⇒ animation keeps the panel”, “with no launcher the bridge never takes ownership” |
-| 3.4 colour order (red stays red) | ☐ PASS ☐ FAIL | `test-colour-order.py`: golden bytes for R/G/B/white/black/mixed; LUT equals an independent reference over 74 words |
+| 3.4 colour order (red stays red) | ☐ PASS ☐ FAIL | `test-colour-order.py`: golden bytes for R/G/B/white/black/mixed; LUT equals an independent reference over 74 words; the shipped `colour-test.html` swatches are checked against those same golden values. The on-glass verdict needs the owner |
 | 3.5 verbose-boot setting (durable, UI + console, boot consumer) | ☐ PASS ☐ FAIL | `nuxel-verbose-boot.py --selftest`: fresh install, upgrade-keep rule, legacy migration, unreadable document refused, override honoured/refused. On-glass effect needs the owner |
 | 3.5b Bixby hold override | `BLOCKED_KERNEL / BOOT_UPDATE_REQUIRED` | the installed early boot stage does not publish `bixby-hold-override=1`; the harness asserts the request is *refused, not faked* |
 | 3.6 safe areas through the handoff | ☐ PASS ☐ FAIL | `tools/s10plus/a32/tests/safe-zones-test.js` (see area 2) |
 
-**Current automatic evidence (build host, 2026-10-16):**
+**Current automatic evidence (build host + UTM guest, 2026-10-16):**
+`tools/s10plus/a33/build-a33-boot.sh` → `BUILD_A33_BOOT=OK channel=vm`: the A33 bridge
+built as an aarch64 ELF on the UTM Fedora 43 guest and its own `--colour-selftest`,
+`--handoff-selftest` (`handoff_logic invariants cases=22`) and `--colour-dump` ran
+**natively** there (sha256 `2d8718c4d92858bbae02b7e914f0172d295b1c12446eb861e91c355f2ac912fc`);
+the golden-bytes test then matched that compiled artefact word for word
+(48 checks, 0 failures with `NUXEL_VM` set). It is **not deployed** to the phone.
 `nuxel-anim-handoff.py selftest` → *handoff harness selftest (0 failures)*, 29 checks including
 the C layer compiled and executed against the shared 22-case corpus;
 `nuxel-verbose-boot.py --selftest` → *verbose-boot offline harness passed (upgrade-safe, offline)*;

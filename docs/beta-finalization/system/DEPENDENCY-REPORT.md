@@ -36,6 +36,42 @@ for aarch64 is a hard failure, not a warning — a missing package is either fix
 in the manifest or would have aborted the real `dnf` install (the builder runs
 `set -Eeuo pipefail`).
 
+### 1.1 Provenance of the metadata every NEVRA comes from
+
+A version is only evidence if the artifact it was read from is named. The
+verifier now records the chain of custody for each repository in the report
+(`metadata_provenance[]`) and in the manifest
+(`source.metadata_provenance[]`), and re-derives it on every run. Values below
+are from the live `dl.fedoraproject.org` fetch of **2026-10-16** (the cache
+under `build/pkgmeta/` holds bit-identical copies, verified by
+`tests/test-packages-manifest.py`):
+
+| Repository | `repomd.xml` sha256 | primary payload | compressed sha256 | NEVRAs |
+|---|---|---|---|---|
+| `releases/43/Everything/aarch64/os` (GA) | `6431612747d987257399969298151d19cfe87ed26322be6987e7b00cd0ae66a2` | `a29dc3fc…-primary.xml.zst` (14 837 955 B) | `a29dc3fcc86b6e10fab525e6de0b97e851b5e4e7fc3691d40d72efe6757a733d` | 68 135 |
+| `updates/43/Everything/aarch64` | `fa6fe9653ba62e44069d27a1f4fb9c410ab6240ea714eddce1e362a3c9cc6623` | `8932760a…-primary.xml.zst` (5 588 439 B) | `8932760a7b759f80fec97f8c1f5cd95c7b322e5f9955615876dd7ecf421e1aa6` | 25 840 |
+
+Decompressed primary sha256: GA
+`02d247f25e10add65533a4e76462fe390ebf2b77fcc4e60fe53c2c172ce2d680`, updates
+`68908f389c99b37d479e1fe4383f92c7971a147fd50ab383993ea549000ad329`. Together:
+**93 975 distinct aarch64/noarch NEVRAs**.
+
+Re-derive the same package set from the recorded artifacts:
+
+```sh
+# network: fetch the current metadata and re-resolve (fails on any pin drift)
+python3 tools/s10plus/a33/verify-packages.py --report build/pkgmeta/report.json
+# offline: resolve from the cache and diff its hashes against the manifest
+python3 tools/s10plus/a33/verify-packages.py --offline --quiet
+python3 tools/s10plus/a33/tests/test-packages-manifest.py   # provenance + pin + builder checks
+```
+
+Drift policy: the `updates` repository moves by design. `test-packages-manifest.py`
+reports a `updates` hash change as `INFO metadata drifted`, a **GA** hash change
+as a failure, and any change that breaks the `systemd` pin as `FAILED`
+regardless — the pin is what the carried 4.14 `libsystemd-shared` patch is
+compiled against (§3.1).
+
 ## 2. Fail-loud findings (these changed the build)
 
 Three real problems were found by resolving against actual metadata. All three
@@ -255,3 +291,16 @@ report only guarantees the packages exist for aarch64.
   resolved. `basesystem` was removed from the list because it no longer exists
   in Fedora 43 (documented in §2.1) — that is a removal of a non-existent
   package, not a hidden `--skip-unavailable`.
+
+## 6. Evidence index (reproduce everything offline)
+
+| Claim | Command | Result |
+|---|---|---|
+| essential packages resolve against real Fedora 43 aarch64 metadata | `python3 tools/s10plus/a33/verify-packages.py` | `resolved` (rc 0), 50/50 |
+| the systemd pin is load-bearing (GA alone fails) | `python3 tools/s10plus/a33/verify-packages.py --ga-only` | `FAILED`, names the systemd pin |
+| no metadata source ⇒ no invented versions | `python3 tools/s10plus/a33/verify-packages.py --offline --cache-dir /tmp/empty` | `BLOCKED_EXTERNAL_RESOURCE` (rc 3) |
+| provenance + builder install-line + pin, all offline | `python3 tools/s10plus/a33/tests/test-packages-manifest.py` | all assertions pass |
+| all of Priority 4 in one command | `bash tools/s10plus/a33/tests/run-userspace-tests.sh` | `OFFLINE_TESTED` (10/10) |
+
+The machine-readable results are written to `build/pkgmeta/` (git-ignored build
+scratch, never to `.qq`/RUN_ROOT).

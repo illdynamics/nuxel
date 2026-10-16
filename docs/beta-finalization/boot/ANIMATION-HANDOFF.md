@@ -92,6 +92,9 @@ player's own `NUXEL_ANIM_LOOP=<n>` and `NUXEL_ANIM_HEARTBEAT_LOOPS=<n>`.
 | `tools/s10plus/a33/tests/test-handoff-logic.c` | Compiles the header against the corpus and asserts the invariants |
 | `configs/nuxel/boot/animation-handoff.json` | Installs to `/etc/nuxel/boot/animation-handoff.json`; read by the bridge at boot |
 | `tools/s10plus/a33/nuxelctl` | `nuxelctl handoff status\|simulate\|audit` |
+| `tools/s10plus/a33/build-a33-boot.sh` | Builds **this** bridge as an aarch64 ELF (UTM guest, or `CROSS_COMPILE`), then runs the bridge's own `--colour-selftest`, `--colour-dump` and `--handoff-selftest` natively on the build channel. A build that cannot run is reported as skipped — never as a pass. Output: `build/out/s10plus/a33-boot/` (never the A32 artifact directory) |
+| `tools/s10plus/a33/tests/run-boot-tests.sh` | The whole bg-02 offline set (headless, rootless) as one command |
+| `tools/s10plus/a33/tests/test-boot-surface-contract.py` | Wiring contract: the markers, the lock/receipt paths, the config the bridge reads, the console/UI wiring, the ten-zone contract and the documents all agreeing |
 | `configs/nuxel/README.md` | Install/upgrade rules for the `/etc/nuxel` documents |
 
 Geometry is **measured, not assumed**: `mp4_frames=192`, `mp4_fps=24`,
@@ -108,9 +111,21 @@ python3 tools/s10plus/a33/nuxel-anim-handoff.py selftest   # exit 0 == all pass
 python3 tools/s10plus/a33/nuxel-anim-handoff.py simulate   # the A32-vs-A33 timeline
 python3 tools/s10plus/a33/nuxel-anim-handoff.py audit --root <fixture>   # auditor
 python3 tools/s10plus/a33/nuxelctl handoff status|simulate|audit
+
+bash tools/s10plus/a33/tests/run-boot-tests.sh          # every bg-02 leg, one command
+bash tools/s10plus/a33/build-a33-boot.sh                # build + self-test the aarch64 bridge
+bash tools/beta/regression-guard.sh                     # the A32 floor (INV-1..INV-9)
 ```
 
-Latest run — 23 checks, 0 failures:
+Measured 2026-10-16, `build-a33-boot.sh`: `BUILD_A33_BOOT=OK channel=vm` — the A33
+bridge built as an aarch64 ELF on the UTM Fedora 43 guest (sha256
+`2d8718c4d92858bbae02b7e914f0172d295b1c12446eb861e91c355f2ac912fc`), and on that guest
+`--colour-selftest` printed all six PASS lines, `--handoff-selftest` printed
+`PASS handoff_logic invariants cases=22` and `--colour-dump` reported
+`hw=R@0,G@8,B@16 hw_order_override=1`. The artifact is **not deployed to the phone** by
+that script (deployment is the serialized live group's job).
+
+Latest run — **30 checks, 0 failures**:
 
 * header/config agreement (mp4 geometry, floor, schema version);
 * the shipping asset's play-through is 8000 ms;
@@ -176,6 +191,17 @@ follow §6.
   model for comparison only (it is what `simulate` prints in its first row); it is
   never selected by the shipped configuration, and the shipped config is what the
   bridge reads.
+
+## 6b. Owner-visible proof (manual proof area 3)
+
+The on-glass half of this briQ is
+`docs/beta-finalization/manual-proof/03-display-boot.md` (area 3 — display and boot
+animation): watch one normal boot, then read the receipts and markers with
+`nuxelctl handoff status|audit`, `cat /run/nuxel-anim-handoff`,
+`dmesg | grep -E 'NUXEL_ANIM|ANIM_MIN_CYCLE|ANIMATION_STOP|LAUNCHER_DISPLAY'` and
+`tail /var/lib/nuxel/anim-handoff.log`. The verdict stays **NEEDS_OWNER_TEST** until a
+human has watched that boot: the evidence above is a decision table, a compiled binary
+and a harness — none of which can see the panel.
 
 ## 7. Rollback
 

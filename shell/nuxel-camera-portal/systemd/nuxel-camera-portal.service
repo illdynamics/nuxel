@@ -3,11 +3,20 @@
 # Minimal org.freedesktop.portal.Camera backend that publishes a PipeWire
 # camera node (synthetic color bars on the VM, real v4l2src on mustang).
 #
-# Install (VM / Fedora systemd):
-#   sudo install -m 0644 shell/nuxel-camera-portal/systemd/nuxel-camera-portal.service \
-#       /etc/systemd/system/nuxel-camera-portal.service
-#   sudo systemctl daemon-reload
-#   sudo systemctl enable --now nuxel-camera-portal
+# Install (VM / Fedora systemd) - this is a USER-manager unit:
+#   install -Dm0644 shell/nuxel-camera-portal/systemd/nuxel-camera-portal.service \
+#       ~/.config/systemd/user/nuxel-camera-portal.service
+#   systemctl --user daemon-reload
+#   systemctl --user enable --now nuxel-camera-portal
+#
+# It is session-scoped on purpose: it has to sit in the same user D-Bus
+# namespace as PipeWire and xdg-desktop-portal, which is why it carries
+# WantedBy=graphical-session.target. Installing it into the SYSTEM manager
+# (/etc/systemd/system + `systemctl enable`) is a NO-OP for that target; the
+# handset rootfs builder never installs it (it builds no VM camera surface), and
+# tools/s10plus/a33/verify-service-graph.py records that as an explicit warning
+# instead of silently "passing" a unit that could never start. Phone camera work
+# is tracked separately (see docs/beta-finalization/manual-proof/15-camera.md).
 #
 # mustang / Alpine pmOS runs the OpenRC wrapper at boot; see docs.
 

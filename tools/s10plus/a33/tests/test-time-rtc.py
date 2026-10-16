@@ -22,6 +22,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 
@@ -85,7 +86,26 @@ for name, expect in cases.items():
     check("fixture %s -> %s" % (name, expect), got == expect, "got %s" % got)
 
 # 2 ── verify surfaces real failures and passes observable checks -------------------
-p = run(["bash", TOOL, "verify"], root=os.path.abspath(os.path.join(FIX, "time-ok")))
+# The committed time-ok fixture pins a STATIC RTC epoch, so checking it against
+# the real wall clock would rot as real time advances past the drift bound. That
+# is a broken test, not a broken device. Materialise a copy whose RTC reads
+# "now - 1 s" so the evidence genuinely agrees with the clock at run time; the
+# committed fixture is still used verbatim for the (clock-independent) verdict
+# checks above.
+def materialize_time_ok():
+    d = tempfile.mkdtemp(prefix="nuxel-time-ok-")
+    dst = os.path.join(d, "root")
+    shutil.copytree(os.path.join(FIX, "time-ok"), dst)
+    now = int(time.time()) - 1
+    rtc = os.path.join(dst, "sys/class/rtc/rtc0")
+    open(os.path.join(rtc, "since_epoch"), "w").write("%d\n" % now)
+    open(os.path.join(rtc, "date"), "w").write(time.strftime("%Y-%m-%d\n", time.gmtime(now)))
+    open(os.path.join(rtc, "time"), "w").write(time.strftime("%H:%M:%S\n", time.gmtime(now)))
+    return dst
+
+
+ok_root = materialize_time_ok()
+p = run(["bash", TOOL, "verify"], root=ok_root)
 check("verify PASSES every observable check when the evidence agrees",
       p.returncode == 0 and "fail=0" in p.stdout, p.stdout[-400:])
 check("verify marks reboot persistence as NEEDS_OWNER_TEST (never a silent PASS)",

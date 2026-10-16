@@ -90,12 +90,18 @@ tree inside the image build (never on a phone), idempotently, and
 ## 5. Verification and honest limits
 
 ```sh
-python3 tools/s10plus/a33/verify-service-graph.py     # OFFLINE_TESTED (repository evidence)
-python3 tools/s10plus/a33/verify-packages.py          # package/NEVRA pin evidence
+python3 tools/s10plus/a33/verify-service-graph.py      # OFFLINE_TESTED (repository evidence)
+python3 tools/s10plus/a33/tests/test-service-graph.py  # the validator is proven to FAIL on defects
+python3 tools/s10plus/a33/verify-packages.py           # package/NEVRA pin evidence
+bash tools/s10plus/a33/tests/run-userspace-tests.sh    # all of Priority 4 (packages, graph, apps)
 ```
 
 * Offline: the graph is cycle-free, every reference resolves, no forbidden 4.14
   dependency exists, and the builder installs + enables exactly the canonical set.
+  The `[Install] WantedBy=` half of that check was repaired in this revision (it
+  had been reading `[Unit]`, so it could never fail) and is now covered by the
+  mutation test; the one remaining warning is the VM-only
+  `nuxel-camera-portal.service`, which the handset never installs.
 * On-device: `systemctl is-system-running`, `systemctl --failed`,
   `journalctl -b -p err` are **not** claimed here. They are measured by the live
   deployment group and recorded in `docs/beta-finalization/live/` and the manual

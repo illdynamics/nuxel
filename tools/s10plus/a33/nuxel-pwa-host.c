@@ -146,6 +146,14 @@ static const struct cfgfile CFG[] = {
   { "anim-state",          "/var/lib/nuxel/animation",                     0 },
   { "display-state",       "/var/lib/nuxel/display",                       0 },
   { "touch-arm-state",     "/run/nuxel-touch-arm.state",                   0 },
+  /* REVISION A33c (bg-06-core-phone-apps, briq-06d): the Nuxel Settings app's
+     Input group switches the on-screen keyboard through the document
+     /etc/nuxel/keyboard/keyboard.json, and it must be able to SHOW what the
+     applier actually managed to apply. /run/nuxel-keyboard.state is written by
+     tools/s10plus/a33/nuxel-keyboard-apply.sh (the single consumer of that
+     document) and is read-only here - no new verb, no new write path, no change
+     to the terminal, the buttons or the boot surface. */
+  { "keyboard-state",      "/run/nuxel-keyboard.state",                    0 },
   { NULL, NULL, 0 }
 };
 

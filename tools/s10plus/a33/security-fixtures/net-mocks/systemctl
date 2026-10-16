@@ -1,0 +1,20 @@
+#!/bin/bash
+# Offline stand-in for systemctl (briq-05c tests). Reads NUXEL_MOCK_NET_MODE.
+MODE="${NUXEL_MOCK_NET_MODE:-off}"
+cmd="${1-}"; shift || true
+unit="${1-}"
+case "$cmd" in
+    is-active)
+        case "$MODE:$unit" in
+            tor-up*:tor.service)        echo active;   exit 0 ;;
+            *:tor.service)              echo inactive; exit 3 ;;
+            remote-on:sshd-gadget.service) echo active; exit 0 ;;
+            *:sshd-gadget.service)      echo inactive; exit 3 ;;
+            *)                          echo unknown;  exit 4 ;;
+        esac ;;
+    start|stop|restart|reload)
+        echo "$cmd $unit (mock)"; exit 0 ;;
+    show)
+        echo "ActiveState=inactive"; exit 0 ;;
+    *) exit 0 ;;
+esac

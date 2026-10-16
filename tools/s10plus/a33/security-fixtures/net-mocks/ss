@@ -1,0 +1,18 @@
+#!/bin/bash
+# Offline stand-in for ss (briq-05c leak-probe tests). Reads NUXEL_MOCK_NET_MODE.
+MODE="${NUXEL_MOCK_NET_MODE:-off}"
+if [ "$MODE" = "leak" ]; then
+    cat <<'OUT'
+udp   UNCONN 0   0     127.0.0.1:9053    0.0.0.0:*    users:(("tor",pid=1,fd=1))
+tcp   LISTEN 0   128   127.0.0.1:9051    0.0.0.0:*    users:(("tor",pid=1,fd=2))
+udp   ESTAB  0   0     192.168.1.50:40222  9.9.9.9:53   users:(("probe",pid=2,fd=3))
+tcp   ESTAB  0   0     192.168.1.50:44110  93.184.216.34:443 users:(("curl",pid=3,fd=4))
+OUT
+else
+    cat <<'OUT'
+udp   UNCONN 0   0     127.0.0.1:9053    0.0.0.0:*    users:(("tor",pid=1,fd=1))
+tcp   LISTEN 0   128   127.0.0.1:9051    0.0.0.0:*    users:(("tor",pid=1,fd=2))
+tcp   ESTAB  0   0     127.0.0.1:41234   127.0.0.1:9050 users:(("probe",pid=2,fd=3))
+OUT
+fi
+exit 0

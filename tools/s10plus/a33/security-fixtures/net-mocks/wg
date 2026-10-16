@@ -1,0 +1,26 @@
+#!/bin/bash
+# Offline stand-in for wg (briq-05c tests). Reads NUXEL_MOCK_NET_MODE.
+MODE="${NUXEL_MOCK_NET_MODE:-off}"
+cmd="${1-}"; shift || true
+iface="${1-}"
+case "$MODE" in
+    vpn-up*) ;;   # tunnel present
+    *) echo "Unable to access interface: No such device" >&2; exit 1 ;;
+esac
+case "$cmd" in
+    show)
+        case "${1-}" in
+            latest-handshakes)
+                if [ "$MODE" = "vpn-up-handshake" ]; then
+                    printf 'ZmFrZXB1YmtleWJhc2U2NDAwMDAwMDAwMDAwMDAwMDA=\t1712345678\n'
+                else
+                    printf 'ZmFrZXB1YmtleWJhc2U2NDAwMDAwMDAwMDAwMDAwMDA=\t0\n'
+                fi
+                exit 0 ;;
+            *)
+                echo "interface: $iface"
+                echo "  public key: ZmFrZXB1YmtleWJhc2U2NDAwMDAwMDAwMDAwMDAwMDA="
+                exit 0 ;;
+        esac ;;
+    *) exit 0 ;;
+esac

@@ -107,6 +107,14 @@ FORBIDDEN_REFS = {
     "dbus-broker.service": "dbus-broker-launch dies ENOSYS in launcher_fork; the system bus is dbus-daemon",
 }
 
+# Surfaces that exist in the tree for the UTM VM / another device generation and
+# are NEVER installed on the handset by the rootfs builder. They are validated
+# (their references must still resolve) but a no-op enablement in them is a
+# recorded WARNING with a documented reason, not a handset boot-graph FAILURE.
+VM_ONLY_UNITS = {
+    "nuxel-camera-portal.service",
+}
+
 REGEX_SECTION = re.compile(r"^\[([A-Za-z]+)\]\s*$")
 REGEX_ASSIGN = re.compile(r"^([A-Za-z][A-Za-z0-9_-]*)=(.*)$")
 MULTI_KEYS = {"After", "Before", "Wants", "Requires", "Conflicts", "ConditionPathExists",
@@ -146,6 +154,21 @@ def refs(sections, key) -> List[str]:
         for v in sections.get(sec, {}).get(key, []):
             for tok in v.split():
                 out.append(tok)
+    return out
+
+
+def install_refs(sections, key) -> List[str]:
+    """Read a directive from the [Install] section.
+
+    `WantedBy=`/`Also=` live in [Install], NOT [Unit]; reading them with refs()
+    (which only scans [Unit]) silently returns nothing and turns every
+    enablement assertion into dead code. This helper is the fix for that, and
+    tools/s10plus/a33/tests/test-service-graph.py proves the assertion fires.
+    """
+    out: List[str] = []
+    for v in sections.get("Install", {}).get(key, []):
+        for tok in v.split():
+            out.append(tok)
     return out
 
 
@@ -232,10 +255,16 @@ def main(argv=None, root: str = None) -> int:
                     warnings.append("%s: %s=%s is an unlisted external unit (not verified here)"
                                     % (name, key, ref))
         # a system unit must never be enabled into a user target
-        for wb in refs(secs, "WantedBy"):
+        for wb in install_refs(secs, "WantedBy"):
             if wb in ("graphical-session.target", "default.target") and not info["path"].startswith("shell/config/systemd-user"):
-                problems.append("%s: WantedBy=%s is a USER target in a SYSTEM unit (enablement is a no-op)"
-                                % (name, wb))
+                msg = ("%s: WantedBy=%s is a USER target in a SYSTEM unit "
+                       "(enablement is a no-op in the system manager)" % (name, wb))
+                if name in VM_ONLY_UNITS:
+                    warnings.append(msg + " - VM-only surface (%s), never installed on the handset by "
+                                          "images/s10plus/build-phone-rootfs-inside-fedora.sh; enablement "
+                                          "belongs to the VM/user manager" % info["path"])
+                else:
+                    problems.append(msg)
         # ExecStart must point at a path we install
         for exe in secs.get("Service", {}).get("ExecStart", []):
             prog = exe.split()[0]
@@ -280,7 +309,7 @@ def main(argv=None, root: str = None) -> int:
             problems.append("builder does not install %s (boot graph not reproducible from the repo)" % name)
         else:
             secs = units[name]["sections"]
-            wb = refs(secs, "WantedBy")
+            wb = install_refs(secs, "WantedBy")
             if "multi-user.target" in wb and name not in enabled and name != "nuxel-ui.service":
                 # enabled set uses .service names; accept either form
                 if name not in enabled:
@@ -288,7 +317,7 @@ def main(argv=None, root: str = None) -> int:
     enabled_byname = {e if e.endswith(".service") else e + ".service" for e in enabled}
     for name in sorted(units):
         secs = units[name]["sections"]
-        if "multi-user.target" in refs(secs, "WantedBy") and name not in enabled_byname:
+        if "multi-user.target" in install_refs(secs, "WantedBy") and name not in enabled_byname:
             problems.append("unit %s expects multi-user.target enablement; builder enables %s"
                             % (name, sorted(enabled_byname)))
 
@@ -325,6 +354,7 @@ def main(argv=None, root: str = None) -> int:
         "builder_enabled": sorted(enabled_byname),
         "problems": problems,
         "warnings": warnings,
+        "vm_only_units": sorted(VM_ONLY_UNITS),
         "verdict": verdict,
     }
     if args.json:

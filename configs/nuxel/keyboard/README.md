@@ -51,6 +51,17 @@ Everything above is written by the **same applier** whether the change comes fro
 the Settings UI (`NuxelHost.configSet`) or from `nuxelctl` — one settings system,
 not a UI path plus a console path.
 
+### Symbols, shift/caps, enter, space and backspace
+
+These keys are **not** re-declared by the Nuxel documents. They come from the
+provider's own layout levels: `stevia` ships letters/numbers/symbols views with a
+shift key, and `squeekboard` has separate shift and symbol levels. A hand-written
+layout file that no engine on this image reads would be exactly the kind of
+cosmetic artefact this mission forbids, so the decision record says so instead:
+`keyboard-apply` reports them as `provider-managed` and the last-hop proof is the
+probe page, where a finger pressing shift, symbols, space, backspace or enter must
+produce a real `isTrusted` event.
+
 ## 3. Evidence — how you know it is not cosmetic
 
 1. `nuxel-keyboard-apply.sh apply` writes `/run/nuxel-keyboard.state`: one

@@ -49,8 +49,8 @@ features (exactly how Terminal went missing on the device copy).
 4. Record the current bundle before judging it (30 seconds):
 
    ```sh
-   curl -s http://127.0.0.1:8080/pwa/nuxel-home/js/status-bar.js | grep -m1 VERSION
-   curl -s http://127.0.0.1:8080/pwa/nuxel-home/manifest.json | python3 -c \
+   curl -s http://127.0.0.1:8000/pwa/nuxel-home/js/status-bar.js | grep -m1 VERSION
+   curl -s http://127.0.0.1:8000/pwa/nuxel-home/manifest.json | python3 -c \
      'import json,sys; print(json.load(sys.stdin)["nuxel"])'
    ```
 

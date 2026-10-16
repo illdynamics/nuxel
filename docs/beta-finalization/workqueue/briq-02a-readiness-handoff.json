@@ -49,6 +49,79 @@
       "revision": 1,
       "at": "2026-10-16T16:07:13+02:00",
       "by": "construqtor/bg-00-preflight"
+    },
+    {
+      "id": "briq-02a-readiness-handoff",
+      "title": "Display-ownership receipt-driven animation handoff with single fb owner",
+      "component": "bg-02-boot-animation-launcher",
+      "component_title": "Priority 2 - Boot Stability, Animation Handoff & UTM Launcher Parity",
+      "priority": 2,
+      "state": "implemented",
+      "dependencies": [],
+      "evidence": [
+        {
+          "kind": "observation",
+          "path": "tools/s10plus/a33/nuxel-wl-fb.c",
+          "command": "test -e tools/s10plus/a33/nuxel-wl-fb.c",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "observation",
+          "path": "tools/s10plus/a33/nuxel-anim-handoff.py",
+          "command": "test -e tools/s10plus/a33/nuxel-anim-handoff.py",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "tools/s10plus/a33/nuxel-anim-handoff.py",
+          "command": "python3 tools/s10plus/a33/nuxel-anim-handoff.py selftest",
+          "result": "PASS handoff harness selftest (0 failures); 30 checks: floor honoured exactly for 1/2/3 cycles, launcher-not-ready resumes the animation, auditor rejects a handoff with no completed cycle and a two-writer fixture",
+          "at": "2026-10-16T16:24:21+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "tools/s10plus/a33/nuxel-wl-fb.c",
+          "command": "bash tools/s10plus/a33/build-a33-boot.sh",
+          "result": "BUILD_A33_BOOT=OK channel=vm: aarch64 ELF sha256 2d8718c4d92858bbae02b7e914f0172d295b1c12446eb861e91c355f2ac912fc built and self-tested on the UTM Fedora 43 guest (NOT deployed to the phone)",
+          "at": "2026-10-16T16:24:21+02:00"
+        },
+        {
+          "kind": "doc",
+          "path": "docs/beta-finalization/manual-proof/03-display-boot.md",
+          "command": "cat docs/beta-finalization/manual-proof/03-display-boot.md",
+          "result": "owner procedure written: markers, receipt paths, expected/failure table, PASS/FAIL record; area verdict NEEDS_OWNER_TEST",
+          "at": "2026-10-16T16:24:21+02:00"
+        }
+      ],
+      "intended_changes": [
+        "tools/s10plus/a33/nuxel-wl-fb.c",
+        "tools/s10plus/a33/nuxel-anim-handoff.py",
+        "docs/beta-finalization/boot/ANIMATION-HANDOFF.md"
+      ],
+      "tests": [
+        "(tests are recorded by the owning briQ when it reports)",
+        "python3 tools/s10plus/a33/nuxel-anim-handoff.py selftest -> 30 PASS / 0 FAIL (decision table over the shared 22-case corpus + compiled C layer + single-owner/negative controls)",
+        "python3 tools/s10plus/a33/nuxel-anim-handoff.py simulate (A32 cut vs A33 0-skipped-frame timeline)",
+        "bash tools/s10plus/a33/build-a33-boot.sh -> BUILD_A33_BOOT=OK channel=vm; on the UTM Fedora 43 guest the aarch64 bridge printed PASS handoff_logic invariants cases=22",
+        "bash tools/s10plus/a33/tests/run-boot-tests.sh (all bg-02 legs) and bash tools/s10plus/a32/tests/run-tests.sh -> 0 failing suites"
+      ],
+      "risk": "medium",
+      "rollback": "git revert the commit(s) touching this task's expected files; the change is repository-only and alters no device state",
+      "verdict": "OFFLINE_TESTED",
+      "offline_ceiling": "NEEDS_OWNER_TEST",
+      "owner_action": "Watch one normal boot on the handset and confirm the animation plays a complete cycle and then hands over to the launcher without a blank/static frame; audit with 'nuxelctl handoff status|audit' (docs/beta-finalization/manual-proof/03-display-boot.md)",
+      "expected_files": [
+        "tools/s10plus/a33/nuxel-wl-fb.c",
+        "tools/s10plus/a33/nuxel-anim-handoff.py",
+        "docs/beta-finalization/boot/ANIMATION-HANDOFF.md"
+      ],
+      "note": "Receipt-driven handoff replacing the A31/A32 time/gap rule: mode=receipt in configs/nuxel/boot/animation-handoff.json, min_cycles=1 (one complete 192-frame/24fps play-through = 8000 ms), single-/dev/fb0-owner lock (/run/nuxel-fb-owner.lock + durable /var/lib/nuxel/fb-owner), NUXEL_ANIM_HANDOFF receipt=<id> owner=<anim|ui>, ANIM_MIN_CYCLE/ANIMATION_STOP/LAUNCHER_DISPLAY/ANIM_LOOP markers, launcher-not-ready resumes the animation (no blank/static frame), bounded max_wait_s=24 with explicit ANIM_MIN_CYCLE_DEGRADED. A33 also added build-a33-boot.sh (nothing built this bridge before) and run-boot-tests.sh (one gate for all five bg-02 briQs). Evidence here is a decision table, a compiled binary and a harness - none of which can see the panel, so the on-glass verdict stays NEEDS_OWNER_TEST.",
+      "source": "plan.json",
+      "at": "2026-10-16T16:24:21+02:00",
+      "by": "construqtor/bg-02-boot-animation-launcher",
+      "revision": 2
     }
   ]
 }

@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<!--
+  Nuxel colour-order test page (briq-02c, manual proof area 3.4)
+
+  WHY THIS PAGE EXISTS
+    The panel is driven in the DECON hardware byte order ABGR_8888, while the
+    compositor hands the bridge XRGB8888 shm.  If the byte swap is ever bypassed
+    (the measured A29-A31 defect) red and blue are exchanged on the glass, and
+    the ONLY way to catch that is to look at a known colour - a unit test on the
+    conversion table cannot see the panel.
+
+    This page is served from the same docroot as the launcher, so it is displayed
+    through the real pipeline (WebKitGTK -> Phoc/Wayland -> nuxel-wl-fb ->
+    /dev/fb0 -> DECON), which is exactly the path under test.  It writes no
+    framebuffer memory itself: it is ordinary web content.
+
+    Show it on the handset with:
+      sudo systemctl set-environment NUXEL_HOME_URL=http://127.0.0.1:8000/pwa/nuxel-home/colour-test.html
+      sudo systemctl restart nuxel-pwa-host          # launcher view now shows this page
+      # ... look at the panel, take a photo, then return to the normal launcher:
+      sudo systemctl unset-environment NUXEL_HOME_URL
+      sudo systemctl restart nuxel-pwa-host
+
+    EXPECTED: the bar that fills the screen is RED, the left/middle/right thirds
+    are RED / GREEN / BLUE in that order, and the text label matches the colour
+    you see.  FAILURE: red looks blue (or blue looks red) anywhere on the panel -
+    that is the R/B swap, i.e. the ABGR conversion was bypassed.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Nuxel colour-order test</title>
+<style>
+  :root { color-scheme: dark; }
+  html, body { margin: 0; padding: 0; height: 100%; background: #000; overflow: hidden;
+               font-family: system-ui, -apple-system, "Nimbus Sans", sans-serif; }
+  #swatch { position: fixed; inset: 0; background: #ff0000; }
+  #thirds { position: fixed; inset: auto 0 0 0; height: 22vh; display: flex; }
+  #thirds > div { flex: 1 1 0; }
+  #thirds .r { background: #ff0000; }
+  #thirds .g { background: #00ff00; }
+  #thirds .b { background: #0000ff; }
+  #label { position: fixed; left: 0; right: 0; top: 0; padding: 10px 14px;
+           color: #fff; background: rgba(0,0,0,.62); font-size: 17px; line-height: 1.45;
+           text-shadow: 0 1px 2px #000; }
+  #label b { font-size: 20px; }
+  #label .hint { color: #ffe; opacity: .95; }
+  #controls { position: fixed; left: 0; right: 0; bottom: 22vh; padding: 8px 10px;
+              display: flex; flex-wrap: wrap; gap: 8px; justify-content: center;
+              background: rgba(0,0,0,.55); }
+  #controls button { font: inherit; font-size: 16px; padding: 12px 16px; min-width: 88px;
+                     border: 0; border-radius: 10px; background: #e8e8e8; color: #111; }
+  #controls button.active { outline: 3px solid #fff; background: #fff; }
+  #report { position: fixed; right: 8px; top: 8px; max-width: 46vw; color: #fff;
+            background: rgba(0,0,0,.62); font: 12px/1.4 ui-monospace, monospace;
+            padding: 6px 8px; border-radius: 8px; white-space: pre-wrap; }
+</style>
+</head>
+<body>
+<div id="swatch"></div>
+<div id="thirds"><div class="r"></div><div class="g"></div><div class="b"></div></div>
+<div id="label">
+  <b id="name">RED</b> — <span id="hex">#ff0000</span><br>
+  <span class="hint" id="hint">The panel must be red. If it looks BLUE, the
+    XRGB8888&nbsp;→&nbsp;ABGR_8888 conversion was bypassed.</span>
+</div>
+<div id="controls">
+  <button data-c="red" class="active">Red</button>
+  <button data-c="green">Green</button>
+  <button data-c="blue">Blue</button>
+  <button data-c="white">White</button>
+  <button data-c="black">Black</button>
+  <button data-c="grey">50% grey</button>
+  <button data-c="thirds">Thirds</button>
+</div>
+<div id="report">waiting…</div>
+
+<script>
+(function () {
+  'use strict';
+  var COLOURS = {
+    red:    { css: '#ff0000', name: 'RED',   hex: '#ff0000', note: 'The panel must be red. If it looks BLUE, the XRGB8888 -> ABGR_8888 conversion was bypassed.' },
+    green:  { css: '#00ff00', name: 'GREEN', hex: '#00ff00', note: 'Green must look green: it survives an R/B swap, so a wrong green means a wrong format guess, not a swap.' },
+    blue:   { css: '#0000ff', name: 'BLUE',  hex: '#0000ff', note: 'Blue must look blue. If it looks RED, the conversion was bypassed (the same defect seen from the other side).' },
+    white:  { css: '#ffffff', name: 'WHITE', hex: '#ffffff', note: 'White must be white and fully opaque (the conversion forces alpha 0xff).' },
+    black:  { css: '#000000', name: 'BLACK', hex: '#000000', note: 'Black must be black, never transparent/garbage.' },
+    grey:   { css: '#808080', name: 'GREY',  hex: '#808080', note: 'Neutral grey must be neutral: a colour cast here means a byte-order error in another channel.' },
+    thirds: { css: null,      name: 'THIRDS', hex: 'red | green | blue',
+              note: 'Left third RED, middle GREEN, right BLUE. If the left third looks blue and the right looks red, the panel byte order is swapped.' }
+  };
+  var swatch = document.getElementById('swatch');
+  var thirds = document.getElementById('thirds');
+  var name = document.getElementById('name');
+  var hex = document.getElementById('hex');
+  var hint = document.getElementById('hint');
+  var report = document.getElementById('report');
+  var buttons = Array.prototype.slice.call(document.querySelectorAll('#controls button'));
+
+  function diag(line) {
+    report.textContent = line;
+    try {
+      if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.nuxelDiag) {
+        window.webkit.messageHandlers.nuxelDiag.postMessage(line);
+      }
+    } catch (e) {}
+  }
+
+  function show(key) {
+    var c = COLOURS[key];
+    if (!c) return;
+    if (key === 'thirds') {
+      swatch.style.background = '#101010';
+      thirds.style.display = 'flex';
+    } else {
+      swatch.style.background = c.css;
+      thirds.style.display = 'none';
+    }
+    name.textContent = c.name;
+    hex.textContent = c.hex;
+    hint.textContent = c.note;
+    buttons.forEach(function (b) { b.classList.toggle('active', b.getAttribute('data-c') === key); });
+    diag('COLOURTEST mode=' + key + ' expect=' + c.hex +
+         ' dpr=' + (window.devicePixelRatio || 0) +
+         ' viewport=' + window.innerWidth + 'x' + window.innerHeight +
+         ' hint="if the panel colour differs from this label, the framebuffer ' +
+         'conversion is wrong (docs/beta-finalization/boot/COLOUR-CONVERSION.md)"');
+  }
+
+  buttons.forEach(function (b) {
+    b.addEventListener('click', function () { show(b.getAttribute('data-c')); });
+  });
+  // Tapping the full-screen swatch cycles through the colours: usable on a phone
+  // with a single finger and no keyboard.
+  swatch.addEventListener('click', function () {
+    var order = ['red', 'green', 'blue', 'white', 'black', 'grey', 'thirds'];
+    var cur = 0;
+    buttons.forEach(function (b, i) { if (b.classList.contains('active')) cur = i; });
+    show(order[(cur + 1) % order.length]);
+  });
+  window.addEventListener('resize', function () {
+    diag('COLOURTEST viewport=' + window.innerWidth + 'x' + window.innerHeight + ' (unchanged expectation)');
+  });
+  show('red');
+})();
+</script>
+</body>
+</html>

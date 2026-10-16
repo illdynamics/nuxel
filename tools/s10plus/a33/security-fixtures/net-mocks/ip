@@ -1,0 +1,7 @@
+#!/bin/bash
+# Offline stand-in for ip (briq-05c tests). Reads NUXEL_MOCK_NET_MODE.
+MODE="${NUXEL_MOCK_NET_MODE:-off}"
+case "$MODE" in
+    vpn-up*) echo "wg0  UP  10.7.0.2/32"; exit 0 ;;
+    *) echo "Device \"wg0\" does not exist." >&2; exit 1 ;;
+esac

@@ -20,7 +20,9 @@ report each defect class:
      with "forbidden on 4.14";
   6. builder installs a unit but does NOT enable it => FAILED (the boot graph is
      only reproducible if enablement is in the builder, not hot-patched);
-  7. the A26 containment script loses one of its four 4.14 repairs => FAILED.
+  7. a phone unit is enabled into a USER target (`WantedBy=graphical-session.target`)
+     => FAILED, while the VM-only camera portal is a recorded WARNING;
+  8. the A26 containment script loses one of its four 4.14 repairs => FAILED.
 
 Every case runs against a temporary copy; the repository is never modified and
 no device, partition or /Users/wicked/x/nuxel/.qq path is touched.
@@ -141,6 +143,11 @@ def main() -> int:
               "baseline parses the full unit set (%d units)" % report.get("unit_count", 0))
         check(report.get("root") == os.path.abspath(base),
               "the report records which tree was validated (%s)" % report.get("root"))
+        check(any("nuxel-camera-portal.service" in w and "graphical-session.target" in w
+                  for w in report.get("warnings", [])),
+              "the VM-only camera portal's no-op enablement is a recorded WARNING, not silence")
+        check(report.get("vm_only_units") == ["nuxel-camera-portal.service"],
+              "the report names the VM-only unit set explicitly (%s)" % report.get("vm_only_units"))
 
         print("[service-graph] an injected ordering cycle is fatal")
         mut = os.path.join(tmp, "cycle")
@@ -195,6 +202,21 @@ def main() -> int:
               any(("does not enable" in p or "builder enables" in p) for p in report.get("problems", [])),
               "the missing enablement is named: %s"
               % [p for p in report.get("problems", []) if "nuxel-web.service" in p][:1])
+
+        print("[service-graph] a phone unit enabled into a USER target is fatal")
+        mut = os.path.join(tmp, "usertarget")
+        make_fixture(mut)
+        unit = os.path.join(mut, "services/nuxel-web.service")
+        text = open(unit, errors="replace").read()
+        check("WantedBy=multi-user.target" in text,
+              "nuxel-web.service is enabled into multi-user.target before mutation")
+        open(unit, "w").write(text.replace("WantedBy=multi-user.target",
+                                           "WantedBy=graphical-session.target"))
+        rc, report = validate(mut)
+        check(rc != 0, "verdict is FAILED (rc=%s)" % rc)
+        check(has_problem(report, "is a USER target in a SYSTEM unit"),
+              "the no-op enablement is named: %s"
+              % [p for p in report.get("problems", []) if "USER target" in p][:1])
 
         print("[service-graph] a lost A26 4.14 repair is fatal")
         mut = os.path.join(tmp, "a26")

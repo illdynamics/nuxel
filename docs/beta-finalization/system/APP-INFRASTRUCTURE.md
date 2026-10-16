@@ -72,6 +72,29 @@ Enforcement, measured offline:
   `/pwa/nuxel-home/index.html` finds `../nuxel-common/bridge.js` (enforced by
   `pwa/nuxel-common/verify-wiring.js`) and every app is addressed as
   `/pwa/nuxel-apps/<app>/index.html`. The launcher is never staged flat.
+  Two defects in this path were fixed and are now regression-tested
+  (`tools/s10plus/a33/tests/test-web-server.py`, which starts the real shim and
+  speaks HTTP to it):
+
+  1. **A resolved-but-wrong docroot was served anyway.** An explicit
+     `NUXEL_WEBROOT` that contained no launcher index started a server that
+     answered `/` with a listing and 404'd the launcher — the measured A29b blank
+     WebKit view, with a unit that reported success. The shim now verifies that
+     the resolved docroot actually contains `pwa/nuxel-home/index.html` (or the
+     flat `nuxel-home/index.html`) and exits non-zero with the path in the
+     message otherwise, so the failure lands in `systemctl status` instead of in
+     a blank screen.
+  2. **`/etc/nuxel/web.conf` was inert.** The builder writes
+     `NUXEL_WEBROOT` / `NUXEL_WEB_PORT` / `NUXEL_WEB_BIND` there, but the unit
+     never loaded it, so the documented override did nothing and the shim always
+     fell back to probing. `nuxel-web.service` now carries
+     `EnvironmentFile=-/etc/nuxel/web.conf` (optional, so VM/dev hosts still
+     work) and the test asserts the builder consumes what it writes.
+
+  The interpreter is natively `/usr/bin/python3` (from the `python3` RPM); the
+  shim accepts `NUXEL_WEB_PYTHON` only so this offline test can run the identical
+  code path on a host whose python3 lives elsewhere. The unit does **not** set
+  it.
 
 ## 4. Portal and notifications
 
@@ -112,8 +135,10 @@ python3 tools/s10plus/a33/verify-app-registry.py --strict    # release gate
 python3 services/nuxel-portal/test-portal-policy.py          # grant store + timeout invariants
 python3 services/nuxel-notifications/test-notifications-persistence.py
 python3 tools/s10plus/a33/tests/test-app-infrastructure.py   # real HTTP handler: pin, 409, registry
+python3 tools/s10plus/a33/tests/test-web-server.py           # static PWA server: docroot, wiring, loud failures
 node pwa/nuxel-common/test-bridge.js                         # client pin + refusal semantics
 node pwa/nuxel-common/verify-wiring.js                       # shared bridge module wiring
+bash tools/s10plus/a33/tests/run-userspace-tests.sh          # all of Priority 4 (04a/04b/04c)
 ```
 
 ## 7. Honest limits

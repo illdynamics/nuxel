@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Nuxel keyboard probe — last hop (WebKitGTK DOM)</title>
+<!--
+  keyboard-probe.html — the LAST HOP of the Nuxel keyboard pipeline.
+
+  WHY THIS EXISTS (mission area 29)
+  ---------------------------------
+  The keyboard path is:
+
+      finger -> OSK provider (stevia / stevia-phosh-osk-provider, or squeekboard
+                in the UTM VM) -> phoc (zwp_text_input_manager_v3)
+             -> WebKitGTK -> the focused DOM text field -> this page
+
+  A config file, a running provider and a mixer-style "success" prove nothing.
+  This page is the end of the chain: if a key pressed ON THE ON-SCREEN KEYBOARD
+  produces a real (isTrusted=true) key/beforeinput/input event here, the whole
+  chain delivered. If only scripted events arrive, this page says SYNTHETIC and
+  refuses to call that a keyboard.
+
+  HOW IT REPORTS (machine-readable; one event per line)
+  ----------------------------------------------------
+      focus field=<id> blur field=<id>
+      keydown key=<k> code=<c> trusted=<true|false>
+      beforeinput type=<t> data=<d> trusted=<true|false>
+      input field=<id> value=<len> trusted=<true|false>
+      operator-osk-visible confirmed=<yes|no>        (human observation)
+      EVIDENCE osk_key_events=<n> synthetic_events=<n> operator=<yes|no> verdict=<...>
+
+    verdict=PASS requires at least one TRUSTED key event AND no synthetic and no
+    harness event in the same run. A scripted delivery is printed as [synthetic]
+    (SYNTHETIC_ONLY / VOIDED_BY_SYNTHETIC) and the offline harness path prints
+    [harness] (VOIDED_BY_HARNESS), so a machine-driven run can never look like a
+    finger test — exactly the mission's evidence discipline. verdict=PENDING means
+    nothing has been pressed yet.
+
+  It is deliberately one self-contained file: no network, no CDN, no build step,
+  because the phone image has no package manager and may have no outbound network
+  during a bring-up boot. Nothing is stored and nothing is fetched.
+
+  HOW TO USE IT (VM or phone; owner step)
+  ---------------------------------------
+    1. open this file in the Nuxel WebKitGTK surface (VM: the launcher host can
+       open it as a page; phone: it is deployed under /usr/share/nuxel/probes/);
+    2. tap the text field -> the on-screen keyboard must appear (owner observation);
+    3. tap keys ON the on-screen keyboard -> lines must appear here with trusted=true;
+    4. press "I saw the keyboard appear", then "Copy evidence" and paste the
+       evidence line into docs/beta-finalization/manual-proof/20-applications.md.
+    A desktop browser with a physical keyboard can run the page too, but a
+    physical-keyboard run is labelled as such and is NOT proof of the OSK.
+-->
+<style>
+  :root { color-scheme: dark; }
+  html, body { margin: 0; min-height: 100%; background: #05070c; color: #e8eef7;
+    font: 14px/1.5 ui-monospace, "DejaVu Sans Mono", monospace; }
+  #wrap { display: flex; flex-direction: column; min-height: 100vh; }
+  header { padding: 10px 14px; background: #0c1220; border-bottom: 1px solid #1d2a44; }
+  h1 { margin: 0 0 4px; font-size: 15px; }
+  .sub { color: #8ea3c4; font-size: 12px; }
+  #fields { padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; }
+  label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: #9fb0c8; }
+  input { font: 16px/1.4 ui-monospace, monospace; padding: 10px 12px; border-radius: 8px;
+    border: 1px solid #2b3d5e; background: #0a1120; color: #eaf1ff; }
+  input:focus { outline: 2px solid #4cc2ff; border-color: #4cc2ff; }
+  #actions { display: flex; flex-wrap: wrap; gap: 8px; padding: 0 14px 10px; }
+  button { font: 13px ui-monospace, monospace; padding: 8px 12px; border-radius: 8px;
+    border: 1px solid #2b3d5e; background: #111c31; color: #dbe7f8; }
+  button.primary { background: #14395c; border-color: #4cc2ff; color: #eaf6ff; }
+  #evidence { margin: 0 14px 10px; padding: 10px 12px; border-radius: 8px;
+    background: #071324; border: 1px solid #1d3a5c; font-size: 12px; color: #bcd3ef; }
+  #evidence b { color: #7ee2b8; }
+  #evidence.pending b { color: #ffcf6b; }
+  #log { flex: 1 1 auto; margin: 0 14px 14px; padding: 10px 12px; overflow: auto;
+    background: #04060b; border: 1px solid #16223a; border-radius: 10px;
+    white-space: pre-wrap; font-size: 12px; min-height: 30vh; }
+  .trusted { color: #7ee2b8; } .synthetic { color: #ffcf6b; } .dim { color: #7d8cab; }
+  #hint { padding: 0 14px 14px; color: #6d84a8; font-size: 11px; }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <header>
+    <h1>Nuxel keyboard probe — last hop</h1>
+    <div class="sub">finger &rarr; OSK (stevia / squeekboard) &rarr; phoc zwp_text_input_manager_v3 &rarr; WebKitGTK &rarr; this DOM</div>
+  </header>
+
+  <div id="fields">
+    <label for="text">Text field (tap it: the on-screen keyboard must appear)
+      <input id="text" name="text" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="tap here, then press keys on the on-screen keyboard">
+    </label>
+    <label for="numeric">Numeric field (must raise the numeric layout when numeric_layout is on)
+      <input id="numeric" name="numeric" type="number" inputmode="numeric" placeholder="123">
+    </label>
+  </div>
+
+  <div id="actions">
+    <button id="confirm-osk" class="primary">I saw the keyboard appear</button>
+    <button id="copy">Copy evidence</button>
+    <button id="clear">Clear log</button>
+    <button id="reload-state">Show keyboard state (host)</button>
+  </div>
+
+  <div id="evidence" class="pending">EVIDENCE osk_key_events=0 synthetic_events=0 operator=no verdict=<b>PENDING</b></div>
+
+  <pre id="log"></pre>
+  <div id="hint">
+    trusted=true means the event came from the compositor's text-input path (a real key).
+    A scripted delivery is printed as [synthetic] and voids the run: this page never
+    counts a harness as a human finger. The page cannot detect the keyboard itself —
+    that observation is yours, and it is recorded as <code>operator-osk-visible</code>.
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  var logEl = document.getElementById('log');
+  var evEl = document.getElementById('evidence');
+  var lines = [];
+  var state = { trusted: 0, synthetic: 0, harness: 0, operator: false, fields: 0 };
+  var MAX_LINES = 4000;
+
+  function push(kind, text) {
+    var cls = kind || 'dim';
+    lines.push({ cls: cls, text: text });
+    if (lines.length > MAX_LINES) lines = lines.slice(-MAX_LINES);
+    logEl.textContent = lines.map(function (l) { return l.text; }).join('\n');
+    logEl.scrollTop = logEl.scrollHeight;
+  }
+
+  function evidenceLine() {
+    var verdict = 'PENDING';
+    if (state.harness > 0) verdict = 'VOIDED_BY_HARNESS';          // a harness ran: never PASS
+    else if (state.synthetic > 0 && state.trusted > 0) verdict = 'VOIDED_BY_SYNTHETIC';
+    else if (state.synthetic > 0) verdict = 'SYNTHETIC_ONLY';
+    else if (state.trusted > 0) verdict = 'PASS';
+    var line = 'EVIDENCE osk_key_events=' + state.trusted +
+               ' synthetic_events=' + state.synthetic +
+               ' harness_events=' + state.harness +
+               ' operator=' + (state.operator ? 'yes' : 'no') +
+               ' fields_focused=' + state.fields +
+               ' verdict=' + verdict;
+    evEl.textContent = line;
+    evEl.className = verdict === 'PASS' ? 'trusted' : 'pending';
+    return line;
+  }
+
+  function trustedStr(ev) {
+    return (ev && ev.isTrusted === true) ? 'true' : 'false';
+  }
+
+  function noteDelivery(ev, text, kind) {
+    var synthetic = !(ev && ev.isTrusted === true);
+    if (synthetic) { state.synthetic++; push('synthetic', '[synthetic] ' + text); }
+    else { state.trusted++; push('trusted', text); }
+    push('dim', evidenceLine());
+    void kind;
+  }
+
+  /* ---------------- real event recording (the whole point) ---------------- */
+  ['text', 'numeric'].forEach(function (id) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('focus', function () {
+      state.fields++;
+      push('dim', 'focus field=' + id);
+      push('dim', evidenceLine());
+    });
+    el.addEventListener('blur', function () { push('dim', 'blur field=' + id); });
+    el.addEventListener('keydown', function (ev) {
+      noteDelivery(ev, 'keydown field=' + id + ' key=' + (ev.key || '?') +
+        ' code=' + (ev.code || '?') + ' trusted=' + trustedStr(ev), 'keydown');
+    });
+    el.addEventListener('beforeinput', function (ev) {
+      noteDelivery(ev, 'beforeinput field=' + id + ' type=' + (ev.inputType || '?') +
+        ' data=' + JSON.stringify(ev.data === null || ev.data === undefined ? '' : ev.data) +
+        ' trusted=' + trustedStr(ev), 'beforeinput');
+    });
+    el.addEventListener('input', function (ev) {
+      noteDelivery(ev, 'input field=' + id + ' value_len=' + String(el.value || '').length +
+        ' trusted=' + trustedStr(ev), 'input');
+    });
+  });
+
+  /* ---------------- operator observation (a human fact, labelled) --------- */
+  document.getElementById('confirm-osk').addEventListener('click', function () {
+    state.operator = true;
+    push('dim', 'operator-osk-visible confirmed=yes (human observation: the on-screen keyboard rose on focus and hid on blur)');
+    push('dim', evidenceLine());
+  });
+
+  document.getElementById('clear').addEventListener('click', function () {
+    lines = [];
+    logEl.textContent = '';
+  });
+
+  document.getElementById('copy').addEventListener('click', function () {
+    var payload = lines.map(function (l) { return l.text; }).join('\n');
+    var done = function () { push('dim', 'evidence copied to the clipboard (' + payload.split('\n').length + ' lines)'); };
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(payload).then(done, function () { push('dim', 'clipboard refused by the engine; select the log text instead'); });
+        return;
+      }
+    } catch (e) { /* fall through */ }
+    push('dim', 'clipboard API unavailable; select the log text and copy manually');
+  });
+
+  document.getElementById('reload-state').addEventListener('click', function () {
+    var h = null;
+    try { h = window.parent && window.parent.NuxelHost ? window.parent.NuxelHost : null; } catch (e) { h = null; }
+    if (!h) h = window.NuxelHost || null;
+    if (!h || typeof h.statusRead !== 'function') {
+      push('dim', 'keyboard-state: launcher host unavailable in this context (no status channel to read)');
+      return;
+    }
+    h.statusRead('keyboard-state').then(function (res) {
+      if (res && res.ok && res.text) {
+        String(res.text).split('\n').forEach(function (l) { if (l.trim()) push('dim', 'keyboard-state: ' + l.trim()); });
+      } else {
+        push('dim', 'keyboard-state: no state recorded yet — run nuxel-keyboard-apply.sh apply');
+      }
+    }, function () { push('dim', 'keyboard-state: the host refused the status read'); });
+  });
+
+  /* ---------------- smoke-test hook (an offline harness uses ONLY this) --- */
+  window.nuxelKeyboardProbe = {
+    version: '1',
+    /* A synthetic delivery exists so the OFFLINE test can prove that scripted
+       events are labelled synthetic and can never produce verdict=PASS. */
+    deliver: function (text, target) {
+      var el = document.getElementById(target || 'text');
+      if (!el) return 'NO_FIELD';
+      el.focus();
+      String(text || '').split('').forEach(function (ch) {
+        var ev;
+        try { ev = new KeyboardEvent('keydown', { key: ch, bubbles: true }); }
+        catch (e) { ev = new CustomEvent('keydown', { bubbles: true }); }
+        el.dispatchEvent(ev);
+        try { el.dispatchEvent(new InputEvent('input', { bubbles: true, data: ch, inputType: 'insertText' })); }
+        catch (e2) { el.dispatchEvent(new CustomEvent('input', { bubbles: true })); }
+        el.value = String(el.value || '') + ch;
+      });
+      return el.value;
+    },
+    /* OFFLINE HARNESS ONLY. Exercises the trusted branch of the evidence logic
+       without pretending to be a finger: the delivery is logged [harness], it is
+       counted separately, and it forces the verdict to VOIDED_BY_HARNESS — a run
+       that a script drove can never come out as PASS. */
+    harnessTrusted: function (text, target) {
+      var el = document.getElementById(target || 'text');
+      if (!el) return 'NO_FIELD';
+      el.focus();
+      String(text || '').split('').forEach(function (ch) {
+        state.harness++;
+        push('synthetic', '[harness] keydown key=' + ch + ' (offline harness delivery, not a finger)');
+        el.value = String(el.value || '') + ch;
+      });
+      push('dim', evidenceLine());
+      return el.value;
+    },
+    evidence: evidenceLine,
+    state: function () {
+      return { trusted: state.trusted, synthetic: state.synthetic, harness: state.harness, operator: state.operator };
+    },
+    reset: function () { state = { trusted: 0, synthetic: 0, harness: 0, operator: false, fields: 0 }; lines = []; logEl.textContent = ''; evidenceLine(); return true; },
+    /* the OSK stack this page assumes, for the operator's cross-check */
+    expectedPath: 'finger -> OSK (stevia/squeekboard) -> phoc zwp_text_input_manager_v3 -> WebKitGTK DOM'
+  };
+
+  push('dim', 'keyboard-probe ready — expected path: ' + window.nuxelKeyboardProbe.expectedPath);
+  push('dim', evidenceLine());
+})();
+</script>
+</body>
+</html>

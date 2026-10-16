@@ -100,9 +100,18 @@ def source_lut_converter():
 
 
 def find_binary():
-    cand = os.environ.get("NUXEL_WLFB_BIN") or os.path.join(ROOT, "build/out/s10plus/a33/nuxel-wl-fb")
-    if os.path.isfile(cand) and os.access(cand, os.X_OK):
-        return cand
+    """The compiled A33 bridge, if one has been built.
+
+    `tools/s10plus/a33/build-a33-boot.sh` writes it to
+    build/out/s10plus/a33-boot/nuxel-wl-fb (an aarch64 ELF, so it is executed on the
+    UTM guest - see the NUXEL_VM path below); build/out/s10plus/a33/nuxel-wl-fb is
+    also accepted for a host-native build.
+    """
+    for cand in (os.environ.get("NUXEL_WLFB_BIN"),
+                 os.path.join(ROOT, "build/out/s10plus/a33-boot/nuxel-wl-fb"),
+                 os.path.join(ROOT, "build/out/s10plus/a33/nuxel-wl-fb")):
+        if cand and os.path.isfile(cand) and os.access(cand, os.X_OK):
+            return cand
     return None
 
 
@@ -121,9 +130,11 @@ def run_colour_dump():
             print("NOTE local binary not runnable (%s)" % e)
     vm = os.environ.get("NUXEL_VM")
     if vm:
-        remote = "~/a33build/nuxel-wl-fb"
+        # Both build directories are tried: build-a33-boot.sh uses ~/a33boot,
+        # the older A33 VMs used ~/a33build.
         cmd = ("ssh -q -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=6 %s "
-               "'test -x %s && %s --colour-dump || echo NO_BINARY'" % (vm, remote, remote))
+               "'for b in ~/a33boot/nuxel-wl-fb ~/a33build/nuxel-wl-fb; do "
+               " [ -x \"$b\" ] && exec \"$b\" --colour-dump; done; echo NO_BINARY'" % vm)
         try:
             out = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=30)
             if out.returncode == 0 and "COLOUR_DUMP" in out.stdout:
@@ -235,6 +246,35 @@ def main():
           re.search(r"COLOR_UNKNOWN_SRC_FORMAT=0x%08x passthrough", src_text) is not None)
     check("the applied order is logged with the declared fb_var order",
           re.search(r"COLOR_ORDER declared=R@%u G@%u B@%u A@%u  applied=R@%u G@%u B@%u A@24 name=%s override=1", src_text) is not None)
+
+    # --- 7. the owner-visible half: the shipped full-screen test page (briq-02c)
+    #     A conversion table cannot see the panel; the page is what the owner looks
+    #     at, so its swatches must be the same golden colours this test proves.
+    page_path = os.path.join(ROOT, "pwa/nuxel-home/colour-test.html")
+    page = ""
+    if os.path.exists(page_path):
+        with open(page_path, "r", encoding="utf-8", errors="replace") as f:
+            page = f.read()
+    check("the owner colour-test page ships in the launcher docroot", bool(page), page_path)
+    if page:
+        check("colour page: full-screen swatch starts pure red",
+              bool(re.search(r"#swatch \{[^}]*background:\s*#ff0000", page)),
+              "no #ff0000 default in the #swatch rule")
+        for name, css in (("red", "#ff0000"), ("green", "#00ff00"), ("blue", "#0000ff")):
+            check("colour page: %s swatch is %s" % (name, css),
+                  ("css: '%s'" % css) in page or ("css: \"%s\"" % css) in page, css)
+        check("colour page: thirds bar is R then G then B (left to right)",
+              page.index('<div class="r"></div><div class="g"></div><div class="b"></div>') > 0)
+        check("colour page: states the swap failure symptom (red looking blue)",
+              "looks BLUE" in page and "was bypassed" in page)
+        check("colour page: reports each mode through the host diag channel",
+              "nuxelDiag" in page and "COLOURTEST mode=" in page)
+        check("colour page: documents how to display it on the handset",
+              "NUXEL_HOME_URL" in page and "colour-test.html" in page)
+        check("colour page: is self-contained (no external asset or script fetch)",
+              not re.search(r"<script[^>]+src=", page) and "url(http" not in page)
+        check("colour page: forces alpha-opaque colours only (white/black are literal)",
+              "#ffffff" in page and "#000000" in page)
 
     print("\n%s colour-order golden-bytes test (%d failures)" % ("FAIL" if failures else "PASS", failures))
     return failures

@@ -85,6 +85,8 @@ Effective-state resolution order (first match wins, and the source is recorded):
 | Settings app | `pwa/nuxel-apps/settings/` (Developer → **Boot** card) | A real toggle (`#verbose-boot-toggle`) that writes the same document through the host (`configSet('verbose-boot')`), **merges** into the loaded JSON (so unknown keys survive), sets `set_by=user`/`updated_at`, shows the durable state + `this boot:` line from `/run/nuxel/verbose-boot`, and states the override capability verbatim. If the write fails the switch flips back — the UI never claims a setting it did not store |
 | Settings store | `pwa/nuxel-home/js/settings-store.js` | DOM-free, unit-tested store: one document per setting name, merge-on-write, migration, host→localStorage degradation |
 | Console | `tools/s10plus/a33/nuxelctl` | `verbose-boot status`, `on`, `off`, `override` |
+| Offline gate | `tools/s10plus/a33/tests/run-boot-tests.sh` | runs this harness (plus the handoff, colour, launcher and safe-zone legs) as one command, headless and rootless |
+| Owner procedure | `docs/beta-finalization/manual-proof/03-display-boot.md` | area 3 step 5: enable it, reboot once, watch the boot log appear, disable it again |
 | Launcher manifest | `pwa/nuxel-home/manifest.json` | `nuxel.settings_documents` lists `/etc/nuxel/boot/verbose-boot.json` |
 
 ## 5. The one-time Bixby-hold override — implemented, NOT deployed
@@ -151,7 +153,7 @@ no phone, no systemd, no `/etc` write on this host:
 | Bixby hold, stage cannot | `ONCE_REQUESTED=1`, `ONCE=0`, boot stays non-verbose (refused, not faked) | PASS |
 | Bixby hold, stage can | `EFFECTIVE=1 SOURCE=bixby_hold_once`, **nothing persisted**, request consumed so a second start in the same boot is normal again | PASS |
 
-Result: **`verbose-boot offline harness passed (upgrade-safe, offline)`** — 30 checks, 0 failures.
+Result: **`verbose-boot offline harness passed (upgrade-safe, offline)`** — 29 checks, 0 failures.
 
 ### 6.2 The store contract (`settings-store-test.js`)
 

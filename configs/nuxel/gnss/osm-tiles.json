@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "comment": "Offline-first OpenStreetMap integration contract for the Nuxel Maps app. Shipped as data so the map surface (pwa/nuxel-apps/maps) and the GNSS diagnostic agree on ONE tile layout, ONE attribution and ONE offline story. This file describes the layout; it does not ship map data (that is owner/area work), and the app must render cached tiles with the radio off.",
+  "device": "beyond2lte",
+  "attribution": "(c) OpenStreetMap contributors, ODbL 1.0",
+  "tiles": {
+    "search_order": [
+      "/var/lib/nuxel/maps/osm-tiles",
+      "/usr/share/nuxel/maps/osm-tiles"
+    ],
+    "layout": "{z}/{x}/{y}.png",
+    "min_zoom": 2,
+    "max_zoom": 19,
+    "tile_size_px": 256,
+    "raster": true,
+    "empty_tile": "#e8eef6"
+  },
+  "network": {
+    "optional": true,
+    "online_url": "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+    "user_agent_note": "An honest HTTP User-Agent is required by the OSM tile usage policy; the app must degrade to cached tiles when offline, never to a blank grid without a message.",
+    "respect_tile_policy": true
+  },
+  "offline_first": {
+    "comment": "The launcher/Maps app must load a cached area with the network off. A map that only works online is not offline-first and must be labelled as such in the UI.",
+    "requires_network_for_cached_area": false,
+    "show_offline_banner": true
+  },
+  "geolocation": {
+    "source": "nuxel-gnss-diag.sh monitor (NMEA) or gpsd on 127.0.0.1:2947",
+    "no_fixed_coordinate_in_repo": true,
+    "location_is_owner_data": true
+  }
+}

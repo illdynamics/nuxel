@@ -47,6 +47,8 @@ echo "-- A33 verbose-boot durability harness (briq-02b)"
 if command -v python3 >/dev/null; then python3 "$HERE/../../a33/nuxel-verbose-boot.py" --selftest >/dev/null || FAIL=$((FAIL+1)); else echo "SKIP (python3 absent)"; fi
 echo "-- A33 settings store contract (briq-02b)"
 command -v node >/dev/null && { node "$HERE/../../a33/tests/settings-store-test.js" || FAIL=$((FAIL+1)); } || echo "SKIP (node absent)"
+echo "-- A33 boot-surface wiring contract (briq-02a..02e)"
+if command -v python3 >/dev/null; then python3 "$HERE/../../a33/tests/test-boot-surface-contract.py" >/dev/null || FAIL=$((FAIL+1)); else echo "SKIP (python3 absent)"; fi
 echo "-- A33 launcher registry/parity (briq-02d)"
 command -v node >/dev/null && { node "$HERE/../../a33/tests/launcher-registry-test.js" || FAIL=$((FAIL+1)); } || echo "SKIP (node absent)"
 echo "-- button manager / host sources parse"

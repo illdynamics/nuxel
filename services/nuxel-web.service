@@ -9,6 +9,11 @@ ConditionPathExists=/usr/bin/nuxel-web
 
 [Service]
 Type=simple
+# /etc/nuxel/web.conf is written by the rootfs builder (NUXEL_WEBROOT,
+# NUXEL_WEB_PORT, NUXEL_WEB_BIND). It is loaded here so the documented docroot
+# override is real rather than inert; the leading '-' keeps the unit valid when
+# the file is absent (VM / development hosts).
+EnvironmentFile=-/etc/nuxel/web.conf
 # Serve the FULL Nuxel PWA tree from the repo mirror the deploy staged at
 # /home/nuxel/nuxel. Serving from the repo ROOT (not pwa/nuxel-home) is
 # REQUIRED so the shared bridge client pwa/nuxel-common/bridge.js resolves via

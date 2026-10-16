@@ -101,10 +101,19 @@ two guards; it is the animation owner only on `NUXEL_ENABLE_LAUNCHER=0` images.
 
 ```sh
 python3 tools/s10plus/a33/verify-service-graph.py
-# units=14 problems=0 warnings=0 verdict=OFFLINE_TESTED
+# units=14 problems=0 warnings=1 verdict=OFFLINE_TESTED
+#   WARN nuxel-camera-portal.service: WantedBy=graphical-session.target is a
+#        USER target in a SYSTEM unit - VM-only surface, never installed on the handset
+python3 tools/s10plus/a33/tests/test-service-graph.py
+#   proves the validator FAILS on an injected cycle / unsatisfied dep /
+#   forbidden 4.14 dep / lost builder enablement / lost A26 repair
+python3 tools/s10plus/a33/verify-service-graph.py --root /some/tree   # validate a copy
 ```
 
-A green run means the repository can reproduce the graph and that no 4.14
-forbidden dependency or ordering cycle exists in it. It is **not** a claim that
-`systemctl is-system-running` reaches `running` on the handset — see
+A green run means the repository can reproduce the graph, that no 4.14
+forbidden dependency or ordering cycle exists in it, and (since the `[Install]`
+`WantedBy=` assertions were repaired in this revision — they had been reading
+`[Unit]` and could never fire) that every enabled unit is really enabled by the
+builder. It is **not** a claim that `systemctl is-system-running` reaches
+`running` on the handset — see
 `docs/beta-finalization/system/SERVICE-GRAPH.md` §6.

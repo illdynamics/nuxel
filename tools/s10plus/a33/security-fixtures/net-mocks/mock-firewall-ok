@@ -1,0 +1,22 @@
+#!/bin/bash
+# Offline stand-in for nuxel-firewall.sh (kill-switch delegation tests).
+# Records the call and writes the state file the real tool writes.
+STATE="${NUXEL_FIREWALL_STATE_DIR:-/tmp/nuxel-mock-fw}"
+mkdir -p "$STATE"
+printf '%s\n' "$*" >> "$STATE/calls.log"
+case "${1-}" in
+    vpn-on)
+        cat > "$STATE/killswitch.json" <<'JSON'
+{
+  "armed": true,
+  "interface": "wg0",
+  "console_guard_verified": "yes",
+  "honest_note": "Armed != tunnel up."
+}
+JSON
+        exit 0 ;;
+    vpn-off)
+        rm -f "$STATE/killswitch.json"
+        exit 0 ;;
+    *) exit 0 ;;
+esac

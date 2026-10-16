@@ -1,0 +1,224 @@
+{
+  "schema_version": 1,
+  "comment": "Sensor capability manifest + policy for the S10+ (beyond2lte). Read by tools/s10plus/a33/nuxel-sensors-diag.sh. What the device ACTUALLY exposes is enumerated from three independent sources (IIO devices, the input subsystem, and the sensor-hub driver set) and reported per class. The `expected_on_s10plus` flags below are the device's documented hardware, NOT observations: a class is only `readable` when a real raw value is read, otherwise it is `present-unreadable`, and when nothing is enumerated it is `NOT_SUPPORTED_ON_DEVICE`. Motion/orientation must be physically induced, so the terminal verdict is NEEDS_OWNER_TEST.",
+  "device": {
+    "model": "Samsung Galaxy S10+ SM-G975F",
+    "codename": "beyond2lte",
+    "soc": "Exynos 9820"
+  },
+  "evidence_sources": {
+    "iio": {
+      "root": "/sys/bus/iio/devices",
+      "name_file": "name",
+      "device_glob": "iio:device*"
+    },
+    "input": {
+      "devices_file": "/proc/bus/input/devices"
+    },
+    "sysfs_class": [
+      "/sys/class/sensors",
+      "/sys/class/hwmon"
+    ],
+    "hub_drivers": [
+      "sensorhub",
+      "ssp",
+      "sec_sensor",
+      "bmi160",
+      "bmi270",
+      "lsm6ds",
+      "lsm6dso",
+      "mpu6050",
+      "ak09918",
+      "mmc3630",
+      "tmd2725",
+      "stk3x1x",
+      "cm36686",
+      "max86902",
+      "barometer",
+      "bmp",
+      "lps22"
+    ],
+    "modules_file": "/proc/modules",
+    "hub_input_names": [
+      "ssp_context",
+      "meta_event",
+      "sec_sensor_hub"
+    ],
+    "comment_hub_input": "The A32 baseline observed these input devices on the handset (grip_sensor, ssp_context, hall, certify_hall). They are hub evidence for the sensor-group as a whole, so a class with no IIO node is still PRESENT_UNREADABLE rather than absent."
+  },
+  "classes": {
+    "accelerometer": {
+      "expected_on_s10plus": true,
+      "iio_names": [
+        "accel",
+        "bmi160_accel",
+        "lsm6ds_accel",
+        "lsm6dso_accel",
+        "accel_3d"
+      ],
+      "iio_channels": [
+        "in_accel_x_raw",
+        "in_accel_y_raw",
+        "in_accel_z_raw"
+      ],
+      "input_name_hints": [
+        "accel",
+        "accelerometer",
+        "ssp_accel"
+      ],
+      "owner_gesture": "tilt the phone left/right and forward/back \u2014 the axis values must change and settle"
+    },
+    "gyroscope": {
+      "expected_on_s10plus": true,
+      "iio_names": [
+        "gyro",
+        "bmi160_gyro",
+        "lsm6ds_gyro",
+        "lsm6dso_gyro",
+        "gyro_3d"
+      ],
+      "iio_channels": [
+        "in_anglvel_x_raw",
+        "in_anglvel_y_raw",
+        "in_anglvel_z_raw"
+      ],
+      "input_name_hints": [
+        "gyro",
+        "gyroscope",
+        "ssp_gyro"
+      ],
+      "owner_gesture": "rotate the phone about each axis \u2014 the rate values must change and return to ~0 when still"
+    },
+    "magnetometer": {
+      "expected_on_s10plus": true,
+      "iio_names": [
+        "mag",
+        "ak09918",
+        "mmc3630",
+        "compass"
+      ],
+      "iio_channels": [
+        "in_magn_x_raw",
+        "in_magn_y_raw",
+        "in_magn_z_raw"
+      ],
+      "input_name_hints": [
+        "mag",
+        "magnet",
+        "compass"
+      ],
+      "owner_gesture": "rotate the phone through a full turn \u2014 the field values must change and the heading must respond"
+    },
+    "proximity": {
+      "expected_on_s10plus": true,
+      "iio_names": [
+        "prox",
+        "tmd2725",
+        "cm36686",
+        "stk3x1x"
+      ],
+      "iio_channels": [
+        "in_proximity_raw",
+        "in_proximity0_raw"
+      ],
+      "input_name_hints": [
+        "prox",
+        "proximity"
+      ],
+      "owner_gesture": "cover the top of the screen with your hand \u2014 near/far must flip"
+    },
+    "ambient_light": {
+      "expected_on_s10plus": true,
+      "iio_names": [
+        "als",
+        "lightsensor",
+        "tmd2725",
+        "cm36686"
+      ],
+      "iio_channels": [
+        "in_illuminance_raw",
+        "in_intensity_raw"
+      ],
+      "input_name_hints": [
+        "light",
+        "als",
+        "illuminance"
+      ],
+      "owner_gesture": "move from a dark corner to a lit area \u2014 the lux value must rise and fall"
+    },
+    "barometer": {
+      "expected_on_s10plus": true,
+      "iio_names": [
+        "baro",
+        "pressure",
+        "bmp",
+        "lps22"
+      ],
+      "iio_channels": [
+        "in_pressure_raw",
+        "in_pressure_input"
+      ],
+      "input_name_hints": [
+        "baro",
+        "pressure",
+        "press"
+      ],
+      "owner_gesture": "change altitude slightly (stairs/lift) \u2014 the pressure value must move; a static value is unproven, not PASS"
+    },
+    "heart_rate": {
+      "expected_on_s10plus": true,
+      "iio_names": [
+        "hr",
+        "heart",
+        "max86902",
+        "ppg"
+      ],
+      "iio_channels": [
+        "in_intensity_red_raw",
+        "in_heart_rate_raw"
+      ],
+      "input_name_hints": [
+        "heart",
+        "hr",
+        "ppg"
+      ],
+      "owner_gesture": "place a finger on the rear sensor for 20 s \u2014 a plausible rate (40..200 bpm) must appear",
+      "optional": true
+    },
+    "grip": {
+      "expected_on_s10plus": true,
+      "iio_names": [
+        "grip"
+      ],
+      "iio_channels": [],
+      "input_name_hints": [
+        "grip"
+      ],
+      "owner_gesture": "cover the side grip area \u2014 the grip input must change",
+      "optional": true
+    },
+    "hall": {
+      "expected_on_s10plus": true,
+      "iio_names": [
+        "hall"
+      ],
+      "iio_channels": [],
+      "input_name_hints": [
+        "hall"
+      ],
+      "owner_gesture": "bring a magnet near the top-left of the phone (or close a flip cover) \u2014 the hall input must flip",
+      "optional": true
+    }
+  },
+  "verdicts": {
+    "READABLE_SOME": "at least one class returned a raw value; the rest are enumerated/absent as printed",
+    "PRESENT_UNREADABLE": "classes are enumerated (input/hub) but expose no readable raw value",
+    "BLOCKED_KERNEL": "nothing is enumerated from IIO, input or the hub drivers",
+    "NOT_SUPPORTED_ON_DEVICE": "a specific class has no evidence anywhere (per-class state)"
+  },
+  "diagnostics": {
+    "log": "/var/log/nuxel/sensors-diag.log",
+    "watch_seconds_max": 120,
+    "sample_interval_ms": 200
+  }
+}

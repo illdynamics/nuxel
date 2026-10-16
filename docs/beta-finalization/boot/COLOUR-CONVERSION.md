@@ -14,7 +14,7 @@ gate, so any later change to `nuxel-wl-fb.c` that breaks it turns red.
 |---|---|
 | Conversion implemented + documented in the bridge | `OFFLINE_TESTED` |
 | Golden-bytes test (source LUT + independent reference) | `OFFLINE_TESTED` |
-| Golden bytes of the **compiled aarch64** bridge | `OFFLINE_TESTED` on this host (the A32 binary's `--colour-selftest` runs here; the aarch64 build is exercised in the UTM guest) |
+| Golden bytes of the **compiled aarch64** bridge | `OFFLINE_TESTED` — the A32 binary's `--colour-selftest` runs on this host; the **A33** bridge was built as an aarch64 ELF by `build-a33-boot.sh` on the UTM Fedora 43 guest (sha256 `2d8718c4d92858bbae02b7e914f0172d295b1c12446eb861e91c355f2ac912fc`), where `--colour-selftest` passed and `--colour-dump` matched the golden bytes word for word. Not deployed |
 | Red/blue order on the **glass** | previously observed on the handset in A20/A23 (photograph + driver proof); a fresh observation is `NEEDS_OWNER_TEST` |
 
 No claim in this document is `VERIFIED_ON_S10PLUS`.
@@ -101,17 +101,52 @@ Golden bytes asserted (source → destination memory bytes `R,G,B,A`):
 | `0x00123456` | mixed | `12,34,56,ff` | `0xff563412` |
 | `0x00fedcba` | mixed | `fe,dc,ba,ff` | `0xffbadcfe` |
 
-Latest run: **31 checks, 0 failures** (`PASS colour-order golden-bytes test`), with the
-note that the compiled-artefact layer is skipped when no aarch64 executable is
-reachable — the source and reference layers always execute.
+Latest run: **42 checks, 0 failures** in the default (source + reference) mode, and
+**48 checks, 0 failures** with the compiled-artefact layer enabled
+(`NUXEL_VM=nuxel@192.168.64.3 python3 tools/s10plus/a33/tests/test-colour-order.py`) —
+the A33 bridge was built on the UTM guest by `tools/s10plus/a33/build-a33-boot.sh`
+(aarch64 ELF, sha256 `2d8718c4d92858bbae02b7e914f0172d295b1c12446eb861e91c355f2ac912fc`) and its
+`--colour-dump` agrees word for word with the source-derived conversion. The layer is
+skipped, with a printed note, when no aarch64 executable is reachable; the source and
+reference layers always execute.
+
+### The owner-visible layer: `pwa/nuxel-home/colour-test.html`
+
+A conversion table cannot see the panel, so the briQ also ships the page the owner
+actually looks at. It is served from the launcher's own docroot and therefore goes
+through the real path under test (WebKitGTK → Phoc/Wayland → `nuxel-wl-fb` → `/dev/fb0`
+→ DECON) — it writes no framebuffer memory itself:
+
+```sh
+# on the handset (owner, NEEDS_OWNER_TEST)
+sudo systemctl set-environment NUXEL_HOME_URL=http://127.0.0.1:8000/pwa/nuxel-home/colour-test.html
+sudo systemctl restart nuxel-pwa-host      # the launcher view now shows the colour test
+#  -> the glass must be RED; tap to cycle RED/GREEN/BLUE/WHITE/BLACK/GREY/THIRDS
+sudo systemctl unset-environment NUXEL_HOME_URL
+sudo systemctl restart nuxel-pwa-host      # back to the normal launcher
+
+# in the VM / any browser on the device
+http://127.0.0.1:8000/pwa/nuxel-home/colour-test.html
+```
+
+The bottom bar is literally **red | green | blue** left to right: if the left third
+looks blue, the R/B swap is back. `test-colour-order.py` asserts that the page ships,
+that its swatches are exactly these golden colours, that the thirds bar is in R,G,B
+order, and that it is self-contained (no external script or asset fetch). The page
+reports each mode to the host diagnostic channel (`COLOURTEST mode=…`) so a
+console-side log line exists next to the photo.
 
 ## 5. Regression-gate wiring
 
 * `tools/s10plus/a32/tests/run-tests.sh` — the full offline suite the regression guard
   executes (register invariant `INV-9-a32-suite`) — now carries the A33 legs:
   the colour-order golden bytes, the handoff decision table, the verbose-boot
-  durability harness, the settings store and the launcher registry. Verified:
-  `bash tools/s10plus/a32/tests/run-tests.sh` → `== 0 failing suite(s) ==`.
+  durability harness, the settings store, the launcher registry and the boot-surface
+  contract check. Verified: `bash tools/s10plus/a32/tests/run-tests.sh` → `== 0 failing suite(s) ==`.
+* `tools/s10plus/a33/tests/run-boot-tests.sh` — the same bg-02 legs as one command, with
+  the optional aarch64 build of the A33 bridge (`build-a33-boot.sh`) when a Linux
+  toolchain or the UTM guest is reachable. A build that cannot run is reported as
+  skipped/blocked, never as a pass.
 * The A32 binary leg (`build/out/s10plus/a32/nuxel-wl-fb --colour-selftest`) remains
   the hard `program` assertion in `INV-2-colour-conversion`, and it passes here
   (`red src=0x00ff0000 got=0xff0000ff want=0xff0000ff`, …).
@@ -121,18 +156,24 @@ reachable — the source and reference layers always execute.
 ## 6. How to re-verify (offline, or on the glass by the owner)
 
 ```sh
-python3 tools/s10plus/a33/tests/test-colour-order.py            # golden bytes
+python3 tools/s10plus/a33/tests/test-colour-order.py            # golden bytes (42 checks)
+NUXEL_VM=nuxel@192.168.64.3 python3 tools/s10plus/a33/tests/test-colour-order.py
+                                                                # + the compiled artefact (48 checks)
+bash    tools/s10plus/a33/tests/run-boot-tests.sh               # every bg-02 leg, one command
+bash    tools/s10plus/a33/build-a33-boot.sh                     # build + self-test the aarch64 bridge
 bash    tools/s10plus/a32/tests/run-tests.sh                    # the whole offline suite
-build/out/s10plus/a32/nuxel-wl-fb --colour-dump | head          # compiled artefact
+build/out/s10plus/a32/nuxel-wl-fb --colour-dump | head          # compiled A32 artefact
 build/out/s10plus/a32/nuxel-wl-fb --fbvar-order --colour-selftest   # the BUG, for contrast
 ```
 
-On the handset (owner/live, `NEEDS_OWNER_TEST`): display a full-screen **pure red**
-image through the launcher; the glass must be **red**, not blue. A photo of the panel
-is the evidence; `dmesg | grep -i colour` / the bridge state line
-(`colour=R@0,G@8,B@16_abgr8888_override=1`) confirms which path ran. Failure symptom:
-red and blue exchanged everywhere (launcher icons, wallpaper, green Wi-Fi tick) —
-that is the A29–A31 defect, i.e. the conversion was bypassed.
+On the handset (owner/live, `NEEDS_OWNER_TEST`): display the shipped colour page
+(`pwa/nuxel-home/colour-test.html`, procedure in §4) so the panel must be **red**, not
+blue — the page fills the screen with the named colour and its bottom bar is literally
+red | green | blue left to right. A photo of the panel is the evidence; `dmesg | grep -i
+colour` / the bridge state line (`colour=R@0,G@8,B@16_abgr8888_override=1`) confirms
+which path ran, and the page reports `COLOURTEST mode=…` on the host diagnostic channel.
+Failure symptom: red and blue exchanged everywhere (launcher icons, wallpaper, green
+Wi-Fi tick) — that is the A29–A31 defect, i.e. the conversion was bypassed.
 
 `build/out/s10plus/a32/nuxel-wl-fb --colour-dump` output used as the golden source of
 truth is reproducible byte for byte; there is no time- or hardware-dependent input in

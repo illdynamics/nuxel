@@ -58,6 +58,87 @@
       "revision": 1,
       "at": "2026-10-16T16:07:13+02:00",
       "by": "construqtor/bg-00-preflight"
+    },
+    {
+      "id": "briq-02b-verbose-boot-setting",
+      "title": "Verbose-boot Settings option with Bixby hold override (persisted)",
+      "component": "bg-02-boot-animation-launcher",
+      "component_title": "Priority 2 - Boot Stability, Animation Handoff & UTM Launcher Parity",
+      "priority": 2,
+      "state": "implemented",
+      "dependencies": [],
+      "evidence": [
+        {
+          "kind": "observation",
+          "path": "configs/nuxel/",
+          "command": "test -e configs/nuxel/",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "observation",
+          "path": "pwa/nuxel-home/js/qs.js",
+          "command": "test -e pwa/nuxel-home/js/qs.js",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "observation",
+          "path": "pwa/nuxel-home/js/settings-store.js",
+          "command": "test -e pwa/nuxel-home/js/settings-store.js",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "tools/s10plus/a33/nuxel-verbose-boot.py",
+          "command": "python3 tools/s10plus/a33/nuxel-verbose-boot.py --selftest",
+          "result": "verbose-boot offline harness passed (upgrade-safe, offline); the simulated reinstall keeps the user's verbose_boot=true and set_by=user, and a plain overwrite is shown to LOSE it (negative control)",
+          "at": "2026-10-16T16:24:36+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "pwa/nuxel-home/js/settings-store.js",
+          "command": "node tools/s10plus/a33/tests/settings-store-test.js",
+          "result": "29 PASS / 0 FAIL: one document per setting, merge-on-write preserves unknown keys, host->localStorage degradation, Settings app reverts the switch if the write fails (no lying UI)",
+          "at": "2026-10-16T16:24:36+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "configs/nuxel/boot/verbose-boot.json",
+          "command": "python3 tools/s10plus/a33/tests/test-boot-surface-contract.py",
+          "result": "default verbose_boot=false; bixby_hold_override.status=BOOT_UPDATE_REQUIRED with the precise reason; consumer/nuxelctl/Settings/manifest all resolve /etc/nuxel/boot/verbose-boot.json",
+          "at": "2026-10-16T16:24:36+02:00"
+        }
+      ],
+      "intended_changes": [
+        "configs/nuxel/",
+        "pwa/nuxel-home/js/qs.js",
+        "pwa/nuxel-home/js/settings-store.js",
+        "docs/beta-finalization/boot/VERBOSE-BOOT.md"
+      ],
+      "tests": [
+        "(tests are recorded by the owning briQ when it reports)",
+        "python3 tools/s10plus/a33/nuxel-verbose-boot.py --selftest -> 29 PASS / 0 FAIL (fresh install, upgrade keep-rule, legacy migration, unreadable document refused, override honoured/refused, one-time consumption)",
+        "node tools/s10plus/a33/tests/settings-store-test.js -> settings-store tests passed (default OFF, merge-on-write, migration, host configSet('verbose-boot'), QS tile + Settings Boot card + manifest all on the same document)",
+        "bash tools/s10plus/a33/tests/run-boot-tests.sh -> ALL PASS; cross-file agreement asserted by tools/s10plus/a33/tests/test-boot-surface-contract.py"
+      ],
+      "risk": "medium",
+      "rollback": "git revert the commit(s) touching this task's expected files; the change is repository-only and alters no device state",
+      "verdict": "OFFLINE_TESTED",
+      "offline_ceiling": "NEEDS_OWNER_TEST",
+      "owner_action": "Settings -> Developer -> Boot: toggle Verbose boot on, then reboot once and confirm the boot log appears on the glass before the launcher; disable it again. The one-time Bixby-hold override is BLOCKED_KERNEL/BOOT_UPDATE_REQUIRED and cannot be tested (docs/beta-finalization/manual-proof/03-display-boot.md step 5)",
+      "expected_files": [
+        "configs/nuxel/",
+        "pwa/nuxel-home/js/qs.js",
+        "pwa/nuxel-home/js/settings-store.js",
+        "docs/beta-finalization/boot/VERBOSE-BOOT.md"
+      ],
+      "note": "Durable setting at /etc/nuxel/boot/verbose-boot.json (shipped default in configs/nuxel/boot/verbose-boot.json), installed with the 'keep' upgrade rule and merged on every write so a package update can never clobber a user decision; legacy flags migrated once. Honoured by the early userspace stage (nuxel-verbose-boot.service -> nuxel-verbose-boot.py), toggleable from the Quick Settings tile and the Settings app, and wired into 'nuxelctl verbose-boot status|on|off|override'. The one-time Bixby-hold override is implemented but the installed early boot stage cannot read the Bixby key state, so it is honestly reported as BLOCKED_KERNEL / BOOT_UPDATE_REQUIRED and REFUSED rather than faked behind a cosmetic switch. On-glass effect remains NEEDS_OWNER_TEST.",
+      "source": "plan.json",
+      "at": "2026-10-16T16:24:36+02:00",
+      "by": "construqtor/bg-02-boot-animation-launcher",
+      "revision": 2
     }
   ]
 }

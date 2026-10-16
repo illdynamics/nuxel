@@ -5,8 +5,13 @@
 **Device:** Samsung Galaxy S10+ SM-G975F (`beyond2lte`, Exynos 9820) — Fedora 43
 aarch64 userspace, Samsung Linux **4.14.253**, **systemd PID 1**
 **Verifier:** `tools/s10plus/a33/verify-service-graph.py` → **`OFFLINE_TESTED`**
-(14 units, 0 problems, 0 warnings; machine-readable report written to
+(14 units, 0 problems, 1 recorded warning; machine-readable report written to
 `build/pkgmeta/service-graph.json`)
+**Regression test:** `python3 tools/s10plus/a33/tests/test-service-graph.py` —
+proves the validator actually *fails* on an injected cycle, an unsatisfied
+dependency, a 4.14-forbidden dependency, a lost builder enablement and a lost
+A26 repair (a validator that has only ever run against the fixed tree has never
+been shown to work).
 **Builder:** `images/s10plus/build-phone-rootfs-inside-fedora.sh`
 **Verdict scope:** this document is *repository evidence*. `systemctl
 is-system-running` on the handset is **not** claimed here — that verdict belongs
@@ -37,6 +42,23 @@ in it:
 Both are fixed here. The units now live in exactly one canonical place
 (`services/**`), the builder installs and enables them with explicit per-unit
 lines, and a validator parses the real unit files *and* the real builder text.
+
+A **third** defect was found in the validator itself while writing the
+regression test for it: every `WantedBy=` assertion read the **`[Unit]`**
+section, but `WantedBy=` lives in **`[Install]`**. The enablement checks had
+therefore never been able to fail (dead code) — a green run proved nothing about
+enablement. Fixed (`install_refs()`), and the mutation test now proves the check
+fires (`builder installs but does not enable nuxel-web.service`,
+`WantedBy=graphical-session.target is a USER target in a SYSTEM unit`). Turning
+the check back on immediately surfaced one real, previously invisible finding,
+recorded as a **warning** rather than silently passing:
+
+* `nuxel-camera-portal.service` (`shell/nuxel-camera-portal/systemd/`) declares
+  `WantedBy=graphical-session.target`, a **user** target, so enabling it in the
+  system manager is a no-op. It is a VM-only surface that the handset rootfs
+  builder never installs, so it is a recorded `WARN` (with the reason and the
+  file's own corrected install instructions) and never a handset boot failure.
+  Its unit header now documents the user-manager install it actually needs.
 
 ## 2. The installed unit set (14 units)
 
@@ -134,7 +156,16 @@ Re-run the proof:
 ```sh
 python3 tools/s10plus/a33/verify-service-graph.py                       # text verdict
 python3 tools/s10plus/a33/verify-service-graph.py --json build/pkgmeta/service-graph.json
+python3 tools/s10plus/a33/tests/test-service-graph.py                   # prove the validator can FAIL
+bash tools/s10plus/a33/tests/run-userspace-tests.sh                     # all of Priority 4
 ```
+
+`--root <dir>` validates a copy of the tree instead of the repository. The
+regression test uses it to mutate a verbatim fixture and require a `FAILED`
+verdict for each defect class (cycle, unsatisfied dependency, forbidden 4.14
+dependency, missing enablement, user-target enablement, lost A26 repair) and a
+green verdict for the unmutated copy — so a green run means the checks ran, not
+that they were unreachable.
 
 The validator checks, in order: reference resolution, forbidden 4.14
 dependencies, ordering cycles, system-unit-into-user-target enablement, the A26
@@ -157,3 +188,7 @@ shipped A29/A31/A32 revision carried (the check reports `problems` for a lost
 * No AppArmor profile is declared for any unit: Nuxel has no verified AppArmor
   policy-load path on this vendor kernel, and declaring an unenforced profile
   would be a cosmetic switch that lies about enforcement.
+* The single warning is real but out of scope for the handset:
+  `nuxel-camera-portal.service` is a VM-only, user-manager surface (see §1). It
+  is reported on every run rather than suppressed, because "the VM unit is a
+  no-op in the system manager" is information the next reader needs.

@@ -28,8 +28,10 @@ not. A passing run is OFFLINE_TESTED, never VERIFIED_ON_S10PLUS.
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
+import tempfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 
@@ -64,6 +66,16 @@ def run(args, env=None):
     e["NUXEL_DIAG_NO_SYSTEM"] = "1"
     e.update(env or {})
     return subprocess.run(args, capture_output=True, text=True, env=e)
+
+
+def temp_root(name):
+    """A writable copy of a fixture. Evidence writes are redirected by the tool
+    through its fake root, so a case that writes must run on a copy: a test must
+    never create files inside the committed fixtures."""
+    d = tempfile.mkdtemp(prefix="nuxel-hp-test-")
+    dst = os.path.join(d, "root")
+    shutil.copytree(fixture(name), dst)
+    return dst
 
 
 def fixture(name):
@@ -144,8 +156,9 @@ check("policy re-applies the low-volume cap on every route change",
       and pol["safety"]["cap_on_route_change"] is True
       and int(pol["safety"]["volume_cap_percent"]) <= 25)
 
-# bounded watch: logs transitions and applies NOTHING
-p = run(["bash", TOOL, "watch", "2"], {"NUXEL_DIAG_ROOT": fixture("jack-inserted-headphones")})
+# bounded watch: logs transitions and applies NOTHING (runs on a writable copy,
+# because watch appends to its evidence log)
+p = run(["bash", TOOL, "watch", "2"], {"NUXEL_DIAG_ROOT": temp_root("jack-inserted-headphones")})
 check("watch is bounded and applies no route by itself",
       p.returncode == 0 and "watch complete" in p.stdout and "No route was applied" in p.stdout,
       p.stdout[-300:])

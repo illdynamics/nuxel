@@ -1,0 +1,4 @@
+#!/bin/bash
+# Offline stand-in for nuxel-firewall.sh that refuses (rollback/guard failure).
+echo "nuxel-firewall: ERROR: rendered ruleset has no console guard - refusing to apply" >&2
+exit 1

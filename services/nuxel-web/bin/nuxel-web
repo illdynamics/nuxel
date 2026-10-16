@@ -7,6 +7,11 @@
 #   2. /usr/share/nuxel      — the phone rootfs (pwa/ tree staged by the builder)
 #   3. /home/nuxel/nuxel     — the flash-free VM/handset deploy mirror
 #
+# The interpreter is overridable (NUXEL_WEB_PYTHON) so the server can be started
+# unchanged by the offline test suite (tools/s10plus/a33/tests/test-web-server.py)
+# on a development host whose python3 is not /usr/bin/python3. The unit does not
+# set it, so the phone always uses /usr/bin/python3 from the python3 RPM.
+#
 # Serving from the tree ROOT (not the launcher directory) is REQUIRED: the
 # launcher's index.html imports `../nuxel-common/bridge.js`, a relative ES-module
 # reference enforced by pwa/nuxel-common/verify-wiring.js.  The launcher is
@@ -21,7 +26,15 @@ if [ -z "$ROOT" ]; then
   done
 fi
 [ -n "$ROOT" ] || { echo "nuxel-web: no docroot with a launcher index.html (set NUXEL_WEBROOT)" >&2; exit 1; }
+# An explicit docroot is verified, not trusted: serving a root that has no
+# launcher (measured A29b failure mode) renders a blank WebKit view with a 404
+# the unit never notices, so it is a start failure here instead.
+if [ ! -f "$ROOT/pwa/nuxel-home/index.html" ] && [ ! -f "$ROOT/nuxel-home/index.html" ]; then
+  echo "nuxel-web: ERROR: $ROOT contains no launcher index.html (expected pwa/nuxel-home/index.html)" >&2
+  exit 1
+fi
 [ -f "$ROOT/pwa/nuxel-common/bridge.js" ] || echo "nuxel-web: WARNING: $ROOT/pwa/nuxel-common/bridge.js missing - the launcher's ES module will 404" >&2
 echo "nuxel-web: serving $ROOT on $BIND:$PORT"
+PY="${NUXEL_WEB_PYTHON:-/usr/bin/python3}"
 cd "$ROOT"
-exec /usr/bin/python3 -m http.server "$PORT" --bind "$BIND"
+exec "$PY" -m http.server "$PORT" --bind "$BIND"
