@@ -44,7 +44,7 @@ Two things this capture proves beyond the boot-mode finding:
 | `evdev.txt` | `/sys/class/input`, `/dev/input` and one real sysfs identity read |
 | `interrupts-{before,after}.txt` | the `/proc/interrupts` probe (no `sec_ts` line exists this boot) |
 | `verdict.txt`, `layer-verdicts.txt`, `analysis.json` | `nuxel-touch-trace.py --analyze` output for this capture |
-| `verdict.pre-rename.txt`, `analysis.pre-rename.json` | the *original* analyzer records, kept for audit. They were generated while the directory was named `...-p0probe`, before the archive was renamed to `...-p0probe-live-run`, so the `EVIDENCE=` / `JSON_OUT=` paths inside them no longer resolve. `verdict.txt` / `analysis.json` were re-generated with `--analyze` against the stored directory, so every evidence path in them names a file that exists. Both kinds are conclusions (structurally excluded from evidence), never graded as capture output. |
+| — | The *original* analyzer records (generated while the directory was named `...-p0probe`) are kept for audit **outside** this bundle, at `docs/beta-finalization/touch/live-capture-pre-rename-records/`, because a copy of `analysis.json` under another name inside the bundle would be re-graded as evidence by the analyzer (see that directory's README). `verdict.txt` and `analysis.json` here were re-generated with `--analyze` against the stored directory, so every `EVIDENCE=` / `JSON_OUT=` path in them names a file that exists; their finding is unchanged (`FIRST_FAIL_LAYER=1`, charger/LPM boot). |
 | `provenance.txt` | how the capture was taken and what was **not** done |
 
 `verdict.txt` / `layer-verdicts.txt` / `analysis.json` are the analyzer's own

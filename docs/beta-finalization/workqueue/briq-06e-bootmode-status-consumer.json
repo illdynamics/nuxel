@@ -1,0 +1,86 @@
+{
+  "schema_version": 1,
+  "id": "briq-06e-bootmode-status-consumer",
+  "revisions": [
+    {
+      "id": "briq-06e-bootmode-status-consumer",
+      "title": "Boot-mode status surface: read /run/nuxel-bootmode.json in Settings and the Home status surface",
+      "component": "bg-06-core-phone-apps",
+      "priority": 6,
+      "state": "pending",
+      "dependencies": [
+        "briq-01c-chargermode-bootmode"
+      ],
+      "evidence": [],
+      "intended_changes": [
+        "the Settings app (and/or the Home status surface) loads /run/nuxel-bootmode.json and, when mode != \"normal\", renders the headline + message with touch_available as a tri-state (true | false | unknown) and the action (\"unplug-and-normal-reboot\"); when mode == \"normal\" nothing is shown",
+        "the same reader exposes the machine line from /run/nuxel-bootmode.state (BOOTMODE= / TOUCH_AVAILABLE=) so Settings and the live console agree"
+      ],
+      "tests": [
+        "a unit test that feeds a charger-mode /run/nuxel-bootmode.json (touch_available=false) and asserts the banner text + tri-state, and a normal-mode fixture asserting no banner",
+        "read once at start-up plus on the existing launcher refresh - no busy polling"
+      ],
+      "risk": "low",
+      "rollback": "git revert the commit(s) touching pwa/nuxel-apps/settings, shell/nuxel-shell/nuxel-settings and pwa/nuxel-home; the reader is read-only and changes no device state",
+      "verdict": null,
+      "offline_ceiling": null,
+      "owner_action": "boot into charger mode (or a normal boot) and confirm the owner actually sees/does not see the warning on screen; until then this surface is NEEDS_OWNER_TEST",
+      "expected_files": [
+        "pwa/nuxel-apps/settings/",
+        "shell/nuxel-shell/nuxel-settings/",
+        "pwa/nuxel-home/"
+      ],
+      "note": "Recorded by bg-01-touch-pipeline while repairing briq-01c. The guard half is done (machine-readable NX_STATUS line, /run/nuxel-bootmode.state, and the /run/nuxel-bootmode.json launcher contract with mode/touch_available/message/action/graded) - see configs/nuxel/bootmode/README.md and docs/beta-finalization/touch/CHARGER-MODE-ROOTCAUSE.md. The RENDERING half is deliberately NOT implemented by bg-01: a grep over pwa/, services/ and shell/ finds no consumer of nuxel-bootmode, and the Settings/launcher surfaces belong to bg-06/bg-02, so this task is the explicit dependency that carries it so it cannot be lost. The split is documented in configs/nuxel/bootmode/README.md.",
+      "revision": 1,
+      "at": "2026-10-16T19:58:20+02:00",
+      "by": "construqtor/bg-01-touch-pipeline"
+    },
+    {
+      "id": "briq-06e-bootmode-status-consumer",
+      "title": "Boot-mode status surface: read /run/nuxel-bootmode.json in Settings and the Home status surface",
+      "component": "bg-06-core-phone-apps",
+      "priority": 6,
+      "state": "pending",
+      "dependencies": [
+        "briq-01c-chargermode-bootmode"
+      ],
+      "evidence": [
+        {
+          "kind": "doc",
+          "path": "configs/nuxel/bootmode/README.md",
+          "result": "the published contract this consumer must render: /run/nuxel-bootmode.json {mode, touch_available, message, headline, action, graded, permanent_fix}, /run/nuxel-bootmode.state (BOOTMODE=, TOUCH_AVAILABLE= tri-state) and the NX_STATUS live-console line",
+          "at": "2026-10-16T19:58:20+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "pwa/ services/ shell/",
+          "command": "grep -rn nuxel-bootmode pwa services shell",
+          "result": "no match: no consumer of /run/nuxel-bootmode.json exists in this tree, which is why this dependency task exists (bg-01 publishes, bg-06/bg-02 renders)",
+          "at": "2026-10-16T19:58:20+02:00"
+        }
+      ],
+      "intended_changes": [
+        "the Settings app (and/or the Home status surface) loads /run/nuxel-bootmode.json and, when mode != \"normal\", renders the headline + message with touch_available as a tri-state (true | false | unknown) and the action (\"unplug-and-normal-reboot\"); when mode == \"normal\" nothing is shown",
+        "the same reader exposes the machine line from /run/nuxel-bootmode.state (BOOTMODE= / TOUCH_AVAILABLE=) so Settings and the live console agree"
+      ],
+      "tests": [
+        "a unit test that feeds a charger-mode /run/nuxel-bootmode.json (touch_available=false) and asserts the banner text + tri-state, and a normal-mode fixture asserting no banner",
+        "read once at start-up plus on the existing launcher refresh - no busy polling"
+      ],
+      "risk": "low",
+      "rollback": "git revert the commit(s) touching pwa/nuxel-apps/settings, shell/nuxel-shell/nuxel-settings and pwa/nuxel-home; the reader is read-only and changes no device state",
+      "verdict": null,
+      "offline_ceiling": null,
+      "owner_action": "boot into charger mode (or a normal boot) and confirm the owner actually sees/does not see the warning on screen; until then this surface is NEEDS_OWNER_TEST",
+      "expected_files": [
+        "pwa/nuxel-apps/settings/",
+        "shell/nuxel-shell/nuxel-settings/",
+        "pwa/nuxel-home/"
+      ],
+      "note": "Recorded by bg-01-touch-pipeline while repairing briq-01c. The guard half is done and live-proven (machine-readable NX_STATUS line, /run/nuxel-bootmode.state, and the /run/nuxel-bootmode.json launcher contract with mode/touch_available/message/action/graded). The RENDERING half is deliberately NOT implemented by bg-01: a grep over pwa/, services/ and shell/ finds no consumer of nuxel-bootmode, and the Settings/launcher surfaces belong to bg-06 (Settings: pwa/nuxel-apps/settings, shell/nuxel-shell/nuxel-settings) and bg-02 (Home status surface: pwa/nuxel-home), so this task is the explicit dependency that carries it so it cannot be lost. The split is documented in configs/nuxel/bootmode/README.md.",
+      "at": "2026-10-16T19:58:30+02:00",
+      "by": "construqtor/bg-01-touch-pipeline",
+      "revision": 2
+    }
+  ]
+}

@@ -151,7 +151,7 @@ after `systemctl reboot`:
 | File | Contents |
 |---|---|
 | `/run/nuxel-bootmode.state` | `BOOTMODE=CHARGER_LPM|NORMAL|UNKNOWN`, `TOUCH_DRIVER_EXPECTED`, `SEC_TOUCHSCREEN_REGISTERED`, `LPCHARGE`, `PERMANENT_FIX=BLOCKED_KERNEL BOOT_UPDATE_REQUIRED NOT_DEPLOYED`, one `EVIDENCE_n=<why> [<file>]: <line>` per marker |
-| `/run/nuxel-bootmode.json` | launcher-facing: `headline`, owner-readable `message` ("charging-mode boot: touch is disabled on this boot. Unplug the charger and reboot normally …"), `action: unplug-and-normal-reboot`, `permanent_fix`, `graded` |
+| `/run/nuxel-bootmode.json` | launcher-facing: `headline`, owner-readable `message` ("charging-mode boot: touch is disabled on this boot. Unplug the charger and reboot normally …"), `touch_available` (tri-state: `true` **only** for a normal boot, `false` for charger/LPM, `unknown`), `action: unplug-and-normal-reboot`, `permanent_fix`, `graded`, `evidence` |
 
 `mode == "unknown"` (no readable evidence) is **never** presented as a pass: it is
 `graded: false`, and the tool exits 2.
@@ -248,11 +248,19 @@ report touch results from a charger-mode boot.
   this group: this group is repository-only and does not reboot the live phone. The
   reboot itself is proven (A29b), but the post-reboot touch state on the current
   beta image is `DEPLOYED_UNVERIFIED` until the live group performs a normal reboot.
-* The guard's launcher message is **published**, not rendered: the status-bar /
-  notification surface is owned by the launcher work. `configs/nuxel/bootmode/README.md`
-  (canonical subpath) and `configs/nuxel/touch/README.md` (legacy path, kept for the
-  generated deploy plan) fix the JSON contract (`mode`, `touch_available`, `message`,
-  `action`, `graded`, `evidence`).
+* The guard's launcher message is **published only** — publishing and rendering are two
+  halves of the requirement and this group owns the first: the status-bar / notification
+  surface belongs to the Settings/launcher components (`bg-06`, `bg-02`), so the render
+  half is recorded as the explicit dependency task
+  **`briq-06e-bootmode-status-consumer`** (`docs/beta-finalization/workqueue/briq-06e-bootmode-status-consumer.json`,
+  depending on `briq-01c-chargermode-bootmode`) instead of being written here. A
+  `grep -rn nuxel-bootmode pwa services shell` currently matches nothing, so an owner
+  staring at a charger-mode boot gets **no on-screen warning yet** — the state is
+  correct on the live console (`NX_STATUS …`) and in `/run/nuxel-bootmode.{state,json}`,
+  and that is all that is claimed. `configs/nuxel/bootmode/README.md` (canonical
+  subpath, section "Two halves") and `configs/nuxel/touch/README.md` (legacy path, kept
+  for the generated deploy plan) fix the JSON contract (`mode`, `touch_available`,
+  `message`, `action`, `graded`, `evidence`).
 * An `androidboot.mode=charger` boot is not a testable state for *anything* in the
   touch pipeline. If the boot-mode check says LPM, every other touch measurement on
   that boot is meaningless, and this document is the reason why.

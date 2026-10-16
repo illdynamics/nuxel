@@ -12,6 +12,7 @@ command or log path**, **PASS**, **FAIL** and **Current automatic evidence**.
 | Platform | Nuxel — Fedora 43 ARM64 userspace, Linux **4.14.253** (Samsung vendor), systemd PID 1 |
 | Probe | Nuxel Home PWA over WebKitGTK → headless Phoc/Wayland → `nuxel-wl-fb` → `/dev/fb0` |
 | Compiled by | `bg-12-reports` / `briq-12b-manual-proof-checklist` at repository revision `838a00a5…` |
+| Area 1 re-stamped | `bg-01-touch-pipeline` / `briq-01d-touch-owner-test`, over the same consolidation base (`f36646a` + cycle-002 working tree): area 1's action sequence now matches what `nuxel-touch-capture.sh` prints (tap / three taps / swipe / multi-contact / select an app / on-screen keyboard), the counts are refreshed (240 PASS, gate 27 files, self-test 43/43) and the measured charger-mode state is carried. Sections 2–26 are otherwise unchanged. |
 | Pass 1 (areas 1–19) | 2026-10-16T14:26Z (16:26 +02:00, `Europe/Amsterdam`) — from the `manual-proof/` fragments |
 | Pass 2 (areas 20–26) | 2026-10-16T16:55Z (18:55 +02:00, `Europe/Amsterdam`) — synthesized; source fragments for these areas were not present at either pass (see each area's **Source note**) |
 
@@ -123,19 +124,30 @@ selects the panel **by capability, never by node number**.
    guard cannot reboot mid-test, holds the reader open only for the bounded window, and releases it on
    exit. Budget 90 s of touching; the session is hard-bounded and cannot hang the console.
 
-**Exact action.**
-1. Run `nuxel-touch-capture.sh --seconds 90`.
-2. While it is armed, deliberately and slowly: **one tap** centre; **three taps** at top-left, centre,
-   bottom-right (to catch an inverted/swapped axis); **one slow vertical swipe** bottom-third →
-   top-third (≥ 1 s); **one tap on a launcher tile** (e.g. Terminal or Settings) and let it open.
-3. If the harness says layer 7 has no evidence, stage the probe and repeat the taps in it:
+**Exact action.** `nuxel-touch-capture.sh --seconds 90` prints this sequence before it arms; perform it
+deliberately and slowly, in this order (it is the same text the harness writes into `<BUNDLE>/commands.txt`):
+
+1. **TAP DOWN/UP** — one tap in the centre of the screen (slow, ~0.3 s).
+2. **THREE TAPS** — top-left, centre, bottom-right (catches a swapped/inverted axis).
+3. **SWIPE** — bottom third → top third, slowly (≥ 1 s), for scroll/gesture.
+4. **MULTI-CONTACT** — two fingers down together for ~1 s, then lift both (slot + tracking-id behaviour).
+5. **SELECT AN APP** — tap a launcher tile (Terminal or Settings) and let it open.
+6. **KEYBOARD** — if a text field is reachable, type three keys on the on-screen keyboard (it proves the
+   keyboard's own hit testing on the same pipeline).
+
+The **completion definition for the whole touch mission** is: a real finger opens **Settings**, returns
+**Home**, opens **Terminal**, scrolls the launcher, selects an app, and uses the on-screen keyboard.
+Anything less is not a finished touch story even if the machine gate passes.
+
+Then:
+1. If the harness says layer 7 has no evidence, stage the probe and repeat the taps in it:
    `python3 /usr/libexec/nuxel/nuxel-touch-trace.py --stage-probe`, then open `/touch-probe.html` as the
    receipt instructs.
-4. Save the `BUNDLE=…` path and the verdict block.
-5. Confirm the human half: did the tapped tile **open**? Does a tap ring/dot appear under your finger on
+2. Save the `BUNDLE=…` path and the verdict block.
+3. Confirm the human half: did the tapped tile **open**? Does a tap ring/dot appear under your finger on
    the probe page? Does a swipe move the UI in the direction you swiped?
-6. Write down: the taps you made, the `CAPTURE_GATE=` line, the `FIRST_FAIL_LAYER=` line, and your
-   answer to step 5.
+4. Write down: the actions you performed, the `CAPTURE_GATE=` line, the `FIRST_FAIL_LAYER=` line, and
+   your answer to step 3.
 
 **Expected result.**
 * `CAPTURE_GATE=PASS` with `gate.json` showing `down ≥ 1`, `up ≥ 1`, `coords_plausible: true`,
@@ -144,6 +156,12 @@ selects the panel **by capability, never by node number**.
 * Coordinates track your finger (top-left → small x/y; bottom-right → large; the swipe keeps x roughly
   constant while y changes monotonically).
 * The launcher tile opens, and the probe page draws a ring under your finger.
+* `<BUNDLE>/events.jsonl` exists with one JSON record per input event (kernel timeval `ts`/`iso`) and a
+  `point` record per frame carrying raw + mapped coordinates; `<BUNDLE>/coordinate-map.json` records the
+  1440x3040 panel, the device range and its source, the output scale/transform and `validation.verdict`.
+* **Completion definition for the whole touch mission** (nothing less counts as a finished touch story):
+  a real finger opens **Settings**, returns **Home**, opens **Terminal**, scrolls the launcher, selects
+  an app, and uses the on-screen keyboard.
 
 **Failure symptoms.** `charger` in `/proc/cmdline` or `verdict=CHARGER_MODE_TOUCH_DISABLED` (harness
 exit 10) = charger/LPM boot — unplug, reboot normally, redo. No `sec_touchscreen` = driver did not bind.
@@ -175,12 +193,33 @@ bundle path and the `LAYER=` lines.
 inverted/mirrored mapping, no UI reaction, or a check you could not perform. Record the exact
 `FIRST_FAIL_LAYER=` line and do not report any layer as working that was not observed.
 
+**Current measured state — read this before planning the test.** A bounded, read-only probe of the
+running phone over the USB CDC-ACM console found the handset **booted in charger / low-power mode**
+(transcript and grading: `docs/beta-finalization/live/evidence/touch-20261016T193756+0200-cycl001-p0probe-live-run/`):
+
+| Probe | Result on that boot |
+|---|---|
+| `/proc/cmdline` | `androidboot.mode=charger`, `charging_mode=0x3030` |
+| `dmesg` | `[    1.638064] [sec_input] sec_ts_init: Do not load driver due to : lpm 1` |
+| `grep -c sec_touchscreen /proc/bus/input/devices` | `0` |
+| `/sys/class/sec/tsp`, `/proc/interrupts` `sec_ts` line | absent |
+| `nuxel-touch-arm.service` | `failed` |
+| fb0 panel | `U:1440x3040p-0`, virtual_size `1440,6080`, 32 bpp |
+
+**Consequence: this test cannot pass in that state.** On a charger-mode boot the controller is never
+initialised, so no touch device exists and no finger can produce an event; every layer grades `blocked`
+(never `ok`) with `FIRST_FAIL_LAYER=1`. Preparation step 1 (unplug + normal reboot) is what changes it.
+
 **Current automatic evidence.** `./tools/s10plus/a33/tests/run-touch-tests.sh` → **`TOUCH-TESTS: ALL
-PASS`** (149 assertions: shim fixtures 19/19, A31/A33 parity 6/6, tracer layers/gate/boundedness,
-boot-mode guard, capture harness 33/33, `/dev/input/eventN` gate 26 files/0 fail). Archived real
-handset captures graded: A20/A21 → layers 1 and 3 `ok`, `FIRST_FAIL_LAYER=2`; older captures honestly
-all-`blocked`. Full table: `docs/beta-finalization/touch/OFFLINE-TEST-RESULTS.md`. **No finger produced
-a real contact in this cycle**, so the area stays `NEEDS_OWNER_TEST`.
+PASS`** (**240 PASS / 0 FAIL**: `test-touch-trace.py` 67/67, `test-bootmode-guard.py` 53/53,
+`test-capture-harness.py` 33/33, `test-no-eventn-literal.py` **27 files checked**/0 failing,
+`test-libinput-shim-invocation.py` 27/27, shim fixtures 19/19, A31/A33 parity 6/6, plus the 8
+`run_step` summary lines). `nuxel-touch-trace.py --self-test` → **`SELF-TEST: PASS (43/43
+assertions)`**. Archived real handset captures graded: A20/A21 → layers 1 and 3 `ok`,
+`FIRST_FAIL_LAYER=2`; older captures honestly all-`blocked`. Full table:
+`docs/beta-finalization/touch/OFFLINE-TEST-RESULTS.md`; owner procedure in full:
+`docs/beta-finalization/manual-proof/01-touchscreen.md`. **No finger produced a real contact in this
+cycle**, so the area stays `NEEDS_OWNER_TEST`.
 
 ---
 

@@ -81,4 +81,21 @@ The guard publishes state for both consumers (Settings and the live console):
 | File | Contents |
 |---|---|
 | `/run/nuxel-bootmode.state` | `BOOTMODE=…`, `TOUCH_AVAILABLE=…`, `PERMANENT_FIX=…`, one `EVIDENCE_n=` per marker |
-| `/run/nuxel-bootmode.json` | launcher/Settings-facing `headline`, `message`, `action`, `permanent_fix`, `graded` |
+| `/run/nuxel-bootmode.json` | launcher/Settings-facing `headline`, `message`, `action`, `touch_available` (tri-state), `permanent_fix`, `graded` |
+
+## Two halves — publishing (done here) and rendering (owned by Settings/launcher)
+
+This requirement has two halves, and **only one of them belongs to the touch group**:
+
+| Half | Owner | State |
+|---|---|---|
+| **publish** the boot-mode state: classify the boot, write `/run/nuxel-bootmode.state`, write the `/run/nuxel-bootmode.json` contract, print the machine-readable `NX_STATUS bootmode=… touch_available=…` line for the live console | `bg-01-touch-pipeline` (this subpath, `tools/s10plus/a33/nuxel-bootmode-guard.py`) | **done**; live-proven on a charger-mode boot (`docs/beta-finalization/live/evidence/touch-*-p0probe-live-run/`) |
+| **render** it on screen: load `/run/nuxel-bootmode.json` in Settings (and/or the Home status surface), show `headline` + `message` when `mode != "normal"`, show `touch_available` as the tri-state `true`/`false`/`unknown`, and offer the `action` (`unplug-and-normal-reboot`) | `bg-06-core-phone-apps` (Settings: `pwa/nuxel-apps/settings/`, `shell/nuxel-shell/nuxel-settings/`) and `bg-02` (Home status surface: `pwa/nuxel-home/`) | **open — tracked as the explicit dependency task `briq-06e-bootmode-status-consumer`** (queue: `docs/beta-finalization/workqueue/briq-06e-bootmode-status-consumer.json`), which depends on `briq-01c-chargermode-bootmode` |
+
+The render half is **not** implemented in this subpath and not implemented by
+`bg-01-touch-pipeline`: a `grep -rn nuxel-bootmode pwa services shell` over the tree
+returns no consumer, and those surfaces belong to the Settings/launcher components, so
+the touch group does not edit them. Recording it as a queue task with a dependency is
+what keeps the requirement from being lost. Until that task lands, a charger-mode boot
+is reported **correctly but only off-screen** — on the live console and in the state
+files — and must never be described as "the owner will see a warning".

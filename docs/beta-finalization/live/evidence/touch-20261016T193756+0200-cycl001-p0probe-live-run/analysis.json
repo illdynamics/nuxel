@@ -39,9 +39,9 @@
     {
       "n": 6,
       "name": "wayland",
-      "state": "ok",
-      "evidence": "analysis.pre-rename.json",
-      "detail": "wl_touch present in the compositor protocol capture"
+      "state": "blocked",
+      "evidence": "/x/nuxel/docs/beta-finalization/live/evidence/touch-20261016T193756+0200-cycl001-p0probe-live-run",
+      "detail": "no seat/focus/wl_touch evidence in this capture (WAYLAND_DEBUG was not enabled?)"
     },
     {
       "n": 7,
