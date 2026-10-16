@@ -352,17 +352,49 @@
       return {};
     }, function () { return {}; });
   }
+  // The three boot-diagnostics controls, their legal values and the one
+  // precedence rule.  Kept next to the panel so the UI cannot invent a value the
+  // console / the boot-time consumer would reject.
+  var ANIMATION_MODES = ['standard', 'short', 'off'];
+  var VERBOSITY_MIN = 0, VERBOSITY_MAX = 3;
+  function animationMode(doc) {
+    var m = String((doc && doc.animation_mode) || 'standard').toLowerCase();
+    return ANIMATION_MODES.indexOf(m) >= 0 ? m : 'standard';
+  }
+  function verbosityLevel(doc) {
+    var n = parseInt((doc && doc.verbosity_level), 10);
+    if (isNaN(n) || n < VERBOSITY_MIN || n > VERBOSITY_MAX) return 1;
+    return n;
+  }
+  // The precedence rule as the boot-time consumer implements it
+  // (tools/s10plus/a33/nuxel-verbose-boot.py): off > short > verbose_boot > standard.
+  function effectiveAnimation(doc) {
+    var mode = animationMode(doc);
+    if (mode === 'off') return { mode: 'off', reason: 'animation_mode_off' };
+    if (mode === 'short') return { mode: 'short', reason: 'animation_mode_short' };
+    if (doc && doc.verbose_boot) return { mode: 'short', reason: 'verbose_boot_requested' };
+    return { mode: 'standard', reason: 'standard' };
+  }
+
   function loadBoot() {
     var state = document.getElementById('verbose-boot-state');
     var toggle = document.getElementById('verbose-boot-toggle');
+    var animSel = document.getElementById('animation-mode');
+    var verbSel = document.getElementById('verbosity-level');
+    var eff = document.getElementById('boot-effective');
     var override = document.getElementById('verbose-boot-override');
     if (!state || !toggle) return Promise.resolve();
     return verboseDoc().then(function (doc) {
       toggle.checked = !!doc.verbose_boot;
+      if (animSel) animSel.value = animationMode(doc);
+      if (verbSel) verbSel.value = String(verbosityLevel(doc));
+      var policy = effectiveAnimation(doc);
       return call('status.read', { name: 'verbose-boot-state' }).then(function (res) {
         var bootState = (res && res.ok && res.text) ? res.text.trim() : '';
         var lines = [
           'verbose_boot: ' + (doc.verbose_boot ? 'ON — applies from the NEXT boot' : 'off (default)'),
+          'animation_mode: ' + animationMode(doc) + ' → effective ' + policy.mode + ' (' + policy.reason + ')',
+          'verbosity_level: ' + verbosityLevel(doc),
           'stored in: /etc/nuxel/boot/verbose-boot.json',
           'set_by: ' + (doc.set_by || 'default') + '   schema_version: ' + (doc.schema_version || 1)
         ];
@@ -370,14 +402,71 @@
         if (bootState) lines.push('this boot: ' + bootState.split('\n').join(' | '));
         else lines.push('this boot: (nuxel-verbose-boot has not reported yet)');
         state.textContent = lines.join('\n');
+        if (eff) {
+          eff.textContent = 'Next boot will ' + (policy.mode === 'standard'
+            ? 'play the full 192-frame / 24 fps animation and then hand over to the launcher'
+            : 'hand over without the full animation') + ' — reason ' + policy.reason + '. '
+            + (doc.verbose_boot ? 'The boot log WILL be shown on the glass. ' : 'The boot log will NOT be shown. ')
+            + 'Verbosity ' + verbosityLevel(doc) + ' (' + verbosityLabel(verbosityLevel(doc)) + ').';
+        }
         var supported = /OVERRIDE_CAPABILITY=supported/.test(bootState);
         override.textContent = supported
           ? 'One-time Bixby-hold override: available on the installed early boot stage.'
           : 'One-time Bixby-hold override: BOOT_UPDATE_REQUIRED — the installed early boot stage ' +
             'cannot read the Bixby key state, so the override is refused with a kernel marker ' +
-            '(NUXEL_VERBOSE_BOOT_OVERRIDE_REFUSED) rather than faked behind this switch.';
+            '(NUXEL_VERBOSE_BOOT_OVERRIDE_REFUSED) rather than faked behind this switch. ' +
+            'Userspace fallback: turn Verbose boot on here (or "nuxelctl verbose-boot on"), which ' +
+            'needs no BOOT partition write.';
       });
     });
+  }
+  function verbosityLabel(n) {
+    return { 0: 'quiet (markers only)', 1: 'normal', 2: 'verbose (per-stage)', 3: 'debug' }[n] || 'normal';
+  }
+  // One write for the whole panel: the three controls are stored in ONE document,
+  // so a single failed write cannot leave them disagreeing with the file.  The
+  // write MERGES into the loaded document, preserving keys this revision does not
+  // know about (an upgrade or a downgrade never clobbers the operator's choice).
+  function saveBoot() {
+    var toggle = document.getElementById('verbose-boot-toggle');
+    var animSel = document.getElementById('animation-mode');
+    var verbSel = document.getElementById('verbosity-level');
+    var btn = document.getElementById('save-boot');
+    if (!toggle || !animSel || !verbSel) return Promise.resolve();
+    var want = {
+      verbose_boot: !!toggle.checked,
+      animation_mode: animationMode({ animation_mode: animSel.value }),
+      verbosity_level: verbosityLevel({ verbosity_level: verbSel.value })
+    };
+    if (btn) btn.disabled = true;
+    return verboseDoc().then(function (doc) {
+      doc.schema_version = doc.schema_version || 1;
+      doc.verbose_boot = want.verbose_boot;
+      doc.animation_mode = want.animation_mode;
+      doc.verbosity_level = want.verbosity_level;
+      doc.set_by = 'user';
+      doc.updated_at = Date.now();
+      return cfgSet(VERBOSE_NAME, JSON.stringify(doc, null, 2) + '\n');
+    }).then(function (res) {
+      if (btn) btn.disabled = false;
+      if (!res || !res.ok) {
+        // Never leave the panel lying about what is stored: put the controls back.
+        return loadBoot().then(function () {
+          document.getElementById('verbose-boot-state').textContent =
+            'save failed — nothing was changed (no host channel?)\nwanted: ' + JSON.stringify(want);
+        });
+      }
+      return loadBoot();
+    }, function () {
+      if (btn) btn.disabled = false;
+      return loadBoot().then(function () {
+        document.getElementById('verbose-boot-state').textContent =
+          'save failed — nothing was changed';
+      });
+    });
+  }
+  if (document.getElementById('save-boot')) {
+    document.getElementById('save-boot').addEventListener('click', saveBoot);
   }
   if (document.getElementById('verbose-boot-toggle')) {
     document.getElementById('verbose-boot-toggle').addEventListener('change', function () {

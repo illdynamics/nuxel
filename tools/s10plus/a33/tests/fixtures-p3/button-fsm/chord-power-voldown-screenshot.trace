@@ -1,0 +1,8 @@
+# Power + VolumeDown held together for >= 500 ms -> screenshot.
+# No volume step is emitted (the chord outranks the single press).
+0 key power 1
+100 tick
+200 key volume_down 1
+800 tick
+900 key volume_down 0
+1000 key power 0

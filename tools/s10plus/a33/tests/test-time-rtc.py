@@ -223,5 +223,82 @@ tool_src = open(TOOL).read()
 for pat in ("/dev/block", "dd if=", "heimdall", "fastboot", "flash"):
     check("timekeeping tool has no %r surface" % pat, pat not in tool_src.lower())
 
+
+# 6 ── the Settings surface, clock permissions, last-known and suspend honesty ----
+pol = json.load(open(os.path.join(TIME_DIR, "time.json")))
+
+ss = pol.get("settings_surface", {})
+keys = {f.get("key") for f in ss.get("fields", [])}
+need = {"auto_time", "auto_timezone", "manual_timezone", "time_format", "ntp_servers", "last_sync"}
+check("settings surface covers every required Date & time row", need.issubset(keys), sorted(need - keys))
+check("settings surface names its renderer (append point, not a second store)",
+      ss.get("renderer", "").startswith("briq-06d"))
+atz = [f for f in ss.get("fields", []) if f.get("key") == "auto_timezone"]
+check("auto timezone is gated on the location service (never inferred from an IP)",
+      bool(atz) and atz[0].get("requires") == "location service enabled")
+lz = [f for f in ss.get("fields", []) if f.get("key") == "manual_timezone"]
+check("the timezone list is probed from tzdata, never hard-coded",
+      bool(lz) and "zoneinfo" in lz[0].get("read_api", ""))
+check("last-sync is read-only and never replaced by the boot time",
+      bool([f for f in ss.get("fields", []) if f.get("key") == "last_sync"
+            and f.get("read_only") is True
+            and "never replaced" in f.get("honest_note", "")]))
+
+cp = pol.get("clock_permissions", {})
+check("clock permissions state that only root/CAP_SYS_TIME may set the clock",
+      "CAP_SYS_TIME" in cp.get("set_time_requires", ""), cp.get("set_time_requires"))
+check("clock permissions forbid an unprivileged app or PWA from setting the clock",
+      "never" in cp and "PWA" in cp.get("never", ""))
+check("the monotonic clock is documented as unaffected by clock steps",
+      "CLOCK_MONOTONIC" in cp.get("monotonic", ""))
+
+lk = pol.get("last_known_time", {})
+check("last-known records a plausible-after floor and is described as a floor, not a measurement",
+      lk.get("plausible_after", "").startswith("2024-") and "floor" in lk.get("uncertainty", ""))
+check("a clock earlier than the last-known record is reported RTC_SUSPECT",
+      "RTC_SUSPECT" in lk.get("use", ""))
+
+sr = pol.get("suspend_resume", {})
+check("suspend support is read from the kernel's own /sys/power/state",
+      "/sys/power/state" in sr.get("state_source", ""))
+check("suspend/resume never claims a state the kernel does not advertise",
+      "not-supported-by-this-kernel" in sr.get("honest_note", ""))
+check("suspend/resume timekeeping effect is stated (monotonic pauses, wall clock re-synced)",
+      "CLOCK_MONOTONIC" in sr.get("clock_effect", ""))
+check("tzdata availability is a probe with a documented missing case",
+      "TZDATA_MISSING" in pol.get("tzdata", {}).get("if_missing", ""))
+
+# behavioural: the tool's own surface + the last-known refusal/suspect logic
+p = run(["bash", TOOL, "settings"])
+check("nuxelctl time settings runs and prints the surface",
+      p.returncode == 0 and "Date & time settings surface" in p.stdout, p.stdout[-200:])
+check("settings reports the clock-permission requirement",
+      "set_time_requires" in p.stdout and "CAP_SYS_TIME" in p.stdout)
+check("settings reports suspend support from the kernel, or says UNKNOWN",
+      "/sys/power/state" in p.stdout and ("advertised" in p.stdout or "UNKNOWN" in p.stdout))
+
+with tempfile.TemporaryDirectory() as td:
+    os.makedirs(os.path.join(td, "var/lib/nuxel/time"), exist_ok=True)
+    rec = os.path.join(td, "var/lib/nuxel/time/last-known.json")
+    if os.path.exists(rec):
+        os.unlink(rec)
+    # The host clock is plausible, so this records; the REFUSAL path itself is
+    # exercised by the forged future record below (which must report RTC_SUSPECT).
+    p = run(["bash", TOOL, "last-known", "--record"], root=td)
+    check("last-known --record writes a floor record with an explicit warning",
+          os.path.exists(rec) and "floor" in open(rec).read().lower(), p.stdout[-200:])
+    # now forge a record in the FUTURE and confirm the tool reports RTC_SUSPECT
+    with open(rec, "w") as f:
+        json.dump({"schema_version": 1, "observed_epoch": int(time.time()) + 864000,
+                   "observed_iso": "2999-01-01T00:00:00Z", "kind": "last-known-lower-bound"}, f)
+    p = run(["bash", TOOL, "last-known"], root=td)
+    check("a clock earlier than the last-known record is reported RTC_SUSPECT",
+          "RTC_SUSPECT" in p.stdout, p.stdout[-200:])
+    # a record that does not exist is reported as such, never invented
+    os.unlink(rec)
+    p = run(["bash", TOOL, "last-known"], root=td)
+    check("no record is reported as 'no record yet', never as a fabricated time",
+          "no record yet" in p.stdout, p.stdout[-200:])
+
 print("\n== %d failing check(s) ==" % len(fails))
 sys.exit(1 if fails else 0)

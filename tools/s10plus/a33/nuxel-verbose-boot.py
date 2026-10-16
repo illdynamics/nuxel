@@ -21,7 +21,19 @@ WHAT IT DOES
        the request file /run/nuxel/boot-verbose-once.  The installed stage (the
        A23 initramfs in the BOOT partition) cannot, so the override is reported as
        BOOT_UPDATE_REQUIRED with that exact reason - never faked behind a switch.
-    3. Publishes the effective state (/run/nuxel/verbose-boot, K=V lines),
+    3. Evaluates the OTHER two boot-diagnostics controls (briq-02b,bg-02
+       verification pass) with one documented precedence, so the three controls
+       can never contradict each other:
+
+            off > short > verbose_boot > standard
+
+       animation_mode=off/short comes from the durable document; otherwise an
+       effective verbose_boot (config, kernel cmdline, or the one-time hold)
+       shortens the animation because the operator asked for the log; otherwise
+       the standard 192-frame animation with its minimum-cycle handoff runs.
+       verbosity_level (0..3) only selects HOW MUCH the boot log says - it never
+       turns the log on or off, so a default boot stays quiet and silent.
+    4. Publishes the effective state (/run/nuxel/verbose-boot, K=V lines),
        appends the durable record (/var/lib/nuxel/verbose-boot), emits the
        NUXEL_VERBOSE_BOOT kernel marker, and - when verbose - writes
        /run/nuxel/anim-skip.request so the framebuffer bridge deliberately trades
@@ -54,6 +66,13 @@ SKIP_REQUEST = "/run/nuxel/anim-skip.request"
 RECORD = "/var/lib/nuxel/verbose-boot"
 CAPS = "/run/nuxel/boot-stage-capabilities"
 ONCE_REQUEST = "/run/nuxel/boot-verbose-once"
+# animation_mode / verbosity_level (briq-02b, bg-02 verification pass).  Both are
+# keys of the SAME durable document, so there is still exactly one boot-diagnostics
+# setting to read, back up and roll back.
+ANIMATION_MODES = ("standard", "short", "off")
+VERBOSITY_MIN = 0
+VERBOSITY_MAX = 3
+DEFAULT_VERBOSITY = 1
 BOOT_LOG = "/var/log/nuxel/boot-stage.log"
 KMSG = "/dev/kmsg"
 STAMP = 0
@@ -123,6 +142,32 @@ def parse_bool(v, default=False):
     if s in ("0", "false", "no", "off", "disable", "disabled", ""):
         return False
     return default
+
+
+def parse_animation_mode(v, default="standard"):
+    """standard | short | off, case-insensitively.  Unknown values fall back to
+    the default AND are reported, so a typo in the document can never silently
+    pick a different animation policy than the operator asked for."""
+    if v is None:
+        return default, "default"
+    s = str(v).strip().strip('"').lower()
+    if s in ANIMATION_MODES:
+        return s, "config"
+    return default, "invalid"
+
+
+def parse_verbosity(v, default=DEFAULT_VERBOSITY):
+    """Clamp 0..3.  A non-integer falls back to the default; an out-of-range
+    integer is CLAMPED (not accepted) and the fact is reported."""
+    if v is None:
+        return default, "default"
+    try:
+        n = int(str(v).strip().strip('"'))
+    except (TypeError, ValueError):
+        return default, "invalid"
+    if n < VERBOSITY_MIN or n > VERBOSITY_MAX:
+        return max(VERBOSITY_MIN, min(VERBOSITY_MAX, n)), "clamped"
+    return n, "config"
 
 
 def load_durable():
@@ -201,26 +246,76 @@ def decide():
         effective, eff_source = True, "config"
     else:
         effective, eff_source = False, "default"
+
+    # ---- the other two boot-diagnostics controls ------------------------- #
+    # ONE precedence, documented in configs/nuxel/boot/verbose-boot.json:
+    #     off > short > verbose_boot > standard
+    # The three controls therefore cannot contradict each other, and the
+    # animation policy the bridge is told to run is a single value.
+    anim_mode, anim_src = parse_animation_mode(doc.get("animation_mode"))
+    verbosity, verb_src = parse_verbosity(doc.get("verbosity_level"))
+    if anim_mode == "off":
+        eff_anim, anim_reason = "off", "animation_mode_off"
+    elif anim_mode == "short":
+        eff_anim, anim_reason = "short", "animation_mode_short"
+    elif effective:
+        # verbose boot trades the animation for the earliest on-glass log
+        eff_anim, anim_reason = "short", "verbose_boot_requested"
+    else:
+        eff_anim, anim_reason = "standard", "standard"
     return {"doc": doc, "config_source": source, "config_value": config_value,
             "effective": effective, "effective_source": eff_source,
             "capability": cap, "capability_reason": cap_reason,
             "once_requested": bool(once_requested), "once": once,
-            "cmdline": kernel}
+            "cmdline": kernel,
+            "animation_mode": anim_mode, "animation_mode_source": anim_src,
+            "verbosity": verbosity, "verbosity_source": verb_src,
+            "effective_animation": eff_anim, "animation_reason": anim_reason,
+            "skip_animation": eff_anim in ("short", "off")}
 
 
-def boot_snapshot():
+def boot_snapshot(verbosity=DEFAULT_VERBOSITY):
+    """The on-glass boot log.  `verbosity` selects HOW MUCH it says (never
+    whether it is shown - that is verbose_boot's job):
+
+        0 quiet   -> the header and the kernel/boot-id identity only
+        1 normal  -> + the display/launcher state files (the default)
+        2 verbose -> + every subsystem state file, more lines per file
+        3 debug   -> + /proc facts and the environment
+
+    It is a bounded snapshot either way: it must never be able to block or
+    flood the boot."""
+    verbosity = max(VERBOSITY_MIN, min(VERBOSITY_MAX, int(verbosity)))
     lines = ["# Nuxel boot-stage log (verbose boot) — one line per boot marker",
+             "# verbosity_level=%d" % verbosity,
              "== boot %s ==" % time.strftime("%Y-%m-%dT%H:%M:%S%z"),
              "kernel %s" % (read_text("/proc/version") or "unknown").strip()]
     for path in ("/proc/cmdline", "/proc/sys/kernel/random/boot_id"):
         t = read_text(path)
         if t:
             lines.append("%s: %s" % (os.path.basename(path), t.strip()))
-    for path in ("/var/lib/nuxel/animation", "/run/nuxel/verbose-boot", "/var/lib/nuxel/display",
-                 "/run/nuxel-home.state", "/run/nuxel-wl-fb.state", "/var/lib/nuxel/buttons"):
-        t = read_text(path)
-        if t:
-            lines.extend("%s | %s" % (path, l) for l in t.strip().splitlines()[:12])
+    if verbosity >= 1:
+        per_file = 4 if verbosity < 2 else 12
+        for path in ("/var/lib/nuxel/animation", "/run/nuxel/verbose-boot"):
+            t = read_text(path)
+            if t:
+                lines.extend("%s | %s" % (path, l) for l in t.strip().splitlines()[:per_file])
+    if verbosity >= 2:
+        for path in ("/var/lib/nuxel/display", "/run/nuxel-home.state",
+                     "/run/nuxel-wl-fb.state", "/var/lib/nuxel/buttons",
+                     "/run/nuxel/anim-handoff", "/run/nuxel/boot-stage-capabilities"):
+            t = read_text(path)
+            if t:
+                lines.extend("%s | %s" % (path, l) for l in t.strip().splitlines()[:12])
+    if verbosity >= 3:
+        for path in ("/proc/uptime", "/proc/loadavg", "/proc/meminfo",
+                     "/proc/sys/kernel/random/entropy_avail"):
+            t = read_text(path)
+            if t:
+                head = " ".join(t.split()[:6]) if path.endswith("meminfo") else t.strip()
+                lines.append("%s: %s" % (path, head))
+        env = os.environ.get("NUXEL_BOOT_STAGE", "")
+        lines.append("env NUXEL_BOOT_STAGE=%s" % env)
     return "\n".join(lines) + "\n"
 
 
@@ -241,6 +336,9 @@ def boot_snapshot():
 #   5. unreadable document      -> refuses to overwrite, boot still succeeds
 #   6. Bixby hold, stage cannot -> BOOT_UPDATE_REQUIRED, override REFUSED
 #   7. Bixby hold, stage can    -> honoured for THAT BOOT ONLY (config untouched)
+#   8. animation_mode/verbosity -> the single documented precedence
+#                                  (off > short > verbose_boot > standard) and the
+#                                  "verbosity never turns the log on" separation
 SHIPPED_DEFAULT = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                "..", "..", "..", "configs", "nuxel", "boot", "verbose-boot.json")
 FAILED = []
@@ -393,7 +491,96 @@ def selftest():
     _check("override is one-time only (the next start is non-verbose)",
            "EFFECTIVE=0" in _state(r5, "verbose-boot"))
 
-    for d in (r, r2, r3, r4, r5):
+    # ---- 8. the OTHER two boot-diagnostics controls (animation_mode /
+    #         verbosity_level) and their single documented precedence:
+    #             off > short > verbose_boot > standard
+    #         verbosity_level only chooses HOW MUCH the log says, never whether
+    #         it is shown, so the three controls cannot contradict each other.
+    _check("shipped default config carries animation_mode=standard",
+           shipped.get("animation_mode") == "standard", shipped.get("animation_mode"))
+    _check("shipped default config carries verbosity_level=1",
+           shipped.get("verbosity_level") == 1, shipped.get("verbosity_level"))
+    _check("shipped default documents the precedence rule",
+           (shipped.get("precedence") or {}).get("rule") == "off > short > verbose_boot > standard",
+           json.dumps(shipped.get("precedence")))
+
+    def _boot_with(verbose, anim_mode=None, verbosity=None):
+        """A fake root whose durable document carries exactly these controls."""
+        root = _root()
+        doc = {"schema_version": 1, "verbose_boot": bool(verbose), "set_by": "user",
+               "updated_at": int(time.time())}
+        if anim_mode is not None:
+            doc["animation_mode"] = anim_mode
+        if verbosity is not None:
+            doc["verbosity_level"] = verbosity
+        with open(os.path.join(root, NEW_CFG.lstrip("/")), "w") as f:
+            json.dump(doc, f, indent=2)
+        _boot(root)
+        return root, _state(root, "verbose-boot"), doc
+
+    # defaults: standard animation, no skip, verbosity unchanged by verbose_boot
+    rt, st, _ = _boot_with(False)
+    _check("default: EFFECTIVE_ANIMATION=standard", "EFFECTIVE_ANIMATION=standard" in st, st)
+    _check("default: ANIMATION_REASON=standard", "ANIMATION_REASON=standard" in st, st)
+    _check("default: VERBOSITY=1", "VERBOSITY=1" in st, st)
+    _check("default: still no animation-skip request", not os.path.exists(os.path.join(rt, "run/nuxel/anim-skip.request")))
+
+    # verbose_boot alone shortens the animation, and never rewrites verbosity
+    rv, stv, docv = _boot_with(True)
+    _check("verbose only: animation shortens with reason=verbose_boot_requested",
+           "EFFECTIVE_ANIMATION=short" in stv and "ANIMATION_REASON=verbose_boot_requested" in stv, stv)
+    _check("verbose only: the skip request names the reason",
+           "reason=verbose_boot_requested" in _state(rv, "anim-skip.request"), _state(rv, "anim-skip.request"))
+    _check("verbose only: VERBOSITY is still 1 (controls are independent)", "VERBOSITY=1" in stv, stv)
+    _check("verbose only: the design is recorded, not the setting", json.load(open(os.path.join(rv, NEW_CFG.lstrip("/")))) == docv)
+
+    # animation_mode=short / off, with verbose OFF, still skip - and win
+    rs, sts, _ = _boot_with(False, anim_mode="short")
+    _check("animation_mode=short (verbose off): skip with reason=animation_mode_short",
+           "reason=animation_mode_short" in _state(rs, "anim-skip.request"), sts)
+    ro, sto, _ = _boot_with(False, anim_mode="off")
+    _check("animation_mode=off (verbose off): skip with reason=animation_mode_off",
+           "reason=animation_mode_off" in _state(ro, "anim-skip.request"), sto)
+    _check("animation_mode=off: EFFECTIVE_ANIMATION=off", "EFFECTIVE_ANIMATION=off" in sto, sto)
+    rov, stov, _ = _boot_with(True, anim_mode="off", verbosity=3)
+    _check("precedence: off beats verbose_boot (reason=animation_mode_off)",
+           "reason=animation_mode_off" in _state(rov, "anim-skip.request"), stov)
+    _check("precedence: off beats verbose_boot (animation=off, verbose still 1)",
+           "EFFECTIVE=1" in stov and "EFFECTIVE_ANIMATION=off" in stov, stov)
+
+    # an invalid animation_mode is reported and falls back to standard
+    rb, stb, _ = _boot_with(False, anim_mode="turbo")
+    _check("an unknown animation_mode falls back to standard and is reported",
+           "EFFECTIVE_ANIMATION=standard" in stb and "ANIMATION_MODE_SOURCE=invalid" in stb, stb)
+    _check("an unknown animation_mode is NOT faked into a skip request",
+           not os.path.exists(os.path.join(rb, "run/nuxel/anim-skip.request")))
+
+    # verbosity_level: honoured, clamped, refused when nonsense - and the log
+    # stays OFF when verbose_boot is off
+    r3v, st3v, _ = _boot_with(False, verbosity=3)
+    _check("verbosity_level=3 is honoured", "VERBOSITY=3" in st3v, st3v)
+    _check("verbosity_level alone does NOT turn the on-glass log on (no skip request)",
+           not os.path.exists(os.path.join(r3v, "run/nuxel/anim-skip.request")))
+    _check("verbosity_level alone does NOT seed the boot-stage log",
+           not os.path.exists(os.path.join(r3v, "var/log/nuxel/boot-stage.log")))
+    rcl, stcl, _ = _boot_with(False, verbosity=9)
+    _check("verbosity_level=9 is clamped to 3 (reported as clamped)",
+           "VERBOSITY=3" in stcl and "VERBOSITY_SOURCE=clamped" in stcl, stcl)
+    rnv, stnv, _ = _boot_with(False, verbosity="lots")
+    _check("a nonsense verbosity_level falls back to 1 and is reported",
+           "VERBOSITY=1" in stnv and "VERBOSITY_SOURCE=invalid" in stnv, stnv)
+
+    # the snapshot itself obeys the level (less text at 0, more at 3)
+    q = boot_snapshot(0)
+    dbg = boot_snapshot(3)
+    _check("boot log snapshot: level 0 is the bounded quiet form",
+           q.count("\n") <= 6 and "verbosity_level=0" in q, q)
+    _check("boot log snapshot: level 3 says strictly more than level 0",
+           dbg.count("\n") > q.count("\n"), "%d vs %d" % (dbg.count("\n"), q.count("\n")))
+    _check("boot log snapshot: level 0 never emits subsystem state lines",
+           "nuxel-wl-fb.state" not in q)
+
+    for d in (r, r2, r3, r4, r5, rt, rv, rs, ro, rov, rb, r3v, rcl, rnv):
         shutil.rmtree(d, ignore_errors=True)
     print("\n" + ("FAILED: " + ", ".join(FAILED) if FAILED else
                   "verbose-boot offline harness passed (upgrade-safe, offline)"))
@@ -412,6 +599,11 @@ def main(argv):
             print("verbose_boot=%s source=%s config=%s once=%s override=%s"
                   % (d["effective"], d["effective_source"], d["config_value"],
                      d["once"], d["capability"]))
+            print("animation_mode=%s (requested %s/%s) -> effective=%s reason=%s"
+                  % (d["effective_animation"], d["animation_mode"],
+                     d["animation_mode_source"], d["effective_animation"],
+                     d["animation_reason"]))
+            print("verbosity_level=%d (%s)" % (d["verbosity"], d["verbosity_source"]))
             if d["capability"] != "supported":
                 print("override: %s — %s" % (d["capability"], d["capability_reason"]))
         return 0
@@ -431,6 +623,12 @@ def main(argv):
              "ONCE_REQUESTED=%d\n"
              "ONCE=%d\n"
              "CMDLINE_VERBOSE=%d\n"
+             "ANIMATION_MODE=%s\n"
+             "ANIMATION_MODE_SOURCE=%s\n"
+             "EFFECTIVE_ANIMATION=%s\n"
+             "ANIMATION_REASON=%s\n"
+             "VERBOSITY=%d\n"
+             "VERBOSITY_SOURCE=%s\n"
              "ANIM_HANDOFF=%s\n"
              "TS=%d\n" % (
                  1 if d["effective"] else 0, d["effective_source"], NEW_CFG,
@@ -439,7 +637,10 @@ def main(argv):
                  "BOOT_UPDATE_REQUIRED" if d["capability"] != "supported" else "SUPPORTED",
                  d["capability_reason"], 1 if d["once_requested"] else 0,
                  1 if d["once"] else 0, 1 if d["cmdline"] else 0,
-                 "skip-animation" if d["effective"] else "minimum-cycle", STAMP))
+                 d["animation_mode"], d["animation_mode_source"],
+                 d["effective_animation"], d["animation_reason"],
+                 d["verbosity"], d["verbosity_source"],
+                 "skip-animation" if d["skip_animation"] else "minimum-cycle", STAMP))
     write_text(STATE, state)
     atomic_write(RECORD, state + "HISTORY %d verbose=%d source=%s\n"
                  % (STAMP, 1 if d["effective"] else 0, d["effective_source"]))
@@ -447,9 +648,15 @@ def main(argv):
     say("NUXEL_VERBOSE_BOOT=%d SOURCE=%s CONFIG=%s ONCE=%d OVERRIDE=%s"
         % (1 if d["effective"] else 0, d["effective_source"], d["config_source"],
            1 if d["once"] else 0, d["capability"]))
+    say("NUXEL_BOOT_ANIMATION=%s reason=%s verbosity=%d"
+        % (d["effective_animation"], d["animation_reason"], d["verbosity"]))
     touch_kmsg("NUXEL_VERBOSE_BOOT=%d source=%s config=%d once=%d override=%s"
                % (1 if d["effective"] else 0, d["effective_source"],
                   1 if d["config_value"] else 0, 1 if d["once"] else 0, d["capability"]))
+    # The animation policy gets its own marker: the live group greps for it, and
+    # the bridge records the same reason in the handoff receipt.
+    touch_kmsg("NUXEL_BOOT_ANIMATION=%s reason=%s verbosity=%d"
+               % (d["effective_animation"], d["animation_reason"], d["verbosity"]))
     if d["capability"] != "supported" and d["once_requested"]:
         say("!! bixby-hold override requested but NOT honoured: %s" % d["capability_reason"])
         touch_kmsg("NUXEL_VERBOSE_BOOT_OVERRIDE_REFUSED reason=BOOT_UPDATE_REQUIRED")
@@ -463,26 +670,39 @@ def main(argv):
             pass
         touch_kmsg("NUXEL_VERBOSE_BOOT_OVERRIDE_CONSUMED once=1")
 
-    if d["effective"]:
-        # The operator asked for the boot log: the framebuffer bridge is told that
-        # the animation may be traded for the earliest on-glass log.  The bridge
-        # still confirms the stop before it writes a single scanout byte, and it
-        # records reason=verbose_boot_requested in the handoff receipt.
-        write_text(SKIP_REQUEST, "ANIM_SKIP_REQUESTED reason=verbose_boot\n")
-        os.makedirs(P(os.path.dirname(BOOT_LOG)), exist_ok=True)
-        try:
-            with open(P(BOOT_LOG), "a", encoding="utf-8") as f:
-                f.write(boot_snapshot())
-                f.write("verbose_boot=1 source=%s\n" % d["effective_source"])
-        except OSError as e:
-            say("!! cannot append %s: %s" % (BOOT_LOG, e))
-        say("REBOOT_WILL_ENABLE_VERBOSE_BOOT=1 (applies from the next boot; "
-            "kernel cmdline changes still require a BOOT partition update and are NOT done)")
+    if d["skip_animation"]:
+        # The animation is traded for the earliest on-glass handoff.  WHY is a
+        # single value with one documented precedence (off > short > verbose_boot
+        # > standard), so the bridge never has to guess and the receipt always
+        # names the reason: animation_mode_off / animation_mode_short /
+        # verbose_boot_requested.  The bridge still confirms the stop before it
+        # writes a single scanout byte.
+        write_text(SKIP_REQUEST, "ANIM_SKIP_REQUESTED reason=%s animation_mode=%s\n"
+                   % (d["animation_reason"], d["animation_mode"]))
     else:
         try:
             os.unlink(P(SKIP_REQUEST))
         except OSError:
             pass
+
+    # The on-glass boot log is gated on verbose_boot ONLY.  verbosity_level
+    # selects how much it says; animation_mode selects what the animation does.
+    # Keeping those three separate is what makes them non-contradictory.
+    if d["effective"]:
+        os.makedirs(P(os.path.dirname(BOOT_LOG)), exist_ok=True)
+        try:
+            with open(P(BOOT_LOG), "a", encoding="utf-8") as f:
+                f.write(boot_snapshot(d["verbosity"]))
+                f.write("verbose_boot=1 source=%s verbosity=%d animation=%s (%s)\n"
+                        % (d["effective_source"], d["verbosity"],
+                           d["effective_animation"], d["animation_reason"]))
+        except OSError as e:
+            say("!! cannot append %s: %s" % (BOOT_LOG, e))
+        say("REBOOT_WILL_ENABLE_VERBOSE_BOOT=1 (applies from the next boot; "
+            "kernel cmdline changes still require a BOOT partition update and are NOT done)")
+    if d["skip_animation"] and not d["effective"]:
+        say("ANIMATION_POLICY=%s reason=%s (verbose boot is OFF: no boot log is shown)"
+            % (d["effective_animation"], d["animation_reason"]))
     return 0
 
 

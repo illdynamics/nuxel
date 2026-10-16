@@ -1,0 +1,6 @@
+# the owner is ALREADY holding Bixby when the manager starts: the node sync
+# delivers a synthetic press at t~0 (inside the 2 s early window) and the hold
+# past 1500 ms produces the one-time verbose-boot note
+0 key bixby 1
+1600 tick
+1700 key bixby 0

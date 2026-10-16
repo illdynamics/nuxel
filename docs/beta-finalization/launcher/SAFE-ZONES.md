@@ -44,6 +44,55 @@ The ten-zone contract is a **protected A32 asset** (`INV-3` in
 the S10+ portrait preset and the padding. A33 changed the *placement* algorithm around the
 contract, not the contract. Verified: `tools/beta/regression-guard.sh` → `INV-3` green.
 
+### Zone geometry on the real panel (1440 × 3040, padding_dp 6 = 12 px at dpr 2)
+
+`W` is the **bar width in CSS-independent px on the long axis of the bar**. In portrait the bar
+spans the panel width (1440); in landscape it spans the panel height used as width (3040).
+Intervals are clamped to the panel, so zone 1 never starts at −12 and zone 10 never ends past
+the edge.
+
+Portrait, `W = 1440` (`pad = 12`):
+
+| zone | raw interval | clamped | blocked in the S10+ preset |
+|---:|---|---|---|
+| 1 | −12 … 156 | 0 … 156 | |
+| 2 | 132 … 300 | 132 … 300 | |
+| 3 | 276 … 444 | 276 … 444 | |
+| 4 | 420 … 588 | 420 … 588 | |
+| 5 | 564 … 732 | 564 … 732 | |
+| 6 | 708 … 876 | 708 … 876 | |
+| 7 | 852 … 1020 | 852 … 1020 | |
+| 8 | 996 … 1164 | 996 … 1164 | |
+| 9 | 1140 … 1308 | 1140 … 1308 | **yes** (cutout) |
+| 10 | 1284 … 1452 | 1284 … 1440 | **yes** (cutout) |
+
+Padded zones 9 and 10 **overlap** (1284 < 1308), so they merge into the single blocked interval
+`1140 … 1440` and leave exactly one free interval for the right cluster: `0 … 1140`. The
+right-hand cluster therefore shifts **left** by the amount the test records (`300..360` →
+shadowed to `[0,276]` in the harness), and never past the left edge.
+
+Landscape, `W = 3040` (`pad = 12`):
+
+| zone | raw interval | clamped | blocked in the S10+ preset |
+|---:|---|---|---|
+| 1 | −12 … 316 | 0 … 316 | |
+| 2 | 292 … 620 | 292 … 620 | |
+| 3 | 596 … 924 | 596 … 924 | |
+| 4 | 900 … 1228 | 900 … 1228 | |
+| 5 | 1204 … 1532 | 1204 … 1532 | |
+| 6 | 1508 … 1836 | 1508 … 1836 | |
+| 7 | 1812 … 2140 | 1812 … 2140 | |
+| 8 | 2116 … 2444 | 2116 … 2444 | |
+| 9 | 2420 … 2748 | 2420 … 2748 | |
+| 10 | 2724 … 3052 | 2724 … 3040 | |
+
+`profiles.s10plus.landscape_left` and `landscape_right` are both `[]`: the S10+ punch-hole sits
+in the *top* short edge, so when the bar rotates to the long edge there is nothing above the bar
+to avoid — a non-empty landscape preset is there for devices whose cutout rotates with the bar
+(e.g. a centred Pixel-style camera), and the profile is selectable per device, never assumed.
+Both tables are asserted: `zone k → (k-1)·W/10 … k·W/10` with the same padding, clamped, and the
+merged-free-interval result for `[9,10]`.
+
 ## 2. “Blocked” is an EXCLUDED INTERVAL, not a painted warning
 
 A zone marked blocked produces an interval that status items must not be laid out inside.
@@ -113,7 +162,7 @@ left cluster **+84 px**; blocking 5,6 shifts the centre cluster **−114 px** (f
 ## 5. How to re-verify (offline — no phone, no root, no display)
 
 ```sh
-node tools/s10plus/a32/tests/safe-zones-test.js     # 44 assertions, 0 failures
+node tools/s10plus/a32/tests/safe-zones-test.js     # 44 assertions, 0 failures (recorded)
 bash tools/s10plus/a33/tests/run-boot-tests.sh      # the whole bg-02 gate (includes this suite)
 bash tools/beta/regression-guard.sh                 # INV-3 hard, INV-9 soft: the A32 floor
 ```

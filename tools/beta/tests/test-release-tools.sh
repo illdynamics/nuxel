@@ -104,7 +104,6 @@ sys.path.insert(0, os.path.join(root, "tools", "beta"))
 # INVARIANT-NEGATIVE-FIXTURE: the literals below are fed to the guard to assert
 # it REFUSES them; they are never executed as commands.  run-all-tests.sh
 # (L1-no-flash-invariants) honours this marker because the file is a self-test.
-from release_lib import
 import release_lib as rl
 
 fails = []

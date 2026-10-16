@@ -193,6 +193,153 @@
       "at": "2026-10-16T16:24:51+02:00",
       "by": "construqtor/bg-02-boot-animation-launcher",
       "revision": 2
+    },
+    {
+      "id": "briq-02d-launcher-parity",
+      "title": "Exact UTM launcher parity - refresh stale assets and cache invalidation",
+      "component": "bg-02-boot-animation-launcher",
+      "component_title": "Priority 2 - Boot Stability, Animation Handoff & UTM Launcher Parity",
+      "priority": 2,
+      "state": "implemented",
+      "dependencies": [
+        "briq-00d-baseline-protection"
+      ],
+      "evidence": [
+        {
+          "kind": "observation",
+          "path": "pwa/nuxel-home/js/status-bar.js",
+          "command": "test -e pwa/nuxel-home/js/status-bar.js",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "observation",
+          "path": "pwa/nuxel-home/manifest.json",
+          "command": "test -e pwa/nuxel-home/manifest.json",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "observation",
+          "path": "pwa/nuxel-home/sw.js",
+          "command": "test -e pwa/nuxel-home/sw.js",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "observation",
+          "path": "pwa/nuxel-home/js/apps.js",
+          "command": "test -e pwa/nuxel-home/js/apps.js",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "observation",
+          "path": "pwa/nuxel-apps/settings/",
+          "command": "test -e pwa/nuxel-apps/settings/",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "observation",
+          "path": "tools/s10plus/a33/tests/launcher-registry-test.js",
+          "command": "test -e tools/s10plus/a33/tests/launcher-registry-test.js",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "tools/s10plus/a33/tests/launcher-registry-test.js",
+          "command": "node tools/s10plus/a33/tests/launcher-registry-test.js",
+          "result": "PASS: status-bar.js VERSION 0.4.1-a33 == manifest pwa_version; sw.js CACHE_VERSION v4-a33 == manifest cache_version and advanced past v3-a32; index.html loads apps.js/status-bar.js/qs.js/safe-zones.js/settings-store.js/app.js; shortcuts resolve to registry ids; no stale duplicate launcher asset or v0.3.2 constant remains",
+          "at": "2026-10-16T16:24:50+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "pwa/nuxel-home/js/apps.js",
+          "command": "python3 tools/s10plus/a33/tests/test-boot-surface-contract.py",
+          "result": "REGISTRY_VERSION 4 carries org.nuxel.Terminal and nuxel-settings, and manifest.apps_in_registry lists exactly those ids (the phone copy was stale: no Terminal, old status-bar.js, old manifest)",
+          "at": "2026-10-16T16:24:50+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "pwa/nuxel-apps/settings/settings.js",
+          "command": "node --check pwa/nuxel-apps/settings/settings.js",
+          "result": "the Settings app is a runnable frontend (index.html + settings.js, syntax-checked) and its safe-zone editor now calls the launcher's shared planner instead of its own divergent copy",
+          "at": "2026-10-16T16:24:50+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "tools/s10plus/a33/tests/launcher-registry-test.js",
+          "command": "node tools/s10plus/a33/tests/launcher-registry-test.js",
+          "result": "PASS launcher registry/parity tests passed, 107 checks / 0 failures (1 WARN: org.nuxel.LiveConsole's app tree is served by another build group). Section 7 is new: activation of a registry id dispatches app:launch, records recents and makes the REAL NuxelHome controller open exactly one fullscreen .pwa-frame pointing at the registry url; closing it removes frame+button; a second activation does not stack frames; the logical home action closes overlays; searchApps() is the matcher the search UI delegates to (name/category/case-insensitive/empty/no-match/ranking); the #app=<id> deeplink launches the real app and an unknown id is refused without a frame; and the grid is the scrollable, momentum-scrolling 4-column surface with viewport-fit=cover",
+          "at": "2026-10-16T21:12:00+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "pwa/nuxel-home/sw.js",
+          "command": "node tools/s10plus/a33/tests/launcher-registry-test.js (cache legs)",
+          "result": "CACHE_VERSION bumped v4-a33 -> v5-a33 in sw.js and manifest.nuxel.cache_version: this revision changes js/qs.js (boot-diagnostics long press) and js/settings-store.js (animation_mode + verbosity_level), so a bundle restored from the v4 cache would have kept serving the old tile with no way to tell. The test asserts sw.js CACHE_VERSION == manifest.cache_version and that it has advanced past the A32 baseline v3-a32; activate still deletes every other namespace and the host purge/URL-stamp path (INV-1) is untouched",
+          "at": "2026-10-16T21:12:00+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "tools/s10plus/a33/tests/test-boot-surface-contract.py",
+          "command": "python3 tools/s10plus/a33/tests/test-boot-surface-contract.py",
+          "result": "PASS, 295 checks / 0 failures: the store exports the same three animation values the Settings app renders and the tile cycles, the Settings app writes the whole boot panel through one config name, and the app registry remains the single authority (manifest.apps_in_registry == the registry ids)",
+          "at": "2026-10-16T21:12:00+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "docs/beta-finalization/vm/LAUNCHER-PARITY.md",
+          "command": "ssh -o ConnectTimeout=5 nuxel@192.168.64.3 uname -a ; ls docs/beta-finalization/vm/",
+          "result": "VM PARITY GAP, recorded honestly: the UTM Fedora 43 guest was NOT reachable this revision (connect to 192.168.64.3 port 22: Connection timed out), so no live VM-vs-repo hash table could be produced. Repo-side hashes as of revision 3: status-bar.js 7a2f02eacff1fe904c73ad631d1882406c4a9c9d4512e9cfceee6f4ff6606723, manifest.json bbb2edfa7ef090a6df7d53809eb1540d1f76694b91fb7a889f429ad62bc5606e, sw.js 58461b89735f2a820ec1f34d2cf917b5e02cec3e517c2cb43e8a61ffc41582f8, js/apps.js df08dfaf5d17c3685bee4abb94d24f3f059ed2289edb13bf5159ad162aafcf72, js/qs.js 2391b5683361415cefbfdb7465457b813fd7f5a320a5662fa6030147642c1777, js/settings-store.js 383e068515aba43da0026d6dc1e0250f34cd87f8f1d7014db2c7831cd18c9c1d, js/safe-zones.js 0ef0c91a45b599881f4eea26fca2c08ffdde806ec52dd48472c042ecb5806a0f, index.html a15be137ee268bb15400dc983c29f12a258331862ef17d9732108c19c4ce6443, pwa/nuxel-apps/settings/index.html 32e648d67203a43043374c72609aeb7b0a3c313c8a6b61db8da8db537b769050, pwa/nuxel-apps/settings/settings.js c243ab16e61458afc07685858ee30be857fe32590c2e6e47c3344b24ba8e517d. The VM column of the parity table is UNAVAILABLE, not satisfied; VM parity is owned by bg-11-vm-parity",
+          "at": "2026-10-16T21:12:00+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "pwa/nuxel-apps/settings/settings.js",
+          "command": "node --check pwa/nuxel-apps/settings/settings.js",
+          "result": "the Settings app is a runnable frontend (index.html + settings.js, syntax-checked) and its Developer -> Boot diagnostics card now carries the three controls the boot consumer reads (#animation-mode, #verbose-boot-toggle, #verbosity-level + #save-boot whole-panel write); the safe-zone editor still calls the launcher shared planner instead of its own copy",
+          "at": "2026-10-16T21:12:00+02:00"
+        }
+      ],
+      "intended_changes": [
+        "pwa/nuxel-home/js/status-bar.js",
+        "pwa/nuxel-home/manifest.json",
+        "pwa/nuxel-home/sw.js",
+        "pwa/nuxel-home/js/apps.js",
+        "pwa/nuxel-apps/settings/",
+        "tools/s10plus/a33/tests/launcher-registry-test.js"
+      ],
+      "tests": [
+        "(tests are recorded by the owning briQ when it reports)",
+        "node tools/s10plus/a33/tests/launcher-registry-test.js -> launcher registry/parity tests passed (1 warn: the Live Console entry is served by another build group)",
+        "python3 tools/s10plus/a33/tests/test-boot-surface-contract.py -> status-bar VERSION == manifest.pwa_version, sw.js CACHE_VERSION == manifest.cache_version and advanced past v3-a32, apps.js REGISTRY_VERSION == manifest.registry_version, manifest.apps_in_registry == the registry ids",
+        "bash tools/beta/regression-guard.sh -> INV-1 (SW namespace bump + host purge + URL stamp) green",
+        "node tools/s10plus/a33/tests/launcher-registry-test.js -> passed, 107 checks / 0 failures (1 WARN: the Live Console app tree is another build group's artefact). New behaviour legs: activation, single-frame ownership, close-and-return-home, home action closing overlays, registry-backed search, #app= deeplink navigation, scroll/viewport contract",
+        "python3 tools/s10plus/a33/tests/test-boot-surface-contract.py -> PASS, 295 checks / 0 failures (the registry stays the single authority; manifest.apps_in_registry == the registry ids)",
+        "node --check pwa/nuxel-apps/settings/settings.js && node --check pwa/nuxel-home/js/qs.js && node --check pwa/nuxel-home/js/settings-store.js -> all three parse",
+        "ssh -o ConnectTimeout=5 nuxel@192.168.64.3 -> Connection timed out: the VM-vs-repo hash table could NOT be produced this revision; recorded as an explicit gap, not as parity"
+      ],
+      "risk": "medium",
+      "rollback": "git revert the commit(s) touching this task's expected files; the change is repository-only and alters no device state",
+      "verdict": "OFFLINE_TESTED",
+      "offline_ceiling": "VERIFIED_IN_VM_ONLY",
+      "owner_action": "On the handset open Terminal and Settings from the home grid, confirm both render real content, use search, close an app back to the launcher, and after one normal reboot confirm the launcher is the current bundle (docs/beta-finalization/manual-proof/02-launcher.md). The VM parity run itself is owned by bg-11-vm-parity.",
+      "expected_files": [
+        "pwa/nuxel-home/js/status-bar.js",
+        "pwa/nuxel-home/manifest.json",
+        "pwa/nuxel-home/sw.js",
+        "pwa/nuxel-home/js/apps.js",
+        "pwa/nuxel-apps/settings/",
+        "tools/s10plus/a33/tests/launcher-registry-test.js"
+      ],
+      "note": "Revision 3 (bg-02 verification pass) - no second launcher was introduced: the existing pwa/nuxel-home PWA is extended, and the legacy framebuffer UI remains a non-competing recovery fallback. Completed this revision: (1) the launcher-cache authority is bumped v4-a33 -> v5-a33 in BOTH sw.js and manifest.nuxel.cache_version because js/qs.js and js/settings-store.js changed again - without the bump a bundle restored from the v4 cache keeps serving the old boot tile; (2) the behaviour the briQ asks to be covered by tests is now actually covered, against the REAL js/apps.js registry and js/app.js controller in a minimal DOM shell: activation (one .pwa-frame pointing at the registry url, no frame stacking, recents recorded), close-and-return-home (frame + close control removed; the logical home action closes overlays), search (the registry searchApps() is the matcher the search UI delegates to, asserted for name/category/case-insensitivity/empty/no-match/ranking), navigation (the manifest #app=<id> deeplink launches the real app; an unknown id is refused and opens no frame), and scrolling/viewport (the grid is the scrollable, momentum-scrolling, 4-column surface under viewport-fit=cover). PARITY GAP, recorded rather than glossed: the UTM Fedora 43 guest was unreachable (ssh ConnectTimeout), so no VM-vs-repo hash comparison table could be produced; the repo-side hash list and the UNAVAILABLE VM column are recorded in this revision evidence, and VM parity stays bg-11-vm-parity (ceiling VERIFIED_IN_VM_ONLY). On-glass parity remains NEEDS_OWNER_TEST.",
+      "source": "plan.json",
+      "at": "2026-10-16T20:58:05+02:00",
+      "by": "construqtor/bg-02-boot-animation-launcher",
+      "revision": 3
     }
   ]
 }

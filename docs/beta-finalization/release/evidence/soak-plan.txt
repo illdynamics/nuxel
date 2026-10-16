@@ -1,0 +1,48 @@
+=== Nuxel beta soak / performance plan ===
+{
+  "checkpoint_s": 1800,
+  "duration_s": 28800,
+  "gated": [
+    "no reboot",
+    "no failed units",
+    "launcher availability >= 99%",
+    "single framebuffer owner",
+    "stack CPU <= 150% mean / 300% peak",
+    "RSS growth <= 2%/h and <= 10% total",
+    "no service restarts",
+    "coverage >= 90% of the requested duration"
+  ],
+  "mode": "device",
+  "probe_set": [
+    "uptime",
+    "loadavg",
+    "meminfo",
+    "stack-cpu+rss (nuxel stack units)",
+    "systemctl --failed",
+    "stack service NRestarts",
+    "fb-owner pid",
+    "launcher HTTP 127.0.0.1:8000",
+    "thermal zones",
+    "androidboot.mode"
+  ],
+  "recorded_not_gated": [
+    "load1 (Samsung vendor kernel threads, A31 finding)",
+    "thermal max (advisory unless > 90 C)"
+  ],
+  "sample_interval_s": 60,
+  "samples_planned": 481,
+  "terminal_states": {
+    "device": "VERIFIED_ON_S10PLUS on PASS",
+    "replay/selftest": "OFFLINE_TESTED",
+    "unreachable": "BLOCKED_EXTERNAL_RESOURCE",
+    "vm": "VERIFIED_IN_VM_ONLY"
+  }
+}
+
+Pass criteria are the single source of truth in tools/beta/soak_lib.py THRESHOLDS
+and are quoted verbatim in docs/beta-finalization/testing/SOAK-AND-PERFORMANCE.md.
+
+Access tier: repository-only orchestration.  The 8 h soak needs the live USB
+console ('--device') or the UTM guest ('--vm'); when neither is reachable the
+soak is BLOCKED_EXTERNAL_RESOURCE while the harness still ships and passes
+--selftest (offline) and --replay (recorded samples).

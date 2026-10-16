@@ -6,12 +6,17 @@
 // worker installs its own cache namespace and 'activate' deletes the old ones,
 // so a redeployed launcher is never served from a stale cache (briq A31).
 //
-// A33 bumped it to v4-a33 because this revision adds js/settings-store.js and
+// A33 bumped it to v4-a33 because that revision adds js/settings-store.js and
 // js/bootlog.js and changes js/status-bar.js (v0.4.0-alpha -> v0.4.1-a33) and
-// js/qs.js.  The registry test asserts this string advanced past 'v3-a32', and
-// manifest.json carries the same key as nuxel.cache_version, so a launcher that
-// was served from a stale bundle is a detectable state rather than a mystery.
-const CACHE_VERSION = 'v4-a33';
+// js/qs.js.  The bg-02 verification pass bumps it again to v5-a33 because
+// js/qs.js (the boot-diagnostics tile: tap = verbose boot, long-press = cycle the
+// animation policy) and js/settings-store.js (animation_mode + verbosity_level)
+// changed again: without the bump a launcher restored from the v4 cache would
+// keep serving the old tile with no way to tell.  The registry test asserts this
+// string advanced past 'v3-a32', and manifest.json carries the same key as
+// nuxel.cache_version, so a launcher that was served from a stale bundle is a
+// detectable state rather than a mystery.
+const CACHE_VERSION = 'v5-a33';
 const CACHE_NAME = 'nuxel-home-' + CACHE_VERSION;
 const STATIC_CACHE = 'nuxel-static-' + CACHE_VERSION;
 const DYNAMIC_CACHE = 'nuxel-dynamic-' + CACHE_VERSION;

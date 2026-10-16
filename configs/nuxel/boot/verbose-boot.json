@@ -1,15 +1,30 @@
 {
   "schema_version": 1,
   "verbose_boot": false,
+  "animation_mode": "standard",
+  "verbosity_level": 1,
   "set_by": "default",
   "updated_at": 0,
   "migrated_from": null,
-  "_comment": "A33 verbose-boot setting (briq-02b). DURABLE user state: installed under /etc/nuxel/boot/verbose-boot.json and NEVER overwritten by a package/rootfs update (the installer installs it with the 'keep' rule; nuxelctl and the Settings UI atomically replace it only on an explicit user change). Read by /usr/libexec/nuxel/nuxel-verbose-boot before nuxel-wl-fb.service starts.",
-  "effect": "shows the Nuxel boot log on the glass (launcher boot-log overlay + /var/log/nuxel/boot-stage.log) and shortens the boot animation so the log is visible as early as possible; the default (false) keeps the full 192-frame 24 fps animation and its minimum-cycle handoff.",
+  "_comment": "A33 boot-diagnostics setting (briq-02b; extended with animation_mode + verbosity_level in the bg-02 verification pass). ONE durable document, three controls: verbose_boot (on-glass boot log), animation_mode (standard|short|off boot-animation policy) and verbosity_level (0..3 detail of that log). DURABLE user state: installed under /etc/nuxel/boot/verbose-boot.json and NEVER overwritten by a package/rootfs update (the installer installs it with the 'keep' rule; nuxelctl, the Settings app and the Quick Settings tile atomically merge-write it only on an explicit user change). Read before nuxel-wl-fb.service starts by /usr/libexec/nuxel/nuxel-verbose-boot.",
+  "_schema_note": "schema_version is deliberately NOT bumped by the added keys. The contract is additive and merge-on-write: a reader that does not know animation_mode / verbosity_level preserves them instead of clobbering them, and this reader treats a missing key as its default. That is what makes a downgrade safe.",
+  "effect": "verbose_boot=true shows the Nuxel boot log on the glass (launcher boot-log overlay + /var/log/nuxel/boot-stage.log) and shortens the boot animation so the log is visible as early as possible; verbosity_level picks how much that log says; animation_mode picks what the boot animation does. The default (verbose_boot=false, animation_mode=standard, verbosity_level=1) keeps the full 192-frame 24 fps animation and its minimum-cycle receipt handoff.",
+  "precedence": {
+    "rule": "off > short > verbose_boot > standard",
+    "meaning": "animation_mode=off disables the animation entirely; animation_mode=short trades the animation for the earliest userspace handoff; otherwise an effective verbose_boot=true (config, kernel cmdline nuxel.verbose_boot=1, or the one-time Bixby hold) shortens it, because the operator asked to see the log; otherwise the standard 192-frame/24 fps animation with the minimum-cycle handoff runs. verbosity_level never changes WHETHER the log is shown - only how much it says - so a quiet boot stays quiet.",
+    "asserted_by": "tools/s10plus/a33/nuxel-verbose-boot.py --selftest and tools/s10plus/a33/tests/test-boot-surface-contract.py"
+  },
+  "verbosity_levels": {
+    "0": "quiet - NUXEL_* markers only",
+    "1": "normal (default) - stage summary lines",
+    "2": "verbose - per-stage and per-device lines",
+    "3": "debug - everything, including the config/environment snapshot"
+  },
   "bixby_hold_override": {
     "requested_by": "hold Bixby during the early boot stage",
     "capability": "the early boot stage must publish bixby-hold-override=1 in /run/nuxel/boot-stage-capabilities",
     "status": "BOOT_UPDATE_REQUIRED",
-    "reason": "the installed early boot stage (initramfs in the BOOT partition, revision A23) does not read the Bixby key state and does not export it; enabling the one-time override needs a BOOT partition update, which this mission forbids (no flashing). The override is implemented in tools/s10plus/a33/nuxel-boot-stage-verbose.sh and is marked NOT DEPLOYED."
+    "reason": "the installed early boot stage (initramfs in the BOOT partition, revision A23) does not read the Bixby key state and does not export it; enabling the one-time override needs a BOOT partition update, which this mission forbids (no flashing). The override is implemented in tools/s10plus/a33/nuxel-boot-stage-verbose.sh and is marked NOT DEPLOYED.",
+    "userspace_fallback": "nuxelctl verbose-boot on (or the Settings -> Developer -> Boot toggle, or the Quick Settings 'Verbose boot' tile) turns the boot log on durably for subsequent boots without touching the BOOT partition."
   }
 }

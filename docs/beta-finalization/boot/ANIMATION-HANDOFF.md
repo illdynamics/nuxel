@@ -19,6 +19,21 @@ only be *observed* on a live boot; the live group (bg-10) owns that observation.
 
 No claim in this document is `VERIFIED_ON_S10PLUS`.
 
+### Revision 3 (bg-02 verification pass) — what was re-verified
+
+| Check | Command | Result |
+|---|---|---|
+| The A32 conversion baseline pin is intact | `bash tools/beta/regression-guard.sh` | `INV-2-colour-conversion` **MATCH** (hard pin, `tools/s10plus/a32/nuxel-wl-fb.c` = `6501c6d5…`); guard `PASS`, exit 0 |
+| The bridge under test is byte-identified | `sha256sum tools/s10plus/a33/nuxel-wl-fb.c` | `052bfdbf673ef658c93b8c07925f2c9249af3c755a011ccbe90011c616f7b768` (unchanged this revision — no conversion or handoff semantics were touched) |
+| Handoff state machine (decision table + single-owner proof) | `python3 tools/s10plus/a33/nuxel-anim-handoff.py selftest` | **PASS, 30 checks / 0 failures** |
+| Replayable timeline | `python3 tools/s10plus/a33/nuxel-anim-handoff.py simulate` | 195 presented, 0 dropped, 8150 ms whole cycle (A32 row shown as the negative control) |
+| Wiring contract across the boot surface | `python3 tools/s10plus/a33/tests/test-boot-surface-contract.py` | **PASS, 295 checks / 0 failures** |
+| Whole offline gate | `bash tools/s10plus/a33/tests/run-boot-tests.sh` | `BOOT-TESTS: ALL PASS` (8 legs; the aarch64 build leg reported `SKIP` — the UTM guest was not reachable, and a skip is never a pass) |
+
+The only behaviour added in this revision is the recorded *reason* for a waived
+minimum-cycle floor plus its documentation (§2, §6d); the conversion, the lock, the
+receipt and the presentation path are untouched.
+
 ---
 
 ## 1. The defect this fixes (A31/A32 evidence)
@@ -47,7 +62,8 @@ A32's handoff silently undid that by stopping the player early.
 | **Minimum full cycle count** before handoff | `min_cycles`, default 1 = one complete play-through of the shipping 192-frame 24 fps MP4 = **8000 ms**; configurable in `configs/nuxel/boot/animation-handoff.json` |
 | Handoff is **auditable after the fact** | Kernel marker `NUXEL_ANIM_HANDOFF receipt=<id> owner=<anim\|ui> stage=… terminal=… loops=n/m reason=…` plus an append-only `/var/lib/nuxel/anim-handoff.log` |
 | **Launcher-not-ready ⇒ the animation resumes** | No scanout write at all, stale stop file unlinked, receipt `owner=anim stage=ANIMATION_RESUMED`, ownership lock released so the first-light fallback can legally take the panel — never a blank or silently static frame |
-| Verbose boot may waive the floor — **only** as a recorded operator choice | Decision 5 of the shared table: if `/run/nuxel/anim-skip.request` says `ANIM_SKIP_REQUESTED` (published by `nuxel-verbose-boot` when the durable verbose-boot setting is ON), the floor is waived for that boot only. The receipt/state records `ANIM_MIN_CYCLE_SKIPPED` / `reason=verbose_boot_requested` with `terminal=0`, so a waiver can never be mistaken for a completed cycle. With no request file this branch is inert |
+| Verbose boot may waive the floor — **only** as a recorded operator choice | Decision 5 of the shared table: if `/run/nuxel/anim-skip.request` says `ANIM_SKIP_REQUESTED` (published by `nuxel-verbose-boot`), the floor is waived for that boot only. The receipt/state records `ANIM_MIN_CYCLE_SKIPPED` / `reason=…` with `terminal=0`, so a waiver can never be mistaken for a completed cycle. With no request file this branch is inert |
+| The waiver must say **WHY** | `nuxel-verbose-boot` writes `ANIM_SKIP_REQUESTED reason=<animation_mode_off\|animation_mode_short\|verbose_boot_requested> animation_mode=<standard\|short\|off>`, and the state file carries `ANIMATION_MODE`, `ANIMATION_MODE_SOURCE`, `EFFECTIVE_ANIMATION`, `ANIMATION_REASON`, `VERBOSITY`. The precedence is `off > short > verbose_boot > standard`, so the bridge has exactly one reason to record — never a guess. `animation_mode=off` means the animation never starts at all rather than being cut short |
 | A stalled player must not freeze the boot | Bounded wait (`max_wait_s`, default 24 s) ⇒ `ANIMATION_DEGRADED_STOP` with an explicit `reason` (`anim_min_cycle_timeout` / `anim_clock_unavailable`); the receipt records `terminal=0` and **never** claims a completed cycle |
 
 ### Ownership contract (single writer)
@@ -80,6 +96,12 @@ unexpected fault, and they are never conflated),
 `ANIMATION_STOP` (`ANIMATION_STOP_REQUESTED`, `ANIMATION_STOP_CONFIRMED`),
 `LAUNCHER_DISPLAY` (`LAUNCHER_DISPLAY_OWNER`), `NUXEL_ANIM_HANDOFF`, plus the
 player's own `NUXEL_ANIM_LOOP=<n>` and `NUXEL_ANIM_HEARTBEAT_LOOPS=<n>`.
+
+The animation *policy* of the boot is published by the early stage as
+`NUXEL_BOOT_ANIMATION=<standard|short|off> reason=<reason> verbosity=<0..3>`
+(the same values are in `/run/nuxel/verbose-boot` and, when a waiver happened, in
+`/run/nuxel/anim-skip.request`), so a live run can be graded without guessing which
+of the three boot-diagnostics controls produced what was seen.
 
 ## 3. Files
 
@@ -191,6 +213,11 @@ follow §6.
   model for comparison only (it is what `simulate` prints in its first row); it is
   never selected by the shipped configuration, and the shipped config is what the
   bridge reads.
+* `animation_mode=short` is an *earlier* handoff, not a shorter clip: the bridge
+  still confirms the stop before it writes a scanout byte, and the receipt still
+  records `terminal=0` because the minimum-cycle floor was deliberately waived. It
+  is not evidence that a full cycle was seen, and the audit tool does not treat it
+  as such.
 
 ## 6b. Owner-visible proof (manual proof area 3)
 
@@ -202,6 +229,52 @@ animation): watch one normal boot, then read the receipts and markers with
 `tail /var/lib/nuxel/anim-handoff.log`. The verdict stays **NEEDS_OWNER_TEST** until a
 human has watched that boot: the evidence above is a decision table, a compiled binary
 and a harness — none of which can see the panel.
+
+## 6c. Flash-free deployment hand-off (`bg-10-live-phone`)
+
+This revision is **repository-only**: nothing here has been copied to the handset
+and nothing may be flashed. The deploy step is owned by `bg-10-live-phone`; this is
+the exact list it needs, with the install path, the pre-check and the rollback for
+each artefact. All of it is userspace under `/usr/lib/nuxel`, `/usr/libexec/nuxel`
+and `/etc/nuxel` — **no BOOT, USERDATA, SYSTEM, DTB/DTBO, VBMETA or recovery write,
+and no partition is touched at any point.**
+
+| Artefact (repository) | Installs to | Pre-deploy check | Rollback |
+|---|---|---|---|
+| `tools/s10plus/a33/nuxel-wl-fb.c` → built with `tools/s10plus/a33/build-a33-boot.sh` | `/usr/lib/nuxel/nuxel-wl-fb` (`build/out/s10plus/a33-boot/`) | record the current binary's `sha256sum`; the A32 fallback hash is `e4b4293e8d3d7d5e1c168e58c80ef23e4cb64db30313f0658498362ccaca7b9e` | keep the previous binary next to it and `systemctl restart nuxel-wl-fb` (or restore the A32 binary) — no partition write |
+| `tools/s10plus/a33/nuxel-handoff-logic.h` | compiled into the bridge | header compiled from the same tree as the bridge | rebuilt with the bridge |
+| `tools/s10plus/a33/nuxel-anim-handoff.py` | `/usr/lib/nuxel/nuxel-anim-handoff` (used by `nuxelctl handoff …`) | `python3 … audit` must run on the device | keep the previous copy; it is read-only tooling |
+| `tools/s10plus/a33/nuxel-verbose-boot.py` + `.service` | `/usr/libexec/nuxel/nuxel-verbose-boot` + systemd unit | `systemctl status nuxel-verbose-boot` before; `--status` after | `systemctl disable --now nuxel-verbose-boot.service` restores the pre-A33 behaviour immediately |
+| `configs/nuxel/boot/animation-handoff.json` | `/etc/nuxel/boot/animation-handoff.json` | **must be installed with the `keep` rule**; `python3 -c "import json;json.load(open(...))"` | restore the previous file (git has it); no reboot needed |
+| `configs/nuxel/boot/verbose-boot.json` | `/etc/nuxel/boot/verbose-boot.json` | **`keep` rule** (an existing user document wins); additive keys only, so an older consumer keeps working | restore the previous file; keys are additive so a downgrade is safe |
+| `pwa/nuxel-home/{index.html,css/,js/,manifest.json,sw.js,icons/,assets/}` | the launcher docroot | compare `sha256sum` per file; the SW `CACHE_VERSION` must be `v5-a33` (see §6d) | restore the previous bundle; the cache namespace bump makes the old bundle reclaim itself |
+| `pwa/nuxel-apps/settings/*` | the Settings app docroot | `node --check settings.js` locally, then re-check on the device | restore the previous files |
+| `tools/s10plus/a33/nuxelctl` | `/usr/bin/nuxelctl` | `nuxelctl verbose-boot status` must not error | restore the previous file |
+
+Deploy order that keeps the single-owner rule intact: (1) files on disk, (2) the
+`/etc/nuxel` documents with the `keep` rule, (3) `systemctl restart
+nuxel-verbose-boot`/`nuxel-wl-fb`/`nuxel-pwa-host` (smallest affected unit first),
+(4) observe one normal boot. **Never** start a second framebuffer writer to "check"
+the bridge: `FB_OWNER_BUSY` is the correct answer, and a second writer on `/dev/fb0`
+is exactly the failure this briQ exists to prevent.
+
+Verdict after a successful copy but before an observed boot:
+`DEPLOYED_UNVERIFIED`. `VERIFIED_ON_S10PLUS` is never reached without the ownership
+receipts from §5 captured on the handset — ownership is evidence, a binary on disk
+is not.
+
+## 6d. Cache invalidation for the deployed launcher bundle
+
+The launcher bundle changed in this revision (`js/qs.js` gained the boot-diagnostics
+long-press, `js/settings-store.js` gained the two controls), so the service-worker
+namespace was bumped `v4-a33` → **`v5-a33`** in both `pwa/nuxel-home/sw.js`
+(`CACHE_VERSION`) and `pwa/nuxel-home/manifest.json`
+(`nuxel.cache_version`). Without the bump a launcher restored from the v4 cache
+would keep serving the old tile with no way to tell. `launcher-registry-test.js`
+asserts `sw.js CACHE_VERSION == manifest.cache_version` and that it has advanced
+past the A32 baseline `v3-a32`; `sw.js`'s `activate` handler deletes every other
+namespace, and the host purges WebKit's caches and version-stamps the launcher URL
+(`tools/s10plus/a32/nuxel-pwa-host.c`, guarded by `INV-1`).
 
 ## 7. Rollback
 

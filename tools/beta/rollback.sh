@@ -2,7 +2,7 @@
 # =============================================================================
 # rollback.sh — baseline discipline and the reliable rollback route (briq-09b)
 #
-#   tools/beta/rollback.sh capture [--label L] [--paths FILE] [--tree DIR]...
+#   tools/beta/rollback.sh capture [--label L] [--briq ID] [--paths FILE] [--tree DIR]...
 #   tools/beta/rollback.sh list
 #   tools/beta/rollback.sh status
 #   tools/beta/rollback.sh verify [--against DIR]
@@ -42,6 +42,7 @@ PY="${ROLLBACK_PY:-python3}"
 
 CMD=""
 LABEL=""
+BRIQ=""
 MANIFEST=""
 TARGET_DIR="latest"
 PATHS_FILE=""
@@ -60,6 +61,7 @@ while [ $# -gt 0 ]; do
   case "$1" in
     capture|list|status|verify|install|rollback|selftest) CMD="$1"; shift ;;
     --label)    LABEL="$2"; shift 2 ;;
+    --briq)     BRIQ="$2"; shift 2 ;;
     --manifest) MANIFEST="$2"; shift 2 ;;
     --to)       TARGET_DIR="$2"; shift 2 ;;
     --paths)    PATHS_FILE="$2"; shift 2 ;;
@@ -116,6 +118,15 @@ if [ "$ROOT_DIR" = "/" ]; then
   STATE_DIR="${STATE_DIR:-/var/lib/nuxel/rollback}"
 else
   STATE_DIR="${STATE_DIR:-$ROOT_DIR/var/lib/nuxel/rollback}"
+fi
+# Per-task isolation (briq-09b): with --briq the baseline lives under
+# <state>/<briq-id>/ so two concurrent tasks can never overwrite each other's
+# "previous good" copy.  The id is recorded inside baseline.json as provenance.
+if [ -n "$BRIQ" ]; then
+  case "$BRIQ" in
+    */*|.|..) echo "rollback: REFUSING unsafe briq id: $BRIQ" >&2; exit 2 ;;
+  esac
+  STATE_DIR="${STATE_DIR%/}/$BRIQ"
 fi
 guard_path "$STATE_DIR" || exit 2
 WORK_TMP="$(mktemp -d "${TMPDIR:-/tmp}/nuxel-rollback-XXXXXX")"
@@ -218,11 +229,12 @@ for u in units:
 print(json.dumps(out))')"
   fi
   local ghead; ghead="$(git -C "$WORKSPACE" rev-parse HEAD 2>/dev/null || echo unknown)"
-  "$PY" - "$dir/baseline.json" "$entries" "$trees" "$unitstate" "$ROOT_DIR" "$ghead" <<'PY'
+  "$PY" - "$dir/baseline.json" "$entries" "$trees" "$unitstate" "$ROOT_DIR" "$ghead" "$BRIQ" <<'PY'
 import json, sys, time
-path, entries, trees, unitstate, root, ghead = sys.argv[1:7]
+path, entries, trees, unitstate, root, ghead, briq = sys.argv[1:8]
 doc = {"schema_version": 1, "tool": "tools/beta/rollback.sh capture",
        "generated_at": time.strftime("%Y-%m-%dT%H:%M:%S%z"), "root": root,
+       "briq": (briq or None),
        "git_head": ghead, "entries": json.loads(entries), "trees": json.loads(trees),
        "unit_state": json.loads(unitstate), "known_good": True,
        "note": ("recorded before any change: previous hash of every tracked target. "

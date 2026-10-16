@@ -81,10 +81,28 @@ single ownership is a correctness property, not a style choice.
    The page (`pwa/nuxel-home/colour-test.html`) fills the screen with the named colour and shows
    a bottom bar in **red | green | blue** order. In a VM/desktop browser it is also directly
    openable at `http://127.0.0.1:8000/pwa/nuxel-home/colour-test.html`.
-5. **Verbose boot:** `nuxelctl verbose-boot status` → note the durable value, source and
-   override capability. Then enable it (`nuxelctl verbose-boot on`) and reboot once more, and
-   confirm the boot log appears on the glass early. Turn it back off afterwards
-   (`nuxelctl verbose-boot off`) unless you want to keep it.
+5. **Boot diagnostics — verbose boot:** `nuxelctl verbose-boot status` → note the durable
+   value, source and override capability. Then enable it (`nuxelctl verbose-boot on`) and
+   reboot once more, and confirm the boot log appears on the glass early. Turn it back off
+   afterwards (`nuxelctl verbose-boot off`) unless you want to keep it.
+5b. **Boot diagnostics — verbosity level (0…3):** with verbose boot ON, set
+   `nuxelctl verbose-boot verbosity 0` and reboot: the log must be reduced to the `NUXEL_*`
+   markers. Then `nuxelctl verbose-boot verbosity 3` and reboot: `/var/log/nuxel/boot-stage.log`
+   must be visibly longer (a duplicate of your own terminal history is NOT evidence — compare
+   the appended block for the two boots).
+
+   ```sh
+   nuxelctl verbose-boot verbosity 0         # or 1/2/3; a value outside 0..3 is refused
+   nuxelctl verbose-boot status              # echoes verbosity_level and its source
+   wc -l /var/log/nuxel/boot-stage.log       # grows by the block the level asks for
+   dmesg | grep NUXEL_BOOT_ANIMATION         # effective animation policy + reason
+   ```
+5c. **Boot diagnostics — standard animation:** set `nuxelctl verbose-boot animation off`
+   (with verbose boot OFF) and reboot: no animation, the launcher appears directly. Set it back
+   to `standard` (or `short`), reboot, and confirm the full 192-frame animation returns. The
+   precedence is `off > short > verbose boot > standard`, so with `verbose_boot=true` a
+   `standard` request is reported as `animation_mode=standard reason=verbose_boot_requested`;
+   that is by design, not a defect — the boot-stage state file says which reason applied.
 6. **Safe areas after handoff:** with the launcher up, confirm the status bar still excludes
    zones 9,10 in portrait (area 2, step 4).
 
@@ -110,6 +128,12 @@ single ownership is a correctness property, not a style choice.
   `/run/nuxel/verbose-boot` reports `NUXEL_VERBOSE_BOOT=1 SOURCE=config`, and the handoff
   receipt says `reason=verbose_boot_requested terminal=0` (a deliberate waiver — it must never
   be reported as a completed animation cycle).
+* Boot diagnostics (all three controls live in `/etc/nuxel/boot/verbose-boot.json`):
+  `/run/nuxel/verbose-boot` reports `ANIMATION_MODE=<requested> EFFECTIVE_ANIMATION=<effective>
+  ANIMATION_REASON=<reason> VERBOSITY=<0..3>`, `/run/nuxel/anim-skip.request` (when it exists)
+  names the same reason, and `dmesg | grep NUXEL_BOOT_ANIMATION` shows the marker. With
+  `animation_mode=standard` and `verbose_boot=false` there is **no** `/run/nuxel/anim-skip.request`
+  at all.
 
 ## 6. Failure symptoms → what they mean
 
@@ -120,6 +144,8 @@ single ownership is a correctness property, not a style choice.
 | Frames from two sources alternate (jitter, tearing between two images) | two `/dev/fb0` writers; look for `NUXEL_FB_OWNER_BUSY` and both writers in `/run/nuxel-fb-owner.lock` / `/var/lib/nuxel/fb-owner` |
 | Everything is blue that should be red (icons, wallpaper, green Wi-Fi tick) | the colour conversion was bypassed — area 3.4 |
 | Verbose boot switched ON but no log on the glass | the early boot stage did not run/read `/etc/nuxel/boot/verbose-boot.json`; check `systemctl status nuxel-verbose-boot` and `/var/log/nuxel/boot-stage.log` |
+| `animation_mode=standard` but the animation is still skipped | an effective verbose boot outranks `standard` (by design): `ANIMATION_REASON=verbose_boot_requested`. Turn verbose boot off, or set `animation_mode=short/off` deliberately |
+| `animation_mode=off` was set but the animation still plays | the consumer did not read the document (check `systemctl status nuxel-verbose-boot`, `cat /run/nuxel/verbose-boot`) or the value is a typo (`ANIMATION_MODE_SOURCE=invalid` → falls back to `standard`) |
 | The Bixby hold override does nothing at boot | **expected today**: the installed early boot stage cannot read the Bixby key state — `BLOCKED_KERNEL / BOOT_UPDATE_REQUIRED`, deliberately not faked |
 | Status items under the cutout after handoff | safe-zone layout — area 2 |
 
@@ -127,12 +153,13 @@ single ownership is a correctness property, not a style choice.
 
 ```sh
 nuxelctl handoff status | simulate | audit        # receipt, owner lock, replayable timeline
-nuxelctl verbose-boot status | on | off | override
+nuxelctl verbose-boot status | on | off | animation standard|short|off | verbosity 0..3 | override
 cat  /run/nuxel-anim-handoff                      # ownership receipt (K=V)
 cat  /var/lib/nuxel/fb-owner                      # durable single-owner record
 tail /var/lib/nuxel/anim-handoff.log              # append-only ownership audit log
 cat  /var/lib/nuxel/anim-min-cycle.completed      # floor result of the last boot
 cat  /run/nuxel/verbose-boot /run/nuxel/anim-skip.request /run/nuxel/boot-stage-capabilities
+dmesg | grep NUXEL_BOOT_ANIMATION                  # effective animation policy + reason
 tail /var/log/nuxel/boot-stage.log                # early-stage verbose-boot consumer log
 dmesg | grep -E 'NUXEL_ANIM|ANIM_MIN_CYCLE|ANIMATION_STOP|LAUNCHER_DISPLAY|NUXEL_FB_OWNER_BUSY'
 python3 tools/s10plus/a33/nuxel-anim-handoff.py audit        # offline grading of the artefacts
@@ -148,7 +175,8 @@ python3 tools/s10plus/a33/nuxel-verbose-boot.py --selftest   # offline durabilit
 | 3.3 launcher-not-ready ⇒ animation resumes | ☐ PASS ☐ FAIL | `selftest`: “launcher never ready ⇒ animation keeps the panel”, “with no launcher the bridge never takes ownership” |
 | 3.4 colour order (red stays red) | ☐ PASS ☐ FAIL | `test-colour-order.py`: golden bytes for R/G/B/white/black/mixed; LUT equals an independent reference over 74 words; the shipped `colour-test.html` swatches are checked against those same golden values. The on-glass verdict needs the owner |
 | 3.5 verbose-boot setting (durable, UI + console, boot consumer) | ☐ PASS ☐ FAIL | `nuxel-verbose-boot.py --selftest`: fresh install, upgrade-keep rule, legacy migration, unreadable document refused, override honoured/refused. On-glass effect needs the owner |
-| 3.5b Bixby hold override | `BLOCKED_KERNEL / BOOT_UPDATE_REQUIRED` | the installed early boot stage does not publish `bixby-hold-override=1`; the harness asserts the request is *refused, not faked* |
+| 3.5b Bixby hold override | `BLOCKED_KERNEL / BOOT_UPDATE_REQUIRED` | the installed early boot stage does not publish `bixby-hold-override=1`; the harness asserts the request is *refused, not faked*. Userspace fallback: `nuxelctl verbose-boot on` / the Settings toggle (no BOOT partition write) |
+| 3.5c boot animation policy (`animation_mode` + `verbosity_level`) | ☐ PASS ☐ FAIL | `nuxel-verbose-boot.py --selftest`: the precedence `off > short > verbose_boot > standard`, an unknown mode falling back to `standard` *and being reported*, `verbosity_level` clamped/reported and never turning the log on. Console: `nuxelctl verbose-boot animation|verbosity` |
 | 3.6 safe areas through the handoff | ☐ PASS ☐ FAIL | `tools/s10plus/a32/tests/safe-zones-test.js` (see area 2) |
 
 **Current automatic evidence (build host + UTM guest, 2026-10-16):**

@@ -1,0 +1,6 @@
+# volume press then hold: the step fires once on press (predictable), then
+# the long-press class opens the notifications panel at 500 ms
+0 key volume_up 1
+500 tick
+800 tick
+900 key volume_up 0

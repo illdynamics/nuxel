@@ -1,4 +1,6 @@
-# volume press then hold: A32 cadence (400 ms delay, then every 250 ms)
+# the A32 key-repeat cadence is NOT gone: remap volume_up_long to the
+# *-autorepeat action and the 400 ms / 250 ms cadence is byte-identical
+cfg volume_long=repeat
 0 key volume_up 1
 500 tick
 800 tick

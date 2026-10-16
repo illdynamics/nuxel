@@ -7,6 +7,13 @@
 // DOM-free on purpose) and cross-checks the file name against the boot-time
 // consumer (tools/s10plus/a33/nuxel-verbose-boot.py) and the launcher manifest,
 // so a rename on one side cannot silently orphan the other.
+//
+// The bg-02 verification pass added the other two boot-diagnostics controls to
+// the SAME document - animation_mode (standard|short|off) and verbosity_level
+// (0..3) - plus the one precedence rule (off > short > verbose_boot > standard).
+// Section 5 below covers them: defaults, refusals (never a silently clamped
+// value behind the UI), merge-on-write, the whole-panel read/write, and the
+// precedence table itself.
 const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
@@ -154,6 +161,95 @@ function finished() {
         /verboseDoc\(\)\.then\(function \(doc\)/.test(appJs) && /doc\.set_by = 'user'/.test(appJs));
   check('the Settings app reverts the switch if the write fails (no lying UI)',
         /el\.checked = !want/.test(appJs));
+
+  // ----------------------------------------------------------------------- //
+  // 5. boot diagnostics: the two controls added in the bg-02 verification pass
+  //    (animation_mode, verbosity_level) plus the precedence rule, in ONE
+  //    document - so the panel, the tile and the boot stage cannot disagree.
+  // ----------------------------------------------------------------------- //
+  check('the store ships the animation modes the console accepts',
+        JSON.stringify(S.ANIMATION_MODES) === JSON.stringify(['standard', 'short', 'off']),
+        JSON.stringify(S.ANIMATION_MODES));
+  check('the store ships the verbosity range 0..3',
+        S.VERBOSITY_MIN === 0 && S.VERBOSITY_MAX === 3);
+  check('animation_mode defaults to standard', S.animationMode() === 'standard', S.animationMode());
+  check('verbosity_level defaults to 1', S.verbosityLevel() === 1, S.verbosityLevel());
+
+  const s5 = makeSandbox(null);
+  const S5 = s5.NuxelSettings;
+  const a5 = S5.setAnimationMode('off');
+  check('setAnimationMode persists through the same store', a5 && a5.ok !== false);
+  check('animationMode() reads back "off"', S5.animationMode() === 'off', S5.animationMode());
+  check('setVerbosityLevel(3) persists', (S5.setVerbosityLevel(3) || {}).ok !== false);
+  check('verbosityLevel() reads back 3', S5.verbosityLevel() === 3, S5.verbosityLevel());
+  check('a bad animation mode is refused, not silently stored',
+        (S5.setAnimationMode('turbo') || {}).ok === false && S5.animationMode() === 'off');
+  check('an out-of-range verbosity level is refused, not clamped behind the UI',
+        (S5.setVerbosityLevel(9) || {}).ok === false && S5.verbosityLevel() === 3);
+  check('all three controls land in ONE durable document',
+        (() => { const d = JSON.parse(s5.__store['nuxel.settings.verbose-boot'] || '{}');
+                 return 'verbose_boot' in d && d.animation_mode === 'off' && d.verbosity_level === 3; })(),
+        s5.__store['nuxel.settings.verbose-boot']);
+  check('a write to one control does not drop its siblings (merge, not replace)',
+        (S5.setVerboseBoot(true), S5.animationMode() === 'off' && S5.verbosityLevel() === 3));
+  check('bootDiagnostics() reports the whole panel in one read',
+        JSON.stringify(S5.bootDiagnostics()) === JSON.stringify({ verbose_boot: true, animation_mode: 'off', verbosity_level: 3 }),
+        JSON.stringify(S5.bootDiagnostics()));
+  check('setBootDiagnostics() writes the whole panel in one write',
+        (S5.setBootDiagnostics({ verbose_boot: false, animation_mode: 'short', verbosity_level: 2 }) || {}).ok !== false
+        && S5.animationMode() === 'short' && S5.verbosityLevel() === 2 && S5.verboseBoot() === false);
+  check('an unknown key in the document still survives a whole-panel write',
+        (() => { const raw = JSON.parse(s5.__store['nuxel.settings.verbose-boot']);
+                 raw.future_key = 'keep-me';
+                 s5.__store['nuxel.settings.verbose-boot'] = JSON.stringify(raw);
+                 S5.reset();
+                 S5.load('verbose-boot');
+                 S5.setBootDiagnostics({ animation_mode: 'standard' });
+                 const after = JSON.parse(s5.__store['nuxel.settings.verbose-boot']);
+                 return after.future_key === 'keep-me'; })(),
+        s5.__store['nuxel.settings.verbose-boot']);
+
+  // The precedence rule: off > short > verbose_boot > standard
+  const rules = [
+    [{ verbose_boot: false, animation_mode: 'off' }, 'off', 'animation_mode_off'],
+    [{ verbose_boot: false, animation_mode: 'short' }, 'short', 'animation_mode_short'],
+    [{ verbose_boot: true, animation_mode: 'standard' }, 'short', 'verbose_boot_requested'],
+    [{ verbose_boot: true, animation_mode: 'off' }, 'off', 'animation_mode_off'],
+    [{ verbose_boot: true, animation_mode: 'short' }, 'short', 'animation_mode_short'],
+    [{ verbose_boot: false, animation_mode: 'standard' }, 'standard', 'standard'],
+    [{ verbose_boot: true, animation_mode: 'gone' }, 'short', 'verbose_boot_requested'],
+  ];
+  rules.forEach(function (c) {
+    const sb = makeSandbox(null);
+    if (c[0].verbose_boot) sb.NuxelSettings.setVerboseBoot(true);
+    sb.NuxelSettings.setAnimationMode(c[0].animation_mode);
+    const eff = sb.NuxelSettings.effectiveAnimation();
+    check('precedence ' + c[0].animation_mode + ' + verbose=' + c[0].verbose_boot + ' -> ' + c[1] + ' (' + c[2] + ')',
+          eff.mode === c[1] && eff.reason === c[2], JSON.stringify(eff));
+  });
+  check('verbosity does not change the animation decision',
+        (function () {
+          const sb = makeSandbox(null);
+          sb.NuxelSettings.setVerbosityLevel(3);
+          return sb.NuxelSettings.effectiveAnimation().mode === 'standard';
+        })());
+
+  // The three surfaces really exist and use the same vocabulary.
+  check('the Settings app renders the animation-mode control', /id="animation-mode"/.test(appHtml));
+  check('the Settings app renders the verbosity control', /id="verbosity-level"/.test(appHtml));
+  check('the Settings app saves the whole panel in one write', /function saveBoot\(/.test(appJs)
+        && /cfgSet\(VERBOSE_NAME/.test(appJs));
+  check('the Settings app keeps a single source for the precedence rule',
+        /off > short > verbose_boot > standard/.test(appHtml) || /off > short > verbose_boot > standard/.test(appJs));
+  const qsSrc = fs.readFileSync(path.join(ROOT, 'pwa/nuxel-home/js/qs.js'), 'utf8');
+  check('the Quick Settings tile cycles the animation policy (long press)', /_cycleAnimationMode/.test(qsSrc));
+  check('the Quick Settings tile reads the same store API for the policy',
+        /effectiveAnimation/.test(qsSrc) && /setAnimationMode/.test(qsSrc));
+  check('the Quick Settings long press cannot double-fire on the following click',
+        /_vbLongPressFired/.test(qsSrc));
+  check('the boot consumer implements the SAME precedence (off > short > verbose_boot > standard)',
+        /anim_mode == "off"/.test(consumer) && /anim_mode == "short"/.test(consumer)
+        && /elif effective:/.test(consumer));
 
   console.log('\n' + (failures ? failures + ' FAILURES' : 'settings-store tests passed'));
   process.exit(failures ? 1 : 0);

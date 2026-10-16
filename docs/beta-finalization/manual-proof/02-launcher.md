@@ -24,7 +24,7 @@ Four concrete things are being checked:
 
 | # | Claim | Why it matters |
 |---|---|---|
-| 2.1 | The served launcher bundle is the current one (status bar `0.4.1-a33`, cache namespace `v4-a33`) | The phone’s copy had drifted (`status-bar.js` v0.3.2, stale `manifest.json`): the launcher on the glass was *not* the launcher in the repository |
+| 2.1 | The served launcher bundle is the current one (status bar `0.4.1-a33`, cache namespace `v5-a33`) | The phone’s copy had drifted (`status-bar.js` v0.3.2, stale `manifest.json`): the launcher on the glass was *not* the launcher in the repository |
 | 2.2 | The registry contains **Terminal** (`org.nuxel.Terminal`) and a runnable **Settings** app (`nuxel-settings`) | Both existed as metadata/placeholder before; Terminal was missing from the phone’s registry and Settings had no runnable frontend |
 | 2.3 | Tapping a tile really opens the app (frame, real content, working Back/close) | “A tile exists” is not “an app launches” |
 | 2.4 | The status bar lays every item out **outside** the ten-zone blocked intervals (S10+ portrait: zones 9,10 = the hole-punch cutout) | Items under the cutout are invisible in normal use; the shipped preset must exclude them |
@@ -54,7 +54,7 @@ features (exactly how Terminal went missing on the device copy).
      'import json,sys; print(json.load(sys.stdin)["nuxel"])'
    ```
 
-   Expect `VERSION = "0.4.1-a33"` and `pwa_version 0.4.1-a33`, `cache_version v4-a33`,
+   Expect `VERSION = "0.4.1-a33"` and `pwa_version 0.4.1-a33`, `cache_version v5-a33`,
    `registry_version 4`.
 5. Nothing needs to be installed, flashed or rebooted for this test.
 
@@ -125,7 +125,7 @@ Logs: `/var/log/nuxel/pwa-host.log` (page load + diagnostics),
 
 | Check | Result | Evidence |
 |---|---|---|
-| 2.1 bundle is current (`0.4.1-a33`, `v4-a33`) | ☐ PASS ☐ FAIL | `launcher-registry-test.js`: status-bar `VERSION == manifest.pwa_version`, `CACHE_VERSION == manifest.cache_version` and advanced past `v3-a32` |
+| 2.1 bundle is current (`0.4.1-a33`, `v5-a33`) | ☐ PASS ☐ FAIL | `launcher-registry-test.js`: status-bar `VERSION == manifest.pwa_version`, `CACHE_VERSION == manifest.cache_version` and advanced past `v3-a32` |
 | 2.2 registry has Terminal + Settings | ☐ PASS ☐ FAIL | `apps.js` `REGISTRY_VERSION 4` contains `org.nuxel.Terminal` and `nuxel-settings`; test asserts both, plus a runnable Settings frontend (`index.html` + `settings.js`) |
 | 2.3 apps launch | ☐ PASS ☐ FAIL | owner observation (no automated substitute for “a human tapped a tile”) |
 | 2.4 safe areas on the glass | ☐ PASS ☐ FAIL | `safe-zones-test.js`: 44 assertions, 0 failures (`OFFLINE_TESTED`); on-glass verdict needs the owner |

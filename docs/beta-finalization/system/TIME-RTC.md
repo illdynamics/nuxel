@@ -13,6 +13,8 @@ repository files or explicitly marked as not yet observed on hardware.
 | Which timesync package exists on this image | `OFFLINE_TESTED` (probe is part of the tool; package claim verified against repo metadata in the dependency report) |
 | RTC set/read on the handset | `NEEDS_OWNER_TEST` |
 | RTC persistence across an ordinary reboot | `NEEDS_OWNER_TEST` |
+| Settings surface, clock permissions, last-known record, suspend honesty (contract + code) | `OFFLINE_TESTED` |
+| Suspend/resume timekeeping on the handset | `NEEDS_OWNER_TEST` (a resume needs a finger; the kernel's own state list is reported, never assumed) |
 
 No claim in this document is `VERIFIED_ON_S10PLUS`.
 
@@ -158,12 +160,89 @@ and refuses to fall back to host state when the fixture isolation flag is set.
 * `nuxelctl time set` is the only command that changes the clock, and running it
   twice with the correct timestamp restores the intended state.
 
-## 10. Known limitations (stated, not hidden)
+## 10. Who may set the clock (permissions)
+
+`configs/nuxel/time/time.json → clock_permissions` records the rule the Settings
+page must not break:
+
+* `timedatectl set-time` / `set-timezone` require **root or `CAP_SYS_TIME`** and go
+  through polkit, which will prompt an unprivileged caller.
+* The **launcher / status bar only reads** the clock (the bridge's phone-status
+  `time` field is local `HH:MM`); an app or PWA has no write path at all.
+* After boot, **systemd-timesyncd (or chrony)** own step/slew; the page shows their
+  state instead of pretending to be the authority.
+* `CLOCK_MONOTONIC` is unaffected by clock steps, which is why the button FSM and
+  every timeout use it rather than the wall clock.
+
+## 11. Last-known time (a floor, never a fabricated instant)
+
+A dead or reset RTC can make the phone boot in 1970: logs then get meaningless
+timestamps, TLS validation fails and NTP itself cannot bootstrap. The policy
+(→ `last_known_time`) keeps a **last-known lower bound** at
+`/var/lib/nuxel/time/last-known.json`:
+
+```sh
+nuxelctl time last-known --record   # while the clock is plausible: write the floor
+nuxelctl time last-known            # after a suspicious boot: compare against the floor
+```
+
+* A record is **refused** when the system clock is below
+  `plausible_after` (2024-01-01T00:00:00Z): writing an implausible instant as
+  "last-known" would fabricate a time.
+* When the clock reads **earlier** than the record, the tool prints
+  `RTC_SUSPECT` and says to re-sync before trusting any timestamp.
+* The file itself states that it is a **floor**, not a measurement of "now".
+
+## 12. Timezone data, automatic timezone and the display format
+
+* **tzdata is probed, never assumed**: the picker is populated from
+  `timedatectl list-timezones`, whose entries come only from the installed
+  `/usr/share/zoneinfo`. With no tzdata the page reports `TZDATA_MISSING` and
+  offers **UTC only**, saying so. The package claim is checked against the Fedora
+  43 ARM64 manifest in `docs/beta-finalization/system/DEPENDENCY-REPORT.md`.
+* **Automatic timezone is gated on the location service**: with location disabled
+  the row is off and says why. A timezone is never inferred from an IP address or
+  from a guess.
+* **12/24-hour format is a display preference** (`time_format`): it changes the
+  launcher's rendering and no kernel, RTC or timesync state.
+
+## 13. Suspend / resume timekeeping (reported, not assumed)
+
+`configs/nuxel/time/time.json → suspend_resume` and `nuxelctl time settings`
+report the state list the **kernel** advertises:
+
+```sh
+nuxelctl time settings      # prints /sys/power/state and what it means
+```
+
+* If `/sys/power/state` contains `mem`, suspend-to-RAM is advertised by this
+  kernel — that is a statement about the kernel, **not** proof that this handset
+  suspends. Triggering a resume needs the owner, so the verdict stays
+  `NEEDS_OWNER_TEST`.
+* If it lists only `freeze`, the tool says so explicitly and suspend-to-RAM is
+  **not claimed** for this kernel.
+* `CLOCK_MONOTONIC` pauses across a suspend while the **wall clock** must be
+  re-corrected by the RTC or the timesync backend after resume; that correction is
+  observable in the journal, which is what makes it checkable rather than assumed.
+
+## 14. Settings surface (renderer: briq-06d)
+
+`nuxelctl time settings` prints the Date & time surface: auto time (NTP state),
+automatic timezone (with its location dependency), the timezone, RTC-in-local-TZ,
+the 12/24-hour preference, the configured NTP servers and the **last sync** state
+(`UNKNOWN` when no backend answers — never replaced by the boot time). bg-03 owns
+the contract in `configs/nuxel/time/time.json → settings_surface`; briq-06d
+renders the page and must not display a value that no listed `read_api` produced.
+## 15. Known limitations (stated, not hidden)
 
 * RTC **persistence across power-off** (battery removal / deep discharge) is a
   different test from reboot persistence and is not covered here.
 * NTP requires network reachability; on a phone without a working radio (area 4)
-  the clock is corrected only by the RTC.
+  the clock is corrected only by the RTC - and by `last-known` when the RTC is
+  itself suspect.
+* Whether the RTC is **battery-backed** is not assumed: it is inferred only from
+  the observed behaviour across a real power loss plus the RTC's own delta, and is
+  reported as uncertainty rather than as a datasheet fact.
 * The S10+ vendor kernel's RTC driver behaviour after a Samsung-firmware
   "Download/Recovery" boot is out of scope: those modes must never be triggered
   (mission invariant).

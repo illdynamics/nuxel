@@ -231,7 +231,7 @@ cycle**, so the area stays `NEEDS_OWNER_TEST`.
 
 **Feature.** The launcher is the existing **Nuxel Home PWA** — not a new launcher — served by
 `nuxel-pwa-host` (WebKitGTK on headless Phoc/Wayland, presented through the framebuffer bridge). Four
-claims: (2.1) the served bundle is the current one (status bar `0.4.1-a33`, cache namespace `v4-a33`);
+claims: (2.1) the served bundle is the current one (status bar `0.4.1-a33`, cache namespace `v5-a33`);
 (2.2) the registry contains **Terminal** and a runnable **Settings**; (2.3) tapping a tile really opens
 the app; (2.4) the status bar lays every item **outside** the ten-zone blocked intervals (S10+ portrait:
 zones 9,10 = the hole-punch cutout).
@@ -251,7 +251,7 @@ Terminal went missing on the device copy.
    curl -s http://127.0.0.1:8000/pwa/nuxel-home/manifest.json | python3 -c \
      'import json,sys; print(json.load(sys.stdin)["nuxel"])'
    ```
-   Expect `VERSION = "0.4.1-a33"`, `pwa_version 0.4.1-a33`, `cache_version v4-a33`, `registry_version 4`.
+   Expect `VERSION = "0.4.1-a33"`, `pwa_version 0.4.1-a33`, `cache_version v5-a33`, `registry_version 4`.
 4. Nothing needs to be installed, flashed or rebooted for this test.
 
 **Exact action.**

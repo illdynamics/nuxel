@@ -1,13 +1,20 @@
-// Nuxel Home - Quick Settings Panel (A32 base, A33 verbose-boot tile)
+// Nuxel Home - Quick Settings Panel (A32 base, A33 boot-diagnostics tile)
 // Manages the quick settings toggles.
 //
-// A33 adds the VERBOSE BOOT tile (briq-02b).  It is built here rather than in
-// index.html on purpose: the tile must not exist at all on a build without the
-// setting store, and building it in JS keeps the A32 markup/screenshot surface
-// byte-identical when the feature is off.  The tile reads and writes the SAME
-// durable document the console writes (`nuxelctl verbose-boot on|off`) and the
+// A33 adds the BOOT DIAGNOSTICS tile (briq-02b; extended in the bg-02
+// verification pass).  It is built here rather than in index.html on purpose:
+// the tile must not exist at all on a build without the setting store, and
+// building it in JS keeps the A32 markup/screenshot surface byte-identical when
+// the feature is off.  The tile reads and writes the SAME durable document the
+// console writes (`nuxelctl verbose-boot on|off|animation|verbosity`) and the
 // consumer reads at boot (/etc/nuxel/boot/verbose-boot.json), so the UI, the
 // console and the early boot stage cannot disagree.
+//
+//   tap        = verbose boot on/off (show the boot log on the glass)
+//   long press = cycle the animation policy standard -> short -> off
+// The tile always shows the EFFECTIVE animation policy and its reason, which is
+// how the documented precedence (off > short > verbose_boot > standard) stays
+// visible instead of surprising the operator after a reboot.
 
 class QuickSettings {
     constructor() {
@@ -57,7 +64,14 @@ class QuickSettings {
         }
     }
 
-    // ---- A33: verbose boot -------------------------------------------------
+    // ---- A33: boot diagnostics --------------------------------------------
+    // ONE tile drives the SAME durable document the Settings app and
+    // `nuxelctl verbose-boot …` write:
+    //   tap        -> verbose boot on/off   (show the boot log on the glass)
+    //   long press -> cycle the animation policy  standard -> short -> off
+    // The tile label always names the EFFECTIVE animation policy and its reason,
+    // so the precedence rule (off > short > verbose_boot > standard) is visible
+    // in the panel instead of being a surprise after a reboot.
     _buildVerboseBootTile() {
         const panel = this.panel;
         if (!panel || document.getElementById('qs-verbose-boot')) return;
@@ -67,25 +81,70 @@ class QuickSettings {
         tile.className = 'qs-item';
         tile.id = 'qs-verbose-boot';
         tile.dataset.enabled = 'false';
-        tile.title = 'Verbose boot: show the Nuxel boot log on the glass and shorten the boot animation';
+        tile.dataset.animation = 'standard';
+        tile.title = 'Verbose boot: tap to show the Nuxel boot log on the glass; long-press to cycle the animation policy (standard / short / off)';
         tile.innerHTML = '<span class="qs-icon verbose-icon"></span><span class="qs-label">Verbose<br>boot</span>';
-        tile.addEventListener('click', () => this._toggleVerboseBoot());
+        tile.addEventListener('click', () => {
+            // A long press already acted: swallow the click it produces.
+            if (this._vbLongPressFired) { this._vbLongPressFired = false; return; }
+            this._toggleVerboseBoot();
+        });
+        this._bindLongPress(tile, () => this._cycleAnimationMode());
         const settingsTile = document.getElementById('qs-settings');
         if (settingsTile && settingsTile.parentNode === row) row.insertBefore(tile, settingsTile);
         else row.appendChild(tile);
         this._syncVerboseBoot();
     }
 
+    // A long press that cannot double-fire, cannot fire on a scroll and cannot
+    // leave the timer running after a pointer release.  Same shape the hardware
+    // button manager uses (debounce -> duration -> one action).
+    _bindLongPress(tile, action) {
+        let timer = null;
+        let fired = false;
+        const HOLD_MS = 600;
+        const cancel = () => { if (timer) { clearTimeout(timer); timer = null; } };
+        const start = (ev) => {
+            fired = false;
+            cancel();
+            timer = setTimeout(() => {
+                timer = null;
+                fired = true;
+                this._vbLongPressFired = true;
+                action();
+            }, HOLD_MS);
+        };
+        const end = () => {
+            cancel();
+            if (fired) this._vbLongPressFired = true;
+        };
+        tile.addEventListener('pointerdown', start);
+        tile.addEventListener('pointerup', end);
+        tile.addEventListener('pointercancel', () => { cancel(); fired = false; });
+        tile.addEventListener('pointerleave', () => { cancel(); fired = false; });
+        tile.addEventListener('contextmenu', (ev) => { ev.preventDefault(); action(); });
+    }
+
     _syncVerboseBoot() {
         const tile = document.getElementById('qs-verbose-boot');
-        if (!tile) return;
         const store = window.NuxelSettings;
-        const on = !!(store && store.verboseBoot && store.verboseBoot());
-        tile.dataset.enabled = on ? 'true' : 'false';
         if (store && store.subscribe && !this._vbSubscribed) {
             this._vbSubscribed = true;
             store.subscribe((ev) => { if (ev && ev.name === 'verbose-boot') this._syncVerboseBoot(); });
         }
+        if (!tile) return;
+        const on = !!(store && store.verboseBoot && store.verboseBoot());
+        const policy = (store && store.effectiveAnimation)
+            ? store.effectiveAnimation()
+            : { mode: 'standard', reason: 'store-unavailable' };
+        const verbosity = (store && store.verbosityLevel) ? store.verbosityLevel() : 1;
+        tile.dataset.enabled = on ? 'true' : 'false';
+        tile.dataset.animation = policy.mode;
+        tile.dataset.verbosity = String(verbosity);
+        tile.title = 'Verbose boot: ' + (on ? 'ON' : 'off')
+            + ' | animation: ' + policy.mode + ' (' + policy.reason + ')'
+            + ' | verbosity: ' + verbosity
+            + '\nTap = verbose boot on/off, long-press = cycle the animation policy';
     }
 
     _toggleVerboseBoot() {
@@ -99,10 +158,33 @@ class QuickSettings {
         const settle = (r) => {
             this._syncVerboseBoot();
             const how = (r && r.transport) ? r.transport : 'localStorage';
-            this._osdNotice(next
-                ? 'Verbose boot ON (applies from the next boot, ' + how + ')'
-                : 'Verbose boot OFF (' + how + ')');
+            const policy = store.effectiveAnimation ? store.effectiveAnimation() : { mode: 'standard', reason: '?' };
+            this._osdNotice((next ? 'Verbose boot ON' : 'Verbose boot OFF')
+                + ' (' + how + ') — next boot: animation ' + policy.mode
+                + ' (' + policy.reason + ')');
             if (next && window.NuxelBootLog) window.NuxelBootLog.show();
+        };
+        if (res && res.then) res.then(settle); else settle(res);
+    }
+
+    _cycleAnimationMode() {
+        const store = window.NuxelSettings;
+        if (!store || !store.setAnimationMode) {
+            this._osdNotice('Animation policy needs the settings store');
+            return;
+        }
+        const order = (store.ANIMATION_MODES && store.ANIMATION_MODES.length)
+            ? store.ANIMATION_MODES : ['standard', 'short', 'off'];
+        const cur = store.animationMode ? store.animationMode() : 'standard';
+        const idx = Math.max(0, order.indexOf(cur));
+        const next = order[(idx + 1) % order.length];
+        const res = store.setAnimationMode(next);
+        const settle = (r) => {
+            this._syncVerboseBoot();
+            const policy = store.effectiveAnimation ? store.effectiveAnimation() : { mode: next, reason: '?' };
+            const how = (r && r.transport) ? r.transport : 'localStorage';
+            this._osdNotice('Boot animation: ' + next + ' → effective ' + policy.mode
+                + ' from the next boot (' + how + ')');
         };
         if (res && res.then) res.then(settle); else settle(res);
     }

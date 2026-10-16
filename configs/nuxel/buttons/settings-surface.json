@@ -1,0 +1,190 @@
+{
+  "schema_version": 1,
+  "comment": "Buttons & Gestures settings surface (S10+ / beyond2lte). bg-03 owns this contract and the state machine it describes; briq-06d renders the page in the Settings app. This is an APPEND POINT, not a second settings store: every value here is persisted in the A32 file /etc/nuxel/input/buttons.json, which the button manager reads and which no UI may rewrite with anything except a value from the option list below.",
+  "device": {
+    "model": "Samsung Galaxy S10+ SM-G975F",
+    "codename": "beyond2lte"
+  },
+  "renderer": "briq-06d (Settings app: Settings -> Buttons & Gestures)",
+  "store": "/etc/nuxel/input/buttons.json",
+  "registry_app": "nuxel-settings",
+  "timing_source": {
+    "file": "configs/nuxel/input/button-fsm.json",
+    "installed": "/etc/nuxel/input/button-fsm.json",
+    "editable_by_ui": false,
+    "why": "The timing windows are the state machine's contract and are cross-checked against the protected A32 source by the offline test. The UI DISPLAYS them (read-only) so the owner can see what a 'long press' means; it never edits them."
+  },
+  "fields": [
+    {
+      "key": "power_short",
+      "label": "Power: short press",
+      "class": "single",
+      "default": "screen-toggle",
+      "options": [
+        "screen-toggle",
+        "screen-on",
+        "screen-off",
+        "disabled",
+        "lock"
+      ],
+      "help": "A32 behaviour: dispatched immediately on release, no deferral."
+    },
+    {
+      "key": "power_long",
+      "label": "Power: long press",
+      "class": "long",
+      "default": "power-menu",
+      "options": [
+        "power-menu",
+        "screenshot",
+        "settings",
+        "disabled"
+      ],
+      "help": "Opens the Nuxel power menu (lock/screenshot/restart/power-off/recovery entries)."
+    },
+    {
+      "key": "power_double",
+      "label": "Power: double press",
+      "class": "double",
+      "default": "camera",
+      "options": [
+        "camera",
+        "flashlight",
+        "settings",
+        "disabled"
+      ],
+      "help": "Deferred by the double-press gap so a single press is not mistaken for a double."
+    },
+    {
+      "key": "volume_up_long",
+      "label": "Volume up: hold",
+      "class": "long",
+      "default": "notifications-panel",
+      "options": [
+        "notifications-panel",
+        "volume-up-autorepeat",
+        "disabled"
+      ],
+      "help": "Default opens the notifications panel. Choosing *-autorepeat restores the exact A32 key-repeat cadence (400 ms then every 250 ms)."
+    },
+    {
+      "key": "volume_down_long",
+      "label": "Volume down: hold",
+      "class": "long",
+      "default": "all-apps",
+      "options": [
+        "all-apps",
+        "volume-down-autorepeat",
+        "disabled"
+      ],
+      "help": "Default opens the all-apps view."
+    },
+    {
+      "key": "bixby_short",
+      "label": "Bixby: press",
+      "class": "single",
+      "default": "open-terminal",
+      "options": [
+        "open-terminal",
+        "camera",
+        "settings",
+        "disabled"
+      ],
+      "help": "Deferred by the 400 ms double-press gap to disambiguate press vs double press."
+    },
+    {
+      "key": "bixby_double",
+      "label": "Bixby: double press",
+      "class": "double",
+      "default": "flashlight",
+      "options": [
+        "flashlight",
+        "open-terminal",
+        "camera",
+        "disabled"
+      ],
+      "help": "Dispatched as a REQUEST to the camera/flashlight arbitration (briq-08c); it never claims the LED lit."
+    },
+    {
+      "key": "bixby_early_hold",
+      "label": "Bixby: hold during startup",
+      "class": "early",
+      "default": "verbose-boot-note",
+      "options": [
+        "verbose-boot-note",
+        "disabled"
+      ],
+      "needs": "early boot stage (initramfs/BOOT key capture) - BOOT_UPDATE_REQUIRED",
+      "help": "One-time verbose boot for that boot only; never persisted. Honoured only when the early boot stage captures the key - otherwise it is reported BOOT_UPDATE_REQUIRED (briq-02b owns the consumer)."
+    },
+    {
+      "key": "chord_power_volume_up",
+      "label": "Power + Volume up (hold)",
+      "class": "chord",
+      "default": "sound-mode-cycle",
+      "options": [
+        "sound-mode-cycle",
+        "disabled"
+      ],
+      "needs": "the vibrator path for audible-silent modes (briq-08b) and the audio path (briq-03c)",
+      "help": "Normal -> vibrate -> silent, recorded in /var/lib/nuxel/audio/sound-mode."
+    },
+    {
+      "key": "chord_power_volume_down",
+      "label": "Power + Volume down (hold)",
+      "class": "chord",
+      "default": "screenshot",
+      "options": [
+        "screenshot",
+        "disabled"
+      ],
+      "help": "Never intercepts Samsung's own hardware reset combo (no EVIOCGRAB is taken); the FSM's own classes are cancelled for the rest of the hold."
+    },
+    {
+      "key": "volume_repeat_enabled",
+      "label": "Hold volume to repeat",
+      "class": "setting",
+      "default": "false",
+      "options": [
+        "true",
+        "false"
+      ],
+      "help": "Off by default: a hold opens a panel instead. Turning it on restores continuous volume ramping for owners who want the A32 feel."
+    }
+  ],
+  "read_only_rows": [
+    {
+      "id": "windows",
+      "source": "configs/nuxel/input/button-fsm.json",
+      "shows": [
+        "power.debounce_ms",
+        "power.long_min_ms",
+        "power.double_gap_ms",
+        "bixby.long_min_ms",
+        "volume.long_min_ms",
+        "chord.hold_min_ms",
+        "early_boot.window_ms"
+      ]
+    },
+    {
+      "id": "selected_key_device",
+      "source": "nuxel-button-manager --probe",
+      "shows": [
+        "the capability-resolved keypad and touchscreen nodes (never a fixed /dev/input/eventN)"
+      ]
+    },
+    {
+      "id": "last_action",
+      "source": "/var/log/nuxel/buttons.log",
+      "shows": [
+        "the last FSM action, its source and the refusal reason for a gated entry"
+      ]
+    }
+  ],
+  "honesty": [
+    "A saved mapping is a stored preference: it is not proof that the keys work on the handset.",
+    "Physical press behaviour is NEEDS_OWNER_TEST - the offline tests replay recorded traces only.",
+    "Recovery / Download Mode entries and the reboot class are REFUSED by policy; the page shows the refusal reason instead of a toggle it cannot honour."
+  ],
+  "conflict_rule": "bg-03 owns configs/nuxel/buttons/**, configs/nuxel/input/** and tools/s10plus/a33/nuxel-button-manager.c + nuxel-button-fsm.h; briq-06d owns pwa/nuxel-apps/settings/**."
+}

@@ -125,6 +125,119 @@
       "at": "2026-10-16T16:24:41+02:00",
       "by": "construqtor/bg-02-boot-animation-launcher",
       "revision": 2
+    },
+    {
+      "id": "briq-02c-fb-colour-conversion",
+      "title": "Protect and re-verify XRGB8888 -> DECON ABGR8888 conversion",
+      "component": "bg-02-boot-animation-launcher",
+      "component_title": "Priority 2 - Boot Stability, Animation Handoff & UTM Launcher Parity",
+      "priority": 2,
+      "state": "implemented",
+      "dependencies": [
+        "briq-00d-baseline-protection"
+      ],
+      "evidence": [
+        {
+          "kind": "observation",
+          "path": "tools/s10plus/a33/nuxel-wl-fb.c",
+          "command": "test -e tools/s10plus/a33/nuxel-wl-fb.c",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "observation",
+          "path": "tools/s10plus/a33/tests/test-colour-order.py",
+          "command": "test -e tools/s10plus/a33/tests/test-colour-order.py",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "tools/s10plus/a33/tests/test-colour-order.py",
+          "command": "NUXEL_VM=nuxel@192.168.64.3 python3 tools/s10plus/a33/tests/test-colour-order.py",
+          "result": "PASS colour-order golden-bytes test (0 failures), 48 checks; the A33 bridge built on the UTM guest (sha256 2d8718c4d92858bbae02b7e914f0172d295b1c12446eb861e91c355f2ac912fc) reports hw=R@0,G@8,B@16 hw_order_override=1 and every dumped word matches the source-derived conversion",
+          "at": "2026-10-16T16:24:41+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "pwa/nuxel-home/colour-test.html",
+          "command": "python3 tools/s10plus/a33/tests/test-colour-order.py",
+          "result": "the owner-visible test page ships: full-screen red default, red|green|blue thirds bar, self-contained, reports COLOURTEST mode=... to the host diag channel, so the on-glass check has a deterministic procedure",
+          "at": "2026-10-16T16:24:41+02:00"
+        },
+        {
+          "kind": "doc",
+          "path": "docs/beta-finalization/boot/COLOUR-CONVERSION.md",
+          "command": "cat docs/beta-finalization/boot/COLOUR-CONVERSION.md",
+          "result": "driver evidence, the LUT contract, the golden-byte table, the owner procedure and the rollback path documented",
+          "at": "2026-10-16T16:24:41+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "tools/s10plus/a33/tests/test-colour-order.py",
+          "command": "python3 tools/s10plus/a33/tests/test-colour-order.py",
+          "result": "PASS colour-order golden-bytes test (0 failures), 42 checks: the source LUT evaluated as arithmetic + an independent reference over 74 words (10 primaries + a 64-word LCG sequence) + the owner page. Raw vectors re-emitted: 0x00ff0000->ff,00,00,ff; 0x0000ff00->00,ff,00,ff; 0x000000ff->00,00,ff,ff; 0x00ffffff->ff,ff,ff,ff; 0x00000000->00,00,00,ff (opaque); 0x00123456->12,34,56,ff; 0x00fedcba->fe,dc,ba,ff",
+          "at": "2026-10-16T21:10:00+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "tools/s10plus/a33/nuxel-wl-fb.c",
+          "command": "sha256sum tools/s10plus/a33/nuxel-wl-fb.c tools/s10plus/a32/nuxel-wl-fb.c",
+          "result": "a33=052bfdbf673ef658c93b8c07925f2c9249af3c755a011ccbe90011c616f7b768 (byte-identical to revision 2, EXPECTED: conversion verified, not re-implemented); a32=6501c6d5d74128f9004088663ca78e46356b7131756d325165822a76b56c51d7 which is exactly the INV-2 hard pin and still MATCHES under bash tools/beta/regression-guard.sh",
+          "at": "2026-10-16T21:10:00+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "tools/s10plus/a33/tests/test-colour-order.py",
+          "command": "NUXEL_VM=nuxel@192.168.64.3 python3 tools/s10plus/a33/tests/test-colour-order.py",
+          "result": "SKIPPED (not a pass): the UTM Fedora 43 guest was unreachable this revision (ssh ConnectTimeout against 192.168.64.3:22), so the compiled-artefact layer could not run and prints its note. The source LUT + independent-reference layers (42 checks) still execute. The binary layer stays bg-11/live-deploy territory",
+          "at": "2026-10-16T21:10:00+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "pwa/nuxel-home/assets/nuxel-background.png",
+          "command": "sha256sum assets/nuxel-background.png pwa/nuxel-home/assets/nuxel-background.png assets/nuxel-boot-animation.mp4 pwa/nuxel-home/assets/nuxel-boot-animation.mp4",
+          "result": "wallpaper both 6e337ef2d506a16778fd3c79159f0cf053eb07ace40cf43387a33486da76cb29 and boot animation both 280e094fb3efe54eaf15f0d964bf8ad834eeebde2e34901e1bf1e3520b95184c: the canonical asset and the launcher copy are byte-identical, and both match the hard INV-11 pins. No decode/scale/alpha change was made, so the wallpaper path through the conversion is unchanged by construction",
+          "at": "2026-10-16T21:10:00+02:00"
+        },
+        {
+          "kind": "doc",
+          "path": "docs/beta-finalization/boot/COLOUR-CONVERSION.md",
+          "command": "cat docs/beta-finalization/boot/COLOUR-CONVERSION.md",
+          "result": "revision-3 re-verification section added with the byte-identical source hash, the INV-2 MATCH, the re-emitted raw vectors, the wallpaper/animation asset hashes and the honest SKIP of the binary layer; the document already carried the raw test-vector table and the owner procedure",
+          "at": "2026-10-16T21:10:00+02:00"
+        }
+      ],
+      "intended_changes": [
+        "tools/s10plus/a33/nuxel-wl-fb.c",
+        "tools/s10plus/a33/tests/test-colour-order.py",
+        "docs/beta-finalization/boot/COLOUR-CONVERSION.md"
+      ],
+      "tests": [
+        "(tests are recorded by the owning briQ when it reports)",
+        "python3 tools/s10plus/a33/tests/test-colour-order.py -> PASS, 42 checks (source LUT evaluated as arithmetic + independent reference over 74 words + the owner page)",
+        "NUXEL_VM=nuxel@192.168.64.3 python3 tools/s10plus/a33/tests/test-colour-order.py -> PASS, 48 checks (compiled aarch64 artefact compared word for word)",
+        "bash tools/beta/regression-guard.sh -> INV-2 (A32 colour conversion) hard assertion green; build/out/s10plus/a32/nuxel-wl-fb --colour-selftest passes on this host",
+        "python3 tools/s10plus/a33/tests/test-colour-order.py -> PASS, 42 checks / 0 failures (source LUT evaluated as arithmetic + an independent reference over 74 words + the owner colour-test page)",
+        "NUXEL_VM=nuxel@192.168.64.3 python3 tools/s10plus/a33/tests/test-colour-order.py -> SKIPPED this revision (no aarch64 channel reachable); a skip is never a pass",
+        "sha256sum tools/s10plus/a33/nuxel-wl-fb.c -> 052bfdbf... unchanged; sha256sum tools/s10plus/a32/nuxel-wl-fb.c -> 6501c6d5... == the INV-2 hard pin (MATCH under bash tools/beta/regression-guard.sh)",
+        "sha256sum assets/nuxel-background.png pwa/nuxel-home/assets/nuxel-background.png -> both 6e337ef2... (INV-11 hard pin); boot animation both 280e094f... (INV-11 hard pin)"
+      ],
+      "risk": "high",
+      "rollback": "git revert the commit(s) touching this task's expected files; the change is repository-only and alters no device state",
+      "verdict": "OFFLINE_TESTED",
+      "offline_ceiling": "NEEDS_OWNER_TEST",
+      "owner_action": "Show pwa/nuxel-home/colour-test.html on the handset (procedure in docs/beta-finalization/manual-proof/03-display-boot.md step 4) and confirm the full screen is RED and the bottom bar is red|green|blue in that order",
+      "expected_files": [
+        "tools/s10plus/a33/nuxel-wl-fb.c",
+        "tools/s10plus/a33/tests/test-colour-order.py",
+        "docs/beta-finalization/boot/COLOUR-CONVERSION.md"
+      ],
+      "note": "Revision 3 (bg-02 verification pass). Expected outcome for a protected asset: the conversion was RE-VERIFIED, not re-implemented, and the primary evidence is byte-identity plus the still-matching A32 hard pin. tools/s10plus/a33/nuxel-wl-fb.c is unchanged at 052bfdbf673ef658c93b8c07925f2c9249af3c755a011ccbe90011c616f7b768, the A32 source equals the INV-2 pin 6501c6d5d74128f9004088663ca78e46356b7131756d325165822a76b56c51d7, the golden-bytes test re-ran at 42 checks / 0 failures with the raw R/G/B/white/black/mixed vectors re-emitted, and the wallpaper (6e337ef2...) plus boot animation (280e094f...) assets are byte-identical to the hard INV-11 pins, so the wallpaper path through the conversion cannot have changed. The compiled-artefact layer was SKIPPED because the UTM Fedora 43 guest was unreachable this revision (ssh ConnectTimeout) - recorded as a skip, never as a pass. No work-queue revision names a change to the conversion semantics, and none was made. The colour on the glass stays NEEDS_OWNER_TEST.",
+      "source": "plan.json",
+      "at": "2026-10-16T20:57:44+02:00",
+      "by": "construqtor/bg-02-boot-animation-launcher",
+      "revision": 3
     }
   ]
 }

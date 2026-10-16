@@ -25,6 +25,10 @@
 #   nuxel-wifi-diag.sh connect <SSID>    # prompts for the PSK; never stored here
 #   nuxel-wifi-diag.sh disconnect
 #   nuxel-wifi-diag.sh regdom [CC]       # read or set the 802.11 regulatory domain
+#   nuxel-wifi-diag.sh mark              # record the pre-reboot association
+#   nuxel-wifi-diag.sh compare           # judge reconnection after ONE normal reboot
+#   nuxel-wifi-diag.sh fallback          # no-cellular-fallback audit (policy evidence)
+#   nuxel-wifi-diag.sh settings-spec     # the native Network Settings feature set
 #   nuxel-wifi-diag.sh report [--json]   # status + write the evidence log
 #   nuxel-wifi-diag.sh selftest          # run the bundled offline fixtures
 #   nuxel-wifi-diag.sh help
@@ -39,6 +43,7 @@ set -uo pipefail
 
 SELF="$(basename "$0")"
 SELF_PATH="$(cd "$(dirname "$0")" && pwd)/$(basename "$0")"
+SELF_DIR="$(cd "$(dirname "$0")" && pwd)"
 ROOT="${NUXEL_DIAG_ROOT:-/}"
 ARGS=()
 while [ $# -gt 0 ]; do
@@ -86,10 +91,31 @@ run_tool() {
     if [ -x "$p" ] && [ "$ROOT" != "/" ]; then "$p" "$@"; return $?; fi
   done
   if [ "${NUXEL_DIAG_NO_SYSTEM:-0}" = "1" ]; then return 127; fi
+  # A FAKED root is evidence about THAT root and nothing else. Without this rule
+  # a fixture run on a developer laptop borrows the laptop's wpa_supplicant /
+  # NetworkManager and reports the workstation's state as the device's - which is
+  # exactly how a "no supplicant on this image" fixture once read as "supplicant
+  # present". Host tools are used only when the caller opts in explicitly.
+  if [ "$ROOT" != "/" ] && [ "${NUXEL_DIAG_ALLOW_HOST_TOOLS:-0}" != "1" ]; then return 127; fi
   command -v "$t" >/dev/null 2>&1 || return 127
   "$t" "$@"
 }
 have_tool() { run_tool "$1" --version >/dev/null 2>&1 || run_tool "$1" -v >/dev/null 2>&1; }
+
+# tool_path NAME -> prints the path of a tool that may legitimately be used for
+# this root (fake-root tools first, the host only for a real root), or nothing.
+# Every path this tool REPORTS must come from here, so the report and the
+# execution path can never disagree about which supplicant was found.
+tool_path() {
+  local t="$1" p
+  for p in "$ROOT/usr/bin/$t" "$ROOT/bin/$t" "$ROOT/usr/sbin/$t" "$ROOT/sbin/$t"; do
+    if [ "$ROOT" != "/" ] && [ -x "$p" ]; then printf '%s' "$p"; return 0; fi
+  done
+  if [ "${NUXEL_DIAG_NO_SYSTEM:-0}" = "1" ]; then return 1; fi
+  if [ "$ROOT" != "/" ] && [ "${NUXEL_DIAG_ALLOW_HOST_TOOLS:-0}" != "1" ]; then return 1; fi
+  command -v "$t" 2>/dev/null || return 1
+}
+supplicant_path() { tool_path wpa_supplicant; }
 
 json_escape() { printf '%s' "$1" | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g' | tr -d '\r'; }
 
@@ -175,14 +201,13 @@ collect_dmesg() {
 
 collect_supplicant() {
   say "supplicant:"
-  local wpa; wpa="$(command -v wpa_supplicant 2>/dev/null || true)"
-  if [ "$ROOT" != "/" ] && [ -x "$ROOT/usr/sbin/wpa_supplicant" ]; then wpa="$ROOT/usr/sbin/wpa_supplicant"; fi
+  local wpa; wpa="$(supplicant_path || true)"
   if [ -n "$wpa" ]; then
     say "  wpa_supplicant: $wpa ($("$wpa" -v 2>/dev/null | head -1))"
   else
     say "  wpa_supplicant: ABSENT (no Wi-Fi supplicant on this image — Wi-Fi cannot associate)"
   fi
-  local iwd; iwd="$(command -v iwd 2>/dev/null || true)"
+  local iwd; iwd="$(tool_path iwd || true)"
   say "  iwd: ${iwd:-absent}"
   say "  sockets:"
   local s
@@ -248,6 +273,200 @@ association_state() {
   else
     printf 'disconnected %s NetworkManager=%s' "${ip:-none}" "${nmstate:-n/a}"
   fi
+}
+
+
+# ---------------------------------------------------------------------------
+# mark / compare — the reboot-reconnection evidence pair
+#
+# Wi-Fi is not "working" until it comes back BY ITSELF after an ordinary reboot
+# (briq-03a acceptance). This pair is the evidence: mark records the association
+# that exists now, compare re-reads it after exactly one normal reboot and
+# refuses to judge at all when the boot id did not change (a mark/compare pair
+# with no reboot in between proves nothing and is reported as invalid).
+# ---------------------------------------------------------------------------
+WIFI_STATE_DIR_DEFAULT="/var/lib/nuxel/wifi"
+state_dir() { printf '%s' "$(abs "${NUXEL_WIFI_STATE_DIR:-$WIFI_STATE_DIR_DEFAULT}")"; }
+# The two record paths can be overridden so an operator (or the offline tests)
+# can judge a pair of EXISTING records without touching the live state:
+#   nuxelctl wifi compare <before.json> <after.json>
+before_path() { printf '%s' "${NUXEL_WIFI_BEFORE:-$(state_dir)/last-associated.json}"; }
+after_path()  { printf '%s' "${NUXEL_WIFI_AFTER:-$(state_dir)/after-reboot.json}"; }
+
+boot_id_now() {
+  local b; b="$(cat "$(abs /proc/sys/kernel/random/boot_id)" 2>/dev/null)"
+  [ -z "$b" ] && b="$(run_tool cat /proc/sys/kernel/random/boot_id 2>/dev/null)"
+  printf '%s' "$b"
+}
+
+# Prints: ssid<TAB>bssid<TAB>ipv4<TAB>gw   (fields may be empty; never invented)
+wifi_identity() {
+  local ifn="$1" ssid="" bssid="" ip="" gw="" nm="" link=""
+  [ -z "$ifn" ] && { printf '\t\t\t'; return 0; }
+  ip="$(run_tool ip -4 -o addr show dev "$ifn" 2>/dev/null | awk '{print $4}' | head -1)"
+  gw="$(run_tool ip -4 route show default dev "$ifn" 2>/dev/null | awk '{print $3}' | head -1)"
+  nm="$(run_tool nmcli -t -f active,ssid,bssid,signal device wifi list 2>/dev/null | awk -F: '$1=="yes"{print; exit}')"
+  if [ -n "$nm" ]; then
+    ssid="$(printf '%s' "$nm" | cut -d: -f2 | sed 's/\\:/:/g')"
+    bssid="$(printf '%s' "$nm" | cut -d: -f3-5 | sed 's/\\:/:/g')"
+  fi
+  if [ -z "$ssid" ]; then
+    link="$(run_tool iw dev "$ifn" link 2>/dev/null)"
+    if [ -n "$link" ]; then
+      ssid="$(printf '%s\n' "$link" | sed -n 's/^[[:space:]]*SSID: //p' | head -1)"
+      bssid="$(printf '%s\n' "$link" | sed -n 's/^[[:space:]]*Connected to \([0-9a-fA-F:]*\).*/\1/p' | head -1)"
+    fi
+  fi
+  printf '%s\t%s\t%s\t%s' "$ssid" "$bssid" "$ip" "$gw"
+}
+
+write_assoc_json() {   # write_assoc_json <path> <ifname> <associated|disconnected> <ssid> <bssid> <ip> <gw>
+  python3 - "$1" "$2" "$3" "$4" "$5" "$6" "$7" "$(boot_id_now)" <<'PY'
+import json,os,sys,time
+path,ifn,state,ssid,bssid,ip,gw,bid = sys.argv[1:9]
+os.makedirs(os.path.dirname(path), exist_ok=True)
+doc = {"schema_version": 1, "device": "beyond2lte", "ifname": ifn, "state": state,
+       "ssid": ssid or None, "bssid": bssid or None, "ipv4": ip or None, "gateway": gw or None,
+       "boot_id": bid or None, "recorded_at": time.strftime("%FT%TZ", time.gmtime())}
+with open(path, "w", encoding="utf-8") as f:
+    json.dump(doc, f, indent=2)
+print("assoc record written: %s state=%s ssid=%s ip=%s" % (path, state, ssid or "-", ip or "-"))
+PY
+}
+
+cmd_mark() {
+  local ifn; ifn="$(pick_ifname || true)"
+  local dir; dir="$(state_dir)"; mkdir -p "$dir" 2>/dev/null || { say "cannot create $dir"; return 1; }
+  local assoc; assoc="$(association_state "${ifn:-}")"
+  local id ssid bssid ip gw
+  id="$(wifi_identity "${ifn:-}")"
+  IFS=$'\t' read -r ssid bssid ip gw <<<"$id"
+  write_assoc_json "$(before_path)" "${ifn:-}" "${assoc%% *}" "$ssid" "$bssid" "$ip" "$gw"
+  say "ifname: ${ifn:-<none>}  association: $assoc"
+  say "next: ONE ordinary userspace reboot (never a bootloader mode), then run: nuxelctl wifi compare"
+  return 0
+}
+
+cmd_compare_quiet() {   # prints PASS/FAIL/UNKNOWN/REFUSED, always rc=0
+  local b a
+  b="$(before_path)"; a="$(after_path)"
+  [ -r "$b" ] && [ -r "$a" ] || { printf 'NO_MARKS'; return 0; }
+  python3 - "$b" "$a" <<'PY'
+import json,sys
+b=json.load(open(sys.argv[1])); a=json.load(open(sys.argv[2]))
+if b.get("boot_id") and a.get("boot_id") and b["boot_id"]==a["boot_id"]:
+    print("REFUSED same boot_id — no reboot happened between mark and compare; the pair is invalid")
+    sys.exit(0)
+if b.get("state")!="associated" or not b.get("ssid"):
+    print("INVALID the pre-reboot mark was taken while not associated (ssid=%s) — re-mark while connected" % (b.get("ssid") or "-"))
+    sys.exit(0)
+if a.get("state")!="associated" or not a.get("ssid"):
+    print("FAIL after boot_id %s the radio is %s (was associated to %s before the reboot)"
+          % ((a.get("boot_id") or "?")[:8], a.get("state") or "unknown", b.get("ssid")))
+    sys.exit(0)
+if a["ssid"]!=b["ssid"]:
+    print("FAIL reconnected to a DIFFERENT network: before=%s after=%s" % (b["ssid"], a["ssid"]))
+    sys.exit(0)
+if not a.get("ipv4"):
+    print("FAIL re-associated to %s but no IPv4 address was obtained" % a["ssid"])
+    sys.exit(0)
+if b.get("bssid") and a.get("bssid") and b["bssid"]!=a["bssid"]:
+    print("PASS reconnected to %s, ip=%s (different BSSID %s -> %s: a roam, not a failure)"
+          % (a["ssid"], a["ipv4"], b["bssid"], a["bssid"]))
+    sys.exit(0)
+print("PASS reconnected to %s after the reboot, ip=%s gw=%s" % (a["ssid"], a["ipv4"], a.get("gateway") or "-"))
+PY
+}
+
+cmd_compare() {
+  local pair_before="${1:-}" pair_after="${2:-}"
+  if [ -n "$pair_before" ] && [ -n "$pair_after" ]; then
+    # judge two EXISTING records: no live read, no record written
+    NUXEL_WIFI_BEFORE="$pair_before" NUXEL_WIFI_AFTER="$pair_after" cmd_compare_quiet
+    return $?
+  fi
+  local b; b="$(before_path)"
+  if [ ! -r "$b" ]; then
+    say "no pre-reboot mark at $b: run 'nuxelctl wifi mark' BEFORE the reboot"; return 2
+  fi
+  local pdfn; pdfn="$(pick_ifname || true)"
+  local assoc; assoc="$(association_state "${pdfn:-}")"
+  local id ssid bssid ip gw
+  id="$(wifi_identity "${pdfn:-}")"
+  IFS=$'\t' read -r ssid bssid ip gw <<<"$id"
+  write_assoc_json "$(after_path)" "${pdfn:-}" "${assoc%% *}" "$ssid" "$bssid" "$ip" "$gw" >/dev/null
+  local verdict; verdict="$(cmd_compare_quiet)"
+  hdr "reconnection across a normal reboot"
+  say "$verdict"
+  say "record this verdict in docs/beta-finalization/manual-proof/04-wifi.md (area 4)."
+  case "$verdict" in PASS*) return 0 ;; FAIL*) return 1 ;; *) return 2 ;; esac
+}
+
+# ---------------------------------------------------------------------------
+# fallback — the no-cellular-fallback audit
+#
+# The mission requires that Wi-Fi work must not silently be propped up by mobile
+# data. This audit is POLICY EVIDENCE only: it looks for a NetworkManager profile
+# that could bring up a cellular interface automatically. It never claims the
+# modem works — on this device the Shannon LTE modem has no upstream
+# ModemManager plugin support (briq-08i), so a cellular profile appearing at all
+# is a finding for the owner, not a working fallback.
+# ---------------------------------------------------------------------------
+cmd_fallback() {
+  local dir; dir="$(abs /etc/NetworkManager/system-connections)"
+  local n=0 hits="" f t ac
+  hdr "no-cellular-fallback audit"
+  say "profile dir: ${dir#"$ROOT"}"
+  if [ -d "$dir" ]; then
+    for f in "$dir"/*; do
+      [ -f "$f" ] || continue
+      n=$((n+1))
+      t="$(sed -n 's/^type=//p' "$f" 2>/dev/null | head -1)"
+      ac="$(sed -n 's/^autoconnect=//p' "$f" 2>/dev/null | head -1)"
+      [ -n "$t" ] || t="wifi"
+      if [ "$t" = "gsm" ] || [ "$t" = "cdma" ]; then
+        hits="$hits $(basename "$f")[type=$t autoconnect=${ac:-default}]"
+      fi
+    done
+  else
+    say "(no profile directory on this root: user-state profiles are not part of the image)"
+  fi
+  say "profiles_scanned: $n"
+  if [ -n "$hits" ]; then
+    say "CELLULAR_FALLBACK=present — review these profiles with the owner:$hits"
+    say "note: presence is a policy finding, NOT proof that the modem can associate"
+    say "      (Shannon LTE has no upstream ModemManager plugin on this kernel)"
+    return 1
+  fi
+  say "CELLULAR_FALLBACK=absent — no gsm/cdma profile can auto-connect on this root"
+  say "behavioural rule (owner test, area 4): with Wi-Fi associated, disable the AP"
+  say "  and confirm no mobile-data interface takes over the default route:"
+  say "    ip -4 route show default   # must lose the wlan default, gain no wwan/rmnet one"
+  return 0
+}
+
+# ---------------------------------------------------------------------------
+# settings-spec — the native Network Settings feature set (bg-06d append point)
+# ---------------------------------------------------------------------------
+cmd_settings_spec() {
+  local f="${NUXEL_NETWORK_SETTINGS_SPEC:-configs/networkmanager/nuxel-network-settings.spec.json}"
+  local p="$SELF_DIR/../../../$f"
+  hdr "native Network Settings feature set"
+  if [ -r "$p" ]; then
+    say "spec: $f"
+    python3 - "$p" <<'PY'
+import json,sys
+d=json.load(open(sys.argv[1]))
+for sec in d.get("sections", []):
+    print("  %-14s %-10s %s" % (sec.get("id"), sec.get("status", "?"), sec.get("title", "")))
+print("  pages=%d  coordinator=%s" % (len(d.get("sections", [])), d.get("coordinator", "?")))
+PY
+  else
+    say "spec not found at $f (the feature list below is the repository copy)"
+  fi
+  say "owner-facing page: Settings -> Network. Renderer owner: briq-06d"
+  say "read API: nuxelctl wifi status --json | scan | fallback | mark/compare"
+  return 0
 }
 
 # ---------------------------------------------------------------------------
@@ -316,7 +535,7 @@ do_status() {
   [ -n "${IFNAME:-}" ] && wireless_netdev=1
   [ "$wireless_netdev" = "1" ] && modules_ok=1
   local wpa_ok=0
-  { command -v wpa_supplicant >/dev/null 2>&1 || [ -x "$ROOT/usr/sbin/wpa_supplicant" ]; } && wpa_ok=1
+  supplicant_path >/dev/null 2>&1 && wpa_ok=1
   : "${FW_FOUND:=0}"; [ -z "${FW_FOUND:-}" ] && FW_FOUND=0
 
   hdr "verdict"
@@ -432,6 +651,10 @@ case "$CMD" in
   connect)     cmd_connect "${1:-}" ;;
   disconnect)  cmd_disconnect ;;
   regdom)      cmd_regdom "${1:-}" ;;
+  mark)        cmd_mark ;;
+  compare)     cmd_compare "${1:-}" "${2:-}" ;;
+  fallback)    cmd_fallback ;;
+  settings-spec) cmd_settings_spec ;;
   report)      cmd_report "${1:-}" ;;
   selftest)    cmd_selftest ;;
   help|-h|--help) sed -n '2,40p' "$0" | sed 's/^# \{0,1\}//' ;;

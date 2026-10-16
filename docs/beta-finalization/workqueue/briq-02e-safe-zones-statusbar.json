@@ -125,6 +125,119 @@
       "at": "2026-10-16T16:24:51+02:00",
       "by": "construqtor/bg-02-boot-animation-launcher",
       "revision": 2
+    },
+    {
+      "id": "briq-02e-safe-zones-statusbar",
+      "title": "Ten-zone status-bar safe areas - protected-asset verification & editor polish",
+      "component": "bg-02-boot-animation-launcher",
+      "component_title": "Priority 2 - Boot Stability, Animation Handoff & UTM Launcher Parity",
+      "priority": 2,
+      "state": "implemented",
+      "dependencies": [
+        "briq-00d-baseline-protection"
+      ],
+      "evidence": [
+        {
+          "kind": "observation",
+          "path": "pwa/nuxel-home/js/safe-zones.js",
+          "command": "test -e pwa/nuxel-home/js/safe-zones.js",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "observation",
+          "path": "tools/s10plus/a32/tests/safe-zones-test.js",
+          "command": "test -e tools/s10plus/a32/tests/safe-zones-test.js",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "tools/s10plus/a32/tests/safe-zones-test.js",
+          "command": "node tools/s10plus/a32/tests/safe-zones-test.js",
+          "result": "44 PASS / 0 FAIL; blocking zones 9,10 moves the right cluster LEFT by 84 px into the free interval [0,276] and it stays on the panel (the A32 one-way push moved it off the panel), zones 1,2 move the left cluster +84 px, zones 5,6 the centre -114 px, and applyLayout is idempotent",
+          "at": "2026-10-16T16:24:50+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "pwa/nuxel-home/js/safe-zones.js",
+          "command": "node tools/s10plus/a32/tests/safe-zones-test.js",
+          "result": "ZONES=10, s10plus portrait [9,10], padding_dp 6, storage /etc/nuxel/display/statusbar-safezones.json via NuxelHost.configGet/configSet with localStorage fallback, device profile from hardware identity; blocked zones are EXCLUDED INTERVALS and the pure planner (planCluster/freeIntervals/overlaps) is exported",
+          "at": "2026-10-16T16:24:50+02:00"
+        },
+        {
+          "kind": "doc",
+          "path": "docs/beta-finalization/launcher/SAFE-ZONES.md",
+          "command": "cat docs/beta-finalization/launcher/SAFE-ZONES.md",
+          "result": "the ten-zone contract, the excluded-interval rule, the three A33 hardenings, the evidence channel (SAFEZONES diag line + data-safezone-* attributes), the offline re-verification and the rollback path documented",
+          "at": "2026-10-16T16:24:50+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "tools/s10plus/a32/tests/safe-zones-test.js",
+          "command": "node tools/s10plus/a32/tests/safe-zones-test.js",
+          "result": "PASS, 44 checks / 0 failures: ZONES=10, the S10+ portrait preset [9,10], padding_dp 6, the per-zone padded intervals tiling the bar, cluster exclusion for left/centre/right with the cluster landing inside a free interval and staying on the panel, idempotent applyLayout, the shared-planner contract and the editor-drift gate",
+          "at": "2026-10-16T21:14:00+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "pwa/nuxel-home/js/safe-zones.js",
+          "command": "node tools/s10plus/a32/tests/safe-zones-test.js (engine legs)",
+          "result": "the engine is byte-UNCHANGED this revision (sha256 0ef0c91a45b599881f4eea26fca2c08ffdde806ec52dd48472c042ecb5806a0f): blocked zones are EXCLUDED intervals, the pure planner (planCluster/freeIntervals/overlaps) is exported and shared with the Settings editor, storage is /etc/nuxel/display/statusbar-safezones.json through NuxelHost.configGet/configSet with an offline localStorage fallback, and the device profile comes from the real hardware identity",
+          "at": "2026-10-16T21:14:00+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "configs/nuxel/statusbar-safezones.json",
+          "command": "sha256sum configs/nuxel/statusbar-safezones.json",
+          "result": "5dec2d293480f30ea4c6c1cf2b690d7efebd10247a4575a52c9c264c0cd9d9c6 - re-verified, not rewritten: the protected A32 preset file (zones 10, s10plus portrait [9,10], padding_dp 6, the shipped profile set) is unchanged this revision",
+          "at": "2026-10-16T21:14:00+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "docs/beta-finalization/launcher/SAFE-ZONES.md",
+          "command": "cat docs/beta-finalization/launcher/SAFE-ZONES.md",
+          "result": "added the per-zone geometry table for the real 1440x3040 panel in BOTH orientations (portrait W=1440 and landscape W=3040, raw and clamped intervals, pad=12) with the merged 9+10 blocked interval 1140..1440 leaving the single free interval 0..1140, the landscape presets being intentionally empty on S10+, and the 44-assertion re-verification recorded",
+          "at": "2026-10-16T21:14:00+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "tools/beta/regression-guard.sh",
+          "command": "bash tools/beta/regression-guard.sh",
+          "result": "INV-3-ten-zone-safe-areas: the two HARD assertions are green (the S10+ portrait preset is [9,10]; the device profile keys on the real hardware identity) and the suite assertion exits 0 (44 checks); the file-drift signals named for safe-zones.js / safe-zones-test.js are the documented WARN path for a bg-02-owned shared file, not a regression",
+          "at": "2026-10-16T21:14:00+02:00"
+        }
+      ],
+      "intended_changes": [
+        "pwa/nuxel-home/js/safe-zones.js",
+        "tools/s10plus/a32/tests/safe-zones-test.js",
+        "docs/beta-finalization/launcher/SAFE-ZONES.md"
+      ],
+      "tests": [
+        "(tests are recorded by the owning briQ when it reports)",
+        "node tools/s10plus/a32/tests/safe-zones-test.js -> all safe-zone tests passed, 44 checks (geometry per zone, cluster exclusion for left/centre/right, idempotency, shared-planner contract, editor drift gate)",
+        "bash tools/s10plus/a33/tests/run-boot-tests.sh -> ALL PASS; bash tools/s10plus/a32/tests/run-tests.sh -> 0 failing suites",
+        "bash tools/beta/regression-guard.sh -> INV-3 (ten-zone safe areas, S10+ preset = zones 9,10) hard assertion green",
+        "node tools/s10plus/a32/tests/safe-zones-test.js -> passed, 44 checks / 0 failures (ten-zone geometry, cluster exclusion for left/centre/right, idempotency, shared-planner contract, editor drift gate)",
+        "bash tools/s10plus/a33/tests/run-boot-tests.sh -> ALL PASS (includes this suite); bash tools/s10plus/a32/tests/run-tests.sh -> the safe-zone and launcher legs pass (the only failing suite is the A32 colour selftest, which needs the gitignored aarch64 artefact)",
+        "bash tools/beta/regression-guard.sh -> INV-3 hard assertions green (S10+ preset = zones [9,10]; device profile from the hardware identity); file drift is the documented WARN path for a bg-02-owned file",
+        "sha256sum configs/nuxel/statusbar-safezones.json -> 5dec2d293480f30ea4c6c1cf2b690d7efebd10247a4575a52c9c264c0cd9d9c6 (unchanged: the protected A32 preset is re-verified, not rewritten)"
+      ],
+      "risk": "medium",
+      "rollback": "git revert the commit(s) touching this task's expected files; the change is repository-only and alters no device state",
+      "verdict": "OFFLINE_TESTED",
+      "offline_ceiling": "VERIFIED_IN_VM_ONLY",
+      "owner_action": "On the handset in portrait confirm the clock/battery/signal/Wi-Fi items are all clear of the hole-punch cutout, then open Settings -> Display -> Camera & Cutout Areas and confirm the preview strip moves exactly like the real status bar; repeat in landscape (docs/beta-finalization/manual-proof/02-launcher.md steps 4-5)",
+      "expected_files": [
+        "pwa/nuxel-home/js/safe-zones.js",
+        "tools/s10plus/a32/tests/safe-zones-test.js",
+        "docs/beta-finalization/launcher/SAFE-ZONES.md"
+      ],
+      "note": "Revision 3 (bg-02 verification pass) - protected-geometry re-verification, no change to the ten-zone contract and no rewrite of the A32 preset: ZONES=10, S10+ portrait blocks [9,10] (the dual-punch cutout), padding_dp 6, and the same storage name/document, all re-checked by the suite (44 checks, 0 failures) and by the INV-3 hard assertions. The A32 preset file configs/nuxel/statusbar-safezones.json is byte-identical (5dec2d29...) because the correct action for a protected asset is to verify its hash, not to edit it. What is added here is evidence and owner-facing completeness: (a) the SAFE-ZONES document now carries the explicit per-zone geometry table for the real 1440x3040 panel in portrait (W=1440) AND landscape (W=3040) with raw and clamped intervals, showing numerically that padded zones 9 and 10 merge into one blocked interval 1140..1440 and leave the right cluster the single free interval 0..1140 - i.e. blocked regions EXCLUDE status items rather than being painted over them; (b) the landscape presets are empty on S10+ with the reason stated (the punch-hole is on the short edge, so nothing sits above the bar when it rotates), and the centre/left/right/none presets plus the live-preview/persistence/overflow behaviour of the Settings editor are asserted by the same suite; (c) overflow is reported (dropped: no_free_interval) rather than drawn inside the cutout, and the profile is keyed on the real hardware identity so a Pixel-style centred camera is a forward-compatible profile rather than an assumption. On-glass status-bar evidence stays NEEDS_OWNER_TEST.",
+      "source": "plan.json",
+      "at": "2026-10-16T20:58:18+02:00",
+      "by": "construqtor/bg-02-boot-animation-launcher",
+      "revision": 3
     }
   ]
 }

@@ -132,6 +132,21 @@ if vcfg:
     check("verbose-boot: the Bixby hold override is reported as needing a BOOT update, not faked",
           ov.get("status") == "BOOT_UPDATE_REQUIRED" and bool(ov.get("reason")),
           ov.get("status"))
+    # --- the other two boot-diagnostics controls (bg-02 verification pass) ---
+    check("the boot-diagnostics document carries animation_mode=standard by default",
+          vcfg.get("animation_mode") == "standard", vcfg.get("animation_mode"))
+    check("the boot-diagnostics document carries verbosity_level=1 by default",
+          vcfg.get("verbosity_level") == 1, vcfg.get("verbosity_level"))
+    check("the document states the ONE precedence rule",
+          (vcfg.get("precedence") or {}).get("rule") == "off > short > verbose_boot > standard",
+          json.dumps(vcfg.get("precedence")))
+    check("the document maps all four verbosity levels",
+          set((vcfg.get("verbosity_levels") or {}).keys()) == {"0", "1", "2", "3"},
+          sorted((vcfg.get("verbosity_levels") or {}).keys()))
+    check("the override records a userspace fallback that needs no BOOT write",
+          "nuxelctl verbose-boot on" in str(ov.get("userspace_fallback", "")), ov.get("userspace_fallback"))
+    check("the document explains that adding keys does not bump schema_version",
+          "schema_version" in str(vcfg.get("_schema_note", "")))
 if vconsumer:
     check("verbose-boot consumer reads /etc/nuxel/boot/verbose-boot.json",
           "/etc/nuxel/boot/verbose-boot.json" in vconsumer)
@@ -146,6 +161,21 @@ if vconsumer:
           "/var/log/nuxel/boot-stage.log" in vconsumer)
     check("verbose-boot consumer refuses to overwrite an unreadable document",
           "refusing to overwrite" in vconsumer.lower())
+    check("verbose-boot consumer validates the animation mode instead of trusting it",
+          "parse_animation_mode" in vconsumer and "AnimationMode" not in vconsumer)
+    check("verbose-boot consumer clamps/reports the verbosity level",
+          "parse_verbosity" in vconsumer and "clamped" in vconsumer)
+    check("verbose-boot consumer implements the documented precedence",
+          "anim_mode == \"off\"" in vconsumer and "anim_mode == \"short\"" in vconsumer
+          and "verbose_boot_requested" in vconsumer)
+    check("verbose-boot consumer publishes the animation policy and verbosity",
+          "EFFECTIVE_ANIMATION=" in vconsumer and "VERBOSITY=" in vconsumer)
+    check("verbose-boot consumer emits a NUXEL_BOOT_ANIMATION marker for the live group",
+          "NUXEL_BOOT_ANIMATION" in vconsumer)
+    check("the skip request names WHY the animation was waived",
+          "ANIM_SKIP_REQUESTED reason=%s" in vconsumer)
+    check("the boot-log verbosity never turns the log on by itself",
+          'if d["effective"]:' in vconsumer and 'if d["skip_animation"]:' in vconsumer)
 
 nuxelctl = read("tools/s10plus/a33/nuxelctl")
 check("nuxelctl exists", nuxelctl is not None)
@@ -154,6 +184,16 @@ if nuxelctl:
           "verbose-boot status|on|off" in nuxelctl)
     check("nuxelctl: the one-time override status is exposed",
           "verbose-boot override" in nuxelctl)
+    check("nuxelctl: the animation policy is settable from the console",
+          "_verbose_animation" in nuxelctl and "verbose-boot animation" in nuxelctl)
+    check("nuxelctl: the verbosity level is settable from the console",
+          "_verbose_verbosity" in nuxelctl and "verbose-boot verbosity" in nuxelctl)
+    check("nuxelctl: an out-of-range verbosity level is refused, not silently clamped",
+          "refused, not clamped silently" in nuxelctl)
+    check("nuxelctl: every boot-diagnostics write merges instead of replacing the document",
+          "def _verbose_write(patch)" in nuxelctl and "doc.update(patch)" in nuxelctl)
+    check("nuxelctl: the boot controls share ONE document writer",
+          nuxelctl.count("_verbose_write(") >= 3)
     check("nuxelctl: handoff status|simulate|audit is wired",
           "handoff status|simulate|audit" in nuxelctl)
     check("nuxelctl: it resolves the same config path as the consumer/settings UI",
@@ -261,8 +301,53 @@ mp3 = read(DOCS[5]) or ""
 check("manual proof area 3 covers the handoff, the colour order and verbose boot",
       all(s in mp3 for s in ("ANIM_MIN_CYCLE", "colour", "verbose-boot")) and
       "PASS" in mp3 and "FAIL" in mp3)
+check("manual proof area 3 covers the animation policy and the verbosity level",
+      "animation off" in mp3 and "verbosity" in mp3 and "NUXEL_BOOT_ANIMATION" in mp3)
+check("VERBOSE-BOOT.md documents the three controls and the precedence",
+      "animation_mode" in vb_doc and "verbosity_level" in vb_doc
+      and "off > short > verbose_boot > standard" in vb_doc.replace("&gt;", ">"))
 check("colour test page ships for the owner (on-glass colour check)",
       read("pwa/nuxel-home/colour-test.html") is not None)
+
+# --- 5c. boot diagnostics: one vocabulary across the consumer, the console, the
+#          Settings app and the Quick Settings tile - plus the prohibition sweep
+app_html = read("pwa/nuxel-apps/settings/index.html") or ""
+app_js = read("pwa/nuxel-apps/settings/settings.js") or ""
+qs_js = read("pwa/nuxel-home/js/qs.js") or ""
+store_js = read("pwa/nuxel-home/js/settings-store.js") or ""
+check("the Settings app exposes the standard-animation control",
+      'id="animation-mode"' in app_html and 'value="standard"' in app_html
+      and "Standard (full 192-frame / 24 fps)" in app_html)
+check("the Settings app exposes the verbosity-level control",
+      'id="verbosity-level"' in app_html and 'value="3"' in app_html)
+check("the Settings app writes the whole panel through the same config name",
+      "function saveBoot(" in app_js and "cfgSet(VERBOSE_NAME" in app_js)
+check("the Settings app keeps the documented precedence on screen",
+      "off > short > verbose boot > standard" in app_html.replace("&gt;", ">"))
+check("the Settings app does not fake the animation effect it cannot observe",
+      "effective" in app_js and "reason" in app_js)
+check("the store exports the animation modes and the verbosity range",
+      "ANIMATION_MODES" in store_js and "VERBOSITY_MAX" in store_js)
+check("the store implements the precedence rule in one place",
+      "effectiveAnimation" in store_js and "verbose_boot_requested" in store_js)
+check("the Quick Settings tile surfaces the effective animation policy",
+      "effectiveAnimation" in qs_js and "dataset.animation" in qs_js)
+check("the Quick Settings tile cycles the policy on a long press",
+      "_cycleAnimationMode" in qs_js and "600" in qs_js)
+for rel, blob in (("the consumer", vconsumer or ""), ("nuxelctl", nuxelctl or ""),
+                  ("the store", store_js), ("the Settings app", app_js)):
+    check("%s uses the same three animation modes" % rel,
+          "standard" in blob and "short" in blob and "off" in blob)
+# The mission forbids guessing Samsung magic reboot strings: the boot surface must
+# not carry one, and it must say so rather than silently omitting the topic.
+BOOT_SURFACE = (BRIDGE, "tools/s10plus/a33/nuxel-verbose-boot.py", "tools/s10plus/a33/nuxelctl",
+                "pwa/nuxel-home/js/qs.js", "pwa/nuxel-home/js/settings-store.js",
+                "pwa/nuxel-apps/settings/settings.js")
+MAGIC = re.compile(r"(reboot[-_ ]?download|reboot[-_ ]?recovery|__REBOOT|BCM_?REBOOT|"
+                   r"0x[0-9a-fA-F]{8,}\s*(reboot|magic)|magic[-_ ]?reboot)", re.I)
+for rel in BOOT_SURFACE:
+    t = read(rel) or ""
+    check("no guessed reboot/magic string in %s" % os.path.basename(rel), not MAGIC.search(t))
 
 # --- 6b. every app manifest in the launcher tree is consistent and resolvable
 #         (briq-02d: "keep pwa/nuxel-apps/*/manifest.json consistent")

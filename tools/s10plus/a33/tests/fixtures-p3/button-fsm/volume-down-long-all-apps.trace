@@ -1,0 +1,4 @@
+# volume-down hold -> all-apps (briq-03e)
+0 key volume_down 1
+600 tick
+700 key volume_down 0

@@ -19,10 +19,19 @@ that is already cached under build/pkgmeta/ (or the network when available):
      NEVRA in the manifest is attributable to a specific Fedora 43 artifact and
      a reviewer can re-fetch and re-derive it. Drift in an unpinned repository is
      reported (the repos move), a missing provenance record is a failure.
+  7. DEPENDENCIES, not just existence (briq-04a rev 2): every essential package's
+     rpm requirements resolve against the repository set, the requirement
+     classifier and the rpm RICH (boolean) dependency evaluator behave as
+     specified, and a requirement that only the OTHER repository provides still
+     resolves (the measured `stevia` (updates) -> `libdconf.so.1()(64bit)` (GA)
+     case -- a real defect this suite is the regression test for).
+  8. the manifest is DATA: it validates against the embedded JSON schema, and a
+     tampered manifest is REJECTED rather than silently consumed by the builder.
 
 Usage:  python3 tools/s10plus/a33/tests/test-packages-manifest.py
 """
 
+import importlib.util
 import json
 import os
 import re
@@ -57,6 +66,147 @@ def run_verify(args):
         except (OSError, ValueError):
             report = {"stderr": proc.stderr[-2000:], "stdout": proc.stdout[-2000:]}
     return proc.returncode, report
+
+
+def load_verify_module():
+    """Import verify-packages.py so its pure functions can be unit-tested."""
+    spec = importlib.util.spec_from_file_location("nuxel_verify_packages", VERIFY)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def test_requirement_classifier(vp, check):
+    """The classifier decides what a requirement IS; a wrong answer turns the
+    dependency check into a rubber stamp, so every MEASURED shape is pinned."""
+    measured = [
+        ("rpmlib(RichDependencies)", "rpmlib"),
+        ("config(systemd)", "config"),
+        ("/usr/bin/sh", "file"),
+        ("/etc/pam.d/system-auth", "file"),
+        ("libc.so.6()(64bit)", "capability"),
+        ("ld-linux-aarch64.so.1(GLIBC_2.17)(64bit)", "capability"),
+        ("python3.13dist(something)", "capability"),
+        ("(wpa_supplicant >= 1:1.1 or iwd)", "rich"),
+        ("(util-linux-core or util-linux)", "rich"),
+        ("hicolor-icon-theme", "package"),
+        ("openssl-libs", "package"),
+        ("", "empty"),
+    ]
+    bad = [(name, vp.classify_requirement(name), want) for name, want in measured
+           if vp.classify_requirement(name) != want]
+    check(not bad, "requirement classifier matches every measured rpm shape"
+          + (" -- wrong: %s" % bad if bad else ""))
+    check(vp.req_base_name("systemd >= 258.11") == "systemd",
+          "a version constraint is stripped from the requirement name")
+    check(vp.req_base_name("libc.so.6()(64bit)") == "libc.so.6()(64bit)",
+          "a capability name is NOT truncated at '('")
+
+
+def test_rich_dependency_evaluator(vp, check):
+    """Tri-state evaluation of rpm RICH dependencies. Never a guess."""
+    names = {"wpa_supplicant", "util-linux", "systemd", "redhat-rpm-config", "mesa-dri-drivers"}
+    providers = {"glibc-gconv-extra(aarch-64)": "glibc-gconv-extra-2.42-17.fc43.aarch64",
+                 "mesa-dri-drivers(aarch-64)": "mesa-dri-drivers-25.3.6-3.fc43.aarch64"}
+
+    def resolve(atom, versioned=False):
+        if atom.startswith("/") or atom.startswith("rpmlib("):
+            return None
+        return True if (atom in names or atom in providers) else False
+
+    cases = [
+        ("(wpa_supplicant >= 1:1.1 or iwd)", True, "or: one satisfied atom is enough"),
+        ("(util-linux-core or util-linux)", True, "or: the second atom resolves"),
+        ("(absent-a or absent-b)", False, "or: nothing satisfies it -> resolvable FAIL"),
+        ("(absent if absent-cond else util-linux)", True,
+         "if/else: an unsatisfied condition uses the else branch"),
+        ("(absent if systemd else absent-2)", False,
+         "if/else: a satisfied condition demands the first operand"),
+        ("(absent if absent)", True, "if: an unsatisfied condition is vacuous"),
+        ("(absent if systemd)", False, "if: a satisfied condition demands the target"),
+        ("(/etc/pam.d/system-auth if systemd)", None,
+         "if: a FILE requirement cannot be decided from primary.xml"),
+        ("(systemd and util-linux)", True, "and: every operand resolves"),
+        ("(systemd and absent)", False, "and: one missing operand fails the pair"),
+        ("((a or b) and c)", False, "nested groups evaluate before the outer operator"),
+    ]
+    bad = []
+    for expr, want, why in cases:
+        got = vp.eval_rich(expr, resolve)
+        if got is not want:
+            bad.append((expr, got, want, why))
+    check(not bad, "rich dependency evaluator is tri-state correct"
+          + (" -- wrong: %s" % bad if bad else ""))
+    check(vp.split_rich("wpa_supplicant >= 1:1.1 or iwd") == ["wpa_supplicant >= 1:1.1", "or", "iwd"],
+          "split_rich keeps version constraints in the operand")
+    check(vp.rich_atoms("(glibc-gconv-extra(aarch-64) = 2.42 if redhat-rpm-config)")
+          == ["glibc-gconv-extra(aarch-64)", "redhat-rpm-config"],
+          "rich_atoms yields the atom names (constraints and parentheses stripped)")
+
+
+GA_FIXTURE = """<?xml version="1.0"?>
+<metadata xmlns="http://linux.duke.edu/metadata/common" xmlns:rpm="http://linux.duke.edu/metadata/rpm">
+<package type="rpm"><name>dconf</name><arch>aarch64</arch>
+<version epoch="0" ver="0.49.0" rel="1.fc43"/>
+<format><rpm:provides><rpm:entry name="dconf"/>
+<rpm:entry name="libdconf.so.1()(64bit)"/></rpm:provides></format></package>
+</metadata>"""
+
+UPDATES_FIXTURE = """<?xml version="1.0"?>
+<metadata xmlns="http://linux.duke.edu/metadata/common" xmlns:rpm="http://linux.duke.edu/metadata/rpm">
+<package type="rpm"><name>stevia</name><arch>aarch64</arch>
+<version epoch="0" ver="0.54.0" rel="1.fc43"/>
+<format><rpm:requires><rpm:entry name="libdconf.so.1()(64bit)"/>
+<rpm:entry name="libnope.so.9()(64bit)"/></rpm:requires></format></package>
+<package type="rpm"><name>stevia-osk</name><arch>noarch</arch>
+<version epoch="0" ver="0.54.0" rel="1.fc43"/>
+<format><rpm:requires><rpm:entry name="stevia-osk-data"/></rpm:requires></format></package>
+</metadata>"""
+
+
+def test_cross_repository_provider_resolution(vp, check):
+    """Regression: a requirement in one repository, provided only in the other.
+
+    Measured on Fedora 43 aarch64: `stevia` lives in `updates` and requires
+    `libdconf.so.1()(64bit)`, which only `dconf` in the GA repository provides.
+    A per-repository resolution reported that pair as unsatisfiable -- a false
+    FAILED on a package set dnf installs without complaint. The fix resolves
+    the needed set globally; this test keeps it fixed.
+    """
+    ga = GA_FIXTURE.encode()
+    updates = UPDATES_FIXTURE.encode()
+    want = {"stevia", "stevia-osk"}
+    a = vp.parse_primary(ga, want)
+    b = vp.parse_primary(updates, want)
+    requires = {}
+    for parsed in (a, b):
+        for pname, by_nevra in parsed["requires"].items():
+            requires.setdefault(pname, {}).update(by_nevra)
+    names = a["names"] | b["names"]
+    needed = vp.global_needed(requires)
+    providers = {}
+    for parsed, xml in ((a, ga), (b, updates)):
+        for cap, prov in vp.scan_providers(xml, needed).items():
+            providers.setdefault(cap, prov)
+    check("libdconf.so.1()(64bit)" in needed and "libdconf.so.1()(64bit)" in providers,
+          "a requirement in the second repo finds its provider in the first (stevia/dconf)")
+    check(providers.get("libdconf.so.1()(64bit)") == "dconf-0.49.0-1.fc43.aarch64",
+          "the providing NEVRA is attributed, not just a boolean")
+    dep = vp.resolve_dependencies([("stevia", "stevia-0.54.0-1.fc43.aarch64"),
+                                   ("stevia-osk", "stevia-osk-0.54.0-1.fc43.noarch")],
+                                  names, providers, requires)
+    # Both classes of miss must be caught: a capability with no provider
+    # (libnope.so.9) and a plain package name that no package carries
+    # (stevia-osk-data). Everything else in the fixture resolves.
+    missed = sorted(u["requirement"] for u in dep["unresolved"])
+    check(missed == ["libnope.so.9()(64bit)", "stevia-osk-data"],
+          "both an unprovided capability and an unknown package name are unresolved")
+    check(all(u["kind"] in ("capability", "package") for u in dep["unresolved"]),
+          "every unresolved requirement records its classified kind")
+    check(dep["per_package"]["stevia"]["by_kind"].get("capability") == 2,
+          "per-package requirement counts are recorded")
+    check(vp.INDEX_CACHE_VERSION >= 2,
+          "the derived index cache is versioned (a stale cache cannot change a verdict)")
 
 
 def main():
@@ -191,6 +341,57 @@ def main():
           + (" — missing: %s" % ", ".join(missing) if missing else ""))
     unexpected = sorted(t for t in tokens if t not in declared and not t.startswith("--"))
     print("        install-line tokens not in the manifest: %s" % (unexpected or "none"))
+
+    vp = load_verify_module()
+    print("[packages] requirement classifier, rich deps, cross-repo providers")
+    test_requirement_classifier(vp, check)
+    test_rich_dependency_evaluator(vp, check)
+    test_cross_repository_provider_resolution(vp, check)
+
+    print("[packages] the manifest carries the dependency evidence")
+    deps = manifest.get("dependencies") or {}
+    check(bool(deps), "the manifest has a dependencies{} block")
+    check(deps.get("unresolved") == [], "no essential dependency is unresolved (%s)"
+          % (deps.get("unresolved") or "none"))
+    check((deps.get("requirements_total") or 0) > 0,
+          "the manifest records the requirement count (%s)" % deps.get("requirements_total"))
+    kinds = deps.get("by_kind") or {}
+    check(kinds.get("package", 0) > 0 and kinds.get("capability", 0) > 0,
+          "requirements are classified (package=%s capability=%s file=%s rich=%s)"
+          % (kinds.get("package"), kinds.get("capability"), kinds.get("file"), kinds.get("rich")))
+    per_pkg = deps.get("per_package") or {}
+    no_dep = [p["name"] for g in manifest["groups"] for p in g["packages"]
+              if p["name"] not in per_pkg]
+    check(not no_dep, "every manifest package carries its resolved requirements:[]"
+          + (" -- missing: %s" % no_dep if no_dep else ""))
+    bad_dep = [p["name"] for g in manifest["groups"] for p in g["packages"]
+               if (p.get("requires") or {}).get("unresolved")]
+    check(not bad_dep, "no package entry carries an unresolved requirement"
+          + (" -- %s" % bad_dep if bad_dep else ""))
+    check(deps.get("unverifiable_from_primary", {}).get("file", 0) > 0,
+          "file requirements are counted as unverifiable-from-primary, not as verified")
+
+    print("[packages] the manifest is validated as DATA (JSON schema, fail closed)")
+    rc, report = run_verify(["--validate-manifest"])
+    check(rc == 0, "the shipped manifest passes the embedded schema (rc=%s)" % rc)
+    with tempfile.TemporaryDirectory() as tmp:
+        broken = json.loads(json.dumps(manifest))
+        broken["dependencies"] = {}
+        broken["groups"][0]["packages"][0]["nevra"] = "not-a-nevra"
+        path = os.path.join(tmp, "packages-manifest.json")
+        with open(path, "w") as fh:
+            json.dump(broken, fh)
+        proc = subprocess.run([sys.executable, VERIFY, "--validate-manifest", "--manifest", path],
+                              capture_output=True, text=True)
+        check(proc.returncode != 0, "a tampered manifest is REJECTED (rc=%s)" % proc.returncode)
+        check("MANIFEST INVALID" in proc.stdout and "dependencies" in proc.stdout,
+              "the rejection names the malformed property (%s)"
+              % (proc.stdout.strip().splitlines()[0][:110] if proc.stdout.strip() else "no output"))
+        proc2 = subprocess.run([sys.executable, VERIFY, "--validate-manifest",
+                                "--manifest", os.path.join(tmp, "missing.json")],
+                               capture_output=True, text=True)
+        check(proc2.returncode != 0, "a missing manifest is a failure, not a pass (rc=%s)"
+              % proc2.returncode)
 
     print("[packages] the 4.14 compatibility items still exist in the tree")
     check(os.path.exists(os.path.join(ROOT, "tools", "s10plus", "a26", "nuxel-rootfs-fixes.sh")),

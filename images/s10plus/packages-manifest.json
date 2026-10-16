@@ -1,6 +1,7 @@
 {
   "schema_version": 1,
-  "generated": "2026-10-16T14:17:41Z",
+  "schema": "nuxel.packages-manifest/1",
+  "generated": "2026-10-16T18:57:13Z",
   "source": {
     "distribution": "fedora",
     "release": "43",
@@ -28,24 +29,688 @@
       {
         "repo": "https://dl.fedoraproject.org/pub/fedora/linux/updates/43/Everything/aarch64",
         "repomd": {
-          "sha256": "fa6fe9653ba62e44069d27a1f4fb9c410ab6240ea714eddce1e362a3c9cc6623"
+          "sha256": "0a1fda3e791e0d0b61940d075fd4a503031419a54848ae84a22871f90beec7af"
         },
         "primary": {
-          "href": "repodata/8932760a7b759f80fec97f8c1f5cd95c7b322e5f9955615876dd7ecf421e1aa6-primary.xml.zst",
-          "compressed_sha256": "8932760a7b759f80fec97f8c1f5cd95c7b322e5f9955615876dd7ecf421e1aa6",
-          "compressed_bytes": 5588439,
-          "decompressed_sha256": "68908f389c99b37d479e1fe4383f92c7971a147fd50ab383993ea549000ad329"
+          "href": "repodata/7ca220d0970a83663d177d49f88307ab4cea8151b9d67cd36e337a0bf2af89dc-primary.xml.zst",
+          "compressed_sha256": "7ca220d0970a83663d177d49f88307ab4cea8151b9d67cd36e337a0bf2af89dc",
+          "compressed_bytes": 5594019,
+          "decompressed_sha256": "a3505a4b18b100c7b9ada971cef70d2dadf010ff8a9efefb01f5a07a79f48fbd"
         },
         "source": "network (dl.fedoraproject.org)",
-        "nevra_count": 25840
+        "nevra_count": 25856
       }
     ],
-    "package_count": 93975
+    "package_count": 93991
   },
   "policy": {
     "no_skip_unavailable": true,
     "essential_packages_must_exist": true,
     "pins_must_match_exactly": true
+  },
+  "dependencies": {
+    "policy": {
+      "fail_closed": true,
+      "name_resolution": "a requirement is resolved if a repository package carries that name or a repository package provides that exact capability (rpm:provides from the same primary.xml)",
+      "version_satisfaction": "delegated to dnf's solver: this verifier matches names/capabilities, it does not compare EVR strings",
+      "file_requirements": "'kind=file' requirements (/usr/bin/sh) cannot be resolved from primary.xml - Fedora keeps file provides in filelists.xml, which this verifier deliberately does not download; they are counted, never reported as verified"
+    },
+    "essential_packages": 50,
+    "requirements_total": 1220,
+    "by_kind": {
+      "file": 52,
+      "capability": 1062,
+      "package": 95,
+      "rich": 11
+    },
+    "unresolved": [],
+    "unverifiable_from_primary": {
+      "file": 52,
+      "rpmlib": 0,
+      "config": 0,
+      "empty": 0,
+      "rich": 1,
+      "rich_unparsable": 0
+    },
+    "sample_providers": {
+      "ModemManager-glib(aarch-64)": "ModemManager-glib-1.24.2-1.fc43.aarch64",
+      "filesystem(unmerged-sbin-symlinks)": "filesystem-3.18-50.fc43.aarch64",
+      "ld-linux-aarch64.so.1()(64bit)": "glibc-2.42-4.fc43.aarch64",
+      "ld-linux-aarch64.so.1(GLIBC_2.17)(64bit)": "glibc-2.42-4.fc43.aarch64",
+      "libgcc_s.so.1()(64bit)": "libgcc-15.2.1-2.fc43.aarch64",
+      "libgcc_s.so.1(GCC_3.0)(64bit)": "libgcc-15.2.1-2.fc43.aarch64",
+      "libgcc_s.so.1(GCC_3.3.1)(64bit)": "libgcc-15.2.1-2.fc43.aarch64",
+      "libgio-2.0.so.0()(64bit)": "glib2-2.86.0-2.fc43.aarch64",
+      "libglib-2.0.so.0()(64bit)": "glib2-2.86.0-2.fc43.aarch64",
+      "libgmodule-2.0.so.0()(64bit)": "glib2-2.86.0-2.fc43.aarch64",
+      "libgobject-2.0.so.0()(64bit)": "glib2-2.86.0-2.fc43.aarch64",
+      "libgudev-1.0.so.0()(64bit)": "libgudev-238-8.fc43.aarch64"
+    },
+    "per_package": {
+      "ModemManager": {
+        "nevra": "ModemManager-1.24.2-1.fc43.aarch64",
+        "total": 29,
+        "by_kind": {
+          "file": 3,
+          "capability": 21,
+          "package": 5
+        },
+        "package_requirements": [
+          "libmbim-utils",
+          "libqmi-utils",
+          "polkit",
+          "systemd"
+        ],
+        "unresolved": []
+      },
+      "NetworkManager": {
+        "nevra": "NetworkManager-1:1.54.3-3.fc43.aarch64",
+        "total": 63,
+        "by_kind": {
+          "file": 4,
+          "capability": 54,
+          "package": 5
+        },
+        "package_requirements": [
+          "dbus",
+          "glib2",
+          "systemd",
+          "systemd-udev"
+        ],
+        "unresolved": []
+      },
+      "NetworkManager-wifi": {
+        "nevra": "NetworkManager-wifi-1:1.54.3-3.fc43.aarch64",
+        "total": 13,
+        "by_kind": {
+          "rich": 1,
+          "capability": 11,
+          "package": 1
+        },
+        "package_requirements": [
+          "wireless-regdb"
+        ],
+        "unresolved": []
+      },
+      "alsa-lib": {
+        "nevra": "alsa-lib-1.2.16.1-1.fc43.aarch64",
+        "total": 7,
+        "by_kind": {
+          "capability": 7
+        },
+        "package_requirements": [],
+        "unresolved": []
+      },
+      "bash": {
+        "nevra": "bash-5.3.0-2.fc43.aarch64",
+        "total": 6,
+        "by_kind": {
+          "package": 1,
+          "capability": 5
+        },
+        "package_requirements": [
+          "filesystem"
+        ],
+        "unresolved": []
+      },
+      "bluez": {
+        "nevra": "bluez-5.87+1.git8750129efca8-1.fc43.aarch64",
+        "total": 16,
+        "by_kind": {
+          "file": 2,
+          "package": 3,
+          "capability": 11
+        },
+        "package_requirements": [
+          "dbus",
+          "systemd"
+        ],
+        "unresolved": []
+      },
+      "ca-certificates": {
+        "nevra": "ca-certificates-2026.2.90_v9.0.317-1.fc43.noarch",
+        "total": 16,
+        "by_kind": {
+          "file": 2,
+          "package": 14
+        },
+        "package_requirements": [
+          "bash",
+          "coreutils",
+          "findutils",
+          "grep",
+          "libffi",
+          "p11-kit",
+          "p11-kit-trust",
+          "sed"
+        ],
+        "unresolved": []
+      },
+      "coreutils": {
+        "nevra": "coreutils-9.7-10.fc43.aarch64",
+        "total": 20,
+        "by_kind": {
+          "package": 1,
+          "capability": 19
+        },
+        "package_requirements": [
+          "coreutils-common"
+        ],
+        "unresolved": []
+      },
+      "curl": {
+        "nevra": "curl-8.15.0-10.fc43.aarch64",
+        "total": 6,
+        "by_kind": {
+          "capability": 6
+        },
+        "package_requirements": [],
+        "unresolved": []
+      },
+      "dbus-broker": {
+        "nevra": "dbus-broker-37-2.fc43.aarch64",
+        "total": 23,
+        "by_kind": {
+          "file": 3,
+          "package": 1,
+          "capability": 19
+        },
+        "package_requirements": [
+          "dbus-common"
+        ],
+        "unresolved": []
+      },
+      "dbus-daemon": {
+        "nevra": "dbus-daemon-1:1.16.2-1.fc43.aarch64",
+        "total": 25,
+        "by_kind": {
+          "file": 3,
+          "package": 2,
+          "capability": 20
+        },
+        "package_requirements": [
+          "dbus-common",
+          "dbus-tools"
+        ],
+        "unresolved": []
+      },
+      "e2fsprogs": {
+        "nevra": "e2fsprogs-1.47.3-2.fc43.aarch64",
+        "total": 21,
+        "by_kind": {
+          "capability": 20,
+          "package": 1
+        },
+        "package_requirements": [
+          "libss"
+        ],
+        "unresolved": []
+      },
+      "fedora-release": {
+        "nevra": "fedora-release-43-27.noarch",
+        "total": 1,
+        "by_kind": {
+          "package": 1
+        },
+        "package_requirements": [
+          "fedora-release-common"
+        ],
+        "unresolved": []
+      },
+      "filesystem": {
+        "nevra": "filesystem-3.18-50.fc43.aarch64",
+        "total": 2,
+        "by_kind": {
+          "capability": 1,
+          "package": 1
+        },
+        "package_requirements": [
+          "setup"
+        ],
+        "unresolved": []
+      },
+      "findutils": {
+        "nevra": "findutils-1:4.10.0-6.fc43.aarch64",
+        "total": 8,
+        "by_kind": {
+          "capability": 8
+        },
+        "package_requirements": [],
+        "unresolved": []
+      },
+      "gawk": {
+        "nevra": "gawk-5.3.2-2.fc43.aarch64",
+        "total": 13,
+        "by_kind": {
+          "file": 1,
+          "package": 1,
+          "capability": 11
+        },
+        "package_requirements": [
+          "filesystem"
+        ],
+        "unresolved": []
+      },
+      "geoclue2": {
+        "nevra": "geoclue2-2.8.2-1.fc43.aarch64",
+        "total": 25,
+        "by_kind": {
+          "file": 2,
+          "package": 1,
+          "capability": 22
+        },
+        "package_requirements": [
+          "dbus"
+        ],
+        "unresolved": []
+      },
+      "glibc": {
+        "nevra": "glibc-2.42-17.fc43.aarch64",
+        "total": 8,
+        "by_kind": {
+          "rich": 1,
+          "package": 4,
+          "capability": 3
+        },
+        "package_requirements": [
+          "filesystem",
+          "glibc-common",
+          "glibc-langpack"
+        ],
+        "unresolved": []
+      },
+      "glibc-langpack-en": {
+        "nevra": "glibc-langpack-en-2.42-17.fc43.aarch64",
+        "total": 2,
+        "by_kind": {
+          "package": 2
+        },
+        "package_requirements": [
+          "glibc",
+          "glibc-common"
+        ],
+        "unresolved": []
+      },
+      "greetd": {
+        "nevra": "greetd-0.10.3-6.fc43.aarch64",
+        "total": 16,
+        "by_kind": {
+          "rich": 1,
+          "file": 2,
+          "capability": 13
+        },
+        "package_requirements": [],
+        "unresolved": []
+      },
+      "grep": {
+        "nevra": "grep-3.12-2.fc43.aarch64",
+        "total": 6,
+        "by_kind": {
+          "file": 1,
+          "capability": 5
+        },
+        "package_requirements": [],
+        "unresolved": []
+      },
+      "gtk3": {
+        "nevra": "gtk3-3.24.52-1.fc43.aarch64",
+        "total": 55,
+        "by_kind": {
+          "file": 1,
+          "package": 3,
+          "capability": 51
+        },
+        "package_requirements": [
+          "adwaita-icon-theme",
+          "gtk-update-icon-cache",
+          "hicolor-icon-theme"
+        ],
+        "unresolved": []
+      },
+      "gtk4": {
+        "nevra": "gtk4-4.20.4-1.fc43.aarch64",
+        "total": 69,
+        "by_kind": {
+          "package": 3,
+          "capability": 66
+        },
+        "package_requirements": [
+          "adwaita-icon-theme",
+          "gtk-update-icon-cache",
+          "hicolor-icon-theme"
+        ],
+        "unresolved": []
+      },
+      "iproute": {
+        "nevra": "iproute-6.14.0-2.fc43.aarch64",
+        "total": 26,
+        "by_kind": {
+          "capability": 24,
+          "package": 2
+        },
+        "package_requirements": [
+          "libbpf",
+          "psmisc"
+        ],
+        "unresolved": []
+      },
+      "kmod": {
+        "nevra": "kmod-34.2-2.fc43.aarch64",
+        "total": 15,
+        "by_kind": {
+          "file": 1,
+          "capability": 14
+        },
+        "package_requirements": [],
+        "unresolved": []
+      },
+      "libadwaita": {
+        "nevra": "libadwaita-1.8.8-1.fc43.aarch64",
+        "total": 19,
+        "by_kind": {
+          "capability": 19
+        },
+        "package_requirements": [],
+        "unresolved": []
+      },
+      "libinput": {
+        "nevra": "libinput-1.30.3-1.fc43.aarch64",
+        "total": 25,
+        "by_kind": {
+          "file": 1,
+          "capability": 24
+        },
+        "package_requirements": [],
+        "unresolved": []
+      },
+      "mesa-dri-drivers": {
+        "nevra": "mesa-dri-drivers-25.3.6-3.fc43.aarch64",
+        "total": 49,
+        "by_kind": {
+          "capability": 49
+        },
+        "package_requirements": [],
+        "unresolved": []
+      },
+      "mesa-libEGL": {
+        "nevra": "mesa-libEGL-25.3.6-3.fc43.aarch64",
+        "total": 23,
+        "by_kind": {
+          "capability": 23
+        },
+        "package_requirements": [],
+        "unresolved": []
+      },
+      "mesa-libgbm": {
+        "nevra": "mesa-libgbm-25.3.6-3.fc43.aarch64",
+        "total": 8,
+        "by_kind": {
+          "rich": 1,
+          "capability": 7
+        },
+        "package_requirements": [],
+        "unresolved": []
+      },
+      "nftables": {
+        "nevra": "nftables-1:1.1.3-6.fc43.1.aarch64",
+        "total": 19,
+        "by_kind": {
+          "capability": 18,
+          "package": 1
+        },
+        "package_requirements": [
+          "nftables-services"
+        ],
+        "unresolved": []
+      },
+      "phoc": {
+        "nevra": "phoc-0.54.0-1.fc43.aarch64",
+        "total": 37,
+        "by_kind": {
+          "package": 1,
+          "capability": 36
+        },
+        "package_requirements": [
+          "gmobile"
+        ],
+        "unresolved": []
+      },
+      "phosh": {
+        "nevra": "phosh-0.54.0-1.fc43.aarch64",
+        "total": 78,
+        "by_kind": {
+          "file": 1,
+          "package": 9,
+          "capability": 68
+        },
+        "package_requirements": [
+          "gnome-session",
+          "gnome-settings-daemon",
+          "gnome-shell-common",
+          "hicolor-icon-theme",
+          "lato-fonts",
+          "mutter-common",
+          "phoc",
+          "phosh-osk",
+          "xorg-x11-server-Xwayland"
+        ],
+        "unresolved": []
+      },
+      "pipewire": {
+        "nevra": "pipewire-1.4.11-1.fc43.aarch64",
+        "total": 11,
+        "by_kind": {
+          "file": 2,
+          "capability": 6,
+          "package": 3
+        },
+        "package_requirements": [
+          "pipewire-session-manager",
+          "rtkit",
+          "systemd"
+        ],
+        "unresolved": []
+      },
+      "polkit": {
+        "nevra": "polkit-126-6.fc43.2.aarch64",
+        "total": 23,
+        "by_kind": {
+          "file": 2,
+          "package": 3,
+          "capability": 18
+        },
+        "package_requirements": [
+          "dbus",
+          "systemd"
+        ],
+        "unresolved": []
+      },
+      "procps-ng": {
+        "nevra": "procps-ng-4.0.4-7.fc43.1.aarch64",
+        "total": 10,
+        "by_kind": {
+          "capability": 10
+        },
+        "package_requirements": [],
+        "unresolved": []
+      },
+      "python3": {
+        "nevra": "python3-3.14.8-1.fc43.aarch64",
+        "total": 4,
+        "by_kind": {
+          "capability": 4
+        },
+        "package_requirements": [],
+        "unresolved": []
+      },
+      "seatd": {
+        "nevra": "seatd-0.9.3-1.fc43.aarch64",
+        "total": 6,
+        "by_kind": {
+          "file": 2,
+          "capability": 4
+        },
+        "package_requirements": [],
+        "unresolved": []
+      },
+      "sed": {
+        "nevra": "sed-4.9-5.fc43.aarch64",
+        "total": 8,
+        "by_kind": {
+          "capability": 8
+        },
+        "package_requirements": [],
+        "unresolved": []
+      },
+      "setup": {
+        "nevra": "setup-2.15.0-26.fc43.noarch",
+        "total": 1,
+        "by_kind": {
+          "package": 1
+        },
+        "package_requirements": [
+          "system-release"
+        ],
+        "unresolved": []
+      },
+      "shadow-utils": {
+        "nevra": "shadow-utils-2:4.18.0-3.fc43.aarch64",
+        "total": 25,
+        "by_kind": {
+          "package": 4,
+          "capability": 21
+        },
+        "package_requirements": [
+          "audit-libs",
+          "libselinux",
+          "pam-libs",
+          "setup"
+        ],
+        "unresolved": []
+      },
+      "stevia": {
+        "nevra": "stevia-0.54.0-1.fc43.aarch64",
+        "total": 30,
+        "by_kind": {
+          "capability": 30
+        },
+        "package_requirements": [],
+        "unresolved": []
+      },
+      "stevia-phosh-osk-provider": {
+        "nevra": "stevia-phosh-osk-provider-0.54.0-1.fc43.noarch",
+        "total": 1,
+        "by_kind": {
+          "package": 1
+        },
+        "package_requirements": [
+          "stevia"
+        ],
+        "unresolved": []
+      },
+      "systemd": {
+        "nevra": "systemd-258.11-1.fc43.aarch64",
+        "total": 56,
+        "by_kind": {
+          "rich": 3,
+          "file": 5,
+          "package": 4,
+          "capability": 44
+        },
+        "package_requirements": [
+          "coreutils",
+          "dbus",
+          "grep",
+          "openssl-libs"
+        ],
+        "unresolved": []
+      },
+      "systemd-networkd": {
+        "nevra": "systemd-networkd-258.11-1.fc43.aarch64",
+        "total": 12,
+        "by_kind": {
+          "file": 2,
+          "capability": 10
+        },
+        "package_requirements": [],
+        "unresolved": []
+      },
+      "systemd-udev": {
+        "nevra": "systemd-udev-258.11-1.fc43.aarch64",
+        "total": 45,
+        "by_kind": {
+          "rich": 2,
+          "file": 4,
+          "capability": 36,
+          "package": 3
+        },
+        "package_requirements": [
+          "grep",
+          "kbd",
+          "kmod"
+        ],
+        "unresolved": []
+      },
+      "upower": {
+        "nevra": "upower-1.91.3-2.fc43.aarch64",
+        "total": 19,
+        "by_kind": {
+          "file": 2,
+          "capability": 16,
+          "package": 1
+        },
+        "package_requirements": [
+          "udev"
+        ],
+        "unresolved": []
+      },
+      "util-linux": {
+        "nevra": "util-linux-2.41.5-1.fc43.aarch64",
+        "total": 86,
+        "by_kind": {
+          "rich": 2,
+          "file": 3,
+          "package": 9,
+          "capability": 72
+        },
+        "package_requirements": [
+          "audit-libs",
+          "coreutils",
+          "libblkid",
+          "libfdisk",
+          "liblastlog2",
+          "libmount",
+          "libsmartcols",
+          "libuuid",
+          "util-linux-core"
+        ],
+        "unresolved": []
+      },
+      "webkit2gtk4.1": {
+        "nevra": "webkit2gtk4.1-2.52.5-1.fc43.aarch64",
+        "total": 119,
+        "by_kind": {
+          "package": 3,
+          "capability": 116
+        },
+        "package_requirements": [
+          "bubblewrap",
+          "libGLES",
+          "xdg-dbus-proxy"
+        ],
+        "unresolved": []
+      },
+      "wireplumber": {
+        "nevra": "wireplumber-0.5.14-1.fc43.aarch64",
+        "total": 15,
+        "by_kind": {
+          "file": 3,
+          "capability": 12
+        },
+        "package_requirements": [],
+        "unresolved": []
+      }
+    }
   },
   "protected_compat_items": [
     {
@@ -79,89 +744,333 @@
       "packages": [
         {
           "name": "filesystem",
-          "nevra": "filesystem-3.18-50.fc43.aarch64"
+          "nevra": "filesystem-3.18-50.fc43.aarch64",
+          "requires": {
+            "total": 2,
+            "by_kind": {
+              "capability": 1,
+              "package": 1
+            },
+            "packages": [
+              "setup"
+            ],
+            "unresolved": []
+          }
         },
         {
           "name": "setup",
-          "nevra": "setup-2.15.0-26.fc43.noarch"
+          "nevra": "setup-2.15.0-26.fc43.noarch",
+          "requires": {
+            "total": 1,
+            "by_kind": {
+              "package": 1
+            },
+            "packages": [
+              "system-release"
+            ],
+            "unresolved": []
+          }
         },
         {
           "name": "fedora-release",
-          "nevra": "fedora-release-43-27.noarch"
+          "nevra": "fedora-release-43-27.noarch",
+          "requires": {
+            "total": 1,
+            "by_kind": {
+              "package": 1
+            },
+            "packages": [
+              "fedora-release-common"
+            ],
+            "unresolved": []
+          }
         },
         {
           "name": "glibc",
-          "nevra": "glibc-2.42-17.fc43.aarch64"
+          "nevra": "glibc-2.42-17.fc43.aarch64",
+          "requires": {
+            "total": 8,
+            "by_kind": {
+              "rich": 1,
+              "package": 4,
+              "capability": 3
+            },
+            "packages": [
+              "filesystem",
+              "glibc-common",
+              "glibc-langpack"
+            ],
+            "unresolved": []
+          }
         },
         {
           "name": "glibc-langpack-en",
-          "nevra": "glibc-langpack-en-2.42-17.fc43.aarch64"
+          "nevra": "glibc-langpack-en-2.42-17.fc43.aarch64",
+          "requires": {
+            "total": 2,
+            "by_kind": {
+              "package": 2
+            },
+            "packages": [
+              "glibc",
+              "glibc-common"
+            ],
+            "unresolved": []
+          }
         },
         {
           "name": "bash",
-          "nevra": "bash-5.3.0-2.fc43.aarch64"
+          "nevra": "bash-5.3.0-2.fc43.aarch64",
+          "requires": {
+            "total": 6,
+            "by_kind": {
+              "package": 1,
+              "capability": 5
+            },
+            "packages": [
+              "filesystem"
+            ],
+            "unresolved": []
+          }
         },
         {
           "name": "coreutils",
-          "nevra": "coreutils-9.7-10.fc43.aarch64"
+          "nevra": "coreutils-9.7-10.fc43.aarch64",
+          "requires": {
+            "total": 20,
+            "by_kind": {
+              "package": 1,
+              "capability": 19
+            },
+            "packages": [
+              "coreutils-common"
+            ],
+            "unresolved": []
+          }
         },
         {
           "name": "util-linux",
-          "nevra": "util-linux-2.41.5-1.fc43.aarch64"
+          "nevra": "util-linux-2.41.5-1.fc43.aarch64",
+          "requires": {
+            "total": 86,
+            "by_kind": {
+              "rich": 2,
+              "file": 3,
+              "package": 9,
+              "capability": 72
+            },
+            "packages": [
+              "audit-libs",
+              "coreutils",
+              "libblkid",
+              "libfdisk",
+              "liblastlog2",
+              "libmount",
+              "libsmartcols",
+              "libuuid",
+              "util-linux-core"
+            ],
+            "unresolved": []
+          }
         },
         {
           "name": "findutils",
-          "nevra": "findutils-1:4.10.0-6.fc43.aarch64"
+          "nevra": "findutils-1:4.10.0-6.fc43.aarch64",
+          "requires": {
+            "total": 8,
+            "by_kind": {
+              "capability": 8
+            },
+            "packages": [],
+            "unresolved": []
+          }
         },
         {
           "name": "grep",
-          "nevra": "grep-3.12-2.fc43.aarch64"
+          "nevra": "grep-3.12-2.fc43.aarch64",
+          "requires": {
+            "total": 6,
+            "by_kind": {
+              "file": 1,
+              "capability": 5
+            },
+            "packages": [],
+            "unresolved": []
+          }
         },
         {
           "name": "sed",
-          "nevra": "sed-4.9-5.fc43.aarch64"
+          "nevra": "sed-4.9-5.fc43.aarch64",
+          "requires": {
+            "total": 8,
+            "by_kind": {
+              "capability": 8
+            },
+            "packages": [],
+            "unresolved": []
+          }
         },
         {
           "name": "gawk",
-          "nevra": "gawk-5.3.2-2.fc43.aarch64"
+          "nevra": "gawk-5.3.2-2.fc43.aarch64",
+          "requires": {
+            "total": 13,
+            "by_kind": {
+              "file": 1,
+              "package": 1,
+              "capability": 11
+            },
+            "packages": [
+              "filesystem"
+            ],
+            "unresolved": []
+          }
         },
         {
           "name": "shadow-utils",
-          "nevra": "shadow-utils-2:4.18.0-3.fc43.aarch64"
+          "nevra": "shadow-utils-2:4.18.0-3.fc43.aarch64",
+          "requires": {
+            "total": 25,
+            "by_kind": {
+              "package": 4,
+              "capability": 21
+            },
+            "packages": [
+              "audit-libs",
+              "libselinux",
+              "pam-libs",
+              "setup"
+            ],
+            "unresolved": []
+          }
         },
         {
           "name": "procps-ng",
-          "nevra": "procps-ng-4.0.4-7.fc43.1.aarch64"
+          "nevra": "procps-ng-4.0.4-7.fc43.1.aarch64",
+          "requires": {
+            "total": 10,
+            "by_kind": {
+              "capability": 10
+            },
+            "packages": [],
+            "unresolved": []
+          }
         },
         {
           "name": "kmod",
-          "nevra": "kmod-34.2-2.fc43.aarch64"
+          "nevra": "kmod-34.2-2.fc43.aarch64",
+          "requires": {
+            "total": 15,
+            "by_kind": {
+              "file": 1,
+              "capability": 14
+            },
+            "packages": [],
+            "unresolved": []
+          }
         },
         {
           "name": "e2fsprogs",
-          "nevra": "e2fsprogs-1.47.3-2.fc43.aarch64"
+          "nevra": "e2fsprogs-1.47.3-2.fc43.aarch64",
+          "requires": {
+            "total": 21,
+            "by_kind": {
+              "capability": 20,
+              "package": 1
+            },
+            "packages": [
+              "libss"
+            ],
+            "unresolved": []
+          }
         },
         {
           "name": "ca-certificates",
-          "nevra": "ca-certificates-2026.2.90_v9.0.317-1.fc43.noarch"
+          "nevra": "ca-certificates-2026.2.90_v9.0.317-1.fc43.noarch",
+          "requires": {
+            "total": 16,
+            "by_kind": {
+              "file": 2,
+              "package": 14
+            },
+            "packages": [
+              "bash",
+              "coreutils",
+              "findutils",
+              "grep",
+              "libffi",
+              "p11-kit",
+              "p11-kit-trust",
+              "sed"
+            ],
+            "unresolved": []
+          }
         },
         {
           "name": "curl",
-          "nevra": "curl-8.15.0-10.fc43.aarch64"
+          "nevra": "curl-8.15.0-10.fc43.aarch64",
+          "requires": {
+            "total": 6,
+            "by_kind": {
+              "capability": 6
+            },
+            "packages": [],
+            "unresolved": []
+          }
         },
         {
           "name": "systemd",
           "nevra": "systemd-258.11-1.fc43.aarch64",
+          "requires": {
+            "total": 56,
+            "by_kind": {
+              "rich": 3,
+              "file": 5,
+              "package": 4,
+              "capability": 44
+            },
+            "packages": [
+              "coreutils",
+              "dbus",
+              "grep",
+              "openssl-libs"
+            ],
+            "unresolved": []
+          },
           "pin": true,
           "pin_reason": "ABI of the carried kernel-4.14 libsystemd-shared patch (boot/s10plus/payload/libsystemd-shared-258.11-1.fc43.so)"
         },
         {
           "name": "systemd-udev",
-          "nevra": "systemd-udev-258.11-1.fc43.aarch64"
+          "nevra": "systemd-udev-258.11-1.fc43.aarch64",
+          "requires": {
+            "total": 45,
+            "by_kind": {
+              "rich": 2,
+              "file": 4,
+              "capability": 36,
+              "package": 3
+            },
+            "packages": [
+              "grep",
+              "kbd",
+              "kmod"
+            ],
+            "unresolved": []
+          }
         },
         {
           "name": "systemd-networkd",
-          "nevra": "systemd-networkd-258.11-1.fc43.aarch64"
+          "nevra": "systemd-networkd-258.11-1.fc43.aarch64",
+          "requires": {
+            "total": 12,
+            "by_kind": {
+              "file": 2,
+              "capability": 10
+            },
+            "packages": [],
+            "unresolved": []
+          }
         }
       ]
     },
@@ -171,11 +1080,36 @@
       "packages": [
         {
           "name": "dbus-daemon",
-          "nevra": "dbus-daemon-1:1.16.2-1.fc43.aarch64"
+          "nevra": "dbus-daemon-1:1.16.2-1.fc43.aarch64",
+          "requires": {
+            "total": 25,
+            "by_kind": {
+              "file": 3,
+              "package": 2,
+              "capability": 20
+            },
+            "packages": [
+              "dbus-common",
+              "dbus-tools"
+            ],
+            "unresolved": []
+          }
         },
         {
           "name": "dbus-broker",
-          "nevra": "dbus-broker-37-2.fc43.aarch64"
+          "nevra": "dbus-broker-37-2.fc43.aarch64",
+          "requires": {
+            "total": 23,
+            "by_kind": {
+              "file": 3,
+              "package": 1,
+              "capability": 19
+            },
+            "packages": [
+              "dbus-common"
+            ],
+            "unresolved": []
+          }
         }
       ]
     },
@@ -185,7 +1119,15 @@
       "packages": [
         {
           "name": "python3",
-          "nevra": "python3-3.14.8-1.fc43.aarch64"
+          "nevra": "python3-3.14.8-1.fc43.aarch64",
+          "requires": {
+            "total": 4,
+            "by_kind": {
+              "capability": 4
+            },
+            "packages": [],
+            "unresolved": []
+          }
         }
       ]
     },
@@ -195,23 +1137,66 @@
       "packages": [
         {
           "name": "mesa-dri-drivers",
-          "nevra": "mesa-dri-drivers-25.3.6-3.fc43.aarch64"
+          "nevra": "mesa-dri-drivers-25.3.6-3.fc43.aarch64",
+          "requires": {
+            "total": 49,
+            "by_kind": {
+              "capability": 49
+            },
+            "packages": [],
+            "unresolved": []
+          }
         },
         {
           "name": "mesa-libEGL",
-          "nevra": "mesa-libEGL-25.3.6-3.fc43.aarch64"
+          "nevra": "mesa-libEGL-25.3.6-3.fc43.aarch64",
+          "requires": {
+            "total": 23,
+            "by_kind": {
+              "capability": 23
+            },
+            "packages": [],
+            "unresolved": []
+          }
         },
         {
           "name": "mesa-libgbm",
-          "nevra": "mesa-libgbm-25.3.6-3.fc43.aarch64"
+          "nevra": "mesa-libgbm-25.3.6-3.fc43.aarch64",
+          "requires": {
+            "total": 8,
+            "by_kind": {
+              "rich": 1,
+              "capability": 7
+            },
+            "packages": [],
+            "unresolved": []
+          }
         },
         {
           "name": "libinput",
-          "nevra": "libinput-1.30.3-1.fc43.aarch64"
+          "nevra": "libinput-1.30.3-1.fc43.aarch64",
+          "requires": {
+            "total": 25,
+            "by_kind": {
+              "file": 1,
+              "capability": 24
+            },
+            "packages": [],
+            "unresolved": []
+          }
         },
         {
           "name": "seatd",
-          "nevra": "seatd-0.9.3-1.fc43.aarch64"
+          "nevra": "seatd-0.9.3-1.fc43.aarch64",
+          "requires": {
+            "total": 6,
+            "by_kind": {
+              "file": 2,
+              "capability": 4
+            },
+            "packages": [],
+            "unresolved": []
+          }
         }
       ]
     },
@@ -221,23 +1206,82 @@
       "packages": [
         {
           "name": "phoc",
-          "nevra": "phoc-0.54.0-1.fc43.aarch64"
+          "nevra": "phoc-0.54.0-1.fc43.aarch64",
+          "requires": {
+            "total": 37,
+            "by_kind": {
+              "package": 1,
+              "capability": 36
+            },
+            "packages": [
+              "gmobile"
+            ],
+            "unresolved": []
+          }
         },
         {
           "name": "phosh",
-          "nevra": "phosh-0.54.0-1.fc43.aarch64"
+          "nevra": "phosh-0.54.0-1.fc43.aarch64",
+          "requires": {
+            "total": 78,
+            "by_kind": {
+              "file": 1,
+              "package": 9,
+              "capability": 68
+            },
+            "packages": [
+              "gnome-session",
+              "gnome-settings-daemon",
+              "gnome-shell-common",
+              "hicolor-icon-theme",
+              "lato-fonts",
+              "mutter-common",
+              "phoc",
+              "phosh-osk",
+              "xorg-x11-server-Xwayland"
+            ],
+            "unresolved": []
+          }
         },
         {
           "name": "stevia",
-          "nevra": "stevia-0.54.0-1.fc43.aarch64"
+          "nevra": "stevia-0.54.0-1.fc43.aarch64",
+          "requires": {
+            "total": 30,
+            "by_kind": {
+              "capability": 30
+            },
+            "packages": [],
+            "unresolved": []
+          }
         },
         {
           "name": "stevia-phosh-osk-provider",
-          "nevra": "stevia-phosh-osk-provider-0.54.0-1.fc43.noarch"
+          "nevra": "stevia-phosh-osk-provider-0.54.0-1.fc43.noarch",
+          "requires": {
+            "total": 1,
+            "by_kind": {
+              "package": 1
+            },
+            "packages": [
+              "stevia"
+            ],
+            "unresolved": []
+          }
         },
         {
           "name": "greetd",
-          "nevra": "greetd-0.10.3-6.fc43.aarch64"
+          "nevra": "greetd-0.10.3-6.fc43.aarch64",
+          "requires": {
+            "total": 16,
+            "by_kind": {
+              "rich": 1,
+              "file": 2,
+              "capability": 13
+            },
+            "packages": [],
+            "unresolved": []
+          }
         }
       ]
     },
@@ -247,19 +1291,67 @@
       "packages": [
         {
           "name": "gtk3",
-          "nevra": "gtk3-3.24.52-1.fc43.aarch64"
+          "nevra": "gtk3-3.24.52-1.fc43.aarch64",
+          "requires": {
+            "total": 55,
+            "by_kind": {
+              "file": 1,
+              "package": 3,
+              "capability": 51
+            },
+            "packages": [
+              "adwaita-icon-theme",
+              "gtk-update-icon-cache",
+              "hicolor-icon-theme"
+            ],
+            "unresolved": []
+          }
         },
         {
           "name": "webkit2gtk4.1",
-          "nevra": "webkit2gtk4.1-2.52.5-1.fc43.aarch64"
+          "nevra": "webkit2gtk4.1-2.52.5-1.fc43.aarch64",
+          "requires": {
+            "total": 119,
+            "by_kind": {
+              "package": 3,
+              "capability": 116
+            },
+            "packages": [
+              "bubblewrap",
+              "libGLES",
+              "xdg-dbus-proxy"
+            ],
+            "unresolved": []
+          }
         },
         {
           "name": "gtk4",
-          "nevra": "gtk4-4.20.4-1.fc43.aarch64"
+          "nevra": "gtk4-4.20.4-1.fc43.aarch64",
+          "requires": {
+            "total": 69,
+            "by_kind": {
+              "package": 3,
+              "capability": 66
+            },
+            "packages": [
+              "adwaita-icon-theme",
+              "gtk-update-icon-cache",
+              "hicolor-icon-theme"
+            ],
+            "unresolved": []
+          }
         },
         {
           "name": "libadwaita",
-          "nevra": "libadwaita-1.8.8-1.fc43.aarch64"
+          "nevra": "libadwaita-1.8.8-1.fc43.aarch64",
+          "requires": {
+            "total": 19,
+            "by_kind": {
+              "capability": 19
+            },
+            "packages": [],
+            "unresolved": []
+          }
         }
       ]
     },
@@ -269,19 +1361,73 @@
       "packages": [
         {
           "name": "NetworkManager",
-          "nevra": "NetworkManager-1:1.54.3-3.fc43.aarch64"
+          "nevra": "NetworkManager-1:1.54.3-3.fc43.aarch64",
+          "requires": {
+            "total": 63,
+            "by_kind": {
+              "file": 4,
+              "capability": 54,
+              "package": 5
+            },
+            "packages": [
+              "dbus",
+              "glib2",
+              "systemd",
+              "systemd-udev"
+            ],
+            "unresolved": []
+          }
         },
         {
           "name": "NetworkManager-wifi",
-          "nevra": "NetworkManager-wifi-1:1.54.3-3.fc43.aarch64"
+          "nevra": "NetworkManager-wifi-1:1.54.3-3.fc43.aarch64",
+          "requires": {
+            "total": 13,
+            "by_kind": {
+              "rich": 1,
+              "capability": 11,
+              "package": 1
+            },
+            "packages": [
+              "wireless-regdb"
+            ],
+            "unresolved": []
+          }
         },
         {
           "name": "ModemManager",
-          "nevra": "ModemManager-1.24.2-1.fc43.aarch64"
+          "nevra": "ModemManager-1.24.2-1.fc43.aarch64",
+          "requires": {
+            "total": 29,
+            "by_kind": {
+              "file": 3,
+              "capability": 21,
+              "package": 5
+            },
+            "packages": [
+              "libmbim-utils",
+              "libqmi-utils",
+              "polkit",
+              "systemd"
+            ],
+            "unresolved": []
+          }
         },
         {
           "name": "iproute",
-          "nevra": "iproute-6.14.0-2.fc43.aarch64"
+          "nevra": "iproute-6.14.0-2.fc43.aarch64",
+          "requires": {
+            "total": 26,
+            "by_kind": {
+              "capability": 24,
+              "package": 2
+            },
+            "packages": [
+              "libbpf",
+              "psmisc"
+            ],
+            "unresolved": []
+          }
         }
       ]
     },
@@ -291,11 +1437,36 @@
       "packages": [
         {
           "name": "geoclue2",
-          "nevra": "geoclue2-2.8.2-1.fc43.aarch64"
+          "nevra": "geoclue2-2.8.2-1.fc43.aarch64",
+          "requires": {
+            "total": 25,
+            "by_kind": {
+              "file": 2,
+              "package": 1,
+              "capability": 22
+            },
+            "packages": [
+              "dbus"
+            ],
+            "unresolved": []
+          }
         },
         {
           "name": "bluez",
-          "nevra": "bluez-5.87+1.git8750129efca8-1.fc43.aarch64"
+          "nevra": "bluez-5.87+1.git8750129efca8-1.fc43.aarch64",
+          "requires": {
+            "total": 16,
+            "by_kind": {
+              "file": 2,
+              "package": 3,
+              "capability": 11
+            },
+            "packages": [
+              "dbus",
+              "systemd"
+            ],
+            "unresolved": []
+          }
         }
       ]
     },
@@ -305,15 +1476,46 @@
       "packages": [
         {
           "name": "pipewire",
-          "nevra": "pipewire-1.4.11-1.fc43.aarch64"
+          "nevra": "pipewire-1.4.11-1.fc43.aarch64",
+          "requires": {
+            "total": 11,
+            "by_kind": {
+              "file": 2,
+              "capability": 6,
+              "package": 3
+            },
+            "packages": [
+              "pipewire-session-manager",
+              "rtkit",
+              "systemd"
+            ],
+            "unresolved": []
+          }
         },
         {
           "name": "wireplumber",
-          "nevra": "wireplumber-0.5.14-1.fc43.aarch64"
+          "nevra": "wireplumber-0.5.14-1.fc43.aarch64",
+          "requires": {
+            "total": 15,
+            "by_kind": {
+              "file": 3,
+              "capability": 12
+            },
+            "packages": [],
+            "unresolved": []
+          }
         },
         {
           "name": "alsa-lib",
-          "nevra": "alsa-lib-1.2.16.1-1.fc43.aarch64"
+          "nevra": "alsa-lib-1.2.16.1-1.fc43.aarch64",
+          "requires": {
+            "total": 7,
+            "by_kind": {
+              "capability": 7
+            },
+            "packages": [],
+            "unresolved": []
+          }
         }
       ]
     },
@@ -323,11 +1525,35 @@
       "packages": [
         {
           "name": "polkit",
-          "nevra": "polkit-126-6.fc43.2.aarch64"
+          "nevra": "polkit-126-6.fc43.2.aarch64",
+          "requires": {
+            "total": 23,
+            "by_kind": {
+              "file": 2,
+              "package": 3,
+              "capability": 18
+            },
+            "packages": [
+              "dbus",
+              "systemd"
+            ],
+            "unresolved": []
+          }
         },
         {
           "name": "nftables",
-          "nevra": "nftables-1:1.1.3-6.fc43.1.aarch64"
+          "nevra": "nftables-1:1.1.3-6.fc43.1.aarch64",
+          "requires": {
+            "total": 19,
+            "by_kind": {
+              "capability": 18,
+              "package": 1
+            },
+            "packages": [
+              "nftables-services"
+            ],
+            "unresolved": []
+          }
         }
       ]
     },
@@ -337,7 +1563,19 @@
       "packages": [
         {
           "name": "upower",
-          "nevra": "upower-1.91.3-2.fc43.aarch64"
+          "nevra": "upower-1.91.3-2.fc43.aarch64",
+          "requires": {
+            "total": 19,
+            "by_kind": {
+              "file": 2,
+              "capability": 16,
+              "package": 1
+            },
+            "packages": [
+              "udev"
+            ],
+            "unresolved": []
+          }
         }
       ]
     }

@@ -19,6 +19,42 @@ gate, so any later change to `nuxel-wl-fb.c` that breaks it turns red.
 
 No claim in this document is `VERIFIED_ON_S10PLUS`.
 
+### Revision 3 (bg-02 verification pass) — re-verification, no semantic change
+
+This is the *expected* outcome for a protected asset: the conversion was
+**re-verified, not re-implemented**, and the primary evidence is that the files are
+byte-identical to the revision-2 state and that the A32 hard pin still matches.
+
+| Check | Command | Result |
+|---|---|---|
+| A32 conversion source is byte-pinned and unchanged | `bash tools/beta/regression-guard.sh` | `INV-2-colour-conversion` **MATCH**, `tools/s10plus/a32/nuxel-wl-fb.c` = `6501c6d5d74128f9004088663ca78e46356b7131756d325165822a76b56c51d7` (hard assertion) |
+| The A33 bridge source under test | `sha256sum tools/s10plus/a33/nuxel-wl-fb.c` | `052bfdbf673ef658c93b8c07925f2c9249af3c755a011ccbe90011c616f7b768` — **unchanged in this revision**: no conversion, alpha, LUT or format-detection line was edited |
+| Golden bytes (source LUT evaluated as arithmetic + independent reference over 74 words) | `python3 tools/s10plus/a33/tests/test-colour-order.py` | **PASS, 42 checks / 0 failures** |
+| Compiled aarch64 artefact word-for-word | `NUXEL_VM=… python3 tools/s10plus/a33/tests/test-colour-order.py` | **SKIPPED** — the UTM Fedora 43 guest was not reachable in this revision (`ssh … ConnectTimeout` timed out). A skip is recorded as a skip, never as a pass; the binary layer stays owned by `bg-11-vm-parity` / the next live deploy |
+| Wallpaper asset unchanged (canonical + launcher copy, same bytes) | `sha256sum assets/nuxel-background.png pwa/nuxel-home/assets/nuxel-background.png` | both `6e337ef2d506a16778fd3c79159f0cf053eb07ace40cf43387a33486da76cb29` (`INV-11` pin, hard) |
+| Boot-animation asset unchanged | `sha256sum assets/nuxel-boot-animation.mp4 pwa/nuxel-home/assets/nuxel-boot-animation.mp4` | both `280e094fb3efe54eaf15f0d964bf8ad834eeebde2e34901e1bf1e3520b95184c` (`INV-11` pin, hard) |
+| The owner-visible page still ships with the right swatches | the golden-bytes test's page layer | PASS (full-screen red default, `red | green | blue` thirds bar, self-contained) |
+
+Raw vectors re-emitted by this run (identical to the table in §4, which is the
+point):
+
+```
+src 0x00ff0000 -> bytes ff 00 00 ff  word 0xff0000ff   (red)
+src 0x0000ff00 -> bytes 00 ff 00 ff  word 0xff00ff00   (green)
+src 0x000000ff -> bytes 00 00 ff ff  word 0xffff0000   (blue)
+src 0x00ffffff -> bytes ff ff ff ff  word 0xffffffff   (white)
+src 0x00000000 -> bytes 00 00 00 ff  word 0xff000000   (black -> opaque)
+src 0x00123456 -> bytes 12 34 56 ff  word 0xff563412
+src 0x00fedcba -> bytes fe dc ba ff  word 0xffbadcfe
+LUT == independent reference over 74 words (10 primaries + 64 LCG): PASS
+```
+
+**Changing the conversion semantics is forbidden** without a new work-queue revision
+naming `briq-02c-fb-colour-conversion`. This revision names none, and the only edits
+to the A33 bridge family in this pass are in `nuxel-anim-handoff.py` /
+`nuxel-verbose-boot.py` (the recorded reason for a waived floor) — the `.c` file is
+untouched.
+
 ---
 
 ## 1. Root cause (driver evidence, not assumption)

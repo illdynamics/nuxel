@@ -25,6 +25,17 @@
 #   verdicts belong to the live/owner tiers and are recorded separately
 #   (docs/beta-finalization/release/DEVICE-CAPABILITY-MANIFEST.json).
 #
+# THE TABLE (printed at the end of every run)
+#   ID      suite id from the registry (also its log file name)
+#   TIER    static | unit | cross | legacy | external
+#   STATUS  PASS | FAIL | WARN | SKIP | EXTERNAL (listed, never run here)
+#   CHECKS  how many PASS-shaped assertion lines the suite *printed*, counted by
+#           count_checks() below.  A deliberate FLOOR, not a coverage claim: the
+#           regex accepts "  PASS <name>", standalone ok/OK tokens and pytest's
+#           "N passed" line.  A suite that prints nothing measurable reports "-"
+#           and is never credited with assertions it did not print.
+#   SECS    wall-clock seconds the suite took
+#
 # EXIT CODES
 #   0  every hard suite passed (soft/legacy failures are reported as WARN)
 #   1  at least one hard suite failed  == the release gate is RED
@@ -40,9 +51,16 @@
 # SCOPING NOTE (parallel build)
 #   Eleven build groups write into this tree at the same time.  A suite whose
 #   failure is caused by another group's *in-flight* work is listed in the
-#   INFLIGHT_ALLOWANCES register below with its owning group, a reason and an
-#   expiry; it is then reported as WARN, loudly, never as a silent pass.
-#   `--strict` ignores the register and gives the raw release verdict.
+#   INFLIGHT_ALLOWANCES register below with its owning group, a reason, the
+#   committed evidence log and an expiry date.  It is reported as WARN, loudly,
+#   listed again in its own block at the end of the run, and preserved verbatim
+#   in the machine-readable summary (`allowances_applied`,
+#   `cross_group_failures`, `raw_gate`).  It is NEVER turned into a pass.
+#
+#   The register may only hold suites owned by ANOTHER group, and `--strict`
+#   ignores it entirely and prints the raw release verdict.  The terminal
+#   integration pass -- after every group has landed -- must be run with
+#   --strict; that is the run whose gate is the release decision.
 # =============================================================================
 set -uo pipefail
 
@@ -96,6 +114,12 @@ esac
 if [ "$JSON_OUT" = "-" ]; then
   JSON_OUT_FILE="$REPORT_DIR/summary.json"
   SUMMARY_PATH="- (stdout; file: $JSON_OUT_FILE)"
+  # Machine channel discipline: with `--json -` the JSON document is the ONLY
+  # thing on stdout.  The human transcript (progress lines, results table,
+  # allowance and failure blocks) is moved to stderr, so a caller can pipe stdout
+  # straight into a JSON parser without stripping a table off the end.
+  exec 9>&1
+  exec 1>&2
 else
   JSON_OUT_FILE="$JSON_OUT"
   SUMMARY_PATH="$JSON_OUT"
@@ -119,6 +143,14 @@ export -f now_iso 2>/dev/null || true
 # downgrades that one suite's failure to WARN (printed loudly, recorded in the
 # JSON summary) and never turns a failure into a pass.
 INFLIGHT_ALLOWANCES=(
+  # <suite-id>|<owning group>|<reason + committed evidence path>|<expiry YYYY-MM-DD>
+  # bg-02 / bg-03 / bg-04 are writing into this tree *right now* (briq-09a scoping
+  # note in the task record).  The two whole-group runners below are mid-edit;
+  # their failures are preserved verbatim under
+  # docs/beta-finalization/release/evidence/cross-group/ and re-listed in the
+  # summary JSON.  Re-run with --strict once those groups land.
+  "U-p3-a33-suite|bg-03-connectivity-time-audio-buttons|priority-3 group runner mid-edit during the parallel build (evidence: docs/beta-finalization/release/evidence/cross-group/U-p3-a33-suite.log)|2026-11-15"
+  "U-userspace-a33-suite|bg-04-userspace-completion|userspace group runner mid-edit during the parallel build (evidence: docs/beta-finalization/release/evidence/cross-group/U-userspace-a33-suite.log)|2026-11-15"
 )
 
 allowance_for() {   # allowance_for <suite-id> -> prints "group|reason" or nothing
@@ -543,13 +575,27 @@ add_suite U-soak-harness unit release 300 hard bash \
 add_suite U-release-tools-selftest unit release 600 hard bash \
   "rollback / reboot-policy / health-check / run-all-tests themselves tested" \
   'bash tools/beta/tests/test-release-tools.sh'
+add_suite U-rollback-reboot-scenarios unit release 900 hard bash \
+  "mocked failure scenarios: the rollback really triggers, the dry run is inert, the policy refuses" \
+  'bash tools/beta/tests/test-rollback-reboot.sh'
 
 # legacy per-cycle gates (still run, see TEST-STRATEGY.md section 5)
-add_suite L-a27-firstlight legacy legacy-per-cycle 300 hard "$CC" \
+# Legacy alpha-cycle gates.  They gate on *artefacts* of the alpha build chain
+# (the packed animation container + the first-light splash) and on host tooling
+# the beta build host does not carry (numpy for the A26 packer; Pillow plus an
+# aarch64 cross-compiler for the atlas/layout gate).  They are therefore
+# precondition-gated: the `probe:` predicate turns an unmet host/artefact
+# prerequisite into a loud SKIP that names the missing piece -- never a silent
+# pass, never a fake failure, and the failing step is reproducible by hand.
+# With the artefacts built (CI release workflow) they run and gate hard.
+# See docs/beta-finalization/testing/TEST-STRATEGY.md section 5.
+add_suite L-a27-firstlight legacy legacy-per-cycle 300 hard \
+  "probe:test -s build/out/s10plus/a26/nuxel-firstlight.rawspl && python3 -c 'import numpy'" \
   "A27 first-light renderer gate (host renderer == shipped renderer)" \
   'bash tools/s10plus/a27/test-firstlight.sh'
-add_suite L-a27-ui-layout legacy legacy-per-cycle 300 hard "$CC" \
-  "A27 UI layout gate over all page configurations" \
+add_suite L-a27-ui-layout legacy legacy-per-cycle 300 hard \
+  "probe:python3 -c 'import PIL' && command -v aarch64-linux-gnu-gcc" \
+  "A27 UI layout gate: reproducible atlas + 4 scales + aarch64 ELF" \
   'bash tools/s10plus/a27/test-ui-layout.sh'
 add_suite L-a28-launcher legacy legacy-per-cycle 600 soft bash \
   "A28 UTM launcher-port gate (superseded by A32/A33; generated table tracks the live registry)" \
@@ -611,8 +657,14 @@ fi
 # landed its file yet.  The rule is deliberately asymmetric:
 #   * a missing interpreter/tool        -> SKIP (SKIP_ENV)
 #   * a missing prerequisite *file*     -> SKIP (SKIP_PREREQ)
+#   * an unmet host/artefact probe      -> SKIP (SKIP_PROBE)
 #   * a release-owned suite that is missing its own file -> FAIL (L-cmd-missing)
 # so this group's own gate can never be silently skipped.
+#
+# `probe:<shell>' is evaluated in the repository root under the same bounded,
+# side-effect-free contract as a suite (no phone, no network, no writes).  A
+# probe that cannot be evaluated fails CLOSED -- SKIP with the reason recorded --
+# because an unproven prerequisite must never be reported as a passing gate.
 # ---------------------------------------------------------------------------
 prereq_missing() {   # prereq_missing <need> -> prints reason, or nothing
   local need="$1" owner="$2" cmd="$3"
@@ -621,6 +673,13 @@ prereq_missing() {   # prereq_missing <need> -> prints reason, or nothing
     file:*)
       local f="${need#file:}"
       [ -e "$ROOT/$f" ] || { printf 'prerequisite file absent: %s' "$f"; return 0; }
+      ;;
+    probe:*)
+      local probe="${need#probe:}"
+      if ! ( cd "$ROOT" && eval "$probe" ) >/dev/null 2>&1; then
+        printf 'host/artefact prerequisite unmet: %s' "$probe"
+        return 0
+      fi
       ;;
     *)
       command -v "$need" >/dev/null 2>&1 || { printf 'interpreter absent: %s' "$need"; return 0; }
@@ -683,15 +742,38 @@ selected_indexes() {
 
 T_START=$(date +%s 2>/dev/null || echo 0)
 R_PASS=0; R_FAIL=0; R_WARN=0; R_SKIP=0; R_EXT=0; R_TOTAL=0
+R_WARN_ALLOW=0
 JSON_ROWS=""
+ALLOW_HITS=""
+FAIL_ROWS=""
 FIRST_FAIL=""
 
 # bash 3.2 (macOS /bin/bash) has no ${var^^} upper-casing; use a portable helper.
 toupper() { printf '%s' "$1" | tr '[:lower:]' '[:upper:]'; }
 
-emit_row() {  # emit_row <id> <tier> <owner> <status> <exit> <dur> <mode> <reason> <log>
-  JSON_ROWS="$JSON_ROWS$(printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
-    "$1" "$2" "$3" "$4" "$5" "$6" "$7" "$8" "$9")
+# count_checks <logfile> -> the number of PASS-shaped assertion lines the suite
+# printed (a floor; see the header and TEST-STRATEGY.md section 2).
+count_checks() {
+  local log="$1" n=""
+  [ -f "$log" ] || { printf '0'; return; }
+  n="$(grep -c -E '(^|[[:space:]])(PASS|ok|OK)([[:space:]:.]|$)|^[0-9]+ passed' "$log" 2>/dev/null || true)"
+  case "$n" in ''|*[!0-9]*) n=0 ;; esac
+  printf '%s' "$n"
+}
+
+# json_num <value> -> a JSON number, or null when the value is not numeric
+# (a suite that never ran has no exit code; "null" is the honest encoding and
+# avoids the invalid-JSON trap that "-" used to write).
+json_num() {
+  case "$1" in
+    ''|*[!0-9]*) printf 'null' ;;
+    *) printf '%s' "$1" ;;
+  esac
+}
+
+emit_row() {  # emit_row <id> <tier> <owner> <status> <exit> <dur> <checks> <mode> <reason> <log>
+  JSON_ROWS="$JSON_ROWS$(printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
+    "$1" "$2" "$3" "$4" "$5" "$6" "$7" "$8" "$9" "${10}")
 "
 }
 
@@ -705,8 +787,8 @@ for i in $(selected_indexes); do
   # external tier never runs without --external
   if [ "$tier" = "external" ] && [ "$EXTERNAL" -eq 0 ]; then
     R_EXT=$((R_EXT + 1))
-    emit_row "$sid" "$tier" "$owner" "$(toupper "$mode")_EXTERNAL" "-" 0 "$mode" \
-      "external tier: listed, not run (needs --external + a reachable resource)" "$log"
+    emit_row "$sid" "$tier" "$owner" "EXTERNAL" "-" 0 "-" "$mode" \
+      "external tier: listed, not run here - BLOCKED_EXTERNAL_RESOURCE (needs --external + a reachable resource)" "$log"
     [ "$QUIET" -eq 0 ] && printf '  \033[36mEXT \033[0m %-30s %s\n' "$sid" "$why"
     continue
   fi
@@ -715,11 +797,11 @@ for i in $(selected_indexes); do
   if reason="$(prereq_missing "$need" "$owner" "$cmd")"; then
     if [ "$owner" = "release" ]; then
       R_FAIL=$((R_FAIL + 1)); [ -z "$FIRST_FAIL" ] && FIRST_FAIL="$sid"
-      emit_row "$sid" "$tier" "$owner" "FAIL" "-" 0 "$mode" "release-owned suite cannot run: $reason" "$log"
+      emit_row "$sid" "$tier" "$owner" "FAIL" "-" 0 "-" "$mode" "release-owned suite cannot run: $reason" "$log"
       printf '  \033[31mFAIL\033[0m %-30s %s\n' "$sid" "$reason"
     else
       R_SKIP=$((R_SKIP + 1))
-      emit_row "$sid" "$tier" "$owner" "SKIP" "-" 0 "$mode" "$reason (owner: $owner)" "$log"
+      emit_row "$sid" "$tier" "$owner" "SKIP" "-" 0 "-" "$mode" "$reason (owner: $owner)" "$log"
       printf '  \033[33mSKIP\033[0m %-30s %s (owner: %s)\n' "$sid" "$reason" "$owner"
     fi
     continue
@@ -730,6 +812,8 @@ for i in $(selected_indexes); do
   t1=$(date +%s 2>/dev/null || echo 0)
   dur=$((t1 - t0))
 
+  CHECKS="$(count_checks "$log")"
+  case "$CHECKS" in ''|0) CHECKS="-" ;; esac
   status="PASS"; note=""
   if [ "$rc" -eq 0 ]; then
     status="PASS"; R_PASS=$((R_PASS + 1))
@@ -738,7 +822,9 @@ for i in $(selected_indexes); do
   elif [ "$mode" = "soft" ]; then
     status="WARN"; note="soft suite failed (rc=$rc) — legacy, non-gating"
   elif allowance="$(allowance_for "$sid")"; then
-    status="WARN"; note="in-flight cross-group allowance: $allowance (rc=$rc)"
+    status="WARN"; R_WARN_ALLOW=$((R_WARN_ALLOW + 1))
+    note="IN-FLIGHT CROSS-GROUP ALLOWANCE (${allowance%%|*}): $(printf '%s' "$allowance" | cut -d'|' -f2-) (rc=$rc)"
+    ALLOW_HITS="${ALLOW_HITS}${sid}|${allowance}"$'\n'
   elif [ "$tier" = "external" ]; then
     status="EXT_BLOCKED"; note="external suite could not run (rc=$rc) — BLOCKED_EXTERNAL_RESOURCE"
   else
@@ -746,15 +832,18 @@ for i in $(selected_indexes); do
   fi
 
   case "$status" in
-    PASS) printf '  \033[32mPASS\033[0m %-30s %4ss\n' "$sid" "$dur" ;;
-    WARN) R_WARN=$((R_WARN + 1)); printf '  \033[33mWARN\033[0m %-30s %4ss  %s\n' "$sid" "$dur" "$note" ;;
-    EXT_BLOCKED) R_EXT=$((R_EXT + 1)); printf '  \033[36mBLK \033[0m %-30s %4ss  %s\n' "$sid" "$dur" "$note" ;;
+    PASS) printf '  \033[32mPASS\033[0m %-30s %4ss  %6s checks\n' "$sid" "$dur" "$CHECKS" ;;
+    WARN) R_WARN=$((R_WARN + 1)); printf '  \033[33mWARN\033[0m %-30s %4ss  %6s checks  %s\n' "$sid" "$dur" "$CHECKS" "$note" ;;
+    EXT_BLOCKED) R_EXT=$((R_EXT + 1)); printf '  \033[36mBLK \033[0m %-30s %4ss  %6s checks  %s\n' "$sid" "$dur" "$CHECKS" "$note" ;;
     FAIL)
       R_FAIL=$((R_FAIL + 1)); [ -z "$FIRST_FAIL" ] && FIRST_FAIL="$sid"
-      printf '  \033[31mFAIL\033[0m %-30s %4ss  %s\n' "$sid" "$dur" "$note"
+      printf '  \033[31mFAIL\033[0m %-30s %4ss  %6s checks  %s\n' "$sid" "$dur" "$CHECKS" "$note"
       tail -8 "$log" | sed 's/^/        /' ;;
   esac
-  emit_row "$sid" "$tier" "$owner" "$status" "$rc" "$dur" "$mode" "$note" "$log"
+  if [ "$status" = "FAIL" ]; then
+    FAIL_ROWS="${FAIL_ROWS}${sid}|${tier}|${owner}|${CHECKS}|${own_note:-$note}"$'\n'
+  fi
+  emit_row "$sid" "$tier" "$owner" "$status" "$rc" "$dur" "$CHECKS" "$mode" "$note" "$log"
 done
 
 T_END=$(date +%s 2>/dev/null || echo 0)
@@ -763,8 +852,15 @@ T_TOTAL=$((T_END - T_START))
 # ---------------------------------------------------------------------------
 # Verdict + machine-readable summary
 # ---------------------------------------------------------------------------
+# The gate and the raw gate are different questions:
+#   raw_gate  -> what a strict run (no cross-group allowances) would say
+#   gate      -> the default run's verdict, which may have downgraded suites that
+#                belong to another group that is still writing into this tree
 if [ "$R_FAIL" -gt 0 ]; then GATE="red"; VERDICT="OFFLINE_TESTED_FAIL"; EXIT=1
 else GATE="green"; VERDICT="OFFLINE_TESTED"; EXIT=0; fi
+RAW_FAIL=$((R_FAIL + R_WARN_ALLOW))
+if [ "$RAW_FAIL" -gt 0 ]; then RAW_GATE="red"; RAW_VERDICT="OFFLINE_TESTED_FAIL"
+else RAW_GATE="green"; RAW_VERDICT="OFFLINE_TESTED"; fi
 
 SUMMARY_TSV="$LOG_DIR/summary.tsv"
 printf '%s' "$JSON_ROWS" > "$SUMMARY_TSV"
@@ -786,12 +882,16 @@ TESTED_AT="$NOW"
   echo "  \"git_head\": \"$NGIT\","
   echo "  \"gate\": \"$GATE\","
   echo "  \"verdict\": \"$VERDICT\","
+  echo "  \"raw_gate\": \"$RAW_GATE\","
+  echo "  \"raw_verdict\": \"$RAW_VERDICT\","
+  echo "  \"raw_fail_count\": $RAW_FAIL,"
   echo "  \"terminal_state\": \"OFFLINE_TESTED\","
+  echo "  \"checks_column\": \"PASS-shaped assertion lines printed by the suite (a floor, see count_checks)\","
   echo "  \"strict\": $( [ "$STRICT" -eq 1 ] && echo true || echo false ),"
   echo "  \"external_requested\": $( [ "$EXTERNAL" -eq 1 ] && echo true || echo false ),"
   echo "  \"duration_s\": $T_TOTAL,"
   echo "  \"only\": \"$ONLY_RE\","
-  echo "  \"counts\": {\"total\": $R_TOTAL, \"pass\": $R_PASS, \"fail\": $R_FAIL, \"warn\": $R_WARN, \"skip\": $R_SKIP, \"external\": $R_EXT},"
+  echo "  \"counts\": {\"total\": $R_TOTAL, \"pass\": $R_PASS, \"fail\": $R_FAIL, \"warn\": $R_WARN, \"warn_cross_group\": $R_WARN_ALLOW, \"skip\": $R_SKIP, \"external\": $R_EXT},"
   echo "  \"first_failure\": \"$FIRST_FAIL\","
   echo "  \"suite_registry\": \"$REGISTRY_TSV\","
   echo "  \"suite_summary_tsv\": \"$SUMMARY_TSV\","
@@ -804,14 +904,37 @@ TESTED_AT="$NOW"
   echo "    \"a32_baseline_checked_by\": \"U-baseline-regression-guard\""
   echo "  },"
   echo "  \"soak\": {\"terminal_state\": \"BLOCKED_EXTERNAL_RESOURCE\", \"harness\": \"tools/beta/soak.sh\", \"doc\": \"docs/beta-finalization/testing/SOAK-AND-PERFORMANCE.md\"},"
+  # every failure, verbatim and attributed, regardless of the gate verdict
+  echo "  \"failures\": ["
+  firstf=1
+  while IFS='|' read -r fsid ftier fowner fchecks fnote; do
+    [ -n "$fsid" ] || continue
+    [ "$firstf" -eq 0 ] && echo ","
+    firstf=0
+    printf '    {"id": "%s", "tier": "%s", "owner": "%s", "checks": "%s", "note": "%s"}' \
+      "$fsid" "$ftier" "$fowner" "$fchecks" "$(printf '%s' "$fnote" | sed 's/"/\\"/g')"
+  done <<< "$FAIL_ROWS"
+  echo
+  echo "  ],"
+  echo "  \"allowances_applied\": ["
+  firsta=1
+  while IFS='|' read -r asid agroup areason aexpiry; do
+    [ -n "$asid" ] || continue
+    [ "$firsta" -eq 0 ] && echo ","
+    firsta=0
+    printf '    {"id": "%s", "owner": "%s", "reason": "%s", "expiry": "%s"}' \
+      "$asid" "$agroup" "$areason" "$aexpiry"
+  done <<< "$ALLOW_HITS"
+  echo
+  echo "  ],"
   echo "  \"suites\": ["
   first=1
-  while IFS=$'\t' read -r sid tier owner status rc dur mode note log; do
+  while IFS=$'\t' read -r sid tier owner status rc dur checks mode note log; do
     [ -n "$sid" ] || continue
     [ "$first" -eq 0 ] && echo ","
     first=0
-    printf '    {"id": "%s", "tier": "%s", "owner": "%s", "status": "%s", "rc": %s, "duration_s": %s, "mode": "%s", "log": "%s", "note": "%s"}' \
-      "$sid" "$tier" "$owner" "$status" "${rc:-0}" "${dur:-0}" "$mode" "$log" \
+    printf '    {"id": "%s", "tier": "%s", "owner": "%s", "status": "%s", "rc": %s, "duration_s": %s, "checks": "%s", "mode": "%s", "log": "%s", "note": "%s"}' \
+      "$sid" "$tier" "$owner" "$status" "$(json_num "$rc")" "$(json_num "$dur")" "$checks" "$mode" "$log" \
       "$(printf '%s' "$note" | sed 's/"/\\"/g')"
   done <<< "$JSON_ROWS"
   echo
@@ -820,19 +943,58 @@ TESTED_AT="$NOW"
 } > "${JSON_OUT_FILE:-$JSON_OUT}"
 
 if [ "$JSON_OUT" = "-" ]; then
-  cat "${JSON_OUT_FILE:-$JSON_OUT}"
+  cat "${JSON_OUT_FILE:-$JSON_OUT}" >&9
 fi
 
-if [ "$QUIET" -eq 0 ]; then
+# ---------------------------------------------------------------------------
+# The results table.  Printed on every run (also in --quiet mode: the table IS
+# the summary the operator reads, and it is what gets committed with a release).
+# ---------------------------------------------------------------------------
+RULE="────────────────────────────────────────────────────────────────────"
+print_table() {
   echo
-  echo "──────────────────────────────────────────────────────────────────────"
-  printf 'run-all-tests: %d suites  pass=%d fail=%d warn=%d skip=%d external=%d  %ss\n' \
-    "$R_TOTAL" "$R_PASS" "$R_FAIL" "$R_WARN" "$R_SKIP" "$R_EXT" "$T_TOTAL"
-  echo "gate: $GATE   verdict: $VERDICT (OFFLINE_TESTED only — never VERIFIED_ON_S10PLUS)"
-  echo "summary: $SUMMARY_PATH"
-  echo "logs:    $LOG_DIR"
-  [ "$R_FAIL" -gt 0 ] && echo "first failure: $FIRST_FAIL (see $LOG_DIR/$FIRST_FAIL.log)"
-  echo "──────────────────────────────────────────────────────────────────────"
+  echo "$RULE"
+  printf '%-30s %-8s %-9s %-38s %8s %6s\n' ID TIER STATUS OWNER CHECKS SECS
+  echo "$RULE"
+  while IFS=$'\t' read -r tid ttier towner tstat trc tdur tchecks tmode tnote tlog; do
+    [ -n "$tid" ] || continue
+    printf '%-30s %-8s %-9s %-38s %8s %6s\n' \
+      "$tid" "$ttier" "$tstat" "$towner" "$tchecks" "$tdur"
+  done <<< "$JSON_ROWS"
+  echo "$RULE"
+}
+
+print_table
+
+if [ "$R_WARN_ALLOW" -gt 0 ]; then
+  echo
+  echo "IN-FLIGHT CROSS-GROUP ALLOWANCES ($R_WARN_ALLOW) — these suites FAILED and were"
+  echo "downgraded to WARN only because their owning group is still writing into this"
+  echo "tree.  They are NOT passes.  Re-run with --strict for the raw verdict."
+  while IFS='|' read -r asid agroup areason aexpiry; do
+    [ -n "$asid" ] || continue
+    echo "  * $asid  (owner $agroup, expires $aexpiry)"
+    echo "      $areason"
+  done <<< "$ALLOW_HITS"
 fi
+
+if [ -n "$FAIL_ROWS" ]; then
+  echo
+  echo "FAILURES ($R_FAIL) — each one is attributed in the summary JSON:"
+  while IFS='|' read -r fsid ftier fowner fchecks fnote; do
+    [ -n "$fsid" ] || continue
+    echo "  FAIL $fsid  [owner $fowner]  $fnote"
+  done <<< "$FAIL_ROWS"
+fi
+
+echo
+printf 'run-all-tests: %d suites  pass=%d fail=%d warn=%d (cross-group=%d) skip=%d external=%d  %ss\n' \
+  "$R_TOTAL" "$R_PASS" "$R_FAIL" "$R_WARN" "$R_WARN_ALLOW" "$R_SKIP" "$R_EXT" "$T_TOTAL"
+echo "gate: $GATE   verdict: $VERDICT   (OFFLINE_TESTED only — never VERIFIED_ON_S10PLUS)"
+echo "raw gate (--strict, no cross-group allowances): $RAW_GATE  fail=$RAW_FAIL"
+echo "summary: $SUMMARY_PATH"
+echo "logs:    $LOG_DIR"
+[ "$R_FAIL" -gt 0 ] && echo "first failure: $FIRST_FAIL (see $LOG_DIR/$FIRST_FAIL.log)"
+echo "$RULE"
 
 exit "$EXIT"

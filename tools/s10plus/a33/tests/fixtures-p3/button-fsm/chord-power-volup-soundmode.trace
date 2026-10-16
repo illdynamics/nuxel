@@ -1,0 +1,8 @@
+# Power pressed while VolumeUp is held -> the sound-mode cycle.
+# The volume step from the FIRST (plain) press is kept: it was not a chord yet.
+0 key volume_up 1
+100 tick
+200 key power 1
+700 tick
+800 key power 0
+1000 key volume_up 0

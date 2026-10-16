@@ -88,6 +88,23 @@ d. Independent cross-check (human, therefore needed):
 | `launcher_agrees=UNKNOWN` | The bridge is unreachable, so the launcher clock is unverified — state that, never assume it is fine. |
 | Clock jumps only after the network comes up | Normal before a sync; record the initial offset so the RTC's own error is visible. |
 
+## 6b. Additional owner checks (settings-driven rows)
+
+These rows exercise the calendar/time settings the mission requires. All are
+owner actions (they change a user-visible clock), so none of them is
+auto-promoted.
+
+| # | Action | Expected | FAIL |
+|---|---|---|---|
+| S1 | Settings → System → Date & time: turn **Set time automatically** off, set a time by hand, reboot, re-read | the manual time is still there and no NTP step undoes it while auto is off | the clock jumps on reboot although auto time is off |
+| S2 | Turn **automatic time zone** on with the location service **disabled** | the row is OFF and says it needs location | a zone appears out of nowhere (never inferred from an IP) |
+| S3 | Set a zone from the picker | only zones that exist in `/usr/share/zoneinfo` are offered; with no tzdata the picker offers UTC and says `TZDATA_MISSING` | a hard-coded zone list appears |
+| S4 | Switch **24-hour clock** off | the status-bar clock changes format; no kernel/RTC state changes | the clock jumps |
+| S5 | Set custom NTP servers | `timedatectl show-timesync` reflects them; with no backend the row reports `NO_TIMESYNC_BACKEND` | the row silently accepts a list nothing applies |
+| S6 | `nuxelctl time last-known --record` while the clock is plausible, then `nuxelctl time last-known` | the record is written; a clock earlier than the record reports `RTC_SUSPECT` | an implausible clock is recorded as "last-known" |
+| S7 | `nuxelctl time settings` on the handset | prints `/sys/power/state` and the settings surface | suspend-to-RAM is claimed although the kernel does not advertise `mem` |
+| S8 | (only if `mem` IS advertised) suspend, wait 2 min, resume | the journal shows the wall clock being re-corrected after resume | the clock is wrong after resume with no correction logged |
+
 ## 7. Diagnostic command / log path
 
 * `nuxelctl time status|verify|rtc|mark|compare` —
@@ -114,8 +131,13 @@ d. Independent cross-check (human, therefore needed):
   (`RTC_ABSENT`, `NO_TIMESYNC_BACKEND`, `CLOCK_NOT_SET`, `PARTIAL_EVIDENCE`,
   `CLOCK_OK_UNVERIFIED_PERSISTENCE`).
 * `python3 tools/s10plus/a33/tests/test-time-rtc.py` → all checks PASS, including
-  the deterministic mark/compare PASS case, the FAIL case with numbers, and the
-  same-boot-id refusal.
+  the deterministic mark/compare PASS case, the FAIL case with numbers, the
+  same-boot-id refusal, the settings surface (all six Date & time rows), the
+  clock-permission rule, the last-known floor/`RTC_SUSPECT` behaviour, the tzdata
+  probe and the suspend-support honesty check.
+* Rows S1–S8 above are **NEEDS_OWNER_TEST by construction**: each one changes a
+  user-visible clock or requires a suspend/resume, so no repository test can
+  promote it.
 * `nuxelctl time verify` on the "everything agrees" fixture: `pass=6 fail=0`,
   persistence `NEEDS_OWNER_TEST`.
 * On-device RTC persistence is **not** claimed: it stays `NEEDS_OWNER_TEST` in

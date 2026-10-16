@@ -1,4 +1,6 @@
-# assistant key held past 1500 ms -> the long-press class (mapped to disabled)
-0 key bixby 1
-1600 tick
-1700 key bixby 0
+# a LATE assistant hold: the early window opened at t=0 (the manager's first
+# tick), so a press at 5000 ms is outside the 2 s window -> the long class is inert
+0 tick
+5000 key bixby 1
+6600 tick
+6700 key bixby 0

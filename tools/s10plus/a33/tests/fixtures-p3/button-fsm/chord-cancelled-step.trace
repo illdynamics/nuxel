@@ -1,0 +1,8 @@
+# the chord never completes (VolumeDown released at once), so the buffered
+# volume step is delivered - a press is never silently swallowed - and the
+# power hold that continues on its own still opens the menu
+0 key power 1
+100 key volume_down 1
+200 key volume_down 0
+2500 tick
+2600 key power 0

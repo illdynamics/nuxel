@@ -25,6 +25,8 @@
 #   nuxel-time.sh rtc                 RTC inventory
 #   nuxel-time.sh mark                record RTC + boot id before an ordinary reboot
 #   nuxel-time.sh compare             after the reboot: delta, with verdict
+#   nuxel-time.sh settings [--json]   the Date & time settings surface + live values
+#   nuxel-time.sh last-known          show/preserve the plausible last-known time
 #   nuxel-time.sh sync                ask the real backend for a sync
 #   nuxel-time.sh set <ISO8601>       set the clock, then systohc to the RTC
 #   nuxel-time.sh selftest            run the bundled offline fixtures
@@ -50,6 +52,10 @@ set -- ${ARGS[@]+"${ARGS[@]}"}
 CMD="${1:-status}"; [ $# -gt 0 ] && shift || true
 
 POLICY="${NUXEL_TIME_POLICY:-$POLICY_DEFAULT}"
+# The repository copy of the policy is used ONLY as a fallback so the settings
+# contract can be read on a development host that has no /etc/nuxel. The live
+# device always has the installed file and always wins.
+POLICY_REPO="$(cd "$(dirname "$SELF_PATH")/../../.." 2>/dev/null && pwd)/configs/nuxel/time/time.json"
 STATE_DIR_DEFAULT="/var/lib/nuxel/time"
 EVIDENCE_LOG="${NUXEL_TIME_LOG:-/var/log/nuxel/time.log}"
 # Tools that measure rather than read device state: never blocked by the
@@ -486,6 +492,164 @@ PY
 }
 
 # ---------------------------------------------------------------------------
+# settings / last-known — the Settings surface and the last-known-time record
+#
+# Both are READ-MOSTLY: they report what the system actually does. The one write
+# is the last-known record, and it records an observed epoch plus the explicit
+# statement that it is a floor, not a measurement of "now".
+# ---------------------------------------------------------------------------
+# settings_field <key> [property] — read a field out of the policy's
+# settings_surface.fields[] list (the page contract), never a guess.
+settings_field() {
+  local src=""
+  [ -r "$(abs "$POLICY")" ] && src="$(abs "$POLICY")"
+  [ -z "$src" ] && [ -r "$POLICY_REPO" ] && src="$POLICY_REPO"
+  if [ -n "$src" ]; then
+    python3 - "$src" "$1" "${2:-default}" <<'PY' 2>/dev/null
+import json, sys
+key, prop = sys.argv[2], sys.argv[3]
+try:
+    doc = json.load(open(sys.argv[1]))
+except Exception:
+    sys.exit(0)
+for f in doc.get("settings_surface", {}).get("fields", []):
+    if f.get("key") == key:
+        v = f.get(prop, "")
+        if isinstance(v, list):
+            print(" ".join(str(x) for x in v))
+        elif isinstance(v, bool):
+            print("true" if v else "false")
+        else:
+            print(v)
+        break
+PY
+  fi
+}
+
+do_settings() {
+  local json="${1:-}"
+  hdr "Date & time settings surface (renderer: briq-06d)"
+  local ntp tz lrtc susp tzlist tzdb
+  ntp="$(run_tool timedatectl show -p NTP --value 2>/dev/null)"
+  tz="$(run_tool timedatectl show -p Timezone --value 2>/dev/null)"
+  lrtc="$(run_tool timedatectl show -p LocalRTC --value 2>/dev/null)"
+  [ -z "$ntp" ] && ntp="unknown (timedatectl unavailable)"
+  [ -z "$tz" ] && tz="unknown"
+  say "auto_time(NTP)      : ${ntp}"
+  say "auto_time policy    : $(settings_field auto_time default) (default); NTP service state above is the live truth"
+  say "auto_timezone       : $(settings_field auto_timezone default) (default) -> applies ONLY when the location service is enabled"
+  say "timezone            : ${tz}"
+  say "RTC in local TZ     : ${lrtc:-unknown}"
+  say "time_format policy  : $(settings_field time_format default) (display preference; kernel/RTC untouched)"
+  say "manual_timezone dflt: $(settings_field manual_timezone default)"
+  say "ntp_servers(policy) : $(policy_get timesync.servers "-")"
+  local ss
+  ss="$(run_tool timedatectl show-timesync --property=ServerName --property=ServerAddress --property=LastNTPSync 2>/dev/null | tr '\n' ' ')"
+  say "last_sync           : ${ss:-UNKNOWN (no timesync backend answered)}"
+  say "set_time_requires   : $(policy_get clock_permissions.set_time_requires "root (CAP_SYS_TIME)")"
+  say "tzdata              :"
+  tzdb="$(abs /usr/share/zoneinfo)"
+  if [ -d "$tzdb" ]; then
+    tzlist="$(run_tool timedatectl list-timezones 2>/dev/null | wc -l | tr -d ' ')"
+    say "  /usr/share/zoneinfo present; timedatectl reports ${tzlist:-0} zone(s)"
+    [ "${tzlist:-0}" = "0" ] && say "  TZDATA_PROBE_INCONCLUSIVE (a directory exists but no zone list was returned)"
+  else
+    say "  TZDATA_MISSING (/usr/share/zoneinfo absent): the picker offers UTC only and must say so"
+  fi
+  say "suspend/resume      :"
+  susp="$(cat "$(abs /sys/power/state)" 2>/dev/null)"
+  if [ -n "$susp" ]; then
+    say "  /sys/power/state: ${susp}"
+    case "$susp" in *mem*) say "  suspend-to-RAM IS advertised by this kernel (NEEDS_OWNER_TEST to trigger)" ;; *) say "  only '${susp}' is advertised: suspend-to-RAM is NOT claimed for this kernel" ;; esac
+  else
+    say "  /sys/power/state unreadable: suspend support is UNKNOWN and is not claimed"
+  fi
+  say "last_known_record   : $(last_known_path)"
+  local lk; lk="$(last_known_path)"
+  if [ -r "$lk" ]; then
+    say "  $(sed -n '1,12p' "$lk" | tr '\n' ' ')"
+  else
+    say "  (no record yet: run 'nuxelctl time last-known --record' while the clock is plausible)"
+  fi
+  if [ "$json" = "--json" ]; then
+    printf '{"tool":"nuxel-time","device":"beyond2lte","ntp":"%s","timezone":"%s","rtc_local":"%s","last_sync":"%s"}\n' \
+      "$(printf '%s' "$ntp" | tr -d '"')" "$(printf '%s' "$tz" | tr -d '"')" "${lrtc:-unknown}" "$(printf '%s' "${ss:-UNKNOWN}" | tr -d '"')"
+  fi
+  return 0
+}
+
+# abs() prefixes the (possibly faked) root; when ROOT=/ the result of an
+# absolute policy default is "//var/...", which is valid but ugly in a report.
+norm_abs() { printf '%s' "$1" | sed 's#^//#/#'; }
+
+last_known_path() {
+  local v; v="$(policy_get last_known_time.record "/var/lib/nuxel/time/last-known.json")"
+  norm_abs "$(abs "$v")"
+}
+
+do_last_known() {
+  local record_flag=0
+  [ "${1:-}" = "--record" ] && record_flag=1
+  local lk; lk="$(last_known_path)"
+  local floor; floor="$(policy_get last_known_time.plausible_after "2024-01-01T00:00:00Z")"
+  local now r; now="$(sys_epoch)"; r="$(rtc_epoch)" || r=""
+  local floor_epoch
+  floor_epoch="$(python3 - "$floor" <<'PY'
+import sys, time
+try:
+    print(int(time.mktime(time.strptime(sys.argv[1], "%Y-%m-%dT%H:%M:%SZ"))))
+except Exception:
+    print(0)
+PY
+)"
+  hdr "last-known time"
+  say "record: $lk"
+  say "plausible_after: $floor (epoch ${floor_epoch})"
+  say "system_epoch: ${now:-unknown}  rtc_epoch: ${r:-unreadable}"
+  if [ "$record_flag" = "1" ]; then
+    if [ -z "$now" ] || [ "$now" -lt "${floor_epoch:-0}" ]; then
+      local human="unset"
+      if [ -n "$now" ]; then
+        human="$(python3 -c "import sys,time;print(time.strftime('%FT%TZ',time.gmtime(int(sys.argv[1]))))" "$now" 2>/dev/null)"
+      fi
+      say "REFUSED the system clock reads ${human:-unset} — recording it as 'last-known' would fabricate a time"
+      return 1
+    fi
+    python3 - "$lk" "$now" "${r:-}" "$floor" <<'PY'
+import json, os, sys, time
+path, now, rtc, floor = sys.argv[1:5]
+os.makedirs(os.path.dirname(path), exist_ok=True)
+doc = {"schema_version": 1, "observed_epoch": int(now),
+       "observed_iso": time.strftime("%FT%TZ", time.gmtime(int(now))),
+       "rtc_epoch_at_observation": int(rtc) if rtc.isdigit() else None,
+       "plausible_after": floor,
+       "kind": "last-known-lower-bound",
+       "warning": "This is the last time the clock was OBSERVED to be plausible. It is a floor, "
+                  "not a measurement of the current time: if the RTC or the system clock now reads "
+                  "earlier than this record, the clock is SUSPECT and must be re-synced."}
+json.dump(doc, open(path, "w"), indent=2)
+print("last-known recorded: %s (rtc=%s)" % (doc["observed_iso"], doc["rtc_epoch_at_observation"]))
+PY
+  else
+    if [ -r "$lk" ]; then
+      python3 - "$lk" "$now" <<'PY'
+import json, sys
+rec = json.load(open(sys.argv[1])); now = sys.argv[2]
+obs = rec.get("observed_epoch") or 0
+if now.isdigit() and int(now) < obs:
+    print("RTC_SUSPECT the clock now reads EARLIER than the last-known observation (%s < %s): "
+          "re-sync before trusting any timestamp" % (now, obs))
+else:
+    print("last-known observation: %s (a floor, not the current time)" % rec.get("observed_iso"))
+PY
+    else
+      say "(no record yet)"
+    fi
+  fi
+  return 0
+}
+
+# ---------------------------------------------------------------------------
 # rtc / sync / set / selftest
 # ---------------------------------------------------------------------------
 do_rtc() {
@@ -553,6 +717,8 @@ case "$CMD" in
   rtc)      do_rtc ;;
   mark)     do_mark ;;
   compare)  do_compare ;;
+  settings) do_settings "${1:-}" ;;
+  last-known) do_last_known "${1:-}" ;;
   sync)     do_sync ;;
   set)      do_set "${1:-}" ;;
   selftest) do_selftest ;;

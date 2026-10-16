@@ -79,6 +79,14 @@
 #define WLFB_FIFO    "/run/nuxel-wl-fb.cmd"
 #define HOST_FIFO    "/run/nuxel-pwa-host.cmd"
 #define SIM_BIN      "/usr/lib/nuxel/nuxel-button-fsm-sim"
+/* briq-03e additions: the sound-mode state, the flashlight request and the
+ * one-time verbose-boot request/state published by briq-02b. */
+#define SOUND_MODE_FILE "/var/lib/nuxel/audio/sound-mode"
+#define SOUND_MODE_DIR  "/var/lib/nuxel/audio"
+#define FLASHLIGHT_REQ  "/run/nuxel/flashlight.request"
+#define VERBOSE_ONCE    "/run/nuxel/boot-verbose-once"
+#define VERBOSE_STATE   "/run/nuxel/verbose-boot"
+#define BOOT_CAPS       "/run/nuxel/boot-stage-capabilities"
 
 static int verbose = 1;
 static void st(const char *fmt, ...) __attribute__((format(printf, 1, 2)));
@@ -209,6 +217,16 @@ static void cfg_load_actions(void) {
     json_str(b, "bixby_short",   C.bixby_short,   sizeof C.bixby_short,   C.bixby_short);
     json_str(b, "bixby_long",    C.bixby_long,    sizeof C.bixby_long,    C.bixby_long);
     json_str(b, "bixby_double",  C.bixby_double,  sizeof C.bixby_double,  C.bixby_double);
+    /* briq-03e: the panel/chord/early-hold mappings are owner-remappable too, and
+     * an owner value WINS over the shipped default exactly like the A32 keys. */
+    json_str(b, "volume_up_long",   C.volume_up_long,   sizeof C.volume_up_long,   C.volume_up_long);
+    json_str(b, "volume_down_long", C.volume_down_long, sizeof C.volume_down_long, C.volume_down_long);
+    json_str(b, "bixby_early_hold", C.bixby_early_hold, sizeof C.bixby_early_hold, C.bixby_early_hold);
+    json_str(b, "chord_power_volume_up",   C.chord_power_volume_up,
+             sizeof C.chord_power_volume_up,   C.chord_power_volume_up);
+    json_str(b, "chord_power_volume_down", C.chord_power_volume_down,
+             sizeof C.chord_power_volume_down, C.chord_power_volume_down);
+    C.volume_repeat_enabled = json_int(b, "volume_repeat_enabled", C.volume_repeat_enabled);
     audit("CONFIG_LOADED buttons_json=%s power_short=%s power_long=%s bixby_short=%s",
           BUTTONS_JSON, C.power_short, C.power_long, C.bixby_short);
   } else {
@@ -402,6 +420,86 @@ static void volume_mute_toggle(void) {
   }
 }
 
+/* ---- sound mode: normal -> vibrate -> silent (briq-03e chord, area 6) ----
+ * The mode is RECORDED in /var/lib/nuxel/audio/sound-mode, which is the shared
+ * contract with the audio settings surface (briq-03c). The mixer playback switch
+ * is set for silent/normal; whether the owner then HEARS anything stays
+ * NEEDS_OWNER_TEST - a switch write is never an audibility claim. */
+static void volume_set_switch(int on) {
+  if (mixer_open_dev() < 0 || !selem) return;
+  if (snd_mixer_selem_has_playback_switch(selem))
+    snd_mixer_selem_set_playback_switch_all(selem, on ? 1 : 0);
+}
+
+static void sound_mode_cycle(void) {
+  char cur[16] = "normal";
+  FILE *f = fopen(SOUND_MODE_FILE, "r");
+  if (f) { if (fscanf(f, "%15s", cur) != 1) strcpy(cur, "normal"); fclose(f); }
+  const char *next = !strcmp(cur, "normal") ? "vibrate" : (!strcmp(cur, "vibrate") ? "silent" : "normal");
+  mkdir(SOUND_MODE_DIR, 0755);
+  FILE *o = fopen(SOUND_MODE_FILE, "w");
+  if (o) { fprintf(o, "%s\n", next); fclose(o); }
+  else audit("SOUND_MODE_WRITE_FAIL errno=%d", errno);
+  volume_set_switch(!strcmp(next, "normal"));
+  char l[64]; snprintf(l, sizeof l, "sound-mode %s\n", next);
+  fifo_send(HOST_FIFO, l);            /* the launcher shows the mode on the glass */
+  char txt[96]; snprintf(txt, sizeof txt, "sound mode: %s", next);
+  osd_publish("sound", txt, 100, 100);
+  audit("SOUND_MODE %s -> %s (switch_write=%s)", cur, next,
+        (!strcmp(next, "normal")) ? "unmute" : "mute");
+  publish("SOUND_MODE=%s", next);
+  if (!strcmp(next, "vibrate"))
+    audit("SOUND_MODE_NOTE vibrate mode also needs the vibrator path (briq-08b): "
+          "recorded here, not claimed as a working haptic");
+}
+
+/* ---- flashlight: the button side of briq-08c's real LED control ---------- *
+ * This manager does NOT write an LED device node: the camera flash is shared
+ * with the camera, has thermal limits and needs camera/flashlight arbitration,
+ * all of which are owned by briq-08c. The dispatch publishes a REQUEST the
+ * owner of that path consumes, and never claims the LED lit. */
+static void flashlight_request(void) {
+  mkdir("/run/nuxel", 0755);
+  FILE *f = fopen(FLASHLIGHT_REQ, "w");
+  if (!f) { audit("FLASHLIGHT_REQUEST_FAIL errno=%d", errno); publish("FLASHLIGHT_REQUEST_FAIL errno=%d", errno); return; }
+  fprintf(f, "action=toggle requested_by=nuxel-button-manager at=%lld\n", (long long)time(NULL));
+  fclose(f);
+  fifo_send(HOST_FIFO, "action flashlight\n");
+  osd_publish("flashlight", "flashlight toggle requested", 100, 100);
+  audit("FLASHLIGHT_REQUESTED path=%s (the LED itself is owned by the camera/flashlight "
+        "arbitration in briq-08c; this is the request, not a claim that it lit)", FLASHLIGHT_REQ);
+  publish("FLASHLIGHT_REQUESTED");
+}
+
+/* ---- the one-time verbose-boot note (Bixby early hold) ------------------- *
+ * briq-02b owns the consumer (nuxel-verbose-boot, which runs in the EARLY
+ * userspace boot stage and reads /run/nuxel/boot-verbose-once). This is the
+ * BUTTON side: publish the request, and say plainly when it cannot apply. */
+static void verbose_boot_note_once(void) {
+  int consumer_ran = file_exists(VERBOSE_STATE);
+  char cap[256] = ""; char *c = slurp(BOOT_CAPS, 0);
+  if (c) { snprintf(cap, sizeof cap, "%s", c); free(c); }
+  if (consumer_ran) {
+    /* The early stage already decided this boot. The button manager starts AFTER
+     * it, so it cannot make THIS boot verbose; honouring the override before the
+     * first userspace stage needs an initramfs/BOOT key capture. */
+    audit("VERBOSE_ONCE_REFUSED reason=boot-stage-already-ran state=BOOT_UPDATE_REQUIRED "
+          "caps=%s", cap[0] ? cap : "(none)");
+    publish("VERBOSE_ONCE_REFUSED reason=boot-stage-already-ran state=BOOT_UPDATE_REQUIRED");
+    osd_publish("boot", "verbose boot: the early boot stage must capture the key (BOOT update pending)", 0, 100);
+    return;
+  }
+  mkdir("/run/nuxel", 0755);
+  FILE *f = fopen(VERBOSE_ONCE, "w");
+  if (!f) { audit("VERBOSE_ONCE_FAIL errno=%d", errno); return; }
+  fprintf(f, "requested_by=nuxel-button-manager at=%lld (this boot only)\n", (long long)time(NULL));
+  fclose(f);
+  audit("VERBOSE_ONCE_REQUESTED path=%s caps=%s (one boot only; never persisted)", VERBOSE_ONCE,
+        cap[0] ? cap : "(none)");
+  publish("VERBOSE_ONCE_REQUESTED");
+  osd_publish("boot", "verbose boot requested for THIS boot", 100, 100);
+}
+
 /* The ONLY place a userspace reboot/power-off is ever executed, and it executes
  * nothing unless the gate allows it. No other path in this program can reboot. */
 static void gated_system_action(const char *what) {
@@ -443,6 +541,9 @@ static void perform(const char *action, const char *source) {
   if (!strcmp(action, "volume-up") || !strcmp(action, "volume-up-autorepeat")) { volume_step(+1); return; }
   if (!strcmp(action, "volume-down") || !strcmp(action, "volume-down-autorepeat")) { volume_step(-1); return; }
   if (!strcmp(action, "volume-mute")) { volume_mute_toggle(); return; }
+  if (!strcmp(action, "sound-mode-cycle")) { sound_mode_cycle(); return; }
+  if (!strcmp(action, "flashlight")) { flashlight_request(); return; }
+  if (!strcmp(action, "verbose-boot-note")) { verbose_boot_note_once(); return; }
   if (!strcmp(action, "reboot-request")) { gated_system_action("systemctl-reboot"); return; }
   if (!strcmp(action, "systemctl-reboot")) { gated_system_action("systemctl-reboot"); return; }
   if (!strcmp(action, "systemctl-poweroff")) { gated_system_action("systemctl-poweroff"); return; }
@@ -460,7 +561,8 @@ static void perform(const char *action, const char *source) {
   if (!strcmp(action, "open-terminal")) { fifo_send(HOST_FIFO, "open-terminal\n"); return; }
   if (!strcmp(action, "back") || !strcmp(action, "home") || !strcmp(action, "recents") ||
       !strcmp(action, "search") || !strcmp(action, "settings") || !strcmp(action, "lock") ||
-      !strcmp(action, "screenshot") || !strcmp(action, "camera") || !strcmp(action, "voice-input")) {
+      !strcmp(action, "screenshot") || !strcmp(action, "camera") || !strcmp(action, "voice-input") ||
+      !strcmp(action, "notifications-panel") || !strcmp(action, "all-apps")) {
     char l[64];
     snprintf(l, sizeof l, "action %s\n", action);
     fifo_send(HOST_FIFO, l);
@@ -888,6 +990,39 @@ int main(int argc, char **argv) {
   } else {
     audit("EVIOCGBIT(EV_KEY) FAILED errno=%d — refusing to guess the key set", errno);
     publish("EVIOCGBIT_FAILED errno=%d", errno);
+  }
+
+  /* ---- start-up key-state sync (one-time) ---------------------------------
+   * A key the owner is ALREADY holding when this manager opens the node produces
+   * no further evdev event, so without this sync the Bixby early-hold ("hold
+   * Bixby through the boot") would be invisible: the FSM's early window would
+   * never see a press. EVIOCGKEY reports the state the driver holds RIGHT NOW;
+   * a set bit becomes a synthetic press at t~start. It never synthesises a
+   * release and it never grabs the device, so libinput and Phoc keep receiving
+   * every event they receive today. */
+  {
+    const unsigned long bits = 8 * sizeof(long);
+    unsigned long held[(KEY_MAX / bits) + 1];
+    memset(held, 0, sizeof held);
+    if (ioctl(sel.key_fd, EVIOCGKEY(sizeof held), held) >= 0) {
+      static const unsigned probe[4] = { KEY_POWER, KEY_VOLUMEUP, KEY_VOLUMEDOWN,
+                                         (unsigned)NUXEL_FSM_KEY_BIXBY };
+      for (int i = 0; i < 4; i++) {
+        unsigned code = probe[i];
+        if (code > KEY_MAX) continue;
+        if (!(held[code / bits] & (1UL << (code % bits)))) continue;
+        nuxel_fsm_event se; memset(&se, 0, sizeof se);
+        se.t_ms = now_ms(); se.kind = NUXEL_FSM_EV_KEY; se.code = (int)code; se.value = 1;
+        const char *a[4];
+        int n = nuxel_fsm_feed(&fsm, &C, &se, a, 4);
+        for (int j = 0; j < n; j++) handle_action(&fsm, a[j], "key-sync");
+        audit("KEY_STATE_SYNC code=%u value=1 held_at_start=1 (already down when the manager started)", code);
+      }
+    } else {
+      audit("EVIOCGKEY FAILED errno=%d — no start-up key-state sync: a Bixby held through the "
+            "boot cannot be seen by the early-hold window on this run", errno);
+      publish("EVIOCGKEY_FAILED errno=%d", errno);
+    }
   }
 
   struct pollfd pf[3];

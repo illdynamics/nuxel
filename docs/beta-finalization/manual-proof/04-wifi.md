@@ -115,13 +115,76 @@ a real IPv4 address is observed **on the handset**.
   verdict string from `nuxelctl wifi status`; the verdict names the layer, and a
   verdict is what the repair cycle needs — not a screenshot.
 
+## 9. Reconnection across a normal reboot (acceptance, not optional)
+
+Wi-Fi is not accepted on the strength of one successful association: it has to
+come back **by itself** after an ordinary reboot. This is the evidence pair
+`nuxelctl wifi mark` / `nuxelctl wifi compare` (state records live in
+`/var/lib/nuxel/wifi/`, written by `tools/s10plus/a33/nuxel-wifi-diag.sh`).
+
+1. While connected, run `nuxelctl wifi mark`. This records ifname, state, SSID,
+   BSSID, IPv4, gateway and the kernel `boot_id`.
+2. Perform **one** ordinary reboot (userspace; never a bootloader/recovery mode —
+   this mission performs no flashing).
+3. Re-run `nuxelctl wifi compare`. It writes the post-reboot record and prints
+   one verdict word:
+
+| Verdict | Meaning |
+|---|---|
+| `PASS` | the same SSID is associated again with an IPv4 address (a different BSSID with the same SSID is reported as a roam and still PASSes) |
+| `FAIL` | the radio is not associated after the reboot, re-associated to a different network, or has no IPv4 address |
+| `REFUSED` | the boot id did not change — no reboot happened, so the pair proves nothing |
+| `INVALID` | the pre-reboot mark was taken while not associated; re-mark while connected |
+| `NO_MARKS` | one of the two records is missing |
+
+To judge two existing records without touching live state (what the offline test
+does): `nuxelctl wifi compare before.json after.json`.
+
+## 10. No silent cellular fallback
+
+The mission requires that Wi-Fi work is not propped up by mobile data, and that
+the repository never implies a working cellular fallback on a device whose
+Shannon LTE modem has no upstream ModemManager plugin (briq-08i).
+
+* **Policy audit:** `nuxelctl wifi fallback` scans the NetworkManager profile
+  directory for `type=gsm` / `type=cdma` profiles with `autoconnect=true` and
+  prints `CELLULAR_FALLBACK=present` (a finding for the owner) or
+  `CELLULAR_FALLBACK=absent`. Presence is **not** proof that the modem can
+  associate; absence is proof only that no profile on this image can bring one
+  up automatically.
+* **Behavioural test (owner):** while associated, power the access point off,
+  wait 30 s, then run:
+  `ip -4 route show default` and `nuxelctl wifi status`.
+  Expected: the wlan default route disappears and **no** `wwan*`/`rmnet*`
+  default route appears. A mobile-data default route appearing here is a FAIL of
+  this area even if a page still loads.
+
+## 11. Native Network Settings feature set (bg-06d append point)
+
+The owner-facing pages are rendered by the Settings app (briq-06d); the facts
+they may display come from the read contract in
+`configs/networkmanager/nuxel-network-settings.spec.json` (bg-03 owns it). Print
+it with `nuxelctl wifi settings-spec`. It covers: radio on/off and rfkill,
+available networks (SSID, signal, security, band, channel, BSSID), connect and
+disconnect, per-network settings, DNS/resolver, advanced routing, the regulatory
+domain and channel occupancy (only when the driver reports survey data — the page
+must say "not reported by this driver" otherwise; only regulatory-compliant
+controls are offered), reconnection/reboot persistence and the
+no-cellular-fallback audit. Nothing in that list may be displayed before its
+`read_api` command has produced it, and no SSID/PSK is ever written by Nuxel.
+
 ## Current automatic evidence (repository, this build group)
 
 * `tools/s10plus/a33/nuxel-wifi-diag.sh selftest` → 5/5 fixtures PASS
-  (`tools/s10plus/a33/tests/fixtures-p3/wifi-*`).
+  (`tools/s10plus/a33/tests/fixtures-p3/wifi-*`: no radio / no firmware / no
+  supplicant / no association / associated). The "no supplicant" fixture is a
+  regression guard: it fails if the tool borrows the *host's* supplicant when it
+  is pointed at a faked root.
 * `python3 tools/s10plus/a33/tests/test-wifi-diag.py` → all checks PASS
   (verdict logic, NM/wpa config syntax, no-credential check, no-flashing
-  invariant, this fragment's field completeness).
+  invariant, this fragment's field completeness, the mark/compare reconnection
+  judgement incl. REFUSED, the no-cellular-fallback audit, host-tool leakage,
+  and the bg-06d settings spec).
 * Verdict for the live radio: **unknown / not claimed** — default state
   `BLOCKED_FIRMWARE` in
   `configs/nuxel/capabilities/connectivity-time-audio-buttons.json` until an

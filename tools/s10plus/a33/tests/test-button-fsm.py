@@ -18,6 +18,19 @@ WHAT IS ACTUALLY PROVEN HERE
      Recovery and Download-Mode entries that are refused at execution, and the
      manager contains no flashing surface at all.
   5. The menu the daemon shows equals the menu the spec documents.
+  6. The briq-03e EXACT mapping is what both the spec and the C implement:
+     power short/long/double, Power+VolUp -> sound-mode cycle, Power+VolDn ->
+     screenshot, Bixby short/double/early-hold, volume short/long - plus the
+     arbitration order (chord > long > double > single > key-repeat volume).
+  7. The A32 autorepeat cadence is preserved (reachable by remap) even though the
+     shipped default for a volume HOLD is now a panel - so "extend, do not
+     replace" is checkable, not a slogan.
+  8. Samsung's emergency combos are never intercepted: the daemon takes no
+     EVIOCGRAB and a chord cancels the FSM's own classes (including the 8 s
+     reboot class) for the rest of that hold.
+  9. The daemon parses: the whole file is run through -fsyntax-only against a
+     stub alsa header, and the gate is proven to actually parse it (negative
+     control). A red syntax check is a real error in the daemon.
 
 A passing run is OFFLINE_TESTED (plus VERIFIED_IN_VM_ONLY for the build leg when
 it is compiled on the UTM Fedora 43 aarch64 guest). It is NOT
@@ -103,6 +116,8 @@ json_to_define = {
     "BIXBY_LONG_MIN_MS": pc["bixby"]["long_min_ms"],
     "BIXBY_DOUBLE_GAP_MS": pc["bixby"]["double_gap_ms"],
     "VOLUME_DEBOUNCE_MS": pc["volume"]["debounce_ms"],
+    "VOLUME_LONG_MIN_MS": pc["volume"]["long_min_ms"],
+    "CHORD_HOLD_MIN_MS": pc["chord"]["hold_min_ms"],
     "VOLUME_REPEAT_DELAY_MS": pc["volume"]["repeat_delay_ms"],
     "VOLUME_REPEAT_INTERVAL_MS": pc["volume"]["repeat_interval_ms"],
     "VOLUME_STEP_DIVISOR": spec["volume_step"]["divisor"],
@@ -124,6 +139,7 @@ json_to_define = {
     "KEY_VOLUMEUP": spec["device"]["measured_keys"]["KEY_VOLUMEUP"],
     "KEY_VOLUMEDOWN": spec["device"]["measured_keys"]["KEY_VOLUMEDOWN"],
     "KEY_BIXBY": spec["device"]["measured_keys"]["KEY_BIXBY_assistant"],
+    "BIXBY_EARLY_WINDOW_MS": spec["early_boot"]["window_ms"],
 }
 for k, want in sorted(json_to_define.items()):
     got = defines.get("NUXEL_FSM_" + k)
@@ -314,6 +330,106 @@ if os.path.exists(DOC):
         check("BUTTONS-GESTURES.md covers %r" % want, want.lower() in d.lower())
 else:
     check("BUTTONS-GESTURES.md exists", False, DOC)
+
+
+# --------------------------------------------------------------------------- #
+# 6. the briq-03e exact mapping + arbitration + chord/early-hold behaviour
+# --------------------------------------------------------------------------- #
+want_actions = {
+    "power_short": "screen-toggle", "power_long": "power-menu", "power_double": "camera",
+    "volume_up": "volume-up", "volume_down": "volume-down",
+    "volume_up_long": "notifications-panel", "volume_down_long": "all-apps",
+    "bixby_short": "open-terminal", "bixby_double": "flashlight",
+    "bixby_early_hold": "verbose-boot-note",
+    "chord_power_volume_up": "sound-mode-cycle", "chord_power_volume_down": "screenshot",
+}
+for k, v in sorted(want_actions.items()):
+    check("mapping: %s -> %s" % (k, v), spec["actions"].get(k) == v, spec["actions"].get(k))
+check("mapping: no double-press volume class exists at all",
+      "double" not in json.dumps(spec["press_classes"]["volume"]))
+check("mapping: the volume long window is documented and matches the C",
+      spec["press_classes"]["volume"]["long_min_ms"] == 500 and
+      defines.get("NUXEL_FSM_VOLUME_LONG_MIN_MS") == 500)
+order = spec["arbitration"]["order"]
+check("arbitration order is stated highest-first, hardware combos first",
+      order[0].startswith("hardware_emergency_combos") and
+      any(o.startswith("multi_key_chords") for o in order) and
+      any(o.startswith("long_press") for o in order) and
+      any(o.startswith("double_press") for o in order) and
+      any(o.startswith("single_press") for o in order) and
+      any(o.startswith("key_repeat_volume") for o in order), order)
+check("the spec records that the A32 autorepeat cadence survives as an opt-in",
+      spec["volume_hold"]["repeat_is_opt_in"] is True and
+      "volume-up-autorepeat" in " ".join(spec["volume_hold"]["repeat_opt_in_via"]))
+check("the spec records that Samsung emergency combos are never intercepted",
+      "NEVER intercepted" in spec["press_classes"]["chord"]["emergency_note"])
+check("the early-hold is documented as needing the early boot stage (honest limit)",
+      "BOOT_UPDATE_REQUIRED" in spec["early_boot"]["honest_limit"] and
+      spec["early_boot"]["not_persistent"] is True)
+for needle, why in [
+    ("chord_power_volume_down", "the daemon implements the Power+VolDn chord"),
+    ("chord_power_volume_up", "the daemon implements the Power+VolUp chord"),
+    ("sound-mode-cycle", "the daemon implements the sound-mode cycle"),
+    ("notifications-panel", "the daemon implements the notifications panel action"),
+    ("all-apps", "the daemon implements the all-apps action"),
+    ("flashlight", "the daemon implements the flashlight dispatch"),
+    ("verbose-boot-note", "the daemon implements the verbose-boot note"),
+    ("EVIOCGKEY", "the daemon syncs the held-key state at start-up (early hold)"),
+    ("SOUND_MODE_FILE", "the sound mode is a persisted, shared contract"),
+]:
+    check("daemon: " + why, needle in manager)
+check("FSM: the chord is decided BEFORE the long-press classes in the feed order",
+      header.index("chords: decided on the timer") < header.index("power long/very-long decided on ticks"))
+check("FSM: a chord in progress silences the volume class entirely",
+      "&& !f->chord_armed) {" in header and "chord outranks every single-key class" in header)
+check("FSM: a chord suppresses the very-long reboot class for the rest of the hold",
+      "f->power_used_very_long = 1;" in header and "f->chord_fired = 1;" in header)
+check("FSM: the buffered volume step is delivered when a chord does not complete",
+      "f->chord_step_pending" in header and "no press is lost" in header)
+check("FSM: a volume hold uses a repeat cadence only when it is asked for",
+      "vol_repeat_mode" in header and "volume_repeat_enabled" in header)
+check("FSM: the early window is measured from the manager's first event",
+      "fsm_start_ms" in header and "bixby_early" in header)
+
+sfs = os.path.join(ROOT, "configs", "nuxel", "buttons", "settings-surface.json")
+if os.path.exists(sfs):
+    sf = json.load(open(sfs))
+    keys = {f.get("key") for f in sf.get("fields", [])}
+    need = {"power_short", "power_long", "power_double", "volume_up_long", "volume_down_long",
+            "bixby_short", "bixby_double", "bixby_early_hold", "chord_power_volume_up",
+            "chord_power_volume_down"}
+    check("settings surface exposes every mapping the FSM implements",
+          need.issubset(keys), sorted(need - keys))
+    check("settings surface names its renderer and its persistence store",
+          sf.get("renderer", "").startswith("briq-06d") and
+          sf.get("store") == "/etc/nuxel/input/buttons.json")
+else:
+    check("settings surface exists (bg-06d append point)", False, sfs)
+
+# the daemon must PARSE: syntax gate against the stub alsa header (+ negative control)
+STUB = os.path.join(HERE, "stub-include")
+if cc and os.path.isdir(STUB):
+    p = subprocess.run([cc, "-std=gnu11", "-fsyntax-only", "-Wall", "-Wextra", "-I", STUB, MANAGER_C],
+                       capture_output=True, text=True)
+    check("daemon syntax gate: nuxel-button-manager.c parses (stub alsa header, syntax only)",
+          p.returncode == 0, (p.stderr or "")[-400:])
+    tmpd2 = tempfile.mkdtemp(prefix="nuxel-mgr-neg-")
+    bad = os.path.join(tmpd2, "bad.c")
+    with open(bad, "w") as f:
+        f.write(manager.replace("static void perform(const char *action, const char *source) {",
+                                "static void perform(const char *action, const char *source) { int broken = ;", 1))
+    p2 = subprocess.run([cc, "-std=gnu11", "-fsyntax-only", "-I", STUB, bad],
+                        capture_output=True, text=True)
+    check("daemon syntax gate: negative control fails (the gate really parses the file)",
+          p2.returncode != 0)
+else:
+    skip("daemon syntax gate", "no C compiler or stub include dir")
+
+# the extra chord/early-hold traces must exist and be replayed above
+for t in ["chord-power-voldown-screenshot", "chord-power-volup-soundmode", "chord-cancelled-step",
+          "volume-hold-panel", "volume-down-long-all-apps", "bixby-early-hold"]:
+    check("fixture %s.trace exists with an expectation" % t,
+          os.path.exists(os.path.join(FIX, t + ".trace")) and os.path.exists(os.path.join(FIX, t + ".expected")))
 
 print("\n== %d failing check(s), %d skipped leg(s) ==" % (len(fails), len(skips)))
 if skips:

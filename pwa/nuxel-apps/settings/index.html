@@ -145,17 +145,41 @@
       <pre id="dev-state" class="state">—</pre>
     </div>
     <div class="card">
-      <h3>Boot</h3>
-      <p class="hint">Verbose boot shows Nuxel's own boot log on the glass as early as possible
-        and shortens the boot animation while it is on. The choice is stored durably in
-        <code>/etc/nuxel/boot/verbose-boot.json</code>, applies from the <b>next boot</b>, and a
-        package/rootfs update never overwrites it. Turning it on is never recorded as a completed
-        animation cycle: the handoff receipt says <code>reason=verbose_boot_requested</code>.</p>
+      <h3>Boot diagnostics</h3>
+      <p class="hint">Three independent controls, one durable document
+        (<code>/etc/nuxel/boot/verbose-boot.json</code>). All three apply from the <b>next
+        boot</b>, are written by <code>nuxelctl verbose-boot …</code> and by this panel through
+        the same file, and are never overwritten by a package/rootfs update. Precedence for the
+        animation is <code>off &gt; short &gt; verbose boot &gt; standard</code>; the verbosity
+        level only picks how much the log says, never whether it is shown.</p>
       <div class="boot-row">
-        <label><input type="checkbox" id="verbose-boot-toggle"> Verbose boot</label>
+        <label>Boot animation
+          <select id="animation-mode">
+            <option value="standard">Standard (full 192-frame / 24 fps)</option>
+            <option value="short">Short (hand over early)</option>
+            <option value="off">Off (no animation)</option>
+          </select>
+        </label>
+      </div>
+      <div class="boot-row">
+        <label><input type="checkbox" id="verbose-boot-toggle"> Verbose boot (show the boot log on the glass)</label>
+      </div>
+      <div class="boot-row">
+        <label>Verbosity level
+          <select id="verbosity-level">
+            <option value="0">0 — quiet (markers only)</option>
+            <option value="1">1 — normal (default)</option>
+            <option value="2">2 — verbose (per-stage)</option>
+            <option value="3">3 — debug (everything)</option>
+          </select>
+        </label>
+      </div>
+      <div class="boot-row">
+        <button id="save-boot" class="primary">Save boot diagnostics</button>
         <button id="reload-boot" class="ghost">Reload</button>
       </div>
       <pre id="verbose-boot-state" class="state">—</pre>
+      <p class="hint" id="boot-effective">—</p>
       <p class="hint" id="verbose-boot-override">—</p>
     </div>
     <div class="card">

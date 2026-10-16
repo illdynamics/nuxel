@@ -3,6 +3,8 @@
 
 A33 adds the boot-surface controls that have to agree with the Settings UI:
     nuxelctl verbose-boot status|on|off     durable verbose-boot setting (briq-02b)
+    nuxelctl verbose-boot animation MODE    boot animation policy: standard|short|off
+    nuxelctl verbose-boot verbosity N       boot-log detail: 0 (quiet) .. 3 (debug)
     nuxelctl verbose-boot override          one-time Bixby-hold override status
     nuxelctl handoff status                 single-owner lock + ownership receipt (briq-02a)
     nuxelctl handoff simulate               replayable handoff timing harness
@@ -415,10 +417,27 @@ def _verbose_status():
     return out.returncode
 
 
-def _verbose_set(value):
-    """Write the durable document atomically, preserving unknown keys.  This is
-    the SAME file the Settings UI writes through NuxelHost.configSet('verbose-boot'),
-    so a console command and a finger tap cannot diverge."""
+ANIMATION_MODES = ("standard", "short", "off")
+VERBOSITY_MIN, VERBOSITY_MAX = 0, 3
+
+
+def _verbose_doc():
+    """Best-effort read of the durable boot-diagnostics document (never raises)."""
+    try:
+        with open(P(VERBOSE_CFG)) as f:
+            d = json.load(f)
+        return d if isinstance(d, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def _verbose_write(patch):
+    """Atomically MERGE `patch` into the durable boot-diagnostics document,
+    preserving every key this revision does not know about.  This is the SAME
+    file the Settings UI writes through NuxelHost.configSet('verbose-boot') and
+    the Quick Settings tile writes through NuxelSettings, so a console command
+    and a finger tap cannot diverge - and an older/newer launcher cannot clobber
+    the operator's choice."""
     path = P(VERBOSE_CFG)
     doc = {}
     try:
@@ -432,7 +451,7 @@ def _verbose_set(value):
         print("!! %s is not a readable JSON object (%s) - refusing to overwrite it" % (VERBOSE_CFG, e))
         return 3
     doc["schema_version"] = doc.get("schema_version", 1)
-    doc["verbose_boot"] = bool(value)
+    doc.update(patch)
     doc["set_by"] = "user"
     doc["updated_at"] = int(__import__("time").time())
     os.makedirs(os.path.dirname(path), exist_ok=True)
@@ -441,9 +460,51 @@ def _verbose_set(value):
         json.dump(doc, f, indent=2)
         f.write("\n")
     os.replace(tmp, path)
-    print("saved %s (verbose_boot=%s)" % (VERBOSE_CFG, doc["verbose_boot"]))
+    print("saved %s (%s)" % (VERBOSE_CFG, ", ".join("%s=%s" % kv for kv in sorted(patch.items()))))
+    return 0
+
+
+def _verbose_set(value):
+    """The verbose-boot control (on-glass boot log)."""
+    rc = _verbose_write({"verbose_boot": bool(value)})
+    if rc:
+        return rc
     print("applies from the NEXT boot; the on-glass boot log is shown by the launcher, and "
-          "the boot animation is shortened only while verbose boot is on.")
+          "the boot animation is shortened only while verbose boot is on "
+          "(animation_mode=standard,short,off overrides that).")
+    return 0
+
+
+def _verbose_animation(mode):
+    """The standard-animation control: standard | short | off."""
+    m = (mode or "").strip().lower()
+    if m not in ANIMATION_MODES:
+        print("!! animation_mode must be one of: %s" % ", ".join(ANIMATION_MODES))
+        return 2
+    rc = _verbose_write({"animation_mode": m})
+    if rc:
+        return rc
+    print("animation policy: standard = full 192-frame 24 fps animation with the "
+          "minimum-cycle handoff; short = trade the animation for the earliest handoff; "
+          "off = no animation. Precedence: off > short > verbose_boot > standard.")
+    return 0
+
+
+def _verbose_verbosity(level):
+    """The verbosity-level control: 0 (quiet) .. 3 (debug)."""
+    try:
+        n = int(str(level).strip())
+    except (TypeError, ValueError):
+        print("!! verbosity_level must be an integer %d..%d" % (VERBOSITY_MIN, VERBOSITY_MAX))
+        return 2
+    if n < VERBOSITY_MIN or n > VERBOSITY_MAX:
+        print("!! verbosity_level must be %d..%d (got %d) - refused, not clamped silently"
+              % (VERBOSITY_MIN, VERBOSITY_MAX, n))
+        return 2
+    rc = _verbose_write({"verbosity_level": n})
+    if rc:
+        return rc
+    print("how much the boot log says, not whether it is shown (that is verbose-boot on|off).")
     return 0
 
 
@@ -492,13 +553,33 @@ def main():
             rc = _verbose_set(False)
             _verbose_status()
             return rc
+        if argv[0] in ("animation", "anim"):
+            if len(argv) < 2:
+                d = _verbose_doc()
+                print("animation_mode=%s" % d.get("animation_mode", "standard (default)"))
+                print("usage: nuxelctl verbose-boot animation standard|short|off")
+                return 0
+            rc = _verbose_animation(argv[1])
+            _verbose_status()
+            return rc
+        if argv[0] in ("verbosity", "verbose-level", "level"):
+            if len(argv) < 2:
+                d = _verbose_doc()
+                print("verbosity_level=%s" % d.get("verbosity_level", "1 (default)"))
+                print("usage: nuxelctl verbose-boot verbosity 0|1|2|3")
+                return 0
+            rc = _verbose_verbosity(argv[1])
+            _verbose_status()
+            return rc
         if argv[0] in ("override", "bixby"):
             rc = _verbose_status()
             print("one-time Bixby-hold override: honoured only when the early boot stage "
                   "publishes bixby-hold-override=1; otherwise BOOT_UPDATE_REQUIRED "
                   "(no BOOT partition write is performed by this mission).")
+            print("userspace fallback (no BOOT partition write): 'nuxelctl verbose-boot on', "
+                  "the Settings -> Developer -> Boot toggle, or the Quick Settings tile.")
             return rc
-        print("usage: nuxelctl verbose-boot status|on|off|override")
+        print("usage: nuxelctl verbose-boot status|on|off|animation MODE|verbosity N|override")
         return 2
 
     if cmd == "handoff":

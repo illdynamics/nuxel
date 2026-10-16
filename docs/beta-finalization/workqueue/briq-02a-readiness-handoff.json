@@ -122,6 +122,133 @@
       "at": "2026-10-16T16:24:21+02:00",
       "by": "construqtor/bg-02-boot-animation-launcher",
       "revision": 2
+    },
+    {
+      "id": "briq-02a-readiness-handoff",
+      "title": "Display-ownership receipt-driven animation handoff with single fb owner",
+      "component": "bg-02-boot-animation-launcher",
+      "component_title": "Priority 2 - Boot Stability, Animation Handoff & UTM Launcher Parity",
+      "priority": 2,
+      "state": "implemented",
+      "dependencies": [],
+      "evidence": [
+        {
+          "kind": "observation",
+          "path": "tools/s10plus/a33/nuxel-wl-fb.c",
+          "command": "test -e tools/s10plus/a33/nuxel-wl-fb.c",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "observation",
+          "path": "tools/s10plus/a33/nuxel-anim-handoff.py",
+          "command": "test -e tools/s10plus/a33/nuxel-anim-handoff.py",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "tools/s10plus/a33/nuxel-anim-handoff.py",
+          "command": "python3 tools/s10plus/a33/nuxel-anim-handoff.py selftest",
+          "result": "PASS handoff harness selftest (0 failures); 30 checks: floor honoured exactly for 1/2/3 cycles, launcher-not-ready resumes the animation, auditor rejects a handoff with no completed cycle and a two-writer fixture",
+          "at": "2026-10-16T16:24:21+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "tools/s10plus/a33/nuxel-wl-fb.c",
+          "command": "bash tools/s10plus/a33/build-a33-boot.sh",
+          "result": "BUILD_A33_BOOT=OK channel=vm: aarch64 ELF sha256 2d8718c4d92858bbae02b7e914f0172d295b1c12446eb861e91c355f2ac912fc built and self-tested on the UTM Fedora 43 guest (NOT deployed to the phone)",
+          "at": "2026-10-16T16:24:21+02:00"
+        },
+        {
+          "kind": "doc",
+          "path": "docs/beta-finalization/manual-proof/03-display-boot.md",
+          "command": "cat docs/beta-finalization/manual-proof/03-display-boot.md",
+          "result": "owner procedure written: markers, receipt paths, expected/failure table, PASS/FAIL record; area verdict NEEDS_OWNER_TEST",
+          "at": "2026-10-16T16:24:21+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "tools/s10plus/a33/nuxel-anim-handoff.py",
+          "command": "python3 tools/s10plus/a33/nuxel-anim-handoff.py selftest",
+          "result": "PASS handoff harness selftest (0 failures); 30 checks over the shared 22-case corpus + the compiled C layer + the single-owner/negative controls. Re-run in this revision; the decision table, the ownership lock and the receipt writer are unchanged",
+          "at": "2026-10-16T21:05:00+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "tools/s10plus/a33/tests/test-boot-surface-contract.py",
+          "command": "python3 tools/s10plus/a33/tests/test-boot-surface-contract.py",
+          "result": "PASS boot-surface contract (0 failures), 295 checks: the bridge markers, the lock/receipt paths, the config the bridge reads, the console/UI wiring, the ten-zone contract and all six documents agree",
+          "at": "2026-10-16T21:05:00+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "tools/s10plus/a33/nuxel-wl-fb.c",
+          "command": "sha256sum tools/s10plus/a33/nuxel-wl-fb.c",
+          "result": "052bfdbf673ef658c93b8c07925f2c9249af3c755a011ccbe90011c616f7b768 - UNCHANGED this revision: no conversion, lock, receipt or presentation line was edited. The A32 conversion pin INV-2 (tools/s10plus/a32/nuxel-wl-fb.c = 6501c6d5...) still MATCHES under bash tools/beta/regression-guard.sh",
+          "at": "2026-10-16T21:05:00+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "tools/s10plus/a33/tests/run-boot-tests.sh",
+          "command": "bash tools/s10plus/a33/tests/run-boot-tests.sh",
+          "result": "BOOT-TESTS: ALL PASS (8 legs). The aarch64 build leg reported SKIP because the UTM Fedora 43 guest was unreachable (ssh ConnectTimeout) - a skip is never a pass; the compiled-artefact and VM legs remain bg-11/bg-10 territory",
+          "at": "2026-10-16T21:05:00+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "tools/beta/regression-guard.sh",
+          "command": "bash tools/beta/regression-guard.sh",
+          "result": "PASS=67 FAIL=1 WARN=12 INFO=2. The single FAIL is INV-4 on configs/nuxel/buttons.json (want 6e9994c0... got 420567fe...), a file this briQ does not own and did not touch: it is an IN-FLIGHT edit by the parallel button/gesture group (bg-03). Every INV-2/INV-3/INV-9/INV-11 drift named here is a bg-02-owned file, which is the documented WARN path, not a regression",
+          "at": "2026-10-16T21:05:00+02:00"
+        },
+        {
+          "kind": "doc",
+          "path": "docs/beta-finalization/boot/ANIMATION-HANDOFF.md",
+          "command": "cat docs/beta-finalization/boot/ANIMATION-HANDOFF.md",
+          "result": "revision-3 section added: byte-identified re-verification table, the recorded reason for a waived floor (animation_mode_off / animation_mode_short / verbose_boot_requested), the NUXEL_BOOT_ANIMATION marker, the cache-namespace bump for the deployed bundle, and the flash-free deployment hand-off for bg-10 (per-artefact install path, pre-check, rollback; DEPLOYED_UNVERIFIED until receipts are captured)",
+          "at": "2026-10-16T21:05:00+02:00"
+        },
+        {
+          "kind": "doc",
+          "path": "docs/beta-finalization/manual-proof/03-display-boot.md",
+          "command": "cat docs/beta-finalization/manual-proof/03-display-boot.md",
+          "result": "owner procedure extended with steps 5b (verbosity 0 vs 3) and 5c (animation off / standard), the new expected-state lines (EFFECTIVE_ANIMATION/ANIMATION_REASON/VERBOSITY) and two new failure rows; result row 3.5c added",
+          "at": "2026-10-16T21:05:00+02:00"
+        }
+      ],
+      "intended_changes": [
+        "tools/s10plus/a33/nuxel-wl-fb.c",
+        "tools/s10plus/a33/nuxel-anim-handoff.py",
+        "docs/beta-finalization/boot/ANIMATION-HANDOFF.md"
+      ],
+      "tests": [
+        "(tests are recorded by the owning briQ when it reports)",
+        "python3 tools/s10plus/a33/nuxel-anim-handoff.py selftest -> 30 PASS / 0 FAIL (decision table over the shared 22-case corpus + compiled C layer + single-owner/negative controls)",
+        "python3 tools/s10plus/a33/nuxel-anim-handoff.py simulate (A32 cut vs A33 0-skipped-frame timeline)",
+        "bash tools/s10plus/a33/build-a33-boot.sh -> BUILD_A33_BOOT=OK channel=vm; on the UTM Fedora 43 guest the aarch64 bridge printed PASS handoff_logic invariants cases=22",
+        "bash tools/s10plus/a33/tests/run-boot-tests.sh (all bg-02 legs) and bash tools/s10plus/a32/tests/run-tests.sh -> 0 failing suites",
+        "python3 tools/s10plus/a33/nuxel-anim-handoff.py selftest -> PASS, 30 checks / 0 failures (decision table over the shared 22-case corpus + compiled C layer + single-owner and negative controls)",
+        "python3 tools/s10plus/a33/nuxel-anim-handoff.py simulate -> replayable timeline; the A32 time-based cut is printed as the negative control next to the A33 0-skipped-frame timeline",
+        "python3 tools/s10plus/a33/tests/test-boot-surface-contract.py -> PASS, 295 checks / 0 failures",
+        "bash tools/s10plus/a33/tests/run-boot-tests.sh -> BOOT-TESTS: ALL PASS (8 legs, 1 SKIP: no aarch64 channel)",
+        "sha256sum tools/s10plus/a33/nuxel-wl-fb.c -> 052bfdbf673ef658c93b8c07925f2c9249af3c755a011ccbe90011c616f7b768 (unchanged); INV-2 A32 pin MATCH under the regression guard"
+      ],
+      "risk": "medium",
+      "rollback": "git revert the commit(s) touching this task's expected files; the change is repository-only and alters no device state",
+      "verdict": "OFFLINE_TESTED",
+      "offline_ceiling": "NEEDS_OWNER_TEST",
+      "owner_action": "Watch one normal boot on the handset: the full 192-frame animation, then the launcher, with no blank/static frame; audit with 'nuxelctl handoff status|audit' and confirm the last receipt is owner=ui stage=LAUNCHER_DISPLAY_OWNER terminal=1 loops>=1 and that NUXEL_FB_OWNER_BUSY never appears (docs/beta-finalization/manual-proof/03-display-boot.md)",
+      "expected_files": [
+        "tools/s10plus/a33/nuxel-wl-fb.c",
+        "tools/s10plus/a33/nuxel-anim-handoff.py",
+        "docs/beta-finalization/boot/ANIMATION-HANDOFF.md"
+      ],
+      "note": "Revision 3 (bg-02 verification pass, resume & re-verify). RE-VERIFIED against the protected baseline, no change to the handoff semantics: the bridge source is byte-identical to revision 2 (052bfdbf...) and the A32 conversion pin INV-2 still matches. What changed around it: (a) the animation policy is now a real, persisted control (configs/nuxel/boot/verbose-boot.json -> animation_mode + verbosity_level with the single precedence off > short > verbose_boot > standard), so a waived minimum-cycle floor now carries a RECORDED REASON (animation_mode_off | animation_mode_short | verbose_boot_requested) through /run/nuxel/anim-skip.request and the new NUXEL_BOOT_ANIMATION marker instead of an unnamed waiver; (b) Settings -> Developer now carries the full Boot diagnostics panel the briQ asks for (standard animation, persistent verbose boot, verbosity level); (c) docs/beta-finalization/boot/ANIMATION-HANDOFF.md gained the flash-free deployment hand-off for bg-10 (exact artefacts, install paths, pre-checks, rollback, deploy order that keeps one fb owner, DEPLOYED_UNVERIFIED until live receipts exist) and the launcher cache namespace was bumped v4-a33 -> v5-a33 for the changed bundle. Honest limits recorded: the UTM guest was NOT reachable this revision, so the aarch64 build leg and the binary colour layer were SKIPPED (never a pass) and VM parity stays bg-11's; bash tools/beta/regression-guard.sh reports FAIL=1 on INV-4 configs/nuxel/buttons.json, an in-flight edit by the parallel button group (bg-03) that this briQ neither owns nor touched - it is the only FAIL and it is not a bg-02 regression. No kernel/initramfs change: the one-time Bixby-hold override stays BLOCKED_KERNEL/BOOT_UPDATE_REQUIRED and NO Samsung magic reboot string exists anywhere on the boot surface (asserted by the contract test).",
+      "source": "plan.json",
+      "at": "2026-10-16T20:57:12+02:00",
+      "by": "construqtor/bg-02-boot-animation-launcher",
+      "revision": 3
     }
   ]
 }

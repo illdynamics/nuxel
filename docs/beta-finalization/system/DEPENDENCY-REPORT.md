@@ -4,9 +4,13 @@
 **BriQ:** `briq-04a-fedora-packages`
 **Device:** Samsung Galaxy S10+ SM-G975F (`beyond2lte`, Exynos 9820), Fedora 43
 aarch64 userspace on Samsung Linux **4.14.253**, systemd PID 1.
-**Verdict:** `OFFLINE_TESTED` — manifest resolved against **real Fedora 43
-aarch64 repository metadata** (two repositories, 93 975 distinct NEVRAs). No
-package version in `images/s10plus/packages-manifest.json` is guessed.
+**Verdict:** `OFFLINE_TESTED` — the manifest resolved **and its rpm dependencies
+resolved** against **real Fedora 43 aarch64 repository metadata** (two
+repositories, 93 991 distinct NEVRAs; revision 2 of `briq-04a-fedora-packages`).
+No package version in `images/s10plus/packages-manifest.json` is guessed, and
+every one of the 1220 rpm requirements of the 50 essential packages is either
+resolved to a package/capability in that metadata, or explicitly recorded as
+not-decidable-from-`primary.xml` (file requirements). Unresolved: **0**.
 
 ## 1. What was verified, and how
 
@@ -14,11 +18,16 @@ package version in `images/s10plus/packages-manifest.json` is guessed.
 |---|---|---|
 | Repo metadata located | `repomd.xml` → `primary.xml.zst` fetched from `dl.fedoraproject.org` | 200 OK |
 | GA repository | `releases/43/Everything/aarch64/os` | 68 135 aarch64/noarch NEVRAs |
-| Updates repository | `updates/43/Everything/aarch64` | 25 840 aarch64/noarch NEVRAs |
+| Updates repository | `updates/43/Everything/aarch64` | 25 856 aarch64/noarch NEVRAs |
 | Essential package list | 50 packages across 11 groups | **all resolve** |
 | systemd pin | `systemd-258.11-1.fc43.aarch64` | **exact match in updates** |
 | systemd subpackages | `systemd-udev`, `systemd-networkd` must equal the pinned systemd version-release | aligned at `258.11-1.fc43` |
 | 4.14 patch cross-check | carried `boot/s10plus/payload/libsystemd-shared-*.so` version must equal the resolved systemd version-release | **match** (`258.11-1.fc43`) |
+| Requirement classifier | every `Requires` of every essential package, classified by rpm shape | 95 package / 1062 capability / 11 rich / 52 file |
+| Dependency resolution | each requirement matched against the repository's package names **and** its real `rpm:provides` entries; the needed set is global across BOTH repositories | **0 unresolved** |
+| rpm RICH dependencies | boolean `(A or B)`, `(A if B)`, `(A if B else C)` evaluated tri-state; never guessed | 10 resolved, 1 not-decidable-from-primary |
+| Manifest schema | `--validate-manifest` against the embedded JSON schema (stdlib validator; no `jsonschema` dependency exists on a Fedora 43 ARM64 image) | valid (rc 0) |
+| Manifest self-check | `--emit-manifest` refuses to write a manifest that does not validate | enforced |
 | Offline re-verification | `--offline` against the cached metadata | `resolved` |
 | No metadata source | `--offline` with an empty cache | `BLOCKED_EXTERNAL_RESOURCE` (rc 3) |
 
@@ -28,7 +37,9 @@ Reproduce exactly:
 python3 tools/s10plus/a33/verify-packages.py                 # network, real metadata
 python3 tools/s10plus/a33/verify-packages.py --offline       # cache only, reproducible
 python3 tools/s10plus/a33/verify-packages.py --ga-only       # MUST fail on the systemd pin
+python3 tools/s10plus/a33/verify-packages.py --validate-manifest   # JSON-schema the manifest
 python3 tools/s10plus/a33/verify-packages.py --emit-manifest # regenerate the manifest
+python3 tools/s10plus/a33/tests/test-packages-manifest.py     # the whole guarantee, offline
 ```
 
 There is **no `--skip-unavailable`**. An essential package that does not exist
@@ -49,12 +60,16 @@ under `build/pkgmeta/` holds bit-identical copies, verified by
 | Repository | `repomd.xml` sha256 | primary payload | compressed sha256 | NEVRAs |
 |---|---|---|---|---|
 | `releases/43/Everything/aarch64/os` (GA) | `6431612747d987257399969298151d19cfe87ed26322be6987e7b00cd0ae66a2` | `a29dc3fc…-primary.xml.zst` (14 837 955 B) | `a29dc3fcc86b6e10fab525e6de0b97e851b5e4e7fc3691d40d72efe6757a733d` | 68 135 |
-| `updates/43/Everything/aarch64` | `fa6fe9653ba62e44069d27a1f4fb9c410ab6240ea714eddce1e362a3c9cc6623` | `8932760a…-primary.xml.zst` (5 588 439 B) | `8932760a7b759f80fec97f8c1f5cd95c7b322e5f9955615876dd7ecf421e1aa6` | 25 840 |
+| `updates/43/Everything/aarch64` | `0a1fda3e791e0d0b61940d075fd4a503031419a54848ae84a22871f90beec7af` | `7ca220d0…-primary.xml.zst` (5 594 019 B) | `7ca220d0970a83663d177d49f88307ab4cea8151b9d67cd36e337a0bf2af89dc` | 25 856 |
 
 Decompressed primary sha256: GA
 `02d247f25e10add65533a4e76462fe390ebf2b77fcc4e60fe53c2c172ce2d680`, updates
-`68908f389c99b37d479e1fe4383f92c7971a147fd50ab383993ea549000ad329`. Together:
-**93 975 distinct aarch64/noarch NEVRAs**.
+`a3505a4b18b100c7b9ada971cef70d2dadf010ff8a9efefb01f5a07a79f48fbd`. Together:
+**93 991 distinct aarch64/noarch NEVRAs**, re-derivable from the recorded artifacts
+by anyone with the URLs and a sha256 tool. The `updates` repository moves by
+design, so the numbers in this table are the ones resolved by the run recorded
+in `images/s10plus/packages-manifest.json` (`source.metadata_provenance[]` is
+the machine-readable copy of this table).
 
 Re-derive the same package set from the recorded artifacts:
 

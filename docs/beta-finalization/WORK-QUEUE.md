@@ -136,8 +136,8 @@ deterministic.  Prose outside the markers is edited by hand and never clobbered 
 | Metric | Value |
 |--------|-------|
 | Tasks | **55** (one per briQ in the plan, bg-00 … bg-12) |
-| Revisions (append-only) | 94 |
-| Evidence entries | 173 |
+| Revisions (append-only) | 99 |
+| Evidence entries | 202 |
 | Dependencies | validated acyclic; referential integrity enforced |
 
 | State | Count | Tasks |
@@ -247,11 +247,11 @@ Ids are shown without the `briq-` prefix.
 | `10a-live-reachability-preflight` | 1 | bg-10-live-phone | pending | — | 0 | 1 | 00a-repo-preflight |
 | `10b-live-deploy-userspace` | 1 | bg-10-live-phone | pending | — | 0 | 1 | 10a-live-reachability-preflight, 01b-libinput-path-shim, 02a-readiness-handoff, 09b-reboot-rollback-policy |
 | `10c-live-reboot-and-verify` | 1 | bg-10-live-phone | pending | — | 0 | 1 | 10b-live-deploy-userspace, 01a-pipeline-trace-tool, 03c-audio-speaker |
-| `02a-readiness-handoff` | 2 | bg-02-boot-animation-launcher | implemented | OFFLINE_TESTED | 5 | 2 | — |
-| `02b-verbose-boot-setting` | 2 | bg-02-boot-animation-launcher | implemented | OFFLINE_TESTED | 6 | 2 | — |
-| `02c-fb-colour-conversion` | 2 | bg-02-boot-animation-launcher | implemented | OFFLINE_TESTED | 5 | 2 | 00d-baseline-protection |
-| `02d-launcher-parity` | 2 | bg-02-boot-animation-launcher | implemented | OFFLINE_TESTED | 9 | 2 | 00d-baseline-protection |
-| `02e-safe-zones-statusbar` | 2 | bg-02-boot-animation-launcher | implemented | OFFLINE_TESTED | 5 | 2 | 00d-baseline-protection |
+| `02a-readiness-handoff` | 2 | bg-02-boot-animation-launcher | implemented | OFFLINE_TESTED | 12 | 3 | — |
+| `02b-verbose-boot-setting` | 2 | bg-02-boot-animation-launcher | implemented | OFFLINE_TESTED | 13 | 3 | — |
+| `02c-fb-colour-conversion` | 2 | bg-02-boot-animation-launcher | implemented | OFFLINE_TESTED | 10 | 3 | 00d-baseline-protection |
+| `02d-launcher-parity` | 2 | bg-02-boot-animation-launcher | implemented | OFFLINE_TESTED | 14 | 3 | 00d-baseline-protection |
+| `02e-safe-zones-statusbar` | 2 | bg-02-boot-animation-launcher | implemented | OFFLINE_TESTED | 10 | 3 | 00d-baseline-protection |
 | `11a-vm-launcher-parity` | 2 | bg-11-vm-parity | pending | — | 0 | 1 | 02d-launcher-parity, 02e-safe-zones-statusbar, 06b-missing-core-apps |
 | `11b-vm-services-verify` | 2 | bg-11-vm-parity | in_progress | — | 1 | 1 | 04b-service-definitions, 04c-app-infrastructure |
 | `03a-wifi` | 3 | bg-03-connectivity-time-audio-buttons | in_progress | — | 3 | 1 | 00c-workqueue-ledger |

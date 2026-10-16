@@ -22,6 +22,16 @@
 //     are read ONCE, only when the durable document has no user-set value, and
 //     the origin is recorded in the document as `migrated_from`.
 //
+// BOOT DIAGNOSTICS (briq-02b, extended in the bg-02 verification pass)
+//   The SAME document carries three independent controls, because they are three
+//   questions about the same thing (what the boot shows and says) and splitting
+//   them across three files would let them contradict each other:
+//     * verbose_boot      - show the on-glass boot log at all
+//     * animation_mode    - standard | short | off boot-animation policy
+//     * verbosity_level   - 0 quiet .. 3 debug detail of that log
+//   Precedence for the animation: off > short > verbose_boot > standard.
+//   verbosity_level never turns the log on; it only selects how much it says.
+//
 // The module is DOM-free so its behaviour can be unit-tested in node
 // (tools/s10plus/a33/tests/settings-store-test.js).
 (function (global) {
@@ -32,10 +42,19 @@
   HOST_NAME['animation-handoff'] = 'animation-handoff';
   HOST_NAME['statusbar-safezones'] = 'statusbar-safezones';
 
+  // The boot-diagnostics controls the UI and the console share.  Exported so the
+  // Settings app and the Quick Settings tile cannot invent a fourth value.
+  var ANIMATION_MODES = ['standard', 'short', 'off'];
+  var VERBOSITY_MIN = 0;
+  var VERBOSITY_MAX = 3;
+  var DEFAULT_VERBOSITY = 1;
+
   var DEFAULTS = {
     'verbose-boot': {
       schema_version: 1,
       verbose_boot: false,
+      animation_mode: 'standard',
+      verbosity_level: DEFAULT_VERBOSITY,
       set_by: 'default',
       updated_at: 0,
       migrated_from: null
@@ -215,9 +234,75 @@
     subscribe: function (cb) { listeners.push(cb); return function () { listeners = listeners.filter(function (l) { return l !== cb; }); }; },
     transport: function (name) { return cache[name] ? cache[name].transport : undefined; },
     reset: function () { cache = {}; listeners = []; },   // harness use only
-    // Convenience wrappers for the two boot settings this cycle owns.
+    // Convenience wrappers for the boot-diagnostics controls (verbose-boot
+    // document).  They all go through save(), so they MERGE: a key this
+    // revision does not know about survives, which is what makes a downgrade
+    // safe, and the three controls are written to one durable file.
     verboseBoot: function () { return !!current('verbose-boot').verbose_boot; },
-    setVerboseBoot: function (on) { return save('verbose-boot', { verbose_boot: !!on }); }
+    setVerboseBoot: function (on) { return save('verbose-boot', { verbose_boot: !!on }); },
+    animationMode: function () {
+      var m = String(current('verbose-boot').animation_mode || 'standard').toLowerCase();
+      return ANIMATION_MODES.indexOf(m) >= 0 ? m : 'standard';
+    },
+    setAnimationMode: function (mode) {
+      var m = String(mode == null ? '' : mode).toLowerCase();
+      if (ANIMATION_MODES.indexOf(m) < 0) return { ok: false, error: 'bad animation_mode', allowed: ANIMATION_MODES.slice() };
+      return save('verbose-boot', { animation_mode: m });
+    },
+    verbosityLevel: function () {
+      var n = parseInt(current('verbose-boot').verbosity_level, 10);
+      if (isNaN(n) || n < VERBOSITY_MIN || n > VERBOSITY_MAX) return DEFAULT_VERBOSITY;
+      return n;
+    },
+    setVerbosityLevel: function (level) {
+      var n = parseInt(level, 10);
+      if (isNaN(n) || n < VERBOSITY_MIN || n > VERBOSITY_MAX) {
+        return { ok: false, error: 'bad verbosity_level', min: VERBOSITY_MIN, max: VERBOSITY_MAX };
+      }
+      return save('verbose-boot', { verbosity_level: n });
+    },
+    // One read/write for the whole panel (the Settings app uses this so a single
+    // failed write cannot leave three controls disagreeing with the document).
+    bootDiagnostics: function () {
+      var d = current('verbose-boot');
+      return { verbose_boot: !!d.verbose_boot, animation_mode: API.animationMode(), verbosity_level: API.verbosityLevel() };
+    },
+    setBootDiagnostics: function (patch) {
+      var out = {};
+      if (patch && Object.prototype.hasOwnProperty.call(patch, 'verbose_boot')) out.verbose_boot = !!patch.verbose_boot;
+      if (patch && Object.prototype.hasOwnProperty.call(patch, 'animation_mode')) {
+        var m = String(patch.animation_mode).toLowerCase();
+        if (ANIMATION_MODES.indexOf(m) < 0) return { ok: false, error: 'bad animation_mode', allowed: ANIMATION_MODES.slice() };
+        out.animation_mode = m;
+      }
+      if (patch && Object.prototype.hasOwnProperty.call(patch, 'verbosity_level')) {
+        var n = parseInt(patch.verbosity_level, 10);
+        if (isNaN(n) || n < VERBOSITY_MIN || n > VERBOSITY_MAX) {
+          return { ok: false, error: 'bad verbosity_level', min: VERBOSITY_MIN, max: VERBOSITY_MAX };
+        }
+        out.verbosity_level = n;
+      }
+      if (!Object.keys(out).length) return { ok: false, error: 'nothing to change' };
+      return save('verbose-boot', out);
+    },
+    // The precedence rule, in one place, so the UI can explain it and the tests
+    // can assert it: off > short > verbose_boot > standard.
+    effectiveAnimation: function () {
+      var mode = API.animationMode();
+      if (mode === 'off') return { mode: 'off', reason: 'animation_mode_off' };
+      if (mode === 'short') return { mode: 'short', reason: 'animation_mode_short' };
+      if (API.verboseBoot()) return { mode: 'short', reason: 'verbose_boot_requested' };
+      return { mode: 'standard', reason: 'standard' };
+    },
+    ANIMATION_MODES: ANIMATION_MODES,
+    VERBOSITY_MIN: VERBOSITY_MIN,
+    VERBOSITY_MAX: VERBOSITY_MAX,
+    VERBOSITY_LABELS: {
+      0: 'quiet (markers only)',
+      1: 'normal (default)',
+      2: 'verbose (per-stage)',
+      3: 'debug (everything)'
+    }
   };
 
   global.NuxelSettings = API;

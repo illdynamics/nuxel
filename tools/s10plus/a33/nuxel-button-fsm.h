@@ -58,8 +58,15 @@
 #define NUXEL_FSM_BIXBY_LONG_MIN_MS        1500
 #define NUXEL_FSM_BIXBY_DOUBLE_GAP_MS      400
 #define NUXEL_FSM_VOLUME_DEBOUNCE_MS       20
+#define NUXEL_FSM_VOLUME_LONG_MIN_MS       500
 #define NUXEL_FSM_VOLUME_REPEAT_DELAY_MS   400
 #define NUXEL_FSM_VOLUME_REPEAT_INTERVAL_MS 250
+/* Chords (briq-03e): both keys held together for this long. Measured from the
+ * SECOND key press, so "hold both keys" means what it says on the glass. */
+#define NUXEL_FSM_CHORD_HOLD_MIN_MS        500
+/* The Bixby early-hold window, measured from the FIRST event the manager sees
+ * (i.e. the start of Nuxel's userspace, not the kernel's). */
+#define NUXEL_FSM_BIXBY_EARLY_WINDOW_MS    2000
 
 /* ---- volume step — mirror of volume_step in the JSON --------------------- */
 #define NUXEL_FSM_VOLUME_STEP_DIVISOR      20
@@ -122,15 +129,23 @@ typedef struct {
   char volume_down[64];
   char volume_up_repeat[64];
   char volume_down_repeat[64];
+  char volume_up_long[64];            /* the long-press class: panel, not repeat */
+  char volume_down_long[64];
+  char chord_power_volume_up[64];     /* Power + VolumeUp   held together     */
+  char chord_power_volume_down[64];   /* Power + VolumeDown held together     */
   char bixby_short[64];
   char bixby_long[64];
   char bixby_double[64];
+  char bixby_early_hold[64];          /* Bixby held from the start of userspace */
   char gesture_back[64];
   char gesture_home[64];
   char gesture_recents[64];
   int  defer_power_short_for_double;  /* 0 = A32 behaviour (immediate)     */
   int  defer_bixby_short_for_double;  /* 1 = default: disambiguate 1x/2x   */
   int  gestures_enabled;
+  int  volume_repeat_enabled;  /* 0 = a volume HOLD opens a panel (briq-03e);
+                                * 1 (or a *-autorepeat remap) = A32 cadence */
+  int  early_window_ms;        /* Bixby early-hold window after FSM start    */
 } nuxel_fsm_cfg;
 
 typedef struct {
@@ -141,9 +156,21 @@ typedef struct {
   int64_t bixby_down_ms, bixby_used_long;
   int     bixby_down, bixby_double_deferring, bixby_pending_double_armed;
   int64_t bixby_release_ms, bixby_pending_deadline_ms;
+  int     bixby_early;              /* the press began inside the early window */
 
   int     vol_held;                 /* 0 none, +1 up, -1 down             */
-  int64_t vol_next_repeat_ms;
+  int     vol_used_long;            /* the long-press class already fired  */
+  int     vol_repeat_mode;          /* this hold is a key-repeat hold      */
+  int64_t vol_down_ms, vol_next_repeat_ms;
+
+  /* chords (priority above every single-key class) */
+  int     chord_armed;              /* 0 none, +1 power+up, -1 power+down  */
+  int     chord_fired;
+  int64_t chord_start_ms;
+  int     chord_step_pending;       /* +1/-1: a volume step buffered by a chord */
+
+  int     started;                  /* the FSM has seen its first event    */
+  int64_t fsm_start_ms;             /* = t of that first event (userspace start) */
 
   /* touch track */
   int     touch_active;
@@ -190,9 +217,18 @@ static void nuxel_fsm_cfg_defaults(nuxel_fsm_cfg *c) {
   strcpy(c->volume_down,       "volume-down");
   strcpy(c->volume_up_repeat,  "volume-up");
   strcpy(c->volume_down_repeat,"volume-down");
+  /* briq-03e exact mapping: a volume HOLD opens a panel. The A32 autorepeat
+   * cadence is NOT deleted - it stays reachable by remapping volume_up_long /
+   * volume_down_long to the *-autorepeat actions (or volume_repeat_enabled=1),
+   * which is why the repeat windows above are still authoritative. */
+  strcpy(c->volume_up_long,    "notifications-panel");
+  strcpy(c->volume_down_long,  "all-apps");
+  strcpy(c->chord_power_volume_up,   "sound-mode-cycle");
+  strcpy(c->chord_power_volume_down, "screenshot");
   strcpy(c->bixby_short,       "open-terminal");
   strcpy(c->bixby_long,        "disabled");
-  strcpy(c->bixby_double,      "voice-input");
+  strcpy(c->bixby_double,      "flashlight");
+  strcpy(c->bixby_early_hold,  "verbose-boot-note");
   strcpy(c->gesture_back,      "back");
   strcpy(c->gesture_home,      "home");
   strcpy(c->gesture_recents,   "recents");
@@ -203,6 +239,8 @@ static void nuxel_fsm_cfg_defaults(nuxel_fsm_cfg *c) {
   c->defer_power_short_for_double = 0;
   c->defer_bixby_short_for_double = 1;
   c->gestures_enabled = 1;
+  c->volume_repeat_enabled = 0;
+  c->early_window_ms = NUXEL_FSM_BIXBY_EARLY_WINDOW_MS;
 }
 
 static void nuxel_fsm_init(nuxel_fsm *f, const nuxel_fsm_cfg *c) {
@@ -260,6 +298,7 @@ static int nuxel_fsm_feed(nuxel_fsm *f, const nuxel_fsm_cfg *c,
                           const char **out, int max) {
   int n = 0;
   f->now_ms = e->t_ms;
+  if (!f->started) { f->started = 1; f->fsm_start_ms = e->t_ms; }
 
 #define EMIT(s) do { if (n < max) out[n++] = (s); f->actions_emitted++; } while (0)
 
@@ -279,10 +318,36 @@ static int nuxel_fsm_feed(nuxel_fsm *f, const nuxel_fsm_cfg *c,
     EMIT(c->bixby_short);
   }
 
-  /* ---- volume autorepeat (A32 cadence: 400 ms then every 250 ms) ---------- */
-  if (f->vol_held && e->kind == NUXEL_FSM_EV_TICK && e->t_ms >= f->vol_next_repeat_ms) {
-    EMIT(f->vol_held > 0 ? c->volume_up_repeat : c->volume_down_repeat);
-    f->vol_next_repeat_ms = e->t_ms + NUXEL_FSM_VOLUME_REPEAT_INTERVAL_MS;
+  /* ---- volume hold: chord > long press (panel) > key-repeat volume --------
+   * A Chord in progress keeps the volume class completely quiet, because the
+   * chord outranks every single-key class (see ARBITRATION in the spec). */
+  if (f->vol_held && e->kind == NUXEL_FSM_EV_TICK && !f->chord_armed) {
+    if (f->vol_repeat_mode) {
+      /* A32 cadence, kept for an owner remap / volume_repeat_enabled=1:
+       * 400 ms delay, then every 250 ms. */
+      if (e->t_ms >= f->vol_next_repeat_ms) {
+        EMIT(f->vol_held > 0 ? c->volume_up_repeat : c->volume_down_repeat);
+        f->vol_next_repeat_ms = e->t_ms + NUXEL_FSM_VOLUME_REPEAT_INTERVAL_MS;
+      }
+    } else if (!f->vol_used_long &&
+               (e->t_ms - f->vol_down_ms) >= NUXEL_FSM_VOLUME_LONG_MIN_MS) {
+      f->vol_used_long = 1;
+      EMIT(f->vol_held > 0 ? c->volume_up_long : c->volume_down_long);
+    }
+  }
+
+  /* ---- chords: decided on the timer, before any long-press class ---------- */
+  if (f->chord_armed && !f->chord_fired && e->kind == NUXEL_FSM_EV_TICK &&
+      (e->t_ms - f->chord_start_ms) >= NUXEL_FSM_CHORD_HOLD_MIN_MS) {
+    f->chord_fired = 1;
+    f->chord_step_pending = 0;          /* the chord wins; a buffered step is dropped */
+    /* cancel every single-key class for the rest of this hold, including the
+     * 8 s reboot class: an emergency combo must never also ask for a reboot */
+    f->power_used_long = 1;
+    f->power_used_very_long = 1;
+    f->vol_used_long = 1;
+    if (f->menu_open) { f->menu_open = 0; f->menu_last_activity_ms = e->t_ms; EMIT("menu-close"); }
+    EMIT(f->chord_armed > 0 ? c->chord_power_volume_up : c->chord_power_volume_down);
   }
 
   if (e->kind == NUXEL_FSM_EV_KEY) {
@@ -293,6 +358,12 @@ static int nuxel_fsm_feed(nuxel_fsm *f, const nuxel_fsm_cfg *c,
         f->power_down_ms = e->t_ms;
         f->power_used_long = 0;
         f->power_used_very_long = 0;
+        if (f->vol_held) {                 /* power pressed while volume held */
+          f->chord_armed = f->vol_held > 0 ? 1 : -1;
+          f->chord_fired = 0;
+          f->chord_step_pending = 0;       /* the volume press already emitted its step */
+          f->chord_start_ms = e->t_ms;
+        }
         if (f->power_double_deferring) {   /* second press => it was a double */
           f->power_double_deferring = 0;
           f->power_pending_double_armed = 1;
@@ -301,7 +372,7 @@ static int nuxel_fsm_feed(nuxel_fsm *f, const nuxel_fsm_cfg *c,
         /* autorepeat path is handled on ticks below; kept for kernel repeats */
       }
       /* long / very-long are decided by ticks (and by EV_KEY autorepeat)      */
-      if ((e->value == 2 || e->value == 1) && f->power_down) {
+      if ((e->value == 2 || e->value == 1) && f->power_down && !f->chord_armed) {
         int64_t held = e->t_ms - f->power_down_ms;
         if (held >= NUXEL_FSM_POWER_VERY_LONG_MIN_MS && !f->power_used_very_long) {
           f->power_used_very_long = 1;
@@ -326,6 +397,13 @@ static int nuxel_fsm_feed(nuxel_fsm *f, const nuxel_fsm_cfg *c,
       if (e->value == 0) {
         int64_t held = e->t_ms - f->power_down_ms;
         f->power_down = 0;
+        if (f->chord_armed && !f->chord_fired) {
+          /* the other key was released too early: no chord. Any buffered volume
+           * step is delivered by the volume release below, so no press is lost. */
+          f->chord_armed = 0;
+        } else if (f->chord_fired) {
+          f->chord_armed = 0;            /* the chord already acted: release is inert */
+        }
         if (f->power_used_very_long) {
           /* the reboot class already fired on the hold; the release is inert  */
         } else if (f->power_used_long) {
@@ -365,17 +443,49 @@ static int nuxel_fsm_feed(nuxel_fsm *f, const nuxel_fsm_cfg *c,
     else if (e->code == NUXEL_FSM_KEY_VOLUMEUP || e->code == NUXEL_FSM_KEY_VOLUMEDOWN) {
       int dir = (e->code == NUXEL_FSM_KEY_VOLUMEUP) ? +1 : -1;
       if (e->value == 1) {
-        if (f->menu_open) {
+        if (f->menu_open && !f->power_down) {
           f->menu_index = (f->menu_index + (dir > 0 ? -1 : 1) + nuxel_fsm_menu_count) % nuxel_fsm_menu_count;
           f->menu_last_activity_ms = e->t_ms;
           EMIT(dir > 0 ? "menu-move-up" : "menu-move-down");
+        } else if (f->power_down) {
+          /* Power is held: this is the Power+Volume chord, NOT a volume press.
+           * The step is buffered (not emitted) and delivered if the chord does
+           * not complete, so a press is never silently swallowed. */
+          f->chord_armed = dir > 0 ? 1 : -1;
+          f->chord_fired = 0;
+          f->chord_step_pending = dir;
+          f->chord_start_ms = e->t_ms > f->power_down_ms ? e->t_ms : f->power_down_ms;
+          f->vol_held = dir;
+          f->vol_down_ms = e->t_ms;
+          f->vol_used_long = 0;
+          f->vol_repeat_mode = 0;
         } else {
           f->vol_held = dir;
+          f->vol_down_ms = e->t_ms;
+          f->vol_used_long = 0;
+          /* The A32 cadence survives, but only when it is asked for: either the
+           * owner remapped the long action to *-autorepeat, or the explicit
+           * volume_repeat_enabled setting is on. */
+          f->vol_repeat_mode =
+            (!strcmp(dir > 0 ? c->volume_up_long : c->volume_down_long,
+                     dir > 0 ? "volume-up-autorepeat" : "volume-down-autorepeat")
+             || c->volume_repeat_enabled) ? 1 : 0;
           f->vol_next_repeat_ms = e->t_ms + NUXEL_FSM_VOLUME_REPEAT_DELAY_MS;
           EMIT(dir > 0 ? c->volume_up : c->volume_down);
         }
       } else if (e->value == 0) {
-        if (f->vol_held == dir) f->vol_held = 0;
+        if (f->vol_held == dir) {
+          f->vol_held = 0;
+          if (f->chord_armed && !f->chord_fired) {
+            f->chord_armed = 0;
+            if (f->chord_step_pending == dir) {
+              f->chord_step_pending = 0;
+              EMIT(dir > 0 ? c->volume_up : c->volume_down);
+            }
+          } else if (f->chord_fired) {
+            f->chord_armed = 0;
+          }
+        }
       }
     }
     /* ---------------- BIXBY / assistant ---------------- */
@@ -384,6 +494,12 @@ static int nuxel_fsm_feed(nuxel_fsm *f, const nuxel_fsm_cfg *c,
         f->bixby_down = 1;
         f->bixby_down_ms = e->t_ms;
         f->bixby_used_long = 0;
+        /* EARLY window: measured from the first event this manager saw, i.e. the
+         * start of Nuxel's userspace. A key the owner is ALREADY holding when the
+         * manager opens the node arrives as a synthetic press at t~start (see the
+         * EVIOCGKEY sync in the daemon), so holding Bixby through the boot lands
+         * here - which is exactly the documented one-time verbose-boot override. */
+        f->bixby_early = ((e->t_ms - f->fsm_start_ms) <= c->early_window_ms) ? 1 : 0;
         if (f->bixby_double_deferring) {   /* second press => it was a double */
           f->bixby_double_deferring = 0;
           f->bixby_pending_double_armed = 1;
@@ -393,7 +509,7 @@ static int nuxel_fsm_feed(nuxel_fsm *f, const nuxel_fsm_cfg *c,
         int64_t held = e->t_ms - f->bixby_down_ms;
         if (held >= NUXEL_FSM_BIXBY_LONG_MIN_MS && !f->bixby_used_long) {
           f->bixby_used_long = 1;
-          EMIT(c->bixby_long);
+          EMIT(f->bixby_early ? c->bixby_early_hold : c->bixby_long);
         }
       }
       if (e->value == 0) {
@@ -416,7 +532,7 @@ static int nuxel_fsm_feed(nuxel_fsm *f, const nuxel_fsm_cfg *c,
   }
 
   /* ---- power long/very-long decided on ticks (a hold produces no event) --- */
-  if (e->kind == NUXEL_FSM_EV_TICK && f->power_down) {
+  if (e->kind == NUXEL_FSM_EV_TICK && f->power_down && !f->chord_armed) {
     int64_t held = e->t_ms - f->power_down_ms;
     if (held >= NUXEL_FSM_POWER_VERY_LONG_MIN_MS && !f->power_used_very_long) {
       f->power_used_very_long = 1;
@@ -442,7 +558,7 @@ static int nuxel_fsm_feed(nuxel_fsm *f, const nuxel_fsm_cfg *c,
     int64_t held = e->t_ms - f->bixby_down_ms;
     if (held >= NUXEL_FSM_BIXBY_LONG_MIN_MS && !f->bixby_used_long) {
       f->bixby_used_long = 1;
-      EMIT(c->bixby_long);
+      EMIT(f->bixby_early ? c->bixby_early_hold : c->bixby_long);
     }
   }
 
@@ -539,6 +655,9 @@ static int fsm_sim_menu_dump(void) {
   printf("BIXBY_LONG_MIN_MS %d\n", NUXEL_FSM_BIXBY_LONG_MIN_MS);
   printf("BIXBY_DOUBLE_GAP_MS %d\n", NUXEL_FSM_BIXBY_DOUBLE_GAP_MS);
   printf("VOLUME_DEBOUNCE_MS %d\n", NUXEL_FSM_VOLUME_DEBOUNCE_MS);
+  printf("VOLUME_LONG_MIN_MS %d\n", NUXEL_FSM_VOLUME_LONG_MIN_MS);
+  printf("CHORD_HOLD_MIN_MS %d\n", NUXEL_FSM_CHORD_HOLD_MIN_MS);
+  printf("BIXBY_EARLY_WINDOW_MS %d\n", NUXEL_FSM_BIXBY_EARLY_WINDOW_MS);
   printf("VOLUME_REPEAT_DELAY_MS %d\n", NUXEL_FSM_VOLUME_REPEAT_DELAY_MS);
   printf("VOLUME_REPEAT_INTERVAL_MS %d\n", NUXEL_FSM_VOLUME_REPEAT_INTERVAL_MS);
   printf("VOLUME_STEP_DIVISOR %d\n", NUXEL_FSM_VOLUME_STEP_DIVISOR);
@@ -592,6 +711,17 @@ static int fsm_sim_run(FILE *in, int print_all) {
           c.defer_bixby_short_for_double = (!strcmp(v, "bixby") || !strcmp(v, "both"));
         }
         if (!strncmp(tok[i], "gestures=", 9)) c.gestures_enabled = atoi(tok[i] + 9);
+        if (!strncmp(tok[i], "volume_long=", 12)) {
+          if (!strcmp(tok[i] + 12, "repeat")) {
+            strcpy(c.volume_up_long, "volume-up-autorepeat");
+            strcpy(c.volume_down_long, "volume-down-autorepeat");
+          } else {
+            strcpy(c.volume_up_long, "notifications-panel");
+            strcpy(c.volume_down_long, "all-apps");
+          }
+        }
+        if (!strncmp(tok[i], "repeat=", 7)) c.volume_repeat_enabled = atoi(tok[i] + 7);
+        if (!strncmp(tok[i], "early_window=", 13)) c.early_window_ms = atoi(tok[i] + 13);
       }
       continue;
     }
@@ -671,6 +801,8 @@ int main(int argc, char **argv) {
     }
     if (!strcmp(argv[i], "--help")) {
       printf("usage: fsm-sim [--menu-dump] [--gate k=v ...] [trace-file]\n");
+      printf("  trace cfg keys: defer=power|bixby|both|none  gestures=0|1\n");
+      printf("                  volume_long=panel|repeat  repeat=0|1  early_window=<ms>\n");
       return 0;
     }
   }

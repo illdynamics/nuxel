@@ -139,6 +139,140 @@
       "at": "2026-10-16T16:24:36+02:00",
       "by": "construqtor/bg-02-boot-animation-launcher",
       "revision": 2
+    },
+    {
+      "id": "briq-02b-verbose-boot-setting",
+      "title": "Verbose-boot Settings option with Bixby hold override (persisted)",
+      "component": "bg-02-boot-animation-launcher",
+      "component_title": "Priority 2 - Boot Stability, Animation Handoff & UTM Launcher Parity",
+      "priority": 2,
+      "state": "implemented",
+      "dependencies": [],
+      "evidence": [
+        {
+          "kind": "observation",
+          "path": "configs/nuxel/",
+          "command": "test -e configs/nuxel/",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "observation",
+          "path": "pwa/nuxel-home/js/qs.js",
+          "command": "test -e pwa/nuxel-home/js/qs.js",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "observation",
+          "path": "pwa/nuxel-home/js/settings-store.js",
+          "command": "test -e pwa/nuxel-home/js/settings-store.js",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "tools/s10plus/a33/nuxel-verbose-boot.py",
+          "command": "python3 tools/s10plus/a33/nuxel-verbose-boot.py --selftest",
+          "result": "verbose-boot offline harness passed (upgrade-safe, offline); the simulated reinstall keeps the user's verbose_boot=true and set_by=user, and a plain overwrite is shown to LOSE it (negative control)",
+          "at": "2026-10-16T16:24:36+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "pwa/nuxel-home/js/settings-store.js",
+          "command": "node tools/s10plus/a33/tests/settings-store-test.js",
+          "result": "29 PASS / 0 FAIL: one document per setting, merge-on-write preserves unknown keys, host->localStorage degradation, Settings app reverts the switch if the write fails (no lying UI)",
+          "at": "2026-10-16T16:24:36+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "configs/nuxel/boot/verbose-boot.json",
+          "command": "python3 tools/s10plus/a33/tests/test-boot-surface-contract.py",
+          "result": "default verbose_boot=false; bixby_hold_override.status=BOOT_UPDATE_REQUIRED with the precise reason; consumer/nuxelctl/Settings/manifest all resolve /etc/nuxel/boot/verbose-boot.json",
+          "at": "2026-10-16T16:24:36+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "tools/s10plus/a33/nuxel-verbose-boot.py",
+          "command": "python3 tools/s10plus/a33/nuxel-verbose-boot.py --selftest",
+          "result": "PASS verbose-boot offline harness passed (upgrade-safe, offline), 55 checks / 0 failures. New legs: shipped-default policy keys, the precedence table (off > short > verbose_boot > standard), an unknown animation_mode falling back to standard AND being reported, verbosity honoured/clamped/rejected, verbosity never turning the log on, and the level-0 vs level-3 snapshot bound",
+          "at": "2026-10-16T21:08:00+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "tools/s10plus/a33/tests/settings-store-test.js",
+          "command": "node tools/s10plus/a33/tests/settings-store-test.js",
+          "result": "PASS settings-store tests passed, 59 checks / 0 failures. Section 5 added: exported ANIMATION_MODES/verbosity range, defaults, refusals (setAnimationMode turbo, setVerbosityLevel 9) instead of silent clamping, all three keys in ONE document, merge-on-write preserving unknown keys (future_key), whole-panel bootDiagnostics()/setBootDiagnostics(), and the 7-case precedence table",
+          "at": "2026-10-16T21:08:00+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "tools/s10plus/a33/nuxelctl",
+          "command": "NUXEL_ROOT=$(mktemp -d) python3 tools/s10plus/a33/nuxelctl verbose-boot animation short ; verbose-boot verbosity 4 ; verbose-boot verbosity 3 ; verbose-boot status",
+          "result": "the console path exists and refuses bad input: animation short stored, status echoes animation_mode=short -> effective=short reason=animation_mode_short; verbosity 4 refused with 'refused, not clamped silently'; verbosity 3 stored; the document keeps schema_version and every unknown key (one merge writer, _verbose_write)",
+          "at": "2026-10-16T21:08:00+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "configs/nuxel/boot/verbose-boot.json",
+          "command": "python3 -c import json; json.load(open(configs/nuxel/boot/verbose-boot.json))",
+          "result": "the shipped durable document parses and now carries verbose_boot=false, animation_mode=standard, verbosity_level=1, the precedence rule (off > short > verbose_boot > standard), the four verbosity levels, the Bixby override as BOOT_UPDATE_REQUIRED and its userspace fallback; schema_version deliberately stays 1 because the change is additive",
+          "at": "2026-10-16T21:08:00+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "tools/s10plus/a33/tests/test-boot-surface-contract.py",
+          "command": "python3 tools/s10plus/a33/tests/test-boot-surface-contract.py",
+          "result": "PASS boot-surface contract, 295 checks / 0 failures: the document carries all three controls + the precedence rule + the four verbosity levels + the userspace fallback, the consumer validates rather than trusts both new values, and the consumer/console/store/Settings app/Quick Settings tile all use the same three-value vocabulary",
+          "at": "2026-10-16T21:08:00+02:00"
+        },
+        {
+          "kind": "doc",
+          "path": "docs/beta-finalization/boot/VERBOSE-BOOT.md",
+          "command": "cat docs/beta-finalization/boot/VERBOSE-BOOT.md",
+          "result": "rewritten around the three controls: the standard-animation control, the persistent verbose boot and the verbosity level; the precedence table; the storage/schema/downgrade contract (additive keys, schema_version NOT bumped); the recorded run numbers; and the per-surface rollback",
+          "at": "2026-10-16T21:08:00+02:00"
+        },
+        {
+          "kind": "doc",
+          "path": "docs/beta-finalization/manual-proof/03-display-boot.md",
+          "command": "cat docs/beta-finalization/manual-proof/03-display-boot.md",
+          "result": "owner procedure for the verbosity level (5b) and the animation policy (5c) with exact commands, expected state lines and failure symptoms, including the documented standard+verbose-boot = verbose_boot_requested case which is by design and not a defect",
+          "at": "2026-10-16T21:08:00+02:00"
+        }
+      ],
+      "intended_changes": [
+        "configs/nuxel/",
+        "pwa/nuxel-home/js/qs.js",
+        "pwa/nuxel-home/js/settings-store.js",
+        "docs/beta-finalization/boot/VERBOSE-BOOT.md"
+      ],
+      "tests": [
+        "(tests are recorded by the owning briQ when it reports)",
+        "python3 tools/s10plus/a33/nuxel-verbose-boot.py --selftest -> 29 PASS / 0 FAIL (fresh install, upgrade keep-rule, legacy migration, unreadable document refused, override honoured/refused, one-time consumption)",
+        "node tools/s10plus/a33/tests/settings-store-test.js -> settings-store tests passed (default OFF, merge-on-write, migration, host configSet('verbose-boot'), QS tile + Settings Boot card + manifest all on the same document)",
+        "bash tools/s10plus/a33/tests/run-boot-tests.sh -> ALL PASS; cross-file agreement asserted by tools/s10plus/a33/tests/test-boot-surface-contract.py",
+        "python3 tools/s10plus/a33/nuxel-verbose-boot.py --selftest -> passed, 55 checks / 0 failures (fresh install, upgrade keep-rule, legacy migration, unreadable document refused, override honoured/refused/one-time, plus the policy + verbosity legality and precedence legs)",
+        "node tools/s10plus/a33/tests/settings-store-test.js -> passed, 59 checks / 0 failures (incl. the whole-panel read/write and the 7-case precedence table)",
+        "NUXEL_ROOT=<tmp> python3 tools/s10plus/a33/nuxelctl verbose-boot status|animation short|verbosity 4|verbosity 3 -> all four paths behave as documented; an out-of-range level is refused, not stored",
+        "python3 tools/s10plus/a33/tests/test-boot-surface-contract.py -> PASS, 295 checks / 0 failures (cross-file vocabulary + precedence)"
+      ],
+      "risk": "medium",
+      "rollback": "git revert the commit(s) touching this task's expected files; the change is repository-only and alters no device state",
+      "verdict": "OFFLINE_TESTED",
+      "offline_ceiling": "NEEDS_OWNER_TEST",
+      "owner_action": "Settings -> Developer -> Boot diagnostics: set the animation to off, reboot once (no animation, launcher appears directly), set it back to standard; then verbosity 0 vs 3 with verbose boot ON, reboot once each and compare the appended block in /var/log/nuxel/boot-stage.log. The one-time Bixby-hold override remains BLOCKED_KERNEL/BOOT_UPDATE_REQUIRED and is untestable (docs/beta-finalization/manual-proof/03-display-boot.md steps 5/5b/5c)",
+      "expected_files": [
+        "configs/nuxel/",
+        "pwa/nuxel-home/js/qs.js",
+        "pwa/nuxel-home/js/settings-store.js",
+        "docs/beta-finalization/boot/VERBOSE-BOOT.md"
+      ],
+      "note": "Revision 3 (bg-02 verification pass). The briQ asked for Settings -> Developer -> Boot Diagnostics = standard animation + persistent verbose boot + verbosity level, all persisted - revision 2 shipped only the verbose-boot toggle, so the other two controls are NEW here and are real, not cosmetic: (1) animation_mode (standard|short|off) with the ONE precedence rule off > short > verbose_boot > standard, implemented once in the boot-time consumer and asserted in two suites; (2) verbosity_level 0..3, which selects HOW MUCH the boot log says and never whether it is shown. All three live in the SAME durable document (/etc/nuxel/boot/verbose-boot.json, still schema_version 1 because the change is purely additive, which is what makes a downgrade safe), are written by the Settings panel, the Quick Settings tile and nuxelctl verbose-boot animation|verbosity through one merge-on-write path each, and are read by nuxel-verbose-boot.service, which now publishes EFFECTIVE_ANIMATION/ANIMATION_REASON/VERBOSITY plus the NUXEL_BOOT_ANIMATION marker and names the reason in /run/nuxel/anim-skip.request. An unknown animation_mode or an out-of-range verbosity is REPORTED and never silently reinterpreted. The one-time Bixby hold stays BLOCKED_KERNEL/BOOT_UPDATE_REQUIRED with an explicit userspace fallback (nuxelctl/Settings toggle) recorded in the document itself. On-glass effect remains NEEDS_OWNER_TEST.",
+      "source": "plan.json",
+      "at": "2026-10-16T20:57:34+02:00",
+      "by": "construqtor/bg-02-boot-animation-launcher",
+      "revision": 3
     }
   ]
 }

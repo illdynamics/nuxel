@@ -1,0 +1,168 @@
+{
+  "schema_version": 1,
+  "comment": "Native Network Settings feature set for the Samsung Galaxy S10+ (beyond2lte). This file is the READ CONTRACT between build group bg-03 (owner of the Wi-Fi diagnostic, tools/s10plus/a33/nuxel-wifi-diag.sh) and briq-06d (owner of the Settings app UI). bg-03 owns this file and the read API it names; bg-06d renders the pages. It is an APPEND POINT, not a second settings store: the Settings app keeps owning its own layout, and this file only says which network facts exist on this device, how to read each one and what each one may NOT claim.",
+  "device": {
+    "model": "Samsung Galaxy S10+ SM-G975F",
+    "codename": "beyond2lte"
+  },
+  "coordinator": "briq-06d-settings-and-keyboard",
+  "read_api": {
+    "comment": "Every field below is backed by one of these commands. No Settings page may invent a value.",
+    "commands": [
+      "nuxelctl wifi status --json      # ifname, state, modules_ok, firmware_found, supplicant, associated",
+      "nuxelctl wifi scan               # nmcli device wifi list (SSID, SIGNAL, SECURITY, CHAN) or iw scan",
+      "nuxelctl wifi firmware           # candidate firmware blobs vs what is on the image",
+      "nuxelctl wifi regdom [CC]        # 802.11 regulatory domain (read or runtime set)",
+      "nuxelctl wifi fallback           # no-cellular-fallback policy audit",
+      "nuxelctl wifi mark | compare     # reconnection across one normal reboot",
+      "nuxelctl wifi connect <SSID> | disconnect   # uses nmcli --ask; the PSK is never stored by Nuxel"
+    ]
+  },
+  "never_claims": [
+    "that Wi-Fi works because a driver module is loaded",
+    "that a scan result equals a working association",
+    "that the S10+ uses the Pixel BCM4390 (docs/wifi-bcm4390-status.md does not apply to this device)",
+    "a country code that the owner has not chosen (the default stays world/00)",
+    "any credentials: no SSID/PSK is ever written by the repository, and none is stored by the diagnostic"
+  ],
+  "sections": [
+    {
+      "id": "radio-power",
+      "title": "Wi-Fi radio on/off",
+      "status": "IMPLEMENTED_NOT_DEPLOYED",
+      "read_api": "nuxelctl wifi status --json (modules_ok, firmware_found), rfkill list",
+      "fields": [
+        "enabled",
+        "rfkill-soft",
+        "rfkill-hard",
+        "driver-module",
+        "firmware-present"
+      ],
+      "control": "NetworkManager owns the radio: nmcli radio wifi on|off. The app must NOT write rfkill directly.",
+      "notes": "rfkill hard-block cannot be cleared from userspace; report it, never pretend to fix it."
+    },
+    {
+      "id": "scan-list",
+      "title": "Available networks",
+      "status": "NEEDS_OWNER_TEST",
+      "read_api": "nuxelctl wifi scan",
+      "fields": [
+        "ssid",
+        "signal-dbm-or-percent",
+        "security",
+        "band",
+        "channel",
+        "bssid",
+        "active"
+      ],
+      "notes": "An empty list is reported as unproven, never as 'no networks exist'."
+    },
+    {
+      "id": "connection",
+      "title": "Connect / disconnect",
+      "status": "NEEDS_OWNER_TEST",
+      "read_api": "nuxelctl wifi connect <SSID> | disconnect",
+      "fields": [
+        "state",
+        "ipv4",
+        "gateway",
+        "dns",
+        "dhcp-or-static"
+      ],
+      "security": "The PSK is read interactively (nmcli --ask) and never persisted by Nuxel's own files."
+    },
+    {
+      "id": "per-network",
+      "title": "Per-network settings",
+      "status": "IMPLEMENTED_NOT_DEPLOYED",
+      "read_api": "NetworkManager keyfile profiles in /etc/NetworkManager/system-connections",
+      "fields": [
+        "autoconnect",
+        "priority",
+        "metered",
+        "mac-randomisation",
+        "static-ip",
+        "dns-servers",
+        "routes"
+      ],
+      "template": "configs/networkmanager/nuxel-s10plus-wifi.nmconnection.example",
+      "notes": "The template is shipped inert (.example) so NetworkManager never loads a placeholder profile."
+    },
+    {
+      "id": "dns",
+      "title": "DNS / resolver",
+      "status": "IMPLEMENTED_NOT_DEPLOYED",
+      "read_api": "resolvectl status, configs/networkmanager/98-nuxel-dns.conf",
+      "fields": [
+        "current-servers",
+        "per-link-servers",
+        "dnssd",
+        "dns-over-tls-capability"
+      ],
+      "notes": "systemd-resolved is the authoritative resolver; /etc/resolv.conf is never hand-edited."
+    },
+    {
+      "id": "routing",
+      "title": "Advanced routing / split",
+      "status": "IMPLEMENTED_NOT_DEPLOYED",
+      "read_api": "ip route show, NetworkManager ipv4.never-default, nuxelctl wifi fallback",
+      "fields": [
+        "default-route",
+        "per-connection never-default",
+        "vpn-split-tunnel (briq-05c)"
+      ],
+      "notes": "The Wi-Fi connection must not be able to hand the default route to an unverified cellular interface."
+    },
+    {
+      "id": "regulatory",
+      "title": "Regulatory domain and channel occupancy",
+      "status": "OFFLINE_TESTED",
+      "read_api": "nuxelctl wifi regdom [CC]  (iw reg get / iw reg set)",
+      "fields": [
+        "country",
+        "per-band-allowed-channels",
+        "channel-occupancy (only if the driver reports survey data)"
+      ],
+      "safety": "Only regulatory-compliant controls are offered. Active/passive scan flags follow the domain; the tool never sets a country the owner did not choose (default stays 00/world).",
+      "notes": "Channel occupancy is shown ONLY when /sys/kernel/debug/ieee80211/*/survey or `iw dev <if> survey dump` actually reports it; otherwise the page says 'not reported by this driver'."
+    },
+    {
+      "id": "reconnection",
+      "title": "Reconnection and reboot persistence",
+      "status": "NEEDS_OWNER_TEST",
+      "read_api": "nuxelctl wifi mark  ->  one normal reboot  ->  nuxelctl wifi compare",
+      "fields": [
+        "pre-reboot ssid/bssid/ip",
+        "post-reboot ssid/bssid/ip",
+        "verdict"
+      ],
+      "notes": "A pair with an unchanged boot id is REFUSED as evidence; there is no PASS without a real reboot."
+    },
+    {
+      "id": "no-cellular-fallback",
+      "title": "No silent cellular fallback",
+      "status": "OFFLINE_TESTED",
+      "read_api": "nuxelctl wifi fallback",
+      "fields": [
+        "cellular-profiles-present",
+        "autoconnect",
+        "behavioural-rule"
+      ],
+      "notes": "Policy evidence only: the Shannon LTE modem has no upstream ModemManager plugin on this kernel (briq-08i), so a cellular profile appearing is a finding for the owner, not a working fallback."
+    }
+  ],
+  "verdicts": [
+    "OFFLINE_TESTED",
+    "IMPLEMENTED_NOT_DEPLOYED",
+    "NEEDS_OWNER_TEST",
+    "BLOCKED_FIRMWARE",
+    "BLOCKED_DRIVER",
+    "BLOCKED_HARDWARE",
+    "BLOCKED_EXTERNAL_RESOURCE"
+  ],
+  "append_point": {
+    "for": "briq-06d-settings-and-keyboard",
+    "how": "Read this object verbatim; render one page per section and one row per field. Report each section's 'status' string next to the page title. Do not add a network field that is not listed here without a matching read_api command.",
+    "conflict_rule": "bg-03 owns configs/networkmanager/** and tools/s10plus/a33/nuxel-wifi-diag.sh; bg-06d owns pwa/nuxel-apps/settings/**. Neither rewrites the other's files."
+  }
+}
