@@ -154,8 +154,6 @@ INFLIGHT_ALLOWANCES=(
   # Failures are preserved verbatim under
   # docs/beta-finalization/release/evidence/cross-group/ (committed evidence) and
   # re-listed in the summary JSON.  --strict ignores the register entirely.
-  "U-p3-a33-suite|bg-03-connectivity-time-audio-buttons|priority-3 group runner mid-edit: bg-03 still has unfinished queue records (evidence: docs/beta-finalization/release/evidence/cross-group/U-p3-a33-suite.log)|2026-11-15"
-  "U-userspace-a33-suite|bg-04-userspace-completion|userspace group runner mid-edit: bg-04 still has unfinished queue records (evidence: docs/beta-finalization/release/evidence/cross-group/U-userspace-a33-suite.log)|2026-11-15"
   "U-security-vpn-tor|bg-05-security-permissions|VPN/Tor/remote surface mid-edit: bg-05 still has unfinished queue records (evidence: docs/beta-finalization/release/evidence/cross-group/U-security-vpn-tor.log)|2026-11-15"
   "U-verify-app-registry|bg-06-core-phone-apps|app registry mid-edit: bg-06 still has unfinished queue records (evidence: docs/beta-finalization/release/evidence/cross-group/U-verify-app-registry.log)|2026-11-15"
   "U-verify-app-inventory|bg-06-core-phone-apps|app inventory mid-edit: bg-06 still has unfinished queue records (evidence: docs/beta-finalization/release/evidence/cross-group/U-verify-app-inventory.log)|2026-11-15"
@@ -896,7 +894,7 @@ for i in $(selected_indexes); do
     status="WARN"; note="soft suite failed (rc=$rc) — legacy, non-gating"
   elif allowance="$(allowance_for "$sid")" && allowance_is_live "${allowance%%|*}"; then
     status="WARN"; R_WARN_ALLOW=$((R_WARN_ALLOW + 1))
-    note="IN-FLIGHT CROSS-GROUP ALLOWANCE (${allowance%%|*}): $(printf '%s' "$allowance" | cut -d'|' -f2-) (rc=$rc)"
+    note="IN-FLIGHT CROSS-GROUP ALLOWANCE (${allowance%%|*}): $(printf '%s' "$allowance" | cut -d'|' -f2) (rc=$rc)"
     ALLOW_HITS="${ALLOW_HITS}${sid}|${allowance}"$'\n'
   elif [ "$tier" = "external" ]; then
     status="EXT_BLOCKED"; note="external suite could not run (rc=$rc) — BLOCKED_EXTERNAL_RESOURCE"

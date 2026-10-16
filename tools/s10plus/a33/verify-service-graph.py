@@ -79,6 +79,21 @@ UNIT_SOURCES = [
     "shell/nuxel-camera-portal/systemd/nuxel-camera-portal.service",
 ]
 
+# USER-manager units (shipped in shell/config/systemd-user/, installed into
+# ~/.config/systemd/user by the VM/dev bootstrap - NOT by the handset rootfs
+# builder). They are validated with their own rules, because the two failure
+# modes a user unit actually has are invisible to a system-unit validator:
+#   1. a USER unit that references a SYSTEM unit (`Wants=nuxel-web.service`): in
+#      the user manager that name is a user unit that does not exist, so the
+#      dependency is unsatisfiable noise that ALSO implies an ordering which
+#      never happens (measured: both launcher units carried it until rev 2);
+#   2. a user unit enabled into a SYSTEM target (or vice versa).
+USER_UNIT_SOURCES = [
+    "shell/config/systemd-user/nuxel-home-kiosk.service",
+    "shell/config/systemd-user/nuxel-home-native.service",
+    "shell/config/systemd-user/nuxel-phosh-agent.service",
+]
+
 # Units the graph is allowed to reference that Nuxel does not ship itself.
 EXTERNAL_UNITS = {
     "sysinit.target", "basic.target", "multi-user.target", "default.target",
@@ -303,6 +318,45 @@ def main(argv=None, root: str = None) -> int:
     for cyc in cycles:
         problems.append("ordering cycle: %s" % " -> ".join(cyc))
 
+    # ---- 3d: the USER-manager units (VM/desktop surface) --------------------
+    # A user unit may only reference user units and user targets. Every system
+    # unit this repository ships is a name a user unit must NOT name, because the
+    # user manager would look for a USER unit of that name.
+    user_units = {}
+    for rel in USER_UNIT_SOURCES:
+        path = os.path.join(repo_root(), rel)
+        if not os.path.exists(path):
+            problems.append("declared user unit is missing from the repository: %s" % rel)
+            continue
+        user_units[os.path.basename(rel)] = {"path": rel, "sections": parse_unit(path)}
+    system_names = set(units) | {"nuxel-ui.service"}
+    for name, info in sorted(user_units.items()):
+        secs = info["sections"]
+        for key in ("After", "Before", "Requires", "Wants", "Conflicts"):
+            for ref in refs(secs, key):
+                if ref in ("default.target", "graphical-session.target", "basic.target",
+                           "shutdown.target", "dbus.socket", "pipewire.service",
+                           "wireplumber.service"):
+                    continue
+                if ref in system_names:
+                    problems.append("%s: %s=%s names a SYSTEM unit from a USER unit - the user "
+                                    "manager looks for a user unit of that name, so the dependency "
+                                    "is unsatisfiable (and implies an ordering that never happens)"
+                                    % (name, key, ref))
+                elif ref.endswith(".service") and ref not in user_units:
+                    warnings.append("%s: %s=%s is not a unit this repository ships (assumed to be a "
+                                    "user unit supplied by the session)" % (name, key, ref))
+        for key in ("WantedBy", "RequiredBy"):
+            for target in install_refs(secs, key):
+                if target in ("multi-user.target", "sysinit.target", "graphical.target"):
+                    problems.append("%s: %s=%s is a SYSTEM target in a USER unit" % (name, key, target))
+        if not secs.get("Service", {}).get("ExecStart"):
+            problems.append("%s: user unit has no ExecStart" % name)
+        exe = (secs.get("Service", {}).get("ExecStart") or [""])[0].split()[0] if secs.get("Service", {}).get("ExecStart") else ""
+        if exe.startswith("/home/") or exe.startswith("/usr/local/"):
+            warnings.append("%s: ExecStart %s is a VM/desktop development path - these units are "
+                            "installed by the VM/dev bootstrap, never by the handset builder" % (name, exe))
+
     # ---- 3c: the live console is single-owner, and the declaration matches ---
     # The console is the only channel that can report a failing phone, so its
     # ownership rule is asserted, not assumed: the unit must be unable to start
@@ -371,6 +425,15 @@ def main(argv=None, root: str = None) -> int:
         if needle not in a26:
             problems.append("A26 fix missing: %s (tools/s10plus/a26/nuxel-rootfs-fixes.sh)" % label)
 
+    # The handset builder must not install or enable the user-manager units: no
+    # systemd user session is proven on this kernel (see SERVICE-GRAPH.md §6).
+    builder_text = open(builder_path(), errors="replace").read() if os.path.exists(builder_path()) else ""
+    for rel in USER_UNIT_SOURCES:
+        base = os.path.basename(rel)
+        if base in builder_text and "systemd/user" in builder_text:
+            problems.append("the handset builder references the user unit %s: these are VM/dev "
+                            "units and no user session is proven on this kernel" % base)
+
     # ---- 5: the builder installs + enables the canonical set ---------------
     installed, enabled, bp = installed_units_from_builder()
     problems.extend(bp)
@@ -436,6 +499,7 @@ def main(argv=None, root: str = None) -> int:
         "problems": problems,
         "warnings": warnings,
         "vm_only_units": sorted(VM_ONLY_UNITS),
+        "user_units": {n: i["path"] for n, i in sorted(user_units.items())},
         "provisioned_not_enabled": {k: PROVISIONED_NOT_ENABLED[k] for k in sorted(PROVISIONED_NOT_ENABLED)},
         "verdict": verdict,
     }

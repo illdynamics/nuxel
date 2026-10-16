@@ -252,7 +252,21 @@ export class NuxelBridgeClient {
         options.headers['X-Nuxel-Bridge-Version'] = NUXEL_BRIDGE_VERSION;
         if (method === 'POST') options.body = JSON.stringify(data || {});
         const res = await fetch(url, options);
-        if (!res.ok) throw new Error('bridge HTTP ' + res.status);
+        if (!res.ok) {
+            // A refusal body carries the machine-readable reason (error/detail).
+            // Attach it so a caller can act on the refusal instead of string-
+            // matching 'bridge HTTP 404' — the activation path depends on this
+            // (unknown_app vs invalid_app_id are different UI states).
+            let body = null;
+            try { body = await res.json(); } catch (e) { body = null; }
+            const err = new Error('bridge HTTP ' + res.status
+                + (body && body.error ? ' (' + body.error + ')' : ''));
+            err.status = res.status;
+            err.code = (body && body.error) ? body.error : ('http_' + res.status);
+            err.detail = (body && body.detail) || null;
+            err.body = body;
+            throw err;
+        }
         return res.json();
     }
 
@@ -265,6 +279,42 @@ export class NuxelBridgeClient {
                 if (id) this.capabilities.set(id, true);
             });
         } catch (e) { /* ignore */ }
+    }
+
+    /* ---- Launcher -> app activation (briq-04c rev 2) ---- */
+
+    /**
+     * Resolve an app id to an activation DESCRIPTOR through the privileged
+     * service. This is the launcher-to-app bridge: the bridge — not the page —
+     * decides what an app id means, and it never executes anything (it returns a
+     * `url` for a PWA or a registry-listed `native_binary` for a native app).
+     *
+     * Returns the descriptor, or throws on a refusal (unknown_app /
+     * invalid_app_id / registry_unavailable) so a caller cannot mistake a
+     * refusal for a launch. `launchable: false` (e.g. an app tree that is
+     * declared but not landed) is a successful answer, not an error.
+     */
+    async activateApp(targetId, source) {
+        await this._init();
+        if (this.versionMismatch) {
+            throw new NuxelBridgeVersionError(this.versionMismatch.expected, this.versionMismatch.got);
+        }
+        const res = await this._request('/apps/activate', {
+            app_id: this.appId, target: targetId, source: source || 'launcher',
+        }, 'POST');
+        if (res && res.success === false) {
+            const err = new Error('activation refused: ' + (res.error || 'unknown'));
+            err.code = res.error;
+            err.detail = res.detail || null;
+            throw err;
+        }
+        return res;
+    }
+
+    /** The bounded activation history the Console app observes. */
+    async recentActivations() {
+        await this._init();
+        return this._request('/apps/recent', null, 'GET');
     }
 
     /* ---- Generic RPC with mock fallback ---- */

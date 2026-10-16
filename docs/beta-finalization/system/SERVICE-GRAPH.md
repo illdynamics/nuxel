@@ -5,8 +5,9 @@
 **Device:** Samsung Galaxy S10+ SM-G975F (`beyond2lte`, Exynos 9820) — Fedora 43
 aarch64 userspace, Samsung Linux **4.14.253**, **systemd PID 1**
 **Verifier:** `tools/s10plus/a33/verify-service-graph.py` → **`OFFLINE_TESTED`**
-(15 units, 0 problems, 1 recorded warning, 1 recorded INFO; machine-readable
-report written to `build/pkgmeta/service-graph.json`). Revision 2 of
+(15 system units + 3 user-manager units, 0 problems, 4 recorded warnings, 1
+recorded INFO; machine-readable report written to
+`build/pkgmeta/service-graph.json`). Revision 2 of
 `briq-04b-service-definitions` adds the one service that had NO unit anywhere in
 the repository — the **live console** — plus the assertions that keep it
 single-owner (`services/nuxel-console/`).
@@ -156,6 +157,34 @@ settings surface is where that sprawl usually starts. Nuxel therefore has **no
   document. If a future feature genuinely needs a supervisor it gets a named unit
   here with its own ordering and restart policy — not a new daemon per setting.
 
+### 2.4 The user-manager units, and the cross-manager defect they carried
+
+`shell/config/systemd-user/` ships three USER units for the **UTM VM / desktop**
+surface (`[vm]` in `configs/init/archived/README.md`): `nuxel-home-kiosk.service`,
+`nuxel-home-native.service` (both launcher surfaces) and `nuxel-phosh-agent.service`
+(the `org.nuxel.PhoshAgent` session-bus consent agent). The handset rootfs
+builder installs **none** of them, because no systemd user session is proven on
+this kernel (§6) — and the validator now asserts that:
+
+| Rule | Checked by |
+|---|---|
+| a USER unit may not reference a SYSTEM unit | validator section 3d (`names a SYSTEM unit from a USER unit`) |
+| a USER unit may not be enabled into a SYSTEM target | validator section 3d (`is a SYSTEM target in a USER unit`) |
+| the handset builder never installs a user unit | validator section 5 (builder text scan) |
+| a VM/desktop development path in `ExecStart` is reported, never assumed | validator warning (`/home/…`, `/usr/local/…`) |
+
+**A real defect was fixed here.** Both launcher units declared
+`Wants=nuxel-web.service`. In the *user* manager that name is a user unit that
+does not exist, so the dependency was unsatisfiable noise that also implied an
+ordering which never happened (and it read as if the user unit could start the
+system web service). It is gone from both units in revision 2, replaced by a
+documented statement of who actually owns readiness: the kiosk launcher polls
+`http://127.0.0.1:8000/pwa/nuxel-home/index.html` before it execs a browser, and
+the native launcher's `ExecStartPre=/bin/sleep 8` is explicitly labelled a
+**timing** wait (the handset's receipt-driven equivalent belongs to the
+Priority 2 handoff work). The mutation test proves the validator now fails if the
+dependency ever returns, or if a user unit is enabled into a system target.
+
 ## 3. Ordering (as declared, and why)
 
 ```
@@ -256,8 +285,9 @@ bash tools/s10plus/a33/tests/run-userspace-tests.sh                     # all of
 `--root <dir>` validates a copy of the tree instead of the repository. The
 regression test uses it to mutate a verbatim fixture and require a `FAILED`
 verdict for each defect class (cycle, unsatisfied dependency, forbidden 4.14
-dependency, missing enablement, user-target enablement, lost A26 repair) and a
-green verdict for the unmutated copy — so a green run means the checks ran, not
+dependency, missing enablement, user-target enablement, lost A26 repair, and the
+four live-console cases plus the two user-manager cases added in revision 2) and
+a green verdict for the unmutated copy — so a green run means the checks ran, not
 that they were unreachable.
 
 Installed-but-not-enabled is itself asserted (revision 2): for every unit in
@@ -290,10 +320,13 @@ shipped A29/A31/A32 revision carried (the check reports `problems` for a lost
 * No AppArmor profile is declared for any unit: Nuxel has no verified AppArmor
   policy-load path on this vendor kernel, and declaring an unenforced profile
   would be a cosmetic switch that lies about enforcement.
-* The single warning is real but out of scope for the handset:
-  `nuxel-camera-portal.service` is a VM-only, user-manager surface (see §1). It
-  is reported on every run rather than suppressed, because "the VM unit is a
-  no-op in the system manager" is information the next reader needs.
+* Four warnings are recorded on every run rather than suppressed, because each
+  one is information the next reader needs: the VM-only camera portal's no-op
+  enablement (see §1), and the three user-manager units whose `ExecStart` is a
+  VM/desktop development path (`/home/…/nuxel-home-kiosk`,
+  `/usr/local/bin/nuxel-home`, `/usr/local/bin/nuxel-phosh-agent` — §2.4). None
+  of them is a handset boot-graph failure; all of them would be if the
+  corresponding unit were ever installed on the phone.
 * The console unit is **`IMPLEMENTED_NOT_DEPLOYED`** as a systemd service: the
   unit, the guard and the builder line are in the repository and offline-tested,
   but the running console is still the initramfs instance. Enabling it on the
@@ -315,9 +348,12 @@ shipped A29/A31/A32 revision carried (the check reports `problems` for a lost
   and is tested, they stay masked and the graph is built not to need them. The
   A26 script is the single place that encodes this, and the validator fails if
   any of its four repairs disappears.
-* **No systemd user session is claimed.** `shell/config/systemd-user/*` units
-  (`nuxel-home-native.service`, `nuxel-home-kiosk.service`, `nuxel-phosh-agent.service`)
-  are written for the VM/user manager. On the handset the launcher runs from the
-  PWA host on the system bus, and `systemd --user` is affected by the A26 fixes;
-  the user units are declared here so the boundary is visible, not because a user
-  manager is proven to run on the phone.
+* **No systemd user session is claimed** (§2.4). `shell/config/systemd-user/*`
+  units are VM/desktop surfaces with development paths; they are validated under
+  user-manager rules and the builder is forbidden from installing them. Direct
+  consequence, stated plainly: the portal's **consent dialog depends on
+  `org.nuxel.PhoshAgent` on the session bus**, so on the handset in this
+  revision a first-time permission request has no dialog surface — the bridge's
+  portal call then resolves by the portal's own timeout/deny rule (§
+  `APP-INFRASTRUCTURE.md` §4), never by a fabricated grant. That is an open gap
+  for the permission-manager work (Priority 5), not a hidden pass.

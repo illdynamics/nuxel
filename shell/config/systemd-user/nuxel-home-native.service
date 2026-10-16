@@ -1,7 +1,18 @@
 [Unit]
-Description=Launch Native Nuxel Home
+Description=Launch Native Nuxel Home (user session, VM/desktop surface)
+Documentation=file:/usr/share/doc/nuxel/BETA-FINALIZATION/system/SERVICE-GRAPH.md
+# USER-manager unit for the UTM VM / desktop surface: shell/nuxel-home-native/
+# install-dev.sh copies nuxel-home-launcher to /usr/local/bin/nuxel-home (hence
+# ExecStart below) and this unit is installed into ~/.config/systemd/user.
+# It is NOT part of the handset image; the phone's launcher is the WebKitGTK PWA
+# host (nuxel-wayland.service + nuxel-web.service, system scope).
+#
+# `Wants=nuxel-web.service` was removed in briq-04b rev 2: nuxel-web.service is a
+# SYSTEM unit and a user unit cannot require one (the reference resolved to a
+# nonexistent user unit). The 8 s head start below is a TIMING wait, and it is
+# labelled as such - on the handset the equivalent is the receipt-driven handoff
+# owned by the Priority 2 group, not a sleep.
 After=default.target
-Wants=nuxel-web.service
 
 [Service]
 Type=simple

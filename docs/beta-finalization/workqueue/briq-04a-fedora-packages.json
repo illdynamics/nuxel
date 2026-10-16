@@ -58,6 +58,109 @@
       "revision": 1,
       "at": "2026-10-16T16:07:13+02:00",
       "by": "construqtor/bg-00-preflight"
+    },
+    {
+      "id": "briq-04a-fedora-packages",
+      "title": "Verified Fedora 43 ARM64 package manifest and dependency report",
+      "component": "bg-04-userspace-completion",
+      "component_title": "Priority 4 - Full Fedora Userspace, Services & Application Infrastructure",
+      "priority": 4,
+      "state": "implemented",
+      "dependencies": [
+        "briq-00c-workqueue-ledger"
+      ],
+      "evidence": [
+        {
+          "kind": "observation",
+          "path": "docs/beta-finalization/system/DEPENDENCY-REPORT.md",
+          "command": "test -e docs/beta-finalization/system/DEPENDENCY-REPORT.md",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "observation",
+          "path": "images/s10plus/packages-manifest.json",
+          "command": "test -e images/s10plus/packages-manifest.json",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "observation",
+          "path": "tools/s10plus/a33/verify-packages.py",
+          "command": "test -e tools/s10plus/a33/verify-packages.py",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "verifier-run",
+          "command": "python3 tools/s10plus/a33/verify-packages.py --report build/pkgmeta/packages-report.json",
+          "result": "resolved (rc 0): 50/50 essential packages, 93991 distinct aarch64/noarch NEVRAs, 1220 rpm requirements, 0 unresolved; by_kind={package:95, capability:1062, rich:11, file:52}",
+          "at": "2026-10-16T21:07:13+02:00"
+        },
+        {
+          "kind": "verifier-run",
+          "command": "python3 tools/s10plus/a33/verify-packages.py --validate-manifest",
+          "result": "manifest schema OK: 50 package(s), 1220 requirement(s) resolved across 11 group(s) (rc 0)",
+          "at": "2026-10-16T21:07:13+02:00"
+        },
+        {
+          "kind": "verifier-run",
+          "command": "python3 tools/s10plus/a33/verify-packages.py --emit-manifest",
+          "result": "images/s10plus/packages-manifest.json rewritten from real metadata (schema validated before write)",
+          "at": "2026-10-16T21:07:13+02:00"
+        },
+        {
+          "kind": "test-run",
+          "command": "python3 tools/s10plus/a33/tests/test-packages-manifest.py",
+          "result": "all assertions pass (classifier, rich-dep tri-state, cross-repo provider regression, manifest dependency evidence, JSON-schema rejection of a tampered manifest)",
+          "at": "2026-10-16T21:07:13+02:00"
+        },
+        {
+          "kind": "defect-found-and-fixed",
+          "what": "cross-repository provider resolution (stevia in updates requires libdconf.so.1()(64bit) provided only by dconf in GA was reported unsatisfiable)",
+          "result": "needed set is now global; regression test added",
+          "at": "2026-10-16T21:07:13+02:00"
+        },
+        {
+          "kind": "defect-found-and-fixed",
+          "what": "rpm RICH (boolean) dependencies were classified as capabilities and reported unresolved",
+          "result": "parser + tri-state evaluator added; 10/11 resolve, 1 recorded as undecidable-from-primary (a FILE operand)",
+          "at": "2026-10-16T21:07:13+02:00"
+        },
+        {
+          "kind": "defect-found-and-fixed",
+          "what": "a stale derived index cache could silently change a verdict",
+          "result": "INDEX_CACHE_VERSION guard added (a cache from an older classifier is re-parsed)",
+          "at": "2026-10-16T21:07:13+02:00"
+        }
+      ],
+      "intended_changes": [
+        "docs/beta-finalization/system/DEPENDENCY-REPORT.md",
+        "images/s10plus/packages-manifest.json",
+        "tools/s10plus/a33/verify-packages.py"
+      ],
+      "tests": [
+        "tools/s10plus/a33/tests/test-packages-manifest.py: PASS (network metadata + provenance + pin + builder + dependencies + JSON-schema validation + tampered-manifest rejection)",
+        "tools/s10plus/a33/verify-packages.py --ga-only: FAILED as designed (the systemd pin is load-bearing)",
+        "tools/s10plus/a33/verify-packages.py --offline --cache-dir <empty>: BLOCKED_EXTERNAL_RESOURCE (rc 3)",
+        "bash tools/s10plus/a33/tests/run-userspace-tests.sh: 12/12 PASS -> OFFLINE_TESTED"
+      ],
+      "risk": "medium",
+      "rollback": "git revert the commit(s) touching this task's expected files; the change is repository-only and alters no device state",
+      "verdict": "OFFLINE_TESTED",
+      "offline_ceiling": "OFFLINE_TESTED",
+      "owner_action": "No owner action. The package set is verified against real Fedora 43 aarch64 metadata; the handset's installed NEVRAs are a live-deployment measurement (bg-10) and are not claimed here.",
+      "expected_files": [
+        "docs/beta-finalization/system/DEPENDENCY-REPORT.md",
+        "images/s10plus/packages-manifest.json",
+        "tools/s10plus/a33/verify-packages.py"
+      ],
+      "note": "Revision 2 (cycle 6): dependencies are now resolved, not just packages; the manifest is validated against an embedded JSON schema (stdlib-only) before it is written or accepted; the derived index cache is versioned. Verdict OFFLINE_TESTED.",
+      "source": "plan.json",
+      "revision": 2,
+      "at": "2026-10-16T21:07:13+02:00",
+      "by": "construqtor/bg-04-userspace-completion",
+      "supersedes": "revision 1"
     }
   ]
 }

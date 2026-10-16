@@ -206,7 +206,12 @@ else
 fi
 dupes="$(bash "$ROOT/tools/beta/run-all-tests.sh" --list | awk 'NR>1 && NF>3 {print $1}' | sort | uniq -d)"
 [ -z "$dupes" ] && ok "no duplicate suite ids" || bad "no duplicate suite ids" "$dupes"
-if run_quiet bash "$ROOT/tools/beta/run-all-tests.sh" --only '^L1-js-syntax$' --quiet --json -; then
+# The machine summary must be the ONLY thing on stdout: capture stdout and stderr
+# separately so a human transcript on stderr cannot be mistaken for JSON.  (The
+# gate deliberately moves the table/progress to stderr with `--json -`.)
+bash "$ROOT/tools/beta/run-all-tests.sh" --only '^L1-js-syntax$' --quiet --json - \
+     >"$TMP/out" 2>"$TMP/err"
+if [ $? -eq 0 ]; then
   if "$PY" -c '
 import json,sys
 raw=open(sys.argv[1],encoding="utf-8").read()

@@ -8,6 +8,146 @@ and the OTA builder (see *Versioning* below).
 
 ---
 
+## [v0.5.0-beta-rc1] — 2026-10-16
+
+**Theme:** the alpha hardware bring-up becomes a *maintainable* beta candidate.
+The device truth is now recorded per subsystem instead of asserted, the whole
+programme runs through a resumable on-disk work queue, and the release gate has a
+real test hierarchy, a bounded soak, a reboot policy and a rollback discipline
+behind it.
+
+> **This is a beta CANDIDATE (`-rc1`), not a beta release.** The identifier is
+> justified because the *release engineering* (queue, gate, soak, rollback,
+> capability manifest) now exists and is offline-tested — and because the
+> hardware story is honest rather than finished: the phone boots Fedora 43 with
+> systemd, the launcher runs on the panel through the Wayland→framebuffer
+> bridge, the live console is proven, and the separate subsystems say plainly
+> which of them are still unproven. Per-subsystem status is **not** in this file:
+> it lives in [`docs/beta-finalization/release/DEVICE-CAPABILITY-MANIFEST.md`](docs/beta-finalization/release/DEVICE-CAPABILITY-MANIFEST.md)
+> (machine-readable twin `.json`, cross-checked against the work queue by
+> `tools/beta/validate-capability-manifest.py`). Words like "working" in this
+> changelog mean "exists in the repository and passed its offline suite" unless a
+> live capture is cited.
+
+### Added — release engineering (this cycle's deliverable, `bg-09`)
+
+- **`tools/beta/run-all-tests.sh` — the release gate.** One command runs every
+  offline suite plus the A32 baseline regression guard, prints a per-suite table
+  (`ID / TIER / STATUS / OWNER / CHECKS / SECS`) and exits non-zero on any hard
+  failure. `CHECKS` is the number of PASS-shaped assertion lines the suite
+  printed (a floor, never a coverage claim). `--list`, `--only REGEX`, `--strict`,
+  `--external`, `--json -` (pure JSON on stdout, transcript on stderr), `--quiet`.
+  The machine summary carries `gate` **and** `raw_gate`, `counts`, every
+  `failures[]` entry attributed to its owning group, and `allowances_applied[]`.
+- **`docs/beta-finalization/testing/TEST-STRATEGY.md`** — the L1–L6 hierarchy
+  (static → unit → integration → UTM VM → live phone → owner physical),
+  what each tier may claim, the hardware truth table that constrains those
+  claims, and the rule that a metric the phone could not produce is reported
+  unproven rather than assumed healthy.
+- **`docs/beta-finalization/testing/SOAK-AND-PERFORMANCE.md`** + the extended
+  harness. The soak is bounded (default ≤ 30 min for an autonomous run, 8 h on
+  the device tier) and now measures, in addition to stability: **disk headroom,
+  swap pressure, WebKit subprocess count and memory, Phoc CPU/RSS, the
+  framebuffer bridge's CPU and commit volume, leftover animation processes,
+  runnable-process count and the input-node inventory** — alongside the existing
+  reboot / failed-unit / launcher-availability / single-framebuffer-owner /
+  stack-CPU / RSS-growth / service-restart / thermal findings. Unreachable
+  console ⇒ `BLOCKED_EXTERNAL_RESOURCE`, never a fabricated sample.
+- **`tools/beta/rollback.sh`** — record previous hash → stage → verify sha256 →
+  atomic install → restart only the smallest affected service → health-check →
+  **automatic rollback** on failure. Per-task baselines under
+  `/var/lib/nuxel/rollback/<briq-id>/` via the new `--briq` switch.
+- **`tools/beta/reboot-policy.sh`** — the pre/post reboot checklist (live console,
+  progress saved, logs flushed, systemd ready, no package transaction, known-good
+  rollback, bounded reconnect) plus mechanical refusals: no reason, blind repeat,
+  repeated reason, previous reboot never returned, no known-good rollback,
+  3-reboot budget, and the mode-scoped **three-same-mode-failures** guard. It
+  never reboots on its own initiative.
+- **`docs/beta-finalization/release/REBOOT-ROLLBACK.md`** and **`ROLLBACK.md`** —
+  the discipline, the component map, the backup paths and the rollback routes,
+  including the time-bounded auto-rollback rule for security/network changes that
+  could cut the only reachable console.
+- **`docs/beta-finalization/release/DEVICE-CAPABILITY-MANIFEST.{md,json,schema.json}`**
+  and **`tools/beta/validate-capability-manifest.py`** — 41 subsystem entries,
+  each naming the work-queue record that authorises it; the validator rejects any
+  verdict stronger than the record's (schema validation **and** cross-check).
+- **`tools/beta/tests/test-rollback-reboot.sh`** — 22 mocked-failure scenarios
+  that prove the rollback really triggers and the reboot path is inert.
+
+### Changed
+
+- **`VERSION`** → `v0.5.0-beta-rc1`, in lockstep with this entry.
+- **`tools/beta/soak.sh` / `soak_lib.py`** — the probe emits a second short line
+  (`SOAK2`) for the resource/performance metrics, and two sample families are now
+  explicitly separated: *gated* (decides the verdict) and *recorded* (warns).
+- **`tools/beta/run-all-tests.sh`** — the JSON emitter no longer writes invalid
+  JSON for a suite that never ran (`"rc": -` → `null`), the external tier is
+  reported as `EXTERNAL`/`BLOCKED_EXTERNAL_RESOURCE` instead of the meaningless
+  `EXTERNAL_EXTERNAL`, and cross-group allowances are now **evidence-derived**:
+  an entry is honoured only while its owning group still has an unfinished record
+  in the work queue, so it stops working by itself when that group lands.
+- Legacy alpha-cycle gates (`tools/s10plus/a27/*`) are precondition-gated with a
+  `probe:` prerequisite: a missing alpha build artefact or host tool is a loud
+  `SKIP` that names the missing piece, never a silent pass and never a fake
+  failure.
+
+### Fixed
+
+- **Invalid machine-readable summary** (`"rc": -` for a suite that never ran)
+  made `summary.json` unparseable whenever any suite was skipped. Fixed and
+  covered by the release-tooling self-test.
+- **`tools/beta/tests/test-release-tools.sh`** had a stray `from release_lib
+  import` line that made the `release_lib.py` unit block die with a SyntaxError;
+  the block now runs.
+- **The release-tool self-test asserted the wrong stream**: with `--json -` the
+  gate now keeps stdout pure JSON and moves the human transcript to stderr, and
+  the test captures the two streams separately.
+
+### Preserved from A32 (do not start over)
+
+The A32 hardware-proven baseline is unchanged and still guarded, as hash pins and
+behavioural invariants in `docs/beta-finalization/baseline-protection.json` plus
+`tools/beta/regression-guard.sh` (passing in the release gate): Fedora 43 ARM64 +
+Samsung Linux 4.14.253 with systemd PID1 and the USB CDC-ACM console, the DECON
+framebuffer at 1440×3040, the XRGB8888→Samsung ABGR8888 screencopy translation,
+Phoc headless + the Wayland→framebuffer bridge, the original MP4 boot animation
+with a single framebuffer owner and receipt-driven handoff, the WebKitGTK Nuxel
+Home PWA as the authoritative launcher, the A32 button manager, and the ten-zone
+status-bar safe areas.
+
+### Still open / not claimed (see the capability manifest for the full matrix)
+
+- **No subsystem in this release is `VERIFIED_ON_S10PLUS` by this cycle.** The
+  live preflight was read-only; the manifest caps every entry at its recorded
+  offline/vendor ceiling, and no entry in it claims live verification from this run.
+- The touch controller is present but **deliberately not initialised** while
+  `androidboot.mode=charger` sets `lpcharge=1` (`sec_ts_init: Do not load driver
+  due to : lpm 1`); touch is `BLOCKED_KERNEL` on the boot mode until a normal
+  boot is performed, and the finger test is `NEEDS_OWNER_TEST`.
+- Wi-Fi enumerates (`brcmfmac`, `wlan0`/`wlan1`, unblocked, **down**) but
+  association/DHCP/DNS/reconnect are unproven; Bluetooth is soft-blocked;
+  ModemManager reports `No modems were found` despite the Shannon `rmnet*`
+  interfaces; `pipewire`, `wireplumber`, `alsa-utils` and `flatpak` are **not
+  installed** on the phone.
+- There is **no exposed battery-backed RTC** (`timedatectl`: *RTC time: n/a*); the
+  device clock reads ~31 days behind the host and that already breaks RPM
+  signature verification (`signature is not alive`). Time is therefore reported
+  with its uncertainty rather than as a precise value.
+- The 8 h device soak, the UTM tiers and every physical acceptance item are
+  registered but **not executed** here: the soak and the VM tiers are
+  `BLOCKED_EXTERNAL_RESOURCE`, and the physical items are `NEEDS_OWNER_TEST` in
+  `docs/beta-finalization/BETA-MANUAL-PROOF-CHECKLIST.md`.
+- The release gate is **RED** at the time of this entry for two suites owned by
+  another build group (`U-baseline-a32-suite` and `U-boot-s10plus-gates`, both
+  needing alpha-cycle build artefacts that the beta build host cannot produce:
+  the aarch64 bridge binary and the A5 boot fixture). They are attributed in
+  `build/reports/beta-tests/summary.json` as `failures[]`; nothing here hides
+  them, and `--strict` reports the raw verdict.
+
+---
+
+---
+
 ## [v0.4.0-alpha] — 2026-10-15
 
 **Theme:** the Galaxy S10+ **boots Nuxel** — and the release CI now builds the

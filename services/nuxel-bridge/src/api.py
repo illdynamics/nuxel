@@ -11,6 +11,7 @@ and testing; production PWAs should use D-Bus directly via xdg-desktop-portal.
 """
 
 import json
+import re
 import uuid
 import hmac
 import hashlib
@@ -82,6 +83,25 @@ if not NUXEL_DATA_DIR:
     NUXEL_DATA_DIR = '/var/lib/nuxel'
 
 # Token directory
+# ── Launcher -> app activation (briq-04c rev 2) ────────────────────────────
+# The launcher resolves an app id to an activation DESCRIPTOR here, for the same
+# reason the registry is served here: one authority, one answer.
+#
+# WHAT THIS NEVER DOES: it never executes anything. There is no path parameter,
+# no command parameter and no subprocess/os.system/exec* call on this path - the
+# client sends a registry ID and receives back the REGISTRY's own entry (a `url`
+# for a PWA, `native_binary` for a native app). A client-supplied `binary`,
+# `command`, `url` or `path` is ignored by construction (the descriptor is built
+# from the registry, not from the request), so a compromised PWA cannot turn
+# "activate an app" into "run an arbitrary program". The actual launch (WebKit
+# navigation, or exec of a registry-listed binary) happens in the native PWA
+# host, which is a separate, non-Web process.
+ACTIVATION_HISTORY_MAX = 20
+ACTIVATION_HISTORY = []          # bounded, in-process: {id, at, action, source}
+ACTIVATION_REJECTED = {"count": 0, "last": None}
+# An app id is an identifier, never a path: no separator, no "..", no leading dot.
+APP_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,63}$")
+
 TOKEN_DIR = os.path.join(NUXEL_DATA_DIR, 'http-bridge')
 TOKEN_FILE = os.path.join(TOKEN_DIR, 'token')
 
@@ -264,6 +284,109 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
         if declared and declared != BRIDGE_PROTOCOL_VERSION:
             info["version_mismatch"] = {"registry": declared, "host": BRIDGE_PROTOCOL_VERSION}
         return info
+
+    def _lookup_registry_app(self, app_id):
+        """Return (app_entry_or_None, registry_info). Never invents an app."""
+        info = self._load_app_registry()
+        if not info.get("available"):
+            return None, info
+        for app in info.get("apps") or []:
+            if app.get("id") == app_id:
+                return app, info
+        return None, info
+
+    def _activate_app(self, target_id, requester, source):
+        """Resolve an app id to an activation descriptor (JSON body, HTTP code).
+
+        Mediation rules:
+          * the registry is the ONLY source of the descriptor;
+          * an unknown id is 404 unknown_app - nothing is guessed, nothing runs;
+          * an id that is not a plain identifier (a path, a shell metacharacter,
+            a "..") is 400 invalid_app_id BEFORE any lookup;
+          * a native entry without a binary (a documented placeholder, e.g.
+            nuxel-camera until the camera surface lands) is reported as
+            `launchable: false` with the registry's own implementation note;
+          * an unavailable registry is 503 - never a fabricated app list.
+        """
+        if not isinstance(target_id, str) or not APP_ID_RE.match(target_id or ""):
+            ACTIVATION_REJECTED["count"] += 1
+            ACTIVATION_REJECTED["last"] = target_id if isinstance(target_id, str) else repr(target_id)
+            logger.warning("activation refused: %r is not an app identifier", target_id)
+            return ({"success": False, "error": "invalid_app_id",
+                     "detail": "an app id is an identifier (letters, digits, . _ : -), "
+                               "never a path or a command",
+                     "got": target_id if isinstance(target_id, str) else None}, 400)
+        app, info = self._lookup_registry_app(target_id)
+        if app is None:
+            if not info.get("available"):
+                return ({"success": False, "error": "registry_unavailable",
+                         "detail": info.get("error") or "the canonical registry could not be read",
+                         "source": info.get("source")}, 503)
+            ACTIVATION_REJECTED["count"] += 1
+            ACTIVATION_REJECTED["last"] = target_id
+            return ({"success": False, "error": "unknown_app", "app_id": target_id,
+                     "registry_version": info.get("registry_version")}, 404)
+        kind = app.get("type")
+        descriptor = {
+            "success": True,
+            "id": app.get("id"),
+            "name": app.get("name"),
+            "type": kind,
+            "category": app.get("category"),
+            "capabilities": app.get("capabilities") or [],
+            "bridge_version": app.get("bridge_version"),
+            "registry_version": info.get("registry_version"),
+            "source": "registry",
+            "executed": False,   # the bridge resolves; the PWA host launches
+            "app_id": app.get("id"),
+        }
+        if kind == "pwa":
+            if app.get("resolution") == "pending":
+                # The app tree is DECLARED but not landed in this revision (the
+                # registry records the owners, the reason and the expected files).
+                # Navigating to a 404 is not a launch, so the descriptor says so
+                # instead of handing the launcher a dead URL. This is a STATIC
+                # registry fact: the bridge never probes the filesystem.
+                pending = app.get("pending") or {}
+                descriptor.update({
+                    "launchable": False,
+                    "action": "pending_app_tree",
+                    "url": app.get("url"),
+                    "detail": pending.get("reason")
+                              or "this app's tree is declared but not landed yet",
+                    "owner_groups": pending.get("owner_groups") or [],
+                    "expected": pending.get("expected") or [],
+                })
+            else:
+                descriptor.update({
+                    "launchable": True,
+                    "action": "navigate",
+                    "url": app.get("url"),             # registry value, not the request's
+                    "manifest": app.get("manifest"),
+                    "origin": info.get("url_base"),
+                })
+        elif kind == "native":
+            binary = app.get("native_binary")
+            if binary:
+                descriptor.update({"launchable": True, "action": "exec",
+                                   "native_binary": binary,
+                                   "desktop_entry": app.get("desktop_entry")})
+            else:
+                descriptor.update({
+                    "launchable": False,
+                    "action": "documented_placeholder",
+                    "detail": app.get("implementation_note")
+                              or "native entry without a binary in this revision",
+                    "status": app.get("status", "placeholder"),
+                })
+        else:
+            descriptor.update({"launchable": False, "action": "unknown_type",
+                               "detail": "registry entry has type %r" % kind})
+        ACTIVATION_HISTORY.append({"id": app.get("id"), "at": time.time(),
+                                   "action": descriptor["action"],
+                                   "requester": requester, "source": source})
+        del ACTIVATION_HISTORY[:-ACTIVATION_HISTORY_MAX]
+        return descriptor, 200
 
     def _verify_version(self):
         """Enforce the pinned bridge_version when the client declares one.
@@ -576,6 +699,15 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
             result = self._call_bridge('CheckPermission', app_id, capability)
             self._send_json(result)
 
+        elif path == '/api/v1/apps/recent':
+            self._send_json({
+                "success": True,
+                "count": len(ACTIVATION_HISTORY),
+                "max": ACTIVATION_HISTORY_MAX,
+                "rejected": dict(ACTIVATION_REJECTED),
+                "activations": list(ACTIVATION_HISTORY),
+            })
+
         elif path == '/api/v1/apps/capabilities':
             app_id = parse_qs(parsed.query).get('app_id', ['unknown'])[0]
             result = self._call_bridge('GetAppCapabilities', app_id)
@@ -720,6 +852,15 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
             message = body.get('body', '')
             result = self._call_bridge('SendNotification', app_id, title, message)
             self._send_json(result)
+
+        elif path == '/api/v1/apps/activate':
+            # The target is its OWN field: `app_id` in this API is the CALLER (used
+            # for capability checks), and conflating the two would let a caller
+            # "activate itself" with someone else's identity.
+            target = body.get('target') or body.get('activate') or body.get('target_app_id')
+            requester = body.get('requester') or app_id
+            result, code = self._activate_app(target, requester, body.get('source') or 'launcher')
+            self._send_json(result, code)
 
         elif path == '/api/v1/capabilities/revoke':
             capability = body.get('capability', '')

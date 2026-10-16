@@ -3,9 +3,15 @@
 **Component:** Priority 4 — Full Fedora userspace, services & application infrastructure
 **BriQ:** `briq-04c-app-infrastructure`
 **Verifier:** `python3 tools/s10plus/a33/verify-app-registry.py`
-**Verdict:** `OFFLINE_TESTED_WITH_DEFERRALS` (0 problems; the deferral is a
-cross-group app tree that has not landed yet — see §5)
-**Evidence:** `build/pkgmeta/app-registry.json`, the two test files in §6
+**Verdict:** `OFFLINE_TESTED_WITH_DEFERRALS` (0 problems; the deferrals are app
+trees owned by other groups that have not landed yet — see §5)
+**Evidence:** `build/pkgmeta/app-registry.json`, the test files in §6
+**Revision 2 (cycle 6)** closed the four gaps this document used to describe as
+work in progress: the registry's dangling `tree_apps` entry (a hard `FAILED`
+verdict) is now a declared `planned` state, the missing activation path is
+implemented and mediated (§3.2), the static web server is a real PWA server with
+service-worker and cache policy (§3.3), and the client exposes the same contract
+(`bridge.js` `activateApp`/`recentActivations`, §2).
 
 ---
 
@@ -24,8 +30,45 @@ URL or type that differs between the registry and `apps.js`, a native-shell copy
 that is out of sync, a `registry_version` mismatch, a PWA entry that does not
 resolve to a real `index.html` + `manifest.json`, a manifest whose
 `nuxel.bridge_version` differs from the pin, a capability the bridge cannot
-arbitrate, or a `pwa/nuxel-apps/<dir>` that ships an `index.html` and is
-documented nowhere.
+arbitrate, a `pwa/nuxel-apps/<dir>` that ships an `index.html` and is documented
+nowhere, or a `tree_apps` entry WITH a present-state (`complete`,
+`in_progress`, `shared-assets-not-an-app`) whose directory is not on disk.
+
+### 1.1 `tree_apps` states: a present claim must be true, a promise is labelled
+
+Revision 2 replaced an ambiguous boolean ("documented") with four explicit
+states, because the registry used to claim a directory that did not exist:
+
+| State | Meaning | Verifier behaviour |
+|---|---|---|
+| `complete` | installed, `index.html` + `manifest.json` present | the directory **must** exist or the verdict is `FAILED` |
+| `in_progress` | the owning group is landing it in this cycle | the directory must exist; a missing `index.html` is reported, not a failure |
+| `shared-assets-not-an-app` | `pwa/nuxel-apps/_shared` | must exist; never a launcher entry |
+| `planned` | declared and owned, **not landed yet** | the directory must **not** exist yet; while absent the entry is a printed `DEFER` naming the owning group and its ledger briq, and it is promoted automatically (reported as LANDED) when the tree appears |
+
+That is what keeps the inventory from going stale in either direction: a
+present-state entry that points at nothing fails closed, and a promise is never
+counted as an app.
+
+### 1.2 `required_apps_not_yet_in_tree`: the mission inventory, cross-checked
+
+The mission names apps that have no tree directory at all yet (Permissions &
+Privacy, Firewall, VPN/Tor/remote access, Security auditor, System monitor).
+Guessing directory names for them would make the verifier report paths that will
+never exist, so they are recorded **concept-level** with no path claim - and the
+entry is not a free-text promise: each names its owning build group and its
+`ledger_briq`, and the verifier fails if
+`docs/beta-finalization/workqueue/<briq>.json` does not exist or if that briq's
+`component` is not the `owner_group` the registry claims. A mission requirement
+therefore cannot point at work nobody owns.
+
+### 1.3 Why `registry_version` stays 4 in this revision
+
+`tree_apps`, `required_apps_not_yet_in_tree` and `notes` are INVENTORY sections:
+they do not change `apps[]` or a single app URL, so bumping
+`NUXEL_REGISTRY_VERSION` in `pwa/nuxel-home/js/apps.js` (owned by the Priority 2
+group) would be a false signal - and the verifier treats registry-version drift
+as a failure. The version moves when the app grid moves.
 
 ## 2. bridge_version pinning (no silent version skew)
 
@@ -96,6 +139,69 @@ Enforcement, measured offline:
   code path on a host whose python3 lives elsewhere. The unit does **not** set
   it.
 
+### 3.2 Launcher → app activation (the mediated launch path)
+
+The launcher resolves an app id to an activation **descriptor** through the
+privileged service, so app identity is decided in exactly one place:
+
+```
+Nuxel Home (WebKit/WebKitGTK)                     native PWA host (non-Web process)
+  appRegistry.launchApp(id)                         parses app:launch / pwa:open / native:launch
+    └─> POST /api/v1/apps/activate  ────────────────> WebKit navigation to the registry url,
+        {app_id: caller, target: id}                   or exec of the registry's native_binary
+        <── {action: navigate|exec|pending_app_tree|documented_placeholder,
+             url|native_binary, launchable, executed:false, source:"registry"}
+```
+
+| Property | Implementation | Why it matters |
+|---|---|---|
+| the registry is the only source of the descriptor | `_activate_app()` builds `url` / `native_binary` from `app-registry.json`, never from the request | a client-supplied `binary`, `command`, `url` or `path` is ignored by construction, so "activate an app" cannot become "run an arbitrary program" (asserted by the test) |
+| no execution primitive exists | the handler contains no `subprocess`, `os.system`, `popen`, `os.exec*`, `exec(`, `eval(` or `shell=True`; the test greps the handler body | the bridge resolves; the launch happens in the native host |
+| an id is an identifier, never a path | `^[A-Za-z0-9][A-Za-z0-9._:-]{0,63}$` checked *before* any lookup → `400 invalid_app_id` | traversal, absolute paths and shell metacharacters are refused before they can be resolved |
+| an unknown id is refused | `404 unknown_app` (+ `registry_version`) | nothing is guessed; the launcher shows an honest "unknown app" |
+| an unavailable registry is reported | `503 registry_unavailable` with the source path and reason | an absent registry never becomes a fabricated app list |
+| a declared-but-unlanded app is not "launchable" | `resolution: "pending"` → `launchable:false`, `action:"pending_app_tree"`, owners + reason | navigating to a 404 is not a launch (LiveConsole is the live example) |
+| a native placeholder is honest | no `native_binary` → `launchable:false`, `action:"documented_placeholder"` + the registry's own note | `nuxel-camera` is not reported as a working camera |
+| activity is observable, bounded | `ACTIVATION_HISTORY` (cap 20) + refusal counter, read through `GET /api/v1/apps/recent`; refusals are counted, not recorded as launches | the Live Console app's activity view needs the data the bridge already has |
+
+The client half lives in `pwa/nuxel-common/bridge.js` (`activateApp(target,
+source)`, `recentActivations()`), and `_request()` now attaches the refusal
+reason (`err.code` = `unknown_app` / `invalid_app_id` / `registry_unavailable`)
+to the thrown error instead of losing it in `"bridge HTTP 404"`, so a UI can
+distinguish the states. Covered by
+`services/nuxel-bridge/test-launcher-activation.py` (real handler + real
+registry, every app id, refusal cases, no-execution assertions, launcher wiring)
+and `pwa/nuxel-common/test-bridge.js`.
+
+### 3.3 The static server is a real PWA server (revision 2)
+
+`python3 -m http.server` was replaced by
+`services/nuxel-web/bin/nuxel-web-server.py` (installed to
+`/usr/lib/nuxel/nuxel-web-server.py`), because a development file server cannot
+provide the four things this tree needs. The shim still owns docroot resolution
+and verification and hands the verified root to the server, so there is one
+root-resolution rule; if the server file is missing the shim falls back to
+`-m http.server` **with a warning** rather than failing to start.
+
+| Property | Policy | Why |
+|---|---|---|
+| MIME | explicit table (`.webmanifest`/`manifest.json` → `application/manifest+json`, `.js`/`.mjs` → `text/javascript`, `.wasm`, fonts, media) + `X-Content-Type-Options: nosniff` | an installable manifest and an ES module must not depend on a changing stdlib guess |
+| service worker | `Cache-Control: no-cache` + `Service-Worker-Allowed: /` + `X-Nuxel-Service-Worker: 1` for `sw.js` | a stale service worker is the classic "the launcher runs old JavaScript" defect: the browser must revalidate, and the worker may claim the root scope it registers for |
+| HTML/manifests | `no-cache` | an update check must not be masked by a cached shell |
+| content-addressed assets | `Cache-Control: public, max-age=31536000, immutable` when the URL carries `?v=`/`?h=`/`?hash=`/`?ver=` | the URL changes with the content, so a long cache is safe and the launcher loads fast |
+| everything else | `public, max-age=3600` | bounded staleness rather than browser-invented policy |
+| revalidation | `ETag` (sha256[:16]) + `Last-Modified` on every 200, `304` for `If-None-Match`/`If-Modified-Since`, `HEAD` supported | the CI smoke test's "sw.js cacheable (validator)" check passes with a real validator |
+| troubleshooting | `NUXEL_WEB_NO_CACHE=1` → `no-store` everywhere | the owner's stale-asset switch, no code change |
+| listings | `/` and any directory → `403`, never a listing | a directory listing of the staged tree is an information leak, not a convenience |
+| traversal | every path is `realpath`-resolved and must stay under the docroot; `..`, encoded `..` and symlink escapes are refused | `python3 -m http.server` already refuses these; the replacement must not regress it |
+| throughput | `ThreadingHTTPServer` | WebKit opens several connections per page; a single-threaded server serialises them behind one slow request |
+| journal | successful requests are not logged; refusals are | the journal is a diagnostic channel, not a request log |
+
+Every row above is asserted by `tools/s10plus/a33/tests/test-web-server.py`
+against the real shim over HTTP - including the `304`s, the traversal attempts
+and the "successful requests are silent" property - so the policy is verified
+rather than described.
+
 ## 4. Portal and notifications
 
 * `nuxel-portal` (`org.nuxel.Portal`) mediates every hardware permission through
@@ -123,6 +229,8 @@ Reported by the verifier as `DEFER` / `WARN`, and fatal under `--strict`:
 | `pwa/nuxel-apps/{mail,calendar}.manifest.json` declare `storage:read` / `storage:write`; `terminal` declares `shell:local-pty` | bg-06 | **warn**: these ids are not in `services/nuxel-bridge/src/capabilities.py` (`storage:persistent` is the enum entry). An app must not advertise a capability the host cannot arbitrate — documented in the registry's `capability_gaps`, not hidden. |
 | `pwa/nuxel-home/manifest.json` declares `nuxel.bridge_version: 0.4.0-alpha` | bg-02 | **warn**: that is `host_version`, not the protocol pin. The launcher is a system surface and is not part of `apps[]`, so nothing is rejected — but the two fields must not be conflated. |
 | 20 app directories in `pwa/nuxel-apps/` | bg-06 / bg-07 / bg-05 | inventoried in `tree_apps` with owner + state; an `index.html` that appears without a registry entry or an inventory note fails the verifier. |
+| `pwa/nuxel-apps/privacy` | bg-05 (`briq-05a-permission-manager`) | **deferred** (`planned`, not landed — the previous revision wrongly claimed it existed and the verifier failed on it; that FAILED verdict is what this revision fixes). |
+| Permissions & Privacy, Firewall, VPN/Tor/remote, Security auditor, System monitor | bg-05 / bg-06 | **pending** in `required_apps_not_yet_in_tree`: concept-level, with owner + ledger briq cross-checked against `docs/beta-finalization/workqueue/`. No tree path is claimed. |
 
 Run `--strict` once every group has merged: a deferral or gap is then a hard
 failure, which is the release gate.
@@ -135,7 +243,8 @@ python3 tools/s10plus/a33/verify-app-registry.py --strict    # release gate
 python3 services/nuxel-portal/test-portal-policy.py          # grant store + timeout invariants
 python3 services/nuxel-notifications/test-notifications-persistence.py
 python3 tools/s10plus/a33/tests/test-app-infrastructure.py   # real HTTP handler: pin, 409, registry
-python3 tools/s10plus/a33/tests/test-web-server.py           # static PWA server: docroot, wiring, loud failures
+python3 services/nuxel-bridge/test-launcher-activation.py     # registry -> activation descriptor, refusals, no execution
+python3 tools/s10plus/a33/tests/test-web-server.py           # static PWA server: docroot, MIME, SW headers, cache policy, 304, traversal
 node pwa/nuxel-common/test-bridge.js                         # client pin + refusal semantics
 node pwa/nuxel-common/verify-wiring.js                       # shared bridge module wiring
 bash tools/s10plus/a33/tests/run-userspace-tests.sh          # all of Priority 4 (04a/04b/04c)
@@ -150,5 +259,12 @@ bash tools/s10plus/a33/tests/run-userspace-tests.sh          # all of Priority 4
 * `bridge_version` mismatch handling is proven against a real HTTP server with a
   stub D-Bus. On the handset the same handler runs with the real bus; the
   semantics are identical, but the on-device run is bg-10's measurement.
-* Nothing here is deployed to the phone by this component. No flashing of any
-  kind is performed or required.
+* The static server and the activation endpoint are `OFFLINE_TESTED` here and
+  `IMPLEMENTED_NOT_DEPLOYED` on the handset: the builder installs them and the
+  tests run the real code, but nothing in this component deploys to the phone
+  (that is bg-10's live step) and no flashing of any kind is performed or
+  required.
+* The activation descriptor is a *resolution*, not a launch: the bridge proves
+  which program or URL an id means, and the native PWA host performs it. Whether
+  a launched app then works is the app's own evidence (and, for anything needing
+  a finger, a SIM or a speaker, `NEEDS_OWNER_TEST`).

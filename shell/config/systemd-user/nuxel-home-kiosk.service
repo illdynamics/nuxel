@@ -1,10 +1,29 @@
 [Unit]
-Description=Launch Nuxel Home Kiosk
+Description=Launch Nuxel Home Kiosk (user session)
+Documentation=file:/usr/share/doc/nuxel/BETA-FINALIZATION/system/SERVICE-GRAPH.md
+# WHERE THIS UNIT BELONGS (briq-04b rev 2)
+#   This is a USER-manager unit for the UTM VM / desktop development surface
+#   ([vm] in configs/init/archived/README.md). It is NOT installed on the
+#   handset by images/s10plus/build-phone-rootfs-inside-fedora.sh: on the phone
+#   the launcher is the WebKitGTK PWA host inside nuxel-wayland.service (system
+#   scope). The boundary is stated here so nobody reads this file as the phone's
+#   launcher definition.
+#
+# WHY THERE IS NO `Wants=nuxel-web.service` ANY MORE
+#   nuxel-web.service is a SYSTEM unit. A user unit that declares
+#   `Wants=nuxel-web.service` asks the USER manager for a unit of that name,
+#   which does not exist there, so the dependency was unsatisfiable noise
+#   (and, worse, implied a start ordering that never happened). Cross-manager
+#   readiness is the launcher's own job: shell/nuxel-kiosk/nuxel-home-kiosk
+#   polls http://127.0.0.1:8000/pwa/nuxel-home/index.html until the system
+#   service answers before it execs the browser. verify-service-graph.py now
+#   fails if a user unit references a system unit again.
 After=default.target
-Wants=nuxel-web.service
 
 [Service]
 Type=simple
+# Bounded readiness: the kiosk script polls the launcher URL itself, so this is
+# only a short head start for the system service; it is not the readiness rule.
 ExecStartPre=/bin/sleep 8
 ExecStart=/home/wicked/bin/nuxel-home-kiosk
 Restart=on-failure

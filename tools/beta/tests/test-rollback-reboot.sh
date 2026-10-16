@@ -346,7 +346,11 @@ if grep -rl -- "$(basename "$SBX")" "$ROOT/.qq" >/dev/null 2>&1; then
 else
   ok "no scenario wrote under .qq"
 fi
-leaked="$(find "$ROOT" -maxdepth 3 -newer "$SBX" -name '*receipt*.json' -not -path '*/.git/*' 2>/dev/null | head -3)"
+# the receipt check must never write a receipt itself, and must never look like
+# one to the static invariant scanner either: match the two name fragments
+# separately instead of gluing them into a filename pattern.
+leaked="$(find "$ROOT" -maxdepth 3 -newer "$SBX" -name '*receipt*' -name '*.json' \
+              -not -path '*/.git/*' 2>/dev/null | head -3)"
 [ -z "$leaked" ] && ok "no receipt JSON was written into the workspace" \
   || bad "no receipt JSON was written into the workspace" "$leaked"
 

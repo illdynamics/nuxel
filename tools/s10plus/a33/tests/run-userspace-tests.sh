@@ -10,7 +10,8 @@
 #   briq-04b  services/** + shell/config/systemd-user/**   (boot graph)
 #             tools/s10plus/a33/verify-service-graph.py
 #             services/nuxel-console/test-console-ownership.py (single-owner guard)
-#   briq-04c  pwa/nuxel-common/**, services/nuxel-{bridge,portal,notifications}/**
+#   briq-04c  pwa/nuxel-common/**, services/nuxel-{bridge,portal,notifications,web}/**
+#             services/nuxel-bridge/test-launcher-activation.py (registry -> launch)
 #             services/nuxel-web (static PWA server)
 #             tools/s10plus/a33/verify-app-registry.py
 #
@@ -96,6 +97,8 @@ run_py "apps: canonical registry + manifests + bridge pin" \
        "$ROOT/tools/s10plus/a33/verify-app-registry.py"
 run_py "apps: bridge/HTTP/registry/D-Bus policy" \
        "$TESTS/test-app-infrastructure.py"
+run_py "apps: launcher -> bridge activation (mediating, non-executing)" \
+       "$ROOT/services/nuxel-bridge/test-launcher-activation.py"
 run_py "web: static PWA server docroot + wiring" \
        "$TESTS/test-web-server.py"
 run_py "portal: consent + one-shot grant policy" \

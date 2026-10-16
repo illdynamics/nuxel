@@ -53,6 +53,36 @@ const server = createServer((req, res) => {
             return send(200, body);
         }
 
+        // Launcher -> app activation (briq-04c rev 2): the same shape the real
+        // bridge returns, so the client contract (success / refusal) is exercised.
+        if (path === '/api/v1/apps/activate' && req.method === 'POST') {
+            const target = payload.target;
+            if (target === 'org.nuxel.Mail') {
+                return send(200, { success: true, id: target, type: 'pwa', action: 'navigate',
+                                   url: '/pwa/nuxel-apps/mail/index.html', launchable: true,
+                                   executed: false, source: 'registry', bridge_version: NUXEL_BRIDGE_VERSION });
+            }
+            if (target === 'org.nuxel.LiveConsole') {
+                return send(200, { success: true, id: target, type: 'pwa', action: 'pending_app_tree',
+                                   launchable: false, executed: false, owner_groups: ['bg-07-specialty-apps'],
+                                   detail: 'the app tree is declared but not landed yet' });
+            }
+            if (target === 'nuxel-dialer') {
+                return send(200, { success: true, id: target, type: 'native', action: 'exec',
+                                   native_binary: '/usr/bin/nuxel-dialer', launchable: true, executed: false });
+            }
+            if (target === '../../bin/sh' || target === '/bin/sh') {
+                return send(400, { success: false, error: 'invalid_app_id',
+                                   detail: 'an app id is an identifier, never a path' });
+            }
+            return send(404, { success: false, error: 'unknown_app', app_id: target });
+        }
+        if (path === '/api/v1/apps/recent' && req.method === 'GET') {
+            return send(200, { success: true, count: 1, max: 20, rejected: { count: 1, last: null },
+                               activations: [{ id: 'org.nuxel.Mail', at: 1, action: 'navigate',
+                                               requester: 'org.nuxel.Home', source: 'launcher' }] });
+        }
+
         // Generic RPC.
         if (path === '/api/v1/rpc' && req.method === 'POST') {
             const { namespace, verb } = payload;
@@ -121,7 +151,38 @@ async function main() {
     assert.strictEqual(c2.token, 'from-window-token', 'window token should be preferred');
     console.log('[test] token from window.__NUXEL_TOKEN__ ok');
 
-    // 4. Mock fallback when the server is unreachable.
+    // 4. Launcher -> app activation through the bridge (briq-04c rev 2).
+    // 9. Launcher -> app activation through the bridge (briq-04c rev 2).
+    const pwa = await client.activateApp('org.nuxel.Mail', 'launcher');
+    assert.strictEqual(pwa.action, 'navigate', 'a PWA activation navigates');
+    assert.strictEqual(pwa.url, '/pwa/nuxel-apps/mail/index.html', 'the descriptor url comes from the registry');
+    assert.strictEqual(pwa.executed, false, 'the bridge reports that it executed nothing');
+
+    const nativeApp = await client.activateApp('nuxel-dialer');
+    assert.strictEqual(nativeApp.action, 'exec', 'a native activation resolves to exec');
+    assert.strictEqual(nativeApp.native_binary, '/usr/bin/nuxel-dialer', 'the binary comes from the registry');
+
+    const pending = await client.activateApp('org.nuxel.LiveConsole');
+    assert.strictEqual(pending.launchable, false, 'a declared-but-not-landed app tree is not launchable');
+    assert.strictEqual(pending.action, 'pending_app_tree', 'the not-launchable reason is explicit');
+    assert.ok(Array.isArray(pending.owner_groups) && pending.owner_groups.length, 'the owners are named');
+
+    await assert.rejects(() => client.activateApp('../../bin/sh'), (e) => {
+        assert.strictEqual(e.code, 'invalid_app_id', 'a path-shaped id is refused with a code');
+        return true;
+    });
+    await assert.rejects(() => client.activateApp('org.nuxel.NotAThing'), (e) => {
+        assert.strictEqual(e.code, 'unknown_app', 'an unknown app is refused with a code');
+        return true;
+    });
+
+    const recent = await client.recentActivations();
+    assert.strictEqual(recent.count, 1, 'the bounded activation history is observable');
+    assert.strictEqual(recent.max, 20, 'the history is bounded');
+    assert.strictEqual(recent.rejected.count, 1, 'refusals are counted for the Console view');
+    console.log('[test] launcher -> bridge activation + activity history ok');
+
+    // 5. Mock fallback when the server is unreachable.
     await new Promise((r) => server.close(r));
     const c3 = new NuxelBridgeClient({ apiUrl: 'http://127.0.0.1:1', appId: 'org.nuxel.Offline' });
     const fallback = await c3.call('storage', 'list-dir', { path: '/offline' });
@@ -178,6 +239,7 @@ async function main() {
     assert.strictEqual(cOk.isConnected(), true);
     assert.strictEqual(cOk.getBridgeVersion(), NUXEL_BRIDGE_VERSION);
     console.log('[test] healthy host accepted ok');
+
     await new Promise((r) => server.close(r));
 
     console.log('\n[test] ALL TESTS PASSED');

@@ -29,6 +29,10 @@ report each defect class:
      `Restart=always` (a second owner waiting to happen) and the unit being
      deleted altogether each => FAILED, while the baseline records the unit as
      installed-but-not-enabled in the report.
+ 10. the USER-manager units (shell/config/systemd-user/, VM/desktop surface) are
+     validated under user-manager rules: a user unit that references a SYSTEM
+     unit (`Wants=nuxel-web.service` - the defect both launcher units carried
+     until rev 2) and a user unit enabled into a SYSTEM target each => FAILED.
 
 Every case runs against a temporary copy; the repository is never modified and
 no device, partition or /Users/wicked/x/nuxel/.qq path is touched.
@@ -92,7 +96,7 @@ EXTRA_TREE_FILES = [
 
 def make_fixture(dest: str) -> None:
     """Copy the unit set + the builder + the A26 script into <dest> verbatim."""
-    rels = list(VSG.UNIT_SOURCES) + PROVENANCE_UNITS + EXTRA_TREE_FILES
+    rels = list(VSG.UNIT_SOURCES) + list(VSG.USER_UNIT_SOURCES) + PROVENANCE_UNITS + EXTRA_TREE_FILES
     for rel in rels:
         src = os.path.join(ROOT, rel)
         if not os.path.exists(src):
@@ -171,6 +175,42 @@ def main() -> int:
               % [i for i in (report.get("builder_installed") or []) if "console" in i])
         check(not any("console" in e for e in (report.get("builder_enabled") or [])),
               "the builder does NOT enable the console (%s)" % report.get("builder_enabled"))
+
+        check(len(report.get("user_units") or {}) == 3,
+              "the report validates the three VM/desktop user units (%s)"
+              % sorted((report.get("user_units") or {}).keys()))
+        check(not any("USER unit" in p or "user unit" in p for p in report.get("problems", [])),
+              "the baseline user units raise no user-manager problem (%s)"
+              % [p for p in report.get("problems", []) if "user unit" in p][:1])
+
+        print("[service-graph] a USER unit that depends on a SYSTEM unit is fatal")
+        mut = os.path.join(tmp, "user-refs-system")
+        make_fixture(mut)
+        upath = os.path.join(mut, "shell/config/systemd-user/nuxel-home-kiosk.service")
+        utext = open(upath, errors="replace").read()
+        check(not any(ln.strip().startswith("Wants=nuxel-web.service")
+                      for ln in utext.splitlines()),
+              "the launcher user unit no longer carries the system-unit dependency as an ACTIVE "
+              "directive before mutation (the removal is documented in a comment)")
+        insert_into_section(upath, "Unit", "Wants=nuxel-web.service")
+        rc, report = validate(mut)
+        check(rc != 0, "verdict is FAILED (rc=%s)" % rc)
+        check(has_problem(report, "names a SYSTEM unit from a USER unit"),
+              "the cross-manager dependency is named: %s"
+              % [p for p in report.get("problems", []) if "USER unit" in p][:1])
+
+        print("[service-graph] a USER unit enabled into a SYSTEM target is fatal")
+        mut = os.path.join(tmp, "user-system-target")
+        make_fixture(mut)
+        upath = os.path.join(mut, "shell/config/systemd-user/nuxel-phosh-agent.service")
+        utext = open(upath, errors="replace").read()
+        open(upath, "w").write(utext.replace("WantedBy=default.target",
+                                             "WantedBy=multi-user.target"))
+        rc, report = validate(mut)
+        check(rc != 0, "verdict is FAILED (rc=%s)" % rc)
+        check(has_problem(report, "is a SYSTEM target in a USER unit"),
+              "the wrong-scope enablement is named: %s"
+              % [p for p in report.get("problems", []) if "USER unit" in p][:1])
 
         print("[service-graph] enabling the provisioned-only console is fatal (two owners)")
         mut = os.path.join(tmp, "console-enabled")

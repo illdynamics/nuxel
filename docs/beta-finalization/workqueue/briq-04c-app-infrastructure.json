@@ -69,6 +69,118 @@
       "revision": 1,
       "at": "2026-10-16T16:07:13+02:00",
       "by": "construqtor/bg-00-preflight"
+    },
+    {
+      "id": "briq-04c-app-infrastructure",
+      "title": "Application infrastructure - registry, portal, notifications, bridge, web server",
+      "component": "bg-04-userspace-completion",
+      "component_title": "Priority 4 - Full Fedora Userspace, Services & Application Infrastructure",
+      "priority": 4,
+      "state": "implemented",
+      "dependencies": [
+        "briq-04b-service-definitions"
+      ],
+      "evidence": [
+        {
+          "kind": "observation",
+          "path": "services/nuxel-bridge/",
+          "command": "test -e services/nuxel-bridge/",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "observation",
+          "path": "services/nuxel-portal/",
+          "command": "test -e services/nuxel-portal/",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "observation",
+          "path": "services/nuxel-notifications/",
+          "command": "test -e services/nuxel-notifications/",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "observation",
+          "path": "pwa/nuxel-common/",
+          "command": "test -e pwa/nuxel-common/",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "verifier-run",
+          "command": "python3 tools/s10plus/a33/verify-app-registry.py",
+          "result": "apps=11 problems=0 warnings=6 deferred=2 required_apps_pending=5 verdict=OFFLINE_TESTED_WITH_DEFERRALS",
+          "at": "2026-10-16T21:07:13+02:00"
+        },
+        {
+          "kind": "defect-found-and-fixed",
+          "what": "the registry's tree_apps named pwa/nuxel-apps/privacy, which does not exist on disk -> the verifier returned FAILED (a real release blocker)",
+          "result": "tree_apps states are now explicit (complete/in_progress/shared-assets-not-an-app require the dir; planned must not exist yet and is a printed DEFER); privacy is declared `planned` with its owner and ledger briq",
+          "at": "2026-10-16T21:07:13+02:00"
+        },
+        {
+          "kind": "change",
+          "what": "POST /api/v1/apps/activate + GET /api/v1/apps/recent in services/nuxel-bridge/src/api.py: the launcher-to-app bridge resolves an app id to a descriptor built ONLY from the canonical registry (no client binary/command/url), refuses path-shaped ids before lookup, reports an unavailable registry as 503, and reports a declared-but-unlanded app tree as not launchable",
+          "result": "a PWA cannot turn activation into arbitrary execution (asserted: no subprocess/os.system/exec/eval on the handler path)",
+          "at": "2026-10-16T21:07:13+02:00"
+        },
+        {
+          "kind": "change",
+          "what": "services/nuxel-web/bin/nuxel-web-server.py replaces `python3 -m http.server` (installed to /usr/lib/nuxel/): explicit MIME (manifest+json, .mjs, .wasm), ETag+Last-Modified+304, Service-Worker-Allowed for sw scripts, per-class Cache-Control incl. immutable for ?v= assets, NUXEL_WEB_NO_CACHE for troubleshooting, threaded serving, no directory listings, traversal-proof",
+          "result": "the stale-service-worker and serialised-request defects are closed; the shim keeps a documented fallback to the old server with a warning",
+          "at": "2026-10-16T21:07:13+02:00"
+        },
+        {
+          "kind": "change",
+          "what": "pwa/nuxel-common/bridge.js grew activateApp()/recentActivations() and _request() now attaches the refusal reason (err.code) instead of losing it in 'bridge HTTP 404'",
+          "result": "the client half of the activation contract is testable and honest",
+          "at": "2026-10-16T21:07:13+02:00"
+        },
+        {
+          "kind": "change",
+          "what": "required_apps_not_yet_in_tree: the mission apps with no tree dir (permissions & privacy, firewall, VPN/Tor/remote, security auditor, system monitor) are recorded concept-level with owner + ledger briq, cross-checked against docs/beta-finalization/workqueue/",
+          "result": "a mission requirement cannot point at work nobody owns; no directory path is guessed",
+          "at": "2026-10-16T21:07:13+02:00"
+        }
+      ],
+      "intended_changes": [
+        "services/nuxel-bridge/",
+        "services/nuxel-portal/",
+        "services/nuxel-notifications/",
+        "pwa/nuxel-common/",
+        "tools/s10plus/a33/verify-app-registry.py"
+      ],
+      "tests": [
+        "tools/s10plus/a33/verify-app-registry.py: OFFLINE_TESTED_WITH_DEFERRALS (0 problems)",
+        "services/nuxel-bridge/test-launcher-activation.py: PASS (every app id resolved; refusal cases; no-execution assertions; bounded history; launcher wiring)",
+        "tools/s10plus/a33/tests/test-web-server.py: PASS (docroot verification + MIME + SW headers + cache policy + 304 + traversal + journal policy)",
+        "tools/s10plus/a33/tests/test-app-infrastructure.py: PASS (real HTTP handler, pin/409/registry)",
+        "node pwa/nuxel-common/test-bridge.js: PASS (client pin, refusal codes, activation + history)",
+        "node pwa/nuxel-common/verify-wiring.js: PASS (6 PWA surfaces)",
+        "services/nuxel-portal/test-portal-policy.py + services/nuxel-notifications/test-notifications-persistence.py: PASS",
+        "bash tools/s10plus/a33/tests/run-userspace-tests.sh: 12/12 PASS -> OFFLINE_TESTED"
+      ],
+      "risk": "medium",
+      "rollback": "git revert the commit(s) touching this task's expected files; the change is repository-only and alters no device state",
+      "verdict": "OFFLINE_TESTED_WITH_DEFERRALS",
+      "offline_ceiling": "OFFLINE_TESTED",
+      "owner_action": "Two cross-group deferrals remain and are printed on every run: pwa/nuxel-apps/console (LiveConsole app tree, owners bg-02/bg-07) and pwa/nuxel-apps/privacy (bg-05 briq-05a). Both are DEFER, never silent; --strict makes them fatal once every group has merged.",
+      "expected_files": [
+        "services/nuxel-bridge/",
+        "services/nuxel-portal/",
+        "services/nuxel-notifications/",
+        "pwa/nuxel-common/",
+        "tools/s10plus/a33/verify-app-registry.py"
+      ],
+      "note": "Revision 2 (cycle 6): the registry FAILED verdict is fixed with explicit tree_apps states; the launcher-to-app activation path and a real PWA static server are implemented and covered by tests. Verdict OFFLINE_TESTED_WITH_DEFERRALS (two cross-group app trees not landed yet).",
+      "source": "plan.json",
+      "revision": 2,
+      "at": "2026-10-16T21:07:13+02:00",
+      "by": "construqtor/bg-04-userspace-completion",
+      "supersedes": "revision 1"
     }
   ]
 }

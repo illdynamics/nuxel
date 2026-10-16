@@ -60,6 +60,117 @@
       "revision": 1,
       "at": "2026-10-16T16:07:13+02:00",
       "by": "construqtor/bg-00-preflight"
+    },
+    {
+      "id": "briq-04b-service-definitions",
+      "title": "Complete service definitions and boot graph (4.14-compatible)",
+      "component": "bg-04-userspace-completion",
+      "component_title": "Priority 4 - Full Fedora Userspace, Services & Application Infrastructure",
+      "priority": 4,
+      "state": "implemented",
+      "dependencies": [
+        "briq-04a-fedora-packages"
+      ],
+      "evidence": [
+        {
+          "kind": "observation",
+          "path": "services/",
+          "command": "test -e services/",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "observation",
+          "path": "shell/config/systemd-user/",
+          "command": "test -e shell/config/systemd-user/",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "observation",
+          "path": "tools/s10plus/a33/verify-service-graph.py",
+          "command": "test -e tools/s10plus/a33/verify-service-graph.py",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "verifier-run",
+          "command": "python3 tools/s10plus/a33/verify-service-graph.py --json build/pkgmeta/service-graph.json",
+          "result": "units=15 problems=0 warnings=1 INFO=1 verdict=OFFLINE_TESTED (the new unit is nuxel-console.service, installed and deliberately not enabled)",
+          "at": "2026-10-16T21:07:13+02:00"
+        },
+        {
+          "kind": "test-run",
+          "command": "python3 tools/s10plus/a33/tests/test-service-graph.py",
+          "result": "all mutation cases pass, including the four new console cases (builder ENABLING it, a lost ExecCondition guard, Restart=always, deleting the unit)",
+          "at": "2026-10-16T21:07:13+02:00"
+        },
+        {
+          "kind": "test-run",
+          "command": "python3 services/nuxel-console/test-console-ownership.py",
+          "result": "all console-ownership checks pass, including the real flock(2) behaviour of the guard (free/held/released/no-flock(1)/missing-lock-dir)",
+          "at": "2026-10-16T21:07:13+02:00"
+        },
+        {
+          "kind": "change",
+          "what": "services/nuxel-console/{systemd/nuxel-console.service,bin/nuxel-console-free,README.md,test-console-ownership.py} added; the rootfs builder installs the unit and the guard and creates NO multi-user.target.wants symlink",
+          "result": "the live console is now a declared service with ordering, dependencies, restart policy and jail scoping instead of a comment in init.sh",
+          "at": "2026-10-16T21:07:13+02:00"
+        },
+        {
+          "kind": "change",
+          "what": "verify-service-graph.py grew section 3c (console single-owner assertions + lock-protocol cross-check) and PROVISIONED_NOT_ENABLED (an enablement exception that is asserted, not assumed)",
+          "result": "carried in the report as provisioned_not_enabled + an INFO line",
+          "at": "2026-10-16T21:07:13+02:00"
+        },
+        {
+          "kind": "defect-found-and-fixed",
+          "what": "both VM/desktop USER units (nuxel-home-kiosk.service, nuxel-home-native.service) declared Wants=nuxel-web.service - a SYSTEM unit. In the user manager that name is a user unit that does not exist, so the dependency was unsatisfiable and implied an ordering that never happened",
+          "result": "the dependency is removed and the real readiness owner is documented (the kiosk launcher polls http://127.0.0.1:8000/pwa/nuxel-home/index.html; the native launcher's sleep is labelled a timing wait). The validator grew USER_UNIT_SOURCES + section 3d, and the mutation test now fails if a user unit references a system unit or is enabled into a system target",
+          "at": "2026-10-16T21:09:12+02:00"
+        },
+        {
+          "kind": "verifier-run",
+          "command": "python3 tools/s10plus/a33/verify-service-graph.py",
+          "result": "units=15 problems=0 warnings=4 verdict=OFFLINE_TESTED (warnings: the VM-only camera portal plus the three user units' VM/desktop ExecStart paths - reported, never suppressed)",
+          "at": "2026-10-16T21:09:12+02:00"
+        },
+        {
+          "kind": "change",
+          "what": "shell/config/systemd-user/{nuxel-home-kiosk,nuxel-home-native,nuxel-phosh-agent}.service documented as VM/desktop user units (including the honest consequence that the portal consent dialog has no surface on the handset in this revision)",
+          "result": "the handset/VM boundary is explicit; the builder is forbidden from installing them",
+          "at": "2026-10-16T21:09:12+02:00"
+        }
+      ],
+      "intended_changes": [
+        "services/",
+        "shell/config/systemd-user/",
+        "tools/s10plus/a33/verify-service-graph.py",
+        "docs/beta-finalization/system/SERVICE-GRAPH.md"
+      ],
+      "tests": [
+        "tools/s10plus/a33/verify-service-graph.py: OFFLINE_TESTED (15 units, 0 problems)",
+        "tools/s10plus/a33/tests/test-service-graph.py: PASS (validator proven to fail on 9 defect classes)",
+        "services/nuxel-console/test-console-ownership.py: PASS (unit semantics + builder rule + guard behaviour)",
+        "bash tools/s10plus/a33/tests/run-userspace-tests.sh: 12/12 PASS -> OFFLINE_TESTED"
+      ],
+      "risk": "medium",
+      "rollback": "git revert the commit(s) touching this task's expected files; the change is repository-only and alters no device state",
+      "verdict": "OFFLINE_TESTED",
+      "offline_ceiling": "OFFLINE_TESTED",
+      "owner_action": "No owner action for the graph itself. The live console unit is IMPLEMENTED_NOT_DEPLOYED as a systemd service: enabling it on the handset would require the console binary in the rootfs (the shipped image runs it from the initramfs) and stopping the initramfs instance first - a live change that has not been made. Live per-unit state (systemctl --failed) is bg-10's capture. The portal consent dialog has no session-bus agent on the handset (recorded gap for Priority 5).",
+      "expected_files": [
+        "services/",
+        "shell/config/systemd-user/",
+        "tools/s10plus/a33/verify-service-graph.py",
+        "docs/beta-finalization/system/SERVICE-GRAPH.md"
+      ],
+      "note": "Revision 2 (cycle 6): the one service briq-04b names that had no unit anywhere - the live console - is now declared, guarded and offline-tested; the installed-but-not-enabled state is asserted by the validator so it cannot silently become two console owners. Verdict OFFLINE_TESTED.",
+      "source": "plan.json",
+      "revision": 2,
+      "at": "2026-10-16T21:07:13+02:00",
+      "by": "construqtor/bg-04-userspace-completion",
+      "supersedes": "revision 1"
     }
   ]
 }

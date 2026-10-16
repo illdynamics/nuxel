@@ -1,6 +1,14 @@
 [Unit]
 Description=Nuxel Phosh Agent — user-session D-Bus permission portal + signal-driven notification relay
-Documentation=https://nuxel.org/docs/phosh-agent
+Documentation=file:/usr/share/doc/nuxel/BETA-FINALIZATION/system/SERVICE-GRAPH.md
+# USER-manager unit (the agent owns org.nuxel.PhoshAgent on the SESSION bus,
+# which is what nuxel-portal asks for consent through). Installed into
+# ~/.config/systemd/user by the VM/dev bootstrap; the handset rootfs builder does
+# not install it, because no systemd user session is proven on this 4.14 tree
+# (systemd-userdbd/udevd are masked by the A26 containment and `systemd --user`
+# is affected by the same kernel limitations - see SERVICE-GRAPH.md §4/§6).
+# Consequence: on the handset the portal's consent dialog is NOT available in
+# this revision; that is recorded, not implied away.
 After=default.target
 
 # The agent is registered under org.nuxel.PhoshAgent on the SESSION bus.
