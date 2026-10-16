@@ -214,7 +214,21 @@ FLASH_DOC_ALLOWLIST = {
 }
 ALLOWED_MARKERS = ("NEVER", "never flashes", "not part of the beta")
 
-problems, documented, scanned = [], [], 0
+# Files whose *job* is to prove that a guard REFUSES a forbidden action.  Such a
+# file contains the forbidden string as a *quoted string literal* it feeds to the
+# guard, never as an executed command.  An entry is honoured only when the file
+# is under a tests/ tree, carries the marker INVARIANT-NEGATIVE-FIXTURE, and the
+# offending line is quoted; every exempted line is still printed, loudly.
+NEGATIVE_FIXTURE_ALLOWLIST = {
+    "tools/beta/tests/test-release-tools.sh":
+        "release-tool self-test: feeds dd-/mkfs-style block-device strings to "
+        "release_lib.guard_command() to assert they are REFUSED; the strings are "
+        "Python literals, never executed (no single quotes here: this block lives "
+        "inside a bash single-quoted heredoc)",
+}
+NEG_FIXTURE_MARKER = "INVARIANT-NEGATIVE-FIXTURE"
+
+problems, documented, scanned, negatives = [], [], 0, []
 for tree in BETA_TREES:
     for dp, dn, fn in os.walk(tree):
         if any(x in dp for x in ("__pycache__", "/fixtures", "/.build", "/.git")):
@@ -257,10 +271,20 @@ for tree in BETA_TREES:
                         continue
                     problems.append("%s:%d: flash tool in command position: %s"
                                     % (rel, n, m.group(0).strip()[:90]))
-                if DD_BLOCK.search(line):
-                    problems.append("%s:%d: dd to a block device: %s" % (rel, n, stripped[:90]))
-                if RAW_WRITE.search(line):
-                    problems.append("%s:%d: write to /dev/block: %s" % (rel, n, stripped[:90]))
+                dd = DD_BLOCK.search(line)
+                rw = RAW_WRITE.search(line)
+                if dd or rw:
+                    if (rel in NEGATIVE_FIXTURE_ALLOWLIST and "/tests/" in rel
+                            and NEG_FIXTURE_MARKER in text
+                            and (chr(34) in line or chr(39) in line)):
+                        negatives.append("%s:%d: %s" % (rel, n, stripped[:90]))
+                    else:
+                        if dd:
+                            problems.append("%s:%d: dd to a block device: %s"
+                                            % (rel, n, stripped[:90]))
+                        if rw:
+                            problems.append("%s:%d: write to /dev/block: %s"
+                                            % (rel, n, stripped[:90]))
 
 # an allow-listed file must not be referenced from anywhere in the beta pipeline
 PIPELINE_TREES = ["tools/beta", "tools/s10plus/a32", "tools/s10plus/a33", "services",
@@ -301,7 +325,10 @@ for tree in ["tools/beta", "tools/s10plus", "services", "shell", "vm", "configs"
                     problems.append("%s: %s: %s" % (path, label, line[:100]))
 
 print("beta-surface files scanned: %d  heredoc-documented (not executed): %d  "
-      "invariant violations: %d" % (scanned, len(documented), len(problems)))
+      "negative-fixture (guard-refusal proof): %d  invariant violations: %d"
+      % (scanned, len(documented), len(negatives), len(problems)))
+for nline in negatives:
+    print("negative-fixture", nline)
 for d in documented:
     print("documented-not-executed", d)
 for x in problems:
@@ -659,6 +686,9 @@ R_PASS=0; R_FAIL=0; R_WARN=0; R_SKIP=0; R_EXT=0; R_TOTAL=0
 JSON_ROWS=""
 FIRST_FAIL=""
 
+# bash 3.2 (macOS /bin/bash) has no ${var^^} upper-casing; use a portable helper.
+toupper() { printf '%s' "$1" | tr '[:lower:]' '[:upper:]'; }
+
 emit_row() {  # emit_row <id> <tier> <owner> <status> <exit> <dur> <mode> <reason> <log>
   JSON_ROWS="$JSON_ROWS$(printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
     "$1" "$2" "$3" "$4" "$5" "$6" "$7" "$8" "$9")
@@ -675,7 +705,7 @@ for i in $(selected_indexes); do
   # external tier never runs without --external
   if [ "$tier" = "external" ] && [ "$EXTERNAL" -eq 0 ]; then
     R_EXT=$((R_EXT + 1))
-    emit_row "$sid" "$tier" "$owner" "${mode^^}_EXTERNAL" "-" 0 "$mode" \
+    emit_row "$sid" "$tier" "$owner" "$(toupper "$mode")_EXTERNAL" "-" 0 "$mode" \
       "external tier: listed, not run (needs --external + a reachable resource)" "$log"
     [ "$QUIET" -eq 0 ] && printf '  \033[36mEXT \033[0m %-30s %s\n' "$sid" "$why"
     continue

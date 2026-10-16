@@ -19,7 +19,12 @@ harness supplies an OFFLINE_TESTED substitute: a PTY whose far end
   * shims the target-only tools the scripts call (sha256sum, systemctl, uname,
     hostname, id, curl) with stateful fakes,
   * can be run in `silent` mode, which reproduces the measured failure so the
-    reachability escalation path is proven against a real silent port too.
+    reachability escalation path is proven against a real silent port too,
+  * models a power cycle: `systemctl reboot` (and plain `reboot`) set a flag that
+    ends the session, and `post-reboot` mode boots a tree with a *different*
+    kernel boot_id, a reset uptime and an incremented boot counter — so the host
+    tool's reconnect watch, its real-reboot proof and its reboot policy are all
+    exercised without touching the phone.
 
 It is a TEST DOUBLE.  Nothing it does is evidence about the physical phone; it
 only proves the host tooling behaves correctly.  Stdlib only; never touches
@@ -112,9 +117,17 @@ case "$1" in
   start)     u="$2"; act active "$u"; echo "start $u ok" ;;
   stop)      u="$2"; act inactive "$u"; echo "stop $u ok" ;;
   --failed)  echo "0 loaded units listed." ;;
+  reboot)    : > "$NXL_FAKE_ROOT/run/reboot-requested"; echo "reboot requested" ;;
   *)         echo "systemctl shim: unhandled $*"; exit 1 ;;
 esac
 exit 0
+"""
+
+#: The plain `reboot` command a root shell would use.  Both entry points set the
+#: same flag so the harness can model a power cycle for the offline reboot tests.
+SHIM_REBOOT = """#!/bin/sh
+: > "$NXL_FAKE_ROOT/run/reboot-requested"
+echo "reboot requested"
 """
 
 SHIM_MISC = """#!/bin/sh
@@ -157,7 +170,12 @@ def build_fake_root(root: str, mode: str = "healthy"):
               "bin", "sbin", "usr/bin", "run/nuxel-units", "var/lib/nuxel/pwa"):
         os.makedirs(os.path.join(root, d), exist_ok=True)
 
-    w("proc/uptime", "18432.55 51233.11")
+    post = (mode == "post-reboot")
+    w("proc/uptime", "24.10 91.44" if post else "18432.55 51233.11")
+    w("proc/sys/kernel/random/boot_id",
+      "b41f7c9e-6d21-4f8a-9e77-2c0d51a4f8b3" if post
+      else "1d6f0a77-2b93-4c58-8d1e-77ae30c9b4d2")
+    w("var/lib/nuxel/boot-count", "8" if post else "7")
     w("proc/cmdline",
       "console=ttySAC2,115200 androidboot.mode=normal androidboot.hardware=beyond2lte "
       "androidboot.selinux=permissive nuxel.bootmode=normal")
@@ -208,6 +226,11 @@ def build_fake_root(root: str, mode: str = "healthy"):
         with open(p, "w") as fh:
             fh.write(body)
         os.chmod(p, 0o755)
+    for name, body in (("reboot", SHIM_REBOOT),):
+        p = os.path.join(shim, name)
+        with open(p, "w") as fh:
+            fh.write(body)
+        os.chmod(p, 0o755)
     for name in ("uname", "hostname", "id", "uptime"):
         p = os.path.join(shim, name)
         with open(p, "w") as fh:
@@ -240,8 +263,30 @@ class FakeConsole:
                % (rid, rid, rc, b64, rid, sha, rid))
         os.write(self.master, out.encode())
 
+    SCRIPT_RE = re.compile(r"sh (/[\w./+-]+\.sh)")
+
+    def materialise_scripts(self, mapped_cmd):
+        """Rewrite device paths *inside* a staged script, as the device would run it.
+
+        A deploy pushes its install script to /var/tmp and runs `sh <path>`, so the
+        path translation has to happen to the file's contents, not to the command
+        line.  Doing it here keeps the offline harness faithful to the real flow.
+        """
+        for m in self.SCRIPT_RE.finditer(mapped_cmd):
+            real = m.group(1)
+            if not os.path.isfile(real):
+                continue
+            try:
+                with open(real) as fh:
+                    body = fh.read()
+                with open(real, "w") as fh:
+                    fh.write(map_paths(body, self.root))
+            except OSError:
+                pass
+
     def execute(self, cmd):
         mapped = map_paths(cmd, self.root)
+        self.materialise_scripts(mapped)
         env = dict(os.environ)
         env["PATH"] = self.shim + ":" + env.get("PATH", "/usr/bin:/bin")
         env["NXL_FAKE_ROOT"] = self.root
@@ -299,9 +344,17 @@ class FakeConsole:
             if not chunk:
                 break
             self.buf += chunk
+            stopped = False
             while b"\r" in self.buf:
                 line, self.buf = self.buf.split(b"\r", 1)
                 self.handle_line(line.decode("utf-8", "replace"))
+                if os.path.exists(os.path.join(self.root, "run", "reboot-requested")):
+                    # the "device" is power-cycling: this console stops serving, so
+                    # the host must reconnect (and re-resolve the node) from scratch
+                    stopped = True
+                    break
+            if stopped:
+                break
 
     def close(self):
         for fd in (self.master, self.slave):
@@ -316,7 +369,7 @@ def main(argv=None):
     ap.add_argument("--root", required=True)
     ap.add_argument("--mode", default="healthy",
                     choices=("healthy", "silent", "frame-broken", "touch-broken",
-                             "no-launcher"))
+                             "no-launcher", "post-reboot"))
     ap.add_argument("--ready-file", default=None)
     ap.add_argument("--seconds", type=float, default=600.0)
     ap.add_argument("--log", default=None)

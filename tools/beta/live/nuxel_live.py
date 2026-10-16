@@ -1016,6 +1016,13 @@ class EvidenceBundle:
 
     def write(self, filename, text):
         path = os.path.join(self.dir, filename)
+        # sub-directories are created on demand (raw/<probe>.txt, scripts/NNN-*.sh,
+        # runs/<step>.out); without this the very first write into a new
+        # sub-directory failed with FileNotFoundError the moment the console
+        # became reachable — a bug that offline plan-only runs never hit.
+        parent = os.path.dirname(path)
+        if parent:
+            os.makedirs(parent, exist_ok=True)
         with open(path, "w") as fh:
             fh.write(text if text.endswith("\n") else text + "\n")
         self.files.append(path)
@@ -1037,6 +1044,17 @@ class EvidenceBundle:
 def repo_root_from_here():
     """/Users/wicked/x/nuxel — the workspace root (never RUN_ROOT)."""
     return os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
+
+
+#: The mission's exact terminal-state vocabulary.  Every verdict this group emits
+#: must be one of these, and only on-device observations may claim
+#: VERIFIED_ON_S10PLUS.
+VALID_VERDICTS = (
+    "VERIFIED_ON_S10PLUS", "VERIFIED_IN_VM_ONLY", "OFFLINE_TESTED", "DEPLOYED_UNVERIFIED",
+    "IMPLEMENTED_NOT_DEPLOYED", "BLOCKED_KERNEL", "BLOCKED_FIRMWARE", "BLOCKED_HARDWARE",
+    "BLOCKED_EXTERNAL_RESOURCE", "NEEDS_OWNER_TEST", "FAILED", "DEFERRED",
+    "NOT_SUPPORTED_ON_DEVICE",
+)
 
 
 def ensure_not_qq(path):

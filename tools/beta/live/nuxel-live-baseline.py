@@ -113,8 +113,9 @@ def parse_irq(text):
 
 def snapshot(con, bundle, repo, rels):
     """Read the baseline through verified frames; return the structured dict."""
-    probes = nl.baseline_probes([r.split("pwa/", 1)[1] if r.startswith("pwa/")
-                                 else r for r in rels])
+    # baseline_probes() prefixes every entry with the on-device docroot
+    # /home/nuxel/nuxel, so the repo-relative path is passed through unchanged.
+    probes = nl.baseline_probes(list(rels))
     raw, frames, pwa_dev = {}, [], {}
     for key, cmd in probes:
         res = con.run(cmd)
