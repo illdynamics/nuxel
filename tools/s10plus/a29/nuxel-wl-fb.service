@@ -1,0 +1,18 @@
+[Unit]
+Description=Nuxel display bridge (Wayland screencopy -> /dev/fb0 AMOLED)
+Documentation=file:/usr/share/doc/nuxel/UTM-LAUNCHER-PORT.md
+After=nuxel-wayland.service
+Wants=nuxel-wayland.service
+Before=nuxel-fallback.service
+
+[Service]
+Type=simple
+Environment=XDG_RUNTIME_DIR=/run/nuxel-wayland
+Environment=XDG_SESSION_TYPE=wayland
+ExecStartPre=/usr/lib/nuxel/nuxel-wait-wayland /run/nuxel-wayland 30
+ExecStart=/usr/lib/nuxel/nuxel-wl-fb
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target

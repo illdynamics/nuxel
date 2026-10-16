@@ -1,0 +1,224 @@
+{
+  "pwa_url": "http://127.0.0.1:8000/pwa/nuxel-home/index.html",
+  "geometry": {
+    "window": {
+      "w": 360,
+      "h": 636
+    },
+    "registryCount": 9,
+    "order": [
+      "Calendar",
+      "Camera",
+      "Contacts",
+      "Files",
+      "Mail",
+      "Messages",
+      "Notes",
+      "Phone",
+      "Settings"
+    ],
+    "dockOrder": [
+      "Messages",
+      "Phone",
+      "Settings"
+    ],
+    "apps": {
+      "org.nuxel.Calendar": {
+        "glyph": "\ud83d\udcc5",
+        "name": "Calendar",
+        "color": "rgb(233, 30, 99)",
+        "background": "rgba(233, 30, 99, 0.2)",
+        "fontSize": "28px",
+        "radius": "16px",
+        "rect": {
+          "x": 23,
+          "y": 118,
+          "w": 56,
+          "h": 56
+        },
+        "labelFontSize": "11px",
+        "docked": false
+      },
+      "nuxel-camera": {
+        "glyph": "\ud83d\udcf7",
+        "name": "Camera",
+        "color": "rgb(121, 85, 72)",
+        "background": "rgba(121, 85, 72, 0.2)",
+        "fontSize": "28px",
+        "radius": "16px",
+        "rect": {
+          "x": 109,
+          "y": 118,
+          "w": 56,
+          "h": 56
+        },
+        "labelFontSize": "11px",
+        "docked": false
+      },
+      "nuxel-contacts": {
+        "glyph": "\ud83d\udc64",
+        "name": "Contacts",
+        "color": "rgb(156, 39, 176)",
+        "background": "rgba(156, 39, 176, 0.2)",
+        "fontSize": "28px",
+        "radius": "16px",
+        "rect": {
+          "x": 195,
+          "y": 118,
+          "w": 56,
+          "h": 56
+        },
+        "labelFontSize": "11px",
+        "docked": false
+      },
+      "org.nuxel.Files": {
+        "glyph": "\ud83d\udcc1",
+        "name": "Files",
+        "color": "rgb(63, 81, 181)",
+        "background": "rgba(63, 81, 181, 0.2)",
+        "fontSize": "28px",
+        "radius": "16px",
+        "rect": {
+          "x": 281,
+          "y": 118,
+          "w": 56,
+          "h": 56
+        },
+        "labelFontSize": "11px",
+        "docked": false
+      },
+      "org.nuxel.Mail": {
+        "glyph": "\u2709\ufe0f",
+        "name": "Mail",
+        "color": "rgb(255, 152, 0)",
+        "background": "rgba(255, 152, 0, 0.2)",
+        "fontSize": "28px",
+        "radius": "16px",
+        "rect": {
+          "x": 23,
+          "y": 210,
+          "w": 56,
+          "h": 56
+        },
+        "labelFontSize": "11px",
+        "docked": false
+      },
+      "org.nuxel.Notes": {
+        "glyph": "\ud83d\udcdd",
+        "name": "Notes",
+        "color": "rgb(96, 125, 139)",
+        "background": "rgba(96, 125, 139, 0.2)",
+        "fontSize": "28px",
+        "radius": "16px",
+        "rect": {
+          "x": 109,
+          "y": 210,
+          "w": 56,
+          "h": 56
+        },
+        "labelFontSize": "11px",
+        "docked": false
+      },
+      "nuxel-messages": {
+        "glyph": "\ud83d\udcac",
+        "name": null,
+        "color": "rgb(33, 150, 243)",
+        "background": "rgba(33, 150, 243, 0.2)",
+        "fontSize": "24px",
+        "radius": "16px",
+        "rect": {
+          "x": 76,
+          "y": 568.5,
+          "w": 56,
+          "h": 56
+        },
+        "labelFontSize": null,
+        "docked": true
+      },
+      "nuxel-dialer": {
+        "glyph": "\ud83d\udcde",
+        "name": null,
+        "color": "rgb(76, 175, 80)",
+        "background": "rgba(76, 175, 80, 0.2)",
+        "fontSize": "24px",
+        "radius": "16px",
+        "rect": {
+          "x": 152,
+          "y": 568.5,
+          "w": 56,
+          "h": 56
+        },
+        "labelFontSize": null,
+        "docked": true
+      },
+      "nuxel-settings": {
+        "glyph": "\u2699\ufe0f",
+        "name": null,
+        "color": "rgb(120, 144, 156)",
+        "background": "rgba(120, 144, 156, 0.2)",
+        "fontSize": "24px",
+        "radius": "16px",
+        "rect": {
+          "x": 228,
+          "y": 568.5,
+          "w": 56,
+          "h": 56
+        },
+        "labelFontSize": null,
+        "docked": true
+      }
+    },
+    "grid": {
+      "display": "grid",
+      "columns": "78px 78px 78px 78px",
+      "rowGap": "16px",
+      "columnGap": "8px",
+      "padding": "0px 0px 20px",
+      "itemCount": 6,
+      "items": [
+        "org.nuxel.Calendar",
+        "nuxel-camera",
+        "nuxel-contacts",
+        "org.nuxel.Files",
+        "org.nuxel.Mail",
+        "org.nuxel.Notes"
+      ],
+      "rect": {
+        "x": 12,
+        "y": 118,
+        "w": 336,
+        "h": 188
+      }
+    },
+    "dock": {
+      "count": 3,
+      "height": 80,
+      "background": "rgb(13, 31, 60)",
+      "borderTopWidth": "1px",
+      "gap": "20px",
+      "y": 556,
+      "items": [
+        "nuxel-messages",
+        "nuxel-dialer",
+        "nuxel-settings"
+      ]
+    },
+    "statusBar": {
+      "height": 36,
+      "background": "rgba(26, 26, 46, 0.95)",
+      "padding": "0px 16px",
+      "fontSize": "12px"
+    },
+    "title": {
+      "fontSize": "28px",
+      "text": "Nuxel",
+      "backgroundImage": "linear-gradient(135deg, rgb(96, 165, 250), rgb(18, 41, 82))"
+    },
+    "body": {
+      "backgroundColor": "rgb(26, 26, 46)",
+      "backgroundImage": "url(\"http://127.0.0.1:8000/pwa/nuxel-home/assets/nuxel-background.png\")",
+      "backgroundSize": "cover"
+    }
+  },
+  "eval_error": null
+}

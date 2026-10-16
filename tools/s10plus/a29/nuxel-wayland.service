@@ -1,0 +1,24 @@
+[Unit]
+Description=Nuxel phone Wayland session (phoc headless + Nuxel Home launcher)
+Documentation=file:/usr/share/doc/nuxel/UTM-LAUNCHER-PORT.md
+After=nuxel-touch-arm.service
+Wants=nuxel-touch-arm.service
+Before=nuxel-wl-fb.service nuxel-fallback.service
+
+[Service]
+Type=simple
+# phoc from the phone image, wlroots 0.19 headless backend + pixman renderer:
+# the only Wayland output this kernel (CONFIG_DRM unset) can offer.
+Environment=WLR_BACKENDS=headless
+Environment=WLR_RENDERER=pixman
+Environment=WLR_HEADLESS_OUTPUTS=1
+Environment=XDG_RUNTIME_DIR=/run/nuxel-wayland
+Environment=XDG_SESSION_TYPE=wayland
+ExecStartPre=/bin/mkdir -p /run/nuxel-wayland
+ExecStartPre=/bin/chmod 700 /run/nuxel-wayland
+ExecStart=/usr/sbin/phoc --no-xwayland -C /etc/nuxel/phoc-phone.ini -E /usr/lib/nuxel/nuxel-session.sh
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

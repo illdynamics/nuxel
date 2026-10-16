@@ -495,7 +495,21 @@ nuxel_first_light() {
 
     # 1) Fully-logged synchronous paint: every NUXEL_FB_* line reaches the ram
     #    console, so the next capture always states what the panel got.
-    /opt/nuxel/nuxel-fb-phone > /dev/kmsg 2>&1
+    #
+    #    A27 SEAMLESS FIRST LIGHT: the painter is handed the NUXSPL01 asset, which
+    #    IS frame 0 of the original animation container.  The earliest lit frame on
+    #    the glass is therefore the animation's own opening frame and the handoff to
+    #    nuxel-anim-player is not a transition at all -- no obsolete diagnostic
+    #    splash, no black gap, no colour change (palette, spans and packing are the
+    #    player's own).  A missing or malformed asset is named by the painter and it
+    #    falls back to the A16 diagnostic frame, so the panel is never left
+    #    unpainted and "cannot execute" is never confused with "no panel".
+    if [ -f /opt/nuxel/nuxel-firstlight.rawspl ]; then
+        diag "FIRSTLIGHT asset present: /opt/nuxel/nuxel-firstlight.rawspl (NUXSPL01 = animation frame 0)"
+    else
+        diag "FIRSTLIGHT asset ABSENT from this initramfs -> A16 diagnostic frame"
+    fi
+    /opt/nuxel/nuxel-fb-phone --firstlight=/opt/nuxel/nuxel-firstlight.rawspl > /dev/kmsg 2>&1
     _fbrc=$?
     diag "FIRSTLIGHT exit=${_fbrc}"
     [ "${_fbrc}" = 0 ] && nuxel_marker FIRSTLIGHT_FRAME_WRITTEN
@@ -1276,7 +1290,16 @@ nuxel_install_ui() {
     _have="$(cat "${_rev}" 2>/dev/null)"
     mkdir -p "${ROOT_MNT}/usr/bin" "${ROOT_MNT}/usr/lib/nuxel" "${ROOT_MNT}/etc/systemd/system/multi-user.target.wants" 2>/dev/null
 
-    if [ "${_want}" != "${_have}" ]; then
+    # A27: the BOOT candidate is a DELIVERY vehicle for the UI, not its owner.  A
+    # live-deployed UI records its own rev in /usr/lib/nuxel/ui.pinned; when that
+    # differs from the rev this initramfs carries, the live (newer, proven) binary
+    # WINS and the BOOT copy is not installed.  Without the pin file the behaviour
+    # is exactly the A25/A26 behaviour, so nothing changes for an untouched system.
+    _pin="${ROOT_MNT}/usr/lib/nuxel/ui.pinned"
+    if [ -f "${_pin}" ] && [ "${_want}" != "$(cat "${_pin}" 2>/dev/null)" ]; then
+        diag "UI_PINNED_KEEP live-deployed rev '$(cat "${_pin}" 2>/dev/null)' overrides BOOT candidate rev '${_want}' (not installing)"
+        nuxel_marker UI_PINNED_KEEP
+    elif [ "${_want}" != "${_have}" ]; then
         if [ -f "${_dst}" ]; then
             if cp -f "${_dst}" "${ROOT_MNT}/usr/lib/nuxel/nuxel-ui.prev" 2>/dev/null; then
                 diag "UI_BACKUP previous binary kept as /usr/lib/nuxel/nuxel-ui.prev (rev '${_have:-unknown}')"
@@ -1317,14 +1340,27 @@ nuxel_install_ui() {
     # A24: enable in BOTH targets.  multi-user.target is the normal path; sysinit.target
     # is reached earlier and does not depend on local-fs.target, which is where this
     # image's boot graph stalls (see A23 measurements in NUXEL-BOOT-STALL.md).
-    ln -sf /etc/systemd/system/nuxel-ui.service \
-        "${ROOT_MNT}/etc/systemd/system/multi-user.target.wants/nuxel-ui.service" 2>/dev/null && \
-        diag "UI_SERVICE_ENABLED nuxel-ui.service (multi-user.target)" || \
-        diag "UI_SERVICE_ENABLE_FAILED"
-    ln -sf /etc/systemd/system/nuxel-ui.service \
-        "${ROOT_MNT}/etc/systemd/system/sysinit.target.wants/nuxel-ui.service" 2>/dev/null && \
-        diag "UI_SERVICE_ENABLED nuxel-ui.service (sysinit.target)" || \
-        diag "UI_SERVICE_SYSINIT_ENABLE_FAILED"
+    #
+    # A29b: unless the UTM-derived launcher is installed in this rootfs, in which
+    # case the A27 fbdev UI is only the *fallback* and is started by
+    # nuxel-fallback.service (ExecStart=/usr/bin/nuxel-ui) after the launcher has
+    # failed.  Enabling the unit as well would put a second /dev/fb0 owner on the
+    # panel behind the launcher's back (measured on the handset this cycle), so the
+    # unit is left disabled and its own launcher-primary condition decides.
+    if [ -x "${ROOT_MNT}/usr/lib/nuxel/nuxel-wl-fb" ]; then
+        rm -f "${ROOT_MNT}/etc/systemd/system/multi-user.target.wants/nuxel-ui.service" \
+              "${ROOT_MNT}/etc/systemd/system/sysinit.target.wants/nuxel-ui.service" 2>/dev/null
+        diag "UI_SERVICE_ENABLE_SKIPPED nuxel-ui.service (A29 launcher present: fallback only)"
+    else
+        ln -sf /etc/systemd/system/nuxel-ui.service \
+            "${ROOT_MNT}/etc/systemd/system/multi-user.target.wants/nuxel-ui.service" 2>/dev/null && \
+            diag "UI_SERVICE_ENABLED nuxel-ui.service (multi-user.target)" || \
+            diag "UI_SERVICE_ENABLE_FAILED"
+        ln -sf /etc/systemd/system/nuxel-ui.service \
+            "${ROOT_MNT}/etc/systemd/system/sysinit.target.wants/nuxel-ui.service" 2>/dev/null && \
+            diag "UI_SERVICE_ENABLED nuxel-ui.service (sysinit.target)" || \
+            diag "UI_SERVICE_SYSINIT_ENABLE_FAILED"
+    fi
 
     # the post-handoff supervisor (runs in the new root after switch_root)
     if cp -f /opt/nuxel/nuxel-postboot.sh "${ROOT_MNT}/usr/lib/nuxel/nuxel-postboot.sh" 2>/dev/null; then

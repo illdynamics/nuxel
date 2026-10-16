@@ -32,6 +32,21 @@ SYSCTL=/usr/bin/systemctl
 [ -x "$SYSCTL" ] || SYSCTL=/bin/systemctl
 STATE=/var/lib/nuxel
 REPORT=$STATE/bootreport.txt
+
+# --- A29b: who owns the panel? ----------------------------------------------------
+# When the UTM-derived launcher is installed (nuxel-wl-fb + nuxel-wayland), IT is
+# the panel owner: the A27 fbdev UI is only the fallback.  Measured on the
+# handset: this supervisor started nuxel-ui 9 s after `systemctl stop nuxel-ui`,
+# which would put a second /dev/fb0 owner behind the launcher's back.  The
+# launcher units are enabled by the rootfs builder, so this script must not fight
+# them; /usr/lib/nuxel/nuxel-launcher-ready-wait (used by nuxel-fallback.service)
+# is the authoritative "did the launcher come up" test.
+launcher_owns_panel() {
+    [ -x /usr/lib/nuxel/nuxel-wl-fb ] || return 1
+    [ -f /run/nuxel-launcher-ready ] && return 0
+    $SYSCTL is-active --quiet nuxel-wl-fb 2>/dev/null && return 0
+    return 1
+}
 WAIT="${1:-20}"
 
 mkdir -p "$STATE" 2>/dev/null
@@ -62,8 +77,13 @@ report
 
 # --- self-repair: the UI owns the panel; it must not depend on the stalled graph
 if ! $SYSCTL is-active --quiet nuxel-ui 2>/dev/null; then
-    echo "$(date -u 2>/dev/null) postboot: nuxel-ui not active -> starting it" >> "$REPORT"
-    $SYSCTL start --no-block nuxel-ui >> "$REPORT" 2>&1
+    if launcher_owns_panel; then
+        echo "$(date -u 2>/dev/null) postboot: launcher owns the panel -> nuxel-ui NOT started" >> "$REPORT"
+        $SYSCTL start --no-block nuxel-touch-arm nuxel-wayland nuxel-wl-fb >> "$REPORT" 2>&1
+    else
+        echo "$(date -u 2>/dev/null) postboot: nuxel-ui not active -> starting it" >> "$REPORT"
+        $SYSCTL start --no-block nuxel-ui >> "$REPORT" 2>&1
+    fi
 fi
 
 sleep 15 2>/dev/null
@@ -83,8 +103,13 @@ while [ "$i" -lt 240 ]; do
     i=$((i+1))
     sleep 30 2>/dev/null
     if ! $SYSCTL is-active --quiet nuxel-ui 2>/dev/null; then
-        echo "$(date -u 2>/dev/null) postboot: nuxel-ui went away -> restart (iteration $i)" >> "$REPORT"
-        $SYSCTL start --no-block nuxel-ui 2>/dev/null
+        if launcher_owns_panel; then
+            echo "$(date -u 2>/dev/null) postboot: iteration $i - launcher owns the panel (nuxel-ui not started)" >> "$REPORT"
+            $SYSCTL is-active --quiet nuxel-wl-fb 2>/dev/null || $SYSCTL start --no-block nuxel-wayland nuxel-wl-fb 2>/dev/null
+        else
+            echo "$(date -u 2>/dev/null) postboot: nuxel-ui went away -> restart (iteration $i)" >> "$REPORT"
+            $SYSCTL start --no-block nuxel-ui 2>/dev/null
+        fi
     fi
 done
 exit 0

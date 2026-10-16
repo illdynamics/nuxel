@@ -1,0 +1,76 @@
+== UTM launcher geometry (guest 192.168.64.3, WebKitGTK on the live display) ==
+   PASS the VM's own registry holds 9 apps
+   PASS getAllApps() order == the generated registry order
+   PASS getDockedApps() order == the port's dock order ['Messages', 'Phone', 'Settings']
+   PASS grid DOM order == the port's grid order ['Calendar', 'Camera', 'Contacts', 'Files', 'Mail', 'Notes']
+   PASS dock DOM order == the port's dock order
+   PASS grid is display:grid with gap 16px 8px (port: 4 columns, 16/8 design px)
+   PASS grid has 4 columns (78px 78px 78px 78px)
+   PASS dock height 80px (port: --dock-height)
+   PASS dock background is --bg-secondary #0d1f3c
+   PASS dock item gap 20px (port: 20 design px)
+   PASS status bar height 36px (port: --status-bar-height)
+   PASS body background-color #1a1a2e (port fallback)
+   PASS body loads the Nuxel wallpaper asset
+   PASS app-grid title 28px (port: 28 design px)
+   PASS app-grid left padding 12px == the EFFECTIVE --grid-padding (media <=480px)
+   PASS status bar height == --status-bar-height
+   PASS dock height == --dock-height
+   PASS Calendar icon colour == apps.js #E91E63
+   PASS Calendar icon background is <colour>@0x33 (launcher.js tint rule)
+   PASS Calendar glyph == the registry emoji '📅'
+   PASS Calendar icon is 56x56 CSS px (port: 56 design px)
+   PASS Calendar icon radius 16px (port: --app-icon-radius)
+   PASS Calendar label 11px (port: 11 design px)
+   PASS Calendar label text == the registry name
+   PASS Camera icon colour == apps.js #795548
+   PASS Camera icon background is <colour>@0x33 (launcher.js tint rule)
+   PASS Camera glyph == the registry emoji '📷'
+   PASS Camera icon is 56x56 CSS px (port: 56 design px)
+   PASS Camera icon radius 16px (port: --app-icon-radius)
+   PASS Camera label 11px (port: 11 design px)
+   PASS Camera label text == the registry name
+   PASS Contacts icon colour == apps.js #9C27B0
+   PASS Contacts icon background is <colour>@0x33 (launcher.js tint rule)
+   PASS Contacts glyph == the registry emoji '👤'
+   PASS Contacts icon is 56x56 CSS px (port: 56 design px)
+   PASS Contacts icon radius 16px (port: --app-icon-radius)
+   PASS Contacts label 11px (port: 11 design px)
+   PASS Contacts label text == the registry name
+   PASS Files icon colour == apps.js #3F51B5
+   PASS Files icon background is <colour>@0x33 (launcher.js tint rule)
+   PASS Files glyph == the registry emoji '📁'
+   PASS Files icon is 56x56 CSS px (port: 56 design px)
+   PASS Files icon radius 16px (port: --app-icon-radius)
+   PASS Files label 11px (port: 11 design px)
+   PASS Files label text == the registry name
+   PASS Mail icon colour == apps.js #FF9800
+   PASS Mail icon background is <colour>@0x33 (launcher.js tint rule)
+   PASS Mail glyph == the registry emoji '✉️'
+   PASS Mail icon is 56x56 CSS px (port: 56 design px)
+   PASS Mail icon radius 16px (port: --app-icon-radius)
+   PASS Mail label 11px (port: 11 design px)
+   PASS Mail label text == the registry name
+   PASS Messages icon colour == apps.js #2196F3
+   PASS Messages icon background is <colour>@0x33 (launcher.js tint rule)
+   PASS Messages glyph == the registry emoji '💬'
+   PASS Messages icon is 56x56 CSS px (port: 56 design px)
+   PASS Messages icon radius 16px (port: --app-icon-radius)
+   PASS Notes icon colour == apps.js #607D8B
+   PASS Notes icon background is <colour>@0x33 (launcher.js tint rule)
+   PASS Notes glyph == the registry emoji '📝'
+   PASS Notes icon is 56x56 CSS px (port: 56 design px)
+   PASS Notes icon radius 16px (port: --app-icon-radius)
+   PASS Notes label 11px (port: 11 design px)
+   PASS Notes label text == the registry name
+   PASS Phone icon colour == apps.js #4CAF50
+   PASS Phone icon background is <colour>@0x33 (launcher.js tint rule)
+   PASS Phone glyph == the registry emoji '📞'
+   PASS Phone icon is 56x56 CSS px (port: 56 design px)
+   PASS Phone icon radius 16px (port: --app-icon-radius)
+   PASS Settings icon colour == apps.js #78909C
+   PASS Settings icon background is <colour>@0x33 (launcher.js tint rule)
+   PASS Settings glyph == the registry emoji '⚙️'
+   PASS Settings icon is 56x56 CSS px (port: 56 design px)
+   PASS Settings icon radius 16px (port: --app-icon-radius)
+A28_UTM_CONSISTENCY_OK — the S10+ adapter and the UTM launcher agree on the registry, the order, the tint rule, the icons and every geometry token

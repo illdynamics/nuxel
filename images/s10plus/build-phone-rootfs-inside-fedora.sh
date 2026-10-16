@@ -32,9 +32,57 @@ install -d "$STAGE/etc/nuxel/device/s10plus" "$STAGE/etc/udev/rules.d" \
 cp -a /nuxel/configs/s10plus/. "$STAGE/etc/nuxel/device/s10plus/"
 install -m 0644 /nuxel/device/s10plus/nuxel-beyond2lte.conf "$STAGE/etc/nuxel/nuxel-beyond2lte.conf"
 install -m 0644 /nuxel/device/s10plus/90-nuxel-beyond2lte.rules "$STAGE/etc/udev/rules.d/90-nuxel-beyond2lte.rules"
-cp -a /nuxel/pwa/nuxel-home "$STAGE/usr/share/nuxel/"
+# The launcher is a PWA whose index.html imports `../nuxel-common/bridge.js`
+# (pwa/nuxel-common/verify-wiring.js enforces it) and whose application registry
+# (pwa/nuxel-home/js/apps.js) addresses the web apps as /pwa/nuxel-apps/... .
+# The VM's services/nuxel-web.service therefore serves the REPOSITORY ROOT and the
+# launcher URL is /pwa/nuxel-home/index.html.  Staging only pwa/nuxel-home (the
+# A25..A29a behaviour) 404'd both the page and the bridge module on the handset
+# (measured A29b) and left the WebKit view blank.  So the whole pwa/ tree is
+# staged, and the old flat path stays as a symlink for the legacy consumers
+# (verify-fedora-phone-rootfs.py checks /usr/share/nuxel/nuxel-home/index.html).
+cp -a /nuxel/pwa "$STAGE/usr/share/nuxel/pwa"
+ln -sfn pwa/nuxel-home "$STAGE/usr/share/nuxel/nuxel-home"
 install -m 0755 /nuxel/tools/s10plus/nuxel-fb-phone-aarch64 "$STAGE/usr/bin/nuxel-fb-phone"
 install -m 0644 /nuxel/assets/nuxel-background.png "$STAGE/usr/share/nuxel/nuxel-background.png"
+# --- A29: the UTM launcher port (Wayland-only; /dev/fb0 output bridge) -------
+# The launcher itself is not rebuilt here: pwa/nuxel-home is already staged above
+# and the binaries below only carry it (display host + bridge + touch arming).
+# See docs/s10plus-autonomous-boot-repair/UTM-LAUNCHER-PORT/A29-PORT-RECORD.md.
+install -d "$STAGE/etc/nuxel" "$STAGE/usr/lib/nuxel"
+install -m 0755 /nuxel/tools/s10plus/a29/nuxel-touch-arm "$STAGE/usr/lib/nuxel/nuxel-touch-arm"
+install -m 0755 /nuxel/tools/s10plus/a29/nuxel-wl-fb     "$STAGE/usr/lib/nuxel/nuxel-wl-fb"
+install -m 0755 /nuxel/tools/s10plus/a29/nuxel-pwa-host  "$STAGE/usr/lib/nuxel/nuxel-pwa-host"
+install -m 0755 /nuxel/tools/s10plus/a29/nuxel-session.sh            "$STAGE/usr/lib/nuxel/nuxel-session.sh"
+install -m 0755 /nuxel/tools/s10plus/a29/nuxel-wait-wayland          "$STAGE/usr/lib/nuxel/nuxel-wait-wayland"
+install -m 0755 /nuxel/tools/s10plus/a29/nuxel-launcher-ready-wait.sh "$STAGE/usr/lib/nuxel/nuxel-launcher-ready-wait"
+install -m 0644 /nuxel/tools/s10plus/a29/phoc-phone.ini              "$STAGE/etc/nuxel/phoc-phone.ini"
+for u in nuxel-touch-arm nuxel-wayland nuxel-wl-fb nuxel-fallback; do
+  install -m 0644 "/nuxel/tools/s10plus/a29/$u.service" "$STAGE/etc/systemd/system/$u.service"
+done
+# The A27 fbdev UI unit must never be a second /dev/fb0 owner on this image:
+# /init re-enables it every boot and the initramfs postboot supervisor restarts
+# it every 30 s (measured: it took the panel back 9 s after `systemctl stop`).
+# The condition makes those starts no-ops while the launcher bridge is installed;
+# nuxel-fallback.service still runs /usr/bin/nuxel-ui as the fallback path.
+install -Dm0644 /nuxel/tools/s10plus/a29/nuxel-ui-launcher-primary.conf \
+    "$STAGE/etc/systemd/system/nuxel-ui.service.d/10-launcher-primary.conf"
+# The touchscreen arm is safe to enable on its own (it changes no pixels).
+ln -sf ../nuxel-touch-arm.service "$STAGE/etc/systemd/system/multi-user.target.wants/nuxel-touch-arm.service"
+# The launcher path is the default screen.  NUXEL_ENABLE_LAUNCHER=0 builds the
+# old A27-framebuffer-UI-only image instead.  Verified live on the handset this
+# cycle (A29b): NUXEL_HOME_READY for /pwa/nuxel-home/index.html, bridge
+# FRAMES_OK ... panel=1440x3040, 217 TOUCH_POINTs delivered from the panel to a
+# userspace reader - see UTM-LAUNCHER-PORT/A29-PORT-RECORD.md §6-§8.
+if [ "${NUXEL_ENABLE_LAUNCHER:-1}" = "1" ]; then
+  for u in nuxel-wayland nuxel-wl-fb nuxel-fallback; do
+    ln -sf "../$u.service" "$STAGE/etc/systemd/system/multi-user.target.wants/$u.service"
+  done
+fi
+
+# A28: the launcher's port record (nuxel-ui.service Documentation= points here)
+install -Dm0644 /nuxel/docs/s10plus-autonomous-boot-repair/UTM-LAUNCHER-PORT/README.md \
+    "$STAGE/usr/share/doc/nuxel/UTM-LAUNCHER-PORT.md"
 for service in nuxel-bridge nuxel-portal nuxel-notifications; do
   if [[ -d "/nuxel/services/$service/src" ]]; then
     install -d "$STAGE/usr/lib/nuxel/$service"

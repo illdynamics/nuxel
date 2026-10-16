@@ -1,0 +1,9 @@
+#!/bin/sh
+# Wait until the compositor's Wayland socket exists (bounded).
+DIR="${1:-/run/nuxel-wayland}"; SECS="${2:-30}"; i=0
+while [ "$i" -lt "$SECS" ]; do
+  ls "$DIR"/wayland-* >/dev/null 2>&1 && exit 0
+  i=$((i + 1)); sleep 1
+done
+echo "nuxel-wait-wayland: no socket in $DIR after ${SECS}s" >&2
+exit 1
