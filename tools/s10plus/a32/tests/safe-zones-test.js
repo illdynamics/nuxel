@@ -75,5 +75,141 @@ check('committed zones stored in custom/portrait',
 check('saved document is valid JSON', (() => { try { JSON.parse(store['nuxel.safezones']); return true; } catch (e) { return false; } })());
 check('schema_version present in the persisted document', JSON.parse(store['nuxel.safezones']).schema_version === 1);
 
+
+// --------------------------------------------------------------------------- //
+// A33 (briq-02e): every zone of the ten-zone split, and the LEFT/CENTRE/RIGHT
+// cluster layout must EXCLUDE the blocked intervals.
+//
+// The ten-zone system is a protected A32 asset.  Two properties have to hold no
+// matter which zone is blocked:
+//   (a) zone k is exactly the interval [ (k-1)*W/10 , k*W/10 ] grown by the
+//       configured padding - the geometry contract, not an opinion;
+//   (b) after applyLayout() every cluster's final rectangle is outside every
+//       blocked interval, for the left, the centre AND the right cluster.
+// A "painted warning" that leaves an item sitting in the cutout is exactly the
+// failure mode this asserts against.
+// --------------------------------------------------------------------------- //
+const W = 360;
+const ZONE_W = W / Z.ZONES;
+Z.padding(6);                           // the shipped contract: padding_dp 6
+const PAD = Z.state.padding_dp * 2;     // padding_dp * devicePixelRatio 2
+check('the ten-zone contract uses padding_dp 6', PAD === 12, Z.state.padding_dp);
+
+// (a) zone-by-zone geometry: block ONE zone at a time and check its interval.
+let zoneGeometryOk = true, zoneDetail = '';
+for (let z = 1; z <= Z.ZONES; z++) {
+  Z.previewZones([z], 'portrait', 'custom');
+  const ivs = Z.blockedIntervals(W);
+  const want = { start: (z - 1) * ZONE_W - PAD, end: z * ZONE_W + PAD };
+  const got = ivs[0];
+  const ok = ivs.length === 1 && got.zone === z &&
+             Math.abs(got.start - want.start) < 1e-9 && Math.abs(got.end - want.end) < 1e-9;
+  if (!ok) { zoneGeometryOk = false; zoneDetail = 'zone ' + z + ': ' + JSON.stringify(got); }
+}
+check('every one of the ten zones maps to its own padded interval', zoneGeometryOk, zoneDetail);
+
+// the ten zones tile the bar: consecutive zone boundaries are contiguous
+Z.previewZones([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], 'portrait', 'custom');
+let ivAll = Z.blockedIntervals(W);
+check('all ten blocked zones tile the whole bar', ivAll.length === 10 &&
+      Math.abs(ivAll[0].start - (0 - PAD)) < 1e-9 &&
+      Math.abs(ivAll[9].end - (W + PAD)) < 1e-9 &&
+      ivAll.every((iv, i) => Math.abs(iv.start - (i * ZONE_W - PAD)) < 1e-9),
+      JSON.stringify(ivAll));
+
+// blocking NOTHING is the identity: no excluded interval at all
+Z.previewZones([], 'portrait', 'custom');
+check('no blocked zone -> no excluded interval', Z.blockedIntervals(W).length === 0,
+      JSON.stringify(Z.blockedIntervals(W)));
+Z.cancelPreview();
+
+// (b) cluster layout: a DOM-free status bar with the three real clusters.
+function cluster(cls, left, right) {
+  return {
+    className: cls,
+    style: {},
+    getBoundingClientRect() { return { left: left, right: right, width: right - left, top: 0, bottom: 24, height: 24 }; },
+  };
+}
+function parseShift(t) {
+  const m = /translateX\((-?\d+(?:\.\d+)?)px\)/.exec(t || '');
+  return m ? parseFloat(m[1]) : 0;
+}
+let clusters = {
+  '.status-left': cluster('status-left', 0, 60),
+  '.status-center': cluster('status-center', 150, 210),
+  '.status-right': cluster('status-right', 300, 360),
+};
+const bar = {
+  clientWidth: W, offsetWidth: W,
+  setAttribute() {},
+  querySelector(sel) { return clusters[sel] || null; },
+};
+win.document.getElementById = (id) => (id === 'status-bar' ? bar : null);
+
+function layoutExcludes(zones, expectMoved) {
+  Z.previewZones(zones, 'portrait', 'custom');
+  const report = Z.applyLayout();
+  const ivs = Z.blockedIntervals(W);
+  const bad = [];
+  const seen = [];
+  Object.keys(clusters).forEach((sel) => {
+    const c = clusters[sel];
+    const shift = parseShift(c.style.transform);
+    const r = c.getBoundingClientRect();
+    const fin = { left: r.left + shift, right: r.right + shift };
+    seen.push(sel + ':' + Math.round(fin.left) + '..' + Math.round(fin.right));
+    ivs.forEach((iv) => {
+      if (fin.left < iv.end && fin.right > iv.start) bad.push(sel + ' in zone ' + iv.zone);
+    });
+  });
+  const movedOk = expectMoved === undefined || (report.moved.length > 0) === expectMoved;
+  check('cluster layout excludes blocked zones ' + JSON.stringify(zones) +
+        (expectMoved === undefined ? '' : expectMoved ? ' (a cluster is pushed)' : ' (nothing to push)'),
+        bad.length === 0 && movedOk, bad.length ? bad.join(',') : 'moved=' + JSON.stringify(report.moved) + ' ' + seen.join(' '));
+  return report;
+}
+
+// S10+ portrait: zones 9,10 are the right-hand camera cutout.  The right cluster
+// sits at 300..360 (zone 9-10) and MUST be pushed out of it.
+const r910 = layoutExcludes([9, 10], true);
+check('the right cluster was moved out of zones 9,10 by a negative shift',
+      r910.moved.length === 1 && r910.moved[0].cluster === 'status-right' && r910.moved[0].shift < 0,
+      JSON.stringify(r910.moved));
+
+// Left camera: zones 1,2 blocked - the LEFT cluster must move.
+layoutExcludes([1, 2], true);
+// Centre camera: zones 5,6 blocked - the CENTRE cluster must move.
+layoutExcludes([5, 6], true);
+// No cutout: nothing may move (a layout that shifts for no reason is a defect).
+clusters['.status-right'].style.transform = '';
+clusters['.status-center'].style.transform = '';
+clusters['.status-left'].style.transform = '';
+const rNone = layoutExcludes([], false);
+check('with no blocked zone the clusters are left exactly where they are',
+      rNone.moved.length === 0, JSON.stringify(rNone));
+check('the report names the blocked zones it solved against',
+      JSON.stringify(rNone.blocked) === '[]', JSON.stringify(rNone.blocked));
+
+// Idempotency: a CSS transform is included in getBoundingClientRect(), so a
+// layout pass that measures before it resets would stack another translate on
+// every render (the A32 drift).  Two consecutive passes must agree exactly.
+Z.previewZones([9, 10], 'portrait', 'custom');
+const pass1 = Z.applyLayout();
+const t1 = clusters['.status-right'].style.transform;
+const pass2 = Z.applyLayout();
+const t2 = clusters['.status-right'].style.transform;
+check('applyLayout is idempotent (no compounding translate)',
+      t1 === t2 && JSON.stringify(pass1.moved) === JSON.stringify(pass2.moved),
+      t1 + ' -> ' + t2);
+check('the right cluster stays on the panel after the push',
+      parseShift(t2) + 360 <= W + 0.5 && parseShift(t2) + 360 > 0,
+      'right edge ' + (parseShift(t2) + 360));
+check('the moved cluster reports the free interval it moved into',
+      pass1.moved.length === 1 && Array.isArray(pass1.moved[0].free) &&
+      pass1.moved[0].free[1] <= 9 * ZONE_W + 0.5,
+      JSON.stringify(pass1.moved));
+Z.cancelPreview();
+
 console.log(failures ? ('\n' + failures + ' FAILURES') : '\nall safe-zone tests passed');
 process.exit(failures ? 1 : 0);

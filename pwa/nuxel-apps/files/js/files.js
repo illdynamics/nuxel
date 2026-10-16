@@ -57,24 +57,29 @@ class FilesApp {
             this.files = fallback();
         }
 
-        // If no files exist, populate with demo structure
+        // Never fabricate a file tree.  If the portal returned nothing we keep the
+        // (unavailable) portal roots so the empty state can explain itself.
         if (this.files.length === 0) {
             this.files = this._getDefaultFiles();
-            this._saveFiles();
+            this.portalEmpty = true;
         }
     }
 
-    _getDefaultFiles() {
-        const now = new Date().toISOString();
+    // The real portal roots this PWA may browse.  No fabricated files: when the
+    // portal cannot be reached the browser shows the roots as unavailable rather
+    // than inventing a Documents/Downloads tree that does not exist on disk.
+    _getPortalRoots() {
         return [
-            { name: 'Documents', path: '/Documents', type: 'folder', size: 0, modified: now },
-            { name: 'Downloads', path: '/Downloads', type: 'folder', size: 0, modified: now },
-            { name: 'Pictures', path: '/Pictures', type: 'folder', size: 0, modified: now },
-            { name: 'Music', path: '/Music', type: 'folder', size: 0, modified: now },
-            { name: 'Videos', path: '/Videos', type: 'folder', size: 0, modified: now },
-            { path: '/Documents/readme.txt', name: 'readme.txt', type: 'document', size: 2048, modified: now },
-            { path: '/Documents/notes.md', name: 'notes.md', type: 'code', size: 1024, modified: now },
+            { name: 'home', path: '/home/nuxel', type: 'folder', size: 0, portal: true, note: 'user files' },
+            { name: 'nuxel-share', path: '/usr/share/nuxel', type: 'folder', size: 0, portal: true, note: 'system assets' },
+            { name: 'nuxel-state', path: '/var/lib/nuxel', type: 'folder', size: 0, portal: true, note: 'app state and caches' },
         ];
+    }
+
+    _getDefaultFiles() {
+        // Offline (no portal/bridge): only the portal roots are listed, flagged as
+        // unavailable, so the user can see why the tree is empty.
+        return this._getPortalRoots().map((r) => ({ ...r, unavailable: true }));
     }
 
     _render() {
@@ -107,6 +112,8 @@ class FilesApp {
         
         // Get files in current directory
         const currentDir = this.currentPath === '/' ? '' : this.currentPath;
+        // At the root, the portal roots are the content (they live at /home/nuxel etc).
+        const roots = currentDir === '' ? this._getPortalRoots() : [];
         const dirFiles = this.files.filter(f => {
             const parentPath = f.path.substring(0, f.path.lastIndexOf('/'));
             return parentPath === currentDir || (currentDir === '' && !f.path.includes('/'));
@@ -123,7 +130,7 @@ class FilesApp {
         const seen = new Set();
         const allItems = [];
         
-        for (const f of [...subdirs, ...dirFiles]) {
+        for (const f of [...roots, ...subdirs, ...dirFiles]) {
             if (!seen.has(f.path)) {
                 seen.add(f.path);
                 allItems.push(f);
@@ -142,17 +149,22 @@ class FilesApp {
                 <div class="empty-state">
                     <div class="empty-icon">📁</div>
                     <p>This folder is empty</p>
+                    <p class="portal-hint">Nuxel Files shows the PWA-visible tree through the
+                    Nuxel bridge (verb <code>storage.list-dir</code>). When the bridge is offline
+                    only the portal roots can be listed, and no files are invented.</p>
                 </div>`;
             return;
         }
 
         grid.innerHTML = allItems.map(file => `
-            <div class="file-item" data-path="${file.path}" data-type="${file.type}">
+            <div class="file-item${file.unavailable ? ' unavailable' : ''}" data-path="${file.path}" data-type="${file.type}"
+                 title="${file.note ? file.note : ''}${file.unavailable ? ' — portal unreachable' : ''}">
                 <div class="file-icon ${file.type === 'folder' ? 'folder' : this._getFileTypeClass(file.name)}">
                     ${this._getFileIcon(file)}
                 </div>
                 <div class="file-name">${file.name}</div>
-                ${file.type !== 'folder' ? `<div class="file-size">${this._formatSize(file.size)}</div>` : ''}
+                ${file.note ? `<div class="file-size">${file.note}${file.unavailable ? ' · offline' : ''}</div>` : ''}
+                ${file.type !== 'folder' && file.size ? `<div class="file-size">${this._formatSize(file.size)}</div>` : ''}
             </div>
         `).join('');
 
@@ -429,3 +441,5 @@ class FilesApp {
 document.addEventListener('DOMContentLoaded', () => {
     window.filesApp = new FilesApp();
 });
+// headless smoke-test hook (documented app API; used by tools/s10plus/a33/tests/test-core-apps.py)
+window.nuxelFiles = { app: () => window.filesApp, portalRoots: () => (window.filesApp ? window.filesApp._getPortalRoots() : []) };

@@ -1,0 +1,15 @@
+{
+  "id": "org.nuxel.Downloader",
+  "name": "Media Downloader",
+  "icon": "DL",
+  "color": "#00796B",
+  "category": "media",
+  "type": "pwa",
+  "url": "/pwa/nuxel-apps/downloader/index.html",
+  "description": "Queue-based offline-first downloader with a legal-use gate",
+  "capabilities": ["download:queue"],
+  "docked": false,
+  "network": "optional",
+  "legal_notice_required": true,
+  "third_party_accounts": []
+}

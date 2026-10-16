@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "id": "briq-09c-release-deliverables",
+  "revisions": [
+    {
+      "id": "briq-09c-release-deliverables",
+      "title": "Reproducible release deliverables and capability manifest",
+      "component": "bg-09-integration-release",
+      "component_title": "Priority 8 - Integration, Soak, Reboot Policy, Rollback & Release Deliverables",
+      "priority": 8,
+      "state": "in_progress",
+      "dependencies": [
+        "briq-09b-reboot-rollback-policy"
+      ],
+      "evidence": [
+        {
+          "kind": "observation",
+          "path": "CHANGELOG.md",
+          "command": "test -e CHANGELOG.md",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "observation",
+          "path": "VERSION",
+          "command": "test -e VERSION",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        }
+      ],
+      "intended_changes": [
+        "CHANGELOG.md",
+        "VERSION",
+        "docs/beta-finalization/release/DEVICE-CAPABILITY-MANIFEST.md",
+        "docs/beta-finalization/release/DEVICE-CAPABILITY-MANIFEST.json",
+        "docs/beta-finalization/release/ROLLBACK.md"
+      ],
+      "tests": [
+        "(tests are recorded by the owning briQ when it reports)"
+      ],
+      "risk": "medium",
+      "rollback": "git revert the commit(s) touching this task's expected files; the change is repository-only and alters no device state",
+      "verdict": null,
+      "offline_ceiling": null,
+      "owner_action": "",
+      "expected_files": [
+        "CHANGELOG.md",
+        "VERSION",
+        "docs/beta-finalization/release/DEVICE-CAPABILITY-MANIFEST.md",
+        "docs/beta-finalization/release/DEVICE-CAPABILITY-MANIFEST.json",
+        "docs/beta-finalization/release/ROLLBACK.md"
+      ],
+      "note": "seeded from the QonQrete plan; 2/5 expected file(s) already present in the tree",
+      "source": "plan.json",
+      "revision": 1,
+      "at": "2026-10-16T16:07:13+02:00",
+      "by": "construqtor/bg-00-preflight"
+    }
+  ]
+}

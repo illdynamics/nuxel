@@ -10,5 +10,34 @@
   "theme_color": "#0a1628",
   "lang": "en",
   "dir": "ltr",
-  "icons": [{ "src": "../calendar/icons/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+  "icons": [
+    {
+      "src": "../calendar/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    }
+  ],
+  "nuxel": {
+    "bridge_version": "1",
+    "capabilities": [],
+    "app_type": "settings",
+    "offline_first": true,
+    "network": "none",
+    "storage": [
+      "none (settings live in /etc/nuxel/*.json through the launcher host)"
+    ],
+    "settings_documents": [
+      "statusbar-safezones",
+      "buttons",
+      "verbose-boot",
+      "animation-handoff",
+      "audio",
+      "display",
+      "power",
+      "privacy",
+      "network",
+      "keyboard",
+      "system"
+    ]
+  }
 }

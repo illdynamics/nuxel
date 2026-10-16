@@ -1,0 +1,24 @@
+{
+  "name": "Nuxel Authenticator",
+  "short_name": "Authenticator",
+  "description": "RFC 6238 TOTP codes with an AES-GCM encrypted vault — no account, no cloud",
+  "start_url": "/pwa/nuxel-apps/authenticator/index.html",
+  "scope": "/pwa/nuxel-apps/authenticator/",
+  "display": "standalone",
+  "background_color": "#04191c",
+  "theme_color": "#00838F",
+  "icons": [
+    {"src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png"},
+    {"src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png"},
+    {"src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml"}
+  ],
+  "nuxel": {
+    "app_id": "org.nuxel.Authenticator",
+    "capabilities": ["storage:encrypted"],
+    "app_type": "security",
+    "offline_first": true,
+    "network": "none",
+    "storage": ["localStorage (AES-GCM encrypted vault only)"],
+    "features": ["TOTP SHA1/SHA256/SHA512", "6 or 8 digits", "30 s or 60 s period", "passphrase vault", "otpauth URI import", "encrypted export/import", "RFC 6238 self test"]
+  }
+}

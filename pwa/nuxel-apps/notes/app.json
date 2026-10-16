@@ -1,0 +1,17 @@
+{
+  "id": "org.nuxel.Notes",
+  "name": "Notes",
+  "icon": "\ud83d\udcdd",
+  "color": "#607D8B",
+  "category": "productivity",
+  "type": "pwa",
+  "url": "/pwa/nuxel-apps/notes/index.html",
+  "manifest": "pwa/nuxel-apps/notes/manifest.json",
+  "description": "Offline notes with local persistence, search, import/export",
+  "capabilities": [
+    "storage:persistent"
+  ],
+  "bridge_version": "1",
+  "docked": false,
+  "source": "pwa/nuxel-apps tree (bg-06-core-phone-apps)"
+}

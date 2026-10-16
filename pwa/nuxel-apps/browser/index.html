@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#101820">
+<meta name="nuxel-app-id" content="org.nuxel.Browser">
+<title>Nuxel Browser</title>
+<link rel="stylesheet" href="css/browser.css">
+<link rel="manifest" href="manifest.json">
+</head>
+<body>
+<header class="chrome">
+  <button id="back" class="icon-btn" title="Back">‹</button>
+  <button id="forward" class="icon-btn" title="Forward">›</button>
+  <input id="url" type="text" spellcheck="false" placeholder="local path, app id or https:// (off by default)">
+  <button id="go" class="primary">Go</button>
+  <button id="menu" class="icon-btn" title="Bookmarks and history">☰</button>
+</header>
+
+<div class="status-line">
+  <span id="net-badge" class="badge warn">external navigation: blocked</span>
+  <span id="page-info" class="li-sub">start page</span>
+</div>
+
+<main id="stage">
+  <iframe id="view" class="view" sandbox="allow-scripts allow-forms allow-same-origin" referrerpolicy="no-referrer"></iframe>
+
+  <section id="start" class="start">
+    <h2>Local Nuxel pages</h2>
+    <p class="li-sub">Nuxel Browser opens pages served by this device. It never becomes a search
+      engine and it performs no background requests; external navigation stays blocked until you
+      explicitly enable it in the menu.</p>
+    <div id="locals" class="locals"></div>
+    <h2>Reading list</h2>
+    <ul id="bookmarks" class="list"></ul>
+  </section>
+
+  <section id="blocked" class="blocked hidden">
+    <h2>External navigation is blocked</h2>
+    <p id="blocked-url" class="mono"></p>
+    <p class="li-sub">Nuxel ships offline-first: no external service is contacted by default.
+      Open the menu and enable “Allow external navigation” if you really want to load this URL
+      through WebKitGTK. Nothing is fetched until you do.</p>
+    <div class="row">
+      <button id="enable-now">Enable external navigation for this session</button>
+      <button id="copy-url">Copy the URL</button>
+    </div>
+  </section>
+</main>
+
+<aside id="drawer" class="drawer hidden">
+  <div class="drawer-head">
+    <h2>Nuxel Browser</h2>
+    <button id="drawer-close" class="icon-btn">✕</button>
+  </div>
+  <label class="check"><input id="allow-external" type="checkbox"> Allow external navigation</label>
+  <p class="li-sub">When on, pages fetched from the network can be loaded in the view. The Nuxel
+    policy for this app is <code>network: opt-in</code>; the default is off.</p>
+  <h3>Bookmarks</h3>
+  <ul id="drawer-bookmarks" class="list"></ul>
+  <button id="clear-bookmarks" class="danger">Clear bookmarks</button>
+  <h3>History</h3>
+  <ul id="history" class="list"></ul>
+  <button id="clear-history" class="danger">Clear history</button>
+</aside>
+
+<p id="toast" class="toast hidden"></p>
+
+<script type="module" src="../../nuxel-common/bridge.js"></script>
+<script src="js/browser.js"></script>
+</body>
+</html>

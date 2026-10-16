@@ -14,17 +14,79 @@ trap 'rm -f "$OUT" "$OUT.sha256"' ERR
 # DNF packages are resolved for Fedora 43/aarch64 by an ARM64 Fedora container.
 # A dependency error must abort, rather than emitting a deceptive bare /etc tree.
 dnf -y install e2fsprogs findutils coreutils file rpm shadow-utils python3
+# --- BOTH Fedora 43 aarch64 repositories are REQUIRED (briq-04a) --------------
+# The GA "Everything" repo alone is NOT enough and the failure is not cosmetic:
+#   * `stevia` / `stevia-phosh-osk-provider` (the phosh on-screen keyboard) do
+#     not exist in GA at all, so `dnf install stevia` aborts the whole build;
+#   * `systemd-258.11-1.fc43` -- the exact NEVRA the carried kernel-4.14
+#     libsystemd-shared patch was built from -- is in `updates` only (GA has
+#     `systemd-258-1.fc43`).  Resolving GA's systemd silently drops the 4.14
+#     spawn fix, and every unit start goes back to ENOSYS.
+# `phosh`/`phoc` are also 0.49.0 in GA and 0.54.0 in updates.
+# Explicit, reproducible repo definitions (no dependence on whatever the
+# fedora:43 container image happens to ship, and no reliance on container repo
+# ids).  DNF reads these through --setopt=reposdir= below.
+REPODIR=/tmp/nuxel-repos
+mkdir -p "$REPODIR"
+GPGKEY=""
+for cand in /etc/pki/rpm-gpg/RPM-GPG-KEY-fedora-43-primary \
+            /etc/pki/rpm-gpg/RPM-GPG-KEY-fedora-43 \
+            /etc/pki/rpm-gpg/RPM-GPG-KEY-fedora-aarch64; do
+  [ -f "$cand" ] && { GPGKEY="$cand"; break; }
+done
+if [ -n "$GPGKEY" ]; then
+  rpm --import "$GPGKEY" || true
+  GPGCHECK=1
+else
+  echo '[nuxel] WARNING: no Fedora GPG key found in the container; package signature checking is DISABLED for this build (reported, not hidden)' >&2
+  GPGCHECK=0
+fi
+for spec in "fedora|$GPGKEY|1" "updates|$GPGKEY|1"; do
+  rid="${spec%%|*}"; rest="${spec#*|}"; key="${rest%%|*}"
+  case "$rid" in
+    fedora)  url='https://dl.fedoraproject.org/pub/fedora/linux/releases/$releasever/Everything/$basearch/os' ;;
+    updates) url='https://dl.fedoraproject.org/pub/fedora/linux/updates/$releasever/Everything/$basearch' ;;
+  esac
+  {
+    printf '[%s]\n' "$rid"
+    printf 'name=Fedora 43 aarch64 (%s)\n' "$rid"
+    printf 'baseurl=%s\n' "$url"
+    printf 'enabled=1\n'
+    printf 'metadata_expire=6h\n'
+    printf 'gpgcheck=%s\n' "$GPGCHECK"
+    printf 'repo_gpgcheck=0\n'
+    if [ -n "$key" ]; then printf 'gpgkey=file://%s\n' "$key"; fi
+  } > "$REPODIR/nuxel-$rid.repo"
+done
+# Verify the essential package list against REAL repo metadata before installing
+# anything.  No --skip-unavailable: a package that does not exist must be seen.
+python3 /nuxel/tools/s10plus/a33/verify-packages.py --quiet --report /tmp/nuxel-packages-report.json \
+  || { echo 'ERROR: Fedora 43 essential package manifest did not resolve - see /tmp/nuxel-packages-report.json' >&2; exit 1; }
 # Required in the target: real binaries and shared libraries, not .desktop shims.
-dnf -y --installroot="$STAGE" --releasever=43 --use-host-config --setopt=install_weak_deps=False install \
-    basesystem filesystem setup fedora-release glibc glibc-langpack-en \
+# `basesystem` was RETIRED in Fedora 43 (0 occurrences in GA and updates); the
+# real base is `filesystem` + `setup`.  webkit2gtk4.1/gtk3/alsa-lib are the
+# RUNTIME libraries nuxel-pwa-host and nuxel-button-manager are linked against;
+# seatd is required by services/nuxel-session/systemd/seatd.service.
+dnf -y --installroot="$STAGE" --releasever=43 --use-host-config \
+    --setopt=reposdir="$REPODIR" --setopt=install_weak_deps=False --setopt=tsflags=nodocs install \
+    filesystem setup fedora-release glibc glibc-langpack-en \
     bash coreutils util-linux findutils grep sed gawk \
-    systemd systemd-udev systemd-networkd dbus-broker dbus-daemon \
-    python3 phosh phoc stevia stevia-phosh-osk-provider \
-    NetworkManager ModemManager \
+    systemd-258.11-1.fc43 systemd-udev systemd-networkd dbus-broker dbus-daemon \
+    python3 phosh phoc stevia stevia-phosh-osk-provider seatd \
+    NetworkManager NetworkManager-wifi ModemManager geoclue2 bluez \
     mesa-dri-drivers mesa-libEGL mesa-libgbm libinput \
-    polkit greetd \
+    gtk3 webkit2gtk4.1 gtk4 libadwaita \
+    pipewire wireplumber alsa-lib \
+    polkit nftables upower greetd \
     iproute procps-ng kmod e2fsprogs \
     shadow-utils ca-certificates curl
+# The pinned systemd must be what actually landed, or the carried 4.14
+# libsystemd-shared patch and the installed binaries do not line up.
+INSTALLED_SYSTEMD="$(rpm --root "$STAGE" -q systemd)"
+case "$INSTALLED_SYSTEMD" in
+  systemd-258.11-1.fc43*) echo "[nuxel] systemd pin OK: $INSTALLED_SYSTEMD" ;;
+  *) echo "ERROR: installed $INSTALLED_SYSTEMD, expected systemd-258.11-1.fc43 (carried 4.14 libsystemd patch)" >&2; exit 1 ;;
+esac
 # Keep Nuxel's native phone-specific bits; do not import the G7 Power staging.
 install -d "$STAGE/etc/nuxel/device/s10plus" "$STAGE/etc/udev/rules.d" \
     "$STAGE/usr/share/nuxel" "$STAGE/usr/lib/nuxel" "$STAGE/usr/bin" \
@@ -90,8 +152,6 @@ install -m 0755 /nuxel/build/out/s10plus/a32/nuxel-button-manager     "$STAGE/us
 install -m 0755 /nuxel/build/out/s10plus/a32/libnuxel-libinput-path.so "$STAGE/usr/lib/nuxel/libnuxel-libinput-path.so"
 # console control for the same configuration the Settings app uses
 install -m 0755 /nuxel/tools/s10plus/a32/nuxelctl                     "$STAGE/usr/bin/nuxelctl"
-install -m 0644 /nuxel/tools/s10plus/a32/nuxel-button-manager.service \
-    "$STAGE/etc/systemd/system/nuxel-button-manager.service"
 # default device configuration: the S10+ port starts from its own profile, and a
 # full rebuild must reproduce what the live deployment installed
 install -d "$STAGE/etc/nuxel/display" "$STAGE/etc/nuxel/input"
@@ -101,10 +161,27 @@ install -m 0755 /nuxel/tools/s10plus/a29/nuxel-session.sh            "$STAGE/usr
 install -m 0755 /nuxel/tools/s10plus/a29/nuxel-wait-wayland          "$STAGE/usr/lib/nuxel/nuxel-wait-wayland"
 install -m 0755 /nuxel/tools/s10plus/a29/nuxel-launcher-ready-wait.sh "$STAGE/usr/lib/nuxel/nuxel-launcher-ready-wait"
 install -m 0644 /nuxel/tools/s10plus/a29/phoc-phone.ini              "$STAGE/etc/nuxel/phoc-phone.ini"
-for u in nuxel-touch-arm nuxel-wayland nuxel-wl-fb; do
-  install -m 0644 "/nuxel/tools/s10plus/a31/$u.service" "$STAGE/etc/systemd/system/$u.service"
-done
-install -m 0644 /nuxel/tools/s10plus/a29/nuxel-fallback.service "$STAGE/etc/systemd/system/nuxel-fallback.service"
+# --- canonical service graph (briq-04b) --------------------------------------
+# The units are installed from services/**, the ONE canonical repository source,
+# NOT from the A29/A31/A32 tool directories they were measured in.  Provenance is
+# checked by tools/s10plus/a33/verify-service-graph.py (it fails if a canonical
+# unit loses an Environment=/ExecStart= line the shipped revision carried).
+# Explicit, one line per unit: the boot graph must be readable and verifiable
+# from this script (verify-service-graph.py proves install AND enablement textually).
+install -m 0644 /nuxel/services/nuxel-session/systemd/seatd.service                "$STAGE/etc/systemd/system/seatd.service"
+install -m 0644 /nuxel/services/nuxel-session/systemd/nuxel-touch-arm.service      "$STAGE/etc/systemd/system/nuxel-touch-arm.service"
+install -m 0644 /nuxel/services/nuxel-session/systemd/nuxel-wayland.service        "$STAGE/etc/systemd/system/nuxel-wayland.service"
+install -m 0644 /nuxel/services/nuxel-session/systemd/nuxel-wl-fb.service          "$STAGE/etc/systemd/system/nuxel-wl-fb.service"
+install -m 0644 /nuxel/services/nuxel-session/systemd/nuxel-fallback.service       "$STAGE/etc/systemd/system/nuxel-fallback.service"
+install -m 0644 /nuxel/services/nuxel-session/systemd/nuxel-button-manager.service "$STAGE/etc/systemd/system/nuxel-button-manager.service"
+install -m 0644 /nuxel/services/nuxel-animation/systemd/nuxel-animation.service \
+    "$STAGE/etc/systemd/system/nuxel-animation.service"
+install -m 0755 /nuxel/services/nuxel-animation/bin/nuxel-animation-claim \
+    "$STAGE/usr/lib/nuxel/nuxel-animation-claim"
+# nuxel-animation may only become the panel owner on an image WITHOUT the launcher
+# bridge (ConditionPathExists=!/usr/lib/nuxel/nuxel-wl-fb + the claim helper), so
+# enabling it cannot regress the A32 single framebuffer owner invariant.
+ln -sf ../nuxel-animation.service "$STAGE/etc/systemd/system/multi-user.target.wants/nuxel-animation.service"
 # The A27 fbdev UI unit must never be a second /dev/fb0 owner on this image:
 # /init re-enables it every boot and the initramfs postboot supervisor restarts
 # it every 30 s (measured: it took the panel back 9 s after `systemctl stop`).
@@ -120,20 +197,65 @@ ln -sf ../nuxel-touch-arm.service "$STAGE/etc/systemd/system/multi-user.target.w
 # FRAMES_OK ... panel=1440x3040, 217 TOUCH_POINTs delivered from the panel to a
 # userspace reader - see UTM-LAUNCHER-PORT/A29-PORT-RECORD.md §6-§8.
 if [ "${NUXEL_ENABLE_LAUNCHER:-1}" = "1" ]; then
-  for u in nuxel-wayland nuxel-wl-fb nuxel-fallback nuxel-button-manager; do
-    ln -sf "../$u.service" "$STAGE/etc/systemd/system/multi-user.target.wants/$u.service"
-  done
+  # seatd is the backend session provider the libinput backend needs (A31).
+  # One explicit symlink per unit (verify-service-graph.py reads these lines).
+  ln -sf ../seatd.service                "$STAGE/etc/systemd/system/multi-user.target.wants/seatd.service"
+  ln -sf ../nuxel-wayland.service        "$STAGE/etc/systemd/system/multi-user.target.wants/nuxel-wayland.service"
+  ln -sf ../nuxel-wl-fb.service          "$STAGE/etc/systemd/system/multi-user.target.wants/nuxel-wl-fb.service"
+  ln -sf ../nuxel-fallback.service       "$STAGE/etc/systemd/system/multi-user.target.wants/nuxel-fallback.service"
+  ln -sf ../nuxel-button-manager.service "$STAGE/etc/systemd/system/multi-user.target.wants/nuxel-button-manager.service"
 fi
 
 # A28: the launcher's port record (nuxel-ui.service Documentation= points here)
 install -Dm0644 /nuxel/docs/s10plus-autonomous-boot-repair/UTM-LAUNCHER-PORT/README.md \
     "$STAGE/usr/share/doc/nuxel/UTM-LAUNCHER-PORT.md"
+# --- bridge / portal / notifications: code, shims, units, policies ----------
 for service in nuxel-bridge nuxel-portal nuxel-notifications; do
-  if [[ -d "/nuxel/services/$service/src" ]]; then
-    install -d "$STAGE/usr/lib/nuxel/$service"
-    cp -a "/nuxel/services/$service/src/." "$STAGE/usr/lib/nuxel/$service/"
-  fi
+  [[ -d "/nuxel/services/$service/src" ]] || { echo "ERROR: services/$service/src missing" >&2; exit 1; }
+  install -d "$STAGE/usr/lib/nuxel/$service"
+  cp -a "/nuxel/services/$service/src/." "$STAGE/usr/lib/nuxel/$service/"
+  for shim in "/nuxel/services/$service/bin/"*; do
+    [ -f "$shim" ] || continue
+    install -m 0755 "$shim" "$STAGE/usr/bin/$(basename "$shim")"
+  done
 done
+# Units installed explicitly (not by glob) so the canonical set is greppable and
+# verify-service-graph.py can prove install + enablement from the script text.
+install -m 0644 /nuxel/services/nuxel-bridge/systemd/nuxel-bridge.service             "$STAGE/etc/systemd/system/nuxel-bridge.service"
+install -m 0644 /nuxel/services/nuxel-bridge/systemd/nuxel-http-bridge.service        "$STAGE/etc/systemd/system/nuxel-http-bridge.service"
+install -m 0644 /nuxel/services/nuxel-portal/systemd/nuxel-portal.service             "$STAGE/etc/systemd/system/nuxel-portal.service"
+install -m 0644 /nuxel/services/nuxel-notifications/systemd/nuxel-notifications.service "$STAGE/etc/systemd/system/nuxel-notifications.service"
+# The static PWA server that serves the launcher tree on :8000.
+install -m 0755 /nuxel/services/nuxel-web/bin/nuxel-web "$STAGE/usr/bin/nuxel-web"
+install -m 0644 /nuxel/services/nuxel-web.service "$STAGE/etc/systemd/system/nuxel-web.service"
+# System users the units run as (systemd-sysusers would do this at boot, but
+# this kernel masks the units that consume it, so create them in the image).
+for u in nuxel-bridge nuxel-portal nuxel-notifications; do
+  chroot "$STAGE" /usr/sbin/useradd --system --no-create-home --home-dir /       --shell /usr/sbin/nologin "$u" 2>/dev/null || true
+done
+chroot "$STAGE" /usr/sbin/groupadd --system seat 2>/dev/null || true
+# D-Bus system policies: configs/dbus/ is the canonical combined directory.
+install -d "$STAGE/etc/dbus-1/system.d"
+for conf in /nuxel/configs/dbus/*.conf; do
+  [ -f "$conf" ] || continue
+  install -m 0644 "$conf" "$STAGE/etc/dbus-1/system.d/$(basename "$conf")"
+done
+# The canonical application registry is a runtime file, so the shell, the bridge
+# and the PWA all resolve the same source of truth (briq-04c).
+install -d "$STAGE/etc/nuxel/app-registry"
+install -m 0644 /nuxel/pwa/nuxel-common/app-registry.json \
+    "$STAGE/etc/nuxel/app-registry/app_registry.json"
+install -m 0644 /nuxel/pwa/nuxel-common/bridge-version.json \
+    "$STAGE/etc/nuxel/bridge-version.json"
+# docroot override for nuxel-web (the shim also probes the default locations)
+printf 'NUXEL_WEBROOT=/usr/share/nuxel\nNUXEL_WEB_PORT=8000\nNUXEL_WEB_BIND=127.0.0.1\n' \
+    > "$STAGE/etc/nuxel/web.conf"
+# enablement: the boot graph must be reproducible from the repository
+ln -sf ../nuxel-notifications.service "$STAGE/etc/systemd/system/multi-user.target.wants/nuxel-notifications.service"
+ln -sf ../nuxel-portal.service        "$STAGE/etc/systemd/system/multi-user.target.wants/nuxel-portal.service"
+ln -sf ../nuxel-bridge.service        "$STAGE/etc/systemd/system/multi-user.target.wants/nuxel-bridge.service"
+ln -sf ../nuxel-http-bridge.service   "$STAGE/etc/systemd/system/multi-user.target.wants/nuxel-http-bridge.service"
+ln -sf ../nuxel-web.service           "$STAGE/etc/systemd/system/multi-user.target.wants/nuxel-web.service"
 install -Dm0644 /nuxel/images/s10plus/nuxel-firstlight.service \
     "$STAGE/etc/systemd/system/nuxel-firstlight.service"
 # Diagnostic can run only when the framebuffer node exists; enabling here

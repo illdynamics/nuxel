@@ -1,0 +1,4 @@
+# swipe up from the bottom zone within 600 ms -> home
+1000 touch down 700 3000
+1200 touch move 700 2850
+1300 touch up 700 2700

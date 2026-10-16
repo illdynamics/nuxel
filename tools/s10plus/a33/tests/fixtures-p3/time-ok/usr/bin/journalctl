@@ -1,0 +1,3 @@
+#!/bin/sh
+# fixture fake: newest journal entry is "now"
+printf '%s fixture entry\n' "$(/bin/date +%s)"

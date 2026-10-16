@@ -1,0 +1,52 @@
+{
+  "_comment": "Offline kernel-facts fixture for the S10+ beta baseline. Every value here is either (a) taken from a real artefact committed in this repository, named in 'provenance', or (b) explicitly marked unverified. It exists so the security auditor and the permission tooling can run OFFLINE and never fabricate a device reading. Do not add a value that has no provenance.",
+  "release": "4.14.253",
+  "arch": "aarch64",
+  "provenance": {
+    "release": "docs/s10plus-autonomous-boot-repair/evidence-a27/last_kmsg.txt: '<0>[ 2910.828571] I[7: nuxel-ui: 5341] linux_banner: Linux version 4.14.253 (root@) (gcc version 15.3.1 ...)'",
+    "kernel_config_source": "docs/s10plus-autonomous-boot-repair/UTM-LAUNCHER-PORT/A29-PORT-RECORD.md: '/proc/config.gz: # CONFIG_DRM is not set' - /proc/config.gz is readable on the handset",
+    "cgroup_config": "docs/s10plus-autonomous-boot-repair/SYSTEMD-COMPATIBILITY.md section 2: 'verified in A16/A17 .config'",
+    "audit": "evidence-a27/last_kmsg.txt contains a live 'kauditd' thread -> the audit subsystem is enabled",
+    "dr": "docs/s10plus-autonomous-boot-repair/BOOT-STAGES.md: '# CONFIG_DRM is not set' -> no /dev/dri, no KMS (fbdev only)"
+  },
+  "unverified": [
+    "apparmor: not yet read from /sys/kernel/security/lsm on the handset",
+    "selinux: not yet read",
+    "yama: not yet read",
+    "seccomp: /proc/sys/kernel/seccomp/actions_avail not yet read",
+    "user namespaces: /proc/sys/user/max_user_namespaces not yet read"
+  ],
+  "landlock_abi": null,
+  "seccomp_actions_avail": null,
+  "lsm_list": null,
+  "yama_ptrace_scope": null,
+  "userns_max": null,
+  "bpf_unprivileged_disabled": null,
+  "cgroup2_controllers": "cpu memory pids freezer",
+  "cgroup_v1_net_cls": "unknown",
+  "auditd_present": true,
+  "kernel_config_source": "offline fixture (see provenance)",
+  "kernel_config": {
+    "CONFIG_CGROUPS": "y",
+    "CONFIG_MEMCG": "y",
+    "CONFIG_CGROUP_SCHED": "y",
+    "CONFIG_CGROUP_PIDS": "y",
+    "CONFIG_CGROUP_FREEZER": "y",
+    "CONFIG_CPUSETS": "y",
+    "CONFIG_CGROUP_DEVICE": "y",
+    "CONFIG_CGROUP_CPUACCT": "y",
+    "CONFIG_CGROUP_BPF": "y",
+    "CONFIG_NAMESPACES": "y",
+    "CONFIG_BPF_LSM": "n",
+    "CONFIG_DRM": "n",
+    "CONFIG_FB": "y",
+    "CONFIG_SECCOMP_FILTER": "y",
+    "CONFIG_SECCOMP": "y"
+  },
+  "notes": [
+    "CONFIG_BPF_LSM is not set: systemd reports 'bpf-restrict-fs: BPF LSM hook not enabled' and proceeds without device ACLs.",
+    "CONFIG_DRM is not set: no KMS, no /dev/dri, fbdev only -> no Wayland compositor output, so no system-wide clipboard to mediate.",
+    "Landlock (>= 5.13), kernel lockdown (>= 4.17), BPF LSM (>= 5.7), arm64 CFI (>= 5.13), Shadow Call Stack (>= 5.7), BTI and Pointer Authentication (ARMv8.5/8.3 hardware) are all unavailable on 4.14.253 / Exynos 9820 (ARMv8.2-A).",
+    "nftables 'socket cgroupv2' matching requires Linux >= 5.13; on this kernel per-app network matching must use cgroup v1 net_cls classid."
+  ]
+}

@@ -1,0 +1,11 @@
+#!/bin/sh
+# fixture fake bridge: health, token and a phone-status whose "time" is the real
+# local time, so a PASS here proves the comparison, not a hard-coded string.
+url=""
+for a in "$@"; do case "$a" in http*) url="$a" ;; esac; done
+case "$url" in
+  *auth/token*) echo '{"success":true,"token":"fixture-token"}' ;;
+  *phone/status*) printf '{"success":true,"time":"%s"}\n' "$(/bin/date +%H:%M)" ;;
+  *health*) echo '{"status":"ok"}' ;;
+  *) echo '{}' ;;
+esac

@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "id": "briq-08c-flashlight-led",
+  "revisions": [
+    {
+      "id": "briq-08c-flashlight-led",
+      "title": "Flashlight, notification LED and edge lighting - owner test kit",
+      "component": "bg-08-hardware-subsystems",
+      "component_title": "Priority 7b - Hardware Subsystems, Power, Sensors & Owner-Test Kits",
+      "priority": 7,
+      "state": "pending",
+      "dependencies": [
+        "briq-08a-power-management"
+      ],
+      "evidence": [],
+      "intended_changes": [
+        "configs/nuxel/leds/",
+        "docs/beta-finalization/manual-proof/09-flashlight.md"
+      ],
+      "tests": [
+        "(tests are recorded by the owning briQ when it reports)"
+      ],
+      "risk": "medium",
+      "rollback": "git revert the commit(s) touching this task's expected files; the change is repository-only and alters no device state",
+      "verdict": null,
+      "offline_ceiling": "NEEDS_OWNER_TEST",
+      "owner_action": "OWNER TEST REQUIRED: see docs/beta-finalization/BETA-MANUAL-PROOF-CHECKLIST.md",
+      "expected_files": [
+        "configs/nuxel/leds/",
+        "docs/beta-finalization/manual-proof/09-flashlight.md"
+      ],
+      "note": "seeded from the QonQrete plan; 0/2 expected file(s) already present in the tree",
+      "source": "plan.json",
+      "revision": 1,
+      "at": "2026-10-16T16:07:13+02:00",
+      "by": "construqtor/bg-00-preflight"
+    }
+  ]
+}

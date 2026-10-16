@@ -1,0 +1,17 @@
+{
+  "name": "Safe Cleanup",
+  "short_name": "Cleanup",
+  "description": "Preview-then-delete cache and log cleanup with an allowlist and a hard confirmation gate",
+  "start_url": "/pwa/nuxel-apps/cleanup/index.html",
+  "scope": "/pwa/nuxel-apps/cleanup/",
+  "display": "standalone",
+  "background_color": "#0a1628",
+  "theme_color": "#EF6C00",
+  "icons": [
+    {"src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png"},
+    {"src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png"},
+    {"src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml"}
+  ],
+  "nuxel": {"app_id": "org.nuxel.Cleanup", "capabilities": ["storage:cleanup"], "app_type": "tools",
+            "dry_run_first": true, "confirmation": "typed-phrase", "raw_device_writes": false}
+}

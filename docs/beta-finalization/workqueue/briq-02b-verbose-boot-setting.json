@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "id": "briq-02b-verbose-boot-setting",
+  "revisions": [
+    {
+      "id": "briq-02b-verbose-boot-setting",
+      "title": "Verbose-boot Settings option with Bixby hold override (persisted)",
+      "component": "bg-02-boot-animation-launcher",
+      "component_title": "Priority 2 - Boot Stability, Animation Handoff & UTM Launcher Parity",
+      "priority": 2,
+      "state": "in_progress",
+      "dependencies": [],
+      "evidence": [
+        {
+          "kind": "observation",
+          "path": "configs/nuxel/",
+          "command": "test -e configs/nuxel/",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "observation",
+          "path": "pwa/nuxel-home/js/qs.js",
+          "command": "test -e pwa/nuxel-home/js/qs.js",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "observation",
+          "path": "pwa/nuxel-home/js/settings-store.js",
+          "command": "test -e pwa/nuxel-home/js/settings-store.js",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        }
+      ],
+      "intended_changes": [
+        "configs/nuxel/",
+        "pwa/nuxel-home/js/qs.js",
+        "pwa/nuxel-home/js/settings-store.js",
+        "docs/beta-finalization/boot/VERBOSE-BOOT.md"
+      ],
+      "tests": [
+        "(tests are recorded by the owning briQ when it reports)"
+      ],
+      "risk": "medium",
+      "rollback": "git revert the commit(s) touching this task's expected files; the change is repository-only and alters no device state",
+      "verdict": null,
+      "offline_ceiling": null,
+      "owner_action": "",
+      "expected_files": [
+        "configs/nuxel/",
+        "pwa/nuxel-home/js/qs.js",
+        "pwa/nuxel-home/js/settings-store.js",
+        "docs/beta-finalization/boot/VERBOSE-BOOT.md"
+      ],
+      "note": "seeded from the QonQrete plan; 3/4 expected file(s) already present in the tree",
+      "source": "plan.json",
+      "revision": 1,
+      "at": "2026-10-16T16:07:13+02:00",
+      "by": "construqtor/bg-00-preflight"
+    }
+  ]
+}

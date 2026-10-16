@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "id": "briq-02a-readiness-handoff",
+  "revisions": [
+    {
+      "id": "briq-02a-readiness-handoff",
+      "title": "Display-ownership receipt-driven animation handoff with single fb owner",
+      "component": "bg-02-boot-animation-launcher",
+      "component_title": "Priority 2 - Boot Stability, Animation Handoff & UTM Launcher Parity",
+      "priority": 2,
+      "state": "in_progress",
+      "dependencies": [],
+      "evidence": [
+        {
+          "kind": "observation",
+          "path": "tools/s10plus/a33/nuxel-wl-fb.c",
+          "command": "test -e tools/s10plus/a33/nuxel-wl-fb.c",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "observation",
+          "path": "tools/s10plus/a33/nuxel-anim-handoff.py",
+          "command": "test -e tools/s10plus/a33/nuxel-anim-handoff.py",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        }
+      ],
+      "intended_changes": [
+        "tools/s10plus/a33/nuxel-wl-fb.c",
+        "tools/s10plus/a33/nuxel-anim-handoff.py",
+        "docs/beta-finalization/boot/ANIMATION-HANDOFF.md"
+      ],
+      "tests": [
+        "(tests are recorded by the owning briQ when it reports)"
+      ],
+      "risk": "medium",
+      "rollback": "git revert the commit(s) touching this task's expected files; the change is repository-only and alters no device state",
+      "verdict": null,
+      "offline_ceiling": "NEEDS_OWNER_TEST",
+      "owner_action": "OWNER TEST REQUIRED: see docs/beta-finalization/BETA-MANUAL-PROOF-CHECKLIST.md",
+      "expected_files": [
+        "tools/s10plus/a33/nuxel-wl-fb.c",
+        "tools/s10plus/a33/nuxel-anim-handoff.py",
+        "docs/beta-finalization/boot/ANIMATION-HANDOFF.md"
+      ],
+      "note": "seeded from the QonQrete plan; 2/3 expected file(s) already present in the tree",
+      "source": "plan.json",
+      "revision": 1,
+      "at": "2026-10-16T16:07:13+02:00",
+      "by": "construqtor/bg-00-preflight"
+    }
+  ]
+}

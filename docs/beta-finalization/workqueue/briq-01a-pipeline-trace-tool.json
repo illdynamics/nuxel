@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "id": "briq-01a-pipeline-trace-tool",
+  "revisions": [
+    {
+      "id": "briq-01a-pipeline-trace-tool",
+      "title": "End-to-end touch pipeline tracer with bounded capture session",
+      "component": "bg-01-touch-pipeline",
+      "component_title": "Priority 0 - Touchscreen & Reliable Interactive Input",
+      "priority": 1,
+      "state": "in_progress",
+      "dependencies": [],
+      "evidence": [
+        {
+          "kind": "observation",
+          "path": "tools/s10plus/a33/nuxel-touch-trace.py",
+          "command": "test -e tools/s10plus/a33/nuxel-touch-trace.py",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        }
+      ],
+      "intended_changes": [
+        "tools/s10plus/a33/nuxel-touch-trace.py",
+        "tools/s10plus/a33/README.md",
+        "docs/beta-finalization/touch/PIPELINE-TRACE.md"
+      ],
+      "tests": [
+        "(tests are recorded by the owning briQ when it reports)"
+      ],
+      "risk": "medium",
+      "rollback": "git revert the commit(s) touching this task's expected files; the change is repository-only and alters no device state",
+      "verdict": null,
+      "offline_ceiling": null,
+      "owner_action": "",
+      "expected_files": [
+        "tools/s10plus/a33/nuxel-touch-trace.py",
+        "tools/s10plus/a33/README.md",
+        "docs/beta-finalization/touch/PIPELINE-TRACE.md"
+      ],
+      "note": "seeded from the QonQrete plan; 1/3 expected file(s) already present in the tree",
+      "source": "plan.json",
+      "revision": 1,
+      "at": "2026-10-16T16:07:13+02:00",
+      "by": "construqtor/bg-00-preflight"
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="Nuxel test signal cover">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#b388ff"/><stop offset="1" stop-color="#311b92"/>
+    </linearGradient>
+  </defs>
+  <rect width="256" height="256" rx="28" fill="url(#g)"/>
+  <path d="M16 128 q16 -70 32 0 t32 0 t32 0 t32 0 t32 0 t32 0" fill="none" stroke="#120a1e" stroke-width="10" stroke-linecap="round"/>
+  <text x="128" y="212" text-anchor="middle" font-family="DejaVu Sans, Helvetica, Arial, sans-serif" font-size="34" fill="#f2ecff">440 Hz</text>
+</svg>

@@ -1,10 +1,24 @@
-// Nuxel Status Bar — v0.4.0-alpha
+// Nuxel Status Bar — v0.4.1-a33
+//
+// SINGLE SOURCE OF TRUTH (briq-02d).  The handset used to serve a stale
+// v0.3.2 copy of this file while the repo (and the UTM VM) was on v0.4.x, so the
+// phone silently ran older status-bar behaviour than the build everyone tested.
+// The version below is now a machine-readable constant that the launcher reports
+// on its own evidence channel and that
+// tools/s10plus/a33/tests/launcher-registry-test.js asserts against the repo - a
+// stale device copy is therefore DETECTED instead of tolerated, and the service
+// worker cache key (sw.js CACHE_VERSION) is bumped for the same revision so a
+// stale cached bundle is invalidated deterministically.
 // Real-wired to the HTTP bridge (/api/v1/phone/status) and to the same
 // notification JSON source the daemon persists (/var/lib/nuxel/notifications.json,
 // surfaced via the bridge as `notifications/list`). Polls every 5 seconds in
 // dev, resilient to bridge failures.
 
 class StatusBar {
+    // Keep in sync with manifest.json ("nuxel.pwa_version") and sw.js
+    // (CACHE_VERSION) - the registry test fails if the three ever diverge.
+    static get VERSION() { return '0.4.1-a33'; }
+
     constructor() {
         this.state = {
             signalLevel: 4,
@@ -32,6 +46,24 @@ class StatusBar {
         this._notifPollTimer = null;
         this._pollTimer = null;
         this._init();
+        this._pubVersion();
+    }
+
+    // Evidence marker: STATE channel + diag hook, so the live console and the VM
+    // can both be asked "which status-bar revision is actually running?".
+    _pubVersion() {
+        const line = 'STATUSBAR_READY version=' + StatusBar.VERSION + ' safezones=' +
+                     (typeof NuxelSafeZones !== 'undefined' ? 'present' : 'absent');
+        try {
+            if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.nuxelDiag) {
+                window.webkit.messageHandlers.nuxelDiag.postMessage(line);
+            }
+            if (window.NuxelHost && window.NuxelHost.available && window.NuxelHost.statusRead) {
+                // read-only poll: publishing happens host-side for the services
+            }
+            console.log('[status-bar] ' + line);
+        } catch (e) { /* evidence must never break the bar */ }
+        try { window.NUXEL_STATUS_BAR_VERSION = StatusBar.VERSION; } catch (e) {}
     }
 
     _init() {

@@ -1,0 +1,630 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-10-16T16:01:03+0200",
+  "generated_by": "briq-00d-baseline-protection (Qq cycle-001, construqtor)",
+  "baseline": {
+    "commit_a32": "0102b6009d5ac561fe15c85b25a58942404d081d",
+    "commit_a32_subject": "A32 BETA HARDWARE FINALIZER: touchscreen alive (normal-boot fix), launcher parity + cache invalidation, DECON colour conversion, ten-zone cutout safe areas, phone buttons (power/volume/Bixby), full boot animation",
+    "commit_a32_date": "2026-10-16T15:11:15+02:00",
+    "release_record": "docs/s10plus-autonomous-boot-repair/BETA-HARDWARE-FINALIZER/13-RELEASE-NOTES-A32.md",
+    "release_record_sha256": "a4bfe968f1c409c3e0233877d6284c369eef263216111a2cad2aaf4b4c24db67",
+    "deployed_artifacts_a32": [
+      {
+        "target": "/usr/lib/nuxel/nuxel-wl-fb",
+        "sha256": "e4b4293e8d3d7d5e1c168e58c80ef23e4cb64db30313f0658498362ccaca7b9e",
+        "built_from": "tools/s10plus/a32/nuxel-wl-fb.c"
+      },
+      {
+        "target": "/usr/lib/nuxel/nuxel-pwa-host",
+        "sha256": "18631d5b71eb938d821ba319ddf78ee73b403811933824d93b36dc9439f7f6b0",
+        "built_from": "tools/s10plus/a32/nuxel-pwa-host.c"
+      },
+      {
+        "target": "/usr/lib/nuxel/nuxel-button-manager",
+        "sha256": "5f052ef4523a3fee8f13c65a24fddfede553753d18725bd533e7e877f7cc3dc5",
+        "built_from": "tools/s10plus/a32/nuxel-button-manager.c"
+      },
+      {
+        "target": "/usr/bin/nuxelctl",
+        "sha256": "e4281cab",
+        "built_from": "tools/s10plus/a32/nuxelctl"
+      },
+      {
+        "target": "/etc/systemd/system/nuxel-button-manager.service",
+        "sha256": "d911babfdbc9fbfe59da9f13317833601ecec4816494d1c672cc5526d3b1f90c",
+        "built_from": "tools/s10plus/a32/nuxel-button-manager.service"
+      }
+    ],
+    "phone_deployment_verified": false,
+    "phone_deployment_note": "The A32 hashes were recorded as verified on the target in the A32 record. This run has no live phone console (see docs/beta-finalization/preflight/ENVIRONMENT.md section 6), so the guard compares the *built* artefacts in build/out/s10plus/a32/ against those recorded hashes instead of re-reading the phone."
+  },
+  "invariants": [
+    {
+      "id": "INV-1-launcher-cache-invalidation",
+      "title": "Launcher/PWA cache invalidation (A32 briq A31)",
+      "why": "After an A32 deployment the previous launcher stayed alive because the service worker kept serving ./js/*.js from its old cache namespace. The invariant: a redeployed launcher is never served from a stale cache. Three legs must all hold - (a) the SW namespace is versioned and 'activate' deletes the old namespaces, (b) code assets are network-first, (c) the host purges the WebKit caches and version-stamps the launcher URL.",
+      "owner_group": "bg-02-boot-animation-launcher",
+      "hash_mode": "soft",
+      "files": [
+        {
+          "path": "pwa/nuxel-home/sw.js",
+          "sha256": "d7fd084352f8fafa377d6f0ac28a4dd576fb842d03fd7292924609f6538ded30",
+          "exists": true,
+          "role": "service worker: versioned cache namespace + activate purge",
+          "hash_mode": "soft"
+        },
+        {
+          "path": "pwa/nuxel-home/js/app.js",
+          "sha256": "2ba9ff8be5331b18ba0353a95ddace87edb8c4f7f368c6ca17f3113ace2d849a",
+          "exists": true,
+          "role": "SW registration + updatefound handling",
+          "hash_mode": "soft"
+        },
+        {
+          "path": "pwa/nuxel-home/js/apps.js",
+          "sha256": "029c9331f45a1b52344baaf53c8d23eae985a549a3b39bdab6784c7e8abac401",
+          "exists": true,
+          "role": "app registry bridge used by the launcher",
+          "hash_mode": "soft"
+        },
+        {
+          "path": "tools/s10plus/a32/nuxel-pwa-host.c",
+          "sha256": "adeddd50474b57f9b927a13831e411845fad0d3453d95086b4c02b24eed616a6",
+          "exists": true,
+          "role": "host-side cache purge + URL version stamp",
+          "hash_mode": "hard"
+        }
+      ],
+      "assertions": [
+        {
+          "type": "regex",
+          "path": "pwa/nuxel-home/sw.js",
+          "pattern": "^const CACHE_VERSION *= *'[^']+'",
+          "min_count": 1,
+          "label": "SW cache namespace is explicitly versioned"
+        },
+        {
+          "type": "regex",
+          "path": "pwa/nuxel-home/sw.js",
+          "pattern": "caches\\.delete\\(",
+          "min_count": 1,
+          "label": "SW activate deletes the previous cache namespaces"
+        },
+        {
+          "type": "regex",
+          "path": "pwa/nuxel-home/sw.js",
+          "pattern": "activate",
+          "min_count": 1,
+          "label": "SW activate handler present"
+        },
+        {
+          "type": "regex",
+          "path": "pwa/nuxel-home/js/app.js",
+          "pattern": "serviceWorker",
+          "min_count": 1,
+          "label": "launcher registers the service worker"
+        },
+        {
+          "type": "regex",
+          "path": "pwa/nuxel-home/js/app.js",
+          "pattern": "updatefound",
+          "min_count": 1,
+          "label": "launcher reacts to a new SW becoming available"
+        },
+        {
+          "type": "regex",
+          "path": "tools/s10plus/a32/nuxel-pwa-host.c",
+          "pattern": "purge_launcher_cache",
+          "min_count": 2,
+          "label": "host purges the launcher caches at startup"
+        },
+        {
+          "type": "regex",
+          "path": "tools/s10plus/a32/nuxel-pwa-host.c",
+          "pattern": "CacheStorage",
+          "min_count": 1,
+          "label": "host purges the SW cache namespaces on disk"
+        },
+        {
+          "type": "regex",
+          "path": "tools/s10plus/a32/nuxel-pwa-host.c",
+          "pattern": "stamp",
+          "min_count": 1,
+          "label": "launcher URL carries a version stamp"
+        }
+      ],
+      "rollback": "git checkout -- pwa/nuxel-home/sw.js pwa/nuxel-home/js/app.js tools/s10plus/a32/nuxel-pwa-host.c, then rebuild with tools/s10plus/a32/build-a32.sh and re-run tools/beta/regression-guard.sh"
+    },
+    {
+      "id": "INV-2-colour-conversion",
+      "title": "XRGB8888 -> DECON ABGR8888 colour conversion",
+      "why": "The panel's DECON maps R@0 G@8 B@16 while the compositor hands the bridge XRGB8888 (R@16 G@8 B@0). Copying the words unchanged swapped red and blue on the glass. The invariant: the R<->B swap stays in the scanout path and the binary still reproduces the A32 selftest vectors.",
+      "owner_group": "bg-02-boot-animation-launcher",
+      "hash_mode": "hard",
+      "files": [
+        {
+          "path": "tools/s10plus/a32/nuxel-wl-fb.c",
+          "sha256": "6501c6d5d74128f9004088663ca78e46356b7131756d325165822a76b56c51d7",
+          "exists": true,
+          "role": "the bridge: conversion + animation gate + screen on/off",
+          "hash_mode": "hard"
+        }
+      ],
+      "assertions": [
+        {
+          "type": "regex",
+          "path": "tools/s10plus/a32/nuxel-wl-fb.c",
+          "pattern": "XRGB8888",
+          "min_count": 2,
+          "label": "source XRGB8888 handled explicitly"
+        },
+        {
+          "type": "regex",
+          "path": "tools/s10plus/a32/nuxel-wl-fb.c",
+          "pattern": "ABGR",
+          "min_count": 1,
+          "label": "destination ABGR_8888 order documented in the source"
+        },
+        {
+          "type": "regex",
+          "path": "tools/s10plus/a32/nuxel-wl-fb.c",
+          "pattern": "0xff0000ff",
+          "min_count": 1,
+          "label": "R<->B swap constant present (red must land in the blue byte slot)"
+        },
+        {
+          "type": "regex",
+          "path": "tools/s10plus/a32/nuxel-wl-fb.c",
+          "pattern": "--colour-selftest",
+          "min_count": 1,
+          "label": "selftest entry point retained"
+        },
+        {
+          "type": "program",
+          "path": "build/out/s10plus/a32/nuxel-wl-fb",
+          "args": [
+            "--colour-selftest"
+          ],
+          "expect_exit": 0,
+          "require_stdout": "PASS",
+          "forbid_stdout": "FAIL",
+          "on_missing": "warn",
+          "label": "aarch64 colour selftest (real binary) passes",
+          "exec_fallback": "vm"
+        },
+        {
+          "type": "sha256",
+          "path": "build/out/s10plus/a32/nuxel-wl-fb",
+          "expect": "e4b4293e8d3d7d5e1c168e58c80ef23e4cb64db30313f0658498362ccaca7b9e",
+          "on_missing": "warn",
+          "label": "built bridge hash == the hash deployed and verified on the phone in A32"
+        }
+      ],
+      "rollback": "git checkout -- tools/s10plus/a32/nuxel-wl-fb.c && bash tools/s10plus/a32/build-a32.sh  # rebuild on the UTM guest; the deploy path keeps a .prev-a32 copy of /usr/lib/nuxel/nuxel-wl-fb"
+    },
+    {
+      "id": "INV-3-ten-zone-safe-areas",
+      "title": "Ten-zone status-bar safe areas, S10+ preset = zones 9,10 in portrait",
+      "why": "The S10+ camera cutout sits in the top-right of portrait. A32 introduced a ten-zone model with per-device and per-orientation presets and moved the battery cluster 112 px clear of zones 9-10. The invariant: the model stays ten-zone and the S10+ portrait preset stays [9,10].",
+      "owner_group": "bg-02-boot-animation-launcher",
+      "hash_mode": "soft",
+      "files": [
+        {
+          "path": "pwa/nuxel-home/js/safe-zones.js",
+          "sha256": "ca99df1a9da4d94c75d83b91b5962b3d6aafd3b3ec76af5b5cf2b2c9b97cdb93",
+          "exists": true,
+          "role": "zone engine (10 zones) + presets + editor",
+          "hash_mode": "soft"
+        },
+        {
+          "path": "configs/nuxel/statusbar-safezones.json",
+          "sha256": "5dec2d293480f30ea4c6c1cf2b690d7efebd10247a4575a52c9c264c0cd9d9c6",
+          "exists": true,
+          "role": "persisted safe-zone document (device default)",
+          "hash_mode": "soft"
+        },
+        {
+          "path": "tools/s10plus/a32/tests/safe-zones-test.js",
+          "sha256": "aae114a6ee7481fd59382ce7a4ce02889d9a45811abb801c82d6fe05ccfe898d",
+          "exists": true,
+          "role": "15-assertion offline test for the engine",
+          "hash_mode": "soft"
+        }
+      ],
+      "assertions": [
+        {
+          "type": "json_eq",
+          "path": "configs/nuxel/statusbar-safezones.json",
+          "pointer": ".zones",
+          "expect": 10,
+          "label": "persisted document declares ten zones"
+        },
+        {
+          "type": "json_eq",
+          "path": "configs/nuxel/statusbar-safezones.json",
+          "pointer": ".profiles.s10plus.portrait",
+          "expect": [
+            9,
+            10
+          ],
+          "label": "S10+ portrait preset blocks zones 9,10"
+        },
+        {
+          "type": "json_eq",
+          "path": "configs/nuxel/statusbar-safezones.json",
+          "pointer": ".profiles.s10plus.landscape_left",
+          "expect": [],
+          "label": "S10+ landscape_left blocks nothing"
+        },
+        {
+          "type": "json_eq",
+          "path": "configs/nuxel/statusbar-safezones.json",
+          "pointer": ".schema_version",
+          "expect": 1,
+          "label": "persisted document carries schema_version"
+        },
+        {
+          "type": "regex",
+          "path": "pwa/nuxel-home/js/safe-zones.js",
+          "pattern": "s10plus:\\s*\\{\\s*portrait:\\s*\\[9, 10\\]",
+          "min_count": 1,
+          "label": "engine preset for s10plus is [9,10] in portrait"
+        },
+        {
+          "type": "regex",
+          "path": "pwa/nuxel-home/js/safe-zones.js",
+          "pattern": "beyond2",
+          "min_count": 1,
+          "label": "device profile detection keys on the real hardware identity"
+        },
+        {
+          "type": "suite",
+          "path": "tools/s10plus/a32/tests/safe-zones-test.js",
+          "interpreter": "node",
+          "expect_exit": 0,
+          "require_stdout": "all safe-zone tests passed",
+          "on_missing": "warn",
+          "label": "safe-zone engine assertions (node)",
+          "mode": "soft",
+          "owned_by": "bg-02-boot-animation-launcher (owns tools/s10plus/a32/tests/safe-zones-test.js in this run)",
+          "note": "This suite file is being extended by bg-02 while the parallel build runs, so its in-flight assertions are NOT an A32 invariant. The A32 ten-zone behaviour is gated hard by the four json_eq assertions on configs/nuxel/statusbar-safezones.json and the two regex assertions on pwa/nuxel-home/js/safe-zones.js; this suite is reported as a soft signal (WARN when it fails)."
+        }
+      ],
+      "rollback": "git checkout -- pwa/nuxel-home/js/safe-zones.js configs/nuxel/statusbar-safezones.json tools/s10plus/a32/tests/safe-zones-test.js"
+    },
+    {
+      "id": "INV-4-button-manager",
+      "title": "Hardware button manager is the single owner of power/volume/assistant",
+      "why": "A32 made one process the only handler of the gpio_keys key set (114 VOLUMEDOWN, 115 VOLUMEUP, 116 POWER, 703 assistant), so POWER short toggles the display through nuxel-wl-fb without a second framebuffer owner and volume drives the real ALSA element. The invariant: that ownership model and its service definition survive.",
+      "owner_group": "bg-03-connectivity-time-audio-buttons",
+      "hash_mode": "hard",
+      "files": [
+        {
+          "path": "tools/s10plus/a32/nuxel-button-manager.c",
+          "sha256": "07ce5c56d7f14efa4850a8ff8e851f574a034fe6582eb98fbec6188413b8632c",
+          "exists": true,
+          "role": "the manager: key map, ALSA volume, display toggle, OSD",
+          "hash_mode": "hard"
+        },
+        {
+          "path": "tools/s10plus/a32/nuxel-button-manager.service",
+          "sha256": "d911babfdbc9fbfe59da9f13317833601ecec4816494d1c672cc5526d3b1f90c",
+          "exists": true,
+          "role": "systemd unit (only owner of gpio_keys)",
+          "hash_mode": "hard"
+        },
+        {
+          "path": "configs/nuxel/buttons.json",
+          "sha256": "6e9994c054d8e983bdf0fe66a476106ad9036e21286aafb5871d778193e5ff25",
+          "exists": true,
+          "role": "user-remappable action map",
+          "hash_mode": "soft"
+        }
+      ],
+      "assertions": [
+        {
+          "type": "regex",
+          "path": "tools/s10plus/a32/nuxel-button-manager.c",
+          "pattern": "gpio_keys",
+          "min_count": 1,
+          "label": "key device resolved by capability/name, not by a hard-coded eventN"
+        },
+        {
+          "type": "regex",
+          "path": "tools/s10plus/a32/nuxel-button-manager.c",
+          "pattern": "703",
+          "min_count": 1,
+          "label": "assistant/Bixby key 703 handled"
+        },
+        {
+          "type": "regex",
+          "path": "tools/s10plus/a32/nuxel-button-manager.service",
+          "pattern": "ExecStart=.*nuxel-button-manager",
+          "min_count": 1,
+          "label": "unit starts the manager binary"
+        },
+        {
+          "type": "regex",
+          "path": "tools/s10plus/a32/nuxel-button-manager.service",
+          "pattern": "Restart=always",
+          "min_count": 1,
+          "label": "unit restarts the manager"
+        },
+        {
+          "type": "regex",
+          "path": "configs/nuxel/buttons.json",
+          "pattern": "\"power_short\": \"screen-toggle\"",
+          "min_count": 1,
+          "label": "power short press maps to screen-toggle"
+        },
+        {
+          "type": "regex",
+          "path": "configs/nuxel/buttons.json",
+          "pattern": "\"bixby_short\": \"open-terminal\"",
+          "min_count": 1,
+          "label": "assistant key maps to an action, not a dead key"
+        }
+      ],
+      "rollback": "git checkout -- tools/s10plus/a32/nuxel-button-manager.c tools/s10plus/a32/nuxel-button-manager.service configs/nuxel/buttons.json; deploy path keeps .prev-a32 copies of /usr/bin/nuxelctl and the unit"
+    },
+    {
+      "id": "INV-5-live-usb-console",
+      "title": "Live USB console stays reachable and respawning",
+      "why": "The CDC-ACM console is the only channel that can inspect a running Nuxel without flashing and without adb. The ACM tty raises SIGHUP when a host attaches, so the supervisor must respawn the shell, and the initramfs must launch it before switch_root. The invariant: the console binary, its launch point and the host-side driver script all stay in place.",
+      "owner_group": "bg-00-preflight (protected baseline)",
+      "hash_mode": "hard",
+      "files": [
+        {
+          "path": "tools/s10plus/a24-nuxel-console.c",
+          "sha256": "d5d4c65c0605f88e8769a1e04d00795e27048899d493dee212f97e7134ad6dd1",
+          "exists": true,
+          "role": "HUP-proof live root shell + /dev/kmsg mirror",
+          "hash_mode": "hard"
+        },
+        {
+          "path": "scripts/s10plus-debug-pack/nuxel-console-host.sh",
+          "sha256": "9428a1b2ce7cf46a2927d0738ceed4a9084b2579c254f3ae8b14be1e8b74202b",
+          "exists": true,
+          "role": "host-side driver (list/watch/run/accept)",
+          "hash_mode": "hard"
+        },
+        {
+          "path": "boot/initramfs/init.sh",
+          "sha256": "897e3e7de552855f76853aee5976b49f25c416f9653609958495211f64049395",
+          "exists": true,
+          "role": "initramfs launch point for /opt/nuxel/nuxel-console",
+          "hash_mode": "hard"
+        }
+      ],
+      "assertions": [
+        {
+          "type": "regex",
+          "path": "tools/s10plus/a24-nuxel-console.c",
+          "pattern": "respawning",
+          "min_count": 1,
+          "label": "console supervisor respawns the shell after SIGHUP"
+        },
+        {
+          "type": "regex",
+          "path": "tools/s10plus/a24-nuxel-console.c",
+          "pattern": "fork\\(",
+          "min_count": 1,
+          "label": "console runs in a forked child so it cannot delay boot"
+        },
+        {
+          "type": "regex",
+          "path": "boot/initramfs/init.sh",
+          "pattern": "/opt/nuxel/nuxel-console",
+          "min_count": 1,
+          "label": "initramfs starts the console before switch_root"
+        },
+        {
+          "type": "file_executable",
+          "path": "scripts/s10plus-debug-pack/nuxel-console-host.sh",
+          "label": "console host script is executable"
+        },
+        {
+          "type": "regex",
+          "path": "scripts/s10plus-debug-pack/nuxel-console-host.sh",
+          "pattern": "/dev/cu\\.usbmodem",
+          "min_count": 1,
+          "label": "host script enumerates the CDC-ACM node"
+        },
+        {
+          "type": "info",
+          "label": "console node presence (informational; a live phone is not required)",
+          "path": "/dev"
+        }
+      ],
+      "rollback": "git checkout -- tools/s10plus/a24-nuxel-console.c scripts/s10plus-debug-pack/nuxel-console-host.sh boot/initramfs/init.sh"
+    },
+    {
+      "id": "INV-6-userspace-rollback",
+      "title": "Userspace rollback route back to the known-working kiosk launcher",
+      "why": "The mission allows normal reboots but requires a known-working userspace rollback path at all times. The invariant: the rollback script and the systemd-user units it switches between exist and are wired together.",
+      "owner_group": "bg-04-userspace-completion / bg-09-integration-release",
+      "hash_mode": "hard",
+      "files": [
+        {
+          "path": "tools/nuxel-rollback-home.sh",
+          "sha256": "b6288c34e1117edfccaa76bd7d764fbb903108a9dc29ea88e9582c27993c1f24",
+          "exists": true,
+          "role": "rollback: native -> kiosk home",
+          "hash_mode": "hard"
+        },
+        {
+          "path": "shell/config/systemd-user/nuxel-home-kiosk.service",
+          "sha256": "18c24f92a417251eae14de154dd17cb2a07c4f58f1393e9565f55d304c13b8f8",
+          "exists": true,
+          "role": "known-working PWA kiosk unit",
+          "hash_mode": "soft"
+        },
+        {
+          "path": "shell/config/systemd-user/nuxel-home-native.service",
+          "sha256": "08ef67de38fdeda878556e0652ba915653e6d9c95745473bba060d3b7a91ade0",
+          "exists": true,
+          "role": "native home unit (the one rolled back from)",
+          "hash_mode": "soft"
+        },
+        {
+          "path": "shell/config/systemd-user/nuxel-phosh-agent.service",
+          "sha256": "e4ac569e0a6f0bf4fff2981a7669e38a254069363c7b6df8fc10d30e12829c72",
+          "exists": true,
+          "role": "Wayland/phoc session for the kiosk",
+          "hash_mode": "soft"
+        }
+      ],
+      "assertions": [
+        {
+          "type": "file_executable",
+          "path": "tools/nuxel-rollback-home.sh",
+          "label": "rollback script is executable"
+        },
+        {
+          "type": "regex",
+          "path": "tools/nuxel-rollback-home.sh",
+          "pattern": "nuxel-home-kiosk",
+          "min_count": 1,
+          "label": "rollback re-enables the kiosk home unit"
+        },
+        {
+          "type": "regex",
+          "path": "shell/config/systemd-user/nuxel-home-kiosk.service",
+          "pattern": "Restart=",
+          "min_count": 1,
+          "label": "kiosk unit is restart-guarded"
+        },
+        {
+          "type": "regex",
+          "path": "shell/config/systemd-user/nuxel-phosh-agent.service",
+          "pattern": "ExecStart=",
+          "min_count": 1,
+          "label": "phosh agent unit is complete"
+        }
+      ],
+      "rollback": "git checkout -- tools/nuxel-rollback-home.sh shell/config/systemd-user/ && systemctl --user daemon-reload"
+    },
+    {
+      "id": "INV-7-a32-release-record",
+      "title": "The A32 release record stays byte-identical",
+      "why": "13-RELEASE-NOTES-A32.md is the measured floor of this mission: it lists the deployed artefact hashes, the head-line claims and the explicit non-claims. Rewriting history here would make every later 'no regression' claim worthless.",
+      "owner_group": "bg-00-preflight (protected baseline)",
+      "hash_mode": "hard",
+      "files": [
+        {
+          "path": "docs/s10plus-autonomous-boot-repair/BETA-HARDWARE-FINALIZER/13-RELEASE-NOTES-A32.md",
+          "sha256": "a4bfe968f1c409c3e0233877d6284c369eef263216111a2cad2aaf4b4c24db67",
+          "exists": true,
+          "role": "A32 release record (floor of the mission)",
+          "hash_mode": "hard"
+        },
+        {
+          "path": "docs/s10plus-autonomous-boot-repair/BETA-HARDWARE-FINALIZER/00-BASELINE.md",
+          "sha256": "0f7474fcca4dcf4b09325807ed333636a5a142da936517c2fe2e4e2e4adfa197",
+          "exists": true,
+          "role": "A32 baseline statement",
+          "hash_mode": "hard"
+        }
+      ],
+      "assertions": [
+        {
+          "type": "regex",
+          "path": "docs/s10plus-autonomous-boot-repair/BETA-HARDWARE-FINALIZER/13-RELEASE-NOTES-A32.md",
+          "pattern": "e4b4293e",
+          "min_count": 1,
+          "label": "A32 record still carries the deployed nuxel-wl-fb hash"
+        },
+        {
+          "type": "regex",
+          "path": "docs/s10plus-autonomous-boot-repair/BETA-HARDWARE-FINALIZER/13-RELEASE-NOTES-A32.md",
+          "pattern": "Still not claimed",
+          "min_count": 1,
+          "label": "A32 record still states what is NOT claimed"
+        }
+      ],
+      "rollback": "git checkout -- docs/s10plus-autonomous-boot-repair/BETA-HARDWARE-FINALIZER/"
+    },
+    {
+      "id": "INV-8-no-flash-invariant-recorded",
+      "title": "The NO-FLASHING invariant is recorded in the protected-asset register",
+      "why": "Every briQ in this plan carries the same verbatim invariant set. If the register that states it disappears, later cycles lose the constraint that makes this mission safe.",
+      "owner_group": "bg-00-preflight",
+      "hash_mode": "soft",
+      "files": [
+        {
+          "path": "docs/beta-finalization/BASELINE-PROTECTION.md",
+          "sha256": null,
+          "exists": false,
+          "role": "this register",
+          "hash_mode": "self"
+        }
+      ],
+      "assertions": [
+        {
+          "type": "regex",
+          "path": "docs/beta-finalization/BASELINE-PROTECTION.md",
+          "pattern": "NO FLASHING",
+          "min_count": 1,
+          "label": "register states the NO FLASHING constraint"
+        },
+        {
+          "type": "regex",
+          "path": "docs/beta-finalization/BASELINE-PROTECTION.md",
+          "pattern": "NEVER create/edit/build anything under",
+          "min_count": 1,
+          "label": "register states the .qq / RUN_ROOT read-only constraint"
+        },
+        {
+          "type": "regex",
+          "path": "docs/beta-finalization/BASELINE-PROTECTION.md",
+          "pattern": "VERIFIED_ON_S10PLUS",
+          "min_count": 1,
+          "label": "register states the evidence discipline"
+        }
+      ],
+      "rollback": "git checkout -- docs/beta-finalization/BASELINE-PROTECTION.md"
+    },
+    {
+      "id": "INV-9-a32-suite",
+      "title": "The full A32 offline suite still runs (soft signal while other groups edit shared suites)",
+      "why": "A32's evidence is `tools/s10plus/a32/tests/run-tests.sh` exiting 0 with 0 failing suites. The guard re-runs it on every invocation so a regression in the colour selftest, the keycode bitmap decode, the safe-zone engine, the launcher registry or the wallpaper asset is visible immediately. It is a soft assertion because two of the suites it drives (safe-zones-test.js, and by extension the safe-zone engine) belong to bg-02 and are legitimately mid-flight during the parallel build: a failure there is reported as WARN naming the owning group, never as a silent pass and never as a false baseline regression.",
+      "owner_group": "bg-00-preflight",
+      "hash_mode": "soft",
+      "files": [
+        {
+          "path": "tools/s10plus/a32/tests/run-tests.sh",
+          "sha256": "cc9c79701e2848f9eafe737927fdafc799d8c9e644f3ff8403ba0e1aac77ef58",
+          "exists": true,
+          "role": "the A32 offline suite entry point (re-run as the gate)",
+          "hash_mode": "soft"
+        }
+      ],
+      "assertions": [
+        {
+          "type": "suite",
+          "path": "tools/s10plus/a32/tests/run-tests.sh",
+          "interpreter": "bash",
+          "expect_exit": 0,
+          "require_stdout": "failing suite",
+          "mode": "soft",
+          "owned_by": "bg-02-boot-animation-launcher / bg-00-preflight",
+          "label": "full A32 offline suite (colour selftest, keycode bitmap, safe zones, launcher registry, wallpaper)"
+        }
+      ]
+    }
+  ],
+  "history": [
+    {
+      "at": "2026-10-16T16:01:03+0200",
+      "event": "created",
+      "detail": "Register created by briq-00d. A32 gate executed first: bash tools/s10plus/a32/tests/run-tests.sh -> exit 0, 0 failing suites."
+    },
+    {
+      "at": "2026-10-16T16:02:19+0200",
+      "event": "manifest-change",
+      "detail": "colour selftest assertion given exec_fallback=vm after measuring that this host cannot exec aarch64 Linux ELF (exec format error, rc=126)."
+    }
+  ],
+  "vm_host": "nuxel@192.168.64.3",
+  "host_cannot_exec_aarch64_elf": "Measured 2026-10-16: executing build/out/s10plus/a32/nuxel-wl-fb on this macOS host fails with 'exec format error' (rc=126). tools/s10plus/a32/tests/run-tests.sh therefore takes its documented fallback and runs the colour selftest on the UTM Fedora 43 aarch64 guest. Any assertion whose subject is an aarch64 ELF must carry exec_fallback=vm."
+}

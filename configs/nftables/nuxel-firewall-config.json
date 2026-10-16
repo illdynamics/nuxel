@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "description": "Policy input for tools/s10plus/a33/nuxel-firewall.sh. The tool renders the per-interface and per-app rules from this file, checks them with 'nft -c', and applies them atomically. Nothing here is applied by itself.",
+  "kernel_posture": {
+    "target_kernel": "4.14.253",
+    "per_app_match": "meta cgroup <net_cls classid>",
+    "per_app_match_note": "nftables 'socket cgroupv2' matching needs Linux >= 5.13 and is NOT usable on this device. The loader selects nuxel-app-firewall.nft (classid) vs nuxel-app-firewall-cgroupv2.nft (VM/future) from the measured kernel.",
+    "classid_base": "0x01030000",
+    "classid_derivation": "classid = cgroup_classid from configs/nuxel/app-registry/app_registry.json when present, else 0x01030000 | (crc32(app_id) % 0xFFFD + 1) - identical to nuxel-permd.py _classid_for()"
+  },
+  "defaults": {
+    "input_policy": "drop",
+    "forward_policy": "drop",
+    "output_policy": "drop",
+    "allow_dhcp": true,
+    "allow_dns": true,
+    "allow_icmp": true,
+    "allow_loopback": true,
+    "log_prefix": "NUXXEL-",
+    "log_rate": "10/minute"
+  },
+  "console_protection": {
+    "enabled": true,
+    "must_never_be_removed": true,
+    "guard_file": "configs/nftables/nuxel-console-guard.nft",
+    "guard_table": "inet nuxel_console_guard",
+    "guard_priority": -200,
+    "interfaces": ["usb0", "rndis0", "ncm0", "usb1", "eth0", "enp0s1", "enp0s2", "enp0s3", "enp0s4"],
+    "ports": [22, 2022],
+    "reason": "The live root console (CDC-ACM /dev/ttyGS0) is the only recovery path; the mission forbids flashing, so the console path must survive any firewall mistake. Network rules are also reverted automatically if an apply is not confirmed within rollback_seconds."
+  },
+  "rollback": {
+    "rollback_seconds": 60,
+    "snapshot_dir": "/var/lib/nuxel/firewall",
+    "require_confirm": true,
+    "confirm_note": "apply --rollback-after N arms a timer; run 'nuxel-firewall.sh confirm' (or the console stays reachable and the timer restores the previous ruleset)."
+  },
+  "interfaces": {
+    "lo": {"policy": "allow"},
+    "usb0": {"policy": "console", "note": "USB gadget networking - owner console path"},
+    "rndis0": {"policy": "console", "note": "USB RNDIS gadget - alias sometimes used by the host side"},
+    "ncm0": {"policy": "console"},
+    "eth0": {"policy": "console", "note": "VM bridged NIC"},
+    "wlan0": {"policy": "client", "note": "Wi-Fi station interface; app traffic still requires a classid ACCEPT rule"},
+    "rmnet0": {"policy": "disabled", "note": "cellular data; no modem bring-up on the S10+ yet, so it is explicitly disabled rather than silently assumed"},
+    "tun0": {"policy": "vpn", "note": "VPN tunnel; only used with the kill switch armed"},
+    "wg0": {"policy": "vpn"},
+    "usb1": {"policy": "console"}
+  },
+  "apps": {
+    "_comment": "Per-app override of the classid ACCEPT rule. 'auto' = use the app registry's network_class (public -> allow, isolated -> drop). Keys are app_ids.",
+    "nuxel-dialer": {"network_class": "public", "classid": 16973825},
+    "nuxel-messages": {"network_class": "public", "classid": 16973826},
+    "nuxel-contacts": {"network_class": "isolated", "classid": 16973827},
+    "nuxel-settings": {"network_class": "public", "classid": 16973828},
+    "nuxel-permissions": {"network_class": "isolated", "classid": 16973829},
+    "nuxel-home": {"network_class": "isolated"},
+    "nuxel-privacy": {"network_class": "isolated"},
+    "org.nuxel.PWA": {"network_class": "isolated", "classid": 16974000}
+  },
+  "evidence": {
+    "always_capture": ["nft list ruleset", "nft list table inet nuxel_console_guard", "nft -a list chain inet nuxel_app_firewall output"],
+    "note": "The tool prints the real 'nft list ruleset' output after every apply and stores it under /var/lib/nuxel/firewall/evidence/. A rule that cannot be shown in that output is not claimed as enforced."
+  }
+}

@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "id": "briq-02c-fb-colour-conversion",
+  "revisions": [
+    {
+      "id": "briq-02c-fb-colour-conversion",
+      "title": "Protect and re-verify XRGB8888 -> DECON ABGR8888 conversion",
+      "component": "bg-02-boot-animation-launcher",
+      "component_title": "Priority 2 - Boot Stability, Animation Handoff & UTM Launcher Parity",
+      "priority": 2,
+      "state": "in_progress",
+      "dependencies": [
+        "briq-00d-baseline-protection"
+      ],
+      "evidence": [
+        {
+          "kind": "observation",
+          "path": "tools/s10plus/a33/nuxel-wl-fb.c",
+          "command": "test -e tools/s10plus/a33/nuxel-wl-fb.c",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "observation",
+          "path": "tools/s10plus/a33/tests/test-colour-order.py",
+          "command": "test -e tools/s10plus/a33/tests/test-colour-order.py",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        }
+      ],
+      "intended_changes": [
+        "tools/s10plus/a33/nuxel-wl-fb.c",
+        "tools/s10plus/a33/tests/test-colour-order.py",
+        "docs/beta-finalization/boot/COLOUR-CONVERSION.md"
+      ],
+      "tests": [
+        "(tests are recorded by the owning briQ when it reports)"
+      ],
+      "risk": "medium",
+      "rollback": "git revert the commit(s) touching this task's expected files; the change is repository-only and alters no device state",
+      "verdict": null,
+      "offline_ceiling": null,
+      "owner_action": "",
+      "expected_files": [
+        "tools/s10plus/a33/nuxel-wl-fb.c",
+        "tools/s10plus/a33/tests/test-colour-order.py",
+        "docs/beta-finalization/boot/COLOUR-CONVERSION.md"
+      ],
+      "note": "seeded from the QonQrete plan; 2/3 expected file(s) already present in the tree",
+      "source": "plan.json",
+      "revision": 1,
+      "at": "2026-10-16T16:07:13+02:00",
+      "by": "construqtor/bg-00-preflight"
+    }
+  ]
+}

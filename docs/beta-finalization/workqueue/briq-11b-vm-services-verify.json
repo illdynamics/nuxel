@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "id": "briq-11b-vm-services-verify",
+  "revisions": [
+    {
+      "id": "briq-11b-vm-services-verify",
+      "title": "VM service graph and bridge verification",
+      "component": "bg-11-vm-parity",
+      "component_title": "VM-only Verification - UTM Launcher, Services & Theme Parity",
+      "priority": 2,
+      "state": "in_progress",
+      "dependencies": [
+        "briq-04b-service-definitions",
+        "briq-04c-app-infrastructure"
+      ],
+      "evidence": [
+        {
+          "kind": "observation",
+          "path": "vm/vm-verify-services.sh",
+          "command": "test -e vm/vm-verify-services.sh",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        }
+      ],
+      "intended_changes": [
+        "docs/beta-finalization/vm/SERVICE-VERIFY.md",
+        "vm/vm-verify-services.sh"
+      ],
+      "tests": [
+        "(tests are recorded by the owning briQ when it reports)"
+      ],
+      "risk": "medium",
+      "rollback": "git revert the commit(s) touching this task's expected files; the change is repository-only and alters no device state",
+      "verdict": null,
+      "offline_ceiling": null,
+      "owner_action": "",
+      "expected_files": [
+        "docs/beta-finalization/vm/SERVICE-VERIFY.md",
+        "vm/vm-verify-services.sh"
+      ],
+      "note": "seeded from the QonQrete plan; 1/2 expected file(s) already present in the tree",
+      "source": "plan.json",
+      "revision": 1,
+      "at": "2026-10-16T16:07:13+02:00",
+      "by": "construqtor/bg-00-preflight"
+    }
+  ]
+}

@@ -1,5 +1,13 @@
-// Nuxel Home - App Registry
-// Defines the default app list with metadata
+// Nuxel Home - App Registry (A33 revision 4)
+// Defines the default app list with metadata.
+//
+// SINGLE SOURCE OF TRUTH (briq-02d): the registry below is what both the handset
+// and the UTM VM must serve.  The phone's copy had drifted (missing Terminal,
+// stale status-bar/manifest), so this revision carries a machine-readable
+// REGISTRY_VERSION that the launcher publishes on its evidence channel and that
+// tools/s10plus/a33/tests/launcher-registry-test.js asserts ("org.nuxel.Terminal"
+// and "nuxel-settings" present, every PWA served under /pwa/nuxel-apps/).
+const NUXEL_REGISTRY_VERSION = 4;
 
 const NUXEL_APPS = {
     // Native shell apps
@@ -133,6 +141,20 @@ const NUXEL_APPS = {
         description: 'Nuxel shell console',
         capabilities: [],
         docked: true,
+    },
+    'org.nuxel.LiveConsole': {
+        id: 'org.nuxel.LiveConsole',
+        name: 'Live Console',
+        icon: '📟',
+        color: '#37474F',
+        category: 'system',
+        // A33: the manifest shortcut "Console" launches THIS id, so the two files
+        // cannot disagree.  The app tree lives under /pwa/nuxel-apps/console/.
+        type: 'pwa',
+        url: '/pwa/nuxel-apps/console/index.html',
+        description: 'Live device console and control centre',
+        capabilities: [],
+        docked: false,
     },
 };
 
@@ -347,6 +369,31 @@ class AppRegistry {
 
 // Create global instance
 const appRegistry = new AppRegistry();
+// A33: registry revision + launcher deeplinks.  manifest.json's shortcuts
+// (Terminal / Settings / Live Console) resolve to ./index.html#app=<id>, so the
+// launcher has to honour that hash - otherwise the shortcuts would be a manifest
+// promise the OS never keeps.
+try { window.NUXEL_REGISTRY_VERSION = NUXEL_REGISTRY_VERSION; } catch (e) { /* ignore */ }
+
+function nuxelLaunchFromHash(hash) {
+    const m = /(?:^#|&)app=([^&]+)/.exec(hash || '');
+    if (!m) return false;
+    const id = decodeURIComponent(m[1]);
+    if (!appRegistry.getApp(id)) {
+        console.warn('[registry] deeplink unknown app: ' + id);
+        return false;
+    }
+    // Wait for the launcher to be wired (app.js publishes window.nuxel on
+    // DOMContentLoaded) before dispatching the launch event.
+    const go = () => appRegistry.launchApp(id);
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => setTimeout(go, 0));
+    else setTimeout(go, 0);
+    return true;
+}
+try {
+    window.addEventListener('hashchange', () => nuxelLaunchFromHash(window.location.hash));
+    if (window.location.hash) nuxelLaunchFromHash(window.location.hash);
+} catch (e) { /* no DOM (offline registry test) */ }
 // A32: expose the registry to the launcher host (hardware-button remapping needs
 // the authoritative app list) and to same-origin PWA iframes (Settings).
 try { window.appRegistry = appRegistry; } catch (e) { /* ignore */ }

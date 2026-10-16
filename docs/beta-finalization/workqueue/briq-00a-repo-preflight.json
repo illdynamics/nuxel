@@ -1,0 +1,142 @@
+{
+  "schema_version": 1,
+  "id": "briq-00a-repo-preflight",
+  "revisions": [
+    {
+      "id": "briq-00a-repo-preflight",
+      "title": "Repository revision, disk and inventory preflight",
+      "component": "bg-00-preflight",
+      "component_title": "Preflight, Discovery, Work Queue & Baseline Protection",
+      "priority": 0,
+      "state": "in_progress",
+      "dependencies": [],
+      "evidence": [
+        {
+          "kind": "observation",
+          "path": "docs/beta-finalization/preflight/ENVIRONMENT.md",
+          "command": "test -e docs/beta-finalization/preflight/ENVIRONMENT.md",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        }
+      ],
+      "intended_changes": [
+        "docs/beta-finalization/preflight/ENVIRONMENT.md"
+      ],
+      "tests": [
+        "(tests are recorded by the owning briQ when it reports)"
+      ],
+      "risk": "medium",
+      "rollback": "git revert the commit(s) touching this task's expected files; the change is repository-only and alters no device state",
+      "verdict": null,
+      "offline_ceiling": null,
+      "owner_action": "",
+      "expected_files": [
+        "docs/beta-finalization/preflight/ENVIRONMENT.md"
+      ],
+      "note": "seeded from the QonQrete plan; 1/1 expected file(s) already present in the tree",
+      "source": "plan.json",
+      "revision": 1,
+      "at": "2026-10-16T16:07:13+02:00",
+      "by": "construqtor/bg-00-preflight"
+    },
+    {
+      "id": "briq-00a-repo-preflight",
+      "title": "Repository revision, disk and inventory preflight",
+      "component": "bg-00-preflight",
+      "component_title": "Preflight, Discovery, Work Queue & Baseline Protection",
+      "priority": 0,
+      "state": "implemented",
+      "dependencies": [],
+      "evidence": [
+        {
+          "kind": "observation",
+          "path": "docs/beta-finalization/preflight/ENVIRONMENT.md",
+          "command": "test -e docs/beta-finalization/preflight/ENVIRONMENT.md",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "docs/beta-finalization/preflight/ENVIRONMENT.md",
+          "command": "git rev-parse HEAD; df -k /Users/wicked/x/nuxel; command -v python3 adb podman aarch64-linux-gnu-gcc node utmctl; bash tools/s10plus/a32/tests/run-tests.sh",
+          "result": "HEAD=de45917d6d9b2ebaf3f8b81467484637807f2ad0, 22498592 KiB free, A32 gate exit 0",
+          "at": "2026-10-16T15:59:31+02:00"
+        }
+      ],
+      "intended_changes": [
+        "docs/beta-finalization/preflight/ENVIRONMENT.md",
+        "docs/beta-finalization/preflight/ENVIRONMENT.md; .gitignore hardening for docs.zip/scripts.zip/tools.zip/.venv"
+      ],
+      "tests": [
+        "(tests are recorded by the owning briQ when it reports)",
+        "bash tools/s10plus/a32/tests/run-tests.sh -> exit 0 (frozen baseline gate re-run by the preflight)"
+      ],
+      "risk": "low",
+      "rollback": "git revert the commit(s) touching this task's expected files; the change is repository-only and alters no device state",
+      "verdict": "OFFLINE_TESTED",
+      "offline_ceiling": "OFFLINE_TESTED",
+      "owner_action": "",
+      "expected_files": [
+        "docs/beta-finalization/preflight/ENVIRONMENT.md"
+      ],
+      "note": "Preflight captured HEAD de45917 on main, 21.5 GiB free (hard budget), full tool inventory (python3/adb/podman/qemu/aarch64-gcc/node/UTM), tree classification, and the A32 gate at exit 0. Phone filesystem free space: BLOCKED_EXTERNAL_RESOURCE (console enumerated but did not answer; adb empty) - recorded as a gap, not guessed.",
+      "source": "plan.json",
+      "at": "2026-10-16T16:08:14+02:00",
+      "by": "construqtor/bg-00-preflight",
+      "revision": 2
+    },
+    {
+      "id": "briq-00a-repo-preflight",
+      "title": "Repository revision, disk and inventory preflight",
+      "component": "bg-00-preflight",
+      "component_title": "Preflight, Discovery, Work Queue & Baseline Protection",
+      "priority": 0,
+      "state": "implemented",
+      "dependencies": [],
+      "evidence": [
+        {
+          "kind": "observation",
+          "path": "docs/beta-finalization/preflight/ENVIRONMENT.md",
+          "command": "test -e docs/beta-finalization/preflight/ENVIRONMENT.md",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "docs/beta-finalization/preflight/ENVIRONMENT.md",
+          "command": "git rev-parse HEAD; df -k /Users/wicked/x/nuxel; command -v python3 adb podman aarch64-linux-gnu-gcc node utmctl; bash tools/s10plus/a32/tests/run-tests.sh",
+          "result": "HEAD=de45917d6d9b2ebaf3f8b81467484637807f2ad0, 22498592 KiB free, A32 gate exit 0",
+          "at": "2026-10-16T15:59:31+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "docs/beta-finalization/preflight/ENVIRONMENT.md",
+          "command": "bash tools/s10plus/a32/tests/run-tests.sh; git rev-parse HEAD; df -k /Users/wicked/x/nuxel",
+          "result": "a32_exit=0 (0 failing suites); HEAD=de45917d6d9b2ebaf3f8b81467484637807f2ad0 unchanged; 21220428 KiB free",
+          "at": "2026-10-16T14:11:44Z"
+        }
+      ],
+      "intended_changes": [
+        "docs/beta-finalization/preflight/ENVIRONMENT.md",
+        "docs/beta-finalization/preflight/ENVIRONMENT.md; .gitignore hardening for docs.zip/scripts.zip/tools.zip/.venv"
+      ],
+      "tests": [
+        "(tests are recorded by the owning briQ when it reports)",
+        "bash tools/s10plus/a32/tests/run-tests.sh -> exit 0 (frozen baseline gate re-run by the preflight)"
+      ],
+      "risk": "low",
+      "rollback": "git revert the commit(s) touching this task's expected files; the change is repository-only and alters no device state",
+      "verdict": "OFFLINE_TESTED",
+      "offline_ceiling": "OFFLINE_TESTED",
+      "owner_action": "",
+      "expected_files": [
+        "docs/beta-finalization/preflight/ENVIRONMENT.md"
+      ],
+      "note": "Evidence-timestamp correction: the \"at\" markers written in revisions 1-2 were derived from the session clock without re-reading it and are therefore approximate, not measured. This revision records the real batch re-verification window 2026-10-16T14:11:40Z-14:11:52Z (16:11:40-16:11:52 +02:00) and supersedes those values. Nothing was edited out: the ledger is append-only, errors are corrected by appending.",
+      "source": "plan.json",
+      "at": "2026-10-16T16:11:58+02:00",
+      "by": "construqtor/bg-00-preflight",
+      "revision": 3
+    }
+  ]
+}

@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "id": "briq-10b-live-deploy-userspace",
+  "revisions": [
+    {
+      "id": "briq-10b-live-deploy-userspace",
+      "title": "Deploy staged userspace to the running phone (flash-free) with rollback",
+      "component": "bg-10-live-phone",
+      "component_title": "Live S10+ Deployment, Reboot & On-Device Evidence (serialized)",
+      "priority": 1,
+      "state": "pending",
+      "dependencies": [
+        "briq-10a-live-reachability-preflight",
+        "briq-01b-libinput-path-shim",
+        "briq-02a-readiness-handoff",
+        "briq-09b-reboot-rollback-policy"
+      ],
+      "evidence": [],
+      "intended_changes": [
+        "docs/beta-finalization/live/DEPLOYMENTS.md",
+        "docs/beta-finalization/live/evidence/"
+      ],
+      "tests": [
+        "(tests are recorded by the owning briQ when it reports)"
+      ],
+      "risk": "medium",
+      "rollback": "git revert the commit(s) touching this task's expected files; the change is repository-only and alters no device state",
+      "verdict": null,
+      "offline_ceiling": "NEEDS_OWNER_TEST",
+      "owner_action": "OWNER TEST REQUIRED: see docs/beta-finalization/BETA-MANUAL-PROOF-CHECKLIST.md",
+      "expected_files": [
+        "docs/beta-finalization/live/DEPLOYMENTS.md",
+        "docs/beta-finalization/live/evidence/"
+      ],
+      "note": "seeded from the QonQrete plan; 0/2 expected file(s) already present in the tree",
+      "source": "plan.json",
+      "revision": 1,
+      "at": "2026-10-16T16:07:13+02:00",
+      "by": "construqtor/bg-00-preflight"
+    }
+  ]
+}

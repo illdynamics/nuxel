@@ -1,0 +1,319 @@
+{
+  "schema_version": 1,
+  "generated": "2026-10-16T14:01:35Z",
+  "source": {
+    "distribution": "fedora",
+    "release": "43",
+    "basearch": "aarch64",
+    "repos": [
+      "https://dl.fedoraproject.org/pub/fedora/linux/releases/43/Everything/aarch64/os",
+      "https://dl.fedoraproject.org/pub/fedora/linux/updates/43/Everything/aarch64"
+    ],
+    "metadata": "repomd.xml -> primary.xml (real repository metadata)",
+    "package_count": 93975
+  },
+  "policy": {
+    "no_skip_unavailable": true,
+    "essential_packages_must_exist": true,
+    "pins_must_match_exactly": true
+  },
+  "protected_compat_items": [
+    {
+      "id": "libsystemd-4.14-patch",
+      "what": "patched libsystemd-shared for kernels without pidfd_open/waitid(P_PIDFD)",
+      "carried_version": "258.11-1.fc43",
+      "source_edits": [
+        "src/basic/process-util.c (posix_spawn fallback)",
+        "src/basic/pidref.c (PidRef without pidfd degrades)"
+      ],
+      "builder": "tools/s10plus/a17/build-systemd4.sh + tools/s10plus/a17/nuxel-systemd-edit.py",
+      "installed_by": "tools/s10plus/a17/edit-init-a17.py (initramfs, over /usr/lib64/systemd/)",
+      "constraint": "the systemd RPM NEVRA must stay systemd-258.11-1.fc43.aarch64"
+    },
+    {
+      "id": "a26-rootfs-fixes",
+      "what": "userdbd/dbus-broker/udevd containment on 4.14",
+      "builder": "tools/s10plus/a26/nuxel-rootfs-fixes.sh (runs on the staging tree)",
+      "details": [
+        "nsswitch: drop the systemd varlink module",
+        "mask systemd-userdbd.{service,socket}",
+        "system bus -> dbus-daemon.service",
+        "mask systemd-udevd + its sockets"
+      ]
+    }
+  ],
+  "groups": [
+    {
+      "id": "base",
+      "description": "Fedora base OS, init and the 4.14-compatible service manager",
+      "packages": [
+        {
+          "name": "filesystem",
+          "nevra": "filesystem-3.18-50.fc43.aarch64"
+        },
+        {
+          "name": "setup",
+          "nevra": "setup-2.15.0-26.fc43.noarch"
+        },
+        {
+          "name": "fedora-release",
+          "nevra": "fedora-release-43-27.noarch"
+        },
+        {
+          "name": "glibc",
+          "nevra": "glibc-2.42-17.fc43.aarch64"
+        },
+        {
+          "name": "glibc-langpack-en",
+          "nevra": "glibc-langpack-en-2.42-17.fc43.aarch64"
+        },
+        {
+          "name": "bash",
+          "nevra": "bash-5.3.0-2.fc43.aarch64"
+        },
+        {
+          "name": "coreutils",
+          "nevra": "coreutils-9.7-10.fc43.aarch64"
+        },
+        {
+          "name": "util-linux",
+          "nevra": "util-linux-2.41.5-1.fc43.aarch64"
+        },
+        {
+          "name": "findutils",
+          "nevra": "findutils-1:4.10.0-6.fc43.aarch64"
+        },
+        {
+          "name": "grep",
+          "nevra": "grep-3.12-2.fc43.aarch64"
+        },
+        {
+          "name": "sed",
+          "nevra": "sed-4.9-5.fc43.aarch64"
+        },
+        {
+          "name": "gawk",
+          "nevra": "gawk-5.3.2-2.fc43.aarch64"
+        },
+        {
+          "name": "shadow-utils",
+          "nevra": "shadow-utils-2:4.18.0-3.fc43.aarch64"
+        },
+        {
+          "name": "procps-ng",
+          "nevra": "procps-ng-4.0.4-7.fc43.1.aarch64"
+        },
+        {
+          "name": "kmod",
+          "nevra": "kmod-34.2-2.fc43.aarch64"
+        },
+        {
+          "name": "e2fsprogs",
+          "nevra": "e2fsprogs-1.47.3-2.fc43.aarch64"
+        },
+        {
+          "name": "ca-certificates",
+          "nevra": "ca-certificates-2026.2.90_v9.0.317-1.fc43.noarch"
+        },
+        {
+          "name": "curl",
+          "nevra": "curl-8.15.0-10.fc43.aarch64"
+        },
+        {
+          "name": "systemd",
+          "nevra": "systemd-258.11-1.fc43.aarch64",
+          "pin": true,
+          "pin_reason": "ABI of the carried kernel-4.14 libsystemd-shared patch (boot/s10plus/payload/libsystemd-shared-258.11-1.fc43.so)"
+        },
+        {
+          "name": "systemd-udev",
+          "nevra": "systemd-udev-258.11-1.fc43.aarch64"
+        },
+        {
+          "name": "systemd-networkd",
+          "nevra": "systemd-networkd-258.11-1.fc43.aarch64"
+        }
+      ]
+    },
+    {
+      "id": "dbus",
+      "description": "System message bus (dbus-daemon is the 4.14-usable implementation)",
+      "packages": [
+        {
+          "name": "dbus-daemon",
+          "nevra": "dbus-daemon-1:1.16.2-1.fc43.aarch64"
+        },
+        {
+          "name": "dbus-broker",
+          "nevra": "dbus-broker-37-2.fc43.aarch64"
+        }
+      ]
+    },
+    {
+      "id": "python",
+      "description": "Python 3 runtime used by every Nuxel service",
+      "packages": [
+        {
+          "name": "python3",
+          "nevra": "python3-3.14.8-1.fc43.aarch64"
+        }
+      ]
+    },
+    {
+      "id": "graphics",
+      "description": "Software display path (wlroots/pixman; no DRM on this kernel)",
+      "packages": [
+        {
+          "name": "mesa-dri-drivers",
+          "nevra": "mesa-dri-drivers-25.3.6-3.fc43.aarch64"
+        },
+        {
+          "name": "mesa-libEGL",
+          "nevra": "mesa-libEGL-25.3.6-3.fc43.aarch64"
+        },
+        {
+          "name": "mesa-libgbm",
+          "nevra": "mesa-libgbm-25.3.6-3.fc43.aarch64"
+        },
+        {
+          "name": "libinput",
+          "nevra": "libinput-1.30.3-1.fc43.aarch64"
+        },
+        {
+          "name": "seatd",
+          "nevra": "seatd-0.9.3-1.fc43.aarch64"
+        }
+      ]
+    },
+    {
+      "id": "session",
+      "description": "Wayland compositor, phone shell and on-screen keyboard",
+      "packages": [
+        {
+          "name": "phoc",
+          "nevra": "phoc-0.54.0-1.fc43.aarch64"
+        },
+        {
+          "name": "phosh",
+          "nevra": "phosh-0.54.0-1.fc43.aarch64"
+        },
+        {
+          "name": "stevia",
+          "nevra": "stevia-0.54.0-1.fc43.aarch64"
+        },
+        {
+          "name": "stevia-phosh-osk-provider",
+          "nevra": "stevia-phosh-osk-provider-0.54.0-1.fc43.noarch"
+        },
+        {
+          "name": "greetd",
+          "nevra": "greetd-0.10.3-6.fc43.aarch64"
+        }
+      ]
+    },
+    {
+      "id": "webkit",
+      "description": "WebKitGTK/GTK runtime for nuxel-pwa-host (the launcher surface)",
+      "packages": [
+        {
+          "name": "gtk3",
+          "nevra": "gtk3-3.24.52-1.fc43.aarch64"
+        },
+        {
+          "name": "webkit2gtk4.1",
+          "nevra": "webkit2gtk4.1-2.52.5-1.fc43.aarch64"
+        },
+        {
+          "name": "gtk4",
+          "nevra": "gtk4-4.20.4-1.fc43.aarch64"
+        },
+        {
+          "name": "libadwaita",
+          "nevra": "libadwaita-1.8.8-1.fc43.aarch64"
+        }
+      ]
+    },
+    {
+      "id": "network",
+      "description": "Connectivity stack",
+      "packages": [
+        {
+          "name": "NetworkManager",
+          "nevra": "NetworkManager-1:1.54.3-3.fc43.aarch64"
+        },
+        {
+          "name": "NetworkManager-wifi",
+          "nevra": "NetworkManager-wifi-1:1.54.3-3.fc43.aarch64"
+        },
+        {
+          "name": "ModemManager",
+          "nevra": "ModemManager-1.24.2-1.fc43.aarch64"
+        },
+        {
+          "name": "iproute",
+          "nevra": "iproute-6.14.0-2.fc43.aarch64"
+        }
+      ]
+    },
+    {
+      "id": "connectors",
+      "description": "D-Bus connectors nuxel-bridge talks to",
+      "packages": [
+        {
+          "name": "geoclue2",
+          "nevra": "geoclue2-2.8.2-1.fc43.aarch64"
+        },
+        {
+          "name": "bluez",
+          "nevra": "bluez-5.87+1.git8750129efca8-1.fc43.aarch64"
+        }
+      ]
+    },
+    {
+      "id": "audio",
+      "description": "PipeWire/WirePlumber + ALSA (beyond-madera card path)",
+      "packages": [
+        {
+          "name": "pipewire",
+          "nevra": "pipewire-1.4.11-1.fc43.aarch64"
+        },
+        {
+          "name": "wireplumber",
+          "nevra": "wireplumber-0.5.14-1.fc43.aarch64"
+        },
+        {
+          "name": "alsa-lib",
+          "nevra": "alsa-lib-1.2.16.1-1.fc43.aarch64"
+        }
+      ]
+    },
+    {
+      "id": "security",
+      "description": "Polkit authorisation + nftables firewall",
+      "packages": [
+        {
+          "name": "polkit",
+          "nevra": "polkit-126-6.fc43.2.aarch64"
+        },
+        {
+          "name": "nftables",
+          "nevra": "nftables-1:1.1.3-6.fc43.1.aarch64"
+        }
+      ]
+    },
+    {
+      "id": "power",
+      "description": "Power/session peripherals",
+      "packages": [
+        {
+          "name": "upower",
+          "nevra": "upower-1.91.3-2.fc43.aarch64"
+        }
+      ]
+    }
+  ],
+  "unavailable": [],
+  "pin_mismatches": [],
+  "verdict": "resolved",
+  "resolved_count": 50
+}

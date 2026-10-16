@@ -1,0 +1,5 @@
+DEVNAME=input/event2
+NAME="sec_touchscreen"
+PROP=2
+ID_INPUT=1
+ID_INPUT_TOUCHSCREEN=1

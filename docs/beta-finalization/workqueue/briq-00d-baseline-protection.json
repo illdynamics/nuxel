@@ -1,0 +1,358 @@
+{
+  "schema_version": 1,
+  "id": "briq-00d-baseline-protection",
+  "revisions": [
+    {
+      "id": "briq-00d-baseline-protection",
+      "title": "A32 baseline protected-assets register and regression guard",
+      "component": "bg-00-preflight",
+      "component_title": "Preflight, Discovery, Work Queue & Baseline Protection",
+      "priority": 0,
+      "state": "in_progress",
+      "dependencies": [
+        "briq-00a-repo-preflight"
+      ],
+      "evidence": [
+        {
+          "kind": "observation",
+          "path": "docs/beta-finalization/BASELINE-PROTECTION.md",
+          "command": "test -e docs/beta-finalization/BASELINE-PROTECTION.md",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "observation",
+          "path": "tools/beta/regression-guard.sh",
+          "command": "test -e tools/beta/regression-guard.sh",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        }
+      ],
+      "intended_changes": [
+        "docs/beta-finalization/BASELINE-PROTECTION.md",
+        "tools/beta/regression-guard.sh"
+      ],
+      "tests": [
+        "(tests are recorded by the owning briQ when it reports)"
+      ],
+      "risk": "medium",
+      "rollback": "git revert the commit(s) touching this task's expected files; the change is repository-only and alters no device state",
+      "verdict": null,
+      "offline_ceiling": null,
+      "owner_action": "",
+      "expected_files": [
+        "docs/beta-finalization/BASELINE-PROTECTION.md",
+        "tools/beta/regression-guard.sh"
+      ],
+      "note": "seeded from the QonQrete plan; 2/2 expected file(s) already present in the tree",
+      "source": "plan.json",
+      "revision": 1,
+      "at": "2026-10-16T16:07:13+02:00",
+      "by": "construqtor/bg-00-preflight"
+    },
+    {
+      "id": "briq-00d-baseline-protection",
+      "title": "A32 baseline protected-assets register and regression guard",
+      "component": "bg-00-preflight",
+      "component_title": "Preflight, Discovery, Work Queue & Baseline Protection",
+      "priority": 0,
+      "state": "implemented",
+      "dependencies": [
+        "briq-00a-repo-preflight"
+      ],
+      "evidence": [
+        {
+          "kind": "observation",
+          "path": "docs/beta-finalization/BASELINE-PROTECTION.md",
+          "command": "test -e docs/beta-finalization/BASELINE-PROTECTION.md",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "observation",
+          "path": "tools/beta/regression-guard.sh",
+          "command": "test -e tools/beta/regression-guard.sh",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "tools/beta/regression-guard.sh",
+          "command": "bash tools/beta/regression-guard.sh",
+          "result": "PASS=43 FAIL=0 WARN=2 INFO=3 - REGRESSION GUARD: PASS",
+          "at": "2026-10-16T16:10:00+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "tools/beta/tests/test-regression-guard.sh",
+          "command": "bash tools/beta/tests/test-regression-guard.sh",
+          "result": "0 failing self-test(s), 10 passing",
+          "at": "2026-10-16T16:11:00+02:00"
+        }
+      ],
+      "intended_changes": [
+        "docs/beta-finalization/BASELINE-PROTECTION.md",
+        "tools/beta/regression-guard.sh",
+        "docs/beta-finalization/BASELINE-PROTECTION.md; docs/beta-finalization/baseline-protection.json; tools/beta/regression-guard.sh; tools/beta/tests/test-regression-guard.sh"
+      ],
+      "tests": [
+        "(tests are recorded by the owning briQ when it reports)",
+        "bash tools/beta/tests/test-regression-guard.sh -> 10/10 (tamper detection, repin protocol, --json)",
+        "bash tools/s10plus/a32/tests/run-tests.sh -> exit 0 (the a32 suite the gate re-runs)"
+      ],
+      "risk": "medium",
+      "rollback": "git revert the commit(s) touching this task's expected files; the change is repository-only and alters no device state",
+      "verdict": "OFFLINE_TESTED",
+      "offline_ceiling": "OFFLINE_TESTED",
+      "owner_action": "",
+      "expected_files": [
+        "docs/beta-finalization/BASELINE-PROTECTION.md",
+        "tools/beta/regression-guard.sh"
+      ],
+      "note": "A32 protected assets registered as hash-pinned invariants (INV-1..INV-8) in baseline-protection.json and defended by tools/beta/regression-guard.sh. Guard green on the untouched tree (PASS=43 FAIL=0) and its self-test 10/10 after repairing the --repin protocol: a re-pin now moves the type:sha256 assertions with the file pin (it previously left the register self-contradictory) and the guard FAILs on any assertion/pin disagreement.",
+      "source": "plan.json",
+      "at": "2026-10-16T16:08:18+02:00",
+      "by": "construqtor/bg-00-preflight",
+      "revision": 2
+    },
+    {
+      "id": "briq-00d-baseline-protection",
+      "title": "A32 baseline protected-assets register and regression guard",
+      "component": "bg-00-preflight",
+      "component_title": "Preflight, Discovery, Work Queue & Baseline Protection",
+      "priority": 0,
+      "state": "implemented",
+      "dependencies": [
+        "briq-00a-repo-preflight"
+      ],
+      "evidence": [
+        {
+          "kind": "observation",
+          "path": "docs/beta-finalization/BASELINE-PROTECTION.md",
+          "command": "test -e docs/beta-finalization/BASELINE-PROTECTION.md",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "observation",
+          "path": "tools/beta/regression-guard.sh",
+          "command": "test -e tools/beta/regression-guard.sh",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "tools/beta/regression-guard.sh",
+          "command": "bash tools/beta/regression-guard.sh",
+          "result": "PASS=43 FAIL=0 WARN=2 INFO=3 - REGRESSION GUARD: PASS",
+          "at": "2026-10-16T16:10:00+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "tools/beta/tests/test-regression-guard.sh",
+          "command": "bash tools/beta/tests/test-regression-guard.sh",
+          "result": "0 failing self-test(s), 10 passing",
+          "at": "2026-10-16T16:11:00+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "tools/beta/regression-guard.sh",
+          "command": "bash tools/beta/regression-guard.sh --json",
+          "result": "{\"verdict\":\"PASS\",\"pass\":43,\"fail\":0,\"warn\":2,\"info\":2}",
+          "at": "2026-10-16T16:20:00+02:00"
+        }
+      ],
+      "intended_changes": [
+        "docs/beta-finalization/BASELINE-PROTECTION.md",
+        "tools/beta/regression-guard.sh",
+        "docs/beta-finalization/BASELINE-PROTECTION.md; docs/beta-finalization/baseline-protection.json; tools/beta/regression-guard.sh; tools/beta/tests/test-regression-guard.sh"
+      ],
+      "tests": [
+        "(tests are recorded by the owning briQ when it reports)",
+        "bash tools/beta/tests/test-regression-guard.sh -> 10/10 (tamper detection, repin protocol, --json)",
+        "bash tools/s10plus/a32/tests/run-tests.sh -> exit 0 (the a32 suite the gate re-runs)"
+      ],
+      "risk": "medium",
+      "rollback": "git revert the commit(s) touching this task's expected files; the change is repository-only and alters no device state",
+      "verdict": "OFFLINE_TESTED",
+      "offline_ceiling": "OFFLINE_TESTED",
+      "owner_action": "",
+      "expected_files": [
+        "docs/beta-finalization/BASELINE-PROTECTION.md",
+        "tools/beta/regression-guard.sh"
+      ],
+      "note": "Evidence correction: the first revision recorded the guard summary as INFO=3; the re-run reports INFO=2 (PASS=43 FAIL=0 WARN=2 INFO=2). The earlier value was carried over from the pre-fix run and is superseded by this revision rather than edited out - the ledger is append-only.",
+      "source": "plan.json",
+      "at": "2026-10-16T16:09:11+02:00",
+      "by": "construqtor/bg-00-preflight",
+      "revision": 3
+    },
+    {
+      "id": "briq-00d-baseline-protection",
+      "title": "A32 baseline protected-assets register and regression guard",
+      "component": "bg-00-preflight",
+      "component_title": "Preflight, Discovery, Work Queue & Baseline Protection",
+      "priority": 0,
+      "state": "implemented",
+      "dependencies": [
+        "briq-00a-repo-preflight"
+      ],
+      "evidence": [
+        {
+          "kind": "observation",
+          "path": "docs/beta-finalization/BASELINE-PROTECTION.md",
+          "command": "test -e docs/beta-finalization/BASELINE-PROTECTION.md",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "observation",
+          "path": "tools/beta/regression-guard.sh",
+          "command": "test -e tools/beta/regression-guard.sh",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "tools/beta/regression-guard.sh",
+          "command": "bash tools/beta/regression-guard.sh",
+          "result": "PASS=43 FAIL=0 WARN=2 INFO=3 - REGRESSION GUARD: PASS",
+          "at": "2026-10-16T16:10:00+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "tools/beta/tests/test-regression-guard.sh",
+          "command": "bash tools/beta/tests/test-regression-guard.sh",
+          "result": "0 failing self-test(s), 10 passing",
+          "at": "2026-10-16T16:11:00+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "tools/beta/regression-guard.sh",
+          "command": "bash tools/beta/regression-guard.sh --json",
+          "result": "{\"verdict\":\"PASS\",\"pass\":43,\"fail\":0,\"warn\":2,\"info\":2}",
+          "at": "2026-10-16T16:20:00+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "tools/beta/regression-guard.sh",
+          "command": "bash tools/beta/regression-guard.sh --json; bash tools/beta/tests/test-regression-guard.sh",
+          "result": "{\"verdict\":\"PASS\",\"pass\":44,\"fail\":0,\"warn\":4,\"info\":2}; guard self-test 0 failing, 11 passing",
+          "at": "2026-10-16T14:11:48Z"
+        }
+      ],
+      "intended_changes": [
+        "docs/beta-finalization/BASELINE-PROTECTION.md",
+        "tools/beta/regression-guard.sh",
+        "docs/beta-finalization/BASELINE-PROTECTION.md; docs/beta-finalization/baseline-protection.json; tools/beta/regression-guard.sh; tools/beta/tests/test-regression-guard.sh"
+      ],
+      "tests": [
+        "(tests are recorded by the owning briQ when it reports)",
+        "bash tools/beta/tests/test-regression-guard.sh -> 10/10 (tamper detection, repin protocol, --json)",
+        "bash tools/s10plus/a32/tests/run-tests.sh -> exit 0 (the a32 suite the gate re-runs)"
+      ],
+      "risk": "medium",
+      "rollback": "git revert the commit(s) touching this task's expected files; the change is repository-only and alters no device state",
+      "verdict": "OFFLINE_TESTED",
+      "offline_ceiling": "OFFLINE_TESTED",
+      "owner_action": "",
+      "expected_files": [
+        "docs/beta-finalization/BASELINE-PROTECTION.md",
+        "tools/beta/regression-guard.sh"
+      ],
+      "note": "Evidence-timestamp correction: the \"at\" markers written in revisions 1-2 were derived from the session clock without re-reading it and are therefore approximate, not measured. This revision records the real batch re-verification window 2026-10-16T14:11:40Z-14:11:52Z (16:11:40-16:11:52 +02:00) and supersedes those values. Nothing was edited out: the ledger is append-only, errors are corrected by appending.",
+      "source": "plan.json",
+      "at": "2026-10-16T16:11:58+02:00",
+      "by": "construqtor/bg-00-preflight",
+      "revision": 4
+    },
+    {
+      "id": "briq-00d-baseline-protection",
+      "title": "A32 baseline protected-assets register and regression guard",
+      "component": "bg-00-preflight",
+      "component_title": "Preflight, Discovery, Work Queue & Baseline Protection",
+      "priority": 0,
+      "state": "implemented",
+      "dependencies": [
+        "briq-00a-repo-preflight"
+      ],
+      "evidence": [
+        {
+          "kind": "observation",
+          "path": "docs/beta-finalization/BASELINE-PROTECTION.md",
+          "command": "test -e docs/beta-finalization/BASELINE-PROTECTION.md",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "observation",
+          "path": "tools/beta/regression-guard.sh",
+          "command": "test -e tools/beta/regression-guard.sh",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "tools/beta/regression-guard.sh",
+          "command": "bash tools/beta/regression-guard.sh",
+          "result": "PASS=43 FAIL=0 WARN=2 INFO=3 - REGRESSION GUARD: PASS",
+          "at": "2026-10-16T16:10:00+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "tools/beta/tests/test-regression-guard.sh",
+          "command": "bash tools/beta/tests/test-regression-guard.sh",
+          "result": "0 failing self-test(s), 10 passing",
+          "at": "2026-10-16T16:11:00+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "tools/beta/regression-guard.sh",
+          "command": "bash tools/beta/regression-guard.sh --json",
+          "result": "{\"verdict\":\"PASS\",\"pass\":43,\"fail\":0,\"warn\":2,\"info\":2}",
+          "at": "2026-10-16T16:20:00+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "tools/beta/regression-guard.sh",
+          "command": "bash tools/beta/regression-guard.sh --json; bash tools/beta/tests/test-regression-guard.sh",
+          "result": "{\"verdict\":\"PASS\",\"pass\":44,\"fail\":0,\"warn\":4,\"info\":2}; guard self-test 0 failing, 11 passing",
+          "at": "2026-10-16T14:11:48Z"
+        },
+        {
+          "kind": "offline",
+          "path": "docs/beta-finalization/baseline-protection.json",
+          "command": "bash tools/beta/regression-guard.sh --json",
+          "result": "{\"verdict\":\"PASS\",\"pass\":44,\"fail\":0,\"warn\":4,\"info\":2} invariants INV-1..INV-9",
+          "at": "2026-10-16T14:12:31Z"
+        }
+      ],
+      "intended_changes": [
+        "docs/beta-finalization/BASELINE-PROTECTION.md",
+        "tools/beta/regression-guard.sh",
+        "docs/beta-finalization/BASELINE-PROTECTION.md; docs/beta-finalization/baseline-protection.json; tools/beta/regression-guard.sh; tools/beta/tests/test-regression-guard.sh",
+        "docs/beta-finalization/baseline-protection.json: +INV-9-a32-suite, INV-3 suite assertion marked mode:soft; tools/beta/regression-guard.sh: judge() honours mode:soft"
+      ],
+      "tests": [
+        "(tests are recorded by the owning briQ when it reports)",
+        "bash tools/beta/tests/test-regression-guard.sh -> 10/10 (tamper detection, repin protocol, --json)",
+        "bash tools/s10plus/a32/tests/run-tests.sh -> exit 0 (the a32 suite the gate re-runs)",
+        "bash tools/beta/tests/test-regression-guard.sh -> 11/11 (adds: mode:soft degrades to WARN and the gate stays PASS)"
+      ],
+      "risk": "medium",
+      "rollback": "git revert the commit(s) touching this task's expected files; the change is repository-only and alters no device state",
+      "verdict": "OFFLINE_TESTED",
+      "offline_ceiling": "OFFLINE_TESTED",
+      "owner_action": "",
+      "expected_files": [
+        "docs/beta-finalization/BASELINE-PROTECTION.md",
+        "tools/beta/regression-guard.sh"
+      ],
+      "note": "Final state of the register: INV-1..INV-9. Added INV-9-a32-suite (the full tools/s10plus/a32/tests/run-tests.sh re-run on every gate invocation) and per-assertion mode:soft support, because tools/s10plus/a32/tests/safe-zones-test.js and pwa/nuxel-home/js/safe-zones.js belong to bg-02 and are being edited right now (measured: the a32 safe-zone suite failed at 16:09:29, passed again at 16:11:40 - in-flight, not a baseline regression). A soft assertion reports failure as a WARN that names the owning group; the hard json_eq/regex assertions on configs/nuxel/statusbar-safezones.json and pwa/nuxel-home/js/safe-zones.js still FAIL if the ten-zone S10+ preset is ever lost. Final measured gate: PASS=44 FAIL=0 WARN=4 INFO=2, guard self-test 11/11.",
+      "source": "plan.json",
+      "at": "2026-10-16T16:12:49+02:00",
+      "by": "construqtor/bg-00-preflight",
+      "revision": 5
+    }
+  ]
+}

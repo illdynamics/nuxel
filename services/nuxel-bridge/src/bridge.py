@@ -46,6 +46,11 @@ logger = logging.getLogger('nuxel-bridge')
 
 BUS_NAME = 'org.nuxel.Bridge'
 INTERFACE_NAME = 'org.nuxel.Bridge'
+
+# PWA<->host protocol pin (briq-04c). Same env names as the systemd units and the
+# HTTP layer, so `systemctl show -p Environment` shows exactly what is enforced.
+BRIDGE_PROTOCOL_VERSION = os.environ.get('NUXEL_BRIDGE_PROTOCOL_VERSION', '1')
+BRIDGE_HOST_VERSION = os.environ.get('NUXEL_BRIDGE_VERSION', '0.4.0-alpha')
 OBJECT_PATH = '/org/nuxel/Bridge'
 PORTAL_BUS_NAME = 'org.nuxel.Portal'
 PORTAL_OBJECT_PATH = '/org/nuxel/Portal'
@@ -458,6 +463,19 @@ class NuxelBridgeService(dbus.service.Object):
         self._init_connectors()
         
         logger.info(f"Nuxel Bridge started | session={self.session_id}")
+        logger.info(f"bridge_version={BRIDGE_PROTOCOL_VERSION} host_version={BRIDGE_HOST_VERSION}")
+
+    # ---------- D-Bus properties: the pinned protocol version ----------
+    # Published as org.nuxel.Bridge.BridgeVersion / .HostVersion
+    # (bridge-version.json "dbus_property") so a native consumer can check the
+    # contract without parsing Ping()'s JSON.
+    @dbus.service.property(INTERFACE_NAME, signature='s')
+    def BridgeVersion(self):
+        return BRIDGE_PROTOCOL_VERSION
+
+    @dbus.service.property(INTERFACE_NAME, signature='s')
+    def HostVersion(self):
+        return BRIDGE_HOST_VERSION
     
     def _init_connectors(self):
         def _connect():
@@ -555,9 +573,15 @@ class NuxelBridgeService(dbus.service.Object):
     
     @dbus.service.method(INTERFACE_NAME, in_signature='s', out_signature='s')
     def Ping(self, message):
+        # bridge_version is the PWA<->host PROTOCOL contract pinned in
+        # pwa/nuxel-common/bridge-version.json (briq-04c); `version` is the host
+        # implementation version. Every PWA client refuses a protocol mismatch
+        # rather than falling back to mock data.
         return json.dumps({
             'status': 'ok', 'service': 'nuxel-bridge',
-            'version': '0.4.0-alpha', 'session': self.session_id,
+            'version': BRIDGE_HOST_VERSION,
+            'bridge_version': BRIDGE_PROTOCOL_VERSION,
+            'session': self.session_id,
             'echo': message
         })
     

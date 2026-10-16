@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "id": "briq-03d-headphones-usbc",
+  "revisions": [
+    {
+      "id": "briq-03d-headphones-usbc",
+      "title": "Headphones and USB-C audio adapters - owner test kit",
+      "component": "bg-03-connectivity-time-audio-buttons",
+      "component_title": "Priority 3 - Wi-Fi, Time/RTC, Audio, Headphones & Hardware Buttons",
+      "priority": 3,
+      "state": "pending",
+      "dependencies": [
+        "briq-03c-audio-speaker"
+      ],
+      "evidence": [],
+      "intended_changes": [
+        "docs/beta-finalization/manual-proof/07-headphones.md",
+        "tools/s10plus/a33/nuxel-headphone-diag.sh"
+      ],
+      "tests": [
+        "(tests are recorded by the owning briQ when it reports)"
+      ],
+      "risk": "medium",
+      "rollback": "git revert the commit(s) touching this task's expected files; the change is repository-only and alters no device state",
+      "verdict": null,
+      "offline_ceiling": "NEEDS_OWNER_TEST",
+      "owner_action": "OWNER TEST REQUIRED: see docs/beta-finalization/BETA-MANUAL-PROOF-CHECKLIST.md",
+      "expected_files": [
+        "docs/beta-finalization/manual-proof/07-headphones.md",
+        "tools/s10plus/a33/nuxel-headphone-diag.sh"
+      ],
+      "note": "seeded from the QonQrete plan; 0/2 expected file(s) already present in the tree",
+      "source": "plan.json",
+      "revision": 1,
+      "at": "2026-10-16T16:07:13+02:00",
+      "by": "construqtor/bg-00-preflight"
+    }
+  ]
+}

@@ -5,7 +5,7 @@ Wants=dbus.service nuxel-bridge.service
 
 [Service]
 Type=simple
-ExecStart=/usr/bin/python3 /usr/lib/nuxel/bridge/api.py
+ExecStart=/usr/bin/nuxel-http-bridge
 Restart=on-failure
 RestartSec=3
 User=nuxel-bridge
@@ -22,6 +22,12 @@ LogsDirectory=nuxel
 Environment=NUXEL_HTTP_BIND=127.0.0.1
 Environment=NUXEL_HTTP_PORT=8080
 Environment=NUXEL_HTTP_MODE=dev
+Environment=NUXEL_PATHS_CONF=/etc/nuxel/paths.conf
+# The HTTP bridge reads the SAME canonical app registry the PWA and the native
+# shell use, so /api/v1/apps/registry cannot drift from the launcher.
+Environment=NUXEL_APP_REGISTRY=/usr/share/nuxel/pwa/nuxel-common/app-registry.json
+Environment=NUXEL_BRIDGE_PROTOCOL_VERSION=1
+Environment=NUXEL_BRIDGE_VERSION=0.4.0-alpha
 Environment=NUXEL_API_ALLOW_ORIGIN=http://127.0.0.1:8000,http://localhost:8000
 
 [Install]

@@ -269,6 +269,39 @@ const char *nuxel_sandbox_get_sandbox_dir(void)
 
 /* ---- Layer 3: Landlock helpers ---- */
 
+/* briq-05a: measured enforcement state for THIS kernel.
+ *
+ * Landlock entered mainline in Linux 5.13. The S10+ vendor kernel is
+ * 4.14.253, where the LSM simply does not exist. Refusing to launch (the old
+ * behaviour: _exit(126)) would make every sandboxed app unusable on the
+ * device, so an UNAVAILABLE Landlock is degraded and reported loudly, while a
+ * Landlock that exists but fails to apply stays fatal (fail-closed). The
+ * distinction is deliberately strict: state 1 = available, 2 = unavailable,
+ * and the permission manager reports it as a documented limitation. */
+#define NUXXEL_LANDLOCK_UNKNOWN      0
+#define NUXXEL_LANDLOCK_AVAILABLE    1
+#define NUXXEL_LANDLOCK_UNAVAILABLE  2
+
+static int g_nuxel_landlock_state = NUXXEL_LANDLOCK_UNKNOWN;
+static char g_nuxel_landlock_reason[192] = "not probed";
+
+static int nuxel_landlock_state(void)
+{
+    return g_nuxel_landlock_state;
+}
+
+static const char *nuxel_landlock_reason(void)
+{
+    return g_nuxel_landlock_reason;
+}
+
+static void nuxel_landlock_mark_unavailable(const char *why)
+{
+    g_nuxel_landlock_state = NUXXEL_LANDLOCK_UNAVAILABLE;
+    snprintf(g_nuxel_landlock_reason, sizeof(g_nuxel_landlock_reason), "%s",
+             why ? why : "unavailable");
+}
+
 static int nuxel_landlock_detect_abi(void)
 {
     int abi = 0;
@@ -291,9 +324,19 @@ static int nuxel_landlock_apply(const nuxel_sandbox_config_t *config)
         supported = abi > LANDLOCK_ABI_MAX ? LANDLOCK_ABI_MAX : abi;
 
     if (supported < LANDLOCK_ABI_MIN) {
-        fprintf(stderr, "Landlock not supported on this kernel\n");
-        return -1;
+        /* Distinguish "this kernel has no Landlock" from "Landlock broke".
+         * No /proc/sys/kernel/landlock/abi_version AND a kernel older than
+         * 5.13 is the expected state on the S10+ (4.14.253). */
+        nuxel_landlock_mark_unavailable(
+            "Landlock LSM is not present on this kernel "
+            "(mainline >= 5.13; no /proc/sys/kernel/landlock/abi_version)");
+        fprintf(stderr, "nuxel-sandbox: LANDLOCK_UNAVAILABLE: %s\n",
+                g_nuxel_landlock_reason);
+        return -2;
     }
+    g_nuxel_landlock_state = NUXXEL_LANDLOCK_AVAILABLE;
+    snprintf(g_nuxel_landlock_reason, sizeof(g_nuxel_landlock_reason),
+             "ABI %d", supported);
 
     struct landlock_ruleset_attr attr = {
         .handled_access_fs =
@@ -333,6 +376,14 @@ static int nuxel_landlock_apply(const nuxel_sandbox_config_t *config)
                                  &attr_fs, sizeof(attr_fs), 0);
         }
         if (ruleset_fd < 0) {
+            if (errno == ENOSYS || errno == EOPNOTSUPP || errno == EINVAL) {
+                nuxel_landlock_mark_unavailable(
+                    "landlock_create_ruleset returned ENOSYS/EOPNOTSUPP/EINVAL "
+                    "(kernel built without Landlock)");
+                fprintf(stderr, "nuxel-sandbox: LANDLOCK_UNAVAILABLE: %s\n",
+                        g_nuxel_landlock_reason);
+                return -2;
+            }
             perror("landlock_create_ruleset");
             return -1;
         }
@@ -1096,7 +1147,23 @@ int nuxel_sandbox_config_load(const char *profile_path,
         if (strcmp(kp, "dbus_access") == 0 ||
             strcmp(kp, "devices") == 0 ||
             strcmp(kp, "seccomp_profile") == 0 ||
-            strcmp(kp, "landlock_rules") == 0) {
+            strcmp(kp, "landlock_rules") == 0 ||
+            /* briq-05a: these keys live INSIDE landlock_rules / enforcement.
+             * Without an explicit reset the line scanner treated them as
+             * further ro/rw path elements, so a profile's "deny" list (or a
+             * kernel_note string) was appended to the ALLOWED sets. That would
+             * have granted write access to /dev and /sys on any kernel that
+             * does support Landlock. Reset instead of capture. */
+            strcmp(kp, "deny") == 0 ||
+            strcmp(kp, "kernel_note") == 0 ||
+            strcmp(kp, "enforcement") == 0 ||
+            strcmp(kp, "attacker_privilege_class") == 0 ||
+            strcmp(kp, "root_note") == 0 ||
+            strcmp(kp, "apparmor") == 0 ||
+            strcmp(kp, "landlock") == 0 ||
+            strcmp(kp, "seccomp") == 0 ||
+            strcmp(kp, "note") == 0 ||
+            strcmp(kp, "network_policy") == 0) {
             in_ro = 0; in_rw = 0; in_flags = 0; in_caps = 0; in_np = 0;
             continue;
         }
@@ -1356,6 +1423,11 @@ int nuxel_sandbox_config_load_from_registry(nuxel_sandbox_config_t *config)
             continue;
 
         /* type -> category */
+        if (strcmp(kp, "kernel_note") == 0 || strcmp(kp, "deny") == 0 ||
+            strcmp(kp, "enforcement") == 0) {
+            in_flags = in_caps = in_ro = in_rw = 0;
+            continue;
+        }
         if (strcmp(kp, "type") == 0) {
             if (strstr(val, "pwa"))      config->category = NUXXEL_SANDBOX_CATEGORY_PWA;
             else if (strstr(val, "native")) config->category = NUXXEL_SANDBOX_CATEGORY_NATIVE;
@@ -1522,7 +1594,87 @@ void nuxel_sandbox_cleanup(const nuxel_sandbox_config_t *config)
     }
 }
 
+/* briq-05a: read one trimmed line; leaves the buffer untouched (value stays
+ * "unknown") when the file does not exist. Never invents a value. */
+static void nuxel_read_first_line(const char *path, char *out, size_t out_size)
+{
+    FILE *f = fopen(path, "r");
+    size_t n;
+    if (!f)
+        return;
+    if (fgets(out, (int)out_size, f)) {
+        n = strlen(out);
+        while (n > 0 && (out[n-1] == '\n' || out[n-1] == '\r'))
+            out[--n] = '\0';
+    }
+    fclose(f);
+}
+
 /* ---- CLI (briq-14) ---- */
+
+/* briq-05a: report what this kernel can ACTUALLY enforce, so the permission
+ * manager, verify-permissions.py and the security auditor never have to guess.
+ * Prints one JSON object; an unknown value stays "unknown" and is never
+ * assumed to be available. */
+static int nuxel_sandbox_print_enforcement(void)
+{
+    char release[128] = "unknown";
+    char lsm[256] = "unknown";
+    char cg[256] = "unknown";
+    char userns[64] = "unknown";
+    char yama[64] = "unknown";
+    char seccomp_avail[128] = "unknown";
+    int landlock_file, apparmor_dir, apparmor, selinux, yama_on;
+    int major = 0, minor = 0;
+    struct stat st;
+
+    nuxel_read_first_line("/proc/sys/kernel/osrelease", release, sizeof(release));
+    nuxel_read_first_line("/sys/kernel/security/lsm", lsm, sizeof(lsm));
+    nuxel_read_first_line("/sys/fs/cgroup/cgroup.controllers", cg, sizeof(cg));
+    nuxel_read_first_line("/proc/sys/user/max_user_namespaces", userns, sizeof(userns));
+    nuxel_read_first_line("/proc/sys/kernel/yama/ptrace_scope", yama, sizeof(yama));
+    nuxel_read_first_line("/proc/sys/kernel/seccomp/actions_avail",
+                          seccomp_avail, sizeof(seccomp_avail));
+
+    landlock_file = (stat("/proc/sys/kernel/landlock/abi_version", &st) == 0);
+    apparmor_dir  = (stat("/sys/kernel/security/apparmor", &st) == 0);
+    apparmor = (strstr(lsm, "apparmor") != NULL) || apparmor_dir;
+    selinux  = (strstr(lsm, "selinux") != NULL);
+    yama_on  = (strstr(lsm, "yama") != NULL);
+    (void)sscanf(release, "%d.%d", &major, &minor);
+
+    printf("{\n");
+    printf("  \"kernel_release\": \"%s\",\n", release);
+    printf("  \"kernel_class\": \"%s\",\n",
+           (major < 5 || (major == 5 && minor < 13)) ? "pre-5.13" : "5.13+");
+    printf("  \"landlock\": \"%s\",\n",
+           landlock_file ? "available" : "unavailable");
+    printf("  \"landlock_note\": \"%s\",\n",
+           landlock_file
+             ? "Landlock present: path-level filesystem confinement is kernel-enforced"
+             : "Landlock is mainline >= 5.13; absent here, so there is NO per-app "
+               "path confinement for unprivileged apps (documented limitation)");
+    printf("  \"seccomp_bpf\": \"%s\",\n",
+           (strcmp(seccomp_avail, "unknown") != 0) ? "available" : "unknown");
+    printf("  \"seccomp_actions_avail\": \"%s\",\n", seccomp_avail);
+    printf("  \"lsm_list\": \"%s\",\n", lsm);
+    printf("  \"apparmor\": \"%s\",\n",
+           apparmor ? "available" : "unknown-or-absent");
+    printf("  \"selinux\": \"%s\",\n", selinux ? "available" : "absent");
+    printf("  \"yama\": \"%s\",\n", yama_on ? "available" : "not-in-lsm-list");
+    printf("  \"ptrace_scope\": \"%s\",\n", yama);
+    printf("  \"cgroup_v2_controllers\": \"%s\",\n", cg);
+    printf("  \"user_namespaces_max\": \"%s\",\n", userns);
+    printf("  \"nft_socket_cgroupv2\": \"%s\",\n",
+           (major > 5 || (major == 5 && minor >= 13)) ? "possible" : "unavailable");
+    printf("  \"nft_per_app_match\": \"%s\",\n",
+           (major > 5 || (major == 5 && minor >= 13))
+             ? "socket cgroupv2 level 2"
+             : "meta cgroup (cgroup v1 net_cls classid)");
+    printf("  \"verified_by\": \"nuxel-sandbox --print-enforcement\"\n");
+    printf("}\n");
+    return 0;
+}
 
 static void nuxel_sandbox_usage(const char *prog)
 {
@@ -1533,6 +1685,7 @@ static void nuxel_sandbox_usage(const char *prog)
         "  %s --cgroup <app-id> [options] [--] <command> [args...]\n"
         "  %s --print-cgroup <app-id>      Print the deterministic cgroup name and exit\n"
         "  %s --selfcheck [registry]       Verify the app-id -> cgroup mapping vs expected\n"
+        "  %s --print-enforcement          Report what THIS kernel can enforce (JSON)\n"
         "\n"
         "Required:\n"
         "  --cgroup <app-id>  Per-app cgroup name; used to match the\n"
@@ -1555,7 +1708,7 @@ static void nuxel_sandbox_usage(const char *prog)
         "  %s --cgroup test-app /bin/true\n"
         "  %s --print-cgroup Org.Nuxel.Mail    # -> app-org-nuxel-mail\n"
         "  %s --selfcheck\n",
-        prog, prog, prog, prog, prog, prog);
+        prog, prog, prog, prog, prog, prog, prog);
 }
 
 /* ---- Verification helpers (briq-se1) ----
@@ -1744,6 +1897,9 @@ int nuxel_sandbox_main(int argc, char **argv)
         } else if (strcmp(a, "--mem-high") == 0) {
             if (i + 1 >= argc) { fprintf(stderr, "--mem-high requires bytes\n"); return 2; }
             mem_high_str = argv[++i];
+        } else if (strcmp(a, "--print-enforcement") == 0) {
+            /* briq-05a: measured enforcement report for this kernel. */
+            return nuxel_sandbox_print_enforcement();
         } else if (strcmp(a, "--selfcheck") == 0) {
             /* briq-se1: verify the deterministic mapping vs built-in cases and,
              * optionally, the app registry. Safe to run on any host. */
@@ -1963,11 +2119,29 @@ nuxel_sandbox_result_t nuxel_sandbox_launch(
         mount("none", "/", NULL, MS_REC | MS_PRIVATE, NULL);
         (void)mount("proc", "/proc", "proc", 0, NULL);
 
-        /* Layer 3: Landlock (unless disabled). */
-        if ((config->flags & NUXXEL_SANDBOX_SANDBOX_LANDLOCK) &&
-            nuxel_sandbox_apply_landlock(config) < 0) {
-            fprintf(stderr, "Landlock setup failed\n");
-            _exit(126);
+        /* Layer 3: Landlock (unless disabled).
+         *
+         * briq-05a: on a kernel without Landlock (the S10+ runs 4.14.253) the
+         * layer is reported and skipped - the app still launches under
+         * seccomp + namespaces + cgroup + nftables. A Landlock that exists but
+         * fails to apply is still fatal, because that would silently drop a
+         * confinement layer the kernel does support. */
+        if (config->flags & NUXXEL_SANDBOX_SANDBOX_LANDLOCK) {
+            int ll = nuxel_sandbox_apply_landlock(config);
+            if (ll < 0) {
+                if (ll == -2) {
+                    fprintf(stderr,
+                            "nuxel-sandbox: ENFORCEMENT landlock=unavailable "
+                            "seccomp=%s cgroup=%s (documented limitation: no "
+                            "path-level filesystem confinement on this kernel)\n",
+                            (config->flags & NUXXEL_SANDBOX_SANDBOX_SECCOMP)
+                                ? "on" : "off",
+                            config->cgroup_name);
+                } else {
+                    fprintf(stderr, "Landlock setup failed\n");
+                    _exit(126);
+                }
+            }
         }
 
         /* Layer 2: seccomp BPF (unless disabled). */

@@ -2,7 +2,7 @@
     "app_id": "nuxel-permissions",
     "name": "Permissions",
     "category": "native",
-    "flags": [],
+    "flags": ["storage", "contacts"],
     "capabilities": ["storage", "contacts"],
     "network_class": "isolated",
     "data_dir": "/var/app/nuxel-permissions/data",
@@ -14,5 +14,28 @@
         "org.nuxel.Bridge",
         "org.freedesktop.Accounts"
     ],
-    "devices": []
+    "devices": [],
+    "seccomp_profile": "native-standard",
+    "landlock_rules": {
+        "read_only": ["/usr", "/etc/nuxel"],
+        "read_write": ["/var/lib/nuxel/permissions", "/var/app/nuxel-permissions/data"],
+        "deny": ["/dev", "/sys", "/proc/*/mem", "/var/app/"],
+        "kernel_note": "INTENT ONLY: Landlock requires Linux >= 5.13; this device runs 4.14.253."
+    },
+    "network_policy": {
+        "default": "deny_all",
+        "allow_dns": false,
+        "allow_tcp_outbound": false,
+        "allow_udp_outbound": false,
+        "allow_inbound": false,
+        "kernel_note": "The permission manager talks to org.nuxel.Portal over the SYSTEM D-Bus socket, not the network; no ACCEPT rule is emitted."
+    },
+    "enforcement": {
+        "attacker_privilege_class": "unprivileged-app",
+        "root_note": "Nothing here constrains uid 0.",
+        "apparmor": "profile configs/apparmor.d/usr.bin.nuxel-permissions; only effective if AppArmor is enabled",
+        "landlock": "unavailable on Linux 4.14",
+        "seccomp": "BPF allow-list with no_new_privs",
+        "note": "This app is the reviewer: it must display mechanism, attacker class and limitation per capability, sourced from capabilities.json. It never upgrades a 'partial' to 'enforced'."
+    }
 }

@@ -13,7 +13,11 @@
 
 import { createServer } from 'node:http';
 import assert from 'node:assert';
-import { NuxelBridgeClient } from './bridge.js';
+import { NuxelBridgeClient, NUXEL_BRIDGE_VERSION, NuxelBridgeVersionError } from './bridge.js';
+
+// The /ping response's bridge_version. undefined => the pinned value (healthy
+// host); null => a legacy host that declares nothing; a string => a skewed host.
+let VERSION_OVERRIDE;
 
 // ---- Mock nuxel-bridge HTTP server --------------------------------
 const authenticatedTokens = new Set();
@@ -43,7 +47,10 @@ const server = createServer((req, res) => {
         }
 
         if (path === '/api/v1/ping' && req.method === 'GET') {
-            return send(200, { status: 'ok', version: '0.2.0-test' });
+            const proto = VERSION_OVERRIDE === undefined ? NUXEL_BRIDGE_VERSION : VERSION_OVERRIDE;
+            const body = { status: 'ok', version: '0.4.0-alpha' };
+            if (proto !== null) body.bridge_version = proto;
+            return send(200, body);
         }
 
         // Generic RPC.
@@ -122,6 +129,56 @@ async function main() {
     assert.strictEqual(fallback.success, true, 'mock fallback returns success');
     assert.strictEqual(fallback.mock, true, 'mock fallback flagged');
     console.log('[test] mock fallback ok');
+
+    // 5. Pin integrity: the compiled-in literal is the protocol contract and the
+    //    manifest helper agrees with it.
+    assert.strictEqual(NUXEL_BRIDGE_VERSION, '1', 'pinned bridge_version');
+    assert.deepStrictEqual(
+        NuxelBridgeClient.checkManifest({ nuxel: { bridge_version: '1' } }),
+        { compatible: true, declared: '1', expected: '1' });
+    assert.strictEqual(
+        NuxelBridgeClient.checkManifest({ nuxel: { bridge_version: '2' } }).compatible, false,
+        'a manifest pinned to another protocol version is incompatible');
+    assert.strictEqual(
+        NuxelBridgeClient.checkManifest({}).compatible, false,
+        'a manifest with no nuxel.bridge_version is incompatible');
+    console.log('[test] bridge_version pin + manifest check ok');
+
+    // 6. Version mismatch must be LOUD and must NOT degrade to mock data.
+    //    Drop the window token from test 3 so each client bootstraps its own.
+    delete globalThis.__NUXEL_TOKEN__;
+    //    (a) host declares a different protocol version.
+    await new Promise((r) => server.listen(0, '127.0.0.1', r));
+    PORT = server.address().port;
+    VERSION_OVERRIDE = '999';
+    const cVer = new NuxelBridgeClient({ apiUrl: base(), appId: 'org.nuxel.Skewed' });
+    await cVer._init();
+    assert.strictEqual(cVer.isConnected(), false, 'a skewed host is not a usable connection');
+    assert.strictEqual(cVer.mockMode, false, 'a version mismatch must never enable mock mode');
+    assert.deepStrictEqual(cVer.versionMismatch, { expected: '1', got: '999' });
+    await assert.rejects(() => cVer.call('storage', 'list-dir', { path: '/' }), (e) => {
+        assert.ok(e instanceof NuxelBridgeVersionError, 'thrown error is a NuxelBridgeVersionError');
+        assert.strictEqual(e.code, 'NUXEL_BRIDGE_VERSION_MISMATCH');
+        return true;
+    });
+    console.log('[test] version mismatch refused loudly (no mock fallback) ok');
+
+    //    (b) a legacy host that declares nothing is also a mismatch.
+    VERSION_OVERRIDE = null;
+    const cLegacy = new NuxelBridgeClient({ apiUrl: base(), appId: 'org.nuxel.Legacy' });
+    await cLegacy._init();
+    assert.strictEqual(cLegacy.mockMode, false, 'legacy host must not silently enable mock mode');
+    assert.deepStrictEqual(cLegacy.versionMismatch, { expected: '1', got: null });
+    console.log('[test] undeclared host version refused loudly ok');
+
+    //    (c) the healthy host is accepted, and the pin is exposed.
+    VERSION_OVERRIDE = undefined;
+    const cOk = new NuxelBridgeClient({ apiUrl: base(), appId: 'org.nuxel.Ok' });
+    await cOk._init();
+    assert.strictEqual(cOk.isConnected(), true);
+    assert.strictEqual(cOk.getBridgeVersion(), NUXEL_BRIDGE_VERSION);
+    console.log('[test] healthy host accepted ok');
+    await new Promise((r) => server.close(r));
 
     console.log('\n[test] ALL TESTS PASSED');
     process.exit(0);

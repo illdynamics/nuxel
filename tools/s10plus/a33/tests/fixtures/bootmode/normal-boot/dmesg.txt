@@ -1,0 +1,4 @@
+[    1.633010] [0: swapper/0: 1] [sec_input] sec_ts_init
+[    1.654761] [0: kworker/u16:1: 42] input: sec_touchscreen as /devices/platform/104b0000.hsi2c/i2c-4/4-0048/input/input2
+[    5.962929] [0: kworker/u16:1: 42] sec_ts 4-0048: [sec_input] ic_status_show: lpm:0, no_charger:0, wired_charger:1
+[    6.001122] [0: kworker/u16:1: 42] sec_ts 4-0048: [sec_input] mode:0202 tc:0 noise:0 wet:0 Cal_flag:Success fail_cnt:0

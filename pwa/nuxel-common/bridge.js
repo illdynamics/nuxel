@@ -16,6 +16,15 @@
  *     `/bridge/subscribe` (falls back to a local event bus if SSE fails).
  *   - `on` / `off` local event bus, capability helpers, native wrappers.
  *
+ * Bridge protocol pin
+ * -------------------
+ * `NUXEL_BRIDGE_VERSION` is the PWA<->host PROTOCOL contract, pinned in
+ * `pwa/nuxel-common/bridge-version.json` and declared by every app manifest as
+ * `nuxel.bridge_version`. The host publishes it in `/ping` (`bridge_version`).
+ * A mismatch is LOUD and terminal for this client: it is never downgraded to
+ * mock mode, because a silent mock fallback on a version skew is exactly how an
+ * app ends up "working" against a host that cannot serve it.
+ *
  * Token resolution order (first source that yields a token wins):
  *   1. `window.__NUXEL_TOKEN__`   (injected by the native PWA launcher)
  *   2. `/var/lib/nuxel/.api-token` (local API token file)
@@ -25,6 +34,24 @@
 
 const API_URL = (typeof globalThis !== 'undefined' && globalThis.NUXEL_API_URL) ||
     'http://127.0.0.1:8080/api/v1';
+
+// Pinned PWA<->host protocol version. MUST equal pwa/nuxel-common/bridge-version.json's
+// "bridge_version"; tools/s10plus/a33/verify-app-registry.py fails the build if
+// these two ever disagree. (Literal on purpose: it must work with no network.)
+export const NUXEL_BRIDGE_VERSION = '1';
+export const NUXEL_BRIDGE_VERSION_PIN_URL = '/pwa/nuxel-common/bridge-version.json';
+
+/** Thrown when the host's bridge_version does not match the pinned contract. */
+export class NuxelBridgeVersionError extends Error {
+    constructor(expected, got) {
+        super('nuxel bridge_version mismatch: app pin=' + expected + ' host=' + got +
+            ' — refusing to run against a skewed host (no silent mock fallback)');
+        this.name = 'NuxelBridgeVersionError';
+        this.code = 'NUXEL_BRIDGE_VERSION_MISMATCH';
+        this.expected = expected;
+        this.got = got;
+    }
+}
 
 // Local fallback data used when the bridge is unreachable (mock mode).
 const MOCK_STORE = {};
@@ -39,6 +66,10 @@ export class NuxelBridgeClient {
         this.token = '';
         this.connected = false;
         this.mockMode = false;
+        this.bridgeVersion = NUXEL_BRIDGE_VERSION;   // the pinned contract
+        this.hostVersion = null;                     // implementation version reported by the host
+        this.versionMismatch = null;                 // {expected, got} once a mismatch is seen
+        this.pinVerified = false;                    // did bridge-version.json agree with the literal?
         this.capabilities = new Map();
         this.listeners = new Map();
         this._sseSources = new Map();
@@ -112,9 +143,24 @@ export class NuxelBridgeClient {
         if (this._initPromise) return this._initPromise;
         this._initPromise = (async () => {
             try {
+                await this._verifyVersionPin();
                 await this._resolveToken();
                 const ping = await this._request('/ping', { message: 'init' });
                 if (ping && (ping.status === 'ok' || ping.success === true)) {
+                    this.hostVersion = ping.version || null;
+                    const hostProto = ping.bridge_version;
+                    if (hostProto !== this.bridgeVersion) {
+                        // Loud, explicit, NON-recoverable-by-mock: the host contract
+                        // does not match the pin this app was built against.
+                        this.versionMismatch = { expected: this.bridgeVersion, got: hostProto === undefined ? null : hostProto };
+                        this.connected = false;
+                        this.mockMode = false;
+                        console.error('[Bridge] VERSION MISMATCH — pinned bridge_version=' + this.bridgeVersion +
+                            ' but host declares ' + JSON.stringify(hostProto) +
+                            '. The bridge is NOT usable and will NOT fall back to mock data.');
+                        this._emit('bridge:version-mismatch', this.versionMismatch);
+                        return;
+                    }
                     this.connected = true;
                     this.mockMode = false;
                     this._loadCapabilities();
@@ -128,6 +174,69 @@ export class NuxelBridgeClient {
         return this._initPromise;
     }
 
+    /* ---- Version pin ---- */
+
+    /**
+     * Cross-check the compiled-in pin against pwa/nuxel-common/bridge-version.json.
+     * A drift between the literal and the JSON is a packaging bug (the rootfs
+     * installs /etc/nuxel/bridge-version.json from the same file), so it is
+     * reported as an error and disables the client rather than being ignored.
+     * Unreachable pin file (file://, offline node) is NOT an error: the literal
+     * is authoritative and the verifier checks the two offline.
+     */
+    async _verifyVersionPin() {
+        if (this.pinVerified) return true;
+        let pinUrl = NUXEL_BRIDGE_VERSION_PIN_URL;
+        try {
+            if (typeof import.meta !== 'undefined' && import.meta.url) {
+                const u = new URL('./bridge-version.json', import.meta.url);
+                if (u.protocol === 'http:' || u.protocol === 'https:') pinUrl = u.href;
+            }
+        } catch (e) { /* keep the absolute path */ }
+        try {
+            const res = await fetch(pinUrl, { cache: 'no-store' });
+            if (res && res.ok) {
+                const doc = await res.json();
+                if (doc && doc.bridge_version && doc.bridge_version !== NUXEL_BRIDGE_VERSION) {
+                    this.versionMismatch = { expected: NUXEL_BRIDGE_VERSION, got: doc.bridge_version };
+                    console.error('[Bridge] the pin file ' + pinUrl + ' declares bridge_version=' + doc.bridge_version +
+                        ' but bridge.js is built with ' + NUXEL_BRIDGE_VERSION + ' — packaging bug.');
+                    this._emit('bridge:version-mismatch', this.versionMismatch);
+                    return false;
+                }
+                if (doc && doc.host_version) this.hostVersion = this.hostVersion || doc.host_version;
+                this.pinVerified = true;
+                return true;
+            }
+        } catch (e) { /* pin file not reachable from this surface — literal stands */ }
+        this.pinVerified = true;
+        return true;
+    }
+
+    /** True when the host and this client agree on the pinned protocol version. */
+    isVersionCompatible() {
+        return this.versionMismatch === null;
+    }
+
+    /** The pinned protocol version (what app manifests must declare). */
+    getBridgeVersion() {
+        return this.bridgeVersion;
+    }
+
+    /** The host implementation version reported by /ping, or null. */
+    getHostVersion() {
+        return this.hostVersion;
+    }
+
+    /**
+     * Check an app manifest against the pin. Returns {compatible, declared, expected}.
+     * `nuxel.bridge_version` is REQUIRED: a manifest without it is incompatible.
+     */
+    static checkManifest(manifest) {
+        const declared = manifest && manifest.nuxel && manifest.nuxel.bridge_version;
+        return { compatible: declared === NUXEL_BRIDGE_VERSION, declared: declared === undefined ? null : declared, expected: NUXEL_BRIDGE_VERSION };
+    }
+
     /* ---- Low-level request ---- */
 
     async _request(endpoint, data, method) {
@@ -138,6 +247,9 @@ export class NuxelBridgeClient {
             headers: { 'Content-Type': 'application/json' },
         };
         if (this.token) options.headers['Authorization'] = 'Bearer ' + this.token;
+        // Pin header (bridge-version.json "http_header"): the host answers 409
+        // version_mismatch instead of silently serving a skewed contract.
+        options.headers['X-Nuxel-Bridge-Version'] = NUXEL_BRIDGE_VERSION;
         if (method === 'POST') options.body = JSON.stringify(data || {});
         const res = await fetch(url, options);
         if (!res.ok) throw new Error('bridge HTTP ' + res.status);
@@ -159,6 +271,11 @@ export class NuxelBridgeClient {
 
     async call(namespace, verb, params) {
         await this._init();
+        if (this.versionMismatch) {
+            // Protocol skew is not an availability problem: mock data would make a
+            // skewed app look healthy. Fail the call instead.
+            throw new NuxelBridgeVersionError(this.versionMismatch.expected, this.versionMismatch.got);
+        }
         const payload = { app_id: this.appId, namespace, verb, params: params || {} };
         try {
             const res = await this._request('/rpc', payload, 'POST');
@@ -328,3 +445,8 @@ if (typeof addEventListener === 'function') {
 
 export { shared as bridge };
 export const NuxelBridge = shared;
+export const bridgeVersion = NUXEL_BRIDGE_VERSION;
+try {
+    g.NUXEL_BRIDGE_VERSION = NUXEL_BRIDGE_VERSION;
+    g.NuxelBridgeVersionError = NuxelBridgeVersionError;
+} catch (e) { /* no global (node ESM) */ }

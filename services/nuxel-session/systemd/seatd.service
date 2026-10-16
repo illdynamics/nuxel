@@ -1,0 +1,46 @@
+[Unit]
+Description=Nuxel seat daemon (seatd) — backend session for wlroots/phoc input
+Documentation=file:/usr/share/doc/nuxel/UTM-LAUNCHER-PORT.md
+# Bounded restarts: never spin into a process storm.
+StartLimitIntervalSec=60
+StartLimitBurst=5
+# WHY THIS EXISTS (measured A31 on the handset): wlroots 0.19 only creates its
+# libinput backend once a backend *session* can be started
+#   phoc-wlroots-CRITICAL [backend/backend.c:305] failed to start a session
+#   phoc-wlroots-CRITICAL [backend/backend.c:355] failed to add backend 'libinput'
+# and phoc then ran with ZERO /dev/input devices — no touch event ever reached
+# the compositor even though sec_ts produced data.  libseat on Fedora 43 carries
+# logind/seatd/noop; this image has no logind session and no VT, and
+# nuxel-wayland.service sets LIBSEAT_BACKEND=noop, so seatd is installed and
+# started to keep the seat broker available for the libinput backend and for any
+# future logind-less seat consumer.  phoc runs as root (no seat broker needed for
+# privilege); seatd only brokers open_device().
+Before=nuxel-wayland.service
+After=systemd-udev-settle.service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/seatd -g seat
+Restart=always
+RestartSec=1
+# Privilege: seatd is the only component that opens /dev/input for other
+# processes.  Nothing else is granted.
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+ReadWritePaths=/run
+ProtectKernelTunables=yes
+ProtectControlGroups=yes
+RestrictAddressFamilies=AF_UNIX
+RestrictNamespaces=yes
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+SystemCallArchitectures=native
+DevicePolicy=strict
+DeviceAllow=char-input rw
+DeviceAllow=char-tty rw
+DeviceAllow=/dev/null rw
+
+[Install]
+WantedBy=multi-user.target

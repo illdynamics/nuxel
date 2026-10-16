@@ -3,7 +3,9 @@ Description=Nuxel PWA Static Web Server (nuxel-home launcher on :8000)
 Documentation=https://nuxel.org
 After=network.target nuxel-http-bridge.service
 Wants=nuxel-http-bridge.service
-ConditionPathExists=/home/nuxel/nuxel/pwa/nuxel-home/index.html
+# The docroot is resolved by the shim: /usr/share/nuxel on the phone rootfs,
+# /home/nuxel/nuxel on the flash-free deploy mirror (or $NUXEL_WEBROOT).
+ConditionPathExists=/usr/bin/nuxel-web
 
 [Service]
 Type=simple
@@ -16,8 +18,9 @@ Type=simple
 # readable.
 User=nuxel
 Group=nuxel
-WorkingDirectory=/home/nuxel/nuxel
-ExecStart=/usr/bin/python3 -m http.server 8000 --bind 127.0.0.1
+Environment=NUXEL_WEB_PORT=8000
+Environment=NUXEL_WEB_BIND=127.0.0.1
+ExecStart=/usr/bin/nuxel-web
 Restart=on-failure
 RestartSec=2
 StartLimitIntervalSec=60
@@ -31,7 +34,8 @@ PrivateDevices=yes
 NoNewPrivileges=yes
 RestrictAddressFamilies=AF_INET AF_INET6
 ReadOnlyPaths=/
-ReadWritePaths=/home/nuxel/nuxel /home/nuxel/nuxel/pwa
+ReadOnlyPaths=/usr/share/nuxel
+ReadWritePaths=/home/nuxel/nuxel
 
 [Install]
 WantedBy=multi-user.target

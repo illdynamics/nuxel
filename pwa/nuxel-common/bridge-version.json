@@ -1,0 +1,25 @@
+{
+  "schema": "nuxel.bridge-version/1",
+  "bridge_version": "1",
+  "host_version": "0.4.0-alpha",
+  "policy": "reject-on-mismatch",
+  "pinned_on": "2026-10-16",
+  "app_manifest_field": "nuxel.bridge_version",
+  "http_header": "X-Nuxel-Bridge-Version",
+  "dbus_property": "org.nuxel.Bridge.BridgeVersion",
+  "canonical_registry": "pwa/nuxel-common/app-registry.json",
+  "enforcement": {
+    "pwa_client": "pwa/nuxel-common/bridge.js (NUXEL_BRIDGE_VERSION) — a ping that does not declare this version is a version MISMATCH, never a silent mock downgrade",
+    "http_bridge": "services/nuxel-bridge/src/api.py — /api/v1/ping and /api/v1/health publish bridge_version; a request carrying a mismatching X-Nuxel-Bridge-Version is answered 409 version_mismatch (loud, never silently rejected)",
+    "dbus_bridge": "services/nuxel-bridge/src/bridge.py — Ping() publishes bridge_version",
+    "verifier": "tools/s10plus/a33/verify-app-registry.py — asserts this file, bridge.js's NUXEL_BRIDGE_VERSION, every app manifest's nuxel.bridge_version and the installed systemd Environment= pins all agree"
+  },
+  "history": [
+    {
+      "bridge_version": "1",
+      "since": "A32/A33",
+      "note": "Current protocol contract. Additive changes keep 1; a breaking change to the /rpc envelope or the capability ids bumps it and every manifest must move with it."
+    }
+  ],
+  "note": "bridge_version is the PWA<->host PROTOCOL contract declared by every app manifest. host_version is the implementation version of the nuxel-bridge processes and is allowed to move without a manifest change."
+}

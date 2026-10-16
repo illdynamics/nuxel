@@ -1,0 +1,125 @@
+Offline patch PROPOSAL - NOT APPLIED, NOT DEPLOYED, NOT FLASHED.
+===============================================================
+
+Verdict for this item: BLOCKED_KERNEL / BOOT_UPDATE_REQUIRED.
+Nothing in this file has been built into a kernel, written to a partition or
+loaded on the SM-G975F.  It exists so that, if a future cycle is authorised to
+build and flash a BOOT image, the change is reviewable instead of folklore.
+
+Root cause it addresses
+-----------------------
+Samsung's LPM gate is consumed once, in an `__setup` hook, before the driver
+core runs, and `sec_ts_init()` turns it into a hard `-ENODEV`:
+
+    drivers/samsung/misc/sec_batt.c
+        static int sec_bat_is_lpm_check(char *str) {
+                if (strncmp(str, "charger", 7) == 0) lpcharge = 1;
+                pr_info("%s: Low power charging mode: %d\n", __func__, lpcharge);
+                return lpcharge;
+        }
+        __setup("androidboot.mode=", sec_bat_is_lpm_check);
+
+    drivers/input/touchscreen/sec_ts/y771/sec_ts.c
+        if (lpcharge == 1) {
+                pr_err("%s %s: Do not load driver due to : lpm %d\n", SECLOG, __func__, lpcharge);
+                return -ENODEV;
+        }
+        ...
+        return i2c_add_driver(&sec_ts_driver);
+
+Why the userspace mitigation is primary on THIS device
+------------------------------------------------------
+* CONFIG_KEXEC is not set -> the kernel cannot be re-entered with a new cmdline.
+* CONFIG_TOUCHSCREEN_SEC_TS_Y771=y and /lib/modules/4.14.253 does not exist ->
+  the driver cannot be re-loaded; the initcall already ran and returned.
+* In LPM the panel is not being driven, so there is no interactive session that a
+  late-bound touchscreen would serve anyway.
+Therefore: `systemctl reboot` (a normal, non-LPM boot) is the correct and complete
+mitigation today, and `tools/s10plus/a33/nuxel-bootmode-guard.py` implements it
+with locks, a cooldown, an uptime floor and a charger check so it can never become
+a reboot loop.  The patch below is only needed if a future boot must be
+interactive *from an LPM power-up* (e.g. always-on kiosk behaviour).
+
+Rules for a future, authorised deployment (documented; DO NOT EXECUTE HERE)
+---------------------------------------------------------------------------
+1. Apply this patch to the vendor 4.14.253 tree in a clean branch; keep the
+   original `sec_bat_is_lpm_check()` and `sec_ts_init()` behaviour reachable.
+2. Build arm64 `Image` (with the embedded Nuxel initramfs) and the merged DTB
+   exactly as the A25/A26 toolchain does; verify the SHA-256 of every artifact.
+3. Offline gates that must pass first: arch/arm64/boot/Image is a valid arm64
+   Image, the DTB merges with fdtoverlay, the initramfs contains the nuxel init.
+4. Only then, and only under explicit owner authorisation, a BOOT-partition-only
+   write with a full-partition readback would be performed - and recorded as
+   DEPLOYED_UNVERIFIED until a normal boot proves the driver binds.
+5. Rollback: keep the previously verified BOOT image and its SHA-256; restore it
+   with the same BOOT-only write path.  No other partition is touched.
+This repository does not perform step 2-5, and must not claim it has.
+
+Patch (proposal)
+----------------
+--- a/drivers/input/touchscreen/sec_ts/y771/sec_ts.c
++++ b/drivers/input/touchscreen/sec_ts/y771/sec_ts.c
+@@
+ /* context lines below the (@) markers are reconstructed from the excerpt quoted in
+  * docs/s10plus-autonomous-boot-repair/DEVICE-OBSERVATIONS.md; verify against the
+  * actual vendor tree before applying - do NOT trust the line numbers here. */
+@@ sec_ts_init / module_init
+-	if (lpcharge == 1) {
+-		pr_err("%s %s: Do not load driver due to : lpm %d\n", SECLOG, __func__, lpcharge);
+-		return -ENODEV;
+-	}
+-
+-	return i2c_add_driver(&sec_ts_driver);
++	/*
++	 * NUXEL (proposal, not deployed): an LPM power-up is not a reason to remove
++	 * the controller for the whole boot.  Keep "do not sense yet", but let the
++	 * driver exist so that the device can be brought up in userspace once the
++	 * board leaves low-power charging.
++	 *
++	 * - the i2c client 4-0048 is still registered (so the sysfs node exists and
++	 *   a reader can open the input node without a reboot);
++	 * - sensing stays OFF until nuxel_lpm_late_start() flips it on, which only
++	 *   happens when lpcharge is observed clear (normal-mode transition);
++	 * - if the boot remains in LPM, the panel is off and the extra driver
++	 *   binding is inert - it converts a "device does not exist" boot into a
++	 *   "device exists and is armed on demand" boot.
++	 */
++	if (lpcharge == 1)
++		pr_info("%s %s: LPM power-up detected (lpcharge=%d): binding device, sensing deferred\n",
++			SECLOG, __func__, lpcharge);
++
++	ret = i2c_add_driver(&sec_ts_driver);
++	if (ret)
++		return ret;
++	queue_delayed_work(system_wq, &sec_ts_lpm_deferred, msecs_to_jiffies(1000));
++	return 0;
+ }
++
++static void nuxel_lpm_clear_work(struct work_struct *w)
++{
++	/* lpcharge() is a pure read of the cached __setup result on this tree; the
++	 * probe path already refuses to sense while it is set.  Poll until it clears
++	 * or the retry budget is spent, then run the ordinary start path. */
++	int tries = NUXEL_LPM_MAX_PROBES;
++	while (tries-- > 0) {
++		if (sec_bat_lpm_flag() == 0) {   /* NUXEL helper wrapping the cached flag */
++			pr_info("%s: LPM cleared: starting touch sensing without a reboot\n", SECLOG);
++			sec_ts_start_device(&sec_ts_driver);   /* existing start path, unchanged */
++			return;
++		}
++		msleep(1000);
++	}
++	pr_info("%s: still in LPM after %d probes: sensing stays off this boot\n",
++		SECLOG, NUXEL_LPM_MAX_PROBES);
++}
++#define NUXEL_LPM_MAX_PROBES 120
++static DECLARE_DELAYED_WORK(sec_ts_lpm_deferred, nuxel_lpm_clear_work);
+
+@@ sec_ts_probe (unchanged gate; NUXEL does not weaken it)
+ 	if (lpcharge == 1) {
+-		pr_err("%s: Do not load driver due to : lpm %d\n", SECLOG, lpcharge);
+-		return -ENODEV;
++		/* NUXEL: bind, but do not enable sensing or the IRQ until LPM clears */
++		pr_info("%s: LPM: skipping sensing enable (device is bound, IRQ stays masked)\n", SECLOG);
++		return 0;
+ 	}

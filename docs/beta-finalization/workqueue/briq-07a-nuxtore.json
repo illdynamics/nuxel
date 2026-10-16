@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "id": "briq-07a-nuxtore",
+  "revisions": [
+    {
+      "id": "briq-07a-nuxtore",
+      "title": "NuxTore - custom Nuxel app store (offline-first, no store submission)",
+      "component": "bg-07-specialty-apps",
+      "component_title": "Priority 7a - Store, Power-User, Security & Specialty Applications",
+      "priority": 7,
+      "state": "in_progress",
+      "dependencies": [
+        "briq-06a-core-app-inventory"
+      ],
+      "evidence": [
+        {
+          "kind": "observation",
+          "path": "pwa/nuxel-apps/nuxtore/",
+          "command": "test -e pwa/nuxel-apps/nuxtore/",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        }
+      ],
+      "intended_changes": [
+        "pwa/nuxel-apps/nuxtore/",
+        "docs/beta-finalization/apps/NUXTORE.md"
+      ],
+      "tests": [
+        "(tests are recorded by the owning briQ when it reports)"
+      ],
+      "risk": "medium",
+      "rollback": "git revert the commit(s) touching this task's expected files; the change is repository-only and alters no device state",
+      "verdict": null,
+      "offline_ceiling": null,
+      "owner_action": "",
+      "expected_files": [
+        "pwa/nuxel-apps/nuxtore/",
+        "docs/beta-finalization/apps/NUXTORE.md"
+      ],
+      "note": "seeded from the QonQrete plan; 1/2 expected file(s) already present in the tree",
+      "source": "plan.json",
+      "revision": 1,
+      "at": "2026-10-16T16:07:13+02:00",
+      "by": "construqtor/bg-00-preflight"
+    }
+  ]
+}

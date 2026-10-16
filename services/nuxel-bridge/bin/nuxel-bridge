@@ -1,0 +1,12 @@
+#!/bin/sh
+# Nuxel Bridge launcher shim.
+#
+# The service's Python tree is installed read-only at
+# /usr/lib/nuxel/nuxel-bridge/ by images/s10plus/build-phone-rootfs-inside-fedora.sh;
+# running bridge.py from there puts that directory on sys.path so the sibling
+# modules (capabilities.py, api.py) import cleanly.  This shim exists so the
+# systemd unit and any operator invocation use ONE stable path.
+set -eu
+LIBDIR=/usr/lib/nuxel/nuxel-bridge
+[ -r "$LIBDIR/bridge.py" ] || { echo "nuxel-bridge: missing $LIBDIR/bridge.py" >&2; exit 1; }
+exec /usr/bin/python3 "$LIBDIR/bridge.py" "$@"

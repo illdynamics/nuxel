@@ -1,0 +1,9 @@
+{
+  "kind": "otpauth-import-examples",
+  "warning": "Documentation examples only. The secrets below are the RFC 6238 test string '12345678901234567890' encoded as base32 — they belong to no service and authorise nothing.",
+  "examples": [
+    {"uri": "otpauth://totp/RFC6238:reference%40example.org?secret=GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ&issuer=RFC6238&algorithm=SHA1&digits=8&period=30", "why": "the RFC 6238 reference secret, 8 digits — codes match the published Appendix B table"},
+    {"uri": "otpauth://totp/Example:owner%40example.org?secret=GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ&issuer=Example", "why": "no algorithm/digits/period: the app applies SHA1/6/30 defaults"},
+    {"uri": "otpauth://hotp/Example:owner%40example.org?secret=GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ", "why": "counter-based HOTP — refused on import; Nuxel Authenticator is TOTP-only and does not silently treat a counter as time"}
+  ]
+}

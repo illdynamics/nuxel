@@ -4,6 +4,8 @@ const ASSETS = [
   '/index.html',
   '/css/notes.css',
   '/js/notes.js',
+  '/js/notes-io.js',
+  '../../nuxel-common/bridge.js',
   '/manifest.json',
   '/icons/icon-48.png',
   '/icons/icon-72.png',

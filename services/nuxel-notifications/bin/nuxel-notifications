@@ -1,0 +1,6 @@
+#!/bin/sh
+# Nuxel Notifications launcher shim (org.nuxel.Notifications on the system bus).
+set -eu
+LIBDIR=/usr/lib/nuxel/nuxel-notifications
+[ -r "$LIBDIR/notifications.py" ] || { echo "nuxel-notifications: missing $LIBDIR/notifications.py" >&2; exit 1; }
+exec /usr/bin/python3 "$LIBDIR/notifications.py" "$@"

@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "id": "briq-03e-buttons-gestures",
+  "revisions": [
+    {
+      "id": "briq-03e-buttons-gestures",
+      "title": "Hardware button manager and gesture state machine",
+      "component": "bg-03-connectivity-time-audio-buttons",
+      "component_title": "Priority 3 - Wi-Fi, Time/RTC, Audio, Headphones & Hardware Buttons",
+      "priority": 3,
+      "state": "pending",
+      "dependencies": [
+        "briq-00d-baseline-protection"
+      ],
+      "evidence": [],
+      "intended_changes": [
+        "tools/s10plus/a33/nuxel-button-manager.c",
+        "tools/s10plus/a33/tests/test-button-fsm.py",
+        "docs/beta-finalization/system/BUTTONS-GESTURES.md"
+      ],
+      "tests": [
+        "(tests are recorded by the owning briQ when it reports)"
+      ],
+      "risk": "medium",
+      "rollback": "git revert the commit(s) touching this task's expected files; the change is repository-only and alters no device state",
+      "verdict": null,
+      "offline_ceiling": null,
+      "owner_action": "",
+      "expected_files": [
+        "tools/s10plus/a33/nuxel-button-manager.c",
+        "tools/s10plus/a33/tests/test-button-fsm.py",
+        "docs/beta-finalization/system/BUTTONS-GESTURES.md"
+      ],
+      "note": "seeded from the QonQrete plan; 0/3 expected file(s) already present in the tree",
+      "source": "plan.json",
+      "revision": 1,
+      "at": "2026-10-16T16:07:13+02:00",
+      "by": "construqtor/bg-00-preflight"
+    }
+  ]
+}

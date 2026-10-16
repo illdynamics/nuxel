@@ -1,0 +1,29 @@
+# Nuxel periodic time/RTC verifier (briq-03b)
+# Install: /etc/systemd/system/nuxel-rtc-check.service
+#
+# It CHECKS and RECORDS; it never reformats or rewrites anything outside
+# /var/lib/nuxel/time and /var/log/nuxel. `nuxelctl time verify` performs:
+#   * RTC presence + readability + drift against the system clock,
+#   * which timesync backend is really active,
+#   * journald timestamp agreement,
+#   * launcher-clock agreement via the bridge (reported UNKNOWN when the bridge
+#     is unreachable instead of being assumed correct).
+[Unit]
+Description=Nuxel time/RTC verification (evidence only, no clock changes)
+Documentation=file:/usr/share/doc/nuxel/beta-finalization/system/TIME-RTC.md
+After=multi-user.target
+# No dependency on a display or the launcher: timekeeping must be checkable on a
+# console-only boot (which is exactly the state after a recovery boot).
+[Service]
+Type=oneshot
+Environment=NUXEL_TIME_LOG=/var/log/nuxel/time.log
+ExecStart=/usr/bin/nuxelctl time verify --log
+# A missing RTC is a finding for the report, not a reason to fail the unit and
+# spam the journal: the tool exits 0 after recording the finding, and exits 1
+# only when a check is genuinely WRONG (miscompares, drift beyond the fail
+# threshold) which the timer run then surfaces in the journal.
+SuccessExitStatus=0 1
+Nice=10
+IOSchedulingClass=idle
+[Install]
+WantedBy=multi-user.target

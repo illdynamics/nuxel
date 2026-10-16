@@ -1,0 +1,15 @@
+{
+  "id": "org.nuxel.Media",
+  "name": "Media Player",
+  "icon": "MD",
+  "color": "#6A1B9A",
+  "category": "media",
+  "type": "pwa",
+  "url": "/pwa/nuxel-apps/media/index.html",
+  "description": "Audio and video playback over the real playback path",
+  "capabilities": ["audio:playback", "media:library"],
+  "docked": false,
+  "network": "none",
+  "honest_route": true,
+  "owner_test_required_for_speakers": true
+}

@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "id": "briq-05a-permission-manager",
+  "revisions": [
+    {
+      "id": "briq-05a-permission-manager",
+      "title": "Privacy and permission manager",
+      "component": "bg-05-security-permissions",
+      "component_title": "Priority 5 - Security, Permissions & Connectivity Controls",
+      "priority": 5,
+      "state": "in_progress",
+      "dependencies": [
+        "briq-04c-app-infrastructure"
+      ],
+      "evidence": [
+        {
+          "kind": "observation",
+          "path": "shell/nuxel-shell/nuxel-permissions/",
+          "command": "test -e shell/nuxel-shell/nuxel-permissions/",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "observation",
+          "path": "shell/nuxel-shell/nuxel-sandbox/profiles/",
+          "command": "test -e shell/nuxel-shell/nuxel-sandbox/profiles/",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "observation",
+          "path": "tools/s10plus/a33/verify-permissions.py",
+          "command": "test -e tools/s10plus/a33/verify-permissions.py",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        }
+      ],
+      "intended_changes": [
+        "shell/nuxel-shell/nuxel-permissions/",
+        "shell/nuxel-shell/nuxel-sandbox/profiles/",
+        "tools/s10plus/a33/verify-permissions.py",
+        "docs/beta-finalization/security/PERMISSIONS.md"
+      ],
+      "tests": [
+        "(tests are recorded by the owning briQ when it reports)"
+      ],
+      "risk": "medium",
+      "rollback": "git revert the commit(s) touching this task's expected files; the change is repository-only and alters no device state",
+      "verdict": null,
+      "offline_ceiling": null,
+      "owner_action": "",
+      "expected_files": [
+        "shell/nuxel-shell/nuxel-permissions/",
+        "shell/nuxel-shell/nuxel-sandbox/profiles/",
+        "tools/s10plus/a33/verify-permissions.py",
+        "docs/beta-finalization/security/PERMISSIONS.md"
+      ],
+      "note": "seeded from the QonQrete plan; 3/4 expected file(s) already present in the tree",
+      "source": "plan.json",
+      "revision": 1,
+      "at": "2026-10-16T16:07:13+02:00",
+      "by": "construqtor/bg-00-preflight"
+    }
+  ]
+}

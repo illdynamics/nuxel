@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "id": "briq-02d-launcher-parity",
+  "revisions": [
+    {
+      "id": "briq-02d-launcher-parity",
+      "title": "Exact UTM launcher parity - refresh stale assets and cache invalidation",
+      "component": "bg-02-boot-animation-launcher",
+      "component_title": "Priority 2 - Boot Stability, Animation Handoff & UTM Launcher Parity",
+      "priority": 2,
+      "state": "in_progress",
+      "dependencies": [
+        "briq-00d-baseline-protection"
+      ],
+      "evidence": [
+        {
+          "kind": "observation",
+          "path": "pwa/nuxel-home/js/status-bar.js",
+          "command": "test -e pwa/nuxel-home/js/status-bar.js",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "observation",
+          "path": "pwa/nuxel-home/manifest.json",
+          "command": "test -e pwa/nuxel-home/manifest.json",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "observation",
+          "path": "pwa/nuxel-home/sw.js",
+          "command": "test -e pwa/nuxel-home/sw.js",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "observation",
+          "path": "pwa/nuxel-home/js/apps.js",
+          "command": "test -e pwa/nuxel-home/js/apps.js",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "observation",
+          "path": "pwa/nuxel-apps/settings/",
+          "command": "test -e pwa/nuxel-apps/settings/",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "observation",
+          "path": "tools/s10plus/a33/tests/launcher-registry-test.js",
+          "command": "test -e tools/s10plus/a33/tests/launcher-registry-test.js",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        }
+      ],
+      "intended_changes": [
+        "pwa/nuxel-home/js/status-bar.js",
+        "pwa/nuxel-home/manifest.json",
+        "pwa/nuxel-home/sw.js",
+        "pwa/nuxel-home/js/apps.js",
+        "pwa/nuxel-apps/settings/",
+        "tools/s10plus/a33/tests/launcher-registry-test.js"
+      ],
+      "tests": [
+        "(tests are recorded by the owning briQ when it reports)"
+      ],
+      "risk": "medium",
+      "rollback": "git revert the commit(s) touching this task's expected files; the change is repository-only and alters no device state",
+      "verdict": null,
+      "offline_ceiling": null,
+      "owner_action": "",
+      "expected_files": [
+        "pwa/nuxel-home/js/status-bar.js",
+        "pwa/nuxel-home/manifest.json",
+        "pwa/nuxel-home/sw.js",
+        "pwa/nuxel-home/js/apps.js",
+        "pwa/nuxel-apps/settings/",
+        "tools/s10plus/a33/tests/launcher-registry-test.js"
+      ],
+      "note": "seeded from the QonQrete plan; 6/6 expected file(s) already present in the tree",
+      "source": "plan.json",
+      "revision": 1,
+      "at": "2026-10-16T16:07:13+02:00",
+      "by": "construqtor/bg-00-preflight"
+    }
+  ]
+}

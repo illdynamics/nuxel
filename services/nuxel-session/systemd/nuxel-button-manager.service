@@ -1,0 +1,27 @@
+[Unit]
+# Nuxel hardware-button manager (S10+, A32) — the single owner of the phone's
+# physical buttons on this device:
+#   POWER short -> display off/on through nuxel-wl-fb (no second fb owner)
+#   VOLUME +/-  -> the real ALSA mixer of card0, with autorepeat + OSD
+#   BIXBY/ASSISTANT -> configurable logical action (default: Nuxel Terminal)
+# Measured key set on /dev/input/event1 "gpio_keys": 114 VOLUMEDOWN,
+# 115 VOLUMEUP, 116 POWER, 703 assistant.  Nothing else in this image handles
+# these keys, so there is no duplicated handling with logind/phoc.
+Description=Nuxel hardware button manager (power, volume, assistant key)
+Documentation=file:/usr/share/doc/nuxel/BETA-HARDWARE-FINALIZER/06-POWER-BUTTON.md
+After=nuxel-wayland.service nuxel-wl-fb.service
+Wants=nuxel-wayland.service
+StartLimitIntervalSec=60
+StartLimitBurst=5
+
+[Service]
+Type=simple
+Environment=NUXEL_KEY_DEVICE=gpio_keys
+ExecStart=/usr/lib/nuxel/nuxel-button-manager
+Restart=always
+RestartSec=3
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

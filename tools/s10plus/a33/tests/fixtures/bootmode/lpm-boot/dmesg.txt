@@ -1,0 +1,5 @@
+[    0.000000] [0: swapper/0: 1] sec_bat_is_lpm_check: Low power charging mode: 1
+[    1.674224] [0: swapper/0: 1] [sec_input] sec_ts_init: Do not load driver due to : lpm 1
+[    2.257441] [0: swapper/0: 1] tsp_io: disabling
+[    2.257552] [0: swapper/0: 1] tsp_avdd: disabling
+[    2.310004] [0: swapper/0: 1] max77705_chg_monitor_work: [CHG] MODE(0x5) ... otg_on(0)

@@ -1,0 +1,5 @@
+DEVNAME=input/event4
+NAME="sec_touchscreen_degenerate"
+PROP=2
+ID_INPUT=1
+ID_INPUT_TOUCHSCREEN=1

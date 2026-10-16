@@ -129,3 +129,13 @@ backups/**
 # Qq
 .qq**
 *.pyc
+
+# --- Supplied comparison archives + local virtualenv (preflight briq-00a) ----
+# docs.zip / scripts.zip / tools.zip are read-only provenance inputs supplied for
+# the beta finalization run (scripts.zip alone is 125 MB).  They are inspected in
+# place / streamed with `unzip -p` and must never enter the repository history.
+/docs.zip
+/scripts.zip
+/tools.zip
+/*.zip
+.venv/

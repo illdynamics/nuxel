@@ -1,0 +1,99 @@
+#!/usr/sbin/nft -f
+# ============================================================================
+# Nuxel app firewall - cgroupv2 variant (Linux >= 5.13 only: VM and future)
+# ============================================================================
+# This is the SAME policy as nuxel-app-firewall.nft, expressed with the modern
+# per-cgroup socket match. It MUST NOT be loaded on the S10+ (4.14.253), where
+# `socket cgroupv2` does not exist; tools/s10plus/a33/nuxel-firewall.sh refuses
+# to load it when the running kernel is older than 5.13 and says so.
+#
+# Difference from the device variant:
+#   * per-app allow rules look like
+#         socket cgroupv2 level 2 "app-nuxel-dialer" accept
+#     which matches the cgroup path /sys/fs/cgroup/nuxel/app-<id> created by
+#     nuxel-sandbox, with no classid arithmetic at all;
+#   * the "unclassified traffic" hole of the classid scheme disappears: a
+#     cgroupv2 match is a path match, so an app cannot become "system" by
+#     failing to be classified.
+
+flush ruleset
+
+table inet nuxel_app_firewall {
+    chain input {
+        type filter hook input priority -100; policy drop;
+        ct state established,related accept
+        iif lo accept
+        icmp type { echo-request, echo-reply, destination-unreachable,
+                    time-exceeded, parameter-problem } limit rate 10/second accept
+        icmpv6 type { echo-request, echo-reply, destination-unreachable,
+                      time-exceeded, parameter-problem,
+                      neighbor-solicit, neighbor-advertise,
+                      router-solicit, router-advertise } accept
+        log prefix "NUXXEL-INPUT-DROP: " limit rate 10/minute
+    }
+
+    chain forward {
+        type filter hook forward priority -100; policy drop;
+        log prefix "NUXXEL-FWD-DROP: " limit rate 10/minute
+    }
+
+    chain output {
+        type filter hook output priority -100; policy drop;
+        ct state established,related accept
+        oif lo accept
+        udp sport 68 udp dport 67 accept
+        udp dport 53 accept
+        tcp dport 53 accept
+        icmp type { echo-request, echo-reply, destination-unreachable,
+                    time-exceeded, parameter-problem } accept
+        icmpv6 type { echo-request, echo-reply, destination-unreachable,
+                      time-exceeded, parameter-problem,
+                      neighbor-solicit, neighbor-advertise } accept
+
+        # Per-app rules injected by nuxel-sandbox / nftables.sh, e.g.:
+        #   socket cgroupv2 level 2 "app-nuxel-dialer" accept
+
+        # App cgroups that are NOT permitted: logged so the posture is visible.
+        socket cgroupv2 level 2 "app-" ct state new \
+            log prefix "NUXXEL-APP-DROP: " limit rate 20/minute
+
+        log prefix "NUXXEL-OUTPUT-DROP: " limit rate 10/minute
+    }
+
+    chain prerouting {
+        type nat hook prerouting priority -100; policy accept;
+    }
+
+    chain postrouting {
+        type nat hook postrouting priority 100; policy accept;
+        oifname "tun0" masquerade
+    }
+
+    chain app_allowed {
+    }
+
+    chain app_denied {
+    }
+}
+
+table inet nuxel_raw {
+    chain prerouting {
+        type filter hook prerouting priority -300; policy accept;
+        ct state invalid drop
+        iif lo ip daddr != 127.0.0.0/8 drop
+        iif lo ip6 daddr != ::1/128 drop
+    }
+}
+
+table inet nuxel_system {
+    chain output {
+        type filter hook output priority -90; policy accept;
+    }
+}
+
+table inet nuxel_log {
+    chain posthook {
+        type filter hook input priority -50; policy accept;
+        log prefix "NUXXEL-FW: " limit rate 5/minute
+    }
+}

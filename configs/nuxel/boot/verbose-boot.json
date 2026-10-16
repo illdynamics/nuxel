@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "verbose_boot": false,
+  "set_by": "default",
+  "updated_at": 0,
+  "migrated_from": null,
+  "_comment": "A33 verbose-boot setting (briq-02b). DURABLE user state: installed under /etc/nuxel/boot/verbose-boot.json and NEVER overwritten by a package/rootfs update (the installer installs it with the 'keep' rule; nuxelctl and the Settings UI atomically replace it only on an explicit user change). Read by /usr/libexec/nuxel/nuxel-verbose-boot before nuxel-wl-fb.service starts.",
+  "effect": "shows the Nuxel boot log on the glass (launcher boot-log overlay + /var/log/nuxel/boot-stage.log) and shortens the boot animation so the log is visible as early as possible; the default (false) keeps the full 192-frame 24 fps animation and its minimum-cycle handoff.",
+  "bixby_hold_override": {
+    "requested_by": "hold Bixby during the early boot stage",
+    "capability": "the early boot stage must publish bixby-hold-override=1 in /run/nuxel/boot-stage-capabilities",
+    "status": "BOOT_UPDATE_REQUIRED",
+    "reason": "the installed early boot stage (initramfs in the BOOT partition, revision A23) does not read the Bixby key state and does not export it; enabling the one-time override needs a BOOT partition update, which this mission forbids (no flashing). The override is implemented in tools/s10plus/a33/nuxel-boot-stage-verbose.sh and is marked NOT DEPLOYED."
+  }
+}

@@ -1,0 +1,1 @@
+androidboot.mode=charger androidboot.hardware=exynos9820 lpcharge=1 charging_mode=0x3030 console=ttySAC0,115200 root=PARTUUID=nuxel

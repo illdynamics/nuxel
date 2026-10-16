@@ -1,0 +1,74 @@
+{
+  "kind": "sample-library",
+  "captured": "2026-10-16",
+  "warning": "Bundled OFFLINE sample library. These entries are generated tones plus documentation placeholders used when the Nuxel bridge does not answer (VM, desktop browser, or a handset without the host running). They are NOT a scan of your device storage. Every entry is labelled `source: sample` in the UI, and the tones are real, decodable 8 kHz PCM WAV files, so playback, seeking and the transport controls can be exercised end to end offline.",
+  "device_note": "On the S10+ the audio route is ALSA card `beyond-madera` (Exynos 9820); audibility is an owner test (manual proof area 41).",
+  "files": {
+    "tone-440.wav": {
+      "bytes": 32044,
+      "sha256": "940d094f04d24371f4b51619613058543db8a934c4a0926990e6536a7999b386"
+    },
+    "tone-880.wav": {
+      "bytes": 32044,
+      "sha256": "25420ab3170596a7a85dd12b84abe7062b3f0c28693e995b9dfb4bc5752b46f6"
+    }
+  },
+  "tracks": [
+    {
+      "id": "sample-tone-440",
+      "name": "tone-440.wav",
+      "title": "Reference tone \u2014 A4 440 Hz",
+      "artist": "Nuxel test signal",
+      "album": "Offline sample library",
+      "seconds": 2.0,
+      "bytes": 32044,
+      "url": "samples/tone-440.wav",
+      "art": "samples/cover-tone.svg",
+      "kind": "audio",
+      "playable": true,
+      "note": "Calibration tone; use it to check the transport and the route readout."
+    },
+    {
+      "id": "sample-tone-880",
+      "name": "tone-880.wav",
+      "title": "Reference tone \u2014 A5 880 Hz",
+      "artist": "Nuxel test signal",
+      "album": "Offline sample library",
+      "seconds": 2.0,
+      "bytes": 32044,
+      "url": "samples/tone-880.wav",
+      "art": "samples/cover-tone.svg",
+      "kind": "audio",
+      "playable": true,
+      "note": "One octave above the A4 tone \u2014 a route sanity check by ear."
+    },
+    {
+      "id": "sample-doc-video",
+      "name": "s10plus-panel-test.mp4",
+      "title": "Panel test clip (placeholder)",
+      "artist": "Nuxel documentation",
+      "album": "Offline sample library",
+      "seconds": 12,
+      "bytes": 0,
+      "url": null,
+      "art": null,
+      "kind": "video",
+      "playable": false,
+      "note": "Placeholder entry: no video is bundled with the image (a decoder smoke test needs a real file). The player refuses to pretend it played \u2014 pressing play on this row shows an honest decode error plus the manual-proof instructions for supplying a clip."
+    },
+    {
+      "id": "sample-flac-route",
+      "name": "beyond-madera-route-check.flac",
+      "title": "Route check (FLAC, not bundled)",
+      "artist": "Nuxel documentation",
+      "album": "Offline sample library",
+      "seconds": null,
+      "bytes": 0,
+      "url": null,
+      "art": null,
+      "kind": "audio",
+      "playable": false,
+      "note": "Placeholder for the FLAC decode path. FLAC is claimed only when `canPlayType` says so at runtime; this row stays unplayable here so the UI cannot claim a codec it never exercised."
+    }
+  ]
+}

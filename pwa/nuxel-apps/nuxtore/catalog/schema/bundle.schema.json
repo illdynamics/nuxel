@@ -1,0 +1,17 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://nuxel.local/schemas/nuxtore-bundle.json",
+  "title": "NuxTore staged bundle manifest",
+  "description": "Content-addressed file list for one staged package. The package's sha256 in the catalog is the SHA-256 of the canonical JSON (sorted keys, compact separators) of this array, sorted by path.",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "required": ["path", "sha256", "size"],
+    "additionalProperties": false,
+    "properties": {
+      "path": {"type": "string", "pattern": "^[A-Za-z0-9._/-]+$"},
+      "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+      "size": {"type": "integer", "minimum": 0}
+    }
+  }
+}

@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Nuxel touch probe — layer 7 (WebKitGTK DOM)</title>
+<!--
+  touch-probe.html — the top layer of the Nuxel touch pipeline.
+
+  WHY THIS EXISTS
+  ---------------
+  The touch pipeline is:  sec_ts -> IRQ -> evdev -> libinput -> phoc -> Wayland
+  -> WebKitGTK -> this document.  A raw evdev capture can prove events reach the
+  kernel node; it cannot prove they survive the compositor, the Wayland touch
+  interface and WebKit's own event translation.  This page is the last hop: if
+  `touchstart`/`touchmove`/`touchend` fire here WITH coordinates, the whole chain
+  delivered.
+
+  It is deliberately a single self-contained file with no network, no CDN and no
+  build step, because the phone image has no package manager and no outbound
+  network during a bring-up boot.
+
+  HOW IT REPORTS
+  --------------
+    * every touch contact is appended to the on-screen log in the exact
+      machine-readable form the analyzer greps for:
+          touchstart x=<int> y=<int> id=<slot> ...   (and touchmove / touchend)
+    * each line is POSTed, best effort, to the bounded collector that
+      `nuxel-touch-trace.py --live` listens on (default 127.0.0.1:8099), which
+      writes /run/nuxel-touch-dom.log inside the evidence bundle;
+    * pointer events are logged too (pointerdown/...) so a tablet-style or
+      mouse-emulated fallback is visible instead of silently absent;
+    * nothing is stored, nothing is fetched, no analytics, no persistence.
+
+  It never claims a touch happened.  A page that loads and shows "0 contacts"
+  is honest evidence that the walk stopped upstream of WebKit.
+-->
+<style>
+  :root { color-scheme: dark; }
+  html, body { margin: 0; height: 100%; background: #05070c; color: #e8eef7;
+    font: 14px/1.45 ui-monospace, "DejaVu Sans Mono", monospace; }
+  #wrap { display: flex; flex-direction: column; height: 100%; }
+  header { padding: 10px 14px; background: #0c1220; border-bottom: 1px solid #1d2a44; }
+  h1 { margin: 0 0 4px; font-size: 15px; letter-spacing: .02em; }
+  .sub { color: #8ea3c4; font-size: 12px; }
+  #state { display: flex; gap: 18px; flex-wrap: wrap; padding: 8px 14px;
+    background: #080d18; border-bottom: 1px solid #16223a; font-size: 12px; }
+  #state b { color: #7ee2b8; font-weight: 600; }
+  #touchpad { flex: 1 1 auto; position: relative; margin: 10px; border: 2px dashed #26c6a4;
+    border-radius: 12px; touch-action: none; overscroll-behavior: contain;
+    background: radial-gradient(circle at 50% 40%, #0e1729, #05070c 70%); }
+  #touchpad .hint { position: absolute; inset: 0; display: flex; align-items: center;
+    justify-content: center; text-align: center; color: #6d84a8; font-size: 13px; padding: 16px; }
+  .dot { position: absolute; width: 44px; height: 44px; margin: -22px 0 0 -22px;
+    border-radius: 50%; border: 2px solid #26c6a4; background: rgba(38,198,164,.18);
+    pointer-events: none; transition: transform .05s linear; }
+  #log { height: 34%; overflow: auto; margin: 0 10px 10px; padding: 8px 10px;
+    background: #04060b; border: 1px solid #16223a; border-radius: 10px;
+    white-space: pre-wrap; font-size: 12px; }
+  .ok { color: #7ee2b8; } .warn { color: #ffcf6b; } .dim { color: #7d8cab; }
+  footer { padding: 0 14px 10px; color: #6d84a8; font-size: 11px; }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <header>
+    <h1>Nuxel touch probe — layer 7 / 7</h1>
+    <div class="sub">WebKitGTK DOM touch events, with coordinates</div>
+  </header>
+
+  <div id="state">
+    <span>document: <b id="s-ready">loading</b></span>
+    <span>contacts seen: <b id="s-contacts">0</b></span>
+    <span>last point: <b id="s-last">—</b></span>
+    <span>collector: <b id="s-post">idle</b></span>
+    <span>viewport: <b id="s-vp">?</b></span>
+  </div>
+
+  <div id="touchpad" aria-label="touch test surface">
+    <div class="hint" id="hint">
+      Touch this area.<br>
+      A green ring must follow your finger and a <code>touchstart x=… y=…</code> line
+      must appear in the log below.
+    </div>
+  </div>
+
+  <div id="log" aria-live="polite"></div>
+  <footer>
+    Evidence lands in <code>/run/nuxel-touch-dom.log</code> (collector) and in this log.
+    Screenshot it if the collector is not reachable. This page stores nothing.
+  </footer>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var LOG_MAX = 400;
+  var COLLECTOR = "http://127.0.0.1:8099/dom";
+  var logEl = document.getElementById("log");
+  var pad = document.getElementById("touchpad");
+  var hint = document.getElementById("hint");
+  var sReady = document.getElementById("s-ready");
+  var sContacts = document.getElementById("s-contacts");
+  var sLast = document.getElementById("s-last");
+  var sPost = document.getElementById("s-post");
+  var sVp = document.getElementById("s-vp");
+
+  var lines = [];
+  var contacts = 0;
+  var dots = {};
+  var seq = 0;
+
+  function now() {
+    var d = new Date();
+    return d.toTimeString().slice(0, 8);
+  }
+
+  function append(kind, text) {
+    var line = now() + " " + kind + " " + text;
+    lines.push(line);
+    if (lines.length > LOG_MAX) { lines = lines.slice(-LOG_MAX); }
+    logEl.textContent = lines.join("\n");
+    logEl.scrollTop = logEl.scrollHeight;
+  }
+
+  /* The analyzer greps for:  \b(touchstart|touchmove|touchend)\b .* \bx=<int>
+     so the machine form is fixed here: "<event> x=<int> y=<int> id=<n> ...". */
+  function touchLine(ev, rect) {
+    var out = [];
+    var list = ev.changedTouches || [];
+    for (var i = 0; i < list.length; i++) {
+      var t = list[i];
+      var x = Math.round(t.clientX - rect.left);
+      var y = Math.round(t.clientY - rect.top);
+      out.push("x=" + x + " y=" + y + " id=" + (t.identifier | 0) +
+               " rx=" + Math.round(t.clientX) + " ry=" + Math.round(t.clientY) +
+               " force=" + (typeof t.force === "number" ? t.force.toFixed(2) : "na") +
+               " radius=" + (typeof t.radiusX === "number" ? t.radiusX.toFixed(1) : "na") +
+               " dpr=" + (window.devicePixelRatio || 1));
+    }
+    if (!out.length) {
+      var x2 = Math.round(ev.clientX - rect.left);
+      var y2 = Math.round(ev.clientY - rect.top);
+      out.push("x=" + x2 + " y=" + y2 + " id=-1 rx=" + Math.round(ev.clientX) +
+               " ry=" + Math.round(ev.clientY) + " dpr=" + (window.devicePixelRatio || 1));
+    }
+    return out.join(" | ");
+  }
+
+  function post(kind, text) {
+    seq += 1;
+    var body = JSON.stringify({
+      seq: seq, event: kind, text: text, page: "touch-probe",
+      ua: navigator.userAgent, vw: window.innerWidth, vh: window.innerHeight,
+      dpr: window.devicePixelRatio || 1, t: Date.now()
+    });
+    try {
+      if (navigator.sendBeacon) {
+        /* sendBeacon survives a page teardown and never blocks an event handler */
+        if (navigator.sendBeacon(COLLECTOR, body)) { sPost.textContent = "sent(" + seq + ")"; return; }
+      }
+    } catch (e) { /* fall through */ }
+    try {
+      var xhr = new XMLHttpRequest();
+      xhr.open("POST", COLLECTOR, true);
+      xhr.setRequestHeader("Content-Type", "text/plain");
+      xhr.onload = function () { sPost.textContent = "sent(" + seq + ")"; };
+      xhr.onerror = function () { sPost.textContent = "offline"; };
+      xhr.send(body);
+    } catch (e2) {
+      sPost.textContent = "offline";
+    }
+  }
+
+  function placeDot(id, x, y) {
+    var d = dots[id];
+    if (!d) {
+      d = document.createElement("div");
+      d.className = "dot";
+      pad.appendChild(d);
+      dots[id] = d;
+    }
+    d.style.left = x + "px";
+    d.style.top = y + "px";
+  }
+
+  function dropDot(id) {
+    if (dots[id] && dots[id].parentNode) { dots[id].parentNode.removeChild(dots[id]); }
+    delete dots[id];
+  }
+
+  function note(kind, text) {
+    append(kind, text);
+    post(kind, text);
+  }
+
+  function onDown(ev) {
+    ev.preventDefault();
+    if (hint) { hint.style.display = "none"; }
+    contacts += 1;
+    sContacts.textContent = String(contacts);
+    var rect = pad.getBoundingClientRect();
+    var list = ev.changedTouches || [];
+    for (var i = 0; i < list.length; i++) {
+      placeDot(list[i].identifier, list[i].clientX - rect.left, list[i].clientY - rect.top);
+    }
+    sLast.textContent = (list[0] ? (Math.round(list[0].clientX - rect.left) + "," +
+                                    Math.round(list[0].clientY - rect.top)) : "-");
+    note("touchstart", touchLine(ev, rect));
+  }
+
+  function onMove(ev) {
+    ev.preventDefault();
+    var rect = pad.getBoundingClientRect();
+    var list = ev.changedTouches || [];
+    for (var i = 0; i < list.length; i++) {
+      placeDot(list[i].identifier, list[i].clientX - rect.left, list[i].clientY - rect.top);
+    }
+    note("touchmove", touchLine(ev, rect));
+  }
+
+  function onUp(ev) {
+    ev.preventDefault();
+    var rect = pad.getBoundingClientRect();
+    var list = ev.changedTouches || [];
+    for (var i = 0; i < list.length; i++) { dropDot(list[i].identifier); }
+    note("touchend", touchLine(ev, rect));
+  }
+
+  function onCancel(ev) {
+    ev.preventDefault();
+    var rect = pad.getBoundingClientRect();
+    var list = ev.changedTouches || [];
+    for (var i = 0; i < list.length; i++) { dropDot(list[i].identifier); }
+    note("touchcancel", touchLine(ev, rect));
+  }
+
+  /* Pointer fallback: a touch screen that arrives as a pointer (or a mouse while
+     debugging in the VM) still produces a coordinate-bearing line, but it is
+     labelled separately so it can never be graded as a real touch. */
+  function onPointer(ev) {
+    var rect = pad.getBoundingClientRect();
+    var x = Math.round(ev.clientX - rect.left);
+    var y = Math.round(ev.clientY - rect.top);
+    if (ev.pointerType === "touch") { return; }   /* already covered by the touch handlers */
+    note("pointer-" + ev.type, "x=" + x + " y=" + y + " id=-1 ptr=" + ev.pointerType +
+         " rx=" + Math.round(ev.clientX) + " ry=" + Math.round(ev.clientY));
+  }
+
+  var touchSupported = ("ontouchstart" in window) || (navigator.maxTouchPoints > 0);
+  pad.addEventListener("touchstart", onDown, { passive: false });
+  pad.addEventListener("touchmove", onMove, { passive: false });
+  pad.addEventListener("touchend", onUp, { passive: false });
+  pad.addEventListener("touchcancel", onCancel, { passive: false });
+  pad.addEventListener("pointerdown", onPointer, { passive: false });
+  pad.addEventListener("pointerup", onPointer, { passive: false });
+  pad.addEventListener("contextmenu", function (e) { e.preventDefault(); });
+
+  sVp.textContent = window.innerWidth + "x" + window.innerHeight +
+                    " @" + (window.devicePixelRatio || 1) + "x";
+  sReady.textContent = "ready";
+  append("probe", "loaded maptouch=" + (navigator.maxTouchPoints | 0) +
+         " ontouchstart=" + ("ontouchstart" in window) +
+         " vp=" + window.innerWidth + "x" + window.innerHeight +
+         " dpr=" + (window.devicePixelRatio || 1) + " touch_capable=" + touchSupported);
+  post("probe", "loaded");
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,17 @@
+{
+  "id": "org.nuxel.Browser",
+  "name": "Browser",
+  "icon": "\ud83c\udf10",
+  "color": "#101820",
+  "category": "utilities",
+  "type": "pwa",
+  "url": "/pwa/nuxel-apps/browser/index.html",
+  "manifest": "pwa/nuxel-apps/browser/manifest.json",
+  "description": "Local-first page viewer; external navigation is opt-in",
+  "capabilities": [
+    "network:outbound"
+  ],
+  "bridge_version": "1",
+  "docked": false,
+  "source": "pwa/nuxel-apps tree (bg-06-core-phone-apps)"
+}

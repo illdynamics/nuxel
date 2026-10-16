@@ -1,0 +1,17 @@
+{
+  "id": "org.nuxel.Photos",
+  "name": "Photos",
+  "icon": "\ud83d\uddbc\ufe0f",
+  "color": "#2b1b3d",
+  "category": "media",
+  "type": "pwa",
+  "url": "/pwa/nuxel-apps/photos/index.html",
+  "manifest": "pwa/nuxel-apps/photos/manifest.json",
+  "description": "Gallery over the shared camera-gallery store; no capture",
+  "capabilities": [
+    "storage:persistent"
+  ],
+  "bridge_version": "1",
+  "docked": false,
+  "source": "pwa/nuxel-apps tree (bg-06-core-phone-apps)"
+}

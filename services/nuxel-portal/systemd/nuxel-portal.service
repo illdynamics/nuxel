@@ -13,8 +13,13 @@ Type=simple
 ExecStart=/usr/bin/nuxel-portal
 Restart=on-failure
 RestartSec=5
-User=nuxel-portal
-Group=nuxel-portal
+# MEASURED (2026-08-19): the portal must run as the graphical 'nuxel' user
+# (uid 1000).  It forwards every consent request to org.nuxel.PhoshAgent on the
+# SESSION bus, and the user bus rejects cross-uid connections while root cannot
+# reach the session bus at all.  configs/dbus/org.nuxel.Portal.conf allows the
+# 'nuxel' user (and root, for older deployments) to own org.nuxel.Portal.
+User=nuxel
+Group=nuxel
 
 # Security hardening for portal daemon
 # relaxed from strict to full — GTK4/Wayland/DBus need /usr access
@@ -34,12 +39,19 @@ LockPersonality=yes
 ReadWritePaths=/var/lib/nuxel/permissions /run/user
 ReadOnlyPaths=/etc/dbus-1 /usr/share
 
-# Wayland/GTK display
-Environment=GDK_BACKEND=wayland
+# Session-bus access (the Phosh agent lives on the user bus).
+Environment=XDG_RUNTIME_DIR=/run/user/1000
+Environment=DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus
+# The Bounded consent window: a request with no answer inside this window is
+# DENIED.  Must stay below nuxel-bridge's PORTAL_DBUS_TIMEOUT_SECONDS (120).
 Environment=NUXEL_PORTAL_TIMEOUT_SECONDS=30
+Environment=NUXEL_PATHS_CONF=/etc/nuxel/paths.conf
 
-# AppArmor
-AppArmorProfile=usr.bin.nuxel-portal
+# AppArmorProfile was REMOVED here: the S10+ 4.14 vendor kernel does not
+# provably enable AppArmor (Nuxel has no verified AppArmor policy load path on
+# this device), and declaring a profile that is never enforced is a cosmetic
+# switch that lies about enforcement.  See docs/beta-finalization/system/
+# SERVICE-GRAPH.md and the security threat model.  No enforcement is claimed.
 
 [Install]
-WantedBy=graphical-session.target
+WantedBy=multi-user.target

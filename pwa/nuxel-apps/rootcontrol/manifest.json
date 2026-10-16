@@ -1,0 +1,17 @@
+{
+  "name": "Root & Sudo",
+  "short_name": "Root & Sudo",
+  "description": "Shows the real sudoers state and privilege mechanism, and refuses to claim unbypassable root protection",
+  "start_url": "/pwa/nuxel-apps/rootcontrol/index.html",
+  "scope": "/pwa/nuxel-apps/rootcontrol/",
+  "display": "standalone",
+  "background_color": "#0a1628",
+  "theme_color": "#B71C1C",
+  "icons": [
+    {"src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png"},
+    {"src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png"},
+    {"src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml"}
+  ],
+  "nuxel": {"app_id": "org.nuxel.RootControl", "capabilities": ["system:inspect"], "app_type": "system",
+            "grants_root": false, "claims_unbypassable_root": false}
+}

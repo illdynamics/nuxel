@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0a1628">
+<meta name="nuxel-app-id" content="org.nuxel.DevMgmt">
+<link rel="manifest" href="manifest.json">
+<title>DevMgmt</title>
+<link rel="stylesheet" href="css/devmgmt.css">
+</head>
+<body>
+<header class="hdr">
+  <h1>DevMgmt</h1>
+  <span id="source-badge" class="badge">source: probing…</span>
+  <span class="grow"></span>
+  <button id="refresh" class="ghost">Refresh</button>
+  <button id="close" class="ghost">Close</button>
+</header>
+
+<nav class="tabs">
+  <button class="tab active" data-tab="device">Device</button>
+  <button class="tab" data-tab="display">Display</button>
+  <button class="tab" data-tab="input">Input</button>
+  <button class="tab" data-tab="power">Power</button>
+  <button class="tab" data-tab="storage">Storage</button>
+  <button class="tab" data-tab="raw">Raw reads</button>
+  <button class="tab" data-tab="privileged">Privileged actions</button>
+</nav>
+
+<main>
+  <div id="source-note" class="note"></div>
+
+  <section id="tab-device" class="panel active"></section>
+  <section id="tab-display" class="panel"></section>
+  <section id="tab-input" class="panel"></section>
+  <section id="tab-power" class="panel"></section>
+  <section id="tab-storage" class="panel"></section>
+  <section id="tab-raw" class="panel">
+    <div class="card">
+      <h3>Raw reads (read-only)</h3>
+      <p class="hint">These are the exact bytes the tool parsed, one section per path. Nothing on this page
+        writes to the filesystem.</p>
+      <div id="raw-lines" class="raw"></div>
+    </div>
+  </section>
+  <section id="tab-privileged" class="panel">
+    <div class="card">
+      <h3>Read-only by default</h3>
+      <p class="hint">DevMgmt performs no privileged action at all. Every path below is opened for reading
+        (<code>system.read</code> with <code>mode: read-only</code>) and refusals are shown as refusals.</p>
+    </div>
+    <div class="card">
+      <h3>Actions that would need root</h3>
+      <p class="hint">These are listed so the boundary is explicit. They are <b>not implemented here</b>, and
+        each one is labelled with what it would actually change:</p>
+      <ul class="reqs">
+        <li><b>Write a sysfs tunable</b> (for example a thermal trip point or a USB gadget attribute) —
+          needs CAP_SYS_ADMIN or a udev rule; changes live kernel state until reboot.</li>
+        <li><b>Rebind a driver</b> (<code>/sys/bus/*/drivers/…/{unbind,bind}</code>) — needs CAP_SYS_ADMIN;
+          can detach the touchscreen or the panel and is not recoverable from this UI.</li>
+        <li><b>Set the RTC or the clock</b> — needs CAP_SYS_TIME (Root &amp; Sudo shows the real mechanism).</li>
+        <li><b>Change CPU governor / frequency</b> — needs write access to
+          <code>/sys/devices/system/cpu/cpufreq</code>; can thermal-throttle or overheat the device.</li>
+        <li><b>Install staged files</b> — always through NuxTore with a verified signature, never by hand here.</li>
+      </ul>
+      <p class="hint">Root &amp; Sudo is the honest place to look at the privilege mechanism; it also states
+        plainly that root compromise is out of scope for any claim this build makes.</p>
+      <div class="row"><button id="open-rootcontrol">Open Root &amp; Sudo</button></div>
+    </div>
+  </section>
+</main>
+
+<div class="statusbar">
+  <span id="sb-paths">paths: —</span>
+  <span id="sb-time">read at —</span>
+</div>
+
+<script type="module" src="../../nuxel-common/bridge.js"></script>
+<script src="../_shared/sysinfo.js"></script>
+<script src="js/devmgmt-parsers.js"></script>
+<script src="js/devmgmt.js"></script>
+</body>
+</html>

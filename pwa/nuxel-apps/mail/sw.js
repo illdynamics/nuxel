@@ -1,26 +1,20 @@
-const CACHE_NAME = 'nuxel-mail-v1';
+// v2 (briq-06c): the mail app moved off the fake IMAP client onto the
+// honest local store + transport pair, so the cached v1 bundle must be replaced.
+const CACHE_NAME = 'nuxel-mail-v2';
 const ASSETS = [
-  '/',
-  '/index.html',
-  '/css/mail.css',
-  '/js/mail.js',
-  '/js/imap.js',
-  '/js/storage.js',
-  '/manifest.json',
-  '/icons/icon-48.png',
-  '/icons/icon-72.png',
-  '/icons/icon-96.png',
-  '/icons/icon-128.png',
-  '/icons/icon-144.png',
-  '/icons/icon-152.png',
-  '/icons/icon-192.png',
-  '/icons/icon-384.png',
-  '/icons/icon-512.png'
+  './', './index.html', './manifest.json',
+  './css/mail.css',
+  './js/mail.js', './js/transport.js', './js/storage.js',
+  './icons/icon-48.png', './icons/icon-72.png', './icons/icon-96.png',
+  './icons/icon-128.png', './icons/icon-144.png', './icons/icon-152.png',
+  './icons/icon-192.png', './icons/icon-384.png', './icons/icon-512.png'
 ];
 
 self.addEventListener('install', event => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS))
+    caches.open(CACHE_NAME).then(cache =>
+      // one missing asset must not abort the install of the whole app shell
+      Promise.all(ASSETS.map(a => cache.add(a).catch(() => null))))
   );
   self.skipWaiting();
 });

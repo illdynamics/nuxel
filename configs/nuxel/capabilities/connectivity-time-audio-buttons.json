@@ -1,0 +1,179 @@
+{
+  "schema_version": 1,
+  "generated_by": "briq-03a..03e (Qq cycle-001, construqtor) — build group P3",
+  "device": {
+    "model": "Samsung Galaxy S10+ SM-G975F",
+    "codename": "beyond2lte",
+    "soc": "Exynos 9820",
+    "kernel": "4.14.253 (Samsung vendor)",
+    "userspace": "Fedora 43 ARM64, systemd PID 1"
+  },
+  "comment": "Capability slice for the connectivity / time / audio / button build group. Every state is drawn from the mission's allowed terminal-state set. NOTHING here is VERIFIED_ON_S10PLUS: no item in this file is based on an observation made on the handset during this run. A passing offline test is OFFLINE_TESTED and stays OFFLINE_TESTED.",
+  "allowed_states": [
+    "VERIFIED_ON_S10PLUS", "VERIFIED_IN_VM_ONLY", "OFFLINE_TESTED", "DEPLOYED_UNVERIFIED",
+    "IMPLEMENTED_NOT_DEPLOYED", "BLOCKED_KERNEL", "BLOCKED_FIRMWARE", "BLOCKED_HARDWARE",
+    "BLOCKED_EXTERNAL_RESOURCE", "NEEDS_OWNER_TEST", "FAILED", "DEFERRED",
+    "NOT_SUPPORTED_ON_DEVICE"
+  ],
+  "items": [
+    {
+      "id": "wifi.radio.association",
+      "area": 4,
+      "component": "wifi",
+      "state": "BLOCKED_FIRMWARE",
+      "why_this_state": "The default state is BLOCKED_FIRMWARE because nothing in this repository has observed a BCM4375-class radio binding, loading firmware or associating on the handset. The state is evidence-derived at runtime by tools/s10plus/a33/nuxel-wifi-diag.sh; BLOCKED_FIRMWARE is the *default* claim, not the *measured* one, and it is deliberately pessimistic: an unproven radio must never be advertised as working.",
+      "evidence": [],
+      "evidence_required_for_promotion": [
+        "nuxelctl wifi status prints verdict=ASSOCIATED with a non-empty IPv4 address on the handset",
+        "a page loads in the Nuxel browser and the link survives 10 idle minutes",
+        "/var/log/nuxel/wifi-diag.log pre- and post-run blocks attached to the report"
+      ],
+      "owner_test": "docs/beta-finalization/manual-proof/04-wifi.md",
+      "device_note": "S10+ carries a Murata/Broadcom BCM4375-class part. docs/wifi-bcm4390-status.md describes the Pixel BCM4390 and was explicitly NOT applied to this device (no blob name, quirk or conclusion copied)."
+    },
+    {
+      "id": "wifi.config_and_tooling",
+      "area": 4,
+      "component": "wifi",
+      "state": "OFFLINE_TESTED",
+      "why_this_state": "NetworkManager device/connection policy, the supplicant parameters, the credential-free connection template and the read-mostly diagnostic are all covered by tools/s10plus/a33/tests/test-wifi-diag.py and five faked-root fixtures. No credential is stored, no partition is written.",
+      "evidence": [
+        "bash tools/s10plus/a33/nuxel-wifi-diag.sh selftest -> 5/5 fixtures PASS",
+        "python3 tools/s10plus/a33/tests/test-wifi-diag.py -> all checks PASS"
+      ],
+      "owner_test": "docs/beta-finalization/manual-proof/04-wifi.md"
+    },
+    {
+      "id": "time.rtc.read_write",
+      "area": 5,
+      "component": "time",
+      "state": "NEEDS_OWNER_TEST",
+      "why_this_state": "The RTC device naming on this PMIC is enumerated at runtime, never assumed, and the read/write path is exercised through the mark/compare pair. Until the owner records that pair on the handset, the RTC is unobserved.",
+      "evidence": [
+        "bash tools/s10plus/a33/nuxel-time.sh selftest -> 5/5 fixtures PASS",
+        "python3 tools/s10plus/a33/tests/test-time-rtc.py -> all checks PASS"
+      ],
+      "owner_test": "docs/beta-finalization/manual-proof/05-timekeeping.md#4c"
+    },
+    {
+      "id": "time.rtc.persistence_across_reboot",
+      "area": 5,
+      "component": "time",
+      "state": "NEEDS_OWNER_TEST",
+      "why_this_state": "Persistence is only proven by a before/after pair across one ordinary reboot with a changed boot id. The repository ships the procedure and the arithmetic; it cannot perform the reboot on the owner's behalf, and it must not repeat the reboot on failure (no blind repeat reboots).",
+      "evidence": [],
+      "evidence_required_for_promotion": [
+        "nuxelctl time mark before the reboot and nuxelctl time compare after it, both quoted in the report",
+        "compare returns PASS with the RTC and wall-clock deltas stated",
+        "independent reference clock agrees within 60 s"
+      ],
+      "owner_test": "docs/beta-finalization/manual-proof/05-timekeeping.md#4c"
+    },
+    {
+      "id": "time.timesync_backend",
+      "area": 5,
+      "component": "time",
+      "state": "OFFLINE_TESTED",
+      "why_this_state": "The policy prefers systemd-timesyncd and documents chrony as the fallback, but the tool probes for the real unit on the real image and reports NO_TIMESYNC_BACKEND rather than pretending a sync is running. Only the socket/unit probe and the fixture verdict logic are tested offline; the running backend on the handset is NEEDS_OWNER_TEST.",
+      "evidence": [
+        "python3 tools/s10plus/a33/tests/test-time-rtc.py -> all checks PASS (incl. NO_TIMESYNC_BACKEND fixture)"
+      ],
+      "owner_test": "docs/beta-finalization/manual-proof/05-timekeeping.md#4a"
+    },
+    {
+      "id": "audio.codec_path_definition",
+      "area": 6,
+      "component": "audio",
+      "state": "OFFLINE_TESTED",
+      "why_this_state": "The UCM2 master profile is anchored on the real ALSA card name beyond-madera, the PipeWire/WirePlumber drops and the ALSA softvol ceiling are installed configuration, and the pipeline walker plus its fixtures are tested offline. The sequences are deliberately empty and are generated from a *captured* control list, because inventing MADEERA/CS47L93 control names would be a fabrication.",
+      "evidence": [
+        "bash tools/s10plus/a33/nuxel-audio-diag.sh selftest -> fixtures PASS",
+        "python3 tools/s10plus/a33/tests/test-audio-diag.py -> all checks PASS"
+      ],
+      "owner_test": "docs/beta-finalization/manual-proof/06-audio.md"
+    },
+    {
+      "id": "audio.audibility",
+      "area": 6,
+      "component": "audio",
+      "state": "NEEDS_OWNER_TEST",
+      "why_this_state": "A writable mixer control is explicitly NOT an acceptance criterion for this mission. Whether the CS35L40 amplifiers and the CS47L93 DAC actually produce sound is an observation only a human ear can make, and it is deferred by design.",
+      "evidence": [],
+      "evidence_required_for_promotion": [
+        "owner confirms the low-volume test tone is heard from the speaker",
+        "the pipeline walker reports the DAC/DAPM stages running (not silent) while the tone plays",
+        "journalctl plus /var/log/nuxel/audio-diag.log attached"
+      ],
+      "owner_test": "docs/beta-finalization/manual-proof/06-audio.md"
+    },
+    {
+      "id": "audio.headphone_and_usbc_detection",
+      "area": 7,
+      "component": "audio",
+      "state": "OFFLINE_TESTED",
+      "why_this_state": "Jack-insert and USB-C accessory detection are implemented as evidence-derived state (ALSA jack kcontrols, /proc/asound/*/codec#* pin state, ALSA card enumeration for a UAC device, /sys/class/typec) and are exercised offline against fixtures. Audibility through a real adapter remains NEEDS_OWNER_TEST.",
+      "evidence": [
+        "bash tools/s10plus/a33/nuxel-headphone-diag.sh selftest -> fixtures PASS",
+        "python3 tools/s10plus/a33/tests/test-headphone-route.py -> all checks PASS"
+      ],
+      "owner_test": "docs/beta-finalization/manual-proof/07-headphones.md"
+    },
+    {
+      "id": "audio.headphone_audibility",
+      "area": 7,
+      "component": "audio",
+      "state": "NEEDS_OWNER_TEST",
+      "why_this_state": "Requires a human to plug in headphones or a USB-C adapter and listen. Deferred by design; this item must never gate another briQ.",
+      "evidence": [],
+      "owner_test": "docs/beta-finalization/manual-proof/07-headphones.md"
+    },
+    {
+      "id": "buttons.power_volume_bixby",
+      "area": 16,
+      "component": "buttons",
+      "state": "VERIFIED_ON_S10PLUS",
+      "why_this_state": "The A32 release record documents the button manager as the single owner of gpio_keys and the display toggle / ALSA volume / assistant-key behaviour as observed on the handset (docs/s10plus-autonomous-boot-repair/BETA-HARDWARE-FINALIZER/13-RELEASE-NOTES-A32.md). That observation is the A32 floor and is preserved byte-identically by this group (a32 sources are untouched, and tools/beta/regression-guard.sh INV-4 keeps them pinned).",
+      "evidence": [
+        "docs/s10plus-autonomous-boot-repair/BETA-HARDWARE-FINALIZER/13-RELEASE-NOTES-A32.md",
+        "tools/beta/regression-guard.sh INV-4-button-manager (A32 sources + buttons.json)"
+      ],
+      "owner_test": "docs/beta-finalization/system/BUTTONS-GESTURES.md"
+    },
+    {
+      "id": "buttons.a33_state_machine",
+      "area": 17,
+      "component": "buttons",
+      "state": "IMPLEMENTED_NOT_DEPLOYED",
+      "why_this_state": "The A33 state machine (single/double/long press classes, very-long-press reboot gate, power menu with Recovery / Download-Mode entries, screen-gesture recognizer) is implemented and offline-tested but has not been installed on the handset or observed there. It is NOT a claim that the new behaviour works on the phone.",
+      "evidence": [
+        "cc -std=c11 -fsyntax-only tools/s10plus/a33/nuxel-button-fsm.h harness (offline FSM compile + replay)",
+        "python3 tools/s10plus/a33/tests/test-button-fsm.py -> all checks PASS",
+        "A32 behavioural parity assertions (press windows and repeat cadence extracted from the protected A32 source) PASS"
+      ],
+      "owner_test": "docs/beta-finalization/system/BUTTONS-GESTURES.md"
+    },
+    {
+      "id": "buttons.power_menu_recovery_download",
+      "area": 20,
+      "component": "buttons",
+      "state": "OFFLINE_TESTED",
+      "why_this_state": "The power menu exists as a state machine with Recovery and Download-Mode entries that can be selected and offline-tested but are hard-refused at execution time (they require an owner-typed confirmation and are never triggered by this mission). The refusal, not the entry, is what is tested.",
+      "evidence": [
+        "python3 tools/s10plus/a33/tests/test-button-fsm.py (recovery/download refused; no flashing surface in the manager)",
+        "tool contains no heimdall / odin / fastboot / /dev/block / dd path"
+      ],
+      "owner_test": "docs/beta-finalization/system/BUTTONS-GESTURES.md"
+    },
+    {
+      "id": "buttons.gestures.swipe_up_hold_edge_back",
+      "area": 17,
+      "component": "buttons",
+      "state": "OFFLINE_TESTED",
+      "why_this_state": "The gesture state machine (swipe-up home, swipe-up-hold recents, edge back) is implemented in the dependency-free FSM core and replayed offline against recorded event traces. Dispatch is to the launcher's own control FIFO and is idempotent, so it cannot double-fire against the launcher's own touch handling.",
+      "evidence": [
+        "python3 tools/s10plus/a33/tests/test-button-fsm.py (gesture traces -> expected actions)"
+      ],
+      "owner_test": "docs/beta-finalization/system/BUTTONS-GESTURES.md"
+    }
+  ]
+}

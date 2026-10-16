@@ -1,0 +1,399 @@
+{
+  "schema": "nuxel.app-registry/1",
+  "registry_version": 4,
+  "bridge_version": "1",
+  "bridge_version_pin": "pwa/nuxel-common/bridge-version.json",
+  "url_base": "http://127.0.0.1:8000",
+  "consumers": {
+    "pwa_launcher": "pwa/nuxel-home/js/apps.js",
+    "native_shell": "shell/nuxel-home-native/nuxel_home/app_registry.json",
+    "http_bridge": "services/nuxel-bridge/src/api.py (GET /api/v1/apps/registry)",
+    "installed_copy": "/etc/nuxel/app-registry/app_registry.json (rootfs builder, briq-04b)",
+    "verifier": "tools/s10plus/a33/verify-app-registry.py"
+  },
+  "contract": {
+    "one_registry": "This file is the canonical launcher registry. The PWA launcher (apps.js), the native shell (app_registry.json) and the HTTP bridge all serve the SAME app set; verify-app-registry.py fails on any drift between them.",
+    "capability_source": "services/nuxel-bridge/src/capabilities.py (Capability enum) \u2014 an app may not declare a capability the bridge does not know.",
+    "manifest_rule": "every pwa entry must resolve to a real index.html AND a manifest.json carrying nuxel.capabilities (list) and nuxel.bridge_version equal to the pin."
+  },
+  "apps": [
+    {
+      "id": "nuxel-dialer",
+      "name": "Phone",
+      "icon": "\ud83d\udcde",
+      "color": "#4CAF50",
+      "category": "communication",
+      "type": "native",
+      "url": "nuxel-dialer://",
+      "native_binary": "/usr/bin/nuxel-dialer",
+      "binary_source": "shell/nuxel-shell/nuxel-dialer",
+      "desktop_entry": "shell/config/nuxel-dialer.desktop",
+      "description": "Make phone calls",
+      "capabilities": [
+        "call:initiate",
+        "call:end",
+        "call:status",
+        "contacts:read"
+      ],
+      "bridge_version": "1",
+      "docked": true,
+      "status": "implemented",
+      "runtime_state": "NEEDS_OWNER_TEST (real call needs a SIM and a carrier)"
+    },
+    {
+      "id": "nuxel-messages",
+      "name": "Messages",
+      "icon": "\ud83d\udcac",
+      "color": "#2196F3",
+      "category": "communication",
+      "type": "native",
+      "url": "nuxel-messages://",
+      "native_binary": "/usr/bin/nuxel-messages",
+      "binary_source": "shell/nuxel-shell/nuxel-messages",
+      "desktop_entry": "shell/config/nuxel-messages.desktop",
+      "description": "Send and receive SMS",
+      "capabilities": [
+        "sms:send",
+        "sms:receive",
+        "contacts:read"
+      ],
+      "bridge_version": "1",
+      "docked": true,
+      "status": "implemented",
+      "runtime_state": "NEEDS_OWNER_TEST (real SMS needs a SIM and a carrier)"
+    },
+    {
+      "id": "nuxel-contacts",
+      "name": "Contacts",
+      "icon": "\ud83d\udc64",
+      "color": "#9C27B0",
+      "category": "communication",
+      "type": "native",
+      "url": "nuxel-contacts://",
+      "native_binary": "/usr/bin/nuxel-contacts",
+      "binary_source": "shell/nuxel-shell/nuxel-contacts",
+      "desktop_entry": "shell/config/nuxel-contacts.desktop",
+      "description": "Manage your contacts",
+      "capabilities": [
+        "contacts:read",
+        "contacts:write"
+      ],
+      "bridge_version": "1",
+      "docked": false,
+      "status": "implemented"
+    },
+    {
+      "id": "nuxel-camera",
+      "name": "Camera",
+      "icon": "\ud83d\udcf7",
+      "color": "#795548",
+      "category": "media",
+      "type": "native",
+      "url": "nuxel-camera://",
+      "native_binary": null,
+      "binary_source": null,
+      "desktop_entry": null,
+      "description": "Take photos and videos",
+      "capabilities": [
+        "camera:capture",
+        "camera:preview"
+      ],
+      "bridge_version": "1",
+      "docked": false,
+      "status": "placeholder",
+      "implementation_note": "No /usr/bin/nuxel-camera exists in this revision. The real camera surface on this device is the Camera Gallery PWA (pwa/nuxel-apps/camera-gallery), which the launcher opens through the fallback_surface below. The hardware camera itself is NEEDS_OWNER_TEST (Priority 7b).",
+      "fallback_surface": "/pwa/nuxel-apps/camera-gallery/index.html"
+    },
+    {
+      "id": "org.nuxel.Mail",
+      "name": "Mail",
+      "icon": "\u2709\ufe0f",
+      "color": "#FF9800",
+      "category": "productivity",
+      "type": "pwa",
+      "url": "/pwa/nuxel-apps/mail/index.html",
+      "entry": "pwa/nuxel-apps/mail/index.html",
+      "manifest": "pwa/nuxel-apps/mail/manifest.json",
+      "description": "Email client",
+      "capabilities": [
+        "notifications:send",
+        "notifications:receive",
+        "storage:read",
+        "storage:write"
+      ],
+      "bridge_version": "1",
+      "docked": false
+    },
+    {
+      "id": "org.nuxel.Calendar",
+      "name": "Calendar",
+      "icon": "\ud83d\udcc5",
+      "color": "#E91E63",
+      "category": "productivity",
+      "type": "pwa",
+      "url": "/pwa/nuxel-apps/calendar/index.html",
+      "entry": "pwa/nuxel-apps/calendar/index.html",
+      "manifest": "pwa/nuxel-apps/calendar/manifest.json",
+      "description": "Calendar and events",
+      "capabilities": [
+        "notifications:send",
+        "storage:read",
+        "storage:write"
+      ],
+      "bridge_version": "1",
+      "docked": false
+    },
+    {
+      "id": "org.nuxel.Notes",
+      "name": "Notes",
+      "icon": "\ud83d\udcdd",
+      "color": "#607D8B",
+      "category": "productivity",
+      "type": "pwa",
+      "url": "/pwa/nuxel-apps/notes/index.html",
+      "entry": "pwa/nuxel-apps/notes/index.html",
+      "manifest": "pwa/nuxel-apps/notes/manifest.json",
+      "description": "Take notes",
+      "capabilities": [],
+      "bridge_version": "1",
+      "docked": false
+    },
+    {
+      "id": "org.nuxel.Files",
+      "name": "Files",
+      "icon": "\ud83d\udcc1",
+      "color": "#3F51B5",
+      "category": "tools",
+      "type": "pwa",
+      "url": "/pwa/nuxel-apps/files/index.html",
+      "entry": "pwa/nuxel-apps/files/index.html",
+      "manifest": "pwa/nuxel-apps/files/manifest.json",
+      "description": "File browser",
+      "capabilities": [],
+      "bridge_version": "1",
+      "docked": false
+    },
+    {
+      "id": "nuxel-settings",
+      "name": "Settings",
+      "icon": "\u2699\ufe0f",
+      "color": "#78909C",
+      "category": "system",
+      "type": "pwa",
+      "url": "/pwa/nuxel-apps/settings/index.html",
+      "entry": "pwa/nuxel-apps/settings/index.html",
+      "manifest": "pwa/nuxel-apps/settings/manifest.json",
+      "description": "System settings",
+      "capabilities": [],
+      "bridge_version": "1",
+      "docked": true,
+      "cross_group_gaps": [
+        "pwa/nuxel-apps/settings/manifest.json (owned by the Priority 2 / Priority 6 groups) declares no nuxel{} block yet, so nuxel.capabilities and nuxel.bridge_version are only recorded here. verify-app-registry.py reports this as a WARN (FAIL under --strict) until that manifest is completed by its owning group; the bridge_version recorded above is the pin value the PWA is built against."
+      ]
+    },
+    {
+      "id": "org.nuxel.Terminal",
+      "name": "Terminal",
+      "icon": "\ud83d\udda5\ufe0f",
+      "color": "#263238",
+      "category": "system",
+      "type": "pwa",
+      "url": "/pwa/nuxel-apps/terminal/index.html",
+      "entry": "pwa/nuxel-apps/terminal/index.html",
+      "manifest": "pwa/nuxel-apps/terminal/manifest.json",
+      "description": "Nuxel shell console",
+      "capabilities": [
+        "shell:local-pty"
+      ],
+      "bridge_version": "1",
+      "docked": true
+    },
+    {
+      "id": "org.nuxel.LiveConsole",
+      "name": "Live Console",
+      "icon": "\ud83d\udcdf",
+      "color": "#37474F",
+      "category": "system",
+      "type": "pwa",
+      "url": "/pwa/nuxel-apps/console/index.html",
+      "entry": "pwa/nuxel-apps/console/index.html",
+      "manifest": "pwa/nuxel-apps/console/manifest.json",
+      "description": "Live device console and control centre",
+      "capabilities": [],
+      "bridge_version": "1",
+      "docked": false,
+      "resolution": "pending",
+      "pending": {
+        "owner_groups": [
+          "bg-02-boot-animation-launcher",
+          "bg-07-specialty-apps"
+        ],
+        "reason": "apps.js (NUXEL_REGISTRY_VERSION=4) lists org.nuxel.LiveConsole and its manifest shortcut, but pwa/nuxel-apps/console/ ships no index.html or manifest.json yet in this cycle. verify-app-registry.py reports this as DEFER, never as a silent pass, and --strict makes it fatal once every group has merged.",
+        "expected": [
+          "pwa/nuxel-apps/console/index.html",
+          "pwa/nuxel-apps/console/manifest.json"
+        ],
+        "asserted_by": "tools/s10plus/a33/verify-app-registry.py"
+      }
+    }
+  ],
+  "tree_apps": [
+    {
+      "dir": "pwa/nuxel-apps/_shared",
+      "owner_group": "bg-06-core-phone-apps",
+      "state": "shared-assets-not-an-app",
+      "note": "Shared CSS/JS for the nuxel-apps tree, deliberately not a launcher entry."
+    },
+    {
+      "dir": "pwa/nuxel-apps/authenticator",
+      "owner_group": "bg-07-specialty-apps",
+      "state": "in_progress",
+      "note": "Owner-group work in progress in this cycle; registered by its owner when index.html + manifest.json land."
+    },
+    {
+      "dir": "pwa/nuxel-apps/browser",
+      "owner_group": "bg-06-core-phone-apps",
+      "state": "complete",
+      "note": "Present with index.html + manifest.json but intentionally NOT in the A32 launcher default set; a separate registry revision would be required to surface it on the home grid."
+    },
+    {
+      "dir": "pwa/nuxel-apps/calculator",
+      "owner_group": "bg-06-core-phone-apps",
+      "state": "complete",
+      "note": "Same as browser: installed, not in the launcher default set."
+    },
+    {
+      "dir": "pwa/nuxel-apps/camera-gallery",
+      "owner_group": "unassigned-this-cycle",
+      "state": "complete",
+      "note": "The real camera surface; referenced by the nuxel-camera placeholder fallback."
+    },
+    {
+      "dir": "pwa/nuxel-apps/cleanup",
+      "owner_group": "bg-07-specialty-apps",
+      "state": "complete",
+      "note": "Installed, not in the launcher default set."
+    },
+    {
+      "dir": "pwa/nuxel-apps/clock",
+      "owner_group": "bg-06-core-phone-apps",
+      "state": "complete",
+      "note": "Installed, not in the launcher default set."
+    },
+    {
+      "dir": "pwa/nuxel-apps/console",
+      "owner_group": "bg-07-specialty-apps",
+      "state": "in_progress",
+      "note": "Owner-group work in progress in this cycle."
+    },
+    {
+      "dir": "pwa/nuxel-apps/devmgmt",
+      "owner_group": "bg-07-specialty-apps",
+      "state": "complete",
+      "note": "Installed, not in the launcher default set."
+    },
+    {
+      "dir": "pwa/nuxel-apps/downloader",
+      "owner_group": "bg-07-specialty-apps",
+      "state": "in_progress",
+      "note": "Owner-group work in progress in this cycle."
+    },
+    {
+      "dir": "pwa/nuxel-apps/maps",
+      "owner_group": "bg-06-core-phone-apps",
+      "state": "complete",
+      "note": "Installed, not in the launcher default set."
+    },
+    {
+      "dir": "pwa/nuxel-apps/media",
+      "owner_group": "bg-07-specialty-apps",
+      "state": "in_progress",
+      "note": "manifest.json present, index.html not yet; owner group completes it."
+    },
+    {
+      "dir": "pwa/nuxel-apps/nuxtore",
+      "owner_group": "bg-07-specialty-apps",
+      "state": "complete",
+      "note": "Installed, not in the launcher default set."
+    },
+    {
+      "dir": "pwa/nuxel-apps/penguinterface",
+      "owner_group": "bg-07-specialty-apps",
+      "state": "in_progress",
+      "note": "Owner-group work in progress in this cycle."
+    },
+    {
+      "dir": "pwa/nuxel-apps/photos",
+      "owner_group": "bg-06-core-phone-apps",
+      "state": "complete",
+      "note": "Installed, not in the launcher default set."
+    },
+    {
+      "dir": "pwa/nuxel-apps/privacy",
+      "owner_group": "bg-05-security-permissions",
+      "state": "in_progress",
+      "note": "Owner-group work in progress in this cycle."
+    },
+    {
+      "dir": "pwa/nuxel-apps/recorder",
+      "owner_group": "bg-06-core-phone-apps",
+      "state": "complete",
+      "note": "Installed, not in the launcher default set."
+    },
+    {
+      "dir": "pwa/nuxel-apps/rootcontrol",
+      "owner_group": "bg-07-specialty-apps",
+      "state": "complete",
+      "note": "Installed, not in the launcher default set."
+    },
+    {
+      "dir": "pwa/nuxel-apps/snekbyte",
+      "owner_group": "bg-07-specialty-apps",
+      "state": "in_progress",
+      "note": "Owner-group work in progress in this cycle."
+    },
+    {
+      "dir": "pwa/nuxel-apps/weather",
+      "owner_group": "bg-06-core-phone-apps",
+      "state": "complete",
+      "note": "Installed, not in the launcher default set."
+    }
+  ],
+  "capability_gaps": [
+    {
+      "capability": "storage:read",
+      "declared_by": [
+        "pwa/nuxel-apps/mail/manifest.json",
+        "pwa/nuxel-apps/calendar/manifest.json"
+      ],
+      "status": "not-in-capabilities.py-enum",
+      "bridge_enum_equivalent": "storage:persistent",
+      "owner_group": "bg-06-core-phone-apps",
+      "note": "The apps ask for a read/write storage pair; the bridge enum defines storage:persistent only. Not fatal for the registry (the ids are a manifest contract, not an enforcement claim) but an app must not advertise a capability the host cannot arbitrate - the owning group either adds the enum entry or moves the manifests to storage:persistent."
+    },
+    {
+      "capability": "storage:write",
+      "declared_by": [
+        "pwa/nuxel-apps/mail/manifest.json",
+        "pwa/nuxel-apps/calendar/manifest.json"
+      ],
+      "status": "not-in-capabilities.py-enum",
+      "bridge_enum_equivalent": "storage:persistent",
+      "owner_group": "bg-06-core-phone-apps",
+      "note": "See storage:read."
+    },
+    {
+      "capability": "shell:local-pty",
+      "declared_by": [
+        "pwa/nuxel-apps/terminal/manifest.json"
+      ],
+      "status": "not-in-capabilities.py-enum",
+      "bridge_enum_equivalent": null,
+      "owner_group": "bg-06-core-phone-apps",
+      "note": "The Terminal's PTY is opened by the native PWA host (tools/s10plus/a3x/nuxel-pwa-host.c), NOT through the bridge capability model, so no bridge enum entry exists. Recorded so the gap is visible instead of implied."
+    }
+  ],
+  "launcher_manifest_notes": [
+    "pwa/nuxel-home/manifest.json (owned by the Priority 2 group) declares nuxel.bridge_version 0.4.0-alpha, which is the HOST version, not the protocol pin '1'. Reported as a WARN by the verifier: the launcher is a system surface, not a third-party app, so it is not part of apps[] and the mismatch cannot reject a PWA, but the two fields should not be conflated."
+  ]
+}

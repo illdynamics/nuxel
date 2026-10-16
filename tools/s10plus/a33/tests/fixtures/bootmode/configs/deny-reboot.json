@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "allow_reboot": false,
+  "require_charger": true,
+  "min_uptime_seconds": 60,
+  "cooldown_seconds": 900,
+  "reason_allow_reboot_false": "test fixture: automatic reboot intentionally disabled"
+}

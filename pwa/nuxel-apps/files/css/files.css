@@ -44,3 +44,8 @@ body { display: flex; flex-direction: column; padding-top: env(safe-area-inset-t
 .dialog-actions { display: flex; gap: 8px; margin-top: 16px; justify-content: flex-end; }
 .btn-secondary { background: var(--card); color: var(--text); border: none; padding: 8px 16px; border-radius: var(--radius); font-size: 14px; cursor: pointer; }
 .btn-primary { background: var(--accent); color: white; border: none; padding: 8px 16px; border-radius: var(--radius); font-size: 14px; font-weight: 600; cursor: pointer; }
+
+/* Core-inventory additions: portal honesty (no fabricated file tree) */
+.file-item.unavailable { opacity: .55; }
+.empty-state .portal-hint { font-size: 12px; line-height: 1.5; color: #9aa7bd; max-width: 32ch; margin: 8px auto 0; }
+.empty-state code { color: #4cc2ff; }

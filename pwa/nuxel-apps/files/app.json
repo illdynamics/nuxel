@@ -1,0 +1,15 @@
+{
+  "id": "org.nuxel.Files",
+  "name": "Files",
+  "icon": "\ud83d\udcc1",
+  "color": "#3F51B5",
+  "category": "tools",
+  "type": "pwa",
+  "url": "/pwa/nuxel-apps/files/index.html",
+  "manifest": "pwa/nuxel-apps/files/manifest.json",
+  "description": "Browse the PWA-visible tree through the Nuxel portal (read-only until granted)",
+  "capabilities": [],
+  "bridge_version": "1",
+  "docked": false,
+  "source": "pwa/nuxel-apps tree (bg-06-core-phone-apps)"
+}

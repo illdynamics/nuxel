@@ -46,6 +46,16 @@ typedef struct {
     gchar *duration;     /* "once", "session", "always", or "" if denied */
     gdouble granted_at;
     gboolean granted;
+
+    /* briq-05a: what this grant actually enforces, sourced from
+     * shell/nuxel-shell/nuxel-permissions/capabilities.json. Never derived at
+     * display time from the LSM name alone - the registry is the single
+     * source of truth and it is the file the auditors read too. */
+    gchar *enforceable;      /* "yes" | "partial" | "no" | "n/a" */
+    gchar *enforces_against; /* attacker privilege class, e.g. "unprivileged-app" */
+    gchar *mechanisms;       /* comma separated mechanism ids */
+    gchar *limitation;       /* the honest limitation statement */
+    gchar *verdict;          /* terminal verdict label */
 } Capability;
 
 typedef struct {
@@ -175,6 +185,168 @@ resolve_app_icon(const gchar *app_id) {
     return "application-x-executable-symbolic";
 }
 
+/* ── Enforcement truth (briq-05a) ────────────────────────────────────── */
+/*
+ * The capability registry defines, per capability, which mechanism enforces it,
+ * against which attacker privilege class, and - where the kernel cannot enforce
+ * it - the explicit limitation. This app must never display anything stronger
+ * than that file states. If the registry is missing we fall back to "unknown"
+ * and the UI says so, because "unknown" is the truth and "enforced" would not
+ * be.
+ */
+
+static JsonObject *g_registry = NULL;
+
+static const gchar *registry_candidates[] = {
+    "/etc/nuxel/permissions/capabilities.json",
+    "/usr/share/nuxel/permissions/capabilities.json",
+    "shell/nuxel-shell/nuxel-permissions/capabilities.json",
+    "nuxel-permissions/capabilities.json",
+    NULL
+};
+
+static void
+load_capability_registry(void) {
+    if (g_registry != NULL)
+        return;
+
+    for (gint i = 0; registry_candidates[i] != NULL; i++) {
+        JsonParser *parser = json_parser_new();
+        GError *error = NULL;
+        if (!json_parser_load_from_file(parser, registry_candidates[i], &error)) {
+            g_clear_error(&error);
+            g_object_unref(parser);
+            continue;
+        }
+        JsonNode *root = json_parser_get_root(parser);
+        if (root != NULL && JSON_NODE_HOLDS_OBJECT(root)) {
+            /* keep the object alive for the process lifetime */
+            g_registry = json_node_dup_object(root);
+            g_object_unref(parser);
+            g_message("nuxel-permissions: capability registry loaded from %s",
+                      registry_candidates[i]);
+            return;
+        }
+        g_object_unref(parser);
+    }
+    g_warning("nuxel-permissions: capability registry not found; enforcement "
+              "information will be shown as UNKNOWN");
+}
+
+static JsonObject *
+registry_entry_for(const gchar *capability) {
+    if (g_registry == NULL || capability == NULL)
+        return NULL;
+
+    JsonArray *caps = json_object_get_array_member(g_registry, "capabilities");
+    if (caps == NULL)
+        return NULL;
+
+    gchar *base = g_strdup(capability);
+    gchar *colon = strchr(base, ':');
+    if (colon != NULL)
+        *colon = '\0';
+
+    JsonObject *found = NULL;
+    guint n = json_array_get_length(caps);
+    for (guint i = 0; i < n && found == NULL; i++) {
+        JsonNode *node = json_array_get_element(caps, i);
+        if (node == NULL || !JSON_NODE_HOLDS_OBJECT(node))
+            continue;
+        JsonObject *obj = json_node_get_object(node);
+        const gchar *id = json_object_get_string_member_with_default(obj, "id", "");
+        if (g_strcmp0(id, capability) == 0 || g_strcmp0(id, base) == 0) {
+            found = obj;
+            continue;
+        }
+        JsonArray *aliases = json_object_get_array_member(obj, "aliases");
+        if (aliases != NULL) {
+            guint m = json_array_get_length(aliases);
+            for (guint j = 0; j < m; j++) {
+                const gchar *alias = json_array_get_string_element(aliases, j);
+                if (g_strcmp0(alias, capability) == 0 || g_strcmp0(alias, base) == 0) {
+                    found = obj;
+                    break;
+                }
+            }
+        }
+    }
+    g_free(base);
+    return found;
+}
+
+static gchar *
+registry_join_mechanisms(JsonObject *entry) {
+    JsonArray *mech = json_object_get_array_member(entry, "mechanisms");
+    if (mech == NULL)
+        return g_strdup("unknown");
+    GString *out = g_string_new("");
+    guint n = json_array_get_length(mech);
+    for (guint i = 0; i < n; i++) {
+        const gchar *m = json_array_get_string_element(mech, i);
+        if (m == NULL)
+            continue;
+        if (out->len > 0)
+            g_string_append(out, ", ");
+        g_string_append(out, m);
+    }
+    return g_string_free(out, FALSE);
+}
+
+static void
+capability_apply_enforcement(Capability *cap) {
+    load_capability_registry();
+    JsonObject *entry = registry_entry_for(cap->capability);
+    if (entry == NULL) {
+        cap->enforceable = g_strdup("unknown");
+        cap->enforces_against = g_strdup("unknown");
+        cap->mechanisms = g_strdup("unknown");
+        cap->verdict = g_strdup("NEEDS_REVIEW");
+        cap->limitation = g_strdup(
+            "Not present in the capability registry - enforcement truth is "
+            "unknown, so no guarantee is displayed.");
+        return;
+    }
+    cap->enforceable = g_strdup(json_object_get_string_member_with_default(
+        entry, "enforceable", "unknown"));
+    cap->enforces_against = g_strdup(json_object_get_string_member_with_default(
+        entry, "enforces_against", "unknown"));
+    cap->limitation = g_strdup(json_object_get_string_member_with_default(
+        entry, "limitation", ""));
+    cap->verdict = g_strdup(json_object_get_string_member_with_default(
+        entry, "verdict", "UNKNOWN"));
+    cap->mechanisms = registry_join_mechanisms(entry);
+}
+
+/*
+ * Measured kernel facts for the banner. Reads sysfs directly; an unreadable
+ * file leaves the value as "unknown" (never "available").
+ */
+static gboolean
+kernel_landlock_available(void) {
+    return g_file_test("/proc/sys/kernel/landlock/abi_version", G_FILE_TEST_EXISTS);
+}
+
+static gchar *
+kernel_release_string(void) {
+    gchar *contents = NULL;
+    if (g_file_get_contents("/proc/sys/kernel/osrelease", &contents, NULL, NULL)) {
+        g_strstrip(contents);
+        return contents;
+    }
+    return g_strdup("unknown");
+}
+
+static gchar *
+kernel_lsm_string(void) {
+    gchar *contents = NULL;
+    if (g_file_get_contents("/sys/kernel/security/lsm", &contents, NULL, NULL)) {
+        g_strstrip(contents);
+        return contents;
+    }
+    return g_strdup("unknown");
+}
+
 /* ── Permission File Parsing ───────────────────────────────────────────── */
 
 static GPtrArray *
@@ -228,6 +400,11 @@ parse_permissions_file(const gchar *filepath) {
 
         cap->granted = (g_strcmp0(cap->duration, "always") == 0);
 
+        /* briq-05a: attach the measured enforcement truth to every row, so the
+         * detail page can show the mechanism, the attacker class it holds
+         * against and the limitation instead of a bare on/off switch. */
+        capability_apply_enforcement(cap);
+
         g_ptr_array_add(caps, cap);
     }
 
@@ -258,6 +435,11 @@ app_info_free(AppInfo *info) {
             g_free(cap->capability);
             g_free(cap->description);
             g_free(cap->duration);
+            g_free(cap->enforceable);
+            g_free(cap->enforces_against);
+            g_free(cap->mechanisms);
+            g_free(cap->limitation);
+            g_free(cap->verdict);
             g_free(cap);
         }
         g_ptr_array_free(info->capabilities, TRUE);
@@ -578,6 +760,58 @@ show_app_detail(PermissionsApp *app, AppInfo *info) {
             adw_action_row_add_suffix(ADW_ACTION_ROW(row), time_label);
         }
 
+        /* briq-05a: the enforcement block. This is the part that stops the UI
+         * from being a cosmetic switch: the mechanism, the attacker class it
+         * holds against, and the limitation are all shown for every row. */
+        {
+            AdwActionRow *enf_row = ADW_ACTION_ROW(adw_action_row_new());
+            adw_action_row_set_title(enf_row, "Enforced by");
+            gchar *mech_text = g_strdup_printf(
+                "%s  (holds against: %s)",
+                cap->mechanisms ? cap->mechanisms : "unknown",
+                cap->enforces_against ? cap->enforces_against : "unknown");
+            adw_action_row_set_subtitle(enf_row, mech_text);
+            g_free(mech_text);
+            if (g_strcmp0(cap->enforceable, "yes") == 0)
+                gtk_widget_add_css_class(GTK_WIDGET(enf_row), "success");
+            else if (g_strcmp0(cap->enforceable, "no") == 0)
+                gtk_widget_add_css_class(GTK_WIDGET(enf_row), "error");
+            else
+                gtk_widget_add_css_class(GTK_WIDGET(enf_row), "warning");
+            gtk_preferences_group_add(
+                ADW_PREFERENCES_GROUP(app->detail_permissions_group),
+                GTK_WIDGET(enf_row));
+        }
+        {
+            AdwActionRow *lim_row = ADW_ACTION_ROW(adw_action_row_new());
+            adw_action_row_set_title(lim_row, "What this does NOT guarantee");
+            GtkWidget *lim_label = gtk_label_new(
+                cap->limitation ? cap->limitation : "unknown");
+            gtk_label_set_wrap(GTK_LABEL(lim_label), TRUE);
+            gtk_label_set_xalign(GTK_LABEL(lim_label), 0.0f);
+            gtk_label_set_max_width_chars(GTK_LABEL(lim_label), 48);
+            gtk_widget_set_opacity(lim_label, 0.75);
+            adw_action_row_add_suffix(ADW_ACTION_ROW(lim_row), lim_label);
+            adw_action_row_set_subtitle(lim_row,
+                cap->verdict ? cap->verdict : "UNKNOWN");
+            adw_action_row_set_subtitle_lines(lim_row, 4);
+            gtk_preferences_group_add(
+                ADW_PREFERENCES_GROUP(app->detail_permissions_group),
+                GTK_WIDGET(lim_row));
+        }
+        {
+            AdwActionRow *status_row = ADW_ACTION_ROW(adw_action_row_new());
+            adw_action_row_set_title(status_row, "Enforcement level");
+            gchar *lvl = g_strdup_printf("%s (against %s)",
+                cap->enforceable ? cap->enforceable : "unknown",
+                cap->enforces_against ? cap->enforces_against : "unknown");
+            adw_action_row_set_subtitle(status_row, lvl);
+            g_free(lvl);
+            gtk_preferences_group_add(
+                ADW_PREFERENCES_GROUP(app->detail_permissions_group),
+                GTK_WIDGET(status_row));
+        }
+
         /* Revoke button for granted permissions */
         if (cap->granted) {
             GtkWidget *revoke_btn = gtk_button_new_from_icon_name("edit-delete-symbolic");
@@ -670,6 +904,32 @@ activate_cb(AdwApplication *app_adw, gpointer user_data) {
     perm_app->app_list_box = gtk_list_box_new();
     gtk_list_box_set_selection_mode(GTK_LIST_BOX(perm_app->app_list_box), GTK_SELECTION_NONE);
 
+    /* briq-05a honesty banner: state the measured kernel capability before the
+     * user reads a single row, so no grant can be mistaken for a guarantee the
+     * kernel cannot provide. */
+    {
+        gchar *release = kernel_release_string();
+        gchar *lsm = kernel_lsm_string();
+        gboolean landlock = kernel_landlock_available();
+        gchar *banner_text = g_strdup_printf(
+            "Kernel %s | LSM list: %s | Landlock: %s\n"
+            "Capabilities marked \"partial\" are enforced by the portal, DAC and "
+            "(if the LSM is enabled) AppArmor - they are not a kernel boundary "
+            "against a process that ignores the portal. Landlock (>= 5.13) would "
+            "add path-level confinement and is absent here.",
+            release, lsm, landlock ? "available" : "NOT available");
+        GtkWidget *banner = gtk_label_new(banner_text);
+        gtk_label_set_wrap(GTK_LABEL(banner), TRUE);
+        gtk_label_set_xalign(GTK_LABEL(banner), 0.0f);
+        gtk_widget_set_opacity(banner, 0.7);
+        gtk_widget_set_margin_top(banner, 6);
+        gtk_widget_set_margin_bottom(banner, 6);
+        gtk_preferences_group_add(list_group, banner);
+        g_free(banner_text);
+        g_free(release);
+        g_free(lsm);
+    }
+
     /* Header bar for list page */
     AdwHeaderBar *header_bar = ADW_HEADER_BAR(adw_header_bar_new());
     gtk_widget_set_hexpand(GTK_WIDGET(header_bar), TRUE);
@@ -750,8 +1010,97 @@ activate_cb(AdwApplication *app_adw, gpointer user_data) {
     gtk_window_present(GTK_WINDOW(window));
 }
 
+/* ── CLI modes (briq-05a) ─────────────────────────────────────────────────
+ * These run without a display and without GTK, so the enforcement truth can be
+ * read on a serial console, in CI and by tools/s10plus/a33/verify-permissions.py.
+ */
+
+static int
+cli_print_matrix(void) {
+    load_capability_registry();
+    if (g_registry == NULL) {
+        g_printerr("capability registry not found; cannot report enforcement truth\n");
+        return 1;
+    }
+    JsonArray *caps = json_object_get_array_member(g_registry, "capabilities");
+    if (caps == NULL) {
+        g_printerr("capability registry has no capabilities array\n");
+        return 1;
+    }
+    g_print("%-16s %-10s %-18s %s\n", "capability", "enforce", "against", "mechanisms");
+    guint n = json_array_get_length(caps);
+    for (guint i = 0; i < n; i++) {
+        JsonNode *node = json_array_get_element(caps, i);
+        if (node == NULL || !JSON_NODE_HOLDS_OBJECT(node))
+            continue;
+        JsonObject *obj = json_node_get_object(node);
+        gchar *mech = registry_join_mechanisms(obj);
+        g_print("%-16s %-10s %-18s %s\n",
+                json_object_get_string_member_with_default(obj, "id", "?"),
+                json_object_get_string_member_with_default(obj, "enforceable", "?"),
+                json_object_get_string_member_with_default(obj, "enforces_against", "?"),
+                mech);
+        g_free(mech);
+    }
+    return 0;
+}
+
+static int
+cli_print_kernel_report(void) {
+    gchar *release = kernel_release_string();
+    gchar *lsm = kernel_lsm_string();
+    gboolean landlock = kernel_landlock_available();
+    gchar *gateway = NULL;
+    gboolean cgroup2 = g_file_get_contents("/sys/fs/cgroup/cgroup.controllers",
+                                           &gateway, NULL, NULL);
+    g_print("kernel_release:        %s\n", release);
+    g_print("lsm_list:              %s\n", lsm);
+    g_print("landlock_abi_file:     %s\n",
+            landlock ? "present" : "absent (no path-level filesystem confinement)");
+    g_print("seccomp_actions_avail: %s\n",
+            g_file_test("/proc/sys/kernel/seccomp/actions_avail", G_FILE_TEST_EXISTS)
+                ? "present" : "unknown");
+    g_print("cgroup2_controllers:   %s\n",
+            cgroup2 ? (gateway ? gateway : "") : "unknown");
+    g_print("drm_kms:               %s\n",
+            g_file_test("/dev/dri", G_FILE_TEST_EXISTS)
+                ? "present" : "absent (fbdev only)");
+    g_print("display_owner_file:    %s\n",
+            g_file_test("/dev/fb0", G_FILE_TEST_EXISTS) ? "present" : "absent");
+    g_free(gateway);
+    g_free(release);
+    g_free(lsm);
+    return 0;
+}
+
+static void
+cli_usage(const char *prog) {
+    g_print("Nuxel Permissions manager\n\n"
+            "  %s                     open the GTK permission manager\n"
+            "  %s --enforcement-matrix print the capability enforcement truth table\n"
+            "  %s --kernel-report      print the measured kernel capability report\n",
+            prog, prog, prog);
+}
+
 int
 main(int argc, char *argv[]) {
+    for (int i = 1; i < argc; i++) {
+        if (g_strcmp0(argv[i], "--enforcement-matrix") == 0) {
+            load_capability_registry();
+            int rc = cli_print_matrix();
+            if (g_registry != NULL)
+                json_object_unref(g_registry);
+            return rc;
+        }
+        if (g_strcmp0(argv[i], "--kernel-report") == 0) {
+            return cli_print_kernel_report();
+        }
+        if (g_strcmp0(argv[i], "--help") == 0 || g_strcmp0(argv[i], "-h") == 0) {
+            cli_usage(argv[0]);
+            return 0;
+        }
+    }
+
     PermissionsApp *app = g_new0(PermissionsApp, 1);
     app->apps = g_ptr_array_new_with_free_func((GDestroyNotify)app_info_free);
 

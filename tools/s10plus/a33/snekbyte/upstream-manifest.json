@@ -1,0 +1,117 @@
+{
+  "members": {
+    ".gitignore": {
+      "bytes": 160,
+      "sha256": "7affec2644c4278a9995bb2e79791e3a4e86541f3dd818e19dedda8f505a5cf9"
+    },
+    "README.md": {
+      "bytes": 1740,
+      "sha256": "ccd558434e8e9078dadcb26e64a34ce27201457188eed53b2d2e6b271dc17fb1"
+    },
+    "main.py": {
+      "bytes": 207,
+      "sha256": "536efa4ff990c97ebe3b5314447d0e1e0c2c2f526490f568a9bd7a3abfb44aec"
+    },
+    "requirements.txt": {
+      "bytes": 13,
+      "sha256": "ab75252b273106eb5484e42ef4e45cc06d061a904706a583df4ea864403f016d"
+    },
+    "snekbyte.py": {
+      "bytes": 7454,
+      "sha256": "2396dc85d6a0da3a9db059fa033e6b6b0dcc12a634e572aa102f5e0339c202b7"
+    },
+    "src/__init__.py": {
+      "bytes": 55,
+      "sha256": "d1bed7343d681acf2c78a3bc5ecba3e9dc8b222a48494145d8ca601b628cd40e"
+    },
+    "src/config.py": {
+      "bytes": 758,
+      "sha256": "5bb47077061490dfc2c0be06d6472e74933847d7578112e43244f8e504b80771"
+    },
+    "src/event_handler.py": {
+      "bytes": 4063,
+      "sha256": "1e88c41a4eb70095301364f96b66609bf248b97bace710f6296cb9bb76f0734b"
+    },
+    "src/food.py": {
+      "bytes": 1179,
+      "sha256": "648f3115b32d73b7c77a88d2c700641782071b5dba93b6b3e0e6a86b6c65c079"
+    },
+    "src/game_logic.py": {
+      "bytes": 3104,
+      "sha256": "95492eee4473dc775b2b5180ec4d6305964acc95c1b32e880454f8ed98a38ee4"
+    },
+    "src/game_loop.py": {
+      "bytes": 4315,
+      "sha256": "c24d185c926c7a4d0699f2b23f19654701cdcbc812dc1c8c6e99ebabbaa0f715"
+    },
+    "src/game_state.py": {
+      "bytes": 981,
+      "sha256": "4064780bd4cdf6f30f4301fa775ab9ae7f2246004fa053c62861f9b78b39f5b7"
+    },
+    "src/main.py": {
+      "bytes": 487,
+      "sha256": "b8133d6f7e1952db9454a2ca133f1d28676f46057ac9762e2e4583437df06a32"
+    },
+    "src/poop.py": {
+      "bytes": 778,
+      "sha256": "85d60475da41a8f5dfc476cf03826208485cade3f8aa8712fa25a54c3cd7e64a"
+    },
+    "src/snake.py": {
+      "bytes": 3137,
+      "sha256": "bb5011ce42fd697a4b6c7cbb5557719bcc2380530f8d453bcb84f676dfd0dd52"
+    },
+    "src/ui.py": {
+      "bytes": 4982,
+      "sha256": "fd066d55f3eaaf4a0a6cb3885cdb9b1d008626cec6147e1532ca48bad925f348"
+    },
+    "src/utils/__init__.py": {
+      "bytes": 57,
+      "sha256": "4190cda7f8daddb3f88b8962a334fbc93f5746e182184e20d77223a3765b5359"
+    },
+    "src/utils/constants.py": {
+      "bytes": 1075,
+      "sha256": "7de4fb7cf9875b2e715235e96c1e6a8dcb71eb5f3b5f97ffd6cb6c9276499377"
+    },
+    "src/utils/logger.py": {
+      "bytes": 546,
+      "sha256": "924acd9ecb260e8a13723e9f088bf35a50c96ad1dc08efedc5f9f5f2d9115393"
+    },
+    "tests/__init__.py": {
+      "bytes": 57,
+      "sha256": "f107b0db6700df35cfb6550cf96ba50c3e859e9877b49167c525c6fa74737b5b"
+    },
+    "tests/test_core.py": {
+      "bytes": 277,
+      "sha256": "e6af1d7f3e12924eb06ab81f07b43a36cda6175a073e16d68c49cc21b27efffa"
+    },
+    "tests/test_event_handler.py": {
+      "bytes": 6730,
+      "sha256": "36d883aa4d7020798f868cb133f9497f86c3a0a58e8108cc14dc996a1a197f0e"
+    },
+    "tests/test_game_logic.py": {
+      "bytes": 4993,
+      "sha256": "01bda0dc7424221f4ff760919785524e96ec168274f433b1a40c4e9fb1c60d04"
+    },
+    "tests/test_game_state.py": {
+      "bytes": 2485,
+      "sha256": "787f1c3fe2e9fad9af3e695e3bbba16e7e2635b892d1c857628f4e4c89293002"
+    },
+    "tests/test_input_handling.py": {
+      "bytes": 3935,
+      "sha256": "aa1dfee7fed6404935221c61fc934de2767a5f77ceacf5da5a923d90a4267bbf"
+    },
+    "tests/test_rendering.py": {
+      "bytes": 313,
+      "sha256": "5cafac3b93a1881afb1f37f24fdf06db42470303f5d01df59bb9dcf37422dac4"
+    },
+    "tests/test_rendering_adapter.py": {
+      "bytes": 2802,
+      "sha256": "abbfbe6d8b09ce10dc61007e53916804cb9e8d3a18964550d8aaa6ff46ca7c19"
+    },
+    "tests/test_snake.py": {
+      "bytes": 3615,
+      "sha256": "c950368974888a711ff826932ce51a9211e7e11a1b764a1d827899e1a946618e"
+    }
+  },
+  "source_archive": "snekbyte-main.zip"
+}

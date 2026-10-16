@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "id": "briq-03c-audio-speaker",
+  "revisions": [
+    {
+      "id": "briq-03c-audio-speaker",
+      "title": "Real speaker audio path - beyond-madera / CS47L93 / CS35L40 / ABox (low volume only)",
+      "component": "bg-03-connectivity-time-audio-buttons",
+      "component_title": "Priority 3 - Wi-Fi, Time/RTC, Audio, Headphones & Hardware Buttons",
+      "priority": 3,
+      "state": "in_progress",
+      "dependencies": [
+        "briq-00c-workqueue-ledger"
+      ],
+      "evidence": [
+        {
+          "kind": "observation",
+          "path": "configs/alsa-ucm/",
+          "command": "test -e configs/alsa-ucm/",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "observation",
+          "path": "configs/pipewire/",
+          "command": "test -e configs/pipewire/",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "observation",
+          "path": "configs/wireplumber/",
+          "command": "test -e configs/wireplumber/",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        }
+      ],
+      "intended_changes": [
+        "configs/alsa-ucm/",
+        "configs/pipewire/",
+        "configs/wireplumber/",
+        "tools/s10plus/a33/nuxel-audio-diag.sh",
+        "docs/beta-finalization/manual-proof/06-audio.md"
+      ],
+      "tests": [
+        "(tests are recorded by the owning briQ when it reports)"
+      ],
+      "risk": "medium",
+      "rollback": "git revert the commit(s) touching this task's expected files; the change is repository-only and alters no device state",
+      "verdict": null,
+      "offline_ceiling": null,
+      "owner_action": "",
+      "expected_files": [
+        "configs/alsa-ucm/",
+        "configs/pipewire/",
+        "configs/wireplumber/",
+        "tools/s10plus/a33/nuxel-audio-diag.sh",
+        "docs/beta-finalization/manual-proof/06-audio.md"
+      ],
+      "note": "seeded from the QonQrete plan; 3/5 expected file(s) already present in the tree",
+      "source": "plan.json",
+      "revision": 1,
+      "at": "2026-10-16T16:07:13+02:00",
+      "by": "construqtor/bg-00-preflight"
+    }
+  ]
+}

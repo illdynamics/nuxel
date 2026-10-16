@@ -9,7 +9,10 @@
 #include <string.h>
 #include <glib.h>
 #include <gio/gio.h>
-#include <json-glib/json-glib.h>
+/* Shared phone data model (contacts/call log/messages) used by nuxel-dialer,
+ * nuxel-contacts and nuxel-messages.  Dependency-free C11: see
+ * nuxel-phone-data/README.md and nuxel-phone-data/run-tests.sh. */
+#include "nuxel-phone-data.h"
 
 /* ============================================================
  * Data structures
@@ -45,7 +48,21 @@ typedef struct {
     GHashTable *contacts_by_id;
     Contact *active_contact;
     gchar *data_dir;
+
+    /* Shared store (the authoritative on-disk model) + a status line so the UI
+     * can report a real write failure instead of pretending it saved. */
+    NuxelPhoneStore store;
+    gchar *store_path;
+    GtkWidget *status_label;
 } NuxelContacts;
+
+/* ============================================================
+ * Forward declarations
+ * ============================================================ */
+
+static void save_contacts(NuxelContacts *app);
+static void load_contacts(NuxelContacts *app);
+static void on_vcard_chosen(GObject *source, GAsyncResult *res, gpointer user_data);
 
 /* ============================================================
  * Contact lifecycle
@@ -88,95 +105,196 @@ contact_free(gpointer data)
  * ============================================================ */
 
 static void
-save_contacts(NuxelContacts *app)
+contacts_status(NuxelContacts *app, const gchar *text)
 {
-    if (!app->data_dir) return;
-    
-    gchar *path = g_build_filename(app->data_dir, "contacts.json", NULL);
-    
-    GFile *file = g_file_new_for_path(path);
-    GFileOutputStream *stream = g_file_replace(file, NULL, FALSE, G_FILE_CREATE_NONE, NULL, NULL);
-    
-    if (!stream) {
-        g_warning("Failed to open contacts file for writing");
-        g_free(path);
-        return;
-    }
-    
-    /* Build JSON */
-    g_autoptr(JsonBuilder) builder = json_builder_new();
-    json_builder_begin_object(builder);
-    json_builder_set_member_name(builder, "contacts");
-    json_builder_begin_array(builder);
-    
-    for (guint i = 0; i < app->contacts->len; i++) {
-        Contact *c = g_ptr_array_index(app->contacts, i);
-        json_builder_begin_object(builder);
-        json_builder_set_member_name(builder, "id");    json_builder_add_string_value(builder, c->id);
-        json_builder_set_member_name(builder, "name");  json_builder_add_string_value(builder, c->name);
-        json_builder_set_member_name(builder, "phone"); json_builder_add_string_value(builder, c->phone);
-        json_builder_set_member_name(builder, "email"); json_builder_add_string_value(builder, c->email);
-        json_builder_end_object(builder);
-    }
-    
-    json_builder_end_array(builder);
-    json_builder_end_object(builder);
-    
-    g_output_stream_close(G_OUTPUT_STREAM(stream), NULL, NULL);
-    g_object_unref(stream);
-    g_object_unref(file);
-    g_free(path);
+    if (app->status_label)
+        gtk_label_set_text(GTK_LABEL(app->status_label), text ? text : "");
+    g_message("[Contacts] %s", text ? text : "");
 }
 
+/* Copy the UI model into the shared store and flush it atomically.
+ *
+ * This is the fix for the A32 defect where save_contacts() built a JSON tree and
+ * never wrote it to the file: contacts were silently lost on exit.  The write now
+ * goes through nuxel_phone_store_save(), which writes <path>.tmp and renames, so
+ * a crash cannot leave a half-written address book. */
+static void
+save_contacts(NuxelContacts *app)
+{
+    if (!app->store_path) {
+        contacts_status(app, "No storage location configured — nothing was saved.");
+        return;
+    }
+
+    nuxel_phone_store_free(&app->store);
+    nuxel_phone_store_init(&app->store);
+
+    for (guint i = 0; i < app->contacts->len; i++) {
+        Contact *c = g_ptr_array_index(app->contacts, i);
+        NuxelContact *stored = nuxel_phone_add_contact(&app->store, c->name, c->phone, c->email);
+        if (stored) {
+            /* keep the shared id so vCard UIDs stay stable across edits */
+            g_strlcpy(stored->id, c->id ? c->id : stored->id, sizeof stored->id);
+            if (c->avatar_color)
+                g_strlcpy(stored->avatar_color, c->avatar_color, sizeof stored->avatar_color);
+        }
+    }
+
+    if (nuxel_phone_store_save(&app->store, app->store_path) == 0) {
+        gchar *msg = g_strdup_printf("Saved %u contact(s) to %s",
+                                     app->contacts->len, app->store_path);
+        contacts_status(app, msg);
+        g_free(msg);
+    } else {
+        contacts_status(app, "Save failed — the address book on disk was NOT changed.");
+    }
+}
+
+/* Load via the shared store.  The previous loader also seeded three fake
+ * contacts ("Alice Johnson", ...) when the file was missing, which made an empty
+ * address book look populated; we now start genuinely empty and say so. */
 static void
 load_contacts(NuxelContacts *app)
 {
-    if (!app->data_dir) return;
-    
-    gchar *path = g_build_filename(app->data_dir, "contacts.json", NULL);
-    
-    /* Load using simple key-file approach */
-    gchar *content;
-    gsize length;
-    if (!g_file_get_contents(path, &content, &length, NULL)) {
-        /* Create default contacts */
-        Contact *c1 = contact_new("Alice Johnson", "+1-555-0101", "alice@example.com");
-        Contact *c2 = contact_new("Bob Smith", "+1-555-0102", "bob@example.com");
-        Contact *c3 = contact_new("Carol Davis", "+1-555-0103", "carol@example.com");
-        g_ptr_array_add(app->contacts, c1);
-        g_ptr_array_add(app->contacts, c2);
-        g_ptr_array_add(app->contacts, c3);
-        g_hash_table_insert(app->contacts_by_id, c1->id, c1);
-        g_hash_table_insert(app->contacts_by_id, c2->id, c2);
-        g_hash_table_insert(app->contacts_by_id, c3->id, c3);
-        save_contacts(app);
-        g_free(path);
+    if (!app->store_path) {
+        gtk_label_set_text(GTK_LABEL(app->status_label),
+                           "No storage location configured — contacts are read-only.");
         return;
     }
-    
-    /* Parse JSON (using json-glib) */
-    g_autoptr(JsonParser) parser = json_parser_new();
-    if (json_parser_load_from_data(parser, content, length, NULL)) {
-        JsonNode *root = json_parser_get_root(parser);
-        JsonObject *obj = json_node_get_object(root);
-        JsonArray *arr = json_object_get_array_member(obj, "contacts");
-        
-        for (guint i = 0; i < json_array_get_length(arr); i++) {
-            JsonObject *cobj = json_array_get_object_element(arr, i);
-            Contact *c = contact_new(
-                json_object_get_string_member(cobj, "name"),
-                json_object_get_string_member(cobj, "phone"),
-                json_object_get_string_member(cobj, "email")
-            );
+
+    nuxel_phone_store_free(&app->store);
+    nuxel_phone_store_init(&app->store);
+
+    int rc = nuxel_phone_store_load(&app->store, app->store_path);
+    if (rc == -1)
+        contacts_status(app, "The stored address book could not be parsed; starting empty (the file was left in place).");
+    else if (rc == -2)
+        contacts_status(app, "The stored address book was written by a newer Nuxel version; refusing to downgrade it.");
+    else if (app->store.n_contacts == 0)
+        contacts_status(app, "Address book is empty. Add a contact or import a vCard.");
+    else {
+        gchar *msg = g_strdup_printf("Loaded %u contact(s) from %s",
+                                     (guint)app->store.n_contacts, app->store_path);
+        contacts_status(app, msg);
+        g_free(msg);
+    }
+
+    for (size_t i = 0; i < app->store.n_contacts; i++) {
+        NuxelContact *sc = &app->store.contacts[i];
+        Contact *c = contact_new(sc->name, sc->phone, sc->email);
+        g_free(c->id);
+        c->id = g_strdup(sc->id);
+        if (sc->avatar_color[0]) {
+            g_free(c->avatar_color);
+            c->avatar_color = g_strdup(sc->avatar_color);
+        }
+        g_ptr_array_add(app->contacts, c);
+        g_hash_table_insert(app->contacts_by_id, c->id, c);
+    }
+}
+
+/* vCard 3.0 import/export (offline, no network, no account). */
+static void
+on_export_vcard_clicked(GtkWidget *btn, gpointer user_data)
+{
+    NuxelContacts *app = (NuxelContacts *)user_data;
+    (void)btn;
+
+    save_contacts(app);   /* export exactly what is on screen */
+
+    gchar *vcards = NULL;
+    if (nuxel_phone_export_vcard(&app->store, &vcards) != 0 || !vcards) {
+        contacts_status(app, "Export failed: the vCard writer could not build the file.");
+        return;
+    }
+
+    gchar *dir = g_path_get_dirname(app->store_path);
+    gchar *out = g_build_filename(dir, "contacts-export.vcf", NULL);
+    GError *error = NULL;
+    if (!g_file_set_contents(out, vcards, -1, &error)) {
+        gchar *msg = g_strdup_printf("Export failed: %s",
+                                     error ? error->message : "unknown error");
+        contacts_status(app, msg);
+        g_free(msg);
+        if (error) g_error_free(error);
+    } else {
+        gchar *msg = g_strdup_printf("Exported %u contact(s) to %s (vCard 3.0)",
+                                     app->contacts->len, out);
+        contacts_status(app, msg);
+        g_free(msg);
+    }
+    g_free(out);
+    g_free(dir);
+    g_free(vcards);
+}
+
+static void
+on_import_vcard_clicked(GtkWidget *btn, gpointer user_data)
+{
+    NuxelContacts *app = (NuxelContacts *)user_data;
+    (void)btn;
+
+    GtkFileDialog *dialog = gtk_file_dialog_new();
+    gtk_file_dialog_set_title(dialog, "Import a vCard file");
+
+    /* GTK4: async file dialog; the callback re-reads through the shared store. */
+    gtk_file_dialog_open(dialog, GTK_WINDOW(app->window), NULL,
+                         (GAsyncReadyCallback)on_vcard_chosen, app);
+}
+
+static void
+on_vcard_chosen(GObject *source, GAsyncResult *res, gpointer user_data)
+{
+    NuxelContacts *app = (NuxelContacts *)user_data;
+    GError *error = NULL;
+    GFile *file = gtk_file_dialog_open_finish(GTK_FILE_DIALOG(source), res, &error);
+    if (!file) {
+        if (error) {
+            contacts_status(app, error->message);
+            g_error_free(error);
+        }
+        return;
+    }
+
+    gchar *path = g_file_get_path(file);
+    gchar *text = NULL;
+    gsize len = 0;
+    if (!path || !g_file_get_contents(path, &text, &len, &error)) {
+        gchar *msg = g_strdup_printf("Import failed: %s",
+                                     error ? error->message : "cannot read that file");
+        contacts_status(app, msg);
+        g_free(msg);
+        if (error) g_error_free(error);
+        g_free(path);
+        g_object_unref(file);
+        return;
+    }
+
+    int imported = 0;
+    if (nuxel_phone_import_vcard(&app->store, text, len, &imported) != 0) {
+        contacts_status(app, "Import failed: that file is not a vCard stream we can read.");
+    } else {
+        /* Rebuild the UI model from the store so the imported people appear. */
+        g_ptr_array_set_size(app->contacts, 0);
+        g_hash_table_remove_all(app->contacts_by_id);
+        nuxel_phone_store_save(&app->store, app->store_path);
+        for (size_t i = 0; i < app->store.n_contacts; i++) {
+            NuxelContact *sc = &app->store.contacts[i];
+            Contact *c = contact_new(sc->name, sc->phone, sc->email);
             g_free(c->id);
-            c->id = g_strdup(json_object_get_string_member(cobj, "id"));
+            c->id = g_strdup(sc->id);
             g_ptr_array_add(app->contacts, c);
             g_hash_table_insert(app->contacts_by_id, c->id, c);
         }
+        gchar *msg = g_strdup_printf("Imported %d contact(s) from %s",
+                                     imported, path);
+        contacts_status(app, msg);
+        g_free(msg);
     }
-    
-    g_free(content);
+
+    g_free(text);
     g_free(path);
+    g_object_unref(file);
 }
 
 /* ============================================================
@@ -317,6 +435,11 @@ activate_cb(GtkApplication *gtk_app, gpointer user_data)
     /* Setup data directory */
     app->data_dir = g_build_filename(g_get_user_data_dir(), "nuxel-contacts", NULL);
     g_mkdir_with_parents(app->data_dir, 0755);
+
+    /* Authoritative store: same file the A32 build intended to write, now written
+     * through the shared phone data layer (atomic tmp+rename, schema_version 1). */
+    app->store_path = g_build_filename(app->data_dir, "contacts.json", NULL);
+    nuxel_phone_store_init(&app->store);
     
     app->contacts = g_ptr_array_new_with_free_func(contact_free);
     app->contacts_by_id = g_hash_table_new(g_str_hash, g_str_equal);
@@ -356,12 +479,36 @@ activate_cb(GtkApplication *gtk_app, gpointer user_data)
     gtk_widget_set_margin(title, 12);
     gtk_box_append(GTK_BOX(header), title);
     
+    GtkWidget *spacer = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
+    gtk_widget_set_hexpand(spacer, TRUE);
+    gtk_box_append(GTK_BOX(header), spacer);
+
+    GtkWidget *import_btn = gtk_button_new_with_label("Import vCard");
+    gtk_widget_add_css_class(import_btn, "flat");
+    g_signal_connect(import_btn, "clicked", G_CALLBACK(on_import_vcard_clicked), app);
+    gtk_box_append(GTK_BOX(header), import_btn);
+
+    GtkWidget *export_btn = gtk_button_new_with_label("Export vCard");
+    gtk_widget_add_css_class(export_btn, "flat");
+    g_signal_connect(export_btn, "clicked", G_CALLBACK(on_export_vcard_clicked), app);
+    gtk_box_append(GTK_BOX(header), export_btn);
+
     GtkWidget *add_btn = gtk_button_new_with_label("+");
     gtk_widget_add_css_class(add_btn, "flat");
     g_signal_connect(add_btn, "clicked", G_CALLBACK(on_add_contact_clicked), app);
     gtk_box_append(GTK_BOX(header), add_btn);
     
     gtk_box_append(GTK_BOX(list_page), header);
+
+    /* Status line: every save/import/export reports its real outcome here. */
+    app->status_label = gtk_label_new("");
+    gtk_widget_add_css_class(app->status_label, "caption");
+    gtk_label_set_xalign(GTK_LABEL(app->status_label), 0.0);
+    gtk_label_set_wrap(GTK_LABEL(app->status_label), TRUE);
+    gtk_widget_set_margin_start(app->status_label, 12);
+    gtk_widget_set_margin_end(app->status_label, 12);
+    gtk_widget_set_margin_bottom(app->status_label, 6);
+    gtk_box_append(GTK_BOX(list_page), app->status_label);
     
     app->contact_list = gtk_list_box_new();
     g_signal_connect(app->contact_list, "row-activated",

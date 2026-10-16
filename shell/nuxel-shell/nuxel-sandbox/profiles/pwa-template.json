@@ -2,7 +2,13 @@
     "app_id": "org.nuxel.PWA",
     "name": "PWA Template",
     "category": "pwa",
+    "template": true,
     "flags": [],
+    "capabilities": [
+        "network", "storage", "camera", "microphone", "location",
+        "notifications", "background", "bluetooth", "usb", "display"
+    ],
+    "note": "Template only: it declares the full catalogue an installed PWA MAY request. A real app is launched with the SUBSET a user granted; nothing here is granted by copying this file.",
     "data_dir": "/var/app/APP_ID/data",
     "cgroup_name": "app-APP_ID",
     "cgroup_classid": 16974000,
@@ -14,13 +20,23 @@
     "landlock_rules": {
         "read_only": ["/usr", "/usr/share", "/etc/fonts", "/etc/gtk-4.0"],
         "read_write": ["/var/app/APP_ID/data"],
-        "deny": ["/dev", "/sys", "/proc/*/mem", "/var/app/"]
+        "deny": ["/dev", "/sys", "/proc/*/mem", "/var/app/"],
+        "kernel_note": "INTENT ONLY on this device: Landlock requires Linux >= 5.13 and the S10+ vendor kernel is 4.14.253. nuxel-sandbox reports LANDLOCK_UNAVAILABLE and continues."
     },
     "network_policy": {
         "default": "deny",
         "allow_dns": true,
         "allow_tcp_outbound": false,
         "allow_udp_outbound": false,
-        "allow_inbound": false
+        "allow_inbound": false,
+        "kernel_note": "Per-app matching on 4.14 uses the cgroup v1 net_cls classid; the cgroupv2 matcher requires Linux >= 5.13."
+    },
+    "enforcement": {
+        "attacker_privilege_class": "unprivileged-app",
+        "root_note": "Nothing here constrains uid 0.",
+        "apparmor": "generated per installed app from configs/apparmor.d/usr.bin.nuxel-pwa-launcher; effective only if AppArmor is enabled in this kernel",
+        "landlock": "unavailable on Linux 4.14",
+        "seccomp": "pwa-strict BPF allow-list with no_new_privs",
+        "note": "A denied capability is a real refusal from the portal; it is not a kernel-level denial of the underlying device, because 4.14 has no Landlock."
     }
 }

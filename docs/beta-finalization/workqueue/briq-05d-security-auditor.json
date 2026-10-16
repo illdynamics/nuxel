@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "id": "briq-05d-security-auditor",
+  "revisions": [
+    {
+      "id": "briq-05d-security-auditor",
+      "title": "Security auditor and threat-model enforcement proof",
+      "component": "bg-05-security-permissions",
+      "component_title": "Priority 5 - Security, Permissions & Connectivity Controls",
+      "priority": 5,
+      "state": "pending",
+      "dependencies": [
+        "briq-05a-permission-manager"
+      ],
+      "evidence": [],
+      "intended_changes": [
+        "docs/beta-finalization/security/THREAT-MODEL.md",
+        "docs/beta-finalization/security/ENFORCEMENT-PROOF.md",
+        "tools/s10plus/a33/nuxel-security-audit.sh"
+      ],
+      "tests": [
+        "(tests are recorded by the owning briQ when it reports)"
+      ],
+      "risk": "medium",
+      "rollback": "git revert the commit(s) touching this task's expected files; the change is repository-only and alters no device state",
+      "verdict": null,
+      "offline_ceiling": null,
+      "owner_action": "",
+      "expected_files": [
+        "docs/beta-finalization/security/THREAT-MODEL.md",
+        "docs/beta-finalization/security/ENFORCEMENT-PROOF.md",
+        "tools/s10plus/a33/nuxel-security-audit.sh"
+      ],
+      "note": "seeded from the QonQrete plan; 0/3 expected file(s) already present in the tree",
+      "source": "plan.json",
+      "revision": 1,
+      "at": "2026-10-16T16:07:13+02:00",
+      "by": "construqtor/bg-00-preflight"
+    }
+  ]
+}

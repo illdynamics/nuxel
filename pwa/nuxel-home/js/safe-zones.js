@@ -90,6 +90,50 @@
   //   1 time  2 battery icon  3 battery %  4 signal  5 wifi  6 notifications
   var PRIORITY = ['status-time', 'status-battery', 'status-battery-pct', 'status-signal', 'status-wifi'];
 
+  // The complement of the blocked intervals inside the bar, with overlapping
+  // intervals merged (adjacent blocked zones overlap once the padding is added,
+  // so "zones 9 and 10" is ONE free gap, not two).
+  function freeIntervals(width, ivals) {
+    var free = [], pos = 0, i, s0, e0;
+    for (i = 0; i < ivals.length; i++) {
+      s0 = Math.max(0, Math.min(width, ivals[i].start));
+      e0 = Math.max(0, Math.min(width, ivals[i].end));
+      if (s0 > pos) free.push({ start: pos, end: s0 });
+      if (e0 > pos) pos = e0;
+    }
+    if (pos < width) free.push({ start: pos, end: width });
+    return free;
+  }
+
+  // The free interval the cluster mostly occupies; if it occupies none, the
+  // nearest one (a cluster that is merely close is still an item in the cutout).
+  function bestFreeInterval(natural, free) {
+    var best = null, bestScore = -Infinity, i, f, overlap, dist;
+    for (i = 0; i < free.length; i++) {
+      f = free[i];
+      overlap = Math.min(natural.right, f.end) - Math.max(natural.left, f.start);
+      dist = Math.min(Math.abs(natural.left - f.end), Math.abs(f.start - natural.right));
+      var score = overlap > 0 ? overlap : -dist;
+      if (score > bestScore) { bestScore = score; best = f; }
+    }
+    return best;
+  }
+
+  // Where the cluster's left edge goes inside a free interval, honouring its
+  // alignment, then clamped so the cluster stays inside that interval AND on the
+  // panel.  ('center' keeps its centre; 'end' keeps its right edge flush.)
+  function targetLeft(align, natural, f, width) {
+    var w = natural.right - natural.left, left;
+    if (align === 'start') left = f.start;
+    else if (align === 'end') left = f.end - w;
+    else left = (f.start + f.end - w) / 2;
+    if (left < f.start) left = f.start;
+    if (left + w > f.end) left = Math.max(f.start, f.end - w);
+    if (left < 0) left = 0;
+    if (left + w > width) left = Math.max(0, width - w);
+    return left;
+  }
+
   function applyLayout() {
     var bar = document.getElementById('status-bar');
     if (!bar) return { blocked: [], placed: [], moved: [], dropped: [] };
@@ -109,27 +153,44 @@
 
     clusters.forEach(function (c) {
       if (!c.el) return;
-      var natural = c.el.getBoundingClientRect();
-      var hit = overlaps(natural.left, natural.right, ivals);
-      // Reset any previous push, then solve against the real blocked intervals.
+      // A33 HARDENING (briq-02e): reset the previous push BEFORE measuring.  A
+      // CSS transform is included in getBoundingClientRect(), so measuring first
+      // made every re-render stack another translate on top of the last one -
+      // the layout drifted a little further off-target on every state update.
+      // applyLayout() is now idempotent.
       c.el.style.transform = '';
       c.el.style.paddingRight = '';
+      var natural = c.el.getBoundingClientRect();
+      var hit = overlaps(natural.left, natural.right, ivals);
       if (!hit) { report.placed.push({ cluster: c.el.className, ok: true }); return; }
-      var shift;
-      if (c.align === 'start') {                       // push left of the first blocked zone
-        shift = Math.min(0, ivals[0].start - natural.left - 2);
-      } else if (c.align === 'end') {                  // push right of the last blocked zone
-        var last = ivals[ivals.length - 1];
-        shift = Math.max(0, last.end - natural.left + 2);
-      } else {                                         // centre: take the wider free side
-        var leftFree = ivals[0].start;
-        var rightFree = width - ivals[ivals.length - 1].end;
-        shift = (leftFree >= rightFree)
-          ? (ivals[0].start - natural.right - 2)
-          : (ivals[ivals.length - 1].end - natural.left + 2);
+
+      // A33 HARDENING: solve against the FREE intervals, not "left of the first
+      // blocked zone" / "right of the last".  A32 only ever pushed one way, so
+      //   * the S10+ portrait profile (zones 9,10 = the right edge) pushed the
+      //     right cluster further RIGHT, i.e. off the panel, and
+      //   * blocking zones 1,2 pushed the left cluster off the LEFT edge and it
+      //     still sat inside the excluded interval.
+      // The contract is unchanged (ten zones, same profile, same padding, still
+      // transform-only); the difference is that the item now lands in the nearest
+      // free interval and never inside a blocked one.
+      var free = freeIntervals(width, ivals);
+      var target = bestFreeInterval(natural, free);
+      if (!target) {   // the whole bar is blocked: nothing can be placed safely
+        report.dropped.push({ cluster: c.el.className, reason: 'no_free_interval' });
+        return;
       }
-      c.el.style.transform = 'translateX(' + Math.round(shift) + 'px)';
-      report.moved.push({ cluster: c.el.className, shift: Math.round(shift), zone: hit.zone });
+      var left = targetLeft(c.align, natural, target, width);
+      var shift = Math.round(left - natural.left);
+      if (!shift) { report.placed.push({ cluster: c.el.className, ok: true }); return; }
+      c.el.style.transform = 'translateX(' + shift + 'px)';
+      var clusterW = natural.right - natural.left;
+      if (target.end - target.start + 0.5 < clusterW) {
+        report.dropped.push({ cluster: c.el.className, reason: 'free_interval_narrower_than_cluster',
+                              free: [Math.round(target.start), Math.round(target.end)],
+                              width: Math.round(clusterW) });
+      }
+      report.moved.push({ cluster: c.el.className, shift: shift, zone: hit.zone,
+                          free: [Math.round(target.start), Math.round(target.end)] });
     });
     global.__nuxelSafeZoneReport = report;
     // Deterministic evidence: the placement report goes through the launcher

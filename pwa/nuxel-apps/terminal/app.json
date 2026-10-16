@@ -1,0 +1,15 @@
+{
+  "id": "org.nuxel.Terminal",
+  "name": "Terminal",
+  "icon": "\ud83d\udda5\ufe0f",
+  "color": "#263238",
+  "category": "system",
+  "type": "pwa",
+  "url": "/pwa/nuxel-apps/terminal/index.html",
+  "manifest": "pwa/nuxel-apps/terminal/manifest.json",
+  "description": "Real local PTY through the launcher host - no remote shell",
+  "capabilities": [],
+  "bridge_version": "1",
+  "docked": true,
+  "source": "pwa/nuxel-apps tree (bg-06-core-phone-apps)"
+}

@@ -1,0 +1,72 @@
+#!/usr/sbin/nft -f
+# ============================================================================
+# Nuxel console guard - the rule that must never lock the owner out.
+# ============================================================================
+# Rationale (briq-05b, hard requirement): the only recovery path on the S10+ is
+# the live USB console (root shell over the CDC-ACM gadget, /dev/ttyGS0). A
+# firewall that drops the console turns a misconfiguration into a device that
+# must be flashed to recover - and flashing is forbidden by the mission
+# invariants. Therefore this table is loaded at priority -200, BEFORE every
+# filter chain in nuxel-app-firewall.nft (which start at -100), with
+# policy accept, so no later chain can drop console traffic.
+#
+# Honest scope of this guard:
+#   * The CDC-ACM console is a serial device (/dev/ttyGS0), not a network
+#     interface. Netfilter rules do not affect it at all - this guard exists for
+#     the *networked* console paths (USB gadget RNDIS/NCM interface, the VM
+#     bridged interface, and SSH over either of them).
+#   * Allowing traffic on the USB gadget interface cannot make the device less
+#     safe against anyone who does not already have the cable: physical access
+#     to the USB data port is equivalent to having the console. That is why the
+#     guard accepts the gadget interface wholesale instead of trying to
+#     micro-manage it.
+#   * Removal of this table is itself refused by tools/s10plus/a33/nuxel-firewall.sh
+#     (see "console-verify"): the tool re-loads the guard first and fails the
+#     apply if the guard is not present in the resulting ruleset.
+#
+# Verify after every apply:
+#   nft list table inet nuxel_console_guard
+#   nft list ruleset | grep -c nuxel_console_guard
+
+table inet nuxel_console_guard {
+    chain guard {
+        type filter hook input priority -200; policy accept;
+
+        # The owner's console paths, highest priority, never dropped.
+        #  - usb0 / rndis0 / ncm0 : USB gadget networking used by the live host
+        #  - enp0s* / eth0        : VM (UTM) host bridge used for VM-only work
+        #  - wlanmon0             : never used for the console; listed for clarity
+        iifname { "usb0", "rndis0", "ncm0", "usb1", "eth0" } accept
+        iifname { "enp0s1", "enp0s2", "enp0s3", "enp0s4" } accept
+
+        # Loopback and established flows are always allowed.
+        iif lo accept
+        ct state established,related accept
+
+        # SSH / console service port: allowed on ANY interface so that a
+        # re-addressed gadget interface cannot lock the owner out.
+        tcp dport { 22, 2022 } accept
+
+        # ICMP echo so the owner can see the device is alive.
+        icmp type echo-request accept
+        icmpv6 type { echo-request, echo-reply, neighbor-solicit, neighbor-advertise } accept
+    }
+
+    chain guard_out {
+        type filter hook output priority -200; policy accept;
+
+        oifname { "usb0", "rndis0", "ncm0", "usb1", "eth0" } accept
+        oifname { "enp0s1", "enp0s2", "enp0s3", "enp0s4" } accept
+
+        oif lo accept
+        ct state established,related accept
+
+        # Console responses must be able to leave even if the app chain is in a
+        # drop-everything posture.
+        tcp sport { 22, 2022 } accept
+
+        # DHCP client + DHCP server responses for the gadget link.
+        udp sport 67 udp dport 68 accept
+        udp sport 68 udp dport 67 accept
+    }
+}

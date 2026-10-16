@@ -1,0 +1,5 @@
+# holding past 8 s escalates from the menu to the gated reboot class
+0 key power 1
+2100 tick
+8100 tick
+8200 key power 0

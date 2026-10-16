@@ -1,0 +1,12 @@
+{
+  "kind": "downloader-acceptance-examples",
+  "warning": "Documentation examples for the refusal paths. These URLs are NOT fetched by the test suite and NOT by the app; they exist so the refusal rules can be read and reproduced by hand in the UI.",
+  "cases": [
+    {"url": "https://ftp.gnu.org/gnu/coreutils/coreutils-9.5.tar.xz", "expected": "accepted", "why": "https on a plain publisher host with no third-party service"},
+    {"url": "http://example.org/file.mp3", "expected": "refused", "why": "plain http — the payload cannot be integrity-checked"},
+    {"url": "https://play.google.com/store/apps/details?id=x", "expected": "refused", "why": "Google Play is on the no-third-party-service list"},
+    {"url": "https://dl.google.com/foo.bin", "expected": "refused", "why": "Google download host is on the no-third-party-service list"},
+    {"url": "ftp://example.org/file.mp3", "expected": "refused", "why": "ftp is not an allowed scheme"},
+    {"url": "example.org/file.mp3", "expected": "refused", "why": "no scheme at all"}
+  ]
+}

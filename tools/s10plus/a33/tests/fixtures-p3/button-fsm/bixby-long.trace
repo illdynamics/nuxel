@@ -1,0 +1,4 @@
+# assistant key held past 1500 ms -> the long-press class (mapped to disabled)
+0 key bixby 1
+1600 tick
+1700 key bixby 0

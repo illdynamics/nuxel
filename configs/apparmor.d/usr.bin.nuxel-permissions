@@ -17,6 +17,13 @@ profile nuxel-permissions /usr/bin/nuxel-permissions flags=(attach_disconnected)
     /var/lib/nuxel/permissions/** rw,
     /var/app/nuxel-permissions/data/** rw,
 
+    # briq-05a: the capability registry is the single source of the enforcement
+    # truth shown in the UI (mechanism / attacker class / limitation). The app
+    # must be able to read it, and must NOT be able to write it - a permission
+    # manager that can rewrite the truth it displays is worthless.
+    /etc/nuxel/permissions/capabilities.json r,
+    /usr/share/nuxel/permissions/capabilities.json r,
+
     /run/user/*/wayland-* rw,
     /run/user/*/bus rw,
 

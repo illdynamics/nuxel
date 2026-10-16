@@ -1,0 +1,90 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://nuxel.local/schemas/nuxtore-catalog.json",
+  "title": "NuxTore local catalog",
+  "description": "Offline-first catalog format for NuxTore. Local staging only: no field may reference an external store submission. All strings inside a signature-covered package object must be printable ASCII so the Python and JavaScript canonicalisers emit identical bytes.",
+  "type": "object",
+  "required": ["schema_version", "catalog_id", "generated", "publisher", "policy", "packages"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {"const": 1},
+    "catalog_id": {"type": "string", "pattern": "^[A-Za-z0-9._-]+$"},
+    "generated": {"type": "string"},
+    "notice": {"type": "string"},
+    "publisher": {
+      "type": "object",
+      "required": ["name", "key_id"],
+      "additionalProperties": true,
+      "properties": {
+        "name": {"type": "string"},
+        "key_id": {"type": "string", "pattern": "^[A-Za-z0-9._-]+$"},
+        "key_note": {"type": "string"}
+      }
+    },
+    "policy": {
+      "type": "object",
+      "required": ["require_signature", "allow_unsigned_with_confirmation", "allow_http", "allow_external_publish", "max_package_bytes", "allowed_source_types"],
+      "additionalProperties": true,
+      "properties": {
+        "require_signature": {"type": "boolean"},
+        "allow_unsigned_with_confirmation": {"type": "boolean"},
+        "allow_http": {"const": false, "description": "NuxTore is offline-first: plain HTTP sources are refused."},
+        "allow_external_publish": {"const": false, "description": "The mission forbids external publishing and store submission; this must stay false."},
+        "max_package_bytes": {"type": "integer", "minimum": 1024},
+        "allowed_source_types": {"type": "array", "items": {"enum": ["local-bundle"]}}
+      }
+    },
+    "packages": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "version", "category", "summary", "description", "license", "size_bytes", "file_count", "sha256", "bundle", "source", "install"],
+        "additionalProperties": true,
+        "properties": {
+          "id": {"type": "string", "pattern": "^[A-Za-z0-9._-]+$"},
+          "name": {"type": "string"},
+          "version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"},
+          "category": {"type": "string"},
+          "summary": {"type": "string", "maxLength": 120},
+          "description": {"type": "string"},
+          "license": {"type": "string"},
+          "size_bytes": {"type": "integer", "minimum": 0},
+          "file_count": {"type": "integer", "minimum": 1},
+          "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+          "bundle": {"type": "string", "pattern": "^bundles/[A-Za-z0-9._-]+\\.bundle\\.json$"},
+          "source": {
+            "type": "object",
+            "required": ["type", "uri", "provenance"],
+            "properties": {
+              "type": {"const": "local-bundle"},
+              "uri": {"type": "string"},
+              "provenance": {"type": "string"}
+            }
+          },
+          "install": {
+            "type": "object",
+            "required": ["type", "app_id", "start_url", "mode"],
+            "properties": {
+              "type": {"enum": ["pwa"]},
+              "app_id": {"type": "string"},
+              "start_url": {"type": "string", "pattern": "^/"},
+              "mode": {"enum": ["staged"]}
+            }
+          },
+          "requires": {"type": "array", "items": {"type": "string"}},
+          "capabilities": {"type": "array", "items": {"type": "string"}},
+          "state_hint": {"enum": ["installed", "available"]},
+          "signature": {
+            "type": "object",
+            "required": ["alg", "key_id", "value"],
+            "properties": {
+              "alg": {"const": "ed25519"},
+              "key_id": {"type": "string"},
+              "value": {"type": "string", "pattern": "^[A-Za-z0-9+/]+=*$"}
+            }
+          }
+        }
+      }
+    }
+  }
+}

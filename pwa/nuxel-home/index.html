@@ -129,8 +129,12 @@
     <!-- A32: host backend (settings/buttons/terminal) + status-bar safe zones.
          Both are inert without a host, so the VM/desktop launcher is unchanged. -->
     <script src="js/host-bridge.js"></script>
+    <!-- A33: the durable settings document store (verbose boot, handoff config)
+         and the verbose-boot log overlay.  Both are inert without a host. -->
+    <script src="js/settings-store.js"></script>
     <script src="js/safe-zones.js"></script>
     <script src="js/osd.js"></script>
+    <script src="js/bootlog.js"></script>
     <script src="js/app.js"></script>
 </body>
 </html>

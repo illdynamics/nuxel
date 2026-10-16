@@ -99,6 +99,64 @@
     ],
     "app_type": "home",
     "native_fallback": false,
-    "bridge_version": "0.4.0-alpha"
-  }
+    "bridge_version": "0.4.0-alpha",
+    "pwa_version": "0.4.1-a33",
+    "cache_version": "v4-a33",
+    "registry_version": 4,
+    "single_source_of_truth": "pwa/nuxel-home (index.html, css/, js/, manifest.json, sw.js)",
+    "apps_in_registry": [
+      "nuxel-dialer",
+      "nuxel-messages",
+      "nuxel-contacts",
+      "org.nuxel.Mail",
+      "org.nuxel.Calendar",
+      "org.nuxel.Notes",
+      "org.nuxel.Files",
+      "nuxel-camera",
+      "nuxel-settings",
+      "org.nuxel.Terminal",
+      "org.nuxel.LiveConsole"
+    ],
+    "settings_documents": [
+      "/etc/nuxel/boot/verbose-boot.json",
+      "/etc/nuxel/boot/animation-handoff.json",
+      "/etc/nuxel/display/statusbar-safezones.json",
+      "/etc/nuxel/input/buttons.json"
+    ],
+    "display": {
+      "panel": "1440x3040",
+      "viewport_css_px": "360x760",
+      "safe_zones": 10,
+      "safe_zone_profile": "s10plus"
+    }
+  },
+  "id": "/pwa/nuxel-home/",
+  "display_override": [
+    "fullscreen",
+    "standalone"
+  ],
+  "scope_extensions": [],
+  "launch_handler": {
+    "client_mode": "focus-existing"
+  },
+  "shortcuts": [
+    {
+      "name": "Terminal",
+      "short_name": "Terminal",
+      "url": "./index.html#app=org.nuxel.Terminal",
+      "description": "Open the Nuxel terminal (Bixby button default action)"
+    },
+    {
+      "name": "Settings",
+      "short_name": "Settings",
+      "url": "./index.html#app=nuxel-settings",
+      "description": "Open Nuxel settings (display safe zones, buttons, verbose boot)"
+    },
+    {
+      "name": "Console",
+      "short_name": "Console",
+      "url": "./index.html#app=org.nuxel.LiveConsole",
+      "description": "Open the Nuxel live console"
+    }
+  ]
 }

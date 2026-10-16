@@ -1,0 +1,6 @@
+# swipe up and hold for 500 ms -> recents (fires on the timer, once)
+1000 touch down 700 3000
+1200 touch move 702 2990
+1600 tick
+1800 touch move 705 2870
+1900 touch up 705 2860

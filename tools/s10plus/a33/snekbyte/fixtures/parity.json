@@ -1,0 +1,2460 @@
+{
+  "config": {
+    "defaultSpeedIndex": 2,
+    "gridHeight": 30,
+    "gridSize": 20,
+    "gridWidth": 40,
+    "initialDirection": [
+      1,
+      0
+    ],
+    "initialLength": 1,
+    "initialPosition": [
+      20,
+      15
+    ],
+    "screenHeight": 600,
+    "screenWidth": 800,
+    "speedLevels": [
+      5,
+      8,
+      12,
+      16,
+      20
+    ],
+    "wonqThreshold": 5
+  },
+  "fixtureSchema": 1,
+  "generator": "tools/s10plus/a33/snekbyte/gen-parity-fixtures.py",
+  "pygameUsed": "real pygame",
+  "scenarios": [
+    {
+      "expectedEvents": [
+        "eat",
+        "eat",
+        "eat",
+        "wall"
+      ],
+      "name": "eat-grow-trim-wall",
+      "steps": [
+        {
+          "food": [
+            21,
+            15
+          ],
+          "tick": {
+            "food": [
+              0,
+              0
+            ],
+            "gameOver": false,
+            "poops": [],
+            "score": 1,
+            "shitCounter": 0,
+            "snake": {
+              "direction": [
+                1,
+                0
+              ],
+              "length": 2,
+              "positions": [
+                [
+                  21,
+                  15
+                ]
+              ]
+            },
+            "tick": 1
+          },
+          "turn": null
+        },
+        {
+          "food": [
+            22,
+            15
+          ],
+          "tick": {
+            "food": [
+              0,
+              0
+            ],
+            "gameOver": false,
+            "poops": [],
+            "score": 2,
+            "shitCounter": 0,
+            "snake": {
+              "direction": [
+                1,
+                0
+              ],
+              "length": 3,
+              "positions": [
+                [
+                  22,
+                  15
+                ],
+                [
+                  21,
+                  15
+                ]
+              ]
+            },
+            "tick": 2
+          },
+          "turn": null
+        },
+        {
+          "food": [
+            23,
+            15
+          ],
+          "tick": {
+            "food": [
+              0,
+              0
+            ],
+            "gameOver": false,
+            "poops": [],
+            "score": 3,
+            "shitCounter": 0,
+            "snake": {
+              "direction": [
+                1,
+                0
+              ],
+              "length": 4,
+              "positions": [
+                [
+                  23,
+                  15
+                ],
+                [
+                  22,
+                  15
+                ],
+                [
+                  21,
+                  15
+                ]
+              ]
+            },
+            "tick": 3
+          },
+          "turn": null
+        },
+        {
+          "food": [
+            0,
+            0
+          ],
+          "tick": {
+            "food": [
+              0,
+              0
+            ],
+            "gameOver": false,
+            "poops": [],
+            "score": 3,
+            "shitCounter": 0,
+            "snake": {
+              "direction": [
+                1,
+                0
+              ],
+              "length": 4,
+              "positions": [
+                [
+                  24,
+                  15
+                ],
+                [
+                  23,
+                  15
+                ],
+                [
+                  22,
+                  15
+                ],
+                [
+                  21,
+                  15
+                ]
+              ]
+            },
+            "tick": 4
+          },
+          "turn": null
+        },
+        {
+          "food": [
+            0,
+            0
+          ],
+          "tick": {
+            "food": [
+              0,
+              0
+            ],
+            "gameOver": false,
+            "poops": [],
+            "score": 3,
+            "shitCounter": 0,
+            "snake": {
+              "direction": [
+                1,
+                0
+              ],
+              "length": 4,
+              "positions": [
+                [
+                  25,
+                  15
+                ],
+                [
+                  24,
+                  15
+                ],
+                [
+                  23,
+                  15
+                ],
+                [
+                  22,
+                  15
+                ]
+              ]
+            },
+            "tick": 5
+          },
+          "turn": null
+        },
+        {
+          "food": [
+            0,
+            0
+          ],
+          "tick": {
+            "food": [
+              0,
+              0
+            ],
+            "gameOver": false,
+            "poops": [],
+            "score": 3,
+            "shitCounter": 0,
+            "snake": {
+              "direction": [
+                1,
+                0
+              ],
+              "length": 4,
+              "positions": [
+                [
+                  26,
+                  15
+                ],
+                [
+                  25,
+                  15
+                ],
+                [
+                  24,
+                  15
+                ],
+                [
+                  23,
+                  15
+                ]
+              ]
+            },
+            "tick": 6
+          },
+          "turn": null
+        },
+        {
+          "food": [
+            0,
+            0
+          ],
+          "tick": {
+            "food": [
+              0,
+              0
+            ],
+            "gameOver": false,
+            "poops": [],
+            "score": 3,
+            "shitCounter": 0,
+            "snake": {
+              "direction": [
+                1,
+                0
+              ],
+              "length": 4,
+              "positions": [
+                [
+                  27,
+                  15
+                ],
+                [
+                  26,
+                  15
+                ],
+                [
+                  25,
+                  15
+                ],
+                [
+                  24,
+                  15
+                ]
+              ]
+            },
+            "tick": 7
+          },
+          "turn": null
+        },
+        {
+          "food": [
+            0,
+            0
+          ],
+          "tick": {
+            "food": [
+              0,
+              0
+            ],
+            "gameOver": false,
+            "poops": [],
+            "score": 3,
+            "shitCounter": 0,
+            "snake": {
+              "direction": [
+                1,
+                0
+              ],
+              "length": 4,
+              "positions": [
+                [
+                  28,
+                  15
+                ],
+                [
+                  27,
+                  15
+                ],
+                [
+                  26,
+                  15
+                ],
+                [
+                  25,
+                  15
+                ]
+              ]
+            },
+            "tick": 8
+          },
+          "turn": null
+        },
+        {
+          "food": [
+            0,
+            0
+          ],
+          "tick": {
+            "food": [
+              0,
+              0
+            ],
+            "gameOver": false,
+            "poops": [],
+            "score": 3,
+            "shitCounter": 0,
+            "snake": {
+              "direction": [
+                1,
+                0
+              ],
+              "length": 4,
+              "positions": [
+                [
+                  29,
+                  15
+                ],
+                [
+                  28,
+                  15
+                ],
+                [
+                  27,
+                  15
+                ],
+                [
+                  26,
+                  15
+                ]
+              ]
+            },
+            "tick": 9
+          },
+          "turn": null
+        },
+        {
+          "food": [
+            0,
+            0
+          ],
+          "tick": {
+            "food": [
+              0,
+              0
+            ],
+            "gameOver": false,
+            "poops": [],
+            "score": 3,
+            "shitCounter": 0,
+            "snake": {
+              "direction": [
+                1,
+                0
+              ],
+              "length": 4,
+              "positions": [
+                [
+                  30,
+                  15
+                ],
+                [
+                  29,
+                  15
+                ],
+                [
+                  28,
+                  15
+                ],
+                [
+                  27,
+                  15
+                ]
+              ]
+            },
+            "tick": 10
+          },
+          "turn": null
+        },
+        {
+          "food": [
+            0,
+            0
+          ],
+          "tick": {
+            "food": [
+              0,
+              0
+            ],
+            "gameOver": false,
+            "poops": [],
+            "score": 3,
+            "shitCounter": 0,
+            "snake": {
+              "direction": [
+                1,
+                0
+              ],
+              "length": 4,
+              "positions": [
+                [
+                  31,
+                  15
+                ],
+                [
+                  30,
+                  15
+                ],
+                [
+                  29,
+                  15
+                ],
+                [
+                  28,
+                  15
+                ]
+              ]
+            },
+            "tick": 11
+          },
+          "turn": null
+        },
+        {
+          "food": [
+            0,
+            0
+          ],
+          "tick": {
+            "food": [
+              0,
+              0
+            ],
+            "gameOver": false,
+            "poops": [],
+            "score": 3,
+            "shitCounter": 0,
+            "snake": {
+              "direction": [
+                1,
+                0
+              ],
+              "length": 4,
+              "positions": [
+                [
+                  32,
+                  15
+                ],
+                [
+                  31,
+                  15
+                ],
+                [
+                  30,
+                  15
+                ],
+                [
+                  29,
+                  15
+                ]
+              ]
+            },
+            "tick": 12
+          },
+          "turn": null
+        },
+        {
+          "food": [
+            0,
+            0
+          ],
+          "tick": {
+            "food": [
+              0,
+              0
+            ],
+            "gameOver": false,
+            "poops": [],
+            "score": 3,
+            "shitCounter": 0,
+            "snake": {
+              "direction": [
+                1,
+                0
+              ],
+              "length": 4,
+              "positions": [
+                [
+                  33,
+                  15
+                ],
+                [
+                  32,
+                  15
+                ],
+                [
+                  31,
+                  15
+                ],
+                [
+                  30,
+                  15
+                ]
+              ]
+            },
+            "tick": 13
+          },
+          "turn": null
+        },
+        {
+          "food": [
+            0,
+            0
+          ],
+          "tick": {
+            "food": [
+              0,
+              0
+            ],
+            "gameOver": false,
+            "poops": [],
+            "score": 3,
+            "shitCounter": 0,
+            "snake": {
+              "direction": [
+                1,
+                0
+              ],
+              "length": 4,
+              "positions": [
+                [
+                  34,
+                  15
+                ],
+                [
+                  33,
+                  15
+                ],
+                [
+                  32,
+                  15
+                ],
+                [
+                  31,
+                  15
+                ]
+              ]
+            },
+            "tick": 14
+          },
+          "turn": null
+        },
+        {
+          "food": [
+            0,
+            0
+          ],
+          "tick": {
+            "food": [
+              0,
+              0
+            ],
+            "gameOver": false,
+            "poops": [],
+            "score": 3,
+            "shitCounter": 0,
+            "snake": {
+              "direction": [
+                1,
+                0
+              ],
+              "length": 4,
+              "positions": [
+                [
+                  35,
+                  15
+                ],
+                [
+                  34,
+                  15
+                ],
+                [
+                  33,
+                  15
+                ],
+                [
+                  32,
+                  15
+                ]
+              ]
+            },
+            "tick": 15
+          },
+          "turn": null
+        },
+        {
+          "food": [
+            0,
+            0
+          ],
+          "tick": {
+            "food": [
+              0,
+              0
+            ],
+            "gameOver": false,
+            "poops": [],
+            "score": 3,
+            "shitCounter": 0,
+            "snake": {
+              "direction": [
+                1,
+                0
+              ],
+              "length": 4,
+              "positions": [
+                [
+                  36,
+                  15
+                ],
+                [
+                  35,
+                  15
+                ],
+                [
+                  34,
+                  15
+                ],
+                [
+                  33,
+                  15
+                ]
+              ]
+            },
+            "tick": 16
+          },
+          "turn": null
+        },
+        {
+          "food": [
+            0,
+            0
+          ],
+          "tick": {
+            "food": [
+              0,
+              0
+            ],
+            "gameOver": false,
+            "poops": [],
+            "score": 3,
+            "shitCounter": 0,
+            "snake": {
+              "direction": [
+                1,
+                0
+              ],
+              "length": 4,
+              "positions": [
+                [
+                  37,
+                  15
+                ],
+                [
+                  36,
+                  15
+                ],
+                [
+                  35,
+                  15
+                ],
+                [
+                  34,
+                  15
+                ]
+              ]
+            },
+            "tick": 17
+          },
+          "turn": null
+        },
+        {
+          "food": [
+            0,
+            0
+          ],
+          "tick": {
+            "food": [
+              0,
+              0
+            ],
+            "gameOver": false,
+            "poops": [],
+            "score": 3,
+            "shitCounter": 0,
+            "snake": {
+              "direction": [
+                1,
+                0
+              ],
+              "length": 4,
+              "positions": [
+                [
+                  38,
+                  15
+                ],
+                [
+                  37,
+                  15
+                ],
+                [
+                  36,
+                  15
+                ],
+                [
+                  35,
+                  15
+                ]
+              ]
+            },
+            "tick": 18
+          },
+          "turn": null
+        },
+        {
+          "food": [
+            0,
+            0
+          ],
+          "tick": {
+            "food": [
+              0,
+              0
+            ],
+            "gameOver": false,
+            "poops": [],
+            "score": 3,
+            "shitCounter": 0,
+            "snake": {
+              "direction": [
+                1,
+                0
+              ],
+              "length": 4,
+              "positions": [
+                [
+                  39,
+                  15
+                ],
+                [
+                  38,
+                  15
+                ],
+                [
+                  37,
+                  15
+                ],
+                [
+                  36,
+                  15
+                ]
+              ]
+            },
+            "tick": 19
+          },
+          "turn": null
+        },
+        {
+          "food": [
+            0,
+            0
+          ],
+          "tick": {
+            "food": [
+              0,
+              0
+            ],
+            "gameOver": true,
+            "poops": [],
+            "score": 3,
+            "shitCounter": 0,
+            "snake": {
+              "direction": [
+                1,
+                0
+              ],
+              "length": 4,
+              "positions": [
+                [
+                  40,
+                  15
+                ],
+                [
+                  39,
+                  15
+                ],
+                [
+                  38,
+                  15
+                ],
+                [
+                  37,
+                  15
+                ]
+              ]
+            },
+            "tick": 20
+          },
+          "turn": null
+        }
+      ],
+      "wonqMode": false
+    },
+    {
+      "expectedEvents": [
+        "eat",
+        "eat",
+        "eat",
+        "eat",
+        "self"
+      ],
+      "name": "self-collision",
+      "steps": [
+        {
+          "food": [
+            21,
+            15
+          ],
+          "tick": {
+            "food": [
+              0,
+              0
+            ],
+            "gameOver": false,
+            "poops": [],
+            "score": 1,
+            "shitCounter": 0,
+            "snake": {
+              "direction": [
+                1,
+                0
+              ],
+              "length": 2,
+              "positions": [
+                [
+                  21,
+                  15
+                ]
+              ]
+            },
+            "tick": 1
+          },
+          "turn": null
+        },
+        {
+          "food": [
+            22,
+            15
+          ],
+          "tick": {
+            "food": [
+              0,
+              0
+            ],
+            "gameOver": false,
+            "poops": [],
+            "score": 2,
+            "shitCounter": 0,
+            "snake": {
+              "direction": [
+                1,
+                0
+              ],
+              "length": 3,
+              "positions": [
+                [
+                  22,
+                  15
+                ],
+                [
+                  21,
+                  15
+                ]
+              ]
+            },
+            "tick": 2
+          },
+          "turn": null
+        },
+        {
+          "food": [
+            23,
+            15
+          ],
+          "tick": {
+            "food": [
+              0,
+              0
+            ],
+            "gameOver": false,
+            "poops": [],
+            "score": 3,
+            "shitCounter": 0,
+            "snake": {
+              "direction": [
+                1,
+                0
+              ],
+              "length": 4,
+              "positions": [
+                [
+                  23,
+                  15
+                ],
+                [
+                  22,
+                  15
+                ],
+                [
+                  21,
+                  15
+                ]
+              ]
+            },
+            "tick": 3
+          },
+          "turn": null
+        },
+        {
+          "food": [
+            24,
+            15
+          ],
+          "tick": {
+            "food": [
+              0,
+              0
+            ],
+            "gameOver": false,
+            "poops": [],
+            "score": 4,
+            "shitCounter": 0,
+            "snake": {
+              "direction": [
+                1,
+                0
+              ],
+              "length": 5,
+              "positions": [
+                [
+                  24,
+                  15
+                ],
+                [
+                  23,
+                  15
+                ],
+                [
+                  22,
+                  15
+                ],
+                [
+                  21,
+                  15
+                ]
+              ]
+            },
+            "tick": 4
+          },
+          "turn": null
+        },
+        {
+          "food": [
+            0,
+            0
+          ],
+          "tick": {
+            "food": [
+              0,
+              0
+            ],
+            "gameOver": false,
+            "poops": [],
+            "score": 4,
+            "shitCounter": 0,
+            "snake": {
+              "direction": [
+                0,
+                -1
+              ],
+              "length": 5,
+              "positions": [
+                [
+                  24,
+                  14
+                ],
+                [
+                  24,
+                  15
+                ],
+                [
+                  23,
+                  15
+                ],
+                [
+                  22,
+                  15
+                ],
+                [
+                  21,
+                  15
+                ]
+              ]
+            },
+            "tick": 5
+          },
+          "turn": [
+            0,
+            -1
+          ]
+        },
+        {
+          "food": [
+            0,
+            0
+          ],
+          "tick": {
+            "food": [
+              0,
+              0
+            ],
+            "gameOver": false,
+            "poops": [],
+            "score": 4,
+            "shitCounter": 0,
+            "snake": {
+              "direction": [
+                -1,
+                0
+              ],
+              "length": 5,
+              "positions": [
+                [
+                  23,
+                  14
+                ],
+                [
+                  24,
+                  14
+                ],
+                [
+                  24,
+                  15
+                ],
+                [
+                  23,
+                  15
+                ],
+                [
+                  22,
+                  15
+                ]
+              ]
+            },
+            "tick": 6
+          },
+          "turn": [
+            -1,
+            0
+          ]
+        },
+        {
+          "food": [
+            0,
+            0
+          ],
+          "tick": {
+            "food": [
+              0,
+              0
+            ],
+            "gameOver": true,
+            "poops": [],
+            "score": 4,
+            "shitCounter": 0,
+            "snake": {
+              "direction": [
+                0,
+                1
+              ],
+              "length": 5,
+              "positions": [
+                [
+                  23,
+                  15
+                ],
+                [
+                  23,
+                  14
+                ],
+                [
+                  24,
+                  14
+                ],
+                [
+                  24,
+                  15
+                ],
+                [
+                  23,
+                  15
+                ]
+              ]
+            },
+            "tick": 7
+          },
+          "turn": [
+            0,
+            1
+          ]
+        }
+      ],
+      "wonqMode": false
+    },
+    {
+      "expectedEvents": [
+        "eat",
+        "eat",
+        "eat",
+        "eat",
+        "eat",
+        "poop",
+        "poop-collision"
+      ],
+      "name": "wonq-poop-drop-and-collision",
+      "steps": [
+        {
+          "food": [
+            21,
+            15
+          ],
+          "tick": {
+            "food": [
+              0,
+              0
+            ],
+            "gameOver": false,
+            "poops": [],
+            "score": 1,
+            "shitCounter": 1,
+            "snake": {
+              "direction": [
+                1,
+                0
+              ],
+              "length": 2,
+              "positions": [
+                [
+                  21,
+                  15
+                ]
+              ]
+            },
+            "tick": 1
+          },
+          "turn": null
+        },
+        {
+          "food": [
+            22,
+            15
+          ],
+          "tick": {
+            "food": [
+              0,
+              0
+            ],
+            "gameOver": false,
+            "poops": [],
+            "score": 2,
+            "shitCounter": 2,
+            "snake": {
+              "direction": [
+                1,
+                0
+              ],
+              "length": 3,
+              "positions": [
+                [
+                  22,
+                  15
+                ],
+                [
+                  21,
+                  15
+                ]
+              ]
+            },
+            "tick": 2
+          },
+          "turn": null
+        },
+        {
+          "food": [
+            23,
+            15
+          ],
+          "tick": {
+            "food": [
+              0,
+              0
+            ],
+            "gameOver": false,
+            "poops": [],
+            "score": 3,
+            "shitCounter": 3,
+            "snake": {
+              "direction": [
+                1,
+                0
+              ],
+              "length": 4,
+              "positions": [
+                [
+                  23,
+                  15
+                ],
+                [
+                  22,
+                  15
+                ],
+                [
+                  21,
+                  15
+                ]
+              ]
+            },
+            "tick": 3
+          },
+          "turn": null
+        },
+        {
+          "food": [
+            24,
+            15
+          ],
+          "tick": {
+            "food": [
+              0,
+              0
+            ],
+            "gameOver": false,
+            "poops": [],
+            "score": 4,
+            "shitCounter": 4,
+            "snake": {
+              "direction": [
+                1,
+                0
+              ],
+              "length": 5,
+              "positions": [
+                [
+                  24,
+                  15
+                ],
+                [
+                  23,
+                  15
+                ],
+                [
+                  22,
+                  15
+                ],
+                [
+                  21,
+                  15
+                ]
+              ]
+            },
+            "tick": 4
+          },
+          "turn": null
+        },
+        {
+          "food": [
+            25,
+            15
+          ],
+          "tick": {
+            "food": [
+              0,
+              0
+            ],
+            "gameOver": false,
+            "poops": [
+              [
+                21,
+                15
+              ]
+            ],
+            "score": 5,
+            "shitCounter": 0,
+            "snake": {
+              "direction": [
+                1,
+                0
+              ],
+              "length": 6,
+              "positions": [
+                [
+                  25,
+                  15
+                ],
+                [
+                  24,
+                  15
+                ],
+                [
+                  23,
+                  15
+                ],
+                [
+                  22,
+                  15
+                ],
+                [
+                  21,
+                  15
+                ]
+              ]
+            },
+            "tick": 5
+          },
+          "turn": null
+        },
+        {
+          "food": [
+            0,
+            0
+          ],
+          "tick": {
+            "food": [
+              0,
+              0
+            ],
+            "gameOver": false,
+            "poops": [
+              [
+                21,
+                15
+              ]
+            ],
+            "score": 5,
+            "shitCounter": 0,
+            "snake": {
+              "direction": [
+                1,
+                0
+              ],
+              "length": 6,
+              "positions": [
+                [
+                  26,
+                  15
+                ],
+                [
+                  25,
+                  15
+                ],
+                [
+                  24,
+                  15
+                ],
+                [
+                  23,
+                  15
+                ],
+                [
+                  22,
+                  15
+                ],
+                [
+                  21,
+                  15
+                ]
+              ]
+            },
+            "tick": 6
+          },
+          "turn": [
+            -1,
+            0
+          ]
+        },
+        {
+          "food": [
+            0,
+            0
+          ],
+          "tick": {
+            "food": [
+              0,
+              0
+            ],
+            "gameOver": false,
+            "poops": [
+              [
+                21,
+                15
+              ]
+            ],
+            "score": 5,
+            "shitCounter": 0,
+            "snake": {
+              "direction": [
+                1,
+                0
+              ],
+              "length": 6,
+              "positions": [
+                [
+                  27,
+                  15
+                ],
+                [
+                  26,
+                  15
+                ],
+                [
+                  25,
+                  15
+                ],
+                [
+                  24,
+                  15
+                ],
+                [
+                  23,
+                  15
+                ],
+                [
+                  22,
+                  15
+                ]
+              ]
+            },
+            "tick": 7
+          },
+          "turn": [
+            -1,
+            0
+          ]
+        },
+        {
+          "food": [
+            0,
+            0
+          ],
+          "tick": {
+            "food": [
+              0,
+              0
+            ],
+            "gameOver": false,
+            "poops": [
+              [
+                21,
+                15
+              ]
+            ],
+            "score": 5,
+            "shitCounter": 0,
+            "snake": {
+              "direction": [
+                1,
+                0
+              ],
+              "length": 6,
+              "positions": [
+                [
+                  28,
+                  15
+                ],
+                [
+                  27,
+                  15
+                ],
+                [
+                  26,
+                  15
+                ],
+                [
+                  25,
+                  15
+                ],
+                [
+                  24,
+                  15
+                ],
+                [
+                  23,
+                  15
+                ]
+              ]
+            },
+            "tick": 8
+          },
+          "turn": [
+            -1,
+            0
+          ]
+        },
+        {
+          "food": [
+            0,
+            0
+          ],
+          "tick": {
+            "food": [
+              0,
+              0
+            ],
+            "gameOver": false,
+            "poops": [
+              [
+                21,
+                15
+              ]
+            ],
+            "score": 5,
+            "shitCounter": 0,
+            "snake": {
+              "direction": [
+                1,
+                0
+              ],
+              "length": 6,
+              "positions": [
+                [
+                  29,
+                  15
+                ],
+                [
+                  28,
+                  15
+                ],
+                [
+                  27,
+                  15
+                ],
+                [
+                  26,
+                  15
+                ],
+                [
+                  25,
+                  15
+                ],
+                [
+                  24,
+                  15
+                ]
+              ]
+            },
+            "tick": 9
+          },
+          "turn": [
+            -1,
+            0
+          ]
+        },
+        {
+          "food": [
+            0,
+            0
+          ],
+          "tick": {
+            "food": [
+              0,
+              0
+            ],
+            "gameOver": false,
+            "poops": [
+              [
+                21,
+                15
+              ]
+            ],
+            "score": 5,
+            "shitCounter": 0,
+            "snake": {
+              "direction": [
+                1,
+                0
+              ],
+              "length": 6,
+              "positions": [
+                [
+                  30,
+                  15
+                ],
+                [
+                  29,
+                  15
+                ],
+                [
+                  28,
+                  15
+                ],
+                [
+                  27,
+                  15
+                ],
+                [
+                  26,
+                  15
+                ],
+                [
+                  25,
+                  15
+                ]
+              ]
+            },
+            "tick": 10
+          },
+          "turn": [
+            -1,
+            0
+          ]
+        },
+        {
+          "food": [
+            0,
+            0
+          ],
+          "tick": {
+            "food": [
+              0,
+              0
+            ],
+            "gameOver": false,
+            "poops": [
+              [
+                21,
+                15
+              ]
+            ],
+            "score": 5,
+            "shitCounter": 0,
+            "snake": {
+              "direction": [
+                1,
+                0
+              ],
+              "length": 6,
+              "positions": [
+                [
+                  31,
+                  15
+                ],
+                [
+                  30,
+                  15
+                ],
+                [
+                  29,
+                  15
+                ],
+                [
+                  28,
+                  15
+                ],
+                [
+                  27,
+                  15
+                ],
+                [
+                  26,
+                  15
+                ]
+              ]
+            },
+            "tick": 11
+          },
+          "turn": [
+            -1,
+            0
+          ]
+        },
+        {
+          "food": [
+            0,
+            0
+          ],
+          "tick": {
+            "food": [
+              0,
+              0
+            ],
+            "gameOver": false,
+            "poops": [
+              [
+                21,
+                15
+              ]
+            ],
+            "score": 5,
+            "shitCounter": 0,
+            "snake": {
+              "direction": [
+                1,
+                0
+              ],
+              "length": 6,
+              "positions": [
+                [
+                  32,
+                  15
+                ],
+                [
+                  31,
+                  15
+                ],
+                [
+                  30,
+                  15
+                ],
+                [
+                  29,
+                  15
+                ],
+                [
+                  28,
+                  15
+                ],
+                [
+                  27,
+                  15
+                ]
+              ]
+            },
+            "tick": 12
+          },
+          "turn": [
+            -1,
+            0
+          ]
+        },
+        {
+          "food": [
+            0,
+            0
+          ],
+          "tick": {
+            "food": [
+              0,
+              0
+            ],
+            "gameOver": false,
+            "poops": [
+              [
+                21,
+                15
+              ]
+            ],
+            "score": 5,
+            "shitCounter": 0,
+            "snake": {
+              "direction": [
+                1,
+                0
+              ],
+              "length": 6,
+              "positions": [
+                [
+                  33,
+                  15
+                ],
+                [
+                  32,
+                  15
+                ],
+                [
+                  31,
+                  15
+                ],
+                [
+                  30,
+                  15
+                ],
+                [
+                  29,
+                  15
+                ],
+                [
+                  28,
+                  15
+                ]
+              ]
+            },
+            "tick": 13
+          },
+          "turn": [
+            -1,
+            0
+          ]
+        },
+        {
+          "food": [
+            0,
+            0
+          ],
+          "tick": {
+            "food": [
+              0,
+              0
+            ],
+            "gameOver": false,
+            "poops": [
+              [
+                21,
+                15
+              ]
+            ],
+            "score": 5,
+            "shitCounter": 0,
+            "snake": {
+              "direction": [
+                1,
+                0
+              ],
+              "length": 6,
+              "positions": [
+                [
+                  34,
+                  15
+                ],
+                [
+                  33,
+                  15
+                ],
+                [
+                  32,
+                  15
+                ],
+                [
+                  31,
+                  15
+                ],
+                [
+                  30,
+                  15
+                ],
+                [
+                  29,
+                  15
+                ]
+              ]
+            },
+            "tick": 14
+          },
+          "turn": [
+            -1,
+            0
+          ]
+        },
+        {
+          "food": [
+            0,
+            0
+          ],
+          "tick": {
+            "food": [
+              0,
+              0
+            ],
+            "gameOver": false,
+            "poops": [
+              [
+                21,
+                15
+              ]
+            ],
+            "score": 5,
+            "shitCounter": 0,
+            "snake": {
+              "direction": [
+                1,
+                0
+              ],
+              "length": 6,
+              "positions": [
+                [
+                  35,
+                  15
+                ],
+                [
+                  34,
+                  15
+                ],
+                [
+                  33,
+                  15
+                ],
+                [
+                  32,
+                  15
+                ],
+                [
+                  31,
+                  15
+                ],
+                [
+                  30,
+                  15
+                ]
+              ]
+            },
+            "tick": 15
+          },
+          "turn": [
+            -1,
+            0
+          ]
+        },
+        {
+          "food": [
+            0,
+            0
+          ],
+          "tick": {
+            "food": [
+              0,
+              0
+            ],
+            "gameOver": false,
+            "poops": [
+              [
+                21,
+                15
+              ]
+            ],
+            "score": 5,
+            "shitCounter": 0,
+            "snake": {
+              "direction": [
+                1,
+                0
+              ],
+              "length": 6,
+              "positions": [
+                [
+                  36,
+                  15
+                ],
+                [
+                  35,
+                  15
+                ],
+                [
+                  34,
+                  15
+                ],
+                [
+                  33,
+                  15
+                ],
+                [
+                  32,
+                  15
+                ],
+                [
+                  31,
+                  15
+                ]
+              ]
+            },
+            "tick": 16
+          },
+          "turn": [
+            -1,
+            0
+          ]
+        },
+        {
+          "food": [
+            0,
+            0
+          ],
+          "tick": {
+            "food": [
+              0,
+              0
+            ],
+            "gameOver": false,
+            "poops": [
+              [
+                21,
+                15
+              ]
+            ],
+            "score": 5,
+            "shitCounter": 0,
+            "snake": {
+              "direction": [
+                1,
+                0
+              ],
+              "length": 6,
+              "positions": [
+                [
+                  37,
+                  15
+                ],
+                [
+                  36,
+                  15
+                ],
+                [
+                  35,
+                  15
+                ],
+                [
+                  34,
+                  15
+                ],
+                [
+                  33,
+                  15
+                ],
+                [
+                  32,
+                  15
+                ]
+              ]
+            },
+            "tick": 17
+          },
+          "turn": [
+            -1,
+            0
+          ]
+        },
+        {
+          "food": [
+            0,
+            0
+          ],
+          "tick": {
+            "food": [
+              0,
+              0
+            ],
+            "gameOver": false,
+            "poops": [
+              [
+                21,
+                15
+              ]
+            ],
+            "score": 5,
+            "shitCounter": 0,
+            "snake": {
+              "direction": [
+                1,
+                0
+              ],
+              "length": 6,
+              "positions": [
+                [
+                  38,
+                  15
+                ],
+                [
+                  37,
+                  15
+                ],
+                [
+                  36,
+                  15
+                ],
+                [
+                  35,
+                  15
+                ],
+                [
+                  34,
+                  15
+                ],
+                [
+                  33,
+                  15
+                ]
+              ]
+            },
+            "tick": 18
+          },
+          "turn": [
+            -1,
+            0
+          ]
+        },
+        {
+          "food": [
+            0,
+            0
+          ],
+          "tick": {
+            "food": [
+              0,
+              0
+            ],
+            "gameOver": false,
+            "poops": [
+              [
+                21,
+                15
+              ]
+            ],
+            "score": 5,
+            "shitCounter": 0,
+            "snake": {
+              "direction": [
+                1,
+                0
+              ],
+              "length": 6,
+              "positions": [
+                [
+                  39,
+                  15
+                ],
+                [
+                  38,
+                  15
+                ],
+                [
+                  37,
+                  15
+                ],
+                [
+                  36,
+                  15
+                ],
+                [
+                  35,
+                  15
+                ],
+                [
+                  34,
+                  15
+                ]
+              ]
+            },
+            "tick": 19
+          },
+          "turn": [
+            -1,
+            0
+          ]
+        },
+        {
+          "food": [
+            0,
+            0
+          ],
+          "tick": {
+            "food": [
+              0,
+              0
+            ],
+            "gameOver": true,
+            "poops": [
+              [
+                21,
+                15
+              ]
+            ],
+            "score": 5,
+            "shitCounter": 0,
+            "snake": {
+              "direction": [
+                1,
+                0
+              ],
+              "length": 6,
+              "positions": [
+                [
+                  40,
+                  15
+                ],
+                [
+                  39,
+                  15
+                ],
+                [
+                  38,
+                  15
+                ],
+                [
+                  37,
+                  15
+                ],
+                [
+                  36,
+                  15
+                ],
+                [
+                  35,
+                  15
+                ]
+              ]
+            },
+            "tick": 20
+          },
+          "turn": [
+            -1,
+            0
+          ]
+        },
+        {
+          "food": [
+            0,
+            0
+          ],
+          "tick": {
+            "food": [
+              0,
+              0
+            ],
+            "gameOver": true,
+            "poops": [
+              [
+                21,
+                15
+              ]
+            ],
+            "score": 5,
+            "shitCounter": 0,
+            "snake": {
+              "direction": [
+                1,
+                0
+              ],
+              "length": 6,
+              "positions": [
+                [
+                  40,
+                  15
+                ],
+                [
+                  39,
+                  15
+                ],
+                [
+                  38,
+                  15
+                ],
+                [
+                  37,
+                  15
+                ],
+                [
+                  36,
+                  15
+                ],
+                [
+                  35,
+                  15
+                ]
+              ]
+            },
+            "tick": 20
+          },
+          "turn": null
+        },
+        {
+          "food": [
+            0,
+            0
+          ],
+          "tick": {
+            "food": [
+              0,
+              0
+            ],
+            "gameOver": true,
+            "poops": [
+              [
+                21,
+                15
+              ]
+            ],
+            "score": 5,
+            "shitCounter": 0,
+            "snake": {
+              "direction": [
+                1,
+                0
+              ],
+              "length": 6,
+              "positions": [
+                [
+                  40,
+                  15
+                ],
+                [
+                  39,
+                  15
+                ],
+                [
+                  38,
+                  15
+                ],
+                [
+                  37,
+                  15
+                ],
+                [
+                  36,
+                  15
+                ],
+                [
+                  35,
+                  15
+                ]
+              ]
+            },
+            "tick": 20
+          },
+          "turn": null
+        },
+        {
+          "food": [
+            0,
+            0
+          ],
+          "tick": {
+            "food": [
+              0,
+              0
+            ],
+            "gameOver": true,
+            "poops": [
+              [
+                21,
+                15
+              ]
+            ],
+            "score": 5,
+            "shitCounter": 0,
+            "snake": {
+              "direction": [
+                1,
+                0
+              ],
+              "length": 6,
+              "positions": [
+                [
+                  40,
+                  15
+                ],
+                [
+                  39,
+                  15
+                ],
+                [
+                  38,
+                  15
+                ],
+                [
+                  37,
+                  15
+                ],
+                [
+                  36,
+                  15
+                ],
+                [
+                  35,
+                  15
+                ]
+              ]
+            },
+            "tick": 20
+          },
+          "turn": null
+        }
+      ],
+      "wonqMode": true
+    }
+  ],
+  "upstream": "snekbyte-main.zip (see UPSTREAM-PROVENANCE.md)"
+}

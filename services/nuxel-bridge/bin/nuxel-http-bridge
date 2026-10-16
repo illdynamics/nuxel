@@ -1,0 +1,6 @@
+#!/bin/sh
+# Nuxel HTTP bridge launcher shim (the HTTP/JSON face of nuxel-bridge).
+set -eu
+LIBDIR=/usr/lib/nuxel/nuxel-bridge
+[ -r "$LIBDIR/api.py" ] || { echo "nuxel-http-bridge: missing $LIBDIR/api.py" >&2; exit 1; }
+exec /usr/bin/python3 "$LIBDIR/api.py" "$@"

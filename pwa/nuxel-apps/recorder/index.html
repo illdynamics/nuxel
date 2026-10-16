@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#1a1024">
+<meta name="nuxel-app-id" content="org.nuxel.Recorder">
+<title>Nuxel Recorder</title>
+<link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="css/recorder.css">
+</head>
+<body>
+<header class="top-bar">
+  <h1>Recorder</h1>
+  <span id="mic-badge" class="badge warn">microphone: unknown</span>
+</header>
+
+<main>
+  <section class="card">
+    <h3>Capture</h3>
+    <div class="meter-wrap">
+      <canvas id="meter" class="meter" width="600" height="90"></canvas>
+      <div id="timer" class="timer mono">00:00.0</div>
+    </div>
+    <div class="row">
+      <button id="rec" class="primary">Start recording</button>
+      <button id="stop" disabled>Stop</button>
+    </div>
+    <label class="check"><input id="monitor" type="checkbox"> Play back while recording (loopback monitor)</label>
+    <p id="capability" class="hint">Checking the capture path…</p>
+  </section>
+
+  <section class="card">
+    <h3>Recordings <span id="count" class="li-sub">0</span></h3>
+    <ul id="list" class="list"></ul>
+    <div class="row">
+      <button id="export">Export list (JSON)</button>
+      <button id="clear" class="danger">Delete all recordings</button>
+    </div>
+    <p id="io-report" class="li-sub">—</p>
+  </section>
+
+  <section class="card">
+    <h3>Audio path honesty</h3>
+    <pre id="path-report" class="state">—</pre>
+  </section>
+</main>
+
+<p id="toast" class="toast hidden"></p>
+
+<script type="module" src="../../nuxel-common/bridge.js"></script>
+<script src="js/recorder.js"></script>
+</body>
+</html>

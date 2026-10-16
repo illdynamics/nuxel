@@ -31,6 +31,20 @@ HTTP_BIND = os.environ.get('NUXEL_HTTP_BIND', '127.0.0.1')
 HTTP_PORT = int(os.environ.get('NUXEL_HTTP_PORT', '8080'))
 HTTP_MODE = os.environ.get('NUXEL_HTTP_MODE', 'dev')
 
+# PWA<->host PROTOCOL contract (briq-04c). Pinned in
+# pwa/nuxel-common/bridge-version.json; every app manifest declares the same
+# value as nuxel.bridge_version. Published on /ping and /health, and enforced on
+# every request that carries the X-Nuxel-Bridge-Version header: a mismatch is
+# answered 409 version_mismatch — LOUD, never a silent rejection or a silent
+# downgrade. NUXEL_BRIDGE_VERSION is the host IMPLEMENTATION version and is
+# allowed to move independently.
+BRIDGE_PROTOCOL_VERSION = os.environ.get('NUXEL_BRIDGE_PROTOCOL_VERSION', '1')
+BRIDGE_HOST_VERSION = os.environ.get('NUXEL_BRIDGE_VERSION', '0.4.0-alpha')
+
+# Canonical launcher registry, shared with the PWA (pwa/nuxel-common/app-registry.json)
+# and the native shell. The rootfs installs it at /etc/nuxel/app-registry/.
+APP_REGISTRY_PATH = os.environ.get('NUXEL_APP_REGISTRY', '/etc/nuxel/app-registry/app_registry.json')
+
 # D-Bus bridge call timeout (seconds). Must comfortably exceed the portal's
 # consent timeout (NUXEL_PORTAL_TIMEOUT_SECONDS=30) plus slack so an in-flight
 # user-consent round-trip (bridge -> portal -> PhoshAgent -> dialog) resolves
@@ -215,6 +229,63 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
 
         return False
 
+
+    def _load_app_registry(self):
+        """Serve the canonical app registry (briq-04c): the SAME file the PWA and
+        the native shell consume, so the grid cannot drift from the bridge.
+
+        Honest failure: an absent/unreadable registry is reported as
+        available=false with the resolved path and the reason. It is never
+        replaced with an invented app list.
+        """
+        info = {"available": False, "source": APP_REGISTRY_PATH, "bridge_version": BRIDGE_PROTOCOL_VERSION}
+        try:
+            with open(APP_REGISTRY_PATH, "r") as fh:
+                doc = json.load(fh)
+        except FileNotFoundError:
+            info["error"] = "registry file not found"
+            return info
+        except (OSError, ValueError) as exc:
+            info["error"] = "registry unreadable: %s" % exc
+            return info
+        apps = doc.get("apps")
+        if not isinstance(apps, list) or not apps:
+            info["error"] = "registry has no apps[] entries"
+            return info
+        info.update({
+            "available": True,
+            "schema": doc.get("schema"),
+            "registry_version": doc.get("registry_version"),
+            "host_version": BRIDGE_HOST_VERSION,
+            "url_base": doc.get("url_base"),
+            "apps": apps,
+        })
+        declared = doc.get("bridge_version")
+        if declared and declared != BRIDGE_PROTOCOL_VERSION:
+            info["version_mismatch"] = {"registry": declared, "host": BRIDGE_PROTOCOL_VERSION}
+        return info
+
+    def _verify_version(self):
+        """Enforce the pinned bridge_version when the client declares one.
+
+        Returns None when the request may proceed, or the 409 payload to send.
+        A client that sends no header is a legacy client and is allowed through
+        (the version is published on /ping and /health for it to check), but a
+        client that declares a DIFFERENT version is refused explicitly.
+        """
+        got = self.headers.get('X-Nuxel-Bridge-Version')
+        if got is None or got == '':
+            return None
+        if got == BRIDGE_PROTOCOL_VERSION:
+            return None
+        return {
+            "error": "version_mismatch",
+            "expected": BRIDGE_PROTOCOL_VERSION,
+            "got": got,
+            "host_version": BRIDGE_HOST_VERSION,
+            "detail": "the app was built against a different bridge protocol version; "
+                      "the host refuses to serve it rather than answering with skewed data",
+        }
 
     def _classify_backends(self):
         """Probe live D-Bus backend providers to classify each data source.
@@ -406,7 +477,8 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
             "backend_audit": audit,
         }
         mocks = {
-            "Ping": {"success": True, "service": "nuxel-bridge", "version": "0.1.1-dev", "echo": args[0] if args else "pong", **mock_base},
+            "Ping": {"success": True, "service": "nuxel-bridge", "version": BRIDGE_HOST_VERSION,
+                     "bridge_version": BRIDGE_PROTOCOL_VERSION, "echo": args[0] if args else "pong", **mock_base},
             "GetCapabilities": {"capabilities": [{"id": k, "description": "Dev mock", "risk": "low", "data_source": "mock"} for k in ["phone:status", "location:read", "camera:capture", "sms:send", "notifications:send"]], **mock_base},
             "GetPhoneStatus": self._get_system_phone_status(app_id),
             "GetLocation": {"success": False, "error": "Location not available in VM (GeoClue2 absent)", "data_source": "mock", "backend_layer": "GeoClue2", "backend_audit": audit, "vm_mode": True},
@@ -450,17 +522,34 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
             self._send_json({'error': 'unauthorized'}, 401)
             return
 
+        mismatch = self._verify_version()
+        if mismatch is not None:
+            logger.error("bridge_version mismatch: expected %s, app declared %s",
+                         BRIDGE_PROTOCOL_VERSION, mismatch.get("got"))
+            self._send_json(mismatch, 409)
+            return
+
         if path == '/api/v1/health':
             self._send_json({
                 "success": True,
                 "service": "nuxel-http-bridge",
-                "version": "0.4.0-alpha",
+                "version": BRIDGE_HOST_VERSION,
+                "bridge_version": BRIDGE_PROTOCOL_VERSION,
+                "registry": {"source": APP_REGISTRY_PATH, "available": os.path.exists(APP_REGISTRY_PATH)},
                 "timestamp": time.time(),
             })
 
         elif path == '/api/v1/ping':
             result = self._call_bridge('Ping', 'health')
+            # The host's protocol version is published here (bridge-version.json
+            # "enforcement.http_bridge"); the PWA client refuses a mismatch.
+            if isinstance(result, dict):
+                result.setdefault("bridge_version", BRIDGE_PROTOCOL_VERSION)
+                result.setdefault("version", BRIDGE_HOST_VERSION)
             self._send_json(result)
+
+        elif path == '/api/v1/apps/registry':
+            self._send_json(self._load_app_registry())
 
         elif path == '/api/v1/capabilities':
             result = self._call_bridge('GetCapabilities')
@@ -554,6 +643,13 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
         parsed = urlparse(self.path)
         path = parsed.path.rstrip('/')
 
+        mismatch = self._verify_version()
+        if mismatch is not None:
+            logger.error("bridge_version mismatch: expected %s, app declared %s",
+                         BRIDGE_PROTOCOL_VERSION, mismatch.get("got"))
+            self._send_json(mismatch, 409)
+            return
+
         # Bootstrap token endpoint: deliberately NOT auth-gated. A PWA without a
         # token calls this once to obtain a per-session token.
         if path == '/api/v1/auth/token':
@@ -578,6 +674,13 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
 
         if not self._verify_auth():
             self._send_json({'error': 'unauthorized'}, 401)
+            return
+
+        mismatch = self._verify_version()
+        if mismatch is not None:
+            logger.error("bridge_version mismatch: expected %s, app declared %s",
+                         BRIDGE_PROTOCOL_VERSION, mismatch.get("got"))
+            self._send_json(mismatch, 409)
             return
 
         body = self._get_json_body()

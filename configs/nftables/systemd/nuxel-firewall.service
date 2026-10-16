@@ -1,0 +1,43 @@
+# Load the Nuxel firewall at boot (briq-05b).
+# Install as /etc/systemd/system/nuxel-firewall.service
+#
+# Ordering matters and is deliberate: the runtime tool loads the app ruleset
+# first (it starts with `flush ruleset`) and the console guard LAST, so the
+# guard cannot be flushed away by a later load.
+[Unit]
+Description=Nuxel firewall (nftables per-app network control)
+Documentation=file:/usr/share/doc/nuxel/security/FIREWALL.md
+DefaultDependencies=no
+After=network-pre.target systemd-modules-load.service
+Before=network.target nuxel-portal.service nuxel-bridge.service
+Wants=network-pre.target
+ConditionPathExists=/usr/sbin/nft
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+Environment=NUXEL_FIREWALL_TOOL=/usr/bin/nuxel-firewall.sh
+Environment=NUXEL_FIREWALL_CONFIG=/etc/nftables/nuxel-firewall-config.json
+
+# Fail closed on the *policy*, never on the console: if the app ruleset fails
+# its own check, the tool leaves the previous ruleset in place and exits
+# non-zero. It never leaves the device without a ruleset.
+ExecStartPre=/usr/bin/nuxel-firewall.sh check
+ExecStart=/usr/bin/nuxel-firewall.sh apply --no-rollback-timer
+ExecStartPost=/usr/bin/nuxel-firewall.sh console-verify
+ExecStop=/usr/bin/nuxel-firewall.sh flush --keep-console
+
+# NoNewPrivileges/ProtectSystem restrict the tool itself. CAP_NET_ADMIN is
+# required to talk to nftables (that is the whole point of the unit).
+CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_RAW
+AmbientCapabilities=CAP_NET_ADMIN
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+NoNewPrivileges=yes
+RestrictAddressFamilies=AF_NETLINK AF_UNIX AF_INET AF_INET6
+# DeviceAllow would be a no-op here: this kernel has no BPF device controller
+# (CONFIG_BPF_LSM unset). It is intentionally not listed.
+
+[Install]
+WantedBy=multi-user.target

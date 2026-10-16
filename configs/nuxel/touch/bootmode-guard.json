@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "comment": [
+    "Nuxel charger/LPM boot-mode guard (briq-01c). Userspace only: it classifies the",
+    "current boot, publishes the state to the launcher, and can request ONE gated",
+    "normal reboot. It never writes a partition, a bootloader, a DTB or a modem.",
+    "The permanent fix for 'an LPM power-up has no touchscreen' is a kernel change",
+    "(see tools/s10plus/a33/kernel-patches/); it is NOT deployed."
+  ],
+  "state_file": "/run/nuxel-bootmode.state",
+  "launcher_state": "/run/nuxel-bootmode.json",
+  "allow_reboot": false,
+  "require_charger": true,
+  "min_uptime_seconds": 120,
+  "cooldown_seconds": 900,
+  "reboot_command": ["systemctl", "reboot"],
+  "locks": [
+    "/run/nuxel-touch-capture.lock",
+    "/run/nuxel-owner-test.lock",
+    "/run/nuxel-manual-proof.lock",
+    "/var/lib/nuxel/owner-test.lock"
+  ],
+  "reason_allow_reboot_false": "allow_reboot is false in the config: touch is disabled on this boot and this device is not in an automatic-reboot configuration - unplug and reboot normally",
+  "enable_auto_reboot": [
+    "To let the guard perform the reboot itself, set \"allow_reboot\": true here AND",
+    "run the unit with --reboot --i-understand-this-reboots-the-phone (see",
+    "nuxel-bootmode-reboot.service, shipped disabled). The acknowledgement flag is",
+    "deliberate: a config edit alone must not be enough to reboot the phone."
+  ]
+}

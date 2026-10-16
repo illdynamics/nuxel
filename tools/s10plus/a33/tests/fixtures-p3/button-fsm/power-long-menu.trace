@@ -1,0 +1,4 @@
+# long press opens the power menu; release closes it
+0 key power 1
+2100 tick
+2200 key power 0

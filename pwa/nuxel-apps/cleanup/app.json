@@ -1,0 +1,13 @@
+{
+  "id": "org.nuxel.Cleanup",
+  "name": "Safe Cleanup",
+  "icon": "CL",
+  "color": "#EF6C00",
+  "category": "tools",
+  "type": "pwa",
+  "url": "/pwa/nuxel-apps/cleanup/index.html",
+  "description": "Preview-then-delete cache and log cleanup",
+  "capabilities": ["storage:cleanup"],
+  "docked": false,
+  "dry_run_first": true
+}

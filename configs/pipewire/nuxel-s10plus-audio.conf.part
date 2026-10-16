@@ -1,0 +1,31 @@
+# Nuxel S10+ PipeWire drop-in — Samsung Galaxy S10+ (beyond2lte)
+# Card: beyond-madera (CS47L93 MADERA + 2x CS35L40 + Exynos ABox)
+# Install: /etc/pipewire/pipewire.conf.d/40-nuxel-s10plus-audio.conf
+#
+# WHY THESE VALUES
+#   * 48 kHz is the native rate of the MADERA-family codec path and, more
+#     importantly, the rate the ABox/modem voice path expects. Asking the graph
+#     for one rate instead of resampling between 44.1 kHz and 48 kHz removes a
+#     whole class of "first 200 ms is silent / crackles" bring-up artefacts.
+#   * The quantum bounds keep the graph schedulable on a phone (< 4096 frames)
+#     without forcing a low-latency configuration that a cold amplifier cannot
+#     service.
+#   * Power-save suspend of the ALSA node is disabled (see the WirePlumber
+#     drop-in) because a suspended amplifier takes tens of milliseconds to
+#     re-enable, which on a phone looks exactly like "the first sound is lost".
+#
+# NOTHING HERE ASSERTS THAT SOUND IS AUDIBLE. Audibility is NEEDS_OWNER_TEST
+# (docs/beta-finalization/manual-proof/06-audio.md). For the same reason the
+# low-volume cap is enforced at the ALSA layer (configs/pipewire/
+# asound-nuxel-safe.conf) where it is guaranteed, not by a grace-and-favour
+# property of the session manager.
+
+context.properties = {
+    default.clock.rate          = 48000
+    default.clock.allowed-rates = [ 44100 48000 96000 ]
+    default.clock.quantum       = 1024
+    default.clock.min-quantum   = 256
+    default.clock.max-quantum   = 4096
+    # Keep the device node open: the amplifier must not be re-probed mid-stream.
+    alsa.reserve                = false
+}

@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#04191c">
+<meta name="nuxel-app-id" content="org.nuxel.Authenticator">
+<link rel="manifest" href="manifest.json">
+<title>Nuxel Authenticator</title>
+<link rel="stylesheet" href="css/authenticator.css">
+</head>
+<body>
+<header class="hdr">
+  <h1>Authenticator</h1>
+  <span id="header-state" class="badge bad">no vault</span>
+  <span id="header-code-count" class="badge"></span>
+  <span class="grow"></span>
+  <button id="lock-now" class="ghost">Lock</button>
+  <button id="close" class="ghost">Close</button>
+</header>
+
+<main>
+  <section id="screen-lock" class="panel active" style="display:block">
+    <div class="card">
+      <h3 id="lock-title">Create vault</h3>
+      <p id="lock-hint" class="hint"></p>
+      <input id="pass" type="password" placeholder="Passphrase" autocomplete="new-password">
+      <div class="row" id="confirm-row" style="margin-top:8px">
+        <input id="pass2" type="password" placeholder="Repeat passphrase" autocomplete="new-password">
+      </div>
+      <div class="row" style="margin-top:10px"><button id="lock-go" class="primary">Create vault</button></div>
+      <p id="lock-error" class="hint" style="color:#ffb4b4"></p>
+      <p class="hint">Storage: AES-256-GCM under a PBKDF2-SHA-256 key. There is no account, no sync server and no
+        network call anywhere in this app — the vault is a single encrypted file on this device.</p>
+    </div>
+  </section>
+
+  <section id="screen-main" class="panel" style="display:none">
+    <nav class="tabs" style="padding:0 0 10px">
+      <button class="tab active" data-tab="codes">Codes</button>
+      <button class="tab" data-tab="add">Add account</button>
+      <button class="tab" data-tab="io">Import / export</button>
+      <button class="tab" data-tab="security">Security</button>
+    </nav>
+
+    <div id="tab-codes" class="panel active" style="padding:0">
+      <div class="card">
+        <div class="row"><input id="search" type="search" placeholder="Filter issuer or account"></div>
+        <p class="hint">Codes are computed locally from the secret with WebCrypto. The countdown is the real
+          remaining time in this 30 s (or 60 s) step — not a decorative animation.</p>
+      </div>
+      <div id="codes"></div>
+    </div>
+
+    <div id="tab-add" class="panel" style="padding:0">
+      <div class="card">
+        <h3>Paste an otpauth:// URI</h3>
+        <input id="add-uri" type="text" placeholder="otpauth://totp/Issuer:account?secret=…&issuer=…">
+        <div class="row" style="margin-top:8px"><button id="add-uri-go" class="primary">Import URI</button></div>
+        <p id="uri-error" class="hint" style="color:#ffb4b4"></p>
+        <p class="hint">Only <code>otpauth://totp/</code> works. A HOTP (counter) URI is refused rather than
+          silently treated as time-based. Examples live in <code>samples/otpauth-examples.json</code>.</p>
+      </div>
+      <div class="card">
+        <h3>Enter details by hand</h3>
+        <input id="add-issuer" type="text" placeholder="Issuer (e.g. Example)">
+        <div class="row" style="margin-top:8px"><input id="add-account" type="text" placeholder="Account (e.g. owner@example.org)"></div>
+        <div class="row" style="margin-top:8px"><input id="add-secret" type="text" placeholder="Base32 secret"></div>
+        <div class="row" style="margin-top:8px">
+          <select id="add-alg"><option>SHA1</option><option>SHA256</option><option>SHA512</option></select>
+          <select id="add-digits"><option>6</option><option>8</option></select>
+          <select id="add-period"><option>30</option><option>60</option></select>
+        </div>
+        <div class="row" style="margin-top:10px"><button id="add-form-go" class="primary">Add account</button></div>
+        <p id="add-error" class="hint" style="color:#ffb4b4"></p>
+        <p class="hint">Validation is strict on purpose: a secret that is not decodable base32, fewer than 10
+          bytes of entropy, an unsupported hash, or a nonsense period is refused instead of stored and
+          producing wrong codes later.</p>
+      </div>
+    </div>
+
+    <div id="tab-io" class="panel" style="padding:0">
+      <div class="card">
+        <h3>Export</h3>
+        <p class="hint">Exports the <b>encrypted envelope</b> only. There is no plaintext export button: a
+          plaintext file is how secrets end up in a chat message or a screenshot.</p>
+        <div class="row"><button id="export-go">Export encrypted vault</button></div>
+      </div>
+      <div class="card">
+        <h3>Import</h3>
+        <input id="import-file" type="file" accept="application/json,.json">
+        <div class="row" style="margin-top:8px"><button id="import-go">Import vault</button></div>
+        <p class="hint">Replacing the vault needs its passphrase afterwards — importing does not unlock it, and a
+          file containing plaintext accounts is refused.</p>
+      </div>
+      <div class="card">
+        <h3>Re-key</h3>
+        <div class="row"><input id="rk-current" type="password" placeholder="Current passphrase"></div>
+        <div class="row" style="margin-top:8px"><input id="rk-new" type="password" placeholder="New passphrase"></div>
+        <div class="row" style="margin-top:8px"><input id="rk-new2" type="password" placeholder="Repeat new passphrase"></div>
+        <div class="row" style="margin-top:10px"><button id="rekey-go" class="primary">Re-key vault</button></div>
+        <p id="rk-note" class="hint"></p>
+      </div>
+      <div class="card">
+        <h3>Delete</h3>
+        <div class="row"><input id="wipe-confirm" type="text" placeholder="Type DELETE VAULT to confirm"></div>
+        <div class="row" style="margin-top:8px"><button id="wipe-go" class="danger">Delete the vault on this device</button></div>
+        <p id="wipe-note" class="hint"></p>
+      </div>
+      <p id="io-note" class="hint"></p>
+    </div>
+
+    <div id="tab-security" class="panel" style="padding:0">
+      <div class="card">
+        <h3>What this app is</h3>
+        <ul class="hint">
+          <li>RFC 4226/6238 TOTP over WebCrypto — no third-party library, no CDN, no analytics.</li>
+          <li>Vault: <b id="vault-kdf">—</b>, AES-256-GCM with a fresh 12-byte IV on every save.</li>
+          <li>Storage: this app's local storage only. <b id="vault-count">—</b></li>
+          <li>No network: the module contains no <code>fetch</code>, <code>XMLHttpRequest</code> or
+            <code>WebSocket</code> call, and the offline test suite greps the source to prove it.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>What this app is not</h3>
+        <ul class="hint">
+          <li>It cannot tell you whether a service accepted a code — it only knows the code matches this
+            device's clock and this secret.</li>
+          <li>It does not protect you if the device itself is compromised while unlocked (root compromise is
+            out of scope for every claim this build makes).</li>
+          <li>It does not back anything up. Lose the passphrase and the secrets are gone.</li>
+          <li>It does not do HOTP, push approval, or "remember this device" tokens.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Self test — RFC 6238 vectors</h3>
+        <div class="row"><button id="selftest-run" class="primary">Run the 18 published vectors</button></div>
+        <p><span id="selftest-summary" class="pill warn">not run in this session</span></p>
+        <table class="selftest"><thead><tr><th>vector</th><th>expected</th><th>computed</th><th></th></tr></thead>
+          <tbody id="selftest-body"></tbody></table>
+        <p class="hint">The same code path that renders the codes above is used here. If a vector fails, the app
+          says the codes cannot be trusted rather than showing a green tick.</p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div class="statusbar">
+  <span id="sb-1">vault: encrypted at rest</span>
+  <span id="sb-2">network: none</span>
+</div>
+<div id="toast" class="toast"></div>
+
+<script type="module" src="../../nuxel-common/bridge.js"></script>
+<script src="js/totp.js"></script>
+<script src="js/vault.js"></script>
+<script src="js/authenticator.js"></script>
+</body>
+</html>

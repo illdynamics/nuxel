@@ -1,0 +1,24 @@
+{
+  "name": "Nuxel Downloader",
+  "short_name": "Downloader",
+  "description": "Offline-first, queue-based media downloader with a legal-use gate",
+  "start_url": "/pwa/nuxel-apps/downloader/index.html",
+  "scope": "/pwa/nuxel-apps/downloader/",
+  "display": "standalone",
+  "background_color": "#061a18",
+  "theme_color": "#00796B",
+  "icons": [
+    {"src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png"},
+    {"src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png"},
+    {"src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml"}
+  ],
+  "nuxel": {
+    "app_id": "org.nuxel.Downloader",
+    "capabilities": ["download:queue"],
+    "app_type": "media",
+    "offline_first": true,
+    "network": "optional",
+    "storage": ["localStorage"],
+    "features": ["persistent queue", "resume", "per-item sha256", "retry with strategy change", "legal-use gate", "no third-party service"]
+  }
+}

@@ -1,0 +1,148 @@
+{
+  "schema_version": 1,
+  "id": "briq-00b-archive-discovery",
+  "revisions": [
+    {
+      "id": "briq-00b-archive-discovery",
+      "title": "Locate and inventory supplied comparison archives",
+      "component": "bg-00-preflight",
+      "component_title": "Preflight, Discovery, Work Queue & Baseline Protection",
+      "priority": 0,
+      "state": "in_progress",
+      "dependencies": [
+        "briq-00a-repo-preflight"
+      ],
+      "evidence": [
+        {
+          "kind": "observation",
+          "path": "docs/beta-finalization/ARCHIVE-INVENTORY.md",
+          "command": "test -e docs/beta-finalization/ARCHIVE-INVENTORY.md",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        }
+      ],
+      "intended_changes": [
+        "docs/beta-finalization/ARCHIVE-INVENTORY.md"
+      ],
+      "tests": [
+        "(tests are recorded by the owning briQ when it reports)"
+      ],
+      "risk": "medium",
+      "rollback": "git revert the commit(s) touching this task's expected files; the change is repository-only and alters no device state",
+      "verdict": null,
+      "offline_ceiling": null,
+      "owner_action": "",
+      "expected_files": [
+        "docs/beta-finalization/ARCHIVE-INVENTORY.md"
+      ],
+      "note": "seeded from the QonQrete plan; 1/1 expected file(s) already present in the tree",
+      "source": "plan.json",
+      "revision": 1,
+      "at": "2026-10-16T16:07:13+02:00",
+      "by": "construqtor/bg-00-preflight"
+    },
+    {
+      "id": "briq-00b-archive-discovery",
+      "title": "Locate and inventory supplied comparison archives",
+      "component": "bg-00-preflight",
+      "component_title": "Preflight, Discovery, Work Queue & Baseline Protection",
+      "priority": 0,
+      "state": "implemented",
+      "dependencies": [
+        "briq-00a-repo-preflight"
+      ],
+      "evidence": [
+        {
+          "kind": "observation",
+          "path": "docs/beta-finalization/ARCHIVE-INVENTORY.md",
+          "command": "test -e docs/beta-finalization/ARCHIVE-INVENTORY.md",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "docs/beta-finalization/ARCHIVE-INVENTORY.md",
+          "command": "stat -f size=%z -t %Y-%m-%dT%H:%M:%S%z docs.zip scripts.zip tools.zip; shasum -a 256 docs.zip scripts.zip tools.zip; unzip -l scripts.zip | tail -3",
+          "result": "7 archives, 553905672 B uncompressed total; scripts.zip 125885057 B never extracted (22 GiB budget)",
+          "at": "2026-10-16T16:00:06+02:00"
+        }
+      ],
+      "intended_changes": [
+        "docs/beta-finalization/ARCHIVE-INVENTORY.md",
+        "docs/beta-finalization/ARCHIVE-INVENTORY.md"
+      ],
+      "tests": [
+        "(tests are recorded by the owning briQ when it reports)",
+        "bash tools/beta/regression-guard.sh (INV-8 register survives; no extraction performed)"
+      ],
+      "risk": "low",
+      "rollback": "git revert the commit(s) touching this task's expected files; the change is repository-only and alters no device state",
+      "verdict": "OFFLINE_TESTED",
+      "offline_ceiling": "OFFLINE_TESTED",
+      "owner_action": "",
+      "expected_files": [
+        "docs/beta-finalization/ARCHIVE-INVENTORY.md"
+      ],
+      "note": "7 archives located by real filesystem inspection and sha256-pinned; docs(8).zip / scripts(7).zip / tools(4).zip and standalone A30/A31/A32 archives are ABSENT on disk and recorded as degraded gaps (BLOCKED_EXTERNAL_RESOURCE), never assumed. Three archive members streamed with unzip -p and hashed to prove docs.zip/scripts.zip/tools.zip/nuxel-main.zip are snapshots of this same repo taken minutes before the run.",
+      "source": "plan.json",
+      "at": "2026-10-16T16:08:14+02:00",
+      "by": "construqtor/bg-00-preflight",
+      "revision": 2
+    },
+    {
+      "id": "briq-00b-archive-discovery",
+      "title": "Locate and inventory supplied comparison archives",
+      "component": "bg-00-preflight",
+      "component_title": "Preflight, Discovery, Work Queue & Baseline Protection",
+      "priority": 0,
+      "state": "implemented",
+      "dependencies": [
+        "briq-00a-repo-preflight"
+      ],
+      "evidence": [
+        {
+          "kind": "observation",
+          "path": "docs/beta-finalization/ARCHIVE-INVENTORY.md",
+          "command": "test -e docs/beta-finalization/ARCHIVE-INVENTORY.md",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "docs/beta-finalization/ARCHIVE-INVENTORY.md",
+          "command": "stat -f size=%z -t %Y-%m-%dT%H:%M:%S%z docs.zip scripts.zip tools.zip; shasum -a 256 docs.zip scripts.zip tools.zip; unzip -l scripts.zip | tail -3",
+          "result": "7 archives, 553905672 B uncompressed total; scripts.zip 125885057 B never extracted (22 GiB budget)",
+          "at": "2026-10-16T16:00:06+02:00"
+        },
+        {
+          "kind": "observation",
+          "path": "docs/beta-finalization/ARCHIVE-INVENTORY.md",
+          "command": "ls -l docs.zip scripts.zip tools.zip; shasum -a 256 docs.zip scripts.zip tools.zip",
+          "result": "three supplied archives still in place at the recorded sizes; no extraction performed (22 GiB budget rule respected)",
+          "at": "2026-10-16T14:11:52Z"
+        }
+      ],
+      "intended_changes": [
+        "docs/beta-finalization/ARCHIVE-INVENTORY.md",
+        "docs/beta-finalization/ARCHIVE-INVENTORY.md"
+      ],
+      "tests": [
+        "(tests are recorded by the owning briQ when it reports)",
+        "bash tools/beta/regression-guard.sh (INV-8 register survives; no extraction performed)"
+      ],
+      "risk": "low",
+      "rollback": "git revert the commit(s) touching this task's expected files; the change is repository-only and alters no device state",
+      "verdict": "OFFLINE_TESTED",
+      "offline_ceiling": "OFFLINE_TESTED",
+      "owner_action": "",
+      "expected_files": [
+        "docs/beta-finalization/ARCHIVE-INVENTORY.md"
+      ],
+      "note": "Evidence-timestamp correction: the \"at\" markers written in revisions 1-2 were derived from the session clock without re-reading it and are therefore approximate, not measured. This revision records the real batch re-verification window 2026-10-16T14:11:40Z-14:11:52Z (16:11:40-16:11:52 +02:00) and supersedes those values. Nothing was edited out: the ledger is append-only, errors are corrected by appending.",
+      "source": "plan.json",
+      "at": "2026-10-16T16:11:58+02:00",
+      "by": "construqtor/bg-00-preflight",
+      "revision": 3
+    }
+  ]
+}

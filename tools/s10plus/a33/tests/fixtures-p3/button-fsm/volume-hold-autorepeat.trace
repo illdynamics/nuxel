@@ -1,0 +1,5 @@
+# volume press then hold: A32 cadence (400 ms delay, then every 250 ms)
+0 key volume_up 1
+500 tick
+800 tick
+900 key volume_up 0

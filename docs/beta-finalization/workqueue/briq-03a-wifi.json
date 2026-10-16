@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "id": "briq-03a-wifi",
+  "revisions": [
+    {
+      "id": "briq-03a-wifi",
+      "title": "Wi-Fi bring-up (S10+ Murata/BCM4375 class) - config, diagnostics, association tool",
+      "component": "bg-03-connectivity-time-audio-buttons",
+      "component_title": "Priority 3 - Wi-Fi, Time/RTC, Audio, Headphones & Hardware Buttons",
+      "priority": 3,
+      "state": "in_progress",
+      "dependencies": [
+        "briq-00c-workqueue-ledger"
+      ],
+      "evidence": [
+        {
+          "kind": "observation",
+          "path": "configs/networkmanager/",
+          "command": "test -e configs/networkmanager/",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "observation",
+          "path": "tools/s10plus/a33/nuxel-wifi-diag.sh",
+          "command": "test -e tools/s10plus/a33/nuxel-wifi-diag.sh",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "observation",
+          "path": "docs/beta-finalization/manual-proof/04-wifi.md",
+          "command": "test -e docs/beta-finalization/manual-proof/04-wifi.md",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        }
+      ],
+      "intended_changes": [
+        "configs/networkmanager/",
+        "tools/s10plus/a33/nuxel-wifi-diag.sh",
+        "docs/beta-finalization/manual-proof/04-wifi.md"
+      ],
+      "tests": [
+        "(tests are recorded by the owning briQ when it reports)"
+      ],
+      "risk": "medium",
+      "rollback": "git revert the commit(s) touching this task's expected files; the change is repository-only and alters no device state",
+      "verdict": null,
+      "offline_ceiling": null,
+      "owner_action": "",
+      "expected_files": [
+        "configs/networkmanager/",
+        "tools/s10plus/a33/nuxel-wifi-diag.sh",
+        "docs/beta-finalization/manual-proof/04-wifi.md"
+      ],
+      "note": "seeded from the QonQrete plan; 3/3 expected file(s) already present in the tree",
+      "source": "plan.json",
+      "revision": 1,
+      "at": "2026-10-16T16:07:13+02:00",
+      "by": "construqtor/bg-00-preflight"
+    }
+  ]
+}

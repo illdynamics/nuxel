@@ -1,0 +1,18 @@
+{
+  "id": "org.nuxel.Clock",
+  "name": "Clock",
+  "icon": "\u23f0",
+  "color": "#0b1020",
+  "category": "productivity",
+  "type": "pwa",
+  "url": "/pwa/nuxel-apps/clock/index.html",
+  "manifest": "pwa/nuxel-apps/clock/manifest.json",
+  "description": "Clock, world clocks, alarms, stopwatch and timer tied to Nuxel time/RTC",
+  "capabilities": [
+    "notifications:send",
+    "storage:persistent"
+  ],
+  "bridge_version": "1",
+  "docked": false,
+  "source": "pwa/nuxel-apps tree (bg-06-core-phone-apps)"
+}

@@ -1,0 +1,3 @@
+# power short press: A32 behaviour, dispatched immediately on release
+0 key power 1
+120 key power 0

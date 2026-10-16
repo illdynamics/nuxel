@@ -1,0 +1,76 @@
+{
+  "schema_version": 1,
+  "id": "briq-06c-phone-apps",
+  "revisions": [
+    {
+      "id": "briq-06c-phone-apps",
+      "title": "Phone apps - dialer, contacts, messages, mail end-to-end",
+      "component": "bg-06-core-phone-apps",
+      "component_title": "Priority 6 - Core Phone Applications",
+      "priority": 6,
+      "state": "in_progress",
+      "dependencies": [
+        "briq-06a-core-app-inventory"
+      ],
+      "evidence": [
+        {
+          "kind": "observation",
+          "path": "shell/nuxel-shell/nuxel-dialer/",
+          "command": "test -e shell/nuxel-shell/nuxel-dialer/",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "observation",
+          "path": "shell/nuxel-shell/nuxel-contacts/",
+          "command": "test -e shell/nuxel-shell/nuxel-contacts/",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "observation",
+          "path": "shell/nuxel-shell/nuxel-messages/",
+          "command": "test -e shell/nuxel-shell/nuxel-messages/",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "observation",
+          "path": "pwa/nuxel-apps/mail/",
+          "command": "test -e pwa/nuxel-apps/mail/",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        }
+      ],
+      "intended_changes": [
+        "shell/nuxel-shell/nuxel-dialer/",
+        "shell/nuxel-shell/nuxel-contacts/",
+        "shell/nuxel-shell/nuxel-messages/",
+        "pwa/nuxel-apps/mail/",
+        "docs/beta-finalization/manual-proof/17-calls-sms.md",
+        "docs/beta-finalization/manual-proof/20-applications.md"
+      ],
+      "tests": [
+        "(tests are recorded by the owning briQ when it reports)"
+      ],
+      "risk": "medium",
+      "rollback": "git revert the commit(s) touching this task's expected files; the change is repository-only and alters no device state",
+      "verdict": null,
+      "offline_ceiling": null,
+      "owner_action": "",
+      "expected_files": [
+        "shell/nuxel-shell/nuxel-dialer/",
+        "shell/nuxel-shell/nuxel-contacts/",
+        "shell/nuxel-shell/nuxel-messages/",
+        "pwa/nuxel-apps/mail/",
+        "docs/beta-finalization/manual-proof/17-calls-sms.md",
+        "docs/beta-finalization/manual-proof/20-applications.md"
+      ],
+      "note": "seeded from the QonQrete plan; 4/6 expected file(s) already present in the tree",
+      "source": "plan.json",
+      "revision": 1,
+      "at": "2026-10-16T16:07:13+02:00",
+      "by": "construqtor/bg-00-preflight"
+    }
+  ]
+}

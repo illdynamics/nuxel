@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "id": "briq-12a-engineering-report",
+  "revisions": [
+    {
+      "id": "briq-12a-engineering-report",
+      "title": "BETA-FINALIZATION-ENGINEERING-REPORT.md",
+      "component": "bg-12-reports",
+      "component_title": "Terminal Deliverables - Engineering Report & Manual Proof Checklist",
+      "priority": 8,
+      "state": "pending",
+      "dependencies": [
+        "briq-00d-baseline-protection",
+        "briq-09c-release-deliverables",
+        "briq-10c-live-reboot-and-verify",
+        "briq-11a-vm-launcher-parity",
+        "briq-11b-vm-services-verify"
+      ],
+      "evidence": [],
+      "intended_changes": [
+        "docs/beta-finalization/BETA-FINALIZATION-ENGINEERING-REPORT.md"
+      ],
+      "tests": [
+        "(tests are recorded by the owning briQ when it reports)"
+      ],
+      "risk": "medium",
+      "rollback": "git revert the commit(s) touching this task's expected files; the change is repository-only and alters no device state",
+      "verdict": null,
+      "offline_ceiling": null,
+      "owner_action": "",
+      "expected_files": [
+        "docs/beta-finalization/BETA-FINALIZATION-ENGINEERING-REPORT.md"
+      ],
+      "note": "seeded from the QonQrete plan; 0/1 expected file(s) already present in the tree",
+      "source": "plan.json",
+      "revision": 1,
+      "at": "2026-10-16T16:07:13+02:00",
+      "by": "construqtor/bg-00-preflight"
+    }
+  ]
+}

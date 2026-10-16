@@ -1,111 +1,107 @@
-# Nuxel Init System Split (briq-21)
+# Nuxel Init System on the S10+ (systemd, Linux 4.14)
 
-Nuxel ships two different init/service-management stacks depending on the
-target platform. They are kept separate and never mixed. This document
-defines the split, how the build chooses between them, and what happens to
-init files that do not apply to a given target.
+**Scope:** this document describes the init/service-manager reality of the
+supported phone target — **Samsung Galaxy S10+ SM-G975F (`beyond2lte`, Exynos
+9820), Fedora 43 aarch64 userspace on Samsung Linux 4.14.253, systemd PID 1**.
+**Related:** `docs/service-graph.md` (graph + dependency matrix),
+`docs/beta-finalization/system/SERVICE-GRAPH.md` (per-unit evidence and 4.14
+constraints), `docs/s10plus-autonomous-boot-repair/` (how this kernel was made
+to boot systemd at all).
 
-## Targets
+## 1. One init system, no split
 
-### `[vm]` — Fedora / UTM VM (systemd)
+The S10+ runs **systemd only**. There is no OpenRC path, no elogind, no
+`systemd-shim`: `/sbin/init` is the Fedora systemd binary and
+`default.target → multi-user.target`.
 
-The development and validation target is an ARM64 Fedora UTM VM running
-Phosh. It uses **systemd** for system services and **systemd user services**
-for the session shell/agent stack.
+Earlier revisions of this document described an `NUXEL_INIT` switch between
+"systemd (VM)" and "OpenRC (mustang/pmOS)". That split applied to a *different*
+device generation that is not a supported target, and it never described the
+S10+. It is recorded here only so the stale claim is not silently reused:
+**no OpenRC script, and no Alpine/pmOS rootfs, is part of the S10+ boot.**
 
-- System services: `services/nuxel-bridge/systemd/*.service`,
-  `services/nuxel-portal/systemd/*.service`,
-  `services/nuxel-notifications/systemd/*.service`,
-  `services/nuxel-web.service`
-- User services: `shell/config/systemd-user/*.service`
-  (`nuxel-phosh-agent.service`, `nuxel-home-kiosk.service`,
-  `nuxel-home-native.service`)
-- The VM rootfs builder (`images/mkrootfs.sh`) and the VM bootstrap
-  (`vm/nuxel-vm-bootstrap.sh`) operate with `NUXEL_INIT=systemd`.
+`shell/config/openrc/*` still exists in the tree as non-applicable history for
+that other device. It is not installed by
+`images/s10plus/build-phone-rootfs-inside-fedora.sh`, and no S10+ document may
+cite it as live.
 
-Targets: `UTM VM (Fedora/Phosh) -> systemd`.
+## 2. What actually starts the phone
 
-### `[mustang]` — Alpine / pmOS (OpenRC)
-
-The physical phone target (Google Pixel 10 Pro XL "mustang", running Alpine /
-postmarketOS) uses **OpenRC** (`/sbin/openrc-run` scripts).
-
-- OpenRC init scripts: `shell/config/openrc/*`
-  (`nuxel-bridge`, `nuxel-portal`, `nuxel-notifications`, `nuxel-firstboot`)
-- These are openrc-run style scripts using `start-stop-daemon` and
-  `checkpath`, with `depend()` blocks wired to the Alpine/pmOS boot scripts
-  (`dbus`, `base`, `localmount`, `modloop`, `network`).
-
-Targets: `mustang (Alpine/pmOS) -> OpenRC`.
-
-## NUXEL_INIT selection
-
-The build/bootstrap detects the init system and stores it in the `NUXEL_INIT`
-environment variable:
-
-- `NUXEL_INIT=systemd` → Fedora/UVM VM (install systemd units, D-Bus
-  policies, multi-user.target.wants).
-- `NUXEL_INIT=openrc` → mustang/Alpine-pmOS (install OpenRC scripts into
-  `/etc/init.d/`, enable via `rc-update add ... boot`).
-
-Each bootstrap script sets a sensible default for its platform but honors an
-explicit override:
-
-```sh
-# vm/nuxel-vm-bootstrap.sh (default systemd for the Fedora/UVM VM):
-export NUXEL_INIT="${NUXEL_INIT:-systemd}"
-# images/mkrootfs.sh — set NUXEL_INIT=openrc to produce an OpenRC rootfs for the
-# mustang/Alpine-pmOS target (installs shell/config/openrc/*, codes them into the boot runlevel):
-export NUXEL_INIT="${NUXEL_INIT:-openrc}"
+```
+Samsung bootloader (NO FLASHING is performed by this project)
+  └─ BOOT container: Samsung kernel + initramfs (carried 4.14 systemd compatibility patch)
+       └─ initramfs /init
+            ├─ installs the patched libsystemd-shared-258.11-1.fc43.so over /usr/lib64/systemd/
+            ├─ plays the boot animation (nuxel-anim-player) while it owns /dev/fb0
+            ├─ enables nuxel-ui.service into sysinit + multi-user targets (initramfs revision)
+            ├─ starts the post-boot supervisor (periodic health checks, no blind reboots)
+            └─ switch_root → Fedora 43 userspace, systemd PID 1
+                 └─ multi-user.target → the Nuxel service set (docs/service-graph.md)
 ```
 
-When neither systemd nor OpenRC is detected at runtime, the bootstrap falls
-back to the target default above.
+The initramfs stage is **not** rebuilt or modified by the rootfs builder; it is
+referenced read-only and its compatibility patch is pinned by NEVRA (see
+`docs/beta-finalization/system/DEPENDENCY-REPORT.md` §3.1).
 
-## D-Bus policy configuration
+## 3. Unit sources and installation
 
-All D-Bus system policies live in the single combined directory
-`configs/dbus/` (canonical), and are installed by both init paths:
+| Class | Repository path | Installed to |
+|---|---|---|
+| Session / display / input | `services/nuxel-session/systemd/*.service` | `/etc/systemd/system/` |
+| Animation phase | `services/nuxel-animation/systemd/nuxel-animation.service` | `/etc/systemd/system/` |
+| Bridge / portal / notifications | `services/nuxel-{bridge,portal,notifications}/systemd/*.service` | `/etc/systemd/system/` |
+| Static web server | `services/nuxel-web.service` | `/etc/systemd/system/` |
+| Diagnostic | `images/s10plus/nuxel-firstlight.service` | `/etc/systemd/system/` |
+| VM-only | `shell/nuxel-camera-portal/systemd/nuxel-camera-portal.service` | VM bootstrap only |
 
-- `configs/dbus/org.nuxel.Bridge.conf`
-- `configs/dbus/org.nuxel.Portal.conf`
-- `configs/dbus/org.nuxel.Notifications.conf`
+Enablement is explicit symlinks into `/etc/systemd/system/multi-user.target.wants/`
+created by the builder (never `systemctl enable`), because the initramfs
+re-enables `nuxel-ui.service` on every boot and the shipped enablement must be
+readable and diffable. See `docs/beta-finalization/system/SERVICE-GRAPH.md` §5.
 
-The per-service copies under `services/*/dbus/` are kept as legacy sources for
-tooling that predates the combined directory; new installs must prefer
-`configs/dbus/`.
+D-Bus policies are installed from the single canonical directory `configs/dbus/`
+into `/etc/dbus-1/system.d/`. The per-service copies under `services/*/dbus/`
+are legacy sources; new installs prefer `configs/dbus/`.
 
-## Archived / non-applicable init files
+## 4. 4.14 compatibility (why the units look unusual)
 
-`configs/init/archived/` holds init files that are non-applicable to their
-target. The categorization rules:
+Linux 4.14 has no `pidfd_open(2)` (5.3) and no `waitid(P_PIDFD)` (5.4). Fedora 43's
+systemd 258 uses pidfd child watching for unit execution, so three components can
+never run on this kernel:
 
-- Every `[vm]` (systemd) unit is non-applicable on `[mustang]`.
-- Every `[mustang]` (OpenRC) script is non-applicable on `[vm]`.
+* `systemd-userdbd.{service,socket}` → masked; the `systemd` NSS module is removed
+  from `nsswitch.conf` (a varlink lookup without a server blocks forever);
+* `dbus-broker` → `dbus-broker-launch` dies `ENOSYS` in `launcher_fork`; the
+  system bus is `dbus-daemon.service`;
+* `systemd-udevd` (+ its sockets) → cannot register worker objects and forks
+  unboundedly; masked, devtmpfs supplies the nodes, and libinput's device
+  discovery is redirected by `libnuxel-libinput-path.so`.
 
-Because the two stacks are mutually exclusive, the "live" set for a given
-target is exactly the files for that target; the files for the *other* target
-are considered archived *with respect to the current build*. The
-`configs/init/archived/` directory documents this matrix:
+The carried `libsystemd-shared-258.11-1.fc43.so` patch (posix_spawn fallback in
+`process-util.c`, PID-only `PidRef` degraded in `pidref.c`) is what lets the
+remaining units execute at all. It is bound to the exact `systemd-258.11-1.fc43`
+NEVRA from the Fedora `updates` repository — the pin is enforced by
+`tools/s10plus/a33/verify-packages.py` and by the builder.
 
-| File                                          | Category   | Live on      |
-|-----------------------------------------------|------------|--------------|
-| `services/nuxel-bridge/systemd/nuxel-bridge.service`          | `[vm]`   | systemd (VM) |
-| `services/nuxel-bridge/systemd/nuxel-http-bridge.service`     | `[vm]`   | systemd (VM) |
-| `services/nuxel-portal/systemd/nuxel-portal.service`          | `[vm]`   | systemd (VM) |
-| `services/nuxel-notifications/systemd/nuxel-notifications.service` | `[vm]` | systemd (VM) |
-| `services/nuxel-web.service`                                   | `[vm]`   | systemd (VM) |
-| `shell/config/systemd-user/nuxel-phosh-agent.service`          | `[vm]`   | systemd (VM) |
-| `shell/config/systemd-user/nuxel-home-kiosk.service`           | `[vm]`   | systemd (VM) |
-| `shell/config/systemd-user/nuxel-home-native.service`          | `[vm]`   | systemd (VM) |
-| `configs/apparmor/systemd/nuxel-apparmor-enforce.service`      | `[vm]`   | systemd (VM) |
-| `shell/config/openrc/nuxel-bridge`         | `[mustang]` | OpenRC (mustang) |
-| `shell/config/openrc/nuxel-portal`         | `[mustang]` | OpenRC (mustang) |
-| `shell/config/openrc/nuxel-notifications`  | `[mustang]` | OpenRC (mustang) |
-| `shell/config/openrc/nuxel-firstboot`      | `[mustang]` | OpenRC (mustang) |
+`tools/s10plus/a26/nuxel-rootfs-fixes.sh` applies all four repairs to the staging
+tree inside the image build (never on a phone), idempotently, and
+`tools/s10plus/a33/verify-service-graph.py` fails if any of them disappears.
 
-At present every init file in the tree applies to exactly one target, so the
-working set is never empty; nothing is orphaned. The `archived/` directory
-exists so that if a service is later dropped from one target (but kept in the
-other), its init file can be moved there instead of being deleted, preserving
-the history without affecting the live boot.
+## 5. Verification and honest limits
+
+```sh
+python3 tools/s10plus/a33/verify-service-graph.py     # OFFLINE_TESTED (repository evidence)
+python3 tools/s10plus/a33/verify-packages.py          # package/NEVRA pin evidence
+```
+
+* Offline: the graph is cycle-free, every reference resolves, no forbidden 4.14
+  dependency exists, and the builder installs + enables exactly the canonical set.
+* On-device: `systemctl is-system-running`, `systemctl --failed`,
+  `journalctl -b -p err` are **not** claimed here. They are measured by the live
+  deployment group and recorded in `docs/beta-finalization/live/` and the manual
+  proof checklist.
+* Reboots are permitted but must return to Nuxel; a known-working userspace
+  rollback path is kept at all times. No blind repeat reboots (three same-mode
+  failures ⇒ change the diagnostic strategy).
+* No unit declares an AppArmor profile: Nuxel has no verified policy-load path on
+  this kernel, and an unenforced profile would be a claim it cannot support.

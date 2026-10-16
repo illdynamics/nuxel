@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "id": "briq-07c-media-authenticator-downloader",
+  "revisions": [
+    {
+      "id": "briq-07c-media-authenticator-downloader",
+      "title": "Media players, custom media downloader and custom authenticator",
+      "component": "bg-07-specialty-apps",
+      "component_title": "Priority 7a - Store, Power-User, Security & Specialty Applications",
+      "priority": 7,
+      "state": "in_progress",
+      "dependencies": [
+        "briq-06a-core-app-inventory"
+      ],
+      "evidence": [
+        {
+          "kind": "observation",
+          "path": "pwa/nuxel-apps/media/",
+          "command": "test -e pwa/nuxel-apps/media/",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "observation",
+          "path": "pwa/nuxel-apps/downloader/",
+          "command": "test -e pwa/nuxel-apps/downloader/",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "observation",
+          "path": "pwa/nuxel-apps/authenticator/",
+          "command": "test -e pwa/nuxel-apps/authenticator/",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        }
+      ],
+      "intended_changes": [
+        "pwa/nuxel-apps/media/",
+        "pwa/nuxel-apps/downloader/",
+        "pwa/nuxel-apps/authenticator/",
+        "docs/beta-finalization/apps/MEDIA-AUTH.md"
+      ],
+      "tests": [
+        "(tests are recorded by the owning briQ when it reports)"
+      ],
+      "risk": "medium",
+      "rollback": "git revert the commit(s) touching this task's expected files; the change is repository-only and alters no device state",
+      "verdict": null,
+      "offline_ceiling": null,
+      "owner_action": "",
+      "expected_files": [
+        "pwa/nuxel-apps/media/",
+        "pwa/nuxel-apps/downloader/",
+        "pwa/nuxel-apps/authenticator/",
+        "docs/beta-finalization/apps/MEDIA-AUTH.md"
+      ],
+      "note": "seeded from the QonQrete plan; 3/4 expected file(s) already present in the tree",
+      "source": "plan.json",
+      "revision": 1,
+      "at": "2026-10-16T16:07:13+02:00",
+      "by": "construqtor/bg-00-preflight"
+    }
+  ]
+}

@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "comment": "Jack / USB-C accessory route-switching policy for the S10+ (beyond2lte). Installed to /etc/nuxel/audio/jack-routes.json. Read by nuxel-headphone-diag.sh and by the A33 audio policy. The control NAMES are never invented here: each rule names the *evidence* that must appear before a route may be selected, and the concrete control names come from a capture of the live card.",
+  "card_name": "beyond-madera",
+  "detection": {
+    "jack_kcontrols": {
+      "comment": "The CS47L93 exposes jack detection as ALSA kcontrols. The exact names are discovered from `amixer -c <card> contents` and from the codec pin files; a name is used only after it has been seen.",
+      "name_patterns": ["Headphone Jack", "Headset Jack", "Jack", "Mic Jack"],
+      "pin_state_files": ["/proc/asound/card*/codec#*"],
+      "require_observed_name": true
+    },
+    "usbc": {
+      "comment": "S10+ audio over USB-C is a USB Audio Class device (digital), not a UCM-routed codec path; and the S10 family also supports an analog USB-C accessory through the codec's AUX path. Both are detected from real evidence, not assumed.",
+      "evidence_any_of": [
+        "/sys/class/typec/port*/data_role exists",
+        "a new ALSA card with a USB bus id appears in /proc/asound/cards",
+        "lsusb reports an audio-class interface (bInterfaceClass 0x01)"
+      ],
+      "role": "uac"
+    }
+  },
+  "rules": [
+    {
+      "id": "jack-insert-headphones",
+      "when": {"jack": "inserted", "has_mic": false},
+      "select_device": "Headphones",
+      "reason": "3.5 mm stereo plug: route playback to the CS47L93 headphone driver, speaker amplifiers disabled."
+    },
+    {
+      "id": "jack-insert-headset",
+      "when": {"jack": "inserted", "has_mic": true},
+      "select_device": "Headset",
+      "reason": "TRRS headset: the same playback path plus the headset microphone input."
+    },
+    {
+      "id": "jack-remove",
+      "when": {"jack": "removed"},
+      "select_device": "Speaker",
+      "reason": "Unplug returns to the CS35L40 speaker path. This is the revert rule and must always exist."
+    },
+    {
+      "id": "usbc-digital-headset",
+      "when": {"usbc": "present", "class": "audio"},
+      "select_device": "USB-C Headset (UAC)",
+      "reason": "A UAC accessory takes over as a separate card; the codec route is left untouched rather than being reconfigured blindly."
+    },
+    {
+      "id": "usbc-analog-headset",
+      "when": {"usbc": "present", "class": "analog"},
+      "select_device": "Headset",
+      "reason": "Analog USB-C accessory drives the codec AUX pins; treat it as a headset on the codec."
+    }
+  ],
+  "revert": {
+    "on_unplug": true,
+    "always_restore": ["Speaker"],
+    "never_leave_routed_to_absent_device": true
+  },
+  "safety": {
+    "low_volume_only": true,
+    "volume_cap_percent": 25,
+    "cap_on_route_change": true,
+    "comment": "A route change must not restore a stored high volume: every route switch re-applies the low-volume cap before the first sample is rendered."
+  },
+  "evidence": {
+    "state_file": "/var/lib/nuxel/audio/jack-state.json",
+    "log": "/var/log/nuxel/audio-diag.log",
+    "audibility": "NEEDS_OWNER_TEST (docs/beta-finalization/manual-proof/07-headphones.md)"
+  }
+}

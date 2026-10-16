@@ -1,0 +1,6 @@
+# two short presses inside the 400 ms double-press gap
+cfg defer=power
+0 key power 1
+100 key power 0
+300 key power 1
+400 key power 0

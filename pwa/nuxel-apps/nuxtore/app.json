@@ -1,0 +1,14 @@
+{
+  "id": "org.nuxel.NuxTore",
+  "name": "NuxTore",
+  "icon": "NX",
+  "color": "#1565C0",
+  "category": "system",
+  "type": "pwa",
+  "url": "/pwa/nuxel-apps/nuxtore/index.html",
+  "description": "Offline-first app catalog with signature and digest verification",
+  "capabilities": ["catalog:read", "catalog:install", "catalog:remove"],
+  "docked": false,
+  "network": "none",
+  "external_publish": false
+}

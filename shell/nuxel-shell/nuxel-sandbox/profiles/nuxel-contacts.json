@@ -2,7 +2,7 @@
     "app_id": "nuxel-contacts",
     "name": "Contacts",
     "category": "native",
-    "flags": [],
+    "flags": ["contacts", "storage"],
     "capabilities": ["contacts", "storage"],
     "network_class": "isolated",
     "data_dir": "/var/app/nuxel-contacts/data",
@@ -14,5 +14,28 @@
         "org.nuxel.Bridge",
         "org.gnome.evolution.dataserver.Sources"
     ],
-    "devices": []
+    "devices": [],
+    "seccomp_profile": "native-standard",
+    "landlock_rules": {
+        "read_only": ["/usr", "/etc/fonts", "/etc/gtk-4.0"],
+        "read_write": ["/var/app/nuxel-contacts/data"],
+        "deny": ["/dev", "/sys", "/proc/*/mem", "/var/app/"],
+        "kernel_note": "INTENT ONLY: Landlock requires Linux >= 5.13; this device runs 4.14.253."
+    },
+    "network_policy": {
+        "default": "deny_all",
+        "allow_dns": false,
+        "allow_tcp_outbound": false,
+        "allow_udp_outbound": false,
+        "allow_inbound": false,
+        "kernel_note": "No ACCEPT rule is emitted for this app; the nftables output chain default-drop policy applies."
+    },
+    "enforcement": {
+        "attacker_privilege_class": "unprivileged-app",
+        "root_note": "Nothing here constrains uid 0.",
+        "apparmor": "profile configs/apparmor.d/usr.bin.nuxel-contacts; only effective if AppArmor is enabled",
+        "landlock": "unavailable on Linux 4.14",
+        "seccomp": "BPF allow-list with no_new_privs",
+        "note": "The contacts database is protected by DAC (dedicated uid) plus the portal D-Bus gate; there is no path-level kernel confinement on 4.14."
+    }
 }

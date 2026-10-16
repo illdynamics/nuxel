@@ -1,0 +1,333 @@
+#!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
+"""mock-nft - a deliberately dumb, state-recording stand-in for `nft`.
+
+WHY THIS EXISTS (and what it does NOT prove)
+--------------------------------------------
+The Nuxel firewall tool must be testable offline: no phone, no root, no
+netfilter. This mock records what the tool asked the kernel to do and keeps a
+tiny "live ruleset" on disk so that list/verify/rollback flows are executable.
+
+  * It does NOT validate nftables syntax. A green run here is evidence about the
+    TOOL (staging order, snapshot, guard verification, rollback), never about
+    whether the ruleset is accepted by a real kernel. The authoritative syntax
+    check is `nft -c -f` on the device/VM, which the tool runs when a real nft is
+    present, and the documented output belongs in the evidence files.
+  * It does NOT touch netfilter, block devices, or any privileged interface.
+
+State: $NUXEL_MOCK_NFT_STATE/ruleset.nft holds the "live" ruleset, and
+$NUXEL_MOCK_NFT_STATE/calls.log records every invocation so a test can assert
+the ORDER of operations (snapshot before apply, guard last, ...).
+
+Failure injection (for the rollback tests):
+  NUXEL_MOCK_NFT_FAIL_APPLY=1   -> any `-f` apply exits 1
+  NUXEL_MOCK_NFT_FAIL_CHECK=1   -> any `-c` check exits 1
+  NUXEL_MOCK_NFT_DROP_GUARD=1   -> the guard table is silently omitted from the
+                                   live ruleset after an apply (simulates the
+                                   one failure mode that must trigger rollback)
+  NUXEL_MOCK_NFT_UNAVAILABLE=1  -> behave as if nft were not installed
+"""
+import os
+import sys
+
+STATE = os.environ.get("NUXEL_MOCK_NFT_STATE", "/tmp/nuxel-mock-nft")
+RULESET = os.path.join(STATE, "ruleset.nft")
+CALLS = os.path.join(STATE, "calls.log")
+
+
+def ensure():
+    os.makedirs(STATE, exist_ok=True)
+
+
+def record(argv):
+    ensure()
+    with open(CALLS, "a") as fh:
+        fh.write(" ".join(argv) + "\n")
+
+
+def read_live():
+    try:
+        with open(RULESET) as fh:
+            return fh.read()
+    except IOError:
+        return ""
+
+
+def write_live(text):
+    ensure()
+    with open(RULESET, "w") as fh:
+        fh.write(text)
+
+
+def tables_in(text):
+    """Return [(table_decl, body)] for the naive 'table <family> <name> {' form."""
+    out = []
+    lines = text.splitlines()
+    i = 0
+    while i < len(lines):
+        line = lines[i].strip()
+        if line.startswith("table "):
+            header = line
+            depth = line.count("{") - line.count("}")
+            body = [lines[i]]
+            i += 1
+            while i < len(lines) and depth > 0:
+                body.append(lines[i])
+                depth += lines[i].count("{") - lines[i].count("}")
+                i += 1
+            out.append((header, "\n".join(body)))
+            continue
+        i += 1
+    return out
+
+
+def strip_table(text):
+    """Drop 'table inet X {' ... matching '}' blocks (used by `delete table`)."""
+    keep = []
+    depth = 0
+    for line in text.splitlines():
+        if depth == 0 and line.strip().startswith("table "):
+            depth = line.count("{") - line.count("}")
+            continue
+        if depth > 0:
+            depth += line.count("{") - line.count("}")
+            continue
+        keep.append(line)
+    return "\n".join(keep) + ("\n" if keep else "")
+
+
+def strip_comments(text):
+    """Drop full-line comments/shebang.
+
+    Real `nft list ruleset` prints rules, not the comments you wrote above them.
+    Modelling that keeps the mock honest: a verifier that greps for a string can
+    no longer be satisfied by a comment, which is exactly the failure mode the
+    console-guard tests exist to catch.
+    """
+    return "\n".join(l for l in text.splitlines() if not l.strip().startswith("#")) + "\n"
+
+
+def drop_guard(text):
+    """Remove the nuxel_console_guard table block from a ruleset text.
+
+    This models the one live-kernel outcome the tool must never accept: the
+    apply "succeeds" but the console guard is not in the resulting ruleset.
+    """
+    out = []
+    skip = False
+    depth = 0
+    for line in text.splitlines():
+        stripped = line.strip()
+        if not skip and stripped.startswith("table ") and "nuxel_console_guard" in stripped:
+            skip = True
+            depth = stripped.count("{") - stripped.count("}")
+            continue
+        if skip:
+            depth += stripped.count("{") - stripped.count("}")
+            if depth <= 0:
+                skip = False
+            continue
+        out.append(line)
+    return "\n".join(out) + "\n"
+
+
+def chain_span(lines, chain):
+    """Return (start, end) line indices of the 'chain <chain> {' block."""
+    start = None
+    depth = 0
+    for idx, line in enumerate(lines):
+        stripped = line.strip()
+        if start is None and stripped.startswith("chain %s " % chain):
+            start = idx
+            depth = stripped.count("{") - stripped.count("}")
+            continue
+        if start is not None:
+            depth += stripped.count("{") - stripped.count("}")
+            if depth <= 0:
+                return start, idx
+    return None, None
+
+
+def rule_lines(lines, start, end):
+    """Indices of rule lines inside a chain block (same rule as `list chain -a`)."""
+    out = []
+    for idx in range(start, end):
+        stripped = lines[idx].strip()
+        if stripped.startswith("#"):
+            continue
+        if " accept" in " " + stripped or " drop" in " " + stripped or " log " in " " + stripped:
+            out.append(idx)
+    return out
+
+
+def insert_in_chain(text, chain, spec):
+    lines = text.splitlines()
+    start, end = chain_span(lines, chain)
+    if start is None:
+        return text + "\n        %s\n" % spec
+    entry = rule_lines(lines, start, end)
+    at = entry[0] if entry else end
+    lines.insert(at, "        %s" % spec)
+    return "\n".join(lines) + "\n"
+
+
+def delete_handle(text, chain, handle):
+    lines = text.splitlines()
+    start, end = chain_span(lines, chain)
+    if start is None:
+        return text
+    entry = rule_lines(lines, start, end)
+    try:
+        idx = entry[int(handle) - 1]
+    except (ValueError, IndexError):
+        return text
+    del lines[idx]
+    return "\n".join(lines) + "\n"
+
+
+def main(argv):
+    args = argv[1:]
+    if os.environ.get("NUXEL_MOCK_NFT_UNAVAILABLE") == "1":
+        sys.stderr.write("mock-nft: pretending to be uninstalled\n")
+        return 127
+    record(args)
+    if not args:
+        print("mock-nft: no arguments", file=sys.stderr)
+        return 1
+
+    # ---- check (-c -f FILE) -------------------------------------------------
+    if args[0] == "-c" and "-f" in args:
+        if os.environ.get("NUXEL_MOCK_NFT_FAIL_CHECK") == "1":
+            print("mock-nft: injected check failure", file=sys.stderr)
+            return 1
+        print("mock-nft: check ok (mock does not parse nftables syntax)")
+        return 0
+
+    # ---- apply (-f FILE) ----------------------------------------------------
+    if args[0] == "-f":
+        path = args[1] if len(args) > 1 else None
+        if os.environ.get("NUXEL_MOCK_NFT_FAIL_APPLY") == "1":
+            print("mock-nft: injected apply failure", file=sys.stderr)
+            return 1
+        if not path or not os.path.exists(path):
+            print("mock-nft: cannot open %r" % path, file=sys.stderr)
+            return 1
+        with open(path) as fh:
+            text = fh.read()
+        if os.environ.get("NUXEL_MOCK_NFT_DROP_GUARD") == "1" and "nuxel_console_guard" in text:
+            # One-shot injection: the FIRST apply in a session loses the guard
+            # (so the tool must notice and roll back), while the rollback load
+            # that follows behaves normally and restores it. A permanently
+            # broken mock would make "rollback restored the guard" untestable.
+            marker = os.path.join(STATE, "guard-dropped.once")
+            if not os.path.exists(marker):
+                ensure()
+                open(marker, "w").write("1\n")
+                text = drop_guard(text)
+        text = strip_comments(text)
+        if "flush ruleset" in text:
+            live = strip_table(read_live())
+            write_live((live.rstrip() + "\n" + text) if live.strip() else text)
+        else:
+            live = read_live()
+            write_live(live.rstrip() + "\n\n" + text + "\n")
+        return 0
+
+    # ---- optional leading flags (e.g. -a for handles) ------------------------
+    handles = False
+    while args and args[0].startswith("-"):
+        if args[0] == "-a":
+            handles = True
+        args = args[1:]
+
+    # ---- list ruleset -------------------------------------------------------
+    if args[:2] == ["list", "ruleset"]:
+        sys.stdout.write(read_live())
+        return 0
+
+    # ---- list table FAMILY NAME --------------------------------------------
+    if args[:2] == ["list", "table"] and len(args) >= 4:
+        want = "table %s %s" % (args[2], args[3])
+        for header, body in tables_in(read_live()):
+            if header.startswith(want):
+                print(body)
+                return 0
+        return 0
+
+    # ---- list chain FAMILY TABLE CHAIN -------------------------------------
+    if args[:2] == ["list", "chain"] and len(args) >= 5:
+        text = read_live()
+        fam, table, chain = args[2], args[3], args[4]
+        # locate chain block
+        lines = text.splitlines()
+        out = []
+        capturing = False
+        depth = 0
+        for line in lines:
+            stripped = line.strip()
+            if not capturing and stripped.startswith("chain %s" % chain):
+                capturing = True
+                depth = stripped.count("{") - stripped.count("}")
+                out.append(line)
+                continue
+            if capturing:
+                out.append(line)
+                depth += stripped.count("{") - stripped.count("}")
+                if depth <= 0:
+                    break
+        if not out:
+            return 0
+        if handles:
+            # Handle numbering must agree with delete_handle() above, otherwise a
+            # mock delete would remove a different rule than the tool listed.
+            n = 0
+            for idx in rule_lines(out, 0, len(out)):
+                n += 1
+                out[idx] = out[idx] + " # handle %d" % n
+        print("\n".join(out))
+        return 0
+
+    # ---- add table / chain / rule ------------------------------------------
+    if args[0] == "add" and args[1] == "table":
+        live = read_live()
+        header = "table %s %s {" % (args[2], args[3])
+        if header not in live:
+            write_live(live.rstrip() + "\n\n%s\n}\n" % header)
+        return 0
+    if args[0] == "add" and args[1] == "chain":
+        live = read_live()
+        body = "{ %s }" % " ".join(args[4:])
+        write_live(live.rstrip() + "\n%s\n" % body)
+        return 0
+    if args[0] in ("add", "insert") and args[1] == "rule":
+        # Record the rule inside the target chain body so `list chain -a` can
+        # show it and the tool's app-list/app-deny flows are exercised for real.
+        live = read_live()
+        spec = " ".join(args[5:]) if len(args) > 5 else ""
+        if not spec:
+            return 0
+        new_live = insert_in_chain(live, args[4], spec)
+        write_live(new_live)
+        return 0
+    if args[0] == "delete" and args[1] == "rule":
+        handle = None
+        if "handle" in args:
+            handle = args[args.index("handle") + 1]
+        chain = args[4] if len(args) > 4 else None
+        live = read_live()
+        if handle is not None and chain:
+            write_live(delete_handle(live, chain, handle))
+        return 0
+    if args[0] == "delete" and args[1] == "table":
+        write_live(strip_table(read_live()))
+        return 0
+    if args[0] == "flush":
+        write_live("")
+        return 0
+
+    print("mock-nft: unhandled invocation %r" % (args,), file=sys.stderr)
+    return 2
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))

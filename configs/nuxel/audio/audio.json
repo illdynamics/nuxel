@@ -1,0 +1,91 @@
+{
+  "schema_version": 1,
+  "comment": "Audio policy for the Samsung Galaxy S10+ (beyond2lte). Read by tools/s10plus/a33/nuxel-audio-diag.sh and tools/s10plus/a33/nuxel-headphone-diag.sh, installed to /etc/nuxel/audio/audio.json. Nothing here asserts that sound is audible; it constrains HOW the first bring-up may happen so that an unknown amplifier path can never be driven at full scale.",
+  "device": {
+    "model": "Samsung Galaxy S10+ SM-G975F",
+    "codename": "beyond2lte",
+    "card_name": "beyond-madera",
+    "codec": "Cirrus Logic CS47L93 (MADERA ASoC)",
+    "amplifiers": ["CS35L40", "CS35L40"],
+    "soc_audio_subsystem": "Exynos 9820 ABox",
+    "card_name_note": "beyond-madera is the ALSA card name (what /proc/asound/cards reports) and therefore also the UCM2 directory name. It is the anchor: a config that names any other card is wrong for this device."
+  },
+
+  "safety": {
+    "comment": "LOW-VOLUME-ONLY default. The cap is enforced at the ALSA layer (configs/pipewire/asound-nuxel-safe.conf, softvol max_dB=-6.0) AND clamped again in every generated UCM cset, so a session-manager restore or a direct mixer write cannot defeat it.",
+    "low_volume_only": true,
+    "volume_cap_percent": 25,
+    "softvol_max_dB": -6.0,
+    "softvol_min_dB": -51.0,
+    "max_burst_ms_at_full_scale": 0,
+    "first_tone_default_percent": 8,
+    "banned_by_default": [
+      "amixer sset 'Playback Volume' 100%",
+      "alsactl restore of a stored full-scale profile",
+      "any aplay invocation without a bounded -d duration"
+    ],
+    "why_not_a_session_manager_property": "A session manager restores a stored volume; that is a convenience, not a safety guarantee. The hard ceiling lives at the ALSA layer and in the generated csets."
+  },
+
+  "card_selection": {
+    "comment": "The card is located by NAME first and by index only as a fallback; a hard-coded card index is never assumed.",
+    "prefer_name": "beyond-madera",
+    "fallback_card_index": 0,
+    "pcm_playback_candidates": ["hw:0,0", "default", "plughw:0,0"],
+    "must_not_assume": ["card index 0", "a PCM named 'pcmC0D0p' as the only playback PCM", "a mixer element named 'Master'"]
+  },
+
+  "pipeline_walk": {
+    "comment": "nuxelctl audio pipeline walks these stages in order and reports the FIRST stage that is missing, silent or broken. It never reports 'OK' for a stage it could not observe.",
+    "stages": [
+      {"id": "card", "evidence": ["/proc/asound/cards"], "fail_state": "NO_CARD"},
+      {"id": "pcm", "evidence": ["/proc/asound/card*/pcm*p/sub*/hw_params", "/proc/asound/card*/pcm*/sub*/status"], "fail_state": "NO_PCM"},
+      {"id": "daifmt", "evidence": ["/proc/asound/card*/daifmt"], "fail_state": "NO_DAIFMT"},
+      {"id": "controls", "evidence": ["amixer -c <card> contents", "alsactl -f - store"], "fail_state": "NO_CONTROLS"},
+      {"id": "dapm", "evidence": ["/sys/kernel/debug/asoc/<card>/dapm/*", "dmesg | grep -i dapm"], "fail_state": "NO_DAPM_VIEW"},
+      {"id": "route", "evidence": ["the UCM EnableSequence that was actually applied", "the mixer controls that changed"], "fail_state": "NO_ROUTE"},
+      {"id": "dac_running", "evidence": ["/proc/asound/card*/pcm*p/sub*/status -> state=RUNNING", "ABox/DEQ counters when exposed"], "fail_state": "DAC_NOT_RUNNING"}
+    ],
+    "never_a_criterion": [
+      "a writable mixer control (writability is not audibility)",
+      "a registered codec driver",
+      "a DAPM widget reporting 'On' without a running PCM"
+    ]
+  },
+
+  "capture": {
+    "comment": "The concrete UCM EnableSequence is GENERATED from a real capture, never invented: the MADERA/CS47L93 control namespace is large and device-specific.",
+    "state_dir": "/var/lib/nuxel/audio",
+    "controls_json": "/var/lib/nuxel/audio/controls.json",
+    "generated_ucm": "/var/lib/nuxel/audio/HiFi.conf.generated",
+    "install_target": "/usr/share/alsa/ucm2/beyond-madera/HiFi.conf",
+    "install_backup": "/usr/share/alsa/ucm2/beyond-madera/HiFi.conf.prev-nuxel",
+    "install_requires_hash_check": true,
+    "rollback_on_failure": true
+  },
+
+  "test_tone": {
+    "comment": "A bounded, low-volume tone whose purpose is to make the DAC/DAPM decision observable: the tool asserts PCM state=RUNNING while the tone plays and reports SILENT if the DAC never leaves SETUP. It does not, and cannot, assert that the owner heard anything.",
+    "generator": "sine",
+    "frequency_hz": 440,
+    "duration_ms": 800,
+    "level_percent": 8,
+    "require_pcm_running": true,
+    "audibility_verdict": "NEEDS_OWNER_TEST"
+  },
+
+  "jack": {
+    "comment": "See configs/nuxel/audio/jack-routes.json for the route-switching policy. Jack state is read from ALSA jack kcontrols and codec pin registers; the kcontrol names are discovered, not invented.",
+    "policy": "/etc/nuxel/audio/jack-routes.json",
+    "discover": ["amixer -c <card> contents | grep -i -E 'jack|headphone|headset|mic'", "/proc/asound/card*/codec#* pin states"],
+    "usbc_detect": ["/sys/class/typec/port*/data_role", "/proc/asound/cards (a UAC card appearing)", "lsusb for an audio-class accessory"],
+    "mode": "auto",
+    "state_dir": "/var/lib/nuxel/audio"
+  },
+
+  "evidence": {
+    "log": "/var/log/nuxel/audio-diag.log",
+    "state_file": "/var/lib/nuxel/audio/state.json",
+    "reports": ["nuxelctl audio status", "nuxelctl audio pipeline", "nuxelctl audio capture", "nuxelctl audio tone"]
+  }
+}

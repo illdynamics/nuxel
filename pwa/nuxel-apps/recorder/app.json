@@ -1,0 +1,17 @@
+{
+  "id": "org.nuxel.Recorder",
+  "name": "Recorder",
+  "icon": "\ud83c\udf99\ufe0f",
+  "color": "#150e20",
+  "category": "media",
+  "type": "pwa",
+  "url": "/pwa/nuxel-apps/recorder/index.html",
+  "manifest": "pwa/nuxel-apps/recorder/manifest.json",
+  "description": "Audio capture provisioning; reports honestly when no capture path exists",
+  "capabilities": [
+    "storage:persistent"
+  ],
+  "bridge_version": "1",
+  "docked": false,
+  "source": "pwa/nuxel-apps tree (bg-06-core-phone-apps)"
+}

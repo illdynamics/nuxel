@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "id": "briq-04a-fedora-packages",
+  "revisions": [
+    {
+      "id": "briq-04a-fedora-packages",
+      "title": "Verified Fedora 43 ARM64 package manifest and dependency report",
+      "component": "bg-04-userspace-completion",
+      "component_title": "Priority 4 - Full Fedora Userspace, Services & Application Infrastructure",
+      "priority": 4,
+      "state": "in_progress",
+      "dependencies": [
+        "briq-00c-workqueue-ledger"
+      ],
+      "evidence": [
+        {
+          "kind": "observation",
+          "path": "docs/beta-finalization/system/DEPENDENCY-REPORT.md",
+          "command": "test -e docs/beta-finalization/system/DEPENDENCY-REPORT.md",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "observation",
+          "path": "images/s10plus/packages-manifest.json",
+          "command": "test -e images/s10plus/packages-manifest.json",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "observation",
+          "path": "tools/s10plus/a33/verify-packages.py",
+          "command": "test -e tools/s10plus/a33/verify-packages.py",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        }
+      ],
+      "intended_changes": [
+        "docs/beta-finalization/system/DEPENDENCY-REPORT.md",
+        "images/s10plus/packages-manifest.json",
+        "tools/s10plus/a33/verify-packages.py"
+      ],
+      "tests": [
+        "(tests are recorded by the owning briQ when it reports)"
+      ],
+      "risk": "medium",
+      "rollback": "git revert the commit(s) touching this task's expected files; the change is repository-only and alters no device state",
+      "verdict": null,
+      "offline_ceiling": null,
+      "owner_action": "",
+      "expected_files": [
+        "docs/beta-finalization/system/DEPENDENCY-REPORT.md",
+        "images/s10plus/packages-manifest.json",
+        "tools/s10plus/a33/verify-packages.py"
+      ],
+      "note": "seeded from the QonQrete plan; 3/3 expected file(s) already present in the tree",
+      "source": "plan.json",
+      "revision": 1,
+      "at": "2026-10-16T16:07:13+02:00",
+      "by": "construqtor/bg-00-preflight"
+    }
+  ]
+}

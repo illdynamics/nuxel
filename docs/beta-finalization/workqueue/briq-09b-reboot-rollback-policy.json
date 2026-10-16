@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "id": "briq-09b-reboot-rollback-policy",
+  "revisions": [
+    {
+      "id": "briq-09b-reboot-rollback-policy",
+      "title": "Autonomous reboot policy and reliable rollback",
+      "component": "bg-09-integration-release",
+      "component_title": "Priority 8 - Integration, Soak, Reboot Policy, Rollback & Release Deliverables",
+      "priority": 8,
+      "state": "pending",
+      "dependencies": [
+        "briq-09a-test-strategy-soak"
+      ],
+      "evidence": [],
+      "intended_changes": [
+        "tools/beta/rollback.sh",
+        "tools/beta/reboot-policy.sh",
+        "docs/beta-finalization/release/REBOOT-ROLLBACK.md"
+      ],
+      "tests": [
+        "(tests are recorded by the owning briQ when it reports)"
+      ],
+      "risk": "medium",
+      "rollback": "git revert the commit(s) touching this task's expected files; the change is repository-only and alters no device state",
+      "verdict": null,
+      "offline_ceiling": null,
+      "owner_action": "",
+      "expected_files": [
+        "tools/beta/rollback.sh",
+        "tools/beta/reboot-policy.sh",
+        "docs/beta-finalization/release/REBOOT-ROLLBACK.md"
+      ],
+      "note": "seeded from the QonQrete plan; 0/3 expected file(s) already present in the tree",
+      "source": "plan.json",
+      "revision": 1,
+      "at": "2026-10-16T16:07:13+02:00",
+      "by": "construqtor/bg-00-preflight"
+    }
+  ]
+}

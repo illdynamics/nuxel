@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "id": "briq-04b-service-definitions",
+  "revisions": [
+    {
+      "id": "briq-04b-service-definitions",
+      "title": "Complete service definitions and boot graph (4.14-compatible)",
+      "component": "bg-04-userspace-completion",
+      "component_title": "Priority 4 - Full Fedora Userspace, Services & Application Infrastructure",
+      "priority": 4,
+      "state": "in_progress",
+      "dependencies": [
+        "briq-04a-fedora-packages"
+      ],
+      "evidence": [
+        {
+          "kind": "observation",
+          "path": "services/",
+          "command": "test -e services/",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "observation",
+          "path": "shell/config/systemd-user/",
+          "command": "test -e shell/config/systemd-user/",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "observation",
+          "path": "tools/s10plus/a33/verify-service-graph.py",
+          "command": "test -e tools/s10plus/a33/verify-service-graph.py",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        }
+      ],
+      "intended_changes": [
+        "services/",
+        "shell/config/systemd-user/",
+        "tools/s10plus/a33/verify-service-graph.py",
+        "docs/beta-finalization/system/SERVICE-GRAPH.md"
+      ],
+      "tests": [
+        "(tests are recorded by the owning briQ when it reports)"
+      ],
+      "risk": "medium",
+      "rollback": "git revert the commit(s) touching this task's expected files; the change is repository-only and alters no device state",
+      "verdict": null,
+      "offline_ceiling": null,
+      "owner_action": "",
+      "expected_files": [
+        "services/",
+        "shell/config/systemd-user/",
+        "tools/s10plus/a33/verify-service-graph.py",
+        "docs/beta-finalization/system/SERVICE-GRAPH.md"
+      ],
+      "note": "seeded from the QonQrete plan; 3/4 expected file(s) already present in the tree",
+      "source": "plan.json",
+      "revision": 1,
+      "at": "2026-10-16T16:07:13+02:00",
+      "by": "construqtor/bg-00-preflight"
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "id": "org.nuxel.Calculator",
+  "name": "Calculator",
+  "icon": "\ud83e\uddee",
+  "color": "#101725",
+  "category": "utilities",
+  "type": "pwa",
+  "url": "/pwa/nuxel-apps/calculator/index.html",
+  "manifest": "pwa/nuxel-apps/calculator/manifest.json",
+  "description": "Offline expression calculator with scientific functions and memory",
+  "capabilities": [],
+  "bridge_version": "1",
+  "docked": false,
+  "source": "pwa/nuxel-apps tree (bg-06-core-phone-apps)"
+}

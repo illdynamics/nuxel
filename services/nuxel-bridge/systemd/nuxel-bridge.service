@@ -1,13 +1,28 @@
 [Unit]
 Description=Nuxel Bridge - PWA to Native Phone Service Mediator
 Documentation=https://github.com/nuxel/nuxel/docs/architecture.md
-Wants=dbus.service modemmanager.service
-After=dbus.service modemmanager.service network-online.target
+# DEPENDENCY DIRECTION (measured A33): the bridge CALLS the notification hub
+# (SendNotification -> org.nuxel.Notifications on the system bus), so the hub must
+# be up first. The previous revision had `Before=nuxel-notifications.service`
+# here while nuxel-notifications.service had `Before=nuxel-bridge.service`,
+# which is a real ordering CYCLE (tools/s10plus/a33/verify-service-graph.py
+# failed on it). The hub is the producer, the bridge is the consumer:
+#   nuxel-notifications.service -> nuxel-bridge.service
+Wants=dbus.service ModemManager.service nuxel-portal.service nuxel-notifications.service
+After=dbus.service ModemManager.service nuxel-portal.service nuxel-notifications.service network-online.target
 Before=phosh.service
 
 [Service]
 Type=simple
 ExecStart=/usr/bin/nuxel-bridge
+# The bridge refuses to answer a PWA whose bridge_version does not match the
+# pinned value in pwa/nuxel-common/bridge-version.json; publish it so the pin is
+# visible in `systemctl show -p Environment`.
+#   NUXEL_BRIDGE_PROTOCOL_VERSION = the pinned PWA<->host contract ("1")
+#   NUXEL_BRIDGE_VERSION          = the host implementation version
+Environment=NUXEL_BRIDGE_PROTOCOL_VERSION=1
+Environment=NUXEL_BRIDGE_VERSION=0.4.0-alpha
+Environment=NUXEL_PATHS_CONF=/etc/nuxel/paths.conf
 Restart=on-failure
 RestartSec=5
 RestartMaxDelaySec=30
@@ -44,6 +59,9 @@ KeyringMode=private
 RuntimeDirectory=nuxel-bridge
 StateDirectory=nuxel-bridge
 CacheDirectory=nuxel-bridge
+# Permission grants and the HTTP-bridge token live in the shared Nuxel data dir
+# (configs/nuxel/paths.conf: NUXEL_DATA_DIR=/var/lib/nuxel).
+ReadWritePaths=/var/lib/nuxel /var/log/nuxel
 
 # D-Bus access
 # Sockets: D-Bus uses system bus socket, no extra sockets needed

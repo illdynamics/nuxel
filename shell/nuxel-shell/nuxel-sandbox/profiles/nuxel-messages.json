@@ -2,7 +2,7 @@
     "app_id": "nuxel-messages",
     "name": "Messages",
     "category": "native",
-    "flags": [],
+    "flags": ["network", "sms", "contacts"],
     "capabilities": ["network", "sms", "contacts"],
     "network_class": "public",
     "data_dir": "/var/app/nuxel-messages/data",
@@ -14,5 +14,28 @@
         "org.freedesktop.ModemManager1",
         "org.nuxel.Bridge"
     ],
-    "devices": []
+    "devices": [],
+    "seccomp_profile": "native-standard",
+    "landlock_rules": {
+        "read_only": ["/usr", "/etc/fonts", "/etc/gtk-4.0"],
+        "read_write": ["/var/app/nuxel-messages/data"],
+        "deny": ["/dev", "/sys", "/proc/*/mem", "/var/app/"],
+        "kernel_note": "INTENT ONLY: Landlock is not available on Linux 4.14 (requires >= 5.13)."
+    },
+    "network_policy": {
+        "default": "deny_per_cgroup",
+        "allow_dns": true,
+        "allow_tcp_outbound": true,
+        "allow_udp_outbound": true,
+        "allow_inbound": false,
+        "kernel_note": "cgroup v1 net_cls classid 16973826 = 0x01030002 on Linux 4.14."
+    },
+    "enforcement": {
+        "attacker_privilege_class": "unprivileged-app",
+        "root_note": "Nothing here constrains uid 0.",
+        "apparmor": "profile configs/apparmor.d/usr.bin.nuxel-messages; only effective if the AppArmor LSM is enabled in this kernel",
+        "landlock": "unavailable on Linux 4.14",
+        "seccomp": "BPF allow-list with no_new_privs",
+        "note": "SMS send/receive depends on ModemManager + the Shannon modem, which is not integrated upstream (BLOCKED_HARDWARE for the radio path); the permission gate itself is implemented."
+    }
 }

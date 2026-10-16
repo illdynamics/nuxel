@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#120a1e">
+<meta name="nuxel-app-id" content="org.nuxel.Media">
+<link rel="manifest" href="manifest.json">
+<title>Nuxel Media</title>
+<link rel="stylesheet" href="css/media.css">
+</head>
+<body>
+<header class="hdr">
+  <h1>Media</h1>
+  <span id="source-badge" class="badge">library: loading…</span>
+  <span class="grow"></span>
+  <button id="reload" class="ghost">Reload</button>
+  <button id="close" class="ghost">Close</button>
+</header>
+
+<nav class="tabs">
+  <button class="tab active" data-tab="player">Player</button>
+  <button class="tab" data-tab="library">Library</button>
+  <button class="tab" data-tab="route">Output route</button>
+  <button class="tab" data-tab="proof">Proof &amp; limits</button>
+</nav>
+
+<main>
+  <div id="source-note" class="note hint" style="padding:8px 12px 0"></div>
+
+  <section id="tab-player" class="panel active">
+    <div class="stage">
+      <video id="video" playsinline preload="metadata"></video>
+      <audio id="audio" preload="metadata"></audio>
+    </div>
+    <div class="card">
+      <div class="now">
+        <div id="cover" class="cover">♪</div>
+        <div class="meta">
+          <div id="np-title" class="title">Nothing queued</div>
+          <div id="np-sub" class="sub"></div>
+          <div class="sub">state: <span id="np-state">idle</span></div>
+        </div>
+      </div>
+      <input id="seek" class="seek" type="range" min="0" max="100" value="0" step="1" aria-label="Seek">
+      <div class="times"><span id="t-cur">--:--</span><span id="t-dur">--:--</span></div>
+      <div class="transport">
+        <button id="prev" aria-label="Previous">⏮</button>
+        <button id="play" class="big primary" aria-label="Play or pause">▶︎</button>
+        <button id="next" aria-label="Next">⏭</button>
+        <button id="stop" aria-label="Stop">■</button>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <button id="repeat">repeat: off</button>
+        <button id="shuffle">shuffle: off</button>
+        <span class="grow"></span>
+        <span class="hint">volume <b id="vol-value">—</b></span>
+      </div>
+      <input id="vol" class="seek" type="range" min="0" max="100" value="50" aria-label="Volume">
+      <p id="vol-note" class="hint">volume is sent to the real mixer through the bridge; the value shown is whatever the mixer echoes back.</p>
+      <p id="error-line" class="hint"></p>
+      <p class="hint">Keys: <b>Space</b> play/pause · <b>←</b>/<b>→</b> previous/next · <b>↑</b>/<b>↓</b> volume.</p>
+    </div>
+  </section>
+
+  <section id="tab-library" class="panel">
+    <div class="card">
+      <div class="row">
+        <input id="search" type="search" placeholder="Search title, artist or album" style="flex:1;background:#140d26;border:1px solid #46357a;border-radius:10px;padding:9px 10px;color:#f2ecff">
+      </div>
+      <p id="lib-count" class="hint">—</p>
+      <div id="track-list"></div>
+    </div>
+    <div class="card">
+      <h3>Format support reported by this build</h3>
+      <p class="hint">Probed with <code>HTMLMediaElement.canPlayType</code> at load time. A format that is not
+        listed is not claimed anywhere in this app — those rows stay unplayable and say why:</p>
+      <p class="hint"><b id="codecs">—</b></p>
+    </div>
+  </section>
+
+  <section id="tab-route" class="panel">
+    <div class="card">
+      <h3>Where the sound would go</h3>
+      <p class="hint">Read from the running audio stack through the bridge (<code>audio.route</code>). If the
+        bridge does not answer, every field says “not reported” rather than guessing — and the expected route
+        for this device (ALSA <code>beyond-madera</code> on the Exynos 9820) is documented, not invented.</p>
+      <dl id="route-kv" class="kv"></dl>
+      <p><span id="route-summary" class="pill warn">probing…</span></p>
+      <div class="row"><button id="refresh-route">Re-probe route</button></div>
+    </div>
+  </section>
+
+  <section id="tab-proof" class="panel">
+    <div class="card">
+      <h3>What this build claims, and what it does not</h3>
+      <ul class="reqs hint">
+        <li><b>Claims:</b> a real <code>&lt;audio&gt;</code>/<code>&lt;video&gt;</code> element decodes and plays
+          the bundled reference tones; transport, seek, queue, repeat and shuffle operate on real media time.</li>
+        <li><b>Claims:</b> volume requests go to the real mixer through <code>audio.setVolume</code> and the
+          displayed value is the mixer's own echo.</li>
+        <li><b>Does NOT claim:</b> that anything was audible. A successful <code>play()</code> proves the media
+          pipeline accepted the stream, not that a speaker moved air.</li>
+        <li><b>Does NOT claim:</b> hardware codecs. Only what <code>canPlayType</code> reports is listed.</li>
+        <li><b>Does NOT claim:</b> a device library scan when the badge says <code>sample</code>.</li>
+      </ul>
+      <p id="owner-steps" class="hint"></p>
+    </div>
+    <div class="card">
+      <h3>Owner listening test (manual proof area 41)</h3>
+      <ol class="steps">
+        <li>Prepare: phone on Nuxel, at the launcher, sound you are allowed to make.</li>
+        <li>Open Media → Player → tap ▶︎ on “Reference tone — A4 440 Hz”.</li>
+        <li>Listen to the speaker. Then tap ⏭ to play “Reference tone — A5 880 Hz” and listen again.</li>
+        <li>Expected: two clearly different steady tones; the seek bar advances; “state: playing”.</li>
+        <li>Failure symptoms: silence with the bar advancing (route/decode problem), an immediate
+          “Playback failed” message (decoder or device problem), or a stuck bar (transport problem).</li>
+        <li>Record the result in <code>docs/beta-finalization/BETA-MANUAL-PROOF-CHECKLIST.md</code> area 41.</li>
+      </ol>
+      <p class="hint">Diagnostics: <code>journalctl -u nuxel-media* --no-pager | tail -40</code> ·
+        <code>aplay -l</code> · <code>wpctl status</code> · <code>cat /proc/asound/cards</code>.</p>
+      <p class="hint">Until that test is recorded, this app reports audibility as <b>UNVERIFIED</b> — a passing
+        VM smoke test never yields a hardware verdict.</p>
+    </div>
+  </section>
+</main>
+
+<div class="statusbar">
+  <span id="sb-src">library source: —</span>
+  <span id="sb-route">route: —</span>
+</div>
+<div id="toast" class="toast"></div>
+
+<script type="module" src="../../nuxel-common/bridge.js"></script>
+<script src="js/media-library.js"></script>
+<script src="js/media.js"></script>
+</body>
+</html>

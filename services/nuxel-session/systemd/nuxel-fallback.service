@@ -1,0 +1,17 @@
+[Unit]
+Description=Nuxel fallback framebuffer UI (only when the launcher fails)
+Documentation=file:/usr/share/doc/nuxel/UTM-LAUNCHER-PORT.md
+After=nuxel-wl-fb.service
+Wants=nuxel-wayland.service nuxel-wl-fb.service
+
+[Service]
+Type=simple
+# Exit 0 from ExecCondition => the launcher did not become ready, so the
+# existing A27 framebuffer UI (tools/s10plus/nuxel-ui.c) takes the panel.
+# Non-zero => the launcher is up and this unit is skipped: never two owners.
+ExecCondition=/usr/lib/nuxel/nuxel-launcher-ready-wait 60
+ExecStart=/usr/bin/nuxel-ui
+Restart=no
+
+[Install]
+WantedBy=multi-user.target

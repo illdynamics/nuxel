@@ -1,0 +1,494 @@
+{
+  "schema_version": 2,
+  "updated": "2026-10-16",
+  "description": "Canonical Nuxel capability registry. Single source of truth for what a capability means, what mechanism actually enforces it on the target device, and which attacker-privilege class that enforcement holds against. Consumed by nuxel-permd.py, nuxel-permissions (GTK), tools/s10plus/a33/verify-permissions.py and the security auditor. Never state a stronger guarantee than the 'enforceable'/'limitation' fields below.",
+  "target": {
+    "device": "Samsung Galaxy S10+ SM-G975F (beyond2lte, Exynos 9820)",
+    "kernel_release": "4.14.253",
+    "kernel_tree": "https://github.com/Linux4/android_kernel_samsung_exynos9820 @ f7194c1d (Linux 4.14.253)",
+    "kernel_config_source": "/proc/config.gz on the handset (readable; recorded in A29/A32 records). Cgroup prerequisites verified in the A16/A17 .config: CONFIG_CGROUPS=y CONFIG_MEMCG=y CONFIG_CGROUP_SCHED=y CONFIG_CGROUP_PIDS=y CONFIG_CGROUP_FREEZER=y CONFIG_CPUSETS=y CONFIG_CGROUP_DEVICE=y CONFIG_CGROUP_CPUACCT=y CONFIG_CGROUP_BPF=y CONFIG_NAMESPACES=y; CONFIG_BPF_LSM is unset.",
+    "kernel_facts_measured": [
+      "uname -r = 4.14.253 (linux_banner in evidence-a27/last_kmsg.txt)",
+      "kauditd is running -> the audit subsystem is enabled in the vendor kernel",
+      "CONFIG_BPF_LSM is not set -> 'bpf-restrict-fs: BPF LSM hook not enabled' (systemd warning)",
+      "Landlock is mainline >= 5.13; it cannot exist in a 4.14 tree. /proc/sys/kernel/landlock/abi_version is absent.",
+      "nftables 'socket cgroupv2' matching is mainline >= 5.13. On 4.14 the per-app network match must use cgroup v1 net_cls classid (nft 'meta cgroup <classid>').",
+      "Kernel lockdown LSM is mainline >= 4.17 -> not present.",
+      "Kernel CFI / arm64 Shadow Call Stack (>= 5.7), BTI and Pointer Authentication (>= 5.9/ARMv8.3+) are absent; Exynos 9820 is ARMv8.2-A so PAuth/BTI are also absent in hardware."
+    ],
+    "enforcement_baseline": {
+      "unprivileged_app": "DAC (file ownership/mode) + per-asset wrapper (portal) + AppArmor IF the vendor kernel has the AppArmor LSM enabled (must be read from /sys/kernel/security/lsm on the handset; not assumed).",
+      "root": "Nothing in this document constrains uid 0 / CAP_SYS_ADMIN. Root compromise is explicitly out of scope for every claim here."
+    }
+  },
+  "mechanisms": {
+    "portal": {
+      "title": "D-Bus portal gate (org.nuxel.Portal)",
+      "kind": "userspace-policy",
+      "enforces_against": "unprivileged-app",
+      "honest_note": "The portal is a userspace broker. It refuses the request when no grant exists and logs the decision. An app that never calls the portal is not blocked by it."
+    },
+    "sandbox-profile": {
+      "title": "Per-app sandbox profile (cgroup + namespace + seccomp + nftables classid)",
+      "kind": "kernel-enforced",
+      "enforces_against": "unprivileged-app",
+      "honest_note": "Layers that the 4.14 kernel actually provides: namespaces, seccomp BPF, cgroup limits, cgroup v1 net_cls network matching. Landlock is unavailable."
+    },
+    "apparmor": {
+      "title": "AppArmor MAC label (/etc/apparmor.d/*)",
+      "kind": "kernel-enforced-if-enabled",
+      "enforces_against": "unprivileged-app",
+      "honest_note": "Profiles ship in the repository, but they only take effect if the vendor 4.14 kernel has CONFIG_SECURITY_APPARMOR=y and apparmor is in /sys/kernel/security/lsm. Verify with tools/s10plus/a33/nuxel-security-audit.sh before claiming enforcement. If absent, the profiles are inert and must be labelled as such."
+    },
+    "nftables": {
+      "title": "nftables ruleset (configs/nftables/)",
+      "kind": "kernel-enforced",
+      "enforces_against": "unprivileged-app",
+      "honest_note": "Per-app matching on this kernel uses net_cls classid. A process outside the matched cgroup (or root) is not constrained by these rules."
+    },
+    "file-mode": {
+      "title": "POSIX file ownership and mode (DAC)",
+      "kind": "kernel-enforced",
+      "enforces_against": "unprivileged-app",
+      "honest_note": "DAC is the only filesystem boundary left on 4.14 once Landlock is unavailable. It cannot express per-app path allow-lists."
+    },
+    "systemd-cgroup": {
+      "title": "systemd unit confinement (cgroup v2, MemoryMax/TasksMax/DeviceAllow)",
+      "kind": "kernel-enforced",
+      "enforces_against": "unprivileged-app",
+      "honest_note": "cgroup v2 works on 4.14. DeviceAllow needs the BPF device controller, which this kernel lacks (CONFIG_BPF_LSM unset) -> systemd warns and proceeds without device ACLs."
+    },
+    "none": {
+      "title": "No enforcement implemented",
+      "kind": "none",
+      "enforces_against": "nobody",
+      "honest_note": "Labelled NOT_SUPPORTED_ON_DEVICE / documented limitation. No cosmetic switch is exposed for these."
+    },
+    "not-applicable": {
+      "title": "Not applicable (no sensitive resource)",
+      "kind": "none",
+      "enforces_against": "nobody",
+      "honest_note": "The capability names a UI affordance, not a protected resource."
+    }
+  },
+  "capabilities": [
+    {
+      "id": "audio",
+      "aliases": [
+        "audio:playback",
+        "speaker",
+        "sound"
+      ],
+      "portal_type": null,
+      "title": "Audio playback",
+      "description": "Play sound through the speaker or headphones",
+      "risk": "low",
+      "group": "hardware",
+      "mechanisms": [
+        "file-mode"
+      ],
+      "enforceable": "n/a",
+      "enforces_against": "nobody",
+      "grant_required": false,
+      "limitation": "Audio OUTPUT is not a protected resource: playing sound discloses nothing, so there is no privacy gate and none is faked. The only boundary is DAC on /dev/snd/*. The S10+ speaker path itself (beyond-madera / CS47L93 / CS35L40 / ABox, low volume only) is unverified - see manual proof 06-audio.",
+      "verdict": "NEEDS_OWNER_TEST",
+      "test": "tools/s10plus/a33/nuxel-audio-diag.sh; manual proof 06-audio"
+    },
+    {
+      "id": "background",
+      "portal_type": "background",
+      "title": "Background execution",
+      "description": "Keep running after the UI is closed",
+      "risk": "medium",
+      "group": "ui",
+      "mechanisms": [
+        "systemd-cgroup"
+      ],
+      "enforceable": "partial",
+      "enforces_against": "unprivileged-app",
+      "grant_required": true,
+      "limitation": "Enforced by systemd (cgroup v2: MemoryMax/TasksMax). cgroup v2 works on 4.14 but the BPF device controller does not (CONFIG_BPF_LSM unset), so DeviceAllow is not applied (systemd warns and proceeds).",
+      "verdict": "IMPLEMENTED_NOT_DEPLOYED",
+      "test": "systemctl show <unit> -p MemoryMax -p TasksMax"
+    },
+    {
+      "id": "bluetooth",
+      "portal_type": "bluetooth",
+      "title": "Bluetooth",
+      "description": "Scan, pair and talk to Bluetooth devices",
+      "risk": "medium",
+      "group": "hardware",
+      "mechanisms": [
+        "portal",
+        "file-mode",
+        "apparmor"
+      ],
+      "enforceable": "partial",
+      "enforces_against": "unprivileged-app",
+      "grant_required": true,
+      "limitation": "Enforced by D-Bus policy on org.bluez plus group ownership of the BlueZ socket. Bluetooth hardware itself is unverified on the S10+ (manual proof 11-bluetooth).",
+      "verdict": "NEEDS_OWNER_TEST",
+      "test": "tools/s10plus/a33/verify-permissions.py; manual proof 11-bluetooth"
+    },
+    {
+      "id": "calendar",
+      "portal_type": "calendar",
+      "title": "Calendar",
+      "description": "Read and write calendar events",
+      "risk": "medium",
+      "group": "personal-data",
+      "mechanisms": [
+        "portal",
+        "file-mode"
+      ],
+      "enforceable": "partial",
+      "enforces_against": "unprivileged-app",
+      "grant_required": true,
+      "limitation": "Same DAC/portal story as contacts; no path-level kernel confinement on 4.14.",
+      "verdict": "IMPLEMENTED_NOT_DEPLOYED",
+      "test": "tools/s10plus/a33/verify-permissions.py --app pwa/nuxel-apps/calendar"
+    },
+    {
+      "id": "call",
+      "aliases": [
+        "phone"
+      ],
+      "portal_type": "call",
+      "title": "Phone calls",
+      "description": "Place and answer phone calls",
+      "risk": "high",
+      "group": "telephony",
+      "mechanisms": [
+        "portal",
+        "sandbox-profile",
+        "apparmor"
+      ],
+      "enforceable": "partial",
+      "enforces_against": "unprivileged-app",
+      "grant_required": true,
+      "limitation": "Same as sms: D-Bus/portal mediation only; the Shannon modem is not integrated upstream, so no call can actually be placed yet.",
+      "verdict": "BLOCKED_HARDWARE",
+      "test": "tools/s10plus/a33/verify-permissions.py; manual proof 17-calls-sms"
+    },
+    {
+      "id": "camera",
+      "aliases": [
+        "camera:capture",
+        "camera:preview"
+      ],
+      "portal_type": "camera",
+      "title": "Camera",
+      "description": "Capture photos and preview the camera feed",
+      "risk": "high",
+      "group": "hardware",
+      "mechanisms": [
+        "portal",
+        "sandbox-profile",
+        "apparmor"
+      ],
+      "enforceable": "partial",
+      "enforces_against": "unprivileged-app",
+      "grant_required": true,
+      "limitation": "Device-node access is gated by DAC (/dev/video* mode/group) and by AppArmor only if the vendor 4.14 kernel enables that LSM. Landlock (which would give per-app path/device confinement) does not exist on 4.14, so an unprivileged app that can open /dev/video* is not stopped by the permission store.",
+      "verdict": "IMPLEMENTED_NOT_DEPLOYED",
+      "test": "tools/s10plus/a33/verify-permissions.py --app pwa/nuxel-apps/camera-gallery; manual: deny grant, observe portal refusal in journalctl -u nuxel-portal"
+    },
+    {
+      "id": "clipboard",
+      "aliases": [
+        "clipboard_read",
+        "clipboard_write"
+      ],
+      "portal_type": "clipboard_read",
+      "title": "Clipboard",
+      "description": "Read and write the shared clipboard",
+      "risk": "high",
+      "group": "ui",
+      "mechanisms": [
+        "none"
+      ],
+      "enforceable": "no",
+      "enforces_against": "unprivileged-app",
+      "grant_required": true,
+      "limitation": "Clipboard mediation needs a Wayland compositor data-device. This kernel has no DRM/KMS (# CONFIG_DRM is not set), so Phoc runs headless only and there is no system-wide clipboard to mediate. Labelled NOT_SUPPORTED_ON_DEVICE; no switch is exposed.",
+      "verdict": "NOT_SUPPORTED_ON_DEVICE",
+      "test": "tools/s10plus/a33/nuxel-security-audit.sh (reports absence of /dev/dri)"
+    },
+    {
+      "id": "clock_status",
+      "aliases": [
+        "clock:status",
+        "clock:alarm",
+        "timer"
+      ],
+      "portal_type": null,
+      "title": "Clock and alarms",
+      "description": "Read the system clock and manage alarms/timers",
+      "risk": "low",
+      "group": "ui",
+      "mechanisms": [
+        "not-applicable"
+      ],
+      "enforceable": "n/a",
+      "enforces_against": "nobody",
+      "grant_required": false,
+      "limitation": "Reading the system clock and setting alarms is not a protected resource; there is nothing to enforce, so no switch is exposed. Listed so that manifests declaring clock:status resolve instead of being reported as unknown. Time/RTC persistence itself is owned by manual proof 05-timekeeping.",
+      "verdict": "OFFLINE_TESTED",
+      "test": "tools/s10plus/a33/verify-permissions.py (token resolves, no grant required)"
+    },
+    {
+      "id": "contacts",
+      "portal_type": "contacts",
+      "title": "Contacts",
+      "description": "Read and write the contacts database",
+      "risk": "high",
+      "group": "personal-data",
+      "mechanisms": [
+        "portal",
+        "file-mode",
+        "apparmor"
+      ],
+      "enforceable": "partial",
+      "enforces_against": "unprivileged-app",
+      "grant_required": true,
+      "limitation": "The contacts store is a file owned by the nuxel-contacts uid; other apps are stopped by DAC, not by a per-app kernel rule. Portal mediation covers Evolution/EDS D-Bus access.",
+      "verdict": "IMPLEMENTED_NOT_DEPLOYED",
+      "test": "tools/s10plus/a33/verify-permissions.py --app shell/nuxel-shell/nuxel-contacts"
+    },
+    {
+      "id": "display",
+      "portal_type": "display",
+      "title": "Display ownership",
+      "description": "Take ownership of the framebuffer for full-screen rendering",
+      "risk": "medium",
+      "group": "ui",
+      "mechanisms": [
+        "file-mode"
+      ],
+      "enforceable": "partial",
+      "enforces_against": "unprivileged-app",
+      "grant_required": true,
+      "limitation": "Single framebuffer owner is a repository-level protocol (receipt-driven handoff), not a kernel permission. /dev/fb0 is crw------- root:root, so only the owning process (or root) can render. Correct, but not a per-app capability the kernel mediates.",
+      "verdict": "IMPLEMENTED_NOT_DEPLOYED",
+      "test": "ls -l /dev/fb0 ; tools/s10plus/a33/nuxel-anim-handoff.py --receipts"
+    },
+    {
+      "id": "location",
+      "aliases": [
+        "gps",
+        "location:fine",
+        "location:coarse"
+      ],
+      "portal_type": "location",
+      "title": "Location",
+      "description": "Read device location (GPS/GNSS or network-derived)",
+      "risk": "high",
+      "group": "hardware",
+      "mechanisms": [
+        "portal",
+        "sandbox-profile"
+      ],
+      "enforceable": "partial",
+      "enforces_against": "unprivileged-app",
+      "grant_required": true,
+      "limitation": "No GNSS bring-up on the S10+ yet (see manual proof 13-gps) -> the data path is BLOCKED_HARDWARE; the grant gate is implemented and refusal is enforced by the portal only.",
+      "verdict": "BLOCKED_HARDWARE",
+      "test": "tools/s10plus/a33/verify-permissions.py; manual proof 13-gps"
+    },
+    {
+      "id": "microphone",
+      "aliases": [
+        "mic",
+        "audio-input",
+        "audio:capture",
+        "audio:record",
+        "record"
+      ],
+      "portal_type": "microphone",
+      "title": "Microphone",
+      "description": "Record audio from the microphone",
+      "risk": "high",
+      "group": "hardware",
+      "mechanisms": [
+        "portal",
+        "sandbox-profile",
+        "apparmor"
+      ],
+      "enforceable": "partial",
+      "enforces_against": "unprivileged-app",
+      "grant_required": true,
+      "limitation": "ALSA/PipeWire capture access is DAC-gated (/dev/snd/*). The portal gate is a userspace broker; a recorder that bypasses the portal is only stopped by DAC/AppArmor. The S10+ capture path itself is NOT yet verified (see manual proof 06-audio).",
+      "verdict": "NEEDS_OWNER_TEST",
+      "test": "tools/s10plus/a33/verify-permissions.py --app pwa/nuxel-apps/notes (mismatch demo); manual proof 06-audio"
+    },
+    {
+      "id": "network",
+      "aliases": [
+        "network:outbound",
+        "net"
+      ],
+      "portal_type": "network",
+      "title": "Network access",
+      "description": "Open outbound and inbound network connections",
+      "risk": "medium",
+      "group": "connectivity",
+      "mechanisms": [
+        "nftables",
+        "sandbox-profile"
+      ],
+      "enforceable": "partial",
+      "enforces_against": "unprivileged-app",
+      "grant_required": true,
+      "limitation": "On 4.14 the per-app path is cgroup v1 net_cls classid matching (nft 'meta cgroup 0x...'). The cgroupv2 'socket cgroupv2' matcher used by the newer ruleset needs Linux >= 5.13 and is BLOCKED_KERNEL here. Processes that leave the matched cgroup, and root, are not constrained.",
+      "verdict": "IMPLEMENTED_NOT_DEPLOYED",
+      "test": "tools/s10plus/a33/nuxel-firewall.sh console-verify; nft list ruleset (live group applies rules)"
+    },
+    {
+      "id": "notifications",
+      "aliases": [
+        "notifications:send",
+        "notifications:receive"
+      ],
+      "portal_type": "notifications",
+      "title": "Notifications",
+      "description": "Post and receive notifications",
+      "risk": "low",
+      "group": "ui",
+      "mechanisms": [
+        "portal"
+      ],
+      "enforceable": "partial",
+      "enforces_against": "unprivileged-app",
+      "grant_required": true,
+      "limitation": "Rate-limited by the notification service; there is no protected resource to enforce against, so this is a policy affordance, not a security boundary.",
+      "verdict": "IMPLEMENTED_NOT_DEPLOYED",
+      "test": "tools/s10plus/a33/verify-permissions.py --app pwa/nuxel-apps/calendar"
+    },
+    {
+      "id": "phone_status",
+      "portal_type": "phone_status",
+      "title": "Phone status",
+      "description": "Read signal strength, network registration and SIM identity",
+      "risk": "low",
+      "group": "telephony",
+      "mechanisms": [
+        "portal"
+      ],
+      "enforceable": "partial",
+      "enforces_against": "unprivileged-app",
+      "grant_required": true,
+      "limitation": "Read-only metadata via the bridge/portal. No modem -> returns an honest 'no modem' state rather than fabricated values.",
+      "verdict": "IMPLEMENTED_NOT_DEPLOYED",
+      "test": "tools/s10plus/a33/verify-permissions.py"
+    },
+    {
+      "id": "sms",
+      "portal_type": "sms",
+      "title": "SMS",
+      "description": "Send and receive text messages",
+      "risk": "high",
+      "group": "telephony",
+      "mechanisms": [
+        "portal",
+        "sandbox-profile",
+        "apparmor"
+      ],
+      "enforceable": "partial",
+      "enforces_against": "unprivileged-app",
+      "grant_required": true,
+      "limitation": "ModemManager D-Bus access is mediated by AppArmor (if enabled) and by the portal; the modem itself is not yet up on the S10+ (Shannon, no upstream plugin) -> radio path is BLOCKED_FIRMWARE/BLOCKED_HARDWARE.",
+      "verdict": "BLOCKED_HARDWARE",
+      "test": "tools/s10plus/a33/verify-permissions.py; manual proof 17-calls-sms"
+    },
+    {
+      "id": "sms_send_raw",
+      "portal_type": null,
+      "title": "(reserved) raw modem commands",
+      "description": "Reserved capability for direct modem AT access; intentionally unimplemented",
+      "risk": "high",
+      "group": "telephony",
+      "mechanisms": [
+        "none"
+      ],
+      "enforceable": "no",
+      "enforces_against": "nobody",
+      "grant_required": true,
+      "limitation": "Deliberately NOT supported: raw modem access would bypass every portal rule. Declared here so a manifest that asks for it is reported as an unsupported capability instead of being silently ignored.",
+      "verdict": "NOT_SUPPORTED_ON_DEVICE",
+      "test": "tools/s10plus/a33/verify-permissions.py (unsupported-capability check)"
+    },
+    {
+      "id": "storage",
+      "aliases": [
+        "files",
+        "files:read",
+        "files:write"
+      ],
+      "portal_type": "files",
+      "title": "Files and storage",
+      "description": "Read and write the app's own data directory (and files the user hands over)",
+      "risk": "medium",
+      "group": "data",
+      "mechanisms": [
+        "file-mode",
+        "sandbox-profile"
+      ],
+      "enforceable": "partial",
+      "enforces_against": "unprivileged-app",
+      "grant_required": false,
+      "limitation": "App data lives in /var/app/<app-id>/data owned by a dedicated uid (DAC). Without Landlock there is no path-level allow-list, so 'the app may read only these paths' is not kernel-enforced on 4.14.",
+      "verdict": "IMPLEMENTED_NOT_DEPLOYED",
+      "test": "ls -ln /var/app/<app-id>/data (owner/mode), tools/s10plus/a33/verify-permissions.py"
+    },
+    {
+      "id": "usb",
+      "portal_type": "usb",
+      "title": "USB devices",
+      "description": "Access external USB devices",
+      "risk": "medium",
+      "group": "hardware",
+      "mechanisms": [
+        "portal",
+        "file-mode",
+        "apparmor"
+      ],
+      "enforceable": "partial",
+      "enforces_against": "unprivileged-app",
+      "grant_required": true,
+      "limitation": "Mediated by the portal and DAC only. Note the live-console CDC-ACM gadget interface is deliberately reserved for the owner console and is never granted to apps.",
+      "verdict": "IMPLEMENTED_NOT_DEPLOYED",
+      "test": "tools/s10plus/a33/nuxel-firewall.sh console-verify"
+    }
+  ],
+  "unsupported_manifest_tokens": [
+    "sms_send_raw",
+    "modem:raw",
+    "kernel:module",
+    "landlock",
+    "ptrace",
+    "selinux",
+    "lockdown"
+  ],
+  "manifest_tokens": {
+    "phone:status": "phone_status",
+    "phone:network": "phone_status",
+    "audio:capture": "microphone",
+    "audio:record": "microphone",
+    "audio:playback": "audio",
+    "clock:status": "clock_status",
+    "clock:alarm": "clock_status",
+    "camera:read": "camera",
+    "camera:capture": "camera",
+    "camera:preview": "camera",
+    "location:read": "location",
+    "location:fine": "location",
+    "location:coarse": "location",
+    "storage:read": "storage",
+    "storage:write": "storage",
+    "storage:cache": "storage",
+    "notifications:send": "notifications",
+    "notifications:receive": "notifications",
+    "files:read": "storage",
+    "files:write": "storage"
+  }
+}

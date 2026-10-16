@@ -1,0 +1,80 @@
+{
+  "name": "Nuxel Browser",
+  "short_name": "Browser",
+  "description": "Local-first page viewer: local Nuxel pages by default, opt-in external navigation, offline history and bookmarks",
+  "start_url": "/pwa/nuxel-apps/browser/index.html",
+  "scope": "/pwa/nuxel-apps/browser/",
+  "display": "fullscreen",
+  "orientation": "any",
+  "background_color": "#101820",
+  "theme_color": "#101820",
+  "lang": "en",
+  "dir": "ltr",
+  "categories": [
+    "utilities"
+  ],
+  "icons": [
+    {
+      "src": "icons/icon-48.png",
+      "sizes": "48x48",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/icon-72.png",
+      "sizes": "72x72",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/icon-96.png",
+      "sizes": "96x96",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/icon-128.png",
+      "sizes": "128x128",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/icon-144.png",
+      "sizes": "144x144",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/icon-152.png",
+      "sizes": "152x152",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/icon-384.png",
+      "sizes": "384x384",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "nuxel": {
+    "bridge_version": "1",
+    "capabilities": [
+      "network:outbound"
+    ],
+    "app_type": "browser",
+    "offline_first": true,
+    "network": "opt-in",
+    "storage": [
+      "localStorage"
+    ],
+    "external_service_dependency": "none by default",
+    "facilities": [
+      "local Nuxel pages by default; external navigation is opt-in (network:outbound)"
+    ]
+  }
+}

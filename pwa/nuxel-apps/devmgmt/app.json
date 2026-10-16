@@ -1,0 +1,13 @@
+{
+  "id": "org.nuxel.DevMgmt",
+  "name": "DevMgmt",
+  "icon": "DV",
+  "color": "#00695C",
+  "category": "tools",
+  "type": "pwa",
+  "url": "/pwa/nuxel-apps/devmgmt/index.html",
+  "description": "Read-only device and peripheral inspection",
+  "capabilities": ["system:inspect"],
+  "docked": false,
+  "default_mode": "read-only"
+}

@@ -1,0 +1,126 @@
+{
+  "schema_version": 1,
+  "id": "briq-06b-missing-core-apps",
+  "revisions": [
+    {
+      "id": "briq-06b-missing-core-apps",
+      "title": "Implement missing core apps (terminal, notes, files, clock, calculator, browser, photos, recorder, weather, maps)",
+      "component": "bg-06-core-phone-apps",
+      "component_title": "Priority 6 - Core Phone Applications",
+      "priority": 6,
+      "state": "in_progress",
+      "dependencies": [
+        "briq-06a-core-app-inventory"
+      ],
+      "evidence": [
+        {
+          "kind": "observation",
+          "path": "pwa/nuxel-apps/terminal/",
+          "command": "test -e pwa/nuxel-apps/terminal/",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "observation",
+          "path": "pwa/nuxel-apps/notes/",
+          "command": "test -e pwa/nuxel-apps/notes/",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "observation",
+          "path": "pwa/nuxel-apps/files/",
+          "command": "test -e pwa/nuxel-apps/files/",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "observation",
+          "path": "pwa/nuxel-apps/clock/",
+          "command": "test -e pwa/nuxel-apps/clock/",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "observation",
+          "path": "pwa/nuxel-apps/calculator/",
+          "command": "test -e pwa/nuxel-apps/calculator/",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "observation",
+          "path": "pwa/nuxel-apps/browser/",
+          "command": "test -e pwa/nuxel-apps/browser/",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "observation",
+          "path": "pwa/nuxel-apps/photos/",
+          "command": "test -e pwa/nuxel-apps/photos/",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "observation",
+          "path": "pwa/nuxel-apps/recorder/",
+          "command": "test -e pwa/nuxel-apps/recorder/",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "observation",
+          "path": "pwa/nuxel-apps/weather/",
+          "command": "test -e pwa/nuxel-apps/weather/",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "observation",
+          "path": "pwa/nuxel-apps/maps/",
+          "command": "test -e pwa/nuxel-apps/maps/",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        }
+      ],
+      "intended_changes": [
+        "pwa/nuxel-apps/terminal/",
+        "pwa/nuxel-apps/notes/",
+        "pwa/nuxel-apps/files/",
+        "pwa/nuxel-apps/clock/",
+        "pwa/nuxel-apps/calculator/",
+        "pwa/nuxel-apps/browser/",
+        "pwa/nuxel-apps/photos/",
+        "pwa/nuxel-apps/recorder/",
+        "pwa/nuxel-apps/weather/",
+        "pwa/nuxel-apps/maps/"
+      ],
+      "tests": [
+        "(tests are recorded by the owning briQ when it reports)"
+      ],
+      "risk": "medium",
+      "rollback": "git revert the commit(s) touching this task's expected files; the change is repository-only and alters no device state",
+      "verdict": null,
+      "offline_ceiling": null,
+      "owner_action": "",
+      "expected_files": [
+        "pwa/nuxel-apps/terminal/",
+        "pwa/nuxel-apps/notes/",
+        "pwa/nuxel-apps/files/",
+        "pwa/nuxel-apps/clock/",
+        "pwa/nuxel-apps/calculator/",
+        "pwa/nuxel-apps/browser/",
+        "pwa/nuxel-apps/photos/",
+        "pwa/nuxel-apps/recorder/",
+        "pwa/nuxel-apps/weather/",
+        "pwa/nuxel-apps/maps/"
+      ],
+      "note": "seeded from the QonQrete plan; 10/10 expected file(s) already present in the tree",
+      "source": "plan.json",
+      "revision": 1,
+      "at": "2026-10-16T16:07:13+02:00",
+      "by": "construqtor/bg-00-preflight"
+    }
+  ]
+}

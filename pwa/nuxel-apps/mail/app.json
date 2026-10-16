@@ -1,0 +1,19 @@
+{
+  "id": "org.nuxel.Mail",
+  "name": "Mail",
+  "icon": "\u2709\ufe0f",
+  "color": "#FF9800",
+  "category": "productivity",
+  "type": "pwa",
+  "url": "/pwa/nuxel-apps/mail/index.html",
+  "manifest": "pwa/nuxel-apps/mail/manifest.json",
+  "description": "Local-first mail store; sending requires a configured mail service",
+  "capabilities": [
+    "notifications:send",
+    "notifications:receive",
+    "storage:persistent"
+  ],
+  "bridge_version": "1",
+  "docked": false,
+  "source": "pwa/nuxel-apps tree (bg-06-core-phone-apps)"
+}

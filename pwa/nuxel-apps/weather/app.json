@@ -1,0 +1,18 @@
+{
+  "id": "org.nuxel.Weather",
+  "name": "Weather",
+  "icon": "\u26c5",
+  "color": "#0e1a2b",
+  "category": "utilities",
+  "type": "pwa",
+  "url": "/pwa/nuxel-apps/weather/index.html",
+  "manifest": "pwa/nuxel-apps/weather/manifest.json",
+  "description": "Manual/offline weather records with an opt-in network source",
+  "capabilities": [
+    "storage:persistent",
+    "network:outbound"
+  ],
+  "bridge_version": "1",
+  "docked": false,
+  "source": "pwa/nuxel-apps tree (bg-06-core-phone-apps)"
+}

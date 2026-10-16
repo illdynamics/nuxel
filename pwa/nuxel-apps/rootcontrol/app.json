@@ -1,0 +1,13 @@
+{
+  "id": "org.nuxel.RootControl",
+  "name": "Root & Sudo",
+  "icon": "RT",
+  "color": "#B71C1C",
+  "category": "system",
+  "type": "pwa",
+  "url": "/pwa/nuxel-apps/rootcontrol/index.html",
+  "description": "Real sudoers state and the honest privilege mechanism",
+  "capabilities": ["system:inspect"],
+  "docked": false,
+  "grants_root": false
+}

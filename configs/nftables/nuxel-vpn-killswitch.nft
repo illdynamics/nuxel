@@ -1,0 +1,50 @@
+#!/usr/sbin/nft -f
+# ============================================================================
+# Nuxel VPN kill switch - template (rendered by tools/s10plus/a33/nuxel-firewall.sh)
+# ============================================================================
+# This file is a TEMPLATE: __IFACE__ and __MATCH__ are substituted by the tool
+# before it is loaded, and the result is what `nft -f` actually sees. It is kept
+# here, in the repository, so the rule that blocks traffic is reviewable and
+# versioned instead of being assembled invisibly on a command line.
+#
+# Semantics (and the honest limits of them):
+#   * The chain sits at output priority -110, i.e. BEFORE the app firewall's
+#     output chain (-100), so it decides before any per-app ACCEPT rule: while
+#     the kill switch is armed, app traffic may only leave through the tunnel.
+#   * Only app-classified traffic is constrained (__MATCH__ selects the
+#     classid-matched flows on 4.14 / the app-* cgroups on >= 5.13). System
+#     traffic, DNS resolution and the owner's USB console are deliberately NOT
+#     constrained: a kill switch that takes the console with it converts a
+#     mistake into a device that must be flashed, and flashing is forbidden.
+#   * ARMED IS NOT "CONNECTED". This rule proves nothing about the tunnel being
+#     up. `nuxel-vpn-tor.sh vpn status` reports the tunnel separately, and if the
+#     tunnel is down this rule simply blocks the traffic (which is the point);
+#     it never silently falls back to the clear net.
+#   * Policy 'accept' plus an explicit drop rule (rather than policy 'drop') is
+#     intentional: this chain must never become a second default-deny for system
+#     traffic.
+#
+# Verify while armed:
+#   nft list table inet nuxel_vpn_killswitch
+#   nft list ruleset | grep -c nuxel_vpn_killswitch
+# Disarm:
+#   nuxel-firewall.sh vpn-off     (deletes the table; no rule remains)
+
+table inet nuxel_vpn_killswitch {
+    chain output {
+        type filter hook output priority -110; policy accept;
+
+        # Rendered match: 'meta cgroup != 0' on 4.14 (cgroup v1 net_cls
+        # classid), 'socket cgroupv2 level 2 "app-"' on Linux >= 5.13.
+        __MATCH__ oifname != "__IFACE__" counter drop
+
+        # Everything else (system traffic, console, DNS, DHCP) is accepted by the
+        # policy of this chain, exactly as documented above.
+    }
+
+    chain killswitch_evidence {
+        # Anchor chain. It carries no rules on purpose: it exists so that
+        # `nft list table inet nuxel_vpn_killswitch` shows a human-readable
+        # marker, meaning "if you can read this, the kill switch is armed".
+    }
+}

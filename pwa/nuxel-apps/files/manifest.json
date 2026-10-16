@@ -7,8 +7,39 @@
   "background_color": "#1a1a2e",
   "theme_color": "#3F51B5",
   "icons": [
-    {"src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png"},
-    {"src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png"}
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
   ],
-  "nuxel": {"capabilities": [], "app_type": "files"}
+  "lang": "en",
+  "dir": "ltr",
+  "scope": "/pwa/nuxel-apps/files/",
+  "categories": [
+    "utilities"
+  ],
+  "nuxel": {
+    "bridge_version": "1",
+    "capabilities": [],
+    "app_type": "files",
+    "offline_first": true,
+    "network": "none",
+    "storage": [
+      "bridge storage"
+    ],
+    "bridge_verbs": [
+      "storage.list-dir",
+      "storage.read",
+      "storage.write"
+    ],
+    "facilities": [
+      "portal file browsing: permission-gated by nuxel-portal (org.nuxel.Portal), no bridge capability id"
+    ]
+  }
 }

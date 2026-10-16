@@ -1,0 +1,10 @@
+I: Bus=0018 Vendor=04e8 Product=0000 Version=0000
+N: Name="sec_touchscreen"
+P: Phys=
+S: Sysfs=/devices/platform/104b0000.hsi2c/i2c-4/4-0048/input/input2
+U: Uniq=
+H: Handlers=sec_key_notifier
+B: PROP=2
+B: EV=2b
+B: KEY=4000000000000000 0 0 80 0 420 0 0 8000 0 0
+B: ABS=4263800000000003

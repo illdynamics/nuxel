@@ -1,0 +1,6 @@
+#!/bin/sh
+# Nuxel Portal launcher shim (system-bus consent daemon, no GTK).
+set -eu
+LIBDIR=/usr/lib/nuxel/nuxel-portal
+[ -r "$LIBDIR/portal.py" ] || { echo "nuxel-portal: missing $LIBDIR/portal.py" >&2; exit 1; }
+exec /usr/bin/python3 "$LIBDIR/portal.py" "$@"

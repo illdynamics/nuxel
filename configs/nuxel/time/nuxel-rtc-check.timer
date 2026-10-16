@@ -1,0 +1,20 @@
+# Nuxel periodic time/RTC verifier timer (briq-03b)
+# Install: /etc/systemd/system/nuxel-rtc-check.timer
+# Enable:  systemctl enable --now nuxel-rtc-check.timer
+#
+# Every 30 minutes, matching rtc.save_interval_min in configs/nuxel/time/time.json.
+# Persistent=true means a check missed while the phone was off runs at the next
+# boot, so a drifted RTC after a long power-off is recorded rather than skipped.
+# AccuracySec=1min keeps the wake-up cheap (a phone should not be woken early for
+# a timekeeping check) while still being precise enough for a 30-minute cadence.
+[Unit]
+Description=Nuxel periodic time/RTC verification
+Documentation=file:/usr/share/doc/nuxel/beta-finalization/system/TIME-RTC.md
+[Timer]
+OnBootSec=3min
+OnUnitActiveSec=30min
+AccuracySec=1min
+Persistent=true
+Unit=nuxel-rtc-check.service
+[Install]
+WantedBy=timers.target

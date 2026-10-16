@@ -1,0 +1,10 @@
+# open the menu, walk DOWN to the gated Restart entry, try (and fail) to select it
+0 key power 1
+2100 tick
+2200 key power 0
+3000 key volume_down 1
+3100 key volume_down 0
+4000 key volume_down 1
+4100 key volume_down 0
+5000 key power 1
+5100 key power 0

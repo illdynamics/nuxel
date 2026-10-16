@@ -250,3 +250,5 @@ class NotesApp {
 document.addEventListener('DOMContentLoaded', () => {
     window.notesApp = new NotesApp();
 });
+// headless smoke-test hook (documented app API; used by tools/s10plus/a33/tests/test-core-apps.py)
+window.nuxelNotes = { app: () => window.notesApp, storageKey: 'nuxel-notes' };

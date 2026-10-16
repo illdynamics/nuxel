@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "allow_reboot": true,
+  "require_charger": true,
+  "min_uptime_seconds": 60,
+  "cooldown_seconds": 900,
+  "reboot_command": ["systemctl", "reboot"],
+  "_note": "test fixture: permits the guarded normal-reboot path"
+}

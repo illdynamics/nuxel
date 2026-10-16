@@ -8,12 +8,41 @@
   "background_color": "#1a1a2e",
   "theme_color": "#FF9800",
   "icons": [
-    {"src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png"},
-    {"src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png"}
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
   ],
-  "categories": ["productivity", "communication"],
+  "categories": [
+    "productivity",
+    "communication"
+  ],
+  "lang": "en",
+  "dir": "ltr",
+  "scope": "/pwa/nuxel-apps/mail/",
   "nuxel": {
-    "capabilities": ["notifications:send", "notifications:receive"],
-    "app_type": "mail"
+    "bridge_version": "1",
+    "capabilities": [
+      "notifications:send",
+      "notifications:receive",
+      "storage:persistent"
+    ],
+    "app_type": "mail",
+    "offline_first": true,
+    "network": "optional (external services only when configured by the user)",
+    "storage": [
+      "localStorage",
+      "bridge storage"
+    ],
+    "bridge_verbs": [
+      "mail.imap-list",
+      "mail.smtp-send"
+    ]
   }
 }

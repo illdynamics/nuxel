@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "id": "briq-07b-devmgmt-cleanup-root",
+  "revisions": [
+    {
+      "id": "briq-07b-devmgmt-cleanup-root",
+      "title": "DevMgmt, Safe Cleanup and Root/Sudo control apps",
+      "component": "bg-07-specialty-apps",
+      "component_title": "Priority 7a - Store, Power-User, Security & Specialty Applications",
+      "priority": 7,
+      "state": "in_progress",
+      "dependencies": [
+        "briq-06a-core-app-inventory"
+      ],
+      "evidence": [
+        {
+          "kind": "observation",
+          "path": "pwa/nuxel-apps/devmgmt/",
+          "command": "test -e pwa/nuxel-apps/devmgmt/",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "observation",
+          "path": "pwa/nuxel-apps/cleanup/",
+          "command": "test -e pwa/nuxel-apps/cleanup/",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "observation",
+          "path": "pwa/nuxel-apps/rootcontrol/",
+          "command": "test -e pwa/nuxel-apps/rootcontrol/",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        }
+      ],
+      "intended_changes": [
+        "pwa/nuxel-apps/devmgmt/",
+        "pwa/nuxel-apps/cleanup/",
+        "pwa/nuxel-apps/rootcontrol/",
+        "docs/beta-finalization/apps/POWER-USER-APPS.md"
+      ],
+      "tests": [
+        "(tests are recorded by the owning briQ when it reports)"
+      ],
+      "risk": "medium",
+      "rollback": "git revert the commit(s) touching this task's expected files; the change is repository-only and alters no device state",
+      "verdict": null,
+      "offline_ceiling": null,
+      "owner_action": "",
+      "expected_files": [
+        "pwa/nuxel-apps/devmgmt/",
+        "pwa/nuxel-apps/cleanup/",
+        "pwa/nuxel-apps/rootcontrol/",
+        "docs/beta-finalization/apps/POWER-USER-APPS.md"
+      ],
+      "note": "seeded from the QonQrete plan; 3/4 expected file(s) already present in the tree",
+      "source": "plan.json",
+      "revision": 1,
+      "at": "2026-10-16T16:07:13+02:00",
+      "by": "construqtor/bg-00-preflight"
+    }
+  ]
+}

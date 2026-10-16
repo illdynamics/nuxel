@@ -7,8 +7,36 @@
   "background_color": "#1a1a2e",
   "theme_color": "#E91E63",
   "icons": [
-    {"src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png"},
-    {"src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png"}
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
   ],
-  "nuxel": {"capabilities": ["notifications:send"], "app_type": "calendar"}
+  "lang": "en",
+  "dir": "ltr",
+  "scope": "/pwa/nuxel-apps/calendar/",
+  "nuxel": {
+    "bridge_version": "1",
+    "capabilities": [
+      "notifications:send",
+      "storage:persistent"
+    ],
+    "app_type": "calendar",
+    "offline_first": true,
+    "network": "optional (external services only when configured by the user)",
+    "storage": [
+      "localStorage",
+      "bridge storage"
+    ],
+    "bridge_verbs": [
+      "caldav.list",
+      "caldav.put"
+    ]
+  }
 }

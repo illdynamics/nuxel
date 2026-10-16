@@ -9,6 +9,8 @@
 #include <string.h>
 #include <glib.h>
 #include <gio/gio.h>
+/* Shared phone data layer: message threads + the honest capability model. */
+#include "nuxel-phone-data.h"
 
 /* ============================================================
  * Data structures
@@ -53,6 +55,13 @@ typedef struct {
     /* Data */
     GPtrArray *conversations;    /* Array of Conversation */
     Conversation *active_conversation;
+
+    /* Shared phone data: threads are persisted through the same store the
+     * dialer and contacts use, so a restart does not lose the message history. */
+    NuxelPhoneStore store;
+    NuxelPhoneCapabilities caps;
+    gchar *store_path;
+    GtkWidget *capability_label;
 } NuxelMessages;
 
 /* ============================================================
@@ -64,6 +73,10 @@ static void render_conversations(NuxelMessages *app);
 static void open_conversation(NuxelMessages *app, Conversation *conv);
 static void send_message(NuxelMessages *app);
 static void modem_connect(NuxelMessages *app);
+static void messages_update_capabilities(NuxelMessages *app);
+static void messages_persist(NuxelMessages *app);
+static void messages_hydrate_from_store(NuxelMessages *app);
+static void message_free(gpointer data);
 
 /* ============================================================
  * Helper functions
@@ -75,7 +88,7 @@ conversation_new(const gchar *number)
     Conversation *conv = g_new0(Conversation, 1);
     conv->number = g_strdup(number);
     conv->name = g_strdup(number);
-    conv->messages = g_ptr_array_new_with_free_func(g_free);
+    conv->messages = g_ptr_array_new_with_free_func(message_free);
     return conv;
 }
 
@@ -125,6 +138,14 @@ find_or_create_conversation(NuxelMessages *app, const gchar *number)
     }
     
     Conversation *conv = conversation_new(number);
+    /* Resolve the display name from the shared address book (no fake names). */
+    {
+        const gchar *display = nuxel_phone_display_name(&app->store, number);
+        if (display && *display && g_strcmp0(display, number) != 0) {
+            g_free(conv->name);
+            conv->name = g_strdup(display);
+        }
+    }
     g_ptr_array_add(app->conversations, conv);
     return conv;
 }
@@ -279,6 +300,7 @@ on_messaging_added(GDBusConnection *connection,
     g_ptr_array_add(conv->messages, msg);
     conv->last_message = msg;
 
+    messages_persist(app);
     render_conversations(app);
     if (app->active_conversation == conv)
         open_conversation(app, conv);
@@ -344,8 +366,13 @@ send_message(NuxelMessages *app)
     g_ptr_array_add(conv->messages, msg);
     conv->last_message = msg;
     
-    /* Send via modem */
+    /* Send via modem (or record honestly that there is no backend) */
+    if (!app->modem_ready) {
+        msg->text = g_strdup_printf("%s", text);
+    }
     send_message_via_modem(app, number, text);
+    messages_persist(app);
+    messages_update_capabilities(app);
     
     /* Clear entry */
     gtk_editable_set_text(GTK_EDITABLE(app->message_entry), "");
@@ -481,13 +508,102 @@ open_conversation(NuxelMessages *app, Conversation *conv)
  * UI Construction
  * ============================================================ */
 
+/* Copy every in-memory thread into the shared store and flush it.  The state of
+ * each message records what actually happened ("stored" locally, "sent" through
+ * a modem, or "no-modem") instead of assuming delivery. */
+static void
+messages_persist(NuxelMessages *app)
+{
+    if (!app->store_path || !app->conversations)
+        return;
+
+    nuxel_phone_store_free(&app->store);
+    nuxel_phone_store_init(&app->store);
+
+    for (guint i = 0; i < app->conversations->len; i++) {
+        Conversation *conv = g_ptr_array_index(app->conversations, i);
+        for (guint j = 0; j < conv->messages->len; j++) {
+            Message *m = g_ptr_array_index(conv->messages, j);
+            const gchar *state = m->incoming ? "received"
+                               : (app->mm_ready ? "sent"
+                               : (app->bridge_mock ? "queued-bridge" : "no-modem"));
+            nuxel_phone_add_message(&app->store, conv->number, m->text,
+                                    m->incoming ? "in" : "out", state);
+        }
+    }
+
+    if (nuxel_phone_store_save(&app->store, app->store_path) != 0)
+        g_warning("[Messages] could not persist the message store to %s", app->store_path);
+}
+
+/* Rebuild the in-memory threads from the shared store (runs before the modem
+ * connect, so history is on screen even with no modem at all). */
+static void
+messages_hydrate_from_store(NuxelMessages *app)
+{
+    if (!app->store_path)
+        return;
+
+    int rc = nuxel_phone_store_load(&app->store, app->store_path);
+    if (rc == -1) {
+        g_warning("[Messages] stored message history is unreadable; starting empty");
+        return;
+    }
+
+    for (size_t i = 0; i < app->store.n_messages; i++) {
+        NuxelMessage *stored = &app->store.messages[i];
+        Conversation *conv = find_or_create_conversation(app, stored->peer);
+        gboolean incoming = (g_strcmp0(stored->direction, "in") == 0);
+        Message *m = message_new(stored->peer, stored->body, incoming);
+        if (incoming || g_strcmp0(stored->state, "sent") == 0 ||
+            g_strcmp0(stored->state, "received") == 0) {
+            /* keep the persisted text as-is */
+        } else if (g_strcmp0(stored->state, "no-modem") == 0) {
+            g_free(m->text);
+            m->text = g_strdup_printf("%s  [not sent: no modem]", stored->body);
+        }
+        g_ptr_array_add(conv->messages, m);
+        conv->last_message = m;
+    }
+}
+
+/* Honest capability banner: rebuilt from the probe only. */
+static void
+messages_update_capabilities(NuxelMessages *app)
+{
+    if (!app->capability_label)
+        return;
+
+    char label[NUXEL_LABEL_MAX];
+    char text[NUXEL_LABEL_MAX + 160];
+
+    if (app->mm_ready)
+        app->caps.modem_present = 1, app->caps.sms_send = 1, app->caps.voice_calls = 1,
+        app->caps.data_connection = 1;
+    else if (app->bridge_mock)
+        app->caps.modem_present = 0;   /* the bridge mock is not a modem */
+
+    nuxel_phone_capability_label(&app->caps, "sms", label, sizeof label);
+    if (app->bridge_mock && !app->mm_ready) {
+        g_snprintf(text, sizeof text,
+                   "%s  The Nuxel bridge mock accepts the send call for testing, but a "
+                   "mock send is NOT an SMS: nothing leaves the device.", label);
+    } else {
+        g_snprintf(text, sizeof text, "%s", label);
+    }
+    gtk_label_set_text(GTK_LABEL(app->capability_label), text);
+}
+
 static void
 load_conversations(NuxelMessages *app)
 {
     /* Build initial conversations */
     app->conversations = g_ptr_array_new_with_free_func(conversation_free);
-    
-    /* Load from ModemManager SMS store */
+
+    /* First: whatever the shared store already holds (survives a restart). */
+    messages_hydrate_from_store(app);
+
+    /* Then: let ModemManager add the live SMS store on top (see modem_connect). */
     render_conversations(app);
 }
 
@@ -554,6 +670,7 @@ modem_connect(NuxelMessages *app)
     }
 
     app->modem_ready = app->mm_ready || app->bridge_mock;
+    messages_update_capabilities(app);
     g_debug("[Messages] Backend ready: mm=%d mock=%d", app->mm_ready, app->bridge_mock);
 }
 
@@ -588,6 +705,16 @@ activate_cb(GtkApplication *gtk_app, gpointer user_data)
         GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
     g_object_unref(provider);
     
+    /* Shared phone data store (same file as nuxel-contacts / nuxel-dialer). */
+    {
+        gchar *dir = g_build_filename(g_get_user_data_dir(), "nuxel-contacts", NULL);
+        g_mkdir_with_parents(dir, 0755);
+        app->store_path = g_build_filename(dir, "contacts.json", NULL);
+        g_free(dir);
+    }
+    nuxel_phone_store_init(&app->store);
+    nuxel_phone_capabilities_init(&app->caps);
+
     /* Stack for list/thread views */
     app->stack = gtk_stack_new();
     gtk_stack_set_transition_type(GTK_STACK(app->stack), GTK_STACK_TRANSITION_TYPE_SLIDE_LEFT_RIGHT);
@@ -615,6 +742,15 @@ activate_cb(GtkApplication *gtk_app, gpointer user_data)
                                     GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC);
     gtk_box_append(GTK_BOX(list_page), scrolled);
     
+    app->capability_label = gtk_label_new("Modem status unknown - not probed yet.");
+    gtk_label_set_wrap(GTK_LABEL(app->capability_label), TRUE);
+    gtk_label_set_xalign(GTK_LABEL(app->capability_label), 0.0);
+    gtk_widget_set_margin_start(app->capability_label, 12);
+    gtk_widget_set_margin_end(app->capability_label, 12);
+    gtk_widget_set_margin_bottom(app->capability_label, 6);
+    gtk_widget_add_css_class(app->capability_label, "caption");
+    gtk_box_append(GTK_BOX(list_page), app->capability_label);
+
     gtk_stack_add_titled(GTK_STACK(app->stack), list_page, "list", "Messages");
     
     /* Page 2: Thread view */
@@ -669,6 +805,7 @@ activate_cb(GtkApplication *gtk_app, gpointer user_data)
     
     /* Load data */
     load_conversations(app);
+    messages_update_capabilities(app);
     render_conversations(app);
 
     /* Connect to ModemManager (or the bridge mock) for SMS signal subscription. */

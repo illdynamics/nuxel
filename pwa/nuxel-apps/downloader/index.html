@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#061a18">
+<meta name="nuxel-app-id" content="org.nuxel.Downloader">
+<link rel="manifest" href="manifest.json">
+<title>Nuxel Downloader</title>
+<link rel="stylesheet" href="css/downloader.css">
+</head>
+<body>
+<header class="hdr">
+  <h1>Downloader</h1>
+  <span id="notice-badge" class="badge warn">notice: required</span>
+  <span class="grow"></span>
+  <button id="close" class="ghost">Close</button>
+</header>
+
+<nav class="tabs">
+  <button class="tab active" data-tab="queue">Queue</button>
+  <button class="tab" data-tab="done">Completed</button>
+  <button class="tab" data-tab="notice">Legal notice</button>
+  <button class="tab" data-tab="limits">How it works</button>
+</nav>
+
+<main>
+  <section id="tab-queue" class="panel active">
+    <div class="card">
+      <h3>Add a download</h3>
+      <div class="row"><input id="add-url" type="url" inputmode="url" placeholder="https://example.org/file.mp3" disabled></div>
+      <div class="row" style="margin-top:8px">
+        <input id="add-name" type="text" placeholder="file name (optional)" style="flex:1">
+        <input id="add-bytes" type="number" inputmode="numeric" placeholder="size in bytes (optional)" style="flex:1">
+      </div>
+      <div class="row" style="margin-top:8px">
+        <input id="add-sha" type="text" placeholder="expected sha256 (optional, but then the item stays unverified)" style="flex:1">
+        <button id="enqueue" class="primary" disabled>Queue</button>
+      </div>
+      <p id="add-error" class="hint" style="color:#ffb4b4"></p>
+      <p class="hint">Only <code>https://</code> is fetched — plain http is refused because the payload could
+        not be integrity-checked. Google/Apple/Android/Meta service hosts are refused outright.</p>
+    </div>
+    <div class="card">
+      <h3>Queue</h3>
+      <p id="counts" class="hint">—</p>
+      <div id="queue-list"></div>
+    </div>
+  </section>
+
+  <section id="tab-done" class="panel">
+    <div class="card">
+      <h3>Completed transfers</h3>
+      <p class="hint">A completed item shows <b>sha256 verified</b> only when the host computed a digest that
+        matched the expected one. If the publisher gave no digest the item says so and is not called verified.</p>
+      <div class="row"><button id="clear-done" class="ghost">Clear the completed list</button></div>
+      <div id="done-list" style="margin-top:10px"></div>
+    </div>
+  </section>
+
+  <section id="tab-notice" class="panel">
+    <div class="card">
+      <h3>Legal-use notice <span id="notice-version" class="pill"></span></h3>
+      <p class="notice" id="notice-text">—</p>
+      <p id="notice-state" class="pill bad">—</p>
+      <div class="row" style="margin-top:10px"><button id="accept-notice" class="primary">I have read and accept this notice</button></div>
+      <p class="hint">The acceptance is stored locally, versioned, and required before anything can be queued.
+        Bumping the notice version invalidates an old acceptance — accepting once does not authorise a future,
+        different notice.</p>
+      <p class="hint">This app does not bypass DRM, paywalls or access controls, and Nuxel ships no third-party
+        download service. Queueing a URL you have no right to is your problem, not a feature.</p>
+    </div>
+  </section>
+
+  <section id="tab-limits" class="panel">
+    <div class="card">
+      <h3>What actually happens</h3>
+      <ul class="limits">
+        <li><b>Who transfers:</b> the Nuxel host (<code>download.start</code> over the bridge). A PWA cannot
+          write files, so this page never claims to have written one itself. Host state:
+          <b id="limits-host">probing…</b></li>
+        <li><b>Queue persistence:</b> the queue is stored in this app's local storage and survives a reload,
+          an app switch and a reboot.</li>
+        <li><b>Resume:</b> a paused item records the byte offset it reached and the host is asked to continue
+          from there with a ranged request. If the server does not support ranges the item restarts and says so.</li>
+        <li><b>Retry:</b> after <b>three identical failures</b> the strategy changes (direct → ranged resume →
+          single-connection delayed retry) and, if that also fails, the item is <b>blocked</b> for a human
+          decision instead of looping forever.</li>
+        <li><b>Verification:</b> when an expected sha256 is supplied the host's digest must match before the
+          item is marked done. A mismatch is a failure, never a warning.</li>
+        <li><b>Never contacted:</b> <span id="deny-list">…</span></li>
+        <li><b>No account:</b> there is no sign-in, no API key and no cloud dashboard. Nothing in this app
+          authenticates to a Google, Apple, Android or Meta service.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Where does the file go?</h3>
+      <p class="hint">Downloads land in <code>/home/nuxel/Downloads</code> on the device, owned by the user
+        that the host runs as. The VM smoke test exercises the queue, the notice gate and the refusal paths;
+        it does not prove that a real network transfer happened anywhere.</p>
+    </div>
+  </section>
+</main>
+
+<div class="statusbar">
+  <span id="sb-host">host: probing…</span>
+  <span id="sb-bytes">pending —</span>
+</div>
+<div id="toast" class="toast"></div>
+
+<script type="module" src="../../nuxel-common/bridge.js"></script>
+<script src="js/download-queue.js"></script>
+<script src="js/downloader.js"></script>
+</body>
+</html>

@@ -1,0 +1,43 @@
+# AppArmor profile for the Nuxel permission daemon (briq-05a).
+#
+# IMPORTANT: this profile only confines anything if the vendor 4.14 kernel has
+# the AppArmor LSM enabled and apparmor appears in /sys/kernel/security/lsm.
+# Verify with tools/s10plus/a33/nuxel-security-audit.sh before claiming
+# enforcement; if the LSM is absent this file is inert and must be described as
+# a limitation, not as a boundary.
+
+profile nuxel-permd /usr/bin/nuxel-permd.py flags=(attach_disconnected) {
+    #include <abstractions/base>
+    #include <abstractions/python>
+    #include <abstractions/nameservice>
+
+    /usr/bin/nuxel-permd.py r,
+    /usr/lib/python3*/** r,
+    /usr/lib64/python3*/** r,
+    /usr/share/nuxel/permissions/** r,
+    /etc/nuxel/permissions/** r,
+    /etc/nuxel/** r,
+
+    # The grant store and its reviewable state (the whole point of the daemon)
+    /var/lib/nuxel/permissions/ rw,
+    /var/lib/nuxel/permissions/** rw,
+    /var/lib/nuxel/permissions/state/** rw,
+
+    # Loopback only: the Settings app and the Privacy app talk to it over
+    # 127.0.0.1. No outbound sockets are granted.
+    network inet stream,
+    network unix stream,
+
+    # Read-only inspection of the app tree so manifests can be cross-checked.
+    /usr/share/nuxel/apps/** r,
+    /var/lib/nuxel/app-registry/** r,
+    /etc/nuxel/app-registry/** r,
+
+    deny /dev/** rwk,
+    deny /sys/** rw,
+    deny /proc/*/mem rw,
+    deny /var/lib/nuxel/permissions/../../../** w,
+    deny ptrace,
+    deny mount,
+    deny network inet6 stream,
+}

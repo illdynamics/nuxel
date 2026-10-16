@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0a1628">
+<meta name="nuxel-app-id" content="org.nuxel.Cleanup">
+<link rel="manifest" href="manifest.json">
+<title>Safe Cleanup</title>
+<link rel="stylesheet" href="css/cleanup.css">
+</head>
+<body>
+<header class="hdr">
+  <h1>Safe Cleanup</h1>
+  <span id="source-badge" class="badge">scan: probing…</span>
+  <span class="grow"></span>
+  <button id="rescan" class="ghost">Re-scan</button>
+  <button id="close" class="ghost">Close</button>
+</header>
+
+<main>
+  <div id="source-note" class="note"></div>
+
+  <section class="card">
+    <h3>1 · Preview (dry run)</h3>
+    <p class="hint">A dry run reports the <b>exact</b> bytes and files that would be removed, computed from the
+      scan on this device. Nothing is deleted in this step.</p>
+    <div class="totals">
+      <div><span class="big" id="total-bytes">—</span><span class="lbl">reclaimable</span></div>
+      <div><span class="big" id="total-files">—</span><span class="lbl">files</span></div>
+      <div><span class="big" id="total-dirs">—</span><span class="lbl">directories</span></div>
+      <div><span class="big" id="total-skipped">—</span><span class="lbl">paths protected</span></div>
+    </div>
+    <div class="row"><button id="preview" class="primary">Run dry run</button></div>
+    <div id="entries"></div>
+  </section>
+
+  <section class="card">
+    <h3>2 · Not touched</h3>
+    <p class="hint">These paths were found by the scan and are deliberately excluded. Safe Cleanup has no mode
+      that can delete them.</p>
+    <ul class="reqs" id="skipped"></ul>
+    <h4>Structural exclusions</h4>
+    <ul class="reqs" id="nevertouch"></ul>
+  </section>
+
+  <section class="card">
+    <h3>3 · Execute (hard gate)</h3>
+    <p class="hint">Deleting requires typing <code id="phrase-label">DELETE CACHE</code> exactly. There is no
+      one-tap delete, no timer, and no automatic cleanup job.</p>
+    <input id="confirm" type="text" placeholder="type the phrase to unlock the delete step" autocomplete="off">
+    <div class="row">
+      <button id="execute" class="danger" disabled>Delete allowlisted caches and logs</button>
+      <button id="cancel" class="ghost">Reset</button>
+    </div>
+    <p class="hint" id="gate-reason">Delete is locked until the phrase is typed.</p>
+    <div id="results"></div>
+  </section>
+
+  <section class="card">
+    <h3>Activity</h3>
+    <pre class="log" id="activity">No cleanup has been run on this device yet.</pre>
+  </section>
+
+  <section class="card">
+    <h3>What this tool will never do</h3>
+    <ul class="reqs">
+      <li>It never writes to a raw partition or block device. The beta mission forbids all direct writes.</li>
+      <li>It never removes user documents, pictures, music, downloads or the Trash.</li>
+      <li>It never removes package-manager state (the RPM database or <code>/var/lib/dnf</code>).</li>
+      <li>It never follows symlinks out of an allowlisted directory, and it only deletes regular files.</li>
+      <li>It refuses to run at all when the Nuxel host is unreachable, instead of reporting a delete it did not do.</li>
+    </ul>
+  </section>
+</main>
+
+<div class="statusbar">
+  <span id="sb-source">scan source: —</span>
+  <span id="sb-at">scanned at —</span>
+  <span id="sb-allowlist">allowlist v—</span>
+</div>
+
+<script type="module" src="../../nuxel-common/bridge.js"></script>
+<script src="js/cleanup-plan.js"></script>
+<script src="js/cleanup.js"></script>
+</body>
+</html>

@@ -1,0 +1,19 @@
+{
+  "id": "org.nuxel.Maps",
+  "name": "Maps",
+  "icon": "\ud83d\uddfa\ufe0f",
+  "color": "#0f2119",
+  "category": "utilities",
+  "type": "pwa",
+  "url": "/pwa/nuxel-apps/maps/index.html",
+  "manifest": "pwa/nuxel-apps/maps/manifest.json",
+  "description": "Offline-first OSM tile cache with an opt-in online tile source",
+  "capabilities": [
+    "location:read",
+    "storage:persistent",
+    "network:outbound"
+  ],
+  "bridge_version": "1",
+  "docked": false,
+  "source": "pwa/nuxel-apps tree (bg-06-core-phone-apps)"
+}

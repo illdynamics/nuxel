@@ -1,0 +1,38 @@
+{
+    "app_id": "default",
+    "name": "Fail-closed default profile",
+    "category": "pwa",
+    "template": true,
+    "flags": [],
+    "capabilities": [],
+    "network_class": "isolated",
+    "data_dir": "/var/app/UNKNOWN/data",
+    "cgroup_name": "app-unknown",
+    "cgroup_classid": 16974001,
+    "allowed_ro_paths": ["/usr"],
+    "allowed_rw_paths": [],
+    "dbus_access": [],
+    "devices": [],
+    "seccomp_profile": "pwa-strict",
+    "landlock_rules": {
+        "read_only": ["/usr"],
+        "read_write": [],
+        "deny": ["/dev", "/sys", "/proc", "/var/app/"],
+        "kernel_note": "INTENT ONLY: Landlock is unavailable on the 4.14 vendor kernel."
+    },
+    "network_policy": {
+        "default": "deny",
+        "allow_dns": false,
+        "allow_tcp_outbound": false,
+        "allow_udp_outbound": false,
+        "allow_inbound": false
+    },
+    "enforcement": {
+        "attacker_privilege_class": "unprivileged-app",
+        "root_note": "Nothing here constrains uid 0.",
+        "apparmor": "none for unknown apps",
+        "landlock": "unavailable on Linux 4.14",
+        "seccomp": "pwa-strict BPF allow-list with no_new_privs",
+        "note": "An app with no profile and no grant gets: no network, no dbus, no devices, and only read access to /usr. This is the file a new app is measured against."
+    }
+}

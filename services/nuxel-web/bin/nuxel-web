@@ -1,0 +1,27 @@
+#!/bin/sh
+# Nuxel static PWA web server.
+#
+# ONE canonical docroot resolution, so the same unit works on both layouts the
+# repository actually uses:
+#   1. $NUXEL_WEBROOT (set via /etc/nuxel/web.conf or the unit environment)
+#   2. /usr/share/nuxel      — the phone rootfs (pwa/ tree staged by the builder)
+#   3. /home/nuxel/nuxel     — the flash-free VM/handset deploy mirror
+#
+# Serving from the tree ROOT (not the launcher directory) is REQUIRED: the
+# launcher's index.html imports `../nuxel-common/bridge.js`, a relative ES-module
+# reference enforced by pwa/nuxel-common/verify-wiring.js.  The launcher is
+# therefore served at /pwa/nuxel-home/index.html.
+set -eu
+PORT="${NUXEL_WEB_PORT:-8000}"
+BIND="${NUXEL_WEB_BIND:-127.0.0.1}"
+ROOT="${NUXEL_WEBROOT:-}"
+if [ -z "$ROOT" ]; then
+  for cand in /usr/share/nuxel /home/nuxel/nuxel; do
+    if [ -f "$cand/pwa/nuxel-home/index.html" ] || [ -f "$cand/nuxel-home/index.html" ]; then ROOT="$cand"; break; fi
+  done
+fi
+[ -n "$ROOT" ] || { echo "nuxel-web: no docroot with a launcher index.html (set NUXEL_WEBROOT)" >&2; exit 1; }
+[ -f "$ROOT/pwa/nuxel-common/bridge.js" ] || echo "nuxel-web: WARNING: $ROOT/pwa/nuxel-common/bridge.js missing - the launcher's ES module will 404" >&2
+echo "nuxel-web: serving $ROOT on $BIND:$PORT"
+cd "$ROOT"
+exec /usr/bin/python3 -m http.server "$PORT" --bind "$BIND"

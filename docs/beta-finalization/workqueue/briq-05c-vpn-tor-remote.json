@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "id": "briq-05c-vpn-tor-remote",
+  "revisions": [
+    {
+      "id": "briq-05c-vpn-tor-remote",
+      "title": "VPN, Tor and remote access - honest enforcement labels",
+      "component": "bg-05-security-permissions",
+      "component_title": "Priority 5 - Security, Permissions & Connectivity Controls",
+      "priority": 5,
+      "state": "in_progress",
+      "dependencies": [
+        "briq-05b-firewall-app"
+      ],
+      "evidence": [
+        {
+          "kind": "observation",
+          "path": "configs/nuxel/",
+          "command": "test -e configs/nuxel/",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        }
+      ],
+      "intended_changes": [
+        "docs/beta-finalization/security/VPN-TOR-REMOTE.md",
+        "configs/nuxel/",
+        "docs/beta-finalization/manual-proof/21-vpn-remote.md",
+        "docs/beta-finalization/manual-proof/22-firewall-permissions.md"
+      ],
+      "tests": [
+        "(tests are recorded by the owning briQ when it reports)"
+      ],
+      "risk": "medium",
+      "rollback": "git revert the commit(s) touching this task's expected files; the change is repository-only and alters no device state",
+      "verdict": null,
+      "offline_ceiling": null,
+      "owner_action": "",
+      "expected_files": [
+        "docs/beta-finalization/security/VPN-TOR-REMOTE.md",
+        "configs/nuxel/",
+        "docs/beta-finalization/manual-proof/21-vpn-remote.md",
+        "docs/beta-finalization/manual-proof/22-firewall-permissions.md"
+      ],
+      "note": "seeded from the QonQrete plan; 1/4 expected file(s) already present in the tree",
+      "source": "plan.json",
+      "revision": 1,
+      "at": "2026-10-16T16:07:13+02:00",
+      "by": "construqtor/bg-00-preflight"
+    }
+  ]
+}

@@ -1,0 +1,38 @@
+{
+    "app_id": "nuxel-privacy",
+    "name": "Privacy (VPN / Tor / Remote access)",
+    "category": "pwa",
+    "flags": [],
+    "capabilities": [],
+    "note": "Deliberately requests no capability: the panes read a local status API from the root-owned nuxel-privacy daemon over loopback. The app cannot change state without an explicit, audited action from that daemon.",
+    "network_class": "isolated",
+    "data_dir": "/var/app/nuxel-privacy/data",
+    "cgroup_name": "app-nuxel-privacy",
+    "allowed_ro_paths": ["/usr", "/usr/share"],
+    "allowed_rw_paths": ["/var/app/nuxel-privacy/data", "/run/nuxel"],
+    "dbus_access": ["org.nuxel.Bridge"],
+    "devices": [],
+    "seccomp_profile": "pwa-strict",
+    "landlock_rules": {
+        "read_only": ["/usr", "/usr/share", "/etc/fonts"],
+        "read_write": ["/var/app/nuxel-privacy/data", "/run/nuxel"],
+        "deny": ["/dev", "/sys", "/proc/*/mem", "/etc/tor", "/var/lib/tor"],
+        "kernel_note": "INTENT ONLY: Landlock requires Linux >= 5.13; the S10+ runs 4.14.253."
+    },
+    "network_policy": {
+        "default": "deny",
+        "allow_dns": false,
+        "allow_tcp_outbound": false,
+        "allow_udp_outbound": false,
+        "allow_inbound": false,
+        "kernel_note": "Tor/VPN control happens in the daemon, not in the app. The app never gets egress."
+    },
+    "enforcement": {
+        "attacker_privilege_class": "unprivileged-app",
+        "root_note": "Tor/VPN/remote state is changed only by the root daemon; the app is a read-mostly viewer.",
+        "apparmor": "none yet (add a profile before claiming enforcement)",
+        "landlock": "unavailable on Linux 4.14",
+        "seccomp": "pwa-strict BPF allow-list with no_new_privs",
+        "note": "Honesty requirement: 'Tor service running' is displayed separately from 'traffic verified through Tor'."
+    }
+}

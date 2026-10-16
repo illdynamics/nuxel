@@ -1,14 +1,189 @@
 {
-  "version": "1.0.0",
+  "schema": "nuxel.app-registry.native-consumer/1",
+  "version": 4,
+  "generated_from": "pwa/nuxel-common/app-registry.json",
+  "bridge_version": "1",
+  "do_not_edit": "Rendered by tools/s10plus/a33/verify-app-registry.py --sync-native. Edit the canonical registry instead.",
   "apps": [
-    {"id": "org.nuxel.Notes", "name": "Notes", "icon": "📝", "kind": "pwa", "url": "http://127.0.0.1:8000/pwa/nuxel-apps/notes/index.html", "native_binary": null, "color": "#607D8B", "category": "productivity", "capabilities": []},
-    {"id": "org.nuxel.Files", "name": "Files", "icon": "📁", "kind": "pwa", "url": "http://127.0.0.1:8000/pwa/nuxel-apps/files/index.html", "native_binary": null, "color": "#3F51B5", "category": "tools", "capabilities": []},
-    {"id": "org.nuxel.Calendar", "name": "Calendar", "icon": "📅", "kind": "pwa", "url": "http://127.0.0.1:8000/pwa/nuxel-apps/calendar/index.html", "native_binary": null, "color": "#E91E63", "category": "productivity", "capabilities": ["notifications:send"]},
-    {"id": "org.nuxel.Mail", "name": "Mail", "icon": "✉️", "kind": "pwa", "url": "http://127.0.0.1:8000/pwa/nuxel-apps/mail/index.html", "native_binary": null, "color": "#FF9800", "category": "productivity", "capabilities": ["notifications:send", "notifications:receive"]},
-    {"id": "org.nuxel.Camera", "name": "Camera", "icon": "📷", "kind": "pwa", "url": "http://127.0.0.1:8000/pwa/nuxel-apps/camera-gallery/index.html", "native_binary": null, "color": "#795548", "category": "media", "capabilities": ["camera:capture"]},
-    {"id": "org.nuxel.Settings", "name": "Settings", "icon": "⚙️", "kind": "native-placeholder", "url": "", "native_binary": "/usr/bin/nuxel-settings", "color": "#78909C", "category": "system", "capabilities": []},
-    {"id": "org.nuxel.Phone", "name": "Phone", "icon": "📞", "kind": "native-placeholder", "url": "", "native_binary": "/usr/bin/nuxel-dialer", "color": "#4CAF50", "category": "communication", "capabilities": ["call:initiate", "call:end"]},
-    {"id": "org.nuxel.Messages", "name": "Messages", "icon": "💬", "kind": "native-placeholder", "url": "", "native_binary": "/usr/bin/nuxel-messages", "color": "#2196F3", "category": "communication", "capabilities": ["sms:send", "sms:receive"]},
-    {"id": "org.nuxel.Contacts", "name": "Contacts", "icon": "👤", "kind": "native-placeholder", "url": "", "native_binary": "/usr/bin/nuxel-contacts", "color": "#9C27B0", "category": "communication", "capabilities": ["contacts:read", "contacts:write"]}
+    {
+      "id": "nuxel-dialer",
+      "name": "Phone",
+      "icon": "\ud83d\udcde",
+      "kind": "native",
+      "url": "nuxel-dialer://",
+      "native_binary": "/usr/bin/nuxel-dialer",
+      "color": "#4CAF50",
+      "category": "communication",
+      "description": "Make phone calls",
+      "capabilities": [
+        "call:initiate",
+        "call:end",
+        "call:status",
+        "contacts:read"
+      ],
+      "bridge_version": "1",
+      "status": "implemented"
+    },
+    {
+      "id": "nuxel-messages",
+      "name": "Messages",
+      "icon": "\ud83d\udcac",
+      "kind": "native",
+      "url": "nuxel-messages://",
+      "native_binary": "/usr/bin/nuxel-messages",
+      "color": "#2196F3",
+      "category": "communication",
+      "description": "Send and receive SMS",
+      "capabilities": [
+        "sms:send",
+        "sms:receive",
+        "contacts:read"
+      ],
+      "bridge_version": "1",
+      "status": "implemented"
+    },
+    {
+      "id": "nuxel-contacts",
+      "name": "Contacts",
+      "icon": "\ud83d\udc64",
+      "kind": "native",
+      "url": "nuxel-contacts://",
+      "native_binary": "/usr/bin/nuxel-contacts",
+      "color": "#9C27B0",
+      "category": "communication",
+      "description": "Manage your contacts",
+      "capabilities": [
+        "contacts:read",
+        "contacts:write"
+      ],
+      "bridge_version": "1",
+      "status": "implemented"
+    },
+    {
+      "id": "nuxel-camera",
+      "name": "Camera",
+      "icon": "\ud83d\udcf7",
+      "kind": "native",
+      "url": "nuxel-camera://",
+      "native_binary": null,
+      "color": "#795548",
+      "category": "media",
+      "description": "Take photos and videos",
+      "capabilities": [
+        "camera:capture",
+        "camera:preview"
+      ],
+      "bridge_version": "1",
+      "status": "placeholder"
+    },
+    {
+      "id": "org.nuxel.Mail",
+      "name": "Mail",
+      "icon": "\u2709\ufe0f",
+      "kind": "pwa",
+      "url": "http://127.0.0.1:8000/pwa/nuxel-apps/mail/index.html",
+      "native_binary": null,
+      "color": "#FF9800",
+      "category": "productivity",
+      "description": "Email client",
+      "capabilities": [
+        "notifications:send",
+        "notifications:receive",
+        "storage:read",
+        "storage:write"
+      ],
+      "bridge_version": "1",
+      "status": "implemented"
+    },
+    {
+      "id": "org.nuxel.Calendar",
+      "name": "Calendar",
+      "icon": "\ud83d\udcc5",
+      "kind": "pwa",
+      "url": "http://127.0.0.1:8000/pwa/nuxel-apps/calendar/index.html",
+      "native_binary": null,
+      "color": "#E91E63",
+      "category": "productivity",
+      "description": "Calendar and events",
+      "capabilities": [
+        "notifications:send",
+        "storage:read",
+        "storage:write"
+      ],
+      "bridge_version": "1",
+      "status": "implemented"
+    },
+    {
+      "id": "org.nuxel.Notes",
+      "name": "Notes",
+      "icon": "\ud83d\udcdd",
+      "kind": "pwa",
+      "url": "http://127.0.0.1:8000/pwa/nuxel-apps/notes/index.html",
+      "native_binary": null,
+      "color": "#607D8B",
+      "category": "productivity",
+      "description": "Take notes",
+      "capabilities": [],
+      "bridge_version": "1",
+      "status": "implemented"
+    },
+    {
+      "id": "org.nuxel.Files",
+      "name": "Files",
+      "icon": "\ud83d\udcc1",
+      "kind": "pwa",
+      "url": "http://127.0.0.1:8000/pwa/nuxel-apps/files/index.html",
+      "native_binary": null,
+      "color": "#3F51B5",
+      "category": "tools",
+      "description": "File browser",
+      "capabilities": [],
+      "bridge_version": "1",
+      "status": "implemented"
+    },
+    {
+      "id": "nuxel-settings",
+      "name": "Settings",
+      "icon": "\u2699\ufe0f",
+      "kind": "pwa",
+      "url": "http://127.0.0.1:8000/pwa/nuxel-apps/settings/index.html",
+      "native_binary": null,
+      "color": "#78909C",
+      "category": "system",
+      "description": "System settings",
+      "capabilities": [],
+      "bridge_version": "1",
+      "status": "implemented"
+    },
+    {
+      "id": "org.nuxel.Terminal",
+      "name": "Terminal",
+      "icon": "\ud83d\udda5\ufe0f",
+      "kind": "pwa",
+      "url": "http://127.0.0.1:8000/pwa/nuxel-apps/terminal/index.html",
+      "native_binary": null,
+      "color": "#263238",
+      "category": "system",
+      "description": "Nuxel shell console",
+      "capabilities": [
+        "shell:local-pty"
+      ],
+      "bridge_version": "1",
+      "status": "implemented"
+    },
+    {
+      "id": "org.nuxel.LiveConsole",
+      "name": "Live Console",
+      "icon": "\ud83d\udcdf",
+      "kind": "pwa",
+      "url": "http://127.0.0.1:8000/pwa/nuxel-apps/console/index.html",
+      "native_binary": null,
+      "color": "#37474F",
+      "category": "system",
+      "description": "Live device console and control centre",
+      "capabilities": [],
+      "bridge_version": "1",
+      "status": "implemented"
+    }
   ]
 }

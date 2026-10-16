@@ -14,5 +14,28 @@
         "org.freedesktop.ModemManager1",
         "org.nuxel.Bridge"
     ],
-    "devices": ["/dev/snd/"]
+    "devices": ["/dev/snd/"],
+    "seccomp_profile": "native-standard",
+    "landlock_rules": {
+        "read_only": ["/usr", "/usr/share", "/etc/fonts", "/etc/gtk-4.0"],
+        "read_write": ["/var/app/nuxel-dialer/data"],
+        "deny": ["/dev", "/sys", "/proc/*/mem", "/var/app/"],
+        "kernel_note": "Landlock requires Linux >= 5.13; the S10+ vendor kernel is 4.14.253, so these rules are INTENT ONLY and are not applied. nuxel-sandbox degrades gracefully (LANDLOCK_UNAVAILABLE) instead of refusing to launch."
+    },
+    "network_policy": {
+        "default": "deny_per_cgroup",
+        "allow_dns": true,
+        "allow_tcp_outbound": true,
+        "allow_udp_outbound": true,
+        "allow_inbound": false,
+        "kernel_note": "On 4.14 the per-app match is cgroup v1 net_cls classid 16973825 = 0x01030001 (nft 'meta cgroup 0x01030001'). The cgroupv2 'socket cgroupv2' matcher requires Linux >= 5.13 and is not used on this device."
+    },
+    "enforcement": {
+        "attacker_privilege_class": "unprivileged-app",
+        "root_note": "Nothing here constrains uid 0.",
+        "apparmor": "profile configs/apparmor.d/usr.bin.nuxel-dialer; effective only if apparmor is present in /sys/kernel/security/lsm (verify with nuxel-security-audit.sh)",
+        "landlock": "unavailable on Linux 4.14",
+        "seccomp": "BPF allow-list with no_new_privs (available on 4.14)",
+        "note": "ModemManager access is the real gate for calls/SMS; the Shannon modem has no upstream plugin, so the radio path is BLOCKED_HARDWARE."
+    }
 }

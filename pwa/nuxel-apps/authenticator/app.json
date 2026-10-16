@@ -1,0 +1,15 @@
+{
+  "id": "org.nuxel.Authenticator",
+  "name": "Authenticator",
+  "icon": "AU",
+  "color": "#00838F",
+  "category": "security",
+  "type": "pwa",
+  "url": "/pwa/nuxel-apps/authenticator/index.html",
+  "description": "RFC 6238 TOTP with an encrypted on-device vault",
+  "capabilities": ["storage:encrypted"],
+  "docked": false,
+  "network": "none",
+  "third_party_accounts": [],
+  "cloud_sync": false
+}

@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "comment": "Timekeeping policy for the S10+ (beyond2lte). Read by tools/s10plus/a33/nuxel-time.sh (installed as `nuxelctl time`) and by the nuxel-rtc-check timer. Nothing here is applied by itself: the tool reads it, reports what the system actually does, and refuses to claim a PASS it cannot observe.",
+
+  "timesync": {
+    "mode": "auto",
+    "comment_mode": "auto = use systemd-timesyncd if it is installed AND enabled; otherwise chrony if installed; otherwise report NO_TIMESYNC_BACKEND (never silently pretend NTP is running).",
+    "preferred": "systemd-timesyncd",
+    "fallback": "chrony",
+    "package_probe": ["systemd-timesyncd", "chrony", "ntpsec", "openntpd"],
+    "servers": [
+      "2.fedora.pool.ntp.org",
+      "1.fedora.pool.ntp.org",
+      "0.pool.ntp.org"
+    ],
+    "min_poll_sec": 16,
+    "max_poll_sec": 2048,
+    "step_threshold_sec": 1.0,
+    "max_steps": 3
+  },
+
+  "rtc": {
+    "comment": "The S10+ RTC lives in the Samsung PMIC. The exact driver/binding is NOT assumed: the tool enumerates /sys/class/rtc/* and reports the real name so the claim can be checked instead of guessed.",
+    "device": "auto",
+    "candidates": ["/dev/rtc0", "/dev/rtc"],
+    "sysfs_candidates": ["/sys/class/rtc/rtc0", "/sys/class/rtc/rtc1"],
+    "save_mode": "systohc",
+    "save_interval_min": 30,
+    "max_drift_s_warn": 60,
+    "max_drift_s_fail": 300,
+    "state_dir": "/var/lib/nuxel/time",
+    "drift_before": "/var/lib/nuxel/time/rtc-before.json",
+    "drift_after": "/var/lib/nuxel/time/rtc-after.json",
+    "kernel": {
+      "comment": "Both are kernel-side requirements for RTC persistence and are verified from the running kernel, never assumed: CONFIG_RTC_HCTOSYS (set the system clock from the RTC at boot) and CONFIG_RTC_DRV_S5M-family (the PMIC RTC driver). /sys/class/rtc existing is the observable proof that a driver bound.",
+      "required_config": ["CONFIG_RTC_CLASS", "CONFIG_RTC_DRV_S5M"],
+      "expected_hctosys": true
+    }
+  },
+
+  "launcher": {
+    "comment": "The launcher clock is rendered from the bridge's phone-status payload (services/nuxel-bridge/src/api.py -> _get_system_phone_status, field \"time\", local HH:MM). Comparing that value with the system clock is what makes 'the launcher clock agrees with the system' an observable statement instead of a promise.",
+    "bridge_health": "http://127.0.0.1:8080/api/v1/health",
+    "bridge_token": "http://127.0.0.1:8080/api/v1/auth/token",
+    "bridge_status": "http://127.0.0.1:8080/api/v1/phone/status",
+    "tolerance_s": 120,
+    "api_key_env": "NUXEL_BRIDGE_API_KEY"
+  },
+
+  "journal": {
+    "comment": "journald timestamps must agree with the system clock; a frozen journald after an RTC restore is a real failure mode and is checked directly.",
+    "tolerance_s": 120
+  },
+
+  "reboot_persistence": {
+    "comment": "Owner-driven: `nuxelctl time mark` before the reboot, `nuxelctl time compare` after it. The verdict is computed from the two real RTC readings and a boot-id change, not from the fact that a reboot happened.",
+    "require_boot_id_change": true,
+    "max_delta_s": 10
+  }
+}

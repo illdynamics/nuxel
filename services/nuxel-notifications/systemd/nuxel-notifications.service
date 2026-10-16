@@ -3,6 +3,8 @@ Description=Nuxel Notification Hub
 Documentation=https://nuxel.org/docs/notifications
 Wants=dbus.service
 After=dbus.service
+# The hub is the PRODUCER for the bridge's SendNotification path, so it starts
+# first (briq-04b: this direction is what removes the A33 ordering cycle).
 Before=nuxel-bridge.service
 
 [Service]
@@ -20,6 +22,9 @@ Group=nuxel-notifications
 # then the built-in default), so pin it explicitly to the canonical path.
 Environment=NUXEL_NOTIFICATIONS_FILE=/var/lib/nuxel/notifications.json
 Environment=NUXEL_NOTIFICATIONS_HISTORY_CAP=200
+Environment=NUXEL_PATHS_CONF=/etc/nuxel/paths.conf
+Environment=NUXEL_BRIDGE_PROTOCOL_VERSION=1
+Environment=NUXEL_BRIDGE_VERSION=0.4.0-alpha
 
 # Security hardening
 ProtectSystem=full
@@ -36,4 +41,7 @@ ReadWritePaths=/var/lib/nuxel /var/log/nuxel
 ReadOnlyPaths=/etc/dbus-1
 
 [Install]
-WantedBy=graphical-session.target
+# NOTE: this is a SYSTEM service on the system bus; graphical-session.target is
+# a USER target and enabling a system unit there is a no-op.  Fixed to the real
+# target so `systemctl enable` actually starts it.
+WantedBy=multi-user.target

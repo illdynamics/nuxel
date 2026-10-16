@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0d1b16">
+<meta name="nuxel-app-id" content="org.nuxel.Maps">
+<title>Nuxel Maps</title>
+<link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="css/maps.css">
+</head>
+<body>
+<header class="top-bar">
+  <h1>Maps</h1>
+  <span id="tile-badge" class="badge">no tile source configured</span>
+</header>
+
+<div class="map-wrap">
+  <canvas id="map" class="map"></canvas>
+  <div id="overlay-msg" class="overlay-msg"></div>
+  <div class="zoom-buttons">
+    <button id="zoom-in" title="Zoom in">＋</button>
+    <button id="zoom-out" title="Zoom out">−</button>
+    <button id="locate" title="Go to a coordinate">⌖</button>
+  </div>
+  <div class="attribution">Tiles, when present, are OpenStreetMap data © OpenStreetMap contributors — offline cache only.</div>
+  <div id="scale" class="scale">—</div>
+</div>
+
+<section class="controls">
+  <div class="row">
+    <input id="goto-lat" type="text" placeholder="lat e.g. 52.3702">
+    <input id="goto-lon" type="text" placeholder="lon e.g. 4.8952">
+    <button id="do-goto">Go</button>
+  </div>
+  <div class="row">
+    <input id="marker-label" type="text" placeholder="Pin label">
+    <button id="add-pin" class="primary">Add pin here</button>
+  </div>
+  <div class="row">
+    <input id="search" type="text" placeholder="Search saved pins and places">
+  </div>
+</section>
+
+<section class="card">
+  <h3>Pins and places <span id="pin-count" class="li-sub">0</span></h3>
+  <ul id="pins" class="pins"></ul>
+  <div class="row">
+    <button id="export">Export places</button>
+    <button id="import">Import places</button>
+    <button id="clear-pins" class="danger">Clear pins</button>
+  </div>
+  <input id="file" type="file" accept="application/json,.json" class="hidden">
+</section>
+
+<section class="card">
+  <h3>Offline tile cache</h3>
+  <p class="hint">Nuxel Maps works completely offline. Tiles are only drawn if they are already in
+    the local cache. Set a tile URL template to fetch tiles into the cache; this is the single
+    place where the app can touch the network and it stays disabled until you turn it on.</p>
+  <div class="row">
+    <input id="tile-url" type="text" placeholder="https://tile.example/{z}/{x}/{y}.png" class="grow">
+    <button id="save-tile">Save template</button>
+  </div>
+  <label class="check"><input id="allow-net" type="checkbox"> Allow tile downloads from the template above</label>
+  <div class="row">
+    <button id="cache-here">Cache the visible tiles</button>
+    <button id="cache-stats">Cache statistics</button>
+    <button id="cache-clear" class="danger">Empty tile cache</button>
+  </div>
+  <pre id="cache-report" class="state">—</pre>
+</section>
+
+<p id="toast" class="toast hidden"></p>
+
+<script type="module" src="../../nuxel-common/bridge.js"></script>
+<script src="js/maps.js"></script>
+</body>
+</html>

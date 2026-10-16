@@ -5,7 +5,13 @@
 // controlled migration path for the cache-first static strategy below: a new
 // worker installs its own cache namespace and 'activate' deletes the old ones,
 // so a redeployed launcher is never served from a stale cache (briq A31).
-const CACHE_VERSION = 'v3-a32';
+//
+// A33 bumped it to v4-a33 because this revision adds js/settings-store.js and
+// js/bootlog.js and changes js/status-bar.js (v0.4.0-alpha -> v0.4.1-a33) and
+// js/qs.js.  The registry test asserts this string advanced past 'v3-a32', and
+// manifest.json carries the same key as nuxel.cache_version, so a launcher that
+// was served from a stale bundle is a detectable state rather than a mystery.
+const CACHE_VERSION = 'v4-a33';
 const CACHE_NAME = 'nuxel-home-' + CACHE_VERSION;
 const STATIC_CACHE = 'nuxel-static-' + CACHE_VERSION;
 const DYNAMIC_CACHE = 'nuxel-dynamic-' + CACHE_VERSION;
@@ -31,7 +37,9 @@ const PRECACHE_ASSETS = [
     './js/qs.js',
     './js/host-bridge.js',
     './js/safe-zones.js',
+    './js/settings-store.js',
     './js/osd.js',
+    './js/bootlog.js',
     './js/app.js',
     './icons/icon-192.png',
     './icons/icon-512.png',

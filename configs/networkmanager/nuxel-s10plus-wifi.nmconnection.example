@@ -1,0 +1,41 @@
+# Cleanup: installs nothing by itself. NetworkManager only loads *.nmconnection.
+# Copy to a real profile and fill in the SSID/PSK, then:
+#   nmcli connection load /etc/NetworkManager/system-connections/<name>.nmconnection
+#   nmcli connection up <name>
+# or, without root-owned files on disk:
+#   nuxelctl wifi connect "<SSID>"      (psk is prompted, never stored in the repo)
+#
+# WHY A TEMPLATE EXISTS: the repository must never carry a real SSID or a PSK
+# (no secrets in the tree). This template is what makes the *policy* reviewable
+# — randomization, power save and IPv6 privacy — without inventing credentials.
+[connection]
+id=nuxel-wifi-template
+uuid=00000000-0000-0000-0000-000000000000
+type=wifi
+autoconnect=true
+# Per-SSID random MAC (privacy), consistent with 98-nuxel-defaults.conf.
+wifi.cloned-mac-address=random
+wifi.powersave=2
+
+[wifi]
+mode=infrastructure
+ssid=REPLACE-WITH-SSID
+# Hidden network: set 1 and provide the SSID above.
+hidden=false
+# Restrict to bands the BCM4375-class part can actually associate on. Both are
+# listed because the driver reports band support, not the module datasheet.
+band=bg
+
+[wifi-security]
+key-mgmt=wpa-psk
+psk=REPLACE-WITH-PSK
+
+[ipv4]
+method=auto
+
+[ipv6]
+method=auto
+addr-gen-mode=stable-privacy
+ip6-privacy=2
+
+[proxy]

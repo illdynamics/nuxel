@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "_comment": "A33 boot-animation ownership handoff (briq-02a). Read by /usr/lib/nuxel/nuxel-wl-fb on the handset and by tools/s10plus/a33/nuxel-anim-handoff.py off-device. The geometry is MEASURED from the shipping asset: ffprobe pwa/nuxel-home/assets/nuxel-boot-animation.mp4 -> nb_frames=192 r_frame_rate=24/1 duration=8.0s.",
+  "mode": "receipt",
+  "mp4_frames": 192,
+  "mp4_fps": 24,
+  "min_cycles": 1,
+  "max_wait_s": 24,
+  "launcher_ready_wait_s": 120,
+  "poll_ms": 100,
+  "stop_latency_ms": 150,
+  "anim_start_ms": 2900,
+  "launcher_ready_ms": 5900,
+  "receipt_path": "/run/nuxel-anim-handoff",
+  "log_path": "/var/lib/nuxel/anim-handoff.log",
+  "owner_lock": "/run/nuxel-fb-owner.lock",
+  "owner_record": "/var/lib/nuxel/fb-owner"
+}

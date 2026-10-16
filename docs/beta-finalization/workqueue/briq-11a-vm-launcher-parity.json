@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "id": "briq-11a-vm-launcher-parity",
+  "revisions": [
+    {
+      "id": "briq-11a-vm-launcher-parity",
+      "title": "VM launcher, status-bar, safe-zones and app parity run",
+      "component": "bg-11-vm-parity",
+      "component_title": "VM-only Verification - UTM Launcher, Services & Theme Parity",
+      "priority": 2,
+      "state": "pending",
+      "dependencies": [
+        "briq-02d-launcher-parity",
+        "briq-02e-safe-zones-statusbar",
+        "briq-06b-missing-core-apps"
+      ],
+      "evidence": [],
+      "intended_changes": [
+        "docs/beta-finalization/vm/LAUNCHER-PARITY.md",
+        "docs/beta-finalization/vm/screenshots/"
+      ],
+      "tests": [
+        "(tests are recorded by the owning briQ when it reports)"
+      ],
+      "risk": "medium",
+      "rollback": "git revert the commit(s) touching this task's expected files; the change is repository-only and alters no device state",
+      "verdict": null,
+      "offline_ceiling": null,
+      "owner_action": "",
+      "expected_files": [
+        "docs/beta-finalization/vm/LAUNCHER-PARITY.md",
+        "docs/beta-finalization/vm/screenshots/"
+      ],
+      "note": "seeded from the QonQrete plan; 0/2 expected file(s) already present in the tree",
+      "source": "plan.json",
+      "revision": 1,
+      "at": "2026-10-16T16:07:13+02:00",
+      "by": "construqtor/bg-00-preflight"
+    }
+  ]
+}

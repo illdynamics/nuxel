@@ -1,0 +1,6 @@
+#!/bin/sh
+# fixture fake: epoch is pinned to 2001 (before 2020) for +%s, real otherwise
+case "$*" in
+  "+%s") echo 1000000000 ;;
+  *) exec /bin/date "$@" ;;
+esac

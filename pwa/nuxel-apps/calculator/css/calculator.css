@@ -1,0 +1,106 @@
+/* Nuxel Calculator - offline, no external assets (mission area 30) */
+:root {
+  --bg: #101725;
+  --panel: #16203200;
+  --card: #1b2740;
+  --card-2: #223257;
+  --ink: #eaf1ff;
+  --dim: #90a2c4;
+  --accent: #4cc2ff;
+  --op: #2e6bff;
+  --eq: #2ecc71;
+  --fn: #2a3a5e;
+  --danger: #ff6b6b;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body {
+  margin: 0; padding: 0; height: 100%;
+  background: var(--bg); color: var(--ink);
+  font-family: system-ui, -apple-system, "Noto Sans", "DejaVu Sans", sans-serif;
+  overscroll-behavior: none;
+}
+body { display: flex; flex-direction: column; padding-top: var(--safe-top); padding-bottom: var(--safe-bottom); }
+
+.top-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 14px; border-bottom: 1px solid #24314d;
+}
+.top-bar h1 { font-size: 16px; font-weight: 600; margin: 0; letter-spacing: .2px; }
+.icon-btn {
+  background: #1d2942; color: var(--ink); border: 1px solid #2c3c5e;
+  border-radius: 10px; font-size: 15px; padding: 6px 10px; cursor: pointer;
+}
+.icon-btn:active { background: #27395c; }
+
+.calc { flex: 1 1 auto; display: flex; flex-direction: column; padding: 10px 12px 12px; gap: 10px; min-height: 0; }
+
+.display {
+  background: linear-gradient(180deg, #17223a, #131c2e);
+  border: 1px solid #26344f; border-radius: 16px; padding: 12px 14px;
+  min-height: 108px; display: flex; flex-direction: column; justify-content: flex-end; gap: 4px;
+}
+.expr { color: var(--dim); font-size: 15px; min-height: 20px; word-break: break-all; font-variant-numeric: tabular-nums; }
+.result { font-size: 40px; font-weight: 600; line-height: 1.1; text-align: right; word-break: break-all; font-variant-numeric: tabular-nums; }
+.flags { display: flex; gap: 6px; justify-content: flex-end; min-height: 18px; }
+.flag { font-size: 11px; color: var(--accent); border: 1px solid #2b4a6b; border-radius: 6px; padding: 1px 6px; }
+.flag.hidden { visibility: hidden; }
+
+.pads { flex: 1 1 auto; min-height: 0; }
+.pad { display: none; grid-template-columns: repeat(4, 1fr); gap: 8px; height: 100%; }
+.pad.active { display: grid; }
+.pad.sci.active { grid-template-columns: repeat(5, 1fr); }
+
+.key {
+  border: 1px solid #2b3a5b; background: var(--card); color: var(--ink);
+  border-radius: 14px; font-size: 21px; font-weight: 500; cursor: pointer;
+  min-height: 52px; transition: transform .06s ease, background .12s ease;
+}
+.key:active { transform: scale(.97); background: var(--card-2); }
+.key.op { background: #24365c; color: #cfe4ff; }
+.key.eq { background: var(--eq); color: #06240f; font-weight: 700; }
+.key.fn { background: var(--fn); font-size: 18px; }
+.key.mem { background: #23304d; font-size: 15px; }
+.pad.sci .key { min-height: 44px; font-size: 16px; }
+
+.modes { display: flex; gap: 8px; }
+.mode {
+  flex: 1 1 0; background: #1b2740; color: var(--dim); border: 1px solid #2b3a5b;
+  border-radius: 12px; padding: 10px 6px; font-size: 13px; cursor: pointer;
+}
+.mode.active { color: var(--ink); border-color: var(--accent); background: #1f3153; }
+
+.history {
+  position: absolute; top: 0; right: 0; bottom: 0; width: min(340px, 88vw);
+  background: #131c2e; border-left: 1px solid #26344f; padding: 14px; overflow-y: auto;
+  box-shadow: -12px 0 30px rgba(0,0,0,.45);
+}
+.history.hidden { display: none; }
+.history-head { display: flex; align-items: center; justify-content: space-between; }
+.history-head h2 { font-size: 16px; margin: 0 0 6px; }
+.link { background: none; border: none; color: var(--accent); font-size: 13px; cursor: pointer; padding: 4px 6px; }
+.hint { color: var(--dim); font-size: 12px; line-height: 1.5; }
+.hint code { color: #cfe4ff; }
+#history-list { list-style: none; margin: 10px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+#history-list li { background: #1a2540; border: 1px solid #26344f; border-radius: 10px; padding: 8px 10px; font-size: 13px; }
+#history-list li .h-expr { color: var(--dim); display: block; font-size: 12px; }
+#history-list li .h-res { font-weight: 600; font-variant-numeric: tabular-nums; }
+#history-list li button { float: right; }
+
+.toast {
+  position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(24px + var(--safe-bottom));
+  background: #1f3153; border: 1px solid var(--accent); color: var(--ink);
+  padding: 8px 14px; border-radius: 999px; font-size: 13px; z-index: 20;
+}
+.toast.hidden { display: none; }
+
+@media (max-height: 620px) {
+  .result { font-size: 32px; }
+  .key { min-height: 44px; font-size: 18px; }
+  .pad.sci .key { min-height: 38px; font-size: 14px; }
+}
+@media (orientation: landscape) and (max-height: 520px) {
+  .calc { flex-direction: row; }
+  .display { min-width: 40%; }
+}

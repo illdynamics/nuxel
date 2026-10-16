@@ -1,0 +1,4 @@
+# assistant key, single short press (deferred by the double-press gap)
+0 key bixby 1
+100 key bixby 0
+700 tick

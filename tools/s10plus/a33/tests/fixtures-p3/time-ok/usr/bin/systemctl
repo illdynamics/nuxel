@@ -1,0 +1,10 @@
+#!/bin/sh
+case "$1 $2" in
+  "is-active systemd-timesyncd") echo active ;;
+  "is-active chronyd") echo inactive ;;
+  "is-active chrony") echo inactive ;;
+  "is-active ntpsec") echo inactive ;;
+  "is-active ntpd") echo inactive ;;
+  "is-active openntpd") echo inactive ;;
+  *) echo inactive ;;
+esac

@@ -1,0 +1,4 @@
+# swipe inward from the left edge within 400 ms -> back
+1000 touch down 10 1500
+1200 touch move 260 1505
+1300 touch up 400 1510

@@ -1,0 +1,19 @@
+{
+  "source": "sample",
+  "at": "2026-10-16T00:00:00Z",
+  "note": "Bundled scan snapshot used when the Nuxel bridge is unreachable. Delete operations are refused when the bridge is offline — Safe Cleanup never pretends to have removed something.",
+  "entries": [
+    {"path": "/var/cache/nuxel", "bytes": 41287680, "files": 312},
+    {"path": "/var/cache/pipewire", "bytes": 204800, "files": 4},
+    {"path": "/var/cache/fontconfig", "bytes": 3145728, "files": 7},
+    {"path": "/var/tmp", "bytes": 8765440, "files": 41},
+    {"path": "/var/log/journal", "bytes": 134217728, "files": 18},
+    {"path": "/var/log/nuxel", "bytes": 2621440, "files": 12},
+    {"path": "/home/nuxel/.cache/thumbnails", "bytes": 52428800, "files": 618},
+    {"path": "/home/nuxel/.cache/nuxel-pwa", "bytes": 15728640, "files": 214},
+    {"path": "/var/lib/nuxel", "bytes": 1048576, "files": 9},
+    {"path": "/home/nuxel/Downloads", "bytes": 734003200, "files": 23},
+    {"path": "/var/lib/dnf", "bytes": 209715200, "files": 44},
+    {"path": "/home/nuxel/.local/share/Trash", "bytes": 2097152, "files": 5}
+  ]
+}
