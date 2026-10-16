@@ -85,6 +85,114 @@
       "revision": 1,
       "at": "2026-10-16T16:07:13+02:00",
       "by": "construqtor/bg-00-preflight"
+    },
+    {
+      "id": "briq-02d-launcher-parity",
+      "title": "Exact UTM launcher parity - refresh stale assets and cache invalidation",
+      "component": "bg-02-boot-animation-launcher",
+      "component_title": "Priority 2 - Boot Stability, Animation Handoff & UTM Launcher Parity",
+      "priority": 2,
+      "state": "implemented",
+      "dependencies": [
+        "briq-00d-baseline-protection"
+      ],
+      "evidence": [
+        {
+          "kind": "observation",
+          "path": "pwa/nuxel-home/js/status-bar.js",
+          "command": "test -e pwa/nuxel-home/js/status-bar.js",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "observation",
+          "path": "pwa/nuxel-home/manifest.json",
+          "command": "test -e pwa/nuxel-home/manifest.json",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "observation",
+          "path": "pwa/nuxel-home/sw.js",
+          "command": "test -e pwa/nuxel-home/sw.js",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "observation",
+          "path": "pwa/nuxel-home/js/apps.js",
+          "command": "test -e pwa/nuxel-home/js/apps.js",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "observation",
+          "path": "pwa/nuxel-apps/settings/",
+          "command": "test -e pwa/nuxel-apps/settings/",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "observation",
+          "path": "tools/s10plus/a33/tests/launcher-registry-test.js",
+          "command": "test -e tools/s10plus/a33/tests/launcher-registry-test.js",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "tools/s10plus/a33/tests/launcher-registry-test.js",
+          "command": "node tools/s10plus/a33/tests/launcher-registry-test.js",
+          "result": "PASS: status-bar.js VERSION 0.4.1-a33 == manifest pwa_version; sw.js CACHE_VERSION v4-a33 == manifest cache_version and advanced past v3-a32; index.html loads apps.js/status-bar.js/qs.js/safe-zones.js/settings-store.js/app.js; shortcuts resolve to registry ids; no stale duplicate launcher asset or v0.3.2 constant remains",
+          "at": "2026-10-16T16:24:50+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "pwa/nuxel-home/js/apps.js",
+          "command": "python3 tools/s10plus/a33/tests/test-boot-surface-contract.py",
+          "result": "REGISTRY_VERSION 4 carries org.nuxel.Terminal and nuxel-settings, and manifest.apps_in_registry lists exactly those ids (the phone copy was stale: no Terminal, old status-bar.js, old manifest)",
+          "at": "2026-10-16T16:24:50+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "pwa/nuxel-apps/settings/settings.js",
+          "command": "node --check pwa/nuxel-apps/settings/settings.js",
+          "result": "the Settings app is a runnable frontend (index.html + settings.js, syntax-checked) and its safe-zone editor now calls the launcher's shared planner instead of its own divergent copy",
+          "at": "2026-10-16T16:24:50+02:00"
+        }
+      ],
+      "intended_changes": [
+        "pwa/nuxel-home/js/status-bar.js",
+        "pwa/nuxel-home/manifest.json",
+        "pwa/nuxel-home/sw.js",
+        "pwa/nuxel-home/js/apps.js",
+        "pwa/nuxel-apps/settings/",
+        "tools/s10plus/a33/tests/launcher-registry-test.js"
+      ],
+      "tests": [
+        "(tests are recorded by the owning briQ when it reports)",
+        "node tools/s10plus/a33/tests/launcher-registry-test.js -> launcher registry/parity tests passed (1 warn: the Live Console entry is served by another build group)",
+        "python3 tools/s10plus/a33/tests/test-boot-surface-contract.py -> status-bar VERSION == manifest.pwa_version, sw.js CACHE_VERSION == manifest.cache_version and advanced past v3-a32, apps.js REGISTRY_VERSION == manifest.registry_version, manifest.apps_in_registry == the registry ids",
+        "bash tools/beta/regression-guard.sh -> INV-1 (SW namespace bump + host purge + URL stamp) green"
+      ],
+      "risk": "medium",
+      "rollback": "git revert the commit(s) touching this task's expected files; the change is repository-only and alters no device state",
+      "verdict": "OFFLINE_TESTED",
+      "offline_ceiling": "VERIFIED_IN_VM_ONLY",
+      "owner_action": "On the handset open Terminal and Settings from the home grid and confirm both render real content; after one normal reboot confirm the launcher is still the current bundle (docs/beta-finalization/manual-proof/02-launcher.md). The VM parity run itself is owned by bg-11-vm-parity",
+      "expected_files": [
+        "pwa/nuxel-home/js/status-bar.js",
+        "pwa/nuxel-home/manifest.json",
+        "pwa/nuxel-home/sw.js",
+        "pwa/nuxel-home/js/apps.js",
+        "pwa/nuxel-apps/settings/",
+        "tools/s10plus/a33/tests/launcher-registry-test.js"
+      ],
+      "note": "No new launcher: the existing PWA is extended. pwa/nuxel-home (index/css/js/manifest/sw) is the single source of truth; the stale device copies (status-bar.js v0.3.2, old manifest.json, missing Terminal) are fixed, the SW cache key was bumped to v4-a33 so a stale bundle is invalidated deterministically (the A32 cache-invalidation behaviour is preserved and INV-1 still guards it), Terminal was added to the registry and nuxel-settings now has a runnable frontend. VM parity belongs to bg-11 (ceiling VERIFIED_IN_VM_ONLY); on-glass parity remains NEEDS_OWNER_TEST.",
+      "source": "plan.json",
+      "at": "2026-10-16T16:24:51+02:00",
+      "by": "construqtor/bg-02-boot-animation-launcher",
+      "revision": 2
     }
   ]
 }

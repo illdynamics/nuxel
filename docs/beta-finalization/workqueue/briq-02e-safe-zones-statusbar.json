@@ -51,6 +51,80 @@
       "revision": 1,
       "at": "2026-10-16T16:07:13+02:00",
       "by": "construqtor/bg-00-preflight"
+    },
+    {
+      "id": "briq-02e-safe-zones-statusbar",
+      "title": "Ten-zone status-bar safe areas - protected-asset verification & editor polish",
+      "component": "bg-02-boot-animation-launcher",
+      "component_title": "Priority 2 - Boot Stability, Animation Handoff & UTM Launcher Parity",
+      "priority": 2,
+      "state": "implemented",
+      "dependencies": [
+        "briq-00d-baseline-protection"
+      ],
+      "evidence": [
+        {
+          "kind": "observation",
+          "path": "pwa/nuxel-home/js/safe-zones.js",
+          "command": "test -e pwa/nuxel-home/js/safe-zones.js",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "observation",
+          "path": "tools/s10plus/a32/tests/safe-zones-test.js",
+          "command": "test -e tools/s10plus/a32/tests/safe-zones-test.js",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "tools/s10plus/a32/tests/safe-zones-test.js",
+          "command": "node tools/s10plus/a32/tests/safe-zones-test.js",
+          "result": "44 PASS / 0 FAIL; blocking zones 9,10 moves the right cluster LEFT by 84 px into the free interval [0,276] and it stays on the panel (the A32 one-way push moved it off the panel), zones 1,2 move the left cluster +84 px, zones 5,6 the centre -114 px, and applyLayout is idempotent",
+          "at": "2026-10-16T16:24:50+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "pwa/nuxel-home/js/safe-zones.js",
+          "command": "node tools/s10plus/a32/tests/safe-zones-test.js",
+          "result": "ZONES=10, s10plus portrait [9,10], padding_dp 6, storage /etc/nuxel/display/statusbar-safezones.json via NuxelHost.configGet/configSet with localStorage fallback, device profile from hardware identity; blocked zones are EXCLUDED INTERVALS and the pure planner (planCluster/freeIntervals/overlaps) is exported",
+          "at": "2026-10-16T16:24:50+02:00"
+        },
+        {
+          "kind": "doc",
+          "path": "docs/beta-finalization/launcher/SAFE-ZONES.md",
+          "command": "cat docs/beta-finalization/launcher/SAFE-ZONES.md",
+          "result": "the ten-zone contract, the excluded-interval rule, the three A33 hardenings, the evidence channel (SAFEZONES diag line + data-safezone-* attributes), the offline re-verification and the rollback path documented",
+          "at": "2026-10-16T16:24:50+02:00"
+        }
+      ],
+      "intended_changes": [
+        "pwa/nuxel-home/js/safe-zones.js",
+        "tools/s10plus/a32/tests/safe-zones-test.js",
+        "docs/beta-finalization/launcher/SAFE-ZONES.md"
+      ],
+      "tests": [
+        "(tests are recorded by the owning briQ when it reports)",
+        "node tools/s10plus/a32/tests/safe-zones-test.js -> all safe-zone tests passed, 44 checks (geometry per zone, cluster exclusion for left/centre/right, idempotency, shared-planner contract, editor drift gate)",
+        "bash tools/s10plus/a33/tests/run-boot-tests.sh -> ALL PASS; bash tools/s10plus/a32/tests/run-tests.sh -> 0 failing suites",
+        "bash tools/beta/regression-guard.sh -> INV-3 (ten-zone safe areas, S10+ preset = zones 9,10) hard assertion green"
+      ],
+      "risk": "medium",
+      "rollback": "git revert the commit(s) touching this task's expected files; the change is repository-only and alters no device state",
+      "verdict": "OFFLINE_TESTED",
+      "offline_ceiling": "VERIFIED_IN_VM_ONLY",
+      "owner_action": "On the handset (portrait) confirm the clock/battery/signal/Wi-Fi items are all clear of the hole-punch cutout, then open Settings -> Display -> Safe zones and confirm the preview strip moves exactly like the real status bar (docs/beta-finalization/manual-proof/02-launcher.md step 4-5)",
+      "expected_files": [
+        "pwa/nuxel-home/js/safe-zones.js",
+        "tools/s10plus/a32/tests/safe-zones-test.js",
+        "docs/beta-finalization/launcher/SAFE-ZONES.md"
+      ],
+      "note": "Geometry contract untouched (protected A32 asset): ten zones, S10+ portrait [9,10], padding_dp 6, same storage and same preset names. Three real defects fixed: (1) A32's one-way push moved clusters off the panel / left them inside the excluded interval, so A33 solves against the free intervals; (2) applyLayout measured before resetting the previous transform, so it drifted on every render - it is now idempotent; (3) the Settings safe-zone editor carried a second copy of the placement arithmetic that still had defect (1), so its preview disagreed with the real bar - the planner is now a single exported function used by both, with an honest 'preview needs the launcher engine' message when it is absent. VM-verifiable (ceiling VERIFIED_IN_VM_ONLY); on-glass verdict NEEDS_OWNER_TEST.",
+      "source": "plan.json",
+      "at": "2026-10-16T16:24:51+02:00",
+      "by": "construqtor/bg-02-boot-animation-launcher",
+      "revision": 2
     }
   ]
 }

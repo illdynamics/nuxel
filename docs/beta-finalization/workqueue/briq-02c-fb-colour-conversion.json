@@ -51,6 +51,80 @@
       "revision": 1,
       "at": "2026-10-16T16:07:13+02:00",
       "by": "construqtor/bg-00-preflight"
+    },
+    {
+      "id": "briq-02c-fb-colour-conversion",
+      "title": "Protect and re-verify XRGB8888 -> DECON ABGR8888 conversion",
+      "component": "bg-02-boot-animation-launcher",
+      "component_title": "Priority 2 - Boot Stability, Animation Handoff & UTM Launcher Parity",
+      "priority": 2,
+      "state": "implemented",
+      "dependencies": [
+        "briq-00d-baseline-protection"
+      ],
+      "evidence": [
+        {
+          "kind": "observation",
+          "path": "tools/s10plus/a33/nuxel-wl-fb.c",
+          "command": "test -e tools/s10plus/a33/nuxel-wl-fb.c",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "observation",
+          "path": "tools/s10plus/a33/tests/test-colour-order.py",
+          "command": "test -e tools/s10plus/a33/tests/test-colour-order.py",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "tools/s10plus/a33/tests/test-colour-order.py",
+          "command": "NUXEL_VM=nuxel@192.168.64.3 python3 tools/s10plus/a33/tests/test-colour-order.py",
+          "result": "PASS colour-order golden-bytes test (0 failures), 48 checks; the A33 bridge built on the UTM guest (sha256 2d8718c4d92858bbae02b7e914f0172d295b1c12446eb861e91c355f2ac912fc) reports hw=R@0,G@8,B@16 hw_order_override=1 and every dumped word matches the source-derived conversion",
+          "at": "2026-10-16T16:24:41+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "pwa/nuxel-home/colour-test.html",
+          "command": "python3 tools/s10plus/a33/tests/test-colour-order.py",
+          "result": "the owner-visible test page ships: full-screen red default, red|green|blue thirds bar, self-contained, reports COLOURTEST mode=... to the host diag channel, so the on-glass check has a deterministic procedure",
+          "at": "2026-10-16T16:24:41+02:00"
+        },
+        {
+          "kind": "doc",
+          "path": "docs/beta-finalization/boot/COLOUR-CONVERSION.md",
+          "command": "cat docs/beta-finalization/boot/COLOUR-CONVERSION.md",
+          "result": "driver evidence, the LUT contract, the golden-byte table, the owner procedure and the rollback path documented",
+          "at": "2026-10-16T16:24:41+02:00"
+        }
+      ],
+      "intended_changes": [
+        "tools/s10plus/a33/nuxel-wl-fb.c",
+        "tools/s10plus/a33/tests/test-colour-order.py",
+        "docs/beta-finalization/boot/COLOUR-CONVERSION.md"
+      ],
+      "tests": [
+        "(tests are recorded by the owning briQ when it reports)",
+        "python3 tools/s10plus/a33/tests/test-colour-order.py -> PASS, 42 checks (source LUT evaluated as arithmetic + independent reference over 74 words + the owner page)",
+        "NUXEL_VM=nuxel@192.168.64.3 python3 tools/s10plus/a33/tests/test-colour-order.py -> PASS, 48 checks (compiled aarch64 artefact compared word for word)",
+        "bash tools/beta/regression-guard.sh -> INV-2 (A32 colour conversion) hard assertion green; build/out/s10plus/a32/nuxel-wl-fb --colour-selftest passes on this host"
+      ],
+      "risk": "high",
+      "rollback": "git revert the commit(s) touching this task's expected files; the change is repository-only and alters no device state",
+      "verdict": "OFFLINE_TESTED",
+      "offline_ceiling": "NEEDS_OWNER_TEST",
+      "owner_action": "Show pwa/nuxel-home/colour-test.html on the handset (procedure in docs/beta-finalization/manual-proof/03-display-boot.md step 4) and confirm the full screen is RED and the bottom bar is red|green|blue in that order",
+      "expected_files": [
+        "tools/s10plus/a33/nuxel-wl-fb.c",
+        "tools/s10plus/a33/tests/test-colour-order.py",
+        "docs/beta-finalization/boot/COLOUR-CONVERSION.md"
+      ],
+      "note": "Protected A32 asset re-verified, not re-implemented: XRGB8888 shm -> DECON ABGR_8888 (R@0,G@8,B@16, alpha forced opaque) stays as A32 shipped it. Added: the owner-visible colour-test page, a guard that the A33 bridge is the file under test, and wiring into run-boot-tests.sh and the A32 suite so INV-2 and the golden bytes are re-checked on every guard run. The colour seen on the glass remains NEEDS_OWNER_TEST.",
+      "source": "plan.json",
+      "at": "2026-10-16T16:24:41+02:00",
+      "by": "construqtor/bg-02-boot-animation-launcher",
+      "revision": 2
     }
   ]
 }
