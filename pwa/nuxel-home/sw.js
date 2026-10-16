@@ -1,9 +1,14 @@
 // Nuxel Home - Service Worker
 // Provides offline support, background sync, and push notification handling
 
-const CACHE_NAME = 'nuxel-home-v1';
-const STATIC_CACHE = 'nuxel-static-v1';
-const DYNAMIC_CACHE = 'nuxel-dynamic-v1';
+// Cache version is bumped by hand when a launcher asset changes.  It is the
+// controlled migration path for the cache-first static strategy below: a new
+// worker installs its own cache namespace and 'activate' deletes the old ones,
+// so a redeployed launcher is never served from a stale cache (briq A31).
+const CACHE_VERSION = 'v2';
+const CACHE_NAME = 'nuxel-home-' + CACHE_VERSION;
+const STATIC_CACHE = 'nuxel-static-' + CACHE_VERSION;
+const DYNAMIC_CACHE = 'nuxel-dynamic-' + CACHE_VERSION;
 
 // Assets to cache on install (critical path)
 // Assets to cache on install (critical path). Paths are SCOPE-RELATIVE so the
@@ -28,6 +33,10 @@ const PRECACHE_ASSETS = [
     './icons/icon-192.png',
     './icons/icon-512.png',
     './assets/nuxel-boot-animation.mp4',
+    // The real home-screen wallpaper (assets/nuxel-background.png). It is
+    // referenced by css/style.css as ../assets/nuxel-background.png, so a
+    // missing copy at this path means the launcher renders with no wallpaper.
+    './assets/nuxel-background.png',
 ];
 
 // Install event: cache critical assets

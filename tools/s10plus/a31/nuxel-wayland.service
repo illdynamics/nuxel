@@ -1,0 +1,49 @@
+[Unit]
+Description=Nuxel phone Wayland session (phoc headless + Nuxel Home launcher)
+# Bounded restarts (mission 16): never spin into a process storm.
+StartLimitIntervalSec=60
+StartLimitBurst=5
+Documentation=file:/usr/share/doc/nuxel/UTM-LAUNCHER-PORT.md
+After=nuxel-touch-arm.service seatd.service
+Wants=nuxel-touch-arm.service seatd.service
+Before=nuxel-wl-fb.service nuxel-fallback.service
+
+[Service]
+Type=simple
+# phoc from the phone image, wlroots 0.19 headless backend + pixman renderer:
+# the only Wayland output this kernel (CONFIG_DRM unset) can offer.
+# A31: the libinput backend must be requested explicitly (A29 asked for 'headless'
+# alone, so wlroots never even attempted an input backend) and it needs a backend
+# session - seatd provides it (LIBSEAT_BACKEND=seatd).  Both were measured as the
+# missing link between "sec_ts produces data" and "the compositor sees a finger".
+Environment=WLR_BACKENDS=headless,libinput
+# A31: the handset has NO VT (/dev/tty0, /sys/class/vtconsole, /proc/consoles all
+# absent), so a VT-bound seat can never activate - seatd's seat was measured to
+# time out ('backend.c:105 Timeout waiting session to become active') while libseat's
+# noop backend satisfies wlroots' session requirement.  Device access is then granted
+# by the preloaded shim for /dev/input paths only.
+Environment=LIBSEAT_BACKEND=noop
+# If the panel node is absent (the handset booted in CHARGER MODE, where sec_ts
+# never binds at all - measured A29b/A31) wlroots would otherwise fail the whole
+# backend and phoc would restart-loop.  The shim records what it actually found in
+# /run/nuxel-libinput-path.state, so 'zero devices' stays visible evidence.
+Environment=WLR_LIBINPUT_NO_DEVICES=1
+# A31: the udev daemon is masked on this image (it cannot register workers on 4.14
+# and forks unboundedly - measured A26 and re-measured this cycle), so libinput's
+# udev backend discovers zero devices.  The preloaded shim redirects ONLY libinput's
+# discovery step to its path backend and adds the real /dev/input/eventN node that
+# carries INPUT_PROP_DIRECT (the panel's sec_touchscreen).  Real evdev, real
+# libinput parsing, real wl_touch - no synthesised events.  See
+# tools/s10plus/a31/nuxel-libinput-path.c.
+Environment=LD_PRELOAD=/usr/lib/nuxel/libnuxel-libinput-path.so
+Environment=WLR_RENDERER=pixman
+Environment=WLR_HEADLESS_OUTPUTS=1
+Environment=XDG_RUNTIME_DIR=/run/nuxel-wayland
+Environment=XDG_SESSION_TYPE=wayland
+ExecStartPre=/bin/mkdir -p /run/nuxel-wayland
+ExecStartPre=/bin/chmod 700 /run/nuxel-wayland
+ExecStart=/usr/sbin/phoc --no-xwayland -C /etc/nuxel/phoc-phone.ini -E /usr/lib/nuxel/nuxel-session.sh
+Restart=on-failure
+RestartSec=3
+[Install]
+WantedBy=multi-user.target

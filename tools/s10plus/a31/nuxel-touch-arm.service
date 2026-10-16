@@ -1,0 +1,23 @@
+[Unit]
+# Bounded restarts (mission 16).
+StartLimitIntervalSec=300
+StartLimitBurst=10
+Description=Nuxel S10+ touchscreen arming (sec_ts stop->start, then hold open)
+Documentation=file:/usr/share/doc/nuxel/UTM-LAUNCHER-PORT.md
+# The controller must be armed before any other reader (libinput in the
+# compositor) opens the panel node, otherwise the driver's first-open
+# short-circuit is the only path taken.
+Before=nuxel-wayland.service nuxel-ui.service
+After=systemd-udev-settle.service
+Wants=systemd-udev-settle.service
+
+[Service]
+Type=simple
+ExecStart=/usr/lib/nuxel/nuxel-touch-arm
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

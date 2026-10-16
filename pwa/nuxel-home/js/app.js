@@ -44,6 +44,24 @@ class NuxelHome {
         // animation is actually seen without delaying the UI. Safety timeout
         // guarantees the splash can never outlive 12s.
         const hide = () => document.body.classList.add('ready');
+
+        // BOOT-ANIMATION OWNERSHIP (?boot=os).
+        // On the S10+ the OS has already played the authoritative boot animation
+        // from the initramfs before this document exists, so a second fullscreen
+        // animation here would (a) show the animation twice and (b) put an
+        // opaque, pointer-events:auto element above the launcher for up to 12 s.
+        // In that launch mode the splash is REMOVED from the DOM (not merely
+        // faded), so it can neither flash over the launcher nor intercept a
+        // touch. The VM/desktop launch has no such parameter and is unchanged.
+        try {
+            if (new URLSearchParams(window.location.search).get('boot') === 'os') {
+                const splash = document.getElementById('boot-splash');
+                if (splash && splash.parentNode) splash.parentNode.removeChild(splash);
+                hide();
+                return;
+            }
+        } catch (e) { /* URLSearchParams unavailable: fall through to normal path */ }
+
         const video = document.getElementById('boot-splash-video');
         if (!video || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
             hide();

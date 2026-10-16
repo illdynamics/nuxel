@@ -45,21 +45,49 @@ cp -a /nuxel/pwa "$STAGE/usr/share/nuxel/pwa"
 ln -sfn pwa/nuxel-home "$STAGE/usr/share/nuxel/nuxel-home"
 install -m 0755 /nuxel/tools/s10plus/nuxel-fb-phone-aarch64 "$STAGE/usr/bin/nuxel-fb-phone"
 install -m 0644 /nuxel/assets/nuxel-background.png "$STAGE/usr/share/nuxel/nuxel-background.png"
+# The launcher stylesheet (css/style.css:60) references
+# ../assets/nuxel-background.png RELATIVE TO css/, i.e.
+# pwa/nuxel-home/assets/nuxel-background.png.  That per-app copy is git-ignored
+# (single-sourced in assets/, normally placed by tools/dedupe-assets.sh) and the
+# A25..A29 staging never created it, so the handset rendered with no wallpaper
+# (measured: HTTP 404 for that path, A31).  Stage it explicitly for the home PWA
+# and for every PWA app, and keep the canonical path for legacy consumers.
+for _d in "$STAGE/usr/share/nuxel/pwa/nuxel-home" \
+          "$STAGE/usr/share/nuxel/pwa/nuxel-apps/calendar" \
+          "$STAGE/usr/share/nuxel/pwa/nuxel-apps/camera-gallery" \
+          "$STAGE/usr/share/nuxel/pwa/nuxel-apps/files" \
+          "$STAGE/usr/share/nuxel/pwa/nuxel-apps/mail" \
+          "$STAGE/usr/share/nuxel/pwa/nuxel-apps/notes"; do
+  [ -d "$_d" ] || continue
+  install -d "$_d/assets"
+  install -m 0644 /nuxel/assets/nuxel-background.png "$_d/assets/nuxel-background.png"
+done
 # --- A29: the UTM launcher port (Wayland-only; /dev/fb0 output bridge) -------
 # The launcher itself is not rebuilt here: pwa/nuxel-home is already staged above
 # and the binaries below only carry it (display host + bridge + touch arming).
 # See docs/s10plus-autonomous-boot-repair/UTM-LAUNCHER-PORT/A29-PORT-RECORD.md.
 install -d "$STAGE/etc/nuxel" "$STAGE/usr/lib/nuxel"
+# A31 is the shipped revision: single-owner framebuffer handoff, boot-animation
+# ownership signal for the launcher, capability-aware WebKit permissions, web
+# process supervision, and the libinput path shim that gives phoc the real
+# touchscreen on a kernel with no VT and no usable udev daemon.
 install -m 0755 /nuxel/tools/s10plus/a29/nuxel-touch-arm "$STAGE/usr/lib/nuxel/nuxel-touch-arm"
-install -m 0755 /nuxel/tools/s10plus/a29/nuxel-wl-fb     "$STAGE/usr/lib/nuxel/nuxel-wl-fb"
-install -m 0755 /nuxel/tools/s10plus/a29/nuxel-pwa-host  "$STAGE/usr/lib/nuxel/nuxel-pwa-host"
+for _b in /nuxel/build/out/s10plus/a31/nuxel-wl-fb \
+          /nuxel/build/out/s10plus/a31/nuxel-pwa-host \
+          /nuxel/build/out/s10plus/a31/libnuxel-libinput-path.so; do
+  [ -f "$_b" ] || { echo "ERROR: missing A31 artifact $_b - run tools/s10plus/a31/build-a31.sh (builds on the live UTM VM) before building this image" >&2; exit 1; }
+done
+install -m 0755 /nuxel/build/out/s10plus/a31/nuxel-wl-fb              "$STAGE/usr/lib/nuxel/nuxel-wl-fb"
+install -m 0755 /nuxel/build/out/s10plus/a31/nuxel-pwa-host           "$STAGE/usr/lib/nuxel/nuxel-pwa-host"
+install -m 0755 /nuxel/build/out/s10plus/a31/libnuxel-libinput-path.so "$STAGE/usr/lib/nuxel/libnuxel-libinput-path.so"
 install -m 0755 /nuxel/tools/s10plus/a29/nuxel-session.sh            "$STAGE/usr/lib/nuxel/nuxel-session.sh"
 install -m 0755 /nuxel/tools/s10plus/a29/nuxel-wait-wayland          "$STAGE/usr/lib/nuxel/nuxel-wait-wayland"
 install -m 0755 /nuxel/tools/s10plus/a29/nuxel-launcher-ready-wait.sh "$STAGE/usr/lib/nuxel/nuxel-launcher-ready-wait"
 install -m 0644 /nuxel/tools/s10plus/a29/phoc-phone.ini              "$STAGE/etc/nuxel/phoc-phone.ini"
-for u in nuxel-touch-arm nuxel-wayland nuxel-wl-fb nuxel-fallback; do
-  install -m 0644 "/nuxel/tools/s10plus/a29/$u.service" "$STAGE/etc/systemd/system/$u.service"
+for u in nuxel-touch-arm nuxel-wayland nuxel-wl-fb; do
+  install -m 0644 "/nuxel/tools/s10plus/a31/$u.service" "$STAGE/etc/systemd/system/$u.service"
 done
+install -m 0644 /nuxel/tools/s10plus/a29/nuxel-fallback.service "$STAGE/etc/systemd/system/nuxel-fallback.service"
 # The A27 fbdev UI unit must never be a second /dev/fb0 owner on this image:
 # /init re-enables it every boot and the initramfs postboot supervisor restarts
 # it every 30 s (measured: it took the panel back 9 s after `systemctl stop`).

@@ -122,7 +122,7 @@ def main():
     t_start = time.time()
     while idx < len(lines):
         blk = lines[idx:idx + BLOCK]
-        want_len = good + sum(len(l.split("'", 2)[1]) for l in blk)
+        want_len = good + sum(len(l.split("'")[3]) for l in blk)
         payload = "".join(l + "\n" for l in blk) + "wc -c < %s\n" % TMP
         s.clear()
         s.send(payload.encode())
