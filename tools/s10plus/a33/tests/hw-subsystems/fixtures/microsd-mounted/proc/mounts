@@ -1,0 +1,2 @@
+rootfs / rootfs rw 0 0
+/dev/mmcblk1p1 /run/media/nuxel/mmcblk1 ext4 ro,nodev,nosuid,noexec,noatime 0 0

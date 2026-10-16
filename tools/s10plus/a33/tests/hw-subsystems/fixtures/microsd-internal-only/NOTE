@@ -1,0 +1,1 @@
+Only internal UFS mmcblk0 is present; it must NEVER be treated as a card => INTERNAL_ONLY.

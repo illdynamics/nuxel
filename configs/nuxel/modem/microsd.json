@@ -1,0 +1,85 @@
+{
+  "schema_version": 1,
+  "comment": "microSD policy for the S10+ (beyond2lte). Read by tools/s10plus/a33/nuxel-microsd-diag.sh. The hybrid tray exposes a microSD slot behind an sdhci/mmc host (external card = mmcblk1+), while the internal UFS 2.1 storage is mmcblk0. Because the external card is removable and the internal storage is not, ALL write paths here refuse any /dev/mmcblk0* or /dev/block/* target outright. Media is NEVER formatted, existing data is never modified, and the default mount is READ-ONLY.",
+  "device": {
+    "model": "Samsung Galaxy S10+ SM-G975F",
+    "codename": "beyond2lte",
+    "internal_storage": "/dev/mmcblk0* — UFS 2.1 internal storage. NEVER used as an external card.",
+    "external_card": "microSD in the hybrid SIM tray, behind the sdhci/mmc host (typically mmcblk1)",
+    "tray_note": "The S10+ tray can be SIM-only or SIM+microSD depending on the unit/tray — the model and tray configuration must be verified on the actual device."
+  },
+
+  "safety": {
+    "comment": "Hard, tested invariants. The tool refuses rather than guesses.",
+    "never_format": true,
+    "never_partition": true,
+    "never_write_to_internal": true,
+    "internal_target_denylist": ["/dev/mmcblk0", "/dev/mmcblk0p*", "/dev/block/mmcblk0*", "/dev/block/by-name/*"],
+    "default_mount_readonly": true,
+    "require_explicit_yes_for_rw": true,
+    "require_explicit_yes_for_mount": false,
+    "require_explicit_yes_for_unmount": false,
+    "forbidden_tools": ["mkfs", "mkfs.ext4", "mkfs.f2fs", "mkfs.vfat", "mkfs.exfat", "fdisk", "sfdisk", "parted", "sgdisk", "wipefs", "dd"]
+  },
+
+  "detection": {
+    "comment": "Card presence is derived from controller + removable flag + an external block device; an internal-only device is reported as INTERNAL_ONLY and refused as a card.",
+    "host_globs": ["/sys/class/mmc_host/*"],
+    "external_device_globs": ["/dev/mmcblk1", "/dev/mmcblk1p*", "/dev/mmcblk2", "/dev/mmcblk2p*"],
+    "removable_flag_globs": ["/sys/block/mmcblk[1-9]/removable", "/sys/block/mmcblk[1-9]/size"],
+    "state_file": "/var/lib/nuxel/microsd/state.json",
+    "mounts_file": "/proc/mounts",
+    "on_insert": "detect -> identify device -> read filesystem metadata -> mount read-only (never format, never wipe)"
+  },
+
+  "filesystems": {
+    "comment": "Only these types may be mounted. Unknown/absent metadata means the tool refuses to mount unless the owner passes an explicit type with --fstype AND --yes.",
+    "supported": {
+      "ext4":   {"options": "nodev,nosuid,noexec,noatime", "rw_allowed": true, "fsck_ro": true},
+      "ext3":   {"options": "nodev,nosuid,noexec,noatime", "rw_allowed": true, "fsck_ro": true},
+      "f2fs":   {"options": "nodev,nosuid,noexec,noatime", "rw_allowed": true, "fsck_ro": false},
+      "vfat":   {"options": "nodev,nosuid,noexec,noatime,uid=1000,gid=1000,umask=0022", "rw_allowed": true, "fsck_ro": true},
+      "exfat":  {"options": "nodev,nosuid,noexec,noatime,uid=1000,gid=1000,umask=0022", "rw_allowed": true, "fsck_ro": false},
+      "ntfs3":  {"options": "nodev,nosuid,noexec,noatime,uid=1000,gid=1000,umask=0022", "rw_allowed": false, "fsck_ro": false},
+      "iso9660":{"options": "ro,nodev,nosuid,noexec,noatime", "rw_allowed": false, "fsck_ro": false},
+      "udf":    {"options": "ro,nodev,nosuid,noexec,noatime", "rw_allowed": false, "fsck_ro": false}
+    },
+    "unsupported_action": "REFUSE (report the detected type; never format, never force-mount an unknown filesystem)"
+  },
+
+  "mount": {
+    "comment": "Mount points are per-card and per-user; nothing is written to the card by mounting read-only.",
+    "mount_point_template": "/run/media/nuxel/%LABEL%",
+    "fallback_name": "%DEVNAME%",
+    "sync_before_unmount": true,
+    "require_not_busy_for_unmount": true,
+    "busy_action": "report the processes holding the mount (fuser/lsof if present) and refuse with a non-zero exit; the owner closes them",
+    "preserve_existing_data": "no path in this subsystem writes to the card except an explicit owner-requested read-write remount"
+  },
+
+  "automount": {
+    "comment": "Auto-mount on INSERT only. The same udev event class fires for cards that were already present when the kernel enumerated them, so the tool refuses to mount during the boot window (uptime < boot_grace_s) and says so; a card that was in the slot at boot is mounted by the owner (or by `mount <dev>`), which is what diagnostics.auto_mount_on_boot=false means. Nothing here formats, partitions or writes to the card: an unknown filesystem is reported and refused, and the mount is read-only.",
+    "enabled_key": "diagnostics.auto_mount_on_insert",
+    "boot_flag_key": "diagnostics.auto_mount_on_boot",
+    "boot_grace_s": 120,
+    "uptime_file": "/proc/uptime",
+    "owner_switch": "/var/lib/nuxel/microsd/automount",
+    "owner_switch_values": ["on", "off"],
+    "read_only_only": true,
+    "only_external": true,
+    "on_unknown_fs": "refuse and report (never guess a filesystem, never format)",
+    "on_busy": "leave the card alone and report",
+    "idempotent": true,
+    "udev_rule": "/etc/udev/rules.d/90-nuxel-microsd.rules",
+    "service": "/etc/systemd/system/nuxel-microsd-automount.service",
+    "exit_codes": {"0": "mounted, already mounted, nothing to do, or deliberately skipped", "9": "unknown filesystem / not a present external card"}
+  },
+
+  "diagnostics": {
+    "log": "/var/log/nuxel/microsd-diag.log",
+    "auto_mount_on_boot": false,
+    "auto_mount_on_insert": true,
+    "auto_mount_readonly": true,
+    "auto_format": false
+  }
+}

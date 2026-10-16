@@ -1,0 +1,99 @@
+{
+  "schema_version": 1,
+  "comment": "Event -> haptics-pattern wiring for the S10+ (beyond2lte). Installed to /etc/nuxel/haptics/bridge.json and read by tools/s10plus/a33/nuxel-haptics-bridge.py. This file is DATA ONLY: the bridge expands an event name to one of the patterns in haptics.json and asks the GATED programmatic API for it, so the global switch, the rate limit and the audit trail live in exactly one place. Nothing in this table runs at boot and nothing buzzes on bridge start.",
+  "device": "beyond2lte",
+  "tool": "/usr/bin/nuxel-haptics-diag.sh",
+  "state_file": "/var/lib/nuxel/haptics/state.json",
+  "gate_file": "/run/nuxel/haptics/api-enabled",
+  "request_fifo": "/run/nuxel-haptics.cmd",
+
+  "always_on_off_switch": {
+    "comment": "The single global switch. `off` silences every consumer below at once: the bridge exits its buzz path, the tool refuses, and the button manager's own button-action mapping is skipped. It is persisted, is NOT re-enabled at boot (haptics.json: global_switch.auto_enable_on_boot=false), and the bridge only READS it - it never flips it.",
+    "path": "/var/lib/nuxel/haptics/state.json",
+    "read_only_for_bridge": true,
+    "when_off": "every consumer below is refused with reason=global_switch_off and no sysfs write happens"
+  },
+
+  "quiet_hours": {
+    "comment": "Optional owner window in which notification haptics (but not button haptics) are suppressed. Empty list = never quiet. Times are local (the phone's timezone).",
+    "windows": [],
+    "applies_to": ["notifications"],
+    "does_not_apply_to": ["buttons", "alarm"]
+  },
+
+  "rate_limit": {
+    "comment": "Extra bridge-side guard on top of the tool's own rate limit, so a burst of notifications cannot turn into a buzzing phone. Counted per consumer.",
+    "window_ms": 10000,
+    "max_per_window": 4
+  },
+
+  "consumers": {
+    "buttons": {
+      "enabled": true,
+      "source": "buttons-log",
+      "log": "/var/log/nuxel/buttons.log",
+      "line_regex": "^([0-9-]+T[0-9:.]+Z?)?\\s*FSM_ACTION source=(?P<source>\\S+) action=(?P<action>\\S+)",
+      "default_pattern": "button",
+      "action_patterns": {
+        "volume-up": "button",
+        "volume-down": "button",
+        "volume-up-repeat": "button",
+        "volume-down-repeat": "button",
+        "screen-toggle": "tap",
+        "screen-lock": "gesture",
+        "power-menu": "double",
+        "menu-open": "gesture",
+        "menu-up": "tap",
+        "menu-down": "tap",
+        "menu-select": "double",
+        "menu-close": "tap",
+        "open-terminal": "double",
+        "gesture-back": "gesture",
+        "gesture-home": "gesture",
+        "gesture-recents": "gesture"
+      },
+      "ignore_actions": ["poweroff", "restart", "boot-recovery", "boot-download-mode", "volume-mute"],
+      "ignore_reason": "refused/gated menu actions must not produce feedback that implies they executed; volume-mute has no user-visible step"
+    },
+
+    "notifications": {
+      "enabled": true,
+      "source": "notifications-json",
+      "state_file": "/var/lib/nuxel/notifications.json",
+      "signal": "org.freedesktop.Notifications.NotificationAdded",
+      "default_pattern": "notify",
+      "per_urgency_patterns": {"low": "tap", "normal": "notify", "critical": "alarm"},
+      "skip_app_ids": ["nuxel-haptics"],
+      "skip_reason": "the haptics tool's own status/report output must never buzz",
+      "max_pattern_for_urgency": {"critical": "alarm"}
+    },
+
+    "alarm": {
+      "enabled": true,
+      "source": "fifo",
+      "fifo_command": "alarm",
+      "default_pattern": "alarm",
+      "note": "the clock app (bg-06) writes one line to the request FIFO; the bridge performs it if the global switch is on. The alarm pattern is exempt from quiet hours."
+    }
+  },
+
+  "fifo_protocol": {
+    "comment": "Line protocol on $request_fifo. One request per line; unknown lines are ignored and logged, never guessed. The FIFO exists only while the bridge runs, so a system daemon writing to a missing FIFO is a silent no-op instead of an error storm.",
+    "lines": {
+      "pattern <name>": "buzz a named pattern (see haptics.json: patterns)",
+      "button <action>": "map a button action name through consumers.buttons.action_patterns",
+      "notify [urgency]": "notification haptics, subject to quiet hours",
+      "alarm": "alarm pattern, exempt from quiet hours",
+      "off": "stop issuing haptics for 30 s without flipping the persisted switch (a panic button for a buzzing phone)",
+      "status": "write the current gate/switch/consumer state to the log"
+    },
+    "rejected": ["any sysfs path", "any command name", "anything that is not a pattern name or a known action"],
+    "never": ["write to a block device", "write a partition", "invoke heimdall/odin/fastboot", "trigger recovery or download mode"]
+  },
+
+  "owner_test": {
+    "comment": "The felt half stays the owner's. This doc path is printed by --status so the console points at the checklist.",
+    "manual": "docs/beta-finalization/manual-proof/10-vibration.md",
+    "felt_haptics_verified": false
+  }
+}

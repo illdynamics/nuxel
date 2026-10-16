@@ -53,6 +53,29 @@
     "notifications": {"note": "notification daemon consumes `notify`; a notification must never buzz while the global switch is off."}
   },
 
+  "api": {
+    "comment": "The PROGRAMMATIC surface used by the button manager and the notification daemon (both reach it through nuxel-haptics-bridge). It exists so no system daemon needs to poke sysfs itself and so ONE place enforces the global switch. It is gated shut: without the gate file present, every api request refuses with exit 7. The bridge arms the gate when a user session starts and disarms it on exit, which is what makes 'nothing buzzes during boot' and 'nothing buzzes with no session' structural rather than a promise.",
+    "gate_file": "/run/nuxel/haptics/api-enabled",
+    "armed_by": "nuxel-haptics-bridge (session unit) / `nuxel-haptics-diag.sh arm`",
+    "audit": "/var/log/nuxel/haptics-api.log",
+    "exit_codes": {"7": "gate closed (no session armed the API)", "3": "global switch off", "2": "no node / bad pattern", "8": "rate limited"},
+    "rate_limit": {"window_ms": 5000, "max_per_window": 6, "state_file": "/run/nuxel/haptics/api-recent"},
+    "never_at_boot": true,
+    "owner_surface": "`buzz --yes <ms>` is unaffected by the gate - it is a human action, not an automated one"
+  },
+
+  "bridge": {
+    "comment": "Event-to-pattern wiring for the two consumers. The mapping table lives in bridge.json; the bridge itself only translates an event into a pattern and calls the gated api. Nothing here is loaded at boot (session unit, started by the user session, not by the system manager).",
+    "config": "/etc/nuxel/haptics/bridge.json",
+    "tool": "/usr/bin/nuxel-haptics-diag.sh",
+    "service": "/usr/lib/systemd/user/nuxel-haptics-bridge.service",
+    "request_fifo": "/run/nuxel-haptics.cmd",
+    "consumers": {
+      "buttons": {"event_source": "/var/log/nuxel/buttons.log", "line": "FSM_ACTION source=<src> action=<action>", "note": "the button manager (bg-03) already records every FSM action to its audit log; the bridge maps those action names to patterns, so button haptics work without modifying the daemon. Press-time (key-down) haptics need one extra fifo_send from the daemon; the exact patch is documented in configs/nuxel/haptics/README.md and is owned by bg-03."},
+      "notifications": {"event_source": "/var/lib/nuxel/notifications.json + org.freedesktop.Notifications.NotificationAdded", "note": "a notification must never buzz while the global switch is off, while the API gate is closed, or during quiet hours."}
+    }
+  },
+
   "diagnostics": {
     "log": "/var/log/nuxel/haptics-diag.log",
     "test_buzz_max_ms": 1500,

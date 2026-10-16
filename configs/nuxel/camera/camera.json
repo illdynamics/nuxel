@@ -1,0 +1,139 @@
+{
+  "schema_version": 1,
+  "comment": "Camera policy for the S10+ (beyond2lte). Read by tools/s10plus/a33/nuxel-camera-diag.sh. Sensors, V4L2/media nodes and firmware blobs are ENUMERATED and reported truthfully; a driver name in sysfs is NOT proof that a frame can be captured, and no frame is ever claimed without a real capture. There is NO Android camera HAL here and none is installed: the userspace path is V4L2 -> PipeWire -> xdg-desktop-portal Camera -> nuxel-home camera UI. Nothing in this file touches a partition, a block device or a bootloader.",
+  "device": {
+    "model": "Samsung Galaxy S10+ SM-G975F",
+    "codename": "beyond2lte",
+    "soc": "Exynos 9820",
+    "expected_sensors": {
+      "rear": [
+        {"role": "rear_main",  "name": "s5k2l4", "note": "12 MP dual-aperture ISOCELL (f/1.5-2.4) with OIS"},
+        {"role": "rear_tele",  "name": "s5k3m3", "note": "12 MP 2x telephoto (f/2.4) with OIS"},
+        {"role": "rear_uw",    "name": "s5k3p9", "note": "16 MP ultra-wide (f/2.2)"}
+      ],
+      "front": [
+        {"role": "front_main", "name": "s5k2l4sx_front", "note": "10 MP front ISOCELL (f/1.9, dual-pixel AF)"},
+        {"role": "front_ir",   "name": "s5k4h7", "note": "8 MP front depth/IR sensor used by live focus"}
+      ]
+    },
+    "comment_expected": "expected_on_s10plus is the SHIPPED HARDWARE, derived from the beyond2lte DTS and the S10+ specification. It is NOT an observation. What the running kernel actually binds is enumerated at runtime and is the only thing reported as present."
+  },
+
+  "device_candidates": {
+    "comment": "All candidates are probed with shell globs; no /dev/videoN is hard-coded as truth. The first set that responds is reported with its real path.",
+    "video_nodes": ["/dev/video0", "/dev/video1", "/dev/video2", "/dev/video3"],
+    "video_globs": ["/dev/video*", "/dev/v4l/by-id/*"],
+    "subdev_nodes": ["/dev/v4l-subdev0", "/dev/v4l-subdev1", "/dev/v4l-subdev2"],
+    "subdev_globs": ["/dev/v4l-subdev*"],
+    "media_nodes": ["/dev/media0", "/dev/media1"],
+    "media_globs": ["/dev/media*"],
+    "sensor_name_sources": ["/sys/class/video4linux/*/name", "/sys/class/v4l-subdev*/name"],
+    "sensor_name_regex": "(s5k|isocell|imx|ov[0-9]|hi[0-9]|sec_cam|front|rear|exynos[0-9]*is)",
+    "sysfs_counts": {
+      "video4linux": "/sys/class/video4linux",
+      "media": "/sys/class/media"
+    }
+  },
+
+  "firmware_blobs": {
+    "comment": "Vendor sensor/ISP firmware and calibration live under the vendor firmware paths. A blob being present is necessary but NOT sufficient: the sensor must also be bound and produce a frame. Missing blobs are reported as BLOCKED_FIRMWARE with the exact gap - never hidden, never substituted with a Pixel blob file.",
+    "search_paths": ["/lib/firmware", "/vendor/firmware", "/vendor/firmware/camera", "/vendor/etc/firmware", "/etc/firmware"],
+    "candidates": [
+      "s5k2l4_setfile.bin", "s5k3m3_setfile.bin", "s5k3p9_setfile.bin",
+      "s5k2l4sx_setfile.bin", "s5k4h7_setfile.bin",
+      "exynos9820_camera.bin", "is-camera.bin", "is-camera-3.bin",
+      "camera_calibration.bin", "setfile.bin"
+    ],
+    "never_install": ["android.hardware.camera.provider", "libcamera_hal*", "libexynoscamera*"],
+    "never_install_comment": "No Android camera HAL / framework library is installed or depended on (mission section 27)."
+  },
+
+  "pipeline": {
+    "comment": "The ready userspace chain. Each hop is reported independently so the FIRST failing stage is unambiguous.",
+    "stages": [
+      {"id": "dev_nodes",     "means": "a /dev/video*, /dev/v4l-subdev* or /dev/media* node exists"},
+      {"id": "sensor_names",  "means": "a sensor/bridge name is readable from the video4linux sysfs class"},
+      {"id": "firmware",      "means": "at least one expected firmware blob exists under a search path"},
+      {"id": "media_graph",   "means": "a media device is present and readable (link/graph evidence)"},
+      {"id": "capture",       "means": "a real frame is captured on an explicit owner command (never automated)"}
+    ],
+    "userspace_chain": [
+      "V4L2 capture node (this tool enumerates it)",
+      "PipeWire camera node (published by the camera portal)",
+      "xdg-desktop-portal Camera interface (org.freedesktop.portal.Camera)",
+      "camera-gallery app (pwa/nuxel-apps/camera-gallery) via getUserMedia -> the portal's node",
+      "shared gallery/storage path (pwa/nuxel-apps/photos) for browsing captures"
+    ],
+    "portal": {
+      "comment": "Session-scoped xdg-desktop-portal Camera backend. Everything here is VERIFIED to exist by `nuxel-camera-diag.sh portal`; the point of listing the paths in the policy is that the check is data-driven instead of hard-coded prose. A synthetic node proves the CHAIN works; it is NOT evidence that the S10+ camera works and every status output says so.",
+      "unit": "shell/nuxel-camera-portal/systemd/nuxel-camera-portal.service",
+      "install_unit": "/usr/lib/systemd/user/nuxel-camera-portal.service",
+      "backend": "shell/nuxel-camera-portal/nuxel_camera_portal.py",
+      "install_backend": "/usr/libexec/nuxel/nuxel-camera-portal",
+      "interface": "org.freedesktop.portal.Camera",
+      "methods": ["AvailableCameras", "RunCamera", "OpenPipeWireRemote"],
+      "bus": "session",
+      "scope": "user",
+      "requires": ["pipewire", "xdg-desktop-portal"],
+      "synthetic_when_no_hardware": {
+        "enabled": true,
+        "publisher": "GStreamer videotestsrc",
+        "proves": "the PipeWire -> portal -> WebKitGTK getUserMedia chain is intact",
+        "not_evidence_of": "the S10+ camera; a synthetic node must never be reported as hardware",
+        "reported_as": "synthetic=true on every line that mentions it"
+      },
+      "first_failing_stage_order": ["unit_installed", "backend_installed", "app_installed", "pipeline_open"],
+      "on_missing": "report the missing hop and the install path; never fall back to a hard-coded /dev/videoN"
+    }
+  },
+
+  "privacy": {
+    "comment": "Mission section 27 recording privacy. Recording is always user-controlled; there is no stealth mode, no hidden microphone/camera bypass and no way to suppress the recording indicator.",
+    "recording_indicator_required": true,
+    "stealth_recording_allowed": false,
+    "hidden_microphone_bypass_allowed": false,
+    "background_recording": {
+      "user_controlled_only": true,
+      "indicator_must_stay_visible": true,
+      "obeys_app_permissions": true,
+      "stop_control_always_available": true,
+      "history_retained": true
+    },
+    "microphone_for_video": "used only when the microphone is granted and the app is recording video; the mic is never opened by this tool"
+  },
+
+  "gallery": {
+    "comment": "The app pair the owner actually uses in the manual proof. The tool VERIFIES these paths and their declared bridge verbs exist; it never opens the camera on its own.",
+    "capture_app": {
+      "path": "pwa/nuxel-apps/camera-gallery",
+      "start_url": "/pwa/nuxel-apps/camera-gallery/index.html",
+      "capture_path": "getUserMedia -> canvas -> JPEG data URL",
+      "declared_bridge_verbs": ["camera.capture", "camera.list-captures"]
+    },
+    "gallery_app": {
+      "path": "pwa/nuxel-apps/photos",
+      "note": "browsing gallery; owned by the core-apps build group, referenced here so the owner is sent to a real path"
+    },
+    "bridge_verbs": ["camera.capture", "camera.list-captures"],
+    "bridge_comment": "The shared bridge (services/nuxel-bridge) already exposes CameraCapture/CameraListCaptures; this file only asserts the contract the app declares.",
+    "offline_first": true,
+    "capture_must_be_owner_initiated": true
+  },
+
+  "output": {
+    "comment": "Where a captured still would go. This tool writes ONLY on an explicit `capture --yes` and never overwrites an existing file silently.",
+    "stills_dir": "/var/lib/nuxel/camera",
+    "default_still_name": "owner-test-%TIMESTAMP%.jpg",
+    "max_paths": 200,
+    "max_capture_count": 5,
+    "oriented_metadata": true,
+    "comment_metadata": "EXIF orientation is recorded by the capturing app; this diagnostic does not rewrite metadata."
+  },
+
+  "diagnostics": {
+    "log": "/var/log/nuxel/camera-diag.log",
+    "require_explicit_yes_for_capture": true,
+    "auto_capture_on_boot": false,
+    "print_imsi_or_iccid": false
+  }
+}

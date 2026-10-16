@@ -12,8 +12,13 @@
   "dir": "ltr",
   "icons": [
     {
-      "src": "../calendar/icons/icon-192.png",
+      "src": "../../nuxel-home/icons/icon-192.png",
       "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "../../nuxel-home/icons/icon-512.png",
+      "sizes": "512x512",
       "type": "image/png"
     }
   ],
@@ -21,6 +26,7 @@
     "bridge_version": "1",
     "capabilities": [],
     "app_type": "settings",
+    "app_id": "nuxel-settings",
     "offline_first": true,
     "network": "none",
     "storage": [
@@ -38,6 +44,10 @@
       "network",
       "keyboard",
       "system"
+    ],
+    "registry_id": "nuxel-settings",
+    "facilities": [
+      "launcher host config get/set (the settings documents are the same files nuxelctl writes; the settings app never writes a file itself)"
     ]
   }
 }

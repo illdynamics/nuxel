@@ -1,0 +1,43 @@
+# nuxel-haptics-bridge — session-scoped wiring between the button manager /
+# notification daemon and the S10+ haptic actuator.
+#
+# WHY A *USER* UNIT AND NOT A SYSTEM ONE
+#   Two properties must hold and both are structural, not promises:
+#     1. nothing buzzes during boot;
+#     2. nothing buzzes while no user session exists.
+#   A system unit cannot guarantee either. This unit is started by the Nuxel
+#   session, it arms the programmatic API gate on start and disarms it on exit,
+#   so a system daemon (button manager, notifier) that asks for haptics while no
+#   session is up gets a refusal instead of a buzz.
+#
+# IT NEVER STARTS A BUZZ BY ITSELF: on start it only baselines the notification
+# history (existing notifications are recorded, not replayed). The global switch
+# in /var/lib/nuxel/haptics/state.json silences every consumer at once, and this
+# unit never flips that switch.
+#
+# It writes no partition, no block device, no bootloader and no modem/EFS area.
+[Unit]
+Description=Nuxel haptics bridge (button manager + notifications -> gated haptics API)
+Documentation=file:/usr/share/doc/nuxel/manual-proof/10-vibration.md
+After=nuxel-notifications.service
+ConditionPathExists=/usr/bin/nuxel-haptics-diag.sh
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/nuxel-haptics-bridge --follow
+ExecStartPost=/usr/bin/nuxel-haptics-diag.sh status --json
+Restart=on-failure
+RestartSec=3
+# The gate file lives under /run and is removed by the bridge on exit; a stale
+# gate would be the only way a sessionless buzz could happen, so RuntimeDirectory
+# is cleaned by systemd as well.
+RuntimeDirectory=nuxel-haptics
+RuntimeDirectoryMode=0755
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/run/nuxel-haptics /var/log/nuxel
+
+[Install]
+WantedBy=nuxel-session.target

@@ -264,6 +264,33 @@ check("manual proof area 3 covers the handoff, the colour order and verbose boot
 check("colour test page ships for the owner (on-glass colour check)",
       read("pwa/nuxel-home/colour-test.html") is not None)
 
+# --- 6b. every app manifest in the launcher tree is consistent and resolvable
+#         (briq-02d: "keep pwa/nuxel-apps/*/manifest.json consistent")
+app_manifests = sorted(
+    os.path.relpath(os.path.join(dp, f), ROOT)
+    for dp, _dn, fn in os.walk(os.path.join(ROOT, "pwa/nuxel-apps"))
+    for f in fn if f == "manifest.json")
+check("the launcher tree has app manifests to check", len(app_manifests) >= 10, len(app_manifests))
+for rel in app_manifests:
+    d = load_json(rel)
+    ok = isinstance(d, dict) and isinstance(d.get("name"), str) and bool(d.get("start_url"))
+    check("app manifest is valid (name + start_url): %s" % rel, ok)
+    if not ok:
+        continue
+    for icon in (d.get("icons") or []):
+        src = icon.get("src") or ""
+        target = (os.path.join(ROOT, src.lstrip("/")) if src.startswith("/")
+                  else os.path.normpath(os.path.join(ROOT, os.path.dirname(rel), src)))
+        check("app manifest icon resolves: %s -> %s" % (rel, src), os.path.isfile(target), target)
+setman = load_json("pwa/nuxel-apps/settings/manifest.json") or {}
+snux = setman.get("nuxel") or {}
+check("the Settings manifest identifies itself as the nuxel-settings registry entry",
+      snux.get("app_id") == "nuxel-settings" or snux.get("registry_id") == "nuxel-settings",
+      (snux.get("app_id"), snux.get("registry_id")))
+check("the Settings manifest declares the settings documents it edits",
+      "verbose-boot" in (snux.get("settings_documents") or []) and
+      "statusbar-safezones" in (snux.get("settings_documents") or []))
+
 runner = "tools/s10plus/a33/tests/run-boot-tests.sh"
 if check("boot test runner exists", read(runner) is not None):
     rt = read(runner)

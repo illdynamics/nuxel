@@ -1,0 +1,28 @@
+[
+  {
+    "dev": "/dev/tty.usbmodem201",
+    "error": "cannot open /dev/tty.usbmodem201: [Errno 16] Resource busy: '/dev/tty.usbmodem201'",
+    "mode": "dialin-node",
+    "ok": false
+  },
+  {
+    "baud": 115200,
+    "burst": 0,
+    "bytes_in": 0,
+    "dev": "/dev/cu.usbmodem201",
+    "echo_ok": false,
+    "error": null,
+    "mode": "baud-115200",
+    "ok": false
+  },
+  {
+    "baud": 9600,
+    "burst": 4096,
+    "bytes_in": 0,
+    "dev": "/dev/cu.usbmodem201",
+    "echo_ok": false,
+    "error": "write failed on /dev/cu.usbmodem201: [Errno 35] Resource temporarily unavailable",
+    "mode": "burst-4k",
+    "ok": false
+  }
+]

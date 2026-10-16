@@ -1,0 +1,93 @@
+{
+  "schema_version": 1,
+  "comment": "Cellular / SIM policy for the S10+ (beyond2lte). Read by tools/s10plus/a33/nuxel-modem-diag.sh. THE HONEST POSITION: this device has a Samsung Shannon LTE modem integrated in the Exynos 9820 and there is NO upstream ModemManager plugin for it, so the default verdict is NOT_SUPPORTED_ON_DEVICE / BLOCKED_FIRMWARE. This tool reports which host interfaces exist and names the first missing stage; it NEVER prints a signal, operator or registration value that was not read from a real API, and it never fakes a data connection. It never writes to any partition (modem/EFS/SEC_EFS/calibration/IMEI are read-only if referenced at all) and never touches a bootloader.",
+  "device": {
+    "model": "Samsung Galaxy S10+ SM-G975F",
+    "codename": "beyond2lte",
+    "soc": "Exynos 9820",
+    "modem": "Samsung Shannon LTE (integrated; Cat 20 LTE, no 5G)",
+    "modem_stack_truth": {
+      "upstream_modemmanager_plugin": false,
+      "reason": "There is no upstream ModemManager plugin for the Shannon LTE interface, and the vendor CP transport (cbd/umts character devices) is not exposed by this 4.14 vendor kernel to a mainline modem stack.",
+      "ofono_suitability": "not demonstrated for Shannon LTE; no supported AT command channel has been verified",
+      "default_cellular_verdict": "NOT_SUPPORTED_ON_DEVICE",
+      "voLTE_posture": "VoLTE/IMS is NOT implemented; calls and SMS are NOT available. See docs/volte-carrier-strategy.md.",
+      "do_not_transplant": "Pixel / Exynos 5500 / Qualcomm modem instructions must NOT be applied to this Samsung modem."
+    }
+  },
+
+  "interfaces": {
+    "comment": "Candidate host interfaces are ENUMERATED with globs; presence of a node is evidence of a transport, NOT of a working modem.",
+    "cp_node_globs": ["/dev/cbd*", "/dev/umts*", "/dev/gsmtty*", "/dev/wwan*", "/dev/ttyUSB*", "/dev/ttyACM*"],
+    "cp_node_candidates": ["/dev/cbd0", "/dev/cbd1", "/dev/umts_boot0", "/dev/umts_at0", "/dev/umts_dm0", "/dev/umts_rmnet0", "/dev/wwan0"],
+    "net_globs": ["/sys/class/net/rmnet*", "/sys/class/net/wwan*", "/sys/class/net/pdp*", "/sys/class/net/rev_rmnet*"],
+    "net_comment": "A rmnet/wwan netdev is a *potential* data bearer, never a data connection. No data connection is ever reported as up unless it really is."
+  },
+
+  "modemmanager": {
+    "comment": "The stack hop. A ModemManager plugin that knows this modem is the missing piece; its absence is the documented blocker, not a mystery.",
+    "plugin_dirs": ["/usr/lib64/ModemManager", "/usr/lib/ModemManager", "/usr/libexec/ModemManager", "/usr/lib64/ModemManager/plugins", "/usr/lib/ModemManager/plugins"],
+    "plugin_globs": ["*shannon*", "*samsung*", "*sec*modem*", "*exynos*modem*"],
+    "mmcli_candidates": ["/usr/bin/mmcli", "/usr/local/bin/mmcli"],
+    "mm_debug_helper": "/usr/libexec/ModemManager/mmcli-test",
+    "suitability_note": "Even with mmcli installed, without a Shannon-capable plugin ModemManager cannot probe or register this modem."
+  },
+
+  "sim": {
+    "comment": "SIM presence is only reported from a REAL source (ModemManager's modem list, or a state file written by a real detection run). Offline/VM runs report 'unknown'. SIM PIN, IMSI and ICCID are never printed: they are redacted before they can reach a log.",
+    "state_file": "/var/lib/nuxel/modem/sim.json",
+    "sysfs_candidates": ["/sys/class/mmc_host/mmc1", "/sys/class/sim", "/sys/devices/platform/sim"],
+    "supported_ui": {
+      "detected_absent": "the UI must be able to say SIM detected / SIM absent",
+      "pin_request": "only where the platform supports it — on this device it is NOT_SUPPORTED_ON_DEVICE (no host modem stack)",
+      "carrier_identity": "only from a real modem API; otherwise reported as unavailable",
+      "signal": "only from a real modem API",
+      "registration": "only from a real modem API",
+      "apn_config": "an APN template exists, but it cannot be applied without a registered bearer",
+      "data_connection": "not available"
+    },
+    "redaction": {
+      "must_mask": ["IMSI", "ICCID", "IMEI", "ESN", "MEID", "PIN", "PUK", "SPN", "MSISDN"],
+      "mask_style": "••••••••<last4>",
+      "never_log": true,
+      "comment": "Redaction runs on every line the tool prints from a modem source and is unit-tested offline (`redact` subcommand)."
+    }
+  },
+
+  "apn": {
+    "comment": "Templates only. Nothing here can be applied on this device today, and the tool says so instead of pretending.",
+    "template": {"name": "carrier-internet", "apn": "", "username": "", "password": "", "auth": "none", "protocol": "ipv4", "roaming": false},
+    "state": "NOT_SUPPORTED_ON_DEVICE",
+    "requires": "a registered data bearer from a supported modem stack (none exists for Shannon LTE)"
+  },
+
+  "registration": {
+    "comment": "Truthful reporting contract: these fields may ONLY be filled from a live ModemManager query, and the tool never guesses.",
+    "fields": ["operator", "registration_state", "signal_quality", "access_technology", "roaming"],
+    "source": "ModemManager D-Bus (org.freedesktop.ModemManager1) only",
+    "empty_means": "unavailable (no supported modem stack), NOT 'no signal'"
+  },
+
+  "at_channel": {
+    "comment": "An AT channel is NOT opened by default. If the owner explicitly asks, only a read-only allowlist is permitted, every command is logged, and the output is redacted. Nothing runs at boot.",
+    "enabled_by_default": false,
+    "require_explicit_flag": "--yes-at",
+    "read_only_allowlist": ["AT", "ATI", "AT+CGMI", "AT+CGMM", "AT+CGMR", "AT+CPIN?", "AT+CSQ", "AT+CREG?", "AT+COPS?"],
+    "forbidden": ["AT+CFUN=1,1", "AT+EGMR", "AT+CLCK", "AT+CPWD", "AT+CRSM", "AT+CSIM", "*#*#*#", "AT+Q*"],
+    "forbidden_comment": "Anything that could change radio state, unlock, write NV/EFS, or send a raw APDU is refused outright — EFS/IMEI/calibration are never touched.",
+    "auto_probe_on_boot": false
+  },
+
+  "protected_partitions": {
+    "comment": "Denylist copied from the mission invariants. No Nuxel tool reads, writes or flashes these.",
+    "never_read_or_write": ["modem", "efs", "efsg", "sec_efs", "persist", "param", "up_param", "steady", "keystorage", "carrier", "cp_debug", "misc"],
+    "flashing_tools_forbidden": ["heimdall", "odin", "fastboot", "download-mode", "twrp"]
+  },
+
+  "diagnostics": {
+    "log": "/var/log/nuxel/modem-diag.log",
+    "print_imsi_or_iccid": false,
+    "auto_probe_on_boot": false,
+    "claim_policy": "never print signal/registration/operator that was not read from a real API; never claim data without a real bearer"
+  }
+}

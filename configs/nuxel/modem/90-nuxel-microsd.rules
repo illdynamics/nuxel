@@ -1,0 +1,34 @@
+# Nuxel microSD auto-mount rule (S10+ / beyond2lte).
+#
+# Install to /etc/udev/rules.d/90-nuxel-microsd.rules.
+#
+# ONE JOB: when an EXTERNAL removable card appears, ask the auto-mount service to
+# mount it READ-ONLY. Nothing here formats, partitions, repairs or writes a card.
+#
+# KERNEL=="mmcblk[1-9]*" is deliberate: the microSD is an external card
+# (mmcblk1/2), while mmcblk0 is the INTERNAL UFS. The tool refuses mmcblk0 and
+# /dev/block/* on its own as well; matching only mmcblk[1-9] here means the
+# internal device is never even handed to a mount path.
+#
+# The event is handed to systemd (TAG+="systemd" / SYSTEMD_WANTS) rather than run
+# inline, so a slow card cannot stall the udev event queue, and the unit is
+# oneshot with Restart=no - a card that fails to mount is reported, never looped.
+#
+# The same "add" uevent is replayed for a card that was already seated when the
+# kernel enumerated it, so the service is NOT a boot-time auto-mounter: the tool
+# refuses to mount inside the boot window (uptime < automount.boot_grace_s) and
+# reports the skip. diagnostics.auto_mount_on_boot is false and stays false.
+#
+# Deliberately NOT used as a condition: ID_DRIVE_FLASH_SD. It is not reliably set
+# for mmc devices on this platform, and a rule that silently never fires would be
+# worse than one that lets the tool decide. The tool does the real check
+# (removable flag + external device + never mmcblk0).
+
+ACTION=="add", SUBSYSTEM=="block", KERNEL=="mmcblk[1-9]", ENV{DEVTYPE}=="disk", \
+  TAG+="systemd", ENV{SYSTEMD_WANTS}+="nuxel-microsd-automount.service"
+
+# Partition devices of the same card: the tool mounts the partition node itself,
+# so these only get a journal note - never a second mount attempt, never a
+# filesystem change.
+ACTION=="add", SUBSYSTEM=="block", KERNEL=="mmcblk[1-9]p*", \
+  RUN{program}+="/usr/bin/logger -t nuxel-microsd 'partition node %k appeared; the auto-mount service drives the mount'"

@@ -1,0 +1,49 @@
+{
+  "adb_devices": [],
+  "at": "2026-10-16T16:35:36+0200",
+  "blocked_reason": "cannot take the console: /dev/cu.usbmodem201 is owned by another host tool (lock /tmp/nuxel-live._dev_cu_usbmodem201.lock) \u2014 the live group is serialised on purpose",
+  "capability": {
+    "pid": "0x4ee7",
+    "serial": "NUXEL-S10PLUS-0001",
+    "vid": "0x18d1"
+  },
+  "evidence_dir": "/Users/wicked/x/nuxel/docs/beta-finalization/live/evidence/reachability-20261016-cycl001",
+  "exit_code": 4,
+  "finished": "2026-10-16T16:35:44+0200",
+  "gadget_descriptor_present": true,
+  "host": "Darwin 24.6.0",
+  "nodes": [
+    {
+      "callout": "/dev/cu.usbmodem201",
+      "dialin": "/dev/tty.usbmodem201",
+      "pid": 20199,
+      "tty_base": "usbmodem",
+      "tty_device": "usbmodem201",
+      "tty_suffix": "201",
+      "vid": 6353
+    }
+  ],
+  "port_busy": true,
+  "reachable": false,
+  "selected": {
+    "callout": "/dev/cu.usbmodem201",
+    "dialin": "/dev/tty.usbmodem201",
+    "match_stage": "vid+pid+ttybase+serial",
+    "pid": 20199,
+    "tty_base": "usbmodem",
+    "tty_device": "usbmodem201",
+    "tty_suffix": "201",
+    "vid": 6353
+  },
+  "steps": [
+    {
+      "detail": "/dev/cu.usbmodem201 (matched vid+pid+ttybase+serial)",
+      "ok": true,
+      "step": "select-by-capability"
+    }
+  ],
+  "verdict": "BLOCKED_EXTERNAL_RESOURCE",
+  "verdicts": {
+    "briq-10a-live-reachability-preflight": "BLOCKED_EXTERNAL_RESOURCE"
+  }
+}

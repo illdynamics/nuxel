@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "comment": "Consolidated capability manifest for the Priority 7b hardware subsystems (build group bg-08). 'expected_on_s10plus' is the SHIPPED HARDWARE from the beyond2lte DTS / S10+ specification and is NOT an observation. 'state'/'verdict' are what the repository can actually prove offline; everything that needs a human (ear, finger, eyes, SIM, microSD, peer device, tag, sky view) is NEEDS_OWNER_TEST and is never auto-promoted. A registered kernel driver is not proof of working hardware, and a writable node is not proof of a felt buzz, visible light or audible sound. No subsystem here claims VERIFIED_ON_S10PLUS.",
+  "device": {"model": "Samsung Galaxy S10+ SM-G975F", "codename": "beyond2lte", "soc": "Exynos 9820"},
+  "evidence_rule": {
+    "offline_proves": ["config validity", "enumeration logic", "verdict chains", "refusal/safety paths", "capability reporting"],
+    "offline_cannot_prove": ["felt haptics", "visible light", "paired Bluetooth", "an NFC tag read", "a GNSS fix", "physically induced motion", "a captured frame", "a mounted physical card", "audible sound", "a cellular bearer"],
+    "allowed_terminal_states": ["VERIFIED_ON_S10PLUS", "VERIFIED_IN_VM_ONLY", "OFFLINE_TESTED", "DEPLOYED_UNVERIFIED", "IMPLEMENTED_NOT_DEPLOYED", "BLOCKED_KERNEL", "BLOCKED_FIRMWARE", "BLOCKED_HARDWARE", "BLOCKED_EXTERNAL_RESOURCE", "NEEDS_OWNER_TEST", "FAILED", "DEFERRED", "NOT_SUPPORTED_ON_DEVICE"]
+  },
+  "subsystems": {
+    "power":      {"tool": "tools/s10plus/a33/nuxel-power-diag.sh", "config": "configs/nuxel/power/power.json", "manual": "docs/beta-finalization/manual-proof/24-battery-power.md", "offline_state": "OFFLINE_TESTED", "owner_state": "NEEDS_OWNER_TEST", "owner_needs": "battery/charging behaviour", "notes": "lpcharge/charger-mode is treated as a distinct boot mode; Recovery/Download Mode entries exist in the power menu but are never triggered by an automated path"},
+    "haptics":    {"tool": "tools/s10plus/a33/nuxel-haptics-diag.sh", "config": "configs/nuxel/haptics/haptics.json", "manual": "docs/beta-finalization/manual-proof/10-vibration.md", "offline_state": "OFFLINE_TESTED", "owner_state": "NEEDS_OWNER_TEST", "owner_needs": "a felt buzz; global off switch and bounded --yes test buzz only"},
+    "leds":       {"tool": "tools/s10plus/a33/nuxel-led-diag.sh", "config": "configs/nuxel/leds/leds.json", "manual": "docs/beta-finalization/manual-proof/09-flashlight.md", "offline_state": "OFFLINE_TESTED", "owner_state": "NEEDS_OWNER_TEST", "owner_needs": "visible torch/notification light; absent classes reported NOT_SUPPORTED_ON_DEVICE; edge lighting is a display effect, not a hardware LED"},
+    "bluetooth":  {"tool": "tools/s10plus/a33/nuxel-bluetooth-diag.sh", "config": "configs/nuxel/bluetooth/bluetooth.json", "manual": "docs/beta-finalization/manual-proof/11-bluetooth.md", "offline_state": "OFFLINE_TESTED", "owner_state": "NEEDS_OWNER_TEST", "owner_needs": "a peer device to pair with; radio presence/firmware reported, never assumed"},
+    "nfc":        {"tool": "tools/s10plus/a33/nuxel-nfc-diag.sh", "config": "configs/nuxel/nfc/nfc.json", "manual": "docs/beta-finalization/manual-proof/12-nfc.md", "offline_state": "OFFLINE_TESTED", "owner_state": "NEEDS_OWNER_TEST", "owner_needs": "a physical tag; controller presence/firmware staged, never claimed from config"},
+    "gnss":       {"tool": "tools/s10plus/a33/nuxel-gnss-diag.sh", "config": "configs/nuxel/gnss/gnss.json", "manual": "docs/beta-finalization/manual-proof/13-gps.md", "offline_state": "OFFLINE_TESTED", "owner_state": "NEEDS_OWNER_TEST", "owner_needs": "outdoors with sky view for a real fix; no fabricated fix"},
+    "sensors":    {"tool": "tools/s10plus/a33/nuxel-sensors-diag.sh", "config": "configs/nuxel/sensors/sensors.json", "manual": "docs/beta-finalization/manual-proof/14-sensors.md", "offline_state": "OFFLINE_TESTED", "owner_state": "NEEDS_OWNER_TEST", "owner_needs": "physically induced motion; per-class states include NOT_SUPPORTED_ON_DEVICE and PRESENT_UNREADABLE"},
+    "camera":     {"tool": "tools/s10plus/a33/nuxel-camera-diag.sh", "config": "configs/nuxel/camera/camera.json", "manual": "docs/beta-finalization/manual-proof/15-camera.md", "offline_state": "OFFLINE_TESTED", "owner_state": "NEEDS_OWNER_TEST", "owner_needs": "aim the camera at a real scene and view the still in the gallery; frame_captured_verified is always false; a missing vendor blob is BLOCKED_FIRMWARE with the exact gap", "no_android_hal": true},
+    "modem":      {"tool": "tools/s10plus/a33/nuxel-modem-diag.sh", "config": "configs/nuxel/modem/modem.json", "manual": "docs/beta-finalization/manual-proof/16-sim-mobile-data.md", "offline_state": "OFFLINE_TESTED", "owner_state": "NEEDS_OWNER_TEST", "owner_needs": "insert a nano-SIM; cellular service itself is BLOCKED_FIRMWARE / NOT_SUPPORTED_ON_DEVICE (no upstream ModemManager plugin for Samsung Shannon LTE)", "never_claims": ["signal", "operator", "registration", "data", "SMS", "calls"]},
+    "microsd":    {"tool": "tools/s10plus/a33/nuxel-microsd-diag.sh", "config": "configs/nuxel/modem/microsd.json", "manual": "docs/beta-finalization/manual-proof/18-microsd.md", "offline_state": "OFFLINE_TESTED", "owner_state": "NEEDS_OWNER_TEST", "owner_needs": "insert and eject a physical card; read-only mount by default, never format, internal mmcblk0 refused as a target"}
+  },
+  "offline_suites": {
+    "runner": "bash tools/s10plus/a33/tests/hw-subsystems/run-all.sh",
+    "tests": [
+      "tools/s10plus/a33/tests/hw-subsystems/test-power-diag.py",
+      "tools/s10plus/a33/tests/hw-subsystems/test-haptics-diag.py",
+      "tools/s10plus/a33/tests/hw-subsystems/test-led-diag.py",
+      "tools/s10plus/a33/tests/hw-subsystems/test-bluetooth-diag.py",
+      "tools/s10plus/a33/tests/hw-subsystems/test-nfc-diag.py",
+      "tools/s10plus/a33/tests/hw-subsystems/test-gnss-diag.py",
+      "tools/s10plus/a33/tests/hw-subsystems/test-sensors-diag.py",
+      "tools/s10plus/a33/tests/hw-subsystems/test-camera-diag.py",
+      "tools/s10plus/a33/tests/hw-subsystems/test-modem-diag.py",
+      "tools/s10plus/a33/tests/hw-subsystems/test-microsd-diag.py"
+    ]
+  },
+  "invariants": {
+    "no_flashing": true,
+    "no_block_device_writes": true,
+    "protected_partitions": ["boot", "userdata", "system", "recovery", "dtb", "dtbo", "vbmeta", "radio", "modem", "efs", "sec_efs", "calibration", "imei", "pit"],
+    "no_heimdall_odin_fastboot_twrp": true,
+    "download_mode_never_triggered": true,
+    "a32_baseline_not_regressed": true
+  }
+}
