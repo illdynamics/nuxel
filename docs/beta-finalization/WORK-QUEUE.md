@@ -136,8 +136,8 @@ deterministic.  Prose outside the markers is edited by hand and never clobbered 
 | Metric | Value |
 |--------|-------|
 | Tasks | **55** (one per briQ in the plan, bg-00 … bg-12) |
-| Revisions (append-only) | 82 |
-| Evidence entries | 148 |
+| Revisions (append-only) | 87 |
+| Evidence entries | 157 |
 | Dependencies | validated acyclic; referential integrity enforced |
 
 | State | Count | Tasks |
@@ -155,7 +155,7 @@ deterministic.  Prose outside the markers is edited by hand and never clobbered 
 | `OFFLINE_TESTED` | 12 | `00b-archive-discovery`, `00c-workqueue-ledger`, `00d-baseline-protection`, `01a-pipeline-trace-tool`, `01b-libinput-path-shim`, `01c-chargermode-bootmode`, `01d-touch-owner-test`, `02a-readiness-handoff`, `02b-verbose-boot-setting`, `02c-fb-colour-conversion`, `02d-launcher-parity`, `02e-safe-zones-statusbar` |
 | *(no verdict recorded yet)* | 42 | `03a-wifi`, `03b-time-rtc-timesync`, `03c-audio-speaker`, `03d-headphones-usbc`, `03e-buttons-gestures`, `04a-fedora-packages`, `04b-service-definitions`, `04c-app-infrastructure`, `05a-permission-manager`, `05b-firewall-app`, `05c-vpn-tor-remote`, `05d-security-auditor`, `06a-core-app-inventory`, `06b-missing-core-apps`, `06c-phone-apps`, `06d-settings-and-keyboard`, `06e-bootmode-status-consumer`, `07a-nuxtore`, `07b-devmgmt-cleanup-root`, `07c-media-authenticator-downloader`, `07d-snekbyte`, `07e-live-console-app`, `07f-penguinterface`, `08a-power-management`, `08b-vibration-haptics`, `08c-flashlight-led`, `08d-bluetooth`, `08e-nfc`, `08f-gps-gnss`, `08g-sensors`, `08h-camera`, `08i-sim-microsd-modem`, `09a-test-strategy-soak`, `09b-reboot-rollback-policy`, `09c-release-deliverables`, `10a-live-reachability-preflight`, `10b-live-deploy-userspace`, `10c-live-reboot-and-verify`, `11a-vm-launcher-parity`, `11b-vm-services-verify`, `12a-engineering-report`, `12b-manual-proof-checklist` |
 
-* `VERIFIED_ON_S10PLUS` claims: **1** — tasks carrying an `on_device` evidence entry: **3** (`00a-repo-preflight`, `01a-pipeline-trace-tool`, `01c-chargermode-bootmode`)
+* `VERIFIED_ON_S10PLUS` claims: **1** — tasks carrying an `on_device` evidence entry: **2** (`00a-repo-preflight`, `01c-chargermode-bootmode`)
 * Open tasks (resumable remainder): **42** — see the execution order below.
 * Dependency-satisfied (ready to start, or already finished): **21** — `00a-repo-preflight`, `00b-archive-discovery`, `00c-workqueue-ledger`, `00d-baseline-protection`, `01a-pipeline-trace-tool`, `01b-libinput-path-shim`, `01c-chargermode-bootmode`, `01d-touch-owner-test`, `10a-live-reachability-preflight`, `02a-readiness-handoff`, `02b-verbose-boot-setting`, `02c-fb-colour-conversion`, `02d-launcher-parity`, `02e-safe-zones-statusbar`, `03a-wifi`, `03b-time-rtc-timesync`, `03c-audio-speaker`, `03e-buttons-gestures`, `04a-fedora-packages`, `06e-bootmode-status-consumer`, `09a-test-strategy-soak`
 * Marked owner-only (`offline_ceiling`/verdict = `NEEDS_OWNER_TEST`): **14** — `01d-touch-owner-test`, `02a-readiness-handoff`, `02b-verbose-boot-setting`, `02c-fb-colour-conversion`, `03d-headphones-usbc`, `08b-vibration-haptics`, `08c-flashlight-led`, `08d-bluetooth`, `08e-nfc`, `08f-gps-gnss`, `08g-sensors`, `08h-camera`, `08i-sim-microsd-modem`, `10b-live-deploy-userspace`
@@ -236,14 +236,14 @@ Ids are shown without the `briq-` prefix.
 
 | id | pri | component | state | verdict | ev | rev | depends on |
 |----|----:|-----------|-------|---------|--:|----:|------------|
-| `00a-repo-preflight` | 0 | bg-00-preflight | implemented | VERIFIED_ON_S10PLUS | 11 | 5 | — |
+| `00a-repo-preflight` | 0 | bg-00-preflight | implemented | VERIFIED_ON_S10PLUS | 14 | 6 | — |
 | `00b-archive-discovery` | 0 | bg-00-preflight | implemented | OFFLINE_TESTED | 7 | 5 | 00a-repo-preflight |
-| `00c-workqueue-ledger` | 0 | bg-00-preflight | implemented | OFFLINE_TESTED | 9 | 4 | 00a-repo-preflight, 00b-archive-discovery |
-| `00d-baseline-protection` | 0 | bg-00-preflight | implemented | OFFLINE_TESTED | 14 | 7 | 00a-repo-preflight |
-| `01a-pipeline-trace-tool` | 1 | bg-01-touch-pipeline | implemented | OFFLINE_TESTED | 4 | 2 | — |
+| `00c-workqueue-ledger` | 0 | bg-00-preflight | implemented | OFFLINE_TESTED | 13 | 5 | 00a-repo-preflight, 00b-archive-discovery |
+| `00d-baseline-protection` | 0 | bg-00-preflight | implemented | OFFLINE_TESTED | 17 | 8 | 00a-repo-preflight |
+| `01a-pipeline-trace-tool` | 1 | bg-01-touch-pipeline | implemented | OFFLINE_TESTED | 4 | 3 | — |
 | `01b-libinput-path-shim` | 1 | bg-01-touch-pipeline | implemented | OFFLINE_TESTED | 6 | 2 | — |
 | `01c-chargermode-bootmode` | 1 | bg-01-touch-pipeline | implemented | OFFLINE_TESTED | 4 | 2 | 01a-pipeline-trace-tool |
-| `01d-touch-owner-test` | 1 | bg-01-touch-pipeline | implemented | OFFLINE_TESTED | 5 | 2 | 01a-pipeline-trace-tool |
+| `01d-touch-owner-test` | 1 | bg-01-touch-pipeline | implemented | OFFLINE_TESTED | 4 | 3 | 01a-pipeline-trace-tool |
 | `10a-live-reachability-preflight` | 1 | bg-10-live-phone | pending | — | 0 | 1 | 00a-repo-preflight |
 | `10b-live-deploy-userspace` | 1 | bg-10-live-phone | pending | — | 0 | 1 | 10a-live-reachability-preflight, 01b-libinput-path-shim, 02a-readiness-handoff, 09b-reboot-rollback-policy |
 | `10c-live-reboot-and-verify` | 1 | bg-10-live-phone | pending | — | 0 | 1 | 10b-live-deploy-userspace, 01a-pipeline-trace-tool, 03c-audio-speaker |

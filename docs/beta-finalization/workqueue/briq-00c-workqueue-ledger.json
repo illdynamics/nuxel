@@ -312,6 +312,150 @@
       "at": "2026-10-16T19:36:06+02:00",
       "by": "construqtor/bg-00-preflight",
       "revision": 4
+    },
+    {
+      "id": "briq-00c-workqueue-ledger",
+      "title": "Persistent dependency-aware, resumable work queue",
+      "component": "bg-00-preflight",
+      "component_title": "Preflight, Discovery, Work Queue & Baseline Protection",
+      "priority": 0,
+      "state": "implemented",
+      "dependencies": [
+        "briq-00a-repo-preflight",
+        "briq-00b-archive-discovery"
+      ],
+      "evidence": [
+        {
+          "kind": "observation",
+          "path": "docs/beta-finalization/workqueue/",
+          "command": "test -e docs/beta-finalization/workqueue/",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "observation",
+          "path": "tools/beta/workqueue.py",
+          "command": "test -e tools/beta/workqueue.py",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "tools/beta/tests/test_workqueue.py",
+          "command": "python3 tools/beta/tests/test_workqueue.py",
+          "result": "0 failing case(s), 27 passing",
+          "at": "2026-10-16T16:12:00+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "docs/beta-finalization/workqueue/",
+          "command": "python3 tools/beta/workqueue.py verify-schema",
+          "result": "tasks: 54, schema OK, no task claims VERIFIED_ON_S10PLUS",
+          "at": "2026-10-16T16:12:00+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "tools/beta/tests/test_workqueue.py",
+          "command": "python3 tools/beta/tests/test_workqueue.py; python3 tools/beta/workqueue.py verify-schema --json",
+          "result": "wq_selftest_exit=0 (0 failing, 27 passing); verify-schema ok=true tasks=54 errors=[]",
+          "at": "2026-10-16T14:11:50Z"
+        },
+        {
+          "kind": "offline",
+          "path": "docs/beta-finalization/preflight/gate-workqueue.txt",
+          "command": "python3 tools/beta/tests/test_workqueue.py",
+          "result": "== 0 failing case(s), 38 passing == (was 27; 11 new assertions cover the renderer)",
+          "at": "2026-10-16T19:36:05+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "docs/beta-finalization/preflight/gate-workqueue.txt",
+          "command": "python3 tools/beta/workqueue.py verify-schema --json",
+          "result": "{\"tasks\": 54, \"ok\": true, \"errors\": [], \"verified_on_s10plus\": [], \"by_state\": {\"implemented\": 9, \"in_progress\": 24, \"pending\": 21}}",
+          "at": "2026-10-16T19:36:05+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "docs/beta-finalization/preflight/gate-workqueue.txt",
+          "command": "python3 tools/beta/workqueue.py render --check",
+          "result": "'WORK-QUEUE.md matches the JSON store (54 task(s))' -> exit 0",
+          "at": "2026-10-16T19:36:05+02:00"
+        },
+        {
+          "kind": "doc",
+          "path": "docs/beta-finalization/WORK-QUEUE.md",
+          "command": "python3 tools/beta/workqueue.py render --write",
+          "result": "machine-owned blocks (ledger-state, execution-order, task-ledger) regenerated from the 54 JSON records; the dependency-ordered resumable remainder is now section 6 and is produced by the tool, not by hand",
+          "at": "2026-10-16T19:36:05+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "tools/beta/tests/test_workqueue.py",
+          "command": "python3 tools/beta/tests/test_workqueue.py",
+          "result": "== 0 failing case(s), 38 passing == (exit 0)",
+          "at": "2026-10-16T20:15:17+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "docs/beta-finalization/workqueue/",
+          "command": "python3 tools/beta/workqueue.py verify-schema --json",
+          "result": "{\"ok\": true, \"tasks\": 55, \"errors\": [], \"by_state\": {\"implemented\": 13, \"in_progress\": 21, \"pending\": 21}, \"by_verdict\": {\"None\": 42, \"OFFLINE_TESTED\": 12, \"VERIFIED_ON_S10PLUS\": 1}} \u2014 referential integrity held, dependency graph acyclic, verdict vocabulary closed (the one VERIFIED_ON_S10PLUS claim is backed by an on_device capture)",
+          "at": "2026-10-16T20:15:17+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "docs/beta-finalization/WORK-QUEUE.md",
+          "command": "python3 tools/beta/workqueue.py render --write && python3 tools/beta/workqueue.py render --check",
+          "result": "'rendered ... from the JSON store (55 task(s), 42 open)' then 'matches the JSON store (55 task(s))' -> exit 0: the human view equals the machine view. (An earlier render --check in this same pass exited 1 because a PARALLEL group had appended a revision to its own task file; regenerating from the store absorbed those revisions - ledger-state counts 82/148 -> 84/147 and the bg-01 task rows - which is exactly the resumable-queue behaviour the renderer exists for.)",
+          "at": "2026-10-16T20:15:17+02:00"
+        },
+        {
+          "kind": "observation",
+          "path": "tools/beta/workqueue.py",
+          "command": "inspection of set-state / atomic_write_json / task_lock / load_queue",
+          "result": "append-only contract intact: set-state deep-copies the previous revision, pops 'revision' and APPENDS revision N+1 with a real clock and author, never editing an earlier revision; writes are atomic (mkstemp + os.replace); writers take a per-task advisory lock (<id>.json.lock, O_CREAT|O_EXCL) so parallel groups cannot interleave on one task; one file per task, no shared ledger file",
+          "at": "2026-10-16T20:15:17+02:00"
+        }
+      ],
+      "intended_changes": [
+        "docs/beta-finalization/WORK-QUEUE.md",
+        "docs/beta-finalization/workqueue/",
+        "tools/beta/workqueue.py",
+        "tools/beta/tests/test_workqueue.py",
+        "docs/beta-finalization/WORK-QUEUE.md; docs/beta-finalization/workqueue/<stable-id>.json (54 files); tools/beta/workqueue.py; tools/beta/tests/test_workqueue.py",
+        "tools/beta/workqueue.py (+render/list --check/--stdout, atomic_write_text, fail-closed on an invalid store)",
+        "tools/beta/tests/test_workqueue.py (+11 renderer assertions)",
+        "docs/beta-finalization/WORK-QUEUE.md (regenerated; \u00a75/\u00a76/\u00a77 are machine-owned and marker-delimited)",
+        "docs/beta-finalization/workqueue/briq-00c-workqueue-ledger.json (this revision)"
+      ],
+      "tests": [
+        "(tests are recorded by the owning briQ when it reports)",
+        "python3 tools/beta/tests/test_workqueue.py -> 27/27 pass (hermetic tmpdir queue + real queue validation)",
+        "python3 tools/beta/tests/test_workqueue.py -> 38 passing / 0 failing",
+        "python3 tools/beta/workqueue.py verify-schema -> ok (54 tasks, acyclic)",
+        "python3 tools/beta/workqueue.py render --check -> exit 0 (human view == machine view)",
+        "append-only contract re-proved by the suite (set-state appends; the previous revision is frozen)",
+        "per-task lock re-proved by the suite (a held <id>.json.lock -> exit 1 'locked by another writer')",
+        "python3 tools/beta/tests/test_workqueue.py -> 0 failing / 38 passing",
+        "python3 tools/beta/workqueue.py verify-schema -> ok=true, 55 tasks, acyclic, verdict vocabulary closed",
+        "python3 tools/beta/workqueue.py render --check -> exit 0 (human view == machine view)"
+      ],
+      "risk": "low",
+      "rollback": "git revert the commit(s) touching this task's expected files; the change is repository-only and alters no device state",
+      "verdict": "OFFLINE_TESTED",
+      "offline_ceiling": "OFFLINE_TESTED",
+      "owner_action": "",
+      "expected_files": [
+        "docs/beta-finalization/WORK-QUEUE.md",
+        "docs/beta-finalization/workqueue/",
+        "tools/beta/workqueue.py",
+        "tools/beta/tests/test_workqueue.py"
+      ],
+      "note": "REPAIR PASS 2 (revision 5). The inspeQtor found that the previous pass left NO revision on the ledger task it was told to resume: briq-00c still ended at revision 4 while briq-00a/00b/00d each appended one (5/5/7). The substance had been done (that pass regenerated WORK-QUEUE.md - counts 77/141 -> 80/146) but none of it was recorded in this task's own append-only trail, so the resumable queue could not show that the pass re-validated it. I did NOT deliberately skip re-validation - it is re-validated and recorded here. Re-validated in this pass: (1) python3 tools/beta/tests/test_workqueue.py -> 0 failing / 38 passing; (2) python3 tools/beta/workqueue.py verify-schema -> ok=true, 55 tasks, errors=[], dependency graph acyclic, referential integrity enforced, verdict vocabulary closed (12 OFFLINE_TESTED, 1 VERIFIED_ON_S10PLUS backed by an on_device capture, 42 with no verdict yet); (3) render --write then render --check -> exit 0, 'matches the JSON store (55 task(s))', i.e. the human view equals the machine view (an earlier check in this pass exited 1 only because a PARALLEL group had appended a revision to its own task file; regenerating absorbed it - ledger-state counts now 84 revisions / 147 evidence entries); (4) append-only revisions, atomic writes (mkstemp + os.replace) and per-task advisory locks (<id>.json.lock, O_CREAT|O_EXCL) confirmed intact by inspecting tools/beta/workqueue.py. Dependency-ordered resumable remainder: docs/beta-finalization/WORK-QUEUE.md section 6 (42 open tasks: 21 in_progress + 21 pending). No test, schema, lock or rendering defect was found and nothing was refactored or re-seeded.",
+      "source": "plan.json",
+      "at": "2026-10-16T20:16:40+02:00",
+      "by": "construqtor",
+      "revision": 5
     }
   ]
 }
