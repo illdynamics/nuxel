@@ -22,7 +22,32 @@ A sample is one JSON object (NDJSON on disk):
      "fb_owner_pid": <int|null>,     # /var/lib/nuxel/fb-owner pid
      "http_ok": <bool>,              # launcher answered 200 on 127.0.0.1:8000
      "thermal_max_c": <float|null>,  # hottest thermal zone
-     "cmdline_boot_mode": <str>}     # androidboot.mode (charger vs normal)
+     "cmdline_boot_mode": <str>,     # androidboot.mode (charger vs normal)
+     # --- resource / performance quality (area 50) -------------------------
+     "disk_avail_kb": <int|null>,    # free space on / (statfs)
+     "swap_used_kb": <int|null>,     # SwapTotal-SwapFree (0 when no swap)
+     "webkit_procs": <int|null>,     # WebKitWebProcess + WebKitNetworkProcess count
+     "webkit_rss_kb": <int|null>,    # their summed RSS (decoder/browser memory)
+     "phoc_rss_kb": <int|null>,      # the compositor's RSS (rendering cost)
+     "phoc_cpu_pct": <float|null>,   # the compositor's %CPU (rendering cost)
+     "bridge_rss_kb": <int|null>,    # nuxel-wl-fb RSS
+     "bridge_cpu_pct": <float|null>, # nuxel-wl-fb %CPU
+     "bridge_io_kb": <int|null>,     # nuxel-wl-fb cumulative write_bytes/1024
+     "anim_procs": <int|null>,       # animation/first-light processes still alive
+     "procs_running": <int|null>,    # /proc/loadavg field 4 numerator
+     "procs_total": <int|null>,      # /proc/loadavg field 4 denominator
+     "input_nodes": <int|null>,      # evdev nodes in /proc/bus/input/devices
+     "touch_nodes": <int|null>}      # those belonging to the touch controller
+
+Two families of metric are deliberately separated.  The *gated* metrics decide
+the verdict (no reboot, no failed units, launcher availability, single
+framebuffer owner, stack CPU, stack RSS growth, no service restarts, coverage).
+The *recorded* metrics give the resource/performance picture and only warn:
+disk headroom, swap pressure, WebKit subprocess count and memory, Phoc memory
+and CPU, the framebuffer bridge's CPU and commit volume, leftover animation
+processes, running-process count and input-node inventory.  A metric that was not
+recorded reports WARN ("claim stays unproven") — it is never silently assumed
+healthy, and it never invents a number.
 
 The load average on this handset sits near 12 (which looks alarming on an 8-core
 SoC) because eleven Samsung *vendor kernel* tasks (TrustZone worker / interworld
@@ -62,6 +87,20 @@ THRESHOLDS = {
     "max_service_restarts_warn": 1,
     "thermal_warn_c": 75.0,
     "thermal_fail_c": 90.0,
+    # --- resource / performance quality (warn-first; nothing here is a device claim)
+    "min_disk_avail_kb": 262144,        # 256 MiB free on / at any sample
+    "disk_avail_drop_warn_pct": 20.0,   # a >20% fall over the soak is reported
+    "swap_used_warn_kb": 65536,         # 64 MiB of swap in use is swap pressure
+    "max_webkit_procs": 8,              # WebKit subprocess ceiling (daemon sprawl)
+    "max_webkit_procs_warn": 6,
+    "max_webkit_rss_kb": 1572864,       # 1.5 GiB of browser memory is a leak signal
+    "max_phoc_cpu_mean_pct": 120.0,     # the compositor must not eat the SoC
+    "max_phoc_cpu_peak_pct": 300.0,
+    "max_bridge_cpu_mean_pct": 100.0,   # the Wayland->framebuffer bridge
+    "max_bridge_cpu_peak_pct": 300.0,
+    "min_bridge_io_growth_kb": 1,       # the bridge must keep committing frames
+    "max_anim_procs_after_settle": 0,   # the animation must have stopped (handoff)
+    "max_procs_running_warn": 24,       # background scheduling sanity
     "durations": {"device": 28800, "vm": 1800, "smoke": 300},
     "sample_interval_s": 60,
     "checkpoint_s": 1800,
@@ -302,6 +341,197 @@ def evaluate(samples, duration_s, thresholds=None, mode="replay"):
         findings.append(_finding("S11-boot-mode", INFO,
                                  "normal boot mode throughout (%s)" % (modes or ["unknown"])))
 
+    # --- S12: disk headroom (storage pressure / log growth) -----------------
+    disk = [(s["t"], s["disk_avail_kb"]) for s in samples if s.get("disk_avail_kb")]
+    if disk:
+        first, last = float(disk[0][1]), float(disk[-1][1])
+        stats["disk_avail_first_kb"] = int(first)
+        stats["disk_avail_last_kb"] = int(last)
+        stats["disk_avail_min_kb"] = int(min(v for _, v in disk))
+        drop = 100.0 * (first - last) / first if first else 0.0
+        stats["disk_avail_drop_pct"] = round(drop, 2)
+        if stats["disk_avail_min_kb"] < th["min_disk_avail_kb"]:
+            findings.append(_finding("S12-disk", FAIL,
+                                     "free space on / fell to %d KiB (floor %d KiB) — the phone "
+                                     "would run out of room" % (stats["disk_avail_min_kb"],
+                                                                th["min_disk_avail_kb"])))
+        elif drop > th["disk_avail_drop_warn_pct"]:
+            findings.append(_finding("S12-disk", WARN,
+                                     "free space on / fell %.1f%% over the soak (%d -> %d KiB): "
+                                     "check what is growing" % (drop, first, last)))
+        else:
+            findings.append(_finding("S12-disk", INFO,
+                                     "disk free %d -> %d KiB (%.1f%% change)"
+                                     % (first, last, drop)))
+    else:
+        findings.append(_finding("S12-disk", WARN,
+                                 "disk headroom not recorded in these samples — storage claim "
+                                 "stays unproven"))
+
+    # --- S13: swap pressure -------------------------------------------------
+    swaps = [s["swap_used_kb"] for s in samples if s.get("swap_used_kb") is not None]
+    if swaps:
+        stats["swap_used_max_kb"] = int(max(swaps))
+        if stats["swap_used_max_kb"] > th["swap_used_warn_kb"]:
+            findings.append(_finding("S13-swap", WARN,
+                                     "swap in use peaked at %d KiB — memory pressure on a device "
+                                     "with no swap on the S10+ would thrash the flash"
+                                     % stats["swap_used_max_kb"]))
+        elif stats["swap_used_max_kb"] == 0:
+            findings.append(_finding("S13-swap", INFO,
+                                     "no swap in use during the soak (none is configured on the "
+                                     "S10+ build)"))
+        else:
+            findings.append(_finding("S13-swap", INFO,
+                                     "swap in use peaked at %d KiB (below the %d KiB advisory)"
+                                     % (stats["swap_used_max_kb"], th["swap_used_warn_kb"])))
+    else:
+        findings.append(_finding("S13-swap", WARN,
+                                 "swap not recorded in these samples — memory-pressure claim "
+                                 "stays unproven"))
+
+    # --- S14: WebKit subprocess count + memory (browser sprawl / decoder) ----
+    wp = [s["webkit_procs"] for s in samples if s.get("webkit_procs") is not None]
+    wr = [s["webkit_rss_kb"] for s in samples if s.get("webkit_rss_kb") is not None]
+    if wp or wr:
+        stats["webkit_procs_max"] = int(max(wp)) if wp else None
+        stats["webkit_rss_max_kb"] = int(max(wr)) if wr else None
+        if wp and stats["webkit_procs_max"] > th["max_webkit_procs"]:
+            findings.append(_finding("S14-webkit", WARN,
+                                     "WebKit subprocess count peaked at %d (ceiling %d): the "
+                                     "launcher must not spawn a process per view"
+                                     % (stats["webkit_procs_max"], th["max_webkit_procs"])))
+        if wr and stats["webkit_rss_max_kb"] > th["max_webkit_rss_kb"]:
+            findings.append(_finding("S14-webkit", WARN,
+                                     "WebKit RSS peaked at %.0f MiB (ceiling %.0f MiB) — bound the "
+                                     "decoder/browser memory"
+                                     % (stats["webkit_rss_max_kb"] / 1024.0,
+                                        th["max_webkit_rss_kb"] / 1024.0)))
+        if not findings or not any(f["id"] == "S14-webkit" for f in findings):
+            findings.append(_finding("S14-webkit", INFO,
+                                     "WebKit processes peak %s, RSS peak %s MiB"
+                                     % (stats["webkit_procs_max"],
+                                        round(stats["webkit_rss_max_kb"] / 1024.0, 1)
+                                        if stats["webkit_rss_max_kb"] else None)))
+    else:
+        findings.append(_finding("S14-webkit", WARN,
+                                 "WebKit process/memory footprint not recorded — browser-cost "
+                                 "claim stays unproven"))
+
+    # --- S15: Phoc rendering cost -----------------------------------------
+    pc = [s["phoc_cpu_pct"] for s in samples if s.get("phoc_cpu_pct") is not None]
+    pr = [s["phoc_rss_kb"] for s in samples if s.get("phoc_rss_kb") is not None]
+    if pc or pr:
+        stats["phoc_cpu_mean_pct"] = round(sum(pc) / len(pc), 1) if pc else None
+        stats["phoc_cpu_peak_pct"] = round(max(pc), 1) if pc else None
+        stats["phoc_rss_max_kb"] = int(max(pr)) if pr else None
+        if pc and stats["phoc_cpu_peak_pct"] > th["max_phoc_cpu_peak_pct"]:
+            findings.append(_finding("S15-phoc", WARN,
+                                     "Phoc peaked at %.0f%% CPU (ceiling %.0f%%) — compositor cost"
+                                     % (stats["phoc_cpu_peak_pct"], th["max_phoc_cpu_peak_pct"])))
+        elif pc and stats["phoc_cpu_mean_pct"] > th["max_phoc_cpu_mean_pct"]:
+            findings.append(_finding("S15-phoc", WARN,
+                                     "Phoc averaged %.0f%% CPU (ceiling %.0f%%) — headless "
+                                     "compositing should be cheap"
+                                     % (stats["phoc_cpu_mean_pct"], th["max_phoc_cpu_mean_pct"])))
+        else:
+            findings.append(_finding("S15-phoc", INFO,
+                                     "Phoc CPU mean %s%%, peak %s%%, RSS peak %s MiB"
+                                     % (stats["phoc_cpu_mean_pct"], stats["phoc_cpu_peak_pct"],
+                                        round(stats["phoc_rss_max_kb"] / 1024.0, 1)
+                                        if stats["phoc_rss_max_kb"] else None)))
+    else:
+        findings.append(_finding("S15-phoc", WARN,
+                                 "Phoc rendering cost not recorded — rendering claim stays "
+                                 "unproven"))
+
+    # --- S16: the Wayland->framebuffer bridge (CPU + commit volume) ---------
+    bc = [s["bridge_cpu_pct"] for s in samples if s.get("bridge_cpu_pct") is not None]
+    bio = [(s["t"], s["bridge_io_kb"]) for s in samples if s.get("bridge_io_kb")]
+    if bc:
+        stats["bridge_cpu_mean_pct"] = round(sum(bc) / len(bc), 1)
+        stats["bridge_cpu_peak_pct"] = round(max(bc), 1)
+        if stats["bridge_cpu_peak_pct"] > th["max_bridge_cpu_peak_pct"]:
+            findings.append(_finding("S16-bridge", WARN,
+                                     "the framebuffer bridge peaked at %.0f%% CPU (ceiling %.0f%%)"
+                                     % (stats["bridge_cpu_peak_pct"],
+                                        th["max_bridge_cpu_peak_pct"])))
+        elif stats["bridge_cpu_mean_pct"] > th["max_bridge_cpu_mean_pct"]:
+            findings.append(_finding("S16-bridge", WARN,
+                                     "the framebuffer bridge averaged %.0f%% CPU (ceiling %.0f%%) — "
+                                     "the bridge must stay cheaper than the UI it feeds"
+                                     % (stats["bridge_cpu_mean_pct"],
+                                        th["max_bridge_cpu_mean_pct"])))
+        else:
+            findings.append(_finding("S16-bridge", INFO,
+                                     "framebuffer bridge CPU mean %.0f%%, peak %.0f%%"
+                                     % (stats["bridge_cpu_mean_pct"], stats["bridge_cpu_peak_pct"])))
+    else:
+        findings.append(_finding("S16-bridge", WARN,
+                                 "framebuffer bridge CPU not recorded — bridge cost stays unproven"))
+    if len(bio) >= 2:
+        growth = bio[-1][1] - bio[0][1]
+        stats["bridge_io_growth_kb"] = int(growth)
+        if growth < th["min_bridge_io_growth_kb"]:
+            findings.append(_finding("S16-bridge-commits", WARN,
+                                     "the bridge wrote nothing to the framebuffer over the soak "
+                                     "(%d KiB): a frozen panel looks exactly like this"
+                                     % growth))
+        else:
+            findings.append(_finding("S16-bridge-commits", INFO,
+                                     "bridge committed %d KiB to the framebuffer during the soak"
+                                     % growth))
+    else:
+        findings.append(_finding("S16-bridge-commits", WARN,
+                                 "bridge commit volume not recorded — panel-freshness claim stays "
+                                 "unproven"))
+
+    # --- S17: the animation must have stopped (display-ownership handoff) ---
+    anim = [s["anim_procs"] for s in samples[settle:] if s.get("anim_procs") is not None]
+    if anim:
+        stats["anim_procs_max_after_settle"] = int(max(anim))
+        if stats["anim_procs_max_after_settle"] > th["max_anim_procs_after_settle"]:
+            findings.append(_finding("S17-animation", WARN,
+                                     "%d animation process(es) were still alive after the boot-settle "
+                                     "window: the handoff did not stop the animation"
+                                     % stats["anim_procs_max_after_settle"]))
+        else:
+            findings.append(_finding("S17-animation", INFO,
+                                     "no animation process survived the handoff"))
+    else:
+        findings.append(_finding("S17-animation", WARN,
+                                 "animation-process count not recorded — handoff claim stays "
+                                 "unproven"))
+
+    # --- S18: background scheduling + input inventory (recorded) ------------
+    pr_run = [s["procs_running"] for s in samples if s.get("procs_running") is not None]
+    if pr_run:
+        stats["procs_running_max"] = int(max(pr_run))
+        if stats["procs_running_max"] > th["max_procs_running_warn"]:
+            findings.append(_finding("S18-scheduling", WARN,
+                                     "up to %d runnable processes at once (advisory ceiling %d): "
+                                     "uncontrolled idle refresh / daemon-per-setting sprawl"
+                                     % (stats["procs_running_max"], th["max_procs_running_warn"])))
+        else:
+            findings.append(_finding("S18-scheduling", INFO,
+                                     "runnable processes peak %d (advisory ceiling %d)"
+                                     % (stats["procs_running_max"], th["max_procs_running_warn"])))
+    else:
+        findings.append(_finding("S18-scheduling", WARN,
+                                 "runnable-process count not recorded — scheduling claim stays "
+                                 "unproven"))
+    inodes = [s["input_nodes"] for s in samples if s.get("input_nodes") is not None]
+    tnodes = [s["touch_nodes"] for s in samples if s.get("touch_nodes") is not None]
+    if inodes:
+        stats["input_nodes"] = int(max(inodes))
+        stats["touch_nodes"] = int(max(tnodes)) if tnodes else None
+        findings.append(_finding("S18-input", INFO,
+                                 "input nodes present: %s (touch-controller nodes: %s)"
+                                 % (stats["input_nodes"], stats["touch_nodes"])))
+    else:
+        findings.append(_finding("S18-input", WARN,
+                                 "input-node inventory not recorded — input claim stays unproven"))
+
     fails = [f for f in findings if f["severity"] == FAIL]
     warns = [f for f in findings if f["severity"] == WARN]
     verdict = "FAIL" if fails else ("PASS_WITH_WARNINGS" if warns else "PASS")
@@ -330,7 +560,11 @@ def evaluate(samples, duration_s, thresholds=None, mode="replay"):
 # --------------------------------------------------------------------------- #
 def synth(n=481, interval=60, t0=None, uptime0=180.0, rss0_kb=180 * 1024,
           growth_pct_per_hour=0.02, cpu=68.0, failed_units=0, http_ok=True,
-          fb_owner_pid=1401, reboots=(), restarts=0, thermal=52.0, boot_mode="normal"):
+          fb_owner_pid=1401, reboots=(), restarts=0, thermal=52.0, boot_mode="normal",
+          disk_avail_kb=2055840, swap_used_kb=0, webkit_procs=4, webkit_rss_kb=520 * 1024,
+          phoc_cpu=32.0, phoc_rss_kb=392 * 1024, bridge_cpu=3.0, bridge_rss_kb=48 * 1024,
+          bridge_io_kb0=1024, anim_procs=0, procs_running=2, procs_total=347,
+          input_nodes=7, touch_nodes=0):
     """Build a synthetic sample series.  `reboots` = sample indexes where the
     device restarted (uptime resets)."""
     t0 = t0 if t0 is not None else 1750000000
@@ -352,6 +586,15 @@ def synth(n=481, interval=60, t0=None, uptime0=180.0, rss0_kb=180 * 1024,
             "fb_owner_pid": fb_owner_pid,
             "http_ok": http_ok, "thermal_max_c": thermal,
             "cmdline_boot_mode": boot_mode,
+            "disk_avail_kb": disk_avail_kb,
+            "swap_used_kb": swap_used_kb,
+            "webkit_procs": webkit_procs, "webkit_rss_kb": webkit_rss_kb,
+            "phoc_rss_kb": phoc_rss_kb, "phoc_cpu_pct": phoc_cpu,
+            "bridge_rss_kb": bridge_rss_kb, "bridge_cpu_pct": bridge_cpu,
+            "bridge_io_kb": bridge_io_kb0 + (i * 8),
+            "anim_procs": anim_procs,
+            "procs_running": procs_running, "procs_total": procs_total,
+            "input_nodes": input_nodes, "touch_nodes": touch_nodes,
         })
     return out
 
@@ -397,6 +640,53 @@ def selftest():
     charger = synth(boot_mode="charger")
     r = evaluate(charger, 28800, mode="replay")
     check("charger-mode-warned", "S11-boot-mode" in r["warnings"], str(r["warnings"]))
+
+    # resource / performance quality (area 50) — each metric must be observable
+    r = evaluate(synth(), 28800, mode="replay")
+    for probe, label in (("S12-disk", "disk"), ("S13-swap", "swap"),
+                         ("S14-webkit", "webkit"), ("S15-phoc", "phoc"),
+                         ("S16-bridge", "bridge"), ("S16-bridge-commits", "bridge commits"),
+                         ("S17-animation", "animation"), ("S18-scheduling", "scheduling"),
+                         ("S18-input", "input inventory")):
+        check("good-series-%s-info" % label,
+              probe not in r["failures"] and probe not in r["warnings"], probe)
+    check("good-series-resource-stats", r["stats"].get("webkit_procs_max") == 4
+          and r["stats"].get("disk_avail_first_kb") == 2055840
+          and r["stats"].get("bridge_io_growth_kb", 0) > 0, str(r["stats"])[:200])
+
+    # a metric the sampler could not read must never be assumed healthy
+    stripped = synth()
+    for s in stripped:
+        for k in ("disk_avail_kb", "swap_used_kb", "webkit_procs", "webkit_rss_kb",
+                  "phoc_cpu_pct", "phoc_rss_kb", "bridge_cpu_pct", "bridge_io_kb",
+                  "anim_procs", "procs_running", "input_nodes"):
+            s.pop(k, None)
+    r = evaluate(stripped, 28800, mode="replay")
+    check("unrecorded-resource-metrics-warn",
+          all(p in r["warnings"] for p in ("S12-disk", "S13-swap", "S14-webkit", "S15-phoc",
+                                           "S16-bridge", "S17-animation", "S18-scheduling",
+                                           "S18-input")),
+          str(r["warnings"]))
+
+    r = evaluate(synth(disk_avail_kb=100 * 1024), 28800, mode="replay")
+    check("low-disk-detected", "S12-disk" in r["failures"], str(r["failures"]))
+    r = evaluate(synth(swap_used_kb=200 * 1024), 28800, mode="replay")
+    check("swap-pressure-warned", "S13-swap" in r["warnings"], str(r["warnings"]))
+    r = evaluate(synth(webkit_procs=24), 28800, mode="replay")
+    check("webkit-sprawl-warned", "S14-webkit" in r["warnings"], str(r["warnings"]))
+    r = evaluate(synth(phoc_cpu=420.0), 28800, mode="replay")
+    check("phoc-cost-warned", "S15-phoc" in r["warnings"], str(r["warnings"]))
+    r = evaluate(synth(bridge_cpu=340.0), 28800, mode="replay")
+    check("bridge-cost-warned", "S16-bridge" in r["warnings"], str(r["warnings"]))
+    frozen = synth()
+    for s in frozen:
+        s["bridge_io_kb"] = 4096
+    r = evaluate(frozen, 28800, mode="replay")
+    check("frozen-bridge-warned", "S16-bridge-commits" in r["warnings"], str(r["warnings"]))
+    r = evaluate(synth(anim_procs=1), 28800, mode="replay")
+    check("surviving-animation-warned", "S17-animation" in r["warnings"], str(r["warnings"]))
+    r = evaluate(synth(procs_running=40), 28800, mode="replay")
+    check("scheduling-sprawl-warned", "S18-scheduling" in r["warnings"], str(r["warnings"]))
 
     empty = evaluate([], 28800, mode="device")
     check("no-samples-is-blocked",
@@ -445,13 +735,25 @@ def coalesce_plan(mode="device", duration_s=None, interval_s=None, checkpoint_s=
             "uptime", "loadavg", "meminfo", "stack-cpu+rss (nuxel stack units)",
             "systemctl --failed", "stack service NRestarts", "fb-owner pid",
             "launcher HTTP 127.0.0.1:8000", "thermal zones", "androidboot.mode",
+            "disk free on /", "swap used", "WebKit subprocess count + RSS",
+            "Phoc CPU + RSS", "framebuffer-bridge CPU + RSS + commit volume",
+            "leftover animation processes", "runnable/total process count",
+            "evdev node inventory (touch nodes)",
         ],
         "gated": ["no reboot", "no failed units", "launcher availability >= 99%",
                   "single framebuffer owner", "stack CPU <= 150% mean / 300% peak",
                   "RSS growth <= 2%/h and <= 10% total", "no service restarts",
-                  "coverage >= 90% of the requested duration"],
+                  "coverage >= 90% of the requested duration",
+                  "disk free on / never below 256 MiB"],
         "recorded_not_gated": ["load1 (Samsung vendor kernel threads, A31 finding)",
-                               "thermal max (advisory unless > 90 C)"],
+                               "thermal max (advisory unless > 90 C)",
+                               "swap pressure (WARN above 64 MiB in use)",
+                               "WebKit process count / RSS ceilings",
+                               "Phoc and bridge CPU ceilings",
+                               "bridge commit volume (a frozen panel is a WARN)",
+                               "leftover animation processes after the handoff",
+                               "runnable-process count (daemon sprawl)",
+                               "input-node inventory (touch nodes present)"],
         "terminal_states": {"device": "VERIFIED_ON_S10PLUS on PASS",
                             "vm": "VERIFIED_IN_VM_ONLY",
                             "replay/selftest": "OFFLINE_TESTED",

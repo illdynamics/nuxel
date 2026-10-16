@@ -63,6 +63,7 @@ and never auto-promoted.
    nuxelctl headphone status --json     # machine-readable, for the bridge/apps
    nuxelctl headphone jack              # jack controls + codec pin evidence
    nuxelctl headphone usbc              # USB-C evidence + ALSA cards
+   nuxelctl headphone usb-role          # the gadget/host role conflict (read-only)
    ```
 
    If `status` reports `jack: UNKNOWN`, the jack kcontrol could not be read on
@@ -133,7 +134,7 @@ e. Record the evidence:
 
 ## 7. Diagnostic command / log path
 
-* `nuxelctl headphone status|jack|usbc|route|watch|tone` —
+* `nuxelctl headphone status|jack|usbc|route|watch|tone|usb-role` —
   `tools/s10plus/a33/nuxel-headphone-diag.sh`
 * Route decision + revert policy: `configs/nuxel/audio/jack-routes.json`
   (installed to `/etc/nuxel/audio/jack-routes.json`)
@@ -156,6 +157,61 @@ e. Record the evidence:
   keeps playing with the plug in, no revert on unplug, or the accessory is not
   detected. Quote the exact `nuxelctl headphone status --json` line: the
   `route` and `rule` fields name the layer that failed.
+
+## 9. The USB-C role conflict: the live console vs host peripherals
+
+This is the sharpest risk in this area, and it is why the tooling is read-only
+about the port role.
+
+**The conflict.** The A32/A33 bring-up carries its **live USB console as a USB
+*gadget*** (CDC-ACM: `/dev/ttyACM0` on the host, `ttyGS*` on the phone). That
+gadget is the only debug path into the phone. A **host-mode** peripheral — a USB
+Audio Class DAC/headset, a keyboard, a hub — needs the same port in **host**
+mode. One port, two roles: they cannot both be true at once.
+
+**What the tool does.** `nuxelctl headphone usb-role` reports, read-only:
+
+* the Type-C role files (`/sys/class/typec/port*/data_role`, `power_role`),
+* the gadget side (`/sys/class/udc/*/state`, the bound `usb_gadget` functions),
+* whether a console device node is visible,
+* and the explicit decision `ROLE_SWITCH=REFUSED-BY-THIS-TOOL`.
+
+**Why refuse.** Switching the role *can be done* on many Type-C ports
+(`/sys/class/typec/port0/data_role`), but on this device the switch is the one
+action that can remove the engineer's own way back in. So the switch is **not**
+performed by any repository tool. If the owner wants USB-C audio, the bounded
+procedure below is the only sanctioned route, and it terminates in
+`NEEDS_OWNER_TEST` / `BLOCKED_HARDWARE` rather than in a claim:
+
+1. **Prefer the path that needs no role change.** The **3.5 mm jack** needs no USB
+   at all, and a **passive analog USB-C accessory** goes through the codec AUX
+   pins, not through a USB role change. Try those first.
+2. **For a digital accessory use an ACTIVE (UAC) DAC/headset.** It enumerates as
+   its own ALSA card — the path the tooling is built for. A *passive* adapter is
+   **not** assumed to work: if it is not detected, the recommendation is an active
+   DAC, and passive-analog support is reported `NOT_SUPPORTED_ON_DEVICE` rather
+   than faked.
+3. **Before any role experiment, record the recovery plan** (this is the
+   precondition, not a formality):
+   * the console device node and the exact host-side reconnect command
+     (`scripts/s10plus-debug-pack/nuxel-live.sh` / `nuxel-console-host.sh`),
+   * the current role values (copy `nuxelctl headphone usb-role` output into the
+     report verbatim),
+   * the value to restore the role to, and the fact that a **normal reboot**
+     (never Recovery/Download Mode) re-establishes the boot-time gadget role,
+   * confirmation that no flashing or partition action is involved anywhere in
+     this plan.
+4. **Only then**, with the recovery plan recorded, a bounded experiment is
+   allowed: change the role, enumerate the adapter, then **restore the role**
+   (or reboot normally) inside the same session, with the console output captured.
+5. If the console is lost mid-experiment and does not re-establish itself on a
+   normal reboot, **stop** and record `BLOCKED_HARDWARE`: do not escalate, and do
+   not attempt a bootloader path (mission invariant).
+
+Accepted verdicts for this section: `OFFLINE_TESTED` (the read-only report),
+`NEEDS_OWNER_TEST` (a real headset), `NOT_SUPPORTED_ON_DEVICE` (passive analog),
+`BLOCKED_HARDWARE` (the role cannot be switched without risking the console).
+**No repository tool switches the role, and no claim is made from a report.**
 
 ## Current automatic evidence (repository, this build group)
 

@@ -1,0 +1,10 @@
+# TIMING BOUNDARY: 499 ms after the second key CANCELS the chord (the buffered volume
+# step is delivered); 500 ms FIRES it. A press is never silently swallowed.
+0 key power 1
+100 key volume_down 1
+599 key volume_down 0
+700 tick
+800 key volume_down 1
+1300 tick
+1400 key volume_down 0
+1500 key power 0

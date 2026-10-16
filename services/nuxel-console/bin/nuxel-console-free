@@ -1,0 +1,37 @@
+#!/bin/sh
+# nuxel-console-free — "is the live console port free?" (single-owner guard).
+#
+# Used as ExecCondition= of nuxel-console.service. Exit 0 => nobody owns the
+# console lock => the unit may start. Non-zero => an owner exists (normally the
+# initramfs instance of /opt/nuxel/nuxel-console) or the check cannot be made:
+# the unit is SKIPPED. Failing closed here is what guarantees one owner.
+#
+# The lock protocol is the one tools/s10plus/a33/nuxel-console.c implements
+# (open(2) + flock(LOCK_EX|LOCK_NB) on $NUXEL_CONSOLE_LOCK, default
+# /run/nuxel-console.lock). flock(2) and the flock(1) utility use the same
+# kernel mechanism, so taking LOCK_EX through flock(1) conflicts with a running
+# console and succeeds when there is none. The lock is released when this
+# process exits, so the check does not itself become an owner.
+set -u
+LOCK="${NUXEL_CONSOLE_LOCK:-/run/nuxel-console.lock}"
+
+# No flock(1) (util-linux)? Then we cannot prove the port is free: fail closed
+# (skip the unit) instead of starting a possible second console.
+if ! command -v flock >/dev/null 2>&1; then
+    echo "nuxel-console-free: flock(1) not available - cannot prove the port is free, skipping" >&2
+    exit 1
+fi
+
+# The directory must exist to create the lock file; a missing /run is a start
+# condition failure, not a console failure (systemd-tmpfiles provides it).
+_dir="$(dirname "$LOCK")"
+if [ ! -d "$_dir" ]; then
+    echo "nuxel-console-free: $_dir does not exist - cannot test the lock" >&2
+    exit 1
+fi
+
+if flock -n "$LOCK" -c 'exit 0'; then
+    exit 0        # free: no console owner right now
+fi
+echo "nuxel-console-free: $LOCK is held - a console owner already exists, skipping" >&2
+exit 1

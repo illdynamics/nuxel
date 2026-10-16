@@ -39,6 +39,8 @@
 #   nuxel-audio-diag.sh ucm-install [--yes] atomic install of the generated HiFi.conf
 #   nuxel-audio-diag.sh tone [MS] [--yes]   bounded low-volume tone + DAC decision
 #   nuxel-audio-diag.sh safe-volume [N]     read or set the softvol ceiling control
+#   nuxel-audio-diag.sh settings [--json]   the Settings -> Sound surface + live values
+#   nuxel-audio-diag.sh mode [normal|vibrate|silent]   read/cycle the sound mode
 #   nuxel-audio-diag.sh selftest            run the bundled offline fixtures
 #   nuxel-audio-diag.sh help
 #
@@ -50,6 +52,7 @@ set -uo pipefail
 
 SELF="$(basename "$0")"
 SELF_PATH="$(cd "$(dirname "$0")" && pwd)/$(basename "$0")"
+SELF_DIR="$(cd "$(dirname "$0")" && pwd)"
 ROOT="${NUXEL_DIAG_ROOT:-/}"
 ARGS=()
 while [ $# -gt 0 ]; do
@@ -68,6 +71,10 @@ CMD="${1:-status}"; [ $# -gt 0 ] && shift || true
 CARD_NAME="${NUXEL_AUDIO_CARD:-beyond-madera}"
 POLICY="${NUXEL_AUDIO_POLICY:-/etc/nuxel/audio/audio.json}"
 STATE_DIR="${NUXEL_AUDIO_STATE:-/var/lib/nuxel/audio}"
+# The sound mode is a SHARED contract: the button manager's Power+VolumeUp chord
+# writes the same file (see nuxel-button-manager.c), so the two can never disagree.
+SOUND_MODE_FILE="${NUXEL_SOUND_MODE_FILE:-/var/lib/nuxel/audio/sound-mode}"
+SOUND_SETTINGS_SPEC="$SELF_DIR/../../../configs/alsa-ucm/nuxel-sound-settings.json"
 EVIDENCE_LOG="${NUXEL_AUDIO_LOG:-/var/log/nuxel/audio-diag.log}"
 UCM_DIR="/usr/share/alsa/ucm2/$CARD_NAME"
 # Codec DSP firmware. Without it the CS47L93 DSP does not enumerate and no route
@@ -503,6 +510,98 @@ cmd_safe_volume() {
   run_tool amixer -c "$idx" sset 'Nuxel Safe Volume' "${want}%" && say "set softvol ceiling to ${want}%"
 }
 
+# ------------------------------------------------------------------- settings
+# primary_element: the FIRST real playback element the card reports. A control
+# name is never invented ('Master' is not assumed to exist on this codec).
+primary_element() {
+  local idx="$1" ctl=""
+  [ -n "$idx" ] && have_tool amixer || return 1
+  ctl="$(run_tool amixer -c "$idx" scontrols 2>/dev/null | sed -n "s/^Simple mixer control '\(.*\)',.*/\1/p" | head -1)"
+  [ -n "$ctl" ] && printf '%s' "$ctl"
+}
+
+cmd_mode() {
+  local want="${1:-}"
+  local f; f="$(abs "$SOUND_MODE_FILE")"
+  if [ -z "$want" ]; then
+    local cur="normal"
+    [ -r "$f" ] && cur="$(head -1 "$f" | tr -d ' \n')"
+    [ -n "$cur" ] || cur="normal"
+    say "sound mode: $cur"
+    say "state file: $SOUND_MODE_FILE (shared with the Power+VolumeUp chord in the button manager)"
+    return 0
+  fi
+  case "$want" in
+    normal|vibrate|silent) ;;
+    *) say "usage: $SELF mode [normal|vibrate|silent]"; return 2 ;;
+  esac
+  mkdir -p "$(dirname "$f")" 2>/dev/null || true
+  printf '%s\n' "$want" > "$f" 2>/dev/null || { say "cannot write $f"; return 1; }
+  local idx ctl sw
+  idx="$(card_index)"; ctl="$(primary_element "$idx" || true)"
+  sw="off"; [ "$want" = "normal" ] && sw="on"
+  if [ -n "$ctl" ]; then
+    run_tool amixer -c "$idx" sset "$ctl" "$sw" >/dev/null 2>&1 || true
+    say "sound mode set to $want (element '$ctl' switched $sw)"
+  else
+    say "sound mode set to $want (no mixer element was discoverable: the MODE is recorded, the"
+    say "  playback switch was NOT touched — a control name is never invented)"
+  fi
+  if [ "$want" = "vibrate" ]; then
+    say "NOTE: vibrate mode also needs the vibrator path (briq-08b). The mode is RECORDED here;"
+    say "      it is not a claim that the phone vibrates."
+  fi
+  say "audibility remains NEEDS_OWNER_TEST (a switch write is not sound)."
+  return 0
+}
+
+cmd_settings() {
+  local json="${1:-}"
+  hdr "Settings -> Sound (renderer: briq-06d)"
+  say "spec: configs/alsa-ucm/nuxel-sound-settings.json"
+  local idx; idx="$(card_index)"
+  say "card: ${idx:-NOT FOUND} (name '$CARD_NAME')"
+  say "volume step: 5% of the element range (range / 20, floored at 1)"
+  say "low-volume cap: ${CAP_PCT}% (from $POLICY)"
+  local ctl; ctl="$(primary_element "$idx" || true)"
+  if [ -n "$ctl" ]; then
+    say "primary element: $ctl"
+    if [ -n "$ctl" ]; then
+      local mute_state
+      mute_state="$(run_tool amixer -c "$idx" sget "$ctl" 2>/dev/null | sed -n 's/.*\[\(on\|off\)\].*/\1/p' | head -1)"
+      say "playback switch: ${mute_state:-unknown}"
+    fi
+  else
+    say "mixer: unavailable (amixer absent or no card) - the settings page must say so, not guess"
+  fi
+  say "sound mode: $(cmd_mode | head -1 | sed 's/^sound mode: //')"
+  say "outputs:"
+  local sink=""
+  if have_tool wpctl; then
+    sink="$(run_tool wpctl status 2>/dev/null | awk '
+      /Sinks:/ { in_s = 1; next }
+      /Sources:|Filters:|Streams:|Devices:/ { if (in_s) in_s = 0 }
+      in_s && /[0-9]+\./ { print "    " $0 }' | head -6)"
+  fi
+  if [ -n "$sink" ]; then
+    printf '%s\n' "$sink"
+  elif have_tool pactl; then
+    printf '    %s\n' "$(run_tool pactl list short sinks 2>/dev/null | head -5)"
+  else
+    say "    (no session manager answered: sink list unavailable; the ALSA element above is the only truth)"
+  fi
+  say "per-app volume: $( if have_tool wpctl || have_tool pactl; then echo "supported by the session manager (per-node volume)"; else echo "NOT supported on this image - the row must say unsupported"; fi )"
+  say "mic input: the capture control of the same card (jack headset mic vs built-in); selection is not proof of a recording"
+  say "jack routes: configs/nuxel/audio/jack-routes.json (speaker / headphones / headset / USB-C UAC / analog accessory)"
+  say "audibility: NEEDS_OWNER_TEST for every row."
+  if [ "$json" = "--json" ]; then
+    local mode; mode="$(cmd_mode 2>/dev/null | head -1 | sed 's/^sound mode: //')"
+    printf '{"tool":"nuxel-audio-diag","device":"beyond2lte","card":"%s","card_index":"%s","cap_percent":%s,"sound_mode":"%s","step_percent":5}\n' \
+      "$CARD_NAME" "${idx:-}" "${CAP_PCT:-0}" "${mode:-normal}"
+  fi
+  return 0
+}
+
 # ------------------------------------------------------------------- status
 cmd_status() {
   local json=""
@@ -588,6 +687,8 @@ case "$CMD" in
   ucm-install) cmd_ucm_install "${1:-}" ;;
   tone)        cmd_tone "${1:-800}" "${2:-}" ;;
   safe-volume) cmd_safe_volume "${1:-}" ;;
+  settings)    cmd_settings "${1:-}" ;;
+  mode)        cmd_mode "${1:-}" ;;
   selftest)    cmd_selftest ;;
   help|-h|--help) sed -n '2,45p' "$0" | sed 's/^# \{0,1\}//' ;;
   *) say "unknown command: $CMD (try: $SELF help)"; exit 2 ;;

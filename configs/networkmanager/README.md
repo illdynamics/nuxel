@@ -9,6 +9,21 @@ not aspirational:
 | `98-nuxel-dns.conf` | `/etc/NetworkManager/conf.d/` | Prefer private DNS (`dns-priority=-1`), DM to encrypted stub |
 | `resolved-conf.d/nuxel-privacy.conf` | `/etc/systemd/resolved.conf.d/nuxel-privacy.conf` | **Actual** DoH/DoT transport (pinned Cloudflare upstreams + `DNSOverTLS`) — Fedora/VM |
 | `nuxel-stubby.yml` | `/etc/stubby/stubby.yml` | DoT/DoH stub for mustang / pure-OpenRC (no systemd) |
+| `10-nuxel-s10plus-wifi.conf` | `/etc/NetworkManager/conf.d/` | S10+ Wi-Fi bring-up policy (wpa_supplicant backend, scan MAC randomization, power-save off during bring-up) |
+| `wpa_supplicant-s10plus.conf` | `/etc/wpa_supplicant/` (owner-installed) | world regulatory domain (no invented country), `update_config=0`, no legacy `driver=` pin |
+| `nuxel-s10plus-wifi.nmconnection.example` | nowhere (inert) | credential-free connection template; the `.example` suffix keeps NetworkManager from loading a placeholder profile |
+| `nuxel-network-settings.spec.json` | repository contract only | the native Network Settings feature set + the `read_api` command behind every row (append point for briq-06d) |
+
+## Wi-Fi diagnostics and evidence (briq-03a)
+
+`tools/s10plus/a33/nuxel-wifi-diag.sh` (also `nuxelctl wifi …`) reports what the
+live kernel, firmware directory and NetworkManager actually show, and never
+claims a working radio: `status`/`scan`/`connect`/`disconnect`/`regdom`/
+`firmware`, plus `mark` → one normal reboot → `compare` for **reconnection across
+a reboot** (a pair with an unchanged boot id is REFUSED as evidence) and
+`fallback` for the **no-cellular-fallback** policy audit. `settings-spec` prints
+the network settings contract. Owner procedure:
+`docs/beta-finalization/manual-proof/04-wifi.md`.
 
 ## DNS transport
 `98-nuxel-dns.conf` sets `dns=systemd-resolved` (Fedora VM) and a negative

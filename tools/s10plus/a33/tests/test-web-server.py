@@ -112,6 +112,146 @@ def port_free(port: int) -> bool:
         s.close()
 
 
+def request(port: int, path: str, method: str = "GET", headers: dict = None):
+    """Return (status, headers-dict, body-bytes-or-None). Raw http.client, so
+    HEAD/conditional requests and headers are observable."""
+    conn = http.client.HTTPConnection("127.0.0.1", port, timeout=5)
+    try:
+        conn.request(method, path, headers=headers or {})
+        resp = conn.getresponse()
+        body = resp.read() if method != "HEAD" else b""
+        return resp.status, {k.lower(): v for k, v in resp.getheaders()}, body
+    finally:
+        conn.close()
+
+
+def raw_request(port: int, target: str, extra: str = "", timeout: float = 5.0):
+    """Send a hand-built request line (for traversal attempts) and read the reply."""
+    s = socket.socket()
+    s.settimeout(timeout)
+    try:
+        s.connect(("127.0.0.1", port))
+        s.sendall(("GET %s HTTP/1.0\r\nHost: 127.0.0.1\r\n%s\r\n" % (target, extra)).encode())
+        data = b""
+        while True:
+            chunk = s.recv(65536)
+            if not chunk:
+                break
+            data += chunk
+        return data
+    except OSError as exc:
+        return b"<socket error: %s>" % str(exc).encode()
+    finally:
+        s.close()
+
+
+def status_of(reply: bytes) -> int:
+    try:
+        return int(reply.split(b" ", 2)[1])
+    except (IndexError, ValueError):
+        return 0
+
+
+def test_static_server_headers(port: int, check, src: str) -> None:
+    """MIME types, validators, the cache policy, service-worker headers,
+    no directory listings, no traversal and no per-request journal spam.
+
+    These are the properties `python3 -m http.server` does NOT provide and the
+    reason briq-04c replaced it: a stale service worker, a browser-invented cache
+    policy per asset, a serialised request queue and a directory listing of the
+    staged tree.
+    """
+    st, hdrs, _ = request(port, "/pwa/nuxel-home/index.html")
+    check(st == 200, "index.html -> 200 (%s)" % st)
+    check(hdrs.get("content-type", "").startswith("text/html"),
+          "index.html is served as text/html (%r)" % hdrs.get("content-type"))
+    check(hdrs.get("x-content-type-options") == "nosniff",
+          "X-Content-Type-Options: nosniff is set (WebKit never guesses)")
+    check(hdrs.get("cache-control") == "no-cache",
+          "the launcher shell is revalidated (Cache-Control=%r)" % hdrs.get("cache-control"))
+    check(bool(hdrs.get("etag")) and bool(hdrs.get("last-modified")),
+          "index.html carries ETag + Last-Modified validators")
+
+    st, hdrs, _ = request(port, "/pwa/nuxel-common/bridge.js")
+    check(st == 200 and hdrs.get("content-type", "").startswith("text/javascript"),
+          "bridge.js is served as text/javascript (%r)" % hdrs.get("content-type"))
+    check(hdrs.get("cache-control", "").startswith("public, max-age=3600"),
+          "an unversioned module gets bounded staleness (%r)" % hdrs.get("cache-control"))
+    st, hdrs, _ = request(port, "/pwa/nuxel-common/bridge.js?v=deadbeef")
+    check("immutable" in hdrs.get("cache-control", ""),
+          "a content-addressed asset (?v=…) is immutable (%r)" % hdrs.get("cache-control"))
+    check(hdrs.get("x-nuxel-asset-revision", "") != "",
+          "X-Nuxel-Asset-Revision names the served bytes (%r)"
+          % hdrs.get("x-nuxel-asset-revision"))
+
+    st, hdrs, _ = request(port, "/pwa/nuxel-apps/calendar/manifest.json")
+    check(st == 200 and hdrs.get("content-type", "").startswith("application/manifest+json"),
+          "an app manifest.json is typed application/manifest+json, not generic JSON (%r)"
+          % hdrs.get("content-type"))
+    check(hdrs.get("cache-control") == "no-cache",
+          "a manifest is revalidated, not cached blind (%r)" % hdrs.get("cache-control"))
+    st, hdrs, _ = request(port, "/pwa/nuxel-common/bridge-version.json")
+    check(st == 200 and hdrs.get("content-type", "").startswith("application/json"),
+          "an ordinary .json is application/json (%r)" % hdrs.get("content-type"))
+    st, hdrs, _ = request(port, "/pwa/nuxel-apps/settings/icons/settings.svg") \
+        if os.path.isfile(os.path.join(ROOT, "pwa/nuxel-apps/settings/icons/settings.svg")) \
+        else (None, {}, b"")
+    if st is not None:
+        check(hdrs.get("content-type", "").startswith("image/svg+xml"),
+              "an SVG icon is image/svg+xml (%r)" % hdrs.get("content-type"))
+    st, hdrs, _ = request(port, "/pwa/nuxel-home/manifest.json")
+    check(st == 200 and hdrs.get("content-type", "").startswith("application/manifest+json"),
+          "the launcher manifest.json is application/manifest+json (%r)" % hdrs.get("content-type"))
+
+    st, hdrs, body = request(port, "/pwa/nuxel-home/sw.js")
+    check(st == 200, "the launcher service worker is served (%s)" % st)
+    check(hdrs.get("service-worker-allowed") == "/",
+          "Service-Worker-Allowed: / is sent for the service worker (%r)"
+          % hdrs.get("service-worker-allowed"))
+    check(hdrs.get("cache-control") == "no-cache",
+          "the service worker is REVALIDATED: an update cannot be masked by a stale "
+          "browser copy (%r)" % hdrs.get("cache-control"))
+    etag = hdrs.get("etag")
+    st2, hdrs2, _ = request(port, "/pwa/nuxel-home/sw.js", headers={"If-None-Match": etag})
+    check(st2 == 304, "a matching If-None-Match -> 304 Not Modified (%s)" % st2)
+    st3, _h3, _ = request(port, "/pwa/nuxel-home/sw.js",
+                          headers={"If-Modified-Since": hdrs.get("last-modified", "")})
+    check(st3 == 304, "a matching If-Modified-Since -> 304 Not Modified (%s)" % st3)
+    st_head, hdrs_head, body_head = request(port, "/pwa/nuxel-home/sw.js", method="HEAD")
+    check(st_head == 200 and body_head == b"" and hdrs_head.get("content-length"),
+          "HEAD returns the headers and no body (status=%s, length=%s)"
+          % (st_head, hdrs_head.get("content-length")))
+
+    st, hdrs, _ = request(port, "/pwa/nuxel-apps/calendar/")
+    check(st == 403, "a directory is NOT listed (%s)" % st)
+    st, hdrs, _ = request(port, "/")
+    check(st == 403, "the docroot is not listed either (%s)" % st)
+    for target in ("/pwa/../../etc/passwd", "/../../../../etc/passwd",
+                   "/pwa/nuxel-home/%2e%2e/%2e%2e/etc/passwd"):
+        reply = raw_request(port, target)
+        code = status_of(reply)
+        check(code in (400, 403, 404) and b"root:" not in reply,
+              "traversal %r is refused with %s and leaks nothing" % (target, code))
+
+    # the old development server would answer every one of these with 200 and no
+    # policy; the presence of the policy is the behavioural proof that the new
+    # server (not `python3 -m http.server`) is the one serving.
+    check("ThreadingHTTPServer((" in src,
+          "wiring: the server is threaded (a single-threaded server serialises WebKit's "
+          "parallel subresource loads)")
+    check("os.path.realpath" in src and "startswith(root + os.sep)" in src,
+          "wiring: every path is realpath-resolved and must stay under the docroot")
+
+
+def test_no_request_log_spam(port: int, check, stderr_text: str) -> None:
+    """The journal must not become a request log: 200s are silent, failures are
+    named. (The diagnostics path is the live console, not a log flood.)"""
+    lines = [l for l in stderr_text.splitlines() if "-> 200" in l]
+    check(not lines, "successful requests are not logged to stderr (%d line(s))" % len(lines))
+    check(any("-> 404" in l or "not found" in l or "ERROR" in l for l in stderr_text.splitlines()),
+          "a refused request IS named on stderr")
+
+
 def main() -> int:
     print("[web-server] serves the PWA tree root so the launcher's ES module resolves")
     port = free_port()
@@ -143,8 +283,19 @@ def main() -> int:
             check(status3 in (200, 404),
                   "app assets are reachable from the same root (calendar manifest -> %s)" % status3)
         check(not proc.poll(), "the server is still running (no crash loop)")
-    finally:
+        print("[web-server] the PWA policy a development file server does not provide")
+        src = open(os.path.join(ROOT, "services", "nuxel-web", "bin",
+                                "nuxel-web-server.py"), errors="replace").read()
+        test_static_server_headers(port, check, src)
+        # a 404 must still be produced, and the log policy evaluated against
+        # everything the server has written so far
+        st404, _h, _b = request(port, "/pwa/nuxel-apps/does-not-exist.js")
+        check(st404 == 404, "an unknown asset is 404, not a directory listing (%s)" % st404)
         stop(proc)
+        test_no_request_log_spam(port, check, proc.stderr.read())
+    finally:
+        if proc.poll() is None:
+            stop(proc)
     check(port_free(port), "the listener is gone after termination (port %d freed)" % port)
 
     print("[web-server] a bad docroot fails loudly instead of serving '/'")

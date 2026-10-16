@@ -1,0 +1,8 @@
+# INTERRUPTED PRESS: VolumeUp is pressed (its step is already emitted), then Power arrives
+# before the hold class can fire, so the press becomes a chord and NO phantom volume-panel
+# action appears. The chord is then cancelled, and the short power press still counts as the
+# A32 short press (defer_power_short_for_double is 0 by design).
+0 key volume_up 1
+200 key power 1
+300 key volume_up 0
+400 key power 0

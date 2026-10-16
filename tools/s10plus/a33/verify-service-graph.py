@@ -74,6 +74,7 @@ UNIT_SOURCES = [
     "services/nuxel-session/systemd/nuxel-fallback.service",
     "services/nuxel-session/systemd/nuxel-button-manager.service",
     "services/nuxel-animation/systemd/nuxel-animation.service",
+    "services/nuxel-console/systemd/nuxel-console.service",
     "images/s10plus/nuxel-firstlight.service",
     "shell/nuxel-camera-portal/systemd/nuxel-camera-portal.service",
 ]
@@ -113,6 +114,21 @@ FORBIDDEN_REFS = {
 # recorded WARNING with a documented reason, not a handset boot-graph FAILURE.
 VM_ONLY_UNITS = {
     "nuxel-camera-portal.service",
+}
+
+# Units that are INSTALLED BUT DELIBERATELY NOT ENABLED, with the reason.  These
+# are not "forgotten" enablements: enabling them is the defect.  The validator
+# asserts three things for each of them - the builder installs it, the builder
+# does NOT enable it, and the unit file itself states why - so a future
+# contributor cannot turn the exception into a silent hole by deleting a comment.
+PROVISIONED_NOT_ENABLED = {
+    "nuxel-console.service":
+        "the live console has exactly ONE owner: the initramfs-started "
+        "/opt/nuxel/nuxel-console already holds /run/nuxel-console.lock before "
+        "systemd exists, and a second console on the same tty desynchronises the "
+        "framed protocol. The unit is guarded by ConditionPathExists=/usr/bin/"
+        "nuxel-console (absent on the shipped image) + ExecCondition="
+        "nuxel-console-free (proves the port is free) + Restart=no",
 }
 
 REGEX_SECTION = re.compile(r"^\[([A-Za-z]+)\]\s*$")
@@ -287,6 +303,62 @@ def main(argv=None, root: str = None) -> int:
     for cyc in cycles:
         problems.append("ordering cycle: %s" % " -> ".join(cyc))
 
+    # ---- 3c: the live console is single-owner, and the declaration matches ---
+    # The console is the only channel that can report a failing phone, so its
+    # ownership rule is asserted, not assumed: the unit must be unable to start
+    # beside a running console, must not restart into a second owner, must be
+    # ordered before the compositor it has to be able to report, and must never
+    # be enabled by the builder.  Finally the CURRENT owner must still exist: if
+    # the initramfs stops starting /opt/nuxel/nuxel-console AND the unit is not
+    # enabled, the image would ship with no debug path at all.
+    console_rel = "services/nuxel-console/systemd/nuxel-console.service"
+    console_path = os.path.join(repo_root(), console_rel)
+    if not os.path.exists(console_path):
+        problems.append("the live console has no unit in the repository (%s)" % console_rel)
+    else:
+        csec = parse_unit(console_path)
+        svc = csec.get("Service", {})
+        unit_sec = csec.get("Unit", {})
+        if "/usr/bin/nuxel-console" not in unit_sec.get("ConditionPathExists", []):
+            problems.append("nuxel-console.service: missing ConditionPathExists=/usr/bin/nuxel-console "
+                            "(a rootfs image without the binary must skip the unit, not fail it)")
+        if "/usr/lib/nuxel/nuxel-console-free" not in svc.get("ExecCondition", []):
+            problems.append("nuxel-console.service: missing ExecCondition=nuxel-console-free "
+                            "(nothing proves the console port is free before starting)")
+        if svc.get("Restart", [""])[0] != "no":
+            problems.append("nuxel-console.service: Restart=%s - a restart loop can fight the "
+                            "initramfs console for the tty; single-owner resources fail visibly"
+                            % svc.get("Restart"))
+        before = " ".join(unit_sec.get("Before", [])).split()
+        if "nuxel-wayland.service" not in before:
+            problems.append("nuxel-console.service: not ordered Before=nuxel-wayland.service "
+                            "(the console must be up first: it is the only failure report channel)")
+        console_txt = open(console_path, errors="replace").read()
+        if "NOT ENABLED" not in console_txt or "single-owner" not in console_txt.lower().replace("single owner", "single-owner"):
+            problems.append("nuxel-console.service: does not document its single-owner / not-enabled state")
+        helper = os.path.join(repo_root(), "services", "nuxel-console", "bin", "nuxel-console-free")
+        if not os.path.exists(helper):
+            problems.append("the console guard is missing: services/nuxel-console/bin/nuxel-console-free")
+        console_c = os.path.join(repo_root(), "tools", "s10plus", "a33", "nuxel-console.c")
+        init_sh = os.path.join(repo_root(), "boot", "initramfs", "init.sh")
+        if os.path.exists(console_c):
+            ctext = open(console_c, errors="replace").read()
+            if "/run/nuxel-console.lock" not in ctext:
+                problems.append("nuxel-console.c no longer uses /run/nuxel-console.lock "
+                                "(the unit's ExecCondition probes a lock the console does not take)")
+        else:
+            warnings.append("nuxel-console.c is absent: the device-side console implementation "
+                            "cannot be cross-checked against the unit's lock protocol")
+        if os.path.exists(init_sh):
+            itext = open(init_sh, errors="replace").read()
+            if "/opt/nuxel/nuxel-console" not in itext:
+                warnings.append("boot/initramfs/init.sh no longer starts /opt/nuxel/nuxel-console: "
+                                "the console's current owner has moved - if the rootfs unit is not "
+                                "enabled either, the image ships with NO debug console")
+        else:
+            warnings.append("boot/initramfs/init.sh is absent: the console's current owner "
+                            "(the initramfs instance) cannot be cross-checked")
+
     # ---- 3b: the A26 4.14 containment must still be there -------------------
     a26_path = a26_fixes_path()
     a26 = open(a26_path, errors="replace").read() if os.path.exists(a26_path) else ""
@@ -310,6 +382,11 @@ def main(argv=None, root: str = None) -> int:
         else:
             secs = units[name]["sections"]
             wb = install_refs(secs, "WantedBy")
+            if name in PROVISIONED_NOT_ENABLED:
+                if name in enabled:
+                    problems.append("builder ENABLES %s, which must stay provisioned-only: %s"
+                                    % (name, PROVISIONED_NOT_ENABLED[name]))
+                continue
             if "multi-user.target" in wb and name not in enabled and name != "nuxel-ui.service":
                 # enabled set uses .service names; accept either form
                 if name not in enabled:
@@ -317,6 +394,10 @@ def main(argv=None, root: str = None) -> int:
     enabled_byname = {e if e.endswith(".service") else e + ".service" for e in enabled}
     for name in sorted(units):
         secs = units[name]["sections"]
+        if name in PROVISIONED_NOT_ENABLED:
+            if name in enabled_byname:
+                problems.append("unit %s is enabled but is declared provisioned-only" % name)
+            continue
         if "multi-user.target" in install_refs(secs, "WantedBy") and name not in enabled_byname:
             problems.append("unit %s expects multi-user.target enablement; builder enables %s"
                             % (name, sorted(enabled_byname)))
@@ -355,6 +436,7 @@ def main(argv=None, root: str = None) -> int:
         "problems": problems,
         "warnings": warnings,
         "vm_only_units": sorted(VM_ONLY_UNITS),
+        "provisioned_not_enabled": {k: PROVISIONED_NOT_ENABLED[k] for k in sorted(PROVISIONED_NOT_ENABLED)},
         "verdict": verdict,
     }
     if args.json:
@@ -363,6 +445,8 @@ def main(argv=None, root: str = None) -> int:
             json.dump(report, fh, indent=2)
             fh.write("\n")
     if not args.quiet:
+        for name, why in sorted(PROVISIONED_NOT_ENABLED.items()):
+            print("INFO  %s is installed but deliberately NOT enabled: %s" % (name, why))
         for w in warnings:
             print("WARN  %s" % w)
         for p in problems:

@@ -22,7 +22,13 @@ report each defect class:
      only reproducible if enablement is in the builder, not hot-patched);
   7. a phone unit is enabled into a USER target (`WantedBy=graphical-session.target`)
      => FAILED, while the VM-only camera portal is a recorded WARNING;
-  8. the A26 containment script loses one of its four 4.14 repairs => FAILED.
+  8. the A26 containment script loses one of its four 4.14 repairs => FAILED;
+  9. the single-owner live console (briq-04b rev 2) is enforced, not assumed: the
+     builder ENABLING the provisioned-only `nuxel-console.service`, the unit
+     losing its `ExecCondition`/`ConditionPathExists` guard, the unit switching to
+     `Restart=always` (a second owner waiting to happen) and the unit being
+     deleted altogether each => FAILED, while the baseline records the unit as
+     installed-but-not-enabled in the report.
 
 Every case runs against a temporary copy; the repository is never modified and
 no device, partition or /Users/wicked/x/nuxel/.qq path is touched.
@@ -75,6 +81,12 @@ PROVENANCE_UNITS = [
 EXTRA_TREE_FILES = [
     "images/s10plus/build-phone-rootfs-inside-fedora.sh",
     "tools/s10plus/a26/nuxel-rootfs-fixes.sh",
+    # the live console's device-side implementation, its single-owner guard and
+    # the initramfs owner are cross-checked by the validator (section 3c), so a
+    # faithful fixture must carry them.
+    "tools/s10plus/a33/nuxel-console.c",
+    "boot/initramfs/init.sh",
+    "services/nuxel-console/bin/nuxel-console-free",
 ]
 
 
@@ -139,7 +151,7 @@ def main() -> int:
         check(rc == 0 and report["verdict"] == "OFFLINE_TESTED",
               "baseline fixture verdict=%s rc=%s problems=%s"
               % (report["verdict"], rc, report.get("problems")))
-        check(report.get("unit_count", 0) >= 14,
+        check(report.get("unit_count", 0) >= 15,
               "baseline parses the full unit set (%d units)" % report.get("unit_count", 0))
         check(report.get("root") == os.path.abspath(base),
               "the report records which tree was validated (%s)" % report.get("root"))
@@ -148,6 +160,67 @@ def main() -> int:
               "the VM-only camera portal's no-op enablement is a recorded WARNING, not silence")
         check(report.get("vm_only_units") == ["nuxel-camera-portal.service"],
               "the report names the VM-only unit set explicitly (%s)" % report.get("vm_only_units"))
+        check("nuxel-console.service" in (report.get("provisioned_not_enabled") or {}),
+              "the report records the live console as installed-but-deliberately-not-enabled")
+        check(not any("nuxel-console" in p for p in report.get("problems", [])),
+              "the baseline raises no console-ownership problem (%s)"
+              % [p for p in report.get("problems", []) if "console" in p][:1])
+        check(report.get("builder_installed") and
+              any("nuxel-console.service" == i for i in report["builder_installed"]),
+              "the builder installs nuxel-console.service (%s)"
+              % [i for i in (report.get("builder_installed") or []) if "console" in i])
+        check(not any("console" in e for e in (report.get("builder_enabled") or [])),
+              "the builder does NOT enable the console (%s)" % report.get("builder_enabled"))
+
+        print("[service-graph] enabling the provisioned-only console is fatal (two owners)")
+        mut = os.path.join(tmp, "console-enabled")
+        make_fixture(mut)
+        bpath = os.path.join(mut, "images/s10plus/build-phone-rootfs-inside-fedora.sh")
+        btext = open(bpath, errors="replace").read()
+        btext += ('ln -sf ../nuxel-console.service '
+                  '"$STAGE/etc/systemd/system/multi-user.target.wants/nuxel-console.service"\n')
+        open(bpath, "w").write(btext)
+        rc, report = validate(mut)
+        check(rc != 0, "verdict is FAILED (rc=%s)" % rc)
+        check(has_problem(report, "provisioned-only"),
+              "the two-owner enablement is named: %s"
+              % [p for p in report.get("problems", []) if "console" in p][:1])
+
+        print("[service-graph] a console unit that lost its single-owner guard is fatal")
+        mut = os.path.join(tmp, "console-unguarded")
+        make_fixture(mut)
+        cpath = os.path.join(mut, "services/nuxel-console/systemd/nuxel-console.service")
+        ctext = open(cpath, errors="replace").read()
+        keep = [ln for ln in ctext.splitlines(keepends=True) if not ln.startswith("ExecCondition=")]
+        check(len(keep) != len(ctext.splitlines(keepends=True)),
+              "the ExecCondition line was located before mutation")
+        open(cpath, "w").write("".join(keep))
+        rc, report = validate(mut)
+        check(rc != 0, "verdict is FAILED (rc=%s)" % rc)
+        check(has_problem(report, "ExecCondition"), "the lost port guard is named: %s"
+              % [p for p in report.get("problems", []) if "console" in p][:1])
+
+        print("[service-graph] a console unit that restarts into a second owner is fatal")
+        mut = os.path.join(tmp, "console-restart")
+        make_fixture(mut)
+        cpath = os.path.join(mut, "services/nuxel-console/systemd/nuxel-console.service")
+        ctext = open(cpath, errors="replace").read()
+        open(cpath, "w").write(ctext.replace("Restart=no", "Restart=always"))
+        rc, report = validate(mut)
+        check(rc != 0, "verdict is FAILED (rc=%s)" % rc)
+        check(has_problem(report, "Restart=[") and has_problem(report, "restart loop"),
+              "the restart loop is named: %s"
+              % [p for p in report.get("problems", []) if "Restart" in p][:1])
+
+        print("[service-graph] deleting the console unit is fatal (no debug path at all)")
+        mut = os.path.join(tmp, "console-gone")
+        make_fixture(mut)
+        os.unlink(os.path.join(mut, "services/nuxel-console/systemd/nuxel-console.service"))
+        rc, report = validate(mut)
+        check(rc != 0, "verdict is FAILED (rc=%s)" % rc)
+        check(has_problem(report, "live console has no unit"),
+              "the missing console declaration is named: %s"
+              % [p for p in report.get("problems", []) if "console" in p][:1])
 
         print("[service-graph] an injected ordering cycle is fatal")
         mut = os.path.join(tmp, "cycle")

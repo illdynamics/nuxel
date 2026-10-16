@@ -178,6 +178,24 @@ install -m 0644 /nuxel/services/nuxel-animation/systemd/nuxel-animation.service 
     "$STAGE/etc/systemd/system/nuxel-animation.service"
 install -m 0755 /nuxel/services/nuxel-animation/bin/nuxel-animation-claim \
     "$STAGE/usr/lib/nuxel/nuxel-animation-claim"
+# --- live console (briq-04b): INSTALLED, DELIBERATELY NOT ENABLED -------------
+# The console has exactly ONE owner. On this image that owner is the initramfs
+# instance of /opt/nuxel/nuxel-console, which binds the CDC-ACM gadget and holds
+# /run/nuxel-console.lock before systemd exists (boot/initramfs/init.sh).
+# The unit + its flock probe are installed so the declaration is reproducible
+# from the repository, but NO multi-user.target.wants symlink is created:
+#   * ConditionPathExists=/usr/bin/nuxel-console (absent: the console ships in
+#     the initramfs) and ExecCondition=nuxel-console-free (proves the port is
+#     free) already make a start impossible while the initramfs owner runs;
+#   * enabling it would put a second console on the same tty the moment the
+#     rootfs binary is ever added, which desynchronises the framed protocol.
+# services/nuxel-console/test-console-ownership.py asserts BOTH facts, and
+# verify-service-graph.py fails the build if an enablement line appears here.
+install -m 0644 /nuxel/services/nuxel-console/systemd/nuxel-console.service \
+    "$STAGE/etc/systemd/system/nuxel-console.service"
+install -m 0755 /nuxel/services/nuxel-console/bin/nuxel-console-free \
+    "$STAGE/usr/lib/nuxel/nuxel-console-free"
+# NOT ENABLED ON PURPOSE - see above. No `ln -sf ../nuxel-console.service`.
 # nuxel-animation may only become the panel owner on an image WITHOUT the launcher
 # bridge (ConditionPathExists=!/usr/lib/nuxel/nuxel-wl-fb + the claim helper), so
 # enabling it cannot regress the A32 single framebuffer owner invariant.
@@ -227,6 +245,12 @@ install -m 0644 /nuxel/services/nuxel-portal/systemd/nuxel-portal.service       
 install -m 0644 /nuxel/services/nuxel-notifications/systemd/nuxel-notifications.service "$STAGE/etc/systemd/system/nuxel-notifications.service"
 # The static PWA server that serves the launcher tree on :8000.
 install -m 0755 /nuxel/services/nuxel-web/bin/nuxel-web "$STAGE/usr/bin/nuxel-web"
+# The static server itself (briq-04c rev 2): explicit MIME types, ETag +
+# Last-Modified revalidation, Service-Worker-Allowed for service-worker scripts,
+# a cache policy per asset class and threaded serving. The shim resolves it from
+# /usr/lib/nuxel first, so this path is what the phone uses.
+install -m 0755 /nuxel/services/nuxel-web/bin/nuxel-web-server.py \
+    "$STAGE/usr/lib/nuxel/nuxel-web-server.py"
 install -m 0644 /nuxel/services/nuxel-web.service "$STAGE/etc/systemd/system/nuxel-web.service"
 # System users the units run as (systemd-sysusers would do this at boot, but
 # this kernel masks the units that consume it, so create them in the image).

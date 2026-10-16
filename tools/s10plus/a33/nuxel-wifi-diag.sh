@@ -449,11 +449,23 @@ cmd_fallback() {
 # settings-spec — the native Network Settings feature set (bg-06d append point)
 # ---------------------------------------------------------------------------
 cmd_settings_spec() {
-  local f="${NUXEL_NETWORK_SETTINGS_SPEC:-configs/networkmanager/nuxel-network-settings.spec.json}"
-  local p="$SELF_DIR/../../../$f"
+  # Three candidates, in order: an explicit override, the installed device copy,
+  # the repository copy. The first readable one wins; none of them is guessed.
+  local cands=(
+    "${NUXEL_NETWORK_SETTINGS_SPEC:-}"
+    "/etc/nuxel/network/nuxel-network-settings.spec.json"
+    "$SELF_DIR/../../../configs/networkmanager/nuxel-network-settings.spec.json"
+  )
+  local f="" p="" c
+  for c in "${cands[@]}"; do
+    [ -n "$c" ] || continue
+    if [ -r "$c" ]; then f="$c"; p="$c"; break; fi
+    if [ -r "$(abs "$c")" ]; then f="$c"; p="$(abs "$c")"; break; fi
+  done
+  [ -n "$f" ] || f="configs/networkmanager/nuxel-network-settings.spec.json"
   hdr "native Network Settings feature set"
-  if [ -r "$p" ]; then
-    say "spec: $f"
+  if [ -n "$p" ] && [ -r "$p" ]; then
+    say "spec: $p"
     python3 - "$p" <<'PY'
 import json,sys
 d=json.load(open(sys.argv[1]))

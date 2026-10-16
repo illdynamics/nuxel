@@ -55,6 +55,11 @@ from typing import Dict, List, Set, Tuple
 
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", ".."))
 REGISTRY = os.path.join(ROOT, "pwa", "nuxel-common", "app-registry.json")
+WORKQUEUE = os.path.join(ROOT, "docs", "beta-finalization", "workqueue")
+# A tree_apps entry may only claim to EXIST in one of these states; `planned` is
+# the state for "declared, owned, not landed yet", and it must NOT exist on disk
+# (when it lands, the verifier says so and the entry is promoted).
+PRESENT_STATES = ("complete", "in_progress", "shared-assets-not-an-app", "partial")
 PIN = os.path.join(ROOT, "pwa", "nuxel-common", "bridge-version.json")
 BRIDGE_JS = os.path.join(ROOT, "pwa", "nuxel-common", "bridge.js")
 APPS_JS = os.path.join(ROOT, "pwa", "nuxel-home", "js", "apps.js")
@@ -82,6 +87,12 @@ class Report:
         # silent pass (always printed), never fatal unless --strict.
         self.deferred: List[Dict[str, object]] = []
         self.deferred_resolved: List[str] = []
+        # Concept-level inventory of mission apps with no tree dir yet, and the
+        # tree dirs that were declared `planned` and are still absent. Both are
+        # printed on every run: completeness is stated, never implied.
+        self.pending_apps: List[Dict[str, object]] = []
+        self.planned_pending: List[str] = []
+        self.planned_landed: List[str] = []
 
     def fail(self, msg: str) -> None:
         self.problems.append(msg)
@@ -186,6 +197,10 @@ def main(argv=None) -> int:
         rep.fail("no capability ids parsed from %s — the drift check cannot be trusted" % rel(CAPABILITIES_PY))
 
     cap_gaps = {g.get("capability"): g for g in registry.get("capability_gaps", [])}
+    # A capability this revision declares but the bridge cannot yet arbitrate is
+    # reported ONCE per capability, with the apps that use it - not once per app
+    # (the same finding repeated N times hides the N real drifts beside it).
+    gap_users: Dict[str, Set[str]] = {}
     for cap, gap in sorted(cap_gaps.items()):
         for field in ("declared_by", "status", "owner_group", "note"):
             if not gap.get(field):
@@ -212,8 +227,7 @@ def main(argv=None) -> int:
                 continue
             gap = cap_gaps.get(cap)
             if gap:
-                rep.warn("app %s: capability %r is not in the bridge enum — documented gap (owner %s)"
-                         % (aid, cap, gap.get("owner_group")))
+                gap_users.setdefault(cap, set()).add(aid)
             else:
                 rep.fail("app %s: capability %r is not defined in %s and not documented in capability_gaps"
                          % (aid, cap, rel(CAPABILITIES_PY)))
@@ -271,8 +285,7 @@ def main(argv=None) -> int:
                         continue
                     gap = cap_gaps.get(cap)
                     if gap:
-                        rep.warn("app %s: capability %r is declared but NOT in the bridge enum — documented gap (owner %s): %s"
-                                 % (aid, cap, gap.get("owner_group"), (gap.get("note") or "")[:120]))
+                        gap_users.setdefault(cap, set()).add(aid)
                     else:
                         rep.fail("app %s: capability %r is declared by the manifest but not defined in %s and not documented in capability_gaps"
                                  % (aid, cap, rel(CAPABILITIES_PY)))
@@ -294,6 +307,13 @@ def main(argv=None) -> int:
                 rep.ok("native %s -> %s (source %s)" % (aid, binp, src))
         else:
             rep.fail("app %s: unknown type %r" % (aid, app.get("type")))
+
+    for cap in sorted(gap_users):
+        gap = cap_gaps[cap]
+        rep.ok("capability %r is declared by %s but not yet in the bridge enum — documented gap "
+               "(owner %s, status %s): %s"
+               % (cap, ", ".join(sorted(gap_users[cap])), gap.get("owner_group"),
+                  gap.get("status"), (gap.get("note") or "")[:150]))
 
     # ---- 5: the PWA launcher serves exactly this set ---------------------
     if not os.path.exists(APPS_JS):
@@ -356,11 +376,77 @@ def main(argv=None) -> int:
                      if os.path.isdir(os.path.join(APPS_ROOT, d))
                      and os.path.isfile(os.path.join(APPS_ROOT, d, "index.html")))
     for t in registry.get("tree_apps", []):
-        if not os.path.isdir(os.path.join(ROOT, t["dir"])):
-            rep.fail("tree_apps names %r, which does not exist on disk" % t["dir"])
+        exists = os.path.isdir(os.path.join(ROOT, t["dir"]))
         for field in ("owner_group", "state", "note"):
             if not t.get(field):
                 rep.fail("tree_apps entry %r is missing %s" % (t["dir"], field))
+        state = t.get("state")
+        if state == "planned":
+            # `planned` is an OWNED promise, not a path claim: the directory must
+            # NOT exist yet, and while it is absent the entry is a DEFER (printed
+            # on every run) rather than a silent pass. A live `planned` dir means
+            # the owner group landed it - reported so the state is promoted, and
+            # never a failure (another group's cycle can land it mid-run).
+            if exists:
+                rep.planned_landed.append(t["dir"])
+                rep.ok("tree_apps planned entry %s has LANDED (promote it to complete/in_progress)"
+                       % t["dir"])
+            else:
+                rep.planned_pending.append(t["dir"])
+            continue
+        if state not in PRESENT_STATES:
+            rep.fail("tree_apps entry %r has unknown state %r (known: %s | planned)"
+                     % (t["dir"], state, " | ".join(PRESENT_STATES)))
+            continue
+        if not exists:
+            rep.fail("tree_apps names %r as %s, which does not exist on disk"
+                     % (t["dir"], state))
+
+    # ---- 7b: the concept-level inventory, cross-checked against the LEDGER ----
+    # pwa/nuxel-common/app-registry.json's required_apps_not_yet_in_tree[] lists
+    # mission apps that have no tree dir yet. It carries no path (a guess would
+    # make this verifier report a directory that will never exist) but it DOES
+    # carry the owning build group and its ledger briq, and both are checked:
+    # a mission requirement may not point at a briq that does not exist, and the
+    # briq's own `component` must be the owner the registry claims. This is what
+    # keeps the inventory from going stale silently.
+    for entry in registry.get("required_apps_not_yet_in_tree", []):
+        for field in ("app", "owner_group", "ledger_briq", "status", "note"):
+            if not entry.get(field):
+                rep.fail("required_apps_not_yet_in_tree entry %r is missing %s"
+                         % (entry.get("app"), field))
+        briq = entry.get("ledger_briq")
+        path = os.path.join(WORKQUEUE, "%s.json" % briq)
+        if not os.path.exists(path):
+            rep.fail("required_apps_not_yet_in_tree[%s] names ledger briq %r, which does not exist (%s)"
+                     % (entry.get("app"), briq, rel(WORKQUEUE)))
+            continue
+        try:
+            task = json.load(open(path))
+        except ValueError as exc:
+            rep.fail("ledger briq %s is not valid JSON (%s)" % (briq, exc))
+            continue
+        revs = task.get("revisions") or []
+        component = (revs[-1].get("component") if revs else task.get("component"))
+        if component != entry.get("owner_group"):
+            rep.fail("required_apps_not_yet_in_tree[%s]: owner_group %r != %s's component %r"
+                     % (entry.get("app"), entry.get("owner_group"), briq, component))
+        rep.pending_apps.append({"app": entry.get("app"), "owner_group": entry.get("owner_group"),
+                                 "ledger_briq": briq, "status": entry.get("status"),
+                                 "task_state": (revs[-1].get("state") if revs else task.get("state"))})
+
+    # ---- 7c: the REPORTED tree_apps states (never silent) --------------------
+    for d in sorted(rep.planned_pending):
+        rep.defer({"entry": d, "owner_groups": [t.get("owner_group") for t in registry["tree_apps"]
+                                                if t["dir"] == d],
+                   "ledger_briq": [t.get("ledger_briq") for t in registry["tree_apps"]
+                                   if t["dir"] == d],
+                   "reason": "declared `planned`: the owner group has not landed the app tree in "
+                             "this revision. Recorded as a DEFER (never a silent pass); the entry is "
+                             "promoted automatically when index.html + manifest.json appear."})
+    for a in rep.pending_apps:
+        rep.ok("required app not yet in the tree: %s (owner %s, %s, status %s/%s)"
+               % (a["app"], a["owner_group"], a["ledger_briq"], a["status"], a["task_state"]))
     launcher_registered_dirs = set()
     for aid, app in {a["id"]: a for a in registry["apps"]}.items():
         if app.get("type") == "pwa":
@@ -423,6 +509,9 @@ def main(argv=None) -> int:
         "tree_app_count": len(registry.get("tree_apps", [])),
         "checks": rep.checks,
         "deferred": rep.deferred,
+        "planned_pending": rep.planned_pending,
+        "planned_landed": rep.planned_landed,
+        "required_apps_pending": rep.pending_apps,
         "deferred_now_resolved": rep.deferred_resolved,
         "capability_gaps": registry.get("capability_gaps", []),
         "problems": rep.problems,
@@ -438,8 +527,13 @@ def main(argv=None) -> int:
         for c in rep.checks:
             print("OK    %s" % c)
         for d in rep.deferred:
-            print("DEFER %s: app tree not landed yet (owners: %s) — %s"
-                  % (d["app"], ", ".join(d.get("owner_groups") or []), d.get("reason")))
+            if "app" in d:
+                print("DEFER %s: app tree not landed yet (owners: %s) — %s"
+                      % (d["app"], ", ".join(d.get("owner_groups") or []), d.get("reason")))
+            else:
+                print("DEFER %s: declared planned, not landed yet (owners: %s, ledger: %s) — %s"
+                      % (d["entry"], ", ".join(d.get("owner_groups") or []),
+                         ", ".join(d.get("ledger_briq") or []), d.get("reason")))
         for aid in rep.deferred_resolved:
             print("INFO  %s was deferred earlier in this cycle and now resolves; drop the pending marker"
                   % aid)
@@ -447,8 +541,9 @@ def main(argv=None) -> int:
             print("WARN  %s" % w)
         for p in rep.problems:
             print("FAIL  %s" % p)
-        print("apps=%d problems=%d warnings=%d deferred=%d verdict=%s"
-              % (len(registry.get("apps", [])), len(rep.problems), len(rep.warnings), len(rep.deferred), verdict))
+        print("apps=%d problems=%d warnings=%d deferred=%d required_apps_pending=%d verdict=%s"
+              % (len(registry.get("apps", [])), len(rep.problems), len(rep.warnings),
+                 len(rep.deferred), len(rep.pending_apps), verdict))
     return 0 if verdict != "FAILED" else 1
 
 

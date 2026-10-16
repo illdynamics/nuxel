@@ -1,0 +1,5 @@
+# TIMING BOUNDARY: 29 ms is below the 30 ms debounce (ignored); 35 ms is a short press
+0 key power 1
+29 key power 0
+200 key power 1
+235 key power 0

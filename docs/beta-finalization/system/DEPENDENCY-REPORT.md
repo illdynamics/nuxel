@@ -87,6 +87,110 @@ as a failure, and any change that breaks the `systemd` pin as `FAILED`
 regardless — the pin is what the carried 4.14 `libsystemd-shared` patch is
 compiled against (§3.1).
 
+### 1.2 Dependencies (revision 2): existence is not installability
+
+Resolving a package's NEVRA proves it EXISTS. It does not prove the set can be
+installed together, and on a phone with no rescue shell an unsatisfiable
+requirement is a bricking class of defect. `verify-packages.py` therefore reads
+the rpm `Requires` of every candidate NEVRA of every essential package **from
+the same `primary.xml` that resolved the package** (same artifact, same
+provenance, no second source of truth), classifies each requirement by shape,
+and resolves it against the repository's package names *and* its real
+`rpm:provides` entries. Measured result of the recorded run:
+
+| Class | Count | Resolution rule |
+|---|---|---|
+| `package` (plain name, e.g. `openssl-libs`, `hicolor-icon-theme`) | 95 | must be a package NAME in the repository (or a plain provider) |
+| `capability` (sonames, `python3.13dist(…)`, versioned names) | 1062 | must be an exact `rpm:provides` entry of some package |
+| `rich` (rpm boolean: `(A or B)`, `(A if B else C)`) | 11 | evaluated tri-state; see below |
+| `file` (`/usr/bin/sh`, `/etc/pam.d/system-auth`) | 52 | **cannot be resolved from `primary.xml`** — Fedora keeps file provides in `filelists.xml`, which this verifier deliberately does not download; counted as `unverifiable_from_primary`, never reported as verified |
+| **unresolved** | **0** | a requirement no package in Fedora 43 satisfies ⇒ verdict `FAILED` |
+
+The dependency evidence is part of the manifest (`dependencies{}` plus a
+`requires{}` block on every package entry), so a reviewer sees the same numbers
+the verifier computed, per package:
+
+| Package | Requirements | By kind | Plain-name requirements |
+|---|---|---|---|
+| systemd (pinned) | 56 | {"capability": 44, "file": 5, "package": 4, "rich": 3} | `coreutils`, `dbus`, `grep`, `openssl-libs` |
+| NetworkManager | 63 | {"capability": 54, "file": 4, "package": 5} | `dbus`, `glib2`, `systemd`, `systemd-udev` |
+| phoc | 37 | {"capability": 36, "package": 1} | `gmobile` |
+| phosh | 78 | {"capability": 68, "file": 1, "package": 9} | `gnome-session`, `gnome-settings-daemon`, `gnome-shell-common`, `hicolor-icon-theme`, `lato-fonts`, `mutter-common`, `phoc`, `phosh-osk`, `xorg-x11-server-Xwayland` |
+| webkit2gtk4.1 | 119 | {"capability": 116, "package": 3} | `bubblewrap`, `libGLES`, `xdg-dbus-proxy` |
+
+Provider attribution is recorded, not just a boolean, so a capability can be
+traced to the package that carries it:
+
+| Requirement | Provided by |
+|---|---|
+| `ModemManager-glib(aarch-64)` | `ModemManager-glib-1.24.2-1.fc43.aarch64` |
+| `filesystem(unmerged-sbin-symlinks)` | `filesystem-3.18-50.fc43.aarch64` |
+| `ld-linux-aarch64.so.1()(64bit)` | `glibc-2.42-4.fc43.aarch64` |
+| `ld-linux-aarch64.so.1(GLIBC_2.17)(64bit)` | `glibc-2.42-4.fc43.aarch64` |
+| `libgcc_s.so.1()(64bit)` | `libgcc-15.2.1-2.fc43.aarch64` |
+| `libgcc_s.so.1(GCC_3.0)(64bit)` | `libgcc-15.2.1-2.fc43.aarch64` |
+| `libgcc_s.so.1(GCC_3.3.1)(64bit)` | `libgcc-15.2.1-2.fc43.aarch64` |
+| `libgio-2.0.so.0()(64bit)` | `glib2-2.86.0-2.fc43.aarch64` |
+
+**Three real defects were found and fixed by this check** (each of them a false
+verdict if left alone):
+
+1. **A cross-repository provider was reported as missing.** On Fedora 43
+   `stevia` lives in `updates` and requires `libdconf.so.1()(64bit)`, which only
+   `dconf` in the **GA** repository provides. A per-repository resolution called
+   that pair unsatisfiable — a false `FAILED` on a package set `dnf` installs
+   without complaint. The verifier now computes the needed set globally and
+   scans each repository for it. The regression test is
+   `test_cross_repository_provider_resolution()` in
+   `tools/s10plus/a33/tests/test-packages-manifest.py` (synthetic two-repository
+   fixture, so it stays offline).
+2. **rpm RICH dependencies were mis-classified as capabilities** and therefore
+   reported unresolved: `(wpa_supplicant >= 1:1.1 or iwd)`,
+   `(util-linux-core or util-linux)`, `(libbpf >= 2:1.4.7 if libbpf)` … They are
+   now parsed (with version constraints kept intact inside each atom) and
+   evaluated tri-state (True / False / undecidable). Measured: 10 of
+   11 resolve, 1 are *undecidable from `primary.xml`*
+   because the required operand is a FILE (e.g. `(/etc/pam.d/system-auth if
+   systemd)`) — reported, never guessed.
+3. **A stale derived index cache could silently change a verdict.** The parsed
+   index (names, requirements, classification) is cached under
+   `build/pkgmeta/` to keep re-runs and the mutation tests fast, so it now
+   carries `INDEX_CACHE_VERSION`; a cache written by an older classifier is
+   re-parsed instead of being trusted (`index cache version 1 != 2 (re-parsing)`
+   was observed exactly once, during this revision).
+
+**Honest limit:** resolving names and capabilities is not a transaction.
+Version-constraint satisfaction (EVR comparison, file provides, scriptlet
+behaviour, conflicts, multilib) is delegated to `dnf`'s solver, which the
+builder runs under `set -Eeuo pipefail` with `--installroot`. What this section
+proves is that **no essential package requires something the repository set does
+not contain at all** — the class of error that no amount of retrying can fix.
+
+### 1.3 The manifest is validated as data (JSON schema, fail closed)
+
+`images/s10plus/packages-manifest.json` is consumed by the rootfs builder as
+data, so a malformed manifest is as fatal as a missing package: a builder that
+iterated `groups[]` would silently install a SUBSET of the userspace. The
+schema is embedded in `verify-packages.py` (`MANIFEST_SCHEMA`, a draft-07
+subset: `type`, `enum`, `required`, `properties`, `items`, `additionalProperties`,
+`minItems`, `minimum`, `pattern`) and enforced two ways:
+
+* `--validate-manifest` validates the checked-in manifest **offline** and exits
+  `4` on any problem, naming the JSON path (`$.dependencies: required property
+  "dependencies" is missing`). It also refuses a manifest whose `verdict` is not
+  `resolved`, whose `resolved_count` disagrees with `groups[]`, or whose pinned
+  `systemd` NEVRA does not match the carried 4.14 patch version;
+* `--emit-manifest` validates the document it is about to write and refuses to
+  write an invalid one (`refusing to write an invalid manifest: …`).
+
+The validator is stdlib-only on purpose: there is no `jsonschema` module on a
+Fedora 43 ARM64 image (verified: the import fails), so a schema check that
+depended on it would be inert exactly where it matters. `MANIFEST_SCHEMA`
+validation reports the count and the groups it validated
+(`manifest schema OK: 50 package(s), 1220 requirement(s) resolved
+across 11 group(s)`), and the tampered-manifest rejection is asserted by
+`test-packages-manifest.py`.
+
 ## 2. Fail-loud findings (these changed the build)
 
 Three real problems were found by resolving against actual metadata. All three
@@ -291,9 +395,10 @@ report only guarantees the packages exist for aarch64.
   speaker, camera or GNSS works. A registered driver is not proof of working
   hardware, and this report makes no such claim.
 * **The repository is a live target.** `updates` moves. The manifest records the
-  NEVRAs resolved on 2026-10-16T14:01Z and the builder re-verifies at build
-  time; drift in an unpinned package is reported (WARN + recorded), drift in the
-  pinned `systemd` is a build failure.
+  NEVRAs resolved on 2026-10-16T18:57:13Z (recorded in `images/s10plus/packages-manifest.json`,
+  `groups[].packages[].nevra`) and the builder re-verifies at build time; drift
+  in an unpinned package is reported (WARN + recorded), drift in the pinned
+  `systemd` is a build failure.
 * **The metadata cache lives under `build/pkgmeta/`** (git-ignored,
   regenerable). Nothing is written to `.qq` or the QonQrete run root.
 * **Package-set completeness is asserted, not proven by installation.** The
@@ -303,19 +408,54 @@ report only guarantees the packages exist for aarch64.
   resolution + the install-list correctness offline; the container install is
   not run here.
 * **Unresolved / unavailable packages: none.** 50/50 essential packages
-  resolved. `basesystem` was removed from the list because it no longer exists
-  in Fedora 43 (documented in §2.1) — that is a removal of a non-existent
-  package, not a hidden `--skip-unavailable`.
+  resolved, 1220/1220 requirements resolved (the remainder being 52 file
+  requirements and 1 rich-dependency expressions that `primary.xml` cannot
+  decide — §1.2). `basesystem` was removed from the list because it no longer
+  exists in Fedora 43 (documented in §2.1) — that is a removal of a
+  non-existent package, not a hidden `--skip-unavailable`.
+* **Dependency resolution is name/capability level, not a transaction.** EVR
+  comparison, file provides (`filelists.xml`), conflicts, scriptlets and
+  multilib are `dnf`'s job (§1.2). Nothing here claims a package set installs;
+  it claims nothing in the set requires a package the repository does not
+  contain at all.
+* **The graphical stack is headless Phoc + a Wayland→framebuffer bridge, and
+  that is NOT equivalent to native DRM/KMS-accelerated Phosh.** This 4.14 tree
+  has **no `CONFIG_DRM`**, so there is no KMS device for Phosh to present on;
+  `phoc` runs with `WLR_BACKENDS=headless,libinput` and `WLR_RENDERER=pixman`,
+  and `nuxel-wl-fb` copies the composited frame into the DECON framebuffer
+  (§`docs/beta-finalization/system/SERVICE-GRAPH.md`). The `phoc`/`phosh`/
+  `mesa-*` packages above are what FEDORA ships for a DRM device: their
+  presence is not a claim that hardware acceleration, KMS atomic modesetting or
+  Phosh's native output path works on this phone. Native DRM is future kernel
+  work.
+* **`ModemManager` is installed; that is not a supported modem.** The S10+ ships
+  a Shannon LTE baseband that upstream ModemManager has no plugin for. The
+  package is required by the network stack and by the Settings surfaces that
+  must be able to report "no supported modem interface", but no cellular,
+  SMS or call capability is claimed here (Priority 7b owns that investigation,
+  and it is `BLOCKED_KERNEL`/`BLOCKED_FIRMWARE` until a host interface exists).
+* **No AOSP, HAL, Android runtime, Play Services, telemetry or mandatory
+  accounts** exist anywhere in this userspace, by construction: the package set
+  above is Fedora 43 ARM64 plus Nuxel's own units. Privileged mediation happens
+  only through the narrowly scoped Nuxel services (`services/nuxel-*`), never
+  through arbitrary shell execution from a WebKit frontend (§
+  `docs/beta-finalization/system/APP-INFRASTRUCTURE.md`).
 
 ## 6. Evidence index (reproduce everything offline)
 
 | Claim | Command | Result |
 |---|---|---|
 | essential packages resolve against real Fedora 43 aarch64 metadata | `python3 tools/s10plus/a33/verify-packages.py` | `resolved` (rc 0), 50/50 |
+| every rpm requirement either resolves or is recorded as undecidable-from-primary | same run, `report["dependencies"]` | `unresolved: []`, 1220 requirement(s) |
+| the manifest is a valid, complete document | `python3 tools/s10plus/a33/verify-packages.py --validate-manifest` | `manifest schema OK` (rc 0) |
+| a tampered manifest is rejected, not consumed | mutate `dependencies`/a NEVRA, then `--validate-manifest` | `MANIFEST INVALID`, rc 4 |
+| the requirement classifier + rpm rich-dependency evaluator | `tools/s10plus/a33/tests/test-packages-manifest.py` (unit cases over measured rpm shapes) | all assertions pass |
+| a requirement provided by the OTHER repository still resolves | same test, synthetic GA/updates fixture (`stevia` → `dconf`) | `libdconf.so.1()(64bit)` attributed to `dconf-…` |
 | the systemd pin is load-bearing (GA alone fails) | `python3 tools/s10plus/a33/verify-packages.py --ga-only` | `FAILED`, names the systemd pin |
 | no metadata source ⇒ no invented versions | `python3 tools/s10plus/a33/verify-packages.py --offline --cache-dir /tmp/empty` | `BLOCKED_EXTERNAL_RESOURCE` (rc 3) |
 | provenance + builder install-line + pin, all offline | `python3 tools/s10plus/a33/tests/test-packages-manifest.py` | all assertions pass |
-| all of Priority 4 in one command | `bash tools/s10plus/a33/tests/run-userspace-tests.sh` | `OFFLINE_TESTED` (10/10) |
+| the derived index cache cannot silently change a verdict | `INDEX_CACHE_VERSION` guard (`grep INDEX_CACHE_VERSION tools/s10plus/a33/verify-packages.py`) | a stale cache is re-parsed |
+| all of Priority 4 in one command | `bash tools/s10plus/a33/tests/run-userspace-tests.sh` | `OFFLINE_TESTED` |
 
 The machine-readable results are written to `build/pkgmeta/` (git-ignored build
 scratch, never to `.qq`/RUN_ROOT).

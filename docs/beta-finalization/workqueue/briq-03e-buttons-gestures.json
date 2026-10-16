@@ -36,6 +36,148 @@
       "revision": 1,
       "at": "2026-10-16T16:07:13+02:00",
       "by": "construqtor/bg-00-preflight"
+    },
+    {
+      "id": "briq-03e-buttons-gestures",
+      "title": "Hardware button manager and gesture state machine",
+      "component": "bg-03-connectivity-time-audio-buttons",
+      "component_title": "Priority 3 - Wi-Fi, Time/RTC, Audio, Headphones & Hardware Buttons",
+      "priority": 3,
+      "state": "implemented",
+      "dependencies": [
+        "briq-00d-baseline-protection"
+      ],
+      "evidence": [
+        {
+          "kind": "offline",
+          "path": "tools/s10plus/a33/tests/test-button-fsm.py",
+          "command": "python3 tools/s10plus/a33/tests/test-button-fsm.py",
+          "result": "all checks PASS: JSON<->C<->A32 parity, 20 trace replays, the exact briq-03e mapping, arbitration, chords, early-hold, the A32 autorepeat opt-in and the daemon syntax gate (with a negative control)",
+          "at": "2026-10-16T20:55:00+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "tools/s10plus/a33/nuxel-button-fsm.h",
+          "command": "gcc -std=c11 -O1 -DNUXEL_FSM_MAIN -x c nuxel-button-fsm.h -o fsm-sim",
+          "result": "the real state machine compiles and replays 20 recorded traces to their expected action sequences",
+          "at": "2026-10-16T20:55:00+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "tools/s10plus/a33/nuxel-button-manager.c",
+          "command": "gcc -std=gnu11 -fsyntax-only -I tools/s10plus/a33/tests/stub-include nuxel-button-manager.c",
+          "result": "the daemon parses cleanly (stub alsa header; the negative control fails as it should). The real aarch64 build still happens on the guest.",
+          "at": "2026-10-16T20:55:00+02:00"
+        },
+        {
+          "kind": "observation",
+          "path": "configs/nuxel/buttons/settings-surface.json",
+          "command": "python3 -c 'json.load(open(\"configs/nuxel/buttons/settings-surface.json\"))'",
+          "result": "11 fields exposed for Settings -> Buttons & Gestures (append point for briq-06d); persistence stays in the A32 /etc/nuxel/input/buttons.json, left byte-identical (its hard pin is intact)",
+          "at": "2026-10-16T20:55:00+02:00"
+        }
+      ],
+      "intended_changes": [
+        "tools/s10plus/a33/nuxel-button-manager.c",
+        "tools/s10plus/a33/tests/test-button-fsm.py",
+        "docs/beta-finalization/system/BUTTONS-GESTURES.md"
+      ],
+      "tests": [
+        "(tests are recorded by the owning briQ when it reports)",
+        "python3 tools/s10plus/a33/tests/test-button-fsm.py (parity + 20 replays + gate + mapping + syntax gate)",
+        "gcc -DNUXEL_FSM_MAIN nuxel-button-fsm.h && fsm-sim <trace> (each fixture)",
+        "gcc -fsyntax-only -I tools/s10plus/a33/tests/stub-include nuxel-button-manager.c"
+      ],
+      "risk": "medium",
+      "rollback": "git revert the commit(s) touching this task's expected files; the change is repository-only and alters no device state",
+      "verdict": "OFFLINE_TESTED",
+      "offline_ceiling": "NEEDS_OWNER_TEST",
+      "owner_action": "OWNER TEST REQUIRED: physical press feel for the new classes and chords (rows 6-11 in BUTTONS-GESTURES.md section 11) - a replay proves the logic, not a finger",
+      "expected_files": [
+        "tools/s10plus/a33/nuxel-button-manager.c",
+        "tools/s10plus/a33/tests/test-button-fsm.py",
+        "docs/beta-finalization/system/BUTTONS-GESTURES.md"
+      ],
+      "note": "Buttons: the A32 manager is EXTENDED (not replaced) with the briq-03e exact mapping, the Power+VolUp/Power+VolDn chords, the arbitration order and the Bixby early hold; the A32 autorepeat cadence survives as an opt-in and Samsung's emergency combos are never intercepted (no EVIOCGRAB). Physical press behaviour is NEEDS_OWNER_TEST.",
+      "source": "plan.json",
+      "at": "2026-10-16T21:02:33+02:00",
+      "by": "construqtor/bg-03",
+      "revision": 2
+    },
+    {
+      "id": "briq-03e-buttons-gestures",
+      "title": "Hardware button manager and gesture state machine",
+      "component": "bg-03-connectivity-time-audio-buttons",
+      "component_title": "Priority 3 - Wi-Fi, Time/RTC, Audio, Headphones & Hardware Buttons",
+      "priority": 3,
+      "state": "implemented",
+      "dependencies": [
+        "briq-00d-baseline-protection"
+      ],
+      "evidence": [
+        {
+          "kind": "offline",
+          "path": "tools/s10plus/a33/tests/test-button-fsm.py",
+          "command": "python3 tools/s10plus/a33/tests/test-button-fsm.py",
+          "result": "all checks PASS: JSON<->C<->A32 parity, 20 trace replays, the exact briq-03e mapping, arbitration, chords, early-hold, the A32 autorepeat opt-in and the daemon syntax gate (with a negative control)",
+          "at": "2026-10-16T20:55:00+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "tools/s10plus/a33/nuxel-button-fsm.h",
+          "command": "gcc -std=c11 -O1 -DNUXEL_FSM_MAIN -x c nuxel-button-fsm.h -o fsm-sim",
+          "result": "the real state machine compiles and replays 20 recorded traces to their expected action sequences",
+          "at": "2026-10-16T20:55:00+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "tools/s10plus/a33/nuxel-button-manager.c",
+          "command": "gcc -std=gnu11 -fsyntax-only -I tools/s10plus/a33/tests/stub-include nuxel-button-manager.c",
+          "result": "the daemon parses cleanly (stub alsa header; the negative control fails as it should). The real aarch64 build still happens on the guest.",
+          "at": "2026-10-16T20:55:00+02:00"
+        },
+        {
+          "kind": "observation",
+          "path": "configs/nuxel/buttons/settings-surface.json",
+          "command": "python3 -c 'json.load(open(\"configs/nuxel/buttons/settings-surface.json\"))'",
+          "result": "11 fields exposed for Settings -> Buttons & Gestures (append point for briq-06d); persistence stays in the A32 /etc/nuxel/input/buttons.json, left byte-identical (its hard pin is intact)",
+          "at": "2026-10-16T20:55:00+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "tools/s10plus/a33/tests/fixtures-p3/button-fsm/",
+          "command": "fsm-sim <boundary-*.trace> / <interrupted-*.trace>",
+          "result": "timing-boundary vectors (debounce 29/35 ms, long 1999/2000 ms, chord 499/500 ms) and interrupted-press vectors (volume interrupted by power, cancelled touch gesture) replay exactly; the trace count is 25",
+          "at": "2026-10-16T21:05:00+02:00"
+        }
+      ],
+      "intended_changes": [
+        "tools/s10plus/a33/nuxel-button-manager.c",
+        "tools/s10plus/a33/tests/test-button-fsm.py",
+        "docs/beta-finalization/system/BUTTONS-GESTURES.md"
+      ],
+      "tests": [
+        "(tests are recorded by the owning briQ when it reports)",
+        "python3 tools/s10plus/a33/tests/test-button-fsm.py (parity + 20 replays + gate + mapping + syntax gate)",
+        "gcc -DNUXEL_FSM_MAIN nuxel-button-fsm.h && fsm-sim <trace> (each fixture)",
+        "gcc -fsyntax-only -I tools/s10plus/a33/tests/stub-include nuxel-button-manager.c",
+        "python3 tools/s10plus/a33/tests/test-button-fsm.py (25 replays incl. boundary + interrupted vectors)"
+      ],
+      "risk": "medium",
+      "rollback": "git revert the commit(s) touching this task's expected files; the change is repository-only and alters no device state",
+      "verdict": "OFFLINE_TESTED",
+      "offline_ceiling": "NEEDS_OWNER_TEST",
+      "owner_action": "OWNER TEST REQUIRED: physical press feel for the new classes and chords (rows 6-11 in BUTTONS-GESTURES.md section 11) - a replay proves the logic, not a finger",
+      "expected_files": [
+        "tools/s10plus/a33/nuxel-button-manager.c",
+        "tools/s10plus/a33/tests/test-button-fsm.py",
+        "docs/beta-finalization/system/BUTTONS-GESTURES.md"
+      ],
+      "note": "Boundary and interrupted-press vectors added (briq-03e requirement); the earlier revision's trace count of 20 is superseded by 25.",
+      "source": "plan.json",
+      "at": "2026-10-16T21:03:17+02:00",
+      "by": "construqtor/bg-03",
+      "revision": 3
     }
   ]
 }

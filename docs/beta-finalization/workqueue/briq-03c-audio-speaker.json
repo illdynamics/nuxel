@@ -62,6 +62,98 @@
       "revision": 1,
       "at": "2026-10-16T16:07:13+02:00",
       "by": "construqtor/bg-00-preflight"
+    },
+    {
+      "id": "briq-03c-audio-speaker",
+      "title": "Real speaker audio path - beyond-madera / CS47L93 / CS35L40 / ABox (low volume only)",
+      "component": "bg-03-connectivity-time-audio-buttons",
+      "component_title": "Priority 3 - Wi-Fi, Time/RTC, Audio, Headphones & Hardware Buttons",
+      "priority": 3,
+      "state": "implemented",
+      "dependencies": [
+        "briq-00c-workqueue-ledger"
+      ],
+      "evidence": [
+        {
+          "kind": "observation",
+          "path": "configs/alsa-ucm/",
+          "command": "test -e configs/alsa-ucm/",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "observation",
+          "path": "configs/pipewire/",
+          "command": "test -e configs/pipewire/",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "observation",
+          "path": "configs/wireplumber/",
+          "command": "test -e configs/wireplumber/",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "tools/s10plus/a33/nuxel-audio-diag.sh",
+          "command": "bash tools/s10plus/a33/nuxel-audio-diag.sh selftest",
+          "result": "8/8 fixtures PASS",
+          "at": "2026-10-16T20:55:00+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "tools/s10plus/a33/tests/test-audio-diag.py",
+          "command": "python3 tools/s10plus/a33/tests/test-audio-diag.py",
+          "result": "all checks PASS incl. the 7-row sound-settings surface, the shared sound-mode state file and the no-invented-control-name rule",
+          "at": "2026-10-16T20:55:00+02:00"
+        },
+        {
+          "kind": "observation",
+          "path": "configs/alsa-ucm/nuxel-sound-settings.json",
+          "command": "nuxelctl audio settings",
+          "result": "user-facing rows: volume, mute, sound mode (normal/vibrate/silent), outputs, per-app volume, mic input, notifications",
+          "at": "2026-10-16T20:55:00+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "tools/s10plus/a33/nuxel-audio-diag.sh",
+          "command": "nuxelctl audio mode <normal|vibrate|silent>",
+          "result": "the mode round-trips through /var/lib/nuxel/audio/sound-mode (shared with the button chord); the mixer is touched only when a real element was discovered",
+          "at": "2026-10-16T20:55:00+02:00"
+        }
+      ],
+      "intended_changes": [
+        "configs/alsa-ucm/",
+        "configs/pipewire/",
+        "configs/wireplumber/",
+        "tools/s10plus/a33/nuxel-audio-diag.sh",
+        "docs/beta-finalization/manual-proof/06-audio.md"
+      ],
+      "tests": [
+        "(tests are recorded by the owning briQ when it reports)",
+        "bash tools/s10plus/a33/nuxel-audio-diag.sh selftest",
+        "python3 tools/s10plus/a33/tests/test-audio-diag.py",
+        "nuxelctl audio settings [--json] / nuxelctl audio mode <v>"
+      ],
+      "risk": "medium",
+      "rollback": "git revert the commit(s) touching this task's expected files; the change is repository-only and alters no device state",
+      "verdict": "OFFLINE_TESTED",
+      "offline_ceiling": "NEEDS_OWNER_TEST",
+      "owner_action": "OWNER TEST REQUIRED: audibility (rows A1-A6) - a mixer write is never sound. See docs/beta-finalization/manual-proof/06-audio.md",
+      "expected_files": [
+        "configs/alsa-ucm/",
+        "configs/pipewire/",
+        "configs/wireplumber/",
+        "tools/s10plus/a33/nuxel-audio-diag.sh",
+        "docs/beta-finalization/manual-proof/06-audio.md"
+      ],
+      "note": "Audio: the pipeline/UCM/low-volume cap were already offline-tested; this cycle adds the user-facing Settings -> Sound surface and the shared sound-mode contract. Audibility remains NEEDS_OWNER_TEST; no max-volume or continuous-loop test was run.",
+      "source": "plan.json",
+      "at": "2026-10-16T21:02:33+02:00",
+      "by": "construqtor/bg-03",
+      "revision": 2
     }
   ]
 }

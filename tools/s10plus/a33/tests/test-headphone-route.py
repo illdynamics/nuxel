@@ -192,5 +192,27 @@ for pat in banned:
     hits = re.findall(pat, src, re.I)
     check("tool contains no flashing surface for %r" % pat, not hits, str(hits))
 
+
+# 6 ── the USB role conflict: reported, never switched -------------------------------
+src = open(TOOL).read()
+check("the tool reports the USB device-role conflict (usb-role command)",
+      "cmd_usb_role" in src and "usb-role)" in src)
+check("the USB role is examined from the kernel's Type-C and gadget state, not guessed",
+      "/sys/class/typec" in src and "/sys/class/udc" in src and "usb_gadget" in src)
+check("no tool switches the port role (the live console is the only debug path)",
+      "REFUSED-BY-THIS-TOOL" in src and not any(p in src for p in
+          ("data_role >", "> data_role", "echo host >", "echo device >")))
+doc7 = open(os.path.join(ROOT, "docs", "beta-finalization", "manual-proof", "07-headphones.md")).read()
+for needle in ["role conflict", "live console", "recovery plan", "read-only",
+               "ACTIVE (UAC) DAC", "NOT_SUPPORTED_ON_DEVICE", "BLOCKED_HARDWARE",
+               "never Recovery/Download Mode"]:
+    check("07-headphones.md documents %r" % needle, needle.lower() in doc7.lower())
+if os.path.exists(TOOL):
+    p = run(["bash", TOOL, "usb-role"])
+    check("usb-role runs and prints its refusal decision",
+          p.returncode == 0 and "ROLE_SWITCH=" in p.stdout, p.stdout[-200:])
+    check("usb-role names the owner procedure for the bounded experiment",
+          "07-headphones.md" in p.stdout)
+
 print("\n== %d failing check(s) ==" % len(fails))
 sys.exit(1 if fails else 0)

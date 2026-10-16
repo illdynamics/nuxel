@@ -58,6 +58,94 @@
       "revision": 1,
       "at": "2026-10-16T16:07:13+02:00",
       "by": "construqtor/bg-00-preflight"
+    },
+    {
+      "id": "briq-03b-time-rtc-timesync",
+      "title": "Time, RTC persistence and timesync",
+      "component": "bg-03-connectivity-time-audio-buttons",
+      "component_title": "Priority 3 - Wi-Fi, Time/RTC, Audio, Headphones & Hardware Buttons",
+      "priority": 3,
+      "state": "implemented",
+      "dependencies": [
+        "briq-00c-workqueue-ledger"
+      ],
+      "evidence": [
+        {
+          "kind": "observation",
+          "path": "docs/beta-finalization/system/TIME-RTC.md",
+          "command": "test -e docs/beta-finalization/system/TIME-RTC.md",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "observation",
+          "path": "configs/nuxel/",
+          "command": "test -e configs/nuxel/",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "observation",
+          "path": "docs/beta-finalization/manual-proof/05-timekeeping.md",
+          "command": "test -e docs/beta-finalization/manual-proof/05-timekeeping.md",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "tools/s10plus/a33/nuxel-time.sh",
+          "command": "bash tools/s10plus/a33/nuxel-time.sh selftest",
+          "result": "5/5 fixtures PASS (RTC_ABSENT / NO_TIMESYNC_BACKEND / CLOCK_NOT_SET / PARTIAL_EVIDENCE / CLOCK_OK_UNVERIFIED_PERSISTENCE)",
+          "at": "2026-10-16T20:55:00+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "tools/s10plus/a33/tests/test-time-rtc.py",
+          "command": "python3 tools/s10plus/a33/tests/test-time-rtc.py",
+          "result": "all checks PASS incl. the settings surface (6 rows), clock permissions, last-known floor/RTC_SUSPECT, tzdata probe, suspend honesty",
+          "at": "2026-10-16T20:55:00+02:00"
+        },
+        {
+          "kind": "observation",
+          "path": "configs/nuxel/time/time.json",
+          "command": "python3 -c 'json.load(open(\"configs/nuxel/time/time.json\"))'",
+          "result": "added settings_surface, clock_permissions, last_known_time, suspend_resume and tzdata sections",
+          "at": "2026-10-16T20:55:00+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "tools/s10plus/a33/nuxel-time.sh",
+          "command": "nuxelctl time settings | nuxelctl time last-known",
+          "result": "new read-mostly commands: the Date & time surface with live values, and the last-known floor record (which refuses an implausible clock)",
+          "at": "2026-10-16T20:55:00+02:00"
+        }
+      ],
+      "intended_changes": [
+        "docs/beta-finalization/system/TIME-RTC.md",
+        "configs/nuxel/",
+        "docs/beta-finalization/manual-proof/05-timekeeping.md"
+      ],
+      "tests": [
+        "(tests are recorded by the owning briQ when it reports)",
+        "bash tools/s10plus/a33/nuxel-time.sh selftest",
+        "python3 tools/s10plus/a33/tests/test-time-rtc.py",
+        "nuxelctl time settings / nuxelctl time last-known [--record] (behavioural, incl. RTC_SUSPECT)"
+      ],
+      "risk": "medium",
+      "rollback": "git revert the commit(s) touching this task's expected files; the change is repository-only and alters no device state",
+      "verdict": "OFFLINE_TESTED",
+      "offline_ceiling": "NEEDS_OWNER_TEST",
+      "owner_action": "OWNER TEST REQUIRED: RTC persistence across one authorised reboot (mark/compare) plus settings rows S1-S8 in docs/beta-finalization/manual-proof/05-timekeeping.md",
+      "expected_files": [
+        "docs/beta-finalization/system/TIME-RTC.md",
+        "configs/nuxel/",
+        "docs/beta-finalization/manual-proof/05-timekeeping.md"
+      ],
+      "note": "Time: added the Settings date/time surface, the clock-permission rule, the last-known-time floor (never a fabricated instant) and honest suspend/tzdata reporting. RTC persistence across a real reboot stays NEEDS_OWNER_TEST.",
+      "source": "plan.json",
+      "at": "2026-10-16T21:02:33+02:00",
+      "by": "construqtor/bg-03",
+      "revision": 2
     }
   ]
 }

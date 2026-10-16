@@ -8,11 +8,20 @@
     "kernel": "4.14.253 (Samsung vendor)",
     "userspace": "Fedora 43 ARM64, systemd PID 1"
   },
-  "comment": "Capability slice for the connectivity / time / audio / button build group. Every state is drawn from the mission's allowed terminal-state set. NOTHING here is VERIFIED_ON_S10PLUS: no item in this file is based on an observation made on the handset during this run. A passing offline test is OFFLINE_TESTED and stays OFFLINE_TESTED.",
+  "comment": "Capability slice for the connectivity / time / audio / button build group. Every state is drawn from the mission's allowed terminal-state set. NOTHING here is VERIFIED_ON_S10PLUS: no item in this file is based on an observation made on the handset during this run. A passing offline test is OFFLINE_TESTED and stays OFFLINE_TESTED. | Cycle-006 (bg-03): every state below is derived from a test that actually ran in the offline set (tools/s10plus/a33/tests/run-p3-tests.sh); nothing here is promoted without evidence.",
   "allowed_states": [
-    "VERIFIED_ON_S10PLUS", "VERIFIED_IN_VM_ONLY", "OFFLINE_TESTED", "DEPLOYED_UNVERIFIED",
-    "IMPLEMENTED_NOT_DEPLOYED", "BLOCKED_KERNEL", "BLOCKED_FIRMWARE", "BLOCKED_HARDWARE",
-    "BLOCKED_EXTERNAL_RESOURCE", "NEEDS_OWNER_TEST", "FAILED", "DEFERRED",
+    "VERIFIED_ON_S10PLUS",
+    "VERIFIED_IN_VM_ONLY",
+    "OFFLINE_TESTED",
+    "DEPLOYED_UNVERIFIED",
+    "IMPLEMENTED_NOT_DEPLOYED",
+    "BLOCKED_KERNEL",
+    "BLOCKED_FIRMWARE",
+    "BLOCKED_HARDWARE",
+    "BLOCKED_EXTERNAL_RESOURCE",
+    "NEEDS_OWNER_TEST",
+    "FAILED",
+    "DEFERRED",
     "NOT_SUPPORTED_ON_DEVICE"
   ],
   "items": [
@@ -29,7 +38,8 @@
         "/var/log/nuxel/wifi-diag.log pre- and post-run blocks attached to the report"
       ],
       "owner_test": "docs/beta-finalization/manual-proof/04-wifi.md",
-      "device_note": "S10+ carries a Murata/Broadcom BCM4375-class part. docs/wifi-bcm4390-status.md describes the Pixel BCM4390 and was explicitly NOT applied to this device (no blob name, quirk or conclusion copied)."
+      "device_note": "S10+ carries a Murata/Broadcom BCM4375-class part. docs/wifi-bcm4390-status.md describes the Pixel BCM4390 and was explicitly NOT applied to this device (no blob name, quirk or conclusion copied).",
+      "note": "Not claimed. The diagnostic's verdict logic, the NetworkManager/wpa policy and the no-cellular-fallback audit are OFFLINE_TESTED; a real association is NEEDS_OWNER_TEST (needs a permitted AP and the owner's credential)."
     },
     {
       "id": "wifi.config_and_tooling",
@@ -90,7 +100,8 @@
         "bash tools/s10plus/a33/nuxel-audio-diag.sh selftest -> fixtures PASS",
         "python3 tools/s10plus/a33/tests/test-audio-diag.py -> all checks PASS"
       ],
-      "owner_test": "docs/beta-finalization/manual-proof/06-audio.md"
+      "owner_test": "docs/beta-finalization/manual-proof/06-audio.md",
+      "note": "UCM/PipeWire/WirePlumber policy, the low-volume cap and the sound-settings contract (configs/alsa-ucm/nuxel-sound-settings.json) are OFFLINE_TESTED."
     },
     {
       "id": "audio.audibility",
@@ -150,7 +161,8 @@
         "python3 tools/s10plus/a33/tests/test-button-fsm.py -> all checks PASS",
         "A32 behavioural parity assertions (press windows and repeat cadence extracted from the protected A32 source) PASS"
       ],
-      "owner_test": "docs/beta-finalization/system/BUTTONS-GESTURES.md"
+      "owner_test": "docs/beta-finalization/system/BUTTONS-GESTURES.md",
+      "note": "The briq-03e mapping, chords, arbitration and early-hold replay offline to their expected action sequences (20 traces); the daemon also passes a -fsyntax-only gate. It has not run on the handset in this cycle, so it is not VERIFIED_ON_S10PLUS."
     },
     {
       "id": "buttons.power_menu_recovery_download",
@@ -174,6 +186,71 @@
         "python3 tools/s10plus/a33/tests/test-button-fsm.py (gesture traces -> expected actions)"
       ],
       "owner_test": "docs/beta-finalization/system/BUTTONS-GESTURES.md"
+    },
+    {
+      "id": "wifi.reconnection_across_reboot",
+      "state": "NEEDS_OWNER_TEST",
+      "note": "mark/compare is implemented and its judgement (PASS/FAIL/REFUSED/NO_MARKS) is OFFLINE_TESTED; a real reboot pair needs the owner and an authorized reboot (bg-10c)."
+    },
+    {
+      "id": "wifi.no_cellular_fallback",
+      "state": "OFFLINE_TESTED",
+      "note": "Policy audit implemented (nuxelctl wifi fallback) and tested; the behavioural test (AP off, no mobile-data default route) is NEEDS_OWNER_TEST."
+    },
+    {
+      "id": "wifi.network_settings_surface",
+      "state": "IMPLEMENTED_NOT_DEPLOYED",
+      "note": "configs/networkmanager/nuxel-network-settings.spec.json: the native Network Settings feature set + read_api per row. Rendered by briq-06d."
+    },
+    {
+      "id": "time.last_known_time",
+      "state": "OFFLINE_TESTED",
+      "note": "A last-known lower bound is recorded only from a plausible clock (refused below 2024-01-01); a clock earlier than the record is reported RTC_SUSPECT."
+    },
+    {
+      "id": "time.suspend_resume_timekeeping",
+      "state": "NEEDS_OWNER_TEST",
+      "note": "Support is read from the kernel's own /sys/power/state and never assumed; triggering a resume needs the owner."
+    },
+    {
+      "id": "audio.sound_settings_surface",
+      "state": "IMPLEMENTED_NOT_DEPLOYED",
+      "note": "Volume/mute/sound-mode/selectable-output/per-app-volume/mic rows with the shared /var/lib/nuxel/audio/sound-mode contract (button chord + Settings agree)."
+    },
+    {
+      "id": "audio.sound_mode_normal_vibrate_silent",
+      "state": "OFFLINE_TESTED",
+      "note": "The mode round-trips through the shared state file; vibrate mode is recorded but NOT claimed as a working haptic (briq-08b)."
+    },
+    {
+      "id": "buttons.chords_power_volume",
+      "state": "OFFLINE_TESTED",
+      "note": "Power+VolUp -> sound-mode cycle, Power+VolDn -> screenshot, 500 ms from the second key; a chord cancels the 8 s reboot class for the rest of the hold."
+    },
+    {
+      "id": "buttons.bixby_double_flashlight",
+      "state": "IMPLEMENTED_NOT_DEPLOYED",
+      "note": "Bixby double publishes a flashlight REQUEST consumed by the camera/flashlight arbitration (briq-08c); it never claims the LED lit."
+    },
+    {
+      "id": "buttons.bixby_early_hold_verbose_once",
+      "state": "BLOCKED_KERNEL",
+      "note": "The button side is implemented (EVIOCGKEY start-up sync + the one-time request), but the early boot stage must capture the key for THIS boot: state=BOOT_UPDATE_REQUIRED on the current BOOT image."
+    },
+    {
+      "id": "buttons.settings_surface",
+      "state": "IMPLEMENTED_NOT_DEPLOYED",
+      "note": "configs/nuxel/buttons/settings-surface.json: every mapping exposed for Settings -> Buttons & Gestures; persisted in the A32 /etc/nuxel/input/buttons.json (untouched, still byte-pinned)."
+    },
+    {
+      "id": "buttons.samsung_emergency_combos",
+      "state": "OFFLINE_TESTED",
+      "note": "No EVIOCGRAB is ever taken, so Samsung's own reset/recovery key handling keeps every event; the FSM only suppresses its own classes."
+    },
+    {
+      "id": "usbc.role_conflict_report",
+      "state": "OFFLINE_TESTED",
+      "note": "nuxelctl headphone usb-role reports the Type-C/gadget state read-only and refuses to switch the role (the CDC-ACM console is the only debug path); the bounded owner procedure is documented."
     }
   ]
 }

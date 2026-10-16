@@ -1,0 +1,139 @@
+{
+  "schema_version": 1,
+  "comment": "User-facing sound settings for the S10+ (beyond2lte). bg-03 owns this contract; briq-06d renders Settings -> Sound and the launcher's volume HUD. Everything here is read from the REAL card ('beyond-madera') by tools/s10plus/a33/nuxel-audio-diag.sh; no control name is invented. Hard rule: a writable mixer control is NOT audibility - every audible claim stays NEEDS_OWNER_TEST.",
+  "device": {
+    "model": "Samsung Galaxy S10+ SM-G975F",
+    "codename": "beyond2lte",
+    "card_name": "beyond-madera",
+    "codec": "Cirrus Logic CS47L93 (MADERA)",
+    "amps": [
+      "CS35L40",
+      "CS35L40"
+    ],
+    "soc_audio": "Exynos 9820 ABox"
+  },
+  "renderer": "briq-06d (Settings app)",
+  "read_api": {
+    "list": [
+      "nuxelctl audio settings [--json]",
+      "nuxelctl audio cards",
+      "nuxelctl audio pipeline",
+      "nuxelctl audio controls",
+      "nuxelctl audio safe-volume",
+      "nuxelctl audio mode [normal|vibrate|silent]",
+      "nuxelctl headphone route"
+    ],
+    "note": "every row on the page must name the command that produced it"
+  },
+  "safety": {
+    "low_volume_only": true,
+    "cap_source": "configs/nuxel/audio/audio.json -> safety.volume_cap_percent",
+    "softvol_layer": "configs/pipewire/asound-nuxel-safe.conf (softvol max_dB = -6.0)",
+    "step_per_press": "5% of the element range (range / 20, floored at 1) - the same formula the A32 button manager and the FSM use",
+    "never": [
+      "disable the CS35L40 amplifier protection or the thermal limits",
+      "run a tone longer than the bounded duration or above the cap",
+      "claim audibility from a mixer write"
+    ]
+  },
+  "rows": [
+    {
+      "id": "volume",
+      "title": "Media volume up / down",
+      "status": "OFFLINE_TESTED",
+      "read_api": "the album control of card 'beyond-madera' (discovered, never hard-coded)",
+      "fields": [
+        "current percent",
+        "cap (bring-up)",
+        "element name",
+        "muted"
+      ],
+      "dispatch": "button manager (volume keys / hands-free) and the volume HUD",
+      "honesty": "the number shown is the mixer value; whether it is audible is NEEDS_OWNER_TEST"
+    },
+    {
+      "id": "mute",
+      "title": "Mute / unmute",
+      "status": "OFFLINE_TESTED",
+      "read_api": "the playback switch of the same element (amixer sget)",
+      "fields": [
+        "muted",
+        "element has playback switch"
+      ],
+      "honesty": "a control without a playback switch is reported as unsupported, not silently ignored"
+    },
+    {
+      "id": "sound-mode",
+      "title": "Sound mode: normal / vibrate / silent",
+      "status": "OFFLINE_TESTED",
+      "state_file": "/var/lib/nuxel/audio/sound-mode",
+      "read_api": "nuxelctl audio mode",
+      "written_by": [
+        "nuxelctl audio mode <v>",
+        "the Power+VolumeUp chord in the button manager (briq-03e)"
+      ],
+      "contract": "both writers use the same file, so the button chord and the Settings row can never disagree",
+      "fields": [
+        "mode",
+        "mute switch state"
+      ],
+      "honesty": "the mode is recorded and the playback switch follows it; VIBRATE also needs the vibrator path (briq-08b) and is reported as requested-not-proven"
+    },
+    {
+      "id": "outputs",
+      "title": "Output selection",
+      "status": "IMPLEMENTED_NOT_DEPLOYED",
+      "read_api": "nuxelctl audio settings (sink list when a session manager answers) + nuxelctl headphone route",
+      "outputs": [
+        "Speaker (CS35L40 x2)",
+        "Earpiece",
+        "Headphones (3.5 mm jack)",
+        "USB-C UAC adapter",
+        "Bluetooth A2DP (briq-08d)"
+      ],
+      "routing_policy": "configs/nuxel/audio/jack-routes.json (jack insert/remove rules)",
+      "honesty": "with no PipeWire/WirePlumber session the list is reported as unavailable; the ALSA element is still shown so the state is not hidden"
+    },
+    {
+      "id": "per-app-volume",
+      "title": "Per-app volume",
+      "status": "NEEDS_OWNER_TEST",
+      "read_api": "wpctl set-volume <node-id> (wireplumber) / pactl for PulseAudio-compatible clients",
+      "fields": [
+        "supported (probe)",
+        "per-stream volume"
+      ],
+      "honesty": "only offered when the session manager really exposes a per-node volume; otherwise the row says unsupported instead of faking a slider"
+    },
+    {
+      "id": "mic-input",
+      "title": "Microphone input selection",
+      "status": "IMPLEMENTED_NOT_DEPLOYED",
+      "read_api": "the capture control of card 'beyond-madera' + the source list (jack headset mic vs built-in)",
+      "fields": [
+        "source",
+        "capture switch",
+        "capture level"
+      ],
+      "honesty": "a chosen source is not proof of a recording; mic capture is NEEDS_OWNER_TEST"
+    },
+    {
+      "id": "notifications",
+      "title": "Notification and touch sounds",
+      "status": "IMPLEMENTED_NOT_DEPLOYED",
+      "fields": [
+        "notification volume (where a separate stream exists)",
+        "touch sounds (opt-in)",
+        "do-not-disturb"
+      ],
+      "honesty": "these are display/UX preferences plus a stream volume; no audible claim is made"
+    }
+  ],
+  "never_claims": [
+    "that sound is audible because a control accepted a value: a writable control is not audibility",
+    "that the CS35L40 amplifiers are driven correctly because the DAC reports RUNNING",
+    "that the headphone jack silences the speaker because a route rule exists (that is NEEDS_OWNER_TEST)",
+    "that Bluetooth A2DP playback implies A2DP microphone support"
+  ],
+  "conflict_rule": "bg-03 owns configs/alsa-ucm/**, configs/pipewire/**, configs/wireplumber/** and tools/s10plus/a33/nuxel-audio-diag.sh; briq-06d owns the Settings pages; briq-08d owns Bluetooth."
+}

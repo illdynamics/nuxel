@@ -1,0 +1,6 @@
+# INTERRUPTED GESTURE: a swipe-up track that is CANCELLED must emit nothing at all
+# (a lost/aborted contact never becomes a phantom home/recents transition).
+1000 touch down 700 3000
+1200 touch move 705 2990
+1300 touch cancel 705 2990
+2000 tick

@@ -240,6 +240,59 @@ check("no audio capability is claimed VERIFIED_ON_S10PLUS",
 check("audibility is NEEDS_OWNER_TEST in the manifest",
       any(i["id"] == "audio.audibility" and i["state"] == "NEEDS_OWNER_TEST" for i in audio_items))
 
+
+# 7 ── the user-facing sound settings surface (briq-03c rows) -------------------------
+SPEC3 = os.path.join(ROOT, "configs", "alsa-ucm", "nuxel-sound-settings.json")
+if os.path.exists(SPEC3):
+    spec3 = json.load(open(SPEC3))
+    rows = {r.get("id") for r in spec3.get("rows", [])}
+    need_rows = {"volume", "mute", "sound-mode", "outputs", "per-app-volume", "mic-input", "notifications"}
+    check("sound-settings spec covers every required user-facing row",
+          need_rows.issubset(rows), str(sorted(need_rows - rows)))
+    check("sound-settings spec keeps the low-volume safety rule",
+          spec3["safety"]["low_volume_only"] is True and
+          "amplifier protection" in " ".join(spec3["safety"]["never"]))
+    check("sound-settings spec states the shared sound-mode state file",
+          any(r.get("state_file") == "/var/lib/nuxel/audio/sound-mode" for r in spec3["rows"]))
+    check("sound-settings spec never claims audibility from a mixer write",
+          any("not audibility" in c.lower() for c in spec3.get("never_claims", [])))
+    check("per-app volume is honest about needing the session manager",
+          any(r["id"] == "per-app-volume" and "unsupported" in r.get("honesty", "") for r in spec3["rows"]))
+else:
+    check("sound-settings spec exists", False, SPEC3)
+
+# the tool's own rows must run and must not invent a control name
+with tempfile.TemporaryDirectory() as td:
+    env = {"NUXEL_DIAG_NO_SYSTEM": "1", "NUXEL_DIAG_ROOT": td,
+           "NUXEL_SOUND_MODE_FILE": "/var/lib/nuxel/audio/sound-mode"}
+    p = run(["bash", TOOL, "settings", "--json"], env)
+    jlines = [l for l in p.stdout.splitlines() if l.startswith("{")]
+    okjson = False
+    if len(jlines) == 1:
+        try:
+            doc3 = json.loads(jlines[0])
+            okjson = doc3.get("device") == "beyond2lte" and doc3.get("card") == "beyond-madera"
+        except Exception:  # noqa: BLE001
+            okjson = False
+    check("nuxelctl audio settings --json emits exactly one parseable JSON object",
+          p.returncode == 0 and okjson, p.stdout[-200:])
+    check("settings on an empty root says the mixer is unavailable instead of guessing",
+          "unavailable" in p.stdout or "NOT FOUND" in p.stdout, p.stdout[-300:])
+    p = run(["bash", TOOL, "mode", "silent"], env)
+    check("mode writes the shared state file", p.returncode == 0 and
+          open(os.path.join(td, "var/lib/nuxel/audio/sound-mode")).read().strip() == "silent", p.stdout[-200:])
+    check("mode on an empty root does NOT touch a mixer it cannot see",
+          "NOT touched" in p.stdout or "switched" in p.stdout, p.stdout[-300:])
+    p = run(["bash", TOOL, "mode"], env)
+    check("mode reads back what was set", "sound mode: silent" in p.stdout, p.stdout[-200:])
+    p = run(["bash", TOOL, "mode", "bogus"], env)
+    check("an invalid mode is refused with a usage message", p.returncode == 2 and "usage" in p.stdout)
+    p = run(["bash", TOOL, "mode", "vibrate"], env)
+    check("vibrate mode is recorded but not promoted into a haptic claim",
+          "briq-08b" in p.stdout and "not a claim" in p.stdout, p.stdout[-300:])
+check("the tool never hard-codes a mixer element name like 'Master'",
+      "sset 'Master'" not in open(TOOL).read() and "primary_element" in open(TOOL).read())
+
 # 6 ── NO FLASHING invariant, mechanically ------------------------------------------
 src = open(TOOL).read()
 banned = [r"\bdd\s+if=", r"/dev/block", r"\bheimdall\b", r"\bodind?\b", r"fastboot",

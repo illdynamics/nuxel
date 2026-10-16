@@ -1,0 +1,6 @@
+# TIMING BOUNDARY: 1999 ms is still the short class; 2000 ms is the long class (inclusive)
+0 key power 1
+1999 key power 0
+4000 key power 1
+6000 tick
+6100 key power 0

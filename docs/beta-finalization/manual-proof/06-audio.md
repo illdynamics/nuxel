@@ -172,12 +172,51 @@ f. Save the evidence:
   that is uncomfortably loud, or a cap that can be exceeded. Quote the exact
   `nuxelctl audio pipeline --json` line — `first_broken_stage` names the layer.
 
+## 9. User-facing sound settings (the rows of Settings -> Sound)
+
+The owner-facing surface is specified in
+`configs/alsa-ucm/nuxel-sound-settings.json` (bg-03 owns the contract; briq-06d
+renders the page). `nuxelctl audio settings` prints it with live values, and every
+row names the command that produced it.
+
+| Row | How it works | What it may NOT claim |
+|---|---|---|
+| Media volume up/down | the discovered album control of card `beyond-madera`; one press = 5 % of the range (`range/20`, floored at 1) — the same formula as the A32 manager and the button FSM | that any level is audible |
+| Mute / unmute | the playback switch of that same element | silence, if the element has no playback switch (reported unsupported) |
+| Sound mode | `nuxelctl audio mode normal\|vibrate\|silent`, state in `/var/lib/nuxel/audio/sound-mode` | that vibrate mode vibrates (the vibrator path is briq-08b) |
+| Output selection | sink list when a session manager answers; jack rules in `configs/nuxel/audio/jack-routes.json` | a sink list when no session manager answered |
+| Per-app volume | `wpctl`/`pactl` per-node volume **when the session manager exposes it** | a slider when nothing supports it (the row says unsupported) |
+| Microphone input | the capture control of the same card (jack headset mic vs built-in) | that a chosen source records anything |
+| Notifications | notification stream volume where one exists, touch sounds (opt-in), do-not-disturb | audibility |
+
+The sound mode is a **shared contract**: the Power+VolumeUp chord in the button
+manager (`tools/s10plus/a33/nuxel-button-manager.c`, briq-03e) writes the same
+`/var/lib/nuxel/audio/sound-mode` file, so the hardware chord and the Settings row
+cannot disagree. A mixer control name is **never invented** — the tool discovers
+the primary element from the card and says so when it cannot (`primary_element()`).
+
+### Owner rows (all NEEDS_OWNER_TEST — these need ears)
+
+| # | Action | Expected | FAIL |
+|---|---|---|---|
+| A1 | volume up/down from the buttons and from Settings | the number moves by 5 % of the range per press and stops at the bring-up cap | an audibility claim with no listening |
+| A2 | mute then unmute | the switch state is reported; with the cap in force the level never exceeds it | the cap is silently ignored |
+| A3 | sound mode: normal → vibrate → silent → normal | the mode is recorded and published; in silent/vibrate the playback switch goes off | a mode that changes nothing yet reports success |
+| A4 | select an output (speaker vs headphones vs USB-C) | the route follows `jack-routes.json` | a route that stays on the speaker while headphones are in |
+| A5 | per-app volume (only if the row is offered) | one stream changes, the others do not | the row is offered although nothing supports it |
+| A6 | microphone input selection + a short capture | the chosen source appears in `nuxelctl audio controls` | a source list built from guesses |
+
 ## Current automatic evidence (repository, this build group)
 
 * `tools/s10plus/a33/nuxel-audio-diag.sh selftest` → 8/8 pipeline fixtures PASS
   (`tools/s10plus/a33/tests/fixtures-p3/audio-*`): `NO_CARD`, `BLOCKED_FIRMWARE`,
   `NO_PCM`, `NO_CONTROLS`, `DAC_NOT_RUNNING`, `OK_DAC_RUNNING` (DAPM view
   unavailable), fully `OK`, and route-present-but-empty.
+* `nuxelctl audio settings [--json]` prints the sound surface with live values and
+  emits one parseable JSON object (checked offline against an empty root).
+* `nuxelctl audio mode <v>` round-trips through the shared state file; an invalid
+  mode is refused with a usage message; on a root with no card the mode is recorded
+  and the mixer is left alone (a control name is never invented).
 * `python3 tools/s10plus/a33/tests/test-audio-diag.py` → all checks PASS,
   including: the first-broken-stage naming, the "writable controls but silent
   PCM → `DAC_NOT_RUNNING`" case, tone refusal without `--yes`, refusal of a level

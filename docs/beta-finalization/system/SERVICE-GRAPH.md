@@ -5,8 +5,13 @@
 **Device:** Samsung Galaxy S10+ SM-G975F (`beyond2lte`, Exynos 9820) — Fedora 43
 aarch64 userspace, Samsung Linux **4.14.253**, **systemd PID 1**
 **Verifier:** `tools/s10plus/a33/verify-service-graph.py` → **`OFFLINE_TESTED`**
-(14 units, 0 problems, 1 recorded warning; machine-readable report written to
-`build/pkgmeta/service-graph.json`)
+(15 units, 0 problems, 1 recorded warning, 1 recorded INFO; machine-readable
+report written to `build/pkgmeta/service-graph.json`). Revision 2 of
+`briq-04b-service-definitions` adds the one service that had NO unit anywhere in
+the repository — the **live console** — plus the assertions that keep it
+single-owner (`services/nuxel-console/`).
+**Console ownership test:** `python3 services/nuxel-console/test-console-ownership.py`
+— proves the console's single-owner guard with the real `flock(2)` mechanism.
 **Regression test:** `python3 tools/s10plus/a33/tests/test-service-graph.py` —
 proves the validator actually *fails* on an injected cycle, an unsatisfied
 dependency, a 4.14-forbidden dependency, a lost builder enablement and a lost
@@ -60,7 +65,7 @@ recorded as a **warning** rather than silently passing:
   file's own corrected install instructions) and never a handset boot failure.
   Its unit header now documents the user-manager install it actually needs.
 
-## 2. The installed unit set (14 units)
+## 2. The installed unit set (15 units)
 
 | Unit | Repository path | ExecStart | Enabled |
 |---|---|---|---|
@@ -77,6 +82,7 @@ recorded as a **warning** rather than silently passing:
 | `nuxel-http-bridge.service` | `services/nuxel-bridge/systemd/nuxel-http-bridge.service` | `/usr/bin/nuxel-http-bridge` | yes |
 | `nuxel-web.service` | `services/nuxel-web.service` | `/usr/bin/nuxel-web` | yes |
 | `nuxel-firstlight.service` | `images/s10plus/nuxel-firstlight.service` | `/usr/bin/nuxel-fb-phone` | yes (self-skipping diagnostic) |
+| `nuxel-console.service` | `services/nuxel-console/systemd/nuxel-console.service` | `/usr/bin/nuxel-console /` | **installed, deliberately NOT enabled** (§2.1) |
 | `nuxel-camera-portal.service` | `shell/nuxel-camera-portal/systemd/nuxel-camera-portal.service` | `/usr/bin/python3 …/nuxel_camera_portal.py` | VM-only surface, installed by the VM bootstrap |
 
 The builder also installs a drop-in,
@@ -86,6 +92,69 @@ unconditional `systemctl start nuxel-ui` cannot become a second `/dev/fb0`
 owner behind the launcher. `nuxel-ui.service` itself is installed by the
 initramfs `/init`, not by the rootfs builder, which is why it appears in the
 validator's known-unit set but not in the installed table above.
+
+### 2.1 The live console: installed, and deliberately **not** enabled
+
+briq-04b requires every Nuxel service — the live console included — to be a
+declared unit with ordering, dependencies, restart policy and jail scoping. The
+console was the one exception: its ownership rules lived only in a comment in
+`boot/initramfs/init.sh` and in `tools/s10plus/a33/nuxel-console.c`.
+`services/nuxel-console/systemd/nuxel-console.service` is that declaration, and
+it is **installed without an enablement symlink**, because the console's owner on
+this image is not systemd at all:
+
+| Question | Answer | Where it is enforced |
+|---|---|---|
+| Who owns the console today? | the **initramfs** instance of `/opt/nuxel/nuxel-console`, started before systemd exists (`boot/initramfs/init.sh`), which binds the CDC-ACM gadget, `mknod`s `/dev/ttyGS0`, mirrors `/dev/kmsg` and `chroot`s into the Fedora root | `boot/initramfs/init.sh`; asserted by `services/nuxel-console/test-console-ownership.py` |
+| What stops a second owner? | `ConditionPathExists=/usr/bin/nuxel-console` (the rootfs binary is absent on the shipped image ⇒ `ConditionResult=no`), `ExecCondition=/usr/lib/nuxel/nuxel-console-free` (takes the **same** `flock(LOCK_EX\|LOCK_NB)` on `/run/nuxel-console.lock` the console takes; non-zero ⇒ the unit is skipped), and `Restart=no` | the unit file; asserted by both the verifier (§3c) and the test |
+| Why not simply enable it? | enabling it would put a second console on the same tty the moment the rootfs binary is added, desynchronising the framed protocol. `verify-service-graph.py` now **fails the build** if a `multi-user.target.wants/nuxel-console.service` line appears in the builder | `PROVISIONED_NOT_ENABLED` in `tools/s10plus/a33/verify-service-graph.py` |
+| What is the jail scoping? | `NoNewPrivileges=yes`, `ReadWritePaths=/run`, `ReadOnlyPaths=/usr/bin/nuxel-console /opt/nuxel /usr/lib/nuxel`. `ProtectSystem`/`ProtectKernelTunables`/`PrivateDevices`/`ProtectHome`/`PrivateTmp` are **not** set, and the unit file says why: the console writes configfs (`/sys/kernel/config`) to bind the gadget and needs `/dev/ttyGS0` + `/dev/kmsg` | the unit file (documented, not silently omitted) |
+| Ordering | `After=systemd-tmpfiles-setup.service` (the lock lives in `/run`), `Before=nuxel-wayland.service nuxel-wl-fb.service nuxel-fallback.service` — the console is the only channel that can report a compositor failure | asserted by the verifier |
+
+The verifier also cross-checks the **lock protocol across three files**
+(`nuxel-console.c` default, the guard's default, the unit's
+`NUXEL_CONSOLE_LOCK`) and fails if the C implementation stops using
+`/run/nuxel-console.lock`, because a guard that probes a lock nobody takes is a
+rubber stamp.
+
+### 2.2 Who owns what: every Priority-4 service → its unit (or its owner)
+
+briq-04b names the services that must exist as units. This is the honest mapping,
+including the two entries that are **not** systemd units and say so:
+
+| Service (briq-04b) | Declared as | State |
+|---|---|---|
+| live console | `nuxel-console.service` + the initramfs instance of `/opt/nuxel/nuxel-console` | unit installed, **not enabled** (§2.1); the initramfs instance is the live owner |
+| wl-fb bridge | `nuxel-wl-fb.service` | enabled, single `/dev/fb0` owner |
+| animation handoff | `nuxel-animation.service` (+ the initramfs player `/opt/nuxel/nuxel-anim-player`) | enabled and *self-skipping* while the bridge exists; the handoff is receipt-driven in the initramfs/host pair (bg-02) |
+| launcher host | `nuxel-web.service` (PWA tree on `127.0.0.1:8000`), `nuxel-wayland.service` (phoc), `nuxel-home-native.service` / `nuxel-home-kiosk.service` (`shell/config/systemd-user/`, user manager), plus the initramfs `nuxel-ui.service` fallback | enabled (launcher images) |
+| button manager | `nuxel-button-manager.service` | enabled, owns the physical keys |
+| bridge / portal / notifications | `nuxel-bridge.service`, `nuxel-http-bridge.service` (in-process HTTP front end of the same bridge), `nuxel-portal.service`, `nuxel-notifications.service` | enabled, ordered hub-before-consumer (§3) |
+| settings daemon pieces | **no settings daemon exists, deliberately** — see §2.3 | — |
+
+### 2.3 There is no settings daemon, and that is a design decision
+
+The mission warns explicitly against "daemon-per-setting sprawl", and the
+settings surface is where that sprawl usually starts. Nuxel therefore has **no
+`nuxel-settingsd`**, and nothing in the boot graph waits on one:
+
+* the durable store is a **file contract**, not a service: one JSON document per
+  setting under `/etc/nuxel/boot/<name>.json`, written atomically (same-directory
+  rename) by the launcher host (`pwa/nuxel-home/js/settings-store.js` through
+  `NuxelHost.configSet`), with `localStorage` as the documented fallback on
+  VM/desktop/plain-browser hosts and merge-on-write so an upgrade cannot clobber
+  a key this revision does not know;
+* the console path writes the **same** file (`nuxelctl`), so a setting cannot
+  have a UI value and a console value that disagree;
+* anything privileged — notifications, files, location, camera permission, PTY —
+  is mediated by the already-declared narrow services (`nuxel-bridge`,
+  `nuxel-portal`, `nuxel-notifications`) that are subject to the capability
+  model, never by a settings daemon running as root;
+* consequence, stated plainly: a setting the *system* must act on (e.g. verbose
+  boot) is consumed by the component that owns the behaviour
+  (`pwa/nuxel-home/js/qs.js`, the launcher host, `nuxelctl`), each reading the one
+  document. If a future feature genuinely needs a supervisor it gets a named unit
+  here with its own ordering and restart policy — not a new daemon per setting.
 
 ## 3. Ordering (as declared, and why)
 
@@ -100,6 +169,8 @@ dbus.service ─> nuxel-notifications.service ─> nuxel-bridge.service ─> nux
                           (producer)            (consumer)                 (in-process HTTP front end)
 dbus.service ─> nuxel-portal.service ─(session bus)→ org.nuxel.PhoshAgent
 nuxel-animation.service: Conflicts=nuxel-wl-fb.service; ConditionPathExists=!/usr/lib/nuxel/nuxel-wl-fb
+(initramfs, pre-systemd) /opt/nuxel/nuxel-console ─> nuxel-console.service (skipped: port owned)
+                                                   └─ Before=nuxel-wayland.service
 ```
 
 Three properties are load-bearing:
@@ -123,6 +194,28 @@ Restart policy is bounded everywhere (`StartLimitIntervalSec` /
 `StartLimitBurst`), so a failing unit cannot become a process storm — a measured
 A31 concern (the vendor kernel's `loadavg ~12` is TrustZone/RPMB threads, not a
 Nuxel restart loop).
+
+### 3.1 Native DRM is **not** what runs here (do not read this graph as Phosh)
+
+The graphical path this graph starts is **headless Phoc + a Wayland→framebuffer
+bridge**, and it is *not equivalent* to native DRM/KMS-accelerated Phosh:
+
+| | This device (4.14 vendor kernel) | A DRM-capable Fedora phone |
+|---|---|---|
+| Kernel interfaces | **no `CONFIG_DRM`** in the running kernel: no KMS device, no atomic modesetting, no GBM/EGL-on-DRM | `card0` + `renderD128`, atomic modesetting |
+| Compositor backend | `phoc` with `WLR_BACKENDS=headless,libinput` and `WLR_RENDERER=pixman` (software) | `WLR_BACKENDS=drm` with GPU rendering |
+| Presentation | `nuxel-wl-fb` copies the composited buffer into the DECON framebuffer (`/dev/fb0`) with the XRGB8888→Samsung ABGR8888 translation | the compositor scans out directly |
+| Session/seat | `LIBSEAT_BACKEND=noop` + the libinput path shim (no VT on this device: `/dev/tty0`, `/sys/class/vtconsole` and `/proc/consoles` are absent) | logind/seatd on a real VT |
+| Cost | a full-frame copy per presented frame, no vsync fencing, no per-plane composition | zero-copy, tear-free |
+
+`phoc`, `phosh`, `mesa-*` and `libinput` are installed because that is what
+Fedora ships and what the shared PWA/Phosh-agent code expects — **not** as a
+claim that hardware acceleration, KMS or `phosh.service` as a system session work
+on this phone. Native DRM/KMS support is future kernel work (a 4.14 tree with
+`CONFIG_DRM` plus the S10+ display driver); until then the framebuffer bridge is
+the supported path, it has exactly one owner, and the fallback framebuffer UI
+stays as the non-competing recovery surface. Nothing in this document is evidence
+of hardware-accelerated rendering on the S10+.
 
 ## 4. Linux 4.14 constraints that shape the graph
 
@@ -167,8 +260,17 @@ dependency, missing enablement, user-target enablement, lost A26 repair) and a
 green verdict for the unmutated copy — so a green run means the checks ran, not
 that they were unreachable.
 
+Installed-but-not-enabled is itself asserted (revision 2): for every unit in
+`PROVISIONED_NOT_ENABLED` the validator requires that the builder installs it,
+that the builder does **not** create a `multi-user.target.wants` symlink, and
+that the unit file states why. The report carries the reason
+(`provisioned_not_enabled`) and prints it as an `INFO` line on every run, so the
+exception cannot silently become a forgotten enablement (or, worse, a second
+console). The one entry today is `nuxel-console.service` (§2.1).
+
 The validator checks, in order: reference resolution, forbidden 4.14
-dependencies, ordering cycles, system-unit-into-user-target enablement, the A26
+dependencies, the console's single-owner guard (3c), ordering cycles,
+system-unit-into-user-target enablement, the A26
 repairs, builder install+enable for every canonical unit, and *provenance* — a
 canonical unit may not silently lose an `Environment=`/`ExecStart=` line that the
 shipped A29/A31/A32 revision carried (the check reports `problems` for a lost
@@ -192,3 +294,30 @@ shipped A29/A31/A32 revision carried (the check reports `problems` for a lost
   `nuxel-camera-portal.service` is a VM-only, user-manager surface (see §1). It
   is reported on every run rather than suppressed, because "the VM unit is a
   no-op in the system manager" is information the next reader needs.
+* The console unit is **`IMPLEMENTED_NOT_DEPLOYED`** as a systemd service: the
+  unit, the guard and the builder line are in the repository and offline-tested,
+  but the running console is still the initramfs instance. Enabling it on the
+  handset would require the console binary in the rootfs *and* stopping the
+  initramfs instance first — a live change that has not been made and is not
+  claimed here. What IS verified offline is the ownership rule (the guard refuses
+  to start beside an existing owner; the builder cannot enable it).
+* **`systemctl is-system-running` is not measured on the handset here.** Per-unit
+  live state (`systemctl --failed`, `is-active` for each unit in §2) is the
+  live-deployment group's capture (bg-10). A unit that is `enabled` in this
+  document is *declared*, and may be self-skipping by condition (`nuxel-animation`,
+  `nuxel-fallback`, `nuxel-console`).
+* **Deferred 4.14 compatibility work, named rather than hidden.** Three
+  components remain contained (`masked` / `unused`) instead of fixed:
+  `systemd-userdbd` (service+socket), `systemd-udevd` (4 units) and
+  `dbus-broker` as the system bus. Unmasking any of them on this kernel requires
+  the sd-event child-watch compatibility patch (pidfd-free child watching) to be
+  carried the same way the `libsystemd-shared` patch is; until that patch exists
+  and is tested, they stay masked and the graph is built not to need them. The
+  A26 script is the single place that encodes this, and the validator fails if
+  any of its four repairs disappears.
+* **No systemd user session is claimed.** `shell/config/systemd-user/*` units
+  (`nuxel-home-native.service`, `nuxel-home-kiosk.service`, `nuxel-phosh-agent.service`)
+  are written for the VM/user manager. On the handset the launcher runs from the
+  PWA host on the system bus, and `systemd --user` is affected by the A26 fixes;
+  the user units are declared here so the boundary is visible, not because a user
+  manager is proven to run on the phone.

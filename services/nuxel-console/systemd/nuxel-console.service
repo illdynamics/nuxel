@@ -1,0 +1,96 @@
+[Unit]
+Description=Nuxel live console (single-owner USB CDC-ACM debug channel)
+Documentation=file:/usr/share/doc/nuxel/BETA-FINALIZATION/system/SERVICE-GRAPH.md
+# ============================================================================
+# PROVISIONED, INSTALLED, **NOT ENABLED** — and that is the correct state.
+#
+# WHY THIS UNIT EXISTS
+#   briq-04b requires every Nuxel service to exist as a declared unit with
+#   ordering, dependencies, restart policy and jail scoping. The live console
+#   was the one service with no unit anywhere in the repository: its ownership
+#   semantics lived only in a comment in boot/initramfs/init.sh and in
+#   tools/s10plus/a33/nuxel-console.c. This file is that declaration.
+#
+# WHO OWNS THE CONSOLE TODAY (measured A32/A33 baseline)
+#   The initramfs starts /opt/nuxel/nuxel-console BEFORE systemd exists
+#   (boot/initramfs/init.sh: `if [ -x /opt/nuxel/nuxel-console ]`). It binds the
+#   CDC-ACM gadget to the first UDC, mknod()s /dev/ttyGS0, mirrors /dev/kmsg,
+#   chroot()s into the Fedora root and serves the framed command responder. It
+#   holds an flock() on /run/nuxel-console.lock for its whole lifetime.
+#
+# WHY THE ROOTFS UNIT MUST NOT FIGHT IT
+#   Two consoles on one tty is not a degraded state, it is a broken debug path
+#   (the port lock exists precisely because a second instance desynchronises the
+#   framed protocol). Therefore this unit starts only when it can PROVE nobody
+#   else owns the port:
+#     * ConditionPathExists=/usr/bin/nuxel-console — the rootfs binary. The
+#       shipped image carries the console in the INITRAMFS (/opt/nuxel), so on
+#       today's image this condition is false and systemd skips the unit
+#       (ConditionResult=no) — an honest "not deployed" instead of a failed unit;
+#     * ExecCondition=/usr/lib/nuxel/nuxel-console-free — takes the SAME flock
+#       the console takes and exits non-zero if anyone holds it. If the
+#       initramfs instance is running, the unit is skipped, never raced;
+#     * Restart=no — deliberately. A restart loop would re-acquire the tty and
+#       could interleave with an owner that appeared in between; the console is a
+#       single-owner resource and a bounded, visible failure beats a loop.
+#
+# ORDERING
+#   Before=nuxel-wayland.service: the console is the only channel that can
+#   report a compositor failure, so it must be up first (the initramfs instance
+#   trivially satisfies this on the shipping image). After=systemd-tmpfiles-setup
+#   because /run must exist for the lock file.
+After=systemd-tmpfiles-setup.service
+Before=nuxel-wayland.service nuxel-wl-fb.service nuxel-fallback.service
+# The rootfs binary. The shipped image carries the console in the INITRAMFS
+# (/opt/nuxel/nuxel-console), so this condition is FALSE on today's image and
+# systemd skips the unit with ConditionResult=no - an honest "not deployed"
+# rather than a failed unit or, far worse, a second console.
+ConditionPathExists=/usr/bin/nuxel-console
+
+[Service]
+Type=simple
+Environment=NUXEL_CONSOLE_LOCK=/run/nuxel-console.lock
+# The console chroots into the Fedora root itself (dirfd/chroot, this process
+# only — PID1's switch_root is untouched), so it is started with the root as its
+# argument, exactly as the initramfs starts it.
+ExecCondition=/usr/lib/nuxel/nuxel-console-free
+ExecStart=/usr/bin/nuxel-console /
+# WHY THE RESTART POLICY IS "no" (see the [Unit] block): a second owner of the
+# console tty is worse than a stopped console. Failures are visible in the
+# journal and in /dev/kmsg, and the owner can always reach the console through
+# the initramfs instance or the recovery path.
+Restart=no
+TimeoutStopSec=10
+KillMode=mixed
+StandardOutput=journal
+StandardError=journal
+
+# --- jail scoping: what is applied, and what deliberately is NOT -------------
+# APPLIED: no privilege escalation is ever needed by this process (it runs as
+# root by design and executes a bounded, cancellable child in its own process
+# group).
+NoNewPrivileges=yes
+# APPLIED: the console must not be able to rewrite the code it runs, and /run is
+# the only place it writes outside /dev/kmsg.
+ReadWritePaths=/run
+ReadOnlyPaths=/usr/bin/nuxel-console /opt/nuxel /usr/lib/nuxel
+# NOT APPLIED, with the reason — a "hardened" job that cannot create the gadget
+# is not more secure, it is a broken debug path:
+#   ProtectSystem=strict / ProtectKernelTunables=yes  -> writes /sys/kernel/config
+#       (configfs) to bind the ACM gadget: the ONLY way this kernel exposes a USB
+#       peripheral console (CONFIG_USB_CONFIGFS_ACM=y, no legacy g_serial).
+#   PrivateDevices=yes                                -> needs /dev/ttyGS0
+#       (mknod'd from /sys/class/tty/ttyGS0/dev) and /dev/kmsg (char 1:11).
+#   ProtectHome=yes / PrivateTmp=yes                  -> the chroot target and the
+#       journal hand-off live in the real filesystem hierarchy.
+# Residual risk is recorded rather than hidden: whoever controls this process
+# controls a root shell on the phone. That is exactly why the Live Console app
+# (Priority 7e) exposes a hard disable and why the local owner always wins over
+# any remote session.
+
+[Install]
+# multi-user.target: the console is a system service, not a user session unit.
+# NOT enabled by images/s10plus/build-phone-rootfs-inside-fedora.sh — install
+# only. verify-service-graph.py asserts BOTH facts (installed + not enabled) so
+# an accidental enablement (two owners) fails the build.
+WantedBy=multi-user.target

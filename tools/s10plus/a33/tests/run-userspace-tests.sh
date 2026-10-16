@@ -9,6 +9,7 @@
 #             tools/s10plus/a33/verify-packages.py
 #   briq-04b  services/** + shell/config/systemd-user/**   (boot graph)
 #             tools/s10plus/a33/verify-service-graph.py
+#             services/nuxel-console/test-console-ownership.py (single-owner guard)
 #   briq-04c  pwa/nuxel-common/**, services/nuxel-{bridge,portal,notifications}/**
 #             services/nuxel-web (static PWA server)
 #             tools/s10plus/a33/verify-app-registry.py
@@ -87,6 +88,8 @@ run_py "service-graph: repository boot graph" \
        --json "$ROOT/build/pkgmeta/service-graph.json"
 run_py "service-graph: validator detects defects (mutation test)" \
        "$TESTS/test-service-graph.py"
+run_py "console: single-owner live console (unit + flock guard + builder)" \
+       "$ROOT/services/nuxel-console/test-console-ownership.py"
 
 echo "-- briq-04c  application infrastructure"
 run_py "apps: canonical registry + manifests + bridge pin" \

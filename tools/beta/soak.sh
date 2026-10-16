@@ -115,7 +115,10 @@ PY
 }
 
 # --------------------------------------------------------------------------- #
-# The probe: ONE short line per sample (the live console drops long lines)
+# The probe: SHORT output lines per sample (the live console drops long lines),
+# so the probe emits two: `SOAK` (stability) and `SOAK2` (resource/performance
+# quality — disk, swap, WebKit, Phoc, the framebuffer bridge, leftover animation
+# processes, scheduling and the input inventory).  parse_sample merges both.
 # --------------------------------------------------------------------------- #
 probe_command() {
   cat <<'EOF'
@@ -129,6 +132,20 @@ tz=$(cat /sys/class/thermal/thermal_zone*/temp 2>/dev/null | sort -n | tail -1);
 rr=$(for u2 in nuxel-pwa nuxel-wl-fb nuxel-button-manager nuxel-wayland; do systemctl show -p NRestarts --value $u2 2>/dev/null; done | awk '{s+=$1}END{print s+0}');
 bm=$(tr ' ' '\n' </proc/cmdline | sed -n 's/^androidboot.mode=//p');
 echo "SOAK uptime_s=$u load1=$l failed_units=$fu stack_rss_kb=$rs stack_cpu_pct=$cp fb_owner_pid=$fb http_code=$hc thermal_raw=$tz restarts=$rr boot_mode=$bm"
+da=$(df -k / 2>/dev/null | awk 'NR==2{print $4}');
+sw=$(awk '/^SwapTotal:/{t=$2}/^SwapFree:/{f=$2}END{print t-f+0}' /proc/meminfo);
+wk=$(ps -eo rss,comm --no-headers 2>/dev/null | awk '/WebKit/{n++;r+=$1}END{printf "%d %d",n+0,r+0}');
+wk_n=${wk% *}; wk_r=${wk#* };
+pg=$(ps -eo rss,pcpu,comm --no-headers 2>/dev/null | awk '/[p]hoc/{r+=$1;c+=$2}END{printf "%d %.1f",r+0,c+0}');
+pg_r=${pg% *}; pg_c=${pg#* };
+br=$(ps -eo pid,rss,pcpu,comm --no-headers 2>/dev/null | awk '/nuxel-wl-fb/{p=$1;r=$2;c=$3}END{print p" "r" "c}');
+br_p=${br%% *}; br_t=${br#* }; br_r=${br_t%% *}; br_c=${br_t##* };
+bi=$( [ -n "$br_p" ] && awk '/^write_bytes/{printf "%d",$2/1024}' /proc/$br_p/io 2>/dev/null );
+an=$(ps -eo comm --no-headers 2>/dev/null | awk '/nuxel-anim|nuxel-firstlight/{n++}END{print n+0}');
+pq=$(cut -d' ' -f4 /proc/loadavg); pq_r=${pq%%/*}; pq_t=${pq##*/};
+in_n=$(grep -c '^H:' /proc/bus/input/devices 2>/dev/null);
+in_t=$(grep -c -i 'sec_ts\|sec_touch\|tsp' /proc/bus/input/devices 2>/dev/null);
+echo "SOAK2 disk_avail_kb=$da swap_used_kb=$sw webkit_procs=$wk_n webkit_rss_kb=$wk_r phoc_rss_kb=$pg_r phoc_cpu_pct=$pg_c bridge_rss_kb=$br_r bridge_cpu_pct=$br_c bridge_io_kb=$bi anim_procs=$an procs_running=$pq_r procs_total=$pq_t input_nodes=$in_n touch_nodes=$in_t"
 EOF
 }
 
@@ -137,8 +154,11 @@ parse_sample() {   # parse_sample <raw-line> <index> -> JSON on stdout
 import json, sys, time, re
 raw, idx = sys.argv[1], int(sys.argv[2])
 kv = {}
-m = re.search(r"SOAK\s+(.*)$", raw)
-body = m.group(1) if m else raw
+# The probe emits two lines ("SOAK ..." stability, "SOAK2 ..." resource and
+# performance quality); every k=v token on either line lands in the same sample,
+# and a key the phone could not produce is left absent so the evaluator can
+# report it as unproven rather than assuming it healthy.
+body = " ".join(m.group(1) for m in re.finditer(r"SOAK2?\s+(.*)$", raw, re.M)) or raw
 for tok in body.split():
     if "=" in tok:
         k, v = tok.split("=", 1)
@@ -163,6 +183,21 @@ sample = {
     "http_code": kv.get("http_code", ""),
     "thermal_max_c": (th / 1000.0) if th and th > 1000 else th,
     "cmdline_boot_mode": kv.get("boot_mode", ""),
+    # --- resource / performance quality (area 50) -------------------------
+    "disk_avail_kb": num("disk_avail_kb", int),
+    "swap_used_kb": num("swap_used_kb", int),
+    "webkit_procs": num("webkit_procs", int),
+    "webkit_rss_kb": num("webkit_rss_kb", int),
+    "phoc_rss_kb": num("phoc_rss_kb", int),
+    "phoc_cpu_pct": num("phoc_cpu_pct"),
+    "bridge_rss_kb": num("bridge_rss_kb", int),
+    "bridge_cpu_pct": num("bridge_cpu_pct"),
+    "bridge_io_kb": num("bridge_io_kb", int),
+    "anim_procs": num("anim_procs", int),
+    "procs_running": num("procs_running", int),
+    "procs_total": num("procs_total", int),
+    "input_nodes": num("input_nodes", int),
+    "touch_nodes": num("touch_nodes", int),
     "raw": body.strip()[:400],
 }
 print(json.dumps(sample, sort_keys=True))

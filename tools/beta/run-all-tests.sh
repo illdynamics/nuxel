@@ -144,16 +144,27 @@ export -f now_iso 2>/dev/null || true
 # JSON summary) and never turns a failure into a pass.
 INFLIGHT_ALLOWANCES=(
   # <suite-id>|<owning group>|<reason + committed evidence path>|<expiry YYYY-MM-DD>
-  # bg-02 / bg-03 / bg-04 are writing into this tree *right now* (briq-09a scoping
-  # note in the task record).  The two whole-group runners below are mid-edit;
-  # their failures are preserved verbatim under
-  # docs/beta-finalization/release/evidence/cross-group/ and re-listed in the
-  # summary JSON.  Re-run with --strict once those groups land.
-  "U-p3-a33-suite|bg-03-connectivity-time-audio-buttons|priority-3 group runner mid-edit during the parallel build (evidence: docs/beta-finalization/release/evidence/cross-group/U-p3-a33-suite.log)|2026-11-15"
-  "U-userspace-a33-suite|bg-04-userspace-completion|userspace group runner mid-edit during the parallel build (evidence: docs/beta-finalization/release/evidence/cross-group/U-userspace-a33-suite.log)|2026-11-15"
+  #
+  # An entry is honoured ONLY IF the owning group still has an unfinished
+  # (pending/in_progress/blocked) record in docs/beta-finalization/workqueue/ at
+  # run time -- checked by allowance_is_live() below.  A stale entry is refused,
+  # printed loudly, and the suite keeps its FAIL.  That is what keeps this
+  # register evidence-derived instead of aspirational: when a group finishes, its
+  # allowance stops working by itself.
+  # Failures are preserved verbatim under
+  # docs/beta-finalization/release/evidence/cross-group/ (committed evidence) and
+  # re-listed in the summary JSON.  --strict ignores the register entirely.
+  "U-p3-a33-suite|bg-03-connectivity-time-audio-buttons|priority-3 group runner mid-edit: bg-03 still has unfinished queue records (evidence: docs/beta-finalization/release/evidence/cross-group/U-p3-a33-suite.log)|2026-11-15"
+  "U-userspace-a33-suite|bg-04-userspace-completion|userspace group runner mid-edit: bg-04 still has unfinished queue records (evidence: docs/beta-finalization/release/evidence/cross-group/U-userspace-a33-suite.log)|2026-11-15"
+  "U-security-vpn-tor|bg-05-security-permissions|VPN/Tor/remote surface mid-edit: bg-05 still has unfinished queue records (evidence: docs/beta-finalization/release/evidence/cross-group/U-security-vpn-tor.log)|2026-11-15"
+  "U-verify-app-registry|bg-06-core-phone-apps|app registry mid-edit: bg-06 still has unfinished queue records (evidence: docs/beta-finalization/release/evidence/cross-group/U-verify-app-registry.log)|2026-11-15"
+  "U-verify-app-inventory|bg-06-core-phone-apps|app inventory mid-edit: bg-06 still has unfinished queue records (evidence: docs/beta-finalization/release/evidence/cross-group/U-verify-app-inventory.log)|2026-11-15"
+  "U-shell-phone-data|bg-06-core-phone-apps|phone-data module mid-edit: bg-06 still has unfinished queue records (evidence: docs/beta-finalization/release/evidence/cross-group/U-shell-phone-data.log)|2026-11-15"
+  "U-snek-parity|bg-07-specialty-apps|specialty apps mid-edit: bg-07 still has unfinished queue records (evidence: docs/beta-finalization/release/evidence/cross-group/U-snek-parity.log)|2026-11-15"
+  "U-snek-upstream-pytest|bg-07-specialty-apps|specialty apps mid-edit: bg-07 still has unfinished queue records (evidence: docs/beta-finalization/release/evidence/cross-group/U-snek-upstream-pytest.log)|2026-11-15"
 )
 
-allowance_for() {   # allowance_for <suite-id> -> prints "group|reason" or nothing
+allowance_for() {   # allowance_for <suite-id> -> prints "group|reason|expiry" or nothing
   local sid="$1" line
   for line in ${INFLIGHT_ALLOWANCES[@]+"${INFLIGHT_ALLOWANCES[@]}"}; do
     case "$line" in
@@ -163,6 +174,46 @@ allowance_for() {   # allowance_for <suite-id> -> prints "group|reason" or nothi
   return 1
 }
 export -f allowance_for 2>/dev/null || true
+
+# ---- which build groups still have unfinished work? -------------------------
+# Read from the persistent work queue, never guessed: a group is "in flight" iff
+# its latest record revision is pending/in_progress/blocked.  This makes the
+# allowance register evidence-derived -- when a group lands its last record, its
+# allowances stop being honoured with no edit to this file.
+UNFINISHED_GROUPS=""
+load_unfinished_groups() {
+  [ -n "$UNFINISHED_GROUPS" ] && return 0
+  UNFINISHED_GROUPS="$( "$PY" - "$ROOT/docs/beta-finalization/workqueue" <<'PY'
+import glob, json, os, sys
+d = sys.argv[1]
+out = set()
+if os.path.isdir(d):
+    for f in glob.glob(os.path.join(d, "briq-*.json")):
+        try:
+            doc = json.load(open(f, encoding="utf-8"))
+        except Exception:
+            continue
+        revs = doc.get("revisions") or []
+        latest = revs[-1] if revs else {}
+        state = latest.get("state") or "pending"
+        if state in ("pending", "in_progress", "blocked"):
+            out.add(latest.get("component") or doc.get("component") or "unknown")
+print(" ".join(sorted(out)))
+PY
+)" 2>/dev/null || UNFINISHED_GROUPS=""
+  export UNFINISHED_GROUPS
+}
+export -f load_unfinished_groups 2>/dev/null || true
+
+# allowance_is_live <owning group> -> 0 when that group still has unfinished work
+allowance_is_live() {
+  load_unfinished_groups
+  case " $UNFINISHED_GROUPS " in
+    *" $1 "*) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+export -f allowance_is_live 2>/dev/null || true
 
 # ---- static-check programs (kept in the environment, side-effect free) -------
 # python syntax: parse every repo-authored .py with ast (no .pyc written)
@@ -740,6 +791,28 @@ selected_indexes() {
   done
 }
 
+# ---------------------------------------------------------------------------
+# Allowance register audit (printed once, before anything runs): every entry is
+# checked against the work queue.  A stale entry (its group has no unfinished
+# record) is announced loudly and will NOT downgrade its suite.
+# ---------------------------------------------------------------------------
+load_unfinished_groups
+STALE_ALLOW=""
+if [ ${#INFLIGHT_ALLOWANCES[@]} -gt 0 ] && [ "$QUIET" -eq 0 ]; then
+  echo
+  echo "in-flight allowance register (evidence-derived from the work queue):"
+  echo "  groups with unfinished records: ${UNFINISHED_GROUPS:-<none>}"
+  for line in "${INFLIGHT_ALLOWANCES[@]}"; do
+    asid="${line%%|*}"; arest="${line#*|}"; agrp="${arest%%|*}"
+    if allowance_is_live "$agrp"; then
+      printf '  live  %-28s owner %s (expires %s)\n' "$asid" "$agrp" "$(printf '%s' "$line" | cut -d'|' -f4)"
+    else
+      printf '  STALE %-28s owner %s has no unfinished record — the allowance is REFUSED\n' "$asid" "$agrp"
+      STALE_ALLOW="${STALE_ALLOW}${asid}|${agrp}"$'\n'
+    fi
+  done
+fi
+
 T_START=$(date +%s 2>/dev/null || echo 0)
 R_PASS=0; R_FAIL=0; R_WARN=0; R_SKIP=0; R_EXT=0; R_TOTAL=0
 R_WARN_ALLOW=0
@@ -821,7 +894,7 @@ for i in $(selected_indexes); do
     status="FAIL"; note="timeout after ${tmo}s"
   elif [ "$mode" = "soft" ]; then
     status="WARN"; note="soft suite failed (rc=$rc) — legacy, non-gating"
-  elif allowance="$(allowance_for "$sid")"; then
+  elif allowance="$(allowance_for "$sid")" && allowance_is_live "${allowance%%|*}"; then
     status="WARN"; R_WARN_ALLOW=$((R_WARN_ALLOW + 1))
     note="IN-FLIGHT CROSS-GROUP ALLOWANCE (${allowance%%|*}): $(printf '%s' "$allowance" | cut -d'|' -f2-) (rc=$rc)"
     ALLOW_HITS="${ALLOW_HITS}${sid}|${allowance}"$'\n'
@@ -916,6 +989,7 @@ TESTED_AT="$NOW"
   done <<< "$FAIL_ROWS"
   echo
   echo "  ],"
+  echo "  \"unfinished_groups\": \"${UNFINISHED_GROUPS:-}\","
   echo "  \"allowances_applied\": ["
   firsta=1
   while IFS='|' read -r asid agroup areason aexpiry; do

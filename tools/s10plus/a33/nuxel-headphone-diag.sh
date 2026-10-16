@@ -25,6 +25,7 @@
 #   nuxel-headphone-diag.sh status [--json]   jack/USB-C state + the route decision
 #   nuxel-headphone-diag.sh jack              jack controls and codec pin evidence
 #   nuxel-headphone-diag.sh usbc              USB-C accessory evidence
+#   nuxel-headphone-diag.sh usb-role          USB device-role conflict report (READ-ONLY)
 #   nuxel-headphone-diag.sh route [--yes]     apply the decision (revert-aware)
 #   nuxel-headphone-diag.sh watch [SECONDS]   bounded poll: log every transition
 #   nuxel-headphone-diag.sh tone [MS] --yes   render the audio tool's low-volume tone
@@ -332,6 +333,51 @@ cmd_tone() {
   fi
 }
 
+# ------------------------------------------------------------------- usb-role
+# The USB-C port on the S10+ carries ONE live-console gadget (CDC-ACM) in the
+# A32/A33 bring-up: that gadget is the ONLY debug path to the phone. A host-mode
+# peripheral (UAC DAC/headset, keyboard, hub) needs the port in HOST mode, so the
+# two compete for the same port. Switching roles blindly can therefore cost the
+# console - the thing an engineer needs to recover a failed switch. This command
+# is READ-ONLY by design: it reports the role, the gadget state and the recovery
+# plan, and REFUSES to change the role itself.
+cmd_usb_role() {
+  hdr "USB-C device-role conflict (read-only)"
+  local p any=0
+  for p in "$(abs /sys/class/typec)"/port*/data_role "$(abs /sys/class/typec)"/port*/role; do
+    [ -f "$p" ] || continue
+    any=1
+    say "$(basename "$(dirname "$p")")/$(basename "$p") = $(head -1 "$p" 2>/dev/null | tr -d '\r')"
+  done
+  [ "$any" = 0 ] && say "  no /sys/class/typec port node: the role cannot be read on this image"
+  hdr "gadget state (the live console rides on this)"
+  local u found=0
+  for u in "$(abs /sys/class/udc)"/*; do
+    [ -e "$u" ] || continue
+    found=1
+    say "  udc $(basename "$u"): state=$(cat "$u/state" 2>/dev/null || echo '?')"
+  done
+  [ "$found" = 0 ] && say "  no UDC registered (no gadget is bound right now)"
+  for p in "$(abs /sys/kernel/config/usb_gadget)"/*/functions/*; do
+    [ -e "$p" ] || continue
+    say "  gadget function: $(basename "$(dirname "$p")")/$(basename "$p")"
+  done
+  hdr "console reachability"
+  if [ -e "$(abs /dev/ttyGS0)" ] || [ -e "$(abs /dev/ttyACM0)" ]; then
+    say "  console device node present ($( [ -e "$(abs /dev/ttyGS0)" ] && echo ttyGS0 || echo ttyACM0 ))"
+  else
+    say "  no console device node visible on this root (the host side may still hold the port)"
+  fi
+  hdr "decision"
+  say "  ROLE_SWITCH=REFUSED-BY-THIS-TOOL (read-only command)"
+  say "  Reason: the CDC-ACM live console is the only debug path; switching the port to"
+  say "  host mode without a recorded, tested recovery plan can strand the phone."
+  say "  Bounded owner procedure + recovery plan: docs/beta-finalization/manual-proof/07-headphones.md §9."
+  say "  Passive analog USB-C accessories are a SEPARATE path (codec AUX, no USB role change);"
+  say "  if the accessory is unsupported, an ACTIVE (UAC) DAC is the recommendation."
+  return 0
+}
+
 cmd_selftest() {
   local fx="${NUXEL_JACK_FIXTURES:-$(dirname "$SELF_PATH")/tests/fixtures-p3}"
   local fail=0 n name exp got
@@ -354,6 +400,7 @@ case "$CMD" in
   status)   cmd_status "${1:-}" ;;
   jack)     cmd_jack ;;
   usbc)     cmd_usbc ;;
+  usb-role) cmd_usb_role ;;
   route)    cmd_route "${1:-}" ;;
   watch)    cmd_watch "${1:-20}" ;;
   tone)     cmd_tone "${1:-800}" "${2:-}" ;;

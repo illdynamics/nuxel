@@ -34,6 +34,71 @@
       "revision": 1,
       "at": "2026-10-16T16:07:13+02:00",
       "by": "construqtor/bg-00-preflight"
+    },
+    {
+      "id": "briq-03d-headphones-usbc",
+      "title": "Headphones and USB-C audio adapters - owner test kit",
+      "component": "bg-03-connectivity-time-audio-buttons",
+      "component_title": "Priority 3 - Wi-Fi, Time/RTC, Audio, Headphones & Hardware Buttons",
+      "priority": 3,
+      "state": "implemented",
+      "dependencies": [
+        "briq-03c-audio-speaker"
+      ],
+      "evidence": [
+        {
+          "kind": "offline",
+          "path": "tools/s10plus/a33/nuxel-headphone-diag.sh",
+          "command": "bash tools/s10plus/a33/nuxel-headphone-diag.sh selftest",
+          "result": "7/7 fixtures PASS (jack headphones/headset, no control, none, removed, USB-C analog, USB-C UAC)",
+          "at": "2026-10-16T20:55:00+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "tools/s10plus/a33/tests/test-headphone-route.py",
+          "command": "python3 tools/s10plus/a33/tests/test-headphone-route.py",
+          "result": "all checks PASS incl. the USB role conflict report and the refusal to switch the role",
+          "at": "2026-10-16T20:55:00+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "tools/s10plus/a33/nuxel-headphone-diag.sh",
+          "command": "nuxelctl headphone usb-role",
+          "result": "new READ-ONLY report: Type-C role files, UDC/gadget state, console node reachability, ROLE_SWITCH=REFUSED-BY-THIS-TOOL",
+          "at": "2026-10-16T20:55:00+02:00"
+        },
+        {
+          "kind": "doc",
+          "path": "docs/beta-finalization/manual-proof/07-headphones.md",
+          "command": "grep -i 'role conflict' docs/beta-finalization/manual-proof/07-headphones.md",
+          "result": "section 9 documents the live-console vs host-peripheral conflict, the recovery plan, the active-DAC recommendation and NOT_SUPPORTED_ON_DEVICE for passive analog",
+          "at": "2026-10-16T20:55:00+02:00"
+        }
+      ],
+      "intended_changes": [
+        "docs/beta-finalization/manual-proof/07-headphones.md",
+        "tools/s10plus/a33/nuxel-headphone-diag.sh"
+      ],
+      "tests": [
+        "(tests are recorded by the owning briQ when it reports)",
+        "bash tools/s10plus/a33/nuxel-headphone-diag.sh selftest",
+        "python3 tools/s10plus/a33/tests/test-headphone-route.py",
+        "nuxelctl headphone usb-role (read-only)"
+      ],
+      "risk": "medium",
+      "rollback": "git revert the commit(s) touching this task's expected files; the change is repository-only and alters no device state",
+      "verdict": "OFFLINE_TESTED",
+      "offline_ceiling": "NEEDS_OWNER_TEST",
+      "owner_action": "OWNER TEST REQUIRED: plug in 3.5 mm headphones/a headset and a USB-C adapter and listen; the USB role experiment is bounded by the recovery plan in 07-headphones.md section 9",
+      "expected_files": [
+        "docs/beta-finalization/manual-proof/07-headphones.md",
+        "tools/s10plus/a33/nuxel-headphone-diag.sh"
+      ],
+      "note": "USB-C/jack audio: (a) UAC via the kernel driver + PipeWire/ALSA and (b) passive analog via the codec AUX are separated and never conflated; the USB role conflict is reported read-only and no tool ever switches the role. Audibility stays NEEDS_OWNER_TEST.",
+      "source": "plan.json",
+      "at": "2026-10-16T21:02:33+02:00",
+      "by": "construqtor/bg-03",
+      "revision": 2
     }
   ]
 }

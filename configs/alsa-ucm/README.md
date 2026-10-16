@@ -12,6 +12,7 @@ codec, **2x CS35L40** smart speaker amplifiers on the I2S/TDM lines, inside the
 | `beyond-madera/beyond-madera.conf` | `/usr/share/alsa/ucm2/beyond-madera/beyond-madera.conf` |
 | `beyond-madera/HiFi.conf` | `/usr/share/alsa/ucm2/beyond-madera/HiFi.conf` |
 | `beyond-madera/VoiceCall.conf` | `/usr/share/alsa/ucm2/beyond-madera/VoiceCall.conf` |
+| `nuxel-sound-settings.json` | repository contract only (read by `nuxel-audio-diag.sh`, rendered by briq-06d) — Settings → Sound rows, the shared sound-mode state file and what each row may NOT claim |
 
 The UCM2 directory name **is** the card name: `beyond-madera`, not the SoC or
 product codename. That is why the old `SamsungBeyond2/` stub (whose own header
@@ -50,5 +51,7 @@ full-scale a speaker.
 * postmarketOS UCM2 for madera-family devices is the reference for control
   names once the real capture exists; it is not copied blindly, because a
   different board wires a different amplifier mask.
-* Diagnostics: `tools/s10plus/a33/nuxel-audio-diag.sh`;
-  manual proof: `docs/beta-finalization/manual-proof/06-audio.md`.
+* Diagnostics: `tools/s10plus/a33/nuxel-audio-diag.sh`; user-facing rows:
+  `nuxelctl audio settings` / `nuxelctl audio mode` against
+  `nuxel-sound-settings.json`; manual proof:
+  `docs/beta-finalization/manual-proof/06-audio.md`.

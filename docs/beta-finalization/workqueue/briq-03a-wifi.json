@@ -58,6 +58,95 @@
       "revision": 1,
       "at": "2026-10-16T16:07:13+02:00",
       "by": "construqtor/bg-00-preflight"
+    },
+    {
+      "id": "briq-03a-wifi",
+      "title": "Wi-Fi bring-up (S10+ Murata/BCM4375 class) - config, diagnostics, association tool",
+      "component": "bg-03-connectivity-time-audio-buttons",
+      "component_title": "Priority 3 - Wi-Fi, Time/RTC, Audio, Headphones & Hardware Buttons",
+      "priority": 3,
+      "state": "implemented",
+      "dependencies": [
+        "briq-00c-workqueue-ledger"
+      ],
+      "evidence": [
+        {
+          "kind": "observation",
+          "path": "configs/networkmanager/",
+          "command": "test -e configs/networkmanager/",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "observation",
+          "path": "tools/s10plus/a33/nuxel-wifi-diag.sh",
+          "command": "test -e tools/s10plus/a33/nuxel-wifi-diag.sh",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "observation",
+          "path": "docs/beta-finalization/manual-proof/04-wifi.md",
+          "command": "test -e docs/beta-finalization/manual-proof/04-wifi.md",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "tools/s10plus/a33/nuxel-wifi-diag.sh",
+          "command": "bash tools/s10plus/a33/nuxel-wifi-diag.sh selftest",
+          "result": "5/5 fixtures PASS (associated / firmware-missing / hardware / nodevice / nosupplicant)",
+          "at": "2026-10-16T20:55:00+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "tools/s10plus/a33/tests/test-wifi-diag.py",
+          "command": "python3 tools/s10plus/a33/tests/test-wifi-diag.py",
+          "result": "all checks PASS (verdict logic, NM/wpa config, no-credential, no-flashing, doc fields, mark/compare judgement, no-cellular-fallback audit, host-tool isolation, bg-06d settings spec)",
+          "at": "2026-10-16T20:55:00+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "tools/s10plus/a33/nuxel-wifi-diag.sh",
+          "command": "NUXEL_DIAG_ROOT=<fixture> bash nuxel-wifi-diag.sh status",
+          "result": "FIXED defect: the supplicant probe borrowed the HOST's /usr/bin/wpa_supplicant, so the wifi-nosupplicant fixture reported BLOCKED_HARDWARE instead of BLOCKED_EXTERNAL_RESOURCE. Supplicant resolution now goes through tool_path()/supplicant_path(); a faked root never uses host tools unless NUXEL_DIAG_ALLOW_HOST_TOOLS=1.",
+          "at": "2026-10-16T20:55:00+02:00"
+        },
+        {
+          "kind": "observation",
+          "path": "configs/networkmanager/nuxel-network-settings.spec.json",
+          "command": "bash tools/s10plus/a33/nuxel-wifi-diag.sh settings-spec",
+          "result": "9-section native Network Settings feature set with a read_api command per row; append point for briq-06d",
+          "at": "2026-10-16T20:55:00+02:00"
+        }
+      ],
+      "intended_changes": [
+        "configs/networkmanager/",
+        "tools/s10plus/a33/nuxel-wifi-diag.sh",
+        "docs/beta-finalization/manual-proof/04-wifi.md"
+      ],
+      "tests": [
+        "(tests are recorded by the owning briQ when it reports)",
+        "bash tools/s10plus/a33/nuxel-wifi-diag.sh selftest (5/5 fixtures)",
+        "python3 tools/s10plus/a33/tests/test-wifi-diag.py (0 failing checks)",
+        "bash tools/s10plus/a33/nuxel-wifi-diag.sh compare before.json after.json (PASS/FAIL/REFUSED/NO_MARKS)",
+        "bash tools/s10plus/a33/nuxel-wifi-diag.sh fallback (CELLULAR_FALLBACK=present|absent, rc 1|0)"
+      ],
+      "risk": "medium",
+      "rollback": "git revert the commit(s) touching this task's expected files; the change is repository-only and alters no device state",
+      "verdict": "OFFLINE_TESTED",
+      "offline_ceiling": "NEEDS_OWNER_TEST",
+      "owner_action": "OWNER TEST REQUIRED: nuxelctl wifi mark -> ONE normal reboot -> nuxelctl wifi compare (plus the AP-off fallback check). See docs/beta-finalization/manual-proof/04-wifi.md",
+      "expected_files": [
+        "configs/networkmanager/",
+        "tools/s10plus/a33/nuxel-wifi-diag.sh",
+        "docs/beta-finalization/manual-proof/04-wifi.md"
+      ],
+      "note": "Wi-Fi: fixed a real evidence defect (host supplicant leakage), added the reboot-reconnection mark/compare pair, the no-cellular-fallback audit and the bg-06d Network Settings spec. A live association is NOT claimed: NEEDS_OWNER_TEST.",
+      "source": "plan.json",
+      "at": "2026-10-16T21:02:33+02:00",
+      "by": "construqtor/bg-03",
+      "revision": 2
     }
   ]
 }

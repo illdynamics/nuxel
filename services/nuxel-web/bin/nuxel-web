@@ -36,5 +36,29 @@ fi
 [ -f "$ROOT/pwa/nuxel-common/bridge.js" ] || echo "nuxel-web: WARNING: $ROOT/pwa/nuxel-common/bridge.js missing - the launcher's ES module will 404" >&2
 echo "nuxel-web: serving $ROOT on $BIND:$PORT"
 PY="${NUXEL_WEB_PYTHON:-/usr/bin/python3}"
+
+# The static server (briq-04c rev 2). `python3 -m http.server` is a development
+# server: no Cache-Control, no ETag, no Service-Worker-Allowed and no threading,
+# which is what made a stale service worker and slow launcher loads possible.
+# nuxel-web-server.py provides the MIME/news, service-worker and cache policy the
+# PWA tree needs. Resolution order (no env var needed on the phone):
+#   1. $NUXEL_WEB_SERVER                       (tests / owner troubleshooting)
+#   2. /usr/lib/nuxel/nuxel-web-server.py      (how the rootfs builder installs it)
+#   3. <dir of this shim>/nuxel-web-server.py  (repository / deploy mirror layout)
+SERVER="${NUXEL_WEB_SERVER:-}"
+if [ -z "$SERVER" ]; then
+  for _cand in /usr/lib/nuxel/nuxel-web-server.py "$(dirname "$0")/nuxel-web-server.py"; do
+    if [ -f "$_cand" ]; then SERVER="$_cand"; break; fi
+  done
+fi
+
+if [ -n "$SERVER" ] && [ -f "$SERVER" ]; then
+  # The docroot was resolved AND verified above; hand the verified path to the
+  # server so there is exactly one root-resolution rule in the system.
+  NUXEL_WEBROOT="$ROOT" NUXEL_WEB_PORT="$PORT" NUXEL_WEB_BIND="$BIND" \
+    exec "$PY" "$SERVER"
+fi
+
+echo "nuxel-web: WARNING: nuxel-web-server.py not found - falling back to 'python3 -m http.server', which serves the tree but sends NO Cache-Control, NO ETag and NO Service-Worker-Allowed header (a stale service worker is then possible)" >&2
 cd "$ROOT"
 exec "$PY" -m http.server "$PORT" --bind "$BIND"

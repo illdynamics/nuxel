@@ -107,8 +107,19 @@ Actions per class:
 
 The mapping above is the **briq-03e exact mapping**, and it is checked twice: the
 offline test compares it against `configs/nuxel/input/button-fsm.json`, and every
-one of the 20 recorded traces must replay to its expected action sequence through
+one of the 25 recorded traces must replay to its expected action sequence through
 the real C state machine.
+
+**Timing boundaries and interrupted presses are pinned, not assumed** — the
+offline test replays vectors that sit exactly on each edge:
+
+| Trace | What the boundary proves |
+|---|---|
+| `boundary-power-debounce` | 29 ms is below the 30 ms debounce (ignored); 35 ms is a short press |
+| `boundary-power-long` | 1999 ms is still the short class; **2000 ms** opens the menu (the threshold is inclusive) |
+| `boundary-chord-hold` | 499 ms after the second key CANCELS the chord (the buffered volume step is delivered); **500 ms** fires it |
+| `interrupted-press` | VolumeUp interrupted by Power becomes a chord — no phantom volume-panel action — and the cancelled chord leaves the short power press intact |
+| `interrupted-touch-gesture` | a cancelled swipe emits **nothing** (no phantom home/recents transition) |
 
 **A volume HOLD is not a key repeat.** The shipped default opens a panel, because
 that is the mapping the beta specifies; the A32 autorepeat cadence is *preserved,
@@ -260,7 +271,7 @@ phantom track behind.
 | `tools/s10plus/a33/nuxel-button-manager.service` | systemd unit (single owner, `Restart=always`) |
 | `tools/s10plus/a33/build-a33-buttons.sh` | builds the daemon and the replay helper |
 | `tools/s10plus/a33/tests/test-button-fsm.py` | offline tests (replay, parity, gate, invariants) |
-| `tools/s10plus/a33/tests/fixtures-p3/button-fsm/*.trace` + `.expected` | 20 recorded event traces with their expected action sequences (incl. the chords, the volume-hold panel, the opt-in autorepeat and the early hold) |
+| `tools/s10plus/a33/tests/fixtures-p3/button-fsm/*.trace` + `.expected` | 25 recorded event traces with their expected action sequences (incl. the chords, the volume-hold panel, the opt-in autorepeat, the early hold, and the timing-BOUNDARY and interrupted-press vectors below) |
 | `tools/s10plus/a33/tests/stub-include/alsa/asoundlib.h` | stub alsa declarations so the **daemon** can be syntax-checked on a host without alsa-lib (syntax gate only, never a build) |
 | `tools/s10plus/a32/nuxel-button-manager.c` | **protected A32 baseline — untouched** |
 

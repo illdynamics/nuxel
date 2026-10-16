@@ -331,8 +331,9 @@
     {
       "dir": "pwa/nuxel-apps/privacy",
       "owner_group": "bg-05-security-permissions",
-      "state": "in_progress",
-      "note": "Owner-group work in progress in this cycle."
+      "state": "planned",
+      "note": "Owner-group (bg-05) work not started in this revision: the directory does not exist yet. Declared as `planned` so the inventory stays honest - the verifier reports a DEFER (owner named, never a silent pass) until index.html + manifest.json land, and promotes it automatically when they do.",
+      "ledger_briq": "briq-05a-permission-manager"
     },
     {
       "dir": "pwa/nuxel-apps/recorder",
@@ -395,5 +396,48 @@
   ],
   "launcher_manifest_notes": [
     "pwa/nuxel-home/manifest.json (owned by the Priority 2 group) declares nuxel.bridge_version 0.4.0-alpha, which is the HOST version, not the protocol pin '1'. Reported as a WARN by the verifier: the launcher is a system surface, not a third-party app, so it is not part of apps[] and the mismatch cannot reject a PWA, but the two fields should not be conflated."
-  ]
+  ],
+  "required_apps_not_yet_in_tree": [
+    {
+      "app": "Permissions & Privacy manager",
+      "owner_group": "bg-05-security-permissions",
+      "ledger_briq": "briq-05a-permission-manager",
+      "status": "not-started",
+      "note": "Per-app permission states, global kill switches, kernel-confinement reality (Linux 4.14: no Landlock). No tree path is claimed here on purpose: this is the concept-level inventory, and a path guess would make the verifier report a directory that will not exist."
+    },
+    {
+      "app": "Firewall manager",
+      "owner_group": "bg-05-security-permissions",
+      "ledger_briq": "briq-05b-firewall-app",
+      "status": "not-started",
+      "note": "One authoritative backend (firewalld or UFW), blocklists, hosts editor with atomic writes."
+    },
+    {
+      "app": "VPN, Tor and remote access",
+      "owner_group": "bg-05-security-permissions",
+      "ledger_briq": "briq-05c-vpn-tor-remote",
+      "status": "not-started",
+      "note": "OpenVPN/WireGuard profiles via NetworkManager, Tor SOCKS control, SSH/SFTP/VNC/SMB clients."
+    },
+    {
+      "app": "Security auditor",
+      "owner_group": "bg-05-security-permissions",
+      "ledger_briq": "briq-05d-security-auditor",
+      "status": "not-started",
+      "note": "Read-only audit with recorded coverage/version; never presented as a certified CIS score."
+    },
+    {
+      "app": "System monitor / diagnostics",
+      "owner_group": "bg-06-core-phone-apps",
+      "ledger_briq": "briq-06b-missing-core-apps",
+      "status": "not-started",
+      "note": "CPU/memory/storage/thermal/sensor readouts plus the hardware capability inventory."
+    }
+  ],
+  "notes": {
+    "revision": "briq-04c rev 2 (cycle 6)",
+    "tree_apps_states": "complete | in_progress | shared-assets-not-an-app (the dir MUST exist) | planned (must NOT exist yet; DEFER until it lands). Enforced by tools/s10plus/a33/verify-app-registry.py - a dangling directory in a present-state entry is a FAILED verdict, never a warning.",
+    "registry_version_stays_4": "tree_apps/required_apps_not_yet_in_tree are INVENTORY sections: they do not change apps[] or its urls, so NUXEL_REGISTRY_VERSION in pwa/nuxel-home/js/apps.js (owned by the Priority 2 group) must NOT be bumped by this revision. verify-app-registry.py fails on any registry_version drift.",
+    "required_apps_not_yet_in_tree": "Concept-level inventory of mission-required apps with no tree directory yet. Each entry names the owning build group and its ledger briq; the verifier fails if that briq file does not exist in docs/beta-finalization/workqueue/ or if the briq's component does not match owner_group."
+  }
 }
