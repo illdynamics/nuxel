@@ -1,0 +1,10 @@
+cat /proc/asound/cards; echo ---; cat /proc/asound/devices 2>/dev/null | head -20; echo ---; ls /sys/class/sound 2>&1
+aplay -l 2>&1 | head -25
+rfkill list 2>&1; echo ---; ls /sys/class/net; echo ---; ip -br link 2>&1
+cat /proc/net/wireless 2>&1 | head -5; echo ---; ip -br addr 2>&1
+ls -la /dev/cdc-wdm* /dev/wwan* /dev/mhi* /dev/ttyGS* /dev/rmnet* 2>&1; mmcli -L 2>&1 | head -8
+ls /sys/class/power_supply 2>&1; for f in capacity status health temp voltage_now current_now charge_type; do echo "battery/$f=$(cat /sys/class/power_supply/battery/$f 2>&1)"; done
+for d in /sys/bus/iio/devices/iio:device*; do echo "$d name=$(cat $d/name 2>/dev/null)"; done 2>&1 | head -20
+ls /sys/class/leds 2>&1; echo ---; ls /sys/class/vibrator /sys/class/timed_output 2>&1
+nproc; echo ---; cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor 2>&1; cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_available_governors 2>&1; cat /sys/class/thermal/thermal_zone0/type /sys/class/thermal/thermal_zone0/temp 2>&1
+timedatectl 2>&1 | head -12; echo ---; ls -la /etc/localtime 2>&1; cat /etc/timezone 2>&1

@@ -1,0 +1,10 @@
+uname -a; echo "rc=$?"; cat /spec/hostname 2>/dev/null; cat /etc/hostname; cat /etc/fedora-release 2>/dev/null; head -4 /etc/os-release
+date -u +%Y-%m-%dT%H:%M:%SZ; date; cat /proc/uptime; cat /proc/loadavg
+id; echo "HOME=$HOME"; echo "PATH=$PATH"
+cat /proc/cmdline
+tr -d '\000' < /proc/device-tree/model 2>/dev/null; echo; cat /sys/devices/soc0/machine 2>/dev/null; cat /sys/devices/soc0/family 2>/dev/null
+cat /proc/version
+df -h; echo ---; df -k / | tail -1
+lsblk -o NAME,SIZE,TYPE,MOUNTPOINT 2>/dev/null | head -30
+free -m; head -5 /proc/meminfo
+cat /proc/partitions | head -20

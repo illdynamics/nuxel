@@ -1,0 +1,12 @@
+cat /var/lib/nuxel/boot-stage /var/lib/nuxel/boot-context /var/lib/nuxel/display /var/lib/nuxel/fb-owner /var/lib/nuxel/animation /var/lib/nuxel/buttons /var/lib/nuxel/ui-build /var/lib/nuxel/ui-fb-ready /var/lib/nuxel/anim-min-cycle.completed /var/lib/nuxel/fb-hold-stop 2>&1
+ls -la /usr/lib/systemd/system/nuxel* /etc/systemd/system/nuxel* 2>&1
+systemctl status nuxel-touch-arm.service --no-pager -l 2>&1 | head -40
+systemctl status nuxel-wayland.service --no-pager -l 2>&1 | head -30
+journalctl -b -p err --no-pager 2>&1 | tail -25
+rpm -qa 2>/dev/null | wc -l; rpm -q fedora-release systemd NetworkManager ModemManager pipewire wireplumber alsa-utils flatpak webkitgtk6.0 phoc phosh python3 mesa-dri-drivers 2>&1
+flatpak list --app --columns=application,branch,origin 2>&1 | head -20; echo ---; flatpak remotes 2>&1; echo ---; flatpak --version 2>&1
+lsmod 2>&1 | head -5; lsmod 2>&1 | wc -l
+ls /sys/module | grep -i -E 'sec_ts|tsp|touch|stm|synaptics' 2>&1; dmesg 2>/dev/null | grep -i -E 'sec_ts|tsp_|lpcharge|charger mode' | tail -15
+cat /proc/net/arp 2>&1; echo ---; cat /etc/resolv.conf 2>&1
+ls /etc/NetworkManager/system-connections/ 2>&1; nmcli -t -f DEVICE,STATE,CONNECTION dev 2>&1 | head
+ls /etc/nuxel 2>/dev/null | head -20; echo ---; ls /usr/local/bin | head -30

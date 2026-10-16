@@ -1,0 +1,97 @@
+# console /dev/ttyACM0
+# shared lock /tmp/nuxel-live._dev_ttyACM0.lock is not usable by uid 0 ([Errno 13] Permission denied: '/tmp/nuxel-live._dev_ttyACM0.lock') — using private lock /tmp/nuxel-live._dev_ttyACM0.0.lock
+===== uname -a; echo "rc=$?"; cat /spec/hostname 2>/dev/null; cat /etc/hostname; cat /etc/fedora-release 2>/dev/null; head -4 /etc/os-release   [rc=0 frame=cbc65ed0 sha_ok=yes]
+    Linux fedora 4.14.253 #15 SMP PREEMPT Thu Oct 15 22:29:25 UTC 2026 aarch64 GNU/Linux
+    rc=0
+    cat: /etc/hostname: No such file or directory
+    Fedora release 43 (Forty Three)
+    NAME="Fedora Linux"
+    VERSION="43 (Forty Three)"
+    RELEASE_TYPE=stable
+    ID=fedora
+===== date -u +%Y-%m-%dT%H:%M:%SZ; date; cat /proc/uptime; cat /proc/loadavg   [rc=0 frame=e38b5ed1 sha_ok=yes]
+    2026-09-15T00:15:17Z
+    Tue Sep 15 00:15:17 UTC 2026
+    921.19 6391.12
+    12.11 11.71 7.85 2/347 6320
+===== id; echo "HOME=$HOME"; echo "PATH=$PATH"   [rc=0 frame=254e5ed2 sha_ok=yes]
+    uid=0(root) gid=0(root) groups=0(root)
+    HOME=/root
+    PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+===== cat /proc/cmdline   [rc=0 frame=294f5ed3 sha_ok=yes]
+     console=ram loglevel=4 sec_debug.pcb_offset=7346944 sec_debug.smd_offset=7348992 sec_debug.lpddr4_size=8 sec_debug.dram_info=01,06,03,8G sec_debug.pwrsrc_rs=0x0001000840010000 sec_debug.reset_reason=5 sec_reset.reset_reason=5 sec_debug.reset_rwc=1 sec_debug.level=0 sec_watchdog.sec_pet=5 androidboot.debug_level=0x4f4c androidboot.force_upload=0x0 softdog.soft_margin=100 softdog.soft_panic=1 sec_debug.dump_sink=0x0 sec_debug.upload_count=0 androidboot.dram_info=01,06,03,8G androidboot.fmm_lock=48 sec_debug.fmm_lock_offset=7340600 sec_debug.sjl=1 androidboot.sn.param.offset=7343024 androidboot.prototype.param.offset=7351040 androidboot.recovery_offset=7355136 printk.devkmsg=on ess_setup=0xfd900000 sec_avc_log=0x40000@0x91202000 sec_tsp_log=0x40000@0x91244000 sec_disp_log=0x100000@0x91286000 sec_debug_next=0x800000@0x91388000 charging_mode=0x3030 s3cfb.bootloaderfb=0xca000000 lcdtype=10555411 androidboot.carrierid.param.offset=7340608 androidboot.carrierid=PHN consoleblank=0 androidboot.mode=charger ehci_hcd.park=3 oops=panic pmic_info=43 ccic_info=1 fg_reset=0 androidboot.emmc_checksum=3 androidboot.sales.param.offset=7340572 sales_code=PHN androidboot.odin_download=1 androidboot.bootloader=G975FXXSEFUL1 androidboot.selinux=enforcing androidboot.ucs_mode=0 androidboot.revision=26 androidboot.hardware=exynos9820 androidboot.warranty_bit=1 androidboot.wb.hs=0e03 androidboot.rp=14 androidboot.wb.snapQB=34489444R sec_debug.bin=A androidboot.hmac_mismatch=0 androidboot.sec_atd.tty=/dev/ttySAC0 androidboot.serialno=R58M75KDB2X androidboot.ap_serial=0x10764E6460BA snd_soc_core.pmdown_time=1000 androidboot.cp_reserved_mem=off rootwait ro init=/init root=/dev/sda25 androidboot.dtbo_idx=9 androidboot.fmp_config=0 androidboot.em.did=2010764e6460ba11 androidboot.em.model=SM-G975F androidboot.em.status=0x0 androidboot.sb.debug0=0x0 androidboot.verifiedbootstate=orange androidboot.svb.ver=SVB1.0 bcm_setup= reserve-fimc= firmware_class.path=/vendor/firmware ecd_setup=disable region1=EUR region2=OPEN factory_mode=0 androidboot.ulcnt=1 android.nonce=b321f12c0b7b3c81f7f44e725b2dcad6 root=PARTUUID=52444E41-494F-2044-7379-7374656D0000
+===== tr -d '\000' < /proc/device-tree/model 2>/dev/null; echo; cat /sys/devices/soc0/machine 2>/dev/null; cat /sys/devices/soc0/family 2>/dev/null   [rc=0 frame=39aa5ed4 sha_ok=yes]
+    Samsung BEYOND2LTE EUR OPEN 26 board based on EXYNOS9820
+    Samsung BEYOND2LTE EUR OPEN 26 board based on EXYNOS9820
+    Samsung Exynos
+===== cat /proc/version   [rc=0 frame=3bbd5ed5 sha_ok=yes]
+    Linux version 4.14.253 (root@) (gcc version 15.3.1 20260722 (Red Hat 15.3.1-1) (GCC)) #15 SMP PREEMPT Thu Oct 15 22:29:25 UTC 2026
+===== df -h; echo ---; df -k / | tail -1   [rc=0 frame=69c85ed6 sha_ok=yes]
+    Filesystem      Size  Used Avail Use% Mounted on
+    none            3.4G     0  3.4G   0% /dev
+    /dev/sda31      3.9G  1.7G  2.0G  47% /
+    tmpfs           3.5G   13M  3.4G   1% /dev/shm
+    tmpfs           1.4G  268K  1.4G   1% /run
+    tmpfs           3.5G     0  3.5G   0% /tmp
+    ---
+    /dev/sda31       4046560 1781008   2055840  47% /
+===== lsblk -o NAME,SIZE,TYPE,MOUNTPOINT 2>/dev/null | head -30   [rc=0 frame=5f375ed7 sha_ok=yes]
+    NAME      SIZE TYPE MOUNTPOINT
+    sda     119.2G disk
+    |-sda1    4.5M part
+    |-sda2    7.5M part
+    |-sda3     20M part
+    |-sda4      8M part
+    |-sda5      8M part
+    |-sda6    512K part
+    |-sda7     20M part
+    |-sda8      8M part
+    |-sda9      4M part
+    |-sda10     2M part
+    |-sda11     4M part
+    |-sda12     8M part
+    |-sda13     8M part
+    |-sda14    55M part
+    |-sda15  64.5M part
+    |-sda16    50M part
+    |-sda17     1M part
+    |-sda18   512K part
+    |-sda19     1M part
+    |-sda20    16M part
+    |-sda21    16M part
+    |-sda22    16M part
+    |-sda23    64K part
+    |-sda24   1.4M part
+    |-sda25   5.6G part
+    |-sda26   1.1G part
+    |-sda27   620M part
+    |-sda28   600M part
+===== free -m; head -5 /proc/meminfo   [rc=0 frame=791d5ed8 sha_ok=yes]
+                   total        used        free      shared  buff/cache   available
+    Mem:            7420         672        6416          21         412        6747
+    Swap:              0           0           0
+    MemTotal:        7598232 kB
+    MemFree:         6570184 kB
+    MemAvailable:    6909924 kB
+    Buffers:           11244 kB
+    Cached:           371224 kB
+===== cat /proc/partitions | head -20   [rc=0 frame=e96b5ed9 sha_ok=yes]
+    major minor  #blocks  name
+       1        0       8192 ram0
+       1        1       8192 ram1
+       1        2       8192 ram2
+       1        3       8192 ram3
+       1        4       8192 ram4
+       1        5       8192 ram5
+       1        6       8192 ram6
+       1        7       8192 ram7
+       1        8       8192 ram8
+       1        9       8192 ram9
+       1       10       8192 ram10
+       1       11       8192 ram11
+       1       12       8192 ram12
+       1       13       8192 ram13
+       1       14       8192 ram14
+       1       15       8192 ram15
+       8        0  124944384 sda
+       8        1       4608 sda1

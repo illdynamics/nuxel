@@ -1,0 +1,55 @@
+### host tool/inventory probe 2026-10-16T17:30:15Z
+python3                    /x/qonqrete/.venv/bin/python3
+git                        /usr/bin/git
+jq                         /usr/bin/jq
+unzip                      /usr/bin/unzip
+zip                        /usr/bin/zip
+sha256sum                  /usr/bin/sha256sum
+adb                        /usr/bin/adb
+podman                     /usr/bin/podman
+docker                     /usr/bin/docker
+qemu-system-aarch64        ABSENT
+aarch64-linux-gnu-gcc      ABSENT
+node                       /home/wicked/.nvm/versions/node/v20.20.0/bin/node
+npm                        /home/wicked/.nvm/versions/node/v20.20.0/bin/npm
+ssh                        /usr/bin/ssh
+socat                      ABSENT
+setpriv                    /usr/bin/setpriv
+timeout                    /usr/bin/timeout
+flock                      /usr/bin/flock
+lsblk                      /usr/bin/lsblk
+udisksctl                  /usr/bin/udisksctl
+
+### versions
+Python 3.11.8
+git version 2.55.0
+jq-1.8.1
+v20.20.0
+UnZip 6.00 of 20 April 2009, by Info-ZIP.  Maintained by C. Spieler.  Send
+
+### disk
+Filesystem        1K-blocks      Used Available Use% Mounted on
+/dev/mapper/vg-lv 486191160 417842156  68349004  86% /
+/dev/mapper/vg-lv 486191160 417842156  68349004  86% /
+tmpfs              16296908   1311596  14985312   9% /tmp
+
+### load/mem
+ 19:30:15 up 14 days, 18:25,  5 users,  load average: 0.14, 0.18, 0.11
+               total        used        free      shared  buff/cache   available
+Mem:           31829        7600        6878        1370       19185       24229
+
+### virt
+1770476 /bin/bash -c cd /x/nuxel && { echo "### host tool/inventory probe $(date -u +%Y-%m-%dT%H:%M:%SZ)"; for t in python3 git jq unzip zip sha256sum adb podman docker qemu-system-aarch64 aarch64-linux-gnu-gcc node npm ssh socat setpriv timeout flock lsblk udisksctl; do printf '%-26s %s\n' "$t" "$(command -v $t 2>/dev/null || echo ABSENT)"; done; echo; echo "### versions"; python3 -V 2>&1; git --version; jq --version; node -v 2>/dev/null || echo "node ABSENT"; aarch64-linux-gnu-gcc --version 2>/dev/null | head -1 || echo "cross-gcc ABSENT"; unzip -v 2>/dev/null | head -1; echo; echo "### disk"; df -k / /x /tmp 2>&1; echo; echo "### load/mem"; uptime; free -m | head -2; echo; echo "### virt"; (pgrep -a -f 'qemu|virsh|VBoxHeadless|UTM' | head -10) || echo "no qemu/vbox/UTM process"; systemctl is-system-running 2>&1; echo; echo "### serial"; ls -la /dev/ttyACM* /dev/serial/by-id/ 2>&1; lsusb | grep -i -E 'samsung|nuxel|18d1' ; } 2>&1 | tee /tmp/nuxel-host-probe.txt | head -80
+1770481 /bin/bash -c cd /x/nuxel && { echo "### host tool/inventory probe $(date -u +%Y-%m-%dT%H:%M:%SZ)"; for t in python3 git jq unzip zip sha256sum adb podman docker qemu-system-aarch64 aarch64-linux-gnu-gcc node npm ssh socat setpriv timeout flock lsblk udisksctl; do printf '%-26s %s\n' "$t" "$(command -v $t 2>/dev/null || echo ABSENT)"; done; echo; echo "### versions"; python3 -V 2>&1; git --version; jq --version; node -v 2>/dev/null || echo "node ABSENT"; aarch64-linux-gnu-gcc --version 2>/dev/null | head -1 || echo "cross-gcc ABSENT"; unzip -v 2>/dev/null | head -1; echo; echo "### disk"; df -k / /x /tmp 2>&1; echo; echo "### load/mem"; uptime; free -m | head -2; echo; echo "### virt"; (pgrep -a -f 'qemu|virsh|VBoxHeadless|UTM' | head -10) || echo "no qemu/vbox/UTM process"; systemctl is-system-running 2>&1; echo; echo "### serial"; ls -la /dev/ttyACM* /dev/serial/by-id/ 2>&1; lsusb | grep -i -E 'samsung|nuxel|18d1' ; } 2>&1 | tee /tmp/nuxel-host-probe.txt | head -80
+1770525 /bin/bash -c cd /x/nuxel && { echo "### host tool/inventory probe $(date -u +%Y-%m-%dT%H:%M:%SZ)"; for t in python3 git jq unzip zip sha256sum adb podman docker qemu-system-aarch64 aarch64-linux-gnu-gcc node npm ssh socat setpriv timeout flock lsblk udisksctl; do printf '%-26s %s\n' "$t" "$(command -v $t 2>/dev/null || echo ABSENT)"; done; echo; echo "### versions"; python3 -V 2>&1; git --version; jq --version; node -v 2>/dev/null || echo "node ABSENT"; aarch64-linux-gnu-gcc --version 2>/dev/null | head -1 || echo "cross-gcc ABSENT"; unzip -v 2>/dev/null | head -1; echo; echo "### disk"; df -k / /x /tmp 2>&1; echo; echo "### load/mem"; uptime; free -m | head -2; echo; echo "### virt"; (pgrep -a -f 'qemu|virsh|VBoxHeadless|UTM' | head -10) || echo "no qemu/vbox/UTM process"; systemctl is-system-running 2>&1; echo; echo "### serial"; ls -la /dev/ttyACM* /dev/serial/by-id/ 2>&1; lsusb | grep -i -E 'samsung|nuxel|18d1' ; } 2>&1 | tee /tmp/nuxel-host-probe.txt | head -80
+degraded
+
+### serial
+crw-rw----. 1 root dialout 166, 0 Oct 16 19:30 /dev/ttyACM0
+
+/dev/serial/by-id/:
+total 0
+drwxr-xr-x. 2 root root 60 Oct 16 19:13 .
+drwxr-xr-x. 4 root root 80 Oct 16 19:13 ..
+lrwxrwxrwx. 1 root root 13 Oct 16 19:13 usb-Nuxel_Nuxel_S10+_Live_Console_NUXEL-S10PLUS-0001-if00 -> ../../ttyACM0
+Bus 002 Device 015: ID 18d1:4ee7 Google Inc. Nexus/Pixel Device (charging + debug)

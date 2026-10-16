@@ -1,0 +1,17 @@
+### archive re-scan 2026-10-16T17:30:32Z
+-- search root: /x/nuxel
+-- search root: /x/nuxel/docs
+-- search root: /tmp
+-- search root: /x
+-- search root: /home/wicked
+-- search root: /home/wicked/Downloads
+-- search root: /home/wicked/Nuxel
+-- search root: /mnt
+-- search root: /media
+-- search root: /run/media
+-- broad: any *.zip under /x/nuxel or /home/wicked/Downloads (depth 6)
+/x/nuxel/build/out/g7power/stock/firmware/RETEU_10.zip
+/x/nuxel/build/out/g7power/stock/blankflash/blankflash_from_PDOS29.114-134-2.zip
+/x/nuxel/build/out/g7power/stock/blankflash/blankflash_from_QCO30.85-18.zip
+-- /x/nuxel/tools/s10plus/a33 presence (another group's tree, read-only look)
+/x/nuxel/tools/s10plus/a33

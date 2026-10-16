@@ -1,6 +1,13 @@
 # Environment preflight — measured, not assumed (briq-00a)
 
-**Access tier:** repository-only (no phone, no VM required for this briQ).
+> **2026-10-16 re-verification (bg-00, second session of this run): the handset IS reachable in
+> this session — the USB CDC-ACM live console answers and every device-side fact in §13 below
+> was read off the physical SM-G975F. §6, §10 and §12 record the *first* session, where the
+> console enumerated but did not answer; §13 supersedes them for the current session.**
+
+
+**Access tier:** repository-only in the first session (§1–§12); **repository + read-only live
+console** in the re-verification session (§13).
 **Measured at:** 2026-10-16T15:59:31+02:00 (2026-10-16T13:59:31Z, epoch 1792159173).
 **Clock:** real host clock, `TZ=Europe/Amsterdam` → **CEST (+02:00)**. Nothing in this document
 is a fabricated timestamp; every value came from a command whose output is quoted below.
@@ -373,3 +380,593 @@ Two honest corrections recorded because this preflight's own discipline demands 
 2. **The phone is still unreachable.** The re-measure did not touch the handset; the CDC-ACM
    node (`/dev/cu.usbmodem201`) was not re-probed and no on-device value is claimed here. The
    phone free-space measurement remains **BLOCKED_EXTERNAL_RESOURCE** (§6, §10).
+
+---
+
+## 13. Re-verification in the current session — Linux host, live USB console **ONLINE**
+
+**Access tier this session:** repository + **read-only live inspection of the handset** over the
+USB CDC-ACM console.  Nothing was written to the phone, no service was restarted, no partition or
+block device was touched, no reboot was issued and no key was injected.  The only device-side
+write is the framing temp file `/var/tmp/nx-<id>` that the project's own console tool creates for
+every command (see §13.4) — it is transient, holds only a command's stdout/stderr, and is removed
+by the tool itself at the start of the next command.
+
+**Measured (real clock, `TZ=Europe/Amsterdam` → +02:00):** 2026-10-16T17:26Z → 17:32Z
+(19:26 → 19:32 +02:00).  Every value below quotes the command output it came from; the raw
+captures live in `docs/beta-finalization/preflight/live/`.
+
+### 13.1 What changed since the first session (§1–§12)
+
+| Property | First session (§1–§12) | This session (§13) |
+|----------|------------------------|--------------------|
+| Host | macOS 15.7.9 on Apple Silicon (`Darwin infranux`) | **Fedora Linux 43 x86_64** (`dextronux`, kernel 6.17.1-300.fc43) |
+| Workspace path | `/Users/wicked/x/nuxel` | **`/x/nuxel`** (same repository, same `origin/main`) |
+| Supplied archives | `docs.zip`, `scripts.zip`, `tools.zip`, `nuxel-main.zip`, … present in `~/Downloads` | **absent** — re-scan found none (§13.19, `ARCHIVE-INVENTORY.md` §5) |
+| `.venv/` | present, 772 files | **absent** (a fresh clone of the same tree) |
+| Phone console | node enumerated, **did not answer** → `BLOCKED_EXTERNAL_RESOURCE` | **answers** (framed, SHA-256-verified round trips) |
+| aarch64 execution channel | native on the arm64 Mac + UTM guest | **none**: no cross-gcc, no `qemu-aarch64-static`, no binfmt, no UTM (see §13.2) |
+| HEAD at start | `de45917d` | **`6ee6a39c727f8936ae530092ba23bfe3b7d1e4a1`** (`main`, working tree clean except other groups' in-flight files) |
+
+### 13.2 Host platform and tool inventory (this session)
+
+```
+$ uname -a
+Linux dextronux 6.17.1-300.fc43.x86_64 #1 SMP PREEMPT_DYNAMIC Mon Oct  6 15:37:21 UTC 2025 x86_64 GNU/Linux
+$ cat /etc/os-release | head -2
+NAME="Fedora Linux"
+VERSION="43 (Workstation Edition)"
+$ uptime ; free -m | head -2
+ 19:30:15 up 14 days, 18:25,  5 users,  load average: 0.14, 0.18, 0.11
+               total        used        free      shared  buff/cache   available
+Mem:           31829        7600        6878        1370       19185       24229
+```
+
+| Tool | This session | Consequence |
+|------|--------------|-------------|
+| `python3` | `/x/qonqrete/.venv/bin/python3` — **3.11.8** | every `tools/beta/*.py` and `tools/s10plus/**/*.py` runs; the QonQrete venv is first on `PATH` |
+| `git` | 2.55.0 | repository work normal |
+| `jq` | 1.8.1 | the regression guard's manifest reader works |
+| `node` | v20.20.0 (nvm) | the JS suites (safe zones, launcher registry) actually execute |
+| `adb` | present, `adb devices` → **empty** | adb channel unavailable; the serial console is the only device channel |
+| `podman` / `docker` | present (29.9.0) | `docker run --platform linux/arm64 fedora:43 uname -m` → **`exec /usr/sbin/uname: exec format error`**: `/proc/sys/fs/binfmt_misc` holds only `register`/`status`, **no `qemu-aarch64` handler**, so **no aarch64 container execution channel** |
+| `qemu-system-aarch64`, `socat`, `aarch64-linux-gnu-gcc` | **ABSENT** | nothing on this host can execute an aarch64 Linux ELF; a cross build is not possible here |
+| `lsusb` | present | used for the gadget identity probe |
+
+**Consequence for the whole run:** the aarch64 colour selftest behind INV-2 cannot execute on this
+host (it executed natively on the arm64 Mac in the first session).  The handset itself is the only
+aarch64 execution channel available in this environment, and this group may only read from it.
+That is why `tools/beta/regression-guard.sh` reports the two INV-2 binary legs as **WARN**
+(`binary absent or not executable: build/out/s10plus/a32/nuxel-wl-fb`) while the source-level and
+A33 golden-bytes legs pass.
+
+### 13.3 Disk
+
+```
+$ df -k / /tmp
+Filesystem        1K-blocks      Used Available Use% Mounted on
+/dev/mapper/vg-lv 486191160 417842156  68349004  86% /
+tmpfs              16296908   1311596  14985312   9% /tmp
+```
+Host: **66 747 KiB … 68 349 004 KiB (≈65 GiB) free** on the volume holding `/x/nuxel`; `/tmp` is a
+16 GiB tmpfs with ≈14.3 GiB free.  The 22 GiB hard budget of the first session does not bind here,
+but the rule stands: still no bulk unpacking (nothing needs it — no archive is present).
+
+**Phone filesystem free space — MEASURED (first session: NOT MEASURED):**
+
+```
+$ df -h ; df -k / | tail -1
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/sda31      3.9G  1.7G  2.0G  47% /
+tmpfs           3.5G   13M  3.4G   1% /dev/shm
+tmpfs           1.4G  268K  1.4G   1% /run
+tmpfs           3.5G     0  3.5G   0% /tmp
+/dev/sda31       4046560 1781008   2055840  47% /
+```
+The Nuxel rootfs (`/dev/sda31`, ext4) is **3.9 GiB, 47 % used, 2 055 840 KiB ≈ 1.96 GiB free**.
+`free -m` on the phone: **7420 MiB total, 6416 MiB free, 0 swap**.
+
+### 13.4 How the live console was reached, and the three tool defects fixed
+
+``` 
+$ ls -la /dev/ttyACM0 /dev/serial/by-id/
+crw-rw----. 1 root dialout 166, 0 Oct 16 19:30 /dev/ttyACM0
+usb-Nuxel_Nuxel_S10+_Live_Console_NUXEL-S10PLUS-0001-if00 -> ../../ttyACM0
+$ lsusb | grep 18d1
+Bus 002 Device 015: ID 18d1:4ee7 Google Inc. Nexus/Pixel Device (charging + debug)
+$ sudo -n bash scripts/s10plus-debug-pack/nuxel-live.sh --dev /dev/ttyACM0 --run 'uname -a'
+Linux fedora 4.14.253 #15 SMP PREEMPT Thu Oct 15 22:29:25 UTC 2026 aarch64 GNU/Linux
+```
+
+The console node exists, carries the gadget string **`Nuxel_Nuxel S10+_Live Console`** /
+`NUXEL-S10PLUS-0001`, and answers in framed round trips (`@@NXB/@@NXR/@@NXH/@@NXE`, target-side
+SHA-256 re-verified on the host — `sha_ok=yes` on every command captured today; a mangled frame is
+re-requested, never accepted).  Three defects in the host tool had to be fixed before it could be
+used **on Linux** (all three are repository changes by this group, listed with their rollback in
+§13.18):
+
+1. **Missing heredoc terminator.** `scripts/s10plus-debug-pack/nuxel-live.sh` opened
+   `exec "$PY" - … <<'PYEOF'` at line 64 and never closed it — bash warned
+   *"here-document at line 64 delimited by end-of-file (wanted `PYEOF')"* on every invocation and
+   fed the interpreter from EOF.  Fixed by appending the `PYEOF` terminator; `bash -n` clean.
+2. **macOS-only device discovery.** The default was `ls /dev/cu.usbmodem*`; on Linux the gadget is
+   `/dev/ttyACM*`.  The tool now probes both and, when the node exists but is not readable, prints
+   the real remedy (`root:dialout 0660`; add yourself to `dialout` *or* re-run with `sudo` — never
+   `chmod` the node).
+3. **Port lock crashed instead of falling back.** `open("/tmp/nuxel-live.<dev>.lock","w")` under
+   `sudo` fails with `EACCES` on a Fedora host because `fs.protected_regular=2` forbids root from
+   `O_CREAT`-opening another user's file in the shared sticky `/tmp`.  The tool printed a raw
+   `PermissionError` traceback — exactly the failure class the A33 cable-pull fix removed for the
+   serial port.  Now a genuinely **held** lock is still reported as such (exit 3), and a lock that
+   merely cannot be *opened* falls back to a private per-uid lock, announcing the substitution.
+
+Access note for later groups: **the node is `root:dialout 0660`, and `wicked` is not in `dialout`
+in this environment** (`id` → `wicked wheel vboxusers docker`).  Every capture below therefore ran
+through `sudo -n` (passwordless sudo verified, `sudo -n id` → `uid=0(root)`).  Do not `chmod` the
+device node: use `sudo`, or `usermod -aG dialout` plus a fresh login.
+
+### 13.5 Device identity and boot mode
+
+```
+$ cat /proc/version
+Linux version 4.14.253 (root@) (gcc version 15.3.1 20260722 (Red Hat 15.3.1-1) (GCC)) #15 SMP PREEMPT Thu Oct 15 22:29:25 UTC 2026
+$ tr -d '\000' < /proc/device-tree/model ; echo
+Samsung BEYOND2LTE EUR OPEN 26 board based on EXYNOS9820
+```
+| Item | Measured |
+|------|----------|
+| Model / codename | **SM-G975F / beyond2lte** (`androidboot.em.model=SM-G975F`, board `BEYOND2LTE EUR OPEN 26`), SoC **Exynos 9820** |
+| Kernel | **4.14.253** (`#15 SMP PREEMPT Thu Oct 15 22:29:25 UTC 2026`), built with **GCC 15.3.1 (Red Hat)** — i.e. the Fedora toolchain |
+| Distribution | **Fedora release 43 (Forty Three)**, aarch64, hostname `fedora`, systemd PID 1 |
+| Bootloader | `androidboot.bootloader=G975FXXSEFUL1`, `androidboot.verifiedbootstate=orange` (unlocked, as required by the project) |
+| Serial / AP serial | present in `/proc/cmdline` — **deliberately not reproduced in this document** (identity is established by model, board, SoC and bootloader string). The raw capture `preflight/live/batch-1-identity.out` keeps the command line **verbatim**, unredacted, because it is the primary evidence for the charger-mode finding and doctoring evidence would be worse than quoting it. No IMEI, IMSI, PIN, APN credential or SIM identifier was read at any point — the modem was only probed with `mmcli -L` (which returned "No modems were found") and with `ls` on the device nodes. |
+| **Boot mode** | **`androidboot.mode=charger`** and `charging_mode=0x3030` in `/proc/cmdline` (`consoleblank=0`), i.e. the handset is in **charger/LPM mode** |
+| Consequence | `[sec_input] sec_ts_init: Do not load driver due to : lpm 1` — the touchscreen driver **deliberately does not initialise** in this boot (§13.8). This is the P0 condition bg-01 owns; **this group took no action on it** (no reboot, no service change) because bg-00 is repository plus read-only inspection only. |
+| Other cmdline facts used later in this run | `root=/dev/sda25` (initramfs) → switch_root into `/dev/sda31`; `sec_tsp_log=0x40000@0x91244000` (the `sec_ts` log region exists even though the driver does not arm); `printk.devkmsg=on` |
+
+### 13.6 systemd health
+
+```
+$ systemctl is-system-running
+degraded
+$ systemctl --failed --no-pager
+  UNIT                    LOAD   ACTIVE SUB    DESCRIPTION
+● nuxel-touch-arm.service loaded failed failed Nuxel S10+ touchscreen arming (sec_ts stop->start, then hold open)
+```
+
+**One failed unit**, and it is the expected one: the touchscreen arming hook cannot arm a driver
+the kernel skipped in charger mode.
+
+```
+$ systemctl status nuxel-touch-arm.service --no-pager -l | head
+× nuxel-touch-arm.service - Nuxel S10+ touchscreen arming (sec_ts stop->start, then hold open)
+     Active: failed (Result: exit-code) since Tue 2026-09-15 00:01:46 UTC; 14min ago
+   Process: 5783 ExecStart=/usr/lib/nuxel/nuxel-touch-arm (code=exited, status=2)
+   Sep 15 00:01:46 fedora systemd[1]: nuxel-touch-arm.service: Scheduled restart job, restart counter is at 10.
+   Sep 15 00:01:46 fedora systemd[1]: nuxel-touch-arm.service: Start request repeated too quickly.
+```
+
+Running units (16, measured):
+
+```
+init.scope · dbus-daemon.service · ModemManager.service · NetworkManager.service
+nuxel-button-manager.service · nuxel-wayland.service · nuxel-wl-fb.service
+polkit.service · seatd.service · systemd-journald.service · systemd-logind.service
+dbus.socket · systemd-journald{,-audit,-dev-log}.socket · systemd-logind-varlink.socket
+```
+
+Unit files live in **`/etc/systemd/system/`** (not `/usr/lib/systemd/system/`): `nuxel-button-manager.service`
+(+ `…service.prev-a32`), `nuxel-fallback.service`, `nuxel-firstlight.service` (**disabled**),
+`nuxel-touch-arm.service`, `nuxel-ui-fallback.service` (**disabled**), `nuxel-ui.service`,
+`nuxel-wayland.service`, `nuxel-wl-fb.service`, plus `nuxel-ui.service.d/10-launcher-primary.conf`.
+
+### 13.7 Display, framebuffer and the graphical stack
+
+```
+$ ls -la /dev/fb0 /dev/dri ; cat /sys/class/graphics/fb0/name /sys/class/graphics/fb0/virtual_size /sys/class/graphics/fb0/bits_per_pixel
+ls: cannot access '/dev/dri': No such file or directory
+crw------- 1 root root 29, 0 Jan  1  1970 /dev/fb0
+1440,6080
+32
+$ cat /sys/class/graphics/fb0/modes
+U:1440x3040p-0
+$ ls -l /sys/class/graphics/
+fb0 -> ../../devices/platform/19030000.decon_f/graphics/fb0
+fb1 -> ../../devices/platform/19050000.decon_t/graphics/fb1
+```
+| Item | Measured |
+|------|----------|
+| Framebuffer | `/dev/fb0` = `19030000.decon_f`, **1440×6080 virtual (double-height), 32 bpp**, mode `U:1440x3040p-0` — matches the A32 DECON/XRGB8888→ABGR8888 baseline |
+| DRM | **no `/dev/dri`** — the session is Phoc-headless + Wayland→framebuffer bridge, exactly as documented; native DRM/KMS is still future kernel work (no equivalence claimed) |
+| Compositor | `phoc --no-xwayland -C /etc/nuxel/phoc-phone.ini -E /usr/lib/nuxel/nuxel-session.sh` (PID 5315, 392.7 MB, 72 tasks); log: `Linux dmabuf support unavailable`, `Output 'HEADLESS-1' added` |
+| Launcher host | `/usr/lib/nuxel/nuxel-pwa-host` (PID 5349) + `python3 -m http.server 8000 --bind 127.0.0.1` (PID 5359) + 2× `WebKitWebProcess` (5402, 5641) + `WebKitNetworkProcess` (5400) |
+| Bridge | `nuxel-wl-fb` (PID 5387) |
+| Buttons | `nuxel-button-manager` (PID 5388) |
+
+**CPU cost measured on the handset** (`ps -eo … --sort=start_time`): `nuxel-wl-fb` **63.6 % CPU**,
+`phoc` **32.5 %**, `WebKitWebProcess` 7.1 % / 1.0 %, `nuxel-pwa-host` 1.0 % — i.e. the bridge and the
+software-rendered compositor are the dominant CPU consumers at idle.  Load average on the phone at
+capture time: **12.11 11.71 7.85** with 8 CPUs and 347 tasks.  This is a real, measured
+performance finding for the resource/performance workstream (it is *not* a verdict that the
+launcher is broken — the launcher process tree is healthy and holding the display).
+
+### 13.8 Input devices — and the missing touchscreen
+
+```
+$ cat /proc/bus/input/devices        # 7 devices, condensed
+meta_event   event0   /devices/virtual/input/input0            (EV=5 REL=c0)
+gpio_keys    event1   /devices/platform/gpio_keys/input/input1 (EV=3 KEY=…1c000000000000)
+grip_sensor  event2   /devices/virtual/input/input2
+ssp_context  event3   /devices/virtual/input/input3
+Headset      event4   madera-extcon (EV=23 KEY=40 … 402000000 c000000000000 SW=94)
+hall         event5   /devices/platform/hall/input/input5
+certify_hall event6   /devices/platform/certify_hall/input/input6
+$ ls -la /sys/class/sec/tsp
+ls: cannot access '/sys/class/sec/tsp': No such file or directory
+$ ls /sys/module | grep -iE 'sec_ts|tsp|touch'      # (empty)
+$ dmesg | grep -iE 'sec_ts|tsp_|lpcharge' | tail -4
+[    1.638064] [sec_input] sec_ts_init: Do not load driver due to : lpm 1
+[    2.214721] tsp_io: disabling
+[    2.214833] tsp_avdd: disabling
+```
+
+| Finding | Evidence | Meaning |
+|---------|----------|---------|
+| **No touchscreen evdev node exists** | 7 input devices, none is `sec_ts`/`sec_touchscreen`; `/sys/class/sec/tsp` absent | nothing for libinput/Phoc to use — touch cannot work in this boot |
+| Root cause | `sec_ts_init: Do not load driver due to : lpm 1` + `androidboot.mode=charger` | the kernel *chose* not to arm the controller because the boot is a charger/LPM boot |
+| No loadable modules at all | `lsmod` → header only (`1` line) | the 4.14.253 kernel is monolithic for these drivers; a "modprobe sec_ts" recovery is impossible by construction |
+| `nuxel-touch-arm.service` | failed (exit 2), restart counter 10 | the userspace "stop→start then hold open" hook cannot succeed while the driver is skipped; mission rule honoured — no hacks were added by this group to resurrect it |
+| Also useful later | `/sys/class/input/eventN` → `inputN` symlinks are device-scoped and stable **by capability**, not by number; `/dev/input/eventN` nodes are `root:root 0600` | the "no hardcoded eventN" rule (bg-01's `libnuxel-libinput-path.so`) is the right design; any later group that opens `/dev/input/eventN` as a non-root user will get `EACCES` (measured: `crw-------`) |
+
+### 13.9 Audio
+
+```
+$ cat /proc/asound/cards
+ 0 [beyondmadera   ]: beyond-madera - beyond-madera
+ 1 [aboxvdma       ]: abox_vdma - abox_vdma
+ 2 [aboxdump       ]: abox_dump - abox_dump
+$ aplay -l
+sh: aplay: command not found
+```
+* ALSA card **0 = `beyond-madera`** is present, as the A32 baseline predicted, plus the ABox DMA/dump
+  helpers.  `/proc/asound/devices` exposes 12 playback PCMs (`pcmC0D0p`…`pcmC0D11p`) and 10 capture
+  PCMs (`pcmC0D12c`…`pcmC0D22p`), so both directions have real device nodes.
+* **`alsa-utils` is not installed** (`aplay` missing) and **neither is `pipewire` nor
+  `wireplumber`** (§13.15).  So there is no mixer to read, no userspace sound server, and no way to
+  play a test tone on the device today.  Audio must therefore be reported as **prepared but
+  unproven**; nothing about speaker output is claimed here, and no mixer value was written.
+* `/sys/class/sound` lists the same cards and PCM nodes — the hardware side is real.
+
+### 13.10 Radios: Wi-Fi, Bluetooth, modem
+
+```
+$ rfkill list
+0: bcm43xx Bluetooth: Bluetooth     Soft blocked: yes   Hard blocked: no
+1: phy0: Wireless LAN               Soft blocked: no    Hard blocked: no
+2: brcmfmac-wifi: Wireless LAN      Soft blocked: no    Hard blocked: no
+$ ip -br link | grep -E 'wlan|p2p|rmnet|umts'
+p2p0  DOWN 00:90:4c:33:22:11 ; wlan0 DOWN 00:90:4c:4c:b1:54 ; wlan1 DOWN 02:90:4c:4c:b1:54
+umts_dm0 DOWN <POINTOPOINT…> ; rmnet0…rmnet7 DOWN <POINTOPOINT…>
+$ ls -la /dev/cdc-wdm* /dev/wwan* /dev/mhi*
+ls: cannot access '/dev/cdc-wdm*': No such file or directory        (all three absent)
+$ mmcli -L
+No modems were found
+```
+| Radio | Measured state | Consequence |
+|-------|----------------|-------------|
+| Wi-Fi | **`brcmfmac` / `phy0` driver present**, `wlan0` + `wlan1` + `p2p0` interfaces exist, all `DOWN`; `rfkill` shows the Wi-Fi PHY **unblocked**; `/etc/NetworkManager/system-connections/` is empty; `nmcli -t … dev` lists every non-`lo` interface as `unmanaged`; `cat /etc/resolv.conf` → **No such file** | the chipset is Broadcom `brcmfmac` on this exact unit (measured, not assumed from any Pixel document). Interfaces enumerate ⇒ the driver bound; **no scan, no association, no DHCP, no DNS** has happened on this boot. Everything beyond "interface enumerates" is unproven. |
+| Bluetooth | `bcm43xx Bluetooth`, **soft blocked** | controller seen by rfkill, currently blocked; BlueZ pairing is unproven |
+| Modem | `ModemManager` running, `mmcli -L` → **No modems were found**; `rmnet0..7`/`umts_dm0` exist but are `DOWN`; no `cdc-wdm*`/`wwan*`/`mhi*` device nodes | consistent with the A32 baseline: the Shannon LTE modem has no upstream ModemManager-compatible host interface on this kernel. **BLOCKED_KERNEL/BLOCKED_FIRMWARE** territory — no EFS/IMEI/calibration/radio-firmware contact of any kind was made |
+| Gadget | `/dev/ttyGS0` present (the live console's serial function) | the USB gadget is what carries this very session |
+
+### 13.11 Power, thermal and CPU
+
+```
+$ nproc ; cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor \
+        /sys/devices/system/cpu/cpu0/cpufreq/scaling_available_governors
+8
+schedutil
+performance schedutil
+$ cat /sys/class/thermal/thermal_zone0/type /sys/class/thermal/thermal_zone0/temp
+BIG
+39000
+$ ls /sys/class/power_supply
+ac  battery  max77705-charger  max77705-fuelgauge  mfc-charger  otg  ps  usb  wireless
+$ for f in capacity status health temp voltage_now current_now charge_type; do echo "battery/$f=$(cat /sys/class/power_supply/battery/$f)"; done
+battery/capacity=100    battery/status=Full   battery/health=Good   battery/temp=271
+battery/voltage_now=4317000   battery/current_now=0   battery/charge_type=Fast
+```
+| Item | Measured | Consequence for the power-management workstream |
+|------|----------|--------------------------------------------------|
+| CPUs | **8** (`nproc`), `scaling_governor=schedutil` | the only governors this kernel implements are **`performance` and `schedutil`** — an "ondemand/powersave/conservative" UI would be a lie on this kernel; the governor list must be read from sysfs, never hardcoded |
+| Thermal | `thermal_zone0` = **`BIG` 39.0 °C** at idle | thermal zones are readable; thermal throttling must never be disabled |
+| Charger/FG | `max77705-charger`, `max77705-fuelgauge`, `mfc-charger`, `otg`, `wireless`, `ac`, `battery`, `ps` | all Samsung PMIC interfaces the power app needs are visible |
+| Battery | **100 %, `Full`, `Good`, 4.317 V, 0 mA, 27.1 °C, `charge_type=Fast`** (PDIC cable, `cable_type=19` from the kernel ring) | the handset is plugged in and full; idle-drain measurements are only meaningful unplugged, so they are **not** claimed |
+
+### 13.12 Sensors (real enumeration)
+
+```
+$ for d in /sys/bus/iio/devices/iio:device*; do echo "$d name=$(cat $d/name)"; done
+iio:device0  15c40000.adc            iio:device14 rotation_vector_sensor
+iio:device1  accelerometer_sensor    iio:device15 game_rotation_vector
+iio:device2  geomagnetic_sensor      iio:device16 sig_motion_sensor
+iio:device10 light_flicker_sensor    iio:device17 step_det_sensor
+iio:device11 proximity_sensor        iio:device18 step_cnt_sensor
+iio:device12 proximity_alert_sensor  iio:device19 tilt_detector
+iio:device13 proximity_raw           iio:device20 pickup_gesture
+iio:device21 scontext_iio            iio:device23 thermistor_sensor
+iio:device22 light_cct_sensor        iio:device24 proximity_pocket
+iio:device25 uncal_accel_sensor      iio:device26 meta_event
+```
+23 IIO devices are enumerated on this exact unit: accelerometer, geomagnetic, ambient-light (two
+variants), proximity (4 variants), rotation vector, game rotation vector, significant motion, step
+detector/counter, tilt, pickup gesture, thermistor, light flicker, plus the sensor-context bridge.
+The sensors workstream can therefore build a diagnostics page against **real** device names instead
+of guessing — and the absent ones (barometer, hall is `event5`/`event6` *input*, not IIO; no
+fingerprint IIO node) must be reported as absent.
+
+### 13.13 LEDs, flashlight and haptics
+
+```
+$ ls /sys/class/leds
+leds-sec1    torch-sec1
+$ ls /sys/class/vibrator /sys/class/timed_output
+ls: cannot access '/sys/class/vibrator': No such file or directory
+/sys/class/timed_output:
+vibrator
+```
+* **No multicolor RGB notification LED exists** on this unit: the only LED-class devices are
+  `leds-sec1` (a single Samsung LED-class entry) and `torch-sec1` (the camera flash).  Per the
+  mission's rule, the camera flash must **never** be presented as a notification LED ⇒ the
+  notification-LED feature is `NOT_SUPPORTED_ON_DEVICE`; software "edge lighting" must be labelled
+  as software.
+* The vibrator **does** exist, but through the Samsung `timed_output` interface
+  (`/sys/class/timed_output/vibrator`), not the input-force-feedback path.  Haptics is therefore
+  implementable as a bounded, duration-based write — with the "no continuous test loops" rule.
+
+### 13.14 Time and RTC
+
+```
+$ timedatectl
+               Local time: Tue 2026-09-15 00:16:09 UTC
+           Universal time: Tue 2026-09-15 00:16:09 UTC
+                 RTC time: n/a
+                Time zone: UTC (UTC, +0000)
+System clock synchronized: no
+              NTP service: inactive
+$ ls -la /etc/localtime /etc/timezone
+ls: cannot access '/etc/localtime': No such file or directory
+cat: /etc/timezone: No such file or directory
+```
+| Item | Measured | Note |
+|------|----------|------|
+| Phone clock | **2026-09-15T00:16:09Z** while the host clock was **2026-10-16T17:31Z** | the handset is **≈31 days behind**; this is a plausible "last known time" from a previous session, not a fabricated value — but it is definitely not current time |
+| Kernel RTC | **`RTC time: n/a`** | **no battery-backed RTC is exposed to userspace on this kernel/board** — so "restore the clock at boot from the RTC" is not available as a userspace fix; report the uncertainty instead of pretending |
+| NTP | `NTP service: inactive`, `System clock synchronized: no` | time sync awaits a working network (§13.10) |
+| Timezone | `UTC`, and **`/etc/localtime` and `/etc/timezone` do not exist** | tzdata is not installed/configured: the Settings timezone feature has real work to do |
+| Downstream symptom | `rpm -q …` reports *"Signature c9fa created at Tue Sep 15 17:23:38 2026 invalid: signature is not alive … Not live until 2026-09-15T17:18:38Z"* and `rpmdbNextIterator: skipping h# 379` | the stale clock makes RPM **signature verification fail** and hides one header, so package queries are unreliable until the clock is set |
+
+### 13.15 Packages, Flatpak and the application inventory
+
+```
+$ rpm -qa | wc -l
+410
+$ rpm -q fedora-release systemd NetworkManager ModemManager pipewire wireplumber alsa-utils flatpak webkitgtk6.0 phoc phosh python3 mesa-dri-drivers
+fedora-release-43-27.noarch
+… (rpm signature "not alive" errors, see 13.14) …
+package systemd is not installed            <- query artefact: the rpmdb header skip, not a missing systemd
+NetworkManager-1.54.3-3.fc43.aarch64
+ModemManager-1.24.2-1.fc43.aarch64
+package pipewire is not installed
+package wireplumber is not installed
+package alsa-utils is not installed
+package flatpak is not installed
+webkitgtk6.0-2.52.5-1.fc43.aarch64
+phoc-0.54.0-1.fc43.aarch64
+phosh-0.54.0-1.fc43.aarch64
+python3-3.14.7-1.fc43.aarch64
+mesa-dri-drivers-25.3.6-3.fc43.aarch64
+$ flatpak --version
+sh: flatpak: command not found
+```
+| Package | On the device | Consequence |
+|---------|---------------|-------------|
+| `fedora-release` | 43-27 | the Fedora 43 ARM64 base is the one the project claims |
+| `systemd` | **is** PID 1 (16 units running) but the query hides its header | the **rpmdb is damaged/partially hidden while the clock is wrong**; treat rpm output as advisory until the time fix lands |
+| `NetworkManager` 1.54.3, `ModemManager` 1.24.2 | installed and running | Wi-Fi/network plumbing exists |
+| `webkitgtk6.0` 2.52.5 | installed | note: the *running* launcher uses `webkit2gtk-4.1` helpers (`/usr/libexec/webkit2gtk-4.1/WebKitWebProcess`), so the 6.0 packages are present but are **not** what the live session uses — a parity question for the launcher workstream |
+| `phoc` 0.54.0, `phosh` 0.54.0, `mesa-dri-drivers` 25.3.6, `python3` 3.14.7 | installed | compositor + shell + Python tooling present |
+| `pipewire`, `wireplumber`, `alsa-utils`, `flatpak` | **NOT installed** | audio userspace, sound settings and the whole Flatpak/NuXtore package path are **not deployable on the device today**; they are repository work + a live-deploy task, not something to claim as working |
+
+`/etc/nuxel/` exists with `device/`, `display/`, `input/`, `nuxel-beyond2lte.conf`,
+`phoc-phone.ini`, `phone-runtime-status`.  `/usr/local/bin` is empty.  A frozen package list from an
+earlier session is still on the device at `/var/lib/nuxel/pkglist.txt`.
+
+### 13.16 On-device state receipts (boot / animation / display ownership)
+
+```
+$ cat /var/lib/nuxel/boot-stage /var/lib/nuxel/boot-context /var/lib/nuxel/display \
+      /var/lib/nuxel/fb-owner /var/lib/nuxel/animation /var/lib/nuxel/buttons \
+      /var/lib/nuxel/ui-build /var/lib/nuxel/ui-fb-ready \
+      /var/lib/nuxel/anim-min-cycle.completed /var/lib/nuxel/fb-hold-stop
+STAGE=PHONE_UI_INSTALLED
+REV=A25-fbdev-phone-ui-1
+root=/dev/sda31 device=s10plus slot=a
+DISPLAY_ON
+brightness=12800
+saved_brightness=12800
+max_brightness=48600
+owner=nuxel-wl-fb
+BOOT_WAIT_LAUNCHER
+LAUNCHER_READY
+ANIMATION_STOP_REQUESTED
+ANIMATION_STOP_CONFIRMED
+LAUNCHER_DISPLAY_OWNER
+ANIM_STAGE=ANIMATION_STOPPED
+ANIM_OWNER=nuxel-wl-fb
+2026-09-15T00:01:02Z ACTION source=bixby(short) action=open-terminal
+UI_REV=A25-fbdev-phone-ui-1
+INSTALLED_AT_BOOT=1
+PHONE_UI_FRAME_COMMITTED commit=fbio_pan_display fb=1440x3040x32 abgr8888
+ANIM_MIN_CYCLE_COMPLETED
+ANIMATION_STOP_REQUESTED
+```
+These are the **readiness/ownership receipts** the boot-handoff invariant asks for, and on this boot
+they form a complete chain: `BOOT_WAIT_LAUNCHER → LAUNCHER_READY → ANIMATION_STOP_REQUESTED →
+ANIMATION_STOP_CONFIRMED → LAUNCHER_DISPLAY_OWNER`, with `owner=nuxel-wl-fb`, a committed
+`fbio_pan_display 1440x3040x32 abgr8888` frame, and `ANIM_STAGE=ANIMATION_STOPPED`.  They are
+**consumed here as evidence of what the device recorded**, not as a new verdict: this group did not
+re-run the handoff.  The unrelated `buttons` receipt shows a real Bixby short-press handled as
+`open-terminal` at 2026-09-15T00:01:02Z (the A32 button manager working, ~1 minute after boot).
+
+The file inventory itself is a health signal for later groups: `bootreport.txt` (157 KB),
+`ui-a27-home.ppm`, `ui-a27-settings.ppm`, `ui-home.ppm` (13.1 MB PPM screencopies), `touch-raw.bin`
+(2 928 B — from an earlier touch experiment), `deploy.tmp`, `push-33470.b64`, `nxrecv.py`,
+`pkglist.txt` and the empty `nxpayload.b64` are still on the rootfs.  Their presence is a cleanup
+opportunity for the cleanup/deploy workstreams; **this group deleted nothing.**
+
+### 13.17 Journal snapshot (errors in this boot)
+
+```
+$ journalctl -b -p err --no-pager | tail
+… watchdog: watchdog0: watchdog did not stop!            (repeats every 10 s, kernel)
+… dwc3 10c00000.dwc3: failed to send remote wakeup       (repeats)
+… systemd[1]: Attaching device control BPF program to cgroup /system.slice/systemd-timedated.service failed: Argument list too long
+… systemd[1]: systemd-timedated.service: bpf-firewall: Attaching egress BPF program to cgroup … failed: Argument list too long
+… kernel: EXT4-fs (sda31): errors=remount-ro for active namespaces on umount 2
+… kernel: audit: kauditd hold queue overflow
+… kernel: <keyctl> add_key succeeded(0). type: user, desc: invocation_id
+```
+Reading these without alarm: the `watchdog0: did not stop!` and `dwc3 … remote wakeup` lines are
+the A32-era baseline noise; **`s3c2410-wdt … RTC 2026-09-15 00:13:58 UTC`** in the kmsg stream is
+the same stale clock as §13.14.  Two lines matter for later work: (a) **systemd cannot attach cgroup
+BPF device-control programs on this kernel** (*"Argument list too long"* — the 4.14 kernel's BPF
+program-load path rejects them), which caps what the permission/sandbox workstream can enforce and
+must be stated honestly instead of promising eBPF-based app confinement; (b) the ext4
+`errors=remount-ro … on umount` line is the boot-time mount-namespace teardown, recorded here
+because it appeared in the same window and nothing like it was seen again.
+
+### 13.18 Backup list — every file this group replaces
+
+`docs/beta-finalization/preflight/BACKUP-LIST-20261016.tsv` records, for each file touched by
+bg-00 in this session, the **git blob id at HEAD** (the rollback source) and the sha256 of the
+version that was in the tree when the group started:
+
+```
+$ git checkout 6ee6a39c727f8936ae530092ba23bfe3b7d1e4a1 -- <path>     # per-file rollback
+```
+
+| File | git blob at HEAD | sha256 at HEAD |
+|------|------------------|----------------|
+| `scripts/s10plus-debug-pack/nuxel-live.sh` | `dc9aa86a33d6…` | `3b68af7f22dd48cf414e32a2d28cbcc3cfdfa5744be6b18d3dc1c321817b67b4` |
+| `.gitignore` | `a2e3f4c161be…` | `b2c34efb04bd92e141cbb593c3bde87389fd4f27b84cb33b94a8bc910eb5ab9b` |
+| `tools/beta/workqueue.py` | `68fcb4c1bddd…` | `f7036027041c9b7819e187ca5db417b1d9cfaf4f4529cb0d517e8c6c8d880f95` |
+| `tools/beta/tests/test_workqueue.py` | `baebaf6e6846…` | `804b8878ec7ff3f046a92fd342d69f76bd1edcce11a780c367031564eb921549` |
+| `docs/beta-finalization/WORK-QUEUE.md` | `89414a4cf7f6…` | `69ff064889b39af86982804f97c374d65458d47f263e31991a6dea69d8b9d408` |
+| `docs/beta-finalization/baseline-protection.json` | `82fe81f5dd99…` | `733105d7ed123e766ef8af152d3682672dc044b836cc94f341ac7bcf3a07319f` |
+| `docs/beta-finalization/BASELINE-PROTECTION.md` | `6b7d15545df7…` | `a840e4eb27519d113d789b4bed3246c1310553b7d323ab633c28e7e8d478fc3e` |
+| `docs/beta-finalization/preflight/ENVIRONMENT.md` | `80968e2d3aad…` | `1cc5d6a1739ec3a98cc3c86af9a59833ee8a439d8ec852881c9a9692672d692e` |
+| `docs/beta-finalization/ARCHIVE-INVENTORY.md` | `ff0078f1df4a…` | `c3dcf66703af9dec4afe9258eb6ca3f2eeb2f17b01584c663a6c59e38d7b7d15` |
+| `docs/beta-finalization/workqueue/briq-00{a,b,c,d}-*.json` | see the TSV | append-only revisions; the earlier revisions are never rewritten |
+
+The only files whose **bytes** this group changes are the six host/repository tooling and document
+files above plus the four append-only task records; nothing under `configs/`, `pwa/`, `services/`,
+`shell/`, `firmware/` or `tools/s10plus/a3*` is modified by bg-00 (see §13.19 for the one shared
+build-time asset step).
+
+### 13.19 Raw evidence index (all under `docs/beta-finalization/preflight/`)
+
+| Capture | Content |
+|---------|---------|
+| `live/batch-1-identity.txt` / `.out` | identity, kernel, Fedora, uptime, `/proc/cmdline`, board, disk, memory, partitions — device commands + framed results |
+| `live/batch-2-graphics-input.txt` / `.out` | systemd state + failed units, running units, process tree with CPU, framebuffer/DECON, `/proc/bus/input/devices`, `/dev/input`, `/sys/class/input`, missing `/sys/class/sec/tsp`, nuxel unit files, `/var/lib/nuxel` |
+| `live/batch-3-audio-radio-power.txt` / `.out` | ALSA cards/PCMs, rfkill, interfaces, modem devices + `mmcli`, power_supply, IIO sensors, LEDs/haptics, CPUfreq/thermal, `timedatectl` |
+| `live/batch-4-pkgs-services-receipts.txt` / `.out` | on-device receipts, unit files, `nuxel-touch-arm` failure, `nuxel-wayland` status, `journalctl -b -p err`, rpm inventory, flatpak, modules + `sec_ts` dmesg, resolv.conf, NM devices |
+| `host-tool-inventory.txt` | host tools, versions, disk, load, virt probe, serial nodes, `lsusb` |
+| `archive-rescan.txt` | the archive re-scan (all search roots, all names) |
+| `protected-asset-hashes-20261016.tsv` | every protected asset: pinned vs current sha256 and MATCH/DRIFT |
+| `BACKUP-LIST-20261016.tsv` | pre-change git blob + sha256 for every file this group touches |
+| `gate-a32-suite.txt` | `tools/s10plus/a32/tests/run-tests.sh` with exit code |
+| `gate-workqueue.txt` | `test_workqueue.py`, `verify-schema --json`, `render --check` with exit codes |
+| `gate-regression-guard.txt` | `tools/beta/regression-guard.sh` (human + `--json`) with exit code |
+| `gate-asset-invariant.txt` | `tools/dedupe-assets.sh --verify` with exit code |
+
+**One shared build-time asset step:** two suites in the A32 gate (`wallpaper asset`,
+`launcher registry → every precached asset exists in the tree`) require
+`pwa/*/assets/nuxel-background.png`, which is **gitignored by design** (single source of truth in
+`assets/`, copied per app at build time).  In this fresh clone the copies were absent, so the gate
+failed for a *missing build artefact*, not a regression.  `tools/dedupe-assets.sh` (the project's own
+sanctioned step) was run: it copies the canonical wallpaper into the six PWA `assets/` dirs and
+re-copies the animation, and `tools/dedupe-assets.sh --verify` now reports
+**`[VERIFY-OK] All 6 PWA asset dirs are byte-identical to the canonical assets/ tree`**.  The A32
+suite went from **3 failing suites to 1**; the remaining failure is the aarch64 colour selftest,
+which cannot execute on this host (§13.2) and belongs to `bg-02` (INV-2).
+
+### 13.20 What was deliberately NOT measured, and why
+
+| Not measured / not done | Why | Marked as |
+|-------------------------|-----|-----------|
+| Touch behaviour, swipe, multi-contact, on-screen keyboard | no touchscreen device node exists in this boot (§13.8); a charger-mode boot cannot produce one, and bg-00 may not change device state | `BLOCKED_KERNEL`-class condition for the moment of capture; owner/bg-01 action |
+| Any audio playback ("mixer writes ≠ audible sound") | `alsa-utils`, PipeWire and WirePlumber are not installed; no tone was ever played and **no mixer value was written** | `NEEDS_OWNER_TEST` (after the userspace workstream deploys) |
+| Wi-Fi scan/association/DHCP/DNS | needs credentials the mission forbids guessing, and this group may not write to the device | `NEEDS_OWNER_TEST` |
+| Idle drain / battery life | the handset is on the charger at 100 % (`status=Full`) | not claimed (measurement invalid while charging) |
+| GPS fix, camera frame, NFC tag, Bluetooth pairing, microSD, SIM, calls/SMS | requires a finger, a SIM tag, a card, a tag or an owner decision — and most need userspace that is not installed yet | `NEEDS_OWNER_TEST` / `NOT_SUPPORTED_ON_DEVICE` where hardware is absent |
+| Reboot into Nuxel to escape charger mode | explicitly out of bg-00's scope (repository + read-only inspection); the reboot decision belongs to bg-01/bg-10 with the safety rules in the mission | not done |
+| UTM/VM parity | no UTM and no hypervisor VM on this host; no aarch64 execution channel at all (§13.2) | `BLOCKED_EXTERNAL_RESOURCE` for the VM channel in this environment |
+| The 7 supplied archives | not present anywhere on this host (re-scanned, §13.19 + `ARCHIVE-INVENTORY.md` §5) | per-archive `BLOCKED_EXTERNAL_RESOURCE` |
+
+### 13.21 Verdicts for this session
+
+| Item | Verdict |
+|------|---------|
+| Repository revision/tree state captured at HEAD `6ee6a39c` | **OFFLINE_TESTED** |
+| Host tool inventory, disk, toolchain limits (no aarch64 execution channel) measured | **OFFLINE_TESTED** |
+| Live USB console reachable, framed, SHA-256-verified round trips | **VERIFIED_ON_S10PLUS** |
+| Device identity (SM-G975F / beyond2lte / Exynos 9820), kernel 4.14.253 #15, Fedora 43 | **VERIFIED_ON_S10PLUS** |
+| Boot mode is `androidboot.mode=charger`; `sec_ts` deliberately skipped (`lpm 1`) | **VERIFIED_ON_S10PLUS** (observation of the device's own kernel log) |
+| `systemctl is-system-running = degraded`, exactly one failed unit (`nuxel-touch-arm.service`) | **VERIFIED_ON_S10PLUS** |
+| Touchscreen interaction | **NEEDS_OWNER_TEST** — impossible to test in this boot; no touch node exists |
+| Framebuffer/DECON 1440×3040×32 state, Phoc-headless + bridge + PWA host process tree | **VERIFIED_ON_S10PLUS** |
+| Phone rootfs free space (3.9 GiB, 47 % used, 1.96 GiB free) | **VERIFIED_ON_S10PLUS** (closes the first session's gap) |
+| ALSA `beyond-madera` card + PCM device nodes present | **VERIFIED_ON_S10PLUS**; audible output still **NEEDS_OWNER_TEST** |
+| Wi-Fi interfaces enumerate (brcmfmac, `wlan0`/`wlan1`/`p2p0`, all DOWN) | **VERIFIED_ON_S10PLUS**; connectivity itself **NEEDS_OWNER_TEST** |
+| `mmcli -L` → "No modems were found" on this boot | **VERIFIED_ON_S10PLUS** (negative result recorded as such) |
+| Battery/thermal/CPUfreq/governor inventory (`performance`, `schedutil` only) | **VERIFIED_ON_S10PLUS** |
+| 23 IIO sensors enumerated; no RGB notification LED; `timed_output/vibrator` present | **VERIFIED_ON_S10PLUS** |
+| No battery-backed RTC (`RTC time: n/a`), clock ≈31 days stale, tzdata unconfigured | **VERIFIED_ON_S10PLUS** (uncertainty stated, no precise time fabricated) |
+| Repository tooling fixes (`nuxel-live.sh` ×3, `.gitignore`) | **OFFLINE_TESTED** (bash -n, real runs, guard re-run) |
+| Work-queue ledger + `render` regeneration + 38 assertions | **OFFLINE_TESTED** |
+| A32 protected-asset pins re-verified (hard 10/10 held; soft drift on files owned by `bg-02`) | **OFFLINE_TESTED** |
+| Regression guard | **OFFLINE_TESTED** — `PASS=41 FAIL=0 WARN=8 INFO=2` after the `.venv` hygiene fix |
+| aarch64 colour selftest (INV-2 binary legs) | **BLOCKED_EXTERNAL_RESOURCE** in this environment (no aarch64 execution channel); owner `bg-02` |
+| Anything requiring a human finger/SIM/card/ear/eyes | **NEEDS_OWNER_TEST** |
+
+### 13.22 Observed tool caveat — `tools/beta/health-check.sh` mis-detects this workstation
+
+Captured (raw: `docs/beta-finalization/preflight/observed-health-check-host.txt`) while validating
+that nothing else in the tree regressed:
+
+```
+$ bash tools/beta/health-check.sh
+=== Nuxel health check ===  root=/  tier=ON_DEVICE
+  [FAIL] unit-nuxel-pwa / unit-nuxel-wl-fb / unit-nuxel-button-manager / unit-nuxel-wayland /
+         unit-nuxel-pwa-host / unit-nuxel-touch-arm   inactive (inactive)
+  [FAIL] no-failed-units        2 failed unit(s)   <- the workstation's own caddy.service and xrdp.service
+  [FAIL] fb-owner-present       no fb-owner record (/var/lib/nuxel/fb-owner)
+  [FAIL] launcher-http          http://127.0.0.1:8000/ -> 000
+  [FAIL] touch-node             by-path touch nodes: none
+verdict: UNHEALTHY
+```
+
+This was run on the **Fedora workstation** (`root=/`), and every line is therefore a statement about
+the workstation, not the handset: it has no `nuxel-*` units, no `/dev/fb0`, no
+`/var/lib/nuxel/fb-owner` and nothing listening on 127.0.0.1:8000.  The tool's tier auto-detection
+reported `tier=ON_DEVICE` anyway, which is the caveat worth recording: **a later cycle that runs this
+tool in the wrong place will get a confident-looking `UNHEALTHY` that means nothing about the phone.**
+The tool's own footer agrees — *"offline health checks verify recorded/fixture state and are advisory;
+they are never proof that the phone is healthy"*.  Recorded here as an observation for
+`bg-09-integration-release` (the owner of that tool); this group did not modify it.
+
+For contrast, the **actual** device state measured in §13.6 over the live console is: 16 units
+running, one failed unit (`nuxel-touch-arm.service`), the launcher process tree up and holding the
+display.

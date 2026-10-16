@@ -267,6 +267,93 @@ def main():
     check(rc == 0 and "NEEDS_OWNER_TEST" in out, "--stage-probe runs, stages nothing on a host, "
           "and states the NEEDS_OWNER_TEST rule", out[-300:])
 
+    # ---------------------------------------------------------------- A33 adds
+    print("== host self-test (briq-01a evidence line) ==")
+    rc, out = run_tracer(["--self-test"], timeout=60)
+    check(rc == 0, "--self-test exits 0 on the host", out[-400:])
+    check("SELF-TEST: PASS" in out, "--self-test reports PASS", out[-200:])
+    check("not a touch verification" in out,
+          "--self-test states it is NOT a touch verification")
+
+    print("== bounded owner-tap capture (--capture) ==")
+    cap = os.path.join(tmp, "capture")
+    rc, out = run_tracer(["--capture", "2", "--dry-run", "--out", cap], timeout=90)
+    check(os.path.isfile(os.path.join(cap, "events.jsonl")),
+          "--capture writes the per-event JSONL stream (events.jsonl)")
+    check(os.path.isfile(os.path.join(cap, "coordinate-map.json")),
+          "--capture writes coordinate-map.json")
+    check("EVENTS_JSONL=" in out and "COORD_VALIDATION points=" in out,
+          "--capture reports the JSONL path and runs the coordinate validation")
+    check("expect-finger" in out,
+          "--capture states that a finger is expected (NEEDS_OWNER_TEST until then)")
+    check(os.path.isfile(os.path.join(cap, "sysfs-input.txt")),
+          "--capture records the /sys/class/input capability scan")
+    p = subprocess.run([sys.executable, TRACER, "--capture", "0", "--dry-run",
+                        "--out", os.path.join(tmp, "cap0")],
+                       capture_output=True, text=True, timeout=60)
+    check(p.returncode != 0 and "1..900" in (p.stdout + p.stderr),
+          "--capture 0 is refused instead of running unbounded", (p.stdout + p.stderr)[-160:])
+
+    print("== per-layer exit codes ==")
+    d = make_bundle(tmp, "layer-exit-clean")
+    rc, out = run_tracer(["--analyze", d, "--layer-exit-codes"])
+    check(rc == 0, "--layer-exit-codes: a fully delivered pipeline exits 0", "rc=%d" % rc)
+    check("EXIT_CODE=0" in out, "--layer-exit-codes: prints EXIT_CODE=0")
+    n_exit = len([l for l in out.splitlines() if l.startswith("LAYER_EXIT=")])
+    check(n_exit == 7, "--layer-exit-codes: one LAYER_EXIT line per layer (%d)" % n_exit)
+    empty2 = os.path.join(tmp, "empty-for-exit")
+    os.makedirs(empty2, exist_ok=True)
+    rc, out = run_tracer(["--analyze", empty2, "--layer-exit-codes"])
+    check(rc == 11, "--layer-exit-codes: no evidence exits 10+1=11 (first lossy layer)", "rc=%d" % rc)
+    check("EXIT_CODE=11" in out, "--layer-exit-codes: names layer 1 as the first lossy hop")
+    rc, out = run_tracer(["--analyze", empty2])
+    check(rc == 3, "without the flag the historical exit status 3 is kept", "rc=%d" % rc)
+
+    print("== capability scan from a synthetic /sys/class/input (no phone) ==")
+    fix = os.path.join(A33, "tests", "fixtures", "sec-ts-only", "sys", "class", "input")
+    if os.path.isdir(fix):
+        sc = os.path.join(tmp, "sysfs-scan")
+        rc, out = run_tracer(["--live", "--dry-run", "--seconds", "2",
+                              "--sysfs-root", fix, "--out", sc], timeout=90)
+        check("selected=" in out and "sec_touchscreen" in out,
+              "sysfs scan selects the panel by capability (ABS_MT + direct marker)", out[-400:])
+        check("direct=1" in out and "mt=1" in out,
+              "sysfs scan reports direct/mt as numbers, not as an assumption")
+        check("vendor=" in out and "product=" in out,
+              "sysfs scan reports the vendor/product identity fields")
+        txt = ""
+        p = os.path.join(sc, "sysfs-input.txt")
+        if os.path.isfile(p):
+            txt = open(p).read()
+        check("gpio_keys" in txt and "direct=0" in txt and "mt=0" in txt,
+              "sysfs scan records the non-touch node as rejected BY CAPABILITY (direct=0 mt=0)")
+        check("SELECTED" in txt and "sec_touchscreen" in txt,
+              "the sysfs scan is written into the bundle as evidence")
+        check("4095" in out,
+              "the raw device range comes from the fixture absinfo (no node was openable)", out[-300:])
+        check("mapping=scaled" in out,
+              "a 0..4095 device range against the 1440x3040 panel maps as 'scaled'")
+    else:
+        print("SKIP no fixture at %s" % fix)
+
+    print("== archive into the repository evidence root ==")
+    src_bundle = make_bundle(tmp, "archive-me")
+    dest = os.path.join(tmp, "archive-root")
+    rc, out = run_tracer(["--archive", src_bundle, "--archive-dir", dest], timeout=60)
+    check(rc == 0 and "ARCHIVED=" in out, "--archive copies the bundle", out[-300:])
+    made = [d for d in os.listdir(dest) if d.startswith("touch-")] if os.path.isdir(dest) else []
+    check(len(made) == 1 and made[0].startswith("touch-"),
+          "--archive lands under touch-<ts>/ in the archive root", str(made))
+    check(os.path.isfile(os.path.join(dest, "INDEX.jsonl")),
+          "--archive appends the archive INDEX.jsonl")
+    if made:
+        check(os.path.isfile(os.path.join(dest, made[0], "meta.json"))
+              and os.path.isfile(os.path.join(dest, made[0], "evdev.txt")),
+              "--archive copies the bundle contents")
+    rc, out = run_tracer(["--archive", os.path.join(tmp, "nope"), "--archive-dir", dest], timeout=60)
+    check(rc == 4 and "ARCHIVE_FAILED" in out,
+          "--archive of a missing bundle fails loudly with rc=4", out[-200:])
+
     print("== %d failing assertion(s), temp dir %s ==" % (len(failures), tmp))
     return 1 if failures else 0
 

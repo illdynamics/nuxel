@@ -138,4 +138,9 @@ backups/**
 /scripts.zip
 /tools.zip
 /*.zip
-.venv/
+# `.venv` (no trailing slash) so the rule also matches the *path* before the
+# directory exists: with `.venv/` a bare `git check-ignore .venv` failed on a
+# fresh clone (git cannot know a non-existent path is a directory), and the
+# repository-hygiene assertion in tools/beta/regression-guard.sh then FAILED —
+# which is how bg-00-preflight found it in the 2026-10-16 re-verification.
+.venv

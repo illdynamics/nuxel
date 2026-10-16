@@ -1,0 +1,227 @@
+# console /dev/ttyACM0
+# shared lock /tmp/nuxel-live._dev_ttyACM0.lock is not usable by uid 0 ([Errno 13] Permission denied: '/tmp/nuxel-live._dev_ttyACM0.lock') — using private lock /tmp/nuxel-live._dev_ttyACM0.0.lock
+===== systemctl is-system-running; systemctl --failed --no-pager   [rc=0 frame=dec05ee2 sha_ok=yes]
+    degraded
+      UNIT                    LOAD   ACTIVE SUB    DESCRIPTION
+    ● nuxel-touch-arm.service loaded failed failed Nuxel S10+ touchscreen arming (sec_ts stop->start, then hold open)
+    Legend: LOAD   → Reflects whether the unit definition was properly loaded.
+            ACTIVE → The high-level unit activation state, i.e. generalization of SUB.
+            SUB    → The low-level unit activation state, values depend on unit type.
+    1 loaded units listed.
+===== systemctl list-units --state=running --no-pager | head -45   [rc=0 frame=714b5ee3 sha_ok=yes]
+      UNIT                            LOAD   ACTIVE SUB     DESCRIPTION
+      init.scope                      loaded active running System and Service Manager
+      dbus-daemon.service             loaded active running D-Bus System Message Bus
+      ModemManager.service            loaded active running Modem Manager
+      NetworkManager.service          loaded active running Network Manager
+      nuxel-button-manager.service    loaded active running Nuxel hardware button manager (power, volume, assistant key)
+      nuxel-wayland.service           loaded active running Nuxel phone Wayland session (phoc headless + Nuxel Home launcher)
+      nuxel-wl-fb.service             loaded active running Nuxel display bridge (Wayland screencopy -> /dev/fb0 AMOLED)
+      polkit.service                  loaded active running Authorization Manager
+      seatd.service                   loaded active running Nuxel seat daemon (seatd) for phoc input on the S10+
+      systemd-journald.service        loaded active running Journal Service
+      systemd-logind.service          loaded active running User Login Management
+      dbus.socket                     loaded active running D-Bus System Message Bus Socket
+      systemd-journald-audit.socket   loaded active running Journal Audit Socket
+      systemd-journald-dev-log.socket loaded active running Journal Socket (/dev/log)
+      systemd-journald.socket         loaded active running Journal Sockets
+      systemd-logind-varlink.socket   loaded active running User Login Management Varlink Socket
+    Legend: LOAD   → Reflects whether the unit definition was properly loaded.
+            ACTIVE → The high-level unit activation state, i.e. generalization of SUB.
+            SUB    → The low-level unit activation state, values depend on unit type.
+    16 loaded units listed.
+===== ps -eo pid,ppid,etime,pcpu,pmem,comm --sort=start_time | tail -40   [rc=0 frame=6b665ee4 sha_ok=yes]
+       4752       2       15:34  0.0  0.0 kworker/7:2H
+       5304       1       15:34  0.0  0.0 dbus-daemon
+       5305       1       15:34  0.0  0.2 NetworkManager
+       5307       1       15:34  0.0  0.0 polkitd
+       5308       1       15:34  0.0  0.0 seatd
+       5310       1       15:34  0.0  0.0 systemd-logind
+       5315       1       15:34 32.5  0.4 phoc
+       5349    5315       15:33  1.0  1.8 nuxel-pwa-host
+       5359    5349       15:33  0.0  0.2 python3
+       5362       1       15:33  0.0  0.1 ModemManager
+       5387       1       15:33 63.6  0.0 nuxel-wl-fb
+       5388       1       15:33  0.0  0.0 nuxel-button-ma
+       5400    5349       15:33  0.6  0.6 WebKitNetworkPr
+       5402    5349       15:33  7.1  2.0 WebKitWebProces
+       5465       2       15:31  0.0  0.0 kworker/3:1H
+       5615       2       15:02  0.0  0.0 kworker/7:3
+       5619       2       15:01  0.0  0.0 kworker/u18:2
+       5632       2       14:56  0.0  0.0 kworker/1:2H
+       5641    5349       14:51  0.0  1.6 WebKitWebProces
+       5643    5349       14:51  0.0  0.0 sh
+       5781       2       14:03  0.8  0.0 kworker/u17:3
+       5927       2       10:21  0.0  0.0 kworker/2:0H
+       5954       2       09:47  0.0  0.0 kworker/7:0
+       5956       2       09:47  0.0  0.0 kworker/0:0H
+       5958       2       09:37  0.0  0.0 kworker/1:0H
+       5973       2       09:07  0.0  0.0 kworker/3:0H
+       5974       2       09:03  0.0  0.0 kworker/u16:0
+       6137       2       04:51  0.0  0.0 kworker/2:1H
+       6153       2       04:47  0.0  0.0 kworker/4:0H
+       6159       2       04:25  0.0  0.0 kworker/0:2H
+       6160       2       04:21  0.0  0.0 kworker/1:1H
+       6168       2       04:12  0.0  0.0 kworker/7:1
+       6202       2       03:14  0.0  0.0 kworker/5:1H
+       6216       2       02:55  0.0  0.0 kworker/u16:1
+       6224       2       02:47  0.0  0.0 kworker/3:2H
+       6294       2       00:37  0.0  0.0 kworker/0:0
+       6329    3470       00:17  0.0  0.0 sleep
+       6395    3297       00:07  0.0  0.0 init
+       6413    3506       00:00  300  0.0 ps
+       6414    3506       00:00  0.0  0.0 tail
+===== ls -la /dev/fb0 /dev/dri 2>&1; cat /sys/class/graphics/fb0/name 2>&1; cat /sys/class/graphics/fb0/virtual_size 2>&1; cat /sys/class/graphics/fb0/bits_per_pixel 2>&1   [rc=0 frame=15f15ee5 sha_ok=yes]
+    ls: cannot access '/dev/dri': No such file or directory
+    crw------- 1 root root 29, 0 Jan  1  1970 /dev/fb0
+    1440,6080
+    32
+===== ls -la /sys/class/graphics/ 2>&1   [rc=0 frame=d2ad5ee6 sha_ok=yes]
+    total 0
+    drwxr-xr-x  2 root root 0 Sep 15 00:15 .
+    drwxr-xr-x 91 root root 0 Jan  5  2019 ..
+    lrwxrwxrwx  1 root root 0 Jan  5  2019 fb0 -> ../../devices/platform/19030000.decon_f/graphics/fb0
+    lrwxrwxrwx  1 root root 0 Sep 15 00:00 fb1 -> ../../devices/platform/19050000.decon_t/graphics/fb1
+===== cat /sys/class/graphics/fb0/modes 2>&1 | head -3; cat /sys/class/graphics/fb0/blank 2>&1   [rc=0 frame=73e85ee7 sha_ok=yes]
+    U:1440x3040p-0
+===== cat /proc/bus/input/devices   [rc=0 frame=fa5e5ee8 sha_ok=yes]
+    I: Bus=0000 Vendor=0000 Product=0000 Version=0000
+    N: Name="meta_event"
+    P: Phys=
+    S: Sysfs=/devices/virtual/input/input0
+    U: Uniq=
+    H: Handlers=event0
+    B: PROP=0
+    B: EV=5
+    B: REL=c0
+    I: Bus=0019 Vendor=0001 Product=0001 Version=0100
+    N: Name="gpio_keys"
+    P: Phys=gpio-keys/input0
+    S: Sysfs=/devices/platform/gpio_keys/input/input1
+    U: Uniq=
+    H: Handlers=sec_key_notifier event1
+    B: PROP=0
+    B: EV=3
+    B: KEY=8000000000000000 0 0 0 0 0 0 0 0 1c000000000000 0
+    I: Bus=0018 Vendor=0000 Product=0000 Version=0000
+    N: Name="grip_sensor"
+    P: Phys=
+    S: Sysfs=/devices/virtual/input/input2
+    U: Uniq=
+    H: Handlers=event2
+    B: PROP=0
+    B: EV=5
+    B: REL=200
+    I: Bus=0000 Vendor=0000 Product=0000 Version=0000
+    N: Name="ssp_context"
+    P: Phys=
+    S: Sysfs=/devices/virtual/input/input3
+    U: Uniq=
+    H: Handlers=event3
+    B: PROP=0
+    B: EV=5
+    B: REL=38
+    I: Bus=0000 Vendor=0000 Product=0000 Version=0000
+    N: Name="Headset"
+    P: Phys=madera/extcon
+    S: Sysfs=/devices/platform/10470000.spi/spi_master/spi2/spi2.0/madera-extcon/input/input4
+    U: Uniq=
+    H: Handlers=sec_key_notifier event4
+    B: PROP=0
+    B: EV=23
+    B: KEY=40 0 0 0 0 0 402000000 0 c000000000000 0
+    B: SW=94
+    I: Bus=0000 Vendor=0000 Product=0000 Version=0000
+    N: Name="hall"
+    P: Phys=hall
+    S: Sysfs=/devices/platform/hall/input/input5
+    U: Uniq=
+    H: Handlers=event5
+    B: PROP=0
+    B: EV=100021
+    B: SW=1
+    I: Bus=0000 Vendor=0000 Product=0000 Version=0000
+    N: Name="certify_hall"
+    P: Phys=certify_hall
+    S: Sysfs=/devices/platform/certify_hall/input/input6
+    U: Uniq=
+    H: Handlers=event6
+    B: PROP=0
+    B: EV=100021
+    B: SW=8000000
+===== ls -la /dev/input /dev/input/by-path 2>&1   [rc=2 frame=e1755ee9 sha_ok=yes]
+    ls: cannot access '/dev/input/by-path': No such file or directory
+    /dev/input:
+    total 0
+    drwxr-xr-x  2 root root    180 Jan  1  1970 .
+    drwxr-xr-x 10 root root   7760 Sep 15 00:00 ..
+    crw-------  1 root root 13, 64 Jan  1  1970 event0
+    crw-------  1 root root 13, 65 Jan  1  1970 event1
+    crw-------  1 root root 13, 66 Jan  1  1970 event2
+    crw-------  1 root root 13, 67 Jan  1  1970 event3
+    crw-------  1 root root 13, 68 Jan  1  1970 event4
+    crw-------  1 root root 13, 69 Jan  1  1970 event5
+    crw-------  1 root root 13, 70 Jan  1  1970 event6
+===== ls -la /sys/class/input 2>&1   [rc=0 frame=3d3e5eea sha_ok=yes]
+    total 0
+    drwxr-xr-x  2 root root 0 Sep 15 00:15 .
+    drwxr-xr-x 91 root root 0 Sep 15 00:15 ..
+    lrwxrwxrwx  1 root root 0 Sep 15 00:00 event0 -> ../../devices/virtual/input/input0/event0
+    lrwxrwxrwx  1 root root 0 Sep 15 00:00 event1 -> ../../devices/platform/gpio_keys/input/input1/event1
+    lrwxrwxrwx  1 root root 0 Sep 15 00:00 event2 -> ../../devices/virtual/input/input2/event2
+    lrwxrwxrwx  1 root root 0 Sep 15 00:00 event3 -> ../../devices/virtual/input/input3/event3
+    lrwxrwxrwx  1 root root 0 Sep 15 00:00 event4 -> ../../devices/platform/10470000.spi/spi_master/spi2/spi2.0/madera-extcon/input/input4/event4
+    lrwxrwxrwx  1 root root 0 Sep 15 00:00 event5 -> ../../devices/platform/hall/input/input5/event5
+    lrwxrwxrwx  1 root root 0 Sep 15 00:00 event6 -> ../../devices/platform/certify_hall/input/input6/event6
+    lrwxrwxrwx  1 root root 0 Sep 15 00:00 input0 -> ../../devices/virtual/input/input0
+    lrwxrwxrwx  1 root root 0 Sep 15 00:00 input1 -> ../../devices/platform/gpio_keys/input/input1
+    lrwxrwxrwx  1 root root 0 Sep 15 00:00 input2 -> ../../devices/virtual/input/input2
+    lrwxrwxrwx  1 root root 0 Sep 15 00:00 input3 -> ../../devices/virtual/input/input3
+    lrwxrwxrwx  1 root root 0 Sep 15 00:00 input4 -> ../../devices/platform/10470000.spi/spi_master/spi2/spi2.0/madera-extcon/input/input4
+    lrwxrwxrwx  1 root root 0 Sep 15 00:00 input5 -> ../../devices/platform/hall/input/input5
+    lrwxrwxrwx  1 root root 0 Sep 15 00:00 input6 -> ../../devices/platform/certify_hall/input/input6
+===== ls -la /sys/class/sec/tsp 2>&1; ls /sys/class/sec/tsp 2>/dev/null | head -5   [rc=0 frame=2e865eeb sha_ok=yes]
+    ls: cannot access '/sys/class/sec/tsp': No such file or directory
+===== ls -la /sys/class/input/event0 /sys/class/input/input0 2>&1 | head -20   [rc=0 frame=56d65eec sha_ok=yes]
+    lrwxrwxrwx 1 root root 0 Sep 15 00:15 /sys/class/input/event0 -> ../../devices/virtual/input/input0/event0
+    lrwxrwxrwx 1 root root 0 Sep 15 00:15 /sys/class/input/input0 -> ../../devices/virtual/input/input0
+===== systemctl list-unit-files --no-pager | grep -i -E 'nuxel|phoc|phosh|wayland|kiosk'    [rc=0 frame=fc5b5eed sha_ok=yes]
+    nuxel-button-manager.service                 enabled         disabled
+    nuxel-fallback.service                       enabled         disabled
+    nuxel-firstlight.service                     disabled        disabled
+    nuxel-touch-arm.service                      enabled         disabled
+    nuxel-ui-fallback.service                    disabled        disabled
+    nuxel-ui.service                             enabled         disabled
+    nuxel-wayland.service                        enabled         disabled
+    nuxel-wl-fb.service                          enabled         disabled
+===== ls -la /run/nuxel /var/lib/nuxel /run/user/1000 2>&1 | head -30   [rc=0 frame=a49c5eee sha_ok=yes]
+    ls: cannot access '/run/nuxel': No such file or directory
+    ls: cannot access '/run/user/1000': No such file or directory
+    /var/lib/nuxel:
+    total 132872
+    drwxr-xr-x  2 root root     4096 Sep 15 00:00 .
+    drwxr-xr-x 19 root root     4096 Sep 15 00:06 ..
+    -rw-r--r--  1 root root       25 Sep 15 00:00 anim-min-cycle.completed
+    -rw-r--r--  1 root root       52 Sep 15 00:00 animation
+    -rw-r--r--  1 root root       38 Jan  5  2019 boot-context
+    -rw-r--r--  1 root root       50 Jan  5  2019 boot-stage
+    -rw-r--r--  1 root root   157395 Sep 15 00:15 bootreport.txt
+    -rw-r--r--  1 root root       69 Sep 15 00:01 buttons
+    -rw-r--r--  1 root root     4375 Sep 15 00:04 deploy.tmp
+    -rw-r--r--  1 root root       90 Sep 15 00:00 display
+    -rw-------  1 root root       26 Jan  5  2019 fb-anim-ready
+    -rw-------  1 root root       15 Jan  5  2019 fb-anim-starting
+    -rw-------  1 root root        5 Jan  5  2019 fb-anim.pid
+    -rw-r--r--  1 root root       25 Sep 15 00:00 fb-hold-stop
+    -rw-r--r--  1 root root      107 Sep 15 00:00 fb-owner
+    -rw-r--r--  1 root root        0 Sep 15  2026 nxpayload.b64
+    -rw-r--r--  1 root root      279 Sep 15  2026 nxrecv.py
+    -rw-r--r--  1 root root     4891 Sep 15  2026 pkglist.txt
+    -rw-r--r--  1 root root      188 Sep 15  2026 push-33470.b64
+    -rw-r--r--  1 root root        0 Sep 15  2026 push-33470.new
+    -rw-r--r--  1 root root     2928 Sep 15 00:11 touch-raw.bin
+    -rw-r--r--  1 root root 13132817 Sep 15 00:01 ui-a27-home.ppm
+    -rw-r--r--  1 root root 13132817 Sep 15 00:02 ui-a27-settings.ppm
+    -rw-r--r--  1 root root       48 Jan  5  2019 ui-build
+    -rw-r--r--  1 root root       74 Sep 15 00:03 ui-fb-ready
+    -rw-r--r--  1 root root 13132817 Sep 15 00:03 ui-home.ppm

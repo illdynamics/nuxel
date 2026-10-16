@@ -1,0 +1,18 @@
+# tools/beta/health-check.sh run on the WORKSTATION host (not the phone) — 2026-10-16T17:36:39Z
+# Purpose: record a false-negative of the tool's tier auto-detection, so no later group
+# treats this verdict as a statement about the handset.
+
+=== Nuxel health check ===  root=/  tier=ON_DEVICE
+  [FAIL] unit-nuxel-pwa           inactive (inactive)
+  [FAIL] unit-nuxel-wl-fb         inactive (inactive)
+  [FAIL] unit-nuxel-button-manager inactive (inactive)
+  [FAIL] unit-nuxel-wayland       inactive (inactive)
+  [FAIL] unit-nuxel-pwa-host      inactive (inactive)
+  [FAIL] unit-nuxel-touch-arm     inactive (inactive)
+  [FAIL] no-failed-units          2 failed unit(s)
+  [FAIL] fb-owner-present         no fb-owner record (/var/lib/nuxel/fb-owner)
+  [FAIL] launcher-http            http://127.0.0.1:8000/ -> 000
+  [FAIL] touch-node               by-path touch nodes: none
+verdict: UNHEALTHY  (hard failures: unit-nuxel-pwa, unit-nuxel-wl-fb, unit-nuxel-button-manager, unit-nuxel-wayland, unit-nuxel-pwa-host, unit-nuxel-touch-arm, no-failed-units, fb-owner-present, launcher-http, touch-node)
+note: offline health checks verify recorded/fixture state and are advisory; they are never proof that the phone is healthy
+exit=1

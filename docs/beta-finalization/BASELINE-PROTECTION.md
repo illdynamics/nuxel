@@ -8,6 +8,10 @@ that sentence into first-class, hash-pinned, machine-checkable invariants, and
 
 * Machine-readable register: **`docs/beta-finalization/baseline-protection.json`**
 * Gate: **`tools/beta/regression-guard.sh`** (exit 0 ⇔ no invariant regressed)
+**Re-verified and extended 2026-10-16 (session 2, HEAD `6ee6a39c`)** — see §9 for the re-run,
+the hygiene fix, the hash table and the new INV-10; §10 states the regression rule every later
+group follows.  The §1–§8 text below is preserved unchanged except where §9.2 corrects it.
+
 * Baseline floor record: `docs/s10plus-autonomous-boot-repair/BETA-HARDWARE-FINALIZER/13-RELEASE-NOTES-A32.md`
   (also `00-BASELINE.md`)
 
@@ -283,3 +287,177 @@ archive paths stay ignored, so a future edit that un-ignores a 125 MB zip fails 
 | Files owned by other build groups (`bg-02`: safe-zone engine + its suite) | **soft-pinned**, drift reported as WARN with the owning group named — `bg-02` is editing them right now; a genuine regression still FAILs through INV-3's hard `json_eq`/`regex` assertions |
 | A32 deployed-artefact hash parity re-read from the phone | **BLOCKED_EXTERNAL_RESOURCE** → **NEEDS_OWNER_TEST** |
 | Any of these invariants re-verified on the physical S10+ in this run | **NOT_SUPPORTED_ON_DEVICE** in this environment (no console, no adb) — requires a reachable phone |
+
+---
+
+## 9. Session-2 re-verification (2026-10-16, HEAD `6ee6a39c727f8936ae530092ba23bfe3b7d1e4a1`)
+
+The register was re-run against the current tree on a **different host** from §1–§8 (Fedora Linux 43
+x86_64, workspace `/x/nuxel`) and against the **live handset** (read-only).  Nothing in this section
+deletes or rewrites an existing pin: it records what was re-measured, what had to be fixed to make
+the gate green again, and one new invariant.
+
+### 9.1 The gate, re-executed
+
+```
+$ bash tools/beta/regression-guard.sh --json
+{"tool":"regression-guard","verdict":"PASS","pass":53,"fail":0,"warn":8,"info":2,
+ "failed_invariants":"","warned_invariants":"INV-1… INV-3… INV-9-a32-suite INV-2-colour-conversion …"}
+$ bash tools/beta/tests/test-regression-guard.sh
+== 0 failing self-test(s), 11 passing ==
+$ bash tools/s10plus/a32/tests/run-tests.sh ; echo EXIT=$?
+== 1 failing suite(s) ==   EXIT=1
+$ bash tools/dedupe-assets.sh --verify ; echo EXIT=$?
+[VERIFY-OK] All 6 PWA asset dirs are byte-identical to the canonical assets/ tree.   EXIT=0
+```
+
+Raw captures: `docs/beta-finalization/preflight/gate-regression-guard.txt`,
+`gate-a32-suite.txt`, `gate-asset-invariant.txt`, `gate-workqueue.txt`.
+
+### 9.2 The one hard FAIL, and its fix
+
+The first re-run failed exactly once, in repository hygiene:
+
+```
+    FAIL  repository hygiene: '.venv' must stay gitignored …  [git check-ignore .venv]
+```
+
+Root cause, measured: `.gitignore` carried the **directory-only** pattern `.venv/`.  On this fresh
+clone (no `.venv` present) git cannot know that the path is a directory, so the pattern does not
+match and `git check-ignore .venv` exits 1 — i.e. the guard's own assertion was checking a rule that
+only held *after* the risky directory already existed.  Fixed in `.gitignore` by dropping the
+trailing slash (`.venv` matches the path whether or not it exists).  **Authorised by
+`briq-00a-repo-preflight` revision 4 / `briq-00d-baseline-protection` revision 4** (this section is
+that record).  Re-measured after the fix:
+
+```
+$ for p in docs.zip scripts.zip tools.zip .venv; do git check-ignore -q "$p" && echo "$p ignored OK"; done
+docs.zip ignored OK · scripts.zip ignored OK · tools.zip ignored OK · .venv ignored OK
+```
+
+> **Correction to §6 of this document.** The `.gitignore` block quoted in §6 shows `.venv/` as the
+> last line.  The current, correct rule is `.venv` (no slash), for the reason above.  The block is
+> otherwise unchanged; nothing else in the repository-hygiene rule was relaxed.
+
+### 9.3 Build-time artefacts had to be restored before the A32 gate could pass
+
+Two A32 suites fail on a fresh clone for a reason that is **not** a regression: the per-app wallpaper
+copies are gitignored **by design** (single source of truth `assets/nuxel-background.png`, copied per
+app at build time by `tools/dedupe-assets.sh`).  Measured before/after running that project step:
+
+| Suite | Before | After |
+|-------|--------|-------|
+| `wallpaper asset` | `FAIL missing pwa/nuxel-home/assets/nuxel-background.png` | PASS |
+| `launcher registry` | `FAIL every precached asset exists in the tree ["assets/nuxel-background.png"]` | PASS |
+| `colour conversion` | `FAIL` (no `build/out/s10plus/a32/nuxel-wl-fb`) | **still FAIL — unchanged, not fixable here** |
+
+The colour leg needs an aarch64 ELF to execute, and **this session's host has no aarch64 execution
+channel at all**: no cross-gcc, no `qemu-aarch64-static`, no binfmt handler (`/proc/sys/fs/binfmt_misc`
+holds only `register`/`status`), and `docker run --platform linux/arm64 fedora:43 uname -m` →
+`exec /usr/sbin/uname: exec format error`; there is no UTM/VM either.  It is reported as a **WARN**
+naming its owner (`bg-02-boot-animation-launcher`, INV-2), never as a pass and never as a baseline
+regression.
+
+### 9.4 Hash table — every protected asset, pinned vs current
+
+Full machine-readable table: `docs/beta-finalization/preflight/protected-asset-hashes-20261016.tsv`.
+
+```
+INV-1  soft  pwa/nuxel-home/sw.js                        DRIFT  (owner bg-02)
+INV-1  soft  pwa/nuxel-home/js/app.js                    MATCH
+INV-1  soft  pwa/nuxel-home/js/apps.js                   DRIFT  (owner bg-02)
+INV-1  hard  tools/s10plus/a32/nuxel-pwa-host.c          MATCH
+INV-2  hard  tools/s10plus/a32/nuxel-wl-fb.c             MATCH
+INV-3  soft  pwa/nuxel-home/js/safe-zones.js             DRIFT  (owner bg-02)
+INV-3  soft  configs/nuxel/statusbar-safezones.json      MATCH
+INV-3  soft  tools/s10plus/a32/tests/safe-zones-test.js  DRIFT  (owner bg-02)
+INV-4  hard  tools/s10plus/a32/nuxel-button-manager.c    MATCH
+INV-4  hard  tools/s10plus/a32/nuxel-button-manager.service  MATCH
+INV-4  soft  configs/nuxel/buttons.json                  MATCH
+INV-5  hard  tools/s10plus/a24-nuxel-console.c           MATCH
+INV-5  hard  scripts/s10plus-debug-pack/nuxel-console-host.sh  MATCH
+INV-5  hard  boot/initramfs/init.sh                      MATCH
+INV-6  hard  tools/nuxel-rollback-home.sh                MATCH
+INV-6  soft  shell/config/systemd-user/nuxel-home-kiosk.service    MATCH
+INV-6  soft  shell/config/systemd-user/nuxel-home-native.service   MATCH
+INV-6  soft  shell/config/systemd-user/nuxel-phosh-agent.service   MATCH
+INV-7  hard  docs/…/BETA-HARDWARE-FINALIZER/13-RELEASE-NOTES-A32.md  MATCH
+INV-7  hard  docs/…/BETA-HARDWARE-FINALIZER/00-BASELINE.md           MATCH
+INV-8  self  docs/beta-finalization/BASELINE-PROTECTION.md           (self)
+INV-9  soft  tools/s10plus/a32/tests/run-tests.sh        DRIFT  (owner bg-02)
+INV-10 soft  scripts/s10plus-debug-pack/nuxel-live.sh    NEW PIN (8c413a471051be8d…)
+```
+
+**`hard pins: 10/10 held`.  No protected asset needed a re-pin in this session, so none was
+performed** — the only hash change is the new INV-10 pin on a tool this group itself repaired, and
+its old→new pair is recorded below.
+
+| Path | Old sha256 | New sha256 | Reason | Authorising briQ |
+|------|------------|------------|--------|------------------|
+| `scripts/s10plus-debug-pack/nuxel-live.sh` | `3b68af7f22dd48cf414e32a2d28cbcc3cfdfa5744be6b18d3dc1c321817b67b4` | `8c413a471051be8d6d226dd818c3d6f780b02236c23dd165353793656a54eb20` | three real defects made the console unusable on a Linux host: missing `PYEOF` heredoc terminator (bash warning on every run), macOS-only `/dev/cu.usbmodem*` discovery, and a raw `PermissionError` traceback when the shared `/tmp` lock cannot be opened under `sudo` (`fs.protected_regular=2`) — details in `docs/beta-finalization/preflight/ENVIRONMENT.md` §13.4 | `briq-00a-repo-preflight` (rev 4) + `briq-00d-baseline-protection` (rev 4) |
+
+### 9.5 New invariant added by this session
+
+**INV-10 `console-and-ledger-tooling`** (hash mode `soft`, owner `bg-00-preflight`) pins twelve
+assertions: the console tool stays executable; its Python heredoc is opened *and terminated*; the
+Linux `/dev/ttyACM*` node is discovered; the port lock can be redirected (`NUXEL_LIVE_LOCK`); the
+`fs.protected_regular` case is documented in the tool; the session-2 preflight, the device captures
+and the backup list exist; and — the one that keeps the *plan* honest — `tools/beta/workqueue.py
+render --check` exits 0, i.e. **`WORK-QUEUE.md` still matches the JSON store**.  Verified green:
+
+```
+-- INV-10-console-and-ledger-tooling
+    PASS  the console tool stays executable
+    PASS  the heredoc that carries the Python body is opened AND terminated
+    PASS  the interpreter call and its terminator both use PYEOF
+    PASS  the Linux CDC-ACM node (/dev/ttyACM*) is discovered, not only the macOS one
+    PASS  the port lock can be redirected when the shared /tmp one is unusable
+    PASS  the fs.protected_regular root-vs-shared-/tmp case is documented in the tool
+    PASS  the session-2 environment preflight exists
+    PASS  the session-2 device captures are preserved as evidence
+    PASS  the session-2 backup list (pre-change blobs) exists
+    PASS  workqueue.py is runnable as a program (so the render check below can execute it)
+    PASS  the work queue has a renderer for its human view
+    PASS  WORK-QUEUE.md still matches the JSON store (render --check)
+```
+
+### 9.6 What this session's re-verification does **not** claim
+
+* The phone's A32 artefact hashes were **not** re-read from the device in this session: `nuxel-wl-fb`,
+  `nuxel-pwa-host`, `nuxel-button-manager` and `nuxelctl` were not hashed on the handset, because
+  bg-00 may only read *and* the read would still not be a verdict for a running feature.  The
+  deployed-hash parity row of §4 therefore remains **NEEDS_OWNER_TEST** for this session as well.
+* The green gate does **not** mean touch, audio, Wi-Fi, camera, modem or any owner acceptance test
+  works.  It means the A32 code paths, presets, unit definitions and tool contracts are intact, and
+  that the queue's human view still matches its machine view.
+* The `WARN`s are not passes.  Four soft pins belong to `bg-02` and are mid-flight; the aarch64
+  colour selftest is unavailable on this host; the A32 suite now fails only because of that
+  unavailable selftest.
+
+---
+
+## 10. The regression rule every later group must follow
+
+> **A protected hash may change only via an explicit work-queue revision that names the authorising
+> briQ.**
+
+Operationally (this is the contract; the guard enforces the mechanical half of it):
+
+1. **Never edit a protected file and leave the register stale.**  If your briQ legitimately changes a
+   protected file, that briQ must (a) append a revision to its own record in
+   `docs/beta-finalization/workqueue/`, (b) record the transition here — old hash, new hash, reason,
+   authorising briQ — as §9.4 does, and (c) move the pin with
+   `tools/beta/regression-guard.sh --repin <path> --reason '<why>'`, which updates both the file pin
+   and any `sha256` assertion that carried the old value (a stale copy is exactly the defect the
+   register's self-consistency check exists to catch).
+2. **A re-pin is a claim, not a proof.**  The behavioural assertions for that invariant must still
+   pass; a byte pin that matches while the behaviour broke is caught by the `regex`/`json_eq`/
+   `program`/`suite` assertions, not by the hash.
+3. **Hard vs soft is about ownership, not importance.**  A file that another build group owns *right
+   now* is `soft`: its pin is last-known-good and drift is a WARN that names the owner.  Drift is
+   **never** a silent pass and never a FAIL-for-someone-else's-work-in-progress.
+4. **Deleting a pin is not allowed by this rule.**  A pin can only be superseded by an appended entry
+   that records the change (this register is append-only in exactly the same spirit as the queue).
+5. **Evidence discipline is part of the baseline.**  A green gate is `OFFLINE_TESTED`, never
+   `VERIFIED_ON_S10PLUS`; the only thing that yields an on-device verdict is an on-device capture
+   (the queue tool refuses anything else).

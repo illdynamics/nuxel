@@ -1,0 +1,52 @@
+# gate captures (FINAL, after all bg-00 edits) — 2026-10-16T17:36:52Z (TZ=Europe/Amsterdam, +0200)
+# HEAD: 6ee6a39c727f8936ae530092ba23bfe3b7d1e4a1
+
+## tools/beta/tests/test_workqueue.py
+PASS add creates the per-task state file
+PASS verify-schema accepts a well-formed queue
+PASS verify-schema --json emits a parseable payload
+PASS duplicate add is refused (exit 2)
+PASS --force re-creates a task deliberately
+PASS a verdict outside the mission vocabulary is rejected by the CLI
+PASS verify-schema rejects a verdict outside the vocabulary even if written directly
+PASS VERIFIED_ON_S10PLUS is refused without an on-device evidence path
+PASS an offline-only 'pass' still cannot produce VERIFIED_ON_S10PLUS
+PASS VERIFIED_ON_S10PLUS is accepted once a real on-device capture is attached
+PASS set-state APPENDS a revision and never rewrites the previous one
+PASS the queue validates with a legitimate on-device verdict present
+PASS silently downgrading a recorded verdict is refused
+PASS a verdict change is accepted when the reason is recorded
+PASS a dependency on an unknown task is refused
+PASS a self-dependency is refused
+PASS a valid dependency chain validates
+PASS a dependency cycle is detected (and named) by verify-schema
+PASS list --json returns parseable rows ordered by priority
+PASS list --ready hides tasks whose dependency is unsatisfied
+PASS verify-schema --strict demands a verdict on every task
+PASS a corrupt state file is reported cleanly instead of crashing the validator
+PASS the per-task writer lock prevents interleaved concurrent writes
+PASS an evidence entry with an unknown kind is refused
+PASS an evidence entry without a path is refused
+PASS render --write replaces every generated block and leaves no stale marker text
+PASS render never touches the prose outside the generated markers
+PASS the rendered ledger-state block carries measured counts from the JSON store
+PASS the execution order lists a dependent after its dependency and flags it as waiting
+PASS the task ledger reflects the effective (latest) revision
+PASS render --check passes when the document matches the JSON store
+PASS render --check detects a new task in the store and writes nothing
+PASS render --stdout prints the regenerated document without touching the file
+PASS render is deterministic (byte-identical across runs, no timestamps in generated blocks)
+PASS render refuses a document without the generated-block markers (and names them)
+PASS render refuses to render the human view from an invalid store (fail closed)
+PASS the seeded repository queue validates (54 tasks, acyclic)
+PASS every VERIFIED_ON_S10PLUS claim in the seeded queue carries an on_device capture (1 claim(s), 0 unbacked)
+== 0 failing case(s), 38 passing ==
+exit=0
+
+## tools/beta/workqueue.py verify-schema --json
+{"by_state": {"implemented": 9, "in_progress": 24, "pending": 21}, "by_verdict": {"None": 45, "OFFLINE_TESTED": 8, "VERIFIED_ON_S10PLUS": 1}, "errors": [], "ok": true, "queue": "/x/nuxel/docs/beta-finalization/workqueue", "tasks": 54, "tool": "workqueue", "verified_on_s10plus": ["briq-00a-repo-preflight"]}
+exit=0
+
+## tools/beta/workqueue.py render --check
+workqueue: /x/nuxel/docs/beta-finalization/WORK-QUEUE.md matches the JSON store (54 task(s))
+exit=0

@@ -199,6 +199,119 @@
       "at": "2026-10-16T16:11:58+02:00",
       "by": "construqtor/bg-00-preflight",
       "revision": 3
+    },
+    {
+      "id": "briq-00c-workqueue-ledger",
+      "title": "Persistent dependency-aware, resumable work queue",
+      "component": "bg-00-preflight",
+      "component_title": "Preflight, Discovery, Work Queue & Baseline Protection",
+      "priority": 0,
+      "state": "implemented",
+      "dependencies": [
+        "briq-00a-repo-preflight",
+        "briq-00b-archive-discovery"
+      ],
+      "evidence": [
+        {
+          "kind": "observation",
+          "path": "docs/beta-finalization/workqueue/",
+          "command": "test -e docs/beta-finalization/workqueue/",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "observation",
+          "path": "tools/beta/workqueue.py",
+          "command": "test -e tools/beta/workqueue.py",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "tools/beta/tests/test_workqueue.py",
+          "command": "python3 tools/beta/tests/test_workqueue.py",
+          "result": "0 failing case(s), 27 passing",
+          "at": "2026-10-16T16:12:00+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "docs/beta-finalization/workqueue/",
+          "command": "python3 tools/beta/workqueue.py verify-schema",
+          "result": "tasks: 54, schema OK, no task claims VERIFIED_ON_S10PLUS",
+          "at": "2026-10-16T16:12:00+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "tools/beta/tests/test_workqueue.py",
+          "command": "python3 tools/beta/tests/test_workqueue.py; python3 tools/beta/workqueue.py verify-schema --json",
+          "result": "wq_selftest_exit=0 (0 failing, 27 passing); verify-schema ok=true tasks=54 errors=[]",
+          "at": "2026-10-16T14:11:50Z"
+        },
+        {
+          "kind": "offline",
+          "path": "docs/beta-finalization/preflight/gate-workqueue.txt",
+          "command": "python3 tools/beta/tests/test_workqueue.py",
+          "result": "== 0 failing case(s), 38 passing == (was 27; 11 new assertions cover the renderer)",
+          "at": "2026-10-16T19:36:05+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "docs/beta-finalization/preflight/gate-workqueue.txt",
+          "command": "python3 tools/beta/workqueue.py verify-schema --json",
+          "result": "{\"tasks\": 54, \"ok\": true, \"errors\": [], \"verified_on_s10plus\": [], \"by_state\": {\"implemented\": 9, \"in_progress\": 24, \"pending\": 21}}",
+          "at": "2026-10-16T19:36:05+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "docs/beta-finalization/preflight/gate-workqueue.txt",
+          "command": "python3 tools/beta/workqueue.py render --check",
+          "result": "'WORK-QUEUE.md matches the JSON store (54 task(s))' -> exit 0",
+          "at": "2026-10-16T19:36:05+02:00"
+        },
+        {
+          "kind": "doc",
+          "path": "docs/beta-finalization/WORK-QUEUE.md",
+          "command": "python3 tools/beta/workqueue.py render --write",
+          "result": "machine-owned blocks (ledger-state, execution-order, task-ledger) regenerated from the 54 JSON records; the dependency-ordered resumable remainder is now section 6 and is produced by the tool, not by hand",
+          "at": "2026-10-16T19:36:05+02:00"
+        }
+      ],
+      "intended_changes": [
+        "docs/beta-finalization/WORK-QUEUE.md",
+        "docs/beta-finalization/workqueue/",
+        "tools/beta/workqueue.py",
+        "tools/beta/tests/test_workqueue.py",
+        "docs/beta-finalization/WORK-QUEUE.md; docs/beta-finalization/workqueue/<stable-id>.json (54 files); tools/beta/workqueue.py; tools/beta/tests/test_workqueue.py",
+        "tools/beta/workqueue.py (+render/list --check/--stdout, atomic_write_text, fail-closed on an invalid store)",
+        "tools/beta/tests/test_workqueue.py (+11 renderer assertions)",
+        "docs/beta-finalization/WORK-QUEUE.md (regenerated; \u00a75/\u00a76/\u00a77 are machine-owned and marker-delimited)",
+        "docs/beta-finalization/workqueue/briq-00c-workqueue-ledger.json (this revision)"
+      ],
+      "tests": [
+        "(tests are recorded by the owning briQ when it reports)",
+        "python3 tools/beta/tests/test_workqueue.py -> 27/27 pass (hermetic tmpdir queue + real queue validation)",
+        "python3 tools/beta/tests/test_workqueue.py -> 38 passing / 0 failing",
+        "python3 tools/beta/workqueue.py verify-schema -> ok (54 tasks, acyclic)",
+        "python3 tools/beta/workqueue.py render --check -> exit 0 (human view == machine view)",
+        "append-only contract re-proved by the suite (set-state appends; the previous revision is frozen)",
+        "per-task lock re-proved by the suite (a held <id>.json.lock -> exit 1 'locked by another writer')"
+      ],
+      "risk": "low",
+      "rollback": "git revert the commit(s) touching this task's expected files; the change is repository-only and alters no device state",
+      "verdict": "OFFLINE_TESTED",
+      "offline_ceiling": "OFFLINE_TESTED",
+      "owner_action": "",
+      "expected_files": [
+        "docs/beta-finalization/WORK-QUEUE.md",
+        "docs/beta-finalization/workqueue/",
+        "tools/beta/workqueue.py",
+        "tools/beta/tests/test_workqueue.py"
+      ],
+      "note": "Ledger re-validated: 54 tasks, 0 schema errors, 0 cycles, append-only revisions intact, per-task advisory locks intact, verdict vocabulary closed (nothing outside the 13 mission tokens is accepted, including in the renderer). WORK-QUEUE.md is no longer hand-maintained: the prose lives outside GENERATED markers and the three tables inside them are rewritten from the JSON store, so the human view cannot drift from the machine view - and if it does, `render --check` fails, which is now assertion 12 of INV-10 in the regression guard. The resumable remainder after this group is 45 open tasks; the dependency-ordered list is section 6 of WORK-QUEUE.md.",
+      "source": "plan.json",
+      "at": "2026-10-16T19:36:06+02:00",
+      "by": "construqtor/bg-00-preflight",
+      "revision": 4
     }
   ]
 }

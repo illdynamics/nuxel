@@ -57,8 +57,19 @@ while [ $# -gt 0 ]; do
     *) echo "unknown option: $1" >&2; exit 2 ;;
   esac
 done
-[ -n "$DEV" ] || DEV=$(ls -1 /dev/cu.usbmodem* 2>/dev/null | head -1)
-[ -n "$DEV" ] || { echo "no /dev/cu.usbmodem* — is the phone running Nuxel?" >&2; exit 1; }
+# The host may be macOS (/dev/cu.usbmodem*) or Linux (/dev/ttyACM*); find either.
+[ -n "$DEV" ] || DEV=$(ls -1 /dev/cu.usbmodem* /dev/ttyACM* 2>/dev/null | head -1)
+[ -n "$DEV" ] || { echo "no CDC-ACM console node (/dev/cu.usbmodem* or /dev/ttyACM*) — is the phone running Nuxel?" >&2; exit 1; }
+case "$DEV" in
+  /dev/ttyACM*)
+    # Linux: the node is root:dialout 0660.  Say so instead of a bare EACCES.
+    if [ ! -r "$DEV" ]; then
+      echo "!! $DEV exists but is not readable by $(id -un)." >&2
+      echo "!!   it is owned by root:dialout (mode 0660): add yourself to dialout," >&2
+      echo "!!   or re-run this tool with sudo.  Never chmod the node." >&2
+    fi
+    ;;
+esac
 [ -n "$MODE" ] || MODE=watch
 echo "# console $DEV"
 exec "$PY" - "$DEV" "$MODE" "${CMD:-}" "${FILE:-}" "${TIMEOUT:-20}" "${OUT:-}" "${RECONNECT:-0}" <<'PYEOF'
@@ -82,14 +93,48 @@ def lost(what, e):
                        if not isinstance(e, str) else "%s: %s" % (what, e))
 
 # ---- one host tool per serial device -------------------------------------------------
-LOCK = "/tmp/nuxel-live.%s.lock" % re.sub(r"[^A-Za-z0-9]", "_", dev)
-_lk = open(LOCK, "w")
+# The lock lives in the shared /tmp so that nuxel-live.sh, nuxel-push.py and
+# nuxel-console-host.sh mutually exclude each other on one serial device.
+# BUG fixed 2026-10-16 (bg-00-preflight): on a Linux host with
+# fs.protected_regular=2 (Fedora default) running this tool through sudo made the
+# bare open() below raise EACCES — root may not O_CREAT an existing lock file that
+# belongs to another user in a sticky world-writable directory.  That surfaced as a
+# raw Python traceback, i.e. exactly the class of failure the A33 cable-pull fix
+# removed for the serial port.  Now: a genuinely *held* lock is reported as such
+# (exit 3) and a lock we merely cannot *open* falls back to a private per-uid lock.
+_sanitized_dev = re.sub(r"[^A-Za-z0-9]", "_", dev)
+LOCK = os.environ.get("NUXEL_LIVE_LOCK") or "/tmp/nuxel-live.%s.lock" % _sanitized_dev
+
+
+def _open_lock(path):
+    """Open `path` and take the exclusive, non-blocking port lock."""
+    f = open(path, "w")
+    fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)      # BlockingIOError when held
+    return f
+
+
 try:
-    fcntl.flock(_lk, fcntl.LOCK_EX | fcntl.LOCK_NB)
-except OSError:
+    _lk = _open_lock(LOCK)
+except BlockingIOError:
     print("!! another nuxel-live/console-host owns %s (lock %s) — refusing to share the port"
           % (dev, LOCK), file=sys.stderr)
     sys.exit(3)
+except OSError as e:
+    _alt = "%s/nuxel-live.%s.%d.lock" % (os.environ.get("TMPDIR", "/tmp").rstrip("/"),
+                                         _sanitized_dev, os.getuid())
+    try:
+        _lk = _open_lock(_alt)
+    except BlockingIOError:
+        print("!! another nuxel-live/console-host owns %s (lock %s) — refusing to share the port"
+              % (dev, _alt), file=sys.stderr)
+        sys.exit(3)
+    except OSError as e2:
+        print("!! cannot take a port lock for %s (%s; %s) — refusing to share the serial port"
+              % (dev, e, e2), file=sys.stderr)
+        sys.exit(3)
+    print("# shared lock %s is not usable by uid %d (%s) — using private lock %s"
+          % (LOCK, os.getuid(), e, _alt), file=sys.stderr)
+    LOCK = _alt
 
 # ---- framing constants ---------------------------------------------------------------
 B64 = re.compile(r"^[A-Za-z0-9+/=]+$")
@@ -397,3 +442,4 @@ def main():
 
 if __name__ == "__main__":
     sys.exit(main())
+PYEOF

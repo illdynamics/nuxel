@@ -1,0 +1,281 @@
+# A32 offline suite (FINAL) — 2026-10-16T17:36:56Z
+== A32 offline tests ==
+FAIL colour conversion (build the a32 binaries first)
+-- input keycode bitmap decode
+decoded keys: [114, 115, 116, 703]
+PASS gpio_keys key set matches the measured EVIOCGBIT output
+PASS key 114 = VOLUMEDOWN present
+PASS key 115 = VOLUMEUP present
+PASS key 116 = POWER present
+PASS key 703 = assistant/Bixby present
+-- status-bar safe zones
+PASS module exposes NuxelSafeZones
+PASS ten zones
+PASS two blocked zones -> two intervals
+PASS zone 9 interval starts at 8*36 - pad
+PASS zone 10 interval ends at 360 + pad
+PASS zones 1..8 are free
+PASS no interval covers zone 5 (centre preset must differ)
+PASS centre preset blocks the middle
+PASS centre preset leaves the right edge free
+PASS right_camera preset = zones 9,10 in portrait
+PASS right_camera preset = zones 1,2 in landscape_right
+PASS center_camera aliases to pixel_center (zones 5,6)
+PASS no-cutout preset blocks nothing
+PASS device profile detected from hardware identity
+PASS padding is configurable
+PASS preview commit persists (offline → localStorage)
+PASS committed zones stored in custom/portrait
+PASS saved document is valid JSON
+PASS schema_version present in the persisted document
+PASS the ten-zone contract uses padding_dp 6
+PASS every one of the ten zones maps to its own padded interval
+PASS all ten blocked zones tile the whole bar
+PASS no blocked zone -> no excluded interval
+PASS cluster layout excludes blocked zones [9,10] (a cluster is pushed)
+PASS the right cluster was moved out of zones 9,10 by a negative shift
+PASS cluster layout excludes blocked zones [1,2] (a cluster is pushed)
+PASS cluster layout excludes blocked zones [5,6] (a cluster is pushed)
+PASS cluster layout excludes blocked zones [] (nothing to push)
+PASS with no blocked zone the clusters are left exactly where they are
+PASS the report names the blocked zones it solved against
+PASS applyLayout is idempotent (no compounding translate)
+PASS the right cluster stays on the panel after the push
+PASS the moved cluster reports the free interval it moved into
+PASS engine exports the pure planner
+PASS padded zones 9,10 merge into a single free interval
+PASS planner pushes the right cluster LEFT out of the S10+ cutout (never off-panel)
+PASS the planned right-cluster rectangle lands inside the free interval
+PASS planner pushes the left cluster RIGHT out of zones 1,2 (never off the left edge)
+PASS the planned left-cluster rectangle is clear of every blocked interval
+PASS planner moves the centre cluster out of zones 5,6
+PASS a cluster already in free space is not moved
+PASS a fully blocked bar yields no placement (and is reported, not faked)
+PASS the Settings editor uses the shared planner (no second copy)
+PASS the Settings editor states that the preview needs the launcher engine when it is absent
+
+all safe-zone tests passed
+-- launcher registry
+PASS registry loaded
+PASS registry has nuxel-settings
+PASS registry has org.nuxel.Terminal
+PASS registry has org.nuxel.Mail
+PASS registry has org.nuxel.Calendar
+PASS registry has org.nuxel.Notes
+PASS registry has org.nuxel.Files
+PASS registry has nuxel-camera
+PASS registry has nuxel-dialer
+PASS registry has nuxel-messages
+PASS registry has nuxel-contacts
+PASS settings is a served PWA, not the native placeholder
+PASS terminal is a served PWA under the authoritative tree
+PASS pwa urls all live under /pwa/nuxel-apps/
+
+registry tests passed
+-- wallpaper asset
+PASS assets/nuxel-background.png sha256=6e337ef2d506a16778fd3c79159f0cf053eb07ace40cf43387a33486da76cb29
+PASS pwa/nuxel-home/assets/nuxel-background.png sha256=6e337ef2d506a16778fd3c79159f0cf053eb07ace40cf43387a33486da76cb29
+PASS style.css background-image = ../assets/nuxel-background.png (resolves under the served pwa tree)
+-- A33 colour-order golden bytes (briq-02c: XRGB8888 -> DECON ABGR8888)
+== A33 colour-order golden-bytes test (briq-02c) ==
+PASS source exists: tools/s10plus/a33/nuxel-wl-fb.c
+PASS driver evidence present: docs/s10plus-autonomous-boot-repair/NUXEL-COLOUR-ORDER.md
+PASS driver evidence present: docs/s10plus-autonomous-boot-repair/COLOR-FORMAT-VERIFICATION.md
+PASS hardware order constants are the DECON ABGR_8888 order (R@0 G@8 B@16)
+PASS the override is ON by default (hw_order_override = 1)
+PASS the LUT path only builds for the DECON order
+     LUT: cv_lo[x] = ((x & 0xff) << 16) | (x & 0xff00) | 0xff000000 ; cv_hi[x] = (x & 0xff)
+PASS low LUT forces alpha 0xff
+PASS high LUT contributes only the red byte
+PASS low LUT moves the source blue byte into bits 16..23
+PASS full 64K+64K LUT allocation is the A32 fast path
+PASS golden bytes src=0x00ff0000 -> ff,00,00,ff (red -> memory R=ff G=00 B=00 A=ff)
+PASS reference implementation agrees for 0x00ff0000
+PASS golden bytes src=0x0000ff00 -> 00,ff,00,ff (green)
+PASS reference implementation agrees for 0x0000ff00
+PASS golden bytes src=0x000000ff -> 00,00,ff,ff (blue)
+PASS reference implementation agrees for 0x000000ff
+PASS golden bytes src=0x00ffffff -> ff,ff,ff,ff (white)
+PASS reference implementation agrees for 0x00ffffff
+PASS golden bytes src=0x00000000 -> 00,00,00,ff (black -> opaque, never transparent)
+PASS reference implementation agrees for 0x00000000
+PASS golden bytes src=0x00123456 -> 12,34,56,ff (mixed)
+PASS reference implementation agrees for 0x00123456
+PASS golden bytes src=0x00fedcba -> fe,dc,ba,ff (mixed)
+PASS reference implementation agrees for 0x00fedcba
+PASS LUT == independent reference over 74 words (10 primaries + 64 LCG)
+PASS alpha opaque on every dumped word
+     binary layer: source-derived
+     NOTE compiled-artifact layer skipped: no runnable aarch64 binary here (set NUXEL_VM or build/out/s10plus/a33/nuxel-wl-fb); the source LUT and the independent reference above are still executed and must agree.
+PASS XRGB8888 is converted
+PASS ABGR/XBGR are passed through with alpha forced opaque
+PASS an unknown shm format is logged, never silently mis-converted
+PASS the applied order is logged with the declared fb_var order
+PASS the owner colour-test page ships in the launcher docroot
+PASS colour page: full-screen swatch starts pure red
+PASS colour page: red swatch is #ff0000
+PASS colour page: green swatch is #00ff00
+PASS colour page: blue swatch is #0000ff
+PASS colour page: thirds bar is R then G then B (left to right)
+PASS colour page: states the swap failure symptom (red looking blue)
+PASS colour page: reports each mode through the host diag channel
+PASS colour page: documents how to display it on the handset
+PASS colour page: is self-contained (no external asset or script fetch)
+PASS colour page: forces alpha-opaque colours only (white/black are literal)
+
+PASS colour-order golden-bytes test (0 failures)
+-- A33 handoff decision table + single-owner proof (briq-02a)
+== A33 handoff harness selftest ==
+PASS header declares the same mp4 geometry as configs/nuxel/boot/animation-handoff.json
+PASS header default floor equals the configured floor
+PASS one play-through is the 8000 ms measured from the shipping asset
+PASS case corpus present and non-trivial
+PASS python model reproduces every case in tests/handoff-cases.json
+     C layer: compiled + executed
+PASS C table has every corpus case
+PASS compiled C decisions == tests/handoff-cases.json
+PASS compiled C invariants pass
+PASS legacy (A31/A32) reproduces the reported defect
+PASS A33 shows at least one COMPLETE play-through before the handoff
+PASS A33 cut is zero frames
+PASS A33 handoff happens only after the launcher is ready
+PASS floor=1 is honoured exactly (1 complete cycles)
+PASS floor=2 is honoured exactly (2 complete cycles)
+PASS floor=3 is honoured exactly (3 complete cycles)
+PASS launcher never ready => animation keeps the panel (resume, no blank frame)
+PASS with no launcher the bridge never takes ownership
+PASS fail-safe stays bounded (floor=0)
+PASS fail-safe stays bounded (floor=1)
+PASS fail-safe stays bounded (floor=2)
+PASS verbose skip waives the floor only with the request file
+PASS verbose skip never fires before the launcher is ready
+PASS verbose skip never fires without a painter
+PASS verbose skip never fires when the floor was already reached
+PASS the shipping config does not waive the floor by itself
+PASS the verbose-boot consumer publishes exactly the request file the bridge reads
+PASS auditor accepts a correct single-owner handoff
+PASS auditor rejects a handoff with no completed cycle on the glass
+PASS auditor rejects two different writers (negative control)
+
+PASS handoff harness selftest (0 failures)
+-- A33 verbose-boot durability harness (briq-02b)
+-- A33 settings store contract (briq-02b)
+PASS module exposes NuxelSettings
+PASS verbose-boot maps to the host config name "verbose-boot"
+PASS verbose-boot default is OFF
+PASS setVerboseBoot(true) persists to localStorage offline
+PASS persisted document is valid JSON with schema_version
+PASS get() round-trips the value
+PASS toggle flips the value
+PASS an unknown key in the document survives a settings write
+PASS the user decision is what changed
+PASS legacy nuxel.verboseBoot=1 migrates to verbose_boot=true
+PASS migration records its origin
+PASS migration is flagged as migrated (not user)
+PASS a user decision is NOT overwritten by a legacy flag
+PASS host load reports the host transport
+PASS host load reads the durable value
+PASS host save writes through configSet("verbose-boot")
+PASS the document written to the device is the same JSON shape
+PASS a host that refuses the write degrades to localStorage instead of losing the setting
+PASS the boot consumer reads /etc/nuxel/boot/verbose-boot.json
+PASS the boot consumer publishes the effective state under /run
+PASS the launcher manifest lists /etc/nuxel/boot/verbose-boot.json as a settings document
+PASS the store documents the same durable path in its header
+PASS the Quick Settings tile drives the same store
+PASS the Settings app renders a verbose-boot control
+PASS the Settings app shows the durable document and the override status
+PASS the Settings app writes the same config name the console writes
+PASS the Settings app merges into the loaded document instead of replacing it
+PASS the Settings app reverts the switch if the write fails (no lying UI)
+
+settings-store tests passed
+-- A33 boot-surface wiring contract (briq-02a..02e)
+-- A33 launcher registry/parity (briq-02d)
+PASS registry loaded
+PASS registry carries a machine-readable revision
+PASS registry has org.nuxel.Terminal
+PASS registry has nuxel-settings
+PASS A32 registry entry kept: nuxel-dialer
+PASS A32 registry entry kept: nuxel-messages
+PASS A32 registry entry kept: nuxel-contacts
+PASS A32 registry entry kept: org.nuxel.Mail
+PASS A32 registry entry kept: org.nuxel.Calendar
+PASS A32 registry entry kept: org.nuxel.Notes
+PASS A32 registry entry kept: org.nuxel.Files
+PASS A32 registry entry kept: nuxel-camera
+PASS entry nuxel-dialer is launchable (id/name/url/type/category)
+PASS entry nuxel-messages is launchable (id/name/url/type/category)
+PASS entry nuxel-contacts is launchable (id/name/url/type/category)
+PASS entry org.nuxel.Mail is launchable (id/name/url/type/category)
+PASS entry org.nuxel.Calendar is launchable (id/name/url/type/category)
+PASS entry org.nuxel.Notes is launchable (id/name/url/type/category)
+PASS entry org.nuxel.Files is launchable (id/name/url/type/category)
+PASS entry nuxel-camera is launchable (id/name/url/type/category)
+PASS entry nuxel-settings is launchable (id/name/url/type/category)
+PASS entry org.nuxel.Terminal is launchable (id/name/url/type/category)
+PASS entry org.nuxel.LiveConsole is launchable (id/name/url/type/category)
+PASS settings is a served PWA, not the native placeholder
+PASS terminal is a served PWA under the authoritative tree
+PASS every PWA url lives under /pwa/nuxel-apps/
+PASS served asset exists for org.nuxel.Mail (/pwa/nuxel-apps/mail/index.html)
+PASS app manifest valid for org.nuxel.Mail
+PASS served asset exists for org.nuxel.Calendar (/pwa/nuxel-apps/calendar/index.html)
+PASS app manifest valid for org.nuxel.Calendar
+PASS served asset exists for org.nuxel.Notes (/pwa/nuxel-apps/notes/index.html)
+PASS app manifest valid for org.nuxel.Notes
+PASS served asset exists for org.nuxel.Files (/pwa/nuxel-apps/files/index.html)
+PASS app manifest valid for org.nuxel.Files
+PASS served asset exists for nuxel-settings (/pwa/nuxel-apps/settings/index.html)
+PASS app manifest valid for nuxel-settings
+PASS served asset exists for org.nuxel.Terminal (/pwa/nuxel-apps/terminal/index.html)
+PASS app manifest valid for org.nuxel.Terminal
+WARN registry entry org.nuxel.LiveConsole is not fully served yet (/pwa/nuxel-apps/console/index.html) - owned by another build group, not a bg-02 regression
+PASS nuxel-apps/settings frontend is runnable (index.html + js)
+PASS launcher manifest.json parses
+PASS manifest carries nuxel.pwa_version
+PASS manifest carries nuxel.cache_version
+PASS manifest declares this tree the single source of truth
+PASS status-bar.js exposes a machine-readable VERSION
+PASS status-bar.js VERSION == manifest pwa_version (0.4.1-a33)
+PASS status-bar.js reports a newer revision than the stale v0.3.2 device copy
+PASS sw.js declares an explicit CACHE_VERSION
+PASS sw.js CACHE_VERSION == manifest cache_version (v4-a33)
+PASS sw.js cache namespace advanced past the A32 baseline v3-a32
+PASS sw.js activate deletes the previous namespaces
+PASS sw.js keeps the A32 network-first rule for code assets
+PASS precache list contains ./js/status-bar.js
+PASS precache list contains ./js/qs.js
+PASS precache list contains ./js/safe-zones.js
+PASS precache list contains ./js/settings-store.js
+PASS precache list contains ./js/bootlog.js
+PASS precache list contains ./manifest.json
+PASS precache list contains ./assets/nuxel-background.png
+PASS every precached asset exists in the tree
+PASS index.html loads js/apps.js
+PASS index.html loads js/status-bar.js
+PASS index.html loads js/qs.js
+PASS index.html loads js/safe-zones.js
+PASS index.html loads js/settings-store.js
+PASS index.html loads js/app.js
+PASS manifest exposes shortcuts (Terminal/Settings/Console)
+PASS shortcut "Terminal" points at a registry id
+PASS shortcut "Settings" points at a registry id
+PASS shortcut "Console" points at a registry id
+PASS manifest settings_documents lists /etc/nuxel/boot/verbose-boot.json
+PASS manifest settings_documents lists /etc/nuxel/boot/animation-handoff.json
+PASS manifest settings_documents lists /etc/nuxel/display/statusbar-safezones.json
+PASS manifest settings_documents lists /etc/nuxel/input/buttons.json
+PASS manifest apps_in_registry matches the registry ids
+PASS manifest registry_version matches the registry revision
+PASS no stale duplicate launcher asset pwa/nuxel-home/js/status-bar.js.orig
+PASS no stale duplicate launcher asset pwa/nuxel-home/status-bar.js
+PASS no stale duplicate launcher asset pwa/nuxel-home/js/bundle.js
+PASS no v0.3.2 launcher version constant survives under pwa/nuxel-home/js
+
+launcher registry/parity tests passed (1 warning(s))
+-- button manager / host sources parse
+PASS present nuxel-button-manager.c
+PASS present nuxel-pwa-host.c
+== 1 failing suite(s) ==
+exit=1

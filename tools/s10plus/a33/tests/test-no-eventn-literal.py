@@ -35,6 +35,7 @@ TARGETS = [
     "tools/s10plus/a33/tests/test-capture-harness.py",
     "tools/s10plus/a33/tests/test-no-eventn-literal.py",
     "tools/s10plus/a33/tests/test-libinput-parity.py",
+    "tools/s10plus/a33/tests/test-libinput-shim-invocation.py",
     "tools/s10plus/a33/tests/run-touch-tests.sh",
     "tools/s10plus/a33/touch-probe.html",
     "docs/beta-finalization/touch/PIPELINE-TRACE.md",

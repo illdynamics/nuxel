@@ -611,6 +611,104 @@
           "label": "full A32 offline suite (colour selftest, keycode bitmap, safe zones, launcher registry, wallpaper)"
         }
       ]
+    },
+    {
+      "id": "INV-10-console-and-ledger-tooling",
+      "title": "Live-console host tooling and the work-queue renderer stay usable and honest",
+      "why": "Two host-side tools decide whether the rest of the run can be trusted. (a) scripts/s10plus-debug-pack/nuxel-live.sh is the only channel to the handset: in session 2 it was found broken three ways on a Linux host - a missing heredoc terminator (bash warned on every invocation), macOS-only /dev/cu.usbmodem* device discovery (the Linux gadget is /dev/ttyACM*), and a port lock that crashed with a raw PermissionError traceback under sudo because Fedora's fs.protected_regular=2 forbids root from O_CREAT-opening another user's file in the sticky /tmp. (b) docs/beta-finalization/WORK-QUEUE.md is the human view of the queue; if it can drift from the JSON store, the resumed mission plans against a fiction. Both are now gated here.",
+      "owner_group": "bg-00-preflight",
+      "hash_mode": "soft",
+      "files": [
+        {
+          "path": "scripts/s10plus-debug-pack/nuxel-live.sh",
+          "sha256": "8c413a471051be8d6d226dd818c3d6f780b02236c23dd165353793656a54eb20",
+          "exists": true,
+          "role": "live USB console host tool (framed, SHA-256-verified round trips to the phone)",
+          "hash_mode": "soft"
+        }
+      ],
+      "assertions": [
+        {
+          "type": "file_executable",
+          "label": "the console tool stays executable",
+          "path": "scripts/s10plus-debug-pack/nuxel-live.sh"
+        },
+        {
+          "type": "regex",
+          "label": "the heredoc that carries the Python body is opened AND terminated",
+          "path": "scripts/s10plus-debug-pack/nuxel-live.sh",
+          "pattern": "^PYEOF$",
+          "min_count": 1
+        },
+        {
+          "type": "regex",
+          "label": "the interpreter call and its terminator both use PYEOF",
+          "path": "scripts/s10plus-debug-pack/nuxel-live.sh",
+          "pattern": "PYEOF",
+          "min_count": 2
+        },
+        {
+          "type": "regex",
+          "label": "the Linux CDC-ACM node (/dev/ttyACM*) is discovered, not only the macOS one",
+          "path": "scripts/s10plus-debug-pack/nuxel-live.sh",
+          "pattern": "/dev/ttyACM",
+          "min_count": 1
+        },
+        {
+          "type": "regex",
+          "label": "the port lock can be redirected when the shared /tmp one is unusable",
+          "path": "scripts/s10plus-debug-pack/nuxel-live.sh",
+          "pattern": "NUXEL_LIVE_LOCK",
+          "min_count": 1
+        },
+        {
+          "type": "regex",
+          "label": "the fs.protected_regular root-vs-shared-/tmp case is documented in the tool",
+          "path": "scripts/s10plus-debug-pack/nuxel-live.sh",
+          "pattern": "protected_regular",
+          "min_count": 1
+        },
+        {
+          "type": "file_exists",
+          "label": "the session-2 environment preflight exists",
+          "path": "docs/beta-finalization/preflight/ENVIRONMENT.md"
+        },
+        {
+          "type": "file_exists",
+          "label": "the session-2 device captures are preserved as evidence",
+          "path": "docs/beta-finalization/preflight/live/batch-1-identity.out"
+        },
+        {
+          "type": "file_exists",
+          "label": "the session-2 backup list (pre-change blobs) exists",
+          "path": "docs/beta-finalization/preflight/BACKUP-LIST-20261016.tsv"
+        },
+        {
+          "type": "file_executable",
+          "label": "workqueue.py is runnable as a program (so the render check below can execute it)",
+          "path": "tools/beta/workqueue.py"
+        },
+        {
+          "type": "regex",
+          "label": "the work queue has a renderer for its human view",
+          "path": "tools/beta/workqueue.py",
+          "pattern": "def cmd_render",
+          "min_count": 1
+        },
+        {
+          "type": "program",
+          "label": "WORK-QUEUE.md still matches the JSON store (render --check)",
+          "path": "tools/beta/workqueue.py",
+          "args": [
+            "--root",
+            "docs/beta-finalization/workqueue",
+            "render",
+            "--check"
+          ],
+          "expect_exit": 0,
+          "require_stdout": "matches the JSON store"
+        }
+      ]
     }
   ],
   "history": [
@@ -623,8 +721,40 @@
       "at": "2026-10-16T16:02:19+0200",
       "event": "manifest-change",
       "detail": "colour selftest assertion given exec_fallback=vm after measuring that this host cannot exec aarch64 Linux ELF (exec format error, rc=126)."
+    },
+    {
+      "at": "2026-10-16T19:35:09+02:00",
+      "event": "invariant-added",
+      "invariant": "INV-10-console-and-ledger-tooling",
+      "detail": "Added by briq-00d revision 4 (bg-00-preflight re-verification, HEAD 6ee6a39c): gates the live-console host tool after three real defects were found and fixed on a Linux host, and requires WORK-QUEUE.md to keep matching the JSON store (program assertion: render --check). Hash mode soft because the live-phone build group is contractually allowed to evolve the tool."
     }
   ],
   "vm_host": "nuxel@192.168.64.3",
-  "host_cannot_exec_aarch64_elf": "Measured 2026-10-16: executing build/out/s10plus/a32/nuxel-wl-fb on this macOS host fails with 'exec format error' (rc=126). tools/s10plus/a32/tests/run-tests.sh therefore takes its documented fallback and runs the colour selftest on the UTM Fedora 43 aarch64 guest. Any assertion whose subject is an aarch64 ELF must carry exec_fallback=vm."
+  "host_cannot_exec_aarch64_elf": "Measured 2026-10-16: executing build/out/s10plus/a32/nuxel-wl-fb on this macOS host fails with 'exec format error' (rc=126). tools/s10plus/a32/tests/run-tests.sh therefore takes its documented fallback and runs the colour selftest on the UTM Fedora 43 aarch64 guest. Any assertion whose subject is an aarch64 ELF must carry exec_fallback=vm.",
+  "reverification_log": [
+    {
+      "at": "2026-10-16T19:35:09+02:00",
+      "by": "construqtor/bg-00-preflight",
+      "briq": "briq-00d-baseline-protection",
+      "repo_head": "6ee6a39c727f8936ae530092ba23bfe3b7d1e4a1",
+      "host": "Fedora Linux 43 x86_64 (dextronux) \u2014 second session of this run",
+      "device": "SM-G975F / beyond2lte, reachable over /dev/ttyACM0 (read-only inspection)",
+      "hard_pins": "10/10 held (no re-pin was required)",
+      "soft_pins_drifted": [
+        "pwa/nuxel-home/sw.js",
+        "pwa/nuxel-home/js/apps.js",
+        "pwa/nuxel-home/js/safe-zones.js",
+        "tools/s10plus/a32/tests/safe-zones-test.js",
+        "tools/s10plus/a32/tests/run-tests.sh"
+      ],
+      "soft_drift_owner": "bg-02-boot-animation-launcher (mid-flight in this parallel run; drift is a WARN naming the owner, never a silent pass)",
+      "guard_result": "PASS=41 FAIL=0 WARN=8 INFO=2",
+      "actions": [
+        "fixed the repository-hygiene FAIL: .gitignore rule '.venv/' -> '.venv' so `git check-ignore .venv` is true before the directory exists (it was the single hard FAIL of the first re-run)",
+        "restored gitignored build-time assets via the project's own tools/dedupe-assets.sh (per-app wallpaper copies) so the A32 suite's wallpaper/launcher-registry assertions stop failing on a missing artefact: 3 failing suites -> 1",
+        "added INV-10 (console host tooling + work-queue renderer) as a new protected invariant; no existing pin was deleted or rewritten"
+      ],
+      "evidence": "docs/beta-finalization/preflight/gate-regression-guard.txt, gate-a32-suite.txt, gate-asset-invariant.txt, protected-asset-hashes-20261016.tsv, BACKUP-LIST-20261016.tsv"
+    }
+  ]
 }

@@ -97,10 +97,18 @@ import time
 STATE_FILE = "/run/nuxel-bootmode.state"
 LAUNCHER_JSON = "/run/nuxel-bootmode.json"
 COOLDOWN_FILE = "/run/nuxel-bootmode-guard.cooldown"
+# The guard configuration has its OWN subpath (configs/nuxel/bootmode/) and it is
+# searched FIRST.  The touch/ copies are retained because an already-generated
+# deploy plan names them as the source for /etc/nuxel/touch/bootmode-guard.json;
+# tests/test-bootmode-guard.py asserts the two files agree on every gate field, so
+# the duplication is enforced rather than trusted.
+_REPO = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                     "..", "..", ".."))
 CONFIG_PATHS = [
+    "/etc/nuxel/bootmode/bootmode-guard.json",
+    os.path.join(_REPO, "configs", "nuxel", "bootmode", "bootmode-guard.json"),
     "/etc/nuxel/touch/bootmode-guard.json",
-    os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                 "..", "..", "..", "configs", "nuxel", "touch", "bootmode-guard.json"),
+    os.path.join(_REPO, "configs", "nuxel", "touch", "bootmode-guard.json"),
 ]
 OWNER_TEST_LOCKS = ["/run/nuxel-touch-capture.lock", "/run/nuxel-owner-test.lock",
                     "/run/nuxel-manual-proof.lock", "/var/lib/nuxel/owner-test.lock"]
@@ -489,8 +497,18 @@ def run(args):
     for h in cls["hits"]:
         say("  hit: %s [%s]" % (h["why"], h["origin"]))
     say("SEC_TOUCHSCREEN_REGISTERED=%d" % (1 if cls["registered"] else 0))
-    say("TOUCH_AVAILABLE=%s" % ("true" if mode != "charger-lpm" else "false"))
+    # Never claim touch is available on a boot we could not classify: an unknown
+    # boot is reported as unknown, exactly like the launcher JSON does.
+    avail = "true" if mode == "normal" else ("false" if mode == "charger-lpm" else "unknown")
+    say("TOUCH_AVAILABLE=%s" % avail)
     say("PERMANENT_FIX=%s" % PERMANENT_FIX)
+    say("CONFIG=%s" % (cfg_path or "(defaults: no configuration file found)"))
+    say("SETTINGS_STATE=%s (what Settings reads)%s"
+        % (LAUNCHER_JSON, " (not written: --no-write)" if args.no_write else ""))
+    # One machine-readable line for the live console, so a console session and any
+    # script see the same verdict without parsing the human output.
+    say("NX_STATUS bootmode=%s touch_available=%s permanent_fix=\"%s\""
+        % (mode, avail, PERMANENT_FIX))
     acted = bool(decision.get("reboot"))
     would = bool(decision.get("would_reboot"))
     say("REBOOT_DECISION=%s REASON=%s"

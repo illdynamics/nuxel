@@ -15,6 +15,9 @@ What is proven:
   * a verdict change requires a note (the reason is evidence)
   * the per-task writer lock is honoured
   * `list --ready` and `verify-schema --strict` behave
+  * `render` regenerates the machine-owned blocks of WORK-QUEUE.md from the JSON
+    store, is deterministic, detects staleness (`--check`), never clobbers the
+    prose outside the markers, and REFUSES to render from an invalid store
   * the real seeded queue is valid and covers every briQ in the plan
 
 Usage: python3 tools/beta/tests/test_workqueue.py
@@ -314,6 +317,120 @@ def case_strict_and_broken(q: Queue):
 
 
 # --------------------------------------------------------------------------- #
+# 11b. render: the human view is derived, deterministic, and fail-closed
+# --------------------------------------------------------------------------- #
+DOC_TEMPLATE = """# test doc
+
+prose before
+
+<!-- BEGIN GENERATED: ledger-state -->
+stale
+<!-- END GENERATED: ledger-state -->
+
+<!-- BEGIN GENERATED: execution-order -->
+stale
+<!-- END GENERATED: execution-order -->
+
+<!-- BEGIN GENERATED: task-ledger -->
+stale
+<!-- END GENERATED: task-ledger -->
+
+prose after
+"""
+
+
+def _doc(q: Queue) -> Path:
+    d = q.dir / "WORK-QUEUE.md"
+    d.write_text(DOC_TEMPLATE)
+    return d
+
+
+def case_render(q: Queue):
+    add_task(q, "t-r1", component="bg-00-preflight", rollback="revert", priority="0")
+    add_task(q, "t-r2", component="bg-00-preflight", rollback="revert", priority="1", dep="t-r1")
+    add_task(q, "t-r3", component="bg-00-preflight", rollback="revert", priority="1", dep="t-r2")
+    q.run("set-state", "t-r1", "--state", "implemented", "--verdict", "OFFLINE_TESTED",
+          "--evidence", json.dumps({"kind": "offline", "path": "tools/beta/workqueue.py",
+                                    "command": "python3 tools/beta/tests/test_workqueue.py",
+                                    "result": "PASS"}))
+
+    doc = _doc(q)
+    p = q.run("render", "--write", "--out", str(doc))
+    body = doc.read_text()
+    if p.returncode == 0 and "<!-- BEGIN GENERATED: ledger-state -->" in body and "stale" not in body:
+        ok("render --write replaces every generated block and leaves no stale marker text")
+    else:
+        bad(f"render --write failed rc={p.returncode}: {p.stderr.strip()[:160]}")
+
+    if "prose before" in body and "prose after" in body:
+        ok("render never touches the prose outside the generated markers")
+    else:
+        bad("render clobbered human prose")
+
+    n_tasks = len(sorted(q.dir.glob("*.json")))
+    if f"| Tasks | **{n_tasks}**" in body and "| Revisions (append-only) | " in body:
+        ok("the rendered ledger-state block carries measured counts from the JSON store")
+    else:
+        bad(f"rendered ledger-state has no task count for {n_tasks} task(s)")
+
+    i2, i3 = body.find("`t-r2`"), body.find("`t-r3`")
+    if -1 < i2 < i3 and "waiting on `t-r2`" in body:
+        ok("the execution order lists a dependent after its dependency and flags it as waiting")
+    else:
+        bad(f"execution order wrong (t-r2@{i2} t-r3@{i3})")
+
+    if "| `t-r1` | 0 | bg-00-preflight | implemented | OFFLINE_TESTED" in body:
+        ok("the task ledger reflects the effective (latest) revision")
+    else:
+        bad("task ledger row does not reflect the latest revision")
+
+    p = q.run("render", "--check", "--out", str(doc))
+    if p.returncode == 0:
+        ok("render --check passes when the document matches the JSON store")
+    else:
+        bad(f"render --check reported a fresh document as stale rc={p.returncode}")
+
+    before = doc.read_text()
+    q.run("render", "--check", "--out", str(doc))
+    add_task(q, "t-r4", component="bg-00-preflight", rollback="revert", priority="2")
+    p = q.run("render", "--check", "--out", str(doc))
+    if p.returncode == 1 and doc.read_text() == before:
+        ok("render --check detects a new task in the store and writes nothing")
+    else:
+        bad(f"staleness not detected rc={p.returncode}")
+
+    p = q.run("render", "--stdout", "--out", str(doc))
+    if p.returncode == 0 and "`t-r4`" in p.stdout and doc.read_text() == before:
+        ok("render --stdout prints the regenerated document without touching the file")
+    else:
+        bad(f"render --stdout wrote or printed nothing rc={p.returncode}")
+
+    first = q.run("render", "--stdout", "--out", str(doc)).stdout
+    second = q.run("render", "--stdout", "--out", str(doc)).stdout
+    if first == second and first:
+        ok("render is deterministic (byte-identical across runs, no timestamps in generated blocks)")
+    else:
+        bad("render output is not stable")
+
+    nomark = q.dir / "WORK-QUEUE-nomarkers.md"
+    nomark.write_text("# no markers here\n")
+    p = q.run("render", "--write", "--out", str(nomark))
+    if p.returncode != 0 and "marker" in (p.stderr + p.stdout):
+        ok("render refuses a document without the generated-block markers (and names them)")
+    else:
+        bad(f"marker-less document not refused rc={p.returncode}")
+
+    broken = q.dir / "t-broken-render.json"
+    broken.write_text("{not json")
+    p = q.run("render", "--stdout", "--out", str(doc))
+    broken.unlink()
+    if p.returncode == 1 and "refusing to render" in p.stderr:
+        ok("render refuses to render the human view from an invalid store (fail closed)")
+    else:
+        bad(f"render rendered an invalid store rc={p.returncode}: {p.stderr.strip()[:160]}")
+
+
+# --------------------------------------------------------------------------- #
 # 12. writer lock
 # --------------------------------------------------------------------------- #
 def case_lock(q: Queue):
@@ -366,13 +483,27 @@ def case_real_queue():
     else:
         bad(f"real queue invalid: {payload.get('errors')}")
 
-    stale = sorted(
-        t for t, r in load_real().items() if r.get("verdict") == "VERIFIED_ON_S10PLUS"
+    # An on-device verdict is legitimate ONLY when the record carries a real
+    # on_device capture.  (The first sessions had zero such claims; session 2 has
+    # exactly one - briq-00a, whose preflight ran against the live handset - so the
+    # invariant to hold is "no claim without a capture", not "no claim at all".)
+    unbacked = sorted(
+        t
+        for t, r in load_real().items()
+        if r.get("verdict") == "VERIFIED_ON_S10PLUS"
+        and not any(
+            (e or {}).get("kind") == "on_device"
+            and str((e or {}).get("command", "")).strip()
+            and (str((e or {}).get("result", "")).strip() or str((e or {}).get("at", "")).strip())
+            for e in (r.get("evidence") or [])
+        )
     )
-    if not stale:
-        ok("no seeded task claims VERIFIED_ON_S10PLUS (nothing has been proven on the handset yet)")
+    if not unbacked:
+        n = sum(1 for r in load_real().values() if r.get("verdict") == "VERIFIED_ON_S10PLUS")
+        ok(f"every VERIFIED_ON_S10PLUS claim in the seeded queue carries an on_device capture "
+           f"({n} claim(s), 0 unbacked)")
     else:
-        bad(f"tasks claim an on-device verdict without evidence: {stale}")
+        bad(f"tasks claim an on-device verdict without on_device evidence: {unbacked}")
 
 
 def load_real() -> dict:
@@ -399,6 +530,7 @@ def main() -> int:
         case_strict_and_broken(q)
         case_lock(q)
         case_evidence_shape(q)
+        case_render(q)
         case_real_queue()
     finally:
         q.cleanup()

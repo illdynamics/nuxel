@@ -145,6 +145,49 @@ def main():
           "fixture mode either refuses to execute or reports print-only", "rc=%d\n%s" % (rc, out[-400:]))
     check("REBOOT_EXEC" not in out, "fixture mode never executes a reboot command")
 
+    print("== bootmode guard: its own configuration subpath ==")
+    import json as _json
+    repo = os.path.abspath(os.path.join(HERE, "..", "..", "..", ".."))
+    sub = os.path.join(repo, "configs", "nuxel", "bootmode")
+    legacy = os.path.join(repo, "configs", "nuxel", "touch", "bootmode-guard.json")
+    check(os.path.isdir(sub), "configs/nuxel/bootmode/ exists (its own subpath)", sub)
+    check(os.path.isfile(os.path.join(sub, "bootmode-guard.json")),
+          "the subpath carries the guard configuration")
+    check(os.path.isfile(os.path.join(sub, "README.md")),
+          "the subpath documents the gates and the search order")
+    # the guard prefers the subpath, and says which file it used
+    rc, out = run(base_args("lpm-boot"))
+    check("CONFIG=" in out, "the guard prints which configuration file it used", out[-300:])
+    check(("configs/nuxel/bootmode/bootmode-guard.json" in out),
+          "the configuration it used is configs/nuxel/bootmode/bootmode-guard.json", out[-300:])
+    check("NX_STATUS bootmode=" in out,
+          "the guard prints one machine-readable line for the live console")
+    check("SETTINGS_STATE=/run/nuxel-bootmode.json" in out,
+          "the guard names the launcher/Settings state file it publishes")
+    rc, out = run(["--status", "--no-write"])
+    check("TOUCH_AVAILABLE=unknown" in out,
+          "an unclassifiable boot reports touch as UNKNOWN, never as available", out[-300:])
+    # duplication is enforced, not trusted
+    if os.path.isfile(legacy):
+        a = _json.load(open(os.path.join(sub, "bootmode-guard.json")))
+        b = _json.load(open(legacy))
+        gates = ["allow_reboot", "require_charger", "min_uptime_seconds", "cooldown_seconds",
+                 "reboot_command", "locks", "state_file", "launcher_state"]
+        for k in gates:
+            check(a.get(k) == b.get(k),
+                  "gate field %r agrees between the subpath and the legacy config" % k,
+                  "bootmode=%r touch=%r" % (a.get(k), b.get(k)))
+        check(a.get("allow_reboot") is False and b.get("allow_reboot") is False,
+              "the reboot gate is OFF in both files (a config edit alone never reboots)")
+        check("--i-understand-this-reboots-the-phone" in " ".join(a.get("enable_auto_reboot", [])),
+              "the subpath config documents the acknowledgement requirement")
+    else:
+        print("SKIP no legacy config to compare against")
+    md = open(os.path.join(sub, "README.md")).read() if os.path.isfile(os.path.join(sub, "README.md")) else ""
+    check("recovery" in md.lower() or "download" in md.lower(),
+          "the subpath README states that no recovery/Download-Mode action exists")
+    check("BLOCKED_KERNEL" in md, "the subpath README marks the kernel fix BLOCKED_KERNEL")
+
     print("== %d failing assertion(s) ==" % len(failures))
     return 1 if failures else 0
 

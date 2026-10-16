@@ -58,15 +58,55 @@ directory that contains archived capture text (dmesg/ram-console dumps,
 /proc/bus/input/devices dumps, libinput shim state, ...): it searches the tree for
 the evidence patterns instead of trusting a fixed name, so an old debug pack can
 be graded with the same rules as a fresh bundle.
+
+CAPABILITY DISCOVERY (never a node number)
+    Two independent identity sources are read and cross-reported:
+      * /sys/class/input/<node>/device/  - name, id/bustype+vendor+product, the
+        capability bitmaps (properties / capabilities/abs / capabilities/key) and,
+        where the kernel exposes it, per-axis absinfo.  NUXEL_SYSFS_INPUT_ROOT (or
+        --sysfs-root) redirects this at a synthetic tree so the same code runs
+        offline, and the A33 tests do exactly that.
+      * the evdev ioctls (EVIOCGNAME/EVIOCGPROP/EVIOCGBIT/EVIOCGABS) on every
+        /dev/input node, which is what ACTUALLY decides the selection: ranges and
+        contact slots are only obtainable from the ioctl.
+    The raw `properties` value is always printed next to its interpretation.  On
+    this handset the panel node reports a raw value whose INPUT_PROP_DIRECT bit
+    (used, as everywhere in the A32/A33 baseline, as a BIT INDEX) is set; that
+    convention is what the deployed A31 shim shares, so it is reported and never
+    silently "corrected" here - a divergence must be visible, not papered over.
+
+COORDINATE VALIDATION (1440x3040 DECON panel)
+    fb0 is the DECON framebuffer: /sys/class/graphics/fb0/modes is `U:1440x3040p-0`
+    (the panel) and virtual_size is `1440,6080` (two pages, which the animation and
+    the bridge flip between).  The tool reads those, composes raw ABS_MT ->
+    panel pixels -> compositor output pixels, and every captured point is checked
+    against the device's own reported range AND against the panel bounds.
+
+BOUNDED CAPTURE SESSION (--capture SECONDS)
+    --capture N is --live with N seconds and a per-event JSONL record stream
+    (events.jsonl: kernel timeval timestamp, decoded kind, raw coordinates and the
+    mapped panel/output coordinates) plus coordinate-map.json.  It is sized for the
+    owner's finger taps and is bounded exactly like --live (hard alarm, caps).
+    --archive-dir (or --archive DIR afterwards) copies the finished bundle into
+    docs/beta-finalization/live/evidence/touch-<ts>/ so the evidence lands in the
+    repository instead of only on the phone.
+
+EXIT STATUS
+    Every layer reports its own exit code (`LAYER_EXIT=<n> ... EXIT=<10+n>`), and
+    with --layer-exit-codes the process itself exits 10+<first lossy layer> so a
+    wrapper can branch on the exact hop instead of parsing text.  The historical
+    0/3/4 statuses are unchanged without that flag.
 """
 import argparse
 import errno
 import fcntl
+import hashlib
 import importlib.util
 import json
 import os
 import re
 import select
+import shutil
 import signal
 import struct
 import subprocess
@@ -110,6 +150,24 @@ EVIOCGPROP = lambda ln: 0x80000000 | (ln << 16) | (0x45 << 8) | 0x09
 
 SLACK_SECONDS = 15                             # hard alarm = --seconds + this
 
+# --- capability discovery + panel geometry (briq-01a) ----------------------
+# NUXEL_SYSFS_INPUT_ROOT redirects the sysfs scan so the offline tests drive the
+# same code with a synthetic tree (a workstation has no sec_ts).
+SYSFS_INPUT_ROOT = os.environ.get("NUXEL_SYSFS_INPUT_ROOT", "/sys/class/input")
+SYSFS_FB = os.environ.get("NUXEL_SYSFS_FB", "/sys/class/graphics/fb0")
+NODE_PREFIX = "event"                # entries matched by prefix + numeric suffix
+# DECON panel measured on the handset (/sys/class/graphics/fb0/modes ->
+# `U:1440x3040p-0`).  Used only when the framebuffer is not readable (a host).
+PANEL_FALLBACK = (1440, 3040)
+# The direct-touch marker, used exactly as the A32/A33 baseline uses it: the
+# constant is a BIT INDEX into the printed bitmap, and the panel's raw value is
+# reported next to the interpretation so a divergence is visible.
+INPUT_PROP_DIRECT_BIT = INPUT_PROP_DIRECT
+# The repository's archive root for live evidence; overridden by --archive-dir.
+RUN_ROOT_ARCHIVE = os.path.abspath(os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "..", "..", "..",
+    "docs", "beta-finalization", "live", "evidence"))
+
 LAYERS = [
     (1, "driver", "sec_ts binding / -ENODEV gate (charger-mode LPM)"),
     (2, "irq", "IRQ delivery (sec_ts line delta over a 2 s window)"),
@@ -120,6 +178,14 @@ LAYERS = [
     (7, "dom", "WebKitGTK DOM touchstart/move/end with coordinates"),
 ]
 LAYER_NAMES = {n: nm for n, nm, _ in LAYERS}
+
+# Exit status vocabulary: 10 + the layer number names the FIRST hop that lost the
+# event.  Used for the per-layer LAYER_EXIT lines always, and for the process exit
+# status when --layer-exit-codes is given.
+LAYER_EXIT_BASE = 10
+EXIT_OK = 0
+EXIT_GATE_FAIL = 3
+LAYER_EXIT_CODES = {n: LAYER_EXIT_BASE + n for n, _nm, _d in LAYERS}
 
 
 # ---------------------------------------------------------------------------
@@ -692,7 +758,7 @@ def capture_raw(bundle, nodes, seconds, max_events, max_bytes):
         bundle.put("touch-events.log", "\n".join(ev_log) + "\n")
         bundle.put_bytes("raw-touch.bin", b"")
         return {"armed": 0, "bytes": 0, "stats": decode_raw(b""), "log": ev_log,
-                "evidence": bundle.ev("touch-events.log")}
+                "raw": b"", "evidence": bundle.ev("touch-events.log")}
 
     raw = bytearray()
     stats = {"events": 0, "frames": 0, "downs": 0, "ups": 0, "points": 0,
@@ -736,7 +802,7 @@ def capture_raw(bundle, nodes, seconds, max_events, max_bytes):
     bundle.put_bytes("raw-touch.bin", bytes(raw))
     bundle.put("touch-events.log", head + "\n".join(ev_log + lines) + "\n")
     return {"armed": len(fds), "bytes": len(raw), "stats": stats, "log": ev_log,
-            "evidence": bundle.ev("touch-events.log")}
+            "raw": bytes(raw), "evidence": bundle.ev("touch-events.log")}
 
 
 def raw_summary(stats, panel):
@@ -903,6 +969,372 @@ def _hard_timeout(signum, frame):                       # pragma: no cover
     os._exit(3)
 
 
+
+# ---------------------------------------------------------------------------
+# capability discovery: /sys/class/input/<node>/device/  (never a node number)
+# ---------------------------------------------------------------------------
+def _bitmap_words(hexstr):
+    """Decode a kernel bitmap string into 64-bit words.
+
+    The kernel prints the HIGHEST word first
+    (drivers/input/input.c:input_print_bitmap loops `i = BITS_TO_LONGS(max)-1 ..
+    0`), so word 0 of the parsed list is the HIGHEST word.  This is the same
+    convention the A32 bitmap decoder and the A33 shim use, which is what makes
+    one implementation testable against the other.
+    """
+    words = []
+    for tok in re.split(r"[\s,]+", (hexstr or "").strip()):
+        if not tok:
+            continue
+        try:
+            words.append(int(tok, 16))
+        except ValueError:
+            return []
+    return words
+
+
+def _bitmap_has(words, bit):
+    """True when `bit` is set in a printed bitmap (first printed word = highest)."""
+    if not words or bit is None or bit < 0:
+        return False
+    printed = len(words) - 1 - (bit // 64)
+    if printed < 0 or printed >= len(words):
+        return False
+    return bool((words[printed] >> (bit % 64)) & 1)
+
+
+def _parse_mode(text):
+    m = re.search(r"(\d+)\s*[x,]\s*(\d+)", text or "")
+    return (int(m.group(1)), int(m.group(2))) if m else None
+
+
+def sysfs_inputs(bundle):
+    """Capability inspection of /sys/class/input/*/device (briq-01a).
+
+    Reads the kernel's own device metadata: name, id/bustype+vendor+product, the
+    capability bitmaps (properties, capabilities/abs, capabilities/key) and the
+    per-axis absinfo when the kernel exposes it.  A node NUMBER is parsed from the
+    directory entry at runtime and is never assumed.  Nothing here decides the
+    selection on its own: it is reported next to the ioctl result so the two
+    independent identities can be compared.
+    """
+    root = SYSFS_INPUT_ROOT
+    rows = []
+    try:
+        entries = sorted((e for e in os.listdir(root) if e.startswith(NODE_PREFIX)),
+                         key=lambda e: int(re.sub(r"\D", "", e) or 0))
+    except OSError as e:
+        bundle.put("sysfs-input.txt", "# capability scan of %s\ncannot list: %s\n" % (root, e))
+        return {"root": root, "rows": [], "selected": None, "error": str(e),
+                "evidence": bundle.ev("sysfs-input.txt")}
+    lines = ["# capability scan of %s/ (selection by capability, never by number)" % root]
+    selected = None
+    for e in entries:
+        dev = os.path.join(root, e, "device")
+        name = read_text(os.path.join(dev, "name")).strip().strip('"')
+        props = _bitmap_words((read_text(os.path.join(dev, "properties")).strip().splitlines() or [""])[0])
+        absb = _bitmap_words((read_text(os.path.join(dev, "capabilities", "abs")).strip().splitlines() or [""])[0])
+        keyb = _bitmap_words((read_text(os.path.join(dev, "capabilities", "key")).strip().splitlines() or [""])[0])
+        row = {
+            "entry": e, "path": os.path.join(INPUT_DIR, e), "name": name,
+            "bustype": read_text(os.path.join(dev, "id", "bustype")).strip(),
+            "vendor": read_text(os.path.join(dev, "id", "vendor")).strip(),
+            "product": read_text(os.path.join(dev, "id", "product")).strip(),
+            "properties_raw": (read_text(os.path.join(dev, "properties")).strip().splitlines() or [""])[0],
+            "direct": _bitmap_has(props, INPUT_PROP_DIRECT_BIT),
+            "abs_raw": (read_text(os.path.join(dev, "capabilities", "abs")).strip().splitlines() or [""])[0],
+            "mt": (_bitmap_has(absb, ABS_MT_POSITION_X) and _bitmap_has(absb, ABS_MT_POSITION_Y)),
+            "tracking_id": _bitmap_has(absb, ABS_MT_TRACKING_ID),
+            "btn_touch": _bitmap_has(keyb, BTN_TOUCH),
+            "absinfo": {},
+        }
+        for line in read_text(os.path.join(dev, "absinfo")).splitlines():
+            f = line.split()
+            if len(f) >= 3 and f[0] in ("ABS_MT_POSITION_X", "ABS_MT_POSITION_Y",
+                                        "ABS_X", "ABS_Y", "ABS_MT_SLOT"):
+                try:
+                    row["absinfo"][f[0]] = [int(f[1]), int(f[2])]
+                except ValueError:
+                    pass
+        rows.append(row)
+        lines.append("%-12s name=%-22r bustype=%s vendor=%s product=%s direct=%d mt=%d "
+                     "tracking_id=%d btn_touch=%d properties=%s abs=%s absinfo=%s"
+                     % (e, row["name"], row["bustype"] or "?", row["vendor"] or "?", row["product"] or "?",
+                        row["direct"], row["mt"], row["tracking_id"], row["btn_touch"],
+                        row["properties_raw"] or "(unreadable)", row["abs_raw"] or "(unreadable)",
+                        row["absinfo"] or "(none)"))
+    cand = [r for r in rows if r["mt"] and r["direct"]]
+    if not cand:
+        cand = [r for r in rows if SEC_TS_NAME in r["name"]]
+    if cand:
+        selected = cand[0]
+        lines.append("")
+        lines.append("SELECTED %s name=%r by %s"
+                     % (selected["path"], selected["name"],
+                        "capability (ABS_MT + direct marker)" if (selected["mt"] and selected["direct"])
+                        else "name fallback (capability not proven: direct=%d mt=%d)"
+                             % (selected["direct"], selected["mt"])))
+    else:
+        lines.append("")
+        lines.append("SELECTED (none): no node proves a direct multitouch surface in %s/" % root)
+    bundle.put("sysfs-input.txt", "\n".join(lines) + "\n")
+    return {"root": root, "rows": rows, "selected": selected,
+            "evidence": bundle.ev("sysfs-input.txt")}
+
+
+# ---------------------------------------------------------------------------
+# panel geometry + coordinate validation (1440x3040 DECON)
+# ---------------------------------------------------------------------------
+def panel_geometry(bundle):
+    """Panel size, framebuffer page geometry and the output the bridge feeds.
+
+    Read, never assumed: fb0 is the DECON framebuffer, `modes` carries the panel
+    mode (`U:1440x3040p-0`) and `virtual_size` carries the allocated surface
+    (`1440,6080` = TWO panel pages, because the animation and the Wayland bridge
+    flip between them).  PANEL_FALLBACK is only for a host with no framebuffer.
+    """
+    modes = read_text(os.path.join(SYSFS_FB, "modes"))
+    virtual = read_text(os.path.join(SYSFS_FB, "virtual_size"))
+    name = read_text(os.path.join(SYSFS_FB, "name")).strip()
+    bpp = read_text(os.path.join(SYSFS_FB, "bits_per_pixel")).strip()
+    panel = _parse_mode(modes) or _parse_mode(virtual) or PANEL_FALLBACK
+    vpage = _parse_mode(virtual) or panel
+    pages = int(round(vpage[1] / panel[1])) if panel[1] else 1
+    out = detect_output()
+    geo = {
+        "panel": panel,
+        "panel_source": ("%s/modes" % SYSFS_FB) if _parse_mode(modes) else "PANEL_FALLBACK (no readable mode)",
+        "framebuffer_name": name or "(unreadable)",
+        "bits_per_pixel": bpp or "(unreadable)",
+        "virtual_size": vpage,
+        "pages": max(1, pages),
+        "output": out,
+    }
+    bundle.put("panel-geometry.txt",
+               "# framebuffer + Wayland output geometry\n"
+               "fb_name=%s bpp=%s modes=%s virtual_size=%s\npanel=%dx%d (from %s) pages=%d\n"
+               "output=%s\n"
+               % (geo["framebuffer_name"], geo["bits_per_pixel"], modes.strip() or "(unreadable)",
+                  virtual.strip() or "(unreadable)", panel[0], panel[1], geo["panel_source"],
+                  geo["pages"], json.dumps(out, sort_keys=True)))
+    return geo
+
+
+def detect_output():
+    """The Wayland output behind the framebuffer bridge.
+
+    Read from the bridge/launcher state; the A32 measurement is a headless output
+    at HALF the panel resolution with scale 2, so a scale-mismatched coordinate
+    mapping must show up as a number.  Nothing is hard-coded as a fact: an
+    unreadable state yields scale 1 and an explicit `source` saying so.
+    """
+    bridge = read_text(BRIDGE_STATE, 65536)
+    launcher = read_text(LAUNCHER_STATE, 131072)
+    txt = bridge + "\n" + launcher
+    scale, name, geo, tf = 1, None, None, "normal"
+    m = re.search(r"scale[\s=:]+(\d+)", txt)
+    if m:
+        scale = max(1, int(m.group(1)))
+    m = re.search(r"\b(HEADLESS[-\w]*)\b", txt)
+    if m:
+        name = m.group(1)
+    m = re.search(r"\b(\d{3,4})x(\d{3,4})\b", txt)
+    if m:
+        geo = [int(m.group(1)), int(m.group(2))]
+    m = re.search(r"transform[\s=:]+([A-Za-z0-9_]+)", txt)
+    if m:
+        tf = m.group(1)
+    return {"name": name, "scale": scale, "geometry": geo, "transform": tf,
+            "source": ("%s + %s" % (BRIDGE_STATE, LAUNCHER_STATE)) if txt.strip()
+                      else "(no bridge/launcher state readable: scale defaults to 1)"}
+
+
+def coord_map(scan, geo, sysfs=None):
+    """raw ABS_MT device range -> panel pixels -> compositor output pixels.
+
+    The range comes from EVIOCGABS when the node is openable (the authority) and
+    falls back to the sysfs absinfo tree, which is what makes the validation
+    testable offline with the checked-in fixtures.  The source is recorded, so a
+    fallback range is never mistaken for a measured one.
+    """
+    dev = scan.get("panel") or (scan.get("touch") or [None])[0] or {}
+    pw, ph = geo["panel"]
+    rx = list(dev.get("x") or [])
+    ry = list(dev.get("y") or [])
+    range_source = "ioctl EVIOCGABS on %s" % (dev.get("path") or "?") if (rx and ry) else None
+    if (not rx or not ry) and sysfs and sysfs.get("selected"):
+        ai = sysfs["selected"].get("absinfo") or {}
+        fx = ai.get("ABS_MT_POSITION_X") or ai.get("ABS_X")
+        fy = ai.get("ABS_MT_POSITION_Y") or ai.get("ABS_Y")
+        if fx and fy:
+            rx, ry = list(fx), list(fy)
+            range_source = "sysfs absinfo of %s (no openable node)" % sysfs["selected"]["entry"]
+    if not rx or not ry:
+        rx, ry = [0, pw - 1], [0, ph - 1]
+        range_source = "PANEL_FALLBACK (no range was readable: not a measurement)"
+    dev = dict(dev, x=tuple(rx), y=tuple(ry))
+    out = geo["output"]
+    scale = max(1, int(out.get("scale") or 1))
+    m = {
+        "panel": {"width": pw, "height": ph, "source": geo["panel_source"]},
+        "framebuffer": {"virtual_size": geo["virtual_size"], "pages": geo["pages"],
+                        "bits_per_pixel": geo["bits_per_pixel"]},
+        "device": {"name": dev.get("name"), "path": dev.get("path"),
+                   "range_x": rx, "range_y": ry, "range_source": range_source},
+        "output": {"name": out.get("name"), "scale": scale, "transform": out.get("transform"),
+                   "width": max(1, pw // scale), "height": max(1, ph // scale),
+                   "geometry": out.get("geometry"), "source": out.get("source")},
+        "mapping": ("identity" if (rx == [0, pw - 1] and ry == [0, ph - 1]) else "scaled"),
+    }
+    return m
+
+
+def map_coords(m, x, y):
+    """Map one raw ABS_MT point to panel pixels and to compositor output pixels."""
+    dx0, dx1 = m["device"]["range_x"]
+    dy0, dy1 = m["device"]["range_y"]
+    pw, ph = m["panel"]["width"], m["panel"]["height"]
+    sx = ((pw - 1) / (dx1 - dx0)) if dx1 > dx0 else 1.0
+    sy = ((ph - 1) / (dy1 - dy0)) if dy1 > dy0 else 1.0
+    px, py = (x - dx0) * sx, (y - dy0) * sy
+    sc = max(1, int(m["output"].get("scale") or 1))
+    return {"raw_x": x, "raw_y": y, "panel_x": round(px, 2), "panel_y": round(py, 2),
+            "out_x": round(px / sc, 2), "out_y": round(py / sc, 2)}
+
+
+def validate_mapping(m, xs, ys):
+    """Every captured point must be inside the DEVICE's own range and inside the
+    PANEL bounds.  A number, not an opinion - and no points is not a pass."""
+    dx0, dx1 = m["device"]["range_x"]
+    dy0, dy1 = m["device"]["range_y"]
+    pw, ph = m["panel"]["width"], m["panel"]["height"]
+    n = min(len(xs), len(ys))
+    pts = [map_coords(m, xs[i], ys[i]) for i in range(n)]
+    inside_dev = bool(n) and all(dx0 <= v <= dx1 for v in xs) and all(dy0 <= v <= dy1 for v in ys)
+    inside_panel = bool(n) and all(0 <= p["panel_x"] <= pw - 1 and 0 <= p["panel_y"] <= ph - 1
+                                  for p in pts)
+    return {
+        "points": n,
+        "device_range_x": [dx0, dx1], "device_range_y": [dy0, dy1],
+        "observed_x": [min(xs), max(xs)] if n else [],
+        "observed_y": [min(ys), max(ys)] if ys else [],
+        "inside_device_range": bool(inside_dev),
+        "inside_panel_bounds": bool(inside_panel),
+        "panel": {"width": pw, "height": ph},
+        "verdict": ("NO_POINTS" if not n else
+                    ("OK" if (inside_dev and inside_panel) else "OUT_OF_RANGE")),
+    }
+
+
+# ---------------------------------------------------------------------------
+# JSONL per-event stream (the owner-tap capture format)
+# ---------------------------------------------------------------------------
+def decode_jsonl(data, m, source=""):
+    """One JSON object per input_event, plus one `point` object per frame.
+
+    struct input_event carries its OWN timeval (the kernel timestamp), which is
+    the only timestamp that reflects when the controller was read rather than when
+    this tool happened to be scheduled.  Both the kernel timeval (ts) and an ISO
+    form are written; the `point` records add the mapped coordinates.
+    """
+    recs, slot, ids = [], 0, {}
+    xs, ys = {}, {}
+    for off in range(0, len(data) - EV_SIZE + 1, EV_SIZE):
+        sec, usec, typ, code, val = struct.unpack_from(EV_FMT, data, off)
+        iso = time.strftime("%Y-%m-%dT%H:%M:%S", time.gmtime(sec)) + ".%06dZ" % usec
+        rec = {"ts": round(sec + usec / 1e6, 6), "iso": iso, "source": source,
+               "type": typ, "code": code, "value": val, "kind": "evdev"}
+        if typ == EV_KEY and code == BTN_TOUCH:
+            rec.update(kind="btn_touch", button_state=val)
+        elif typ == EV_ABS and code == ABS_MT_SLOT:
+            slot = val
+            rec.update(kind="slot", slot=val)
+        elif typ == EV_ABS and code == ABS_MT_TRACKING_ID:
+            if val >= 0:
+                ids[slot] = val
+                rec.update(kind="down", slot=slot, tracking_id=val)
+            else:
+                ids.pop(slot, None)
+                rec.update(kind="up", slot=slot)
+        elif typ == EV_ABS and code == ABS_MT_POSITION_X:
+            xs[slot] = val
+            rec.update(kind="axis", axis="ABS_MT_POSITION_X", slot=slot)
+        elif typ == EV_ABS and code == ABS_MT_POSITION_Y:
+            ys[slot] = val
+            rec.update(kind="axis", axis="ABS_MT_POSITION_Y", slot=slot)
+        elif typ == EV_SYN and code == SYN_REPORT:
+            rec.update(kind="frame")
+            for s in sorted(ids):
+                if s in xs and s in ys:
+                    p = {"kind": "point", "slot": s, "tracking_id": ids[s],
+                         "ts": rec["ts"], "iso": iso, "source": source}
+                    p.update(map_coords(m, xs[s], ys[s]))
+                    recs.append(p)
+        recs.append(rec)
+    return recs
+
+
+def write_events_jsonl(bundle, raw, m, source):
+    recs = decode_jsonl(raw, m, source)
+    bundle.put("events.jsonl", "".join(json.dumps(r, sort_keys=True) + "\n" for r in recs))
+    pts = [r for r in recs if r.get("kind") == "point"]
+    return {"path": bundle.ev("events.jsonl"), "records": len(recs),
+            "frames": len([r for r in recs if r.get("kind") == "frame"]),
+            "points": len(pts)}
+
+
+# ---------------------------------------------------------------------------
+# archive the evidence into the repository (never only on the phone)
+# ---------------------------------------------------------------------------
+def archive_bundle(src, dest_root, label="touch"):
+    """Copy a finished bundle into <dest_root>/<label>-<ts>/ and append INDEX.jsonl.
+
+    Creating dest_root is attempted explicitly so an unwritable target is a hard
+    error with a message rather than a silent relocation.
+    """
+    if not os.path.isdir(src):
+        raise OSError("no such bundle to archive: %s" % src)
+    os.makedirs(dest_root, exist_ok=True)
+    ts = time.strftime("%Y%m%dT%H%M%S%z")
+    dest = os.path.join(dest_root, "%s-%s" % (label, ts))
+    if os.path.exists(dest):
+        dest = dest + "-%d" % int(time.time() % 1000)
+    os.makedirs(dest)
+    n = 0
+    for name in sorted(os.listdir(src)):
+        s = os.path.join(src, name)
+        if os.path.isfile(s):
+            shutil.copy2(s, os.path.join(dest, name))
+            n += 1
+    with open(os.path.join(dest_root, "INDEX.jsonl"), "a") as f:
+        f.write(json.dumps({"dir": os.path.basename(dest), "files": n, "source": os.path.abspath(src),
+                            "archived_at": time.strftime("%Y-%m-%dT%H:%M:%S%z")}, sort_keys=True) + "\n")
+    return dest, n
+
+
+def emit_exit_codes(results, use_layer_codes):
+    """Print one LAYER_EXIT line per layer and the process status this run means.
+
+    The per-layer code (10 + layer) is always printed.  The process exit status
+    only becomes that code with --layer-exit-codes; otherwise the historical
+    0/3/4 contract is kept so nothing that already parses this tool changes.
+    """
+    first = next((r.n for r in results if r.state != "ok"), None)
+    for r in results:
+        say("LAYER_EXIT=%d NAME=%s STATE=%s EXIT=%d" % (r.n, r.name, r.state, LAYER_EXIT_CODES[r.n]))
+    if first is None:
+        say("EXIT_CODE=0 (ALL_LAYERS_PASS)")
+        return EXIT_OK
+    st = next(r.state for r in results if r.n == first)
+    if use_layer_codes:
+        say("EXIT_CODE=%d (first lossy layer %d %s is %s)"
+            % (LAYER_EXIT_CODES[first], first, LAYER_NAMES.get(first, "?"), st))
+        return LAYER_EXIT_CODES[first]
+    say("EXIT_CODE=%d (gate fail; first lossy layer %d %s is %s - pass --layer-exit-codes "
+        "to get %d here)" % (EXIT_GATE_FAIL, first, LAYER_NAMES.get(first, "?"), st,
+                             LAYER_EXIT_CODES[first]))
+    return EXIT_GATE_FAIL
+
 # ---------------------------------------------------------------------------
 # live session
 # ---------------------------------------------------------------------------
@@ -935,9 +1367,10 @@ def run_live(args):
     signal.signal(signal.SIGALRM, _hard_timeout)
     signal.alarm(int(args.seconds) + SLACK_SECONDS)
     t0 = time.time()
-    say("== nuxel-touch-trace --live  budget=%ds max_events=%d max_bytes=%d dry_run=%s =="
-        % (args.seconds, args.max_events, args.max_bytes, args.dry_run))
-    bundle.meta["mode"] = "dry-run" if args.dry_run else "live"
+    label = "--capture" if getattr(args, "capture", None) else "--live"
+    say("== nuxel-touch-trace %s  budget=%ds max_events=%d max_bytes=%d dry_run=%s =="
+        % (label, args.seconds, args.max_events, args.max_bytes, args.dry_run))
+    bundle.meta["mode"] = "%s%s" % (label.lstrip("-"), "-dry-run" if args.dry_run else "")
     bundle.meta["budget_seconds"] = args.seconds
     bundle.meta["expect_finger"] = bool(args.expect_finger)
 
@@ -963,6 +1396,42 @@ def run_live(args):
         % (len(scan["nodes"]), len(scan["touch"]),
            ", ".join("%s=%r" % (c["path"], c["name"]) for c in scan["touch"]) or "none"))
 
+    # INDEPENDENT identity, from the kernel's own sysfs metadata.  The selection
+    # above came from the evdev ioctls; this is what the kernel says the node is,
+    # including the vendor/product and the capability bitmaps.
+    sysfs = sysfs_inputs(bundle)
+    sel = sysfs["selected"]
+    say("SYSFS_INPUT root=%s entries=%d selected=%s"
+        % (sysfs["root"], len(sysfs["rows"]),
+           ("%s name=%r direct=%d mt=%d vendor=%s product=%s"
+            % (sel["path"], sel["name"], sel["direct"], sel["mt"], sel["vendor"] or "?", sel["product"] or "?"))
+           if sel else "none"))
+    disagreement = None
+    if sel and scan["panel"]:
+        if (sel["name"] != scan["panel"]["name"]) or (bool(sel["mt"]) != bool(scan["panel"]["mt"])):
+            disagreement = ("sysfs says name=%r mt=%d, the ioctl says name=%r mt=%d"
+                            % (sel["name"], sel["mt"], scan["panel"]["name"], scan["panel"]["mt"]))
+    if sel and scan["panel"] and bool(sel.get("direct")) != bool(scan["panel"].get("direct")):
+        disagreement = (disagreement or "") + (" [direct: sysfs=%d ioctl=%d]"
+                                               % (sel["direct"], scan["panel"]["direct"]))
+    if disagreement:
+        say("SYSFS_IOCTL_DISAGREEMENT %s (the ioctl is authoritative for selection; the raw "
+            "properties value is %s)" % (disagreement.strip(), sel["properties_raw"]))
+
+    # PANEL + coordinate mapping: read the DECON framebuffer geometry and the
+    # output the bridge feeds, then map raw ABS_MT -> panel -> output.
+    geo = panel_geometry(bundle)
+    cmap = coord_map(scan, geo, sysfs)
+    say("PANEL=%dx%d source=%s fb=%s bpp=%s virtual_size=%s pages=%d output=%s scale=%s transform=%s"
+        % (geo["panel"][0], geo["panel"][1], geo["panel_source"], geo["framebuffer_name"],
+           geo["bits_per_pixel"], "x".join(str(v) for v in geo["virtual_size"]), geo["pages"],
+           geo["output"].get("name") or "(unknown)", geo["output"].get("scale"),
+           geo["output"].get("transform")))
+    say("COORD_MAP mapping=%s device_range_x=%s device_range_y=%s range_source=%s -> panel %dx%d -> output %dx%d"
+        % (cmap["mapping"], cmap["device"]["range_x"], cmap["device"]["range_y"],
+           cmap["device"]["range_source"], cmap["panel"]["width"], cmap["panel"]["height"],
+           cmap["output"]["width"], cmap["output"]["height"]))
+
     raw = {"armed": 0, "bytes": 0, "stats": decode_raw(b""), "log": []}
     if not args.dry_run:
         budget = max(3.0, args.seconds - (time.time() - t0) - 2.0)
@@ -970,6 +1439,16 @@ def run_live(args):
             % (budget, ", ".join(n["path"] for n in scan["touch"]) or "(none - nothing to arm)"))
         raw = capture_raw(bundle, scan["touch"], budget, args.max_events, args.max_bytes)
         say("RAW %s" % raw_summary(raw["stats"], scan["panel"]))
+    jsonl = write_events_jsonl(bundle, raw.get("raw", b""), cmap,
+                               ", ".join("%s (%s)" % (n["path"], n["name"]) for n in scan["touch"]) or "(none)")
+    say("EVENTS_JSONL=%s records=%d frames=%d points=%d"
+        % (jsonl["path"], jsonl["records"], jsonl["frames"], jsonl["points"]))
+    cmap["validation"] = validate_mapping(cmap, raw["stats"]["xs"], raw["stats"]["ys"])
+    cmap["events_jsonl"] = {"path": jsonl["path"], "records": jsonl["records"], "points": jsonl["points"]}
+    bundle.put("coordinate-map.json", json.dumps(cmap, indent=2, sort_keys=True) + "\n")
+    say("COORD_VALIDATION points=%d inside_device_range=%s inside_panel_bounds=%s verdict=%s"
+        % (cmap["validation"]["points"], cmap["validation"]["inside_device_range"],
+           cmap["validation"]["inside_panel_bounds"], cmap["validation"]["verdict"]))
     while time.time() - t0 < 2.0:            # the IRQ window is at least 2 s, always
         time.sleep(0.05)
     after = collect_interrupts(bundle, "after")
@@ -1000,12 +1479,25 @@ def run_live(args):
     say("RAW_SUMMARY %s" % raw_summary(raw["stats"], scan["panel"]))
     say("GATE=%s %s" % ("pass" if gate["pass"] else "fail", json.dumps(gate)))
     first = summarize(results)
+    rc = emit_exit_codes(results, args.layer_exit_codes)
     say("EVIDENCE_BUNDLE=%s" % bundle.path)
     signal.alarm(0)
     if args.expect_finger and not gate["pass"]:
         say("NOTE: --expect-finger was set and the gate did not pass; write the result as "
             "NEEDS_OWNER_TEST (a human finger is the only acceptable proof) - never VERIFIED_ON_S10PLUS.")
-    return 0 if first is None else 3
+    dest_root = args.archive_dir
+    if dest_root:
+        try:
+            dest, n = archive_bundle(bundle.path, dest_root, "touch")
+            say("ARCHIVED=%s files=%d" % (dest, n))
+            say("ARCHIVE_INDEX=%s" % os.path.join(dest_root, "INDEX.jsonl"))
+        except OSError as e:
+            say("ARCHIVE_FAILED %s (the bundle is still at %s)" % (e, bundle.path))
+            rc = max(rc, EXIT_GATE_FAIL)
+    elif args.capture:
+        say("ARCHIVE_HINT=python3 %s --archive %s --archive-dir docs/beta-finalization/live/evidence"
+            % (os.path.basename(__file__), bundle.path))
+    return rc
 
 
 # ---------------------------------------------------------------------------
@@ -1184,7 +1676,7 @@ def parse_interrupts(text):
     return None
 
 
-def analyze(root, json_out=None):
+def analyze(root, json_out=None, layer_codes=False):
     root = os.path.abspath(root)
     if not os.path.isdir(root):
         say("ANALYZE_ERROR no such directory: %s" % root)
@@ -1391,9 +1883,10 @@ def analyze(root, json_out=None):
                        "raw": {k: (sorted(v) if isinstance(v, set) else v) for k, v in stats.items()}},
                       f, indent=2, default=str)
         say("JSON_OUT=%s" % json_out)
+    rc = emit_exit_codes(results, layer_codes)
     say("NOTE: an archived capture is graded against the same rules as a live bundle. A layer with no "
         "capture is reported 'blocked' (not ok) on purpose, so absence of evidence is never a pass.")
-    return 0 if first is None else 3
+    return rc
 
 
 def run_stage_probe(args):
@@ -1420,6 +1913,196 @@ def run_stage_probe(args):
 
 
 # ---------------------------------------------------------------------------
+# host self-test (briq-01a evidence line: python3 ... --self-test)
+# ---------------------------------------------------------------------------
+def self_test():
+    """Assert the tool's own logic, with no phone, no libinput, no /dev/input, no root.
+
+    Every assertion here is about a decision this tool makes.  A wrong ioctl
+    number reads the wrong struct silently, a wrong bitmap order selects the wrong
+    device silently, and a wrong coordinate scale puts the touch in the wrong place
+    silently - so those are exactly the three things asserted.
+    """
+    checks = []
+
+    def ck(cond, what, detail=""):
+        checks.append(bool(cond))
+        say("%s %s%s" % ("PASS" if cond else "FAIL", what, (" :: " + str(detail)) if (detail and not cond) else ""))
+
+    # 1. kernel ABI: the ioctl request numbers this tool issues, computed by the
+    #    same formula the kernel's _IOC() uses, checked against the numeric value.
+    ck(EVIOCGNAME == 0x80404506, "EVIOCGNAME(64) == 0x80404506 (arm64 _IOC tuple)", hex(EVIOCGNAME))
+    ck(EVIOCGBIT(EV_ABS, 8) == 0x80084523, "EVIOCGBIT(EV_ABS,8) == 0x80084523", hex(EVIOCGBIT(EV_ABS, 8)))
+    ck(EVIOCGABS(ABS_MT_POSITION_X) == 0x80184575,
+       "EVIOCGABS(ABS_MT_POSITION_X) == 0x80184575", hex(EVIOCGABS(ABS_MT_POSITION_X)))
+    ck(EVIOCGPROP(8) == 0x80084509, "EVIOCGPROP(8) == 0x80084509", hex(EVIOCGPROP(8)))
+    ck(EV_SIZE == 24, "struct input_event is 24 bytes (arm64 Linux 4.14)", EV_SIZE)
+    ck((EV_KEY, EV_ABS, ABS_MT_POSITION_X, ABS_MT_POSITION_Y, ABS_MT_TRACKING_ID, BTN_TOUCH)
+       == (1, 3, 53, 54, 57, 330), "evdev codes match the kernel ABI")
+
+    # 2. the event decoder: one down, one up, one point from a known byte stream
+    stream = b"".join([
+        struct.pack(EV_FMT, 0, 0, EV_ABS, ABS_MT_SLOT, 0),
+        struct.pack(EV_FMT, 0, 0, EV_ABS, ABS_MT_TRACKING_ID, 5),
+        struct.pack(EV_FMT, 0, 0, EV_ABS, ABS_MT_POSITION_X, 700),
+        struct.pack(EV_FMT, 0, 0, EV_ABS, ABS_MT_POSITION_Y, 1500),
+        struct.pack(EV_FMT, 0, 0, EV_KEY, BTN_TOUCH, 1),
+        struct.pack(EV_FMT, 0, 0, EV_SYN, SYN_REPORT, 0),
+        struct.pack(EV_FMT, 0, 0, EV_ABS, ABS_MT_TRACKING_ID, -1),
+        struct.pack(EV_FMT, 0, 0, EV_KEY, BTN_TOUCH, 0),
+        struct.pack(EV_FMT, 0, 0, EV_SYN, SYN_REPORT, 0),
+    ])
+    st = decode_raw(stream)
+    ck(st["downs"] == 1 and st["ups"] == 1 and st["points"] == 1 and st["btn_touch"] == 2 and st["frames"] == 2,
+       "decode_raw: 1 down, 1 up, 1 point, 2 BTN_TOUCH, 2 frames",
+       "downs=%d ups=%d points=%d btn=%d frames=%d"
+       % (st["downs"], st["ups"], st["points"], st["btn_touch"], st["frames"]))
+
+    # 3. the bitmap decoder.  `4263800000000003` is the panel's OWN reported ABS
+    #    bitmap from the A32 record: ABS_X/Y (0,1) + MT_TOUCH_MAJOR/MINOR (48,49)
+    #    + MT_POSITION_X/Y (53,54) + MT_TRACKING_ID (57) + MT_TOOL_PRESSURE? (62).
+    abs_words = _bitmap_words("4263800000000003")
+    ck(_bitmap_has(abs_words, ABS_MT_POSITION_X) and _bitmap_has(abs_words, ABS_MT_POSITION_Y)
+       and _bitmap_has(abs_words, ABS_MT_TRACKING_ID) and _bitmap_has(abs_words, ABS_MT_SLOT),
+       "bitmap: the panel's own 4263800000000003 carries ABS_MT_POSITION_X/Y, TRACKING_ID and SLOT")
+    ck(not _bitmap_has(abs_words, 0x37),
+       "bitmap: the panel's ABS bitmap does NOT claim ABS_MT_TOOL_TYPE (no over-reading)")
+    KEY_LINE = "B: KEY=8000000000000000 0 0 0 0 0 0 0 0 1c000000000000 0"
+    key_words = _bitmap_words(KEY_LINE.split("KEY=")[1])
+    mine = [k for k in range(0, 768) if _bitmap_has(key_words, k)]
+    ck(mine == [114, 115, 116, 703],
+       "bitmap: the live gpio_keys line decodes to VOLUMEDOWN/VOLUMEUP/POWER/Bixby",
+       str(mine))
+    ck(not _bitmap_has(key_words, BTN_TOUCH),
+       "bitmap: that key node does not claim BTN_TOUCH (BTN_TOUCH belongs to the panel)")
+    if _DECODER is not None:
+        want = sorted(_DECODER.decode(KEY_LINE))
+        ck(want == mine,
+           "bitmap: this decoder agrees with the A32 device-validated decoder",
+           "a32=%s tracer=%s" % (want, mine))
+    else:
+        say("SKIP bitmap cross-check: %s is not present" % A32_BITMAP_DECODER)
+    # The A32/A33 convention, stated as an assertion so a change is deliberate:
+    # INPUT_PROP_DIRECT is used as a BIT INDEX and the panel's raw properties value
+    # is 2, so the marker is bit 1 of the printed word.
+    ck(_bitmap_has(_bitmap_words("2"), INPUT_PROP_DIRECT_BIT),
+       "bitmap: the observed panel properties=2 sets the direct marker bit (A32 convention)")
+
+    # 4. coordinate mapping against the 1440x3040 DECON panel
+    g = {"panel": (1440, 3040), "panel_source": "self-test", "framebuffer_name": "self-test",
+         "bits_per_pixel": "32", "virtual_size": (1440, 6080), "pages": 2,
+         "output": {"name": "HEADLESS-1", "scale": 2, "geometry": [720, 1520], "transform": "normal",
+                    "source": "self-test"}}
+    m = coord_map({"panel": {"name": SEC_TS_NAME, "path": "/dev/input/<capability-selected>",
+                             "x": [0, 1439], "y": [0, 3039]}, "touch": []}, g)
+    ck(m["device"]["range_source"] and "EVIOCGABS" in m["device"]["range_source"],
+       "coord_map: the range source names the ioctl when the node is openable",
+       m["device"]["range_source"])
+    ck(m["mapping"] == "identity", "coord_map: full-range device -> identity mapping", m["mapping"])
+    p = map_coords(m, 700, 1500)
+    ck(p["panel_x"] == 700 and p["panel_y"] == 1500, "coord_map: identity keeps panel pixels",
+       json.dumps(p))
+    ck(p["out_x"] == 350 and p["out_y"] == 750, "coord_map: scale 2 halves the output coordinates",
+       json.dumps(p))
+    half = coord_map({"panel": {"name": SEC_TS_NAME, "path": "x", "x": [0, 719], "y": [0, 1519]}, "touch": []}, g)
+    ck(half["mapping"] == "scaled", "coord_map: half-range device is 'scaled', not 'identity'")
+    q = map_coords(half, 719, 1519)
+    ck(q["panel_x"] == 1439 and q["panel_y"] == 3039,
+       "coord_map: half-range raw maps to the last panel pixel", json.dumps(q))
+    ck(validate_mapping(m, [700], [1500])["verdict"] == "OK", "validate_mapping: in-range point is OK")
+    ck(validate_mapping(m, [99999], [1500])["verdict"] == "OUT_OF_RANGE",
+       "validate_mapping: an out-of-range point is OUT_OF_RANGE")
+    ck(validate_mapping(m, [], [])["verdict"] == "NO_POINTS",
+       "validate_mapping: no points is NO_POINTS, never OK")
+    ck(validate_mapping(m, [700], [1500])["panel"] == {"width": 1440, "height": 3040},
+       "validate_mapping: validates against the 1440x3040 panel")
+
+    # 5. JSONL: per-event records with a kernel timestamp and a mapped point
+    recs = decode_jsonl(stream, m, "self-test")
+    pts = [r for r in recs if r.get("kind") == "point"]
+    ck(len(pts) == 1 and pts[0]["raw_x"] == 700 and pts[0]["out_x"] == 350.0,
+       "decode_jsonl: one point record with raw and mapped coordinates",
+       json.dumps(pts[0]) if pts else "no points")
+    ck(all("ts" in r and "iso" in r for r in recs), "decode_jsonl: every record carries a timestamp")
+    ck(any(r.get("kind") == "btn_touch" and r.get("button_state") == 1 for r in recs),
+       "decode_jsonl: the BTN_TOUCH down is recorded")
+
+    # 6. evidence discipline: a shell command listing is not device output, while
+    #    the same tokens in a state file ARE device output.
+    checklist = ("echo \"=== libinput ===\"; grep -a accepted=1 /run/nuxel-libinput-path.state")
+    real = "2026-10-16T12:00:00 PATH_ADD node=/dev/input/<sel> accepted=1 reason=INPUT_PROP_DIRECT+ABS_MT"
+    ev_cl = Evidence("<selftest>", [("checklist.txt", None, checklist)])
+    ev_rf = Evidence("<selftest>", [("libinput-path.state", None, real)])
+    ck(ev_cl.best(r"accepted=1") is None,
+       "evidence: a checklist line mentioning accepted=1 is NOT accepted as libinput evidence")
+    ck(ev_rf.best(r"accepted=1") is not None, "evidence: real state-file output IS accepted")
+
+    # 7. the exit-code contract
+    ck(sorted(LAYER_EXIT_CODES) == list(range(1, 8)) and len(set(LAYER_EXIT_CODES.values())) == 7,
+       "exit codes: one distinct code per layer, all 7 layers covered")
+    ck(all(v == LAYER_EXIT_BASE + k for k, v in LAYER_EXIT_CODES.items()),
+       "exit codes: code == 10 + layer number")
+
+    # 8. the invariant this whole area exists for: no node number in this file
+    own = read_text(os.path.abspath(__file__), 1 << 20)
+    bad = re.findall(r"/dev/input/" + NODE_PREFIX + r"[0-9]|\b" + NODE_PREFIX + r"[0-9]+\b", own)
+    ck(not bad, "no hard-coded input node number in this tool's own source", ", ".join(bad[:5]))
+
+    # 9. the bound is enforced, not advisory
+    try:
+        self_check_limits(0, 2000, 262144)
+        refused = False
+    except SystemExit:
+        refused = True
+    ck(refused, "an out-of-range budget is refused instead of running unbounded")
+    try:
+        self_check_limits(20, 2000, 262144)
+        allowed = True
+    except SystemExit:
+        allowed = False
+    ck(allowed, "a 20 s budget is accepted")
+
+    # 10. the gate cannot be passed without a DOM event
+    gd = gate_json({"downs": 1, "ups": 1, "btn_touch": 1, "points": 1, "xs": [700], "ys": [1500],
+                    "events": 9, "frames": 2, "slots": {0}, "tracking_ids": {5}},
+                   {"x": [0, 1439], "y": [0, 3039]}, "blocked")
+    ck(gd["pass"] is False, "gate: down+up+coords without a DOM event does NOT pass")
+    gd2 = gate_json({"downs": 1, "ups": 1, "btn_touch": 1, "points": 1, "xs": [700], "ys": [1500],
+                     "events": 9, "frames": 2, "slots": {0}, "tracking_ids": {5}},
+                    {"x": [0, 1439], "y": [0, 3039]}, "ok")
+    ck(gd2["pass"] is True, "gate: down+up+coords at the DOM layer DOES pass")
+    ck(gd2["device_range_x"] == [0, 1439] and gd2["coords_plausible"] is True,
+       "gate: coordinates are validated against the device's own range")
+
+    good = sum(1 for c in checks if c)
+    say("SELF-TEST: %s (%d/%d assertions)" % ("PASS" if good == len(checks) else "FAIL", good, len(checks)))
+    say("SELF-TEST NOTE: this proves the TOOL's logic on a workstation. It is not a touch "
+        "verification and it never becomes VERIFIED_ON_S10PLUS.")
+    return 0 if good == len(checks) else 1
+
+
+def run_self_test(args):
+    return self_test()
+
+
+def run_archive(args):
+    """Copy a finished bundle into the repository's live-evidence archive."""
+    src = os.path.abspath(args.archive)
+    dest_root = args.archive_dir or RUN_ROOT_ARCHIVE
+    say("== nuxel-touch-trace --archive %s -> %s ==" % (src, dest_root))
+    try:
+        dest, n = archive_bundle(src, dest_root, "touch")
+    except OSError as e:
+        say("ARCHIVE_FAILED %s" % e)
+        return 4
+    say("ARCHIVED=%s files=%d" % (dest, n))
+    say("ARCHIVE_INDEX=%s" % os.path.join(dest_root, "INDEX.jsonl"))
+    say("NOTE: archiving copies evidence. It does not grade it and it does not touch the device. "
+        "Grade the archived copy with --analyze %s" % dest)
+    return 0
+
+
+# ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
 def main(argv=None):
@@ -1434,6 +2117,14 @@ def main(argv=None):
     g.add_argument("--stage-probe", action="store_true",
                    help="stage touch-probe.html into the launcher docroot and print the exact "
                         "manual steps to measure layer 7 (does not arm anything)")
+    g.add_argument("--self-test", dest="self_test", action="store_true",
+                   help="assert this tool's own logic on the HOST (no phone, no /dev/input, no root)")
+    g.add_argument("--capture", type=float, metavar="SECONDS",
+                   help="bounded owner-tap capture session: --live for SECONDS seconds with the "
+                        "per-event JSONL stream (events.jsonl) and coordinate-map.json")
+    g.add_argument("--archive", metavar="DIR",
+                   help="copy a finished evidence bundle into the repository archive "
+                        "(docs/beta-finalization/live/evidence/touch-<ts>/) and append INDEX.jsonl")
     ap.add_argument("--out", default="/var/lib/nuxel/touch-trace", help="evidence bundle directory (--live)")
     ap.add_argument("--seconds", type=float, default=20.0, help="wall-clock budget for --live (1..900)")
     ap.add_argument("--max-events", type=int, default=2000, help="hard cap on decoded input events")
@@ -1444,12 +2135,31 @@ def main(argv=None):
                     help="collect what is readable without arming or writing outside the bundle")
     ap.add_argument("--dom-port", type=int, default=8099, help="port for the bounded DOM collector")
     ap.add_argument("--json-out", metavar="FILE", help="write a machine-readable verdict JSON")
+    ap.add_argument("--archive-dir", metavar="DIR",
+                    help="with --live/--capture: archive the finished bundle here (default for "
+                         "--archive: %s)" % RUN_ROOT_ARCHIVE)
+    ap.add_argument("--layer-exit-codes", action="store_true",
+                    help="exit with 10 + the first lossy layer (11..17) instead of the historical 3")
+    ap.add_argument("--sysfs-root", metavar="DIR",
+                    help="override /sys/class/input for the capability scan (offline tests)")
     args = ap.parse_args(argv)
+    if args.sysfs_root:
+        globals()["SYSFS_INPUT_ROOT"] = os.path.abspath(args.sysfs_root)
+    if args.capture is not None:
+        # --capture N is the bounded owner-tap window: --live for N seconds, JSONL
+        # always, and a finger is expected in that window.
+        args.live = True
+        args.seconds = args.capture
+        args.expect_finger = True
+    if args.self_test:
+        return run_self_test(args)
+    if args.archive:
+        return run_archive(args)
     if args.stage_probe:
         return run_stage_probe(args)
     if args.live:
         return run_live(args)
-    return analyze(args.analyze, args.json_out)
+    return analyze(args.analyze, args.json_out, args.layer_exit_codes)
 
 
 if __name__ == "__main__":

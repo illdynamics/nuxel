@@ -143,6 +143,86 @@
       "at": "2026-10-16T16:11:58+02:00",
       "by": "construqtor/bg-00-preflight",
       "revision": 3
+    },
+    {
+      "id": "briq-00b-archive-discovery",
+      "title": "Locate and inventory supplied comparison archives",
+      "component": "bg-00-preflight",
+      "component_title": "Preflight, Discovery, Work Queue & Baseline Protection",
+      "priority": 0,
+      "state": "implemented",
+      "dependencies": [
+        "briq-00a-repo-preflight"
+      ],
+      "evidence": [
+        {
+          "kind": "observation",
+          "path": "docs/beta-finalization/ARCHIVE-INVENTORY.md",
+          "command": "test -e docs/beta-finalization/ARCHIVE-INVENTORY.md",
+          "result": "present at seed time (presence is not a verdict)",
+          "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "docs/beta-finalization/ARCHIVE-INVENTORY.md",
+          "command": "stat -f size=%z -t %Y-%m-%dT%H:%M:%S%z docs.zip scripts.zip tools.zip; shasum -a 256 docs.zip scripts.zip tools.zip; unzip -l scripts.zip | tail -3",
+          "result": "7 archives, 553905672 B uncompressed total; scripts.zip 125885057 B never extracted (22 GiB budget)",
+          "at": "2026-10-16T16:00:06+02:00"
+        },
+        {
+          "kind": "observation",
+          "path": "docs/beta-finalization/ARCHIVE-INVENTORY.md",
+          "command": "ls -l docs.zip scripts.zip tools.zip; shasum -a 256 docs.zip scripts.zip tools.zip",
+          "result": "three supplied archives still in place at the recorded sizes; no extraction performed (22 GiB budget rule respected)",
+          "at": "2026-10-16T14:11:52Z"
+        },
+        {
+          "kind": "offline",
+          "path": "docs/beta-finalization/preflight/archive-rescan.txt",
+          "command": "for p in /x/nuxel /x/nuxel/docs /tmp /x /home/wicked /home/wicked/Downloads /home/wicked/Nuxel /mnt /media /run/media; do find $p -maxdepth 3 -type f \\( -name docs.zip -o -name scripts.zip -o -name tools.zip -o -name 'nuxel-main*.zip' -o -name 'snekbyte-main*.zip' -o -name 'docs(8).zip' -o -name 'scripts(7).zip' -o -name 'tools(4).zip' -o -name '*A30*.zip' -o -name '*A31*.zip' -o -name '*A32*.zip' \\); done; find /x/nuxel /home/wicked/Downloads -maxdepth 6 -name '*.zip'",
+          "result": "no output for any search root: all 7 supplied archives + docs(8)/scripts(7)/tools(4) + standalone A30/A31/A32 archives are ABSENT on this host; the only *.zip present are three unrelated Motorola G7 Power stock-firmware/blankflash bundles under build/out/g7power/ (gitignored)",
+          "at": "2026-10-16T19:36:05+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "docs/beta-finalization/ARCHIVE-INVENTORY.md",
+          "command": "git -C /x/snekbyte rev-parse HEAD; git -C /x/snekbyte status --porcelain; find /x/snekbyte -type f | sort; sha256sum $(...)",
+          "result": "genuine snekbyte source found as a clean git checkout at /x/snekbyte, HEAD 84430528bf0b6c9d0810975e117a3fc9e298ce08 (illdynamics/snekbyte, 2025-12-15); src/poop.py + src/game_logic.py + README WoNQ docs present -> it is the real game, not a clone",
+          "at": "2026-10-16T19:36:05+02:00"
+        },
+        {
+          "kind": "doc",
+          "path": "docs/s10plus-autonomous-boot-repair/STATUS.md",
+          "command": "cat docs/s10plus-autonomous-boot-repair/STATUS.md docs/s10plus-autonomous-boot-repair/NEXT-ACTION.md; ls docs/s10plus-autonomous-boot-repair/BETA-HARDWARE-FINALIZER/",
+          "result": "A30-A32 baseline facts re-read: systemd boot graph repaired live (A26, is-system-running=running) with three ENOSYS root causes (userdbd, dbus-broker, udevd->masked); 4.14.253 is the hard ceiling (no DRM/KMS, no pidfd, no cgroup-BPF device control); touch present in a NORMAL boot; animation handoff is receipt-driven; no BOOT/EFS/PIT/bootloader writes; every live fix must land in the rootfs builder the same cycle",
+          "at": "2026-10-16T19:36:05+02:00"
+        }
+      ],
+      "intended_changes": [
+        "docs/beta-finalization/ARCHIVE-INVENTORY.md",
+        "docs/beta-finalization/ARCHIVE-INVENTORY.md",
+        "docs/beta-finalization/ARCHIVE-INVENTORY.md (+\u00a77 session-2 re-scan, snekbyte provenance, A30-A32 baseline facts)"
+      ],
+      "tests": [
+        "(tests are recorded by the owning briQ when it reports)",
+        "bash tools/beta/regression-guard.sh (INV-8 register survives; no extraction performed)",
+        "find over 10 search roots (depth 3) + a depth-6 *.zip sweep -> nothing found",
+        "git -C /x/snekbyte rev-parse HEAD / status --porcelain -> 84430528bf0b6c9d0810975e117a3fc9e298ce08, clean tree",
+        "documentation review of the in-tree A30-A32 journals (STATUS.md, NEXT-ACTION.md, BETA-HARDWARE-FINALIZER/*)"
+      ],
+      "risk": "low",
+      "rollback": "git revert the commit(s) touching this task's expected files; the change is repository-only and alters no device state",
+      "verdict": "OFFLINE_TESTED",
+      "offline_ceiling": "OFFLINE_TESTED",
+      "owner_action": "",
+      "expected_files": [
+        "docs/beta-finalization/ARCHIVE-INVENTORY.md"
+      ],
+      "note": "Per-archive disposition: docs.zip, scripts.zip, tools.zip, nuxel-main.zip, snekbyte-main.zip, snekbyte-main (1).zip, 'nuxel-main (2).zip', docs(8).zip, scripts(7).zip, tools(4).zip and the standalone A30/A31/A32 archives are ALL BLOCKED_EXTERNAL_RESOURCE in this session - they are not present anywhere on this host (exact search roots recorded). No extraction was attempted and no archive content is assumed. The mission is not blocked by this: the archives were comparison snapshots of this same repository and the repository itself is complete at HEAD 6ee6a39c. New this session: the genuine snekbyte source is available as a git checkout at /x/snekbyte (revision 84430528, clean) - briq-07d-snekbyte can vendor it from a pinned revision instead of waiting for the zip.",
+      "source": "plan.json",
+      "at": "2026-10-16T19:36:06+02:00",
+      "by": "construqtor/bg-00-preflight",
+      "revision": 4
     }
   ]
 }

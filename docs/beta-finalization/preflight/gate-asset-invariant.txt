@@ -1,0 +1,16 @@
+# dedupe-assets --verify (FINAL) — 2026-10-16T17:37:03Z
+[VERIFY] Checking single-source PWA asset invariant...
+[VERIFY-OK] /x/nuxel/pwa/nuxel-home/assets/nuxel-background.png matches canonical nuxel-background.png
+[VERIFY-OK] /x/nuxel/pwa/nuxel-apps/calendar/assets/nuxel-background.png matches canonical nuxel-background.png
+[VERIFY-OK] /x/nuxel/pwa/nuxel-apps/camera-gallery/assets/nuxel-background.png matches canonical nuxel-background.png
+[VERIFY-OK] /x/nuxel/pwa/nuxel-apps/files/assets/nuxel-background.png matches canonical nuxel-background.png
+[VERIFY-OK] /x/nuxel/pwa/nuxel-apps/mail/assets/nuxel-background.png matches canonical nuxel-background.png
+[VERIFY-OK] /x/nuxel/pwa/nuxel-apps/notes/assets/nuxel-background.png matches canonical nuxel-background.png
+[VERIFY-OK] /x/nuxel/pwa/nuxel-home/assets/nuxel-boot-animation.mp4 matches canonical nuxel-boot-animation.mp4
+[VERIFY-OK] /x/nuxel/pwa/nuxel-apps/calendar/assets/nuxel-boot-animation.mp4 matches canonical nuxel-boot-animation.mp4
+[VERIFY-OK] /x/nuxel/pwa/nuxel-apps/camera-gallery/assets/nuxel-boot-animation.mp4 matches canonical nuxel-boot-animation.mp4
+[VERIFY-OK] /x/nuxel/pwa/nuxel-apps/files/assets/nuxel-boot-animation.mp4 matches canonical nuxel-boot-animation.mp4
+[VERIFY-OK] /x/nuxel/pwa/nuxel-apps/mail/assets/nuxel-boot-animation.mp4 matches canonical nuxel-boot-animation.mp4
+[VERIFY-OK] /x/nuxel/pwa/nuxel-apps/notes/assets/nuxel-boot-animation.mp4 matches canonical nuxel-boot-animation.mp4
+[VERIFY-OK] All 6 PWA asset dirs are byte-identical to the canonical assets/ tree.
+exit=0

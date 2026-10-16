@@ -1,0 +1,13 @@
+systemctl is-system-running; systemctl --failed --no-pager
+systemctl list-units --state=running --no-pager | head -45
+ps -eo pid,ppid,etime,pcpu,pmem,comm --sort=start_time | tail -40
+ls -la /dev/fb0 /dev/dri 2>&1; cat /sys/class/graphics/fb0/name 2>&1; cat /sys/class/graphics/fb0/virtual_size 2>&1; cat /sys/class/graphics/fb0/bits_per_pixel 2>&1
+ls -la /sys/class/graphics/ 2>&1
+cat /sys/class/graphics/fb0/modes 2>&1 | head -3; cat /sys/class/graphics/fb0/blank 2>&1
+cat /proc/bus/input/devices
+ls -la /dev/input /dev/input/by-path 2>&1
+ls -la /sys/class/input 2>&1
+ls -la /sys/class/sec/tsp 2>&1; ls /sys/class/sec/tsp 2>/dev/null | head -5
+ls -la /sys/class/input/event0 /sys/class/input/input0 2>&1 | head -20
+systemctl list-unit-files --no-pager | grep -i -E 'nuxel|phoc|phosh|wayland|kiosk' 
+ls -la /run/nuxel /var/lib/nuxel /run/user/1000 2>&1 | head -30

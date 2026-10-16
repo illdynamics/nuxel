@@ -1,0 +1,205 @@
+# console /dev/ttyACM0
+# shared lock /tmp/nuxel-live._dev_ttyACM0.lock is not usable by uid 0 ([Errno 13] Permission denied: '/tmp/nuxel-live._dev_ttyACM0.lock') — using private lock /tmp/nuxel-live._dev_ttyACM0.0.lock
+===== cat /proc/asound/cards; echo ---; cat /proc/asound/devices 2>/dev/null | head -20; echo ---; ls /sys/class/sound 2>&1   [rc=0 frame=052f5efc sha_ok=yes]
+     0 [beyondmadera   ]: beyond-madera - beyond-madera
+                          beyond-madera
+     1 [aboxvdma       ]: abox_vdma - abox_vdma
+                          abox_vdma
+     2 [aboxdump       ]: abox_dump - abox_dump
+                          abox_dump
+    ---
+      2: [ 0]   : control
+      3: [ 0- 0]: digital audio playback
+      4: [ 0- 1]: digital audio playback
+      5: [ 0- 2]: digital audio playback
+      6: [ 0- 3]: digital audio playback
+      7: [ 0- 4]: digital audio playback
+      8: [ 0- 6]: digital audio playback
+      9: [ 0- 7]: digital audio playback
+     10: [ 0- 8]: digital audio playback
+     11: [ 0- 9]: digital audio playback
+     12: [ 0-10]: digital audio playback
+     13: [ 0-11]: digital audio playback
+     14: [ 0-12]: digital audio capture
+     15: [ 0-13]: digital audio capture
+     16: [ 0-14]: digital audio capture
+     17: [ 0-15]: digital audio capture
+     18: [ 0-16]: digital audio capture
+     19: [ 0-17]: digital audio capture
+     20: [ 0-18]: digital audio capture
+     21: [ 0-19]: digital audio capture
+    ---
+    card0
+    card1
+    card2
+    comprC0D42
+    comprC0D5
+    controlC0
+    controlC1
+    controlC2
+    hwC0D13
+    hwC0D2
+    pcmC0D0p
+    pcmC0D10p
+    pcmC0D11p
+    pcmC0D12c
+    pcmC0D13c
+    pcmC0D14c
+    pcmC0D15c
+    pcmC0D16c
+    pcmC0D17c
+    pcmC0D18c
+    pcmC0D19c
+    pcmC0D1p
+    pcmC0D20c
+    pcmC0D21c
+    pcmC0D22p
+    pcmC0D2p
+    pcmC0D3p
+    pcmC0D4p
+    pcmC0D6p
+    pcmC0D7p
+    pcmC0D8p
+    pcmC0D9p
+    timer
+===== aplay -l 2>&1 | head -25   [rc=0 frame=018d5efd sha_ok=yes]
+    sh: aplay: command not found
+===== rfkill list 2>&1; echo ---; ls /sys/class/net; echo ---; ip -br link 2>&1   [rc=0 frame=1ef45efe sha_ok=yes]
+    0: bcm43xx Bluetooth: Bluetooth
+    	Soft blocked: yes
+    	Hard blocked: no
+    1: phy0: Wireless LAN
+    	Soft blocked: no
+    	Hard blocked: no
+    2: brcmfmac-wifi: Wireless LAN
+    	Soft blocked: no
+    	Hard blocked: no
+    ---
+    ip6_vti0
+    ip6tnl0
+    ip_vti0
+    lo
+    mcps0
+    p2p0
+    rmnet0
+    rmnet1
+    rmnet2
+    rmnet3
+    rmnet4
+    rmnet5
+    rmnet6
+    rmnet7
+    sit0
+    umts_dm0
+    wlan0
+    wlan1
+    ---
+    lo               UNKNOWN        00:00:00:00:00:00 <LOOPBACK,UP,LOWER_UP>
+    mcps0            DOWN           <>
+    umts_dm0         DOWN           <POINTOPOINT,MULTICAST,NOARP>
+    rmnet0           DOWN           <POINTOPOINT,MULTICAST,NOARP>
+    rmnet1           DOWN           <POINTOPOINT,MULTICAST,NOARP>
+    rmnet2           DOWN           <POINTOPOINT,MULTICAST,NOARP>
+    rmnet3           DOWN           <POINTOPOINT,MULTICAST,NOARP>
+    rmnet4           DOWN           <POINTOPOINT,MULTICAST,NOARP>
+    rmnet5           DOWN           <POINTOPOINT,MULTICAST,NOARP>
+    rmnet6           DOWN           <POINTOPOINT,MULTICAST,NOARP>
+    rmnet7           DOWN           <POINTOPOINT,MULTICAST,NOARP>
+    ip_vti0@NONE     DOWN           0.0.0.0 <NOARP>
+    ip6_vti0@NONE    DOWN           :: <NOARP>
+    sit0@NONE        DOWN           0.0.0.0 <NOARP>
+    ip6tnl0@NONE     DOWN           :: <NOARP>
+    p2p0             DOWN           00:90:4c:33:22:11 <BROADCAST,MULTICAST>
+    wlan0            DOWN           00:90:4c:4c:b1:54 <BROADCAST,MULTICAST>
+    wlan1            DOWN           02:90:4c:4c:b1:54 <BROADCAST,MULTICAST>
+===== cat /proc/net/wireless 2>&1 | head -5; echo ---; ip -br addr 2>&1   [rc=0 frame=b9ff5eff sha_ok=yes]
+    cat: /proc/net/wireless: No such file or directory
+    ---
+    lo               UNKNOWN        127.0.0.1/8 ::1/128
+    mcps0            DOWN
+    umts_dm0         DOWN
+    rmnet0           DOWN
+    rmnet1           DOWN
+    rmnet2           DOWN
+    rmnet3           DOWN
+    rmnet4           DOWN
+    rmnet5           DOWN
+    rmnet6           DOWN
+    rmnet7           DOWN
+    ip_vti0@NONE     DOWN
+    ip6_vti0@NONE    DOWN
+    sit0@NONE        DOWN
+    ip6tnl0@NONE     DOWN
+    p2p0             DOWN
+    wlan0            DOWN
+    wlan1            DOWN
+===== ls -la /dev/cdc-wdm* /dev/wwan* /dev/mhi* /dev/ttyGS* /dev/rmnet* 2>&1; mmcli -L 2>&1 | head -8   [rc=0 frame=e8545f00 sha_ok=yes]
+    ls: cannot access '/dev/cdc-wdm*': No such file or directory
+    ls: cannot access '/dev/wwan*': No such file or directory
+    ls: cannot access '/dev/mhi*': No such file or directory
+    ls: cannot access '/dev/rmnet*': No such file or directory
+    crw------- 1 root root 243, 0 Sep 15 00:16 /dev/ttyGS0
+    No modems were found
+===== ls /sys/class/power_supply 2>&1; for f in capacity status health temp voltage_now current_now charge_type; do echo "battery/$f=$(cat /sys/class/power_supply/battery/$f 2>&1)"; done   [rc=0 frame=36165f01 sha_ok=yes]
+    ac
+    battery
+    max77705-charger
+    max77705-fuelgauge
+    mfc-charger
+    otg
+    ps
+    usb
+    wireless
+    battery/capacity=100
+    battery/status=Full
+    battery/health=Good
+    battery/temp=271
+    battery/voltage_now=4317000
+    battery/current_now=0
+    battery/charge_type=Fast
+===== for d in /sys/bus/iio/devices/iio:device*; do echo "$d name=$(cat $d/name 2>/dev/null)"; done 2>&1 | head -20   [rc=0 frame=e4fc5f02 sha_ok=yes]
+    /sys/bus/iio/devices/iio:device0 name=15c40000.adc
+    /sys/bus/iio/devices/iio:device1 name=accelerometer_sensor
+    /sys/bus/iio/devices/iio:device10 name=light_flicker_sensor
+    /sys/bus/iio/devices/iio:device11 name=proximity_sensor
+    /sys/bus/iio/devices/iio:device12 name=proximity_alert_sensor
+    /sys/bus/iio/devices/iio:device13 name=proximity_raw
+    /sys/bus/iio/devices/iio:device14 name=rotation_vector_sensor
+    /sys/bus/iio/devices/iio:device15 name=game_rotation_vector
+    /sys/bus/iio/devices/iio:device16 name=sig_motion_sensor
+    /sys/bus/iio/devices/iio:device17 name=step_det_sensor
+    /sys/bus/iio/devices/iio:device18 name=step_cnt_sensor
+    /sys/bus/iio/devices/iio:device19 name=tilt_detector
+    /sys/bus/iio/devices/iio:device2 name=geomagnetic_sensor
+    /sys/bus/iio/devices/iio:device20 name=pickup_gesture
+    /sys/bus/iio/devices/iio:device21 name=scontext_iio
+    /sys/bus/iio/devices/iio:device22 name=light_cct_sensor
+    /sys/bus/iio/devices/iio:device23 name=thermistor_sensor
+    /sys/bus/iio/devices/iio:device24 name=proximity_pocket
+    /sys/bus/iio/devices/iio:device25 name=uncal_accel_sensor
+    /sys/bus/iio/devices/iio:device26 name=meta_event
+===== ls /sys/class/leds 2>&1; echo ---; ls /sys/class/vibrator /sys/class/timed_output 2>&1   [rc=2 frame=4ca75f03 sha_ok=yes]
+    leds-sec1
+    torch-sec1
+    ---
+    ls: cannot access '/sys/class/vibrator': No such file or directory
+    /sys/class/timed_output:
+    vibrator
+===== nproc; echo ---; cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor 2>&1; cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_available_governors 2>&1; cat /sys/class/thermal/thermal_zone0/type /sys/class/thermal/thermal_zone0/temp 2>&1   [rc=0 frame=fd0c5f04 sha_ok=yes]
+    8
+    ---
+    schedutil
+    performance schedutil
+    BIG
+    39000
+===== timedatectl 2>&1 | head -12; echo ---; ls -la /etc/localtime 2>&1; cat /etc/timezone 2>&1   [rc=1 frame=26205f05 sha_ok=yes]
+                   Local time: Tue 2026-09-15 00:16:09 UTC
+               Universal time: Tue 2026-09-15 00:16:09 UTC
+                     RTC time: n/a
+                    Time zone: UTC (UTC, +0000)
+    System clock synchronized: no
+                  NTP service: inactive
+              RTC in local TZ: no
+    ---
+    ls: cannot access '/etc/localtime': No such file or directory
+    cat: /etc/timezone: No such file or directory

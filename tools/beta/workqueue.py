@@ -26,6 +26,9 @@ Subcommands
   add             create a new task file (refuses duplicate / invalid records)
   set-state       append a revision changing state/verdict/evidence/notes
   verify-schema   validate the whole queue; non-zero exit when it is invalid
+  render          regenerate the machine-owned blocks of the human view
+                  (docs/beta-finalization/WORK-QUEUE.md) from the JSON store;
+                  --check exits 1 when they are stale, --stdout prints them
   seed            create task files for every briQ in a QonQrete plan.json
                   (used once to seed this ledger; safe to re-run with --force)
 
@@ -146,6 +149,22 @@ def default_queue_dir() -> Path:
 
 def task_path(queue_dir: Path, task_id: str) -> Path:
     return queue_dir / f"{task_id}.json"
+
+
+def atomic_write_text(path: Path, text: str) -> None:
+    """Atomically replace a text file (same tmpfile+os.replace discipline as JSON)."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fd, tmp = tempfile.mkstemp(dir=str(path.parent), prefix=f".{path.name}.", suffix=".tmp")
+    try:
+        with os.fdopen(fd, "w") as fh:
+            fh.write(text)
+        os.replace(tmp, path)
+    except BaseException:
+        try:
+            os.unlink(tmp)
+        except OSError:
+            pass
+        raise
 
 
 def atomic_write_json(path: Path, obj) -> None:
@@ -767,6 +786,215 @@ def cmd_seed(args) -> int:
 
 
 # --------------------------------------------------------------------------- #
+# render: regenerate the human view (docs/beta-finalization/WORK-QUEUE.md)      #
+#                                                                              #
+# The JSON store is the source of truth; WORK-QUEUE.md is a rendered snapshot.   #
+# Only the blocks between GENERATED markers are machine-owned, so the prose can  #
+# still be edited by a human (and a human edit can never be silently clobbered   #
+# outside a marker).  The generated text carries no timestamps: that is what     #
+# makes `render --check` usable as a staleness gate in a test or CI run.         #
+# --------------------------------------------------------------------------- #
+BEGIN = "<!-- BEGIN GENERATED: %s -->"
+END = "<!-- END GENERATED: %s -->"
+
+OPEN_STATES = {"pending", "in_progress", "blocked"}
+
+
+def is_open(rec: dict) -> bool:
+    """True when this task still has work left for a later cycle."""
+    return rec.get("state") in OPEN_STATES or rec.get("verdict") in (set(UNSATISFIED_VERDICTS) | {None})
+
+
+def _key(rec: dict):
+    return (rec.get("priority", 99), rec.get("id", ""))
+
+
+def dependency_order(records: dict, only_open: bool = True) -> list:
+    """Deterministic Kahn topological sort, tie-broken by (priority, id).
+
+    Unknown dependencies (a referential-integrity error reported by verify-schema)
+    are treated as satisfied here so the renderer still produces a usable order
+    instead of refusing to draw the queue.  Returns [(record, [unmet deps])].
+    """
+    live = {t: r for t, r in records.items() if "__broken__" not in r}
+    deps = {t: [d for d in (r.get("dependencies") or []) if d in live] for t, r in live.items()}
+    order, placed = [], set()
+    remaining = {t: set(v) for t, v in deps.items()}
+    while remaining:
+        ready = sorted((t for t, d in remaining.items() if not (d - placed)), key=lambda t: _key(live[t]))
+        if not ready:                      # cycle: emit the rest deterministically
+            ready = sorted(remaining, key=lambda t: _key(live[t]))
+        for t in ready:
+            order.append(t)
+            placed.add(t)
+            remaining.pop(t, None)
+    rows = [(live[t], [d for d in deps[t] if not _is_satisfied(live.get(d))]) for t in order]
+    if only_open:
+        rows = [(r, unmet) for r, unmet in rows if is_open(r)]
+    return rows
+
+
+def _is_satisfied(dep) -> bool:
+    if dep is None:
+        return False
+    v = dep.get("verdict")
+    return v is not None and v not in UNSATISFIED_VERDICTS
+
+
+def _block(name: str, body: str) -> str:
+    return "%s\n%s\n%s" % (BEGIN % name, body.rstrip("\n"), END % name)
+
+
+def render_state_block(records: dict) -> str:
+    live = {t: r for t, r in records.items() if "__broken__" not in r}
+    broken = sorted(t for t, r in records.items() if "__broken__" in r)
+    states = {s: sorted(t for t, r in live.items() if r.get("state") == s) for s in STATES}
+    verdicts = {}
+    for t, r in live.items():
+        verdicts.setdefault(r.get("verdict"), []).append(t)
+    on_device = sorted(
+        t for t, r in live.items()
+        if any((e or {}).get("kind") == "on_device" for e in (r.get("evidence") or []))
+    )
+    evidence = sum(len(r.get("evidence") or []) for r in live.values())
+    revisions = sum(r.get("__revisions__") or 0 for r in live.values())
+    ready = [t for t, r in sorted(live.items(), key=lambda kv: _key(kv[1]))
+             if not [d for d in (r.get("dependencies") or []) if d in live and not _is_satisfied(live[d])]]
+    owner_only = sorted(t for t, r in live.items()
+                        if r.get("offline_ceiling") == "NEEDS_OWNER_TEST" or r.get("verdict") == "NEEDS_OWNER_TEST")
+    order = dependency_order(live)
+    out = []
+    out.append("| Metric | Value |")
+    out.append("|--------|-------|")
+    out.append(f"| Tasks | **{len(live)}** (one per briQ in the plan, bg-00 … bg-12) |")
+    out.append(f"| Revisions (append-only) | {revisions} |")
+    out.append(f"| Evidence entries | {evidence} |")
+    out.append(f"| Dependencies | validated acyclic; referential integrity enforced |")
+    if broken:
+        out.append(f"| Unreadable state files | {len(broken)} — `{'`, `'.join(broken)}` (verify-schema fails) |")
+    out.append("")
+    out.append("| State | Count | Tasks |")
+    out.append("|-------|------:|-------|")
+    for st in STATES:
+        ids = [t.replace("briq-", "") for t in states[st]]
+        out.append(f"| `{st}` | {len(ids)} | {('`' + '`, `'.join(ids) + '`') if ids else '—'} |")
+    out.append("")
+    out.append("| Verdict | Count | Tasks |")
+    out.append("|---------|------:|-------|")
+    for v in VERDICTS:
+        ids = [t.replace("briq-", "") for t in sorted(verdicts.get(v) or [])]
+        if ids:
+            out.append(f"| `{v}` | {len(ids)} | `{'`, `'.join(ids)}` |")
+    nov = [t.replace("briq-", "") for t in sorted(verdicts.get(None) or [])]
+    out.append(f"| *(no verdict recorded yet)* | {len(nov)} | {('`' + '`, `'.join(nov) + '`') if nov else '—'} |")
+    out.append("")
+    out.append(f"* `VERIFIED_ON_S10PLUS` claims: **{len(verdicts.get('VERIFIED_ON_S10PLUS') or [])}**"
+               f" — tasks carrying an `on_device` evidence entry: **{len(on_device)}**"
+               f"{(' (`' + '`, `'.join(t.replace('briq-', '') for t in on_device) + '`)') if on_device else ''}")
+    out.append(f"* Open tasks (resumable remainder): **{len(order)}** — see the execution order below.")
+    out.append(f"* Dependency-satisfied (ready to start, or already finished): **{len(ready)}**"
+               f"{(' — `' + '`, `'.join(t.replace('briq-', '') for t in ready) + '`') if ready else ''}")
+    out.append(f"* Marked owner-only (`offline_ceiling`/verdict = `NEEDS_OWNER_TEST`): **{len(owner_only)}**"
+               f"{(' — `' + '`, `'.join(t.replace('briq-', '') for t in owner_only) + '`') if owner_only else ''}")
+    return _block("ledger-state", "\n".join(out))
+
+
+def render_order_block(records: dict) -> str:
+    rows = dependency_order(records)
+    out = ["Resumable remainder, in dependency order (priority band, then id; a task never",
+           "precedes a dependency).  `ready` = every dependency is satisfied; `waiting on` lists",
+           "the dependency verdicts that are still `null` or unsatisfied.", "",
+           "| # | task | pri | component | state | verdict | ready / waiting on |", "|--:|------|----:|-----------|-------|---------|--------------------|"]
+    for i, (rec, unmet) in enumerate(rows, 1):
+        tid = rec.get("id", "").replace("briq-", "")
+        status = "ready" if not unmet else "waiting on `" + "`, `".join(u.replace("briq-", "") for u in unmet) + "`"
+        out.append(f"| {i} | `{tid}` | {rec.get('priority', -1)} | {rec.get('component', '')} | "
+                   f"{rec.get('state')} | {rec.get('verdict') or '—'} | {status} |")
+    if not rows:
+        out.append("| — | *(nothing open)* | | | | | |")
+    return _block("execution-order", "\n".join(out))
+
+
+def render_ledger_block(records: dict) -> str:
+    live = {t: r for t, r in records.items() if "__broken__" not in r}
+    out = ["Columns: task id, priority band, component, state, verdict, evidence count, dependencies",
+           "recorded on the task, and the revision count (how many append-only entries exist).",
+           "Ids are shown without the `briq-` prefix.", "",
+           "| id | pri | component | state | verdict | ev | rev | depends on |",
+           "|----|----:|-----------|-------|---------|--:|----:|------------|"]
+    for t, r in sorted(live.items(), key=lambda kv: _key(kv[1])):
+        deps = ", ".join(d.replace("briq-", "") for d in (r.get("dependencies") or [])) or "—"
+        out.append(f"| `{t.replace('briq-', '')}` | {r.get('priority', -1)} | {r.get('component', '')} | "
+                   f"{r.get('state')} | {r.get('verdict') or '—'} | {len(r.get('evidence') or [])} | "
+                   f"{r.get('__revisions__') or 0} | {deps} |")
+    return _block("task-ledger", "\n".join(out))
+
+
+GENERATED = ("ledger-state", "execution-order", "task-ledger")
+
+
+def render_document(doc_text: str, records: dict) -> str:
+    """Splice the three generated blocks into the human document."""
+    blocks = {
+        "ledger-state": render_state_block(records),
+        "execution-order": render_order_block(records),
+        "task-ledger": render_ledger_block(records),
+    }
+    out = doc_text
+    for name in GENERATED:
+        b, e = BEGIN % name, END % name
+        if b not in out or e not in out:
+            raise SystemExit(
+                "workqueue: WORK-QUEUE.md is missing the generated block markers for "
+                f"{name!r}.  Add\n  {b}\n  {e}\naround that section and re-run."
+            )
+        i, j = out.index(b), out.index(e)
+        if j < i:
+            raise SystemExit(f"workqueue: generated block {name!r} has its end marker before its begin marker")
+        out = out[:i] + blocks[name] + out[j + len(e):]
+    return out
+
+
+def cmd_render(args) -> int:
+    qdir = Path(args.root)
+    records = load_queue(qdir, include_meta=True)
+    # Fail closed: the human view is never rendered from an invalid store.  A stale
+    # or broken ledger must be fixed (or the task's revision appended) first.
+    errs = validate_queue(records)
+    if errs:
+        print(f"workqueue: refusing to render — the queue has {len(errs)} schema error(s); "
+              "run `verify-schema` for the full list", file=sys.stderr)
+        for e in errs[:10]:
+            print(f"  {e}", file=sys.stderr)
+        return 1
+    doc = Path(args.out)
+    if args.check and not doc.is_file():
+        print(f"workqueue: render --check: {doc} does not exist", file=sys.stderr)
+        return 2
+    if not args.check and not doc.is_file():
+        if not args.write and not args.stdout:
+            print(f"workqueue: {doc} does not exist; pass --write to create it or --out PATH", file=sys.stderr)
+            return 2
+        text = "\n".join(_block(n, "(generated)") for n in GENERATED) + "\n"
+    else:
+        text = doc.read_text()
+    rendered = render_document(text, records)
+    if args.check:
+        if rendered == text:
+            print(f"workqueue: {doc} matches the JSON store ({len(records)} task(s))")
+            return 0
+        print(f"workqueue: {doc} is STALE — regenerate with: python3 tools/beta/workqueue.py render --write")
+        return 1
+    if args.stdout:
+        sys.stdout.write(rendered)
+        return 0
+    atomic_write_text(doc, rendered)
+    print(f"workqueue: rendered {doc} from the JSON store ({len(records)} task(s), "
+          f"{len(dependency_order(records))} open)")
+    return 0
+
+
+# --------------------------------------------------------------------------- #
 # CLI                                                                          #
 # --------------------------------------------------------------------------- #
 def build_parser() -> argparse.ArgumentParser:
@@ -837,6 +1065,14 @@ def build_parser() -> argparse.ArgumentParser:
     vp.add_argument("--json", action="store_true")
     vp.add_argument("--strict", action="store_true", help="also require a final verdict on every task")
     vp.set_defaults(func=cmd_verify_schema)
+
+    rp = sub.add_parser("render", help="regenerate the human view (WORK-QUEUE.md) from the JSON store")
+    rp.add_argument("--write", action="store_true", help="write the rendered document back in place")
+    rp.add_argument("--check", action="store_true", help="exit 1 when the document is stale (no writes)")
+    rp.add_argument("--stdout", action="store_true", help="print the rendered document instead of writing it")
+    rp.add_argument("--out", default=str(default_queue_dir().parent / "WORK-QUEUE.md"),
+                    help="document to render (default: docs/beta-finalization/WORK-QUEUE.md)")
+    rp.set_defaults(func=cmd_render)
 
     sd = sub.add_parser("seed", help="create task files from a plan.json")
     sd.add_argument("--from-plan", required=True)

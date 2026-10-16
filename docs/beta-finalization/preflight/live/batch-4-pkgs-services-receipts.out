@@ -1,0 +1,172 @@
+# console /dev/ttyACM0
+# shared lock /tmp/nuxel-live._dev_ttyACM0.lock is not usable by uid 0 ([Errno 13] Permission denied: '/tmp/nuxel-live._dev_ttyACM0.lock') — using private lock /tmp/nuxel-live._dev_ttyACM0.0.lock
+===== cat /var/lib/nuxel/boot-stage /var/lib/nuxel/boot-context /var/lib/nuxel/display /var/lib/nuxel/fb-owner /var/lib/nuxel/animation /var/lib/nuxel/buttons /var/lib/nuxel/ui-build /var/lib/nuxel/ui-fb-ready /var/lib/nuxel/anim-min-cycle.completed /var/lib/nuxel/fb-hold-stop 2>&1   [rc=0 frame=568f5f0f sha_ok=yes]
+    STAGE=PHONE_UI_INSTALLED
+    REV=A25-fbdev-phone-ui-1
+    root=/dev/sda31 device=s10plus slot=a
+    DISPLAY_ON
+    brightness=12800
+    saved_brightness=12800
+    max_brightness=48600
+    owner=nuxel-wl-fb
+    BOOT_WAIT_LAUNCHER
+    LAUNCHER_READY
+    ANIMATION_STOP_REQUESTED
+    ANIMATION_STOP_CONFIRMED
+    LAUNCHER_DISPLAY_OWNER
+    ANIM_STAGE=ANIMATION_STOPPED
+    ANIM_OWNER=nuxel-wl-fb
+    2026-09-15T00:01:02Z ACTION source=bixby(short) action=open-terminal
+    UI_REV=A25-fbdev-phone-ui-1
+    INSTALLED_AT_BOOT=1
+    PHONE_UI_FRAME_COMMITTED commit=fbio_pan_display fb=1440x3040x32 abgr8888
+    ANIM_MIN_CYCLE_COMPLETED
+    ANIMATION_STOP_REQUESTED
+===== ls -la /usr/lib/systemd/system/nuxel* /etc/systemd/system/nuxel* 2>&1   [rc=2 frame=d8d75f10 sha_ok=yes]
+    ls: cannot access '/usr/lib/systemd/system/nuxel*': No such file or directory
+    -rw-r--r-- 1 root root 1049 Sep 15  2026 /etc/systemd/system/nuxel-button-manager.service
+    -rw-r--r-- 1 root root 1049 Sep 15  2026 /etc/systemd/system/nuxel-button-manager.service.prev-a32
+    -rw-r--r-- 1 root root  603 Sep 15  2026 /etc/systemd/system/nuxel-fallback.service
+    -rw-r--r-- 1 root root  324 Oct 14  2026 /etc/systemd/system/nuxel-firstlight.service
+    -rw-r--r-- 1 root root  697 Sep 15 00:02 /etc/systemd/system/nuxel-touch-arm.service
+    -rw-r--r-- 1 root root 1145 Jan  5  2019 /etc/systemd/system/nuxel-ui-fallback.service
+    -rw-r--r-- 1 root root 1478 Jan  5  2019 /etc/systemd/system/nuxel-ui.service
+    -rw-r--r-- 1 root root 2707 Sep 15 00:01 /etc/systemd/system/nuxel-wayland.service
+    -rw-r--r-- 1 root root  620 Sep 15 00:02 /etc/systemd/system/nuxel-wl-fb.service
+    /etc/systemd/system/nuxel-ui.service.d:
+    total 12
+    drwxr-xr-x  2 root root 4096 Sep 15  2026 .
+    drwxr-xr-x 12 root root 4096 Sep 15  2026 ..
+    -rw-r--r--  1 root root 1455 Sep 15  2026 10-launcher-primary.conf
+===== systemctl status nuxel-touch-arm.service --no-pager -l 2>&1 | head -40   [rc=0 frame=b8f85f11 sha_ok=yes]
+    × nuxel-touch-arm.service - Nuxel S10+ touchscreen arming (sec_ts stop->start, then hold open)
+         Loaded: loaded (/etc/systemd/system/nuxel-touch-arm.service; enabled; preset: disabled)
+        Drop-In: /usr/lib/systemd/system/service.d
+                 └─10-timeout-abort.conf
+         Active: failed (Result: exit-code) since Tue 2026-09-15 00:01:46 UTC; 14min ago
+       Duration: 369ms
+     Invocation: 63e0e487cc984a7683c67825690cc738
+           Docs: file:/usr/share/doc/nuxel/UTM-LAUNCHER-PORT.md
+        Process: 5783 ExecStart=/usr/lib/nuxel/nuxel-touch-arm (code=exited, status=2)
+       Main PID: 5783 (code=exited, status=2)
+    Sep 15 00:01:46 fedora systemd[1]: nuxel-touch-arm.service: Scheduled restart job, restart counter is at 10.
+    Sep 15 00:01:46 fedora systemd[1]: nuxel-touch-arm.service: Start request repeated too quickly.
+    Sep 15 00:01:46 fedora systemd[1]: nuxel-touch-arm.service: Failed with result 'exit-code'.
+    Sep 15 00:01:46 fedora systemd[1]: Failed to start nuxel-touch-arm.service - Nuxel S10+ touchscreen arming (sec_ts stop->start, then hold open).
+===== systemctl status nuxel-wayland.service --no-pager -l 2>&1 | head -30   [rc=0 frame=b0b35f12 sha_ok=yes]
+    ● nuxel-wayland.service - Nuxel phone Wayland session (phoc headless + Nuxel Home launcher)
+         Loaded: loaded (/etc/systemd/system/nuxel-wayland.service; enabled; preset: disabled)
+        Drop-In: /usr/lib/systemd/system/service.d
+                 └─10-timeout-abort.conf
+         Active: active (running) since Tue 2026-09-15 00:00:01 UTC; 16min ago
+     Invocation: 578077d179f242fc94c3accb757c772a
+           Docs: file:/usr/share/doc/nuxel/UTM-LAUNCHER-PORT.md
+        Process: 5309 ExecStartPre=/bin/mkdir -p /run/nuxel-wayland (code=exited, status=0/SUCCESS)
+        Process: 5313 ExecStartPre=/bin/chmod 700 /run/nuxel-wayland (code=exited, status=0/SUCCESS)
+       Main PID: 5315 (phoc)
+          Tasks: 72 (limit: 8169)
+         Memory: 392.7M
+         CGroup: /system.slice/nuxel-wayland.service
+                 ├─5315 /usr/sbin/phoc --no-xwayland -C /etc/nuxel/phoc-phone.ini -E /usr/lib/nuxel/nuxel-session.sh
+                 ├─5349 /usr/lib/nuxel/nuxel-pwa-host
+                 ├─5359 python3 -m http.server 8000 --bind 127.0.0.1
+                 ├─5400 /usr/libexec/webkit2gtk-4.1/WebKitNetworkProcess 2 14
+                 ├─5402 /usr/libexec/webkit2gtk-4.1/WebKitWebProcess 4 14
+                 ├─5641 /usr/libexec/webkit2gtk-4.1/WebKitWebProcess 6 32
+                 └─5643 sh -i
+    Sep 15 00:00:01 fedora systemd[1]: Starting nuxel-wayland.service - Nuxel phone Wayland session (phoc headless + Nuxel Home launcher)...
+    Sep 15 00:00:01 fedora systemd[1]: Started nuxel-wayland.service - Nuxel phone Wayland session (phoc headless + Nuxel Home launcher).
+    Sep 15 00:00:01 fedora phoc[5315]: Linux dmabuf support unavailable
+    Sep 15 00:00:01 fedora phoc[5315]: Running compositor on wayland display 'wayland-0'
+    Sep 15 00:00:01 fedora phoc[5315]: Output 'HEADLESS-1' added ('(null)'/'(null)'/'(null)'), 0mm x 0mm
+    Sep 15 00:00:01 fedora phoc[5315]: Failed to get screensaver session proxy: Cannot autolaunch D-Bus without X11 $DISPLAY
+    Sep 15 00:00:01 fedora phoc[5363]: curl: (7) Failed to connect to 127.0.0.1 port 8000 after 0 ms: Could not connect to server
+    Sep 15 00:16:22 fedora systemd[1]: nuxel-wayland.service: Failed to get CPU usage: No such file or directory
+===== journalctl -b -p err --no-pager 2>&1 | tail -25   [rc=0 frame=31855f13 sha_ok=yes]
+    Sep 15 00:14:08 fedora kernel: watchdog: watchdog0: watchdog did not stop!
+    Sep 15 00:14:18 fedora kernel: watchdog: watchdog0: watchdog did not stop!
+    Sep 15 00:14:28 fedora kernel: watchdog: watchdog0: watchdog did not stop!
+    Sep 15 00:14:38 fedora kernel: watchdog: watchdog0: watchdog did not stop!
+    Sep 15 00:14:48 fedora kernel: watchdog: watchdog0: watchdog did not stop!
+    Sep 15 00:14:58 fedora kernel: <keyctl> add_key succeeded(0). type: user, desc: invocation_id
+    Sep 15 00:14:58 fedora kernel: audit: kauditd hold queue overflow
+    Sep 15 00:14:58 fedora kernel: audit: kauditd hold queue overflow
+    Sep 15 00:14:58 fedora kernel: watchdog: watchdog0: watchdog did not stop!
+    Sep 15 00:15:08 fedora kernel: watchdog: watchdog0: watchdog did not stop!
+    Sep 15 00:15:18 fedora kernel: watchdog: watchdog0: watchdog did not stop!
+    Sep 15 00:15:28 fedora kernel: watchdog: watchdog0: watchdog did not stop!
+    Sep 15 00:15:32 fedora kernel: dwc3 10c00000.dwc3: failed to send remote wakeup
+    Sep 15 00:15:38 fedora kernel: watchdog: watchdog0: watchdog did not stop!
+    Sep 15 00:15:48 fedora kernel: watchdog: watchdog0: watchdog did not stop!
+    Sep 15 00:15:58 fedora kernel: dwc3 10c00000.dwc3: failed to send remote wakeup
+    Sep 15 00:15:58 fedora kernel: watchdog: watchdog0: watchdog did not stop!
+    Sep 15 00:16:08 fedora kernel: watchdog: watchdog0: watchdog did not stop!
+    Sep 15 00:16:09 fedora systemd[1]: Attaching device control BPF program to cgroup /system.slice/systemd-timedated.service failed: Argument list too long
+    Sep 15 00:16:09 fedora systemd[1]: systemd-timedated.service: bpf-firewall: Attaching egress BPF program to cgroup /sys/fs/cgroup/system.slice/systemd-timedated.service failed: Argument list too long
+    Sep 15 00:16:09 fedora kernel: <keyctl> add_key succeeded(0). type: user, desc: invocation_id
+    Sep 15 00:16:09 fedora kernel: EXT4-fs (sda31): errors=remount-ro for active namespaces on umount 2
+    Sep 15 00:16:09 fedora kernel: audit: kauditd hold queue overflow
+    Sep 15 00:16:17 fedora kernel: dwc3 10c00000.dwc3: failed to send remote wakeup
+    Sep 15 00:16:18 fedora kernel: watchdog: watchdog0: watchdog did not stop!
+===== rpm -qa 2>/dev/null | wc -l; rpm -q fedora-release systemd NetworkManager ModemManager pipewire wireplumber alsa-utils flatpak webkitgtk6.0 phoc phosh python3 mesa-dri-drivers 2>&1   [rc=5 frame=ceaa5f14 sha_ok=yes]
+    410
+    fedora-release-43-27.noarch
+    error: Verifying a signature using certificate C6E7F081CF80E13146676E88829B606631645531 (Fedora (43) <fedora-43-primary@fedoraproject.org>):
+      Signature c9fa created at Tue Sep 15 17:23:38 2026 invalid: signature is not alive
+          because: Not live until 2026-09-15T17:18:38Z
+    error: rpmdbNextIterator: skipping h#     379
+    Header OpenPGP V4 RSA/SHA256 signature, key fingerprint: c6e7f081cf80e13146676e88829b606631645531: BAD
+    Header SHA256 digest: OK
+    Header SHA1 digest: OK
+    package systemd is not installed
+    NetworkManager-1.54.3-3.fc43.aarch64
+    ModemManager-1.24.2-1.fc43.aarch64
+    package pipewire is not installed
+    package wireplumber is not installed
+    package alsa-utils is not installed
+    package flatpak is not installed
+    webkitgtk6.0-2.52.5-1.fc43.aarch64
+    phoc-0.54.0-1.fc43.aarch64
+    phosh-0.54.0-1.fc43.aarch64
+    python3-3.14.7-1.fc43.aarch64
+    mesa-dri-drivers-25.3.6-3.fc43.aarch64
+===== flatpak list --app --columns=application,branch,origin 2>&1 | head -20; echo ---; flatpak remotes 2>&1; echo ---; flatpak --version 2>&1   [rc=127 frame=8cb05f16 sha_ok=yes]
+    sh: flatpak: command not found
+    ---
+    sh: flatpak: command not found
+    ---
+    sh: flatpak: command not found
+===== lsmod 2>&1 | head -5; lsmod 2>&1 | wc -l   [rc=0 frame=d6e15f17 sha_ok=yes]
+    Module                  Size  Used by
+    1
+===== ls /sys/module | grep -i -E 'sec_ts|tsp|touch|stm|synaptics' 2>&1; dmesg 2>/dev/null | grep -i -E 'sec_ts|tsp_|lpcharge|charger mode' | tail -15   [rc=0 frame=7ca05f18 sha_ok=yes]
+    [    0.000000] Kernel command line:  console=ram loglevel=4 sec_debug.pcb_offset=7346944 sec_debug.smd_offset=7348992 sec_debug.lpddr4_size=8 sec_debug.dram_info=01,06,03,8G sec_debug.pwrsrc_rs=0x0001000840010000 sec_debug.reset_reason=5 sec_reset.reset_reason=5 sec_debug.reset_rwc=1 sec_debug.level=0 sec_watchdog.sec_pet=5 androidboot.debug_level=0x4f4c androidboot.force_upload=0x0 softdog.soft_margin=100 softdog.soft_panic=1 sec_debug.dump_sink=0x0 sec_debug.upload_count=0 androidboot.dram_info=01,06,03,8G androidboot.fmm_lock=48 sec_debug.fmm_lock_offset=7340600 sec_debug.sjl=1 androidboot.sn.param.offset=7343024 androidboot.prototype.param.offset=7351040 androidboot.recovery_offset=7355136 printk.devkmsg=on ess_setup=0xfd900000 sec_avc_log=0x40000@0x91202000 sec_tsp_log=0x40000@0x91244000 sec_disp_log=0x100000@0x91286000 sec_debug_next=0x800000@0x91388000 charging_mode=0x3030 s3cfb.bootloaderfb=0xca000000 lcdtype=10555411 androidboot.carrierid.param.offset=7340608 andro
+    [    0.963836] __init_sec_tsp_command_history: init done
+    [    0.963848] __init_sec_tsp_raw_data: init done
+    [    1.638064] [sec_input] sec_ts_init: Do not load driver due to : lpm 1
+    [    2.214721] tsp_io: disabling
+    [    2.214833] tsp_avdd: disabling
+    [    2.232136] nuxel-init: CMDLINE_PART 4: prototype.param.offset=7351040 androidboot.recovery_offset=7355136 printk.devkmsg=on ess_setup=0xfd900000 sec_avc_log=0x40000@0x91202000 sec_tsp_log=0x40000@0x91244000 sec_disp_log=0x100000@0x91286000
+===== cat /proc/net/arp 2>&1; echo ---; cat /etc/resolv.conf 2>&1   [rc=1 frame=8c1b5f19 sha_ok=yes]
+    IP address       HW type     Flags       HW address            Mask     Device
+    ---
+    cat: /etc/resolv.conf: No such file or directory
+===== ls /etc/NetworkManager/system-connections/ 2>&1; nmcli -t -f DEVICE,STATE,CONNECTION dev 2>&1 | head   [rc=0 frame=3a325f1a sha_ok=yes]
+    p2p0:unmanaged:
+    ip6_vti0:unmanaged:
+    ip6tnl0:unmanaged:
+    ip_vti0:unmanaged:
+    sit0:unmanaged:
+    lo:unmanaged:
+    rmnet0:unmanaged:
+    rmnet1:unmanaged:
+    rmnet2:unmanaged:
+    rmnet3:unmanaged:
+===== ls /etc/nuxel 2>/dev/null | head -20; echo ---; ls /usr/local/bin | head -30   [rc=0 frame=274b5f1b sha_ok=yes]
+    device
+    display
+    input
+    nuxel-beyond2lte.conf
+    phoc-phone.ini
+    phone-runtime-status
+    ---
