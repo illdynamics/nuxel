@@ -258,6 +258,91 @@
       "owner_action": "OWNER TEST REQUIRED for the finger half: on a NORMAL boot run nuxel-touch-capture.sh --seconds 90 and perform the printed tap sequence; until then the physical-contact verdict is NEEDS_OWNER_TEST",
       "note": "REPAIR PASS (revision 4). Two things, both append-only (revision 3 is preserved byte-for-byte).\n\n(1) RESTORED the on_device evidence entry that revision 2 recorded for the archived live capture and that revision 3 dropped. Revision 3 was written as a fresh snapshot rather than the deep-copy+append contract this queue enforces (WORK-QUEUE.md section 1: 'the effective record is always the last revision'; tools/beta/workqueue.py set-state deep-copies), so the drop was NOT deliberate and revision 3's note does not claim it was. The capture is still in the tree and its truth did not change (docs/beta-finalization/live/evidence/touch-20261016T193756+0200-cycl001-p0probe-live-run -> FIRST_FAIL_LAYER=1 NAME=driver STATE=blocked, androidboot.mode=charger, sec_ts_init: lpm 1), but the regenerated ledger's own summary had begun saying this task carries NO device evidence - which an auditor would take as 'no device evidence exists'. The entry is restored verbatim via the tool's own append path, so the summary is back to 3 (00a-repo-preflight, 01a-pipeline-trace-tool, 01c-chargermode-bootmode).\n\n(2) Fixed the console channel this briQ's live run depends on. scripts/s10plus-debug-pack/nuxel-live.sh auto-discovery died with rc=2 and zero bytes of output on any Linux host (the macOS glob does not exist, GNU ls exited 2, pipefail propagated it and set -e aborted before the diagnostic). The glob-safe discovery itself was fixed in this tree by bg-00-preflight (briq-00a rev 7, 8c413a47->49a204dd); this revision adds the part my briQ owed: a --dry-detect (and --glob-root) behavioural self-test, and INV-10's device-discovery claim is now a program assertion that RUNS that path (a glob that matches nothing must not abort; a glob that matches must be found) instead of the grepping-for-'/dev/ttyACM' string check that the dead path also passed. The soft pin moved 49a204dd->8d5c9afb with the old->new pair recorded in the register's history and the authorising briQ named; the guard was re-run (PASS=68 FAIL=0 WARN=8 INFO=2, exit 0).\n\nState and verdict are UNCHANGED: implemented / OFFLINE_TESTED. This boot is still charger/LPM mode, so no finger-tap evidence exists and none is claimed; the archived capture above remains a BLOCKED-layer diagnosis, not a pass.",
       "revision": 4
+    },
+    {
+      "component": "bg-01-touch-pipeline",
+      "component_title": "Priority 0 - Touchscreen & Reliable Interactive Input",
+      "priority": 1,
+      "risk": "low",
+      "rollback": "git revert the commit(s) touching this task's expected files; the change is repository-only and alters no device state",
+      "source": "construqtor/bg-01-touch-pipeline cycle-003 repair",
+      "by": "construqtor",
+      "at": "2026-10-16T20:42:06+02:00",
+      "id": "briq-01a-pipeline-trace-tool",
+      "title": "End-to-end touch pipeline tracer with bounded capture session",
+      "state": "implemented",
+      "dependencies": [],
+      "expected_files": [
+        "tools/s10plus/a33/nuxel-touch-trace.py",
+        "tools/s10plus/a33/README.md",
+        "docs/beta-finalization/touch/PIPELINE-TRACE.md"
+      ],
+      "intended_changes": [
+        "tools/s10plus/a33/nuxel-touch-trace.py (cycle-002 change, now recorded here): the layer-4 capability/absinfo probe gained EVIOCGID and ABS_MT_SLOT handling; --self-test grew from 40 to 43 assertions",
+        "docs/beta-finalization/touch/OFFLINE-TEST-RESULTS.md section 4: the placeholder tokens (HASH_TOUCH_TRACE, HASH_CAPTURE_SH, HASH_BOOTMODE_PY, HASH_PROBE_HTML, HASH_SHIM_C, HASH_BUILD_SH) were replaced with the real re-taken sha256 values for the six artifacts, and the false sentence claiming the values are 'written by tools/s10plus/a33/tests/run-touch-tests.sh (sha256sum section)' was corrected (that script prints no hashes and never did)"
+      ],
+      "evidence": [
+        {
+          "kind": "observation",
+          "path": "tools/s10plus/a33/nuxel-touch-trace.py",
+          "command": "sha256sum tools/s10plus/a33/nuxel-touch-trace.py",
+          "result": "sha256 dc3a0d61ec4396b0bf55b58297f0801a4d773a120b945aee6bbac06e24709484 (current HEAD file; supersedes the rev-2 value 47ea7fc4...)",
+          "at": "2026-10-16T20:14:03+02:00"
+        },
+        {
+          "kind": "offline",
+          "command": "python3 tools/s10plus/a33/nuxel-touch-trace.py --self-test",
+          "path": "tools/s10plus/a33/nuxel-touch-trace.py",
+          "result": "SELF-TEST: PASS (43/43 assertions) - supersedes the rev-2 40/40 record",
+          "at": "2026-10-16T20:14:03+02:00"
+        },
+        {
+          "kind": "offline",
+          "command": "./tools/s10plus/a33/tests/run-touch-tests.sh",
+          "path": "tools/s10plus/a33/tests/run-touch-tests.sh",
+          "result": "TOUCH-TESTS: ALL PASS (240 PASS / 0 FAIL) - re-measured after this cycle's test-set growth (test-no-eventn-literal.py 27 files, test-libinput-shim-invocation.py in TARGETS); supersedes the rev-2 239 PASS record",
+          "at": "2026-10-16T20:14:03+02:00"
+        },
+        {
+          "kind": "doc",
+          "command": "sha256sum tools/s10plus/a33/nuxel-touch-trace.py tools/s10plus/a33/nuxel-touch-capture.sh tools/s10plus/a33/nuxel-bootmode-guard.py tools/s10plus/a33/touch-probe.html tools/s10plus/a33/nuxel-libinput-path.c tools/s10plus/a31/nuxel-libinput-path.c tools/s10plus/a33/build-libinput-shim.sh",
+          "path": "docs/beta-finalization/touch/OFFLINE-TEST-RESULTS.md",
+          "result": "section 4 now carries the six real sha256 values (nuxel-touch-trace.py dc3a0d61ec4396b0bf55b58297f0801a4d773a120b945aee6bbac06e24709484; nuxel-touch-capture.sh 93b7179e2ce7a2171b77fc1284fb7f0dc5bdbb36d8453ac5d945519136de57b4; nuxel-bootmode-guard.py 0019ce964d7499f25df13fbbb2a6c07371139c661780223cae7e17f83ec6fce0; touch-probe.html aea597a1b6cb77a5e7af497a63a4900b59000498a8ccedf6d5998ae8371aad21; nuxel-libinput-path.c f94240412b731233ad0e93de24d20283f55fc0d0b1f74aa1cddc9f19265e598f == the a31 copy; build-libinput-shim.sh 667f7fadb7ee475e130688d884e116fc2de12512b03941242fbcb1f6399e300c); the placeholder tokens and the non-existent-generator sentence are gone",
+          "at": "2026-10-16T20:14:03+02:00"
+        },
+        {
+          "kind": "on_device",
+          "command": "nuxel-live.sh --batch (read-only, bounded) then --analyze",
+          "path": "docs/beta-finalization/live/evidence/touch-20261016T193756+0200-cycl001-p0probe-live-run",
+          "result": "FIRST_FAIL_LAYER=1 NAME=driver STATE=blocked; androidboot.mode=charger; sec_ts_init: lpm 1 (cause cited from /proc/cmdline and dmesg: 'Do not load driver due to : lpm 1'; layers 2-7 blocked, never ok; GATE=fail). Re-added by revision 4 with the same kind/command/path/at and an appended explanatory result text: revision 3 was a fresh snapshot instead of a deep-copy+append, so it silently dropped this entry - the archive is still in the tree, unchanged, and still grades FIRST_FAIL_LAYER=1 NAME=driver STATE=blocked.",
+          "at": "2026-10-16T19:43:49+02:00"
+        },
+        {
+          "kind": "offline",
+          "path": "scripts/s10plus-debug-pack/nuxel-live.sh",
+          "command": "bash -n scripts/s10plus-debug-pack/nuxel-live.sh; bash scripts/s10plus-debug-pack/nuxel-live.sh --dry-detect; sudo -n bash scripts/s10plus-debug-pack/nuxel-live.sh --run 'uname -r' --timeout 20",
+          "result": "bash -n clean; --dry-detect -> 'DISCOVERY-OK: 3/3 checks PASS (root=/dev, real node=/dev/ttyACM0)' rc=0; the documented bare form (no --dev) now reaches the phone: rc=0, frame sha_ok=yes; fail-closed preserved (--glob-root with no node -> the documented 'no CDC-ACM console node' diagnostic, rc=1). Capture: docs/beta-finalization/touch/live-discovery-selftest.out",
+          "at": "2026-10-16T20:29:51+0200"
+        },
+        {
+          "kind": "observation",
+          "path": "docs/beta-finalization/baseline-protection.json",
+          "command": "bash tools/beta/regression-guard.sh --repin scripts/s10plus-debug-pack/nuxel-live.sh --reason '<briq-01a revision 4 ...>'; bash tools/beta/regression-guard.sh",
+          "result": "INV-10 assertion 4 is now type='program' (runs the tool's real discovery via --dry-detect; expect exit 0 and 'DISCOVERY-OK: 3/3 checks PASS') instead of the greppable '/dev/ttyACM' string the dead path also satisfied; the soft pin moved 49a204ddb8f26bf988f32bbd26b18a402bf18605ff9d88d747ac445063ea5a24 -> 8d5c9afbfe5be068492dc55113d8cdfdccb21fb93e9f5d0eaee682abf8fc8214 and the old->new pair is recorded in .history with the authorising briQ. Gate re-run: PASS=68 FAIL=0 WARN=8 INFO=2, exit 0 (log build/out/beta/regression-guard-20261016T182903Z.log); the new assertion reports 'PASS ... [1 PASS line(s) on host]'.",
+          "at": "2026-10-16T20:29:51+0200"
+        }
+      ],
+      "tests": [
+        "L1: python3 -m py_compile tools/s10plus/a33/nuxel-touch-trace.py",
+        "L2/L3 offline: 43/43 self-test assertions (ioctl numbers incl. EVIOCGID/ABS_MT_SLOT, decoder, bitmap order, coordinate mapping, gate, exit codes)",
+        "L3 offline: run-touch-tests.sh 240 PASS / 0 FAIL",
+        "doc: OFFLINE-TEST-RESULTS.md section 4 lists the six real hashes and the command that reproduces them"
+      ],
+      "verdict": "OFFLINE_TESTED",
+      "offline_ceiling": "OFFLINE_TESTED",
+      "owner_action": "OWNER TEST REQUIRED for the finger half: on a NORMAL boot run nuxel-touch-capture.sh --seconds 90 and perform the printed tap sequence; until then the physical-contact verdict is NEEDS_OWNER_TEST",
+      "note": "REPAIR PASS (revision 4). Two things, both append-only (revision 3 is preserved byte-for-byte).\n\n(1) RESTORED the on_device evidence entry that revision 2 recorded for the archived live capture and that revision 3 dropped. Revision 3 was written as a fresh snapshot rather than the deep-copy+append contract this queue enforces (WORK-QUEUE.md section 1: 'the effective record is always the last revision'; tools/beta/workqueue.py set-state deep-copies), so the drop was NOT deliberate and revision 3's note does not claim it was. The capture is still in the tree and its truth did not change (docs/beta-finalization/live/evidence/touch-20261016T193756+0200-cycl001-p0probe-live-run -> FIRST_FAIL_LAYER=1 NAME=driver STATE=blocked, androidboot.mode=charger, sec_ts_init: lpm 1), but the regenerated ledger's own summary had begun saying this task carries NO device evidence - which an auditor would take as 'no device evidence exists'. The entry is restored via the tool's own append path with the same kind/command/path/at and an appended explanatory result text, so the summary is back to 3 (00a-repo-preflight, 01a-pipeline-trace-tool, 01c-chargermode-bootmode).\n\n(2) Fixed the console channel this briQ's live run depends on. scripts/s10plus-debug-pack/nuxel-live.sh auto-discovery died with rc=2 and zero bytes of output on any Linux host (the macOS glob does not exist, GNU ls exited 2, pipefail propagated it and set -e aborted before the diagnostic). The glob-safe discovery itself was fixed in this tree by bg-00-preflight (briq-00a rev 7, 8c413a47->49a204dd); this revision adds the part my briQ owed: a --dry-detect (and --glob-root) behavioural self-test, and INV-10's device-discovery claim is now a program assertion that RUNS that path (a glob that matches nothing must not abort; a glob that matches must be found) instead of the grepping-for-'/dev/ttyACM' string check that the dead path also passed. The soft pin moved 49a204dd->8d5c9afb with the old->new pair recorded in the register's history and the authorising briQ named; the guard was re-run (PASS=68 FAIL=0 WARN=8 INFO=2, exit 0).\n\nState and verdict are UNCHANGED: implemented / OFFLINE_TESTED. This boot is still charger/LPM mode, so no finger-tap evidence exists and none is claimed; the archived capture above remains a BLOCKED-layer diagnosis, not a pass.\n\nREPAIR PASS (revision 5). Correction of a byte-level overstatement in revision 4's own text; no tool behaviour, no pin and no verdict changed. The glob-safe BEHAVIOUR is preserved, not the bytes - 49a204dd -> 8d5c9afb replaced the [ -e ] loop with the discover_dev() helper (+ --dry-detect/--glob-root), which is exactly why the pin moved; revision 4's 'preserved byte-for-byte' wording, and its own 'Re-added verbatim' and 'restored verbatim' phrasing, overstated it. Revision 5 therefore records that the on_device evidence entry was re-added with the same kind/command/path/at and an appended explanatory result text (the bytes differ), and the register's history carries a matching 'correction' entry for the 2026-10-16T20:29:03+0200 repin (docs/beta-finalization/baseline-protection.json). State and verdict UNCHANGED: implemented / OFFLINE_TESTED.",
+      "revision": 5
     }
   ]
 }

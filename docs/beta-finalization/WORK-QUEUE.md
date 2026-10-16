@@ -136,7 +136,7 @@ deterministic.  Prose outside the markers is edited by hand and never clobbered 
 | Metric | Value |
 |--------|-------|
 | Tasks | **55** (one per briQ in the plan, bg-00 … bg-12) |
-| Revisions (append-only) | 93 |
+| Revisions (append-only) | 94 |
 | Evidence entries | 173 |
 | Dependencies | validated acyclic; referential integrity enforced |
 
@@ -240,7 +240,7 @@ Ids are shown without the `briq-` prefix.
 | `00b-archive-discovery` | 0 | bg-00-preflight | implemented | OFFLINE_TESTED | 11 | 7 | 00a-repo-preflight |
 | `00c-workqueue-ledger` | 0 | bg-00-preflight | implemented | OFFLINE_TESTED | 13 | 5 | 00a-repo-preflight, 00b-archive-discovery |
 | `00d-baseline-protection` | 0 | bg-00-preflight | implemented | OFFLINE_TESTED | 17 | 8 | 00a-repo-preflight |
-| `01a-pipeline-trace-tool` | 1 | bg-01-touch-pipeline | implemented | OFFLINE_TESTED | 7 | 4 | — |
+| `01a-pipeline-trace-tool` | 1 | bg-01-touch-pipeline | implemented | OFFLINE_TESTED | 7 | 5 | — |
 | `01b-libinput-path-shim` | 1 | bg-01-touch-pipeline | implemented | OFFLINE_TESTED | 6 | 2 | — |
 | `01c-chargermode-bootmode` | 1 | bg-01-touch-pipeline | implemented | OFFLINE_TESTED | 4 | 2 | 01a-pipeline-trace-tool |
 | `01d-touch-owner-test` | 1 | bg-01-touch-pipeline | implemented | OFFLINE_TESTED | 7 | 4 | 01a-pipeline-trace-tool |

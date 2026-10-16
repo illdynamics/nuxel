@@ -1111,6 +1111,12 @@
       "new_sha256": "8d5c9afbfe5be068492dc55113d8cdfdccb21fb93e9f5d0eaee682abf8fc8214",
       "reason": "briq-01a-pipeline-trace-tool revision 4 (bg-01-touch-pipeline repair pass, coordinated with bg-00-preflight's INV-10 pin): added --dry-detect/--glob-root so INV-10's device-discovery claim is BEHAVIOURAL (program assertion: the tool's real discover_dev() run against a glob that matches nothing and one that matches; expect exit 0 + 'DISCOVERY-OK: 3/3 checks PASS') instead of the greppable '/dev/ttyACM' string that the dead discovery path also satisfied. Supersedes bg-00's 8c413a47->49a204dd repin; that glob-safe fix is preserved byte-for-byte in the new revision of the file. Evidence: docs/beta-finalization/touch/live-discovery-selftest.out.",
       "sha256_assertions_updated": 0
+    },
+    {
+      "at": "2026-10-16T20:42:02+02:00",
+      "event": "correction",
+      "path": "scripts/s10plus-debug-pack/nuxel-live.sh",
+      "detail": "Clarification (append-only; no pin, hash, assertion or invariant changed) to the 2026-10-16T20:29:03+0200 repin of scripts/s10plus-debug-pack/nuxel-live.sh: the glob-safe behaviour is preserved, not the bytes - 49a204dd -> 8d5c9afb replaced the [ -e ] loop with the discover_dev() helper (+ --dry-detect/--glob-root). That entry said the superseded bg-00 fix is 'preserved byte-for-byte in the new revision of the file'; the superseded bytes do NOT survive - 49a204dd -> 8d5c9afb moved the pin precisely because the [ -e ] loop was replaced. Only the glob-safe BEHAVIOUR survived, not the bytes. The frozen 2026-10-16T20:29:03+0200 entry above is left untouched; this entry is appended, never a rewrite. Recorded by briq-01a-pipeline-trace-tool revision 5."
     }
   ],
   "vm_host": "nuxel@192.168.64.3",
