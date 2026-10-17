@@ -1,0 +1,12 @@
+{
+  "animation": "ANIM_STAGE=ANIMATION_STOPPED\nANIM_OWNER=nuxel-wl-fb\n",
+  "boot_count": "cat: /var/lib/nuxel/boot-count: No such file or directory\n",
+  "boot_id": "5d3af323-993a-4fb9-875f-6fa857379460\n",
+  "boot_mode": "",
+  "failed_units": "",
+  "fb_owner": "BOOT_WAIT_LAUNCHER\nLAUNCHER_READY\nANIMATION_STOP_REQUESTED\nANIMATION_STOP_CONFIRMED\nLAUNCHER_DISPLAY_OWNER\n",
+  "registry_http": "200\n",
+  "units": "nuxel-wayland=active\nnuxel-wl-fb=active\nnuxel-button-manager=active\nnuxel-touch-arm=active\nseatd=active\n",
+  "uptime": "4727.58 32945.73\n",
+  "wl_fb_state": "1792208838 FRAMES_OK total=107736 fps_1s=23 failures=0 blit_avg_ms=39 out=720x1520 src=720x1520 scale=2 panel=1440x3040 owner=nuxel-wl-fb display=on src_format=0x00000001 colour=R@0,G@8,B@16_abgr8888_override=1\n"
+}

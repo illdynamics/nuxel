@@ -239,8 +239,18 @@ static void cfg_load_actions(void) {
     json_str(b, "chord_power_volume_down", C.chord_power_volume_down,
              sizeof C.chord_power_volume_down, C.chord_power_volume_down);
     C.volume_repeat_enabled = json_int(b, "volume_repeat_enabled", C.volume_repeat_enabled);
-    audit("CONFIG_LOADED buttons_json=%s power_short=%s power_long=%s bixby_short=%s",
-          BUTTONS_JSON, C.power_short, C.power_long, C.bixby_short);
+    /* The reload loop polls every second so owner remaps apply without a restart;
+     * logging every poll floods the audit log and hides real button decisions.
+     * Log the effective mapping only when the buttons file actually changes. */
+    {
+      static time_t logged_mtime = 0;
+      struct stat sb;
+      if (stat(BUTTONS_JSON, &sb) == 0 && sb.st_mtime != logged_mtime) {
+        logged_mtime = sb.st_mtime;
+        audit("CONFIG_LOADED buttons_json=%s power_short=%s power_long=%s bixby_short=%s",
+              BUTTONS_JSON, C.power_short, C.power_long, C.bixby_short);
+      }
+    }
   } else {
     st("BUTTONS_JSON_ABSENT %s — FSM defaults in use (A32 behaviour)", BUTTONS_JSON);
   }

@@ -1,0 +1,1 @@
+ioreg unavailable: [Errno 2] No such file or directory: 'ioreg'

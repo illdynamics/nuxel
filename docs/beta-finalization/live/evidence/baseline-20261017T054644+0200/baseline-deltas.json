@@ -1,0 +1,8 @@
+[
+  {
+    "expected": "nuxel-wl-fb",
+    "item": "fb-owner",
+    "observed": "BOOT_WAIT_LAUNCHER",
+    "severity": "regression-signal"
+  }
+]

@@ -1,0 +1,9 @@
+dev=/dev/ttyACM0 bytes_in=324 echo_ok=True error=None elapsed=0.318s
+sample:
+
+[?2004lsh: :s^[[?2004: substitution failed
+[?2004hsh-5.3# 
+[?2004l[?2004hsh-5.3# 6,21414,3621861331,-;sec_ts 4-0048: [sec_input] mode:0202 tc:0 noise:0 wet:0 wc:0 lp:(0) D0C000 fn:0061/0061 // v:0233 cal:A2(00) C01T0226.LCIA.L Cal_flag:Success fail_cnt:0 // id(0,0) // #88 31
+ SUBSYSTEM=i2c
+ DEVICE=+i2c:4-0048
+
