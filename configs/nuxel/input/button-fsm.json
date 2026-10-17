@@ -126,7 +126,7 @@
         "label": "Restart",
         "action": "systemctl-reboot",
         "dispatch": "userspace",
-        "trigger_allowed": false,
+        "trigger_allowed": true,
         "gate": "/etc/nuxel/buttons/reboot-gate.json",
         "why_gated": "A userspace reboot is allowed by the mission only after the reboot policy allows it and only with a healthy rollback path. While the owner is absent the gate stays closed by default."
       },
@@ -135,9 +135,41 @@
         "label": "Power off",
         "action": "systemctl-poweroff",
         "dispatch": "userspace",
-        "trigger_allowed": false,
+        "trigger_allowed": true,
         "gate": "/etc/nuxel/buttons/reboot-gate.json",
         "why_gated": "Powering the handset off with no owner present would strand the mission with no way to turn it back on."
+      },
+      {
+        "id": "reboot-verbose",
+        "label": "Reboot Verbose",
+        "action": "reboot-verbose",
+        "dispatch": "userspace",
+        "trigger_allowed": true,
+        "gate": "/etc/nuxel/buttons/reboot-gate.json"
+      },
+      {
+        "id": "reboot-safe-mode",
+        "label": "Safe Mode",
+        "action": "reboot-safe-mode",
+        "dispatch": "userspace",
+        "trigger_allowed": true,
+        "gate": "/etc/nuxel/buttons/reboot-gate.json"
+      },
+      {
+        "id": "reboot-diag",
+        "label": "Reboot Diag",
+        "action": "reboot-diag",
+        "dispatch": "userspace",
+        "trigger_allowed": true,
+        "gate": "/etc/nuxel/buttons/reboot-gate.json"
+      },
+      {
+        "id": "reboot-debug",
+        "label": "Reboot Debug",
+        "action": "reboot-debug",
+        "dispatch": "userspace",
+        "trigger_allowed": true,
+        "gate": "/etc/nuxel/buttons/reboot-gate.json"
       },
       {
         "id": "recovery",

@@ -1,0 +1,122 @@
+{
+  "at": "2026-10-17T02:00:17+0200",
+  "blocked_reason": null,
+  "briq": "briq-10c-live-reboot-and-verify",
+  "checklists": {
+    "pre": [
+      {
+        "evidence": "624 deploy targets audited, 0 refused by assert_userspace_path(); skipped blocked groups: console-and-kernel-side-followups",
+        "id": "pr-1",
+        "item": "no block-device / firmware write this session",
+        "status": "pass"
+      },
+      {
+        "evidence": "2 *.nuxel-rollback file(s) on the device",
+        "id": "pr-2",
+        "item": "rollback copies present for deployed files",
+        "status": "pass"
+      },
+      {
+        "evidence": "MISSING",
+        "id": "pr-3",
+        "item": "known-good userspace rollback path recorded",
+        "status": "warn"
+      },
+      {
+        "evidence": "capability-based reconnect (/dev/ttyACM0); timeout 240.0s, poll 3.0s",
+        "id": "pr-4",
+        "item": "console reconnect procedure ready on the host",
+        "status": "pass"
+      },
+      {
+        "evidence": "/x/nuxel/docs/beta-finalization/live/evidence/baseline-20261017T002026+0200",
+        "id": "pr-5",
+        "item": "baseline bundle captured and hashed",
+        "status": "pass"
+      }
+    ]
+  },
+  "console": {
+    "callout": "/dev/ttyACM0",
+    "match_stage": "explicit"
+  },
+  "diagnostic": null,
+  "evidence_dir": "/x/nuxel/docs/beta-finalization/live/evidence/reboot-verify-20261017T020017+0200",
+  "exit_code": 0,
+  "history_before": [
+    {
+      "at": "2026-10-16T22:23:57+0200",
+      "corrected_at": "2026-10-16T23:50:00+0200",
+      "correction": "returned_to_nuxel was recorded as false because the Python console client could not verify ANY frame at that time: the target tty ends its lines with CRLF and the frame parser matched bare LF, so every command was reported framed=false/sha_ok=false even though the device answered correctly.  That defect is fixed (CRLF normalisation in tools/beta/live/nuxel_live.py, this session).  The handset DID return to Nuxel: the non-charger baseline docs/beta-finalization/live/evidence/baseline-20261016T222451+0200 shows 41/41 frames verified with androidboot.mode absent, sec_touchscreen registered and nuxel-wayland/nuxel-wl-fb/nuxel-button-manager/nuxel-touch-arm/seatd all active.",
+      "diagnostic": "re-read /proc/cmdline for androidboot.mode and confirm sec_touchscreen is registered",
+      "evidence_after": null,
+      "evidence_before": "/x/nuxel/docs/beta-finalization/live/evidence/reboot-verify-20261016T221922+0200",
+      "n": 1,
+      "reason": "clear LPM/charger-mode boot so sec_ts can initialise",
+      "returned_to_nuxel": true,
+      "rollback_known_good": true
+    },
+    {
+      "at": "2026-10-16T23:50:58+0200",
+      "diagnostic": "after reconnect verify sec_touchscreen is registered and nuxel-touch-arm is active, and read the previous boot's power-key hold from journalctl -b -1",
+      "evidence_after": "/x/nuxel/docs/beta-finalization/live/evidence/reboot-verify-20261016T235033+0200",
+      "evidence_before": "/x/nuxel/docs/beta-finalization/live/evidence/reboot-verify-20261016T235033+0200",
+      "n": 2,
+      "reason": "clear the LPM/charger-mode boot that recurred after an 11.6s hardware POWER-key hold, so sec_ts can initialise",
+      "returned_to_nuxel": true,
+      "rollback_known_good": true
+    },
+    {
+      "at": "2026-10-17T00:49:31+0200",
+      "diagnostic": "re-read /proc/cmdline androidboot.mode and confirm sec_touchscreen registered, 0 failed units, launcher HTTP 200, bridge/portal/notifications active",
+      "evidence_after": "/x/nuxel/docs/beta-finalization/live/evidence/reboot-verify-20261017T004900+0200",
+      "evidence_before": "/x/nuxel/docs/beta-finalization/live/evidence/reboot-verify-20261017T004900+0200",
+      "n": 3,
+      "reason": "validate non-charger normal boot persistence and Nuxel return after live deploy",
+      "returned_to_nuxel": true,
+      "rollback_known_good": true
+    }
+  ],
+  "history_path": "/x/nuxel/docs/beta-finalization/live/evidence/reboots.json",
+  "history_verdict": {
+    "allowed": false,
+    "code": "budget_exhausted",
+    "reason": "3/3 reboots already used \u2014 change strategy, do not reboot again"
+  },
+  "pre_reboot": {
+    "animation": "ANIM_STAGE=ANIMATION_STOPPED",
+    "boot_count": "cat: /var/lib/nuxel/boot-count: No such file or directory",
+    "boot_id": "25dc3435-8f8a-4c7e-837a-bc45e7475f65",
+    "boot_mode": "androidboot.mode=charger",
+    "failed_units": "\u25cf nuxel-touch-arm.service loaded failed failed Nuxel S10+ touchscreen arming (sec_ts stop->start, then hold open)",
+    "fb_owner": "BOOT_WAIT_LAUNCHER",
+    "registry_http": "200",
+    "units": "nuxel-wayland=active",
+    "uptime": "1179.67 8187.55",
+    "wl_fb_state": "1792195216 FRAMES_OK total=25730 fps_1s=23 failures=0 blit_avg_ms=44 out=720x1520 src=720x1520 scale=2 panel=1440x3040 owner=nuxel-wl-fb display=on src_format=0x00000001 colour=R@0,G@8,B@16_abgr8888_override=1"
+  },
+  "probe": {
+    "at": "2026-10-17T02:00:17+0200",
+    "bytes_in": 54,
+    "dev": "/dev/ttyACM0",
+    "echo_ok": true,
+    "elapsed_s": 0.304,
+    "error": null,
+    "reachable": true,
+    "sample": "\n\u001b[?2004l\u001b[?2004hsh-5.3# \n\u001b[?2004l\u001b[?2004hsh-5.3# "
+  },
+  "probes": [],
+  "reason": null,
+  "reboot": {
+    "requested": false
+  },
+  "reboot_cmd": null,
+  "reboot_requested": false,
+  "simulated": false,
+  "verdict": "IMPLEMENTED_NOT_DEPLOYED",
+  "verdict_note": "checklists evaluated; --checklist-only stops before any reboot",
+  "verdicts": {
+    "briq-10c-live-reboot-and-verify": "IMPLEMENTED_NOT_DEPLOYED",
+    "per-item": {}
+  }
+}

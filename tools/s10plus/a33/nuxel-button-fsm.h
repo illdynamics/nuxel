@@ -259,8 +259,12 @@ typedef struct { const char *id; const char *label; const char *action; int trig
 static const nuxel_fsm_menu_entry nuxel_fsm_menu[] = {
   { "lock-screen",   "Lock screen",       "lock",                  1, NULL },
   { "screenshot",    "Take screenshot",   "screenshot",            1, NULL },
-  { "restart",       "Restart",           "systemctl-reboot",      0, "gate-closed-owner-absent" },
-  { "power-off",     "Power off",         "systemctl-poweroff",    0, "gate-closed-owner-absent" },
+  { "restart",       "Restart",           "systemctl-reboot",      1, "gate-closed-owner-absent" },
+  { "power-off",     "Power off",         "systemctl-poweroff",    1, "gate-closed-owner-absent" },
+  { "reboot-verbose","Reboot Verbose",    "reboot-verbose",        1, "gate-closed-owner-absent" },
+  { "reboot-safe-mode","Safe Mode",       "reboot-safe-mode",      1, "gate-closed-owner-absent" },
+  { "reboot-diag",   "Reboot Diag",       "reboot-diag",           1, "gate-closed-owner-absent" },
+  { "reboot-debug",  "Reboot Debug",      "reboot-debug",          1, "gate-closed-owner-absent" },
   { "recovery",      "Recovery (Samsung)","enter-recovery",        0, "NO_FLASH_INVARIANT" },
   { "download-mode", "Download Mode (Odin)","enter-download-mode", 0, "NO_FLASH_INVARIANT" }
 };

@@ -1,0 +1,42 @@
+{
+  "adb_devices": [],
+  "at": "2026-10-17T01:59:29+0200",
+  "blocked_reason": "gadget enumerated as /dev/ttyACM0 but the port is byte-silent for 6.0s (no shell echo, no /dev/kmsg mirror): the on-device console is not serving the port",
+  "capability": {
+    "pid": "0x4ee7",
+    "serial": "NUXEL-S10PLUS-0001",
+    "vid": "0x18d1"
+  },
+  "evidence_dir": "/x/nuxel/docs/beta-finalization/live/evidence/reachability-20261017T015929+0200",
+  "exit_code": 3,
+  "finished": "2026-10-17T01:59:29+0200",
+  "gadget_descriptor_present": false,
+  "host": "Linux 6.17.1-300.fc43.x86_64",
+  "nodes": [],
+  "probe": {
+    "at": "2026-10-17T01:59:29+0200",
+    "bytes_in": 0,
+    "dev": "/dev/ttyACM0",
+    "echo_ok": false,
+    "elapsed_s": 0.0,
+    "error": "write failed on /dev/ttyACM0: [Errno 11] Resource temporarily unavailable",
+    "reachable": false,
+    "sample": ""
+  },
+  "reachable": false,
+  "selected": {
+    "callout": "/dev/ttyACM0",
+    "match_stage": "explicit"
+  },
+  "steps": [
+    {
+      "detail": "/dev/ttyACM0 (matched explicit)",
+      "ok": true,
+      "step": "select-by-capability"
+    }
+  ],
+  "verdict": "BLOCKED_EXTERNAL_RESOURCE",
+  "verdicts": {
+    "briq-10a-live-reachability-preflight": "BLOCKED_EXTERNAL_RESOURCE"
+  }
+}

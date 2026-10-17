@@ -1,0 +1,4 @@
+cmd: sha256sum /usr/share/nuxel/pwa/nuxel-home/js/status-bar.js 2>&1
+ok: True rc: 0 framed: True sha_ok: True
+---
+7a2f02eacff1fe904c73ad631d1882406c4a9c9d4512e9cfceee6f4ff6606723  /usr/share/nuxel/pwa/nuxel-home/js/status-bar.js

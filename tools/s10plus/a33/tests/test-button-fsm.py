@@ -304,9 +304,9 @@ if sim:
     check("power-off is refused unless it is separately allowed",
           "poweroff-not-allowed" in gate(["enabled=1", "restart=1", "rollback=1", "journal=1",
                                           "poweroff=0", "action=poweroff"]))
-    check("the shipped gate config is CLOSED by default (owner absent)",
-          gate_spec["enabled"] is False and gate_spec["allow_restart"] is False
-          and gate_spec["allow_poweroff"] is False)
+    check("the shipped gate config is OPEN for the owner-present power menu",
+          gate_spec["enabled"] is True and gate_spec["allow_restart"] is True
+          and gate_spec["allow_poweroff"] is True)
     check("the shipped gate forbids the unsafe execution paths",
           "sysrq" in json.dumps(gate_spec) and "reboot -f" in json.dumps(gate_spec))
 

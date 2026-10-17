@@ -1,0 +1,28 @@
+[
+  {
+    "expected": "active",
+    "item": "unit:nuxel-touch-arm",
+    "observed": "failed",
+    "severity": "regression-signal"
+  },
+  {
+    "expected": "nuxel-wl-fb",
+    "item": "fb-owner",
+    "observed": "BOOT_WAIT_LAUNCHER",
+    "severity": "regression-signal"
+  },
+  {
+    "expected": "contains sec_touchscreen",
+    "item": "touch-device",
+    "observed": "",
+    "severity": "regression-signal"
+  },
+  {
+    "expected": "0",
+    "item": "failed-units",
+    "observed": [
+      "\u25cf nuxel-touch-arm.service loaded failed failed Nuxel S10+ touchscreen arming (sec_ts stop->start, then hold open)"
+    ],
+    "severity": "regression-signal"
+  }
+]

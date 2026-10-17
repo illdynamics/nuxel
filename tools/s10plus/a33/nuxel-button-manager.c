@@ -87,6 +87,12 @@
 #define VERBOSE_ONCE    "/run/nuxel/boot-verbose-once"
 #define VERBOSE_STATE   "/run/nuxel/verbose-boot"
 #define BOOT_CAPS       "/run/nuxel/boot-stage-capabilities"
+#define BOOT_FLAG_DIR   "/var/lib/nuxel/boot"
+#define REBOOT_VERBOSE_FLAG "/var/lib/nuxel/boot/verbose-once"
+#define REBOOT_SAFE_MODE_FLAG "/var/lib/nuxel/boot/safe-mode-once"
+#define REBOOT_DIAG_FLAG "/var/lib/nuxel/boot/diag-once"
+#define REBOOT_DEBUG_FLAG "/var/lib/nuxel/boot/debug-once"
+#define LIVE_CONSOLE_STATE "/run/nuxel/live-console"
 
 static int verbose = 1;
 static void st(const char *fmt, ...) __attribute__((format(printf, 1, 2)));
@@ -155,7 +161,10 @@ static int json_int(const char *js, const char *key, int dflt) {
 }
 
 static void json_str(const char *js, const char *key, char *out, size_t outn, const char *dflt) {
-  snprintf(out, outn, "%s", dflt);
+  /* Copy the default only when it is NOT the same buffer as the output: every
+   * cfg_load_actions call passes out == dflt (the field already holds the
+   * default), and snprintf with overlapping source/destination is undefined. */
+  if (out != dflt) snprintf(out, outn, "%s", dflt);
   char pat[96];
   snprintf(pat, sizeof pat, "\"%s\"", key);
   const char *p = strstr(js, pat);
@@ -169,13 +178,16 @@ static void json_str(const char *js, const char *key, char *out, size_t outn, co
   out[i] = 0;
 }
 
-/* read a whole file into a static buffer; returns NULL when absent */
+/* read a whole file into a static buffer; returns NULL when absent.
+ * max == 0 means "use the whole static buffer" (a sane sentinel), never an
+ * underflowing fread size. */
 static char *slurp(const char *path, size_t max) {
   static char buf[16384];
-  if (max > sizeof buf) max = sizeof buf;
+  size_t cap = sizeof buf;
+  if (max > 0 && max < cap) cap = max;
   FILE *f = fopen(path, "r");
   if (!f) return NULL;
-  size_t n = fread(buf, 1, max - 1, f);
+  size_t n = fread(buf, 1, cap - 1, f);
   buf[n] = 0;
   fclose(f);
   return buf;
@@ -477,14 +489,13 @@ static void flashlight_request(void) {
  * BUTTON side: publish the request, and say plainly when it cannot apply. */
 static void verbose_boot_note_once(void) {
   int consumer_ran = file_exists(VERBOSE_STATE);
-  char cap[256] = ""; char *c = slurp(BOOT_CAPS, 0);
-  if (c) { snprintf(cap, sizeof cap, "%s", c); free(c); }
+  char *c = slurp(BOOT_CAPS, 0);
   if (consumer_ran) {
     /* The early stage already decided this boot. The button manager starts AFTER
      * it, so it cannot make THIS boot verbose; honouring the override before the
      * first userspace stage needs an initramfs/BOOT key capture. */
     audit("VERBOSE_ONCE_REFUSED reason=boot-stage-already-ran state=BOOT_UPDATE_REQUIRED "
-          "caps=%s", cap[0] ? cap : "(none)");
+          "caps=%s", c ? c : "(none)");
     publish("VERBOSE_ONCE_REFUSED reason=boot-stage-already-ran state=BOOT_UPDATE_REQUIRED");
     osd_publish("boot", "verbose boot: the early boot stage must capture the key (BOOT update pending)", 0, 100);
     return;
@@ -495,14 +506,14 @@ static void verbose_boot_note_once(void) {
   fprintf(f, "requested_by=nuxel-button-manager at=%lld (this boot only)\n", (long long)time(NULL));
   fclose(f);
   audit("VERBOSE_ONCE_REQUESTED path=%s caps=%s (one boot only; never persisted)", VERBOSE_ONCE,
-        cap[0] ? cap : "(none)");
+        c ? c : "(none)");
   publish("VERBOSE_ONCE_REQUESTED");
   osd_publish("boot", "verbose boot requested for THIS boot", 100, 100);
 }
 
 /* The ONLY place a userspace reboot/power-off is ever executed, and it executes
  * nothing unless the gate allows it. No other path in this program can reboot. */
-static void gated_system_action(const char *what) {
+static int gated_system_action(const char *what) {
   int is_poweroff = (strstr(what, "poweroff") != NULL);
   const char *reason = NULL;
   int ok = nuxel_fsm_gate_decide(&GATE, is_poweroff, (int64_t)time(NULL), &reason);
@@ -510,7 +521,7 @@ static void gated_system_action(const char *what) {
     audit("REBOOT_REFUSED action=%s reason=%s (nothing was executed)", what, reason);
     publish("REBOOT_REFUSED action=%s reason=%s", what, reason);
     osd_publish("power", "power off / restart is gated: see the engineering report", 0, 100);
-    return;
+    return 0;
   }
   audit("REBOOT_ALLOWED action=%s reason=%s -> executing through the userspace path", what, reason);
   publish("REBOOT_ALLOWED action=%s reason=%s", what, reason);
@@ -522,6 +533,37 @@ static void gated_system_action(const char *what) {
   if (pid == 0) {
     execl("/usr/bin/systemctl", "systemctl", is_poweroff ? "poweroff" : "reboot", (char *)NULL);
     _exit(127);
+  }
+  return 1;
+}
+
+static void reboot_mode_once(const char *flagpath, const char *what) {
+  int allowed = gated_system_action(what);
+  if (!allowed) return;
+  mkdir(BOOT_FLAG_DIR, 0755);
+  FILE *f = fopen(flagpath, "w");
+  if (f) {
+    fprintf(f, "requested_by=nuxel-button-manager at=%lld reason=%s\n",
+            (long long)time(NULL), what);
+    fclose(f);
+  }
+  audit("REBOOT_MODE_ONCE flag=%s", flagpath);
+  publish("REBOOT_MODE_ONCE flag=%s", flagpath);
+}
+
+static void live_console_toggle(void) {
+  mkdir("/run/nuxel", 0755);
+  int on = file_exists(LIVE_CONSOLE_STATE);
+  if (on) {
+    if (unlink(LIVE_CONSOLE_STATE) != 0) { audit("LIVE_CONSOLE_OFF_FAIL errno=%d", errno); return; }
+    fifo_send(HOST_FIFO, "action live-console-off\n");
+    audit("LIVE_CONSOLE_OFF");
+  } else {
+    FILE *f = fopen(LIVE_CONSOLE_STATE, "w");
+    if (!f) { audit("LIVE_CONSOLE_ON_FAIL errno=%d", errno); return; }
+    fprintf(f, "on\n"); fclose(f);
+    fifo_send(HOST_FIFO, "action live-console-on\n");
+    audit("LIVE_CONSOLE_ON");
   }
 }
 
@@ -558,6 +600,11 @@ static void perform(const char *action, const char *source) {
     osd_publish("power-menu", "refused: this mission never enters Recovery or Download Mode", 0, 100);
     return;
   }
+  if (!strcmp(action, "reboot-verbose"))   { reboot_mode_once(REBOOT_VERBOSE_FLAG, "systemctl-reboot"); return; }
+  if (!strcmp(action, "reboot-safe-mode")) { reboot_mode_once(REBOOT_SAFE_MODE_FLAG, "systemctl-reboot"); return; }
+  if (!strcmp(action, "reboot-diag"))      { reboot_mode_once(REBOOT_DIAG_FLAG, "systemctl-reboot"); return; }
+  if (!strcmp(action, "reboot-debug"))     { reboot_mode_once(REBOOT_DEBUG_FLAG, "systemctl-reboot"); return; }
+  if (!strcmp(action, "live-console-toggle")) { live_console_toggle(); return; }
   if (!strcmp(action, "open-terminal")) { fifo_send(HOST_FIFO, "open-terminal\n"); return; }
   if (!strcmp(action, "back") || !strcmp(action, "home") || !strcmp(action, "recents") ||
       !strcmp(action, "search") || !strcmp(action, "settings") || !strcmp(action, "lock") ||

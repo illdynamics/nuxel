@@ -1,0 +1,7 @@
+pushed={"b64_chars": 1796, "bytes": 1347, "decoded_sha256": "8bc6780bc4472dad3b56531b14c9f88b14c7e332c4932e68e541f7c6e4076c09", "parts": 1, "path": "/var/tmp/nxl-install-517.sh"}
+ok=True rc=0
+---
+PREV=3e5870abe2f4b80fa82a835e83d6a997bdd09ec3bc0b5f2d5d7819703b8f1c22
+/usr/local/bin/nuxel-sensors-diag.sh.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

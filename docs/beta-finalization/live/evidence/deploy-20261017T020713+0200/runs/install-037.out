@@ -1,0 +1,7 @@
+pushed={"b64_chars": 1856, "bytes": 1390, "decoded_sha256": "a96909f99fb9fb722b9c6358c3fcc89368438cb2767108300435057034cc8584", "parts": 1, "path": "/var/tmp/nxl-install-037.sh"}
+ok=True rc=0
+---
+PREV=c1fb6b5ba535b34c0b3f9db80b6130e356ba2d8d6efd4791f57444d03c054b58
+/etc/nuxel/app-registry/app_registry.json.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

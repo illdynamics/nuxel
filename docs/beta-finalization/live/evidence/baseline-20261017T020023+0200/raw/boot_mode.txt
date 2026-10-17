@@ -1,0 +1,4 @@
+cmd: tr ' ' '\n' </proc/cmdline|grep androidboot.mode
+ok: True rc: 0 framed: True sha_ok: True
+---
+androidboot.mode=charger

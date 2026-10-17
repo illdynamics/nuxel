@@ -1,0 +1,7 @@
+pushed={"b64_chars": 1832, "bytes": 1372, "decoded_sha256": "da87ed6f3e954dd317dce875e4bb641c2f5f6b1d0237331ce19692cd1371a185", "parts": 1, "path": "/var/tmp/nxl-install-623.sh"}
+ok=True rc=0
+---
+PREV=99f68383be024f8aeeeea4f3af7177df21969b2294edc0b6877da785c2dea7dc
+/usr/lib/nuxel/packages-manifest.json.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

@@ -1,0 +1,4 @@
+cmd: systemctl --failed --no-legend --no-pager
+ok: True rc: 0 framed: True sha_ok: True
+---
+● nuxel-touch-arm.service loaded failed failed Nuxel S10+ touchscreen arming (sec_ts stop->start, then hold open)

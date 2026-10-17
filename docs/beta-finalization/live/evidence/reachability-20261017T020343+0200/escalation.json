@@ -1,0 +1,32 @@
+[
+  {
+    "baud": 9600,
+    "burst": 0,
+    "bytes_in": 91,
+    "dev": "/dev/ttyACM0",
+    "echo_ok": true,
+    "error": null,
+    "mode": "dialin-node",
+    "ok": true
+  },
+  {
+    "baud": 115200,
+    "burst": 0,
+    "bytes_in": 54,
+    "dev": "/dev/ttyACM0",
+    "echo_ok": true,
+    "error": null,
+    "mode": "baud-115200",
+    "ok": true
+  },
+  {
+    "baud": 9600,
+    "burst": 4096,
+    "bytes_in": 50960,
+    "dev": "/dev/ttyACM0",
+    "echo_ok": true,
+    "error": null,
+    "mode": "burst-4k",
+    "ok": true
+  }
+]
