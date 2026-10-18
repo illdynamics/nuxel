@@ -1,0 +1,3 @@
+1792357332.750840 fedora systemd[1]: nuxel-wayland.service: Failed to get CPU usage: No such file or directory
+1792357397.949310 fedora systemd[1]: nuxel-wayland.service: Failed to get CPU usage: No such file or directory
+1792357528.619369 fedora systemd[1]: nuxel-wayland.service: Failed to get CPU usage: No such file or directory

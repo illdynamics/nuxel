@@ -1,0 +1,167 @@
+[
+  {
+    "command": "test ! -e /var/tmp/nuxel-tap-before-20261018t2307 && test ! -e /run/nuxel-owner-test.lock",
+    "output": "",
+    "rid": "bfe3340f",
+    "rc": 0,
+    "framed": true,
+    "sha_ok": true,
+    "elapsed_s": 0.821,
+    "raw_len": 8754,
+    "output_bytes": 0
+  },
+  {
+    "command": "uname -smr; cat /proc/sys/kernel/random/boot_id; cat /proc/bus/input/devices; systemctl is-active nuxel-wayland nuxel-wl-fb nuxel-touch-arm",
+    "output": "Linux 4.14.253 aarch64\n2efd316a-3c15-441d-ae9d-54cd9b30aacd\nI: Bus=0000 Vendor=0000 Product=0000 Version=0000\nN: Name=\"meta_event\"\nP: Phys=\nS: Sysfs=/devices/virtual/input/input0\nU: Uniq=\nH: Handlers=event0 \nB: PROP=0\nB: EV=5\nB: REL=c0\n\nI: Bus=0019 Vendor=0001 Product=0001 Version=0100\nN: Name=\"gpio_keys\"\nP: Phys=gpio-keys/input0\nS: Sysfs=/devices/platform/gpio_keys/input/input1\nU: Uniq=\nH: Handlers=sec_key_notifier event1 \nB: PROP=0\nB: EV=3\nB: KEY=8000000000000000 0 0 0 0 0 0 0 0 1c000000000000 0\n\nI: Bus=0018 Vendor=0000 Product=0000 Version=0000\nN: Name=\"sec_touchscreen\"\nP: Phys=sec_touchscreen/input1\nS: Sysfs=/devices/platform/104b0000.hsi2c/i2c-4/4-0048/input/input2\nU: Uniq=\nH: Handlers=sec_key_notifier event2 \nB: PROP=2\nB: EV=2b\nB: KEY=4000000000000000 0 0 80 0 420 0 0 8000 0 0\nB: ABS=4263800000000003\nB: SW=0\n\nI: Bus=0018 Vendor=0000 Product=0000 Version=0000\nN: Name=\"sec_touchpad\"\nP: Phys=sec_touchscreen/input1\nS: Sysfs=/devices/platform/104b0000.hsi2c/i2c-4/4-0048/input/input3\nU: Uniq=\nH: Handlers=sec_key_notifier event3 \nB: PROP=1\nB: EV=2b\nB: KEY=4000000000000000 0 0 80 0 e520 0 0 8000 0 0\nB: ABS=4263800000000003\nB: SW=0\n\nI: Bus=0018 Vendor=0000 Product=0000 Version=0000\nN: Name=\"sec_touchproximity\"\nP: Phys=sec_touchproximity/input1\nS: Sysfs=/devices/platform/104b0000.hsi2c/i2c-4/4-0048/input/input4\nU: Uniq=\nH: Handlers=event4 \nB: PROP=2\nB: EV=29\nB: ABS=4000000000000000\nB: SW=0\n\nI: Bus=0018 Vendor=0000 Product=0000 Version=0000\nN: Name=\"grip_sensor\"\nP: Phys=\nS: Sysfs=/devices/virtual/input/input5\nU: Uniq=\nH: Handlers=event5 \nB: PROP=0\nB: EV=5\nB: REL=200\n\nI: Bus=0000 Vendor=0000 Product=0000 Version=0000\nN: Name=\"ssp_context\"\nP: Phys=\nS: Sysfs=/devices/virtual/input/input6\nU: Uniq=\nH: Handlers=event6 \nB: PROP=0\nB: EV=5\nB: REL=38\n\nI: Bus=0000 Vendor=0000 Product=0000 Version=0000\nN: Name=\"hrm_sensor\"\nP: Phys=\nS: Sysfs=/devices/virtual/input/input7\nU: Uniq=\nH: Handlers=event7 \nB: PROP=0\nB: EV=d\nB: REL=20f\nB: ABS=ff\n\nI: Bus=0000 Vendor=0000 Product=0000 Version=0000\nN: Name=\"Headset\"\nP: Phys=madera/extcon\nS: Sysfs=/devices/platform/10470000.spi/spi_master/spi2/spi2.0/madera-extcon/input/input8\nU: Uniq=\nH: Handlers=sec_key_notifier event8 \nB: PROP=0\nB: EV=23\nB: KEY=40 0 0 0 0 0 402000000 0 c000000000000 0\nB: SW=94\n\nI: Bus=0000 Vendor=0000 Product=0000 Version=0000\nN: Name=\"hall\"\nP: Phys=hall\nS: Sysfs=/devices/platform/hall/input/input9\nU: Uniq=\nH: Handlers=event9 \nB: PROP=0\nB: EV=100021\nB: SW=1\n\nI: Bus=0000 Vendor=0000 Product=0000 Version=0000\nN: Name=\"certify_hall\"\nP: Phys=certify_hall\nS: Sysfs=/devices/platform/certify_hall/input/input10\nU: Uniq=\nH: Handlers=event10 \nB: PROP=0\nB: EV=100021\nB: SW=8000000\n\nactive\nactive\nactive\n",
+    "rid": "9c213410",
+    "rc": 0,
+    "framed": true,
+    "sha_ok": true,
+    "elapsed_s": 0.118,
+    "raw_len": 12950,
+    "output_bytes": 2679
+  },
+  {
+    "command": "if test -f /var/tmp/nuxel-owner-capture-63d9d567dc434d0a.py; then sha256sum /var/tmp/nuxel-owner-capture-63d9d567dc434d0a.py; else echo ABSENT; fi",
+    "output": "ABSENT\n",
+    "rid": "79583410",
+    "rc": 0,
+    "framed": true,
+    "sha_ok": true,
+    "elapsed_s": 0.132,
+    "raw_len": 13593,
+    "output_bytes": 7
+  },
+  {
+    "command": "gzip -dc /var/tmp/nuxel-owner-capture-63d9d567dc434d0a.py.gz > /var/tmp/nuxel-owner-capture-63d9d567dc434d0a.py.stage && test \"$(sha256sum /var/tmp/nuxel-owner-capture-63d9d567dc434d0a.py.stage | cut -d' ' -f1)\" = 63d9d567dc434d0a8087537c41766b5856e369e2b03ba601509e3ecaf6937ffe && chmod 0600 /var/tmp/nuxel-owner-capture-63d9d567dc434d0a.py.stage && mv /var/tmp/nuxel-owner-capture-63d9d567dc434d0a.py.stage /var/tmp/nuxel-owner-capture-63d9d567dc434d0a.py",
+    "output": "",
+    "rid": "ae293415",
+    "rc": 0,
+    "framed": true,
+    "sha_ok": true,
+    "elapsed_s": 0.115,
+    "raw_len": 48788,
+    "output_bytes": 0
+  },
+  {
+    "command": "sha256sum /var/tmp/nuxel-owner-capture-63d9d567dc434d0a.py",
+    "output": "63d9d567dc434d0a8087537c41766b5856e369e2b03ba601509e3ecaf6937ffe  /var/tmp/nuxel-owner-capture-63d9d567dc434d0a.py\n",
+    "rid": "a1803415",
+    "rc": 0,
+    "framed": true,
+    "sha_ok": true,
+    "elapsed_s": 0.086,
+    "raw_len": 49485,
+    "output_bytes": 115
+  },
+  {
+    "command": "systemd-run --quiet --unit=nuxel-tap-before-20261018t2307 --property=RuntimeMaxSec=170 --property=TimeoutStopSec=5 /usr/bin/python3 /var/tmp/nuxel-owner-capture-63d9d567dc434d0a.py --out /var/tmp/nuxel-tap-before-20261018t2307 --seconds 90",
+    "output": "UNVERIFIED",
+    "rid": "45663416",
+    "rc": 0,
+    "framed": true,
+    "sha_ok": false,
+    "elapsed_s": 0.083,
+    "raw_len": 50280,
+    "output_bytes": 83
+  },
+  {
+    "command": "test ! -e /var/tmp/nuxel-tap-before-20261018t2307/start",
+    "output": "",
+    "rid": "e67b342e",
+    "rc": 0,
+    "framed": true,
+    "sha_ok": true,
+    "elapsed_s": 0.881,
+    "raw_len": 611,
+    "output_bytes": 0
+  },
+  {
+    "command": "uname -smr; cat /proc/sys/kernel/random/boot_id; cat /proc/bus/input/devices; systemctl is-active nuxel-wayland nuxel-wl-fb nuxel-touch-arm",
+    "output": "Linux 4.14.253 aarch64\n2efd316a-3c15-441d-ae9d-54cd9b30aacd\nI: Bus=0000 Vendor=0000 Product=0000 Version=0000\nN: Name=\"meta_event\"\nP: Phys=\nS: Sysfs=/devices/virtual/input/input0\nU: Uniq=\nH: Handlers=event0 \nB: PROP=0\nB: EV=5\nB: REL=c0\n\nI: Bus=0019 Vendor=0001 Product=0001 Version=0100\nN: Name=\"gpio_keys\"\nP: Phys=gpio-keys/input0\nS: Sysfs=/devices/platform/gpio_keys/input/input1\nU: Uniq=\nH: Handlers=sec_key_notifier event1 \nB: PROP=0\nB: EV=3\nB: KEY=8000000000000000 0 0 0 0 0 0 0 0 1c000000000000 0\n\nI: Bus=0018 Vendor=0000 Product=0000 Version=0000\nN: Name=\"sec_touchscreen\"\nP: Phys=sec_touchscreen/input1\nS: Sysfs=/devices/platform/104b0000.hsi2c/i2c-4/4-0048/input/input2\nU: Uniq=\nH: Handlers=sec_key_notifier event2 \nB: PROP=2\nB: EV=2b\nB: KEY=4000000000000000 0 0 80 0 420 0 0 8000 0 0\nB: ABS=4263800000000003\nB: SW=0\n\nI: Bus=0018 Vendor=0000 Product=0000 Version=0000\nN: Name=\"sec_touchpad\"\nP: Phys=sec_touchscreen/input1\nS: Sysfs=/devices/platform/104b0000.hsi2c/i2c-4/4-0048/input/input3\nU: Uniq=\nH: Handlers=sec_key_notifier event3 \nB: PROP=1\nB: EV=2b\nB: KEY=4000000000000000 0 0 80 0 e520 0 0 8000 0 0\nB: ABS=4263800000000003\nB: SW=0\n\nI: Bus=0018 Vendor=0000 Product=0000 Version=0000\nN: Name=\"sec_touchproximity\"\nP: Phys=sec_touchproximity/input1\nS: Sysfs=/devices/platform/104b0000.hsi2c/i2c-4/4-0048/input/input4\nU: Uniq=\nH: Handlers=event4 \nB: PROP=2\nB: EV=29\nB: ABS=4000000000000000\nB: SW=0\n\nI: Bus=0018 Vendor=0000 Product=0000 Version=0000\nN: Name=\"grip_sensor\"\nP: Phys=\nS: Sysfs=/devices/virtual/input/input5\nU: Uniq=\nH: Handlers=event5 \nB: PROP=0\nB: EV=5\nB: REL=200\n\nI: Bus=0000 Vendor=0000 Product=0000 Version=0000\nN: Name=\"ssp_context\"\nP: Phys=\nS: Sysfs=/devices/virtual/input/input6\nU: Uniq=\nH: Handlers=event6 \nB: PROP=0\nB: EV=5\nB: REL=38\n\nI: Bus=0000 Vendor=0000 Product=0000 Version=0000\nN: Name=\"hrm_sensor\"\nP: Phys=\nS: Sysfs=/devices/virtual/input/input7\nU: Uniq=\nH: Handlers=event7 \nB: PROP=0\nB: EV=d\nB: REL=20f\nB: ABS=ff\n\nI: Bus=0000 Vendor=0000 Product=0000 Version=0000\nN: Name=\"Headset\"\nP: Phys=madera/extcon\nS: Sysfs=/devices/platform/10470000.spi/spi_master/spi2/spi2.0/madera-extcon/input/input8\nU: Uniq=\nH: Handlers=sec_key_notifier event8 \nB: PROP=0\nB: EV=23\nB: KEY=40 0 0 0 0 0 402000000 0 c000000000000 0\nB: SW=94\n\nI: Bus=0000 Vendor=0000 Product=0000 Version=0000\nN: Name=\"hall\"\nP: Phys=hall\nS: Sysfs=/devices/platform/hall/input/input9\nU: Uniq=\nH: Handlers=event9 \nB: PROP=0\nB: EV=100021\nB: SW=1\n\nI: Bus=0000 Vendor=0000 Product=0000 Version=0000\nN: Name=\"certify_hall\"\nP: Phys=certify_hall\nS: Sysfs=/devices/platform/certify_hall/input/input10\nU: Uniq=\nH: Handlers=event10 \nB: PROP=0\nB: EV=100021\nB: SW=8000000\n\nactive\nactive\nactive\n",
+    "rid": "4ffe342f",
+    "rc": 0,
+    "framed": true,
+    "sha_ok": true,
+    "elapsed_s": 0.118,
+    "raw_len": 4807,
+    "output_bytes": 2679
+  },
+  {
+    "command": "if test -f /var/tmp/nuxel-owner-capture-63d9d567dc434d0a.py; then sha256sum /var/tmp/nuxel-owner-capture-63d9d567dc434d0a.py; else echo ABSENT; fi",
+    "output": "63d9d567dc434d0a8087537c41766b5856e369e2b03ba601509e3ecaf6937ffe  /var/tmp/nuxel-owner-capture-63d9d567dc434d0a.py\n",
+    "rid": "aa89342f",
+    "rc": 0,
+    "framed": true,
+    "sha_ok": true,
+    "elapsed_s": 0.084,
+    "raw_len": 5594,
+    "output_bytes": 115
+  },
+  {
+    "command": "sha256sum /var/tmp/nuxel-owner-capture-63d9d567dc434d0a.py",
+    "output": "63d9d567dc434d0a8087537c41766b5856e369e2b03ba601509e3ecaf6937ffe  /var/tmp/nuxel-owner-capture-63d9d567dc434d0a.py\n",
+    "rid": "582e342f",
+    "rc": 0,
+    "framed": true,
+    "sha_ok": true,
+    "elapsed_s": 0.086,
+    "raw_len": 6291,
+    "output_bytes": 115
+  },
+  {
+    "command": "if test -f /var/tmp/nuxel-tap-before-20261018t2307/ready.json; then cat /var/tmp/nuxel-tap-before-20261018t2307/ready.json; elif test -f /var/tmp/nuxel-tap-before-20261018t2307/receipt.json; then cat /var/tmp/nuxel-tap-before-20261018t2307/receipt.json; else echo WAITING; fi",
+    "output": "{\n  \"armed_at\": 1792357398.0526373,\n  \"nodes\": [\n    {\n      \"path\": \"/dev/input/event1\",\n      \"name\": \"gpio_keys\",\n      \"properties\": \"0\",\n      \"abs\": \"0\",\n      \"touchscreen\": false,\n      \"buttons\": true\n    },\n    {\n      \"path\": \"/dev/input/event2\",\n      \"name\": \"sec_touchscreen\",\n      \"properties\": \"2\",\n      \"abs\": \"4263800000000003\",\n      \"touchscreen\": true,\n      \"buttons\": false\n    }\n  ],\n  \"event_size\": 24,\n  \"wait_for_start_seconds\": 60,\n  \"capture_seconds\": 90.0\n}\n",
+    "rid": "0758342f",
+    "rc": 0,
+    "framed": true,
+    "sha_ok": true,
+    "elapsed_s": 0.081,
+    "raw_len": 7711,
+    "output_bytes": 490
+  },
+  {
+    "command": "touch /var/tmp/nuxel-tap-before-20261018t2307/start",
+    "output": "",
+    "rid": "433d343e",
+    "rc": 0,
+    "framed": true,
+    "sha_ok": true,
+    "elapsed_s": 0.087,
+    "raw_len": 14320,
+    "output_bytes": 0
+  },
+  {
+    "command": "cat /var/tmp/nuxel-tap-before-20261018t2307/started.json",
+    "output": "{\n  \"started_wall\": 1792357438.5755754,\n  \"started_monotonic\": 1033.226151376,\n  \"deadline_wall\": 1792357528.5755754,\n  \"seconds\": 90.0\n}\n",
+    "rid": "e88d343e",
+    "rc": 0,
+    "framed": true,
+    "sha_ok": true,
+    "elapsed_s": 0.093,
+    "raw_len": 15043,
+    "output_bytes": 138
+  },
+  {
+    "command": "systemctl show nuxel-tap-before-20261018t2307 -p ActiveState -p SubState -p ExecMainStatus; cat /var/tmp/nuxel-tap-before-20261018t2307/receipt.json",
+    "output": "ActiveState=inactive\nSubState=dead\nExecMainStatus=0\n{\n  \"verdict\": \"EVENTS_RECORDED_BUT_NOT_FORWARDED\",\n  \"started_wall\": 1792357438.5755754,\n  \"ended_wall\": 1792357528.5783973,\n  \"capture_seconds\": 90.00282112800005,\n  \"requested_seconds\": 90.0,\n  \"totals\": {\n    \"events\": 384,\n    \"touch_events\": 384,\n    \"tracking_down\": 11,\n    \"tracking_up\": 11,\n    \"syn_report\": 87,\n    \"syn_dropped\": 0,\n    \"dom_events\": 0,\n    \"dom_touch_events\": 0,\n    \"dom_clicks\": 0,\n    \"app_launches\": 0,\n    \"event_bytes\": 48739,\n    \"log_bytes\": 30168\n  },\n  \"errors\": [],\n  \"owner_verified\": false\n}\n",
+    "rid": "e8cb3499",
+    "rc": 0,
+    "framed": true,
+    "sha_ok": true,
+    "elapsed_s": 0.868,
+    "raw_len": 9326,
+    "output_bytes": 587
+  },
+  {
+    "command": "python3 -c 'import io,tarfile,base64; b=io.BytesIO(); t=tarfile.open(fileobj=b,mode=\"w:gz\"); t.add('\"'\"'/var/tmp/nuxel-tap-before-20261018t2307'\"'\"',arcname='\"'\"'nuxel-tap-before-20261018t2307'\"'\"'); t.close(); print(base64.b64encode(b.getvalue()).decode())'",
+    "output": "H4sIAJk01WoC/+1da28bx9X25/yKhb64BSxq7pcUBOzEamK0tQPb7VugLogVubLZUCRLUrbcIP/9fWalSJQ1u56d0bjpZjeBLZMUn7NnZ879nBkdjY4e/1BefF+Vs2rzIMtFLq+mvwnh/OZn9zoljNIHxcWDL3Cdb3flBvAPfpsX08XZbn5Wjam2jEstmRlpLq21Xz0Yrv5fy/OLanG4K9eHJ9XpalMdMsIUJdTsGCf66N72v5ayef/jZyqZkowzxin2v+CaPyjkl9z/m9Vq1/a5z73/P3qNBvk/yP9B/g/y3y//y9NdtRn9a7taJu5/JUTD/qfu/0/kv8JKfFCQQf5nv376qigOPpSLxcRJgYOvi1tygGlhH7lPnK2Wq91qOZ+6T1DGR9xwzoWSpn77BMyZzGd484BVpzNOVXnIp1QeCkFnh2VlZ4dSTGf2hJOynM4O6l/6sdosq4X7HTGiYsQkv3z9rJy+my8dLQdluZm+U+Lq9dXMvfgP/Ix/Td+Vm7fz5duJe3lMLjjh5ABv/bP+7Hy5Pt9trz/9U/0nXl+Xu3fui49m1fuj+kNH1ftquSM1RP2RZVnz4eCs2pWT+s2b99ab1bra7OaV++qDvV8qTz59Zbc6n77bTjdVtcQ7p+ViW12/d3K+AzO3v7xev/zzozBK6V1K367nq8mP1cdtRkJ3m/OOdHpYOnUknX6cvMN6+1Uxld2ldVtNJ/twDeSyO+QKpri5sWZ4E/WOo/dCPG8hfl3Omiin0ZTfH99FG+mb1cX8bL772IH15PaV/wakZzdu5uvJtlpuV5tf1RpXHl5v15PparmrLn5dMk7fJfXd5qwzU09P85Nq7pLqXKlt9eviqPVw9IsJ4RutvPn3jQIXnH5dXF2UqeL6IvfxY3Xxcbna6smHH8/XE+BOYFOs67f+DIYs6o/VomZ7YzRsq837+fSSA89m40vT+EP5cVEuZ6OrN98sn0x38/fVq125q8Zl/fOb5avzk8sXNufLJYySN8u/lPPlD8+ejiWX8s3yzfLm+xaHpyfR3yYYu/Vt9bM4LDdn8fQJdesbL5/g4Vm5LN/C9I8nVLy5VJoH08UcK9BnjNUWo6PgzuL85O5uFl+9piens5uvq1++q9Cv3vunf5tcIUt5B3n9bjWNgHvU/KYIokVQ3sCF9Yfy8N1qu2ugqv1bGWv41nodtn/lzcZwD9m9c/n1B0d43ke3lrP7QG1UXHsPxR9fPvnL8avJiz8Vu9WuXIxh3xtanK63E7odMw4BMV+cb6rtmBQni/luUr6HLb8dC1aszndjzcgFfEJSbDfTvX9My0U1ZsW6hOcwpkI4u1+QYvVhWW32N1gxm2/Xi/LjeLV03zCBa3tW7uAmXFkGtJiuFqvzzfjlY/Lou8fm0TePqZqUJ283Btdk9b7abObwK+ibXyy//ZtezE9qfh06cfvpzStBSfHDk9ffT7598fz18d9fT759efzk9fHTYrq7AAVS2mpGTkVJinOslKtXTk5EiRv5nXupmJUVHK4CLlexqf59Pt9Us9+/We59/V+fHv/t6TeTV8fHT/G9NWXuF49m5a48mlL+tVLF7+bL+W5eLub/qWbFWbmBu/WHYvtxu6vOZofu07NiWi5rjPNlAbjdu/m2uHTKbqMB7Nm3x5MXPxw/n/z52TevcDeFu/PxnW1Q4GExUZzOxof01lfU/Hjy9CnuCVy9+3tubY4ffmJzPyzK6bRa76rZeP/baMDtm3u7fRp++6K+fXnn9ulnbl98evvXpm8jBy6/8NWrZ989n9QEbSss74fuT/IQi39TTXcTwDh1BrupWmLTlLMZvocVsxP3Sv0zVvdXbqP/PAT7fqPXryP+L+7G/9kQ//8i8X9zO/7PrRkRoRH/F4NMGOL/ly8mJgC6xP+B7uL/krEh/v/fjP9fygGhuTZ3EgDWspGykiNXw9UQ/x/i/0P8f4j/D/H/If4/xP+H+H9U/L/gdoj/D/H/If7fk/g/vIe78X8mqLyO/6sh/j/E/4f4/xD/H64h/j/E/3818X9X94s/Ef/ng0wY4v+1ftrW8f9Fnvg/5RrtXp/W/+uh/v8Lxf+vwvBX4f8rKSA0pIDSRvNHBzAlKnh7s8leCoASzUeMESmkUPjMFqb0FL9+N2p6sPu4xhv4zLQO30v96OB9uTh3r/38VRq6NiYMnf6Czjm5hqep8AA3RnWCZ/Ie4a00xHbiPb9GZ0yJVAIswq3IDnUhQNw8fCtlMgEGzl8XfGGu8U0iOEwUzUWnu0crzf2hayIJ64Ku2DW6kpYmU0CpDnv65BcKbrYeaQXHvmKqDZxLYRV0Rfzal6kEaGK6br5ba18lE2B4mPDpzH7LrGx99mjORilnt7V/m/06lQAIj47Lf2/r20R0gb/CeO/b+snolIuOa39v63PDUvEZUWGCr+vKU9TwdqmjLNVIUMZvfJ1MANfKBtkcne8e24q1YVsUYxjbzdrae/KJ4LJ2002kqXdIE9EpWoI72lr83hiPYiQWJu+8ll4qOu4kz4ZzJTyiDVw5I4NIEfnURSo4ysHgIGYx8EPgBbQcE1kM/BB4OFc83sCHCZFKgJJdn/2+jcN0Kr6Wwgidw8APQTewkpEfzGDgh6BD0MfL+s8a+AEUKLgYYSZuZ7EDDWplGzhcO7ggmsavfZFIALwbGu1b2lRwOOcdd36ogRmCziWVhOYxMEPwYWCHid3OC88KqdrsO+UGWnBlRfzCU6kEOAO3G/dvS12TSoDhgneTup0kTwgFJpCCbgvAjgiltYZuBlcw9USS1rWpBAgrOoYWQrdfGL5EbCGD3Ae4ZNa0hTU0ERC7PCGu0mZzhBEgmOUdffsgmyMMHSZfN4srzOQIA1eK6qDAQucHr6xpFfqo7wGyZeL+fdswdCtsx4hOoHMbBE8J4klBAq+rdxsGD+cajz6DexsIb7XOIe0lc3nERmw0nbgBV7qrtr158DIVXRJuOzqYYf5tILwhXOgM/m0YvBJW62hFq1UqvsaytzxW1xjDkwkwTLAMTkYYuhG2o5kf5mSEoVsqSLST8RkrM5ACgzyQzCF3YIS1mLgAN7AxdEd1d3vxm1QCEE7NlEUIwzfwsLMIfZgxVrVhW62oYPGCxyTjGwRVg9Z+55tHVszoFnDkbggDiSz+7nkqAdSYeKlHk++fKWZMbFgvHZ6HZu86P3t8NW0TeQisYHJnV2vn1rOXqQRwlHZRFa9yWTIBSmrOsqjcAHTkTjvuvWCVG4IOF4eqHEsPFXyqdd273g+WElYxOpUAaUlXcydY7ATAKyRzOuYy7D3COy8nj7FjDLR5GzhMPUSURLzCtckEQOgmxFQBkEwALL4sEU3kiaRibeCoGhCuXCie/TSVAElNRwKChW4IuiZZkilh6Ais5AmqKYIiONoGjkCugocfL3QtTyXA6q5RvdsbL5UDyiUSu/n4wVI/BB6JtK4r394nvJWZFh+FtdHm5cD/s4LzFKkvEwkQFD5mQnxH21QC0EgRv/iS0SH0Ou69ULkXhC4DZX7npceoEa1CVzOXRE7wca1JJUAj6p0g97ROJQDFK0znEXsB6JaoXD52ELxkeRwdxQkyhG3gBh62K07PkcgKQYe11rUwPjSRFQLvioaCDI7uiawQeET0Zcd6wdBEVgg8Iqr2/gtXDEH2FlUZpgUcrRiWUdnR1rt58ioR3bDQeHbHTFYgvEDBXI5KzUB4SZlN0DfcpBKAbpiutta+vrHJBEDlaX3vlk4guOEsR1gtEN1ypfOUS4URYInIJXaUMLQtj6OpNK5gzcSvPJtIABQ9IltZ7t5Q1Cq2gXNn5CoZn8YTyQRoLRIC6pYkE2BQPBNdt9OWRwzFx/ozMsfjR35Ytil8HI1GbHwyRchUdE7RghpfKUpYMgFIyPAMIfVAeFctd/8+RiA4ZhWE6Zyu644SV4TaBo6wHqYpJFQPCJ1KAELeNkPlSiC6q9WTIoe+D0A3rjOE2xxPnkqELdrAUaYHszmhaEqYVALc0Of4oJolPJkAgzS2ysF+5k60bAPXSGKSjoGNW+yXyQQw598nyHyRSgCSSfdft+OwOZJorbreMOu6/uM1ruSJBGDt6675lFvcV6kEcHQEdiMgqDo9EF3AW+kYz7b3h46OsDyGPioRP6PuLXWGdoLGlSKVAKglreNXnknFdzuf5eG+UbxV5WLbE6TR4rWeNKkEuHEoIoH9NpUAV6ybg/mfCy8YWBso0+/m4QcFtAPRkUch0WHNQ5oKj/RxWAqvY0A7DB7ZBBtm7nUMaIfCh2bPu647lJGSlvpsCYUgiKonQ8c9eZ2Kjk+E+XfdA9oh8LBxw6zc7gHtEHjZvU5zT+BKZpIJQEg/Qd8xmUqAQmlPNw50CeuGUIAP5olsIUcIM7YNXNTlG/EZDTQbphKAyFK8pZuOrm3H5RcaYQhBR+peZXFxUZ4OsdYGjoWLyXYqumZMcppKAOeKpowdUakEQPYrmyO0h/YAolqwGYahokCfZ+l/DsNHJpNGi73PhPND4FUWMxdGnGa6DZrqhDzOZ/RdCDrqo2XKc1epBDh5Fx3LT759Z2ZnaHwPQzeusoPlMHPdOG3ZuuQhak0geMPSk4kEaDfwJWXppRMAEvLIWzfKpPXZw9AWXctmQr3bEHSXu87i24aAu7oRqrL4tiHwqM4N2/PdfdsQeMtYjgQeH6G3FAfdN4LjWE0U5bs8QuzcbJOKjvG5UssMvm0YvBsvbzO4toHo6AmI9WwRAU2Fx1gxwmMdW0OSn73WSsSOt6HJzEdfOAb9xybt0+ER05F5pmYHUgB1aYTIIXVQRWhkGzjGSiF9w2j02jeJ+MjtushW9NrXqfgomAm7/87Mx4TYFtfGoK7AWRrRbrXgNBVeoXbA5rh19CHxNmhMHEPHvRDRt84T4WGAhuna7reORg3WCm4V0prR2obLVHgIvK47fn/HqVR8TJhhLMuyQ+Elb13ybsWrhB1nUuGhLeKVTWsoJQgfUUZNtMzAe+lM6NYHr5xlj6RlNPN1Kj5K8rWKN7NkKj4+rGiGvtNQeNvRyA2sjQxCx8RwY1WOhYe4uG3T8YijSex7ef/tV0Hoxg3utRnGCAaiY5pd2Kbr6tAHwmu49DyDQx8GDwNVZpB3aoQic9I8XwPhBjR7CteoEXs6gk1DRyWuu/UMB2EFwmPQABcsg0cfBo8mkdrvioug0jZhH0YAJikiYR2pbCCreSoBrk9C5nFrwwhAXS/RPMfeQ4yON258Q0dIKWGQo+52+7fZL1IJUJTZDAoP4Jjs05wsduAIYsK1pDZ+9ZtUAmBthK3+zneP9hLSynrXP0Ztwt3TVALcgUTUmBxWfhi+SyLkUHpuVFv7kzeQnCRs13uNXJYKj+k6mkWP1EqG586/VVlYbxhtxTYuaUgzZK1CwDG5VcXbOoc0FR1Dg5XMYOQGobu+PZ3Dxg1DR9Nelt3ujmZoHg8PcEzLRaOzlTrysdNUeKw6xk0WEzcEnaFwKJOJGwLPpRTRcUQ34D2VALR+dBT1ezaWGzqaSgDiXQm6Jnn1uVhijmbTMHQ3pF7zXAZ+CAVGG5shfwBweG9MtICjPgOJHc1U/OJjiQS46Ro8h4WLTlZm2qARvVcdzcvbG58lwuM8kq74t1jPE/FRWke4yGNeh8AjjprFxkN5s2guS3PgiLLiOJyUZ09TCYDSj/ar8exlKj6OcQuLK3XmPs7WE22OlRuj5SaH8kyeZQgBwq0/Hc9+lUqAJLaj2A1274Lgkb2Tedy7EHhXJ5RF49UjY9pWvkSFOhpwjMnh34WgY3QmYyqLgxcEbwN1TncPLwQena5K2CwuXhC8FWHedbd1p1HorFhzjzXAMUoHh5+FNZp6fTyaCi/dyNYM5/0Gwru0LcvRdBcGj6PvwtSdV+MgEptKAPLeHY2tWxqnrUAskADrwisZnLwweGt4gsZJhUcSh3e8+3AvL4wCnIwStgA6yx7UWtM2W9u4jjeq4s1dwngqAaiXCZM+HVsOw9BRwNgV3d4jOmaJU5rjyaOTWbSCo0ANgp/S+CevUwlwp8LEW7rJ94/Ipsgld0LgNQ0Te92fva1HYzaCW+KmFZsUpWdSCXD9ScJm2fUB6Jhs0lHlBu/6EHR3PoLOEV0Jw9dY+kzlWHkI15q2/J11HY+Ex6sbThPx0Y3AWUJ45TNSL4AAHAjUkYBwqRcAj5p1Gb307wEeI30Iz7H2tDv0ow2cubM7EkwdzlPxMVwh08YznLZGVmDjQuh3DS/cunuRSgDF1NiEoHZbs3UYAWi5VZkszRD02t7LonMC0HlnM7+TlxNAAUgIu//Oi9/N6WoFRxaZG5qy9VUiAZhwSuPtHZp6/2jHcbZ2HqkfAF8bHDKTxROAjxLtsNvvuvaQoYRMbwMHbejEYur+o8ph6DD2slQNBaJj25Ecg9zC4DG+EnonQ1A5EB5jfbIElZGho82DrAzDpkABqexo6O0HlVkqPMIqRuQJKofAu2lCwmYJKofAS95V2d/SNzL56SOwRboJ/OAKgjACXAOJoLkMjhAKjIswyBy7zx08w1vAIRjcRC3C4xcATSWA6678D67eCSNAuDwyy2Fth6DDyeYmh7EdAo6Ydpjs67zykC2RbcseU+JxFljHsObtlSdTCaDu1F2apWgxjADm8mlZ2K8VtEobOHPkaSXi2a9SCUAJS6a7v6p+bwbn0o2uTdF7JpUAnEllbUL1VDIH8J8hPI+rE4Rfj/DM8fjR8EZoG7hwAZ4U2aOSCXAF6zZPcDUAvh6eTHgWNzsIHhXjNIe/gUZT25LLBLhBTiMpvti+9UMIYDilwuj4hkSbTACq5QXNMOUpEN5IE7/4kuE5UnpZYizu+BXTqvKx6nESZTajJ4QA5pqRdSa9E0QAKlmMzlA2GghvdYLkS4aH826yaD3USAjbJnZxiAfySlTYHAG+EHScOt3V0wyN8AXBhwa2u0f4guAt6difFhrgC0FHo7DIUMOBsWkoSOVta97VjEo3MD02wMdT4dGkQeMfPE2FRzYr7O67BvjC4PGRrsbGvsKhKpUAmNqWxmdT2w4jDCMA+pbrHBmtEHju5j90tfTtPcKjPU7QTPnUMAoQ5chQOujGZSrS0pfosDHkTImUxWdSCUBDuJAqx907W6IVHLF9RNYTPB2qUwmQrlFEZLh7dwiFbNN56E5DK4WVCXdvUwnQzuTKcApqGDpSijZa7iSjuyKmDE5WPTWSq1aJo4kb6altlk6JMAJQLaxZjl3vhqXqNmzjTpxnTMbfvEzEZ8amJPTa9X0APlcJu46mcl84/45l0fYh6I71WcpXguClVDZDWK8e3ChMm8QxzstQHTl/e92LVAIk3AYePwNDqGQCjMykbS1yFW3ZHIM5y5pmiS2EoXPVdeEHxhbC4IUKdLK6xhbC4KVLZrAMwYUweFdNnZDIezBcv95rdDQ6evxDefF9Vc6qTR4Mcnk1/e06YG5+dq/DAKXsQXHxJRhwvt2VG8D/Rp8/M8WZEwrjK5mAmR8j2GhIQolh4/4GruX5RbU43JXrw5PqdLWpDl1/Aw7oMTtk7/XRBmLh4+hf29Uycf+jDLBx/2PUzQPqepHQDAh07H8l8HZBvuT+36xWu7bPfe79/9Hrp6+K4qDcnEHzl7uDr4t9MSBd/Rh/5D6xhFrf4u1/4B9F8VP9J15el7t3ePXgaFa9P5ov1+e7o+p9tdzRg0e/fGRZOoujOHi7nq8mP1YftzdvrTerdbXZzetvPiA3b5Qnn76yb218XZyWi211/d7J+Q4Gi/uN3ea8ql/9+VEYnewunXdsGz+17A617tBcc6PFeBPxjkgP7fU9XRKPP/9Zc72mcbKd/8dRhiFl7rUP5Xw3wU6duHWLN6vpajlzX6BI/f60XO/ON9XeG5aMyFdNZtig/wf9v6//kcpzhzZC//NB/w/6v3YL17s0C+Az+h+7XV/rf5ROOf2PI0EH/f/F9P/7ajObT536Pzj+2/Hz168mL4+/ffHy6fHTyTd/fT15/uL15I8vXv7fE/dKrdYOauUDm+FDuVjcWA2ou3TCA/9f6qpqObvzmUsBg0k7V5aFX1+5igZMr6z1qaw/t6n+fV5tHebtT9Zv7lY7qE+8cqnxLxWn+zc34lLXXirhie+NTTn9cb58O5mtPjj9jFzmJ2+cr/df3n5cTjbVerVx/EJQ6ObVGSyEdTXDy+Tq1dnq7AZy/8VPqNl/a7qYT3/cf7FcryeL8nw5fVftv3xpHJx83NWvolAEx9hevrNYvb1+HQliZb66sogOqs1mtantuEsDA3dcbSZ4/PPTeU34pRUyxGyG+M9g//0m7b9ahHM62H+D/efsv1rP38f+b4v/uJ+v4z9aY/+jhHmw/wb5P8j//47814P8H+T/jfyvZln9/3qz35b/CpWVg/z/Yv5/mDf/y6f2KgQKnJLFR+4MOIy20ar+2AyaZDFfVl6/f+/bwuLTwzXo/0H/f+n4/6D/B/1f63+3NJwwrw2ARRb9jzMcOfkk/o/i6sH/+zL6/yo3fnC0OV8eXa6GD4vD05MR+LKrUNp3+ffXBzdWQfHHl0/+cvxq8uJPRR14H7vzsWxxut5O6HbMBKLI8wVi+tsxKU4WSFeX799OzrZjwYrV+W6sGbnA4ybFdjPd+8e0XFRjVqxL1CmOcfoNueBEkKIOUY/3CCtm8+16UX4cr5buG1wu/KzcjcnFL+mkYrpaoFJx/PIxefTdY/Pom8dUTcqTtxs06pnJCtHuzXwGgffGFS6uTrbV5k7dozNqNDIUCmddPjpwhswnlZMwjTBOHyPr6waiuyxczE/qMoND91YDK9G5RIofnrz+fvLti+evj//+evLty+Mnr4+fFtPdBe5HSlvNyKkoSXGOuoWrV05ORAm2/M69VMzKCnQXoLxw+ZH5ppr9/s1y7+v/+vT4b0+/mbw6PkbqpqgJdL94NCt35dGU8q+VKn43X85383KBMoNZcVZuUCr6h2L7EbmWs9mh+/SsmJbLGuN8WQBu926+LS4LSm+jAezZt8eTFz8cP5/8+dk3r3A3hWPA+E7dRYFH7xbKbHxIb31FzY8nT58WruLE83uuTGP88JMijYdFOZ1Waxin4/1vowG3b+7t9mn47Yv69uWd26efuX3x6e2jJuVifjbffWzkwOUXvnr17Lvnk5qgbYXN8tD9SR5iKyHBu5sAZj6ttsisVUtswXKGtB3+np24V+qfP7NX3LER7vyUlr2ilfZvlc9IG+uTNor3TNrg6BPYXpxrPwctujOMOwQzhoW4LQ8LjblmoewBC8XIYO6LxBQALwcFGaFRFmEFE8VB6uEgDsnq1SKUaDFBgxE6B6yfhRRNKm6oF4tiIfOxkItrFrIesBAnfOFMchyM7s6V9LGQod8CtPMoDnIfB6Xp1SLUOIbIUncAnp+B0DUUXVA2ioHCx0DTr11scKKLFETWs5Z9HBQ4mQM3reLWoPSwUJJ+7WI7qicXMuE3Z4QcubpoFamMlY+DTF9zkP/vcxDKFsdvYOqyZA3bWI0IZguQSBZqHwvljUmoesBCOtJudi+6/JmfhRr1+RQ2YxQHfS48ivL6ZBEKNxuGo5KA8gZ7xk03waQ4GWcS+vwSdKb3SZlA28InofhPNbDQulkR2Ho0hoXS55eoPVHYh1UoMC4CR9gjcuNnoYRj4n5QUaJQ+hwTjCPqkz6GvkUoDnMV6znrPhbCMUGPNIvjoM8vgZ/Yq30Mv6SehY0TZv0chF8CjY1R5VEs9DkmyqpemTRwTKCLiUGgxs9CPsKEAB1lVUufY6Kp6dUuhmMiLZJL1B0F4mMgHBNM22KXx3t1ZqHPMcF8pl6x0OKkVuPmTlG/ZyLhmTADMRm3jX2eCSbI90kSQtvi2EecdWsbnDupRm5ov4m0aHyeiTa9CtFId4AgDli0xDZsZHcEISNRIRrpc0wQT+vTNoayVZhehrS3abBn4Jig79ryOIPG55jAi+wVC+GYUIT6XXOTn4V2RBQihXEsVD7HxMheRbmgbrU7OAzTc/0BBoWqPCQEOIvSx8rnmBjdL0kIx0TiQEFDpN+sVnBMUEmDs16jWOjzTJAEvGYh7QELFdxjd1AOzuT0sxCeiSsvFXEb2eeZWNYr5w7qFmNQcaQrb8jbKXgm8PAiF6HPNcGpcr0ShXBNEGllONfEbxQqAfdYxIValc8xseqGgaQHDIRjgqiT5tJv0CgJ31giLxXFQJ9bYvds6h5EF6BrDYouEbjjDZoEbonzoeOkoMcrwSHcvTKqoWqNO1rZatJgzsAr4TBmSJw5Y3ws5KRPuxiq1gIcRwc1bWMD3xhBRBXl2inrY6GUfYr2Q9VaJO2IsrxBk1j4xqhTitLFmvg4qHWv9rGAc4xqQd7EQQ23BH9jFG0UCz1uCapOaZ8MQmhb7crtkWX3l4BoitQxiuHiEp+a+VjIVK/2MdwS1MKhuor43RLNkDtWJjJhormPhaJX8X7ljstC0tMgBepnIccJE8jOx+1j4eOgpr0yCs0IRUYI9lvVsAjhllDhzmeJYqH0sdCKXrHQ1gcWYK1Rv1WopRt7j/HWcfvY45oI6P8+RWigbw3OmbZKsIZVqOAcY+WYqIyJ9vkmyJn0SRRC3xp3IDFnumEVavjHiBaKKN9E+3wThMz6ZNNA3yL+jgOFjWlYhfBNUPKFNHwUC32+CaJBfXLvtPNNpDvDgzRY1s43QZxQRclC43NOOOmVOoHCte50YZSo+8M0huDUd/Si2DgW+pwTznqVM9GumAsKF3EE/0Y2dTEX6myiOOjzTSB6e7UIXTGXYO7wDr9hbVwxl6u/ijILjc834Xv1cH1QyK6YC02E8Fr9/XbGFXMhPx9XUmh8zgkCGr3SJq7PBPsU51E1rMK6zwQh0jhR6HNO4OD1ShTWfSYgizY4J6ZuNEGlUhQHfb6Ja2TsEQehbpV23olpSNwZ9JnAppE0Tpv4fBOXlu+Rewd1i2pC1KfThn4xnD+N9BS6JOJY6PNNnI7pEwvrQ3CtoaTBvatPkgV5LG4j+3wTxCX7ZNNA3xo385M01AYb6xLwRkcx0Po8E/g5vWIg2t+5QLzLNhTEYcYaquFwjHwUB32Oidyrh+tByB/K1khYzdxK/xq0FBEGDlEZxUGfY4Kmnz5Z1VC2mEGPQYCqwTGxDOXpaLiLsgitzy+Rtl+7WNfN2xT37C/lsrxu3uZxEX/r80sUY71ioUGUCxwyaGfysxB+CQ7xhUkTxUKfX6L2yuH6wEL4JUhwImxC/HUgFn4JYjiYLxTFQp9jolSvIv7Qtmi1Qy+OIg2iULn6dNR7xa1Cn2OChow+rUKoW+1G7CAv7reqLRwTpFVEXOOs9TkmqCrpk3sMfQvfFzEu02BW44w/1xxqbBwLfY4JakD75NtB4Wrthpfh8G0/C+GZRJo0kvgcEy1VrxgoXPO2m4hEvaFWMAHxfh3X9YlMlo+DexVxfeCgrH1j9Ej4yzLBhNo5FlHBakl8ngmO3eqVLlGuPh37GANm/SxEygQF2OiSi2KhzzUxrFcdd9C2BpXBrrya+VkI1wSdFFHlXG6AlIeDgvUpYwJliyYdzEqRys9AOCYYvadF3Db2OSZG9coxga6FqYJ4PuUNLIRjgg5uq0wUC32OielVowmFtkWEEPNorGiQhGg0QWEw11Ec9PkltldjMlErPrJop8YoR/8gEDAB43BhNMo4Fvr8EturMZmwBd1sMyO1bjBo6qPHMX87Thv73BIrVa84CLeEIXeMhqYGSYj+d414Ytw+pj7HxGrTKxbCMREwa3C8rJ+FFI0mFsMgSRwLfZ4JquF7ZNEgPIgCdQgna/0VhWCCK1B3I92iWOjxTGCpk16tQlUXqOO4C97AQlYXqMfV+MNQ8rFQsF6xULsCdY6ZPQ3OHUUxl8KJInEcFD4OKtUrkwaeCRQJbBpu/BwUrhyOxHU7YUipj4XG9squhmuCUSDuh4Z9DNeEuAADj2KhxzWBdKV92sfQt65VB4FW2rCP4Zq44d8kykGm2sdC3qe2RVxwkKl2o6sbWAjfRLhqrzgWGh8LZZ+irSjFhIOMZJpBpMHPQjSaIFKIys0oFlofC7Xt1Ubmbvo3TvVEMNDPQuumf2ORRqkT5nFOXBFtr1gI54TUI+Yb/DsG5wRTl+Mq4iSjPhayPvXqQMiNnDbBALMG/46hC167WclRHPT5JkzIXolC+CZIKrlAl/BzEE3wmOgadxACUjE+FqpehVuhb5F1gjKR/lGPYAI8ZObSpFEs9DknGGPVJ+cE+lYjNYeOJv+cQjABHjLSKjqOhT7nhFPZq1UI5wQF6AjTEH8OnqELvlYqUc4J8zknvFct3BT61qCaC83uzO/fMXTBa+NirlEs9DknfO9opx6oE+hbI13QkDVk7xicE0RjmYozC33OCTd9av3EIEwMOYNSwdJoWIVwTjjG8anhNPXhGq7hGq7hGq7hGq7hGq7hGq7hGq7hGq7hGq7hGq7hGq7hGq7hGq7hGq7hGq7f0vX/UusriQC4AQA=\n",
+    "rid": "2ecb3499",
+    "rc": 0,
+    "framed": true,
+    "sha_ok": true,
+    "elapsed_s": 0.199,
+    "raw_len": 26709,
+    "output_bytes": 12477
+  }
+]

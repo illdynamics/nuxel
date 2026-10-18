@@ -21,6 +21,7 @@ run node "$HERE/test-qs-gesture.js"
 run node "$HERE/test-touch-keyboard.js"
 run python3 "$HERE/test-terminal-keyboard.py"
 run python3 "$HERE/test-terminal-lifecycle.py"
+run sh "$HERE/../../../touchable/run-tests.sh"
 
 echo
 if [ "$fail" -eq 0 ]; then

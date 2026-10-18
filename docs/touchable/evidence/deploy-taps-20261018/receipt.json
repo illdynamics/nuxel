@@ -1,0 +1,99 @@
+{
+  "started_at": 1792357924.7255569,
+  "files": [
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/js/launcher.js",
+      "staged": "/usr/share/nuxel/pwa/nuxel-home/js/launcher.js.touchable-stage",
+      "backup": "/var/tmp/nuxel-deploy-taps-20261018/backup/pwa/nuxel-home/js/launcher.js",
+      "existed": true,
+      "old_sha256": "3dc737d867a2ad31a10c4a1f8a472b77e78b76a7065a6b34b88be3dd88c91346",
+      "new_sha256": "347cb611104d2d36f5a9565d7bd4567b8d8909f2fec96e4ab6c3f68264fd0ca4",
+      "installed_sha256": "347cb611104d2d36f5a9565d7bd4567b8d8909f2fec96e4ab6c3f68264fd0ca4",
+      "readback_sha256": "347cb611104d2d36f5a9565d7bd4567b8d8909f2fec96e4ab6c3f68264fd0ca4"
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/js/app.js",
+      "staged": "/usr/share/nuxel/pwa/nuxel-home/js/app.js.touchable-stage",
+      "backup": "/var/tmp/nuxel-deploy-taps-20261018/backup/pwa/nuxel-home/js/app.js",
+      "existed": true,
+      "old_sha256": "eea79efd49ac7c973ab48ada52ed788fcffb2480f2d0471ac886657a3fd77a9a",
+      "new_sha256": "9a6ababcb6dc2f7a634daa7d590afb568557496f1405733c91b6d80e080a38fc",
+      "installed_sha256": "9a6ababcb6dc2f7a634daa7d590afb568557496f1405733c91b6d80e080a38fc",
+      "readback_sha256": "9a6ababcb6dc2f7a634daa7d590afb568557496f1405733c91b6d80e080a38fc"
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/css/style.css",
+      "staged": "/usr/share/nuxel/pwa/nuxel-home/css/style.css.touchable-stage",
+      "backup": "/var/tmp/nuxel-deploy-taps-20261018/backup/pwa/nuxel-home/css/style.css",
+      "existed": true,
+      "old_sha256": "39ff68fd920d55cc68733a0f1f1ef0ada2433d6c95946cded95aa084ac156eb4",
+      "new_sha256": "a7e3bd2b93db334344d04e98145f56372542b5799868db5e4ffaa244daed9738",
+      "installed_sha256": "a7e3bd2b93db334344d04e98145f56372542b5799868db5e4ffaa244daed9738",
+      "readback_sha256": "a7e3bd2b93db334344d04e98145f56372542b5799868db5e4ffaa244daed9738"
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/js/touch-keyboard.js",
+      "staged": "/usr/share/nuxel/pwa/nuxel-home/js/touch-keyboard.js.touchable-stage",
+      "backup": "/var/tmp/nuxel-deploy-taps-20261018/backup/pwa/nuxel-home/js/touch-keyboard.js",
+      "existed": false,
+      "old_sha256": null,
+      "new_sha256": "33d5df4fca42363e423a8f52125f67b9a7288b3b7c762ef53ba71715fb04adff",
+      "installed_sha256": "33d5df4fca42363e423a8f52125f67b9a7288b3b7c762ef53ba71715fb04adff",
+      "readback_sha256": "33d5df4fca42363e423a8f52125f67b9a7288b3b7c762ef53ba71715fb04adff"
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/index.html",
+      "staged": "/usr/share/nuxel/pwa/nuxel-home/index.html.touchable-stage",
+      "backup": "/var/tmp/nuxel-deploy-taps-20261018/backup/pwa/nuxel-home/index.html",
+      "existed": true,
+      "old_sha256": "a15be137ee268bb15400dc983c29f12a258331862ef17d9732108c19c4ce6443",
+      "new_sha256": "73348b1c503429187f03a3539536be310a64b0c31e7cda8a6df317b9ed1fd740",
+      "installed_sha256": "73348b1c503429187f03a3539536be310a64b0c31e7cda8a6df317b9ed1fd740",
+      "readback_sha256": "73348b1c503429187f03a3539536be310a64b0c31e7cda8a6df317b9ed1fd740"
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/sw.js",
+      "staged": "/usr/share/nuxel/pwa/nuxel-home/sw.js.touchable-stage",
+      "backup": "/var/tmp/nuxel-deploy-taps-20261018/backup/pwa/nuxel-home/sw.js",
+      "existed": true,
+      "old_sha256": "bb8572e29b1bb960a3445699c2ad17bca36c6680a06c306c742cf67fc3f8b58c",
+      "new_sha256": "f3f4a3d69468efb2cc045fc5fce0be138722a10a5b1ca02e2857f8b93537c8e2",
+      "installed_sha256": "f3f4a3d69468efb2cc045fc5fce0be138722a10a5b1ca02e2857f8b93537c8e2",
+      "readback_sha256": "f3f4a3d69468efb2cc045fc5fce0be138722a10a5b1ca02e2857f8b93537c8e2"
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/manifest.json",
+      "staged": "/usr/share/nuxel/pwa/nuxel-home/manifest.json.touchable-stage",
+      "backup": "/var/tmp/nuxel-deploy-taps-20261018/backup/pwa/nuxel-home/manifest.json",
+      "existed": true,
+      "old_sha256": "2d22fc805ce0ba0db1f487de13f54fb10c128d5e3b2856b82f67973e9515313d",
+      "new_sha256": "05f36603272c0ee210e0d42f2e4782c3146690059f67043a27f1f510ccc0664b",
+      "installed_sha256": "05f36603272c0ee210e0d42f2e4782c3146690059f67043a27f1f510ccc0664b",
+      "readback_sha256": "05f36603272c0ee210e0d42f2e4782c3146690059f67043a27f1f510ccc0664b"
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/js/status-bar.js",
+      "staged": "/usr/share/nuxel/pwa/nuxel-home/js/status-bar.js.touchable-stage",
+      "backup": "/var/tmp/nuxel-deploy-taps-20261018/backup/pwa/nuxel-home/js/status-bar.js",
+      "existed": true,
+      "old_sha256": "47b4e28db5f9bcc4a23aae4a292567b923d49635f69aea415d4a3e697787e72b",
+      "new_sha256": "1e0e0d02a0b1a2abcfcd611c9d45bd9ed36931f27e098c9dd1b0059f62831e39",
+      "installed_sha256": "1e0e0d02a0b1a2abcfcd611c9d45bd9ed36931f27e098c9dd1b0059f62831e39",
+      "readback_sha256": "1e0e0d02a0b1a2abcfcd611c9d45bd9ed36931f27e098c9dd1b0059f62831e39"
+    },
+    {
+      "target": "/usr/share/nuxel/pwa/nuxel-home/js/search.js",
+      "staged": "/usr/share/nuxel/pwa/nuxel-home/js/search.js.touchable-stage",
+      "backup": "/var/tmp/nuxel-deploy-taps-20261018/backup/pwa/nuxel-home/js/search.js",
+      "existed": true,
+      "old_sha256": "49c60d37b0e66d2feb1f233fbc2d9f2b49e76b115337a4584518727c5d1f677d",
+      "new_sha256": "7506f5b75e3b096ee28432aaa9fee6d6296437ffb97c99a59031c96b3a917d19",
+      "installed_sha256": "7506f5b75e3b096ee28432aaa9fee6d6296437ffb97c99a59031c96b3a917d19",
+      "readback_sha256": "7506f5b75e3b096ee28432aaa9fee6d6296437ffb97c99a59031c96b3a917d19"
+    }
+  ],
+  "status": "DEPLOYED_UNVERIFIED",
+  "home_state": "1792356411 CACHE_PURGE removed /root/.local/share/nuxel-pwa-host/serviceworkers (stale service worker scripts) still_present=0\n1792356411 CACHE_PURGE removed /root/.cache/nuxel-pwa-host/CacheStorage (stale service worker cache namespaces) still_present=0\n1792356411 CACHE_PURGE removed /root/.cache/nuxel-pwa-host/WebKitCache (stale HTTP cache) still_present=0\n1792356411 NUXEL_HOME_MEDIA enable_media=0 audio_sink=0\n1792356411 NUXEL_BOOT_POLICY host-enforced=1 css=1 dom_removal=1 (phone launch mode)\n1792356411 NUXEL_INPUT_DIAG enabled=1 (user-script observer; launcher source unmodified)\n1792356412 HOST_CTRL_FIFO_READY /run/nuxel-pwa-host.cmd\n1792356412 NUXEL_HOME_BOOT_OWNER os_animation=1 splash_removed_by_launcher=1\n1792356412 NUXEL_HOME_OPEN url=http://127.0.0.1:8000/pwa/nuxel-home/index.html?boot=os&v=1789437068 engine=WebKitGTK/2.52\n1792356412 NUXEL_HOME_NAV uri=http://127.0.0.1:8000/pwa/nuxel-home/index.html?boot=os&v=1789437068\n1792356413 NUXEL_HOME_COMMITTED uri=http://127.0.0.1:8000/pwa/nuxel-home/index.html?boot=os&v=1789437068\n1792356413 NUXEL_INPUT EVT diag-ready x=-1 y=-1 tag=- id= w=360 h=760 dpr=2 splash=absent\n1792356413 NUXEL_INPUT HOSTBRIDGE_READY available=true inIframe=false\n1792356413 NUXEL_HOME_READY uri=http://127.0.0.1:8000/pwa/nuxel-home/index.html?boot=os&v=1789437068\n1792356413 NUXEL_INPUT STATUSBAR_READY version=0.4.3-a34 safezones=present\n1792356413 HOST_CONFIG_GET name=verbose-boot bytes=3453\n1792356413 HOST_CONFIG_GET name=statusbar-safezones bytes=657\n1792356413 NUXEL_INPUT SAFEZONES profile=none orientation=portrait blocked=[] padding_dp=6 width=360 moved=[] dropped=[]\n1792356413 NUXEL_INPUT SAFEZONES profile=s10plus orientation=portrait blocked=[9,10] padding_dp=6 width=360 moved=[{\"cluster\":\"status-right\",\"shift\":-68,\"zone\":9,\"free\":[0,276]}] dropped=[]\n1792356413 NUXEL_INPUT BOOTLOG_VERDICT show=1 why=durable-setting\n1792356413 HOST_CONFIG_GET name=fb-owner bytes=198\n1792356413 HOST_CONFIG_GET name=anim-handoff bytes=444\n1792356413 HOST_CONFIG_GET name=anim-state bytes=29\n1792356413 HOST_CONFIG_GET name=launcher-state bytes=2039\n1792356413 HOST_CONFIG_GET name=display-state bytes=123\n1792356413 NUXEL_INPUT EVT wallpaper url=http://127.0.0.1:8000/pwa/nuxel-home/assets/nuxel-background.png decoded=1 natural=941x1672 x=-1 y=-1 tag=BODY id= w=360 h=760 dpr=2 splash=absent\n1792356413 NUXEL_INPUT BOOTLOG_SHOWN blocks=5/7\n1792356414 NUXEL_INPUT JS-warn [Bridge] not connected, using mock fallback: Load failed\n1792356414 NUXEL_INPUT EVT splash-t1s absent pointer-events=n/a z-index=n/a x=-1 y=-1 tag=BODY id= w=360 h=760 dpr=2 splash=absent\n1792356415 HOST_CONFIG_GET name=fb-owner bytes=198\n1792356415 HOST_CONFIG_GET name=anim-handoff bytes=444\n1792356415 HOST_CONFIG_GET name=anim-state bytes=29\n1792356415 HOST_CONFIG_GET name=launcher-state bytes=2766\n1792356415 HOST_CONFIG_GET name=display-state bytes=123\n1792356417 NUXEL_INPUT EVT splash-t4s absent pointer-events=n/a z-index=n/a x=-1 y=-1 tag=BODY id= w=360 h=760 dpr=2 splash=absent\n1792356417 HOST_CONFIG_GET name=fb-owner bytes=254\n1792356417 HOST_CONFIG_GET name=anim-handoff bytes=429\n1792356417 HOST_CONFIG_GET name=anim-state bytes=29\n1792356417 HOST_CONFIG_GET name=launcher-state bytes=3169\n1792356417 HOST_CONFIG_GET name=display-state bytes=123\n1792356419 HOST_CONFIG_GET name=fb-owner bytes=254\n1792356419 HOST_CONFIG_GET name=anim-handoff bytes=429\n1792356419 HOST_CONFIG_GET name=anim-state bytes=29\n1792356419 HOST_CONFIG_GET name=launcher-state bytes=3441\n1792356419 HOST_CONFIG_GET name=display-state bytes=123\n1792356421 HOST_CONFIG_GET name=fb-owner bytes=254\n1792356421 HOST_CONFIG_GET name=anim-handoff bytes=429\n1792356421 HOST_CONFIG_GET name=anim-state bytes=29\n1792356421 HOST_CONFIG_GET name=launcher-state bytes=3713\n1792356421 HOST_CONFIG_GET name=display-state bytes=123\n1792356422 NUXEL_INPUT EVT splash-t9s absent pointer-events=n/a z-index=n/a x=-1 y=-1 tag=BODY id= w=360 h=760 dpr=2 splash=absent\n1792356423 HOST_CONFIG_GET name=fb-owner bytes=254\n1792356423 HOST_CONFIG_GET name=anim-handoff bytes=429\n1792356423 HOST_CONFIG_GET name=anim-state bytes=29\n1792356423 HOST_CONFIG_GET name=launcher-state bytes=4116\n1792356423 HOST_CONFIG_GET name=display-state bytes=123\n1792356425 HOST_CONFIG_GET name=fb-owner bytes=254\n1792356425 HOST_CONFIG_GET name=anim-handoff bytes=429\n1792356425 HOST_CONFIG_GET name=anim-state bytes=29\n1792356425 HOST_CONFIG_GET name=launcher-state bytes=4388\n1792356425 HOST_CONFIG_GET name=display-state bytes=123\n1792356427 HOST_CONFIG_GET name=fb-owner bytes=252\n1792356427 HOST_CONFIG_GET name=anim-handoff bytes=423\n1792356428 HOST_CONFIG_GET name=anim-state bytes=52\n1792356428 HOST_CONFIG_GET name=launcher-state bytes=4660\n1792356428 HOST_CONFIG_GET name=display-state bytes=123\n1792356430 HOST_CONFIG_GET name=fb-owner bytes=252\n1792356430 HOST_CONFIG_GET name=anim-handoff bytes=423\n1792356430 HOST_CONFIG_GET name=anim-state bytes=52\n1792356430 HOST_CONFIG_GET name=launcher-state bytes=4932\n1792356430 HOST_CONFIG_GET name=display-state bytes=123\n1792356432 HOST_CONFIG_GET name=fb-owner bytes=252\n1792356432 HOST_CONFIG_GET name=anim-handoff bytes=423\n1792356432 HOST_CONFIG_GET name=anim-state bytes=52\n1792356432 HOST_CONFIG_GET name=launcher-state bytes=5204\n1792356432 HOST_CONFIG_GET name=display-state bytes=123\n1792356434 HOST_CONFIG_GET name=fb-owner bytes=252\n1792356434 HOST_CONFIG_GET name=anim-handoff bytes=423\n1792356434 HOST_CONFIG_GET name=anim-state bytes=52\n1792356434 HOST_CONFIG_GET name=launcher-state bytes=5476\n1792356434 HOST_CONFIG_GET name=display-state bytes=123\n1792356436 HOST_CONFIG_GET name=fb-owner bytes=252\n1792356436 HOST_CONFIG_GET name=anim-handoff bytes=423\n1792356436 HOST_CONFIG_GET name=anim-state bytes=52\n1792356436 HOST_CONFIG_GET name=launcher-state bytes=5748\n1792356436 HOST_CONFIG_GET name=display-state bytes=123\n1792356438 HOST_CONFIG_GET name=fb-owner bytes=252\n1792356438 HOST_CONFIG_GET name=anim-handoff bytes=423\n1792356438 HOST_CONFIG_GET name=anim-state bytes=52\n1792356438 HOST_CONFIG_GET name=launcher-state bytes=6020\n1792356438 HOST_CONFIG_GET name=display-state bytes=123\n1792356440 HOST_CONFIG_GET name=fb-owner bytes=252\n1792356440 HOST_CONFIG_GET name=anim-handoff bytes=423\n1792356440 HOST_CONFIG_GET name=anim-state bytes=52\n1792356440 HOST_CONFIG_GET name=launcher-state bytes=6292\n1792356440 HOST_CONFIG_GET name=display-state bytes=123\n1792356442 HOST_CONFIG_GET name=fb-owner bytes=252\n1792356442 HOST_CONFIG_GET name=anim-handoff bytes=423\n1792356442 HOST_CONFIG_GET name=anim-state bytes=52\n1792356442 HOST_CONFIG_GET name=launcher-state bytes=6564\n1792356442 HOST_CONFIG_GET name=display-state bytes=123\n1792356443 NUXEL_INPUT BOOTLOG_HIDDEN why=auto\n1792356589 NUXEL_INPUT EVT pointerdown x=353 y=255 tag=DIV id=app-grid w=360 h=760 dpr=2 splash=absent\n1792356589 NUXEL_INPUT EVT touchstart x=353 y=255 tag=DIV id=app-grid w=360 h=760 dpr=2 splash=absent\n1792356589 NUXEL_INPUT EVT touchmove x=353 y=255 tag=DIV id=app-grid w=360 h=760 dpr=2 splash=absent\n1792356589 NUXEL_INPUT EVT touchmove x=353 y=254 tag=DIV id=app-grid w=360 h=760 dpr=2 splash=absent\n1792356589 NUXEL_INPUT EVT touchmove x=353 y=254 tag=DIV id=app-grid w=360 h=760 dpr=2 splash=absent\n1792356589 NUXEL_INPUT EVT touchmove x=355 y=250 tag=DIV id=app-grid w=360 h=760 dpr=2 splash=absent\n1792356589 NUXEL_INPUT EVT touchmove x=356 y=246 tag=DIV id=app-grid w=360 h=760 dpr=2 splash=absent\n1792356589 NUXEL_INPUT EVT touchmove x=357 y=243 tag=DIV id=app-grid w=360 h=760 dpr=2 splash=absent\n1792356589 NUXEL_INPUT EVT touchmove x=357 y=240 tag=DIV id=app-grid w=360 h=760 dpr=2 splash=absent\n1792356589 NUXEL_INPUT EVT touchmove x=358 y=236 tag=DIV id=app-grid w=360 h=760 dpr=2 splash=absent\n1792356589 NUXEL_INPUT EVT touchmove x=358 y=231 tag=DIV id=app-grid w=360 h=760 dpr=2 splash=absent\n1792356589 NUXEL_INPUT EVT touchmove x=359 y=224 tag=DIV id=app-grid w=360 h=760 dpr=2 splash=absent\n1792356589 NUXEL_INPUT EVT touchmove x=359 y=202 tag=DIV id=app-grid w=360 h=760 dpr=2 splash=absent\n1792356589 NUXEL_INPUT EVT pointerup x=359 y=202 tag=DIV id=app-grid w=360 h=760 dpr=2 splash=absent\n1792356589 NUXEL_INPUT EVT touchend x=359 y=202 tag=DIV id=app-grid w=360 h=760 dpr=2 splash=absent\n1792356593 NUXEL_INPUT EVT pointerdown x=38 y=155 tag=SPAN id=app-icon app-category-productivity w=360 h=760 dpr=2 splash=absent\n1792356593 NUXEL_INPUT EVT touchstart x=38 y=155 tag=SPAN id=app-icon app-category-productivity w=360 h=760 dpr=2 splash=absent\n1792356593 NUXEL_INPUT EVT touchmove x=39 y=155 tag=SPAN id=app-icon app-category-productivity w=360 h=760 dpr=2 splash=absent\n1792356593 NUXEL_INPUT EVT touchmove x=39 y=155 tag=SPAN id=app-icon app-category-productivity w=360 h=760 dpr=2 splash=absent\n1792356593 NUXEL_INPUT EVT touchmove x=39 y=155 tag=SPAN id=app-icon app-category-productivity w=360 h=760 dpr=2 splash=absent\n1792356593 NUXEL_INPUT EVT touchmove x=39 y=154 tag=SPAN id=app-icon app-category-productivity w=360 h=760 dpr=2 splash=absent\n1792356593 NUXEL_INPUT EVT pointerup x=39 y=154 tag=SPAN id=app-icon app-category-productivity w=360 h=760 dpr=2 splash=absent\n1792356593 NUXEL_INPUT EVT app:launch id=org.nuxel.Calendar name=Calendar\n1792356593 NUXEL_INPUT EVT touchend x=39 y=154 tag=SPAN id=app-icon app-category-productivity w=360 h=760 dpr=2 splash=absent\n1792357926 CACHE_PURGE removed /root/.local/share/nuxel-pwa-host/serviceworkers (stale service worker scripts) still_present=0\n1792357926 CACHE_PURGE removed /root/.cache/nuxel-pwa-host/CacheStorage (stale service worker cache namespaces) still_present=0\n1792357926 CACHE_PURGE removed /root/.cache/nuxel-pwa-host/WebKitCache (stale HTTP cache) still_present=0\n1792357926 NUXEL_HOME_MEDIA enable_media=0 audio_sink=0\n1792357926 NUXEL_BOOT_POLICY host-enforced=1 css=1 dom_removal=1 (phone launch mode)\n1792357926 NUXEL_INPUT_DIAG enabled=1 (user-script observer; launcher source unmodified)\n1792357926 HOST_CTRL_FIFO_READY /run/nuxel-pwa-host.cmd\n1792357926 NUXEL_HOME_BOOT_OWNER os_animation=1 splash_removed_by_launcher=1\n1792357926 NUXEL_HOME_OPEN url=http://127.0.0.1:8000/pwa/nuxel-home/index.html?boot=os&v=1792363909 engine=WebKitGTK/2.52\n1792357926 NUXEL_HOME_NAV uri=http://127.0.0.1:8000/pwa/nuxel-home/index.html?boot=os&v=1792363909\n1792357927 NUXEL_HOME_COMMITTED uri=http://127.0.0.1:8000/pwa/nuxel-home/index.html?boot=os&v=1792363909\n1792357927 NUXEL_INPUT EVT diag-ready x=-1 y=-1 tag=- id= w=360 h=760 dpr=2 splash=absent\n1792357927 NUXEL_INPUT HOSTBRIDGE_READY available=true inIframe=false\n1792357927 NUXEL_HOME_READY uri=http://127.0.0.1:8000/pwa/nuxel-home/index.html?boot=os&v=1792363909\n",
+  "presentation_state": "1792357924 WL_DISPATCH_FAIL errno=32\n",
+  "finished_at": 1792357927.5038815
+}

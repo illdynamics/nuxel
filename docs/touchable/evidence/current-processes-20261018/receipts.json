@@ -1,0 +1,62 @@
+[
+  {
+    "key": "services",
+    "rid": "706533d4",
+    "rc": 0,
+    "framed": true,
+    "sha_ok": true,
+    "elapsed_s": 0.986,
+    "raw_len": 9953,
+    "output_bytes": 1300
+  },
+  {
+    "key": "processes",
+    "rid": "7f8933d5",
+    "rc": 0,
+    "framed": true,
+    "sha_ok": true,
+    "elapsed_s": 0.116,
+    "raw_len": 13010,
+    "output_bytes": 1845
+  },
+  {
+    "key": "home-state",
+    "rid": "528133d5",
+    "rc": 0,
+    "framed": true,
+    "sha_ok": true,
+    "elapsed_s": 0.086,
+    "raw_len": 23160,
+    "output_bytes": 7203
+  },
+  {
+    "key": "paths",
+    "rid": "912833d5",
+    "rc": 0,
+    "framed": true,
+    "sha_ok": true,
+    "elapsed_s": 0.127,
+    "raw_len": 28372,
+    "output_bytes": 3477
+  },
+  {
+    "key": "host-hashes",
+    "rid": "21e233d5",
+    "rc": 0,
+    "framed": true,
+    "sha_ok": true,
+    "elapsed_s": 0.09,
+    "raw_len": 29576,
+    "output_bytes": 390
+  },
+  {
+    "key": "owners",
+    "rid": "6ea633d5",
+    "rc": 0,
+    "framed": true,
+    "sha_ok": true,
+    "elapsed_s": 3.318,
+    "raw_len": 30414,
+    "output_bytes": 111
+  }
+]

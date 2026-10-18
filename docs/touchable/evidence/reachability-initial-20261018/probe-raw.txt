@@ -1,0 +1,9 @@
+dev=/dev/cu.usbmodem1201 bytes_in=7691 echo_ok=True error=None elapsed=0.330s
+sample:
+0), chgcurr(2850)
+6,6652,12458624,-;android_work: sent uevent USB_STATE=CONFIGURED
+6,6653,12922666,-;PANEL:INFO:panel_fb_notifier:EARLY UNBLANK
+3,6654,12922674,-;[STUI] stui_notifier_callback is not state TUI
+6,6655,12922679,-;[SSP] copr_fb_notifier_callback: early_blank = 1, fb_blank = 0
+6,6656,12922683,-;decon-0 UNBLANK mode: 0 type (0: DSI, 1: eDP, 2:DP, 3: WB)
+4,6657,12922687,-;decon-0 a

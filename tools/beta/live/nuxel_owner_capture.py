@@ -9,6 +9,7 @@ state file is modified. Logs contain input metadata, never typed text or app dat
 from __future__ import annotations
 
 import argparse
+import fcntl
 import json
 import os
 from pathlib import Path
@@ -60,10 +61,10 @@ def inventory():
 def safe_log(line):
     # Observe only known event metadata, not console messages, URLs, terminal
     # output, input values, notifications or arbitrary bridge requests.
-    match = re.search(r'NUXEL_INPUT EVT (touchstart|touchmove|touchend|pointerdown|pointerup|pointercancel|click|app:launch|app:lifecycle|focusin|input)\b', line)
+    match = re.search(r'NUXEL_INPUT EVT (touchstart|touchmove|touchend|touchcancel|pointerdown|pointerup|pointercancel|click|app:launch|app:lifecycle|launcher:activate|gesture:state|desktop:page|panel:state|focusin|input)\b', line)
     if not match:
         return None
-    fields = re.findall(r'\b(x|y|tag|id|w|h|dpr|splash|app|state|hit|path|trusted|ts)=([A-Za-z0-9_.:-]+)', line[match.end():])
+    fields = re.findall(r'\b(x|y|dx|dy|tag|id|w|h|dpr|splash|app|state|hit|path|trusted|ts|page|panel|axis|owner)=([A-Za-z0-9_.:-]+)', line[match.end():])
     prefix = re.match(r'^\d+(?:\.\d+)?', line)
     return {'event': match.group(1), 'fields': dict(fields),
             'source_time': prefix.group(0) if prefix else None}
@@ -111,7 +112,7 @@ def snapshot():
             for fd in (p / 'fd').iterdir():
                 try:
                     dest = os.readlink(fd)
-                    if dest.startswith('/dev/input/'):
+                    if dest.startswith('/dev/input/') or dest in ('/dev/fb0', '/dev/graphics/fb0'):
                         fds.append(dest)
                 except OSError:
                     pass
@@ -141,6 +142,17 @@ def capture(out, seconds=90, arm_wait=60):
     try:
         for n in nodes:
             fds[os.open(n['path'], os.O_RDONLY | os.O_NONBLOCK | os.O_CLOEXEC)] = n
+        axes = {}
+        for fd, node in fds.items():
+            if not node['touchscreen']:
+                continue
+            axes[node['path']] = {}
+            for code in (47, 53, 54, 57):
+                # EVIOCGABS: read-only axis metadata; never EVIOCGRAB.
+                info = fcntl.ioctl(fd, 0x80184540 + code, bytes(24))
+                axes[node['path']][str(code)] = dict(zip(
+                    ('value', 'min', 'max', 'fuzz', 'flat', 'resolution'), struct.unpack('6i', info)))
+        write_json(out / 'axes.json', axes)
         cursors = {p: Cursor(p) for p in LOG_PATHS}
         write_json(out / 'ready.json', {'armed_at': time.time(), 'nodes': nodes, 'event_size': EVENT.size,
                                        'wait_for_start_seconds': arm_wait, 'capture_seconds': seconds})
@@ -215,7 +227,7 @@ def capture(out, seconds=90, arm_wait=60):
             errors.append('incomplete-or-dropped-input')
         verdict = ('INVALID_CAPTURE' if errors else
                    'NO_PHYSICAL_EVENT_RECORDED' if not totals['tracking_down'] else
-                   'EVENTS_RECORDED_BUT_NOT_FORWARDED' if not totals['dom_touch_events'] else
+                   'PHYSICAL_EVENTS_RECORDED_DOM_NOT_OBSERVED' if not totals['dom_touch_events'] else
                    'PHYSICAL_EVENTS_RECORDED_OWNER_TEST_REQUIRED')
         receipt = {'verdict': verdict, 'started_wall': start_wall, 'ended_wall': end_wall,
                    'capture_seconds': end_mono - start_mono, 'requested_seconds': seconds,

@@ -1,0 +1,5 @@
+Linux 4.14.253 aarch64
+2efd316a-3c15-441d-ae9d-54cd9b30aacd
+active
+active
+1792357699 FRAMES_OK total=29230 fps_1s=23 failures=0 blit_avg_ms=42 out=720x1520 src=720x1520 scale=2 panel=1440x3040 owner=nuxel-wl-fb display=on src_format=0x00000001 colour=R@0,G@8,B@16_abgr8888_override=1

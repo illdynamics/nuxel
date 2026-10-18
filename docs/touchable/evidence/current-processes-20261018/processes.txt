@@ -1,0 +1,29 @@
+   5346       1 nuxel-touch-arm /usr/lib/nuxel/nuxel-touch-arm
+   5355       1 phoc            /usr/sbin/phoc --no-xwayland -C /etc/nuxel/phoc-phone.ini -E /usr/lib/nuxel/nuxel-session.sh
+   5413    5355 nuxel-pwa-host  /usr/lib/nuxel/nuxel-pwa-host
+   5422       1 nuxel-wl-fb     /usr/lib/nuxel/nuxel-wl-fb
+   5444    5413 WebKitNetworkPr /usr/libexec/webkit2gtk-4.1/WebKitNetworkProcess 2 11
+   5446    5413 WebKitWebProces /usr/libexec/webkit2gtk-4.1/WebKitWebProcess 4 15
+   7191    3528 grep            grep -E phoc|nuxel-pwa|WebKit|nuxel-wl-fb|nuxel-touch-arm
+-rw-r--r-- 1 root         root           423 Oct 18 22:47 /run/nuxel-anim-handoff
+-rw-r--r-- 1 root         root            25 Oct 18 22:47 /run/nuxel-anim-stop.confirmed
+prw------- 1 root         root             0 Oct 18 22:46 /run/nuxel-buttons.cmd
+-rw-r--r-- 1 root         root             5 Oct 18 22:46 /run/nuxel-fb-owner.lock
+-rw-r--r-- 1 root         root          9334 Oct 18 22:49 /run/nuxel-home.state
+-rw-r--r-- 1 root         root            69 Oct 18 22:46 /run/nuxel-launcher-ready
+-rw-r--r-- 1 root         root           684 Oct 18 22:46 /run/nuxel-libinput-path.state
+prw------- 1 root         root             0 Oct 18 22:46 /run/nuxel-pwa-host.cmd
+-rw-r--r-- 1 root         root           297 Oct 18 22:46 /run/nuxel-session.log
+-rw-r--r-- 1 root         root          1786 Oct 18 22:49 /run/nuxel-touch-arm.state
+-rw-r--r-- 1 root         root         49421 Oct 18 23:02 /run/nuxel-web.log
+prw------- 1 root         root             0 Oct 18 22:49 /run/nuxel-wl-fb.cmd
+-rw-r--r-- 1 root         root           210 Oct 18 23:02 /run/nuxel-wl-fb.state
+
+/run/nuxel-bridge:
+total 0
+
+/run/nuxel-wayland:
+total 0
+drwx------ 2 root root 60 Oct 18 22:46 dconf
+srwxr-xr-x 1 root root  0 Oct 18 22:46 wayland-0
+-rw-r----- 1 root root  0 Oct 18 22:46 wayland-0.lock

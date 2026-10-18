@@ -1,0 +1,31 @@
+#!/usr/bin/env python3
+"""Record the owner's visible result for the most recently announced trial."""
+import argparse
+import json
+import time
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[2]
+MISSION = ROOT / 'docs/touchable'
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('verdict', choices=['PASS', 'FAIL'])
+    parser.add_argument('message', nargs='?', default='')
+    parser.add_argument('--trial', help='Trial id; defaults to the last announced trial')
+    args = parser.parse_args()
+    if not args.trial:
+        active = MISSION / 'active-trial.json'
+        if not active.exists():
+            parser.error('No trial announced yet. Use --trial with a recorded trial id.')
+        args.trial = json.loads(active.read_text())['trial']
+    row = dict(trial=args.trial, verdict=args.verdict, message=args.message,
+               recorded_at=time.time(), source='owner-terminal')
+    with (MISSION / 'owner-feedback.jsonl').open('a') as stream:
+        stream.write(json.dumps(row) + '\n')
+    print(f"Recorded {args.verdict} for {args.trial}: {args.message}")
+
+
+if __name__ == '__main__':
+    main()

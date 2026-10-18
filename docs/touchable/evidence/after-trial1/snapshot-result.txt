@@ -1,0 +1,1 @@
+SNAPSHOT_OK path=/var/tmp/touchable-before.ppm w=720 h=1520 stride=2880 format=0x00000001 fnv64=3316299888e9a8e3 frame_ts=1199.875357103

@@ -1,0 +1,101 @@
+{
+  "at": "2026-10-18T23:01:27+0200",
+  "baseline_deltas": [],
+  "blocked_reason": null,
+  "briq": "briq-10a-live-reachability-preflight",
+  "console": {
+    "callout": "/dev/cu.usbmodem1201",
+    "dialin": "/dev/tty.usbmodem1201",
+    "match_stage": "vid+pid+ttybase",
+    "pid": 20199,
+    "tty_base": "usbmodem",
+    "tty_device": "usbmodem1201",
+    "tty_suffix": "1201",
+    "vid": 6353
+  },
+  "evidence_dir": "docs/touchable/evidence/baseline-20261018",
+  "exit_code": 0,
+  "fake_console": false,
+  "probe": {
+    "at": "2026-10-18T23:01:28+0200",
+    "bytes_in": 6561,
+    "dev": "/dev/cu.usbmodem1201",
+    "echo_ok": true,
+    "elapsed_s": 0.34,
+    "error": null,
+    "reachable": true,
+    "sample": "YSTEM=platform\n DEVICE=+platform:10050000.watchdog_cl0\n6,8779,862430382,-;Watchdog: s3c2410wdt_keepalive RTC 2026-10-18 21:01:07 UTC\n6,8780,863205730,-;sec_ts 4-0048: [sec_input] mode:0202 tc:0 noise:0 wet:0 wc:0 lp:(0) D0F000 fn:0061/0061 // v:0233 cal:A2(00) C01T0226.LCIA.L Cal_flag:Success fail_cnt:0 // id(0,0) // #23 22\n SUBSYSTEM=i2c\n DEVICE=+i2c:4-0048\n6,8781,866017722,-;[SSP]: debug_w"
+  },
+  "pwa_drift": [
+    {
+      "device": "a15be137ee268bb15400dc983c29f12a258331862ef17d9732108c19c4ce6443",
+      "file": "pwa/nuxel-home/index.html",
+      "repo": "73348b1c503429187f03a3539536be310a64b0c31e7cda8a6df317b9ed1fd740"
+    },
+    {
+      "device": "2d22fc805ce0ba0db1f487de13f54fb10c128d5e3b2856b82f67973e9515313d",
+      "file": "pwa/nuxel-home/manifest.json",
+      "repo": "05f36603272c0ee210e0d42f2e4782c3146690059f67043a27f1f510ccc0664b"
+    },
+    {
+      "device": "bb8572e29b1bb960a3445699c2ad17bca36c6680a06c306c742cf67fc3f8b58c",
+      "file": "pwa/nuxel-home/sw.js",
+      "repo": "f3f4a3d69468efb2cc045fc5fce0be138722a10a5b1ca02e2857f8b93537c8e2"
+    },
+    {
+      "device": "39ff68fd920d55cc68733a0f1f1ef0ada2433d6c95946cded95aa084ac156eb4",
+      "file": "pwa/nuxel-home/css/style.css",
+      "repo": "a7e3bd2b93db334344d04e98145f56372542b5799868db5e4ffaa244daed9738"
+    },
+    {
+      "device": "eea79efd49ac7c973ab48ada52ed788fcffb2480f2d0471ac886657a3fd77a9a",
+      "file": "pwa/nuxel-home/js/app.js",
+      "repo": "9a6ababcb6dc2f7a634daa7d590afb568557496f1405733c91b6d80e080a38fc"
+    },
+    {
+      "device": "sha256sum:",
+      "file": "pwa/nuxel-home/js/touch-keyboard.js",
+      "repo": "33d5df4fca42363e423a8f52125f67b9a7288b3b7c762ef53ba71715fb04adff"
+    },
+    {
+      "device": "49c60d37b0e66d2feb1f233fbc2d9f2b49e76b115337a4584518727c5d1f677d",
+      "file": "pwa/nuxel-home/js/search.js",
+      "repo": "7506f5b75e3b096ee28432aaa9fee6d6296437ffb97c99a59031c96b3a917d19"
+    },
+    {
+      "device": "47b4e28db5f9bcc4a23aae4a292567b923d49635f69aea415d4a3e697787e72b",
+      "file": "pwa/nuxel-home/js/status-bar.js",
+      "repo": "1e0e0d02a0b1a2abcfcd611c9d45bd9ed36931f27e098c9dd1b0059f62831e39"
+    }
+  ],
+  "pwa_files": [
+    "pwa/nuxel-home/index.html",
+    "pwa/nuxel-home/manifest.json",
+    "pwa/nuxel-home/sw.js",
+    "pwa/nuxel-home/colour-test.html",
+    "pwa/nuxel-home/css/launcher.css",
+    "pwa/nuxel-home/css/search.css",
+    "pwa/nuxel-home/css/status-bar.css",
+    "pwa/nuxel-home/css/style.css",
+    "pwa/nuxel-home/js/app.js",
+    "pwa/nuxel-home/js/touch-keyboard.js",
+    "pwa/nuxel-home/js/apps.js",
+    "pwa/nuxel-home/js/bootlog.js",
+    "pwa/nuxel-home/js/bridge.js",
+    "pwa/nuxel-home/js/host-bridge.js",
+    "pwa/nuxel-home/js/launcher.js",
+    "pwa/nuxel-home/js/osd.js",
+    "pwa/nuxel-home/js/qs.js",
+    "pwa/nuxel-home/js/recents.js",
+    "pwa/nuxel-home/js/safe-zones.js",
+    "pwa/nuxel-home/js/search.js",
+    "pwa/nuxel-home/js/settings-store.js",
+    "pwa/nuxel-home/js/status-bar.js"
+  ],
+  "reachable": true,
+  "verdict": "DEPLOYED_UNVERIFIED",
+  "verdict_note": "baseline read from the running device; this is a read-only observation and proves nothing about hardware that reports no evidence (e.g. a registered sec_ts driver is not proof of a working touchscreen)",
+  "verdicts": {
+    "briq-10a-live-reachability-preflight": "DEPLOYED_UNVERIFIED"
+  }
+}

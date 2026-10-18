@@ -1,0 +1,10 @@
+U-touch-a33-suite	cross	bg-01-touch-pipeline	PASS	0	28	345	hard		/Users/wicked/x/nuxel/docs/touchable/evidence/tests-before/logs/U-touch-a33-suite.log
+U-a34-touchdown-suite	cross	bg-01-touch-pipeline	PASS	0	2	41	hard		/Users/wicked/x/nuxel/docs/touchable/evidence/tests-before/logs/U-a34-touchdown-suite.log
+U-boot-a33-suite	cross	bg-02-boot-animation-launcher	PASS	0	8	652	hard		/Users/wicked/x/nuxel/docs/touchable/evidence/tests-before/logs/U-boot-a33-suite.log
+U-userspace-a33-suite	cross	bg-04-userspace-completion	PASS	0	11	12	hard		/Users/wicked/x/nuxel/docs/touchable/evidence/tests-before/logs/U-userspace-a33-suite.log
+U-verify-app-registry	unit	bg-06-core-phone-apps	PASS	0	2	26	hard		/Users/wicked/x/nuxel/docs/touchable/evidence/tests-before/logs/U-verify-app-registry.log
+U-pwa-bridge	unit	bg-04-userspace-completion	PASS	0	2	9	hard		/Users/wicked/x/nuxel/docs/touchable/evidence/tests-before/logs/U-pwa-bridge.log
+U-bridge-activation	unit	bg-04-userspace-completion	PASS	0	2	104	hard		/Users/wicked/x/nuxel/docs/touchable/evidence/tests-before/logs/U-bridge-activation.log
+U-console-ownership	unit	bg-04-userspace-completion	PASS	0	2	34	hard		/Users/wicked/x/nuxel/docs/touchable/evidence/tests-before/logs/U-console-ownership.log
+U-pwa-wiring	unit	bg-04-userspace-completion	PASS	0	2	1	hard		/Users/wicked/x/nuxel/docs/touchable/evidence/tests-before/logs/U-pwa-wiring.log
+U-pwa-assets	unit	bg-02-boot-animation-launcher	PASS	0	2	-	hard		/Users/wicked/x/nuxel/docs/touchable/evidence/tests-before/logs/U-pwa-assets.log

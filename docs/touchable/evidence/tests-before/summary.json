@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "tool": "tools/beta/run-all-tests.sh",
+  "briq": "briq-09a-test-strategy-soak",
+  "generated_at": "2026-10-18T23:02:09+0200",
+  "host": "Darwin arm64",
+  "root": "/Users/wicked/x/nuxel",
+  "version": "v0.5.2-beta",
+  "git_head": "91453380eb34b3e4f1964639edd2fb13cf65557b",
+  "gate": "green",
+  "verdict": "OFFLINE_TESTED",
+  "raw_gate": "green",
+  "raw_verdict": "OFFLINE_TESTED",
+  "raw_fail_count": 0,
+  "terminal_state": "OFFLINE_TESTED",
+  "checks_column": "PASS-shaped assertion lines printed by the suite (a floor, see count_checks)",
+  "strict": true,
+  "external_requested": false,
+  "duration_s": 61,
+  "only": "U-(touch-a33-suite|a34-touchdown-suite|boot-a33-suite|userspace-a33-suite|pwa-bridge|bridge-activation|console-ownership|pwa-wiring|pwa-assets|verify-app-registry)",
+  "counts": {"total": 10, "pass": 10, "fail": 0, "warn": 0, "warn_cross_group": 0, "skip": 0, "external": 0},
+  "first_failure": "",
+  "suite_registry": "/Users/wicked/x/nuxel/docs/touchable/evidence/tests-before/logs/suite-registry.tsv",
+  "suite_summary_tsv": "/Users/wicked/x/nuxel/docs/touchable/evidence/tests-before/logs/summary.tsv",
+  "log_dir": "/Users/wicked/x/nuxel/docs/touchable/evidence/tests-before/logs",
+  "invariants": {
+    "no_flashing": true,
+    "no_block_device_writes": true,
+    "no_qq_writes": true,
+    "no_qonqrete_receipt_in_workspace": true,
+    "a32_baseline_checked_by": "U-baseline-regression-guard"
+  },
+  "soak": {"terminal_state": "BLOCKED_EXTERNAL_RESOURCE", "harness": "tools/beta/soak.sh", "doc": "docs/beta-finalization/testing/SOAK-AND-PERFORMANCE.md"},
+  "failures": [
+
+  ],
+  "unfinished_groups": "bg-05-security-permissions bg-06-core-phone-apps bg-07-specialty-apps bg-08-hardware-subsystems bg-09-integration-release bg-11-vm-parity bg-12-reports",
+  "allowances_applied": [
+
+  ],
+  "suites": [
+    {"id": "U-touch-a33-suite", "tier": "cross", "owner": "bg-01-touch-pipeline", "status": "PASS", "rc": 0, "duration_s": 28, "checks": "345", "mode": "hard", "log": "", "note": "/Users/wicked/x/nuxel/docs/touchable/evidence/tests-before/logs/U-touch-a33-suite.log"},
+    {"id": "U-a34-touchdown-suite", "tier": "cross", "owner": "bg-01-touch-pipeline", "status": "PASS", "rc": 0, "duration_s": 2, "checks": "41", "mode": "hard", "log": "", "note": "/Users/wicked/x/nuxel/docs/touchable/evidence/tests-before/logs/U-a34-touchdown-suite.log"},
+    {"id": "U-boot-a33-suite", "tier": "cross", "owner": "bg-02-boot-animation-launcher", "status": "PASS", "rc": 0, "duration_s": 8, "checks": "652", "mode": "hard", "log": "", "note": "/Users/wicked/x/nuxel/docs/touchable/evidence/tests-before/logs/U-boot-a33-suite.log"},
+    {"id": "U-userspace-a33-suite", "tier": "cross", "owner": "bg-04-userspace-completion", "status": "PASS", "rc": 0, "duration_s": 11, "checks": "12", "mode": "hard", "log": "", "note": "/Users/wicked/x/nuxel/docs/touchable/evidence/tests-before/logs/U-userspace-a33-suite.log"},
+    {"id": "U-verify-app-registry", "tier": "unit", "owner": "bg-06-core-phone-apps", "status": "PASS", "rc": 0, "duration_s": 2, "checks": "26", "mode": "hard", "log": "", "note": "/Users/wicked/x/nuxel/docs/touchable/evidence/tests-before/logs/U-verify-app-registry.log"},
+    {"id": "U-pwa-bridge", "tier": "unit", "owner": "bg-04-userspace-completion", "status": "PASS", "rc": 0, "duration_s": 2, "checks": "9", "mode": "hard", "log": "", "note": "/Users/wicked/x/nuxel/docs/touchable/evidence/tests-before/logs/U-pwa-bridge.log"},
+    {"id": "U-bridge-activation", "tier": "unit", "owner": "bg-04-userspace-completion", "status": "PASS", "rc": 0, "duration_s": 2, "checks": "104", "mode": "hard", "log": "", "note": "/Users/wicked/x/nuxel/docs/touchable/evidence/tests-before/logs/U-bridge-activation.log"},
+    {"id": "U-console-ownership", "tier": "unit", "owner": "bg-04-userspace-completion", "status": "PASS", "rc": 0, "duration_s": 2, "checks": "34", "mode": "hard", "log": "", "note": "/Users/wicked/x/nuxel/docs/touchable/evidence/tests-before/logs/U-console-ownership.log"},
+    {"id": "U-pwa-wiring", "tier": "unit", "owner": "bg-04-userspace-completion", "status": "PASS", "rc": 0, "duration_s": 2, "checks": "1", "mode": "hard", "log": "", "note": "/Users/wicked/x/nuxel/docs/touchable/evidence/tests-before/logs/U-pwa-wiring.log"},
+    {"id": "U-pwa-assets", "tier": "unit", "owner": "bg-02-boot-animation-launcher", "status": "PASS", "rc": 0, "duration_s": 2, "checks": "-", "mode": "hard", "log": "", "note": "/Users/wicked/x/nuxel/docs/touchable/evidence/tests-before/logs/U-pwa-assets.log"}
+  ]
+}

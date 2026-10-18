@@ -1,0 +1,23 @@
+{
+  "verdict": "PHYSICAL_EVENTS_RECORDED_OWNER_TEST_REQUIRED",
+  "started_wall": 1792358030.0013063,
+  "ended_wall": 1792358120.0036016,
+  "capture_seconds": 90.0022952820002,
+  "requested_seconds": 90.0,
+  "totals": {
+    "events": 811,
+    "touch_events": 795,
+    "tracking_down": 18,
+    "tracking_up": 18,
+    "syn_report": 178,
+    "syn_dropped": 0,
+    "dom_events": 191,
+    "dom_touch_events": 181,
+    "dom_clicks": 5,
+    "app_launches": 0,
+    "event_bytes": 102927,
+    "log_bytes": 81983
+  },
+  "errors": [],
+  "owner_verified": false
+}

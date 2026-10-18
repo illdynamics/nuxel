@@ -1,0 +1,23 @@
+{
+  "verdict": "EVENTS_RECORDED_BUT_NOT_FORWARDED",
+  "started_wall": 1792357438.5755754,
+  "ended_wall": 1792357528.5783973,
+  "capture_seconds": 90.00282112800005,
+  "requested_seconds": 90.0,
+  "totals": {
+    "events": 384,
+    "touch_events": 384,
+    "tracking_down": 11,
+    "tracking_up": 11,
+    "syn_report": 87,
+    "syn_dropped": 0,
+    "dom_events": 0,
+    "dom_touch_events": 0,
+    "dom_clicks": 0,
+    "app_launches": 0,
+    "event_bytes": 48739,
+    "log_bytes": 30168
+  },
+  "errors": [],
+  "owner_verified": false
+}

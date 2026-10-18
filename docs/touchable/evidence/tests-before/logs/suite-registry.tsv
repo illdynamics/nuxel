@@ -1,0 +1,53 @@
+id	tier	owner	timeout	mode	need	why	cmd
+L1-python-syntax	static	release	600	hard	/usr/local/bin/python3	every repo-authored .py parses (ast, no bytecode written)	find tools services shell pwa scripts vm boot configs images firmware -name "*.py" 2>/dev/null | LC_ALL=C sort | xargs python3 -c "$PY_STATIC_SYNTAX"
+L1-shell-syntax	static	release	600	hard	bash	every .sh parses, dispatched by shebang (boot/*/pack-boot-v1.sh is python)	bash -c "$SH_STATIC_SYNTAX"
+L1-js-syntax	static	release	600	hard	/Users/wicked/.nvm/versions/node/v20.20.2/bin/node	every PWA .js parses (node --check)	bash -c "$JS_STATIC_SYNTAX"
+L1-json-valid	static	release	600	hard	/usr/local/bin/python3	every manifest/registry/report JSON in the owned trees parses	python3 -c "$PY_STATIC_JSON"
+L1-no-flash-invariants	static	release	600	hard	/usr/local/bin/python3	no flash tool invoked, no /dev/block write, no .qq write, no receipt JSON	python3 -c "$PY_STATIC_INVARIANTS"
+L1-test-coverage	static	release	300	hard	/usr/local/bin/python3	no test file is orphaned: every discovered test is reachable from the registry	python3 "$ROOT/tools/beta/suite-coverage.py" --registry "$LOG_DIR/suite-registry.tsv" --root "$ROOT"
+U-workqueue-schema	unit	bg-00-preflight	300	hard	/usr/local/bin/python3	the persistent work queue is schema-valid (vocabulary, deps, evidence gates)	python3 tools/beta/workqueue.py verify-schema
+U-workqueue-unit	unit	bg-00-preflight	300	hard	/usr/local/bin/python3	work queue tool unit tests	python3 tools/beta/tests/test_workqueue.py
+U-regression-guard-selftest	unit	bg-00-preflight	600	hard	bash	the A32 baseline gate is itself tested (mutation fixtures + re-pin path)	bash tools/beta/tests/test-regression-guard.sh
+U-baseline-regression-guard	cross	bg-00-preflight	2400	hard	bash	the A32 baseline register still holds (hash pins + behavioural invariants)	bash tools/beta/regression-guard.sh
+U-baseline-a32-suite	cross	bg-00-preflight	1800	hard	bash	the full A32 offline suite still runs (colour, safe zones, wallpaper, registry)	bash tools/s10plus/a32/tests/run-tests.sh
+U-boot-s10plus-gates	unit	bg-00-preflight	600	hard	probe:test -s build/out/s10plus/debug-candidates/nuxel-beyond2lte-boot-A5-dtb-fix.img && test -s build/out/s10plus/debug-candidates/A4/initramfs.cpio	boot-image gates: container structure, initramfs embedding, partition budget (needs the gitignored, hardware-proven A5 base + A4 initramfs)	bash boot/s10plus/tests/test-boot-image-gates.sh
+U-boot-init-cmdline	unit	bg-00-preflight	300	hard	bash	init/cmdline independence (no board-specific hard-coding in the initramfs)	bash boot/s10plus/tests/test-init-cmdline-independence.sh
+U-touch-a33-suite	cross	bg-01-touch-pipeline	2400	hard	bash	A33 touch group runner: trace tool, libinput shim, bootmode guard, capture harness	bash tools/s10plus/a33/tests/run-touch-tests.sh --quick
+U-a34-touchdown-suite	cross	bg-01-touch-pipeline	300	hard	bash	A34 TOUCHDOWN regressions: SYN_REPORT touch translation, Power-vs-Bixby, Quick Settings pull-down	bash tools/s10plus/a34/tests/run-a34-tests.sh
+U-boot-a33-suite	cross	bg-02-boot-animation-launcher	2400	hard	bash	A33 boot group runner: handoff, colour order, verbose boot, safe zones, launcher	bash tools/s10plus/a33/tests/run-boot-tests.sh
+U-c-protocol-handoff	unit	bg-02-boot-animation-launcher	300	hard	/usr/bin/cc	the handoff decision logic compiled and executed on the host (C protocol test)	cc -O2 -Wall -o "$LOG_DIR/.handoff-logic" tools/s10plus/a33/tests/test-handoff-logic.c && "$LOG_DIR/.handoff-logic"
+U-p3-a33-suite	cross	bg-03-connectivity-time-audio-buttons	2400	hard	bash	A33 priority-3 runner: wifi, time/RTC, audio, headphones, buttons	bash tools/s10plus/a33/tests/run-p3-tests.sh
+U-userspace-a33-suite	cross	bg-04-userspace-completion	2400	hard	bash	A33 userspace runner: service graph, app infrastructure, portal, notifications	bash tools/s10plus/a33/tests/run-userspace-tests.sh
+U-verify-service-graph	unit	bg-04-userspace-completion	300	hard	/usr/local/bin/python3	boot graph: no cycles, no unsatisfied units, no system->user enablement	python3 tools/s10plus/a33/verify-service-graph.py
+U-verify-packages	unit	bg-04-userspace-completion	300	hard	/usr/local/bin/python3	package manifest vs the real Fedora 43 ARM64 metadata (no --skip-unavailable)	python3 tools/s10plus/a33/verify-packages.py
+U-security-firewall	unit	bg-05-security-permissions	900	hard	bash	nftables rule translation + fail-closed console guard (offline)	bash tools/s10plus/a33/security-tests/test-firewall.sh
+U-security-vpn-tor	unit	bg-05-security-permissions	900	hard	bash	VPN/Tor/remote honest-enforcement labels (mock network, no live tunnel)	bash tools/s10plus/a33/security-tests/test-vpn-tor.sh
+U-verify-permissions	unit	bg-05-security-permissions	300	hard	/usr/local/bin/python3	every declared capability has a grant that claims only enforceable protection	python3 tools/s10plus/a33/verify-permissions.py
+U-shell-permissions	unit	bg-05-security-permissions	600	hard	bash	permission manager unit tests (store, fail-closed, revocation)	bash shell/nuxel-shell/nuxel-permissions/tests/run-tests.sh
+U-verify-app-registry	unit	bg-06-core-phone-apps	300	hard	/usr/local/bin/python3	canonical app registry: every entry launchable, assets present, bridge pinned	python3 tools/s10plus/a33/verify-app-registry.py
+U-verify-app-inventory	unit	bg-06-core-phone-apps	300	hard	/usr/local/bin/python3	core application inventory and gap matrix	python3 tools/s10plus/a33/verify-app-inventory.py
+U-shell-phone-data	unit	bg-06-core-phone-apps	600	hard	bash	phone data model (dialer/contacts/messages) host tests	bash shell/nuxel-shell/nuxel-phone-data/run-tests.sh
+U-pwa-bridge	unit	bg-04-userspace-completion	300	hard	probe:python3 -c 'import socket; s=socket.socket(); s.bind(("127.0.0.1", 0)); s.close()'	shared PWA bridge client contract (node)	node pwa/nuxel-common/test-bridge.js
+U-bridge-activation	unit	bg-04-userspace-completion	600	hard	probe:python3 -c 'import socket; s=socket.socket(); s.bind(("127.0.0.1", 0)); s.close()'	launcher->bridge activation, capability/RPC wiring (no D-Bus, no device)	python3 services/nuxel-bridge/test-launcher-activation.py
+U-console-ownership	unit	bg-04-userspace-completion	300	hard	/usr/local/bin/python3	live-console single-owner lock protocol and unit semantics (offline)	python3 services/nuxel-console/test-console-ownership.py
+U-pwa-wiring	unit	bg-04-userspace-completion	300	hard	/Users/wicked/.nvm/versions/node/v20.20.2/bin/node	every PWA surface wires manifest/registry/bridge consistently (node)	node pwa/nuxel-common/verify-wiring.js
+U-services-portal	unit	bg-04-userspace-completion	300	hard	/usr/local/bin/python3	portal consent + one-shot grant policy	python3 services/nuxel-portal/test-portal-policy.py
+U-services-notifications	unit	bg-04-userspace-completion	300	hard	/usr/local/bin/python3	notification persistence + bounded history	python3 services/nuxel-notifications/test-notifications-persistence.py
+U-snek-parity	unit	bg-07-specialty-apps	300	hard	/usr/local/bin/python3	SnekByte port parity with the original engine fixtures	python3 tools/s10plus/a33/snekbyte/tests/test-snek-parity.py
+U-snek-upstream-pytest	unit	bg-07-specialty-apps	600	hard	/usr/local/bin/python3	the vendored upstream SnekByte engine test-suite (pytest)	python3 -m pytest -q tools/s10plus/a33/snekbyte/upstream/tests
+U-nuxtore-pwa	unit	bg-07-specialty-apps	600	hard	file:pwa/nuxel-apps/nuxtore/catalog/nuxtore-catalog.json	NuxTore catalogue tests (signing, tamper, unsigned refusal, policy); needs the owner-staged catalogue	python3 pwa/nuxel-apps/nuxtore/tests/test-catalog.py
+U-apps-js	unit	bg-06-core-phone-apps	600	hard	/Users/wicked/.nvm/versions/node/v20.20.2/bin/node	every PWA application unit test (discovered under pwa/**/tests)	set -u; fail=0; n=0    for f in $(find pwa -type f -path "*/tests/*" -name "*.js" 2>/dev/null | LC_ALL=C sort); do      n=$((n+1))      if node "$f" >"$LOG_DIR/.app-js.out" 2>&1; then echo "  PASS  $f"      else echo "  FAIL  $f"; tail -6 "$LOG_DIR/.app-js.out" | sed "s/^/        /"; fail=$((fail+1)); fi    done    echo "pwa app js tests: $n  failing: $fail"; [ "$fail" -eq 0 ]
+U-debug-pack	unit	bg-00-preflight	300	hard	/usr/local/bin/python3	the s10plus debug pack is self-consistent (scripts, manifests, syntax)	python3 scripts/s10plus-debug-pack/tests/test_pack.py
+U-adb-pack-mock	unit	release	600	hard	/usr/local/bin/python3	the adb flash pack's own MOCK suite (no device, no flash: mocks only)	bash scripts/nuxel-adb-flash-pack/tools/run-mock-tests.sh
+U-pwa-assets	unit	bg-02-boot-animation-launcher	300	hard	bash	launcher assets referenced by HTML/CSS/manifest all exist	bash tools/verify-pwa-assets.sh
+U-soak-harness	unit	release	300	hard	bash	the soak/performance harness works offline (plan, sampling, verdicts)	bash tools/beta/soak.sh --selftest
+U-release-tools-selftest	unit	release	600	hard	bash	rollback / reboot-policy / health-check / run-all-tests themselves tested	bash tools/beta/tests/test-release-tools.sh
+U-rollback-reboot-scenarios	unit	release	900	hard	bash	mocked failure scenarios: the rollback really triggers, the dry run is inert, the policy refuses	bash tools/beta/tests/test-rollback-reboot.sh
+L-a27-firstlight	legacy	legacy-per-cycle	300	hard	probe:test -s build/out/s10plus/a26/nuxel-firstlight.rawspl && python3 -c 'import numpy'	A27 first-light renderer gate (host renderer == shipped renderer)	bash tools/s10plus/a27/test-firstlight.sh
+L-a27-ui-layout	legacy	legacy-per-cycle	300	hard	probe:python3 -c 'import PIL' && command -v aarch64-linux-gnu-gcc	A27 UI layout gate: reproducible atlas + 4 scales + aarch64 ELF	bash tools/s10plus/a27/test-ui-layout.sh
+L-a28-launcher	legacy	legacy-per-cycle	600	soft	bash	A28 UTM launcher-port gate (superseded by A32/A33; generated table tracks the live registry)	bash tools/s10plus/a28/test-launcher.sh
+L-app-registry-check	legacy	legacy-per-cycle	300	soft	bash	legacy app_registry.json checker (superseded by verify-app-registry.py)	bash tools/app-registry-check.sh
+X-live-launcher-acceptance	external	bg-10-live-phone	1200	external	-	live console acceptance on the physical S10+ (needs the USB console)	bash tools/s10plus/a31/verify-launcher-live.sh
+X-live-soak	external	bg-10-live-phone	86400	external	-	the 8 h on-device soak (needs live console time; see SOAK-AND-PERFORMANCE.md)	bash tools/beta/soak.sh --device --duration 28800 --checkpoint 1800
+X-vm-services	external	bg-11-vm-parity	1800	external	-	UTM Fedora 43 guest service-graph verification (needs the VM)	bash vm/vm-verify-services.sh
+X-vm-launcher-parity	external	bg-11-vm-parity	1800	external	-	VM launcher/status-bar/safe-zone parity run (needs the VM)	bash vm/vm-verify-pwa.sh

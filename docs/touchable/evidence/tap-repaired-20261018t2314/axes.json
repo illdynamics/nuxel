@@ -1,0 +1,36 @@
+{
+  "/dev/input/event2": {
+    "47": {
+      "value": 0,
+      "min": 0,
+      "max": 9,
+      "fuzz": 0,
+      "flat": 0,
+      "resolution": 0
+    },
+    "53": {
+      "value": 0,
+      "min": 0,
+      "max": 4095,
+      "fuzz": 0,
+      "flat": 0,
+      "resolution": 0
+    },
+    "54": {
+      "value": 0,
+      "min": 0,
+      "max": 4095,
+      "fuzz": 0,
+      "flat": 0,
+      "resolution": 0
+    },
+    "57": {
+      "value": 0,
+      "min": 0,
+      "max": 65535,
+      "fuzz": 0,
+      "flat": 0,
+      "resolution": 0
+    }
+  }
+}

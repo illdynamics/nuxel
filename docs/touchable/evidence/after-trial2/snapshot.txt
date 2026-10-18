@@ -1,0 +1,1 @@
+SNAPSHOT_OK path=/var/tmp/touchable-after2.ppm w=720 h=1520 stride=2880 format=0x00000001 fnv64=d438686e7fa34811 frame_ts=1736.031232835

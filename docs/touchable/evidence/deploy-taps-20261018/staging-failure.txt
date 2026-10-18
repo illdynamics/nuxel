@@ -1,0 +1,5 @@
+e0cad81d8da066fc668cf3f44e8d3803401e3fc29ceeebccb46e57c51e35f197  /var/tmp/nuxel-deploy-taps-20261018/bundle.json.gz
+e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  /var/tmp/nuxel-deploy-taps-20261018/install.py
+total 40
+-rw------- 1 root root 39561 Oct 18 23:09 bundle.json.gz
+-rw------- 1 root root     0 Oct 18 23:09 install.py

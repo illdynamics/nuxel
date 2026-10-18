@@ -548,12 +548,13 @@ def push_bytes(con, data, path, chunk=None, mode="+x"):
     import base64
     path = assert_userspace_path(path)
     b64 = base64.b64encode(data).decode()
+    want = hashlib.sha256(data).hexdigest()
+    part_prefix = path + "." + want[:16] + ".b64"
 
     def mk(seg, part):
         return "printf '%s' '%s' > %s" % ("%s", seg, part)
     if chunk is None:
-        chunk = chunk_size_for(lambda seg: mk(seg, path + ".b64.00000"))
-    want = hashlib.sha256(data).hexdigest()
+        chunk = chunk_size_for(lambda seg: mk(seg, part_prefix + ".00000"))
     mkdir = con.run('mkdir -p "$(dirname %s)"' % path, timeout=con.timeout)
     if not mkdir.ok or mkdir.rc != 0:
         raise ConsoleLost("cannot create parent directory for %s (%s)"
@@ -561,7 +562,7 @@ def push_bytes(con, data, path, chunk=None, mode="+x"):
     parts = []
     for i in range(0, len(b64), chunk):
         seg = b64[i:i + chunk]
-        part = "%s.b64.%05d" % (path, len(parts))
+        part = "%s.%05d" % (part_prefix, len(parts))
         cmd = mk(seg, part)
         got = False
         for _try in range(5):
@@ -575,16 +576,22 @@ def push_bytes(con, data, path, chunk=None, mode="+x"):
             raise ConsoleLost("chunk %d of %s could not be written to %s"
                               % (len(parts) + 1, path, part))
         parts.append(part)
-    dec = ("cat %s.b64.* > %s.b64 2>/dev/null; rm -f %s.b64.*; "
-           "base64 -d < %s.b64 > %s && rm -f %s.b64 && "
-           "(test -z '%s' || chmod %s %s)"
-           % (path, path, path, path, path, path, mode, mode or "0644", path))
+    # Retain the parts until destination readback succeeds. A lost console
+    # receipt after a successful decode must be safe to retry: removing the
+    # parts first made the second attempt truncate the correctly staged file.
+    dec = ("cat %s.* > %s.b64 && "
+           "base64 -d < %s.b64 > %s.decode && "
+           "chmod %s %s.decode && mv -f %s.decode %s"
+           % (part_prefix, path, path, path, mode or "0644", path, path, path))
     for _try in range(3):
         res = con.run(dec, timeout=con.timeout)
         if res.ok:
             chk = con.run("sha256sum %s 2>/dev/null | cut -d' ' -f1" % path,
                           timeout=con.timeout)
             if chk.ok and want in chk.output:
+                # Cleanup is best effort after verification; it never changes
+                # the verified destination and is itself idempotent.
+                con.run("rm -f %s.b64 %s.*" % (path, part_prefix), timeout=con.timeout)
                 return {"path": path, "bytes": len(data), "b64_chars": len(b64),
                         "parts": len(parts), "decoded_sha256": want}
         con.interrupt()

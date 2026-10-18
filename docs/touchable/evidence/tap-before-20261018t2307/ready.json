@@ -1,0 +1,24 @@
+{
+  "armed_at": 1792357398.0526373,
+  "nodes": [
+    {
+      "path": "/dev/input/event1",
+      "name": "gpio_keys",
+      "properties": "0",
+      "abs": "0",
+      "touchscreen": false,
+      "buttons": true
+    },
+    {
+      "path": "/dev/input/event2",
+      "name": "sec_touchscreen",
+      "properties": "2",
+      "abs": "4263800000000003",
+      "touchscreen": true,
+      "buttons": false
+    }
+  ],
+  "event_size": 24,
+  "wait_for_start_seconds": 60,
+  "capture_seconds": 90.0
+}

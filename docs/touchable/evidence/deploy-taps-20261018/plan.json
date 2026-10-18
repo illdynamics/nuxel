@@ -1,0 +1,38 @@
+[
+  {
+    "path": "pwa/nuxel-home/js/launcher.js",
+    "sha256": "347cb611104d2d36f5a9565d7bd4567b8d8909f2fec96e4ab6c3f68264fd0ca4"
+  },
+  {
+    "path": "pwa/nuxel-home/js/app.js",
+    "sha256": "9a6ababcb6dc2f7a634daa7d590afb568557496f1405733c91b6d80e080a38fc"
+  },
+  {
+    "path": "pwa/nuxel-home/css/style.css",
+    "sha256": "a7e3bd2b93db334344d04e98145f56372542b5799868db5e4ffaa244daed9738"
+  },
+  {
+    "path": "pwa/nuxel-home/js/touch-keyboard.js",
+    "sha256": "33d5df4fca42363e423a8f52125f67b9a7288b3b7c762ef53ba71715fb04adff"
+  },
+  {
+    "path": "pwa/nuxel-home/index.html",
+    "sha256": "73348b1c503429187f03a3539536be310a64b0c31e7cda8a6df317b9ed1fd740"
+  },
+  {
+    "path": "pwa/nuxel-home/sw.js",
+    "sha256": "f3f4a3d69468efb2cc045fc5fce0be138722a10a5b1ca02e2857f8b93537c8e2"
+  },
+  {
+    "path": "pwa/nuxel-home/manifest.json",
+    "sha256": "05f36603272c0ee210e0d42f2e4782c3146690059f67043a27f1f510ccc0664b"
+  },
+  {
+    "path": "pwa/nuxel-home/js/status-bar.js",
+    "sha256": "1e0e0d02a0b1a2abcfcd611c9d45bd9ed36931f27e098c9dd1b0059f62831e39"
+  },
+  {
+    "path": "pwa/nuxel-home/js/search.js",
+    "sha256": "7506f5b75e3b096ee28432aaa9fee6d6296437ffb97c99a59031c96b3a917d19"
+  }
+]

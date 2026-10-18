@@ -1,0 +1,6 @@
+PASS WebKit tap / active app / visible Home / cleanup: nuxel-settings
+PASS WebKit tap / active app / visible Home / cleanup: org.nuxel.Calendar
+PASS WebKit tap / active app / visible Home / cleanup: nuxel-settings
+PASS WebKit tap / active app / visible Home / cleanup: org.nuxel.Notes
+PASS WebKit tap / active app / visible Home / cleanup: nuxel-settings
+PASS browser keyboard activation and no JS exceptions

@@ -1,0 +1,101 @@
+1792356413 NUXEL_INPUT BOOTLOG_SHOWN blocks=5/7
+1792356414 NUXEL_INPUT JS-warn [Bridge] not connected, using mock fallback: Load failed
+1792356414 NUXEL_INPUT EVT splash-t1s absent pointer-events=n/a z-index=n/a x=-1 y=-1 tag=BODY id= w=360 h=760 dpr=2 splash=absent
+1792356415 HOST_CONFIG_GET name=fb-owner bytes=198
+1792356415 HOST_CONFIG_GET name=anim-handoff bytes=444
+1792356415 HOST_CONFIG_GET name=anim-state bytes=29
+1792356415 HOST_CONFIG_GET name=launcher-state bytes=2766
+1792356415 HOST_CONFIG_GET name=display-state bytes=123
+1792356417 NUXEL_INPUT EVT splash-t4s absent pointer-events=n/a z-index=n/a x=-1 y=-1 tag=BODY id= w=360 h=760 dpr=2 splash=absent
+1792356417 HOST_CONFIG_GET name=fb-owner bytes=254
+1792356417 HOST_CONFIG_GET name=anim-handoff bytes=429
+1792356417 HOST_CONFIG_GET name=anim-state bytes=29
+1792356417 HOST_CONFIG_GET name=launcher-state bytes=3169
+1792356417 HOST_CONFIG_GET name=display-state bytes=123
+1792356419 HOST_CONFIG_GET name=fb-owner bytes=254
+1792356419 HOST_CONFIG_GET name=anim-handoff bytes=429
+1792356419 HOST_CONFIG_GET name=anim-state bytes=29
+1792356419 HOST_CONFIG_GET name=launcher-state bytes=3441
+1792356419 HOST_CONFIG_GET name=display-state bytes=123
+1792356421 HOST_CONFIG_GET name=fb-owner bytes=254
+1792356421 HOST_CONFIG_GET name=anim-handoff bytes=429
+1792356421 HOST_CONFIG_GET name=anim-state bytes=29
+1792356421 HOST_CONFIG_GET name=launcher-state bytes=3713
+1792356421 HOST_CONFIG_GET name=display-state bytes=123
+1792356422 NUXEL_INPUT EVT splash-t9s absent pointer-events=n/a z-index=n/a x=-1 y=-1 tag=BODY id= w=360 h=760 dpr=2 splash=absent
+1792356423 HOST_CONFIG_GET name=fb-owner bytes=254
+1792356423 HOST_CONFIG_GET name=anim-handoff bytes=429
+1792356423 HOST_CONFIG_GET name=anim-state bytes=29
+1792356423 HOST_CONFIG_GET name=launcher-state bytes=4116
+1792356423 HOST_CONFIG_GET name=display-state bytes=123
+1792356425 HOST_CONFIG_GET name=fb-owner bytes=254
+1792356425 HOST_CONFIG_GET name=anim-handoff bytes=429
+1792356425 HOST_CONFIG_GET name=anim-state bytes=29
+1792356425 HOST_CONFIG_GET name=launcher-state bytes=4388
+1792356425 HOST_CONFIG_GET name=display-state bytes=123
+1792356427 HOST_CONFIG_GET name=fb-owner bytes=252
+1792356427 HOST_CONFIG_GET name=anim-handoff bytes=423
+1792356428 HOST_CONFIG_GET name=anim-state bytes=52
+1792356428 HOST_CONFIG_GET name=launcher-state bytes=4660
+1792356428 HOST_CONFIG_GET name=display-state bytes=123
+1792356430 HOST_CONFIG_GET name=fb-owner bytes=252
+1792356430 HOST_CONFIG_GET name=anim-handoff bytes=423
+1792356430 HOST_CONFIG_GET name=anim-state bytes=52
+1792356430 HOST_CONFIG_GET name=launcher-state bytes=4932
+1792356430 HOST_CONFIG_GET name=display-state bytes=123
+1792356432 HOST_CONFIG_GET name=fb-owner bytes=252
+1792356432 HOST_CONFIG_GET name=anim-handoff bytes=423
+1792356432 HOST_CONFIG_GET name=anim-state bytes=52
+1792356432 HOST_CONFIG_GET name=launcher-state bytes=5204
+1792356432 HOST_CONFIG_GET name=display-state bytes=123
+1792356434 HOST_CONFIG_GET name=fb-owner bytes=252
+1792356434 HOST_CONFIG_GET name=anim-handoff bytes=423
+1792356434 HOST_CONFIG_GET name=anim-state bytes=52
+1792356434 HOST_CONFIG_GET name=launcher-state bytes=5476
+1792356434 HOST_CONFIG_GET name=display-state bytes=123
+1792356436 HOST_CONFIG_GET name=fb-owner bytes=252
+1792356436 HOST_CONFIG_GET name=anim-handoff bytes=423
+1792356436 HOST_CONFIG_GET name=anim-state bytes=52
+1792356436 HOST_CONFIG_GET name=launcher-state bytes=5748
+1792356436 HOST_CONFIG_GET name=display-state bytes=123
+1792356438 HOST_CONFIG_GET name=fb-owner bytes=252
+1792356438 HOST_CONFIG_GET name=anim-handoff bytes=423
+1792356438 HOST_CONFIG_GET name=anim-state bytes=52
+1792356438 HOST_CONFIG_GET name=launcher-state bytes=6020
+1792356438 HOST_CONFIG_GET name=display-state bytes=123
+1792356440 HOST_CONFIG_GET name=fb-owner bytes=252
+1792356440 HOST_CONFIG_GET name=anim-handoff bytes=423
+1792356440 HOST_CONFIG_GET name=anim-state bytes=52
+1792356440 HOST_CONFIG_GET name=launcher-state bytes=6292
+1792356440 HOST_CONFIG_GET name=display-state bytes=123
+1792356442 HOST_CONFIG_GET name=fb-owner bytes=252
+1792356442 HOST_CONFIG_GET name=anim-handoff bytes=423
+1792356442 HOST_CONFIG_GET name=anim-state bytes=52
+1792356442 HOST_CONFIG_GET name=launcher-state bytes=6564
+1792356442 HOST_CONFIG_GET name=display-state bytes=123
+1792356443 NUXEL_INPUT BOOTLOG_HIDDEN why=auto
+1792356589 NUXEL_INPUT EVT pointerdown x=353 y=255 tag=DIV id=app-grid w=360 h=760 dpr=2 splash=absent
+1792356589 NUXEL_INPUT EVT touchstart x=353 y=255 tag=DIV id=app-grid w=360 h=760 dpr=2 splash=absent
+1792356589 NUXEL_INPUT EVT touchmove x=353 y=255 tag=DIV id=app-grid w=360 h=760 dpr=2 splash=absent
+1792356589 NUXEL_INPUT EVT touchmove x=353 y=254 tag=DIV id=app-grid w=360 h=760 dpr=2 splash=absent
+1792356589 NUXEL_INPUT EVT touchmove x=353 y=254 tag=DIV id=app-grid w=360 h=760 dpr=2 splash=absent
+1792356589 NUXEL_INPUT EVT touchmove x=355 y=250 tag=DIV id=app-grid w=360 h=760 dpr=2 splash=absent
+1792356589 NUXEL_INPUT EVT touchmove x=356 y=246 tag=DIV id=app-grid w=360 h=760 dpr=2 splash=absent
+1792356589 NUXEL_INPUT EVT touchmove x=357 y=243 tag=DIV id=app-grid w=360 h=760 dpr=2 splash=absent
+1792356589 NUXEL_INPUT EVT touchmove x=357 y=240 tag=DIV id=app-grid w=360 h=760 dpr=2 splash=absent
+1792356589 NUXEL_INPUT EVT touchmove x=358 y=236 tag=DIV id=app-grid w=360 h=760 dpr=2 splash=absent
+1792356589 NUXEL_INPUT EVT touchmove x=358 y=231 tag=DIV id=app-grid w=360 h=760 dpr=2 splash=absent
+1792356589 NUXEL_INPUT EVT touchmove x=359 y=224 tag=DIV id=app-grid w=360 h=760 dpr=2 splash=absent
+1792356589 NUXEL_INPUT EVT touchmove x=359 y=202 tag=DIV id=app-grid w=360 h=760 dpr=2 splash=absent
+1792356589 NUXEL_INPUT EVT pointerup x=359 y=202 tag=DIV id=app-grid w=360 h=760 dpr=2 splash=absent
+1792356589 NUXEL_INPUT EVT touchend x=359 y=202 tag=DIV id=app-grid w=360 h=760 dpr=2 splash=absent
+1792356593 NUXEL_INPUT EVT pointerdown x=38 y=155 tag=SPAN id=app-icon app-category-productivity w=360 h=760 dpr=2 splash=absent
+1792356593 NUXEL_INPUT EVT touchstart x=38 y=155 tag=SPAN id=app-icon app-category-productivity w=360 h=760 dpr=2 splash=absent
+1792356593 NUXEL_INPUT EVT touchmove x=39 y=155 tag=SPAN id=app-icon app-category-productivity w=360 h=760 dpr=2 splash=absent
+1792356593 NUXEL_INPUT EVT touchmove x=39 y=155 tag=SPAN id=app-icon app-category-productivity w=360 h=760 dpr=2 splash=absent
+1792356593 NUXEL_INPUT EVT touchmove x=39 y=155 tag=SPAN id=app-icon app-category-productivity w=360 h=760 dpr=2 splash=absent
+1792356593 NUXEL_INPUT EVT touchmove x=39 y=154 tag=SPAN id=app-icon app-category-productivity w=360 h=760 dpr=2 splash=absent
+1792356593 NUXEL_INPUT EVT pointerup x=39 y=154 tag=SPAN id=app-icon app-category-productivity w=360 h=760 dpr=2 splash=absent
+1792356593 NUXEL_INPUT EVT app:launch id=org.nuxel.Calendar name=Calendar
+1792356593 NUXEL_INPUT EVT touchend x=39 y=154 tag=SPAN id=app-icon app-category-productivity w=360 h=760 dpr=2 splash=absent
+1792357333 FRAMES_OK total=20885 fps_1s=23 failures=0 blit_avg_ms=42 out=720x1520 src=720x1520 scale=2 panel=1440x3040 owner=nuxel-wl-fb display=on src_format=0x00000001 colour=R@0,G@8,B@16_abgr8888_override=1

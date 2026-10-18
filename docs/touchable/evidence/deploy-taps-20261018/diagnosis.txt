@@ -1,0 +1,16 @@
+{
+  "started_at": 1792357818.1709092,
+  "files": [],
+  "status": "PREPARING"
+}
+ActiveState=failed
+ExecMainStatus=1
+Oct 18 23:10:18 fedora systemd[1]: Started nuxel-deploy-taps-20261018.service - [systemd-run] /usr/bin/python3 /var/tmp/nuxel-deploy-taps-20261018/install.py /var/tmp/nuxel-deploy-taps-20261018.
+Oct 18 23:10:18 fedora python3[12708]: Traceback (most recent call last):
+Oct 18 23:10:18 fedora python3[12708]:   File "/var/tmp/nuxel-deploy-taps-20261018/install.py", line 28, in <module>
+Oct 18 23:10:18 fedora python3[12708]:     raise RuntimeError('unsafe target')
+Oct 18 23:10:18 fedora python3[12708]: RuntimeError: unsafe target
+Oct 18 23:10:18 fedora systemd[1]: nuxel-deploy-taps-20261018.service: Main process exited, code=exited, status=1/FAILURE
+Oct 18 23:10:18 fedora systemd[1]: nuxel-deploy-taps-20261018.service: Failed with result 'exit-code'.
+active
+active

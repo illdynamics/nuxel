@@ -1,0 +1,72 @@
+{
+  "adb_devices": [],
+  "at": "2026-10-18T23:01:00+0200",
+  "blocked_reason": null,
+  "capability": {
+    "pid": "0x4ee7",
+    "serial": "NUXEL-S10PLUS-0001",
+    "vid": "0x18d1"
+  },
+  "evidence_dir": "docs/touchable/evidence/reachability-initial-20261018",
+  "exit_code": 0,
+  "finished": "2026-10-18T23:01:02+0200",
+  "gadget_descriptor_present": true,
+  "host": "Darwin 24.6.0",
+  "nodes": [
+    {
+      "callout": "/dev/cu.usbmodem1201",
+      "dialin": "/dev/tty.usbmodem1201",
+      "pid": 20199,
+      "tty_base": "usbmodem",
+      "tty_device": "usbmodem1201",
+      "tty_suffix": "1201",
+      "vid": 6353
+    }
+  ],
+  "probe": {
+    "at": "2026-10-18T23:01:01+0200",
+    "bytes_in": 7691,
+    "dev": "/dev/cu.usbmodem1201",
+    "echo_ok": true,
+    "elapsed_s": 0.33,
+    "error": null,
+    "reachable": true,
+    "sample": "0), chgcurr(2850)\n6,6652,12458624,-;android_work: sent uevent USB_STATE=CONFIGURED\n6,6653,12922666,-;PANEL:INFO:panel_fb_notifier:EARLY UNBLANK\n3,6654,12922674,-;[STUI] stui_notifier_callback is not state TUI\n6,6655,12922679,-;[SSP] copr_fb_notifier_callback: early_blank = 1, fb_blank = 0\n6,6656,12922683,-;decon-0 UNBLANK mode: 0 type (0: DSI, 1: eDP, 2:DP, 3: WB)\n4,6657,12922687,-;decon-0 a"
+  },
+  "reachable": true,
+  "selected": {
+    "callout": "/dev/cu.usbmodem1201",
+    "dialin": "/dev/tty.usbmodem1201",
+    "match_stage": "vid+pid+ttybase+serial",
+    "pid": 20199,
+    "tty_base": "usbmodem",
+    "tty_device": "usbmodem1201",
+    "tty_suffix": "1201",
+    "vid": 6353
+  },
+  "steps": [
+    {
+      "detail": "/dev/cu.usbmodem1201 (matched vid+pid+ttybase+serial)",
+      "ok": true,
+      "step": "select-by-capability"
+    },
+    {
+      "detail": {
+        "elapsed_s": 0.865,
+        "framed": true,
+        "output_bytes": 52,
+        "raw_len": 8340,
+        "rc": 0,
+        "rid": "6974338d",
+        "sha_ok": true
+      },
+      "ok": true,
+      "output": "uid=0(root) gid=0(root) groups=0(root)\nNXL-REACH-OK",
+      "step": "framed-command"
+    }
+  ],
+  "verdict": "REACHABLE",
+  "verdicts": {
+    "briq-10a-live-reachability-preflight": "REACHABLE"
+  }
+}

@@ -1,0 +1,27 @@
+Id=nuxel-wayland.service
+ActiveState=active
+MainPID=5355
+ExecStart={ path=/usr/sbin/phoc ; argv[]=/usr/sbin/phoc --no-xwayland -C /etc/nuxel/phoc-phone.ini -E /usr/lib/nuxel/nuxel-session.sh ; ignore_errors=no ; start_time=[Sun 2026-10-18 22:46:50 CEST] ; stop_time=[n/a] ; pid=5355 ; code=(null) ; status=0/0 }
+
+Id=nuxel-wl-fb.service
+ActiveState=active
+MainPID=5422
+ExecStart={ path=/usr/lib/nuxel/nuxel-wl-fb ; argv[]=/usr/lib/nuxel/nuxel-wl-fb ; ignore_errors=no ; start_time=[Sun 2026-10-18 22:46:51 CEST] ; stop_time=[n/a] ; pid=5422 ; code=(null) ; status=0/0 }
+
+Id=nuxel-pwa.service
+ActiveState=inactive
+MainPID=0
+
+Id=nuxel-touch-arm.service
+ActiveState=active
+MainPID=5346
+ExecStart={ path=/usr/lib/nuxel/nuxel-touch-arm ; argv[]=/usr/lib/nuxel/nuxel-touch-arm ; ignore_errors=no ; start_time=[Sun 2026-10-18 22:46:50 CEST] ; stop_time=[n/a] ; pid=5346 ; code=(null) ; status=0/0 }
+
+Id=nuxel-button-manager.service
+ActiveState=active
+MainPID=5424
+ExecStart={ path=/usr/lib/nuxel/nuxel-button-manager ; argv[]=/usr/lib/nuxel/nuxel-button-manager ; ignore_errors=no ; start_time=[Sun 2026-10-18 22:46:51 CEST] ; stop_time=[n/a] ; pid=5424 ; code=(null) ; status=0/0 }
+  UNIT LOAD ACTIVE SUB DESCRIPTION
+
+0 loaded units listed.
+To show all installed unit files use 'systemctl list-unit-files'.
