@@ -4,7 +4,7 @@
 **Machine-readable twin:** [`DEVICE-CAPABILITY-MANIFEST.json`](DEVICE-CAPABILITY-MANIFEST.json) · **Schema:** [`DEVICE-CAPABILITY-MANIFEST.schema.json`](DEVICE-CAPABILITY-MANIFEST.schema.json) · **Validator:** `tools/beta/validate-capability-manifest.py`
 **Companion:** [`../testing/TEST-STRATEGY.md`](../testing/TEST-STRATEGY.md) (L1–L6) · [`SOAK-AND-PERFORMANCE.md`](../testing/SOAK-AND-PERFORMANCE.md) · [`REBOOT-ROLLBACK.md`](REBOOT-ROLLBACK.md) · [`ROLLBACK.md`](ROLLBACK.md) · [`../BETA-MANUAL-PROOF-CHECKLIST.md`](../BETA-MANUAL-PROOF-CHECKLIST.md)
 
-**Version:** `v0.4.0-alpha` · **git head at generation:** `94d68b13e64ed195e0c3f3f6d2e21a07f3ae3b19` · **generated:** `2026-10-16T21:02:28+0200`
+**Version:** `v0.5.1-alpha` · **git head at generation:** `94d68b13e64ed195e0c3f3f6d2e21a07f3ae3b19` · **generated:** `2026-10-16T21:02:28+0200`
 
 ---
 

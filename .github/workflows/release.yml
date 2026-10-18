@@ -26,6 +26,13 @@
 #   images/s10plus/build.sh --phone-rootfs
 #                                        -> s10plus Fedora 43 ARM64 phone rootfs
 #                                           (arm64 container: podman + qemu binfmt)
+#                                           The container now COMPILES the
+#                                           current A34 TOUCHDOWN userspace
+#                                           (nuxel-wl-fb, nuxel-pwa-host,
+#                                           nuxel-button-manager, libinput shim,
+#                                           nuxel-wl-snapshot) from repository
+#                                           sources; it no longer depends on a
+#                                           developer's build/out/a32 tree.
 #   tools/verify-artifacts.sh --device   -> FAIL-CLOSED artifact verification
 #   tools/package-release.sh             -> nuxel-<ver>-<dev>.tar.gz artifact
 #
@@ -34,7 +41,9 @@
 #     initramfs, kernel, or images are missing/invalid, the job goes RED and the
 #     release job is skipped (a release is only ever published from a fully green
 #     build). tools/verify-artifacts.sh is the explicit gate for that.
-#   * The S10+ image set is the A25 set that runs on the handset. Two properties
+#   * The S10+ BOOT image is the A25 image that runs on the handset; the
+#     userspace inside USERDATA is the current A34 TOUCHDOWN set. Two boot
+#     properties
 #     are non-negotiable on this board (docs/s10plus-autonomous-boot-repair/
 #     INITRAMFS-DELIVERY-ROOT-CAUSE.md): the BOOT container carries a RAW arm64
 #     Image (never Image.gz — S-Boot executes a gzip payload as code) and that
@@ -52,7 +61,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Release tag (e.g. v0.4.0-alpha). Empty => v<VERSION>.'
+        description: 'Release tag (e.g. v0.5.1-alpha). Empty => v<VERSION>.'
         required: false
         default: ''
       devices:
@@ -198,20 +207,34 @@ jobs:
               bash images/g7power/build.sh --device g7power
               ;;
             s10plus)
-              # 1) THE A25 BOOT IMAGE — the image that runs on the handset.
-              #    repo-source initramfs -> RAW arm64 kernel Image with the
-              #    archive EMBEDDED (CONFIG_INITRAMFS_SOURCE) -> legacy v1
+              # 1) THE A25 BOOT IMAGE — the boot image currently flashed on the
+              #    handset. repo-source initramfs -> RAW arm64 kernel Image with
+              #    the archive EMBEDDED (CONFIG_INITRAMFS_SOURCE) -> legacy v1
               #    boot.img with the merged board DTB. The script runs
               #    tools/s10plus/verify-a25-boot.py fail-closed before it exits 0.
               bash images/s10plus/build-a25-boot.sh
-              # 2) The real Fedora 43 ARM64 phone userspace (Python/systemd/
-              #    Phosh/Phoc RPM binaries) that is written to USERDATA. This is
-              #    NOT the retired shared Plymouth/Flatpak rootfs.
+              # 2) The real Fedora 43 ARM64 phone userspace written to USERDATA.
+              #    Inside the arm64 container this also COMPILES the current A34
+              #    TOUCHDOWN userspace from repo sources (display bridge, PWA
+              #    host, button manager, libinput shim, snapshot tool), so CI
+              #    produces exactly the runtime the handset is running rather
+              #    than copying a developer-only build/out/s10plus/a32 tree.
               NUXEL_S10PLUS_OUTPUT="$PWD/build/out/s10plus/nuxel-beyond2lte-rootfs-fedora-phone.img" \
                 bash images/s10plus/build.sh --device s10plus --phone-rootfs
               ;;
             *) echo "::error::unsupported device ${{ matrix.device }}"; exit 1 ;;
           esac
+
+      - name: Run current S10+ userspace regression tests
+        if: matrix.device == 's10plus'
+        run: |
+          # These drive the real shipped sources (A34 FSM, SYN_REPORT touch
+          # translation, QS gesture, A33 MT parser) without a phone attached.
+          # The libinput suite consumes a HOST-built selftest binary; build it
+          # first so a fresh CI checkout does not depend on local build output.
+          bash tools/s10plus/a33/build-libinput-shim.sh --selftest
+          bash tools/s10plus/a34/tests/run-a34-tests.sh
+          bash tools/s10plus/a33/tests/run-touch-tests.sh --quick
 
       - name: Verify artifacts (${{ matrix.device }})
         run: bash tools/verify-artifacts.sh --device "${{ matrix.device }}"

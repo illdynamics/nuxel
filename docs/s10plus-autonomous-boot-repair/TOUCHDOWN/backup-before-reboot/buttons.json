@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "bixby_short": "open-terminal",
+  "bixby_long": "live-console-toggle",
+  "power_short": "screen-toggle",
+  "power_long": "power-menu",
+  "power_double": "camera",
+  "volume_up": "volume-up",
+  "volume_down": "volume-down",
+  "volume_up_long": "notifications-panel",
+  "volume_down_long": "all-apps",
+  "chord_power_volume_up": "sound-mode-cycle",
+  "chord_power_volume_down": "screenshot"
+}

@@ -40,6 +40,8 @@ run_step "libinput shim: capability fixtures"      python3 "$HERE/test-libinput-
 run_step "libinput shim: A31/A33 parity"           python3 "$HERE/test-libinput-parity.py"
 run_step "libinput shim: the LD_PRELOAD invocation chain" python3 "$HERE/test-libinput-shim-invocation.py"
 run_step "touch tracer: layers, gate, boundedness" python3 "$HERE/test-touch-trace.py"
+run_step "MT frame parser: DOWN at SYN, tap != back, bottom swipe = home" \
+  bash -c 'd=$(mktemp -d); trap "rm -rf \"$d\"" EXIT; cc -std=gnu11 -O2 -Wall -Wextra -Wno-unused-function -o "$d/test-touch-mt" "$1" && "$d/test-touch-mt"' _ "$HERE/test-touch-mt.c"
 run_step "boot-mode guard: LPM detection + gates"  python3 "$HERE/test-bootmode-guard.py"
 run_step "capture harness: commands, gate, no repo litter" python3 "$HERE/test-capture-harness.py"
 run_step "no hard-coded /dev/input/event<N> gate"  python3 "$HERE/test-no-eventn-literal.py"

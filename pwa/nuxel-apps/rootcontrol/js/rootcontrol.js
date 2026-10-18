@@ -184,7 +184,16 @@
   el('refresh').addEventListener('click', refresh);
   el('close').addEventListener('click', function () {
     var f = window.frameElement;
-    if (f && window.parent !== window && window.parent.NuxelLauncherClose) window.parent.NuxelLauncherClose();
+    if (f) {
+      var closedByLauncher = false;
+      try {
+        if (window.parent !== window && window.parent.NuxelLauncherClose) {
+          window.parent.NuxelLauncherClose();
+          closedByLauncher = true;
+        }
+      } catch (e) { /* cross-origin parent: fall through */ }
+      if (!closedByLauncher && f.parentNode) f.parentNode.removeChild(f);
+    }
     else if (f && f.parentNode) f.parentNode.removeChild(f);
   });
   refresh();

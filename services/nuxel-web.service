@@ -6,6 +6,10 @@ Wants=nuxel-http-bridge.service
 # The docroot is resolved by the shim: /usr/share/nuxel on the phone rootfs,
 # /home/nuxel/nuxel on the flash-free deploy mirror (or $NUXEL_WEBROOT).
 ConditionPathExists=/usr/bin/nuxel-web
+# Restart-burst bound.  These keys belong to [Unit]; in [Service] systemd
+# ignores them (measured journal: "Unknown key 'StartLimitIntervalSec'").
+StartLimitIntervalSec=60
+StartLimitBurst=5
 
 [Service]
 Type=simple
@@ -28,8 +32,6 @@ Environment=NUXEL_WEB_BIND=127.0.0.1
 ExecStart=/usr/bin/nuxel-web
 Restart=on-failure
 RestartSec=2
-StartLimitIntervalSec=60
-StartLimitBurst=5
 
 # Hardening (localhost-only; PWA static content is read-only)
 ProtectSystem=strict

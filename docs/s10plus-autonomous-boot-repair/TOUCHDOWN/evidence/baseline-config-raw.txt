@@ -1,0 +1,375 @@
+# console /dev/ttyACM0
+===== echo ===NXLIBS===; ls -la /usr/lib/nuxel/ /usr/lib/nuxel/*/ 2>&1 | head -120   [rc=0 frame=e2d2487f sha_ok=yes]
+    ===NXLIBS===
+    /usr/lib/nuxel/:
+    total 1064
+    drwxr-xr-x 10 root root  4096 Oct 17 05:45 .
+    dr-xr-xr-x 33 root root  4096 Oct 14 17:45 ..
+    -rwxr-xr-x  1 root root 71376 Sep 15 02:00 libnuxel-libinput-path.so
+    -rwxr-xr-x  1 root root 13389 Sep 15 03:14 nuxel-anim-pack.py
+    -rwxr-xr-x  1 root root  1216 Sep 15 03:10 nuxel-animation-claim
+    drwxr-xr-x  2 root root  4096 Sep 15 02:18 nuxel-bridge
+    -rwxr-xr-x  1 root root 77056 Oct 17 05:45 nuxel-button-manager
+    -rwxr-xr-x  1 root root 77016 Oct 17 05:45 nuxel-button-manager.prev
+    -rwxr-xr-x  1 root root 75984 Sep 15 02:35 nuxel-button-manager.prev-a32
+    drwxr-xr-x  2 root root  4096 Sep 15 02:49 nuxel-camera-portal
+    drwxr-xr-x  2 root root  4096 Sep 15 02:46 nuxel-console
+    -rwxr-xr-x  1 root root  1692 Sep 15 02:46 nuxel-console-free
+    -rwxr-xr-x  1 root root  1073 Sep 15 02:46 nuxel-home-kiosk
+    drwxr-xr-x  3 root root  4096 Sep 15 02:39 nuxel-home-native
+    -rwxr-xr-x  1 root root   517 Sep 15 02:36 nuxel-launcher-ready-wait
+    drwxr-xr-x  2 root root  4096 Sep 15 02:46 nuxel-notifications
+    drwxr-xr-x  2 root root  4096 Sep 15 02:47 nuxel-permissions
+    drwxr-xr-x  2 root root  4096 Sep 15 02:46 nuxel-portal
+    -rwxr-xr-x  1 root root  3834 Oct 17 11:51 nuxel-postboot.sh
+    -rwxr-xr-x  1 root root 78120 Sep 15 03:01 nuxel-pwa-host
+    -rwxr-xr-x  1 root root 74760 Sep 15 02:31 nuxel-pwa-host.prev-a32
+    -rwxr-xr-x  1 root root  2858 Sep 15 02:07 nuxel-session.sh
+    -rwxr-xr-x  1 root root 72624 Sep 15 02:27 nuxel-touch-arm
+    -rwxr-xr-x  1 root root 66136 Jan  4  2019 nuxel-ui.A25
+    -rwxr-xr-x  1 root root 66136 Jan  4  2019 nuxel-ui.prev
+    -rwxr-xr-x  1 root root   305 Sep 15 02:36 nuxel-wait-wayland
+    -rwxr-xr-x  1 root root 14765 Sep 15 02:46 nuxel-web-server.py
+    -rwxr-xr-x  1 root root 77152 Sep 15 03:01 nuxel-wl-fb
+    -rwxr-xr-x  1 root root 76160 Sep 15 02:20 nuxel-wl-fb.prev-a32
+    -rw-r--r--  1 root root 40423 Oct 17 02:11 packages-manifest.json
+    -rw-r--r--  1 root root 40423 Sep 15 03:14 packages-manifest.json.nuxel-rollback
+    drwxr-xr-x  4 root root  4096 Sep 15 02:46 src
+    -rwxr-xr-x  1 root root  4375 Sep 15 02:15 touch-capture.py
+    -rw-rw-rw-  1 root root    23 Oct 17 02:38 ui.pinned
+    -rw-r--r--  1 root root    23 Oct 17 02:38 ui.rev
+    -rwxr-xr-x  1 root root 16673 Sep 15 02:39 verify-app-inventory.py
+    -rwxr-xr-x  1 root root 29542 Sep 15 02:39 verify-app-registry.py
+    /usr/lib/nuxel/nuxel-bridge/:
+    total 172
+    drwxr-xr-x  2 root root  4096 Sep 15 02:18 .
+    drwxr-xr-x 10 root root  4096 Oct 17 05:45 ..
+    -rw-r--r--  1 root root 42030 Sep 15 02:45 api.py
+    -rw-r--r--  1 root root 29449 Oct 14 14:51 api.py.nuxel-rollback
+    -rw-r--r--  1 root root 35124 Sep 15 02:18 bridge.py
+    -rw-r--r--  1 root root 32847 Oct 14 14:51 bridge.py.nuxel-rollback
+    -rw-r--r--  1 root root 13301 Oct 14 14:51 capabilities.py
+    /usr/lib/nuxel/nuxel-camera-portal/:
+    total 28
+    drwxr-xr-x  2 root root  4096 Sep 15 02:49 .
+    drwxr-xr-x 10 root root  4096 Oct 17 05:45 ..
+    -rw-r--r--  1 root root 16550 Sep 15 02:49 nuxel_camera_portal.py
+    /usr/lib/nuxel/nuxel-console/:
+    total 16
+    drwxr-xr-x  2 root root 4096 Sep 15 02:46 .
+    drwxr-xr-x 10 root root 4096 Oct 17 05:45 ..
+    -rw-r--r--  1 root root 4715 Sep 15 02:46 README.md
+    /usr/lib/nuxel/nuxel-home-native/:
+    total 12
+    drwxr-xr-x  3 root root 4096 Sep 15 02:39 .
+    drwxr-xr-x 10 root root 4096 Oct 17 05:45 ..
+    drwxr-xr-x  2 root root 4096 Sep 15 02:39 nuxel_home
+    /usr/lib/nuxel/nuxel-notifications/:
+    total 44
+    drwxr-xr-x  2 root root  4096 Sep 15 02:46 .
+    drwxr-xr-x 10 root root  4096 Oct 17 05:45 ..
+    -rw-r--r--  1 root root  3242 Sep 15 02:46 README.md
+    -rw-r--r--  1 root root 13336 Sep 15 02:46 notifications.py
+    -rw-r--r--  1 root root 13336 Oct 14 14:51 notifications.py.nuxel-rollback
+    /usr/lib/nuxel/nuxel-permissions/:
+    total 108
+    drwxr-xr-x  2 root root  4096 Sep 15 02:47 .
+    drwxr-xr-x 10 root root  4096 Oct 17 05:45 ..
+    -rw-r--r--  1 root root 29723 Sep 15 02:47 capabilities.json
+    -rwxr-xr-x  1 root root 68783 Sep 15 02:47 nuxel-permd.py
+    /usr/lib/nuxel/nuxel-portal/:
+    total 56
+    drwxr-xr-x  2 root root  4096 Sep 15 02:46 .
+    drwxr-xr-x 10 root root  4096 Oct 17 05:45 ..
+    -rw-r--r--  1 root root 22742 Sep 15 02:46 portal.py
+    -rw-r--r--  1 root root 22742 Oct 14 14:51 portal.py.nuxel-rollback
+    /usr/lib/nuxel/src/:
+    total 16
+    drwxr-xr-x  4 root root 4096 Sep 15 02:46 .
+    drwxr-xr-x 10 root root 4096 Oct 17 05:45 ..
+    drwxr-xr-x  2 root root 4096 Sep 15 02:08 a33
+    drwxr-xr-x 10 root root 4096 Sep 15 02:48 shell
+===== echo ===HASHES2===; sha256sum /usr/lib/nuxel/nuxel-pwa-host /usr/lib/nuxel/nuxel-wl-fb /usr/lib/nuxel/nuxel-button-manager /usr/lib/nuxel/nuxel-touch-arm /usr/lib/nuxel/nuxel-libinput-path /usr/lib/nuxel/nuxel-session.sh /opt/nuxel/nuxel-console 2>&1   [rc=1 frame=86724880 sha_ok=yes]
+    ===HASHES2===
+    18631d5b71eb938d821ba319ddf78ee73b403811933824d93b36dc9439f7f6b0  /usr/lib/nuxel/nuxel-pwa-host
+    e4b4293e8d3d7d5e1c168e58c80ef23e4cb64db30313f0658498362ccaca7b9e  /usr/lib/nuxel/nuxel-wl-fb
+    f0648fb7b9e95e86ab00c0f1d46b87693aedd6941244402c68801474fd95bd0f  /usr/lib/nuxel/nuxel-button-manager
+    2d1f6ef4d8ee835a131a6c345d2546fade8383b6007a1078efe31db4b85e58ba  /usr/lib/nuxel/nuxel-touch-arm
+    sha256sum: /usr/lib/nuxel/nuxel-libinput-path: No such file or directory
+    848255f54f164f70cd69440f750a76eb3f7dbf00471b2837f709eb3d38dd32ec  /usr/lib/nuxel/nuxel-session.sh
+    sha256sum: /opt/nuxel/nuxel-console: No such file or directory
+===== echo ===PHOC-INI===; cat /etc/nuxel/phoc-phone.ini 2>&1   [rc=0 frame=4e974881 sha_ok=yes]
+    ===PHOC-INI===
+    # Nuxel S10+ phoc configuration (beyond2lte).
+    #
+    # This is /usr/share/phosh/phoc.ini for the phone, with the HEADLESS-1 output
+    # geometry set to the handset's own panel: 1440x3040 at scale 2 => 720x1520
+    # logical pixels => a 360 CSS-pixel viewport, the same band the UTM VM renders
+    # the Nuxel launcher in (VM: [output:Virtual-1] mode = 720x1440, scale = 2,
+    # 360 CSS px).  The VM value is kept for reference below; only the physical
+    # resolution differs, which the port record documents.
+    [output:HEADLESS-1]
+    mode = 720x1520
+    scale = 2
+===== echo ===ETC-NUXEL===; find /etc/nuxel -maxdepth 3 -type f 2>&1 | sort   [rc=0 frame=c2024882 sha_ok=yes]
+    ===ETC-NUXEL===
+    /etc/nuxel/README.md
+    /etc/nuxel/app-registry/README-app-registry.md
+    /etc/nuxel/app-registry/app-registry.schema.json
+    /etc/nuxel/app-registry/app_registry.json
+    /etc/nuxel/app-registry/app_registry.json.nuxel-rollback
+    /etc/nuxel/audio/audio.json
+    /etc/nuxel/audio/jack-routes.json
+    /etc/nuxel/bluetooth/README.md
+    /etc/nuxel/bluetooth/bluetooth.json
+    /etc/nuxel/bluetooth/main.conf.d/60-nuxel.conf
+    /etc/nuxel/boot/animation-handoff.json
+    /etc/nuxel/boot/verbose-boot.json
+    /etc/nuxel/bootmode/README.md
+    /etc/nuxel/bootmode/bootmode-guard.json
+    /etc/nuxel/bridge-version.json
+    /etc/nuxel/buttons/reboot-gate.json
+    /etc/nuxel/buttons/reboot-gate.json.prev
+    /etc/nuxel/buttons/settings-surface.json
+    /etc/nuxel/camera/README.md
+    /etc/nuxel/camera/camera.json
+    /etc/nuxel/capabilities/connectivity-time-audio-buttons.json
+    /etc/nuxel/capabilities/hardware-subsystems.json
+    /etc/nuxel/display/statusbar-safezones.json
+    /etc/nuxel/gnss/README.md
+    /etc/nuxel/gnss/gnss.json
+    /etc/nuxel/gnss/osm-tiles.json
+    /etc/nuxel/gnss/osm-tiles.json.nuxel-staged
+    /etc/nuxel/haptics/README.md
+    /etc/nuxel/haptics/bridge.json
+    /etc/nuxel/haptics/haptics.json
+    /etc/nuxel/input/button-fsm.json
+    /etc/nuxel/input/button-fsm.json.prev
+    /etc/nuxel/input/buttons.json
+    /etc/nuxel/input/buttons.json.nuxel-staged
+    /etc/nuxel/input/buttons.json.prev
+    /etc/nuxel/keyboard/README.md
+    /etc/nuxel/keyboard/keyboard.json
+    /etc/nuxel/keyboard/keyboard.schema.json
+    /etc/nuxel/leds/README.md
+    /etc/nuxel/leds/leds.json
+    /etc/nuxel/nfc/README.md
+    /etc/nuxel/nfc/nfc.json
+    /etc/nuxel/nuxel-beyond2lte.conf
+    /etc/nuxel/paths.conf
+    /etc/nuxel/phoc-phone.ini
+    /etc/nuxel/phone-runtime-status
+    /etc/nuxel/power/README.md
+    /etc/nuxel/power/power-menu.json
+    /etc/nuxel/power/power.json
+    /etc/nuxel/sandbox/profiles/README.md
+    /etc/nuxel/sandbox/profiles/default.json
+    /etc/nuxel/sandbox/profiles/default.json.nuxel-rollback
+    /etc/nuxel/sandbox/profiles/nuxel-contacts.json
+    /etc/nuxel/sandbox/profiles/nuxel-dialer.json
+    /etc/nuxel/sandbox/profiles/nuxel-home.json
+    /etc/nuxel/sandbox/profiles/nuxel-messages.json
+    /etc/nuxel/sandbox/profiles/nuxel-permissions.json
+    /etc/nuxel/sandbox/profiles/nuxel-privacy.json
+    /etc/nuxel/sandbox/profiles/nuxel-settings.json
+    /etc/nuxel/sandbox/profiles/pwa-template.json
+    /etc/nuxel/security/README.md
+    /etc/nuxel/security/privacy-config.json
+    /etc/nuxel/security/remote-access.json
+    /etc/nuxel/security/tor/torrc
+    /etc/nuxel/sensors/README.md
+    /etc/nuxel/sensors/sensors.json
+    /etc/nuxel/statusbar-safezones.json
+    /etc/nuxel/time/README.md
+    /etc/nuxel/time/nuxel-chrony.conf
+    /etc/nuxel/time/time.json
+    /etc/nuxel/touch/README.md
+    /etc/nuxel/touch/bootmode-guard.json
+===== echo ===UNITS===; systemctl list-unit-files 'nuxel*' --no-pager 2>&1   [rc=0 frame=01924883 sha_ok=yes]
+    ===UNITS===
+    UNIT FILE                       STATE    PRESET
+    nuxel-keyboard-apply.path       disabled disabled
+    nuxel-animation.service         disabled disabled
+    nuxel-bootmode-guard.service    disabled disabled
+    nuxel-bootmode-oneshot.service  enabled  disabled
+    nuxel-bootmode-reboot.service   disabled disabled
+    nuxel-bridge.service            enabled  disabled
+    nuxel-button-manager.service    enabled  disabled
+    nuxel-camera-portal.service     disabled disabled
+    nuxel-console.service           disabled disabled
+    nuxel-fallback.service          enabled  disabled
+    nuxel-firstlight.service        disabled disabled
+    nuxel-haptics-bridge.service    disabled disabled
+    nuxel-http-bridge.service       enabled  disabled
+    nuxel-keyboard-apply.service    static   -
+    nuxel-microsd-automount.service static   -
+    nuxel-notifications.service     enabled  disabled
+    nuxel-permd.service             disabled disabled
+    nuxel-portal.service            enabled  disabled
+    nuxel-power-mode.service        disabled disabled
+    nuxel-rtc-check.service         disabled disabled
+    nuxel-touch-arm.service         enabled  disabled
+    nuxel-ui-fallback.service       disabled disabled
+    nuxel-ui.service                enabled  disabled
+    nuxel-verbose-boot.service      disabled disabled
+    nuxel-wayland.service           enabled  disabled
+    nuxel-web.service               disabled disabled
+    nuxel-wl-fb.service             enabled  disabled
+    nuxel-rtc-check.timer           disabled disabled
+    28 unit files listed.
+===== echo ===TOUCHARM-UNIT===; cat /etc/systemd/system/nuxel-touch-arm.service 2>&1; echo ---STATE---; cat /run/nuxel-touch-arm.state 2>&1   [rc=0 frame=62a04884 sha_ok=yes]
+    ===TOUCHARM-UNIT===
+    [Unit]
+    Description=Nuxel S10+ touchscreen arming (sec_ts stop->start, then hold open)
+    Documentation=file:/usr/share/doc/nuxel/UTM-LAUNCHER-PORT.md
+    # Bounded restarts: never spin into a process storm.
+    StartLimitIntervalSec=300
+    StartLimitBurst=10
+    # The controller must be armed before any other reader (libinput in the
+    # compositor) opens the panel node, otherwise the driver's first-open
+    # short-circuit is the only path taken.
+    Before=nuxel-wayland.service nuxel-ui.service
+    After=systemd-udev-settle.service
+    Wants=systemd-udev-settle.service
+    [Service]
+    Type=simple
+    ExecStart=/usr/lib/nuxel/nuxel-touch-arm
+    Restart=always
+    RestartSec=10
+    StandardOutput=journal
+    StandardError=journal
+    [Install]
+    WantedBy=multi-user.target
+    ---STATE---
+    2026-10-17T09:51:56Z NO_TOUCH_DEVICE devices=7
+    2026-10-17T09:52:07Z NO_TOUCH_DEVICE devices=7
+    2026-10-17T09:52:17Z NO_TOUCH_DEVICE devices=7
+    2026-10-17T09:52:28Z NO_TOUCH_DEVICE devices=7
+    2026-10-17T09:52:38Z NO_TOUCH_DEVICE devices=7
+    2026-10-17T09:52:49Z NO_TOUCH_DEVICE devices=7
+    2026-10-17T09:52:59Z NO_TOUCH_DEVICE devices=7
+    2026-10-17T09:53:10Z NO_TOUCH_DEVICE devices=7
+    2026-10-17T09:53:20Z NO_TOUCH_DEVICE devices=7
+    2026-10-17T09:53:31Z NO_TOUCH_DEVICE devices=7
+===== echo ===LIBINPUTPATH===; cat /run/nuxel-libinput-path.state 2>&1; ls -la /usr/lib/nuxel/nuxel-libinput-path /etc/ld.so.preload 2>&1; cat /etc/ld.so.preload 2>&1   [rc=1 frame=9bfe4885 sha_ok=yes]
+    ===LIBINPUTPATH===
+    1792230716 PATH_CONTEXT_CREATED ctx=0x5573309bb0 udev=0x5573238a40 (udev daemon not required)
+    1792230716 PATH_ASSIGN_SEAT seat='seat0' direct_devices_seen=0 added=0 db_seeded=0
+    ls: cannot access '/usr/lib/nuxel/nuxel-libinput-path': No such file or directory
+    ls: cannot access '/etc/ld.so.preload': No such file or directory
+    cat: /etc/ld.so.preload: No such file or directory
+===== echo ===SESSIONLOG===; cat /run/nuxel-session.log 2>&1   [rc=0 frame=c4b64886 sha_ok=yes]
+    ===SESSIONLOG===
+    2026-10-17T09:51:56Z session start WAYLAND_DISPLAY=wayland-0 layout=/pwa/nuxel-home bridge_ok=yes url=http://127.0.0.1:8000/pwa/nuxel-home/index.html
+    2026-10-17T09:51:57Z web server pid=5363 ready=yes
+    2026-10-17T09:51:57Z starting launcher host url=http://127.0.0.1:8000/pwa/nuxel-home/index.html
+===== echo ===HOME-STATE===; cat /run/nuxel-home.state 2>&1   [rc=0 frame=a7254887 sha_ok=yes]
+    ===HOME-STATE===
+    1792230717 CACHE_PURGE removed /root/.local/share/nuxel-pwa-host/serviceworkers (stale service worker scripts) still_present=0
+    1792230717 CACHE_PURGE removed /root/.cache/nuxel-pwa-host/CacheStorage (stale service worker cache namespaces) still_present=0
+    1792230717 CACHE_PURGE removed /root/.cache/nuxel-pwa-host/WebKitCache (stale HTTP cache) still_present=0
+    1792230717 NUXEL_HOME_MEDIA enable_media=0 audio_sink=0
+    1792230717 NUXEL_BOOT_POLICY host-enforced=1 css=1 dom_removal=1 (phone launch mode)
+    1792230717 NUXEL_INPUT_DIAG enabled=1 (user-script observer; launcher source unmodified)
+    1792230717 HOST_CTRL_FIFO_READY /run/nuxel-pwa-host.cmd
+    1792230717 NUXEL_HOME_BOOT_OWNER os_animation=1 splash_removed_by_launcher=1
+    1792230717 NUXEL_HOME_OPEN url=http://127.0.0.1:8000/pwa/nuxel-home/index.html?boot=os&v=1789437068 engine=WebKitGTK/2.52
+    1792230718 NUXEL_HOME_NAV uri=http://127.0.0.1:8000/pwa/nuxel-home/index.html?boot=os&v=1789437068
+    1792230718 NUXEL_HOME_COMMITTED uri=http://127.0.0.1:8000/pwa/nuxel-home/index.html?boot=os&v=1789437068
+    1792230718 NUXEL_INPUT EVT diag-ready x=-1 y=-1 tag=- id= w=360 h=760 dpr=2 splash=absent
+    1792230719 NUXEL_HOME_READY uri=http://127.0.0.1:8000/pwa/nuxel-home/index.html?boot=os&v=1789437068
+    1792230719 NUXEL_INPUT STATUSBAR_READY version=0.4.1-a33 safezones=present
+    1792230719 HOST_CONFIG_REFUSED name=verbose-boot
+    1792230719 HOST_CONFIG_GET name=statusbar-safezones bytes=657
+    1792230719 HOST_CONFIG_REFUSED name=verbose-boot-state
+    1792230719 NUXEL_INPUT SAFEZONES profile=none orientation=portrait blocked=[] padding_dp=6 width=360 moved=[] dropped=[]
+    1792230719 NUXEL_INPUT SAFEZONES profile=s10plus orientation=portrait blocked=[9,10] padding_dp=6 width=360 moved=[{"cluster":"status-right","shift":-68,"zone":9,"free":[0,276]}] dropped=[]
+    1792230719 NUXEL_INPUT BOOTLOG_VERDICT show=0 why=off
+    1792230719 NUXEL_INPUT EVT wallpaper url=http://127.0.0.1:8000/pwa/nuxel-home/assets/nuxel-background.png decoded=1 natural=941x1672 x=-1 y=-1 tag=BODY id= w=360 h=760 dpr=2 splash=absent
+    1792230719 NUXEL_INPUT JS-warn [Bridge] not connected, using mock fallback: Load failed
+    1792230719 NUXEL_INPUT EVT splash-t1s absent pointer-events=n/a z-index=n/a x=-1 y=-1 tag=BODY id= w=360 h=760 dpr=2 splash=absent
+    1792230722 NUXEL_INPUT EVT splash-t4s absent pointer-events=n/a z-index=n/a x=-1 y=-1 tag=BODY id= w=360 h=760 dpr=2 splash=absent
+    1792230727 NUXEL_INPUT EVT splash-t9s absent pointer-events=n/a z-index=n/a x=-1 y=-1 tag=BODY id= w=360 h=760 dpr=2 splash=absent
+===== echo ===BUTTONS===; cat /var/lib/nuxel/buttons 2>&1; cat /var/lib/nuxel/display 2>&1   [rc=0 frame=0a584888 sha_ok=yes]
+    ===BUTTONS===
+    2026-10-17T09:51:57Z KEY_CAPABILITIES 114 115 116 703
+    DISPLAY_ON
+    brightness=12800
+    saved_brightness=12800
+    max_brightness=48600
+    owner=nuxel-wl-fb
+===== echo ===BUTTON-LOG-TAIL===; journalctl -u nuxel-button-manager.service -n 40 --no-pager 2>&1   [rc=0 frame=825e4889 sha_ok=yes]
+    ===BUTTON-LOG-TAIL===
+    Oct 17 11:44:06 fedora systemd[1]: Started nuxel-button-manager.service - Nuxel hardware button and gesture manager (single owner of gpio_keys).
+    Oct 17 11:44:06 fedora nuxel-button-manager[5422]: CONFIG_LOADED buttons_json=/etc/nuxel/input/buttons.json power_short=screen-toggle power_long=power-menu bixby_short=open-terminal
+    Oct 17 11:44:06 fedora nuxel-button-manager[5422]: REBOOT_GATE enabled=1 restart=1 poweroff=1 rollback_ok=1 policy_known=0 policy_allow=0
+    Oct 17 11:44:07 fedora nuxel-button-manager[5422]: KEY_DEVICE_OPEN path=/dev/input/event1 name=gpio_keys (selected by capability, not by eventN)
+    Oct 17 11:44:07 fedora nuxel-button-manager[5422]: TOUCH_DEVICE_OPEN path=/dev/input/event2 name=sec_touchscreen axis_max=4095x4095 grab=none
+    Oct 17 11:44:07 fedora nuxel-button-manager[5422]: MANAGER_READY key=/dev/input/event1 touch=/dev/input/event2 gestures=1 fsm_spec_v=1
+    Oct 17 11:44:07 fedora nuxel-button-manager[5422]: KEY_CAPABILITIES 114 115 116 703
+    Oct 17 11:49:34 fedora nuxel-button-manager[5422]: FSM_ACTION source=key action=screen-toggle
+    Oct 17 11:49:35 fedora nuxel-button-manager[5422]: FSM_ACTION source=key action=screen-toggle
+    Oct 17 11:49:42 fedora nuxel-button-manager[5422]: FSM_ACTION source=key action=volume-up
+    Oct 17 11:49:42 fedora nuxel-button-manager[5422]: MIXER_READY element=Left AMP PCM Gain min=0 max=20 current=19 cap_active=0 cap_pct=25
+    Oct 17 11:49:42 fedora nuxel-button-manager[5422]: VOLUME_STEP dir=1 value=20 step=1 ceiling=20 capped=0
+    Oct 17 11:51:18 fedora nuxel-button-manager[5422]: FSM_ACTION source=key action=volume-down
+    Oct 17 11:51:18 fedora nuxel-button-manager[5422]: VOLUME_STEP dir=-1 value=19 step=1 ceiling=20 capped=0
+    Oct 17 11:51:18 fedora nuxel-button-manager[5422]: FSM_ACTION source=key action=screen-toggle
+    Oct 17 11:51:19 fedora nuxel-button-manager[5422]: FSM_ACTION source=key action=screen-toggle
+    Oct 17 11:51:20 fedora nuxel-button-manager[5422]: FSM_ACTION source=key action=volume-down
+    Oct 17 11:51:20 fedora nuxel-button-manager[5422]: VOLUME_STEP dir=-1 value=18 step=1 ceiling=20 capped=0
+    Oct 17 11:51:23 fedora nuxel-button-manager[5422]: FSM_ACTION source=key action=screen-toggle
+    Oct 17 11:51:23 fedora nuxel-button-manager[5422]: FSM_ACTION source=key action=screen-toggle
+    Oct 17 11:51:23 fedora nuxel-button-manager[5422]: FSM_ACTION source=key action=screen-toggle
+    Oct 17 11:51:24 fedora nuxel-button-manager[5422]: FSM_ACTION source=key action=screen-toggle
+    Oct 17 11:51:24 fedora nuxel-button-manager[5422]: FSM_ACTION source=key action=screen-toggle
+    Oct 17 11:51:24 fedora nuxel-button-manager[5422]: FSM_ACTION source=key action=screen-toggle
+    Oct 17 11:51:25 fedora nuxel-button-manager[5422]: FSM_ACTION source=key action=screen-toggle
+    Oct 17 11:51:25 fedora nuxel-button-manager[5422]: FSM_ACTION source=key action=screen-toggle
+    Oct 17 11:51:28 fedora nuxel-button-manager[5422]: MENU_OPEN index=0 id=lock-screen
+    Oct 17 11:51:31 fedora nuxel-button-manager[5422]: MENU_CLOSE reason=menu-close
+    Oct 17 11:51:36 fedora nuxel-button-manager[5422]: FSM_ACTION source=tick action=open-terminal
+    Oct 17 11:51:37 fedora nuxel-button-manager[5422]: FSM_ACTION source=tick action=open-terminal
+    Oct 17 11:51:38 fedora nuxel-button-manager[5422]: FSM_ACTION source=key action=volume-down
+    Oct 17 11:51:38 fedora nuxel-button-manager[5422]: VOLUME_STEP dir=-1 value=17 step=1 ceiling=20 capped=0
+    Oct 17 11:51:38 fedora nuxel-button-manager[5422]: FSM_ACTION source=tick action=screenshot
+    -- Boot b02d5e1a09da4a33b570e9608360d203 --
+    Oct 17 11:51:57 fedora systemd[1]: Started nuxel-button-manager.service - Nuxel hardware button and gesture manager (single owner of gpio_keys).
+    Oct 17 11:51:57 fedora nuxel-button-manager[5393]: CONFIG_LOADED buttons_json=/etc/nuxel/input/buttons.json power_short=screen-toggle power_long=power-menu bixby_short=open-terminal
+    Oct 17 11:51:57 fedora nuxel-button-manager[5393]: REBOOT_GATE enabled=1 restart=1 poweroff=1 rollback_ok=1 policy_known=0 policy_allow=0
+    Oct 17 11:51:57 fedora nuxel-button-manager[5393]: KEY_DEVICE_OPEN path=/dev/input/event1 name=gpio_keys (selected by capability, not by eventN)
+    Oct 17 11:51:57 fedora nuxel-button-manager[5393]: TOUCH_DEVICE_NOT_FOUND (no DIRECT+MT device: gestures stay disabled)
+    Oct 17 11:51:57 fedora nuxel-button-manager[5393]: MANAGER_READY key=/dev/input/event1 touch=none gestures=1 fsm_spec_v=1
+    Oct 17 11:51:57 fedora nuxel-button-manager[5393]: KEY_CAPABILITIES 114 115 116 703
+===== echo ===TOUCHARM-LOG===; journalctl -u nuxel-touch-arm.service -n 30 --no-pager 2>&1   [rc=0 frame=89e9488a sha_ok=yes]
+    ===TOUCHARM-LOG===
+    Oct 17 11:52:28 fedora systemd[1]: nuxel-touch-arm.service: Main process exited, code=exited, status=2/INVALIDARGUMENT
+    Oct 17 11:52:28 fedora systemd[1]: nuxel-touch-arm.service: Failed with result 'exit-code'.
+    Oct 17 11:52:38 fedora systemd[1]: nuxel-touch-arm.service: Scheduled restart job, restart counter is at 4.
+    Oct 17 11:52:38 fedora systemd[1]: Started nuxel-touch-arm.service - Nuxel S10+ touchscreen arming (sec_ts stop->start, then hold open).
+    Oct 17 11:52:38 fedora systemd[1]: nuxel-touch-arm.service: Main process exited, code=exited, status=2/INVALIDARGUMENT
+    Oct 17 11:52:38 fedora systemd[1]: nuxel-touch-arm.service: Failed with result 'exit-code'.
+    Oct 17 11:52:48 fedora systemd[1]: nuxel-touch-arm.service: Scheduled restart job, restart counter is at 5.
+    Oct 17 11:52:48 fedora systemd[1]: Started nuxel-touch-arm.service - Nuxel S10+ touchscreen arming (sec_ts stop->start, then hold open).
+    Oct 17 11:52:49 fedora systemd[1]: nuxel-touch-arm.service: Main process exited, code=exited, status=2/INVALIDARGUMENT
+    Oct 17 11:52:49 fedora systemd[1]: nuxel-touch-arm.service: Failed with result 'exit-code'.
+    Oct 17 11:52:59 fedora systemd[1]: nuxel-touch-arm.service: Scheduled restart job, restart counter is at 6.
+    Oct 17 11:52:59 fedora systemd[1]: Started nuxel-touch-arm.service - Nuxel S10+ touchscreen arming (sec_ts stop->start, then hold open).
+    Oct 17 11:52:59 fedora systemd[1]: nuxel-touch-arm.service: Main process exited, code=exited, status=2/INVALIDARGUMENT
+    Oct 17 11:52:59 fedora systemd[1]: nuxel-touch-arm.service: Failed with result 'exit-code'.
+    Oct 17 11:53:09 fedora systemd[1]: nuxel-touch-arm.service: Scheduled restart job, restart counter is at 7.
+    Oct 17 11:53:09 fedora systemd[1]: Started nuxel-touch-arm.service - Nuxel S10+ touchscreen arming (sec_ts stop->start, then hold open).
+    Oct 17 11:53:10 fedora systemd[1]: nuxel-touch-arm.service: Main process exited, code=exited, status=2/INVALIDARGUMENT
+    Oct 17 11:53:10 fedora systemd[1]: nuxel-touch-arm.service: Failed with result 'exit-code'.
+    Oct 17 11:53:20 fedora systemd[1]: nuxel-touch-arm.service: Scheduled restart job, restart counter is at 8.
+    Oct 17 11:53:20 fedora systemd[1]: Started nuxel-touch-arm.service - Nuxel S10+ touchscreen arming (sec_ts stop->start, then hold open).
+    Oct 17 11:53:20 fedora systemd[1]: nuxel-touch-arm.service: Main process exited, code=exited, status=2/INVALIDARGUMENT
+    Oct 17 11:53:20 fedora systemd[1]: nuxel-touch-arm.service: Failed with result 'exit-code'.
+    Oct 17 11:53:30 fedora systemd[1]: nuxel-touch-arm.service: Scheduled restart job, restart counter is at 9.
+    Oct 17 11:53:30 fedora systemd[1]: Started nuxel-touch-arm.service - Nuxel S10+ touchscreen arming (sec_ts stop->start, then hold open).
+    Oct 17 11:53:31 fedora systemd[1]: nuxel-touch-arm.service: Main process exited, code=exited, status=2/INVALIDARGUMENT
+    Oct 17 11:53:31 fedora systemd[1]: nuxel-touch-arm.service: Failed with result 'exit-code'.
+    Oct 17 11:53:41 fedora systemd[1]: nuxel-touch-arm.service: Scheduled restart job, restart counter is at 10.
+    Oct 17 11:53:41 fedora systemd[1]: nuxel-touch-arm.service: Start request repeated too quickly.
+    Oct 17 11:53:41 fedora systemd[1]: nuxel-touch-arm.service: Failed with result 'exit-code'.
+    Oct 17 11:53:41 fedora systemd[1]: Failed to start nuxel-touch-arm.service - Nuxel S10+ touchscreen arming (sec_ts stop->start, then hold open).

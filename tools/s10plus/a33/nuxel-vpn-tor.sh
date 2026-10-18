@@ -93,7 +93,12 @@ for part in sys.argv[2].split("."):
     else:
         print(sys.argv[3] if len(sys.argv) > 3 else "")
         sys.exit(0)
-print(cur if not isinstance(cur, (dict, list)) else json.dumps(cur))
+if isinstance(cur, bool):
+    print("true" if cur else "false")
+elif isinstance(cur, (dict, list)):
+    print(json.dumps(cur))
+else:
+    print(cur)
 PY
 }
 
@@ -317,6 +322,8 @@ do_tor_leak_probe() {
     # and direct outbound sockets that bypass loopback. This is a SUSPECT LIST.
     # It cannot prove anonymisation - only an external vantage point can.
     local json=0; [ "${1-}" = "--json" ] && json=1
+    # With --json, stdout is the machine channel: progress belongs on stderr.
+    sayp() { if [ "$json" = 1 ]; then printf '%s\n' "$*" >&2; else say "$*"; fi; }
     local samples sample_seconds
     samples="$(json_get "$CONFIG" "tor.leak_probe.samples" 3)"
     sample_seconds="$(json_get "$CONFIG" "tor.leak_probe.sample_seconds" 3)"
@@ -342,19 +349,19 @@ PY
         return "$EXIT_EXTERNAL"
     fi
 
-    say "tor leak probe (device-side smoke test; NOT proof of anonymisation)"
+    sayp "tor leak probe (device-side smoke test; NOT proof of anonymisation)"
     local suspects=0 sampling=0
     for _ in $(seq 1 "${samples:-3}" 2>/dev/null || seq 1 3); do
         run_cmd "$SS -H -tunp" "$SS" -H -tunp
         local out="$LAST_OUT"
         if [ "$LAST_STATUS" -eq 127 ]; then
-            say "  ss unavailable -> unknown"
+            sayp "  ss unavailable -> unknown"
             return "$EXIT_EXTERNAL"
         fi
         local plain_dns direct
         plain_dns="$(printf '%s\n' "$out" | grep -E ':(53)[[:space:]]' | grep -v '127\.0\.0\.1' | wc -l | tr -d ' ')"
         direct="$(printf '%s\n' "$out" | grep -vE '127\.0\.0\.1|\[::1\]|(^|[[:space:]])(0\.0\.0\.0|\*):' | wc -l | tr -d ' ')"
-        say "  sample $((sampling + 1)): plaintext-DNS sockets=$plain_dns non-loopback outbound=$direct"
+        sayp "  sample $((sampling + 1)): plaintext-DNS sockets=$plain_dns non-loopback outbound=$direct"
         suspects=$((suspects + plain_dns + direct))
         sampling=$((sampling + 1))
         sleep "${sample_seconds:-3}"
@@ -523,7 +530,9 @@ do_vpn_status() {
     if [ "$json" = 1 ]; then
         "$PY" - "$iface" "$iface_state" "$iface_level" "$hs_result" "$hs_level" "$ks_file" "$ks_armed" <<'PY'
 import json, sys, time
-iface, istate, ilevel, hs, hs_level, ks_file, ks_armed = sys.argv[1:7]
+# Seven arguments follow argv[0]; argv[1:7] yields only six and crashed this
+# writer (empty stdout) for every `vpn status --json` call.
+iface, istate, ilevel, hs, hs_level, ks_file, ks_armed = sys.argv[1:8]
 doc = {
   "surface": "vpn", "collected_at": time.strftime("%Y-%m-%dT%H:%M:%SZ"),
   "measured": {"interface": iface, "interface_present": istate == "up",

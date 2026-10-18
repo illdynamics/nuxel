@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "comment": "Reboot gate for the S10+ (beyond2lte), installed to /etc/nuxel/buttons/reboot-gate.json. This is the ONLY thing that decides whether a very-long power press or the power-menu Restart/Power-off entry may actually act. It is closed by default. Rationale: this mission runs with the owner absent; a reboot that does not return to Nuxel, or a phone left powered off, would be unrecoverable without the owner. The mission permits ordinary reboots only with a known-working userspace rollback path and a pre/post-reboot checklist.",
+  "enabled": true,
+  "allow_restart": true,
+  "allow_poweroff": true,
+  "min_interval_s": 1800,
+  "max_reboots_per_hour": 1,
+  "require_rollback_path": true,
+  "rollback_paths": [
+    "tools/nuxel-rollback-home.sh",
+    "/usr/lib/nuxel/nuxel-wl-fb.prev-a32"
+  ],
+  "require_clean_journal": false,
+  "audit_log": "/var/log/nuxel/buttons.log",
+  "state_file": "/var/lib/nuxel/buttons/reboot-gate.json",
+  "policy_source": "/var/lib/nuxel/reboot/policy.json",
+  "policy_source_contract": {
+    "comment": "bg-09 owns the reboot policy. When this file exists and carries allow_reboot: true, the gate treats it as an additional permission (AND, not OR, with this file's own flags) so neither group can silently override the other.",
+    "keys": [
+      "allow_reboot",
+      "reason",
+      "updated_at"
+    ]
+  },
+  "refusal_reason": "owner present and explicitly requested a working power menu (see task2 follow-up)",
+  "execution": {
+    "comment": "Only a userspace reboot path is ever used. Nothing here talks to a bootloader, a partition or a block device.",
+    "restart": "systemctl reboot",
+    "poweroff": "systemctl poweroff",
+    "forbidden": [
+      "reboot -f (sysrq)",
+      "echo b > /proc/sysrq-trigger",
+      "/dev/block writes",
+      "bootloader interfaces of any kind"
+    ]
+  }
+}

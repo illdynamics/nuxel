@@ -241,8 +241,26 @@ static void term_spawn(void) {
   st("TERMINAL_STARTED pid=%d fd=%d", (int)pid, term_fd);
 }
 
-static void term_request_close(void) {   /* fallback watcher for the close button */
+static void term_request_close(void) {
   if (term_pid > 0) { kill(term_pid, SIGHUP); term_pid = -1; }
+}
+
+/* Close the native terminal SURFACE, not just its PTY.
+ *
+ * Measured A34 owner test: tapping the terminal's Close button produced a
+ * `click` on #close, but the window stayed on the glass because term.close
+ * only killed the shell.  The fullscreen terminal then covered Home for the
+ * rest of the session, so every later touch ("Settings", the status-bar pull,
+ * the power menu) looked like it did nothing.  A close is only complete when
+ * the window is gone. */
+static void term_close_window(void) {
+  term_request_close();
+  if (term_window) {
+    GtkWidget *w = term_window;
+    term_window = NULL;          /* one-instance guard stops re-entrancy */
+    term_view = NULL;
+    gtk_widget_destroy(w);
+  }
 }
 
 /* --- host API ------------------------------------------------------------- */
@@ -301,12 +319,40 @@ static void action_perform(const char *action, char *result, size_t rn) {
     snprintf(result, rn, "{\"ok\":true,\"action\":\"%s\"}", action);
     return;
   }
+  /* A34 TOUCHDOWN: the on-screen power menu uses the SAME control FIFO as the
+   * hardware keys, so tapping Cancel/Restart and pressing them are one path.
+   * Only the menu's own verbs are accepted (no arbitrary FIFO injection). */
+  if (!strncmp(action, "menu-", 5)) {
+    int valid = !strcmp(action, "menu-up") || !strcmp(action, "menu-down") ||
+                !strcmp(action, "menu-close") || !strcmp(action, "menu-open") ||
+                !strcmp(action, "menu-select");
+    if (!valid && !strncmp(action, "menu-select ", 12)) {
+      const char *p = action + 12;
+      valid = *p != 0;
+      for (; *p; p++) if (*p < '0' || *p > '9') { valid = 0; break; }
+    }
+    if (valid) {
+      int fd = open("/run/nuxel-buttons.cmd", O_WRONLY | O_NONBLOCK);
+      if (fd < 0) { snprintf(result, rn, "{\"ok\":false,\"error\":\"button-fifo-absent\"}"); return; }
+      dprintf(fd, "%s\n", action);
+      close(fd);
+      st("HOST_ACTION %s -> button manager fifo", action);
+      snprintf(result, rn, "{\"ok\":true,\"action\":\"%s\"}", action);
+      return;
+    }
+    snprintf(result, rn, "{\"ok\":false,\"error\":\"bad-menu-action\"}");
+    return;
+  }
   if (!strcmp(action, "open-terminal")) {
     term_open_window();
     snprintf(result, rn, "{\"ok\":true,\"action\":\"open-terminal\"}");
     return;
   }
   if (!strcmp(action, "home") || !strcmp(action, "search") || !strcmp(action, "settings")) {
+    /* A native terminal window is a separate top-level surface: the launcher's
+     * DOM `home` event cannot dismiss it.  Home/back must close it here, or the
+     * fullscreen terminal stays in front of Home (the A34 owner-test symptom). */
+    if (!strcmp(action, "home")) term_close_window();
     if (g_main_view) {
       GString *g = g_string_new("");
       g_string_append_printf(g,
@@ -399,7 +445,7 @@ static void on_host_message(WebKitUserContentManager *m, WebKitJavascriptResult 
     return;
   }
   if (!strcmp(method, "term.open")) { term_open_window(); host_reply(v, id, 1, "{\"ok\":true}"); g_free(js); return; }
-  if (!strcmp(method, "term.close")) { term_request_close(); host_reply(v, id, 1, "{\"ok\":true}"); g_free(js); return; }
+  if (!strcmp(method, "term.close")) { term_close_window(); host_reply(v, id, 1, "{\"ok\":true}"); g_free(js); return; }
   st("HOST_METHOD_REFUSED %s", method);
   host_reply(v, id, 0, "{\"error\":\"unknown-method\"}");
   g_free(js);
@@ -540,7 +586,7 @@ static gboolean ctl_in(GIOChannel *ch, GIOCondition cond, gpointer d) {
     char *nl = strchr(q, '\n');
     if (nl) *nl = 0;
     if (!strncmp(q, "open-terminal", 13)) term_open_window();
-    else if (!strncmp(q, "close-terminal", 14)) term_request_close();
+    else if (!strncmp(q, "close-terminal", 14)) term_close_window();
     else if (!strncmp(q, "home", 4)) {
       action_perform("home", buf, sizeof buf);
     } else if (!strncmp(q, "action ", 7)) {

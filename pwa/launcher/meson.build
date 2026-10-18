@@ -1,5 +1,5 @@
 project('nuxel-pwa-launcher', 'c',
-    version: '0.4.0-alpha',
+    version: '0.5.1-alpha',
     license: 'MIT',
     default_options: [
         'c_std=c17',

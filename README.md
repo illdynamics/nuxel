@@ -3,7 +3,7 @@
 
 ![Nuxel](./nuxel.jpg)
 
-**v0.4.0-alpha** — _Build the bunker first. Add the rave lights later._
+**v0.5.1-alpha** — _Build the bunker first. Add the rave lights later._
 
 A hardened, GrapheneOS-spirited **Linux phone operating system** built from
 scratch on a pure Linux substrate. **Zero Android dependencies.** Immutable OS.
@@ -147,6 +147,34 @@ NUXEL_DEVICE=mustang bash boot/flash.sh --unlock --wipe
 | `ci/` | Build validation |
 | `assets/` | Wallpaper + boot animation |
 
+## What's new in v0.5.1-alpha
+
+**The current S10+ image is reproducible, and the status is now honest about what
+works.** The handset boots Nuxel (kernel → embedded initramfs → Fedora 43
+systemd → launcher), the **touchscreen works at the hardware/input layer**, and
+the remaining interaction gap is that **clicking/navigation in the UI is not yet
+signed off**.
+
+- **The release CI builds the exact current userspace.** The S10+ rootfs builder
+  now compiles the **A34 TOUCHDOWN** display bridge, PWA host, button manager,
+  libinput shim and snapshot tool from repository sources inside the arm64
+  container. It no longer copies a developer-only `build/out/s10plus/a32` tree,
+  so a clean checkout produces the same runtime the phone is running.
+- **The artifact gate knows the current image.** `verify-fedora-phone-rootfs.py`
+  fails if any current binary or the current button/reboot-gate configuration is
+  missing; the workflow also runs the A34 and A33 touch regression suites.
+- **Touch works.** Physical finger contacts reach `sec_touchscreen` → evdev →
+  libinput → phoc → WebKit (`pointerdown`/`touchstart`), and the display bridge
+  presents frames. Taps are delivered; reliable in-UI clicking is the open item.
+- **Sound should work, but is not proven on the phone.** ALSA/UCM configuration
+  and diagnostics are present and VM audio is verified, but S10+ audio cannot be
+  exercised through the UI until clicking is reliable.
+- **Repository cleanup.** Legacy mission/scratch notes, duplicate flash guides,
+  the `finish/` trees and all superseded image candidates were removed. Only the
+  canonical currently-flashed images remain in the local build tree.
+- **Version bump to `v0.5.1-alpha`** across the repository.
+
+
 ## What's new in v0.4.0-alpha
 
 **The Galaxy S10+ boots Nuxel.** This release records the first hardware-proven
@@ -180,7 +208,7 @@ from the animation. Full per-step evidence:
   `Image.gz` + external-ramdisk path is no longer the S10+ deliverable.
 - **The honest scoreboard moved accordingly**: build system 58% → 85%, S10+
   bring-up 55% → 85%, flashable images 80% → 90%; overall **~45–50% → ~60%**.
-- **Version bump to v0.4.0-alpha** across `VERSION`, README/design/docs, the
+- **Version bump to v0.5.1-alpha** across `VERSION`, README/design/docs, the
   flash guides, the device `APKBUILD`s, the shell/PWA manifests, the VM tooling
   and the OTA builder.
 
@@ -377,53 +405,53 @@ release. Full detail, per area, is in **[CHANGELOG.md](CHANGELOG.md)**.
   shell apps (meson + metainfo), the PWA manifest, the device `APKBUILD`s, the
   VM tooling and the OTA builder.
 
-**Readiness at a glance:** a documented scaffold with a **bootable UTM VM
-demo** and **built flash images for two of three phones — both partly pushed to
-hardware, neither booting Nuxel yet**. **0 of 3 phones have booted a Nuxel-built
-image.** The honest
-per-area breakdown is the table below; the "what's left" list is in the
-changelog.
+**Readiness at a glance:** the Galaxy S10+ **boots Nuxel on real hardware**,
+the display path and **touchscreen input work**, and clicking/navigation is the
+remaining interactive gap. The Moto G7 Power is flashed but still hangs at a
+black screen; the Pixel 10 Pro XL is still a scaffold. The UTM VM demo boots
+(display + network + sound).
 
-## Honest Status — v0.4.0-alpha
+## Honest Status — v0.5.1-alpha
 
+**S10+ (SM-G975F, beyond2lte) — NUXEL BOOTS AND TOUCH INPUT WORKS.**
+S-Boot loads the raw arm64 `Image` with the initramfs embedded, the Fedora 43
+ext4 rootfs mounts, `switch_root` hands over to **systemd 258 as PID 1**, the
+service graph reaches `running`, and the panel shows the boot animation before
+the launcher takes ownership. The **touchscreen produces real finger contact
+events** and they are delivered through evdev → libinput → phoc → WebKit.
+**Clickable UI interaction is not yet signed off**: taps reach the page, but
+reliable app clicking/navigation remains the open owner test. **Sound should
+work but is unproven** because the UI cannot be driven reliably yet. Camera,
+radio/modem, sensors and Phosh (no DRM/KMS in this 4.14 vendor kernel) remain
+unproven.
 
-**S10+ October 15 status — Nuxel BOOTS on the handset.** Read
-[S10PLUS-PROGRESS.md](S10PLUS-PROGRESS.md) and
-[docs/s10plus-autonomous-boot-repair/STATUS.md](docs/s10plus-autonomous-boot-repair/STATUS.md)
-for the area-by-area percentages and the hardware evidence. The earlier
-"bootloops on the Samsung logo" statement is **superseded**: on the SM-G975F the
-Nuxel ARM64 kernel is loaded by S-Boot, the **embedded Nuxel initramfs runs**,
-USERDATA (`/dev/sda31`) is discovered, the **Fedora 43 ext4 rootfs mounts**,
-`switch_root` hands over to **Fedora systemd 258 as PID 1**, the full systemd unit
-graph builds, the **AMOLED panel shows the Nuxel boot animation** (original MP4,
-24.00 fps, 0 skips, ABGR order) and a **live root console** runs over the USB
-gadget. The **Nuxel UI runs as a Fedora userspace process** and commits real
-frames, taking the panel over from the animation. A25 — single-instance UI plus a
-console-owned postboot supervisor — is flashed to BOOT with a full SHA-256
-readback (its boot is the next observation). What is *not* proven is unchanged in
-kind: touch input, human-visible confirmation of the UI/colours, completion of
-the Fedora boot graph, radio/camera/sensors, and Phosh (this kernel has no DRM).
-
-
-**Nuxel now boots on hardware: the Galaxy S10+ runs the Nuxel kernel, Nuxel initramfs, Fedora systemd rootfs, the panel boot animation and a live root console — and its UI process starts and commits frames. No phone yet reaches a complete interactive phone shell (touch, radio, Phosh), and the Moto G7 Power still hangs at a black screen.**
+**The current images are the ones flashed on the handset.** The release workflow
+builds the S10+ **A25 boot image** (raw arm64 kernel with the repo-source
+initramfs embedded) plus the Fedora 43 ARM64 userspace containing the **current
+A34 TOUCHDOWN** binaries. There is no dependency on a developer's local build
+output.
 
 | Area | Score | Notes |
 |---|---|---|
-| Design/docs | 80% | Architecture, security model, PWA spec, three device doc bundles, plus the A25 hardware-evidence set under `docs/s10plus-autonomous-boot-repair/` |
-| Repo structure | 85% | Clean layout; device doc bundles consolidated under `phones/` |
-| PWA apps | 45% | Manifests, SWs, JS exist — need integration testing |
+| Design/docs | 85% | Architecture, security model, PWA spec, three device bundles, plus the A25–A34 hardware evidence set |
+| Repo structure | 90% | Legacy scratch trees and duplicate guides removed; canonical images only |
+| PWA apps | 55% | Manifests, service workers and launcher integration exist; live app interaction still limited by the clickable gap |
 | Flatpak app model | 20% | Manifests + launcher exist (`pwa/flatpak/`, `org.nuxel.Platform`); runtime not built or integration-tested |
-| Native GTK apps | 25–35% | C source exists, not proven buildable on aarch64 |
-| D-Bus bridge/portal | 30% | Python parses, dev-grade auth, not integration-tested |
-| Sandbox/security | 20% | Configs exist, enforcement not wired end-to-end |
-| Build system | 85% | Per-device dispatchers + inventory gates. The **fail-closed release CI builds `g7power` + `s10plus`**, and the S10+ job now builds the **image that actually runs on the handset**: repo-source initramfs (`tools/s10plus/build-a25-initramfs.sh`) **embedded** in a raw arm64 `Image` + merged board DTB (`images/s10plus/build-a25-boot.sh`), gated by `tools/s10plus/verify-a25-boot.py` (raw kernel, embedded archive identical to the built one, pinned systemd payload, partition budget) plus the Fedora 43 ARM64 phone rootfs; G7 Power keeps its lk2nd + boot + ext4 chain. Both device paths are **proven buildable**, and the S10+ set is now **proven on hardware** |
-| Flashable images | 90% | Real, checksummed artifacts for **g7power** (lk2nd + boot + ext4 rootfs) and **s10plus** (A25 boot image + Fedora 43 ARM64 phone rootfs). Both are **flashed to hardware** with byte-for-byte SHA-256 readback, and the **S10+ image is verified booting Nuxel** (kernel → initramfs → Fedora rootfs → systemd → panel animation → UI process → live console) — **1 of 2 verified booting** |
-| Pixel 10 Pro XL (mustang) | 5% | Public mustang Linux is UART/initramfs-level only; no boot artifact built yet |
-| Galaxy S10+ (beyond2lte) | 85% | **Nuxel boots on the SM-G975F.** Downstream 4.14 kernel (rev-26 board DTBO merged with `fdtoverlay`) + initramfs **embedded in the kernel** + Fedora 43 ARM64 rootfs: S-Boot loads the kernel, `/init` runs, USERDATA is discovered, ext4 root mounts, **systemd 258 is PID 1** and executes services, the **panel shows the boot animation** (24.00 fps, 0 skips, ABGR) and a **live root console** works over USB; the **UI process starts and commits frames**, handing over from the animation — all flashed with full SHA-256 readback. Open: touch input, human-visible UI/colour confirmation, the stalled systemd boot graph, radio/camera/sensors, Phosh (no DRM in this kernel) |
-| Moto G7 Power (ocean) | 40% | Boot + ext4 rootfs images **flashed to hardware** (touch-driver fix, lk2nd/QCDT chainloader); device powers on but hangs at a **black/flashy screen** — not yet booting Nuxel |
-| UTM VM | 70% | A genuine **Nuxel UTM bundle exists and boots** — Fedora 43 + Phosh at 720×1440 (live screenshots), Nuxel services + PWA on the desktop, guest SSH + **internet verified working**, and **sound works** via a `virtio-sound-pci` device (`virtio_snd` ALSA card, in-guest playback verified); bundle is a local artifact (`artifacts/vm/`, gitignored, not committed) |
+| Native GTK apps | 30% | C source exists; not yet proven end-to-end in the phone UI |
+| D-Bus bridge/portal | 45% | Bridge/portal/notifications run on the phone with real bus policies; deeper app integration is partial |
+| Sandbox/security | 25% | Configs exist; enforcement is not wired end-to-end |
+| Build system | 90% | Fail-closed CI builds the A25 boot image and **compiles the current A34 userspace from repo sources**; artifact verification is content-based |
+| Flashable images | 90% | S10+ boot + Fedora rootfs and G7 Power lk2nd/boot/rootfs are byte-verified on hardware; S10+ boots |
+| Pixel 10 Pro XL (mustang) | 5% | UART/initramfs-level only; no boot artifact yet |
+| Galaxy S10+ (beyond2lte) | 90% | **Boots Nuxel; touchscreen works; clickable UI is the remaining gate.** Display, animation, launcher, systemd service graph and single framebuffer owner are proven. Sound is expected but unproven; radio/camera/sensors/Phosh remain open |
+| Moto G7 Power (ocean) | 40% | Images flashed (lk2nd + boot + ext4 rootfs); still hangs at a black/flashy screen |
+| UTM VM | 70% | Boots Fedora 43 + Phosh at 720×1440 with working network and **audio** (local, gitignored artifact) |
 
-**Overall: ~60% MVP — and the first phone actually boots Nuxel. 2 of 3 phones produce built, checksummed images from a fail-closed CI and both are flashed to hardware; the S10+ image chain is hardware-proven end to end (kernel, initramfs, Fedora rootfs, systemd, panel animation, UI process, live root console), while G7 Power still hangs at a black screen and mustang is UART/initramfs-level only. 1 of 3 verified booting, none interactive yet (no touch, no Phosh). The UTM VM demo boots and works (display + network + sound).**
+**Overall: ~70% MVP.** One of three phones (S10+) boots a Nuxel-built image,
+its display path is live, and its **touchscreen delivers real contacts**; the
+phone is not yet a usable interactive device because clicking/navigation is not
+signed off. G7 Power still hangs at a black screen; mustang is UART/initramfs
+level only. The UTM VM demo boots and works (display, network, sound).
 
 ### What this repo IS:
 - A well-documented architecture blueprint for a Linux phone OS
@@ -436,38 +464,30 @@ the Fedora boot graph, radio/camera/sensors, and Phosh (this kernel has no DRM).
 - UTM VM testing scripts, plus a **booted UTM VM** (local artifact) running Phosh + the Nuxel service stack at phone resolution
 
 ### What this repo HAS now (verified this cycle):
-- A **bootable UTM VM** — Fedora 43 + Phosh at 720×1440, Nuxel services + PWA
-  live on the desktop, guest SSH reachable and **internet working** (bundle is a
-  local, gitignored artifact under `artifacts/vm/`)
-- **A green, fail-closed release CI.** The `Release` workflow run for tag
-  `v0.3.0-alpha` completed **success** for the `g7power` + `s10plus` matrix (the
-  `mustang` job is not in the matrix), including the strict
-  `tools/verify-artifacts.sh` gate. Artifacts are reproducible per device and
-  shipped with a per-device `sha256sums.txt`; a red run can no longer create a
-  release.
-- **Working VM audio** — the UTM bundle exposes a `virtio-sound-pci` device
-  (`Sound` → `Hardware: virtio-sound-pci` in `config.plist`); the guest binds it
-  with `virtio_snd` and enumerates it as ALSA card 0
-  (`[SoundCard] virtio-snd — VirtIO SoundCard`). Playback was verified in-guest
-  (`aplay` → exit 0, PCM state `RUNNING`, `hw_ptr` advancing), bridged to the
-  host through QEMU's audiodev → UTM/CoreAudio. Setup lives in
-  `vm/build-vm-image.sh` (device) and `vm/nuxel-vm-bootstrap.sh`
-  (`install_audio_virtio`)
-- **Built, checksummed, and flashed images for two of three phones**
-  — `g7power` (`nuxel-ocean-boot.img`, `nuxel-ocean-rootfs.img`, `lk2nd.img`,
-  sha256-verified against the build manifest) is **flashed to hardware** but so
-  far only reaches a black/flashy screen; `s10plus` (`nuxel-beyond2lte-boot.img`
-  + the Fedora 43 ARM64 `nuxel-beyond2lte-rootfs-fedora-phone.img`) is **flashed
-  over ADB and read back byte-for-byte** and now **bootloops on the Samsung
-  logo** — transfer proven, boot not yet
+- A **bootable S10+** — the Galaxy S10+ runs the Nuxel kernel, embedded
+  initramfs, Fedora 43 systemd userspace, the panel animation and the launcher.
+  The **touchscreen delivers real finger contacts** through evdev, libinput,
+  phoc and WebKit. The open item is reliable **clickable** UI interaction.
+- **A reproducible, fail-closed release CI.** The S10+ job builds the A25 boot
+  image and compiles the **current A34 TOUCHDOWN** userspace from repo sources
+  inside the arm64 container, then runs the A34/A33 touch regression suites and
+  the strict `tools/verify-artifacts.sh` content gate. A red build cannot create
+  a release.
+- **A bootable UTM VM** — Fedora 43 + Phosh at 720×1440, Nuxel services + PWA
+  live on the desktop, guest SSH reachable and **internet working**, with
+  **verified VM audio** via `virtio-sound-pci` (local, gitignored artifact).
+- **Flashed, checksummed images for two of three phones** — `g7power`
+  (`lk2nd.img`, `nuxel-ocean-boot.img`, `nuxel-ocean-rootfs.img`) is flashed but
+  still reaches only a black/flashy screen; `s10plus` (`nuxel-beyond2lte-boot.img`
+  + the Fedora 43 ARM64 rootfs) is flashed, boots, and its userspace is live.
 
 ### What this repo IS NOT YET:
-- A phone that boots Nuxel on real hardware (no target has booted a Nuxel-built
-  image)
+- A fully interactive phone: S10+ clicking/navigation is not yet signed off and
+  audio is expected but unproven.
 - A flashable Pixel ROM (`mustang` has no boot artifact yet)
 - A daily-driver phone
 - A built Flatpak PWA runtime
-- Hardware-validated
+- Hardware-validated across radio, camera, sensors and Phosh
 
 ### Measured code footprint (accuracy note)
 
@@ -543,7 +563,7 @@ Nuxel supports multiple hardware targets. Select via `NUXEL_DEVICE` or `--device
 | Key | Device | Codename | Status |
 |---|---|---|---|
 | `mustang` | Google Pixel 10 Pro XL | mustang | Scaffold — no boot artifact yet |
-| `s10plus` | Samsung Galaxy S10+ (Exynos) | beyond2lte | Boot partition flashed only via heimdall (Download Mode flaky); boot unconfirmed |
+| `s10plus` | Samsung Galaxy S10+ (Exynos) | beyond2lte | **Boots Nuxel — touchscreen works; clickable UI pending; sound unproven** |
 | `g7power` | Motorola Moto G7 Power (ocean) | ocean | **Flashed to hardware** — powers on but stuck at a black/flashy screen |
 
 Every device-specific **build** artifact lives under a per-device directory
@@ -559,16 +579,13 @@ quickstart, go-guide and — for the G7 Power — the on-device stock-evidence
 capture) lives under [`phones/`](phones/): `phones/pixel10proxl/`,
 `phones/s10plus/` and `phones/g7power/`.
 
-Two of the three targets now have real, checksummed boot artifacts, and **both
-have been pushed to hardware — but none has been verified to boot Nuxel**. The
-G7 Power (SDM632/msm8953, fastboot + lk2nd + EDL) is further along: its boot
-image, writable ext4 rootfs and lk2nd chainloader are **flashed to the device**,
-which now powers on but hangs at a black/flashy screen (display init unresolved).
-The S10+ (Exynos 9820, no fastboot; TWRP + Download Mode/heimdall) has the
-**full image set flashed over ADB** (merged-DTB boot + Fedora 43 ARM64 phone
-rootfs), read back byte-for-byte; it now **bootloops on the Samsung logo**, so
-the remaining work is boot-chain and root-mount bring-up, not transfer. The
-mustang path remains a scaffold with no boot artifact.
+Two of the three targets have real, checksummed boot artifacts, and both are
+flashed. The **S10+ (Exynos 9820)** boots Nuxel from the A25 boot image plus the
+Fedora 43 ARM64 userspace; its **touchscreen works**, while reliable clicking and
+S10+ audio remain open. The **G7 Power (SDM632/msm8953)** has its lk2nd
+chainloader, boot image and writable ext4 rootfs flashed, but still hangs at a
+black/flashy screen (display init unresolved). The `mustang` path remains a
+scaffold with no boot artifact.
 
 See `docs/s10plus-bringup.md` for the S10+ bring-up guide,
 `docs/g7power-bringup.md` for the G7 Power bring-up guide, and the per-device
@@ -622,7 +639,7 @@ The other two bring-up targets are the **Samsung Galaxy S10+** (Exynos 9820,
 
 | Document | Description |
 |---|---|
-| [CHANGELOG.md](CHANGELOG.md) | Release notes — everything from v0.1.0 to v0.4.0-alpha + readiness |
+| [CHANGELOG.md](CHANGELOG.md) | Release notes — everything from v0.1.0 to v0.5.1-alpha + readiness |
 | [prompts/QUICKSTART.md](prompts/QUICKSTART.md) | Get running in 5 minutes |
 | [design/nuxel-linux-phone-design.md](design/nuxel-linux-phone-design.md) | Design bible — the full vision |
 | [design/Nuxel Phone OS Project Plan and Architecture.md](design/Nuxel%20Phone%20OS%20Project%20Plan%20and%20Architecture.md) | Technical architecture + component map |
@@ -655,16 +672,16 @@ The other two bring-up targets are the **Samsung Galaxy S10+** (Exynos 9820,
 Build outputs (`build/out/<device>/`) are git-ignored — they are produced by the
 scripts in `images/` and `kernel/`, not committed. To publish them on GitHub:
 
-* **Automated (recommended):** push a version tag (`git tag v0.4.0-alpha && git push
-  origin v0.4.0-alpha`). [`.github/workflows/release.yml`](.github/workflows/release.yml)
+* **Automated (recommended):** push a version tag (`git tag v0.5.1-alpha && git push
+  origin v0.5.1-alpha`). [`.github/workflows/release.yml`](.github/workflows/release.yml)
   builds every device on an Ubuntu runner (`make assets`, the shared initramfs for
   g7power, each `kernel/<dev>/build-kernel.sh`, then `images/g7power/build.sh`;
   for s10plus it runs `images/s10plus/build-a25-boot.sh` — the A25 image with the
-  initramfs embedded in the kernel — plus the Fedora 43 ARM64 phone rootfs),
-  packages
-  each `build/out/<device>/` directory and creates a GitHub Release with the
-  archives + `SHA256SUMS.txt` attached. Devices whose toolchain/kernel source is
-  unavailable in CI are skipped without blocking the others.
+  initramfs embedded in the kernel — plus the Fedora 43 ARM64 phone rootfs, which
+  **compiles the current A34 TOUCHDOWN userspace from repo sources** in the arm64
+  container), packages each `build/out/<device>/` directory and creates a GitHub
+  Release with the archives + `SHA256SUMS.txt` attached. A device only ships if
+  its build and the content gate both pass.
 * **Manually / locally:** run the packager against an existing build tree, then
   upload the archives yourself:
 

@@ -266,7 +266,7 @@ export PY_STATIC_JSON
 PY_STATIC_INVARIANTS='
 import os, re, sys
 ROOT = os.environ.get("ROOT", ".")
-BETA_TREES = ["tools/beta", "tools/s10plus/a32", "tools/s10plus/a33",
+BETA_TREES = ["tools/beta", "tools/s10plus/a32", "tools/s10plus/a33", "tools/s10plus/a34",
               "configs/nuxel", "services", "pwa", "shell", "boot/s10plus", "vm"]
 EXT = (".sh", ".py", ".js", ".c", ".json", ".service", ".md", ".conf", ".ucm")
 
@@ -368,7 +368,7 @@ for tree in BETA_TREES:
                                             % (rel, n, stripped[:90]))
 
 # an allow-listed file must not be referenced from anywhere in the beta pipeline
-PIPELINE_TREES = ["tools/beta", "tools/s10plus/a32", "tools/s10plus/a33", "services",
+PIPELINE_TREES = ["tools/beta", "tools/s10plus/a32", "tools/s10plus/a33", "tools/s10plus/a34", "services",
                   "configs/nuxel", "shell"]
 for tree in PIPELINE_TREES:
     for dp, dn, fn in os.walk(tree):
@@ -534,6 +534,9 @@ add_suite U-boot-init-cmdline unit bg-00-preflight 300 hard bash \
 add_suite U-touch-a33-suite cross bg-01-touch-pipeline 2400 hard bash \
   "A33 touch group runner: trace tool, libinput shim, bootmode guard, capture harness" \
   'bash tools/s10plus/a33/tests/run-touch-tests.sh --quick'
+add_suite U-a34-touchdown-suite cross bg-01-touch-pipeline 300 hard bash \
+  "A34 TOUCHDOWN regressions: SYN_REPORT touch translation, Power-vs-Bixby, Quick Settings pull-down" \
+  'bash tools/s10plus/a34/tests/run-a34-tests.sh'
 
 # bg-02 boot / animation / launcher
 add_suite U-boot-a33-suite cross bg-02-boot-animation-launcher 2400 hard bash \
@@ -588,6 +591,12 @@ add_suite U-shell-phone-data unit bg-06-core-phone-apps 600 hard bash \
 add_suite U-pwa-bridge unit bg-04-userspace-completion 300 hard "$NODE" \
   "shared PWA bridge client contract (node)" \
   'node pwa/nuxel-common/test-bridge.js'
+add_suite U-bridge-activation unit bg-04-userspace-completion 600 hard "$PY" \
+  "launcher->bridge activation, capability/RPC wiring (no D-Bus, no device)" \
+  'python3 services/nuxel-bridge/test-launcher-activation.py'
+add_suite U-console-ownership unit bg-04-userspace-completion 300 hard "$PY" \
+  "live-console single-owner lock protocol and unit semantics (offline)" \
+  'python3 services/nuxel-console/test-console-ownership.py'
 add_suite U-pwa-wiring unit bg-04-userspace-completion 300 hard "$NODE" \
   "every PWA surface wires manifest/registry/bridge consistently (node)" \
   'node pwa/nuxel-common/verify-wiring.js'

@@ -40,8 +40,15 @@
   var closeBtn = document.getElementById('close');
   if (closeBtn) closeBtn.addEventListener('click', function () {
     var f = window.frameElement;
-    if (f && window.parent !== window) window.parent.NuxelLauncherClose && window.parent.NuxelLauncherClose();
-    else if (f && f.parentNode) f.parentNode.removeChild(f);
+    if (!f) return;
+    var closedByLauncher = false;
+    try {
+      if (window.parent !== window && window.parent.NuxelLauncherClose) {
+        window.parent.NuxelLauncherClose();
+        closedByLauncher = true;
+      }
+    } catch (e) { /* cross-origin parent: fall through */ }
+    if (!closedByLauncher && f.parentNode) f.parentNode.removeChild(f);
   });
 
   // ---------- shared config documents ----------

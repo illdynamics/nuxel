@@ -90,7 +90,7 @@ document is `VERIFIED_ON_S10PLUS`, and nothing here was promoted from a unit tes
 | `nuxel-authenticator` | Authenticator (TOTP) | privacy-identity | pwa | `pwa/nuxel-apps/authenticator` | present/full | bg-07-specialty-apps |
 | `tool.tor` | Tor / Onion privacy tools | privacy-identity | tool | `shell/nuxel-shell/nuxel-privacy` | present/partial | bg-05-security-permissions |
 | `nuxel-penguinterface` | PenguInterface | privacy-identity | pwa | `pwa/nuxel-apps/penguinterface` | present/partial | bg-07-specialty-apps |
-| `nuxel-privacy` | Privacy surface (PWA) | privacy-identity | placeholder | `pwa/nuxel-apps/privacy` | present/partial | bg-05-security-permissions |
+| `nuxel-privacy` | Privacy surface (PWA) | privacy-identity | placeholder | `pwa/nuxel-apps/privacy` | missing | bg-05-security-permissions |
 | `org.nuxel.Browser` | Browser | connectivity | pwa | `pwa/nuxel-apps/browser` | present/full | bg-06-core-phone-apps |
 | `org.nuxel.Weather` | Weather | connectivity | pwa | `pwa/nuxel-apps/weather` | present/full | bg-06-core-phone-apps |
 | `tool.keyboard` | Virtual keyboard + keyboard settings | system | tool | `configs/nuxel/keyboard` | present/full | bg-06-core-phone-apps |
@@ -183,3 +183,1104 @@ exactly what remains.
 * The registry (`pwa/nuxel-common/app-registry.json`) remains the canonical *launcher* contract and is
   owned by `bg-04c-app-infrastructure`; where it disagrees with a manifest, this document records the
   disagreement as a gap instead of editing another group's file.
+
+## Appendix A — machine-readable inventory data
+
+<!-- INVENTORY-DATA:BEGIN -->
+
+```json
+{
+  "apps": [
+    {
+      "category": "communication",
+      "dependencies": [
+        "nuxel-phone-data"
+      ],
+      "hardware": [],
+      "id": "nuxel-dialer",
+      "implementation": "native C: main.c",
+      "launch": "/usr/bin/nuxel-dialer",
+      "name": "Phone (dialer)",
+      "offline": "local store; no network dependency",
+      "owner_group": "bg-06-core-phone-apps",
+      "package_type": "native",
+      "path": "shell/nuxel-shell/nuxel-dialer",
+      "permissions": [],
+      "source": "shell/nuxel-shell/nuxel-dialer",
+      "status": "present/partial",
+      "tests": [
+        "tools/s10plus/a33/tests/test-phone-apps.py"
+      ],
+      "type": "native",
+      "version": "0.1.0"
+    },
+    {
+      "category": "communication",
+      "dependencies": [
+        "nuxel-phone-data"
+      ],
+      "hardware": [],
+      "id": "nuxel-messages",
+      "implementation": "native C: main.c",
+      "launch": "/usr/bin/nuxel-messages",
+      "name": "Messages (SMS/MMS)",
+      "offline": "local store; no network dependency",
+      "owner_group": "bg-06-core-phone-apps",
+      "package_type": "native",
+      "path": "shell/nuxel-shell/nuxel-messages",
+      "permissions": [],
+      "source": "shell/nuxel-shell/nuxel-messages",
+      "status": "present/partial",
+      "tests": [
+        "tools/s10plus/a33/tests/test-phone-apps.py"
+      ],
+      "type": "native",
+      "version": "0.1.0"
+    },
+    {
+      "category": "communication",
+      "dependencies": [
+        "nuxel-phone-data"
+      ],
+      "hardware": [],
+      "id": "nuxel-contacts",
+      "implementation": "native C: main.c",
+      "launch": "/usr/bin/nuxel-contacts",
+      "name": "Contacts",
+      "offline": "local store; no network dependency",
+      "owner_group": "bg-06-core-phone-apps",
+      "package_type": "native",
+      "path": "shell/nuxel-shell/nuxel-contacts",
+      "permissions": [],
+      "source": "shell/nuxel-shell/nuxel-contacts",
+      "status": "present/full",
+      "tests": [
+        "tools/s10plus/a33/tests/test-phone-apps.py"
+      ],
+      "type": "native",
+      "version": "0.1.0"
+    },
+    {
+      "category": "communication",
+      "dependencies": [
+        "nuxel-bridge"
+      ],
+      "hardware": [],
+      "id": "org.nuxel.Mail",
+      "implementation": "PWA: index.html, manifest.json, sw.js",
+      "launch": "/pwa/nuxel-apps/mail/index.html",
+      "name": "Mail",
+      "offline": "service-worker cache",
+      "owner_group": "bg-06-core-phone-apps",
+      "package_type": "pwa",
+      "path": "pwa/nuxel-apps/mail",
+      "permissions": [
+        "notifications:send",
+        "notifications:receive",
+        "storage:persistent"
+      ],
+      "source": "pwa/nuxel-apps/mail",
+      "status": "present/full",
+      "tests": [
+        "tools/s10plus/a33/tests/test-core-apps.py"
+      ],
+      "type": "pwa",
+      "version": "0.0.0"
+    },
+    {
+      "category": "productivity",
+      "dependencies": [
+        "nuxel-bridge"
+      ],
+      "hardware": [],
+      "id": "org.nuxel.Calendar",
+      "implementation": "PWA: index.html, manifest.json, sw.js",
+      "launch": "/pwa/nuxel-apps/calendar/index.html",
+      "name": "Calendar",
+      "offline": "service-worker cache",
+      "owner_group": "bg-06-core-phone-apps",
+      "package_type": "pwa",
+      "path": "pwa/nuxel-apps/calendar",
+      "permissions": [
+        "notifications:send",
+        "storage:persistent"
+      ],
+      "source": "pwa/nuxel-apps/calendar",
+      "status": "present/full",
+      "tests": [
+        "tools/s10plus/a33/tests/test-core-apps.py"
+      ],
+      "type": "pwa",
+      "version": "0.0.0"
+    },
+    {
+      "category": "productivity",
+      "dependencies": [
+        "nuxel-bridge"
+      ],
+      "hardware": [],
+      "id": "org.nuxel.Notes",
+      "implementation": "PWA: index.html, manifest.json, sw.js",
+      "launch": "/pwa/nuxel-apps/notes/index.html",
+      "name": "Notes",
+      "offline": "service-worker cache",
+      "owner_group": "bg-06-core-phone-apps",
+      "package_type": "pwa",
+      "path": "pwa/nuxel-apps/notes",
+      "permissions": [
+        "storage:persistent"
+      ],
+      "source": "pwa/nuxel-apps/notes",
+      "status": "present/full",
+      "tests": [
+        "tools/s10plus/a33/tests/test-core-apps.py"
+      ],
+      "type": "pwa",
+      "version": "0.0.0"
+    },
+    {
+      "category": "productivity",
+      "dependencies": [],
+      "hardware": [],
+      "id": "org.nuxel.Calculator",
+      "implementation": "PWA: index.html, manifest.json, sw.js",
+      "launch": "/pwa/nuxel-apps/calculator/index.html",
+      "name": "Calculator",
+      "offline": "service-worker cache",
+      "owner_group": "bg-06-core-phone-apps",
+      "package_type": "pwa",
+      "path": "pwa/nuxel-apps/calculator",
+      "permissions": [],
+      "source": "pwa/nuxel-apps/calculator",
+      "status": "present/full",
+      "tests": [
+        "tools/s10plus/a33/tests/test-core-apps.py"
+      ],
+      "type": "pwa",
+      "version": "0.0.0"
+    },
+    {
+      "category": "productivity",
+      "dependencies": [
+        "nuxel-bridge"
+      ],
+      "hardware": [],
+      "id": "org.nuxel.Clock",
+      "implementation": "PWA: index.html, manifest.json, sw.js",
+      "launch": "/pwa/nuxel-apps/clock/index.html",
+      "name": "Clock, alarms and timers",
+      "offline": "service-worker cache",
+      "owner_group": "bg-06-core-phone-apps",
+      "package_type": "pwa",
+      "path": "pwa/nuxel-apps/clock",
+      "permissions": [
+        "notifications:send",
+        "storage:persistent"
+      ],
+      "source": "pwa/nuxel-apps/clock",
+      "status": "present/full",
+      "tests": [
+        "tools/s10plus/a33/tests/test-core-apps.py"
+      ],
+      "type": "pwa",
+      "version": "0.0.0"
+    },
+    {
+      "category": "productivity",
+      "dependencies": [],
+      "hardware": [],
+      "id": "org.nuxel.Files",
+      "implementation": "PWA: index.html, manifest.json, sw.js",
+      "launch": "/pwa/nuxel-apps/files/index.html",
+      "name": "Files (file explorer)",
+      "offline": "service-worker cache",
+      "owner_group": "bg-06-core-phone-apps",
+      "package_type": "pwa",
+      "path": "pwa/nuxel-apps/files",
+      "permissions": [],
+      "source": "pwa/nuxel-apps/files",
+      "status": "present/full",
+      "tests": [
+        "tools/s10plus/a33/tests/test-core-apps.py"
+      ],
+      "type": "pwa",
+      "version": "0.0.0"
+    },
+    {
+      "category": "productivity/system",
+      "dependencies": [
+        "nuxel-bridge"
+      ],
+      "hardware": [],
+      "id": "org.nuxel.Terminal",
+      "implementation": "PWA: index.html, manifest.json, sw.js",
+      "launch": "/pwa/nuxel-apps/terminal/index.html",
+      "name": "Terminal",
+      "offline": "service-worker cache",
+      "owner_group": "bg-06-core-phone-apps",
+      "package_type": "pwa",
+      "path": "pwa/nuxel-apps/terminal",
+      "permissions": [
+        "shell:local-pty"
+      ],
+      "source": "pwa/nuxel-apps/terminal",
+      "status": "present/full",
+      "tests": [
+        "tools/s10plus/a33/tests/test-core-apps.py"
+      ],
+      "type": "pwa",
+      "version": "0.0.0"
+    },
+    {
+      "category": "system",
+      "dependencies": [],
+      "hardware": [],
+      "id": "nuxel-settings",
+      "implementation": "PWA: index.html, manifest.json",
+      "launch": "/pwa/nuxel-apps/settings/index.html",
+      "name": "Settings",
+      "offline": "no service worker (see gap)",
+      "owner_group": "bg-02 / bg-08 / bg-06 (joint)",
+      "package_type": "pwa",
+      "path": "pwa/nuxel-apps/settings",
+      "permissions": [],
+      "source": "pwa/nuxel-apps/settings",
+      "status": "present/partial",
+      "tests": [
+        "tools/s10plus/a33/tests/test-core-apps.py"
+      ],
+      "type": "pwa",
+      "version": "0.0.0"
+    },
+    {
+      "category": "system",
+      "dependencies": [],
+      "hardware": [],
+      "id": "nuxel-native-settings",
+      "implementation": "native C: main.c",
+      "launch": "/usr/bin/nuxel-settings",
+      "name": "Native Settings shell app",
+      "offline": "local store; no network dependency",
+      "owner_group": "bg-06-core-phone-apps",
+      "package_type": "native",
+      "path": "shell/nuxel-shell/nuxel-settings",
+      "permissions": [],
+      "source": "shell/nuxel-shell/nuxel-settings",
+      "status": "present/full",
+      "tests": [
+        "tools/s10plus/a33/tests/test-phone-apps.py"
+      ],
+      "type": "native",
+      "version": "0.1.0"
+    },
+    {
+      "category": "system",
+      "dependencies": [
+        "pwa/nuxel-apps/settings"
+      ],
+      "hardware": [],
+      "id": "settings-surface.mobile",
+      "implementation": "settings sub-surface inside the Settings PWA",
+      "launch": "n/a (sub-surface of /pwa/nuxel-apps/settings/index.html)",
+      "name": "Mobile Settings",
+      "offline": "inherits the Settings PWA",
+      "owner_group": "bg-03-connectivity-time-audio-buttons",
+      "package_type": "settings-surface",
+      "path": "pwa/nuxel-apps/settings",
+      "permissions": [],
+      "source": "pwa/nuxel-apps/settings",
+      "status": "present/partial",
+      "tests": [
+        "tools/s10plus/a33/tests/test-core-apps.py"
+      ],
+      "type": "settings-surface",
+      "version": "0.0.0"
+    },
+    {
+      "category": "system",
+      "dependencies": [
+        "pwa/nuxel-apps/settings"
+      ],
+      "hardware": [],
+      "id": "settings-surface.network",
+      "implementation": "settings sub-surface inside the Settings PWA",
+      "launch": "n/a (sub-surface of /pwa/nuxel-apps/settings/index.html)",
+      "name": "Network Settings",
+      "offline": "inherits the Settings PWA",
+      "owner_group": "bg-03-connectivity-time-audio-buttons",
+      "package_type": "settings-surface",
+      "path": "pwa/nuxel-apps/settings",
+      "permissions": [],
+      "source": "pwa/nuxel-apps/settings",
+      "status": "present/partial",
+      "tests": [
+        "tools/s10plus/a33/tests/test-core-apps.py"
+      ],
+      "type": "settings-surface",
+      "version": "0.0.0"
+    },
+    {
+      "category": "system",
+      "dependencies": [
+        "nuxel-bridge"
+      ],
+      "hardware": [],
+      "id": "org.nuxel.NuXtore",
+      "implementation": "PWA: index.html, manifest.json, sw.js",
+      "launch": "/pwa/nuxel-apps/nuxtore/index.html",
+      "name": "NuXtore (app store)",
+      "offline": "service-worker cache",
+      "owner_group": "bg-07-specialty-apps",
+      "package_type": "pwa",
+      "path": "pwa/nuxel-apps/nuxtore",
+      "permissions": [
+        "catalog:read",
+        "catalog:install",
+        "catalog:remove"
+      ],
+      "source": "pwa/nuxel-apps/nuxtore",
+      "status": "present/full",
+      "tests": [
+        "tools/s10plus/a33/tests/test-core-apps.py"
+      ],
+      "type": "pwa",
+      "version": "0.0.0"
+    },
+    {
+      "category": "system",
+      "dependencies": [],
+      "hardware": [],
+      "id": "nuxel-permissions",
+      "implementation": "native C: main.c",
+      "launch": "/usr/bin/nuxel-permissions",
+      "name": "Permissions manager",
+      "offline": "local store; no network dependency",
+      "owner_group": "bg-05-security-permissions",
+      "package_type": "native",
+      "path": "shell/nuxel-shell/nuxel-permissions",
+      "permissions": [],
+      "source": "shell/nuxel-shell/nuxel-permissions",
+      "status": "present/full",
+      "tests": [
+        "tools/s10plus/a33/tests/test-phone-apps.py"
+      ],
+      "type": "native",
+      "version": "0.1.0"
+    },
+    {
+      "category": "system",
+      "dependencies": [],
+      "hardware": [],
+      "id": "tool.firewall",
+      "implementation": "repository script/binary",
+      "launch": "tools/s10plus/a33/nuxel-firewall.sh",
+      "name": "Firewall application",
+      "offline": "offline tool",
+      "owner_group": "bg-05-security-permissions",
+      "package_type": "tool",
+      "path": "tools/s10plus/a33/nuxel-firewall.sh",
+      "permissions": [],
+      "source": "tools/s10plus/a33/nuxel-firewall.sh",
+      "status": "present/partial",
+      "tests": [
+        "tools/s10plus/a33/security-tests/test-firewall.sh"
+      ],
+      "type": "tool",
+      "version": "0.1.0"
+    },
+    {
+      "category": "system",
+      "dependencies": [
+        "nuxel-bridge"
+      ],
+      "hardware": [],
+      "id": "nuxel-devmgmt",
+      "implementation": "PWA: index.html, manifest.json, sw.js",
+      "launch": "/pwa/nuxel-apps/devmgmt/index.html",
+      "name": "DevMgmt",
+      "offline": "service-worker cache",
+      "owner_group": "bg-07-specialty-apps",
+      "package_type": "pwa",
+      "path": "pwa/nuxel-apps/devmgmt",
+      "permissions": [
+        "system:inspect"
+      ],
+      "source": "pwa/nuxel-apps/devmgmt",
+      "status": "present/full",
+      "tests": [
+        "tools/s10plus/a33/tests/test-core-apps.py"
+      ],
+      "type": "pwa",
+      "version": "0.0.0"
+    },
+    {
+      "category": "system",
+      "dependencies": [],
+      "hardware": [],
+      "id": "org.nuxel.LiveConsole",
+      "implementation": "PWA: ",
+      "launch": "n/a (no index.html yet)",
+      "name": "Live Console",
+      "offline": "no service worker (see gap)",
+      "owner_group": "bg-07-specialty-apps",
+      "package_type": "pwa",
+      "path": "pwa/nuxel-apps/console",
+      "permissions": [],
+      "source": "pwa/nuxel-apps/console",
+      "status": "present/partial",
+      "tests": [
+        "tools/s10plus/a33/tests/test-core-apps.py"
+      ],
+      "type": "pwa",
+      "version": "0.0.0"
+    },
+    {
+      "category": "system",
+      "dependencies": [],
+      "hardware": [],
+      "id": "tool.system-monitor",
+      "implementation": "repository script/binary",
+      "launch": "tools/s10plus/a33/nuxelctl",
+      "name": "System Monitor / Diagnostics",
+      "offline": "offline tool",
+      "owner_group": "bg-06-core-phone-apps",
+      "package_type": "tool",
+      "path": "tools/s10plus/a33/nuxelctl",
+      "permissions": [],
+      "source": "tools/s10plus/a33/nuxelctl",
+      "status": "present/full",
+      "tests": [
+        "tools/s10plus/a33/tests/test-service-graph.py"
+      ],
+      "type": "tool",
+      "version": "0.1.0"
+    },
+    {
+      "category": "system",
+      "dependencies": [],
+      "hardware": [],
+      "id": "tool.security-audit",
+      "implementation": "repository script/binary",
+      "launch": "tools/s10plus/a33/nuxel-security-audit.sh",
+      "name": "Security auditor",
+      "offline": "offline tool",
+      "owner_group": "bg-05-security-permissions",
+      "package_type": "tool",
+      "path": "tools/s10plus/a33/nuxel-security-audit.sh",
+      "permissions": [],
+      "source": "tools/s10plus/a33/nuxel-security-audit.sh",
+      "status": "present/partial",
+      "tests": [
+        "tools/s10plus/a33/tests/test-service-graph.py"
+      ],
+      "type": "tool",
+      "version": "0.1.0"
+    },
+    {
+      "category": "system",
+      "dependencies": [
+        "nuxel-bridge"
+      ],
+      "hardware": [],
+      "id": "nuxel-cleanup",
+      "implementation": "PWA: index.html, manifest.json, sw.js",
+      "launch": "/pwa/nuxel-apps/cleanup/index.html",
+      "name": "Safe Cleanup",
+      "offline": "service-worker cache",
+      "owner_group": "bg-07-specialty-apps",
+      "package_type": "pwa",
+      "path": "pwa/nuxel-apps/cleanup",
+      "permissions": [
+        "storage:cleanup"
+      ],
+      "source": "pwa/nuxel-apps/cleanup",
+      "status": "present/full",
+      "tests": [
+        "tools/s10plus/a33/tests/test-core-apps.py"
+      ],
+      "type": "pwa",
+      "version": "0.0.0"
+    },
+    {
+      "category": "system",
+      "dependencies": [
+        "nuxel-bridge"
+      ],
+      "hardware": [],
+      "id": "nuxel-rootcontrol",
+      "implementation": "PWA: index.html, manifest.json, sw.js",
+      "launch": "/pwa/nuxel-apps/rootcontrol/index.html",
+      "name": "Root / sudo control",
+      "offline": "service-worker cache",
+      "owner_group": "bg-07-specialty-apps",
+      "package_type": "pwa",
+      "path": "pwa/nuxel-apps/rootcontrol",
+      "permissions": [
+        "system:inspect"
+      ],
+      "source": "pwa/nuxel-apps/rootcontrol",
+      "status": "present/full",
+      "tests": [
+        "tools/s10plus/a33/tests/test-core-apps.py"
+      ],
+      "type": "pwa",
+      "version": "0.0.0"
+    },
+    {
+      "category": "media",
+      "dependencies": [
+        "nuxel-bridge"
+      ],
+      "hardware": [],
+      "id": "org.nuxel.Camera",
+      "implementation": "PWA: index.html, manifest.json, sw.js",
+      "launch": "/pwa/nuxel-apps/camera-gallery/index.html",
+      "name": "Camera",
+      "offline": "service-worker cache",
+      "owner_group": "bg-08-hardware-subsystems",
+      "package_type": "pwa",
+      "path": "pwa/nuxel-apps/camera-gallery",
+      "permissions": [
+        "camera:capture",
+        "camera:preview",
+        "camera:read"
+      ],
+      "source": "pwa/nuxel-apps/camera-gallery",
+      "status": "present/partial",
+      "tests": [
+        "tools/s10plus/a33/tests/test-core-apps.py"
+      ],
+      "type": "pwa",
+      "version": "0.0.0"
+    },
+    {
+      "category": "media",
+      "dependencies": [],
+      "hardware": [],
+      "id": "nuxel-camera",
+      "implementation": "no implementation (documented in the gap table)",
+      "launch": "pwa/nuxel-apps/camera-gallery/index.html",
+      "name": "Camera (launcher placeholder entry)",
+      "offline": "not available",
+      "owner_group": "bg-08-hardware-subsystems",
+      "package_type": "placeholder",
+      "path": "pwa/nuxel-apps/camera-gallery",
+      "permissions": [],
+      "source": "pwa/nuxel-apps/camera-gallery",
+      "status": "present/partial",
+      "tests": [],
+      "type": "placeholder",
+      "version": "n/a"
+    },
+    {
+      "category": "media",
+      "dependencies": [
+        "nuxel-bridge"
+      ],
+      "hardware": [],
+      "id": "org.nuxel.Photos",
+      "implementation": "PWA: index.html, manifest.json, sw.js",
+      "launch": "/pwa/nuxel-apps/photos/index.html",
+      "name": "Photos / Gallery",
+      "offline": "service-worker cache",
+      "owner_group": "bg-06-core-phone-apps",
+      "package_type": "pwa",
+      "path": "pwa/nuxel-apps/photos",
+      "permissions": [
+        "storage:persistent"
+      ],
+      "source": "pwa/nuxel-apps/photos",
+      "status": "present/full",
+      "tests": [
+        "tools/s10plus/a33/tests/test-core-apps.py"
+      ],
+      "type": "pwa",
+      "version": "0.0.0"
+    },
+    {
+      "category": "media",
+      "dependencies": [
+        "nuxel-bridge"
+      ],
+      "hardware": [],
+      "id": "nuxel-media",
+      "implementation": "PWA: index.html, manifest.json, sw.js",
+      "launch": "/pwa/nuxel-apps/media/index.html",
+      "name": "Media players (audio + video)",
+      "offline": "service-worker cache",
+      "owner_group": "bg-07-specialty-apps",
+      "package_type": "pwa",
+      "path": "pwa/nuxel-apps/media",
+      "permissions": [
+        "audio:playback",
+        "media:library"
+      ],
+      "source": "pwa/nuxel-apps/media",
+      "status": "present/full",
+      "tests": [
+        "tools/s10plus/a33/tests/test-core-apps.py"
+      ],
+      "type": "pwa",
+      "version": "0.0.0"
+    },
+    {
+      "category": "media",
+      "dependencies": [
+        "nuxel-bridge"
+      ],
+      "hardware": [],
+      "id": "org.nuxel.Recorder",
+      "implementation": "PWA: index.html, manifest.json, sw.js",
+      "launch": "/pwa/nuxel-apps/recorder/index.html",
+      "name": "Audio recorder",
+      "offline": "service-worker cache",
+      "owner_group": "bg-06-core-phone-apps",
+      "package_type": "pwa",
+      "path": "pwa/nuxel-apps/recorder",
+      "permissions": [
+        "storage:persistent"
+      ],
+      "source": "pwa/nuxel-apps/recorder",
+      "status": "present/partial",
+      "tests": [
+        "tools/s10plus/a33/tests/test-core-apps.py"
+      ],
+      "type": "pwa",
+      "version": "0.0.0"
+    },
+    {
+      "category": "media",
+      "dependencies": [
+        "nuxel-bridge"
+      ],
+      "hardware": [],
+      "id": "nuxel-downloader",
+      "implementation": "PWA: index.html, manifest.json, sw.js",
+      "launch": "/pwa/nuxel-apps/downloader/index.html",
+      "name": "Media downloader",
+      "offline": "service-worker cache",
+      "owner_group": "bg-07-specialty-apps",
+      "package_type": "pwa",
+      "path": "pwa/nuxel-apps/downloader",
+      "permissions": [
+        "download:queue"
+      ],
+      "source": "pwa/nuxel-apps/downloader",
+      "status": "present/full",
+      "tests": [
+        "tools/s10plus/a33/tests/test-core-apps.py"
+      ],
+      "type": "pwa",
+      "version": "0.0.0"
+    },
+    {
+      "category": "game",
+      "dependencies": [
+        "nuxel-bridge"
+      ],
+      "hardware": [],
+      "id": "org.nuxel.SnekByte",
+      "implementation": "PWA: index.html, manifest.json, sw.js",
+      "launch": "/pwa/nuxel-apps/snekbyte/index.html",
+      "name": "SnekByte (game)",
+      "offline": "service-worker cache",
+      "owner_group": "bg-07-specialty-apps",
+      "package_type": "pwa",
+      "path": "pwa/nuxel-apps/snekbyte",
+      "permissions": [
+        "input:keyboard",
+        "input:touch"
+      ],
+      "source": "pwa/nuxel-apps/snekbyte",
+      "status": "present/full",
+      "tests": [
+        "pwa/nuxel-apps/snekbyte/tests/test-snek-engine.js"
+      ],
+      "type": "pwa",
+      "version": "0.0.0"
+    },
+    {
+      "category": "connectivity",
+      "dependencies": [
+        "nuxel-bridge"
+      ],
+      "hardware": [],
+      "id": "org.nuxel.Maps",
+      "implementation": "PWA: index.html, manifest.json, sw.js",
+      "launch": "/pwa/nuxel-apps/maps/index.html",
+      "name": "Maps (OpenStreetMap, offline-first)",
+      "offline": "service-worker cache",
+      "owner_group": "bg-06-core-phone-apps",
+      "package_type": "pwa",
+      "path": "pwa/nuxel-apps/maps",
+      "permissions": [
+        "location:read",
+        "storage:persistent",
+        "network:outbound"
+      ],
+      "source": "pwa/nuxel-apps/maps",
+      "status": "present/full",
+      "tests": [
+        "tools/s10plus/a33/tests/test-core-apps.py"
+      ],
+      "type": "pwa",
+      "version": "0.0.0"
+    },
+    {
+      "category": "connectivity",
+      "dependencies": [
+        "pwa/nuxel-apps/settings"
+      ],
+      "hardware": [],
+      "id": "settings-surface.bluetooth",
+      "implementation": "settings sub-surface inside the Settings PWA",
+      "launch": "n/a (sub-surface of /pwa/nuxel-apps/settings/index.html)",
+      "name": "Bluetooth",
+      "offline": "inherits the Settings PWA",
+      "owner_group": "bg-08-hardware-subsystems",
+      "package_type": "settings-surface",
+      "path": "pwa/nuxel-apps/settings",
+      "permissions": [],
+      "source": "pwa/nuxel-apps/settings",
+      "status": "present/partial",
+      "tests": [
+        "tools/s10plus/a33/tests/test-core-apps.py"
+      ],
+      "type": "settings-surface",
+      "version": "0.0.0"
+    },
+    {
+      "category": "connectivity",
+      "dependencies": [
+        "pwa/nuxel-apps/settings"
+      ],
+      "hardware": [],
+      "id": "settings-surface.vpn",
+      "implementation": "settings sub-surface inside the Settings PWA",
+      "launch": "n/a (sub-surface of /pwa/nuxel-apps/settings/index.html)",
+      "name": "VPN manager",
+      "offline": "inherits the Settings PWA",
+      "owner_group": "bg-05-security-permissions",
+      "package_type": "settings-surface",
+      "path": "pwa/nuxel-apps/settings",
+      "permissions": [],
+      "source": "pwa/nuxel-apps/settings",
+      "status": "present/partial",
+      "tests": [
+        "tools/s10plus/a33/tests/test-core-apps.py"
+      ],
+      "type": "settings-surface",
+      "version": "0.0.0"
+    },
+    {
+      "category": "connectivity",
+      "dependencies": [
+        "pwa/nuxel-apps/settings"
+      ],
+      "hardware": [],
+      "id": "settings-surface.remote",
+      "implementation": "settings sub-surface inside the Settings PWA",
+      "launch": "n/a (sub-surface of /pwa/nuxel-apps/settings/index.html)",
+      "name": "Remote access / Device Connect",
+      "offline": "inherits the Settings PWA",
+      "owner_group": "bg-05-security-permissions",
+      "package_type": "settings-surface",
+      "path": "pwa/nuxel-apps/settings",
+      "permissions": [],
+      "source": "pwa/nuxel-apps/settings",
+      "status": "present/partial",
+      "tests": [
+        "tools/s10plus/a33/tests/test-core-apps.py"
+      ],
+      "type": "settings-surface",
+      "version": "0.0.0"
+    },
+    {
+      "category": "connectivity",
+      "dependencies": [],
+      "hardware": [],
+      "id": "placeholder.casting",
+      "implementation": "no implementation (documented in the gap table)",
+      "launch": "n/a (not implemented)",
+      "name": "Casting",
+      "offline": "not available",
+      "owner_group": "unassigned in this cycle",
+      "package_type": "placeholder",
+      "path": "pwa/nuxel-apps/casting",
+      "permissions": [],
+      "source": "pwa/nuxel-apps/casting",
+      "status": "missing",
+      "tests": [],
+      "type": "placeholder",
+      "version": "n/a"
+    },
+    {
+      "category": "privacy-identity",
+      "dependencies": [
+        "nuxel-bridge"
+      ],
+      "hardware": [],
+      "id": "nuxel-authenticator",
+      "implementation": "PWA: index.html, manifest.json, sw.js",
+      "launch": "/pwa/nuxel-apps/authenticator/index.html",
+      "name": "Authenticator (TOTP)",
+      "offline": "service-worker cache",
+      "owner_group": "bg-07-specialty-apps",
+      "package_type": "pwa",
+      "path": "pwa/nuxel-apps/authenticator",
+      "permissions": [
+        "storage:encrypted"
+      ],
+      "source": "pwa/nuxel-apps/authenticator",
+      "status": "present/full",
+      "tests": [
+        "tools/s10plus/a33/tests/test-core-apps.py"
+      ],
+      "type": "pwa",
+      "version": "0.0.0"
+    },
+    {
+      "category": "privacy-identity",
+      "dependencies": [],
+      "hardware": [],
+      "id": "tool.tor",
+      "implementation": "repository configuration tree",
+      "launch": "shell/nuxel-shell/nuxel-privacy",
+      "name": "Tor / Onion privacy tools",
+      "offline": "offline tool",
+      "owner_group": "bg-05-security-permissions",
+      "package_type": "tool",
+      "path": "shell/nuxel-shell/nuxel-privacy",
+      "permissions": [],
+      "source": "shell/nuxel-shell/nuxel-privacy",
+      "status": "present/partial",
+      "tests": [
+        "tools/s10plus/a33/security-tests/test-vpn-tor.sh"
+      ],
+      "type": "tool",
+      "version": "0.1.0"
+    },
+    {
+      "category": "privacy-identity",
+      "dependencies": [],
+      "hardware": [],
+      "id": "nuxel-penguinterface",
+      "implementation": "PWA: ",
+      "launch": "n/a (no index.html yet)",
+      "name": "PenguInterface",
+      "offline": "no service worker (see gap)",
+      "owner_group": "bg-07-specialty-apps",
+      "package_type": "pwa",
+      "path": "pwa/nuxel-apps/penguinterface",
+      "permissions": [],
+      "source": "pwa/nuxel-apps/penguinterface",
+      "status": "present/partial",
+      "tests": [
+        "tools/s10plus/a33/tests/test-core-apps.py"
+      ],
+      "type": "pwa",
+      "version": "0.0.0"
+    },
+    {
+      "category": "privacy-identity",
+      "dependencies": [],
+      "hardware": [],
+      "id": "nuxel-privacy",
+      "implementation": "no implementation (documented in the gap table)",
+      "launch": "n/a (not implemented)",
+      "name": "Privacy surface (PWA)",
+      "offline": "not available",
+      "owner_group": "bg-05-security-permissions",
+      "package_type": "placeholder",
+      "path": "pwa/nuxel-apps/privacy",
+      "permissions": [],
+      "source": "pwa/nuxel-apps/privacy",
+      "status": "missing",
+      "tests": [],
+      "type": "placeholder",
+      "version": "n/a"
+    },
+    {
+      "category": "connectivity",
+      "dependencies": [
+        "nuxel-bridge"
+      ],
+      "hardware": [],
+      "id": "org.nuxel.Browser",
+      "implementation": "PWA: index.html, manifest.json, sw.js",
+      "launch": "/pwa/nuxel-apps/browser/index.html",
+      "name": "Browser",
+      "offline": "service-worker cache",
+      "owner_group": "bg-06-core-phone-apps",
+      "package_type": "pwa",
+      "path": "pwa/nuxel-apps/browser",
+      "permissions": [
+        "network:outbound"
+      ],
+      "source": "pwa/nuxel-apps/browser",
+      "status": "present/full",
+      "tests": [
+        "tools/s10plus/a33/tests/test-core-apps.py"
+      ],
+      "type": "pwa",
+      "version": "0.0.0"
+    },
+    {
+      "category": "connectivity",
+      "dependencies": [
+        "nuxel-bridge"
+      ],
+      "hardware": [],
+      "id": "org.nuxel.Weather",
+      "implementation": "PWA: index.html, manifest.json, sw.js",
+      "launch": "/pwa/nuxel-apps/weather/index.html",
+      "name": "Weather",
+      "offline": "service-worker cache",
+      "owner_group": "bg-06-core-phone-apps",
+      "package_type": "pwa",
+      "path": "pwa/nuxel-apps/weather",
+      "permissions": [
+        "storage:persistent",
+        "network:outbound"
+      ],
+      "source": "pwa/nuxel-apps/weather",
+      "status": "present/full",
+      "tests": [
+        "tools/s10plus/a33/tests/test-core-apps.py"
+      ],
+      "type": "pwa",
+      "version": "0.0.0"
+    },
+    {
+      "category": "system",
+      "dependencies": [],
+      "hardware": [],
+      "id": "tool.keyboard",
+      "implementation": "repository configuration tree",
+      "launch": "configs/nuxel/keyboard",
+      "name": "Virtual keyboard + keyboard settings",
+      "offline": "offline tool",
+      "owner_group": "bg-06-core-phone-apps",
+      "package_type": "tool",
+      "path": "configs/nuxel/keyboard",
+      "permissions": [],
+      "source": "configs/nuxel/keyboard",
+      "status": "present/full",
+      "tests": [
+        "tools/s10plus/a33/tests/test-virtual-keyboard.py"
+      ],
+      "type": "tool",
+      "version": "0.1.0"
+    }
+  ],
+  "gaps": [
+    {
+      "app": "nuxel-settings",
+      "id": "gap-settings-sw",
+      "missing": "no `sw.js`, so the Settings surface cannot be installed offline",
+      "owner_group": "bg-02-boot-animation-launcher / bg-08-hardware-subsystems",
+      "state": "open"
+    },
+    {
+      "app": "org.nuxel.Mail`, `org.nuxel.Calendar",
+      "closed_by_briq": "briq-04c-app-infrastructure",
+      "id": "gap-registry-mail-calendar-caps",
+      "missing": "the canonical registry lists `storage:read`/`storage:write`, which are **not** bridge-enum ids, while the manifests honestly declare `storage:persistent`",
+      "owner_group": "bg-04c-app-infrastructure",
+      "state": "open"
+    },
+    {
+      "app": "org.nuxel.Calendar`, `org.nuxel.Camera",
+      "closed_by_briq": "briq-04c-app-infrastructure",
+      "id": "gap-calendar-appjson",
+      "missing": "no `app.json` metadata (every other PWA carries one)",
+      "owner_group": "bg-04c-app-infrastructure",
+      "state": "open"
+    },
+    {
+      "app": "org.nuxel.Camera",
+      "id": "gap-camera-read-cap",
+      "missing": "declares `camera:read`, which the bridge enum does not define",
+      "owner_group": "bg-08-hardware-subsystems",
+      "state": "open"
+    },
+    {
+      "app": "org.nuxel.Terminal",
+      "id": "gap-terminal-pty-cap",
+      "missing": "`shell:local-pty` is not a bridge capability: the PTY belongs to the launcher host, not the bridge",
+      "owner_group": "bg-06-core-phone-apps",
+      "state": "by-design"
+    },
+    {
+      "app": "org.nuxel.LiveConsole",
+      "closed_by_briq": "briq-07e-live-console-app",
+      "id": "gap-liveconsole-index",
+      "missing": "the registry serves a tile for an app whose `index.html`/`manifest.json` are not in the tree yet",
+      "owner_group": "bg-07-specialty-apps",
+      "state": "open"
+    },
+    {
+      "app": "nuxel-penguinterface",
+      "closed_by_briq": "briq-07f-penguinterface",
+      "id": "gap-penguinterface",
+      "missing": "icons only; no `index.html`",
+      "owner_group": "bg-07-specialty-apps",
+      "state": "open"
+    },
+    {
+      "app": "nuxel-privacy",
+      "closed_by_briq": "briq-05a-permission-manager",
+      "id": "gap-privacy-pwa",
+      "missing": "icons only; the privacy/permission surface is native + settings-group only",
+      "owner_group": "bg-05-security-permissions",
+      "state": "open"
+    },
+    {
+      "app": "placeholder.casting",
+      "id": "gap-casting",
+      "missing": "no casting application, daemon or protocol surface exists anywhere in this revision (mission area 40)",
+      "owner_group": "unassigned in this cycle",
+      "state": "open"
+    },
+    {
+      "app": "nuxel-dialer`, `nuxel-messages",
+      "id": "gap-modem-plugin",
+      "missing": "no upstream ModemManager plugin for the Samsung Shannon LTE modem, so calls/SMS cannot work on this handset",
+      "owner_group": "bg-03-connectivity-time-audio-buttons",
+      "state": "open"
+    },
+    {
+      "app": "nuxel-camera",
+      "id": "gap-camera-placeholder",
+      "missing": "the registry entry is a placeholder with no `/usr/bin/nuxel-camera` binary",
+      "owner_group": "bg-08-hardware-subsystems",
+      "state": "open"
+    },
+    {
+      "app": "org.nuxel.Recorder",
+      "id": "gap-recorder-mic",
+      "missing": "microphone capture is unproven on hardware",
+      "owner_group": "bg-08-hardware-subsystems",
+      "state": "outside-this-group"
+    },
+    {
+      "app": "org.nuxel.Camera",
+      "id": "gap-camera-capture",
+      "missing": "real capture is unproven on hardware",
+      "owner_group": "bg-08-hardware-subsystems",
+      "state": "outside-this-group"
+    },
+    {
+      "app": "tool.keyboard",
+      "id": "gap-keyboard-vm",
+      "missing": "the on-screen keyboard rising and delivering keys is proven only offline; it needs the VM run and the owner's finger",
+      "owner_group": "bg-06-core-phone-apps",
+      "state": "outside-this-group"
+    }
+  ],
+  "generated_from": "docs/beta-finalization/apps/APP-INVENTORY.md sections 3 and 5",
+  "schema": "nuxel.app-inventory/1"
+}
+```
+
+<!-- INVENTORY-DATA:END -->

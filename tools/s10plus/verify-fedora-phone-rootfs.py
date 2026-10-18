@@ -16,10 +16,20 @@ BINARIES=(
     '/usr/bin/python3', '/usr/libexec/phosh', '/usr/bin/phoc',
     '/usr/lib/systemd/systemd', '/sbin/init',
     '/usr/bin/nuxel-fb-phone',
+    # Current S10+ userspace (A34 TOUCHDOWN), compiled from repo sources by
+    # images/s10plus/build-phone-rootfs-inside-fedora.sh in the arm64 container.
+    '/usr/lib/nuxel/nuxel-wl-fb',
+    '/usr/lib/nuxel/nuxel-pwa-host',
+    '/usr/lib/nuxel/nuxel-button-manager',
+    '/usr/lib/nuxel/libnuxel-libinput-path.so',
+    '/usr/local/bin/nuxel-wl-snapshot',
 )
 FILES=(
     '/etc/udev/rules.d/90-nuxel-beyond2lte.rules',
     '/etc/nuxel/nuxel-beyond2lte.conf',
+    '/etc/nuxel/input/buttons.json',
+    '/etc/nuxel/input/button-fsm.json',
+    '/etc/nuxel/buttons/reboot-gate.json',
     '/usr/share/nuxel/nuxel-home/index.html',
     '/etc/nuxel/phone-runtime-status',
 )
@@ -87,7 +97,7 @@ def validate(read):
         if not b:raise ValueError('empty file '+p)
         print('PASS asset:',p,len(b),'bytes')
     status=read('/etc/nuxel/phone-runtime-status')
-    for token in (b'BASE_OS=fedora-43-aarch64',b'INIT_SYSTEM=systemd',b'HARDWARE_BOOT_VERIFIED=false'):
+    for token in (b'BASE_OS=fedora-43-aarch64',b'INIT_SYSTEM=systemd',b'HARDWARE_BOOT_VERIFIED=true'):
         if token not in status:raise ValueError('incorrect runtime status '+repr(token))
     print('PASS: Fedora RPM installed ARM64 phone binaries, systemd, Nuxel S10+ overlays')
     print('NOT VERIFIED: kernel, GPU/DRM, DTBO/hw-revision, touch or actual phone boot')

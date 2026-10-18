@@ -4,7 +4,7 @@
 // WHY THIS EXISTS
 //   On the handset the launcher page was fine but its ASSETS had drifted: the
 //   device copy of js/status-bar.js was v0.3.2 while the repository was already
-//   v0.4.0-alpha, manifest.json was stale, the registry had no Terminal entry and
+//   v0.5.1-alpha, manifest.json was stale, the registry had no Terminal entry and
 //   nuxel-settings had no runnable frontend.  The A32 fix was the service-worker
 //   cache bump (INV-1) + the authoritative PWA tree.  This test is the repository
 //   half of that fix: it fails if the three version stamps ever diverge, if the
@@ -384,6 +384,14 @@ function loadLauncher(startHash) {
   dom.document.dispatchEvent(new dom.sandbox.CustomEvent('nuxel:action', { detail: { action: 'home' } }));
   check('the logical "home" action closes overlays (return-home)',
         searchClosed === 1 && qsClosed === 1, [searchClosed, qsClosed].join('/'));
+  // A34 TOUCHDOWN: app iframes call window.parent.NuxelLauncherClose() from their
+  // own Close buttons.  It existed nowhere, so those buttons did nothing.
+  check('the launcher exposes the same-origin app close hook',
+        typeof vm.runInContext('window.NuxelLauncherClose', dom.sandbox) === 'function');
+  const statusBarSrc = fs.readFileSync(path.join(HOME, 'js/status-bar.js'), 'utf8');
+  check('the status bar wires a real vertical pull to gesture:qs',
+        /gesture:qs/.test(statusBarSrc) && /pointermove/.test(statusBarSrc) &&
+        /PULL_PX\s*=\s*24/.test(statusBarSrc));
 }
 
 // --- 7c. search: the registry is the matcher the UI uses ---

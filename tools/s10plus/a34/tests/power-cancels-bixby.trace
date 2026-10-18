@@ -1,0 +1,8 @@
+# A34 TOUCHDOWN regression: a short Bixby (open-terminal) inside its 400 ms
+# double-press window followed by a Power press must NOT emit open-terminal on
+# the next tick.  Reproduced the old failure: A33 emitted open-terminal at 700.
+0 key bixby 1
+60 key bixby 0
+80 key power 1
+280 key power 0
+700 tick

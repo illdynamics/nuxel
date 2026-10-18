@@ -6,5 +6,7 @@
 3100 key volume_down 0
 4000 key volume_down 1
 4100 key volume_down 0
+4500 key volume_down 1
+4600 key volume_down 0
 5000 key power 1
 5100 key power 0

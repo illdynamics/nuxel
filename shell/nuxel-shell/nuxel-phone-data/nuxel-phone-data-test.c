@@ -1,3 +1,5 @@
+#define _POSIX_C_SOURCE 200809L
+
 /*
  * nuxel-phone-data-test.c - offline unit test for the shared phone data layer.
  *
@@ -180,7 +182,7 @@ static void test_json_store(const char *dir)
 
     struct stat st;
     check("store file exists and is non-empty", stat(path, &st) == 0 && st.st_size > 100, NULL);
-    char tmp_path[1024];
+    char tmp_path[sizeof path + 8];
     snprintf(tmp_path, sizeof tmp_path, "%s.tmp", path);
     check("atomic save left no .tmp behind", stat(tmp_path, &st) != 0, NULL);
 

@@ -1,4 +1,4 @@
-<!-- Nuxel v0.4.0-alpha -->
+<!-- Nuxel v0.5.1-alpha -->
 # Nuxel Architecture
 
 > **Scope note:** This document describes the **target architecture and design
@@ -11,7 +11,7 @@
 > configuration of the target design unless the referenced file exists in the
 > repo and is measured/verified in the audit.
 
-<!-- Phase 3 Architecture Update v0.4.0-alpha -->
+<!-- Phase 3 Architecture Update v0.5.1-alpha -->
 ## Phase 3: Native GTK4 Home + System Portal Split
 
 ### Overview

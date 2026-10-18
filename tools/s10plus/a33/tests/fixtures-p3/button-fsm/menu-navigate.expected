@@ -1,5 +1,6 @@
 menu-open
 menu-move-down
 menu-move-down
+menu-move-down
 menu-select:restart
 systemctl-reboot

@@ -80,13 +80,23 @@ def main(argv=None):
     bundle.write("host-usb-gadget.txt", gadget_lines or "(no Nuxel gadget descriptor found)")
     report["gadget_descriptor_present"] = bool(gadget_lines)
 
-    try:
-        ioreg_acm = subprocess.run(["ioreg", "-r", "-c", "AppleUSBACMData", "-w0", "-l"],
-                                   capture_output=True, text=True, timeout=20).stdout
-    except (OSError, subprocess.SubprocessError) as e:
-        ioreg_acm = "ioreg unavailable: %s" % e
-    bundle.write("host-ioreg-acm.txt", ioreg_acm)
-    nodes = nl.parse_ioreg_acm(ioreg_acm) if ioreg_acm.startswith(("+", "|", " ")) else []
+    # Capability discovery MUST use the platform that is actually running.  The
+    # previous code unconditionally ran macOS `ioreg`, so on a Linux host it
+    # found zero nodes even when /sys/class/tty/ttyACM0 and the 18d1:4ee7 gadget
+    # were both present — every live test then reported BLOCKED and did nothing.
+    # nl.enumerate_console_nodes() has the /sys/class/tty branch (and tolerates
+    # bare-hex sysfs VID/PID); use it on Linux and keep ioreg on macOS.
+    if sys.platform == "darwin":
+        try:
+            ioreg_acm = subprocess.run(["ioreg", "-r", "-c", "AppleUSBACMData", "-w0", "-l"],
+                                       capture_output=True, text=True, timeout=20).stdout
+        except (OSError, subprocess.SubprocessError) as e:
+            ioreg_acm = "ioreg unavailable: %s" % e
+        bundle.write("host-ioreg-acm.txt", ioreg_acm)
+        nodes = nl.parse_ioreg_acm(ioreg_acm) if ioreg_acm.startswith(("+", "|", " ")) else []
+    else:
+        nodes = nl.enumerate_console_nodes()
+        bundle.write("host-sysfs-nodes.txt", json.dumps(nodes, indent=2, sort_keys=True))
     bundle.write("host-console-nodes.json", json.dumps(nodes, indent=2, sort_keys=True))
     report["nodes"] = nodes
 
@@ -106,12 +116,16 @@ def main(argv=None):
             report["blocked_reason"] = ("no CDC-ACM USB serial gadget enumerated on the host "
                                         "(VID 0x%04x PID 0x%04x)" % (nl.DEFAULT_VID, nl.DEFAULT_PID))
             return finish(bundle, report, args, 3)
-        try:
-            usb_devs = nl.parse_ioreg_usb_devices(
-                subprocess.run(["ioreg", "-w0", "-l", "-p", "IOUSB"],
-                               capture_output=True, text=True, timeout=20).stdout)
-        except (OSError, subprocess.SubprocessError):
-            usb_devs = []
+        if sys.platform == "darwin":
+            try:
+                usb_devs = nl.parse_ioreg_usb_devices(
+                    subprocess.run(["ioreg", "-w0", "-l", "-p", "IOUSB"],
+                                   capture_output=True, text=True, timeout=20).stdout)
+            except (OSError, subprocess.SubprocessError):
+                usb_devs = []
+        else:
+            # Linux sysfs already matched VID/PID; the tty record carries them.
+            usb_devs = None
         try:
             node = nl.select_console_node(nodes, vid=int(args.vid, 0), pid=int(args.pid, 0),
                                           serial=args.serial, usb_devices=usb_devs)
@@ -181,9 +195,9 @@ def escalate(node, args, bundle):
     measured statement, not an assumption.
     """
     attempts = [
-        ("dialin-node", node.get("dialin") or node.get("callout"), 9600, 0),
-        ("baud-115200", node.get("callout"), 115200, 0),
-        ("burst-4k", node.get("callout"), 9600, 4096),
+        ("primary-node", node.get("callout"), 115200, 0),
+        ("fallback-baud-9600", node.get("callout"), 9600, 0),
+        ("burst-4k", node.get("callout"), 115200, 4096),
     ]
     results = []
     for name, dev, baud, burst in attempts:

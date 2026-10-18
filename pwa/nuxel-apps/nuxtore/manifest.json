@@ -20,7 +20,7 @@
     {"src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"},
     {"src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml"}
   ],
-  "nuxel": {
+  "nuxel": { "bridge_version": 1,
     "app_id": "org.nuxel.NuxTore",
     "capabilities": ["catalog:read", "catalog:install", "catalog:remove"],
     "app_type": "store",

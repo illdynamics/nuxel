@@ -64,6 +64,7 @@ OWNERS = (
     ("tools/s10plus/a33/security-tests", "bg-05-security-permissions"),
     ("tools/s10plus/a33/snekbyte", "bg-07-specialty-apps"),
     ("tools/s10plus/a33", "bg-00-preflight+a33-groups"),
+    ("tools/s10plus/a34", "bg-01-touch-pipeline"),
     ("tools/s10plus/a31", "bg-10-live-phone"),
     ("tools/s10plus", "legacy-per-cycle"),
     ("services/nuxel-portal", "bg-04-userspace-completion"),
@@ -150,7 +151,10 @@ def reachable(rel: str, cmds, root: str):
         d = "/".join(parts[: len(parts) - 1 - depth]) if depth else "/".join(parts[:-1])
         for sid, cmd in cmds:
             for runner in ("run-tests.sh", "run-mock-tests.sh"):
-                if ("%s/%s" % (d, runner)) in cmd:
+                # Require a real directory: without this, an empty `d` matched
+                # the literal "/run-tests.sh" in ANY suite command and every
+                # shallow test appeared covered by an unrelated group runner.
+                if d and ("%s/%s" % (d, runner)) in cmd:
                     return True, "run by runner %s/%s (%s)" % (d, runner, sid)
             m = re.search(r"(?:^|[\s/])(\S*run-[A-Za-z0-9_.-]*tests?\.sh)", cmd)
             if m and d and d in m.group(1):

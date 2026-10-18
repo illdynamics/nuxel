@@ -1,0 +1,94 @@
+# console /dev/ttyACM0
+===== echo ===TOUCH-DMESG===; dmesg | grep -E '\[sec_input\] \[P\]|sec_ts_read_event|tsp' | tail -30   [rc=0 frame=adae4a3b sha_ok=yes]
+    ===TOUCH-DMESG===
+    [    1.653300] sec_ts 4-0048: [sec_input] sec_ts_read_event: STATUS 1d 61 2 2 3 0 0 0
+    [    1.653319] sec_ts 4-0048: [sec_input] sec_ts_read_event: Normal changed
+    [    1.709894] sec_ts 4-0048: [sec_input] get_tsp_nvm_data_by_size: offset:2, length:28, size:8
+    [    2.251717] nuxel-init: CMDLINE_PART 4: prototype.param.offset=7351040 androidboot.recovery_offset=7355136 printk.devkmsg=on ess_setup=0xfd900000 sec_avc_log=0x40000@0x91202000 sec_tsp_log=0x40000@0x91244000 sec_disp_log=0x100000@0x91286000
+    [    2.273822] sec_ts 4-0048: [sec_input] get_tsp_nvm_data_by_size: offset:2, length:28, size:8
+    [    2.851710] sec_ts 4-0048: [sec_input] sec_ts_read_event: STATUS 1d 61 2 2 6 0 0 3
+    [    2.851722] sec_ts 4-0048: [sec_input] sec_ts_read_event: Normal changed
+    [    2.851730] sec_ts 4-0048: [sec_input] sec_ts_read_event: STATUS 1d 3 4 1 8 2 0 2
+    [    2.851739] sec_ts 4-0048: [sec_input] sec_ts_read_event: STATUS 1d 3 1 2 8 2 0 1
+    [    2.851748] sec_ts 4-0048: [sec_input] sec_ts_read_event: STATUS 1d 3 2 2 8 2 0 0
+    [    2.853601] sec_ts 4-0048: [sec_input] sec_ts_read_event: STATUS 1d 61 6 0 2 2 0 0
+    [    2.853611] sec_ts 4-0048: [sec_input] sec_ts_read_event: sleep changed
+    [    3.094185] sec_ts 4-0048: [sec_input] get_tsp_nvm_data: offset:0  data:00
+    [    3.095076] sec_ts 4-0048: [sec_input] sec_ts_read_event: STATUS 1d 61 2 2 6 0 0 0
+    [    3.095086] sec_ts 4-0048: [sec_input] sec_ts_read_event: Normal changed
+    [    4.346084] sec_ts 4-0048: [sec_input] sec_ts_read_event: STATUS 1d 61 2 2 3 0 0 0
+    [    4.346094] sec_ts 4-0048: [sec_input] sec_ts_read_event: Normal changed
+    [    6.291910] sec_ts 4-0048: [sec_input] sec_ts_read_event: STATUS 1d 61 2 2 3 0 0 0
+    [    6.291926] sec_ts 4-0048: [sec_input] sec_ts_read_event: Normal changed
+    [    6.296966] sec_ts 4-0048: [sec_input] sec_ts_read_event: STATUS 1d 3 1 2 0 2 0 0
+    [    6.736743] sec_ts 4-0048: [sec_input] sec_ts_read_event: STATUS 1d 3 2 2 0 2 0 0
+    [   21.285645] sec_ts 4-0048: [sec_input] sec_ts_read_event: STATUS 1d 3 4 1 0 0 0 0
+    [   21.293199] sec_ts 4-0048: [sec_input] sec_ts_read_event: STATUS 1d 3 2 2 0 2 0 0
+    [   95.562821] sec_ts 4-0048: [sec_input] sec_ts_read_event: STATUS 1d 75 d9 0 da 0 0 0
+    [  338.824275] sec_ts 4-0048: [sec_input] [P] tID:0.0 z:38 major:9 minor:9 loc:C.C tc:1 type:0 noise:0,0
+    [  345.356081] sec_ts 4-0048: [sec_input] [P] tID:0.1 z:34 major:9 minor:9 loc:C.C tc:1 type:0 noise:0,0
+    [  345.915982] sec_ts 4-0048: [sec_input] [P] tID:0.2 z:34 major:9 minor:9 loc:C.C tc:1 type:0 noise:0,0
+    [  346.300793] sec_ts 4-0048: [sec_input] [P] tID:0.3 z:33 major:8 minor:8 loc:C.C tc:1 type:0 noise:0,0
+    [  346.610035] sec_ts 4-0048: [sec_input] [P] tID:0.4 z:34 major:9 minor:9 loc:C.C tc:1 type:0 noise:0,0
+    [  347.011443] sec_ts 4-0048: [sec_input] [P] tID:0.5 z:35 major:9 minor:9 loc:C.C tc:1 type:0 noise:0,0
+===== echo ===IRQ===; grep sec_ts /proc/interrupts   [rc=0 frame=d3864a3c sha_ok=yes]
+    ===IRQ===
+    431:         42          0          0          0          0          0          0          0  exynos7_wkup_irq_chip   0 Level     sec_ts
+===== echo ===TOUCHCOUNT===; cat /sys/class/sec/tsp/all_touch_count 2>&1; cat /sys/class/sec/tsp/multi_count 2>&1   [rc=0 frame=646d4a3d sha_ok=yes]
+    ===TOUCHCOUNT===
+    "TTCN":"6","TACN":"0","TSCN":"0"0
+===== echo ===HOME===; tail -30 /run/nuxel-home.state   [rc=0 frame=0bf94a3e sha_ok=yes]
+    ===HOME===
+    1792231649 NUXEL_BOOT_POLICY host-enforced=1 css=1 dom_removal=1 (phone launch mode)
+    1792231649 NUXEL_INPUT_DIAG enabled=1 (user-script observer; launcher source unmodified)
+    1792231649 HOST_CTRL_FIFO_READY /run/nuxel-pwa-host.cmd
+    1792231649 NUXEL_HOME_BOOT_OWNER os_animation=1 splash_removed_by_launcher=1
+    1792231649 NUXEL_HOME_OPEN url=http://127.0.0.1:8000/pwa/nuxel-home/index.html?boot=os&v=1789437068 engine=WebKitGTK/2.52
+    1792231649 NUXEL_HOME_NAV uri=http://127.0.0.1:8000/pwa/nuxel-home/index.html?boot=os&v=1789437068
+    1792231650 NUXEL_HOME_COMMITTED uri=http://127.0.0.1:8000/pwa/nuxel-home/index.html?boot=os&v=1789437068
+    1792231650 NUXEL_INPUT EVT diag-ready x=-1 y=-1 tag=- id= w=360 h=760 dpr=2 splash=absent
+    1792231650 NUXEL_HOME_READY uri=http://127.0.0.1:8000/pwa/nuxel-home/index.html?boot=os&v=1789437068
+    1792231650 NUXEL_INPUT STATUSBAR_READY version=0.4.1-a33 safezones=present
+    1792231650 HOST_CONFIG_REFUSED name=verbose-boot
+    1792231650 HOST_CONFIG_GET name=statusbar-safezones bytes=657
+    1792231650 HOST_CONFIG_REFUSED name=verbose-boot-state
+    1792231650 NUXEL_INPUT SAFEZONES profile=none orientation=portrait blocked=[] padding_dp=6 width=360 moved=[] dropped=[]
+    1792231650 NUXEL_INPUT SAFEZONES profile=s10plus orientation=portrait blocked=[9,10] padding_dp=6 width=360 moved=[{"cluster":"status-right","shift":-68,"zone":9,"free":[0,276]}] dropped=[]
+    1792231650 NUXEL_INPUT BOOTLOG_VERDICT show=0 why=off
+    1792231650 NUXEL_INPUT EVT wallpaper url=http://127.0.0.1:8000/pwa/nuxel-home/assets/nuxel-background.png decoded=1 natural=941x1672 x=-1 y=-1 tag=BODY id= w=360 h=760 dpr=2 splash=absent
+    1792231650 NUXEL_INPUT JS-warn [Bridge] not connected, using mock fallback: Load failed
+    1792231651 NUXEL_INPUT EVT splash-t1s absent pointer-events=n/a z-index=n/a x=-1 y=-1 tag=BODY id= w=360 h=760 dpr=2 splash=absent
+    1792231654 NUXEL_INPUT EVT splash-t4s absent pointer-events=n/a z-index=n/a x=-1 y=-1 tag=BODY id= w=360 h=760 dpr=2 splash=absent
+    1792231659 NUXEL_INPUT EVT splash-t9s absent pointer-events=n/a z-index=n/a x=-1 y=-1 tag=BODY id= w=360 h=760 dpr=2 splash=absent
+    1792231981 NUXEL_INPUT EVT pointerdown x=155 y=235 tag=DIV id=app-icon app-category-productivity w=360 h=760 dpr=2 splash=absent
+    1792231981 NUXEL_INPUT EVT touchstart x=155 y=235 tag=DIV id=app-icon app-category-productivity w=360 h=760 dpr=2 splash=absent
+    1792231981 NUXEL_INPUT EVT touchmove x=155 y=236 tag=DIV id=app-icon app-category-productivity w=360 h=760 dpr=2 splash=absent
+    1792231981 NUXEL_INPUT EVT touchmove x=155 y=236 tag=DIV id=app-icon app-category-productivity w=360 h=760 dpr=2 splash=absent
+    1792231981 NUXEL_INPUT EVT touchmove x=155 y=236 tag=DIV id=app-icon app-category-productivity w=360 h=760 dpr=2 splash=absent
+    1792231981 HOST_ACTION_REFUSED back
+    1792231981 NUXEL_INPUT EVT pointerup x=155 y=236 tag=DIV id=app-icon app-category-productivity w=360 h=760 dpr=2 splash=absent
+    1792231981 NUXEL_INPUT EVT app:launch id=org.nuxel.Mail name=Mail
+    1792231981 NUXEL_INPUT EVT touchend x=155 y=236 tag=DIV id=app-icon app-category-productivity w=360 h=760 dpr=2 splash=absent
+===== echo ===LIBINPUT===; tail -20 /run/nuxel-libinput-path.state   [rc=0 frame=7aef4a3f sha_ok=yes]
+    ===LIBINPUT===
+    1792231647 PATH_CONTEXT_CREATED ctx=0x5597a6ab80 udev=0x5597999a40 (udev daemon not required)
+    1792231648 UDEVDB_SEEDED /run/udev/data/c13:66 (initialized marker; systemd-udevd cannot run on this kernel)
+    1792231648 DEVICE_OPEN_LIBSEAT path=/dev/input/event2 rc=24 fd=-1
+    1792231648 PATH_ADD node=/dev/input/event2 name='sec_touchscreen' accepted=1
+    1792231648 UDEVDB_SEEDED /run/udev/data/c13:68 (initialized marker; systemd-udevd cannot run on this kernel)
+    1792231648 DEVICE_OPEN_LIBSEAT path=/dev/input/event4 rc=25 fd=-1
+    1792231648 PATH_ADD node=/dev/input/event4 name='sec_touchproximity' accepted=1
+    1792231648 PATH_ASSIGN_SEAT seat='seat0' direct_devices_seen=2 added=2 db_seeded=2
+===== echo ===DOMLOG===; tail -20 /run/nuxel-touch-dom.log 2>&1   [rc=1 frame=ba814a40 sha_ok=yes]
+    ===DOMLOG===
+    tail: cannot open '/run/nuxel-touch-dom.log' for reading: No such file or directory
+===== echo ===PHOC-FDS===; p=$(systemctl show -p MainPID --value nuxel-wayland); ls -l /proc/$p/fd 2>&1 | grep input   [rc=0 frame=df344a41 sha_ok=yes]
+    ===PHOC-FDS===
+    lrwx------. 1 root root 64 Oct 17 12:09 24 -> /dev/input/event2
+    lrwx------. 1 root root 64 Oct 17 12:07 25 -> /dev/input/event4
+===== echo ===DISPLAY===; cat /run/nuxel-wl-fb.state; cat /sys/class/backlight/panel/{brightness,actual_brightness,bl_power}   [rc=0 frame=675f4a42 sha_ok=yes]
+    ===DISPLAY===
+    1792232001 FRAMES_OK total=7720 fps_1s=23 failures=0 blit_avg_ms=41 out=720x1520 src=720x1520 scale=2 panel=1440x3040 owner=nuxel-wl-fb display=on src_format=0x00000001 colour=R@0,G@8,B@16_abgr8888_override=1
+    12800
+    183
+    0

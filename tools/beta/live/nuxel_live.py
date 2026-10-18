@@ -711,9 +711,11 @@ class Console:
     """
 
     EOF_GRACE = 3
-    BAUDS = (9600, 115200)
+    # The S10+ gadget is 115200 8N1 (quickstart-live-console.md §1, measured).
+    # 9600 is kept only as the explicit fallback a caller may request.
+    BAUDS = (115200, 9600)
 
-    def __init__(self, dev, baud=9600, timeout=20.0, lock=True, lock_wait=0.0):
+    def __init__(self, dev, baud=115200, timeout=20.0, lock=True, lock_wait=0.0):
         self.dev = dev
         self.baud = baud
         self.timeout = float(timeout)

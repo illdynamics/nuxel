@@ -1,8 +1,9 @@
 // Nuxel Terminal service worker - the shell itself is host-provided, so only the
 // presentation assets are cached; a cached stale terminal UI is still safe.
-const CACHE_NAME = 'nuxel-terminal-v1';
+const CACHE_NAME = 'nuxel-terminal-v3';
 const ASSETS = ['./', './index.html', './terminal.css', './terminal.js', './manifest.json',
-  '../../nuxel-common/bridge.js', './icons/icon-192.png', './icons/icon-512.png'];
+  '../../nuxel-common/bridge.js',
+  '../../nuxel-home/js/host-bridge.js', '../../nuxel-home/js/osd.js', './icons/icon-192.png', './icons/icon-512.png'];
 
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE_NAME).then(cache =>

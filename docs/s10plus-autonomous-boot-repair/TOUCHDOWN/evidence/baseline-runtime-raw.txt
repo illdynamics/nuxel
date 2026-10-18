@@ -1,0 +1,163 @@
+# console /dev/ttyACM0
+===== echo ===BOOTMODE-GUARD===; ls -la /usr/local/bin/nuxel-bootmode-guard.py /usr/bin/nuxel-bootmode-guard.py 2>&1; nuxel-bootmode-guard.py --status 2>&1 | head -30   [rc=0 frame=2972486b sha_ok=yes]
+    ===BOOTMODE-GUARD===
+    ls: cannot access '/usr/local/bin/nuxel-bootmode-guard.py': No such file or directory
+    ls: cannot access '/usr/bin/nuxel-bootmode-guard.py': No such file or directory
+    sh: nuxel-bootmode-guard.py: command not found
+===== echo ===STATE-FILES===; ls -la /run/nuxel-* /var/lib/nuxel/ 2>&1 | head -60   [rc=0 frame=bdae486c sha_ok=yes]
+    ===STATE-FILES===
+    -rw-r--r-- 1 root         root            25 Oct 17 11:52 /run/nuxel-anim-stop.confirmed
+    prw------- 1 root         root             0 Oct 17 11:51 /run/nuxel-buttons.cmd
+    -rw-r--r-- 1 root         root          2516 Oct 17 11:52 /run/nuxel-home.state
+    -rw-r--r-- 1 root         root            69 Oct 17 11:51 /run/nuxel-launcher-ready
+    -rw-r--r-- 1 root         root           177 Oct 17 11:51 /run/nuxel-libinput-path.state
+    prw------- 1 root         root             0 Oct 17 11:51 /run/nuxel-pwa-host.cmd
+    -rw-r--r-- 1 root         root           297 Oct 17 11:51 /run/nuxel-session.log
+    -rw-r--r-- 1 root         root           470 Oct 17 11:53 /run/nuxel-touch-arm.state
+    -rw-r--r-- 1 root         root         43423 Oct 17 12:05 /run/nuxel-web.log
+    prw------- 1 root         root             0 Oct 17 11:52 /run/nuxel-wl-fb.cmd
+    -rw-r--r-- 1 root         root           210 Oct 17 12:05 /run/nuxel-wl-fb.state
+    /run/nuxel-bridge:
+    total 0
+    drwxr-xr-x  2 nuxel-bridge nuxel-bridge  40 Oct 17 11:51 .
+    drwxr-xr-x 19 root         root         660 Oct 17 11:52 ..
+    /run/nuxel-wayland:
+    total 0
+    drwx------  3 root root 100 Oct 17 11:51 .
+    drwxr-xr-x 19 root root 660 Oct 17 11:52 ..
+    drwx------  2 root root  60 Oct 17 11:51 dconf
+    srwxr-xr-x  1 root root   0 Oct 17 11:51 wayland-0
+    -rw-r-----  1 root root   0 Oct 17 11:51 wayland-0.lock
+    /var/lib/nuxel/:
+    total 133076
+    drwxr-xr-x  5 root  root      4096 Oct 17 11:52 .
+    drwxr-xr-x 20 root  root      4096 Sep 15 02:10 ..
+    -rw-r--r--  1 root  root        25 Oct 17 11:52 anim-min-cycle.completed
+    -rw-r--r--  1 root  root        52 Oct 17 11:52 animation
+    drwxr-xr-x  2 root  root      4096 Oct 17 11:25 audio
+    -rw-r--r--  1 root  root        38 Oct 17 11:51 boot-context
+    -rw-r--r--  1 root  root        50 Oct 17 11:51 boot-stage
+    -rw-r--r--  1 root  root    358615 Oct 17 12:05 bootreport.txt
+    -rw-r--r--  1 root  root        55 Oct 17 11:51 buttons
+    -rw-r--r--  1 root  root      3686 Oct 17 05:45 deploy.tmp
+    -rw-r--r--  1 root  root        90 Oct 17 11:52 display
+    -rw-------  1 root  root        26 Oct 17 11:51 fb-anim-ready
+    -rw-------  1 root  root        15 Oct 17 11:51 fb-anim-starting
+    -rw-------  1 root  root         5 Oct 17 11:51 fb-anim.pid
+    -rw-r--r--  1 root  root        25 Oct 17 11:52 fb-hold-stop
+    -rw-r--r--  1 root  root       107 Oct 17 11:52 fb-owner
+    -rw-r--r--  1 root  root       279 Oct 17 05:45 nxrecv.py
+    drwxr-xr-x  2 nuxel nuxel     4096 Sep 15 02:10 permissions
+    -rw-r--r--  1 root  root      4891 Sep 15 03:38 pkglist.txt
+    -rw-r--r--  1 root  root       188 Sep 15 02:28 push-33470.b64
+    -rw-r--r--  1 root  root         0 Sep 15 02:28 push-33470.new
+    drwxr-xr-x  5 root  root      4096 Oct 17 00:49 touch-capture
+    -rw-r--r--  1 root  root      2928 Sep 15 02:11 touch-raw.bin
+    -rw-r--r--  1 root  root  13132817 Sep 15 02:01 ui-a27-home.ppm
+    -rw-r--r--  1 root  root  13132817 Sep 15 02:02 ui-a27-settings.ppm
+    -rw-r--r--  1 root  root        48 Oct 17 11:51 ui-build
+    -rw-r--r--  1 root  root        74 Sep 15 02:03 ui-fb-ready
+    -rw-r--r--  1 root  root  13132817 Sep 15 02:03 ui-home.ppm
+    -rw-r--r--  1 root  root  13132817 Sep 15 02:03 ui-logs.ppm
+    -rw-r--r--  1 root  root  13132817 Sep 15 02:03 ui-settings.ppm
+    -rw-r--r--  1 root  root   3283216 Sep 15 02:02 ui-small.ppm
+    -rw-r--r--  1 root  root        15 Sep 15 02:03 ui-stage
+    -rw-r--r--  1 root  root  13132817 Sep 15 02:03 ui-system.ppm
+===== echo ===SERVICES===; systemctl --no-pager --type=service --state=running 2>&1 | head -80   [rc=0 frame=db3f486d sha_ok=yes]
+    ===SERVICES===
+      UNIT                         LOAD   ACTIVE SUB     DESCRIPTION
+      dbus-daemon.service          loaded active running D-Bus System Message Bus
+      ModemManager.service         loaded active running Modem Manager
+      NetworkManager.service       loaded active running Network Manager
+      nuxel-bridge.service         loaded active running Nuxel Bridge - PWA to Native Phone Service Mediator
+      nuxel-button-manager.service loaded active running Nuxel hardware button and gesture manager (single owner of gpio_keys)
+      nuxel-http-bridge.service    loaded active running Nuxel HTTP Bridge API
+      nuxel-notifications.service  loaded active running Nuxel Notification Hub
+      nuxel-portal.service         loaded active running Nuxel Portal Daemon
+      nuxel-wayland.service        loaded active running Nuxel phone Wayland session (phoc headless + Nuxel Home launcher)
+      nuxel-wl-fb.service          loaded active running Nuxel display bridge (Wayland screencopy -> /dev/fb0 AMOLED)
+      polkit.service               loaded active running Authorization Manager
+      seatd.service                loaded active running Nuxel seat daemon (seatd) — backend session for wlroots/phoc input
+      systemd-journald.service     loaded active running Journal Service
+      systemd-logind.service       loaded active running User Login Management
+    Legend: LOAD   → Reflects whether the unit definition was properly loaded.
+            ACTIVE → The high-level unit activation state, i.e. generalization of SUB.
+            SUB    → The low-level unit activation state, values depend on unit type.
+    14 loaded units listed.
+===== echo ===FAILED===; systemctl --no-pager --failed 2>&1   [rc=0 frame=0f98486e sha_ok=yes]
+    ===FAILED===
+      UNIT                    LOAD   ACTIVE SUB    DESCRIPTION
+    ● nuxel-touch-arm.service loaded failed failed Nuxel S10+ touchscreen arming (sec_ts stop->start, then hold open)
+    Legend: LOAD   → Reflects whether the unit definition was properly loaded.
+            ACTIVE → The high-level unit activation state, i.e. generalization of SUB.
+            SUB    → The low-level unit activation state, values depend on unit type.
+    1 loaded units listed.
+===== echo ===PROCS===; ps -eo pid,ppid,stat,etime,comm,args 2>&1 | grep -E "phoc|nuxel|wayland|weston|seatd|Xwayland|dbus" | grep -v grep   [rc=0 frame=9ded486f sha_ok=yes]
+    ===PROCS===
+       3471       1 S          13:39 sh              sh /usr/lib/nuxel/nuxel-postboot.sh 20
+       3505       1 S          13:39 nuxel-console   /opt/nuxel/nuxel-console /newroot
+       3506       1 S          13:39 nuxel-console   /opt/nuxel/nuxel-console /newroot
+       5305       1 Ss         13:37 dbus-daemon     /usr/bin/dbus-daemon --system --address=systemd: --nofork --nopidfile --systemd-activation --syslog-only
+       5307       1 Ss         13:37 python3         /usr/bin/python3 /usr/lib/nuxel/nuxel-notifications/notifications.py
+       5310       1 Ss         13:37 seatd           /usr/bin/seatd -g seat
+       5317       1 Rsl        13:37 phoc            /usr/sbin/phoc --no-xwayland -C /etc/nuxel/phoc-phone.ini -E /usr/lib/nuxel/nuxel-session.sh
+       5351    5317 Sl         13:36 nuxel-pwa-host  /usr/lib/nuxel/nuxel-pwa-host
+       5371       1 Ss         13:36 python3         /usr/bin/python3 /usr/lib/nuxel/nuxel-portal/portal.py
+       5382       1 Ss         13:36 python3         /usr/bin/python3 /usr/lib/nuxel/nuxel-bridge/bridge.py
+       5383       1 Ss         13:36 python3         /usr/bin/python3 /usr/lib/nuxel/nuxel-bridge/api.py
+       5392       1 Ss         13:36 nuxel-wl-fb     /usr/lib/nuxel/nuxel-wl-fb
+       5393       1 Ss         13:36 nuxel-button-ma /usr/lib/nuxel/nuxel-button-manager
+===== echo ===WAYLAND===; ls -la /run/user/*/wayland-* /run/nuxel-wayland* 2>&1   [rc=2 frame=4e7e4870 sha_ok=yes]
+    ===WAYLAND===
+    ls: cannot access '/run/user/*/wayland-*': No such file or directory
+    /run/nuxel-wayland:
+    total 0
+    drwx------  3 root root 100 Oct 17 11:51 .
+    drwxr-xr-x 19 root root 660 Oct 17 11:52 ..
+    drwx------  2 root root  60 Oct 17 11:51 dconf
+    srwxr-xr-x  1 root root   0 Oct 17 11:51 wayland-0
+    -rw-r-----  1 root root   0 Oct 17 11:51 wayland-0.lock
+===== echo ===DEV-INPUT-PERMS===; stat -c '%a %U:%G %n' /dev/input/event* 2>&1   [rc=0 frame=fd944871 sha_ok=yes]
+    ===DEV-INPUT-PERMS===
+    600 root:root /dev/input/event0
+    600 root:root /dev/input/event1
+    600 root:root /dev/input/event2
+    600 root:root /dev/input/event3
+    600 root:root /dev/input/event4
+    600 root:root /dev/input/event5
+    600 root:root /dev/input/event6
+===== echo ===HASHES===; sha256sum /usr/bin/nuxel-pwa-host /usr/bin/nuxel-wl-fb /usr/bin/nuxel-button-manager /usr/bin/nuxel-touch-arm /usr/bin/nuxel-libinput-path /usr/local/bin/nuxel-bootmode-guard.py 2>&1   [rc=1 frame=32ee4872 sha_ok=yes]
+    ===HASHES===
+    sha256sum: /usr/bin/nuxel-pwa-host: No such file or directory
+    sha256sum: /usr/bin/nuxel-wl-fb: No such file or directory
+    sha256sum: /usr/bin/nuxel-button-manager: No such file or directory
+    sha256sum: /usr/bin/nuxel-touch-arm: No such file or directory
+    sha256sum: /usr/bin/nuxel-libinput-path: No such file or directory
+    sha256sum: /usr/local/bin/nuxel-bootmode-guard.py: No such file or directory
+===== echo ===VERSIONS===; cat /etc/os-release | head -5; rpm -q phoc libinput webkit2gtk4.1 2>&1 | head   [rc=0 frame=5da74873 sha_ok=yes]
+    ===VERSIONS===
+    NAME="Fedora Linux"
+    VERSION="43 (Forty Three)"
+    RELEASE_TYPE=stable
+    ID=fedora
+    VERSION_ID=43
+    phoc-0.54.0-1.fc43.aarch64
+    libinput-1.30.3-1.fc43.aarch64
+    webkit2gtk4.1-2.52.5-1.fc43.aarch64
+===== echo ===FB===; cat /sys/class/graphics/fb0/modes /sys/class/graphics/fb0/virtual_size /sys/class/graphics/fb0/bits_per_pixel 2>&1   [rc=0 frame=03f34874 sha_ok=yes]
+    ===FB===
+    U:1440x3040p-0
+    1440,6080
+    32
+===== echo ===FBOWNER===; cat /var/lib/nuxel/fb-owner 2>&1; ls -la /run/nuxel-wl-fb.state 2>&1; cat /run/nuxel-wl-fb.state 2>&1 | tail -20   [rc=0 frame=d7394875 sha_ok=yes]
+    ===FBOWNER===
+    BOOT_WAIT_LAUNCHER
+    LAUNCHER_READY
+    ANIMATION_STOP_REQUESTED
+    ANIMATION_STOP_CONFIRMED
+    LAUNCHER_DISPLAY_OWNER
+    -rw-r--r-- 1 root root 210 Oct 17 12:05 /run/nuxel-wl-fb.state
+    1792231539 FRAMES_OK total=17987 fps_1s=24 failures=0 blit_avg_ms=43 out=720x1520 src=720x1520 scale=2 panel=1440x3040 owner=nuxel-wl-fb display=on src_format=0x00000001 colour=R@0,G@8,B@16_abgr8888_override=1
+===== echo ===TK===; echo n/a   [rc=0 frame=cd194876 sha_ok=yes]
+    ===TK===
+    n/a

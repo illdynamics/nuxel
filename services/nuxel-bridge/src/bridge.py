@@ -50,7 +50,7 @@ INTERFACE_NAME = 'org.nuxel.Bridge'
 # PWA<->host protocol pin (briq-04c). Same env names as the systemd units and the
 # HTTP layer, so `systemctl show -p Environment` shows exactly what is enforced.
 BRIDGE_PROTOCOL_VERSION = os.environ.get('NUXEL_BRIDGE_PROTOCOL_VERSION', '1')
-BRIDGE_HOST_VERSION = os.environ.get('NUXEL_BRIDGE_VERSION', '0.4.0-alpha')
+BRIDGE_HOST_VERSION = os.environ.get('NUXEL_BRIDGE_VERSION', '0.5.1-alpha')
 OBJECT_PATH = '/org/nuxel/Bridge'
 PORTAL_BUS_NAME = 'org.nuxel.Portal'
 PORTAL_OBJECT_PATH = '/org/nuxel/Portal'
@@ -725,16 +725,27 @@ class NuxelBridgeService(dbus.service.Object):
     
     @dbus.service.method(INTERFACE_NAME, in_signature='sss', out_signature='s')
     def SendNotification(self, app_id, title, body):
+        # The Nuxel notification hub is a SYSTEM-bus service
+        # (org.nuxel.Notifications).  The old code called the freedesktop
+        # session daemon, which does not exist on this headless image, so every
+        # notification send failed.  Prefer the hub; keep a session fallback for
+        # desktop/VM installations.
         try:
-            bus = dbus.SessionBus()
-            notif_obj = bus.get_object('org.freedesktop.Notifications',
-                                        '/org/freedesktop/Notifications')
-            notif_iface = dbus.Interface(notif_obj, 'org.freedesktop.Notifications')
-            notif_id = notif_iface.Notify(app_id, 0, '', title, body, [],
-                                           {'category': 'im'}, -1)
-            return json.dumps({'success': True, 'notification_id': int(notif_id)})
+            bus = dbus.SystemBus()
+            notif_obj = bus.get_object('org.nuxel.Notifications', '/org/nuxel/Notifications')
+            notif_iface = dbus.Interface(notif_obj, 'org.nuxel.Notifications')
+            return notif_iface.Notify(app_id, title, body)
         except Exception as e:
-            return json.dumps({'success': False, 'error': str(e)})
+            try:
+                bus = dbus.SessionBus()
+                notif_obj = bus.get_object('org.freedesktop.Notifications',
+                                            '/org/freedesktop/Notifications')
+                notif_iface = dbus.Interface(notif_obj, 'org.freedesktop.Notifications')
+                notif_id = notif_iface.Notify(app_id, 0, '', title, body, [],
+                                               {'category': 'im'}, -1)
+                return json.dumps({'success': True, 'notification_id': int(notif_id)})
+            except Exception as e2:
+                return json.dumps({'success': False, 'error': '%s; fallback: %s' % (e, e2)})
     
     # ---------- D-Bus: Signals ----------
     
@@ -756,7 +767,7 @@ class NuxelBridgeService(dbus.service.Object):
 
 
 def main():
-    logger.info("Starting Nuxel Bridge v0.4.0-alpha...")
+    logger.info("Starting Nuxel Bridge v0.5.1-alpha...")
     
     dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
     bus = dbus.SystemBus()

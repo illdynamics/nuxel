@@ -120,8 +120,14 @@ if [ $rc -ne 0 ]; then
 fi
 
 fails=0
-grep -E "^===== " "$WORK/deploy.log" | grep -v "sha_ok=yes" | head -3 | sed 's/^/   ! unverified frame: /' && fails=1
-grep -E "^===== " "$WORK/deploy.log" | grep -vE "\[rc=0 " | head -5 | sed 's/^/   ! non-zero exit: /'
+# `set -e` note: grep returns 1 when there is NOTHING to report, which is the
+# healthy case.  Capture first, test the text second, or a successful deploy
+# exits 1 after installing (measured: app.js/osd.js installed and verified but
+# this script returned 1 at the old pipeline).
+unverified=$(grep -E "^===== " "$WORK/deploy.log" | grep -v "sha_ok=yes" | head -3 || true)
+[ -n "$unverified" ] && { printf '%s\n' "$unverified" | sed 's/^/   ! unverified frame: /'; fails=1; }
+nonzero=$(grep -E "^===== " "$WORK/deploy.log" | grep -vE "\[rc=0 " | head -5 || true)
+[ -n "$nonzero" ] && printf '%s\n' "$nonzero" | sed 's/^/   ! non-zero exit: /'
 [ "$(grep -cE '^===== .*\[rc=0 .*sha_ok=yes\]' "$WORK/deploy.log")" -ge 1 ] || { echo "# no verified frames at all"; exit 4; }
 
 have_b64=$(grep -A3 '^===== sha256sum -- /var/lib/nuxel/nxpayload.b64' "$WORK/deploy.log" | grep -oE '^[[:space:]]+[0-9a-f]{64}' | head -1 | tr -d ' ')

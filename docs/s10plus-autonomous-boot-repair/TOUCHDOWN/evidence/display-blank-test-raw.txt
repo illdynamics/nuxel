@@ -1,0 +1,52 @@
+# console /dev/ttyACM0
+===== echo ===BEFORE===; date -Is; cat /run/nuxel-wl-fb.state; cat /sys/class/backlight/panel/{brightness,actual_brightness,bl_power,max_brightness}   [rc=0 frame=8a234a28 sha_ok=yes]
+    ===BEFORE===
+    2026-10-17T12:12:55+02:00
+    1792231975 FRAMES_OK total=7079 fps_1s=25 failures=0 blit_avg_ms=42 out=720x1520 src=720x1520 scale=2 panel=1440x3040 owner=nuxel-wl-fb display=on src_format=0x00000001 colour=R@0,G@8,B@16_abgr8888_override=1
+    12800
+    183
+    0
+    48600
+===== echo ===DISP-OFF===; echo screen-off > /run/nuxel-wl-fb.cmd; sleep 1; cat /run/nuxel-wl-fb.state; cat /sys/class/backlight/panel/{brightness,actual_brightness,bl_power}   [rc=0 frame=12ed4a29 sha_ok=yes]
+    ===DISP-OFF===
+    1792231977 FRAMES_OK total=7132 fps_1s=28 failures=0 blit_avg_ms=42 out=720x1520 src=720x1520 scale=2 panel=1440x3040 owner=nuxel-wl-fb display=off src_format=0x00000001 colour=R@0,G@8,B@16_abgr8888_override=1
+    0
+    2
+    0
+===== echo ===BLANK1===; echo 1 > /sys/class/backlight/panel/bl_power; sleep 2; echo bl_power=$(cat /sys/class/backlight/panel/bl_power) brightness=$(cat /sys/class/backlight/panel/brightness) actual=$(cat /sys/class/backlight/panel/actual_brightness)   [rc=0 frame=d0be4a2b sha_ok=yes]
+    ===BLANK1===
+    bl_power=1 brightness=0 actual=2
+===== echo ===DMESG===; dmesg | tail -25   [rc=0 frame=c77b4a2e sha_ok=yes]
+    ===DMESG===
+    [  338.078328] sec_bat_calculate_safety_time : REMAIN_TIME(10592732) CAL_REMAIN_TIME(17172519)
+    [  338.078338] sec_bat_check_mix_temp: mix_limit(0), temp(269), chg_temp(292), input_current(1700)
+    [  338.078347] sec_bat_check_pdic_temp: cable_type(19), chg_limit(0)
+    [  338.078355] sec_bat_get_charging_current_by_siop: incurr(1700), chgcurr(2850)
+    [  338.083069] max77705 : [0xb1]0x1a, [0xb2]0xdf, [0xb3]0xe0, [0xb4]0x33, [0xb5]0x00, [0xb6]0xff, [0xb7]0x15, [0xb8]0x38, [0xb9]0x79, [0xba]0x9d, [0xbb]0x13, [0xbc]0x6c, [0xbd]0x6c, [0xbe]0x34, [0xbf]0x00, [0xc0]0xc3, [0xc1]0x14, [0xc2]0x00, [0xc3]0x68,
+    [  338.083456] max77705_chg_monitor_work: [CHG] MODE(0x5), B2SOVRC(0xc), otg_on(0)
+    [  338.083505] sec_bat_monitor_work: Status(Charging), mode(Normal), Health(Good), Cable(PDIC, PDIC, 0, 0), rp(3), level(100%), lcd(0), slate_mode(0), store_mode(0), HV(PDIC, 0), sleep_mode(0), Cycle(-1)
+    [  338.083535] sec-battery battery: sec_bat_set_polling: Polling time 10/30 sec.
+    [  338.083614] sec_bat_get_property cable type = 19 sleep_mode = 0
+    [  338.084046] max77705_fg_read_current: current=341mA
+    [  338.084474] max77705_fg_read_avg_current: avg_current=346mA
+    [  338.824275] sec_ts 4-0048: [sec_input] [P] tID:0.0 z:38 major:9 minor:9 loc:C.C tc:1 type:0 noise:0,0
+    [  338.824565]  ib_set_booster qos_values[0] : 819000
+    [  338.826385]  ib_set_booster qos_values[0] : 819000
+    [  338.826395]  ib_set_booster qos_values[1] : 1222000
+    [  338.826419]  ib_set_booster qos_values[2] : 806000
+    [  338.827595]  ib_set_booster qos_values[1] : 1222000
+    [  338.827609]  ib_set_booster qos_values[2] : 806000
+    [  338.827616]  ib_set_booster qos_values[3] : 1014000
+    [  338.828051]  ib_set_booster qos_values[3] : 1014000
+    [  338.828061]  ib_set_booster qos_values[4] : 0
+    [  338.828066]  ib_set_booster qos_values[5] : 1
+    [  338.828072]  ib_set_booster qos_values[6] : 1
+    [  338.829151]  ib_set_booster qos_values[4] : 0
+    [  338.829159]  ib_set_booster qos_values[5] : 1
+===== echo ===RESTORE===; echo 0 > /sys/class/backlight/panel/bl_power; sleep 1; echo screen-on > /run/nuxel-wl-fb.cmd; sleep 2; echo bl_power=$(cat /sys/class/backlight/panel/bl_power) brightness=$(cat /sys/class/backlight/panel/brightness) actual=$(cat /sys/class/backlight/panel/actual_brightness); cat /run/nuxel-wl-fb.state   [rc=0 frame=36104a2f sha_ok=yes]
+    ===RESTORE===
+    bl_power=0 brightness=12800 actual=183
+    1792231985 FRAMES_OK total=7354 fps_1s=23 failures=0 blit_avg_ms=41 out=720x1520 src=720x1520 scale=2 panel=1440x3040 owner=nuxel-wl-fb display=on src_format=0x00000001 colour=R@0,G@8,B@16_abgr8888_override=1
+===== echo ===AFTER===; date -Is   [rc=0 frame=10664a33 sha_ok=yes]
+    ===AFTER===
+    2026-10-17T12:13:06+02:00

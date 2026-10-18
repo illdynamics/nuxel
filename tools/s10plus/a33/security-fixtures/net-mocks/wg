@@ -3,13 +3,18 @@
 MODE="${NUXEL_MOCK_NET_MODE:-off}"
 cmd="${1-}"; shift || true
 iface="${1-}"
+shift || true
+sub="${1-}"
 case "$MODE" in
     vpn-up*) ;;   # tunnel present
     *) echo "Unable to access interface: No such device" >&2; exit 1 ;;
 esac
 case "$cmd" in
     show)
-        case "${1-}" in
+        # After consuming `show` and the interface, $1 is the subcommand.
+        # Previous code tested the interface name here, so every handshake
+        # lookup fell through to the interface dump and was read as "never".
+        case "$sub" in
             latest-handshakes)
                 if [ "$MODE" = "vpn-up-handshake" ]; then
                     printf 'ZmFrZXB1YmtleWJhc2U2NDAwMDAwMDAwMDAwMDAwMDA=\t1712345678\n'

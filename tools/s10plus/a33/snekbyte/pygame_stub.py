@@ -19,11 +19,34 @@ def _noop(*a, **k):
 
 
 class Rect(object):
-    def __init__(self, pos=(0, 0), size=(0, 0), **kw):
-        self.x, self.y = pos
-        self.w, self.h = size
+    def __init__(self, *args, **kw):
+        # pygame.Rect accepts both Rect((x, y), (w, h)) and Rect(x, y, w, h).
+        if len(args) == 4:
+            self.x, self.y, self.w, self.h = args
+        elif len(args) == 2:
+            (self.x, self.y), (self.w, self.h) = args
+        else:
+            self.x = kw.get("x", 0)
+            self.y = kw.get("y", 0)
+            self.w = kw.get("w", kw.get("width", 0))
+            self.h = kw.get("h", kw.get("height", 0))
         self.topleft = (self.x, self.y)
         self.center = (self.x + self.w / 2.0, self.y + self.h / 2.0)
+
+    def __eq__(self, other):
+        return (isinstance(other, Rect) and (self.x, self.y, self.w, self.h) ==
+                (other.x, other.y, other.w, other.h))
+
+    def __repr__(self):
+        return "Rect(%r, %r, %r, %r)" % (self.x, self.y, self.w, self.h)
+
+
+class Event(object):
+    """Minimal pygame.event.Event for the upstream unit tests."""
+    def __init__(self, type, **kw):
+        self.type = type
+        for k, v in kw.items():
+            setattr(self, k, v)
 
 
 class Surface(object):
@@ -68,13 +91,13 @@ def install():
     m.font = types.SimpleNamespace(Font=_Font, get_default_font=lambda: "stub",
                                    init=_noop, SysFont=lambda *a, **k: _Font())
     m.time = types.SimpleNamespace(Clock=lambda: types.SimpleNamespace(tick=lambda *a, **k: 0))
-    m.event = types.SimpleNamespace(get=lambda *a, **k: [])
+    m.event = types.SimpleNamespace(get=lambda *a, **k: [], Event=Event)
     m.Rect = Rect
     m.Surface = Surface
     m.QUIT = 256
     m.KEYDOWN = 768
     m.K_UP, m.K_DOWN, m.K_LEFT, m.K_RIGHT = 273, 274, 276, 275
-    m.K_RETURN, m.K_ESCAPE, m.K_q = 13, 27, 113
+    m.K_RETURN, m.K_ESCAPE, m.K_q, m.K_a = 13, 27, 113, 97
     m.locals = types.SimpleNamespace(**{k: getattr(m, k) for k in dir(m) if k.startswith("K_")})
     sys.modules["pygame"] = m
     sys.modules["pygame.locals"] = m.locals

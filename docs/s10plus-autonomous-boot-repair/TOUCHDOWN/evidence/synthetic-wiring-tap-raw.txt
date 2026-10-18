@@ -1,0 +1,55 @@
+# console /dev/ttyACM0
+===== echo ===BEFORE===; date -Is; wc -l /run/nuxel-home.state; tail -2 /run/nuxel-home.state   [rc=0 frame=4125499e sha_ok=yes]
+    ===BEFORE===
+    2026-10-17T12:10:37+02:00
+    25 /run/nuxel-home.state
+    1792231654 NUXEL_INPUT EVT splash-t4s absent pointer-events=n/a z-index=n/a x=-1 y=-1 tag=BODY id= w=360 h=760 dpr=2 splash=absent
+    1792231659 NUXEL_INPUT EVT splash-t9s absent pointer-events=n/a z-index=n/a x=-1 y=-1 tag=BODY id= w=360 h=760 dpr=2 splash=absent
+===== echo ===INJECT===; python3 /usr/local/bin/nuxel-uinput-touch-probe.py --tap 2048 2048 2>&1   [rc=0 frame=121e499f sha_ok=yes]
+    ===INJECT===
+    SYNTHETIC=1 DEVICE_CREATED name=nuxel-synthetic-touch node_hint=/dev/input/eventN
+    SYNTHETIC=1 EVENT kind=down x=2048 y=2048
+    SYNTHETIC=1 EVENT kind=up x=2048 y=2048
+    SYNTHETIC=1 DEVICE_DESTROYED
+===== echo ===AFTER===; sleep 2; date -Is; tail -25 /run/nuxel-home.state   [rc=0 frame=220d49a1 sha_ok=yes]
+    ===AFTER===
+    2026-10-17T12:10:42+02:00
+    1792231648 CACHE_PURGE removed /root/.local/share/nuxel-pwa-host/serviceworkers (stale service worker scripts) still_present=0
+    1792231648 CACHE_PURGE removed /root/.cache/nuxel-pwa-host/CacheStorage (stale service worker cache namespaces) still_present=0
+    1792231648 CACHE_PURGE removed /root/.cache/nuxel-pwa-host/WebKitCache (stale HTTP cache) still_present=0
+    1792231649 NUXEL_HOME_MEDIA enable_media=0 audio_sink=0
+    1792231649 NUXEL_BOOT_POLICY host-enforced=1 css=1 dom_removal=1 (phone launch mode)
+    1792231649 NUXEL_INPUT_DIAG enabled=1 (user-script observer; launcher source unmodified)
+    1792231649 HOST_CTRL_FIFO_READY /run/nuxel-pwa-host.cmd
+    1792231649 NUXEL_HOME_BOOT_OWNER os_animation=1 splash_removed_by_launcher=1
+    1792231649 NUXEL_HOME_OPEN url=http://127.0.0.1:8000/pwa/nuxel-home/index.html?boot=os&v=1789437068 engine=WebKitGTK/2.52
+    1792231649 NUXEL_HOME_NAV uri=http://127.0.0.1:8000/pwa/nuxel-home/index.html?boot=os&v=1789437068
+    1792231650 NUXEL_HOME_COMMITTED uri=http://127.0.0.1:8000/pwa/nuxel-home/index.html?boot=os&v=1789437068
+    1792231650 NUXEL_INPUT EVT diag-ready x=-1 y=-1 tag=- id= w=360 h=760 dpr=2 splash=absent
+    1792231650 NUXEL_HOME_READY uri=http://127.0.0.1:8000/pwa/nuxel-home/index.html?boot=os&v=1789437068
+    1792231650 NUXEL_INPUT STATUSBAR_READY version=0.4.1-a33 safezones=present
+    1792231650 HOST_CONFIG_REFUSED name=verbose-boot
+    1792231650 HOST_CONFIG_GET name=statusbar-safezones bytes=657
+    1792231650 HOST_CONFIG_REFUSED name=verbose-boot-state
+    1792231650 NUXEL_INPUT SAFEZONES profile=none orientation=portrait blocked=[] padding_dp=6 width=360 moved=[] dropped=[]
+    1792231650 NUXEL_INPUT SAFEZONES profile=s10plus orientation=portrait blocked=[9,10] padding_dp=6 width=360 moved=[{"cluster":"status-right","shift":-68,"zone":9,"free":[0,276]}] dropped=[]
+    1792231650 NUXEL_INPUT BOOTLOG_VERDICT show=0 why=off
+    1792231650 NUXEL_INPUT EVT wallpaper url=http://127.0.0.1:8000/pwa/nuxel-home/assets/nuxel-background.png decoded=1 natural=941x1672 x=-1 y=-1 tag=BODY id= w=360 h=760 dpr=2 splash=absent
+    1792231650 NUXEL_INPUT JS-warn [Bridge] not connected, using mock fallback: Load failed
+    1792231651 NUXEL_INPUT EVT splash-t1s absent pointer-events=n/a z-index=n/a x=-1 y=-1 tag=BODY id= w=360 h=760 dpr=2 splash=absent
+    1792231654 NUXEL_INPUT EVT splash-t4s absent pointer-events=n/a z-index=n/a x=-1 y=-1 tag=BODY id= w=360 h=760 dpr=2 splash=absent
+    1792231659 NUXEL_INPUT EVT splash-t9s absent pointer-events=n/a z-index=n/a x=-1 y=-1 tag=BODY id= w=360 h=760 dpr=2 splash=absent
+===== echo ===LIBINPUT-AFTER===; tail -12 /run/nuxel-libinput-path.state   [rc=0 frame=9d9749a4 sha_ok=yes]
+    ===LIBINPUT-AFTER===
+    1792231647 PATH_CONTEXT_CREATED ctx=0x5597a6ab80 udev=0x5597999a40 (udev daemon not required)
+    1792231648 UDEVDB_SEEDED /run/udev/data/c13:66 (initialized marker; systemd-udevd cannot run on this kernel)
+    1792231648 DEVICE_OPEN_LIBSEAT path=/dev/input/event2 rc=24 fd=-1
+    1792231648 PATH_ADD node=/dev/input/event2 name='sec_touchscreen' accepted=1
+    1792231648 UDEVDB_SEEDED /run/udev/data/c13:68 (initialized marker; systemd-udevd cannot run on this kernel)
+    1792231648 DEVICE_OPEN_LIBSEAT path=/dev/input/event4 rc=25 fd=-1
+    1792231648 PATH_ADD node=/dev/input/event4 name='sec_touchproximity' accepted=1
+    1792231648 PATH_ASSIGN_SEAT seat='seat0' direct_devices_seen=2 added=2 db_seeded=2
+===== echo ===PHOC-FDS-AFTER===; p=$(systemctl show -p MainPID --value nuxel-wayland); ls -l /proc/$p/fd 2>&1 | grep input   [rc=0 frame=cfc249a5 sha_ok=yes]
+    ===PHOC-FDS-AFTER===
+    lrwx------. 1 root root 64 Oct 17 12:09 24 -> /dev/input/event2
+    lrwx------. 1 root root 64 Oct 17 12:07 25 -> /dev/input/event4

@@ -1,0 +1,106 @@
+# console /dev/ttyACM0
+===== echo ===DEPLOYED===; sha256sum /usr/local/bin/nuxel-touch-trace.py 2>&1; ls -la /usr/local/bin/nuxel-touch-trace.py /usr/local/bin/nuxel-touch-capture.sh 2>&1   [rc=0 frame=9809494c sha_ok=yes]
+    ===DEPLOYED===
+    dc3a0d61ec4396b0bf55b58297f0801a4d773a120b945aee6bbac06e24709484  /usr/local/bin/nuxel-touch-trace.py
+    -rwxr-xr-x 1 root root  12093 Sep 15 02:43 /usr/local/bin/nuxel-touch-capture.sh
+    -rwxr-xr-x 1 root root 117050 Oct 17 12:09 /usr/local/bin/nuxel-touch-trace.py
+===== echo ===DRYRUN===; python3 /usr/local/bin/nuxel-touch-trace.py --live --dry-run --seconds 5 --out /var/lib/nuxel/touch-trace/node-scan 2>&1 | tail -40   [rc=0 frame=f76d494d sha_ok=yes]
+    ===DRYRUN===
+    == nuxel-touch-trace --live  budget=5s max_events=2000 max_bytes=262144 dry_run=True ==
+    BOOT_MODE=normal (no charger/LPM marker present)
+    DRY_RUN: no arming, no DOM collector, no writes outside the evidence bundle
+    EVDEV_SCAN nodes=11 touch_candidates=1 (/dev/input/event2='sec_touchscreen')
+    SYSFS_INPUT root=/sys/class/input entries=11 selected=/dev/input/event2 name='sec_touchscreen' direct=1 mt=1 vendor=0000 product=0000
+    NODE_ID ioctl EVIOCGID bustype=0x0018 vendor=0x0000 product=0x0000 version=0x0000 (the node's own answer) | sysfs id bustype=0018 vendor=0000 product=0000; ABS_MT_SLOT claimed=True EVIOCGABS(ABS_MT_SLOT)=(0, 9) -> contact_slots=10
+    PANEL=1440x3040 source=/sys/class/graphics/fb0/modes fb=(unreadable) bpp=32 virtual_size=1440x6080 pages=2 output=(unknown) scale=2 transform=normal
+    COORD_MAP mapping=scaled device_range_x=[0, 4095] device_range_y=[0, 4095] range_source=ioctl EVIOCGABS on /dev/input/event2 -> panel 1440x3040 -> output 720x1520
+    EVENTS_JSONL=/var/lib/nuxel/touch-trace/node-scan/events.jsonl records=0 frames=0 points=0
+    COORD_VALIDATION points=0 inside_device_range=False inside_panel_bounds=False verdict=NO_POINTS
+    LAYER=1 NAME=driver STATE=ok EVIDENCE=/var/lib/nuxel/touch-trace/node-scan/boot-driver.txt DETAIL=sec_touchscreen registered (4-0048, driver=/sys/bus/i2c/drivers/sec_ts)
+    LAYER=2 NAME=irq STATE=blocked EVIDENCE=/var/lib/nuxel/touch-trace/node-scan/interrupts-before.txt DETAIL=irq 431 present, 0 events in the 2 s window (no finger activity in this window: the layer was not exercised)
+    LAYER=3 NAME=evdev STATE=ok EVIDENCE=/var/lib/nuxel/touch-trace/node-scan/evdev.txt DETAIL=panel /dev/input/event2 name='sec_touchscreen' PROP=DIRECT ABS_MT=present range x=(0, 4095) y=(0, 4095) EVIOCGID bustype=0x0018 vendor=0x0000 product=0x0000 contact_slots=10 (EVIOCGBIT claims ABS_MT_SLOT=True, EVIOCGABS(ABS_MT_SLOT)=(0, 9))
+    LAYER=4 NAME=libinput STATE=ok EVIDENCE=/var/lib/nuxel/touch-trace/node-scan/libinput-path.state DETAIL=2 accepted device(s); last: 1792231648 PATH_ADD node=/dev/input/event4 name='sec_touchproximity' accepted=1
+    LAYER=5 NAME=compositor STATE=ok EVIDENCE=/var/lib/nuxel/touch-trace/node-scan/compositor-fds.txt DETAIL=phoc pid=5356 holds 2 input node(s): /dev/input/event2, /dev/input/event4
+    LAYER=6 NAME=wayland STATE=blocked EVIDENCE=/var/lib/nuxel/touch-trace/node-scan/wayland-seat.txt DETAIL=no wl_touch in the window (0 seat/focus lines): the layer was not exercised. Enable WAYLAND_DEBUG=1 on nuxel-wayland (systemctl set-environment + restart) for a protocol-level capture; the seat/focus state is in /run/nuxel-home.state
+    LAYER=7 NAME=dom STATE=blocked EVIDENCE=/var/lib/nuxel/touch-trace/node-scan/dom.txt DETAIL=the DOM probe is installed (diag lines present) but no touch event reached the document in this window
+    RAW_SUMMARY events=0 frames=0 BTN_TOUCH=0 down=0 up=0 points=0
+    GATE=fail {"btn_touch_events": 0, "down": 0, "up": 0, "points": 0, "coords_x": [], "coords_y": [], "device_range_x": [0, 4095], "device_range_y": [0, 4095], "coords_plausible": false, "dom_layer_state": "blocked", "pass": false}
+    FIRST_FAIL_LAYER=2
+    FIRST_DROP_LAYER=none
+    VERDICT=PIPELINE_STOPPED_AT_LAYER=2 NAME=irq STATE=blocked
+    LAYER_EXIT=1 NAME=driver STATE=ok EXIT=11
+    LAYER_EXIT=2 NAME=irq STATE=blocked EXIT=12
+    LAYER_EXIT=3 NAME=evdev STATE=ok EXIT=13
+    LAYER_EXIT=4 NAME=libinput STATE=ok EXIT=14
+    LAYER_EXIT=5 NAME=compositor STATE=ok EXIT=15
+    LAYER_EXIT=6 NAME=wayland STATE=blocked EXIT=16
+    LAYER_EXIT=7 NAME=dom STATE=blocked EXIT=17
+    EXIT_CODE=3 (gate fail; first lossy layer 2 irq is blocked - pass --layer-exit-codes to get 12 here)
+    EVIDENCE_BUNDLE=/var/lib/nuxel/touch-trace/node-scan
+===== echo ===EVDEV===; cat /var/lib/nuxel/touch-trace/node-scan/evdev.txt 2>&1 | head -60   [rc=0 frame=23234950 sha_ok=yes]
+    ===EVDEV===
+    # capability scan of /dev/input (selection is by EVIOCGPROP/EVIOCGBIT, never by number)
+    # ioctl_id is the node's OWN EVIOCGID (struct input_id = 4 x u16); compare it with the
+    # sysfs id/bustype+vendor+product values in sysfs-input.txt (second, independent identity).
+    # slot_bit / slot_range / slots come from EVIOCGBIT(EV_ABS) + EVIOCGABS(ABS_MT_SLOT);
+    # slots = the panel's contact-slot capacity (EVIOCGABS max + 1), i.e. simultaneous contacts.
+    event0           name='meta_event'             direct=0 mt=0 btn_touch=0 abs_mt_x=None abs_mt_y=None tracking_id=0 ioctl_id=bustype=0x0000 vendor=0x0000 product=0x0000 version=0x0000 slot_bit=False slot_range=None slots=None
+    event1           name='gpio_keys'              direct=0 mt=0 btn_touch=0 abs_mt_x=None abs_mt_y=None tracking_id=0 ioctl_id=bustype=0x0019 vendor=0x0001 product=0x0001 version=0x0100 slot_bit=False slot_range=None slots=None
+    event2           name='sec_touchscreen'        direct=1 mt=1 btn_touch=1 abs_mt_x=(0, 4095) abs_mt_y=(0, 4095) tracking_id=1 ioctl_id=bustype=0x0018 vendor=0x0000 product=0x0000 version=0x0000 slot_bit=True slot_range=(0, 9) slots=10
+    event3           name='sec_touchpad'           direct=0 mt=1 btn_touch=1 abs_mt_x=(0, 4095) abs_mt_y=(0, 4095) tracking_id=1 ioctl_id=bustype=0x0018 vendor=0x0000 product=0x0000 version=0x0000 slot_bit=True slot_range=(0, 9) slots=10
+    event4           name='sec_touchproximity'     direct=1 mt=0 btn_touch=0 abs_mt_x=(0, 0) abs_mt_y=(0, 0) tracking_id=0 ioctl_id=bustype=0x0018 vendor=0x0000 product=0x0000 version=0x0000 slot_bit=False slot_range=(0, 0) slots=1
+    event5           name='grip_sensor'            direct=0 mt=0 btn_touch=0 abs_mt_x=None abs_mt_y=None tracking_id=0 ioctl_id=bustype=0x0018 vendor=0x0000 product=0x0000 version=0x0000 slot_bit=False slot_range=None slots=None
+    event6           name='ssp_context'            direct=0 mt=0 btn_touch=0 abs_mt_x=None abs_mt_y=None tracking_id=0 ioctl_id=bustype=0x0000 vendor=0x0000 product=0x0000 version=0x0000 slot_bit=False slot_range=None slots=None
+    event7           name='hrm_sensor'             direct=0 mt=0 btn_touch=0 abs_mt_x=(0, 0) abs_mt_y=(0, 0) tracking_id=0 ioctl_id=bustype=0x0000 vendor=0x0000 product=0x0000 version=0x0000 slot_bit=False slot_range=(0, 0) slots=1
+    event8           name='Headset'                direct=0 mt=0 btn_touch=0 abs_mt_x=None abs_mt_y=None tracking_id=0 ioctl_id=bustype=0x0000 vendor=0x0000 product=0x0000 version=0x0000 slot_bit=False slot_range=None slots=None
+    event9           name='hall'                   direct=0 mt=0 btn_touch=0 abs_mt_x=None abs_mt_y=None tracking_id=0 ioctl_id=bustype=0x0000 vendor=0x0000 product=0x0000 version=0x0000 slot_bit=False slot_range=None slots=None
+    event10          name='certify_hall'           direct=0 mt=0 btn_touch=0 abs_mt_x=None abs_mt_y=None tracking_id=0 ioctl_id=bustype=0x0000 vendor=0x0000 product=0x0000 version=0x0000 slot_bit=False slot_range=None slots=None
+    # /proc/bus/input/devices (full)
+    I: Bus=0000 Vendor=0000 Product=0000 Version=0000
+    N: Name="meta_event"
+    P: Phys=
+    S: Sysfs=/devices/virtual/input/input0
+    U: Uniq=
+    H: Handlers=event0
+    B: PROP=0
+    B: EV=5
+    B: REL=c0
+    I: Bus=0019 Vendor=0001 Product=0001 Version=0100
+    N: Name="gpio_keys"
+    P: Phys=gpio-keys/input0
+    S: Sysfs=/devices/platform/gpio_keys/input/input1
+    U: Uniq=
+    H: Handlers=sec_key_notifier event1
+    B: PROP=0
+    B: EV=3
+    B: KEY=8000000000000000 0 0 0 0 0 0 0 0 1c000000000000 0
+    I: Bus=0018 Vendor=0000 Product=0000 Version=0000
+    N: Name="sec_touchscreen"
+    P: Phys=sec_touchscreen/input1
+    S: Sysfs=/devices/platform/104b0000.hsi2c/i2c-4/4-0048/input/input2
+    U: Uniq=
+    H: Handlers=sec_key_notifier event2
+    B: PROP=2
+    B: EV=2b
+    B: KEY=4000000000000000 0 0 80 0 420 0 0 8000 0 0
+    B: ABS=4263800000000003
+    B: SW=0
+    I: Bus=0018 Vendor=0000 Product=0000 Version=0000
+    N: Name="sec_touchpad"
+    P: Phys=sec_touchscreen/input1
+    S: Sysfs=/devices/platform/104b0000.hsi2c/i2c-4/4-0048/input/input3
+    U: Uniq=
+    H: Handlers=sec_key_notifier event3
+    B: PROP=1
+    B: EV=2b
+    B: KEY=4000000000000000 0 0 80 0 e520 0 0 8000 0 0
+    B: ABS=4263800000000003
+===== echo ===LAYERS===; grep -a '^LAYER=\|^FIRST_FAIL\|^VERDICT\|^CAPTURE_GATE' /var/lib/nuxel/touch-trace/node-scan/* 2>/dev/null | head -40   [rc=0 frame=1bd94951 sha_ok=yes]
+    ===LAYERS===
+    /var/lib/nuxel/touch-trace/node-scan/verdict.txt:LAYER=1 NAME=driver STATE=ok EVIDENCE=/var/lib/nuxel/touch-trace/node-scan/boot-driver.txt DETAIL=sec_touchscreen registered (4-0048, driver=/sys/bus/i2c/drivers/sec_ts)
+    /var/lib/nuxel/touch-trace/node-scan/verdict.txt:LAYER=2 NAME=irq STATE=blocked EVIDENCE=/var/lib/nuxel/touch-trace/node-scan/interrupts-before.txt DETAIL=irq 431 present, 0 events in the 2 s window (no finger activity in this window: the layer was not exercised)
+    /var/lib/nuxel/touch-trace/node-scan/verdict.txt:LAYER=3 NAME=evdev STATE=ok EVIDENCE=/var/lib/nuxel/touch-trace/node-scan/evdev.txt DETAIL=panel /dev/input/event2 name='sec_touchscreen' PROP=DIRECT ABS_MT=present range x=(0, 4095) y=(0, 4095) EVIOCGID bustype=0x0018 vendor=0x0000 product=0x0000 contact_slots=10 (EVIOCGBIT claims ABS_MT_SLOT=True, EVIOCGABS(ABS_MT_SLOT)=(0, 9)) (selected by capability)
+    /var/lib/nuxel/touch-trace/node-scan/verdict.txt:LAYER=4 NAME=libinput STATE=ok EVIDENCE=/var/lib/nuxel/touch-trace/node-scan/libinput-path.state DETAIL=2 accepted device(s); last: 1792231648 PATH_ADD node=/dev/input/event4 name='sec_touchproximity' accepted=1
+    /var/lib/nuxel/touch-trace/node-scan/verdict.txt:LAYER=5 NAME=compositor STATE=ok EVIDENCE=/var/lib/nuxel/touch-trace/node-scan/compositor-fds.txt DETAIL=phoc pid=5356 holds 2 input node(s): /dev/input/event2, /dev/input/event4
+    /var/lib/nuxel/touch-trace/node-scan/verdict.txt:LAYER=6 NAME=wayland STATE=blocked EVIDENCE=/var/lib/nuxel/touch-trace/node-scan/wayland-seat.txt DETAIL=no wl_touch in the window (0 seat/focus lines): the layer was not exercised. Enable WAYLAND_DEBUG=1 on nuxel-wayland (systemctl set-environment + restart) for a protocol-level capture; the seat/focus state is in /run/nuxel-home.state
+    /var/lib/nuxel/touch-trace/node-scan/verdict.txt:LAYER=7 NAME=dom STATE=blocked EVIDENCE=/var/lib/nuxel/touch-trace/node-scan/dom.txt DETAIL=the DOM probe is installed (diag lines present) but no touch event reached the document in this window

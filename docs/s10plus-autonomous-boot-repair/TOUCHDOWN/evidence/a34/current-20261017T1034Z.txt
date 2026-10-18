@@ -1,0 +1,54 @@
+# A34 TOUCHDOWN — current state snapshot
+# 2026-10-17T10:34:42Z (12:34:42 +02:00)
+
+KERNEL
+Linux fedora 4.14.253 #15 SMP PREEMPT Thu Oct 15 22:29:25 UTC 2026 aarch64
+/proc/cmdline: no androidboot.mode=charger
+
+TOUCHSCREEN
+event2 sec_touchscreen PROP=DIRECT ABS_MT slots=10 range=0..4095
+IRQ 431 sec_ts count=146
+all_touch_count TTCN=19
+
+PHYSICAL TAPS (from /run/nuxel-home.state and nuxel-touch-arm.state)
+10:13:01Z  pointerdown/touchstart x=155 y=235 -> app:launch org.nuxel.Mail
+10:23:11Z  pointerdown/touchstart x=26 y=31 status-bar -> pointerup/click (tap, not pull)
+10:23:39Z  pointerdown/touchstart x=37 y=154 -> app:launch org.nuxel.Calendar
+10:25:39Z  TOUCH_POINT records inside the Calendar surface (top-frame diag cannot see iframe)
+Screenshots: mail-open-physical-tap-1213.png, calendar-open-physical-tap-1223.png
+
+PRESENTATION
+FRAMES_OK total 2191 -> 2259 in 3 s (22.67 fps), failures=0, blit_avg_ms=43
+snapshot 720x1520, fnv64=5d6d7bd8b2d6d6dc
+
+DISPLAY OFF/ON (FIFO, not Power)
+OFF: brightness=0 actual_brightness=2 bl_power=4
+ON:  brightness=12800 actual_brightness=183 bl_power=0
+Home returned after one ON action.
+
+HOST HOME ACTION
+launch org.nuxel.Mail -> Mail frame (295 unique colours)
+action home -> Home (23,547 unique colours)
+Screenshots: mail-before-home-action.png, home-after-host-home-action.png
+
+SERVICES
+nuxel-wayland active
+nuxel-wl-fb active
+nuxel-button-manager active
+nuxel-touch-arm active
+
+DEPLOYED HASHES
+nuxel-wl-fb             ebe7e2455539b6363dd354cc9114b3798baccd340f40c2173bc447a60006b6d1
+nuxel-button-manager    f5f9c6f88c141d667b17772dc59bbe9897271da0718b6e0fb05cc9f2bdfe0ab9
+nuxel-pwa-host          18631d5b71eb938d821ba319ddf78ee73b403811933824d93b36dc9439f7f6b0
+nuxel-wl-snapshot       71c541006025e19ceb67edff9170ea2ee6e5878df79585faabf54616678f1c81
+status-bar.js           d90b55be31954ffb221d165d50f40472c32ee8f2aefc9dbe47cbdd74a2e4ff4a
+app.js                  dc7d8fcc761bbd1b2878763f7f1fcb9db5e730241764a6f86295b6e74281e690
+manifest.json           1ce22c522d0e24cd5efcf26845e27f45a673e02945f7e7752a8309752d1a77c4
+sw.js                   6058e74fad79e00086099cda39a7b4afca405942a069a250bdc29b124eba3f26
+
+VERDICT
+Touchscreen T8: PASS twice (Mail, Calendar). T9 owner normal-use confirmation pending.
+GUI rendering: alive (22.67 fps, no failures).
+Display-off: now bl_power=4 (FB_BLANK_POWERDOWN), wake restores in one action.
+USB host: unproven (device role, no xHCI bound).

@@ -6,6 +6,9 @@ After=dbus.service
 # The hub is the PRODUCER for the bridge's SendNotification path, so it starts
 # first (briq-04b: this direction is what removes the A33 ordering cycle).
 Before=nuxel-bridge.service
+# Restart-burst bound ([Unit], not [Service]).
+StartLimitIntervalSec=120
+StartLimitBurst=15
 
 [Service]
 Type=simple
@@ -13,8 +16,6 @@ ExecStart=/usr/bin/nuxel-notifications
 Restart=on-failure
 RestartSec=5
 RestartMaxDelaySec=30
-StartLimitIntervalSec=120
-StartLimitBurst=15
 User=nuxel-notifications
 Group=nuxel-notifications
 # Persist notification history to the canonical single JSON file (briq-07).
@@ -24,7 +25,7 @@ Environment=NUXEL_NOTIFICATIONS_FILE=/var/lib/nuxel/notifications.json
 Environment=NUXEL_NOTIFICATIONS_HISTORY_CAP=200
 Environment=NUXEL_PATHS_CONF=/etc/nuxel/paths.conf
 Environment=NUXEL_BRIDGE_PROTOCOL_VERSION=1
-Environment=NUXEL_BRIDGE_VERSION=0.4.0-alpha
+Environment=NUXEL_BRIDGE_VERSION=0.5.1-alpha
 
 # Security hardening
 ProtectSystem=full

@@ -1,6 +1,6 @@
 # Nuxel Linux Phone OS Design Notes
 
-****Status:** v0.4.0-alpha production  
+****Status:** v0.5.1-alpha production  
 ****Last updated:** 2026-05-10  
 **Primary direction:** Graphene-style security principles, but **not Android-based**  
 **Hard rule:** no Android runtime, no APK dependency, no Play Store, no Play Services, no AOSP app layer, no Waydroid as a required compatibility layer.

@@ -18,6 +18,12 @@
 <pre id="screen" class="screen" tabindex="0"></pre>
 <div id="osk" class="osk"></div>
 <div id="notice" class="notice hidden"></div>
+<!-- A34 TOUCHDOWN: the native terminal window is a TOP-LEVEL WebKit view, not an
+     iframe.  It therefore needs the same host bridge and OSD overlay the launcher
+     gets: without host-bridge.js window.NuxelHost was undefined, so Close and
+     every on-screen key silently did nothing. -->
+<script src="../../nuxel-home/js/host-bridge.js"></script>
+<script src="../../nuxel-home/js/osd.js"></script>
 <script src="terminal.js"></script>
 </body>
 </html>

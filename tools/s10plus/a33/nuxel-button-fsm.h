@@ -257,6 +257,10 @@ typedef struct { const char *id; const char *label; const char *action; int trig
  * offline test compares this table with the JSON entry-by-entry, so the menu the
  * daemon shows cannot silently differ from the menu the spec documents. */
 static const nuxel_fsm_menu_entry nuxel_fsm_menu[] = {
+  /* A34 TOUCHDOWN: the owner explicitly asked for a Cancel entry.  It is first
+   * so the safest choice is the initial selection; menu-close is an internal
+   * action, never a reboot path. */
+  { "cancel",        "Cancel",            "menu-close",            1, NULL },
   { "lock-screen",   "Lock screen",       "lock",                  1, NULL },
   { "screenshot",    "Take screenshot",   "screenshot",            1, NULL },
   { "restart",       "Restart",           "systemctl-reboot",      1, "gate-closed-owner-absent" },

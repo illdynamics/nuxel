@@ -40,7 +40,7 @@ HTTP_MODE = os.environ.get('NUXEL_HTTP_MODE', 'dev')
 # downgrade. NUXEL_BRIDGE_VERSION is the host IMPLEMENTATION version and is
 # allowed to move independently.
 BRIDGE_PROTOCOL_VERSION = os.environ.get('NUXEL_BRIDGE_PROTOCOL_VERSION', '1')
-BRIDGE_HOST_VERSION = os.environ.get('NUXEL_BRIDGE_VERSION', '0.4.0-alpha')
+BRIDGE_HOST_VERSION = os.environ.get('NUXEL_BRIDGE_VERSION', '0.5.1-alpha')
 
 # Canonical launcher registry, shared with the PWA (pwa/nuxel-common/app-registry.json)
 # and the native shell. The rootfs installs it at /etc/nuxel/app-registry/.
@@ -720,6 +720,12 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
     # Map (namespace, verb) bridge RPC calls to nuxel-bridge D-Bus methods.
     RPC_METHODS = {
         ("ping", "ping"): "Ping",
+        ("phone", "status"): "GetPhoneStatus",
+        ("notifications", "list"): "GetNotifications",
+        ("permissions", "list"): "GetAppCapabilities",
+        ("sms", "list"): "SmsGetMessages",
+        ("call", "end"): "CallEnd",
+        ("location", "status"): "GetLocation",
         ("permissions", "request"): "RequestCapability",
         ("permissions", "revoke"): "RevokeCapability",
         ("sms", "send"): "SmsSend",
@@ -743,6 +749,12 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
     # arguments" - 2 Python args for a 1-arg 's' method).
     RPC_ARG_BUILDERS = {
         "Ping": lambda app_id, params: [params.get("message") if isinstance(params, dict) and params.get("message") is not None else app_id],
+        "GetPhoneStatus": lambda app_id, params: [app_id],
+        "GetNotifications": lambda app_id, params: [],
+        "GetAppCapabilities": lambda app_id, params: [app_id],
+        "SmsGetMessages": lambda app_id, params: [app_id],
+        "CallEnd": lambda app_id, params: [app_id, params.get("call_id", "")],
+        "GetLocation": lambda app_id, params: [app_id],
         "RequestCapability": lambda app_id, params: [app_id, params.get("capability", "")],
         "RevokeCapability": lambda app_id, params: [app_id, params.get("capability", "")],
         "CallInitiate": lambda app_id, params: [app_id, params.get("number", "")],
@@ -759,6 +771,19 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
         if method is None:
             logger.warning("Unknown RPC %s.%s", namespace, verb)
             return {"success": False, "error": "Unknown RPC: %s.%s" % (namespace, verb), "code": 400}
+        # The notification hub is a separate system-bus service.  Its
+        # GetNotifications is the canonical live store; expose it as
+        # `notifications.list` so the launcher status bar does not poll into
+        # "Unknown RPC" every five seconds.
+        if method == "GetNotifications":
+            try:
+                bus = dbus.SystemBus()
+                obj = bus.get_object('org.nuxel.Notifications', '/org/nuxel/Notifications')
+                iface = dbus.Interface(obj, 'org.nuxel.Notifications')
+                return json.loads(iface.GetNotifications())
+            except Exception as exc:  # noqa: BLE001
+                logger.warning("GetNotifications failed: %s", exc)
+                return {"success": False, "notifications": [], "error": str(exc)}
         build = self.RPC_ARG_BUILDERS.get(method)
         if build is not None:
             try:
@@ -768,7 +793,16 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
         else:
             # Methods without an explicit builder keep the legacy shape.
             args = [app_id, params]
-        return self._call_bridge(method, *args)
+        result = self._call_bridge(method, *args)
+        # `permissions.list` is consumed by bridge.js as a list of capability
+        # ids, while GetAppCapabilities returns {capability: bool}.  Normalise
+        # the shape here rather than making every PWA do it.
+        if method == "GetAppCapabilities" and isinstance(result, dict):
+            caps = result.get("capabilities")
+            if isinstance(caps, dict):
+                result = dict(result)
+                result["capabilities"] = [k for k, v in caps.items() if v]
+        return result
 
 
     def do_POST(self):

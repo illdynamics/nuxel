@@ -296,12 +296,21 @@ def main():
         if not os.path.exists(args.out):
             print("MISSING fixture %s" % args.out)
             return 1
-        old = open(args.out).read()
-        if old != text:
+        # `pygameUsed` records what this HOST happened to provide; the game
+        # rules never consume pygame.  Comparing it verbatim made the parity
+        # check fail on a host without pygame even though all 41 ticks were
+        # byte-identical.  Compare the rules/state only and report the host
+        # fact separately.
+        old_doc = json.load(open(args.out))
+        old_cmp = {k: v for k, v in old_doc.items() if k != "pygameUsed"}
+        new_cmp = {k: v for k, v in fixture.items() if k != "pygameUsed"}
+        if old_cmp != new_cmp:
             print("DRIFT: the committed fixture no longer matches a fresh run of the upstream logic")
             return 1
         print("fixture matches a fresh run of the upstream logic (%d scenarios, %d ticks)"
               % (len(fixture["scenarios"]), sum(len(s["steps"]) for s in fixture["scenarios"])))
+        print("fixture's recorded pygame: %s (this host: %s; not part of the rule comparison)"
+              % (old_doc.get("pygameUsed"), fixture["pygameUsed"]))
         return 0
     os.makedirs(os.path.dirname(args.out), exist_ok=True)
     with open(args.out, "w") as fh:

@@ -1,7 +1,7 @@
 {
   "schema": "nuxel.bridge-version/1",
   "bridge_version": "1",
-  "host_version": "0.4.0-alpha",
+  "host_version": "0.5.1-alpha",
   "policy": "reject-on-mismatch",
   "pinned_on": "2026-10-16",
   "app_manifest_field": "nuxel.bridge_version",

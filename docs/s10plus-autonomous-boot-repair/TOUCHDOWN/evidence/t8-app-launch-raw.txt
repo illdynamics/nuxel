@@ -1,0 +1,126 @@
+# console /dev/ttyACM0
+===== echo ===HOME-TAIL===; tail -50 /run/nuxel-home.state   [rc=0 frame=b0944a4e sha_ok=yes]
+    ===HOME-TAIL===
+    1792231648 CACHE_PURGE removed /root/.local/share/nuxel-pwa-host/serviceworkers (stale service worker scripts) still_present=0
+    1792231648 CACHE_PURGE removed /root/.cache/nuxel-pwa-host/CacheStorage (stale service worker cache namespaces) still_present=0
+    1792231648 CACHE_PURGE removed /root/.cache/nuxel-pwa-host/WebKitCache (stale HTTP cache) still_present=0
+    1792231649 NUXEL_HOME_MEDIA enable_media=0 audio_sink=0
+    1792231649 NUXEL_BOOT_POLICY host-enforced=1 css=1 dom_removal=1 (phone launch mode)
+    1792231649 NUXEL_INPUT_DIAG enabled=1 (user-script observer; launcher source unmodified)
+    1792231649 HOST_CTRL_FIFO_READY /run/nuxel-pwa-host.cmd
+    1792231649 NUXEL_HOME_BOOT_OWNER os_animation=1 splash_removed_by_launcher=1
+    1792231649 NUXEL_HOME_OPEN url=http://127.0.0.1:8000/pwa/nuxel-home/index.html?boot=os&v=1789437068 engine=WebKitGTK/2.52
+    1792231649 NUXEL_HOME_NAV uri=http://127.0.0.1:8000/pwa/nuxel-home/index.html?boot=os&v=1789437068
+    1792231650 NUXEL_HOME_COMMITTED uri=http://127.0.0.1:8000/pwa/nuxel-home/index.html?boot=os&v=1789437068
+    1792231650 NUXEL_INPUT EVT diag-ready x=-1 y=-1 tag=- id= w=360 h=760 dpr=2 splash=absent
+    1792231650 NUXEL_HOME_READY uri=http://127.0.0.1:8000/pwa/nuxel-home/index.html?boot=os&v=1789437068
+    1792231650 NUXEL_INPUT STATUSBAR_READY version=0.4.1-a33 safezones=present
+    1792231650 HOST_CONFIG_REFUSED name=verbose-boot
+    1792231650 HOST_CONFIG_GET name=statusbar-safezones bytes=657
+    1792231650 HOST_CONFIG_REFUSED name=verbose-boot-state
+    1792231650 NUXEL_INPUT SAFEZONES profile=none orientation=portrait blocked=[] padding_dp=6 width=360 moved=[] dropped=[]
+    1792231650 NUXEL_INPUT SAFEZONES profile=s10plus orientation=portrait blocked=[9,10] padding_dp=6 width=360 moved=[{"cluster":"status-right","shift":-68,"zone":9,"free":[0,276]}] dropped=[]
+    1792231650 NUXEL_INPUT BOOTLOG_VERDICT show=0 why=off
+    1792231650 NUXEL_INPUT EVT wallpaper url=http://127.0.0.1:8000/pwa/nuxel-home/assets/nuxel-background.png decoded=1 natural=941x1672 x=-1 y=-1 tag=BODY id= w=360 h=760 dpr=2 splash=absent
+    1792231650 NUXEL_INPUT JS-warn [Bridge] not connected, using mock fallback: Load failed
+    1792231651 NUXEL_INPUT EVT splash-t1s absent pointer-events=n/a z-index=n/a x=-1 y=-1 tag=BODY id= w=360 h=760 dpr=2 splash=absent
+    1792231654 NUXEL_INPUT EVT splash-t4s absent pointer-events=n/a z-index=n/a x=-1 y=-1 tag=BODY id= w=360 h=760 dpr=2 splash=absent
+    1792231659 NUXEL_INPUT EVT splash-t9s absent pointer-events=n/a z-index=n/a x=-1 y=-1 tag=BODY id= w=360 h=760 dpr=2 splash=absent
+    1792231981 NUXEL_INPUT EVT pointerdown x=155 y=235 tag=DIV id=app-icon app-category-productivity w=360 h=760 dpr=2 splash=absent
+    1792231981 NUXEL_INPUT EVT touchstart x=155 y=235 tag=DIV id=app-icon app-category-productivity w=360 h=760 dpr=2 splash=absent
+    1792231981 NUXEL_INPUT EVT touchmove x=155 y=236 tag=DIV id=app-icon app-category-productivity w=360 h=760 dpr=2 splash=absent
+    1792231981 NUXEL_INPUT EVT touchmove x=155 y=236 tag=DIV id=app-icon app-category-productivity w=360 h=760 dpr=2 splash=absent
+    1792231981 NUXEL_INPUT EVT touchmove x=155 y=236 tag=DIV id=app-icon app-category-productivity w=360 h=760 dpr=2 splash=absent
+    1792231981 HOST_ACTION_REFUSED back
+    1792231981 NUXEL_INPUT EVT pointerup x=155 y=236 tag=DIV id=app-icon app-category-productivity w=360 h=760 dpr=2 splash=absent
+    1792231981 NUXEL_INPUT EVT app:launch id=org.nuxel.Mail name=Mail
+    1792231981 NUXEL_INPUT EVT touchend x=155 y=236 tag=DIV id=app-icon app-category-productivity w=360 h=760 dpr=2 splash=absent
+===== echo ===PROCS-NEW===; ps -eo pid,ppid,etime,comm,args | grep -E 'nuxel|WebKit|WebProcess' | grep -v grep   [rc=0 frame=2e1a4a4f sha_ok=yes]
+    ===PROCS-NEW===
+       3494       1       06:09 sh              sh /usr/lib/nuxel/nuxel-postboot.sh 20
+       3527       1       06:09 nuxel-console   /opt/nuxel/nuxel-console /newroot
+       3528       1       06:09 nuxel-console   /opt/nuxel/nuxel-console /newroot
+       5346       1       06:07 python3         /usr/bin/python3 /usr/lib/nuxel/nuxel-notifications/notifications.py
+       5347       1       06:07 nuxel-touch-arm /usr/lib/nuxel/nuxel-touch-arm
+       5356       1       06:07 phoc            /usr/sbin/phoc --no-xwayland -C /etc/nuxel/phoc-phone.ini -E /usr/lib/nuxel/nuxel-session.sh
+       5403       1       06:06 python3         /usr/bin/python3 /usr/lib/nuxel/nuxel-portal/portal.py
+       5413    5356       06:06 nuxel-pwa-host  /usr/lib/nuxel/nuxel-pwa-host
+       5422       1       06:06 nuxel-wl-fb     /usr/lib/nuxel/nuxel-wl-fb
+       5424       1       06:06 python3         /usr/bin/python3 /usr/lib/nuxel/nuxel-bridge/bridge.py
+       5425       1       06:06 nuxel-button-ma /usr/lib/nuxel/nuxel-button-manager
+       5427       1       06:06 python3         /usr/bin/python3 /usr/lib/nuxel/nuxel-bridge/api.py
+       5447    5413       06:05 WebKitNetworkPr /usr/libexec/webkit2gtk-4.1/WebKitNetworkProcess 2 13
+       5449    5413       06:05 WebKitWebProces /usr/libexec/webkit2gtk-4.1/WebKitWebProcess 4 13
+===== echo ===JOURNAL-PWA===; journalctl -u nuxel-wayland -n 50 --no-pager 2>&1 | tail -50   [rc=0 frame=67514a50 sha_ok=yes]
+    ===JOURNAL-PWA===
+    Oct 17 08:28:17 fedora phoc[5311]: Linux dmabuf support unavailable
+    Oct 17 08:28:17 fedora phoc[5311]: Running compositor on wayland display 'wayland-0'
+    Oct 17 08:28:17 fedora phoc[5311]: Output 'HEADLESS-1' added ('(null)'/'(null)'/'(null)'), 0mm x 0mm
+    Oct 17 08:28:18 fedora phoc[5311]: Failed to get screensaver session proxy: Cannot autolaunch D-Bus without X11 $DISPLAY
+    Oct 17 08:28:18 fedora phoc[5359]: curl: (7) Failed to connect to 127.0.0.1 port 8000 after 0 ms: Could not connect to server
+    -- Boot 12aac8becc5b45e89cd7a4465f88ba91 --
+    Oct 17 10:38:07 fedora systemd[1]: Starting nuxel-wayland.service - Nuxel phone Wayland session (phoc headless + Nuxel Home launcher)...
+    Oct 17 10:38:07 fedora systemd[1]: Started nuxel-wayland.service - Nuxel phone Wayland session (phoc headless + Nuxel Home launcher).
+    Oct 17 10:38:07 fedora phoc[5354]: Linux dmabuf support unavailable
+    Oct 17 10:38:07 fedora phoc[5354]: Running compositor on wayland display 'wayland-0'
+    Oct 17 10:38:07 fedora phoc[5354]: Output 'HEADLESS-1' added ('(null)'/'(null)'/'(null)'), 0mm x 0mm
+    Oct 17 10:38:08 fedora phoc[5354]: Failed to get screensaver session proxy: Cannot autolaunch D-Bus without X11 $DISPLAY
+    Oct 17 10:38:08 fedora phoc[5416]: curl: (7) Failed to connect to 127.0.0.1 port 8000 after 0 ms: Could not connect to server
+    -- Boot 162e0b3255c04d109bf7474cc8dfd245 --
+    Oct 17 11:44:05 fedora systemd[1]: Starting nuxel-wayland.service - Nuxel phone Wayland session (phoc headless + Nuxel Home launcher)...
+    Oct 17 11:44:05 fedora systemd[1]: Started nuxel-wayland.service - Nuxel phone Wayland session (phoc headless + Nuxel Home launcher).
+    Oct 17 11:44:05 fedora phoc[5351]: Linux dmabuf support unavailable
+    Oct 17 11:44:05 fedora phoc[5351]: Running compositor on wayland display 'wayland-0'
+    Oct 17 11:44:05 fedora phoc[5351]: Output 'HEADLESS-1' added ('(null)'/'(null)'/'(null)'), 0mm x 0mm
+    Oct 17 11:44:06 fedora phoc[5351]: Failed to get screensaver session proxy: Cannot autolaunch D-Bus without X11 $DISPLAY
+    Oct 17 11:44:06 fedora phoc[5417]: curl: (7) Failed to connect to 127.0.0.1 port 8000 after 0 ms: Could not connect to server
+    -- Boot b02d5e1a09da4a33b570e9608360d203 --
+    Oct 17 11:51:56 fedora systemd[1]: Starting nuxel-wayland.service - Nuxel phone Wayland session (phoc headless + Nuxel Home launcher)...
+    Oct 17 11:51:56 fedora systemd[1]: Started nuxel-wayland.service - Nuxel phone Wayland session (phoc headless + Nuxel Home launcher).
+    Oct 17 11:51:56 fedora phoc[5317]: Linux dmabuf support unavailable
+    Oct 17 11:51:56 fedora phoc[5317]: Running compositor on wayland display 'wayland-0'
+    Oct 17 11:51:56 fedora phoc[5317]: Output 'HEADLESS-1' added ('(null)'/'(null)'/'(null)'), 0mm x 0mm
+    Oct 17 11:51:56 fedora phoc[5317]: Failed to get screensaver session proxy: Cannot autolaunch D-Bus without X11 $DISPLAY
+    Oct 17 11:51:57 fedora phoc[5365]: curl: (7) Failed to connect to 127.0.0.1 port 8000 after 0 ms: Could not connect to server
+    Oct 17 12:06:47 fedora phoc[5317]: Received 2nd SIGTERM, quitting.
+    Oct 17 12:06:47 fedora systemd[1]: Stopping nuxel-wayland.service - Nuxel phone Wayland session (phoc headless + Nuxel Home launcher)...
+    Oct 17 12:06:47 fedora systemd[1]: nuxel-wayland.service: Deactivated successfully.
+    Oct 17 12:06:47 fedora systemd[1]: Stopped nuxel-wayland.service - Nuxel phone Wayland session (phoc headless + Nuxel Home launcher).
+    -- Boot 83a7230a38b040f3a8f1f7b59edbf1fb --
+    Oct 17 12:07:27 fedora systemd[1]: Starting nuxel-wayland.service - Nuxel phone Wayland session (phoc headless + Nuxel Home launcher)...
+    Oct 17 12:07:27 fedora systemd[1]: Started nuxel-wayland.service - Nuxel phone Wayland session (phoc headless + Nuxel Home launcher).
+    Oct 17 12:07:27 fedora phoc[5356]: Linux dmabuf support unavailable
+    Oct 17 12:07:27 fedora phoc[5356]: Running compositor on wayland display 'wayland-0'
+    Oct 17 12:07:27 fedora phoc[5356]: Output 'HEADLESS-1' added ('(null)'/'(null)'/'(null)'), 0mm x 0mm
+    Oct 17 12:07:28 fedora phoc[5356]: Failed to get screensaver session proxy: Cannot autolaunch D-Bus without X11 $DISPLAY
+    Oct 17 12:07:28 fedora phoc[5419]: curl: (7) Failed to connect to 127.0.0.1 port 8000 after 0 ms: Could not connect to server
+    Oct 17 12:09:18 fedora systemd[1]: nuxel-wayland.service: Failed to get CPU usage: No such file or directory
+    Oct 17 12:09:18 fedora systemd[1]: nuxel-wayland.service: Failed to get CPU usage: No such file or directory
+    Oct 17 12:09:38 fedora systemd[1]: nuxel-wayland.service: Failed to get CPU usage: No such file or directory
+    Oct 17 12:09:39 fedora systemd[1]: nuxel-wayland.service: Failed to get CPU usage: No such file or directory
+    Oct 17 12:10:44 fedora systemd[1]: nuxel-wayland.service: Failed to get CPU usage: No such file or directory
+    Oct 17 12:12:39 fedora systemd[1]: nuxel-wayland.service: Failed to get CPU usage: No such file or directory
+    Oct 17 12:12:39 fedora systemd[1]: nuxel-wayland.service: Failed to get CPU usage: No such file or directory
+    Oct 17 12:12:40 fedora systemd[1]: nuxel-wayland.service: Failed to get CPU usage: No such file or directory
+    Oct 17 12:13:20 fedora systemd[1]: nuxel-wayland.service: Failed to get CPU usage: No such file or directory
+===== echo ===HOME-READY===; cat /run/nuxel-launcher-ready; ls -la /run/nuxel-pwa-host.cmd   [rc=0 frame=318b4a51 sha_ok=yes]
+    ===HOME-READY===
+    http://127.0.0.1:8000/pwa/nuxel-home/index.html?boot=os&v=1789437068
+    prw------- 1 root root 0 Oct 17 12:13 /run/nuxel-pwa-host.cmd
+===== echo ===APP-REGISTRY===; grep -n -A4 -B2 'org.nuxel.Mail' /etc/nuxel/app-registry/app_registry.json | head -40   [rc=0 frame=7d8c4a52 sha_ok=yes]
+    ===APP-REGISTRY===
+    106-    },
+    107-    {
+    108:      "id": "org.nuxel.Mail",
+    109-      "name": "Mail",
+    110-      "icon": "\u2709\ufe0f",
+    111-      "color": "#FF9800",
+    112-      "category": "productivity",
+===== echo ===TOUCHARM-STATE===; tail -6 /run/nuxel-touch-arm.state   [rc=0 frame=2a034a53 sha_ok=yes]
+    ===TOUCHARM-STATE===
+    2026-10-17T10:13:08Z TOUCH_POINT slot=0 n=19
+    2026-10-17T10:13:09Z TOUCH_POINT slot=0 n=20
+    2026-10-17T10:13:09Z TOUCH_POINT slot=0 n=21
+    2026-10-17T10:13:09Z TOUCH_POINT slot=0 n=22
+    2026-10-17T10:13:09Z TOUCH_POINT slot=0 n=23
+    2026-10-17T10:13:09Z TOUCH_POINT slot=0 n=24

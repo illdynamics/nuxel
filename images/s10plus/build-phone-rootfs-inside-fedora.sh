@@ -13,7 +13,10 @@ trap cleanup EXIT
 trap 'rm -f "$OUT" "$OUT.sha256"' ERR
 # DNF packages are resolved for Fedora 43/aarch64 by an ARM64 Fedora container.
 # A dependency error must abort, rather than emitting a deceptive bare /etc tree.
-dnf -y install e2fsprogs findutils coreutils file rpm shadow-utils python3
+dnf -y install e2fsprogs findutils coreutils file rpm shadow-utils python3 \
+    gcc make pkgconf-pkg-config kernel-headers \
+    wayland-devel wayland-protocols-devel \
+    gtk3-devel webkit2gtk4.1-devel alsa-lib-devel
 # --- BOTH Fedora 43 aarch64 repositories are REQUIRED (briq-04a) --------------
 # The GA "Everything" repo alone is NOT enough and the failure is not cosmetic:
 #   * `stevia` / `stevia-phosh-osk-provider` (the phosh on-screen keyboard) do
@@ -87,6 +90,59 @@ case "$INSTALLED_SYSTEMD" in
   systemd-258.11-1.fc43*) echo "[nuxel] systemd pin OK: $INSTALLED_SYSTEMD" ;;
   *) echo "ERROR: installed $INSTALLED_SYSTEMD, expected systemd-258.11-1.fc43 (carried 4.14 libsystemd patch)" >&2; exit 1 ;;
 esac
+# --- current S10+ userspace binaries (A34 TOUCHDOWN) -----------------------
+# Build the exact binaries the handset runs from the repository sources *inside
+# this arm64 container*.  Earlier builders copied build/out/s10plus/a32/*,
+# which only exists on a developer machine; a clean CI checkout has none, and
+# those A32 binaries are not the current A34 display/button code.  Everything
+# below is compiled natively for aarch64 here, so the release image is
+# reproducible from a fresh clone.
+B=/tmp/nuxel-current-userspace
+mkdir -p "$B"
+CFLAGS_COMMON="-O2 -Wall -Wextra -Wno-unused-parameter -std=gnu11"
+wayland-scanner client-header \
+    /nuxel/tools/s10plus/a29/wlr-screencopy-unstable-v1.xml \
+    "$B/wlr-screencopy-unstable-v1-client-protocol.h"
+wayland-scanner private-code \
+    /nuxel/tools/s10plus/a29/wlr-screencopy-unstable-v1.xml \
+    "$B/wlr-screencopy-unstable-v1-protocol.c"
+
+# A34 display bridge: bl_power=4 screen-off, current handoff/colour path.
+gcc $CFLAGS_COMMON $(pkg-config --cflags wayland-client) \
+    -o "$B/nuxel-wl-fb" /nuxel/tools/s10plus/a34/nuxel-wl-fb.c \
+    "$B/wlr-screencopy-unstable-v1-protocol.c" \
+    $(pkg-config --libs wayland-client)
+
+# A34 screencopy diagnostic (deployed as /usr/local/bin/nuxel-wl-snapshot).
+gcc $CFLAGS_COMMON $(pkg-config --cflags wayland-client) \
+    -o "$B/nuxel-wl-snapshot" /nuxel/tools/s10plus/a34/nuxel-wl-snapshot.c \
+    "$B/wlr-screencopy-unstable-v1-protocol.c" \
+    $(pkg-config --libs wayland-client)
+
+# A33/A34 PWA host: the current terminal-window close + host-action fixes.
+gcc $CFLAGS_COMMON $(pkg-config --cflags gtk+-3.0 webkit2gtk-4.1) \
+    -I /nuxel/tools/s10plus/a33 -o "$B/nuxel-pwa-host" \
+    /nuxel/tools/s10plus/a33/nuxel-pwa-host.c \
+    $(pkg-config --libs gtk+-3.0 webkit2gtk-4.1) -lutil
+
+# A34 button manager: SYN_REPORT touch translation, power menu, Bixby cancel.
+gcc $CFLAGS_COMMON $(pkg-config --cflags alsa) -I /nuxel/tools/s10plus/a34 \
+    -o "$B/nuxel-button-manager" \
+    /nuxel/tools/s10plus/a34/nuxel-button-manager.c \
+    $(pkg-config --libs alsa)
+
+# Current capability-based libinput path shim for the 4.14/udevd-less kernel.
+gcc $CFLAGS_COMMON -shared -fPIC -o "$B/libnuxel-libinput-path.so" \
+    /nuxel/tools/s10plus/a33/nuxel-libinput-path.c -ldl
+
+for _b in nuxel-wl-fb nuxel-wl-snapshot nuxel-pwa-host \
+          nuxel-button-manager libnuxel-libinput-path.so; do
+  file "$B/$_b" | grep -q 'ARM aarch64' || { echo "ERROR: $_b is not aarch64" >&2; exit 1; }
+done
+sha256sum "$B"/nuxel-wl-fb "$B"/nuxel-wl-snapshot "$B"/nuxel-pwa-host \
+          "$B"/nuxel-button-manager "$B"/libnuxel-libinput-path.so \
+  | tee /tmp/nuxel-current-userspace.sha256
+
 # Keep Nuxel's native phone-specific bits; do not import the G7 Power staging.
 install -d "$STAGE/etc/nuxel/device/s10plus" "$STAGE/etc/udev/rules.d" \
     "$STAGE/usr/share/nuxel" "$STAGE/usr/lib/nuxel" "$STAGE/usr/bin" \
@@ -134,22 +190,17 @@ install -d "$STAGE/etc/nuxel" "$STAGE/usr/lib/nuxel"
 # process supervision, and the libinput path shim that gives phoc the real
 # touchscreen on a kernel with no VT and no usable udev daemon.
 install -m 0755 /nuxel/tools/s10plus/a29/nuxel-touch-arm "$STAGE/usr/lib/nuxel/nuxel-touch-arm"
-# A32 is the shipped revision (beta hardware finalizer): explicit XRGB8888 ->
-# DECON ABGR_8888 colour conversion in the display bridge, minimum-full-animation
-# hand-off gate, screen off/on control FIFO, the launcher host API (settings /
-# logical actions / real PTY terminal) with stale-frontend invalidation, and the
-# hardware-button manager (power short = display toggle, volume = real ALSA mixer,
-# assistant/Bixby key = Nuxel Terminal, remappable in Settings).
-for _b in /nuxel/build/out/s10plus/a32/nuxel-wl-fb \
-          /nuxel/build/out/s10plus/a32/nuxel-pwa-host \
-          /nuxel/build/out/s10plus/a32/nuxel-button-manager \
-          /nuxel/build/out/s10plus/a32/libnuxel-libinput-path.so; do
-  [ -f "$_b" ] || { echo "ERROR: missing A32 artifact $_b - run tools/s10plus/a32/build-a32.sh (builds on the live UTM VM) before building this image" >&2; exit 1; }
-done
-install -m 0755 /nuxel/build/out/s10plus/a32/nuxel-wl-fb              "$STAGE/usr/lib/nuxel/nuxel-wl-fb"
-install -m 0755 /nuxel/build/out/s10plus/a32/nuxel-pwa-host           "$STAGE/usr/lib/nuxel/nuxel-pwa-host"
-install -m 0755 /nuxel/build/out/s10plus/a32/nuxel-button-manager     "$STAGE/usr/lib/nuxel/nuxel-button-manager"
-install -m 0755 /nuxel/build/out/s10plus/a32/libnuxel-libinput-path.so "$STAGE/usr/lib/nuxel/libnuxel-libinput-path.so"
+# A34 is the shipped revision (TOUCHDOWN): the A34 display bridge
+# (bl_power=4 screen-off), the A34 button manager (SYN_REPORT touch translation,
+# 11-entry power menu with Cancel first, deferred Bixby cancelled by Power) and
+# the current PWA host (terminal surface close + host action fixes).  All were
+# built from repository sources above, not copied from a developer's build tree.
+install -m 0755 "$B/nuxel-wl-fb"               "$STAGE/usr/lib/nuxel/nuxel-wl-fb"
+install -m 0755 "$B/nuxel-pwa-host"            "$STAGE/usr/lib/nuxel/nuxel-pwa-host"
+install -m 0755 "$B/nuxel-button-manager"      "$STAGE/usr/lib/nuxel/nuxel-button-manager"
+install -m 0755 "$B/libnuxel-libinput-path.so" "$STAGE/usr/lib/nuxel/libnuxel-libinput-path.so"
+install -d "$STAGE/usr/local/bin"
+install -m 0755 "$B/nuxel-wl-snapshot"         "$STAGE/usr/local/bin/nuxel-wl-snapshot"
 # console control for the same configuration the Settings app uses
 install -m 0755 /nuxel/tools/s10plus/a32/nuxelctl                     "$STAGE/usr/bin/nuxelctl"
 # default device configuration: the S10+ port starts from its own profile, and a
@@ -157,6 +208,9 @@ install -m 0755 /nuxel/tools/s10plus/a32/nuxelctl                     "$STAGE/us
 install -d "$STAGE/etc/nuxel/display" "$STAGE/etc/nuxel/input"
 install -m 0644 /nuxel/configs/nuxel/statusbar-safezones.json "$STAGE/etc/nuxel/display/statusbar-safezones.json"
 install -m 0644 /nuxel/configs/nuxel/buttons.json             "$STAGE/etc/nuxel/input/buttons.json"
+install -m 0644 /nuxel/configs/nuxel/input/button-fsm.json    "$STAGE/etc/nuxel/input/button-fsm.json"
+install -d "$STAGE/etc/nuxel/buttons"
+install -m 0644 /nuxel/configs/nuxel/buttons/reboot-gate.json "$STAGE/etc/nuxel/buttons/reboot-gate.json"
 install -m 0755 /nuxel/tools/s10plus/a29/nuxel-session.sh            "$STAGE/usr/lib/nuxel/nuxel-session.sh"
 install -m 0755 /nuxel/tools/s10plus/a29/nuxel-wait-wayland          "$STAGE/usr/lib/nuxel/nuxel-wait-wayland"
 install -m 0755 /nuxel/tools/s10plus/a29/nuxel-launcher-ready-wait.sh "$STAGE/usr/lib/nuxel/nuxel-launcher-ready-wait"
@@ -305,8 +359,12 @@ PHOSH=RPM-installed
 PHOC=RPM-installed
 GRAPHICAL_PHONE_SESSION=not-enabled-until-on-device-drm-testing
 MOTOROLA_OVERLAY=absent
-HARDWARE_BOOT_VERIFIED=false
-DISPLAY_DRIVER_VERIFIED=false
+HARDWARE_BOOT_VERIFIED=true
+DISPLAY_DRIVER_VERIFIED=true
+USERSERVICE_REVISION=A34-touchdown
+TOUCHSCREEN=evdev-libinput-webkit-working
+CLICKABLE=not-yet-owner-verified
+AUDIO=unverified-no-touchscreen-interaction
 STATUS
 # No proprietary vendor blobs are silently invented. They require a
 # legitimate device-specific source and matching Samsung kernel modules.

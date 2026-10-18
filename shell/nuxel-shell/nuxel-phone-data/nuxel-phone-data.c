@@ -1,3 +1,5 @@
+#define _POSIX_C_SOURCE 200809L
+
 /*
  * nuxel-phone-data.c - see nuxel-phone-data.h for the contract.
  *

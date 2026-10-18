@@ -2,7 +2,7 @@
   "schema_version": 1,
   "generated_at": "2026-10-16T21:02:28+0200",
   "tool": "tools/beta/validate-capability-manifest.py",
-  "version": "v0.4.0-alpha",
+  "version": "v0.5.1-alpha",
   "git_head": "94d68b13e64ed195e0c3f3f6d2e21a07f3ae3b19",
   "scope": "Galaxy S10+ (SM-G975F / beyond2lte / Exynos 9820) Nuxel beta candidate",
   "device": {

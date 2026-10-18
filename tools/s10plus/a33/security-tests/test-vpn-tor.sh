@@ -80,7 +80,12 @@ cur=d
 for part in sys.argv[2].split("."):
     if isinstance(cur,dict) and part in cur: cur=cur[part]
     else: print("<missing>"); sys.exit(0)
-print(cur if not isinstance(cur,(dict,list)) else json.dumps(cur))
+if isinstance(cur, bool):
+    print("true" if cur else "false")
+elif isinstance(cur,(dict,list)):
+    print(json.dumps(cur))
+else:
+    print(cur)
 ' "$1" "$2"; }
 
 run_tool() { MODE="$1"; shift; NUXEL_MOCK_NET_MODE="$MODE" "$TOOL" "$@"; }
@@ -109,7 +114,7 @@ echo
 echo "-- 3. no control port -> unknown, never a guess --"
 OUT="$NUXEL_PRIVACY_STATE_DIR/tor-fail.json"
 run_tool tor-nocontrol tor status --json > "$OUT" 2>/dev/null
-check_eq "control port is reported unauthenticated" "False" "$(jsonget "$OUT" measured.control_port_authenticated)"
+check_eq "control port is reported unauthenticated" "false" "$(jsonget "$OUT" measured.control_port_authenticated)"
 check_eq "circuits_built is null" "None" "$(jsonget "$OUT" measured.circuits_built)"
 check_eq "circuits claim is unknown" "unknown" "$(jsonget "$OUT" claims.circuits_built.level)"
 check_eq "traffic claim is unproven" "unproven" "$(jsonget "$OUT" claims.traffic_routed_through_tor.level)"
@@ -119,14 +124,14 @@ echo "-- 4. VPN: interface and handshake are facts, routing is not --"
 OUT="$NUXEL_PRIVACY_STATE_DIR/vpn-hs.json"
 run_tool vpn-up-handshake vpn status --json > "$OUT" 2>/dev/null
 check_eq "tunnel interface up is evidenced" "evidenced" "$(jsonget "$OUT" claims.tunnel_interface_up.level)"
-check_eq "handshake observed" "True" "$(jsonget "$OUT" measured.handshake_observed)"
+check_eq "handshake observed" "true" "$(jsonget "$OUT" measured.handshake_observed)"
 check_eq "handshake is evidenced" "evidenced" "$(jsonget "$OUT" claims.handshake_observed.level)"
 check_eq "traffic_routed_through_vpn stays unproven" "unproven" "$(jsonget "$OUT" claims.traffic_routed_through_vpn.level)"
 check_eq "killswitch is unknown without state" "unknown" "$(jsonget "$OUT" measured.killswitch_armed)"
 
 OUT="$NUXEL_PRIVACY_STATE_DIR/vpn-nohs.json"
 run_tool vpn-up-nohandshake vpn status --json > "$OUT" 2>/dev/null
-check_eq "no handshake is reported as false (not omitted)" "False" "$(jsonget "$OUT" measured.handshake_observed)"
+check_eq "no handshake is reported as false (not omitted)" "false" "$(jsonget "$OUT" measured.handshake_observed)"
 check_eq "traffic claim is still unproven" "unproven" "$(jsonget "$OUT" claims.traffic_routed_through_vpn.level)"
 
 OUT="$NUXEL_PRIVACY_STATE_DIR/vpn-down.json"
@@ -254,7 +259,9 @@ check_contains "unbridged Tor is stated plainly" "NOT CONFIGURED" "$OUT"
 echo
 echo "-- 13. the menu changes nothing without a terminal --"
 set +e
-OUT="$(run_tool off menu 2>&1)"; RC=$?
+# `menu` is interactive by design.  Give it a closed stdin so the offline suite
+# cannot block on a terminal (this test previously hung when run by hand).
+OUT="$(run_tool off menu 2>&1 </dev/null)"; RC=$?
 set -e
 check_eq "menu exits cleanly" "0" "$RC"
 check_contains "menu declares it changed nothing" "changes nothing" "$OUT"

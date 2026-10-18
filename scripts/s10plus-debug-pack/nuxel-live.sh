@@ -205,7 +205,13 @@ def open_port():
         a = termios.tcgetattr(fd)
         a[0] = 0; a[1] = 0
         a[2] = termios.CS8 | termios.CREAD | termios.CLOCAL
-        a[3] = 0; a[4] = 9600; a[5] = 9600
+        # The Nuxel S10+ gadget is documented and measured at 115200 8N1
+        # (quickstart-live-console.md §1).  This was hard-coded to 9600, which
+        # left the port enumerated but byte-silent: every live command and every
+        # live test looked like it "did nothing".  NUXEL_LIVE_BAUD allows a
+        # deliberate override without editing the tool.
+        baud = int(os.environ.get("NUXEL_LIVE_BAUD", "115200"))
+        a[3] = 0; a[4] = baud; a[5] = baud
         termios.tcsetattr(fd, termios.TCSANOW, a)
         termios.tcflush(fd, termios.TCIOFLUSH)
         return fd

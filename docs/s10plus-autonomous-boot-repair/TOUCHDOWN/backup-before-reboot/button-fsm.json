@@ -1,0 +1,294 @@
+{
+  "schema_version": 1,
+  "comment": "Hardware-button + screen-gesture finite state machine for the Samsung Galaxy S10+ (beyond2lte). Installed to /etc/nuxel/input/button-fsm.json and read by tools/s10plus/a33/nuxel-button-manager.c. This file is authoritative for every timing window: the C source carries the same numbers as NUXEL_FSM_* defines, and tools/s10plus/a33/tests/test-button-fsm.py cross-checks JSON <-> C <-> the protected A32 source so the three can never drift apart.",
+  "device": {
+    "model": "Samsung Galaxy S10+ SM-G975F",
+    "codename": "beyond2lte",
+    "keypad": "gpio_keys",
+    "measured_keys": {
+      "KEY_VOLUMEDOWN": 114,
+      "KEY_VOLUMEUP": 115,
+      "KEY_POWER": 116,
+      "KEY_BIXBY_assistant": 703
+    }
+  },
+  "input_selection": {
+    "comment": "Input nodes are selected by capability and name. A hard-coded /dev/input/eventN is never assumed, because the node numbers change between boots and between kernel builds.",
+    "no_fixed_event_node": true,
+    "key_device": {
+      "match_name_any": [
+        "gpio_keys",
+        "sec_key_notifier"
+      ],
+      "require_capability_any": [
+        "KEY_POWER",
+        "KEY_VOLUMEUP",
+        "KEY_VOLUMEDOWN"
+      ],
+      "probe": "EVIOCGNAME + EVIOCGBIT(EV_KEY) with the kernel's own long size"
+    },
+    "touch_device": {
+      "match_name_any": [
+        "sec_touchscreen",
+        "sec_ts",
+        "touchscreen"
+      ],
+      "require_capability_all": [
+        "ABS_MT_POSITION_X",
+        "ABS_MT_POSITION_Y"
+      ],
+      "require_prop": [
+        "INPUT_PROP_DIRECT"
+      ],
+      "grab": false,
+      "comment_grab": "Read-only observer: NO EVIOCGRAB is taken, so libinput/Phoc keep receiving the same events. Touch gestures are therefore additive, never exclusive, and every dispatched action is idempotent."
+    }
+  },
+  "press_classes": {
+    "comment": "Windows in milliseconds. debounce_ms is the minimum press duration that counts at all; short_max_ms is the exclusive upper bound of a short press; long_min_ms opens the long-press class; very_long_min_ms opens the reboot class; double_gap_ms is the maximum gap between two releases that still forms a double press; volume.long_min_ms is the volume long-press window; chord.hold_min_ms is the both-keys-held window.",
+    "power": {
+      "debounce_ms": 30,
+      "short_max_ms": 2000,
+      "long_min_ms": 2000,
+      "very_long_min_ms": 8000,
+      "double_gap_ms": 400
+    },
+    "bixby": {
+      "debounce_ms": 20,
+      "short_max_ms": 1500,
+      "long_min_ms": 1500,
+      "double_gap_ms": 400
+    },
+    "volume": {
+      "debounce_ms": 20,
+      "long_min_ms": 500,
+      "repeat_delay_ms": 400,
+      "repeat_interval_ms": 250
+    },
+    "chord": {
+      "comment": "Both keys held together for this long, measured from the SECOND key press.",
+      "hold_min_ms": 500,
+      "suppress_single_key_classes": "true (chord > long press > double press > single press)",
+      "emergency_note": "Samsung's own hardware reset/recovery combos are NEVER intercepted: the keypad is opened without EVIOCGRAB, so the kernel and the bootloader keep seeing every event. A Power+VolumeDown hold that reaches Samsung's own reset window resets the handset regardless of what this state machine does; the machine's screenshot fires once at 500 ms and no further class (including the 8 s reboot class) fires for the rest of that hold."
+    }
+  },
+  "volume_step": {
+    "comment": "A volume press moves 5 % of the mixer range, exactly as A32 did (integer division of the range by 20, floored at 1).",
+    "percent_of_range": 5,
+    "divisor": 20,
+    "min_step": 1,
+    "respect_low_volume_cap": true,
+    "cap_source": "/etc/nuxel/audio/audio.json"
+  },
+  "actions": {
+    "comment": "The action for each press class. A value found in /etc/nuxel/input/buttons.json (the A32 file, written by Settings and by nuxelctl) WINS over the default below, so an owner remap is never overridden by the state machine. Absent keys keep A32 behaviour byte-for-byte.",
+    "power_short": "screen-toggle",
+    "power_long": "power-menu",
+    "power_double": "camera",
+    "power_very_long": "reboot-gated",
+    "volume_up": "volume-up",
+    "volume_down": "volume-down",
+    "volume_up_long": "notifications-panel",
+    "volume_down_long": "all-apps",
+    "volume_up_repeat": "volume-up",
+    "volume_down_repeat": "volume-down",
+    "bixby_short": "open-terminal",
+    "bixby_long": "disabled",
+    "bixby_double": "flashlight",
+    "bixby_early_hold": "verbose-boot-note",
+    "chord_power_volume_up": "sound-mode-cycle",
+    "chord_power_volume_down": "screenshot"
+  },
+  "power_menu": {
+    "comment": "Long-press power opens this menu. It is a real state machine with selection, not a placeholder: the OSD document carries the entries and the highlighted item, and the control FIFO accepts up/down/select so a finger tap or the console can drive it. Recovery and Download-Mode EXIST as entries and can be selected in the offline harness, but execution is hard-refused: the NO FLASHING invariant of this mission forbids entering Download Mode or the bootloader at all.",
+    "osd_file": "/usr/share/nuxel/runtime/osd.json",
+    "timeout_ms": 15000,
+    "comment_timeout": "An untouched open menu closes itself after timeout_ms, so a stray long press can never leave a modal menu on the glass.",
+    "entries": [
+      {
+        "id": "lock-screen",
+        "label": "Lock screen",
+        "action": "lock",
+        "dispatch": "host-fifo",
+        "trigger_allowed": true,
+        "implemented_by": "launcher host (nuxel-pwa-host) screen-lock"
+      },
+      {
+        "id": "screenshot",
+        "label": "Take screenshot",
+        "action": "screenshot",
+        "dispatch": "host-fifo",
+        "trigger_allowed": true,
+        "implemented_by": "launcher host"
+      },
+      {
+        "id": "restart",
+        "label": "Restart",
+        "action": "systemctl-reboot",
+        "dispatch": "userspace",
+        "trigger_allowed": true,
+        "gate": "/etc/nuxel/buttons/reboot-gate.json",
+        "why_gated": "A userspace reboot is allowed by the mission only after the reboot policy allows it and only with a healthy rollback path. While the owner is absent the gate stays closed by default."
+      },
+      {
+        "id": "power-off",
+        "label": "Power off",
+        "action": "systemctl-poweroff",
+        "dispatch": "userspace",
+        "trigger_allowed": true,
+        "gate": "/etc/nuxel/buttons/reboot-gate.json",
+        "why_gated": "Powering the handset off with no owner present would strand the mission with no way to turn it back on."
+      },
+      {
+        "id": "reboot-verbose",
+        "label": "Reboot Verbose",
+        "action": "reboot-verbose",
+        "dispatch": "userspace",
+        "trigger_allowed": true,
+        "gate": "/etc/nuxel/buttons/reboot-gate.json"
+      },
+      {
+        "id": "reboot-safe-mode",
+        "label": "Safe Mode",
+        "action": "reboot-safe-mode",
+        "dispatch": "userspace",
+        "trigger_allowed": true,
+        "gate": "/etc/nuxel/buttons/reboot-gate.json"
+      },
+      {
+        "id": "reboot-diag",
+        "label": "Reboot Diag",
+        "action": "reboot-diag",
+        "dispatch": "userspace",
+        "trigger_allowed": true,
+        "gate": "/etc/nuxel/buttons/reboot-gate.json"
+      },
+      {
+        "id": "reboot-debug",
+        "label": "Reboot Debug",
+        "action": "reboot-debug",
+        "dispatch": "userspace",
+        "trigger_allowed": true,
+        "gate": "/etc/nuxel/buttons/reboot-gate.json"
+      },
+      {
+        "id": "recovery",
+        "label": "Recovery (Samsung)",
+        "action": "enter-recovery",
+        "dispatch": "bootloader",
+        "trigger_allowed": false,
+        "refusal": "NO_FLASH_INVARIANT",
+        "why_refused": "Entering Recovery means leaving Linux for the Samsung bootloader. The mission forbids triggering Recovery/Download Mode. The entry is implemented so the menu is complete and so the refusal is observable, never to be used."
+      },
+      {
+        "id": "download-mode",
+        "label": "Download Mode (Odin)",
+        "action": "enter-download-mode",
+        "dispatch": "bootloader",
+        "trigger_allowed": false,
+        "refusal": "NO_FLASH_INVARIANT",
+        "why_refused": "Download Mode exists only to flash. This mission performs no flashing of any kind; the entry is present for completeness and is refused, and nothing in this tool ever opens a bootloader interface."
+      }
+    ]
+  },
+  "reboot_gate": {
+    "comment": "Very long press (>= very_long_min_ms) opens the reboot class, but the action only executes when this gate allows it. The gate is closed by default. bg-09 (integration/release) owns the reboot policy; when /var/lib/nuxel/reboot/policy.json exists and carries allow_reboot: true, that file is honoured in addition to this one.",
+    "config": "/etc/nuxel/buttons/reboot-gate.json",
+    "policy_source": "/var/lib/nuxel/reboot/policy.json",
+    "state_file": "/var/lib/nuxel/buttons/reboot-gate.json",
+    "audit_log": "/var/log/nuxel/buttons.log",
+    "refuse_state": "REBOOT_REFUSED"
+  },
+  "gestures": {
+    "enabled": true,
+    "comment": "Screen gestures (buffet-style): swipe up = home, swipe up and hold = recents, edge swipe inward = back. Recognised from the touchscreen's MT-B slots (ABS_MT_SLOT/ABS_MT_TRACKING_ID, falling back to single-touch ABS_X/ABS_Y when a slot id never appears). Actions are dispatched to the launcher's own control FIFO (/run/nuxel-pwa-host.cmd) and are idempotent, so a gesture that the launcher also handled cannot produce a duplicated transition.",
+    "dispatch": {
+      "channel": "/run/nuxel-pwa-host.cmd",
+      "idempotent": true
+    },
+    "geometry": {
+      "comment": "Pixel geometry is expressed as a fraction of the panel where possible, because the panel resolution is a device property, not a constant of this tool; the pixel fallbacks are used only when the axis ranges cannot be read.",
+      "edge_zone_px": 24,
+      "bottom_zone_px": 48,
+      "min_travel_px": 90,
+      "hold_max_drift_px": 24,
+      "default_axis_max": {
+        "x": 1439,
+        "y": 3039
+      }
+    },
+    "timing": {
+      "swipe_max_ms": 600,
+      "hold_ms": 500,
+      "edge_back_max_ms": 400,
+      "min_track_ms": 0,
+      "stale_track_ms": 1500
+    },
+    "recognizers": [
+      {
+        "id": "edge-back",
+        "label": "Back",
+        "action": "back",
+        "when": "down within edge_zone_px of the left or right edge, released having travelled >= min_travel_px horizontally toward the centre within edge_back_max_ms"
+      },
+      {
+        "id": "swipe-up-home",
+        "label": "Home",
+        "action": "home",
+        "when": "down inside the bottom bottom_zone_px, travelled >= min_travel_px upward, released before hold_ms"
+      },
+      {
+        "id": "swipe-up-hold-recents",
+        "label": "Recents",
+        "action": "recents",
+        "when": "same start, still held after hold_ms with total drift <= hold_max_drift_px; fires once, on the timer, not on the release"
+      }
+    ]
+  },
+  "evidence": {
+    "state_file": "/var/lib/nuxel/buttons",
+    "log": "/var/log/nuxel/buttons.log",
+    "control_fifo": "/run/nuxel-buttons.cmd",
+    "display_fifo": "/run/nuxel-wl-fb.cmd",
+    "host_fifo": "/run/nuxel-pwa-host.cmd",
+    "offline_replay": "nuxel-button-manager --fsm-sim <trace.json> (replays a recorded event trace through the REAL state machine)"
+  },
+  "volume_hold": {
+    "comment": "A volume HOLD is the long-press class (a panel), not a key repeat. The A32 autorepeat cadence is preserved, not deleted: remap volume_up_long/volume_down_long to the *-autorepeat actions, or set volume_repeat_enabled=1, and the 400 ms / 250 ms cadence runs exactly as A32 did.",
+    "default_is_panel": true,
+    "repeat_is_opt_in": true,
+    "repeat_opt_in_via": [
+      "action remap to volume-up-autorepeat / volume-down-autorepeat",
+      "volume_repeat_enabled"
+    ],
+    "predictability_rule": "Exactly one step is emitted per press (on the press, like A32), so a press that turns out to be a long press still yields exactly one step and never two; a chord buffers the step and delivers it on release if the chord does not complete, so no press is lost."
+  },
+  "arbitration": {
+    "comment": "Highest priority first. Every class above suppresses everything below it while it is decided.",
+    "order": [
+      "hardware_emergency_combos (Samsung, never intercepted)",
+      "multi_key_chords (Power+VolUp, Power+VolDn)",
+      "long_press (menu / panel / all-apps / verbose note)",
+      "double_press (camera / flashlight)",
+      "single_press (screen toggle / terminal / volume step)",
+      "key_repeat_volume (opt-in only)"
+    ],
+    "enforcement": "nuxel_fsm_feed(): a chord in progress skips the volume-hold class entirely, and when a chord fires it sets power_used_long, power_used_very_long and vol_used_long so no lower class can also act during that hold."
+  },
+  "early_boot": {
+    "comment": "The one-time verbose-boot override. 'Early' is measured from the FIRST evdev event this manager sees, i.e. the start of Nuxel's userspace - not the kernel's boot.",
+    "key": "bixby",
+    "window_ms": 2000,
+    "action": "verbose-boot-note",
+    "press_class": "long press (>= bixby.long_min_ms) starting inside the window",
+    "honest_limit": "The button manager starts AFTER the early boot stage, so it cannot make THIS boot verbose by itself: it publishes the request and records the refusal when the stage has already run (briq-02b owns the consumer). Honouring an early hold before the very first userspace stage requires a key-capture in the initramfs/BOOT stage, which is BOOT_UPDATE_REQUIRED / BLOCKED_KERNEL and is NOT claimed as working.",
+    "not_persistent": true
+  },
+  "settings_surface": {
+    "comment": "Every mapping here is exposed in Settings -> Buttons & Gestures. The page is rendered by briq-06d from the contract in configs/nuxel/buttons/settings-surface.json; persistence stays in the A32 /etc/nuxel/input/buttons.json file, which is the authoritative store for owner remaps.",
+    "renderer": "briq-06d (Settings app)",
+    "store": "/etc/nuxel/input/buttons.json (A32 file; this FSM only ever reads it)",
+    "contract": "configs/nuxel/buttons/settings-surface.json",
+    "timing_source": "this file (read-only for the UI; the UI never edits windows)"
+  }
+}

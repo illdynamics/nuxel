@@ -62,6 +62,7 @@
 #include <unistd.h>
 
 #include "nuxel-button-fsm.h"
+#include "nuxel-mt.h"
 
 /* ---- paths (single source of truth: configs/nuxel/paths.conf) ------------ */
 #define STATE_FILE   "/var/lib/nuxel/buttons"
@@ -614,6 +615,11 @@ static void perform(const char *action, const char *source) {
   if (!strcmp(action, "reboot-safe-mode")) { reboot_mode_once(REBOOT_SAFE_MODE_FLAG, "systemctl-reboot"); return; }
   if (!strcmp(action, "reboot-diag"))      { reboot_mode_once(REBOOT_DIAG_FLAG, "systemctl-reboot"); return; }
   if (!strcmp(action, "reboot-debug"))     { reboot_mode_once(REBOOT_DEBUG_FLAG, "systemctl-reboot"); return; }
+  if (!strcmp(action, "menu-close")) {
+    /* The menu entry's own action: the FSM/control path has already closed the
+     * overlay.  Keep this here so choosing Cancel is not logged as UNKNOWN. */
+    return;
+  }
   if (!strcmp(action, "live-console-toggle")) { live_console_toggle(); return; }
   if (!strcmp(action, "open-terminal")) { fifo_send(HOST_FIFO, "open-terminal\n"); return; }
   if (!strcmp(action, "back") || !strcmp(action, "home") || !strcmp(action, "recents") ||
@@ -976,14 +982,11 @@ static int mode_fsm_sim(const char *trace) {
   return 1;
 }
 
-/* Translate one evdev frame into FSM events. Multi-touch: only the primary
- * (slot 0) contact is tracked — the three gestures this manager owns are
- * single-finger gestures, and pretending to handle pinch would be dishonest. */
-struct mttrack {
-  int slot, tracking;
-  int32_t x, y;
-  int32_t axis_max_x, axis_max_y;
-};
+/* The touchscreen frame parser lives in nuxel-mt.h so the offline test drives
+ * the SAME code.  It emits DOWN only at SYN_REPORT, after the frame's
+ * ABS_MT_POSITION_X/Y are known: emitting at ABS_MT_TRACKING_ID used the
+ * previous frame's coordinates (0,0 for the first touch), which made every tap
+ * look like an edge-back swipe and made swipe-up-from-the-bottom impossible. */
 
 int main(int argc, char **argv) {
   if (argc > 1 && !strcmp(argv[1], "--probe")) { mode_probe(); return 0; }
@@ -1020,12 +1023,10 @@ int main(int argc, char **argv) {
 
   nuxel_fsm fsm;
   nuxel_fsm_init(&fsm, &C);
-  struct mttrack mt;
-  memset(&mt, 0, sizeof mt);
-  mt.tracking = -1;
-  mt.slot = 0;
-  mt.axis_max_x = sel.axis_max_x ? sel.axis_max_x : NUXEL_FSM_DEFAULT_AXIS_MAX_X;
-  mt.axis_max_y = sel.axis_max_y ? sel.axis_max_y : NUXEL_FSM_DEFAULT_AXIS_MAX_Y;
+  nuxel_mt_state mt;
+  nuxel_mt_init(&mt,
+                sel.axis_max_x ? sel.axis_max_x : NUXEL_FSM_DEFAULT_AXIS_MAX_X,
+                sel.axis_max_y ? sel.axis_max_y : NUXEL_FSM_DEFAULT_AXIS_MAX_Y);
 
   publish("MANAGER_READY device=%s touch=%s", sel.key_path,
           sel.touch_fd >= 0 ? sel.touch_path : "none");
@@ -1117,11 +1118,41 @@ int main(int argc, char **argv) {
           if (!strcmp(q, "volume-up")) volume_step(+1);
           else if (!strcmp(q, "volume-down")) volume_step(-1);
           else if (!strcmp(q, "volume-mute")) volume_mute_toggle();
-          else if (!strcmp(q, "menu-open")) { fsm.menu_open = 1; fsm.menu_index = 0; fsm.menu_last_activity_ms = t; osd_menu(1, 0); }
-          else if (!strcmp(q, "menu-close")) { fsm.menu_open = 0; osd_menu(0, 0); }
-          else if (!strcmp(q, "menu-down")) { if (fsm.menu_open) { fsm.menu_index = (fsm.menu_index + 1) % nuxel_fsm_menu_count; osd_menu(1, fsm.menu_index); } }
-          else if (!strcmp(q, "menu-up")) { if (fsm.menu_open) { fsm.menu_index = (fsm.menu_index - 1 + nuxel_fsm_menu_count) % nuxel_fsm_menu_count; osd_menu(1, fsm.menu_index); } }
-          else if (!strcmp(q, "menu-select")) { if (fsm.menu_open) menu_select(&fsm, t); }
+          else if (!strcmp(q, "menu-open")) {
+            fsm.menu_open = 1; fsm.menu_index = 0; fsm.menu_last_activity_ms = t;
+            osd_menu(1, 0);
+            audit("MENU_OPEN index=0 id=%s source=control-fifo", nuxel_fsm_menu[0].id);
+          }
+          else if (!strcmp(q, "menu-close")) {
+            fsm.menu_open = 0; osd_menu(0, 0);
+            audit("MENU_CLOSE reason=control-fifo");
+          }
+          else if (!strcmp(q, "menu-down")) {
+            if (fsm.menu_open) {
+              fsm.menu_index = (fsm.menu_index + 1) % nuxel_fsm_menu_count;
+              osd_menu(1, fsm.menu_index);
+              audit("MENU_NAV menu-down index=%d id=%s", fsm.menu_index, nuxel_fsm_menu[fsm.menu_index].id);
+            }
+          }
+          else if (!strcmp(q, "menu-up")) {
+            if (fsm.menu_open) {
+              fsm.menu_index = (fsm.menu_index - 1 + nuxel_fsm_menu_count) % nuxel_fsm_menu_count;
+              osd_menu(1, fsm.menu_index);
+              audit("MENU_NAV menu-up index=%d id=%s", fsm.menu_index, nuxel_fsm_menu[fsm.menu_index].id);
+            }
+          }
+          else if (!strcmp(q, "menu-select") || !strncmp(q, "menu-select ", 12)) {
+            if (fsm.menu_open) {
+              if (q[11] == ' ') {
+                int idx = atoi(q + 12);
+                if (idx >= 0 && idx < nuxel_fsm_menu_count) {
+                  fsm.menu_index = idx;
+                  osd_menu(1, idx);
+                }
+              }
+              menu_select(&fsm, t);
+            }
+          }
           else if (!strncmp(q, "action ", 7)) perform(q + 7, "control-fifo");
           else if (!strcmp(q, "reload")) { cfg_load_actions(); gate_load(); }
           else if (*q) audit("CTRL_UNKNOWN '%s'", q);
@@ -1154,36 +1185,21 @@ int main(int argc, char **argv) {
       ssize_t got = read(sel.touch_fd, ev, sizeof ev);
       int cnt = (int)(got / (ssize_t)sizeof(struct input_event));
       for (int k = 0; k < cnt; k++) {
-        struct input_event *e = &ev[k];
-        if (e->type == EV_ABS) {
-          switch (e->code) {
-            case ABS_MT_SLOT: mt.slot = e->value; break;
-            case ABS_MT_TRACKING_ID:
-              if (mt.slot == 0) {
-                if (e->value >= 0) {
-                  mt.tracking = e->value;
-                  nuxel_fsm_event te; memset(&te, 0, sizeof te);
-                  te.t_ms = t; te.kind = NUXEL_FSM_EV_TOUCH; te.phase = NUXEL_FSM_TOUCH_DOWN;
-                  te.x = mt.x; te.y = mt.y; te.axis_max_x = mt.axis_max_x; te.axis_max_y = mt.axis_max_y;
-                  const char *a[4]; int n = nuxel_fsm_feed(&fsm, &C, &te, a, 4);
-                  for (int i = 0; i < n; i++) handle_action(&fsm, a[i], "touch");
-                } else {
-                  mt.tracking = -1;
-                }
-              }
-              break;
-            case ABS_MT_POSITION_X: if (mt.slot == 0) mt.x = e->value; break;
-            case ABS_MT_POSITION_Y: if (mt.slot == 0) mt.y = e->value; break;
-            default: break;
-          }
-        } else if (e->type == EV_SYN && e->code == SYN_REPORT && mt.slot == 0) {
-          nuxel_fsm_event te; memset(&te, 0, sizeof te);
-          te.t_ms = t; te.kind = NUXEL_FSM_EV_TOUCH;
-          te.x = mt.x; te.y = mt.y; te.axis_max_x = mt.axis_max_x; te.axis_max_y = mt.axis_max_y;
-          te.phase = mt.tracking >= 0 ? NUXEL_FSM_TOUCH_MOVE : NUXEL_FSM_TOUCH_UP;
-          const char *a[4]; int n = nuxel_fsm_feed(&fsm, &C, &te, a, 4);
-          for (int i = 0; i < n; i++) handle_action(&fsm, a[i], "touch");
+        nuxel_mt_event me;
+        if (!nuxel_mt_feed(&mt, &ev[k], &me)) continue;
+        nuxel_fsm_event te; memset(&te, 0, sizeof te);
+        te.t_ms = t; te.kind = NUXEL_FSM_EV_TOUCH;
+        te.x = me.x; te.y = me.y;
+        te.axis_max_x = me.axis_max_x; te.axis_max_y = me.axis_max_y;
+        switch (me.phase) {
+          case NUXEL_MT_PHASE_DOWN:   te.phase = NUXEL_FSM_TOUCH_DOWN; break;
+          case NUXEL_MT_PHASE_MOVE:   te.phase = NUXEL_FSM_TOUCH_MOVE; break;
+          case NUXEL_MT_PHASE_UP:     te.phase = NUXEL_FSM_TOUCH_UP; break;
+          case NUXEL_MT_PHASE_CANCEL: te.phase = NUXEL_FSM_TOUCH_CANCEL; break;
+          default: continue;
         }
+        const char *a[4]; int n = nuxel_fsm_feed(&fsm, &C, &te, a, 4);
+        for (int i = 0; i < n; i++) handle_action(&fsm, a[i], "touch");
       }
     }
   }

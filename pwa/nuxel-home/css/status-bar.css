@@ -18,6 +18,12 @@
     color: var(--text-primary);
     border-bottom: 1px solid rgba(255, 255, 255, 0.03);
     padding-top: env(safe-area-inset-top, 0);
+    /* A34 TOUCHDOWN: the top bar owns a vertical pull-down.  Without this the
+       WebKit pan recogniser can consume the drag before pointermove sees the
+       full 24 px, so the quick-settings gesture never fires. */
+    touch-action: none;
+    -webkit-user-select: none;
+    user-select: none;
 }
 
 .status-left, .status-center, .status-right {

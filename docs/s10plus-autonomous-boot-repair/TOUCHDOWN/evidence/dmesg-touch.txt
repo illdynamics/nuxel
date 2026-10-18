@@ -1,0 +1,65 @@
+# console /dev/ttyACM0
+===== dmesg | grep -i -E "sec_ts|sec_touch|tsp|touchscreen|lpcharge|charger|tsp_|sec_ts_" | tail -120   [rc=0 frame=6ca0485c sha_ok=yes]
+    [    1.665431] [sec_input] sec_ts_init: Do not load driver due to : lpm 1
+    [    1.805126] max77705_charger_init:
+    [    1.805188] max77705_charger_probe: max77705 Charger Driver Loading
+    [    1.805240] max77705_charger_parse_dt: battery,chg_ocp_current is Empty
+    [    1.805245] max77705_charger_parse_dt: battery,chg_ocp_dtc is Empty
+    [    1.805250] max77705_charger_parse_dt: battery,topoff_time is Empty
+    [    1.805256] max77705_charger_parse_dt: chg_float_voltage : 4350, chg_ocp_current : 5600, chg_ocp_dtc : 6, topoff_time : 30
+    [    1.805325] max77705_charger_initialize
+    [    1.815324] max77705_charger_probe : device found : ver.0x2
+    [    1.819210] max77705_charger_probe: MAX77705 Charger Driver Loaded
+    [    1.819236] mfc_charger_init
+    [    1.819320] mfc-charger 15-003b: mfc_charger_probe: MFC p9321 Charger Driver Loading
+    [    1.819534] mfc_charger_probe: mfc-charger
+    [    1.819676] mfc_charger_probe wc_w_state_irq = 1
+    [    1.819687] mfc-charger 15-003b: mfc_charger_probe: MFC Charger Driver Loaded
+    [    2.235882] tsp_io: disabling
+    [    2.235994] tsp_avdd: disabling
+    [    2.253569] nuxel-init: CMDLINE_PART 4: prototype.param.offset=7351040 androidboot.recovery_offset=7355136 printk.devkmsg=on ess_setup=0xfd900000 sec_avc_log=0x40000@0x91202000 sec_tsp_log=0x40000@0x91244000 sec_disp_log=0x100000@0x91286000
+    [    2.256060] nuxel-init: CMDLINE_PART 6: mode=charger ehci_hcd.park=3 oops=panic pmic_info=43 ccic_info=1 fg_reset=0 androidboot.emmc_checksum=3 androidboot.sales.param.offset=7340572 sales_code=PHN androidboot.odin_download=1 androidboot.bo
+    [    2.310503] check_charger_unlock_state
+    [    2.413585] check_charger_unlock_state
+    [    2.522102] check_charger_unlock_state
+    [    2.629894] check_charger_unlock_state
+    [    2.733564] check_charger_unlock_state
+    [    2.841585] check_charger_unlock_state
+    [    2.946639] check_charger_unlock_state
+    [    3.050316] check_charger_unlock_state
+    [    3.158231] check_charger_unlock_state
+    [    3.262219] check_charger_unlock_state
+    [    3.366233] check_charger_unlock_state
+    [    3.470741] check_charger_unlock_state
+    [    3.574396] check_charger_unlock_state
+    [    3.678365] check_charger_unlock_state
+    [    3.781581] check_charger_unlock_state
+    [    3.888300] check_charger_unlock_state
+    [    3.989562] check_charger_unlock_state
+    [    4.093796] check_charger_unlock_state
+    [   32.627781] max77705_get_charger_state : charger status (0x31)
+    [   63.159653] max77705_get_charger_state : charger status (0x31)
+    [   93.656146] max77705_get_charger_state : charger status (0x32)
+    [  124.185358] max77705_get_charger_state : charger status (0x32)
+    [  154.701608] max77705_get_charger_state : charger status (0x32)
+    [  185.222531] max77705_get_charger_state : charger status (0x32)
+    [  215.763305] max77705_get_charger_state : charger status (0x32)
+    [  246.279734] max77705_get_charger_state : charger status (0x32)
+    [  276.821549] max77705_get_charger_state : charger status (0x32)
+    [  307.329948] max77705_get_charger_state : charger status (0x32)
+    [  337.862343] max77705_get_charger_state : charger status (0x32)
+    [  368.434487] max77705_get_charger_state : charger status (0x32)
+    [  398.950977] max77705_get_charger_state : charger status (0x32)
+    [  429.517842] max77705_get_charger_state : charger status (0x32)
+    [  460.091530] max77705_get_charger_state : charger status (0x32)
+    [  490.631236] max77705_get_charger_state : charger status (0x32)
+    [  521.205395] max77705_get_charger_state : charger status (0x32)
+    [  551.764983] max77705_get_charger_state : charger status (0x32)
+    [  582.304914] max77705_get_charger_state : charger status (0x32)
+    [  612.818759] max77705_get_charger_state : charger status (0x32)
+    [  643.361860] max77705_get_charger_state : charger status (0x32)
+    [  673.872846] max77705_get_charger_state : charger status (0x32)
+    [  704.405706] max77705_get_charger_state : charger status (0x32)
+    [  734.963711] max77705_get_charger_state : charger status (0x32)
+    [  765.491447] max77705_get_charger_state : charger status (0x32)
+    [  796.039984] max77705_get_charger_state : charger status (0x32)

@@ -54,6 +54,8 @@ PIN = os.path.join(ROOT, "pwa", "nuxel-common", "bridge-version.json")
 APPS_JS = os.path.join(ROOT, "pwa", "nuxel-home", "js", "apps.js")
 APP_JS = os.path.join(ROOT, "pwa", "nuxel-home", "js", "app.js")
 PWA_HOST = os.path.join(ROOT, "tools", "s10plus", "a33", "nuxel-pwa-host.c")
+BRIDGE_JS = os.path.join(ROOT, "pwa", "nuxel-home", "js", "bridge.js")
+BRIDGE_SRC = os.path.join(HERE, "src", "bridge.py")
 
 FAILURES: list = []
 
@@ -247,6 +249,24 @@ def main() -> int:
     check("app:launch" in host,
           "the PWA host observes app:launch (so a launch is visible in the live console)")
     check("nuxelDiag" in host, "the host's launch observation is the diagnostics channel, not a synthetic input")
+
+    print("[rpc] every launcher bridge call maps to a real handler")
+    bridge_js = open(BRIDGE_JS, errors="replace").read()
+    called = set(re.findall(r"shared\(\)\.call\('([^']+)',\s*'([^']+)'", bridge_js))
+    # The status bar polls these every 5 s; an unmapped pair produced a
+    # repeating "Unknown RPC" warning and left the indicators on defaults.
+    required = {("phone", "status"), ("notifications", "list"),
+                ("permissions", "list"), ("sms", "list"),
+                ("call", "end")}
+    check(required <= called,
+          "bridge.js calls the expected launcher RPC surface (%s)" % sorted(called))
+    for ns, verb in sorted(required):
+        method = api.BridgeAPIHandler.RPC_METHODS.get((ns, verb))
+        check(method is not None,
+              "%s.%s maps to a bridge method (%s)" % (ns, verb, method))
+    bridge_src = open(BRIDGE_SRC, errors="replace").read()
+    check("org.nuxel.Notifications" in bridge_src and "dbus.SystemBus()" in bridge_src,
+          "SendNotification targets the system-bus notification hub, not a missing session daemon")
 
     server.shutdown()
     if FAILURES:

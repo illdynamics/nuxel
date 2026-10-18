@@ -109,4 +109,16 @@
   };
 
   global.NuxelHost = NuxelHost;
+
+  /* Evidence marker: the native terminal window is a TOP-LEVEL WebKit view and
+   * therefore must load this file itself.  Without this line, a page that forgot
+   * the include looked identical to a host outage (the Close button and every
+   * on-screen key silently did nothing).  The host's nuxelDiag channel is only
+   * a logger; it never synthesises input. */
+  try {
+    if (global.webkit && global.webkit.messageHandlers && global.webkit.messageHandlers.nuxelDiag) {
+      global.webkit.messageHandlers.nuxelDiag.postMessage(
+        'HOSTBRIDGE_READY available=' + NuxelHost.available + ' inIframe=' + NuxelHost.inIframe);
+    }
+  } catch (e) { /* diagnostics must never break the bridge */ }
 })(window);

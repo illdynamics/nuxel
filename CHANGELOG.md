@@ -9,6 +9,55 @@ and the OTA builder (see *Versioning* below).
 
 ---
 
+## [v0.5.1-alpha] — 2026-10-18 — *current-state cleanup + reproducible A34 image*
+
+**The S10+ image chain is now reproducible from a clean checkout.** The release
+workflow used to copy `build/out/s10plus/a32/*` binaries that only existed on a
+developer machine, so a fresh CI run could not build the userspace the handset is
+actually running. The Fedora 43 arm64 rootfs builder now compiles the **current
+A34 TOUCHDOWN userspace from repository sources inside the container**:
+
+- `nuxel-wl-fb` (A34 display bridge, `bl_power=4` screen-off path),
+- `nuxel-button-manager` (A34 `SYN_REPORT` touch translation, 11-entry power
+  menu with **Cancel first**, deferred Bixby cancelled by Power),
+- `nuxel-pwa-host` (current terminal-surface close + host-action fixes),
+- `libnuxel-libinput-path.so` (capability-based shim for the 4.14/udevd-less
+  kernel), and
+- `nuxel-wl-snapshot` (current screencopy diagnostic).
+
+`tools/s10plus/verify-fedora-phone-rootfs.py` now rejects an image that lacks any
+of those binaries or the current `button-fsm.json` / `reboot-gate.json` configs,
+and the workflow runs the A34 and A33 touch regression suites before packaging.
+
+**Current hardware truth on the S10+ (SM-G975F):**
+
+- Nuxel boots: S-Boot -> raw arm64 `Image` with embedded initramfs -> Fedora 43
+  ext4 rootfs -> systemd 258 PID 1 -> service graph `running`.
+- The display path works: boot animation, Wayland screencopy bridge, launcher,
+  single framebuffer owner.
+- **The touchscreen works**: real finger contacts reach evdev, libinput, phoc and
+  WebKit (`pointerdown`/`touchstart`). Touch coordinates and gestures are
+  delivered.
+- **Clickable interaction is still not signed off.** Taps are delivered, but
+  reliable in-UI clicking/navigation is the remaining open owner test.
+- **Sound should work but is not proven on the handset.** The ALSA/UCM routing
+  and diagnostics are present and VM audio is proven, but the phone's audio
+  cannot be exercised through the UI until clicking works reliably.
+
+**Repository cleanup.** Removed the legacy top-level mission notes and scratch
+captures (`yolo*.md`, `task*.md`, `35b.ms`, `ad.md`, `fb.md`, `heim*.md`,
+`.ocean.dtb/.dts`, `report-workspace-context.md`), the obsolete `finish/` and
+`finish2/` trees, the duplicate/stale flash guides, and the superseded
+`S10PLUS-*` progress notes. Only the canonical currently-flashed image set is
+kept under `build/out/` locally (S10+ BOOT + rootfs, G7 Power lk2nd + BOOT +
+rootfs); all older candidate images and kernel build trees were deleted.
+
+**Version bump to `v0.5.1-alpha`** across `VERSION`, the device `APKBUILD`s,
+PWA/bridge manifests, services, shell apps, VM tooling, current docs and the OTA
+builder.
+
+---
+
 ## [v0.5.0-beta-rc1] — 2026-10-17 — *live service-graph repair + device evidence (task2 continued)*
 
 **Version still unchanged:** same rationale as above; this pass repairs the live service graph and

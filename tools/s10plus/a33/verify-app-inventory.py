@@ -205,8 +205,15 @@ def check_entry(app: dict, bridge_caps: set[str] | None, queue_ids: set[str]) ->
                     warn(f"entry {aid}: capability id(s) {unknown} are not in the bridge enum "
                          f"(services/nuxel-bridge/src/capabilities.py) — see the gap table")
             launch = str(app.get("launch", ""))
-            if launch and not launch.endswith(f"{path}/index.html") and not launch.endswith("index.html"):
-                fail(f"entry {aid}: launch {launch!r} does not point at this app's index.html")
+            # A partial PWA may legitimately have no index.html yet (the gap
+            # table says why).  Require a self-consistent launch only for a
+            # surface that claims to be complete; partial entries must say
+            # "n/a" rather than naming a file that does not exist.
+            if status == "present/full":
+                if not launch or (not launch.endswith(f"{path}/index.html") and not launch.endswith("index.html")):
+                    fail(f"entry {aid}: launch {launch!r} does not point at this app's index.html")
+            elif launch and not launch.startswith("n/a") and not os.path.isfile(os.path.join(abs_path, "index.html")):
+                fail(f"entry {aid}: partial entry names launch {launch!r} but has no index.html")
             version = app.get("version")
             if doc.get("version") and version and doc["version"] != version:
                 fail(f"entry {aid}: version {version!r} != manifest version {doc['version']!r}")
@@ -219,6 +226,12 @@ def check_entry(app: dict, bridge_caps: set[str] | None, queue_ids: set[str]) ->
                 fail(f"entry {aid}: native app has no main.c at {rel(src)}")
             desktop = os.path.join(DESKTOP_DIR, f"{aid}.desktop")
             if not os.path.isfile(desktop):
+                # The installed binary name is not always the inventory id
+                # (e.g. nuxel-native-settings -> nuxel-settings.desktop).
+                alt = os.path.join(DESKTOP_DIR, os.path.basename(path.rstrip("/")) + ".desktop")
+                if os.path.isfile(alt):
+                    desktop = alt
+            if not os.path.isfile(desktop):
                 fail(f"entry {aid}: native app has no desktop entry {rel(desktop)}")
             launch = str(app.get("launch", ""))
             if launch and not launch.startswith("/usr/bin/"):
@@ -226,6 +239,24 @@ def check_entry(app: dict, bridge_caps: set[str] | None, queue_ids: set[str]) ->
     elif typ == "placeholder":
         if status not in ("present/partial", "missing", "external"):
             fail(f"entry {aid}: a placeholder cannot be {status}")
+    elif typ == "settings-surface":
+        # A settings sub-surface lives inside the Settings PWA.  It has no
+        # standalone index/manifest, so the only honest checks are that the
+        # container exists and the status is one of the partial/full states.
+        if not os.path.exists(abs_path):
+            fail(f"entry {aid}: settings-surface path {path!r} does not exist")
+        if status not in ("present/full", "present/partial"):
+            fail(f"entry {aid}: a settings-surface cannot be {status}")
+    elif typ == "tool":
+        # A tool is a repository script/binary or a configuration directory;
+        # it is not a launchable PWA and has no manifest.
+        if not os.path.exists(abs_path):
+            fail(f"entry {aid}: tool path {path!r} does not exist")
+        if status not in ("present/full", "present/partial", "external"):
+            fail(f"entry {aid}: a tool cannot be {status}")
+        launch = str(app.get("launch", ""))
+        if not launch:
+            fail(f"entry {aid}: tool launch is empty")
     else:
         fail(f"entry {aid}: unknown type {typ!r}")
     ok(f"entry {aid} ({typ}, {status}) is consistent with the tree")

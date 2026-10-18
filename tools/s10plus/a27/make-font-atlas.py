@@ -54,7 +54,12 @@ def build_glyphs(font_path):
         glyphs = []
         for cp in range(FIRST, LAST + 1):
             ch = chr(cp)
-            advance = int(round(f.getlength(ch)))
+            # Half-up rounding, not Python's banker's rounding.  FreeType
+            # returns exact halves for some glyphs (measured: 22px 't' =
+            # 34.5), so round() produced 34 while an older Pillow produced 35
+            # and the "reproducible" atlas gate drifted by one advance.  The
+            # conversion is explicit and version-independent now.
+            advance = int(f.getlength(ch) + 0.5)
             bbox = f.getbbox(ch)            # (l, t, r, b) with origin at (0, ascent-offset)
             if bbox is None:
                 glyphs.append(dict(w=0, h=0, xoff=0, yoff=0, adv=max(advance, 0), bits=b""))

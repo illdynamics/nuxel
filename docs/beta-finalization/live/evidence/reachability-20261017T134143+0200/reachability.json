@@ -1,0 +1,49 @@
+{
+  "adb_devices": [],
+  "at": "2026-10-17T13:41:43+0200",
+  "blocked_reason": "cannot take the console: cannot open /dev/ttyACM0: [Errno 13] Permission denied: '/dev/ttyACM0'",
+  "capability": {
+    "pid": "0x4ee7",
+    "serial": "NUXEL-S10PLUS-0001",
+    "vid": "0x18d1"
+  },
+  "evidence_dir": "/x/nuxel/docs/beta-finalization/live/evidence/reachability-20261017T134143+0200",
+  "exit_code": 3,
+  "finished": "2026-10-17T13:41:43+0200",
+  "gadget_descriptor_present": false,
+  "host": "Linux 6.17.1-300.fc43.x86_64",
+  "nodes": [
+    {
+      "callout": "/dev/ttyACM0",
+      "dialin": "/dev/ttyACM0",
+      "pid": 20199,
+      "tty_base": "ttyACM",
+      "tty_device": "ttyACM0",
+      "tty_suffix": "0",
+      "vid": 6353
+    }
+  ],
+  "port_busy": false,
+  "reachable": false,
+  "selected": {
+    "callout": "/dev/ttyACM0",
+    "dialin": "/dev/ttyACM0",
+    "match_stage": "vid+pid",
+    "pid": 20199,
+    "tty_base": "ttyACM",
+    "tty_device": "ttyACM0",
+    "tty_suffix": "0",
+    "vid": 6353
+  },
+  "steps": [
+    {
+      "detail": "/dev/ttyACM0 (matched vid+pid)",
+      "ok": true,
+      "step": "select-by-capability"
+    }
+  ],
+  "verdict": "BLOCKED_EXTERNAL_RESOURCE",
+  "verdicts": {
+    "briq-10a-live-reachability-preflight": "BLOCKED_EXTERNAL_RESOURCE"
+  }
+}

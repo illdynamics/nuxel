@@ -154,13 +154,22 @@ class NuxelHome {
         // A32 — logical actions from the Nuxel hardware buttons / host API.
         // The button manager and the Settings app never poke the DOM directly:
         // they emit the same logical action, which is resolved here.
-        document.addEventListener('nuxel:action', (event) => {
+        // A34 TOUCHDOWN: nuxel-pwa-host delivers host actions with
+        // `window.dispatchEvent(new CustomEvent('nuxel:action', ...))`.  An
+        // event dispatched on window does NOT bubble down to document, so the
+        // document-only listener here never saw the host's `home` / `search` /
+        // `settings` actions (measured: launch Mail, then host `action home`
+        // left the Mail iframe on the glass).  Listen on both targets; the same
+        // handler is idempotent.
+        const onNuxelAction = (event) => {
             const action = event.detail && event.detail.action;
             console.log('[Nuxel] logical action:', action);
             if (action === 'home') this._closeOverlays();
             else if (action === 'search' && this.components.search) this.components.search.open();
             else if (action === 'settings') appRegistry.launchApp('nuxel-settings');
-        });
+        };
+        document.addEventListener('nuxel:action', onNuxelAction);
+        window.addEventListener('nuxel:action', onNuxelAction);
 
         // Keyboard shortcuts
         document.addEventListener('keydown', (e) => {
@@ -194,6 +203,17 @@ class NuxelHome {
 
     _openPwa(app, url) {
         console.log(`Opening PWA: ${app.name} at ${url}`);
+
+        // A34 TOUCHDOWN: the terminal is a real PTY rendered in a SEPARATE
+        // native GTK/WebKit window (one instance, driven by nuxel-pwa-host).
+        // Opening an iframe as well produced two terminal surfaces: closing the
+        // native window revealed a second, non-functional one, and home could
+        // not dismiss the native surface.  Launch it through the host instead.
+        if (app.id === 'org.nuxel.Terminal' &&
+            window.NuxelHost && window.NuxelHost.available) {
+            window.NuxelHost.action('open-terminal');
+            return;
+        }
 
         // Remove any previous app frame.
         document.querySelectorAll('.pwa-frame, .pwa-close-btn').forEach(el => el.remove());
@@ -290,10 +310,21 @@ class NuxelHome {
         if (this.components.qs) {
             this.components.qs.close();
         }
+        // A34 TOUCHDOWN: "home" (hardware action / Escape / host FIFO) must also
+        // dismiss an app surface opened by _openPwa().  Previously it only
+        // closed search/QS, so after any app tap the only way back was the small
+        // ✕.  This uses the same nodes _openPwa() creates; no layout change.
+        document.querySelectorAll('.pwa-frame, .pwa-close-btn').forEach(el => el.remove());
     }
 }
 
 // Initialize on DOM ready
 document.addEventListener('DOMContentLoaded', () => {
     window.nuxel = new NuxelHome();
+    // Same-origin app iframes (Settings, Cleanup, DevMgmt, Nuxtore, Root
+    // Control) call this to return Home.  It did not exist anywhere, so their
+    // own Close buttons fell through and did nothing (A34 owner test).
+    window.NuxelLauncherClose = () => {
+        if (window.nuxel) window.nuxel._closeOverlays();
+    };
 });

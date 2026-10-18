@@ -1,0 +1,19 @@
+# console /dev/ttyACM0
+===== journalctl -u nuxel-button-manager -b --since "12:12:30" --no-pager 2>&1 | tail -40; echo ---; grep -n "gesture\|swipe\|edge\|threshold\|back" /etc/nuxel/input/button-fsm.json | head -50   [rc=0 frame=ce1a4a6c sha_ok=yes]
+    Oct 17 12:13:01 fedora nuxel-button-manager[5425]: FSM_ACTION source=touch action=back
+    ---
+    3:  "comment": "Hardware-button + screen-gesture finite state machine for the Samsung Galaxy S10+ (beyond2lte). Installed to /etc/nuxel/input/button-fsm.json and read by tools/s10plus/a33/nuxel-button-manager.c. This file is authoritative for every timing window: the C source carries the same numbers as NUXEL_FSM_* defines, and tools/s10plus/a33/tests/test-button-fsm.py cross-checks JSON <-> C <-> the protected A32 source so the three can never drift apart.",
+    44:      "comment_grab": "Read-only observer: NO EVIOCGRAB is taken, so libinput/Phoc keep receiving the same events. Touch gestures are therefore additive, never exclusive, and every dispatched action is idempotent."
+    131:        "why_gated": "A userspace reboot is allowed by the mission only after the reboot policy allows it and only with a healthy rollback path. While the owner is absent the gate stays closed by default."
+    140:        "why_gated": "Powering the handset off with no owner present would strand the mission with no way to turn it back on."
+    202:  "gestures": {
+    204:    "comment": "Screen gestures (buffet-style): swipe up = home, swipe up and hold = recents, edge swipe inward = back. Recognised from the touchscreen's MT-B slots (ABS_MT_SLOT/ABS_MT_TRACKING_ID, falling back to single-touch ABS_X/ABS_Y when a slot id never appears). Actions are dispatched to the launcher's own control FIFO (/run/nuxel-pwa-host.cmd) and are idempotent, so a gesture that the launcher also handled cannot produce a duplicated transition.",
+    210:      "comment": "Pixel geometry is expressed as a fraction of the panel where possible, because the panel resolution is a device property, not a constant of this tool; the pixel fallbacks are used only when the axis ranges cannot be read.",
+    211:      "edge_zone_px": 24,
+    221:      "swipe_max_ms": 600,
+    223:      "edge_back_max_ms": 400,
+    229:        "id": "edge-back",
+    231:        "action": "back",
+    232:        "when": "down within edge_zone_px of the left or right edge, released having travelled >= min_travel_px horizontally toward the centre within edge_back_max_ms"
+    235:        "id": "swipe-up-home",
+    241:        "id": "swipe-up-hold-recents",

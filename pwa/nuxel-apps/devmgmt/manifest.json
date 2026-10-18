@@ -12,6 +12,6 @@
     {"src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png"},
     {"src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml"}
   ],
-  "nuxel": {"app_id": "org.nuxel.DevMgmt", "capabilities": ["system:inspect"], "app_type": "tools",
+  "nuxel": { "bridge_version": 1, "app_id": "org.nuxel.DevMgmt", "capabilities": ["system:inspect"], "app_type": "tools",
             "default_mode": "read-only", "writes": false}
 }

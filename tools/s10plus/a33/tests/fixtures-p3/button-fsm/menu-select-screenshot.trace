@@ -4,5 +4,7 @@
 2200 key power 0
 3000 key volume_down 1
 3100 key volume_down 0
+3500 key volume_down 1
+3600 key volume_down 0
 4000 key power 1
 4100 key power 0

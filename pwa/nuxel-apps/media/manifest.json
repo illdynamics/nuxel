@@ -12,7 +12,7 @@
     {"src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png"},
     {"src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml"}
   ],
-  "nuxel": {
+  "nuxel": { "bridge_version": 1,
     "app_id": "org.nuxel.Media",
     "capabilities": ["audio:playback", "media:library"],
     "app_type": "media",

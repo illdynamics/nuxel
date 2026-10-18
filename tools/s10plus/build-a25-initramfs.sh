@@ -112,7 +112,7 @@ mkdir -p "${BIN}"
 # TARGET libc. A cross toolchain installed without the target libc headers/libs
 # still finds the HOST /usr/include and fails deep inside the build with
 #   "/usr/include/features-time64.h: bits/wordsize.h: No such file or directory"
-# (measured on the first v0.4.0-alpha CI run). Catch it here instead.
+# (measured on the first v0.5.1-alpha CI run). Catch it here instead.
 if ! printf '#include <stdio.h>\nint main(void){return 0;}\n' \
         | "${CC}" -static -o "${BIN}/.cc-probe" -x c - 2>"${BIN}/.cc-probe.log"; then
     err "cannot link a static aarch64 binary with ${CC}:"

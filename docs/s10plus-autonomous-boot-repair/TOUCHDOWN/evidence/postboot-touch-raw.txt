@@ -1,0 +1,267 @@
+# console /dev/ttyACM0
+===== echo ===CMDLINE-MODE===; tr ' ' '\n' < /proc/cmdline | grep -E 'androidboot.mode|lpcharge|charging_mode' ; echo rc=$?   [rc=0 frame=782748f7 sha_ok=yes]
+    ===CMDLINE-MODE===
+    charging_mode=0x3030
+    rc=0
+===== echo ===TOUCH-DMESG===; dmesg | grep -i -E 'sec_ts|sec_touch|tsp_|lpcharge|Low power' | head -60   [rc=0 frame=8f9148f8 sha_ok=yes]
+    ===TOUCH-DMESG===
+    [    0.000000] Kernel command line:  console=ram loglevel=4 sec_debug.pcb_offset=7346944 sec_debug.smd_offset=7348992 sec_debug.lpddr4_size=8 sec_debug.dram_info=01,06,03,8G sec_debug.pwrsrc_rs=0x0001000820000000 sec_debug.reset_reason=7 sec_reset.reset_reason=7 sec_debug.reset_rwc=1 sec_debug.level=0 sec_watchdog.sec_pet=5 androidboot.debug_level=0x4f4c androidboot.force_upload=0x0 softdog.soft_margin=100 softdog.soft_panic=1 sec_debug.dump_sink=0x0 sec_debug.upload_count=0 androidboot.dram_info=01,06,03,8G androidboot.fmm_lock=48 sec_debug.fmm_lock_offset=7340600 sec_debug.sjl=1 androidboot.sn.param.offset=7343024 androidboot.prototype.param.offset=7351040 androidboot.recovery_offset=7355136 printk.devkmsg=on ess_setup=0xfd900000 sec_avc_log=0x40000@0x91202000 sec_tsp_log=0x40000@0x91244000 sec_disp_log=0x100000@0x91286000 sec_debug_next=0x800000@0x91388000 charging_mode=0x3030 s3cfb.bootloaderfb=0xca000000 lcdtype=10555411 androidboot.carrierid.param.offset=7340608 andro
+    [    0.956755] __init_sec_tsp_command_history: init done
+    [    0.956768] __init_sec_tsp_raw_data: init done
+    [    1.630590] [sec_input] sec_ts_init
+    [    1.630852] sec_ts 4-0048: [sec_input] sec_ts_probe
+    [    1.630873] sec_ts 4-0048: [sec_input] sec_ts_parse_dt: Failed to get tsp-icid gpio
+    [    1.630930] sec_ts 4-0048: [sec_input] sec_ts_parse_dt: irq_type property:2008, 8200
+    [    1.630950] sec_ts 4-0048: [sec_input] sec_ts_parse_dt: Failed to get tsp-id gpio
+    [    1.630973] sec_ts 4-0048: [sec_input] sec_ts_parse_dt: lcd is connected
+    [    1.630987] sec_ts 4-0048: [sec_input] sec_ts_parse_dt: lcdtype 0x00A11013
+    [    1.631011] sec_ts 4-0048: [sec_input] sec_ts_parse_dt : zone's size - indicator:133, navigation:266, edge:341
+    [    1.631030] sec_ts 4-0048: [sec_input] sec_ts_parse_dt: i2c buffer limit: 65535, lcd_id:A11013, bringup:0, FW:tsp_sec/y771_beyond2_phole.bin(1), id:-2,-2, dex:1, max(4095/4095), FOD:1, AOT:1, ED:1
+    [    1.631059] sec_ts 4-0048: [sec_input] sec_tclm_parse_dt: tclm_level 2, sec_afe_base 0206
+    [    1.631162] sec_ts 4-0048: [sec_input] sec_ts_probe: init resource
+    [    1.631176] sec_ts 4-0048: [sec_input] sec_ts_pinctrl_configure: ACTIVE
+    [    1.632514] sec_ts 4-0048: [sec_input] sec_ts_power: on: avdd:on, dvdd:on
+    [    1.633144] sec_ts 4-0048: [sec_input] sec_ts_wait_for_ready: 09, 00, 10, 00, 00, 00, 00, 00 [0]
+    [    1.633162] sec_ts 4-0048: [sec_input] sec_ts_probe: power enable
+    [    1.633477] sec_ts 4-0048: [sec_input] sec_ts_probe: TOUCH DEVICE ID : 53, 45, 37, 71, 00
+    [    1.648766] sec_ts 4-0048: [sec_input] sec_ts_probe: TOUCH STATUS : 20 || 00, 03, 00, 00
+    [    1.649058] sec_ts 4-0048: [sec_input] sec_ts_read_calibration_report: count:7, pass count:7, fail count:0, status:0xA2
+    [    1.649076] sec_ts 4-0048: [sec_input] sec_ts_firmware_update_on_probe: initial firmware update tsp_sec/y771_beyond2_phole.bin, cal:A2
+    [    1.649095] sec_ts 4-0048: [sec_input] sec_ts_firmware_update_on_probe: request firmware done! size = 184388
+    [    1.649111] sec_ts 4-0048: [sec_input] sec_ts_save_version_of_bin: img_ver of bin = 17.56.2.33
+    [    1.649127] sec_ts 4-0048: [sec_input] sec_ts_save_version_of_bin: core_ver of bin = 17.56.2.1
+    [    1.649141] sec_ts 4-0048: [sec_input] sec_ts_save_version_of_bin: config_ver of bin = 17.56.2.4
+    [    1.649607] sec_ts 4-0048: [sec_input] sec_ts_save_version_of_ic: IC Image version info : 17.56.2.33
+    [    1.649924] sec_ts 4-0048: [sec_input] sec_ts_save_version_of_ic: IC Core version info : 17.56.2.1,
+    [    1.650212] sec_ts 4-0048: [sec_input] sec_ts_save_version_of_ic: IC config version info : 17.56.2.4
+    [    1.650229] sec_ts 4-0048: [sec_input] sec_ts_firmware_update_on_probe: skip - fw update
+    [    1.650488] sec_ts 4-0048: [sec_input] sec_ts_read_information: AC, 37, 71
+    [    1.650971] sec_ts 4-0048: [sec_input] sec_ts_read_information: nTX:17, nRX:36,  rX:4095, rY:4095, dX:1439, dY:3039
+    [    1.651173] sec_ts 4-0048: [sec_input] sec_ts_read_information: STATUS : 20
+    [    1.651458] sec_ts 4-0048: [sec_input] sec_ts_read_information: TOUCH STATUS : 00, 03, 00, 00
+    [    1.651687] sec_ts 4-0048: [sec_input] sec_ts_read_information: Functions : 61
+    [    1.652087] input: sec_touchscreen as /devices/platform/104b0000.hsi2c/i2c-4/4-0048/input/input2
+    [    1.652102] sec_ts 4-0048: [sec_input] sec_ts_input_open not finished info work
+    [    1.652376] input: sec_touchpad as /devices/platform/104b0000.hsi2c/i2c-4/4-0048/input/input3
+    [    1.652614] input: sec_touchproximity as /devices/platform/104b0000.hsi2c/i2c-4/4-0048/input/input4
+    [    1.652756] sec_ts 4-0048: [sec_input] sec_ts_probe: request_irq = 431
+    [    1.653300] sec_ts 4-0048: [sec_input] sec_ts_read_event: STATUS 1d 61 2 2 3 0 0 0
+    [    1.653319] sec_ts 4-0048: [sec_input] sec_ts_read_event: Normal changed
+    [    1.653756] sec_ts 4-0048: [sec_input] sec_ts_check_custom_library: (2) G975, || 00, 04, 00, 17, || 10, 00
+    [    1.653776] sec_ts 4-0048: [sec_input] sec_ts_check_custom_library: use SPONGE
+    [    1.653795] sec_ts 4-0048: [sec_input] sec_ts_set_custom_library: Sponge (0x00)
+    [    1.654237] sec_ts 4-0048: [sec_input] sec_ts_probe: Cannot find power supply
+    [    1.654256] sec_ts 4-0048: [sec_input] sec_ts_probe: done
+    [    1.685974] sec_ts 4-0048: [sec_input] sec_ts_get_touch_function: touch_functions:61 ic_status:61
+    [    1.709894] sec_ts 4-0048: [sec_input] get_tsp_nvm_data_by_size: offset:2, length:28, size:8
+    [    2.251717] nuxel-init: CMDLINE_PART 4: prototype.param.offset=7351040 androidboot.recovery_offset=7355136 printk.devkmsg=on ess_setup=0xfd900000 sec_avc_log=0x40000@0x91202000 sec_tsp_log=0x40000@0x91244000 sec_disp_log=0x100000@0x91286000
+    [    2.273810] sec_ts 4-0048: [sec_input] sec_tclm_check_cal_case: cal_count value [1]
+    [    2.273822] sec_ts 4-0048: [sec_input] get_tsp_nvm_data_by_size: offset:2, length:28, size:8
+    [    2.371603] sec_ts 4-0048: [sec_input] sec_ts_input_open not finished info work
+    [    2.769965] sec_ts 4-0048: [sec_input] sec_ts_input_open not finished info work
+    [    2.849823] sec_ts 4-0048: [sec_input] sec_tclm_get_nvm_all: cal_count:1, pos:4(LCIA), hist_count:1, lastp:0
+    [    2.849836] sec_ts 4-0048: [sec_input] sec_tclm_position_history: [Now] LCIA1
+    [    2.849844] sec_ts 4-0048: [sec_input] sec_tclm_position_history: [Old] O2
+    [    2.849853] sec_ts 4-0048: [sec_input] sec_ts_read_info_work: sec_tclm_check_cal_case ret: 0
+    [    2.851710] sec_ts 4-0048: [sec_input] sec_ts_read_event: STATUS 1d 61 2 2 6 0 0 3
+    [    2.851722] sec_ts 4-0048: [sec_input] sec_ts_read_event: Normal changed
+    grep: write error: Broken pipe
+    dmesg: write error
+===== echo ===INPUT===; grep -A8 -B1 -i 'touchscreen' /proc/bus/input/devices   [rc=0 frame=3b0148f9 sha_ok=yes]
+    ===INPUT===
+    I: Bus=0018 Vendor=0000 Product=0000 Version=0000
+    N: Name="sec_touchscreen"
+    P: Phys=sec_touchscreen/input1
+    S: Sysfs=/devices/platform/104b0000.hsi2c/i2c-4/4-0048/input/input2
+    U: Uniq=
+    H: Handlers=sec_key_notifier event2
+    B: PROP=2
+    B: EV=2b
+    B: KEY=4000000000000000 0 0 80 0 420 0 0 8000 0 0
+    B: ABS=4263800000000003
+    B: SW=0
+    --
+    N: Name="sec_touchpad"
+    P: Phys=sec_touchscreen/input1
+    S: Sysfs=/devices/platform/104b0000.hsi2c/i2c-4/4-0048/input/input3
+    U: Uniq=
+    H: Handlers=sec_key_notifier event3
+    B: PROP=1
+    B: EV=2b
+    B: KEY=4000000000000000 0 0 80 0 e520 0 0 8000 0 0
+    B: ABS=4263800000000003
+    B: SW=0
+===== echo ===TSP-SYSFS===; ls -la /sys/class/sec/tsp/ 2>&1   [rc=0 frame=bced48fa sha_ok=yes]
+    ===TSP-SYSFS===
+    total 0
+    drwxr-xr-x  3 root root    0 Oct 17 12:07 .
+    drwxr-xr-x 33 root root    0 Oct 17 12:07 ..
+    -rw-rw-r--  1 root root 4096 Oct 17 12:07 all_touch_count
+    -rw-rw-r--  1 root root 4096 Oct 17 12:07 checksum
+    -r--r--r--  1 root root 4096 Oct 17 12:07 cm2_main
+    -r--r--r--  1 root root 4096 Oct 17 12:07 cm2_sdc
+    -r--r--r--  1 root root 4096 Oct 17 12:07 cm2_sub
+    -r--r--r--  1 root root 4096 Oct 17 12:07 cm3_main
+    -r--r--r--  1 root root 4096 Oct 17 12:07 cm3_sdc
+    -r--r--r--  1 root root 4096 Oct 17 12:07 cm3_sub
+    --w--w----  1 root root 4096 Oct 17 12:07 cmd
+    -r--r--r--  1 root root 4096 Oct 17 12:07 cmd_list
+    -r--r--r--  1 root root 4096 Oct 17 12:07 cmd_result
+    -r--r--r--  1 root root 4096 Oct 17 12:07 cmd_result_all
+    -r--r--r--  1 root root 4096 Oct 17 12:07 cmd_status
+    -r--r--r--  1 root root 4096 Oct 17 12:07 cmd_status_all
+    -rw-rw-r--  1 root root 4096 Oct 17 12:07 comm_err_count
+    -rw-rw-r--  1 root root 4096 Oct 17 12:07 ear_detect_enable
+    -r--r--r--  1 root root 4096 Oct 17 12:07 fod_info
+    -r--r--r--  1 root root 4096 Oct 17 12:07 fod_pos
+    -r--r--r--  1 root root 4096 Oct 17 12:07 get_lp_dump
+    -rw-rw-r--  1 root root 4096 Oct 17 12:07 ic_reset_count
+    lrwxrwxrwx  1 root root    0 Oct 17 12:07 input -> ../../../platform/104b0000.hsi2c/i2c-4/4-0048/input/input2
+    -r--r--r--  1 root root 4096 Oct 17 12:07 ito_check
+    -rw-rw-r--  1 root root 4096 Oct 17 12:07 mode_change_failed_count
+    -r--r--r--  1 root root 4096 Oct 17 12:07 module_id
+    -rw-rw-r--  1 root root 4096 Oct 17 12:07 multi_count
+    -rw-rw-r--  1 root root 4096 Oct 17 12:07 noise_mode
+    drwxr-xr-x  2 root root    0 Oct 17 12:07 power
+    -rw-rw-r--  1 root root 4096 Oct 17 12:07 prox_power_off
+    -r--r--r--  1 root root 4096 Oct 17 12:07 raw_check
+    -r--r--r--  1 root root 4096 Oct 17 12:07 read_ambient_channel_delta
+    -r--r--r--  1 root root 4096 Oct 17 12:07 read_ambient_channel_info
+    -r--r--r--  1 root root 4096 Oct 17 12:07 read_ambient_info
+    -r--r--r--  1 root root 4096 Oct 17 12:07 scrub_pos
+    -r--r--r--  1 root root 4096 Oct 17 12:07 selftest_fail_hist_main
+    -r--r--r--  1 root root 4096 Oct 17 12:07 selftest_fail_hist_sdc
+    -r--r--r--  1 root root 4096 Oct 17 12:07 selftest_fail_hist_sub
+    -rw-rw-r--  1 root root 4096 Oct 17 12:07 sensitivity_mode
+    -r--r--r--  1 root root 4096 Oct 17 12:07 status
+    lrwxrwxrwx  1 root root    0 Oct 17 12:07 subsystem -> ../../../../class/sec
+    -r--r--r--  1 root root 4096 Oct 17 12:07 support_feature
+    -rw-r--r--  1 root root 4096 Oct 17 12:07 uevent
+    -r--r--r--  1 root root 4096 Oct 17 12:07 vendor
+    -rw-rw-r--  1 root root 4096 Oct 17 12:07 wet_mode
+===== echo ===TSP-FILES===; ls /sys/class/sec/tsp/ 2>&1   [rc=0 frame=b6f748fb sha_ok=yes]
+    ===TSP-FILES===
+    all_touch_count
+    checksum
+    cm2_main
+    cm2_sdc
+    cm2_sub
+    cm3_main
+    cm3_sdc
+    cm3_sub
+    cmd
+    cmd_list
+    cmd_result
+    cmd_result_all
+    cmd_status
+    cmd_status_all
+    comm_err_count
+    ear_detect_enable
+    fod_info
+    fod_pos
+    get_lp_dump
+    ic_reset_count
+    input
+    ito_check
+    mode_change_failed_count
+    module_id
+    multi_count
+    noise_mode
+    power
+    prox_power_off
+    raw_check
+    read_ambient_channel_delta
+    read_ambient_channel_info
+    read_ambient_info
+    scrub_pos
+    selftest_fail_hist_main
+    selftest_fail_hist_sdc
+    selftest_fail_hist_sub
+    sensitivity_mode
+    status
+    subsystem
+    support_feature
+    uevent
+    vendor
+    wet_mode
+===== echo ===IRQ===; grep -i -E 'sec_ts|tsp' /proc/interrupts   [rc=0 frame=632648fc sha_ok=yes]
+    ===IRQ===
+    431:         10          0          0          0          0          0          0          0  exynos7_wkup_irq_chip   0 Level     sec_ts
+===== echo ===EVENT-NODES===; ls -la /dev/input/   [rc=0 frame=701a48fd sha_ok=yes]
+    ===EVENT-NODES===
+    total 0
+    drwxr-xr-x  2 root root    260 Jan  1  1970 .
+    drwxr-xr-x 10 root root   7840 Oct 17 12:07 ..
+    crw-------  1 root root 13, 64 Jan  1  1970 event0
+    crw-------  1 root root 13, 65 Jan  1  1970 event1
+    crw-------  1 root root 13, 74 Jan  1  1970 event10
+    crw-------  1 root root 13, 66 Jan  1  1970 event2
+    crw-------  1 root root 13, 67 Jan  1  1970 event3
+    crw-------  1 root root 13, 68 Jan  1  1970 event4
+    crw-------  1 root root 13, 69 Jan  1  1970 event5
+    crw-------  1 root root 13, 70 Jan  1  1970 event6
+    crw-------  1 root root 13, 71 Jan  1  1970 event7
+    crw-------  1 root root 13, 72 Jan  1  1970 event8
+    crw-------  1 root root 13, 73 Jan  1  1970 event9
+===== echo ===INPUTCOUNT===; grep -c ^I: /proc/bus/input/devices   [rc=0 frame=48ab48fe sha_ok=yes]
+    ===INPUTCOUNT===
+    11
+===== echo ===SERVICES===; systemctl is-active nuxel-wayland nuxel-wl-fb nuxel-touch-arm nuxel-button-manager seatd   [rc=0 frame=82fa48ff sha_ok=yes]
+    ===SERVICES===
+    active
+    active
+    active
+    active
+    active
+===== echo ===TOUCHARM===; systemctl status nuxel-touch-arm --no-pager -l 2>&1 | head -25; cat /run/nuxel-touch-arm.state 2>&1 | tail -8   [rc=0 frame=00274900 sha_ok=yes]
+    ===TOUCHARM===
+    ● nuxel-touch-arm.service - Nuxel S10+ touchscreen arming (sec_ts stop->start, then hold open)
+         Loaded: loaded (/etc/systemd/system/nuxel-touch-arm.service; enabled; preset: disabled)
+        Drop-In: /usr/lib/systemd/system/service.d
+                 └─10-timeout-abort.conf
+         Active: active (running) since Sat 2026-10-17 12:07:27 CEST; 31s ago
+     Invocation: 54776229c6af47cb9a3eb2919768234e
+           Docs: file:/usr/share/doc/nuxel/UTM-LAUNCHER-PORT.md
+       Main PID: 5347 (nuxel-touch-arm)
+          Tasks: 1 (limit: 8169)
+         Memory: 336K
+         CGroup: /system.slice/nuxel-touch-arm.service
+                 └─5347 /usr/lib/nuxel/nuxel-touch-arm
+    Oct 17 12:07:27 fedora systemd[1]: Started nuxel-touch-arm.service - Nuxel S10+ touchscreen arming (sec_ts stop->start, then hold open).
+    Oct 17 12:07:59 fedora systemd[1]: nuxel-touch-arm.service: Failed to get CPU usage: No such file or directory
+    2026-10-17T10:07:29Z ARM_DONE off_rc=0 off_result='module_off_master:OK' fb_blank_rc=0 power=''
+    2026-10-17T10:07:29Z ARMED_OK path=/dev/input/event2 name='sec_touchscreen' mt=1 direct=1 btn=1 slots=10 x=[0.4095] y=[0.4095] tsp_before='mutual:1, hover:0, cover:0, glove:0, stylus:0, palm:1, wet:1, prox:0, npm:1, lpm:0, test:0, flash:0, no_charger:0, wired_charger:1, wireless_charger:0, noise:0, supported_noise_mode:1, monitor_noise:0, cover_type:0, brush_mode:0, aod:0, aot:0spay:0, fod:0' tsp_after='mutual:1, hover:0, cover:0, glove:0, stylus:0, palm:1, wet:1, prox:0, npm:1, lpm:0, test:0, flash:0, no_charger:0, wired_charger:1, wireless_charger:0, noise:0, supported_noise_mode:1, monitor_noise:0, cover_type:0, brush_mode:0, aod:0, aot:0spay:0, fod:0'
+===== echo ===LIBINPUT===; cat /run/nuxel-libinput-path.state 2>&1   [rc=0 frame=45794901 sha_ok=yes]
+    ===LIBINPUT===
+    1792231647 PATH_CONTEXT_CREATED ctx=0x5597a6ab80 udev=0x5597999a40 (udev daemon not required)
+    1792231648 UDEVDB_SEEDED /run/udev/data/c13:66 (initialized marker; systemd-udevd cannot run on this kernel)
+    1792231648 DEVICE_OPEN_LIBSEAT path=/dev/input/event2 rc=24 fd=-1
+    1792231648 PATH_ADD node=/dev/input/event2 name='sec_touchscreen' accepted=1
+    1792231648 UDEVDB_SEEDED /run/udev/data/c13:68 (initialized marker; systemd-udevd cannot run on this kernel)
+    1792231648 DEVICE_OPEN_LIBSEAT path=/dev/input/event4 rc=25 fd=-1
+    1792231648 PATH_ADD node=/dev/input/event4 name='sec_touchproximity' accepted=1
+    1792231648 PATH_ASSIGN_SEAT seat='seat0' direct_devices_seen=2 added=2 db_seeded=2
+===== echo ===BUTTONMGR===; journalctl -u nuxel-button-manager -n 20 --no-pager 2>&1   [rc=0 frame=32e24902 sha_ok=yes]
+    ===BUTTONMGR===
+    Oct 17 11:51:38 fedora nuxel-button-manager[5422]: VOLUME_STEP dir=-1 value=17 step=1 ceiling=20 capped=0
+    Oct 17 11:51:38 fedora nuxel-button-manager[5422]: FSM_ACTION source=tick action=screenshot
+    -- Boot b02d5e1a09da4a33b570e9608360d203 --
+    Oct 17 11:51:57 fedora systemd[1]: Started nuxel-button-manager.service - Nuxel hardware button and gesture manager (single owner of gpio_keys).
+    Oct 17 11:51:57 fedora nuxel-button-manager[5393]: CONFIG_LOADED buttons_json=/etc/nuxel/input/buttons.json power_short=screen-toggle power_long=power-menu bixby_short=open-terminal
+    Oct 17 11:51:57 fedora nuxel-button-manager[5393]: REBOOT_GATE enabled=1 restart=1 poweroff=1 rollback_ok=1 policy_known=0 policy_allow=0
+    Oct 17 11:51:57 fedora nuxel-button-manager[5393]: KEY_DEVICE_OPEN path=/dev/input/event1 name=gpio_keys (selected by capability, not by eventN)
+    Oct 17 11:51:57 fedora nuxel-button-manager[5393]: TOUCH_DEVICE_NOT_FOUND (no DIRECT+MT device: gestures stay disabled)
+    Oct 17 11:51:57 fedora nuxel-button-manager[5393]: MANAGER_READY key=/dev/input/event1 touch=none gestures=1 fsm_spec_v=1
+    Oct 17 11:51:57 fedora nuxel-button-manager[5393]: KEY_CAPABILITIES 114 115 116 703
+    Oct 17 12:06:47 fedora nuxel-button-manager[5393]: MANAGER_EXIT
+    Oct 17 12:06:47 fedora systemd[1]: Stopping nuxel-button-manager.service - Nuxel hardware button and gesture manager (single owner of gpio_keys)...
+    Oct 17 12:06:47 fedora systemd[1]: nuxel-button-manager.service: Deactivated successfully.
+    Oct 17 12:06:47 fedora systemd[1]: Stopped nuxel-button-manager.service - Nuxel hardware button and gesture manager (single owner of gpio_keys).
+    -- Boot 83a7230a38b040f3a8f1f7b59edbf1fb --
+    Oct 17 12:07:28 fedora systemd[1]: Started nuxel-button-manager.service - Nuxel hardware button and gesture manager (single owner of gpio_keys).
+    Oct 17 12:07:28 fedora nuxel-button-manager[5425]: CONFIG_LOADED buttons_json=/etc/nuxel/input/buttons.json power_short=screen-toggle power_long=power-menu bixby_short=open-terminal
+    Oct 17 12:07:28 fedora nuxel-button-manager[5425]: REBOOT_GATE enabled=1 restart=1 poweroff=1 rollback_ok=1 policy_known=0 policy_allow=0
+    Oct 17 12:07:29 fedora nuxel-button-manager[5425]: KEY_DEVICE_OPEN path=/dev/input/event1 name=gpio_keys (selected by capability, not by eventN)
+    Oct 17 12:07:29 fedora nuxel-button-manager[5425]: TOUCH_DEVICE_OPEN path=/dev/input/event2 name=sec_touchscreen axis_max=4095x4095 grab=none
+    Oct 17 12:07:29 fedora nuxel-button-manager[5425]: MANAGER_READY key=/dev/input/event1 touch=/dev/input/event2 gestures=1 fsm_spec_v=1
+    Oct 17 12:07:29 fedora nuxel-button-manager[5425]: KEY_CAPABILITIES 114 115 116 703

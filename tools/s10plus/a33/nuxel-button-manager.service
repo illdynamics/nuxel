@@ -40,6 +40,10 @@ Before=multi-user.target
 # Do not fight the display bridge: the manager only WRITES to its control FIFO.
 After=nuxel-wl-fb.service
 Wants=nuxel-wl-fb.service
+# Restart-burst bound ([Unit], not [Service]).  In [Service] systemd ignores it,
+# which would let a crash loop hammer the handset unbounded.
+StartLimitIntervalSec=60
+StartLimitBurst=5
 
 [Service]
 Type=simple
@@ -48,11 +52,8 @@ ExecStart=/usr/lib/nuxel/nuxel-button-manager
 # physical buttons stop working entirely, and no other process can take over.
 Restart=always
 RestartSec=2
-# A tight loop of crashes must not hammer the system: 5 restarts in 60 s, then
-# stay down and let journald record why (the failure must be visible, not hidden
-# behind an endless retry).
-StartLimitIntervalSec=60
-StartLimitBurst=5
+# A tight loop of crashes must not hammer the system: the [Unit] bound above
+# keeps it to 5 restarts in 60 s, then stays down and lets journald record why.
 # The manager needs the input nodes and the FIFOs; it never needs a block device.
 SupplementaryGroups=input
 # NoNewPrivileges keeps the manager from acquiring anything it was not granted:

@@ -1,4 +1,4 @@
-// Nuxel Status Bar — v0.4.1-a33
+// Nuxel Status Bar — v0.4.3-a34
 //
 // SINGLE SOURCE OF TRUTH (briq-02d).  The handset used to serve a stale
 // v0.3.2 copy of this file while the repo (and the UTM VM) was on v0.4.x, so the
@@ -17,7 +17,7 @@
 class StatusBar {
     // Keep in sync with manifest.json ("nuxel.pwa_version") and sw.js
     // (CACHE_VERSION) - the registry test fails if the three ever diverge.
-    static get VERSION() { return '0.4.1-a33'; }
+    static get VERSION() { return '0.4.3-a34'; }
 
     constructor() {
         this.state = {
@@ -72,6 +72,11 @@ class StatusBar {
         this._renderSignal();
         this._renderWifi();
         this._buildNotificationsUI();
+        // A34 TOUCHDOWN: the Quick Settings panel has always listened for
+        // `gesture:qs`, but nothing in the launcher ever dispatched it (measured
+        // on the handset: the handler existed and the pull-down did nothing).
+        // Wire the gesture to the REAL status bar; no layout or visual change.
+        this._bindQuickSettingsGesture();
 
         // Update local time every second (no bridge needed)
         setInterval(() => this._updateTime(), 1000);
@@ -97,6 +102,58 @@ class StatusBar {
         window.addEventListener('resize', () => this._applySafeZones());
         window.addEventListener('orientationchange', () => setTimeout(() => this._applySafeZones(), 120));
         document.addEventListener('nuxel:safezones-changed', () => this._applySafeZones());
+    }
+
+    _bindQuickSettingsGesture() {
+        const bar = document.getElementById('status-bar');
+        if (!bar) return;
+        const PULL_PX = 24;      // CSS px, measured against the real 360x760 viewport
+        const MAX_SKEW = 80;     // reject diagonal drags that are not a pull-down
+        let startX = 0, startY = 0, tracking = false, fired = false;
+
+        const start = (x, y) => {
+            startX = x; startY = y; tracking = true; fired = false;
+        };
+        const move = (x, y) => {
+            if (!tracking || fired) return;
+            const dy = y - startY;
+            const dx = Math.abs(x - startX);
+            if (dy >= PULL_PX && dx <= MAX_SKEW) {
+                fired = true;
+                tracking = false;
+                try {
+                    document.dispatchEvent(new CustomEvent('gesture:qs'));
+                } catch (e) {}
+            }
+        };
+        const end = () => { tracking = false; };
+
+        // Pointer events are what WebKitGTK delivers for a real finger on this
+        // port (verified: one physical tap produced pointerdown + touchstart).
+        // The touch fallback is passive and shares the same state, so a browser
+        // that emits both cannot open the panel twice.
+        bar.addEventListener('pointerdown', (e) => {
+            if (e.button !== undefined && e.button !== 0) return;
+            start(e.clientX, e.clientY);
+            // Keep receiving moves after the finger leaves the 36 px bar.
+            try { bar.setPointerCapture(e.pointerId); } catch (err) {}
+        });
+        bar.addEventListener('pointermove', (e) => move(e.clientX, e.clientY));
+        bar.addEventListener('pointerup', (e) => {
+            try { bar.releasePointerCapture(e.pointerId); } catch (err) {}
+            end();
+        });
+        bar.addEventListener('pointercancel', end);
+        bar.addEventListener('touchstart', (e) => {
+            const t = e.touches && e.touches[0];
+            if (t) start(t.clientX, t.clientY);
+        }, { passive: true });
+        bar.addEventListener('touchmove', (e) => {
+            const t = e.touches && e.touches[0];
+            if (t) move(t.clientX, t.clientY);
+        }, { passive: true });
+        bar.addEventListener('touchend', end, { passive: true });
+        bar.addEventListener('touchcancel', end, { passive: true });
     }
 
     _applySafeZones() {

@@ -1,0 +1,36 @@
+# console /dev/ttyACM0
+===== echo ===EVIOCGKEY-NOW===; python3 -c "import fcntl,os;f=os.open('/dev/input/event1',os.O_RDONLY);b=bytearray(96);fcntl.ioctl(f,0x80604518,b);print('pressed_codes='+str([i for i in range(768) if (b[i//8]>>(i%8))&1]));os.close(f)"   [rc=0 frame=bc9049d1 sha_ok=yes]
+    ===EVIOCGKEY-NOW===
+    pressed_codes=[]
+===== echo ===MANAGER-HELP===; /usr/lib/nuxel/nuxel-button-manager --help 2>&1 | head -40   [rc=0 frame=584349d2 sha_ok=yes]
+    ===MANAGER-HELP===
+    usage: /usr/lib/nuxel/nuxel-button-manager [--probe|--capture SECS|--menu-dump|--config-check|--fsm-sim TRACE]
+===== echo ===JOURNAL-BOOT===; journalctl -u nuxel-button-manager -b --no-pager 2>&1 | head -40   [rc=0 frame=d13b49d3 sha_ok=yes]
+    ===JOURNAL-BOOT===
+    Oct 17 12:07:28 fedora systemd[1]: Started nuxel-button-manager.service - Nuxel hardware button and gesture manager (single owner of gpio_keys).
+    Oct 17 12:07:28 fedora nuxel-button-manager[5425]: CONFIG_LOADED buttons_json=/etc/nuxel/input/buttons.json power_short=screen-toggle power_long=power-menu bixby_short=open-terminal
+    Oct 17 12:07:28 fedora nuxel-button-manager[5425]: REBOOT_GATE enabled=1 restart=1 poweroff=1 rollback_ok=1 policy_known=0 policy_allow=0
+    Oct 17 12:07:29 fedora nuxel-button-manager[5425]: KEY_DEVICE_OPEN path=/dev/input/event1 name=gpio_keys (selected by capability, not by eventN)
+    Oct 17 12:07:29 fedora nuxel-button-manager[5425]: TOUCH_DEVICE_OPEN path=/dev/input/event2 name=sec_touchscreen axis_max=4095x4095 grab=none
+    Oct 17 12:07:29 fedora nuxel-button-manager[5425]: MANAGER_READY key=/dev/input/event1 touch=/dev/input/event2 gestures=1 fsm_spec_v=1
+    Oct 17 12:07:29 fedora nuxel-button-manager[5425]: KEY_CAPABILITIES 114 115 116 703
+===== echo ===GPIO-KEYS-DT===; for f in /sys/class/input/input1/device/uevent /sys/class/input/input1/name /sys/class/input/input1/properties /sys/class/input/input1/capabilities/key; do echo "--$f"; cat $f 2>&1; done   [rc=0 frame=978349d4 sha_ok=yes]
+    ===GPIO-KEYS-DT===
+    --/sys/class/input/input1/device/uevent
+    DRIVER=gpio-keys
+    OF_NAME=gpio_keys
+    OF_FULLNAME=/gpio_keys
+    OF_COMPATIBLE_0=gpio-keys
+    OF_COMPATIBLE_N=1
+    --/sys/class/input/input1/name
+    gpio_keys
+    --/sys/class/input/input1/properties
+    0
+    --/sys/class/input/input1/capabilities/key
+    8000000000000000 0 0 0 0 0 0 0 0 1c000000000000 0
+===== echo ===IRQ-COUNTS===; grep -E 'gpio-keys' /proc/interrupts   [rc=0 frame=9d3549d5 sha_ok=yes]
+    ===IRQ-COUNTS===
+    427:          0          0          0          0          0          0          0          0  exynos7_wkup_irq_chip   6 Edge      gpio-keys: KEY_WINK
+    428:          0          0          0          0          0          0          0          0  exynos7_wkup_irq_chip   4 Edge      gpio-keys: KEY_VOLUMEDOWN
+    429:          0          0          0          0          0          0          0          0  exynos7_wkup_irq_chip   3 Edge      gpio-keys: KEY_VOLUMEUP
+    430:          0          0          0          0          0          0          0          0  exynos7_wkup_irq_chip   4 Edge      gpio-keys: KEY_POWER

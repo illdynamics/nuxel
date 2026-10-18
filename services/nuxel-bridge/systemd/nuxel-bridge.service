@@ -11,6 +11,9 @@ Documentation=https://github.com/nuxel/nuxel/docs/architecture.md
 Wants=dbus.service ModemManager.service nuxel-portal.service nuxel-notifications.service
 After=dbus.service ModemManager.service nuxel-portal.service nuxel-notifications.service network-online.target
 Before=phosh.service
+# Restart-burst bound ([Unit], not [Service]).
+StartLimitIntervalSec=120
+StartLimitBurst=10
 
 [Service]
 Type=simple
@@ -21,13 +24,11 @@ ExecStart=/usr/bin/nuxel-bridge
 #   NUXEL_BRIDGE_PROTOCOL_VERSION = the pinned PWA<->host contract ("1")
 #   NUXEL_BRIDGE_VERSION          = the host implementation version
 Environment=NUXEL_BRIDGE_PROTOCOL_VERSION=1
-Environment=NUXEL_BRIDGE_VERSION=0.4.0-alpha
+Environment=NUXEL_BRIDGE_VERSION=0.5.1-alpha
 Environment=NUXEL_PATHS_CONF=/etc/nuxel/paths.conf
 Restart=on-failure
 RestartSec=5
 RestartMaxDelaySec=30
-StartLimitIntervalSec=120
-StartLimitBurst=10
 
 # Security hardening
 User=nuxel-bridge

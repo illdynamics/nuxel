@@ -106,6 +106,14 @@
     "comment_timeout": "An untouched open menu closes itself after timeout_ms, so a stray long press can never leave a modal menu on the glass.",
     "entries": [
       {
+        "id": "cancel",
+        "label": "Cancel",
+        "action": "menu-close",
+        "dispatch": "internal",
+        "trigger_allowed": true,
+        "why": "A34 TOUCHDOWN: explicit cancel, first and initially selected; menu-close only dismisses the overlay."
+      },
+      {
         "id": "lock-screen",
         "label": "Lock screen",
         "action": "lock",
