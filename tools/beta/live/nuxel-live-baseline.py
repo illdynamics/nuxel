@@ -139,6 +139,16 @@ def snapshot(con, bundle, repo, rels):
             dev = "pwa/nuxel-home/" + rel.split("pwa/nuxel-home/", 1)[-1]
             pwa_dev[dev] = body.split()[0] if body.split() else None
 
+    # fb-owner is a durable key/value receipt, not a one-line sentinel.  The
+    # schema header is deliberately first, so reading line zero produced a
+    # permanent false regression even while the single owner was healthy.
+    # Prefer the explicit owner= field and retain the legacy one-line format
+    # used by the fake-console test fixture.
+    fb_owner_lines = nl.clean_lines(raw["fb_owner"]["output"])
+    fb_owner = next((line.split("=", 1)[1].strip() for line in fb_owner_lines
+                     if line.startswith("owner=")),
+                    fb_owner_lines[0] if fb_owner_lines else "")
+
     snap = {
         "at": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
         "source": "live console (verified frames)",
@@ -151,7 +161,7 @@ def snapshot(con, bundle, repo, rels):
         "units": parse_units(raw["units"]["output"]),
         "failed_units": [l for l in nl.clean_lines(raw["failed_units"]["output"])
                          if "loaded units listed" not in l],
-        "fb_owner": (nl.clean_lines(raw["fb_owner"]["output"]) or [""])[0],
+        "fb_owner": fb_owner,
         "animation_receipt": (nl.clean_lines(raw["animation"]["output"]) or [""])[0],
         "wl_fb_state": (nl.clean_lines(raw["wl_fb_state"]["output"]) or [""])[0],
         "touch_devices": "\n".join(nl.clean_lines(raw["touch_devices"]["output"])),

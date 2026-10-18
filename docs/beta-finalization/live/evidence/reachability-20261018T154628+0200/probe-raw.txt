@@ -1,0 +1,3 @@
+dev=/dev/cu.usbmodem1201 bytes_in=7666 echo_ok=True error=None elapsed=0.359s
+sample:
+00h,5f00h,045ah,0148h,1a46h,0009h,0f76h,d766h,1e13h,d8cbh,0feah,0314h,0500h,0f30h,0000h,6200h,1c00h,0ea4h,1403h,1e05h,1b1ch,7f3eh,2606h,cea4h,043ch,0890h,e3e1h,290eh,0400h,0001h,7b31h,7138h,0b82h,ffffh,1e36h,0f4bh,0c0fh,05e0h,0038h,1527h,a7e2h,026ah,1680h,1408h,9ee1h,e000h,07fch,0000h,0902h,029ah,d75ch,002fh,0283h,017eh,6664h,2241h,0f11h,039ah,0015h,0017h,1368h,0f4ch,0000h,6c41h,0006h,2f46h,7f80h,

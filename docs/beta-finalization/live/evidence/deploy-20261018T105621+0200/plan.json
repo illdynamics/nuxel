@@ -1,0 +1,1917 @@
+{
+  "group_order": [
+    {
+      "declared_reload": "systemctl daemon-reload",
+      "declared_reload_source": "group",
+      "group": "s10plus-a33-runtime",
+      "priority": 2,
+      "restart_service": null,
+      "risk": "medium",
+      "risk_rank": 1,
+      "steps": 50
+    },
+    {
+      "declared_reload": "systemctl daemon-reload && systemctl restart nuxel-bridge nuxel-http-bridge nuxel-portal nuxel-notifications",
+      "declared_reload_source": "group",
+      "group": "services-runtime",
+      "priority": 3,
+      "restart_service": null,
+      "risk": "medium",
+      "risk_rank": 1,
+      "steps": 25
+    }
+  ],
+  "risk_envelope": {
+    "high": 21,
+    "low": 422,
+    "medium": 187
+  },
+  "schema_version": 1,
+  "skipped": [
+    {
+      "component": "kernel/bootloader-adjacent work is NOT deployed",
+      "group": "console-and-kernel-side-followups",
+      "reason": "sec_ts touch-in-charger-mode (lpcharge) needs a kernel/DTB change; the mission forbids flashing, so this stays offline (source patch + offline build + documented procedure) and is reported BLOCKED_KERNEL.",
+      "state": "blocked_kernel",
+      "verdict": "BLOCKED_KERNEL"
+    }
+  ],
+  "steps": [
+    {
+      "backup": "/usr/lib/nuxel/src/a33/README.md.nuxel-rollback",
+      "component": "S10+ a33 runtime tools, diagnostics and probes",
+      "declared_reload": "systemctl daemon-reload",
+      "group": "s10plus-a33-runtime",
+      "health_check": "test -x /usr/local/bin/nuxelctl && test -x /usr/libexec/nuxel/nuxel-verbose-boot && test -s /usr/share/nuxel/probes/touch-probe.html && test -x /usr/local/bin/nuxel-fb-owner-assert.sh",
+      "install_procedure": "docs/beta-finalization/live/procedures/native-app-binaries.md",
+      "mode": "0644",
+      "post": [
+        "systemctl daemon-reload"
+      ],
+      "pre": [
+        "systemctl daemon-reload"
+      ],
+      "priority": 2,
+      "risk": "medium",
+      "risk_rank": 1,
+      "rollback": "restore every <target>.nuxel-rollback and `systemctl daemon-reload`; the tools are leaf executables, so restoring them cannot strand the boot",
+      "service": null,
+      "source": "tools/s10plus/a33/README.md",
+      "source_sha256": "2160719a9f26aebace6135056b028d1c873eac0044d6977db368c35bbd09678a",
+      "staged": "/usr/lib/nuxel/src/a33/README.md.nuxel-staged",
+      "target": "/usr/lib/nuxel/src/a33/README.md",
+      "verify": "sha256sum /usr/lib/nuxel/src/a33/README.md"
+    },
+    {
+      "backup": "/usr/local/bin/build-a33-boot.sh.nuxel-rollback",
+      "component": "S10+ a33 runtime tools, diagnostics and probes",
+      "declared_reload": "systemctl daemon-reload",
+      "group": "s10plus-a33-runtime",
+      "health_check": "test -x /usr/local/bin/nuxelctl && test -x /usr/libexec/nuxel/nuxel-verbose-boot && test -s /usr/share/nuxel/probes/touch-probe.html && test -x /usr/local/bin/nuxel-fb-owner-assert.sh",
+      "install_procedure": "docs/beta-finalization/live/procedures/native-app-binaries.md",
+      "mode": "0755",
+      "post": [
+        "systemctl daemon-reload"
+      ],
+      "pre": [
+        "systemctl daemon-reload"
+      ],
+      "priority": 2,
+      "risk": "medium",
+      "risk_rank": 1,
+      "rollback": "restore every <target>.nuxel-rollback and `systemctl daemon-reload`; the tools are leaf executables, so restoring them cannot strand the boot",
+      "service": null,
+      "source": "tools/s10plus/a33/build-a33-boot.sh",
+      "source_sha256": "84e005ffc9bb9350e83733077ead80a9cdb75e0171dd3b32795ce72cfd350a98",
+      "staged": "/usr/local/bin/build-a33-boot.sh.nuxel-staged",
+      "target": "/usr/local/bin/build-a33-boot.sh",
+      "verify": "sha256sum /usr/local/bin/build-a33-boot.sh"
+    },
+    {
+      "backup": "/usr/local/bin/build-a33-buttons.sh.nuxel-rollback",
+      "component": "S10+ a33 runtime tools, diagnostics and probes",
+      "declared_reload": "systemctl daemon-reload",
+      "group": "s10plus-a33-runtime",
+      "health_check": "test -x /usr/local/bin/nuxelctl && test -x /usr/libexec/nuxel/nuxel-verbose-boot && test -s /usr/share/nuxel/probes/touch-probe.html && test -x /usr/local/bin/nuxel-fb-owner-assert.sh",
+      "install_procedure": "docs/beta-finalization/live/procedures/native-app-binaries.md",
+      "mode": "0755",
+      "post": [
+        "systemctl daemon-reload"
+      ],
+      "pre": [
+        "systemctl daemon-reload"
+      ],
+      "priority": 2,
+      "risk": "medium",
+      "risk_rank": 1,
+      "rollback": "restore every <target>.nuxel-rollback and `systemctl daemon-reload`; the tools are leaf executables, so restoring them cannot strand the boot",
+      "service": null,
+      "source": "tools/s10plus/a33/build-a33-buttons.sh",
+      "source_sha256": "412e7e1857366d87fa2a2c15c65392c2e9084acf4a76dec3868e500b5a398d48",
+      "staged": "/usr/local/bin/build-a33-buttons.sh.nuxel-staged",
+      "target": "/usr/local/bin/build-a33-buttons.sh",
+      "verify": "sha256sum /usr/local/bin/build-a33-buttons.sh"
+    },
+    {
+      "backup": "/usr/local/bin/build-libinput-shim.sh.nuxel-rollback",
+      "component": "S10+ a33 runtime tools, diagnostics and probes",
+      "declared_reload": "systemctl daemon-reload",
+      "group": "s10plus-a33-runtime",
+      "health_check": "test -x /usr/local/bin/nuxelctl && test -x /usr/libexec/nuxel/nuxel-verbose-boot && test -s /usr/share/nuxel/probes/touch-probe.html && test -x /usr/local/bin/nuxel-fb-owner-assert.sh",
+      "install_procedure": "docs/beta-finalization/live/procedures/native-app-binaries.md",
+      "mode": "0755",
+      "post": [
+        "systemctl daemon-reload"
+      ],
+      "pre": [
+        "systemctl daemon-reload"
+      ],
+      "priority": 2,
+      "risk": "medium",
+      "risk_rank": 1,
+      "rollback": "restore every <target>.nuxel-rollback and `systemctl daemon-reload`; the tools are leaf executables, so restoring them cannot strand the boot",
+      "service": null,
+      "source": "tools/s10plus/a33/build-libinput-shim.sh",
+      "source_sha256": "667f7fadb7ee475e130688d884e116fc2de12512b03941242fbcb1f6399e300c",
+      "staged": "/usr/local/bin/build-libinput-shim.sh.nuxel-staged",
+      "target": "/usr/local/bin/build-libinput-shim.sh",
+      "verify": "sha256sum /usr/local/bin/build-libinput-shim.sh"
+    },
+    {
+      "backup": "/usr/share/nuxel/probes/keyboard-probe.html.nuxel-rollback",
+      "component": "S10+ a33 runtime tools, diagnostics and probes",
+      "declared_reload": "systemctl daemon-reload",
+      "group": "s10plus-a33-runtime",
+      "health_check": "test -x /usr/local/bin/nuxelctl && test -x /usr/libexec/nuxel/nuxel-verbose-boot && test -s /usr/share/nuxel/probes/touch-probe.html && test -x /usr/local/bin/nuxel-fb-owner-assert.sh",
+      "install_procedure": "docs/beta-finalization/live/procedures/native-app-binaries.md",
+      "mode": "0644",
+      "post": [
+        "systemctl daemon-reload"
+      ],
+      "pre": [
+        "systemctl daemon-reload"
+      ],
+      "priority": 2,
+      "risk": "medium",
+      "risk_rank": 1,
+      "rollback": "restore every <target>.nuxel-rollback and `systemctl daemon-reload`; the tools are leaf executables, so restoring them cannot strand the boot",
+      "service": null,
+      "source": "tools/s10plus/a33/keyboard-probe.html",
+      "source_sha256": "23fed0b72e8e9f3832de7f1674edf727004e06eb317dc1e2464e4d005268ec09",
+      "staged": "/usr/share/nuxel/probes/keyboard-probe.html.nuxel-staged",
+      "target": "/usr/share/nuxel/probes/keyboard-probe.html",
+      "verify": "sha256sum /usr/share/nuxel/probes/keyboard-probe.html"
+    },
+    {
+      "backup": "/usr/libexec/nuxel/nuxel-anim-handoff.py.nuxel-rollback",
+      "component": "S10+ a33 runtime tools, diagnostics and probes",
+      "declared_reload": "systemctl daemon-reload",
+      "group": "s10plus-a33-runtime",
+      "health_check": "test -x /usr/local/bin/nuxelctl && test -x /usr/libexec/nuxel/nuxel-verbose-boot && test -s /usr/share/nuxel/probes/touch-probe.html && test -x /usr/local/bin/nuxel-fb-owner-assert.sh",
+      "install_procedure": "docs/beta-finalization/live/procedures/native-app-binaries.md",
+      "mode": "0755",
+      "post": [
+        "systemctl daemon-reload"
+      ],
+      "pre": [
+        "systemctl daemon-reload"
+      ],
+      "priority": 2,
+      "risk": "medium",
+      "risk_rank": 1,
+      "rollback": "restore every <target>.nuxel-rollback and `systemctl daemon-reload`; the tools are leaf executables, so restoring them cannot strand the boot",
+      "service": null,
+      "source": "tools/s10plus/a33/nuxel-anim-handoff.py",
+      "source_sha256": "1d656083f21b37c76ae3eccca870265d15aa46151b90bc61daf68a3e37d61c67",
+      "staged": "/usr/libexec/nuxel/nuxel-anim-handoff.py.nuxel-staged",
+      "target": "/usr/libexec/nuxel/nuxel-anim-handoff.py",
+      "verify": "sha256sum /usr/libexec/nuxel/nuxel-anim-handoff.py"
+    },
+    {
+      "backup": "/usr/local/bin/nuxel-audio-diag.sh.nuxel-rollback",
+      "component": "S10+ a33 runtime tools, diagnostics and probes",
+      "declared_reload": "systemctl daemon-reload",
+      "group": "s10plus-a33-runtime",
+      "health_check": "test -x /usr/local/bin/nuxelctl && test -x /usr/libexec/nuxel/nuxel-verbose-boot && test -s /usr/share/nuxel/probes/touch-probe.html && test -x /usr/local/bin/nuxel-fb-owner-assert.sh",
+      "install_procedure": "docs/beta-finalization/live/procedures/native-app-binaries.md",
+      "mode": "0755",
+      "post": [
+        "systemctl daemon-reload"
+      ],
+      "pre": [
+        "systemctl daemon-reload"
+      ],
+      "priority": 2,
+      "risk": "medium",
+      "risk_rank": 1,
+      "rollback": "restore every <target>.nuxel-rollback and `systemctl daemon-reload`; the tools are leaf executables, so restoring them cannot strand the boot",
+      "service": null,
+      "source": "tools/s10plus/a33/nuxel-audio-diag.sh",
+      "source_sha256": "0d5475367c8b5d9030176d3756f01ffecfddb56417fb8dbcc7a482bca298e21f",
+      "staged": "/usr/local/bin/nuxel-audio-diag.sh.nuxel-staged",
+      "target": "/usr/local/bin/nuxel-audio-diag.sh",
+      "verify": "sha256sum /usr/local/bin/nuxel-audio-diag.sh"
+    },
+    {
+      "backup": "/usr/local/bin/nuxel-bluetooth-diag.sh.nuxel-rollback",
+      "component": "S10+ a33 runtime tools, diagnostics and probes",
+      "declared_reload": "systemctl daemon-reload",
+      "group": "s10plus-a33-runtime",
+      "health_check": "test -x /usr/local/bin/nuxelctl && test -x /usr/libexec/nuxel/nuxel-verbose-boot && test -s /usr/share/nuxel/probes/touch-probe.html && test -x /usr/local/bin/nuxel-fb-owner-assert.sh",
+      "install_procedure": "docs/beta-finalization/live/procedures/native-app-binaries.md",
+      "mode": "0755",
+      "post": [
+        "systemctl daemon-reload"
+      ],
+      "pre": [
+        "systemctl daemon-reload"
+      ],
+      "priority": 2,
+      "risk": "medium",
+      "risk_rank": 1,
+      "rollback": "restore every <target>.nuxel-rollback and `systemctl daemon-reload`; the tools are leaf executables, so restoring them cannot strand the boot",
+      "service": null,
+      "source": "tools/s10plus/a33/nuxel-bluetooth-diag.sh",
+      "source_sha256": "21c78ca70d6a08eebd25454e02042a4cc29fb2cbb8ee35aa10feaba6cbc80c59",
+      "staged": "/usr/local/bin/nuxel-bluetooth-diag.sh.nuxel-staged",
+      "target": "/usr/local/bin/nuxel-bluetooth-diag.sh",
+      "verify": "sha256sum /usr/local/bin/nuxel-bluetooth-diag.sh"
+    },
+    {
+      "backup": "/usr/local/bin/nuxel-boot-stage-verbose.sh.nuxel-rollback",
+      "component": "S10+ a33 runtime tools, diagnostics and probes",
+      "declared_reload": "systemctl daemon-reload",
+      "group": "s10plus-a33-runtime",
+      "health_check": "test -x /usr/local/bin/nuxelctl && test -x /usr/libexec/nuxel/nuxel-verbose-boot && test -s /usr/share/nuxel/probes/touch-probe.html && test -x /usr/local/bin/nuxel-fb-owner-assert.sh",
+      "install_procedure": "docs/beta-finalization/live/procedures/native-app-binaries.md",
+      "mode": "0755",
+      "post": [
+        "systemctl daemon-reload"
+      ],
+      "pre": [
+        "systemctl daemon-reload"
+      ],
+      "priority": 2,
+      "risk": "medium",
+      "risk_rank": 1,
+      "rollback": "restore every <target>.nuxel-rollback and `systemctl daemon-reload`; the tools are leaf executables, so restoring them cannot strand the boot",
+      "service": null,
+      "source": "tools/s10plus/a33/nuxel-boot-stage-verbose.sh",
+      "source_sha256": "889cb30eafd223f2c2f9291934202e123db6ef7173e1b6d53f8c071b07202e50",
+      "staged": "/usr/local/bin/nuxel-boot-stage-verbose.sh.nuxel-staged",
+      "target": "/usr/local/bin/nuxel-boot-stage-verbose.sh",
+      "verify": "sha256sum /usr/local/bin/nuxel-boot-stage-verbose.sh"
+    },
+    {
+      "backup": "/usr/libexec/nuxel/nuxel-bootmode-guard.py.nuxel-rollback",
+      "component": "S10+ a33 runtime tools, diagnostics and probes",
+      "declared_reload": "systemctl daemon-reload",
+      "group": "s10plus-a33-runtime",
+      "health_check": "test -x /usr/local/bin/nuxelctl && test -x /usr/libexec/nuxel/nuxel-verbose-boot && test -s /usr/share/nuxel/probes/touch-probe.html && test -x /usr/local/bin/nuxel-fb-owner-assert.sh",
+      "install_procedure": "docs/beta-finalization/live/procedures/native-app-binaries.md",
+      "mode": "0755",
+      "post": [
+        "systemctl daemon-reload"
+      ],
+      "pre": [
+        "systemctl daemon-reload"
+      ],
+      "priority": 2,
+      "risk": "medium",
+      "risk_rank": 1,
+      "rollback": "restore every <target>.nuxel-rollback and `systemctl daemon-reload`; the tools are leaf executables, so restoring them cannot strand the boot",
+      "service": null,
+      "source": "tools/s10plus/a33/nuxel-bootmode-guard.py",
+      "source_sha256": "0019ce964d7499f25df13fbbb2a6c07371139c661780223cae7e17f83ec6fce0",
+      "staged": "/usr/libexec/nuxel/nuxel-bootmode-guard.py.nuxel-staged",
+      "target": "/usr/libexec/nuxel/nuxel-bootmode-guard.py",
+      "verify": "sha256sum /usr/libexec/nuxel/nuxel-bootmode-guard.py"
+    },
+    {
+      "backup": "/usr/local/bin/nuxel-bootmode-oneshot.sh.nuxel-rollback",
+      "component": "S10+ a33 runtime tools, diagnostics and probes",
+      "declared_reload": "systemctl daemon-reload",
+      "group": "s10plus-a33-runtime",
+      "health_check": "test -x /usr/local/bin/nuxelctl && test -x /usr/libexec/nuxel/nuxel-verbose-boot && test -s /usr/share/nuxel/probes/touch-probe.html && test -x /usr/local/bin/nuxel-fb-owner-assert.sh",
+      "install_procedure": "docs/beta-finalization/live/procedures/native-app-binaries.md",
+      "mode": "0755",
+      "post": [
+        "systemctl daemon-reload"
+      ],
+      "pre": [
+        "systemctl daemon-reload"
+      ],
+      "priority": 2,
+      "risk": "medium",
+      "risk_rank": 1,
+      "rollback": "restore every <target>.nuxel-rollback and `systemctl daemon-reload`; the tools are leaf executables, so restoring them cannot strand the boot",
+      "service": null,
+      "source": "tools/s10plus/a33/nuxel-bootmode-oneshot.sh",
+      "source_sha256": "43c072be42ea63ae86b762a7797adc07560a4b2e9e5e4d55a6db338d0080b4ae",
+      "staged": "/usr/local/bin/nuxel-bootmode-oneshot.sh.nuxel-staged",
+      "target": "/usr/local/bin/nuxel-bootmode-oneshot.sh",
+      "verify": "sha256sum /usr/local/bin/nuxel-bootmode-oneshot.sh"
+    },
+    {
+      "backup": "/usr/lib/nuxel/src/a33/nuxel-button-fsm.h.nuxel-rollback",
+      "component": "S10+ a33 runtime tools, diagnostics and probes",
+      "declared_reload": "systemctl daemon-reload",
+      "group": "s10plus-a33-runtime",
+      "health_check": "test -x /usr/local/bin/nuxelctl && test -x /usr/libexec/nuxel/nuxel-verbose-boot && test -s /usr/share/nuxel/probes/touch-probe.html && test -x /usr/local/bin/nuxel-fb-owner-assert.sh",
+      "install_procedure": "docs/beta-finalization/live/procedures/native-app-binaries.md",
+      "mode": "0644",
+      "post": [
+        "systemctl daemon-reload"
+      ],
+      "pre": [
+        "systemctl daemon-reload"
+      ],
+      "priority": 2,
+      "risk": "medium",
+      "risk_rank": 1,
+      "rollback": "restore every <target>.nuxel-rollback and `systemctl daemon-reload`; the tools are leaf executables, so restoring them cannot strand the boot",
+      "service": null,
+      "source": "tools/s10plus/a33/nuxel-button-fsm.h",
+      "source_sha256": "ff06992306370923ebd8c613c7ad0f8a950fb69c59687de4130b7242642795bf",
+      "staged": "/usr/lib/nuxel/src/a33/nuxel-button-fsm.h.nuxel-staged",
+      "target": "/usr/lib/nuxel/src/a33/nuxel-button-fsm.h",
+      "verify": "sha256sum /usr/lib/nuxel/src/a33/nuxel-button-fsm.h"
+    },
+    {
+      "backup": "/usr/lib/nuxel/src/a33/nuxel-button-manager.c.nuxel-rollback",
+      "component": "S10+ a33 runtime tools, diagnostics and probes",
+      "declared_reload": "systemctl daemon-reload",
+      "group": "s10plus-a33-runtime",
+      "health_check": "test -x /usr/local/bin/nuxelctl && test -x /usr/libexec/nuxel/nuxel-verbose-boot && test -s /usr/share/nuxel/probes/touch-probe.html && test -x /usr/local/bin/nuxel-fb-owner-assert.sh",
+      "install_procedure": "docs/beta-finalization/live/procedures/native-app-binaries.md",
+      "mode": "0644",
+      "post": [
+        "systemctl daemon-reload"
+      ],
+      "pre": [
+        "systemctl daemon-reload"
+      ],
+      "priority": 2,
+      "risk": "medium",
+      "risk_rank": 1,
+      "rollback": "restore every <target>.nuxel-rollback and `systemctl daemon-reload`; the tools are leaf executables, so restoring them cannot strand the boot",
+      "service": null,
+      "source": "tools/s10plus/a33/nuxel-button-manager.c",
+      "source_sha256": "c331b4e4ce1b82e9d969be8bd4228d4dabb876a34754b8d54d4d2d8bf1c03154",
+      "staged": "/usr/lib/nuxel/src/a33/nuxel-button-manager.c.nuxel-staged",
+      "target": "/usr/lib/nuxel/src/a33/nuxel-button-manager.c",
+      "verify": "sha256sum /usr/lib/nuxel/src/a33/nuxel-button-manager.c"
+    },
+    {
+      "backup": "/usr/local/bin/nuxel-camera-diag.sh.nuxel-rollback",
+      "component": "S10+ a33 runtime tools, diagnostics and probes",
+      "declared_reload": "systemctl daemon-reload",
+      "group": "s10plus-a33-runtime",
+      "health_check": "test -x /usr/local/bin/nuxelctl && test -x /usr/libexec/nuxel/nuxel-verbose-boot && test -s /usr/share/nuxel/probes/touch-probe.html && test -x /usr/local/bin/nuxel-fb-owner-assert.sh",
+      "install_procedure": "docs/beta-finalization/live/procedures/native-app-binaries.md",
+      "mode": "0755",
+      "post": [
+        "systemctl daemon-reload"
+      ],
+      "pre": [
+        "systemctl daemon-reload"
+      ],
+      "priority": 2,
+      "risk": "medium",
+      "risk_rank": 1,
+      "rollback": "restore every <target>.nuxel-rollback and `systemctl daemon-reload`; the tools are leaf executables, so restoring them cannot strand the boot",
+      "service": null,
+      "source": "tools/s10plus/a33/nuxel-camera-diag.sh",
+      "source_sha256": "e742baad3fcdd8ab89be848d50a4cd2c788f3f20f069843d7fe415b60abcad6e",
+      "staged": "/usr/local/bin/nuxel-camera-diag.sh.nuxel-staged",
+      "target": "/usr/local/bin/nuxel-camera-diag.sh",
+      "verify": "sha256sum /usr/local/bin/nuxel-camera-diag.sh"
+    },
+    {
+      "backup": "/usr/lib/nuxel/src/a33/nuxel-console.c.nuxel-rollback",
+      "component": "S10+ a33 runtime tools, diagnostics and probes",
+      "declared_reload": "systemctl daemon-reload",
+      "group": "s10plus-a33-runtime",
+      "health_check": "test -x /usr/local/bin/nuxelctl && test -x /usr/libexec/nuxel/nuxel-verbose-boot && test -s /usr/share/nuxel/probes/touch-probe.html && test -x /usr/local/bin/nuxel-fb-owner-assert.sh",
+      "install_procedure": "docs/beta-finalization/live/procedures/native-app-binaries.md",
+      "mode": "0644",
+      "post": [
+        "systemctl daemon-reload"
+      ],
+      "pre": [
+        "systemctl daemon-reload"
+      ],
+      "priority": 2,
+      "risk": "medium",
+      "risk_rank": 1,
+      "rollback": "restore every <target>.nuxel-rollback and `systemctl daemon-reload`; the tools are leaf executables, so restoring them cannot strand the boot",
+      "service": null,
+      "source": "tools/s10plus/a33/nuxel-console.c",
+      "source_sha256": "8d1a56715ce915a72ac08ad2293d2b53d44172bdd48b58e560f27d3845ca7db4",
+      "staged": "/usr/lib/nuxel/src/a33/nuxel-console.c.nuxel-staged",
+      "target": "/usr/lib/nuxel/src/a33/nuxel-console.c",
+      "verify": "sha256sum /usr/lib/nuxel/src/a33/nuxel-console.c"
+    },
+    {
+      "backup": "/usr/local/bin/nuxel-diag-pack.sh.nuxel-rollback",
+      "component": "S10+ a33 runtime tools, diagnostics and probes",
+      "declared_reload": "systemctl daemon-reload",
+      "group": "s10plus-a33-runtime",
+      "health_check": "test -x /usr/local/bin/nuxelctl && test -x /usr/libexec/nuxel/nuxel-verbose-boot && test -s /usr/share/nuxel/probes/touch-probe.html && test -x /usr/local/bin/nuxel-fb-owner-assert.sh",
+      "install_procedure": "docs/beta-finalization/live/procedures/native-app-binaries.md",
+      "mode": "0755",
+      "post": [
+        "systemctl daemon-reload"
+      ],
+      "pre": [
+        "systemctl daemon-reload"
+      ],
+      "priority": 2,
+      "risk": "medium",
+      "risk_rank": 1,
+      "rollback": "restore every <target>.nuxel-rollback and `systemctl daemon-reload`; the tools are leaf executables, so restoring them cannot strand the boot",
+      "service": null,
+      "source": "tools/s10plus/a33/nuxel-diag-pack.sh",
+      "source_sha256": "ecfc39e32783bd2803a14334395c3f3c165dd20b695dbde6f9df0bd1f2739e95",
+      "staged": "/usr/local/bin/nuxel-diag-pack.sh.nuxel-staged",
+      "target": "/usr/local/bin/nuxel-diag-pack.sh",
+      "verify": "sha256sum /usr/local/bin/nuxel-diag-pack.sh"
+    },
+    {
+      "backup": "/usr/local/bin/nuxel-firewall.sh.nuxel-rollback",
+      "component": "S10+ a33 runtime tools, diagnostics and probes",
+      "declared_reload": "systemctl daemon-reload",
+      "group": "s10plus-a33-runtime",
+      "health_check": "test -x /usr/local/bin/nuxelctl && test -x /usr/libexec/nuxel/nuxel-verbose-boot && test -s /usr/share/nuxel/probes/touch-probe.html && test -x /usr/local/bin/nuxel-fb-owner-assert.sh",
+      "install_procedure": "docs/beta-finalization/live/procedures/native-app-binaries.md",
+      "mode": "0755",
+      "post": [
+        "systemctl daemon-reload"
+      ],
+      "pre": [
+        "systemctl daemon-reload"
+      ],
+      "priority": 2,
+      "risk": "medium",
+      "risk_rank": 1,
+      "rollback": "restore every <target>.nuxel-rollback and `systemctl daemon-reload`; the tools are leaf executables, so restoring them cannot strand the boot",
+      "service": null,
+      "source": "tools/s10plus/a33/nuxel-firewall.sh",
+      "source_sha256": "e246c41ea703b5dd5a4e07a033896a378ea98a5ceeffd332867684073305dd1f",
+      "staged": "/usr/local/bin/nuxel-firewall.sh.nuxel-staged",
+      "target": "/usr/local/bin/nuxel-firewall.sh",
+      "verify": "sha256sum /usr/local/bin/nuxel-firewall.sh"
+    },
+    {
+      "backup": "/usr/local/bin/nuxel-gnss-diag.sh.nuxel-rollback",
+      "component": "S10+ a33 runtime tools, diagnostics and probes",
+      "declared_reload": "systemctl daemon-reload",
+      "group": "s10plus-a33-runtime",
+      "health_check": "test -x /usr/local/bin/nuxelctl && test -x /usr/libexec/nuxel/nuxel-verbose-boot && test -s /usr/share/nuxel/probes/touch-probe.html && test -x /usr/local/bin/nuxel-fb-owner-assert.sh",
+      "install_procedure": "docs/beta-finalization/live/procedures/native-app-binaries.md",
+      "mode": "0755",
+      "post": [
+        "systemctl daemon-reload"
+      ],
+      "pre": [
+        "systemctl daemon-reload"
+      ],
+      "priority": 2,
+      "risk": "medium",
+      "risk_rank": 1,
+      "rollback": "restore every <target>.nuxel-rollback and `systemctl daemon-reload`; the tools are leaf executables, so restoring them cannot strand the boot",
+      "service": null,
+      "source": "tools/s10plus/a33/nuxel-gnss-diag.sh",
+      "source_sha256": "76baf8fa9493bee5578be670068895b9b686be08bedf5a4c0f07c48f6860dbb6",
+      "staged": "/usr/local/bin/nuxel-gnss-diag.sh.nuxel-staged",
+      "target": "/usr/local/bin/nuxel-gnss-diag.sh",
+      "verify": "sha256sum /usr/local/bin/nuxel-gnss-diag.sh"
+    },
+    {
+      "backup": "/usr/lib/nuxel/src/a33/nuxel-handoff-logic.h.nuxel-rollback",
+      "component": "S10+ a33 runtime tools, diagnostics and probes",
+      "declared_reload": "systemctl daemon-reload",
+      "group": "s10plus-a33-runtime",
+      "health_check": "test -x /usr/local/bin/nuxelctl && test -x /usr/libexec/nuxel/nuxel-verbose-boot && test -s /usr/share/nuxel/probes/touch-probe.html && test -x /usr/local/bin/nuxel-fb-owner-assert.sh",
+      "install_procedure": "docs/beta-finalization/live/procedures/native-app-binaries.md",
+      "mode": "0644",
+      "post": [
+        "systemctl daemon-reload"
+      ],
+      "pre": [
+        "systemctl daemon-reload"
+      ],
+      "priority": 2,
+      "risk": "medium",
+      "risk_rank": 1,
+      "rollback": "restore every <target>.nuxel-rollback and `systemctl daemon-reload`; the tools are leaf executables, so restoring them cannot strand the boot",
+      "service": null,
+      "source": "tools/s10plus/a33/nuxel-handoff-logic.h",
+      "source_sha256": "56f42be479b345be69ffefd8dd0e02d16b7a720bff1d2cfb34158f1a39471aaf",
+      "staged": "/usr/lib/nuxel/src/a33/nuxel-handoff-logic.h.nuxel-staged",
+      "target": "/usr/lib/nuxel/src/a33/nuxel-handoff-logic.h",
+      "verify": "sha256sum /usr/lib/nuxel/src/a33/nuxel-handoff-logic.h"
+    },
+    {
+      "backup": "/usr/local/bin/nuxel-haptics-bridge.py.nuxel-rollback",
+      "component": "S10+ a33 runtime tools, diagnostics and probes",
+      "declared_reload": "systemctl daemon-reload",
+      "group": "s10plus-a33-runtime",
+      "health_check": "test -x /usr/local/bin/nuxelctl && test -x /usr/libexec/nuxel/nuxel-verbose-boot && test -s /usr/share/nuxel/probes/touch-probe.html && test -x /usr/local/bin/nuxel-fb-owner-assert.sh",
+      "install_procedure": "docs/beta-finalization/live/procedures/native-app-binaries.md",
+      "mode": "0755",
+      "post": [
+        "systemctl daemon-reload"
+      ],
+      "pre": [
+        "systemctl daemon-reload"
+      ],
+      "priority": 2,
+      "risk": "medium",
+      "risk_rank": 1,
+      "rollback": "restore every <target>.nuxel-rollback and `systemctl daemon-reload`; the tools are leaf executables, so restoring them cannot strand the boot",
+      "service": null,
+      "source": "tools/s10plus/a33/nuxel-haptics-bridge.py",
+      "source_sha256": "d0c9027396b0c13ed974a7a9718d8bf2e8f80e7c9e40e9b0786d88e13d9fee47",
+      "staged": "/usr/local/bin/nuxel-haptics-bridge.py.nuxel-staged",
+      "target": "/usr/local/bin/nuxel-haptics-bridge.py",
+      "verify": "sha256sum /usr/local/bin/nuxel-haptics-bridge.py"
+    },
+    {
+      "backup": "/usr/local/bin/nuxel-haptics-diag.sh.nuxel-rollback",
+      "component": "S10+ a33 runtime tools, diagnostics and probes",
+      "declared_reload": "systemctl daemon-reload",
+      "group": "s10plus-a33-runtime",
+      "health_check": "test -x /usr/local/bin/nuxelctl && test -x /usr/libexec/nuxel/nuxel-verbose-boot && test -s /usr/share/nuxel/probes/touch-probe.html && test -x /usr/local/bin/nuxel-fb-owner-assert.sh",
+      "install_procedure": "docs/beta-finalization/live/procedures/native-app-binaries.md",
+      "mode": "0755",
+      "post": [
+        "systemctl daemon-reload"
+      ],
+      "pre": [
+        "systemctl daemon-reload"
+      ],
+      "priority": 2,
+      "risk": "medium",
+      "risk_rank": 1,
+      "rollback": "restore every <target>.nuxel-rollback and `systemctl daemon-reload`; the tools are leaf executables, so restoring them cannot strand the boot",
+      "service": null,
+      "source": "tools/s10plus/a33/nuxel-haptics-diag.sh",
+      "source_sha256": "b48458ebcdcc06705b8bd11253fa2ef7e2ad2da4b1a53f8c1ea7a97e7615460b",
+      "staged": "/usr/local/bin/nuxel-haptics-diag.sh.nuxel-staged",
+      "target": "/usr/local/bin/nuxel-haptics-diag.sh",
+      "verify": "sha256sum /usr/local/bin/nuxel-haptics-diag.sh"
+    },
+    {
+      "backup": "/usr/local/bin/nuxel-headphone-diag.sh.nuxel-rollback",
+      "component": "S10+ a33 runtime tools, diagnostics and probes",
+      "declared_reload": "systemctl daemon-reload",
+      "group": "s10plus-a33-runtime",
+      "health_check": "test -x /usr/local/bin/nuxelctl && test -x /usr/libexec/nuxel/nuxel-verbose-boot && test -s /usr/share/nuxel/probes/touch-probe.html && test -x /usr/local/bin/nuxel-fb-owner-assert.sh",
+      "install_procedure": "docs/beta-finalization/live/procedures/native-app-binaries.md",
+      "mode": "0755",
+      "post": [
+        "systemctl daemon-reload"
+      ],
+      "pre": [
+        "systemctl daemon-reload"
+      ],
+      "priority": 2,
+      "risk": "medium",
+      "risk_rank": 1,
+      "rollback": "restore every <target>.nuxel-rollback and `systemctl daemon-reload`; the tools are leaf executables, so restoring them cannot strand the boot",
+      "service": null,
+      "source": "tools/s10plus/a33/nuxel-headphone-diag.sh",
+      "source_sha256": "4fc2f6d993c1df631f8a19a8503d93572ea831ec2eb4298aad8d7c003229ff8f",
+      "staged": "/usr/local/bin/nuxel-headphone-diag.sh.nuxel-staged",
+      "target": "/usr/local/bin/nuxel-headphone-diag.sh",
+      "verify": "sha256sum /usr/local/bin/nuxel-headphone-diag.sh"
+    },
+    {
+      "backup": "/usr/local/bin/nuxel-keyboard-apply.sh.nuxel-rollback",
+      "component": "S10+ a33 runtime tools, diagnostics and probes",
+      "declared_reload": "systemctl daemon-reload",
+      "group": "s10plus-a33-runtime",
+      "health_check": "test -x /usr/local/bin/nuxelctl && test -x /usr/libexec/nuxel/nuxel-verbose-boot && test -s /usr/share/nuxel/probes/touch-probe.html && test -x /usr/local/bin/nuxel-fb-owner-assert.sh",
+      "install_procedure": "docs/beta-finalization/live/procedures/native-app-binaries.md",
+      "mode": "0755",
+      "post": [
+        "systemctl daemon-reload"
+      ],
+      "pre": [
+        "systemctl daemon-reload"
+      ],
+      "priority": 2,
+      "risk": "medium",
+      "risk_rank": 1,
+      "rollback": "restore every <target>.nuxel-rollback and `systemctl daemon-reload`; the tools are leaf executables, so restoring them cannot strand the boot",
+      "service": null,
+      "source": "tools/s10plus/a33/nuxel-keyboard-apply.sh",
+      "source_sha256": "2794f65d2b9c8a6efda18b68e3b13f6f19338be0dd55c5fabde767ad87f40d50",
+      "staged": "/usr/local/bin/nuxel-keyboard-apply.sh.nuxel-staged",
+      "target": "/usr/local/bin/nuxel-keyboard-apply.sh",
+      "verify": "sha256sum /usr/local/bin/nuxel-keyboard-apply.sh"
+    },
+    {
+      "backup": "/usr/local/bin/nuxel-led-diag.sh.nuxel-rollback",
+      "component": "S10+ a33 runtime tools, diagnostics and probes",
+      "declared_reload": "systemctl daemon-reload",
+      "group": "s10plus-a33-runtime",
+      "health_check": "test -x /usr/local/bin/nuxelctl && test -x /usr/libexec/nuxel/nuxel-verbose-boot && test -s /usr/share/nuxel/probes/touch-probe.html && test -x /usr/local/bin/nuxel-fb-owner-assert.sh",
+      "install_procedure": "docs/beta-finalization/live/procedures/native-app-binaries.md",
+      "mode": "0755",
+      "post": [
+        "systemctl daemon-reload"
+      ],
+      "pre": [
+        "systemctl daemon-reload"
+      ],
+      "priority": 2,
+      "risk": "medium",
+      "risk_rank": 1,
+      "rollback": "restore every <target>.nuxel-rollback and `systemctl daemon-reload`; the tools are leaf executables, so restoring them cannot strand the boot",
+      "service": null,
+      "source": "tools/s10plus/a33/nuxel-led-diag.sh",
+      "source_sha256": "d24124105fdcedb056dcec0c3aee9b010d26b42ae01397bfe733393670532b83",
+      "staged": "/usr/local/bin/nuxel-led-diag.sh.nuxel-staged",
+      "target": "/usr/local/bin/nuxel-led-diag.sh",
+      "verify": "sha256sum /usr/local/bin/nuxel-led-diag.sh"
+    },
+    {
+      "backup": "/usr/lib/nuxel/src/a33/nuxel-libinput-path.c.nuxel-rollback",
+      "component": "S10+ a33 runtime tools, diagnostics and probes",
+      "declared_reload": "systemctl daemon-reload",
+      "group": "s10plus-a33-runtime",
+      "health_check": "test -x /usr/local/bin/nuxelctl && test -x /usr/libexec/nuxel/nuxel-verbose-boot && test -s /usr/share/nuxel/probes/touch-probe.html && test -x /usr/local/bin/nuxel-fb-owner-assert.sh",
+      "install_procedure": "docs/beta-finalization/live/procedures/native-app-binaries.md",
+      "mode": "0644",
+      "post": [
+        "systemctl daemon-reload"
+      ],
+      "pre": [
+        "systemctl daemon-reload"
+      ],
+      "priority": 2,
+      "risk": "medium",
+      "risk_rank": 1,
+      "rollback": "restore every <target>.nuxel-rollback and `systemctl daemon-reload`; the tools are leaf executables, so restoring them cannot strand the boot",
+      "service": null,
+      "source": "tools/s10plus/a33/nuxel-libinput-path.c",
+      "source_sha256": "f94240412b731233ad0e93de24d20283f55fc0d0b1f74aa1cddc9f19265e598f",
+      "staged": "/usr/lib/nuxel/src/a33/nuxel-libinput-path.c.nuxel-staged",
+      "target": "/usr/lib/nuxel/src/a33/nuxel-libinput-path.c",
+      "verify": "sha256sum /usr/lib/nuxel/src/a33/nuxel-libinput-path.c"
+    },
+    {
+      "backup": "/usr/lib/nuxel/src/a33/nuxel-mt.h.nuxel-rollback",
+      "component": "S10+ a33 runtime tools, diagnostics and probes",
+      "declared_reload": "systemctl daemon-reload",
+      "group": "s10plus-a33-runtime",
+      "health_check": "test -x /usr/local/bin/nuxelctl && test -x /usr/libexec/nuxel/nuxel-verbose-boot && test -s /usr/share/nuxel/probes/touch-probe.html && test -x /usr/local/bin/nuxel-fb-owner-assert.sh",
+      "install_procedure": "docs/beta-finalization/live/procedures/native-app-binaries.md",
+      "mode": "0644",
+      "post": [
+        "systemctl daemon-reload"
+      ],
+      "pre": [
+        "systemctl daemon-reload"
+      ],
+      "priority": 2,
+      "risk": "medium",
+      "risk_rank": 1,
+      "rollback": "restore every <target>.nuxel-rollback and `systemctl daemon-reload`; the tools are leaf executables, so restoring them cannot strand the boot",
+      "service": null,
+      "source": "tools/s10plus/a33/nuxel-mt.h",
+      "source_sha256": "18db81abdc4f3ec68485d764a402194b936717f6a68ab2032b1032671b3edf82",
+      "staged": "/usr/lib/nuxel/src/a33/nuxel-mt.h.nuxel-staged",
+      "target": "/usr/lib/nuxel/src/a33/nuxel-mt.h",
+      "verify": "sha256sum /usr/lib/nuxel/src/a33/nuxel-mt.h"
+    },
+    {
+      "backup": "/usr/local/bin/nuxel-microsd-diag.sh.nuxel-rollback",
+      "component": "S10+ a33 runtime tools, diagnostics and probes",
+      "declared_reload": "systemctl daemon-reload",
+      "group": "s10plus-a33-runtime",
+      "health_check": "test -x /usr/local/bin/nuxelctl && test -x /usr/libexec/nuxel/nuxel-verbose-boot && test -s /usr/share/nuxel/probes/touch-probe.html && test -x /usr/local/bin/nuxel-fb-owner-assert.sh",
+      "install_procedure": "docs/beta-finalization/live/procedures/native-app-binaries.md",
+      "mode": "0755",
+      "post": [
+        "systemctl daemon-reload"
+      ],
+      "pre": [
+        "systemctl daemon-reload"
+      ],
+      "priority": 2,
+      "risk": "medium",
+      "risk_rank": 1,
+      "rollback": "restore every <target>.nuxel-rollback and `systemctl daemon-reload`; the tools are leaf executables, so restoring them cannot strand the boot",
+      "service": null,
+      "source": "tools/s10plus/a33/nuxel-microsd-diag.sh",
+      "source_sha256": "001a0b77b773cca89f59ebe6d821092d9ccb14421801a5fae005b7a39f2c1042",
+      "staged": "/usr/local/bin/nuxel-microsd-diag.sh.nuxel-staged",
+      "target": "/usr/local/bin/nuxel-microsd-diag.sh",
+      "verify": "sha256sum /usr/local/bin/nuxel-microsd-diag.sh"
+    },
+    {
+      "backup": "/usr/local/bin/nuxel-nfc-diag.sh.nuxel-rollback",
+      "component": "S10+ a33 runtime tools, diagnostics and probes",
+      "declared_reload": "systemctl daemon-reload",
+      "group": "s10plus-a33-runtime",
+      "health_check": "test -x /usr/local/bin/nuxelctl && test -x /usr/libexec/nuxel/nuxel-verbose-boot && test -s /usr/share/nuxel/probes/touch-probe.html && test -x /usr/local/bin/nuxel-fb-owner-assert.sh",
+      "install_procedure": "docs/beta-finalization/live/procedures/native-app-binaries.md",
+      "mode": "0755",
+      "post": [
+        "systemctl daemon-reload"
+      ],
+      "pre": [
+        "systemctl daemon-reload"
+      ],
+      "priority": 2,
+      "risk": "medium",
+      "risk_rank": 1,
+      "rollback": "restore every <target>.nuxel-rollback and `systemctl daemon-reload`; the tools are leaf executables, so restoring them cannot strand the boot",
+      "service": null,
+      "source": "tools/s10plus/a33/nuxel-nfc-diag.sh",
+      "source_sha256": "93546a357e4fa6e564b9739e99976f9d1e913bdd270b339ee964a46a5fceb9f8",
+      "staged": "/usr/local/bin/nuxel-nfc-diag.sh.nuxel-staged",
+      "target": "/usr/local/bin/nuxel-nfc-diag.sh",
+      "verify": "sha256sum /usr/local/bin/nuxel-nfc-diag.sh"
+    },
+    {
+      "backup": "/usr/local/bin/nuxel-osm-tiles.py.nuxel-rollback",
+      "component": "S10+ a33 runtime tools, diagnostics and probes",
+      "declared_reload": "systemctl daemon-reload",
+      "group": "s10plus-a33-runtime",
+      "health_check": "test -x /usr/local/bin/nuxelctl && test -x /usr/libexec/nuxel/nuxel-verbose-boot && test -s /usr/share/nuxel/probes/touch-probe.html && test -x /usr/local/bin/nuxel-fb-owner-assert.sh",
+      "install_procedure": "docs/beta-finalization/live/procedures/native-app-binaries.md",
+      "mode": "0755",
+      "post": [
+        "systemctl daemon-reload"
+      ],
+      "pre": [
+        "systemctl daemon-reload"
+      ],
+      "priority": 2,
+      "risk": "medium",
+      "risk_rank": 1,
+      "rollback": "restore every <target>.nuxel-rollback and `systemctl daemon-reload`; the tools are leaf executables, so restoring them cannot strand the boot",
+      "service": null,
+      "source": "tools/s10plus/a33/nuxel-osm-tiles.py",
+      "source_sha256": "abd09f763519a816e25f699ff2afe59ec4a61d1fa582321637b1921d2979dfbb",
+      "staged": "/usr/local/bin/nuxel-osm-tiles.py.nuxel-staged",
+      "target": "/usr/local/bin/nuxel-osm-tiles.py",
+      "verify": "sha256sum /usr/local/bin/nuxel-osm-tiles.py"
+    },
+    {
+      "backup": "/usr/local/bin/nuxel-power-diag.sh.nuxel-rollback",
+      "component": "S10+ a33 runtime tools, diagnostics and probes",
+      "declared_reload": "systemctl daemon-reload",
+      "group": "s10plus-a33-runtime",
+      "health_check": "test -x /usr/local/bin/nuxelctl && test -x /usr/libexec/nuxel/nuxel-verbose-boot && test -s /usr/share/nuxel/probes/touch-probe.html && test -x /usr/local/bin/nuxel-fb-owner-assert.sh",
+      "install_procedure": "docs/beta-finalization/live/procedures/native-app-binaries.md",
+      "mode": "0755",
+      "post": [
+        "systemctl daemon-reload"
+      ],
+      "pre": [
+        "systemctl daemon-reload"
+      ],
+      "priority": 2,
+      "risk": "medium",
+      "risk_rank": 1,
+      "rollback": "restore every <target>.nuxel-rollback and `systemctl daemon-reload`; the tools are leaf executables, so restoring them cannot strand the boot",
+      "service": null,
+      "source": "tools/s10plus/a33/nuxel-power-diag.sh",
+      "source_sha256": "0b5aaaf3eedf1415634c3bd976cf69a372656876bd9cdf91fa1eac7162815479",
+      "staged": "/usr/local/bin/nuxel-power-diag.sh.nuxel-staged",
+      "target": "/usr/local/bin/nuxel-power-diag.sh",
+      "verify": "sha256sum /usr/local/bin/nuxel-power-diag.sh"
+    },
+    {
+      "backup": "/usr/local/libexec/nuxel/nuxel-provision-services.sh.nuxel-rollback",
+      "component": "S10+ a33 runtime tools, diagnostics and probes",
+      "declared_reload": "systemctl daemon-reload",
+      "group": "s10plus-a33-runtime",
+      "health_check": "test -x /usr/local/bin/nuxelctl && test -x /usr/libexec/nuxel/nuxel-verbose-boot && test -s /usr/share/nuxel/probes/touch-probe.html && test -x /usr/local/bin/nuxel-fb-owner-assert.sh",
+      "install_procedure": "docs/beta-finalization/live/procedures/native-app-binaries.md",
+      "mode": "0755",
+      "post": [
+        "systemctl daemon-reload"
+      ],
+      "pre": [
+        "systemctl daemon-reload"
+      ],
+      "priority": 2,
+      "risk": "medium",
+      "risk_rank": 1,
+      "rollback": "restore every <target>.nuxel-rollback and `systemctl daemon-reload`; the tools are leaf executables, so restoring them cannot strand the boot",
+      "service": null,
+      "source": "tools/s10plus/a33/nuxel-provision-services.sh",
+      "source_sha256": "bd223c214547b6509e81a276eebfdcf7501ec05b463237c714d06b8a21464fb3",
+      "staged": "/usr/local/libexec/nuxel/nuxel-provision-services.sh.nuxel-staged",
+      "target": "/usr/local/libexec/nuxel/nuxel-provision-services.sh",
+      "verify": "sha256sum /usr/local/libexec/nuxel/nuxel-provision-services.sh"
+    },
+    {
+      "backup": "/usr/lib/nuxel/src/a33/nuxel-pwa-host.c.nuxel-rollback",
+      "component": "S10+ a33 runtime tools, diagnostics and probes",
+      "declared_reload": "systemctl daemon-reload",
+      "group": "s10plus-a33-runtime",
+      "health_check": "test -x /usr/local/bin/nuxelctl && test -x /usr/libexec/nuxel/nuxel-verbose-boot && test -s /usr/share/nuxel/probes/touch-probe.html && test -x /usr/local/bin/nuxel-fb-owner-assert.sh",
+      "install_procedure": "docs/beta-finalization/live/procedures/native-app-binaries.md",
+      "mode": "0644",
+      "post": [
+        "systemctl daemon-reload"
+      ],
+      "pre": [
+        "systemctl daemon-reload"
+      ],
+      "priority": 2,
+      "risk": "medium",
+      "risk_rank": 1,
+      "rollback": "restore every <target>.nuxel-rollback and `systemctl daemon-reload`; the tools are leaf executables, so restoring them cannot strand the boot",
+      "service": null,
+      "source": "tools/s10plus/a33/nuxel-pwa-host.c",
+      "source_sha256": "8351e4b3932f9be4bf2d526c653dd7184d39824b5ec65fb5f1022518e917e171",
+      "staged": "/usr/lib/nuxel/src/a33/nuxel-pwa-host.c.nuxel-staged",
+      "target": "/usr/lib/nuxel/src/a33/nuxel-pwa-host.c",
+      "verify": "sha256sum /usr/lib/nuxel/src/a33/nuxel-pwa-host.c"
+    },
+    {
+      "backup": "/usr/local/bin/nuxel-security-audit.sh.nuxel-rollback",
+      "component": "S10+ a33 runtime tools, diagnostics and probes",
+      "declared_reload": "systemctl daemon-reload",
+      "group": "s10plus-a33-runtime",
+      "health_check": "test -x /usr/local/bin/nuxelctl && test -x /usr/libexec/nuxel/nuxel-verbose-boot && test -s /usr/share/nuxel/probes/touch-probe.html && test -x /usr/local/bin/nuxel-fb-owner-assert.sh",
+      "install_procedure": "docs/beta-finalization/live/procedures/native-app-binaries.md",
+      "mode": "0755",
+      "post": [
+        "systemctl daemon-reload"
+      ],
+      "pre": [
+        "systemctl daemon-reload"
+      ],
+      "priority": 2,
+      "risk": "medium",
+      "risk_rank": 1,
+      "rollback": "restore every <target>.nuxel-rollback and `systemctl daemon-reload`; the tools are leaf executables, so restoring them cannot strand the boot",
+      "service": null,
+      "source": "tools/s10plus/a33/nuxel-security-audit.sh",
+      "source_sha256": "f29e44796822b4119ee6b7fefa0cb77d87c3065ab3ef6e80dc93770e338bb551",
+      "staged": "/usr/local/bin/nuxel-security-audit.sh.nuxel-staged",
+      "target": "/usr/local/bin/nuxel-security-audit.sh",
+      "verify": "sha256sum /usr/local/bin/nuxel-security-audit.sh"
+    },
+    {
+      "backup": "/usr/local/bin/nuxel-reboot-mode.sh.nuxel-rollback",
+      "component": "S10+ a33 runtime tools, diagnostics and probes",
+      "declared_reload": "systemctl daemon-reload",
+      "group": "s10plus-a33-runtime",
+      "health_check": "test -x /usr/local/bin/nuxelctl && test -x /usr/libexec/nuxel/nuxel-verbose-boot && test -s /usr/share/nuxel/probes/touch-probe.html && test -x /usr/local/bin/nuxel-fb-owner-assert.sh",
+      "install_procedure": "docs/beta-finalization/live/procedures/native-app-binaries.md",
+      "mode": "0755",
+      "post": [
+        "systemctl daemon-reload"
+      ],
+      "pre": [
+        "systemctl daemon-reload"
+      ],
+      "priority": 2,
+      "risk": "medium",
+      "risk_rank": 1,
+      "rollback": "restore every <target>.nuxel-rollback and `systemctl daemon-reload`; the tools are leaf executables, so restoring them cannot strand the boot",
+      "service": null,
+      "source": "tools/s10plus/a33/nuxel-reboot-mode.sh",
+      "source_sha256": "a2822cffe942064cc31ad6a90a05747609339cac21cf0e9c127745f65f1cd0bc",
+      "staged": "/usr/local/bin/nuxel-reboot-mode.sh.nuxel-staged",
+      "target": "/usr/local/bin/nuxel-reboot-mode.sh",
+      "verify": "sha256sum /usr/local/bin/nuxel-reboot-mode.sh"
+    },
+    {
+      "backup": "/usr/local/bin/nuxel-sensors-diag.sh.nuxel-rollback",
+      "component": "S10+ a33 runtime tools, diagnostics and probes",
+      "declared_reload": "systemctl daemon-reload",
+      "group": "s10plus-a33-runtime",
+      "health_check": "test -x /usr/local/bin/nuxelctl && test -x /usr/libexec/nuxel/nuxel-verbose-boot && test -s /usr/share/nuxel/probes/touch-probe.html && test -x /usr/local/bin/nuxel-fb-owner-assert.sh",
+      "install_procedure": "docs/beta-finalization/live/procedures/native-app-binaries.md",
+      "mode": "0755",
+      "post": [
+        "systemctl daemon-reload"
+      ],
+      "pre": [
+        "systemctl daemon-reload"
+      ],
+      "priority": 2,
+      "risk": "medium",
+      "risk_rank": 1,
+      "rollback": "restore every <target>.nuxel-rollback and `systemctl daemon-reload`; the tools are leaf executables, so restoring them cannot strand the boot",
+      "service": null,
+      "source": "tools/s10plus/a33/nuxel-sensors-diag.sh",
+      "source_sha256": "3e5870abe2f4b80fa82a835e83d6a997bdd09ec3bc0b5f2d5d7819703b8f1c22",
+      "staged": "/usr/local/bin/nuxel-sensors-diag.sh.nuxel-staged",
+      "target": "/usr/local/bin/nuxel-sensors-diag.sh",
+      "verify": "sha256sum /usr/local/bin/nuxel-sensors-diag.sh"
+    },
+    {
+      "backup": "/usr/local/bin/nuxel-time.sh.nuxel-rollback",
+      "component": "S10+ a33 runtime tools, diagnostics and probes",
+      "declared_reload": "systemctl daemon-reload",
+      "group": "s10plus-a33-runtime",
+      "health_check": "test -x /usr/local/bin/nuxelctl && test -x /usr/libexec/nuxel/nuxel-verbose-boot && test -s /usr/share/nuxel/probes/touch-probe.html && test -x /usr/local/bin/nuxel-fb-owner-assert.sh",
+      "install_procedure": "docs/beta-finalization/live/procedures/native-app-binaries.md",
+      "mode": "0755",
+      "post": [
+        "systemctl daemon-reload"
+      ],
+      "pre": [
+        "systemctl daemon-reload"
+      ],
+      "priority": 2,
+      "risk": "medium",
+      "risk_rank": 1,
+      "rollback": "restore every <target>.nuxel-rollback and `systemctl daemon-reload`; the tools are leaf executables, so restoring them cannot strand the boot",
+      "service": null,
+      "source": "tools/s10plus/a33/nuxel-time.sh",
+      "source_sha256": "15acea3964bbef454c3c07604645a6dba453fb0d683626ace42b0ac488aa3175",
+      "staged": "/usr/local/bin/nuxel-time.sh.nuxel-staged",
+      "target": "/usr/local/bin/nuxel-time.sh",
+      "verify": "sha256sum /usr/local/bin/nuxel-time.sh"
+    },
+    {
+      "backup": "/usr/local/bin/nuxel-touch-capture.sh.nuxel-rollback",
+      "component": "S10+ a33 runtime tools, diagnostics and probes",
+      "declared_reload": "systemctl daemon-reload",
+      "group": "s10plus-a33-runtime",
+      "health_check": "test -x /usr/local/bin/nuxelctl && test -x /usr/libexec/nuxel/nuxel-verbose-boot && test -s /usr/share/nuxel/probes/touch-probe.html && test -x /usr/local/bin/nuxel-fb-owner-assert.sh",
+      "install_procedure": "docs/beta-finalization/live/procedures/native-app-binaries.md",
+      "mode": "0755",
+      "post": [
+        "systemctl daemon-reload"
+      ],
+      "pre": [
+        "systemctl daemon-reload"
+      ],
+      "priority": 2,
+      "risk": "medium",
+      "risk_rank": 1,
+      "rollback": "restore every <target>.nuxel-rollback and `systemctl daemon-reload`; the tools are leaf executables, so restoring them cannot strand the boot",
+      "service": null,
+      "source": "tools/s10plus/a33/nuxel-touch-capture.sh",
+      "source_sha256": "93b7179e2ce7a2171b77fc1284fb7f0dc5bdbb36d8453ac5d945519136de57b4",
+      "staged": "/usr/local/bin/nuxel-touch-capture.sh.nuxel-staged",
+      "target": "/usr/local/bin/nuxel-touch-capture.sh",
+      "verify": "sha256sum /usr/local/bin/nuxel-touch-capture.sh"
+    },
+    {
+      "backup": "/usr/libexec/nuxel/nuxel-touch-trace.py.nuxel-rollback",
+      "component": "S10+ a33 runtime tools, diagnostics and probes",
+      "declared_reload": "systemctl daemon-reload",
+      "group": "s10plus-a33-runtime",
+      "health_check": "test -x /usr/local/bin/nuxelctl && test -x /usr/libexec/nuxel/nuxel-verbose-boot && test -s /usr/share/nuxel/probes/touch-probe.html && test -x /usr/local/bin/nuxel-fb-owner-assert.sh",
+      "install_procedure": "docs/beta-finalization/live/procedures/native-app-binaries.md",
+      "mode": "0755",
+      "post": [
+        "systemctl daemon-reload"
+      ],
+      "pre": [
+        "systemctl daemon-reload"
+      ],
+      "priority": 2,
+      "risk": "medium",
+      "risk_rank": 1,
+      "rollback": "restore every <target>.nuxel-rollback and `systemctl daemon-reload`; the tools are leaf executables, so restoring them cannot strand the boot",
+      "service": null,
+      "source": "tools/s10plus/a33/nuxel-touch-trace.py",
+      "source_sha256": "dc3a0d61ec4396b0bf55b58297f0801a4d773a120b945aee6bbac06e24709484",
+      "staged": "/usr/libexec/nuxel/nuxel-touch-trace.py.nuxel-staged",
+      "target": "/usr/libexec/nuxel/nuxel-touch-trace.py",
+      "verify": "sha256sum /usr/libexec/nuxel/nuxel-touch-trace.py"
+    },
+    {
+      "backup": "/usr/libexec/nuxel/nuxel-verbose-boot.nuxel-rollback",
+      "component": "S10+ a33 runtime tools, diagnostics and probes",
+      "declared_reload": "systemctl daemon-reload",
+      "group": "s10plus-a33-runtime",
+      "health_check": "test -x /usr/local/bin/nuxelctl && test -x /usr/libexec/nuxel/nuxel-verbose-boot && test -s /usr/share/nuxel/probes/touch-probe.html && test -x /usr/local/bin/nuxel-fb-owner-assert.sh",
+      "install_procedure": "docs/beta-finalization/live/procedures/native-app-binaries.md",
+      "mode": "0755",
+      "post": [
+        "systemctl daemon-reload"
+      ],
+      "pre": [
+        "systemctl daemon-reload"
+      ],
+      "priority": 2,
+      "risk": "medium",
+      "risk_rank": 1,
+      "rollback": "restore every <target>.nuxel-rollback and `systemctl daemon-reload`; the tools are leaf executables, so restoring them cannot strand the boot",
+      "service": null,
+      "source": "tools/s10plus/a33/nuxel-verbose-boot.py",
+      "source_sha256": "b484b5750216a1a3eb311e3e01305678e2ba3aeb774888c7aad62d17a784cc49",
+      "staged": "/usr/libexec/nuxel/nuxel-verbose-boot.nuxel-staged",
+      "target": "/usr/libexec/nuxel/nuxel-verbose-boot",
+      "verify": "sha256sum /usr/libexec/nuxel/nuxel-verbose-boot"
+    },
+    {
+      "backup": "/etc/systemd/system/nuxel-verbose-boot.service.nuxel-rollback",
+      "component": "S10+ a33 runtime tools, diagnostics and probes",
+      "declared_reload": "systemctl daemon-reload",
+      "group": "s10plus-a33-runtime",
+      "health_check": "test -x /usr/local/bin/nuxelctl && test -x /usr/libexec/nuxel/nuxel-verbose-boot && test -s /usr/share/nuxel/probes/touch-probe.html && test -x /usr/local/bin/nuxel-fb-owner-assert.sh",
+      "install_procedure": "docs/beta-finalization/live/procedures/native-app-binaries.md",
+      "mode": "0644",
+      "post": [
+        "systemctl daemon-reload"
+      ],
+      "pre": [
+        "systemctl daemon-reload"
+      ],
+      "priority": 2,
+      "risk": "medium",
+      "risk_rank": 1,
+      "rollback": "restore every <target>.nuxel-rollback and `systemctl daemon-reload`; the tools are leaf executables, so restoring them cannot strand the boot",
+      "service": null,
+      "source": "tools/s10plus/a33/nuxel-verbose-boot.service",
+      "source_sha256": "ddbffc025ebdb7982cd80501df403e88d8ac3823fa140806fcb694d0a364c461",
+      "staged": "/etc/systemd/system/nuxel-verbose-boot.service.nuxel-staged",
+      "target": "/etc/systemd/system/nuxel-verbose-boot.service",
+      "verify": "sha256sum /etc/systemd/system/nuxel-verbose-boot.service"
+    },
+    {
+      "backup": "/usr/local/bin/nuxel-vpn-tor.sh.nuxel-rollback",
+      "component": "S10+ a33 runtime tools, diagnostics and probes",
+      "declared_reload": "systemctl daemon-reload",
+      "group": "s10plus-a33-runtime",
+      "health_check": "test -x /usr/local/bin/nuxelctl && test -x /usr/libexec/nuxel/nuxel-verbose-boot && test -s /usr/share/nuxel/probes/touch-probe.html && test -x /usr/local/bin/nuxel-fb-owner-assert.sh",
+      "install_procedure": "docs/beta-finalization/live/procedures/native-app-binaries.md",
+      "mode": "0755",
+      "post": [
+        "systemctl daemon-reload"
+      ],
+      "pre": [
+        "systemctl daemon-reload"
+      ],
+      "priority": 2,
+      "risk": "medium",
+      "risk_rank": 1,
+      "rollback": "restore every <target>.nuxel-rollback and `systemctl daemon-reload`; the tools are leaf executables, so restoring them cannot strand the boot",
+      "service": null,
+      "source": "tools/s10plus/a33/nuxel-vpn-tor.sh",
+      "source_sha256": "42f206307dafbe8201de99127e82fb0fe372617b88f99480a90f5e5864b06acf",
+      "staged": "/usr/local/bin/nuxel-vpn-tor.sh.nuxel-staged",
+      "target": "/usr/local/bin/nuxel-vpn-tor.sh",
+      "verify": "sha256sum /usr/local/bin/nuxel-vpn-tor.sh"
+    },
+    {
+      "backup": "/usr/local/bin/nuxel-wifi-diag.sh.nuxel-rollback",
+      "component": "S10+ a33 runtime tools, diagnostics and probes",
+      "declared_reload": "systemctl daemon-reload",
+      "group": "s10plus-a33-runtime",
+      "health_check": "test -x /usr/local/bin/nuxelctl && test -x /usr/libexec/nuxel/nuxel-verbose-boot && test -s /usr/share/nuxel/probes/touch-probe.html && test -x /usr/local/bin/nuxel-fb-owner-assert.sh",
+      "install_procedure": "docs/beta-finalization/live/procedures/native-app-binaries.md",
+      "mode": "0755",
+      "post": [
+        "systemctl daemon-reload"
+      ],
+      "pre": [
+        "systemctl daemon-reload"
+      ],
+      "priority": 2,
+      "risk": "medium",
+      "risk_rank": 1,
+      "rollback": "restore every <target>.nuxel-rollback and `systemctl daemon-reload`; the tools are leaf executables, so restoring them cannot strand the boot",
+      "service": null,
+      "source": "tools/s10plus/a33/nuxel-wifi-diag.sh",
+      "source_sha256": "7120edb3373071cddb11d251a24473951efbdce613d383f697bfcc1ece247076",
+      "staged": "/usr/local/bin/nuxel-wifi-diag.sh.nuxel-staged",
+      "target": "/usr/local/bin/nuxel-wifi-diag.sh",
+      "verify": "sha256sum /usr/local/bin/nuxel-wifi-diag.sh"
+    },
+    {
+      "backup": "/usr/lib/nuxel/src/a33/nuxel-wl-fb.c.nuxel-rollback",
+      "component": "S10+ a33 runtime tools, diagnostics and probes",
+      "declared_reload": "systemctl daemon-reload",
+      "group": "s10plus-a33-runtime",
+      "health_check": "test -x /usr/local/bin/nuxelctl && test -x /usr/libexec/nuxel/nuxel-verbose-boot && test -s /usr/share/nuxel/probes/touch-probe.html && test -x /usr/local/bin/nuxel-fb-owner-assert.sh",
+      "install_procedure": "docs/beta-finalization/live/procedures/native-app-binaries.md",
+      "mode": "0644",
+      "post": [
+        "systemctl daemon-reload"
+      ],
+      "pre": [
+        "systemctl daemon-reload"
+      ],
+      "priority": 2,
+      "risk": "medium",
+      "risk_rank": 1,
+      "rollback": "restore every <target>.nuxel-rollback and `systemctl daemon-reload`; the tools are leaf executables, so restoring them cannot strand the boot",
+      "service": null,
+      "source": "tools/s10plus/a33/nuxel-wl-fb.c",
+      "source_sha256": "052bfdbf673ef658c93b8c07925f2c9249af3c755a011ccbe90011c616f7b768",
+      "staged": "/usr/lib/nuxel/src/a33/nuxel-wl-fb.c.nuxel-staged",
+      "target": "/usr/lib/nuxel/src/a33/nuxel-wl-fb.c",
+      "verify": "sha256sum /usr/lib/nuxel/src/a33/nuxel-wl-fb.c"
+    },
+    {
+      "backup": "/usr/local/bin/nuxelctl.nuxel-rollback",
+      "component": "S10+ a33 runtime tools, diagnostics and probes",
+      "declared_reload": "systemctl daemon-reload",
+      "group": "s10plus-a33-runtime",
+      "health_check": "test -x /usr/local/bin/nuxelctl && test -x /usr/libexec/nuxel/nuxel-verbose-boot && test -s /usr/share/nuxel/probes/touch-probe.html && test -x /usr/local/bin/nuxel-fb-owner-assert.sh",
+      "install_procedure": "docs/beta-finalization/live/procedures/native-app-binaries.md",
+      "mode": "0755",
+      "post": [
+        "systemctl daemon-reload"
+      ],
+      "pre": [
+        "systemctl daemon-reload"
+      ],
+      "priority": 2,
+      "risk": "medium",
+      "risk_rank": 1,
+      "rollback": "restore every <target>.nuxel-rollback and `systemctl daemon-reload`; the tools are leaf executables, so restoring them cannot strand the boot",
+      "service": null,
+      "source": "tools/s10plus/a33/nuxelctl",
+      "source_sha256": "b002daf2e1c79ef6cd9a60f7f868470534bec592e01d1c945ab447bb4203bf1b",
+      "staged": "/usr/local/bin/nuxelctl.nuxel-staged",
+      "target": "/usr/local/bin/nuxelctl",
+      "verify": "sha256sum /usr/local/bin/nuxelctl"
+    },
+    {
+      "backup": "/usr/share/nuxel/probes/touch-probe.html.nuxel-rollback",
+      "component": "S10+ a33 runtime tools, diagnostics and probes",
+      "declared_reload": "systemctl daemon-reload",
+      "group": "s10plus-a33-runtime",
+      "health_check": "test -x /usr/local/bin/nuxelctl && test -x /usr/libexec/nuxel/nuxel-verbose-boot && test -s /usr/share/nuxel/probes/touch-probe.html && test -x /usr/local/bin/nuxel-fb-owner-assert.sh",
+      "install_procedure": "docs/beta-finalization/live/procedures/native-app-binaries.md",
+      "mode": "0644",
+      "post": [
+        "systemctl daemon-reload"
+      ],
+      "pre": [
+        "systemctl daemon-reload"
+      ],
+      "priority": 2,
+      "risk": "medium",
+      "risk_rank": 1,
+      "rollback": "restore every <target>.nuxel-rollback and `systemctl daemon-reload`; the tools are leaf executables, so restoring them cannot strand the boot",
+      "service": null,
+      "source": "tools/s10plus/a33/touch-probe.html",
+      "source_sha256": "aea597a1b6cb77a5e7af497a63a4900b59000498a8ccedf6d5998ae8371aad21",
+      "staged": "/usr/share/nuxel/probes/touch-probe.html.nuxel-staged",
+      "target": "/usr/share/nuxel/probes/touch-probe.html",
+      "verify": "sha256sum /usr/share/nuxel/probes/touch-probe.html"
+    },
+    {
+      "backup": "/usr/local/bin/verify-app-inventory.py.nuxel-rollback",
+      "component": "S10+ a33 runtime tools, diagnostics and probes",
+      "declared_reload": "systemctl daemon-reload",
+      "group": "s10plus-a33-runtime",
+      "health_check": "test -x /usr/local/bin/nuxelctl && test -x /usr/libexec/nuxel/nuxel-verbose-boot && test -s /usr/share/nuxel/probes/touch-probe.html && test -x /usr/local/bin/nuxel-fb-owner-assert.sh",
+      "install_procedure": "docs/beta-finalization/live/procedures/native-app-binaries.md",
+      "mode": "0755",
+      "post": [
+        "systemctl daemon-reload"
+      ],
+      "pre": [
+        "systemctl daemon-reload"
+      ],
+      "priority": 2,
+      "risk": "medium",
+      "risk_rank": 1,
+      "rollback": "restore every <target>.nuxel-rollback and `systemctl daemon-reload`; the tools are leaf executables, so restoring them cannot strand the boot",
+      "service": null,
+      "source": "tools/s10plus/a33/verify-app-inventory.py",
+      "source_sha256": "3c5d90250072c4b07b79afa732d2f2e10f7f7c1bc7946cedfb2c3443bdf4ae63",
+      "staged": "/usr/local/bin/verify-app-inventory.py.nuxel-staged",
+      "target": "/usr/local/bin/verify-app-inventory.py",
+      "verify": "sha256sum /usr/local/bin/verify-app-inventory.py"
+    },
+    {
+      "backup": "/usr/local/bin/verify-app-registry.py.nuxel-rollback",
+      "component": "S10+ a33 runtime tools, diagnostics and probes",
+      "declared_reload": "systemctl daemon-reload",
+      "group": "s10plus-a33-runtime",
+      "health_check": "test -x /usr/local/bin/nuxelctl && test -x /usr/libexec/nuxel/nuxel-verbose-boot && test -s /usr/share/nuxel/probes/touch-probe.html && test -x /usr/local/bin/nuxel-fb-owner-assert.sh",
+      "install_procedure": "docs/beta-finalization/live/procedures/native-app-binaries.md",
+      "mode": "0755",
+      "post": [
+        "systemctl daemon-reload"
+      ],
+      "pre": [
+        "systemctl daemon-reload"
+      ],
+      "priority": 2,
+      "risk": "medium",
+      "risk_rank": 1,
+      "rollback": "restore every <target>.nuxel-rollback and `systemctl daemon-reload`; the tools are leaf executables, so restoring them cannot strand the boot",
+      "service": null,
+      "source": "tools/s10plus/a33/verify-app-registry.py",
+      "source_sha256": "d4afac0c5d8e2b94d2691cf3d80191347800f78aba9ebb72654297b601948a66",
+      "staged": "/usr/local/bin/verify-app-registry.py.nuxel-staged",
+      "target": "/usr/local/bin/verify-app-registry.py",
+      "verify": "sha256sum /usr/local/bin/verify-app-registry.py"
+    },
+    {
+      "backup": "/usr/local/bin/verify-permissions.py.nuxel-rollback",
+      "component": "S10+ a33 runtime tools, diagnostics and probes",
+      "declared_reload": "systemctl daemon-reload",
+      "group": "s10plus-a33-runtime",
+      "health_check": "test -x /usr/local/bin/nuxelctl && test -x /usr/libexec/nuxel/nuxel-verbose-boot && test -s /usr/share/nuxel/probes/touch-probe.html && test -x /usr/local/bin/nuxel-fb-owner-assert.sh",
+      "install_procedure": "docs/beta-finalization/live/procedures/native-app-binaries.md",
+      "mode": "0755",
+      "post": [
+        "systemctl daemon-reload"
+      ],
+      "pre": [
+        "systemctl daemon-reload"
+      ],
+      "priority": 2,
+      "risk": "medium",
+      "risk_rank": 1,
+      "rollback": "restore every <target>.nuxel-rollback and `systemctl daemon-reload`; the tools are leaf executables, so restoring them cannot strand the boot",
+      "service": null,
+      "source": "tools/s10plus/a33/verify-permissions.py",
+      "source_sha256": "cbc93c3245f3728227de0fa608b5e8629921428a9db85d27565596e821699a86",
+      "staged": "/usr/local/bin/verify-permissions.py.nuxel-staged",
+      "target": "/usr/local/bin/verify-permissions.py",
+      "verify": "sha256sum /usr/local/bin/verify-permissions.py"
+    },
+    {
+      "backup": "/usr/local/bin/verify-service-graph.py.nuxel-rollback",
+      "component": "S10+ a33 runtime tools, diagnostics and probes",
+      "declared_reload": "systemctl daemon-reload",
+      "group": "s10plus-a33-runtime",
+      "health_check": "test -x /usr/local/bin/nuxelctl && test -x /usr/libexec/nuxel/nuxel-verbose-boot && test -s /usr/share/nuxel/probes/touch-probe.html && test -x /usr/local/bin/nuxel-fb-owner-assert.sh",
+      "install_procedure": "docs/beta-finalization/live/procedures/native-app-binaries.md",
+      "mode": "0755",
+      "post": [
+        "systemctl daemon-reload"
+      ],
+      "pre": [
+        "systemctl daemon-reload"
+      ],
+      "priority": 2,
+      "risk": "medium",
+      "risk_rank": 1,
+      "rollback": "restore every <target>.nuxel-rollback and `systemctl daemon-reload`; the tools are leaf executables, so restoring them cannot strand the boot",
+      "service": null,
+      "source": "tools/s10plus/a33/verify-service-graph.py",
+      "source_sha256": "8114851de65a9bbb383da3410285eecc01c1452c64c099503ae319bf9df0ee7a",
+      "staged": "/usr/local/bin/verify-service-graph.py.nuxel-staged",
+      "target": "/usr/local/bin/verify-service-graph.py",
+      "verify": "sha256sum /usr/local/bin/verify-service-graph.py"
+    },
+    {
+      "backup": "/usr/local/bin/nuxel-fb-owner-assert.sh.nuxel-rollback",
+      "component": "S10+ a33 runtime tools, diagnostics and probes",
+      "declared_reload": "systemctl daemon-reload",
+      "group": "s10plus-a33-runtime",
+      "health_check": "test -x /usr/local/bin/nuxelctl && test -x /usr/libexec/nuxel/nuxel-verbose-boot && test -s /usr/share/nuxel/probes/touch-probe.html && test -x /usr/local/bin/nuxel-fb-owner-assert.sh",
+      "install_procedure": "docs/beta-finalization/live/procedures/native-app-binaries.md",
+      "mode": "0755",
+      "post": [
+        "systemctl daemon-reload"
+      ],
+      "pre": [
+        "systemctl daemon-reload"
+      ],
+      "priority": 2,
+      "risk": "medium",
+      "risk_rank": 1,
+      "rollback": "restore every <target>.nuxel-rollback and `systemctl daemon-reload`; the tools are leaf executables, so restoring them cannot strand the boot",
+      "service": null,
+      "source": "tools/beta/live/nuxel-fb-owner-assert.sh",
+      "source_sha256": "46156b3477247549ff6730c9b9dc1180b71ae1bebcb3d116e1528ab2c12a773e",
+      "staged": "/usr/local/bin/nuxel-fb-owner-assert.sh.nuxel-staged",
+      "target": "/usr/local/bin/nuxel-fb-owner-assert.sh",
+      "verify": "sha256sum /usr/local/bin/nuxel-fb-owner-assert.sh"
+    },
+    {
+      "backup": "/usr/bin/nuxel-bridge.nuxel-rollback",
+      "component": "services/** runtime code, shims, units and D-Bus policies",
+      "declared_reload": "systemctl daemon-reload && systemctl restart nuxel-bridge nuxel-http-bridge nuxel-portal nuxel-notifications",
+      "group": "services-runtime",
+      "health_check": "test -x /usr/bin/nuxel-bridge && test -x /usr/bin/nuxel-http-bridge && test -x /usr/bin/nuxel-portal && test -x /usr/bin/nuxel-notifications && test -s /usr/lib/nuxel/nuxel-web-server.py",
+      "install_procedure": null,
+      "mode": "0755",
+      "post": [
+        "systemctl daemon-reload"
+      ],
+      "pre": [
+        "systemctl daemon-reload"
+      ],
+      "priority": 3,
+      "risk": "medium",
+      "risk_rank": 1,
+      "rollback": "restore every <target>.nuxel-rollback (code, shims, units, D-Bus policy), `systemctl daemon-reload`, restart the four units, then re-run the health check; the D-Bus policy is restored before any bus reload is attempted",
+      "service": null,
+      "source": "services/nuxel-bridge/bin/nuxel-bridge",
+      "source_sha256": "004847ca71df3ad46007206b9f85128a1d4787a547bdbd8c793df66b61e65e01",
+      "staged": "/usr/bin/nuxel-bridge.nuxel-staged",
+      "target": "/usr/bin/nuxel-bridge",
+      "verify": "sha256sum /usr/bin/nuxel-bridge"
+    },
+    {
+      "backup": "/usr/bin/nuxel-http-bridge.nuxel-rollback",
+      "component": "services/** runtime code, shims, units and D-Bus policies",
+      "declared_reload": "systemctl daemon-reload && systemctl restart nuxel-bridge nuxel-http-bridge nuxel-portal nuxel-notifications",
+      "group": "services-runtime",
+      "health_check": "test -x /usr/bin/nuxel-bridge && test -x /usr/bin/nuxel-http-bridge && test -x /usr/bin/nuxel-portal && test -x /usr/bin/nuxel-notifications && test -s /usr/lib/nuxel/nuxel-web-server.py",
+      "install_procedure": null,
+      "mode": "0755",
+      "post": [
+        "systemctl daemon-reload"
+      ],
+      "pre": [
+        "systemctl daemon-reload"
+      ],
+      "priority": 3,
+      "risk": "medium",
+      "risk_rank": 1,
+      "rollback": "restore every <target>.nuxel-rollback (code, shims, units, D-Bus policy), `systemctl daemon-reload`, restart the four units, then re-run the health check; the D-Bus policy is restored before any bus reload is attempted",
+      "service": null,
+      "source": "services/nuxel-bridge/bin/nuxel-http-bridge",
+      "source_sha256": "e16c4faff5540d1b3667b7a158983b86ca0d9bd03822689f3fd084fa7236a50f",
+      "staged": "/usr/bin/nuxel-http-bridge.nuxel-staged",
+      "target": "/usr/bin/nuxel-http-bridge",
+      "verify": "sha256sum /usr/bin/nuxel-http-bridge"
+    },
+    {
+      "backup": "/etc/dbus-1/system.d/org.nuxel.Bridge.conf.nuxel-rollback",
+      "component": "services/** runtime code, shims, units and D-Bus policies",
+      "declared_reload": "systemctl daemon-reload && systemctl restart nuxel-bridge nuxel-http-bridge nuxel-portal nuxel-notifications",
+      "group": "services-runtime",
+      "health_check": "test -x /usr/bin/nuxel-bridge && test -x /usr/bin/nuxel-http-bridge && test -x /usr/bin/nuxel-portal && test -x /usr/bin/nuxel-notifications && test -s /usr/lib/nuxel/nuxel-web-server.py",
+      "install_procedure": null,
+      "mode": "0644",
+      "post": [
+        "systemctl daemon-reload"
+      ],
+      "pre": [
+        "systemctl daemon-reload"
+      ],
+      "priority": 3,
+      "risk": "medium",
+      "risk_rank": 1,
+      "rollback": "restore every <target>.nuxel-rollback (code, shims, units, D-Bus policy), `systemctl daemon-reload`, restart the four units, then re-run the health check; the D-Bus policy is restored before any bus reload is attempted",
+      "service": null,
+      "source": "services/nuxel-bridge/dbus/org.nuxel.Bridge.conf",
+      "source_sha256": "b1ff0bab3761491305ff9663598423b8774a260f3196a4aec615780199e93856",
+      "staged": "/etc/dbus-1/system.d/org.nuxel.Bridge.conf.nuxel-staged",
+      "target": "/etc/dbus-1/system.d/org.nuxel.Bridge.conf",
+      "verify": "sha256sum /etc/dbus-1/system.d/org.nuxel.Bridge.conf"
+    },
+    {
+      "backup": "/usr/lib/nuxel/nuxel-bridge/api.py.nuxel-rollback",
+      "component": "services/** runtime code, shims, units and D-Bus policies",
+      "declared_reload": "systemctl daemon-reload && systemctl restart nuxel-bridge nuxel-http-bridge nuxel-portal nuxel-notifications",
+      "group": "services-runtime",
+      "health_check": "test -x /usr/bin/nuxel-bridge && test -x /usr/bin/nuxel-http-bridge && test -x /usr/bin/nuxel-portal && test -x /usr/bin/nuxel-notifications && test -s /usr/lib/nuxel/nuxel-web-server.py",
+      "install_procedure": null,
+      "mode": "0644",
+      "post": [
+        "systemctl daemon-reload"
+      ],
+      "pre": [
+        "systemctl daemon-reload"
+      ],
+      "priority": 3,
+      "risk": "medium",
+      "risk_rank": 1,
+      "rollback": "restore every <target>.nuxel-rollback (code, shims, units, D-Bus policy), `systemctl daemon-reload`, restart the four units, then re-run the health check; the D-Bus policy is restored before any bus reload is attempted",
+      "service": null,
+      "source": "services/nuxel-bridge/src/api.py",
+      "source_sha256": "a31752112d2e6acbebbfb787f468f718b24684c51a3cc51557d053dcc3d9ef31",
+      "staged": "/usr/lib/nuxel/nuxel-bridge/api.py.nuxel-staged",
+      "target": "/usr/lib/nuxel/nuxel-bridge/api.py",
+      "verify": "sha256sum /usr/lib/nuxel/nuxel-bridge/api.py"
+    },
+    {
+      "backup": "/usr/lib/nuxel/nuxel-bridge/bridge.py.nuxel-rollback",
+      "component": "services/** runtime code, shims, units and D-Bus policies",
+      "declared_reload": "systemctl daemon-reload && systemctl restart nuxel-bridge nuxel-http-bridge nuxel-portal nuxel-notifications",
+      "group": "services-runtime",
+      "health_check": "test -x /usr/bin/nuxel-bridge && test -x /usr/bin/nuxel-http-bridge && test -x /usr/bin/nuxel-portal && test -x /usr/bin/nuxel-notifications && test -s /usr/lib/nuxel/nuxel-web-server.py",
+      "install_procedure": null,
+      "mode": "0644",
+      "post": [
+        "systemctl daemon-reload"
+      ],
+      "pre": [
+        "systemctl daemon-reload"
+      ],
+      "priority": 3,
+      "risk": "medium",
+      "risk_rank": 1,
+      "rollback": "restore every <target>.nuxel-rollback (code, shims, units, D-Bus policy), `systemctl daemon-reload`, restart the four units, then re-run the health check; the D-Bus policy is restored before any bus reload is attempted",
+      "service": null,
+      "source": "services/nuxel-bridge/src/bridge.py",
+      "source_sha256": "fcc4c29d880c7d72fa951c0038bc331e0ea8872c1da3e6eea1b1c7a5ad214637",
+      "staged": "/usr/lib/nuxel/nuxel-bridge/bridge.py.nuxel-staged",
+      "target": "/usr/lib/nuxel/nuxel-bridge/bridge.py",
+      "verify": "sha256sum /usr/lib/nuxel/nuxel-bridge/bridge.py"
+    },
+    {
+      "backup": "/usr/lib/nuxel/nuxel-bridge/capabilities.py.nuxel-rollback",
+      "component": "services/** runtime code, shims, units and D-Bus policies",
+      "declared_reload": "systemctl daemon-reload && systemctl restart nuxel-bridge nuxel-http-bridge nuxel-portal nuxel-notifications",
+      "group": "services-runtime",
+      "health_check": "test -x /usr/bin/nuxel-bridge && test -x /usr/bin/nuxel-http-bridge && test -x /usr/bin/nuxel-portal && test -x /usr/bin/nuxel-notifications && test -s /usr/lib/nuxel/nuxel-web-server.py",
+      "install_procedure": null,
+      "mode": "0644",
+      "post": [
+        "systemctl daemon-reload"
+      ],
+      "pre": [
+        "systemctl daemon-reload"
+      ],
+      "priority": 3,
+      "risk": "medium",
+      "risk_rank": 1,
+      "rollback": "restore every <target>.nuxel-rollback (code, shims, units, D-Bus policy), `systemctl daemon-reload`, restart the four units, then re-run the health check; the D-Bus policy is restored before any bus reload is attempted",
+      "service": null,
+      "source": "services/nuxel-bridge/src/capabilities.py",
+      "source_sha256": "b8efdd7d021d00a7438d71c66aee477339ec3819e21bdc84bb1637afb68bee8c",
+      "staged": "/usr/lib/nuxel/nuxel-bridge/capabilities.py.nuxel-staged",
+      "target": "/usr/lib/nuxel/nuxel-bridge/capabilities.py",
+      "verify": "sha256sum /usr/lib/nuxel/nuxel-bridge/capabilities.py"
+    },
+    {
+      "backup": "/etc/systemd/system/nuxel-bridge.service.nuxel-rollback",
+      "component": "services/** runtime code, shims, units and D-Bus policies",
+      "declared_reload": "systemctl daemon-reload && systemctl restart nuxel-bridge nuxel-http-bridge nuxel-portal nuxel-notifications",
+      "group": "services-runtime",
+      "health_check": "test -x /usr/bin/nuxel-bridge && test -x /usr/bin/nuxel-http-bridge && test -x /usr/bin/nuxel-portal && test -x /usr/bin/nuxel-notifications && test -s /usr/lib/nuxel/nuxel-web-server.py",
+      "install_procedure": null,
+      "mode": "0644",
+      "post": [
+        "systemctl daemon-reload"
+      ],
+      "pre": [
+        "systemctl daemon-reload"
+      ],
+      "priority": 3,
+      "risk": "medium",
+      "risk_rank": 1,
+      "rollback": "restore every <target>.nuxel-rollback (code, shims, units, D-Bus policy), `systemctl daemon-reload`, restart the four units, then re-run the health check; the D-Bus policy is restored before any bus reload is attempted",
+      "service": null,
+      "source": "services/nuxel-bridge/systemd/nuxel-bridge.service",
+      "source_sha256": "b8f21cc16f1494a805184fae349a0ac725d91150272fcfc42f3ee320685c6d6e",
+      "staged": "/etc/systemd/system/nuxel-bridge.service.nuxel-staged",
+      "target": "/etc/systemd/system/nuxel-bridge.service",
+      "verify": "sha256sum /etc/systemd/system/nuxel-bridge.service"
+    },
+    {
+      "backup": "/etc/systemd/system/nuxel-http-bridge.service.nuxel-rollback",
+      "component": "services/** runtime code, shims, units and D-Bus policies",
+      "declared_reload": "systemctl daemon-reload && systemctl restart nuxel-bridge nuxel-http-bridge nuxel-portal nuxel-notifications",
+      "group": "services-runtime",
+      "health_check": "test -x /usr/bin/nuxel-bridge && test -x /usr/bin/nuxel-http-bridge && test -x /usr/bin/nuxel-portal && test -x /usr/bin/nuxel-notifications && test -s /usr/lib/nuxel/nuxel-web-server.py",
+      "install_procedure": null,
+      "mode": "0644",
+      "post": [
+        "systemctl daemon-reload"
+      ],
+      "pre": [
+        "systemctl daemon-reload"
+      ],
+      "priority": 3,
+      "risk": "medium",
+      "risk_rank": 1,
+      "rollback": "restore every <target>.nuxel-rollback (code, shims, units, D-Bus policy), `systemctl daemon-reload`, restart the four units, then re-run the health check; the D-Bus policy is restored before any bus reload is attempted",
+      "service": null,
+      "source": "services/nuxel-bridge/systemd/nuxel-http-bridge.service",
+      "source_sha256": "d41acaedddc9a0d34ebd183445922fdc03decc055bbfa229c2fbe17bf67ede50",
+      "staged": "/etc/systemd/system/nuxel-http-bridge.service.nuxel-staged",
+      "target": "/etc/systemd/system/nuxel-http-bridge.service",
+      "verify": "sha256sum /etc/systemd/system/nuxel-http-bridge.service"
+    },
+    {
+      "backup": "/usr/lib/nuxel/nuxel-console/README.md.nuxel-rollback",
+      "component": "services/** runtime code, shims, units and D-Bus policies",
+      "declared_reload": "systemctl daemon-reload && systemctl restart nuxel-bridge nuxel-http-bridge nuxel-portal nuxel-notifications",
+      "group": "services-runtime",
+      "health_check": "test -x /usr/bin/nuxel-bridge && test -x /usr/bin/nuxel-http-bridge && test -x /usr/bin/nuxel-portal && test -x /usr/bin/nuxel-notifications && test -s /usr/lib/nuxel/nuxel-web-server.py",
+      "install_procedure": null,
+      "mode": "0644",
+      "post": [
+        "systemctl daemon-reload"
+      ],
+      "pre": [
+        "systemctl daemon-reload"
+      ],
+      "priority": 3,
+      "risk": "medium",
+      "risk_rank": 1,
+      "rollback": "restore every <target>.nuxel-rollback (code, shims, units, D-Bus policy), `systemctl daemon-reload`, restart the four units, then re-run the health check; the D-Bus policy is restored before any bus reload is attempted",
+      "service": null,
+      "source": "services/nuxel-console/README.md",
+      "source_sha256": "b6b0fec2c3759ae3f5a80aafb41f61c5efb3351b856cdf3114e9a6450ed1b657",
+      "staged": "/usr/lib/nuxel/nuxel-console/README.md.nuxel-staged",
+      "target": "/usr/lib/nuxel/nuxel-console/README.md",
+      "verify": "sha256sum /usr/lib/nuxel/nuxel-console/README.md"
+    },
+    {
+      "backup": "/usr/lib/nuxel/nuxel-console-free.nuxel-rollback",
+      "component": "services/** runtime code, shims, units and D-Bus policies",
+      "declared_reload": "systemctl daemon-reload && systemctl restart nuxel-bridge nuxel-http-bridge nuxel-portal nuxel-notifications",
+      "group": "services-runtime",
+      "health_check": "test -x /usr/bin/nuxel-bridge && test -x /usr/bin/nuxel-http-bridge && test -x /usr/bin/nuxel-portal && test -x /usr/bin/nuxel-notifications && test -s /usr/lib/nuxel/nuxel-web-server.py",
+      "install_procedure": null,
+      "mode": "0755",
+      "post": [
+        "systemctl daemon-reload"
+      ],
+      "pre": [
+        "systemctl daemon-reload"
+      ],
+      "priority": 3,
+      "risk": "medium",
+      "risk_rank": 1,
+      "rollback": "restore every <target>.nuxel-rollback (code, shims, units, D-Bus policy), `systemctl daemon-reload`, restart the four units, then re-run the health check; the D-Bus policy is restored before any bus reload is attempted",
+      "service": null,
+      "source": "services/nuxel-console/bin/nuxel-console-free",
+      "source_sha256": "bb46c39dcd8f35ca64189b2cbbd42aa7f3ef516347868bb01651ca61a02ba0b3",
+      "staged": "/usr/lib/nuxel/nuxel-console-free.nuxel-staged",
+      "target": "/usr/lib/nuxel/nuxel-console-free",
+      "verify": "sha256sum /usr/lib/nuxel/nuxel-console-free"
+    },
+    {
+      "backup": "/etc/systemd/system/nuxel-console.service.nuxel-rollback",
+      "component": "services/** runtime code, shims, units and D-Bus policies",
+      "declared_reload": "systemctl daemon-reload && systemctl restart nuxel-bridge nuxel-http-bridge nuxel-portal nuxel-notifications",
+      "group": "services-runtime",
+      "health_check": "test -x /usr/bin/nuxel-bridge && test -x /usr/bin/nuxel-http-bridge && test -x /usr/bin/nuxel-portal && test -x /usr/bin/nuxel-notifications && test -s /usr/lib/nuxel/nuxel-web-server.py",
+      "install_procedure": null,
+      "mode": "0644",
+      "post": [
+        "systemctl daemon-reload"
+      ],
+      "pre": [
+        "systemctl daemon-reload"
+      ],
+      "priority": 3,
+      "risk": "medium",
+      "risk_rank": 1,
+      "rollback": "restore every <target>.nuxel-rollback (code, shims, units, D-Bus policy), `systemctl daemon-reload`, restart the four units, then re-run the health check; the D-Bus policy is restored before any bus reload is attempted",
+      "service": null,
+      "source": "services/nuxel-console/systemd/nuxel-console.service",
+      "source_sha256": "94802ce65133408688877ffde10c97ada244d262d1b8e928cf6f94d4af8e67e1",
+      "staged": "/etc/systemd/system/nuxel-console.service.nuxel-staged",
+      "target": "/etc/systemd/system/nuxel-console.service",
+      "verify": "sha256sum /etc/systemd/system/nuxel-console.service"
+    },
+    {
+      "backup": "/usr/lib/nuxel/nuxel-notifications/README.md.nuxel-rollback",
+      "component": "services/** runtime code, shims, units and D-Bus policies",
+      "declared_reload": "systemctl daemon-reload && systemctl restart nuxel-bridge nuxel-http-bridge nuxel-portal nuxel-notifications",
+      "group": "services-runtime",
+      "health_check": "test -x /usr/bin/nuxel-bridge && test -x /usr/bin/nuxel-http-bridge && test -x /usr/bin/nuxel-portal && test -x /usr/bin/nuxel-notifications && test -s /usr/lib/nuxel/nuxel-web-server.py",
+      "install_procedure": null,
+      "mode": "0644",
+      "post": [
+        "systemctl daemon-reload"
+      ],
+      "pre": [
+        "systemctl daemon-reload"
+      ],
+      "priority": 3,
+      "risk": "medium",
+      "risk_rank": 1,
+      "rollback": "restore every <target>.nuxel-rollback (code, shims, units, D-Bus policy), `systemctl daemon-reload`, restart the four units, then re-run the health check; the D-Bus policy is restored before any bus reload is attempted",
+      "service": null,
+      "source": "services/nuxel-notifications/README.md",
+      "source_sha256": "b0bdc5a098e542ed25656d0b92e3d2ed8ef3b6c0b2c67964f47c0f234617098b",
+      "staged": "/usr/lib/nuxel/nuxel-notifications/README.md.nuxel-staged",
+      "target": "/usr/lib/nuxel/nuxel-notifications/README.md",
+      "verify": "sha256sum /usr/lib/nuxel/nuxel-notifications/README.md"
+    },
+    {
+      "backup": "/usr/bin/nuxel-notifications.nuxel-rollback",
+      "component": "services/** runtime code, shims, units and D-Bus policies",
+      "declared_reload": "systemctl daemon-reload && systemctl restart nuxel-bridge nuxel-http-bridge nuxel-portal nuxel-notifications",
+      "group": "services-runtime",
+      "health_check": "test -x /usr/bin/nuxel-bridge && test -x /usr/bin/nuxel-http-bridge && test -x /usr/bin/nuxel-portal && test -x /usr/bin/nuxel-notifications && test -s /usr/lib/nuxel/nuxel-web-server.py",
+      "install_procedure": null,
+      "mode": "0755",
+      "post": [
+        "systemctl daemon-reload"
+      ],
+      "pre": [
+        "systemctl daemon-reload"
+      ],
+      "priority": 3,
+      "risk": "medium",
+      "risk_rank": 1,
+      "rollback": "restore every <target>.nuxel-rollback (code, shims, units, D-Bus policy), `systemctl daemon-reload`, restart the four units, then re-run the health check; the D-Bus policy is restored before any bus reload is attempted",
+      "service": null,
+      "source": "services/nuxel-notifications/bin/nuxel-notifications",
+      "source_sha256": "d519a53d05c4607eefeaf135a6bf948a023f531c22875ae3bb7e5bcf45c486b7",
+      "staged": "/usr/bin/nuxel-notifications.nuxel-staged",
+      "target": "/usr/bin/nuxel-notifications",
+      "verify": "sha256sum /usr/bin/nuxel-notifications"
+    },
+    {
+      "backup": "/etc/dbus-1/system.d/org.nuxel.Notifications.conf.nuxel-rollback",
+      "component": "services/** runtime code, shims, units and D-Bus policies",
+      "declared_reload": "systemctl daemon-reload && systemctl restart nuxel-bridge nuxel-http-bridge nuxel-portal nuxel-notifications",
+      "group": "services-runtime",
+      "health_check": "test -x /usr/bin/nuxel-bridge && test -x /usr/bin/nuxel-http-bridge && test -x /usr/bin/nuxel-portal && test -x /usr/bin/nuxel-notifications && test -s /usr/lib/nuxel/nuxel-web-server.py",
+      "install_procedure": null,
+      "mode": "0644",
+      "post": [
+        "systemctl daemon-reload"
+      ],
+      "pre": [
+        "systemctl daemon-reload"
+      ],
+      "priority": 3,
+      "risk": "medium",
+      "risk_rank": 1,
+      "rollback": "restore every <target>.nuxel-rollback (code, shims, units, D-Bus policy), `systemctl daemon-reload`, restart the four units, then re-run the health check; the D-Bus policy is restored before any bus reload is attempted",
+      "service": null,
+      "source": "services/nuxel-notifications/dbus/org.nuxel.Notifications.conf",
+      "source_sha256": "3f64f7388bb6f9324f390074372778786a6a40fa375b44c06ebdc96eecc66710",
+      "staged": "/etc/dbus-1/system.d/org.nuxel.Notifications.conf.nuxel-staged",
+      "target": "/etc/dbus-1/system.d/org.nuxel.Notifications.conf",
+      "verify": "sha256sum /etc/dbus-1/system.d/org.nuxel.Notifications.conf"
+    },
+    {
+      "backup": "/usr/lib/nuxel/nuxel-notifications/notifications.py.nuxel-rollback",
+      "component": "services/** runtime code, shims, units and D-Bus policies",
+      "declared_reload": "systemctl daemon-reload && systemctl restart nuxel-bridge nuxel-http-bridge nuxel-portal nuxel-notifications",
+      "group": "services-runtime",
+      "health_check": "test -x /usr/bin/nuxel-bridge && test -x /usr/bin/nuxel-http-bridge && test -x /usr/bin/nuxel-portal && test -x /usr/bin/nuxel-notifications && test -s /usr/lib/nuxel/nuxel-web-server.py",
+      "install_procedure": null,
+      "mode": "0644",
+      "post": [
+        "systemctl daemon-reload"
+      ],
+      "pre": [
+        "systemctl daemon-reload"
+      ],
+      "priority": 3,
+      "risk": "medium",
+      "risk_rank": 1,
+      "rollback": "restore every <target>.nuxel-rollback (code, shims, units, D-Bus policy), `systemctl daemon-reload`, restart the four units, then re-run the health check; the D-Bus policy is restored before any bus reload is attempted",
+      "service": null,
+      "source": "services/nuxel-notifications/src/notifications.py",
+      "source_sha256": "101f538ed0f49cf4a3557c97aec4264554ce3dd9590e197346f55e75f630fb29",
+      "staged": "/usr/lib/nuxel/nuxel-notifications/notifications.py.nuxel-staged",
+      "target": "/usr/lib/nuxel/nuxel-notifications/notifications.py",
+      "verify": "sha256sum /usr/lib/nuxel/nuxel-notifications/notifications.py"
+    },
+    {
+      "backup": "/etc/systemd/system/nuxel-notifications.service.nuxel-rollback",
+      "component": "services/** runtime code, shims, units and D-Bus policies",
+      "declared_reload": "systemctl daemon-reload && systemctl restart nuxel-bridge nuxel-http-bridge nuxel-portal nuxel-notifications",
+      "group": "services-runtime",
+      "health_check": "test -x /usr/bin/nuxel-bridge && test -x /usr/bin/nuxel-http-bridge && test -x /usr/bin/nuxel-portal && test -x /usr/bin/nuxel-notifications && test -s /usr/lib/nuxel/nuxel-web-server.py",
+      "install_procedure": null,
+      "mode": "0644",
+      "post": [
+        "systemctl daemon-reload"
+      ],
+      "pre": [
+        "systemctl daemon-reload"
+      ],
+      "priority": 3,
+      "risk": "medium",
+      "risk_rank": 1,
+      "rollback": "restore every <target>.nuxel-rollback (code, shims, units, D-Bus policy), `systemctl daemon-reload`, restart the four units, then re-run the health check; the D-Bus policy is restored before any bus reload is attempted",
+      "service": null,
+      "source": "services/nuxel-notifications/systemd/nuxel-notifications.service",
+      "source_sha256": "76f28644e0421851d691525b35707695820b2d38168a2eb1a46aff81ca3e1ecb",
+      "staged": "/etc/systemd/system/nuxel-notifications.service.nuxel-staged",
+      "target": "/etc/systemd/system/nuxel-notifications.service",
+      "verify": "sha256sum /etc/systemd/system/nuxel-notifications.service"
+    },
+    {
+      "backup": "/usr/bin/nuxel-portal.nuxel-rollback",
+      "component": "services/** runtime code, shims, units and D-Bus policies",
+      "declared_reload": "systemctl daemon-reload && systemctl restart nuxel-bridge nuxel-http-bridge nuxel-portal nuxel-notifications",
+      "group": "services-runtime",
+      "health_check": "test -x /usr/bin/nuxel-bridge && test -x /usr/bin/nuxel-http-bridge && test -x /usr/bin/nuxel-portal && test -x /usr/bin/nuxel-notifications && test -s /usr/lib/nuxel/nuxel-web-server.py",
+      "install_procedure": null,
+      "mode": "0755",
+      "post": [
+        "systemctl daemon-reload"
+      ],
+      "pre": [
+        "systemctl daemon-reload"
+      ],
+      "priority": 3,
+      "risk": "medium",
+      "risk_rank": 1,
+      "rollback": "restore every <target>.nuxel-rollback (code, shims, units, D-Bus policy), `systemctl daemon-reload`, restart the four units, then re-run the health check; the D-Bus policy is restored before any bus reload is attempted",
+      "service": null,
+      "source": "services/nuxel-portal/bin/nuxel-portal",
+      "source_sha256": "c08a58e33ef744356112ba6c25c070d454201bd72e338b6168327f92bcfc7815",
+      "staged": "/usr/bin/nuxel-portal.nuxel-staged",
+      "target": "/usr/bin/nuxel-portal",
+      "verify": "sha256sum /usr/bin/nuxel-portal"
+    },
+    {
+      "backup": "/etc/dbus-1/system.d/org.nuxel.Portal.conf.nuxel-rollback",
+      "component": "services/** runtime code, shims, units and D-Bus policies",
+      "declared_reload": "systemctl daemon-reload && systemctl restart nuxel-bridge nuxel-http-bridge nuxel-portal nuxel-notifications",
+      "group": "services-runtime",
+      "health_check": "test -x /usr/bin/nuxel-bridge && test -x /usr/bin/nuxel-http-bridge && test -x /usr/bin/nuxel-portal && test -x /usr/bin/nuxel-notifications && test -s /usr/lib/nuxel/nuxel-web-server.py",
+      "install_procedure": null,
+      "mode": "0644",
+      "post": [
+        "systemctl daemon-reload"
+      ],
+      "pre": [
+        "systemctl daemon-reload"
+      ],
+      "priority": 3,
+      "risk": "medium",
+      "risk_rank": 1,
+      "rollback": "restore every <target>.nuxel-rollback (code, shims, units, D-Bus policy), `systemctl daemon-reload`, restart the four units, then re-run the health check; the D-Bus policy is restored before any bus reload is attempted",
+      "service": null,
+      "source": "services/nuxel-portal/dbus/org.nuxel.Portal.conf",
+      "source_sha256": "ad9db606f303bd0f5c7dc56c7821c52b6ad5214d60de799c4ce3e4eed8233a95",
+      "staged": "/etc/dbus-1/system.d/org.nuxel.Portal.conf.nuxel-staged",
+      "target": "/etc/dbus-1/system.d/org.nuxel.Portal.conf",
+      "verify": "sha256sum /etc/dbus-1/system.d/org.nuxel.Portal.conf"
+    },
+    {
+      "backup": "/usr/lib/nuxel/nuxel-portal/portal.py.nuxel-rollback",
+      "component": "services/** runtime code, shims, units and D-Bus policies",
+      "declared_reload": "systemctl daemon-reload && systemctl restart nuxel-bridge nuxel-http-bridge nuxel-portal nuxel-notifications",
+      "group": "services-runtime",
+      "health_check": "test -x /usr/bin/nuxel-bridge && test -x /usr/bin/nuxel-http-bridge && test -x /usr/bin/nuxel-portal && test -x /usr/bin/nuxel-notifications && test -s /usr/lib/nuxel/nuxel-web-server.py",
+      "install_procedure": null,
+      "mode": "0644",
+      "post": [
+        "systemctl daemon-reload"
+      ],
+      "pre": [
+        "systemctl daemon-reload"
+      ],
+      "priority": 3,
+      "risk": "medium",
+      "risk_rank": 1,
+      "rollback": "restore every <target>.nuxel-rollback (code, shims, units, D-Bus policy), `systemctl daemon-reload`, restart the four units, then re-run the health check; the D-Bus policy is restored before any bus reload is attempted",
+      "service": null,
+      "source": "services/nuxel-portal/src/portal.py",
+      "source_sha256": "50e1cb031eb1111ed64a6ec7bc18f5e098db5d469ad299e271247172040cda16",
+      "staged": "/usr/lib/nuxel/nuxel-portal/portal.py.nuxel-staged",
+      "target": "/usr/lib/nuxel/nuxel-portal/portal.py",
+      "verify": "sha256sum /usr/lib/nuxel/nuxel-portal/portal.py"
+    },
+    {
+      "backup": "/etc/systemd/system/nuxel-portal.service.nuxel-rollback",
+      "component": "services/** runtime code, shims, units and D-Bus policies",
+      "declared_reload": "systemctl daemon-reload && systemctl restart nuxel-bridge nuxel-http-bridge nuxel-portal nuxel-notifications",
+      "group": "services-runtime",
+      "health_check": "test -x /usr/bin/nuxel-bridge && test -x /usr/bin/nuxel-http-bridge && test -x /usr/bin/nuxel-portal && test -x /usr/bin/nuxel-notifications && test -s /usr/lib/nuxel/nuxel-web-server.py",
+      "install_procedure": null,
+      "mode": "0644",
+      "post": [
+        "systemctl daemon-reload"
+      ],
+      "pre": [
+        "systemctl daemon-reload"
+      ],
+      "priority": 3,
+      "risk": "medium",
+      "risk_rank": 1,
+      "rollback": "restore every <target>.nuxel-rollback (code, shims, units, D-Bus policy), `systemctl daemon-reload`, restart the four units, then re-run the health check; the D-Bus policy is restored before any bus reload is attempted",
+      "service": null,
+      "source": "services/nuxel-portal/systemd/nuxel-portal.service",
+      "source_sha256": "b86401526672305ab3b5cc3a5a05c3528d47d4fc584f3dd5088a062962893832",
+      "staged": "/etc/systemd/system/nuxel-portal.service.nuxel-staged",
+      "target": "/etc/systemd/system/nuxel-portal.service",
+      "verify": "sha256sum /etc/systemd/system/nuxel-portal.service"
+    },
+    {
+      "backup": "/etc/systemd/system/nuxel-fallback.service.nuxel-rollback",
+      "component": "services/** runtime code, shims, units and D-Bus policies",
+      "declared_reload": "systemctl daemon-reload && systemctl restart nuxel-bridge nuxel-http-bridge nuxel-portal nuxel-notifications",
+      "group": "services-runtime",
+      "health_check": "test -x /usr/bin/nuxel-bridge && test -x /usr/bin/nuxel-http-bridge && test -x /usr/bin/nuxel-portal && test -x /usr/bin/nuxel-notifications && test -s /usr/lib/nuxel/nuxel-web-server.py",
+      "install_procedure": null,
+      "mode": "0644",
+      "post": [
+        "systemctl daemon-reload"
+      ],
+      "pre": [
+        "systemctl daemon-reload"
+      ],
+      "priority": 3,
+      "risk": "medium",
+      "risk_rank": 1,
+      "rollback": "restore every <target>.nuxel-rollback (code, shims, units, D-Bus policy), `systemctl daemon-reload`, restart the four units, then re-run the health check; the D-Bus policy is restored before any bus reload is attempted",
+      "service": null,
+      "source": "services/nuxel-session/systemd/nuxel-fallback.service",
+      "source_sha256": "cbc1c5d18b365c7ecf7d544a7eb4932171cfef468429c3813df196adaca11233",
+      "staged": "/etc/systemd/system/nuxel-fallback.service.nuxel-staged",
+      "target": "/etc/systemd/system/nuxel-fallback.service",
+      "verify": "sha256sum /etc/systemd/system/nuxel-fallback.service"
+    },
+    {
+      "backup": "/etc/systemd/system/nuxel-bootmode-oneshot.service.nuxel-rollback",
+      "component": "services/** runtime code, shims, units and D-Bus policies",
+      "declared_reload": "systemctl daemon-reload && systemctl restart nuxel-bridge nuxel-http-bridge nuxel-portal nuxel-notifications",
+      "group": "services-runtime",
+      "health_check": "test -x /usr/bin/nuxel-bridge && test -x /usr/bin/nuxel-http-bridge && test -x /usr/bin/nuxel-portal && test -x /usr/bin/nuxel-notifications && test -s /usr/lib/nuxel/nuxel-web-server.py",
+      "install_procedure": null,
+      "mode": "0644",
+      "post": [
+        "systemctl daemon-reload"
+      ],
+      "pre": [
+        "systemctl daemon-reload"
+      ],
+      "priority": 3,
+      "risk": "medium",
+      "risk_rank": 1,
+      "rollback": "restore every <target>.nuxel-rollback (code, shims, units, D-Bus policy), `systemctl daemon-reload`, restart the four units, then re-run the health check; the D-Bus policy is restored before any bus reload is attempted",
+      "service": null,
+      "source": "services/nuxel-session/systemd/nuxel-bootmode-oneshot.service",
+      "source_sha256": "63831fc1cd01b8d1dc40ffd88fca9c84f55349ef0f7ab8065f3db2fef20a32e0",
+      "staged": "/etc/systemd/system/nuxel-bootmode-oneshot.service.nuxel-staged",
+      "target": "/etc/systemd/system/nuxel-bootmode-oneshot.service",
+      "verify": "sha256sum /etc/systemd/system/nuxel-bootmode-oneshot.service"
+    },
+    {
+      "backup": "/etc/systemd/system/nuxel-ui.service.d/10-launcher-primary.conf.nuxel-rollback",
+      "component": "services/** runtime code, shims, units and D-Bus policies",
+      "declared_reload": "systemctl daemon-reload && systemctl restart nuxel-bridge nuxel-http-bridge nuxel-portal nuxel-notifications",
+      "group": "services-runtime",
+      "health_check": "test -x /usr/bin/nuxel-bridge && test -x /usr/bin/nuxel-http-bridge && test -x /usr/bin/nuxel-portal && test -x /usr/bin/nuxel-notifications && test -s /usr/lib/nuxel/nuxel-web-server.py",
+      "install_procedure": null,
+      "mode": "0644",
+      "post": [
+        "systemctl daemon-reload"
+      ],
+      "pre": [
+        "systemctl daemon-reload"
+      ],
+      "priority": 3,
+      "risk": "medium",
+      "risk_rank": 1,
+      "rollback": "restore every <target>.nuxel-rollback (code, shims, units, D-Bus policy), `systemctl daemon-reload`, restart the four units, then re-run the health check; the D-Bus policy is restored before any bus reload is attempted",
+      "service": null,
+      "source": "services/nuxel-session/systemd/nuxel-ui.service.d-10-launcher-primary.conf",
+      "source_sha256": "b26293afafb65bda1b23d28aaa08e9f066a918009e1c7b7f0e17e36dcef7f296",
+      "staged": "/etc/systemd/system/nuxel-ui.service.d/10-launcher-primary.conf.nuxel-staged",
+      "target": "/etc/systemd/system/nuxel-ui.service.d/10-launcher-primary.conf",
+      "verify": "sha256sum /etc/systemd/system/nuxel-ui.service.d/10-launcher-primary.conf"
+    },
+    {
+      "backup": "/usr/bin/nuxel-web.nuxel-rollback",
+      "component": "services/** runtime code, shims, units and D-Bus policies",
+      "declared_reload": "systemctl daemon-reload && systemctl restart nuxel-bridge nuxel-http-bridge nuxel-portal nuxel-notifications",
+      "group": "services-runtime",
+      "health_check": "test -x /usr/bin/nuxel-bridge && test -x /usr/bin/nuxel-http-bridge && test -x /usr/bin/nuxel-portal && test -x /usr/bin/nuxel-notifications && test -s /usr/lib/nuxel/nuxel-web-server.py",
+      "install_procedure": null,
+      "mode": "0755",
+      "post": [
+        "systemctl daemon-reload"
+      ],
+      "pre": [
+        "systemctl daemon-reload"
+      ],
+      "priority": 3,
+      "risk": "medium",
+      "risk_rank": 1,
+      "rollback": "restore every <target>.nuxel-rollback (code, shims, units, D-Bus policy), `systemctl daemon-reload`, restart the four units, then re-run the health check; the D-Bus policy is restored before any bus reload is attempted",
+      "service": null,
+      "source": "services/nuxel-web/bin/nuxel-web",
+      "source_sha256": "636d5972d5b8786c2fceed952dc74e75c6d36fd98efe8a32c6c2863362ea7a32",
+      "staged": "/usr/bin/nuxel-web.nuxel-staged",
+      "target": "/usr/bin/nuxel-web",
+      "verify": "sha256sum /usr/bin/nuxel-web"
+    },
+    {
+      "backup": "/usr/lib/nuxel/nuxel-web-server.py.nuxel-rollback",
+      "component": "services/** runtime code, shims, units and D-Bus policies",
+      "declared_reload": "systemctl daemon-reload && systemctl restart nuxel-bridge nuxel-http-bridge nuxel-portal nuxel-notifications",
+      "group": "services-runtime",
+      "health_check": "test -x /usr/bin/nuxel-bridge && test -x /usr/bin/nuxel-http-bridge && test -x /usr/bin/nuxel-portal && test -x /usr/bin/nuxel-notifications && test -s /usr/lib/nuxel/nuxel-web-server.py",
+      "install_procedure": null,
+      "mode": "0755",
+      "post": [
+        "systemctl daemon-reload"
+      ],
+      "pre": [
+        "systemctl daemon-reload"
+      ],
+      "priority": 3,
+      "risk": "medium",
+      "risk_rank": 1,
+      "rollback": "restore every <target>.nuxel-rollback (code, shims, units, D-Bus policy), `systemctl daemon-reload`, restart the four units, then re-run the health check; the D-Bus policy is restored before any bus reload is attempted",
+      "service": null,
+      "source": "services/nuxel-web/bin/nuxel-web-server.py",
+      "source_sha256": "b17fb3e700ed3918691a395895090ca68eab5fe45b1f9a01a63a270f27072520",
+      "staged": "/usr/lib/nuxel/nuxel-web-server.py.nuxel-staged",
+      "target": "/usr/lib/nuxel/nuxel-web-server.py",
+      "verify": "sha256sum /usr/lib/nuxel/nuxel-web-server.py"
+    }
+  ],
+  "violations": []
+}

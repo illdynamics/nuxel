@@ -1,0 +1,48 @@
+{
+  "at": "2026-10-18T10:37:21+0200",
+  "blocked_reason": "cannot take the console: cannot open /dev/cu.usbmodem1201: [Errno 1] Operation not permitted: '/dev/cu.usbmodem1201'",
+  "capability": {
+    "pid": "0x4ee7",
+    "vid": "0x18d1"
+  },
+  "evidence_dir": "raw capture retained locally in /tmp/nuxel-pullah-private/initial-reachability",
+  "exit_code": 3,
+  "finished": "2026-10-18T10:37:22+0200",
+  "gadget_descriptor_present": true,
+  "host": "Darwin 24.6.0",
+  "nodes": [
+    {
+      "callout": "/dev/cu.usbmodem1201",
+      "dialin": "/dev/tty.usbmodem1201",
+      "pid": 20199,
+      "tty_base": "usbmodem",
+      "tty_device": "usbmodem1201",
+      "tty_suffix": "1201",
+      "vid": 6353
+    }
+  ],
+  "port_busy": false,
+  "reachable": false,
+  "selected": {
+    "callout": "/dev/cu.usbmodem1201",
+    "dialin": "/dev/tty.usbmodem1201",
+    "match_stage": "vid+pid+ttybase+serial",
+    "pid": 20199,
+    "tty_base": "usbmodem",
+    "tty_device": "usbmodem1201",
+    "tty_suffix": "1201",
+    "vid": 6353
+  },
+  "steps": [
+    {
+      "detail": "/dev/cu.usbmodem1201 (matched vid+pid+ttybase+serial)",
+      "ok": true,
+      "step": "select-by-capability"
+    }
+  ],
+  "verdict": "BLOCKED_EXTERNAL_RESOURCE",
+  "verdicts": {
+    "briq-10a-live-reachability-preflight": "BLOCKED_EXTERNAL_RESOURCE"
+  },
+  "raw_report_sha256": "aec3eb0b5450c79fa937bd5218bfe0056f1ef8720dbf86f8c82d3eecc333f2b5"
+}

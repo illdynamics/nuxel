@@ -2,7 +2,7 @@
 
 **Device:** Motorola Moto G7 Power **XT1955** — SDM632 / msm8953 family, codename **`ocean`**
 **Host:** this machine (Linux, Fedora-family), G7 Power on USB
-**Written:** 2026-10-13 · **Nuxel build:** `v0.5.1-alpha` (images built 2026-10-12/13)
+**Written:** 2026-10-13 · **Nuxel build:** `v0.5.2-beta` (images built 2026-10-12/13)
 **Scope:** finish the flash **from the live state of this unit right now** until Nuxel
 boots on it, and get a real **display**.
 
@@ -439,7 +439,7 @@ PY
 ---
 
 *Stage 1 gets Nuxel running on the device. Stage 2 (§8) is what puts it on the
-screen. — Nuxel `v0.5.1-alpha`*
+screen. — Nuxel `v0.5.2-beta`*
 
 ---
 

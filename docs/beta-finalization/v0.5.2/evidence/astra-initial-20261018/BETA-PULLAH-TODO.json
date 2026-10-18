@@ -1,0 +1,1191 @@
+{
+  "schema_version": 1,
+  "updated_at": "2026-10-18T10:41:43.737068+02:00",
+  "source_sha": "8f53caea9c7370339cea239491e3cafccb953987",
+  "verdict": "NOT_READY",
+  "next_action": "Finish strict test triage, repair deployment receipts and image/workflow gates, audit all requirement rows; no phone writes without access and baseline.",
+  "items": [
+    {
+      "id": "P00",
+      "priority": 0,
+      "dependencies": [],
+      "title": "Instruction reconciliation and existing-change inventory",
+      "current_evidence": [
+        "HEAD 8f53caea9c7370339cea239491e3cafccb953987",
+        "Initial dirty tree predates this run; no current runtime proof",
+        "Read mission instructions and A34 journals; current manifest is 624 file steps/16 groups, not historical 37/7. Existing dirty tree preserved."
+      ],
+      "next_action": "Read all.md task.md task2.md beta.md and current journals; preserve initial dirty tree",
+      "tests": "Instruction coverage and git diff review",
+      "deployed_sha": null,
+      "rollback": "Preserve prior source; device writes require captured and tested per-target baseline",
+      "owner_test_requirement": false,
+      "status": "OFFLINE_TESTED",
+      "verdict": "OFFLINE_TESTED"
+    },
+    {
+      "id": "P01",
+      "priority": 0,
+      "dependencies": [
+        "P00"
+      ],
+      "title": "Exclusive serial transport and fresh reachability",
+      "current_evidence": [
+    "Reachability receipts reachability-20261018T110545+0200 and reachability-20261018T113148+0200 selected 18d1:4ee7 / NUXEL-S10PLUS-0001 and completed framed SHA-verified commands."
+      ],
+  "next_action": "Keep exactly one transport owner and re-probe after any console loss",
+      "tests": "Transport lock tests and real framed receipt",
+      "deployed_sha": null,
+      "rollback": "Preserve prior source; device writes require captured and tested per-target baseline",
+      "owner_test_requirement": false,
+  "status": "RUNTIME_VERIFIED",
+  "verdict": "VERIFIED_ON_S10PLUS"
+    },
+    {
+      "id": "P02",
+      "priority": 0,
+      "dependencies": [
+        "P01"
+      ],
+      "title": "Live baseline and tested per-target rollback",
+      "current_evidence": [
+    "baseline-20261018T1122: 41/41 framed baseline; normal boot, sec_ts event2/IRQ431, active core services and zero failed units."
+      ],
+  "next_action": "Preserve per-target rollback copies before any further mutation",
+      "tests": "Current boot mode, runtime hashes, rollback restore receipt",
+      "deployed_sha": null,
+      "rollback": "Preserve prior source; device writes require captured and tested per-target baseline",
+      "owner_test_requirement": false,
+  "status": "RUNTIME_VERIFIED",
+  "verdict": "DEPLOYED_UNVERIFIED"
+    },
+    {
+      "id": "P03",
+      "priority": 0,
+      "dependencies": [
+        "P02"
+      ],
+      "title": "Physical touch through visible app and frame",
+      "current_evidence": [
+    "owner-20261018T1124 gate PASS: 18 down/up, 182 IRQs, valid coordinates and 307 WebKit DOM touch events; explicit visible-usability answer remains absent."
+      ],
+  "next_action": "Collect explicit owner Settings/Calendar/QS/Terminal/Home/redraw PASS or FAIL",
+      "tests": "A34 regressions and bounded real finger capture",
+      "deployed_sha": null,
+      "rollback": "Preserve prior source; device writes require captured and tested per-target baseline",
+      "owner_test_requirement": true,
+  "status": "RUNTIME_VERIFIED",
+  "verdict": "NEEDS_OWNER_TEST"
+    },
+    {
+      "id": "P04",
+      "priority": 0,
+      "dependencies": [
+        "P03"
+      ],
+      "title": "Deploy current interaction stack",
+      "current_evidence": [
+    "Targeted app.js deployment: on-device SHA eea79efd49ac7c973ab48ada52ed788fcffb2480f2d0471ac886657a3fd77a9a; rollback app.js.nuxel-rollback-20261018T1138; nuxel-wayland returned active."
+      ],
+  "next_action": "Verify owner-visible lifecycle; do not bulk-deploy unaffected groups",
+      "tests": "Installed SHA, service consumption, health and rollback",
+  "deployed_sha": "eea79efd49ac7c973ab48ada52ed788fcffb2480f2d0471ac886657a3fd77a9a",
+  "rollback": "/usr/share/nuxel/pwa/nuxel-home/js/app.js.nuxel-rollback-20261018T1138",
+      "owner_test_requirement": false,
+  "status": "DEPLOYED",
+  "verdict": "DEPLOYED_UNVERIFIED"
+    },
+    {
+      "id": "P05",
+      "priority": 0,
+      "dependencies": [
+        "P04"
+      ],
+      "title": "Owner physical interaction sequence",
+      "current_evidence": [
+    "Physical CAPTURE_GATE=PASS captured; post-update window started, but no explicit owner answer recorded."
+      ],
+      "next_action": "Run one bounded Settings/Calendar/QS/Terminal/second-app capture",
+      "tests": "Explicit owner confirmation; never synthetic",
+  "deployed_sha": "eea79efd49ac7c973ab48ada52ed788fcffb2480f2d0471ac886657a3fd77a9a",
+      "rollback": "Preserve prior source; device writes require captured and tested per-target baseline",
+      "owner_test_requirement": true,
+  "status": "RUNTIME_VERIFIED",
+      "verdict": "NEEDS_OWNER_TEST"
+    },
+    {
+      "id": "P06",
+      "priority": 1,
+      "dependencies": [
+        "P01"
+      ],
+      "title": "Repair current hard-red regression gates",
+      "current_evidence": [
+        "HEAD 8f53caea9c7370339cea239491e3cafccb953987",
+        "Initial dirty tree predates this run; no current runtime proof",
+        "Strict full suite running; historical six hard-red suites passed. Other failures need classification/repair."
+      ],
+      "next_action": "bash tools/beta/run-all-tests.sh",
+      "tests": "Current summary and failing logs",
+      "deployed_sha": null,
+      "rollback": "Preserve prior source; device writes require captured and tested per-target baseline",
+      "owner_test_requirement": false,
+      "status": "NOT_DONE",
+      "verdict": "NOT_DONE"
+    },
+    {
+      "id": "P07",
+      "priority": 1,
+      "dependencies": [
+        "P00"
+      ],
+      "title": "Manifest and full requirement reconciliation",
+      "current_evidence": [
+    "Live reachability, baseline, capture, target SHA and rollback evidence recorded in RESUME and markdown ledger."
+      ],
+      "next_action": "Diff task.md sections 6\u201358 and task2.md against current source, queue and manifests",
+      "tests": "All requirements mapped with honest source/runtime status",
+      "deployed_sha": null,
+      "rollback": "Preserve prior source; device writes require captured and tested per-target baseline",
+      "owner_test_requirement": false,
+  "status": "DEPLOYED",
+  "verdict": "DEPLOYED_UNVERIFIED"
+    },
+    {
+      "id": "P08",
+      "priority": 1,
+      "dependencies": [
+        "P02",
+        "P07"
+      ],
+      "title": "Remaining live userspace and hardware integration",
+      "current_evidence": [
+        "HEAD 8f53caea9c7370339cea239491e3cafccb953987",
+        "Initial dirty tree predates this run; no current runtime proof"
+      ],
+      "next_action": "Execute each safe capability check and required userspace repair",
+      "tests": "Per-subsystem device receipt and owner/kernel/external distinction",
+      "deployed_sha": null,
+      "rollback": "Preserve prior source; device writes require captured and tested per-target baseline",
+      "owner_test_requirement": true,
+      "status": "NOT_DONE",
+      "verdict": "NOT_DONE"
+    },
+    {
+      "id": "P09",
+      "priority": 2,
+      "dependencies": [
+        "P06",
+        "P07"
+      ],
+      "title": "Clean image and workflow preparation",
+      "current_evidence": [
+        "HEAD 8f53caea9c7370339cea239491e3cafccb953987",
+        "Initial dirty tree predates this run; no current runtime proof",
+        "Podman socket EPERM; current image build unavailable. Continue workflow/image source repair."
+      ],
+      "next_action": "Inspect release.yml builders verify-artifacts; build available offline images",
+      "tests": "Structure, init, current source parity, provenance and checksums",
+      "deployed_sha": null,
+      "rollback": "Preserve prior source; device writes require captured and tested per-target baseline",
+      "owner_test_requirement": false,
+      "status": "NOT_DONE",
+      "verdict": "NOT_DONE"
+    },
+    {
+      "id": "P10",
+      "priority": 2,
+      "dependencies": [
+        "P05",
+        "P08",
+        "P09"
+      ],
+      "title": "Version and official release gate",
+      "current_evidence": [
+        "HEAD 8f53caea9c7370339cea239491e3cafccb953987",
+        "Initial dirty tree predates this run; no current runtime proof",
+        "No owner proof; gh auth invalid; no hosted CI; existing beta metadata predates run; no tag/publish."
+      ],
+      "next_action": "Require explicit owner touch pass, green tests, image and hosted CI before beta tag",
+      "tests": "VERSION/commit/tag parity and hosted artifact checksums",
+      "deployed_sha": null,
+      "rollback": "Preserve prior source; device writes require captured and tested per-target baseline",
+      "owner_test_requirement": true,
+      "status": "BLOCKED_EXTERNAL",
+      "verdict": "BLOCKED_EXTERNAL"
+    },
+    {
+      "id": "P11",
+      "priority": 1,
+      "dependencies": [
+        "P00"
+      ],
+      "title": "Durable evidence and truthful checkpoint",
+      "current_evidence": [
+        "HEAD 8f53caea9c7370339cea239491e3cafccb953987",
+        "Initial dirty tree predates this run; no current runtime proof"
+      ],
+      "next_action": "Update RESUME, reports, capabilities and queues at transitions",
+      "tests": "Readiness check, sanitized evidence, commit/push if permitted",
+      "deployed_sha": null,
+      "rollback": "Preserve prior source; device writes require captured and tested per-target baseline",
+      "owner_test_requirement": false,
+      "status": "NOT_DONE",
+      "verdict": "NOT_DONE"
+    },
+    {
+      "id": "R06",
+      "priority": 1,
+      "dependencies": [
+        "P07"
+      ],
+      "title": "PRIORITY ZERO \u2014 GET THE TOUCHSCREEN FULLY WORKING",
+      "current_evidence": [
+        "task.md \u00a76; reconciliation pending"
+      ],
+      "next_action": "Audit task.md \u00a76 against source, tests, queue and live capability evidence",
+      "tests": "Existing subsystem tests plus live capability/behavior checks where accessible",
+      "deployed_sha": null,
+      "rollback": "Per-target baseline before any device change",
+      "owner_test_requirement": true,
+      "status": "NOT_DONE",
+      "verdict": "NOT_DONE"
+    },
+    {
+      "id": "R07",
+      "priority": 1,
+      "dependencies": [
+        "P07"
+      ],
+      "title": "FIX REMAINING BOOT INSTABILITY",
+      "current_evidence": [
+        "task.md \u00a77; reconciliation pending"
+      ],
+      "next_action": "Audit task.md \u00a77 against source, tests, queue and live capability evidence",
+      "tests": "Existing subsystem tests plus live capability/behavior checks where accessible",
+      "deployed_sha": null,
+      "rollback": "Per-target baseline before any device change",
+      "owner_test_requirement": true,
+      "status": "NOT_DONE",
+      "verdict": "NOT_DONE"
+    },
+    {
+      "id": "R08",
+      "priority": 1,
+      "dependencies": [
+        "P07"
+      ],
+      "title": "PERFECT THE ORIGINAL BOOT ANIMATION",
+      "current_evidence": [
+        "task.md \u00a78; reconciliation pending"
+      ],
+      "next_action": "Audit task.md \u00a78 against source, tests, queue and live capability evidence",
+      "tests": "Existing subsystem tests plus live capability/behavior checks where accessible",
+      "deployed_sha": null,
+      "rollback": "Per-target baseline before any device change",
+      "owner_test_requirement": true,
+      "status": "NOT_DONE",
+      "verdict": "NOT_DONE"
+    },
+    {
+      "id": "R09",
+      "priority": 1,
+      "dependencies": [
+        "P07"
+      ],
+      "title": "EXACT UTM LAUNCHER \u2014 NO SUBSTITUTES",
+      "current_evidence": [
+        "task.md \u00a79; reconciliation pending"
+      ],
+      "next_action": "Audit task.md \u00a79 against source, tests, queue and live capability evidence",
+      "tests": "Existing subsystem tests plus live capability/behavior checks where accessible",
+      "deployed_sha": null,
+      "rollback": "Per-target baseline before any device change",
+      "owner_test_requirement": true,
+      "status": "NOT_DONE",
+      "verdict": "NOT_DONE"
+    },
+    {
+      "id": "R10",
+      "priority": 1,
+      "dependencies": [
+        "P07"
+      ],
+      "title": "WALLPAPER AND COLOR PIPELINE",
+      "current_evidence": [
+        "task.md \u00a710; reconciliation pending"
+      ],
+      "next_action": "Audit task.md \u00a710 against source, tests, queue and live capability evidence",
+      "tests": "Existing subsystem tests plus live capability/behavior checks where accessible",
+      "deployed_sha": null,
+      "rollback": "Per-target baseline before any device change",
+      "owner_test_requirement": true,
+      "status": "NOT_DONE",
+      "verdict": "NOT_DONE"
+    },
+    {
+      "id": "R11",
+      "priority": 1,
+      "dependencies": [
+        "P07"
+      ],
+      "title": "COMPLETE THE FULL FEDORA USERSpace",
+      "current_evidence": [
+        "task.md \u00a711; reconciliation pending"
+      ],
+      "next_action": "Audit task.md \u00a711 against source, tests, queue and live capability evidence",
+      "tests": "Existing subsystem tests plus live capability/behavior checks where accessible",
+      "deployed_sha": null,
+      "rollback": "Per-target baseline before any device change",
+      "owner_test_requirement": true,
+      "status": "NOT_DONE",
+      "verdict": "NOT_DONE"
+    },
+    {
+      "id": "R12",
+      "priority": 1,
+      "dependencies": [
+        "P07"
+      ],
+      "title": "INTERNET \u2014 WI-FI FIRST",
+      "current_evidence": [
+        "task.md \u00a712; reconciliation pending"
+      ],
+      "next_action": "Audit task.md \u00a712 against source, tests, queue and live capability evidence",
+      "tests": "Existing subsystem tests plus live capability/behavior checks where accessible",
+      "deployed_sha": null,
+      "rollback": "Per-target baseline before any device change",
+      "owner_test_requirement": true,
+      "status": "NOT_DONE",
+      "verdict": "NOT_DONE"
+    },
+    {
+      "id": "R13",
+      "priority": 1,
+      "dependencies": [
+        "P07"
+      ],
+      "title": "TIME, RTC AND TIMESYNC",
+      "current_evidence": [
+        "task.md \u00a713; reconciliation pending"
+      ],
+      "next_action": "Audit task.md \u00a713 against source, tests, queue and live capability evidence",
+      "tests": "Existing subsystem tests plus live capability/behavior checks where accessible",
+      "deployed_sha": null,
+      "rollback": "Per-target baseline before any device change",
+      "owner_test_requirement": true,
+      "status": "NOT_DONE",
+      "verdict": "NOT_DONE"
+    },
+    {
+      "id": "R14",
+      "priority": 1,
+      "dependencies": [
+        "P07"
+      ],
+      "title": "AUDIO \u2014 REAL SPEAKER SOUND, NOT ONLY MIXER VALUES",
+      "current_evidence": [
+        "task.md \u00a714; reconciliation pending"
+      ],
+      "next_action": "Audit task.md \u00a714 against source, tests, queue and live capability evidence",
+      "tests": "Existing subsystem tests plus live capability/behavior checks where accessible",
+      "deployed_sha": null,
+      "rollback": "Per-target baseline before any device change",
+      "owner_test_requirement": true,
+      "status": "NOT_DONE",
+      "verdict": "NOT_DONE"
+    },
+    {
+      "id": "R15",
+      "priority": 1,
+      "dependencies": [
+        "P07"
+      ],
+      "title": "USB-C AUDIO AND JACK ADAPTERS",
+      "current_evidence": [
+        "task.md \u00a715; reconciliation pending"
+      ],
+      "next_action": "Audit task.md \u00a715 against source, tests, queue and live capability evidence",
+      "tests": "Existing subsystem tests plus live capability/behavior checks where accessible",
+      "deployed_sha": null,
+      "rollback": "Per-target baseline before any device change",
+      "owner_test_requirement": true,
+      "status": "NOT_DONE",
+      "verdict": "NOT_DONE"
+    },
+    {
+      "id": "R16",
+      "priority": 1,
+      "dependencies": [
+        "P07"
+      ],
+      "title": "HARDWARE BUTTON MANAGER AND GESTURES",
+      "current_evidence": [
+        "task.md \u00a716; reconciliation pending"
+      ],
+      "next_action": "Audit task.md \u00a716 against source, tests, queue and live capability evidence",
+      "tests": "Existing subsystem tests plus live capability/behavior checks where accessible",
+      "deployed_sha": null,
+      "rollback": "Per-target baseline before any device change",
+      "owner_test_requirement": true,
+      "status": "NOT_DONE",
+      "verdict": "NOT_DONE"
+    },
+    {
+      "id": "R17",
+      "priority": 1,
+      "dependencies": [
+        "P07"
+      ],
+      "title": "POWER MENU",
+      "current_evidence": [
+        "task.md \u00a717; reconciliation pending"
+      ],
+      "next_action": "Audit task.md \u00a717 against source, tests, queue and live capability evidence",
+      "tests": "Existing subsystem tests plus live capability/behavior checks where accessible",
+      "deployed_sha": null,
+      "rollback": "Per-target baseline before any device change",
+      "owner_test_requirement": true,
+      "status": "NOT_DONE",
+      "verdict": "NOT_DONE"
+    },
+    {
+      "id": "R18",
+      "priority": 1,
+      "dependencies": [
+        "P07"
+      ],
+      "title": "POWER MANAGEMENT AND BATTERY MODES",
+      "current_evidence": [
+        "task.md \u00a718; reconciliation pending"
+      ],
+      "next_action": "Audit task.md \u00a718 against source, tests, queue and live capability evidence",
+      "tests": "Existing subsystem tests plus live capability/behavior checks where accessible",
+      "deployed_sha": null,
+      "rollback": "Per-target baseline before any device change",
+      "owner_test_requirement": true,
+      "status": "NOT_DONE",
+      "verdict": "NOT_DONE"
+    },
+    {
+      "id": "R19",
+      "priority": 1,
+      "dependencies": [
+        "P07"
+      ],
+      "title": "DISPLAY, CAMERA CUTOUTS AND STATUS BAR",
+      "current_evidence": [
+        "task.md \u00a719; reconciliation pending"
+      ],
+      "next_action": "Audit task.md \u00a719 against source, tests, queue and live capability evidence",
+      "tests": "Existing subsystem tests plus live capability/behavior checks where accessible",
+      "deployed_sha": null,
+      "rollback": "Per-target baseline before any device change",
+      "owner_test_requirement": true,
+      "status": "NOT_DONE",
+      "verdict": "NOT_DONE"
+    },
+    {
+      "id": "R20",
+      "priority": 1,
+      "dependencies": [
+        "P07"
+      ],
+      "title": "SCREEN GESTURES",
+      "current_evidence": [
+        "task.md \u00a720; reconciliation pending"
+      ],
+      "next_action": "Audit task.md \u00a720 against source, tests, queue and live capability evidence",
+      "tests": "Existing subsystem tests plus live capability/behavior checks where accessible",
+      "deployed_sha": null,
+      "rollback": "Per-target baseline before any device change",
+      "owner_test_requirement": true,
+      "status": "NOT_DONE",
+      "verdict": "NOT_DONE"
+    },
+    {
+      "id": "R21",
+      "priority": 1,
+      "dependencies": [
+        "P07"
+      ],
+      "title": "VIBRATION AND HAPTICS",
+      "current_evidence": [
+        "task.md \u00a721; reconciliation pending"
+      ],
+      "next_action": "Audit task.md \u00a721 against source, tests, queue and live capability evidence",
+      "tests": "Existing subsystem tests plus live capability/behavior checks where accessible",
+      "deployed_sha": null,
+      "rollback": "Per-target baseline before any device change",
+      "owner_test_requirement": true,
+      "status": "NOT_DONE",
+      "verdict": "NOT_DONE"
+    },
+    {
+      "id": "R22",
+      "priority": 1,
+      "dependencies": [
+        "P07"
+      ],
+      "title": "NOTIFICATION LEDS, EDGE LIGHTING AND FLASHLIGHT",
+      "current_evidence": [
+        "task.md \u00a722; reconciliation pending"
+      ],
+      "next_action": "Audit task.md \u00a722 against source, tests, queue and live capability evidence",
+      "tests": "Existing subsystem tests plus live capability/behavior checks where accessible",
+      "deployed_sha": null,
+      "rollback": "Per-target baseline before any device change",
+      "owner_test_requirement": true,
+      "status": "NOT_DONE",
+      "verdict": "NOT_DONE"
+    },
+    {
+      "id": "R23",
+      "priority": 1,
+      "dependencies": [
+        "P07"
+      ],
+      "title": "BLUETOOTH",
+      "current_evidence": [
+        "task.md \u00a723; reconciliation pending"
+      ],
+      "next_action": "Audit task.md \u00a723 against source, tests, queue and live capability evidence",
+      "tests": "Existing subsystem tests plus live capability/behavior checks where accessible",
+      "deployed_sha": null,
+      "rollback": "Per-target baseline before any device change",
+      "owner_test_requirement": true,
+      "status": "NOT_DONE",
+      "verdict": "NOT_DONE"
+    },
+    {
+      "id": "R24",
+      "priority": 1,
+      "dependencies": [
+        "P07"
+      ],
+      "title": "NFC",
+      "current_evidence": [
+        "task.md \u00a724; reconciliation pending"
+      ],
+      "next_action": "Audit task.md \u00a724 against source, tests, queue and live capability evidence",
+      "tests": "Existing subsystem tests plus live capability/behavior checks where accessible",
+      "deployed_sha": null,
+      "rollback": "Per-target baseline before any device change",
+      "owner_test_requirement": true,
+      "status": "NOT_DONE",
+      "verdict": "NOT_DONE"
+    },
+    {
+      "id": "R25",
+      "priority": 1,
+      "dependencies": [
+        "P07"
+      ],
+      "title": "GPS/GNSS AND OPENSTREETMAPS",
+      "current_evidence": [
+        "task.md \u00a725; reconciliation pending"
+      ],
+      "next_action": "Audit task.md \u00a725 against source, tests, queue and live capability evidence",
+      "tests": "Existing subsystem tests plus live capability/behavior checks where accessible",
+      "deployed_sha": null,
+      "rollback": "Per-target baseline before any device change",
+      "owner_test_requirement": true,
+      "status": "NOT_DONE",
+      "verdict": "NOT_DONE"
+    },
+    {
+      "id": "R26",
+      "priority": 1,
+      "dependencies": [
+        "P07"
+      ],
+      "title": "SIM, MICROSD, MODEM AND CELLULAR",
+      "current_evidence": [
+        "task.md \u00a726; reconciliation pending"
+      ],
+      "next_action": "Audit task.md \u00a726 against source, tests, queue and live capability evidence",
+      "tests": "Existing subsystem tests plus live capability/behavior checks where accessible",
+      "deployed_sha": null,
+      "rollback": "Per-target baseline before any device change",
+      "owner_test_requirement": true,
+      "status": "NOT_DONE",
+      "verdict": "NOT_DONE"
+    },
+    {
+      "id": "R27",
+      "priority": 1,
+      "dependencies": [
+        "P07"
+      ],
+      "title": "CAMERA AND GALLERY",
+      "current_evidence": [
+        "task.md \u00a727; reconciliation pending"
+      ],
+      "next_action": "Audit task.md \u00a727 against source, tests, queue and live capability evidence",
+      "tests": "Existing subsystem tests plus live capability/behavior checks where accessible",
+      "deployed_sha": null,
+      "rollback": "Per-target baseline before any device change",
+      "owner_test_requirement": true,
+      "status": "NOT_DONE",
+      "verdict": "NOT_DONE"
+    },
+    {
+      "id": "R28",
+      "priority": 1,
+      "dependencies": [
+        "P07"
+      ],
+      "title": "OTHER SENSORS",
+      "current_evidence": [
+        "task.md \u00a728; reconciliation pending"
+      ],
+      "next_action": "Audit task.md \u00a728 against source, tests, queue and live capability evidence",
+      "tests": "Existing subsystem tests plus live capability/behavior checks where accessible",
+      "deployed_sha": null,
+      "rollback": "Per-target baseline before any device change",
+      "owner_test_requirement": true,
+      "status": "NOT_DONE",
+      "verdict": "NOT_DONE"
+    },
+    {
+      "id": "R29",
+      "priority": 1,
+      "dependencies": [
+        "P07"
+      ],
+      "title": "NATIVE VIRTUAL KEYBOARD",
+      "current_evidence": [
+        "task.md \u00a729; reconciliation pending"
+      ],
+      "next_action": "Audit task.md \u00a729 against source, tests, queue and live capability evidence",
+      "tests": "Existing subsystem tests plus live capability/behavior checks where accessible",
+      "deployed_sha": null,
+      "rollback": "Per-target baseline before any device change",
+      "owner_test_requirement": true,
+      "status": "NOT_DONE",
+      "verdict": "NOT_DONE"
+    },
+    {
+      "id": "R30",
+      "priority": 1,
+      "dependencies": [
+        "P07"
+      ],
+      "title": "CORE APPLICATIONS \u2014 REQUIRED INVENTORY",
+      "current_evidence": [
+        "task.md \u00a730; reconciliation pending"
+      ],
+      "next_action": "Audit task.md \u00a730 against source, tests, queue and live capability evidence",
+      "tests": "Existing subsystem tests plus live capability/behavior checks where accessible",
+      "deployed_sha": null,
+      "rollback": "Per-target baseline before any device change",
+      "owner_test_requirement": true,
+      "status": "NOT_DONE",
+      "verdict": "NOT_DONE"
+    },
+    {
+      "id": "R31",
+      "priority": 1,
+      "dependencies": [
+        "P07"
+      ],
+      "title": "NUXTORE \u2014 CUSTOM NUXEL APP STORE",
+      "current_evidence": [
+        "task.md \u00a731; reconciliation pending"
+      ],
+      "next_action": "Audit task.md \u00a731 against source, tests, queue and live capability evidence",
+      "tests": "Existing subsystem tests plus live capability/behavior checks where accessible",
+      "deployed_sha": null,
+      "rollback": "Per-target baseline before any device change",
+      "owner_test_requirement": true,
+      "status": "NOT_DONE",
+      "verdict": "NOT_DONE"
+    },
+    {
+      "id": "R32",
+      "priority": 1,
+      "dependencies": [
+        "P07"
+      ],
+      "title": "PRIVACY AND PERMISSION MANAGER",
+      "current_evidence": [
+        "task.md \u00a732; reconciliation pending"
+      ],
+      "next_action": "Audit task.md \u00a732 against source, tests, queue and live capability evidence",
+      "tests": "Existing subsystem tests plus live capability/behavior checks where accessible",
+      "deployed_sha": null,
+      "rollback": "Per-target baseline before any device change",
+      "owner_test_requirement": true,
+      "status": "NOT_DONE",
+      "verdict": "NOT_DONE"
+    },
+    {
+      "id": "R33",
+      "priority": 1,
+      "dependencies": [
+        "P07"
+      ],
+      "title": "LIVE CONSOLE \u2014 FULL PHONE APPLICATION AND CONTROL CENTER",
+      "current_evidence": [
+        "task.md \u00a733; reconciliation pending"
+      ],
+      "next_action": "Audit task.md \u00a733 against source, tests, queue and live capability evidence",
+      "tests": "Existing subsystem tests plus live capability/behavior checks where accessible",
+      "deployed_sha": null,
+      "rollback": "Per-target baseline before any device change",
+      "owner_test_requirement": true,
+      "status": "NOT_DONE",
+      "verdict": "NOT_DONE"
+    },
+    {
+      "id": "R34",
+      "priority": 1,
+      "dependencies": [
+        "P07"
+      ],
+      "title": "FIREWALL APPLICATION",
+      "current_evidence": [
+        "task.md \u00a734; reconciliation pending"
+      ],
+      "next_action": "Audit task.md \u00a734 against source, tests, queue and live capability evidence",
+      "tests": "Existing subsystem tests plus live capability/behavior checks where accessible",
+      "deployed_sha": null,
+      "rollback": "Per-target baseline before any device change",
+      "owner_test_requirement": true,
+      "status": "NOT_DONE",
+      "verdict": "NOT_DONE"
+    },
+    {
+      "id": "R35",
+      "priority": 1,
+      "dependencies": [
+        "P07"
+      ],
+      "title": "DEVMGMT \u2014 LINUX POWER-USER APPLICATION",
+      "current_evidence": [
+        "task.md \u00a735; reconciliation pending"
+      ],
+      "next_action": "Audit task.md \u00a735 against source, tests, queue and live capability evidence",
+      "tests": "Existing subsystem tests plus live capability/behavior checks where accessible",
+      "deployed_sha": null,
+      "rollback": "Per-target baseline before any device change",
+      "owner_test_requirement": true,
+      "status": "NOT_DONE",
+      "verdict": "NOT_DONE"
+    },
+    {
+      "id": "R36",
+      "priority": 1,
+      "dependencies": [
+        "P07"
+      ],
+      "title": "SECURITY AUDITOR",
+      "current_evidence": [
+        "task.md \u00a736; reconciliation pending"
+      ],
+      "next_action": "Audit task.md \u00a736 against source, tests, queue and live capability evidence",
+      "tests": "Existing subsystem tests plus live capability/behavior checks where accessible",
+      "deployed_sha": null,
+      "rollback": "Per-target baseline before any device change",
+      "owner_test_requirement": true,
+      "status": "NOT_DONE",
+      "verdict": "NOT_DONE"
+    },
+    {
+      "id": "R37",
+      "priority": 1,
+      "dependencies": [
+        "P07"
+      ],
+      "title": "VPN AND PRIVATE NETWORKING",
+      "current_evidence": [
+        "task.md \u00a737; reconciliation pending"
+      ],
+      "next_action": "Audit task.md \u00a737 against source, tests, queue and live capability evidence",
+      "tests": "Existing subsystem tests plus live capability/behavior checks where accessible",
+      "deployed_sha": null,
+      "rollback": "Per-target baseline before any device change",
+      "owner_test_requirement": true,
+      "status": "NOT_DONE",
+      "verdict": "NOT_DONE"
+    },
+    {
+      "id": "R38",
+      "priority": 1,
+      "dependencies": [
+        "P07"
+      ],
+      "title": "TOR PRIVACY TOOLS",
+      "current_evidence": [
+        "task.md \u00a738; reconciliation pending"
+      ],
+      "next_action": "Audit task.md \u00a738 against source, tests, queue and live capability evidence",
+      "tests": "Existing subsystem tests plus live capability/behavior checks where accessible",
+      "deployed_sha": null,
+      "rollback": "Per-target baseline before any device change",
+      "owner_test_requirement": true,
+      "status": "NOT_DONE",
+      "verdict": "NOT_DONE"
+    },
+    {
+      "id": "R39",
+      "priority": 1,
+      "dependencies": [
+        "P07"
+      ],
+      "title": "REMOTE ACCESS AND DEVICE CONNECT",
+      "current_evidence": [
+        "task.md \u00a739; reconciliation pending"
+      ],
+      "next_action": "Audit task.md \u00a739 against source, tests, queue and live capability evidence",
+      "tests": "Existing subsystem tests plus live capability/behavior checks where accessible",
+      "deployed_sha": null,
+      "rollback": "Per-target baseline before any device change",
+      "owner_test_requirement": true,
+      "status": "NOT_DONE",
+      "verdict": "NOT_DONE"
+    },
+    {
+      "id": "R40",
+      "priority": 1,
+      "dependencies": [
+        "P07"
+      ],
+      "title": "CASTING",
+      "current_evidence": [
+        "task.md \u00a740; reconciliation pending"
+      ],
+      "next_action": "Audit task.md \u00a740 against source, tests, queue and live capability evidence",
+      "tests": "Existing subsystem tests plus live capability/behavior checks where accessible",
+      "deployed_sha": null,
+      "rollback": "Per-target baseline before any device change",
+      "owner_test_requirement": true,
+      "status": "NOT_DONE",
+      "verdict": "NOT_DONE"
+    },
+    {
+      "id": "R41",
+      "priority": 1,
+      "dependencies": [
+        "P07"
+      ],
+      "title": "MEDIA PLAYERS",
+      "current_evidence": [
+        "task.md \u00a741; reconciliation pending"
+      ],
+      "next_action": "Audit task.md \u00a741 against source, tests, queue and live capability evidence",
+      "tests": "Existing subsystem tests plus live capability/behavior checks where accessible",
+      "deployed_sha": null,
+      "rollback": "Per-target baseline before any device change",
+      "owner_test_requirement": true,
+      "status": "NOT_DONE",
+      "verdict": "NOT_DONE"
+    },
+    {
+      "id": "R42",
+      "priority": 1,
+      "dependencies": [
+        "P07"
+      ],
+      "title": "CUSTOM MEDIA DOWNLOADER",
+      "current_evidence": [
+        "task.md \u00a742; reconciliation pending"
+      ],
+      "next_action": "Audit task.md \u00a742 against source, tests, queue and live capability evidence",
+      "tests": "Existing subsystem tests plus live capability/behavior checks where accessible",
+      "deployed_sha": null,
+      "rollback": "Per-target baseline before any device change",
+      "owner_test_requirement": true,
+      "status": "NOT_DONE",
+      "verdict": "NOT_DONE"
+    },
+    {
+      "id": "R43",
+      "priority": 1,
+      "dependencies": [
+        "P07"
+      ],
+      "title": "CUSTOM AUTHENTICATOR",
+      "current_evidence": [
+        "task.md \u00a743; reconciliation pending"
+      ],
+      "next_action": "Audit task.md \u00a743 against source, tests, queue and live capability evidence",
+      "tests": "Existing subsystem tests plus live capability/behavior checks where accessible",
+      "deployed_sha": null,
+      "rollback": "Per-target baseline before any device change",
+      "owner_test_requirement": true,
+      "status": "NOT_DONE",
+      "verdict": "NOT_DONE"
+    },
+    {
+      "id": "R44",
+      "priority": 1,
+      "dependencies": [
+        "P07"
+      ],
+      "title": "PENGUINTERFACE \u2014 DEVICE COMPATIBILITY PROFILES",
+      "current_evidence": [
+        "task.md \u00a744; reconciliation pending"
+      ],
+      "next_action": "Audit task.md \u00a744 against source, tests, queue and live capability evidence",
+      "tests": "Existing subsystem tests plus live capability/behavior checks where accessible",
+      "deployed_sha": null,
+      "rollback": "Per-target baseline before any device change",
+      "owner_test_requirement": true,
+      "status": "NOT_DONE",
+      "verdict": "NOT_DONE"
+    },
+    {
+      "id": "R45",
+      "priority": 1,
+      "dependencies": [
+        "P07"
+      ],
+      "title": "ROOT/SUDO CONTROL APP",
+      "current_evidence": [
+        "task.md \u00a745; reconciliation pending"
+      ],
+      "next_action": "Audit task.md \u00a745 against source, tests, queue and live capability evidence",
+      "tests": "Existing subsystem tests plus live capability/behavior checks where accessible",
+      "deployed_sha": null,
+      "rollback": "Per-target baseline before any device change",
+      "owner_test_requirement": true,
+      "status": "NOT_DONE",
+      "verdict": "NOT_DONE"
+    },
+    {
+      "id": "R46",
+      "priority": 1,
+      "dependencies": [
+        "P07"
+      ],
+      "title": "SAFE CLEANUP APPLICATION",
+      "current_evidence": [
+        "task.md \u00a746; reconciliation pending"
+      ],
+      "next_action": "Audit task.md \u00a746 against source, tests, queue and live capability evidence",
+      "tests": "Existing subsystem tests plus live capability/behavior checks where accessible",
+      "deployed_sha": null,
+      "rollback": "Per-target baseline before any device change",
+      "owner_test_requirement": true,
+      "status": "NOT_DONE",
+      "verdict": "NOT_DONE"
+    },
+    {
+      "id": "R47",
+      "priority": 1,
+      "dependencies": [
+        "P07"
+      ],
+      "title": "SNEKBYTE \u2014 PORT THE ORIGINAL GAME",
+      "current_evidence": [
+        "task.md \u00a747; reconciliation pending"
+      ],
+      "next_action": "Audit task.md \u00a747 against source, tests, queue and live capability evidence",
+      "tests": "Existing subsystem tests plus live capability/behavior checks where accessible",
+      "deployed_sha": null,
+      "rollback": "Per-target baseline before any device change",
+      "owner_test_requirement": true,
+      "status": "NOT_DONE",
+      "verdict": "NOT_DONE"
+    },
+    {
+      "id": "R48",
+      "priority": 1,
+      "dependencies": [
+        "P07"
+      ],
+      "title": "SENSIBLE SETTINGS COMPLETION",
+      "current_evidence": [
+        "task.md \u00a748; reconciliation pending"
+      ],
+      "next_action": "Audit task.md \u00a748 against source, tests, queue and live capability evidence",
+      "tests": "Existing subsystem tests plus live capability/behavior checks where accessible",
+      "deployed_sha": null,
+      "rollback": "Per-target baseline before any device change",
+      "owner_test_requirement": true,
+      "status": "NOT_DONE",
+      "verdict": "NOT_DONE"
+    },
+    {
+      "id": "R49",
+      "priority": 1,
+      "dependencies": [
+        "P07"
+      ],
+      "title": "NO MANDATORY GOOGLE, APPLE OR ANDROID SERVICES",
+      "current_evidence": [
+        "task.md \u00a749; reconciliation pending"
+      ],
+      "next_action": "Audit task.md \u00a749 against source, tests, queue and live capability evidence",
+      "tests": "Existing subsystem tests plus live capability/behavior checks where accessible",
+      "deployed_sha": null,
+      "rollback": "Per-target baseline before any device change",
+      "owner_test_requirement": true,
+      "status": "NOT_DONE",
+      "verdict": "NOT_DONE"
+    },
+    {
+      "id": "R50",
+      "priority": 1,
+      "dependencies": [
+        "P07"
+      ],
+      "title": "SYSTEM RESOURCE AND PERFORMANCE QUALITY",
+      "current_evidence": [
+        "task.md \u00a750; reconciliation pending"
+      ],
+      "next_action": "Audit task.md \u00a750 against source, tests, queue and live capability evidence",
+      "tests": "Existing subsystem tests plus live capability/behavior checks where accessible",
+      "deployed_sha": null,
+      "rollback": "Per-target baseline before any device change",
+      "owner_test_requirement": true,
+      "status": "NOT_DONE",
+      "verdict": "NOT_DONE"
+    },
+    {
+      "id": "R51",
+      "priority": 1,
+      "dependencies": [
+        "P07"
+      ],
+      "title": "SECURITY THREAT MODEL AND ENFORCEMENT PROOF",
+      "current_evidence": [
+        "task.md \u00a751; reconciliation pending"
+      ],
+      "next_action": "Audit task.md \u00a751 against source, tests, queue and live capability evidence",
+      "tests": "Existing subsystem tests plus live capability/behavior checks where accessible",
+      "deployed_sha": null,
+      "rollback": "Per-target baseline before any device change",
+      "owner_test_requirement": true,
+      "status": "NOT_DONE",
+      "verdict": "NOT_DONE"
+    },
+    {
+      "id": "R52",
+      "priority": 1,
+      "dependencies": [
+        "P07"
+      ],
+      "title": "RELEASE-GRADE TEST STRATEGY",
+      "current_evidence": [
+        "task.md \u00a752; reconciliation pending"
+      ],
+      "next_action": "Audit task.md \u00a752 against source, tests, queue and live capability evidence",
+      "tests": "Existing subsystem tests plus live capability/behavior checks where accessible",
+      "deployed_sha": null,
+      "rollback": "Per-target baseline before any device change",
+      "owner_test_requirement": true,
+      "status": "NOT_DONE",
+      "verdict": "NOT_DONE"
+    },
+    {
+      "id": "R53",
+      "priority": 1,
+      "dependencies": [
+        "P07"
+      ],
+      "title": "AUTONOMOUS REBOOT POLICY",
+      "current_evidence": [
+        "task.md \u00a753; reconciliation pending"
+      ],
+      "next_action": "Audit task.md \u00a753 against source, tests, queue and live capability evidence",
+      "tests": "Existing subsystem tests plus live capability/behavior checks where accessible",
+      "deployed_sha": null,
+      "rollback": "Per-target baseline before any device change",
+      "owner_test_requirement": true,
+      "status": "NOT_DONE",
+      "verdict": "NOT_DONE"
+    },
+    {
+      "id": "R54",
+      "priority": 1,
+      "dependencies": [
+        "P07"
+      ],
+      "title": "RELIABLE AUTONOMOUS ROLLBACK",
+      "current_evidence": [
+        "task.md \u00a754; reconciliation pending"
+      ],
+      "next_action": "Audit task.md \u00a754 against source, tests, queue and live capability evidence",
+      "tests": "Existing subsystem tests plus live capability/behavior checks where accessible",
+      "deployed_sha": null,
+      "rollback": "Per-target baseline before any device change",
+      "owner_test_requirement": true,
+      "status": "NOT_DONE",
+      "verdict": "NOT_DONE"
+    },
+    {
+      "id": "R55",
+      "priority": 1,
+      "dependencies": [
+        "P07"
+      ],
+      "title": "MANUAL HARDWARE PROOF MUST NEVER BLOCK OTHER WORK",
+      "current_evidence": [
+        "task.md \u00a755; reconciliation pending"
+      ],
+      "next_action": "Audit task.md \u00a755 against source, tests, queue and live capability evidence",
+      "tests": "Existing subsystem tests plus live capability/behavior checks where accessible",
+      "deployed_sha": null,
+      "rollback": "Per-target baseline before any device change",
+      "owner_test_requirement": true,
+      "status": "NOT_DONE",
+      "verdict": "NOT_DONE"
+    },
+    {
+      "id": "R56",
+      "priority": 1,
+      "dependencies": [
+        "P07"
+      ],
+      "title": "MANDATORY FINAL REPORT ONE \u2014 ENGINEERING SUMMARY",
+      "current_evidence": [
+        "task.md \u00a756; reconciliation pending"
+      ],
+      "next_action": "Audit task.md \u00a756 against source, tests, queue and live capability evidence",
+      "tests": "Existing subsystem tests plus live capability/behavior checks where accessible",
+      "deployed_sha": null,
+      "rollback": "Per-target baseline before any device change",
+      "owner_test_requirement": true,
+      "status": "NOT_DONE",
+      "verdict": "NOT_DONE"
+    },
+    {
+      "id": "R57",
+      "priority": 1,
+      "dependencies": [
+        "P07"
+      ],
+      "title": "MANDATORY FINAL REPORT TWO \u2014 OWNER MANUAL TEST REPORT",
+      "current_evidence": [
+        "task.md \u00a757; reconciliation pending"
+      ],
+      "next_action": "Audit task.md \u00a757 against source, tests, queue and live capability evidence",
+      "tests": "Existing subsystem tests plus live capability/behavior checks where accessible",
+      "deployed_sha": null,
+      "rollback": "Per-target baseline before any device change",
+      "owner_test_requirement": true,
+      "status": "NOT_DONE",
+      "verdict": "NOT_DONE"
+    },
+    {
+      "id": "R58",
+      "priority": 1,
+      "dependencies": [
+        "P07"
+      ],
+      "title": "REPRODUCIBLE RELEASE DELIVERABLES",
+      "current_evidence": [
+        "task.md \u00a758; reconciliation pending"
+      ],
+      "next_action": "Audit task.md \u00a758 against source, tests, queue and live capability evidence",
+      "tests": "Existing subsystem tests plus live capability/behavior checks where accessible",
+      "deployed_sha": null,
+      "rollback": "Per-target baseline before any device change",
+      "owner_test_requirement": true,
+      "status": "NOT_DONE",
+      "verdict": "NOT_DONE"
+    }
+  ]
+}

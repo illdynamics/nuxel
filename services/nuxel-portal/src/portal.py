@@ -31,7 +31,7 @@ import time
 import uuid
 
 # Configure logging
-NUXEL_PORTAL_VERSION = "0.5.1-alpha"
+NUXEL_PORTAL_VERSION = "0.5.2-beta"
 
 logging.basicConfig(
     level=logging.INFO,

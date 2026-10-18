@@ -395,7 +395,7 @@ def collect_interrupts(bundle, tag):
     return hit
 
 
-def classify_driver(boot, bundle):
+def classify_driver(boot, bundle, scan=None):
     if boot["charger"]:
         return Result(1, "driver", "blocked", boot["evidence"],
                       "charger/LPM boot (%s): sec_ts returns -ENODEV before i2c_add_driver, so no touch "
@@ -412,6 +412,10 @@ def classify_driver(boot, bundle):
     if boot["registered"]:
         return Result(1, "driver", "ok", boot["evidence"],
                       "sec_touchscreen registered in the kernel log")
+    panel = (scan or {}).get("panel")
+    if panel and panel.get("name") == SEC_TS_NAME and panel.get("direct") and panel.get("mt"):
+        return Result(1, "driver", "ok", boot["evidence"],
+                      "current direct MT evdev confirms sec_touchscreen registration")
     if re.search(r"sec_ts|sec_input", boot["dmesg"], re.I):
         return Result(1, "driver", "drop", boot["evidence"],
                       "sec_ts messages present but no 'input: sec_touchscreen as ...' registration")
@@ -639,7 +643,7 @@ def classify_compositor(bundle):
                   "phoc pid=%d holds NO %s node (input never reached the compositor)" % (pid, INPUT_DIR))
 
 
-def classify_wayland(bundle, window, exercised):
+def classify_wayland(bundle, window, exercised, dom_ok=False):
     jr = ""
     rc, out = run_cmd(["journalctl", "-u", COMPOSITOR_UNIT, "--since", "-%ds" % window, "--no-pager"], timeout=8)
     if rc == 0:
@@ -666,6 +670,10 @@ def classify_wayland(bundle, window, exercised):
     if not bridge and not launcher and rc != 0:
         return Result(6, "wayland", "blocked", ev,
                       "no compositor journal and no launcher/bridge state: seat state cannot be evaluated")
+    if exercised and dom_ok:
+        return Result(6, "wayland", "ok", ev,
+                      "raw touch reached the WebKit DOM; this necessarily crossed the Wayland client event path "
+                      "(protocol debug logging was not enabled)")
     if exercised:
         return Result(6, "wayland", "drop", ev,
                       "compositor state present but no wl_touch in the journal window while raw events "
@@ -1503,15 +1511,21 @@ def run_live(args):
 
     exercised = (raw["stats"]["points"] > 0 or raw["stats"]["btn_touch"] > 0 or bool(args.expect_finger))
     dom = dom_events(bundle)
-    r1 = classify_driver(boot, bundle)
+    r7 = classify_dom(dom, exercised)
+    # DOM is also downstream evidence for the Wayland client-event hop, so
+    # collect it before classifying that hop.  Missing protocol debug logging
+    # must not contradict an observed real DOM touch event.
+    dom = dom_events(bundle)
+    r1 = classify_driver(boot, bundle, scan)
     results = [
         r1,
         classify_irq(before, after, bundle, exercised, bool(boot["charger"])),
         classify_evdev(scan, r1.state, bool(boot["charger"])),
         classify_libinput(bundle),
         classify_compositor(bundle),
-        classify_wayland(bundle, window=max(5, int(time.time() - t0)), exercised=exercised),
-        classify_dom(dom, exercised),
+        classify_wayland(bundle, window=max(5, int(time.time() - t0)), exercised=exercised,
+                         dom_ok=(r7.state == "ok")),
+        r7,
     ]
     _HARD["results"] = results
     gate = gate_json(raw["stats"], scan["panel"], results[6].state)

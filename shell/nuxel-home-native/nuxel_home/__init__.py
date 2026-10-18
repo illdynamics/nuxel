@@ -1,3 +1,3 @@
 # Nuxel Home — Native GTK4 Home Screen
 # A fullscreen phone home screen built with GTK4/libadwaita
-__version__ = "0.5.1-alpha"
+__version__ = "0.5.2-beta"

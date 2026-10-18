@@ -9,6 +9,21 @@ and the OTA builder (see *Versioning* below).
 
 ---
 
+## [v0.5.2-beta] — 2026-10-18 — *interaction and reproducible release candidate*
+
+- Added explicit launcher application lifecycle states and common surface cleanup;
+  failed PWA loads remain visible and escapable.
+- Repaired Terminal Shift, symbols and Backspace history behavior while retaining
+  the real PTY host bridge and `term_close_window()` lifecycle.
+- Staged the existing Stevia keyboard configuration/applier/user units into the
+  S10+ Fedora image and made the rootfs verifier gate current launcher/Terminal
+  assets.
+- Normalized release tags to exactly one leading `v`, rejected tag/`VERSION`
+  mismatches, and pinned build, packaging and release creation to one source SHA.
+- Added the v0.5.2 finalization evidence set. The A34 real-finger app launches
+  remain proven; the longer owner navigation/keyboard sequence is explicitly
+  still `NEEDS_OWNER_TEST` because this session could not open the USB console.
+
 ## [v0.5.1-alpha] — 2026-10-18 — *current-state cleanup + reproducible A34 image*
 
 **The S10+ image chain is now reproducible from a clean checkout.** The release

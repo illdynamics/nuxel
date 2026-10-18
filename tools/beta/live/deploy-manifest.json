@@ -66,6 +66,10 @@
           "target": "/home/nuxel/nuxel/pwa/nuxel-home/js/app.js"
         },
         {
+          "source": "pwa/nuxel-home/js/touch-keyboard.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/js/touch-keyboard.js"
+        },
+        {
           "source": "pwa/nuxel-home/js/apps.js",
           "target": "/home/nuxel/nuxel/pwa/nuxel-home/js/apps.js"
         },
@@ -2625,6 +2629,11 @@
           "mode": "0755"
         },
         {
+          "source": "tools/s10plus/a33/nuxel-bootmode-oneshot.sh",
+          "target": "/usr/local/bin/nuxel-bootmode-oneshot.sh",
+          "mode": "0755"
+        },
+        {
           "source": "tools/s10plus/a33/nuxel-button-fsm.h",
           "target": "/usr/lib/nuxel/src/a33/nuxel-button-fsm.h",
           "mode": "0644"
@@ -2643,6 +2652,11 @@
           "source": "tools/s10plus/a33/nuxel-console.c",
           "target": "/usr/lib/nuxel/src/a33/nuxel-console.c",
           "mode": "0644"
+        },
+        {
+          "source": "tools/s10plus/a33/nuxel-diag-pack.sh",
+          "target": "/usr/local/bin/nuxel-diag-pack.sh",
+          "mode": "0755"
         },
         {
           "source": "tools/s10plus/a33/nuxel-firewall.sh",
@@ -2690,6 +2704,11 @@
           "mode": "0644"
         },
         {
+          "source": "tools/s10plus/a33/nuxel-mt.h",
+          "target": "/usr/lib/nuxel/src/a33/nuxel-mt.h",
+          "mode": "0644"
+        },
+        {
           "source": "tools/s10plus/a33/nuxel-microsd-diag.sh",
           "target": "/usr/local/bin/nuxel-microsd-diag.sh",
           "mode": "0755"
@@ -2710,6 +2729,11 @@
           "mode": "0755"
         },
         {
+          "source": "tools/s10plus/a33/nuxel-provision-services.sh",
+          "target": "/usr/local/libexec/nuxel/nuxel-provision-services.sh",
+          "mode": "0755"
+        },
+        {
           "source": "tools/s10plus/a33/nuxel-pwa-host.c",
           "target": "/usr/lib/nuxel/src/a33/nuxel-pwa-host.c",
           "mode": "0644"
@@ -2717,6 +2741,11 @@
         {
           "source": "tools/s10plus/a33/nuxel-security-audit.sh",
           "target": "/usr/local/bin/nuxel-security-audit.sh",
+          "mode": "0755"
+        },
+        {
+          "source": "tools/s10plus/a33/nuxel-reboot-mode.sh",
+          "target": "/usr/local/bin/nuxel-reboot-mode.sh",
           "mode": "0755"
         },
         {
@@ -2922,6 +2951,11 @@
         {
           "source": "services/nuxel-session/systemd/nuxel-fallback.service",
           "target": "/etc/systemd/system/nuxel-fallback.service",
+          "mode": "0644"
+        },
+        {
+          "source": "services/nuxel-session/systemd/nuxel-bootmode-oneshot.service",
+          "target": "/etc/systemd/system/nuxel-bootmode-oneshot.service",
           "mode": "0644"
         },
         {

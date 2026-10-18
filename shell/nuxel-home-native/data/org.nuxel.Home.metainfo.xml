@@ -47,14 +47,14 @@
   </screenshots>
 
   <releases>
-    <release version="0.5.1-alpha" date="2026-10-15">
-      <url>https://github.com/nuxel-org/nuxel/releases/tag/v0.5.1-alpha</url>
+    <release version="0.5.2-beta" date="2026-10-15">
+      <url>https://github.com/nuxel-org/nuxel/releases/tag/v0.5.2-beta</url>
       <description>
-        <p>Nuxel Home v0.5.1-alpha — pre-release aligned with Nuxel Phone OS v0.5.1-alpha
+        <p>Nuxel Home v0.5.2-beta — pre-release aligned with Nuxel Phone OS v0.5.2-beta
         (the Galaxy S10+ boots Nuxel: kernel, Nuxel initramfs, Fedora 43 rootfs, systemd,
         the panel boot animation, a live root console and the Nuxel UI process).</p>
         <ul>
-          <li>Version bumped in lockstep with the Nuxel OS v0.5.1-alpha pre-release</li>
+          <li>Version bumped in lockstep with the Nuxel OS v0.5.2-beta pre-release</li>
           <li>Aligned with the first hardware-proven Nuxel boot (Galaxy S10+)</li>
           <li>No shell surface changes</li>
         </ul>

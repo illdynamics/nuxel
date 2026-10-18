@@ -108,21 +108,40 @@
     ['a','s','d','f','g','h','j','k','l','-'],
     ['z','x','c','v','b','n','m','.','/','_']
   ];
+  var SYMBOLS = [
+    ['!','@','#','$','%','^','&','*','(',')'],
+    ['~','`','+','=','{','}','[',']','|','\\'],
+    ['<','>',':',';','"',"'",',','?','/','-']
+  ];
   var osk = document.getElementById('osk');
-  var ctrlArmed = false;
+  var ctrlArmed = false, shiftArmed = false, symbolsArmed = false;
+  function recallHistory(direction) {
+    if (!hist.length) return;
+    if (direction < 0) histPos = Math.min(hist.length - 1, histPos + 1);
+    else histPos = Math.max(-1, histPos - 1);
+    var cmd = histPos >= 0 ? hist[histPos] : '';
+    lineBuffer = cmd;
+    sendInput('\u0015');           // Ctrl-U: kill the current PTY line
+    if (cmd) sendInput(cmd);
+  }
   function key(label, data, cls) {
     var b = document.createElement('button');
     b.textContent = label;
     if (cls) b.className = cls;
     b.addEventListener('click', function () {
       if (data === 'CTRL') { ctrlArmed = !ctrlArmed; b.classList.toggle('active', ctrlArmed); return; }
+      if (data === 'SHIFT') { shiftArmed = !shiftArmed; renderKeys(); return; }
+      if (data === 'SYMBOLS') { symbolsArmed = !symbolsArmed; shiftArmed = false; renderKeys(); return; }
+      if (data === 'HISTUP') { recallHistory(-1); return; }
+      if (data === 'HISTDOWN') { recallHistory(1); return; }
+      if (data === 'HIDE') { osk.classList.add('hidden'); return; }
       if (ctrlArmed) { sendInput(String.fromCharCode(data.toUpperCase().charCodeAt(0) - 64)); ctrlArmed = false; refreshMods(); return; }
       if (data === '\u000c') { buffer = ''; screen.textContent = ''; return; }   // Ctrl-L local clear
       if (data === '\r') rememberLine();
-      if (data === '\r' || data === '\t' || data === ' ' || /^[\x20-\x7e]$/.test(data)) {
-        if (data !== '\r') lineBuffer += data === '\u007f' ? '' : data;
-      }
+      if (data === '\u007f') lineBuffer = lineBuffer.slice(0, -1);
+      else if (data === '\t' || data === ' ' || /^[\x20-\x7e]$/.test(data)) lineBuffer += data;
       sendInput(data);
+      if (shiftArmed) { shiftArmed = false; renderKeys(); }
     });
     return b;
   }
@@ -141,46 +160,47 @@
       if (b.textContent !== 'CTRL') b.classList.remove('active');
     });
   }
-  LETTERS.forEach(function (row, i) {
-    var r = document.createElement('div'); r.className = 'row';
-    if (i === 3) r.appendChild(key('⇧', '', 'mod'));
-    row.forEach(function (k) { r.appendChild(key(k, k)); });
-    r.appendChild(key('⌫', '\u007f', 'mod'));
-    osk.appendChild(r);
-  });
-  var last = document.createElement('div'); last.className = 'row';
-  last.appendChild(key('CTRL', 'CTRL', 'mod'));
-  last.appendChild(key('TAB', '\t', 'mod'));
-  last.appendChild(key('SPACE', ' ', 'wide'));
-  last.appendChild(key('⏎', '\r', 'wide'));
-  last.appendChild(key('^C', '\u0003', 'mod'));
-  last.appendChild(key('↑', 'HISTUP', 'mod'));
-  last.appendChild(key('↓', 'HISTDOWN', 'mod'));
-  osk.appendChild(last);
+  function renderKeys() {
+    osk.textContent = '';
+    var rows = symbolsArmed ? SYMBOLS : LETTERS;
+    rows.forEach(function (row, i) {
+      var r = document.createElement('div'); r.className = 'row';
+      if (!symbolsArmed && i === rows.length - 1) {
+        var shift = key('⇧', 'SHIFT', 'mod' + (shiftArmed ? ' active' : ''));
+        r.appendChild(shift);
+      }
+      row.forEach(function (k) {
+        var data = shiftArmed && /^[a-z]$/.test(k) ? k.toUpperCase() : k;
+        r.appendChild(key(data, data));
+      });
+      r.appendChild(key('⌫', '\u007f', 'mod'));
+      osk.appendChild(r);
+    });
+    var last = document.createElement('div'); last.className = 'row';
+    last.appendChild(key(symbolsArmed ? 'ABC' : '?123', 'SYMBOLS', 'mod active'));
+    last.appendChild(key('CTRL', 'CTRL', 'mod' + (ctrlArmed ? ' active' : '')));
+    last.appendChild(key('TAB', '\t', 'mod'));
+    last.appendChild(key('SPACE', ' ', 'wide'));
+    last.appendChild(key('⏎', '\r', 'wide'));
+    last.appendChild(key('^C', '\u0003', 'mod'));
+    last.appendChild(key('↑', 'HISTUP', 'mod'));
+    last.appendChild(key('↓', 'HISTDOWN', 'mod'));
+    last.appendChild(key('⌄', 'HIDE', 'mod'));
+    osk.appendChild(last);
+  }
+  renderKeys();
 
-  // history keys are handled locally (the PTY never sees them)
-  osk.addEventListener('click', function (ev) {
-    var label = ev.target && ev.target.textContent;
-    if (label === '↑' || label === '↓') {
-      if (!hist.length) return;
-      if (label === '↑') histPos = Math.min(hist.length - 1, histPos + 1);
-      else histPos = Math.max(-1, histPos - 1);
-      var cmd = histPos >= 0 ? hist[histPos] : '';
-      sendInput('\u0015');           // Ctrl-U: kill the current line
-      if (cmd) sendInput(cmd);
-    }
-  });
+  // A dismissed keyboard comes back when the terminal surface is tapped.
+  screen.addEventListener('click', function () { osk.classList.remove('hidden'); });
 
   document.addEventListener('keydown', function (ev) {
-    if (ev.key === 'ArrowUp') { if (!hist.length) return; histPos = Math.min(hist.length - 1, histPos + 1); ev.preventDefault(); }
-    else if (ev.key === 'ArrowDown') { histPos = Math.max(-1, histPos - 1); ev.preventDefault(); }
+    if (ev.key === 'ArrowUp') { recallHistory(-1); ev.preventDefault(); return; }
+    else if (ev.key === 'ArrowDown') { recallHistory(1); ev.preventDefault(); return; }
     else if (ev.ctrlKey && (ev.key === 'l' || ev.key === 'L')) { buffer = ''; screen.textContent = ''; ev.preventDefault(); }
+    else if (ev.key === 'Backspace') { lineBuffer = lineBuffer.slice(0, -1); return; }
     else if (ev.key.length === 1) { lineBuffer += ev.key; return; }
     else if (ev.key === 'Enter') { rememberLine(); return; }
     else return;
-    sendInput('\u0015');
-    var cmd = histPos >= 0 ? hist[histPos] : '';
-    if (cmd) sendInput(cmd);
   });
 
   document.getElementById('clear').addEventListener('click', function () { buffer = ''; screen.textContent = ''; });

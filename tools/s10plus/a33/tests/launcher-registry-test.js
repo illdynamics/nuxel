@@ -260,6 +260,7 @@ check('no v0.3.2 launcher version constant survives under pwa/nuxel-home/js',
 function makeDom(startHash) {
   const listeners = {};
   function el(tag) {
+    const nodeListeners = {};
     const node = {
       tagName: tag, children: [], className: '', textContent: '', innerHTML: '',
       style: { cssText: '' }, dataset: {}, attrs: {}, parentNode: null,
@@ -269,7 +270,9 @@ function makeDom(startHash) {
       removeChild(c) { this.children = this.children.filter((x) => x !== c); c.parentNode = null; },
       insertBefore(c) { return this.appendChild(c); },
       remove() { if (this.parentNode) this.parentNode.removeChild(this); },
-      addEventListener() {}, removeEventListener() {},
+      addEventListener(t, f) { (nodeListeners[t] = nodeListeners[t] || []).push(f); },
+      removeEventListener(t, f) { nodeListeners[t] = (nodeListeners[t] || []).filter((x) => x !== f); },
+      dispatchEvent(ev) { (nodeListeners[ev.type] || []).slice().forEach((f) => f(ev)); },
       querySelectorAll() { return []; }, querySelector() { return null; },
       onclick: null,
     };
@@ -280,6 +283,8 @@ function makeDom(startHash) {
   const document = {
     readyState: 'complete',
     body: body,
+    hidden: false,
+    activeElement: { blur() {} },
     createElement: el,
     getElementById() { return null; },
     addEventListener(t, f) { (listeners[t] = listeners[t] || []).push(f); },
@@ -360,17 +365,36 @@ function loadLauncher(startHash) {
   check('the opened frame points at the app url from the registry',
         frames.length === 1 && frames[0].src === (reg.getApp('nuxel-settings').url || reg.getApp('nuxel-settings').url),
         frames.length === 1 ? frames[0].src : '');
-  check('the frame is fullscreen and above the launcher (fixed inset:0 / z-index)',
+  check('app content reserves the system status and Home bar, below Quick Settings',
         frames.length === 1 && /position:\s*fixed/.test(frames[0].style.cssText)
-        && /inset:\s*0/.test(frames[0].style.cssText) && /z-index:\s*9999/.test(frames[0].style.cssText));
+        && /top:\s*calc\(var\(--status-bar-height, 36px\) \+ 56px\)/.test(frames[0].style.cssText)
+        && /z-index:\s*60/.test(frames[0].style.cssText));
+  check('opening an app enters LAUNCHING',
+        vm.runInContext('window.nuxel.appSession.state', dom.sandbox) === 'LAUNCHING');
+  frames[0].dispatchEvent({ type: 'load' });
+  check('the frame load transition enters ACTIVE',
+        vm.runInContext('window.nuxel.appSession.state', dom.sandbox) === 'ACTIVE');
+  dom.document.hidden = true;
+  dom.document.dispatchEvent({ type: 'visibilitychange' });
+  check('a hidden active app enters BACKGROUND',
+        vm.runInContext('window.nuxel.appSession.state', dom.sandbox) === 'BACKGROUND');
+  dom.document.hidden = false;
+  dom.document.dispatchEvent({ type: 'visibilitychange' });
+  check('a visible background app returns ACTIVE',
+        vm.runInContext('window.nuxel.appSession.state', dom.sandbox) === 'ACTIVE');
   // --- 7b. close-and-return-home ---
   const closeBtn = dom.document.querySelectorAll('.pwa-close-btn')[0];
-  check('a close control is created with the frame', !!closeBtn && closeBtn.textContent === '✕');
+  check('a labeled Home control is created outside the app document',
+        !!closeBtn && closeBtn.textContent === 'Home' && closeBtn.parentNode.className === 'pwa-app-bar');
   closeBtn.onclick();
   check('closing the app removes the frame (returns to the launcher)',
         dom.document.querySelectorAll('.pwa-frame').length === 0);
   check('closing the app removes the close control',
-        dom.document.querySelectorAll('.pwa-close-btn').length === 0);
+        dom.document.querySelectorAll('.pwa-close-btn').length === 0 &&
+        dom.document.querySelectorAll('.pwa-app-bar').length === 0);
+  check('closing the app removes loading/error status and enters CLOSED',
+        dom.document.querySelectorAll('.pwa-app-status').length === 0 &&
+        vm.runInContext('window.nuxel.appSession.state', dom.sandbox) === 'CLOSED');
   // opening a second app must not stack a second frame
   reg.launchApp('org.nuxel.Terminal'); reg.launchApp('nuxel-settings');
   check('activation of a second app does not stack frames (one owner)',
@@ -392,6 +416,42 @@ function loadLauncher(startHash) {
   check('the status bar wires a real vertical pull to gesture:qs',
         /gesture:qs/.test(statusBarSrc) && /pointermove/.test(statusBarSrc) &&
         /PULL_PX\s*=\s*24/.test(statusBarSrc));
+}
+
+// Navigation must bind before optional startup services respond.
+{
+  const dom = loadLauncher();
+  dom.sandbox.navigator.serviceWorker.register = () => new Promise(() => {});
+  dom.sandbox.bridge.requestCapability = () => new Promise(() => {});
+  let qsClosed = 0;
+  dom.win.qs = { close() { qsClosed++; } };
+  dom.document.dispatchEvent(new dom.sandbox.CustomEvent('DOMContentLoaded'));
+  const reg = vm.runInContext('appRegistry', dom.sandbox);
+  reg.launchApp('nuxel-settings');
+  check('unanswered startup services cannot swallow app activation',
+        dom.document.querySelectorAll('.pwa-frame').length === 1);
+  dom.win.NuxelLauncherClose();
+  check('Home closes the actual Quick Settings instance', qsClosed === 1);
+}
+// Delayed host replies must not resurrect a closed/superseded Terminal session.
+{
+  const dom = loadLauncher();
+  const actions = [];
+  let acknowledge;
+  dom.win.NuxelHost = { available: true, action(action) {
+    actions.push(action);
+    return action === 'open-terminal' ? new Promise(resolve => { acknowledge = resolve; }) : Promise.resolve({ok:true});
+  } };
+  dom.document.dispatchEvent(new dom.sandbox.CustomEvent('DOMContentLoaded'));
+  const reg = vm.runInContext('appRegistry', dom.sandbox);
+  reg.launchApp('org.nuxel.Terminal');
+  reg.launchApp('nuxel-settings');
+  acknowledge({ok:true});
+  await tick();
+  check('switching from native Terminal requests host surface cleanup',
+        actions.join(',') === 'open-terminal,close-terminal', actions.join(','));
+  check('late Terminal acknowledgement cannot overwrite the new app',
+        dom.win.nuxel.appSession.app.id === 'nuxel-settings' && dom.win.nuxel.appSession.frame !== null);
 }
 
 // --- 7c. search: the registry is the matcher the UI uses ---

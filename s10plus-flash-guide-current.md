@@ -2,7 +2,7 @@
 
 **Device:** Samsung Galaxy S10+ **SM-G975F** (Exynos 9820), codename **`beyond2lte`**, A-only UFS
 **Host:** this machine (Fedora 43, Linux 6.17) · S10+ on USB-C in **Download Mode**
-**Written:** 2026-10-14 · **Nuxel build:** `v0.5.1-alpha`
+**Written:** 2026-10-14 · **Nuxel build:** `v0.5.2-beta`
 **Scope:** finish the flash **from the live state of this unit right now** until Nuxel
 boots on it, and get a real **display**.
 
@@ -449,4 +449,4 @@ misc`; never overwrite `dtbo`; never re-lock.
 
 ---
 
-*Build the bunker first. Add the rave lights later. — Nuxel v0.5.1-alpha*
+*Build the bunker first. Add the rave lights later. — Nuxel v0.5.2-beta*

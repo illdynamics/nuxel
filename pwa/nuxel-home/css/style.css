@@ -222,23 +222,71 @@ html, body {
     }
 }
 
-/* Nuxel VM app-container fix */
+/* App content starts below system status and its persistent Home/title bar. */
 .pwa-frame {
     position: fixed !important;
-    inset: 0 !important;
+    top: calc(var(--status-bar-height, 36px) + 56px) !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
     width: 100vw !important;
-    height: 100dvh !important;
-    min-width: 100vw !important;
-    min-height: 100dvh !important;
+    height: calc(100dvh - var(--status-bar-height, 36px) - 56px) !important;
+    min-height: 0 !important;
     border: 0 !important;
-    z-index: 9999 !important;
+    z-index: 60 !important;
     background: #071426 !important;
     display: block !important;
 }
 
+.pwa-app-bar {
+    position: fixed;
+    top: var(--status-bar-height, 36px);
+    left: 0;
+    right: 0;
+    height: 56px;
+    z-index: 61;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 6px 12px;
+    background: #10213b;
+    color: #fff;
+}
+.pwa-app-bar span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pwa-close-btn {
-    position: fixed !important;
-    z-index: 10000 !important;
+    min-height: 44px;
+    min-width: 68px;
+    border: 1px solid #567499;
+    border-radius: 10px;
+    background: #203c60;
+    color: #fff;
+    font: 600 16px system-ui, sans-serif;
+    touch-action: manipulation;
+    cursor: pointer;
+}
+
+.nuxel-touch-keyboard {
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    z-index: 240;
+    padding: 8px 4px max(8px, env(safe-area-inset-bottom));
+    background: #0b192d;
+    border-top: 1px solid #4d6583;
+    touch-action: manipulation;
+}
+.nuxel-touch-keyboard[hidden] { display: none; }
+.nuxel-touch-keyboard .key-row { display: flex; justify-content: center; gap: 3px; margin: 4px 0; }
+.nuxel-touch-keyboard button {
+    flex: 1; min-width: 0; min-height: 44px;
+    padding: 4px 2px; border: 0; border-radius: 6px;
+    background: #263d5c; color: #fff; font: 16px system-ui, sans-serif;
+}
+.nuxel-touch-keyboard button:active { background: #4778a6; }
+.nuxel-touch-keyboard .wide { flex: 2; }
+.touch-keyboard-open .search-overlay { bottom: 280px; }
+.touch-keyboard-open .pwa-frame {
+    bottom: 280px !important;
+    height: calc(100dvh - var(--status-bar-height, 36px) - 336px) !important;
 }
 
 /* ── Boot animation splash ───────────────────────────────────────────────

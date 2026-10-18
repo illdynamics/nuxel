@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "id": "briq-10b-touch-tracer-hotfix",
+  "device": {
+    "codename": "beyond2lte",
+    "model": "SM-G975F"
+  },
+  "invariants": [
+    "Single userspace diagnostic only; no partition, kernel, bootloader, modem or framebuffer-device write.",
+    "Stage, SHA-256 verify, atomically install, health-check, and retain deploy-tool rollback receipt."
+  ],
+  "groups": [
+    {
+      "id": "touch-tracer-hotfix",
+      "component": "bounded touch-pipeline diagnostic",
+      "priority": 1,
+      "risk": "low",
+      "restart_service": null,
+      "declared_reload": "true",
+      "declared_reload_reason": "The tracer is an invoked leaf executable; no resident service consumes it.",
+      "pre": [],
+      "post": [],
+      "health_check": "test -x /usr/libexec/nuxel/nuxel-touch-trace.py && python3 /usr/libexec/nuxel/nuxel-touch-trace.py --self-test",
+      "rollback": "The deploy tool preserves the prior target as <target>.nuxel-rollback and restores it automatically if staging, install, or health fails.",
+      "files": [
+        {
+          "source": "tools/s10plus/a33/nuxel-touch-trace.py",
+          "target": "/usr/libexec/nuxel/nuxel-touch-trace.py",
+          "mode": "0755"
+        }
+      ]
+    }
+  ]
+}

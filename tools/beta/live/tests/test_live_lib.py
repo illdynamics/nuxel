@@ -12,11 +12,14 @@ These tests NEVER touch the phone.  They prove:
     a plan whose manifest points at a raw partition;
   * the reboot policy refuses blind repeats / unrecovered reboots;
   * the host serialisation lock is taken on the SHARED /tmp path when this uid
-    can use it, falls back to the private per-uid path (nuxel-live.sh semantics)
-    when it cannot, and refuses a port another host tool already owns either way.
+    can use it, reopens the same inode without O_CREAT for protected_regular,
+    and refuses inaccessible locks instead of bypassing an active peer.
 """
 
 from __future__ import annotations
+from unittest import mock
+import subprocess
+from pathlib import Path
 
 import contextlib
 import fcntl
@@ -253,151 +256,75 @@ class TestEvidenceBundle(unittest.TestCase):
 
 
 class TestConsoleLock(unittest.TestCase):
-    """The one-host-tool-per-port lock (briq-00-lock-fallback-fix).
-
-    The defect this class is the regression test for: the live console always runs
-    through sudo, and `open(path, "w")` on a /tmp lock file owned by another uid
-    raises PermissionError on a host with fs.protected_regular=2 (Fedora default).
-    scripts/s10plus-debug-pack/nuxel-live.sh already fell back to a private per-uid
-    lock; nuxel_live.py did not, so root could not take the shared lock at all.
-    """
+    """Shared-inode exclusion survives Fedora protected_regular and failures."""
 
     def setUp(self):
-        self.tmp = tempfile.mkdtemp(prefix="nxl-locktest-")
-        self._env = {k: os.environ.get(k) for k in ("TMPDIR", "NUXEL_LIVE_LOCK")}
-        os.environ["TMPDIR"] = self.tmp
-        os.environ.pop("NUXEL_LIVE_LOCK", None)
-        self._orig_shared = nl._shared_lock_path
-        self._orig_private = nl._private_lock_path
+        self.tmp = tempfile.TemporaryDirectory(prefix="nxl-locktest-")
+        self.addCleanup(self.tmp.cleanup)
+        self.shared = os.path.join(self.tmp.name, "shared.lock")
+        env = mock.patch.dict(os.environ, {"NUXEL_LIVE_LOCK": self.shared})
+        env.start()
+        self.addCleanup(env.stop)
 
-    def tearDown(self):
-        nl._shared_lock_path = self._orig_shared
-        nl._private_lock_path = self._orig_private
-        for k, v in self._env.items():
-            if v is None:
-                os.environ.pop(k, None)
-            else:
-                os.environ[k] = v
+    def protected_open(self, path, mode):
+        if mode == "a+":
+            raise PermissionError("protected_regular denies O_CREAT")
+        return open(path, mode)
 
-    # -- helpers ------------------------------------------------------------ #
-    @staticmethod
-    def _dir_as_lock(path):
-        """Hand `path` back as a *directory*: open(path, "w") is then an OSError
-        for every uid (IsADirectoryError), which is exactly the class of failure
-        the shared /tmp lock hits when it is owned by another uid under sudo.
-        Deterministic even when the suite runs as root, unlike a chmod."""
-        os.makedirs(path, exist_ok=True)
-        return path
-
-    def test_shared_lock_is_taken_when_the_uid_can_use_it(self):
-        shared = os.path.join(self.tmp, "shared.lock")
-        os.environ["NUXEL_LIVE_LOCK"] = shared
-        with FakePhone("healthy") as phone:
-            with nl.Console(phone.dev, timeout=15) as first:
-                self.assertEqual(first.lock_path, shared)
-                self.assertTrue(os.path.exists(shared))
-                # a real flock, not merely an open file: a second connection in
-                # this very process is refused while the first one holds it
-                with self.assertRaises(nl.ConsoleLost) as ctx:
-                    with nl.Console(phone.dev, timeout=15, lock_wait=0.0):
-                        pass
-                self.assertIn("owned by another host tool", str(ctx.exception))
-                self.assertIn(shared, str(ctx.exception))
-            # ... and the lock is released on close, so the next tool may take it
-            with nl.Console(phone.dev, timeout=15) as third:
-                self.assertEqual(third.lock_path, shared)
-
-    def test_held_shared_lock_is_reported_as_held_not_as_a_fallback(self):
-        dev = "/dev/ttyACM-lockheld0"
-        shared = os.path.join(self.tmp, "held.lock")
-        os.environ["NUXEL_LIVE_LOCK"] = shared
-        fd = nl._flock(shared, 0.0)
+    def test_shared_lock_excludes_peer_and_releases(self):
+        fd, path = nl.take_console_lock("/dev/test")
         try:
-            with self.assertRaises(nl.ConsoleLost) as ctx:
-                nl.take_console_lock(dev, lock_wait=0.0)
-            self.assertIn("owned by another host tool", str(ctx.exception))
-            self.assertIn(shared, str(ctx.exception))
-            # a held lock is NOT a permission problem: no fallback is created
-            self.assertFalse(os.path.exists(nl._private_lock_path(dev)),
-                             "a genuinely held lock must never be bypassed")
+            self.assertEqual(path, self.shared)
+            with self.assertRaisesRegex(nl.ConsoleLost, "owned by another host tool"):
+                nl.take_console_lock("/dev/test")
         finally:
-            fcntl.flock(fd, fcntl.LOCK_UN)
+            fd.close()
+        fd, _ = nl.take_console_lock("/dev/test")
+        fd.close()
+
+    def test_protected_regular_reopens_same_inode_without_truncating(self):
+        Path(self.shared).write_text("owner metadata")
+        before = os.stat(self.shared).st_ino
+        fd, path = nl.take_console_lock("/dev/test", opener=self.protected_open)
+        try:
+            self.assertEqual(path, self.shared)
+            self.assertEqual(os.fstat(fd.fileno()).st_ino, before)
+            self.assertEqual(Path(path).read_text(), "owner metadata")
+        finally:
             fd.close()
 
-    def test_unopenable_shared_lock_falls_back_to_the_private_per_uid_lock(self):
-        dev = "/dev/ttyACM-fallback0"
-        nl._shared_lock_path = lambda d: self._dir_as_lock(
-            os.path.join(self.tmp, "shared-is-a-directory"))
-        err = io.StringIO()
-        with contextlib.redirect_stderr(err):
-            fd, path = nl.take_console_lock(dev, lock_wait=0.0)
+    def test_protected_regular_never_bypasses_active_peer(self):
+        fd, _ = nl.take_console_lock("/dev/test")
         try:
-            private = nl._private_lock_path(dev)
-            self.assertEqual(path, private)
-            self.assertTrue(os.path.exists(private))
-            self.assertIn(private, err.getvalue())
-            self.assertIn("# shared lock", err.getvalue())
-            self.assertIn("— using private lock", err.getvalue())
-            self.assertIn("uid %d" % os.getuid(), err.getvalue())
+            with self.assertRaisesRegex(nl.ConsoleLost, "owned by another host tool"):
+                nl.take_console_lock("/dev/test", opener=self.protected_open)
+            self.assertEqual(os.listdir(self.tmp.name), ["shared.lock"])
         finally:
-            fcntl.flock(fd, fcntl.LOCK_UN)
             fd.close()
 
-    def test_private_lock_still_excludes_a_second_connection(self):
-        dev = "/dev/ttyACM-fallback1"
-        nl._shared_lock_path = lambda d: self._dir_as_lock(
-            os.path.join(self.tmp, "shared-is-a-directory"))
-        fd, path = nl.take_console_lock(dev, lock_wait=0.0)
+    def test_unreadable_shared_lock_fails_closed(self):
+        with self.assertRaisesRegex(nl.ConsoleLost, "refusing to share"):
+            nl.take_console_lock("/dev/test", opener=mock.Mock(side_effect=PermissionError()))
+        self.assertEqual(os.listdir(self.tmp.name), [])
+
+    def test_failed_port_open_releases_lock(self):
+        with mock.patch.object(nl.os, "open", side_effect=PermissionError("serial denied")):
+            with self.assertRaises(nl.ConsoleLost):
+                nl.Console("/dev/test").open()
+        fd, _ = nl.take_console_lock("/dev/test")
+        fd.close()
+
+    def test_shell_transport_obeys_same_held_lock_before_opening_port(self):
+        fd, _ = nl.take_console_lock("/dev/test")
         try:
-            with contextlib.redirect_stderr(io.StringIO()):
-                with self.assertRaises(nl.ConsoleLost) as ctx:
-                    nl.take_console_lock(dev, lock_wait=0.0)
-            self.assertIn("owned by another host tool", str(ctx.exception))
-            self.assertIn(path, str(ctx.exception))
+            root = Path(__file__).resolve().parents[4]
+            result = subprocess.run(["bash", str(root / "scripts/s10plus-debug-pack/nuxel-live.sh"),
+                                     "--dev", "/dev/test", "--run", "id"],
+                                    capture_output=True, text=True, timeout=5)
+            self.assertEqual(result.returncode, 3, result.stderr)
+            self.assertIn("owned by another host tool", result.stderr)
         finally:
-            fcntl.flock(fd, fcntl.LOCK_UN)
             fd.close()
-
-    def test_shared_path_shape_mirrors_nuxel_live_sh(self):
-        os.environ.pop("NUXEL_LIVE_LOCK", None)
-        self.assertEqual(nl._shared_lock_path("/dev/ttyACM0"),
-                         "/tmp/nuxel-live._dev_ttyACM0.lock")
-        self.assertEqual(nl._private_lock_path("/dev/ttyACM0"),
-                         "%s/nuxel-live._dev_ttyACM0.%d.lock" % (self.tmp, os.getuid()))
-        # ... and the two are different files, so the fallback never aliases the
-        # shared lock it could not open (that would defeat the mutual exclusion)
-        self.assertNotEqual(nl._shared_lock_path("/dev/ttyACM0"),
-                            nl._private_lock_path("/dev/ttyACM0"))
-
-    def test_both_paths_unusable_is_a_refusal_not_a_silent_share(self):
-        dev = "/dev/ttyACM-hopeless"
-        nl._shared_lock_path = lambda d: self._dir_as_lock(os.path.join(self.tmp, "d1"))
-        nl._private_lock_path = lambda d, uid=None: self._dir_as_lock(
-            os.path.join(self.tmp, "d2"))
-        with contextlib.redirect_stderr(io.StringIO()):
-            with self.assertRaises(nl.ConsoleLost) as ctx:
-                nl.take_console_lock(dev, lock_wait=0.0)
-        self.assertIn("cannot take a port lock", str(ctx.exception))
-        self.assertIn("refusing to share the serial port", str(ctx.exception))
-
-    def test_fallback_does_not_typeerror_on_a_console(self):
-        """The Console path (not just the helper) must survive the fallback, so a
-        sudo session can serialise the port end to end."""
-        with FakePhone("healthy") as phone:
-            nl._shared_lock_path = lambda d: self._dir_as_lock(
-                os.path.join(self.tmp, "shared-is-a-directory"))
-            err = io.StringIO()
-            with contextlib.redirect_stderr(err):
-                c = nl.Console(phone.dev, timeout=15)
-                c.open()
-            try:
-                self.assertTrue(c.lock_path.startswith(self.tmp))
-                with contextlib.redirect_stderr(io.StringIO()):
-                    with self.assertRaises(nl.ConsoleLost):
-                        nl.Console(phone.dev, timeout=15, lock_wait=0.0).open()
-            finally:
-                c.close()
-            self.assertIn("using private lock", err.getvalue())
 
 
 if __name__ == "__main__":

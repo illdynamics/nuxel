@@ -395,7 +395,7 @@
     }
   ],
   "launcher_manifest_notes": [
-    "pwa/nuxel-home/manifest.json (owned by the Priority 2 group) declares nuxel.bridge_version 0.5.1-alpha, which is the HOST version, not the protocol pin '1'. Reported as a WARN by the verifier: the launcher is a system surface, not a third-party app, so it is not part of apps[] and the mismatch cannot reject a PWA, but the two fields should not be conflated."
+    "pwa/nuxel-home/manifest.json (owned by the Priority 2 group) declares nuxel.bridge_version 0.5.2-beta, which is the HOST version, not the protocol pin '1'. Reported as a WARN by the verifier: the launcher is a system surface, not a third-party app, so it is not part of apps[] and the mismatch cannot reject a PWA, but the two fields should not be conflated."
   ],
   "required_apps_not_yet_in_tree": [
     {

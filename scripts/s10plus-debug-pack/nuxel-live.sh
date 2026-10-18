@@ -123,7 +123,8 @@ case "$DEV" in
 esac
 [ -n "$MODE" ] || MODE=watch
 echo "# console $DEV"
-exec "$PY" - "$DEV" "$MODE" "${CMD:-}" "${FILE:-}" "${TIMEOUT:-20}" "${OUT:-}" "${RECONNECT:-0}" <<'PYEOF'
+LIVE_LIB="$(cd "$(dirname "$0")/../../tools/beta/live" && pwd)"
+exec "$PY" - "$DEV" "$MODE" "${CMD:-}" "${FILE:-}" "${TIMEOUT:-20}" "${OUT:-}" "${RECONNECT:-0}" "$LIVE_LIB" <<'PYEOF'
 import os, re, sys, fcntl, select, termios, time, hashlib, base64, binascii, random, gzip
 
 dev, mode, cmd, path, tmo = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], float(sys.argv[5])
@@ -143,49 +144,17 @@ def lost(what, e):
     return ConsoleLost("%s: %s" % (what, e)
                        if not isinstance(e, str) else "%s: %s" % (what, e))
 
-# ---- one host tool per serial device -------------------------------------------------
-# The lock lives in the shared /tmp so that nuxel-live.sh, nuxel-push.py and
-# nuxel-console-host.sh mutually exclude each other on one serial device.
-# BUG fixed 2026-10-16 (bg-00-preflight): on a Linux host with
-# fs.protected_regular=2 (Fedora default) running this tool through sudo made the
-# bare open() below raise EACCES — root may not O_CREAT an existing lock file that
-# belongs to another user in a sticky world-writable directory.  That surfaced as a
-# raw Python traceback, i.e. exactly the class of failure the A33 cable-pull fix
-# removed for the serial port.  Now: a genuinely *held* lock is reported as such
-# (exit 3) and a lock we merely cannot *open* falls back to a private per-uid lock.
-_sanitized_dev = re.sub(r"[^A-Za-z0-9]", "_", dev)
-LOCK = os.environ.get("NUXEL_LIVE_LOCK") or "/tmp/nuxel-live.%s.lock" % _sanitized_dev
-
-
-def _open_lock(path):
-    """Open `path` and take the exclusive, non-blocking port lock."""
-    f = open(path, "w")
-    fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)      # BlockingIOError when held
-    return f
-
-
+# Use the same shared-inode lock implementation as deploy/baseline tools.
+# NUXEL_LIVE_LOCK selects the shared path for ALL participating tools.
+# Fedora protected_regular fallback reopens that same inode without O_CREAT;
+# inaccessible locks fail closed. Never unlink a peer's lock or use a private one.
+sys.path.insert(0, sys.argv[8])
+from nuxel_live import take_console_lock, ConsoleLost as LockError
 try:
-    _lk = _open_lock(LOCK)
-except BlockingIOError:
-    print("!! another nuxel-live/console-host owns %s (lock %s) — refusing to share the port"
-          % (dev, LOCK), file=sys.stderr)
+    _lk, LOCK = take_console_lock(dev)
+except LockError as e:
+    print("!! %s" % e, file=sys.stderr)
     sys.exit(3)
-except OSError as e:
-    _alt = "%s/nuxel-live.%s.%d.lock" % (os.environ.get("TMPDIR", "/tmp").rstrip("/"),
-                                         _sanitized_dev, os.getuid())
-    try:
-        _lk = _open_lock(_alt)
-    except BlockingIOError:
-        print("!! another nuxel-live/console-host owns %s (lock %s) — refusing to share the port"
-              % (dev, _alt), file=sys.stderr)
-        sys.exit(3)
-    except OSError as e2:
-        print("!! cannot take a port lock for %s (%s; %s) — refusing to share the serial port"
-              % (dev, e, e2), file=sys.stderr)
-        sys.exit(3)
-    print("# shared lock %s is not usable by uid %d (%s) — using private lock %s"
-          % (LOCK, os.getuid(), e, _alt), file=sys.stderr)
-    LOCK = _alt
 
 # ---- framing constants ---------------------------------------------------------------
 B64 = re.compile(r"^[A-Za-z0-9+/=]+$")

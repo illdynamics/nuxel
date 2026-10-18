@@ -4,7 +4,7 @@
 **Machine-readable twin:** [`DEVICE-CAPABILITY-MANIFEST.json`](DEVICE-CAPABILITY-MANIFEST.json) · **Schema:** [`DEVICE-CAPABILITY-MANIFEST.schema.json`](DEVICE-CAPABILITY-MANIFEST.schema.json) · **Validator:** `tools/beta/validate-capability-manifest.py`
 **Companion:** [`../testing/TEST-STRATEGY.md`](../testing/TEST-STRATEGY.md) (L1–L6) · [`SOAK-AND-PERFORMANCE.md`](../testing/SOAK-AND-PERFORMANCE.md) · [`REBOOT-ROLLBACK.md`](REBOOT-ROLLBACK.md) · [`ROLLBACK.md`](ROLLBACK.md) · [`../BETA-MANUAL-PROOF-CHECKLIST.md`](../BETA-MANUAL-PROOF-CHECKLIST.md)
 
-**Version:** `v0.5.1-alpha` · **git head at generation:** `94d68b13e64ed195e0c3f3f6d2e21a07f3ae3b19` · **generated:** `2026-10-16T21:02:28+0200`
+**Version:** `v0.5.2-beta` · **git head at generation:** `94d68b13e64ed195e0c3f3f6d2e21a07f3ae3b19` · **generated:** `2026-10-16T21:02:28+0200`
 
 ---
 
@@ -89,9 +89,9 @@ This is why the table below contains a lot of `1`s and `2`s and no `5`s: nothing
 | `services` | **IMPLEMENTED_NOT_DEPLOYED** | `briq-04b-service-definitions` (in_progress) | Service definitions and boot graph |
 | `app_infrastructure` | **IMPLEMENTED_NOT_DEPLOYED** | `briq-04c-app-infrastructure` (in_progress) | Application infrastructure: registry, portal, notifications, bridge, local web server |
 | `specialty_apps` | **IMPLEMENTED_NOT_DEPLOYED** | `briq-07d-snekbyte` (in_progress) | Specialty applications (media, authenticator, downloader, DevMgmt, cleanup, SnekByte) |
-| `release_gate` | **OFFLINE_TESTED** | `briq-09a-test-strategy-soak` (implemented) | Offline release gate, soak harness, reboot policy and rollback discipline |
-| `release_reboot_rollback` | **OFFLINE_TESTED** | `briq-09b-reboot-rollback-policy` (implemented) | Autonomous reboot policy and per-component rollback |
-| `release_deliverables` | **OFFLINE_TESTED** | `briq-09c-release-deliverables` (implemented) | Reproducible release deliverables and version |
+| `release_gate` | **IMPLEMENTED_NOT_DEPLOYED** | `briq-09a-test-strategy-soak` (pending) | Offline release gate, soak harness, reboot policy and rollback discipline |
+| `release_reboot_rollback` | **IMPLEMENTED_NOT_DEPLOYED** | `briq-09b-reboot-rollback-policy` (pending) | Autonomous reboot policy and per-component rollback |
+| `release_deliverables` | **IMPLEMENTED_NOT_DEPLOYED** | `briq-09c-release-deliverables` (in_progress) | Reproducible release deliverables and version |
 
 ### Detail
 

@@ -588,10 +588,10 @@ add_suite U-shell-phone-data unit bg-06-core-phone-apps 600 hard bash \
   'bash shell/nuxel-shell/nuxel-phone-data/run-tests.sh'
 
 # bg-04 / bg-06 / bg-07 shared surfaces
-add_suite U-pwa-bridge unit bg-04-userspace-completion 300 hard "$NODE" \
+add_suite U-pwa-bridge unit bg-04-userspace-completion 300 hard "probe:python3 -c 'import socket; s=socket.socket(); s.bind((\"127.0.0.1\", 0)); s.close()'" \
   "shared PWA bridge client contract (node)" \
   'node pwa/nuxel-common/test-bridge.js'
-add_suite U-bridge-activation unit bg-04-userspace-completion 600 hard "$PY" \
+add_suite U-bridge-activation unit bg-04-userspace-completion 600 hard "probe:python3 -c 'import socket; s=socket.socket(); s.bind((\"127.0.0.1\", 0)); s.close()'" \
   "launcher->bridge activation, capability/RPC wiring (no D-Bus, no device)" \
   'python3 services/nuxel-bridge/test-launcher-activation.py'
 add_suite U-console-ownership unit bg-04-userspace-completion 300 hard "$PY" \

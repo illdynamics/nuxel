@@ -1,0 +1,4 @@
+cmd: sha256sum /usr/share/nuxel/pwa/nuxel-home/js/search.js 2>&1
+ok: True rc: 0 framed: True sha_ok: True
+---
+49c60d37b0e66d2feb1f233fbc2d9f2b49e76b115337a4584518727c5d1f677d  /usr/share/nuxel/pwa/nuxel-home/js/search.js

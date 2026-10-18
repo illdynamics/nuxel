@@ -1,7 +1,7 @@
 nuxel-deploy-manifest
 git_branch=main
 git_rev=c3c4637ff925d8126a1875eddd2226f73f5c5df2
-version=v0.5.1-alpha
+version=v0.5.2-beta
 deployed_at_utc=2026-08-19T07:16:28Z
 source=/Users/wicked/x/nuxel
 # Note (cycle 20260819-070853, bg-03): deployed rev c3c4637 natively includes

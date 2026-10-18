@@ -1,0 +1,4 @@
+cmd: sha256sum /usr/share/nuxel/pwa/nuxel-home/js/recents.js 2>&1
+ok: True rc: 0 framed: True sha_ok: True
+---
+7ee9077e7097d118a16ab12af46e0cfe51c0af2a2f4056ef227e21dcd4774214  /usr/share/nuxel/pwa/nuxel-home/js/recents.js

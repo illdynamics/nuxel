@@ -39,7 +39,11 @@
 set -uo pipefail
 
 SELF_DIR="$(cd "$(dirname "$0")" && pwd)"
-TRACER="$SELF_DIR/nuxel-touch-trace.py"
+# The deploy manifest installs the canonical tracer here.  Prefer it over any
+# legacy sibling left by an older diagnostic bundle; otherwise a repaired tracer
+# could be shadowed by stale /usr/local/bin code during the owner proof.
+TRACER="/usr/libexec/nuxel/nuxel-touch-trace.py"
+[ -x "$TRACER" ] || TRACER="$SELF_DIR/nuxel-touch-trace.py"
 BOOTMODE_GUARD="$SELF_DIR/nuxel-bootmode-guard.py"
 LOCK="/run/nuxel-touch-capture.lock"
 

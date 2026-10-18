@@ -61,13 +61,18 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Release tag (e.g. v0.5.1-alpha). Empty => v<VERSION>.'
+        description: 'Release tag (e.g. v0.5.2-beta). Empty => v<VERSION>.'
         required: false
         default: ''
       devices:
         description: 'Space-separated device keys (g7power s10plus).'
         required: false
         default: 'g7power s10plus'
+      publish:
+        description: 'Publish only after physical owner acceptance and all release gates.'
+        type: boolean
+        required: false
+        default: false
 
 permissions:
   contents: write
@@ -83,21 +88,50 @@ jobs:
     outputs:
       tag: ${{ steps.v.outputs.tag }}
       devices: ${{ steps.v.outputs.devices }}
+      source_sha: ${{ steps.v.outputs.source_sha }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Resolve tag and device list
         id: v
+        env:
+          REQUESTED_TAG: ${{ github.event.inputs.tag }}
+          REQUESTED_DEVICES: ${{ github.event.inputs.devices }}
         run: |
-          if [ -n "${{ github.event.inputs.tag }}" ]; then
-            tag="${{ github.event.inputs.tag }}"
+          # An explicit manual tag must build that tag's commit, not the
+          # branch from which the workflow was dispatched.
+          if [ -n "$REQUESTED_TAG" ]; then
+            requested_tag="v${REQUESTED_TAG#v}"
+            [[ "$requested_tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9.-]+)?$ ]] || {
+              echo "::error::invalid requested version"; exit 1;
+            }
+            git show-ref --verify "refs/tags/$requested_tag" >/dev/null || {
+              echo "::error::requested tag does not exist; omit tag for a nonpublishing branch build"; exit 1;
+            }
+            git checkout --detach "refs/tags/$requested_tag"
+          fi
+          version="$(tr -d '[:space:]' < VERSION)"
+          version="${version#v}"
+          [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9.-]+)?$ ]] || {
+            echo "::error::VERSION must have at most one v prefix and a valid version"; exit 1;
+          }
+          canonical_tag="v${version}"
+          if [ -n "$REQUESTED_TAG" ]; then
+            requested="$REQUESTED_TAG"
+            tag="v${requested#v}"
           elif [ "${GITHUB_REF_TYPE}" = "tag" ]; then
             tag="${GITHUB_REF_NAME}"
           else
-            tag="v$(cat VERSION 2>/dev/null || echo 0.0.0)"
+            tag="${canonical_tag}"
           fi
-          devs="${{ github.event.inputs.devices }}"
+          [ "$tag" = "$canonical_tag" ] || {
+            echo "::error::release tag '$tag' does not match VERSION '$canonical_tag'"; exit 1;
+          }
+          source_sha="$(git rev-parse HEAD)"
+          devs="$REQUESTED_DEVICES"
           [ -n "$devs" ] || devs="g7power s10plus"
           # Only g7power + s10plus are supported for now.
           allowed=" g7power s10plus "
@@ -113,7 +147,9 @@ jobs:
           json="$(python3 -c 'import json,sys; print(json.dumps(sys.argv[1].split()))' "$filtered")"
           echo "tag=${tag}" >> "$GITHUB_OUTPUT"
           echo "devices=${json}" >> "$GITHUB_OUTPUT"
+          echo "source_sha=${source_sha}" >> "$GITHUB_OUTPUT"
           echo "Release tag : ${tag}"
+          echo "Source SHA  : ${source_sha}"
           echo "Devices     : ${json}"
 
   build:
@@ -134,6 +170,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.source_sha }}
 
       - name: Install build dependencies
         run: |
@@ -263,11 +301,13 @@ jobs:
     name: publish release
     needs: [prepare, build]
     # Only publish from a fully successful build — never from a red/partial one.
-    if: ${{ needs.build.result == 'success' }}
+    if: ${{ needs.build.result == 'success' && (github.event_name == 'push' || inputs.publish == true) }}
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.source_sha }}
 
       - name: Collect device artifacts
         uses: actions/download-artifact@v4
@@ -301,16 +341,17 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           tag="${{ needs.prepare.outputs.tag }}"
+          git fetch --no-tags origin "refs/tags/$tag:refs/tags/$tag"
+          [ "$(git rev-parse "refs/tags/$tag^{commit}")" = "${{ needs.prepare.outputs.source_sha }}" ] || {
+            echo "::error::tag no longer matches the built source commit"; exit 1;
+          }
           if gh release view "$tag" >/dev/null 2>&1; then
-            gh release upload "$tag" dist/*.tar.gz dist/SHA256SUMS.txt --clobber
-            gh release edit "$tag" \
-              --title "Nuxel ${tag}" \
-              --notes-file dist/RELEASE-NOTES.md
-          else
-            gh release create "$tag" \
-              dist/*.tar.gz dist/SHA256SUMS.txt \
-              --title "Nuxel ${tag}" \
-              --notes-file dist/RELEASE-NOTES.md
+            echo "::error::release already exists; refusing to overwrite published artifacts"; exit 1
           fi
+          gh release create "$tag" \
+            dist/*.tar.gz dist/SHA256SUMS.txt \
+            --verify-tag \
+            --title "Nuxel ${tag}" \
+            --notes-file dist/RELEASE-NOTES.md
           echo "### Published ${tag}" >> "$GITHUB_STEP_SUMMARY"
           gh release view "$tag" --json url -q .url >> "$GITHUB_STEP_SUMMARY" || true
