@@ -107,7 +107,8 @@ wayland-scanner private-code \
     /nuxel/tools/s10plus/a29/wlr-screencopy-unstable-v1.xml \
     "$B/wlr-screencopy-unstable-v1-protocol.c"
 
-# A34 display bridge: bl_power=4 screen-off, current handoff/colour path.
+# A35-patched A34 bridge: frame-by-frame DECON PAN commits, real AMOLED blank,
+# automatic first-frame presentation at boot, and current handoff/colour path.
 gcc $CFLAGS_COMMON $(pkg-config --cflags wayland-client) \
     -o "$B/nuxel-wl-fb" /nuxel/tools/s10plus/a34/nuxel-wl-fb.c \
     "$B/wlr-screencopy-unstable-v1-protocol.c" \
@@ -190,8 +191,8 @@ install -d "$STAGE/etc/nuxel" "$STAGE/usr/lib/nuxel"
 # process supervision, and the libinput path shim that gives phoc the real
 # touchscreen on a kernel with no VT and no usable udev daemon.
 install -m 0755 /nuxel/tools/s10plus/a29/nuxel-touch-arm "$STAGE/usr/lib/nuxel/nuxel-touch-arm"
-# A34 is the shipped revision (TOUCHDOWN): the A34 display bridge
-# (bl_power=4 screen-off), the A34 button manager (SYN_REPORT touch translation,
+# A34 is the shipped revision (TOUCHDOWN): the A35-patched A34 display
+# bridge (per-frame PAN + powerdown), the A34 button manager (SYN_REPORT touch translation,
 # 11-entry power menu with Cancel first, deferred Bixby cancelled by Power) and
 # the current PWA host (terminal surface close + host action fixes).  All were
 # built from repository sources above, not copied from a developer's build tree.

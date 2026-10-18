@@ -35,10 +35,11 @@
  *      re-verifying executable identity, re-checks, and if the painter STILL
  *      lives it does NOT touch the panel - it writes a diagnostic and exits
  *      non-zero so the animation/fallback keeps sole ownership (mission 10.3).
- *   3. No periodic FBIOPUT_VSCREENINFO/FBIOPAN_DISPLAY every reporting interval.
- *      The bridge writes the visible buffer directly (yoffset 0, no double
- *      buffer), so the steady state needs no display reset at all; the DECON is
+ *   3. No periodic FBIOPUT_VSCREENINFO every reporting interval. The DECON is
  *      re-asserted only when a real failure is measured (mission 10.4).
+ *      IMPORTANT: a lightweight FBIOPAN_DISPLAY still commits EVERY frame on
+ *      this command-mode Samsung panel. Removing that ioctl made the glass
+ *      appear frozen until a Power-button wake forced an expensive reassert.
  *   4. Paced presentation (NUXEL_TARGET_FPS, default 30) with measured frame
  *      timing instead of an unbounded screencopy loop (mission 10.5).
  *
@@ -135,6 +136,11 @@
  * FB_BLANK_POWERDOWN and is the strongest state the panel driver exposes
  * without closing /dev/fb0 (closing runs decon_release and is NOT used here). */
 #define BL_POWER   "/sys/class/backlight/panel/bl_power"
+
+/* A35: this Samsung DECON is command-mode. Writing the fbdev mmap is NOT
+ * sufficient to submit a frame to the AMOLED; FBIOPAN_DISPLAY latches it.
+ * See A21/A24 receipts and the original nuxel-anim-player per-frame pan.
+ * Do not run FBIOPUT_VSCREENINFO every frame (it is a full mode reset). */
 
 /* ---- A32 colour: the DECON order this panel actually uses -------------------
    Measured on the handset (A23, re-confirmed A32 from the live player log):
@@ -827,10 +833,24 @@ static void display_publish(void) {
   wr_state(DISP_STATE, b);
 }
 
+/* A35: request true panel blanking, not just a darkened backlight. The
+ * framebuffer fd stays open, retaining the single DECON owner. The wake path
+ * below performs the vendor-kernel's documented mode re-assertion. */
+static int panel_blank_powerdown(const char *why) {
+  errno = 0;
+  int rc = ioctl(fb.fd, FBIOBLANK, FB_BLANK_POWERDOWN);
+  int saved_errno = rc < 0 ? errno : 0;
+  st("PANEL_POWERDOWN why=%s rc=%d errno=%d", why, rc, saved_errno);
+  return rc;
+}
+
 static void display_set(int on, const char *why) {
   if (on && !display_on) {
     int b = saved_brightness;
     if (b < 0) b = max_brightness > 0 ? max_brightness / 2 : 255;
+    /* FBIOBLANK(POWERDOWN) disables DECON on this vendor kernel. Re-enable
+       the panel through the complete, measured recovery sequence and force a
+       fresh screencopy/FBIOPAN_DISPLAY in the next presentation iteration. */
     bl_power_write(0, "screen-on");
     panel_assert("screen-on");
     backlight_write(b);
@@ -841,6 +861,10 @@ static void display_set(int on, const char *why) {
     if (cur > 0) saved_brightness = cur;
     backlight_write(0);
     bl_power_write(4, "screen-off");
+    /* Backlight 0 alone left actual_brightness=2 in A34. Explicit fbdev
+       POWERDOWN is the fallback needed for a truly dark AMOLED, and is
+       restricted to user-requested screen-off (never the normal frame loop). */
+    panel_blank_powerdown("screen-off");
     display_on = 0;
     st("DISPLAY_OFF why=%s saved_brightness=%d bl_power=%d", why, saved_brightness, read_int_file(BL_POWER));
   }
@@ -898,8 +922,40 @@ static int wait_launcher_ready(int secs) {
   return 0;
 }
 
-static void frame_blit_once(void) {
+/* A35: a mapped framebuffer write is NOT a presentation commit on the
+ * Exynos 9820 command-mode DECON. Both the original boot animation and the
+ * A24 native Nuxel UI issue FBIOPAN_DISPLAY after painting each frame. A31
+ * accidentally removed the per-frame commit together with periodic expensive
+ * mode reconfiguration. It explains working taps/app state but a static glass
+ * until a Power-key wake calls panel_assert() and pans again.
+ *
+ * Always present the currently painted page (offset 0). Do not alternate
+ * offsets until a full double-buffer design is independently validated. */
+static unsigned long long decon_pan_ok, decon_pan_failed;
+static unsigned int decon_pan_fail_streak;
+static int panel_commit_frame(const char *why) {
+  fb.var.activate = FB_ACTIVATE_NOW;
+  fb.var.xoffset = 0;
+  fb.var.yoffset = 0;
+  errno = 0;
+  int rc = ioctl(fb.fd, FBIOPAN_DISPLAY, &fb.var);
+  if (rc == 0) {
+    decon_pan_ok++;
+    decon_pan_fail_streak = 0;
+    return 0;
+  }
+  int saved_errno = errno;
+  decon_pan_failed++;
+  decon_pan_fail_streak++;
+  if (decon_pan_fail_streak == 1 || (decon_pan_fail_streak % 10) == 0)
+    st("DECON_PAN_FAILED why=%s errno=%d consecutive=%u total=%llu",
+       why, saved_errno, decon_pan_fail_streak, decon_pan_failed);
+  return -1;
+}
+
+static int frame_blit_once(void) {
   blit(frame_buf.data, frame_buf.w, frame_buf.h, frame_buf.stride, frame_buf.format);
+  return panel_commit_frame("frame");
 }
 
 /* Offline, deterministic colour test (mission 17).  Runs on any host, touches no
@@ -1231,7 +1287,19 @@ int main(int argc, char **argv) {
      written, replacing every stale animation pixel.  This is now the first time
      this process touches scanout memory. */
   panel_assert("post-stop");
-  frame_blit_once();
+  /* A35: the preceding animation's close() may have left the backlight or
+     bl_power in a shut-down state. Don't wait for a physical Power press. */
+  bl_power_write(0, "launcher-first-frame");
+  int boot_brightness = read_int_file(BACKLIGHT);
+  if (boot_brightness <= 0) {
+    int boot_max = read_int_file(BL_MAX);
+    backlight_write(boot_max > 0 ? boot_max / 2 : 128);
+  }
+  if (frame_blit_once() != 0) {
+    panel_assert("initial-frame-pan-failed");
+    if (frame_blit_once() != 0)
+      st("INITIAL_FRAME_COMMIT_FAILED owner=ui retry=1");
+  }
   wr_state(ANIM_STATE, "ANIM_STAGE=ANIMATION_STOPPED\nANIM_OWNER=nuxel-wl-fb\n");
   owner_record("LAUNCHER_DISPLAY_OWNER", 1, "single_owner_takeover");
   /* The handoff receipt the launcher/audit reads: ownership moved to the UI. */
@@ -1281,7 +1349,12 @@ int main(int argc, char **argv) {
       frames++; consec_fail = 0;
     }
     else {
-      frame_blit_once(); frames++; consec_fail = 0;
+      /* Command-mode Samsung DECON: every changed frame MUST be committed.
+         Merely blitting to mmap() is not enough (A35 stale-display fix). */
+      int pan_rc = frame_blit_once();
+      frames++;
+      if (pan_rc != 0) { failures++; consec_fail++; }
+      else consec_fail = 0;
       struct timespec t_end;
       clock_gettime(CLOCK_MONOTONIC, &t_end);
       blit_ns_sum += (unsigned long long)(t_end.tv_sec - t_start.tv_sec) * 1000000000ull
@@ -1290,19 +1363,18 @@ int main(int argc, char **argv) {
     zwlr_screencopy_frame_v1_destroy(frame);
     if (frame_buf.wl) { wl_buffer_destroy(frame_buf.wl); munmap(frame_buf.data, frame_buf.len); frame_buf.wl = NULL; }
 
-    /* Panel re-assertion ONLY on measured failure evidence (A31 fix 3): a
-       sustained run of failed captures.  The steady state performs no
-       FBIOPUT_VSCREENINFO and no FBIOPAN_DISPLAY at all - the visible buffer is
-       written directly (yoffset 0, no double buffering), so re-initialising the
-       display every reporting interval bought nothing and disturbed the panel. */
+    /* Full mode re-assertion ONLY on measured capture/pan failures (A35).
+       Steady state MUST run FBIOPAN_DISPLAY after each blit, but MUST NOT
+       repeatedly call FBIOPUT_VSCREENINFO or FBIOBLANK. */
     if (consec_fail >= 10) { panel_assert("capture-failures"); consec_fail = 0; }
 
     now = time(NULL);
     if (now != last) {
       int avg_ms = frames ? (int)(blit_ns_sum / (unsigned long long)frames / 1000000ull) : 0;
-      st("FRAMES_OK total=%d fps_1s=%d failures=%d blit_avg_ms=%d out=%dx%d src=%dx%d scale=%d panel=%ux%u owner=nuxel-wl-fb display=%s src_format=0x%08x colour=R@%u,G@%u,B@%u_abgr8888_override=%d",
+      st("FRAMES_OK total=%d fps_1s=%d failures=%d blit_avg_ms=%d out=%dx%d src=%dx%d scale=%d panel=%ux%u owner=nuxel-wl-fb display=%s src_format=0x%08x colour=R@%u,G@%u,B@%u_abgr8888_override=%d decon_pan_ok=%llu decon_pan_failed=%llu",
          frames, fps, failures, avg_ms, o->w, o->h, o->w, o->h, o->scale, fb.w, fb.h,
-         display_on ? "on" : "off", src_fmt, hw_r_off, hw_g_off, hw_b_off, hw_order_override);
+         display_on ? "on" : "off", src_fmt, hw_r_off, hw_g_off, hw_b_off, hw_order_override,
+         decon_pan_ok, decon_pan_failed);
       fps = 0;
       last = now;
       int intruder = painter_alive();
