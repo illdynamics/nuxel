@@ -6,3 +6,12 @@
 .home-settings-card button, .home-settings-card select, .wallpaper-upload { min-height: 40px; border: 0; border-radius: 10px; padding: 0 12px; background: #23456e; color: #fff; font: 600 14px system-ui,sans-serif; }
 .wallpaper-choices { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }.wallpaper-choice { height: 72px; padding: 0 !important; background-size: cover; background-position: center; overflow: hidden; }.wallpaper-choice span { display: block; padding: 4px; margin-top: 43px; background: rgba(0,0,0,.57); font-size: 11px; }.wallpaper-upload { display: inline-flex; align-items: center; margin-top: 10px; cursor: pointer; }.wallpaper-upload input { display: none; }
 .home-setting-row { display: flex; gap: 12px; }.home-setting-row label { display: grid; gap: 5px; color: #cbd5e1; font-size: 13px; }.home-setting-row select { min-width: 92px; }.home-setting-hint { margin-top: 6px; color: #94a3b8; font-size: 12px; }.home-settings-card footer { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; }.reset-home { background: #7f1d1d !important; }
+
+/* A39: original dock-image picker and persistent layout preferences */
+.dock-background-choices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.dock-background-choice{display:grid;gap:6px;align-content:start;padding:8px!important;min-height:100px!important;border:2px solid transparent!important;background:#0b294c!important}
+.dock-background-choice img{width:100%;max-height:85px;object-fit:contain;pointer-events:none}
+.dock-background-choice[aria-pressed=true]{border-color:#74c0fc!important;box-shadow:0 0 0 2px #3587d770}
+.home-setting-row input[type=checkbox]{width:22px;height:22px;accent-color:#60a5fa}
+.home-settings-card label:has(select){display:grid;gap:6px}
+.home-settings-card select{max-width:100%}

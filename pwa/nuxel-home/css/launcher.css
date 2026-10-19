@@ -145,10 +145,8 @@
     left: 0;
     right: 0;
     height: var(--dock-height);
-    background: var(--bg-secondary);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    background: transparent;
+    border-top: 0;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -306,3 +304,26 @@ body.app-drawer-open .app-grid-title::after { content: 'All apps'; margin-left: 
 
 /* A37: fall back to a readable native glyph if an asset genuinely fails to load. */
 .app-icon .nuxel-icon-fallback:not([hidden]) { display: inline-flex; align-items: center; justify-content: center; width: 100%; height: 100%; }
+
+/* A39: fixed, noninteractive artwork behind exactly four dock shortcuts. */
+.dock{isolation:isolate;overflow:visible}
+.dock::before{content:"";position:absolute;inset:0 8px;z-index:-1;
+ background-image:var(--dock-art,url("assets/nuxel-bottom-bar2.png"));background-size:contain;
+ background-position:center;background-repeat:no-repeat;pointer-events:none}
+.dock-items{position:relative;z-index:1;grid-template-columns:repeat(4,minmax(0,1fr));}
+.dock .app-item{touch-action:manipulation;min-width:0}
+.dock .app-item .app-icon{width:min(56px,100%);aspect-ratio:1;height:auto}
+/* Stationary desktop indicator sits above the artwork, not in its hit area. */
+.app-grid-indicator{position:fixed;left:50%;transform:translateX(-50%);
+ bottom:calc(var(--dock-height) + var(--system-nav-height) + 8px);
+ z-index:3;pointer-events:none;justify-content:center;gap:9px}
+.app-grid-indicator .dot{width:7px;height:7px;background:#b4d8ff;opacity:.36}
+.app-grid-indicator .dot.active{opacity:.92;background:#ffffff;box-shadow:0 0 6px #80bfff}
+.app-grid-header .app-grid-title{pointer-events:none}
+/* Browser scrollbar tracks consume touches on some WebKit builds: hide native
+ * handles and retain native finger scrolling; custom indicators never hit-test. */
+::-webkit-scrollbar{width:0!important;height:0!important}
+.nuxel-scroll-indicator{position:absolute;z-index:30;pointer-events:none;
+ background:rgba(118,190,255,.7);border-radius:2px;opacity:.75}
+.nuxel-scroll-indicator.vertical{right:1px;width:1px}
+.nuxel-scroll-indicator.horizontal{bottom:1px;height:1px}

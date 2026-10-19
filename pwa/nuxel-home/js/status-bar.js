@@ -26,8 +26,8 @@ class StatusBar {
             mobileNetwork: false,
             operator: '',
             wifiConnected: false,
-            batteryLevel: 100,
-            batteryCharging: true,
+            batteryLevel: null,
+            batteryCharging: false,
         };
 
         this.state.notifications = [];
@@ -45,6 +45,7 @@ class StatusBar {
         };
         this._notifPollTimer = null;
         this._pollTimer = null;
+        this.batteryStyle = 'inside';
         this._init();
         this._pubVersion();
     }
@@ -205,21 +206,37 @@ class StatusBar {
         this.elements.wifi.style.setProperty('--wifi-colour', this.state.wifiConnected ? '#4CAF50' : '#666');
     }
 
+    setBatteryStyle(style) {
+        this.batteryStyle = ['inside', 'percentage', 'bar'].includes(style) ? style : 'inside';
+        this._renderBattery();
+        this._applySafeZones();
+    }
+
     _renderBattery() {
         if (!this.elements.battery) return;
         this.elements.battery.className = 'status-icon battery-slot';
-        const level = Math.max(0, Math.min(100, this.state.batteryLevel));
+        const known = Number.isFinite(this.state.batteryLevel);
+        const level = known ? Math.max(0, Math.min(100, this.state.batteryLevel)) : null;
         const charging = this.state.batteryCharging;
 
         let levelClass = '';
-        if (level <= 10) levelClass = 'critical';
-        else if (level <= 20) levelClass = 'warning';
+        if (level !== null && level <= 10) levelClass = 'critical';
+        else if (level !== null && level <= 20) levelClass = 'warning';
 
-        const width = Math.max(2, (level / 100) * 18);
-        this.elements.battery.innerHTML = '<span class="battery-icon' + (charging ? ' charging' : '') + '"><span class="battery-level ' + levelClass + '" style="width: ' + width + 'px"></span>' + (charging ? '<span class="charging-indicator">⚡</span>' : '') + '</span>';
-        if (this.elements.batteryPct) {
-            this.elements.batteryPct.textContent = level + '%';
+        const style = this.batteryStyle || 'inside';
+        const width = level === null ? 0 : level;
+        if (style === 'percentage') {
+            this.elements.battery.innerHTML = '';
+            this.elements.battery.style.display = 'none';
+            if (this.elements.batteryPct) { this.elements.batteryPct.hidden = false; this.elements.batteryPct.textContent = level === null ? '—' : level + '%'; }
+            return;
         }
+        this.elements.battery.style.display = '';
+        const inside = style === 'inside';
+        this.elements.battery.innerHTML = '<span class="battery-icon' + (charging ? ' charging' : '') + '">' +
+            '<span class="battery-level ' + levelClass + '" style="width:' + width + '%"></span>' +
+            (inside ? '<span class="battery-inside-pct">' + (level === null ? '—' : level + '%') + '</span>' : '') + '</span>';
+        if (this.elements.batteryPct) { this.elements.batteryPct.textContent = ''; this.elements.batteryPct.hidden = true; }
         this._applySafeZones();
     }
 
@@ -246,9 +263,9 @@ class StatusBar {
 
         // Battery
         if (status.battery) {
-            const level = Number(status.battery.level ?? this.state.batteryLevel);
+            const level = status.battery.level == null ? NaN : Number(status.battery.level);
             const charging = Boolean(status.battery.charging);
-            this.state.batteryLevel = Math.max(0, Math.min(100, level));
+            if (Number.isFinite(level) && level >= 0 && level <= 100) this.state.batteryLevel = level;
             this.state.batteryCharging = charging;
         }
 

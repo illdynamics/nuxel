@@ -3,6 +3,32 @@
 (function (global) {
     'use strict';
     const KEY = 'nuxel.homeAppearance';
+    const DOCKS = Object.freeze({bg1: 'assets/nuxel-bottom-bar.jpg', bg2: 'assets/nuxel-bottom-bar2.png'});
+    const DEFAULT_DOCK = 'bg2';
+    function dockChoice(value) { return Object.prototype.hasOwnProperty.call(DOCKS, value) ? value : DEFAULT_DOCK; }
+    function applyDock(data) {
+        const value = dockChoice(data.dockBackground);
+        const dock = document.getElementById('dock');
+        if (!dock) return;
+        dock.dataset.background = value;
+        // Use a deliberately noninteractive background layer. /pwa/nuxel-home/
+        // relative paths work for both the static dev server and live nuxel-web.
+        dock.style.setProperty('--dock-art', 'url("' + DOCKS[value] + '")');
+        dock.setAttribute('data-dock-asset', DOCKS[value]);
+        // Validate the selected image with a real decode, but never reset the
+        // user's saved preference because the network may be temporarily down.
+        const image = new Image();
+        image.onerror = () => {
+            if (dock.dataset.background !== value) return;
+            const alternate = value === 'bg2' ? 'bg1' : 'bg2';
+            dock.dataset.backgroundFallback = alternate;
+            dock.style.setProperty('--dock-art', 'url("' + DOCKS[alternate] + '")');
+            console.warn('[Nuxel] Missing/corrupt dock artwork:', DOCKS[value]);
+        };
+        image.onload = () => { if (dock.dataset.background === value) delete dock.dataset.backgroundFallback; };
+        image.src = DOCKS[value];
+        document.dispatchEvent(new CustomEvent('nuxel:dock-background', {detail:{id:value,path:DOCKS[value]}}));
+    }
     const DEFAULT_WALLPAPER = "url('assets/nuxel-background.png')";
     const presets = [
         ['Default', DEFAULT_WALLPAPER],
@@ -15,6 +41,9 @@
     function apply() {
         const data = read();
         document.body.style.backgroundImage = data.wallpaper || DEFAULT_WALLPAPER;
+        applyDock(data);
+        // Battery style is a launcher preference, never a fake battery reading.
+        if (global.statusBar && global.statusBar.setBatteryStyle) global.statusBar.setBatteryStyle(data.batteryStyle || 'inside');
     }
     function open() {
         let panel = document.getElementById('home-settings');
@@ -26,6 +55,8 @@
         }
         const launcher = global.launcher;
         const settings = launcher ? launcher.settings : { gridColumns: 4, gridRows: 5, dockColumns: 5 };
+        const appearance = read();
+        const selectedDock = dockChoice(appearance.dockBackground);
         panel.innerHTML = '<div class="home-settings-card">' +
             '<header><h2>Home settings</h2><button type="button" data-home-close>Done</button></header>' +
             '<h3>Wallpaper</h3><div class="wallpaper-choices">' +
@@ -34,8 +65,16 @@
             '<h3>Home grid</h3><div class="home-setting-row"><label>Columns <select data-grid-columns>' + options(3, 6, settings.gridColumns) + '</select></label>' +
             '<label>Rows <select data-grid-rows>' + options(4, 7, settings.gridRows) + '</select></label></div>' +
             '<p class="home-setting-hint">Default: 4 columns × 5 rows.</p>' +
-            '<h3>Bottom dock</h3><div class="home-setting-row"><label>Icons wide <select data-dock-columns>' + options(3, 6, settings.dockColumns) + '</select></label></div>' +
-            '<p class="home-setting-hint">Default: 5-wide dock.</p>' +
+            '<h3>Home layout</h3>' +
+            '<div class="home-setting-row"><label>Lock icon layout <input type="checkbox" data-home-locked' + (settings.homeLocked ? ' checked' : '') + '></label>' +
+            '<label>Desktops <select data-desktop-count>' + options(1, 8, settings.desktopCount || 2) + '</select></label></div>' +
+            '<h3>Bottom dock</h3>' +
+            '<p class="home-setting-hint">Dock artwork — BG2 is the default. Tap to preview immediately.</p>' +
+            '<div class="dock-background-choices" role="group" aria-label="Dock background">' +
+            Object.keys(DOCKS).map(id => '<button type="button" class="dock-background-choice" data-dock-choice="' + id + '" aria-pressed="' + (id === selectedDock) + '"><img src="' + DOCKS[id] + '" alt="' + (id === 'bg1' ? 'BG1 Classic' : 'BG2 Alternative') + '"><span>' + (id === 'bg1' ? 'BG1 · Classic' : 'BG2 · Alternative') + '</span></button>').join('') + '</div>' +
+            '<h3>Status bar</h3><label>Battery indicator <select data-battery-style>' +
+            [['inside', 'Icon with percentage inside'], ['percentage', 'Percentage only'], ['bar', 'Battery bar only']].map(v => '<option value="' + v[0] + '"' + ((appearance.batteryStyle || 'inside') === v[0] ? ' selected' : '') + '>' + v[1] + '</option>').join('') +
+            '</select></label>' +
             '<footer><button type="button" data-home-restore>Restore hidden apps</button><button type="button" class="reset-home" data-home-reset>Reset launcher layout</button></footer></div>';
         panel.hidden = false;
         panel.querySelector('[data-home-close]').onclick = close;
@@ -49,12 +88,24 @@
             reader.onload = () => { const data = read(); data.wallpaper = 'url("' + reader.result + '")'; save(data); apply(); };
             reader.readAsDataURL(file);
         };
+        panel.querySelectorAll('[data-dock-choice]').forEach(button => button.onclick = () => {
+            const data = read(); data.dockBackground = dockChoice(button.dataset.dockChoice);
+            save(data); applyDock(data);
+            panel.querySelectorAll('[data-dock-choice]').forEach(el => el.setAttribute('aria-pressed', String(el === button)));
+        });
+        panel.querySelector('[data-battery-style]').onchange = event => {
+            const data = read(); data.batteryStyle = event.target.value; save(data); apply();
+        };
         const update = () => launcher && launcher.updateHomeSettings({
             gridColumns: Number(panel.querySelector('[data-grid-columns]').value),
             gridRows: Number(panel.querySelector('[data-grid-rows]').value),
-            dockColumns: Number(panel.querySelector('[data-dock-columns]').value),
+            desktopCount: Number(panel.querySelector('[data-desktop-count]').value),
+            homeLocked: panel.querySelector('[data-home-locked]').checked,
         });
-        panel.querySelectorAll('select').forEach(select => select.onchange = update);
+        panel.querySelector('[data-grid-columns]').onchange = update;
+        panel.querySelector('[data-grid-rows]').onchange = update;
+        panel.querySelector('[data-desktop-count]').onchange = update;
+        panel.querySelector('[data-home-locked]').onchange = update;
         panel.querySelector('[data-home-restore]').onclick = () => { if (launcher) launcher.restoreHiddenApps(); };
         panel.querySelector('[data-home-reset]').onclick = () => { if (launcher) launcher.resetOrder(); close(); };
     }
@@ -74,6 +125,6 @@
         document.addEventListener('pointermove', event => { if (start && event.pointerId === start.id && (Math.abs(event.clientX - start.x) > 8 || Math.abs(event.clientY - start.y) > 8)) { clearTimeout(timer); timer = null; } });
         ['pointerup', 'pointercancel'].forEach(type => document.addEventListener(type, () => { clearTimeout(timer); timer = null; start = null; }));
     }
-    global.NuxelHomeSettings = { open, close, apply };
+    global.NuxelHomeSettings = { open, close, apply, dockChoice, dockPaths: DOCKS };
     document.addEventListener('DOMContentLoaded', () => { apply(); bindLongPress(); });
 })(window);

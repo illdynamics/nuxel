@@ -32,6 +32,8 @@ builder=(ROOT/'images/s10plus/build-phone-rootfs-inside-fedora.sh').read_text()
 assert 'cp -a /nuxel/assets/. "$STAGE/usr/share/nuxel/assets/"' in builder
 assert 'nuxel-boot-sound.service' in builder
 assert 'mpg123' in builder
-assert (ROOT/'pwa/nuxel-home/sw.js').read_text().find('v14-a37-live-assets-and-audio')>=0
+sw=(ROOT/'pwa/nuxel-home/sw.js').read_text()
+cache=manifest['groups'] and json.loads((ROOT/'pwa/nuxel-home/manifest.json').read_text())['nuxel']['cache_version']
+assert ("const CACHE_VERSION = '" + cache + "'") in sw
 print(f'PASS {len(canonical)} live UI icon URLs resolve and are deployable')
 print('PASS boot/volume MP3 packaged and sound service installed by S10+ image builder')

@@ -101,7 +101,7 @@
     "native_fallback": false,
     "bridge_version": "0.6.0-beta",
     "pwa_version": "0.6.0-beta",
-    "cache_version": "v12-0.6.1-navigation-launcher",
+    "cache_version": "v16-a39-smart-dock",
     "registry_version": 4,
     "single_source_of_truth": "pwa/nuxel-home (index.html, css/, js/, manifest.json, sw.js)",
     "apps_in_registry": [

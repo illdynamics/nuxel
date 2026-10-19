@@ -435,3 +435,16 @@
     font-size: 12px;
     opacity: 0.5;
 }
+
+/* A39: single responsive status row, battery reads actual status levels. */
+.status-right{display:flex;align-items:center;justify-content:flex-end;gap:5px;min-width:0}
+#status-battery-pct[hidden]{display:none!important}
+.battery-slot{width:37px;height:19px;flex:none}
+.battery-icon{width:32px;height:15px;border-radius:3px;vertical-align:middle;overflow:visible}
+.battery-icon .battery-level{top:1px;left:1px;bottom:1px;max-width:calc(100% - 2px);opacity:.58}
+.battery-inside-pct{position:absolute;z-index:2;inset:0;display:flex;align-items:center;
+ justify-content:center;text-align:center;font-size:8px;font-weight:800;line-height:1;
+ color:#fff;text-shadow:0 1px 2px #031329;white-space:nowrap;pointer-events:none}
+
+/* A39 Recents must cover the running PWA iframe (z-index:60). */
+.recents-view{z-index:110}

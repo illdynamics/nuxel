@@ -38,7 +38,7 @@
         </div>
         <div class="status-right">
             <span id="status-battery" class="status-icon battery-icon"></span>
-            <span id="status-battery-pct">100%</span>
+            <span id="status-battery-pct" hidden></span>
         </div>
     </div>
 
@@ -55,7 +55,7 @@
     </div>
 
     <!-- Dock -->
-    <div id="dock" class="dock">
+    <div id="dock" class="dock" data-background="bg2" style="--dock-art:url('assets/nuxel-bottom-bar2.png')">
         <div class="dock-items" id="dock-items"></div>
     </div>
 
@@ -150,6 +150,7 @@
     <script src="js/navigation.js"></script>
     <script src="js/gestures.js"></script>
     <script src="js/home-settings.js"></script>
+    <script src="js/scroll-indicators.js"></script>
     <script src="js/app.js"></script>
 </body>
 </html>

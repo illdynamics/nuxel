@@ -46,7 +46,7 @@ class NuxelHome {
             const label = el => el && ((el.id || el.tagName || '').replace(/[^a-zA-Z0-9_.:-]/g, '').slice(0, 80)) || '-';
             ['pointerdown', 'pointerup', 'pointercancel', 'touchstart', 'touchmove', 'touchend', 'click', 'focusin', 'input'].forEach(kind => {
                 doc.addEventListener(kind, event => {
-                    if (kind === 'touchmove' && Date.now() - lastMove < 100) return;
+                    if (kind === 'touchmove' && Date.now() - lastMove < 250) return;
                     if (kind === 'touchmove') lastMove = Date.now();
                     const point = event.changedTouches && event.changedTouches[0] || event;
                     const x = Number.isFinite(point.clientX) ? Math.round(point.clientX) : -1;
@@ -272,7 +272,7 @@ class NuxelHome {
         const onNuxelAction = (event) => {
             const action = event.detail && event.detail.action;
             console.log('[Nuxel] logical action:', action);
-            if (action === 'home') this._closeOverlays();
+            if (action === 'home') this.home();
             else if (action === 'back') this.back();
             else if (action === 'forward') this.forward();
             else if (action === 'stop') this.stopLoading();
@@ -481,10 +481,27 @@ class NuxelHome {
         const folder = document.querySelector('.folder-sheet'); if (folder) { folder.remove(); return; }
         if (window.launcher && window.launcher.drawerOpen) { window.launcher.closeDrawer(); return; }
         if (window.NuxelTouchKeyboard && window.NuxelTouchKeyboard.visible()) { window.NuxelTouchKeyboard.hide(); return; }
-        this._backgroundForegroundApp();
+        const frame = this.appSession.frame;
+        if (frame && this.appSession.state === 'ACTIVE') {
+            // Same-origin PWAs use their own browser history. Never terminate the
+            // iframe just because Back was pressed. If there is no meaningful
+            // previous entry, background it and restore Home instead.
+            try {
+                const hist = frame.contentWindow && frame.contentWindow.history;
+                if (hist && hist.length > 1) { hist.back(); return; }
+                const doc = frame.contentDocument;
+                const back = doc && doc.querySelector('[data-action="back"], [data-nav="back"], .settings-back');
+                if (back) { back.click(); return; }
+            } catch (err) { /* cross-origin iframe: no authority to read history */ }
+        }
+        this.home();
     }
 
-    home() { this._closeOverlays(); }
+    home() {
+        this._closeOverlays();
+        // System Home always navigates to Desktop 1, never to the current page.
+        if (window.launcher) window.launcher.mainDesktop();
+    }
 
     recentsToggle() {
         if (this.components.search && this.components.search.isOpen) this.components.search.close();
