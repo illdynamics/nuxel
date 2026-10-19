@@ -1,35 +1,24 @@
-# Nuxel — Deploy
+# NUXEL A37 — LIVE USB DEPLOY & VERIFY 🐧
 
-Live deployment and runtime configuration for Nuxel on the Samsung S10+ (A36).
+Read `DEPLOY-A37.md` in the supplied patched repository.
 
-## Quick reference
+**MISSION: Actually deploy and verify A37 on our running Samsung Galaxy S10+.**
 
-- **Live deployer:** `tools/beta/live/nuxel-live-deploy.py` (guarded, checksummed transfers)
-- **Sound cues helper:** `tools/s10plus/a33/nuxel-sound-cue.py`
-- **Haptics + button-manager deploy script:** `tools/touchable/deploy-haptics-system.py`
-- **Boot sound service:** `services/nuxel-session/systemd/nuxel-boot-sound.service`
-- **Haptics service:** `services/nuxel-haptics/` (preferences in `configs/nuxel/haptics/settings.json`)
+1. Preserve Git history and existing work. Verify the MacBook USB live console and capture rollback backups.
+2. Deploy the updated Nuxel launcher, app/navigation/Quick Settings PNGs, JavaScript, CSS and service-worker files into the **actual active webroot**.
+3. Restart/reload the affected web and launcher services so WebKit loads the new PNGs rather than stale cached assets.
+4. Install both original MP3 files, the patched `nuxel-sound-cue` helper, boot-sound service and A37 verification tool. Install missing ALSA utilities and `mpg123` safely.
+5. Rebuild and deploy the updated button manager as a Linux AArch64 binary if the installed version lacks the volume-cue hook.
+6. Run `nuxel-assets-audio-check`. Verify actual HTTP 200 responses and PNG byte identity.
+7. **PRIORITY AUDIO:** Diagnose why the speaker is silent using the existing `nuxel-audio-diag.sh pipeline` and ALSA tools. Inspect the real CS47L93/CS35L40 routing and firmware. Establish a verified, low-volume speaker route without guessing mixer values or overwriting an already calibrated UCM. Then test `nuxel-pow.mp3` on Volume Up/Down and the boot MP3 at 44% software gain.
+8. Verify that tapping the virtual keyboard produces real haptic feedback.
+9. Announce a **90-second physical test** and tell me to check icons, keyboard vibrations and sound. Capture logs, collect my PASS/FAIL feedback, fix remaining problems and retest.
+10. Perform one safe normal reboot when ready to verify the startup audio.
 
-## Live USB deployment (MacBook → S10+)
+Never count an MP3 decoder exit code as proof that I heard sound.
 
-See [`DEPLOY-A36.md`](./DEPLOY-A36.md) for the full, step-by-step work order.
-Summary: apply the `nuxel-branding-sounds-and-icons` extension group via the
-guarded live deployer, install/verify audio cues + icon PNGs, build and install
-the patched `nuxel-button-manager`, then enable `nuxel-boot-sound.service`.
-**Never flash.** Only touch USERATA userspace over a framed USB live console.
+**NO FLASHING. NO PARTITION WRITES. NO KERNEL REPLACEMENT.**
 
-## Runtime services
+Don't stop after dry runs or merely installing files. Verify the actual phone and report the first remaining blocker.
 
-- `nuxel-boot-sound.service` — plays `assets/nuxel-boot-audio.mp3` after the
-  animation→launcher ownership handoff (not on early web load).
-- `nuxel-haptics.service` / bridge — **only one** may write the vibration motor.
-- `nuxel-button-manager` — requests `nuxel-pow.mp3` after each successful mixer
-  change; respects mute/vibrate mode and rate-limiting.
-
-## Verify after deploy
-
-```bash
-python3 tools/s10plus/a34/tests/test-sound-cues.py
-python3 tools/s10plus/a34/tests/test-icon-assets.py
-bash   tools/s10plus/a34/tests/run-a34-tests.sh
-```
+**EXECUTE NOW.**
