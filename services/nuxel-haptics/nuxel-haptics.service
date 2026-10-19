@@ -1,0 +1,21 @@
+[Unit]
+Description=Nuxel Samsung timed-output haptics service
+After=local-fs.target
+Before=sleep.target shutdown.target
+ConditionPathExists=/sys/class/timed_output/vibrator/enable
+
+[Service]
+Type=simple
+ExecStart=/usr/lib/nuxel/nuxel-hapticsd.py
+ExecStopPost=/bin/sh -c 'printf 0 > /sys/class/timed_output/vibrator/enable || true'
+Restart=on-failure
+RestartSec=2
+RuntimeDirectory=nuxel-haptics
+RuntimeDirectoryMode=0750
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/run/nuxel-haptics /etc/nuxel/haptics
+
+[Install]
+WantedBy=multi-user.target

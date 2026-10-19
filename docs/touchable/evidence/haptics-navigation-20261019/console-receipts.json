@@ -1,0 +1,35 @@
+[
+  {
+    "command": "test ! -e /run/nuxel-owner-test.lock && test ! -e /var/tmp/nuxel-haptics-navigation-20261019 && mkdir -p /var/tmp/nuxel-haptics-navigation-20261019",
+    "output": "",
+    "rid": "f5d9c061",
+    "rc": 0,
+    "framed": true,
+    "sha_ok": true,
+    "elapsed_s": 0.828,
+    "raw_len": 705,
+    "output_bytes": 0
+  },
+  {
+    "command": "uname -smr; cat /proc/sys/kernel/random/boot_id; systemctl is-active nuxel-wayland nuxel-wl-fb; cat /run/nuxel-wl-fb.state",
+    "output": "Linux 4.14.253 aarch64\n19648641-42af-4f4f-97eb-4afaf5f715fa\nactive\nactive\n1792393314 FRAMES_OK total=393151 fps_1s=20 failures=0 blit_avg_ms=55 out=720x1520 src=720x1520 scale=2 panel=1440x3040 owner=nuxel-wl-fb display=on src_format=0x00000001 colour=R@0,G@8,B@16_abgr8888_override=1 decon_pan_ok=393136 decon_pan_failed=0\n",
+    "rid": "965bc062",
+    "rc": 0,
+    "framed": true,
+    "sha_ok": true,
+    "elapsed_s": 0.119,
+    "raw_len": 1974,
+    "output_bytes": 324
+  },
+  {
+    "command": "systemd-run --quiet --unit=nuxel-haptics-navigation-20261019 --property=RuntimeMaxSec=120 /usr/bin/python3 /var/tmp/nuxel-haptics-navigation-20261019/install.py /var/tmp/nuxel-haptics-navigation-20261019",
+    "output": "\u07de\ufffd\ufffdm\ufffd\ufffdz\ufffd~v\ufffdG\ufffdr\ufffdZu\ufffd\u001e\ufffd\u02dcq\ufffdy\ufffd-\u0297\ufffd\ufffd\ufffd\ufffdz\ufffd\"\ufffd\ufffd\u001cj\u0628\ufffd'",
+    "rid": "b2e1c0d4",
+    "rc": 0,
+    "framed": true,
+    "sha_ok": false,
+    "elapsed_s": 0.113,
+    "raw_len": 469089,
+    "output_bytes": 85
+  }
+]

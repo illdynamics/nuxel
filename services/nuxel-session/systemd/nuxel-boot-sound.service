@@ -1,0 +1,16 @@
+[Unit]
+Description=Nuxel startup cue after confirmed boot-animation to launcher handoff
+After=nuxel-wl-fb.service sound.target
+Wants=nuxel-wl-fb.service
+ConditionPathExists=/usr/share/nuxel/assets/nuxel-boot-audio.mp3
+
+[Service]
+Type=oneshot
+ExecStart=/usr/libexec/nuxel/nuxel-sound-cue boot
+TimeoutStartSec=195
+StandardOutput=journal
+StandardError=journal
+# Deliberately NOT Restart=always: play once, not on every bridge crash.
+
+[Install]
+WantedBy=multi-user.target

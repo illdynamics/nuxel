@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "enabled": true,
+  "touch_feedback": true,
+  "scroll_feedback": true,
+  "navigation_feedback": true,
+  "long_press_feedback": true,
+  "intensity_percent": 30,
+  "tap_ms": 12,
+  "scroll_ms": 6,
+  "long_press_ms": 25
+}

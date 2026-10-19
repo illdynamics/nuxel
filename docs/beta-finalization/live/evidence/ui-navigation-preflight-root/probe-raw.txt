@@ -1,0 +1,10 @@
+dev=/dev/ttyACM0 bytes_in=643 echo_ok=True error=None elapsed=0.323s
+sample:
+
+[?2004lsh: :s^[[?2004hsh-5.3#: substitution failed
+[?2004hsh-5.3# 
+[?2004l[?2004hsh-5.3# 6,8734,842467503,-;s3c2410-wdt 10050000.watchdog_cl0: Watchdog cluster 0 keepalive!, wtcnt = fff5
+ SUBSYSTEM=platform
+ DEVICE=+platform:10050000.watchdog_cl0
+6,8735,842467526,-;Watchdog: s3c2410wdt_keepalive RTC 2026-10-19 08:55:25 UTC
+2,8736,842467559,-;watchdog: watchdog0: watchdog did not stop

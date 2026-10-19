@@ -1,0 +1,24 @@
+[
+  {
+    "command": "test ! -e /run/nuxel-owner-test.lock && test ! -e /var/tmp/nuxel-ui-navigation-icons-20261019c && mkdir -p /var/tmp/nuxel-ui-navigation-icons-20261019c",
+    "output": "",
+    "rid": "a1f6db0e",
+    "rc": 0,
+    "framed": true,
+    "sha_ok": true,
+    "elapsed_s": 0.815,
+    "raw_len": 927,
+    "output_bytes": 0
+  },
+  {
+    "command": "uname -smr; cat /proc/sys/kernel/random/boot_id; systemctl is-active nuxel-wayland nuxel-wl-fb; cat /run/nuxel-wl-fb.state",
+    "output": "Linux 4.14.253 aarch64\nfd35e4ea-072b-47ea-a6a1-80b83e2ec84e\nactive\nactive\n1792400143 FRAMES_OK total=14244 fps_1s=17 failures=0 blit_avg_ms=57 out=720x1520 src=720x1520 scale=2 panel=1440x3040 owner=nuxel-wl-fb display=on src_format=0x00000001 colour=R@0,G@8,B@16_abgr8888_override=1 decon_pan_ok=14244 decon_pan_failed=0\n",
+    "rid": "d652db0f",
+    "rc": 0,
+    "framed": true,
+    "sha_ok": true,
+    "elapsed_s": 0.081,
+    "raw_len": 1966,
+    "output_bytes": 322
+  }
+]
