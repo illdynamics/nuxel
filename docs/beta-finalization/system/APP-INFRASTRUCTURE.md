@@ -77,7 +77,7 @@ as a failure. The version moves when the app grid moves.
 | Field | Value | Meaning |
 |---|---|---|
 | `bridge_version` | `1` | PWA↔host **protocol** contract. Every app manifest declares it as `nuxel.bridge_version`. |
-| `host_version` | `0.5.1-alpha` | implementation version of `nuxel-bridge` / `nuxel-http-bridge`; free to move without touching manifests. |
+| `host_version` | `0.5.2-beta` | implementation version of `nuxel-bridge` / `nuxel-http-bridge`; free to move without touching manifests. |
 | `policy` | `reject-on-mismatch` | enforced on both sides. |
 | `http_header` | `X-Nuxel-Bridge-Version` | what the PWA client sends. |
 
@@ -96,7 +96,7 @@ Enforcement, measured offline:
 * `services/nuxel-bridge/src/bridge.py` publishes `BridgeVersion` / `HostVersion`
   D-Bus properties and includes `bridge_version` in `Ping()` JSON.
 * The systemd units pin `NUXEL_BRIDGE_PROTOCOL_VERSION=1` and
-  `NUXEL_BRIDGE_VERSION=0.5.1-alpha`, so `systemctl show -p Environment` shows
+  `NUXEL_BRIDGE_VERSION=0.5.2-beta`, so `systemctl show -p Environment` shows
   exactly what is enforced. The verifier asserts all four places agree.
 
 ## 3. The bridge and the static server
@@ -227,7 +227,7 @@ Reported by the verifier as `DEFER` / `WARN`, and fatal under `--strict`:
 | `org.nuxel.LiveConsole` (launcher grid revision 4 → `/pwa/nuxel-apps/console/index.html`) | bg-02 (grid) / bg-07 (app tree) | **deferred**: the app tree has no `index.html`/`manifest.json` yet in this cycle. The launcher entry is real; the surface is not. |
 | `pwa/nuxel-apps/settings/manifest.json` has no `nuxel{}` block | bg-02 / bg-06 | **warn**: capabilities + `bridge_version` are recorded in the canonical registry instead; the manifest must gain the block. |
 | `pwa/nuxel-apps/{mail,calendar}.manifest.json` declare `storage:read` / `storage:write`; `terminal` declares `shell:local-pty` | bg-06 | **warn**: these ids are not in `services/nuxel-bridge/src/capabilities.py` (`storage:persistent` is the enum entry). An app must not advertise a capability the host cannot arbitrate — documented in the registry's `capability_gaps`, not hidden. |
-| `pwa/nuxel-home/manifest.json` declares `nuxel.bridge_version: 0.5.1-alpha` | bg-02 | **warn**: that is `host_version`, not the protocol pin. The launcher is a system surface and is not part of `apps[]`, so nothing is rejected — but the two fields must not be conflated. |
+| `pwa/nuxel-home/manifest.json` declares `nuxel.bridge_version: 0.5.2-beta` | bg-02 | **warn**: that is `host_version`, not the protocol pin. The launcher is a system surface and is not part of `apps[]`, so nothing is rejected — but the two fields must not be conflated. |
 | 20 app directories in `pwa/nuxel-apps/` | bg-06 / bg-07 / bg-05 | inventoried in `tree_apps` with owner + state; an `index.html` that appears without a registry entry or an inventory note fails the verifier. |
 | `pwa/nuxel-apps/privacy` | bg-05 (`briq-05a-permission-manager`) | **deferred** (`planned`, not landed — the previous revision wrongly claimed it existed and the verifier failed on it; that FAILED verdict is what this revision fixes). |
 | Permissions & Privacy, Firewall, VPN/Tor/remote, Security auditor, System monitor | bg-05 / bg-06 | **pending** in `required_apps_not_yet_in_tree`: concept-level, with owner + ledger briq cross-checked against `docs/beta-finalization/workqueue/`. No tree path is claimed. |

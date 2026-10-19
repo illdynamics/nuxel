@@ -1,0 +1,4 @@
+cmd: sha256sum /usr/share/nuxel/pwa/nuxel-home/js/host-bridge.js 2>&1
+ok: True rc: 0 framed: True sha_ok: True
+---
+bb6a18ccf76bc81888b03a2a1e79c1795570d3913a3cd374d5962f317a43d49b  /usr/share/nuxel/pwa/nuxel-home/js/host-bridge.js

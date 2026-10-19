@@ -1,0 +1,135 @@
+{
+  "wall_time": 1792357528.732749,
+  "monotonic": 1123.383334658,
+  "boot_id": "2efd316a-3c15-441d-ae9d-54cd9b30aacd",
+  "kernel": "4.14.253",
+  "machine": "aarch64",
+  "mode": [
+    "charging_mode=0x3030"
+  ],
+  "inputs": [
+    {
+      "path": "/dev/input/event0",
+      "name": "meta_event",
+      "properties": "0",
+      "abs": "0",
+      "touchscreen": false,
+      "buttons": false
+    },
+    {
+      "path": "/dev/input/event1",
+      "name": "gpio_keys",
+      "properties": "0",
+      "abs": "0",
+      "touchscreen": false,
+      "buttons": true
+    },
+    {
+      "path": "/dev/input/event10",
+      "name": "certify_hall",
+      "properties": "0",
+      "abs": "0",
+      "touchscreen": false,
+      "buttons": false
+    },
+    {
+      "path": "/dev/input/event2",
+      "name": "sec_touchscreen",
+      "properties": "2",
+      "abs": "4263800000000003",
+      "touchscreen": true,
+      "buttons": false
+    },
+    {
+      "path": "/dev/input/event3",
+      "name": "sec_touchpad",
+      "properties": "1",
+      "abs": "4263800000000003",
+      "touchscreen": false,
+      "buttons": false
+    },
+    {
+      "path": "/dev/input/event4",
+      "name": "sec_touchproximity",
+      "properties": "2",
+      "abs": "4000000000000000",
+      "touchscreen": false,
+      "buttons": false
+    },
+    {
+      "path": "/dev/input/event5",
+      "name": "grip_sensor",
+      "properties": "0",
+      "abs": "0",
+      "touchscreen": false,
+      "buttons": false
+    },
+    {
+      "path": "/dev/input/event6",
+      "name": "ssp_context",
+      "properties": "0",
+      "abs": "0",
+      "touchscreen": false,
+      "buttons": false
+    },
+    {
+      "path": "/dev/input/event7",
+      "name": "hrm_sensor",
+      "properties": "0",
+      "abs": "ff",
+      "touchscreen": false,
+      "buttons": false
+    },
+    {
+      "path": "/dev/input/event8",
+      "name": "Headset",
+      "properties": "0",
+      "abs": "0",
+      "touchscreen": false,
+      "buttons": false
+    },
+    {
+      "path": "/dev/input/event9",
+      "name": "hall",
+      "properties": "0",
+      "abs": "0",
+      "touchscreen": false,
+      "buttons": false
+    }
+  ],
+  "irq": [
+    "431:        126          0          0          0          0          0          0          0  exynos7_wkup_irq_chip   0 Level     sec_ts"
+  ],
+  "services": "Id=nuxel-wayland.service\nActiveState=active\nSubState=running\nMainPID=5355\n\nId=nuxel-wl-fb.service\nActiveState=active\nSubState=running\nMainPID=5422\n\nId=nuxel-touch-arm.service\nActiveState=active\nSubState=running\nMainPID=5346\n\nId=nuxel-button-manager.service\nActiveState=active\nSubState=running\nMainPID=5424\n",
+  "clients": [
+    {
+      "pid": 5346,
+      "name": "nuxel-touch-arm",
+      "input_fds": [
+        "/dev/input/event2"
+      ]
+    },
+    {
+      "pid": 5355,
+      "name": "phoc",
+      "input_fds": [
+        "/dev/input/event2",
+        "/dev/input/event4"
+      ]
+    },
+    {
+      "pid": 5413,
+      "name": "nuxel-pwa-host",
+      "input_fds": []
+    },
+    {
+      "pid": 5422,
+      "name": "nuxel-wl-fb",
+      "input_fds": []
+    }
+  ],
+  "states": {
+    "/run/nuxel-wl-fb.state": "1792357528 FRAMES_OK total=25381 fps_1s=23 failures=0 blit_avg_ms=42 out=720x1520 src=720x1520 scale=2 panel=1440x3040 owner=nuxel-wl-fb display=on src_format=0x00000001 colour=R@0,G@8,B@16_abgr8888_override=1\n",
+    "/run/nuxel-libinput-path.state": "1792356410 PATH_CONTEXT_CREATED ctx=0x559ed0f4a0 udev=0x559ebb4a40 (udev daemon not required)\n1792356410 UDEVDB_SEEDED /run/udev/data/c13:66 (initialized marker; systemd-udevd cannot run on this kernel)\n1792356410 DEVICE_OPEN_LIBSEAT path=/dev/input/event2 rc=24 fd=-1\n1792356410 PATH_ADD node=/dev/input/event2 name='sec_touchscreen' accepted=1\n1792356411 UDEVDB_SEEDED /run/udev/data/c13:68 (initialized marker; systemd-udevd cannot run on this kernel)\n1792356411 DEVICE_OPEN_LIBSEAT path=/dev/input/event4 rc=25 fd=-1\n1792356411 PATH_ADD node=/dev/input/event4 name='sec_touchproximity' accepted=1\n1792356411 PATH_ASSIGN_SEAT seat='seat0' direct_devices_seen=2 added=2 db_seeded=2\n"
+  }
+}

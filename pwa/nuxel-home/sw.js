@@ -16,7 +16,8 @@
 // string advanced past 'v3-a32', and manifest.json carries the same key as
 // nuxel.cache_version, so a launcher that was served from a stale bundle is a
 // detectable state rather than a mystery.
-const CACHE_VERSION = 'v9-a34';
+// v0.5.2-beta changes launcher lifecycle and Terminal interaction assets.
+const CACHE_VERSION = 'v11-0.6.0-beta';
 const CACHE_NAME = 'nuxel-home-' + CACHE_VERSION;
 const STATIC_CACHE = 'nuxel-static-' + CACHE_VERSION;
 const DYNAMIC_CACHE = 'nuxel-dynamic-' + CACHE_VERSION;
@@ -46,6 +47,7 @@ const PRECACHE_ASSETS = [
     './js/osd.js',
     './js/bootlog.js',
     './js/app.js',
+    './js/touch-keyboard.js',
     './icons/icon-192.png',
     './icons/icon-512.png',
     './assets/nuxel-boot-animation.mp4',

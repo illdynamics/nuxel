@@ -1,0 +1,4 @@
+sha256sum: /usr/local/bin/nuxel-pwa-host: No such file or directory
+sha256sum: /usr/share/nuxel/tools/s10plus/a33/nuxel-pwa-host.c: No such file or directory
+e210d4f27aca5885cbf8ab4e598dc166a58ceef8808cdb4f9be74620cbc71c82  /usr/share/nuxel/pwa/nuxel-apps/terminal/terminal.js
+3dc737d867a2ad31a10c4a1f8a472b77e78b76a7065a6b34b88be3dd88c91346  /usr/share/nuxel/pwa/nuxel-home/js/launcher.js

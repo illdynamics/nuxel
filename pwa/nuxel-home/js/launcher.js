@@ -117,22 +117,45 @@ class Launcher {
         document.addEventListener('pointerdown', (e) => this._onPointerDown(e));
         document.addEventListener('pointermove', (e) => this._onPointerMove(e));
         document.addEventListener('pointerup', (e) => this._onPointerUp(e));
+        document.addEventListener('pointercancel', () => this._cancelPointer());
+        document.addEventListener('keydown', (e) => {
+            const item = e.target.closest && e.target.closest('.app-item');
+            if (item && (e.key === 'Enter' || e.key === ' ')) {
+                e.preventDefault();
+                appRegistry.launchApp(item.dataset.appId);
+            }
+        });
+        // Older engines/accessibility tools may deliver only click. Pointer
+        // taps already activate on release, so their compatibility click is
+        // never a second launch.
+        document.addEventListener('click', (e) => {
+            if (window.PointerEvent || Date.now() < (this.suppressClickUntil || 0)) return;
+            const item = e.target.closest && e.target.closest('.app-item');
+            if (item) appRegistry.launchApp(item.dataset.appId);
+        });
         // Swipe for page change
         document.addEventListener('touchstart', (e) => this._onTouchStart(e), { passive: true });
         document.addEventListener('touchend', (e) => this._onTouchEnd(e), { passive: true });
     }
 
     _onPointerDown(e) {
-        const item = e.target.closest('.app-item');
+        if (e.isPrimary === false || (e.button !== undefined && e.button !== 0)) {
+            this._cancelPointer();
+            return;
+        }
+        this._cancelPointer();
+        const item = e.target.closest && e.target.closest('.app-item');
         if (!item) return;
-        if (item.closest('#dock-items')) return; // No drag on dock
 
         this.dragTarget = item;
+        this.pressedPointer = e.pointerId;
         this.dragStartX = e.clientX;
         this.dragStartY = e.clientY;
         this.dragStartTime = Date.now();
         this.hasMoved = false;
 
+        // Dock items still activate on release; only reordering is disabled.
+        if (item.closest('#dock-items')) return;
         // Long-press to start drag
         clearTimeout(this.longPressTimer);
         this.longPressTimer = setTimeout(() => {
@@ -141,6 +164,7 @@ class Launcher {
     }
 
     _onPointerMove(e) {
+        if (this.pressedPointer !== e.pointerId) return;
         if (!this.isDragging) {
             // Check if moved beyond threshold before long-press fires
             if (this.dragTarget && !this.hasMoved) {
@@ -159,20 +183,34 @@ class Launcher {
     }
 
     _onPointerUp(e) {
+        if (this.pressedPointer !== e.pointerId || e.isPrimary === false) return;
         clearTimeout(this.longPressTimer);
 
         if (this.isDragging) {
             this._endDrag(e);
+            this.dragTarget = null;
+            this.pressedPointer = null;
+            this.suppressClickUntil = Date.now() + 500;
             return;
         }
 
         // Normal tap/click → launch app
-        if (!this.hasMoved && this.dragTarget) {
+        const released = e.target.closest && e.target.closest('.app-item');
+        if (!this.hasMoved && this.dragTarget && released === this.dragTarget) {
             const appId = this.dragTarget.dataset.appId;
             if (appId) appRegistry.launchApp(appId);
         }
 
         this.dragTarget = null;
+        this.pressedPointer = null;
+        this.hasMoved = false;
+    }
+
+    _cancelPointer() {
+        clearTimeout(this.longPressTimer);
+        if (this.isDragging) this._endDrag();
+        this.dragTarget = null;
+        this.pressedPointer = null;
         this.hasMoved = false;
     }
 

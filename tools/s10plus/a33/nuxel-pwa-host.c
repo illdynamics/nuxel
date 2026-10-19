@@ -172,6 +172,22 @@ static GIOChannel *term_chan;
 static guint term_watch;
 static int term_bytes;
 
+/* Retire every PTY event source before another window can create a session.
+ * Otherwise an old HUP callback reads the NEW global pid/fd and kills it. */
+static void term_request_close(void) {
+  if (term_watch) { g_source_remove(term_watch); term_watch = 0; }
+  if (term_chan) { g_io_channel_unref(term_chan); term_chan = NULL; }
+  if (term_fd >= 0) { close(term_fd); term_fd = -1; }
+  if (term_pid > 0) { kill(term_pid, SIGHUP); term_pid = -1; }
+}
+
+static void term_child_exited(GPid pid, gint status, gpointer data) {
+  (void)status; (void)data;
+  /* GLib has reaped this child; never alter a subsequently opened session. */
+  if (term_pid == pid) term_pid = -1;
+  g_spawn_close_pid(pid);
+}
+
 static void term_push(const char *jsfun, const char *payload) {
   if (!term_view) return;
   GString *g = g_string_new("");
@@ -204,9 +220,8 @@ static gboolean term_in(GIOChannel *ch, GIOCondition cond, gpointer d) {
   char buf[4096];
   if (cond & (G_IO_HUP | G_IO_ERR)) {
     term_push("exit", "0");
-    if (term_pid > 0) { kill(term_pid, SIGHUP); waitpid(term_pid, NULL, WNOHANG); term_pid = -1; }
-    if (term_fd >= 0) { close(term_fd); term_fd = -1; }
-    if (term_watch) { g_source_remove(term_watch); term_watch = 0; }
+    term_watch = 0; /* returning FALSE removes the currently dispatched watch */
+    term_request_close();
     st("TERMINAL_EXIT bytes=%d", term_bytes);
     return FALSE;
   }
@@ -232,6 +247,7 @@ static void term_spawn(void) {
     _exit(127);
   }
   term_pid = pid;
+  g_child_watch_add(pid, term_child_exited, NULL);
   term_fd = master;
   term_bytes = 0;
   fcntl(term_fd, F_SETFL, O_NONBLOCK);
@@ -239,10 +255,6 @@ static void term_spawn(void) {
   g_io_channel_set_encoding(term_chan, NULL, NULL);
   term_watch = g_io_add_watch(term_chan, G_IO_IN | G_IO_HUP | G_IO_ERR, term_in, NULL);
   st("TERMINAL_STARTED pid=%d fd=%d", (int)pid, term_fd);
-}
-
-static void term_request_close(void) {
-  if (term_pid > 0) { kill(term_pid, SIGHUP); term_pid = -1; }
 }
 
 /* Close the native terminal SURFACE, not just its PTY.
@@ -343,6 +355,11 @@ static void action_perform(const char *action, char *result, size_t rn) {
     snprintf(result, rn, "{\"ok\":false,\"error\":\"bad-menu-action\"}");
     return;
   }
+  if (!strcmp(action, "close-terminal")) {
+    term_close_window();
+    snprintf(result, rn, "{\"ok\":true,\"action\":\"close-terminal\"}");
+    return;
+  }
   if (!strcmp(action, "open-terminal")) {
     term_open_window();
     snprintf(result, rn, "{\"ok\":true,\"action\":\"open-terminal\"}");
@@ -431,6 +448,13 @@ static void on_host_message(WebKitUserContentManager *m, WebKitJavascriptResult 
   }
   if (!strcmp(method, "system.action")) {
     char result[256];
+    /* Home destroys the sending terminal WebView. Reply before that happens. */
+    if ((!strcmp(action, "home") || !strcmp(action, "close-terminal")) && v == term_view) {
+      host_reply(v, id, 1, "{\"ok\":true}");
+      action_perform(action, result, sizeof result);
+      g_free(js);
+      return;
+    }
     action_perform(action, result, sizeof result);
     host_reply(v, id, result[0] ? 1 : 0, result);
     g_free(js);
@@ -445,7 +469,7 @@ static void on_host_message(WebKitUserContentManager *m, WebKitJavascriptResult 
     return;
   }
   if (!strcmp(method, "term.open")) { term_open_window(); host_reply(v, id, 1, "{\"ok\":true}"); g_free(js); return; }
-  if (!strcmp(method, "term.close")) { term_close_window(); host_reply(v, id, 1, "{\"ok\":true}"); g_free(js); return; }
+  if (!strcmp(method, "term.close")) { host_reply(v, id, 1, "{\"ok\":true}"); term_close_window(); g_free(js); return; }
   st("HOST_METHOD_REFUSED %s", method);
   host_reply(v, id, 0, "{\"error\":\"unknown-method\"}");
   g_free(js);

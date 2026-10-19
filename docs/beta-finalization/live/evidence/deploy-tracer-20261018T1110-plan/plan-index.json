@@ -1,0 +1,12 @@
+[
+  {
+    "group": "touch-tracer-hotfix",
+    "n": 1,
+    "risk": "low",
+    "script": "scripts/001-nuxel-touch-trace.py.sh",
+    "service": null,
+    "source": "tools/s10plus/a33/nuxel-touch-trace.py",
+    "source_sha256": "ac5fdfa1a7efecbb3ed46aadba704584eee92ea9bb36448b1e6dc39c3606dfe0",
+    "target": "/usr/libexec/nuxel/nuxel-touch-trace.py"
+  }
+]

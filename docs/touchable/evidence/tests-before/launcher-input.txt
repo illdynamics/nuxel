@@ -1,0 +1,29 @@
+PASS grid child hit invokes the registered app once
+PASS motion is not a tap
+PASS repeated taps reopen the same app without duplicate compatibility click
+FAIL dock taps open their app: Expected values to be strictly deep-equal:
++ actual - expected
+
++ []
+- [
+-   'nuxel-dialer'
+- ]
+FAIL cancel then release never opens an app: Expected values to be strictly equal:
+
+1 !== 0
+
+FAIL release over a different icon does not launch: Expected values to be strictly equal:
+
+1 !== 0
+
+FAIL secondary contact cannot release primary tap: Expected values to be strictly equal:
+
+1 !== 0
+
+FAIL keyboard activation opens focused dock item: Expected values to be strictly deep-equal:
++ actual - expected
+
++ []
+- [
+-   'nuxel-dialer'
+- ]

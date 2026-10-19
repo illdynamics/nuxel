@@ -1,0 +1,752 @@
+[
+  {
+    "group": "s10plus-a33-runtime",
+    "n": 1,
+    "risk": "medium",
+    "script": "scripts/001-README.md.sh",
+    "service": null,
+    "source": "tools/s10plus/a33/README.md",
+    "source_sha256": "2160719a9f26aebace6135056b028d1c873eac0044d6977db368c35bbd09678a",
+    "target": "/usr/lib/nuxel/src/a33/README.md"
+  },
+  {
+    "group": "s10plus-a33-runtime",
+    "n": 2,
+    "risk": "medium",
+    "script": "scripts/002-build-a33-boot.sh.sh",
+    "service": null,
+    "source": "tools/s10plus/a33/build-a33-boot.sh",
+    "source_sha256": "84e005ffc9bb9350e83733077ead80a9cdb75e0171dd3b32795ce72cfd350a98",
+    "target": "/usr/local/bin/build-a33-boot.sh"
+  },
+  {
+    "group": "s10plus-a33-runtime",
+    "n": 3,
+    "risk": "medium",
+    "script": "scripts/003-build-a33-buttons.sh.sh",
+    "service": null,
+    "source": "tools/s10plus/a33/build-a33-buttons.sh",
+    "source_sha256": "412e7e1857366d87fa2a2c15c65392c2e9084acf4a76dec3868e500b5a398d48",
+    "target": "/usr/local/bin/build-a33-buttons.sh"
+  },
+  {
+    "group": "s10plus-a33-runtime",
+    "n": 4,
+    "risk": "medium",
+    "script": "scripts/004-build-libinput-shim.sh.sh",
+    "service": null,
+    "source": "tools/s10plus/a33/build-libinput-shim.sh",
+    "source_sha256": "667f7fadb7ee475e130688d884e116fc2de12512b03941242fbcb1f6399e300c",
+    "target": "/usr/local/bin/build-libinput-shim.sh"
+  },
+  {
+    "group": "s10plus-a33-runtime",
+    "n": 5,
+    "risk": "medium",
+    "script": "scripts/005-keyboard-probe.html.sh",
+    "service": null,
+    "source": "tools/s10plus/a33/keyboard-probe.html",
+    "source_sha256": "23fed0b72e8e9f3832de7f1674edf727004e06eb317dc1e2464e4d005268ec09",
+    "target": "/usr/share/nuxel/probes/keyboard-probe.html"
+  },
+  {
+    "group": "s10plus-a33-runtime",
+    "n": 6,
+    "risk": "medium",
+    "script": "scripts/006-nuxel-anim-handoff.py.sh",
+    "service": null,
+    "source": "tools/s10plus/a33/nuxel-anim-handoff.py",
+    "source_sha256": "1d656083f21b37c76ae3eccca870265d15aa46151b90bc61daf68a3e37d61c67",
+    "target": "/usr/libexec/nuxel/nuxel-anim-handoff.py"
+  },
+  {
+    "group": "s10plus-a33-runtime",
+    "n": 7,
+    "risk": "medium",
+    "script": "scripts/007-nuxel-audio-diag.sh.sh",
+    "service": null,
+    "source": "tools/s10plus/a33/nuxel-audio-diag.sh",
+    "source_sha256": "0d5475367c8b5d9030176d3756f01ffecfddb56417fb8dbcc7a482bca298e21f",
+    "target": "/usr/local/bin/nuxel-audio-diag.sh"
+  },
+  {
+    "group": "s10plus-a33-runtime",
+    "n": 8,
+    "risk": "medium",
+    "script": "scripts/008-nuxel-bluetooth-diag.sh.sh",
+    "service": null,
+    "source": "tools/s10plus/a33/nuxel-bluetooth-diag.sh",
+    "source_sha256": "21c78ca70d6a08eebd25454e02042a4cc29fb2cbb8ee35aa10feaba6cbc80c59",
+    "target": "/usr/local/bin/nuxel-bluetooth-diag.sh"
+  },
+  {
+    "group": "s10plus-a33-runtime",
+    "n": 9,
+    "risk": "medium",
+    "script": "scripts/009-nuxel-boot-stage-verbose.sh.sh",
+    "service": null,
+    "source": "tools/s10plus/a33/nuxel-boot-stage-verbose.sh",
+    "source_sha256": "889cb30eafd223f2c2f9291934202e123db6ef7173e1b6d53f8c071b07202e50",
+    "target": "/usr/local/bin/nuxel-boot-stage-verbose.sh"
+  },
+  {
+    "group": "s10plus-a33-runtime",
+    "n": 10,
+    "risk": "medium",
+    "script": "scripts/010-nuxel-bootmode-guard.py.sh",
+    "service": null,
+    "source": "tools/s10plus/a33/nuxel-bootmode-guard.py",
+    "source_sha256": "0019ce964d7499f25df13fbbb2a6c07371139c661780223cae7e17f83ec6fce0",
+    "target": "/usr/libexec/nuxel/nuxel-bootmode-guard.py"
+  },
+  {
+    "group": "s10plus-a33-runtime",
+    "n": 11,
+    "risk": "medium",
+    "script": "scripts/011-nuxel-bootmode-oneshot.sh.sh",
+    "service": null,
+    "source": "tools/s10plus/a33/nuxel-bootmode-oneshot.sh",
+    "source_sha256": "43c072be42ea63ae86b762a7797adc07560a4b2e9e5e4d55a6db338d0080b4ae",
+    "target": "/usr/local/bin/nuxel-bootmode-oneshot.sh"
+  },
+  {
+    "group": "s10plus-a33-runtime",
+    "n": 12,
+    "risk": "medium",
+    "script": "scripts/012-nuxel-button-fsm.h.sh",
+    "service": null,
+    "source": "tools/s10plus/a33/nuxel-button-fsm.h",
+    "source_sha256": "ff06992306370923ebd8c613c7ad0f8a950fb69c59687de4130b7242642795bf",
+    "target": "/usr/lib/nuxel/src/a33/nuxel-button-fsm.h"
+  },
+  {
+    "group": "s10plus-a33-runtime",
+    "n": 13,
+    "risk": "medium",
+    "script": "scripts/013-nuxel-button-manager.c.sh",
+    "service": null,
+    "source": "tools/s10plus/a33/nuxel-button-manager.c",
+    "source_sha256": "c331b4e4ce1b82e9d969be8bd4228d4dabb876a34754b8d54d4d2d8bf1c03154",
+    "target": "/usr/lib/nuxel/src/a33/nuxel-button-manager.c"
+  },
+  {
+    "group": "s10plus-a33-runtime",
+    "n": 14,
+    "risk": "medium",
+    "script": "scripts/014-nuxel-camera-diag.sh.sh",
+    "service": null,
+    "source": "tools/s10plus/a33/nuxel-camera-diag.sh",
+    "source_sha256": "e742baad3fcdd8ab89be848d50a4cd2c788f3f20f069843d7fe415b60abcad6e",
+    "target": "/usr/local/bin/nuxel-camera-diag.sh"
+  },
+  {
+    "group": "s10plus-a33-runtime",
+    "n": 15,
+    "risk": "medium",
+    "script": "scripts/015-nuxel-console.c.sh",
+    "service": null,
+    "source": "tools/s10plus/a33/nuxel-console.c",
+    "source_sha256": "8d1a56715ce915a72ac08ad2293d2b53d44172bdd48b58e560f27d3845ca7db4",
+    "target": "/usr/lib/nuxel/src/a33/nuxel-console.c"
+  },
+  {
+    "group": "s10plus-a33-runtime",
+    "n": 16,
+    "risk": "medium",
+    "script": "scripts/016-nuxel-diag-pack.sh.sh",
+    "service": null,
+    "source": "tools/s10plus/a33/nuxel-diag-pack.sh",
+    "source_sha256": "ecfc39e32783bd2803a14334395c3f3c165dd20b695dbde6f9df0bd1f2739e95",
+    "target": "/usr/local/bin/nuxel-diag-pack.sh"
+  },
+  {
+    "group": "s10plus-a33-runtime",
+    "n": 17,
+    "risk": "medium",
+    "script": "scripts/017-nuxel-firewall.sh.sh",
+    "service": null,
+    "source": "tools/s10plus/a33/nuxel-firewall.sh",
+    "source_sha256": "e246c41ea703b5dd5a4e07a033896a378ea98a5ceeffd332867684073305dd1f",
+    "target": "/usr/local/bin/nuxel-firewall.sh"
+  },
+  {
+    "group": "s10plus-a33-runtime",
+    "n": 18,
+    "risk": "medium",
+    "script": "scripts/018-nuxel-gnss-diag.sh.sh",
+    "service": null,
+    "source": "tools/s10plus/a33/nuxel-gnss-diag.sh",
+    "source_sha256": "76baf8fa9493bee5578be670068895b9b686be08bedf5a4c0f07c48f6860dbb6",
+    "target": "/usr/local/bin/nuxel-gnss-diag.sh"
+  },
+  {
+    "group": "s10plus-a33-runtime",
+    "n": 19,
+    "risk": "medium",
+    "script": "scripts/019-nuxel-handoff-logic.h.sh",
+    "service": null,
+    "source": "tools/s10plus/a33/nuxel-handoff-logic.h",
+    "source_sha256": "56f42be479b345be69ffefd8dd0e02d16b7a720bff1d2cfb34158f1a39471aaf",
+    "target": "/usr/lib/nuxel/src/a33/nuxel-handoff-logic.h"
+  },
+  {
+    "group": "s10plus-a33-runtime",
+    "n": 20,
+    "risk": "medium",
+    "script": "scripts/020-nuxel-haptics-bridge.py.sh",
+    "service": null,
+    "source": "tools/s10plus/a33/nuxel-haptics-bridge.py",
+    "source_sha256": "d0c9027396b0c13ed974a7a9718d8bf2e8f80e7c9e40e9b0786d88e13d9fee47",
+    "target": "/usr/local/bin/nuxel-haptics-bridge.py"
+  },
+  {
+    "group": "s10plus-a33-runtime",
+    "n": 21,
+    "risk": "medium",
+    "script": "scripts/021-nuxel-haptics-diag.sh.sh",
+    "service": null,
+    "source": "tools/s10plus/a33/nuxel-haptics-diag.sh",
+    "source_sha256": "b48458ebcdcc06705b8bd11253fa2ef7e2ad2da4b1a53f8c1ea7a97e7615460b",
+    "target": "/usr/local/bin/nuxel-haptics-diag.sh"
+  },
+  {
+    "group": "s10plus-a33-runtime",
+    "n": 22,
+    "risk": "medium",
+    "script": "scripts/022-nuxel-headphone-diag.sh.sh",
+    "service": null,
+    "source": "tools/s10plus/a33/nuxel-headphone-diag.sh",
+    "source_sha256": "4fc2f6d993c1df631f8a19a8503d93572ea831ec2eb4298aad8d7c003229ff8f",
+    "target": "/usr/local/bin/nuxel-headphone-diag.sh"
+  },
+  {
+    "group": "s10plus-a33-runtime",
+    "n": 23,
+    "risk": "medium",
+    "script": "scripts/023-nuxel-keyboard-apply.sh.sh",
+    "service": null,
+    "source": "tools/s10plus/a33/nuxel-keyboard-apply.sh",
+    "source_sha256": "2794f65d2b9c8a6efda18b68e3b13f6f19338be0dd55c5fabde767ad87f40d50",
+    "target": "/usr/local/bin/nuxel-keyboard-apply.sh"
+  },
+  {
+    "group": "s10plus-a33-runtime",
+    "n": 24,
+    "risk": "medium",
+    "script": "scripts/024-nuxel-led-diag.sh.sh",
+    "service": null,
+    "source": "tools/s10plus/a33/nuxel-led-diag.sh",
+    "source_sha256": "d24124105fdcedb056dcec0c3aee9b010d26b42ae01397bfe733393670532b83",
+    "target": "/usr/local/bin/nuxel-led-diag.sh"
+  },
+  {
+    "group": "s10plus-a33-runtime",
+    "n": 25,
+    "risk": "medium",
+    "script": "scripts/025-nuxel-libinput-path.c.sh",
+    "service": null,
+    "source": "tools/s10plus/a33/nuxel-libinput-path.c",
+    "source_sha256": "f94240412b731233ad0e93de24d20283f55fc0d0b1f74aa1cddc9f19265e598f",
+    "target": "/usr/lib/nuxel/src/a33/nuxel-libinput-path.c"
+  },
+  {
+    "group": "s10plus-a33-runtime",
+    "n": 26,
+    "risk": "medium",
+    "script": "scripts/026-nuxel-mt.h.sh",
+    "service": null,
+    "source": "tools/s10plus/a33/nuxel-mt.h",
+    "source_sha256": "18db81abdc4f3ec68485d764a402194b936717f6a68ab2032b1032671b3edf82",
+    "target": "/usr/lib/nuxel/src/a33/nuxel-mt.h"
+  },
+  {
+    "group": "s10plus-a33-runtime",
+    "n": 27,
+    "risk": "medium",
+    "script": "scripts/027-nuxel-microsd-diag.sh.sh",
+    "service": null,
+    "source": "tools/s10plus/a33/nuxel-microsd-diag.sh",
+    "source_sha256": "001a0b77b773cca89f59ebe6d821092d9ccb14421801a5fae005b7a39f2c1042",
+    "target": "/usr/local/bin/nuxel-microsd-diag.sh"
+  },
+  {
+    "group": "s10plus-a33-runtime",
+    "n": 28,
+    "risk": "medium",
+    "script": "scripts/028-nuxel-nfc-diag.sh.sh",
+    "service": null,
+    "source": "tools/s10plus/a33/nuxel-nfc-diag.sh",
+    "source_sha256": "93546a357e4fa6e564b9739e99976f9d1e913bdd270b339ee964a46a5fceb9f8",
+    "target": "/usr/local/bin/nuxel-nfc-diag.sh"
+  },
+  {
+    "group": "s10plus-a33-runtime",
+    "n": 29,
+    "risk": "medium",
+    "script": "scripts/029-nuxel-osm-tiles.py.sh",
+    "service": null,
+    "source": "tools/s10plus/a33/nuxel-osm-tiles.py",
+    "source_sha256": "abd09f763519a816e25f699ff2afe59ec4a61d1fa582321637b1921d2979dfbb",
+    "target": "/usr/local/bin/nuxel-osm-tiles.py"
+  },
+  {
+    "group": "s10plus-a33-runtime",
+    "n": 30,
+    "risk": "medium",
+    "script": "scripts/030-nuxel-power-diag.sh.sh",
+    "service": null,
+    "source": "tools/s10plus/a33/nuxel-power-diag.sh",
+    "source_sha256": "0b5aaaf3eedf1415634c3bd976cf69a372656876bd9cdf91fa1eac7162815479",
+    "target": "/usr/local/bin/nuxel-power-diag.sh"
+  },
+  {
+    "group": "s10plus-a33-runtime",
+    "n": 31,
+    "risk": "medium",
+    "script": "scripts/031-nuxel-provision-services.sh.sh",
+    "service": null,
+    "source": "tools/s10plus/a33/nuxel-provision-services.sh",
+    "source_sha256": "bd223c214547b6509e81a276eebfdcf7501ec05b463237c714d06b8a21464fb3",
+    "target": "/usr/local/libexec/nuxel/nuxel-provision-services.sh"
+  },
+  {
+    "group": "s10plus-a33-runtime",
+    "n": 32,
+    "risk": "medium",
+    "script": "scripts/032-nuxel-pwa-host.c.sh",
+    "service": null,
+    "source": "tools/s10plus/a33/nuxel-pwa-host.c",
+    "source_sha256": "8351e4b3932f9be4bf2d526c653dd7184d39824b5ec65fb5f1022518e917e171",
+    "target": "/usr/lib/nuxel/src/a33/nuxel-pwa-host.c"
+  },
+  {
+    "group": "s10plus-a33-runtime",
+    "n": 33,
+    "risk": "medium",
+    "script": "scripts/033-nuxel-security-audit.sh.sh",
+    "service": null,
+    "source": "tools/s10plus/a33/nuxel-security-audit.sh",
+    "source_sha256": "f29e44796822b4119ee6b7fefa0cb77d87c3065ab3ef6e80dc93770e338bb551",
+    "target": "/usr/local/bin/nuxel-security-audit.sh"
+  },
+  {
+    "group": "s10plus-a33-runtime",
+    "n": 34,
+    "risk": "medium",
+    "script": "scripts/034-nuxel-reboot-mode.sh.sh",
+    "service": null,
+    "source": "tools/s10plus/a33/nuxel-reboot-mode.sh",
+    "source_sha256": "a2822cffe942064cc31ad6a90a05747609339cac21cf0e9c127745f65f1cd0bc",
+    "target": "/usr/local/bin/nuxel-reboot-mode.sh"
+  },
+  {
+    "group": "s10plus-a33-runtime",
+    "n": 35,
+    "risk": "medium",
+    "script": "scripts/035-nuxel-sensors-diag.sh.sh",
+    "service": null,
+    "source": "tools/s10plus/a33/nuxel-sensors-diag.sh",
+    "source_sha256": "3e5870abe2f4b80fa82a835e83d6a997bdd09ec3bc0b5f2d5d7819703b8f1c22",
+    "target": "/usr/local/bin/nuxel-sensors-diag.sh"
+  },
+  {
+    "group": "s10plus-a33-runtime",
+    "n": 36,
+    "risk": "medium",
+    "script": "scripts/036-nuxel-time.sh.sh",
+    "service": null,
+    "source": "tools/s10plus/a33/nuxel-time.sh",
+    "source_sha256": "15acea3964bbef454c3c07604645a6dba453fb0d683626ace42b0ac488aa3175",
+    "target": "/usr/local/bin/nuxel-time.sh"
+  },
+  {
+    "group": "s10plus-a33-runtime",
+    "n": 37,
+    "risk": "medium",
+    "script": "scripts/037-nuxel-touch-capture.sh.sh",
+    "service": null,
+    "source": "tools/s10plus/a33/nuxel-touch-capture.sh",
+    "source_sha256": "93b7179e2ce7a2171b77fc1284fb7f0dc5bdbb36d8453ac5d945519136de57b4",
+    "target": "/usr/local/bin/nuxel-touch-capture.sh"
+  },
+  {
+    "group": "s10plus-a33-runtime",
+    "n": 38,
+    "risk": "medium",
+    "script": "scripts/038-nuxel-touch-trace.py.sh",
+    "service": null,
+    "source": "tools/s10plus/a33/nuxel-touch-trace.py",
+    "source_sha256": "dc3a0d61ec4396b0bf55b58297f0801a4d773a120b945aee6bbac06e24709484",
+    "target": "/usr/libexec/nuxel/nuxel-touch-trace.py"
+  },
+  {
+    "group": "s10plus-a33-runtime",
+    "n": 39,
+    "risk": "medium",
+    "script": "scripts/039-nuxel-verbose-boot.sh",
+    "service": null,
+    "source": "tools/s10plus/a33/nuxel-verbose-boot.py",
+    "source_sha256": "b484b5750216a1a3eb311e3e01305678e2ba3aeb774888c7aad62d17a784cc49",
+    "target": "/usr/libexec/nuxel/nuxel-verbose-boot"
+  },
+  {
+    "group": "s10plus-a33-runtime",
+    "n": 40,
+    "risk": "medium",
+    "script": "scripts/040-nuxel-verbose-boot.service.sh",
+    "service": null,
+    "source": "tools/s10plus/a33/nuxel-verbose-boot.service",
+    "source_sha256": "ddbffc025ebdb7982cd80501df403e88d8ac3823fa140806fcb694d0a364c461",
+    "target": "/etc/systemd/system/nuxel-verbose-boot.service"
+  },
+  {
+    "group": "s10plus-a33-runtime",
+    "n": 41,
+    "risk": "medium",
+    "script": "scripts/041-nuxel-vpn-tor.sh.sh",
+    "service": null,
+    "source": "tools/s10plus/a33/nuxel-vpn-tor.sh",
+    "source_sha256": "42f206307dafbe8201de99127e82fb0fe372617b88f99480a90f5e5864b06acf",
+    "target": "/usr/local/bin/nuxel-vpn-tor.sh"
+  },
+  {
+    "group": "s10plus-a33-runtime",
+    "n": 42,
+    "risk": "medium",
+    "script": "scripts/042-nuxel-wifi-diag.sh.sh",
+    "service": null,
+    "source": "tools/s10plus/a33/nuxel-wifi-diag.sh",
+    "source_sha256": "7120edb3373071cddb11d251a24473951efbdce613d383f697bfcc1ece247076",
+    "target": "/usr/local/bin/nuxel-wifi-diag.sh"
+  },
+  {
+    "group": "s10plus-a33-runtime",
+    "n": 43,
+    "risk": "medium",
+    "script": "scripts/043-nuxel-wl-fb.c.sh",
+    "service": null,
+    "source": "tools/s10plus/a33/nuxel-wl-fb.c",
+    "source_sha256": "052bfdbf673ef658c93b8c07925f2c9249af3c755a011ccbe90011c616f7b768",
+    "target": "/usr/lib/nuxel/src/a33/nuxel-wl-fb.c"
+  },
+  {
+    "group": "s10plus-a33-runtime",
+    "n": 44,
+    "risk": "medium",
+    "script": "scripts/044-nuxelctl.sh",
+    "service": null,
+    "source": "tools/s10plus/a33/nuxelctl",
+    "source_sha256": "b002daf2e1c79ef6cd9a60f7f868470534bec592e01d1c945ab447bb4203bf1b",
+    "target": "/usr/local/bin/nuxelctl"
+  },
+  {
+    "group": "s10plus-a33-runtime",
+    "n": 45,
+    "risk": "medium",
+    "script": "scripts/045-touch-probe.html.sh",
+    "service": null,
+    "source": "tools/s10plus/a33/touch-probe.html",
+    "source_sha256": "aea597a1b6cb77a5e7af497a63a4900b59000498a8ccedf6d5998ae8371aad21",
+    "target": "/usr/share/nuxel/probes/touch-probe.html"
+  },
+  {
+    "group": "s10plus-a33-runtime",
+    "n": 46,
+    "risk": "medium",
+    "script": "scripts/046-verify-app-inventory.py.sh",
+    "service": null,
+    "source": "tools/s10plus/a33/verify-app-inventory.py",
+    "source_sha256": "3c5d90250072c4b07b79afa732d2f2e10f7f7c1bc7946cedfb2c3443bdf4ae63",
+    "target": "/usr/local/bin/verify-app-inventory.py"
+  },
+  {
+    "group": "s10plus-a33-runtime",
+    "n": 47,
+    "risk": "medium",
+    "script": "scripts/047-verify-app-registry.py.sh",
+    "service": null,
+    "source": "tools/s10plus/a33/verify-app-registry.py",
+    "source_sha256": "d4afac0c5d8e2b94d2691cf3d80191347800f78aba9ebb72654297b601948a66",
+    "target": "/usr/local/bin/verify-app-registry.py"
+  },
+  {
+    "group": "s10plus-a33-runtime",
+    "n": 48,
+    "risk": "medium",
+    "script": "scripts/048-verify-permissions.py.sh",
+    "service": null,
+    "source": "tools/s10plus/a33/verify-permissions.py",
+    "source_sha256": "cbc93c3245f3728227de0fa608b5e8629921428a9db85d27565596e821699a86",
+    "target": "/usr/local/bin/verify-permissions.py"
+  },
+  {
+    "group": "s10plus-a33-runtime",
+    "n": 49,
+    "risk": "medium",
+    "script": "scripts/049-verify-service-graph.py.sh",
+    "service": null,
+    "source": "tools/s10plus/a33/verify-service-graph.py",
+    "source_sha256": "8114851de65a9bbb383da3410285eecc01c1452c64c099503ae319bf9df0ee7a",
+    "target": "/usr/local/bin/verify-service-graph.py"
+  },
+  {
+    "group": "s10plus-a33-runtime",
+    "n": 50,
+    "risk": "medium",
+    "script": "scripts/050-nuxel-fb-owner-assert.sh.sh",
+    "service": null,
+    "source": "tools/beta/live/nuxel-fb-owner-assert.sh",
+    "source_sha256": "46156b3477247549ff6730c9b9dc1180b71ae1bebcb3d116e1528ab2c12a773e",
+    "target": "/usr/local/bin/nuxel-fb-owner-assert.sh"
+  },
+  {
+    "group": "services-runtime",
+    "n": 51,
+    "risk": "medium",
+    "script": "scripts/051-nuxel-bridge.sh",
+    "service": null,
+    "source": "services/nuxel-bridge/bin/nuxel-bridge",
+    "source_sha256": "004847ca71df3ad46007206b9f85128a1d4787a547bdbd8c793df66b61e65e01",
+    "target": "/usr/bin/nuxel-bridge"
+  },
+  {
+    "group": "services-runtime",
+    "n": 52,
+    "risk": "medium",
+    "script": "scripts/052-nuxel-http-bridge.sh",
+    "service": null,
+    "source": "services/nuxel-bridge/bin/nuxel-http-bridge",
+    "source_sha256": "e16c4faff5540d1b3667b7a158983b86ca0d9bd03822689f3fd084fa7236a50f",
+    "target": "/usr/bin/nuxel-http-bridge"
+  },
+  {
+    "group": "services-runtime",
+    "n": 53,
+    "risk": "medium",
+    "script": "scripts/053-org.nuxel.Bridge.conf.sh",
+    "service": null,
+    "source": "services/nuxel-bridge/dbus/org.nuxel.Bridge.conf",
+    "source_sha256": "b1ff0bab3761491305ff9663598423b8774a260f3196a4aec615780199e93856",
+    "target": "/etc/dbus-1/system.d/org.nuxel.Bridge.conf"
+  },
+  {
+    "group": "services-runtime",
+    "n": 54,
+    "risk": "medium",
+    "script": "scripts/054-api.py.sh",
+    "service": null,
+    "source": "services/nuxel-bridge/src/api.py",
+    "source_sha256": "a31752112d2e6acbebbfb787f468f718b24684c51a3cc51557d053dcc3d9ef31",
+    "target": "/usr/lib/nuxel/nuxel-bridge/api.py"
+  },
+  {
+    "group": "services-runtime",
+    "n": 55,
+    "risk": "medium",
+    "script": "scripts/055-bridge.py.sh",
+    "service": null,
+    "source": "services/nuxel-bridge/src/bridge.py",
+    "source_sha256": "fcc4c29d880c7d72fa951c0038bc331e0ea8872c1da3e6eea1b1c7a5ad214637",
+    "target": "/usr/lib/nuxel/nuxel-bridge/bridge.py"
+  },
+  {
+    "group": "services-runtime",
+    "n": 56,
+    "risk": "medium",
+    "script": "scripts/056-capabilities.py.sh",
+    "service": null,
+    "source": "services/nuxel-bridge/src/capabilities.py",
+    "source_sha256": "b8efdd7d021d00a7438d71c66aee477339ec3819e21bdc84bb1637afb68bee8c",
+    "target": "/usr/lib/nuxel/nuxel-bridge/capabilities.py"
+  },
+  {
+    "group": "services-runtime",
+    "n": 57,
+    "risk": "medium",
+    "script": "scripts/057-nuxel-bridge.service.sh",
+    "service": null,
+    "source": "services/nuxel-bridge/systemd/nuxel-bridge.service",
+    "source_sha256": "b8f21cc16f1494a805184fae349a0ac725d91150272fcfc42f3ee320685c6d6e",
+    "target": "/etc/systemd/system/nuxel-bridge.service"
+  },
+  {
+    "group": "services-runtime",
+    "n": 58,
+    "risk": "medium",
+    "script": "scripts/058-nuxel-http-bridge.service.sh",
+    "service": null,
+    "source": "services/nuxel-bridge/systemd/nuxel-http-bridge.service",
+    "source_sha256": "d41acaedddc9a0d34ebd183445922fdc03decc055bbfa229c2fbe17bf67ede50",
+    "target": "/etc/systemd/system/nuxel-http-bridge.service"
+  },
+  {
+    "group": "services-runtime",
+    "n": 59,
+    "risk": "medium",
+    "script": "scripts/059-README.md.sh",
+    "service": null,
+    "source": "services/nuxel-console/README.md",
+    "source_sha256": "b6b0fec2c3759ae3f5a80aafb41f61c5efb3351b856cdf3114e9a6450ed1b657",
+    "target": "/usr/lib/nuxel/nuxel-console/README.md"
+  },
+  {
+    "group": "services-runtime",
+    "n": 60,
+    "risk": "medium",
+    "script": "scripts/060-nuxel-console-free.sh",
+    "service": null,
+    "source": "services/nuxel-console/bin/nuxel-console-free",
+    "source_sha256": "bb46c39dcd8f35ca64189b2cbbd42aa7f3ef516347868bb01651ca61a02ba0b3",
+    "target": "/usr/lib/nuxel/nuxel-console-free"
+  },
+  {
+    "group": "services-runtime",
+    "n": 61,
+    "risk": "medium",
+    "script": "scripts/061-nuxel-console.service.sh",
+    "service": null,
+    "source": "services/nuxel-console/systemd/nuxel-console.service",
+    "source_sha256": "94802ce65133408688877ffde10c97ada244d262d1b8e928cf6f94d4af8e67e1",
+    "target": "/etc/systemd/system/nuxel-console.service"
+  },
+  {
+    "group": "services-runtime",
+    "n": 62,
+    "risk": "medium",
+    "script": "scripts/062-README.md.sh",
+    "service": null,
+    "source": "services/nuxel-notifications/README.md",
+    "source_sha256": "b0bdc5a098e542ed25656d0b92e3d2ed8ef3b6c0b2c67964f47c0f234617098b",
+    "target": "/usr/lib/nuxel/nuxel-notifications/README.md"
+  },
+  {
+    "group": "services-runtime",
+    "n": 63,
+    "risk": "medium",
+    "script": "scripts/063-nuxel-notifications.sh",
+    "service": null,
+    "source": "services/nuxel-notifications/bin/nuxel-notifications",
+    "source_sha256": "d519a53d05c4607eefeaf135a6bf948a023f531c22875ae3bb7e5bcf45c486b7",
+    "target": "/usr/bin/nuxel-notifications"
+  },
+  {
+    "group": "services-runtime",
+    "n": 64,
+    "risk": "medium",
+    "script": "scripts/064-org.nuxel.Notifications.conf.sh",
+    "service": null,
+    "source": "services/nuxel-notifications/dbus/org.nuxel.Notifications.conf",
+    "source_sha256": "3f64f7388bb6f9324f390074372778786a6a40fa375b44c06ebdc96eecc66710",
+    "target": "/etc/dbus-1/system.d/org.nuxel.Notifications.conf"
+  },
+  {
+    "group": "services-runtime",
+    "n": 65,
+    "risk": "medium",
+    "script": "scripts/065-notifications.py.sh",
+    "service": null,
+    "source": "services/nuxel-notifications/src/notifications.py",
+    "source_sha256": "101f538ed0f49cf4a3557c97aec4264554ce3dd9590e197346f55e75f630fb29",
+    "target": "/usr/lib/nuxel/nuxel-notifications/notifications.py"
+  },
+  {
+    "group": "services-runtime",
+    "n": 66,
+    "risk": "medium",
+    "script": "scripts/066-nuxel-notifications.service.sh",
+    "service": null,
+    "source": "services/nuxel-notifications/systemd/nuxel-notifications.service",
+    "source_sha256": "76f28644e0421851d691525b35707695820b2d38168a2eb1a46aff81ca3e1ecb",
+    "target": "/etc/systemd/system/nuxel-notifications.service"
+  },
+  {
+    "group": "services-runtime",
+    "n": 67,
+    "risk": "medium",
+    "script": "scripts/067-nuxel-portal.sh",
+    "service": null,
+    "source": "services/nuxel-portal/bin/nuxel-portal",
+    "source_sha256": "c08a58e33ef744356112ba6c25c070d454201bd72e338b6168327f92bcfc7815",
+    "target": "/usr/bin/nuxel-portal"
+  },
+  {
+    "group": "services-runtime",
+    "n": 68,
+    "risk": "medium",
+    "script": "scripts/068-org.nuxel.Portal.conf.sh",
+    "service": null,
+    "source": "services/nuxel-portal/dbus/org.nuxel.Portal.conf",
+    "source_sha256": "ad9db606f303bd0f5c7dc56c7821c52b6ad5214d60de799c4ce3e4eed8233a95",
+    "target": "/etc/dbus-1/system.d/org.nuxel.Portal.conf"
+  },
+  {
+    "group": "services-runtime",
+    "n": 69,
+    "risk": "medium",
+    "script": "scripts/069-portal.py.sh",
+    "service": null,
+    "source": "services/nuxel-portal/src/portal.py",
+    "source_sha256": "50e1cb031eb1111ed64a6ec7bc18f5e098db5d469ad299e271247172040cda16",
+    "target": "/usr/lib/nuxel/nuxel-portal/portal.py"
+  },
+  {
+    "group": "services-runtime",
+    "n": 70,
+    "risk": "medium",
+    "script": "scripts/070-nuxel-portal.service.sh",
+    "service": null,
+    "source": "services/nuxel-portal/systemd/nuxel-portal.service",
+    "source_sha256": "b86401526672305ab3b5cc3a5a05c3528d47d4fc584f3dd5088a062962893832",
+    "target": "/etc/systemd/system/nuxel-portal.service"
+  },
+  {
+    "group": "services-runtime",
+    "n": 71,
+    "risk": "medium",
+    "script": "scripts/071-nuxel-fallback.service.sh",
+    "service": null,
+    "source": "services/nuxel-session/systemd/nuxel-fallback.service",
+    "source_sha256": "cbc1c5d18b365c7ecf7d544a7eb4932171cfef468429c3813df196adaca11233",
+    "target": "/etc/systemd/system/nuxel-fallback.service"
+  },
+  {
+    "group": "services-runtime",
+    "n": 72,
+    "risk": "medium",
+    "script": "scripts/072-nuxel-bootmode-oneshot.service.sh",
+    "service": null,
+    "source": "services/nuxel-session/systemd/nuxel-bootmode-oneshot.service",
+    "source_sha256": "63831fc1cd01b8d1dc40ffd88fca9c84f55349ef0f7ab8065f3db2fef20a32e0",
+    "target": "/etc/systemd/system/nuxel-bootmode-oneshot.service"
+  },
+  {
+    "group": "services-runtime",
+    "n": 73,
+    "risk": "medium",
+    "script": "scripts/073-10-launcher-primary.conf.sh",
+    "service": null,
+    "source": "services/nuxel-session/systemd/nuxel-ui.service.d-10-launcher-primary.conf",
+    "source_sha256": "b26293afafb65bda1b23d28aaa08e9f066a918009e1c7b7f0e17e36dcef7f296",
+    "target": "/etc/systemd/system/nuxel-ui.service.d/10-launcher-primary.conf"
+  },
+  {
+    "group": "services-runtime",
+    "n": 74,
+    "risk": "medium",
+    "script": "scripts/074-nuxel-web.sh",
+    "service": null,
+    "source": "services/nuxel-web/bin/nuxel-web",
+    "source_sha256": "636d5972d5b8786c2fceed952dc74e75c6d36fd98efe8a32c6c2863362ea7a32",
+    "target": "/usr/bin/nuxel-web"
+  },
+  {
+    "group": "services-runtime",
+    "n": 75,
+    "risk": "medium",
+    "script": "scripts/075-nuxel-web-server.py.sh",
+    "service": null,
+    "source": "services/nuxel-web/bin/nuxel-web-server.py",
+    "source_sha256": "b17fb3e700ed3918691a395895090ca68eab5fe45b1f9a01a63a270f27072520",
+    "target": "/usr/lib/nuxel/nuxel-web-server.py"
+  }
+]

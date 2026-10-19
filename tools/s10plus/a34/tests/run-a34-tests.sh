@@ -17,7 +17,12 @@ run() {
 
 run sh "$HERE/test-fsm-power-bixby.sh"
 run python3 "$HERE/test-touch-syn-translation.py"
+run sh "$HERE/run-decon-tests.sh"
 run node "$HERE/test-qs-gesture.js"
+run node "$HERE/test-touch-keyboard.js"
+run python3 "$HERE/test-terminal-keyboard.py"
+run python3 "$HERE/test-terminal-lifecycle.py"
+run sh "$HERE/../../../touchable/run-tests.sh"
 
 echo
 if [ "$fail" -eq 0 ]; then

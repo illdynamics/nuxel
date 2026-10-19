@@ -12,6 +12,7 @@ button:active { background: #1f3355; }
   word-break: break-word; overflow-y: auto; height: calc(100% - 108px); }
 .osk { position: fixed; left: 0; right: 0; bottom: 0; background: #0b1220; padding: 6px 4px 10px;
   border-top: 1px solid rgba(96,165,250,.18); display: grid; gap: 4px; }
+.osk.hidden { display: none; }
 .osk .row { display: flex; gap: 4px; justify-content: center; }
 .osk button { flex: 1; min-width: 0; padding: 9px 0; font-size: 13px; font-family: inherit; }
 .osk button.mod { flex: 1.5; font-size: 11px; }

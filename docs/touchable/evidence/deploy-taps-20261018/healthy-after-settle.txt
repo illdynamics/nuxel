@@ -1,0 +1,18 @@
+1792358000 FRAMES_OK total=1543 fps_1s=23 failures=0 blit_avg_ms=44 out=720x1520 src=720x1520 scale=2 panel=1440x3040 owner=nuxel-wl-fb display=on src_format=0x00000001 colour=R@0,G@8,B@16_abgr8888_override=1
+1792357956 NUXEL_INPUT EVT touchmove x=138 y=111 tag=DIV id=status-bar w=360 h=760 dpr=2 splash=absent
+1792357956 NUXEL_INPUT EVT touchmove x=142 y=135 tag=DIV id=status-bar w=360 h=760 dpr=2 splash=absent
+1792357956 NUXEL_INPUT EVT touchmove x=146 y=159 tag=DIV id=status-bar w=360 h=760 dpr=2 splash=absent
+1792357957 NUXEL_INPUT EVT touchmove x=148 y=185 tag=DIV id=status-bar w=360 h=760 dpr=2 splash=absent
+1792357957 NUXEL_INPUT EVT touchmove x=148 y=212 tag=DIV id=status-bar w=360 h=760 dpr=2 splash=absent
+1792357957 NUXEL_INPUT EVT touchmove x=146 y=240 tag=DIV id=status-bar w=360 h=760 dpr=2 splash=absent
+1792357957 NUXEL_INPUT EVT touchmove x=142 y=270 tag=DIV id=status-bar w=360 h=760 dpr=2 splash=absent
+1792357957 NUXEL_INPUT EVT touchmove x=137 y=303 tag=DIV id=status-bar w=360 h=760 dpr=2 splash=absent
+1792357957 NUXEL_INPUT EVT touchmove x=131 y=349 tag=DIV id=status-bar w=360 h=760 dpr=2 splash=absent
+1792357957 NUXEL_INPUT EVT pointerup x=131 y=349 tag=DIV id=status-bar w=360 h=760 dpr=2 splash=absent
+1792357957 NUXEL_INPUT EVT touchend x=131 y=349 tag=DIV id=status-bar w=360 h=760 dpr=2 splash=absent
+1792357957 NUXEL_INPUT BOOTLOG_HIDDEN why=auto
+ActiveState=active
+MainPID=13453
+
+ActiveState=active
+MainPID=13674

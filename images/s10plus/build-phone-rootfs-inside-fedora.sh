@@ -16,7 +16,7 @@ trap 'rm -f "$OUT" "$OUT.sha256"' ERR
 dnf -y install e2fsprogs findutils coreutils file rpm shadow-utils python3 \
     gcc make pkgconf-pkg-config kernel-headers \
     wayland-devel wayland-protocols-devel \
-    gtk3-devel webkit2gtk4.1-devel alsa-lib-devel
+    gtk3-devel webkit2gtk4.1-devel alsa-lib-devel git
 # --- BOTH Fedora 43 aarch64 repositories are REQUIRED (briq-04a) --------------
 # The GA "Everything" repo alone is NOT enough and the failure is not cosmetic:
 #   * `stevia` / `stevia-phosh-osk-provider` (the phosh on-screen keyboard) do
@@ -38,11 +38,11 @@ for cand in /etc/pki/rpm-gpg/RPM-GPG-KEY-fedora-43-primary \
   [ -f "$cand" ] && { GPGKEY="$cand"; break; }
 done
 if [ -n "$GPGKEY" ]; then
-  rpm --import "$GPGKEY" || true
+  rpm --import "$GPGKEY"
   GPGCHECK=1
 else
-  echo '[nuxel] WARNING: no Fedora GPG key found in the container; package signature checking is DISABLED for this build (reported, not hidden)' >&2
-  GPGCHECK=0
+  echo 'ERROR: Fedora 43 signing key missing; refusing unsigned RPM installation' >&2
+  exit 1
 fi
 for spec in "fedora|$GPGKEY|1" "updates|$GPGKEY|1"; do
   rid="${spec%%|*}"; rest="${spec#*|}"; key="${rest%%|*}"
@@ -99,7 +99,11 @@ esac
 # reproducible from a fresh clone.
 B=/tmp/nuxel-current-userspace
 mkdir -p "$B"
-CFLAGS_COMMON="-O2 -Wall -Wextra -Wno-unused-parameter -std=gnu11"
+# The A34 display bridge includes the shared A33 handoff decision header.  Keep
+# this repo source path explicit: the clean CI checkout must compile the same
+# bridge that is staged onto the handset, without depending on a developer's
+# generated include tree.
+CFLAGS_COMMON="-O2 -Wall -Wextra -Wno-unused-parameter -std=gnu11 -I$B -I/nuxel/tools/s10plus/a33"
 wayland-scanner client-header \
     /nuxel/tools/s10plus/a29/wlr-screencopy-unstable-v1.xml \
     "$B/wlr-screencopy-unstable-v1-client-protocol.h"
@@ -107,7 +111,8 @@ wayland-scanner private-code \
     /nuxel/tools/s10plus/a29/wlr-screencopy-unstable-v1.xml \
     "$B/wlr-screencopy-unstable-v1-protocol.c"
 
-# A34 display bridge: bl_power=4 screen-off, current handoff/colour path.
+# A35-patched A34 bridge: frame-by-frame DECON PAN commits, real AMOLED blank,
+# automatic first-frame presentation at boot, and current handoff/colour path.
 gcc $CFLAGS_COMMON $(pkg-config --cflags wayland-client) \
     -o "$B/nuxel-wl-fb" /nuxel/tools/s10plus/a34/nuxel-wl-fb.c \
     "$B/wlr-screencopy-unstable-v1-protocol.c" \
@@ -190,8 +195,8 @@ install -d "$STAGE/etc/nuxel" "$STAGE/usr/lib/nuxel"
 # process supervision, and the libinput path shim that gives phoc the real
 # touchscreen on a kernel with no VT and no usable udev daemon.
 install -m 0755 /nuxel/tools/s10plus/a29/nuxel-touch-arm "$STAGE/usr/lib/nuxel/nuxel-touch-arm"
-# A34 is the shipped revision (TOUCHDOWN): the A34 display bridge
-# (bl_power=4 screen-off), the A34 button manager (SYN_REPORT touch translation,
+# A34 is the shipped revision (TOUCHDOWN): the A35-patched A34 display
+# bridge (per-frame PAN + powerdown), the A34 button manager (SYN_REPORT touch translation,
 # 11-entry power menu with Cancel first, deferred Bixby cancelled by Power) and
 # the current PWA host (terminal surface close + host action fixes).  All were
 # built from repository sources above, not copied from a developer's build tree.
@@ -325,6 +330,24 @@ install -m 0644 /nuxel/pwa/nuxel-common/app-registry.json \
     "$STAGE/etc/nuxel/app-registry/app_registry.json"
 install -m 0644 /nuxel/pwa/nuxel-common/bridge-version.json \
     "$STAGE/etc/nuxel/bridge-version.json"
+# Virtual keyboard contract: Stevia is installed above, while this applier and
+# its user units connect the Settings document to the active Phoc/Phosh session.
+# These files were previously tested in-tree but omitted from the phone image.
+install -Dm0644 /nuxel/configs/nuxel/keyboard/keyboard.json \
+    "$STAGE/etc/nuxel/keyboard/keyboard.json"
+install -Dm0644 /nuxel/configs/nuxel/keyboard/keyboard.schema.json \
+    "$STAGE/usr/share/nuxel/schemas/keyboard.schema.json"
+install -Dm0644 /nuxel/configs/nuxel/keyboard/README.md \
+    "$STAGE/usr/share/doc/nuxel/keyboard/README.md"
+install -Dm0755 /nuxel/tools/s10plus/a33/nuxel-keyboard-apply.sh \
+    "$STAGE/usr/libexec/nuxel/nuxel-keyboard-apply"
+install -Dm0644 /nuxel/configs/nuxel/keyboard/nuxel-keyboard-apply.service \
+    "$STAGE/usr/lib/systemd/user/nuxel-keyboard-apply.service"
+install -Dm0644 /nuxel/configs/nuxel/keyboard/nuxel-keyboard-apply.path \
+    "$STAGE/usr/lib/systemd/user/nuxel-keyboard-apply.path"
+install -d "$STAGE/etc/systemd/user/default.target.wants"
+ln -sf /usr/lib/systemd/user/nuxel-keyboard-apply.path \
+    "$STAGE/etc/systemd/user/default.target.wants/nuxel-keyboard-apply.path"
 # docroot override for nuxel-web (the shim also probes the default locations)
 printf 'NUXEL_WEBROOT=/usr/share/nuxel\nNUXEL_WEB_PORT=8000\nNUXEL_WEB_BIND=127.0.0.1\n' \
     > "$STAGE/etc/nuxel/web.conf"
@@ -359,11 +382,12 @@ PHOSH=RPM-installed
 PHOC=RPM-installed
 GRAPHICAL_PHONE_SESSION=not-enabled-until-on-device-drm-testing
 MOTOROLA_OVERLAY=absent
-HARDWARE_BOOT_VERIFIED=true
-DISPLAY_DRIVER_VERIFIED=true
+HARDWARE_BOOT_VERIFIED=false
+DISPLAY_DRIVER_VERIFIED=false
 USERSERVICE_REVISION=A34-touchdown
-TOUCHSCREEN=evdev-libinput-webkit-working
+TOUCHSCREEN=requires-current-image-physical-test
 CLICKABLE=not-yet-owner-verified
+VIRTUAL_KEYBOARD=stevia-installed-owner-test-pending
 AUDIO=unverified-no-touchscreen-interaction
 STATUS
 # No proprietary vendor blobs are silently invented. They require a

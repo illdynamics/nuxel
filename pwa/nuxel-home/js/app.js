@@ -5,14 +5,84 @@ class NuxelHome {
     constructor() {
         this.initialized = false;
         this.components = {};
+        this.appGeneration = 0;
+        this.appSession = { state: 'CLOSED', app: null, frame: null };
         this._init();
+    }
+
+    _setAppState(state, app = this.appSession.app, frame = this.appSession.frame) {
+        const allowed = ['CLOSED', 'LAUNCHING', 'ACTIVE', 'BACKGROUND', 'CLOSING', 'FAILED'];
+        if (!allowed.includes(state)) throw new Error(`Invalid app lifecycle state: ${state}`);
+        this.appSession = { state, app: app || null, frame: frame || null };
+        document.body.dataset.appState = state;
+        document.dispatchEvent(new CustomEvent('app:lifecycle', {
+            detail: { state, appId: app && app.id ? app.id : null },
+        }));
+        this._inputTrace(`app:lifecycle id=${app && app.id || 'home'} state=${state}`);
+    }
+
+    _inputTrace(message) {
+        try {
+            const handler = window.webkit && window.webkit.messageHandlers.nuxelDiag;
+            if (handler) handler.postMessage(`EVT ${message} ts=${Date.now()}`);
+        } catch (e) { /* observation must never change input delivery */ }
+    }
+
+    _observeAppFrame(frame, app) {
+        // The native host observes only the top document. App events do not
+        // bubble out of an iframe: observe the same-origin document separately.
+        // Record hit targets and lifecycle, never field values or entered text.
+        try {
+            const doc = frame.contentDocument;
+            if (!doc || doc.__nuxelObserved) return;
+            if (window.NuxelTouchKeyboard) window.NuxelTouchKeyboard.attach(doc);
+            doc.__nuxelObserved = true;
+            let lastMove = 0;
+            const label = el => el && ((el.id || el.tagName || '').replace(/[^a-zA-Z0-9_.:-]/g, '').slice(0, 80)) || '-';
+            ['pointerdown', 'pointerup', 'pointercancel', 'touchstart', 'touchmove', 'touchend', 'click', 'focusin', 'input'].forEach(kind => {
+                doc.addEventListener(kind, event => {
+                    if (kind === 'touchmove' && Date.now() - lastMove < 100) return;
+                    if (kind === 'touchmove') lastMove = Date.now();
+                    const point = event.changedTouches && event.changedTouches[0] || event;
+                    const x = Number.isFinite(point.clientX) ? Math.round(point.clientX) : -1;
+                    const y = Number.isFinite(point.clientY) ? Math.round(point.clientY) : -1;
+                    const hit = x >= 0 && y >= 0 ? doc.elementFromPoint(x, y) : null;
+                    const path = event.composedPath ? event.composedPath().slice(0, 5).map(label).join(':') : label(event.target);
+                    this._inputTrace(`${kind} app=${app.id} x=${x} y=${y} id=${label(event.target)} hit=${label(hit)} path=${path} trusted=${event.isTrusted ? 1 : 0} state=${this.appSession.state}`);
+                }, { passive: true, capture: true });
+            });
+        } catch (e) { /* cross-origin applications are deliberately not inspected */ }
+    }
+
+    _removeAppSurface() {
+        if (this.appSession.frame && this.appSession.frame.releasePointerCapture) {
+            try {
+                const captures = this.appSession.frame.__nuxelPointerCaptures || [];
+                captures.forEach(id => this.appSession.frame.releasePointerCapture(id));
+            } catch (e) { /* the frame may already have been detached */ }
+        }
+        document.querySelectorAll('.pwa-frame, .pwa-close-btn, .pwa-app-status, .pwa-app-bar')
+            .forEach(el => el.remove());
+        try {
+            if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+        } catch (e) { /* a torn-down WebKit frame may no longer expose activeElement */ }
+    }
+
+    _closeAppSurface() {
+        this.appGeneration++;
+        if (this.appSession.app && this.appSession.app.id === 'org.nuxel.Terminal' &&
+            !this.appSession.frame && window.NuxelHost && window.NuxelHost.available) {
+            Promise.resolve(window.NuxelHost.action('close-terminal')).catch(error => {
+                console.error('[Nuxel] Terminal close failed:', error);
+            });
+        }
+        if (this.appSession.state !== 'CLOSED') this._setAppState('CLOSING');
+        this._removeAppSurface();
+        this._setAppState('CLOSED', null, null);
     }
 
     async _init() {
         console.log('[Nuxel] Initializing Nuxel Home...');
-
-        // Register service worker
-        await this._registerServiceWorker();
 
         // Initialize all components
         this.components = {
@@ -21,11 +91,8 @@ class NuxelHome {
             launcher: window.launcher,
             search: window.search || null,
             recents: null,
-            qs: null,
+            qs: window.qs || null,
         };
-
-        // Request phone status capability
-        await this._requestCoreCapabilities();
 
         // Bind global events
         this._bindGlobalEvents();
@@ -35,6 +102,13 @@ class NuxelHome {
 
         // Boot animation splash: fade out once the app is ready (see below)
         this._finishBootSplash();
+
+        // App navigation must work even while an optional backend or service
+        // worker is unavailable. Neither request owns the splash or input.
+        this._registerServiceWorker();
+        this._requestCoreCapabilities().catch(error => {
+            console.warn('[Nuxel] Core capabilities unavailable:', error);
+        });
     }
 
     _finishBootSplash() {
@@ -185,6 +259,16 @@ class NuxelHome {
                 this._closeOverlays();
             }
         });
+
+        // Keep lifecycle truth aligned with WebKit visibility.  BACKGROUND is
+        // descriptive only: it never creates another surface or input owner.
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden && this.appSession.state === 'ACTIVE') {
+                this._setAppState('BACKGROUND');
+            } else if (!document.hidden && this.appSession.state === 'BACKGROUND') {
+                this._setAppState('ACTIVE');
+            }
+        });
     }
 
     _showIncomingCall(detail) {
@@ -204,6 +288,10 @@ class NuxelHome {
     _openPwa(app, url) {
         console.log(`Opening PWA: ${app.name} at ${url}`);
 
+        this._closeAppSurface();
+        const generation = this.appGeneration;
+        this._setAppState('LAUNCHING', app, null);
+
         // A34 TOUCHDOWN: the terminal is a real PTY rendered in a SEPARATE
         // native GTK/WebKit window (one instance, driven by nuxel-pwa-host).
         // Opening an iframe as well produced two terminal surfaces: closing the
@@ -211,12 +299,17 @@ class NuxelHome {
         // not dismiss the native surface.  Launch it through the host instead.
         if (app.id === 'org.nuxel.Terminal' &&
             window.NuxelHost && window.NuxelHost.available) {
-            window.NuxelHost.action('open-terminal');
+            Promise.resolve(window.NuxelHost.action('open-terminal')).then((result) => {
+                if (generation !== this.appGeneration) return;
+                if (!result || !result.ok) throw new Error((result && (result.error || (result.timeout && 'timeout'))) || 'host refused terminal launch');
+                this._setAppState('ACTIVE', app, null);
+            }).catch((error) => {
+                if (generation !== this.appGeneration) return;
+                console.error('[Nuxel] Terminal launch failed:', error);
+                this._setAppState('FAILED', app, null);
+            });
             return;
         }
-
-        // Remove any previous app frame.
-        document.querySelectorAll('.pwa-frame, .pwa-close-btn').forEach(el => el.remove());
 
         const frame = document.createElement('iframe');
         frame.src = url;
@@ -224,42 +317,60 @@ class NuxelHome {
         frame.setAttribute('title', app.name);
         frame.style.cssText = `
             position: fixed !important;
-            inset: 0 !important;
+            top: calc(var(--status-bar-height, 36px) + 56px) !important;
+            left: 0 !important;
+            right: 0 !important;
             width: 100vw !important;
-            height: 100dvh !important;
-            min-width: 100vw !important;
-            min-height: 100dvh !important;
+            min-height: 0 !important;
             border: 0 !important;
             margin: 0 !important;
             padding: 0 !important;
-            z-index: 9999 !important;
+            z-index: 60 !important;
             background: #071426 !important;
             display: block !important;
         `;
         document.body.appendChild(frame);
+        this._setAppState('LAUNCHING', app, frame);
 
+        const status = document.createElement('div');
+        status.className = 'pwa-app-status';
+        status.setAttribute('role', 'status');
+        status.textContent = `Opening ${app.name}…`;
+        status.style.cssText = `
+            position: fixed !important; inset: auto 16px 24px 16px !important;
+            z-index: 62 !important; padding: 12px 16px !important;
+            border-radius: 12px !important; background: rgba(0,0,0,.82) !important;
+            color: white !important; text-align: center !important;
+        `;
+        document.body.appendChild(status);
+
+        frame.addEventListener('load', () => {
+            if (this.appSession.frame !== frame) return;
+            status.remove();
+            this._setAppState('ACTIVE', app, frame);
+            this._observeAppFrame(frame, app);
+        }, { once: true });
+        frame.addEventListener('error', () => {
+            if (this.appSession.frame !== frame) return;
+            status.textContent = `${app.name} could not load. Close it to return Home.`;
+            this._setAppState('FAILED', app, frame);
+        }, { once: true });
+
+        // Keep navigation below the camera/status area and outside app content.
+        // A floating upper-right glyph covered Calendar's Save button and the
+        // S10+ cutout. The status bar remains reachable for Quick Settings.
+        const appBar = document.createElement('div');
+        appBar.className = 'pwa-app-bar';
         const closeBtn = document.createElement('button');
         closeBtn.className = 'pwa-close-btn';
-        closeBtn.textContent = '✕';
-        closeBtn.style.cssText = `
-            position: fixed !important;
-            top: 12px !important;
-            right: 12px !important;
-            z-index: 10000 !important;
-            background: rgba(0,0,0,0.65) !important;
-            color: white !important;
-            border: none !important;
-            border-radius: 50% !important;
-            width: 44px !important;
-            height: 44px !important;
-            font-size: 24px !important;
-            cursor: pointer !important;
-        `;
-        closeBtn.onclick = () => {
-            frame.remove();
-            closeBtn.remove();
-        };
-        document.body.appendChild(closeBtn);
+        closeBtn.textContent = 'Home';
+        closeBtn.setAttribute('aria-label', `Close ${app.name} and return Home`);
+        closeBtn.onclick = () => this._closeAppSurface();
+        appBar.appendChild(closeBtn);
+        const appTitle = document.createElement('span');
+        appTitle.textContent = app.name;
+        appBar.appendChild(appTitle);
+        document.body.appendChild(appBar);
     }
 
     _launchNative(app, url) {
@@ -314,7 +425,7 @@ class NuxelHome {
         // dismiss an app surface opened by _openPwa().  Previously it only
         // closed search/QS, so after any app tap the only way back was the small
         // ✕.  This uses the same nodes _openPwa() creates; no layout change.
-        document.querySelectorAll('.pwa-frame, .pwa-close-btn').forEach(el => el.remove());
+        this._closeAppSurface();
     }
 }
 

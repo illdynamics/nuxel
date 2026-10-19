@@ -408,8 +408,9 @@ else:
 
 # the daemon must PARSE: syntax gate against the stub alsa header (+ negative control)
 STUB = os.path.join(HERE, "stub-include")
-if cc and os.path.isdir(STUB):
-    p = subprocess.run([cc, "-std=gnu11", "-fsyntax-only", "-Wall", "-Wextra", "-I", STUB, MANAGER_C],
+linux_cc = os.environ.get("LINUX_CC") or (shutil.which("aarch64-linux-gnu-gcc") if sys.platform == "darwin" else cc)
+if linux_cc and os.path.isdir(STUB):
+    p = subprocess.run([linux_cc, "-std=gnu11", "-fsyntax-only", "-Wall", "-Wextra", "-I", STUB, MANAGER_C],
                        capture_output=True, text=True)
     check("daemon syntax gate: nuxel-button-manager.c parses (stub alsa header, syntax only)",
           p.returncode == 0, (p.stderr or "")[-400:])
@@ -418,7 +419,7 @@ if cc and os.path.isdir(STUB):
     with open(bad, "w") as f:
         f.write(manager.replace("static void perform(const char *action, const char *source) {",
                                 "static void perform(const char *action, const char *source) { int broken = ;", 1))
-    p2 = subprocess.run([cc, "-std=gnu11", "-fsyntax-only", "-I", STUB, bad],
+    p2 = subprocess.run([linux_cc, "-std=gnu11", "-fsyntax-only", "-I", STUB, "-I", os.path.dirname(MANAGER_C), bad],
                         capture_output=True, text=True)
     check("daemon syntax gate: negative control fails (the gate really parses the file)",
           p2.returncode != 0)

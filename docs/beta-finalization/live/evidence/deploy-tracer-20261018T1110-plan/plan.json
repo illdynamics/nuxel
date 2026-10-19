@@ -1,0 +1,43 @@
+{
+  "group_order": [
+    {
+      "declared_reload": "true",
+      "declared_reload_source": "group",
+      "group": "touch-tracer-hotfix",
+      "priority": 1,
+      "restart_service": null,
+      "risk": "low",
+      "risk_rank": 0,
+      "steps": 1
+    }
+  ],
+  "risk_envelope": {
+    "low": 1
+  },
+  "schema_version": 1,
+  "skipped": [],
+  "steps": [
+    {
+      "backup": "/usr/libexec/nuxel/nuxel-touch-trace.py.nuxel-rollback",
+      "component": "bounded touch-pipeline diagnostic",
+      "declared_reload": "true",
+      "group": "touch-tracer-hotfix",
+      "health_check": "test -x /usr/libexec/nuxel/nuxel-touch-trace.py && python3 /usr/libexec/nuxel/nuxel-touch-trace.py --self-test",
+      "install_procedure": null,
+      "mode": "0755",
+      "post": [],
+      "pre": [],
+      "priority": 1,
+      "risk": "low",
+      "risk_rank": 0,
+      "rollback": "The deploy tool preserves the prior target as <target>.nuxel-rollback and restores it automatically if staging, install, or health fails.",
+      "service": null,
+      "source": "tools/s10plus/a33/nuxel-touch-trace.py",
+      "source_sha256": "ac5fdfa1a7efecbb3ed46aadba704584eee92ea9bb36448b1e6dc39c3606dfe0",
+      "staged": "/usr/libexec/nuxel/nuxel-touch-trace.py.nuxel-staged",
+      "target": "/usr/libexec/nuxel/nuxel-touch-trace.py",
+      "verify": "sha256sum /usr/libexec/nuxel/nuxel-touch-trace.py"
+    }
+  ],
+  "violations": []
+}

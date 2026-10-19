@@ -1,0 +1,46 @@
+1792358124 NUXEL_INPUT EVT pointerdown app=nuxel-settings x=79 y=575 id=preview-report hit=preview-report path=preview-report:DIV:tab-display:MAIN:BODY trusted=1 state=ACTIVE ts=1792358124803
+1792358124 NUXEL_INPUT EVT pointerup app=nuxel-settings x=79 y=575 id=preview-report hit=preview-report path=preview-report:DIV:tab-display:MAIN:BODY trusted=1 state=ACTIVE ts=1792358124812
+1792358124 NUXEL_INPUT EVT click app=nuxel-settings x=79 y=575 id=preview-report hit=preview-report path=preview-report:DIV:tab-display:MAIN:BODY trusted=1 state=ACTIVE ts=1792358124813
+1792358124 NUXEL_INPUT EVT pointerdown app=nuxel-settings x=29 y=588 id=preview-report hit=preview-report path=preview-report:DIV:tab-display:MAIN:BODY trusted=1 state=ACTIVE ts=1792358124869
+1792358124 NUXEL_INPUT EVT touchstart app=nuxel-settings x=29 y=588 id=preview-report hit=preview-report path=preview-report:DIV:tab-display:MAIN:BODY trusted=1 state=ACTIVE ts=1792358124870
+1792358124 NUXEL_INPUT EVT touchmove app=nuxel-settings x=29 y=588 id=preview-report hit=preview-report path=preview-report:DIV:tab-display:MAIN:BODY trusted=1 state=ACTIVE ts=1792358124881
+1792358124 NUXEL_INPUT EVT pointerup app=nuxel-settings x=21 y=595 id=preview-report hit=preview-report path=preview-report:DIV:tab-display:MAIN:BODY trusted=1 state=ACTIVE ts=1792358124928
+1792358124 NUXEL_INPUT EVT touchend app=nuxel-settings x=21 y=595 id=preview-report hit=preview-report path=preview-report:DIV:tab-display:MAIN:BODY trusted=1 state=ACTIVE ts=1792358124928
+1792358124 NUXEL_INPUT EVT pointerdown app=nuxel-settings x=21 y=595 id=preview-report hit=preview-report path=preview-report:DIV:tab-display:MAIN:BODY trusted=1 state=ACTIVE ts=1792358124935
+1792358124 NUXEL_INPUT EVT pointerup app=nuxel-settings x=21 y=595 id=preview-report hit=preview-report path=preview-report:DIV:tab-display:MAIN:BODY trusted=1 state=ACTIVE ts=1792358124944
+1792358124 NUXEL_INPUT EVT click app=nuxel-settings x=21 y=595 id=preview-report hit=preview-report path=preview-report:DIV:tab-display:MAIN:BODY trusted=1 state=ACTIVE ts=1792358124944
+1792358125 NUXEL_INPUT EVT pointerdown app=nuxel-settings x=234 y=567 id=preview-report hit=preview-report path=preview-report:DIV:tab-display:MAIN:BODY trusted=1 state=ACTIVE ts=1792358125151
+1792358125 NUXEL_INPUT EVT touchstart app=nuxel-settings x=234 y=567 id=preview-report hit=preview-report path=preview-report:DIV:tab-display:MAIN:BODY trusted=1 state=ACTIVE ts=1792358125151
+1792358125 NUXEL_INPUT EVT touchmove app=nuxel-settings x=235 y=567 id=preview-report hit=preview-report path=preview-report:DIV:tab-display:MAIN:BODY trusted=1 state=ACTIVE ts=1792358125169
+1792358125 NUXEL_INPUT EVT touchmove app=nuxel-settings x=245 y=559 id=preview-report hit=preview-report path=preview-report:DIV:tab-display:MAIN:BODY trusted=1 state=ACTIVE ts=1792358125339
+1792358125 NUXEL_INPUT EVT pointerup app=nuxel-settings x=245 y=555 id=preview-report hit=preview-report path=preview-report:DIV:tab-display:MAIN:BODY trusted=1 state=ACTIVE ts=1792358125340
+1792358125 NUXEL_INPUT EVT touchend app=nuxel-settings x=245 y=555 id=preview-report hit=preview-report path=preview-report:DIV:tab-display:MAIN:BODY trusted=1 state=ACTIVE ts=1792358125340
+1792358126 HOST_CONFIG_GET name=wlfb-state bytes=209
+1792358126 HOST_CONFIG_GET name=launcher-state bytes=65535
+1792358126 HOST_CONFIG_GET name=anim-state bytes=52
+1792358126 HOST_CONFIG_GET name=display-state bytes=123
+1792358126 HOST_CONFIG_GET name=touch-arm-state bytes=36624
+1792358126 HOST_CONFIG_REFUSED name=volume
+1792358126 HOST_CONFIG_GET name=touch-arm-state bytes=36624
+1792358130 HOST_CONFIG_GET name=wlfb-state bytes=209
+1792358130 HOST_CONFIG_GET name=launcher-state bytes=65535
+1792358130 HOST_CONFIG_GET name=anim-state bytes=52
+1792358130 HOST_CONFIG_GET name=display-state bytes=123
+1792358130 HOST_CONFIG_GET name=touch-arm-state bytes=36624
+1792358130 HOST_CONFIG_REFUSED name=volume
+1792358130 HOST_CONFIG_GET name=touch-arm-state bytes=36624
+1792358134 HOST_CONFIG_GET name=wlfb-state bytes=209
+1792358134 HOST_CONFIG_GET name=launcher-state bytes=65535
+1792358134 HOST_CONFIG_GET name=anim-state bytes=52
+1792358134 HOST_CONFIG_GET name=display-state bytes=123
+1792358134 HOST_CONFIG_GET name=touch-arm-state bytes=36624
+1792358134 HOST_CONFIG_REFUSED name=volume
+1792358134 HOST_CONFIG_GET name=touch-arm-state bytes=36624
+1792358138 HOST_CONFIG_GET name=wlfb-state bytes=209
+1792358138 HOST_CONFIG_GET name=launcher-state bytes=65535
+1792358138 HOST_CONFIG_GET name=anim-state bytes=52
+1792358138 HOST_CONFIG_GET name=display-state bytes=123
+1792358138 HOST_CONFIG_GET name=touch-arm-state bytes=36624
+1792358138 HOST_CONFIG_REFUSED name=volume
+1792358138 HOST_CONFIG_GET name=touch-arm-state bytes=36624
+1792358141 FRAMES_OK total=4691 fps_1s=22 failures=0 blit_avg_ms=43 out=720x1520 src=720x1520 scale=2 panel=1440x3040 owner=nuxel-wl-fb display=on src_format=0x00000001 colour=R@0,G@8,B@16_abgr8888_override=1

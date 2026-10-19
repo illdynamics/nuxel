@@ -52,10 +52,12 @@ run_step "no hard-coded /dev/input/event<N> gate"          python3 "$HERE/test-n
 # This is NOT a build: nothing is linked and the aarch64 build on the guest is
 # still the only build. It exists so a syntax error in the daemon cannot hide
 # behind "no alsa-lib on this host".
-if command -v gcc >/dev/null 2>&1; then
+LINUX_CC="${LINUX_CC:-gcc}"
+if [ "$(uname -s)" = Darwin ] && [ "$LINUX_CC" = gcc ]; then LINUX_CC=aarch64-linux-gnu-gcc; fi
+if command -v "$LINUX_CC" >/dev/null 2>&1; then
   echo
   echo "==================== daemon syntax gate (stub alsa header) ===================="
-  if gcc -std=gnu11 -fsyntax-only -Wall -Wextra -I "$A33/tests/stub-include" "$A33/nuxel-button-manager.c"; then
+  if "$LINUX_CC" -std=gnu11 -fsyntax-only -Wall -Wextra -I "$A33/tests/stub-include" "$A33/nuxel-button-manager.c"; then
     RESULTS+=("PASS  daemon syntax gate (nuxel-button-manager.c parses)")
   else
     RESULTS+=("FAIL  daemon syntax gate (nuxel-button-manager.c parses)"); rc_total=1

@@ -65,6 +65,7 @@ class SearchManager {
         this.isOpen = false;
         this.overlay.classList.add('hidden');
         this.input.blur();
+        if (window.NuxelTouchKeyboard) window.NuxelTouchKeyboard.hide();
     }
 
     toggle() {

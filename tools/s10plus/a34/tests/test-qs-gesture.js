@@ -66,7 +66,7 @@ vm.createContext(sandbox);
 vm.runInContext(fs.readFileSync(SRC, 'utf8') + '\nthis.StatusBar = StatusBar;', sandbox);
 const sb = new sandbox.StatusBar();
 check('StatusBar constructed', !!sb);
-check('status-bar version is A34', sb.constructor.VERSION === '0.4.3-a34', sb.constructor.VERSION);
+check('status-bar version is current beta', sb.constructor.VERSION === '0.6.0-beta', sb.constructor.VERSION);
 
 // A real downward pull on the status bar opens QS exactly once.
 bar.dispatch('pointerdown', { clientX: 100, clientY: 8, button: 0 });

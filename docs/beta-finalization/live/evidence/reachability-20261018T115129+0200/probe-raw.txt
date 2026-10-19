@@ -1,0 +1,5 @@
+dev=/dev/cu.usbmodem1201 bytes_in=54 echo_ok=True error=None elapsed=0.326s
+sample:
+
+[?2004l[?2004hsh-5.3# 
+[?2004l[?2004hsh-5.3# 

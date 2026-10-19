@@ -1,0 +1,10 @@
+{
+  "at": "2026-10-18T23:01:28+0200",
+  "bytes_in": 6561,
+  "dev": "/dev/cu.usbmodem1201",
+  "echo_ok": true,
+  "elapsed_s": 0.34,
+  "error": null,
+  "reachable": true,
+  "sample": "YSTEM=platform\n DEVICE=+platform:10050000.watchdog_cl0\n6,8779,862430382,-;Watchdog: s3c2410wdt_keepalive RTC 2026-10-18 21:01:07 UTC\n6,8780,863205730,-;sec_ts 4-0048: [sec_input] mode:0202 tc:0 noise:0 wet:0 wc:0 lp:(0) D0F000 fn:0061/0061 // v:0233 cal:A2(00) C01T0226.LCIA.L Cal_flag:Success fail_cnt:0 // id(0,0) // #23 22\n SUBSYSTEM=i2c\n DEVICE=+i2c:4-0048\n6,8781,866017722,-;[SSP]: debug_w"
+}

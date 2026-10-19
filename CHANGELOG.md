@@ -6,8 +6,46 @@ The canonical version lives in [`VERSION`](VERSION) and is bumped in lockstep
 across the shell apps, the PWA manifest, the device `APKBUILD`s, the VM tooling
 and the OTA builder (see *Versioning* below).
 
+## [v0.6.0-beta] — 2026-10-19 — *touchscreen works: v0.5.2-beta live on the handset, image built exactly as shipped*
+
+- **Touchscreen works.** The Operation Touchable A34 TOUCHDOWN pass (A34 Wayland
+  framebuffer `bl_power=4` screen-off path + decon/frame-commit contract tests)
+  that landed in v0.5.2-beta is the current, working state: real finger contacts
+  reach evdev -> libinput -> phoc -> WebKit and taps are delivered. This release
+  ships that exact runtime — no silent rollback to an older userspace.
+- **The S10+ release image now builds exactly what runs on the phone.** The GitHub
+  Actions `s10plus` job compiles the current A34 TOUCHDOWN userspace from repo
+  sources inside a Fedora 43 arm64 container (`nuxel-wl-fb`, `nuxel-button-manager`,
+  `nuxel-pwa-host`, libinput shim, `nuxel-wl-snapshot`) and embeds the repo-source
+  initramfs in a RAW arm64 kernel Image (never Image.gz — S-Boot executes a gzip
+  payload as code), packed into the legacy v1 boot.img with the merged board DTB.
+  No developer-only `build/out/s10plus/a32` tree is copied; CI reproduces the
+  handset bit-for-bit.
+- **Whole-repo version bump to `v0.6.0-beta`.** `VERSION`, the device `APKBUILD`s
+  (s10plus, g7power, google-pixel-10-pro-xl), PWA/bridge manifests
+  (`package.json`, `manifest.json` + `pwa_version`/`cache_version`,
+  `bridge-version.json` host version), shell apps (`meson.build`, Home metainfo,
+  About Phone strings), bridge/notification/portal services, the OTA builder and
+  VM tooling all move in lockstep. The PWA protocol pin (`NUXEL_BRIDGE_VERSION =
+  '1'`) is intentionally left unchanged — only the host *implementation* version
+  moves; historical changelog entries are preserved untouched.
 
 ---
+
+## [v0.5.2-beta] — 2026-10-18 — *interaction and reproducible release candidate*
+
+- Added explicit launcher application lifecycle states and common surface cleanup;
+  failed PWA loads remain visible and escapable.
+- Repaired Terminal Shift, symbols and Backspace history behavior while retaining
+  the real PTY host bridge and `term_close_window()` lifecycle.
+- Staged the existing Stevia keyboard configuration/applier/user units into the
+  S10+ Fedora image and made the rootfs verifier gate current launcher/Terminal
+  assets.
+- Normalized release tags to exactly one leading `v`, rejected tag/`VERSION`
+  mismatches, and pinned build, packaging and release creation to one source SHA.
+- Added the v0.5.2 finalization evidence set. The A34 real-finger app launches
+  remain proven; the longer owner navigation/keyboard sequence is explicitly
+  still `NEEDS_OWNER_TEST` because this session could not open the USB console.
 
 ## [v0.5.1-alpha] — 2026-10-18 — *current-state cleanup + reproducible A34 image*
 

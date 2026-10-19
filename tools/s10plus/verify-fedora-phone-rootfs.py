@@ -5,6 +5,7 @@ No mount, chroot, Docker, or libext2fs required in --ext4 mode. This verifies
 package binary payloads and S10+ assets; it cannot verify hardware support.
 """
 import argparse
+import hashlib
 import pathlib
 import posixpath
 import stat
@@ -32,7 +33,31 @@ FILES=(
     '/etc/nuxel/buttons/reboot-gate.json',
     '/usr/share/nuxel/nuxel-home/index.html',
     '/etc/nuxel/phone-runtime-status',
+    '/etc/nuxel/keyboard/keyboard.json',
+    '/usr/libexec/nuxel/nuxel-keyboard-apply',
+    '/usr/lib/systemd/user/nuxel-keyboard-apply.service',
+    '/usr/lib/systemd/user/nuxel-keyboard-apply.path',
 )
+
+# Runtime-critical files copied verbatim by the rootfs builder.  Comparing the
+# packaged bytes with the checkout makes "latest source" an enforceable image
+# property instead of an assumption based on a successful copy command.
+SOURCE_PARITY = {
+    '/usr/share/nuxel/pwa/nuxel-home/js/app.js': 'pwa/nuxel-home/js/app.js',
+    '/usr/share/nuxel/pwa/nuxel-home/js/touch-keyboard.js': 'pwa/nuxel-home/js/touch-keyboard.js',
+    '/usr/share/nuxel/pwa/nuxel-home/js/status-bar.js': 'pwa/nuxel-home/js/status-bar.js',
+    '/usr/share/nuxel/pwa/nuxel-home/js/qs.js': 'pwa/nuxel-home/js/qs.js',
+    '/usr/share/nuxel/pwa/nuxel-home/js/host-bridge.js': 'pwa/nuxel-home/js/host-bridge.js',
+    '/usr/share/nuxel/pwa/nuxel-home/sw.js': 'pwa/nuxel-home/sw.js',
+    '/usr/share/nuxel/pwa/nuxel-home/manifest.json': 'pwa/nuxel-home/manifest.json',
+    '/usr/share/nuxel/pwa/nuxel-apps/terminal/index.html': 'pwa/nuxel-apps/terminal/index.html',
+    '/usr/share/nuxel/pwa/nuxel-apps/terminal/terminal.js': 'pwa/nuxel-apps/terminal/terminal.js',
+    '/usr/share/nuxel/pwa/nuxel-apps/terminal/terminal.css': 'pwa/nuxel-apps/terminal/terminal.css',
+    '/etc/nuxel/app-registry/app_registry.json': 'pwa/nuxel-common/app-registry.json',
+    '/etc/nuxel/bridge-version.json': 'pwa/nuxel-common/bridge-version.json',
+    '/etc/nuxel/keyboard/keyboard.json': 'configs/nuxel/keyboard/keyboard.json',
+    '/usr/libexec/nuxel/nuxel-keyboard-apply': 'tools/s10plus/a33/nuxel-keyboard-apply.sh',
+}
 
 
 def read_staging(root, path):
@@ -96,8 +121,17 @@ def validate(read):
         b=read(p)
         if not b:raise ValueError('empty file '+p)
         print('PASS asset:',p,len(b),'bytes')
+    repo = pathlib.Path(__file__).resolve().parents[2]
+    for image_path, source_path in SOURCE_PARITY.items():
+        packaged = read(image_path)
+        source = (repo/source_path).read_bytes()
+        if packaged != source:
+            raise ValueError('source/image drift: %s != %s (%s != %s)' % (
+                image_path, source_path, hashlib.sha256(packaged).hexdigest(),
+                hashlib.sha256(source).hexdigest()))
+        print('PASS exact source parity:', source_path, '->', image_path)
     status=read('/etc/nuxel/phone-runtime-status')
-    for token in (b'BASE_OS=fedora-43-aarch64',b'INIT_SYSTEM=systemd',b'HARDWARE_BOOT_VERIFIED=true'):
+    for token in (b'BASE_OS=fedora-43-aarch64',b'INIT_SYSTEM=systemd',b'HARDWARE_BOOT_VERIFIED=false',b'DISPLAY_DRIVER_VERIFIED=false'):
         if token not in status:raise ValueError('incorrect runtime status '+repr(token))
     print('PASS: Fedora RPM installed ARM64 phone binaries, systemd, Nuxel S10+ overlays')
     print('NOT VERIFIED: kernel, GPU/DRM, DTBO/hw-revision, touch or actual phone boot')

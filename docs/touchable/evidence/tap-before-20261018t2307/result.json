@@ -1,0 +1,44 @@
+{
+  "trial": "tap-before-20261018t2307",
+  "round": 1,
+  "recorder_sha256": "63d9d567dc434d0a8087537c41766b5856e369e2b03ba601509e3ecaf6937ffe",
+  "archive_sha256": "3f2fcba8eae7e1f0c6b838eed599b51ccb36153c6aab8e739f66c1f194a61a36",
+  "console": {
+    "vid": 6353,
+    "pid": 20199,
+    "tty_base": "usbmodem",
+    "tty_suffix": "1201",
+    "tty_device": "usbmodem1201",
+    "callout": "/dev/cu.usbmodem1201",
+    "dialin": "/dev/tty.usbmodem1201",
+    "match_stage": "vid+pid+ttybase+serial"
+  },
+  "capture": {
+    "verdict": "EVENTS_RECORDED_BUT_NOT_FORWARDED",
+    "started_wall": 1792357438.5755754,
+    "ended_wall": 1792357528.5783973,
+    "capture_seconds": 90.00282112800005,
+    "requested_seconds": 90.0,
+    "totals": {
+      "events": 384,
+      "touch_events": 384,
+      "tracking_down": 11,
+      "tracking_up": 11,
+      "syn_report": 87,
+      "syn_dropped": 0,
+      "dom_events": 0,
+      "dom_touch_events": 0,
+      "dom_clicks": 0,
+      "app_launches": 0,
+      "event_bytes": 48739,
+      "log_bytes": 30168
+    },
+    "errors": [],
+    "owner_verified": false
+  },
+  "owner": {
+    "verdict": "PENDING"
+  },
+  "exit_code": 4,
+  "completed_at": 1792357530.1883929
+}

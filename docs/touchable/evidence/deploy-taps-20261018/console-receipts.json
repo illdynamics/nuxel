@@ -1,0 +1,24 @@
+[
+  {
+    "command": "test ! -e /run/nuxel-owner-test.lock && test ! -e /var/tmp/nuxel-deploy-taps-20261018 && mkdir -p /var/tmp/nuxel-deploy-taps-20261018",
+    "output": "",
+    "rid": "58fc3542",
+    "rc": 0,
+    "framed": true,
+    "sha_ok": true,
+    "elapsed_s": 0.853,
+    "raw_len": 8639,
+    "output_bytes": 0
+  },
+  {
+    "command": "uname -smr; cat /proc/sys/kernel/random/boot_id; systemctl is-active nuxel-wayland nuxel-wl-fb; cat /run/nuxel-wl-fb.state",
+    "output": "Linux 4.14.253 aarch64\n2efd316a-3c15-441d-ae9d-54cd9b30aacd\nactive\nactive\n1792357699 FRAMES_OK total=29230 fps_1s=23 failures=0 blit_avg_ms=42 out=720x1520 src=720x1520 scale=2 panel=1440x3040 owner=nuxel-wl-fb display=on src_format=0x00000001 colour=R@0,G@8,B@16_abgr8888_override=1\n",
+    "rid": "f79f3543",
+    "rc": 0,
+    "framed": true,
+    "sha_ok": true,
+    "elapsed_s": 0.128,
+    "raw_len": 9626,
+    "output_bytes": 284
+  }
+]

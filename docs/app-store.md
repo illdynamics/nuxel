@@ -1,4 +1,4 @@
-<!-- Nuxel v0.5.1-alpha -->
+<!-- Nuxel v0.5.2-beta -->
 # Nuxel App Distribution Model
 
 > **Philosophy:** F-Droid principles + Flathub mechanics + GrapheneOS paranoia

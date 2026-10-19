@@ -1,0 +1,72 @@
+{
+  "adb_devices": [],
+  "at": "2026-10-18T15:46:28+0200",
+  "blocked_reason": null,
+  "capability": {
+    "pid": "0x4ee7",
+    "serial": "NUXEL-S10PLUS-0001",
+    "vid": "0x18d1"
+  },
+  "evidence_dir": "/Users/wicked/x/nuxel/docs/beta-finalization/live/evidence/reachability-20261018T154628+0200",
+  "exit_code": 0,
+  "finished": "2026-10-18T15:46:29+0200",
+  "gadget_descriptor_present": true,
+  "host": "Darwin 24.6.0",
+  "nodes": [
+    {
+      "callout": "/dev/cu.usbmodem1201",
+      "dialin": "/dev/tty.usbmodem1201",
+      "pid": 20199,
+      "tty_base": "usbmodem",
+      "tty_device": "usbmodem1201",
+      "tty_suffix": "1201",
+      "vid": 6353
+    }
+  ],
+  "probe": {
+    "at": "2026-10-18T15:46:29+0200",
+    "bytes_in": 7666,
+    "dev": "/dev/cu.usbmodem1201",
+    "echo_ok": true,
+    "elapsed_s": 0.359,
+    "error": null,
+    "reachable": true,
+    "sample": "00h,5f00h,045ah,0148h,1a46h,0009h,0f76h,d766h,1e13h,d8cbh,0feah,0314h,0500h,0f30h,0000h,6200h,1c00h,0ea4h,1403h,1e05h,1b1ch,7f3eh,2606h,cea4h,043ch,0890h,e3e1h,290eh,0400h,0001h,7b31h,7138h,0b82h,ffffh,1e36h,0f4bh,0c0fh,05e0h,0038h,1527h,a7e2h,026ah,1680h,1408h,9ee1h,e000h,07fch,0000h,0902h,029ah,d75ch,002fh,0283h,017eh,6664h,2241h,0f11h,039ah,0015h,0017h,1368h,0f4ch,0000h,6c41h,0006h,2f46h,7f80h,"
+  },
+  "reachable": true,
+  "selected": {
+    "callout": "/dev/cu.usbmodem1201",
+    "dialin": "/dev/tty.usbmodem1201",
+    "match_stage": "vid+pid+ttybase+serial",
+    "pid": 20199,
+    "tty_base": "usbmodem",
+    "tty_device": "usbmodem1201",
+    "tty_suffix": "1201",
+    "vid": 6353
+  },
+  "steps": [
+    {
+      "detail": "/dev/cu.usbmodem1201 (matched vid+pid+ttybase+serial)",
+      "ok": true,
+      "step": "select-by-capability"
+    },
+    {
+      "detail": {
+        "elapsed_s": 0.884,
+        "framed": true,
+        "output_bytes": 52,
+        "raw_len": 8315,
+        "rc": 0,
+        "rid": "d536cdb5",
+        "sha_ok": true
+      },
+      "ok": true,
+      "output": "uid=0(root) gid=0(root) groups=0(root)\nNXL-REACH-OK",
+      "step": "framed-command"
+    }
+  ],
+  "verdict": "REACHABLE",
+  "verdicts": {
+    "briq-10a-live-reachability-preflight": "REACHABLE"
+  }
+}

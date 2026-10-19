@@ -59,8 +59,7 @@ DEFAULT_SERIAL = "NUXEL-S10PLUS-0001"
 DEFAULT_PRODUCT_RE = r"Nuxel.*(Live\s*)?Console"
 
 #: Host serialisation lock (mirrors scripts/s10plus-debug-pack/nuxel-live.sh).
-#: The shared lock is tried first; a lock this uid merely cannot *open* falls
-#: back to a private per-uid lock in $TMPDIR (see take_console_lock()).
+#: All tools use the same inode; an inaccessible lock fails closed.
 LOCK_DIR = "/tmp"
 
 #: Service units whose state is part of the A32 baseline snapshot.
@@ -508,17 +507,20 @@ def wrap_length(command, rid="00000000", tmp="/var/tmp/nxl-00000000"):
 
 
 def chunk_size_for(make_command, limit=MAX_WRAPPER_LEN, start=64, step=64,
-                   max_size=4096):
+                   max_size=128):
     """Largest payload size whose fully wrapped push command still fits.
 
     `make_command(payload) -> str` builds the shell line; a callable (rather
     than a %-template) avoids colliding with the literal `%s` that printf
     needs inside the command itself.
 
-    This must GROW from `start` looking for the largest size that fits — the
-    earlier revision counted *down* from 128 and returned the first size that
-    fit, which is always the start value, so every push was cut into 128-char
-    frames (62 verified frames and ~60 s for one 6 KB launcher file).
+    This must GROW from `start` looking for the largest size that fits.  The
+    protocol's 3800-byte wrapper ceiling is not the usable CDC-ACM line ceiling:
+    the S10+ console mirrors kmsg concurrently and a ~3.8 KiB transmitted line
+    can be shredded before it reaches the shell.  Keep a conservative 128-char
+    base64 payload cap (measured live) while still calculating against the
+    wrapper limit.  Each part is idempotent, so verified smaller frames are
+    preferable to an optimistic frame that cannot be retried safely.
     """
     best = 8
     size = start
@@ -546,12 +548,13 @@ def push_bytes(con, data, path, chunk=None, mode="+x"):
     import base64
     path = assert_userspace_path(path)
     b64 = base64.b64encode(data).decode()
+    want = hashlib.sha256(data).hexdigest()
+    part_prefix = path + "." + want[:16] + ".b64"
 
     def mk(seg, part):
         return "printf '%s' '%s' > %s" % ("%s", seg, part)
     if chunk is None:
-        chunk = chunk_size_for(lambda seg: mk(seg, path + ".b64.00000"))
-    want = hashlib.sha256(data).hexdigest()
+        chunk = chunk_size_for(lambda seg: mk(seg, part_prefix + ".00000"))
     mkdir = con.run('mkdir -p "$(dirname %s)"' % path, timeout=con.timeout)
     if not mkdir.ok or mkdir.rc != 0:
         raise ConsoleLost("cannot create parent directory for %s (%s)"
@@ -559,7 +562,7 @@ def push_bytes(con, data, path, chunk=None, mode="+x"):
     parts = []
     for i in range(0, len(b64), chunk):
         seg = b64[i:i + chunk]
-        part = "%s.b64.%05d" % (path, len(parts))
+        part = "%s.%05d" % (part_prefix, len(parts))
         cmd = mk(seg, part)
         got = False
         for _try in range(5):
@@ -573,16 +576,22 @@ def push_bytes(con, data, path, chunk=None, mode="+x"):
             raise ConsoleLost("chunk %d of %s could not be written to %s"
                               % (len(parts) + 1, path, part))
         parts.append(part)
-    dec = ("cat %s.b64.* > %s.b64 2>/dev/null; rm -f %s.b64.*; "
-           "base64 -d < %s.b64 > %s && rm -f %s.b64 && "
-           "(test -z '%s' || chmod %s %s)"
-           % (path, path, path, path, path, path, mode, mode or "0644", path))
+    # Retain the parts until destination readback succeeds. A lost console
+    # receipt after a successful decode must be safe to retry: removing the
+    # parts first made the second attempt truncate the correctly staged file.
+    dec = ("cat %s.* > %s.b64 && "
+           "base64 -d < %s.b64 > %s.decode && "
+           "chmod %s %s.decode && mv -f %s.decode %s"
+           % (part_prefix, path, path, path, mode or "0644", path, path, path))
     for _try in range(3):
         res = con.run(dec, timeout=con.timeout)
         if res.ok:
             chk = con.run("sha256sum %s 2>/dev/null | cut -d' ' -f1" % path,
                           timeout=con.timeout)
             if chk.ok and want in chk.output:
+                # Cleanup is best effort after verification; it never changes
+                # the verified destination and is itself idempotent.
+                con.run("rm -f %s.b64 %s.*" % (path, part_prefix), timeout=con.timeout)
                 return {"path": path, "bytes": len(data), "b64_chars": len(b64),
                         "parts": len(parts), "decoded_sha256": want}
         con.interrupt()
@@ -608,44 +617,17 @@ def _shared_lock_path(dev: str) -> str:
     return os.path.join(LOCK_DIR, "nuxel-live.%s.lock" % _sanitized_dev(dev))
 
 
-def _private_lock_path(dev: str, uid=None) -> str:
-    """The per-uid fallback lock — byte-identical in shape to nuxel-live.sh's:
-
-        %s/nuxel-live.%s.%d.lock   with TMPDIR defaulting to /tmp
-
-    Why it exists: the live console always runs through sudo, and on a Linux host
-    with `fs.protected_regular=2` (Fedora's default) root may not O_CREAT an
-    *existing* lock file that belongs to another uid inside a sticky,
-    world-writable directory.  `open(path, "w")` then raises PermissionError and
-    a sudo run of this tool died before it touched the port — the serialisation
-    this module promises could not be taken at all.  The fallback is *still*
-    flock()ed, so mutual exclusion between two tools of the same uid is kept, and
-    the shared lock stays the first choice for every uid that can use it.
-    """
-    tmpdir = os.environ.get("TMPDIR", LOCK_DIR).rstrip("/") or LOCK_DIR
-    return "%s/nuxel-live.%s.%d.lock" % (tmpdir, _sanitized_dev(dev),
-                                         os.getuid() if uid is None else uid)
-
-
 def _lock_path(dev: str) -> str:
-    """The shared lock path (kept for callers/tests that only want the path)."""
     return _shared_lock_path(dev)
 
 
 def take_console_lock(dev: str, lock_wait: float = 0.0, opener=open):
-    """Take the one-host-tool-per-port lock; return (fd, path).
+    """Acquire the shared inode, never a private lock that bypasses a peer.
 
-    Order of attempts, mirroring scripts/s10plus-debug-pack/nuxel-live.sh exactly:
-
-      1. the shared /tmp lock  — a *held* lock is reported as held, never retried
-         as if it were a permission problem;
-      2. a private per-uid lock, when the shared file is merely *unopenable* by
-         this uid, with the same operator-facing notice text the shell prints.
-
-    Raises ConsoleLost with the operator-facing wording; never returns a lock it
-    does not hold.
+    Fedora protected_regular rejects O_CREAT on another user's existing /tmp
+    file. Opening that SAME file without O_CREAT preserves mutual exclusion.
+    If its permissions also deny that open, refuse the port; never unlink it.
     """
-    import fcntl
     shared = _shared_lock_path(dev)
     try:
         return _flock(shared, lock_wait, opener), shared
@@ -654,51 +636,33 @@ def take_console_lock(dev: str, lock_wait: float = 0.0, opener=open):
             "%s is owned by another host tool (lock %s) — "
             "the live group is serialised on purpose" % (dev, shared))
     except OSError as e:
-        private = _private_lock_path(dev)
-        if os.path.abspath(private) == os.path.abspath(shared):
-            raise ConsoleLost(
-                "cannot take a port lock for %s (%s) — refusing to share the "
-                "serial port" % (dev, e))
-        try:
-            fd = _flock(private, lock_wait, opener)
-        except BlockingIOError:
-            raise ConsoleLost(
-                "%s is owned by another host tool (lock %s) — "
-                "the live group is serialised on purpose" % (dev, private))
-        except OSError as e2:
-            raise ConsoleLost(
-                "cannot take a port lock for %s (%s; %s) — refusing to share the "
-                "serial port" % (dev, e, e2))
-        sys.stderr.write(
-            "# shared lock %s is not usable by uid %d (%s) — using private lock %s\n"
-            % (shared, os.getuid(), e, private))
-        return fd, private
+        raise ConsoleLost(
+            "cannot take a port lock for %s (%s) — refusing to share the serial port"
+            % (dev, e)) from e
 
 
 def _flock(path, lock_wait=0.0, opener=open):
-    """open(path, "w") + flock(LOCK_EX|LOCK_NB), bounded by `lock_wait` seconds.
-
-    Re-raises the original BlockingIOError when the lock stays held, so the
-    caller can tell "someone else owns the port" from "I cannot open the file".
-    """
+    """Open without truncating, then take a bounded exclusive flock."""
     import fcntl
-    fd = opener(path, "w")
-    waited = 0.0
-    while True:
-        try:
-            fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
-            return fd
-        except BlockingIOError:
-            # Only "held by somebody else" is worth waiting for; any other flock
-            # error (EBADF, EINVAL) is a real failure and is re-raised at once.
-            if waited >= float(lock_wait):
-                try:
-                    fd.close()
-                except OSError:
-                    pass
-                raise
-            time.sleep(1.0)
-            waited += 1.0
+    try:
+        fd = opener(path, "a+")
+    except PermissionError:
+        # No O_CREAT: bypasses protected_regular, NOT the shared lock.
+        fd = opener(path, "r")
+    deadline = time.monotonic() + max(0.0, float(lock_wait))
+    try:
+        while True:
+            try:
+                fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                return fd
+            except BlockingIOError:
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    raise
+                time.sleep(min(0.1, remaining))
+    except BaseException:
+        fd.close()
+        raise
 
 
 class Console:
@@ -744,23 +708,24 @@ class Console:
                 self.dev, lock_wait=self.lock_wait)
         try:
             self.fd = os.open(self.dev, os.O_RDWR | os.O_NOCTTY | os.O_NONBLOCK)
-        except OSError as e:
-            raise ConsoleLost("cannot open %s: %s" % (self.dev, e))
-        import fcntl
-        a = termios.tcgetattr(self.fd)
-        a[0] = 0
-        a[1] = 0
-        a[2] = termios.CS8 | termios.CREAD | termios.CLOCAL
-        a[3] = 0
-        a[4] = self.baud
-        a[5] = self.baud
-        termios.tcsetattr(self.fd, termios.TCSANOW, a)
-        try:  # assert DTR — some CDC-ACM gadgets only start their console on DTR
-            TIOCM_DTR = 0x002
-            fcntl.ioctl(self.fd, 0x8004746D, int(TIOCM_DTR).to_bytes(4, "little"))
-        except OSError:
-            pass
-        termios.tcflush(self.fd, termios.TCIOFLUSH)
+            import fcntl
+            a = termios.tcgetattr(self.fd)
+            a[0] = 0
+            a[1] = 0
+            a[2] = termios.CS8 | termios.CREAD | termios.CLOCAL
+            a[3] = 0
+            a[4] = self.baud
+            a[5] = self.baud
+            termios.tcsetattr(self.fd, termios.TCSANOW, a)
+            try:  # assert DTR — some CDC-ACM gadgets only start their console on DTR
+                TIOCM_DTR = 0x002
+                fcntl.ioctl(self.fd, 0x8004746D, int(TIOCM_DTR).to_bytes(4, "little"))
+            except OSError:
+                pass
+            termios.tcflush(self.fd, termios.TCIOFLUSH)
+        except (OSError, termios.error) as e:
+            self.close()
+            raise ConsoleLost("cannot open/configure %s: %s" % (self.dev, e)) from e
         self.opened_at = time.strftime("%Y-%m-%dT%H:%M:%S%z")
         return self
 

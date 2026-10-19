@@ -1,0 +1,103 @@
+ M .github/workflows/release.yml
+ M CHANGELOG.md
+ M README.md
+ M VERSION
+ M boot/google-pixel-10-pro-xl/flash.sh
+ M boot/google-pixel-10-pro-xl/recovery.sh
+ M "design/Nuxel Phone OS Project Plan and Architecture.md"
+ M design/nuxel-linux-phone-design.md
+ M device/g7power/APKBUILD
+ M device/google-pixel-10-pro-xl/APKBUILD
+ M device/s10plus/APKBUILD
+ M docs/app-store.md
+ M docs/architecture.md
+ M docs/beta-finalization/release/DEVICE-CAPABILITY-MANIFEST.json
+ M docs/beta-finalization/release/DEVICE-CAPABILITY-MANIFEST.md
+ M docs/beta-finalization/system/APP-INFRASTRUCTURE.md
+ M docs/build-guide.md
+ M docs/device-setup.md
+ M docs/milestones.md
+ M docs/pwa-model.md
+ M docs/security-defaults.md
+ M docs/security-model.md
+ M g7power-flash-guide-current.md
+ M images/build-ota.sh
+ M images/s10plus/build-phone-rootfs-inside-fedora.sh
+ M pwa/launcher/meson.build
+ M pwa/nuxel-apps/terminal/terminal.css
+ M pwa/nuxel-apps/terminal/terminal.js
+ M pwa/nuxel-common/app-registry.json
+ M pwa/nuxel-common/bridge-version.json
+ M pwa/nuxel-common/package.json
+ M pwa/nuxel-common/test-bridge.js
+ M pwa/nuxel-home/js/app.js
+ M pwa/nuxel-home/js/status-bar.js
+ M pwa/nuxel-home/manifest.json
+ M pwa/nuxel-home/sw.js
+ M s10plus-flash-guide-current.md
+ M scripts/s10plus-debug-pack/nuxel-live.sh
+ M services/nuxel-bridge/src/api.py
+ M services/nuxel-bridge/src/bridge.py
+ M services/nuxel-bridge/systemd/nuxel-bridge.service
+ M services/nuxel-bridge/systemd/nuxel-http-bridge.service
+ M services/nuxel-notifications/src/notifications.py
+ M services/nuxel-notifications/systemd/nuxel-notifications.service
+ M services/nuxel-portal/src/portal.py
+ M shell/nuxel-home-native/data/org.nuxel.Home.metainfo.xml
+ M shell/nuxel-home-native/meson.build
+ M shell/nuxel-home-native/nuxel_home/__init__.py
+ M shell/nuxel-home-native/nuxel_home/main.py
+ M shell/nuxel-shell/meson.build
+ M shell/nuxel-shell/nuxel-settings/main.c
+ M tools/beta/live/deploy-manifest.json
+ M tools/beta/live/nuxel-live-baseline.py
+ M tools/beta/live/nuxel_live.py
+ M tools/beta/live/tests/test_live_lib.py
+ M tools/beta/run-all-tests.sh
+ M tools/package-release.sh
+ M tools/s10plus/a33/nuxel-pwa-host.c
+ M tools/s10plus/a33/nuxel-reboot-mode.sh
+ M tools/s10plus/a33/nuxel-touch-capture.sh
+ M tools/s10plus/a33/nuxel-touch-trace.py
+ M tools/s10plus/a33/tests/launcher-registry-test.js
+ M tools/s10plus/a33/tests/run-p3-tests.sh
+ M tools/s10plus/a33/tests/run-touch-tests.sh
+ M tools/s10plus/a33/tests/run-userspace-tests.sh
+ M tools/s10plus/a33/tests/test-button-fsm.py
+ M tools/s10plus/a34/tests/run-a34-tests.sh
+ M tools/s10plus/a34/tests/test-qs-gesture.js
+ M tools/s10plus/verify-fedora-phone-rootfs.py
+ M vm/deploy-vm-manifest.txt
+ M vm/nuxel-vm-snapshot.sh
+?? "Nuxel Linux Phone OS - Linux Kernel 6.x Migration and Upgrade Plan.md"
+?? "Samsung S5000AP - Exynos 9820 Native Linux Modem Bring-up for Nuxel.md"
+?? TODO-v0.5.2-beta.md
+?? all.md
+?? beta.md
+?? codex-beta-pullah.jsonl
+?? docs/beta-finalization/live/LIVE-TOUCH-20261018.md
+?? docs/beta-finalization/live/evidence/baseline-20261018T1106/
+?? docs/beta-finalization/live/evidence/baseline-20261018T1122/
+?? docs/beta-finalization/live/evidence/deploy-20261018T105621+0200/
+?? docs/beta-finalization/live/evidence/deploy-tracer-20261018T1110-apply/
+?? docs/beta-finalization/live/evidence/deploy-tracer-20261018T1110-plan/
+?? docs/beta-finalization/live/evidence/reachability-20261018T095925+0200/
+?? docs/beta-finalization/live/evidence/reachability-20261018T104157+0200/
+?? docs/beta-finalization/live/evidence/reachability-20261018T104922+0200/
+?? docs/beta-finalization/live/evidence/reachability-20261018T105801+0200/
+?? docs/beta-finalization/live/evidence/reachability-20261018T110545+0200/
+?? docs/beta-finalization/live/evidence/reachability-20261018T113148+0200/
+?? docs/beta-finalization/live/evidence/reachability-20261018T113253+0200/
+?? docs/beta-finalization/live/evidence/reachability-20261018T113407+0200/
+?? docs/beta-finalization/live/evidence/reachability-20261018T113857+0200/
+?? docs/beta-finalization/live/evidence/reachability-20261018T114156+0200/
+?? docs/beta-finalization/live/evidence/reachability-20261018T114610+0200/
+?? docs/beta-finalization/live/evidence/reachability-20261018T114631+0200/
+?? docs/beta-finalization/live/evidence/reachability-20261018T115129+0200/
+?? docs/beta-finalization/v0.5.2/
+?? nuxel-astra-beta-pullah.md
+?? nuxel-beta-pullah-codex.md
+?? task.md
+?? task2.md
+?? tools/s10plus/a34/tests/test-terminal-keyboard.py
+?? tools/s10plus/a34/tests/test-terminal-lifecycle.py
