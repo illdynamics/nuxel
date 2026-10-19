@@ -13,6 +13,7 @@ import json
 import os
 from pathlib import Path
 import shutil
+import signal
 import subprocess
 import sys
 import time
@@ -21,7 +22,10 @@ ASSETS = Path(os.environ.get('NUXEL_SOUND_ASSET_DIR', '/usr/share/nuxel/assets')
 RUNTIME = Path(os.environ.get('NUXEL_SOUND_RUNTIME_DIR', '/run/nuxel'))
 HANDOFF = Path(os.environ.get('NUXEL_SOUND_HANDOFF', '/run/nuxel-anim-handoff'))
 SOUND_MODE = Path(os.environ.get('NUXEL_SOUND_MODE', '/var/lib/nuxel/audio/sound-mode'))
-PLAYER = os.environ.get('NUXEL_SOUND_PLAYER') or shutil.which('mpg123')
+PLAYER = (os.environ.get('NUXEL_SOUND_PLAYER') or
+          ('/usr/libexec/nuxel/nuxel-mp3-play'
+           if Path('/usr/libexec/nuxel/nuxel-mp3-play').is_file() else None) or
+          shutil.which('mpg123') or shutil.which('gst-launch-1.0'))
 ALSA_DEVICE = os.environ.get('NUXEL_SOUND_ALSA_DEVICE', '').strip()
 BOOT_FILE = 'nuxel-boot-audio.mp3'
 VOL_FILE = 'nuxel-pow.mp3'
@@ -65,26 +69,64 @@ def play(event, percentage):
         record(event, 'player_unavailable', detail='Install mpg123 in the Fedora rootfs'); return 4
     if not normal_sound_mode():
         record(event, 'muted_policy'); return 0
-    # mpg123 -f accepts linear PCM gain in fixed-point units: 32768 = unity.
-    # No ALSA mixer volume adjustment is made here: retain hardware cap.
-    scale = round(32768 * max(0, min(100, percentage)) / 100)
-    cmd = [str(PLAYER), '-q', '-o', 'alsa']
-    # Select a device ONLY if confirmed on hardware. Empty => distro's ALSA
-    # default policy/UCM; do not guess a beyond-madera PCM/card number.
-    if ALSA_DEVICE:
-        if any(c.isspace() for c in ALSA_DEVICE) or ALSA_DEVICE.startswith('-'):
-            record(event, 'invalid_alsa_device', detail=ALSA_DEVICE); return 8
-        cmd += ['-a', ALSA_DEVICE]
-    cmd += ['-f', str(scale), str(src)]
+    # No ALSA mixer volume adjustment is made here: retain the button-manager
+    # hardware cap.  Select a device only if confirmed on hardware; empty lets
+    # ALSA/UCM choose its default route.
+    if ALSA_DEVICE and (any(c.isspace() for c in ALSA_DEVICE) or ALSA_DEVICE.startswith('-')):
+        record(event, 'invalid_alsa_device', detail=ALSA_DEVICE); return 8
+    if Path(PLAYER).name == 'nuxel-mp3-play':
+        cmd = [str(PLAYER), '--gain', str(max(0, min(100, percentage)))]
+        if ALSA_DEVICE:
+            cmd += ['--device', ALSA_DEVICE]
+        cmd += [str(src)]
+    elif Path(PLAYER).name == 'gst-launch-1.0':
+        # The phone image ships GStreamer but not mpg123.  Its decoder is chosen
+        # from the installed plugins and alsasink retains the active ALSA route.
+        gain = max(0, min(100, percentage)) / 100.0
+        sink = 'alsasink' + (f' device={ALSA_DEVICE}' if ALSA_DEVICE else '')
+        cmd = [str(PLAYER), '-q', 'filesrc', f'location={src}', '!', 'decodebin',
+               '!', 'audioconvert', '!', 'audioresample', '!', 'volume',
+               f'volume={gain:.2f}', '!', sink]
+    else:
+        # mpg123 -f accepts linear PCM gain in fixed-point units: 32768 = unity.
+        scale = round(32768 * max(0, min(100, percentage)) / 100)
+        cmd = [str(PLAYER), '-q', '-o', 'alsa']
+        if ALSA_DEVICE:
+            cmd += ['-a', ALSA_DEVICE]
+        cmd += ['-f', str(scale), str(src)]
+    timeout = 11 if event == 'boot' else 4
+    proc = None
     try:
-        done = subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE,
-                              timeout=11 if event == 'boot' else 4, check=False)
-        rc = done.returncode
+        # GStreamer can fork helper processes which inherit stderr.  Killing only
+        # its parent then makes communicate() wait forever for that pipe; give
+        # every cue a separate process group so timeout always returns control to
+        # the single button manager.
+        proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE,
+                                start_new_session=True)
+        _, stderr = proc.communicate(timeout=timeout)
+        rc = proc.returncode
         record(event, 'player_ok' if rc == 0 else 'player_error', exit_code=rc,
                pcm_gain_percent=percentage, output='alsa', alsa_device=ALSA_DEVICE or 'default',
-               audible='unverified', detail=done.stderr.decode('utf-8', 'replace')[-400:])
+               audible='unverified', detail=stderr.decode('utf-8', 'replace')[-400:])
         return 0 if rc == 0 else 5
-    except (OSError, subprocess.TimeoutExpired) as e:
+    except subprocess.TimeoutExpired:
+        try:
+            os.killpg(proc.pid, signal.SIGTERM)
+            _, stderr = proc.communicate(timeout=1)
+        except (OSError, subprocess.TimeoutExpired):
+            try:
+                os.killpg(proc.pid, signal.SIGKILL)
+            except OSError:
+                pass
+        record(event, 'player_timeout', timeout_seconds=timeout, output='alsa',
+               pcm_gain_percent=percentage, audible='unverified')
+        return 5
+    except (OSError, KeyboardInterrupt) as e:
+        if proc is not None:
+            try:
+                os.killpg(proc.pid, signal.SIGKILL)
+            except OSError:
+                pass
         record(event, 'player_exception', detail=str(e), output='alsa', pcm_gain_percent=percentage, audible='unverified')
         return 6
 

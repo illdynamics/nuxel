@@ -1,0 +1,36 @@
+#!/bin/sh
+# A37 live acceptance checker.  It verifies deployable facts only; hearing,
+# haptic feel and visible icon rendering remain owner-confirmed observations.
+set -eu
+
+BASE=/var/lib/nuxel/a37
+SUMS="$BASE/SHA256SUMS"
+URLS="$BASE/http-paths"
+fail=0
+note() { printf '%s\n' "$*"; }
+check() { if "$@"; then note "OK  $*"; else note "FAIL $*"; fail=1; fi; }
+
+check test -s "$SUMS"
+if [ -s "$SUMS" ]; then
+  if (cd / && sha256sum -c "$SUMS"); then note 'OK  deployed file hashes';
+  else note 'FAIL deployed file hashes'; fail=1; fi
+fi
+check test -x /usr/libexec/nuxel/nuxel-sound-cue
+check systemctl is-active --quiet nuxel-button-manager.service
+check systemctl is-active --quiet nuxel-haptics.service
+check systemctl is-enabled --quiet nuxel-boot-sound.service
+check /usr/lib/nuxel/nuxel-button-manager --probe
+
+if [ -s "$URLS" ]; then
+  while IFS= read -r path; do
+    [ -n "$path" ] || continue
+    code="$(curl -sS -o /dev/null -w '%{http_code}' "http://127.0.0.1:8000$path" || true)"
+    if [ "$code" = 200 ]; then note "OK  HTTP 200 $path";
+    else note "FAIL HTTP $code $path"; fail=1; fi
+  done < "$URLS"
+else
+  note 'FAIL missing HTTP acceptance list'; fail=1
+fi
+
+note 'NEEDS_OWNER_CONFIRMATION visible icons, audible volume/startup cues, and keyboard vibration.'
+exit "$fail"

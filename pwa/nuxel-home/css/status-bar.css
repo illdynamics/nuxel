@@ -197,7 +197,11 @@
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
     animation: slideDown 0.25s ease;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    max-height: min(300px, calc(100dvh - var(--status-bar-height) - var(--system-nav-height)));
+    overflow: hidden;
+    touch-action: pan-y;
 }
+.quick-settings.expanded { bottom: var(--system-nav-height); max-height: none; overflow-y: auto; }
 
 @keyframes slideDown {
     from { transform: translateY(-100%); opacity: 0; }
@@ -291,7 +295,7 @@
     top: var(--status-bar-height);
     left: 0;
     right: 0;
-    bottom: 0;
+    bottom: var(--system-nav-height);
     background: var(--bg-primary);
     z-index: 50;
     animation: fadeIn var(--transition-normal) ease;
@@ -302,6 +306,9 @@
     display: flex;
     flex-direction: column;
     gap: 12px;
+    overflow-y: auto;
+    height: 100%;
+    touch-action: pan-y;
 }
 
 .recents-card {

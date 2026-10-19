@@ -37,7 +37,8 @@ class RecentsManager {
     }
 
     _render() {
-        const recentApps = appRegistry.getRecentApps();
+        const sessions = window.nuxel && window.nuxel.sessions;
+        const recentApps = sessions ? sessions.list().map(s => Object.assign({}, appRegistry.getApp(s.appId), { session: s })) : appRegistry.getRecentApps();
         
         if (recentApps.length === 0) {
             this.list.innerHTML = `
@@ -51,27 +52,35 @@ class RecentsManager {
         }
 
         this.list.innerHTML = recentApps.map(app => `
-            <div class="recents-card press-effect" data-app-id="${app.id}">
+            <div class="recents-card press-effect" data-app-id="${app.id}" data-session-id="${app.session ? app.session.sessionId : ''}">
                 <div class="recents-preview" style="background: ${app.color}22">
                     <span class="recent-app-icon">${window.NuxelAppIcon ? window.NuxelAppIcon(app) : app.icon}</span>
                 </div>
                 <div class="recents-label">
                     <span>${app.name}</span>
-                    <span style="float: right; font-size: 12px; color: var(--text-secondary)">
-                        ${app.type === 'native' ? 'System' : 'App'}
-                    </span>
+                    <button type="button" class="recents-close" aria-label="Close ${app.name}">Close</button>
                 </div>
             </div>
         `).join('');
 
         // Bind clicks
         this.list.querySelectorAll('.recents-card').forEach(card => {
-            card.addEventListener('click', () => {
+            let startX = 0;
+            card.addEventListener('pointerdown', e => { startX = e.clientX; });
+            card.addEventListener('pointerup', e => {
+                if (Math.abs(e.clientX - startX) > 72) { this._closeCard(card.dataset.appId); return; }
+                if (e.target.closest('.recents-close')) { this._closeCard(card.dataset.appId); return; }
                 const appId = card.dataset.appId;
                 this.close();
-                appRegistry.launchApp(appId);
+                if (!(window.nuxel && window.nuxel._resumeApp(appRegistry.getApp(appId)))) appRegistry.launchApp(appId);
             });
         });
+    }
+
+    _closeCard(appId) {
+        if (window.nuxel && window.nuxel.sessions) window.nuxel.sessions.close(appId);
+        if (window.nuxel && window.nuxel.appSession.app && window.nuxel.appSession.app.id === appId) window.nuxel._closeAppSurface();
+        this._render();
     }
 }
 

@@ -1,0 +1,6 @@
+dev=/dev/ttyACM0 bytes_in=99 echo_ok=True error=None elapsed=0.304s
+sample:
+
+[?2004lsh: :s^[[?2004hsh-5.3#: substitution failed
+[?2004hsh-5.3# 
+[?2004l[?2004hsh-5.3# 

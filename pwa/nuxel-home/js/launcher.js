@@ -12,6 +12,9 @@ class Launcher {
         this.settings = { gridColumns: 4, gridRows: 5, dockColumns: 5 };
         this.hiddenAppIds = new Set();
         this.appSizes = {};
+        this.layout = null;
+        this.folderHover = null;
+        this.drawerOpen = false;
         this.editMode = false;
         this.selectedAppId = null;
         this.isDragging = false;
@@ -54,6 +57,7 @@ class Launcher {
             this.settings = Object.assign(this.settings, saved.settings || {});
             this.hiddenAppIds = new Set(Array.isArray(saved.hiddenAppIds) ? saved.hiddenAppIds : []);
             this.appSizes = saved.appSizes && typeof saved.appSizes === 'object' ? saved.appSizes : {};
+            this.savedEntries = saved.entries || null;
         } catch (e) { /* first launch or an old, invalid layout */ }
     }
 
@@ -63,6 +67,7 @@ class Launcher {
                 settings: this.settings,
                 hiddenAppIds: Array.from(this.hiddenAppIds),
                 appSizes: this.appSizes,
+                entries: this.layout ? this.layout.snapshot().entries : this.savedEntries,
             }));
         } catch (e) { console.warn('Could not save launcher layout:', e); }
     }
@@ -110,6 +115,23 @@ class Launcher {
         return gridApps;
     }
 
+    _ensureLayout() {
+        const ids = this._getOrderedApps().map(app => app.id);
+        if (!this.layout || ids.some(id => !this.layout.appIds.includes(id))) {
+            this.layout = new window.NuxelHomeLayout(ids, this.savedEntries ? { entries: this.savedEntries } : { order: this.appOrder });
+            this.savedEntries = null;
+        }
+        return this.layout;
+    }
+
+    _entries() {
+        const byId = new Map(this._getOrderedApps().map(app => [app.id, app]));
+        return this._ensureLayout().entries.map(entry => {
+            if (typeof entry === 'string') return byId.get(entry);
+            return Object.assign({}, entry, { apps: entry.items.map(id => byId.get(id)).filter(Boolean) });
+        }).filter(Boolean);
+    }
+
     resetOrder() {
         localStorage.removeItem('nuxel.appOrder');
         localStorage.removeItem('nuxel.launcherLayout');
@@ -138,13 +160,15 @@ class Launcher {
 
     _renderAppGrid() {
         if (!this.appList) return;
-        const gridApps = this._getOrderedApps();
-        const totalPages = Math.max(1, Math.ceil(gridApps.length / this.appsPerPage));
+        const gridEntries = this._entries();
+        const totalPages = Math.max(1, Math.ceil(gridEntries.length / this.appsPerPage));
         if (this.currentPage >= totalPages) this.currentPage = totalPages - 1;
         const start = this.currentPage * this.appsPerPage;
-        const page = gridApps.slice(start, start + this.appsPerPage);
+        const page = gridEntries.slice(start, start + this.appsPerPage);
 
-        this.appList.innerHTML = page.map(app =>
+        this.appList.innerHTML = page.map(app => app.type === 'folder'
+            ? '<div class="app-item app-folder" data-folder-id="' + app.id + '" tabindex="0" role="button" aria-label="' + app.name + '"><div class="app-icon folder-icon">' + app.apps.slice(0, 4).map(a => this._appIcon(a)).join('') + '</div><span class="app-label">' + app.name + '</span></div>'
+            :
             '<div class="app-item" data-size="' + (this.appSizes[app.id] || 'normal') + '" data-app-id="' + app.id + '" tabindex="0" role="button" aria-label="' + app.name + '" title="' + (app.description || '') + '"><div class="app-icon app-category-' + app.category + '" style="background: ' + app.color + '33; color: ' + app.color + '">' + this._appIcon(app) + '</div><span class="app-label">' + app.name + '</span></div>'
         ).join('');
 
@@ -202,6 +226,7 @@ class Launcher {
         const item = e.target.closest && e.target.closest('.app-item');
         if (!item) return;
 
+        if (item.dataset && item.dataset.folderId) { this._openFolder(item.dataset.folderId); return; }
         this.dragTarget = item;
         this.pressedPointer = e.pointerId;
         this.dragStartX = e.clientX;
@@ -304,15 +329,37 @@ class Launcher {
         this.dragGhost.style.left = (e.clientX - 32) + 'px';
         this.dragGhost.style.top = (e.clientY - 32) + 'px';
 
-        // Find target under pointer
+        // Find target under pointer. A folder target needs deliberate centered
+        // dwell; ordinary near-edge drops always use insertion/reflow.
         this.dragGhost.style.display = 'none';
         const under = document.elementFromPoint(e.clientX, e.clientY);
         this.dragGhost.style.display = '';
 
         const targetItem = under ? under.closest('.app-item') : null;
         if (targetItem && targetItem !== this.dragData.el && targetItem.closest('#app-list')) {
-            this._swapWithTarget(targetItem);
+            const rect = targetItem.getBoundingClientRect();
+            const centered = Math.abs(e.clientX - (rect.left + rect.width / 2)) < rect.width * .24 && Math.abs(e.clientY - (rect.top + rect.height / 2)) < rect.height * .24;
+            const targetId = targetItem.dataset.appId;
+            if (centered && targetId) {
+                if (!this.folderHover || this.folderHover.id !== targetId) this.folderHover = { id: targetId, since: Date.now() };
+                if (Date.now() - this.folderHover.since >= 350) targetItem.classList.add('folder-target');
+            } else {
+                this.folderHover = null;
+                document.querySelectorAll('.folder-target').forEach(el => el.classList.remove('folder-target'));
+                this._insertAtTarget(targetItem, e.clientX, e.clientY);
+            }
         }
+    }
+
+    _insertAtTarget(target, x, y) {
+        const id = this.dragData && this.dragData.id, targetId = target.dataset.appId;
+        if (!id || !targetId) return;
+        const entries = this._entries();
+        const targetIndex = entries.findIndex(entry => entry && entry.id === targetId);
+        if (targetIndex < 0) return;
+        const rect = target.getBoundingClientRect();
+        this._ensureLayout().insertApp(id, targetIndex + (y > rect.top + rect.height / 2 ? 1 : 0));
+        this._renderAppGrid();
     }
 
     _swapWithTarget(target) {
@@ -355,8 +402,12 @@ class Launcher {
         document.body.classList.remove('launcher-dragging');
         document.querySelectorAll('.app-item').forEach(el => el.classList.remove('drag-over'));
 
-        this._saveOrder();
+        const folder = document.querySelector('.folder-target');
+        if (folder && this.dragData && folder.dataset.appId) this._ensureLayout().createFolder(this.dragData.id, folder.dataset.appId);
+        this._saveLayout();
+        this._renderAppGrid();
         this.dragData = null;
+        this.folderHover = null;
     }
 
     _enterEditMode(appId) {
@@ -416,6 +467,25 @@ class Launcher {
         if (bar) bar.remove();
     }
 
+    _openFolder(id) {
+        const folder = this._ensureLayout().entries.find(entry => entry && entry.type === 'folder' && entry.id === id);
+        if (!folder) return;
+        const apps = new Map(appRegistry.getAllApps().map(app => [app.id, app]));
+        const sheet = document.createElement('section');
+        sheet.className = 'folder-sheet'; sheet.dataset.folderId = id;
+        const render = () => {
+            sheet.innerHTML = '<div class="folder-card"><input aria-label="Folder name" value="' + folder.name.replace(/"/g, '&quot;') + '"><button type="button" data-folder-close>Done</button><div class="folder-items">' + folder.items.map(appId => { const app = apps.get(appId); return app ? '<button type="button" data-app-id="' + app.id + '">' + this._appIcon(app) + '<span>' + app.name + '</span></button>' : ''; }).join('') + '</div></div>';
+            sheet.querySelector('input').onchange = ev => { this._ensureLayout().renameFolder(id, ev.target.value); this._saveLayout(); this._renderAppGrid(); };
+            sheet.querySelector('[data-folder-close]').onclick = () => sheet.remove();
+            sheet.querySelectorAll('[data-app-id]').forEach(button => button.onclick = () => { sheet.remove(); appRegistry.launchApp(button.dataset.appId); });
+        };
+        render(); document.body.appendChild(sheet);
+    }
+
+    openDrawer() { this.drawerOpen = true; document.body.classList.add('app-drawer-open'); }
+    closeDrawer() { this.drawerOpen = false; document.body.classList.remove('app-drawer-open'); }
+    advanceDrawer() { if (this.drawerOpen) { this.closeDrawer(); appRegistry.launchApp('nuxel-settings'); } else this.openDrawer(); }
+
     // ── Swipe navigation ────────────────────────────────────────────
 
     _onTouchStart(e) {
@@ -427,7 +497,7 @@ class Launcher {
         if (this.isDragging) return;
         const diff = this.swipeStartX - e.changedTouches[0].screenX;
         if (Math.abs(diff) < 50) return;
-        const total = Math.ceil(this._getOrderedApps().length / this.appsPerPage);
+        const total = Math.ceil(this._entries().length / this.appsPerPage);
         if (diff > 0 && this.currentPage < total - 1) {
             this.currentPage++;
             this._renderAppGrid();

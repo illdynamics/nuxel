@@ -1,0 +1,4 @@
+cmd: sha256sum /usr/share/nuxel/pwa/nuxel-home/js/launcher.js 2>&1
+ok: True rc: 0 framed: True sha_ok: True
+---
+9e460bd1ee919ef98de425a796d22190b7cacf7dee578c64e35337b209995ccf  /usr/share/nuxel/pwa/nuxel-home/js/launcher.js

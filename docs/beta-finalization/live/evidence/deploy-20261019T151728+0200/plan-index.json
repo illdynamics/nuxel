@@ -1,0 +1,1182 @@
+[
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 1,
+    "risk": "high",
+    "script": "scripts/001-button-left.png.sh",
+    "service": null,
+    "source": "assets/button-left.png",
+    "source_sha256": "3cc3c77a073788b5ee6192af7bbe5c970c971c68146e4c17ef404b246cc62b6a",
+    "target": "/usr/share/nuxel/assets/button-left.png"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 2,
+    "risk": "high",
+    "script": "scripts/002-button-middle.png.sh",
+    "service": null,
+    "source": "assets/button-middle.png",
+    "source_sha256": "c9b34ac7e3a387626a5ee6694519b779bced64bf32869be096f73cf4c7011fc1",
+    "target": "/usr/share/nuxel/assets/button-middle.png"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 3,
+    "risk": "high",
+    "script": "scripts/003-button-right.png.sh",
+    "service": null,
+    "source": "assets/button-right.png",
+    "source_sha256": "23257499b1617e95afd9b02a1bd99c86633f13e9f1f83d781b315d94873ee921",
+    "target": "/usr/share/nuxel/assets/button-right.png"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 4,
+    "risk": "high",
+    "script": "scripts/004-01-01_terminal.png.sh",
+    "service": null,
+    "source": "assets/nuxel-applications-icon-pack/01-01_terminal.png",
+    "source_sha256": "b23d3cbfe130bcb6ecaa209e2e51f303f01aed1c20fd40b3b448da33d605ce3d",
+    "target": "/usr/share/nuxel/assets/nuxel-applications-icon-pack/01-01_terminal.png"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 5,
+    "risk": "high",
+    "script": "scripts/005-01-06_pixel-envelope.png.sh",
+    "service": null,
+    "source": "assets/nuxel-applications-icon-pack/01-06_pixel-envelope.png",
+    "source_sha256": "2b728648ca6ce4b58522496edad7ed647fbbe85f3f385ae7f643e20deb3f9e97",
+    "target": "/usr/share/nuxel/assets/nuxel-applications-icon-pack/01-06_pixel-envelope.png"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 6,
+    "risk": "high",
+    "script": "scripts/006-01-08_phone.png.sh",
+    "service": null,
+    "source": "assets/nuxel-applications-icon-pack/01-08_phone.png",
+    "source_sha256": "ba6e3c4ab20e966adebd86a58bc5e55d0dda7975e0d0ba6be0d80cf4c08ad93d",
+    "target": "/usr/share/nuxel/assets/nuxel-applications-icon-pack/01-08_phone.png"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 7,
+    "risk": "high",
+    "script": "scripts/007-01-11_settings.png.sh",
+    "service": null,
+    "source": "assets/nuxel-applications-icon-pack/01-11_settings.png",
+    "source_sha256": "e1475756010e3314ce9b2cf47286c719971bbd40b56ed2e46e6999854bc584c8",
+    "target": "/usr/share/nuxel/assets/nuxel-applications-icon-pack/01-11_settings.png"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 8,
+    "risk": "high",
+    "script": "scripts/008-02-01_messages.png.sh",
+    "service": null,
+    "source": "assets/nuxel-applications-icon-pack/02-01_messages.png",
+    "source_sha256": "fe1f515772eafbe77f401791564ac501da23b9662576f01d5417c2fd00c4b347",
+    "target": "/usr/share/nuxel/assets/nuxel-applications-icon-pack/02-01_messages.png"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 9,
+    "risk": "high",
+    "script": "scripts/009-02-02_contacts.png.sh",
+    "service": null,
+    "source": "assets/nuxel-applications-icon-pack/02-02_contacts.png",
+    "source_sha256": "a1d161080b61e2549dd1c6a6b3c32c197d204c58e587252286b667ca48a3b07f",
+    "target": "/usr/share/nuxel/assets/nuxel-applications-icon-pack/02-02_contacts.png"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 10,
+    "risk": "high",
+    "script": "scripts/010-02-03_day-calendar.png.sh",
+    "service": null,
+    "source": "assets/nuxel-applications-icon-pack/02-03_day-calendar.png",
+    "source_sha256": "e4460c41e03c82c51b95eda2e04e569588b61068e0e90977759249d58c1e4016",
+    "target": "/usr/share/nuxel/assets/nuxel-applications-icon-pack/02-03_day-calendar.png"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 11,
+    "risk": "high",
+    "script": "scripts/011-02-06_file-explorer.png.sh",
+    "service": null,
+    "source": "assets/nuxel-applications-icon-pack/02-06_file-explorer.png",
+    "source_sha256": "94a22e4b05e0a7a7805e6f3d471639e541a923f379a055d5af9e57d7368d122d",
+    "target": "/usr/share/nuxel/assets/nuxel-applications-icon-pack/02-06_file-explorer.png"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 12,
+    "risk": "high",
+    "script": "scripts/012-02-09_notes.png.sh",
+    "service": null,
+    "source": "assets/nuxel-applications-icon-pack/02-09_notes.png",
+    "source_sha256": "030d30414a1648135912e7353ec4ff6f00a8fcb5c5d2a88f726215defd62e283",
+    "target": "/usr/share/nuxel/assets/nuxel-applications-icon-pack/02-09_notes.png"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 13,
+    "risk": "high",
+    "script": "scripts/013-03-01_camera.png.sh",
+    "service": null,
+    "source": "assets/nuxel-applications-icon-pack/03-01_camera.png",
+    "source_sha256": "89fa0c84db76ca083a51c882a562d78881f200651b050a2f377b00e045de5af1",
+    "target": "/usr/share/nuxel/assets/nuxel-applications-icon-pack/03-01_camera.png"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 14,
+    "risk": "high",
+    "script": "scripts/014-05-05_live-console.png.sh",
+    "service": null,
+    "source": "assets/nuxel-applications-icon-pack/05-05_live-console.png",
+    "source_sha256": "c695dedd90d5025e33902e2e8ad5f072480084af8950f7c27f435399ac79e6c2",
+    "target": "/usr/share/nuxel/assets/nuxel-applications-icon-pack/05-05_live-console.png"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 15,
+    "risk": "high",
+    "script": "scripts/015-nuxel-boot-audio.mp3.sh",
+    "service": null,
+    "source": "assets/nuxel-boot-audio.mp3",
+    "source_sha256": "cbacfcf706cf8e93dfa44c14cc7786c973d9af9995781243e2ae24cd6a178896",
+    "target": "/usr/share/nuxel/assets/nuxel-boot-audio.mp3"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 16,
+    "risk": "high",
+    "script": "scripts/016-nuxel-pow.mp3.sh",
+    "service": null,
+    "source": "assets/nuxel-pow.mp3",
+    "source_sha256": "a46429a8accf09fb1dc2f95b397e8d3f7795354579e366ce43fab6456190a670",
+    "target": "/usr/share/nuxel/assets/nuxel-pow.mp3"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 17,
+    "risk": "high",
+    "script": "scripts/017-01-wifi.png.sh",
+    "service": null,
+    "source": "assets/nuxel-quicksettings-icon-pack/01-wifi.png",
+    "source_sha256": "588920a76e1b270dddcb0b853a7f55afb9ae21aeb9f4d488dcb50bcc4d086f2b",
+    "target": "/usr/share/nuxel/assets/nuxel-quicksettings-icon-pack/01-wifi.png"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 18,
+    "risk": "high",
+    "script": "scripts/018-02-mobile-signal.png.sh",
+    "service": null,
+    "source": "assets/nuxel-quicksettings-icon-pack/02-mobile-signal.png",
+    "source_sha256": "7ecf9d4fc640282bfef137e04ba2d189ef5c0bf78cac98159e01b37b5dcdc091",
+    "target": "/usr/share/nuxel/assets/nuxel-quicksettings-icon-pack/02-mobile-signal.png"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 19,
+    "risk": "high",
+    "script": "scripts/019-04-bluetooth.png.sh",
+    "service": null,
+    "source": "assets/nuxel-quicksettings-icon-pack/04-bluetooth.png",
+    "source_sha256": "9a9b67f421d0ed2f83c086816b078c3be85bfdc3fc76a3743dd13c8509b2fda1",
+    "target": "/usr/share/nuxel/assets/nuxel-quicksettings-icon-pack/04-bluetooth.png"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 20,
+    "risk": "high",
+    "script": "scripts/020-09-location.png.sh",
+    "service": null,
+    "source": "assets/nuxel-quicksettings-icon-pack/09-location.png",
+    "source_sha256": "a9b62d842b00b4866d7154fce53f683f3f7ebcf36c0ee6e469c2e4303757c641",
+    "target": "/usr/share/nuxel/assets/nuxel-quicksettings-icon-pack/09-location.png"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 21,
+    "risk": "high",
+    "script": "scripts/021-10-flashlight.png.sh",
+    "service": null,
+    "source": "assets/nuxel-quicksettings-icon-pack/10-flashlight.png",
+    "source_sha256": "3e4780671dafa2c81fc4bd844a6f022b429ff14a977688134a20c411efdbe38c",
+    "target": "/usr/share/nuxel/assets/nuxel-quicksettings-icon-pack/10-flashlight.png"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 22,
+    "risk": "high",
+    "script": "scripts/022-11-do-not-disturb.png.sh",
+    "service": null,
+    "source": "assets/nuxel-quicksettings-icon-pack/11-do-not-disturb.png",
+    "source_sha256": "1e53bd1b1ee385a51d897a2c49b370ce7f2442b9541f7b745441aa3927926fdf",
+    "target": "/usr/share/nuxel/assets/nuxel-quicksettings-icon-pack/11-do-not-disturb.png"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 23,
+    "risk": "high",
+    "script": "scripts/023-17-rotation-lock.png.sh",
+    "service": null,
+    "source": "assets/nuxel-quicksettings-icon-pack/17-rotation-lock.png",
+    "source_sha256": "99ede17594b30f04ed2904f7460335857e44f2d11a7335d4f4815ce76a0fef65",
+    "target": "/usr/share/nuxel/assets/nuxel-quicksettings-icon-pack/17-rotation-lock.png"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 24,
+    "risk": "high",
+    "script": "scripts/024-30-quick-settings.png.sh",
+    "service": null,
+    "source": "assets/nuxel-quicksettings-icon-pack/30-quick-settings.png",
+    "source_sha256": "1a5bcd1ebafd71f66cb719530d81c2a73d2a83f07643500723974674841be693",
+    "target": "/usr/share/nuxel/assets/nuxel-quicksettings-icon-pack/30-quick-settings.png"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 25,
+    "risk": "high",
+    "script": "scripts/025-nuxel-sound-cue.sh",
+    "service": null,
+    "source": "tools/s10plus/a33/nuxel-sound-cue.py",
+    "source_sha256": "4b23eeec037b966a9bc56be0c7a855eeb414e6c87ed5ce87593c13dc2f550cef",
+    "target": "/usr/libexec/nuxel/nuxel-sound-cue"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 26,
+    "risk": "high",
+    "script": "scripts/026-nuxel-boot-sound.service.sh",
+    "service": null,
+    "source": "services/nuxel-session/systemd/nuxel-boot-sound.service",
+    "source_sha256": "ed7648ebacd4b8116c7ad6b5939a5384ece081699450047e1d3b029f18abc206",
+    "target": "/etc/systemd/system/nuxel-boot-sound.service"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 27,
+    "risk": "high",
+    "script": "scripts/027-settings.json.sh",
+    "service": null,
+    "source": "configs/nuxel/haptics/settings.json",
+    "source_sha256": "4ee3f014ce668564103ea4620fb04f47a33622722d88221a7b2fefcd96142acb",
+    "target": "/etc/nuxel/haptics/settings.json"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 28,
+    "risk": "high",
+    "script": "scripts/028-nuxel-hapticsd.py.sh",
+    "service": null,
+    "source": "services/nuxel-haptics/nuxel-hapticsd.py",
+    "source_sha256": "9264f64d952adb8a52f3e9169726ce51ad1184a634e8448b1a5680e79f86e8ff",
+    "target": "/usr/lib/nuxel/nuxel-hapticsd.py"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 29,
+    "risk": "high",
+    "script": "scripts/029-nuxel-haptics.service.sh",
+    "service": null,
+    "source": "services/nuxel-haptics/nuxel-haptics.service",
+    "source_sha256": "4dded21d2e83efd7e2448431d671f8a6102d7fa0210712d5b0a862be7db53846",
+    "target": "/etc/systemd/system/nuxel-haptics.service"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 30,
+    "risk": "high",
+    "script": "scripts/030-nuxel-haptics-sleep.sh",
+    "service": null,
+    "source": "services/nuxel-haptics/nuxel-haptics-sleep",
+    "source_sha256": "83ef618ffffda6b96cc5b959dd9e4553f666671fd7c48b169dcbe45399e92177",
+    "target": "/usr/libexec/nuxel/nuxel-haptics-sleep"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 31,
+    "risk": "high",
+    "script": "scripts/031-06-10_network-tools.png.sh",
+    "service": null,
+    "source": "assets/nuxel-applications-icon-pack/06-10_network-tools.png",
+    "source_sha256": "1da85324ec8a0827afb372f859c574d79defd0c5ee5a143aba39764384aa2363",
+    "target": "/usr/share/nuxel/assets/nuxel-applications-icon-pack/06-10_network-tools.png"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 32,
+    "risk": "high",
+    "script": "scripts/032-01-09_browser-swirl.png.sh",
+    "service": null,
+    "source": "assets/nuxel-applications-icon-pack/01-09_browser-swirl.png",
+    "source_sha256": "d29c012158ec6a85d7375cfc475d9e9feab44842b7b473710f053419023ed1c1",
+    "target": "/usr/share/nuxel/assets/nuxel-applications-icon-pack/01-09_browser-swirl.png"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 33,
+    "risk": "high",
+    "script": "scripts/033-02-11_software-updates.png.sh",
+    "service": null,
+    "source": "assets/nuxel-applications-icon-pack/02-11_software-updates.png",
+    "source_sha256": "72ff05afcdc2337b6d06cf1bcada4cabda52ba431cdc81fe7ec28a3d1c30175b",
+    "target": "/usr/share/nuxel/assets/nuxel-applications-icon-pack/02-11_software-updates.png"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 34,
+    "risk": "high",
+    "script": "scripts/034-03-12_settings-alternative.png.sh",
+    "service": null,
+    "source": "assets/nuxel-applications-icon-pack/03-12_settings-alternative.png",
+    "source_sha256": "1aaad3699b8ef7481852786734372e7ca5d3e0ccec94d8ee66da62201d6c9f9e",
+    "target": "/usr/share/nuxel/assets/nuxel-applications-icon-pack/03-12_settings-alternative.png"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 35,
+    "risk": "high",
+    "script": "scripts/035-04-10_volume-control.png.sh",
+    "service": null,
+    "source": "assets/nuxel-applications-icon-pack/04-10_volume-control.png",
+    "source_sha256": "89ac6fb987187ea12cfb2600070512c0a51ad4cc9523d70c5b5795c1df7e6814",
+    "target": "/usr/share/nuxel/assets/nuxel-applications-icon-pack/04-10_volume-control.png"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 36,
+    "risk": "high",
+    "script": "scripts/036-02-07_nuxtore.png.sh",
+    "service": null,
+    "source": "assets/nuxel-applications-icon-pack/02-07_nuxtore.png",
+    "source_sha256": "8a91daf351204f2b78db0cf53b22645462d6893a0eb168f9c804df96061e69f4",
+    "target": "/usr/share/nuxel/assets/nuxel-applications-icon-pack/02-07_nuxtore.png"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 37,
+    "risk": "high",
+    "script": "scripts/037-03-10_volume.png.sh",
+    "service": null,
+    "source": "assets/nuxel-applications-icon-pack/03-10_volume.png",
+    "source_sha256": "305639f42b9b749d964ef7dd932e984548f78ecb9a5e7b15f3cb39b9f2c437b9",
+    "target": "/usr/share/nuxel/assets/nuxel-applications-icon-pack/03-10_volume.png"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 38,
+    "risk": "high",
+    "script": "scripts/038-03-02_gallery.png.sh",
+    "service": null,
+    "source": "assets/nuxel-applications-icon-pack/03-02_gallery.png",
+    "source_sha256": "ba6ca7fc18f622362b4ad336d3f344fcb960a2cf4386b12343782567a21466b7",
+    "target": "/usr/share/nuxel/assets/nuxel-applications-icon-pack/03-02_gallery.png"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 39,
+    "risk": "high",
+    "script": "scripts/039-02-05_folders.png.sh",
+    "service": null,
+    "source": "assets/nuxel-applications-icon-pack/02-05_folders.png",
+    "source_sha256": "ee6562f1839ff3ac3bc6f88545cc3b7a6eb3dc7166bc625c88fd4371036d4e20",
+    "target": "/usr/share/nuxel/assets/nuxel-applications-icon-pack/02-05_folders.png"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 40,
+    "risk": "high",
+    "script": "scripts/040-03-09_brightness.png.sh",
+    "service": null,
+    "source": "assets/nuxel-applications-icon-pack/03-09_brightness.png",
+    "source_sha256": "1ee93906798206de890686adb596caa10cb17a99796ecdb310823335534f44df",
+    "target": "/usr/share/nuxel/assets/nuxel-applications-icon-pack/03-09_brightness.png"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 41,
+    "risk": "high",
+    "script": "scripts/041-06-09_game-controller.png.sh",
+    "service": null,
+    "source": "assets/nuxel-applications-icon-pack/06-09_game-controller.png",
+    "source_sha256": "d0bf459351db48771b4d4768696d6979a7c0c713764930c847b368d57d89df58",
+    "target": "/usr/share/nuxel/assets/nuxel-applications-icon-pack/06-09_game-controller.png"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 42,
+    "risk": "high",
+    "script": "scripts/042-01-07_pixel-wings.png.sh",
+    "service": null,
+    "source": "assets/nuxel-applications-icon-pack/01-07_pixel-wings.png",
+    "source_sha256": "a6ee6424e84660adaa68cb554950b60bb8d5deed805996a3f94e0bd19bc3b1ff",
+    "target": "/usr/share/nuxel/assets/nuxel-applications-icon-pack/01-07_pixel-wings.png"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 43,
+    "risk": "high",
+    "script": "scripts/043-03-07_vpn-protected.png.sh",
+    "service": null,
+    "source": "assets/nuxel-applications-icon-pack/03-07_vpn-protected.png",
+    "source_sha256": "827ba4b125074f36eaf8c0a78660ed1fbfc422d38cb82696f8b88944d4fcc22a",
+    "target": "/usr/share/nuxel/assets/nuxel-applications-icon-pack/03-07_vpn-protected.png"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 44,
+    "risk": "high",
+    "script": "scripts/044-02-12_apps.png.sh",
+    "service": null,
+    "source": "assets/nuxel-applications-icon-pack/02-12_apps.png",
+    "source_sha256": "85b7b81edb1402f00df4803bcfd84680433491f289182e106591ce914aa7a0e7",
+    "target": "/usr/share/nuxel/assets/nuxel-applications-icon-pack/02-12_apps.png"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 45,
+    "risk": "high",
+    "script": "scripts/045-05-10_transfer.png.sh",
+    "service": null,
+    "source": "assets/nuxel-applications-icon-pack/05-10_transfer.png",
+    "source_sha256": "e635ccaddfd565ca30bb8de87928472ebe4068f87ea09092aef455ff8d2d942d",
+    "target": "/usr/share/nuxel/assets/nuxel-applications-icon-pack/05-10_transfer.png"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 46,
+    "risk": "high",
+    "script": "scripts/046-04-08_information.png.sh",
+    "service": null,
+    "source": "assets/nuxel-applications-icon-pack/04-08_information.png",
+    "source_sha256": "e1532f547f0e1c2b896c530c314066c07128bc800c31b0e79c8842abcdfbc8b9",
+    "target": "/usr/share/nuxel/assets/nuxel-applications-icon-pack/04-08_information.png"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 47,
+    "risk": "high",
+    "script": "scripts/047-05-06_downloader.png.sh",
+    "service": null,
+    "source": "assets/nuxel-applications-icon-pack/05-06_downloader.png",
+    "source_sha256": "c4d8c1594528b1eaa35a7b222a73ddc13c4ca08c972785f9a0cdee089cc31ba3",
+    "target": "/usr/share/nuxel/assets/nuxel-applications-icon-pack/05-06_downloader.png"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 48,
+    "risk": "high",
+    "script": "scripts/048-05-08_notepad.png.sh",
+    "service": null,
+    "source": "assets/nuxel-applications-icon-pack/05-08_notepad.png",
+    "source_sha256": "f5e05b56ec9bae631661dcd249608fb7187bd5415dd53cf193190756e277f4dc",
+    "target": "/usr/share/nuxel/assets/nuxel-applications-icon-pack/05-08_notepad.png"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 49,
+    "risk": "high",
+    "script": "scripts/049-03-05_maps.png.sh",
+    "service": null,
+    "source": "assets/nuxel-applications-icon-pack/03-05_maps.png",
+    "source_sha256": "78813c9510c8752c2f921d9791c8de77b8cf89e27f014b624f781f0be12481d8",
+    "target": "/usr/share/nuxel/assets/nuxel-applications-icon-pack/03-05_maps.png"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 50,
+    "risk": "high",
+    "script": "scripts/050-06-02_calculator.png.sh",
+    "service": null,
+    "source": "assets/nuxel-applications-icon-pack/06-02_calculator.png",
+    "source_sha256": "a04e185440a91d1d1ea4b86d4c0d0793b62fbddbdd296e2208af13d598ed2a11",
+    "target": "/usr/share/nuxel/assets/nuxel-applications-icon-pack/06-02_calculator.png"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 51,
+    "risk": "high",
+    "script": "scripts/051-02-10_calendar-check.png.sh",
+    "service": null,
+    "source": "assets/nuxel-applications-icon-pack/02-10_calendar-check.png",
+    "source_sha256": "2b165c23bf7ccd794c70f87b468ecb648ebf6bad40e1554dac1f32ea6e15b86b",
+    "target": "/usr/share/nuxel/assets/nuxel-applications-icon-pack/02-10_calendar-check.png"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 52,
+    "risk": "high",
+    "script": "scripts/052-01-04_authenticator.png.sh",
+    "service": null,
+    "source": "assets/nuxel-applications-icon-pack/01-04_authenticator.png",
+    "source_sha256": "ba0fc865cc3c054e5bc86e8d0c3b684a6f1cf77e78824095e0553ab92d289bff",
+    "target": "/usr/share/nuxel/assets/nuxel-applications-icon-pack/01-04_authenticator.png"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 53,
+    "risk": "high",
+    "script": "scripts/053-06-08_workspace.png.sh",
+    "service": null,
+    "source": "assets/nuxel-applications-icon-pack/06-08_workspace.png",
+    "source_sha256": "adb3a8e45a37ea7409448f17bc2b2fa972690da9b593391a1b5bb706b2a72a8b",
+    "target": "/usr/share/nuxel/assets/nuxel-applications-icon-pack/06-08_workspace.png"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 54,
+    "risk": "high",
+    "script": "scripts/054-06-06_audio-mixer.png.sh",
+    "service": null,
+    "source": "assets/nuxel-applications-icon-pack/06-06_audio-mixer.png",
+    "source_sha256": "5808a5c03367a5a6a064259dfbc03d535fb10fad6241883d51b0319e37329730",
+    "target": "/usr/share/nuxel/assets/nuxel-applications-icon-pack/06-06_audio-mixer.png"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 55,
+    "risk": "high",
+    "script": "scripts/055-04-07_system-info.png.sh",
+    "service": null,
+    "source": "assets/nuxel-applications-icon-pack/04-07_system-info.png",
+    "source_sha256": "0a81ae4c9b7e717d6694ea8a3e90361769dea094934bb862982121371a027ab4",
+    "target": "/usr/share/nuxel/assets/nuxel-applications-icon-pack/04-07_system-info.png"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 56,
+    "risk": "high",
+    "script": "scripts/056-05-03_security-audit.png.sh",
+    "service": null,
+    "source": "assets/nuxel-applications-icon-pack/05-03_security-audit.png",
+    "source_sha256": "1299fd4b61eaae90cfd0cfa8a2b77e29a18f46e1fa9f8c6e45c5585718a682bd",
+    "target": "/usr/share/nuxel/assets/nuxel-applications-icon-pack/05-03_security-audit.png"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 57,
+    "risk": "high",
+    "script": "scripts/057-05-12_app-hub.png.sh",
+    "service": null,
+    "source": "assets/nuxel-applications-icon-pack/05-12_app-hub.png",
+    "source_sha256": "348ae5743e542fe11f211bb8e9938a7c92b4167e828115bdeff8efb05afadf28",
+    "target": "/usr/share/nuxel/assets/nuxel-applications-icon-pack/05-12_app-hub.png"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 58,
+    "risk": "high",
+    "script": "scripts/058-03-04_video-player.png.sh",
+    "service": null,
+    "source": "assets/nuxel-applications-icon-pack/03-04_video-player.png",
+    "source_sha256": "01954277879f9431c81abf9bca5ccec548e6a1deb9fa971b3c3dfb836252a218",
+    "target": "/usr/share/nuxel/assets/nuxel-applications-icon-pack/03-04_video-player.png"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 59,
+    "risk": "high",
+    "script": "scripts/059-05-01_root-sudo-control.png.sh",
+    "service": null,
+    "source": "assets/nuxel-applications-icon-pack/05-01_root-sudo-control.png",
+    "source_sha256": "cb2f2746a23c5fed3b270cdced2a628316e64141c6e1dd8cd9f9212bd8272851",
+    "target": "/usr/share/nuxel/assets/nuxel-applications-icon-pack/05-01_root-sudo-control.png"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 60,
+    "risk": "high",
+    "script": "scripts/060-05-04_developer-management.png.sh",
+    "service": null,
+    "source": "assets/nuxel-applications-icon-pack/05-04_developer-management.png",
+    "source_sha256": "c3c1c44e06c2b122439eb16e2e17c047d591ddec8e55dd1e730c832ada523271",
+    "target": "/usr/share/nuxel/assets/nuxel-applications-icon-pack/05-04_developer-management.png"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 61,
+    "risk": "high",
+    "script": "scripts/061-06-01_recorder.png.sh",
+    "service": null,
+    "source": "assets/nuxel-applications-icon-pack/06-01_recorder.png",
+    "source_sha256": "c417d2b6c309a04ee5ae3d66ed2f3962befcb667a00a978edf96a670227f7437",
+    "target": "/usr/share/nuxel/assets/nuxel-applications-icon-pack/06-01_recorder.png"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 62,
+    "risk": "high",
+    "script": "scripts/062-04-09_brightness-control.png.sh",
+    "service": null,
+    "source": "assets/nuxel-applications-icon-pack/04-09_brightness-control.png",
+    "source_sha256": "3af2552a0b9556397f2b5e958a8274ece31d29ba4c1a91358218fe822fdb2bb5",
+    "target": "/usr/share/nuxel/assets/nuxel-applications-icon-pack/04-09_brightness-control.png"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 63,
+    "risk": "high",
+    "script": "scripts/063-01-02_snekbyte.png.sh",
+    "service": null,
+    "source": "assets/nuxel-applications-icon-pack/01-02_snekbyte.png",
+    "source_sha256": "9859e38325b643735aed45d0a8b31d11c9f70551a2808fc66e2cf41db5163119",
+    "target": "/usr/share/nuxel/assets/nuxel-applications-icon-pack/01-02_snekbyte.png"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 64,
+    "risk": "high",
+    "script": "scripts/064-06-03_clock.png.sh",
+    "service": null,
+    "source": "assets/nuxel-applications-icon-pack/06-03_clock.png",
+    "source_sha256": "32e902705b66f4cd67a29e23bf581bbc9f683217a4544ea332951a6144014d66",
+    "target": "/usr/share/nuxel/assets/nuxel-applications-icon-pack/06-03_clock.png"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 65,
+    "risk": "high",
+    "script": "scripts/065-04-03_firewall.png.sh",
+    "service": null,
+    "source": "assets/nuxel-applications-icon-pack/04-03_firewall.png",
+    "source_sha256": "27fa2a24d9c044dfb89c0cdd0d03c75499bd9c6de6cec62eeb6ede7916b82c5b",
+    "target": "/usr/share/nuxel/assets/nuxel-applications-icon-pack/04-03_firewall.png"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 66,
+    "risk": "high",
+    "script": "scripts/066-02-04_reader.png.sh",
+    "service": null,
+    "source": "assets/nuxel-applications-icon-pack/02-04_reader.png",
+    "source_sha256": "88e08fb8996d8800d65003b06e6ea7f7270550584b83cfd2ed7031437356010f",
+    "target": "/usr/share/nuxel/assets/nuxel-applications-icon-pack/02-04_reader.png"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 67,
+    "risk": "high",
+    "script": "scripts/067-05-11_terminal-alternative.png.sh",
+    "service": null,
+    "source": "assets/nuxel-applications-icon-pack/05-11_terminal-alternative.png",
+    "source_sha256": "4a7a400228b625ca90823827de460f14cbd68c021a27f86b0894a1baa6461218",
+    "target": "/usr/share/nuxel/assets/nuxel-applications-icon-pack/05-11_terminal-alternative.png"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 68,
+    "risk": "high",
+    "script": "scripts/068-01-03_poop-o-meter.png.sh",
+    "service": null,
+    "source": "assets/nuxel-applications-icon-pack/01-03_poop-o-meter.png",
+    "source_sha256": "6b113b3cd9559924b6c534a93d6154efcb08c1a0a25fa21ae2cd646e4e8b6c40",
+    "target": "/usr/share/nuxel/assets/nuxel-applications-icon-pack/01-03_poop-o-meter.png"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 69,
+    "risk": "high",
+    "script": "scripts/069-06-05_usb-connection.png.sh",
+    "service": null,
+    "source": "assets/nuxel-applications-icon-pack/06-05_usb-connection.png",
+    "source_sha256": "8f2b2cb963ba85462b517573940e2a54c38994fd22b69ddd5300193a8b9024d1",
+    "target": "/usr/share/nuxel/assets/nuxel-applications-icon-pack/06-05_usb-connection.png"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 70,
+    "risk": "high",
+    "script": "scripts/070-04-12_utilities.png.sh",
+    "service": null,
+    "source": "assets/nuxel-applications-icon-pack/04-12_utilities.png",
+    "source_sha256": "c5157174a661ad78963907fd90455ee33446f5521c8e619681251b013431dc2c",
+    "target": "/usr/share/nuxel/assets/nuxel-applications-icon-pack/04-12_utilities.png"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 71,
+    "risk": "high",
+    "script": "scripts/071-04-11_battery-indicator.png.sh",
+    "service": null,
+    "source": "assets/nuxel-applications-icon-pack/04-11_battery-indicator.png",
+    "source_sha256": "499fc20a5131128b6e9d310a2e52571b2ca60c61f8f53fe0245d8a2411e74245",
+    "target": "/usr/share/nuxel/assets/nuxel-applications-icon-pack/04-11_battery-indicator.png"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 72,
+    "risk": "high",
+    "script": "scripts/072-04-01_tor-privacy-tool.png.sh",
+    "service": null,
+    "source": "assets/nuxel-applications-icon-pack/04-01_tor-privacy-tool.png",
+    "source_sha256": "6851c02f64f044fdbd99531d5367ffc791f97993ed4b3e3b639f6f692c694e6a",
+    "target": "/usr/share/nuxel/assets/nuxel-applications-icon-pack/04-01_tor-privacy-tool.png"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 73,
+    "risk": "high",
+    "script": "scripts/073-05-02_system-monitor.png.sh",
+    "service": null,
+    "source": "assets/nuxel-applications-icon-pack/05-02_system-monitor.png",
+    "source_sha256": "79028fd0deb88fe79659d761fda5530a3140e6aa99cd21763b1f3bd73dee9fda",
+    "target": "/usr/share/nuxel/assets/nuxel-applications-icon-pack/05-02_system-monitor.png"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 74,
+    "risk": "high",
+    "script": "scripts/074-01-12_phone-alternative.png.sh",
+    "service": null,
+    "source": "assets/nuxel-applications-icon-pack/01-12_phone-alternative.png",
+    "source_sha256": "76a730c35c6cdfdc6b6a636c9db357261626247d0cf959b723ffdbb17ba48f90",
+    "target": "/usr/share/nuxel/assets/nuxel-applications-icon-pack/01-12_phone-alternative.png"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 75,
+    "risk": "high",
+    "script": "scripts/075-06-12_linux-tux-alternative.png.sh",
+    "service": null,
+    "source": "assets/nuxel-applications-icon-pack/06-12_linux-tux-alternative.png",
+    "source_sha256": "8ee25e68c26a4453d62972f3713e015e97afa987ba6766f4e9374544610d6791",
+    "target": "/usr/share/nuxel/assets/nuxel-applications-icon-pack/06-12_linux-tux-alternative.png"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 76,
+    "risk": "high",
+    "script": "scripts/076-03-08_calendar.png.sh",
+    "service": null,
+    "source": "assets/nuxel-applications-icon-pack/03-08_calendar.png",
+    "source_sha256": "e5bbc4b3a3ff3c284006211834c14ddcd0efe50191f93f0278778795cf353957",
+    "target": "/usr/share/nuxel/assets/nuxel-applications-icon-pack/03-08_calendar.png"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 77,
+    "risk": "high",
+    "script": "scripts/077-02-08_sync.png.sh",
+    "service": null,
+    "source": "assets/nuxel-applications-icon-pack/02-08_sync.png",
+    "source_sha256": "9aa5f82017e3103ccb2c4d6c40bc86d5e4f93fe38c0048f76406a76b788ce109",
+    "target": "/usr/share/nuxel/assets/nuxel-applications-icon-pack/02-08_sync.png"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 78,
+    "risk": "high",
+    "script": "scripts/078-03-03_audio-player.png.sh",
+    "service": null,
+    "source": "assets/nuxel-applications-icon-pack/03-03_audio-player.png",
+    "source_sha256": "e5e0cfd404ba492c57bec2a5903c10cd44db02f0a7db0709b89cb2b65e37b3bc",
+    "target": "/usr/share/nuxel/assets/nuxel-applications-icon-pack/03-03_audio-player.png"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 79,
+    "risk": "high",
+    "script": "scripts/079-04-05_network-settings.png.sh",
+    "service": null,
+    "source": "assets/nuxel-applications-icon-pack/04-05_network-settings.png",
+    "source_sha256": "75fea0f8e2adc902ff88d992991c0b5922b4eb99667146abcf1128e6eee3328a",
+    "target": "/usr/share/nuxel/assets/nuxel-applications-icon-pack/04-05_network-settings.png"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 80,
+    "risk": "high",
+    "script": "scripts/080-05-09_clipboard.png.sh",
+    "service": null,
+    "source": "assets/nuxel-applications-icon-pack/05-09_clipboard.png",
+    "source_sha256": "d159c288d7e297d26b07b36058e7b649d683fa8a4a2d9098430a9d0b9590b39d",
+    "target": "/usr/share/nuxel/assets/nuxel-applications-icon-pack/05-09_clipboard.png"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 81,
+    "risk": "high",
+    "script": "scripts/081-03-11_battery.png.sh",
+    "service": null,
+    "source": "assets/nuxel-applications-icon-pack/03-11_battery.png",
+    "source_sha256": "5a58228fc231c5ee45e5d67f1f9fb2b2a83ce82563ab808c1470d090429567f8",
+    "target": "/usr/share/nuxel/assets/nuxel-applications-icon-pack/03-11_battery.png"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 82,
+    "risk": "high",
+    "script": "scripts/082-05-07_web-window.png.sh",
+    "service": null,
+    "source": "assets/nuxel-applications-icon-pack/05-07_web-window.png",
+    "source_sha256": "77b5e77bbbf5111ffe07f64f81dd8f8846af998ba38b265f826d6b258642e6b6",
+    "target": "/usr/share/nuxel/assets/nuxel-applications-icon-pack/05-07_web-window.png"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 83,
+    "risk": "high",
+    "script": "scripts/083-01-05_penguinterface.png.sh",
+    "service": null,
+    "source": "assets/nuxel-applications-icon-pack/01-05_penguinterface.png",
+    "source_sha256": "c53c006b6e082b2b7bb81e23a34e51cd6e0246af27ae2f5d1f6af197a548c031",
+    "target": "/usr/share/nuxel/assets/nuxel-applications-icon-pack/01-05_penguinterface.png"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 84,
+    "risk": "high",
+    "script": "scripts/084-06-04_casting-screen.png.sh",
+    "service": null,
+    "source": "assets/nuxel-applications-icon-pack/06-04_casting-screen.png",
+    "source_sha256": "b10a79025ac113dc47462c87e1abfcd5893f3e91ef2ee90647ead42b6b4873c1",
+    "target": "/usr/share/nuxel/assets/nuxel-applications-icon-pack/06-04_casting-screen.png"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 85,
+    "risk": "high",
+    "script": "scripts/085-04-02_permissions.png.sh",
+    "service": null,
+    "source": "assets/nuxel-applications-icon-pack/04-02_permissions.png",
+    "source_sha256": "abb0aac5a3035684d4f962e38627e89a256dfffe3702baebdc614b4a5d22d38d",
+    "target": "/usr/share/nuxel/assets/nuxel-applications-icon-pack/04-02_permissions.png"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 86,
+    "risk": "high",
+    "script": "scripts/086-04-04_system-settings.png.sh",
+    "service": null,
+    "source": "assets/nuxel-applications-icon-pack/04-04_system-settings.png",
+    "source_sha256": "62669fc6f6daaa94b0fd98a150f445a44872ac9ff459b26d2f789a4b4e4a1229",
+    "target": "/usr/share/nuxel/assets/nuxel-applications-icon-pack/04-04_system-settings.png"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 87,
+    "risk": "high",
+    "script": "scripts/087-04-06_bluetooth-settings.png.sh",
+    "service": null,
+    "source": "assets/nuxel-applications-icon-pack/04-06_bluetooth-settings.png",
+    "source_sha256": "0d237de9eece6ecafa18768990e7287c7e38c34fc51728f202bef182b4167852",
+    "target": "/usr/share/nuxel/assets/nuxel-applications-icon-pack/04-06_bluetooth-settings.png"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 88,
+    "risk": "high",
+    "script": "scripts/088-06-11_linux-tux.png.sh",
+    "service": null,
+    "source": "assets/nuxel-applications-icon-pack/06-11_linux-tux.png",
+    "source_sha256": "29e3db760fd5a842c84ca110c4583bfbf878686b0d137e7a2c45d88665dbc633",
+    "target": "/usr/share/nuxel/assets/nuxel-applications-icon-pack/06-11_linux-tux.png"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 89,
+    "risk": "high",
+    "script": "scripts/089-01-10_document.png.sh",
+    "service": null,
+    "source": "assets/nuxel-applications-icon-pack/01-10_document.png",
+    "source_sha256": "8c2d8c73a2143c728176ada52243f2055985a941bf104c57ffaa621391d2cc67",
+    "target": "/usr/share/nuxel/assets/nuxel-applications-icon-pack/01-10_document.png"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 90,
+    "risk": "high",
+    "script": "scripts/090-03-06_vpn.png.sh",
+    "service": null,
+    "source": "assets/nuxel-applications-icon-pack/03-06_vpn.png",
+    "source_sha256": "0c7e3400c4f0a97151378488741f70150cc7ca117800f50025f8a02536454a6e",
+    "target": "/usr/share/nuxel/assets/nuxel-applications-icon-pack/03-06_vpn.png"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 91,
+    "risk": "high",
+    "script": "scripts/091-28-unlocked.png.sh",
+    "service": null,
+    "source": "assets/nuxel-quicksettings-icon-pack/28-unlocked.png",
+    "source_sha256": "292a546ce7f0fdc7fe5861b2288143247aa3b9b6fd0b371a032cf33b89b9cac3",
+    "target": "/usr/share/nuxel/assets/nuxel-quicksettings-icon-pack/28-unlocked.png"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 92,
+    "risk": "high",
+    "script": "scripts/092-07-tor.png.sh",
+    "service": null,
+    "source": "assets/nuxel-quicksettings-icon-pack/07-tor.png",
+    "source_sha256": "6e8da052c5c5544b0bd686648fb01514de4792604b5c08c559d0d4437c5209be",
+    "target": "/usr/share/nuxel/assets/nuxel-quicksettings-icon-pack/07-tor.png"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 93,
+    "risk": "high",
+    "script": "scripts/093-08-nfc.png.sh",
+    "service": null,
+    "source": "assets/nuxel-quicksettings-icon-pack/08-nfc.png",
+    "source_sha256": "7a27e6dc1a039e6129bf213683054483fb9782f6f9a7645f7270e2f14f3d56a8",
+    "target": "/usr/share/nuxel/assets/nuxel-quicksettings-icon-pack/08-nfc.png"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 94,
+    "risk": "high",
+    "script": "scripts/094-13-vibrate.png.sh",
+    "service": null,
+    "source": "assets/nuxel-quicksettings-icon-pack/13-vibrate.png",
+    "source_sha256": "f516db8052ac18b7895c12bc13c874d1156344d4e3684eafe62af8581fd0e27b",
+    "target": "/usr/share/nuxel/assets/nuxel-quicksettings-icon-pack/13-vibrate.png"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 95,
+    "risk": "high",
+    "script": "scripts/095-24-microphone-muted.png.sh",
+    "service": null,
+    "source": "assets/nuxel-quicksettings-icon-pack/24-microphone-muted.png",
+    "source_sha256": "580ccd37d968447fe5cabadb95d923223a151799ccc98378aa7a5f17980b0a84",
+    "target": "/usr/share/nuxel/assets/nuxel-quicksettings-icon-pack/24-microphone-muted.png"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 96,
+    "risk": "high",
+    "script": "scripts/096-03-airplane-mode.png.sh",
+    "service": null,
+    "source": "assets/nuxel-quicksettings-icon-pack/03-airplane-mode.png",
+    "source_sha256": "db5825066b92cb6cf5924c7fc2e9f536ebf81159b0f40a1aded23d0efb7defdb",
+    "target": "/usr/share/nuxel/assets/nuxel-quicksettings-icon-pack/03-airplane-mode.png"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 97,
+    "risk": "high",
+    "script": "scripts/097-26-screenshot.png.sh",
+    "service": null,
+    "source": "assets/nuxel-quicksettings-icon-pack/26-screenshot.png",
+    "source_sha256": "e86943313e2aee81fbbead831cc1ece2c59d3eaa298ec0c3a95f24b015afef21",
+    "target": "/usr/share/nuxel/assets/nuxel-quicksettings-icon-pack/26-screenshot.png"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 98,
+    "risk": "high",
+    "script": "scripts/098-15-brightness.png.sh",
+    "service": null,
+    "source": "assets/nuxel-quicksettings-icon-pack/15-brightness.png",
+    "source_sha256": "d023e48fa2c07a8ba49c16b2966616d335f86e54e03b28be4f1b1de2bbb43671",
+    "target": "/usr/share/nuxel/assets/nuxel-quicksettings-icon-pack/15-brightness.png"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 99,
+    "risk": "high",
+    "script": "scripts/099-22-terminal.png.sh",
+    "service": null,
+    "source": "assets/nuxel-quicksettings-icon-pack/22-terminal.png",
+    "source_sha256": "57b852bd3eb0807c1837abe3e6deb033d06cf925e8b3b24c8374868391192e3f",
+    "target": "/usr/share/nuxel/assets/nuxel-quicksettings-icon-pack/22-terminal.png"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 100,
+    "risk": "high",
+    "script": "scripts/100-14-mute.png.sh",
+    "service": null,
+    "source": "assets/nuxel-quicksettings-icon-pack/14-mute.png",
+    "source_sha256": "6cbac20323ea70c7e7f090305188ff83d0925ac753df06ec820643413afe3287",
+    "target": "/usr/share/nuxel/assets/nuxel-quicksettings-icon-pack/14-mute.png"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 101,
+    "risk": "high",
+    "script": "scripts/101-25-camera-disabled.png.sh",
+    "service": null,
+    "source": "assets/nuxel-quicksettings-icon-pack/25-camera-disabled.png",
+    "source_sha256": "0132c48a500a58155e02eae329d9f6fa528c200ed44ecfbd834803f8e0b909e5",
+    "target": "/usr/share/nuxel/assets/nuxel-quicksettings-icon-pack/25-camera-disabled.png"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 102,
+    "risk": "high",
+    "script": "scripts/102-23-firewall.png.sh",
+    "service": null,
+    "source": "assets/nuxel-quicksettings-icon-pack/23-firewall.png",
+    "source_sha256": "c9aa81a6d6f8fde6075f858ed26111812d317bac665fc157a7ceb7df258e1c68",
+    "target": "/usr/share/nuxel/assets/nuxel-quicksettings-icon-pack/23-firewall.png"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 103,
+    "risk": "high",
+    "script": "scripts/103-19-battery-saver.png.sh",
+    "service": null,
+    "source": "assets/nuxel-quicksettings-icon-pack/19-battery-saver.png",
+    "source_sha256": "f07f9c517f022e5ea035ec48428c17707ff92014a13fcde9b49a3f116a11c64b",
+    "target": "/usr/share/nuxel/assets/nuxel-quicksettings-icon-pack/19-battery-saver.png"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 104,
+    "risk": "high",
+    "script": "scripts/104-18-night-light.png.sh",
+    "service": null,
+    "source": "assets/nuxel-quicksettings-icon-pack/18-night-light.png",
+    "source_sha256": "f185f1a7ff1bb9bba40cc720e1b4ff43b846aa6a42bb74d15875311c2194cc40",
+    "target": "/usr/share/nuxel/assets/nuxel-quicksettings-icon-pack/18-night-light.png"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 105,
+    "risk": "high",
+    "script": "scripts/105-27-screen-record.png.sh",
+    "service": null,
+    "source": "assets/nuxel-quicksettings-icon-pack/27-screen-record.png",
+    "source_sha256": "b0e9a4f6375f6c8b07bab76f6aaf3801da674f8667151a21343447dcbd7ec412",
+    "target": "/usr/share/nuxel/assets/nuxel-quicksettings-icon-pack/27-screen-record.png"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 106,
+    "risk": "high",
+    "script": "scripts/106-20-battery-charging.png.sh",
+    "service": null,
+    "source": "assets/nuxel-quicksettings-icon-pack/20-battery-charging.png",
+    "source_sha256": "3f0769393cc1c414b9ac5eb2fe186b8664bf5c20892721417972ab5ef3b48f01",
+    "target": "/usr/share/nuxel/assets/nuxel-quicksettings-icon-pack/20-battery-charging.png"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 107,
+    "risk": "high",
+    "script": "scripts/107-05-wireless-hotspot.png.sh",
+    "service": null,
+    "source": "assets/nuxel-quicksettings-icon-pack/05-wireless-hotspot.png",
+    "source_sha256": "ec61cea3f63380aa202c3595f52f513542c6d212324232898daca19960b60c88",
+    "target": "/usr/share/nuxel/assets/nuxel-quicksettings-icon-pack/05-wireless-hotspot.png"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 108,
+    "risk": "high",
+    "script": "scripts/108-16-adaptive-brightness.png.sh",
+    "service": null,
+    "source": "assets/nuxel-quicksettings-icon-pack/16-adaptive-brightness.png",
+    "source_sha256": "ca435e6e2c540531aa184f57de4cdb9cd9f9ae211c72ddd67ddc05036d94c595",
+    "target": "/usr/share/nuxel/assets/nuxel-quicksettings-icon-pack/16-adaptive-brightness.png"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 109,
+    "risk": "high",
+    "script": "scripts/109-06-vpn.png.sh",
+    "service": null,
+    "source": "assets/nuxel-quicksettings-icon-pack/06-vpn.png",
+    "source_sha256": "6d703c349bceb8d5ad969aab7eeb09c19d2f2ddc546e03dabaae04d7ce641839",
+    "target": "/usr/share/nuxel/assets/nuxel-quicksettings-icon-pack/06-vpn.png"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 110,
+    "risk": "high",
+    "script": "scripts/110-29-terminal-alternate.png.sh",
+    "service": null,
+    "source": "assets/nuxel-quicksettings-icon-pack/29-terminal-alternate.png",
+    "source_sha256": "34e095eeee848c5d14161f937410a8e3ab40bac1b3ed2d57f9b3e1bf18c3e0a1",
+    "target": "/usr/share/nuxel/assets/nuxel-quicksettings-icon-pack/29-terminal-alternate.png"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 111,
+    "risk": "high",
+    "script": "scripts/111-12-volume.png.sh",
+    "service": null,
+    "source": "assets/nuxel-quicksettings-icon-pack/12-volume.png",
+    "source_sha256": "51b87b4999245c98085eaf7252d6546ef3c8f22c6ae46477d6bda1a6fed5dbc8",
+    "target": "/usr/share/nuxel/assets/nuxel-quicksettings-icon-pack/12-volume.png"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 112,
+    "risk": "high",
+    "script": "scripts/112-21-sync.png.sh",
+    "service": null,
+    "source": "assets/nuxel-quicksettings-icon-pack/21-sync.png",
+    "source_sha256": "22487f70ae9a09dcd483801aa7a3ccbbb0fe1a870ce7b4553e85148350e3a195",
+    "target": "/usr/share/nuxel/assets/nuxel-quicksettings-icon-pack/21-sync.png"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 113,
+    "risk": "high",
+    "script": "scripts/113-index.html.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/index.html",
+    "source_sha256": "e0235803cf94a3eaa0a74811e23a908aaf7c527eeff51b5aa4a68f13aec66940",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/index.html"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 114,
+    "risk": "high",
+    "script": "scripts/114-sw.js.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/sw.js",
+    "source_sha256": "9f2b191a193906db774e82b3350c3717fafe2dcc0f87115626d6782067566325",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/sw.js"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 115,
+    "risk": "high",
+    "script": "scripts/115-apps.js.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/js/apps.js",
+    "source_sha256": "cae8d99447cbbbbcc90b00a9c715307ff3d20e56e98ede0374341cc4448c2890",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/js/apps.js"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 116,
+    "risk": "high",
+    "script": "scripts/116-touch-keyboard.js.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/js/touch-keyboard.js",
+    "source_sha256": "aac1d0f22c402b49b4cc577a71cf48fd63a09dc2a4e7e74f0645ee2ab8ac7dd6",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/js/touch-keyboard.js"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 117,
+    "risk": "high",
+    "script": "scripts/117-qs.js.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/js/qs.js",
+    "source_sha256": "4ac4ef6ae3daa45925b725640f32da3a9417cdbc4958cd7f6099d5fb9a2be418",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/js/qs.js"
+  },
+  {
+    "group": "nuxel-branding-sounds-and-icons",
+    "n": 118,
+    "risk": "high",
+    "script": "scripts/118-launcher.css.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/css/launcher.css",
+    "source_sha256": "ca24bbadae42e1236da886bc48ce2104a59a2b0384a2ef305025e2503eae412c",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/css/launcher.css"
+  }
+]

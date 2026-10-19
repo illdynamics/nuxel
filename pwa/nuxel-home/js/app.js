@@ -10,6 +10,7 @@ class NuxelHome {
         // A Home press backgrounds an app; it must not tear down its document.
         // Keep one surface per app id so Recents can resume the exact session.
         this.appSurfaces = new Map();
+        this.sessions = window.NuxelAppSessions ? new window.NuxelAppSessions() : null;
         this._init();
     }
 
@@ -99,6 +100,7 @@ class NuxelHome {
             });
         }
         this._setAppState('BACKGROUND', app, frame);
+        if (this.sessions && app) this.sessions.home();
     }
 
     _resumeApp(app) {
@@ -109,6 +111,7 @@ class NuxelHome {
             if (el) el.hidden = false;
         });
         this._setAppState('ACTIVE', app, surface.frame);
+        if (this.sessions) this.sessions.activate(app.id);
         return true;
     }
 
@@ -340,7 +343,8 @@ class NuxelHome {
             Promise.resolve(window.NuxelHost.action('open-terminal')).then((result) => {
                 if (generation !== this.appGeneration) return;
                 if (!result || !result.ok) throw new Error((result && (result.error || (result.timeout && 'timeout'))) || 'host refused terminal launch');
-                this._setAppState('ACTIVE', app, null);
+            this._setAppState('ACTIVE', app, null);
+                if (this.sessions) this.sessions.register(app, null);
             }).catch((error) => {
                 if (generation !== this.appGeneration) return;
                 console.error('[Nuxel] Terminal launch failed:', error);
@@ -410,6 +414,7 @@ class NuxelHome {
         appBar.appendChild(appTitle);
         document.body.appendChild(appBar);
         this.appSurfaces.set(app.id, { frame, bar: appBar, status });
+        if (this.sessions) this.sessions.register(app, this.appSurfaces.get(app.id));
     }
 
     _launchNative(app, url) {
@@ -460,6 +465,9 @@ class NuxelHome {
         if (this.components.qs) {
             this.components.qs.close();
         }
+        if (window.recents) window.recents.close();
+        if (window.launcher) { window.launcher.closeDrawer(); window.launcher.exitEditMode(); }
+        document.querySelectorAll('.folder-sheet').forEach(el => el.remove());
         this._backgroundForegroundApp();
     }
 
@@ -468,8 +476,10 @@ class NuxelHome {
     // iframes: Back/Home/Recents must work identically for every PWA.
     back() {
         if (this.components.search && this.components.search.isOpen) { this.components.search.close(); return; }
-        if (this.components.qs && this.components.qs.isOpen) { this.components.qs.close(); return; }
+        if (this.components.qs && this.components.qs.isOpen) { this.components.qs.collapseOrClose(); return; }
         if (window.recents && window.recents.isOpen) { window.recents.close(); return; }
+        const folder = document.querySelector('.folder-sheet'); if (folder) { folder.remove(); return; }
+        if (window.launcher && window.launcher.drawerOpen) { window.launcher.closeDrawer(); return; }
         if (window.NuxelTouchKeyboard && window.NuxelTouchKeyboard.visible()) { window.NuxelTouchKeyboard.hide(); return; }
         this._backgroundForegroundApp();
     }
@@ -479,6 +489,7 @@ class NuxelHome {
     recentsToggle() {
         if (this.components.search && this.components.search.isOpen) this.components.search.close();
         if (this.components.qs && this.components.qs.isOpen) this.components.qs.close();
+        if (window.launcher) { window.launcher.closeDrawer(); window.launcher.exitEditMode(); }
         if (window.recents) window.recents.toggle();
     }
 

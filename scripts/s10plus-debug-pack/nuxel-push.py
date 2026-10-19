@@ -30,7 +30,9 @@ def open_port(dev):
     a = termios.tcgetattr(fd)
     a[0] = 0; a[1] = 0
     a[2] = termios.CS8 | termios.CREAD | termios.CLOCAL
-    a[3] = 0; a[4] = 9600; a[5] = 9600
+    # The S10+ USB CDC-ACM console is 115200 8N1.  Using 9600 made large,
+    # verified userspace bundles needlessly slow and increased disconnect risk.
+    a[3] = 0; a[4] = 115200; a[5] = 115200
     termios.tcsetattr(fd, termios.TCSANOW, a)
     termios.tcflush(fd, termios.TCIOFLUSH)
     return fd

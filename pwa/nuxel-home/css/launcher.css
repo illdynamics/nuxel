@@ -294,6 +294,15 @@ body.launcher-dragging .app-item {
     outline-offset: 4px;
     border-radius: 16px;
 }
+.app-item.folder-target .app-icon { outline: 3px solid #60a5fa; outline-offset: 5px; box-shadow: 0 0 0 8px rgba(96,165,250,.2); }
+.folder-icon { display: grid !important; grid-template-columns: repeat(2, 1fr); gap: 2px; padding: 7px; background: rgba(8,20,42,.85) !important; }
+.folder-icon img { min-width: 0; min-height: 0; border-radius: 7px !important; }
+.folder-sheet { position: fixed; inset: 0; z-index: 250; display: grid; place-items: center; padding: 20px; background: rgba(1,6,15,.64); }
+.folder-card { width: min(100%, 420px); max-height: calc(100dvh - 120px); overflow: auto; padding: 18px; border-radius: 22px; background: #0d1f3c; box-shadow: 0 18px 60px rgba(0,0,0,.55); }
+.folder-card input { width: calc(100% - 70px); margin: 0 8px 16px 0; padding: 10px; color: white; background: #122952; border: 1px solid #60a5fa; border-radius: 10px; }
+.folder-items { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }.folder-items button { border: 0; color: #dbeafe; background: transparent; }.folder-items img { width: 52px; height: 52px; border-radius: 12px; }.folder-items span { display: block; font-size: 11px; overflow: hidden; text-overflow: ellipsis; }
+body.app-drawer-open .app-grid { z-index: 80; background: var(--bg-primary); top: var(--status-bar-height); bottom: var(--system-nav-height); }
+body.app-drawer-open .app-grid-title::after { content: 'All apps'; margin-left: 10px; font-size: 14px; color: var(--text-secondary); -webkit-text-fill-color: var(--text-secondary); }
 
 /* A37: fall back to a readable native glyph if an asset genuinely fails to load. */
 .app-icon .nuxel-icon-fallback:not([hidden]) { display: inline-flex; align-items: center; justify-content: center; width: 100%; height: 100%; }

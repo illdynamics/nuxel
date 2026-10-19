@@ -20,6 +20,7 @@ class QuickSettings {
     constructor() {
         this.panel = document.getElementById('quick-settings');
         this.isOpen = false;
+        this.expanded = false;
         this.state = {
             wifi: false,
             bluetooth: false,
@@ -201,8 +202,9 @@ class QuickSettings {
     }
 
     open() {
-        if (this.isOpen) return;
+        if (this.isOpen) { this.expand(); return; }
         this.isOpen = true;
+        this.expanded = false;
         this._render();
         this._syncVerboseBoot();
         this.panel.classList.remove('hidden');
@@ -211,8 +213,13 @@ class QuickSettings {
     close() {
         if (!this.isOpen) return;
         this.isOpen = false;
+        this.expanded = false;
+        this.panel.classList.remove('expanded');
         this.panel.classList.add('hidden');
     }
+
+    expand() { if (!this.isOpen) return this.open(); this.expanded = true; this.panel.classList.add('expanded'); }
+    collapseOrClose() { if (this.expanded) { this.expanded = false; this.panel.classList.remove('expanded'); } else this.close(); }
 
     toggle() {
         if (this.isOpen) this.close();

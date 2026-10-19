@@ -1,0 +1,19 @@
+**NUXEL A37 — LIVE USB DEPLOY NOW**
+
+Read `DEPLOY-A37.md` in the patched repository.
+
+Deploy and verify A37 on our live Galaxy S10+.
+
+1. Back up existing phone files and preserve the USB live console.
+2. Deploy all original application, Quick Settings and navigation PNGs, updated launcher code and service worker into the **actual active webroot**. Verify HTTP 200, matching SHA-256 hashes and visible icons on the phone.
+3. Deploy both MP3s and sound-cue services. Rebuild the AArch64 button manager if necessary.
+4. **PRIORITY:** Diagnose and fix the real ALSA speaker routing using observed hardware controls. Make Volume +/- play `nuxel-pow.mp3` and the startup audio play once after launcher handoff. Preserve the protective volume cap.
+5. Verify keyboard vibration through the existing single haptics service.
+6. Run `nuxel-a37-check`, conduct a 90-second physical test with me, collect logs, fix failures and retest.
+7. When safe, perform one normal reboot to verify startup sound timing.
+
+**NO FLASHING, PARTITION WRITES OR KERNEL CHANGES.**
+
+Do not claim physical success without actual owner confirmation. Preserve rollback capability.
+
+**EXECUTE NOW! 🐧🔥**

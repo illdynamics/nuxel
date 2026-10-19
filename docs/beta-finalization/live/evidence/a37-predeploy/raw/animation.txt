@@ -1,0 +1,5 @@
+cmd: cat /var/lib/nuxel/animation 2>&1
+ok: True rc: 0 framed: True sha_ok: True
+---
+ANIM_STAGE=ANIMATION_STOPPED
+ANIM_OWNER=nuxel-wl-fb
