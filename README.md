@@ -657,7 +657,7 @@ The other two bring-up targets are the **Samsung Galaxy S10+** (Exynos 9820,
 | [docs/app-store.md](docs/app-store.md) | App distribution model (Flatpak + portals, signed packages) |
 | [docs/pwa-model.md](docs/pwa-model.md) | Hardened PWA runtime spec |
 | [docs/build-guide.md](docs/build-guide.md) | Full build pipeline |
-| [.github/workflows/release.yml](.github/workflows/release.yml) | Tag-triggered build → GitHub Release pipeline |
+| [.github/workflows/release.yml](.github/workflows/release.yml) | Main-merge or tag-triggered build → GitHub Release pipeline |
 | [docs/device-setup.md](docs/device-setup.md) | Mustang hardware setup |
 | [docs/bootloader-unlock-guide.md](docs/bootloader-unlock-guide.md) | Unlock + relock guide |
 | [docs/driver-status.md](docs/driver-status.md) | Hardware driver matrix |
