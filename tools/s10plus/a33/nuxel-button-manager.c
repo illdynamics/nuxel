@@ -525,7 +525,13 @@ static void verbose_boot_note_once(void) {
 /* The ONLY place a userspace reboot/power-off is ever executed, and it executes
  * nothing unless the gate allows it. No other path in this program can reboot. */
 static int gated_system_action(const char *what) {
-  int is_poweroff = (strstr(what, "poweroff") != NULL);
+  /* Keep Restart and Power off disjoint.  In particular, a future action name
+   * containing "poweroff" must never reinterpret the explicit Restart row. */
+  int is_poweroff = !strcmp(what, "systemctl-poweroff");
+  if (strcmp(what, "systemctl-poweroff") && strcmp(what, "systemctl-reboot")) {
+    audit("REBOOT_REFUSED action=%s reason=unknown-system-action", what);
+    return 0;
+  }
   const char *reason = NULL;
   int ok = nuxel_fsm_gate_decide(&GATE, is_poweroff, (int64_t)time(NULL), &reason);
   if (!ok) {
@@ -622,7 +628,8 @@ static void perform(const char *action, const char *source) {
   }
   if (!strcmp(action, "live-console-toggle")) { live_console_toggle(); return; }
   if (!strcmp(action, "open-terminal")) { fifo_send(HOST_FIFO, "open-terminal\n"); return; }
-  if (!strcmp(action, "back") || !strcmp(action, "home") || !strcmp(action, "recents") ||
+  if (!strcmp(action, "back") || !strcmp(action, "forward") || !strcmp(action, "stop") ||
+      !strcmp(action, "reload-launcher") || !strcmp(action, "home") || !strcmp(action, "recents") ||
       !strcmp(action, "search") || !strcmp(action, "settings") || !strcmp(action, "lock") ||
       !strcmp(action, "screenshot") || !strcmp(action, "camera") || !strcmp(action, "voice-input") ||
       !strcmp(action, "notifications-panel") || !strcmp(action, "all-apps")) {

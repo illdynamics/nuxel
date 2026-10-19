@@ -22,6 +22,7 @@ RUNTIME = Path(os.environ.get('NUXEL_SOUND_RUNTIME_DIR', '/run/nuxel'))
 HANDOFF = Path(os.environ.get('NUXEL_SOUND_HANDOFF', '/run/nuxel-anim-handoff'))
 SOUND_MODE = Path(os.environ.get('NUXEL_SOUND_MODE', '/var/lib/nuxel/audio/sound-mode'))
 PLAYER = os.environ.get('NUXEL_SOUND_PLAYER') or shutil.which('mpg123')
+ALSA_DEVICE = os.environ.get('NUXEL_SOUND_ALSA_DEVICE', '').strip()
 BOOT_FILE = 'nuxel-boot-audio.mp3'
 VOL_FILE = 'nuxel-pow.mp3'
 BOOT_PCM_PERCENT = 44
@@ -67,17 +68,24 @@ def play(event, percentage):
     # mpg123 -f accepts linear PCM gain in fixed-point units: 32768 = unity.
     # No ALSA mixer volume adjustment is made here: retain hardware cap.
     scale = round(32768 * max(0, min(100, percentage)) / 100)
-    cmd = [str(PLAYER), '-q', '-f', str(scale), str(src)]
+    cmd = [str(PLAYER), '-q', '-o', 'alsa']
+    # Select a device ONLY if confirmed on hardware. Empty => distro's ALSA
+    # default policy/UCM; do not guess a beyond-madera PCM/card number.
+    if ALSA_DEVICE:
+        if any(c.isspace() for c in ALSA_DEVICE) or ALSA_DEVICE.startswith('-'):
+            record(event, 'invalid_alsa_device', detail=ALSA_DEVICE); return 8
+        cmd += ['-a', ALSA_DEVICE]
+    cmd += ['-f', str(scale), str(src)]
     try:
         done = subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE,
                               timeout=11 if event == 'boot' else 4, check=False)
         rc = done.returncode
         record(event, 'player_ok' if rc == 0 else 'player_error', exit_code=rc,
-               pcm_gain_percent=percentage,
-               detail=done.stderr.decode('utf-8', 'replace')[-400:])
+               pcm_gain_percent=percentage, output='alsa', alsa_device=ALSA_DEVICE or 'default',
+               audible='unverified', detail=done.stderr.decode('utf-8', 'replace')[-400:])
         return 0 if rc == 0 else 5
     except (OSError, subprocess.TimeoutExpired) as e:
-        record(event, 'player_exception', detail=str(e), pcm_gain_percent=percentage)
+        record(event, 'player_exception', detail=str(e), output='alsa', pcm_gain_percent=percentage, audible='unverified')
         return 6
 
 

@@ -79,7 +79,7 @@ dnf -y --installroot="$STAGE" --releasever=43 --use-host-config \
     NetworkManager NetworkManager-wifi ModemManager geoclue2 bluez \
     mesa-dri-drivers mesa-libEGL mesa-libgbm libinput \
     gtk3 webkit2gtk4.1 gtk4 libadwaita \
-    pipewire wireplumber alsa-lib \
+    pipewire wireplumber alsa-lib mpg123 \
     polkit nftables upower greetd \
     iproute procps-ng kmod e2fsprogs \
     shadow-utils ca-certificates curl
@@ -99,7 +99,11 @@ esac
 # reproducible from a fresh clone.
 B=/tmp/nuxel-current-userspace
 mkdir -p "$B"
-CFLAGS_COMMON="-O2 -Wall -Wextra -Wno-unused-parameter -std=gnu11 -I$B"
+# The A34 display bridge includes the shared A33 handoff decision header.  Keep
+# this repo source path explicit: the clean CI checkout must compile the same
+# bridge that is staged onto the handset, without depending on a developer's
+# generated include tree.
+CFLAGS_COMMON="-O2 -Wall -Wextra -Wno-unused-parameter -std=gnu11 -I$B -I/nuxel/tools/s10plus/a33"
 wayland-scanner client-header \
     /nuxel/tools/s10plus/a29/wlr-screencopy-unstable-v1.xml \
     "$B/wlr-screencopy-unstable-v1-client-protocol.h"
@@ -161,6 +165,31 @@ install -m 0644 /nuxel/device/s10plus/90-nuxel-beyond2lte.rules "$STAGE/etc/udev
 # staged, and the old flat path stays as a symlink for the legacy consumers
 # (verify-fedora-phone-rootfs.py checks /usr/share/nuxel/nuxel-home/index.html).
 cp -a /nuxel/pwa "$STAGE/usr/share/nuxel/pwa"
+# Root-relative /assets URLs used by launcher icons, Quick Settings and
+# navigation images must exist in the STATIC WEBROOT, not just in the repo.
+# Also stage the owner's real MP3 audio cues (no synthetic substitutes).
+install -d "$STAGE/usr/share/nuxel/assets"
+cp -a /nuxel/assets/. "$STAGE/usr/share/nuxel/assets/"
+for _cue in nuxel-boot-audio.mp3 nuxel-pow.mp3; do
+  test -s "$STAGE/usr/share/nuxel/assets/$_cue" || { echo "ERROR: missing cue $_cue" >&2; exit 1; }
+done
+install -Dm0755 /nuxel/tools/s10plus/a33/nuxel-sound-cue.py \
+    "$STAGE/usr/libexec/nuxel/nuxel-sound-cue"
+install -Dm0644 /nuxel/services/nuxel-session/systemd/nuxel-boot-sound.service \
+    "$STAGE/etc/systemd/system/nuxel-boot-sound.service"
+# Package the already-existing haptics implementation and preferences. Do NOT
+# enable an additional vibrator owner automatically: the older haptics bridge
+# may already own the device on live phones. Physical owner test is required.
+install -Dm0644 /nuxel/configs/nuxel/haptics/settings.json \
+    "$STAGE/etc/nuxel/haptics/settings.json"
+install -Dm0755 /nuxel/services/nuxel-haptics/nuxel-hapticsd.py \
+    "$STAGE/usr/lib/nuxel/nuxel-hapticsd.py"
+install -Dm0644 /nuxel/services/nuxel-haptics/nuxel-haptics.service \
+    "$STAGE/etc/systemd/system/nuxel-haptics.service"
+install -Dm0755 /nuxel/services/nuxel-haptics/nuxel-haptics-sleep \
+    "$STAGE/usr/libexec/nuxel/nuxel-haptics-sleep"
+ln -sf ../nuxel-boot-sound.service \
+    "$STAGE/etc/systemd/system/multi-user.target.wants/nuxel-boot-sound.service"
 ln -sfn pwa/nuxel-home "$STAGE/usr/share/nuxel/nuxel-home"
 install -m 0755 /nuxel/tools/s10plus/nuxel-fb-phone-aarch64 "$STAGE/usr/bin/nuxel-fb-phone"
 install -m 0644 /nuxel/assets/nuxel-background.png "$STAGE/usr/share/nuxel/nuxel-background.png"

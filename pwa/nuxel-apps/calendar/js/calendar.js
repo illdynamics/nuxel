@@ -35,10 +35,12 @@ class CalendarApp {
     }
 
     async _init() {
+        // Bind controls before any optional portal call.  A missing local portal
+        // must never leave Calendar looking alive while every button is inert.
+        this._bindEvents();
         await this._checkCalendarPermission();
         await this._loadEvents();
         this._render();
-        this._bindEvents();
     }
 
     /**
@@ -74,14 +76,18 @@ class CalendarApp {
                 }
             } else {
                 // No bridge available — try D-Bus via fetch to local portal HTTP endpoint
+                const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+                const timeout = setTimeout(() => { if (controller) controller.abort(); }, 1800);
                 const response = await fetch('http://127.0.0.1:4678/portal/calendar', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
+                    signal: controller && controller.signal,
                     body: JSON.stringify({
                         app_id: 'org.nuxel.Calendar',
                         action: 'request'
                     })
                 });
+                clearTimeout(timeout);
                 if (response.ok) {
                     const result = await response.json();
                     if (result.granted) {
@@ -323,9 +329,7 @@ class CalendarApp {
         document.getElementById('add-event-btn').addEventListener('click', () => this._openEditor());
         
         // Editor buttons
-        document.getElementById('editor-back').addEventListener('click', () => {
-            document.getElementById('event-editor').classList.add('hidden');
-        });
+        document.getElementById('editor-back').addEventListener('click', () => this._closeEditor());
         document.getElementById('editor-save').addEventListener('click', () => this._saveEvent());
 
         // Color picker
@@ -393,13 +397,22 @@ class CalendarApp {
         }
 
         this._saveEvents();
-        document.getElementById('event-editor').classList.add('hidden');
+        this._closeEditor();
         this._renderEvents();
         this._renderMonth();
     }
 
     _editEvent(event) {
         this._openEditor(event);
+    }
+
+    _closeEditor() {
+        document.getElementById('event-editor').classList.add('hidden');
+        // Calendar is hosted in the same-origin launcher frame.  Hiding the
+        // editor must also dismiss its launcher-owned touch keyboard.
+        try {
+            if (window.parent && window.parent.NuxelTouchKeyboard) window.parent.NuxelTouchKeyboard.hide();
+        } catch (e) { /* standalone Calendar has no parent keyboard */ }
     }
 
     _hasEvents(date) {

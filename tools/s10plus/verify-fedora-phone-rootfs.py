@@ -37,6 +37,15 @@ FILES=(
     '/usr/libexec/nuxel/nuxel-keyboard-apply',
     '/usr/lib/systemd/user/nuxel-keyboard-apply.service',
     '/usr/lib/systemd/user/nuxel-keyboard-apply.path',
+    '/usr/libexec/nuxel/nuxel-sound-cue',
+    '/etc/systemd/system/nuxel-boot-sound.service',
+    '/usr/share/nuxel/assets/nuxel-boot-audio.mp3',
+    '/usr/share/nuxel/assets/nuxel-pow.mp3',
+    '/usr/share/nuxel/assets/button-left.png',
+    '/usr/share/nuxel/assets/button-middle.png',
+    '/usr/share/nuxel/assets/button-right.png',
+    '/usr/share/nuxel/assets/nuxel-applications-icon-pack/01-01_terminal.png',
+    '/usr/share/nuxel/assets/nuxel-quicksettings-icon-pack/01-wifi.png',
 )
 
 # Runtime-critical files copied verbatim by the rootfs builder.  Comparing the
@@ -56,6 +65,15 @@ SOURCE_PARITY = {
     '/etc/nuxel/app-registry/app_registry.json': 'pwa/nuxel-common/app-registry.json',
     '/etc/nuxel/bridge-version.json': 'pwa/nuxel-common/bridge-version.json',
     '/etc/nuxel/keyboard/keyboard.json': 'configs/nuxel/keyboard/keyboard.json',
+    '/usr/share/nuxel/assets/nuxel-boot-audio.mp3': 'assets/nuxel-boot-audio.mp3',
+    '/usr/share/nuxel/assets/nuxel-pow.mp3': 'assets/nuxel-pow.mp3',
+    '/usr/share/nuxel/assets/button-left.png': 'assets/button-left.png',
+    '/usr/share/nuxel/assets/button-middle.png': 'assets/button-middle.png',
+    '/usr/share/nuxel/assets/button-right.png': 'assets/button-right.png',
+    '/usr/share/nuxel/assets/nuxel-applications-icon-pack/01-01_terminal.png': 'assets/nuxel-applications-icon-pack/01-01_terminal.png',
+    '/usr/share/nuxel/assets/nuxel-quicksettings-icon-pack/01-wifi.png': 'assets/nuxel-quicksettings-icon-pack/01-wifi.png',
+    '/usr/libexec/nuxel/nuxel-sound-cue': 'tools/s10plus/a33/nuxel-sound-cue.py',
+    '/etc/systemd/system/nuxel-boot-sound.service': 'services/nuxel-session/systemd/nuxel-boot-sound.service',
     '/usr/libexec/nuxel/nuxel-keyboard-apply': 'tools/s10plus/a33/nuxel-keyboard-apply.sh',
 }
 

@@ -1,4 +1,4 @@
-// Nuxel Status Bar — v0.5.2-beta
+// Nuxel Status Bar — v0.6.0-beta
 //
 // SINGLE SOURCE OF TRUTH (briq-02d).  The handset used to serve a stale
 // v0.3.2 copy of this file while the repo (and the UTM VM) was on v0.4.x, so the
@@ -17,7 +17,7 @@
 class StatusBar {
     // Keep in sync with manifest.json ("nuxel.pwa_version") and sw.js
     // (CACHE_VERSION) - the registry test fails if the three ever diverge.
-    static get VERSION() { return '0.5.2-beta'; }
+    static get VERSION() { return '0.6.0-beta'; }
 
     constructor() {
         this.state = {
@@ -198,17 +198,16 @@ class StatusBar {
 
     _renderWifi() {
         if (!this.elements.wifi) return;
-        if (this.state.wifiConnected) {
-            this.elements.wifi.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4CAF50" stroke-width="2"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><circle cx="12" cy="20" r="1" fill="#4CAF50" stroke="none"/></svg>';
-            this.elements.wifi.style.opacity = '1';
-        } else {
-            this.elements.wifi.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="2"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><circle cx="12" cy="20" r="1" fill="#666" stroke="none"/></svg>';
-            this.elements.wifi.style.opacity = '0.4';
-        }
+        // The CSS glyph is the single Wi-Fi drawing.  Rendering an SVG inside
+        // it created the doubled icon seen on the handset.
+        this.elements.wifi.replaceChildren();
+        this.elements.wifi.style.opacity = this.state.wifiConnected ? '1' : '0.4';
+        this.elements.wifi.style.setProperty('--wifi-colour', this.state.wifiConnected ? '#4CAF50' : '#666');
     }
 
     _renderBattery() {
         if (!this.elements.battery) return;
+        this.elements.battery.className = 'status-icon battery-slot';
         const level = Math.max(0, Math.min(100, this.state.batteryLevel));
         const charging = this.state.batteryCharging;
 

@@ -7,6 +7,9 @@ class NuxelHome {
         this.components = {};
         this.appGeneration = 0;
         this.appSession = { state: 'CLOSED', app: null, frame: null };
+        // A Home press backgrounds an app; it must not tear down its document.
+        // Keep one surface per app id so Recents can resume the exact session.
+        this.appSurfaces = new Map();
         this._init();
     }
 
@@ -37,6 +40,7 @@ class NuxelHome {
             if (!doc || doc.__nuxelObserved) return;
             if (window.NuxelTouchKeyboard) window.NuxelTouchKeyboard.attach(doc);
             doc.__nuxelObserved = true;
+            doc.addEventListener('contextmenu', event => event.preventDefault());
             let lastMove = 0;
             const label = el => el && ((el.id || el.tagName || '').replace(/[^a-zA-Z0-9_.:-]/g, '').slice(0, 80)) || '-';
             ['pointerdown', 'pointerup', 'pointercancel', 'touchstart', 'touchmove', 'touchend', 'click', 'focusin', 'input'].forEach(kind => {
@@ -55,14 +59,18 @@ class NuxelHome {
     }
 
     _removeAppSurface() {
-        if (this.appSession.frame && this.appSession.frame.releasePointerCapture) {
+        const { app, frame } = this.appSession;
+        if (frame && frame.releasePointerCapture) {
             try {
-                const captures = this.appSession.frame.__nuxelPointerCaptures || [];
-                captures.forEach(id => this.appSession.frame.releasePointerCapture(id));
+                const captures = frame.__nuxelPointerCaptures || [];
+                captures.forEach(id => frame.releasePointerCapture(id));
             } catch (e) { /* the frame may already have been detached */ }
         }
-        document.querySelectorAll('.pwa-frame, .pwa-close-btn, .pwa-app-status, .pwa-app-bar')
-            .forEach(el => el.remove());
+        const surface = app && this.appSurfaces.get(app.id);
+        if (surface) {
+            [surface.frame, surface.bar, surface.status].forEach(el => { if (el) el.remove(); });
+            this.appSurfaces.delete(app.id);
+        }
         try {
             if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
         } catch (e) { /* a torn-down WebKit frame may no longer expose activeElement */ }
@@ -79,6 +87,29 @@ class NuxelHome {
         if (this.appSession.state !== 'CLOSED') this._setAppState('CLOSING');
         this._removeAppSurface();
         this._setAppState('CLOSED', null, null);
+    }
+
+    _backgroundForegroundApp() {
+        const { app, frame } = this.appSession;
+        if (!app || !frame) return;
+        const surface = this.appSurfaces.get(app.id);
+        if (surface) {
+            [surface.frame, surface.bar, surface.status].forEach(el => {
+                if (el) el.hidden = true;
+            });
+        }
+        this._setAppState('BACKGROUND', app, frame);
+    }
+
+    _resumeApp(app) {
+        const surface = app && this.appSurfaces.get(app.id);
+        if (!surface) return false;
+        if (this.appSession.app && this.appSession.app.id !== app.id) this._backgroundForegroundApp();
+        [surface.frame, surface.bar, surface.status].forEach(el => {
+            if (el) el.hidden = false;
+        });
+        this._setAppState('ACTIVE', app, surface.frame);
+        return true;
     }
 
     async _init() {
@@ -239,6 +270,10 @@ class NuxelHome {
             const action = event.detail && event.detail.action;
             console.log('[Nuxel] logical action:', action);
             if (action === 'home') this._closeOverlays();
+            else if (action === 'back') this.back();
+            else if (action === 'forward') this.forward();
+            else if (action === 'stop') this.stopLoading();
+            else if (action === 'reload-launcher') this.reloadLauncher();
             else if (action === 'search' && this.components.search) this.components.search.open();
             else if (action === 'settings') appRegistry.launchApp('nuxel-settings');
         };
@@ -259,6 +294,9 @@ class NuxelHome {
                 this._closeOverlays();
             }
         });
+        // Long press is reserved for launcher editing and never opens WebKit's
+        // generic Back/Forward/Stop/Reload context menu.
+        document.addEventListener('contextmenu', event => event.preventDefault());
 
         // Keep lifecycle truth aligned with WebKit visibility.  BACKGROUND is
         // descriptive only: it never creates another surface or input owner.
@@ -287,8 +325,8 @@ class NuxelHome {
 
     _openPwa(app, url) {
         console.log(`Opening PWA: ${app.name} at ${url}`);
-
-        this._closeAppSurface();
+        if (this._resumeApp(app)) return;
+        this._backgroundForegroundApp();
         const generation = this.appGeneration;
         this._setAppState('LAUNCHING', app, null);
 
@@ -365,12 +403,13 @@ class NuxelHome {
         closeBtn.className = 'pwa-close-btn';
         closeBtn.textContent = 'Home';
         closeBtn.setAttribute('aria-label', `Close ${app.name} and return Home`);
-        closeBtn.onclick = () => this._closeAppSurface();
+        closeBtn.onclick = () => this._backgroundForegroundApp();
         appBar.appendChild(closeBtn);
         const appTitle = document.createElement('span');
         appTitle.textContent = app.name;
         appBar.appendChild(appTitle);
         document.body.appendChild(appBar);
+        this.appSurfaces.set(app.id, { frame, bar: appBar, status });
     }
 
     _launchNative(app, url) {
@@ -421,11 +460,49 @@ class NuxelHome {
         if (this.components.qs) {
             this.components.qs.close();
         }
-        // A34 TOUCHDOWN: "home" (hardware action / Escape / host FIFO) must also
-        // dismiss an app surface opened by _openPwa().  Previously it only
-        // closed search/QS, so after any app tap the only way back was the small
-        // ✕.  This uses the same nodes _openPwa() creates; no layout change.
-        this._closeAppSurface();
+        this._backgroundForegroundApp();
+    }
+
+    // Public system-navigation contract.  Keep these methods on the Home
+    // controller rather than making the button bar reach into individual app
+    // iframes: Back/Home/Recents must work identically for every PWA.
+    back() {
+        if (this.components.search && this.components.search.isOpen) { this.components.search.close(); return; }
+        if (this.components.qs && this.components.qs.isOpen) { this.components.qs.close(); return; }
+        if (window.recents && window.recents.isOpen) { window.recents.close(); return; }
+        if (window.NuxelTouchKeyboard && window.NuxelTouchKeyboard.visible()) { window.NuxelTouchKeyboard.hide(); return; }
+        this._backgroundForegroundApp();
+    }
+
+    home() { this._closeOverlays(); }
+
+    recentsToggle() {
+        if (this.components.search && this.components.search.isOpen) this.components.search.close();
+        if (this.components.qs && this.components.qs.isOpen) this.components.qs.close();
+        if (window.recents) window.recents.toggle();
+    }
+
+    forward() {
+        const frame = this.appSession.frame;
+        try { if (frame && frame.contentWindow) frame.contentWindow.history.forward(); } catch (e) {}
+    }
+
+    stopLoading() {
+        const frame = this.appSession.frame;
+        try { if (frame && frame.contentWindow) frame.contentWindow.stop(); } catch (e) {}
+    }
+
+    reloadLauncher() { window.location.reload(); }
+
+    terminateForeground() {
+        // The launcher is never a session, so a held Back can only terminate a
+        // foreground app.  On Home this intentionally does nothing.
+        if (this.appSession.app) this._closeAppSurface();
+    }
+
+    openHomeSettings() {
+        this._closeOverlays();
+        if (window.NuxelHomeSettings) window.NuxelHomeSettings.open();
     }
 }
 

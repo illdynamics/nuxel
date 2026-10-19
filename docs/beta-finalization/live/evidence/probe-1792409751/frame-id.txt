@@ -1,4 +1,0 @@
-rc=0 framed=True sha_ok=True
-uid=0(root) gid=0(root) groups=0(root)
-NXL-REACH-OK
-

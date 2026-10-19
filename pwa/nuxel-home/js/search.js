@@ -105,7 +105,7 @@ class SearchManager {
                                  data-app-id="${app.id}" tabindex="0">
                                 <div class="result-icon" 
                                      style="background: ${app.color}33">
-                                    <span>${app.icon}</span>
+                                    ${window.NuxelAppIcon ? window.NuxelAppIcon(app) : '<span>' + app.icon + '</span>'}
                                 </div>
                                 <div class="result-info">
                                     <div class="result-name">${highlightedName}</div>

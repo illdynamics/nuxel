@@ -15,6 +15,9 @@ assert re.search(r'panel_assert\("post-stop"\);.*?frame_blit_once\(\)',bridge,re
 assert 'panel_blank_powerdown("screen-off");' in bridge, 'real panel blank must be attempted'
 assert 'FBIOPAN_DISPLAY' in bridge and 'decon_pan_failed' in bridge
 assert '/nuxel/tools/s10plus/a34/nuxel-wl-fb.c' in rootfs, 'rootfs CI build must compile the patched source'
+assert '-I/nuxel/tools/s10plus/a33' in rootfs, (
+    'rootfs CI build must include the shared A33 handoff-logic header used by the A34 bridge'
+)
 assert 'ExecStart=/usr/lib/nuxel/nuxel-wl-fb' in unit
 assert 'fbio_pan_display' not in unit.lower(), 'service must not launch another fb writer'
 print('PASS A35 source-to-rootfs commit/blank/startup contract')

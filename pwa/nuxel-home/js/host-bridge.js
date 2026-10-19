@@ -15,7 +15,9 @@
 //   NuxelHost.statusRead(name)     -> {ok, text}
 //   NuxelHost.action(action)       -> {ok}    screen-off|screen-on|screen-toggle|
 //                                             home|search|settings|open-terminal|
-//                                             volume-up|volume-down|volume-mute
+//                                             volume-up|volume-down|volume-mute|
+//                                             haptics-tap|haptics-navigation|
+//                                             haptics-switch|haptics-long
 //   NuxelHost.termInput(data)      -> {ok}
 //   NuxelHost.termOpen() / termClose()
 //   NuxelHost.onEvent(cb)          -> subscription to host-pushed events

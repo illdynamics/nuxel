@@ -6,7 +6,7 @@
     top: var(--status-bar-height);
     left: 0;
     right: 0;
-    bottom: var(--dock-height);
+    bottom: calc(var(--dock-height) + var(--system-nav-height));
     padding: 8px var(--grid-padding) 0;
     overflow-y: auto;
     overflow-x: hidden;
@@ -52,7 +52,9 @@
 /* App List */
 .app-list {
     display: grid;
+    /* Static fallback also documents the shipped 4-wide default. */
     grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(var(--home-columns, 4), 1fr);
     gap: 16px 8px;
     padding-bottom: 20px;
 }
@@ -139,7 +141,7 @@
 /* Dock */
 .dock {
     position: absolute;
-    bottom: 0;
+    bottom: var(--system-nav-height);
     left: 0;
     right: 0;
     height: var(--dock-height);
@@ -155,8 +157,10 @@
 }
 
 .dock-items {
-    display: flex;
-    gap: 20px;
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(var(--dock-columns, 5), minmax(0, 1fr));
+    gap: 6px;
     align-items: center;
 }
 
@@ -169,6 +173,30 @@
 .dock .app-item .app-label {
     display: none;
 }
+
+.launcher-edit-toolbar {
+    position: fixed;
+    z-index: 120;
+    left: 12px;
+    right: 12px;
+    bottom: calc(var(--dock-height) + var(--system-nav-height) + 8px);
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    padding: 8px;
+    border-radius: 16px;
+    background: rgba(8, 23, 45, .94);
+    border: 1px solid rgba(147, 197, 253, .35);
+    box-shadow: 0 10px 28px rgba(0, 0, 0, .4);
+}
+.launcher-edit-toolbar button { min-height: 38px; padding: 0 12px; border: 0; border-radius: 10px; color: #fff; background: #1e3a5f; font: 600 13px system-ui, sans-serif; }
+.launcher-edit-toolbar .danger { background: #8b2635; }
+.launcher-editing .app-item { animation: launcher-wiggle .22s ease-in-out infinite alternate; }
+.launcher-editing .app-item.dragging, .launcher-editing .app-item:active { animation: none; }
+.launcher-editing .app-item.selected-for-edit .app-icon { outline: 3px solid #93c5fd; outline-offset: 3px; }
+.app-item[data-size="large"] .app-icon { transform: scale(1.12); }
+.app-item[data-size="large"] .app-label { margin-top: 5px; }
+@keyframes launcher-wiggle { from { transform: rotate(-.8deg); } to { transform: rotate(.8deg); } }
 
 /* Widget area (future) */
 .widget-area {
@@ -266,3 +294,6 @@ body.launcher-dragging .app-item {
     outline-offset: 4px;
     border-radius: 16px;
 }
+
+/* A37: fall back to a readable native glyph if an asset genuinely fails to load. */
+.app-icon .nuxel-icon-fallback:not([hidden]) { display: inline-flex; align-items: center; justify-content: center; width: 100%; height: 100%; }

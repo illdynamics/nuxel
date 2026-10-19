@@ -180,6 +180,38 @@
         "gate": "/etc/nuxel/buttons/reboot-gate.json"
       },
       {
+        "id": "back",
+        "label": "Back",
+        "action": "back",
+        "dispatch": "host-fifo",
+        "trigger_allowed": true,
+        "implemented_by": "launcher system navigation"
+      },
+      {
+        "id": "forward",
+        "label": "Forward",
+        "action": "forward",
+        "dispatch": "host-fifo",
+        "trigger_allowed": true,
+        "implemented_by": "foreground PWA history"
+      },
+      {
+        "id": "stop",
+        "label": "Stop loading",
+        "action": "stop",
+        "dispatch": "host-fifo",
+        "trigger_allowed": true,
+        "implemented_by": "foreground PWA document"
+      },
+      {
+        "id": "reload-launcher",
+        "label": "Reload launcher",
+        "action": "reload-launcher",
+        "dispatch": "host-fifo",
+        "trigger_allowed": true,
+        "implemented_by": "launcher document"
+      },
+      {
         "id": "recovery",
         "label": "Recovery (Samsung)",
         "action": "enter-recovery",

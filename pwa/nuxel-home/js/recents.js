@@ -53,7 +53,7 @@ class RecentsManager {
         this.list.innerHTML = recentApps.map(app => `
             <div class="recents-card press-effect" data-app-id="${app.id}">
                 <div class="recents-preview" style="background: ${app.color}22">
-                    <span style="font-size: 48px">${app.icon}</span>
+                    <span class="recent-app-icon">${window.NuxelAppIcon ? window.NuxelAppIcon(app) : app.icon}</span>
                 </div>
                 <div class="recents-label">
                     <span>${app.name}</span>

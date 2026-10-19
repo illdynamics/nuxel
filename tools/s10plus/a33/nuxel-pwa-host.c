@@ -117,7 +117,8 @@ static void st(const char *fmt, ...) {
  *   config.get/set   -> whitelisted files under /etc/nuxel/ (atomic replace)
  *   status.read      -> whitelisted read-only state files
  *   system.action    -> screen-off|screen-on|screen-toggle|home|search|settings|
- *                       open-terminal|volume-up|volume-down|volume-mute
+ *                       open-terminal|volume-up|volume-down|volume-mute|
+ *                       haptics-tap|haptics-navigation|haptics-switch|haptics-long
  *   term.input       -> bytes for the existing PTY
  *   term.close       -> end the terminal session
  * Anything else is refused and logged.
@@ -331,6 +332,22 @@ static void action_perform(const char *action, char *result, size_t rn) {
     snprintf(result, rn, "{\"ok\":true,\"action\":\"%s\"}", action);
     return;
   }
+  /* On-screen navigation asks for feedback at pointer-down, before the page
+   * changes state.  Keep the accepted vocabulary deliberately closed: a web
+   * page can request only a named short pattern, never a raw actuator value. */
+  if (!strcmp(action, "haptics-tap") || !strcmp(action, "haptics-navigation") ||
+      !strcmp(action, "haptics-switch") || !strcmp(action, "haptics-long")) {
+    const char *pattern = !strcmp(action, "haptics-navigation") ? "navigation" :
+                          (!strcmp(action, "haptics-long") ? "long" :
+                           (!strcmp(action, "haptics-switch") ? "switch" : "tap"));
+    int fd = open("/run/nuxel-haptics/haptics.cmd", O_WRONLY | O_NONBLOCK);
+    if (fd < 0) { snprintf(result, rn, "{\"ok\":false,\"error\":\"haptics-fifo-absent\"}"); return; }
+    dprintf(fd, "%s\n", pattern);
+    close(fd);
+    st("HOST_ACTION %s -> haptics fifo", action);
+    snprintf(result, rn, "{\"ok\":true,\"action\":\"%s\"}", action);
+    return;
+  }
   /* A34 TOUCHDOWN: the on-screen power menu uses the SAME control FIFO as the
    * hardware keys, so tapping Cancel/Restart and pressing them are one path.
    * Only the menu's own verbs are accepted (no arbitrary FIFO injection). */
@@ -365,16 +382,23 @@ static void action_perform(const char *action, char *result, size_t rn) {
     snprintf(result, rn, "{\"ok\":true,\"action\":\"open-terminal\"}");
     return;
   }
-  if (!strcmp(action, "home") || !strcmp(action, "search") || !strcmp(action, "settings")) {
+  if (!strcmp(action, "home") || !strcmp(action, "back") || !strcmp(action, "forward") ||
+      !strcmp(action, "stop") || !strcmp(action, "reload-launcher") ||
+      !strcmp(action, "search") || !strcmp(action, "settings")) {
     /* A native terminal window is a separate top-level surface: the launcher's
      * DOM `home` event cannot dismiss it.  Home/back must close it here, or the
      * fullscreen terminal stays in front of Home (the A34 owner-test symptom). */
     if (!strcmp(action, "home")) term_close_window();
     if (g_main_view) {
       GString *g = g_string_new("");
+      const char *js_action = !strcmp(action, "home") ? "'home'" :
+                              !strcmp(action, "back") ? "'back'" :
+                              !strcmp(action, "forward") ? "'forward'" :
+                              !strcmp(action, "stop") ? "'stop'" :
+                              !strcmp(action, "reload-launcher") ? "'reload-launcher'" :
+                              !strcmp(action, "search") ? "'search'" : "'settings'";
       g_string_append_printf(g,
-        "window.dispatchEvent(new CustomEvent('nuxel:action',{detail:{action:%s}}));", 
-        !strcmp(action, "home") ? "'home'" : (!strcmp(action, "search") ? "'search'" : "'settings'"));
+        "window.dispatchEvent(new CustomEvent('nuxel:action',{detail:{action:%s}}));", js_action);
       webkit_web_view_evaluate_javascript(g_main_view, g->str, -1, NULL, NULL, NULL, NULL, NULL);
       g_string_free(g, TRUE);
     }

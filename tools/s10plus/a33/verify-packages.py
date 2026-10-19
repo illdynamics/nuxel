@@ -1037,7 +1037,18 @@ def main(argv: Optional[List[str]] = None) -> int:
         log("verdict=resolved (manifest schema validation, stdlib validator)")
         return 0
 
-    os.makedirs(args.cache_dir, exist_ok=True)
+    try:
+        os.makedirs(args.cache_dir, exist_ok=True)
+    except OSError as e:
+        # The default cache lives under `build/pkgmeta/`, which is gitignored and
+        # therefore does NOT exist on a clean checkout.  On the CI S10+ runner the
+        # repo root is bind-mounted read-only inside the arm64 container, so this
+        # makedirs() fails with "Read-only file system".  The cache is purely an
+        # optimization (a fresh runner has nothing to reuse), so fall back to a
+        # writable temp dir and keep building.
+        print("[verify-packages] cache_dir %s not writable (%s); using %s"
+              % (args.cache_dir, e.args[1] if e.args else e, tempfile.gettempdir()))
+        args.cache_dir = tempfile.mkdtemp(prefix="nuxel-pkgmeta-")
     start = time.time()
 
     repos = args.repo if args.repo else ([DEFAULT_REPOS[0]] if args.ga_only else list(DEFAULT_REPOS))

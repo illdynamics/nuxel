@@ -8,7 +8,12 @@ class Launcher {
         this.searchOverlay = document.getElementById('search-overlay');
 
         this.currentPage = 0;
-        this.appsPerPage = 16;
+        this.appsPerPage = 20;
+        this.settings = { gridColumns: 4, gridRows: 5, dockColumns: 5 };
+        this.hiddenAppIds = new Set();
+        this.appSizes = {};
+        this.editMode = false;
+        this.selectedAppId = null;
         this.isDragging = false;
         this.dragData = null;
         this.dragGhost = null;
@@ -23,6 +28,8 @@ class Launcher {
 
     _init() {
         this._loadOrder();
+        this._loadLayout();
+        this._applyLayout();
         this._renderAll();
         this._bindPointerEvents();
     }
@@ -41,18 +48,56 @@ class Launcher {
         }
     }
 
+    _loadLayout() {
+        try {
+            const saved = JSON.parse(localStorage.getItem('nuxel.launcherLayout') || '{}');
+            this.settings = Object.assign(this.settings, saved.settings || {});
+            this.hiddenAppIds = new Set(Array.isArray(saved.hiddenAppIds) ? saved.hiddenAppIds : []);
+            this.appSizes = saved.appSizes && typeof saved.appSizes === 'object' ? saved.appSizes : {};
+        } catch (e) { /* first launch or an old, invalid layout */ }
+    }
+
+    _saveLayout() {
+        try {
+            localStorage.setItem('nuxel.launcherLayout', JSON.stringify({
+                settings: this.settings,
+                hiddenAppIds: Array.from(this.hiddenAppIds),
+                appSizes: this.appSizes,
+            }));
+        } catch (e) { console.warn('Could not save launcher layout:', e); }
+    }
+
+    _applyLayout() {
+        const clamp = (value, low, high, fallback) => {
+            value = Number(value);
+            return Number.isInteger(value) && value >= low && value <= high ? value : fallback;
+        };
+        this.settings.gridColumns = clamp(this.settings.gridColumns, 3, 6, 4);
+        this.settings.gridRows = clamp(this.settings.gridRows, 4, 7, 5);
+        this.settings.dockColumns = clamp(this.settings.dockColumns, 3, 6, 5);
+        this.appsPerPage = this.settings.gridColumns * this.settings.gridRows;
+        document.documentElement.style.setProperty('--home-columns', this.settings.gridColumns);
+        document.documentElement.style.setProperty('--dock-columns', this.settings.dockColumns);
+    }
+
+    updateHomeSettings(next) {
+        this.settings = Object.assign(this.settings, next || {});
+        this._applyLayout();
+        this._saveLayout();
+        this._renderAll();
+    }
+
     _saveOrder() {
-        const docked = appRegistry.getDockedApps().map(a => a.id);
-        const ordered = appRegistry.getAllApps()
-            .filter(a => !docked.includes(a.id))
-            .map(a => a.id);
-        localStorage.setItem('nuxel.appOrder', JSON.stringify(ordered));
+        const visible = Array.from(this.appList ? this.appList.children : []).map(el => el.dataset.appId).filter(Boolean);
+        const current = (this.appOrder || this._getOrderedApps().map(a => a.id)).filter(id => !visible.includes(id));
+        this.appOrder = visible.concat(current);
+        try { localStorage.setItem('nuxel.appOrder', JSON.stringify(this.appOrder)); } catch (e) {}
     }
 
     _getOrderedApps() {
         const all = appRegistry.getAllApps();
         const docked = new Set(appRegistry.getDockedApps().map(a => a.id));
-        const gridApps = all.filter(a => !docked.has(a.id));
+        const gridApps = all.filter(a => !docked.has(a.id) && !this.hiddenAppIds.has(a.id));
 
         if (this.appOrder && this.appOrder.length) {
             const orderMap = new Map();
@@ -67,7 +112,12 @@ class Launcher {
 
     resetOrder() {
         localStorage.removeItem('nuxel.appOrder');
+        localStorage.removeItem('nuxel.launcherLayout');
         this.appOrder = null;
+        this.hiddenAppIds.clear();
+        this.appSizes = {};
+        this.settings = { gridColumns: 4, gridRows: 5, dockColumns: 5 };
+        this._applyLayout();
         this._renderAll();
     }
 
@@ -80,9 +130,9 @@ class Launcher {
 
     _renderDock() {
         if (!this.dockItems) return;
-        const docked = appRegistry.getDockedApps();
+        const docked = appRegistry.getDockedApps().filter(app => !this.hiddenAppIds.has(app.id));
         this.dockItems.innerHTML = docked.map((app, i) =>
-            '<div class="app-item press-effect" data-app-id="' + app.id + '" data-index="' + i + '" tabindex="0" role="button" aria-label="' + app.name + '"><div class="app-icon app-category-' + app.category + '" style="background: ' + app.color + '33; color: ' + app.color + '"><span>' + app.icon + '</span></div></div>'
+            '<div class="app-item press-effect" data-app-id="' + app.id + '" data-index="' + i + '" tabindex="0" role="button" aria-label="' + app.name + '"><div class="app-icon app-category-' + app.category + '" style="background: ' + app.color + '33; color: ' + app.color + '">' + this._appIcon(app) + '</div></div>'
         ).join('');
     }
 
@@ -95,10 +145,15 @@ class Launcher {
         const page = gridApps.slice(start, start + this.appsPerPage);
 
         this.appList.innerHTML = page.map(app =>
-            '<div class="app-item" data-app-id="' + app.id + '" tabindex="0" role="button" aria-label="' + app.name + '" title="' + (app.description || '') + '"><div class="app-icon app-category-' + app.category + '" style="background: ' + app.color + '33; color: ' + app.color + '"><span>' + app.icon + '</span></div><span class="app-label">' + app.name + '</span></div>'
+            '<div class="app-item" data-size="' + (this.appSizes[app.id] || 'normal') + '" data-app-id="' + app.id + '" tabindex="0" role="button" aria-label="' + app.name + '" title="' + (app.description || '') + '"><div class="app-icon app-category-' + app.category + '" style="background: ' + app.color + '33; color: ' + app.color + '">' + this._appIcon(app) + '</div><span class="app-label">' + app.name + '</span></div>'
         ).join('');
 
         this._updatePageDots(totalPages);
+    }
+
+    _appIcon(app) {
+        if (window.NuxelAppIcon) return window.NuxelAppIcon(app);
+        return '<span>' + app.icon + '</span>';
     }
 
     _updatePageDots(total) {
@@ -154,13 +209,18 @@ class Launcher {
         this.dragStartTime = Date.now();
         this.hasMoved = false;
 
-        // Dock items still activate on release; only reordering is disabled.
-        if (item.closest('#dock-items')) return;
+        // Dock items still activate on release; long press selects them for
+        // removal but does not turn the fixed dock into a surprise reordering UI.
+        if (item.closest('#dock-items')) {
+            this.longPressTimer = setTimeout(() => this._enterEditMode(item.dataset.appId), 450);
+            return;
+        }
         // Long-press to start drag
         clearTimeout(this.longPressTimer);
         this.longPressTimer = setTimeout(() => {
+            this._enterEditMode(item.dataset.appId);
             this._startDrag(item, e);
-        }, 500);
+        }, 450);
     }
 
     _onPointerMove(e) {
@@ -194,11 +254,12 @@ class Launcher {
             return;
         }
 
-        // Normal tap/click → launch app
+        // Normal tap either chooses an icon to edit or launches it.
         const released = e.target.closest && e.target.closest('.app-item');
         if (!this.hasMoved && this.dragTarget && released === this.dragTarget) {
             const appId = this.dragTarget.dataset.appId;
-            if (appId) appRegistry.launchApp(appId);
+            if (appId && this.editMode) this._selectForEdit(appId);
+            else if (appId) appRegistry.launchApp(appId);
         }
 
         this.dragTarget = null;
@@ -296,6 +357,63 @@ class Launcher {
 
         this._saveOrder();
         this.dragData = null;
+    }
+
+    _enterEditMode(appId) {
+        this.editMode = true;
+        document.body.classList.add('launcher-editing');
+        this._selectForEdit(appId);
+        if (window.NuxelHost && window.NuxelHost.available) window.NuxelHost.action('haptics-long');
+    }
+
+    _selectForEdit(appId) {
+        this.selectedAppId = appId;
+        document.querySelectorAll('.app-item').forEach(item => item.classList.toggle('selected-for-edit', item.dataset.appId === appId));
+        this._renderEditToolbar();
+    }
+
+    _renderEditToolbar() {
+        let bar = document.getElementById('launcher-edit-toolbar');
+        if (!bar) {
+            bar = document.createElement('div');
+            bar.id = 'launcher-edit-toolbar';
+            bar.className = 'launcher-edit-toolbar';
+            document.body.appendChild(bar);
+        }
+        bar.innerHTML = '<button type="button" data-edit="size">Resize</button><button type="button" class="danger" data-edit="remove">Remove</button><button type="button" data-edit="settings">Home settings</button><button type="button" data-edit="done">Done</button>';
+        bar.querySelector('[data-edit="size"]').onclick = () => this.toggleSelectedSize();
+        bar.querySelector('[data-edit="remove"]').onclick = () => this.removeSelected();
+        bar.querySelector('[data-edit="settings"]').onclick = () => window.NuxelHomeSettings && window.NuxelHomeSettings.open();
+        bar.querySelector('[data-edit="done"]').onclick = () => this.exitEditMode();
+    }
+
+    toggleSelectedSize() {
+        if (!this.selectedAppId) return;
+        this.appSizes[this.selectedAppId] = this.appSizes[this.selectedAppId] === 'large' ? 'normal' : 'large';
+        this._saveLayout(); this._renderAll(); this._selectForEdit(this.selectedAppId);
+    }
+
+    removeSelected() {
+        if (!this.selectedAppId) return;
+        this.hiddenAppIds.add(this.selectedAppId);
+        this.appSizes[this.selectedAppId] = 'normal';
+        this.selectedAppId = null;
+        this._saveLayout(); this._renderAll();
+        const next = this.appList && this.appList.querySelector('.app-item');
+        if (next) this._selectForEdit(next.dataset.appId); else this.exitEditMode();
+    }
+
+    restoreHiddenApps() {
+        this.hiddenAppIds.clear();
+        this._saveLayout();
+        this._renderAll();
+    }
+
+    exitEditMode() {
+        this.editMode = false; this.selectedAppId = null;
+        document.body.classList.remove('launcher-editing');
+        const bar = document.getElementById('launcher-edit-toolbar');
+        if (bar) bar.remove();
     }
 
     // ── Swipe navigation ────────────────────────────────────────────

@@ -17,6 +17,7 @@
     <link rel="stylesheet" href="css/launcher.css">
     <link rel="stylesheet" href="css/search.css">
     <link rel="stylesheet" href="css/status-bar.css">
+    <link rel="stylesheet" href="css/home-settings.css">
 </head>
 <body>
     <!-- Boot animation splash (nuxel-boot-animation.mp4) — shown while the
@@ -71,37 +72,37 @@
     <div id="quick-settings" class="quick-settings hidden">
         <div class="qs-row">
             <div class="qs-item" id="qs-wifi" data-enabled="false">
-                <span class="qs-icon wifi-icon"></span>
+                <img class="qs-icon" src="/assets/nuxel-quicksettings-icon-pack/01-wifi.png?v=a37" alt="">
                 <span class="qs-label">WiFi</span>
             </div>
             <div class="qs-item" id="qs-bluetooth" data-enabled="false">
-                <span class="qs-icon bt-icon"></span>
+                <img class="qs-icon" src="/assets/nuxel-quicksettings-icon-pack/04-bluetooth.png?v=a37" alt="">
                 <span class="qs-label">BT</span>
             </div>
             <div class="qs-item" id="qs-mobile" data-enabled="false">
-                <span class="qs-icon mobile-icon"></span>
+                <img class="qs-icon" src="/assets/nuxel-quicksettings-icon-pack/02-mobile-signal.png?v=a37" alt="">
                 <span class="qs-label">Mobile</span>
             </div>
             <div class="qs-item" id="qs-location" data-enabled="false">
-                <span class="qs-icon location-icon"></span>
+                <img class="qs-icon" src="/assets/nuxel-quicksettings-icon-pack/09-location.png?v=a37" alt="">
                 <span class="qs-label">Location</span>
             </div>
         </div>
         <div class="qs-row">
             <div class="qs-item" id="qs-dnd" data-enabled="false">
-                <span class="qs-icon dnd-icon"></span>
+                <img class="qs-icon" src="/assets/nuxel-quicksettings-icon-pack/11-do-not-disturb.png?v=a37" alt="">
                 <span class="qs-label">DND</span>
             </div>
             <div class="qs-item" id="qs-flashlight" data-enabled="false">
-                <span class="qs-icon flashlight-icon"></span>
+                <img class="qs-icon" src="/assets/nuxel-quicksettings-icon-pack/10-flashlight.png?v=a37" alt="">
                 <span class="qs-label">Flash</span>
             </div>
             <div class="qs-item" id="qs-rotate" data-enabled="false">
-                <span class="qs-icon rotate-icon"></span>
+                <img class="qs-icon" src="/assets/nuxel-quicksettings-icon-pack/17-rotation-lock.png?v=a37" alt="">
                 <span class="qs-label">Rotate</span>
             </div>
             <div class="qs-item" id="qs-settings" data-enabled="true">
-                <span class="qs-icon settings-icon"></span>
+                <img class="qs-icon" src="/assets/nuxel-quicksettings-icon-pack/30-quick-settings.png?v=a37" alt="">
                 <span class="qs-label">Settings</span>
             </div>
         </div>
@@ -117,6 +118,15 @@
         <span id="call-status-text" class="call-status-text"></span>
         <button id="call-status-end" class="call-status-btn">End Call</button>
     </div>
+
+    <!-- Android-style system navigation: Back / Home / Recents.  The image
+         files live at the repository asset root so the deployed static root and
+         local launcher use the same artwork. -->
+    <nav id="system-navigation" class="system-navigation" aria-label="System navigation">
+        <button type="button" data-nav="back" aria-label="Back"><img src="/assets/button-left.png?v=a37" alt=""><span class="nav-fallback" aria-hidden="true">‹</span></button>
+        <button type="button" data-nav="home" aria-label="Home"><img src="/assets/button-middle.png?v=a37" alt=""><span class="nav-fallback" aria-hidden="true">●</span></button>
+        <button type="button" data-nav="recents" aria-label="Recent apps"><img src="/assets/button-right.png?v=a37" alt=""><span class="nav-fallback" aria-hidden="true">▢</span></button>
+    </nav>
 
     <script src="js/apps.js"></script>
     <script src="js/launcher.js"></script>
@@ -136,6 +146,8 @@
     <script src="js/osd.js"></script>
     <script src="js/bootlog.js"></script>
     <script src="js/touch-keyboard.js"></script>
+    <script src="js/navigation.js"></script>
+    <script src="js/home-settings.js"></script>
     <script src="js/app.js"></script>
 </body>
 </html>

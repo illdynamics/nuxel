@@ -1,6 +1,6 @@
 [Unit]
 Description=Nuxel startup cue after confirmed boot-animation to launcher handoff
-After=nuxel-wl-fb.service sound.target
+After=nuxel-wl-fb.service sound.target nuxel-button-manager.service
 Wants=nuxel-wl-fb.service
 ConditionPathExists=/usr/share/nuxel/assets/nuxel-boot-audio.mp3
 

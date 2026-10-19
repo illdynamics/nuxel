@@ -234,7 +234,9 @@ class QuickSettings {
         document.dispatchEvent(event);
         
         // Provide haptic feedback if available
-        if (navigator.vibrate) {
+        if (window.NuxelHost && window.NuxelHost.available) {
+            window.NuxelHost.action('haptics-switch');
+        } else if (navigator.vibrate) {
             navigator.vibrate(10);
         }
     }
