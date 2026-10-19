@@ -99,7 +99,11 @@ esac
 # reproducible from a fresh clone.
 B=/tmp/nuxel-current-userspace
 mkdir -p "$B"
-CFLAGS_COMMON="-O2 -Wall -Wextra -Wno-unused-parameter -std=gnu11 -I$B"
+# The A34 display bridge includes the shared A33 handoff decision header.  Keep
+# this repo source path explicit: the clean CI checkout must compile the same
+# bridge that is staged onto the handset, without depending on a developer's
+# generated include tree.
+CFLAGS_COMMON="-O2 -Wall -Wextra -Wno-unused-parameter -std=gnu11 -I$B -I/nuxel/tools/s10plus/a33"
 wayland-scanner client-header \
     /nuxel/tools/s10plus/a29/wlr-screencopy-unstable-v1.xml \
     "$B/wlr-screencopy-unstable-v1-client-protocol.h"
