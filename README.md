@@ -3,7 +3,7 @@
 
 ![Nuxel](./nuxel.jpg)
 
-**v0.5.2-beta** — _Build the bunker first. Add the rave lights later._
+**v0.6.0-beta** — _Build the bunker first. Add the rave lights later._
 
 > **Samsung S10+ engineering reality.** The active `beyond2lte` port is Fedora
 > 43 aarch64 on Samsung Linux 4.14.253. Its launcher is Nuxel Home in WebKitGTK,
@@ -156,7 +156,7 @@ NUXEL_DEVICE=mustang bash boot/flash.sh --unlock --wipe
 | `ci/` | Build validation |
 | `assets/` | Wallpaper + boot animation |
 
-## What's new in v0.5.2-beta
+## What's new in v0.6.0-beta
 
 **The current S10+ image is reproducible, and the status is now honest about what
 works.** The handset boots Nuxel (kernel → embedded initramfs → Fedora 43
@@ -181,7 +181,7 @@ signed off**.
 - **Repository cleanup.** Legacy mission/scratch notes, duplicate flash guides,
   the `finish/` trees and all superseded image candidates were removed. Only the
   canonical currently-flashed images remain in the local build tree.
-- **Version bump to `v0.5.2-beta`** across the repository.
+- **Version bump to `v0.6.0-beta`** across the repository.
 
 
 ## What's new in v0.4.0-alpha
@@ -420,7 +420,7 @@ remaining interactive gap. The Moto G7 Power is flashed but still hangs at a
 black screen; the Pixel 10 Pro XL is still a scaffold. The UTM VM demo boots
 (display + network + sound).
 
-## Honest Status — v0.5.2-beta
+## Honest Status — v0.6.0-beta
 
 **S10+ (SM-G975F, beyond2lte) — NUXEL BOOTS AND TOUCH INPUT WORKS.**
 S-Boot loads the raw arm64 `Image` with the initramfs embedded, the Fedora 43
@@ -648,7 +648,7 @@ The other two bring-up targets are the **Samsung Galaxy S10+** (Exynos 9820,
 
 | Document | Description |
 |---|---|
-| [CHANGELOG.md](CHANGELOG.md) | Release notes — everything from v0.1.0 to v0.5.2-beta + readiness |
+| [CHANGELOG.md](CHANGELOG.md) | Release notes — everything from v0.1.0 to v0.6.0-beta + readiness |
 | [prompts/QUICKSTART.md](prompts/QUICKSTART.md) | Get running in 5 minutes |
 | [design/nuxel-linux-phone-design.md](design/nuxel-linux-phone-design.md) | Design bible — the full vision |
 | [design/Nuxel Phone OS Project Plan and Architecture.md](design/Nuxel%20Phone%20OS%20Project%20Plan%20and%20Architecture.md) | Technical architecture + component map |
@@ -681,8 +681,8 @@ The other two bring-up targets are the **Samsung Galaxy S10+** (Exynos 9820,
 Build outputs (`build/out/<device>/`) are git-ignored — they are produced by the
 scripts in `images/` and `kernel/`, not committed. To publish them on GitHub:
 
-* **Automated (recommended):** push a version tag (`git tag v0.5.2-beta && git push
-  origin v0.5.2-beta`). [`.github/workflows/release.yml`](.github/workflows/release.yml)
+* **Automated (recommended):** push a version tag (`git tag v0.6.0-beta && git push
+  origin v0.6.0-beta`). [`.github/workflows/release.yml`](.github/workflows/release.yml)
   builds every device on an Ubuntu runner (`make assets`, the shared initramfs for
   g7power, each `kernel/<dev>/build-kernel.sh`, then `images/g7power/build.sh`;
   for s10plus it runs `images/s10plus/build-a25-boot.sh` — the A25 image with the

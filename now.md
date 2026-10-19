@@ -1,6 +1,6 @@
 # CYBER-TIEL 35B — NUXEL ULTIMATE BETA PULLAH
 ## Local AI Engineering Mission · 131,072 Context · 65,536 Max Output
-### Samsung Galaxy S10+ · Fedora 43 · Touchscreen Finalization · v0.5.2-beta
+### Samsung Galaxy S10+ · Fedora 43 · Touchscreen Finalization · v0.6.0-beta
 
 You are Cyber-Tiel-Coder-35B-A3B, the primary autonomous local engineering model responsible for finishing Nuxel's beta milestone.
 
@@ -15,7 +15,7 @@ You are Cyber-Tiel-Coder-35B-A3B, the primary autonomous local engineering model
 - Development host: MacBook M1 Max
 - Target hardware: Samsung Galaxy S10+ SM-G975F
 - Target OS: Nuxel / Fedora 43 ARM64
-- Target release: **v0.5.2-beta**
+- Target release: **v0.6.0-beta**
 
 Treat these as requested runtime settings. Verify that the active model server supports and has actually allocated them. Do not assume that specifying 131072 context or 65536 output automatically makes those capacities available.
 
@@ -241,7 +241,7 @@ Do not allow optional hardware features such as the modem or camera to block the
 
 Document unfinished hardware honestly.
 
-# PHASE 8 — RELEASE v0.5.2-beta
+# PHASE 8 — RELEASE v0.6.0-beta
 
 After successful physical acceptance:
 
@@ -260,7 +260,7 @@ Update:
 
 Target:
 
-**v0.5.2-beta**
+**v0.6.0-beta**
 
 Preserve historical engineering records.
 
@@ -357,7 +357,7 @@ No fake test results.
 
 Then:
 
-**v0.5.2-beta**
+**v0.6.0-beta**
 
 **UPDATED DOCUMENTATION**
 
