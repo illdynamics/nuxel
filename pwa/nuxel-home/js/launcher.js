@@ -118,7 +118,7 @@ class Launcher {
         return true;
     }
 
-    isHomeLocked() { return this.settings.homeLocked === true; }
+    isHomeLocked() { return Boolean(this.settings && this.settings.homeLocked === true); }
     _lockedNotice() {
         let note = document.getElementById('nuxel-home-lock-toast');
         if (!note) { note = document.createElement('div'); note.id = 'nuxel-home-lock-toast'; note.className = 'toast'; document.body.appendChild(note); }
@@ -704,6 +704,15 @@ class Launcher {
         if (dx > 0 && this.currentPage < total - 1) this.currentPage++;
         else if (dx < 0 && this.currentPage > 0) this.currentPage--;
         else return;
+        const grid = document.getElementById('app-grid');
+        if (grid) {
+            grid.style.setProperty('--page-slide-from', dx > 0 ? '22px' : '-22px');
+            grid.classList.remove('page-changing');
+            void grid.offsetWidth; // restart transition only for completed desktop swipes
+            grid.classList.add('page-changing');
+            clearTimeout(this._pageAnimationTimer);
+            this._pageAnimationTimer = setTimeout(() => grid.classList.remove('page-changing'), 250);
+        }
         this._renderAppGrid();
     }
 

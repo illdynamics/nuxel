@@ -50,7 +50,7 @@
             console.warn('[Nuxel] Missing/corrupt dock artwork:', artwork);
         };
         image.onload = () => docks.forEach(dock => { if (dock.dataset.background === value) delete dock.dataset.backgroundFallback; });
-        image.src = artwork;
+        image.src = artwork + '?v=0.6.3-beta';
         document.dispatchEvent(new CustomEvent('nuxel:dock-background', {detail:{id:value,path:artwork}}));
     }
     const DEFAULT_WALLPAPER = "url('assets/nuxel-background.png')";

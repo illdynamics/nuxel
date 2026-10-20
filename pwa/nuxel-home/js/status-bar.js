@@ -1,4 +1,4 @@
-// Nuxel Status Bar — v0.6.1-beta
+// Nuxel Status Bar — v0.6.3-beta
 //
 // SINGLE SOURCE OF TRUTH (briq-02d).  The handset used to serve a stale
 // v0.3.2 copy of this file while the repo (and the UTM VM) was on v0.4.x, so the
@@ -17,7 +17,7 @@
 class StatusBar {
     // Keep in sync with manifest.json ("nuxel.pwa_version") and sw.js
     // (CACHE_VERSION) - the registry test fails if the three ever diverge.
-    static get VERSION() { return '0.6.1-beta'; }
+    static get VERSION() { return '0.6.3-beta'; }
 
     constructor() {
         this.state = {

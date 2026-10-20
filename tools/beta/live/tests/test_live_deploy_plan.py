@@ -39,7 +39,7 @@ REPO = nl.repo_root_from_here()
 MANIFEST = os.path.join(REPO, "tools", "beta", "live", "deploy-manifest.json")
 
 #: sha256 of json.dumps(core_groups, sort_keys=True, separators=(",",":")) — the
-#: seven core groups as present in the supplied v0.6.1-beta archive before extending the
+#: seven core groups as present in the supplied v0.6.3-beta archive before extending the
 #: manifest.  If this changes, the unrun core plan changed, which is forbidden.
 CORE_GROUPS_DIGEST = "013c055c3e347d8e10afb950cf9d83a1d49401f45b99cf3517d9ee8b5229eb83"
 CORE_GROUP_IDS = ["launcher-pwa", "status-bar-safe-zones", "session-units",

@@ -50,7 +50,7 @@ INTERFACE_NAME = 'org.nuxel.Bridge'
 # PWA<->host protocol pin (briq-04c). Same env names as the systemd units and the
 # HTTP layer, so `systemctl show -p Environment` shows exactly what is enforced.
 BRIDGE_PROTOCOL_VERSION = os.environ.get('NUXEL_BRIDGE_PROTOCOL_VERSION', '1')
-BRIDGE_HOST_VERSION = os.environ.get('NUXEL_BRIDGE_VERSION', '0.6.1-beta')
+BRIDGE_HOST_VERSION = os.environ.get('NUXEL_BRIDGE_VERSION', '0.6.3-beta')
 OBJECT_PATH = '/org/nuxel/Bridge'
 PORTAL_BUS_NAME = 'org.nuxel.Portal'
 PORTAL_OBJECT_PATH = '/org/nuxel/Portal'
@@ -379,6 +379,83 @@ class NetworkManagerConnector:
                     'wifi_state': status.get('wifi_state')}
         except Exception as e:
             return {'success': False, 'error': str(e)}
+
+    def _wifi_device(self):
+        """Select an actual NetworkManager Wi-Fi device, never a guessed wlan0."""
+        self._refresh_proxy()
+        mgr = dbus.Interface(self.nm_proxy, 'org.freedesktop.NetworkManager')
+        for path in mgr.GetDevices():
+            device = self.bus.get_object('org.freedesktop.NetworkManager', path)
+            props = dbus.Interface(device, 'org.freedesktop.DBus.Properties')
+            if int(props.Get('org.freedesktop.NetworkManager.Device', 'DeviceType')) == 2:
+                return path, device, props
+        raise RuntimeError('No NetworkManager Wi-Fi device: inspect kernel driver, firmware, rfkill and NM ownership')
+
+    def scan_wifi(self):
+        """Return real AP observations; scan failures are visible to the caller."""
+        try:
+            path, device, props = self._wifi_device()
+            wireless = dbus.Interface(device, 'org.freedesktop.NetworkManager.Device.Wireless')
+            try:
+                wireless.RequestScan(dbus.Dictionary({}, signature='sv'))
+            except dbus.DBusException as exc:
+                # NM throttles repeated requests. Still return its last known AP list.
+                logger.info('Wi-Fi scan request deferred: %s', exc.get_dbus_name())
+            results = []
+            for ap_path in wireless.GetAccessPoints():
+                ap = self.bus.get_object('org.freedesktop.NetworkManager', ap_path)
+                ap_props = dbus.Interface(ap, 'org.freedesktop.DBus.Properties')
+                get = lambda k: ap_props.Get('org.freedesktop.NetworkManager.AccessPoint', k)
+                raw_ssid = bytes(get('Ssid'))
+                ssid = raw_ssid.decode('utf-8', 'replace')
+                rsn, wpa, flags = int(get('RsnFlags')), int(get('WpaFlags')), int(get('Flags'))
+                security = 'wpa3' if (rsn & 0x400) else 'wpa2' if (rsn or wpa) else 'wep' if (flags & 1) else 'open'
+                results.append({'ssid': ssid, 'strength': int(get('Strength')),
+                                'security': security, 'ap_path': str(ap_path)})
+            results.sort(key=lambda a: a['strength'], reverse=True)
+            return {'success': True, 'networks': results, 'device': str(path)}
+        except Exception as exc:
+            return {'success': False, 'networks': [], 'error': str(exc)}
+
+    def connect_wifi(self, ssid, password, security):
+        """Connect through NetworkManager D-Bus, keeping PSKs out of argv/logs."""
+        try:
+            if not isinstance(ssid, str) or not 1 <= len(ssid.encode('utf-8')) <= 32 or '\x00' in ssid:
+                return {'success': False, 'error': 'SSID must contain 1–32 UTF-8 bytes'}
+            if security not in ('wpa2', 'wpa3', 'open'):
+                return {'success': False, 'error': 'Unsupported security type; never downgrade WEP or enterprise security'}
+            if security != 'open' and (not isinstance(password,str) or not 8 <= len(password) <= 63):
+                return {'success': False, 'error': 'Passphrase must contain 8–63 characters'}
+            path, device, props = self._wifi_device()
+            wifi_cfg = dbus.Dictionary({'ssid': dbus.ByteArray(ssid.encode('utf-8')),
+                                        'mode': dbus.String('infrastructure')}, signature='sv')
+            profile = {'connection': dbus.Dictionary({'id': dbus.String('Nuxel ' + ssid),
+                                                      'type': dbus.String('802-11-wireless'),
+                                                      'autoconnect': dbus.Boolean(True)}, signature='sv'),
+                       '802-11-wireless': wifi_cfg,
+                       'ipv4': dbus.Dictionary({'method': dbus.String('auto')}, signature='sv'),
+                       'ipv6': dbus.Dictionary({'method': dbus.String('auto')}, signature='sv')}
+            if security != 'open':
+                wifi_cfg['security'] = dbus.String('802-11-wireless-security')
+                profile['802-11-wireless-security'] = dbus.Dictionary({
+                    'key-mgmt': dbus.String('sae' if security == 'wpa3' else 'wpa-psk'),
+                    'psk': dbus.String(password)}, signature='sv')
+            mgr = dbus.Interface(self.nm_proxy, 'org.freedesktop.NetworkManager')
+            mgr.AddAndActivateConnection(dbus.Dictionary(profile,signature='sa{sv}'), path, '/new')
+            # Connection activation is asynchronous; don't report internet access yet.
+            return {'success': True, 'state': 'connecting', 'ssid': ssid}
+        except Exception as exc:
+            logger.warning('Wi-Fi activation failed (%s)', type(exc).__name__)
+            return {'success': False, 'error': str(exc).replace(password, '[REDACTED]') if password else str(exc)}
+
+    def disconnect_wifi(self):
+        try:
+            path, device, props = self._wifi_device()
+            dbus.Interface(device, 'org.freedesktop.NetworkManager.Device').Disconnect()
+            return {'success': True, 'state': 'disconnected'}
+        except Exception as exc:
+            return {'success': False, 'error': str(exc)}
+
 
 
 class GeoClueConnector:
@@ -802,6 +879,24 @@ class NuxelBridgeService(dbus.service.Object):
                                'error_code': 'CAPABILITY_DENIED'})
         return json.dumps(self.network.set_wifi_enabled(bool(enabled)))
     
+    @dbus.service.method(INTERFACE_NAME, in_signature='s', out_signature='s')
+    def NetworkWifiScan(self, app_id):
+        if not self._check_capability(app_id, 'network:manage'):
+            return json.dumps({'success': False, 'error': 'Network permission denied'})
+        return json.dumps(self.network.scan_wifi())
+
+    @dbus.service.method(INTERFACE_NAME, in_signature='ssss', out_signature='s')
+    def NetworkWifiConnect(self, app_id, ssid, password, security):
+        if not self._check_capability(app_id, 'network:manage'):
+            return json.dumps({'success': False, 'error': 'Network permission denied'})
+        return json.dumps(self.network.connect_wifi(str(ssid), str(password), str(security)))
+
+    @dbus.service.method(INTERFACE_NAME, in_signature='s', out_signature='s')
+    def NetworkWifiDisconnect(self, app_id):
+        if not self._check_capability(app_id, 'network:manage'):
+            return json.dumps({'success': False, 'error': 'Network permission denied'})
+        return json.dumps(self.network.disconnect_wifi())
+
     # ---------- D-Bus: Location ----------
     
     @dbus.service.method(INTERFACE_NAME, in_signature='s', out_signature='s')
@@ -857,7 +952,7 @@ class NuxelBridgeService(dbus.service.Object):
 
 
 def main():
-    logger.info("Starting Nuxel Bridge v0.6.1-beta...")
+    logger.info("Starting Nuxel Bridge v0.6.3-beta...")
     
     dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
     bus = dbus.SystemBus()

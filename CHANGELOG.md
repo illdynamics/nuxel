@@ -12,6 +12,25 @@ The canonical version lives in [`VERSION`](VERSION) and is bumped in lockstep
 across the shell apps, the PWA manifest, the device `APKBUILD`s, the VM tooling
 and the OTA builder (see *Versioning* below).
 
+## [v0.6.3-beta] — 2026-10-20 — *S10+ connectivity UI and beta release wiring*
+
+- Restored the background layer's visibility for the four-shortcut dock and fixed
+  responsive artwork sizing while preserving BG1/BG2 selection (BG2 default).
+- Home gesture threshold and compositor-friendly shade/drawer/page transitions;
+  prevent WebKit gesture zoom on the Home document, not on browser webpages.
+- NetworkManager-backed Settings tab: Wi-Fi status, scan, radio power, D-Bus
+  connection activation, and disconnect. No separate supplicant is launched;
+  credentials are passed to NetworkManager and never written to command argv.
+- Existing Nuxel Browser remains a WebKit page viewer with external navigation
+  opt-in; websites that forbid iframe embedding still require a native top-level
+  WebKit browser integration. No physical HTTPS browsing is claimed.
+- Release workflow builds verified Fedora ARM64 S10+ artifacts on a main-branch
+  VERSION bump or explicit version tag, and attempts annotated tag plus GitHub
+  prerelease publication after the full artifact gate passes.
+- **Not hardware verified:** actual Broadcom Wi-Fi association/internet, speaker,
+  camera, Bluetooth, NFC, GNSS or S10+ image boot. `final.md` tasks are tracked
+  as independent evidence gates, not all declared production-complete.
+
 ## [v0.6.1-beta] — 2026-10-20 — *haptic feedback, triple-button support and live A40 system monitor; whole-repo patch bump*
 
 - **Whole-repo version bump to `v0.6.1-beta`.** `VERSION`, the device `APKBUILD`s

@@ -13,14 +13,14 @@
   },
   "contract": {
     "one_registry": "This file is the canonical launcher registry. The PWA launcher (apps.js), the native shell (app_registry.json) and the HTTP bridge all serve the SAME app set; verify-app-registry.py fails on any drift between them.",
-    "capability_source": "services/nuxel-bridge/src/capabilities.py (Capability enum) \u2014 an app may not declare a capability the bridge does not know.",
+    "capability_source": "services/nuxel-bridge/src/capabilities.py (Capability enum) — an app may not declare a capability the bridge does not know.",
     "manifest_rule": "every pwa entry must resolve to a real index.html AND a manifest.json carrying nuxel.capabilities (list) and nuxel.bridge_version equal to the pin."
   },
   "apps": [
     {
       "id": "nuxel-dialer",
       "name": "Phone",
-      "icon": "\ud83d\udcde",
+      "icon": "📞",
       "color": "#4CAF50",
       "category": "communication",
       "type": "native",
@@ -43,7 +43,7 @@
     {
       "id": "nuxel-messages",
       "name": "Messages",
-      "icon": "\ud83d\udcac",
+      "icon": "💬",
       "color": "#2196F3",
       "category": "communication",
       "type": "native",
@@ -65,7 +65,7 @@
     {
       "id": "nuxel-contacts",
       "name": "Contacts",
-      "icon": "\ud83d\udc64",
+      "icon": "👤",
       "color": "#9C27B0",
       "category": "communication",
       "type": "native",
@@ -85,7 +85,7 @@
     {
       "id": "nuxel-camera",
       "name": "Camera",
-      "icon": "\ud83d\udcf7",
+      "icon": "📷",
       "color": "#795548",
       "category": "media",
       "type": "native",
@@ -107,7 +107,7 @@
     {
       "id": "org.nuxel.Mail",
       "name": "Mail",
-      "icon": "\u2709\ufe0f",
+      "icon": "✉️",
       "color": "#FF9800",
       "category": "productivity",
       "type": "pwa",
@@ -127,7 +127,7 @@
     {
       "id": "org.nuxel.Calendar",
       "name": "Calendar",
-      "icon": "\ud83d\udcc5",
+      "icon": "📅",
       "color": "#E91E63",
       "category": "productivity",
       "type": "pwa",
@@ -146,7 +146,7 @@
     {
       "id": "org.nuxel.Notes",
       "name": "Notes",
-      "icon": "\ud83d\udcdd",
+      "icon": "📝",
       "color": "#607D8B",
       "category": "productivity",
       "type": "pwa",
@@ -161,7 +161,7 @@
     {
       "id": "org.nuxel.Files",
       "name": "Files",
-      "icon": "\ud83d\udcc1",
+      "icon": "📁",
       "color": "#3F51B5",
       "category": "tools",
       "type": "pwa",
@@ -176,7 +176,7 @@
     {
       "id": "nuxel-settings",
       "name": "Settings",
-      "icon": "\u2699\ufe0f",
+      "icon": "⚙️",
       "color": "#78909C",
       "category": "system",
       "type": "pwa",
@@ -194,7 +194,7 @@
     {
       "id": "org.nuxel.Terminal",
       "name": "Terminal",
-      "icon": "\ud83d\udda5\ufe0f",
+      "icon": "🖥️",
       "color": "#263238",
       "category": "system",
       "type": "pwa",
@@ -211,7 +211,7 @@
     {
       "id": "org.nuxel.LiveConsole",
       "name": "Live Console",
-      "icon": "\ud83d\udcdf",
+      "icon": "📟",
       "color": "#37474F",
       "category": "system",
       "type": "pwa",
@@ -235,6 +235,25 @@
         ],
         "asserted_by": "tools/s10plus/a33/verify-app-registry.py"
       }
+    },
+    {
+      "id": "org.nuxel.Browser",
+      "name": "Browser",
+      "icon": "🌐",
+      "color": "#297ad7",
+      "category": "tools",
+      "type": "pwa",
+      "url": "/pwa/nuxel-apps/browser/index.html",
+      "description": "WebKit page viewer; HTTPS external navigation requires explicit opt-in",
+      "capabilities": [
+        "network:outbound"
+      ],
+      "bridge_version": "1",
+      "docked": false,
+      "status": "implemented-source-only",
+      "runtime_state": "NEEDS_OWNER_TEST (HTTPS iframe restrictions on some websites)",
+      "entry": "pwa/nuxel-apps/browser/index.html",
+      "manifest": "pwa/nuxel-apps/browser/manifest.json"
     }
   ],
   "tree_apps": [

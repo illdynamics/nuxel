@@ -3,7 +3,16 @@
 
 ![Nuxel](./nuxel.jpg)
 
-**v0.6.1-beta** — _Build the bunker first. Add the rave lights later._
+**v0.6.3-beta** — _Build the bunker first. Add the rave lights later._
+
+> **v0.6.3-beta candidate (2026-10-20).** This source includes corrected Home
+> dock layering and touch gestures, Wi-Fi Settings backed by NetworkManager,
+> refreshed WebKit caches and a release workflow that builds the S10+ image
+> after a VERSION-bumping PR merge. **No hardware acceptance has been run for
+> these changes:** real speaker, WLAN association, Bluetooth, NFC, GNSS and
+> camera still require on-device drivers/firmware and physical verification.
+> A completed GitHub Release is not proof of on-phone function; see
+> [`docs/releases/v0.6.3-beta.md`](docs/releases/v0.6.3-beta.md).
 
 > **Samsung S10+ engineering reality.** The active `beyond2lte` port is Fedora
 > 43 aarch64 on Samsung Linux 4.14.253. Its launcher is Nuxel Home in WebKitGTK,

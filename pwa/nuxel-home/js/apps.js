@@ -73,6 +73,13 @@ const NUXEL_APPS = {
         capabilities: ['notifications:send'],
         docked: false,
     },
+    'org.nuxel.Browser': {
+        id: 'org.nuxel.Browser', name: 'Browser', icon: '🌐', color: '#297ad7',
+        category: 'tools', type: 'pwa',
+        url: '/pwa/nuxel-apps/browser/index.html',
+        description: 'WebKit browser (external navigation by user consent)',
+        capabilities: ['network:outbound', 'storage:persistent'], docked: false,
+    },
     'org.nuxel.Notes': {
         id: 'org.nuxel.Notes',
         name: 'Notes',
@@ -167,6 +174,7 @@ const NUXEL_APP_ICON_ASSETS = {
     'nuxel-contacts': '/assets/nuxel-applications-icon-pack/02-02_contacts.png?v=a37',
     'org.nuxel.Mail': '/assets/nuxel-applications-icon-pack/01-06_pixel-envelope.png?v=a37',
     'org.nuxel.Calendar': '/assets/nuxel-applications-icon-pack/02-03_day-calendar.png?v=a37',
+    'org.nuxel.Browser': '/assets/nuxel-applications-icon-pack/01-09_browser-swirl.png?v=a43',
     'org.nuxel.Notes': '/assets/nuxel-applications-icon-pack/02-09_notes.png?v=a37',
     'org.nuxel.Files': '/assets/nuxel-applications-icon-pack/02-06_file-explorer.png?v=a37',
     'nuxel-camera': '/assets/nuxel-applications-icon-pack/03-01_camera.png?v=a37',

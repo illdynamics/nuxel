@@ -338,10 +338,10 @@ body.app-drawer-open .app-grid-title::after { content: 'All apps'; margin-left: 
  * 360-CSS-pixel viewport. Give the paint-only layer the artwork's full-width
  * height and scale its width to the actual viewport instead. This preserves
  * the source aspect ratio while allowing the layer above the shortcut hitboxes. */
-.dock{isolation:isolate;overflow:visible}
-.dock::before{content:"";position:absolute;left:0;right:0;bottom:0;height:33.34vw;z-index:-1;
+.dock{isolation:isolate;overflow:visible;z-index:90}
+.dock::before{content:"";position:absolute;left:0;right:0;bottom:0;height:min(33.34vw,150px);z-index:0;
  background-image:var(--dock-art,url("../assets/nuxel-bottom-bar2.png"));background-size:100% auto;
- background-position:center bottom;background-repeat:no-repeat;pointer-events:none;image-rendering:pixelated}
+ background-position:center bottom;background-repeat:no-repeat;pointer-events:none;image-rendering:pixelated;opacity:1}
 .dock[data-background="none"]::before{display:none}
 .dock-items{position:relative;z-index:1;grid-template-columns:repeat(4,minmax(0,1fr));}
 .dock .app-item{touch-action:manipulation;min-width:0}
@@ -360,3 +360,12 @@ body.app-drawer-open .app-grid-title::after { content: 'All apps'; margin-left: 
  background:rgba(118,190,255,.7);border-radius:2px;opacity:.75}
 .nuxel-scroll-indicator.vertical{right:1px;width:1px}
 .nuxel-scroll-indicator.horizontal{bottom:1px;height:1px}
+
+/* A43: compositor-only Home transitions and no touch zoom / rubber-band zoom. */
+#app-grid { touch-action:pan-x pan-y; overscroll-behavior:contain; }
+.app-list, .app-grid { -webkit-user-select:none; user-select:none; }
+.app-list { -webkit-overflow-scrolling:touch; }
+.app-grid.page-changing .app-list { animation:nuxel-page-slide .22s cubic-bezier(.22,.8,.2,1) both; }
+@keyframes nuxel-page-slide { from {opacity:.65;transform:translate3d(var(--page-slide-from,16px),0,0)} to {opacity:1;transform:translate3d(0,0,0)} }
+@media(prefers-reduced-motion:reduce){.app-grid.page-changing .app-list{animation:none!important}}
+.dock::before { will-change:auto; }

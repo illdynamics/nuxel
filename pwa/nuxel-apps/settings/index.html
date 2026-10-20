@@ -16,7 +16,8 @@
 
 <nav class="tabs">
   <button class="tab active" data-tab="display">Display</button>
-  <button class="tab" data-tab="sound">Sound</button>
+  <button class="tab" data-tab="network">Wi-Fi</button>
+    <button class="tab" data-tab="sound">Sound</button>
   <button class="tab" data-tab="buttons">Buttons &amp; Gestures</button>
   <button class="tab" data-tab="dev">Developer</button>
 </nav>
@@ -89,6 +90,25 @@
       <p class="hint">Saved to the Nuxel device configuration
         (<code>/etc/nuxel/display/statusbar-safezones.json</code>); the same file is used by
         <code>nuxelctl statusbar</code> on the live console. Changes need no reboot.</p>
+    </div>
+  </section>
+
+  <!-- A43: One NetworkManager backend shared with Quick Settings. -->
+  <section id="tab-network" class="panel">
+    <h2>Wi-Fi &amp; Internet</h2>
+    <div class="card">
+      <p class="hint">Real NetworkManager state. A connected access point does not guarantee working Internet. Wireless hardware requires its driver and firmware.</p>
+      <div class="row"><button id="wifi-refresh">Refresh</button><button id="wifi-scan">Scan networks</button>
+        <button id="wifi-power">Turn Wi-Fi on/off</button><button id="wifi-disconnect">Disconnect</button></div>
+      <pre id="wifi-status" class="state" role="status">Checking NetworkManager...</pre>
+      <div id="wifi-list" class="wifi-list" aria-label="Discovered Wi-Fi networks"></div>
+      <form id="wifi-connect-form" hidden autocomplete="off">
+        <h3>Connect to <span id="wifi-target-label"></span></h3>
+        <input id="wifi-ssid" type="hidden"><input id="wifi-security" type="hidden">
+        <label>Wi-Fi password <input id="wifi-password" type="password" autocomplete="new-password" minlength="8" maxlength="63"></label>
+        <div class="row"><button type="submit" class="primary">Connect</button><button type="button" id="wifi-cancel">Cancel</button></div>
+      </form>
+      <p id="wifi-result" class="state" role="status" aria-live="polite">—</p>
     </div>
   </section>
 
@@ -191,6 +211,8 @@
   </section>
 </main>
 
+<script type="module" src="../../nuxel-common/bridge.js"></script>
 <script src="settings.js"></script>
+<script src="wifi-settings.js"></script>
 </body>
 </html>

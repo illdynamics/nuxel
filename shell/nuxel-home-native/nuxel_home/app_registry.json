@@ -184,6 +184,22 @@
       "capabilities": [],
       "bridge_version": "1",
       "status": "implemented"
+    },
+    {
+      "id": "org.nuxel.Browser",
+      "name": "Browser",
+      "icon": "\ud83c\udf10",
+      "kind": "pwa",
+      "url": "http://127.0.0.1:8000/pwa/nuxel-apps/browser/index.html",
+      "native_binary": null,
+      "color": "#297ad7",
+      "category": "tools",
+      "description": "WebKit page viewer; HTTPS external navigation requires explicit opt-in",
+      "capabilities": [
+        "network:outbound"
+      ],
+      "bridge_version": "1",
+      "status": "implemented-source-only"
     }
   ]
 }

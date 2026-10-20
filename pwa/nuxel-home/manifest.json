@@ -99,9 +99,9 @@
     ],
     "app_type": "home",
     "native_fallback": false,
-    "bridge_version": "0.6.1-beta",
-    "pwa_version": "0.6.1-beta",
-    "cache_version": "v22-a42-dock-asset-url",
+    "bridge_version": "0.6.3-beta",
+    "pwa_version": "0.6.3-beta",
+    "cache_version": "v23-a43-0.6.3-beta-dock-gestures",
     "registry_version": 4,
     "single_source_of_truth": "pwa/nuxel-home (index.html, css/, js/, manifest.json, sw.js)",
     "apps_in_registry": [

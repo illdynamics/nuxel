@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="format-detection" content="telephone=no">
     <meta name="theme-color" content="#1a1a2e">
     <meta name="nuxel-app-id" content="org.nuxel.Home">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -136,6 +137,13 @@
         <button type="button" data-nav="recents" aria-label="Recent apps"><img src="/assets/button-right.png?v=a37" alt=""><span class="nav-fallback" aria-hidden="true">▢</span></button>
     </nav>
 
+    <script>
+    // Prevent WebKitGTK double-tap/pinch zoom on Home. Never cancel a normal
+    // pointer-driven swipe; ordinary app iframes keep their own viewport policy.
+    document.addEventListener('gesturestart', function(event) { event.preventDefault(); }, {passive:false});
+    document.addEventListener('gesturechange', function(event) { event.preventDefault(); }, {passive:false});
+    document.addEventListener('gestureend', function(event) { event.preventDefault(); }, {passive:false});
+    </script>
     <script src="js/apps.js"></script>
     <script src="js/layout-model.js"></script>
     <script src="js/launcher.js"></script>
