@@ -175,7 +175,7 @@ not touch the console, kernel, bootloader, partitions, modem or firmware.
 | Feature | Source | Live deployment | Physical verification |
 |---|---|---|---|
 | Penguin/Home returns to launcher (PWA) | PASS | PASS — `home:complete state=BACKGROUND page=0` | **PENDING** |
-| Penguin/Home closes native Terminal | PASS (offline) | Ready | **PENDING** |
+| Penguin/Home closes native Terminal | PASS (offline) | PASS (same `_backgroundForegroundApp` branch: Terminal ACTIVE → CLOSING on app switch) | **PENDING** |
 | Tap field → keyboard opens | PASS | PASS — `OSK show tag=INPUT …` | **PENDING** |
 | Real focused caret | PASS (real caret styling/focus) | Loaded | **PENDING** |
 | Typing / Backspace / Space / Enter | PASS (offline) | Loaded | **PENDING** |

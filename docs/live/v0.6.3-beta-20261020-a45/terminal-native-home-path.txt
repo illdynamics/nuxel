@@ -1,0 +1,21 @@
+===== grep -a "app:lifecycle id=org.nuxel.Terminal\|app:lifecycle id=nuxel-settings\|home:complete" /run/nuxel-home.state | tail -20   [rc=0 frame=271abee9 sha_ok=yes]
+    1792523765 NUXEL_INPUT EVT home:complete state=BACKGROUND page=0 ts=1792523765149
+    1792523765 NUXEL_INPUT EVT home:complete state=BACKGROUND page=0 ts=1792523765476
+    1792523765 NUXEL_INPUT EVT home:complete state=BACKGROUND page=0 ts=1792523765594
+    1792523797 NUXEL_INPUT EVT home:complete state=CLOSED page=0 ts=1792523797485
+    1792523809 NUXEL_INPUT EVT home:complete state=BACKGROUND page=0 ts=1792523809015
+    1792523809 NUXEL_INPUT EVT home:complete state=BACKGROUND page=0 ts=1792523809374
+    1792523809 NUXEL_INPUT EVT home:complete state=BACKGROUND page=0 ts=1792523809499
+    1792523810 NUXEL_INPUT EVT home:complete state=BACKGROUND page=0 ts=1792523810344
+    1792523810 NUXEL_INPUT EVT home:complete state=BACKGROUND page=0 ts=1792523810459
+    1792523814 NUXEL_INPUT EVT home:complete state=BACKGROUND page=0 ts=1792523814700
+    1792523868 NUXEL_INPUT EVT home:complete state=CLOSED page=0 ts=1792523868229
+    1792523874 NUXEL_INPUT EVT home:complete state=BACKGROUND page=0 ts=1792523874251
+    1792523997 NUXEL_INPUT EVT app:lifecycle id=org.nuxel.Terminal state=LAUNCHING ts=1792523997766
+    1792523998 NUXEL_INPUT EVT app:lifecycle id=org.nuxel.Terminal state=ACTIVE ts=1792523997861
+    1792524000 NUXEL_INPUT EVT app:lifecycle id=org.nuxel.Terminal state=CLOSING ts=1792524000782
+    1792524000 NUXEL_INPUT EVT app:lifecycle id=nuxel-settings state=LAUNCHING ts=1792524000786
+    1792524000 NUXEL_INPUT EVT app:lifecycle id=nuxel-settings state=LAUNCHING ts=1792524000791
+    1792524001 NUXEL_INPUT EVT app:lifecycle id=nuxel-settings state=ACTIVE ts=1792524001063
+    1792524003 NUXEL_INPUT EVT app:lifecycle id=nuxel-settings state=BACKGROUND ts=1792524003809
+    1792524003 NUXEL_INPUT EVT home:complete state=BACKGROUND page=0 ts=1792524003821
