@@ -4,7 +4,8 @@ const win = {navigator:{userAgent:'Nuxel/1.0 (S10+, like Gecko)'}};
 vm.runInNewContext(fs.readFileSync(path.join(__dirname, '../../../../pwa/nuxel-home/js/touch-keyboard.js'), 'utf8'), {window:win});
 class Event { constructor(type, args) { this.type = type; Object.assign(this, args); } }
 function field(value = '') {
-    return {tagName:'INPUT', type:'search', value, selectionStart:value.length, selectionEnd:value.length, maxLength:-1,
+    return {tagName:'INPUT', type:'search', isConnected:true, disabled:false, readOnly:false,
+        focus() {}, value, selectionStart:value.length, selectionEnd:value.length, maxLength:-1,
         ownerDocument:{defaultView:{InputEvent:Event, KeyboardEvent:Event}}, events:[],
         dispatchEvent(e) { this.events.push(e); return !this.cancelBefore || e.type !== 'beforeinput'; },
         setRangeText(s,a,b) { this.value = this.value.slice(0,a) + s + this.value.slice(b); this.selectionStart = this.selectionEnd = a+s.length; }};

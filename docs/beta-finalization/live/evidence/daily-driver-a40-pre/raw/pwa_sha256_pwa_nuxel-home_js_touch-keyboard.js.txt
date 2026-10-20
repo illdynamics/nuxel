@@ -1,0 +1,4 @@
+cmd: sha256sum /usr/share/nuxel/pwa/nuxel-home/js/touch-keyboard.js 2>&1
+ok: True rc: 0 framed: True sha_ok: True
+---
+aac1d0f22c402b49b4cc577a71cf48fd63a09dc2a4e7e74f0645ee2ab8ac7dd6  /usr/share/nuxel/pwa/nuxel-home/js/touch-keyboard.js

@@ -1,0 +1,14 @@
+[Unit]
+Description=Nuxel NetworkManager udev compatibility seed for S10+ Wi-Fi
+Documentation=file:/usr/share/doc/nuxel/
+After=local-fs.target sys-subsystem-net-devices-wlan0.device
+Wants=sys-subsystem-net-devices-wlan0.device
+Before=NetworkManager.service
+ConditionPathExists=/sys/class/net
+
+[Service]
+Type=oneshot
+ExecStart=/usr/libexec/nuxel/nuxel-network-udev-seed
+
+[Install]
+RequiredBy=NetworkManager.service

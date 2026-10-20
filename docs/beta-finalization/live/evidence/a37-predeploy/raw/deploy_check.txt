@@ -1,0 +1,6 @@
+cmd: for p in /usr/share/nuxel /etc/nuxel /usr/local;do printf '%s ' $p;test -d $p && echo present||echo MISSING;done
+ok: True rc: 0 framed: True sha_ok: True
+---
+/usr/share/nuxel present
+/etc/nuxel present
+/usr/local present

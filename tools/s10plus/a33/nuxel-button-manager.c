@@ -259,9 +259,13 @@ static void cfg_load_actions(void) {
   /* audio: the low-volume cap only bites while the first bring-up is unfinished */
   char *a = slurp(AUDIO_JSON, 0);
   vol_cap_pct = a ? json_int(a, "volume_cap_percent", 25) : 25;
-  struct stat sb;
-  vol_cap_active = (stat(BRINGUP_FLAG, &sb) == 0) ||
-                   (getenv("NUXEL_AUDIO_LOW_VOLUME") && atoi(getenv("NUXEL_AUDIO_LOW_VOLUME")) != 0);
+  /* The live S10+ has no separate softvol device in its active ALSA
+   * configuration.  Therefore the physical-key owner is the last enforcement
+   * point for the low-volume bring-up policy.  Keep it active by default;
+   * NUXEL_AUDIO_LOW_VOLUME=0 is an explicit engineering override only. */
+  vol_cap_active = 1;
+  if (getenv("NUXEL_AUDIO_LOW_VOLUME"))
+    vol_cap_active = atoi(getenv("NUXEL_AUDIO_LOW_VOLUME")) != 0;
 }
 
 static int file_exists(const char *p) { struct stat sb; return stat(p, &sb) == 0; }
@@ -377,7 +381,9 @@ static int mixer_open_dev(void) {
   }
   snd_mixer_selem_register(mixer, NULL, NULL);
   if (snd_mixer_load(mixer) < 0) { audit("MIXER_LOAD_FAIL"); snd_mixer_close(mixer); mixer = NULL; return -1; }
-  static const char *prefer[] = { "Master", "Speaker", "Headphone", "Digital Volume", "PCM", "Playback", NULL };
+  /* On beyond-madera the DAPM SPEAKER widget is fed by Right AMP SPK.  Prefer
+   * its matching gain, not Left AMP PCM Gain (which does not drive SPEAKER). */
+  static const char *prefer[] = { "Right AMP PCM Gain", "Master", "Speaker", "Headphone", "Digital Volume", "PCM", "Playback", NULL };
   for (int i = 0; prefer[i] && !selem; i++)
     for (snd_mixer_elem_t *e = snd_mixer_first_elem(mixer); e; e = snd_mixer_elem_next(e)) {
       if (!snd_mixer_selem_is_active(e) || !snd_mixer_selem_has_playback_volume(e)) continue;
@@ -392,6 +398,21 @@ static int mixer_open_dev(void) {
   }
   snd_mixer_selem_get_playback_volume_range(selem, &vol_min, &vol_max);
   if (snd_mixer_selem_get_playback_volume(selem, SND_MIXER_SCHN_FRONT_LEFT, &vol_cur) < 0) vol_cur = vol_min;
+  /* A cap must also tame a loud value inherited from a pre-A37 process or a
+   * previous boot.  Waiting for the next Volume key press would leave the
+   * first startup/feedback cue outside the protective policy. */
+  if (vol_cap_active) {
+    long ceiling = vol_min + ((vol_max - vol_min) * vol_cap_pct) / 100;
+    if (ceiling > vol_max) ceiling = vol_max;
+    if (vol_cur > ceiling) {
+      if (snd_mixer_selem_set_playback_volume_all(selem, ceiling) == 0) {
+        audit("MIXER_SAFETY_CLAMP inherited=%ld ceiling=%ld", vol_cur, ceiling);
+        vol_cur = ceiling;
+      } else {
+        audit("MIXER_SAFETY_CLAMP_FAIL inherited=%ld ceiling=%ld", vol_cur, ceiling);
+      }
+    }
+  }
   audit("MIXER_READY element=%s min=%ld max=%ld current=%ld cap_active=%d cap_pct=%d",
         snd_mixer_selem_get_name(selem), vol_min, vol_max, vol_cur, vol_cap_active, vol_cap_pct);
   return 0;
@@ -416,6 +437,30 @@ static void osd_volume(void) {
   publish("VOLUME element=%s value=%ld pct=%d", snd_mixer_selem_get_name(selem), vol_cur, pct);
 }
 
+/* Nonblocking audible volume preview.  The manager owns the mixer write; the
+ * helper is only started after that write succeeded, and gets the newly
+ * selected protected level. */
+static void cue_volume_preview(int pct) {
+  if (pct <= 0 || access("/usr/libexec/nuxel/nuxel-sound-cue", X_OK) != 0) return;
+  char level[12];
+  snprintf(level, sizeof level, "%d", pct);
+  pid_t pid = fork();
+  if (pid < 0) { audit("VOLUME_CUE_FORK_FAILED errno=%d", errno); return; }
+  if (pid == 0) {
+    pid_t player = fork();
+    if (player < 0) _exit(1);
+    if (player == 0) {
+      setsid();
+      execl("/usr/libexec/nuxel/nuxel-sound-cue", "nuxel-sound-cue",
+            "volume", "--level", level, (char *)NULL);
+      _exit(127);
+    }
+    _exit(0);
+  }
+  int status = 0;
+  while (waitpid(pid, &status, 0) < 0 && errno == EINTR) {}
+}
+
 static void volume_step(int dir) {
   if (mixer_open_dev() < 0 || !selem) { osd_volume(); return; }
   long step = nuxel_fsm_volume_step(vol_min, vol_max);   /* same formula as A32 */
@@ -427,6 +472,8 @@ static void volume_step(int dir) {
   vol_cur = v;
   audit("VOLUME_STEP dir=%d value=%ld step=%ld ceiling=%ld capped=%d", dir, v, step, ceiling, mixer_capped);
   osd_volume();
+  int pct = (vol_max > vol_min) ? (int)(((vol_cur - vol_min) * 100) / (vol_max - vol_min)) : 0;
+  cue_volume_preview(pct);
 }
 
 static void volume_mute_toggle(void) {
@@ -525,7 +572,13 @@ static void verbose_boot_note_once(void) {
 /* The ONLY place a userspace reboot/power-off is ever executed, and it executes
  * nothing unless the gate allows it. No other path in this program can reboot. */
 static int gated_system_action(const char *what) {
-  int is_poweroff = (strstr(what, "poweroff") != NULL);
+  /* Keep Restart and Power off disjoint.  In particular, a future action name
+   * containing "poweroff" must never reinterpret the explicit Restart row. */
+  int is_poweroff = !strcmp(what, "systemctl-poweroff");
+  if (strcmp(what, "systemctl-poweroff") && strcmp(what, "systemctl-reboot")) {
+    audit("REBOOT_REFUSED action=%s reason=unknown-system-action", what);
+    return 0;
+  }
   const char *reason = NULL;
   int ok = nuxel_fsm_gate_decide(&GATE, is_poweroff, (int64_t)time(NULL), &reason);
   if (!ok) {
@@ -622,7 +675,8 @@ static void perform(const char *action, const char *source) {
   }
   if (!strcmp(action, "live-console-toggle")) { live_console_toggle(); return; }
   if (!strcmp(action, "open-terminal")) { fifo_send(HOST_FIFO, "open-terminal\n"); return; }
-  if (!strcmp(action, "back") || !strcmp(action, "home") || !strcmp(action, "recents") ||
+  if (!strcmp(action, "back") || !strcmp(action, "forward") || !strcmp(action, "stop") ||
+      !strcmp(action, "reload-launcher") || !strcmp(action, "home") || !strcmp(action, "recents") ||
       !strcmp(action, "search") || !strcmp(action, "settings") || !strcmp(action, "lock") ||
       !strcmp(action, "screenshot") || !strcmp(action, "camera") || !strcmp(action, "voice-input") ||
       !strcmp(action, "notifications-panel") || !strcmp(action, "all-apps")) {

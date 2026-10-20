@@ -1,0 +1,3 @@
+rc=None framed=False sha_ok=False
+_N=c6c02564;rm -f /var/tmp/nxl-c6c02564;{ id; echo NXL-REACH-OK ;} >/var/tmp/nxl-c6c02564 2>&1 </dev/null;_R=$?;printf '\n@@B%s@@\n' $_N;printf '@@R%s:%s@@\n' $_N $_R;base64 -w0 </var/tmp/nxl-c6c02564 2>/dev/null|tr -d '\n';printf '\n@@S%s:%s@@\n' $_N "$(sha256sum </var/tmp/nxl-c6c02564 2>/dev/null|cut -d' ' -f1)";printf '@@E%s@@\n' $_N
+^C

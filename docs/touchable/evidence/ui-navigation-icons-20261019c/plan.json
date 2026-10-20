@@ -1,0 +1,174 @@
+[
+  {
+    "path": "pwa/nuxel-home/index.html",
+    "sha256": "0e25b76db2e478175233964a8fae7a98e99da65be529757b7cb512fa25765939"
+  },
+  {
+    "path": "pwa/nuxel-home/manifest.json",
+    "sha256": "e77dca6bd1e877b9eeb010b555479644cfcdbde7cf82841b80a4ad5e81f007e0"
+  },
+  {
+    "path": "pwa/nuxel-home/sw.js",
+    "sha256": "7bb1a272042916ab23866e31373ea30b8c5d4e0587bad5f6db6ba06654a6d9db"
+  },
+  {
+    "path": "pwa/nuxel-home/css/style.css",
+    "sha256": "88a6461097a417e53e9b7bdefdab32ec17aecc88e1b80d05cc50ab5d97528d2b"
+  },
+  {
+    "path": "pwa/nuxel-home/css/launcher.css",
+    "sha256": "bd2893723cbd0975c81e5a3410281811ebd004f1e92cb71e80701fda41713f04"
+  },
+  {
+    "path": "pwa/nuxel-home/css/search.css",
+    "sha256": "7854223714fe77cb7e69c62ca1ca9a1ffd02a41d7d3cc3014424f449ff4668f1"
+  },
+  {
+    "path": "pwa/nuxel-home/css/status-bar.css",
+    "sha256": "94453da221ffb96ca2dad58abbf47cb2c217ab762269ee1b5e75b68c9546df1c"
+  },
+  {
+    "path": "pwa/nuxel-home/css/home-settings.css",
+    "sha256": "35d1f1c9c574c0e9943d8c59f47dc9b2f4b7aadb6d51f6770ec00490215b9678"
+  },
+  {
+    "path": "pwa/nuxel-home/js/app.js",
+    "sha256": "b130c60185b2494e47e8608418d1d3d304e8c0816c8f95abc1d70b7491c34eb9"
+  },
+  {
+    "path": "pwa/nuxel-home/js/apps.js",
+    "sha256": "578548d15e226c2c77aac7443617cdaabae18b48b60fe6679c77007e0b09f745"
+  },
+  {
+    "path": "pwa/nuxel-home/js/bridge.js",
+    "sha256": "6a02998c715be597f3150192207e7e10f7907e2ae729ad88efb7daa8fb308d00"
+  },
+  {
+    "path": "pwa/nuxel-home/js/host-bridge.js",
+    "sha256": "35d18f88f5f9564a9a1ee41027968f9c3227549b2689f5be31b9d7f08d9e6762"
+  },
+  {
+    "path": "pwa/nuxel-home/js/launcher.js",
+    "sha256": "b907ccd0b433a7eee7c7ddb52730aedc5f96dd58fab8e7cfd6269402463188a0"
+  },
+  {
+    "path": "pwa/nuxel-home/js/navigation.js",
+    "sha256": "e885a0d9831801dc58032ed080c9d5b4575763ff74e857afcccab512820c4510"
+  },
+  {
+    "path": "pwa/nuxel-home/js/recents.js",
+    "sha256": "0bd8c3f290d5074f3fb3b6d59dd520c05e1ebfebb5a680ff38957571c1f3c673"
+  },
+  {
+    "path": "pwa/nuxel-home/js/search.js",
+    "sha256": "b2d46748ccd1ba3e4be2257a9728236bd8102eb73ba37de496627ba3bd3015fc"
+  },
+  {
+    "path": "pwa/nuxel-home/js/status-bar.js",
+    "sha256": "64d67e62d233c6665a03e648ae9723a8883299daf820268b52267762fcf04bfc"
+  },
+  {
+    "path": "pwa/nuxel-home/js/touch-keyboard.js",
+    "sha256": "526880666f8a8de840d29eec683b501b84738c76ac347c8601ebdd7308caf8ab"
+  },
+  {
+    "path": "pwa/nuxel-home/js/home-settings.js",
+    "sha256": "8c745129bfccfd27e023fa69dc27c7fd637a6c6b4ee84a5577bacdc8e4d6e4c2"
+  },
+  {
+    "path": "pwa/nuxel-home/js/osd.js",
+    "sha256": "7c658be63ae365cc4bcf84d9b3975d14108fae5ce37a3c5cca120ceb49c427b6"
+  },
+  {
+    "path": "pwa/nuxel-apps/calendar/js/calendar.js",
+    "sha256": "a93a166c73b80dbb8cb838463c9a6632b3a5ba54b23432b3c1a6734515c299f3"
+  },
+  {
+    "path": "assets/button-left.png",
+    "sha256": "3cc3c77a073788b5ee6192af7bbe5c970c971c68146e4c17ef404b246cc62b6a"
+  },
+  {
+    "path": "assets/button-middle.png",
+    "sha256": "c9b34ac7e3a387626a5ee6694519b779bced64bf32869be096f73cf4c7011fc1"
+  },
+  {
+    "path": "assets/button-right.png",
+    "sha256": "23257499b1617e95afd9b02a1bd99c86633f13e9f1f83d781b315d94873ee921"
+  },
+  {
+    "path": "assets/nuxel-applications-icon-pack/01-08_phone.png",
+    "sha256": "ba6e3c4ab20e966adebd86a58bc5e55d0dda7975e0d0ba6be0d80cf4c08ad93d"
+  },
+  {
+    "path": "assets/nuxel-applications-icon-pack/02-01_messages.png",
+    "sha256": "fe1f515772eafbe77f401791564ac501da23b9662576f01d5417c2fd00c4b347"
+  },
+  {
+    "path": "assets/nuxel-applications-icon-pack/02-02_contacts.png",
+    "sha256": "a1d161080b61e2549dd1c6a6b3c32c197d204c58e587252286b667ca48a3b07f"
+  },
+  {
+    "path": "assets/nuxel-applications-icon-pack/01-06_pixel-envelope.png",
+    "sha256": "2b728648ca6ce4b58522496edad7ed647fbbe85f3f385ae7f643e20deb3f9e97"
+  },
+  {
+    "path": "assets/nuxel-applications-icon-pack/02-03_day-calendar.png",
+    "sha256": "e4460c41e03c82c51b95eda2e04e569588b61068e0e90977759249d58c1e4016"
+  },
+  {
+    "path": "assets/nuxel-applications-icon-pack/02-09_notes.png",
+    "sha256": "030d30414a1648135912e7353ec4ff6f00a8fcb5c5d2a88f726215defd62e283"
+  },
+  {
+    "path": "assets/nuxel-applications-icon-pack/02-06_file-explorer.png",
+    "sha256": "94a22e4b05e0a7a7805e6f3d471639e541a923f379a055d5af9e57d7368d122d"
+  },
+  {
+    "path": "assets/nuxel-applications-icon-pack/03-01_camera.png",
+    "sha256": "89fa0c84db76ca083a51c882a562d78881f200651b050a2f377b00e045de5af1"
+  },
+  {
+    "path": "assets/nuxel-applications-icon-pack/01-11_settings.png",
+    "sha256": "e1475756010e3314ce9b2cf47286c719971bbd40b56ed2e46e6999854bc584c8"
+  },
+  {
+    "path": "assets/nuxel-applications-icon-pack/01-01_terminal.png",
+    "sha256": "b23d3cbfe130bcb6ecaa209e2e51f303f01aed1c20fd40b3b448da33d605ce3d"
+  },
+  {
+    "path": "assets/nuxel-applications-icon-pack/05-05_live-console.png",
+    "sha256": "c695dedd90d5025e33902e2e8ad5f072480084af8950f7c27f435399ac79e6c2"
+  },
+  {
+    "path": "assets/nuxel-quicksettings-icon-pack/01-wifi.png",
+    "sha256": "588920a76e1b270dddcb0b853a7f55afb9ae21aeb9f4d488dcb50bcc4d086f2b"
+  },
+  {
+    "path": "assets/nuxel-quicksettings-icon-pack/02-mobile-signal.png",
+    "sha256": "7ecf9d4fc640282bfef137e04ba2d189ef5c0bf78cac98159e01b37b5dcdc091"
+  },
+  {
+    "path": "assets/nuxel-quicksettings-icon-pack/04-bluetooth.png",
+    "sha256": "9a9b67f421d0ed2f83c086816b078c3be85bfdc3fc76a3743dd13c8509b2fda1"
+  },
+  {
+    "path": "assets/nuxel-quicksettings-icon-pack/09-location.png",
+    "sha256": "a9b62d842b00b4866d7154fce53f683f3f7ebcf36c0ee6e469c2e4303757c641"
+  },
+  {
+    "path": "assets/nuxel-quicksettings-icon-pack/10-flashlight.png",
+    "sha256": "3e4780671dafa2c81fc4bd844a6f022b429ff14a977688134a20c411efdbe38c"
+  },
+  {
+    "path": "assets/nuxel-quicksettings-icon-pack/11-do-not-disturb.png",
+    "sha256": "1e53bd1b1ee385a51d897a2c49b370ce7f2442b9541f7b745441aa3927926fdf"
+  },
+  {
+    "path": "assets/nuxel-quicksettings-icon-pack/17-rotation-lock.png",
+    "sha256": "99ede17594b30f04ed2904f7460335857e44f2d11a7335d4f4815ce76a0fef65"
+  },
+  {
+    "path": "assets/nuxel-quicksettings-icon-pack/30-quick-settings.png",
+    "sha256": "1a5bcd1ebafd71f66cb719530d81c2a73d2a83f07643500723974674841be693"
+  }
+]

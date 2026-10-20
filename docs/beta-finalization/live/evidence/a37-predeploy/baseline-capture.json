@@ -1,0 +1,137 @@
+{
+  "at": "2026-10-19T15:19:38+0200",
+  "baseline_deltas": [],
+  "blocked_reason": null,
+  "briq": "briq-10a-live-reachability-preflight",
+  "console": {
+    "callout": "/dev/ttyACM0",
+    "dialin": "/dev/ttyACM0",
+    "match_stage": "vid+pid",
+    "pid": 20199,
+    "tty_base": "ttyACM",
+    "tty_device": "ttyACM0",
+    "tty_suffix": "0",
+    "vid": 6353
+  },
+  "evidence_dir": "/x/nuxel/docs/beta-finalization/live/evidence/a37-predeploy",
+  "exit_code": 0,
+  "fake_console": false,
+  "incomplete_frames": 1,
+  "probe": {
+    "at": "2026-10-19T15:19:38+0200",
+    "bytes_in": 4388,
+    "dev": "/dev/ttyACM0",
+    "echo_ok": true,
+    "elapsed_s": 0.323,
+    "error": null,
+    "reachable": true,
+    "sample": "\n\u001b[?2004l\u001b[?2004hsh-5.3# \n\u001b[?2004l\u001b[?2004hsh-5.3# 6,18035,5222900823,-;max77705_fg_read_vcell: VCELL(4316)mV, data(0xd7d2)\n6,18036,5223038226,-;[FG] 0080h,ff9bh,7f80h,ff01h,1900h,0f45h,6400h,5ea1h,1a4ch,d7d0h,fffah,0003h,0066h,68b9h,64d4h,0f65h,0f02h,ffffh,3200h,5f00h,0369h,0148h,1a3fh,0009h,0f76h,d7cah,1e13h,d8cbh,0feah,0314h,0500h,0effh,0000h,6200h,1c00h,0ea4h,1403h,1e05h,1a34h,7f18h,2606h,"
+  },
+  "pwa_drift": [
+    {
+      "device": "96ba9e57554d2ad408bb858c051aaec78f069170b083799e6152ed30f9af7582",
+      "file": "pwa/nuxel-home/index.html",
+      "repo": "e0235803cf94a3eaa0a74811e23a908aaf7c527eeff51b5aa4a68f13aec66940"
+    },
+    {
+      "device": "05f36603272c0ee210e0d42f2e4782c3146690059f67043a27f1f510ccc0664b",
+      "file": "pwa/nuxel-home/manifest.json",
+      "repo": "e77dca6bd1e877b9eeb010b555479644cfcdbde7cf82841b80a4ad5e81f007e0"
+    },
+    {
+      "device": "f3f4a3d69468efb2cc045fc5fce0be138722a10a5b1ca02e2857f8b93537c8e2",
+      "file": "pwa/nuxel-home/sw.js",
+      "repo": "9f2b191a193906db774e82b3350c3717fafe2dcc0f87115626d6782067566325"
+    },
+    {
+      "device": "0898b6cd48f52b5f63d3f9b6acbbe654deaf40783bb8ad8b3973a891a70ea17f",
+      "file": "pwa/nuxel-home/css/launcher.css",
+      "repo": "ca24bbadae42e1236da886bc48ce2104a59a2b0384a2ef305025e2503eae412c"
+    },
+    {
+      "device": "a6487023f747ccb3077cd028ea8b6a14076d1d3a133fd68126508206c38484e0",
+      "file": "pwa/nuxel-home/css/search.css",
+      "repo": "7854223714fe77cb7e69c62ca1ca9a1ffd02a41d7d3cc3014424f449ff4668f1"
+    },
+    {
+      "device": "d1dd5716f89a8d4c70ea50703ffbb207116dc8d8d852e9752aa91a3ccb3e6e16",
+      "file": "pwa/nuxel-home/css/status-bar.css",
+      "repo": "94453da221ffb96ca2dad58abbf47cb2c217ab762269ee1b5e75b68c9546df1c"
+    },
+    {
+      "device": "30851970a0bc64e1056de1e369e3d2ab2f287030e5e719240f1977121967fac5",
+      "file": "pwa/nuxel-home/css/style.css",
+      "repo": "e8c9ef9ba15fb8e6dace59cbb8847735964fcc551d7f23a6104bda75cb874163"
+    },
+    {
+      "device": "145cc39fd44aa2f27a75c27973d3eeda2aaa0125a0541b805f64c0e4029fdc82",
+      "file": "pwa/nuxel-home/js/app.js",
+      "repo": "b130c60185b2494e47e8608418d1d3d304e8c0816c8f95abc1d70b7491c34eb9"
+    },
+    {
+      "device": "33d5df4fca42363e423a8f52125f67b9a7288b3b7c762ef53ba71715fb04adff",
+      "file": "pwa/nuxel-home/js/touch-keyboard.js",
+      "repo": "aac1d0f22c402b49b4cc577a71cf48fd63a09dc2a4e7e74f0645ee2ab8ac7dd6"
+    },
+    {
+      "device": "df08dfaf5d17c3685bee4abb94d24f3f059ed2289edb13bf5159ad162aafcf72",
+      "file": "pwa/nuxel-home/js/apps.js",
+      "repo": "cae8d99447cbbbbcc90b00a9c715307ff3d20e56e98ede0374341cc4448c2890"
+    },
+    {
+      "device": "bb6a18ccf76bc81888b03a2a1e79c1795570d3913a3cd374d5962f317a43d49b",
+      "file": "pwa/nuxel-home/js/host-bridge.js",
+      "repo": "35d18f88f5f9564a9a1ee41027968f9c3227549b2689f5be31b9d7f08d9e6762"
+    },
+    {
+      "device": "9e460bd1ee919ef98de425a796d22190b7cacf7dee578c64e35337b209995ccf",
+      "file": "pwa/nuxel-home/js/launcher.js",
+      "repo": "b907ccd0b433a7eee7c7ddb52730aedc5f96dd58fab8e7cfd6269402463188a0"
+    },
+    {
+      "device": "9c139ff51e6559c4b173d7284243fdd37f05fc974e6dd21dde9c3427fbe93d8d",
+      "file": "pwa/nuxel-home/js/recents.js",
+      "repo": "0bd8c3f290d5074f3fb3b6d59dd520c05e1ebfebb5a680ff38957571c1f3c673"
+    },
+    {
+      "device": "7506f5b75e3b096ee28432aaa9fee6d6296437ffb97c99a59031c96b3a917d19",
+      "file": "pwa/nuxel-home/js/search.js",
+      "repo": "b2d46748ccd1ba3e4be2257a9728236bd8102eb73ba37de496627ba3bd3015fc"
+    },
+    {
+      "device": "1e0e0d02a0b1a2abcfcd611c9d45bd9ed36931f27e098c9dd1b0059f62831e39",
+      "file": "pwa/nuxel-home/js/status-bar.js",
+      "repo": "64d67e62d233c6665a03e648ae9723a8883299daf820268b52267762fcf04bfc"
+    }
+  ],
+  "pwa_files": [
+    "pwa/nuxel-home/index.html",
+    "pwa/nuxel-home/manifest.json",
+    "pwa/nuxel-home/sw.js",
+    "pwa/nuxel-home/colour-test.html",
+    "pwa/nuxel-home/css/launcher.css",
+    "pwa/nuxel-home/css/search.css",
+    "pwa/nuxel-home/css/status-bar.css",
+    "pwa/nuxel-home/css/style.css",
+    "pwa/nuxel-home/js/app.js",
+    "pwa/nuxel-home/js/touch-keyboard.js",
+    "pwa/nuxel-home/js/apps.js",
+    "pwa/nuxel-home/js/bootlog.js",
+    "pwa/nuxel-home/js/bridge.js",
+    "pwa/nuxel-home/js/host-bridge.js",
+    "pwa/nuxel-home/js/launcher.js",
+    "pwa/nuxel-home/js/osd.js",
+    "pwa/nuxel-home/js/qs.js",
+    "pwa/nuxel-home/js/recents.js",
+    "pwa/nuxel-home/js/safe-zones.js",
+    "pwa/nuxel-home/js/search.js",
+    "pwa/nuxel-home/js/settings-store.js",
+    "pwa/nuxel-home/js/status-bar.js"
+  ],
+  "reachable": true,
+  "verdict": "DEPLOYED_UNVERIFIED",
+  "verdict_note": "baseline read from the running device; this is a read-only observation and proves nothing about hardware that reports no evidence (e.g. a registered sec_ts driver is not proof of a working touchscreen)",
+  "verdicts": {
+    "briq-10a-live-reachability-preflight": "DEPLOYED_UNVERIFIED"
+  }
+}

@@ -70,16 +70,21 @@ python3 /nuxel/tools/s10plus/a33/verify-packages.py --quiet --report /tmp/nuxel-
 # real base is `filesystem` + `setup`.  webkit2gtk4.1/gtk3/alsa-lib are the
 # RUNTIME libraries nuxel-pwa-host and nuxel-button-manager are linked against;
 # seatd is required by services/nuxel-session/systemd/seatd.service.
+# NetworkManager-wifi provides the Wi-Fi device plugin; without it NM creates
+# wlan0 as a generic unmanaged device even when the BCM/DHD driver and firmware
+# have registered a radio. wpa_supplicant is the configured backend and requires
+# Fedora's split libnl3 + libnl3-cli runtime; iw and wireless-regdb provide
+# truthful scan/regulatory diagnostics and its required regulatory database.
 dnf -y --installroot="$STAGE" --releasever=43 --use-host-config \
     --setopt=reposdir="$REPODIR" --setopt=install_weak_deps=False --setopt=tsflags=nodocs install \
     filesystem setup fedora-release glibc glibc-langpack-en \
     bash coreutils util-linux findutils grep sed gawk \
     systemd-258.11-1.fc43 systemd-udev systemd-networkd dbus-broker dbus-daemon \
     python3 phosh phoc stevia stevia-phosh-osk-provider seatd \
-    NetworkManager NetworkManager-wifi ModemManager geoclue2 bluez \
+    NetworkManager NetworkManager-wifi wpa_supplicant libnl3 libnl3-cli iw wireless-regdb ModemManager geoclue2 bluez \
     mesa-dri-drivers mesa-libEGL mesa-libgbm libinput \
     gtk3 webkit2gtk4.1 gtk4 libadwaita \
-    pipewire wireplumber alsa-lib \
+    pipewire wireplumber alsa-lib mpg123 \
     polkit nftables upower greetd \
     iproute procps-ng kmod e2fsprogs \
     shadow-utils ca-certificates curl
@@ -140,12 +145,19 @@ gcc $CFLAGS_COMMON $(pkg-config --cflags alsa) -I /nuxel/tools/s10plus/a34 \
 gcc $CFLAGS_COMMON -shared -fPIC -o "$B/libnuxel-libinput-path.so" \
     /nuxel/tools/s10plus/a33/nuxel-libinput-path.c -ldl
 
+# A40/A44 socket-activated Home hardware monitor. The live phone runs this
+# collector; a fresh release image must build and install the same source, not
+# depend on a previously deployed binary.
+gcc -std=c11 -O2 -Wall -Wextra -Werror -o "$B/nuxel-metricsd" \
+    /nuxel/services/nuxel-metrics/nuxel-metricsd.c
+
 for _b in nuxel-wl-fb nuxel-wl-snapshot nuxel-pwa-host \
-          nuxel-button-manager libnuxel-libinput-path.so; do
+          nuxel-button-manager libnuxel-libinput-path.so nuxel-metricsd; do
   file "$B/$_b" | grep -q 'ARM aarch64' || { echo "ERROR: $_b is not aarch64" >&2; exit 1; }
 done
 sha256sum "$B"/nuxel-wl-fb "$B"/nuxel-wl-snapshot "$B"/nuxel-pwa-host \
           "$B"/nuxel-button-manager "$B"/libnuxel-libinput-path.so \
+          "$B"/nuxel-metricsd \
   | tee /tmp/nuxel-current-userspace.sha256
 
 # Keep Nuxel's native phone-specific bits; do not import the G7 Power staging.
@@ -165,6 +177,42 @@ install -m 0644 /nuxel/device/s10plus/90-nuxel-beyond2lte.rules "$STAGE/etc/udev
 # staged, and the old flat path stays as a symlink for the legacy consumers
 # (verify-fedora-phone-rootfs.py checks /usr/share/nuxel/nuxel-home/index.html).
 cp -a /nuxel/pwa "$STAGE/usr/share/nuxel/pwa"
+# Root-relative /assets URLs used by launcher icons, Quick Settings and
+# navigation images must exist in the STATIC WEBROOT, not just in the repo.
+# Also stage the owner's real MP3 audio cues (no synthetic substitutes).
+install -d "$STAGE/usr/share/nuxel/assets"
+cp -a /nuxel/assets/. "$STAGE/usr/share/nuxel/assets/"
+for _cue in nuxel-boot-audio.mp3 nuxel-pow.mp3; do
+  test -s "$STAGE/usr/share/nuxel/assets/$_cue" || { echo "ERROR: missing cue $_cue" >&2; exit 1; }
+done
+install -Dm0755 /nuxel/tools/s10plus/a33/nuxel-sound-cue.py \
+    "$STAGE/usr/libexec/nuxel/nuxel-sound-cue"
+install -Dm0644 /nuxel/services/nuxel-session/systemd/nuxel-boot-sound.service \
+    "$STAGE/etc/systemd/system/nuxel-boot-sound.service"
+# A40/A44 metrics daemon + socket activation. This is the same collector the
+# live userspace reports through /metrics; without it a fresh image would lose
+# the CPU/MEM/GPU/VRAM meters.
+install -Dm0755 "$B/nuxel-metricsd" "$STAGE/usr/lib/nuxel/nuxel-metricsd"
+install -Dm0644 /nuxel/services/nuxel-metrics/nuxel-metrics.service \
+    "$STAGE/etc/systemd/system/nuxel-metrics.service"
+install -Dm0644 /nuxel/services/nuxel-metrics/nuxel-metrics.socket \
+    "$STAGE/etc/systemd/system/nuxel-metrics.socket"
+install -d "$STAGE/etc/systemd/system/sockets.target.wants"
+ln -sf ../nuxel-metrics.socket \
+    "$STAGE/etc/systemd/system/sockets.target.wants/nuxel-metrics.socket"
+# Package the already-existing haptics implementation and preferences. Do NOT
+# enable an additional vibrator owner automatically: the older haptics bridge
+# may already own the device on live phones. Physical owner test is required.
+install -Dm0644 /nuxel/configs/nuxel/haptics/settings.json \
+    "$STAGE/etc/nuxel/haptics/settings.json"
+install -Dm0755 /nuxel/services/nuxel-haptics/nuxel-hapticsd.py \
+    "$STAGE/usr/lib/nuxel/nuxel-hapticsd.py"
+install -Dm0644 /nuxel/services/nuxel-haptics/nuxel-haptics.service \
+    "$STAGE/etc/systemd/system/nuxel-haptics.service"
+install -Dm0755 /nuxel/services/nuxel-haptics/nuxel-haptics-sleep \
+    "$STAGE/usr/libexec/nuxel/nuxel-haptics-sleep"
+ln -sf ../nuxel-boot-sound.service \
+    "$STAGE/etc/systemd/system/multi-user.target.wants/nuxel-boot-sound.service"
 ln -sfn pwa/nuxel-home "$STAGE/usr/share/nuxel/nuxel-home"
 install -m 0755 /nuxel/tools/s10plus/nuxel-fb-phone-aarch64 "$STAGE/usr/bin/nuxel-fb-phone"
 install -m 0644 /nuxel/assets/nuxel-background.png "$STAGE/usr/share/nuxel/nuxel-background.png"
@@ -300,6 +348,7 @@ done
 # verify-service-graph.py can prove install + enablement from the script text.
 install -m 0644 /nuxel/services/nuxel-bridge/systemd/nuxel-bridge.service             "$STAGE/etc/systemd/system/nuxel-bridge.service"
 install -m 0644 /nuxel/services/nuxel-bridge/systemd/nuxel-http-bridge.service        "$STAGE/etc/systemd/system/nuxel-http-bridge.service"
+install -m 0644 /nuxel/services/nuxel-bridge/polkit/50-nuxel-bridge-network.rules     "$STAGE/etc/polkit-1/rules.d/50-nuxel-bridge-network.rules"
 install -m 0644 /nuxel/services/nuxel-portal/systemd/nuxel-portal.service             "$STAGE/etc/systemd/system/nuxel-portal.service"
 install -m 0644 /nuxel/services/nuxel-notifications/systemd/nuxel-notifications.service "$STAGE/etc/systemd/system/nuxel-notifications.service"
 # The static PWA server that serves the launcher tree on :8000.

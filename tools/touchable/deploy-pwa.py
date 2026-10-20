@@ -50,11 +50,11 @@ def restart():
 save()
 for row in rows:
     rel=Path(row['path'])
-    if rel.is_absolute() or '..' in rel.parts or rel.parts[:2] not in (('pwa','nuxel-home'),('pwa','nuxel-apps'),('pwa','nuxel-common')):
+    if rel.is_absolute() or '..' in rel.parts or not (rel.parts[:2] in (('pwa','nuxel-home'),('pwa','nuxel-apps'),('pwa','nuxel-common')) or rel.parts[:1] == ('assets',)):
         raise RuntimeError('outside PWA scope')
     dst=Path('/usr/share/nuxel')/rel
     # This handset's pwa/nuxel-home is the measured ../nuxel-home symlink.
-    if dst.is_symlink() or not any(dst.resolve().is_relative_to(p) for p in ('/usr/share/nuxel/pwa','/usr/share/nuxel/nuxel-home')):
+    if dst.is_symlink() or not any(dst.resolve().is_relative_to(p) for p in ('/usr/share/nuxel/pwa','/usr/share/nuxel/nuxel-home','/usr/share/nuxel/assets')):
         raise RuntimeError('unsafe target')
     body=base64.b64decode(row['data'],validate=True)
     if hashlib.sha256(body).hexdigest()!=row['sha256']: raise RuntimeError('payload mismatch')
@@ -111,8 +111,9 @@ def main():
     for filename in args.files:
         source = (ROOT / filename).resolve()
         rel = source.relative_to(ROOT)
-        if rel.parts[:2] not in [('pwa','nuxel-home'), ('pwa','nuxel-common'), ('pwa','nuxel-apps')]:
-            ap.error('only PWA assets may be installed')
+        if not (rel.parts[:2] in [('pwa','nuxel-home'), ('pwa','nuxel-common'), ('pwa','nuxel-apps')]
+                or rel.parts[:1] == ('assets',)):
+            ap.error('only launcher/PWA assets may be installed')
         data = source.read_bytes()
         rows.append(dict(path=str(rel),sha256=hashlib.sha256(data).hexdigest(),data=base64.b64encode(data).decode()))
     (evidence / 'plan.json').write_text(json.dumps([{k:v for k,v in row.items() if k!='data'} for row in rows],indent=2)+'\n')

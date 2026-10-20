@@ -1,0 +1,14 @@
+# console /dev/ttyACM0
+===== ls -l /var/lib/nuxel/permissions/ 2>/dev/null; echo ===GRANT===; cat /var/lib/nuxel/permissions/nuxel-settings.json 2>/dev/null; echo; echo ===STAT===; stat -c "%y %n" /var/lib/nuxel/permissions/nuxel-settings.json 2>/dev/null   [rc=0 frame=7eb96225 sha_ok=yes]
+    total 8
+    -rw-r--r-- 1 nuxel-bridge nuxel-bridge 93 Oct 20 14:43 nuxel-settings.json
+    -rw-r--r-- 1 nuxel-bridge nuxel-bridge 93 Oct 20 10:41 org.nuxel.Home.json
+    ===GRANT===
+    {
+      "network:manage": {
+        "granted_at": 1792500231.2952952,
+        "duration": "session"
+      }
+    }
+    ===STAT===
+    2026-10-20 14:43:51.291992625 +0200 /var/lib/nuxel/permissions/nuxel-settings.json

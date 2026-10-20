@@ -34,6 +34,7 @@
     
     --status-bar-height: 36px;
     --dock-height: 80px;
+    --system-nav-height: 62px;
     --search-bar-height: 56px;
     --grid-padding: 16px;
     --app-icon-size: 64px;
@@ -74,11 +75,17 @@ html, body {
     left: 0;
     right: 0;
     bottom: 0;
+    /* Home owns pan/swipe; browser pinch-zoom is intentionally excluded.
+       App iframes keep their own viewport policy. */
+    touch-action: pan-x pan-y;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
 }
 
 /* Scrollbar styling */
 ::-webkit-scrollbar {
-    width: 3px;
+    width: 1px;
+    height: 1px;
 }
 ::-webkit-scrollbar-track {
     background: transparent;
@@ -228,9 +235,9 @@ html, body {
     top: calc(var(--status-bar-height, 36px) + 56px) !important;
     left: 0 !important;
     right: 0 !important;
-    bottom: 0 !important;
+    bottom: var(--system-nav-height) !important;
     width: 100vw !important;
-    height: calc(100dvh - var(--status-bar-height, 36px) - 56px) !important;
+    height: calc(100dvh - var(--status-bar-height, 36px) - 56px - var(--system-nav-height)) !important;
     min-height: 0 !important;
     border: 0 !important;
     z-index: 60 !important;
@@ -267,7 +274,7 @@ html, body {
 
 .nuxel-touch-keyboard {
     position: fixed;
-    left: 0; right: 0; bottom: 0;
+    left: 0; right: 0; bottom: var(--system-nav-height);
     z-index: 240;
     padding: 8px 4px max(8px, env(safe-area-inset-bottom));
     background: #0b192d;
@@ -285,9 +292,67 @@ html, body {
 .nuxel-touch-keyboard .wide { flex: 2; }
 .touch-keyboard-open .search-overlay { bottom: 280px; }
 .touch-keyboard-open .pwa-frame {
-    bottom: 280px !important;
-    height: calc(100dvh - var(--status-bar-height, 36px) - 336px) !important;
+    bottom: calc(280px + var(--system-nav-height)) !important;
+    height: calc(100dvh - var(--status-bar-height, 36px) - 336px - var(--system-nav-height)) !important;
 }
+
+/* Persistent Android-like navigation. The supplied artwork has a black matte
+   rather than alpha, so screen blending makes that matte transparent to the
+   wallpaper while retaining the bright pixel-art geometry. Its paint-only
+   layer is full viewport width; it deliberately extends above the button row
+   instead of shrinking the supplied 3:1 art with `contain`. */
+.system-navigation {
+    position: fixed;
+    z-index: 260;
+    inset: auto 0 0;
+    height: var(--system-nav-height);
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    align-items: center;
+    padding: 5px max(14px, env(safe-area-inset-left)) calc(5px + env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-right));
+    background: transparent;
+    border-top: 0;
+    overflow: hidden;
+    touch-action: pan-x pan-y;
+}
+/* The source artwork is ~3:1 and its meaningful pixels occupy the middle
+ * ~56% of the image.  Keep the artwork inside this 62px strip (instead of
+ * letting a 120px layer paint upward over the shortcut dock), and crop the
+ * black matte above the artwork. */
+.system-navigation::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: var(--system-nav-height);
+    z-index: 0;
+    pointer-events: none;
+    background-image: var(--dock-art, url('../assets/nuxel-bottom-bar2.png'));
+    background-size: 100% auto;
+    background-position: center -11.05vw;
+    background-repeat: no-repeat;
+    image-rendering: pixelated;
+}
+.system-navigation[data-background="none"]::before { display: none; }
+.system-navigation button {
+    position: relative;
+    z-index: 1;
+    height: 48px;
+    min-width: 48px;
+    padding: 4px;
+    border: 0;
+    background: transparent;
+    border-radius: 14px;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+}
+.system-navigation button:active { background: rgba(96, 165, 250, .22); transform: scale(.94); }
+.system-navigation img { display: block; width: 100%; height: 100%; object-fit: contain; }
+.system-navigation .nav-fallback { font-size: 25px; color: #dbeafe; pointer-events: none; }
+.system-navigation button.has-image .nav-fallback { display: none; }
+.system-navigation button img[hidden] { display: none; }
+.system-navigation button:not(.has-image) { color: #dbeafe; font-size: 15px; }
 
 /* ── Boot animation splash ───────────────────────────────────────────────
    Fullscreen nuxel-boot-animation.mp4 overlay shown while the home PWA
@@ -320,3 +385,13 @@ body.ready #boot-splash {
         display: none;
     }
 }
+
+/* A43: prevent accidental zoom gestures on the launcher without disabling scrolling inside apps. */
+html:has(#app-grid), body:has(#app-grid) { overscroll-behavior: none; }
+body:not(.app-drawer-open) #app-grid { touch-action:pan-x pan-y; }
+#quick-settings { will-change:transform; }
+#quick-settings:not(.hidden) { animation:nuxel-shade-enter .20s cubic-bezier(.2,.8,.2,1) both; }
+body.app-drawer-open #app-grid { animation:nuxel-drawer-enter .22s cubic-bezier(.2,.8,.2,1) both; }
+@keyframes nuxel-shade-enter { from { opacity:.7; transform:translate3d(0,-18px,0); } to {opacity:1;transform:translate3d(0,0,0);} }
+@keyframes nuxel-drawer-enter { from {opacity:.8;transform:translate3d(0,28px,0)} to {opacity:1;transform:translate3d(0,0,0)} }
+@media(prefers-reduced-motion:reduce){#quick-settings:not(.hidden),body.app-drawer-open #app-grid {animation:none}}

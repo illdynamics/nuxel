@@ -1,0 +1,41 @@
+# console /dev/ttyACM0
+===== echo ===WIDGETS===; ls /sys/kernel/debug/asoc/beyond-madera/dapm; echo ===AMP===; for w in "Right AMP SPK" "Left AMP SPK" "SPEAKER" "RECEIVER"; do printf "=== %s ===\n" "$w"; timeout 3 cat "/sys/kernel/debug/asoc/beyond-madera/dapm/$w" 2>&1; echo "rc=$?"; done; echo ===SND===; ls -l /dev/snd 2>&1 | head   [rc=0 frame=f1816100 sha_ok=yes]
+    ===WIDGETS===
+    BLUETOOTH MIC
+    BLUETOOTH SPK
+    DMIC1
+    DMIC2
+    FM IN
+    HEADPHONE
+    HEADSETMIC
+    RECEIVER
+    SPEAKER
+    VTS Virtual Output
+    VTS Virtual Output Mux
+    bias_level
+    ===AMP===
+    === Right AMP SPK ===
+    cat: '/sys/kernel/debug/asoc/beyond-madera/dapm/Right AMP SPK': No such file or directory
+    rc=1
+    === Left AMP SPK ===
+    cat: '/sys/kernel/debug/asoc/beyond-madera/dapm/Left AMP SPK': No such file or directory
+    rc=1
+    === SPEAKER ===
+    SPEAKER: Off  in 0 out 1
+     in  "static" "Right AMP SPK"
+    rc=0
+    === RECEIVER ===
+    RECEIVER: Off  in 0 out 1
+     in  "static" "Left AMP SPK"
+    rc=0
+    ===SND===
+    total 0
+    crw------- 1 root root  116, 26 Jan  1  1970 comprC0D42
+    crw------- 1 root root  116, 25 Jan  1  1970 comprC0D5
+    crw------- 1 root root  116,  2 Jan  1  1970 controlC0
+    crw------- 1 root root  116, 29 Jan  1  1970 controlC1
+    crw------- 1 root root  116, 30 Jan  1  1970 controlC2
+    crw------- 1 root root  116, 28 Jan  1  1970 hwC0D13
+    crw------- 1 root root  116, 27 Jan  1  1970 hwC0D2
+    crw------- 1 root root  116,  3 Jan  1  1970 pcmC0D0p
+    crw------- 1 root root  116, 12 Jan  1  1970 pcmC0D10p

@@ -17,7 +17,7 @@
 // nuxel.cache_version, so a launcher that was served from a stale bundle is a
 // detectable state rather than a mystery.
 // v0.5.2-beta changes launcher lifecycle and Terminal interaction assets.
-const CACHE_VERSION = 'v11-0.6.0-beta';
+const CACHE_VERSION = 'v27-a44-0.6.3-beta-launcher-fixes';
 const CACHE_NAME = 'nuxel-home-' + CACHE_VERSION;
 const STATIC_CACHE = 'nuxel-static-' + CACHE_VERSION;
 const DYNAMIC_CACHE = 'nuxel-dynamic-' + CACHE_VERSION;
@@ -33,8 +33,10 @@ const PRECACHE_ASSETS = [
     './css/style.css',
     './css/launcher.css',
     './css/status-bar.css',
+    './css/home-settings.css',
     './css/search.css',
     './js/apps.js',
+    './js/layout-model.js',
     './js/launcher.js',
     './js/status-bar.js',
     './js/search.js',
@@ -48,6 +50,11 @@ const PRECACHE_ASSETS = [
     './js/bootlog.js',
     './js/app.js',
     './js/touch-keyboard.js',
+    './js/navigation.js',
+    './js/gestures.js',
+    './js/home-settings.js',
+    './js/system-monitor.js',
+    './js/scroll-indicators.js',
     './icons/icon-192.png',
     './icons/icon-512.png',
     './assets/nuxel-boot-animation.mp4',
@@ -55,6 +62,8 @@ const PRECACHE_ASSETS = [
     // referenced by css/style.css as ../assets/nuxel-background.png, so a
     // missing copy at this path means the launcher renders with no wallpaper.
     './assets/nuxel-background.png',
+    './assets/nuxel-bottom-bar.jpg',
+    './assets/nuxel-bottom-bar2.png',
 ];
 
 // Install event: cache critical assets
@@ -154,6 +163,21 @@ self.addEventListener('fetch', (event) => {
                 return response;
             }).catch(() => caches.match(request).then((cached) => cached || new Response('Offline', { status: 503 })))
         );
+        return;
+    }
+
+    // A37: owner artwork is mutable during live deployment. The previous
+    // cache-first branch could keep old/missing artwork visible indefinitely.
+    // Use network-first even for previously cached 404/fallback PNG responses.
+    const ownerArt = /\/(?:assets\/(?:button-(?:left|middle|right)\.png|nuxel-(?:applications|quicksettings)-icon-pack\/)|pwa\/nuxel-home\/assets\/branding\/)/.test(new URL(request.url).pathname);
+    if (ownerArt) {
+        event.respondWith(fetch(request, {cache: 'no-store'}).then(response => {
+            if (!response.ok || !response.headers.get('content-type')?.includes('image/png'))
+                throw new Error('Nuxel owner art unavailable: ' + response.status);
+            const clone = response.clone();
+            caches.open(DYNAMIC_CACHE).then(cache => cache.put(request, clone));
+            return response;
+        }).catch(() => caches.match(request).then(cached => cached || new Response('Nuxel art unavailable', {status: 503}))));
         return;
     }
 

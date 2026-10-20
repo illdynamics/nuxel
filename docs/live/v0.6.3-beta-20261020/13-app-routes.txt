@@ -1,0 +1,21 @@
+# console /dev/ttyACM0
+===== echo ===APPS===; curl -s --max-time 3 http://127.0.0.1:8080/api/v1/apps/registry | python3 -c "import json,sys; d=json.load(sys.stdin); [print(a.get(\"id\"), a.get(\"name\"), a.get(\"url\")) for a in d.get(\"apps\",[])]"; echo ===ROUTES===; for r in /pwa/nuxel-apps/browser/index.html /pwa/nuxel-apps/settings/index.html /pwa/nuxel-apps/settings/wifi-settings.js /pwa/nuxel-apps/settings/settings.css /pwa/nuxel-common/app-registry.json; do printf "%s " $r; curl -s -o /dev/null -w "%{http_code} %{size_download}\n" http://127.0.0.1:8000$r; done   [rc=0 frame=c704605d sha_ok=yes]
+    ===APPS===
+    nuxel-dialer Phone nuxel-dialer://
+    nuxel-messages Messages nuxel-messages://
+    nuxel-contacts Contacts nuxel-contacts://
+    nuxel-camera Camera nuxel-camera://
+    org.nuxel.Mail Mail /pwa/nuxel-apps/mail/index.html
+    org.nuxel.Calendar Calendar /pwa/nuxel-apps/calendar/index.html
+    org.nuxel.Notes Notes /pwa/nuxel-apps/notes/index.html
+    org.nuxel.Files Files /pwa/nuxel-apps/files/index.html
+    nuxel-settings Settings /pwa/nuxel-apps/settings/index.html
+    org.nuxel.Terminal Terminal /pwa/nuxel-apps/terminal/index.html
+    org.nuxel.LiveConsole Live Console /pwa/nuxel-apps/console/index.html
+    org.nuxel.Browser Browser /pwa/nuxel-apps/browser/index.html
+    ===ROUTES===
+    /pwa/nuxel-apps/browser/index.html 200 3030
+    /pwa/nuxel-apps/settings/index.html 200 10185
+    /pwa/nuxel-apps/settings/wifi-settings.js 200 4625
+    /pwa/nuxel-apps/settings/settings.css 200 5055
+    /pwa/nuxel-common/app-registry.json 200 18166

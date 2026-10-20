@@ -154,6 +154,8 @@
     flex-shrink: 0;
     background: var(--bg-card);
 }
+.search-result-item .result-icon img,
+.recent-app-icon img { width: 100%; height: 100%; object-fit: cover; border-radius: 12px; display: block; }
 
 .search-result-item .result-info {
     flex: 1;

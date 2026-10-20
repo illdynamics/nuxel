@@ -1,0 +1,29 @@
+# console /dev/ttyACM0
+===== date -u; echo ===LATEST-TOUCH===; tail -18 /run/nuxel-home.state 2>/dev/null; echo ===LATEST-WEB===; tail -6 /run/nuxel-web.log 2>/dev/null   [rc=0 frame=4b6361d2 sha_ok=yes]
+    Tue Oct 20 12:43:00 UTC 2026
+    ===LATEST-TOUCH===
+    1792500063 NUXEL_INPUT EVT touchmove x=64 y=734 tag=IMG id= w=360 h=760 dpr=2 splash=absent
+    1792500063 NUXEL_INPUT EVT touchmove x=63 y=734 tag=IMG id= w=360 h=760 dpr=2 splash=absent
+    1792500063 NUXEL_INPUT EVT touchmove x=63 y=734 tag=IMG id= w=360 h=760 dpr=2 splash=absent
+    1792500063 NUXEL_INPUT EVT touchmove x=63 y=734 tag=IMG id= w=360 h=760 dpr=2 splash=absent
+    1792500063 NUXEL_INPUT EVT app:lifecycle id=org.nuxel.Browser state=CLOSING ts=1792500063911
+    1792500063 NUXEL_INPUT EVT app:lifecycle id=home state=CLOSED ts=1792500063919
+    1792500063 HOST_ACTION haptics-long -> bounded haptics fifo
+    1792500064 NUXEL_INPUT EVT touchmove x=63 y=733 tag=IMG id= w=360 h=760 dpr=2 splash=absent
+    1792500064 NUXEL_INPUT EVT touchmove x=63 y=733 tag=IMG id= w=360 h=760 dpr=2 splash=absent
+    1792500064 NUXEL_INPUT EVT touchmove x=63 y=733 tag=IMG id= w=360 h=760 dpr=2 splash=absent
+    1792500064 NUXEL_INPUT EVT touchmove x=62 y=733 tag=IMG id= w=360 h=760 dpr=2 splash=absent
+    1792500064 NUXEL_INPUT EVT touchmove x=63 y=733 tag=IMG id= w=360 h=760 dpr=2 splash=absent
+    1792500064 NUXEL_INPUT EVT touchmove x=62 y=733 tag=IMG id= w=360 h=760 dpr=2 splash=absent
+    1792500064 NUXEL_INPUT EVT pointerup x=62 y=733 tag=BUTTON id= w=360 h=760 dpr=2 splash=absent
+    1792500064 NUXEL_INPUT EVT touchend x=62 y=733 tag=IMG id= w=360 h=760 dpr=2 splash=absent
+    1792500064 NUXEL_INPUT EVT pointerup x=62 y=733 tag=IMG id= w=360 h=760 dpr=2 splash=absent
+    1792500064 NUXEL_INPUT EVT pointerdown x=62 y=733 tag=IMG id= w=360 h=760 dpr=2 splash=absent
+    1792500064 NUXEL_INPUT EVT pointerup x=62 y=733 tag=IMG id= w=360 h=760 dpr=2 splash=absent
+    ===LATEST-WEB===
+    127.0.0.1 - - [20/Oct/2026 14:42:52] "GET /runtime/osd.json HTTP/1.1" 200 -
+    127.0.0.1 - - [20/Oct/2026 14:42:54] "GET /runtime/osd.json HTTP/1.1" 200 -
+    127.0.0.1 - - [20/Oct/2026 14:42:55] "GET /runtime/osd.json HTTP/1.1" 200 -
+    127.0.0.1 - - [20/Oct/2026 14:42:57] "GET /runtime/osd.json HTTP/1.1" 200 -
+    127.0.0.1 - - [20/Oct/2026 14:42:58] "GET /runtime/osd.json HTTP/1.1" 200 -
+    127.0.0.1 - - [20/Oct/2026 14:43:00] "GET /runtime/osd.json HTTP/1.1" 200 -

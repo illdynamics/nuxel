@@ -6,7 +6,7 @@
     top: var(--status-bar-height);
     left: 0;
     right: 0;
-    bottom: var(--dock-height);
+    bottom: calc(var(--dock-height) + var(--system-nav-height));
     padding: 8px var(--grid-padding) 0;
     overflow-y: auto;
     overflow-x: hidden;
@@ -18,16 +18,42 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 12px 4px 20px;
+    gap: 8px;
+    padding: 8px 4px 14px;
 }
 
-.app-grid-title {
-    font-size: 28px;
-    font-weight: 700;
-    background: linear-gradient(135deg, #60a5fa, #122952);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+.system-monitor {
+    min-width: 0;
+    flex: 1 1 auto;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 4px;
+    padding: 6px 7px;
+    color: #dbeafe;
+    background: rgba(5, 22, 43, .72);
+    border: 1px solid rgba(96, 165, 250, .36);
+    border-radius: 5px;
+    font: 700 10px/1 ui-monospace, "Cascadia Mono", "DejaVu Sans Mono", monospace;
+    letter-spacing: .035em;
+}
+
+.system-monitor[hidden] { display: none; }
+.system-meter { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2px 3px; min-width: 0; }
+.system-meter-label { color: #7dd3fc; }
+.system-meter-value { min-width: 0; color: #f8fafc; text-align: right; transition: color 160ms ease-out; }
+.system-meter-detail { grid-column: 1 / -1; min-width: 0; overflow: hidden; color: #bfdbfe; font-size: 8px; line-height: 1; text-overflow: ellipsis; white-space: nowrap; }
+.system-meter-bar { grid-column: 1 / -1; height: 4px; overflow: hidden; background: #122b49; box-shadow: inset 0 0 0 1px rgba(125, 211, 252, .17); }
+.system-meter-bar i { display: block; width: 0%; height: 100%; background: #38bdf8; transition: width 220ms ease-out; }
+.system-meter[data-meter="memory"] .system-meter-bar i { background: #60a5fa; }
+.system-meter[data-meter="gpu"] .system-meter-bar i { background: #a78bfa; }
+.system-meter[data-meter="gpu-memory"] .system-meter-bar i { background: #64748b; }
+.system-meter[data-unavailable="true"] { opacity: .68; }
+.system-monitor[data-detailed="false"] .system-meter-detail { display: none; }
+.system-monitor[data-reduced-motion="true"] .system-meter-bar i,
+@media (prefers-reduced-motion: reduce) { .system-meter-bar i, .system-meter-value { transition: none; } }
+
+@media (orientation: landscape) {
+    .system-monitor { max-width: 560px; }
 }
 
 .app-grid-indicator {
@@ -52,7 +78,9 @@
 /* App List */
 .app-list {
     display: grid;
+    /* Static fallback also documents the shipped 4-wide default. */
     grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(var(--home-columns, 4), 1fr);
     gap: 16px 8px;
     padding-bottom: 20px;
 }
@@ -139,14 +167,12 @@
 /* Dock */
 .dock {
     position: absolute;
-    bottom: 0;
+    bottom: var(--system-nav-height);
     left: 0;
     right: 0;
     height: var(--dock-height);
-    background: var(--bg-secondary);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    background: transparent;
+    border-top: 0;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -155,8 +181,10 @@
 }
 
 .dock-items {
-    display: flex;
-    gap: 20px;
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(var(--dock-columns, 5), minmax(0, 1fr));
+    gap: 6px;
     align-items: center;
 }
 
@@ -169,6 +197,30 @@
 .dock .app-item .app-label {
     display: none;
 }
+
+.launcher-edit-toolbar {
+    position: fixed;
+    z-index: 120;
+    left: 12px;
+    right: 12px;
+    bottom: calc(var(--dock-height) + var(--system-nav-height) + 8px);
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    padding: 8px;
+    border-radius: 16px;
+    background: rgba(8, 23, 45, .94);
+    border: 1px solid rgba(147, 197, 253, .35);
+    box-shadow: 0 10px 28px rgba(0, 0, 0, .4);
+}
+.launcher-edit-toolbar button { min-height: 38px; padding: 0 12px; border: 0; border-radius: 10px; color: #fff; background: #1e3a5f; font: 600 13px system-ui, sans-serif; }
+.launcher-edit-toolbar .danger { background: #8b2635; }
+.launcher-editing .app-item { animation: launcher-wiggle .22s ease-in-out infinite alternate; }
+.launcher-editing .app-item.dragging, .launcher-editing .app-item:active { animation: none; }
+.launcher-editing .app-item.selected-for-edit .app-icon { outline: 3px solid #93c5fd; outline-offset: 3px; }
+.app-item[data-size="large"] .app-icon { transform: scale(1.12); }
+.app-item[data-size="large"] .app-label { margin-top: 5px; }
+@keyframes launcher-wiggle { from { transform: rotate(-.8deg); } to { transform: rotate(.8deg); } }
 
 /* Widget area (future) */
 .widget-area {
@@ -266,3 +318,47 @@ body.launcher-dragging .app-item {
     outline-offset: 4px;
     border-radius: 16px;
 }
+.app-item.folder-target .app-icon { outline: 3px solid #60a5fa; outline-offset: 5px; box-shadow: 0 0 0 8px rgba(96,165,250,.2); }
+.folder-icon { display: grid !important; grid-template-columns: repeat(2, 1fr); gap: 2px; padding: 7px; background: rgba(8,20,42,.85) !important; }
+.folder-icon img { min-width: 0; min-height: 0; border-radius: 7px !important; }
+.folder-sheet { position: fixed; inset: 0; z-index: 250; display: grid; place-items: center; padding: 20px; background: rgba(1,6,15,.64); }
+.folder-card { width: min(100%, 420px); max-height: calc(100dvh - 120px); overflow: auto; padding: 18px; border-radius: 22px; background: #0d1f3c; box-shadow: 0 18px 60px rgba(0,0,0,.55); }
+.folder-card input { width: calc(100% - 70px); margin: 0 8px 16px 0; padding: 10px; color: white; background: #122952; border: 1px solid #60a5fa; border-radius: 10px; }
+.folder-items { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }.folder-items button { border: 0; color: #dbeafe; background: transparent; }.folder-items img { width: 52px; height: 52px; border-radius: 12px; }.folder-items span { display: block; font-size: 11px; overflow: hidden; text-overflow: ellipsis; }
+body.app-drawer-open .app-grid { z-index: 80; background: var(--bg-primary); top: var(--status-bar-height); bottom: var(--system-nav-height); }
+body.app-drawer-open .app-grid-title::after { content: 'All apps'; margin-left: 10px; font-size: 14px; color: var(--text-secondary); -webkit-text-fill-color: var(--text-secondary); }
+
+/* A37: fall back to a readable native glyph if an asset genuinely fails to load. */
+.app-icon .nuxel-icon-fallback:not([hidden]) { display: inline-flex; align-items: center; justify-content: center; width: 100%; height: 100%; }
+
+/* Four fixed shortcut hitboxes with no background artwork of their own.  The
+ * supplied bar image belongs only to the Back/Home/Recents strip in style.css.
+ * Painting it here as well produced a second half-height bar above the nav and
+ * let the taller nav layer cover the shortcut icons. */
+.dock{isolation:isolate;overflow:visible;z-index:90;background:transparent;border:0}
+.dock::before{display:none!important;content:none!important}
+.dock-items{position:relative;z-index:1;grid-template-columns:repeat(4,minmax(0,1fr));}
+.dock .app-item{touch-action:manipulation;min-width:0}
+.dock .app-item .app-icon{width:min(56px,100%);aspect-ratio:1;height:auto}
+/* Stationary desktop indicator sits above the artwork, not in its hit area. */
+.app-grid-indicator{position:fixed;left:50%;transform:translateX(-50%);
+ bottom:calc(var(--dock-height) + var(--system-nav-height) + 8px);
+ z-index:3;pointer-events:none;justify-content:center;gap:9px}
+.app-grid-indicator .dot{width:7px;height:7px;background:#b4d8ff;opacity:.36}
+.app-grid-indicator .dot.active{opacity:.92;background:#ffffff;box-shadow:0 0 6px #80bfff}
+.app-grid-header .app-grid-title{pointer-events:none}
+/* Browser scrollbar tracks consume touches on some WebKit builds: hide native
+ * handles and retain native finger scrolling; custom indicators never hit-test. */
+::-webkit-scrollbar{width:0!important;height:0!important}
+.nuxel-scroll-indicator{position:absolute;z-index:30;pointer-events:none;
+ background:rgba(118,190,255,.7);border-radius:2px;opacity:.75}
+.nuxel-scroll-indicator.vertical{right:1px;width:1px}
+.nuxel-scroll-indicator.horizontal{bottom:1px;height:1px}
+
+/* A43: compositor-only Home transitions and no touch zoom / rubber-band zoom. */
+#app-grid { touch-action:pan-x pan-y; overscroll-behavior:contain; }
+.app-list, .app-grid { -webkit-user-select:none; user-select:none; }
+.app-list { -webkit-overflow-scrolling:touch; }
+.app-grid.page-changing .app-list { animation:nuxel-page-slide .22s cubic-bezier(.22,.8,.2,1) both; }
+@keyframes nuxel-page-slide { from {opacity:.65;transform:translate3d(var(--page-slide-from,16px),0,0)} to {opacity:1;transform:translate3d(0,0,0)} }
+@media(prefers-reduced-motion:reduce){.app-grid.page-changing .app-list{animation:none!important}}

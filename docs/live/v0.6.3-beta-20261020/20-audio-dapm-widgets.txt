@@ -1,0 +1,10 @@
+# console /dev/ttyACM0
+===== for w in SPEAKER RECEIVER HEADPHONE "BLUETOOTH SPK" bias_level dapm_pop_time; do echo "=== $w ==="; cat "/sys/kernel/debug/asoc/beyond-madera/dapm/$w" 2>&1; done; echo ===ALL-WIDGETS===; ls /sys/kernel/debug/asoc/beyond-madera/dapm 2>/dev/null   [FRAMED-ERROR: no end marker within 45s — command cancelled]
+   !  </var/tmp/nx-ec4560b5.out | cut -d' ' -f1)"; base64 -w76 /var/tmp/nx-ec4560b5.ou
+   ! ut; printf '\n@@NXE%s@@\n' "$_NXID"
+   ! [?2004l
+   ! [?2004hsh-5.3# ^C[?2004l
+   ! [?2004h[?2004l
+   ! [?2004hsh-5.3#
+   ! [?2004l
+   ! [?2004hsh-5.3#

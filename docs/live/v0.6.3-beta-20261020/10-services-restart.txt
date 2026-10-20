@@ -1,0 +1,14 @@
+# console /dev/ttyACM0
+===== systemctl restart nuxel-bridge; sleep 2; systemctl is-active nuxel-bridge; systemctl restart nuxel-http-bridge; sleep 2; systemctl is-active nuxel-bridge nuxel-http-bridge; echo ---; systemctl show -p MainPID -p ExecMainStatus -p ActiveState -p SubState nuxel-bridge nuxel-http-bridge   [rc=0 frame=fb026032 sha_ok=yes]
+    active
+    active
+    active
+    ---
+    ActiveState=active
+    SubState=running
+    MainPID=18830
+    ExecMainStatus=0
+    ActiveState=active
+    SubState=running
+    MainPID=18855
+    ExecMainStatus=0

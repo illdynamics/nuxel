@@ -1,0 +1,48 @@
+# console /dev/ttyACM0
+===== sh /tmp/nuxel-deploy-v0.6.3-beta.sh   [rc=0 frame=cefd602a sha_ok=yes]
+    STAGED 19 /var/tmp/nuxel-stage.KT93h4
+    INSTALLED /usr/share/nuxel/pwa/nuxel-home/index.html
+    INSTALLED /usr/share/nuxel/pwa/nuxel-home/manifest.json
+    INSTALLED /usr/share/nuxel/pwa/nuxel-home/sw.js
+    INSTALLED /usr/share/nuxel/pwa/nuxel-home/css/style.css
+    INSTALLED /usr/share/nuxel/pwa/nuxel-home/css/launcher.css
+    INSTALLED /usr/share/nuxel/pwa/nuxel-home/js/launcher.js
+    INSTALLED /usr/share/nuxel/pwa/nuxel-home/js/gestures.js
+    INSTALLED /usr/share/nuxel/pwa/nuxel-home/js/home-settings.js
+    INSTALLED /usr/share/nuxel/pwa/nuxel-home/js/apps.js
+    INSTALLED /usr/share/nuxel/pwa/nuxel-home/assets/nuxel-bottom-bar.jpg
+    INSTALLED /usr/share/nuxel/pwa/nuxel-home/assets/nuxel-bottom-bar2.png
+    INSTALLED /usr/share/nuxel/assets/nuxel-bottom-bar.jpg
+    INSTALLED /usr/share/nuxel/assets/nuxel-bottom-bar2.png
+    INSTALLED /usr/share/nuxel/pwa/nuxel-apps/settings/index.html
+    INSTALLED /usr/share/nuxel/pwa/nuxel-apps/settings/settings.css
+    INSTALLED /usr/share/nuxel/pwa/nuxel-apps/settings/wifi-settings.js
+    INSTALLED /usr/share/nuxel/pwa/nuxel-common/app-registry.json
+    INSTALLED /usr/bin/nuxel-bridge
+    INSTALLED /usr/bin/nuxel-http-bridge
+    INSTALLED /usr/lib/nuxel/nuxel-bridge/bridge.py
+    INSTALLED /usr/lib/nuxel/nuxel-bridge/api.py
+    --- POST-INSTALL HASHES ---
+    76141ec132ed811614468b94b0a044d1bf4d0d1a214646140b01f6d185c39325  /usr/share/nuxel/pwa/nuxel-home/index.html
+    8b38af9ec659000a79426251dbac09cd2a3b90d6397363e50b57c0bcc3774df2  /usr/share/nuxel/pwa/nuxel-home/manifest.json
+    62f63f267143ff8abe079dea0decb03e72f5ee15bafa11065807557e33306a8d  /usr/share/nuxel/pwa/nuxel-home/sw.js
+    2c6e82cb1a4782e2b1cde31563eec67d6da95d7ffb2f5b0e4ee09d6870746f60  /usr/share/nuxel/pwa/nuxel-home/css/style.css
+    36a92d1e8c79ef1a2ab246dd6a7f8a99559e7270c1fac8c8a236755142dd2dcc  /usr/share/nuxel/pwa/nuxel-home/css/launcher.css
+    296780eecd62e43fb447887628dfa4292afecdfaa57900a140f53fe7d10e3e63  /usr/share/nuxel/pwa/nuxel-home/js/launcher.js
+    c56a79782bc39f3f27d299049c40c94d4fca501c07a7dff2232b7b3c3938eb31  /usr/share/nuxel/pwa/nuxel-home/js/gestures.js
+    1ad2afc6a34350142669d9baecec2d14b840e672b18dd972acfa743fc9106a84  /usr/share/nuxel/pwa/nuxel-home/js/home-settings.js
+    c6a72cc0292ea145f59355ddc3dd70cf1640bf9752dbd9e3bee9ffab9a9f3e98  /usr/share/nuxel/pwa/nuxel-home/js/apps.js
+    e40c6b64e828fd6bf5e7ff4c9fecd63c6404fb4ccea84716f361b62dcc0db984  /usr/share/nuxel/pwa/nuxel-home/assets/nuxel-bottom-bar.jpg
+    be60ece34adcf0179d1a94e4cbca309bd8f9bd629c14aedbd00d6b32d1ccf0e3  /usr/share/nuxel/pwa/nuxel-home/assets/nuxel-bottom-bar2.png
+    e40c6b64e828fd6bf5e7ff4c9fecd63c6404fb4ccea84716f361b62dcc0db984  /usr/share/nuxel/assets/nuxel-bottom-bar.jpg
+    be60ece34adcf0179d1a94e4cbca309bd8f9bd629c14aedbd00d6b32d1ccf0e3  /usr/share/nuxel/assets/nuxel-bottom-bar2.png
+    1ceea351d3a4e047a2ec8f7b2cfeed2de2fb1d7658fa91cecfd756afbe7aadcc  /usr/share/nuxel/pwa/nuxel-apps/settings/index.html
+    e305a82028ef4e3399e1a553b3c9a0bacf0b05953ac240552ddbf9dd4ffc6fc6  /usr/share/nuxel/pwa/nuxel-apps/settings/settings.css
+    930c1d3aeb29a00d9bafc0fff53cc66fd46ddc1dbfc9207e334efa7bdb8d164c  /usr/share/nuxel/pwa/nuxel-apps/settings/wifi-settings.js
+    473a2cd00a4cbbf564577a5a0723fa3641e396886a8f5234c683be377a77d137  /usr/share/nuxel/pwa/nuxel-common/app-registry.json
+    808507afb5b538c56e7ebf82af754163b879210cf7e133784336d46056fbfd48  /usr/bin/nuxel-bridge
+    ae9950f9a0b0a6476adae5c16595f615e015f34f724d45ffe15c1ecddfd6e8d1  /usr/bin/nuxel-http-bridge
+    808507afb5b538c56e7ebf82af754163b879210cf7e133784336d46056fbfd48  /usr/lib/nuxel/nuxel-bridge/bridge.py
+    ae9950f9a0b0a6476adae5c16595f615e015f34f724d45ffe15c1ecddfd6e8d1  /usr/lib/nuxel/nuxel-bridge/api.py
+    STAGE_DIR=/var/tmp/nuxel-stage.KT93h4
+    DEPLOY_COMPLETE

@@ -62,3 +62,8 @@ label { display: block; margin: 8px 0; font-size: 13px; }
 .boot-row label { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 13px; }
 .boot-row input[type=checkbox] { width: 18px; height: 18px; accent-color: var(--accent-light, #3b82f6); }
 #verbose-boot-state { white-space: pre-wrap; }
+
+/* Native-touch sized Wi-Fi controls, never a second wireless backend. */
+.wifi-list {display:grid;gap:7px;margin:10px 0;max-height:42dvh;overflow:auto;overscroll-behavior:contain}
+.wifi-list .wifi-network {text-align:left;min-height:48px;background:#142d50}
+#wifi-connect-form input[type=password] {width:100%;font-size:16px;min-height:44px;background:#0b1c30;color:white;border:1px solid #6b96cc;border-radius:8px;padding:10px}

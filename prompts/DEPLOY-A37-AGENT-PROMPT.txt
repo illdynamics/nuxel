@@ -1,0 +1,11 @@
+NUXEL A37 — LIVE S10+ USB DEPLOY NOW 🐧🔥
+
+Read DEPLOY-A37.md. Use this FULL patched repo; preserve current live-console connectivity and byte-for-byte rollback backups. NO FLASHING, PARTITION WRITES, KERNEL CHANGES, OR GUESSED SPEAKER-AMP MIXER VALUES.
+
+1. Identify the ACTUAL active Nuxel webroot and run preflight tests. Deploy A37's updated launcher HTML/JS/CSS/service worker and ALL original app, Quick Settings, three-button PNGs via the guarded live-deploy manifest (it remaps /home/nuxel/nuxel to /usr/share/nuxel). Verify HTTP 200, image/png, SHA-256 equality, and real pixels on the phone; reload WebKit to clear old cache.
+2. Deploy both original MP3s, nuxel-sound-cue, boot-sound service, and the read-only nuxel-a37-check verifier. Confirm mpg123 -o alsa and the detected card/device. Rebuild/install the A34 button-manager Linux AArch64 binary if the live binary lacks the cue hook, backup first. Preserve the 25% protective mixer cap; boot cue uses 44% software PCM gain after the actual LAUNCHER_DISPLAY_OWNER receipt, once per boot; Volume +/- plays POW after a successful mixer change.
+3. Audio is PRIORITY: use nuxelctl audio pipeline / existing nuxel-audio-diag.sh and real CS47L93/CS35L40 device/firmware/ALSA/UCM evidence to locate the FIRST silent speaker-routing stage. Do not fake UCM settings. Distinguish decoder success from audible output.
+4. Keyboard: confirm active on-screen keyboard sends haptics-tap on pointerdown through the SINGLE existing vibrator service/FIFO; never start a second writer.
+5. Run nuxel-a37-check, capture hashes+journals, then announce a 90-second PHYSICAL OWNER TEST (app/nav/Quick Settings icons, keyboard vibration, Volume +/- POW). Collect PASS/FAIL. Fix failures, retest, and only after confirming recoverable live console perform ONE safe normal reboot for startup sound verification. Roll back any broken service/UI change.
+
+Do NOT stop at dry-run or source edits. Report exactly what is confirmed on the real phone and the first remaining hardware blocker. EXECUTE NOW.

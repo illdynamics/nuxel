@@ -1,0 +1,5 @@
+cmd: ls -l /run/seatd.sock /run/seatd/seatd.sock 2>&1
+ok: True rc: 2 framed: True sha_ok: True
+---
+ls: cannot access '/run/seatd/seatd.sock': No such file or directory
+srwxrwx--- 1 root seat 0 Oct 19 13:52 /run/seatd.sock

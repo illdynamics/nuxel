@@ -1,0 +1,16 @@
+[Unit]
+Description=Nuxel on-demand Home hardware metrics
+Documentation=file:/usr/share/doc/nuxel/system-monitor.md
+After=network-pre.target
+
+[Service]
+ExecStart=/usr/lib/nuxel/nuxel-metricsd
+DynamicUser=yes
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+RestrictAddressFamilies=AF_INET AF_UNIX
+MemoryDenyWriteExecute=yes
+SystemCallArchitectures=native
+

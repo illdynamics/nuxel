@@ -1,0 +1,17 @@
+# console /dev/ttyACM0
+===== echo ===DOCK-REQUESTS===; grep -E "20/Oct/2026 14:40:(3[5-9]|4[0-9])" /run/nuxel-web.log | grep -E "index.html|launcher.css|bottom-bar|app-registry|wifi-settings" | tail -20; echo ===RECENT-404===; grep " 404 " /run/nuxel-web.log | tail -5; echo ===STATUS===; curl -s -o /dev/null -w "index=%{http_code} css=%{http_code}\n" http://127.0.0.1:8000/pwa/nuxel-home/index.html; systemctl is-active nuxel-bridge nuxel-http-bridge   [rc=0 frame=2f57614f sha_ok=yes]
+    ===DOCK-REQUESTS===
+    127.0.0.1 - - [20/Oct/2026 14:40:39] "GET /pwa/nuxel-home/index.html?boot=os&v=1792497155 HTTP/1.1" 200 -
+    127.0.0.1 - - [20/Oct/2026 14:40:39] "GET /pwa/nuxel-home/css/launcher.css HTTP/1.1" 200 -
+    127.0.0.1 - - [20/Oct/2026 14:40:40] "GET /pwa/nuxel-home/assets/nuxel-bottom-bar.jpg?v=0.6.3-beta HTTP/1.1" 200 -
+    127.0.0.1 - - [20/Oct/2026 14:40:46] "GET /pwa/nuxel-home/assets/nuxel-bottom-bar2.png?v=0.6.3-beta HTTP/1.1" 200 -
+    ===RECENT-404===
+    127.0.0.1 - - [20/Oct/2026 12:04:13] "GET /pwa/nuxel-apps/terminal/(none) HTTP/1.1" 404 -
+    127.0.0.1 - - [20/Oct/2026 14:40:33] "GET /pwa/nuxel-home/css/assets/nuxel-bottom-bar2.png HTTP/1.1" 404 -
+    127.0.0.1 - - [20/Oct/2026 14:40:33] "GET /pwa/nuxel-home/css/assets/nuxel-bottom-bar.jpg HTTP/1.1" 404 -
+    127.0.0.1 - - [20/Oct/2026 14:40:34] "GET /var/lib/nuxel/.api-token HTTP/1.1" 404 -
+    127.0.0.1 - - [20/Oct/2026 14:40:40] "GET /var/lib/nuxel/.api-token HTTP/1.1" 404 -
+    ===STATUS===
+    index=200 css=200
+    active
+    active

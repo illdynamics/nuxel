@@ -1,0 +1,24 @@
+# console /dev/ttyACM0
+===== ps -eo pid,ppid,user,args | grep -iE "WebKit|pwa-host|http.server" | grep -v grep; echo ===CHILDREN===; ps --ppid 5393 -o pid,ppid,user,args 2>/dev/null; echo ===STATE-TAIL===; tail -12 /run/nuxel-home.state 2>/dev/null   [rc=0 frame=662a6138 sha_ok=yes]
+       5393    5358 root     /usr/lib/nuxel/nuxel-pwa-host
+       5396    5393 root     python3 -m http.server 8000 --bind 127.0.0.1
+       5422    5393 root     /usr/libexec/webkit2gtk-4.1/WebKitNetworkProcess 2 13
+       5425    5393 root     /usr/libexec/webkit2gtk-4.1/WebKitWebProcess 4 13
+    ===CHILDREN===
+        PID    PPID USER     COMMAND
+       5396    5393 root     python3 -m http.server 8000 --bind 127.0.0.1
+       5422    5393 root     /usr/libexec/webkit2gtk-4.1/WebKitNetworkProcess 2 13
+       5425    5393 root     /usr/libexec/webkit2gtk-4.1/WebKitWebProcess 4 13
+    ===STATE-TAIL===
+    1792491492 NUXEL_INPUT EVT touchmove x=51 y=408 tag=DIV id=app-grid w=360 h=760 dpr=2 splash=absent
+    1792491492 NUXEL_INPUT EVT touchmove x=64 y=411 tag=DIV id=app-grid w=360 h=760 dpr=2 splash=absent
+    1792491492 NUXEL_INPUT EVT touchmove x=76 y=412 tag=DIV id=app-grid w=360 h=760 dpr=2 splash=absent
+    1792491492 NUXEL_INPUT EVT touchmove x=89 y=413 tag=DIV id=app-grid w=360 h=760 dpr=2 splash=absent
+    1792491492 NUXEL_INPUT EVT touchmove x=101 y=412 tag=DIV id=app-grid w=360 h=760 dpr=2 splash=absent
+    1792491492 NUXEL_INPUT EVT touchmove x=112 y=411 tag=DIV id=app-grid w=360 h=760 dpr=2 splash=absent
+    1792491492 NUXEL_INPUT EVT touchmove x=123 y=409 tag=DIV id=app-grid w=360 h=760 dpr=2 splash=absent
+    1792491492 NUXEL_INPUT EVT touchmove x=133 y=408 tag=DIV id=app-grid w=360 h=760 dpr=2 splash=absent
+    1792491492 NUXEL_INPUT EVT touchmove x=148 y=405 tag=DIV id=app-grid w=360 h=760 dpr=2 splash=absent
+    1792491492 NUXEL_INPUT EVT pointerup x=148 y=405 tag=DIV id=app-grid w=360 h=760 dpr=2 splash=absent
+    1792491492 NUXEL_INPUT EVT touchend x=148 y=405 tag=DIV id=app-grid w=360 h=760 dpr=2 splash=absent
+    1792500003 HOST_ACTION_REFUSED reload-launcher

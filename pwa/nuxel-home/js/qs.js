@@ -20,6 +20,7 @@ class QuickSettings {
     constructor() {
         this.panel = document.getElementById('quick-settings');
         this.isOpen = false;
+        this.expanded = false;
         this.state = {
             wifi: false,
             bluetooth: false,
@@ -201,8 +202,9 @@ class QuickSettings {
     }
 
     open() {
-        if (this.isOpen) return;
+        if (this.isOpen) { this.expand(); return; }
         this.isOpen = true;
+        this.expanded = false;
         this._render();
         this._syncVerboseBoot();
         this.panel.classList.remove('hidden');
@@ -211,31 +213,51 @@ class QuickSettings {
     close() {
         if (!this.isOpen) return;
         this.isOpen = false;
+        this.expanded = false;
+        this.panel.classList.remove('expanded');
         this.panel.classList.add('hidden');
     }
+
+    expand() { if (!this.isOpen) return this.open(); this.expanded = true; this.panel.classList.add('expanded'); }
+    collapseOrClose() { if (this.expanded) { this.expanded = false; this.panel.classList.remove('expanded'); } else this.close(); }
 
     toggle() {
         if (this.isOpen) this.close();
         else this.open();
     }
 
-    _toggle(id) {
-        this.state[id] = !this.state[id];
-        const el = document.getElementById(`qs-${id}`);
-        if (el) {
-            el.dataset.enabled = this.state[id] ? 'true' : 'false';
+    async _toggle(id) {
+        if (id === 'wifi') {
+            await this._setWifiEnabled(!this.state.wifi);
+            return;
         }
-        
-        // Dispatch event
-        const event = new CustomEvent('qs:toggle', {
-            detail: { id, enabled: this.state[id] },
-            bubbles: true,
-        });
-        document.dispatchEvent(event);
-        
-        // Provide haptic feedback if available
-        if (navigator.vibrate) {
-            navigator.vibrate(10);
+        // A tile must not become a decorative switch.  Keep unintegrated
+        // controls honest until their hardware backend is landed.
+        this._osdNotice(`${id} control is unavailable on this build`);
+    }
+
+    async _setWifiEnabled(enabled) {
+        const el = document.getElementById('qs-wifi');
+        if (el) el.dataset.pending = 'true';
+        try {
+            const grant = await bridge.requestCapability('network:manage', 'Change Wi-Fi power');
+            if (grant === false) throw new Error('Network control permission denied');
+            const result = await bridge.call('network', 'wifi-enabled', { enabled: !!enabled });
+            if (!result || result.success !== true || Boolean(result.wifi_enabled) !== Boolean(enabled)) {
+                throw new Error((result && result.error) || 'NetworkManager did not confirm Wi-Fi state');
+            }
+            this.state.wifi = Boolean(result.wifi_enabled);
+            this._updateUI();
+            document.dispatchEvent(new CustomEvent('qs:toggle', {
+                detail: { id: 'wifi', enabled: this.state.wifi }, bubbles: true,
+            }));
+            if (window.NuxelHost && window.NuxelHost.available) window.NuxelHost.action('haptics-switch');
+            else if (navigator.vibrate) navigator.vibrate(10);
+        } catch (error) {
+            await this._syncState();
+            this._osdNotice('Wi-Fi unchanged: ' + (error && error.message ? error.message : 'backend unavailable'));
+        } finally {
+            if (el) delete el.dataset.pending;
         }
     }
 

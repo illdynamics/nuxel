@@ -1,0 +1,5 @@
+cmd: grep -i madera /proc/asound/cards
+ok: True rc: 0 framed: True sha_ok: True
+---
+ 0 [beyondmadera   ]: beyond-madera - beyond-madera
+                      beyond-madera

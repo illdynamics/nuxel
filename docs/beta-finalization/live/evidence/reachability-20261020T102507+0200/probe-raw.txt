@@ -1,0 +1,5 @@
+dev=/dev/ttyACM0 bytes_in=4 echo_ok=True error=None elapsed=0.302s
+sample:
+
+
+

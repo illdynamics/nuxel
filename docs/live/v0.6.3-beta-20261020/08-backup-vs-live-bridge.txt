@@ -1,0 +1,6 @@
+# console /dev/ttyACM0
+===== B=$(ls -d /var/backups/nuxel/v0.6.3-beta-pre-* | tail -1); sha256sum -c $B/SHA256SUMS.bin --status 2>/dev/null || true; cd /usr/bin && sha256sum -c $B/SHA256SUMS.bin; cd /usr/lib/nuxel/nuxel-bridge && sha256sum -c $B/SHA256SUMS.lib   [rc=0 frame=8ccd5feb sha_ok=yes]
+    nuxel-bridge: OK
+    nuxel-http-bridge: OK
+    api.py: OK
+    bridge.py: OK

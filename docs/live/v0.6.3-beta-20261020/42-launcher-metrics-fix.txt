@@ -1,0 +1,49 @@
+# A44 launcher/nav/metrics fix - live S10+ verification
+# 2026-10-20 ~15:16 CEST (13:16 UTC), userspace only
+
+## Fixes
+
+- Shortcut dock no longer paints its own copy of nuxel-bottom-bar artwork.
+  The four dock shortcuts (Phone, Messages, Settings, Terminal) are visible.
+- Navigation artwork is confined to the Back/Home/Recents strip (62 CSS px)
+  instead of painting a 120 px layer upward over the dock.
+- Home/penguin button always resets to desktop 1, scroll top, no drawer/edit
+  overlay, and long-press Home also returns Home instead of opening Settings.
+- Home launcher pinch/double-tap/Ctrl-wheel zoom blocked.
+- CPU/MEM/GPU/VRAM poller was frozen by WebKit serving a cached metrics 200
+  after the socket-activated collector exited. Every sample is now query
+  cache-busted; nuxel-metricsd accepts /metrics?t=... and OPTIONS.
+- VRAM now reports Mali allocation bytes and shared-RAM budget instead of N/A.
+
+## Live hashes
+
+b39ae8ec1c85cb8292e60913e68f8019d63b4cd8d3f47eee88985baaccc5f7eb  index.html
+9d56a005af3bf09e0c31d1869b7c34f071b285676a3cd7184371dd1de18573e3  css/launcher.css
+e9904d300ba3ba665cc7adb0568ca87e629e3de5e5196706e316032311adf6ca  css/style.css
+6c6ea980060928597aa5d12d716ce2e12b0796922b4032ad8012d15027a8e57a  js/system-monitor.js
+40e33b84cb1ce474e8cdbd2b7881efae75f9d7b586d89f0952b3698ad415b2d2  js/navigation.js
+2171f661c354a46cf1f11f515b333f7171f7f3c41c2bc29950c294dfc3fef91b  js/launcher.js
+7c81bfd6a4be924a906dd16420f3042915af90a59c17f2e3f40f7d2f9c2b0f6b  js/home-settings.js
+95f19b8431a3a8e801cbfd7fec0b616b915b0793f1cb990074b0a7ec715c2a7b  sw.js
+a411e9d4014f26c9b2602137b983f6d16b84113bbcf544d27b942ee669de5473  manifest.json
+aeddb3a0715b82ed911a1936ca0f3eeba27ce61f15bb47514575d9b307c1c054  /usr/lib/nuxel/nuxel-metricsd
+
+## Runtime proof
+
+- nuxel-metrics.service remained active continuously for >3 minutes while
+  Home polled every 3 s (before the cache-bust it exited 33 s after page load).
+- Two on-device snapshots one second apart: CPU 19.8% -> 11.5%, CPU clock and
+  MEM used changed; VRAM returned 0 KiB used / 7598224 KiB shared (status ok).
+- GET /metrics?t=... returns 200 with no-store/Date/CORS headers.
+- OPTIONS /metrics?t=... returns 204 with Access-Control-Allow-Methods GET, OPTIONS.
+- systemctl: nuxel-wayland, nuxel-wl-fb, nuxel-metrics.socket, nuxel-bridge,
+  nuxel-http-bridge all active.
+- nav-home pointer/click in /run/nuxel-home.state produced app BACKGROUND and
+  desktop 1 reset; no app surface remained on the glass.
+
+## Tests
+
+tools/s10plus/a40/tests/test_system_monitor.py: PASS
+tools/s10plus/a40/tests/test_launcher_contract.py: PASS
+tools/touchable/test-launcher-input.js: PASS
+tools/s10plus/a32/tests/launcher-registry-test.js: PASS

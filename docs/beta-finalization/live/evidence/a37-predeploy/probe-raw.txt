@@ -1,0 +1,10 @@
+{
+  "at": "2026-10-19T15:19:38+0200",
+  "bytes_in": 4388,
+  "dev": "/dev/ttyACM0",
+  "echo_ok": true,
+  "elapsed_s": 0.323,
+  "error": null,
+  "reachable": true,
+  "sample": "\n\u001b[?2004l\u001b[?2004hsh-5.3# \n\u001b[?2004l\u001b[?2004hsh-5.3# 6,18035,5222900823,-;max77705_fg_read_vcell: VCELL(4316)mV, data(0xd7d2)\n6,18036,5223038226,-;[FG] 0080h,ff9bh,7f80h,ff01h,1900h,0f45h,6400h,5ea1h,1a4ch,d7d0h,fffah,0003h,0066h,68b9h,64d4h,0f65h,0f02h,ffffh,3200h,5f00h,0369h,0148h,1a3fh,0009h,0f76h,d7cah,1e13h,d8cbh,0feah,0314h,0500h,0effh,0000h,6200h,1c00h,0ea4h,1403h,1e05h,1a34h,7f18h,2606h,"
+}

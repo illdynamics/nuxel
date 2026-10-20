@@ -1,0 +1,9 @@
+# console /dev/ttyACM0
+===== ls -l /usr/bin/nuxel-bridge /usr/bin/nuxel-http-bridge; sha256sum /usr/bin/nuxel-bridge /usr/bin/nuxel-http-bridge /usr/lib/nuxel/nuxel-bridge/api.py /usr/lib/nuxel/nuxel-bridge/bridge.py; echo ---imports---; grep -n "sys.path\|from api\|import api\|from bridge\|import bridge\|/usr/lib/nuxel" /usr/bin/nuxel-bridge /usr/bin/nuxel-http-bridge | head -20   [rc=0 frame=9e835f2c sha_ok=yes]
+    -rwxr-xr-x 1 root root 40860 Oct 20 11:21 /usr/bin/nuxel-bridge
+    -rwxr-xr-x 1 root root 44141 Oct 20 10:39 /usr/bin/nuxel-http-bridge
+    7ce3f9c0e4e460128129c01088dda78dbd514f0d7e56a647a5446b9f564254dc  /usr/bin/nuxel-bridge
+    ba5c43781b97a64f1a0a3607d24478f0c3a8a06b5616c6b1a63e814f4523bb31  /usr/bin/nuxel-http-bridge
+    3632ae12773c717d95abf0068c690fc718c179c8567833649490e62d8aa05d25  /usr/lib/nuxel/nuxel-bridge/api.py
+    d6979acb03f66238647db15ba5a792445d39eda77296d49ac683e1b2a8d4fe05  /usr/lib/nuxel/nuxel-bridge/bridge.py
+    ---imports---

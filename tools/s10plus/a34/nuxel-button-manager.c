@@ -415,6 +415,31 @@ static void osd_volume(void) {
   publish("VOLUME element=%s value=%ld pct=%d", snd_mixer_selem_get_name(selem), vol_cur, pct);
 }
 
+/* Nonblocking audible volume preview. Spawn in a detached grandchild so
+ * the hardware-key event loop never waits for decoding or a busy ALSA PCM.
+ * The helper reads the real current mixer state; it never bypasses the 25%
+ * bring-up cap. The wrapper is optional on older deployed phone revisions. */
+static void cue_volume_preview(int pct) {
+  if (pct <= 0 || access("/usr/libexec/nuxel/nuxel-sound-cue", X_OK) != 0) return;
+  char b[8];
+  snprintf(b, sizeof b, "%d", pct);
+  pid_t pid = fork();
+  if (pid < 0) { audit("VOLUME_CUE_FORK_FAILED errno=%d", errno); return; }
+  if (pid == 0) {
+    pid_t player = fork();
+    if (player < 0) _exit(1);
+    if (player == 0) {
+      setsid();
+      execl("/usr/libexec/nuxel/nuxel-sound-cue", "nuxel-sound-cue",
+            "volume", "--level", b, (char *)NULL);
+      _exit(127);
+    }
+    _exit(0);
+  }
+  int status = 0;
+  while (waitpid(pid, &status, 0) < 0 && errno == EINTR) {}
+}
+
 static void volume_step(int dir) {
   if (mixer_open_dev() < 0 || !selem) { osd_volume(); return; }
   long step = nuxel_fsm_volume_step(vol_min, vol_max);   /* same formula as A32 */
@@ -426,6 +451,9 @@ static void volume_step(int dir) {
   vol_cur = v;
   audit("VOLUME_STEP dir=%d value=%ld step=%ld ceiling=%ld capped=%d", dir, v, step, ceiling, mixer_capped);
   osd_volume();
+  /* Preview at the successfully selected ALSA mixer level (not previous). */
+  int pct = (vol_max > vol_min) ? (int)(((vol_cur - vol_min) * 100) / (vol_max - vol_min)) : 0;
+  cue_volume_preview(pct);
 }
 
 static void volume_mute_toggle(void) {

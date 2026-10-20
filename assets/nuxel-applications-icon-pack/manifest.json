@@ -1,0 +1,1215 @@
+{
+  "source_file": "nuxel-app-icons-full.jpg",
+  "icon_count": 71,
+  "canvas": "128x128 RGBA",
+  "background": "true alpha transparency",
+  "assets": [
+    {
+      "filename": "01-01_terminal.png",
+      "row": 1,
+      "col": 1,
+      "display_name": "Terminal",
+      "source_bbox": [
+        40,
+        99,
+        128,
+        188
+      ],
+      "size": [
+        128,
+        128
+      ],
+      "transparent": true
+    },
+    {
+      "filename": "01-02_snekbyte.png",
+      "row": 1,
+      "col": 2,
+      "display_name": "Snekbyte",
+      "source_bbox": [
+        155,
+        98,
+        241,
+        182
+      ],
+      "size": [
+        128,
+        128
+      ],
+      "transparent": true
+    },
+    {
+      "filename": "01-03_poop-o-meter.png",
+      "row": 1,
+      "col": 3,
+      "display_name": "Poop O Meter",
+      "source_bbox": [
+        283,
+        116,
+        342,
+        171
+      ],
+      "size": [
+        128,
+        128
+      ],
+      "transparent": true
+    },
+    {
+      "filename": "01-04_authenticator.png",
+      "row": 1,
+      "col": 4,
+      "display_name": "Authenticator",
+      "source_bbox": [
+        388,
+        108,
+        465,
+        181
+      ],
+      "size": [
+        128,
+        128
+      ],
+      "transparent": true
+    },
+    {
+      "filename": "01-05_penguinterface.png",
+      "row": 1,
+      "col": 5,
+      "display_name": "Penguinterface",
+      "source_bbox": [
+        487,
+        107,
+        584,
+        185
+      ],
+      "size": [
+        128,
+        128
+      ],
+      "transparent": true
+    },
+    {
+      "filename": "01-06_pixel-envelope.png",
+      "row": 1,
+      "col": 6,
+      "display_name": "Pixel Envelope",
+      "source_bbox": [
+        605,
+        109,
+        696,
+        183
+      ],
+      "size": [
+        128,
+        128
+      ],
+      "transparent": true
+    },
+    {
+      "filename": "01-07_pixel-wings.png",
+      "row": 1,
+      "col": 7,
+      "display_name": "Pixel Wings",
+      "source_bbox": [
+        715,
+        104,
+        806,
+        180
+      ],
+      "size": [
+        128,
+        128
+      ],
+      "transparent": true
+    },
+    {
+      "filename": "01-08_phone.png",
+      "row": 1,
+      "col": 8,
+      "display_name": "Phone",
+      "source_bbox": [
+        836,
+        102,
+        914,
+        183
+      ],
+      "size": [
+        128,
+        128
+      ],
+      "transparent": true
+    },
+    {
+      "filename": "01-09_browser-swirl.png",
+      "row": 1,
+      "col": 9,
+      "display_name": "Browser Swirl",
+      "source_bbox": [
+        943,
+        100,
+        1030,
+        189
+      ],
+      "size": [
+        128,
+        128
+      ],
+      "transparent": true
+    },
+    {
+      "filename": "01-10_document.png",
+      "row": 1,
+      "col": 10,
+      "display_name": "Document",
+      "source_bbox": [
+        1060,
+        105,
+        1140,
+        185
+      ],
+      "size": [
+        128,
+        128
+      ],
+      "transparent": true
+    },
+    {
+      "filename": "01-11_settings.png",
+      "row": 1,
+      "col": 11,
+      "display_name": "Settings",
+      "source_bbox": [
+        1172,
+        99,
+        1251,
+        189
+      ],
+      "size": [
+        128,
+        128
+      ],
+      "transparent": true
+    },
+    {
+      "filename": "01-12_phone-alternative.png",
+      "row": 1,
+      "col": 12,
+      "display_name": "Phone Alternative",
+      "source_bbox": [
+        1284,
+        101,
+        1369,
+        189
+      ],
+      "size": [
+        128,
+        128
+      ],
+      "transparent": true
+    },
+    {
+      "filename": "02-01_messages.png",
+      "row": 2,
+      "col": 1,
+      "display_name": "Messages",
+      "source_bbox": [
+        40,
+        216,
+        129,
+        304
+      ],
+      "size": [
+        128,
+        128
+      ],
+      "transparent": true
+    },
+    {
+      "filename": "02-02_contacts.png",
+      "row": 2,
+      "col": 2,
+      "display_name": "Contacts",
+      "source_bbox": [
+        154,
+        215,
+        242,
+        303
+      ],
+      "size": [
+        128,
+        128
+      ],
+      "transparent": true
+    },
+    {
+      "filename": "02-03_day-calendar.png",
+      "row": 2,
+      "col": 3,
+      "display_name": "Day Calendar",
+      "source_bbox": [
+        272,
+        214,
+        354,
+        302
+      ],
+      "size": [
+        128,
+        128
+      ],
+      "transparent": true
+    },
+    {
+      "filename": "02-04_reader.png",
+      "row": 2,
+      "col": 4,
+      "display_name": "Reader",
+      "source_bbox": [
+        376,
+        217,
+        469,
+        300
+      ],
+      "size": [
+        128,
+        128
+      ],
+      "transparent": true
+    },
+    {
+      "filename": "02-05_folders.png",
+      "row": 2,
+      "col": 5,
+      "display_name": "Folders",
+      "source_bbox": [
+        493,
+        220,
+        584,
+        295
+      ],
+      "size": [
+        128,
+        128
+      ],
+      "transparent": true
+    },
+    {
+      "filename": "02-06_file-explorer.png",
+      "row": 2,
+      "col": 6,
+      "display_name": "File Explorer",
+      "source_bbox": [
+        600,
+        214,
+        697,
+        297
+      ],
+      "size": [
+        128,
+        128
+      ],
+      "transparent": true
+    },
+    {
+      "filename": "02-07_nuxtore.png",
+      "row": 2,
+      "col": 7,
+      "display_name": "Nuxtore",
+      "source_bbox": [
+        715,
+        205,
+        809,
+        296
+      ],
+      "size": [
+        128,
+        128
+      ],
+      "transparent": true
+    },
+    {
+      "filename": "02-08_sync.png",
+      "row": 2,
+      "col": 8,
+      "display_name": "Sync",
+      "source_bbox": [
+        835,
+        215,
+        915,
+        304
+      ],
+      "size": [
+        128,
+        128
+      ],
+      "transparent": true
+    },
+    {
+      "filename": "02-09_notes.png",
+      "row": 2,
+      "col": 9,
+      "display_name": "Notes",
+      "source_bbox": [
+        947,
+        214,
+        1031,
+        306
+      ],
+      "size": [
+        128,
+        128
+      ],
+      "transparent": true
+    },
+    {
+      "filename": "02-10_calendar-check.png",
+      "row": 2,
+      "col": 10,
+      "display_name": "Calendar Check",
+      "source_bbox": [
+        1059,
+        215,
+        1146,
+        307
+      ],
+      "size": [
+        128,
+        128
+      ],
+      "transparent": true
+    },
+    {
+      "filename": "02-11_software-updates.png",
+      "row": 2,
+      "col": 11,
+      "display_name": "Software Updates",
+      "source_bbox": [
+        1170,
+        216,
+        1260,
+        305
+      ],
+      "size": [
+        128,
+        128
+      ],
+      "transparent": true
+    },
+    {
+      "filename": "02-12_apps.png",
+      "row": 2,
+      "col": 12,
+      "display_name": "Apps",
+      "source_bbox": [
+        1284,
+        215,
+        1370,
+        304
+      ],
+      "size": [
+        128,
+        128
+      ],
+      "transparent": true
+    },
+    {
+      "filename": "03-01_camera.png",
+      "row": 3,
+      "col": 1,
+      "display_name": "Camera",
+      "source_bbox": [
+        35,
+        328,
+        132,
+        413
+      ],
+      "size": [
+        128,
+        128
+      ],
+      "transparent": true
+    },
+    {
+      "filename": "03-02_gallery.png",
+      "row": 3,
+      "col": 2,
+      "display_name": "Gallery",
+      "source_bbox": [
+        151,
+        326,
+        242,
+        414
+      ],
+      "size": [
+        128,
+        128
+      ],
+      "transparent": true
+    },
+    {
+      "filename": "03-03_audio-player.png",
+      "row": 3,
+      "col": 3,
+      "display_name": "Audio Player",
+      "source_bbox": [
+        262,
+        323,
+        353,
+        414
+      ],
+      "size": [
+        128,
+        128
+      ],
+      "transparent": true
+    },
+    {
+      "filename": "03-04_video-player.png",
+      "row": 3,
+      "col": 4,
+      "display_name": "Video Player",
+      "source_bbox": [
+        380,
+        322,
+        468,
+        414
+      ],
+      "size": [
+        128,
+        128
+      ],
+      "transparent": true
+    },
+    {
+      "filename": "03-05_maps.png",
+      "row": 3,
+      "col": 5,
+      "display_name": "Maps",
+      "source_bbox": [
+        491,
+        328,
+        585,
+        413
+      ],
+      "size": [
+        128,
+        128
+      ],
+      "transparent": true
+    },
+    {
+      "filename": "03-06_vpn.png",
+      "row": 3,
+      "col": 6,
+      "display_name": "Vpn",
+      "source_bbox": [
+        603,
+        321,
+        700,
+        413
+      ],
+      "size": [
+        128,
+        128
+      ],
+      "transparent": true
+    },
+    {
+      "filename": "03-07_vpn-protected.png",
+      "row": 3,
+      "col": 7,
+      "display_name": "Vpn Protected",
+      "source_bbox": [
+        716,
+        325,
+        812,
+        413
+      ],
+      "size": [
+        128,
+        128
+      ],
+      "transparent": true
+    },
+    {
+      "filename": "03-08_calendar.png",
+      "row": 3,
+      "col": 8,
+      "display_name": "Calendar",
+      "source_bbox": [
+        833,
+        325,
+        917,
+        413
+      ],
+      "size": [
+        128,
+        128
+      ],
+      "transparent": true
+    },
+    {
+      "filename": "03-09_brightness.png",
+      "row": 3,
+      "col": 9,
+      "display_name": "Brightness",
+      "source_bbox": [
+        944,
+        331,
+        1033,
+        420
+      ],
+      "size": [
+        128,
+        128
+      ],
+      "transparent": true
+    },
+    {
+      "filename": "03-10_volume.png",
+      "row": 3,
+      "col": 10,
+      "display_name": "Volume",
+      "source_bbox": [
+        1060,
+        327,
+        1149,
+        413
+      ],
+      "size": [
+        128,
+        128
+      ],
+      "transparent": true
+    },
+    {
+      "filename": "03-11_battery.png",
+      "row": 3,
+      "col": 11,
+      "display_name": "Battery",
+      "source_bbox": [
+        1181,
+        326,
+        1250,
+        415
+      ],
+      "size": [
+        128,
+        128
+      ],
+      "transparent": true
+    },
+    {
+      "filename": "03-12_settings-alternative.png",
+      "row": 3,
+      "col": 12,
+      "display_name": "Settings Alternative",
+      "source_bbox": [
+        1282,
+        327,
+        1370,
+        415
+      ],
+      "size": [
+        128,
+        128
+      ],
+      "transparent": true
+    },
+    {
+      "filename": "04-01_tor-privacy-tool.png",
+      "row": 4,
+      "col": 1,
+      "display_name": "Tor Privacy Tool",
+      "source_bbox": [
+        34,
+        444,
+        135,
+        517
+      ],
+      "size": [
+        128,
+        128
+      ],
+      "transparent": true
+    },
+    {
+      "filename": "04-02_permissions.png",
+      "row": 4,
+      "col": 2,
+      "display_name": "Permissions",
+      "source_bbox": [
+        148,
+        439,
+        244,
+        523
+      ],
+      "size": [
+        128,
+        128
+      ],
+      "transparent": true
+    },
+    {
+      "filename": "04-03_firewall.png",
+      "row": 4,
+      "col": 3,
+      "display_name": "Firewall",
+      "source_bbox": [
+        265,
+        448,
+        357,
+        523
+      ],
+      "size": [
+        128,
+        128
+      ],
+      "transparent": true
+    },
+    {
+      "filename": "04-04_system-settings.png",
+      "row": 4,
+      "col": 4,
+      "display_name": "System Settings",
+      "source_bbox": [
+        380,
+        435,
+        469,
+        523
+      ],
+      "size": [
+        128,
+        128
+      ],
+      "transparent": true
+    },
+    {
+      "filename": "04-05_network-settings.png",
+      "row": 4,
+      "col": 5,
+      "display_name": "Network Settings",
+      "source_bbox": [
+        490,
+        439,
+        584,
+        522
+      ],
+      "size": [
+        128,
+        128
+      ],
+      "transparent": true
+    },
+    {
+      "filename": "04-06_bluetooth-settings.png",
+      "row": 4,
+      "col": 6,
+      "display_name": "Bluetooth Settings",
+      "source_bbox": [
+        607,
+        439,
+        696,
+        525
+      ],
+      "size": [
+        128,
+        128
+      ],
+      "transparent": true
+    },
+    {
+      "filename": "04-07_system-info.png",
+      "row": 4,
+      "col": 7,
+      "display_name": "System Info",
+      "source_bbox": [
+        721,
+        458,
+        807,
+        522
+      ],
+      "size": [
+        128,
+        128
+      ],
+      "transparent": true
+    },
+    {
+      "filename": "04-08_information.png",
+      "row": 4,
+      "col": 8,
+      "display_name": "Information",
+      "source_bbox": [
+        832,
+        442,
+        918,
+        531
+      ],
+      "size": [
+        128,
+        128
+      ],
+      "transparent": true
+    },
+    {
+      "filename": "04-09_brightness-control.png",
+      "row": 4,
+      "col": 9,
+      "display_name": "Brightness Control",
+      "source_bbox": [
+        944,
+        434,
+        1034,
+        530
+      ],
+      "size": [
+        128,
+        128
+      ],
+      "transparent": true
+    },
+    {
+      "filename": "04-10_volume-control.png",
+      "row": 4,
+      "col": 10,
+      "display_name": "Volume Control",
+      "source_bbox": [
+        1060,
+        449,
+        1149,
+        525
+      ],
+      "size": [
+        128,
+        128
+      ],
+      "transparent": true
+    },
+    {
+      "filename": "04-11_battery-indicator.png",
+      "row": 4,
+      "col": 11,
+      "display_name": "Battery Indicator",
+      "source_bbox": [
+        1171,
+        463,
+        1252,
+        517
+      ],
+      "size": [
+        128,
+        128
+      ],
+      "transparent": true
+    },
+    {
+      "filename": "04-12_utilities.png",
+      "row": 4,
+      "col": 12,
+      "display_name": "Utilities",
+      "source_bbox": [
+        1285,
+        438,
+        1371,
+        525
+      ],
+      "size": [
+        128,
+        128
+      ],
+      "transparent": true
+    },
+    {
+      "filename": "05-01_root-sudo-control.png",
+      "row": 5,
+      "col": 1,
+      "display_name": "Root Sudo Control",
+      "source_bbox": [
+        40,
+        555,
+        133,
+        634
+      ],
+      "size": [
+        128,
+        128
+      ],
+      "transparent": true
+    },
+    {
+      "filename": "05-02_system-monitor.png",
+      "row": 5,
+      "col": 2,
+      "display_name": "System Monitor",
+      "source_bbox": [
+        149,
+        554,
+        242,
+        636
+      ],
+      "size": [
+        128,
+        128
+      ],
+      "transparent": true
+    },
+    {
+      "filename": "05-03_security-audit.png",
+      "row": 5,
+      "col": 3,
+      "display_name": "Security Audit",
+      "source_bbox": [
+        270,
+        554,
+        359,
+        637
+      ],
+      "size": [
+        128,
+        128
+      ],
+      "transparent": true
+    },
+    {
+      "filename": "05-04_developer-management.png",
+      "row": 5,
+      "col": 4,
+      "display_name": "Developer Management",
+      "source_bbox": [
+        379,
+        553,
+        471,
+        635
+      ],
+      "size": [
+        128,
+        128
+      ],
+      "transparent": true
+    },
+    {
+      "filename": "05-05_live-console.png",
+      "row": 5,
+      "col": 5,
+      "display_name": "Live Console",
+      "source_bbox": [
+        490,
+        557,
+        587,
+        638
+      ],
+      "size": [
+        128,
+        128
+      ],
+      "transparent": true
+    },
+    {
+      "filename": "05-06_downloader.png",
+      "row": 5,
+      "col": 6,
+      "display_name": "Downloader",
+      "source_bbox": [
+        606,
+        564,
+        701,
+        636
+      ],
+      "size": [
+        128,
+        128
+      ],
+      "transparent": true
+    },
+    {
+      "filename": "05-07_web-window.png",
+      "row": 5,
+      "col": 7,
+      "display_name": "Web Window",
+      "source_bbox": [
+        717,
+        558,
+        812,
+        640
+      ],
+      "size": [
+        128,
+        128
+      ],
+      "transparent": true
+    },
+    {
+      "filename": "05-08_notepad.png",
+      "row": 5,
+      "col": 8,
+      "display_name": "Notepad",
+      "source_bbox": [
+        832,
+        554,
+        916,
+        648
+      ],
+      "size": [
+        128,
+        128
+      ],
+      "transparent": true
+    },
+    {
+      "filename": "05-09_clipboard.png",
+      "row": 5,
+      "col": 9,
+      "display_name": "Clipboard",
+      "source_bbox": [
+        942,
+        555,
+        1035,
+        644
+      ],
+      "size": [
+        128,
+        128
+      ],
+      "transparent": true
+    },
+    {
+      "filename": "05-10_transfer.png",
+      "row": 5,
+      "col": 10,
+      "display_name": "Transfer",
+      "source_bbox": [
+        1056,
+        554,
+        1145,
+        638
+      ],
+      "size": [
+        128,
+        128
+      ],
+      "transparent": true
+    },
+    {
+      "filename": "05-11_terminal-alternative.png",
+      "row": 5,
+      "col": 11,
+      "display_name": "Terminal Alternative",
+      "source_bbox": [
+        1171,
+        559,
+        1254,
+        641
+      ],
+      "size": [
+        128,
+        128
+      ],
+      "transparent": true
+    },
+    {
+      "filename": "05-12_app-hub.png",
+      "row": 5,
+      "col": 12,
+      "display_name": "App Hub",
+      "source_bbox": [
+        1282,
+        551,
+        1373,
+        649
+      ],
+      "size": [
+        128,
+        128
+      ],
+      "transparent": true
+    },
+    {
+      "filename": "06-01_recorder.png",
+      "row": 6,
+      "col": 1,
+      "display_name": "Recorder",
+      "source_bbox": [
+        41,
+        672,
+        117,
+        750
+      ],
+      "size": [
+        128,
+        128
+      ],
+      "transparent": true
+    },
+    {
+      "filename": "06-02_calculator.png",
+      "row": 6,
+      "col": 2,
+      "display_name": "Calculator",
+      "source_bbox": [
+        162,
+        674,
+        242,
+        758
+      ],
+      "size": [
+        128,
+        128
+      ],
+      "transparent": true
+    },
+    {
+      "filename": "06-03_clock.png",
+      "row": 6,
+      "col": 3,
+      "display_name": "Clock",
+      "source_bbox": [
+        267,
+        669,
+        356,
+        755
+      ],
+      "size": [
+        128,
+        128
+      ],
+      "transparent": true
+    },
+    {
+      "filename": "06-04_casting-screen.png",
+      "row": 6,
+      "col": 4,
+      "display_name": "Casting Screen",
+      "source_bbox": [
+        385,
+        676,
+        473,
+        747
+      ],
+      "size": [
+        128,
+        128
+      ],
+      "transparent": true
+    },
+    {
+      "filename": "06-05_usb-connection.png",
+      "row": 6,
+      "col": 5,
+      "display_name": "Usb Connection",
+      "source_bbox": [
+        489,
+        663,
+        587,
+        750
+      ],
+      "size": [
+        128,
+        128
+      ],
+      "transparent": true
+    },
+    {
+      "filename": "06-06_audio-mixer.png",
+      "row": 6,
+      "col": 6,
+      "display_name": "Audio Mixer",
+      "source_bbox": [
+        608,
+        659,
+        697,
+        754
+      ],
+      "size": [
+        128,
+        128
+      ],
+      "transparent": true
+    },
+    {
+      "filename": "06-08_workspace.png",
+      "row": 6,
+      "col": 8,
+      "display_name": "Workspace",
+      "source_bbox": [
+        833,
+        665,
+        921,
+        757
+      ],
+      "size": [
+        128,
+        128
+      ],
+      "transparent": true
+    },
+    {
+      "filename": "06-09_game-controller.png",
+      "row": 6,
+      "col": 9,
+      "display_name": "Game Controller",
+      "source_bbox": [
+        933,
+        672,
+        1032,
+        753
+      ],
+      "size": [
+        128,
+        128
+      ],
+      "transparent": true
+    },
+    {
+      "filename": "06-10_network-tools.png",
+      "row": 6,
+      "col": 10,
+      "display_name": "Network Tools",
+      "source_bbox": [
+        1054,
+        674,
+        1149,
+        755
+      ],
+      "size": [
+        128,
+        128
+      ],
+      "transparent": true
+    },
+    {
+      "filename": "06-11_linux-tux.png",
+      "row": 6,
+      "col": 11,
+      "display_name": "Linux Tux",
+      "source_bbox": [
+        1170,
+        672,
+        1255,
+        758
+      ],
+      "size": [
+        128,
+        128
+      ],
+      "transparent": true
+    },
+    {
+      "filename": "06-12_linux-tux-alternative.png",
+      "row": 6,
+      "col": 12,
+      "display_name": "Linux Tux Alternative",
+      "source_bbox": [
+        1284,
+        669,
+        1372,
+        759
+      ],
+      "size": [
+        128,
+        128
+      ],
+      "transparent": true
+    }
+  ]
+}

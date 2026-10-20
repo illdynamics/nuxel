@@ -1,0 +1,52 @@
+# console /dev/ttyACM0
+===== echo ===KERNEL-LOG===; journalctl -k --no-pager 2>&1 | grep -Ei "cs35l41|cs47l92|madera|firmware.*(fail|load)|direct firmware" | tail -45; echo ===DMESG-HEAD===; dmesg 2>&1 | head -3   [rc=0 frame=8b9f618a sha_ok=yes]
+    ===KERNEL-LOG===
+    Oct 20 11:52:03 fedora kernel: beyond-madera sound: cs47l92-aif1 <-> UAIF0 mapping ok
+    Oct 20 11:52:03 fedora kernel: beyond-madera sound: beyond_uaif1_init (2)
+    Oct 20 11:52:03 fedora kernel: beyond-madera sound: multicodec <-> UAIF1 mapping ok
+    Oct 20 11:52:03 fedora kernel: beyond-madera sound: beyond_uaif2_init
+    Oct 20 11:52:03 fedora kernel: beyond-madera sound: cs47l92-aif3 <-> UAIF2 mapping ok
+    Oct 20 11:52:03 fedora kernel: beyond-madera sound: snd-soc-dummy-dai <-> UAIF3 mapping ok
+    Oct 20 11:52:03 fedora kernel: beyond-madera sound: snd-soc-dummy-dai <-> DSIF mapping ok
+    Oct 20 11:52:03 fedora kernel: beyond-madera sound: snd-soc-dummy-dai <-> SIFS0 mapping ok
+    Oct 20 11:52:03 fedora kernel: beyond-madera sound: snd-soc-dummy-dai <-> SIFS1 mapping ok
+    Oct 20 11:52:03 fedora kernel: beyond-madera sound: snd-soc-dummy-dai <-> SIFS2 mapping ok
+    Oct 20 11:52:03 fedora kernel: beyond-madera sound: snd-soc-dummy-dai <-> SIFS3 mapping ok
+    Oct 20 11:52:03 fedora kernel: beyond-madera sound: snd-soc-dummy-dai <-> SIFS4 mapping ok
+    Oct 20 11:52:03 fedora kernel: beyond-madera sound: snd-soc-dummy-dai <-> RSRC0 mapping ok
+    Oct 20 11:52:03 fedora kernel: beyond-madera sound: snd-soc-dummy-dai <-> RSRC1 mapping ok
+    Oct 20 11:52:03 fedora kernel: beyond-madera sound: snd-soc-dummy-dai <-> NSRC0 mapping ok
+    Oct 20 11:52:03 fedora kernel: beyond-madera sound: snd-soc-dummy-dai <-> NSRC1 mapping ok
+    Oct 20 11:52:03 fedora kernel: beyond-madera sound: snd-soc-dummy-dai <-> NSRC2 mapping ok
+    Oct 20 11:52:03 fedora kernel: beyond-madera sound: snd-soc-dummy-dai <-> NSRC3 mapping ok
+    Oct 20 11:52:03 fedora kernel: beyond-madera sound: snd-soc-dummy-dai <-> NSRC4 mapping ok
+    Oct 20 11:52:03 fedora kernel: beyond-madera sound: snd-soc-dummy-dai <-> NSRC5 mapping ok
+    Oct 20 11:52:03 fedora kernel: beyond-madera sound: snd-soc-dummy-dai <-> NSRC6 mapping ok
+    Oct 20 11:52:03 fedora kernel: compress asoc: cs47l92-dsp-trace <-> cs47l92-cpu-trace mapping ok
+    Oct 20 11:52:03 fedora kernel: beyond-madera sound: beyond_late_probe
+    Oct 20 11:52:03 fedora kernel: cs35l41 11-0040: cs35l41_main_amp_event PMD
+    Oct 20 11:52:03 fedora kernel: cs35l41 11-0041: cs35l41_main_amp_event PMD
+    Oct 20 11:52:03 fedora kernel: beyond-madera sound: disable abox profiling, ret=0
+    Oct 20 11:52:04 fedora kernel: madera spi2.0: Entering sleep mode
+    Oct 20 11:52:04 fedora kernel: madera spi2.0: Leaving sleep mode
+    Oct 20 11:52:04 fedora kernel: madera-extcon madera-extcon: set mic_mode[0] src=0x0 gnd=0x1 bias=0x4 gpio=0 hp_gnd=1
+    Oct 20 11:52:04 fedora kernel: input: Headset as /devices/platform/10470000.spi/spi_master/spi2/spi2.0/madera-extcon/input/input8
+    Oct 20 11:52:04 fedora kernel: madera-extcon madera-extcon: HPDET handler
+    Oct 20 11:52:04 fedora kernel: madera-extcon madera-extcon: HPDET Status: 5
+    Oct 20 11:52:04 fedora kernel: madera-extcon madera-extcon: jackdet IRQ
+    Oct 20 11:52:04 fedora kernel: madera-extcon madera-extcon: Extcon report: 62 is removed
+    Oct 20 11:52:04 fedora kernel: madera-extcon madera-extcon: Extcon report: 20 is removed
+    Oct 20 11:52:04 fedora kernel: madera-extcon madera-extcon: Extcon report: 21 is removed
+    Oct 20 11:52:04 fedora kernel: beyond-madera sound: beyond_madera_hpdet_cb(0) meas(21474836)
+    Oct 20 11:52:04 fedora kernel: beyond-madera sound: SET GAIN 16 step for 21474836 ohms
+    Oct 20 11:52:04 fedora kernel: beyond-madera sound: HPDET val=21474836.47 ohms
+    Oct 20 11:52:04 fedora kernel: beyond-madera sound: beyond_madera_micd_cb: madera_ear_mic = 0
+    Oct 20 11:52:04 fedora kernel: beyond-madera sound: MICDET present=N val=0.00 ohms
+    Oct 20 11:52:04 fedora kernel:   #0: beyond-madera
+    Oct 20 11:52:04 fedora kernel: madera spi2.0: Entering sleep mode
+    Oct 20 11:52:04 fedora systemd[1]: systemd-boot-clear-sysfail.service - Clear SysFail Entry If The Boot Is Successful skipped, unmet condition check ConditionPathExists=/sys/firmware/efi/efivars/LoaderEntrySysFail-4a67b082-0a4c-41cf-b6c7-440b29bb8c4f
+    Oct 20 11:53:01 fedora kernel: samsung-abox-core 18c55000.abox-core: Direct firmware load for calliope_sram.bin failed with error -2
+    ===DMESG-HEAD===
+    [ 8285.069412] exynos-pcie 13ed0000.pcie0: Current LTSSM State is 0xd with retry_cnt =0.
+    [ 8285.069473] exynos-pcie 13ed0000.pcie0: ack message is ok
+    [ 8285.069496] exynos-pcie 13ed0000.pcie0: received Enter_L23_READY DLLP packet

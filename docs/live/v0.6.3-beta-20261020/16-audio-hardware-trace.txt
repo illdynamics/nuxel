@@ -1,0 +1,46 @@
+# console /dev/ttyACM0
+===== echo ===FW===; find /lib/firmware -iname "*cs47l93*" -o -iname "*cs35l40*" -o -iname "*madera*" 2>/dev/null | head -30; echo ===MODULES===; lsmod 2>/dev/null | grep -Ei "madera|cs47l93|cs35l40|abox" || echo none; echo ===CODEC===; head -25 "/proc/asound/card0/codec#0" 2>/dev/null || echo no-codec-node; echo ===PCM===; ls /proc/asound/card0/; cat /proc/asound/card0/pcm0p/sub0/status 2>/dev/null || echo no-pcm-status; echo ===DAPM===; ls -l /sys/kernel/debug/asoc/beyond-madera/ 2>&1 | head; echo ===UCM===; find /usr/share/alsa/ucm2 -maxdepth 2 \( -iname "*madera*" -o -iname "*beyond*" \) 2>/dev/null | head   [rc=0 frame=419b6096 sha_ok=yes]
+    ===FW===
+    ===MODULES===
+    none
+    ===CODEC===
+    no-codec-node
+    ===PCM===
+    compr42
+    compr5
+    id
+    pcm0p
+    pcm10p
+    pcm11p
+    pcm12c
+    pcm13c
+    pcm14c
+    pcm15c
+    pcm16c
+    pcm17c
+    pcm18c
+    pcm19c
+    pcm1p
+    pcm20c
+    pcm21c
+    pcm22p
+    pcm2p
+    pcm3p
+    pcm4p
+    pcm6p
+    pcm7p
+    pcm8p
+    pcm9p
+    closed
+    ===DAPM===
+    total 0
+    drwxr-xr-x 3 root root 0 Jan  1  1970 15510000.vts
+    drwxr-xr-x 3 root root 0 Jan  1  1970 18c50000.abox
+    drwxr-xr-x 3 root root 0 Jan  1  1970 18c50500.abox-uaif
+    drwxr-xr-x 3 root root 0 Jan  1  1970 18c50510.abox-uaif
+    drwxr-xr-x 3 root root 0 Jan  1  1970 18c50520.abox-uaif
+    drwxr-xr-x 3 root root 0 Jan  1  1970 18c50530.abox-uaif
+    drwxr-xr-x 3 root root 0 Jan  1  1970 18c50550.abox-dsif
+    drwxr-xr-x 3 root root 0 Jan  1  1970 18c51000.abox-rdma
+    drwxr-xr-x 3 root root 0 Jan  1  1970 18c51100.abox-rdma
+    ===UCM===

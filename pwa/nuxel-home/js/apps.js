@@ -73,6 +73,13 @@ const NUXEL_APPS = {
         capabilities: ['notifications:send'],
         docked: false,
     },
+    'org.nuxel.Browser': {
+        id: 'org.nuxel.Browser', name: 'Browser', icon: '🌐', color: '#297ad7',
+        category: 'tools', type: 'pwa',
+        url: '/pwa/nuxel-apps/browser/index.html',
+        description: 'WebKit browser (external navigation by user consent)',
+        capabilities: ['network:outbound', 'storage:persistent'], docked: false,
+    },
     'org.nuxel.Notes': {
         id: 'org.nuxel.Notes',
         name: 'Notes',
@@ -157,6 +164,32 @@ const NUXEL_APPS = {
         docked: false,
     },
 };
+
+// Launcher artwork is intentionally separate from the canonical app registry:
+// native consumers still receive their stable textual icon field while Home
+// renders the supplied PNG pack everywhere an app is shown.
+const NUXEL_APP_ICON_ASSETS = {
+    'nuxel-dialer': '/assets/nuxel-applications-icon-pack/01-08_phone.png?v=a37',
+    'nuxel-messages': '/assets/nuxel-applications-icon-pack/02-01_messages.png?v=a37',
+    'nuxel-contacts': '/assets/nuxel-applications-icon-pack/02-02_contacts.png?v=a37',
+    'org.nuxel.Mail': '/assets/nuxel-applications-icon-pack/01-06_pixel-envelope.png?v=a37',
+    'org.nuxel.Calendar': '/assets/nuxel-applications-icon-pack/02-03_day-calendar.png?v=a37',
+    'org.nuxel.Browser': '/assets/nuxel-applications-icon-pack/01-09_browser-swirl.png?v=a43',
+    'org.nuxel.Notes': '/assets/nuxel-applications-icon-pack/02-09_notes.png?v=a37',
+    'org.nuxel.Files': '/assets/nuxel-applications-icon-pack/02-06_file-explorer.png?v=a37',
+    'nuxel-camera': '/assets/nuxel-applications-icon-pack/03-01_camera.png?v=a37',
+    'nuxel-settings': '/assets/nuxel-applications-icon-pack/01-11_settings.png?v=a37',
+    'org.nuxel.Terminal': '/assets/nuxel-applications-icon-pack/01-01_terminal.png?v=a37',
+    'org.nuxel.LiveConsole': '/assets/nuxel-applications-icon-pack/05-05_live-console.png?v=a37',
+};
+
+function nuxelAppIcon(app) {
+    const src = (app && (app.iconAsset || NUXEL_APP_ICON_ASSETS[app.id])) || '';
+    if (!src) return '<span>' + ((app && app.icon) || '📱') + '</span>';
+    const name = String((app && app.name) || 'App').replace(/[&<>'"]/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#39;', '"':'&quot;' }[c]));
+    return '<img src="' + src + '" alt="' + name + '" draggable="false" onerror="this.hidden=true;this.nextElementSibling.hidden=false"><span class="nuxel-icon-fallback" hidden>' + ((app && app.icon) || '📱') + '</span>';
+}
+try { window.NuxelAppIcon = nuxelAppIcon; } catch (e) { /* non-DOM registry test */ }
 
 // App state management
 class AppRegistry {

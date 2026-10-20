@@ -39,15 +39,16 @@ REPO = nl.repo_root_from_here()
 MANIFEST = os.path.join(REPO, "tools", "beta", "live", "deploy-manifest.json")
 
 #: sha256 of json.dumps(core_groups, sort_keys=True, separators=(",",":")) — the
-#: seven briq-10b groups exactly as they were before this briq extended the
+#: seven core groups as present in the supplied v0.6.3-beta archive before extending the
 #: manifest.  If this changes, the unrun core plan changed, which is forbidden.
-CORE_GROUPS_DIGEST = "42abb5be3c301324c1a5553b568838571819853a6764c847084dacd9d30daf65"
+CORE_GROUPS_DIGEST = "013c055c3e347d8e10afb950cf9d83a1d49401f45b99cf3517d9ee8b5229eb83"
 CORE_GROUP_IDS = ["launcher-pwa", "status-bar-safe-zones", "session-units",
                   "animation-handoff", "touch-and-buttons", "audio-and-network-config",
                   "console-and-kernel-side-followups"]
 EXTENSION_GROUP_IDS = ["pwa-app-suite", "pwa-shared-runtime", "app-registry-consumers",
                        "configs-nuxel-remaining", "s10plus-a33-runtime", "services-runtime",
-                       "native-shell-sources", "boot-animation-runtime", "packages-reconcile"]
+                       "native-shell-sources", "boot-animation-runtime", "packages-reconcile",
+                       "nuxel-branding-sounds-and-icons"]
 
 
 def manifest():
@@ -92,11 +93,11 @@ class TestCorePlanIsFrozen(unittest.TestCase):
         self.assertEqual(hashlib.sha256(canon.encode()).hexdigest(), CORE_GROUPS_DIGEST,
                          "the core briq-10b groups must stay byte-identical")
 
-    def test_core_plan_still_has_its_37_steps_and_4_blocks(self):
+    def test_core_plan_still_has_its_38_steps_and_4_blocks(self):
         plan = plan_of(manifest())
         core_steps = [s for s in plan["steps"] if s["group"] in CORE_GROUP_IDS]
-        self.assertEqual(len(core_steps), 37,
-                         "the unrun core plan is 7 groups / 37 file steps")
+        self.assertEqual(len(core_steps), 38,
+                         "the uploaded current core plan is 7 groups / 38 file steps")
         self.assertEqual([s["group"] for s in plan["skipped"]],
                          ["console-and-kernel-side-followups"])
         self.assertTrue(plan["skipped"][0]["verdict"] == "BLOCKED_KERNEL")

@@ -1,0 +1,13 @@
+NUXEL A39 — LIVE USB DEPLOY & VERIFY 🐧🔥
+
+Use the supplied A39 full repo. Read DEPLOY-A39.md, then inspect the live Galaxy S10+ over the working USB console. This repo is not proof of installation.
+
+1. Back up the active launcher/webroot, user Home layout/settings, affected dock PNG/JPG paths; record hashes and rollback steps. NO FLASHING.
+2. Run tools/s10plus/a39/tests/test_a39_assets.py and verify JS and existing regression checks. Run tools/s10plus/a39/package-live.sh to make the userspace-only, SHA-manifested patch. Inspect contents.
+3. Transfer and atomically deploy into the phone's verified active /usr/share/nuxel paths. Validate every PNG/JPG and source file SHA-256. Keep USB console recoverable. Reload only affected services and refresh WebKit caches without erasing Home preferences.
+4. On glass: default BG2 nuxel-bottom-bar2.png, switch to BG1 JPG and back, preview and persist; test app drawer long-press → Add to Home or finger drag, layout lock, 2 desktops, page dots, stationary wallpaper/dock, Home and Back, recents, battery styles, and ultra-thin noninteractive scroll indicators. Fix any failures and retest.
+5. Physical audio STILL UNVERIFIED: trace the real A37 ALSA speaker/codec/amplifier pipeline and missing routing/firmware with a safe capped test. Never assume successful MP3 decode means speaker success. Do not guess amplifier settings.
+6. Report SOURCE VERIFIED / DEPLOYMENT VERIFIED / HARDWARE VERIFIED separately. Obtain my feedback; then one safe normal reboot for persistence and startup sound test. Roll back failed userspace changes.
+
+NO PARTITION WRITES • NO KERNEL/BOOTLOADER CHANGES • NO UNVERIFIED MIXER VALUES.
+EXECUTE NOW. 🐧🔥

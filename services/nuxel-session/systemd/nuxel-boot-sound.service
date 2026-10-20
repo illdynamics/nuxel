@@ -1,0 +1,28 @@
+[Unit]
+Description=Nuxel startup cue after confirmed boot-animation to launcher handoff
+After=nuxel-wayland.service nuxel-wl-fb.service sound.target nuxel-button-manager.service
+Wants=nuxel-wayland.service nuxel-wl-fb.service
+ConditionPathExists=/usr/share/nuxel/assets/nuxel-boot-audio.mp3
+# The speaker route has not passed a physical owner check yet.  A failed
+# diagnostic cue used to leave a player process in this boot transaction for
+# over a minute.  An explicit verification marker lets the normal boot cue
+# resume only after the actual ALSA/UCM/amp route is confirmed; manual audio
+# diagnostics remain available regardless of this condition.
+ConditionPathExists=/var/lib/nuxel/audio/speaker-verified
+
+[Service]
+Type=oneshot
+ExecStart=/usr/libexec/nuxel/nuxel-sound-cue boot
+# Playback is diagnostic until the physical route is verified. It must never
+# hold the boot target hostage; nuxel-sound-cue itself bounds a player attempt
+# to 11 seconds and reaps its process group.
+TimeoutStartSec=18
+TimeoutStopSec=6
+StandardOutput=journal
+StandardError=journal
+# Deliberately NOT Restart=always: play once, not on every bridge crash.
+
+[Install]
+# Start only after the launcher unit is active. This places the non-essential
+# cue outside the multi-user critical path so Home becomes usable first.
+WantedBy=nuxel-wayland.service

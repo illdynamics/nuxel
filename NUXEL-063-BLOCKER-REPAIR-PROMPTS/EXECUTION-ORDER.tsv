@@ -1,0 +1,32 @@
+execution_order	issue_id	priority	prerequisites	filename	title
+1	04	P0	none	04-icon-and-cache-delivery.md	Custom icon loading and WebKit asset/cache consistency
+2	28	P0	none	28-fresh-image-parity.md	Fresh Fedora S10+ rootfs parity with live userspace
+3	02	P0	04,31	02-four-app-dock-bg.md	Four-app dock BG1/BG2 invisible or unswitchable
+4	01	P0	04,31	01-navigation-dock-artwork.md	Bottom navigation dock artwork and layering
+5	03	P1	01,02,04,27	03-quick-settings-artwork.md	Quick Settings shade and notification panel graphics
+6	31	P1	02,04,27	31-gestures-zoom-performance.md	Home gesture arbitration, app drawer, zoom and smoothness
+7	26	P1	09,10,17,18,19,20,27	26-honest-status-bar.md	Truthful single-instance status icons + battery/sound
+8	05	P1	28	05-cpu-meter.md	Actual CPU utilization and frequency meter
+9	06	P1	28	06-ram-meter.md	Real RAM usage, percentage and quantities
+10	07	P1	28	07-gpu-meter.md	Mali GPU utilization and frequency
+11	08	P2	28,07	08-gpu-shared-memory.md	Mali shared GPU allocation accounting
+12	09	P0	28	09-wifi-hardware.md	S10+ Broadcom radio firmware and driver bring-up
+13	10	P0	09,28	10-wifi-manager.md	Full NetworkManager-backed Wi-Fi Settings
+14	11	P0	09,10,12	11-internet-verification.md	End-to-end IP, DNS, TLS, browser connectivity
+15	12	P0	10,11,28	12-native-webkit-browser.md	Full native WebKit multi-tab Nuxel Browser
+16	13	P0	28	13-real-file-explorer.md	Real filesystem File Explorer operations and security
+17	14	P1	13	14-safe-zip-operations.md	Secure ZIP create, inspect and extract in Files
+18	15	P0	28	15-speaker-route.md	S10+ Exynos/Madera physical speaker playback path
+19	16	P0	15,25	16-boot-volume-cues.md	Boot cue and rapid volume feedback through verified output
+20	17	P1	15,16,27	17-sound-modes.md	System-wide Normal/Vibrate/Silent sound behavior
+21	18	P1	28,27	18-bluetooth-bringup.md	BlueZ HCI, pairing, profiles and connected devices
+22	23	P1	25,27	23-flashlight.md	Real LED torch backend and fail-honest toggle
+23	25	P1	22,23,24,16	25-button-shortcuts.md	Deterministic Power/Bixby/volume input FSM
+24	24	P1	25,28	24-real-screenshots.md	Power+VolumeDown authentic live-frame screenshots
+25	22	P1	28,24	22-camera.md	S10+ V4L2/ISP camera and real capture
+26	19	P2	28,27	19-nfc-bringup.md	Native S10+ NFC NCI and NDEF reader
+27	20	P2	09,28	20-gnss-location.md	Real GNSS, GeoClue, permissions and location lifecycle
+28	21	P2	11,20,12	21-maps.md	Nuxel Maps online tiles, OSM behavior and GNSS
+29	27	P0	09,10,17,18,19,20,23,26	27-quick-settings-backends.md	Actual Quick Settings toggles with synchronized backend
+30	29	P0	28	29-github-release-automation.md	Main-merge CI, tag, prerelease and verified S10+ artifacts
+31	30	P1	01-29	30-evidence-docs.md	Evidence-based documentation, progress and feature claims

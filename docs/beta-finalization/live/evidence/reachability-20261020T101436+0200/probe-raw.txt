@@ -1,0 +1,6 @@
+dev=/dev/ttyACM0 bytes_in=102 echo_ok=True error=None elapsed=0.306s
+sample:
+
+[?2004lsh: 4,9844,29329128ss,9882,: command not found
+[?2004hsh-5.3# 
+[?2004l[?2004hsh-5.3# 

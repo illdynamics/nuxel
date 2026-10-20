@@ -269,6 +269,13 @@ static const nuxel_fsm_menu_entry nuxel_fsm_menu[] = {
   { "reboot-safe-mode","Safe Mode",       "reboot-safe-mode",      1, "gate-closed-owner-absent" },
   { "reboot-diag",   "Reboot Diag",       "reboot-diag",           1, "gate-closed-owner-absent" },
   { "reboot-debug",  "Reboot Debug",      "reboot-debug",          1, "gate-closed-owner-absent" },
+  /* Browser-style controls deliberately live here, not in a long-press menu
+   * on the wallpaper.  They operate only on the foreground PWA; Reload
+   * launcher is explicit and never terminates the launcher process. */
+  { "back",          "Back",              "back",                  1, NULL },
+  { "forward",       "Forward",           "forward",               1, NULL },
+  { "stop",          "Stop loading",      "stop",                  1, NULL },
+  { "reload-launcher","Reload launcher",  "reload-launcher",       1, NULL },
   { "recovery",      "Recovery (Samsung)","enter-recovery",        0, "NO_FLASH_INVARIANT" },
   { "download-mode", "Download Mode (Odin)","enter-download-mode", 0, "NO_FLASH_INVARIANT" }
 };

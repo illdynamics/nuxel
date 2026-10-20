@@ -1,0 +1,32 @@
+[
+  {
+    "source": "build/out/s10plus/haptics/nuxel-pwa-host",
+    "target": "/usr/lib/nuxel/nuxel-pwa-host",
+    "sha256": "535958ba147596b6e5fe359986b227429e2e66a91db859cb91ed10d73c9df6e3",
+    "executable": true
+  },
+  {
+    "source": "services/nuxel-haptics/nuxel-hapticsd.py",
+    "target": "/usr/lib/nuxel/nuxel-hapticsd.py",
+    "sha256": "9264f64d952adb8a52f3e9169726ce51ad1184a634e8448b1a5680e79f86e8ff",
+    "executable": true
+  },
+  {
+    "source": "services/nuxel-haptics/nuxel-haptics.service",
+    "target": "/etc/systemd/system/nuxel-haptics.service",
+    "sha256": "4dded21d2e83efd7e2448431d671f8a6102d7fa0210712d5b0a862be7db53846",
+    "executable": false
+  },
+  {
+    "source": "services/nuxel-haptics/nuxel-haptics-sleep",
+    "target": "/usr/lib/systemd/system-sleep/nuxel-haptics-sleep",
+    "sha256": "83ef618ffffda6b96cc5b959dd9e4553f666671fd7c48b169dcbe45399e92177",
+    "executable": true
+  },
+  {
+    "source": "configs/nuxel/haptics/settings.json",
+    "target": "/etc/nuxel/haptics/settings.json",
+    "sha256": "4ee3f014ce668564103ea4620fb04f47a33622722d88221a7b2fefcd96142acb",
+    "executable": false
+  }
+]

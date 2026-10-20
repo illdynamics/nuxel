@@ -1,4 +1,4 @@
-// Nuxel Status Bar — v0.6.0-beta
+// Nuxel Status Bar — v0.6.3-beta
 //
 // SINGLE SOURCE OF TRUTH (briq-02d).  The handset used to serve a stale
 // v0.3.2 copy of this file while the repo (and the UTM VM) was on v0.4.x, so the
@@ -17,17 +17,22 @@
 class StatusBar {
     // Keep in sync with manifest.json ("nuxel.pwa_version") and sw.js
     // (CACHE_VERSION) - the registry test fails if the three ever diverge.
-    static get VERSION() { return '0.6.0-beta'; }
+    static get VERSION() { return '0.6.3-beta'; }
 
     constructor() {
         this.state = {
-            signalLevel: 4,
+            // Never draw a carrier signal merely because Home has not received
+            // a hardware report yet.  In particular, a generic ethernet/Wi-Fi
+            // connection is not evidence of a registered modem or inserted SIM.
+            signalLevel: 0,
             signalMax: 4,
             mobileNetwork: false,
+            cellularState: 'unknown',
             operator: '',
             wifiConnected: false,
-            batteryLevel: 100,
-            batteryCharging: true,
+            wifiState: 'unavailable',
+            batteryLevel: null,
+            batteryCharging: false,
         };
 
         this.state.notifications = [];
@@ -45,6 +50,7 @@ class StatusBar {
         };
         this._notifPollTimer = null;
         this._pollTimer = null;
+        this.batteryStyle = 'inside';
         this._init();
         this._pubVersion();
     }
@@ -181,10 +187,26 @@ class StatusBar {
 
     _renderSignal() {
         if (!this.elements.signal) return;
+        const state = this.state.cellularState;
+        const visible = state === 'registered';
+        this.elements.signal.hidden = !visible;
+        this.elements.signal.dataset.cellularState = state;
+        if (!visible) {
+            const labels = {
+                'no-sim': 'No SIM',
+                unavailable: 'Cellular adapter unavailable',
+                searching: 'Cellular network searching',
+                unknown: 'Cellular status unavailable',
+            };
+            this.elements.signal.setAttribute('aria-label', labels[state] || labels.unknown);
+            this.elements.signal.replaceChildren();
+            this._applySafeZones();
+            return;
+        }
         const barsCount = 4;
-        const activeBars = Math.max(1, Math.round(
+        const activeBars = Math.max(0, Math.min(barsCount, Math.round(
             (this.state.signalLevel / this.state.signalMax) * barsCount
-        ));
+        )));
 
         let html = '<span class="signal-bars">';
         for (let i = 0; i < barsCount; i++) {
@@ -193,34 +215,64 @@ class StatusBar {
         }
         html += '</span>';
         this.elements.signal.innerHTML = html;
+        this.elements.signal.setAttribute('aria-label', 'Cellular signal ' + activeBars + ' of ' + barsCount);
         this._applySafeZones();
     }
 
     _renderWifi() {
         if (!this.elements.wifi) return;
-        if (this.state.wifiConnected) {
-            this.elements.wifi.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4CAF50" stroke-width="2"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><circle cx="12" cy="20" r="1" fill="#4CAF50" stroke="none"/></svg>';
-            this.elements.wifi.style.opacity = '1';
-        } else {
-            this.elements.wifi.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="2"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><circle cx="12" cy="20" r="1" fill="#666" stroke="none"/></svg>';
-            this.elements.wifi.style.opacity = '0.4';
-        }
+        // The CSS glyph is the single Wi-Fi drawing.  Rendering an SVG inside
+        // it created the doubled icon seen on the handset.
+        this.elements.wifi.replaceChildren();
+        const state = this.state.wifiState;
+        const connected = state === 'connected' || state === 'internet';
+        const connecting = state === 'connecting';
+        const labels = {
+            disabled: 'Wi-Fi disabled',
+            unavailable: 'Wi-Fi adapter unavailable',
+            unmanaged: 'Wi-Fi adapter unmanaged',
+            enabled_disconnected: 'Wi-Fi enabled, not connected',
+            connecting: 'Wi-Fi connecting',
+            connected: 'Wi-Fi connected without verified internet',
+            internet: 'Wi-Fi internet verified',
+        };
+        this.elements.wifi.dataset.wifiState = state;
+        this.elements.wifi.setAttribute('aria-label', labels[state] || labels.unavailable);
+        this.elements.wifi.style.opacity = connected ? '1' : (connecting ? '0.7' : '0.4');
+        this.elements.wifi.style.setProperty('--wifi-colour', connected ? '#4CAF50' : (connecting ? '#d9a441' : '#666'));
+    }
+
+    setBatteryStyle(style) {
+        this.batteryStyle = ['inside', 'percentage', 'bar'].includes(style) ? style : 'inside';
+        this._renderBattery();
+        this._applySafeZones();
     }
 
     _renderBattery() {
         if (!this.elements.battery) return;
-        const level = Math.max(0, Math.min(100, this.state.batteryLevel));
+        this.elements.battery.className = 'status-icon battery-slot';
+        const known = Number.isFinite(this.state.batteryLevel);
+        const level = known ? Math.max(0, Math.min(100, this.state.batteryLevel)) : null;
         const charging = this.state.batteryCharging;
 
         let levelClass = '';
-        if (level <= 10) levelClass = 'critical';
-        else if (level <= 20) levelClass = 'warning';
+        if (level !== null && level <= 10) levelClass = 'critical';
+        else if (level !== null && level <= 20) levelClass = 'warning';
 
-        const width = Math.max(2, (level / 100) * 18);
-        this.elements.battery.innerHTML = '<span class="battery-icon' + (charging ? ' charging' : '') + '"><span class="battery-level ' + levelClass + '" style="width: ' + width + 'px"></span>' + (charging ? '<span class="charging-indicator">⚡</span>' : '') + '</span>';
-        if (this.elements.batteryPct) {
-            this.elements.batteryPct.textContent = level + '%';
+        const style = this.batteryStyle || 'inside';
+        const width = level === null ? 0 : level;
+        if (style === 'percentage') {
+            this.elements.battery.innerHTML = '';
+            this.elements.battery.style.display = 'none';
+            if (this.elements.batteryPct) { this.elements.batteryPct.hidden = false; this.elements.batteryPct.textContent = level === null ? '—' : level + '%'; }
+            return;
         }
+        this.elements.battery.style.display = '';
+        const inside = style === 'inside';
+        this.elements.battery.innerHTML = '<span class="battery-icon' + (charging ? ' charging' : '') + '">' +
+            '<span class="battery-level ' + levelClass + '" style="width:' + width + '%"></span>' +
+            (inside ? '<span class="battery-inside-pct">' + (level === null ? '—' : level + '%') + '</span>' : '') + '</span>';
+        if (this.elements.batteryPct) { this.elements.batteryPct.textContent = ''; this.elements.batteryPct.hidden = true; }
         this._applySafeZones();
     }
 
@@ -247,38 +299,61 @@ class StatusBar {
 
         // Battery
         if (status.battery) {
-            const level = Number(status.battery.level ?? this.state.batteryLevel);
+            const level = status.battery.level == null ? NaN : Number(status.battery.level);
             const charging = Boolean(status.battery.charging);
-            this.state.batteryLevel = Math.max(0, Math.min(100, level));
+            if (Number.isFinite(level) && level >= 0 && level <= 100) this.state.batteryLevel = level;
             this.state.batteryCharging = charging;
         }
 
-        // Modem / cellular
-        if (status.modem && status.modem.connected) {
+        // Modem / cellular.  Only an explicit registered/connected modem is
+        // allowed to produce carrier bars.  The old network fallback made a
+        // Wi-Fi or ethernet connection look like a SIM signal on this S10+.
+        const modem = status.modem;
+        const simAbsent = modem && (modem.sim_present === false ||
+            modem.sim === 'absent' || modem.sim_state === 'absent' ||
+            modem.state === 'no-sim');
+        if (modem && modem.connected && !simAbsent) {
             const signalQuality = Number(status.modem.signal_quality || 0);
             this.state.signalLevel = Math.round((signalQuality / 100) * this.state.signalMax);
             this.state.mobileNetwork = true;
+            this.state.cellularState = 'registered';
             this.state.operator = status.modem.operator || '';
-        } else if (status.network && status.network.connected) {
-            // Fallback to network signal for VM/ethernet
-            const networkSignal = Number(status.network.signal ?? 4);
-            this.state.signalLevel = Math.max(0, Math.min(this.state.signalMax, networkSignal));
+        } else if (simAbsent) {
+            this.state.signalLevel = 0;
             this.state.mobileNetwork = false;
-            this.state.operator = status.network.operator || '';
+            this.state.cellularState = 'no-sim';
+            this.state.operator = '';
+        } else if (modem && (modem.available === false || modem.state === 'unavailable')) {
+            this.state.signalLevel = 0;
+            this.state.mobileNetwork = false;
+            this.state.cellularState = 'unavailable';
+            this.state.operator = '';
+        } else if (modem && (modem.state === 'searching' || modem.searching === true)) {
+            this.state.signalLevel = 0;
+            this.state.mobileNetwork = false;
+            this.state.cellularState = 'searching';
+            this.state.operator = '';
         } else {
             this.state.signalLevel = 0;
             this.state.mobileNetwork = false;
+            this.state.cellularState = 'unknown';
+            this.state.operator = '';
         }
 
-        // Network / WiFi / Ethernet
-        if (status.network && status.network.connected) {
-            this.state.wifiConnected = Boolean(
-                status.network.wifi_enabled ||
-                status.network.type === 'wifi' ||
-                status.network.type === 'ethernet' ||
-                status.vm_mode
-            );
+        // Network / Wi-Fi. The bridge reports Wi-Fi device state separately
+        // from its own D-Bus reachability and generic ethernet routes.
+        const network = status.network || {};
+        if (typeof network.wifi_state === 'string') {
+            this.state.wifiState = network.wifi_state;
+            this.state.wifiConnected = Boolean(network.wifi_connected);
+        } else if (network.type === 'wifi' && network.connected) {
+            this.state.wifiState = network.connectivity === 4 ? 'internet' : 'connected';
+            this.state.wifiConnected = true;
+        } else if (network.wifi_enabled) {
+            this.state.wifiState = 'enabled_disconnected';
+            this.state.wifiConnected = false;
         } else {
+            this.state.wifiState = 'unavailable';
             this.state.wifiConnected = false;
         }
 

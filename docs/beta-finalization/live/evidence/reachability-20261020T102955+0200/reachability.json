@@ -1,0 +1,72 @@
+{
+  "adb_devices": [],
+  "at": "2026-10-20T10:29:55+0200",
+  "blocked_reason": null,
+  "capability": {
+    "pid": "0x4ee7",
+    "serial": "NUXEL-S10PLUS-0001",
+    "vid": "0x18d1"
+  },
+  "evidence_dir": "/x/nuxel/docs/beta-finalization/live/evidence/reachability-20261020T102955+0200",
+  "exit_code": 0,
+  "finished": "2026-10-20T10:29:56+0200",
+  "gadget_descriptor_present": false,
+  "host": "Linux 6.17.1-300.fc43.x86_64",
+  "nodes": [
+    {
+      "callout": "/dev/ttyACM0",
+      "dialin": "/dev/ttyACM0",
+      "pid": 20199,
+      "tty_base": "ttyACM",
+      "tty_device": "ttyACM0",
+      "tty_suffix": "0",
+      "vid": 6353
+    }
+  ],
+  "probe": {
+    "at": "2026-10-20T10:29:55+0200",
+    "bytes_in": 54,
+    "dev": "/dev/ttyACM0",
+    "echo_ok": true,
+    "elapsed_s": 0.302,
+    "error": null,
+    "reachable": true,
+    "sample": "\n\u001b[?2004l\u001b[?2004hsh-5.3# \n\u001b[?2004l\u001b[?2004hsh-5.3# "
+  },
+  "reachable": true,
+  "selected": {
+    "callout": "/dev/ttyACM0",
+    "dialin": "/dev/ttyACM0",
+    "match_stage": "vid+pid",
+    "pid": 20199,
+    "tty_base": "ttyACM",
+    "tty_device": "ttyACM0",
+    "tty_suffix": "0",
+    "vid": 6353
+  },
+  "steps": [
+    {
+      "detail": "/dev/ttyACM0 (matched vid+pid)",
+      "ok": true,
+      "step": "select-by-capability"
+    },
+    {
+      "detail": {
+        "elapsed_s": 0.836,
+        "framed": true,
+        "output_bytes": 52,
+        "raw_len": 703,
+        "rc": 0,
+        "rid": "ad472683",
+        "sha_ok": true
+      },
+      "ok": true,
+      "output": "uid=0(root) gid=0(root) groups=0(root)\nNXL-REACH-OK",
+      "step": "framed-command"
+    }
+  ],
+  "verdict": "REACHABLE",
+  "verdicts": {
+    "briq-10a-live-reachability-preflight": "REACHABLE"
+  }
+}

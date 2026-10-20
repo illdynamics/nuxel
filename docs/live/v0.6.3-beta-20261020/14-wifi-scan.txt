@@ -1,0 +1,51 @@
+# console /dev/ttyACM0
+===== echo ===RADIO===; nmcli radio all; echo ===RFKILL===; rfkill list; echo ===DEV===; nmcli -f DEVICE,TYPE,STATE,CONNECTION device status | head -8; echo ===FIRMWARE===; ls -l /lib/firmware/brcm/*4375* 2>/dev/null || echo no-4375-firmware; echo ===SCAN===; nmcli device wifi rescan 2>&1; sleep 6; nmcli -f IN-USE,SSID,SIGNAL,SECURITY device wifi list 2>&1 | head -25   [rc=0 frame=d3736065 sha_ok=yes]
+    ===RADIO===
+    WIFI-HW  WIFI     WWAN-HW  WWAN
+    enabled  enabled  missing  enabled
+    ===RFKILL===
+    0: bcm43xx Bluetooth: Bluetooth
+    	Soft blocked: yes
+    	Hard blocked: no
+    1: phy0: Wireless LAN
+    	Soft blocked: no
+    	Hard blocked: no
+    2: brcmfmac-wifi: Wireless LAN
+    	Soft blocked: no
+    	Hard blocked: no
+    ===DEV===
+    DEVICE         TYPE      STATE         CONNECTION
+    wlan0          wifi      disconnected  --
+    wlan1          wifi      disconnected  --
+    p2p-dev-wlan0  wifi-p2p  disconnected  --
+    p2p-dev-wlan1  wifi-p2p  disconnected  --
+    p2p0           ethernet  unmanaged     --
+    ip6_vti0       iptunnel  unmanaged     --
+    ip6tnl0        iptunnel  unmanaged     --
+    ===FIRMWARE===
+    no-4375-firmware
+    ===SCAN===
+    IN-USE  SSID                            SIGNAL  SECURITY
+            Snoerbreuk                      79      WPA2
+            Snoerbreuk_ExtraWiFi2G          79      WPA2
+            Snoerbreuk                      69      WPA2
+            Ziggo1659159                    35      WPA2
+            Fam. Linders                    34      WPA2
+            --                              32      WPA2
+            FRITZ!Box 7560 DL               29      WPA2
+            Ziggo5113835                    27      WPA2
+            --                              24      WPA2
+            Ziggo5113835                    17      WPA2
+            DIRECT-3Q-EPSON-ET-2870 Series  15      WPA2
+            Ziggo1659159                    12      WPA2
+    IN-USE  SSID                            SIGNAL  SECURITY
+            Snoerbreuk                      79      WPA2
+            Snoerbreuk_ExtraWiFi2G          79      WPA2
+            Snoerbreuk                      69      WPA2
+            Ziggo1659159                    35      WPA2
+            Fam. Linders                    34      WPA2
+            --                              32      WPA2
+            FRITZ!Box 7560 DL               29      WPA2
+            Ziggo5113835                    27      WPA2
+            --                              24      WPA2
+            Ziggo5113835                    17      WPA2

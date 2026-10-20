@@ -1,0 +1,118 @@
+# console /dev/ttyACM0
+===== echo ===UNIT===; systemctl cat nuxel-wayland 2>&1 | head -60; echo ===SESSION===; sed -n "1,120p" /usr/lib/nuxel/nuxel-session.sh 2>/dev/null   [rc=0 frame=35fb612f sha_ok=yes]
+    ===UNIT===
+    # /etc/systemd/system/nuxel-wayland.service
+    [Unit]
+    Description=Nuxel phone Wayland session (phoc headless + Nuxel Home launcher)
+    Documentation=file:/usr/share/doc/nuxel/UTM-LAUNCHER-PORT.md
+    # Bounded restarts: never spin into a process storm.
+    StartLimitIntervalSec=60
+    StartLimitBurst=5
+    After=nuxel-touch-arm.service seatd.service
+    Wants=nuxel-touch-arm.service seatd.service
+    Before=nuxel-wl-fb.service nuxel-fallback.service
+    [Service]
+    Type=simple
+    # phoc with wlroots 0.19: headless backend + pixman renderer is the only Wayland
+    # output this kernel (CONFIG_DRM unset) can offer.
+    Environment=WLR_BACKENDS=headless,libinput
+    # The handset has NO VT (/dev/tty0, /sys/class/vtconsole, /proc/consoles all
+    # absent), so a VT-bound seat can never activate; libseat's noop backend
+    # satisfies wlroots' session requirement and device access is granted by the
+    # preloaded libinput path shim.  See tools/s10plus/a31/nuxel-libinput-path.c.
+    Environment=LIBSEAT_BACKEND=noop
+    # If the panel node is absent (charger mode: sec_ts never binds) wlroots would
+    # fail the whole backend and phoc would restart-loop.  The shim records what it
+    # found in /run/nuxel-libinput-path.state, so "zero devices" stays visible.
+    Environment=WLR_LIBINPUT_NO_DEVICES=1
+    # The udev daemon is masked on this image (it cannot register workers on 4.14),
+    # so libinput's udev backend discovers zero devices; the shim redirects ONLY
+    # libinput's discovery step to its path backend and adds the real
+    # /dev/input/eventN node that carries INPUT_PROP_DIRECT.  Real evdev, real
+    # libinput parsing, real wl_touch - no synthesised events.
+    Environment=LD_PRELOAD=/usr/lib/nuxel/libnuxel-libinput-path.so
+    Environment=WLR_RENDERER=pixman
+    Environment=WLR_HEADLESS_OUTPUTS=1
+    Environment=XDG_RUNTIME_DIR=/run/nuxel-wayland
+    Environment=XDG_SESSION_TYPE=wayland
+    ExecStartPre=/bin/mkdir -p /run/nuxel-wayland
+    ExecStartPre=/bin/chmod 700 /run/nuxel-wayland
+    ExecStart=/usr/sbin/phoc --no-xwayland -C /etc/nuxel/phoc-phone.ini -E /usr/lib/nuxel/nuxel-session.sh
+    Restart=on-failure
+    RestartSec=3
+    [Install]
+    WantedBy=multi-user.target
+    # /usr/lib/systemd/system/service.d/10-timeout-abort.conf
+    # This file is part of the systemd package.
+    # See https://fedoraproject.org/wiki/Changes/Shorter_Shutdown_Timer.
+    #
+    # To facilitate debugging when a service fails to stop cleanly,
+    # TimeoutStopFailureMode=abort is set to "crash" services that fail to stop in
+    # the time allotted. This will cause the service to be terminated with SIGABRT
+    # and a coredump to be generated.
+    #
+    # To undo this configuration change, create a mask file:
+    #   sudo mkdir -p /etc/systemd/system/service.d
+    #   sudo ln -sv /dev/null /etc/systemd/system/service.d/10-timeout-abort.conf
+    [Service]
+    TimeoutStopFailureMode=abort
+    ===SESSION===
+    #!/bin/sh
+    # Nuxel phone session — runs INSIDE the phoc compositor (phoc -E ...).
+    #
+    # Composition (identical to the UTM VM, minus the VM's browser that is not
+    # installed on the handset - nuxel-pwa-host takes that role):
+    #   1. the launcher's own static web server (services/nuxel-web.service in the
+    #      VM: python3 -m http.server 8000 --bind 127.0.0.1, docroot with the
+    #      pwa/ tree), docroot /usr/share/nuxel;
+    #   2. the real launcher (WebKitGTK view) through nuxel-pwa-host.
+    #
+    # DOCROOT LAYOUT (fixed A29b, measured): services/nuxel-web.service does NOT
+    # serve pwa/nuxel-home.  It serves the repository root so that the launcher's own
+    # relative reference `../nuxel-common/bridge.js` (index.html line 125, enforced
+    # by pwa/nuxel-common/verify-wiring.js) resolves.  The launcher URL is therefore
+    # /pwa/nuxel-home/index.html and BOTH pwa/nuxel-home and pwa/nuxel-common must
+    # exist under the docroot.  The first phone image staged only /usr/share/nuxel/
+    # nuxel-home (no pwa/ level, no nuxel-common), which 404'd the index and the
+    # bridge module; this script now resolves the layout and says which one it used.
+    #
+    # Software rendering is forced because this kernel has no DRM/EGL device.
+    set -eu
+    export XDG_SESSION_TYPE=wayland
+    export GDK_BACKEND=wayland
+    export WEBKIT_DISABLE_COMPOSITING_MODE=1
+    export LIBGL_ALWAYS_SOFTWARE=1
+    export GSK_RENDERER=cairo
+    LOG=/run/nuxel-session.log
+    say() { echo "$(date -u +%FT%TZ) $*" >>"$LOG"; }
+    DOCROOT=/usr/share/nuxel
+    # Layout A = the VM's (and the image builder's) pwa/ tree; layout B = the flat
+    # copy the first handset image shipped.  Chosen by the launcher's own index.html.
+    HOME_REL=""
+    for c in /pwa/nuxel-home /nuxel-home; do
+      if [ -f "$DOCROOT$c/index.html" ]; then HOME_REL="$c"; break; fi
+    done
+    if [ -z "$HOME_REL" ]; then
+      say "FATAL launcher index.html not found under $DOCROOT (looked for /pwa/nuxel-home, /nuxel-home)"
+      exit 1
+    fi
+    [ -n "${NUXEL_HOME_URL:-}" ] || NUXEL_HOME_URL="http://127.0.0.1:8000$HOME_REL/index.html"
+    # the ES module the launcher imports by relative path
+    BRIDGE="$DOCROOT${HOME_REL%/*}/nuxel-common/bridge.js"
+    if [ -f "$BRIDGE" ]; then BRIDGE_OK=yes; else BRIDGE_OK=no; fi
+    say() { echo "$(date -u +%FT%TZ) $*" >>"$LOG"; }
+    say "session start WAYLAND_DISPLAY=${WAYLAND_DISPLAY:-?} layout=$HOME_REL bridge_ok=$BRIDGE_OK url=$NUXEL_HOME_URL"
+    if ! curl -fsS -o /dev/null "$NUXEL_HOME_URL" 2>/dev/null; then
+      ( cd "$DOCROOT" && exec python3 -m http.server 8000 --bind 127.0.0.1 ) >/run/nuxel-web.log 2>&1 &
+      WEB_PID=$!
+      for i in $(seq 1 40); do
+        curl -fsS -o /dev/null "$NUXEL_HOME_URL" && break
+        sleep 0.25
+      done
+      if curl -fsS -o /dev/null "$NUXEL_HOME_URL"; then READY=yes; else READY=no; fi
+      say "web server pid=$WEB_PID ready=$READY"
+    else
+      say "web server already serving"
+    fi
+    say "starting launcher host url=$NUXEL_HOME_URL"
+    exec /usr/lib/nuxel/nuxel-pwa-host

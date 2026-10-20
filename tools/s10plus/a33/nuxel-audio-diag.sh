@@ -669,7 +669,7 @@ cmd_selftest() {
     name="$(basename "$n")"
     exp="$(cat "$n/EXPECTED" 2>/dev/null || echo '')"
     [ -n "$exp" ] || { say "SKIP $name (no EXPECTED)"; continue; }
-    got="$(NUXEL_DIAG_ROOT="$n" NUXEL_DIAG_NO_SYSTEM=1 "$SELF_PATH" status 2>&1 \
+    got="$(NUXEL_DIAG_ROOT="$n" NUXEL_DIAG_NO_SYSTEM=1 bash "$SELF_PATH" status 2>&1 \
            | sed -n '/== verdict ==/,+1p' | sed -n '2p' | sed 's/^ *//' | cut -d' ' -f1)"
     if [ "$got" = "$exp" ]; then say "PASS $name verdict=$got"
     else say "FAIL $name expected=$exp got=${got:-<none>}"; fail=$((fail+1)); fi

@@ -1,0 +1,46 @@
+# console /dev/ttyACM0
+===== echo ===GREP===; grep -rn "nuxel:action\|reload-launcher" /usr/share/nuxel/pwa/nuxel-home/js /usr/share/nuxel/pwa/nuxel-home/index.html 2>/dev/null | head -20; echo ===UNITS===; systemctl list-units --type=service --all --no-pager 2>/dev/null | grep -i nuxel | head -20; echo ===TREE===; ps -o pid,ppid,user,args -p 5393; ps -o pid,ppid,user,args -p $(ps -o ppid= -p 5393) 2>/dev/null; echo ===WEBLOG===; ls -l /run/nuxel-web.log 2>/dev/null; tail -8 /run/nuxel-web.log 2>/dev/null   [rc=0 frame=c15d610f sha_ok=yes]
+    ===GREP===
+    /usr/share/nuxel/pwa/nuxel-home/js/app.js:266:        // `window.dispatchEvent(new CustomEvent('nuxel:action', ...))`.  An
+    /usr/share/nuxel/pwa/nuxel-home/js/app.js:279:            else if (action === 'reload-launcher') this.reloadLauncher();
+    /usr/share/nuxel/pwa/nuxel-home/js/app.js:283:        document.addEventListener('nuxel:action', onNuxelAction);
+    /usr/share/nuxel/pwa/nuxel-home/js/app.js:284:        window.addEventListener('nuxel:action', onNuxelAction);
+    /usr/share/nuxel/pwa/nuxel-home/js/app.js.prev:158:        // `window.dispatchEvent(new CustomEvent('nuxel:action', ...))`.  An
+    /usr/share/nuxel/pwa/nuxel-home/js/app.js.prev:171:        document.addEventListener('nuxel:action', onNuxelAction);
+    /usr/share/nuxel/pwa/nuxel-home/js/app.js.prev:172:        window.addEventListener('nuxel:action', onNuxelAction);
+    /usr/share/nuxel/pwa/nuxel-home/js/app.js.nuxel-rollback-20261018T1138:158:        // `window.dispatchEvent(new CustomEvent('nuxel:action', ...))`.  An
+    /usr/share/nuxel/pwa/nuxel-home/js/app.js.nuxel-rollback-20261018T1138:171:        document.addEventListener('nuxel:action', onNuxelAction);
+    /usr/share/nuxel/pwa/nuxel-home/js/app.js.nuxel-rollback-20261018T1138:172:        window.addEventListener('nuxel:action', onNuxelAction);
+    ===UNITS===
+      nuxel-boot-sound.service                 loaded    inactive dead    Nuxel startup cue after confirmed boot-animation to launcher handoff
+      nuxel-bootmode-oneshot.service           loaded    inactive dead    Nuxel one-shot boot mode consumer (verbose/safe/diag/debug flags)
+      nuxel-bridge.service                     loaded    active   running Nuxel Bridge - PWA to Native Phone Service Mediator
+      nuxel-button-manager.service             loaded    active   running Nuxel hardware button and gesture manager (single owner of gpio_keys)
+      nuxel-fallback.service                   loaded    inactive dead    Nuxel fallback framebuffer UI (only when the launcher fails)
+      nuxel-firstlight.service                 loaded    inactive dead    Nuxel S10+ first-light framebuffer hardware probe (not Phosh)
+      nuxel-haptics.service                    loaded    active   running Nuxel Samsung timed-output haptics service
+      nuxel-http-bridge.service                loaded    active   running Nuxel HTTP Bridge API
+      nuxel-metrics.service                    loaded    inactive dead    Nuxel on-demand Home hardware metrics
+      nuxel-network-udev-seed.service          loaded    inactive dead    Nuxel NetworkManager udev compatibility seed for S10+ Wi-Fi
+      nuxel-notifications.service              loaded    active   running Nuxel Notification Hub
+      nuxel-portal.service                     loaded    active   running Nuxel Portal Daemon
+      nuxel-touch-arm.service                  loaded    active   running Nuxel S10+ touchscreen arming (sec_ts stop->start, then hold open)
+      nuxel-ui.service                         loaded    inactive dead    Nuxel phone UI (fbdev-native, transitional - not Phosh)
+      nuxel-wayland.service                    loaded    active   running Nuxel phone Wayland session (phoc headless + Nuxel Home launcher)
+      nuxel-wl-fb.service                      loaded    active   running Nuxel display bridge (Wayland screencopy -> /dev/fb0 AMOLED)
+      seatd.service                            loaded    active   running Nuxel seat daemon (seatd) — backend session for wlroots/phoc input
+    ===TREE===
+        PID    PPID USER     COMMAND
+       5393    5358 root     /usr/lib/nuxel/nuxel-pwa-host
+        PID    PPID USER     COMMAND
+       5358       1 root     /usr/sbin/phoc --no-xwayland -C /etc/nuxel/phoc-phone.ini -E /usr/lib/nuxel/nuxel-session.sh
+    ===WEBLOG===
+    -rw-r--r-- 1 root root 515105 Oct 20 14:39 /run/nuxel-web.log
+    127.0.0.1 - - [20/Oct/2026 14:39:35] "GET /runtime/osd.json HTTP/1.1" 200 -
+    127.0.0.1 - - [20/Oct/2026 14:39:36] "GET /runtime/osd.json HTTP/1.1" 200 -
+    127.0.0.1 - - [20/Oct/2026 14:39:38] "GET /runtime/osd.json HTTP/1.1" 200 -
+    127.0.0.1 - - [20/Oct/2026 14:39:40] "GET /runtime/osd.json HTTP/1.1" 200 -
+    127.0.0.1 - - [20/Oct/2026 14:39:41] "GET /runtime/osd.json HTTP/1.1" 200 -
+    127.0.0.1 - - [20/Oct/2026 14:39:43] "GET /runtime/osd.json HTTP/1.1" 200 -
+    127.0.0.1 - - [20/Oct/2026 14:39:44] "GET /runtime/osd.json HTTP/1.1" 200 -
+    127.0.0.1 - - [20/Oct/2026 14:39:46] "GET /runtime/osd.json HTTP/1.1" 200 -
