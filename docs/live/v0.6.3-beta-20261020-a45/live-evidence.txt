@@ -1,0 +1,77 @@
+at=2026-10-20T21:19:07+02:00
+=== services ===
+active
+active
+inactive
+=== deployed hashes ===
+86ece237b397398edbb68098fe7a459ee31760b86d23966e51fec2c7bb14d5f9  /usr/share/nuxel/nuxel-home/index.html
+96461c930d88e00d4e261df5a0a5d4ed3ac170071f1bbe921bba3ea32865f3f4  /usr/share/nuxel/nuxel-home/css/style.css
+b4fac45ecb3993aba41505e37cc0324d7e00d7e577e6283c2fc25c8c983056c8  /usr/share/nuxel/nuxel-home/js/app.js
+71929ad36079f9b35b5e2a0083e064802db09d040ef68263621d9421a28de95a  /usr/share/nuxel/nuxel-home/js/navigation.js
+c80e9cc8203263d3415254dbc1dd4ca119f888e58974a215e3f37358d817683c  /usr/share/nuxel/nuxel-home/js/touch-keyboard.js
+=== shadowing blocks ===
+1792523765 NUXEL_INPUT NAV done action=back state=BACKGROUND page=0
+1792523765 NUXEL_INPUT NAV tap action=back state=BACKGROUND page=0
+1792523765 NUXEL_INPUT EVT app:lifecycle id=org.nuxel.Calendar state=BACKGROUND ts=1792523765461
+1792523765 NUXEL_INPUT EVT home:complete state=BACKGROUND page=0 ts=1792523765476
+1792523765 NUXEL_INPUT NAV done action=back state=BACKGROUND page=0
+1792523765 NUXEL_INPUT NAV tap action=back state=BACKGROUND page=0
+1792523765 NUXEL_INPUT EVT app:lifecycle id=org.nuxel.Calendar state=BACKGROUND ts=1792523765584
+1792523765 NUXEL_INPUT EVT home:complete state=BACKGROUND page=0 ts=1792523765594
+1792523765 NUXEL_INPUT NAV done action=back state=BACKGROUND page=0
+1792523782 NUXEL_INPUT EVT app:lifecycle id=org.nuxel.Calendar state=CLOSING ts=1792523782489
+1792523797 NUXEL_INPUT NAV tap action=back state=CLOSED page=0
+1792523797 NUXEL_INPUT NAV done action=back state=CLOSED page=0
+1792523797 NUXEL_INPUT NAV tap action=back state=CLOSED page=0
+1792523797 NUXEL_INPUT EVT home:complete state=CLOSED page=0 ts=1792523797485
+1792523797 NUXEL_INPUT NAV done action=back state=CLOSED page=0
+1792523808 NUXEL_INPUT NAV tap action=back state=ACTIVE page=0
+1792523808 NUXEL_INPUT NAV done action=back state=ACTIVE page=0
+1792523808 NUXEL_INPUT NAV tap action=back state=ACTIVE page=0
+1792523809 NUXEL_INPUT EVT home:complete state=BACKGROUND page=0 ts=1792523809015
+1792523809 NUXEL_INPUT NAV done action=back state=BACKGROUND page=0
+1792523809 NUXEL_INPUT NAV tap action=back state=BACKGROUND page=0
+1792523809 NUXEL_INPUT EVT home:complete state=BACKGROUND page=0 ts=1792523809374
+1792523809 NUXEL_INPUT NAV done action=back state=BACKGROUND page=0
+1792523809 NUXEL_INPUT NAV tap action=back state=BACKGROUND page=0
+1792523809 NUXEL_INPUT EVT home:complete state=BACKGROUND page=0 ts=1792523809499
+1792523809 NUXEL_INPUT NAV done action=back state=BACKGROUND page=0
+1792523810 NUXEL_INPUT NAV tap action=back state=BACKGROUND page=0
+1792523810 NUXEL_INPUT EVT home:complete state=BACKGROUND page=0 ts=1792523810344
+1792523810 NUXEL_INPUT NAV done action=back state=BACKGROUND page=0
+1792523810 NUXEL_INPUT NAV tap action=back state=BACKGROUND page=0
+1792523810 NUXEL_INPUT EVT home:complete state=BACKGROUND page=0 ts=1792523810459
+1792523810 NUXEL_INPUT NAV done action=back state=BACKGROUND page=0
+1792523814 NUXEL_INPUT NAV tap action=back state=BACKGROUND page=0
+1792523814 NUXEL_INPUT EVT home:complete state=BACKGROUND page=0 ts=1792523814700
+1792523814 NUXEL_INPUT NAV done action=back state=BACKGROUND page=0
+1792523852 NUXEL_HOME_NAV uri=http://127.0.0.1:8000/pwa/nuxel-home/index.html?boot=os&v=1792534558
+1792523858 NUXEL_INPUT OSK show tag=INPUT id=search-input rows=5
+1792523861 NUXEL_INPUT OSK show tag=INPUT id=search-input rows=5
+1792523861 NUXEL_INPUT OSK show tag=INPUT id=search-input rows=5
+1792523861 NUXEL_INPUT OSK show tag=INPUT id=search-input rows=5
+1792523865 NUXEL_INPUT OSK show tag=INPUT id=search-input rows=5
+1792523866 NUXEL_INPUT OSK show tag=INPUT id=search-input rows=5
+1792523866 NUXEL_INPUT OSK show tag=INPUT id=search-input rows=5
+1792523868 NUXEL_INPUT NAV tap action=back state=CLOSED page=0
+1792523868 NUXEL_INPUT OSK hide
+1792523868 NUXEL_INPUT NAV done action=back state=CLOSED page=0
+1792523868 NUXEL_INPUT NAV tap action=back state=CLOSED page=0
+1792523868 NUXEL_INPUT EVT home:complete state=CLOSED page=0 ts=1792523868229
+1792523868 NUXEL_INPUT NAV done action=back state=CLOSED page=0
+1792523870 NUXEL_INPUT OSK show tag=INPUT id=note-title rows=5
+1792523871 NUXEL_INPUT OSK show tag=INPUT id=note-title rows=5
+1792523871 NUXEL_INPUT OSK show tag=INPUT id=note-title rows=5
+1792523874 NUXEL_INPUT NAV tap action=back state=ACTIVE page=0
+1792523874 NUXEL_INPUT OSK hide
+1792523874 NUXEL_INPUT NAV done action=back state=ACTIVE page=0
+1792523874 NUXEL_INPUT NAV tap action=back state=ACTIVE page=0
+1792523874 NUXEL_INPUT EVT home:complete state=BACKGROUND page=0 ts=1792523874251
+1792523874 NUXEL_INPUT NAV done action=back state=BACKGROUND page=0
+1792523913 NUXEL_HOME_NAV uri=http://127.0.0.1:8000/pwa/nuxel-home/index.html?boot=os&v=1792534558
+1792523919 NUXEL_INPUT OSK show tag=INPUT id=search-input rows=5
+=== rollback ===
+/var/lib/nuxel/a45/rollback-20261020T191510Z
+1c6e350440f8c324e9de7780e39c5b841c425a069cc4a877519fa500f345c2ff  /var/lib/nuxel/a45/rollback-20261020T191510Z/rollback.sh
+=== osk providers ===
+stevia not running (HTML fallback active)

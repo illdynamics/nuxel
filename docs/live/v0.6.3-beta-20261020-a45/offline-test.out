@@ -1,0 +1,22 @@
+PASS app.js exports NuxelHome for the harness
+PASS Home closes a native top-level app instead of returning early
+PASS Home still paints Desktop 1 for a native app
+PASS Home hides the PWA frame, bar and status
+PASS Home marks an in-flight iframe as backgrounded
+PASS Home records BACKGROUND, not a torn-down session
+PASS Home paints Desktop 1 for a PWA app
+PASS penguin/Home pointer tap calls nuxel.home()
+PASS the compatibility click does not fire Home twice
+PASS keyboard inserts a letter
+PASS keyboard leaves the real caret after the letter
+PASS keyboard emits beforeinput and input
+PASS Backspace removes one character and moves the caret
+PASS Space inserts a real space
+PASS ArrowLeft moves the native selection
+PASS contenteditable uses insertText
+PASS contenteditable uses deleteContentBackward
+PASS Enter submits an input form through its owner
+PASS native provider disables the HTML fallback
+PASS HTML fallback returns when the native provider is absent
+PASS no fake caret implementation is present
+ALL PASS
