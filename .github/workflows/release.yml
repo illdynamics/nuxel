@@ -2,6 +2,8 @@
 # Nuxel — build images and publish a GitHub Release
 #
 # Triggers
+#   * push to main               -> build every supported device, publish release
+#                                  when main's VERSION tag names that commit
 #   * push a tag matching v*     -> build every supported device, publish release
 #   * manual (workflow_dispatch) -> choose tag + devices, then publish
 #
@@ -56,12 +58,14 @@ name: Release
 
 on:
   push:
+    branches:
+      - main
     tags:
       - 'v*'
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Release tag (e.g. v0.5.2-beta). Empty => v<VERSION>.'
+        description: 'Release tag (e.g. v0.6.0-beta). Empty => v<VERSION>.'
         required: false
         default: ''
       devices:
@@ -131,6 +135,18 @@ jobs:
             echo "::error::release tag '$tag' does not match VERSION '$canonical_tag'"; exit 1;
           }
           source_sha="$(git rev-parse HEAD)"
+          # A merge to main is a release candidate only when its canonical tag
+          # already names that exact merge commit.  Check before the expensive
+          # matrix so a missing/stale tag cannot consume six hours of CI and
+          # then fail only at publication time.
+          if [ "${GITHUB_EVENT_NAME}" = "push" ] && [ "${GITHUB_REF_NAME}" = "main" ]; then
+            git fetch --no-tags origin "refs/tags/$tag:refs/tags/$tag" || {
+              echo "::error::main release requires tag '$tag' on the merged commit"; exit 1;
+            }
+            [ "$(git rev-parse "refs/tags/$tag^{commit}")" = "$source_sha" ] || {
+              echo "::error::tag '$tag' does not name the merged main commit"; exit 1;
+            }
+          fi
           devs="$REQUESTED_DEVICES"
           [ -n "$devs" ] || devs="g7power s10plus"
           # Only g7power + s10plus are supported for now.
