@@ -1,0 +1,6 @@
+{
+  "schema_version": 1,
+  "timeout_ms": 60000,
+  "never": false,
+  "comment": "Single authoritative screen-idle timeout. Consumed live by nuxel-button-manager (A45) and written by the Home Settings Display & Lockscreen section."
+}
