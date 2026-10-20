@@ -151,6 +151,9 @@ class NuxelHome {
         // Bind global events
         this._bindGlobalEvents();
 
+        // A45 Penguin lockscreen + boot lock + display-off re-lock.
+        this._initLockscreen();
+
         this.initialized = true;
         console.log('[Nuxel] Nuxel Home initialized');
 
@@ -292,11 +295,15 @@ class NuxelHome {
         const onNuxelAction = (event) => {
             const action = event.detail && event.detail.action;
             console.log('[Nuxel] logical action:', action);
+            if (action === 'lock') { this._lock('host'); return; }
+            if (action === 'unlock') { this._unlock(); return; }
+            if (this._isLocked()) return;   // locked: navigation/app actions are inert
             if (action === 'home') this.home();
             else if (action === 'back') this.back();
             else if (action === 'forward') this.forward();
             else if (action === 'stop') this.stopLoading();
             else if (action === 'reload-launcher') this.reloadLauncher();
+            else if (action === 'recents') this.recentsToggle();
             else if (action === 'search' && this.components.search) this.components.search.open();
             else if (action === 'settings') appRegistry.launchApp('nuxel-settings');
         };
@@ -502,6 +509,7 @@ class NuxelHome {
     // controller rather than making the button bar reach into individual app
     // iframes: Back/Home/Recents must work identically for every PWA.
     back() {
+        if (this._isLocked()) return;
         if (this.components.search && this.components.search.isOpen) { this.components.search.close(); return; }
         if (this.components.qs && this.components.qs.isOpen) { this.components.qs.collapseOrClose(); return; }
         if (window.recents && window.recents.isOpen) { window.recents.close('back'); return; }
@@ -525,6 +533,7 @@ class NuxelHome {
     }
 
     home() {
+        if (this._isLocked()) return;
         try {
             this._closeOverlays();
         } catch (error) {
@@ -543,10 +552,54 @@ class NuxelHome {
     }
 
     recentsToggle() {
+        if (this._isLocked()) return;
         if (this.components.search && this.components.search.isOpen) this.components.search.close();
         if (this.components.qs && this.components.qs.isOpen) this.components.qs.close();
         if (window.launcher) { window.launcher.closeDrawer(); window.launcher.exitEditMode(); }
         if (window.recents) window.recents.toggle('system-nav');
+    }
+
+    _isLocked() { return !!(this.lockscreen && this.lockscreen.isLocked()); }
+
+    _lock(reason) {
+        this._inputTrace(`lock reason=${reason}`);
+        if (this.lockscreen) this.lockscreen.show(reason);
+        if (window.NuxelTouchKeyboard) window.NuxelTouchKeyboard.hide();
+        /* A lock always blanks the panel: idempotent for a display-off lock. */
+        try { if (global.NuxelHost && NuxelHost.available) NuxelHost.action('screen-off'); } catch (e) { /* best effort */ }
+    }
+
+    _unlock() {
+        this._inputTrace('unlock');
+        if (this.lockscreen) this.lockscreen.hide();
+    }
+
+    _initLockscreen() {
+        if (window.NuxelLockscreen) this.lockscreen = new window.NuxelLockscreen();
+        /* Boot lock: the inline HTML gate left #lockscreen visible in phone
+           launch mode (?boot=os), so mark the session locked. */
+        if (this.lockscreen && this.lockscreen.el && !this.lockscreen.el.hidden) {
+            this.lockscreen.show('boot');
+        }
+        this._watchDisplayForLock();
+    }
+
+    /* Re-lock when the display actually powers down (idle timeout or Power),
+       so waking always shows the lockscreen.  Only the OFF->ON transition is
+       treated as an event; the poll never locks on a stale OFF. */
+    _watchDisplayForLock() {
+        this._lastDisplayOff = null;
+        const read = () => {
+            if (!global.NuxelHost || !NuxelHost.available) return;
+            NuxelHost.statusRead('wlfb-state').then((r) => {
+                const t = (r && (r.text || r.value)) || '';
+                const off = /^DISPLAY_OFF/m.test(t);
+                if (this._lastDisplayOff === false && off && !this._isLocked()) this._lock('display-off');
+                this._lastDisplayOff = off;
+            }).catch(() => {});
+        };
+        read();
+        setInterval(read, 2000);
     }
 
     forward() {

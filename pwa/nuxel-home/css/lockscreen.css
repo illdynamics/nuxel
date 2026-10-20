@@ -1,0 +1,91 @@
+/* Nuxel A45 Penguin Lockscreen — full-screen swipe-to-unlock surface.
+   The wallpaper is the owner-supplied nuxel-lockscreen.jpg; the draggable
+   unlock handle is the owner-supplied nuxel-lockhead.png.  This overlay is the
+   topmost element of the launcher document, above the nav dock and keyboard. */
+#lockscreen {
+    position: fixed;
+    inset: 0;
+    z-index: 500;
+    background: #04121f;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+#lockscreen[hidden] { display: none; }
+
+.lockscreen-wallpaper {
+    position: absolute;
+    inset: 0;
+    background-image: url('/assets/nuxel-lockscreen.jpg');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+/* Clock / date / battery sit at the top, clear of the illustrated penguin. */
+.lockscreen-meta {
+    position: relative;
+    z-index: 1;
+    margin-top: calc(44px + env(safe-area-inset-top, 0px));
+    text-align: center;
+    color: #eaf4ff;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.7);
+    pointer-events: none;
+}
+.lockscreen-time { font-size: 64px; font-weight: 600; line-height: 1; letter-spacing: -1px; }
+.lockscreen-date { font-size: 18px; margin-top: 8px; opacity: .92; }
+.lockscreen-battery { font-size: 14px; margin-top: 6px; opacity: .85; }
+
+/* The draggable handle.  Resting position is computed by js/lockscreen.js so
+   the lockhead lands BELOW the wallpaper penguin with real spacing; the CSS
+   default is a horizontal centre near the bottom. */
+.lockscreen-handle-wrap {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 16%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    z-index: 2;
+}
+.lockscreen-handle {
+    width: 118px;
+    height: 118px;
+    object-fit: contain;
+    filter: drop-shadow(0 6px 18px rgba(0, 0, 0, 0.55));
+    will-change: transform;
+    pointer-events: auto;
+    -webkit-user-drag: none;
+}
+.lockscreen-handle.grabbed { filter: drop-shadow(0 6px 22px rgba(80, 200, 255, 0.55)); }
+.lockscreen-handle.unlocking { opacity: 0; transform: translateY(-160px) scale(1.15); transition: transform .28s ease-out, opacity .28s ease-out; }
+
+.lockscreen-hint {
+    margin-top: 14px;
+    color: rgba(234, 244, 255, 0.82);
+    font-size: 13px;
+    letter-spacing: .12em;
+    text-shadow: 0 1px 6px rgba(0, 0, 0, 0.7);
+    pointer-events: none;
+}
+.lockscreen-hint::before {
+    content: '';
+    display: block;
+    width: 2px;
+    height: 14px;
+    margin: 0 auto 6px;
+    background: rgba(234, 244, 255, 0.7);
+    animation: nuxel-swipe-hint 1.8s ease-in-out infinite;
+}
+@keyframes nuxel-swipe-hint {
+    0%, 100% { opacity: .25; transform: translateY(3px); }
+    50% { opacity: .9; transform: translateY(-3px); }
+}
+
+/* Progress ring is intentionally omitted: the subtle glow on .grabbed plus the
+   handle following the finger is the whole affordance. */

@@ -19,6 +19,7 @@
     <link rel="stylesheet" href="css/search.css">
     <link rel="stylesheet" href="css/status-bar.css">
     <link rel="stylesheet" href="css/home-settings.css">
+    <link rel="stylesheet" href="css/lockscreen.css?v=a45">
 </head>
 <body>
     <!-- Boot animation splash (nuxel-boot-animation.mp4) — shown while the
@@ -137,6 +138,39 @@
         <button type="button" id="nav-recents" data-nav="recents" aria-label="Recent apps"><img src="/assets/button-right.png?v=a44" alt=""><span class="nav-fallback" aria-hidden="true">▢</span></button>
     </nav>
 
+    <!-- A45 Penguin Lockscreen — full-screen swipe-to-unlock.  Uses the exact
+         owner artwork /assets/nuxel-lockscreen.jpg (wallpaper) and
+         /assets/nuxel-lockhead.png (draggable handle). -->
+    <div id="lockscreen" class="lockscreen" aria-label="Nuxel locked">
+        <div class="lockscreen-wallpaper" aria-hidden="true"></div>
+        <div class="lockscreen-meta">
+            <div class="lockscreen-time" id="lockscreen-time">--:--</div>
+            <div class="lockscreen-date" id="lockscreen-date"></div>
+            <div class="lockscreen-battery" id="lockscreen-battery">—%</div>
+        </div>
+        <div class="lockscreen-handle-wrap" id="lockscreen-handle-wrap">
+            <img id="lockscreen-handle" class="lockscreen-handle"
+                 src="/assets/nuxel-lockhead.png?v=a45" alt="Swipe up to unlock"
+                 draggable="false" aria-label="Drag the penguin upward to unlock">
+            <div class="lockscreen-hint" id="lockscreen-hint" aria-hidden="true">swipe up to unlock</div>
+        </div>
+    </div>
+
+    <script>
+    // Boot-lock gate: the lockscreen is the visible boot surface ONLY in phone
+    // launch mode (?boot=os).  For any other launch mode (the UTM/desktop
+    // launcher) hide it before first paint so the desktop behaviour is intact.
+    (function () {
+        'use strict';
+        try {
+            if (new URLSearchParams(window.location.search).get('boot') !== 'os') {
+                var ls = document.getElementById('lockscreen');
+                if (ls) ls.hidden = true;
+            }
+        } catch (e) { /* URLSearchParams unavailable: keep default (locked) */ }
+    })();
+    </script>
+
     <script>
     // Home is a fixed launcher, not a zoomable document.  Keep pan/swipe
     // working, but refuse every browser zoom path: pinch (two-finger touch),
@@ -181,6 +215,7 @@
     <script src="js/osd.js"></script>
     <script src="js/bootlog.js"></script>
     <script src="js/touch-keyboard.js?v=a45"></script>
+    <script src="js/lockscreen.js?v=a45"></script>
     <script src="js/navigation.js?v=a45"></script>
     <script src="js/gestures.js"></script>
     <script src="js/home-settings.js"></script>
