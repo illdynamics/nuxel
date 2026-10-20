@@ -156,6 +156,9 @@ static const struct cfgfile CFG[] = {
      to the terminal, the buttons or the boot surface. */
   { "keyboard-state",      "/run/nuxel-keyboard.state",                    0 },
   { "lock-state",          "/run/nuxel-lock.state",                        0 },
+  /* A45 Display & Lockscreen: the Home Settings timeout selector writes this
+     document, which nuxel-button-manager (the single idle owner) reads live. */
+  { "display-timeout",     "/etc/nuxel/display/screen-timeout.json",      1 },
   { NULL, NULL, 0 }
 };
 

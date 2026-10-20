@@ -101,6 +101,13 @@
             '<h3>Status bar</h3><label>Battery indicator <select data-battery-style>' +
             [['inside', 'Icon with percentage inside'], ['percentage', 'Percentage only'], ['bar', 'Battery bar only']].map(v => '<option value="' + v[0] + '"' + ((appearance.batteryStyle || 'inside') === v[0] ? ' selected' : '') + '>' + v[1] + '</option>').join('') +
             '</select></label>' +
+            '<h3>Display &amp; Lockscreen</h3>' +
+            '<div class="home-setting-row"><label>Screen timeout <select data-screen-timeout>' +
+            [['15000','15 seconds'],['30000','30 seconds'],['60000','1 minute'],['120000','2 minutes'],['300000','5 minutes'],['600000','10 minutes'],['0','Never']].map(function(v){ return '<option value="'+v[0]+'" data-ms="'+v[0]+'">'+v[1]+'</option>'; }).join('') +
+            '</select></label></div>' +
+            '<p class="home-setting-hint">After this much inactivity the display turns off and Nuxel locks. Never keeps the screen on and uses more battery.</p>' +
+            '<h4>Lockscreen</h4>' +
+            '<ul class="lockscreen-info"><li>Lockscreen: <b>Enabled</b></li><li>Unlock method: <b>Swipe Penguin Up</b></li><li>Wallpaper: <b>Nuxel Default</b></li><li>Show Clock: <b>On</b></li><li>Show Date: <b>On</b></li><li>Show Battery: <b>On</b></li></ul>' +
             '<h3>System Monitor</h3><div class="system-monitor-controls">' +
             '<label>Show hardware meters <input type="checkbox" data-system-monitor-enabled' + (appearance.systemMonitorEnabled !== false ? ' checked' : '') + '></label>' +
             '<label>Refresh interval <select data-system-monitor-interval>' + [1, 2, 3, 5, 10].map(v => '<option value="' + v + '"' + (Number(appearance.systemMonitorInterval || 3) === v ? ' selected' : '') + '>' + v + ' seconds</option>').join('') + '</select></label>' +
@@ -139,6 +146,29 @@
             const data = read(); data.systemMonitorDetailed = event.target.checked; save(data);
             global.NuxelSystemMonitor && global.NuxelSystemMonitor.configure(data);
         };
+        // Display & Lockscreen: read the live timeout, then persist a change
+        // through the host's writable document channel (nuxel-button-manager
+        // reloads it once per second, so the change applies immediately).
+        const timeoutSel = panel.querySelector('[data-screen-timeout]');
+        const writeTimeout = (ms) => {
+            if (global.NuxelHost && global.NuxelHost.available) {
+                global.NuxelHost.configSet('display-timeout', JSON.stringify({
+                    schema_version: 1, timeout_ms: Number(ms), never: Number(ms) === 0,
+                }));
+            }
+        };
+        if (global.NuxelHost && global.NuxelHost.available) {
+            global.NuxelHost.configGet('display-timeout').then((r) => {
+                try {
+                    const doc = JSON.parse(r && (r.text || r.value) || '{}');
+                    const ms = doc.timeout_ms || (doc.never ? 0 : 60000);
+                    const opt = timeoutSel && timeoutSel.querySelector('option[value="' + ms + '"]');
+                    if (opt) { timeoutSel.value = String(ms); }
+                } catch (e) { /* keep default 1 minute */ }
+            }).catch(() => {});
+        }
+        if (timeoutSel) timeoutSel.onchange = () => writeTimeout(timeoutSel.value);
+
         const update = () => launcher && launcher.updateHomeSettings({
             gridColumns: Number(panel.querySelector('[data-grid-columns]').value),
             gridRows: Number(panel.querySelector('[data-grid-rows]').value),
