@@ -1,248 +1,56 @@
-# PROMPT — Component R07: Fix remaining boot instability
+# NUXEL R07 — Fix remaining boot instability
+STATUS: IMPLEMENTATION PROMPT ONLY — NOT EXECUTED
 
-> **This file is a prompt for a FUTURE implementation session. It is NOT an
-> implementation, and running this worktree does not execute it.** The future
-> agent reads this file, then implements **only component R07** in the checked-out
-> feature branch `nuxel/r07-boot-instability`.
+## Mission
 
----
+This is a future implementation mission for `nuxel/r07-boot-instability`. Do not execute it merely by reading this file. A future agent may modify code, tests, documentation, images, services, or configuration only after an owner explicitly authorizes execution of this branch prompt. Keep the change limited to this component; do not merge, cherry-pick, deploy, flash, reboot, replace a kernel, or start an unrelated component.
 
-## Agent mission (this branch ONLY)
+## Repo-grounded current state
 
-You are the Nuxel Fedora ARM64 phone OS engineering agent, working in a dedicated
-Git feature branch. Implement **only component R07: Fix remaining boot instability**
-in this existing repository. Do not implement other screenshot/remaining items; keep
-all work inside R07's scope and its own files/tests/reports.
+**SOURCE VERIFIED:** at source base `e2aaf66951570a8e86211cb8b48060e6cd6773dd`, the following repository paths exist and are directly relevant to the investigation: `boot/s10plus/bringup-init.sh, boot/s10plus/recovery.sh, boot/s10plus/tests/test-boot-image-gates.sh, scripts/s10plus-debug-pack/README.md`. Their presence establishes maintained configuration, code, test, asset, or evidence locations; it does *not* prove a built image or a live-device result. `docs/architecture.md` and `docs/beta-finalization/DEVICE-CAPABILITY-MANIFEST.md` (where present) are context, not a substitute for inspecting the cited owners and their callers at the execution commit.
 
-**Target platform:** Samsung Galaxy S10+ `SM-G975F` / Exynos 9820, "beyond2lte" —
-Nuxel Fedora ARM64 (Fedora 43 aarch64, systemd 258.11) running **without** the
-Android framework. Kernel is the downstream Samsung **4.14.253** `Image`.
+The current target is Fedora ARM64 for Galaxy S10+ SM-G975F / Exynos 9820, without a mandatory Android framework. Start by re-reading the cited files at the implementation commit, `git log`, `git grep`, manifests, unit files and existing A34–A40/beta-finalization evidence. Record what is observed separately from proposed work. Existing repository captures are historical evidence only: label outcomes as `SOURCE VERIFIED`, `BUILT`, `VM VERIFIED`, `LIVE-DEVICE DEPLOYED`, `OWNER-VERIFIED`, `BLOCKED`, or `NOT TESTED`. In particular, S10+ speaker audio remains unverified unless later evidence proves it; user-reported Home/Back/Recents, virtual-keyboard, icon-drag and torch issues require fresh verification only when this component touches them.
 
-**Environment constraints:**
-- A MacBook host may build/cross-build/test offline. The live phone may **not** be
-  connected during this run.
-- Do **not** assume a hardware verification happened. Every device-specific claim in
-  your report must be gated on real evidence, otherwise it is `NOT_TESTED` or
-  `BLOCKED`.
+This component’s intended result is: Audit boot loops and delay with journal, systemd critical chain, restarts, rootfs mounts, initramfs and graphics handoff. Separate kernel-to-userspace from launcher delay and preserve both rescue shell and USB console.
 
----
+## Precise component boundaries
 
-## What "remaining boot instability" means here (context)
+Own the smallest end-to-end path needed for this mission, including its configuration/schema, runtime consumer, status/reporting surface and tests. Preserve the established Nuxel launcher/WebKit/compositor approach, touch UI, three-button navigation, haptics, BG1/BG2 dock selection (BG2 is default), Fedora ARM64 compatibility and USB-console recoverability. Do not silently introduce Android APIs, a second competing daemon, a generic replacement UI, fictitious kernel nodes, unsafe amplifier/LED/radio control, or a capability claim based solely on a mock.
 
-Boot has already progressed far: the kernel loads, `/init` resolves root without the
-kernel cmdline (A5/cmdline-independence), the systemd graph reaches
-`is-system-running = running` (A26), and `nuxel-ui.service` starts on its own. The
-**remaining** instability is a set of *containment* fixes that keep the phone from
-rebooting itself or wedging mid-boot, plus the ability to **measure** boot/shutdown
-timelines and **prove** repeated successful boots — without masking the failures they
-paper over.
+Out of scope without a separate owner-approved task: bootloader/partition writes, flashing, kernel replacement, radio firmware changes, live-phone reboot, factory reset, destructive cleanup, and merge/release activity. If investigation finds no suitable owner, state **“Not found—locate or add the smallest appropriate module”** and document why rather than fabricating a path.
 
-The concrete, already-diagnosed failure modes this component must correctly address
-(or explicitly BLOCK if not yet reachable) are:
+## Implementation work packages
 
-1. **`sd-event` pidfd ENOSYS incompatibility on Linux 4.14.** systemd 258 dropped the
-   legacy `waitid()` child watcher and requires `pidfd_open()` (Linux 5.3+). On this
-   4.14 kernel every call returns `ENOSYS`. This is what made:
-   - `systemd-userdbd` fail to run (`Failed to watch child … Function not implemented`) —
-     which, via a broken `nsswitch.conf` `[SUCCESS=merge]`, hung **every** NSS lookup.
-   - `dbus-broker-launch` die with `-38 ENOSYS` in `launcher_fork`.
-   - `systemd-udevd` fork ~17,700 workers in 50 s (`Failed to create worker object:
-     Function not implemented`) and never reap them.
-   These were **contained** (not fixed) by the A26 rootfs fixes. The durable fix is a
-   source patch teaching `sd-event`'s child watcher to degrade to `waitid()` when
-   `pidfd_open` returns ENOSYS — done twice before in the A17 change set; R07's job is
-   to confirm whether that third edit exists and, if so, un-mask the units cleanly.
+1. Establish a component evidence baseline. Trace every cited path to its producer and consumer, enumerate service/unit/package/schema boundaries, and make a state table with source evidence, runtime prerequisite, owner and current status. Preserve command lines, stderr and content hashes in the future report.
+2. Reproduce the component-specific failure or missing capability with deterministic host/VM-safe fixtures first. Define the exact observable state transition and invariant for: Audit boot loops and delay with journal, systemd critical chain, restarts, rootfs mounts, initramfs and graphics handoff. Separate kernel-to-userspace from launcher delay and preserve both rescue shell and USB console. Do not label a UI rendering, a mock, or an archive member as a device pass.
+3. Design the smallest integration change after the trace is complete. Specify data ownership, lifecycle/ordering, error propagation, privilege boundary, persistence and compatibility with existing launcher/compositor and Fedora services. Resolve duplicate state sources rather than adding a parallel control path.
+4. Implement guarded diagnostics and observability. Produce actionable logs/structured status that expose interface identity, readiness, selected backend, failure reason and fallback without leaking secrets. Add rate/size bounds where event, log, media or sensor streams are involved.
+5. Add component-focused tests and negative cases alongside the implementation. Use existing project tests where applicable (for example `tools/beta/tests/test-release-tools.sh` and `boot/s10plus/tests/test-boot-image-gates.sh` only when their scope applies); add no meaningless skip. Record commands, environment and output hashes.
+6. Write `docs/component-reports/r07.md` when execution is authorized. Include a source inventory, change list, matrix of result labels, commands/exit codes, test evidence, owner-facing live steps, known gaps, rollback receipt and explicit distinction between simulated and physical evidence.
 
-2. **Watchdog / retry policy that can reboot a healthy systemd.** The A14 boot-time
-   watchdog (removed at A15) could force-reboot a *running* Fedora because it slept
-   before `/proc` was mounted and read `1/comm` from the wrong procfs. Samsung's own
-   kernel-side `softdog.soft_margin=100 soft_panic=1`, `hung_task_*`, and
-   `hard_reset_hook` are still active; R07 must not reintroduce a watchdog that kills a
-   healthy boot, but should review the current initramfs `softdog keeper` policy.
+## Failure modes and diagnostics
 
-3. **The `asix`/`wl_cfg80211_netdev_notifier_call: wdev null` uevent storm.** As udevd
-   was un-masking toward full operation it re-added a device thousands of times (same
-   UUID each). With udevd masked nothing consumes it. R07 should identify and stop it
-   at the driver level **before** relying on an un-masked udevd, not mask around it.
+Treat absent nodes, firmware, permissions, services, IPC endpoints, package dependencies, display/input focus, route ownership and stale cached state as separate hypotheses. Capture the exact interface name, udev/sysfs/proc or service evidence, version, timestamp and first failure; do not infer hardware from a nominal configuration file. Guard against races during boot/suspend/resume, duplicate events, stale UI state, partial writes, interrupted updates and privilege escalation. If a hardware-dependent prerequisite is missing, collect the relevant kernel configuration/device-tree/log evidence and report the smallest grounded next step as `BLOCKED` rather than widening scope.
 
-4. **USB recovery console ownership.** The single-owner CDC-ACM live console is started
-   from the initramfs (`nuxel-console.c`, flock on `/run/nuxel-console.lock`) and is the
-   **only** lifeline today (no ECD/RNDIS/bulk-transfer path exists yet). R07 must not
-   let a second instance, a restart loop, or a mid-command cable pull break it.
+## Verification and acceptance
 
----
+All checks below are required before declaring this component complete; report each with its evidence class.
 
-## Required workflow (the four component items)
+1. A traceable before/after matrix names each owned input, consumer, expected state, actual state, command/log and result label for this mission.
+2. The implementation has a focused deterministic test or inspection procedure covering the normal path and an injected unavailable/malformed/denied path specific to the selected backend.
+3. The UI/service exposes truthful readiness and error state: no optimistic success, duplicate status indicator, synthetic hardware reading, or silent fallback is accepted.
+4. Compatibility is demonstrated for the stated Fedora ARM64 target and existing Nuxel interaction model; unrelated navigation, touch focus, BG2 dock and USB recovery invariants are not regressed.
+5. A reviewer can reproduce the result from the report using exact commands, artifacts/hashes and exit codes; source/VM evidence remains labeled separately from live-device proof.
+6. For any physical validation, the owner gets short explicit steps, expected observation, stop condition and a place to record PASS/FAIL/timestamp. Missing phone access remains `NOT TESTED` or `BLOCKED`.
 
-### 1. Capture kernel-to-userspace boot and shutdown timelines
-- Instrument `/init` (`boot/initramfs/init.sh`) so its existing marker channel
-  (`INITRAMFS_EXECUTED`, `USERDATA_DISCOVERED`, `FEDORA_MOUNTED`, `ROOTFS_HANDOFF_STARTED`,
-  …) is the authoritative **kernel→userspace** timeline. These markers already go to
-  `/dev/kmsg` (Samsung `console=ram`) and survive a bootloop; read them from recovery as
-  `/proc/last_kmsg`. Do not invent new marker semantics — extend only where gaps exist.
-- Capture the **shutdown** path: record how a clean `systemctl poweroff/reboot` is
-  observed today (there is no shutdown telemetry proven yet). Where it is missing, add
-  a minimal, non-masking hook and persist a timestamped record to USERDATA **and** the
-  BOOT-partition tail (dd-readable), reusing the existing `diag_persist()` pattern.
+## Hardware/privilege/rollback safety
 
-### 2. Isolate failing/restarting units and dependency deadlocks
-- Use the **offline** validator `tools/s10plus/a33/verify-service-graph.py` (and its
-  fixture-mutation test `tools/s10plus/a33/tests/test-service-graph.py`) to prove the
-  boot graph has no cycles, every referenced unit resolves, and the A26 4.14 containment
-  edits are still present. These tests already inject defects and must keep failing when a
-  defect is injected — require that proof in your run.
-- On device (if reachable) capture `systemctl --failed`, `systemctl list-jobs`, and any
-  unit in a `activating`/`deactivating`/`restart` state; correlate each with its journal.
-  A unit that *restarts* is a failure, not success — do not let `Restart=always` hide it.
+Never surprise-flash, write bootloader/partitions, replace the kernel, reboot a live phone, change radio firmware, brute-force amplifier controls, strobe a torch/LED, or remove the established speaker-volume protection. Obtain explicit owner approval before any live-device action. Prefer read-only discovery, dry runs and mock fixtures. Design rollback as a reversible userspace/config change with a documented pre-state, atomic or staged apply where possible, health check, and USB-console/rescue path. Stop immediately on uncertainty about target identity, power, boot mode, mounted filesystem, privileged authorization or rollback availability.
 
-### 3. Correct ordering, watchdog and retry policy without masking failures
-- If the `sd-event` child-watch compat patch exists in the tree, un-mask
-  `systemd-userdbd`, `dbus-broker` (back to systemd) and `systemd-udevd` **in order** and
-  re-prove `is-system-running = running`. If it does **not** exist, ship the smallest safe
-  containment (the A26 rootfs fixes), keep `*.nuxel-orig` backups, and BLOCK the durable
-  un-mask with concrete evidence that pidfd is unavailable (`ENOSYS`) on this kernel.
-- Review every shipped unit's `Restart=` / `TimeoutStartSec=` policy. Remove any retry
-  that masks a genuine failure (e.g. a console service looping `Restart=always` while it
-  cannot own its tty). A bounded, visible failure beats an infinite loop for a debug
-  resource like the USB console.
-- Do **not** touch BOOT/USERDATA/EFS/DTBO/PIL/bootloader from a running session.
+## Deliverables
 
-### 4. Protect USB recovery console and measure repeated successful boots
-- Keep the console single-owner: `nuxel-console.service` must keep its
-  `ConditionPathExists=/usr/bin/nuxel-console`, its flock-based `ExecCondition=…free`,
-  and `Restart=no`. A mid-command cable pull must be reported as `console lost`, not a
-  traceback. If tools/s10plus/a24-nuxel-console.c's ignore-SIGHUP + re-exec supervisor is
-  the current mechanism, verify it still holds; extend only if needed.
-- **Measure repeated successful boots.** Define a concrete success metric (e.g. count of
-  consecutive boots reaching `PHONE_UI_READY` / `is-system-running = running`, minus any
-  watchdog reset). Record the baseline you observe and how many repeats were run. If the
-  phone is not connected, state this as `NOT_TESTED` with the exact command you would run.
+Deliver the narrowly scoped implementation, focused tests, and `docs/component-reports/r07.md` only after execution authorization. The report must contain: repo commit/tree state; changed files; source versus design decisions; command receipts and hashes; test matrix; device model/variant evidence; any owner observations; rollback procedure/receipt; and unresolved blockers. Do not claim release readiness, live deployment, audible output, sensor operation, radio operation, or physical control without direct evidence.
 
----
+## Stop conditions / known blockers
 
-## Repo architecture to reuse (do NOT reimplement or fake)
-
-| Concern | Real location in this repo |
-|---|---|
-| Initramfs `/init`, marker channel, diag persistence | `boot/initramfs/init.sh` (+ archived variants in `boot/initramfs/`) |
-| Boot-image repair / cmdline rewrite tooling | `scripts/fix-boot.sh`, `tools/s10plus/patch-boot-from-upload.py`, `tools/s10plus/patch-rootfs-image.py` |
-| s10plus boot image & tests | `boot/s10plus/{flash.sh,recovery.sh,build-candidate.sh}`; `boot/s10plus/tests/` |
-| A26 4.14 containment fixes (currently shipped config) | `tools/s10plus/a26/nuxel-rootfs-fixes.sh`, run by `images/s10plus/build-phone-rootfs-inside-fedora.sh` |
-| Offline boot-graph validator + fixture tests | `tools/s10plus/a33/verify-service-graph.py`, `tools/s10plus/a33/tests/test-service-graph.py` |
-| Single-owner USB CDC-ACM console (initramfs) | `tools/s10plus/a24-nuxel-console.c`; `nuxel-console.service` in `services/nuxel-console/systemd/` |
-| Charger/LPM boot-mode guard + guarded reboot | `tools/s10plus/a33/nuxel-bootmode-guard.py`, `configs/nuxel/touch/{nuxel-bootmode-guard,nuxel-bootmode-reboot}.service` |
-| sd-event/pidfd history (A17 edits) | `docs/s10plus-autonomous-boot-repair/A17-POSTMORTEM.md` + prior change sets; check for existing child-watch compat code |
-| Boot-stall / bootloop diagnosis | `docs/s10plus-autonomous-boot-repair/{NUXEL-BOOT-STALL,A26-SYSTEMD-BOOT-GRAPH-FIX,ROOT-CAUSE}.md`, `docs/s10plus-bootloop-repair/` |
-
----
-
-## Verified facts vs. things the future agent MUST inspect
-
-### Verified (measured live on the handset or proven offline in prior cycles — cite these)
-- On Linux 4.14, systemd 258's `pidfd_open` returns ENOSYS; `systemd-userdbd`,
-  `dbus-broker-launch`, and `systemd-udevd` all fail via this path (`A26-SYSTEMD-BOOT-GRAPH-FIX.md`).
-- The graph was brought to `is-system-running = running` by containment:
-  `authselect/nsswitch.conf` → `files`; mask `systemd-userdbd.{socket,service}`; switch
-  system bus to `dbus-daemon.service`; mask `systemd-udevd` (+3 sockets), `udev_log=err`.
-- The old A14 reboot watchdog was removed at A15 because it could kill a running systemd.
-- `/init`'s cmdline-independence (device-tree model + `PARTNAME=userdata` uevent) is proven;
-  boot-diag evidence persists to USERDATA and the BOOT-partition tail, readable with `dd`.
-- The USB console is single-owner via flock (`/run/nuxel-console.lock`) and only lifeline.
-
-### NOT verified — inspect before claiming (do not assume)
-- Whether the **third** `sd-event` child-watch compat edit actually exists in this tree yet
-  (it was "tracked below" as still-open). Search for it; do not assume it is present.
-- The current live value of `systemctl is-system-running`, failed/restarting units, and the
-  real repeated-boot success baseline **on this exact branch** — re-measure on device if
-  connected, else mark `NOT_TESTED`.
-- Whether the `asix`/`wl_cfg80211_netdev_notifier_call: wdev null` storm is still present or
-  already stopped at the driver level.
-- The shutdown-timeline telemetry: whether any exists today (likely none) — verify, then add.
-
----
-
-## Implementation steps (order; adapt to what you find)
-
-1. **Source audit.** Read `boot/initramfs/init.sh`, `verify-service-graph.py`, the A26
-   rootfs fixes script, and the console unit/c source. Record existing behaviour in
-   `docs/component-reports/r07.md` before changing anything.
-2. **Boot graph integrity.** Run the offline validator + its fixture test; confirm green
-   baseline and that each injected defect fails as documented. Fix any cycle/unsatisfied-dep
-   you introduce while working.
-3. **sd-event / pidfd path.** Locate or implement the child-watch `waitid()` fallback for
-   ENOSYS (reuse the A17 edits). If implemented: un-mask userdbd → dbus(systemd) → udevd in
-   order and re-prove the graph. If not: keep the A26 containment, add a precise blocker with
-   evidence (`pidfd_open` ENOSYS on 4.14), and stop — do not ship half-un-masked units.
-4. **Watchdog & retry policy.** Review `Restart=`/timeout policies across shipped units;
-   remove any that mask failure (especially the console). Keep the initramfs `softdog keeper`
-   but confirm it never fires on a healthy systemd (it exits once systemd owns PID 1).
-5. **UEvent storm.** Identify and stop the `asix`/`wl_cfg80211_netdev_notifier_call: wdev null`
-   storm at the driver level before depending on an un-masked udevd, if it is still present.
-6. **Timeline + shutdown telemetry.** Extend `/init`'s marker channel where gaps exist; add a
-   minimal shutdown-timestamp hook persisting to USERDATA + BOOT tail via `diag_persist()`.
-7. **Console protection.** Verify/extend the single-owner console (ignore-SIGHUP, flock,
-   `Restart=no`, `console lost` on cable pull). Never run a second framebuffer client or open
-   `/dev/fb0` from diagnostics (closing it powers the panel down).
-8. **Tests.** Add unit/integration tests that exercise real code paths and failure modes — not
-   static references. Prefer extending existing offline tests; for AArch64 native code,
-   cross-build or document precise toolchain restrictions; never pass off a mock as a physical
-   check.
-9. **Report & commit.** Write `docs/component-reports/r07.md`; commit **only** R07's files/tests/
-   report on this branch. Do not merge, switch branches, add secrets, or touch unrelated work.
-
----
-
-## Tests (must exercise real behaviour and failure paths)
-
-- Extend `tools/s10plus/a33/tests/test-service-graph.py` fixture cases to cover any new unit:
-  injected restart-loop that masks a console-tty conflict → must FAIL; unsatisfied dep → FAIL;
-  forbidden 4.14 dependency → FAIL.
-- Add an offline test for the `/init` timeline functions under test (device-tree model decode,
-  `block_by_partname userdata`, BOOT-tail diag slot) using the same extraction pattern as
-  `boot/s10plus/tests/test-init-cmdline-independence.sh`.
-- If native code is added/changed, add a build/compile check and, where feasible on host, a unit
-  test of pure logic; document AArch64 cross-build toolchain precisely.
-- Never claim physical boot success unless measured on the handset this run.
-
----
-
-## Acceptance gates (each must be met or explicitly BLOCKED with evidence)
-
-- [ ] Boot/shutdown timeline captured (`NOT_TESTED` documented if no shutdown telemetry is possible).
-- [ ] Failing/restarting units and dependency deadlocks isolated; validator green + fixture failures proven.
-- [ ] Ordering/watchdog/retry policy corrected **without masking** any failure (no `Restart=always` hiding a real fault).
-- [ ] USB recovery console still single-owner and survives cable pull as `console lost`.
-- [ ] Repeated successful boots measured, or explicitly recorded as `NOT_TESTED` with the exact command.
-- [ ] Every item above is implemented or BLOCKED/NOT_TESTED with concrete evidence — nothing omitted.
-- [ ] No BOOT/USERDATA/EFS/DTBO/PIL/bootloader written from a live session; no flashing/reboot of hardware claimed.
-- [ ] `docs/component-reports/r07.md` written; worktree clean after committing only R07.
-
----
-
-## Honest hardware verification (do NOT fabricate)
-
-- Live phone may be **disconnected**. If it is connected, capture: `/proc/last_kmsg` marker
-  timeline, `systemctl is-system-running`, `systemctl --failed`, process count under udevd,
-  and consecutive-boot success count — cite exact commands + outputs.
-- If disconnected, write a BLOCKED/NOT_TESTED evidence report stating precisely which checks
-  were pending and the exact commands you would run on-device. State the actual deployment
-  status; never claim a physical pass or a reboot that did not happen.
-- Any hardware operation here is **read-only-ish** (reading logs, measuring timers). Flashing,
-  bootloader/partition writes, kernel replacement, or unsafe LED/amplifier settings remain
-  **forbidden**.
-
----
-
-## Rollback
-
-- Keep `*.nuxel-orig` backups of any edited unit/config/script; the A26 rootfs fixes script is
-  the reference pattern (idempotent, keeps originals).
-- If un-masking udevd/userdbd/dbus-regresses, re-mask them and restore the previous boot image
-  SHA from a pre-write backup (record the baseline SHA before any device change).
-- Commit only R07 on `nuxel/r07-boot-instability`; the queue runner owns git. Leave a clean
-  worktree.
-
----
-
-**Deliverables in this commit:** source/service/config changes, tests, and
-`docs/component-reports/r07.md`. Nothing else. COMPONENT R07 ONLY.
+Stop and ask the owner if implementation requires another component, an unverified driver/firmware/interface, destructive data mutation, sensitive credentials, external service/account, target access, or a security policy exception. Stop if results depend on unavailable S10+ hardware and leave a precise owner request rather than manufacturing a pass. A failed assertion must be triaged as stale versus regression with evidence—never weakened to skip. This prompt itself changes nothing and authorizes no deployment.
