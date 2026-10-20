@@ -12,6 +12,44 @@ The canonical version lives in [`VERSION`](VERSION) and is bumped in lockstep
 across the shell apps, the PWA manifest, the device `APKBUILD`s, the VM tooling
 and the OTA builder (see *Versioning* below).
 
+## [v0.6.1-beta] — 2026-10-20 — *haptic feedback, triple-button support and live A40 system monitor; whole-repo patch bump*
+
+- **Whole-repo version bump to `v0.6.1-beta`.** `VERSION`, the device `APKBUILD`s
+  (s10plus, g7power, google-pixel-10-pro-xl), PWA/bridge manifests
+  (`package.json`, `manifest.json` + `pwa_version`, `bridge-version.json` host
+  version), shell apps (Home metainfo / About Phone strings), bridge/notification/portal
+  services, the OTA builder and VM tooling all move in lockstep. The PWA protocol pin
+  (`NUXEL_BRIDGE_VERSION = '1'`) is intentionally left unchanged — only the host
+  *implementation* version moves; historical changelog entries are preserved untouched.
+- **Haptic feedback (A38).** Staged haptic patterns with distinct tap/scroll/long-press
+  intensities and durations, a single `nuxel-haptics` writer unit, per-user intensity
+  preferences and an on-device Haptics control surface. Intensity is reported honestly
+  and falls back to unsupported rather than fabricating an amplitude the motor cannot do.
+- **Triple-button support (A38).** Button handling extended beyond the previous two-button
+  model so a third button state is wired through the existing input -> UI path, with the
+  Bixby/shortcut default action preserved as the Terminal.
+- **Live A40 system monitor.** `services/nuxel-metrics` (AArch64 `nuxel-metricsd`) reports
+  CPU (`/proc/stat` deltas), RAM (`MemAvailable`), GPU (documented Mali node when exposed)
+  and shared GPU memory that is reported unavailable rather than invented. Deployed via the
+  socket-activated metrics service through the A40 live payload; device values remain
+  UNVERIFIED on the phone until a Milestone A live deployment completes.
+- **S10+ release image unchanged in build method.** The GitHub Actions `s10plus` job still
+  compiles the current A34 TOUCHDOWN userspace from repo sources inside a Fedora 43 arm64
+  container, embeds the repo-source initramfs in a RAW arm64 kernel Image (never Image.gz —
+  S-Boot executes a gzip payload as code) and packs it into the legacy v1 boot.img with the
+  merged board DTB. CI checks out this same source tree, so it reproduces exactly what ships.
+- **Documentation sync.** README changelog headers, "What's new" section, release-tag link and
+  CHANGELOG all reflect `v0.6.1-beta`; readiness percentages are carried forward from v0.6.0-beta
+  unchanged (no new hardware verification landed in this patch — see honesty note below).
+
+**Honesty about what is verified.** The haptic patterns, triple-button wiring and the A40
+monitor are software staged in this release but have **not yet been exercised on physical
+hardware**; they land on the phone through the A40 live payload pending a Milestone A
+deployment. The CI build reproduces the committed sources bit-for-bit; nothing about the boot
+chain, initramfs embedding or A34 userspace compile changed in this patch.
+
+---
+
 ## [v0.6.0-beta] — 2026-10-19 — *touchscreen works: v0.5.2-beta live on the handset, image built exactly as shipped*
 
 - **Touchscreen works.** The Operation Touchable A34 TOUCHDOWN pass (A34 Wayland

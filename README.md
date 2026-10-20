@@ -3,7 +3,7 @@
 
 ![Nuxel](./nuxel.jpg)
 
-**v0.6.0-beta** — _Build the bunker first. Add the rave lights later._
+**v0.6.1-beta** — _Build the bunker first. Add the rave lights later._
 
 > **Samsung S10+ engineering reality.** The active `beyond2lte` port is Fedora
 > 43 aarch64 on Samsung Linux 4.14.253. Its launcher is Nuxel Home in WebKitGTK,
@@ -155,6 +155,38 @@ NUXEL_DEVICE=mustang bash boot/flash.sh --unlock --wipe
 | `firmware/` | Per-device firmware manifests, install/verify, blobs |
 | `ci/` | Build validation |
 | `assets/` | Wallpaper + boot animation |
+
+## What's new in v0.6.1-beta
+
+A patch release on top of the working v0.6.0-beta runtime: it stages haptic
+feedback, triple-button support and a live A40 system monitor, keeps the S10+
+release image building exactly what ships from repo sources, and bumps every
+version string in lockstep to `v0.6.1-beta`.
+
+- **Haptic feedback (A38).** Staged haptic patterns with distinct tap/scroll/long-press
+  intensities and durations, a single `nuxel-haptics` writer unit, per-user intensity
+  preferences and an on-device Haptics control surface. Intensity is reported honestly and
+  falls back to unsupported rather than fabricating an amplitude the motor cannot do.
+- **Triple-button support (A38).** Button handling extended beyond the previous two-button
+  model so a third button state is wired through the existing input -> UI path, with the
+  Bixby/shortcut default action preserved as the Terminal.
+- **Live A40 system monitor.** `services/nuxel-metrics` (AArch64 `nuxel-metricsd`) reports
+  CPU (`/proc/stat` deltas), RAM (`MemAvailable`), GPU (documented Mali node when exposed)
+  and shared GPU memory reported unavailable rather than invented; deployed through the A40
+  live payload via a socket-activated service.
+- **Whole-repo patch bump to `v0.6.1-beta`.** `VERSION`, device `APKBUILD`s, PWA/bridge
+  manifests (`package.json`, `manifest.json` + `pwa_version`, `bridge-version.json` host
+  version), bridge/notification/portal services, the OTA builder and VM tooling all move in
+  lockstep. The PWA protocol pin (`NUXEL_BRIDGE_VERSION = '1'`) is intentionally unchanged —
+  only the host *implementation* version moves.
+- **Build method unchanged.** The GitHub Actions `s10plus` job still compiles the current A34
+  TOUCHDOWN userspace from repo sources in a Fedora 43 arm64 container, embeds the repo-source
+  initramfs in a RAW arm64 kernel Image (never Image.gz) and packs it into the legacy v1 boot.img;
+  CI checks out this same tree, so it reproduces exactly what runs on the handset.
+
+**Verified:** nothing new landed on hardware — the honest readiness scores are carried
+forward unchanged from v0.6.0-beta. The haptic, triple-button and A40-monitor features land
+on the phone through the A40 live payload pending a Milestone A deployment.
 
 ## What's new in v0.6.0-beta
 
@@ -420,7 +452,7 @@ remaining interactive gap. The Moto G7 Power is flashed but still hangs at a
 black screen; the Pixel 10 Pro XL is still a scaffold. The UTM VM demo boots
 (display + network + sound).
 
-## Honest Status — v0.6.0-beta
+## Honest Status — v0.6.1-beta
 
 **S10+ (SM-G975F, beyond2lte) — NUXEL BOOTS AND TOUCH INPUT WORKS.**
 S-Boot loads the raw arm64 `Image` with the initramfs embedded, the Fedora 43
@@ -648,7 +680,7 @@ The other two bring-up targets are the **Samsung Galaxy S10+** (Exynos 9820,
 
 | Document | Description |
 |---|---|
-| [CHANGELOG.md](CHANGELOG.md) | Release notes — everything from v0.1.0 to v0.6.0-beta + readiness |
+| [CHANGELOG.md](CHANGELOG.md) | Release notes — everything from v0.1.0 to v0.6.1-beta + readiness |
 | [prompts/QUICKSTART.md](prompts/QUICKSTART.md) | Get running in 5 minutes |
 | [design/nuxel-linux-phone-design.md](design/nuxel-linux-phone-design.md) | Design bible — the full vision |
 | [design/Nuxel Phone OS Project Plan and Architecture.md](design/Nuxel%20Phone%20OS%20Project%20Plan%20and%20Architecture.md) | Technical architecture + component map |
@@ -681,8 +713,8 @@ The other two bring-up targets are the **Samsung Galaxy S10+** (Exynos 9820,
 Build outputs (`build/out/<device>/`) are git-ignored — they are produced by the
 scripts in `images/` and `kernel/`, not committed. To publish them on GitHub:
 
-* **Automated (recommended):** push a version tag (`git tag v0.6.0-beta && git push
-  origin v0.6.0-beta`). [`.github/workflows/release.yml`](.github/workflows/release.yml)
+* **Automated (recommended):** push a version tag (`git tag v0.6.1-beta && git push
+  origin v0.6.1-beta`). [`.github/workflows/release.yml`](.github/workflows/release.yml)
   builds every device on an Ubuntu runner (`make assets`, the shared initramfs for
   g7power, each `kernel/<dev>/build-kernel.sh`, then `images/g7power/build.sh`;
   for s10plus it runs `images/s10plus/build-a25-boot.sh` — the A25 image with the
