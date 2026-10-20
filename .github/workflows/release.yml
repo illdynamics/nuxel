@@ -293,6 +293,23 @@ jobs:
             *) echo "::error::unsupported device ${{ matrix.device }}"; exit 1 ;;
           esac
 
+      - name: Verify fresh S10+ image parity (s10plus)
+        if: matrix.device == 's10plus'
+        run: |
+          # The builder already runs this gate inside the arm64 container. Run
+          # it again from the checkout after the artifact exists so CI has an
+          # independent extraction/readback receipt for the shipped image.
+          image="$PWD/build/out/s10plus/nuxel-beyond2lte-rootfs-fedora-phone.img"
+          test -s "$image"
+          python3 tools/s10plus/verify-fedora-phone-rootfs.py --ext4 "$image"
+          python3 tools/s10plus/parity/verify-image-parity.py --ext4 "$image" \
+            --inventory tools/s10plus/parity/required-payload.json \
+            --live-baseline tools/s10plus/parity/live-baseline-20261020.json \
+            --json "$PWD/build/out/s10plus/image-parity.json"
+          python3 tools/s10plus/a33/verify-service-graph.py
+          python3 tools/s10plus/parity/tests/test_parity.py
+          cat "$image.sha256"
+
       - name: Build and verify the live userspace payload (s10plus)
         if: matrix.device == 's10plus'
         run: |

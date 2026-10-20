@@ -1,0 +1,631 @@
+{
+  "schema": "nuxel.image-payload-parity/1",
+  "release": "v0.6.3-beta",
+  "description": "Normalized required userspace payload for a fresh S10+ Fedora 43 aarch64 image. The inventory is derived from the A34/A37/A39/A40/A43/A44 live payloads plus the services that are enabled or active on the handset.",
+  "source_trees": [
+    {
+      "id": "pwa",
+      "source": "pwa",
+      "target": "/usr/share/nuxel/pwa",
+      "required": true
+    },
+    {
+      "id": "assets",
+      "source": "assets",
+      "target": "/usr/share/nuxel/assets",
+      "required": true
+    },
+    {
+      "id": "configs-nuxel",
+      "source": "configs/nuxel",
+      "target": "/etc/nuxel",
+      "required": true,
+      "exclude": [
+        "app-registry/app_registry.json",
+        "input/button-fsm.json",
+        "buttons/reboot-gate.json",
+        "keyboard/keyboard.json",
+        "haptics/settings.json"
+      ],
+      "tree_digest": false
+    }
+  ],
+  "source_files": [
+    {
+      "id": "metrics-service",
+      "source": "services/nuxel-metrics/nuxel-metrics.service",
+      "target": "/etc/systemd/system/nuxel-metrics.service",
+      "mode": "0644"
+    },
+    {
+      "id": "metrics-socket",
+      "source": "services/nuxel-metrics/nuxel-metrics.socket",
+      "target": "/etc/systemd/system/nuxel-metrics.socket",
+      "mode": "0644"
+    },
+    {
+      "id": "bridge-unit",
+      "source": "services/nuxel-bridge/systemd/nuxel-bridge.service",
+      "target": "/etc/systemd/system/nuxel-bridge.service",
+      "mode": "0644"
+    },
+    {
+      "id": "http-bridge-unit",
+      "source": "services/nuxel-bridge/systemd/nuxel-http-bridge.service",
+      "target": "/etc/systemd/system/nuxel-http-bridge.service",
+      "mode": "0644"
+    },
+    {
+      "id": "portal-unit",
+      "source": "services/nuxel-portal/systemd/nuxel-portal.service",
+      "target": "/etc/systemd/system/nuxel-portal.service",
+      "mode": "0644"
+    },
+    {
+      "id": "notifications-unit",
+      "source": "services/nuxel-notifications/systemd/nuxel-notifications.service",
+      "target": "/etc/systemd/system/nuxel-notifications.service",
+      "mode": "0644"
+    },
+    {
+      "id": "wayland-unit",
+      "source": "services/nuxel-session/systemd/nuxel-wayland.service",
+      "target": "/etc/systemd/system/nuxel-wayland.service",
+      "mode": "0644"
+    },
+    {
+      "id": "wl-fb-unit",
+      "source": "services/nuxel-session/systemd/nuxel-wl-fb.service",
+      "target": "/etc/systemd/system/nuxel-wl-fb.service",
+      "mode": "0644"
+    },
+    {
+      "id": "touch-arm-unit",
+      "source": "services/nuxel-session/systemd/nuxel-touch-arm.service",
+      "target": "/etc/systemd/system/nuxel-touch-arm.service",
+      "mode": "0644"
+    },
+    {
+      "id": "button-manager-unit",
+      "source": "services/nuxel-session/systemd/nuxel-button-manager.service",
+      "target": "/etc/systemd/system/nuxel-button-manager.service",
+      "mode": "0644"
+    },
+    {
+      "id": "fallback-unit",
+      "source": "services/nuxel-session/systemd/nuxel-fallback.service",
+      "target": "/etc/systemd/system/nuxel-fallback.service",
+      "mode": "0644"
+    },
+    {
+      "id": "seatd-unit",
+      "source": "services/nuxel-session/systemd/seatd.service",
+      "target": "/etc/systemd/system/seatd.service",
+      "mode": "0644"
+    },
+    {
+      "id": "haptics-unit",
+      "source": "services/nuxel-haptics/nuxel-haptics.service",
+      "target": "/etc/systemd/system/nuxel-haptics.service",
+      "mode": "0644"
+    },
+    {
+      "id": "network-udev-seed-unit",
+      "source": "tools/s10plus/a41/nuxel-network-udev-seed.service",
+      "target": "/etc/systemd/system/nuxel-network-udev-seed.service",
+      "mode": "0644"
+    },
+    {
+      "id": "web-unit",
+      "source": "services/nuxel-web.service",
+      "target": "/etc/systemd/system/nuxel-web.service",
+      "mode": "0644"
+    },
+    {
+      "id": "boot-sound-unit",
+      "source": "services/nuxel-session/systemd/nuxel-boot-sound.service",
+      "target": "/etc/systemd/system/nuxel-boot-sound.service",
+      "mode": "0644"
+    },
+    {
+      "id": "animation-unit",
+      "source": "services/nuxel-animation/systemd/nuxel-animation.service",
+      "target": "/etc/systemd/system/nuxel-animation.service",
+      "mode": "0644"
+    },
+    {
+      "id": "console-unit",
+      "source": "services/nuxel-console/systemd/nuxel-console.service",
+      "target": "/etc/systemd/system/nuxel-console.service",
+      "mode": "0644"
+    },
+    {
+      "id": "firstlight-unit",
+      "source": "images/s10plus/nuxel-firstlight.service",
+      "target": "/etc/systemd/system/nuxel-firstlight.service",
+      "mode": "0644"
+    },
+    {
+      "id": "sound-cue",
+      "source": "tools/s10plus/a33/nuxel-sound-cue.py",
+      "target": "/usr/libexec/nuxel/nuxel-sound-cue",
+      "mode": "0755"
+    },
+    {
+      "id": "keyboard-apply",
+      "source": "tools/s10plus/a33/nuxel-keyboard-apply.sh",
+      "target": "/usr/libexec/nuxel/nuxel-keyboard-apply",
+      "mode": "0755"
+    },
+    {
+      "id": "haptics-daemon",
+      "source": "services/nuxel-haptics/nuxel-hapticsd.py",
+      "target": "/usr/lib/nuxel/nuxel-hapticsd.py",
+      "mode": "0755"
+    },
+    {
+      "id": "haptics-sleep",
+      "source": "services/nuxel-haptics/nuxel-haptics-sleep",
+      "target": "/usr/libexec/nuxel/nuxel-haptics-sleep",
+      "mode": "0755"
+    },
+    {
+      "id": "network-udev-seed",
+      "source": "tools/s10plus/a41/nuxel-network-udev-seed.sh",
+      "target": "/usr/libexec/nuxel/nuxel-network-udev-seed",
+      "mode": "0755"
+    },
+    {
+      "id": "console-guard",
+      "source": "services/nuxel-console/bin/nuxel-console-free",
+      "target": "/usr/lib/nuxel/nuxel-console-free",
+      "mode": "0755"
+    },
+    {
+      "id": "animation-claim",
+      "source": "services/nuxel-animation/bin/nuxel-animation-claim",
+      "target": "/usr/lib/nuxel/nuxel-animation-claim",
+      "mode": "0755"
+    },
+    {
+      "id": "session-script",
+      "source": "tools/s10plus/a29/nuxel-session.sh",
+      "target": "/usr/lib/nuxel/nuxel-session.sh",
+      "mode": "0755"
+    },
+    {
+      "id": "wait-wayland",
+      "source": "tools/s10plus/a29/nuxel-wait-wayland",
+      "target": "/usr/lib/nuxel/nuxel-wait-wayland",
+      "mode": "0755"
+    },
+    {
+      "id": "launcher-ready-wait",
+      "source": "tools/s10plus/a29/nuxel-launcher-ready-wait.sh",
+      "target": "/usr/lib/nuxel/nuxel-launcher-ready-wait",
+      "mode": "0755"
+    },
+    {
+      "id": "phoc-config",
+      "source": "tools/s10plus/a29/phoc-phone.ini",
+      "target": "/etc/nuxel/phoc-phone.ini",
+      "mode": "0644"
+    },
+    {
+      "id": "nuxelctl",
+      "source": "tools/s10plus/a32/nuxelctl",
+      "target": "/usr/bin/nuxelctl",
+      "mode": "0755"
+    },
+    {
+      "id": "web-shim",
+      "source": "services/nuxel-web/bin/nuxel-web",
+      "target": "/usr/bin/nuxel-web",
+      "mode": "0755"
+    },
+    {
+      "id": "web-server",
+      "source": "services/nuxel-web/bin/nuxel-web-server.py",
+      "target": "/usr/lib/nuxel/nuxel-web-server.py",
+      "mode": "0755"
+    },
+    {
+      "id": "bridge-shim",
+      "source": "services/nuxel-bridge/bin/nuxel-bridge",
+      "target": "/usr/bin/nuxel-bridge",
+      "mode": "0755"
+    },
+    {
+      "id": "http-bridge-shim",
+      "source": "services/nuxel-bridge/bin/nuxel-http-bridge",
+      "target": "/usr/bin/nuxel-http-bridge",
+      "mode": "0755"
+    },
+    {
+      "id": "portal-shim",
+      "source": "services/nuxel-portal/bin/nuxel-portal",
+      "target": "/usr/bin/nuxel-portal",
+      "mode": "0755"
+    },
+    {
+      "id": "notifications-shim",
+      "source": "services/nuxel-notifications/bin/nuxel-notifications",
+      "target": "/usr/bin/nuxel-notifications",
+      "mode": "0755"
+    },
+    {
+      "id": "app-registry",
+      "source": "pwa/nuxel-common/app-registry.json",
+      "target": "/etc/nuxel/app-registry/app_registry.json",
+      "mode": "0644"
+    },
+    {
+      "id": "bridge-version",
+      "source": "pwa/nuxel-common/bridge-version.json",
+      "target": "/etc/nuxel/bridge-version.json",
+      "mode": "0644"
+    },
+    {
+      "id": "packages-manifest",
+      "source": "images/s10plus/packages-manifest.json",
+      "target": "/usr/lib/nuxel/packages-manifest.json",
+      "mode": "0644"
+    },
+    {
+      "id": "input-buttons",
+      "source": "configs/nuxel/buttons.json",
+      "target": "/etc/nuxel/input/buttons.json",
+      "mode": "0644"
+    },
+    {
+      "id": "input-button-fsm",
+      "source": "configs/nuxel/input/button-fsm.json",
+      "target": "/etc/nuxel/input/button-fsm.json",
+      "mode": "0644"
+    },
+    {
+      "id": "reboot-gate",
+      "source": "configs/nuxel/buttons/reboot-gate.json",
+      "target": "/etc/nuxel/buttons/reboot-gate.json",
+      "mode": "0644"
+    },
+    {
+      "id": "haptics-settings",
+      "source": "configs/nuxel/haptics/settings.json",
+      "target": "/etc/nuxel/haptics/settings.json",
+      "mode": "0644"
+    },
+    {
+      "id": "keyboard-settings",
+      "source": "configs/nuxel/keyboard/keyboard.json",
+      "target": "/etc/nuxel/keyboard/keyboard.json",
+      "mode": "0644"
+    }
+  ],
+  "built_elf": [
+    {
+      "id": "metricsd",
+      "source": "services/nuxel-metrics/nuxel-metricsd.c",
+      "target": "/usr/lib/nuxel/nuxel-metricsd",
+      "mode": "0755"
+    },
+    {
+      "id": "wl-fb",
+      "source": "tools/s10plus/a34/nuxel-wl-fb.c",
+      "target": "/usr/lib/nuxel/nuxel-wl-fb",
+      "mode": "0755"
+    },
+    {
+      "id": "pwa-host",
+      "source": "tools/s10plus/a33/nuxel-pwa-host.c",
+      "target": "/usr/lib/nuxel/nuxel-pwa-host",
+      "mode": "0755"
+    },
+    {
+      "id": "button-manager",
+      "source": "tools/s10plus/a34/nuxel-button-manager.c",
+      "target": "/usr/lib/nuxel/nuxel-button-manager",
+      "mode": "0755"
+    },
+    {
+      "id": "touch-arm",
+      "source": "tools/s10plus/a29/nuxel-touch-arm.c",
+      "target": "/usr/lib/nuxel/nuxel-touch-arm",
+      "mode": "0755"
+    },
+    {
+      "id": "libinput-shim",
+      "source": "tools/s10plus/a33/nuxel-libinput-path.c",
+      "target": "/usr/lib/nuxel/libnuxel-libinput-path.so",
+      "mode": "0755"
+    },
+    {
+      "id": "wl-snapshot",
+      "source": "tools/s10plus/a34/nuxel-wl-snapshot.c",
+      "target": "/usr/local/bin/nuxel-wl-snapshot",
+      "mode": "0755"
+    },
+    {
+      "id": "fb-phone",
+      "source": "tools/s10plus/nuxel-fb-phone.c",
+      "target": "/usr/bin/nuxel-fb-phone",
+      "mode": "0755"
+    }
+  ],
+  "symlinks": [
+    {
+      "id": "flat-home",
+      "path": "/usr/share/nuxel/nuxel-home",
+      "points_to": "pwa/nuxel-home",
+      "required": true
+    }
+  ],
+  "enablement": [
+    {
+      "id": "metrics-socket",
+      "path": "/etc/systemd/system/sockets.target.wants/nuxel-metrics.socket",
+      "points_to": "../nuxel-metrics.socket",
+      "required": true
+    },
+    {
+      "id": "haptics",
+      "path": "/etc/systemd/system/multi-user.target.wants/nuxel-haptics.service",
+      "points_to": "../nuxel-haptics.service",
+      "required": true
+    },
+    {
+      "id": "network-udev-seed",
+      "path": "/etc/systemd/system/NetworkManager.service.requires/nuxel-network-udev-seed.service",
+      "points_to": "../nuxel-network-udev-seed.service",
+      "required": true
+    },
+    {
+      "id": "wayland",
+      "path": "/etc/systemd/system/multi-user.target.wants/nuxel-wayland.service",
+      "points_to": "../nuxel-wayland.service",
+      "required": true
+    },
+    {
+      "id": "wl-fb",
+      "path": "/etc/systemd/system/multi-user.target.wants/nuxel-wl-fb.service",
+      "points_to": "../nuxel-wl-fb.service",
+      "required": true
+    },
+    {
+      "id": "button-manager",
+      "path": "/etc/systemd/system/multi-user.target.wants/nuxel-button-manager.service",
+      "points_to": "../nuxel-button-manager.service",
+      "required": true
+    },
+    {
+      "id": "touch-arm",
+      "path": "/etc/systemd/system/multi-user.target.wants/nuxel-touch-arm.service",
+      "points_to": "../nuxel-touch-arm.service",
+      "required": true
+    },
+    {
+      "id": "seatd",
+      "path": "/etc/systemd/system/multi-user.target.wants/seatd.service",
+      "points_to": "../seatd.service",
+      "required": true
+    },
+    {
+      "id": "fallback",
+      "path": "/etc/systemd/system/multi-user.target.wants/nuxel-fallback.service",
+      "points_to": "../nuxel-fallback.service",
+      "required": true
+    },
+    {
+      "id": "bridge",
+      "path": "/etc/systemd/system/multi-user.target.wants/nuxel-bridge.service",
+      "points_to": "../nuxel-bridge.service",
+      "required": true
+    },
+    {
+      "id": "http-bridge",
+      "path": "/etc/systemd/system/multi-user.target.wants/nuxel-http-bridge.service",
+      "points_to": "../nuxel-http-bridge.service",
+      "required": true
+    },
+    {
+      "id": "portal",
+      "path": "/etc/systemd/system/multi-user.target.wants/nuxel-portal.service",
+      "points_to": "../nuxel-portal.service",
+      "required": true
+    },
+    {
+      "id": "notifications",
+      "path": "/etc/systemd/system/multi-user.target.wants/nuxel-notifications.service",
+      "points_to": "../nuxel-notifications.service",
+      "required": true
+    },
+    {
+      "id": "web",
+      "path": "/etc/systemd/system/multi-user.target.wants/nuxel-web.service",
+      "points_to": "../nuxel-web.service",
+      "required": true
+    },
+    {
+      "id": "boot-sound",
+      "path": "/etc/systemd/system/multi-user.target.wants/nuxel-boot-sound.service",
+      "points_to": "../nuxel-boot-sound.service",
+      "required": true
+    }
+  ],
+  "webroot": [
+    "/usr/share/nuxel/pwa/nuxel-home/index.html",
+    "/usr/share/nuxel/pwa/nuxel-home/js/apps.js",
+    "/usr/share/nuxel/pwa/nuxel-home/js/launcher.js",
+    "/usr/share/nuxel/pwa/nuxel-home/js/system-monitor.js",
+    "/usr/share/nuxel/pwa/nuxel-home/sw.js",
+    "/usr/share/nuxel/pwa/nuxel-home/manifest.json",
+    "/usr/share/nuxel/pwa/nuxel-home/icon-registry.json",
+    "/usr/share/nuxel/pwa/nuxel-common/bridge.js",
+    "/usr/share/nuxel/pwa/nuxel-common/app-registry.json",
+    "/usr/share/nuxel/pwa/nuxel-apps/settings/index.html",
+    "/usr/share/nuxel/pwa/nuxel-apps/settings/wifi-settings.js",
+    "/usr/share/nuxel/pwa/nuxel-apps/browser/index.html",
+    "/usr/share/nuxel/assets/button-left.png",
+    "/usr/share/nuxel/assets/button-middle.png",
+    "/usr/share/nuxel/assets/button-right.png",
+    "/usr/share/nuxel/assets/nuxel-applications-icon-pack/01-01_terminal.png",
+    "/usr/share/nuxel/assets/nuxel-quicksettings-icon-pack/01-wifi.png"
+  ],
+  "required_packages": [
+    "NetworkManager",
+    "NetworkManager-wifi",
+    "wpa_supplicant",
+    "libnl3",
+    "libnl3-cli",
+    "iw",
+    "wireless-regdb",
+    "ModemManager",
+    "bluez",
+    "geoclue2",
+    "pipewire",
+    "wireplumber",
+    "alsa-lib",
+    "mpg123",
+    "gtk3",
+    "webkit2gtk4.1",
+    "systemd",
+    "polkit",
+    "phoc",
+    "phosh",
+    "stevia",
+    "seatd",
+    "python3",
+    "dbus-daemon",
+    "ca-certificates"
+  ],
+  "live_generations": {
+    "A34": {
+      "kind": "native build outputs",
+      "manifest": "tools/s10plus/a34/build-a34.sh",
+      "targets": [
+        "/usr/lib/nuxel/nuxel-wl-fb",
+        "/usr/local/bin/nuxel-wl-snapshot",
+        "/usr/lib/nuxel/nuxel-button-manager"
+      ]
+    },
+    "A37": {
+      "kind": "live deploy manifest/evidence",
+      "manifest": "tools/beta/live/deploy-manifest.json",
+      "evidence": "docs/beta-finalization/live/evidence/deploy-20261019T151728+0200",
+      "targets": [
+        "/usr/share/nuxel/**",
+        "/usr/lib/nuxel/nuxel-button-manager",
+        "/usr/libexec/nuxel/nuxel-mp3-play"
+      ]
+    },
+    "A39": {
+      "kind": "Home PWA payload",
+      "manifest": "tools/s10plus/a39/package-live.sh",
+      "targets": [
+        "/usr/share/nuxel/pwa/nuxel-home/**",
+        "/usr/share/nuxel/assets/nuxel-bottom-bar*"
+      ]
+    },
+    "A40": {
+      "kind": "metrics/launcher payload",
+      "manifest": "tools/s10plus/a40/package-live.sh",
+      "targets": [
+        "/usr/lib/nuxel/nuxel-metricsd",
+        "/etc/systemd/system/nuxel-metrics.service",
+        "/etc/systemd/system/nuxel-metrics.socket",
+        "/usr/share/nuxel/pwa/nuxel-home/**"
+      ]
+    },
+    "A43": {
+      "kind": "release live-userspace payload",
+      "manifest": "tools/s10plus/a43/package-live.py",
+      "targets": [
+        "/usr/share/nuxel/pwa/nuxel-home/**",
+        "/usr/share/nuxel/pwa/nuxel-apps/settings/**",
+        "/usr/bin/nuxel-bridge",
+        "/usr/bin/nuxel-http-bridge"
+      ]
+    },
+    "A44": {
+      "kind": "icon delivery payload",
+      "manifest": "tools/s10plus/a44/deploy-live.py",
+      "targets": [
+        "/usr/share/nuxel/nuxel-home/index.html",
+        "/usr/share/nuxel/nuxel-home/icon-registry.json",
+        "/usr/share/nuxel/nuxel-home/js/apps.js",
+        "/usr/share/nuxel/nuxel-home/js/qs.js",
+        "/usr/share/nuxel/pwa/nuxel-common/app-registry.json"
+      ]
+    }
+  },
+  "normalization": {
+    "live_root": "/home/nuxel/nuxel",
+    "image_root": "/usr/share/nuxel",
+    "equivalent_services": [
+      {
+        "capability": "local PWA web endpoint",
+        "live": "nuxel-wayland.service child python3 -m http.server 127.0.0.1:8000",
+        "image": "nuxel-web.service (or nuxel-wayland fallback)",
+        "why": "same loopback URL and docroot; the image prefers the hardened nuxel-web server"
+      },
+      {
+        "capability": "display/UI",
+        "live": "nuxel-wayland.service + nuxel-wl-fb.service + nuxel-pwa-host",
+        "image": "nuxel-wayland.service + nuxel-wl-fb.service + nuxel-pwa-host",
+        "why": "same three owners"
+      },
+      {
+        "capability": "Wi-Fi metadata",
+        "live": "nuxel-network-udev-seed.service enabled (oneshot inactive after boot)",
+        "image": "nuxel-network-udev-seed.service enabled",
+        "why": "RequiredBy=NetworkManager.service; active state is expected to be inactive/dead after the oneshot"
+      }
+    ],
+    "not_required_on_fresh_image": [
+      {
+        "unit": "nuxel-bootmode-oneshot.service",
+        "why": "live boot-flag consumer; enabled live but boots with no /var/lib/nuxel/boot and is not part of the stable launcher payload"
+      },
+      {
+        "unit": "nuxel-animation.service",
+        "why": "guarded and skipped whenever nuxel-wl-fb is installed; animation is owned by the initramfs"
+      },
+      {
+        "unit": "nuxel-firstlight.service",
+        "why": "diagnostic hardware probe; must not become a second /dev/fb0 owner on a launcher image"
+      },
+      {
+        "unit": "nuxel-ui.service",
+        "why": "deprecated A27 fbdev UI; initramfs installs it only as a guarded fallback"
+      },
+      {
+        "unit": "nuxel-haptics-bridge.service",
+        "why": "superseded by nuxel-haptics.service; disabled live"
+      },
+      {
+        "unit": "nuxel-camera-portal.service",
+        "why": "VM/portal surface, disabled live and not a phone boot unit"
+      },
+      {
+        "unit": "nuxel-permd.service",
+        "why": "native-shell permission broker, disabled live and unrelated to the PWA launcher"
+      },
+      {
+        "unit": "nuxel-power-mode.service",
+        "why": "optional hardware policy, disabled live"
+      },
+      {
+        "unit": "nuxel-microsd-automount.service",
+        "why": "static helper unit, not enabled live"
+      },
+      {
+        "unit": "nuxel-rtc-check.timer",
+        "why": "optional RTC diagnostic, disabled live"
+      },
+      {
+        "unit": "nuxel-verbose-boot.service",
+        "why": "diagnostic boot mode, disabled live"
+      }
+    ]
+  }
+}

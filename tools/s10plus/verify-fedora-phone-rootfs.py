@@ -26,6 +26,8 @@ BINARIES=(
     '/usr/local/bin/nuxel-wl-snapshot',
     # A40/A44 socket-activated Home hardware monitor, built from repo source.
     '/usr/lib/nuxel/nuxel-metricsd',
+    '/usr/lib/nuxel/nuxel-touch-arm',
+    '/usr/bin/nuxel-fb-phone',
 )
 FILES=(
     '/etc/udev/rules.d/90-nuxel-beyond2lte.rules',
@@ -51,6 +53,22 @@ FILES=(
     '/etc/systemd/system/nuxel-metrics.service',
     '/etc/systemd/system/nuxel-metrics.socket',
     '/etc/systemd/system/sockets.target.wants/nuxel-metrics.socket',
+    '/etc/systemd/system/nuxel-haptics.service',
+    '/etc/systemd/system/multi-user.target.wants/nuxel-haptics.service',
+    '/etc/systemd/system/nuxel-network-udev-seed.service',
+    '/etc/systemd/system/NetworkManager.service.requires/nuxel-network-udev-seed.service',
+    '/usr/libexec/nuxel/nuxel-network-udev-seed',
+    '/usr/lib/nuxel/packages-manifest.json',
+    '/etc/nuxel/userspace-manifest.json',
+    '/etc/nuxel/paths.conf',
+    '/etc/nuxel/audio/audio.json',
+    '/etc/nuxel/bluetooth/bluetooth.json',
+    '/etc/nuxel/gnss/gnss.json',
+    '/etc/nuxel/power/power.json',
+    '/usr/share/nuxel/pwa/nuxel-apps/settings/index.html',
+    '/usr/share/nuxel/pwa/nuxel-apps/settings/wifi-settings.js',
+    '/usr/share/nuxel/pwa/nuxel-apps/browser/index.html',
+    '/usr/share/nuxel/pwa/nuxel-home/icon-registry.json',
 )
 
 # Runtime-critical files copied verbatim by the rootfs builder.  Comparing the
@@ -95,6 +113,19 @@ SOURCE_PARITY = {
     '/etc/systemd/system/nuxel-metrics.service': 'services/nuxel-metrics/nuxel-metrics.service',
     '/etc/systemd/system/nuxel-metrics.socket': 'services/nuxel-metrics/nuxel-metrics.socket',
     '/etc/systemd/system/sockets.target.wants/nuxel-metrics.socket': 'services/nuxel-metrics/nuxel-metrics.socket',
+    '/etc/systemd/system/nuxel-haptics.service': 'services/nuxel-haptics/nuxel-haptics.service',
+    '/etc/systemd/system/nuxel-network-udev-seed.service': 'tools/s10plus/a41/nuxel-network-udev-seed.service',
+    '/usr/libexec/nuxel/nuxel-network-udev-seed': 'tools/s10plus/a41/nuxel-network-udev-seed.sh',
+    '/usr/lib/nuxel/packages-manifest.json': 'images/s10plus/packages-manifest.json',
+    '/etc/nuxel/paths.conf': 'configs/nuxel/paths.conf',
+    '/etc/nuxel/audio/audio.json': 'configs/nuxel/audio/audio.json',
+    '/etc/nuxel/bluetooth/bluetooth.json': 'configs/nuxel/bluetooth/bluetooth.json',
+    '/etc/nuxel/gnss/gnss.json': 'configs/nuxel/gnss/gnss.json',
+    '/etc/nuxel/power/power.json': 'configs/nuxel/power/power.json',
+    '/usr/share/nuxel/pwa/nuxel-apps/settings/index.html': 'pwa/nuxel-apps/settings/index.html',
+    '/usr/share/nuxel/pwa/nuxel-apps/settings/wifi-settings.js': 'pwa/nuxel-apps/settings/wifi-settings.js',
+    '/usr/share/nuxel/pwa/nuxel-apps/browser/index.html': 'pwa/nuxel-apps/browser/index.html',
+    '/usr/share/nuxel/pwa/nuxel-home/icon-registry.json': 'pwa/nuxel-home/icon-registry.json',
 }
 
 

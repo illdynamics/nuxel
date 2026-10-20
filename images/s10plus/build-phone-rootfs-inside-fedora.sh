@@ -145,19 +145,39 @@ gcc $CFLAGS_COMMON $(pkg-config --cflags alsa) -I /nuxel/tools/s10plus/a34 \
 gcc $CFLAGS_COMMON -shared -fPIC -o "$B/libnuxel-libinput-path.so" \
     /nuxel/tools/s10plus/a33/nuxel-libinput-path.c -ldl
 
+# Touchscreen arming helper. It used to be copied as a developer-published
+# binary; compile it from the source in this aarch64 container so a clean image
+# cannot inherit a stale local artifact or a host-architecture build.
+gcc $CFLAGS_COMMON -o "$B/nuxel-touch-arm" \
+    /nuxel/tools/s10plus/a29/nuxel-touch-arm.c
+
+# Freestanding first-light renderer. Build exactly as the boot payload does:
+# no libc, no dynamic interpreter, no build id. This replaces the checked-in
+# convenience binary; the image must be reproducible from source.
+gcc -Os -w -ffreestanding -fno-builtin -nostdlib -static -s \
+    -Wl,--build-id=none -o "$B/nuxel-fb-phone" \
+    /nuxel/tools/s10plus/nuxel-fb-phone.c
+
 # A40/A44 socket-activated Home hardware monitor. The live phone runs this
 # collector; a fresh release image must build and install the same source, not
-# depend on a previously deployed binary.
-gcc -std=c11 -O2 -Wall -Wextra -Werror -o "$B/nuxel-metricsd" \
-    /nuxel/services/nuxel-metrics/nuxel-metricsd.c
+# depend on a previously deployed binary. The helper owns the reproducible
+# flags and the AArch64 check for BOTH the image and the live payload.
+/nuxel/tools/s10plus/a40/build-metrics.sh "$B/nuxel-metricsd"
 
 for _b in nuxel-wl-fb nuxel-wl-snapshot nuxel-pwa-host \
-          nuxel-button-manager libnuxel-libinput-path.so nuxel-metricsd; do
+          nuxel-button-manager libnuxel-libinput-path.so nuxel-metricsd \
+          nuxel-touch-arm nuxel-fb-phone; do
   file "$B/$_b" | grep -q 'ARM aarch64' || { echo "ERROR: $_b is not aarch64" >&2; exit 1; }
+done
+# No Mach-O or x86-64 convenience artifact may be shipped in the payload.
+for _b in "$B"/*; do
+  case "$(file -b "$_b")" in
+    *Mach-O*|*x86-64*|*80386*) echo "ERROR: host-architecture artifact in payload: $_b" >&2; exit 1 ;;
+  esac
 done
 sha256sum "$B"/nuxel-wl-fb "$B"/nuxel-wl-snapshot "$B"/nuxel-pwa-host \
           "$B"/nuxel-button-manager "$B"/libnuxel-libinput-path.so \
-          "$B"/nuxel-metricsd \
+          "$B"/nuxel-metricsd "$B"/nuxel-touch-arm "$B"/nuxel-fb-phone \
   | tee /tmp/nuxel-current-userspace.sha256
 
 # Keep Nuxel's native phone-specific bits; do not import the G7 Power staging.
@@ -165,6 +185,10 @@ install -d "$STAGE/etc/nuxel/device/s10plus" "$STAGE/etc/udev/rules.d" \
     "$STAGE/usr/share/nuxel" "$STAGE/usr/lib/nuxel" "$STAGE/usr/bin" \
     "$STAGE/etc/systemd/system/multi-user.target.wants" "$STAGE/etc/nuxel"
 cp -a /nuxel/configs/s10plus/. "$STAGE/etc/nuxel/device/s10plus/"
+# The live A37 deploy installs the canonical configs/nuxel tree. Stage the same
+# complete tree (paths.conf, audio, Bluetooth, GNSS, modem, security, power and
+# every stable settings document) instead of only a hand-picked subset.
+cp -a /nuxel/configs/nuxel/. "$STAGE/etc/nuxel/"
 install -m 0644 /nuxel/device/s10plus/nuxel-beyond2lte.conf "$STAGE/etc/nuxel/nuxel-beyond2lte.conf"
 install -m 0644 /nuxel/device/s10plus/90-nuxel-beyond2lte.rules "$STAGE/etc/udev/rules.d/90-nuxel-beyond2lte.rules"
 # The launcher is a PWA whose index.html imports `../nuxel-common/bridge.js`
@@ -200,9 +224,10 @@ install -Dm0644 /nuxel/services/nuxel-metrics/nuxel-metrics.socket \
 install -d "$STAGE/etc/systemd/system/sockets.target.wants"
 ln -sf ../nuxel-metrics.socket \
     "$STAGE/etc/systemd/system/sockets.target.wants/nuxel-metrics.socket"
-# Package the already-existing haptics implementation and preferences. Do NOT
-# enable an additional vibrator owner automatically: the older haptics bridge
-# may already own the device on live phones. Physical owner test is required.
+# The live handset runs nuxel-haptics.service as the single timed-output
+# owner. Its unit has ConditionPathExists=/sys/class/timed_output/vibrator/enable,
+# so enabling it is a no-op on kernels without that node and cannot create a
+# second owner. The superseded nuxel-haptics-bridge.service stays disabled.
 install -Dm0644 /nuxel/configs/nuxel/haptics/settings.json \
     "$STAGE/etc/nuxel/haptics/settings.json"
 install -Dm0755 /nuxel/services/nuxel-haptics/nuxel-hapticsd.py \
@@ -211,10 +236,26 @@ install -Dm0644 /nuxel/services/nuxel-haptics/nuxel-haptics.service \
     "$STAGE/etc/systemd/system/nuxel-haptics.service"
 install -Dm0755 /nuxel/services/nuxel-haptics/nuxel-haptics-sleep \
     "$STAGE/usr/libexec/nuxel/nuxel-haptics-sleep"
+ln -sf ../nuxel-haptics.service \
+    "$STAGE/etc/systemd/system/multi-user.target.wants/nuxel-haptics.service"
 ln -sf ../nuxel-boot-sound.service \
     "$STAGE/etc/systemd/system/multi-user.target.wants/nuxel-boot-sound.service"
+# A41: systemd-udevd is masked on 4.14, so NetworkManager needs the runtime
+# udev record for the vendor BCM/DHD wlan interface. This is a oneshot seed, not
+# a driver load and not a radio power change. It is required by NetworkManager
+# and is present/enabled on the live phone.
+install -Dm0755 /nuxel/tools/s10plus/a41/nuxel-network-udev-seed.sh \
+    "$STAGE/usr/libexec/nuxel/nuxel-network-udev-seed"
+install -Dm0644 /nuxel/tools/s10plus/a41/nuxel-network-udev-seed.service \
+    "$STAGE/etc/systemd/system/nuxel-network-udev-seed.service"
+install -d "$STAGE/etc/systemd/system/NetworkManager.service.requires"
+ln -sf ../nuxel-network-udev-seed.service \
+    "$STAGE/etc/systemd/system/NetworkManager.service.requires/nuxel-network-udev-seed.service"
 ln -sfn pwa/nuxel-home "$STAGE/usr/share/nuxel/nuxel-home"
-install -m 0755 /nuxel/tools/s10plus/nuxel-fb-phone-aarch64 "$STAGE/usr/bin/nuxel-fb-phone"
+install -m 0755 "$B/nuxel-fb-phone" "$STAGE/usr/bin/nuxel-fb-phone"
+# Package provenance is part of the image, not a host-only build report.
+install -m 0644 /nuxel/images/s10plus/packages-manifest.json \
+    "$STAGE/usr/lib/nuxel/packages-manifest.json"
 install -m 0644 /nuxel/assets/nuxel-background.png "$STAGE/usr/share/nuxel/nuxel-background.png"
 # The launcher stylesheet (css/style.css:60) references
 # ../assets/nuxel-background.png RELATIVE TO css/, i.e.
@@ -242,7 +283,7 @@ install -d "$STAGE/etc/nuxel" "$STAGE/usr/lib/nuxel"
 # ownership signal for the launcher, capability-aware WebKit permissions, web
 # process supervision, and the libinput path shim that gives phoc the real
 # touchscreen on a kernel with no VT and no usable udev daemon.
-install -m 0755 /nuxel/tools/s10plus/a29/nuxel-touch-arm "$STAGE/usr/lib/nuxel/nuxel-touch-arm"
+install -m 0755 "$B/nuxel-touch-arm" "$STAGE/usr/lib/nuxel/nuxel-touch-arm"
 # A34 is the shipped revision (TOUCHDOWN): the A35-patched A34 display
 # bridge (per-frame PAN + powerdown), the A34 button manager (SYN_REPORT touch translation,
 # 11-entry power menu with Cancel first, deferred Bixby cancelled by Power) and
@@ -303,10 +344,10 @@ install -m 0644 /nuxel/services/nuxel-console/systemd/nuxel-console.service \
 install -m 0755 /nuxel/services/nuxel-console/bin/nuxel-console-free \
     "$STAGE/usr/lib/nuxel/nuxel-console-free"
 # NOT ENABLED ON PURPOSE - see above. No `ln -sf ../nuxel-console.service`.
-# nuxel-animation may only become the panel owner on an image WITHOUT the launcher
-# bridge (ConditionPathExists=!/usr/lib/nuxel/nuxel-wl-fb + the claim helper), so
-# enabling it cannot regress the A32 single framebuffer owner invariant.
-ln -sf ../nuxel-animation.service "$STAGE/etc/systemd/system/multi-user.target.wants/nuxel-animation.service"
+# nuxel-animation is INSTALLED but deliberately NOT enabled on the launcher
+# image. The live handset has it disabled: the initramfs owns the boot animation
+# and nuxel-wl-fb owns the panel after handoff. The unit remains guarded for an
+# explicit diagnostic/NUXEL_ENABLE_LAUNCHER=0 build.
 # The A27 fbdev UI unit must never be a second /dev/fb0 owner on this image:
 # /init re-enables it every boot and the initramfs postboot supervisor restarts
 # it every 30 s (measured: it took the panel back 9 s after `systemctl stop`).
@@ -408,9 +449,10 @@ ln -sf ../nuxel-http-bridge.service   "$STAGE/etc/systemd/system/multi-user.targ
 ln -sf ../nuxel-web.service           "$STAGE/etc/systemd/system/multi-user.target.wants/nuxel-web.service"
 install -Dm0644 /nuxel/images/s10plus/nuxel-firstlight.service \
     "$STAGE/etc/systemd/system/nuxel-firstlight.service"
-# Diagnostic can run only when the framebuffer node exists; enabling here
-# does not enable a graphical Phosh session. It is safe to fail silently.
-ln -s ../nuxel-firstlight.service "$STAGE/etc/systemd/system/multi-user.target.wants/nuxel-firstlight.service"
+# Diagnostic first-light probe: installed but deliberately NOT enabled. The
+# live image has it disabled; the initramfs owns first light and a rootfs probe
+# would be a second /dev/fb0 opener. Keep the unit available for an explicit,
+# supervised diagnostic only.
 # Fedora systemd is a real OS boot, but needs compatible kernel cgroups,
 # SELinux settings, devtmpfs, GPU and input drivers. Do not force Phosh
 # autostart when on-device DRM/session support hasn't been established.
@@ -451,7 +493,23 @@ STATUS
 #   * systemd-udevd cannot register workers, so it forks unboundedly
 # Applied to the STAGING tree, so the shipped image needs no live fix.
 bash /nuxel/tools/s10plus/a26/nuxel-rootfs-fixes.sh --root "$STAGE"
+# In-image SBOM/hash manifest. The source commit and commit timestamp come from
+# the mounted checkout, never the wall clock, so the manifest is reproducible.
+SOURCE_COMMIT="$(git -C /nuxel rev-parse HEAD 2>/dev/null || true)"
+if [ -z "${SOURCE_DATE_EPOCH:-}" ]; then
+  SOURCE_DATE_EPOCH="$(git -C /nuxel show -s --format=%ct HEAD 2>/dev/null || echo 0)"
+fi
+python3 /nuxel/tools/s10plus/parity/generate-userspace-manifest.py \
+    --root "$STAGE" --repo /nuxel \
+    --inventory /nuxel/tools/s10plus/parity/required-payload.json \
+    --output /etc/nuxel/userspace-manifest.json \
+    --version "$(tr -d '[:space:]' < /nuxel/VERSION)" \
+    --source-commit "$SOURCE_COMMIT" --source-date-epoch "$SOURCE_DATE_EPOCH"
 python3 /nuxel/tools/s10plus/verify-fedora-phone-rootfs.py --staging "$STAGE"
+python3 /nuxel/tools/s10plus/parity/verify-image-parity.py --staging "$STAGE" --repo /nuxel \
+    --inventory /nuxel/tools/s10plus/parity/required-payload.json \
+    --live-baseline /nuxel/tools/s10plus/parity/live-baseline-20261020.json \
+    --json /tmp/nuxel-image-parity-staging.json
 # Disk size must fit installed runtime before building; fail rather than truncate.
 USED_KB="$(du -sk "$STAGE" | awk '{print $1}')"
 if (( USED_KB + 512*1024 > MB*1024 )); then
@@ -463,5 +521,9 @@ mkfs.ext4 -q -F -L nuxel-beyond2lte -d "$STAGE" "$OUT"
 # e2fsck -fn should exit 0 for a correct freshly-made filesystem.
 e2fsck -fn "$OUT"
 python3 /nuxel/tools/s10plus/verify-fedora-phone-rootfs.py --ext4 "$OUT"
+python3 /nuxel/tools/s10plus/parity/verify-image-parity.py --ext4 "$OUT" --repo /nuxel \
+    --inventory /nuxel/tools/s10plus/parity/required-payload.json \
+    --live-baseline /nuxel/tools/s10plus/parity/live-baseline-20261020.json \
+    --json /tmp/nuxel-image-parity-ext4.json
 sha256sum "$OUT" > "${OUT}.sha256"
 echo "[nuxel] Fedora 43 aarch64 phone rootfs packaged: $OUT"

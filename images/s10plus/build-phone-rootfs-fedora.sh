@@ -27,7 +27,15 @@ mkdir -p "$(dirname "$OUT")"
 OUTDIR="$(cd "$(dirname "$OUT")" && pwd)"
 NAME="$(basename "$OUT")"
 echo "[nuxel] Fedora 43 aarch64 mobile image -> $OUT ($MB MiB)"
-podman run --rm --platform linux/arm64 --user root \
+# On an SELinux-enforcing workstation a read-only bind mount is still blocked
+# without a label; the repo is mounted read-only, so disabling label separation
+# for this build container is the least-privilege way to make the documented
+# build reproducible on Fedora hosts as well as Ubuntu CI.
+SECURITY_ARGS=()
+if command -v selinuxenabled >/dev/null 2>&1 && selinuxenabled; then
+  SECURITY_ARGS+=(--security-opt label=disable)
+fi
+podman run --rm --platform linux/arm64 --user root "${SECURITY_ARGS[@]}" \
   --mount "type=bind,source=$ROOT,target=/nuxel,readonly" \
   --mount "type=bind,source=$OUTDIR,target=/deliver" \
   -e "NUXEL_IMAGE_NAME=$NAME" -e "NUXEL_IMAGE_MB=$MB" \

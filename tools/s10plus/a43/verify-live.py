@@ -41,7 +41,18 @@ with tarfile.open(payload, 'r:gz') as tf:
         'services/nuxel-bridge/src/api.py',
         'services/nuxel-metrics/nuxel-metrics.service',
         'services/nuxel-metrics/nuxel-metrics.socket',
+        'services/nuxel-haptics/nuxel-haptics.service',
+        'tools/s10plus/a41/nuxel-network-udev-seed.service',
+        'tools/s10plus/a41/nuxel-network-udev-seed.sh',
+        'build/a40/nuxel-metricsd',
+        'pwa/nuxel-apps/browser/index.html',
+        'pwa/nuxel-apps/settings/index.html',
     }
     missing = required - seen
     assert not missing, 'missing required payload members: ' + ', '.join(sorted(missing))
-print('Verified payload hashes and %d safe regular files for %s' % (len(entries), expected_version))
+    metrics = tf.extractfile('files/build/a40/nuxel-metricsd').read()
+    assert len(metrics) > 64 and metrics[:4] == b'\x7fELF', 'metrics payload is not ELF'
+    assert metrics[4] == 2 and metrics[5] == 1, 'metrics payload is not 64-bit little-endian ELF'
+    assert int.from_bytes(metrics[18:20], 'little') == 183, 'metrics payload is not AArch64'
+print('Verified payload hashes, AArch64 metrics ELF and %d safe regular files for %s'
+      % (len(entries), expected_version))

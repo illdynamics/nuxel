@@ -11,6 +11,7 @@ from pathlib import Path
 import hashlib
 import json
 import shutil
+import subprocess
 import sys
 import tarfile
 import tempfile
@@ -22,7 +23,7 @@ out = Path(sys.argv[1]).resolve() if len(sys.argv) > 1 else (
     root / f'build/out/nuxel-{version}-live-userspace.tar.gz')
 
 items = set()
-for base in ('pwa/nuxel-home', 'pwa/nuxel-apps/settings'):
+for base in ('pwa/nuxel-home', 'pwa/nuxel-apps/settings', 'pwa/nuxel-apps/browser'):
     for path in (root / base).rglob('*'):
         if path.is_file() and not path.is_symlink():
             items.add(path.relative_to(root).as_posix())
@@ -33,14 +34,25 @@ items.update({
     'services/nuxel-bridge/src/bridge.py',
     'services/nuxel-metrics/nuxel-metrics.service',
     'services/nuxel-metrics/nuxel-metrics.socket',
+    'services/nuxel-haptics/nuxel-haptics.service',
+    'tools/s10plus/a41/nuxel-network-udev-seed.service',
+    'tools/s10plus/a41/nuxel-network-udev-seed.sh',
     'services/nuxel-session/systemd/nuxel-boot-sound.service',
     'tools/s10plus/a33/nuxel-sound-cue.py',
     'assets/nuxel-bottom-bar.jpg',
     'assets/nuxel-bottom-bar2.png',
 })
+# Never package a stale developer binary. Build the collector from the exact
+# checkout now. On x86_64 CI this uses the aarch64 cross compiler; on an arm64
+# host the helper selects native gcc.
 metrics_binary = root / 'build/a40/nuxel-metricsd'
-if metrics_binary.is_file() and not metrics_binary.is_symlink():
-    items.add('build/a40/nuxel-metricsd')
+subprocess.run([str(root / 'tools/s10plus/a40/build-metrics.sh'), str(metrics_binary)],
+               check=True, cwd=root)
+data = metrics_binary.read_bytes()
+if len(data) < 64 or data[:4] != b'\x7fELF' or data[4] != 2 or data[5] != 1 \
+        or int.from_bytes(data[18:20], 'little') != 183:
+    raise SystemExit('fresh metrics build is not a 64-bit little-endian AArch64 ELF')
+items.add('build/a40/nuxel-metricsd')
 
 manifest = []
 out.parent.mkdir(parents=True, exist_ok=True)

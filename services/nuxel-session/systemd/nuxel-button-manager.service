@@ -1,27 +1,82 @@
+# nuxel-button-manager.service — A33 (briq-03e)
+#
+# Install: /etc/systemd/system/nuxel-button-manager.service
+# Build:   tools/s10plus/a33/build-a33-buttons.sh (or: gcc -O2 -o nuxel-button-manager nuxel-button-manager.c -lasound)
+#
+# SINGLE OWNER OF THE KEYPAD
+#   This unit is the ONLY userspace handler of the gpio_keys key set on the S10+
+#   (KEY_VOLUMEDOWN 114, KEY_VOLUMEUP 115, KEY_POWER 116, assistant/Bixby 703).
+#   logind is not used for these keys on this image, phoc treats them as an
+#   ordinary keyboard, and the A27 fb UI is masked — so exactly one process may
+#   read them, and that process must never stop without being restarted. That is
+#   the A32 ownership invariant (docs/beta-finalization/baseline-protection.json
+#   INV-4) and it is preserved here.
+#
+# WHAT IT MAY DO
+#   * POWER short  -> display on/off through the running bridge (/run/nuxel-wl-fb.cmd)
+#   * POWER long   -> the power MENU (selection, refusal, timeout)
+#   * POWER >= 8 s -> the reboot CLASS, which is gated and refuses by default
+#   * VOLUME +/-   -> the real ALSA mixer of the beyond-madera card
+#   * BIXBY        -> open-terminal (single), voice-input (double), long = disabled
+#   * touchscreen gestures (read-only, never grabbed) -> back / home / recents when
+#     the launcher has not already handled them
+#
+# WHAT IT MAY NEVER DO
+#   * enter Recovery or Download Mode, touch a bootloader interface, write a
+#     partition or a block device: those power-menu entries are refused in code
+#     with reason NO_FLASH_INVARIANT.
+#
+# Input nodes are selected by CAPABILITY and NAME, never by /dev/input/eventN.
+#
+# The unit is deliberately NOT PartOf/WantedBy graphical.target: the buttons must
+# work even when the launcher is down, because the power menu is the fallback
+# control surface when the glass is unresponsive.
+
 [Unit]
-# Nuxel hardware-button manager (S10+, A32) — the single owner of the phone's
-# physical buttons on this device:
-#   POWER short -> display off/on through nuxel-wl-fb (no second fb owner)
-#   VOLUME +/-  -> the real ALSA mixer of card0, with autorepeat + OSD
-#   BIXBY/ASSISTANT -> configurable logical action (default: Nuxel Terminal)
-# Measured key set on /dev/input/event1 "gpio_keys": 114 VOLUMEDOWN,
-# 115 VOLUMEUP, 116 POWER, 703 assistant.  Nothing else in this image handles
-# these keys, so there is no duplicated handling with logind/phoc.
-Description=Nuxel hardware button manager (power, volume, assistant key)
-Documentation=file:/usr/share/doc/nuxel/BETA-HARDWARE-FINALIZER/06-POWER-BUTTON.md
-After=nuxel-wayland.service nuxel-wl-fb.service
-Wants=nuxel-wayland.service
+Description=Nuxel hardware button and gesture manager (single owner of gpio_keys)
+Documentation=file:/usr/share/doc/nuxel/BUTTONS-GESTURES.md
+After=local-fs.target
+Before=multi-user.target
+# Do not fight the display bridge: the manager only WRITES to its control FIFO.
+After=nuxel-wl-fb.service
+Wants=nuxel-wl-fb.service
+# Restart-burst bound ([Unit], not [Service]).  In [Service] systemd ignores it,
+# which would let a crash loop hammer the handset unbounded.
 StartLimitIntervalSec=60
 StartLimitBurst=5
 
 [Service]
 Type=simple
-Environment=NUXEL_KEY_DEVICE=gpio_keys
 ExecStart=/usr/lib/nuxel/nuxel-button-manager
+# Restart=always is required by the single-owner rule: if the manager dies, the
+# physical buttons stop working entirely, and no other process can take over.
 Restart=always
-RestartSec=3
-StandardOutput=journal
-StandardError=journal
+RestartSec=2
+# A tight loop of crashes must not hammer the system: the [Unit] bound above
+# keeps it to 5 restarts in 60 s, then stays down and lets journald record why.
+# The manager needs the input nodes and the FIFOs; it never needs a block device.
+SupplementaryGroups=input
+# NoNewPrivileges keeps the manager from acquiring anything it was not granted:
+# it dispatches through FIFOs and the ALSA mixer only.
+NoNewPrivileges=yes
+# Protect the partitions the mission forbids: even a compromised manager cannot
+# reach a block device, and /boot is invisible to it.
+ProtectSystem=strict
+ReadWritePaths=/run /var/lib/nuxel /var/log/nuxel /usr/share/nuxel/runtime
+PrivateDevices=no
+PrivateTmp=yes
+ProtectHome=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictAddressFamilies=AF_UNIX
+RestrictSUIDSGID=yes
+MemoryDenyWriteExecute=yes
+# Explicit: no capability to reboot or to manipulate devices is granted here. The
+# only reboot path is a userspace systemctl call, gated by
+# /etc/nuxel/buttons/reboot-gate.json (see docs/beta-finalization/system/BUTTONS-GESTURES.md).
+CapabilityBoundingSet=CAP_CHOWN CAP_DAC_OVERRIDE
+AmbientCapabilities=
 
 [Install]
 WantedBy=multi-user.target

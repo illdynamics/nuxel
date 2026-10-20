@@ -73,6 +73,8 @@ UNIT_SOURCES = [
     "services/nuxel-session/systemd/nuxel-wl-fb.service",
     "services/nuxel-session/systemd/nuxel-fallback.service",
     "services/nuxel-session/systemd/nuxel-button-manager.service",
+    "services/nuxel-haptics/nuxel-haptics.service",
+    "tools/s10plus/a41/nuxel-network-udev-seed.service",
     "services/nuxel-animation/systemd/nuxel-animation.service",
     "services/nuxel-console/systemd/nuxel-console.service",
     "images/s10plus/nuxel-firstlight.service",
@@ -144,6 +146,15 @@ PROVISIONED_NOT_ENABLED = {
         "framed protocol. The unit is guarded by ConditionPathExists=/usr/bin/"
         "nuxel-console (absent on the shipped image) + ExecCondition="
         "nuxel-console-free (proves the port is free) + Restart=no",
+    "nuxel-animation.service":
+        "installed but not enabled on the launcher image: the initramfs owns the "
+        "boot animation, nuxel-wl-fb owns the panel after handoff, and the live "
+        "handset has this unit disabled. The guarded unit remains for an "
+        "explicit NUXEL_ENABLE_LAUNCHER=0 / diagnostic build.",
+    "nuxel-firstlight.service":
+        "diagnostic first-light probe; installed but not enabled. The initramfs "
+        "owns first light and the live handset has the unit disabled, so a "
+        "rootfs probe must never become a second /dev/fb0 opener.",
 }
 
 REGEX_SECTION = re.compile(r"^\[([A-Za-z]+)\]\s*$")
@@ -222,6 +233,10 @@ def installed_units_from_builder() -> Tuple[Set[str], Set[str], List[str]]:
     for m in re.finditer(r"\$STAGE/etc/systemd/system/([A-Za-z0-9@._-]+\.(?:service|socket))", text):
         installed.add(m.group(1))
     for m in re.finditer(r"/etc/systemd/system/multi-user\.target\.wants/([A-Za-z0-9@._-]+)", text):
+        enabled.add(m.group(1))
+    for m in re.finditer(r"/etc/systemd/system/sockets\.target\.wants/([A-Za-z0-9@._-]+)", text):
+        enabled.add(m.group(1))
+    for m in re.finditer(r"/etc/systemd/system/NetworkManager\.service\.requires/([A-Za-z0-9@._-]+)", text):
         enabled.add(m.group(1))
     # for-loop form over literal unit names: `for u in a b c; do` where the body
     # names "$u.service". Non-unit loops (system users, artifacts, paths) are
@@ -465,13 +480,22 @@ def main(argv=None, root: str = None) -> int:
             problems.append("unit %s expects multi-user.target enablement; builder enables %s"
                             % (name, sorted(enabled_byname)))
 
+    # RequiredBy=NetworkManager.service is an enablement dependency, not a
+    # multi-user symlink. Assert the builder creates the exact .requires link.
+    seed = "nuxel-network-udev-seed.service"
+    if seed in units:
+        required_by = install_refs(units[seed]["sections"], "RequiredBy")
+        if "NetworkManager.service" in required_by:
+            if seed not in enabled:
+                problems.append("builder does not enable %s via NetworkManager.service.requires" % seed)
+
     # ---- 6: provenance — canonical units must not LOSE measured settings ---
     provenance = {
         "services/nuxel-session/systemd/nuxel-wayland.service": "tools/s10plus/a31/nuxel-wayland.service",
         "services/nuxel-session/systemd/nuxel-wl-fb.service": "tools/s10plus/a31/nuxel-wl-fb.service",
         "services/nuxel-session/systemd/nuxel-touch-arm.service": "tools/s10plus/a31/nuxel-touch-arm.service",
         "services/nuxel-session/systemd/seatd.service": "tools/s10plus/a31/seatd.service",
-        "services/nuxel-session/systemd/nuxel-button-manager.service": "tools/s10plus/a32/nuxel-button-manager.service",
+        "services/nuxel-session/systemd/nuxel-button-manager.service": "tools/s10plus/a33/nuxel-button-manager.service",
     }
     for canonical, shipped in provenance.items():
         cp, sp = os.path.join(repo_root(), canonical), os.path.join(repo_root(), shipped)
