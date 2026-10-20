@@ -1,56 +1,55 @@
 # NUXEL R56 — Mandatory final report one — engineering summary
 STATUS: IMPLEMENTATION PROMPT ONLY — NOT EXECUTED
+BRANCH: `nuxel/r56-engineering-summary-report`
+BASE EVIDENCE SNAPSHOT: `e2aaf66951570a8e86211cb8b48060e6cd6773dd` (`v0.6.0-beta`)
 
 ## Mission
+Generate the mandatory engineering summary from actual Git changes, build/deployment receipts, logs, hashes, target identity, and test evidence. This is a reporting branch: no source feature implementation is required, and performance/physical results must never be invented.
 
-This is a future implementation mission for `nuxel/r56-engineering-summary-report`. Do not execute it merely by reading this file. A future agent may modify code, tests, documentation, images, services, or configuration only after an owner explicitly authorizes execution of this branch prompt. Keep the change limited to this component; do not merge, cherry-pick, deploy, flash, reboot, replace a kernel, or start an unrelated component.
+This file is a future implementation brief, not an instruction to execute now. A future agent may modify this branch only after the repository owner explicitly authorizes execution. Do not merge, deploy, flash, reboot the phone, or start another branch's component as part of this work.
 
 ## Repo-grounded current state
+Observed owners: `docs/beta-finalization/BETA-FINALIZATION-ENGINEERING-REPORT.md`, `docs/beta-finalization/release/evidence/gate-20261016T214620+0200/ENGINEERING-REPORT-INPUTS.md`, `docs/architecture.md`, `docs/beta-finalization/live/DEPLOYMENTS.md`, `docs/beta-finalization/WORK-QUEUE.md`, and the evidence directories under `docs/beta-finalization/`. Existing reports provide structure; the new report must be generated from the execution commit, not copied forward.
 
-**SOURCE VERIFIED:** at source base `e2aaf66951570a8e86211cb8b48060e6cd6773dd`, the following repository paths exist and are directly relevant to the investigation: `docs/beta-finalization/BETA-FINALIZATION-ENGINEERING-REPORT.md, docs/beta-finalization/release/evidence/gate-20261016T214620+0200/ENGINEERING-REPORT-INPUTS.md, docs/architecture.md, docs/beta-finalization/live/DEPLOYMENTS.md`. Their presence establishes maintained configuration, code, test, asset, or evidence locations; it does *not* prove a built image or a live-device result. `docs/architecture.md` and `docs/beta-finalization/DEVICE-CAPABILITY-MANIFEST.md` (where present) are context, not a substitute for inspecting the cited owners and their callers at the execution commit.
-
-The current target is Fedora ARM64 for Galaxy S10+ SM-G975F / Exynos 9820, without a mandatory Android framework. Start by re-reading the cited files at the implementation commit, `git log`, `git grep`, manifests, unit files and existing A34–A40/beta-finalization evidence. Record what is observed separately from proposed work. Existing repository captures are historical evidence only: label outcomes as `SOURCE VERIFIED`, `BUILT`, `VM VERIFIED`, `LIVE-DEVICE DEPLOYED`, `OWNER-VERIFIED`, `BLOCKED`, or `NOT TESTED`. In particular, S10+ speaker audio remains unverified unless later evidence proves it; user-reported Home/Back/Recents, virtual-keyboard, icon-drag and torch issues require fresh verification only when this component touches them.
-
-This component’s intended result is: Generate engineering summary only from Git changes, receipts, logs, target model and deployment evidence. No source edit is required for reporting; never invent performance or physical audio evidence.
+Use `SOURCE VERIFIED`, `BUILT`, `VM VERIFIED`, `LIVE-DEVICE DEPLOYED`, `OWNER-VERIFIED`, `BLOCKED`, and `NOT TESTED` as separate labels. A file existing, a unit being active, a mock returning PASS, or a command exiting 0 is not proof of physical hardware behaviour.
 
 ## Precise component boundaries
+Owns the engineering report structure, data collection, traceability, and honest status language. Does not own code changes for failed components. No invented metrics, owner observations, or deployment success.
 
-Own the smallest end-to-end path needed for this mission, including its configuration/schema, runtime consumer, status/reporting surface and tests. Preserve the established Nuxel launcher/WebKit/compositor approach, touch UI, three-button navigation, haptics, BG1/BG2 dock selection (BG2 is default), Fedora ARM64 compatibility and USB-console recoverability. Do not silently introduce Android APIs, a second competing daemon, a generic replacement UI, fictitious kernel nodes, unsafe amplifier/LED/radio control, or a capability claim based solely on a mock.
-
-Out of scope without a separate owner-approved task: bootloader/partition writes, flashing, kernel replacement, radio firmware changes, live-phone reboot, factory reset, destructive cleanup, and merge/release activity. If investigation finds no suitable owner, state **“Not found—locate or add the smallest appropriate module”** and document why rather than fabricating a path.
+Stay inside this boundary. Do not silently alter unrelated launcher, compositor, boot, radio, security, or release behaviour. If a cited path is absent at execution time, record **“Not found—locate or add the smallest appropriate module”** and prove why; never invent a path, symbol, device node, or observed hardware result.
 
 ## Implementation work packages
-
-1. Establish a component evidence baseline. Trace every cited path to its producer and consumer, enumerate service/unit/package/schema boundaries, and make a state table with source evidence, runtime prerequisite, owner and current status. Preserve command lines, stderr and content hashes in the future report.
-2. Reproduce the component-specific failure or missing capability with deterministic host/VM-safe fixtures first. Define the exact observable state transition and invariant for: Generate engineering summary only from Git changes, receipts, logs, target model and deployment evidence. No source edit is required for reporting; never invent performance or physical audio evidence. Do not label a UI rendering, a mock, or an archive member as a device pass.
-3. Design the smallest integration change after the trace is complete. Specify data ownership, lifecycle/ordering, error propagation, privilege boundary, persistence and compatibility with existing launcher/compositor and Fedora services. Resolve duplicate state sources rather than adding a parallel control path.
-4. Implement guarded diagnostics and observability. Produce actionable logs/structured status that expose interface identity, readiness, selected backend, failure reason and fallback without leaking secrets. Add rate/size bounds where event, log, media or sensor streams are involved.
-5. Add component-focused tests and negative cases alongside the implementation. Use existing project tests where applicable (for example `tools/beta/tests/test-release-tools.sh` and `boot/s10plus/tests/test-boot-image-gates.sh` only when their scope applies); add no meaningless skip. Record commands, environment and output hashes.
-6. Write `docs/component-reports/r56.md` when execution is authorized. Include a source inventory, change list, matrix of result labels, commands/exit codes, test evidence, owner-facing live steps, known gaps, rollback receipt and explicit distinction between simulated and physical evidence.
+1. Define the report schema/sections: commit/tree, target, scope, changed files, architecture impact, tests, deployment, evidence classes, blockers, rollback, and next actions.
+2. Collect data from Git, workqueue records, CI logs, build artifacts, deployment receipts, and test outputs; record the exact source for each claim.
+3. Distinguish SOURCE VERIFIED, BUILT, VM VERIFIED, LIVE-DEVICE DEPLOYED, OWNER-VERIFIED, BLOCKED, and NOT TESTED.
+4. Include a dependency/blocker table and a list of owner actions that remain outstanding.
+5. Generate a machine-readable companion JSON and validate it against the source evidence.
+6. Run a consistency check that rejects a claim with no evidence path or a stale commit SHA.
+7. Produce a concise executive summary plus detailed appendices.
 
 ## Failure modes and diagnostics
-
-Treat absent nodes, firmware, permissions, services, IPC endpoints, package dependencies, display/input focus, route ownership and stale cached state as separate hypotheses. Capture the exact interface name, udev/sysfs/proc or service evidence, version, timestamp and first failure; do not infer hardware from a nominal configuration file. Guard against races during boot/suspend/resume, duplicate events, stale UI state, partial writes, interrupted updates and privilege escalation. If a hardware-dependent prerequisite is missing, collect the relevant kernel configuration/device-tree/log evidence and report the smallest grounded next step as `BLOCKED` rather than widening scope.
+- Watch for copying old pass tables, using a stale deployed SHA, claiming CI success without artifact inspection, and omitting failed tests. The report must be reproducible from the evidence set.
+- Preserve the first failing layer, exact command, stderr, timestamp, versions, and owning service/module. Do not blur missing hardware, missing firmware, missing kernel support, bad permissions, stale cache, and an actual code regression into one failure.
 
 ## Verification and acceptance
+A future agent must report every item below with its evidence class and exact command or inspection:
+1. Every claim links to a commit, command, artifact hash, or evidence file.
+2. The report names the exact execution commit/tree and target model/variant.
+3. No physical/hardware/perf claim is made without owner/live evidence.
+4. Blocked and NOT TESTED items are visible, not omitted.
+5. The JSON companion is schema-valid and agrees with the Markdown.
+6. Changed files and tests match `git diff`/the actual run.
+7. The report can be regenerated after an interruption without duplicating or losing evidence.
 
-All checks below are required before declaring this component complete; report each with its evidence class.
-
-1. A traceable before/after matrix names each owned input, consumer, expected state, actual state, command/log and result label for this mission.
-2. The implementation has a focused deterministic test or inspection procedure covering the normal path and an injected unavailable/malformed/denied path specific to the selected backend.
-3. The UI/service exposes truthful readiness and error state: no optimistic success, duplicate status indicator, synthetic hardware reading, or silent fallback is accepted.
-4. Compatibility is demonstrated for the stated Fedora ARM64 target and existing Nuxel interaction model; unrelated navigation, touch focus, BG2 dock and USB recovery invariants are not regressed.
-5. A reviewer can reproduce the result from the report using exact commands, artifacts/hashes and exit codes; source/VM evidence remains labeled separately from live-device proof.
-6. For any physical validation, the owner gets short explicit steps, expected observation, stop condition and a place to record PASS/FAIL/timestamp. Missing phone access remains `NOT TESTED` or `BLOCKED`.
-
-## Hardware/privilege/rollback safety
-
-Never surprise-flash, write bootloader/partitions, replace the kernel, reboot a live phone, change radio firmware, brute-force amplifier controls, strobe a torch/LED, or remove the established speaker-volume protection. Obtain explicit owner approval before any live-device action. Prefer read-only discovery, dry runs and mock fixtures. Design rollback as a reversible userspace/config change with a documented pre-state, atomic or staged apply where possible, health check, and USB-console/rescue path. Stop immediately on uncertainty about target identity, power, boot mode, mounted filesystem, privileged authorization or rollback availability.
+## Hardware, privilege and rollback safety
+Read-only reporting; do not modify implementation to make the report look better. Redact secrets/personal data. No flash/reboot.
+Before a live-device step, capture boot mode, target model/variant, deployed hashes, service state, and a tested userspace rollback. Preserve the USB console and the existing 25% speaker-volume cap. Never surprise-flash, write bootloader/partitions, replace the kernel, change radio firmware, or strobe an LED/torch without explicit owner approval. A missing phone or missing owner observation remains `NOT TESTED` or `BLOCKED`.
 
 ## Deliverables
-
-Deliver the narrowly scoped implementation, focused tests, and `docs/component-reports/r56.md` only after execution authorization. The report must contain: repo commit/tree state; changed files; source versus design decisions; command receipts and hashes; test matrix; device model/variant evidence; any owner observations; rollback procedure/receipt; and unresolved blockers. Do not claim release readiness, live deployment, audible output, sensor operation, radio operation, or physical control without direct evidence.
+- A narrowly scoped implementation on `nuxel/r56-engineering-summary-report`, with tests and docs for this component only.
+- `docs/component-reports/r56.md` containing: commit/tree state, changed files, observed pre-state, commands and exit codes, hashes, evidence-class matrix, owner test steps/results, rollback receipt, and unresolved blockers.
+- A concise handoff stating exactly what is SOURCE VERIFIED, BUILT, DEPLOYED, OWNER-VERIFIED, BLOCKED, and NOT TESTED.
 
 ## Stop conditions / known blockers
-
-Stop and ask the owner if implementation requires another component, an unverified driver/firmware/interface, destructive data mutation, sensitive credentials, external service/account, target access, or a security policy exception. Stop if results depend on unavailable S10+ hardware and leave a precise owner request rather than manufacturing a pass. A failed assertion must be triaged as stale versus regression with evidence—never weakened to skip. This prompt itself changes nothing and authorizes no deployment.
+Stop if required evidence is missing; report a gap instead of filling it with narrative.
+Stop rather than guessing if target identity, privilege, firmware/driver support, rollback availability, or physical safety cannot be established. A failed protected assertion must be triaged as stale versus regression with evidence; never convert it to a skip. This prompt authorizes no implementation, deployment, reboot, or release.
