@@ -1,56 +1,55 @@
 # NUXEL R22 — Notification LEDs, edge lighting and flashlight
 STATUS: IMPLEMENTATION PROMPT ONLY — NOT EXECUTED
+BRANCH: `nuxel/r22-notification-leds-edge-lighting-torch`
+BASE EVIDENCE SNAPSHOT: `e2aaf66951570a8e86211cb8b48060e6cd6773dd` (`v0.6.0-beta`)
 
 ## Mission
+Implement truthful notification LED, edge-lighting, and torch behaviour. This branch must discover actual LED/torch interfaces, keep torch and camera resource ownership safe, enforce a bounded ON time and always-available OFF path, and label the S10+'s curved-display edge lighting as a software effect rather than a hardware LED.
 
-This is a future implementation mission for `nuxel/r22-notification-leds-edge-lighting-torch`. Do not execute it merely by reading this file. A future agent may modify code, tests, documentation, images, services, or configuration only after an owner explicitly authorizes execution of this branch prompt. Keep the change limited to this component; do not merge, cherry-pick, deploy, flash, reboot, replace a kernel, or start an unrelated component.
+This file is a future implementation brief, not an instruction to execute now. A future agent may modify this branch only after the repository owner explicitly authorizes execution. Do not merge, deploy, flash, reboot the phone, or start another branch's component as part of this work.
 
 ## Repo-grounded current state
+Observed owners: `configs/nuxel/leds/leds.json`, `tools/s10plus/a33/nuxel-led-diag.sh`, `tools/s10plus/a33/tests/hw-subsystems/test-led-diag.py`, the `leds-*` fixtures, `configs/nuxel/camera/camera.json`, `services/nuxel-notifications/src/notifications.py`, `pwa/nuxel-home/js/qs.js`, and `pwa/nuxel-home/js/status-bar.js`. The manifest marks visible light and torch as NEEDS_OWNER_TEST and says edge lighting is not a hardware LED.
 
-**SOURCE VERIFIED:** at source base `e2aaf66951570a8e86211cb8b48060e6cd6773dd`, the following repository paths exist and are directly relevant to the investigation: `configs/nuxel/leds/leds.json, configs/nuxel/leds/README.md, configs/nuxel/camera/camera.json, configs/nuxel/camera/README.md`. Their presence establishes maintained configuration, code, test, asset, or evidence locations; it does *not* prove a built image or a live-device result. `docs/architecture.md` and `docs/beta-finalization/DEVICE-CAPABILITY-MANIFEST.md` (where present) are context, not a substitute for inspecting the cited owners and their callers at the execution commit.
-
-The current target is Fedora ARM64 for Galaxy S10+ SM-G975F / Exynos 9820, without a mandatory Android framework. Start by re-reading the cited files at the implementation commit, `git log`, `git grep`, manifests, unit files and existing A34–A40/beta-finalization evidence. Record what is observed separately from proposed work. Existing repository captures are historical evidence only: label outcomes as `SOURCE VERIFIED`, `BUILT`, `VM VERIFIED`, `LIVE-DEVICE DEPLOYED`, `OWNER-VERIFIED`, `BLOCKED`, or `NOT TESTED`. In particular, S10+ speaker audio remains unverified unless later evidence proves it; user-reported Home/Back/Recents, virtual-keyboard, icon-drag and torch issues require fresh verification only when this component touches them.
-
-This component’s intended result is: Inventory real notification LED, screen edge effect and torch interfaces with camera resource and power safety. Separate visual simulation from hardware state, prevent strobe, and enforce a torch timeout plus safe off path.
+Use `SOURCE VERIFIED`, `BUILT`, `VM VERIFIED`, `LIVE-DEVICE DEPLOYED`, `OWNER-VERIFIED`, `BLOCKED`, and `NOT TESTED` as separate labels. A file existing, a unit being active, a mock returning PASS, or a command exiting 0 is not proof of physical hardware behaviour.
 
 ## Precise component boundaries
+Owns LED/torch discovery, status/notification mapping, torch timeout/off path, and EDGE_LIGHTING state reporting. Does not own camera capture or the notification daemon's message store. No automatic strobe, no torch-on-boot, and no camera/ISP changes.
 
-Own the smallest end-to-end path needed for this mission, including its configuration/schema, runtime consumer, status/reporting surface and tests. Preserve the established Nuxel launcher/WebKit/compositor approach, touch UI, three-button navigation, haptics, BG1/BG2 dock selection (BG2 is default), Fedora ARM64 compatibility and USB-console recoverability. Do not silently introduce Android APIs, a second competing daemon, a generic replacement UI, fictitious kernel nodes, unsafe amplifier/LED/radio control, or a capability claim based solely on a mock.
-
-Out of scope without a separate owner-approved task: bootloader/partition writes, flashing, kernel replacement, radio firmware changes, live-phone reboot, factory reset, destructive cleanup, and merge/release activity. If investigation finds no suitable owner, state **“Not found—locate or add the smallest appropriate module”** and document why rather than fabricating a path.
+Stay inside this boundary. Do not silently alter unrelated launcher, compositor, boot, radio, security, or release behaviour. If a cited path is absent at execution time, record **“Not found—locate or add the smallest appropriate module”** and prove why; never invent a path, symbol, device node, or observed hardware result.
 
 ## Implementation work packages
-
-1. Establish a component evidence baseline. Trace every cited path to its producer and consumer, enumerate service/unit/package/schema boundaries, and make a state table with source evidence, runtime prerequisite, owner and current status. Preserve command lines, stderr and content hashes in the future report.
-2. Reproduce the component-specific failure or missing capability with deterministic host/VM-safe fixtures first. Define the exact observable state transition and invariant for: Inventory real notification LED, screen edge effect and torch interfaces with camera resource and power safety. Separate visual simulation from hardware state, prevent strobe, and enforce a torch timeout plus safe off path. Do not label a UI rendering, a mock, or an archive member as a device pass.
-3. Design the smallest integration change after the trace is complete. Specify data ownership, lifecycle/ordering, error propagation, privilege boundary, persistence and compatibility with existing launcher/compositor and Fedora services. Resolve duplicate state sources rather than adding a parallel control path.
-4. Implement guarded diagnostics and observability. Produce actionable logs/structured status that expose interface identity, readiness, selected backend, failure reason and fallback without leaking secrets. Add rate/size bounds where event, log, media or sensor streams are involved.
-5. Add component-focused tests and negative cases alongside the implementation. Use existing project tests where applicable (for example `tools/beta/tests/test-release-tools.sh` and `boot/s10plus/tests/test-boot-image-gates.sh` only when their scope applies); add no meaningless skip. Record commands, environment and output hashes.
-6. Write `docs/component-reports/r22.md` when execution is authorized. Include a source inventory, change list, matrix of result labels, commands/exit codes, test evidence, owner-facing live steps, known gaps, rollback receipt and explicit distinction between simulated and physical evidence.
+1. Enumerate `/sys/class/leds/*`, V4L2 flash controls, and any notification LED paths; record which are truly writable.
+2. Implement torch ON/OFF with explicit owner action, a maximum ON duration, automatic OFF on exit/error, and a hardware-off verification.
+3. Implement notification LED mapping only when a real LED exists; otherwise report NOT_SUPPORTED_ON_DEVICE and use an honest display fallback.
+4. Model edge lighting as a display overlay tied to the display bridge, with `hardware_led=false` and a clear NOT_VERIFIED state when the bridge is unavailable.
+5. Audit camera/torch resource contention and ensure torch cannot run while a camera stream owns the flash.
+6. Add tests for absent class, permission denied, write failure, timeout, and forced service exit.
+7. Define a physical owner check for visible torch/LED and safe OFF.
 
 ## Failure modes and diagnostics
-
-Treat absent nodes, firmware, permissions, services, IPC endpoints, package dependencies, display/input focus, route ownership and stale cached state as separate hypotheses. Capture the exact interface name, udev/sysfs/proc or service evidence, version, timestamp and first failure; do not infer hardware from a nominal configuration file. Guard against races during boot/suspend/resume, duplicate events, stale UI state, partial writes, interrupted updates and privilege escalation. If a hardware-dependent prerequisite is missing, collect the relevant kernel configuration/device-tree/log evidence and report the smallest grounded next step as `BLOCKED` rather than widening scope.
+- Watch for a flash node that accepts `brightness` but never emits light, `flash_strobe` semantics differing from torch, two apps toggling the torch, and a display overlay being mistaken for a hardware LED.
+- Preserve the first failing layer, exact command, stderr, timestamp, versions, and owning service/module. Do not blur missing hardware, missing firmware, missing kernel support, bad permissions, stale cache, and an actual code regression into one failure.
 
 ## Verification and acceptance
+A future agent must report every item below with its evidence class and exact command or inspection:
+1. The report names each real LED/torch path or explicitly reports it absent.
+2. Torch ON/OFF is explicit, bounded, and returns to OFF after timeout, error, or service exit.
+3. No torch or LED turns on during boot or automatically from a notification.
+4. Notification LED is claimed only when the class exists and a write is observed; otherwise the UI says unsupported.
+5. Edge lighting is reported as a display effect, not a hardware LED.
+6. Camera/torch ownership conflict is detected and refused safely.
+7. A visible-light owner result is recorded separately from sysfs tests.
 
-All checks below are required before declaring this component complete; report each with its evidence class.
-
-1. A traceable before/after matrix names each owned input, consumer, expected state, actual state, command/log and result label for this mission.
-2. The implementation has a focused deterministic test or inspection procedure covering the normal path and an injected unavailable/malformed/denied path specific to the selected backend.
-3. The UI/service exposes truthful readiness and error state: no optimistic success, duplicate status indicator, synthetic hardware reading, or silent fallback is accepted.
-4. Compatibility is demonstrated for the stated Fedora ARM64 target and existing Nuxel interaction model; unrelated navigation, touch focus, BG2 dock and USB recovery invariants are not regressed.
-5. A reviewer can reproduce the result from the report using exact commands, artifacts/hashes and exit codes; source/VM evidence remains labeled separately from live-device proof.
-6. For any physical validation, the owner gets short explicit steps, expected observation, stop condition and a place to record PASS/FAIL/timestamp. Missing phone access remains `NOT TESTED` or `BLOCKED`.
-
-## Hardware/privilege/rollback safety
-
-Never surprise-flash, write bootloader/partitions, replace the kernel, reboot a live phone, change radio firmware, brute-force amplifier controls, strobe a torch/LED, or remove the established speaker-volume protection. Obtain explicit owner approval before any live-device action. Prefer read-only discovery, dry runs and mock fixtures. Design rollback as a reversible userspace/config change with a documented pre-state, atomic or staged apply where possible, health check, and USB-console/rescue path. Stop immediately on uncertainty about target identity, power, boot mode, mounted filesystem, privileged authorization or rollback availability.
+## Hardware, privilege and rollback safety
+Torch is a high-power emitter: enforce short tests, explicit `--yes`, and always-off cleanup. No strobing, no camera-module register writes, no boot-time activation.
+Before a live-device step, capture boot mode, target model/variant, deployed hashes, service state, and a tested userspace rollback. Preserve the USB console and the existing 25% speaker-volume cap. Never surprise-flash, write bootloader/partitions, replace the kernel, change radio firmware, or strobe an LED/torch without explicit owner approval. A missing phone or missing owner observation remains `NOT TESTED` or `BLOCKED`.
 
 ## Deliverables
-
-Deliver the narrowly scoped implementation, focused tests, and `docs/component-reports/r22.md` only after execution authorization. The report must contain: repo commit/tree state; changed files; source versus design decisions; command receipts and hashes; test matrix; device model/variant evidence; any owner observations; rollback procedure/receipt; and unresolved blockers. Do not claim release readiness, live deployment, audible output, sensor operation, radio operation, or physical control without direct evidence.
+- A narrowly scoped implementation on `nuxel/r22-notification-leds-edge-lighting-torch`, with tests and docs for this component only.
+- `docs/component-reports/r22.md` containing: commit/tree state, changed files, observed pre-state, commands and exit codes, hashes, evidence-class matrix, owner test steps/results, rollback receipt, and unresolved blockers.
+- A concise handoff stating exactly what is SOURCE VERIFIED, BUILT, DEPLOYED, OWNER-VERIFIED, BLOCKED, and NOT TESTED.
 
 ## Stop conditions / known blockers
-
-Stop and ask the owner if implementation requires another component, an unverified driver/firmware/interface, destructive data mutation, sensitive credentials, external service/account, target access, or a security policy exception. Stop if results depend on unavailable S10+ hardware and leave a precise owner request rather than manufacturing a pass. A failed assertion must be triaged as stale versus regression with evidence—never weakened to skip. This prompt itself changes nothing and authorizes no deployment.
+Stop if the LED class is absent or the only write path is unsafe/unknown. Report NOT_SUPPORTED or BLOCKED; never emulate the hardware and call it verified.
+Stop rather than guessing if target identity, privilege, firmware/driver support, rollback availability, or physical safety cannot be established. A failed protected assertion must be triaged as stale versus regression with evidence; never convert it to a skip. This prompt authorizes no implementation, deployment, reboot, or release.
