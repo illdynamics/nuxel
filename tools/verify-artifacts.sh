@@ -233,6 +233,22 @@ case "${DEVICE}" in
                 _fail "python3 is required to run tools/s10plus/verify-fedora-phone-rootfs.py (${s10_label})"
             fi
         fi
+        # The live userspace delta is generated from the same checkout and
+        # ships inside the device archive. Its manifest must match the exact
+        # bytes in build/out so a release can reproduce the phone userspace.
+        live_payload=""
+        for cand in "${OUT}"/nuxel-*-live-userspace.tar.gz; do
+            [ -s "${cand}" ] || continue
+            live_payload="${cand}"
+            break
+        done
+        if [ -z "${live_payload}" ]; then
+            _fail "missing live userspace payload: ${OUT}/nuxel-*-live-userspace.tar.gz"
+        elif python3 "${NUXEL_ROOT}/tools/s10plus/a43/verify-live.py" "${live_payload}"; then
+            _ok "$(basename "${live_payload}"): hash manifest and required A44 files verified"
+        else
+            _fail "$(basename "${live_payload}"): live userspace payload verification FAILED"
+        fi
         if [ "${NUXEL_S10PLUS_UBOOT:-0}" = "1" ]; then
             _require_boot_image "${OUT}/u-boot-beyond2lte.img" "u-boot-beyond2lte.img (mainline set)"
         fi

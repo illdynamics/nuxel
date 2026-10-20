@@ -75,6 +75,11 @@ html, body {
     left: 0;
     right: 0;
     bottom: 0;
+    /* Home owns pan/swipe; browser pinch-zoom is intentionally excluded.
+       App iframes keep their own viewport policy. */
+    touch-action: pan-x pan-y;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
 }
 
 /* Scrollbar styling */
@@ -299,7 +304,6 @@ html, body {
 .system-navigation {
     position: fixed;
     z-index: 260;
-    isolation: isolate;
     inset: auto 0 0;
     height: var(--system-nav-height);
     display: grid;
@@ -308,23 +312,27 @@ html, body {
     padding: 5px max(14px, env(safe-area-inset-left)) calc(5px + env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-right));
     background: transparent;
     border-top: 0;
-    overflow: visible;
+    overflow: hidden;
+    touch-action: pan-x pan-y;
 }
+/* The source artwork is ~3:1 and its meaningful pixels occupy the middle
+ * ~56% of the image.  Keep the artwork inside this 62px strip (instead of
+ * letting a 120px layer paint upward over the shortcut dock), and crop the
+ * black matte above the artwork. */
 .system-navigation::before {
     content: '';
     position: absolute;
     left: 0;
     right: 0;
     bottom: 0;
-    height: 33.34vw;
+    height: var(--system-nav-height);
     z-index: 0;
     pointer-events: none;
     background-image: var(--dock-art, url('../assets/nuxel-bottom-bar2.png'));
     background-size: 100% auto;
-    background-position: center bottom;
+    background-position: center -11.05vw;
     background-repeat: no-repeat;
     image-rendering: pixelated;
-    mix-blend-mode: screen;
 }
 .system-navigation[data-background="none"]::before { display: none; }
 .system-navigation button {

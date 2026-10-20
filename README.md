@@ -165,6 +165,30 @@ NUXEL_DEVICE=mustang bash boot/flash.sh --unlock --wipe
 | `ci/` | Build validation |
 | `assets/` | Wallpaper + boot animation |
 
+## What's new in v0.6.3-beta
+
+A beta release built from the exact userspace that is live on the S10+:
+
+- **A44 launcher/navigation fixes.** The shortcut dock no longer paints a
+  duplicate half-height artwork bar, dock artwork is confined to the
+  Back/Home/Recents strip, Home always returns to desktop 1, and pinch/double-tap
+  zoom is blocked on the Home document.
+- **Live CPU/MEM/GPU/VRAM meters.** The socket-activated `nuxel-metricsd`
+  collector accepts cache-busted requests, answers CORS preflight, samples a
+  real first CPU delta, and reports Mali allocation bytes against the shared-RAM
+  budget instead of a hard-coded N/A.
+- **NetworkManager Wi-Fi Settings.** Status, scan, radio control, WPA2/WPA3
+  connection activation and disconnect use the existing bridge; no independent
+  supplicant is started and credentials never appear in argv.
+- **Release flow is PR-only.** A merged PR to `main` builds the S10+ image,
+  verifies exact source parity, creates the annotated `v0.6.3-beta` tag and
+  publishes a GitHub prerelease. Tag pushes do not trigger the workflow.
+- **Whole-repo bump to `v0.6.3-beta`:** `VERSION`, device `APKBUILD`s,
+  PWA/bridge manifests, shell apps, services, OTA/VM tooling and release docs.
+- **Not hardware verified:** Wi-Fi association/internet, speaker, camera,
+  Bluetooth, NFC, GNSS and a fresh-image physical boot still require owner
+  testing. See [`docs/releases/v0.6.3-beta.md`](docs/releases/v0.6.3-beta.md).
+
 ## What's new in v0.6.1-beta
 
 A patch release on top of the working v0.6.0-beta runtime: it stages haptic
@@ -461,7 +485,7 @@ remaining interactive gap. The Moto G7 Power is flashed but still hangs at a
 black screen; the Pixel 10 Pro XL is still a scaffold. The UTM VM demo boots
 (display + network + sound).
 
-## Honest Status — v0.6.1-beta
+## Honest Status — v0.6.3-beta
 
 **S10+ (SM-G975F, beyond2lte) — NUXEL BOOTS AND TOUCH INPUT WORKS.**
 S-Boot loads the raw arm64 `Image` with the initramfs embedded, the Fedora 43
@@ -689,7 +713,7 @@ The other two bring-up targets are the **Samsung Galaxy S10+** (Exynos 9820,
 
 | Document | Description |
 |---|---|
-| [CHANGELOG.md](CHANGELOG.md) | Release notes — everything from v0.1.0 to v0.6.1-beta + readiness |
+| [CHANGELOG.md](CHANGELOG.md) | Release notes — everything from v0.1.0 to v0.6.3-beta + readiness |
 | [prompts/QUICKSTART.md](prompts/QUICKSTART.md) | Get running in 5 minutes |
 | [design/nuxel-linux-phone-design.md](design/nuxel-linux-phone-design.md) | Design bible — the full vision |
 | [design/Nuxel Phone OS Project Plan and Architecture.md](design/Nuxel%20Phone%20OS%20Project%20Plan%20and%20Architecture.md) | Technical architecture + component map |
@@ -698,7 +722,7 @@ The other two bring-up targets are the **Samsung Galaxy S10+** (Exynos 9820,
 | [docs/app-store.md](docs/app-store.md) | App distribution model (Flatpak + portals, signed packages) |
 | [docs/pwa-model.md](docs/pwa-model.md) | Hardened PWA runtime spec |
 | [docs/build-guide.md](docs/build-guide.md) | Full build pipeline |
-| [.github/workflows/release.yml](.github/workflows/release.yml) | Main-merge or tag-triggered build → GitHub Release pipeline |
+| [.github/workflows/release.yml](.github/workflows/release.yml) | Merged-PR (`main`) build → auto-tag → GitHub prerelease pipeline |
 | [docs/device-setup.md](docs/device-setup.md) | Mustang hardware setup |
 | [docs/bootloader-unlock-guide.md](docs/bootloader-unlock-guide.md) | Unlock + relock guide |
 | [docs/driver-status.md](docs/driver-status.md) | Hardware driver matrix |
@@ -722,16 +746,17 @@ The other two bring-up targets are the **Samsung Galaxy S10+** (Exynos 9820,
 Build outputs (`build/out/<device>/`) are git-ignored — they are produced by the
 scripts in `images/` and `kernel/`, not committed. To publish them on GitHub:
 
-* **Automated (recommended):** push a version tag (`git tag v0.6.1-beta && git push
-  origin v0.6.1-beta`). [`.github/workflows/release.yml`](.github/workflows/release.yml)
-  builds every device on an Ubuntu runner (`make assets`, the shared initramfs for
-  g7power, each `kernel/<dev>/build-kernel.sh`, then `images/g7power/build.sh`;
-  for s10plus it runs `images/s10plus/build-a25-boot.sh` — the A25 image with the
-  initramfs embedded in the kernel — plus the Fedora 43 ARM64 phone rootfs, which
-  **compiles the current A34 TOUCHDOWN userspace from repo sources** in the arm64
-  container), packages each `build/out/<device>/` directory and creates a GitHub
-  Release with the archives + `SHA256SUMS.txt` attached. A device only ships if
-  its build and the content gate both pass.
+* **Automated (recommended):** open a PR against `main`. When the PR is merged,
+  [`.github/workflows/release.yml`](.github/workflows/release.yml) runs for the
+  merge commit, builds the S10+ image from repo sources, verifies the
+  source-to-image parity gates, creates the annotated `v<VERSION>` tag, and
+  publishes a GitHub **prerelease**. Tag pushes and direct pushes to `main` do
+  not trigger it; `main` is protected so the only route is a merged PR.
+  The S10+ build runs `images/s10plus/build-a25-boot.sh` (raw arm64 kernel with
+  the repo-source initramfs embedded) plus the Fedora 43 ARM64 phone rootfs,
+  which **compiles the current A34 TOUCHDOWN userspace and socket-activated
+  metrics daemon from repo sources** inside the arm64 container. It also emits
+  the matching hash-manifested live userspace payload.
 * **Manually / locally:** run the packager against an existing build tree, then
   upload the archives yourself:
 

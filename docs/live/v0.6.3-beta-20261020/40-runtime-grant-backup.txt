@@ -1,0 +1,5 @@
+# console /dev/ttyACM0
+===== B=/var/backups/nuxel/v0.6.3-beta-pre-20261020T123441Z; mkdir -p "$B/runtime"; cp -a /var/lib/nuxel/permissions/*.json "$B/runtime/" 2>/dev/null; ls -l "$B/runtime"   [rc=0 frame=ec77622c sha_ok=yes]
+    total 8
+    -rw-r--r-- 1 nuxel-bridge nuxel-bridge 93 Oct 20 14:43 nuxel-settings.json
+    -rw-r--r-- 1 nuxel-bridge nuxel-bridge 93 Oct 20 10:41 org.nuxel.Home.json

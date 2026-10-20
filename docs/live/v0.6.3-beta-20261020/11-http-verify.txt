@@ -1,0 +1,18 @@
+# console /dev/ttyACM0
+===== ss -ltnp | grep -E "8000|8080"; echo ===PING===; curl -s --max-time 3 http://127.0.0.1:8080/ping; echo; echo ===HEALTH===; curl -s --max-time 3 http://127.0.0.1:8080/health; echo; echo ===STATIC===; curl -s -o /dev/null -w "index=%{http_code} bytes=%{size_download}\n" http://127.0.0.1:8000/pwa/nuxel-home/index.html; curl -sI http://127.0.0.1:8000/pwa/nuxel-home/assets/nuxel-bottom-bar.jpg | head -3; curl -sI http://127.0.0.1:8000/pwa/nuxel-home/assets/nuxel-bottom-bar2.png | head -3; echo ===CSS===; curl -s http://127.0.0.1:8000/pwa/nuxel-home/css/launcher.css | grep -n "bottom-bar"   [rc=0 frame=5809603d sha_ok=yes]
+    LISTEN 0      5          127.0.0.1:8080      0.0.0.0:*    users:(("python3",pid=18855,fd=3))
+    LISTEN 0      5          127.0.0.1:8000      0.0.0.0:*    users:(("python3",pid=5396,fd=3))
+    ===PING===
+    {"error": "Not found"}
+    ===HEALTH===
+    {"error": "Not found"}
+    ===STATIC===
+    index=200 bytes=9623
+    HTTP/1.0 200 OK
+    Server: SimpleHTTP/0.6 Python/3.14.7
+    Date: Tue, 20 Oct 2026 12:36:15 GMT
+    HTTP/1.0 200 OK
+    Server: SimpleHTTP/0.6 Python/3.14.7
+    Date: Tue, 20 Oct 2026 12:36:15 GMT
+    ===CSS===
+    343: background-image:var(--dock-art,url("../assets/nuxel-bottom-bar2.png"));background-size:100% auto;

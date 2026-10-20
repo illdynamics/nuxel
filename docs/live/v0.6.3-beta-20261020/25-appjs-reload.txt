@@ -1,0 +1,69 @@
+# console /dev/ttyACM0
+===== echo ===APPJS===; sed -n "255,300p" /usr/share/nuxel/pwa/nuxel-home/js/app.js; echo ===INDEX-SCRIPTS===; grep -n "<script" /usr/share/nuxel/pwa/nuxel-home/index.html   [rc=0 frame=a3316117 sha_ok=yes]
+    ===APPJS===
+            // Handle native launch events
+            document.addEventListener('native:launch', (event) => {
+                const { app, url } = event.detail;
+                this._launchNative(app, url);
+            });
+            // A32 — logical actions from the Nuxel hardware buttons / host API.
+            // The button manager and the Settings app never poke the DOM directly:
+            // they emit the same logical action, which is resolved here.
+            // A34 TOUCHDOWN: nuxel-pwa-host delivers host actions with
+            // `window.dispatchEvent(new CustomEvent('nuxel:action', ...))`.  An
+            // event dispatched on window does NOT bubble down to document, so the
+            // document-only listener here never saw the host's `home` / `search` /
+            // `settings` actions (measured: launch Mail, then host `action home`
+            // left the Mail iframe on the glass).  Listen on both targets; the same
+            // handler is idempotent.
+            const onNuxelAction = (event) => {
+                const action = event.detail && event.detail.action;
+                console.log('[Nuxel] logical action:', action);
+                if (action === 'home') this.home();
+                else if (action === 'back') this.back();
+                else if (action === 'forward') this.forward();
+                else if (action === 'stop') this.stopLoading();
+                else if (action === 'reload-launcher') this.reloadLauncher();
+                else if (action === 'search' && this.components.search) this.components.search.open();
+                else if (action === 'settings') appRegistry.launchApp('nuxel-settings');
+            };
+            document.addEventListener('nuxel:action', onNuxelAction);
+            window.addEventListener('nuxel:action', onNuxelAction);
+            // Keyboard shortcuts
+            document.addEventListener('keydown', (e) => {
+                // Ctrl+F or / for search
+                if ((e.ctrlKey && e.key === 'f') || e.key === '/') {
+                    e.preventDefault();
+                    if (this.components.search) {
+                        this.components.search.open();
+                    }
+                }
+                // Escape to close overlays
+                if (e.key === 'Escape') {
+                    this._closeOverlays();
+                }
+            });
+            // Long press is reserved for launcher editing and never opens WebKit's
+    ===INDEX-SCRIPTS===
+    140:    <script>
+    147:    <script src="js/apps.js"></script>
+    148:    <script src="js/layout-model.js"></script>
+    149:    <script src="js/launcher.js"></script>
+    150:    <script src="js/status-bar.js"></script>
+    151:    <script src="js/search.js"></script>
+    152:    <script type="module" src="../nuxel-common/bridge.js"></script>
+    153:    <script src="js/bridge.js"></script>
+    154:    <script src="js/recents.js"></script>
+    155:    <script src="js/qs.js"></script>
+    158:    <script src="js/host-bridge.js"></script>
+    161:    <script src="js/settings-store.js"></script>
+    162:    <script src="js/safe-zones.js"></script>
+    163:    <script src="js/osd.js"></script>
+    164:    <script src="js/bootlog.js"></script>
+    165:    <script src="js/touch-keyboard.js"></script>
+    166:    <script src="js/navigation.js"></script>
+    167:    <script src="js/gestures.js"></script>
+    168:    <script src="js/home-settings.js"></script>
+    169:    <script src="js/system-monitor.js"></script>
+    170:    <script src="js/scroll-indicators.js"></script>
+    171:    <script src="js/app.js"></script>

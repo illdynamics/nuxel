@@ -64,7 +64,8 @@ def verify_running_payload(rows):
     required = {'cpu_percent', 'cpu_status', 'cpu_frequency_mhz',
                 'memory_percent', 'memory_status', 'memory_used_kib',
                 'memory_total_kib', 'gpu_percent', 'gpu_status',
-                'gpu_frequency_mhz', 'gpu_memory_kib', 'gpu_memory_status'}
+                'gpu_frequency_mhz', 'gpu_memory_kib', 'gpu_memory_total_kib',
+                'gpu_memory_status'}
     if not required.issubset(metrics):
         raise RuntimeError('metrics response missing required fields')
     if headers.get('Access-Control-Allow-Origin') != 'http://127.0.0.1:8000':

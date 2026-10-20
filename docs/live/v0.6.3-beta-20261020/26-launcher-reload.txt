@@ -1,0 +1,34 @@
+# console /dev/ttyACM0
+===== echo ===BEFORE===; tail -3 /run/nuxel-web.log; printf "action reload-launcher\n" > /run/nuxel-pwa-host.cmd; sleep 5; echo ===AFTER===; grep -E "GET /(pwa/nuxel-home|assets/nuxel-bottom-bar|pwa/nuxel-apps/settings|pwa/nuxel-common/app-registry)" /run/nuxel-web.log | tail -25; echo ===STATE===; grep -i "reload-launcher" /run/nuxel-home.state 2>/dev/null | tail -3   [rc=0 frame=3bea6121 sha_ok=yes]
+    ===BEFORE===
+    127.0.0.1 - - [20/Oct/2026 14:39:59] "GET /runtime/osd.json HTTP/1.1" 200 -
+    127.0.0.1 - - [20/Oct/2026 14:40:01] "GET /runtime/osd.json HTTP/1.1" 200 -
+    127.0.0.1 - - [20/Oct/2026 14:40:02] "GET /runtime/osd.json HTTP/1.1" 200 -
+    ===AFTER===
+    127.0.0.1 - - [20/Oct/2026 11:52:07] "GET /pwa/nuxel-home/js/system-monitor.js HTTP/1.1" 200 -
+    127.0.0.1 - - [20/Oct/2026 11:52:07] "GET /pwa/nuxel-home/js/scroll-indicators.js HTTP/1.1" 200 -
+    127.0.0.1 - - [20/Oct/2026 11:52:07] "GET /pwa/nuxel-home/js/app.js HTTP/1.1" 200 -
+    127.0.0.1 - - [20/Oct/2026 11:52:07] "GET /pwa/nuxel-home/assets/nuxel-background.png HTTP/1.1" 200 -
+    127.0.0.1 - - [20/Oct/2026 11:52:07] "GET /pwa/nuxel-home/css/assets/nuxel-bottom-bar2.png HTTP/1.1" 404 -
+    127.0.0.1 - - [20/Oct/2026 11:52:07] "GET /pwa/nuxel-home/assets/nuxel-bottom-bar2.png HTTP/1.1" 200 -
+    127.0.0.1 - - [20/Oct/2026 11:52:07] "GET /pwa/nuxel-home/assets/nuxel-bottom-bar.jpg HTTP/1.1" 200 -
+    127.0.0.1 - - [20/Oct/2026 11:52:08] "GET /pwa/nuxel-home/css/assets/nuxel-bottom-bar.jpg HTTP/1.1" 404 -
+    127.0.0.1 - - [20/Oct/2026 11:52:08] "GET /pwa/nuxel-home/sw.js HTTP/1.1" 200 -
+    127.0.0.1 - - [20/Oct/2026 11:52:08] "GET /pwa/nuxel-home/ HTTP/1.1" 200 -
+    127.0.0.1 - - [20/Oct/2026 11:52:08] "GET /pwa/nuxel-home/index.html HTTP/1.1" 200 -
+    127.0.0.1 - - [20/Oct/2026 11:52:08] "GET /pwa/nuxel-home/manifest.json HTTP/1.1" 200 -
+    127.0.0.1 - - [20/Oct/2026 11:52:08] "GET /pwa/nuxel-home/icons/icon-192.png HTTP/1.1" 200 -
+    127.0.0.1 - - [20/Oct/2026 11:52:08] "GET /pwa/nuxel-home/icons/icon-512.png HTTP/1.1" 200 -
+    127.0.0.1 - - [20/Oct/2026 11:52:08] "GET /pwa/nuxel-home/assets/nuxel-boot-animation.mp4 HTTP/1.1" 200 -
+    127.0.0.1 - - [20/Oct/2026 12:17:55] "GET /pwa/nuxel-apps/settings/index.html HTTP/1.1" 200 -
+    127.0.0.1 - - [20/Oct/2026 12:17:55] "GET /pwa/nuxel-apps/settings/settings.css HTTP/1.1" 200 -
+    127.0.0.1 - - [20/Oct/2026 12:17:55] "GET /pwa/nuxel-apps/settings/settings.js HTTP/1.1" 200 -
+    127.0.0.1 - - [20/Oct/2026 14:31:12] "GET /pwa/nuxel-home/index.html HTTP/1.1" 200 -
+    127.0.0.1 - - [20/Oct/2026 14:36:15] "GET /pwa/nuxel-home/index.html HTTP/1.1" 200 -
+    127.0.0.1 - - [20/Oct/2026 14:36:15] "GET /pwa/nuxel-home/css/launcher.css HTTP/1.1" 200 -
+    127.0.0.1 - - [20/Oct/2026 14:36:48] "GET /pwa/nuxel-apps/settings/index.html HTTP/1.1" 200 -
+    127.0.0.1 - - [20/Oct/2026 14:36:48] "GET /pwa/nuxel-apps/settings/wifi-settings.js HTTP/1.1" 200 -
+    127.0.0.1 - - [20/Oct/2026 14:36:48] "GET /pwa/nuxel-apps/settings/settings.css HTTP/1.1" 200 -
+    127.0.0.1 - - [20/Oct/2026 14:36:48] "GET /pwa/nuxel-common/app-registry.json HTTP/1.1" 200 -
+    ===STATE===
+    1792500003 HOST_ACTION_REFUSED reload-launcher

@@ -3,8 +3,8 @@
 (function (global) {
     'use strict';
     const KEY = 'nuxel.homeAppearance';
-    // `none` is intentional: it keeps all dock hitboxes and navigation
-    // behaviour while removing only the decorative, pointer-inert artwork.
+    // `none` is intentional: it keeps all navigation hitboxes/behaviour
+    // while removing only the decorative, pointer-inert artwork.
     // These URLs deliberately start at the active Nuxel Home web root.  A
     // relative URL stored in --dock-art is resolved at the stylesheet which
     // consumes it (css/launcher.css), not at this script.  That formerly made
@@ -19,11 +19,11 @@
     function applyDock(data) {
         const value = dockChoice(data.dockBackground);
         const artwork = DOCKS[value];
-        // The shortcut dock and the fixed Back/Home/Recents dock are distinct
-        // surfaces, but one explicit preference must update both. Previously
-        // the picker changed only #dock while the visible navigation strip was
-        // hard-coded to BG2, making a successful switch appear to do nothing.
-        const docks = Array.from(document.querySelectorAll('#dock, #system-navigation'));
+        // Artwork belongs ONLY to the fixed Back/Home/Recents strip.  The
+        // shortcut dock is deliberately transparent: painting the same art
+        // there created a second half-height bar above the navigation strip
+        // and hid the four dock shortcuts behind its black matte.
+        const docks = Array.from(document.querySelectorAll('#system-navigation'));
         if (!docks.length) return;
         docks.forEach(dock => {
             dock.dataset.background = value;
@@ -92,8 +92,8 @@
             '<h3>Home layout</h3>' +
             '<div class="home-setting-row"><label>Lock icon layout <input type="checkbox" data-home-locked' + (settings.homeLocked ? ' checked' : '') + '></label>' +
             '<label>Desktops <select data-desktop-count>' + options(1, 8, settings.desktopCount || 2) + '</select></label></div>' +
-            '<h3>Bottom dock</h3>' +
-            '<p class="home-setting-hint">Applies to the shortcut and Back/Home/Recents docks. BG2 is the default; tap to preview immediately.</p>' +
+            '<h3>Navigation bar artwork</h3>' +
+            '<p class="home-setting-hint">Shown behind Back, Home and Recents only. The app dock stays transparent. BG2 is the default; tap to preview immediately.</p>' +
             '<div class="dock-background-choices" role="group" aria-label="Dock background">' +
             Object.keys(DOCKS).map(id => '<button type="button" class="dock-background-choice" data-dock-choice="' + id + '" aria-pressed="' + (id === selectedDock) + '">' +
                 (DOCKS[id] ? '<img src="' + DOCKS[id] + '" alt="' + (id === 'bg1' ? 'BG1 Classic' : 'BG2 Alternative') + '">' : '<span class="dock-background-none-preview" aria-hidden="true">No artwork</span>') +

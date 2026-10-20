@@ -1,0 +1,29 @@
+# console /dev/ttyACM0
+===== echo ===DMESG===; dmesg 2>/dev/null | grep -Ei "cs47l93|cs35l40|madera|abox|firmware.*(fail|load)|dsp" | tail -45; echo ===WMFW===; find /lib/firmware -iname "*.wmfw" 2>/dev/null | head -20; echo ===FIRMWARE-DIRS===; find /lib/firmware -maxdepth 2 -type d 2>/dev/null | head -15; echo ===ASOC===; ls /sys/kernel/debug/asoc/ 2>/dev/null; echo ===CARD0===; ls -l /proc/asound/card0/ | head -15   [rc=0 frame=c3d3609d sha_ok=yes]
+    ===DMESG===
+    ===WMFW===
+    ===FIRMWARE-DIRS===
+    /lib/firmware
+    ===ASOC===
+    abox_dump
+    abox_vdma
+    beyond-madera
+    codecs
+    dais
+    platforms
+    ===CARD0===
+    total 0
+    dr-xr-xr-x 2 root root 0 Oct 20 14:37 compr42
+    dr-xr-xr-x 2 root root 0 Oct 20 14:37 compr5
+    -r--r--r-- 1 root root 0 Oct 20 14:37 id
+    dr-xr-xr-x 3 root root 0 Oct 20 14:37 pcm0p
+    dr-xr-xr-x 3 root root 0 Oct 20 14:37 pcm10p
+    dr-xr-xr-x 3 root root 0 Oct 20 14:37 pcm11p
+    dr-xr-xr-x 3 root root 0 Oct 20 14:37 pcm12c
+    dr-xr-xr-x 3 root root 0 Oct 20 14:37 pcm13c
+    dr-xr-xr-x 3 root root 0 Oct 20 14:37 pcm14c
+    dr-xr-xr-x 3 root root 0 Oct 20 14:37 pcm15c
+    dr-xr-xr-x 3 root root 0 Oct 20 14:37 pcm16c
+    dr-xr-xr-x 3 root root 0 Oct 20 14:37 pcm17c
+    dr-xr-xr-x 3 root root 0 Oct 20 14:37 pcm18c
+    dr-xr-xr-x 3 root root 0 Oct 20 14:37 pcm19c

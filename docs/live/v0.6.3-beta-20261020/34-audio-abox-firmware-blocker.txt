@@ -1,0 +1,14 @@
+# console /dev/ttyACM0
+===== echo ===CALLIOPE-FILES===; find /lib/firmware /usr/lib/firmware -iname "calliope*" 2>/dev/null; find / -xdev -iname "calliope*" 2>/dev/null | head -10; echo ===KERNEL===; journalctl -k --no-pager 2>&1 | grep -iE "calliope|abox-core.*firmware|Direct firmware" | tail -15; echo ===ABOX-STATE===; cat /sys/kernel/debug/asoc/beyond-madera/dapm/bias_level 2>/dev/null; cat /sys/kernel/debug/asoc/beyond-madera/dapm/SPEAKER 2>/dev/null   [rc=0 frame=f12d6194 sha_ok=yes]
+    ===CALLIOPE-FILES===
+    ===KERNEL===
+    Oct 20 11:52:03 fedora kernel: samsung-vts 15510000.vts: Direct firmware load for vts.bin failed with error -2
+    Oct 20 11:52:03 fedora kernel: samsung-abox 18c50000.abox: Direct firmware load for calliope_sram.bin failed with error -2
+    Oct 20 11:52:03 fedora kernel: samsung-abox 18c50000.abox: Direct firmware load for calliope_sram_2.bin failed with error -2
+    Oct 20 11:52:03 fedora kernel: samsung-abox 18c50000.abox: Invalid calliope state: 0
+    Oct 20 11:53:01 fedora kernel: samsung-abox-core 18c55000.abox-core: calliope_sram.bin isn't loaded yet
+    Oct 20 11:53:01 fedora kernel: samsung-abox-core 18c55000.abox-core: Direct firmware load for calliope_sram.bin failed with error -2
+    ===ABOX-STATE===
+    Off
+    SPEAKER: Off  in 0 out 1
+     in  "static" "Right AMP SPK"

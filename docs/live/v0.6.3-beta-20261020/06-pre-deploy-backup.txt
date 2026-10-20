@@ -1,0 +1,35 @@
+# console /dev/ttyACM0
+===== sh /tmp/nuxel-backup-pre-deploy.sh   [rc=0 frame=0e9f5fde sha_ok=yes]
+    BACKUP_DIR=/var/backups/nuxel/v0.6.3-beta-pre-20261020T123441Z
+    --- SERVICES BEFORE ---
+    inactive
+    active
+    active
+    --- ACTIVE PATHS ---
+    webroot=/usr/share/nuxel
+    server_pid=5396
+    server_cwd=/usr/share/nuxel
+    --- SHA256SUMS.webroot ---
+    73f9a4ce35bd9ed44bd9558e030cbe4f624d0a513d02a1a4dd64937bdc4313dd  ./pwa/nuxel-apps/settings/index.html
+    ac58c74b0e71f4132689ec9e5344f16635443daeae75adf3135cfc2027474f51  ./pwa/nuxel-apps/settings/settings.css
+    e40c6b64e828fd6bf5e7ff4c9fecd63c6404fb4ccea84716f361b62dcc0db984  ./pwa/nuxel-home/assets/nuxel-bottom-bar.jpg
+    be60ece34adcf0179d1a94e4cbca309bd8f9bd629c14aedbd00d6b32d1ccf0e3  ./pwa/nuxel-home/assets/nuxel-bottom-bar2.png
+    6670025155d1a39401d4b87bda4c2b92aa2f59d014f96ddb8f06ecad8605d650  ./pwa/nuxel-home/index.html
+    3ee93e55a4eee6b66790b19d60ed81cec36a2a64168cc10d9ebee56079866be0  ./pwa/nuxel-home/sw.js
+    723f058d0e1d80a8d493c657056e6e18403a7fdb0b5b4bba22708b983bfbc107  ./pwa/nuxel-home/manifest.json
+    cae8d99447cbbbbcc90b00a9c715307ff3d20e56e98ede0374341cc4448c2890  ./pwa/nuxel-home/js/apps.js
+    82d729c108aaa0b4d6ffdf269422ae5b499e8448b6fb285b7501ddd33bfa4769  ./pwa/nuxel-home/js/gestures.js
+    bb3493e0a01e922a85e8bb35858383d8c702afa8121b7fef1ac07c8e51e7b2f6  ./pwa/nuxel-home/js/launcher.js
+    23586e2b9c8aaf9bbed7b7d603183ea44cbb4a1f3fb169f391a3d389a50bef69  ./pwa/nuxel-home/js/home-settings.js
+    e11372e4c5defcc7d01cd2664a51eec9a7d2287b858e67c5e71a80882e4eed85  ./pwa/nuxel-home/css/style.css
+    0aea12ac91d006d1b689609ad3943d37650e4080912e453760beb2229819666f  ./pwa/nuxel-home/css/launcher.css
+    c1fb6b5ba535b34c0b3f9db80b6130e356ba2d8d6efd4791f57444d03c054b58  ./pwa/nuxel-common/app-registry.json
+    e40c6b64e828fd6bf5e7ff4c9fecd63c6404fb4ccea84716f361b62dcc0db984  ./assets/nuxel-bottom-bar.jpg
+    be60ece34adcf0179d1a94e4cbca309bd8f9bd629c14aedbd00d6b32d1ccf0e3  ./assets/nuxel-bottom-bar2.png
+    --- SHA256SUMS.bin ---
+    7ce3f9c0e4e460128129c01088dda78dbd514f0d7e56a647a5446b9f564254dc  nuxel-bridge
+    ba5c43781b97a64f1a0a3607d24478f0c3a8a06b5616c6b1a63e814f4523bb31  nuxel-http-bridge
+    --- SHA256SUMS.lib ---
+    3632ae12773c717d95abf0068c690fc718c179c8567833649490e62d8aa05d25  api.py
+    d6979acb03f66238647db15ba5a792445d39eda77296d49ac683e1b2a8d4fe05  bridge.py
+    BACKUP_END

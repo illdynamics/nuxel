@@ -1,0 +1,37 @@
+# console /dev/ttyACM0
+===== echo ===BEFORE===; date -u; ps -o pid,ppid,user,args -p 5425; kill -TERM 5425; sleep 7; echo ===AFTER===; date -u; ps -eo pid,ppid,user,args | grep -E "WebKitWebProcess|nuxel-pwa-host" | grep -v grep; echo ===STATE===; grep -E "WEBPROC|reload" /run/nuxel-home.state 2>/dev/null | tail -6; echo ===WEBLOG===; tail -22 /run/nuxel-web.log   [rc=0 frame=fd88613e sha_ok=yes]
+    ===BEFORE===
+    Tue Oct 20 12:40:33 UTC 2026
+        PID    PPID USER     COMMAND
+       5425    5393 root     /usr/libexec/webkit2gtk-4.1/WebKitWebProcess 4 13
+    ===AFTER===
+    Tue Oct 20 12:40:40 UTC 2026
+       5393    5358 root     /usr/lib/nuxel/nuxel-pwa-host
+      19464    5393 root     /usr/libexec/webkit2gtk-4.1/WebKitWebProcess 9 16
+      19465    5393 root     /usr/libexec/webkit2gtk-4.1/WebKitWebProcess 10 19
+    ===STATE===
+    1792500003 HOST_ACTION_REFUSED reload-launcher
+    1792500033 NUXEL_HOME_WEBPROC_TERMINATED reason=0 reload=0
+    ===WEBLOG===
+    127.0.0.1 - - [20/Oct/2026 14:40:39] "GET /assets/button-right.png?v=a37 HTTP/1.1" 200 -
+    127.0.0.1 - - [20/Oct/2026 14:40:39] "GET /pwa/nuxel-home/js/layout-model.js HTTP/1.1" 200 -
+    127.0.0.1 - - [20/Oct/2026 14:40:39] "GET /pwa/nuxel-home/js/apps.js HTTP/1.1" 200 -
+    127.0.0.1 - - [20/Oct/2026 14:40:39] "GET /pwa/nuxel-home/js/launcher.js HTTP/1.1" 200 -
+    127.0.0.1 - - [20/Oct/2026 14:40:39] "GET /pwa/nuxel-home/js/search.js HTTP/1.1" 200 -
+    127.0.0.1 - - [20/Oct/2026 14:40:39] "GET /pwa/nuxel-home/js/status-bar.js HTTP/1.1" 200 -
+    127.0.0.1 - - [20/Oct/2026 14:40:39] "GET /pwa/nuxel-common/bridge.js HTTP/1.1" 200 -
+    127.0.0.1 - - [20/Oct/2026 14:40:39] "GET /pwa/nuxel-home/js/bridge.js HTTP/1.1" 200 -
+    127.0.0.1 - - [20/Oct/2026 14:40:39] "GET /pwa/nuxel-home/js/recents.js HTTP/1.1" 200 -
+    127.0.0.1 - - [20/Oct/2026 14:40:39] "GET /pwa/nuxel-home/js/qs.js HTTP/1.1" 200 -
+    127.0.0.1 - - [20/Oct/2026 14:40:39] "GET /pwa/nuxel-home/js/settings-store.js HTTP/1.1" 200 -
+    127.0.0.1 - - [20/Oct/2026 14:40:39] "GET /pwa/nuxel-home/js/host-bridge.js HTTP/1.1" 200 -
+    127.0.0.1 - - [20/Oct/2026 14:40:39] "GET /pwa/nuxel-home/js/safe-zones.js HTTP/1.1" 200 -
+    127.0.0.1 - - [20/Oct/2026 14:40:39] "GET /pwa/nuxel-home/js/osd.js HTTP/1.1" 200 -
+    127.0.0.1 - - [20/Oct/2026 14:40:39] "GET /pwa/nuxel-home/js/bootlog.js HTTP/1.1" 200 -
+    127.0.0.1 - - [20/Oct/2026 14:40:39] "GET /pwa/nuxel-home/js/navigation.js HTTP/1.1" 200 -
+    127.0.0.1 - - [20/Oct/2026 14:40:39] "GET /pwa/nuxel-home/js/touch-keyboard.js HTTP/1.1" 200 -
+    127.0.0.1 - - [20/Oct/2026 14:40:39] "GET /pwa/nuxel-home/js/home-settings.js HTTP/1.1" 200 -
+    127.0.0.1 - - [20/Oct/2026 14:40:39] "GET /pwa/nuxel-home/js/gestures.js HTTP/1.1" 200 -
+    127.0.0.1 - - [20/Oct/2026 14:40:39] "GET /pwa/nuxel-home/js/app.js HTTP/1.1" 200 -
+    127.0.0.1 - - [20/Oct/2026 14:40:39] "GET /pwa/nuxel-home/js/system-monitor.js HTTP/1.1" 200 -
+    127.0.0.1 - - [20/Oct/2026 14:40:39] "GET /pwa/nuxel-home/js/scroll-indicators.js HTTP/1.1" 200 -

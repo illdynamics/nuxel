@@ -2,10 +2,13 @@
 # Nuxel — build images and publish a GitHub Release
 #
 # Triggers
-#   * push to main               -> build every supported device, publish release
-#                                  when main's VERSION tag names that commit
-#   * push a tag matching v*     -> build every supported device, publish release
-#   * manual (workflow_dispatch) -> choose tag + devices, then publish
+#   * push to main (merged PR)   -> build the S10+ phone image, then create the
+#                                  annotated v<VERSION> tag and publish a
+#                                  GitHub prerelease from the merge commit
+#   * manual (workflow_dispatch) -> operator recovery only; never automatic
+#
+# Tag pushes deliberately do NOT trigger this workflow. main is protected and
+# requires a pull request, so the normal release route is a merged PR.
 #
 # Supported devices (for now): g7power, s10plus.
 #   mustang / google-pixel-10-pro-xl is intentionally NOT built here yet; it is
@@ -58,20 +61,17 @@ name: Release
 
 on:
   push:
-    branches:
-      - main
-    tags:
-      - 'v*'
+    branches: [main]
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Release tag (e.g. v0.6.0-beta). Empty => v<VERSION>.'
+        description: 'Manual recovery tag (e.g. v0.6.3-beta). Empty => v<VERSION>.'
         required: false
         default: ''
       devices:
         description: 'Space-separated device keys (g7power s10plus).'
         required: false
-        default: 'g7power s10plus'
+        default: 's10plus'
       publish:
         description: 'Publish only after physical owner acceptance and all release gates.'
         type: boolean
@@ -93,6 +93,7 @@ jobs:
       tag: ${{ steps.v.outputs.tag }}
       devices: ${{ steps.v.outputs.devices }}
       source_sha: ${{ steps.v.outputs.source_sha }}
+      skip: ${{ steps.v.outputs.skip }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -135,20 +136,30 @@ jobs:
             echo "::error::release tag '$tag' does not match VERSION '$canonical_tag'"; exit 1;
           }
           source_sha="$(git rev-parse HEAD)"
-          # A merge to main is a release candidate only when its canonical tag
-          # already names that exact merge commit.  Check before the expensive
-          # matrix so a missing/stale tag cannot consume six hours of CI and
-          # then fail only at publication time.
-          if [ "${GITHUB_EVENT_NAME}" = "push" ] && [ "${GITHUB_REF_NAME}" = "main" ]; then
-            git fetch --no-tags origin "refs/tags/$tag:refs/tags/$tag" || {
-              echo "::error::main release requires tag '$tag' on the merged commit"; exit 1;
+          # A push to main is the release trigger. The tag is created by the
+          # release job only after every build/verification gate is green.
+          # If VERSION still names an older already-tagged commit, this merge
+          # did not change the version: skip the expensive matrix instead of
+          # rebuilding the same release or overwriting published assets.
+          skip="false"
+          if [ "${GITHUB_EVENT_NAME}" = "push" ]; then
+            [ "${GITHUB_REF_NAME}" = "main" ] || {
+              echo "::error::release pushes are only accepted on main"; exit 1;
             }
-            [ "$(git rev-parse "refs/tags/$tag^{commit}")" = "$source_sha" ] || {
-              echo "::error::tag '$tag' does not name the merged main commit"; exit 1;
-            }
+            if git show-ref --verify --quiet "refs/tags/$tag"; then
+              tagged_commit="$(git rev-parse "refs/tags/$tag^{commit}")"
+              if [ "$tagged_commit" = "$source_sha" ]; then
+                echo "::notice::tag $tag already names this commit; release is already handled"
+              else
+                echo "::notice::VERSION $tag is unchanged from ${tagged_commit}; skipping this main merge"
+                skip="true"
+              fi
+            fi
           fi
+          # The release deliverable is the S10+ image that runs on the phone.
+          # workflow_dispatch may explicitly request g7power as well.
           devs="$REQUESTED_DEVICES"
-          [ -n "$devs" ] || devs="g7power s10plus"
+          [ -n "$devs" ] || devs="s10plus"
           # Only g7power + s10plus are supported for now.
           allowed=" g7power s10plus "
           filtered=""
@@ -164,13 +175,16 @@ jobs:
           echo "tag=${tag}" >> "$GITHUB_OUTPUT"
           echo "devices=${json}" >> "$GITHUB_OUTPUT"
           echo "source_sha=${source_sha}" >> "$GITHUB_OUTPUT"
+          echo "skip=${skip}" >> "$GITHUB_OUTPUT"
           echo "Release tag : ${tag}"
+          echo "Skip build  : ${skip}"
           echo "Source SHA  : ${source_sha}"
           echo "Devices     : ${json}"
 
   build:
     name: build ${{ matrix.device }}
     needs: prepare
+    if: ${{ needs.prepare.outputs.skip != 'true' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 360
     strategy:
@@ -279,16 +293,30 @@ jobs:
             *) echo "::error::unsupported device ${{ matrix.device }}"; exit 1 ;;
           esac
 
+      - name: Build and verify the live userspace payload (s10plus)
+        if: matrix.device == 's10plus'
+        run: |
+          # This is the hash-manifested userspace delta used for live
+          # deployment. It is generated from the exact checkout being built so
+          # the release contains the same PWA/bridge bytes that are running on
+          # the phone, plus the current system-monitor and navigation fixes.
+          payload="$PWD/build/out/s10plus/nuxel-${{ needs.prepare.outputs.tag }}-live-userspace.tar.gz"
+          python3 tools/s10plus/a43/package-live.py "$payload"
+          python3 tools/s10plus/a43/verify-live.py "$payload"
+          python3 tools/s10plus/a43/test-a43-source.py
+
       - name: Run current S10+ userspace regression tests
         if: matrix.device == 's10plus'
         run: |
           # These drive the real shipped sources (A34 FSM, SYN_REPORT touch
-          # translation, QS gesture, A33 MT parser) without a phone attached.
-          # The libinput suite consumes a HOST-built selftest binary; build it
-          # first so a fresh CI checkout does not depend on local build output.
+          # translation, QS gesture, A33 MT parser, A40 metrics, A44 launcher
+          # contracts) without a phone attached. The libinput suite consumes a
+          # HOST-built selftest binary; build it first so a fresh CI checkout
+          # does not depend on local build output.
           bash tools/s10plus/a33/build-libinput-shim.sh --selftest
           bash tools/s10plus/a34/tests/run-a34-tests.sh
           bash tools/s10plus/a33/tests/run-touch-tests.sh --quick
+          bash tools/s10plus/a40/tests/run-a40-tests.sh
 
       - name: Verify artifacts (${{ matrix.device }})
         run: bash tools/verify-artifacts.sh --device "${{ matrix.device }}"
@@ -317,13 +345,14 @@ jobs:
     name: publish release
     needs: [prepare, build]
     # Only publish from a fully successful build — never from a red/partial one.
-    if: ${{ needs.build.result == 'success' && (github.event_name == 'push' || inputs.publish == true) }}
+    if: ${{ needs.build.result == 'success' && needs.prepare.outputs.skip != 'true' && (github.event_name == 'push' || inputs.publish == true) }}
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           ref: ${{ needs.prepare.outputs.source_sha }}
+          fetch-depth: 0
 
       - name: Collect device artifacts
         uses: actions/download-artifact@v4
@@ -352,21 +381,41 @@ jobs:
           [ "${missing}" -eq 0 ] || exit 1
           echo "All expected devices present: ${expected}"
 
-      - name: Create or update GitHub Release
+      - name: Create annotated release tag
+        run: |
+          tag="${{ needs.prepare.outputs.tag }}"
+          sha="${{ needs.prepare.outputs.source_sha }}"
+          if git show-ref --verify --quiet "refs/tags/$tag"; then
+            [ "$(git rev-parse "refs/tags/$tag^{commit}")" = "$sha" ] || {
+              echo "::error::tag $tag already points at $(git rev-parse "refs/tags/$tag^{commit}"), not the built commit $sha"; exit 1;
+            }
+            echo "Tag $tag already exists on the built commit"
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git tag -a "$tag" -m "Nuxel $tag" "$sha"
+            git push origin "refs/tags/$tag"
+            echo "Created and pushed annotated tag $tag"
+          fi
+
+      - name: Create GitHub prerelease
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           tag="${{ needs.prepare.outputs.tag }}"
-          git fetch --no-tags origin "refs/tags/$tag:refs/tags/$tag"
-          [ "$(git rev-parse "refs/tags/$tag^{commit}")" = "${{ needs.prepare.outputs.source_sha }}" ] || {
+          sha="${{ needs.prepare.outputs.source_sha }}"
+          [ "$(git rev-parse "refs/tags/$tag^{commit}")" = "$sha" ] || {
             echo "::error::tag no longer matches the built source commit"; exit 1;
           }
           if gh release view "$tag" >/dev/null 2>&1; then
-            echo "::error::release already exists; refusing to overwrite published artifacts"; exit 1
+            echo "::notice::release $tag already exists; leaving published assets untouched"
+            echo "### Release ${tag} already exists" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
           fi
           gh release create "$tag" \
             dist/*.tar.gz dist/SHA256SUMS.txt \
             --verify-tag \
+            --prerelease \
             --title "Nuxel ${tag}" \
             --notes-file dist/RELEASE-NOTES.md
           echo "### Published ${tag}" >> "$GITHUB_STEP_SUMMARY"

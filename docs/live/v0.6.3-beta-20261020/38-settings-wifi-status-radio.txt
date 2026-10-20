@@ -1,0 +1,6 @@
+# console /dev/ttyACM0
+===== echo ===STATUS===; curl -s --max-time 10 -X POST http://127.0.0.1:8080/api/v1/rpc -H "Content-Type: application/json" -d "{\"app_id\":\"nuxel-settings\",\"namespace\":\"phone\",\"verb\":\"status\",\"params\":{}}"; echo; echo ===RADIO-ON-IDEMPOTENT===; curl -s --max-time 15 -X POST http://127.0.0.1:8080/api/v1/rpc -H "Content-Type: application/json" -d "{\"app_id\":\"nuxel-settings\",\"namespace\":\"network\",\"verb\":\"wifi-enabled\",\"params\":{\"enabled\":true}}"   [rc=0 frame=7698620c sha_ok=yes]
+    ===STATUS===
+    {"result": {"modem": {"connected": false, "error": "ModemManager not connected"}, "network": {"available": true, "connected": false, "state": 20, "connectivity": 1, "wifi_enabled": true, "wifi_available": true, "wifi_connected": false, "wifi_state": "enabled_disconnected", "wifi_devices": [{"interface": "wlan0", "state": 30}, {"interface": "wlan1", "state": 30}]}, "timestamp": 1792500238.9381535}}
+    ===RADIO-ON-IDEMPOTENT===
+    {"result": {"success": true, "wifi_enabled": true, "wifi_state": "enabled_disconnected"}}

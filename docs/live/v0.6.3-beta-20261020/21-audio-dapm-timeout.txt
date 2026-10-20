@@ -1,0 +1,18 @@
+# console /dev/ttyACM0
+===== for w in SPEAKER RECEIVER HEADPHONE bias_level; do printf "=== %s ===\n" "$w"; timeout 4 cat "/sys/kernel/debug/asoc/beyond-madera/dapm/$w" 2>&1; echo "rc=$?"; done   [rc=0 frame=2cb860ea sha_ok=yes]
+    === SPEAKER ===
+    SPEAKER: Off  in 0 out 1
+     in  "static" "Right AMP SPK"
+    rc=0
+    === RECEIVER ===
+    RECEIVER: Off  in 0 out 1
+     in  "static" "Left AMP SPK"
+    rc=0
+    === HEADPHONE ===
+    HEADPHONE: Off  in 0 out 1
+     in  "static" "HPOUT2R"
+     in  "static" "HPOUT2L"
+    rc=0
+    === bias_level ===
+    Off
+    rc=0

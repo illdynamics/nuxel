@@ -42,3 +42,17 @@ require(keyboard, "haptics-tap", "keyboard requests one haptic path")
 
 calendar_css = source("pwa/nuxel-apps/calendar/css/calendar.css")
 require(calendar_css, "caret-color: #fff", "Calendar editable fields expose a real caret")
+
+# A44: dock/nav artwork ownership, Home reset, and zoom lock contracts.
+launcher_css = source("pwa/nuxel-home/css/launcher.css")
+require(launcher_css, ".dock::before{display:none!important", "shortcut dock paints no duplicate artwork")
+style_css = source("pwa/nuxel-home/css/style.css")
+require(style_css, "background-position: center -11.05vw", "navigation artwork is cropped to its own strip")
+require(style_css, "touch-action: pan-x pan-y", "Home excludes pinch zoom while retaining pan")
+home_settings = source("pwa/nuxel-home/js/home-settings.js")
+require(home_settings, "querySelectorAll('#system-navigation')", "artwork picker cannot repaint the shortcut dock")
+require(nav, "else if (action === 'home') global.nuxel.home();", "Home long press always returns to desktop 1")
+require(launcher, "if (grid) grid.scrollTop = 0;", "Home resets the primary desktop scroll position")
+index = source("pwa/nuxel-home/index.html")
+require(index, "id=\"dock\" class=\"dock\" data-background=\"none\"", "shortcut dock starts with no background")
+require(index, "stopPinch", "Home blocks multi-touch pinch zoom")

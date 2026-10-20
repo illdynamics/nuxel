@@ -1,0 +1,15 @@
+# console /dev/ttyACM0
+===== echo ===ALSA-TOOLS===; for t in alsactl speaker-test pactl wpctl pw-play aplay amixer; do printf "%s=" $t; command -v $t || echo MISSING; done; echo ===LIBS===; ldconfig -p 2>/dev/null | grep -i asound | head; echo ===UCM===; ls -la /usr/share/alsa/ucm2 2>&1 | head; find /usr/share/alsa/ucm2 -type f 2>/dev/null | head; echo ===AUDIO-PROCS===; ps -eo user,pid,args | grep -Ei "pipewire|wireplumber|pulseaudio" | grep -v grep   [rc=1 frame=c4f960f3 sha_ok=yes]
+    ===ALSA-TOOLS===
+    alsactl=MISSING
+    speaker-test=MISSING
+    pactl=MISSING
+    wpctl=MISSING
+    pw-play=MISSING
+    aplay=MISSING
+    amixer=MISSING
+    ===LIBS===
+    	libasound.so.2 (libc6,AArch64) => /lib64/libasound.so.2
+    ===UCM===
+    ls: cannot access '/usr/share/alsa/ucm2': No such file or directory
+    ===AUDIO-PROCS===

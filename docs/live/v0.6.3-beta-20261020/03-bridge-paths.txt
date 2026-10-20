@@ -1,0 +1,89 @@
+# console /dev/ttyACM0
+===== echo ===nuxel-bridge-wrapper===; head -45 /usr/bin/nuxel-bridge; echo ===http-wrapper===; head -45 /usr/bin/nuxel-http-bridge; echo ===bridge-dir===; ls -la /usr/lib/nuxel/nuxel-bridge/   [rc=0 frame=dc995f23 sha_ok=yes]
+    ===nuxel-bridge-wrapper===
+    #!/usr/bin/env python3
+    """
+    Nuxel Bridge — D-Bus service mediating between PWAs and native phone functions.
+    Updated with nuxel-portal integration:
+      - CheckPermission(app_id, capability) D-Bus method
+      - Emits signals when permissions change
+      - Integrates with nuxel-portal dialog system for user consent
+      - Extended capability model with network, storage, background, display
+    Architecture:
+        PWA (isolated WebKitGTK) → Unix socket → nuxel-bridge → portal check → system service
+    Capability Model (extended):
+        network:outbound    - Outbound network access
+        network:inbound     - Inbound connections (servers)
+        storage:persistent  - Persistent storage access
+        background:execution - Run in background after suspend
+        display:screenshot  - Screen capture
+        display:screencast  - Screen recording
+        usb:access          - USB device access
+        bluetooth:scan      - Bluetooth scanning
+        bluetooth:connect   - Bluetooth connections
+    """
+    import sys
+    import json
+    import logging
+    import uuid
+    import os
+    import dbus
+    import dbus.service
+    import dbus.mainloop.glib
+    import dbus.exceptions
+    from gi.repository import GLib
+    import threading
+    import time
+    import subprocess
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s [%(levelname)s] %(name)s: %(message)s',
+        handlers=[logging.StreamHandler(sys.stderr)]
+    )
+    logger = logging.getLogger('nuxel-bridge')
+    ===http-wrapper===
+    #!/usr/bin/env python3
+    """
+    Nuxel Bridge - REST API Compatibility Layer
+    Provides a simple HTTP interface for PWAs that cannot directly use D-Bus.
+    This wraps the D-Bus calls in a local HTTP server accessible only from localhost.
+    SECURITY: This API MUST only listen on 127.0.0.1 and MUST validate all requests
+    against an API key or session token. It is a convenience layer for development
+    and testing; production PWAs should use D-Bus directly via xdg-desktop-portal.
+    """
+    import json
+    import re
+    import uuid
+    import hmac
+    import hashlib
+    import time
+    import os
+    import logging
+    from http.server import HTTPServer, BaseHTTPRequestHandler
+    from urllib.parse import urlparse, parse_qs
+    import dbus
+    import dbus.mainloop.glib
+    logger = logging.getLogger('nuxel-http-bridge')
+    # ── Environment-driven configuration ────────────────────────────
+    HTTP_BIND = os.environ.get('NUXEL_HTTP_BIND', '127.0.0.1')
+    HTTP_PORT = int(os.environ.get('NUXEL_HTTP_PORT', '8080'))
+    HTTP_MODE = os.environ.get('NUXEL_HTTP_MODE', 'dev')
+    # PWA<->host PROTOCOL contract (briq-04c). Pinned in
+    # pwa/nuxel-common/bridge-version.json; every app manifest declares the same
+    # value as nuxel.bridge_version. Published on /ping and /health, and enforced on
+    # every request that carries the X-Nuxel-Bridge-Version header: a mismatch is
+    # answered 409 version_mismatch — LOUD, never a silent rejection or a silent
+    # downgrade. NUXEL_BRIDGE_VERSION is the host IMPLEMENTATION version and is
+    # allowed to move independently.
+    BRIDGE_PROTOCOL_VERSION = os.environ.get('NUXEL_BRIDGE_PROTOCOL_VERSION', '1')
+    BRIDGE_HOST_VERSION = os.environ.get('NUXEL_BRIDGE_VERSION', '0.6.1-beta')
+    # Canonical launcher registry, shared with the PWA (pwa/nuxel-common/app-registry.json)
+    ===bridge-dir===
+    total 172
+    drwxr-xr-x  2 root root  4096 Oct 17 13:46 .
+    drwxr-xr-x 10 root root  4096 Oct 20 13:58 ..
+    -rw-r--r--  1 root root 43978 Oct 17 13:46 api.py
+    -rw-r--r--  1 root root 29449 Oct 14 14:51 api.py.nuxel-rollback
+    -rw-r--r--  1 root root 35830 Oct 17 13:46 bridge.py
+    -rw-r--r--  1 root root 32847 Oct 14 14:51 bridge.py.nuxel-rollback
+    -rw-r--r--  1 root root 13301 Oct 14 14:51 capabilities.py

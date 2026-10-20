@@ -127,7 +127,17 @@ class Launcher {
         this._lockToastTimer = setTimeout(() => note.remove(), 2100);
     }
     mainDesktop() {
-        this.currentPage = 0; this.closeDrawer(); this._renderAppGrid();
+        // System Home is a hard reset of the visible launcher surface: primary
+        // desktop, no drawer, no edit mode, no transient folder sheet, and the
+        // page scrolled back to the top.  It never depends on the page the user
+        // happened to be on when they pressed the penguin/Home button.
+        this.currentPage = 0;
+        this.exitEditMode();
+        this.closeDrawer();
+        document.querySelectorAll('.folder-sheet').forEach(el => el.remove());
+        const grid = document.getElementById('app-grid');
+        if (grid) grid.scrollTop = 0;
+        this._renderAppGrid();
     }
 
     _saveOrder() {

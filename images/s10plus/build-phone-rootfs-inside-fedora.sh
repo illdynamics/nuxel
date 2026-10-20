@@ -145,12 +145,19 @@ gcc $CFLAGS_COMMON $(pkg-config --cflags alsa) -I /nuxel/tools/s10plus/a34 \
 gcc $CFLAGS_COMMON -shared -fPIC -o "$B/libnuxel-libinput-path.so" \
     /nuxel/tools/s10plus/a33/nuxel-libinput-path.c -ldl
 
+# A40/A44 socket-activated Home hardware monitor. The live phone runs this
+# collector; a fresh release image must build and install the same source, not
+# depend on a previously deployed binary.
+gcc -std=c11 -O2 -Wall -Wextra -Werror -o "$B/nuxel-metricsd" \
+    /nuxel/services/nuxel-metrics/nuxel-metricsd.c
+
 for _b in nuxel-wl-fb nuxel-wl-snapshot nuxel-pwa-host \
-          nuxel-button-manager libnuxel-libinput-path.so; do
+          nuxel-button-manager libnuxel-libinput-path.so nuxel-metricsd; do
   file "$B/$_b" | grep -q 'ARM aarch64' || { echo "ERROR: $_b is not aarch64" >&2; exit 1; }
 done
 sha256sum "$B"/nuxel-wl-fb "$B"/nuxel-wl-snapshot "$B"/nuxel-pwa-host \
           "$B"/nuxel-button-manager "$B"/libnuxel-libinput-path.so \
+          "$B"/nuxel-metricsd \
   | tee /tmp/nuxel-current-userspace.sha256
 
 # Keep Nuxel's native phone-specific bits; do not import the G7 Power staging.
@@ -182,6 +189,17 @@ install -Dm0755 /nuxel/tools/s10plus/a33/nuxel-sound-cue.py \
     "$STAGE/usr/libexec/nuxel/nuxel-sound-cue"
 install -Dm0644 /nuxel/services/nuxel-session/systemd/nuxel-boot-sound.service \
     "$STAGE/etc/systemd/system/nuxel-boot-sound.service"
+# A40/A44 metrics daemon + socket activation. This is the same collector the
+# live userspace reports through /metrics; without it a fresh image would lose
+# the CPU/MEM/GPU/VRAM meters.
+install -Dm0755 "$B/nuxel-metricsd" "$STAGE/usr/lib/nuxel/nuxel-metricsd"
+install -Dm0644 /nuxel/services/nuxel-metrics/nuxel-metrics.service \
+    "$STAGE/etc/systemd/system/nuxel-metrics.service"
+install -Dm0644 /nuxel/services/nuxel-metrics/nuxel-metrics.socket \
+    "$STAGE/etc/systemd/system/nuxel-metrics.socket"
+install -d "$STAGE/etc/systemd/system/sockets.target.wants"
+ln -sf ../nuxel-metrics.socket \
+    "$STAGE/etc/systemd/system/sockets.target.wants/nuxel-metrics.socket"
 # Package the already-existing haptics implementation and preferences. Do NOT
 # enable an additional vibrator owner automatically: the older haptics bridge
 # may already own the device on live phones. Physical owner test is required.

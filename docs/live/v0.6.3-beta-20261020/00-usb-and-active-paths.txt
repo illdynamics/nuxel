@@ -1,0 +1,19 @@
+# console /dev/ttyACM0
+===== id; uname -a; cat /etc/os-release | head -3; systemctl is-active nuxel-web nuxel-bridge nuxel-http-bridge NetworkManager; readlink -f /proc/5396/cwd; ss -ltnp | grep 8000; curl -sI http://127.0.0.1:8000/pwa/nuxel-home/index.html | head -6   [rc=0 frame=2ad45f1a sha_ok=yes]
+    uid=0(root) gid=0(root) groups=0(root)
+    Linux fedora 4.14.253 #15 SMP PREEMPT Thu Oct 15 22:29:25 UTC 2026 aarch64 GNU/Linux
+    NAME="Fedora Linux"
+    VERSION="43 (Forty Three)"
+    RELEASE_TYPE=stable
+    inactive
+    active
+    active
+    active
+    /usr/share/nuxel
+    LISTEN 0      5          127.0.0.1:8000      0.0.0.0:*    users:(("python3",pid=5396,fd=3))
+    HTTP/1.0 200 OK
+    Server: SimpleHTTP/0.6 Python/3.14.7
+    Date: Tue, 20 Oct 2026 12:31:25 GMT
+    Content-type: text/html
+    Content-Length: 9052
+    Last-Modified: Tue, 20 Oct 2026 09:21:43 GMT

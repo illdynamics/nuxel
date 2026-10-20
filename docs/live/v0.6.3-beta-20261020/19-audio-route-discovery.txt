@@ -1,0 +1,26 @@
+# console /dev/ttyACM0
+===== echo ===FW-FILES===; find /lib/firmware -maxdepth 1 -type f -printf "%f\n" 2>/dev/null; echo ===UCM-DIRS===; find /usr/share/alsa/ucm2 -maxdepth 2 -type d 2>/dev/null | head -30; echo ===DAPM-SAMPLE===; ls /sys/kernel/debug/asoc/beyond-madera/dapm 2>/dev/null | head -25; echo ===SPEAKER-WIDGETS===; grep -ril "speaker\|spk\|receiver\|rcv\|cs35l41\|cs47l92" /sys/kernel/debug/asoc/beyond-madera/dapm 2>/dev/null | head -30   [rc=0 frame=51ee60af sha_ok=yes]
+    ===FW-FILES===
+    bcmdhd_clm.blob
+    nvram.txt_CS01_semco_b1
+    regulatory.db
+    regulatory.db.p7s
+    bcmdhd_sta.bin_b1
+    ===UCM-DIRS===
+    ===DAPM-SAMPLE===
+    BLUETOOTH MIC
+    BLUETOOTH SPK
+    DMIC1
+    DMIC2
+    FM IN
+    HEADPHONE
+    HEADSETMIC
+    RECEIVER
+    SPEAKER
+    VTS Virtual Output
+    VTS Virtual Output Mux
+    bias_level
+    ===SPEAKER-WIDGETS===
+    /sys/kernel/debug/asoc/beyond-madera/dapm/BLUETOOTH SPK
+    /sys/kernel/debug/asoc/beyond-madera/dapm/SPEAKER
+    /sys/kernel/debug/asoc/beyond-madera/dapm/RECEIVER

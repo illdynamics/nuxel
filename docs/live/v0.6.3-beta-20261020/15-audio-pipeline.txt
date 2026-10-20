@@ -1,0 +1,30 @@
+# console /dev/ttyACM0
+===== echo ===TOOLS===; for t in bash amixer aplay alsaucm tinymix; do printf "%s=" $t; command -v $t || echo MISSING; done; echo ===CARDS===; cat /proc/asound/cards; echo ===PIPELINE===; bash /tmp/nuxel-audio-diag.sh pipeline; echo ===JSON===; bash /tmp/nuxel-audio-diag.sh pipeline --json   [rc=0 frame=3537608d sha_ok=yes]
+    ===TOOLS===
+    bash=/usr/sbin/bash
+    amixer=MISSING
+    aplay=MISSING
+    alsaucm=MISSING
+    tinymix=MISSING
+    ===CARDS===
+     0 [beyondmadera   ]: beyond-madera - beyond-madera
+                          beyond-madera
+     1 [aboxvdma       ]: abox_vdma - abox_vdma
+                          abox_vdma
+     2 [aboxdump       ]: abox_dump - abox_dump
+                          abox_dump
+    ===PIPELINE===
+    == pipeline (first broken stage wins) ==
+      card         FAIL       name=beyond-madera index=0 firmware=ABSENT
+      pcm          SKIPPED    state=unknown
+      controls     SKIPPED    0 candidate playback controls (writability is NOT audibility)
+      dapm         SKIPPED    /sys/kernel/debug/asoc/beyond-madera/dapm
+      route        SKIPPED    /usr/share/alsa/ucm2/beyond-madera/HiFi.conf
+      dac          SKIPPED    PCM must be RUNNING while a stream is open
+    == verdict ==
+      BLOCKED_FIRMWARE
+      reason: codec DSP firmware absent (cs47l93-dsp1.wmfw cs47l93-dsp2.wmfw cs47l93-dsp.wmfw cs47l93-dsp1.bin cs47l93-dsp2.bin cs35l40-dsp1.wmfw cs35l40-dsp2.wmfw cs35l40-dsp1.bin)
+      NOT an audibility claim. A writable mixer control is explicitly NOT an
+      acceptance criterion; audibility is NEEDS_OWNER_TEST (area 6).
+    ===JSON===
+    {"schema_version":1,"device":"beyond2lte","card":"beyond-madera","card_index":0,"stages":{"card":"FAIL","pcm":"SKIPPED","controls":"SKIPPED","dapm":"SKIPPED","route":"SKIPPED","dac_running":"SKIPPED"},"pcm_state":"unknown","playback_controls":0,"firmware":"ABSENT","state":"BLOCKED_FIRMWARE","first_broken_stage":"card","reason":"codec DSP firmware absent (cs47l93-dsp1.wmfw cs47l93-dsp2.wmfw cs47l93-dsp.wmfw cs47l93-dsp1.bin cs47l93-dsp2.bin cs35l40-dsp1.wmfw cs35l40-dsp2.wmfw cs35l40-dsp1.bin)","low_volume_cap_percent":25}

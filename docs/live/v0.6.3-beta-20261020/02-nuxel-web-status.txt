@@ -1,0 +1,8 @@
+# console /dev/ttyACM0
+===== systemctl status nuxel-web --no-pager -l 2>&1 | head -25   [rc=0 frame=a9f15f1e sha_ok=yes]
+    ○ nuxel-web.service - Nuxel PWA Static Web Server (nuxel-home launcher on :8000)
+         Loaded: loaded (/etc/systemd/system/nuxel-web.service; disabled; preset: disabled)
+        Drop-In: /usr/lib/systemd/system/service.d
+                 └─10-timeout-abort.conf
+         Active: inactive (dead)
+           Docs: https://nuxel.org

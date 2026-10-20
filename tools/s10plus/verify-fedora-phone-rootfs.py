@@ -24,6 +24,8 @@ BINARIES=(
     '/usr/lib/nuxel/nuxel-button-manager',
     '/usr/lib/nuxel/libnuxel-libinput-path.so',
     '/usr/local/bin/nuxel-wl-snapshot',
+    # A40/A44 socket-activated Home hardware monitor, built from repo source.
+    '/usr/lib/nuxel/nuxel-metricsd',
 )
 FILES=(
     '/etc/udev/rules.d/90-nuxel-beyond2lte.rules',
@@ -46,6 +48,9 @@ FILES=(
     '/usr/share/nuxel/assets/button-right.png',
     '/usr/share/nuxel/assets/nuxel-applications-icon-pack/01-01_terminal.png',
     '/usr/share/nuxel/assets/nuxel-quicksettings-icon-pack/01-wifi.png',
+    '/etc/systemd/system/nuxel-metrics.service',
+    '/etc/systemd/system/nuxel-metrics.socket',
+    '/etc/systemd/system/sockets.target.wants/nuxel-metrics.socket',
 )
 
 # Runtime-critical files copied verbatim by the rootfs builder.  Comparing the
@@ -75,6 +80,21 @@ SOURCE_PARITY = {
     '/usr/libexec/nuxel/nuxel-sound-cue': 'tools/s10plus/a33/nuxel-sound-cue.py',
     '/etc/systemd/system/nuxel-boot-sound.service': 'services/nuxel-session/systemd/nuxel-boot-sound.service',
     '/usr/libexec/nuxel/nuxel-keyboard-apply': 'tools/s10plus/a33/nuxel-keyboard-apply.sh',
+    # A44 launcher/navigation/metrics bytes that were live-deployed on the
+    # handset. A fresh image must carry exactly these checkout versions.
+    '/usr/share/nuxel/pwa/nuxel-home/index.html': 'pwa/nuxel-home/index.html',
+    '/usr/share/nuxel/pwa/nuxel-home/css/launcher.css': 'pwa/nuxel-home/css/launcher.css',
+    '/usr/share/nuxel/pwa/nuxel-home/css/style.css': 'pwa/nuxel-home/css/style.css',
+    '/usr/share/nuxel/pwa/nuxel-home/js/launcher.js': 'pwa/nuxel-home/js/launcher.js',
+    '/usr/share/nuxel/pwa/nuxel-home/js/home-settings.js': 'pwa/nuxel-home/js/home-settings.js',
+    '/usr/share/nuxel/pwa/nuxel-home/js/navigation.js': 'pwa/nuxel-home/js/navigation.js',
+    '/usr/share/nuxel/pwa/nuxel-home/js/system-monitor.js': 'pwa/nuxel-home/js/system-monitor.js',
+    '/usr/share/nuxel/pwa/nuxel-apps/settings/wifi-settings.js': 'pwa/nuxel-apps/settings/wifi-settings.js',
+    '/usr/lib/nuxel/nuxel-bridge/bridge.py': 'services/nuxel-bridge/src/bridge.py',
+    '/usr/lib/nuxel/nuxel-bridge/api.py': 'services/nuxel-bridge/src/api.py',
+    '/etc/systemd/system/nuxel-metrics.service': 'services/nuxel-metrics/nuxel-metrics.service',
+    '/etc/systemd/system/nuxel-metrics.socket': 'services/nuxel-metrics/nuxel-metrics.socket',
+    '/etc/systemd/system/sockets.target.wants/nuxel-metrics.socket': 'services/nuxel-metrics/nuxel-metrics.socket',
 }
 
 

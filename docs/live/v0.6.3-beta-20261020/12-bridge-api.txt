@@ -1,0 +1,9 @@
+# console /dev/ttyACM0
+===== echo ===PING===; curl -s --max-time 3 http://127.0.0.1:8080/api/v1/ping; echo; echo ===HEALTH===; curl -s --max-time 3 http://127.0.0.1:8080/api/v1/health; echo; echo ===REGISTRY===; curl -s --max-time 3 http://127.0.0.1:8080/api/v1/apps/registry | python3 -c "import json,sys; d=json.load(sys.stdin); print(type(d).__name__); print(str(d)[:800])"   [rc=0 frame=f5106056 sha_ok=yes]
+    ===PING===
+    {"status": "ok", "service": "nuxel-bridge", "version": "0.6.1-beta", "bridge_version": "1", "session": "c26e7adc-c6fd-4dec-9152-c73fbe877d5c", "echo": "health"}
+    ===HEALTH===
+    {"success": true, "service": "nuxel-http-bridge", "version": "0.4.0-alpha", "bridge_version": "1", "registry": {"source": "/usr/share/nuxel/pwa/nuxel-common/app-registry.json", "available": true}, "timestamp": 1792499800.9369586}
+    ===REGISTRY===
+    dict
+    {'available': True, 'source': '/usr/share/nuxel/pwa/nuxel-common/app-registry.json', 'bridge_version': '1', 'schema': 'nuxel.app-registry/1', 'registry_version': 4, 'host_version': '0.4.0-alpha', 'url_base': 'http://127.0.0.1:8000', 'apps': [{'id': 'nuxel-dialer', 'name': 'Phone', 'icon': '📞', 'color': '#4CAF50', 'category': 'communication', 'type': 'native', 'url': 'nuxel-dialer://', 'native_binary': '/usr/bin/nuxel-dialer', 'binary_source': 'shell/nuxel-shell/nuxel-dialer', 'desktop_entry': 'shell/config/nuxel-dialer.desktop', 'description': 'Make phone calls', 'capabilities': ['call:initiate', 'call:end', 'call:status', 'contacts:read'], 'bridge_version': '1', 'docked': True, 'status': 'implemented', 'runtime_state': 'NEEDS_OWNER_TEST (real call needs a SIM and a carrier)'}, {'id': 'nux

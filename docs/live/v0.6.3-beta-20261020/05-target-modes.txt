@@ -1,0 +1,23 @@
+# console /dev/ttyACM0
+===== stat -c "%U:%G %a %n" /usr/share/nuxel/pwa/nuxel-home/index.html /usr/share/nuxel/pwa/nuxel-home/css/style.css /usr/share/nuxel/pwa/nuxel-home/js/launcher.js /usr/share/nuxel/pwa/nuxel-home/assets/nuxel-bottom-bar.jpg /usr/share/nuxel/assets/nuxel-bottom-bar2.png /usr/share/nuxel/pwa/nuxel-apps/settings/index.html /usr/share/nuxel/pwa/nuxel-common/app-registry.json /usr/bin/nuxel-bridge /usr/bin/nuxel-http-bridge /usr/lib/nuxel/nuxel-bridge/api.py /usr/lib/nuxel/nuxel-bridge/bridge.py; echo ---; command -v gzip base64 install sha256sum stat find; df -h /tmp /usr | tail -3   [rc=0 frame=27b95fc1 sha_ok=yes]
+    root:root 644 /usr/share/nuxel/pwa/nuxel-home/index.html
+    root:root 644 /usr/share/nuxel/pwa/nuxel-home/css/style.css
+    root:root 644 /usr/share/nuxel/pwa/nuxel-home/js/launcher.js
+    root:root 644 /usr/share/nuxel/pwa/nuxel-home/assets/nuxel-bottom-bar.jpg
+    root:root 644 /usr/share/nuxel/assets/nuxel-bottom-bar2.png
+    root:root 644 /usr/share/nuxel/pwa/nuxel-apps/settings/index.html
+    root:root 644 /usr/share/nuxel/pwa/nuxel-common/app-registry.json
+    root:root 755 /usr/bin/nuxel-bridge
+    root:root 755 /usr/bin/nuxel-http-bridge
+    root:root 644 /usr/lib/nuxel/nuxel-bridge/api.py
+    root:root 644 /usr/lib/nuxel/nuxel-bridge/bridge.py
+    ---
+    /usr/sbin/gzip
+    /usr/sbin/base64
+    /usr/sbin/install
+    /usr/sbin/sha256sum
+    /usr/sbin/stat
+    /usr/sbin/find
+    Filesystem      Size  Used Avail Use% Mounted on
+    tmpfs           3.5G  2.6M  3.5G   1% /tmp
+    /dev/sda31      3.9G  2.0G  1.8G  53% /

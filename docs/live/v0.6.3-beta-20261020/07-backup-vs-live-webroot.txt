@@ -1,0 +1,21 @@
+# console /dev/ttyACM0
+===== B=$(ls -d /var/backups/nuxel/v0.6.3-beta-pre-* | tail -1); echo BACKUP=$B; echo MISSING:; cat $B/missing.txt 2>/dev/null || echo none; cd /usr/share/nuxel; while read h f; do f=${f#./}; a=$(sha256sum "$f" | cut -d" " -f1); [ "$a" = "$h" ] && echo "OK $f" || echo "DIFF $f backup=$h live=$a"; done < $B/SHA256SUMS.webroot   [rc=0 frame=9e985fe7 sha_ok=yes]
+    BACKUP=/var/backups/nuxel/v0.6.3-beta-pre-20261020T123441Z
+    MISSING:
+    MISSING /usr/share/nuxel/pwa/nuxel-apps/settings/wifi-settings.js
+    OK pwa/nuxel-apps/settings/index.html
+    OK pwa/nuxel-apps/settings/settings.css
+    OK pwa/nuxel-home/assets/nuxel-bottom-bar.jpg
+    OK pwa/nuxel-home/assets/nuxel-bottom-bar2.png
+    OK pwa/nuxel-home/index.html
+    OK pwa/nuxel-home/sw.js
+    OK pwa/nuxel-home/manifest.json
+    OK pwa/nuxel-home/js/apps.js
+    OK pwa/nuxel-home/js/gestures.js
+    OK pwa/nuxel-home/js/launcher.js
+    OK pwa/nuxel-home/js/home-settings.js
+    OK pwa/nuxel-home/css/style.css
+    OK pwa/nuxel-home/css/launcher.css
+    OK pwa/nuxel-common/app-registry.json
+    OK assets/nuxel-bottom-bar.jpg
+    OK assets/nuxel-bottom-bar2.png

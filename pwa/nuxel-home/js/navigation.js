@@ -106,7 +106,10 @@
     long(action) {
       if (!global.nuxel) return;
       if (action === 'back') global.nuxel.terminateForeground();
-      else if (action === 'home') global.nuxel.openHomeSettings();
+      // The penguin/Home affordance always returns to Home desktop 1.  It used
+      // to open Home Settings on a long press, so a slightly slow tap looked
+      // like the Home button "did nothing" (or opened a secondary surface).
+      else if (action === 'home') global.nuxel.home();
       this.buzz('long');
     }
   }

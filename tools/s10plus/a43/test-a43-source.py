@@ -6,7 +6,11 @@ r=Path(__file__).resolve().parents[3]
 assert (r/'VERSION').read_text().strip()=='v0.6.3-beta'
 assert 'v0.6.3-beta' in (r/'CHANGELOG.md').read_text()
 assert 'branches: [main]' in (r/'.github/workflows/release.yml').read_text()
-assert '--prerelease' in (r/'.github/workflows/release.yml').read_text()
+workflow = (r/'.github/workflows/release.yml').read_text()
+assert '--prerelease' in workflow
+assert 'push:\n    branches: [main]' in workflow
+assert 'tags:\n' not in workflow
+assert 'refs/tags/$tag' in workflow
 for ext in ('jpg','png'):
     fn='nuxel-bottom-bar'+ ('2' if ext=='png' else '')+'.'+ext
     a=r/'assets'/fn;b=r/'pwa/nuxel-home/assets'/fn
@@ -22,6 +26,7 @@ bridge=(r/'services/nuxel-bridge/src/bridge.py').read_text()
 api=(r/'services/nuxel-bridge/src/api.py').read_text()
 for method in ('NetworkWifiScan','NetworkWifiConnect','NetworkWifiDisconnect','NetworkWifiSetEnabled'):
     assert 'def '+method in bridge and method in api
-assert 'z-index:0' in (r/'pwa/nuxel-home/css/launcher.css').read_text()
+launcher_css = (r/'pwa/nuxel-home/css/launcher.css').read_text()
+assert 'z-index:90' in launcher_css and '.dock::before{display:none!important' in launcher_css
 assert 'gesturestart' in (r/'pwa/nuxel-home/index.html').read_text()
 print('A43 source contract checks: PASS (hardware not tested)')
