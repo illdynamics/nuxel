@@ -92,15 +92,31 @@ class NuxelHome {
 
     _backgroundForegroundApp() {
         const { app, frame } = this.appSession;
-        if (!app || !frame) return;
+        if (!app || this.appSession.state === 'CLOSED') return false;
+        // A native application owns a separate top-level Wayland surface, not a
+        // DOM iframe.  Returning early here (the pre-A45 behaviour) left the
+        // Terminal window in front of Home: the penguin/Home tap ran, the
+        // launcher repainted underneath it, and the glass did not change.
+        // Close that surface through the host's narrow, typed action instead.
+        if (!frame) {
+            this._closeAppSurface();
+            return true;
+        }
         const surface = this.appSurfaces.get(app.id);
         if (surface) {
             [surface.frame, surface.bar, surface.status].forEach(el => {
                 if (el) el.hidden = true;
             });
+        } else {
+            frame.hidden = true;
         }
+        // Remember the user's intent for an app that is still loading.  Its
+        // load handler must not flip an intentionally backgrounded surface back
+        // to ACTIVE and paint over Home.
+        frame.__nuxelBackgrounded = true;
         this._setAppState('BACKGROUND', app, frame);
         if (this.sessions && app) this.sessions.home();
+        return true;
     }
 
     _resumeApp(app) {
@@ -110,6 +126,10 @@ class NuxelHome {
         [surface.frame, surface.bar, surface.status].forEach(el => {
             if (el) el.hidden = false;
         });
+        if (surface.frame) {
+            surface.frame.__nuxelBackgrounded = false;
+            this._observeAppFrame(surface.frame, app);
+        }
         this._setAppState('ACTIVE', app, surface.frame);
         if (this.sessions) this.sessions.activate(app.id);
         return true;
@@ -389,6 +409,12 @@ class NuxelHome {
         frame.addEventListener('load', () => {
             if (this.appSession.frame !== frame) return;
             status.remove();
+            if (frame.__nuxelBackgrounded || this.appSession.state === 'BACKGROUND') {
+                // Home was pressed while this document was loading.  Keep it
+                // hidden; Recents can still resume the completed session.
+                this._observeAppFrame(frame, app);
+                return;
+            }
             this._setAppState('ACTIVE', app, frame);
             this._observeAppFrame(frame, app);
         }, { once: true });
@@ -467,6 +493,7 @@ class NuxelHome {
         }
         if (window.recents) window.recents.close('home');
         if (window.launcher) { window.launcher.closeDrawer(); window.launcher.exitEditMode(); }
+        if (window.NuxelTouchKeyboard) window.NuxelTouchKeyboard.hide();
         document.querySelectorAll('.folder-sheet').forEach(el => el.remove());
         this._backgroundForegroundApp();
     }
@@ -498,9 +525,21 @@ class NuxelHome {
     }
 
     home() {
-        this._closeOverlays();
-        // System Home always navigates to Desktop 1, never to the current page.
-        if (window.launcher) window.launcher.mainDesktop();
+        try {
+            this._closeOverlays();
+        } catch (error) {
+            this._inputTrace(`home:overlay-error ${error && error.message ? error.message : error}`);
+        }
+        try {
+            // System Home always navigates to Desktop 1, never to the current
+            // page.  It must work with no app, a loading app, a PWA iframe and
+            // a native top-level app (Terminal) alike.
+            if (window.launcher) window.launcher.mainDesktop();
+            this._inputTrace(`home:complete state=${this.appSession.state} page=${window.launcher ? window.launcher.currentPage : '?'}`);
+        } catch (error) {
+            this._inputTrace(`home:error ${error && error.message ? error.message : error}`);
+            console.error('[Nuxel] Home failed:', error);
+        }
     }
 
     recentsToggle() {
@@ -533,6 +572,9 @@ class NuxelHome {
         if (window.NuxelHomeSettings) window.NuxelHomeSettings.open();
     }
 }
+
+// The offline regression harness instantiates this class without a browser.
+try { window.NuxelHome = NuxelHome; } catch (e) { /* non-window test context */ }
 
 // Initialize on DOM ready
 document.addEventListener('DOMContentLoaded', () => {

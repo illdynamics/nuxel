@@ -63,6 +63,12 @@
     bind(button) {
       const action = button.dataset.nav;
       let lastPointerTapAt = 0;
+      const trace = (phase) => {
+        try {
+          const diag = global.webkit && global.webkit.messageHandlers && global.webkit.messageHandlers.nuxelDiag;
+          if (diag) diag.postMessage(`NAV ${phase} action=${action} state=${global.nuxel && global.nuxel.appSession ? global.nuxel.appSession.state : '?'} page=${global.launcher ? global.launcher.currentPage : '?'}`);
+        } catch (e) { /* observation only */ }
+      };
       const cancel = () => { if (this.timer) clearTimeout(this.timer); this.timer = null; this.activePointer = null; };
       button.addEventListener('pointerdown', e => {
         if (e.button !== undefined && e.button !== 0) return;
@@ -77,13 +83,13 @@
       button.addEventListener('pointerup', e => {
         if (this.activePointer !== null && e.pointerId !== this.activePointer) return;
         const held = this.held; cancel();
-        if (!held) { this.tap(action); lastPointerTapAt = Date.now(); }
+        if (!held) { lastPointerTapAt = Date.now(); this.tap(action, trace); }
       });
       button.addEventListener('pointercancel', cancel); button.addEventListener('lostpointercapture', cancel);
       // Keyboard and accessibility activations do not generate pointer events.
       button.addEventListener('click', e => {
         if (Date.now() - lastPointerTapAt < 500) return;
-        this.buzz('navigation'); this.tap(action);
+        this.buzz('navigation'); this.tap(action, trace);
       });
     }
     buzz(kind) {
@@ -97,11 +103,18 @@
         try { if (global.navigator && global.navigator.vibrate) global.navigator.vibrate(kind === 'long' ? 25 : 12); } catch (e) {}
       }
     }
-    tap(action) {
-      if (!global.nuxel) return;
-      if (action === 'back') global.nuxel.back();
-      else if (action === 'home') global.nuxel.home();
-      else global.nuxel.recentsToggle();
+    tap(action, trace) {
+      if (trace) trace('tap');
+      if (!global.nuxel) { if (trace) trace('missing-nuxel'); return; }
+      try {
+        if (action === 'back') global.nuxel.back();
+        else if (action === 'home') global.nuxel.home();
+        else global.nuxel.recentsToggle();
+      } catch (error) {
+        if (trace) trace('error:' + (error && error.message ? error.message : error));
+        return;
+      }
+      if (trace) trace('done');
     }
     long(action) {
       if (!global.nuxel) return;
@@ -114,5 +127,6 @@
     }
   }
   global.NuxelAppSessions = AppSessions;
+  global.NuxelSystemNavigation = SystemNavigation;
   document.addEventListener('DOMContentLoaded', () => { global.nuxelNavigation = new SystemNavigation(); });
 })(window);
