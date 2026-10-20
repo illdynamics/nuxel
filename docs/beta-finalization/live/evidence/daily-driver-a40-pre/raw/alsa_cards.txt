@@ -1,0 +1,9 @@
+cmd: cat /proc/asound/cards
+ok: True rc: 0 framed: True sha_ok: True
+---
+ 0 [beyondmadera   ]: beyond-madera - beyond-madera
+                      beyond-madera
+ 1 [aboxvdma       ]: abox_vdma - abox_vdma
+                      abox_vdma
+ 2 [aboxdump       ]: abox_dump - abox_dump
+                      abox_dump

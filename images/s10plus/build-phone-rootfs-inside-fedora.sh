@@ -70,13 +70,18 @@ python3 /nuxel/tools/s10plus/a33/verify-packages.py --quiet --report /tmp/nuxel-
 # real base is `filesystem` + `setup`.  webkit2gtk4.1/gtk3/alsa-lib are the
 # RUNTIME libraries nuxel-pwa-host and nuxel-button-manager are linked against;
 # seatd is required by services/nuxel-session/systemd/seatd.service.
+# NetworkManager-wifi provides the Wi-Fi device plugin; without it NM creates
+# wlan0 as a generic unmanaged device even when the BCM/DHD driver and firmware
+# have registered a radio. wpa_supplicant is the configured backend and requires
+# Fedora's split libnl3 + libnl3-cli runtime; iw and wireless-regdb provide
+# truthful scan/regulatory diagnostics and its required regulatory database.
 dnf -y --installroot="$STAGE" --releasever=43 --use-host-config \
     --setopt=reposdir="$REPODIR" --setopt=install_weak_deps=False --setopt=tsflags=nodocs install \
     filesystem setup fedora-release glibc glibc-langpack-en \
     bash coreutils util-linux findutils grep sed gawk \
     systemd-258.11-1.fc43 systemd-udev systemd-networkd dbus-broker dbus-daemon \
     python3 phosh phoc stevia stevia-phosh-osk-provider seatd \
-    NetworkManager NetworkManager-wifi ModemManager geoclue2 bluez \
+    NetworkManager NetworkManager-wifi wpa_supplicant libnl3 libnl3-cli iw wireless-regdb ModemManager geoclue2 bluez \
     mesa-dri-drivers mesa-libEGL mesa-libgbm libinput \
     gtk3 webkit2gtk4.1 gtk4 libadwaita \
     pipewire wireplumber alsa-lib mpg123 \
@@ -325,6 +330,7 @@ done
 # verify-service-graph.py can prove install + enablement from the script text.
 install -m 0644 /nuxel/services/nuxel-bridge/systemd/nuxel-bridge.service             "$STAGE/etc/systemd/system/nuxel-bridge.service"
 install -m 0644 /nuxel/services/nuxel-bridge/systemd/nuxel-http-bridge.service        "$STAGE/etc/systemd/system/nuxel-http-bridge.service"
+install -m 0644 /nuxel/services/nuxel-bridge/polkit/50-nuxel-bridge-network.rules     "$STAGE/etc/polkit-1/rules.d/50-nuxel-bridge-network.rules"
 install -m 0644 /nuxel/services/nuxel-portal/systemd/nuxel-portal.service             "$STAGE/etc/systemd/system/nuxel-portal.service"
 install -m 0644 /nuxel/services/nuxel-notifications/systemd/nuxel-notifications.service "$STAGE/etc/systemd/system/nuxel-notifications.service"
 # The static PWA server that serves the launcher tree on :8000.

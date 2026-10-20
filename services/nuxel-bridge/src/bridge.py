@@ -50,7 +50,7 @@ INTERFACE_NAME = 'org.nuxel.Bridge'
 # PWA<->host protocol pin (briq-04c). Same env names as the systemd units and the
 # HTTP layer, so `systemctl show -p Environment` shows exactly what is enforced.
 BRIDGE_PROTOCOL_VERSION = os.environ.get('NUXEL_BRIDGE_PROTOCOL_VERSION', '1')
-BRIDGE_HOST_VERSION = os.environ.get('NUXEL_BRIDGE_VERSION', '0.6.0-beta')
+BRIDGE_HOST_VERSION = os.environ.get('NUXEL_BRIDGE_VERSION', '0.6.1-beta')
 OBJECT_PATH = '/org/nuxel/Bridge'
 PORTAL_BUS_NAME = 'org.nuxel.Portal'
 PORTAL_OBJECT_PATH = '/org/nuxel/Portal'
@@ -105,6 +105,7 @@ CAPABILITIES = {
     # Extended capabilities
     'network:outbound': 'Access the internet (outbound connections)',
     'network:inbound': 'Accept incoming network connections',
+    'network:manage': 'Enable or disable system network radios',
     'storage:persistent': 'Store data persistently on device',
     'background:execution': 'Run in background after app is suspended',
     'display:screenshot': 'Capture the screen as an image',
@@ -122,7 +123,7 @@ CAPABILITY_RISK = {
     'camera:capture': 'high', 'camera:preview': 'medium',
     'notifications:send': 'low', 'notifications:receive': 'low',
     'phone:status': 'low',
-    'network:outbound': 'medium', 'network:inbound': 'high',
+    'network:outbound': 'medium', 'network:inbound': 'high', 'network:manage': 'medium',
     'storage:persistent': 'low',
     'background:execution': 'medium',
     'display:screenshot': 'high', 'display:screencast': 'high',
@@ -138,7 +139,7 @@ CAPABILITY_PORTAL_MAP = {
     'location:read': 'location',
     'camera:capture': 'camera', 'camera:preview': 'camera',
     'display:screenshot': 'screenshot', 'display:screencast': 'screencast',
-    'network:outbound': 'network', 'network:inbound': 'network',
+    'network:outbound': 'network', 'network:inbound': 'network', 'network:manage': 'network',
     'background:execution': 'background',
     'usb:access': 'usb',
     'bluetooth:scan': 'bluetooth', 'bluetooth:connect': 'bluetooth',
@@ -270,33 +271,114 @@ class ModemManagerConnector:
 class NetworkManagerConnector:
     def __init__(self):
         self.bus = None
+        self.nm_proxy = None
         self.connected = False
-    
+
+    def _refresh_proxy(self):
+        """Bind the well-known NM name again after a daemon restart.
+
+        dbus-python can retain the old unique-name owner in a proxy.  A
+        NetworkManager restart then leaves the status API reporting the stale
+        ``ServiceUnknown`` error forever although the replacement daemon and
+        Wi-Fi radio are healthy.  Reacquiring this cheap root proxy per status
+        read keeps the indicator tied to the live daemon, not a past owner.
+        """
+        if self.bus is None:
+            self.bus = dbus.SystemBus()
+        self.nm_proxy = self.bus.get_object(
+            'org.freedesktop.NetworkManager',
+            '/org/freedesktop/NetworkManager',
+        )
+        self.connected = True
+
     def connect(self):
         try:
-            self.bus = dbus.SystemBus()
-            self.nm_proxy = self.bus.get_object('org.freedesktop.NetworkManager',
-                                                 '/org/freedesktop/NetworkManager')
-            self.connected = True
+            self._refresh_proxy()
             logger.info("NetworkManager connected")
         except Exception as e:
+            self.connected = False
             logger.error(f"NetworkManager connect failed: {e}")
     
     def get_status(self):
         if not self.connected:
-            return {'connected': False}
+            return {'available': False, 'connected': False,
+                    'wifi_available': False, 'wifi_connected': False,
+                    'wifi_state': 'unavailable'}
         try:
+            self._refresh_proxy()
             props = dbus.Interface(self.nm_proxy, 'org.freedesktop.DBus.Properties')
             state = props.Get('org.freedesktop.NetworkManager', 'State')
             connectivity = props.Get('org.freedesktop.NetworkManager', 'Connectivity')
             wifi_enabled = props.Get('org.freedesktop.NetworkManager', 'WirelessEnabled')
+            # A connection to NetworkManager's D-Bus name is not a network
+            # connection. Inspect Wi-Fi devices individually so a powered but
+            # unmanaged/disconnected radio never creates a connected icon.
+            wifi_devices = []
+            manager = dbus.Interface(self.nm_proxy, 'org.freedesktop.NetworkManager')
+            for device_path in manager.GetDevices():
+                device = self.bus.get_object('org.freedesktop.NetworkManager', device_path)
+                device_props = dbus.Interface(device, 'org.freedesktop.DBus.Properties')
+                interface = str(device_props.Get('org.freedesktop.NetworkManager.Device', 'Interface'))
+                device_type = int(device_props.Get('org.freedesktop.NetworkManager.Device', 'DeviceType'))
+                # The S10+ vendor bcmdhd driver exposes /devices/virtual/net/
+                # interfaces. Until the NM Wi-Fi plugin is installed, NM calls
+                # them generic (rather than type 2); retaining the wlan* match
+                # reports the honest "unmanaged" state instead of pretending
+                # the detected radio does not exist.
+                if device_type != 2 and not interface.startswith('wlan'):
+                    continue
+                wifi_devices.append({
+                    'interface': interface,
+                    'state': int(device_props.Get('org.freedesktop.NetworkManager.Device', 'State')),
+                })
+            active = [row for row in wifi_devices if row['state'] == 100]
+            highest_state = max((row['state'] for row in wifi_devices), default=None)
+            if not wifi_enabled:
+                wifi_state = 'disabled'
+            elif not wifi_devices:
+                wifi_state = 'unavailable'
+            elif active:
+                # NM connectivity: NONE=1, PORTAL=2, LIMITED=3, FULL=4.
+                # Association and internet verification stay distinct.
+                wifi_state = 'internet' if int(connectivity) == 4 else 'connected'
+            elif highest_state == 10:
+                wifi_state = 'unmanaged'
+            elif highest_state in (40, 50, 60, 70, 80, 90, 110):
+                wifi_state = 'connecting'
+            else:
+                wifi_state = 'enabled_disconnected'
             return {
-                'connected': True, 'state': int(state),
+                'available': True, 'connected': int(state) >= 50,
+                'state': int(state),
                 'connectivity': int(connectivity),
                 'wifi_enabled': bool(wifi_enabled),
+                'wifi_available': bool(wifi_devices),
+                'wifi_connected': bool(active),
+                'wifi_state': wifi_state,
+                'wifi_devices': wifi_devices,
             }
         except Exception as e:
-            return {'connected': False, 'error': str(e)}
+            return {'available': False, 'connected': False,
+                    'wifi_available': False, 'wifi_connected': False,
+                    'wifi_state': 'unavailable', 'error': str(e)}
+
+    def set_wifi_enabled(self, enabled):
+        """Set NM's real WirelessEnabled property and confirm its readback."""
+        try:
+            self._refresh_proxy()
+            props = dbus.Interface(self.nm_proxy, 'org.freedesktop.DBus.Properties')
+            props.Set('org.freedesktop.NetworkManager', 'WirelessEnabled',
+                      dbus.Boolean(bool(enabled)))
+            status = self.get_status()
+            if not status.get('available'):
+                return {'success': False, 'error': status.get('error', 'NetworkManager unavailable')}
+            if bool(status.get('wifi_enabled')) != bool(enabled):
+                return {'success': False, 'error': 'NetworkManager did not apply WirelessEnabled',
+                        'wifi_enabled': bool(status.get('wifi_enabled'))}
+            return {'success': True, 'wifi_enabled': bool(enabled),
+                    'wifi_state': status.get('wifi_state')}
+        except Exception as e:
+            return {'success': False, 'error': str(e)}
 
 
 class GeoClueConnector:
@@ -711,6 +793,14 @@ class NuxelBridgeService(dbus.service.Object):
                    'network': self.network.get_status(),
                    'timestamp': time.time()}
         return json.dumps(result)
+
+    @dbus.service.method(INTERFACE_NAME, in_signature='sb', out_signature='s')
+    def NetworkWifiSetEnabled(self, app_id, enabled):
+        if not self._check_capability(app_id, 'network:manage'):
+            return json.dumps({'success': False,
+                               'error': 'Capability not granted: network:manage',
+                               'error_code': 'CAPABILITY_DENIED'})
+        return json.dumps(self.network.set_wifi_enabled(bool(enabled)))
     
     # ---------- D-Bus: Location ----------
     
@@ -767,7 +857,7 @@ class NuxelBridgeService(dbus.service.Object):
 
 
 def main():
-    logger.info("Starting Nuxel Bridge v0.6.0-beta...")
+    logger.info("Starting Nuxel Bridge v0.6.1-beta...")
     
     dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
     bus = dbus.SystemBus()

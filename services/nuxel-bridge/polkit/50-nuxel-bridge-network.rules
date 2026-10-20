@@ -1,0 +1,10 @@
+// Permit only the Nuxel bridge service account to flip NetworkManager's
+// Wi-Fi radio property.  The bridge still enforces its per-app
+// `network:manage` capability before it makes this D-Bus call; no browser or
+// arbitrary local account receives this PolicyKit privilege.
+polkit.addRule(function(action, subject) {
+    if (action.id === 'org.freedesktop.NetworkManager.enable-disable-wifi' &&
+        subject.user === 'nuxel-bridge') {
+        return polkit.Result.YES;
+    }
+});

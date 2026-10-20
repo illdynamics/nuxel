@@ -75,6 +75,11 @@
             '<h3>Status bar</h3><label>Battery indicator <select data-battery-style>' +
             [['inside', 'Icon with percentage inside'], ['percentage', 'Percentage only'], ['bar', 'Battery bar only']].map(v => '<option value="' + v[0] + '"' + ((appearance.batteryStyle || 'inside') === v[0] ? ' selected' : '') + '>' + v[1] + '</option>').join('') +
             '</select></label>' +
+            '<h3>System Monitor</h3><div class="system-monitor-controls">' +
+            '<label>Show hardware meters <input type="checkbox" data-system-monitor-enabled' + (appearance.systemMonitorEnabled !== false ? ' checked' : '') + '></label>' +
+            '<label>Refresh interval <select data-system-monitor-interval>' + [1, 2, 3, 5, 10].map(v => '<option value="' + v + '"' + (Number(appearance.systemMonitorInterval || 3) === v ? ' selected' : '') + '>' + v + ' seconds</option>').join('') + '</select></label>' +
+            '<label>Detailed values <input type="checkbox" data-system-monitor-detailed' + (appearance.systemMonitorDetailed !== false ? ' checked' : '') + '></label>' +
+            '<p class="home-setting-hint">3 seconds is recommended. One-second updates can use more battery.</p></div>' +
             '<footer><button type="button" data-home-restore>Restore hidden apps</button><button type="button" class="reset-home" data-home-reset>Reset launcher layout</button></footer></div>';
         panel.hidden = false;
         panel.querySelector('[data-home-close]').onclick = close;
@@ -95,6 +100,18 @@
         });
         panel.querySelector('[data-battery-style]').onchange = event => {
             const data = read(); data.batteryStyle = event.target.value; save(data); apply();
+        };
+        panel.querySelector('[data-system-monitor-enabled]').onchange = event => {
+            const data = read(); data.systemMonitorEnabled = event.target.checked; save(data);
+            global.NuxelSystemMonitor && global.NuxelSystemMonitor.configure(data);
+        };
+        panel.querySelector('[data-system-monitor-interval]').onchange = event => {
+            const data = read(); data.systemMonitorInterval = Number(event.target.value); save(data);
+            global.NuxelSystemMonitor && global.NuxelSystemMonitor.configure(data);
+        };
+        panel.querySelector('[data-system-monitor-detailed]').onchange = event => {
+            const data = read(); data.systemMonitorDetailed = event.target.checked; save(data);
+            global.NuxelSystemMonitor && global.NuxelSystemMonitor.configure(data);
         };
         const update = () => launcher && launcher.updateHomeSettings({
             gridColumns: Number(panel.querySelector('[data-grid-columns]').value),

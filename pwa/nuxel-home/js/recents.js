@@ -6,6 +6,7 @@ class RecentsManager {
         this.view = document.getElementById('recents-view');
         this.list = document.getElementById('recents-list');
         this.isOpen = false;
+        this.lastTransition = null;
         this._init();
     }
 
@@ -18,22 +19,35 @@ class RecentsManager {
         document.addEventListener('gesture:recents', () => this.toggle());
     }
 
-    open() {
+    _transition(state, reason) {
+        this.lastTransition = { state, reason: reason || 'unspecified', at: Date.now() };
+        document.dispatchEvent(new CustomEvent('recents:state', { detail: this.lastTransition }));
+        try {
+            const diag = window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.nuxelDiag;
+            if (diag) diag.postMessage(`RECENTS state=${state} reason=${this.lastTransition.reason} ts=${this.lastTransition.at}`);
+        } catch (e) { /* diagnostics never control visibility */ }
+    }
+
+    open(reason) {
         if (this.isOpen) return;
         this.isOpen = true;
         this._render();
         this.view.classList.remove('hidden');
+        this._transition('OPEN', reason || 'explicit-open');
+        requestAnimationFrame(() => this.view.classList.add('visible'));
     }
 
-    close() {
+    close(reason) {
         if (!this.isOpen) return;
         this.isOpen = false;
+        this.view.classList.remove('visible');
         this.view.classList.add('hidden');
+        this._transition('CLOSED', reason || 'explicit-close');
     }
 
-    toggle() {
-        if (this.isOpen) this.close();
-        else this.open();
+    toggle(reason) {
+        if (this.isOpen) this.close(reason || 'toggle-close');
+        else this.open(reason || 'toggle-open');
     }
 
     _render() {
@@ -71,7 +85,7 @@ class RecentsManager {
                 if (Math.abs(e.clientX - startX) > 72) { this._closeCard(card.dataset.appId); return; }
                 if (e.target.closest('.recents-close')) { this._closeCard(card.dataset.appId); return; }
                 const appId = card.dataset.appId;
-                this.close();
+                this.close('select-app');
                 if (!(window.nuxel && window.nuxel._resumeApp(appRegistry.getApp(appId)))) appRegistry.launchApp(appId);
             });
         });
@@ -81,6 +95,7 @@ class RecentsManager {
         if (window.nuxel && window.nuxel.sessions) window.nuxel.sessions.close(appId);
         if (window.nuxel && window.nuxel.appSession.app && window.nuxel.appSession.app.id === appId) window.nuxel._closeAppSurface();
         this._render();
+        this._transition('OPEN', 'dismiss-card');
     }
 }
 

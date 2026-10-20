@@ -226,25 +226,38 @@ class QuickSettings {
         else this.open();
     }
 
-    _toggle(id) {
-        this.state[id] = !this.state[id];
-        const el = document.getElementById(`qs-${id}`);
-        if (el) {
-            el.dataset.enabled = this.state[id] ? 'true' : 'false';
+    async _toggle(id) {
+        if (id === 'wifi') {
+            await this._setWifiEnabled(!this.state.wifi);
+            return;
         }
-        
-        // Dispatch event
-        const event = new CustomEvent('qs:toggle', {
-            detail: { id, enabled: this.state[id] },
-            bubbles: true,
-        });
-        document.dispatchEvent(event);
-        
-        // Provide haptic feedback if available
-        if (window.NuxelHost && window.NuxelHost.available) {
-            window.NuxelHost.action('haptics-switch');
-        } else if (navigator.vibrate) {
-            navigator.vibrate(10);
+        // A tile must not become a decorative switch.  Keep unintegrated
+        // controls honest until their hardware backend is landed.
+        this._osdNotice(`${id} control is unavailable on this build`);
+    }
+
+    async _setWifiEnabled(enabled) {
+        const el = document.getElementById('qs-wifi');
+        if (el) el.dataset.pending = 'true';
+        try {
+            const grant = await bridge.requestCapability('network:manage', 'Change Wi-Fi power');
+            if (grant === false) throw new Error('Network control permission denied');
+            const result = await bridge.call('network', 'wifi-enabled', { enabled: !!enabled });
+            if (!result || result.success !== true || Boolean(result.wifi_enabled) !== Boolean(enabled)) {
+                throw new Error((result && result.error) || 'NetworkManager did not confirm Wi-Fi state');
+            }
+            this.state.wifi = Boolean(result.wifi_enabled);
+            this._updateUI();
+            document.dispatchEvent(new CustomEvent('qs:toggle', {
+                detail: { id: 'wifi', enabled: this.state.wifi }, bubbles: true,
+            }));
+            if (window.NuxelHost && window.NuxelHost.available) window.NuxelHost.action('haptics-switch');
+            else if (navigator.vibrate) navigator.vibrate(10);
+        } catch (error) {
+            await this._syncState();
+            this._osdNotice('Wi-Fi unchanged: ' + (error && error.message ? error.message : 'backend unavailable'));
+        } finally {
+            if (el) delete el.dataset.pending;
         }
     }
 

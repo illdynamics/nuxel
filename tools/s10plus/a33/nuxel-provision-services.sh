@@ -28,6 +28,10 @@ need_user nuxel-notifications
 
 mkdir -p /var/lib/nuxel/permissions /var/log/nuxel
 chown nuxel:nuxel /var/lib/nuxel/permissions
-echo "directories ready: /var/lib/nuxel/permissions (nuxel:nuxel), /var/log/nuxel"
+chmod 0770 /var/lib/nuxel/permissions
+# The portal owns this store as nuxel; the bridge needs group-only write access
+# to persist the grants it successfully brokers.  Do not make it world writable.
+usermod -a -G nuxel nuxel-bridge
+echo "directories ready: /var/lib/nuxel/permissions (nuxel:nuxel, 0770; bridge supplementary group nuxel), /var/log/nuxel"
 
 echo "provisioning complete"

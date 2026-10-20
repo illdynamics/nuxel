@@ -1,0 +1,30 @@
+[
+  {
+    "path": "pwa/nuxel-home/js/launcher.js",
+    "sha256": "bb3493e0a01e922a85e8bb35858383d8c702afa8121b7fef1ac07c8e51e7b2f6"
+  },
+  {
+    "path": "pwa/nuxel-home/js/recents.js",
+    "sha256": "009021c709e2eb38a59890c10f00ae2fa52367831dd2dcdf4800f80f128c743c"
+  },
+  {
+    "path": "pwa/nuxel-home/js/app.js",
+    "sha256": "e726526909de5de87f06e26a49b01b6a14bb07d9ba6c43898b3f5a77740a3c0e"
+  },
+  {
+    "path": "pwa/nuxel-home/css/status-bar.css",
+    "sha256": "8526a136cd194787dd6a8d6bee13e8928b91826bccc723dfb994849b8e257907"
+  },
+  {
+    "path": "pwa/nuxel-home/sw.js",
+    "sha256": "13fcd4a9751f11839acc0cfca272a86d2992c68d5d0c3e3cc5667a46acbdefd4"
+  },
+  {
+    "path": "pwa/nuxel-home/manifest.json",
+    "sha256": "8a2d7c3353f5dc6efdb8029cfc4bd1677ef18e75897cc7ec445eb8047e3ed00b"
+  },
+  {
+    "path": "pwa/nuxel-apps/calendar/css/calendar.css",
+    "sha256": "716c86e431e5d187e245a86ac42f31295d697397b8e565b06f9b22f224c1d53b"
+  }
+]

@@ -18,6 +18,7 @@ class Launcher {
         this.editMode = false;
         this.selectedAppId = null;
         this.isDragging = false;
+        this.dragState = 'IDLE';
         this.dragData = null;
         this.dragGhost = null;
         this.dragStartX = 0;
@@ -312,6 +313,7 @@ class Launcher {
 
         if (item.dataset && item.dataset.folderId) { this._openFolder(item.dataset.folderId); return; }
         this.dragTarget = item;
+        this.dragState = 'PRESS_PENDING';
         this.pressedPointer = e.pointerId;
         this.dragStartX = e.clientX;
         this.dragStartY = e.clientY;
@@ -404,11 +406,12 @@ class Launcher {
 
     _cancelPointer() {
         clearTimeout(this.longPressTimer);
-        if (this.isDragging) this._endDrag();
+        if (this.isDragging) this._endDrag(null, true);
         this.dragTarget = null;
         this.pressedPointer = null;
         this.hasMoved = false;
         this.drawerHold = false;
+        if (!this.isDragging) this.dragState = 'IDLE';
     }
 
     _showDrawerMenu(appId) {
@@ -427,7 +430,19 @@ class Launcher {
         if (this.isHomeLocked()) { this._lockedNotice(); return; }
         this.drawerHold = false;
         this.isDragging = true;
-        this.dragData = { id: item.dataset.appId, el: item, fromDrawer };
+        this.dragState = 'DRAGGING';
+        // A drawer item is deliberately unmounted to reveal Home.  Keep the
+        // drag session in model state, not in that soon-to-be-dead element.
+        // The snapshot makes pointercancel a real cancel rather than an
+        // accidental Add-to-Home operation.
+        this.dragData = {
+            id: item.dataset.appId,
+            el: item,
+            fromDrawer,
+            layoutBefore: fromDrawer && this.layout ? this.layout.snapshot() : null,
+            assignmentsBefore: fromDrawer ? Object.assign({}, this.pageAssignments) : null,
+            hiddenBefore: fromDrawer ? Array.from(this.hiddenAppIds) : null,
+        };
         this._positionedThisDrag = false;
         item.classList.add('dragging');
         document.body.classList.add('launcher-dragging');
@@ -437,15 +452,23 @@ class Launcher {
         this.dragGhost.classList.add('drag-ghost');
         this.dragGhost.style.position = 'fixed';
         this.dragGhost.style.zIndex = '99999';
-        this.dragGhost.style.pointerEvents = 'auto'; // Stable pointer owner during drawer unmount.
+        // The document remains the event owner; the ghost must never become
+        // the drop target or steal hit tests from Home icons.
+        this.dragGhost.style.pointerEvents = 'none';
         this.dragGhost.style.opacity = '0.85';
         this.dragGhost.style.transform = 'scale(1.1)';
         this.dragGhost.style.left = (e.clientX - 32) + 'px';
         this.dragGhost.style.top = (e.clientY - 32) + 'px';
         document.body.appendChild(this.dragGhost);
-        try { this.dragGhost.setPointerCapture(e.pointerId); } catch (err) {}
         if (fromDrawer) {
             const menu = document.getElementById('nuxel-drawer-context'); if (menu) menu.remove();
+            // Reveal a temporary Home slot before unmounting the drawer. This
+            // is in-memory only until pointerup; cancel restores the snapshot.
+            const id = this.dragData.id;
+            this.hiddenAppIds.delete(id);
+            this._ensureLayout();
+            if (!this.layout.appIds.includes(id)) { this.layout.appIds.push(id); this.layout._normalise(); }
+            this.pageAssignments[id] = this.currentPage;
             this.closeDrawer();
         }
 
@@ -455,6 +478,7 @@ class Launcher {
 
     _updateDrag(e) {
         if (!this.dragGhost) return;
+        this.dragState = 'DROP_TARGET';
         const edge = e.clientX < 22 ? -1 : e.clientX > innerWidth - 22 ? 1 : 0;
         if (edge !== this._dragEdge) {
             clearTimeout(this._dragPageTimer);
@@ -472,9 +496,7 @@ class Launcher {
 
         // Find target under pointer. A folder target needs deliberate centered
         // dwell; ordinary near-edge drops always use insertion/reflow.
-        this.dragGhost.style.display = 'none';
         const under = document.elementFromPoint(e.clientX, e.clientY);
-        this.dragGhost.style.display = '';
 
         const targetItem = under ? under.closest('.app-item') : null;
         if (targetItem && targetItem !== this.dragData.el && targetItem.closest('#app-list')) {
@@ -530,16 +552,15 @@ class Launcher {
         Array.from(parent.children).forEach((c, i) => c.dataset.index = i);
     }
 
-    _endDrag(e) {
+    _endDrag(e, cancelled = false) {
         this.isDragging = false;
         clearTimeout(this._dragPageTimer); this._dragEdge = 0;
 
-        if (this.dragData && this.dragData.el) {
+        if (this.dragData && this.dragData.el && this.dragData.el.isConnected) {
             this.dragData.el.style.opacity = '';
             this.dragData.el.classList.remove('dragging');
         }
         if (this.dragGhost) {
-            try { if (e && this.dragGhost.hasPointerCapture(e.pointerId)) this.dragGhost.releasePointerCapture(e.pointerId); } catch (err) {}
             this.dragGhost.remove();
             this.dragGhost = null;
         }
@@ -548,10 +569,14 @@ class Launcher {
         document.querySelectorAll('.app-item').forEach(el => el.classList.remove('drag-over'));
 
         const folder = document.querySelector('.folder-target');
-        if (this.dragData && this.dragData.fromDrawer) {
-            this.addToHome(this.dragData.id);
-        }
-        if (this.dragData) {
+        if (cancelled && this.dragData && this.dragData.fromDrawer) {
+            // Closing the drawer must not convert a cancelled gesture into a
+            // layout change. Restore both the model and page placement.
+            this.hiddenAppIds = new Set(this.dragData.hiddenBefore || []);
+            this.layout = new window.NuxelHomeLayout(
+                this._getOrderedApps().map(app => app.id), this.dragData.layoutBefore || {});
+            this.pageAssignments = this.dragData.assignmentsBefore || {};
+        } else if (this.dragData) {
             const id = this.dragData.id;
             this.pageAssignments[id] = this.currentPage;
             if (folder && folder.dataset.appId) {
@@ -567,11 +592,12 @@ class Launcher {
                 this._ensureLayout().insertApp(id, pos);
             }
         }
-        this._saveLayout();
+        if (!cancelled) this._saveLayout();
         this._renderAppGrid();
         this.dragData = null;
         this.folderHover = null;
         this._positionedThisDrag = false;
+        this.dragState = 'IDLE';
     }
 
     _enterEditMode(appId) {

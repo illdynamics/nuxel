@@ -16,7 +16,9 @@ SUBSYSTEM=="input", KERNEL=="event*", ATTRS{name}=="sec_touchscreen", SYMLINK+="
 # (logind grants the active session, same as the touchscreen rule above).
 SUBSYSTEM=="nfc", KERNEL=="nfc*", SYMLINK+="input/nfc", TAG+="uaccess"
 
-# WiFi: Broadcom BCM4375 (brcmfmac SDIO) — interface name from brcmfmac is wlan*
+# WiFi: Broadcom BCM4375-class radio exposed by Samsung's bcmdhd/cfg80211
+# stack on this 4.14 kernel. The netdev has a virtual sysfs parent, so preserve
+# explicit NetworkManager ownership when its udev event is processed.
 SUBSYSTEM=="net", KERNEL=="wlan*", ENV{NM_UNMANAGED}="0"
 
 # --- Camera and sensors: UNKNOWN — collect from real device (Phase 0) ---

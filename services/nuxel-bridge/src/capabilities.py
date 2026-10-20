@@ -59,6 +59,7 @@ class Capability(str, Enum):
     # Network
     NETWORK_OUTBOUND = 'network:outbound'
     NETWORK_INBOUND = 'network:inbound'
+    NETWORK_MANAGE = 'network:manage'
     
     # Storage
     STORAGE_PERSISTENT = 'storage:persistent'
@@ -213,6 +214,14 @@ CAPABILITY_INFO = {
         'prompt': 'Allow this app to accept incoming connections?',
         'portal_type': 'network',
         'sandbox_flag': 'network',
+    },
+    Capability.NETWORK_MANAGE: {
+        'name': 'Manage Network Radios',
+        'description': 'Allows the app to enable or disable Wi-Fi and other managed network radios',
+        'risk': 'medium',
+        'persistent': True,
+        'prompt': 'Allow this app to manage network radios?',
+        'portal_type': 'network',
     },
     Capability.STORAGE_PERSISTENT: {
         'name': 'Persistent Storage',

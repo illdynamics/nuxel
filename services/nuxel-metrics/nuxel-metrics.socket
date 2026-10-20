@@ -1,0 +1,9 @@
+[Unit]
+Description=Nuxel on-demand Home hardware metrics socket
+
+[Socket]
+ListenStream=127.0.0.1:8624
+NoDelay=true
+
+[Install]
+WantedBy=sockets.target

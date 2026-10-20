@@ -136,6 +136,10 @@ install_core_services() {
             install -Dm644 "${NUXEL_ROOT}/services/nuxel-bridge/systemd/nuxel-bridge.service" \
                 "${ROOTFS_DIR}/usr/lib/systemd/system/nuxel-bridge.service"
         fi
+        if [ -f "${NUXEL_ROOT}/services/nuxel-bridge/polkit/50-nuxel-bridge-network.rules" ]; then
+            install -Dm644 "${NUXEL_ROOT}/services/nuxel-bridge/polkit/50-nuxel-bridge-network.rules" \
+                "${ROOTFS_DIR}/etc/polkit-1/rules.d/50-nuxel-bridge-network.rules"
+        fi
         if [ -f "${NUXEL_ROOT}/services/nuxel-portal/systemd/nuxel-portal.service" ]; then
             install -Dm644 "${NUXEL_ROOT}/services/nuxel-portal/systemd/nuxel-portal.service" \
                 "${ROOTFS_DIR}/usr/lib/systemd/system/nuxel-portal.service"

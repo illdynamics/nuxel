@@ -292,22 +292,35 @@ html, body {
 }
 
 /* Persistent Android-like navigation.  The supplied artwork contains the
-   glyphs; object-fit keeps their native canvases from making giant buttons. */
+   glyphs; object-fit keeps their native canvases from making giant buttons.
+   BG2 is the owner-supplied navigation backdrop.  Its source PNG has a black
+   matte rather than alpha, so screen blending makes that matte transparent to
+   the wallpaper while retaining the bright pixel-art geometry. */
 .system-navigation {
     position: fixed;
     z-index: 260;
+    isolation: isolate;
     inset: auto 0 0;
     height: var(--system-nav-height);
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     align-items: center;
     padding: 5px max(14px, env(safe-area-inset-left)) calc(5px + env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-right));
-    background: rgba(5, 12, 24, .94);
-    border-top: 1px solid rgba(164, 199, 241, .2);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    background: transparent;
+    border-top: 0;
+}
+.system-navigation::before {
+    content: '';
+    position: absolute;
+    inset: 0 4px;
+    z-index: 0;
+    pointer-events: none;
+    background: url('../assets/nuxel-bottom-bar2.png') center / contain no-repeat;
+    mix-blend-mode: screen;
 }
 .system-navigation button {
+    position: relative;
+    z-index: 1;
     height: 48px;
     min-width: 48px;
     padding: 4px;

@@ -33,6 +33,10 @@ RestartMaxDelaySec=30
 # Security hardening
 User=nuxel-bridge
 Group=nuxel-bridge
+# The portal owns the shared capability store as the graphical `nuxel` user.
+# The bridge also persists the grants it brokers, so grant it only group access
+# to that one directory rather than running the bridge as root.
+SupplementaryGroups=nuxel
 ProtectSystem=full
 ProtectHome=true
 PrivateTmp=true

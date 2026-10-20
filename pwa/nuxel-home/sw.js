@@ -17,7 +17,7 @@
 // nuxel.cache_version, so a launcher that was served from a stale bundle is a
 // detectable state rather than a mystery.
 // v0.5.2-beta changes launcher lifecycle and Terminal interaction assets.
-const CACHE_VERSION = 'v16-a39-smart-dock';
+const CACHE_VERSION = 'v20-a41-wifi-control';
 const CACHE_NAME = 'nuxel-home-' + CACHE_VERSION;
 const STATIC_CACHE = 'nuxel-static-' + CACHE_VERSION;
 const DYNAMIC_CACHE = 'nuxel-dynamic-' + CACHE_VERSION;
@@ -53,6 +53,7 @@ const PRECACHE_ASSETS = [
     './js/navigation.js',
     './js/gestures.js',
     './js/home-settings.js',
+    './js/system-monitor.js',
     './js/scroll-indicators.js',
     './icons/icon-192.png',
     './icons/icon-512.png',

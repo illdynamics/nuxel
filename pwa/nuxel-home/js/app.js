@@ -465,7 +465,7 @@ class NuxelHome {
         if (this.components.qs) {
             this.components.qs.close();
         }
-        if (window.recents) window.recents.close();
+        if (window.recents) window.recents.close('home');
         if (window.launcher) { window.launcher.closeDrawer(); window.launcher.exitEditMode(); }
         document.querySelectorAll('.folder-sheet').forEach(el => el.remove());
         this._backgroundForegroundApp();
@@ -477,7 +477,7 @@ class NuxelHome {
     back() {
         if (this.components.search && this.components.search.isOpen) { this.components.search.close(); return; }
         if (this.components.qs && this.components.qs.isOpen) { this.components.qs.collapseOrClose(); return; }
-        if (window.recents && window.recents.isOpen) { window.recents.close(); return; }
+        if (window.recents && window.recents.isOpen) { window.recents.close('back'); return; }
         const folder = document.querySelector('.folder-sheet'); if (folder) { folder.remove(); return; }
         if (window.launcher && window.launcher.drawerOpen) { window.launcher.closeDrawer(); return; }
         if (window.NuxelTouchKeyboard && window.NuxelTouchKeyboard.visible()) { window.NuxelTouchKeyboard.hide(); return; }
@@ -507,7 +507,7 @@ class NuxelHome {
         if (this.components.search && this.components.search.isOpen) this.components.search.close();
         if (this.components.qs && this.components.qs.isOpen) this.components.qs.close();
         if (window.launcher) { window.launcher.closeDrawer(); window.launcher.exitEditMode(); }
-        if (window.recents) window.recents.toggle();
+        if (window.recents) window.recents.toggle('system-nav');
     }
 
     forward() {

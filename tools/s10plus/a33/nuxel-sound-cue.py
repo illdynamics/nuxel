@@ -110,16 +110,26 @@ def play(event, percentage):
                audible='unverified', detail=stderr.decode('utf-8', 'replace')[-400:])
         return 0 if rc == 0 else 5
     except subprocess.TimeoutExpired:
+        # Reap the complete process group before returning.  The previous
+        # implementation sent SIGKILL after a second timeout but did not wait
+        # for the child; systemd then kept the oneshot cgroup alive until its
+        # stop-job timeout, adding almost a minute to every boot.
         try:
             os.killpg(proc.pid, signal.SIGTERM)
             _, stderr = proc.communicate(timeout=1)
-        except (OSError, subprocess.TimeoutExpired):
+        except subprocess.TimeoutExpired:
             try:
                 os.killpg(proc.pid, signal.SIGKILL)
-            except OSError:
-                pass
+                _, stderr = proc.communicate(timeout=2)
+            except (OSError, subprocess.TimeoutExpired):
+                # Do not claim playback cleanup succeeded.  The bounded unit
+                # stop timeout remains the final safety net.
+                stderr = b'player process group did not reap after SIGKILL'
+        except OSError:
+            stderr = b'player process group was already gone'
         record(event, 'player_timeout', timeout_seconds=timeout, output='alsa',
-               pcm_gain_percent=percentage, audible='unverified')
+               pcm_gain_percent=percentage, audible='unverified',
+               detail=stderr.decode('utf-8', 'replace')[-400:])
         return 5
     except (OSError, KeyboardInterrupt) as e:
         if proc is not None:

@@ -1,0 +1,46 @@
+[
+  {
+    "command": "test ! -e /run/nuxel-owner-test.lock && test ! -e /var/tmp/nuxel-a40-input-lifecycle-20261019 && mkdir -p /var/tmp/nuxel-a40-input-lifecycle-20261019",
+    "output": "",
+    "rid": "747d6d72",
+    "rc": 0,
+    "framed": true,
+    "sha_ok": true,
+    "elapsed_s": 0.803,
+    "raw_len": 707,
+    "output_bytes": 0
+  },
+  {
+    "command": "uname -smr; cat /proc/sys/kernel/random/boot_id; systemctl is-active nuxel-wayland nuxel-wl-fb; cat /run/nuxel-wl-fb.state",
+    "output": "Linux 4.14.253 aarch64\n545e10ec-5f1f-4855-b692-369b4f8ddfd2\nactive\nactive\n1792437620 FRAMES_OK total=22111 fps_1s=15 failures=0 blit_avg_ms=57 out=720x1520 src=720x1520 scale=2 panel=1440x3040 owner=nuxel-wl-fb display=on src_format=0x00000001 colour=R@0,G@8,B@16_abgr8888_override=1 decon_pan_ok=22111 decon_pan_failed=0\n",
+    "rid": "dc436d73",
+    "rc": 0,
+    "framed": true,
+    "sha_ok": true,
+    "elapsed_s": 0.101,
+    "raw_len": 1746,
+    "output_bytes": 322
+  },
+  {
+    "command": "systemd-run --quiet --unit=nuxel-a40-input-lifecycle-20261019 --property=RuntimeMaxSec=120 /usr/bin/python3 /var/tmp/nuxel-a40-input-lifecycle-20261019/install.py /var/tmp/nuxel-a40-input-lifecycle-20261019",
+    "output": "",
+    "rid": "6a336da3",
+    "rc": 0,
+    "framed": true,
+    "sha_ok": true,
+    "elapsed_s": 0.105,
+    "raw_len": 312580,
+    "output_bytes": 0
+  },
+  {
+    "command": "cat /var/tmp/nuxel-a40-input-lifecycle-20261019/receipt.json",
+    "output": "cat: /var/tmp/nuxel-a40-input-lifecycle-20261019/receipt.json: No such file or directory\n",
+    "rid": "11ff6da3",
+    "rc": 1,
+    "framed": true,
+    "sha_ok": true,
+    "elapsed_s": 0.121,
+    "raw_len": 313243,
+    "output_bytes": 89
+  }
+]

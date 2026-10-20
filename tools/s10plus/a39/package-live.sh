@@ -22,6 +22,7 @@ pwa/nuxel-home/css/style.css
 pwa/nuxel-home/css/status-bar.css
 pwa/nuxel-home/css/home-settings.css
 pwa/nuxel-home/css/launcher.css
+pwa/nuxel-apps/calendar/css/calendar.css
 pwa/nuxel-home/assets/nuxel-background.png
 pwa/nuxel-home/assets/nuxel-bottom-bar.jpg
 pwa/nuxel-home/assets/nuxel-bottom-bar2.png

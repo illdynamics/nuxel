@@ -1,0 +1,254 @@
+[
+  {
+    "elapsed_s": 0.121,
+    "key": "uptime",
+    "ok": true,
+    "rc": 0
+  },
+  {
+    "elapsed_s": 0.126,
+    "key": "uname",
+    "ok": true,
+    "rc": 0
+  },
+  {
+    "elapsed_s": 0.121,
+    "key": "hostname",
+    "ok": true,
+    "rc": 127
+  },
+  {
+    "elapsed_s": 0.127,
+    "key": "cmdline",
+    "ok": true,
+    "rc": 0
+  },
+  {
+    "elapsed_s": 0.082,
+    "key": "boot_mode",
+    "ok": true,
+    "rc": 1
+  },
+  {
+    "elapsed_s": 0.191,
+    "key": "units",
+    "ok": true,
+    "rc": 0
+  },
+  {
+    "elapsed_s": 0.089,
+    "key": "failed_units",
+    "ok": true,
+    "rc": 0
+  },
+  {
+    "elapsed_s": 0.123,
+    "key": "fb_owner",
+    "ok": true,
+    "rc": 0
+  },
+  {
+    "elapsed_s": 0.121,
+    "key": "animation",
+    "ok": true,
+    "rc": 0
+  },
+  {
+    "elapsed_s": 0.127,
+    "key": "wl_fb_state",
+    "ok": true,
+    "rc": 0
+  },
+  {
+    "elapsed_s": 0.105,
+    "key": "touch_devices",
+    "ok": true,
+    "rc": 0
+  },
+  {
+    "elapsed_s": 0.12,
+    "key": "input_nodes",
+    "ok": true,
+    "rc": 2
+  },
+  {
+    "elapsed_s": 0.087,
+    "key": "alsa_cards",
+    "ok": true,
+    "rc": 0
+  },
+  {
+    "elapsed_s": 0.121,
+    "key": "alsa_beyond_madera",
+    "ok": true,
+    "rc": 0
+  },
+  {
+    "elapsed_s": 0.129,
+    "key": "fb_devices",
+    "ok": true,
+    "rc": 0
+  },
+  {
+    "elapsed_s": 0.089,
+    "key": "irq_sec_ts",
+    "ok": true,
+    "rc": 0
+  },
+  {
+    "elapsed_s": 0.12,
+    "key": "pwa_host_unit",
+    "ok": true,
+    "rc": 4
+  },
+  {
+    "elapsed_s": 0.098,
+    "key": "http_registry",
+    "ok": true,
+    "rc": 0
+  },
+  {
+    "elapsed_s": 0.086,
+    "key": "seatd_socket",
+    "ok": true,
+    "rc": 2
+  },
+  {
+    "elapsed_s": 0.12,
+    "key": "deploy_check",
+    "ok": true,
+    "rc": 0
+  },
+  {
+    "elapsed_s": 0.096,
+    "key": "pwa_sha256:pwa/nuxel-home/index.html",
+    "ok": true,
+    "rc": 0
+  },
+  {
+    "elapsed_s": 0.126,
+    "key": "pwa_sha256:pwa/nuxel-home/manifest.json",
+    "ok": true,
+    "rc": 0
+  },
+  {
+    "elapsed_s": 0.125,
+    "key": "pwa_sha256:pwa/nuxel-home/sw.js",
+    "ok": true,
+    "rc": 0
+  },
+  {
+    "elapsed_s": 0.127,
+    "key": "pwa_sha256:pwa/nuxel-home/colour-test.html",
+    "ok": true,
+    "rc": 0
+  },
+  {
+    "elapsed_s": 0.124,
+    "key": "pwa_sha256:pwa/nuxel-home/css/launcher.css",
+    "ok": true,
+    "rc": 0
+  },
+  {
+    "elapsed_s": 0.083,
+    "key": "pwa_sha256:pwa/nuxel-home/css/search.css",
+    "ok": true,
+    "rc": 0
+  },
+  {
+    "elapsed_s": 0.126,
+    "key": "pwa_sha256:pwa/nuxel-home/css/status-bar.css",
+    "ok": true,
+    "rc": 0
+  },
+  {
+    "elapsed_s": 0.093,
+    "key": "pwa_sha256:pwa/nuxel-home/css/style.css",
+    "ok": true,
+    "rc": 0
+  },
+  {
+    "elapsed_s": 0.125,
+    "key": "pwa_sha256:pwa/nuxel-home/js/app.js",
+    "ok": true,
+    "rc": 0
+  },
+  {
+    "elapsed_s": 0.129,
+    "key": "pwa_sha256:pwa/nuxel-home/js/touch-keyboard.js",
+    "ok": true,
+    "rc": 0
+  },
+  {
+    "elapsed_s": 0.123,
+    "key": "pwa_sha256:pwa/nuxel-home/js/apps.js",
+    "ok": true,
+    "rc": 0
+  },
+  {
+    "elapsed_s": 0.126,
+    "key": "pwa_sha256:pwa/nuxel-home/js/bootlog.js",
+    "ok": true,
+    "rc": 0
+  },
+  {
+    "elapsed_s": 0.129,
+    "key": "pwa_sha256:pwa/nuxel-home/js/bridge.js",
+    "ok": true,
+    "rc": 0
+  },
+  {
+    "elapsed_s": 0.127,
+    "key": "pwa_sha256:pwa/nuxel-home/js/host-bridge.js",
+    "ok": true,
+    "rc": 0
+  },
+  {
+    "elapsed_s": 0.127,
+    "key": "pwa_sha256:pwa/nuxel-home/js/launcher.js",
+    "ok": true,
+    "rc": 0
+  },
+  {
+    "elapsed_s": 0.127,
+    "key": "pwa_sha256:pwa/nuxel-home/js/osd.js",
+    "ok": true,
+    "rc": 0
+  },
+  {
+    "elapsed_s": 0.125,
+    "key": "pwa_sha256:pwa/nuxel-home/js/qs.js",
+    "ok": true,
+    "rc": 0
+  },
+  {
+    "elapsed_s": 0.094,
+    "key": "pwa_sha256:pwa/nuxel-home/js/recents.js",
+    "ok": true,
+    "rc": 0
+  },
+  {
+    "elapsed_s": 0.127,
+    "key": "pwa_sha256:pwa/nuxel-home/js/safe-zones.js",
+    "ok": true,
+    "rc": 0
+  },
+  {
+    "elapsed_s": 0.089,
+    "key": "pwa_sha256:pwa/nuxel-home/js/search.js",
+    "ok": true,
+    "rc": 0
+  },
+  {
+    "elapsed_s": 0.095,
+    "key": "pwa_sha256:pwa/nuxel-home/js/settings-store.js",
+    "ok": true,
+    "rc": 0
+  },
+  {
+    "elapsed_s": 0.126,
+    "key": "pwa_sha256:pwa/nuxel-home/js/status-bar.js",
+    "ok": true,
+    "rc": 0
+  }
+]

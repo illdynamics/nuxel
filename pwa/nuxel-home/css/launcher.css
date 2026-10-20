@@ -18,16 +18,42 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 12px 4px 20px;
+    gap: 8px;
+    padding: 8px 4px 14px;
 }
 
-.app-grid-title {
-    font-size: 28px;
-    font-weight: 700;
-    background: linear-gradient(135deg, #60a5fa, #122952);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+.system-monitor {
+    min-width: 0;
+    flex: 1 1 auto;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 4px;
+    padding: 6px 7px;
+    color: #dbeafe;
+    background: rgba(5, 22, 43, .72);
+    border: 1px solid rgba(96, 165, 250, .36);
+    border-radius: 5px;
+    font: 700 10px/1 ui-monospace, "Cascadia Mono", "DejaVu Sans Mono", monospace;
+    letter-spacing: .035em;
+}
+
+.system-monitor[hidden] { display: none; }
+.system-meter { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2px 3px; min-width: 0; }
+.system-meter-label { color: #7dd3fc; }
+.system-meter-value { min-width: 0; color: #f8fafc; text-align: right; transition: color 160ms ease-out; }
+.system-meter-detail { grid-column: 1 / -1; min-width: 0; overflow: hidden; color: #bfdbfe; font-size: 8px; line-height: 1; text-overflow: ellipsis; white-space: nowrap; }
+.system-meter-bar { grid-column: 1 / -1; height: 4px; overflow: hidden; background: #122b49; box-shadow: inset 0 0 0 1px rgba(125, 211, 252, .17); }
+.system-meter-bar i { display: block; width: 0%; height: 100%; background: #38bdf8; transition: width 220ms ease-out; }
+.system-meter[data-meter="memory"] .system-meter-bar i { background: #60a5fa; }
+.system-meter[data-meter="gpu"] .system-meter-bar i { background: #a78bfa; }
+.system-meter[data-meter="gpu-memory"] .system-meter-bar i { background: #64748b; }
+.system-meter[data-unavailable="true"] { opacity: .68; }
+.system-monitor[data-detailed="false"] .system-meter-detail { display: none; }
+.system-monitor[data-reduced-motion="true"] .system-meter-bar i,
+@media (prefers-reduced-motion: reduce) { .system-meter-bar i, .system-meter-value { transition: none; } }
+
+@media (orientation: landscape) {
+    .system-monitor { max-width: 560px; }
 }
 
 .app-grid-indicator {

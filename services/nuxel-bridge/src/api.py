@@ -40,7 +40,7 @@ HTTP_MODE = os.environ.get('NUXEL_HTTP_MODE', 'dev')
 # downgrade. NUXEL_BRIDGE_VERSION is the host IMPLEMENTATION version and is
 # allowed to move independently.
 BRIDGE_PROTOCOL_VERSION = os.environ.get('NUXEL_BRIDGE_PROTOCOL_VERSION', '1')
-BRIDGE_HOST_VERSION = os.environ.get('NUXEL_BRIDGE_VERSION', '0.6.0-beta')
+BRIDGE_HOST_VERSION = os.environ.get('NUXEL_BRIDGE_VERSION', '0.6.1-beta')
 
 # Canonical launcher registry, shared with the PWA (pwa/nuxel-common/app-registry.json)
 # and the native shell. The rootfs installs it at /etc/nuxel/app-registry/.
@@ -721,6 +721,7 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
     RPC_METHODS = {
         ("ping", "ping"): "Ping",
         ("phone", "status"): "GetPhoneStatus",
+        ("network", "wifi-enabled"): "NetworkWifiSetEnabled",
         ("notifications", "list"): "GetNotifications",
         ("permissions", "list"): "GetAppCapabilities",
         ("sms", "list"): "SmsGetMessages",
@@ -750,6 +751,7 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
     RPC_ARG_BUILDERS = {
         "Ping": lambda app_id, params: [params.get("message") if isinstance(params, dict) and params.get("message") is not None else app_id],
         "GetPhoneStatus": lambda app_id, params: [app_id],
+        "NetworkWifiSetEnabled": lambda app_id, params: [app_id, bool(params.get("enabled", False))],
         "GetNotifications": lambda app_id, params: [],
         "GetAppCapabilities": lambda app_id, params: [app_id],
         "SmsGetMessages": lambda app_id, params: [app_id],
