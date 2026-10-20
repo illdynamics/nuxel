@@ -5,7 +5,15 @@
     const KEY = 'nuxel.homeAppearance';
     // `none` is intentional: it keeps all dock hitboxes and navigation
     // behaviour while removing only the decorative, pointer-inert artwork.
-    const DOCKS = Object.freeze({bg2: 'assets/nuxel-bottom-bar2.png', bg1: 'assets/nuxel-bottom-bar.jpg', none: null});
+    // These URLs deliberately start at the active Nuxel Home web root.  A
+    // relative URL stored in --dock-art is resolved at the stylesheet which
+    // consumes it (css/launcher.css), not at this script.  That formerly made
+    // both picker options request css/assets/... and silently lose their art.
+    const DOCKS = Object.freeze({
+        bg2: '/pwa/nuxel-home/assets/nuxel-bottom-bar2.png',
+        bg1: '/pwa/nuxel-home/assets/nuxel-bottom-bar.jpg',
+        none: null,
+    });
     const DEFAULT_DOCK = 'bg2';
     function dockChoice(value) { return Object.prototype.hasOwnProperty.call(DOCKS, value) ? value : DEFAULT_DOCK; }
     function applyDock(data) {

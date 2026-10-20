@@ -17,12 +17,16 @@ ui=(source/'js/home-settings.js').read_text()
 assert "DEFAULT_DOCK = 'bg2'" in ui
 assert "none: null" in ui
 assert "nuxel.homeAppearance" in ui
+assert "'/pwa/nuxel-home/assets/nuxel-bottom-bar2.png'" in ui
+assert "'/pwa/nuxel-home/assets/nuxel-bottom-bar.jpg'" in ui
+assert "css/assets/nuxel-bottom-bar" not in ui
 assert "dock.setAttribute('data-dock-asset'" in ui
 assert "data-dock-choice" in ui and "aria-pressed" in ui
 assert "#dock, #system-navigation" in ui
 assert "homeLocked" in ui and "desktopCount" in ui
 css=(source/'css/launcher.css').read_text()
 assert '.dock::before' in css and 'pointer-events:none' in css
+assert 'url("../assets/nuxel-bottom-bar2.png")' in css
 assert 'background-size:100% auto' in css
 assert '.dock[data-background="none"]::before{display:none}' in css
 assert 'repeat(4,minmax(0,1fr))' in css

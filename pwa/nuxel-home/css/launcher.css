@@ -340,7 +340,7 @@ body.app-drawer-open .app-grid-title::after { content: 'All apps'; margin-left: 
  * the source aspect ratio while allowing the layer above the shortcut hitboxes. */
 .dock{isolation:isolate;overflow:visible}
 .dock::before{content:"";position:absolute;left:0;right:0;bottom:0;height:33.34vw;z-index:-1;
- background-image:var(--dock-art,url("assets/nuxel-bottom-bar2.png"));background-size:100% auto;
+ background-image:var(--dock-art,url("../assets/nuxel-bottom-bar2.png"));background-size:100% auto;
  background-position:center bottom;background-repeat:no-repeat;pointer-events:none;image-rendering:pixelated}
 .dock[data-background="none"]::before{display:none}
 .dock-items{position:relative;z-index:1;grid-template-columns:repeat(4,minmax(0,1fr));}

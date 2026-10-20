@@ -42,6 +42,9 @@ Preserve all functioning Nuxel services, UI behaviors and device interfaces.
 
 ---
 
+now the dock background doesnt work anymore, and cant select another either now just displaying no background on dock.
+and fix audio! and I noticed you added a wifi manager but I doint see any wifi settings in the settings app add the necessary maanger/settings in there please or add it as application if that is more reasonable/common/easy to do it and manage the stuff.
+
 # PHASE 0 — PREFLIGHT, LIVE DEVICE AUDIT AND SAFE EXECUTION
 
 Before modifying code:
