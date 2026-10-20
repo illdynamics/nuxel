@@ -566,12 +566,62 @@ class NuxelHome {
         if (this.lockscreen) this.lockscreen.show(reason);
         if (window.NuxelTouchKeyboard) window.NuxelTouchKeyboard.hide();
         /* A lock always blanks the panel: idempotent for a display-off lock. */
-        try { if (global.NuxelHost && NuxelHost.available) NuxelHost.action('screen-off'); } catch (e) { /* best effort */ }
+        const host = window.NuxelHost;
+        if (host && host.available && typeof host.action === 'function') {
+            Promise.resolve(host.action('screen-off')).catch(() => {});
+        }
     }
 
-    _unlock() {
-        this._inputTrace('unlock');
-        if (this.lockscreen) this.lockscreen.hide();
+    _unlock(reason) {
+        const ls = this.lockscreen;
+        this._inputTrace(`unlock reason=${reason || 'host'}`);
+        if (!ls) return { ok: false, error: 'no-lockscreen' };
+        if (!ls.isLocked()) return { ok: true, already: true, state: ls.state };
+        ls.hide();
+        /* A fresh unlocked session must not consume the stale OFF sample that
+           caused the lock in the first place.  `null` means "unknown/armed":
+           one OFF sample records the state but does not re-lock.  After the
+           panel has been observed ON, the next real OFF transition locks. */
+        this._lastDisplayOff = null;
+        this._unlockGeneration = (this._unlockGeneration || 0) + 1;
+        this._inputTrace(`unlock:complete gen=${this._unlockGeneration} locked=${ls.isLocked() ? 1 : 0} ` +
+                         `visible=${ls.el && !ls.el.hidden ? 1 : 0}`);
+        return { ok: true, state: 'UNLOCKED', generation: this._unlockGeneration };
+    }
+
+    /* The ONLY path from the penguin gesture into the authoritative lock state.
+       The active lockscreen instance consumes a one-shot gesture id, then this
+       controller asks the native host for its acknowledgement before hiding the
+       overlay.  A rejected/missing backend leaves the session locked. */
+    unlockFromLockscreen(instance, request) {
+        const ls = this.lockscreen;
+        if (!ls || ls !== instance) {
+            return Promise.resolve({ ok: false, error: 'inactive-lockscreen' });
+        }
+        if (!ls.acceptGestureUnlock || !ls.acceptGestureUnlock(request)) {
+            return Promise.resolve({ ok: false, error: 'invalid-or-replayed-gesture' });
+        }
+        const commit = () => {
+            if (this.lockscreen !== ls) return { ok: false, error: 'lockscreen-changed' };
+            if (!ls.isLocked()) return { ok: true, state: 'UNLOCKED', via: 'host-event' };
+            return this._unlock('penguin-gesture');
+        };
+        const host = window.NuxelHost;
+        if (host && host.available && typeof host.action === 'function') {
+            return Promise.resolve(host.action('unlock')).then((res) => {
+                if (!res || res.ok === false) {
+                    this._inputTrace(`unlock:backend-rejected ${(res && (res.error || res.timeout)) || 'unknown'}`);
+                    return { ok: false, error: 'backend-unlock-failed', backend: res || null };
+                }
+                return commit();
+            }).catch((err) => {
+                this._inputTrace(`unlock:backend-error ${err && err.message ? err.message : err}`);
+                return { ok: false, error: 'backend-unlock-error' };
+            });
+        }
+        /* VM/desktop launcher: there is no native lock surface to release, so
+           the launcher controller itself is authoritative. */
+        return Promise.resolve(commit());
     }
 
     _initLockscreen() {
@@ -581,19 +631,24 @@ class NuxelHome {
         if (this.lockscreen && this.lockscreen.el && !this.lockscreen.el.hidden) {
             this.lockscreen.show('boot');
         }
+        this._inputTrace(`lockscreen-controller version=a45.1 device=${window.NuxelHost && window.NuxelHost.available ? 'phone' : 'local'}`);
         this._watchDisplayForLock();
     }
 
     /* Re-lock when the display actually powers down (idle timeout or Power),
-       so waking always shows the lockscreen.  Only the OFF->ON transition is
-       treated as an event; the poll never locks on a stale OFF. */
+       so waking always shows the lockscreen.  The ON->OFF transition locks;
+       an unknown/stale OFF sample never does. */
     _watchDisplayForLock() {
         this._lastDisplayOff = null;
         const read = () => {
-            if (!global.NuxelHost || !NuxelHost.available) return;
-            NuxelHost.statusRead('wlfb-state').then((r) => {
+            const host = window.NuxelHost;
+            if (!host || !host.available || typeof host.statusRead !== 'function') return;
+            Promise.resolve(host.statusRead('wlfb-state')).then((r) => {
                 const t = (r && (r.text || r.value)) || '';
-                const off = /^DISPLAY_OFF/m.test(t);
+                /* The running bridge publishes `display=off` in its frame
+                   status line; older display-state documents used DISPLAY_OFF.
+                   Accept both so an idle/power screen-off always re-locks. */
+                const off = /(^|[\s;])display=off([\s;]|$)/i.test(t) || /^DISPLAY_OFF\b/m.test(t);
                 if (this._lastDisplayOff === false && off && !this._isLocked()) this._lock('display-off');
                 this._lastDisplayOff = off;
             }).catch(() => {});

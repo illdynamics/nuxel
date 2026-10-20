@@ -63,6 +63,9 @@
     -webkit-user-drag: none;
 }
 .lockscreen-handle.grabbed { filter: drop-shadow(0 6px 22px rgba(80, 200, 255, 0.55)); }
+/* Subtle armed acknowledgement once the upward distance reaches the threshold.
+   Geometry, position and artwork are untouched. */
+.lockscreen-handle.armed { filter: drop-shadow(0 0 24px rgba(120, 220, 255, 0.85)); }
 .lockscreen-handle.unlocking { opacity: 0; transform: translateY(-160px) scale(1.15); transition: transform .28s ease-out, opacity .28s ease-out; }
 
 .lockscreen-hint {
