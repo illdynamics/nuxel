@@ -1,0 +1,178 @@
+{
+  "plan": [
+    {
+      "source": "pwa/nuxel-home/index.html",
+      "target": "/usr/share/nuxel/nuxel-home/index.html",
+      "bytes": 10824,
+      "sha256": "0ce30b6980f620e67562316b9f4e365373d687992fc344e7897eb79e8bed8fd5"
+    },
+    {
+      "source": "pwa/nuxel-home/manifest.json",
+      "target": "/usr/share/nuxel/nuxel-home/manifest.json",
+      "bytes": 3970,
+      "sha256": "1c2ee4e516a6f9db896af0089548d2467ff163fae8e31889c6a07ea8677f9090"
+    },
+    {
+      "source": "pwa/nuxel-home/sw.js",
+      "target": "/usr/share/nuxel/nuxel-home/sw.js",
+      "bytes": 13209,
+      "sha256": "aac1ee86e1dc60b10452f15ef0a2a68853abb66422b6eb6083bf3134610833c6"
+    },
+    {
+      "source": "pwa/nuxel-home/icon-registry.json",
+      "target": "/usr/share/nuxel/nuxel-home/icon-registry.json",
+      "bytes": 16276,
+      "sha256": "90e524174d1d0b9baab9ad9309d9242f7c8ff14bda26c438141b69f8201082a3"
+    },
+    {
+      "source": "pwa/nuxel-home/js/apps.js",
+      "target": "/usr/share/nuxel/nuxel-home/js/apps.js",
+      "bytes": 15262,
+      "sha256": "de57357e8630b5b962612c61d8fdd2b4d81fe3728d1c222782f97711c5196531"
+    },
+    {
+      "source": "pwa/nuxel-home/js/qs.js",
+      "target": "/usr/share/nuxel/nuxel-home/js/qs.js",
+      "bytes": 13808,
+      "sha256": "35538b976a038c6ea92c89351b3a5b3ef68796a3ad217955a6dd59b8910655b1"
+    },
+    {
+      "source": "pwa/nuxel-home/js/icon-health.js",
+      "target": "/usr/share/nuxel/nuxel-home/js/icon-health.js",
+      "bytes": 14666,
+      "sha256": "e5d927084a7fb0f6838f50873fe5303a8ef0d99215c4ff6e351d626988c9985b"
+    },
+    {
+      "source": "pwa/nuxel-home/icon-health-trigger.json",
+      "target": "/usr/share/nuxel/nuxel-home/icon-health-trigger.json",
+      "bytes": 201,
+      "sha256": "ca68bd90f1f76e52b651374bc4c79d2294212d112c567c7f68ec69a31b2b0adc"
+    },
+    {
+      "source": "pwa/nuxel-common/app-registry.json",
+      "target": "/usr/share/nuxel/pwa/nuxel-common/app-registry.json",
+      "bytes": 19202,
+      "sha256": "707fcdb8a52836e8f66c27056e932c1289b6c13d9796fb43c2fdbd8bec3a1581"
+    }
+  ],
+  "apply": true
+}
+PREFLIGHT:
+aarch64
+4.14.253
+/usr/share/nuxel
+WEBROOT-OK
+active
+active
+
+DEPLOY_COMPLETE backup=/var/backups/nuxel/a44-icon-delivery-20261020T140910Z rollback=/var/backups/nuxel/a44-icon-delivery-20261020T140910Z/rollback.sh
+[{'source': 'pwa/nuxel-home/index.html', 'target': '/usr/share/nuxel/nuxel-home/index.html', 'sha256': '0ce30b6980f620e67562316b9f4e365373d687992fc344e7897eb79e8bed8fd5', 'previous': 'PRESENT b39ae8ec1c85cb8292e60913e68f8019d63b4cd8d3f47eee88985baaccc5f7eb'}, {'source': 'pwa/nuxel-home/manifest.json', 'target': '/usr/share/nuxel/nuxel-home/manifest.json', 'sha256': '1c2ee4e516a6f9db896af0089548d2467ff163fae8e31889c6a07ea8677f9090', 'previous': 'PRESENT a411e9d4014f26c9b2602137b983f6d16b84113bbcf544d27b942ee669de5473'}, {'source': 'pwa/nuxel-home/sw.js', 'target': '/usr/share/nuxel/nuxel-home/sw.js', 'sha256': 'aac1ee86e1dc60b10452f15ef0a2a68853abb66422b6eb6083bf3134610833c6', 'previous': 'PRESENT 95f19b8431a3a8e801cbfd7fec0b616b915b0793f1cb990074b0a7ec715c2a7b'}, {'source': 'pwa/nuxel-home/icon-registry.json', 'target': '/usr/share/nuxel/nuxel-home/icon-registry.json', 'sha256': '90e524174d1d0b9baab9ad9309d9242f7c8ff14bda26c438141b69f8201082a3', 'previous': 'PRESENT aeaf1762821fdbe2324053444d325ac46cb5c03e6f7dbcfebd8c5491d10c5b9c'}, {'source': 'pwa/nuxel-home/js/apps.js', 'target': '/usr/share/nuxel/nuxel-home/js/apps.js', 'sha256': 'de57357e8630b5b962612c61d8fdd2b4d81fe3728d1c222782f97711c5196531', 'previous': 'PRESENT c6a72cc0292ea145f59355ddc3dd70cf1640bf9752dbd9e3bee9ffab9a9f3e98'}, {'source': 'pwa/nuxel-home/js/qs.js', 'target': '/usr/share/nuxel/nuxel-home/js/qs.js', 'sha256': '35538b976a038c6ea92c89351b3a5b3ef68796a3ad217955a6dd59b8910655b1', 'previous': 'PRESENT acca7eed07b36d77a5c1b548b16bc74ca2504dec9955952e260b20ff23928f36'}, {'source': 'pwa/nuxel-home/js/icon-health.js', 'target': '/usr/share/nuxel/nuxel-home/js/icon-health.js', 'sha256': 'e5d927084a7fb0f6838f50873fe5303a8ef0d99215c4ff6e351d626988c9985b', 'previous': 'PRESENT 84ce7ce99e14d565f131feee4b42a3fa96ed2b78cc363ea01fdbcf62ec9c927a'}, {'source': 'pwa/nuxel-home/icon-health-trigger.json', 'target': '/usr/share/nuxel/nuxel-home/icon-health-trigger.json', 'sha256': 'ca68bd90f1f76e52b651374bc4c79d2294212d112c567c7f68ec69a31b2b0adc', 'previous': 'MISSING'}, {'source': 'pwa/nuxel-common/app-registry.json', 'target': '/usr/share/nuxel/pwa/nuxel-common/app-registry.json', 'sha256': '707fcdb8a52836e8f66c27056e932c1289b6c13d9796fb43c2fdbd8bec3a1581', 'previous': 'PRESENT 473a2cd00a4cbbf564577a5a0723fa3641e396886a8f5234c683be377a77d137'}]
+127.0.0.1 - - [20/Oct/2026 16:50:26] "GET /runtime/osd.json HTTP/1.1" 304 -
+127.0.0.1 - - [20/Oct/2026 16:50:27] "GET /runtime/osd.json HTTP/1.1" 304 -
+127.0.0.1 - - [20/Oct/2026 16:50:29] "GET /runtime/osd.json HTTP/1.1" 304 -
+127.0.0.1 - - [20/Oct/2026 16:50:30] "GET /runtime/osd.json HTTP/1.1" 304 -
+127.0.0.1 - - [20/Oct/2026 16:50:32] "GET /runtime/osd.json HTTP/1.1" 304 -
+127.0.0.1 - - [20/Oct/2026 16:50:33] "GET /runtime/osd.json HTTP/1.1" 304 -
+127.0.0.1 - - [20/Oct/2026 16:50:35] "GET /runtime/osd.json HTTP/1.1" 304 -
+127.0.0.1 - - [20/Oct/2026 16:50:37] "GET /runtime/osd.json HTTP/1.1" 304 -
+127.0.0.1 - - [20/Oct/2026 16:50:38] "GET /runtime/osd.json HTTP/1.1" 304 -
+127.0.0.1 - - [20/Oct/2026 16:50:40] "GET /runtime/osd.json HTTP/1.1" 304 -
+127.0.0.1 - - [20/Oct/2026 16:50:41] "GET /runtime/osd.json HTTP/1.1" 304 -
+127.0.0.1 - - [20/Oct/2026 16:50:43] "GET /runtime/osd.json HTTP/1.1" 304 -
+127.0.0.1 - - [20/Oct/2026 16:50:44] "GET /runtime/osd.json HTTP/1.1" 304 -
+127.0.0.1 - - [20/Oct/2026 16:50:46] "GET /runtime/osd.json HTTP/1.1" 304 -
+127.0.0.1 - - [20/Oct/2026 16:50:47] "GET /runtime/osd.json HTTP/1.1" 304 -
+127.0.0.1 - - [20/Oct/2026 16:50:49] "GET /runtime/osd.json HTTP/1.1" 304 -
+127.0.0.1 - - [20/Oct/2026 16:50:50] "GET /runtime/osd.json HTTP/1.1" 304 -
+127.0.0.1 - - [20/Oct/2026 16:50:52] "GET /runtime/osd.json HTTP/1.1" 304 -
+127.0.0.1 - - [20/Oct/2026 16:50:53] "GET /runtime/osd.json HTTP/1.1" 304 -
+127.0.0.1 - - [20/Oct/2026 16:50:55] "GET /runtime/osd.json HTTP/1.1" 304 -
+127.0.0.1 - - [20/Oct/2026 16:50:56] "GET /runtime/osd.json HTTP/1.1" 304 -
+127.0.0.1 - - [20/Oct/2026 16:50:58] "GET /runtime/osd.json HTTP/1.1" 304 -
+127.0.0.1 - - [20/Oct/2026 16:50:59] "GET /runtime/osd.json HTTP/1.1" 304 -
+127.0.0.1 - - [20/Oct/2026 16:51:01] "GET /runtime/osd.json HTTP/1.1" 304 -
+127.0.0.1 - - [20/Oct/2026 16:51:03] "GET /runtime/osd.json HTTP/1.1" 304 -
+127.0.0.1 - - [20/Oct/2026 16:51:04] "GET /runtime/osd.json HTTP/1.1" 304 -
+127.0.0.1 - - [20/Oct/2026 16:51:06] "GET /runtime/osd.json HTTP/1.1" 304 -
+127.0.0.1 - - [20/Oct/2026 16:51:07] "GET /runtime/osd.json HTTP/1.1" 304 -
+127.0.0.1 - - [20/Oct/2026 16:51:09] "GET /runtime/osd.json HTTP/1.1" 304 -
+127.0.0.1 - - [20/Oct/2026 16:51:10] "GET /runtime/osd.json HTTP/1.1" 304 -
+===HOST===
+1792507623 LAUNCH app_id=nuxel-settings via launcher registry
+1792507623 NUXEL_INPUT EVT app:launch id=nuxel-settings name=Settings
+1792507623 NUXEL_INPUT EVT app:lifecycle id=org.nuxel.Browser state=BACKGROUND ts=1792507623318
+1792507623 NUXEL_INPUT EVT app:lifecycle id=nuxel-settings state=ACTIVE ts=1792507623319
+1792507626 HOST_ACTION home -> launcher page
+1792507626 NUXEL_INPUT EVT app:lifecycle id=nuxel-settings state=BACKGROUND ts=1792507626531
+1792507628 LAUNCH app_id=org.nuxel.Browser via launcher registry
+1792507628 NUXEL_INPUT EVT app:launch id=org.nuxel.Browser name=Browser
+1792507628 NUXEL_INPUT EVT app:lifecycle id=nuxel-settings state=BACKGROUND ts=1792507628531
+1792507628 NUXEL_INPUT EVT app:lifecycle id=org.nuxel.Browser state=ACTIVE ts=1792507628532
+1792507631 HOST_ACTION home -> launcher page
+1792507631 NUXEL_INPUT EVT app:lifecycle id=org.nuxel.Browser state=BACKGROUND ts=1792507631746
+
+===FALLBACK===
+127.0.0.1 - - [20/Oct/2026 16:50:18] "GET /runtime/osd.json HTTP/1.1" 304 -
+127.0.0.1 - - [20/Oct/2026 16:50:20] "GET /runtime/osd.json HTTP/1.1" 304 -
+127.0.0.1 - - [20/Oct/2026 16:50:21] "GET /runtime/osd.json HTTP/1.1" 304 -
+127.0.0.1 - - [20/Oct/2026 16:50:23] "GET /runtime/osd.json HTTP/1.1" 304 -
+127.0.0.1 - - [20/Oct/2026 16:50:24] "GET /runtime/osd.json HTTP/1.1" 304 -
+127.0.0.1 - - [20/Oct/2026 16:50:26] "GET /runtime/osd.json HTTP/1.1" 304 -
+127.0.0.1 - - [20/Oct/2026 16:50:27] "GET /runtime/osd.json HTTP/1.1" 304 -
+127.0.0.1 - - [20/Oct/2026 16:50:29] "GET /runtime/osd.json HTTP/1.1" 304 -
+127.0.0.1 - - [20/Oct/2026 16:50:30] "GET /runtime/osd.json HTTP/1.1" 304 -
+127.0.0.1 - - [20/Oct/2026 16:50:32] "GET /runtime/osd.json HTTP/1.1" 304 -
+127.0.0.1 - - [20/Oct/2026 16:50:33] "GET /runtime/osd.json HTTP/1.1" 304 -
+127.0.0.1 - - [20/Oct/2026 16:50:35] "GET /runtime/osd.json HTTP/1.1" 304 -
+127.0.0.1 - - [20/Oct/2026 16:50:37] "GET /runtime/osd.json HTTP/1.1" 304 -
+127.0.0.1 - - [20/Oct/2026 16:50:38] "GET /runtime/osd.json HTTP/1.1" 304 -
+127.0.0.1 - - [20/Oct/2026 16:50:40] "GET /runtime/osd.json HTTP/1.1" 304 -
+127.0.0.1 - - [20/Oct/2026 16:50:41] "GET /runtime/osd.json HTTP/1.1" 304 -
+127.0.0.1 - - [20/Oct/2026 16:50:43] "GET /runtime/osd.json HTTP/1.1" 304 -
+127.0.0.1 - - [20/Oct/2026 16:50:44] "GET /runtime/osd.json HTTP/1.1" 304 -
+127.0.0.1 - - [20/Oct/2026 16:50:46] "GET /runtime/osd.json HTTP/1.1" 304 -
+127.0.0.1 - - [20/Oct/2026 16:50:47] "GET /runtime/osd.json HTTP/1.1" 304 -
+127.0.0.1 - - [20/Oct/2026 16:50:49] "GET /runtime/osd.json HTTP/1.1" 304 -
+127.0.0.1 - - [20/Oct/2026 16:50:50] "GET /runtime/osd.json HTTP/1.1" 304 -
+127.0.0.1 - - [20/Oct/2026 16:50:52] "GET /runtime/osd.json HTTP/1.1" 304 -
+127.0.0.1 - - [20/Oct/2026 16:50:53] "GET /runtime/osd.json HTTP/1.1" 304 -
+127.0.0.1 - - [20/Oct/2026 16:50:55] "GET /runtime/osd.json HTTP/1.1" 304 -
+127.0.0.1 - - [20/Oct/2026 16:50:56] "GET /runtime/osd.json HTTP/1.1" 304 -
+127.0.0.1 - - [20/Oct/2026 16:50:58] "GET /runtime/osd.json HTTP/1.1" 304 -
+127.0.0.1 - - [20/Oct/2026 16:50:59] "GET /runtime/osd.json HTTP/1.1" 304 -
+127.0.0.1 - - [20/Oct/2026 16:51:01] "GET /runtime/osd.json HTTP/1.1" 304 -
+127.0.0.1 - - [20/Oct/2026 16:51:03] "GET /runtime/osd.json HTTP/1.1" 304 -
+127.0.0.1 - - [20/Oct/2026 16:51:04] "GET /runtime/osd.json HTTP/1.1" 304 -
+127.0.0.1 - - [20/Oct/2026 16:51:06] "GET /runtime/osd.json HTTP/1.1" 304 -
+127.0.0.1 - - [20/Oct/2026 16:51:07] "GET /runtime/osd.json HTTP/1.1" 304 -
+127.0.0.1 - - [20/Oct/2026 16:51:09] "GET /runtime/osd.json HTTP/1.1" 304 -
+127.0.0.1 - - [20/Oct/2026 16:51:10] "GET /runtime/osd.json HTTP/1.1" 304 -
+127.0.0.1 - - [20/Oct/2026 16:51:12] "GET /runtime/osd.json HTTP/1.1" 304 -
+127.0.0.1 - - [20/Oct/2026 16:51:13] "GET /runtime/osd.json HTTP/1.1" 304 -
+127.0.0.1 - - [20/Oct/2026 16:51:15] "GET /runtime/osd.json HTTP/1.1" 304 -
+127.0.0.1 - - [20/Oct/2026 16:51:16] "GET /runtime/osd.json HTTP/1.1" 304 -
+127.0.0.1 - - [20/Oct/2026 16:51:18] "GET /runtime/osd.json HTTP/1.1" 304 -
+===HOST===
+1792507623 LAUNCH app_id=nuxel-settings via launcher registry
+1792507623 NUXEL_INPUT EVT app:launch id=nuxel-settings name=Settings
+1792507623 NUXEL_INPUT EVT app:lifecycle id=org.nuxel.Browser state=BACKGROUND ts=1792507623318
+1792507623 NUXEL_INPUT EVT app:lifecycle id=nuxel-settings state=ACTIVE ts=1792507623319
+1792507626 HOST_ACTION home -> launcher page
+1792507626 NUXEL_INPUT EVT app:lifecycle id=nuxel-settings state=BACKGROUND ts=1792507626531
+1792507628 LAUNCH app_id=org.nuxel.Browser via launcher registry
+1792507628 NUXEL_INPUT EVT app:launch id=org.nuxel.Browser name=Browser
+1792507628 NUXEL_INPUT EVT app:lifecycle id=nuxel-settings state=BACKGROUND ts=1792507628531
+1792507628 NUXEL_INPUT EVT app:lifecycle id=org.nuxel.Browser state=ACTIVE ts=1792507628532
+1792507631 HOST_ACTION home -> launcher page
+1792507631 NUXEL_INPUT EVT app:lifecycle id=org.nuxel.Browser state=BACKGROUND ts=1792507631746
+
+pwa/nuxel-home/index.html 0ce30b6980f620e67562316b9f4e365373d687992fc344e7897eb79e8bed8fd5
+pwa/nuxel-home/manifest.json 1c2ee4e516a6f9db896af0089548d2467ff163fae8e31889c6a07ea8677f9090
+pwa/nuxel-home/sw.js aac1ee86e1dc60b10452f15ef0a2a68853abb66422b6eb6083bf3134610833c6
+pwa/nuxel-home/icon-registry.json 90e524174d1d0b9baab9ad9309d9242f7c8ff14bda26c438141b69f8201082a3
+pwa/nuxel-home/js/apps.js de57357e8630b5b962612c61d8fdd2b4d81fe3728d1c222782f97711c5196531
+pwa/nuxel-home/js/qs.js 35538b976a038c6ea92c89351b3a5b3ef68796a3ad217955a6dd59b8910655b1
+pwa/nuxel-home/js/icon-health.js e5d927084a7fb0f6838f50873fe5303a8ef0d99215c4ff6e351d626988c9985b
+pwa/nuxel-home/icon-health-trigger.json ca68bd90f1f76e52b651374bc4c79d2294212d112c567c7f68ec69a31b2b0adc
+pwa/nuxel-common/app-registry.json 707fcdb8a52836e8f66c27056e932c1289b6c13d9796fb43c2fdbd8bec3a1581
+

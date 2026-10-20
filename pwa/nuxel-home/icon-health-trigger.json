@@ -1,0 +1,5 @@
+{
+  "enabled": false,
+  "run_id": "a44-disabled",
+  "note": "A live diagnostic may replace this file with enabled=true and a unique run_id; the Home probe then runs once and never on a normal boot."
+}

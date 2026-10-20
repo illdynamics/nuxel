@@ -116,6 +116,14 @@
         {
           "source": "pwa/nuxel-home/js/status-bar.js",
           "target": "/home/nuxel/nuxel/pwa/nuxel-home/js/status-bar.js"
+        },
+        {
+          "source": "pwa/nuxel-home/js/icon-health.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/js/icon-health.js"
+        },
+        {
+          "source": "pwa/nuxel-home/icon-health-trigger.json",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/icon-health-trigger.json"
         }
       ]
     },
@@ -2161,7 +2169,7 @@
           "mode": "0644"
         }
       ],
-      "notes": "Every installed PWA under pwa/nuxel-apps/ — index.html, app.json, manifest.json, sw.js, js/, css/, icons/, assets/, samples/ and the shared _shared/ runtime — staged to the SAME docroot the existing launcher-pwa group uses (/home/nuxel/nuxel). Repository-only test fixtures are excluded and named in non_deployable."
+      "notes": "Every installed PWA under pwa/nuxel-apps/ \u2014 index.html, app.json, manifest.json, sw.js, js/, css/, icons/, assets/, samples/ and the shared _shared/ runtime \u2014 staged to the SAME docroot the existing launcher-pwa group uses (/home/nuxel/nuxel). Repository-only test fixtures are excluded and named in non_deployable."
     },
     {
       "id": "pwa-shared-runtime",
@@ -2249,7 +2257,7 @@
           "mode": "0644"
         }
       ],
-      "notes": "The core launcher-pwa group covers index.html/manifest.json/sw.js/css/js but NOT the shared ES module the launcher imports (../nuxel-common/bridge.js), the launcher icons or its assets — a launcher restored from the core plan alone renders without wallpaper (measured A31) or 404s its bridge module (measured A29b). This group closes that gap and carries the registry copy the PWA fetches over HTTP."
+      "notes": "The core launcher-pwa group covers index.html/manifest.json/sw.js/css/js but NOT the shared ES module the launcher imports (../nuxel-common/bridge.js), the launcher icons or its assets \u2014 a launcher restored from the core plan alone renders without wallpaper (measured A31) or 404s its bridge module (measured A29b). This group closes that gap and carries the registry copy the PWA fetches over HTTP."
     },
     {
       "id": "app-registry-consumers",
@@ -2296,7 +2304,7 @@
       "risk": "medium",
       "restart_service": null,
       "declared_reload": "systemctl daemon-reload",
-      "declared_reload_reason": "the group installs DATA documents plus unit/timer/path files; no service holds a document open (each reads it at start), so nothing is restarted here and the deliberate reload is `systemctl daemon-reload` (unit visibility) followed by the shipped consumers re-reading their documents — the behavioural confirmation is the later verified reboot owned by briq-10c.",
+      "declared_reload_reason": "the group installs DATA documents plus unit/timer/path files; no service holds a document open (each reads it at start), so nothing is restarted here and the deliberate reload is `systemctl daemon-reload` (unit visibility) followed by the shipped consumers re-reading their documents \u2014 the behavioural confirmation is the later verified reboot owned by briq-10c.",
       "pre": [
         "systemctl daemon-reload"
       ],
@@ -2983,7 +2991,7 @@
       "risk": "medium",
       "restart_service": null,
       "declared_reload": "systemctl daemon-reload",
-      "declared_reload_reason": "sources + two unit files (nuxel-permd.service, nuxel-camera-portal.service); the compiled aarch64 binaries are built by the documented offline recipe, so no service is restarted by this group — the units only become visible with `systemctl daemon-reload`.",
+      "declared_reload_reason": "sources + two unit files (nuxel-permd.service, nuxel-camera-portal.service); the compiled aarch64 binaries are built by the documented offline recipe, so no service is restarted by this group \u2014 the units only become visible with `systemctl daemon-reload`.",
       "pre": [
         "systemctl daemon-reload"
       ],
@@ -3270,7 +3278,7 @@
           "mode": "0644"
         }
       ],
-      "notes": "The deployed phone surface is the PWA launcher; the native shell is the documented rollback/alternative surface (regression-guard INV-6), so its SOURCES, its systemd units and its launcher script are deployed while the compiled aarch64 binaries come from the procedure (build/ is gitignored, so no artefact can be staged from the repository — see non_deployable and native-app-binaries.md). shell/nuxel-home-native/** goes to the deploy mirror because its shipped launcher script resolves NUXEL_HOME (default $HOME/nuxel = /home/nuxel/nuxel) and then shell/nuxel-home-native/nuxel_home/main.py — the mirror path is the one that makes the shipped script work verbatim. shell/config/** and shell/nuxel-phosh-agent/** have no consumer on this image and are not deployed."
+      "notes": "The deployed phone surface is the PWA launcher; the native shell is the documented rollback/alternative surface (regression-guard INV-6), so its SOURCES, its systemd units and its launcher script are deployed while the compiled aarch64 binaries come from the procedure (build/ is gitignored, so no artefact can be staged from the repository \u2014 see non_deployable and native-app-binaries.md). shell/nuxel-home-native/** goes to the deploy mirror because its shipped launcher script resolves NUXEL_HOME (default $HOME/nuxel = /home/nuxel/nuxel) and then shell/nuxel-home-native/nuxel_home/main.py \u2014 the mirror path is the one that makes the shipped script work verbatim. shell/config/** and shell/nuxel-phosh-agent/** have no consumer on this image and are not deployed."
     },
     {
       "id": "boot-animation-runtime",
@@ -3345,7 +3353,7 @@
           "mode": "0644"
         }
       ],
-      "notes": "Asset placement follows the initramfs handoff itself: boot/initramfs/init.sh copies the shipping MP4 to <rootfs>/usr/share/nuxel/boot/nuxel-boot-animation.mp4 and the packed NUXANM01 container is consumed from /usr/share/nuxel/boot/nuxel-animation.nux, so the userspace copy is what this group installs and the container is built by the deployed packer (procedure). The group asserts exactly ONE /dev/fb0 writer named nuxel-wl-fb before and after (nuxel-fb-owner-assert.sh) — a second writer is the failure this invariant exists to prevent, and BOOT is never written."
+      "notes": "Asset placement follows the initramfs handoff itself: boot/initramfs/init.sh copies the shipping MP4 to <rootfs>/usr/share/nuxel/boot/nuxel-boot-animation.mp4 and the packed NUXANM01 container is consumed from /usr/share/nuxel/boot/nuxel-animation.nux, so the userspace copy is what this group installs and the container is built by the deployed packer (procedure). The group asserts exactly ONE /dev/fb0 writer named nuxel-wl-fb before and after (nuxel-fb-owner-assert.sh) \u2014 a second writer is the failure this invariant exists to prevent, and BOOT is never written."
     },
     {
       "id": "packages-reconcile",
@@ -3354,7 +3362,7 @@
       "risk": "high",
       "restart_service": null,
       "declared_reload": "python3 -c \"import json;json.load(open('/usr/lib/nuxel/packages-manifest.json'))\"",
-      "declared_reload_reason": "the group installs DATA plus its verifier; the package transaction itself is a separate, owner-visible install (dnf) that the referenced procedure pins to the resolved NEVRAs — no service is restarted by staging the manifest.",
+      "declared_reload_reason": "the group installs DATA plus its verifier; the package transaction itself is a separate, owner-visible install (dnf) that the referenced procedure pins to the resolved NEVRAs \u2014 no service is restarted by staging the manifest.",
       "pre": [],
       "post": [],
       "health_check": "python3 -c \"import json;d=json.load(open('/usr/lib/nuxel/packages-manifest.json'));assert d['verdict']=='resolved' and d['pin_mismatches']==[]\" && test -x /usr/local/bin/verify-packages.py",
@@ -3381,7 +3389,7 @@
       "risk": "high",
       "pre": [],
       "declared_reload": "systemctl daemon-reload && systemctl try-restart nuxel-web.service && systemctl enable nuxel-boot-sound.service",
-      "health_check": "test -s /usr/share/nuxel/assets/nuxel-boot-audio.mp3 && test -s /usr/share/nuxel/assets/nuxel-pow.mp3 && test -s /usr/share/nuxel/assets/button-left.png && test -x /usr/libexec/nuxel/nuxel-sound-cue && test -f /etc/nuxel/haptics/settings.json && curl -fsS http://127.0.0.1:8000/pwa/nuxel-home/index.html >/dev/null",
+      "health_check": "test -s /usr/share/nuxel/assets/nuxel-boot-audio.mp3 && test -s /usr/share/nuxel/assets/nuxel-pow.mp3 && test -s /usr/share/nuxel/assets/button-left.png && test -x /usr/libexec/nuxel/nuxel-sound-cue && test -f /etc/nuxel/haptics/settings.json && curl -fsS http://127.0.0.1:8000/pwa/nuxel-home/index.html >/dev/null && test -s /home/nuxel/nuxel/pwa/nuxel-home/icon-registry.json",
       "rollback": "restore every staged asset and service backup; systemctl daemon-reload; restart nuxel-web if required",
       "files": [
         {
@@ -4316,6 +4324,10 @@
         {
           "source": "pwa/nuxel-home/js/scroll-indicators.js",
           "target": "/home/nuxel/nuxel/pwa/nuxel-home/js/scroll-indicators.js"
+        },
+        {
+          "source": "pwa/nuxel-home/icon-registry.json",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/icon-registry.json"
         }
       ]
     }
@@ -4329,7 +4341,7 @@
     },
     "audio-and-network-config": {
       "declared_reload": "nuxelctl status >/dev/null 2>&1 || true",
-      "reason": "pure data documents (audio.json, jack-routes.json, chrony conf, the app registry): no service holds one open — each reads it at start — so nothing is restarted; the deliberate reload is the shipped consumer re-reading them (nuxelctl), and the behavioural confirmation is the verified reboot in briq-10c.",
+      "reason": "pure data documents (audio.json, jack-routes.json, chrony conf, the app registry): no service holds one open \u2014 each reads it at start \u2014 so nothing is restarted; the deliberate reload is the shipped consumer re-reading them (nuxelctl), and the behavioural confirmation is the verified reboot in briq-10c.",
       "owner": "briq-10b-live-deploy-userspace (group content frozen; documentation added by briq-01-deploy-manifest-extension)",
       "source": "briq-01-deploy-manifest-extension"
     }
@@ -4647,7 +4659,7 @@
     },
     {
       "path": "tools/s10plus/a33/kernel-patches/",
-      "reason": "kernel/DTB proposals only — never applied, and the mission forbids flashing or installing a kernel",
+      "reason": "kernel/DTB proposals only \u2014 never applied, and the mission forbids flashing or installing a kernel",
       "terminal_state": "BLOCKED_KERNEL",
       "procedure": "docs/beta-finalization/live/procedures/native-app-binaries.md"
     },
@@ -4708,7 +4720,7 @@
         "audio-and-network-config (configs/nuxel/app-registry/app_registry.json)",
         "app-registry-consumers (pwa/nuxel-common/app-registry.json)"
       ],
-      "effective": "pwa/nuxel-common/app-registry.json (registry_version 4) — the group that runs later wins, and it is the registry the PWA actually fetches",
+      "effective": "pwa/nuxel-common/app-registry.json (registry_version 4) \u2014 the group that runs later wins, and it is the registry the PWA actually fetches",
       "why": "the frozen core group predates the canonical served registry; the conflict is recorded here instead of silently rewording a closed group"
     },
     {

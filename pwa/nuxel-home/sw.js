@@ -17,12 +17,12 @@
 // nuxel.cache_version, so a launcher that was served from a stale bundle is a
 // detectable state rather than a mystery.
 // v0.5.2-beta changes launcher lifecycle and Terminal interaction assets.
-const CACHE_VERSION = 'v27-a44-0.6.3-beta-launcher-fixes';
-const CACHE_NAME = 'nuxel-home-' + CACHE_VERSION;
+const CACHE_VERSION = 'v28-a44-0.6.3-beta-icon-delivery';
+const CACHE_NAME = 'nuxel-home-' + CACHE_VERSION;   // version marker sent to clients
 const STATIC_CACHE = 'nuxel-static-' + CACHE_VERSION;
 const DYNAMIC_CACHE = 'nuxel-dynamic-' + CACHE_VERSION;
+const ICON_CACHE = 'nuxel-icons-' + CACHE_VERSION;
 
-// Assets to cache on install (critical path)
 // Assets to cache on install (critical path). Paths are SCOPE-RELATIVE so the
 // worker installs cleanly whether the PWA is served at a sub-path (e.g.
 // /pwa/nuxel-home on the nuxel-web :8000 static server) or at the web root.
@@ -30,6 +30,7 @@ const PRECACHE_ASSETS = [
     './',
     './index.html',
     './manifest.json',
+    './icon-registry.json',
     './css/style.css',
     './css/launcher.css',
     './css/status-bar.css',
@@ -55,6 +56,7 @@ const PRECACHE_ASSETS = [
     './js/home-settings.js',
     './js/system-monitor.js',
     './js/scroll-indicators.js',
+    './js/icon-health.js',
     './icons/icon-192.png',
     './icons/icon-512.png',
     './assets/nuxel-boot-animation.mp4',
@@ -66,143 +68,138 @@ const PRECACHE_ASSETS = [
     './assets/nuxel-bottom-bar2.png',
 ];
 
-// Install event: cache critical assets
+// Install event: cache critical code/UI assets. Custom app/navigation/toggle
+// artwork is network-first at runtime (see the fetch handler), so a stale icon
+// can never win just because it happened to be in the install-time cache.
 self.addEventListener('install', (event) => {
-    console.log('[SW] Installing...');
-    
+    console.log('[SW] Installing...', CACHE_VERSION);
     event.waitUntil(
-        caches.open(STATIC_CACHE).then((cache) => {
-            return cache.addAll(PRECACHE_ASSETS);
-        }).then(() => {
-            // Skip waiting to activate immediately
-            return self.skipWaiting();
-        })
+        caches.open(STATIC_CACHE).then((cache) => cache.addAll(PRECACHE_ASSETS))
+            .then(() => self.skipWaiting())
     );
 });
 
-// Activate event: clean old caches
+// Activate event: remove only OLD NUXEL caches. CacheStorage is code/offline
+// bytes only: localStorage (layout, preferences), IndexedDB and credentials are
+// separate stores and are deliberately never touched by this migration.
 self.addEventListener('activate', (event) => {
-    console.log('[SW] Activating...');
-    
-    const validCaches = [STATIC_CACHE, DYNAMIC_CACHE, CACHE_NAME];
-    
+    console.log('[SW] Activating...', CACHE_VERSION);
+    const validCaches = [STATIC_CACHE, DYNAMIC_CACHE, ICON_CACHE, CACHE_NAME];
     event.waitUntil(
-        caches.keys().then((cacheNames) => {
-            return Promise.all(
-                cacheNames.map((cacheName) => {
-                    if (!validCaches.includes(cacheName)) {
-                        console.log('[SW] Deleting old cache:', cacheName);
-                        return caches.delete(cacheName);
-                    }
-                })
-            );
-        }).then(() => {
-            // Claim all clients immediately
-            return self.clients.claim();
-        })
+        caches.keys().then((cacheNames) => Promise.all(
+            cacheNames.map((cacheName) => {
+                if (cacheName.startsWith('nuxel-') && !validCaches.includes(cacheName)) {
+                    console.log('[SW] Deleting old Nuxel cache:', cacheName);
+                    return caches.delete(cacheName);
+                }
+                return undefined;   // another app's cache is not ours to delete
+            })
+        )).then(() => self.clients.claim())
     );
 });
 
-// Fetch event: network first, cache fallback
+const IMAGE_RE = /\.(?:png|jpe?g|gif|webp|svg|ico)(?:\?|$)/i;
+const CODE_RE = /\.(?:js|css|json|html|webmanifest)(?:\?|$)/i;
+const OWNER_ART_RE = /^\/(?:assets\/(?:button-(?:left|middle|right)\.png$|nuxel-(?:applications|quicksettings)-icon-pack\/)|pwa\/nuxel-home\/assets\/branding\/)/;
+
+function cacheable(response, kind) {
+    if (!response || !response.ok || response.status !== 200) return false;
+    if (response.type === 'opaque' || response.type === 'opaqueredirect') return false;
+    const type = String(response.headers.get('content-type') || '').toLowerCase();
+    if (kind === 'image' && !type.startsWith('image/')) return false;
+    if (kind === 'html' && type && !type.includes('text/html')) return false;
+    return true;
+}
+
+async function cacheSuccessful(cacheName, request, response, kind) {
+    const cache = await caches.open(cacheName);
+    if (cacheable(response, kind)) {
+        await cache.put(request, response.clone());
+    } else if (response && response.status === 404) {
+        // A redeploy can turn a previously good URL into a 404.  Remove that
+        // exact stale entry instead of keeping a broken asset forever.
+        await cache.delete(request);
+    }
+}
+
+// Always ask the live static server first, then fall back to an exact cached
+// response.  Only a verified 200 of the expected type is stored; 404/5xx/HTML
+// error pages are never installed into a cache.
+async function networkFirst(event, request, cacheName, kind, options) {
+    event.respondWith((async () => {
+        try {
+            const response = await fetch(request, options || { cache: 'no-cache' });
+            await cacheSuccessful(cacheName, request, response, kind);
+            return response;
+        } catch (error) {
+            const cached = await caches.match(request);
+            if (cached) return cached;
+            return new Response('Nuxel asset unavailable while offline', {
+                status: 503,
+                headers: { 'Content-Type': 'text/plain', 'Cache-Control': 'no-store' },
+            });
+        }
+    })());
+}
+
+// Fetch event: code and owner artwork are network-first; immutable media may be
+// cache-first, but only after a successful 200.  There is no catch-all image
+// fallback: substituting one icon for another is precisely the stale/duplicate
+// artwork failure this policy exists to prevent.
 self.addEventListener('fetch', (event) => {
     const request = event.request;
-    
-    // Skip non-GET requests
+
     if (request.method !== 'GET') return;
-    
-    // Skip bridge API calls (always go to network)
+
+    // Bridge API calls are live state and must never be cached.
     if (request.url.includes('/api/v1/')) {
         event.respondWith(fetch(request));
         return;
     }
-    
-    // Skip D-Bus (shouldn't happen in SW context)
     if (request.url.startsWith('nuxel-')) {
         event.respondWith(fetch(request));
         return;
     }
 
-    // Strategy: Network first, cache fallback for HTML
-    if (request.headers.get('Accept')?.includes('text/html')) {
-        event.respondWith(
-            fetch(request)
-                .then((response) => {
-                    // Cache successful responses
-                    const clone = response.clone();
-                    caches.open(DYNAMIC_CACHE).then((cache) => {
-                        cache.put(request, clone);
-                    });
-                    return response;
-                })
-                .catch(() => {
-                    // Fallback to cache
-                    return caches.match(request).then((cached) => {
-                        return cached || caches.match('./index.html') || caches.match('/index.html');
-                    });
-                })
-        );
+    const url = new URL(request.url);
+    const pathname = url.pathname;
+
+    // HTML: live first, exact cached page second.  Never cache a 404 page.
+    if (request.headers.get('Accept')?.includes('text/html') || pathname.endsWith('/')) {
+        networkFirst(event, request, DYNAMIC_CACHE, 'html', { cache: 'no-cache' });
         return;
     }
 
-    // A32: CODE assets (js/css/html) are NETWORK FIRST on this device.  The
-    // launcher is served by a local static server that is always up, so a stale
-    // cache can only ever hurt: an earlier revision served the launcher from a
-    // cache-first path and a redeployed index.html/js was invisible on the glass
-    // until the cache namespace changed under it.  Images/video stay cache-first
-    // (large, immutable, and re-validated through HTTP when they do change).
-    const isCode = /\.(js|css|json|html|webmanifest)(\?|$)/i.test(request.url) ||
-                   request.url.includes('/pwa/nuxel-home/js/') ||
-                   request.url.includes('/pwa/nuxel-apps/');
-    if (isCode) {
-        event.respondWith(
-            fetch(request).then((response) => {
-                if (response.status === 200) {
-                    const clone = response.clone();
-                    caches.open(DYNAMIC_CACHE).then((cache) => { cache.put(request, clone); });
-                }
-                return response;
-            }).catch(() => caches.match(request).then((cached) => cached || new Response('Offline', { status: 503 })))
-        );
+    // Code assets are always revalidated so a build/cache-version bump cannot
+    // leave an old launcher running from a previous service-worker generation.
+    if (CODE_RE.test(pathname)) {
+        networkFirst(event, request, DYNAMIC_CACHE, 'code', { cache: 'no-cache' });
         return;
     }
 
-    // A37: owner artwork is mutable during live deployment. The previous
-    // cache-first branch could keep old/missing artwork visible indefinitely.
-    // Use network-first even for previously cached 404/fallback PNG responses.
-    const ownerArt = /\/(?:assets\/(?:button-(?:left|middle|right)\.png|nuxel-(?:applications|quicksettings)-icon-pack\/)|pwa\/nuxel-home\/assets\/branding\/)/.test(new URL(request.url).pathname);
-    if (ownerArt) {
-        event.respondWith(fetch(request, {cache: 'no-store'}).then(response => {
-            if (!response.ok || !response.headers.get('content-type')?.includes('image/png'))
-                throw new Error('Nuxel owner art unavailable: ' + response.status);
-            const clone = response.clone();
-            caches.open(DYNAMIC_CACHE).then(cache => cache.put(request, clone));
+    // App/navigation/toggle artwork is mutable during a live userspace deploy.
+    // `no-store` also bypasses WebKit's HTTP cache, not just CacheStorage.
+    if (request.destination === 'image' || IMAGE_RE.test(pathname) || OWNER_ART_RE.test(pathname)) {
+        networkFirst(event, request, ICON_CACHE, 'image', { cache: 'no-store' });
+        return;
+    }
+
+    // Immutable media/fonts. The cache namespace changes with CACHE_VERSION, so
+    // a new build cannot silently reuse these either.
+    event.respondWith((async () => {
+        const cached = await caches.match(request);
+        if (cached) return cached;
+        try {
+            const response = await fetch(request);
+            await cacheSuccessful(DYNAMIC_CACHE, request, response, 'other');
             return response;
-        }).catch(() => caches.match(request).then(cached => cached || new Response('Nuxel art unavailable', {status: 503}))));
-        return;
-    }
-
-    // Cache first for immutable static assets (images, video, fonts)
-    event.respondWith(
-        caches.match(request).then((cached) => {
-            if (cached) return cached;
-            
-            return fetch(request).then((response) => {
-                if (response.status === 200) {
-                    const clone = response.clone();
-                    caches.open(DYNAMIC_CACHE).then((cache) => {
-                        cache.put(request, clone);
-                    });
-                }
-                return response;
-            }).catch(() => {
-                // Return a fallback for known asset types
-                if (request.url.match(/\.(png|jpg|jpeg|gif|svg|ico)$/)) {
-                    return caches.match('/icons/icon-192.png');
-                }
-                return new Response('Offline', { status: 503 });
+        } catch (error) {
+            return new Response('Nuxel asset unavailable while offline', {
+                status: 503,
+                headers: { 'Content-Type': 'text/plain', 'Cache-Control': 'no-store' },
             });
-        })
-    );
+        }
+    })());
 });
 
 // Push notification event
@@ -336,8 +333,13 @@ self.addEventListener('message', (event) => {
             }
             break;
         case 'clear-cache':
-            caches.delete(DYNAMIC_CACHE);
-            caches.delete(STATIC_CACHE);
+            // Offline/code bytes only; layout, preferences and credentials live
+            // in browser storage and are intentionally preserved.
+            event.waitUntil(Promise.all([
+                caches.delete(DYNAMIC_CACHE),
+                caches.delete(STATIC_CACHE),
+                caches.delete(ICON_CACHE),
+            ]));
             break;
     }
 });

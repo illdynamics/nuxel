@@ -1,0 +1,84 @@
+timestamp_utc=2026-10-20T14:09:05Z
+host=dextronux
+branch=nuxel/repair04-icon-cache
+head=d851713adc86f1e7c5a87fcf715223060dd32082
+version=v0.6.3-beta
+--- git status ---
+## nuxel/repair04-icon-cache
+ D NUXEL-063-BLOCKER-REPAIR-PROMPTS/prompts/01-navigation-dock-artwork.md
+ D NUXEL-063-BLOCKER-REPAIR-PROMPTS/prompts/02-four-app-dock-bg.md
+ D NUXEL-063-BLOCKER-REPAIR-PROMPTS/prompts/03-quick-settings-artwork.md
+ D NUXEL-063-BLOCKER-REPAIR-PROMPTS/prompts/04-icon-and-cache-delivery.md
+ D NUXEL-063-BLOCKER-REPAIR-PROMPTS/prompts/05-cpu-meter.md
+ D NUXEL-063-BLOCKER-REPAIR-PROMPTS/prompts/06-ram-meter.md
+ D NUXEL-063-BLOCKER-REPAIR-PROMPTS/prompts/07-gpu-meter.md
+ D NUXEL-063-BLOCKER-REPAIR-PROMPTS/prompts/08-gpu-shared-memory.md
+ D NUXEL-063-BLOCKER-REPAIR-PROMPTS/prompts/09-wifi-hardware.md
+ D NUXEL-063-BLOCKER-REPAIR-PROMPTS/prompts/10-wifi-manager.md
+ D NUXEL-063-BLOCKER-REPAIR-PROMPTS/prompts/11-internet-verification.md
+ D NUXEL-063-BLOCKER-REPAIR-PROMPTS/prompts/12-native-webkit-browser.md
+ D NUXEL-063-BLOCKER-REPAIR-PROMPTS/prompts/13-real-file-explorer.md
+ D NUXEL-063-BLOCKER-REPAIR-PROMPTS/prompts/14-safe-zip-operations.md
+ D NUXEL-063-BLOCKER-REPAIR-PROMPTS/prompts/15-speaker-route.md
+ D NUXEL-063-BLOCKER-REPAIR-PROMPTS/prompts/16-boot-volume-cues.md
+ D NUXEL-063-BLOCKER-REPAIR-PROMPTS/prompts/17-sound-modes.md
+ D NUXEL-063-BLOCKER-REPAIR-PROMPTS/prompts/18-bluetooth-bringup.md
+ D NUXEL-063-BLOCKER-REPAIR-PROMPTS/prompts/19-nfc-bringup.md
+ D NUXEL-063-BLOCKER-REPAIR-PROMPTS/prompts/20-gnss-location.md
+ D NUXEL-063-BLOCKER-REPAIR-PROMPTS/prompts/21-maps.md
+ D NUXEL-063-BLOCKER-REPAIR-PROMPTS/prompts/22-camera.md
+ D NUXEL-063-BLOCKER-REPAIR-PROMPTS/prompts/23-flashlight.md
+ D NUXEL-063-BLOCKER-REPAIR-PROMPTS/prompts/24-real-screenshots.md
+ D NUXEL-063-BLOCKER-REPAIR-PROMPTS/prompts/25-button-shortcuts.md
+ D NUXEL-063-BLOCKER-REPAIR-PROMPTS/prompts/26-honest-status-bar.md
+ D NUXEL-063-BLOCKER-REPAIR-PROMPTS/prompts/27-quick-settings-backends.md
+ D NUXEL-063-BLOCKER-REPAIR-PROMPTS/prompts/28-fresh-image-parity.md
+ D NUXEL-063-BLOCKER-REPAIR-PROMPTS/prompts/29-github-release-automation.md
+ D NUXEL-063-BLOCKER-REPAIR-PROMPTS/prompts/30-evidence-docs.md
+ D NUXEL-063-BLOCKER-REPAIR-PROMPTS/prompts/31-gestures-zoom-performance.md
+ M pwa/nuxel-common/app-registry.json
+ M pwa/nuxel-home/index.html
+ M pwa/nuxel-home/js/apps.js
+ M pwa/nuxel-home/js/qs.js
+ M pwa/nuxel-home/manifest.json
+ M pwa/nuxel-home/sw.js
+ M tools/beta/live/deploy-manifest.json
+ M tools/s10plus/a34/tests/test-icon-assets.py
+?? NUXEL-063-BLOCKER-REPAIR-PROMPTS/go.sh
+?? NUXEL-063-BLOCKER-REPAIR-PROMPTS/prompts/000_04-icon-and-cache-delivery.md
+?? NUXEL-063-BLOCKER-REPAIR-PROMPTS/prompts/001_28-fresh-image-parity.md
+?? NUXEL-063-BLOCKER-REPAIR-PROMPTS/prompts/002_02-four-app-dock-bg.md
+?? NUXEL-063-BLOCKER-REPAIR-PROMPTS/prompts/003_01-navigation-dock-artwork.md
+?? NUXEL-063-BLOCKER-REPAIR-PROMPTS/prompts/004_03-quick-settings-artwork.md
+?? NUXEL-063-BLOCKER-REPAIR-PROMPTS/prompts/005_31-gestures-zoom-performance.md
+?? NUXEL-063-BLOCKER-REPAIR-PROMPTS/prompts/006_26-honest-status-bar.md
+?? NUXEL-063-BLOCKER-REPAIR-PROMPTS/prompts/007_05-cpu-meter.md
+?? NUXEL-063-BLOCKER-REPAIR-PROMPTS/prompts/008_06-ram-meter.md
+?? NUXEL-063-BLOCKER-REPAIR-PROMPTS/prompts/009_07-gpu-meter.md
+?? NUXEL-063-BLOCKER-REPAIR-PROMPTS/prompts/010_08-gpu-shared-memory.md
+?? NUXEL-063-BLOCKER-REPAIR-PROMPTS/prompts/011_09-wifi-hardware.md
+?? NUXEL-063-BLOCKER-REPAIR-PROMPTS/prompts/012_10-wifi-manager.md
+?? NUXEL-063-BLOCKER-REPAIR-PROMPTS/prompts/013_11-internet-verification.md
+?? NUXEL-063-BLOCKER-REPAIR-PROMPTS/prompts/014_12-native-webkit-browser.md
+?? NUXEL-063-BLOCKER-REPAIR-PROMPTS/prompts/015_13-real-file-explorer.md
+?? NUXEL-063-BLOCKER-REPAIR-PROMPTS/prompts/016_14-safe-zip-operations.md
+?? NUXEL-063-BLOCKER-REPAIR-PROMPTS/prompts/017_15-speaker-route.md
+?? NUXEL-063-BLOCKER-REPAIR-PROMPTS/prompts/018_16-boot-volume-cues.md
+?? NUXEL-063-BLOCKER-REPAIR-PROMPTS/prompts/019_17-sound-modes.md
+?? NUXEL-063-BLOCKER-REPAIR-PROMPTS/prompts/020_18-bluetooth-bringup.md
+?? NUXEL-063-BLOCKER-REPAIR-PROMPTS/prompts/021_23-flashlight.md
+?? NUXEL-063-BLOCKER-REPAIR-PROMPTS/prompts/022_25-button-shortcuts.md
+?? NUXEL-063-BLOCKER-REPAIR-PROMPTS/prompts/023_24-real-screenshots.md
+?? NUXEL-063-BLOCKER-REPAIR-PROMPTS/prompts/024_22-camera.md
+?? NUXEL-063-BLOCKER-REPAIR-PROMPTS/prompts/025_19-nfc-bringup.md
+?? NUXEL-063-BLOCKER-REPAIR-PROMPTS/prompts/026_20-gnss-location.md
+?? NUXEL-063-BLOCKER-REPAIR-PROMPTS/prompts/027_21-maps.md
+?? NUXEL-063-BLOCKER-REPAIR-PROMPTS/prompts/028_27-quick-settings-backends.md
+?? NUXEL-063-BLOCKER-REPAIR-PROMPTS/prompts/029_29-github-release-automation.md
+?? NUXEL-063-BLOCKER-REPAIR-PROMPTS/prompts/030_30-evidence-docs.md
+?? NUXEL-063-BLOCKER-REPAIR-PROMPTS/prompts57/
+?? docs/live/v0.6.3-beta-20261020-a44/
+?? gitbranches.md
+?? pwa/nuxel-home/icon-registry.json
+?? t
+?? tools/s10plus/a44/

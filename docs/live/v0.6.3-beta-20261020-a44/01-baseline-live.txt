@@ -1,0 +1,27 @@
+PROBE {"dev": "/dev/ttyACM0", "bytes_in": 54, "echo_ok": true, "sample": "\n\u001b[?2004l\u001b[?2004hsh-5.3# \n\u001b[?2004l\u001b[?2004hsh-5.3# ", "error": null, "elapsed_s": 0.303, "at": "2026-10-20T16:09:06+0200", "reachable": true}
+OK True RC 0
+2026-10-20T14:09:08Z
+uid=0(root) gid=0(root) groups=0(root)
+aarch64
+4.14.253
+NAME="Fedora Linux"
+VERSION_ID=43
+HTTP_PID=23537
+/usr/share/nuxel
+active
+active
+active
+active
+active
+---TARGET-HASHES---
+b39ae8ec1c85cb8292e60913e68f8019d63b4cd8d3f47eee88985baaccc5f7eb  /usr/share/nuxel/nuxel-home/index.html
+a411e9d4014f26c9b2602137b983f6d16b84113bbcf544d27b942ee669de5473  /usr/share/nuxel/nuxel-home/manifest.json
+95f19b8431a3a8e801cbfd7fec0b616b915b0793f1cb990074b0a7ec715c2a7b  /usr/share/nuxel/nuxel-home/sw.js
+c6a72cc0292ea145f59355ddc3dd70cf1640bf9752dbd9e3bee9ffab9a9f3e98  /usr/share/nuxel/nuxel-home/js/apps.js
+acca7eed07b36d77a5c1b548b16bc74ca2504dec9955952e260b20ff23928f36  /usr/share/nuxel/nuxel-home/js/qs.js
+473a2cd00a4cbbf564577a5a0723fa3641e396886a8f5234c683be377a77d137  /usr/share/nuxel/pwa/nuxel-common/app-registry.json
+---HTTP---
+index=200 text/html
+sw=200 text/javascript
+icon=200 image/png
+

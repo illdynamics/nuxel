@@ -1,0 +1,68 @@
+# frame not verified for 'cat /var/tmp/nuxel-a44-stage-20261020T140910Z/install-pwa_nuxel-home_icon-registry.json.sh.6c1719f29b782ea6.b64.* > /var/tmp/nuxel-a44-stage-20261020T140910Z/install-pwa_nuxel-home_icon-registry.json.sh.b64 && base64 -d < /var/tmp/nuxel-a44-stage-20261020T140910Z/install-pwa_nuxel-home_icon-registry.json.sh.b64 > /var/tmp/nuxel-a44-stage-20261020T140910Z/install-pwa_nuxel-home_icon-registry.json.sh.decode && chmod 0755 /var/tmp/nuxel-a44-stage-20261020T140910Z/install-pwa_nuxel-home_icon-registry.json.sh.decode && mv -f /var/tmp/nuxel-a44-stage-20261020T140910Z/install-pwa_nuxel-home_icon-registry.json.sh.decode /var/tmp/nuxel-a44-stage-20261020T140910Z/install-pwa_nuxel-home_icon-registry.json.sh' (framed=False sha_ok=False)
+# frame not verified for 'cat /var/tmp/nuxel-a44-stage-20261020T140910Z/install-pwa_nuxel-home_icon-registry.json.sh.6c1719f29b782ea6.b64.* > /var/tmp/nuxel-a44-stage-20261020T140910Z/install-pwa_nuxel-home_icon-registry.json.sh.b64 && base64 -d < /var/tmp/nuxel-a44-stage-20261020T140910Z/install-pwa_nuxel-home_icon-registry.json.sh.b64 > /var/tmp/nuxel-a44-stage-20261020T140910Z/install-pwa_nuxel-home_icon-registry.json.sh.decode && chmod 0755 /var/tmp/nuxel-a44-stage-20261020T140910Z/install-pwa_nuxel-home_icon-registry.json.sh.decode && mv -f /var/tmp/nuxel-a44-stage-20261020T140910Z/install-pwa_nuxel-home_icon-registry.json.sh.decode /var/tmp/nuxel-a44-stage-20261020T140910Z/install-pwa_nuxel-home_icon-registry.json.sh' (framed=False sha_ok=False)
+# frame not verified for 'cat /var/tmp/nuxel-a44-stage-20261020T140910Z/install-pwa_nuxel-home_icon-registry.json.sh.6c1719f29b782ea6.b64.* > /var/tmp/nuxel-a44-stage-20261020T140910Z/install-pwa_nuxel-home_icon-registry.json.sh.b64 && base64 -d < /var/tmp/nuxel-a44-stage-20261020T140910Z/install-pwa_nuxel-home_icon-registry.json.sh.b64 > /var/tmp/nuxel-a44-stage-20261020T140910Z/install-pwa_nuxel-home_icon-registry.json.sh.decode && chmod 0755 /var/tmp/nuxel-a44-stage-20261020T140910Z/install-pwa_nuxel-home_icon-registry.json.sh.decode && mv -f /var/tmp/nuxel-a44-stage-20261020T140910Z/install-pwa_nuxel-home_icon-registry.json.sh.decode /var/tmp/nuxel-a44-stage-20261020T140910Z/install-pwa_nuxel-home_icon-registry.json.sh' (framed=False sha_ok=False)
+{
+  "plan": [
+    {
+      "source": "pwa/nuxel-home/index.html",
+      "target": "/usr/share/nuxel/nuxel-home/index.html",
+      "bytes": 10689,
+      "sha256": "c7b7abd1e8809847feb39119a42bf0063b051ceb783cd914751fa81f167b6896"
+    },
+    {
+      "source": "pwa/nuxel-home/manifest.json",
+      "target": "/usr/share/nuxel/nuxel-home/manifest.json",
+      "bytes": 3970,
+      "sha256": "1c2ee4e516a6f9db896af0089548d2467ff163fae8e31889c6a07ea8677f9090"
+    },
+    {
+      "source": "pwa/nuxel-home/sw.js",
+      "target": "/usr/share/nuxel/nuxel-home/sw.js",
+      "bytes": 13182,
+      "sha256": "893c373f7fb7dd1fd3fa0b08473cb7089a50d04296f4236cf3bd02e5684416ff"
+    },
+    {
+      "source": "pwa/nuxel-home/icon-registry.json",
+      "target": "/usr/share/nuxel/nuxel-home/icon-registry.json",
+      "bytes": 16276,
+      "sha256": "aeaf1762821fdbe2324053444d325ac46cb5c03e6f7dbcfebd8c5491d10c5b9c"
+    },
+    {
+      "source": "pwa/nuxel-home/js/apps.js",
+      "target": "/usr/share/nuxel/nuxel-home/js/apps.js",
+      "bytes": 15262,
+      "sha256": "de57357e8630b5b962612c61d8fdd2b4d81fe3728d1c222782f97711c5196531"
+    },
+    {
+      "source": "pwa/nuxel-home/js/qs.js",
+      "target": "/usr/share/nuxel/nuxel-home/js/qs.js",
+      "bytes": 13808,
+      "sha256": "35538b976a038c6ea92c89351b3a5b3ef68796a3ad217955a6dd59b8910655b1"
+    },
+    {
+      "source": "pwa/nuxel-common/app-registry.json",
+      "target": "/usr/share/nuxel/pwa/nuxel-common/app-registry.json",
+      "bytes": 19202,
+      "sha256": "707fcdb8a52836e8f66c27056e932c1289b6c13d9796fb43c2fdbd8bec3a1581"
+    }
+  ],
+  "apply": true
+}
+PREFLIGHT:
+aarch64
+4.14.253
+/usr/share/nuxel
+WEBROOT-OK
+active
+active
+
+Traceback (most recent call last):
+  File "/x/nuxel/tools/s10plus/a44/deploy-live.py", line 191, in <module>
+    sys.exit(main())
+             ~~~~^^
+  File "/x/nuxel/tools/s10plus/a44/deploy-live.py", line 130, in main
+    nl.push_bytes(c, script.encode(), sp, mode="0755")
+    ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/x/nuxel/tools/beta/live/nuxel_live.py", line 599, in push_bytes
+    raise ConsoleLost("staged %s failed the on-device sha256 check after decode" % path)
+nuxel_live.ConsoleLost: staged /var/tmp/nuxel-a44-stage-20261020T140910Z/install-pwa_nuxel-home_icon-registry.json.sh failed the on-device sha256 check after decode

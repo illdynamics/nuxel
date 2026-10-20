@@ -101,7 +101,7 @@
     "native_fallback": false,
     "bridge_version": "0.6.3-beta",
     "pwa_version": "0.6.3-beta",
-    "cache_version": "v27-a44-0.6.3-beta-launcher-fixes",
+    "cache_version": "v28-a44-0.6.3-beta-icon-delivery",
     "registry_version": 4,
     "single_source_of_truth": "pwa/nuxel-home (index.html, css/, js/, manifest.json, sw.js)",
     "apps_in_registry": [
@@ -110,6 +110,7 @@
       "nuxel-contacts",
       "org.nuxel.Mail",
       "org.nuxel.Calendar",
+      "org.nuxel.Browser",
       "org.nuxel.Notes",
       "org.nuxel.Files",
       "nuxel-camera",
@@ -128,7 +129,10 @@
       "viewport_css_px": "360x760",
       "safe_zones": 10,
       "safe_zone_profile": "s10plus"
-    }
+    },
+    "icon_registry": "icon-registry.json",
+    "icon_asset_revision": "a44",
+    "icon_asset_count": 23
   },
   "id": "/pwa/nuxel-home/",
   "display_override": [

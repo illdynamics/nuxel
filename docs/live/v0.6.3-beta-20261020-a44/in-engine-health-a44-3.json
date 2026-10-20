@@ -1,0 +1,614 @@
+{
+  "apps": {
+    "steps": [
+      {
+        "bars": 1,
+        "closeButtons": 1,
+        "current": "nuxel-settings",
+        "frames": 1,
+        "label": "settings-1",
+        "state": "ACTIVE",
+        "visibleBars": 1,
+        "visibleFrameSrcs": [
+          "/pwa/nuxel-apps/settings/index.html"
+        ],
+        "visibleFrames": 1
+      },
+      {
+        "bars": 1,
+        "closeButtons": 1,
+        "current": "nuxel-settings",
+        "frames": 1,
+        "label": "home",
+        "state": "BACKGROUND",
+        "visibleBars": 0,
+        "visibleFrameSrcs": [],
+        "visibleFrames": 0
+      },
+      {
+        "bars": 1,
+        "closeButtons": 1,
+        "current": "nuxel-settings",
+        "frames": 1,
+        "label": "settings-2",
+        "state": "ACTIVE",
+        "visibleBars": 1,
+        "visibleFrameSrcs": [
+          "/pwa/nuxel-apps/settings/index.html"
+        ],
+        "visibleFrames": 1
+      },
+      {
+        "bars": 2,
+        "closeButtons": 2,
+        "current": "org.nuxel.Browser",
+        "frames": 2,
+        "label": "browser",
+        "state": "ACTIVE",
+        "visibleBars": 1,
+        "visibleFrameSrcs": [
+          "/pwa/nuxel-apps/browser/index.html"
+        ],
+        "visibleFrames": 1
+      },
+      {
+        "bars": 2,
+        "closeButtons": 2,
+        "current": "org.nuxel.Browser",
+        "frames": 2,
+        "label": "home-final",
+        "state": "BACKGROUND",
+        "visibleBars": 0,
+        "visibleFrameSrcs": [],
+        "visibleFrames": 0
+      }
+    ]
+  },
+  "assets": [
+    {
+      "bytes": 13653,
+      "expectedBytes": 13653,
+      "expectedHeight": 128,
+      "expectedSha256": "89fa0c84db76ca083a51c882a562d78881f200651b050a2f377b00e045de5af1",
+      "expectedWidth": 128,
+      "id": "nuxel-camera",
+      "image": {
+        "height": 128,
+        "ok": true,
+        "width": 128
+      },
+      "kind": "app",
+      "mime": "image/png",
+      "ok": true,
+      "sha256": "89fa0c84db76ca083a51c882a562d78881f200651b050a2f377b00e045de5af1",
+      "status": 200,
+      "url": "/assets/nuxel-applications-icon-pack/03-01_camera.png?v=a44"
+    },
+    {
+      "bytes": 12754,
+      "expectedBytes": 12754,
+      "expectedHeight": 128,
+      "expectedSha256": "a1d161080b61e2549dd1c6a6b3c32c197d204c58e587252286b667ca48a3b07f",
+      "expectedWidth": 128,
+      "id": "nuxel-contacts",
+      "image": {
+        "height": 128,
+        "ok": true,
+        "width": 128
+      },
+      "kind": "app",
+      "mime": "image/png",
+      "ok": true,
+      "sha256": "a1d161080b61e2549dd1c6a6b3c32c197d204c58e587252286b667ca48a3b07f",
+      "status": 200,
+      "url": "/assets/nuxel-applications-icon-pack/02-02_contacts.png?v=a44"
+    },
+    {
+      "bytes": 8287,
+      "expectedBytes": 8287,
+      "expectedHeight": 128,
+      "expectedSha256": "ba6e3c4ab20e966adebd86a58bc5e55d0dda7975e0d0ba6be0d80cf4c08ad93d",
+      "expectedWidth": 128,
+      "id": "nuxel-dialer",
+      "image": {
+        "height": 128,
+        "ok": true,
+        "width": 128
+      },
+      "kind": "app",
+      "mime": "image/png",
+      "ok": true,
+      "sha256": "ba6e3c4ab20e966adebd86a58bc5e55d0dda7975e0d0ba6be0d80cf4c08ad93d",
+      "status": 200,
+      "url": "/assets/nuxel-applications-icon-pack/01-08_phone.png?v=a44"
+    },
+    {
+      "bytes": 10074,
+      "expectedBytes": 10074,
+      "expectedHeight": 128,
+      "expectedSha256": "fe1f515772eafbe77f401791564ac501da23b9662576f01d5417c2fd00c4b347",
+      "expectedWidth": 128,
+      "id": "nuxel-messages",
+      "image": {
+        "height": 128,
+        "ok": true,
+        "width": 128
+      },
+      "kind": "app",
+      "mime": "image/png",
+      "ok": true,
+      "sha256": "fe1f515772eafbe77f401791564ac501da23b9662576f01d5417c2fd00c4b347",
+      "status": 200,
+      "url": "/assets/nuxel-applications-icon-pack/02-01_messages.png?v=a44"
+    },
+    {
+      "bytes": 11688,
+      "expectedBytes": 11688,
+      "expectedHeight": 128,
+      "expectedSha256": "e1475756010e3314ce9b2cf47286c719971bbd40b56ed2e46e6999854bc584c8",
+      "expectedWidth": 128,
+      "id": "nuxel-settings",
+      "image": {
+        "height": 128,
+        "ok": true,
+        "width": 128
+      },
+      "kind": "app",
+      "mime": "image/png",
+      "ok": true,
+      "sha256": "e1475756010e3314ce9b2cf47286c719971bbd40b56ed2e46e6999854bc584c8",
+      "status": 200,
+      "url": "/assets/nuxel-applications-icon-pack/01-11_settings.png?v=a44"
+    },
+    {
+      "bytes": 12577,
+      "expectedBytes": 12577,
+      "expectedHeight": 128,
+      "expectedSha256": "d29c012158ec6a85d7375cfc475d9e9feab44842b7b473710f053419023ed1c1",
+      "expectedWidth": 128,
+      "id": "org.nuxel.Browser",
+      "image": {
+        "height": 128,
+        "ok": true,
+        "width": 128
+      },
+      "kind": "app",
+      "mime": "image/png",
+      "ok": true,
+      "sha256": "d29c012158ec6a85d7375cfc475d9e9feab44842b7b473710f053419023ed1c1",
+      "status": 200,
+      "url": "/assets/nuxel-applications-icon-pack/01-09_browser-swirl.png?v=a44"
+    },
+    {
+      "bytes": 10662,
+      "expectedBytes": 10662,
+      "expectedHeight": 128,
+      "expectedSha256": "e4460c41e03c82c51b95eda2e04e569588b61068e0e90977759249d58c1e4016",
+      "expectedWidth": 128,
+      "id": "org.nuxel.Calendar",
+      "image": {
+        "height": 128,
+        "ok": true,
+        "width": 128
+      },
+      "kind": "app",
+      "mime": "image/png",
+      "ok": true,
+      "sha256": "e4460c41e03c82c51b95eda2e04e569588b61068e0e90977759249d58c1e4016",
+      "status": 200,
+      "url": "/assets/nuxel-applications-icon-pack/02-03_day-calendar.png?v=a44"
+    },
+    {
+      "bytes": 9866,
+      "expectedBytes": 9866,
+      "expectedHeight": 128,
+      "expectedSha256": "94a22e4b05e0a7a7805e6f3d471639e541a923f379a055d5af9e57d7368d122d",
+      "expectedWidth": 128,
+      "id": "org.nuxel.Files",
+      "image": {
+        "height": 128,
+        "ok": true,
+        "width": 128
+      },
+      "kind": "app",
+      "mime": "image/png",
+      "ok": true,
+      "sha256": "94a22e4b05e0a7a7805e6f3d471639e541a923f379a055d5af9e57d7368d122d",
+      "status": 200,
+      "url": "/assets/nuxel-applications-icon-pack/02-06_file-explorer.png?v=a44"
+    },
+    {
+      "bytes": 10366,
+      "expectedBytes": 10366,
+      "expectedHeight": 128,
+      "expectedSha256": "c695dedd90d5025e33902e2e8ad5f072480084af8950f7c27f435399ac79e6c2",
+      "expectedWidth": 128,
+      "id": "org.nuxel.LiveConsole",
+      "image": {
+        "height": 128,
+        "ok": true,
+        "width": 128
+      },
+      "kind": "app",
+      "mime": "image/png",
+      "ok": true,
+      "sha256": "c695dedd90d5025e33902e2e8ad5f072480084af8950f7c27f435399ac79e6c2",
+      "status": 200,
+      "url": "/assets/nuxel-applications-icon-pack/05-05_live-console.png?v=a44"
+    },
+    {
+      "bytes": 9602,
+      "expectedBytes": 9602,
+      "expectedHeight": 128,
+      "expectedSha256": "2b728648ca6ce4b58522496edad7ed647fbbe85f3f385ae7f643e20deb3f9e97",
+      "expectedWidth": 128,
+      "id": "org.nuxel.Mail",
+      "image": {
+        "height": 128,
+        "ok": true,
+        "width": 128
+      },
+      "kind": "app",
+      "mime": "image/png",
+      "ok": true,
+      "sha256": "2b728648ca6ce4b58522496edad7ed647fbbe85f3f385ae7f643e20deb3f9e97",
+      "status": 200,
+      "url": "/assets/nuxel-applications-icon-pack/01-06_pixel-envelope.png?v=a44"
+    },
+    {
+      "bytes": 11257,
+      "expectedBytes": 11257,
+      "expectedHeight": 128,
+      "expectedSha256": "030d30414a1648135912e7353ec4ff6f00a8fcb5c5d2a88f726215defd62e283",
+      "expectedWidth": 128,
+      "id": "org.nuxel.Notes",
+      "image": {
+        "height": 128,
+        "ok": true,
+        "width": 128
+      },
+      "kind": "app",
+      "mime": "image/png",
+      "ok": true,
+      "sha256": "030d30414a1648135912e7353ec4ff6f00a8fcb5c5d2a88f726215defd62e283",
+      "status": 200,
+      "url": "/assets/nuxel-applications-icon-pack/02-09_notes.png?v=a44"
+    },
+    {
+      "bytes": 9402,
+      "expectedBytes": 9402,
+      "expectedHeight": 128,
+      "expectedSha256": "b23d3cbfe130bcb6ecaa209e2e51f303f01aed1c20fd40b3b448da33d605ce3d",
+      "expectedWidth": 128,
+      "id": "org.nuxel.Terminal",
+      "image": {
+        "height": 128,
+        "ok": true,
+        "width": 128
+      },
+      "kind": "app",
+      "mime": "image/png",
+      "ok": true,
+      "sha256": "b23d3cbfe130bcb6ecaa209e2e51f303f01aed1c20fd40b3b448da33d605ce3d",
+      "status": 200,
+      "url": "/assets/nuxel-applications-icon-pack/01-01_terminal.png?v=a44"
+    },
+    {
+      "bytes": 357388,
+      "expectedBytes": 357388,
+      "expectedHeight": 1086,
+      "expectedSha256": "3cc3c77a073788b5ee6192af7bbe5c970c971c68146e4c17ef404b246cc62b6a",
+      "expectedWidth": 1448,
+      "id": "nav-back",
+      "image": {
+        "height": 1086,
+        "ok": true,
+        "width": 1448
+      },
+      "kind": "navigation",
+      "mime": "image/png",
+      "ok": true,
+      "sha256": "3cc3c77a073788b5ee6192af7bbe5c970c971c68146e4c17ef404b246cc62b6a",
+      "status": 200,
+      "url": "/assets/button-left.png?v=a44"
+    },
+    {
+      "bytes": 1142701,
+      "expectedBytes": 1142701,
+      "expectedHeight": 1024,
+      "expectedSha256": "c9b34ac7e3a387626a5ee6694519b779bced64bf32869be096f73cf4c7011fc1",
+      "expectedWidth": 1536,
+      "id": "nav-home",
+      "image": {
+        "height": 1024,
+        "ok": true,
+        "width": 1536
+      },
+      "kind": "navigation",
+      "mime": "image/png",
+      "ok": true,
+      "sha256": "c9b34ac7e3a387626a5ee6694519b779bced64bf32869be096f73cf4c7011fc1",
+      "status": 200,
+      "url": "/assets/button-middle.png?v=a44"
+    },
+    {
+      "bytes": 1006632,
+      "expectedBytes": 1006632,
+      "expectedHeight": 1024,
+      "expectedSha256": "23257499b1617e95afd9b02a1bd99c86633f13e9f1f83d781b315d94873ee921",
+      "expectedWidth": 1536,
+      "id": "nav-recents",
+      "image": {
+        "height": 1024,
+        "ok": true,
+        "width": 1536
+      },
+      "kind": "navigation",
+      "mime": "image/png",
+      "ok": true,
+      "sha256": "23257499b1617e95afd9b02a1bd99c86633f13e9f1f83d781b315d94873ee921",
+      "status": 200,
+      "url": "/assets/button-right.png?v=a44"
+    },
+    {
+      "bytes": 34177,
+      "expectedBytes": 34177,
+      "expectedHeight": 224,
+      "expectedSha256": "9a9b67f421d0ed2f83c086816b078c3be85bfdc3fc76a3743dd13c8509b2fda1",
+      "expectedWidth": 224,
+      "id": "qs-bluetooth",
+      "image": {
+        "height": 224,
+        "ok": true,
+        "width": 224
+      },
+      "kind": "toggle",
+      "mime": "image/png",
+      "ok": true,
+      "sha256": "9a9b67f421d0ed2f83c086816b078c3be85bfdc3fc76a3743dd13c8509b2fda1",
+      "status": 200,
+      "url": "/assets/nuxel-quicksettings-icon-pack/04-bluetooth.png?v=a44"
+    },
+    {
+      "bytes": 30803,
+      "expectedBytes": 30803,
+      "expectedHeight": 224,
+      "expectedSha256": "1e53bd1b1ee385a51d897a2c49b370ce7f2442b9541f7b745441aa3927926fdf",
+      "expectedWidth": 224,
+      "id": "qs-dnd",
+      "image": {
+        "height": 224,
+        "ok": true,
+        "width": 224
+      },
+      "kind": "toggle",
+      "mime": "image/png",
+      "ok": true,
+      "sha256": "1e53bd1b1ee385a51d897a2c49b370ce7f2442b9541f7b745441aa3927926fdf",
+      "status": 200,
+      "url": "/assets/nuxel-quicksettings-icon-pack/11-do-not-disturb.png?v=a44"
+    },
+    {
+      "bytes": 29998,
+      "expectedBytes": 29998,
+      "expectedHeight": 224,
+      "expectedSha256": "3e4780671dafa2c81fc4bd844a6f022b429ff14a977688134a20c411efdbe38c",
+      "expectedWidth": 224,
+      "id": "qs-flashlight",
+      "image": {
+        "height": 224,
+        "ok": true,
+        "width": 224
+      },
+      "kind": "toggle",
+      "mime": "image/png",
+      "ok": true,
+      "sha256": "3e4780671dafa2c81fc4bd844a6f022b429ff14a977688134a20c411efdbe38c",
+      "status": 200,
+      "url": "/assets/nuxel-quicksettings-icon-pack/10-flashlight.png?v=a44"
+    },
+    {
+      "bytes": 40149,
+      "expectedBytes": 40149,
+      "expectedHeight": 224,
+      "expectedSha256": "a9b62d842b00b4866d7154fce53f683f3f7ebcf36c0ee6e469c2e4303757c641",
+      "expectedWidth": 224,
+      "id": "qs-location",
+      "image": {
+        "height": 224,
+        "ok": true,
+        "width": 224
+      },
+      "kind": "toggle",
+      "mime": "image/png",
+      "ok": true,
+      "sha256": "a9b62d842b00b4866d7154fce53f683f3f7ebcf36c0ee6e469c2e4303757c641",
+      "status": 200,
+      "url": "/assets/nuxel-quicksettings-icon-pack/09-location.png?v=a44"
+    },
+    {
+      "bytes": 25861,
+      "expectedBytes": 25861,
+      "expectedHeight": 224,
+      "expectedSha256": "7ecf9d4fc640282bfef137e04ba2d189ef5c0bf78cac98159e01b37b5dcdc091",
+      "expectedWidth": 224,
+      "id": "qs-mobile",
+      "image": {
+        "height": 224,
+        "ok": true,
+        "width": 224
+      },
+      "kind": "toggle",
+      "mime": "image/png",
+      "ok": true,
+      "sha256": "7ecf9d4fc640282bfef137e04ba2d189ef5c0bf78cac98159e01b37b5dcdc091",
+      "status": 200,
+      "url": "/assets/nuxel-quicksettings-icon-pack/02-mobile-signal.png?v=a44"
+    },
+    {
+      "bytes": 37871,
+      "expectedBytes": 37871,
+      "expectedHeight": 224,
+      "expectedSha256": "99ede17594b30f04ed2904f7460335857e44f2d11a7335d4f4815ce76a0fef65",
+      "expectedWidth": 224,
+      "id": "qs-rotate",
+      "image": {
+        "height": 224,
+        "ok": true,
+        "width": 224
+      },
+      "kind": "toggle",
+      "mime": "image/png",
+      "ok": true,
+      "sha256": "99ede17594b30f04ed2904f7460335857e44f2d11a7335d4f4815ce76a0fef65",
+      "status": 200,
+      "url": "/assets/nuxel-quicksettings-icon-pack/17-rotation-lock.png?v=a44"
+    },
+    {
+      "bytes": 39763,
+      "expectedBytes": 39763,
+      "expectedHeight": 224,
+      "expectedSha256": "1a5bcd1ebafd71f66cb719530d81c2a73d2a83f07643500723974674841be693",
+      "expectedWidth": 224,
+      "id": "qs-settings",
+      "image": {
+        "height": 224,
+        "ok": true,
+        "width": 224
+      },
+      "kind": "toggle",
+      "mime": "image/png",
+      "ok": true,
+      "sha256": "1a5bcd1ebafd71f66cb719530d81c2a73d2a83f07643500723974674841be693",
+      "status": 200,
+      "url": "/assets/nuxel-quicksettings-icon-pack/30-quick-settings.png?v=a44"
+    },
+    {
+      "bytes": 33241,
+      "expectedBytes": 33241,
+      "expectedHeight": 224,
+      "expectedSha256": "588920a76e1b270dddcb0b853a7f55afb9ae21aeb9f4d488dcb50bcc4d086f2b",
+      "expectedWidth": 224,
+      "id": "qs-wifi",
+      "image": {
+        "height": 224,
+        "ok": true,
+        "width": 224
+      },
+      "kind": "toggle",
+      "mime": "image/png",
+      "ok": true,
+      "sha256": "588920a76e1b270dddcb0b853a7f55afb9ae21aeb9f4d488dcb50bcc4d086f2b",
+      "status": 200,
+      "url": "/assets/nuxel-quicksettings-icon-pack/01-wifi.png?v=a44"
+    }
+  ],
+  "cacheNames": [
+    "nuxel-static-v28-a44-0.6.3-beta-icon-delivery",
+    "nuxel-dynamic-v28-a44-0.6.3-beta-icon-delivery",
+    "nuxel-icons-v28-a44-0.6.3-beta-icon-delivery"
+  ],
+  "cacheVersion": "a44",
+  "checks": {
+    "appsOk": true,
+    "assetsOk": true,
+    "cachesOk": true,
+    "qsOk": true,
+    "reloadOk": true,
+    "storageOk": true
+  },
+  "dom": {
+    "allDecoded": true,
+    "appIconImages": 12,
+    "appIconLoaded": 12,
+    "duplicateImageSrcs": [],
+    "imageCount": 23,
+    "navButtonsWithImage": 3,
+    "navImages": 3,
+    "navLoaded": 3,
+    "qsImages": 8,
+    "qsLoaded": 8,
+    "uniqueImageCount": 23
+  },
+  "domAfterSwitch": {
+    "allDecoded": true,
+    "appIconImages": 12,
+    "appIconLoaded": 12,
+    "duplicateImageSrcs": [],
+    "imageCount": 23,
+    "navButtonsWithImage": 3,
+    "navImages": 3,
+    "navLoaded": 3,
+    "qsImages": 8,
+    "qsLoaded": 8,
+    "uniqueImageCount": 23
+  },
+  "dpr": 2,
+  "elapsedMs": 8663,
+  "errors": [],
+  "generated": "2026-10-20T14:51:31.982Z",
+  "href": "http://127.0.0.1:8000/pwa/nuxel-home/index.html?boot=os&v=1792512370",
+  "ok": true,
+  "preReload": {
+    "allDecoded": true,
+    "appIconImages": 12,
+    "appIconLoaded": 12,
+    "duplicateImageSrcs": [],
+    "imageCount": 23,
+    "navButtonsWithImage": 3,
+    "navImages": 3,
+    "navLoaded": 3,
+    "qsImages": 8,
+    "qsLoaded": 8,
+    "uniqueImageCount": 23
+  },
+  "qs": {
+    "cycles": [
+      {
+        "failedStates": 0,
+        "imageCount": 8,
+        "loaded": 8,
+        "open": true,
+        "uniqueSrcs": 8,
+        "verboseTiles": 1
+      },
+      {
+        "failedStates": 0,
+        "imageCount": 8,
+        "loaded": 8,
+        "open": true,
+        "uniqueSrcs": 8,
+        "verboseTiles": 1
+      }
+    ]
+  },
+  "registration": {
+    "active": "http://127.0.0.1:8000/pwa/nuxel-home/sw.js",
+    "scope": "http://127.0.0.1:8000/pwa/nuxel-home/",
+    "state": "activated"
+  },
+  "runId": "a44-3",
+  "schema": "nuxel.icon-health/1",
+  "storageKeysAfter": [
+    "nuxel-app-registry",
+    "nuxel-bridge-token",
+    "nuxel-calendar-permission",
+    "nuxel-terminal-font",
+    "nuxel.appOrder",
+    "nuxel.homeAppearance",
+    "nuxel.iconHealth.storageProbe.a44-3",
+    "nuxel.launcherLayout"
+  ],
+  "storageKeysBefore": [
+    "nuxel-app-registry",
+    "nuxel-bridge-token",
+    "nuxel-calendar-permission",
+    "nuxel-terminal-font",
+    "nuxel.appOrder",
+    "nuxel.homeAppearance",
+    "nuxel.iconHealth.storageProbe.a44-3",
+    "nuxel.launcherLayout"
+  ],
+  "storageProbe": "keep",
+  "version": "a44-3"
+}

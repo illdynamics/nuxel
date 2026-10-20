@@ -1,0 +1,70 @@
+{
+  "timestamp_utc": "20261020T145655Z",
+  "device": "SM-G975F beyond2lte",
+  "arch": "aarch64",
+  "console": "/dev/ttyACM0",
+  "backup_dir": "/var/backups/nuxel/a44-icon-delivery-20261020T145655Z",
+  "stage_dir": "/var/tmp/nuxel-a44-stage-20261020T145655Z",
+  "rollback": "/var/backups/nuxel/a44-icon-delivery-20261020T145655Z/rollback.sh",
+  "installed": [
+    {
+      "source": "pwa/nuxel-home/index.html",
+      "target": "/usr/share/nuxel/nuxel-home/index.html",
+      "sha256": "0ce30b6980f620e67562316b9f4e365373d687992fc344e7897eb79e8bed8fd5",
+      "previous": "PRESENT b39ae8ec1c85cb8292e60913e68f8019d63b4cd8d3f47eee88985baaccc5f7eb"
+    },
+    {
+      "source": "pwa/nuxel-home/manifest.json",
+      "target": "/usr/share/nuxel/nuxel-home/manifest.json",
+      "sha256": "71b8441b003cf67ee5211ac18df4c4235014c4a7e33fa0a312f0a2ca07b71812",
+      "previous": "PRESENT a411e9d4014f26c9b2602137b983f6d16b84113bbcf544d27b942ee669de5473"
+    },
+    {
+      "source": "pwa/nuxel-home/sw.js",
+      "target": "/usr/share/nuxel/nuxel-home/sw.js",
+      "sha256": "aac1ee86e1dc60b10452f15ef0a2a68853abb66422b6eb6083bf3134610833c6",
+      "previous": "PRESENT 95f19b8431a3a8e801cbfd7fec0b616b915b0793f1cb990074b0a7ec715c2a7b"
+    },
+    {
+      "source": "pwa/nuxel-home/icon-registry.json",
+      "target": "/usr/share/nuxel/nuxel-home/icon-registry.json",
+      "sha256": "90e524174d1d0b9baab9ad9309d9242f7c8ff14bda26c438141b69f8201082a3",
+      "previous": "MISSING"
+    },
+    {
+      "source": "pwa/nuxel-home/js/apps.js",
+      "target": "/usr/share/nuxel/nuxel-home/js/apps.js",
+      "sha256": "de57357e8630b5b962612c61d8fdd2b4d81fe3728d1c222782f97711c5196531",
+      "previous": "PRESENT c6a72cc0292ea145f59355ddc3dd70cf1640bf9752dbd9e3bee9ffab9a9f3e98"
+    },
+    {
+      "source": "pwa/nuxel-home/js/qs.js",
+      "target": "/usr/share/nuxel/nuxel-home/js/qs.js",
+      "sha256": "35538b976a038c6ea92c89351b3a5b3ef68796a3ad217955a6dd59b8910655b1",
+      "previous": "PRESENT acca7eed07b36d77a5c1b548b16bc74ca2504dec9955952e260b20ff23928f36"
+    },
+    {
+      "source": "pwa/nuxel-home/js/icon-health.js",
+      "target": "/usr/share/nuxel/nuxel-home/js/icon-health.js",
+      "sha256": "e5d927084a7fb0f6838f50873fe5303a8ef0d99215c4ff6e351d626988c9985b",
+      "previous": "MISSING"
+    },
+    {
+      "source": "pwa/nuxel-home/icon-health-trigger.json",
+      "target": "/usr/share/nuxel/nuxel-home/icon-health-trigger.json",
+      "sha256": "ca68bd90f1f76e52b651374bc4c79d2294212d112c567c7f68ec69a31b2b0adc",
+      "previous": "MISSING"
+    },
+    {
+      "source": "pwa/nuxel-common/app-registry.json",
+      "target": "/usr/share/nuxel/pwa/nuxel-common/app-registry.json",
+      "sha256": "707fcdb8a52836e8f66c27056e932c1289b6c13d9796fb43c2fdbd8bec3a1581",
+      "previous": "PRESENT 473a2cd00a4cbbf564577a5a0723fa3641e396886a8f5234c683be377a77d137"
+    }
+  ],
+  "preflight": "aarch64\n4.14.253\n/usr/share/nuxel\nWEBROOT-OK\nactive\nactive\n",
+  "reload_evidence": "127.0.0.1 - - [20/Oct/2026 16:56:00] \"GET /runtime/osd.json HTTP/1.1\" 304 -\n127.0.0.1 - - [20/Oct/2026 16:56:01] \"GET /runtime/osd.json HTTP/1.1\" 304 -\n127.0.0.1 - - [20/Oct/2026 16:56:03] \"GET /runtime/osd.json HTTP/1.1\" 304 -\n127.0.0.1 - - [20/Oct/2026 16:56:05] \"GET /runtime/osd.json HTTP/1.1\" 304 -\n127.0.0.1 - - [20/Oct/2026 16:56:06] \"GET /runtime/osd.json HTTP/1.1\" 304 -\n127.0.0.1 - - [20/Oct/2026 16:56:08] \"GET /runtime/osd.json HTTP/1.1\" 304 -\n127.0.0.1 - - [20/Oct/2026 16:56:09] \"GET /runtime/osd.json HTTP/1.1\" 304 -\n127.0.0.1 - - [20/Oct/2026 16:56:11] \"GET /runtime/osd.json HTTP/1.1\" 304 -\n127.0.0.1 - - [20/Oct/2026 16:56:12] \"GET /runtime/osd.json HTTP/1.1\" 304 -\n127.0.0.1 - - [20/Oct/2026 16:56:14] \"GET /runtime/osd.json HTTP/1.1\" 304 -\n127.0.0.1 - - [20/Oct/2026 16:56:15] \"GET /runtime/osd.json HTTP/1.1\" 304 -\n127.0.0.1 - - [20/Oct/2026 16:56:17] \"GET /runtime/osd.json HTTP/1.1\" 304 -\n127.0.0.1 - - [20/Oct/2026 16:56:18] \"GET /runtime/osd.json HTTP/1.1\" 304 -\n127.0.0.1 - - [20/Oct/2026 16:56:20] \"GET /runtime/osd.json HTTP/1.1\" 304 -\n127.0.0.1 - - [20/Oct/2026 16:56:21] \"GET /runtime/osd.json HTTP/1.1\" 304 -\n127.0.0.1 - - [20/Oct/2026 16:56:23] \"GET /runtime/osd.json HTTP/1.1\" 304 -\n127.0.0.1 - - [20/Oct/2026 16:56:24] \"GET /runtime/osd.json HTTP/1.1\" 304 -\n127.0.0.1 - - [20/Oct/2026 16:56:26] \"GET /runtime/osd.json HTTP/1.1\" 304 -\n127.0.0.1 - - [20/Oct/2026 16:56:27] \"GET /runtime/osd.json HTTP/1.1\" 304 -\n127.0.0.1 - - [20/Oct/2026 16:56:29] \"GET /runtime/osd.json HTTP/1.1\" 304 -\n127.0.0.1 - - [20/Oct/2026 16:56:30] \"GET /runtime/osd.json HTTP/1.1\" 304 -\n127.0.0.1 - - [20/Oct/2026 16:56:32] \"GET /runtime/osd.json HTTP/1.1\" 304 -\n127.0.0.1 - - [20/Oct/2026 16:56:33] \"GET /runtime/osd.json HTTP/1.1\" 304 -\n127.0.0.1 - - [20/Oct/2026 16:56:35] \"GET /runtime/osd.json HTTP/1.1\" 304 -\n127.0.0.1 - - [20/Oct/2026 16:56:37] \"GET /runtime/osd.json HTTP/1.1\" 304 -\n127.0.0.1 - - [20/Oct/2026 16:56:38] \"GET /runtime/osd.json HTTP/1.1\" 304 -\n127.0.0.1 - - [20/Oct/2026 16:56:40] \"GET /runtime/osd.json HTTP/1.1\" 304 -\n127.0.0.1 - - [20/Oct/2026 16:56:53] \"GET /pwa/nuxel-home/index.html HTTP/1.1\" 200 -\n127.0.0.1 - - [20/Oct/2026 16:56:53] code 404, message File not found\n127.0.0.1 - - [20/Oct/2026 16:56:53] \"GET /pwa/nuxel-home/icon-registry.json HTTP/1.1\" 404 -\n===HOST===\n1792508161 HOST_CONFIG_GET name=anim-state bytes=52\n1792508161 HOST_CONFIG_GET name=launcher-state bytes=65535\n1792508161 HOST_CONFIG_GET name=display-state bytes=123\n1792508163 HOST_CONFIG_GET name=fb-owner bytes=254\n1792508163 HOST_CONFIG_GET name=anim-handoff bytes=423\n1792508163 HOST_CONFIG_GET name=anim-state bytes=52\n1792508163 HOST_CONFIG_GET name=launcher-state bytes=65535\n1792508163 HOST_CONFIG_GET name=display-state bytes=123\n1792508165 NUXEL_INPUT BOOTLOG_HIDDEN why=auto\n1792508201 NUXEL_HOME_WEBPROC_TERMINATED reason=0 reload=5\n1792508201 NUXEL_HOME_WEBPROC_GIVEUP reloads=5\n1792508201 NUXEL_HOME_NAV uri=\n",
+  "post_hashes": "pwa/nuxel-home/index.html 0ce30b6980f620e67562316b9f4e365373d687992fc344e7897eb79e8bed8fd5\npwa/nuxel-home/manifest.json 71b8441b003cf67ee5211ac18df4c4235014c4a7e33fa0a312f0a2ca07b71812\npwa/nuxel-home/sw.js aac1ee86e1dc60b10452f15ef0a2a68853abb66422b6eb6083bf3134610833c6\npwa/nuxel-home/icon-registry.json 90e524174d1d0b9baab9ad9309d9242f7c8ff14bda26c438141b69f8201082a3\npwa/nuxel-home/js/apps.js de57357e8630b5b962612c61d8fdd2b4d81fe3728d1c222782f97711c5196531\npwa/nuxel-home/js/qs.js 35538b976a038c6ea92c89351b3a5b3ef68796a3ad217955a6dd59b8910655b1\npwa/nuxel-home/js/icon-health.js e5d927084a7fb0f6838f50873fe5303a8ef0d99215c4ff6e351d626988c9985b\npwa/nuxel-home/icon-health-trigger.json ca68bd90f1f76e52b651374bc4c79d2294212d112c567c7f68ec69a31b2b0adc\npwa/nuxel-common/app-registry.json 707fcdb8a52836e8f66c27056e932c1289b6c13d9796fb43c2fdbd8bec3a1581\n",
+  "services": "active\nactive\nactive\nactive\n",
+  "rollback_script_sha256": "e6ad52131c980d528116b8690e6e66401abf1ec8fe955ca798001c4438c78254  /var/backups/nuxel/a44-icon-delivery-20261020T145655Z/rollback.sh"
+}

@@ -1,0 +1,9 @@
+{
+  "json": "docs/live/v0.6.3-beta-20261020-a44/http-icons-final.json",
+  "assets": 23,
+  "failures": 0,
+  "missing_status": 404,
+  "wrong_case_status": 404,
+  "frame_ok": true,
+  "rc": 0
+}

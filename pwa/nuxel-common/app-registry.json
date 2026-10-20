@@ -38,7 +38,8 @@
       "bridge_version": "1",
       "docked": true,
       "status": "implemented",
-      "runtime_state": "NEEDS_OWNER_TEST (real call needs a SIM and a carrier)"
+      "runtime_state": "NEEDS_OWNER_TEST (real call needs a SIM and a carrier)",
+      "icon_asset": "/assets/nuxel-applications-icon-pack/01-08_phone.png?v=a44"
     },
     {
       "id": "nuxel-messages",
@@ -60,7 +61,8 @@
       "bridge_version": "1",
       "docked": true,
       "status": "implemented",
-      "runtime_state": "NEEDS_OWNER_TEST (real SMS needs a SIM and a carrier)"
+      "runtime_state": "NEEDS_OWNER_TEST (real SMS needs a SIM and a carrier)",
+      "icon_asset": "/assets/nuxel-applications-icon-pack/02-01_messages.png?v=a44"
     },
     {
       "id": "nuxel-contacts",
@@ -80,7 +82,8 @@
       ],
       "bridge_version": "1",
       "docked": false,
-      "status": "implemented"
+      "status": "implemented",
+      "icon_asset": "/assets/nuxel-applications-icon-pack/02-02_contacts.png?v=a44"
     },
     {
       "id": "nuxel-camera",
@@ -102,7 +105,8 @@
       "docked": false,
       "status": "placeholder",
       "implementation_note": "No /usr/bin/nuxel-camera exists in this revision. The real camera surface on this device is the Camera Gallery PWA (pwa/nuxel-apps/camera-gallery), which the launcher opens through the fallback_surface below. The hardware camera itself is NEEDS_OWNER_TEST (Priority 7b).",
-      "fallback_surface": "/pwa/nuxel-apps/camera-gallery/index.html"
+      "fallback_surface": "/pwa/nuxel-apps/camera-gallery/index.html",
+      "icon_asset": "/assets/nuxel-applications-icon-pack/03-01_camera.png?v=a44"
     },
     {
       "id": "org.nuxel.Mail",
@@ -122,7 +126,8 @@
         "storage:write"
       ],
       "bridge_version": "1",
-      "docked": false
+      "docked": false,
+      "icon_asset": "/assets/nuxel-applications-icon-pack/01-06_pixel-envelope.png?v=a44"
     },
     {
       "id": "org.nuxel.Calendar",
@@ -141,7 +146,8 @@
         "storage:write"
       ],
       "bridge_version": "1",
-      "docked": false
+      "docked": false,
+      "icon_asset": "/assets/nuxel-applications-icon-pack/02-03_day-calendar.png?v=a44"
     },
     {
       "id": "org.nuxel.Notes",
@@ -156,7 +162,8 @@
       "description": "Take notes",
       "capabilities": [],
       "bridge_version": "1",
-      "docked": false
+      "docked": false,
+      "icon_asset": "/assets/nuxel-applications-icon-pack/02-09_notes.png?v=a44"
     },
     {
       "id": "org.nuxel.Files",
@@ -171,7 +178,8 @@
       "description": "File browser",
       "capabilities": [],
       "bridge_version": "1",
-      "docked": false
+      "docked": false,
+      "icon_asset": "/assets/nuxel-applications-icon-pack/02-06_file-explorer.png?v=a44"
     },
     {
       "id": "nuxel-settings",
@@ -189,7 +197,8 @@
       "docked": true,
       "cross_group_gaps": [
         "pwa/nuxel-apps/settings/manifest.json (owned by the Priority 2 / Priority 6 groups) declares no nuxel{} block yet, so nuxel.capabilities and nuxel.bridge_version are only recorded here. verify-app-registry.py reports this as a WARN (FAIL under --strict) until that manifest is completed by its owning group; the bridge_version recorded above is the pin value the PWA is built against."
-      ]
+      ],
+      "icon_asset": "/assets/nuxel-applications-icon-pack/01-11_settings.png?v=a44"
     },
     {
       "id": "org.nuxel.Terminal",
@@ -206,7 +215,8 @@
         "shell:local-pty"
       ],
       "bridge_version": "1",
-      "docked": true
+      "docked": true,
+      "icon_asset": "/assets/nuxel-applications-icon-pack/01-01_terminal.png?v=a44"
     },
     {
       "id": "org.nuxel.LiveConsole",
@@ -234,7 +244,8 @@
           "pwa/nuxel-apps/console/manifest.json"
         ],
         "asserted_by": "tools/s10plus/a33/verify-app-registry.py"
-      }
+      },
+      "icon_asset": "/assets/nuxel-applications-icon-pack/05-05_live-console.png?v=a44"
     },
     {
       "id": "org.nuxel.Browser",
@@ -253,7 +264,8 @@
       "status": "implemented-source-only",
       "runtime_state": "NEEDS_OWNER_TEST (HTTPS iframe restrictions on some websites)",
       "entry": "pwa/nuxel-apps/browser/index.html",
-      "manifest": "pwa/nuxel-apps/browser/manifest.json"
+      "manifest": "pwa/nuxel-apps/browser/manifest.json",
+      "icon_asset": "/assets/nuxel-applications-icon-pack/01-09_browser-swirl.png?v=a44"
     }
   ],
   "tree_apps": [

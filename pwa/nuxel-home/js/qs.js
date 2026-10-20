@@ -35,6 +35,28 @@ class QuickSettings {
 
     _init() {
         this._bindEvents();
+        this._bindIconAssets();
+    }
+
+    // One decode/error owner for custom tile artwork.  The label remains usable
+    // if a PNG is missing, and the browser's broken-image glyph is suppressed.
+    // Re-opening Quick Settings reuses these nodes, so no second renderer is
+    // created (the A44 duplicate-icon regression).
+    _bindIconAssets() {
+        if (this._iconAssetsBound) return;
+        this._iconAssetsBound = true;
+        document.querySelectorAll('#quick-settings .qs-item img.qs-icon').forEach(img => {
+            const mark = () => {
+                img.dataset.iconState = 'failed';
+                img.hidden = true;
+            };
+            img.addEventListener('load', () => { img.dataset.iconState = 'loaded'; img.hidden = false; });
+            img.addEventListener('error', mark);
+            if (img.complete) {
+                if (img.naturalWidth > 0) img.dataset.iconState = 'loaded';
+                else mark();
+            }
+        });
     }
 
     _bindEvents() {

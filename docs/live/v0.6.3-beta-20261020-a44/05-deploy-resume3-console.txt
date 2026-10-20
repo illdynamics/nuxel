@@ -1,0 +1,164 @@
+{
+  "plan": [
+    {
+      "source": "pwa/nuxel-home/index.html",
+      "target": "/usr/share/nuxel/nuxel-home/index.html",
+      "bytes": 10689,
+      "sha256": "c7b7abd1e8809847feb39119a42bf0063b051ceb783cd914751fa81f167b6896"
+    },
+    {
+      "source": "pwa/nuxel-home/manifest.json",
+      "target": "/usr/share/nuxel/nuxel-home/manifest.json",
+      "bytes": 3970,
+      "sha256": "1c2ee4e516a6f9db896af0089548d2467ff163fae8e31889c6a07ea8677f9090"
+    },
+    {
+      "source": "pwa/nuxel-home/sw.js",
+      "target": "/usr/share/nuxel/nuxel-home/sw.js",
+      "bytes": 13182,
+      "sha256": "893c373f7fb7dd1fd3fa0b08473cb7089a50d04296f4236cf3bd02e5684416ff"
+    },
+    {
+      "source": "pwa/nuxel-home/icon-registry.json",
+      "target": "/usr/share/nuxel/nuxel-home/icon-registry.json",
+      "bytes": 16276,
+      "sha256": "aeaf1762821fdbe2324053444d325ac46cb5c03e6f7dbcfebd8c5491d10c5b9c"
+    },
+    {
+      "source": "pwa/nuxel-home/js/apps.js",
+      "target": "/usr/share/nuxel/nuxel-home/js/apps.js",
+      "bytes": 15262,
+      "sha256": "de57357e8630b5b962612c61d8fdd2b4d81fe3728d1c222782f97711c5196531"
+    },
+    {
+      "source": "pwa/nuxel-home/js/qs.js",
+      "target": "/usr/share/nuxel/nuxel-home/js/qs.js",
+      "bytes": 13808,
+      "sha256": "35538b976a038c6ea92c89351b3a5b3ef68796a3ad217955a6dd59b8910655b1"
+    },
+    {
+      "source": "pwa/nuxel-common/app-registry.json",
+      "target": "/usr/share/nuxel/pwa/nuxel-common/app-registry.json",
+      "bytes": 19202,
+      "sha256": "707fcdb8a52836e8f66c27056e932c1289b6c13d9796fb43c2fdbd8bec3a1581"
+    }
+  ],
+  "apply": true
+}
+PREFLIGHT:
+aarch64
+4.14.253
+/usr/share/nuxel
+WEBROOT-OK
+active
+active
+
+DEPLOY_COMPLETE backup=/var/backups/nuxel/a44-icon-delivery-20261020T140910Z rollback=/var/backups/nuxel/a44-icon-delivery-20261020T140910Z/rollback.sh
+[{'source': 'pwa/nuxel-home/index.html', 'target': '/usr/share/nuxel/nuxel-home/index.html', 'sha256': 'c7b7abd1e8809847feb39119a42bf0063b051ceb783cd914751fa81f167b6896', 'previous': 'PRESENT b39ae8ec1c85cb8292e60913e68f8019d63b4cd8d3f47eee88985baaccc5f7eb'}, {'source': 'pwa/nuxel-home/manifest.json', 'target': '/usr/share/nuxel/nuxel-home/manifest.json', 'sha256': '1c2ee4e516a6f9db896af0089548d2467ff163fae8e31889c6a07ea8677f9090', 'previous': 'PRESENT a411e9d4014f26c9b2602137b983f6d16b84113bbcf544d27b942ee669de5473'}, {'source': 'pwa/nuxel-home/sw.js', 'target': '/usr/share/nuxel/nuxel-home/sw.js', 'sha256': '893c373f7fb7dd1fd3fa0b08473cb7089a50d04296f4236cf3bd02e5684416ff', 'previous': 'PRESENT 95f19b8431a3a8e801cbfd7fec0b616b915b0793f1cb990074b0a7ec715c2a7b'}, {'source': 'pwa/nuxel-home/icon-registry.json', 'target': '/usr/share/nuxel/nuxel-home/icon-registry.json', 'sha256': 'aeaf1762821fdbe2324053444d325ac46cb5c03e6f7dbcfebd8c5491d10c5b9c', 'previous': 'MISSING'}, {'source': 'pwa/nuxel-home/js/apps.js', 'target': '/usr/share/nuxel/nuxel-home/js/apps.js', 'sha256': 'de57357e8630b5b962612c61d8fdd2b4d81fe3728d1c222782f97711c5196531', 'previous': 'PRESENT c6a72cc0292ea145f59355ddc3dd70cf1640bf9752dbd9e3bee9ffab9a9f3e98'}, {'source': 'pwa/nuxel-home/js/qs.js', 'target': '/usr/share/nuxel/nuxel-home/js/qs.js', 'sha256': '35538b976a038c6ea92c89351b3a5b3ef68796a3ad217955a6dd59b8910655b1', 'previous': 'PRESENT acca7eed07b36d77a5c1b548b16bc74ca2504dec9955952e260b20ff23928f36'}, {'source': 'pwa/nuxel-common/app-registry.json', 'target': '/usr/share/nuxel/pwa/nuxel-common/app-registry.json', 'sha256': '707fcdb8a52836e8f66c27056e932c1289b6c13d9796fb43c2fdbd8bec3a1581', 'previous': 'PRESENT 473a2cd00a4cbbf564577a5a0723fa3641e396886a8f5234c683be377a77d137'}]
+127.0.0.1 - - [20/Oct/2026 16:17:46] "GET /runtime/osd.json HTTP/1.1" 200 -
+127.0.0.1 - - [20/Oct/2026 16:17:48] "GET /runtime/osd.json HTTP/1.1" 200 -
+127.0.0.1 - - [20/Oct/2026 16:17:49] "GET /runtime/osd.json HTTP/1.1" 200 -
+127.0.0.1 - - [20/Oct/2026 16:17:51] "GET /runtime/osd.json HTTP/1.1" 200 -
+127.0.0.1 - - [20/Oct/2026 16:17:52] "GET /runtime/osd.json HTTP/1.1" 200 -
+127.0.0.1 - - [20/Oct/2026 16:17:54] "GET /runtime/osd.json HTTP/1.1" 200 -
+127.0.0.1 - - [20/Oct/2026 16:17:55] "GET /runtime/osd.json HTTP/1.1" 200 -
+127.0.0.1 - - [20/Oct/2026 16:17:57] "GET /runtime/osd.json HTTP/1.1" 200 -
+127.0.0.1 - - [20/Oct/2026 16:17:58] "GET /runtime/osd.json HTTP/1.1" 200 -
+127.0.0.1 - - [20/Oct/2026 16:18:00] "GET /runtime/osd.json HTTP/1.1" 200 -
+127.0.0.1 - - [20/Oct/2026 16:18:02] "GET /runtime/osd.json HTTP/1.1" 200 -
+127.0.0.1 - - [20/Oct/2026 16:18:03] "GET /runtime/osd.json HTTP/1.1" 200 -
+127.0.0.1 - - [20/Oct/2026 16:18:05] "GET /runtime/osd.json HTTP/1.1" 200 -
+127.0.0.1 - - [20/Oct/2026 16:18:06] "GET /runtime/osd.json HTTP/1.1" 200 -
+127.0.0.1 - - [20/Oct/2026 16:18:08] "GET /runtime/osd.json HTTP/1.1" 200 -
+127.0.0.1 - - [20/Oct/2026 16:18:09] "GET /runtime/osd.json HTTP/1.1" 200 -
+127.0.0.1 - - [20/Oct/2026 16:18:11] "GET /runtime/osd.json HTTP/1.1" 200 -
+127.0.0.1 - - [20/Oct/2026 16:18:12] "GET /runtime/osd.json HTTP/1.1" 200 -
+127.0.0.1 - - [20/Oct/2026 16:18:14] "GET /runtime/osd.json HTTP/1.1" 200 -
+127.0.0.1 - - [20/Oct/2026 16:18:15] "GET /runtime/osd.json HTTP/1.1" 200 -
+127.0.0.1 - - [20/Oct/2026 16:18:17] "GET /runtime/osd.json HTTP/1.1" 200 -
+127.0.0.1 - - [20/Oct/2026 16:18:18] "GET /runtime/osd.json HTTP/1.1" 200 -
+127.0.0.1 - - [20/Oct/2026 16:18:20] "GET /runtime/osd.json HTTP/1.1" 200 -
+127.0.0.1 - - [20/Oct/2026 16:18:21] "GET /runtime/osd.json HTTP/1.1" 200 -
+127.0.0.1 - - [20/Oct/2026 16:18:23] "GET /runtime/osd.json HTTP/1.1" 200 -
+127.0.0.1 - - [20/Oct/2026 16:18:24] "GET /runtime/osd.json HTTP/1.1" 200 -
+127.0.0.1 - - [20/Oct/2026 16:18:26] "GET /runtime/osd.json HTTP/1.1" 200 -
+127.0.0.1 - - [20/Oct/2026 16:18:27] "GET /runtime/osd.json HTTP/1.1" 200 -
+127.0.0.1 - - [20/Oct/2026 16:18:29] "GET /runtime/osd.json HTTP/1.1" 200 -
+127.0.0.1 - - [20/Oct/2026 16:18:30] "GET /runtime/osd.json HTTP/1.1" 200 -
+===HOST===
+1792501925 HOST_CONFIG_GET name=display-state bytes=123
+1792501927 HOST_CONFIG_GET name=fb-owner bytes=254
+1792501927 HOST_CONFIG_GET name=anim-handoff bytes=423
+1792501927 HOST_CONFIG_GET name=anim-state bytes=52
+1792501927 HOST_CONFIG_GET name=launcher-state bytes=65535
+1792501927 HOST_CONFIG_GET name=display-state bytes=123
+1792501929 HOST_CONFIG_GET name=fb-owner bytes=254
+1792501929 HOST_CONFIG_GET name=anim-handoff bytes=423
+1792501929 HOST_CONFIG_GET name=anim-state bytes=52
+1792501929 HOST_CONFIG_GET name=launcher-state bytes=65535
+1792501929 HOST_CONFIG_GET name=display-state bytes=123
+1792501931 NUXEL_INPUT BOOTLOG_HIDDEN why=auto
+
+===FALLBACK===
+127.0.0.1 - - [20/Oct/2026 16:17:39] "GET /runtime/osd.json HTTP/1.1" 200 -
+127.0.0.1 - - [20/Oct/2026 16:17:40] "GET /runtime/osd.json HTTP/1.1" 200 -
+127.0.0.1 - - [20/Oct/2026 16:17:42] "GET /runtime/osd.json HTTP/1.1" 200 -
+127.0.0.1 - - [20/Oct/2026 16:17:43] "GET /runtime/osd.json HTTP/1.1" 200 -
+127.0.0.1 - - [20/Oct/2026 16:17:45] "GET /runtime/osd.json HTTP/1.1" 200 -
+127.0.0.1 - - [20/Oct/2026 16:17:46] "GET /runtime/osd.json HTTP/1.1" 200 -
+127.0.0.1 - - [20/Oct/2026 16:17:48] "GET /runtime/osd.json HTTP/1.1" 200 -
+127.0.0.1 - - [20/Oct/2026 16:17:49] "GET /runtime/osd.json HTTP/1.1" 200 -
+127.0.0.1 - - [20/Oct/2026 16:17:51] "GET /runtime/osd.json HTTP/1.1" 200 -
+127.0.0.1 - - [20/Oct/2026 16:17:52] "GET /runtime/osd.json HTTP/1.1" 200 -
+127.0.0.1 - - [20/Oct/2026 16:17:54] "GET /runtime/osd.json HTTP/1.1" 200 -
+127.0.0.1 - - [20/Oct/2026 16:17:55] "GET /runtime/osd.json HTTP/1.1" 200 -
+127.0.0.1 - - [20/Oct/2026 16:17:57] "GET /runtime/osd.json HTTP/1.1" 200 -
+127.0.0.1 - - [20/Oct/2026 16:17:58] "GET /runtime/osd.json HTTP/1.1" 200 -
+127.0.0.1 - - [20/Oct/2026 16:18:00] "GET /runtime/osd.json HTTP/1.1" 200 -
+127.0.0.1 - - [20/Oct/2026 16:18:02] "GET /runtime/osd.json HTTP/1.1" 200 -
+127.0.0.1 - - [20/Oct/2026 16:18:03] "GET /runtime/osd.json HTTP/1.1" 200 -
+127.0.0.1 - - [20/Oct/2026 16:18:05] "GET /runtime/osd.json HTTP/1.1" 200 -
+127.0.0.1 - - [20/Oct/2026 16:18:06] "GET /runtime/osd.json HTTP/1.1" 200 -
+127.0.0.1 - - [20/Oct/2026 16:18:08] "GET /runtime/osd.json HTTP/1.1" 200 -
+127.0.0.1 - - [20/Oct/2026 16:18:09] "GET /runtime/osd.json HTTP/1.1" 200 -
+127.0.0.1 - - [20/Oct/2026 16:18:11] "GET /runtime/osd.json HTTP/1.1" 200 -
+127.0.0.1 - - [20/Oct/2026 16:18:12] "GET /runtime/osd.json HTTP/1.1" 200 -
+127.0.0.1 - - [20/Oct/2026 16:18:14] "GET /runtime/osd.json HTTP/1.1" 200 -
+127.0.0.1 - - [20/Oct/2026 16:18:15] "GET /runtime/osd.json HTTP/1.1" 200 -
+127.0.0.1 - - [20/Oct/2026 16:18:17] "GET /runtime/osd.json HTTP/1.1" 200 -
+127.0.0.1 - - [20/Oct/2026 16:18:18] "GET /runtime/osd.json HTTP/1.1" 200 -
+127.0.0.1 - - [20/Oct/2026 16:18:20] "GET /runtime/osd.json HTTP/1.1" 200 -
+127.0.0.1 - - [20/Oct/2026 16:18:21] "GET /runtime/osd.json HTTP/1.1" 200 -
+127.0.0.1 - - [20/Oct/2026 16:18:23] "GET /runtime/osd.json HTTP/1.1" 200 -
+127.0.0.1 - - [20/Oct/2026 16:18:24] "GET /runtime/osd.json HTTP/1.1" 200 -
+127.0.0.1 - - [20/Oct/2026 16:18:26] "GET /runtime/osd.json HTTP/1.1" 200 -
+127.0.0.1 - - [20/Oct/2026 16:18:27] "GET /runtime/osd.json HTTP/1.1" 200 -
+127.0.0.1 - - [20/Oct/2026 16:18:29] "GET /runtime/osd.json HTTP/1.1" 200 -
+127.0.0.1 - - [20/Oct/2026 16:18:30] "GET /runtime/osd.json HTTP/1.1" 200 -
+127.0.0.1 - - [20/Oct/2026 16:18:32] "GET /runtime/osd.json HTTP/1.1" 200 -
+127.0.0.1 - - [20/Oct/2026 16:18:33] "GET /runtime/osd.json HTTP/1.1" 200 -
+127.0.0.1 - - [20/Oct/2026 16:18:35] "GET /runtime/osd.json HTTP/1.1" 200 -
+127.0.0.1 - - [20/Oct/2026 16:18:36] "GET /runtime/osd.json HTTP/1.1" 200 -
+127.0.0.1 - - [20/Oct/2026 16:18:38] "GET /runtime/osd.json HTTP/1.1" 200 -
+===HOST===
+1792501925 HOST_CONFIG_GET name=display-state bytes=123
+1792501927 HOST_CONFIG_GET name=fb-owner bytes=254
+1792501927 HOST_CONFIG_GET name=anim-handoff bytes=423
+1792501927 HOST_CONFIG_GET name=anim-state bytes=52
+1792501927 HOST_CONFIG_GET name=launcher-state bytes=65535
+1792501927 HOST_CONFIG_GET name=display-state bytes=123
+1792501929 HOST_CONFIG_GET name=fb-owner bytes=254
+1792501929 HOST_CONFIG_GET name=anim-handoff bytes=423
+1792501929 HOST_CONFIG_GET name=anim-state bytes=52
+1792501929 HOST_CONFIG_GET name=launcher-state bytes=65535
+1792501929 HOST_CONFIG_GET name=display-state bytes=123
+1792501931 NUXEL_INPUT BOOTLOG_HIDDEN why=auto
+
+pwa/nuxel-home/index.html c7b7abd1e8809847feb39119a42bf0063b051ceb783cd914751fa81f167b6896
+pwa/nuxel-home/manifest.json 1c2ee4e516a6f9db896af0089548d2467ff163fae8e31889c6a07ea8677f9090
+pwa/nuxel-home/sw.js 893c373f7fb7dd1fd3fa0b08473cb7089a50d04296f4236cf3bd02e5684416ff
+pwa/nuxel-home/icon-registry.json aeaf1762821fdbe2324053444d325ac46cb5c03e6f7dbcfebd8c5491d10c5b9c
+pwa/nuxel-home/js/apps.js de57357e8630b5b962612c61d8fdd2b4d81fe3728d1c222782f97711c5196531
+pwa/nuxel-home/js/qs.js 35538b976a038c6ea92c89351b3a5b3ef68796a3ad217955a6dd59b8910655b1
+pwa/nuxel-common/app-registry.json 707fcdb8a52836e8f66c27056e932c1289b6c13d9796fb43c2fdbd8bec3a1581
+
