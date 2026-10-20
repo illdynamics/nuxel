@@ -1,238 +1,56 @@
-# NUXEL PROMPT — P08: Remaining Live Userspace and Hardware Integration
+# NUXEL P08 — Remaining live userspace and hardware integration
+STATUS: IMPLEMENTATION PROMPT ONLY — NOT EXECUTED
 
-> **Status of THIS FILE:** it is a *prompt for a future implementation session*, not the implementation.
-> Do **not** run the instructions in this file during authoring; this file only describes them.
-> The future agent that consumes this prompt executes component **P08 — Remaining live userspace and hardware integration** on the branch `nuxel/p08-live-userspace-hardware-integration` of the Nuxel Fedora ARM64 phone OS repo (current HEAD `e2aaf66`, tag `v0.6.0-beta`).
+## Mission
 
----
+This is a future implementation mission for `nuxel/p08-live-userspace-hardware-integration`. Do not execute it merely by reading this file. A future agent may modify code, tests, documentation, images, services, or configuration only after an owner explicitly authorizes execution of this branch prompt. Keep the change limited to this component; do not merge, cherry-pick, deploy, flash, reboot, replace a kernel, or start an unrelated component.
 
-## 0. Agent mission (this branch ONLY)
+## Repo-grounded current state
 
-You are the Nuxel Fedora ARM64 phone OS engineering agent, working in a dedicated Git feature branch. Implement **only component P08: Remaining live userspace and hardware integration** in this existing repository. This file is the complete scope for the current run; **do not implement the other screenshot items or briq tasks in this branch.** Reuse actual Nuxel architecture and existing services instead of creating parallel or fake substitutes.
+**SOURCE VERIFIED:** at source base `e2aaf66951570a8e86211cb8b48060e6cd6773dd`, the following repository paths exist and are directly relevant to the investigation: `configs/nuxel/capabilities/hardware-subsystems.json, configs/nuxel/capabilities/connectivity-time-audio-buttons.json, images/s10plus/build-phone-rootfs-fedora.sh, docs/beta-finalization/live/DEPLOYMENTS.md`. Their presence establishes maintained configuration, code, test, asset, or evidence locations; it does *not* prove a built image or a live-device result. `docs/architecture.md` and `docs/beta-finalization/DEVICE-CAPABILITY-MANIFEST.md` (where present) are context, not a substitute for inspecting the cited owners and their callers at the execution commit.
 
-**Target platform:** Samsung Galaxy S10+ SM-G975F / Exynos 9820 (`beyond2lte`), Fedora Linux 43 aarch64, systemd PID 1, Samsung vendor kernel **4.14.253**, no Android framework dependencies. The display path is Phoc (headless) → Wayland screencopy → `/dev/fb0` DECON; there is **no** DRM/KMS (`/dev/dri` absent).
+The current target is Fedora ARM64 for Galaxy S10+ SM-G975F / Exynos 9820, without a mandatory Android framework. Start by re-reading the cited files at the implementation commit, `git log`, `git grep`, manifests, unit files and existing A34–A40/beta-finalization evidence. Record what is observed separately from proposed work. Existing repository captures are historical evidence only: label outcomes as `SOURCE VERIFIED`, `BUILT`, `VM VERIFIED`, `LIVE-DEVICE DEPLOYED`, `OWNER-VERIFIED`, `BLOCKED`, or `NOT TESTED`. In particular, S10+ speaker audio remains unverified unless later evidence proves it; user-reported Home/Back/Recents, virtual-keyboard, icon-drag and torch issues require fresh verification only when this component touches them.
 
-**Host/device split:** A MacBook host may build/test and run the offline suites. **The live phone may NOT be connected during this run.** Do not assume a hardware verification that did not happen — see §12 for the mock/host vs. live distinction, which is non-negotiable here.
+This component’s intended result is: Map S10+ userspace-to-hardware integrations across units, permissions, device nodes, compositor, network, power, sensors, audio and controls. Specify idempotent service readiness and deployment evidence without presuming access to a phone or substituting fake capabilities.
 
-### The P08 mission statement (verbatim)
-1. Inventory userspace services against actual S10+ runtime capabilities.
-2. Fix one verified integration gap at a time while preserving bootable system.
-3. Track unavailable kernel/firmware capabilities separately.
-4. Expose actionable diagnostics and non-blocking graceful degradation.
+## Precise component boundaries
 
-### P08 contract (verbatim)
-- Inventory userspace services against actual S10+ runtime capabilities.
-- Fix one verified integration gap at a time while preserving bootable system.
-- Track unavailable kernel/firmware capabilities separately.
-- Expose actionable diagnostics and non-blocking graceful degradation.
+Own the smallest end-to-end path needed for this mission, including its configuration/schema, runtime consumer, status/reporting surface and tests. Preserve the established Nuxel launcher/WebKit/compositor approach, touch UI, three-button navigation, haptics, BG1/BG2 dock selection (BG2 is default), Fedora ARM64 compatibility and USB-console recoverability. Do not silently introduce Android APIs, a second competing daemon, a generic replacement UI, fictitious kernel nodes, unsafe amplifier/LED/radio control, or a capability claim based solely on a mock.
 
-**This component is the *remaining* wiring**: haptics/vibration, flashlight/notification LED, power/battery/menu, sensors, NFC/Bluetooth/modem/SIM/microSD — each as a *repository-side* implementation with an honest verdict, plus the diagnostic surface that makes every gap observable and every unavailable capability trackable. Every subsystem below is already **seeded** in `docs/beta-finalization/workqueue/<stable-id>.json` (see §4) with its real state and verdict vocabulary — P08 does not invent new states; it advances whichever of these seeded tasks is the smallest *verified* next gap, or produces a precise blocker.
+Out of scope without a separate owner-approved task: bootloader/partition writes, flashing, kernel replacement, radio firmware changes, live-phone reboot, factory reset, destructive cleanup, and merge/release activity. If investigation finds no suitable owner, state **“Not found—locate or add the smallest appropriate module”** and document why rather than fabricating a path.
 
----
+## Implementation work packages
 
-## 1. Hard boundaries for THIS run (authoring only)
+1. Establish a component evidence baseline. Trace every cited path to its producer and consumer, enumerate service/unit/package/schema boundaries, and make a state table with source evidence, runtime prerequisite, owner and current status. Preserve command lines, stderr and content hashes in the future report.
+2. Reproduce the component-specific failure or missing capability with deterministic host/VM-safe fixtures first. Define the exact observable state transition and invariant for: Map S10+ userspace-to-hardware integrations across units, permissions, device nodes, compositor, network, power, sensors, audio and controls. Specify idempotent service readiness and deployment evidence without presuming access to a phone or substituting fake capabilities. Do not label a UI rendering, a mock, or an archive member as a device pass.
+3. Design the smallest integration change after the trace is complete. Specify data ownership, lifecycle/ordering, error propagation, privilege boundary, persistence and compatibility with existing launcher/compositor and Fedora services. Resolve duplicate state sources rather than adding a parallel control path.
+4. Implement guarded diagnostics and observability. Produce actionable logs/structured status that expose interface identity, readiness, selected backend, failure reason and fallback without leaking secrets. Add rate/size bounds where event, log, media or sensor streams are involved.
+5. Add component-focused tests and negative cases alongside the implementation. Use existing project tests where applicable (for example `tools/beta/tests/test-release-tools.sh` and `boot/s10plus/tests/test-boot-image-gates.sh` only when their scope applies); add no meaningless skip. Record commands, environment and output hashes.
+6. Write `docs/component-reports/p08.md` when execution is authorized. Include a source inventory, change list, matrix of result labels, commands/exit codes, test evidence, owner-facing live steps, known gaps, rollback receipt and explicit distinction between simulated and physical evidence.
 
-- **You are authoring a prompt.** You may read repo files read-only to make the prompt concrete and repo-aware. You must **not** execute P08's implementation instructions yourself.
-- For the *future* agent, these boundaries apply:
-  - Do not modify Nuxel source/test/asset/config/service/device files as part of authoring — only create/update `PROMPT-P08.md`.
-  - No build/install/run-test/deploy/ssh/usb/flash/reboot/touch-the-phone.
-  - No recursive AI agent, no executing the finished prompt.
-  - No new docs/branches/worktrees; no git add/commit/push/switch/merge/rebase (the outer runner owns Git).
-  - No secrets/hostpaths/API tokens/private credentials in the prompt or any file you create.
-  - Never claim implementation/deployment/hardware testing actually took place for *this authoring run*.
+## Failure modes and diagnostics
 
-> The acceptance gates and workflow below are instructions **for the future agent**, not claims about this file's creation.
+Treat absent nodes, firmware, permissions, services, IPC endpoints, package dependencies, display/input focus, route ownership and stale cached state as separate hypotheses. Capture the exact interface name, udev/sysfs/proc or service evidence, version, timestamp and first failure; do not infer hardware from a nominal configuration file. Guard against races during boot/suspend/resume, duplicate events, stale UI state, partial writes, interrupted updates and privilege escalation. If a hardware-dependent prerequisite is missing, collect the relevant kernel configuration/device-tree/log evidence and report the smallest grounded next step as `BLOCKED` rather than widening scope.
 
----
+## Verification and acceptance
 
-## 2. Verified facts vs. must-inspect (read-only audit of the real repo)
+All checks below are required before declaring this component complete; report each with its evidence class.
 
-This section records what is **already true in the repository** at HEAD (`e2aaf66`) so the future agent builds on reality, not assumptions. Mark anything that changed since this authoring as `NOT_REAUDITED` and re-verify from source before touching it.
+1. A traceable before/after matrix names each owned input, consumer, expected state, actual state, command/log and result label for this mission.
+2. The implementation has a focused deterministic test or inspection procedure covering the normal path and an injected unavailable/malformed/denied path specific to the selected backend.
+3. The UI/service exposes truthful readiness and error state: no optimistic success, duplicate status indicator, synthetic hardware reading, or silent fallback is accepted.
+4. Compatibility is demonstrated for the stated Fedora ARM64 target and existing Nuxel interaction model; unrelated navigation, touch focus, BG2 dock and USB recovery invariants are not regressed.
+5. A reviewer can reproduce the result from the report using exact commands, artifacts/hashes and exit codes; source/VM evidence remains labeled separately from live-device proof.
+6. For any physical validation, the owner gets short explicit steps, expected observation, stop condition and a place to record PASS/FAIL/timestamp. Missing phone access remains `NOT TESTED` or `BLOCKED`.
 
-### 2.A Verified facts (observed in-tree now)
+## Hardware/privilege/rollback safety
 
-**Boot / containment (4.14 vendor kernel).** The S10+ runs a Samsung 4.14 tree with specific, *documented* work-arounds that P08 must preserve:
-- `systemd-userdbd.{service,socket}` masked — pidfd child watching is `ENOSYS`.
-- `nsswitch.conf` drops the `systemd` NSS module (a varlink lookup with no server blocks forever).
-- System bus = **`dbus-daemon.service`**; `dbus-broker` is masked/unused.
-- `systemd-udevd` + sockets masked; devtmpfs supplies nodes; libinput discovery goes through **`libnuxel-libinput-path.so`** (a path shim, not the real udev daemon).
-- Carried patched `libsystemd-shared-258.11-1.fc43.so` from systemd `258.11-1.fc43`; the running systemd NEVRA is pinned to match. **Any P08 change that touches systemd units, NSS, or userdbd must be applied by the builder to the staging tree and must not break this pin.**
+Never surprise-flash, write bootloader/partitions, replace the kernel, reboot a live phone, change radio firmware, brute-force amplifier controls, strobe a torch/LED, or remove the established speaker-volume protection. Obtain explicit owner approval before any live-device action. Prefer read-only discovery, dry runs and mock fixtures. Design rollback as a reversible userspace/config change with a documented pre-state, atomic or staged apply where possible, health check, and USB-console/rescue path. Stop immediately on uncertainty about target identity, power, boot mode, mounted filesystem, privileged authorization or rollback availability.
 
-**Display path (proven offline).** Phoc headless + pixman → `nuxel-wl-fb` (the *only* `/dev/fb0` owner) with XRGB8888 → Samsung ABGR8888 colour conversion, proven at byte level. There is **no** `/dev/dri`. Single framebuffer ownership is enforced (`owner=nuxel-wl-fb`). P08 must never introduce a second fb0 writer or bypass the colour conversion when it touches anything that renders.
+## Deliverables
 
-**Service graph (measured reality).** Canonical units live in `services/**` plus `images/s10plus/nuxel-firstlight.service`. Startup order and dependency matrix are captured in `docs/service-graph.md` and `docs/beta-finalization/system/SERVICE-GRAPH.md`. The offline validator is:
-```sh
-python3 tools/s10plus/a33/verify-service-graph.py          # expect verdict=OFFLINE_TESTED, problems=0
-python3 tools/s10plus/a33/tests/test-service-graph.py       # must FAIL on an injected cycle / forbidden 4.14 dep / lost enablement
-```
-If P08 adds or reorders a unit (e.g., a haptics/LED bridge service), it **must** keep this green — that test proves the validator *rejects* exactly the regressions P08 could introduce.
+Deliver the narrowly scoped implementation, focused tests, and `docs/component-reports/p08.md` only after execution authorization. The report must contain: repo commit/tree state; changed files; source versus design decisions; command receipts and hashes; test matrix; device model/variant evidence; any owner observations; rollback procedure/receipt; and unresolved blockers. Do not claim release readiness, live deployment, audible output, sensor operation, radio operation, or physical control without direct evidence.
 
-**Button manager (A34, current).** `tools/s10plus/a34/nuxel-button-manager.c` (+ `nuxel-button-fsm.h`, FSM state machine) owns the `gpio_keys` key set: power menu, volume→ALSA beyond-madera mixer, screen gestures (swipe-up home / swipe-up-hold recents / edge-swipe back), reboot gated by policy file (refuses by default), Recovery/Download hard-refused. The A32 sources in `tools/s10plus/a32/` are **protected baseline** (`docs/beta-finalization/baseline-protection.json`, INV-4) and the offline test asserts behavioural parity with them — **do not touch a32.** Probe modes: `--probe --capture --menu-dump --fsm-sim <trace.json> --config-check`.
+## Stop conditions / known blockers
 
-**Existing hardware-diag scaffolding that P08 can extend (not reinvent):**
-- `tools/s10plus/a34/nuxel-uinput-touch-probe.py`, `tools/s10plus/a34/nuxel-usb-input-audit.sh` — input/USB discovery.
-- `tools/s10plus/a33/nuxel-haptics-diag.sh` (referenced in manual-proof) enumerates haptic nodes; confirm whether it exists on disk and reuse it rather than writing a sibling.
-- `nuxel-hwprobe.c`, `nuxel-diag.c`, `nuxel-syscall-probe.c` — generic hardware/syscall probes already present for diagnostics.
-- The manual-proof files under `docs/beta-finalization/manual-proof/09-flashlight.md … 24-battery-power.md` describe each subsystem's **owner-test surface** (`…diag.sh status`, buzz gates, etc.) and carry the real verdicts to advance.
-
-### 2.B Must-inspect before touching (never assume)
-- **Exact haptic node.** `configs/nuxel/haptics/haptics.json` + `nuxel-haptics-diag.sh` enumerate `/sys/class/leds/*vib*`, `/sys/class/timed_output/*`, `/sys/class/vibrator/*` at runtime — the exact node is **not assumed**. P08 must read these globs live and never hard-code a path.
-- **Intensity support.** Amplitude control exists *only if the node exposes a strength file*; otherwise report `intensity_mode=duration`. Do not fabricate amplitude (see haptic.md's explicit "Do not emulate unsupported intensity" rule).
-- **Boot mode / charger guard.** `tools/s10plus/a33/nuxel-bootmode-guard.py` classifies `androidboot.mode=charger`/LPM (`lpcharge=1`, `sec_ts_init -ENODEV`) and gates reboots. In charger/LPM the touch driver is down and many subsystems can't be exercised — P08's diagnostics must report boot mode first and degrade gracefully rather than failing loudly in LPM.
-- **Modem/SIM/wifi/bt/sensors** capabilities on `beyond2lte` are **not assumed**; enumerate from `/sys/class`, `/proc/bus/input/devices`, DMI, and udev before claiming support.
-
----
-
-## 3. The inventory you must produce (P08 item 1 — done against reality)
-
-Build a single machine-readable inventory that maps each Nuxel userspace service/unit to the **actual** S10+ runtime capability it depends on, with a verdict from the closed vocabulary in §9. Consume and extend what exists rather than duplicating:
-- `docs/service-graph.md` + `docs/beta-finalization/system/SERVICE-GRAPH.md` (unit graph),
-- `docs/beta-finalization/release/DEVICE-CAPABILITY-MANIFEST.json` (+ `.schema.json`, validator `tools/beta/validate-capability-manifest.py`) — the authoritative per-subsystem verdict table,
-- `docs/beta-finalization/workqueue/<stable-id>.json` (the source of truth for each briq's state).
-
-The inventory must list every P08-relevant subsystem with: repo path(s), current `verdict`, `offline_ceiling`, blocking evidence (real `/proc`,`/sys`,`dmesg` lines already captured in the manual-proof files), and the *next* smallest gap. **Do not invent new verdicts** — use exactly the §9 vocabulary, and do not promote a claim to live-device strength on the basis of a file existing (`verify-schema` forbids an on-device verdict from mere presence).
-
----
-
-## 4. Which seeded briq tasks P08 owns (do NOT create new ones)
-
-These already exist in `docs/beta-finalization/workqueue/`. P08 advances **one verified gap** among them (the smallest that is ready and unblocked), or records a precise blocker — it does not spawn parallel work. Current states at authoring:
-
-| Task id | Subsystem | State (authoring) | Offline ceiling / verdict |
-|---|---|---|---|
-| `briq-08a-power-management` | Power mgmt, battery modes, power menu | `in_progress` | depends on `briq-03e-buttons-gestures`; expected: `configs/nuxel/power/`, `pwa/nuxel-apps/settings/`, manual-proof/24-battery-power.md |
-| `briq-08b-vibration-haptics` | Vibration & haptics | `pending` (needs 08a) | NEEDS_OWNER_TEST; expected: `configs/nuxel/haptics/`, manual-proof/10-vibration.md |
-| `briq-08c-flashlight-led` | Flashlight, notification LED, edge lighting | `pending` (needs 08a) | NEEDS_OWNER_TEST; expected: `configs/nuxel/leds/`, manual-proof/09-flashlight.md |
-| `briq-08d-bluetooth` | Bluetooth (BlueZ) | pending | NEEDS_OWNER_TEST |
-| `briq-08e-nfc` | NFC | pending | NEEDS_OWNER_TEST |
-| `briq-08f-gps-gnss` | GPS/GNSS | pending | NEEDS_OWNER_TEST |
-| `briq-08g-sensors` | Sensors (mag/gyro/prox/light) | pending | NEEDS_OWNER_TEST |
-| `briq-08h-camera` | Camera | pending | NEEDS_OWNER_TEST |
-| `briq-08i-sim-microsd-modem` | LTE modem, SIM, microSD | pending | NEEDS_OWNER_TEST |
-
-**Selection rule for the future agent:** pick the lowest-priority-band task whose dependencies are satisfied (`08a` first since it gates `08b/08c`; then whichever of `08d–08i` is ready), implement its *smallest coherent next gap*, and record evidence. If the smallest gap for a subsystem cannot be closed without a live device or a kernel/firmware capability that isn't present, produce the **smallest safe implementation + precise blocker** and stop (acceptance gate: do not let manual hardware proof stall unrelated work).
-
----
-
-## 5. Implementation plan the future agent should follow (repo-aware)
-
-Follow P08's own workflow. Concretely, for each selected subsystem gap:
-
-1. **Inspect reality.** Read the existing repo files (§2.A/§2.B), run the relevant offline tools (`verify-service-graph.py`, `verify-schema`, capability-manifest validator, the subsystem's own test suite) and inspect `/proc/cmdline`, `dmesg`, `/sys/class`, `/proc/bus/input/devices` on-device to confirm capabilities. Record existing behaviour and the smallest coherent repair.
-2. **Preserve invariants before changing anything.** Keep: bootable system; working launcher navigation; haptics wiring already referenced; custom icon assets; Home layouts; USB recovery; single-`/dev/fb0` ownership; A26 containment (masked systemd-userdbd, NSS drop, dbus-daemon bus); a32 protected baseline parity.
-3. **Implement the smallest gap.** Add config under `configs/nuxel/<subsystem>/`, extend existing tools (e.g., `nuxel-haptics-diag.sh`, `nuxel-uinput-touch-probe.py`) rather than creating parallel implementations, add a service unit only where it fits the graph and keep `verify-service-graph.py` green. Never flash a partition, write a block device, enter Download Mode/TWRP, or reboot on its own initiative (see §10).
-4. **Track unavailable capabilities separately.** Anything not present on hardware is recorded as `BLOCKED_KERNEL`, `BOOT_UPDATE_REQUIRED`, `NOT_DEPLOYED`, or `NEEDS_OWNER_TEST` — never promoted to offline/live. Put the real captured evidence (`/sys`,`dmesg`) beside each blocked claim.
-5. **Expose diagnostics + graceful degradation.** Every gap gets an observable surface (`…diag.sh status/… --probe`) and a non-blocking fallback (e.g., intensity falls back to duration; no-session ⇒ silent haptic no-op gated by `/run/nuxel/haptics/api-enabled`; LPM ⇒ report touch-disabled rather than crash).
-6. **Test, then commit only P08's files**, leaving `git status` clean (§13).
-
----
-
-## 6. What to actually build (concrete surfaces — examples, not a fixed list)
-
-> The future agent should implement the *smallest verified gap* for the selected task(s), using these as concrete patterns already present or referenced in-tree. Do **not** assume all of the following exist; verify each path first and reuse where possible.
-
-- **Haptics:** `configs/nuxel/haptics/haptics.json` (node enumeration via globs, named patterns: `tap`,`double`,`long`,`buzz_test`,`notify`,`alarm`,`button`,`gesture`; intensity levels `light/medium/strong` only if a strength file exists), `/var/lib/nuxel/haptics/state.json` global switch wired to button manager + notifications, bounded owner buzz (`buzz --yes <ms>`, cap 1500 ms), programmatic API gated by `/run/nuxel/haptics/api-enabled`, and the bridge that turns a button-manager action or `NotificationAdded` into a named pattern. Reuse/confirm `tools/s10plus/a33/nuxel-haptics-diag.sh`.
-- **Flashlight / LED:** `configs/nuxel/leds/` enumerating `/sys/class/leds/*`, safe duty-cycle limits, notification-LED wiring — with honest reporting when no LED node exists.
-- **Power/battery/menu:** `configs/nuxel/power/`, Settings integration (`pwa/nuxel-apps/settings/`), power-menu actions that route through the running bridge (never a second display owner), reboot policy honouring `briq-09b`'s "allowed but not blind" rule.
-- **Sensors/NFC/BT/GPS/modem/SIM/microSD:** each as enumeration + minimal config + diagnostic script, with verdict driven by what `/sys`,`DMI`,udev actually expose.
-
----
-
-## 7. Tests the future agent must write (real behaviour + failure paths)
-
-Tests exercise real logic/failure paths on host/offline — **not** static references and **not** a stand-in for physical proof.
-
-- Extend each subsystem's existing offline suite where one exists (`tools/s10plus/a33/tests/`, `tools/s10plus/a34/tests/`); otherwise add one under the matching `tests/`.
-- The classifier/gate logic (boot-mode classification, reboot decision, haptic intensity→duration fallback, no-session gate exit code 7, buzz cap) must be driven by **synthetic fixtures** so every branch is exercised without a phone. Prove the validator *fails* on an injected regression (cycle, forbidden 4.14 dep, lost enablement, wrong verdict), exactly as `test-service-graph.py` and `test-bootmode-guard.py` already do.
-- A capability-inventory test that asserts no row claims stronger than its record (§9 strength ordering) via the manifest validator + `verify-schema`.
-- Explicitly assert the **anti-fabrication rule**: a prose doc merely *mentioning* a capability is not graded as hardware evidence — it lands in `UNKNOWN`, never promoted.
-
----
-
-## 8. Acceptance gates (for the future agent; this file does NOT satisfy them)
-
-- Every P08 item above is **implemented or explicitly BLOCKED with concrete evidence** (real `/sys`,`/proc`,`dmesg` lines — not "not implemented").
-- Tests exercise real behaviour and failure paths, not only static references.
-- Where a feature touches the phone, results are labelled: **mock/host test** vs **live-deployed** vs **owner-confirmed** — never conflated (see §12).
-- Any dangerous hardware op (flashing, bootloader/partition write, kernel replacement, unsafe amp/LED setting) is **forbidden**.
-- If a critical external dependency blocks it: produce the smallest safe implementation + precise blocker report, and stop. Do not let manual hardware proof stall unrelated queue tasks.
-
----
-
-## 9. Verdict vocabulary (closed — use exactly these; do not invent)
-
-`strength(min):` NOT_SUPPORTED_ON_DEVICE = DEFERRED = FAILED = BLOCKED_* = **0** · NEEDS_OWNER_TEST = IMPLEMENTED_NOT_DEPLOYED = **1** · OFFLINE_TESTED = **2** · VERIFIED_IN_VM_ONLY = **4** · VERIFIED_ON_S10PLUS = **5** (live-device evidence only).
-
-- `verdict` = the claim; `record` = the evidence gate; a row's verdict may be **no stronger** than `min(record strength, record offline_ceiling)` and a record with no verdict caps it at 1.
-- States: `pending · in_progress · implemented · blocked · deferred · reverted`.
-- Live-device strength requires live-device evidence — **file presence is only an `observation`, never a verdict.**
-
----
-
-## 10. Hardware honesty & the forbidden operations (verbatim discipline)
-
-From `REBOOT-ROLLBACK.md` / `ROLLBACK.md`:
-- **A reboot is allowed; a blind reboot is not** — every reboot states a reason *and* a differing diagnostic, and requires the previous reboot to have returned to Nuxel first.
-- **No change deploys without a recorded way back** — rollback.sh's seven steps: capture previous hash → stage (`<target>.nuxel-staged`) → verify against manifest `source_sha256` → atomic install → restart only the smallest affected service → health-check → per-group checks; on failure auto-rollback (exit 3), state restored.
-- **No script ever** flashes a partition, writes a block device, enters Download Mode/TWRP, or reboots on its own initiative.
-
----
-
-## 11. Honest hardware verification plan (mock/host vs live — the crux)
-
-This is where P08 most often fails; enforce it:
-
-| Evidence | Reachable from host/offline? | How to record honestly |
-|---|---|---|
-| Node exists (`/sys/class/timed_output/vibrator`, `/sys/class/leds/*`) | on-device read only | capture the real line as an `observation` evidence entry |
-| Enumerate capabilities / fallback logic / gate exit codes | **yes** (fixtures, pure functions) → `OFFLINE_TESTED` | assert real behaviour on synthetic input |
-| Intensity supported? | on-device read a strength file; if absent report `intensity_mode=duration` | never claim amplitude without the file |
-| A buzz is *felt* / LED glows / motor moves | **no** — owner must confirm | `VERIFIED_ON_S10PLUS` needs explicit live evidence; otherwise `DEPLOYED_UNVERIFIED` or `NEEDS_OWNER_TEST` |
-| Touch works in a normal boot | **no** — down in charger/LPM | blocked by boot mode; owner test after normal boot |
-
-Rule: **mock/host tests prove the code path and failure paths; they do not substitute for physical confirmation.** Label every result with exactly one of `mock/test · live-deployed · owner-confirmed`. Never pass off a mock as a physical check.
-
----
-
-## 12. Safe rollback (per-component)
-
-- Repository-only change → `git revert <commit>` restores it; no device state changes (`briq` rollback field text).
-- Deployed userspace change → run `tools/beta/rollback.sh` (the seven-step discipline, §10); health gate auto-reverts on UNHEALTHY.
-- A bad unit/config must not break the boot path or the 4.14 containment; keep `verify-service-graph.py` green and a live console recoverable (`ROLLBACK.md`: nothing may remove the console or local recovery route).
-
----
-
-## 13. Commit & finish discipline (for the future agent)
-
-- Commit **only P08's** code, tests, docs and the report; do not merge to main, switch branches, add secrets, or ship unrelated features.
-- Write `docs/component-reports/p08.md` documenting: code paths changed, commands + receipts, PASS/FAIL/BLOCKED/NOT_TESTED per subsystem, actual device deployment status (mock/host vs live), unresolved issues, and safe rollback.
-- Keep the worktree clean (`git status`) at the end; the queue runner pushes the branch.
-
----
-
-## 14. Do / Don't summary
-
-**Do:** reuse `services/**`, the A34 button manager + FSM, `nuxel-haptics-diag.sh`, the manifest/workqueue/service-graph tooling; verify everything from source and live device reads first; extend existing suites; cap every claim at its evidence strength.
-
-**Don't:** create parallel services/tools that duplicate existing ones; touch the a32 protected baseline; bypass single-`/dev/fb0` ownership or the ABGR colour conversion; hard-code haptic node paths; fabricate intensity/amplitude; flash/write partitions/reboot on initiative; claim live-device proof that didn't happen; implement briq tasks outside P08's selected gap(s).
-
----
-
-## 15. Commands the future agent will run (reference only)
-
-```sh
-# Reality checks / invariants (must stay green)
-python3 tools/s10plus/a33/verify-service-graph.py
-python3 tools/s10plus/a33/tests/test-service-graph.py     # must FAIL on injected cycle / forbidden dep
-python3 tools/beta/validate-capability-manifest.py --manifest docs/beta-finalization/release/DEVICE-CAPABILITY-MANIFEST.json --schema docs/beta-finalization/release/DEVICE-CAPABILITY-MANIFEST.schema.json --workqueue docs/beta-finalization/workqueue
-tools/beta/run-all-tests.sh                                  # expect exit 0
-
-# Per-subsystem (reuse; verify paths first)
-tools/s10plus/a34/nuxel-button-manager.c --probe --config-check
-nuxel-haptics-diag.sh status; nuxel-haptics-diag.sh api <pattern> --source <consumer>
-
-# Deploy discipline (only when a live change is made)
-tools/beta/rollback.sh        # seven-step capture→stage→verify→install→restart→health→checks
-```
-
-*Authoring note:* §2 reflects the repo state at HEAD `e2aaf66` (`v0.6.0-beta`). Any subsystem whose files changed since authoring is `NOT_REAUDITED` — re-verify from source before implementing.
+Stop and ask the owner if implementation requires another component, an unverified driver/firmware/interface, destructive data mutation, sensitive credentials, external service/account, target access, or a security policy exception. Stop if results depend on unavailable S10+ hardware and leave a precise owner request rather than manufacturing a pass. A failed assertion must be triaged as stale versus regression with evidence—never weakened to skip. This prompt itself changes nothing and authorizes no deployment.
