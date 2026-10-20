@@ -8,10 +8,11 @@
 .home-setting-row { display: flex; gap: 12px; }.home-setting-row label { display: grid; gap: 5px; color: #cbd5e1; font-size: 13px; }.home-setting-row select { min-width: 92px; }.home-setting-hint { margin-top: 6px; color: #94a3b8; font-size: 12px; }.home-settings-card footer { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; }.reset-home { background: #7f1d1d !important; }
 
 /* A39: original dock-image picker and persistent layout preferences */
-.dock-background-choices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.dock-background-choices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
 .dock-background-choice{display:grid;gap:6px;align-content:start;padding:8px!important;min-height:100px!important;border:2px solid transparent!important;background:#0b294c!important}
 .dock-background-choice img{width:100%;max-height:85px;object-fit:contain;pointer-events:none}
 .dock-background-choice[aria-pressed=true]{border-color:#74c0fc!important;box-shadow:0 0 0 2px #3587d770}
+.dock-background-none-preview{display:block;min-height:58px;border:1px dashed #7fa4cb;border-radius:7px;background:linear-gradient(45deg,#102844 25%,transparent 25% 75%,#102844 75%),linear-gradient(45deg,#102844 25%,transparent 25% 75%,#102844 75%);background-position:0 0,8px 8px;background-size:16px 16px;color:#dbeafe;font-size:11px;line-height:58px;text-align:center}
 .home-setting-row input[type=checkbox]{width:22px;height:22px;accent-color:#60a5fa}
 .home-settings-card label:has(select){display:grid;gap:6px}
 .home-settings-card select{max-width:100%}

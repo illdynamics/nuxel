@@ -291,11 +291,11 @@ html, body {
     height: calc(100dvh - var(--status-bar-height, 36px) - 336px - var(--system-nav-height)) !important;
 }
 
-/* Persistent Android-like navigation.  The supplied artwork contains the
-   glyphs; object-fit keeps their native canvases from making giant buttons.
-   BG2 is the owner-supplied navigation backdrop.  Its source PNG has a black
-   matte rather than alpha, so screen blending makes that matte transparent to
-   the wallpaper while retaining the bright pixel-art geometry. */
+/* Persistent Android-like navigation. The supplied artwork has a black matte
+   rather than alpha, so screen blending makes that matte transparent to the
+   wallpaper while retaining the bright pixel-art geometry. Its paint-only
+   layer is full viewport width; it deliberately extends above the button row
+   instead of shrinking the supplied 3:1 art with `contain`. */
 .system-navigation {
     position: fixed;
     z-index: 260;
@@ -308,16 +308,25 @@ html, body {
     padding: 5px max(14px, env(safe-area-inset-left)) calc(5px + env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-right));
     background: transparent;
     border-top: 0;
+    overflow: visible;
 }
 .system-navigation::before {
     content: '';
     position: absolute;
-    inset: 0 4px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 33.34vw;
     z-index: 0;
     pointer-events: none;
-    background: url('../assets/nuxel-bottom-bar2.png') center / contain no-repeat;
+    background-image: var(--dock-art, url('../assets/nuxel-bottom-bar2.png'));
+    background-size: 100% auto;
+    background-position: center bottom;
+    background-repeat: no-repeat;
+    image-rendering: pixelated;
     mix-blend-mode: screen;
 }
+.system-navigation[data-background="none"]::before { display: none; }
 .system-navigation button {
     position: relative;
     z-index: 1;

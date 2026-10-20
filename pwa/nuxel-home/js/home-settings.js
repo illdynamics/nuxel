@@ -3,31 +3,47 @@
 (function (global) {
     'use strict';
     const KEY = 'nuxel.homeAppearance';
-    const DOCKS = Object.freeze({bg1: 'assets/nuxel-bottom-bar.jpg', bg2: 'assets/nuxel-bottom-bar2.png'});
+    // `none` is intentional: it keeps all dock hitboxes and navigation
+    // behaviour while removing only the decorative, pointer-inert artwork.
+    const DOCKS = Object.freeze({bg2: 'assets/nuxel-bottom-bar2.png', bg1: 'assets/nuxel-bottom-bar.jpg', none: null});
     const DEFAULT_DOCK = 'bg2';
     function dockChoice(value) { return Object.prototype.hasOwnProperty.call(DOCKS, value) ? value : DEFAULT_DOCK; }
     function applyDock(data) {
         const value = dockChoice(data.dockBackground);
-        const dock = document.getElementById('dock');
-        if (!dock) return;
-        dock.dataset.background = value;
+        const artwork = DOCKS[value];
+        // The shortcut dock and the fixed Back/Home/Recents dock are distinct
+        // surfaces, but one explicit preference must update both. Previously
+        // the picker changed only #dock while the visible navigation strip was
+        // hard-coded to BG2, making a successful switch appear to do nothing.
+        const docks = Array.from(document.querySelectorAll('#dock, #system-navigation'));
+        if (!docks.length) return;
+        docks.forEach(dock => {
+            dock.dataset.background = value;
+            if (artwork) dock.style.setProperty('--dock-art', 'url("' + artwork + '")');
+            else dock.style.removeProperty('--dock-art');
+            dock.setAttribute('data-dock-asset', artwork || 'none');
+        });
+        if (!artwork) {
+            document.dispatchEvent(new CustomEvent('nuxel:dock-background', {detail:{id:value,path:null}}));
+            return;
+        }
         // Use a deliberately noninteractive background layer. /pwa/nuxel-home/
         // relative paths work for both the static dev server and live nuxel-web.
-        dock.style.setProperty('--dock-art', 'url("' + DOCKS[value] + '")');
-        dock.setAttribute('data-dock-asset', DOCKS[value]);
         // Validate the selected image with a real decode, but never reset the
         // user's saved preference because the network may be temporarily down.
         const image = new Image();
         image.onerror = () => {
-            if (dock.dataset.background !== value) return;
+            if (!docks.some(dock => dock.dataset.background === value)) return;
             const alternate = value === 'bg2' ? 'bg1' : 'bg2';
-            dock.dataset.backgroundFallback = alternate;
-            dock.style.setProperty('--dock-art', 'url("' + DOCKS[alternate] + '")');
-            console.warn('[Nuxel] Missing/corrupt dock artwork:', DOCKS[value]);
+            docks.forEach(dock => {
+                dock.dataset.backgroundFallback = alternate;
+                dock.style.setProperty('--dock-art', 'url("' + DOCKS[alternate] + '")');
+            });
+            console.warn('[Nuxel] Missing/corrupt dock artwork:', artwork);
         };
-        image.onload = () => { if (dock.dataset.background === value) delete dock.dataset.backgroundFallback; };
-        image.src = DOCKS[value];
-        document.dispatchEvent(new CustomEvent('nuxel:dock-background', {detail:{id:value,path:DOCKS[value]}}));
+        image.onload = () => docks.forEach(dock => { if (dock.dataset.background === value) delete dock.dataset.backgroundFallback; });
+        image.src = artwork;
+        document.dispatchEvent(new CustomEvent('nuxel:dock-background', {detail:{id:value,path:artwork}}));
     }
     const DEFAULT_WALLPAPER = "url('assets/nuxel-background.png')";
     const presets = [
@@ -69,9 +85,11 @@
             '<div class="home-setting-row"><label>Lock icon layout <input type="checkbox" data-home-locked' + (settings.homeLocked ? ' checked' : '') + '></label>' +
             '<label>Desktops <select data-desktop-count>' + options(1, 8, settings.desktopCount || 2) + '</select></label></div>' +
             '<h3>Bottom dock</h3>' +
-            '<p class="home-setting-hint">Dock artwork — BG2 is the default. Tap to preview immediately.</p>' +
+            '<p class="home-setting-hint">Applies to the shortcut and Back/Home/Recents docks. BG2 is the default; tap to preview immediately.</p>' +
             '<div class="dock-background-choices" role="group" aria-label="Dock background">' +
-            Object.keys(DOCKS).map(id => '<button type="button" class="dock-background-choice" data-dock-choice="' + id + '" aria-pressed="' + (id === selectedDock) + '"><img src="' + DOCKS[id] + '" alt="' + (id === 'bg1' ? 'BG1 Classic' : 'BG2 Alternative') + '"><span>' + (id === 'bg1' ? 'BG1 · Classic' : 'BG2 · Alternative') + '</span></button>').join('') + '</div>' +
+            Object.keys(DOCKS).map(id => '<button type="button" class="dock-background-choice" data-dock-choice="' + id + '" aria-pressed="' + (id === selectedDock) + '">' +
+                (DOCKS[id] ? '<img src="' + DOCKS[id] + '" alt="' + (id === 'bg1' ? 'BG1 Classic' : 'BG2 Alternative') + '">' : '<span class="dock-background-none-preview" aria-hidden="true">No artwork</span>') +
+                '<span>' + (id === 'bg1' ? 'BG1 · Classic' : id === 'bg2' ? 'BG2 · Alternative' : 'None') + '</span></button>').join('') + '</div>' +
             '<h3>Status bar</h3><label>Battery indicator <select data-battery-style>' +
             [['inside', 'Icon with percentage inside'], ['percentage', 'Percentage only'], ['bar', 'Battery bar only']].map(v => '<option value="' + v[0] + '"' + ((appearance.batteryStyle || 'inside') === v[0] ? ' selected' : '') + '>' + v[1] + '</option>').join('') +
             '</select></label>' +
