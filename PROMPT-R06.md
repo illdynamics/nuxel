@@ -1,56 +1,55 @@
 # NUXEL R06 — PRIORITY ZERO — Get the touchscreen fully working
 STATUS: IMPLEMENTATION PROMPT ONLY — NOT EXECUTED
+BRANCH: `nuxel/r06-touchscreen-fully-working`
+BASE EVIDENCE SNAPSHOT: `e2aaf66951570a8e86211cb8b48060e6cd6773dd` (`v0.6.0-beta`)
 
 ## Mission
+Make the real S10+ touchscreen reliably drive Nuxel from finger contact through the compositor to the WebKit DOM and visible app response. This branch owns the end-to-end touch path, not just driver registration: tap, multitouch, swipe, drag, long-press arbitration, pointer capture, coordinate transforms, overlay interception, and immediate redraw.
 
-This is a future implementation mission for `nuxel/r06-touchscreen-fully-working`. Do not execute it merely by reading this file. A future agent may modify code, tests, documentation, images, services, or configuration only after an owner explicitly authorizes execution of this branch prompt. Keep the change limited to this component; do not merge, cherry-pick, deploy, flash, reboot, replace a kernel, or start an unrelated component.
+This file is a future implementation brief, not an instruction to execute now. A future agent may modify this branch only after the repository owner explicitly authorizes execution. Do not merge, deploy, flash, reboot the phone, or start another branch's component as part of this work.
 
 ## Repo-grounded current state
+Observed owners: `configs/libinput/nuxel-s10plus-touch.conf`, `configs/s10plus/libinput/99-nuxel-beyond2lte-touch.conf`, `pwa/nuxel-home/js/launcher.js`, `pwa/nuxel-home/js/app.js`, `pwa/nuxel-home/js/gestures.js`, `pwa/nuxel-home/js/navigation.js`, `tools/s10plus/a33/nuxel-touch-trace.py`, `tools/s10plus/a33/nuxel-touch-capture.sh`, and `tools/s10plus/a33/nuxel-wl-fb.c`. Historical A34 evidence proves some physical taps reached WebKit, but later user reports still describe unreliable interaction; neither old proof nor a synthetic click may be treated as current success.
 
-**SOURCE VERIFIED:** at source base `e2aaf66951570a8e86211cb8b48060e6cd6773dd`, the following repository paths exist and are directly relevant to the investigation: `configs/s10plus/libinput/99-nuxel-beyond2lte-touch.conf, configs/libinput/nuxel-s10plus-touch.conf, pwa/nuxel-home/js/launcher.js, pwa/nuxel-home/js/app.js`. Their presence establishes maintained configuration, code, test, asset, or evidence locations; it does *not* prove a built image or a live-device result. `docs/architecture.md` and `docs/beta-finalization/DEVICE-CAPABILITY-MANIFEST.md` (where present) are context, not a substitute for inspecting the cited owners and their callers at the execution commit.
-
-The current target is Fedora ARM64 for Galaxy S10+ SM-G975F / Exynos 9820, without a mandatory Android framework. Start by re-reading the cited files at the implementation commit, `git log`, `git grep`, manifests, unit files and existing A34–A40/beta-finalization evidence. Record what is observed separately from proposed work. Existing repository captures are historical evidence only: label outcomes as `SOURCE VERIFIED`, `BUILT`, `VM VERIFIED`, `LIVE-DEVICE DEPLOYED`, `OWNER-VERIFIED`, `BLOCKED`, or `NOT TESTED`. In particular, S10+ speaker audio remains unverified unless later evidence proves it; user-reported Home/Back/Recents, virtual-keyboard, icon-drag and torch issues require fresh verification only when this component touches them.
-
-This component’s intended result is: Trace touch from Linux event nodes through evdev/libinput and compositor transforms to WebKit DOM. Diagnose early drag drop, pointer capture across drawer unmount, multitouch, overlay interception, long-press ownership and rotation alignment.
+Use `SOURCE VERIFIED`, `BUILT`, `VM VERIFIED`, `LIVE-DEVICE DEPLOYED`, `OWNER-VERIFIED`, `BLOCKED`, and `NOT TESTED` as separate labels. A file existing, a unit being active, a mock returning PASS, or a command exiting 0 is not proof of physical hardware behaviour.
 
 ## Precise component boundaries
+Owns evdev/libinput/Phoc/WebKit touch delivery, touch coordinate mapping, launcher gesture arbitration, pointer capture, and the diagnostic correlation path. Does not own unrelated app business logic or a new compositor. The S10+ uses `sec_ts`/`sec_touchscreen`; charger-mode boot may disable it before userspace runs.
 
-Own the smallest end-to-end path needed for this mission, including its configuration/schema, runtime consumer, status/reporting surface and tests. Preserve the established Nuxel launcher/WebKit/compositor approach, touch UI, three-button navigation, haptics, BG1/BG2 dock selection (BG2 is default), Fedora ARM64 compatibility and USB-console recoverability. Do not silently introduce Android APIs, a second competing daemon, a generic replacement UI, fictitious kernel nodes, unsafe amplifier/LED/radio control, or a capability claim based solely on a mock.
-
-Out of scope without a separate owner-approved task: bootloader/partition writes, flashing, kernel replacement, radio firmware changes, live-phone reboot, factory reset, destructive cleanup, and merge/release activity. If investigation finds no suitable owner, state **“Not found—locate or add the smallest appropriate module”** and document why rather than fabricating a path.
+Stay inside this boundary. Do not silently alter unrelated launcher, compositor, boot, radio, security, or release behaviour. If a cited path is absent at execution time, record **“Not found—locate or add the smallest appropriate module”** and prove why; never invent a path, symbol, device node, or observed hardware result.
 
 ## Implementation work packages
-
-1. Establish a component evidence baseline. Trace every cited path to its producer and consumer, enumerate service/unit/package/schema boundaries, and make a state table with source evidence, runtime prerequisite, owner and current status. Preserve command lines, stderr and content hashes in the future report.
-2. Reproduce the component-specific failure or missing capability with deterministic host/VM-safe fixtures first. Define the exact observable state transition and invariant for: Trace touch from Linux event nodes through evdev/libinput and compositor transforms to WebKit DOM. Diagnose early drag drop, pointer capture across drawer unmount, multitouch, overlay interception, long-press ownership and rotation alignment. Do not label a UI rendering, a mock, or an archive member as a device pass.
-3. Design the smallest integration change after the trace is complete. Specify data ownership, lifecycle/ordering, error propagation, privilege boundary, persistence and compatibility with existing launcher/compositor and Fedora services. Resolve duplicate state sources rather than adding a parallel control path.
-4. Implement guarded diagnostics and observability. Produce actionable logs/structured status that expose interface identity, readiness, selected backend, failure reason and fallback without leaking secrets. Add rate/size bounds where event, log, media or sensor streams are involved.
-5. Add component-focused tests and negative cases alongside the implementation. Use existing project tests where applicable (for example `tools/beta/tests/test-release-tools.sh` and `boot/s10plus/tests/test-boot-image-gates.sh` only when their scope applies); add no meaningless skip. Record commands, environment and output hashes.
-6. Write `docs/component-reports/r06.md` when execution is authorized. Include a source inventory, change list, matrix of result labels, commands/exit codes, test evidence, owner-facing live steps, known gaps, rollback receipt and explicit distinction between simulated and physical evidence.
+1. Capture one physical tap and one drag with correlated timestamps at evdev, libinput, Phoc, WebKit `pointerdown`/`touchstart`, DOM handler, app launch, and presented frame.
+2. Verify the actual touch device selected by name/capabilities and confirm `INPUT_PROP_DIRECT`, `ABS_MT_POSITION_X/Y`, tracking IDs, and coordinate ranges after any libinput transform.
+3. Test tap, double-tap, long-press, horizontal desktop swipe, vertical Quick Settings/drawer gesture, icon drag, drag cancel, and multitouch without creating duplicate clicks.
+4. Audit overlays and app iframes for stale full-screen surfaces, `pointer-events`, z-index, focus, and pointer capture that can intercept later touches.
+5. Instrument the first failing hop and fix that layer; add deterministic regression tests using recorded event sequences without claiming they prove hardware.
+6. Verify immediate visible frame presentation through `nuxel-wl-fb` and ensure a tap does not require a Power press to repaint.
+7. Define a bounded owner test that records PASS/FAIL for each required gesture on the physical phone.
 
 ## Failure modes and diagnostics
-
-Treat absent nodes, firmware, permissions, services, IPC endpoints, package dependencies, display/input focus, route ownership and stale cached state as separate hypotheses. Capture the exact interface name, udev/sysfs/proc or service evidence, version, timestamp and first failure; do not infer hardware from a nominal configuration file. Guard against races during boot/suspend/resume, duplicate events, stale UI state, partial writes, interrupted updates and privilege escalation. If a hardware-dependent prerequisite is missing, collect the relevant kernel configuration/device-tree/log evidence and report the smallest grounded next step as `BLOCKED` rather than widening scope.
+- Distinguish charger-mode/LPM (no `sec_ts` init), missing IRQ, missing `/dev/input` node, libinput transform mismatch, Phoc surface/focus bugs, WebKit touch-action/capture bugs, invisible overlay, stale service-worker cache, and framebuffer presentation failure. Do not call hardware-button events touch events.
+- Preserve the first failing layer, exact command, stderr, timestamp, versions, and owning service/module. Do not blur missing hardware, missing firmware, missing kernel support, bad permissions, stale cache, and an actual code regression into one failure.
 
 ## Verification and acceptance
+A future agent must report every item below with its evidence class and exact command or inspection:
+1. A physical tap on one launcher icon opens exactly that app and produces a visible frame without a Power-key workaround.
+2. A drag that leaves the drawer/grid does not drop early, duplicate a click, or leave a captured pointer behind.
+3. Quick Settings and app-drawer gestures obey zone/direction rules and do not steal normal scrolling.
+4. Coordinate mapping is correct at all four edges and in the supported orientation(s); the reported transformed range matches the hit target.
+5. Long-press opens the intended edit/menu state once, and release/cancel produces no accidental launch.
+6. A failed touch stage is identified by name with raw evidence, and the owner test remains NOT TESTED until the owner confirms it.
+7. Offline event-replay tests cover tap, drag, cancel, multitouch, and stale-overlay regression cases.
 
-All checks below are required before declaring this component complete; report each with its evidence class.
-
-1. A traceable before/after matrix names each owned input, consumer, expected state, actual state, command/log and result label for this mission.
-2. The implementation has a focused deterministic test or inspection procedure covering the normal path and an injected unavailable/malformed/denied path specific to the selected backend.
-3. The UI/service exposes truthful readiness and error state: no optimistic success, duplicate status indicator, synthetic hardware reading, or silent fallback is accepted.
-4. Compatibility is demonstrated for the stated Fedora ARM64 target and existing Nuxel interaction model; unrelated navigation, touch focus, BG2 dock and USB recovery invariants are not regressed.
-5. A reviewer can reproduce the result from the report using exact commands, artifacts/hashes and exit codes; source/VM evidence remains labeled separately from live-device proof.
-6. For any physical validation, the owner gets short explicit steps, expected observation, stop condition and a place to record PASS/FAIL/timestamp. Missing phone access remains `NOT TESTED` or `BLOCKED`.
-
-## Hardware/privilege/rollback safety
-
-Never surprise-flash, write bootloader/partitions, replace the kernel, reboot a live phone, change radio firmware, brute-force amplifier controls, strobe a torch/LED, or remove the established speaker-volume protection. Obtain explicit owner approval before any live-device action. Prefer read-only discovery, dry runs and mock fixtures. Design rollback as a reversible userspace/config change with a documented pre-state, atomic or staged apply where possible, health check, and USB-console/rescue path. Stop immediately on uncertainty about target identity, power, boot mode, mounted filesystem, privileged authorization or rollback availability.
+## Hardware, privilege and rollback safety
+Touch testing requires physical finger input; never claim OWNER-VERIFIED from `evemu` or synthetic events. Preserve the USB console and the working A32/A34 input floor. No kernel replacement, flashing, or partition writes; if the vendor kernel has a proven charger-mode blocker, document the normal-reboot remedy.
+Before a live-device step, capture boot mode, target model/variant, deployed hashes, service state, and a tested userspace rollback. Preserve the USB console and the existing 25% speaker-volume cap. Never surprise-flash, write bootloader/partitions, replace the kernel, change radio firmware, or strobe an LED/torch without explicit owner approval. A missing phone or missing owner observation remains `NOT TESTED` or `BLOCKED`.
 
 ## Deliverables
-
-Deliver the narrowly scoped implementation, focused tests, and `docs/component-reports/r06.md` only after execution authorization. The report must contain: repo commit/tree state; changed files; source versus design decisions; command receipts and hashes; test matrix; device model/variant evidence; any owner observations; rollback procedure/receipt; and unresolved blockers. Do not claim release readiness, live deployment, audible output, sensor operation, radio operation, or physical control without direct evidence.
+- A narrowly scoped implementation on `nuxel/r06-touchscreen-fully-working`, with tests and docs for this component only.
+- `docs/component-reports/r06.md` containing: commit/tree state, changed files, observed pre-state, commands and exit codes, hashes, evidence-class matrix, owner test steps/results, rollback receipt, and unresolved blockers.
+- A concise handoff stating exactly what is SOURCE VERIFIED, BUILT, DEPLOYED, OWNER-VERIFIED, BLOCKED, and NOT TESTED.
 
 ## Stop conditions / known blockers
-
-Stop and ask the owner if implementation requires another component, an unverified driver/firmware/interface, destructive data mutation, sensitive credentials, external service/account, target access, or a security policy exception. Stop if results depend on unavailable S10+ hardware and leave a precise owner request rather than manufacturing a pass. A failed assertion must be triaged as stale versus regression with evidence—never weakened to skip. This prompt itself changes nothing and authorizes no deployment.
+Stop if the physical touch node is absent in a normal boot or if the first failing layer requires kernel/driver work beyond userspace. Do not widen into a launcher rewrite; report the precise blocker and the smallest safe next step.
+Stop rather than guessing if target identity, privilege, firmware/driver support, rollback availability, or physical safety cannot be established. A failed protected assertion must be triaged as stale versus regression with evidence; never convert it to a skip. This prompt authorizes no implementation, deployment, reboot, or release.
