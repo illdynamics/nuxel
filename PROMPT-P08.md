@@ -1,56 +1,55 @@
 # NUXEL P08 — Remaining live userspace and hardware integration
 STATUS: IMPLEMENTATION PROMPT ONLY — NOT EXECUTED
+BRANCH: `nuxel/p08-live-userspace-hardware-integration`
+BASE EVIDENCE SNAPSHOT: `e2aaf66951570a8e86211cb8b48060e6cd6773dd` (`v0.6.0-beta`)
 
 ## Mission
+Close the remaining gap between Nuxel's staged userspace and real S10+ hardware. This branch must produce an idempotent, evidence-driven deployment and readiness map for services, permissions, device nodes, compositor/display ownership, network, power, sensors, audio, and controls, while clearly refusing to invent capabilities that the running kernel does not expose.
 
-This is a future implementation mission for `nuxel/p08-live-userspace-hardware-integration`. Do not execute it merely by reading this file. A future agent may modify code, tests, documentation, images, services, or configuration only after an owner explicitly authorizes execution of this branch prompt. Keep the change limited to this component; do not merge, cherry-pick, deploy, flash, reboot, replace a kernel, or start an unrelated component.
+This file is a future implementation brief, not an instruction to execute now. A future agent may modify this branch only after the repository owner explicitly authorizes execution. Do not merge, deploy, flash, reboot the phone, or start another branch's component as part of this work.
 
 ## Repo-grounded current state
+Observed owners: `configs/nuxel/capabilities/hardware-subsystems.json`, `configs/nuxel/capabilities/connectivity-time-audio-buttons.json`, `tools/beta/live/nuxel_live.py`, `tools/beta/live/tests/`, `scripts/s10plus-debug-pack/nuxel-live-deploy.sh`, `images/s10plus/build-phone-rootfs-fedora.sh`, and `docs/beta-finalization/live/DEPLOYMENTS.md`. The capability manifests explicitly state that many subsystems are `OFFLINE_TESTED` or `NEEDS_OWNER_TEST`, never `VERIFIED_ON_S10PLUS`; treat that as the starting truth.
 
-**SOURCE VERIFIED:** at source base `e2aaf66951570a8e86211cb8b48060e6cd6773dd`, the following repository paths exist and are directly relevant to the investigation: `configs/nuxel/capabilities/hardware-subsystems.json, configs/nuxel/capabilities/connectivity-time-audio-buttons.json, images/s10plus/build-phone-rootfs-fedora.sh, docs/beta-finalization/live/DEPLOYMENTS.md`. Their presence establishes maintained configuration, code, test, asset, or evidence locations; it does *not* prove a built image or a live-device result. `docs/architecture.md` and `docs/beta-finalization/DEVICE-CAPABILITY-MANIFEST.md` (where present) are context, not a substitute for inspecting the cited owners and their callers at the execution commit.
-
-The current target is Fedora ARM64 for Galaxy S10+ SM-G975F / Exynos 9820, without a mandatory Android framework. Start by re-reading the cited files at the implementation commit, `git log`, `git grep`, manifests, unit files and existing A34–A40/beta-finalization evidence. Record what is observed separately from proposed work. Existing repository captures are historical evidence only: label outcomes as `SOURCE VERIFIED`, `BUILT`, `VM VERIFIED`, `LIVE-DEVICE DEPLOYED`, `OWNER-VERIFIED`, `BLOCKED`, or `NOT TESTED`. In particular, S10+ speaker audio remains unverified unless later evidence proves it; user-reported Home/Back/Recents, virtual-keyboard, icon-drag and torch issues require fresh verification only when this component touches them.
-
-This component’s intended result is: Map S10+ userspace-to-hardware integrations across units, permissions, device nodes, compositor, network, power, sensors, audio and controls. Specify idempotent service readiness and deployment evidence without presuming access to a phone or substituting fake capabilities.
+Use `SOURCE VERIFIED`, `BUILT`, `VM VERIFIED`, `LIVE-DEVICE DEPLOYED`, `OWNER-VERIFIED`, `BLOCKED`, and `NOT TESTED` as separate labels. A file existing, a unit being active, a mock returning PASS, or a command exiting 0 is not proof of physical hardware behaviour.
 
 ## Precise component boundaries
+Owns the deployment/readiness orchestration across existing service units and capability files. Does not own each hardware driver implementation; consume the per-component diagnostics and report missing interfaces as blockers. No Android HAL, no second compositor, no parallel daemon, and no fabricated device node.
 
-Own the smallest end-to-end path needed for this mission, including its configuration/schema, runtime consumer, status/reporting surface and tests. Preserve the established Nuxel launcher/WebKit/compositor approach, touch UI, three-button navigation, haptics, BG1/BG2 dock selection (BG2 is default), Fedora ARM64 compatibility and USB-console recoverability. Do not silently introduce Android APIs, a second competing daemon, a generic replacement UI, fictitious kernel nodes, unsafe amplifier/LED/radio control, or a capability claim based solely on a mock.
-
-Out of scope without a separate owner-approved task: bootloader/partition writes, flashing, kernel replacement, radio firmware changes, live-phone reboot, factory reset, destructive cleanup, and merge/release activity. If investigation finds no suitable owner, state **“Not found—locate or add the smallest appropriate module”** and document why rather than fabricating a path.
+Stay inside this boundary. Do not silently alter unrelated launcher, compositor, boot, radio, security, or release behaviour. If a cited path is absent at execution time, record **“Not found—locate or add the smallest appropriate module”** and prove why; never invent a path, symbol, device node, or observed hardware result.
 
 ## Implementation work packages
-
-1. Establish a component evidence baseline. Trace every cited path to its producer and consumer, enumerate service/unit/package/schema boundaries, and make a state table with source evidence, runtime prerequisite, owner and current status. Preserve command lines, stderr and content hashes in the future report.
-2. Reproduce the component-specific failure or missing capability with deterministic host/VM-safe fixtures first. Define the exact observable state transition and invariant for: Map S10+ userspace-to-hardware integrations across units, permissions, device nodes, compositor, network, power, sensors, audio and controls. Specify idempotent service readiness and deployment evidence without presuming access to a phone or substituting fake capabilities. Do not label a UI rendering, a mock, or an archive member as a device pass.
-3. Design the smallest integration change after the trace is complete. Specify data ownership, lifecycle/ordering, error propagation, privilege boundary, persistence and compatibility with existing launcher/compositor and Fedora services. Resolve duplicate state sources rather than adding a parallel control path.
-4. Implement guarded diagnostics and observability. Produce actionable logs/structured status that expose interface identity, readiness, selected backend, failure reason and fallback without leaking secrets. Add rate/size bounds where event, log, media or sensor streams are involved.
-5. Add component-focused tests and negative cases alongside the implementation. Use existing project tests where applicable (for example `tools/beta/tests/test-release-tools.sh` and `boot/s10plus/tests/test-boot-image-gates.sh` only when their scope applies); add no meaningless skip. Record commands, environment and output hashes.
-6. Write `docs/component-reports/p08.md` when execution is authorized. Include a source inventory, change list, matrix of result labels, commands/exit codes, test evidence, owner-facing live steps, known gaps, rollback receipt and explicit distinction between simulated and physical evidence.
+1. Build a service/dependency matrix from installed unit files under `services/`, `configs/`, and `tools/s10plus/a33/`, mapping each unit to device nodes, config files, user/group, D-Bus name, and readiness probe.
+2. Extend the live deployment plan so every changed file has source hash, destination hash, atomic replace, rollback receipt, and an explicit service restart boundary.
+3. Add an idempotent preflight that detects boot mode (`/proc/cmdline`), target model/variant, USB-console availability, disk space, and conflicting owners before any write.
+4. Implement per-subsystem readiness probes that distinguish ABSENT_INTERFACE, NOT_BOUND, PERMISSION_DENIED, SERVICE_FAILED, and READY; wire them to the existing capability manifest states.
+5. Add a dry-run mode that emits the full planned action graph and refuses paths outside the verified Nuxel webroot/data/config roots.
+6. Test interruption recovery: rerun after a partial deployment and prove convergence without duplicate daemons or lost rollback data.
+7. Produce a signed-off live checklist that remains BLOCKED when the phone or a required interface is absent.
 
 ## Failure modes and diagnostics
-
-Treat absent nodes, firmware, permissions, services, IPC endpoints, package dependencies, display/input focus, route ownership and stale cached state as separate hypotheses. Capture the exact interface name, udev/sysfs/proc or service evidence, version, timestamp and first failure; do not infer hardware from a nominal configuration file. Guard against races during boot/suspend/resume, duplicate events, stale UI state, partial writes, interrupted updates and privilege escalation. If a hardware-dependent prerequisite is missing, collect the relevant kernel configuration/device-tree/log evidence and report the smallest grounded next step as `BLOCKED` rather than widening scope.
+- Watch for duplicate ownership between `nuxel-haptics.service` and the haptics bridge, the historical `/var/lib/nuxel/notifications/history.json` split path, webroot remapping from the repo to `/usr/share/nuxel`, charger-mode boots that disable input, and services that report active while their readiness probe still fails.
+- Preserve the first failing layer, exact command, stderr, timestamp, versions, and owning service/module. Do not blur missing hardware, missing firmware, missing kernel support, bad permissions, stale cache, and an actual code regression into one failure.
 
 ## Verification and acceptance
+A future agent must report every item below with its evidence class and exact command or inspection:
+1. The matrix covers every deployed Nuxel service and names its real unit, device dependency, config, user, and probe.
+2. A dry run changes no files and prints exact source/destination paths and hashes.
+3. A repeated apply is idempotent: no duplicate units, no changed hashes on unchanged files, and no restarted service without need.
+4. Every capability state is derived from a probe or cited evidence; no manifest line is promoted to VERIFIED without owner evidence.
+5. Rollback restores every touched path and service state from recorded receipts.
+6. A missing boot mode, device node, firmware, or permission yields a precise BLOCKED state, not a fake READY.
+7. The live checklist separates SOURCE VERIFIED, DEPLOYED, and OWNER-VERIFIED outcomes.
 
-All checks below are required before declaring this component complete; report each with its evidence class.
-
-1. A traceable before/after matrix names each owned input, consumer, expected state, actual state, command/log and result label for this mission.
-2. The implementation has a focused deterministic test or inspection procedure covering the normal path and an injected unavailable/malformed/denied path specific to the selected backend.
-3. The UI/service exposes truthful readiness and error state: no optimistic success, duplicate status indicator, synthetic hardware reading, or silent fallback is accepted.
-4. Compatibility is demonstrated for the stated Fedora ARM64 target and existing Nuxel interaction model; unrelated navigation, touch focus, BG2 dock and USB recovery invariants are not regressed.
-5. A reviewer can reproduce the result from the report using exact commands, artifacts/hashes and exit codes; source/VM evidence remains labeled separately from live-device proof.
-6. For any physical validation, the owner gets short explicit steps, expected observation, stop condition and a place to record PASS/FAIL/timestamp. Missing phone access remains `NOT TESTED` or `BLOCKED`.
-
-## Hardware/privilege/rollback safety
-
-Never surprise-flash, write bootloader/partitions, replace the kernel, reboot a live phone, change radio firmware, brute-force amplifier controls, strobe a torch/LED, or remove the established speaker-volume protection. Obtain explicit owner approval before any live-device action. Prefer read-only discovery, dry runs and mock fixtures. Design rollback as a reversible userspace/config change with a documented pre-state, atomic or staged apply where possible, health check, and USB-console/rescue path. Stop immediately on uncertainty about target identity, power, boot mode, mounted filesystem, privileged authorization or rollback availability.
+## Hardware, privilege and rollback safety
+Use read-only probes and `apply:false` first. Never infer that a Mac/Git checkout path equals the live phone path. Preserve a reconnectable USB console before restarting networking, display, or web services. Never write protected partitions or flash.
+Before a live-device step, capture boot mode, target model/variant, deployed hashes, service state, and a tested userspace rollback. Preserve the USB console and the existing 25% speaker-volume cap. Never surprise-flash, write bootloader/partitions, replace the kernel, change radio firmware, or strobe an LED/torch without explicit owner approval. A missing phone or missing owner observation remains `NOT TESTED` or `BLOCKED`.
 
 ## Deliverables
-
-Deliver the narrowly scoped implementation, focused tests, and `docs/component-reports/p08.md` only after execution authorization. The report must contain: repo commit/tree state; changed files; source versus design decisions; command receipts and hashes; test matrix; device model/variant evidence; any owner observations; rollback procedure/receipt; and unresolved blockers. Do not claim release readiness, live deployment, audible output, sensor operation, radio operation, or physical control without direct evidence.
+- A narrowly scoped implementation on `nuxel/p08-live-userspace-hardware-integration`, with tests and docs for this component only.
+- `docs/component-reports/p08.md` containing: commit/tree state, changed files, observed pre-state, commands and exit codes, hashes, evidence-class matrix, owner test steps/results, rollback receipt, and unresolved blockers.
+- A concise handoff stating exactly what is SOURCE VERIFIED, BUILT, DEPLOYED, OWNER-VERIFIED, BLOCKED, and NOT TESTED.
 
 ## Stop conditions / known blockers
-
-Stop and ask the owner if implementation requires another component, an unverified driver/firmware/interface, destructive data mutation, sensitive credentials, external service/account, target access, or a security policy exception. Stop if results depend on unavailable S10+ hardware and leave a precise owner request rather than manufacturing a pass. A failed assertion must be triaged as stale versus regression with evidence—never weakened to skip. This prompt itself changes nothing and authorizes no deployment.
+Stop if the real active webroot, boot mode, or target identity cannot be established. Stop if deployment would overwrite an unbacked-up live file or if two components claim the same device/service. Report BLOCKED rather than enabling a guessed capability.
+Stop rather than guessing if target identity, privilege, firmware/driver support, rollback availability, or physical safety cannot be established. A failed protected assertion must be triaged as stale versus regression with evidence; never convert it to a skip. This prompt authorizes no implementation, deployment, reboot, or release.
