@@ -1,56 +1,55 @@
 # NUXEL R51 — Security threat model and enforcement proof
 STATUS: IMPLEMENTATION PROMPT ONLY — NOT EXECUTED
+BRANCH: `nuxel/r51-threat-model-enforcement-proof`
+BASE EVIDENCE SNAPSHOT: `e2aaf66951570a8e86211cb8b48060e6cd6773dd` (`v0.6.0-beta`)
 
 ## Mission
+Produce a Nuxel threat model for boot trust, unlock, USB/console, apps, supply chain, remote access, secrets, updates, and physical access, and prove each advertised mitigation links to code or executable evidence. Record residual trust assumptions and unsupported mechanisms honestly.
 
-This is a future implementation mission for `nuxel/r51-threat-model-enforcement-proof`. Do not execute it merely by reading this file. A future agent may modify code, tests, documentation, images, services, or configuration only after an owner explicitly authorizes execution of this branch prompt. Keep the change limited to this component; do not merge, cherry-pick, deploy, flash, reboot, replace a kernel, or start an unrelated component.
+This file is a future implementation brief, not an instruction to execute now. A future agent may modify this branch only after the repository owner explicitly authorizes execution. Do not merge, deploy, flash, reboot the phone, or start another branch's component as part of this work.
 
 ## Repo-grounded current state
+Observed owners: `docs/architecture.md`, `images/config/verity.conf`, `configs/nuxel/security/README.md`, `configs/nuxel/security/privacy-config.json`, `configs/nftables/`, `configs/apparmor/`, `configs/hardened-malloc.conf`, `configs/dbus/`, `services/nuxel-console/`, and `docs/beta-finalization/release/ROLLBACK.md`. Hardening configs exist; enforcement must be demonstrated.
 
-**SOURCE VERIFIED:** at source base `e2aaf66951570a8e86211cb8b48060e6cd6773dd`, the following repository paths exist and are directly relevant to the investigation: `docs/architecture.md, images/config/verity.conf, configs/nuxel/security/remote-access.json, configs/apparmor/systemd/nuxel-apparmor-enforce.service`. Their presence establishes maintained configuration, code, test, asset, or evidence locations; it does *not* prove a built image or a live-device result. `docs/architecture.md` and `docs/beta-finalization/DEVICE-CAPABILITY-MANIFEST.md` (where present) are context, not a substitute for inspecting the cited owners and their callers at the execution commit.
-
-The current target is Fedora ARM64 for Galaxy S10+ SM-G975F / Exynos 9820, without a mandatory Android framework. Start by re-reading the cited files at the implementation commit, `git log`, `git grep`, manifests, unit files and existing A34–A40/beta-finalization evidence. Record what is observed separately from proposed work. Existing repository captures are historical evidence only: label outcomes as `SOURCE VERIFIED`, `BUILT`, `VM VERIFIED`, `LIVE-DEVICE DEPLOYED`, `OWNER-VERIFIED`, `BLOCKED`, or `NOT TESTED`. In particular, S10+ speaker audio remains unverified unless later evidence proves it; user-reported Home/Back/Recents, virtual-keyboard, icon-drag and torch issues require fresh verification only when this component touches them.
-
-This component’s intended result is: Write a threat model for boot trust, unlock, USB, apps, supply chain, remote console, secrets and updates. Each advertised mitigation must link to code or executable evidence; record residual unsupported trust mechanisms.
+Use `SOURCE VERIFIED`, `BUILT`, `VM VERIFIED`, `LIVE-DEVICE DEPLOYED`, `OWNER-VERIFIED`, `BLOCKED`, and `NOT TESTED` as separate labels. A file existing, a unit being active, a mock returning PASS, or a command exiting 0 is not proof of physical hardware behaviour.
 
 ## Precise component boundaries
+Owns the threat model, asset/trust-boundary inventory, mitigation-to-evidence map, and residual-risk register. Does not own every implementation fix. No green checklist without executable evidence.
 
-Own the smallest end-to-end path needed for this mission, including its configuration/schema, runtime consumer, status/reporting surface and tests. Preserve the established Nuxel launcher/WebKit/compositor approach, touch UI, three-button navigation, haptics, BG1/BG2 dock selection (BG2 is default), Fedora ARM64 compatibility and USB-console recoverability. Do not silently introduce Android APIs, a second competing daemon, a generic replacement UI, fictitious kernel nodes, unsafe amplifier/LED/radio control, or a capability claim based solely on a mock.
-
-Out of scope without a separate owner-approved task: bootloader/partition writes, flashing, kernel replacement, radio firmware changes, live-phone reboot, factory reset, destructive cleanup, and merge/release activity. If investigation finds no suitable owner, state **“Not found—locate or add the smallest appropriate module”** and document why rather than fabricating a path.
+Stay inside this boundary. Do not silently alter unrelated launcher, compositor, boot, radio, security, or release behaviour. If a cited path is absent at execution time, record **“Not found—locate or add the smallest appropriate module”** and prove why; never invent a path, symbol, device node, or observed hardware result.
 
 ## Implementation work packages
-
-1. Establish a component evidence baseline. Trace every cited path to its producer and consumer, enumerate service/unit/package/schema boundaries, and make a state table with source evidence, runtime prerequisite, owner and current status. Preserve command lines, stderr and content hashes in the future report.
-2. Reproduce the component-specific failure or missing capability with deterministic host/VM-safe fixtures first. Define the exact observable state transition and invariant for: Write a threat model for boot trust, unlock, USB, apps, supply chain, remote console, secrets and updates. Each advertised mitigation must link to code or executable evidence; record residual unsupported trust mechanisms. Do not label a UI rendering, a mock, or an archive member as a device pass.
-3. Design the smallest integration change after the trace is complete. Specify data ownership, lifecycle/ordering, error propagation, privilege boundary, persistence and compatibility with existing launcher/compositor and Fedora services. Resolve duplicate state sources rather than adding a parallel control path.
-4. Implement guarded diagnostics and observability. Produce actionable logs/structured status that expose interface identity, readiness, selected backend, failure reason and fallback without leaking secrets. Add rate/size bounds where event, log, media or sensor streams are involved.
-5. Add component-focused tests and negative cases alongside the implementation. Use existing project tests where applicable (for example `tools/beta/tests/test-release-tools.sh` and `boot/s10plus/tests/test-boot-image-gates.sh` only when their scope applies); add no meaningless skip. Record commands, environment and output hashes.
-6. Write `docs/component-reports/r51.md` when execution is authorized. Include a source inventory, change list, matrix of result labels, commands/exit codes, test evidence, owner-facing live steps, known gaps, rollback receipt and explicit distinction between simulated and physical evidence.
+1. Define assets, adversaries, trust boundaries, and attack surfaces for boot, recovery, USB, console, apps, updates, radios, and secrets.
+2. Map each claimed mitigation to a code path/command/test and mark it ENFORCED, CONFIGURED_NOT_VERIFIED, or ABSENT.
+3. Verify boot integrity/verity, signed artifacts, update provenance, LSM enforcement, firewall, sandbox, and privilege boundaries where claimed.
+4. Analyze the USB/live-console path as a privileged surface, including authentication and recovery.
+5. Add executable checks/fixtures for the most important mitigations.
+6. Record residual risks and unsupported trust assumptions (e.g., vendor kernel/firmware, unlocked bootloader).
+7. Produce a machine-readable mitigation matrix plus a human report.
 
 ## Failure modes and diagnostics
-
-Treat absent nodes, firmware, permissions, services, IPC endpoints, package dependencies, display/input focus, route ownership and stale cached state as separate hypotheses. Capture the exact interface name, udev/sysfs/proc or service evidence, version, timestamp and first failure; do not infer hardware from a nominal configuration file. Guard against races during boot/suspend/resume, duplicate events, stale UI state, partial writes, interrupted updates and privilege escalation. If a hardware-dependent prerequisite is missing, collect the relevant kernel configuration/device-tree/log evidence and report the smallest grounded next step as `BLOCKED` rather than widening scope.
+- Watch for AppArmor profiles in complain mode, SELinux permissive, verity configured but not active, unsigned local update paths, and a console service that bypasses firewall/polkit. Verify runtime state.
+- Preserve the first failing layer, exact command, stderr, timestamp, versions, and owning service/module. Do not blur missing hardware, missing firmware, missing kernel support, bad permissions, stale cache, and an actual code regression into one failure.
 
 ## Verification and acceptance
+A future agent must report every item below with its evidence class and exact command or inspection:
+1. The model covers assets, adversaries, boundaries, and the USB/console/update paths.
+2. Every advertised mitigation links to code or a command/test and has an enforcement status.
+3. A configured-but-not-enforced control is not marked ENFORCED.
+4. Boot/update/sandbox/firewall claims are tested or marked UNKNOWN.
+5. Residual risks and vendor/firmware trust assumptions are explicit.
+6. At least one negative test proves a claimed boundary denies unauthorized access.
+7. The report does not equate source presence with runtime enforcement.
 
-All checks below are required before declaring this component complete; report each with its evidence class.
-
-1. A traceable before/after matrix names each owned input, consumer, expected state, actual state, command/log and result label for this mission.
-2. The implementation has a focused deterministic test or inspection procedure covering the normal path and an injected unavailable/malformed/denied path specific to the selected backend.
-3. The UI/service exposes truthful readiness and error state: no optimistic success, duplicate status indicator, synthetic hardware reading, or silent fallback is accepted.
-4. Compatibility is demonstrated for the stated Fedora ARM64 target and existing Nuxel interaction model; unrelated navigation, touch focus, BG2 dock and USB recovery invariants are not regressed.
-5. A reviewer can reproduce the result from the report using exact commands, artifacts/hashes and exit codes; source/VM evidence remains labeled separately from live-device proof.
-6. For any physical validation, the owner gets short explicit steps, expected observation, stop condition and a place to record PASS/FAIL/timestamp. Missing phone access remains `NOT TESTED` or `BLOCKED`.
-
-## Hardware/privilege/rollback safety
-
-Never surprise-flash, write bootloader/partitions, replace the kernel, reboot a live phone, change radio firmware, brute-force amplifier controls, strobe a torch/LED, or remove the established speaker-volume protection. Obtain explicit owner approval before any live-device action. Prefer read-only discovery, dry runs and mock fixtures. Design rollback as a reversible userspace/config change with a documented pre-state, atomic or staged apply where possible, health check, and USB-console/rescue path. Stop immediately on uncertainty about target identity, power, boot mode, mounted filesystem, privileged authorization or rollback availability.
+## Hardware, privilege and rollback safety
+Read-only analysis and fixtures by default. Do not weaken controls to make a test pass. No secret exposure in the threat model.
+Before a live-device step, capture boot mode, target model/variant, deployed hashes, service state, and a tested userspace rollback. Preserve the USB console and the existing 25% speaker-volume cap. Never surprise-flash, write bootloader/partitions, replace the kernel, change radio firmware, or strobe an LED/torch without explicit owner approval. A missing phone or missing owner observation remains `NOT TESTED` or `BLOCKED`.
 
 ## Deliverables
-
-Deliver the narrowly scoped implementation, focused tests, and `docs/component-reports/r51.md` only after execution authorization. The report must contain: repo commit/tree state; changed files; source versus design decisions; command receipts and hashes; test matrix; device model/variant evidence; any owner observations; rollback procedure/receipt; and unresolved blockers. Do not claim release readiness, live deployment, audible output, sensor operation, radio operation, or physical control without direct evidence.
+- A narrowly scoped implementation on `nuxel/r51-threat-model-enforcement-proof`, with tests and docs for this component only.
+- `docs/component-reports/r51.md` containing: commit/tree state, changed files, observed pre-state, commands and exit codes, hashes, evidence-class matrix, owner test steps/results, rollback receipt, and unresolved blockers.
+- A concise handoff stating exactly what is SOURCE VERIFIED, BUILT, DEPLOYED, OWNER-VERIFIED, BLOCKED, and NOT TESTED.
 
 ## Stop conditions / known blockers
-
-Stop and ask the owner if implementation requires another component, an unverified driver/firmware/interface, destructive data mutation, sensitive credentials, external service/account, target access, or a security policy exception. Stop if results depend on unavailable S10+ hardware and leave a precise owner request rather than manufacturing a pass. A failed assertion must be triaged as stale versus regression with evidence—never weakened to skip. This prompt itself changes nothing and authorizes no deployment.
+Stop if a claimed mitigation cannot be observed; report UNKNOWN/ABSENT rather than assuming enforcement.
+Stop rather than guessing if target identity, privilege, firmware/driver support, rollback availability, or physical safety cannot be established. A failed protected assertion must be triaged as stale versus regression with evidence; never convert it to a skip. This prompt authorizes no implementation, deployment, reboot, or release.
