@@ -1,0 +1,38 @@
+timestamp_utc=2026-10-20T15:01:06Z
+checkout=3bf72df8b09a185dbdba225f9b0521e71f920938
+=== icon registry generation check ===
+ICON-REGISTRY-OK 23 assets (app=12 navigation=3 toggle=8)
+EXIT=0
+=== icon delivery (122 checks) ===
+PASS Quick Settings artwork is contained, not clipped
+PASS navigation artwork is contained, not clipped
+PASS Quick Settings image error binding is idempotent
+PASS negative: wrong /pwa icon URL is rejected
+PASS A44 icon delivery: 122 checks
+EXIT=0
+=== service-worker cache behaviour ===
+PASS clear-cache does not erase unrelated caches
+
+service-worker cache behaviour passed
+EXIT=0
+=== A34 icon assets ===
+PASS 23 active UI icon URLs resolve from the generated registry and are deployable
+PASS boot/volume MP3 packaged and sound service installed by S10+ image builder
+EXIT=0
+=== A39 asset packaging ===
+PASS nuxel-bottom-bar2.png SHA-256 be60ece34adcf0179d1a94e4cbca309bd8f9bd629c14aedbd00d6b32d1ccf0e3
+PASS A39 asset packaging, default BG2, selector, persistence, Home lock, desktops, scrollbar, battery, deploy manifest
+EXIT=0
+=== canonical app registry ===
+EXIT=0
+=== syntax ===
+EXIT=0
+=== launcher registry (known pre-existing failures) ===
+FAIL closing the app removes the frame (returns to the launcher)  
+FAIL closing the app removes the close control  
+FAIL closing the app removes loading/error status and enters CLOSED  
+FAIL activation of a second app does not stack frames (one owner)  2
+FAIL switching from native Terminal requests host surface cleanup  open-terminal
+FAIL late Terminal acknowledgement cannot overwrite the new app  
+6 FAILURES (1 warning(s))
+EXIT=1
