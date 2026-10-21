@@ -1,0 +1,16 @@
+{
+  "at": "2026-10-21T19:51:30+0200",
+  "files": {
+    "keyboard.json": "9cef7e92b8ba4d64b2e6d8e70fc10706e9fc0d899930925f6e47032504fd55d2",
+    "keyboard.schema.json": "6e7776b02bd16883e5dc4afdc3b0ce432d71734c68f0613995b5305fc410d561",
+    "qs.js": "35538b976a038c6ea92c89351b3a5b3ef68796a3ad217955a6dd59b8910655b1",
+    "status-bar.css": "bfae0198e7eff93ac824fc1cdb4f2803bb4b692fa5be1f7045c24348cc5bfbf2",
+    "settings-index.html": "1ceea351d3a4e047a2ec8f7b2cfeed2de2fb1d7658fa91cecfd756afbe7aadcc",
+    "settings.js": "dc71eeb4d6fdc84220c5178ba04b8d12c2ddd671ef655dc9860ec4ea55b6f9c1",
+    "settings.css": "e305a82028ef4e3399e1a553b3c9a0bacf0b05953ac240552ddbf9dd4ffc6fc6",
+    "settings-model.js": "df1fe0cb81d03d9e6a147bc26245592ccebdb92a921fafcfab1a98d708b43c38",
+    "bridge.py": "393ecef8a40bb3f04ee1ea2ab8bccb6d38cbace6d89f03bcbb702e7c57f3a43a",
+    "api.py": "45a8e0cd6e7fc294eeb4aaa4f0979575a839db37193cbb3ba9e7fe1031f18070",
+    "nuxelctl": "b002daf2e1c79ef6cd9a60f7f868470534bec592e01d1c945ab447bb4203bf1b"
+  }
+}
