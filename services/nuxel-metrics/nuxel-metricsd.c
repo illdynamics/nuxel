@@ -162,7 +162,7 @@ static void make_json(char *out, size_t cap) {
   const char *gpu_status = "unavailable";
   const char *cpu_frequency_status = "unavailable";
   const char *gpu_frequency_status = "unavailable";
-  const char *gpu_memory_status = "unavailable";
+  const char *gpu_memory_status = "unavailable_shared_memory";
   if (read_cpu(&now)) {
     if (cpu_percent(&previous, &now, &cpu)) {
       cpu_status = "ok";
@@ -188,7 +188,7 @@ static void make_json(char *out, size_t cap) {
   if (read_cpu_frequency(&cpu_mhz)) cpu_frequency_status = "ok";
   if (read_gpu_frequency(&gpu_mhz)) gpu_frequency_status = "ok";
   if (read_gpu_memory(&gpu_memory_used_kib)) {
-    gpu_memory_status = !strcmp(mem_status, "ok") ? "ok" : "no_memory_budget";
+    gpu_memory_status = !strcmp(mem_status, "ok") ? "ok" : "unavailable_shared_memory";
   }
   if (!strcmp(cpu_status, "ok")) snprintf(cpu_json, sizeof(cpu_json), "%.1f", cpu); else strcpy(cpu_json, "null");
   if (!strcmp(mem_status, "ok")) snprintf(memory_json, sizeof(memory_json), "%.1f", memory); else strcpy(memory_json, "null");

@@ -532,21 +532,56 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
             except Exception:
                 pass
 
-        # Battery detection (live from sysfs when a battery is present)
+        # Battery detection (live from sysfs).  The S10+ exposes its battery as
+        # /sys/class/power_supply/battery (lowercase), NOT as BAT0/BAT1.  The
+        # old check only matched a "BAT" prefix and therefore fell through to a
+        # fabricated 100% mock on this handset.  Select the node whose `type`
+        # file reads "Battery", which works for both naming schemes, and report
+        # the real current full capacity so the UI can represent it honestly.
         bat_source = "mock"
-        bat_info = {"level": 100, "charging": True}
+        bat_info = {"level": 100, "charging": True, "available": False}
         try:
-            bat_dirs = [d for d in _os.listdir("/sys/class/power_supply") if d.startswith("BAT")]
-            if bat_dirs:
-                bat_source = "live:sysfs"
-                cap_file = "/sys/class/power_supply/" + bat_dirs[0] + "/capacity"
-                status_file = "/sys/class/power_supply/" + bat_dirs[0] + "/status"
+            bat_dir = None
+            for d in sorted(_os.listdir("/sys/class/power_supply")):
+                tfile = "/sys/class/power_supply/" + d + "/type"
+                if not _os.path.exists(tfile):
+                    continue
+                try:
+                    with open(tfile) as f:
+                        if f.read().strip().lower() == "battery":
+                            bat_dir = d
+                            break
+                except Exception:
+                    continue
+            if bat_dir is None:
+                # Fall back to the BAT* convention (standard ACPI laptops).
+                bat_dirs = [d for d in _os.listdir("/sys/class/power_supply") if d.startswith("BAT")]
+                if bat_dirs:
+                    bat_dir = sorted(bat_dirs)[0]
+            if bat_dir:
+                base = "/sys/class/power_supply/" + bat_dir + "/"
+                bat_source = "live:sysfs:" + bat_dir
+                cap_file = base + "capacity"
+                status_file = base + "status"
+                full_file = base + "charge_full"
+                design_file = base + "charge_full_design"
                 if _os.path.exists(cap_file):
                     with open(cap_file) as f:
                         bat_info["level"] = int(f.read().strip())
                 if _os.path.exists(status_file):
                     with open(status_file) as f:
                         bat_info["charging"] = f.read().strip() in ("Charging", "Full")
+                # Actual capacity representation (microampere-hours as reported
+                # by the fuel gauge).  charge_full is the currently usable full
+                # capacity; charge_full_design is the factory design capacity.
+                for key, path in (("capacity_uah", full_file), ("design_capacity_uah", design_file)):
+                    if _os.path.exists(path):
+                        try:
+                            with open(path) as f:
+                                bat_info[key] = int(f.read().strip())
+                        except Exception:
+                            pass
+                bat_info["available"] = True
         except Exception:
             pass
 

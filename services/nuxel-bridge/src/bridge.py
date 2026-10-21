@@ -47,6 +47,61 @@ logger = logging.getLogger('nuxel-bridge')
 BUS_NAME = 'org.nuxel.Bridge'
 INTERFACE_NAME = 'org.nuxel.Bridge'
 
+
+def read_battery_status():
+    """Read the real S10+ fuel gauge by kernel `type=Battery`, never BAT* name.
+
+    Returns level=None when the node is absent/malformed/out of range so the UI
+    can show an em dash instead of fabricating 0% or 100%.  Also reports the
+    actual full capacity in microampere-hours so the launcher can represent real
+    hardware capacity (A48) and not a mock.
+    """
+    base_root = '/sys/class/power_supply'
+    try:
+        names = os.listdir(base_root)
+    except OSError as exc:
+        return {'level': None, 'charging': False, 'available': False,
+                'source': 'unavailable:' + type(exc).__name__}
+    candidates = []
+    for name in names:
+        base = os.path.join(base_root, name)
+        try:
+            with open(os.path.join(base, 'type')) as f:
+                if f.read().strip() != 'Battery':
+                    continue
+        except OSError:
+            continue
+        candidates.append((0 if name == 'battery' else 1, name, base))
+    candidates.sort()
+    for _, name, base in candidates:
+        try:
+            with open(os.path.join(base, 'capacity')) as f:
+                level = int(float(f.read().strip()))
+        except (OSError, ValueError):
+            continue
+        if not 0 <= level <= 100:
+            continue
+        charging = False
+        try:
+            with open(os.path.join(base, 'status')) as f:
+                charging = f.read().strip() in ('Charging', 'Full')
+        except OSError:
+            pass
+        result = {'level': level, 'charging': bool(charging), 'available': True,
+                  'source': 'sysfs:' + name}
+        for key, fname in (('capacity_uah', 'charge_full'),
+                           ('design_capacity_uah', 'charge_full_design')):
+            try:
+                with open(os.path.join(base, fname)) as f:
+                    value = int(float(f.read().strip()))
+                if value > 0:
+                    result[key] = value
+            except (OSError, ValueError):
+                pass
+        return result
+    return {'level': None, 'charging': False, 'available': False,
+            'source': 'unavailable'}
+
 # PWA<->host protocol pin (briq-04c). Same env names as the systemd units and the
 # HTTP layer, so `systemctl show -p Environment` shows exactly what is enforced.
 BRIDGE_PROTOCOL_VERSION = os.environ.get('NUXEL_BRIDGE_PROTOCOL_VERSION', '1')
@@ -868,6 +923,7 @@ class NuxelBridgeService(dbus.service.Object):
     def GetPhoneStatus(self, app_id):
         result = {'modem': self.modem.get_status(),
                    'network': self.network.get_status(),
+                   'battery': read_battery_status(),
                    'timestamp': time.time()}
         return json.dumps(result)
 
