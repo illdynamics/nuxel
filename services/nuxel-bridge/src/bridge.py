@@ -556,6 +556,47 @@ class GeoClueConnector:
             return {'success': False, 'error': str(e)}
 
 
+
+
+class OrientationConnector:
+    """Proxy to the ONE orientation policy implementation (nuxel-orientationd).
+
+    The bridge must not re-implement the seven-mode table or the hysteresis
+    policy; it delegates to the daemon (subprocess) exactly as nuxelctl
+    delegates to the diag scripts, so there is a single source of truth. A
+    missing daemon / failed call is reported honestly (``success: False``),
+    never replaced with a mock mode.
+    """
+
+    BIN = os.environ.get("NUXEL_ORIENTATIOND", "/usr/libexec/nuxel/nuxel-orientationd")
+
+    def _run(self, *args):
+        try:
+            proc = subprocess.run(
+                [self.BIN, *args, "--json"], capture_output=True,
+                text=True, timeout=6)
+        except (OSError, subprocess.SubprocessError) as exc:
+            return {"success": False, "error": "orientation daemon unavailable: %s" % exc}
+        if not proc.stdout.strip():
+            return {"success": False, "error": "orientation daemon returned no output",
+                    "stderr": proc.stderr.strip()}
+        try:
+            return json.loads(proc.stdout)
+        except ValueError:
+            return {"success": False, "error": "orientation daemon returned non-JSON",
+                    "stderr": proc.stderr.strip()[:200]}
+
+    def get_status(self):
+        return self._run("status")
+
+    def modes(self):
+        return self._run("modes")
+
+    def set_mode(self, mode):
+        if not isinstance(mode, str) or not mode.strip():
+            return {"success": False, "error": "invalid mode value"}
+        return self._run("set", mode.strip())
+
 # ============================================================
 # Nuxel Portal Interface
 # ============================================================
@@ -672,6 +713,7 @@ class NuxelBridgeService(dbus.service.Object):
         self.modem = ModemManagerConnector()
         self.network = NetworkManagerConnector()
         self.geoclue = GeoClueConnector()
+        self.orientation = OrientationConnector()
         
         # Initialize connectors in background
         self._init_connectors()
@@ -988,7 +1030,26 @@ class NuxelBridgeService(dbus.service.Object):
             except Exception as e2:
                 return json.dumps({'success': False, 'error': '%s; fallback: %s' % (e, e2)})
     
+
+    # ---------- D-Bus: Orientation ----------
+
+    @dbus.service.method(INTERFACE_NAME, in_signature='s', out_signature='s')
+    def OrientationGet(self, app_id):
+        """Current orientation state: mode, effective, allowed, sensor, compositor."""
+        return json.dumps(self.orientation.get_status())
+
+    @dbus.service.method(INTERFACE_NAME, in_signature='s', out_signature='s')
+    def OrientationModes(self, app_id):
+        """The seven named modes with allowed sets and auto flags."""
+        return json.dumps(self.orientation.modes())
+
+    @dbus.service.method(INTERFACE_NAME, in_signature='ss', out_signature='s')
+    def OrientationSet(self, app_id, mode):
+        """Validate and persist a mode; reject malformed values."""
+        return json.dumps(self.orientation.set_mode(mode))
+
     # ---------- D-Bus: Signals ----------
+
     
     @dbus.service.signal(INTERFACE_NAME, signature='s')
     def PermissionChanged(self, data):

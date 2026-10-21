@@ -779,6 +779,9 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
         ("storage", "read"): "StorageRead",
         ("mail", "imap-list"): "MailImapList",
         ("mail", "smtp-send"): "MailSmtpSend",
+        ("orientation", "get"): "OrientationGet",
+        ("orientation", "modes"): "OrientationModes",
+        ("orientation", "set"): "OrientationSet",
     }
 
     # Map an RPC method to the D-Bus positional args it needs. The bridge's
@@ -803,6 +806,9 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
         "CallInitiate": lambda app_id, params: [app_id, params.get("number", "")],
         "SmsSend": lambda app_id, params: [app_id, params.get("number", ""), params.get("text", "")],
         "SendNotification": lambda app_id, params: [app_id, params.get("title", ""), params.get("body", "")],
+        "OrientationGet": lambda app_id, params: [app_id],
+        "OrientationModes": lambda app_id, params: [app_id],
+        "OrientationSet": lambda app_id, params: [app_id, params.get("mode", "")],
     }
 
     def _handle_rpc(self, app_id, body):
