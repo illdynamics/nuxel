@@ -1,0 +1,314 @@
+#!/usr/bin/env python3
+"""nuxel-orientationd — the ONE authoritative orientation policy service (A49).
+
+Persistence, mode validation, sensor bring-up and compositor apply/revert live
+here so Quick Settings, Settings, nuxelctl and the compositor share one source of
+truth. Manual/fixed modes work with no sensor; auto modes report
+``sensor_unavailable`` when no verified source exists. Nothing flashes, writes
+partitions, or reboots.
+
+CLI:
+    nuxel-orientationd status [--json]      mode + effective + sensor + compositor
+    nuxel-orientationd get                  selected mode
+    nuxel-orientationd modes                the seven named modes + allowed sets
+    nuxel-orientationd set <mode> [--apply] validate, persist, attempt transform
+    nuxel-orientationd selftest             offline policy/sensor sanity
+    nuxel-orientationd watch [seconds]      bounded auto-rotation loop (hardware)
+
+Paths resolve through NUXEL_ROOT (default /) so the offline harness runs the REAL
+code against a fake root. The exact mount matrix / transform mapping stay
+``unverified`` until an owner physically proves them.
+"""
+
+from __future__ import annotations
+
+import json
+import os
+import sys
+import time
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, HERE)
+
+from nuxel_orientation.policy import (  # noqa: E402
+    MODE_ORDER, SEVEN_MODES, Orientator, PolicyError,
+    choose_initial_orientation, is_auto, mode_from_document,
+    normalize_mode, validate_mode,
+)
+from nuxel_orientation import sensors as sensor_mod  # noqa: E402
+from nuxel_orientation import apply as apply_mod  # noqa: E402
+
+ROOT = os.environ.get("NUXEL_ROOT", "/").rstrip("/")
+
+
+def P(path):
+    return ROOT + path if ROOT else path
+
+
+CONFIG_PATH = "/etc/nuxel/orientation/orientation.json"
+DEFAULT_CONFIG = {
+    "schema_version": 1,
+    "default_mode": "portrait",
+    "mode_order": MODE_ORDER,
+    "modes": SEVEN_MODES,
+    "policy": {"hysteresis_ms": 450, "cooldown_ms": 250, "debounce_ms": 60,
+               "flat_gravity_ratio": 0.55, "weak_gravity_ms2": 2.0,
+               "sample_interval_ms": 100, "last_good_on_flat": True},
+    "sensor": {"sources": ["iio-accel", "iio-sensor-proxy", "manual"],
+               "mount_matrix": {"matrix": [1, 0, 0, 0, 1, 0, 0, 0, 1],
+                                "calibration_status": "unverified"},
+               "gravity_reference": {
+                   "0": [0.0, -1.0, 0.0], "90": [1.0, 0.0, 0.0],
+                   "180": [0.0, 1.0, 0.0], "270": [-1.0, 0.0, 0.0],
+                   "calibration_status": "unverified"}},
+    "compositor": {"backend": "auto", "output": "DSI-1",
+                   "transform_map": {"0": "normal", "90": "270",
+                                     "180": "180", "270": "90"},
+                   "revert_after_ms": 4000},
+    "paths": {"state_file": "/var/lib/nuxel/orientation/state.json",
+              "control_fifo": "/run/nuxel-orientation.cmd",
+              "log": "/var/log/nuxel/orientation.log"},
+}
+
+
+def load_config():
+    path = P(CONFIG_PATH)
+    try:
+        with open(path) as f:
+            doc = json.load(f)
+    except (OSError, ValueError):
+        doc = {}
+    merged = json.loads(json.dumps(DEFAULT_CONFIG))
+    if isinstance(doc, dict):
+        for key in ("modes", "policy", "sensor", "compositor", "paths",
+                    "mode_order", "default_mode"):
+            if key in doc:
+                merged[key] = doc[key]
+    merged["modes"] = {**SEVEN_MODES, **merged.get("modes", {})}
+    merged["mode_order"] = MODE_ORDER
+    return merged
+
+
+def state_path(config):
+    return P(config.get("paths", {}).get("state_file",
+           "/var/lib/nuxel/orientation/state.json"))
+
+
+def load_state(config):
+    path = state_path(config)
+    try:
+        with open(path) as f:
+            doc = json.load(f)
+    except (OSError, ValueError):
+        doc = {}
+    if not isinstance(doc, dict):
+        doc = {}
+    return doc
+
+
+def save_state(config, doc):
+    path = state_path(config)
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    tmp = path + ".tmp"
+    with open(tmp, "w") as f:
+        json.dump(doc, f, indent=2)
+        f.write("\n")
+    os.replace(tmp, path)
+
+
+def sensor_probe(config):
+    """Per-source availability, honestly, without fabricating a reading.
+
+    ``available`` reflects ONLY auto-capable sources (a real gravity source),
+    never the diagnostic `manual` source, so an auto mode is reported
+    ``sensor_unavailable`` unless a verified live accelerometer exists.
+    """
+    report = sensor_mod.probe_sources(config)
+    capable = [s for s in report if s.get("auto_capable")]
+    return {
+        "sources": report,
+        "available": bool(capable),
+        "preferred": capable[0]["source"] if capable else None,
+        "unverified": (config.get("sensor", {}).get("mount_matrix", {})
+                       .get("calibration_status", "unverified") == "unverified"),
+    }
+
+
+def sensor_reading(config, source_name):
+    src = sensor_mod.resolve_source(source_name, config)
+    return src.read()
+
+
+def do_status(config):
+    state = load_state(config)
+    mode, effective, last = normalize_mode(state)
+    sensor = sensor_probe(config)
+    comp = config.get("compositor", {})
+    result = {
+        "mode": mode,
+        "mode_label": SEVEN_MODES.get(mode, {}).get("label", mode),
+        "auto": is_auto(mode),
+        "allowed": list(SEVEN_MODES.get(mode, {}).get("allowed", [])),
+        "effective_orientation": effective,
+        "last_orientation": last,
+        "sensor": sensor,
+        "compositor": {
+            "output": comp.get("output", "DSI-1"),
+            "transform_available": apply_mod.wlr_randr_available(),
+            "transform_map_verified": False,
+            "touch_calibration_verified": False,
+        },
+        "calibration": {
+            "mount_matrix": config.get("sensor", {}).get("mount_matrix", {})
+                                .get("calibration_status", "unverified"),
+            "gravity_reference": config.get("sensor", {}).get("gravity_reference", {})
+                                     .get("calibration_status", "unverified"),
+        },
+    }
+    return result
+
+
+def do_set(config, mode, apply_now=False):
+    mode = validate_mode(mode)
+    state = load_state(config)
+    _, _, last = normalize_mode(state)
+    sensor_orient = None
+    if apply_now and is_auto(mode):
+        # Choose a sensor-consistent initial pose when we can, never fabricate.
+        probe = sensor_probe(config)
+        pref = probe.get("preferred")
+        if pref:
+            try:
+                reading = sensor_reading(config, pref)
+                if reading.available:
+                    from nuxel_orientation.policy import Orientator
+                    o = Orientator(mode, config)
+                    sensor_orient, _ = o.classify(reading.vector())
+            except Exception:
+                sensor_orient = None
+    initial = choose_initial_orientation(mode, last, sensor_orient)
+    next_state = {
+        "schema_version": 1,
+        "mode": mode,
+        "effective_orientation": initial,
+        "last_orientation": initial,
+        "set_by": "nuxel-orientationd",
+        "updated_at": int(time.time()),
+    }
+    save_state(config, next_state)
+
+    apply_result = None
+    if apply_now:
+        apply_result = apply_mod.apply_transform(initial, config)
+    result = {"success": True, "mode": mode, "effective_orientation": initial,
+              "auto": is_auto(mode)}
+    if apply_result is not None:
+        result["compositor"] = apply_result
+    return result
+
+
+def do_modes():
+    return [
+        {"mode": name, "label": SEVEN_MODES[name]["label"],
+         "allowed": list(SEVEN_MODES[name]["allowed"]),
+         "auto": len(SEVEN_MODES[name]["allowed"]) > 1}
+        for name in MODE_ORDER
+    ]
+
+
+def do_watch(config, seconds):
+    probe = sensor_probe(config)
+    if not probe.get("available"):
+        print("sensor_unavailable: " + json.dumps(probe))
+        return 2
+    pref = probe["preferred"]
+    state = load_state(config)
+    mode, _, last = normalize_mode(state)
+    if not is_auto(mode):
+        print("mode %s is fixed; nothing to auto-rotate" % mode)
+        return 0
+    orientator = Orientator(mode, config)
+    interval = float(config.get("policy", {}).get("sample_interval_ms", 100)) / 1000.0
+    deadline = time.monotonic() + float(seconds)
+    n = 0
+    while time.monotonic() < deadline:
+        try:
+            reading = sensor_reading(config, pref)
+        except Exception as exc:
+            print("sensor read failed: %s" % exc)
+            return 2
+        changed = orientator.update(reading.vector())
+        n += 1
+        if changed is not None:
+            print("orientation -> %d (samples=%d)" % (changed, n))
+            save_state(config, {"mode": mode, "effective_orientation": changed,
+                                "last_orientation": changed,
+                                "updated_at": int(time.time())})
+        time.sleep(interval)
+    print("watch done: %d samples, effective=%d"
+          % (n, orientator.status()["effective_orientation"]))
+    return 0
+
+
+def do_selftest():
+    # Offline sanity: the real tests live in tests/; this is a no-network smoke.
+    ok = True
+    ok = ok and len(SEVEN_MODES) == 7
+    ok = ok and len(MODE_ORDER) == 7
+    for m in MODE_ORDER:
+        ok = ok and m in SEVEN_MODES
+    o = Orientator("auto")
+    ok = ok and o.classify((0, -9.8, 0))[0] == 0
+    ok = ok and o.classify((0, 9.8, 0))[0] == 180
+    print("selftest %s" % ("PASS" if ok else "FAIL"))
+    return 0 if ok else 1
+
+
+def main(argv):
+    args = list(argv)
+    json_out = "--json" in args
+    args = [a for a in args if a != "--json"]
+    apply_now = "--apply" in args
+    args = [a for a in args if a != "--apply"]
+    cmd = args[0] if args else "status"
+    rest = args[1:]
+
+    try:
+        config = load_config()
+        if cmd == "status":
+            out = do_status(config)
+        elif cmd == "get":
+            out = do_status(config)["mode"]
+        elif cmd == "modes":
+            out = do_modes()
+        elif cmd == "set":
+            if not rest:
+                print("usage: nuxel-orientationd set <mode> [--apply]")
+                return 2
+            try:
+                out = do_set(config, rest[0], apply_now)
+            except PolicyError as exc:
+                out = {"success": False, "error": str(exc)}
+        elif cmd == "watch":
+            seconds = int(rest[0]) if rest else 10
+            return do_watch(config, min(seconds, 120))
+        elif cmd == "selftest":
+            return do_selftest()
+        elif cmd in ("help", "-h", "--help"):
+            print(__doc__)
+            return 0
+        else:
+            print("unknown command: %s" % cmd)
+            return 2
+    except Exception as exc:  # noqa: BLE001 — a daemon must report, not trace
+        out = {"success": False, "error": "%s: %s" % (type(exc).__name__, exc)}
+
+    if json_out or isinstance(out, (dict, list)):
+        print(json.dumps(out, indent=2, sort_keys=True))
+    else:
+        print(out)
+    return 0 if not (isinstance(out, dict) and out.get("success") is False) else 1
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

@@ -1,0 +1,30 @@
+[Unit]
+Description=Nuxel Orientation Policy Service
+Documentation=https://github.com/nuxel/nuxel/docs/A49
+# The orientation service only READS the compositor transform state and WRITES
+# its own state file; it must start after the Wayland session owns outputs.
+After=nuxel-wayland.service phosh.service
+Wants=nuxel-wayland.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/libexec/nuxel/nuxel-orientationd status
+RemainAfterExit=yes
+Environment=NUXEL_ROOT=/
+Restart=no
+
+# Orientation never needs to write to block devices, flash or reboot. It only
+# writes /var/lib/nuxel/orientation/state.json and reads sensor sysfs.
+User=nuxel
+Group=nuxel
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+ReadOnlyPaths=/
+ReadWritePaths=/var/lib/nuxel
+DevicePolicy=closed
+SystemCallFilter=@system-service
+
+[Install]
+WantedBy=multi-user.target

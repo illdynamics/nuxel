@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "comment": "Orientation policy document for the S10+ (beyond2lte). ONE authoritative source shared by Quick Settings, Settings, nuxelctl and nuxel-orientationd. There are SEVEN named modes exactly (the owner phrase 'six modes' is a count mismatch: four fixed poses plus three auto policies). Selected policy (mode) is distinct from the current effective orientation (effective_degrees). Nothing here rotates pixels by itself: nuxel-orientationd computes the desired transform and asks the compositor, and reports honestly when the compositor cannot apply it.",
+  "device": {
+    "model": "Samsung Galaxy S10+ SM-G975F",
+    "codename": "beyond2lte",
+    "soc": "Exynos 9820",
+    "panel": "S6E3HA9 Dynamic AMOLED 3040x1440 (portrait scanout 1440x3040)"
+  },
+  "modes": {
+    "portrait":            { "label": "Portrait",             "allowed": [0] },
+    "reverse_portrait":    { "label": "Reverse portrait",     "allowed": [180] },
+    "landscape":           { "label": "Landscape",            "allowed": [90] },
+    "reverse_landscape":   { "label": "Reverse landscape",    "allowed": [270] },
+    "auto":                { "label": "Auto (all)",           "allowed": [0, 90, 180, 270], "auto": true },
+    "auto_portrait":       { "label": "Auto portrait",        "allowed": [0, 180],          "auto": true },
+    "auto_landscape":      { "label": "Auto landscape",       "allowed": [90, 270],         "auto": true }
+  },
+  "mode_order": ["portrait", "reverse_portrait", "landscape", "reverse_landscape", "auto", "auto_portrait", "auto_landscape"],
+  "default_mode": "portrait",
+  "policy": {
+    "hysteresis_ms": 450,
+    "cooldown_ms": 250,
+    "debounce_ms": 60,
+    "flat_gravity_ratio": 0.55,
+    "weak_gravity_ms2": 2.0,
+    "sample_interval_ms": 100,
+    "last_good_on_flat": true
+  },
+  "sensor": {
+    "preferred_source": "auto",
+    "sources": ["iio-accel", "iio-sensor-proxy", "manual"],
+    "iio": {
+      "name_hints": ["accel", "bmi160", "lsm6ds", "lsm6dso", "accel_3d"],
+      "channels": ["in_accel_x_raw", "in_accel_y_raw", "in_accel_z_raw"],
+      "scale_files": ["in_accel_scale", "in_accel_x_scale"]
+    },
+    "mount_matrix": {
+      "comment": "3x3 row-major map from sensor axes to display-native axes (x=right, y=up, z=out of screen). This is the DEFAULT convention and MUST be calibrated from observed device motion on hardware; until then it is calibration_status=unverified.",
+      "matrix": [1, 0, 0, 0, 1, 0, 0, 0, 1],
+      "calibration_status": "unverified"
+    },
+    "gravity_reference": {
+      "comment": "Unit gravity vector (display-native) for each discrete orientation. 0=portrait, 90/180/270 clockwise physical poses. Unverified until observed on the actual handset.",
+      "0":   [0.0, -1.0, 0.0],
+      "90":  [1.0,  0.0, 0.0],
+      "180": [0.0,  1.0, 0.0],
+      "270": [-1.0,  0.0, 0.0],
+      "calibration_status": "unverified"
+    }
+  },
+  "compositor": {
+    "backend": "auto",
+    "candidates": ["wlr-randr", "phoc-config", "none"],
+    "output": "DSI-1",
+    "transform_map": { "0": "normal", "90": "270", "180": "180", "270": "90" },
+    "comment_transform_map": "Physical pose -> wlr-randr transform that keeps content upright. The mapping and the matching touch calibration are UNVERIFIED until Phase 3 is exercised on the real device.",
+    "revert_after_ms": 4000,
+    "touch": { "verified": false, "matrix_available": false }
+  },
+  "paths": {
+    "state_file": "/var/lib/nuxel/orientation/state.json",
+    "control_fifo": "/run/nuxel-orientation.cmd",
+    "log": "/var/log/nuxel/orientation.log"
+  },
+  "owner_test": "docs/A49/OWNER-TEST-ORIENTATION.md"
+}
