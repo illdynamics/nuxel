@@ -28,6 +28,8 @@
 #include <string.h>
 #include <stdarg.h>
 #include <sys/mman.h>
+#include <sys/stat.h>
+#include <poll.h>
 #include <time.h>
 #include <unistd.h>
 #include <wayland-client.h>
@@ -37,6 +39,7 @@
 #define NAV_HEIGHT 62           /* logical px = 62 CSS px */
 #define HOST_FIFO  "/run/nuxel-pwa-host.cmd"
 #define HAP_FIFO   "/run/nuxel-haptics/haptics.cmd"
+#define CMD_FIFO   "/run/nuxel-navdock.cmd"
 
 static struct wl_display *display;
 static struct wl_registry *registry;
@@ -50,6 +53,10 @@ static struct wl_touch *touch;
 static struct wl_surface *surface;
 static struct zwlr_layer_surface_v1 *layer_surface;
 static struct wl_buffer *buffer;
+static int cmd_fd = -1;
+static int dock_visible = 1;
+static int touch_down = 0;
+static const struct zwlr_layer_surface_v1_listener layer_listener;
 static int32_t scale = 2;
 static int32_t out_w = 720, out_h = 1520;
 static int32_t width = 720, height = NAV_HEIGHT;
@@ -133,8 +140,74 @@ static void render_frame(void) {
   wl_surface_commit(surface);
 }
 
+/* ---- native dock lifecycle ------------------------------------------------ */
+static void dock_create(void) {
+  if (!dock_visible || surface || !compositor || !shm || !layer_shell || !output) return;
+  surface = wl_compositor_create_surface(compositor);
+  if (!surface) { audit("DOCK_SURFACE_FAIL"); return; }
+  layer_surface = zwlr_layer_shell_v1_get_layer_surface(
+      layer_shell, surface, output, ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY, "nuxel-navdock");
+  zwlr_layer_surface_v1_set_anchor(layer_surface,
+      ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM | ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT |
+      ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT);
+  zwlr_layer_surface_v1_set_size(layer_surface, 0, NAV_HEIGHT);
+  zwlr_layer_surface_v1_set_exclusive_zone(layer_surface, NAV_HEIGHT);
+  zwlr_layer_surface_v1_set_keyboard_interactivity(layer_surface,
+      ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_NONE);
+  zwlr_layer_surface_v1_add_listener(layer_surface, &layer_listener, NULL);
+  wl_surface_commit(surface);
+}
+
+static void dock_destroy(void) {
+  touch_down = 0;
+  if (buffer) { wl_buffer_destroy(buffer); buffer = NULL; }
+  if (layer_surface) { zwlr_layer_surface_v1_destroy(layer_surface); layer_surface = NULL; }
+  if (surface) { wl_surface_destroy(surface); surface = NULL; }
+}
+
+static void dock_show(void) {
+  if (dock_visible && surface) return;
+  dock_visible = 1;
+  dock_create();
+  audit("NAV_DOCK_SHOW");
+}
+
+static void dock_hide(void) {
+  if (!dock_visible && !surface) return;
+  dock_visible = 0;
+  dock_destroy();
+  audit("NAV_DOCK_HIDE");
+}
+
+static void cmd_pump(void) {
+  char buf[512];
+  if (cmd_fd < 0) return;
+  for (int i = 0; i < 16; i++) {
+    ssize_t n = read(cmd_fd, buf, sizeof buf - 1);
+    if (n <= 0) break;
+    buf[n] = 0;
+    for (char *q = buf; q && *q; ) {
+      char *nl = strchr(q, '\n');
+      if (nl) *nl = 0;
+      if (!strcmp(q, "hide")) dock_hide();
+      else if (!strcmp(q, "show")) dock_show();
+      else if (!strcmp(q, "status")) audit("NAV_DOCK_STATUS visible=%d surface=%d", dock_visible, surface != NULL);
+      q = nl ? nl + 1 : NULL;
+    }
+  }
+}
+
+static void cmd_open(void) {
+  unlink(CMD_FIFO);
+  if (mkfifo(CMD_FIFO, 0600) < 0 && errno != EEXIST) { audit("CMD_FIFO_FAIL errno=%d", errno); return; }
+  cmd_fd = open(CMD_FIFO, O_RDWR | O_NONBLOCK | O_CLOEXEC);
+  if (cmd_fd < 0) { audit("CMD_FIFO_OPEN_FAIL errno=%d", errno); return; }
+  audit("CMD_FIFO_READY %s", CMD_FIFO);
+}
+
 /* ---- actions ------------------------------------------------------------- */
 static void forward(const char *action) {
+  if (!dock_visible || !layer_surface) return;
   /* One subtle navigation haptic, mirroring the DOM dock's own feedback. */
   int hf = open(HAP_FIFO, O_WRONLY | O_NONBLOCK);
   if (hf >= 0) { dprintf(hf, "navigation\n"); close(hf); }
@@ -146,26 +219,37 @@ static void forward(const char *action) {
   audit("NAV_DOCK action=%s width=%d height=%d scale=%d", action, width, height, scale);
 }
 
-static void tap_at(int32_t x, int32_t y) {
-  if (width <= 0) return;
+static int64_t now_ms(void) {
+  struct timespec ts;
+  clock_gettime(CLOCK_MONOTONIC, &ts);
+  return (int64_t)ts.tv_sec * 1000 + ts.tv_nsec / 1000000;
+}
+
+static void tap_at(int32_t x, int32_t y, int64_t held_ms) {
+  if (width <= 0 || !dock_visible) return;
   int cell = x * 3 / width;
   if (cell < 0) cell = 0;
   if (cell > 2) cell = 2;
+  (void)y;
+  /* Long Back closes only the current foreground app.  The short action is
+     deliberately suppressed after a long hold: exactly one action per gesture. */
+  if (cell == 0 && held_ms >= 700) { forward("back-long"); return; }
   const char *actions[3] = { "back", "home", "recents" };
   forward(actions[cell]);
-  (void)y;
 }
 
 /* ---- touch (single-finger) ---------------------------------------------- */
-static int touch_down = 0;
 static int32_t down_x = 0, down_y = 0, last_x = 0, last_y = 0;
+static int64_t down_ms = 0;
 
 static void touch_down_cb(void *d, struct wl_touch *t, uint32_t serial,
                           uint32_t time, struct wl_surface *surf, int32_t id,
                           wl_fixed_t x, wl_fixed_t y) {
   (void)d; (void)t; (void)serial; (void)time; (void)surf; (void)id;
+  if (!dock_visible) return;
   if (!touch_down) {
     touch_down = 1;
+    down_ms = now_ms();
     down_x = last_x = wl_fixed_to_int(x);
     down_y = last_y = wl_fixed_to_int(y);
   }
@@ -176,8 +260,8 @@ static void touch_up_cb(void *d, struct wl_touch *t, uint32_t serial,
   if (touch_down) {
     touch_down = 0;
     int dx = last_x - down_x, dy = last_y - down_y;
-    /* A tap is a short, mostly-stationary contact: treat drags as non-actions. */
-    if (dx < 24 && dx > -24 && dy < 24 && dy > -24) tap_at(down_x, down_y);
+    /* A tap is a mostly-stationary contact: treat drags as non-actions. */
+    if (dx < 24 && dx > -24 && dy < 24 && dy > -24) tap_at(down_x, down_y, now_ms() - down_ms);
   }
 }
 static void touch_motion_cb(void *d, struct wl_touch *t, uint32_t time, int32_t id,
@@ -279,24 +363,38 @@ int main(void) {
   if (seat) wl_seat_add_listener(seat, &seat_listener, NULL);
   wl_display_roundtrip(display);   /* collect output mode/scale */
 
-  surface = wl_compositor_create_surface(compositor);
-  layer_surface = zwlr_layer_shell_v1_get_layer_surface(
-      layer_shell, surface, output, ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY, "nuxel-navdock");
-  zwlr_layer_surface_v1_set_anchor(layer_surface,
-      ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM | ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT |
-      ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT);
-  zwlr_layer_surface_v1_set_size(layer_surface, 0, NAV_HEIGHT);
-  zwlr_layer_surface_v1_set_exclusive_zone(layer_surface, NAV_HEIGHT);
-  zwlr_layer_surface_v1_set_keyboard_interactivity(layer_surface,
-      ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_NONE);
-  zwlr_layer_surface_v1_add_listener(layer_surface, &layer_listener, NULL);
-  wl_surface_commit(surface);
+  cmd_open();
+  dock_create();
   wl_display_roundtrip(display);   /* receive configure -> render + map */
 
   audit("NAV_DOCK_READY width=%d height=%d scale=%d out=%dx%d",
         width, height, scale, out_w, out_h);
 
-  while (wl_display_dispatch(display) != -1) { /* spin */ }
+  for (;;) {
+    while (wl_display_prepare_read(display) != 0) {
+      if (wl_display_dispatch_pending(display) < 0) { audit("NAV_DOCK_EXIT dispatch"); return 0; }
+    }
+    wl_display_flush(display);
+    struct pollfd pf[2] = {
+      { .fd = wl_display_get_fd(display), .events = POLLIN, .revents = 0 },
+      { .fd = cmd_fd, .events = POLLIN, .revents = 0 }
+    };
+    int nfds = cmd_fd >= 0 ? 2 : 1;
+    int pr = poll(pf, (nfds_t)nfds, -1);
+    if (pr < 0) {
+      wl_display_cancel_read(display);
+      if (errno == EINTR) continue;
+      audit("NAV_DOCK_EXIT poll errno=%d", errno);
+      return 0;
+    }
+    if (pf[0].revents & POLLIN) {
+      if (wl_display_read_events(display) < 0) { audit("NAV_DOCK_EXIT read"); return 0; }
+      if (wl_display_dispatch_pending(display) < 0) { audit("NAV_DOCK_EXIT dispatch"); return 0; }
+    } else {
+      wl_display_cancel_read(display);
+    }
+    if (cmd_fd >= 0 && (pf[1].revents & (POLLIN | POLLHUP))) cmd_pump();
+  }
   audit("NAV_DOCK_EXIT");
   return 0;
 }

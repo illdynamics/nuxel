@@ -47,6 +47,49 @@ logger = logging.getLogger('nuxel-bridge')
 BUS_NAME = 'org.nuxel.Bridge'
 INTERFACE_NAME = 'org.nuxel.Bridge'
 
+
+def read_battery_status():
+    """Read the real S10+ gauge by kernel `type=Battery`, never by BAT* name.
+
+    Returns level=None when the node is absent/malformed/out of range so the UI
+    can show an em dash instead of fabricating 0% or 100%.
+    """
+    base_root = '/sys/class/power_supply'
+    try:
+        names = os.listdir(base_root)
+    except OSError as exc:
+        return {'level': None, 'charging': False, 'available': False,
+                'source': 'unavailable:' + type(exc).__name__}
+    candidates = []
+    for name in names:
+        base = os.path.join(base_root, name)
+        try:
+            with open(os.path.join(base, 'type')) as f:
+                if f.read().strip() != 'Battery':
+                    continue
+        except OSError:
+            continue
+        candidates.append((0 if name == 'battery' else 1, name, base))
+    candidates.sort()
+    for _, name, base in candidates:
+        try:
+            with open(os.path.join(base, 'capacity')) as f:
+                level = int(float(f.read().strip()))
+        except (OSError, ValueError):
+            continue
+        if not 0 <= level <= 100:
+            continue
+        charging = False
+        try:
+            with open(os.path.join(base, 'status')) as f:
+                charging = f.read().strip() in ('Charging', 'Full')
+        except OSError:
+            pass
+        return {'level': level, 'charging': bool(charging), 'available': True,
+                'source': 'sysfs:' + name}
+    return {'level': None, 'charging': False, 'available': False,
+            'source': 'unavailable'}
+
 # PWA<->host protocol pin (briq-04c). Same env names as the systemd units and the
 # HTTP layer, so `systemctl show -p Environment` shows exactly what is enforced.
 BRIDGE_PROTOCOL_VERSION = os.environ.get('NUXEL_BRIDGE_PROTOCOL_VERSION', '1')
@@ -268,21 +311,77 @@ class ModemManagerConnector:
             return {'success': False, 'error': str(e)}
 
 
+def _wifi_security_from_flags(rsn, wpa, flags):
+    """Map NetworkManager AP security flags to the connector's small model."""
+    try:
+        rsn, wpa, flags = int(rsn), int(wpa), int(flags)
+    except (TypeError, ValueError):
+        return 'unknown'
+    # NM_802_11_AP_SEC_KEY_MGMT_SAE = 0x400 (NetworkManager >= 1.8)
+    if rsn & 0x400:
+        return 'wpa3'
+    if rsn or wpa:
+        return 'wpa2'
+    if flags & 0x1:      # NM_802_11_AP_FLAGS_PRIVACY
+        return 'wep'
+    return 'open'
+
+
+def _wifi_key_mgmt(security):
+    if security == 'wpa3':
+        return 'sae'
+    if security == 'wpa2':
+        return 'wpa-psk'
+    return None
+
+
+def _ap_record(bus, ap_path, device_path):
+    """Read one AP into a plain dict; malformed/disappeared APs are skipped."""
+    try:
+        ap = bus.get_object('org.freedesktop.NetworkManager', ap_path)
+        props = dbus.Interface(ap, 'org.freedesktop.DBus.Properties')
+        get = lambda key: props.Get('org.freedesktop.NetworkManager.AccessPoint', key)
+        ssid_bytes = bytes(get('Ssid'))
+        rsn, wpa, flags = int(get('RsnFlags')), int(get('WpaFlags')), int(get('Flags'))
+        security = _wifi_security_from_flags(rsn, wpa, flags)
+        return {
+            'ap_path': str(ap_path),
+            'device': str(device_path),
+            'ssid_bytes': ssid_bytes,
+            'ssid': ssid_bytes.decode('utf-8', 'replace'),
+            'ssid_hex': ssid_bytes.hex(),
+            'bssid': str(get('HwAddress')),
+            'strength': int(get('Strength')),
+            'frequency': int(get('Frequency')),
+            'security': security,
+            'flags': flags,
+            'wpa_flags': wpa,
+            'rsn_flags': rsn,
+        }
+    except Exception:
+        return None
+
+
 class NetworkManagerConnector:
+    """NetworkManager D-Bus connector with real AP-path activation.
+
+    A47 critical fix: the old connector passed the literal string '/new' as the
+    AP object to AddAndActivateConnection.  '/new' is not in NM's scan list, so
+    NM correctly raised Device.SpecificObjectNotFound.  This version resolves a
+    real AccessPoint object owned by the selected Wi-Fi device, validates it,
+    and performs at most one fresh scan + one retry when it went stale.
+    """
+
+    DEVICE_ACTIVATED = 100
+    DEVICE_FAILED = 120
+    CONNECTING_STATES = (40, 50, 60, 70, 80, 90, 110)
+
     def __init__(self):
         self.bus = None
         self.nm_proxy = None
         self.connected = False
 
     def _refresh_proxy(self):
-        """Bind the well-known NM name again after a daemon restart.
-
-        dbus-python can retain the old unique-name owner in a proxy.  A
-        NetworkManager restart then leaves the status API reporting the stale
-        ``ServiceUnknown`` error forever although the replacement daemon and
-        Wi-Fi radio are healthy.  Reacquiring this cheap root proxy per status
-        read keeps the indicator tied to the live daemon, not a past owner.
-        """
         if self.bus is None:
             self.bus = dbus.SystemBus()
         self.nm_proxy = self.bus.get_object(
@@ -294,68 +393,296 @@ class NetworkManagerConnector:
     def connect(self):
         try:
             self._refresh_proxy()
-            logger.info("NetworkManager connected")
+            logger.info('NetworkManager connected')
         except Exception as e:
             self.connected = False
-            logger.error(f"NetworkManager connect failed: {e}")
-    
+            logger.error('NetworkManager connect failed: %s', e)
+
+    # ---- devices / APs ---------------------------------------------------
+    def _wifi_device_records(self):
+        """Return managed Wi-Fi devices (never P2P/virtual) with their APs."""
+        self._refresh_proxy()
+        mgr = dbus.Interface(self.nm_proxy, 'org.freedesktop.NetworkManager')
+        records = []
+        for path in mgr.GetDevices():
+            try:
+                device = self.bus.get_object('org.freedesktop.NetworkManager', path)
+                props = dbus.Interface(device, 'org.freedesktop.DBus.Properties')
+                if int(props.Get('org.freedesktop.NetworkManager.Device', 'DeviceType')) != 2:
+                    continue
+                interface = str(props.Get('org.freedesktop.NetworkManager.Device', 'Interface'))
+                # p2p-dev-wlan* is DeviceType 2 but cannot carry an infrastructure
+                # station connection.  Reject by name as well as by type.
+                if 'p2p' in interface.lower():
+                    continue
+                managed = bool(props.Get('org.freedesktop.NetworkManager.Device', 'Managed'))
+                state = int(props.Get('org.freedesktop.NetworkManager.Device', 'State'))
+                wireless = dbus.Interface(device, 'org.freedesktop.NetworkManager.Device.Wireless')
+                try:
+                    ap_paths = list(wireless.GetAccessPoints())
+                except dbus.DBusException:
+                    ap_paths = []
+                records.append({
+                    'path': str(path), 'device': device, 'props': props,
+                    'interface': interface, 'managed': managed, 'state': state,
+                    'ap_paths': ap_paths,
+                })
+            except Exception:
+                continue
+        # Prefer wlan0 over wlan1, but only after ownership/AP checks below.
+        records.sort(key=lambda r: (0 if r['interface'] == 'wlan0' else 1, r['interface']))
+        return records
+
+    def _all_aps(self, records):
+        seen = set()
+        out = []
+        for rec in records:
+            for ap_path in rec['ap_paths']:
+                key = (rec['path'], str(ap_path))
+                if key in seen:
+                    continue
+                seen.add(key)
+                ap = _ap_record(self.bus, ap_path, rec['path'])
+                if ap:
+                    ap['record'] = rec
+                    out.append(ap)
+        return out
+
+    def _request_scan(self, records):
+        """Ask each managed Wi-Fi device for one scan; never retry in a loop."""
+        requested = False
+        for rec in records:
+            if not rec['managed']:
+                continue
+            try:
+                wireless = dbus.Interface(rec['device'], 'org.freedesktop.NetworkManager.Device.Wireless')
+                wireless.RequestScan(dbus.Dictionary({}, signature='sv'))
+                requested = True
+            except dbus.DBusException as exc:
+                logger.info('Wi-Fi scan request deferred on %s: %s',
+                            rec['interface'], exc.get_dbus_name())
+            except Exception:
+                pass
+        return requested
+
+    def _match_ap(self, aps, ssid_bytes, security, bssid='', ap_path=''):
+        if ap_path:
+            aps = [a for a in aps if a['ap_path'] == str(ap_path)]
+        if bssid:
+            aps = [a for a in aps if a['bssid'].lower() == str(bssid).lower()]
+        if ssid_bytes is not None:
+            aps = [a for a in aps if a['ssid_bytes'] == ssid_bytes]
+        if security in ('wpa2', 'wpa3', 'open'):
+            aps = [a for a in aps if a['security'] == security]
+        # A BSSID hint is exact; otherwise strongest AP wins.  The AP's own
+        # device path comes from the device whose GetAccessPoints() returned it.
+        aps.sort(key=lambda a: (a['bssid'].lower() == str(bssid).lower(),
+                                a['strength']), reverse=True)
+        return aps[0] if aps else None
+
+    def _resolve_ap(self, ssid, ssid_bytes, security, bssid='', ap_path='', device=''):
+        records = self._wifi_device_records()
+        if not records:
+            raise RuntimeError('No managed NetworkManager Wi-Fi device: inspect driver, rfkill and NM ownership')
+        # If the client named a device, prefer it but still verify AP ownership.
+        if device:
+            preferred = [r for r in records if r['path'] == str(device) or r['interface'] == str(device)]
+            records = preferred + [r for r in records if r not in preferred]
+        aps = self._all_aps(records)
+        ap = self._match_ap(aps, ssid_bytes, security, bssid, ap_path)
+        if ap:
+            return ap
+        # One safe refresh only.  Scan throttling is surfaced, not retried forever.
+        refreshed = self._request_scan(records)
+        if refreshed:
+            for _ in range(10):             # <= 5 s, one refresh, no infinite loop
+                time.sleep(0.5)
+                aps = self._all_aps(records)
+                ap = self._match_ap(aps, ssid_bytes, security, bssid, ap_path)
+                if ap:
+                    return ap
+        if ap_path:
+            raise LookupError('Selected access point is no longer in the scan list')
+        if ssid_bytes == b'':
+            raise ValueError('Hidden/empty SSID cannot be selected from this scan list')
+        raise LookupError('Access point not found after one fresh scan (SSID/security/BSSID mismatch or hidden network)')
+
+    # ---- status ----------------------------------------------------------
+    def _ip_config(self, props):
+        """Return the device's real IPv4 stage data, never a guess."""
+        data = {'address': '', 'gateway': '', 'dns': [], 'has_ip': False}
+        try:
+            ip4_path = props.Get('org.freedesktop.NetworkManager.Device', 'Ip4Config')
+            if not ip4_path or str(ip4_path) == '/':
+                return data
+            ip4 = self.bus.get_object('org.freedesktop.NetworkManager', ip4_path)
+            ip4p = dbus.Interface(ip4, 'org.freedesktop.DBus.Properties')
+            try:
+                addr_data = ip4p.Get('org.freedesktop.NetworkManager.IP4Config', 'AddressData')
+                if addr_data:
+                    a = addr_data[0]
+                    data['address'] = '%s/%s' % (a.get('address', ''), a.get('prefix', ''))
+                    data['has_ip'] = bool(a.get('address'))
+            except dbus.DBusException:
+                pass
+            try:
+                data['gateway'] = str(ip4p.Get('org.freedesktop.NetworkManager.IP4Config', 'Gateway'))
+            except dbus.DBusException:
+                pass
+            try:
+                data['dns'] = [str(x) for x in ip4p.Get('org.freedesktop.NetworkManager.IP4Config', 'Nameservers')]
+            except dbus.DBusException:
+                pass
+        except Exception:
+            pass
+        return data
+
+    def _active_connection(self, device_props):
+        out = {'id': '', 'uuid': '', 'path': '', 'state': 0}
+        try:
+            ac_path = device_props.Get('org.freedesktop.NetworkManager.Device', 'ActiveConnection')
+            if not ac_path or str(ac_path) == '/':
+                return out
+            out['path'] = str(ac_path)
+            ac = self.bus.get_object('org.freedesktop.NetworkManager', ac_path)
+            acp = dbus.Interface(ac, 'org.freedesktop.DBus.Properties')
+            out['id'] = str(acp.Get('org.freedesktop.NetworkManager.Connection.Active', 'Id'))
+            out['uuid'] = str(acp.Get('org.freedesktop.NetworkManager.Connection.Active', 'Uuid'))
+            out['state'] = int(acp.Get('org.freedesktop.NetworkManager.Connection.Active', 'State'))
+        except Exception:
+            pass
+        return out
+
+    def _active_connection_state(self, active_path):
+        if not active_path:
+            return 0
+        try:
+            ac = self.bus.get_object('org.freedesktop.NetworkManager', active_path)
+            acp = dbus.Interface(ac, 'org.freedesktop.DBus.Properties')
+            return int(acp.Get('org.freedesktop.NetworkManager.Connection.Active', 'State'))
+        except Exception:
+            return 0
+
+    def _device_state_reason(self, device_props):
+        try:
+            reason = device_props.Get('org.freedesktop.NetworkManager.Device', 'StateReason')
+            return int(reason[0]), str(reason[1])
+        except Exception:
+            return 0, ''
+
+    def _default_route(self, interface):
+        try:
+            with open('/proc/net/route') as f:
+                next(f, None)
+                for line in f:
+                    fields = line.split()
+                    if len(fields) >= 2 and fields[0] == interface and fields[1] == '00000000':
+                        return True
+        except OSError:
+            pass
+        return False
+
+    @classmethod
+    def connection_stage(cls, device_state, has_ip, has_route, has_dns, connectivity):
+        """Pure stage mapping so async NM states are testable without a phone."""
+        if device_state in cls.CONNECTING_STATES:
+            return 'associating'
+        if device_state == cls.DEVICE_FAILED:
+            return 'failed'
+        if device_state != cls.DEVICE_ACTIVATED:
+            return 'idle'
+        if not has_ip:
+            return 'activated'
+        if not has_route:
+            return 'ip'
+        if not has_dns:
+            return 'route'
+        if int(connectivity) != 4:
+            return 'dns'
+        return 'online'
+
+    def _snapshot(self):
+        self._refresh_proxy()
+        props = dbus.Interface(self.nm_proxy, 'org.freedesktop.DBus.Properties')
+        connectivity = int(props.Get('org.freedesktop.NetworkManager', 'Connectivity'))
+        devices = self._wifi_device_records()
+        chosen = None
+        for rec in devices:
+            if rec['state'] == self.DEVICE_ACTIVATED:
+                chosen = rec
+                break
+        if chosen is None and devices:
+            chosen = max(devices, key=lambda r: r['state'])
+        stage = 'idle'
+        ip = {'address': '', 'gateway': '', 'dns': [], 'has_ip': False}
+        active = {'id': '', 'uuid': '', 'path': '', 'state': 0}
+        if chosen:
+            if chosen['state'] == self.DEVICE_ACTIVATED:
+                ip = self._ip_config(chosen['props'])
+                active = self._active_connection(chosen['props'])
+            stage = self.connection_stage(
+                chosen['state'],
+                bool(ip.get('has_ip')),
+                bool(ip.get('gateway') or self._default_route(chosen['interface'])),
+                bool(ip.get('dns')),
+                connectivity)
+        return {
+            'stage': stage,
+            'connectivity': connectivity,
+            'device': chosen['interface'] if chosen else '',
+            'device_path': chosen['path'] if chosen else '',
+            'device_state': chosen['state'] if chosen else 0,
+            'state_reason_code': self._device_state_reason(chosen['props'])[0] if chosen else 0,
+            'state_reason': self._device_state_reason(chosen['props'])[1] if chosen else '',
+            'ip4': ip,
+            'active_connection': active,
+        }
+
     def get_status(self):
         if not self.connected:
             return {'available': False, 'connected': False,
                     'wifi_available': False, 'wifi_connected': False,
                     'wifi_state': 'unavailable'}
         try:
-            self._refresh_proxy()
             props = dbus.Interface(self.nm_proxy, 'org.freedesktop.DBus.Properties')
-            state = props.Get('org.freedesktop.NetworkManager', 'State')
-            connectivity = props.Get('org.freedesktop.NetworkManager', 'Connectivity')
-            wifi_enabled = props.Get('org.freedesktop.NetworkManager', 'WirelessEnabled')
-            # A connection to NetworkManager's D-Bus name is not a network
-            # connection. Inspect Wi-Fi devices individually so a powered but
-            # unmanaged/disconnected radio never creates a connected icon.
-            wifi_devices = []
-            manager = dbus.Interface(self.nm_proxy, 'org.freedesktop.NetworkManager')
-            for device_path in manager.GetDevices():
-                device = self.bus.get_object('org.freedesktop.NetworkManager', device_path)
-                device_props = dbus.Interface(device, 'org.freedesktop.DBus.Properties')
-                interface = str(device_props.Get('org.freedesktop.NetworkManager.Device', 'Interface'))
-                device_type = int(device_props.Get('org.freedesktop.NetworkManager.Device', 'DeviceType'))
-                # The S10+ vendor bcmdhd driver exposes /devices/virtual/net/
-                # interfaces. Until the NM Wi-Fi plugin is installed, NM calls
-                # them generic (rather than type 2); retaining the wlan* match
-                # reports the honest "unmanaged" state instead of pretending
-                # the detected radio does not exist.
-                if device_type != 2 and not interface.startswith('wlan'):
-                    continue
-                wifi_devices.append({
-                    'interface': interface,
-                    'state': int(device_props.Get('org.freedesktop.NetworkManager.Device', 'State')),
-                })
-            active = [row for row in wifi_devices if row['state'] == 100]
-            highest_state = max((row['state'] for row in wifi_devices), default=None)
+            state = int(props.Get('org.freedesktop.NetworkManager', 'State'))
+            wifi_enabled = bool(props.Get('org.freedesktop.NetworkManager', 'WirelessEnabled'))
+            devices = self._wifi_device_records()
+            snap = self._snapshot()
+            active = [r for r in devices if r['state'] == self.DEVICE_ACTIVATED]
+            highest_state = max((r['state'] for r in devices), default=None)
             if not wifi_enabled:
                 wifi_state = 'disabled'
-            elif not wifi_devices:
+            elif not devices:
                 wifi_state = 'unavailable'
             elif active:
-                # NM connectivity: NONE=1, PORTAL=2, LIMITED=3, FULL=4.
-                # Association and internet verification stay distinct.
-                wifi_state = 'internet' if int(connectivity) == 4 else 'connected'
+                wifi_state = 'internet' if snap['connectivity'] == 4 else 'connected'
+            elif highest_state == self.DEVICE_FAILED:
+                wifi_state = 'failed'
             elif highest_state == 10:
                 wifi_state = 'unmanaged'
-            elif highest_state in (40, 50, 60, 70, 80, 90, 110):
+            elif highest_state in self.CONNECTING_STATES:
                 wifi_state = 'connecting'
             else:
                 wifi_state = 'enabled_disconnected'
             return {
-                'available': True, 'connected': int(state) >= 50,
-                'state': int(state),
-                'connectivity': int(connectivity),
-                'wifi_enabled': bool(wifi_enabled),
-                'wifi_available': bool(wifi_devices),
+                'available': True, 'connected': state >= 50, 'state': state,
+                'connectivity': snap['connectivity'],
+                'wifi_enabled': wifi_enabled,
+                'wifi_available': bool(devices),
                 'wifi_connected': bool(active),
                 'wifi_state': wifi_state,
-                'wifi_devices': wifi_devices,
+                'wifi_stage': snap['stage'],
+                'wifi_device': snap['device'],
+                'wifi_device_path': snap['device_path'],
+                'wifi_device_state': snap['device_state'],
+                'ip4': snap['ip4'],
+                'active_connection': snap['active_connection'],
+                'wifi_devices': [
+                    {'interface': r['interface'], 'state': r['state'], 'managed': r['managed'],
+                     'path': r['path']}
+                    for r in devices
+                ],
             }
         except Exception as e:
             return {'available': False, 'connected': False,
@@ -363,7 +690,6 @@ class NetworkManagerConnector:
                     'wifi_state': 'unavailable', 'error': str(e)}
 
     def set_wifi_enabled(self, enabled):
-        """Set NM's real WirelessEnabled property and confirm its readback."""
         try:
             self._refresh_proxy()
             props = dbus.Interface(self.nm_proxy, 'org.freedesktop.DBus.Properties')
@@ -381,81 +707,260 @@ class NetworkManagerConnector:
             return {'success': False, 'error': str(e)}
 
     def _wifi_device(self):
-        """Select an actual NetworkManager Wi-Fi device, never a guessed wlan0."""
-        self._refresh_proxy()
-        mgr = dbus.Interface(self.nm_proxy, 'org.freedesktop.NetworkManager')
-        for path in mgr.GetDevices():
-            device = self.bus.get_object('org.freedesktop.NetworkManager', path)
-            props = dbus.Interface(device, 'org.freedesktop.DBus.Properties')
-            if int(props.Get('org.freedesktop.NetworkManager.Device', 'DeviceType')) == 2:
-                return path, device, props
-        raise RuntimeError('No NetworkManager Wi-Fi device: inspect kernel driver, firmware, rfkill and NM ownership')
+        """Backward-compatible selector for disconnect: active device first."""
+        records = self._wifi_device_records()
+        if not records:
+            raise RuntimeError('No NetworkManager Wi-Fi device')
+        for rec in records:
+            if rec['state'] == self.DEVICE_ACTIVATED:
+                return rec['path'], rec['device'], rec['props']
+        rec = records[0]
+        return rec['path'], rec['device'], rec['props']
 
     def scan_wifi(self):
-        """Return real AP observations; scan failures are visible to the caller."""
+        """Return real AP observations including the AP's D-Bus ownership."""
         try:
-            path, device, props = self._wifi_device()
-            wireless = dbus.Interface(device, 'org.freedesktop.NetworkManager.Device.Wireless')
-            try:
-                wireless.RequestScan(dbus.Dictionary({}, signature='sv'))
-            except dbus.DBusException as exc:
-                # NM throttles repeated requests. Still return its last known AP list.
-                logger.info('Wi-Fi scan request deferred: %s', exc.get_dbus_name())
-            results = []
-            for ap_path in wireless.GetAccessPoints():
-                ap = self.bus.get_object('org.freedesktop.NetworkManager', ap_path)
-                ap_props = dbus.Interface(ap, 'org.freedesktop.DBus.Properties')
-                get = lambda k: ap_props.Get('org.freedesktop.NetworkManager.AccessPoint', k)
-                raw_ssid = bytes(get('Ssid'))
-                ssid = raw_ssid.decode('utf-8', 'replace')
-                rsn, wpa, flags = int(get('RsnFlags')), int(get('WpaFlags')), int(get('Flags'))
-                security = 'wpa3' if (rsn & 0x400) else 'wpa2' if (rsn or wpa) else 'wep' if (flags & 1) else 'open'
-                results.append({'ssid': ssid, 'strength': int(get('Strength')),
-                                'security': security, 'ap_path': str(ap_path)})
+            records = self._wifi_device_records()
+            if not records:
+                return {'success': False, 'networks': [],
+                        'error': 'No managed NetworkManager Wi-Fi device'}
+            self._request_scan(records)
+            # Give a fresh request a short chance to populate, but always return
+            # the last known scan list (the owner-visible scan must keep working).
+            for _ in range(6):
+                aps = self._all_aps(records)
+                if aps:
+                    break
+                time.sleep(0.4)
+            results = [{
+                'ssid': ap['ssid'],
+                'ssid_hex': ap['ssid_hex'],
+                'bssid': ap['bssid'],
+                'strength': ap['strength'],
+                'frequency': ap['frequency'],
+                'security': ap['security'],
+                'ap_path': ap['ap_path'],
+                'device': ap['device'],
+                'device_interface': ap['record']['interface'],
+            } for ap in aps]
             results.sort(key=lambda a: a['strength'], reverse=True)
-            return {'success': True, 'networks': results, 'device': str(path)}
+            return {'success': True, 'networks': results,
+                    'devices': [{'interface': r['interface'], 'path': r['path'],
+                                 'state': r['state'], 'aps': len(r['ap_paths'])}
+                                for r in records]}
         except Exception as exc:
             return {'success': False, 'networks': [], 'error': str(exc)}
 
-    def connect_wifi(self, ssid, password, security):
-        """Connect through NetworkManager D-Bus, keeping PSKs out of argv/logs."""
+    def _saved_connection(self, mgr, ssid_bytes, key_mgmt):
+        """Find one saved profile for this SSID/security; never create duplicates."""
         try:
-            if not isinstance(ssid, str) or not 1 <= len(ssid.encode('utf-8')) <= 32 or '\x00' in ssid:
-                return {'success': False, 'error': 'SSID must contain 1–32 UTF-8 bytes'}
+            settings_iface = dbus.Interface(
+                self.bus.get_object('org.freedesktop.NetworkManager', '/org/freedesktop/NetworkManager/Settings'),
+                'org.freedesktop.NetworkManager.Settings')
+            for conn_path in settings_iface.GetConnections():
+                try:
+                    conn = self.bus.get_object('org.freedesktop.NetworkManager', conn_path)
+                    cset = dbus.Interface(conn, 'org.freedesktop.NetworkManager.Settings.Connection').GetSettings()
+                    wifi = cset.get('802-11-wireless', {})
+                    if bytes(wifi.get('ssid', b'')) != ssid_bytes:
+                        continue
+                    sec = cset.get('802-11-wireless-security', {})
+                    found_mgmt = str(sec.get('key-mgmt', '')) or None
+                    if key_mgmt is None and not sec:
+                        return conn_path, conn, cset
+                    if key_mgmt and found_mgmt == key_mgmt:
+                        return conn_path, conn, cset
+                except Exception:
+                    continue
+        except Exception:
+            pass
+        return None, None, None
+
+    def _settings_for(self, ssid_bytes, security, bssid):
+        wifi = dbus.Dictionary({
+            'ssid': dbus.ByteArray(ssid_bytes),
+            'mode': dbus.String('infrastructure'),
+        }, signature='sv')
+        if bssid:
+            try:
+                mac = bytes.fromhex(str(bssid).replace(':', ''))
+                if len(mac) == 6:
+                    wifi['bssid'] = dbus.ByteArray(mac)
+            except ValueError:
+                pass
+        profile = {
+            'connection': dbus.Dictionary({
+                'id': dbus.String('Nuxel ' + ssid_bytes.decode('utf-8', 'replace')),
+                'type': dbus.String('802-11-wireless'),
+                'autoconnect': dbus.Boolean(True),
+            }, signature='sv'),
+            '802-11-wireless': wifi,
+            'ipv4': dbus.Dictionary({'method': dbus.String('auto')}, signature='sv'),
+            'ipv6': dbus.Dictionary({'method': dbus.String('auto')}, signature='sv'),
+        }
+        if security != 'open':
+            profile['802-11-wireless-security'] = dbus.Dictionary({
+                'key-mgmt': dbus.String(_wifi_key_mgmt(security)),
+                'psk': dbus.String(''),  # overwritten by caller; never logged
+                'psk-flags': dbus.UInt32(0),
+            }, signature='sv')
+        return dbus.Dictionary(profile, signature='sa{sv}')
+
+    @staticmethod
+    def _wifi_error(exc, password=''):
+        name = ''
+        try:
+            name = exc.get_dbus_name() or ''
+        except Exception:
+            pass
+        msg = str(exc)
+        if password:
+            msg = msg.replace(password, '[REDACTED]')
+        code = 'wifi-error'
+        if 'SpecificObjectNotFound' in name or 'not in the scan list' in msg:
+            code = 'ap-disappeared'
+            msg = 'The selected access point disappeared during connect; one fresh scan was attempted. Rescan and select it again.'
+        elif 'Secrets' in name or 'NoSecrets' in name or 'BadPassphrase' in name or 'bad password' in msg.lower():
+            code = 'authentication-failed'
+            msg = 'Authentication failed: wrong password or incompatible WPA2/WPA3 security mode.'
+        elif 'ScanNotAllowed' in name or 'scan' in msg.lower() and 'not allowed' in msg.lower():
+            code = 'scan-throttled'
+            msg = 'NetworkManager throttled the Wi-Fi scan; wait a few seconds and retry.'
+        elif 'NotAuthorized' in name or 'not authorized' in msg.lower():
+            code = 'polkit-denied'
+            msg = 'NetworkManager denied authorization (polkit).'
+        elif 'NotAllowed' in name or 'not allowed' in msg.lower():
+            code = 'device-not-allowed'
+            msg = 'NetworkManager refused activation on this device.'
+        return {'success': False, 'error': msg, 'error_code': code, 'dbus_error': name}
+
+    def connect_wifi(self, ssid, password, security, ap_path='', bssid='', device='', ssid_hex=''):
+        """Resolve a real AP object, then activate through NM.
+
+        Password/PSK never enters argv, a log line, or a returned error string.
+        """
+        password = password if isinstance(password, str) else ''
+        try:
             if security not in ('wpa2', 'wpa3', 'open'):
-                return {'success': False, 'error': 'Unsupported security type; never downgrade WEP or enterprise security'}
-            if security != 'open' and (not isinstance(password,str) or not 8 <= len(password) <= 63):
-                return {'success': False, 'error': 'Passphrase must contain 8–63 characters'}
-            path, device, props = self._wifi_device()
-            wifi_cfg = dbus.Dictionary({'ssid': dbus.ByteArray(ssid.encode('utf-8')),
-                                        'mode': dbus.String('infrastructure')}, signature='sv')
-            profile = {'connection': dbus.Dictionary({'id': dbus.String('Nuxel ' + ssid),
-                                                      'type': dbus.String('802-11-wireless'),
-                                                      'autoconnect': dbus.Boolean(True)}, signature='sv'),
-                       '802-11-wireless': wifi_cfg,
-                       'ipv4': dbus.Dictionary({'method': dbus.String('auto')}, signature='sv'),
-                       'ipv6': dbus.Dictionary({'method': dbus.String('auto')}, signature='sv')}
-            if security != 'open':
-                wifi_cfg['security'] = dbus.String('802-11-wireless-security')
-                profile['802-11-wireless-security'] = dbus.Dictionary({
-                    'key-mgmt': dbus.String('sae' if security == 'wpa3' else 'wpa-psk'),
-                    'psk': dbus.String(password)}, signature='sv')
+                return {'success': False, 'error': 'Unsupported security type; WEP/enterprise are never downgraded',
+                        'error_code': 'unsupported-security'}
+            if ssid_hex:
+                try:
+                    ssid_bytes = bytes.fromhex(str(ssid_hex))
+                except ValueError:
+                    return {'success': False, 'error': 'Invalid SSID byte encoding', 'error_code': 'bad-ssid'}
+                ssid = ssid_bytes.decode('utf-8', 'replace')
+            else:
+                if not isinstance(ssid, str):
+                    return {'success': False, 'error': 'SSID must be text', 'error_code': 'bad-ssid'}
+                ssid_bytes = ssid.encode('utf-8')
+            if not 1 <= len(ssid_bytes) <= 32 or b'\x00' in ssid_bytes:
+                return {'success': False, 'error': 'SSID must contain 1-32 UTF-8 bytes', 'error_code': 'bad-ssid'}
+            if security != 'open' and not 8 <= len(password) <= 63:
+                return {'success': False, 'error': 'Passphrase must contain 8-63 characters',
+                        'error_code': 'bad-passphrase'}
+            ap = self._resolve_ap(ssid, ssid_bytes, security, bssid, ap_path, device)
+            logger.info('Wi-Fi AP resolved: device=%s ap=%s security=%s ssid_len=%d bssid_hint=%s',
+                        ap['record']['interface'], ap['ap_path'], ap['security'], len(ssid_bytes), bool(bssid))
             mgr = dbus.Interface(self.nm_proxy, 'org.freedesktop.NetworkManager')
-            mgr.AddAndActivateConnection(dbus.Dictionary(profile,signature='sa{sv}'), path, '/new')
-            # Connection activation is asynchronous; don't report internet access yet.
-            return {'success': True, 'state': 'connecting', 'ssid': ssid}
+            created_conn, _, _ = self._saved_connection(mgr, ssid_bytes, _wifi_key_mgmt(security))
+            active_path = ''
+            try:
+                if created_conn:
+                    conn = self.bus.get_object('org.freedesktop.NetworkManager', created_conn)
+                    cset = dbus.Interface(conn, 'org.freedesktop.NetworkManager.Settings.Connection').GetSettings()
+                    if security != 'open':
+                        sec = dbus.Dictionary(cset.get('802-11-wireless-security', {}), signature='sv')
+                        sec['key-mgmt'] = dbus.String(_wifi_key_mgmt(security))
+                        sec['psk'] = dbus.String(password)
+                        sec['psk-flags'] = dbus.UInt32(0)
+                        cset['802-11-wireless-security'] = sec
+                        dbus.Interface(conn, 'org.freedesktop.NetworkManager.Settings.Connection').Update(cset)
+                    active_path = mgr.ActivateConnection(
+                        dbus.ObjectPath(created_conn),
+                        dbus.ObjectPath(ap['device']),
+                        dbus.ObjectPath(ap['ap_path']))
+                    reused = True
+                else:
+                    settings = self._settings_for(ssid_bytes, security, ap['bssid'])
+                    if security != 'open':
+                        settings['802-11-wireless-security']['psk'] = dbus.String(password)
+                    created_conn, active_path = mgr.AddAndActivateConnection(
+                        settings,
+                        dbus.ObjectPath(ap['device']),
+                        dbus.ObjectPath(ap['ap_path']))
+                    reused = False
+            except dbus.DBusException as exc:
+                # A stale AP path is the one condition worth one safe refresh.
+                if 'SpecificObjectNotFound' in (exc.get_dbus_name() or ''):
+                    logger.info('Wi-Fi AP went stale; refreshing exactly once')
+                    ap = self._resolve_ap(ssid, ssid_bytes, security, bssid, '', ap['device'])
+                    settings = self._settings_for(ssid_bytes, security, ap['bssid'])
+                    if security != 'open':
+                        settings['802-11-wireless-security']['psk'] = dbus.String(password)
+                    created_conn, active_path = mgr.AddAndActivateConnection(
+                        settings, dbus.ObjectPath(ap['device']), dbus.ObjectPath(ap['ap_path']))
+                    reused = False
+                else:
+                    raise
+            # Activation is asynchronous.  Poll only for a bounded window and
+            # report the real stage, never "connected" just because D-Bus replied.
+            deadline = time.time() + 12
+            snap = self._snapshot()
+            active_state = self._active_connection_state(active_path)
+            while time.time() < deadline and snap['stage'] not in ('dns', 'online', 'failed'):
+                time.sleep(0.5)
+                self._refresh_proxy()
+                snap = self._snapshot()
+                active_state = self._active_connection_state(active_path)
+                if active_state == 4:          # deactivated => NM gave up
+                    break
+            failed = (snap['stage'] == 'failed' or active_state == 4 or
+                      (snap['stage'] == 'idle' and active_state not in (1, 2)))
+            result = {
+                'success': not failed,
+                'state': 'connected' if snap['stage'] in ('dns', 'online') else
+                         ('failed' if failed else 'connecting'),
+                'stage': snap['stage'],
+                'ssid': ssid,
+                'device': snap['device'] or ap['record']['interface'],
+                'ap_path': ap['ap_path'],
+                'reused_saved_profile': bool(reused),
+                'ip4': snap['ip4'],
+                'connectivity': snap['connectivity'],
+                'active_connection': snap['active_connection'],
+                'active_state': active_state,
+                'device_state_reason_code': snap.get('state_reason_code', 0),
+                'device_state_reason': snap.get('state_reason', ''),
+            }
+            if failed:
+                # Wrong PSK, AP disappeared, or a security mismatch; never echo
+                # the secret.  StateReason 7/9 is the common supplicant/no-secret
+                # pair on this NM version.
+                result['error'] = 'NetworkManager could not activate the connection (wrong password, AP gone, or security mismatch).'
+                result['error_code'] = 'authentication-or-activation-failed'
+            elif snap['stage'] == 'associating':
+                result['note'] = 'Activation accepted; association/DHCP is still in progress.'
+            return result
+        except LookupError as exc:
+            logger.info('Wi-Fi AP lookup failed: %s', exc)
+            return {'success': False, 'error': str(exc), 'error_code': 'ap-not-found'}
+        except ValueError as exc:
+            return {'success': False, 'error': str(exc), 'error_code': 'bad-request'}
         except Exception as exc:
             logger.warning('Wi-Fi activation failed (%s)', type(exc).__name__)
-            return {'success': False, 'error': str(exc).replace(password, '[REDACTED]') if password else str(exc)}
+            return self._wifi_error(exc, password)
 
     def disconnect_wifi(self):
         try:
-            path, device, props = self._wifi_device()
-            dbus.Interface(device, 'org.freedesktop.NetworkManager.Device').Disconnect()
-            return {'success': True, 'state': 'disconnected'}
+            records = self._wifi_device_records()
+            if not records:
+                return {'success': False, 'error': 'No Wi-Fi device'}
+            chosen = max(records, key=lambda r: r['state'])
+            dbus.Interface(chosen['device'], 'org.freedesktop.NetworkManager.Device').Disconnect()
+            return {'success': True, 'state': 'disconnected', 'device': chosen['interface']}
         except Exception as exc:
-            return {'success': False, 'error': str(exc)}
-
+            return self._wifi_error(exc, '')
 
 
 class GeoClueConnector:
@@ -868,6 +1373,7 @@ class NuxelBridgeService(dbus.service.Object):
     def GetPhoneStatus(self, app_id):
         result = {'modem': self.modem.get_status(),
                    'network': self.network.get_status(),
+                   'battery': read_battery_status(),
                    'timestamp': time.time()}
         return json.dumps(result)
 
@@ -887,9 +1393,18 @@ class NuxelBridgeService(dbus.service.Object):
 
     @dbus.service.method(INTERFACE_NAME, in_signature='ssss', out_signature='s')
     def NetworkWifiConnect(self, app_id, ssid, password, security):
+        """Compatibility entry point: resolve the AP server-side by SSID."""
         if not self._check_capability(app_id, 'network:manage'):
             return json.dumps({'success': False, 'error': 'Network permission denied'})
         return json.dumps(self.network.connect_wifi(str(ssid), str(password), str(security)))
+
+    @dbus.service.method(INTERFACE_NAME, in_signature='sssssss', out_signature='s')
+    def NetworkWifiConnect2(self, app_id, ssid, password, security, ap_path, bssid, device):
+        """A47: carry the scan-selected AP/BSSID/device, but validate ownership."""
+        if not self._check_capability(app_id, 'network:manage'):
+            return json.dumps({'success': False, 'error': 'Network permission denied'})
+        return json.dumps(self.network.connect_wifi(
+            str(ssid), str(password), str(security), str(ap_path), str(bssid), str(device)))
 
     @dbus.service.method(INTERFACE_NAME, in_signature='s', out_signature='s')
     def NetworkWifiDisconnect(self, app_id):

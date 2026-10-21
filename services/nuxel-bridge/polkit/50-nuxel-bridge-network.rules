@@ -1,10 +1,19 @@
-// Permit only the Nuxel bridge service account to flip NetworkManager's
-// Wi-Fi radio property.  The bridge still enforces its per-app
-// `network:manage` capability before it makes this D-Bus call; no browser or
-// arbitrary local account receives this PolicyKit privilege.
+// Permit only the Nuxel bridge service account to perform the NetworkManager
+// operations the Settings UI exposes.  The bridge still enforces its per-app
+// `network:manage` capability before every D-Bus call; no browser or arbitrary
+// local account receives these PolicyKit privileges.
+//
+// A47: activation and profile creation failed with PermissionDenied because
+// this rule only covered enable-disable-wifi.  NetworkManager checks separate
+// actions for scans, activation and system profile changes.
 polkit.addRule(function(action, subject) {
-    if (action.id === 'org.freedesktop.NetworkManager.enable-disable-wifi' &&
-        subject.user === 'nuxel-bridge') {
+    var allowed = [
+        'org.freedesktop.NetworkManager.enable-disable-wifi',
+        'org.freedesktop.NetworkManager.wifi.scan',
+        'org.freedesktop.NetworkManager.network-control',
+        'org.freedesktop.NetworkManager.settings.modify.system'
+    ];
+    if (allowed.indexOf(action.id) >= 0 && subject.user === 'nuxel-bridge') {
         return polkit.Result.YES;
     }
 });

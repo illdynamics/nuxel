@@ -53,11 +53,15 @@
       this._bound = false;
       this._returnTimer = null;
       this._dismissTimer = null;
+      this._wiggleTimer = null;
+      this._wiggleStopTimer = null;
+      this._reducedMotion = !!(global.matchMedia && global.matchMedia('(prefers-reduced-motion: reduce)').matches);
 
       if (!this.el || !this.handle) return;
       this._bindHandle();
       this._startClock();
       this._startBattery();
+      this._startWiggle();
       this._positionHandle();
     }
 
@@ -261,6 +265,7 @@
       this.state = 'UNLOCKING';
       this.handle.classList.remove('grabbed');
       this.handle.classList.remove('armed');
+      this.handle.classList.remove('wiggling');
       this.handle.classList.add('unlocking');
       this.handle.style.transition = 'transform .28s ease-out, opacity .28s ease-out';
       this._buzz();
@@ -350,11 +355,14 @@
       this.locked = true;
       this.unlocked = false;
       this.state = 'IDLE';
+      try { document.body.classList.add('lockscreen-active'); } catch (e) {}
+      this._blurInputs();
       this.gesture = null;
       this.pointerId = null;
       this.handle.classList.remove('unlocking');
       this.handle.classList.remove('armed');
       this.handle.classList.remove('grabbed');
+      this.handle.classList.remove('wiggling');
       this.handle.style.transition = '';
       this.handle.style.transform = '';
       this.handle.style.opacity = '';
@@ -373,11 +381,13 @@
       this.locked = false;
       this.unlocked = true;
       this.state = 'UNLOCKED';
+      try { document.body.classList.remove('lockscreen-active'); } catch (e) {}
       this.gesture = null;
       this.pointerId = null;
       this.handle.classList.remove('grabbed');
       this.handle.classList.remove('armed');
       this.handle.classList.remove('unlocking');
+      this.handle.classList.remove('wiggling');
       this.handle.style.transition = '';
       this.handle.style.transform = '';
       this.handle.style.opacity = '';
@@ -397,12 +407,43 @@
       } catch (e) { /* feedback must never block the unlock */ }
     }
 
+    _displayOff() {
+      try { return document.body.classList.contains('display-off'); } catch (e) { return false; }
+    }
+
+    _blurInputs() {
+      // The compositor OSK is bound to text-input focus.  Dropping focus on
+      // lock hides it without touching the typed value in any field.
+      try {
+        const active = document.activeElement;
+        if (active && typeof active.blur === 'function') active.blur();
+        const sel = global.getSelection && global.getSelection();
+        if (sel && sel.removeAllRanges) sel.removeAllRanges();
+      } catch (e) { /* best effort */ }
+    }
+
     _updateClock() {
-      if (!this.timeEl || !this.dateEl) return;
+      if (!this.timeEl || !this.dateEl || this._displayOff()) return;
       const d = new Date();
       this.timeEl.textContent = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       const opts = { weekday: 'long', month: 'long', day: 'numeric' };
       this.dateEl.textContent = d.toLocaleDateString([], opts);
+    }
+
+    _startWiggle() {
+      if (this._reducedMotion || this._wiggleTimer) return;
+      // Low-frequency scheduler: at most one short compositor-friendly wiggle
+      // per ~9 s.  It never runs while dragged, unlocked, or display-off.
+      this._wiggleTimer = global.setInterval(() => {
+        if (!this.locked || this.state !== 'IDLE' || this._displayOff()) return;
+        if (!this.handle || this.handle.classList.contains('grabbed')) return;
+        this.handle.classList.add('wiggling');
+        if (this._wiggleStopTimer) global.clearTimeout(this._wiggleStopTimer);
+        this._wiggleStopTimer = global.setTimeout(() => {
+          this._wiggleStopTimer = null;
+          if (this.handle) this.handle.classList.remove('wiggling');
+        }, 1400);
+      }, 9000);
     }
 
     _startClock() {
@@ -411,22 +452,32 @@
     }
 
     _updateBattery() {
-      if (!this.batteryEl) return;
-      let pct = '—';
-      let charging = false;
+      if (!this.batteryEl || this._displayOff()) return;
+      const paint = (level, charging) => {
+        if (!this.batteryEl) return;
+        const ok = Number.isFinite(Number(level)) && Number(level) >= 0 && Number(level) <= 100;
+        const shown = ok ? Math.round(Number(level)) : null;
+        this.batteryEl.textContent = (charging ? '⚡ ' : '') + (shown === null ? '—' : shown + '%');
+      };
+      paint(null, false);
       try {
-        if (global.NuxelHost && global.NuxelHost.available &&
-            typeof global.NuxelHost.statusRead === 'function') {
-          global.NuxelHost.statusRead('battery-state').then((r) => {
+        // Same authoritative HTTP-bridge status source as the Home status bar.
+        // It reads /sys/class/power_supply/<type=Battery>/capacity (the S10+
+        // node is named `battery`, not BAT*), never a fabricated percentage.
+        if (typeof bridge !== 'undefined' && bridge && typeof bridge.getPhoneStatus === 'function') {
+          Promise.resolve(bridge.getPhoneStatus()).then((st) => {
+            const bat = st && st.battery;
+            if (bat) paint(bat.level, !!bat.charging);
+          }).catch(() => {});
+        } else if (global.NuxelHost && global.NuxelHost.available &&
+                   typeof global.NuxelHost.statusRead === 'function') {
+          global.NuxelHost.statusRead('battery-capacity').then((r) => {
             const t = (r && (r.text || r.value)) || '';
-            const m = t.match(/percent[=:]\s*(\d+)/i);
-            if (m) pct = m[1];
-            charging = /charging|charging=1/i.test(t);
-            this.batteryEl.textContent = (charging ? '⚡ ' : '') + pct + '%';
+            const m = t.match(/([-+]?\d+(?:\.\d+)?)/);
+            paint(m ? m[1] : null, false);
           }).catch(() => {});
         }
-      } catch (e) { /* best effort */ }
-      this.batteryEl.textContent = (charging ? '⚡ ' : '') + pct + '%';
+      } catch (e) { /* show — rather than a fabricated number */ }
     }
 
     _startBattery() {

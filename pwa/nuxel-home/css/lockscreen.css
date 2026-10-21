@@ -53,20 +53,60 @@
     align-items: center;
     z-index: 2;
 }
+/* Pointer-captured / drag-transformed container.  The artwork lives in the
+   nested child below so the decorative idle motion is a separate transform. */
 .lockscreen-handle {
+    position: relative;
     width: 118px;
     height: 118px;
-    object-fit: contain;
+    display: block;
     filter: drop-shadow(0 6px 18px rgba(0, 0, 0, 0.55));
     will-change: transform;
     pointer-events: auto;
+    touch-action: none;
     -webkit-user-drag: none;
+    cursor: grab;
 }
-.lockscreen-handle.grabbed { filter: drop-shadow(0 6px 22px rgba(80, 200, 255, 0.55)); }
+.lockscreen-lockhead-motion {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    pointer-events: none;
+    -webkit-user-drag: none;
+    transform-origin: 50% 72%;
+    will-change: transform;
+}
+/* One short wiggle every ~9 s (driven by a low-frequency JS scheduler).  An
+   infinite CSS animation kept WebKit/phoc compositing every frame even during
+   the "pause" segments on this software-rendered phone. */
+.lockscreen-handle.wiggling .lockscreen-lockhead-motion {
+    animation: nuxel-lockhead-wiggle 1.35s cubic-bezier(.36,.07,.19,.97) 1;
+}
+/* Gentle, low-energy invitation: a short wiggle followed by a long rest. */
+@keyframes nuxel-lockhead-wiggle {
+    0%, 58%, 100% { transform: rotate(0deg) translateX(0); }
+    62% { transform: rotate(-1.4deg) translateX(-1px); }
+    66% { transform: rotate(1.3deg) translateX(1px); }
+    70% { transform: rotate(-0.8deg) translateX(0); }
+    74% { transform: rotate(0.4deg) translateX(0); }
+}
+.lockscreen-handle.grabbed { filter: drop-shadow(0 6px 22px rgba(80, 200, 255, 0.55)); cursor: grabbing; }
+/* Stop the invitation the instant a real drag starts; the drag gesture owns
+   the container transform and this child stays still until the gesture ends. */
+.lockscreen-handle.grabbed .lockscreen-lockhead-motion,
+.lockscreen-handle.armed .lockscreen-lockhead-motion,
+.lockscreen-handle.unlocking .lockscreen-lockhead-motion,
+body.display-off .lockscreen-lockhead-motion,
+body.display-off .lockscreen-hint::before { animation-play-state: paused; }
 /* Subtle armed acknowledgement once the upward distance reaches the threshold.
    Geometry, position and artwork are untouched. */
 .lockscreen-handle.armed { filter: drop-shadow(0 0 24px rgba(120, 220, 255, 0.85)); }
 .lockscreen-handle.unlocking { opacity: 0; transform: translateY(-160px) scale(1.15); transition: transform .28s ease-out, opacity .28s ease-out; }
+@media (prefers-reduced-motion: reduce) {
+    .lockscreen-lockhead-motion { animation: none !important; }
+    .lockscreen-hint::before { animation: none !important; }
+}
 
 .lockscreen-hint {
     margin-top: 14px;
@@ -83,7 +123,9 @@
     height: 14px;
     margin: 0 auto 6px;
     background: rgba(234, 244, 255, 0.7);
-    animation: nuxel-swipe-hint 1.8s ease-in-out infinite;
+    /* A47: static cue.  The previous infinite 1.8 s loop forced WebKit/phoc to
+       composite continuously even when the owner was not touching the phone. */
+    opacity: .62;
 }
 @keyframes nuxel-swipe-hint {
     0%, 100% { opacity: .25; transform: translateY(3px); }

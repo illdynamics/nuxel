@@ -100,6 +100,25 @@ html, body {
     display: none !important;
 }
 
+/* A47: when the panel is actually powered down, freeze every decorative CSS
+   animation.  The web process otherwise keeps compositing a 60 fps loop while
+   the glass is dark; this is a real heat source, not a cosmetic setting. */
+body.display-off *,
+body.display-off *::before,
+body.display-off *::after {
+    animation-play-state: paused !important;
+}
+
+/* A47: the native layer-shell nav dock is the single owner on the phone.
+   navigation.js marks this only after it has confirmed the dock is running. */
+html.native-nav-pending #system-navigation { visibility: hidden !important; pointer-events: none !important; }
+html.native-nav-present #system-navigation { display: none !important; }
+
+/* The lockscreen is a security surface: no system nav, no keyboard. */
+body.lockscreen-active #system-navigation,
+body.lockscreen-active .nuxel-touch-keyboard,
+body.lockscreen-active #dock { display: none !important; pointer-events: none !important; }
+
 .fade-in {
     animation: fadeIn var(--transition-normal) ease forwards;
 }

@@ -101,7 +101,7 @@
     "native_fallback": false,
     "bridge_version": "0.6.3-beta",
     "pwa_version": "0.6.3-beta",
-    "cache_version": "v28-a44-0.6.3-beta-icon-delivery",
+    "cache_version": "v29-a47-workday-stabilization",
     "registry_version": 4,
     "single_source_of_truth": "pwa/nuxel-home (index.html, css/, js/, manifest.json, sw.js)",
     "apps_in_registry": [

@@ -335,9 +335,12 @@ body.app-drawer-open .app-grid-title::after { content: 'All apps'; margin-left: 
  * supplied bar image belongs only to the Back/Home/Recents strip in style.css.
  * Painting it here as well produced a second half-height bar above the nav and
  * let the taller nav layer cover the shortcut icons. */
-.dock{isolation:isolate;overflow:visible;z-index:90;background:transparent;border:0}
+.dock{isolation:isolate;overflow:visible;z-index:40;background:transparent;border:0}
 .dock::before{display:none!important;content:none!important}
 .dock-items{position:relative;z-index:1;grid-template-columns:repeat(4,minmax(0,1fr));}
+/* A47: Home-only shortcut dock. It sits below every app surface and is not a
+   hit target while an app launch is in flight or an app is in front. */
+body[data-app-state="LAUNCHING"] #dock,body[data-app-state="ACTIVE"] #dock,body[data-app-state="CLOSING"] #dock,body[data-app-state="FAILED"] #dock{visibility:hidden!important;pointer-events:none!important}
 .dock .app-item{touch-action:manipulation;min-width:0}
 .dock .app-item .app-icon{width:min(56px,100%);aspect-ratio:1;height:auto}
 /* Stationary desktop indicator sits above the artwork, not in its hit area. */

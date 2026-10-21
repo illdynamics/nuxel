@@ -721,6 +721,14 @@ static void menu_select(nuxel_fsm *f, int64_t t) {
 
 static void handle_action(nuxel_fsm *f, const char *a, const char *src) {
   if (!strcmp(a, "menu-open")) {
+    /* A long Power press must show a usable menu even if the panel was already
+       blanked. Wake the panel first; this is the same supported control-FIFO
+       path a short power press uses, not a raw register or second fb owner. */
+    if (!display_on) {
+      fifo_send(WLFB_FIFO, "screen-on\n");
+      display_on = 1;
+      last_activity_ms = now_ms();
+    }
     audit("MENU_OPEN index=%d id=%s", f->menu_index, nuxel_fsm_menu[f->menu_index].id);
     osd_menu(1, f->menu_index);
     return;

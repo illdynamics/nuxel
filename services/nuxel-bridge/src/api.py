@@ -532,23 +532,51 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
             except Exception:
                 pass
 
-        # Battery detection (live from sysfs when a battery is present)
-        bat_source = "mock"
-        bat_info = {"level": 100, "charging": True}
+        # Battery detection: enumerate by the kernel's own `type` property, not
+        # by a name prefix.  The S10+ gauge is `/sys/class/power_supply/battery`
+        # (not BAT0/BAT1), so the old BAT* filter silently fell back to the mock
+        # 100%/charging value and the owner saw a fabricated (and unreadable)
+        # battery.  Missing or malformed values stay None/—.
+        bat_source = "unavailable"
+        bat_info = {"level": None, "charging": False, "available": False}
         try:
-            bat_dirs = [d for d in _os.listdir("/sys/class/power_supply") if d.startswith("BAT")]
-            if bat_dirs:
-                bat_source = "live:sysfs"
-                cap_file = "/sys/class/power_supply/" + bat_dirs[0] + "/capacity"
-                status_file = "/sys/class/power_supply/" + bat_dirs[0] + "/status"
-                if _os.path.exists(cap_file):
+            candidates = []
+            for name in _os.listdir("/sys/class/power_supply"):
+                base = "/sys/class/power_supply/" + name
+                try:
+                    with open(base + "/type") as f:
+                        kind = f.read().strip()
+                except OSError:
+                    continue
+                if kind == "Battery":
+                    candidates.append((0 if name == "battery" else 1, name, base))
+            candidates.sort()
+            for _, name, base in candidates:
+                cap_file = base + "/capacity"
+                status_file = base + "/status"
+                if not _os.path.exists(cap_file):
+                    continue
+                try:
                     with open(cap_file) as f:
-                        bat_info["level"] = int(f.read().strip())
+                        raw = f.read().strip()
+                    level = int(float(raw))
+                except (OSError, ValueError):
+                    continue
+                if not 0 <= level <= 100:
+                    continue
+                charging = False
                 if _os.path.exists(status_file):
-                    with open(status_file) as f:
-                        bat_info["charging"] = f.read().strip() in ("Charging", "Full")
-        except Exception:
-            pass
+                    try:
+                        with open(status_file) as f:
+                            charging = f.read().strip() in ("Charging", "Full")
+                    except OSError:
+                        charging = False
+                bat_info = {"level": level, "charging": bool(charging),
+                            "available": True, "node": name}
+                bat_source = "live:sysfs:" + name
+                break
+        except Exception as _bat_error:
+            bat_source = "unavailable:" + type(_bat_error).__name__
 
         # Modem — live from org.freedesktop.ModemManager1 when present, else
         # in-memory mock (typical in a VM without a real modem).
@@ -723,7 +751,7 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
         ("phone", "status"): "GetPhoneStatus",
         ("network", "wifi-enabled"): "NetworkWifiSetEnabled",
         ("network", "wifi-scan"): "NetworkWifiScan",
-        ("network", "wifi-connect"): "NetworkWifiConnect",
+        ("network", "wifi-connect"): "NetworkWifiConnect2",
         ("network", "wifi-disconnect"): "NetworkWifiDisconnect",
         ("notifications", "list"): "GetNotifications",
         ("permissions", "list"): "GetAppCapabilities",
@@ -757,6 +785,7 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
         "NetworkWifiSetEnabled": lambda app_id, params: [app_id, bool(params.get("enabled", False))],
         "NetworkWifiScan": lambda app_id, params: [app_id],
         "NetworkWifiConnect": lambda app_id, params: [app_id, params.get("ssid", ""), params.get("password", ""), params.get("security", "wpa2")],
+        "NetworkWifiConnect2": lambda app_id, params: [app_id, params.get("ssid", ""), params.get("password", ""), params.get("security", "wpa2"), params.get("ap_path", ""), params.get("bssid", ""), params.get("device", "")],
         "NetworkWifiDisconnect": lambda app_id, params: [app_id],
         "GetNotifications": lambda app_id, params: [],
         "GetAppCapabilities": lambda app_id, params: [app_id],

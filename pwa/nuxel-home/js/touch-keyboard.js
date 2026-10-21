@@ -226,7 +226,7 @@
 
     const keyboard = {
         target: null, panel: null, shifted: false, symbols: false,
-        nativeProvider: false, _providerCheckedAt: 0,
+        nativeProvider: false, _providerCheckedAt: 0, _providerProbe: null, _showSeq: 0,
         _trace(message) {
             try {
                 const diag = global.webkit && global.webkit.messageHandlers && global.webkit.messageHandlers.nuxelDiag;
@@ -236,30 +236,64 @@
         // The software keyboard is needed whenever the Nuxel host is present;
         // keep the S10+ UA fallback for the injected handset browser.
         get enabled() {
-            if (this.nativeProvider) return false;
+            // Whether the fallback may be used at all.  nativeProvider is a
+            // separate, asynchronous fact: deciding it before this first probe
+            // resolves was how the old blue DOM keyboard appeared ON TOP of the
+            // working Stevia OSK (two keyboards for one field).
             return !!(global.NuxelHost && global.NuxelHost.available) || /Nuxel\/.*S10\+/.test((global.navigator && global.navigator.userAgent) || '');
         },
-        detectProvider() {
+        _applyProviderText(text) {
+            const value = String(text || '');
+            this.nativeProvider = /(^|\n)(native=1|provider=stevia)(\n|$)/i.test(value);
+            return this.nativeProvider;
+        },
+        detectProvider(force) {
+            if (this.nativeProvider) return Promise.resolve(true);
             const now = Date.now();
-            if (now - this._providerCheckedAt < 5000) return;
+            if (!force && this._providerProbe && now - this._providerCheckedAt < 5000) return this._providerProbe;
             this._providerCheckedAt = now;
-            const apply = (text) => {
-                const value = String(text || '');
-                this.nativeProvider = /(^|\n)(native=1|provider=stevia)(\n|$)/i.test(value);
+            const fromMarker = () => {
+                try {
+                    if (global.fetch) {
+                        return global.fetch('/pwa/nuxel-home/keyboard-provider.json', { cache: 'no-store' })
+                            .then((res) => res.ok ? res.json() : null)
+                            .then((doc) => !!(doc && doc.native === true))
+                            .catch(() => false);
+                    }
+                } catch (e) { /* fall through */ }
+                return Promise.resolve(false);
             };
-            try {
-                if (global.NuxelHost && global.NuxelHost.statusRead) {
-                    Promise.resolve(global.NuxelHost.statusRead('keyboard-state')).then((res) => {
-                        if (res && res.ok && res.text) apply(res.text);
-                    }, () => {});
-                    return;
+            const fromHost = (markerOk) => {
+                if (markerOk || this.nativeProvider) return Promise.resolve(this.nativeProvider);
+                try {
+                    if (global.NuxelHost && global.NuxelHost.statusRead) {
+                        return Promise.resolve(global.NuxelHost.statusRead('keyboard-state'))
+                            .then((res) => {
+                                if (res && res.ok && res.text) return this._applyProviderText(res.text);
+                                return this.nativeProvider;
+                            }).catch(() => this.nativeProvider);
+                    }
+                } catch (e) { /* no host marker */ }
+                return Promise.resolve(this.nativeProvider);
+            };
+            this._providerProbe = fromMarker().then((ok) => {
+                if (ok) this.nativeProvider = true;
+                return fromHost(ok);
+            }).then((native) => {
+                if (native) {
+                    this.nativeProvider = true;
+                    try { document.body.classList.add('native-osk'); } catch (e) {}
+                    this._discardFallback();
                 }
-            } catch (e) { /* use the HTTP marker below */ }
-            try {
-                if (global.fetch) global.fetch('/pwa/nuxel-home/keyboard-provider.json', { cache: 'no-store' })
-                    .then((res) => res.ok ? res.json() : null)
-                    .then((doc) => { if (doc) this.nativeProvider = doc.native === true; }, () => {});
-            } catch (e) { /* the in-page fallback remains available */ }
+                return native;
+            }).catch(() => this.nativeProvider);
+            return this._providerProbe;
+        },
+        _discardFallback() {
+            if (this.panel && this.panel.parentNode) this.panel.parentNode.removeChild(this.panel);
+            this.panel = null;
+            this.target = null;
+            try { document.body.classList.remove('touch-keyboard-open'); } catch (e) {}
         },
         attach(doc) {
             if (!doc || doc.__nuxelKeyboard) return;
@@ -293,9 +327,23 @@
         },
         _inPanel(node) { try { return !!(this.panel && node && this.panel.contains(node)); } catch (e) { return false; } },
         show(target) {
-            this.detectProvider();
-            if (this.nativeProvider) { this._trace('native-provider-active'); this.hide(); return; }
             if (!this.enabled || !editable(target)) { this._trace('not-shown enabled=' + this.enabled + ' editable=' + editable(target)); return; }
+            const seq = ++this._showSeq;
+            const reveal = (native) => {
+                if (seq !== this._showSeq) return;   // focus moved on; stale probe
+                if (native || this.nativeProvider) {
+                    this._trace('native-provider-active');
+                    this._discardFallback();
+                    return;
+                }
+                this._showFallback(target);
+            };
+            const probe = this.detectProvider();
+            if (probe && probe.then) probe.then(reveal, () => reveal(false));
+            else reveal(this.nativeProvider);
+        },
+        _showFallback(target) {
+            if (this.nativeProvider) { this._discardFallback(); return; }
             this.target = target;
             if (!this.panel) {
                 this.panel = document.createElement('div');
@@ -309,7 +357,7 @@
             this.panel.hidden = false;
             this.render();
             document.body.classList.add('touch-keyboard-open');
-            this._trace('show tag=' + String(target.tagName || '?') + ' id=' + String(target.id || '-') + ' rows=' + this.panel.children.length);
+            this._trace('fallback-show tag=' + String(target.tagName || '?') + ' id=' + String(target.id || '-') + ' rows=' + this.panel.children.length);
             try { target.scrollIntoView({ block: 'nearest', inline: 'nearest' }); } catch (e) { /* optional */ }
         },
         hide() {
@@ -379,7 +427,14 @@
         keyboard.detectProvider();
         document.addEventListener('app:lifecycle', () => keyboard.hide());
         // A provider can start after the launcher (session ordering). Re-check
-        // without polling the host on every key.
-        try { global.setInterval(() => keyboard.detectProvider(), 15000); } catch (e) {}
+        // only while no native provider is known; once Stevia is confirmed there
+        // is nothing to poll and the in-page fallback must stay gone.
+        try {
+            global.setInterval(() => {
+                if (!keyboard.nativeProvider) keyboard.detectProvider(true).then((native) => {
+                    if (native) keyboard._discardFallback();
+                });
+            }, 15000);
+        } catch (e) {}
     }
 })(window);

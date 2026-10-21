@@ -176,7 +176,12 @@ class StatusBar {
         }
     }
 
+    _displayOff() {
+        try { return document.body.classList.contains('display-off'); } catch (e) { return false; }
+    }
+
     _updateTime() {
+        if (this._displayOff()) return;
         const now = new Date();
         const hours = String(now.getHours()).padStart(2, '0');
         const minutes = String(now.getMinutes()).padStart(2, '0');
@@ -277,6 +282,7 @@ class StatusBar {
     }
 
     async _pollPhoneStatus() {
+        if (this._displayOff()) return;
         try {
             if (typeof bridge === 'undefined' || !bridge.getPhoneStatus) {
                 console.warn('StatusBar: bridge not available for phone status');
@@ -301,7 +307,9 @@ class StatusBar {
         if (status.battery) {
             const level = status.battery.level == null ? NaN : Number(status.battery.level);
             const charging = Boolean(status.battery.charging);
-            if (Number.isFinite(level) && level >= 0 && level <= 100) this.state.batteryLevel = level;
+            // A missing/out-of-range sysfs reading is UNKNOWN, not 0% and not a
+            // stale old value.  The icon renders an em dash instead.
+            this.state.batteryLevel = (Number.isFinite(level) && level >= 0 && level <= 100) ? level : null;
             this.state.batteryCharging = charging;
         }
 
@@ -398,6 +406,7 @@ class StatusBar {
     }
 
     async _pollNotifications() {
+        if (this._displayOff()) return;
         try {
             if (typeof bridge === 'undefined' || !bridge.getNotifications) {
                 return;
@@ -495,7 +504,8 @@ class StatusBar {
     }
 
     setBatteryLevel(level, charging) {
-        this.state.batteryLevel = Math.max(0, Math.min(100, level ?? 100));
+        const n = Number(level);
+        this.state.batteryLevel = Number.isFinite(n) ? Math.max(0, Math.min(100, n)) : null;
         this.state.batteryCharging = !!charging;
         this._renderBattery();
     }

@@ -300,6 +300,7 @@ class NuxelHome {
             if (this._isLocked()) return;   // locked: navigation/app actions are inert
             if (action === 'home') this.home();
             else if (action === 'back') this.back();
+            else if (action === 'back-long') this.terminateForeground();
             else if (action === 'forward') this.forward();
             else if (action === 'stop') this.stopLoading();
             else if (action === 'reload-launcher') this.reloadLauncher();
@@ -516,6 +517,13 @@ class NuxelHome {
         const folder = document.querySelector('.folder-sheet'); if (folder) { folder.remove(); return; }
         if (window.launcher && window.launcher.drawerOpen) { window.launcher.closeDrawer(); return; }
         if (window.NuxelTouchKeyboard && window.NuxelTouchKeyboard.visible()) { window.NuxelTouchKeyboard.hide(); return; }
+        // The working keyboard is the compositor's Stevia OSK, not the DOM
+        // fallback.  Back must first remove text-input focus, which asks the
+        // compositor to hide its keyboard while preserving the typed value.
+        if (window.NuxelTouchKeyboard && window.NuxelTouchKeyboard.nativeProvider) {
+            const field = this._activeEditable();
+            if (field) { this._blurActiveField(); return; }
+        }
         const frame = this.appSession.frame;
         if (frame && this.appSession.state === 'ACTIVE') {
             // Same-origin PWAs use their own browser history. Never terminate the
@@ -564,7 +572,9 @@ class NuxelHome {
     _lock(reason) {
         this._inputTrace(`lock reason=${reason}`);
         if (this.lockscreen) this.lockscreen.show(reason);
+        this._blurActiveField();
         if (window.NuxelTouchKeyboard) window.NuxelTouchKeyboard.hide();
+        this._setNavDock(false);
         /* A lock always blanks the panel: idempotent for a display-off lock. */
         const host = window.NuxelHost;
         if (host && host.available && typeof host.action === 'function') {
@@ -578,6 +588,7 @@ class NuxelHome {
         if (!ls) return { ok: false, error: 'no-lockscreen' };
         if (!ls.isLocked()) return { ok: true, already: true, state: ls.state };
         ls.hide();
+        this._setNavDock(true);
         /* A fresh unlocked session must not consume the stale OFF sample that
            caused the lock in the first place.  `null` means "unknown/armed":
            one OFF sample records the state but does not re-lock.  After the
@@ -632,6 +643,7 @@ class NuxelHome {
             this.lockscreen.show('boot');
         }
         this._inputTrace(`lockscreen-controller version=a45.1 device=${window.NuxelHost && window.NuxelHost.available ? 'phone' : 'local'}`);
+        if (this._isLocked()) this._setNavDock(false);
         this._watchDisplayForLock();
     }
 
@@ -649,6 +661,15 @@ class NuxelHome {
                    status line; older display-state documents used DISPLAY_OFF.
                    Accept both so an idle/power screen-off always re-locks. */
                 const off = /(^|[\s;])display=off([\s;]|$)/i.test(t) || /^DISPLAY_OFF\b/m.test(t);
+                document.body.classList.toggle('display-off', off);
+                document.body.dataset.displayOff = off ? '1' : '0';
+                if (off) {
+                    this._blurActiveField();
+                    if (window.NuxelTouchKeyboard) window.NuxelTouchKeyboard.hide();
+                    if (window.NuxelSystemMonitor && window.NuxelSystemMonitor.stop) window.NuxelSystemMonitor.stop();
+                } else if (this._lastDisplayOff === true && window.NuxelSystemMonitor && window.NuxelSystemMonitor.configure) {
+                    window.NuxelSystemMonitor.configure();
+                }
                 if (this._lastDisplayOff === false && off && !this._isLocked()) this._lock('display-off');
                 this._lastDisplayOff = off;
             }).catch(() => {});
@@ -672,7 +693,45 @@ class NuxelHome {
     terminateForeground() {
         // The launcher is never a session, so a held Back can only terminate a
         // foreground app.  On Home this intentionally does nothing.
-        if (this.appSession.app) this._closeAppSurface();
+        const app = this.appSession.app;
+        if (!app) return;
+        if (window.NuxelTouchKeyboard) window.NuxelTouchKeyboard.hide();
+        if (this.sessions) this.sessions.close(app.id);
+        this._closeAppSurface();
+        this.home();
+    }
+
+    _setNavDock(visible) {
+        const host = window.NuxelHost;
+        if (!host || !host.available || typeof host.action !== 'function') return;
+        try { Promise.resolve(host.action(visible ? 'nav-show' : 'nav-hide')).catch(() => {}); }
+        catch (e) { /* the native dock FIFO may not exist yet; next lock retries */ }
+    }
+
+    _activeEditable() {
+        let doc = document;
+        for (let depth = 0; depth < 3; depth++) {
+            const active = doc.activeElement;
+            if (!active) return null;
+            const tag = String(active.tagName || '').toUpperCase();
+            if (tag === 'IFRAME') {
+                try { doc = active.contentDocument; continue; } catch (e) { return null; }
+            }
+            if (active.isContentEditable) return active;
+            if (tag === 'TEXTAREA') return active;
+            if (tag === 'INPUT' && !/^(button|checkbox|radio|submit|reset|file|range|color)$/i.test(String(active.type || 'text'))) return active;
+            return null;
+        }
+        return null;
+    }
+
+    _blurActiveField() {
+        try {
+            const field = this._activeEditable();
+            if (field && typeof field.blur === 'function') field.blur();
+            const sel = window.getSelection && window.getSelection();
+            if (sel && sel.removeAllRanges) sel.removeAllRanges();
+        } catch (e) { /* losing focus is best-effort and must never break lock */ }
     }
 
     openHomeSettings() {

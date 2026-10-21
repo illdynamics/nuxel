@@ -44,13 +44,43 @@
   class SystemNavigation {
     constructor() {
       this.el = document.getElementById('system-navigation');
-      this.holdMs = 650; this.timer = null; this.held = false;
+      this.holdMs = 700; this.timer = null; this.held = false;
       this.activePointer = null;
+      this.nativeDock = false;
       if (!this.el) return;
       this.el.querySelectorAll('button[data-nav]').forEach(button => {
         this._bindImage(button);
         this.bind(button);
       });
+      this._resolveNativeDock();
+    }
+    _resolveNativeDock() {
+      // On the S10+ the authoritative dock is the native layer-shell client
+      // nuxel-navdock. The DOM strip is only the desktop/VM fallback; if both
+      // exist the owner sees two Back and two Recents controls. Hide the DOM
+      // copy before first paint and keep it hidden once the native dock proves
+      // it is running. If the native dock is absent, the DOM fallback returns.
+      const host = global.NuxelHost;
+      if (!host || !host.available || typeof host.statusRead !== 'function') return;
+      try { document.documentElement.classList.add('native-nav-pending'); } catch (e) {}
+      Promise.resolve(host.statusRead('navdock-state')).then((res) => {
+        const text = (res && (res.text || res.value)) || '';
+        const ready = /NAV_DOCK_READY/.test(text);
+        this.nativeDock = ready;
+        try {
+          document.documentElement.classList.toggle('native-nav-present', ready);
+          document.documentElement.classList.toggle('native-nav-pending', !ready);
+        } catch (e) {}
+        this._traceNs('native-dock=' + (ready ? 'present' : 'absent'));
+      }).catch(() => {
+        try { document.documentElement.classList.remove('native-nav-pending'); } catch (e) {}
+      });
+    }
+    _traceNs(message) {
+      try {
+        const diag = global.webkit && global.webkit.messageHandlers && global.webkit.messageHandlers.nuxelDiag;
+        if (diag) diag.postMessage('NAVOWNER ' + message);
+      } catch (e) {}
     }
     _bindImage(button) {
       const image = button.querySelector('img');
@@ -128,5 +158,8 @@
   }
   global.NuxelAppSessions = AppSessions;
   global.NuxelSystemNavigation = SystemNavigation;
-  document.addEventListener('DOMContentLoaded', () => { global.nuxelNavigation = new SystemNavigation(); });
+  document.addEventListener('DOMContentLoaded', () => {
+    if (global.nuxelNavigation) return;   // exactly one DOM fallback instance
+    global.nuxelNavigation = new SystemNavigation();
+  });
 })(window);

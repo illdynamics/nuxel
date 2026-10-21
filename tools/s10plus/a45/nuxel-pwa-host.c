@@ -156,6 +156,10 @@ static const struct cfgfile CFG[] = {
      to the terminal, the buttons or the boot surface. */
   { "keyboard-state",      "/run/nuxel-keyboard.state",                    0 },
   { "lock-state",          "/run/nuxel-lock.state",                        0 },
+  { "navdock-state",       "/run/nuxel-navdock.state",                     0 },
+  /* Real S10+ battery nodes (the gauge is named `battery`, not BAT*). */
+  { "battery-capacity",    "/sys/class/power_supply/battery/capacity",     0 },
+  { "battery-status",      "/sys/class/power_supply/battery/status",       0 },
   /* A45 Display & Lockscreen: the Home Settings timeout selector writes this
      document, which nuxel-button-manager (the single idle owner) reads live. */
   { "display-timeout",     "/etc/nuxel/display/screen-timeout.json",      1 },
@@ -386,7 +390,16 @@ static void action_perform(const char *action, char *result, size_t rn) {
     snprintf(result, rn, "{\"ok\":true,\"action\":\"open-terminal\"}");
     return;
   }
-  if (!strcmp(action, "home") || !strcmp(action, "back") || !strcmp(action, "forward") ||
+  if (!strcmp(action, "nav-hide") || !strcmp(action, "nav-show")) {
+    int nf = open("/run/nuxel-navdock.cmd", O_WRONLY | O_NONBLOCK);
+    if (nf < 0) { snprintf(result, rn, "{\"ok\":false,\"error\":\"navdock-fifo-absent\"}"); return; }
+    dprintf(nf, "%s\n", !strcmp(action, "nav-show") ? "show" : "hide");
+    close(nf);
+    st("HOST_ACTION %s -> navdock fifo", action);
+    snprintf(result, rn, "{\"ok\":true,\"action\":\"%s\"}", action);
+    return;
+  }
+  if (!strcmp(action, "home") || !strcmp(action, "back") || !strcmp(action, "back-long") || !strcmp(action, "forward") ||
       !strcmp(action, "stop") || !strcmp(action, "reload-launcher") ||
       !strcmp(action, "search") || !strcmp(action, "settings") ||
       !strcmp(action, "recents") || !strcmp(action, "lock") || !strcmp(action, "unlock")) {

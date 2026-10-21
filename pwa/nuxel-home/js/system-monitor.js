@@ -23,11 +23,13 @@
   }
   function homeVisible() {
     // BACKGROUND means an app iframe is hidden and Home is on the glass; it is
-    // still visible Home. The previous check paused the monitor permanently
-    // after the first app launch + Home press, freezing every meter at its last
-    // value. Only a foreground app or an in-flight launch covers Home.
+    // still visible Home. Only a foreground app, an in-flight launch, the
+    // lockscreen, or an actually powered-down panel hides Home.
     var state = document.body.dataset.appState;
-    return document.visibilityState === 'visible' && state !== 'ACTIVE' && state !== 'LAUNCHING';
+    var off = document.body.dataset.displayOff === '1' || document.body.classList.contains('display-off');
+    var locked = document.body.classList.contains('lockscreen-active');
+    return document.visibilityState === 'visible' && state !== 'ACTIVE' &&
+      state !== 'LAUNCHING' && state !== 'CLOSING' && !off && !locked;
   }
   function shouldPoll() { return config.enabled && homeVisible(); }
   function meter(name, value, available, display) {
@@ -72,7 +74,7 @@
     detail('cpu', mhz(data.cpu_frequency_mhz));
     detail('memory', data.memory_status === 'ok' && Number.isFinite(Number(data.memory_used_kib)) && Number.isFinite(Number(data.memory_total_kib)) ? gib(data.memory_used_kib) + '/' + gib(data.memory_total_kib) : 'N/A');
     detail('gpu', mhz(data.gpu_frequency_mhz));
-    detail('gpu-memory', gpuMemoryOk ? memAmount(gpuUsed) + ' / ' + memAmount(gpuTotal) + ' shared' : 'N/A');
+    detail('gpu-memory', gpuMemoryOk ? memAmount(gpuUsed) + ' / ' + memAmount(gpuTotal) + ' shared' : 'N/A (shared RAM)');
   }
   function stop() {
     if (timer !== null) { global.clearTimeout(timer); timer = null; }

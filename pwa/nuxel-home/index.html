@@ -14,12 +14,12 @@
     <link rel="icon" type="image/png" href="icons/icon-192.png">
     <link rel="apple-touch-icon" href="icons/icon-192.png">
     <title>Nuxel</title>
-    <link rel="stylesheet" href="css/style.css?v=a45">
-    <link rel="stylesheet" href="css/launcher.css">
+    <link rel="stylesheet" href="css/style.css?v=a47">
+    <link rel="stylesheet" href="css/launcher.css?v=a47">
     <link rel="stylesheet" href="css/search.css">
-    <link rel="stylesheet" href="css/status-bar.css">
+    <link rel="stylesheet" href="css/status-bar.css?v=a47">
     <link rel="stylesheet" href="css/home-settings.css">
-    <link rel="stylesheet" href="css/lockscreen.css?v=a451">
+    <link rel="stylesheet" href="css/lockscreen.css?v=a47">
 </head>
 <body>
     <!-- Boot animation splash (nuxel-boot-animation.mp4) — shown while the
@@ -149,9 +149,15 @@
             <div class="lockscreen-battery" id="lockscreen-battery">—%</div>
         </div>
         <div class="lockscreen-handle-wrap" id="lockscreen-handle-wrap">
-            <img id="lockscreen-handle" class="lockscreen-handle"
-                 src="/assets/nuxel-lockhead.png?v=a45" alt="Swipe up to unlock"
-                 draggable="false" aria-label="Drag the penguin upward to unlock">
+            <!-- The outer container owns pointer capture and the drag transform.
+                 The inner image carries only the decorative idle wiggle, so the
+                 two transforms can never fight over the unlock gesture. -->
+            <div id="lockscreen-handle" class="lockscreen-handle" role="button"
+                 aria-label="Drag the penguin upward to unlock">
+                <img id="lockscreen-lockhead" class="lockscreen-lockhead-motion"
+                     src="/assets/nuxel-lockhead.png?v=a45" alt=""
+                     draggable="false" aria-hidden="true">
+            </div>
             <div class="lockscreen-hint" id="lockscreen-hint" aria-hidden="true">swipe up to unlock</div>
         </div>
     </div>
@@ -199,7 +205,7 @@
     <script src="js/apps.js"></script>
     <script src="js/layout-model.js"></script>
     <script src="js/launcher.js"></script>
-    <script src="js/status-bar.js"></script>
+    <script src="js/status-bar.js?v=a47"></script>
     <script src="js/search.js"></script>
     <script type="module" src="../nuxel-common/bridge.js"></script>
     <script src="js/bridge.js"></script>
@@ -212,17 +218,17 @@
          and the verbose-boot log overlay.  Both are inert without a host. -->
     <script src="js/settings-store.js"></script>
     <script src="js/safe-zones.js"></script>
-    <script src="js/osd.js"></script>
+    <script src="js/osd.js?v=a47"></script>
     <script src="js/bootlog.js"></script>
-    <script src="js/touch-keyboard.js?v=a45"></script>
-    <script src="js/lockscreen.js?v=a451"></script>
-    <script src="js/navigation.js?v=a45"></script>
+    <script src="js/touch-keyboard.js?v=a47"></script>
+    <script src="js/lockscreen.js?v=a47"></script>
+    <script src="js/navigation.js?v=a47"></script>
     <script src="js/gestures.js"></script>
     <script src="js/home-settings.js"></script>
-    <script src="js/system-monitor.js?v=0.6.3-metrics6"></script>
+    <script src="js/system-monitor.js?v=a47"></script>
     <script src="js/scroll-indicators.js"></script>
     <!-- A44: one-shot in-engine icon/WebKit/cache health report to nuxelDiag. -->
     <script src="js/icon-health.js?v=a44"></script>
-    <script src="js/app.js?v=a451"></script>
+    <script src="js/app.js?v=a47"></script>
 </body>
 </html>

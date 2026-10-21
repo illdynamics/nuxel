@@ -17,7 +17,7 @@
 // nuxel.cache_version, so a launcher that was served from a stale bundle is a
 // detectable state rather than a mystery.
 // v0.5.2-beta changes launcher lifecycle and Terminal interaction assets.
-const CACHE_VERSION = 'v28-a44-0.6.3-beta-icon-delivery';
+const CACHE_VERSION = 'v29-a47-workday-stabilization';
 const CACHE_NAME = 'nuxel-home-' + CACHE_VERSION;   // version marker sent to clients
 const STATIC_CACHE = 'nuxel-static-' + CACHE_VERSION;
 const DYNAMIC_CACHE = 'nuxel-dynamic-' + CACHE_VERSION;

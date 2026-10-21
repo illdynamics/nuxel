@@ -127,25 +127,27 @@ static int read_gpu_frequency(double *mhz) {
   return 1;
 }
 
-/* The Mali driver accounts every GPU allocation in this table.  On the S10+
- * GPU memory is shared with system RAM (there is no dedicated VRAM), so the
- * usable budget is MemTotal.  A readable header with no rows is a valid zero,
- * not an unavailable source. */
+/* The Mali driver accounts per-process GPU allocations in this table.  On the
+ * S10+ GPU memory is shared with system RAM (there is no dedicated VRAM), so
+ * the budget is MemTotal.  A header with NO allocation rows is not evidence of
+ * "0 MiB in use": the observed beyond2lte node prints only the header while the
+ * heap accounting is absent from this kernel.  Report unavailable instead of a
+ * fabricated zero. */
 static int read_gpu_memory(unsigned long long *used_kib) {
   FILE *f = fopen(GPU_MEMORY_PATH, "r");
   char line[256];
   unsigned long long tgid, pid, bytes, total_bytes = 0;
-  int saw_header = 0;
+  int saw_header = 0, rows = 0;
   if (!f) return 0;
   while (fgets(line, sizeof(line), f)) {
     if (strstr(line, "mem_used")) { saw_header = 1; continue; }
     if (sscanf(line, "%llu %llu %llu", &tgid, &pid, &bytes) == 3) {
       total_bytes += bytes;
-      saw_header = 1;
+      rows++;
     }
   }
   fclose(f);
-  if (!saw_header) return 0;
+  if (!saw_header || rows == 0) return 0;
   *used_kib = total_bytes / 1024ULL;
   return 1;
 }
@@ -162,7 +164,7 @@ static void make_json(char *out, size_t cap) {
   const char *gpu_status = "unavailable";
   const char *cpu_frequency_status = "unavailable";
   const char *gpu_frequency_status = "unavailable";
-  const char *gpu_memory_status = "unavailable";
+  const char *gpu_memory_status = "unavailable_shared_memory";
   if (read_cpu(&now)) {
     if (cpu_percent(&previous, &now, &cpu)) {
       cpu_status = "ok";

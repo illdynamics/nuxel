@@ -17,7 +17,7 @@
   'use strict';
   var el = null, hideTimer = null, lastTs = 0;
   var menu = null, menuKey = '';
-  var interval = 1500, timer = null;
+  var interval = 2000, timer = null;
 
   function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
@@ -67,7 +67,7 @@
   function hideMenu() {
     if (menu) menu.style.display = 'none';
     menuKey = '';
-    interval = 1500;
+    interval = 2000;
   }
 
   function ensureMenu() {
@@ -136,7 +136,15 @@
     }
   }
 
-  function schedule() { clearTimeout(timer); timer = setTimeout(poll, interval); }
+  function schedule() {
+    clearTimeout(timer);
+    // The OSD/menu must still be reachable while locked, but a dark panel has
+    // no reason to run a 2 s network poll. The button manager wakes the panel
+    // before opening the menu, so the next poll picks it up promptly.
+    var off = document.body.classList.contains('display-off');
+    var wait = (menu && menu.style.display === 'block') ? interval : (off ? 10000 : interval);
+    timer = setTimeout(poll, wait);
+  }
   function poll() {
     fetch('/runtime/osd.json', { cache: 'no-store' })
       .then(function (r) {
