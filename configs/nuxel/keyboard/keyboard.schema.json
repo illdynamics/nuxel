@@ -45,6 +45,14 @@
     "keyboard.key_repeat_delay_ms": {"type": "integer", "minimum": 100, "maximum": 2000},
     "keyboard.key_repeat_interval_ms": {"type": "integer", "minimum": 10, "maximum": 200},
     "keyboard.haptics": {"type": "boolean"},
+    "keyboard.haptics_intensity": {"type": "string", "enum": ["low", "medium", "high"]},
+    "keyboard.haptics_intensity_levels": {
+      "type": "array",
+      "items": {"type": "string", "enum": ["low", "medium", "high"]},
+      "uniqueItems": true
+    },
+    "keyboard.haptics_pulse_ms": {"type": "integer", "minimum": 4, "maximum": 30},
+    "keyboard.haptics_intensity_comment": {"type": "string"},
     "keyboard.clipboard": {"type": "boolean"},
     "keyboard.hardware_passthrough": {"type": "boolean"},
     "set_by": {"type": "string"},

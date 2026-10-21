@@ -91,6 +91,17 @@
         (<code>/etc/nuxel/display/statusbar-safezones.json</code>); the same file is used by
         <code>nuxelctl statusbar</code> on the live console. Changes need no reboot.</p>
     </div>
+
+    <div class="block">
+      <h3>Screen rotation</h3>
+      <p class="hint">Seven modes, one source of truth
+        (<code>nuxel-orientationd</code>). Fixed modes work without a sensor;
+        Auto modes are disabled/marked unavailable when no accelerometer is
+        readable. Rotated pixels alone are never accepted as rotation.</p>
+      <div id="orientation-modes" class="radio-group" role="radiogroup" aria-label="Screen rotation mode"></div>
+      <p id="orientation-state" class="state" role="status" aria-live="polite">Checking orientation service…</p>
+      <p id="orientation-hint" class="hint">—</p>
+    </div>
   </section>
 
   <!-- A43: One NetworkManager backend shared with Quick Settings. -->

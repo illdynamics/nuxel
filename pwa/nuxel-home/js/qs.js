@@ -52,6 +52,16 @@ class QuickSettings {
             }
         });
 
+        // A49: long-press the rotate tile for the seven-mode menu.
+        const rotateTile = document.getElementById('qs-rotate');
+        if (rotateTile) {
+            rotateTile.addEventListener('contextmenu', (ev) => { ev.preventDefault(); this._openRotateMenu(); });
+            let rt = null, rf = false;
+            rotateTile.addEventListener('pointerdown', () => { rf = false; rt = setTimeout(() => { rf = true; this._openRotateMenu(); }, 600); });
+            rotateTile.addEventListener('pointerup', () => { if (rt) clearTimeout(rt); if (rf) { /* swallow the click after a long-press */ rotateTile.dataset.longpress = 'true'; setTimeout(() => delete rotateTile.dataset.longpress, 400); } });
+            rotateTile.addEventListener('pointerleave', () => { if (rt) clearTimeout(rt); });
+        }
+
         // A33: the verbose-boot tile (created dynamically, see header comment)
         this._buildVerboseBootTile();
 
@@ -231,6 +241,10 @@ class QuickSettings {
             await this._setWifiEnabled(!this.state.wifi);
             return;
         }
+        if (id === 'rotate') {
+            await this._toggleRotate();
+            return;
+        }
         // A tile must not become a decorative switch.  Keep unintegrated
         // controls honest until their hardware backend is landed.
         this._osdNotice(`${id} control is unavailable on this build`);
@@ -261,10 +275,100 @@ class QuickSettings {
         }
     }
 
+    // ---- orientation (A49): tap = portrait<->auto, long-press = 7 modes ----
+    async _orientationState() {
+        try {
+            const res = await bridge.call('orientation', 'get', {});
+            return (res && typeof res === 'object') ? res : { mode: 'portrait' };
+        } catch (e) {
+            return { mode: 'portrait', error: String(e && e.message || e) };
+        }
+    }
+
+    async _toggleRotate() {
+        const cur = await this._orientationState();
+        const next = (cur.mode === 'auto') ? 'portrait' : 'auto';
+        await this._setOrientation(next);
+    }
+
+    async _setOrientation(mode) {
+        const tile = document.getElementById('qs-rotate');
+        if (tile) tile.dataset.pending = 'true';
+        try {
+            const res = await bridge.call('orientation', 'set', { mode: mode });
+            if (!res || res.success !== true) {
+                throw new Error((res && res.error) || 'orientation backend unavailable');
+            }
+            this.orientationMode = res.mode || mode;
+            await this._syncRotate();
+            this._osdNotice('Rotation: ' + (res.mode_label || res.mode));
+            this._hapticSwitch();
+        } catch (error) {
+            await this._syncRotate();
+            this._osdNotice('Rotation unchanged: ' + (error && error.message ? error.message : 'backend unavailable'));
+        } finally {
+            if (tile) delete tile.dataset.pending;
+        }
+    }
+
+    _hapticSwitch() {
+        if (window.NuxelHost && window.NuxelHost.available) window.NuxelHost.action('haptics-switch');
+        else if (navigator.vibrate) navigator.vibrate(10);
+    }
+
+    async _syncRotate() {
+        const tile = document.getElementById('qs-rotate');
+        if (!tile) return;
+        const st = await this._orientationState();
+        this.orientationMode = st.mode || 'portrait';
+        const auto = !!(st.auto);
+        const sensor = st.sensor;
+        const sensorOk = !!(sensor && sensor.available);
+        tile.dataset.enabled = auto ? 'true' : 'false';
+        tile.dataset.mode = this.orientationMode;
+        const label = tile.querySelector('.qs-label');
+        if (label) label.textContent = auto ? 'Auto' : 'Locked';
+        tile.title = 'Rotation: ' + (st.mode_label || this.orientationMode)
+            + ' | effective ' + (st.effective_orientation === undefined ? '?' : st.effective_orientation + '°')
+            + (auto ? (' | sensor ' + (sensorOk ? 'available' : 'unavailable')) : '')
+            + '\nTap = portrait/auto, long-press = seven-mode menu';
+    }
+
+    _openRotateMenu() {
+        if (document.getElementById('qs-rotate-menu')) return;
+        const modes = [
+            ['portrait', 'Portrait'], ['reverse_portrait', 'Reverse portrait'],
+            ['landscape', 'Landscape'], ['reverse_landscape', 'Reverse landscape'],
+            ['auto', 'Auto (all)'], ['auto_portrait', 'Auto portrait'],
+            ['auto_landscape', 'Auto landscape'],
+        ];
+        const menu = document.createElement('div');
+        menu.id = 'qs-rotate-menu';
+        menu.className = 'qs-rotate-menu';
+        modes.forEach(([id, label]) => {
+            const item = document.createElement('button');
+            item.type = 'button';
+            item.className = 'qs-rotate-item';
+            item.textContent = label;
+            if (id === this.orientationMode) item.classList.add('selected');
+            item.addEventListener('click', (ev) => {
+                ev.stopPropagation();
+                menu.remove();
+                this._setOrientation(id);
+            });
+            menu.appendChild(item);
+        });
+        const dismiss = (ev) => { if (menu && !menu.contains(ev.target)) menu.remove(); };
+        menu.addEventListener('pointerdown', (ev) => ev.stopPropagation());
+        document.body.appendChild(menu);
+        setTimeout(() => document.addEventListener('pointerdown', dismiss, { once: true }), 0);
+    }
+
     _render() {
         // Update all toggle states from bridge
         this._syncState();
         this._syncVerboseBoot();
+        this._syncRotate();
     }
 
     async _syncState() {

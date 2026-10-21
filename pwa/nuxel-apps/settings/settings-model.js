@@ -24,6 +24,7 @@
     'animation-handoff': { path: '/etc/nuxel/boot/animation-handoff.json', consumer: 'nuxel-anim-handoff.py + nuxel-wl-fb (single framebuffer owner)', probe: 'anim-state' },
     // ---- documents this revision adds (each with a named consumer) ----
     'display': { path: '/etc/nuxel/display/display.json', consumer: 'nuxel-wl-fb display bridge (DPMS/timeout) via nuxelctl display', probe: 'wlfb-state' },
+    'orientation': { path: '/etc/nuxel/orientation/orientation.json', consumer: 'nuxel-orientationd -> compositor transform (seven modes)', probe: 'orientation' },
     'keyboard': { path: '/etc/nuxel/keyboard/keyboard.json', consumer: 'nuxel-keyboard-apply.sh -> stevia / phosh OSK over Wayland text-input-v3', probe: 'keyboard-state' },
     'time': { path: '/etc/nuxel/time/time.json', consumer: 'nuxelctl time / nuxel-time.sh (timesyncd+chrony, RTC check timer)', probe: 'time' },
     'power': { path: '/etc/nuxel/power/power.json', consumer: 'nuxelctl power + the power/battery component (cpufreq governor)', probe: 'power' },
@@ -43,6 +44,9 @@
     'display.overflow_policy': { doc: 'display', kind: 'select', default: 'shift', label: 'Status-bar overflow' },
     'display.wake_double_tap': { doc: 'display', kind: 'switch', default: false, label: 'Double-tap to wake' },
     'display.sleep_double_tap': { doc: 'display', kind: 'switch', default: false, label: 'Double-tap to sleep' },
+    // Orientation (A49): seven modes, one source of truth
+    'orientation.mode': { doc: 'orientation', kind: 'select', default: 'portrait', label: 'Screen rotation',
+      options: ['portrait', 'reverse_portrait', 'landscape', 'reverse_landscape', 'auto', 'auto_portrait', 'auto_landscape'] },
     // Sound (mission 14/15)
     'sound.output_route': { doc: 'power', kind: 'select', default: 'auto', label: 'Output route' },
     'sound.notifications': { doc: 'haptics', kind: 'switch', default: true, label: 'Notification sounds' },
@@ -61,6 +65,9 @@
     'keyboard.height_dp': { doc: 'keyboard', kind: 'number', default: 300, label: 'Keyboard height (dp)' },
     'keyboard.key_repeat': { doc: 'keyboard', kind: 'switch', default: true, label: 'Key repeat (backspace)' },
     'keyboard.haptics': { doc: 'keyboard', kind: 'switch', default: true, label: 'Haptic feedback per key' },
+    'keyboard.haptics_intensity': { doc: 'keyboard', kind: 'select', default: 'low', label: 'Haptic intensity',
+      options: ['low', 'medium', 'high'] },
+    'keyboard.haptics_pulse_ms': { doc: 'keyboard', kind: 'number', default: 12, label: 'Haptic pulse (ms)' },
     'keyboard.clipboard': { doc: 'keyboard', kind: 'switch', default: true, label: 'Clipboard bar' },
     'keyboard.hardware_passthrough': { doc: 'keyboard', kind: 'switch', default: true, label: 'Physical keyboard passthrough' },
     // System (mission 12/18/48)
@@ -192,9 +199,10 @@
     network: ['network.wifi_enabled', 'network.wifi_autoconnect', 'network.cellular_enabled',
               'network.dns_mode', 'network.vpn_enabled'],
     display: ['display.timeout_sec', 'display.overflow_policy', 'display.wake_double_tap', 'display.sleep_double_tap'],
+    orientation: ['orientation.mode'],
     sound: ['sound.output_route', 'sound.notifications', 'sound.haptics'],
     input: ['keyboard.enabled', 'keyboard.auto_show', 'keyboard.layout', 'keyboard.numeric_layout',
-            'keyboard.height_dp', 'keyboard.key_repeat', 'keyboard.haptics', 'keyboard.clipboard',
+            'keyboard.height_dp', 'keyboard.key_repeat', 'keyboard.haptics', 'keyboard.haptics_intensity', 'keyboard.haptics_pulse_ms', 'keyboard.clipboard',
             'keyboard.hardware_passthrough'],
     buttons: ['buttons.bixby_short', 'buttons.bixby_long', 'buttons.power_short', 'buttons.power_long',
               'buttons.volume_up', 'buttons.volume_down'],

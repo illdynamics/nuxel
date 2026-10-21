@@ -450,3 +450,36 @@
 .recents-view{z-index:110;opacity:0;transform:translateY(14px);will-change:transform,opacity;transition:transform 220ms cubic-bezier(.2,.8,.2,1),opacity 180ms ease}
 .recents-view.visible{opacity:1;transform:translateY(0)}
 @media (prefers-reduced-motion:reduce){.recents-view{transition:none}}
+
+/* ---- A49: seven-mode orientation menu (Quick Settings long-press) ---- */
+.qs-rotate-menu {
+    position: fixed;
+    left: 12px;
+    right: 12px;
+    bottom: calc(var(--system-nav-height, 0px) + 88px);
+    background: rgba(16, 18, 24, 0.97);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 14px;
+    padding: 6px;
+    z-index: 4000;
+    display: flex;
+    flex-direction: column;
+    max-width: 320px;
+    margin: 0 auto;
+}
+.qs-rotate-item {
+    -webkit-appearance: none;
+    appearance: none;
+    border: 0;
+    background: transparent;
+    color: #eef1f6;
+    font: 500 15px/1.2 system-ui, sans-serif;
+    text-align: left;
+    padding: 11px 12px;
+    border-radius: 8px;
+}
+.qs-rotate-item.selected {
+    background: rgba(90, 160, 255, 0.28);
+    color: #cfe4ff;
+}
+.qs-rotate-item:active { background: rgba(255, 255, 255, 0.10); }
