@@ -319,6 +319,51 @@
     b.addEventListener('click', function () { act(b.dataset.action); setTimeout(refreshDev, 400); });
   });
 
+  // ---------- haptics (real Samsung timed_output service) ----------
+  var HAPTICS_NAME = 'haptics';
+  var HAPTICS_DEFAULTS = {
+    schema_version: 1, enabled: true, touch_feedback: true, scroll_feedback: true,
+    navigation_feedback: true, long_press_feedback: true, intensity_percent: 30,
+    tap_ms: 12, scroll_ms: 6, long_press_ms: 25
+  };
+  function hapticsDoc() { return cfgGet(HAPTICS_NAME).then(function (res) {
+    return Object.assign({}, HAPTICS_DEFAULTS, (res && res.ok && res.text) ? parse(res.text, {}) : {});
+  }, function () { return Object.assign({}, HAPTICS_DEFAULTS); }); }
+  function hapticValue(id, suffix) { document.getElementById(id + suffix).textContent = document.getElementById(id).value + (suffix.indexOf('ms') >= 0 ? ' ms' : '%'); }
+  function renderHaptics(doc) {
+    var map = [['haptics-enabled','enabled'], ['haptics-touch','touch_feedback'], ['haptics-scroll','scroll_feedback'], ['haptics-navigation','navigation_feedback'], ['haptics-long','long_press_feedback']];
+    map.forEach(function (p) { document.getElementById(p[0]).checked = !!doc[p[1]]; });
+    [['haptics-intensity','intensity_percent'], ['haptics-tap-ms','tap_ms'], ['haptics-scroll-ms','scroll_ms'], ['haptics-long-ms','long_press_ms']].forEach(function (p) { document.getElementById(p[0]).value = doc[p[1]]; });
+    hapticValue('haptics-intensity','-val'); hapticValue('haptics-tap-ms','-val'); hapticValue('haptics-scroll-ms','-val'); hapticValue('haptics-long-ms','-val');
+    return call('status.read', { name: 'haptics-state' }).then(function (r) {
+      var state = (r && r.ok && r.text) ? r.text.trim() : 'service unavailable';
+      document.getElementById('haptics-state').textContent = state;
+      var amplitude = /amplitude_supported=1/.test(state);
+      document.getElementById('haptics-intensity').disabled = !amplitude;
+      document.getElementById('haptics-intensity-row').classList.toggle('disabled', !amplitude);
+      document.getElementById('haptics-capability').textContent = amplitude ? 'Samsung timed_output vibrator; hardware amplitude control is available.' : 'Vibration duration is available; this kernel did not report adjustable hardware amplitude.';
+    });
+  }
+  function saveHaptics() {
+    return hapticsDoc().then(function (doc) {
+      doc.enabled = document.getElementById('haptics-enabled').checked;
+      doc.touch_feedback = document.getElementById('haptics-touch').checked;
+      doc.scroll_feedback = document.getElementById('haptics-scroll').checked;
+      doc.navigation_feedback = document.getElementById('haptics-navigation').checked;
+      doc.long_press_feedback = document.getElementById('haptics-long').checked;
+      doc.intensity_percent = Number(document.getElementById('haptics-intensity').value);
+      doc.tap_ms = Number(document.getElementById('haptics-tap-ms').value);
+      doc.scroll_ms = Number(document.getElementById('haptics-scroll-ms').value);
+      doc.long_press_ms = Number(document.getElementById('haptics-long-ms').value);
+      doc.updated_at = Date.now(); doc.set_by = 'user';
+      return cfgSet(HAPTICS_NAME, JSON.stringify(doc, null, 2) + '\n').then(function (r) { return renderHaptics(doc).then(function () { return r; }); });
+    });
+  }
+  ['haptics-enabled','haptics-touch','haptics-scroll','haptics-navigation','haptics-long'].forEach(function (id) { document.getElementById(id).addEventListener('change', saveHaptics); });
+  [['haptics-intensity','-val'],['haptics-tap-ms','-val'],['haptics-scroll-ms','-val'],['haptics-long-ms','-val']].forEach(function (p) { document.getElementById(p[0]).addEventListener('input', function () { hapticValue(p[0], p[1]); }); document.getElementById(p[0]).addEventListener('change', saveHaptics); });
+  document.getElementById('haptics-test').addEventListener('click', function () { saveHaptics().then(function (r) { if (r && r.ok) return act('haptics-test'); }); });
+  document.getElementById('haptics-reset').addEventListener('click', function () { cfgSet(HAPTICS_NAME, JSON.stringify(HAPTICS_DEFAULTS, null, 2) + '\n').then(function () { renderHaptics(HAPTICS_DEFAULTS); }); });
+
   // ---------- developer status ----------
   function statusLine(name) {
     return call('status.read', { name: name }).then(function (res) {
@@ -511,10 +556,9 @@
   // (home document owns it in the VM build). The seven modes below mirror the
   // daemon; the authoritative list is the orientation.modes RPC response.
   var ROTATE_MODES = [
-    ['portrait', 'Portrait'], ['reverse_portrait', 'Reverse portrait'],
-    ['landscape', 'Landscape'], ['reverse_landscape', 'Reverse landscape'],
-    ['auto', 'Auto (all four)'], ['auto_portrait', 'Auto portrait'],
-    ['auto_landscape', 'Auto landscape']
+    ['auto', 'Auto'], ['auto_portrait', 'Auto Portrait'], ['auto_landscape', 'Auto Landscape'],
+    ['portrait', 'Forced Portrait'], ['landscape', 'Forced Landscape'],
+    ['reverse_portrait', 'Reverse Portrait (advanced)'], ['reverse_landscape', 'Reverse Landscape (advanced)']
   ];
   function orientationBridge() {
     try {
@@ -596,7 +640,7 @@
   loadRotation();
 
   // ---------- boot ----------
-  loadZonesDoc().then(loadButtons).then(loadBoot).then(function () {
+  loadZonesDoc().then(loadButtons).then(loadBoot).then(hapticsDoc).then(renderHaptics).then(function () {
     refreshDev();
     setInterval(refreshDev, 4000);
     window.addEventListener('resize', previewLayout);

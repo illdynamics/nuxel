@@ -35,6 +35,28 @@ class QuickSettings {
 
     _init() {
         this._bindEvents();
+        this._bindIconAssets();
+    }
+
+    // One decode/error owner for custom tile artwork.  The label remains usable
+    // if a PNG is missing, and the browser's broken-image glyph is suppressed.
+    // Re-opening Quick Settings reuses these nodes, so no second renderer is
+    // created (the A44 duplicate-icon regression).
+    _bindIconAssets() {
+        if (this._iconAssetsBound) return;
+        this._iconAssetsBound = true;
+        document.querySelectorAll('#quick-settings .qs-item img.qs-icon').forEach(img => {
+            const mark = () => {
+                img.dataset.iconState = 'failed';
+                img.hidden = true;
+            };
+            img.addEventListener('load', () => { img.dataset.iconState = 'loaded'; img.hidden = false; });
+            img.addEventListener('error', mark);
+            if (img.complete) {
+                if (img.naturalWidth > 0) img.dataset.iconState = 'loaded';
+                else mark();
+            }
+        });
     }
 
     _bindEvents() {
@@ -275,7 +297,7 @@ class QuickSettings {
         }
     }
 
-    // ---- orientation (A49): tap = portrait<->auto, long-press = 7 modes ----
+    // ---- orientation (A53): tap = forced portrait<->auto, long-press = five primary + advanced modes ----
     async _orientationState() {
         try {
             const res = await bridge.call('orientation', 'get', {});
@@ -331,16 +353,15 @@ class QuickSettings {
         tile.title = 'Rotation: ' + (st.mode_label || this.orientationMode)
             + ' | effective ' + (st.effective_orientation === undefined ? '?' : st.effective_orientation + '°')
             + (auto ? (' | sensor ' + (sensorOk ? 'available' : 'unavailable')) : '')
-            + '\nTap = portrait/auto, long-press = seven-mode menu';
+            + '\nTap = forced portrait/auto, long-press = five primary + advanced modes';
     }
 
     _openRotateMenu() {
         if (document.getElementById('qs-rotate-menu')) return;
         const modes = [
-            ['portrait', 'Portrait'], ['reverse_portrait', 'Reverse portrait'],
-            ['landscape', 'Landscape'], ['reverse_landscape', 'Reverse landscape'],
-            ['auto', 'Auto (all)'], ['auto_portrait', 'Auto portrait'],
-            ['auto_landscape', 'Auto landscape'],
+            ['auto', 'Auto'], ['auto_portrait', 'Auto Portrait'], ['auto_landscape', 'Auto Landscape'],
+            ['portrait', 'Forced Portrait'], ['landscape', 'Forced Landscape'],
+            ['reverse_portrait', 'Reverse Portrait (advanced)'], ['reverse_landscape', 'Reverse Landscape (advanced)'],
         ];
         const menu = document.createElement('div');
         menu.id = 'qs-rotate-menu';

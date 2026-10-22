@@ -8,15 +8,15 @@
     "panel": "S6E3HA9 Dynamic AMOLED 3040x1440 (portrait scanout 1440x3040)"
   },
   "modes": {
-    "portrait":            { "label": "Portrait",             "allowed": [0] },
-    "reverse_portrait":    { "label": "Reverse portrait",     "allowed": [180] },
-    "landscape":           { "label": "Landscape",            "allowed": [90] },
-    "reverse_landscape":   { "label": "Reverse landscape",    "allowed": [270] },
-    "auto":                { "label": "Auto (all)",           "allowed": [0, 90, 180, 270], "auto": true },
-    "auto_portrait":       { "label": "Auto portrait",        "allowed": [0, 180],          "auto": true },
-    "auto_landscape":      { "label": "Auto landscape",       "allowed": [90, 270],         "auto": true }
+    "portrait":            { "label": "Forced Portrait",      "allowed": [0] },
+    "reverse_portrait":    { "label": "Reverse Portrait",     "allowed": [180] },
+    "landscape":           { "label": "Forced Landscape",     "allowed": [90] },
+    "reverse_landscape":   { "label": "Reverse Landscape",    "allowed": [270] },
+    "auto":                { "label": "Auto",                 "allowed": [0, 90, 180, 270], "auto": true },
+    "auto_portrait":       { "label": "Auto Portrait",        "allowed": [0, 180],          "auto": true },
+    "auto_landscape":      { "label": "Auto Landscape",       "allowed": [90, 270],         "auto": true }
   },
-  "mode_order": ["portrait", "reverse_portrait", "landscape", "reverse_landscape", "auto", "auto_portrait", "auto_landscape"],
+  "mode_order": ["auto", "auto_portrait", "auto_landscape", "portrait", "landscape", "reverse_portrait", "reverse_landscape"],
   "default_mode": "portrait",
   "policy": {
     "hysteresis_ms": 450,
