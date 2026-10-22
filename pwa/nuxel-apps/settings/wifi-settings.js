@@ -20,6 +20,7 @@
     return response;
   }
   let wifiState = null;
+  let selectedAp = null;
   async function refresh() {
     try {
       const response = await rpc(null, {}, false);
@@ -27,7 +28,7 @@
       if (!wifiState || wifiState.available === false) {
         status.textContent = 'Wi-Fi unavailable: check S10+ driver/firmware, rfkill and NetworkManager. ' + ((wifiState && wifiState.error) || '');
       } else {
-        status.textContent = 'Radio: ' + (wifiState.wifi_enabled ? 'ON' : 'OFF') + '\nDevice: ' + (wifiState.wifi_available ? 'detected' : 'not detected') + '\nAssociation: ' + (wifiState.wifi_state || 'unknown') + '\nInternet check: ' + (wifiState.connectivity === 4 ? 'NetworkManager full' : 'not confirmed') + '\nInterface: ' + (wifiState.wifi_devices || []).map(x => x.interface).join(', ');
+        status.textContent = 'Radio: ' + (wifiState.wifi_enabled ? 'ON' : 'OFF') + '\nDevice: ' + (wifiState.wifi_available ? 'detected' : 'not detected') + '\nAssociation: ' + (wifiState.wifi_state || 'unknown') + '\nStage: ' + (wifiState.wifi_stage || 'idle') + '\nInternet check: ' + (wifiState.connectivity === 4 ? 'NetworkManager full' : 'not confirmed') + '\nInterface: ' + (wifiState.wifi_devices || []).map(x => x.interface + (x.path ? '@' + x.path : '')).join(', ');
       }
     } catch (e) { status.textContent = 'Network status unavailable: ' + e.message; }
   }
@@ -35,7 +36,15 @@
     report('Working…');
     try {
       const response = await rpc(verb, data, true);
-      report(response.state === 'connecting' ? 'Connecting… wait for association and DHCP. Internet is not yet verified.' : 'NetworkManager confirmed request.');
+      if (response.stage) {
+        const labels = { associating: 'Associating / DHCP…', activated: 'Activated; waiting for address…',
+          ip: 'IP address obtained; waiting for route/DNS…', route: 'Default route present; waiting for DNS…',
+          dns: 'DNS configured. Internet is still verified by browsing.', online: 'NetworkManager reports full connectivity.' };
+        report((labels[response.stage] || ('Stage: ' + response.stage)) +
+          (response.note ? ' ' + response.note : ''));
+      } else {
+        report(response.state === 'connecting' ? 'Connecting… wait for association and DHCP. Internet is not yet verified.' : 'NetworkManager confirmed request.');
+      }
       await refresh();
       return response;
     } catch (e) { report('Error: ' + e.message); return null; }
@@ -47,33 +56,53 @@
     if (!response) return;
     const seen = new Set();
     for (const ap of (response.networks || [])) {
-      if (!ap.ssid || seen.has(ap.ssid + '|' + ap.security)) continue;
-      seen.add(ap.ssid + '|' + ap.security);
+      // Duplicate SSIDs are real (2.4/5 GHz, mesh nodes). Keep every AP and
+      // identify it by the AP's own D-Bus path/BSSID instead of dropping rows.
+      const key = (ap.bssid || ap.ap_path) + '|' + ap.ssid + '|' + ap.security + '|' + (ap.frequency || '');
+      if (!ap.ssid || seen.has(key)) continue;
+      seen.add(key);
       const button = document.createElement('button');
       button.type = 'button'; button.className = 'wifi-network';
-      button.textContent = ap.ssid + ' · ' + ap.strength + '% · ' + ap.security;
+      const band = ap.frequency ? (ap.frequency < 3000 ? '2.4 GHz' : '5 GHz') : '';
+      button.textContent = ap.ssid + ' · ' + ap.strength + '% · ' + ap.security + (band ? ' · ' + band : '');
       button.addEventListener('click', () => {
         if (!['wpa2','wpa3','open'].includes(ap.security)) { report('This network security type is not supported by the Settings connector.'); return; }
+        selectedAp = ap;
         $('wifi-ssid').value = ap.ssid; $('wifi-security').value = ap.security;
-        $('wifi-target-label').textContent = ap.ssid; $('wifi-password').value = '';
+        $('wifi-target-label').textContent = ap.ssid + (band ? ' (' + band + ')' : '');
+        $('wifi-password').value = '';
         $('wifi-password').required = ap.security !== 'open';
         $('wifi-password').closest('label').hidden = ap.security === 'open';
         form.hidden = false;
+        if (ap.security !== 'open') { try { $('wifi-password').focus({ preventScroll: false }); } catch (e) { $('wifi-password').focus(); } }
       });
       list.append(button);
     }
-    report(seen.size + ' network(s) reported; select one to connect.');
+    report(seen.size + ' AP(s) reported; select one to connect.');
   });
   $('wifi-power').addEventListener('click', () => mutate('wifi-enabled', {enabled: !(wifiState && wifiState.wifi_enabled)}));
   $('wifi-disconnect').addEventListener('click', () => mutate('wifi-disconnect', {}));
-  $('wifi-cancel').addEventListener('click', () => { $('wifi-password').value = '';form.hidden=true; });
+  $('wifi-cancel').addEventListener('click', () => {
+    $('wifi-password').value = ''; selectedAp = null; form.hidden = true;
+    try { document.activeElement && document.activeElement.blur(); } catch (e) {}
+  });
   form.addEventListener('submit', async event => {
     event.preventDefault();
     const pass = $('wifi-password').value, ssid = $('wifi-ssid').value, security = $('wifi-security').value;
     if (security === 'open' && !confirm('Connect to an unencrypted wireless network?')) return;
-    const ok = await mutate('wifi-connect', {ssid, password: pass, security});
+    const selected = selectedAp || {};
+    const ok = await mutate('wifi-connect', {
+      ssid, password: pass, security,
+      ap_path: selected.ap_path || '',
+      bssid: selected.bssid || '',
+      device: selected.device || '',
+      ssid_hex: selected.ssid_hex || ''
+    });
     $('wifi-password').value = '';
-    if (ok) form.hidden = true;
+    // Release text-input focus once the activation request is in flight. The
+    // compositor (Stevia) hides its keyboard; no repeated focus loop follows.
+    try { document.activeElement && document.activeElement.blur(); } catch (e) {}
+    if (ok && ok.stage !== 'associating') form.hidden = true;
   });
   document.querySelectorAll('[data-tab=network]').forEach(tab => tab.addEventListener('click', refresh));
 })();
