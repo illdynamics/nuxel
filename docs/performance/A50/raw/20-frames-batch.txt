@@ -1,0 +1,20 @@
+# frame not verified for "grep -o 'FRAMES_OK.*' /run/nuxel-wl-fb.state 2>&1" (framed=True sha_ok=False)
+### f1  [rc=1 framed=True sha_ok=True elapsed=0.864s]
+### f2  [rc=1 framed=True sha_ok=False elapsed=0.085s]
+### f3  [rc=1 framed=True sha_ok=True elapsed=0.851s]
+### f4  [rc=1 framed=True sha_ok=True elapsed=0.133s]
+### f5  [rc=1 framed=True sha_ok=True elapsed=0.081s]
+### f6  [rc=1 framed=True sha_ok=True elapsed=0.083s]
+### f7  [rc=1 framed=True sha_ok=True elapsed=0.082s]
+### f8  [rc=1 framed=True sha_ok=True elapsed=0.134s]
+### disp  [rc=0 framed=True sha_ok=True elapsed=0.084s]
+DISPLAY_OFF
+brightness=0
+actual_brightness=2
+bl_power=4
+saved_brightness=12800
+max_brightness=48600
+### thermal  [rc=0 framed=True sha_ok=True elapsed=0.083s]
+25000
+25000
+21200

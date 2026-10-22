@@ -1,0 +1,75 @@
+========================================================================
+### stat_a  [rc=0 framed=True sha_ok=True elapsed=0.879s]
+cpu  122088 0 148676 36399690 1430 0 3662 0 0 0
+========================================================================
+### proc_state  [rc=0 framed=True sha_ok=True elapsed=0.129s]
+    135 S
+     85 I<
+     28 I
+     15 Ss
+     12 D
+      4 Ssl
+      4 Sl
+      3 S+
+      2 SLl
+      1 STAT
+      1 SN
+      1 R+
+========================================================================
+### top_cpu  [rc=0 framed=True sha_ok=True elapsed=0.119s]
+    PID    PPID STAT %CPU %MEM COMMAND         WCHAN
+   5352       1 Ssl   1.5  0.4 phoc            do_sys_poll
+   5450    5389 SLl   0.8  2.8 WebKitWebProces do_sys_poll
+  21858       2 I     0.8  0.0 kworker/u17:0   worker_thread
+  21509       2 I     0.7  0.0 kworker/u17:2   worker_thread
+     98       2 I     0.7  0.0 kworker/0:1     worker_thread
+   3558       1 Ss    0.4  0.4 systemd-journal SyS_epoll_wait
+  26934       2 I     0.4  0.0 kworker/2:0     worker_thread
+   5389    5352 Sl    0.4  1.8 nuxel-pwa-host  do_sys_poll
+   6241       1 Ssl   0.3  0.2 NetworkManager  do_sys_poll
+   2172       2 S     0.3  0.0 sugov:0         kthread_worker_fn
+   5447    5389 SLl   0.2  0.6 WebKitNetworkPr do_sys_poll
+  28909       2 I     0.2  0.0 kworker/u16:0   worker_thread
+   5400       1 Ss    0.2  0.0 nuxel-button-ma do_sys_poll
+   6288       1 Ss    0.2  0.1 wpa_supplicant  do_select
+   5340       1 Ss    0.1  0.0 dbus-daemon     SyS_epoll_wait
+      8       2 I     0.1  0.0 rcu_preempt     rcu_gp_kthread
+     21       2 I     0.1  0.0 kworker/1:0     worker_thread
+  28543       2 I     0.1  0.0 kworker/u17:3   worker_thread
+   5399       1 Ss    0.1  0.0 nuxel-wl-fb     do_sys_poll
+   6274       2 I     0.1  0.0 kworker/3:2     worker_thread
+  28318       2 I     0.1  0.0 kworker/u16:1   worker_thread
+   5393    5389 S     0.0  0.2 python3         do_sys_poll
+  27805       2 I     0.0  0.0 kworker/u16:2   worker_thread
+   3398       2 D     0.0  0.0 dhd_rpm_state_t dhd_runtimepm_state
+========================================================================
+### dstate  [rc=0 framed=True sha_ok=True elapsed=0.107s]
+     12 D    tz_worker_threa tz_worker_handler
+     18 D    tz_worker_threa tz_worker_handler
+     25 D    tz_worker_threa tz_worker_handler
+     32 D    tz_worker_threa tz_worker_handler
+     39 D    tz_worker_threa tz_worker_handler
+     46 D    tz_worker_threa tz_worker_handler
+     53 D    tz_worker_threa tz_worker_handler
+     60 D    tz_worker_threa tz_worker_handler
+   1023 D    scsi_srpmb_work wait_woken
+   1800 D    ree_time        wait_woken
+   1806 D    tz_iwsock       tz_iwsock_kthread
+   3398 D    dhd_rpm_state_t dhd_runtimepm_state
+========================================================================
+### interrupts_ts  [rc=0 framed=True sha_ok=True elapsed=0.086s]
+200:        677          0          0          0          0          0          0          0     GIC-0 215 Edge      19030000.decon_f
+201:        676          0          0          0          0          0          0          0     GIC-0 216 Edge      19030000.decon_f
+202:          0          0          0          0          0          0          0          0     GIC-0 221 Edge      19030000.decon_f
+203:          0          0          0          0          0          0          0          0     GIC-0 227 Edge      19050000.decon_t
+204:          0          0          0          0          0          0          0          0     GIC-0 228 Edge      19050000.decon_t
+205:          0          0          0          0          0          0          0          0     GIC-0 229 Edge      19050000.decon_t
+253:     369129      81927      50539      56017          0          0          0          0     GIC-0 511 Edge      100a0000.G3D, 100a0000.ISP
+431:        706          0          0          0          0          0          0          0  exynos7_wkup_irq_chip   0 Level     sec_ts
+458:       2133          1          0          1          0          0          1          1  exynos_gpio_irq_chip   0 Edge      19030000.decon_f
+========================================================================
+### wakelocks  [rc=0 framed=True sha_ok=True elapsed=0.082s]
+
+========================================================================
+### suspend_state  [rc=0 framed=True sha_ok=True elapsed=0.083s]
+freeze mem

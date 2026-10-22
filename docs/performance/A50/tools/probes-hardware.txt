@@ -1,0 +1,18 @@
+fb_devices	ls -l /dev/fb* 2>&1
+dri_devices	ls -l /dev/dri 2>&1
+graphics_sys	ls -l /sys/class/graphics 2>&1
+fb_vsize	for f in /sys/class/graphics/fb*/virtual_size; do test -r "$f" && echo "$f=$(cat $f)"; done
+fb_bpp	for f in /sys/class/graphics/fb*/bits_per_pixel; do test -r "$f" && echo "$f=$(cat $f)"; done
+fb_stride	for f in /sys/class/graphics/fb*/stride; do test -r "$f" && echo "$f=$(cat $f)"; done
+fb_name	for f in /sys/class/graphics/fb*/name; do test -r "$f" && echo "$f=$(cat $f)"; done
+drm_sys	ls -l /sys/class/drm 2>&1
+drm_render	ls -l /sys/kernel/debug/dri 2>&1 | head -20
+cpu_model	grep -m1 'model name\|Processor' /proc/cpuinfo
+cpu_cores	grep -c processor /proc/cpuinfo
+governors	for f in /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor; do echo "$f=$(cat $f 2>&1)"; done
+freqs	for f in /sys/devices/system/cpu/cpu*/cpufreq/scaling_cur_freq; do echo "$f=$(cat $f 2>&1)"; done
+meminfo	grep -E 'MemTotal|MemAvailable|SwapTotal|SwapFree|Cached' /proc/meminfo
+thermal	for z in /sys/class/thermal/thermal_zone*; do printf '%s type=%s temp=%s\n' "$z" "$(cat $z/type 2>/dev/null)" "$(cat $z/temp 2>/dev/null)"; done
+soc_model	grep -m1 'Hardware' /proc/cpuinfo
+loadavg	cat /proc/loadavg
+zram	cat /sys/block/zram0/orig_data_size 2>/dev/null; cat /proc/swaps 2>&1

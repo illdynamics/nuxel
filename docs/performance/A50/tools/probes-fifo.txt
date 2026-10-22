@@ -1,0 +1,4 @@
+fifo_ls	ls -l /run/nuxel-wl-fb.cmd /run/nuxel-wl-fb.state 2>&1
+fifo_stat	stat -c '%F %a %U %G %s' /run/nuxel-wl-fb.cmd 2>&1
+wlfb_pid	ps -o pid,stat,etime,comm -p 5399 2>&1
+wlfb_proc	ps -ef | grep '[n]uxel-wl-fb'

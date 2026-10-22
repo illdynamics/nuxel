@@ -1,0 +1,74 @@
+{
+  "generated_at_utc": "2026-10-22T08:20:00Z",
+  "host": {"os": "macOS 15.7.9 (24G830)", "arch": "arm64 (Apple Silicon)", "role": "known-good USB recovery host"},
+  "repo": {"branch": "nuxel/A50-operation-smooth-penguin", "sha": "5aa29fbbdbe997ca31465e237346d6ecf2a9db4d", "describe": "v0.6.0-beta-26-g5aa29fb"},
+  "device": {
+    "model": "Samsung Galaxy S10+ SM-G975F",
+    "codename": "beyond2lte",
+    "board": "Samsung BEYOND2LTE EUR OPEN 26 board based on EXYNOS9820",
+    "bootloader": "G975FXXSEFUL1",
+    "kernel": "Linux fedora 4.14.253 #15 SMP PREEMPT (aarch64)",
+    "os": "Fedora Linux 43 (Forty Three)",
+    "cpu_cores": 8,
+    "governor": "schedutil (all 8 cores, balanced profile)",
+    "memtotal_kb": 7598228,
+    "memavailable_kb": 6750596,
+    "gpu_drm": "NONE (CONFIG_DRM unset; no /dev/dri, no /sys/class/drm)",
+    "battery": {"status": "Charging (USB PDIC via console cable)", "soc_pct": 93},
+    "console": "/dev/cu.usbmodem201 (VID 0x18d1 PID 0x4ee7 serial NUXEL-S10PLUS-0001, 115200 8N1)"
+  },
+  "display_pipeline": {
+    "compositor": "phoc headless + pixman (WLR_BACKENDS=headless,libinput WLR_RENDERER=pixman WLR_HEADLESS_OUTPUTS=1)",
+    "compositor_output": "HEADLESS-1 mode=720x1520 scale=2 (360 CSS px viewport)",
+    "panel": "S6E3HA9 1440x3040 (Samsung DECON-F /dev/fb0, 32bpp, stride 5760, virtual 1440x6080 double-buffer)",
+    "bridge_binary": "/usr/lib/nuxel/nuxel-wl-fb",
+    "bridge_sha256": "bc38e12d075ebdd9e7a4cec43740760948a35794ad2d51b303f79d4f6191d123",
+    "bridge_buildid": "d4ecf5b5d2c63f91b155ad57a1c270b33d7f0a20",
+    "bridge_source_status": "LIVE BINARY IS NEWER THAN REPO (a34); source NOT in repository",
+    "bridge_revision_features": ["copy_with_damage/capture_output_region (screencopy v3)", "present_skipped damage-skip", "blits counter", "idle_ms", "DISPLAY_SLEEP capture=stopped"],
+    "format": "src=XRGB8888 -> panel ABGR8888 (colour=R@0,G@8,B@16, override=1), 2x nearest-neighbor upscale, FBIOPAN_DISPLAY per changed frame"
+  },
+  "baseline_metrics_screen_on_locked_idle": {
+    "note": "single-shot samples from /run/nuxel-wl-fb.state FRAMES_OK (charging-induced kmsg flood makes long continuous sampling unreliable)",
+    "fps_1s_samples": [19, 8, 25],
+    "blit_avg_ms_samples": [74, 76, 79],
+    "present_skipped_ratio_pct": 93,
+    "blits_sample": 478,
+    "present_skipped_sample": 6516,
+    "decon_pan_failed": 0,
+    "target_fps": 30
+  },
+  "cpu_per_process_screen_on_display_1core_pct": {
+    "method": "/proc/<pid>/stat utime+stime delta over ~50s vs /proc/stat aggregate",
+    "phoc_compositor_pct": 31.4,
+    "nuxel_wl_fb_bridge_pct": 21.4,
+    "webkit_webprocess_pct": 28.5,
+    "nuxel_pwa_host_pct": 5.0,
+    "graphics_stack_total_1core_pct": 86.3
+  },
+  "thermal_c": {
+    "screen_off": {"BIG": 25.0, "G3D": 25.0, "battery": 19.7},
+    "screen_on": {"BIG": 30.0, "battery": 21.2},
+    "note": "SoC zones appear clamped at 25C floor; battery/ac values are plausible live readings"
+  },
+  "screen_off_behavior": {
+    "bridge_state": "DISPLAY_SLEEP display=off capture=stopped",
+    "bridge_cpu_pct": 0.1,
+    "panel": "bl_power=4 (powerdown), brightness=0, decon_f runtime_status=suspended",
+    "loadavg_1": 11.9,
+    "loadavg_note": "load average ~12 is D-state kernel threads (8x tz_worker + scsi_srpmb + tz_iwsock + dhd_rpm_state), NOT real CPU load; /proc/stat shows <1% total CPU"
+  },
+  "confounders": [
+    "Device charging through the console USB cable (battery/charger/Wi-Fi driver kmsg flood)",
+    "Wi-Fi periodic scans every ~30s (CFG80211)",
+    "No physical/camera access: glass-visible latency NOT measurable by software alone",
+    "Display auto-off idle timer 60s cycles the screen during measurement"
+  ],
+  "measured_ceiling": {
+    "changed_frame_cost_ms": "74-79 (capture+upscale+convert+FBIOPAN)",
+    "max_full_change_fps": "~13.5",
+    "fps_60_achievable": false,
+    "fps_30_full_change_achievable": false,
+    "reason": "all-software pipeline (pixman compositor + CPU upscale/convert + fbdev commit); no DRM/GPU on kernel 4.14.253"
+  }
+}

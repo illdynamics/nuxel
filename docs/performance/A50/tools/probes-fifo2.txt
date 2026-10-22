@@ -1,0 +1,6 @@
+fifo_holders	for p in /proc/[0-9]*/fd; do pid=${p%/fd}; pid=${pid#/proc/}; for f in $p/*; do t=$(readlink "$f" 2>/dev/null); case "$t" in *nuxel-wl-fb.cmd*) echo "pid=$pid fd=${f##*/} -> $t";; esac; done; done
+fifo_inode	ls -li /run/nuxel-wl-fb.cmd 2>&1; ls -li /proc/5399/fd/5 2>&1
+display_before	stat -c 'mtime=%Y size=%s' /var/lib/nuxel/display 2>&1; cat /var/lib/nuxel/display 2>&1
+status_cmd	printf 'status\n' > /run/nuxel-wl-fb.cmd; sleep 2; echo status-sent
+display_after	stat -c 'mtime=%Y size=%s' /var/lib/nuxel/display 2>&1; cat /var/lib/nuxel/display 2>&1
+state_after	cat /run/nuxel-wl-fb.state 2>&1

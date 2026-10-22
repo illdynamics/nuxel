@@ -1,0 +1,9 @@
+model	cat /proc/device-tree/model 2>&1; echo
+kernel	cat /proc/version 2>&1
+uname	uname -a
+os_release	head -8 /etc/os-release 2>&1
+fedora	cat /etc/fedora-release 2>&1
+uptime	cat /proc/uptime
+hostname	hostname; id
+cmdline	cat /proc/cmdline
+boot_mode	tr ' ' '\n' </proc/cmdline | grep -E 'androidboot|nuxel|root=|console|bootmode' 

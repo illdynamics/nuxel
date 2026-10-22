@@ -1,0 +1,22 @@
+========================================================================
+### stat_phoc  [rc=0 framed=True sha_ok=True elapsed=0.899s]
+40200 35946
+========================================================================
+### stat_wlfb  [rc=0 framed=True sha_ok=True elapsed=0.101s]
+5686 2988
+========================================================================
+### stat_webkit  [rc=0 framed=True sha_ok=True elapsed=0.091s]
+38589 7036
+========================================================================
+### stat_pwa  [rc=0 framed=True sha_ok=True elapsed=0.113s]
+11457 8790
+========================================================================
+### stat_total  [rc=0 framed=True sha_ok=True elapsed=0.101s]
+37687689
+========================================================================
+### frames_now  [rc=0 framed=True sha_ok=True elapsed=0.087s]
+FRAMES_OK total=7002 fps_1s=25 failures=0 blits=478 present_skipped=6516 blit_avg_ms=79 idle_ms=83 out=720x1520 src=720x1520 scale=2 panel=1440x3040 owner=nuxel-wl-fb display=on src_format=0x00000001 colour=R@0,G@8,B@16_abgr8888_override=1 decon_pan_ok=479 decon_pan_failed=0
+========================================================================
+### thermal  [rc=0 framed=True sha_ok=True elapsed=0.081s]
+30000
+21200

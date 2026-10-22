@@ -1,0 +1,66 @@
+========================================================================
+### bm_fds  [rc=0 framed=True sha_ok=True elapsed=0.943s]
+
+========================================================================
+### bm_journal  [rc=0 framed=True sha_ok=True elapsed=0.377s]
+Oct 22 03:32:31 fedora nuxel-button-manager[5400]: IDLE_SCREEN_OFF timeout_ms=60000 idle_ms=0
+Oct 22 03:37:31 fedora nuxel-button-manager[5400]: IDLE_SCREEN_OFF timeout_ms=60000 idle_ms=0
+Oct 22 03:45:48 fedora nuxel-button-manager[5400]: IDLE_SCREEN_OFF timeout_ms=60000 idle_ms=0
+Oct 22 04:09:54 fedora nuxel-button-manager[5400]: IDLE_SCREEN_OFF timeout_ms=60000 idle_ms=0
+Oct 22 05:06:13 fedora nuxel-button-manager[5400]: IDLE_SCREEN_OFF timeout_ms=60000 idle_ms=0
+Oct 22 05:08:03 fedora nuxel-button-manager[5400]: IDLE_SCREEN_OFF timeout_ms=60000 idle_ms=0
+Oct 22 05:15:22 fedora nuxel-button-manager[5400]: IDLE_SCREEN_OFF timeout_ms=60000 idle_ms=0
+Oct 22 05:43:09 fedora nuxel-button-manager[5400]: IDLE_SCREEN_OFF timeout_ms=60000 idle_ms=0
+Oct 22 05:51:37 fedora nuxel-button-manager[5400]: IDLE_SCREEN_OFF timeout_ms=60000 idle_ms=0
+Oct 22 06:05:54 fedora nuxel-button-manager[5400]: IDLE_SCREEN_OFF timeout_ms=60000 idle_ms=0
+Oct 22 06:11:11 fedora nuxel-button-manager[5400]: IDLE_SCREEN_OFF timeout_ms=60000 idle_ms=0
+Oct 22 06:27:13 fedora nuxel-button-manager[5400]: IDLE_SCREEN_OFF timeout_ms=60000 idle_ms=0
+Oct 22 06:51:54 fedora nuxel-button-manager[5400]: IDLE_SCREEN_OFF timeout_ms=60000 idle_ms=0
+Oct 22 07:06:03 fedora nuxel-button-manager[5400]: IDLE_SCREEN_OFF timeout_ms=60000 idle_ms=0
+Oct 22 09:01:35 fedora nuxel-button-manager[5400]: IDLE_SCREEN_OFF timeout_ms=60000 idle_ms=0
+Oct 22 09:38:01 fedora nuxel-button-manager[5400]: FSM_ACTION source=key action=screen-toggle
+Oct 22 09:39:02 fedora nuxel-button-manager[5400]: IDLE_SCREEN_OFF timeout_ms=60000 idle_ms=0
+Oct 22 09:43:14 fedora nuxel-button-manager[5400]: FSM_ACTION source=key action=screen-toggle
+Oct 22 09:43:20 fedora nuxel-button-manager[5400]: FSM_ACTION source=key action=screen-toggle
+Oct 22 09:46:07 fedora nuxel-button-manager[5400]: FSM_ACTION source=key action=screen-toggle
+Oct 22 09:47:39 fedora nuxel-button-manager[5400]: IDLE_SCREEN_OFF timeout_ms=60000 idle_ms=0
+Oct 22 09:56:50 fedora nuxel-button-manager[5400]: IDLE_SCREEN_OFF timeout_ms=60000 idle_ms=0
+Oct 22 09:57:53 fedora nuxel-button-manager[5400]: FSM_ACTION source=key action=screen-toggle
+Oct 22 09:58:53 fedora nuxel-button-manager[5400]: IDLE_SCREEN_OFF timeout_ms=60000 idle_ms=0
+Oct 22 10:02:52 fedora nuxel-button-manager[5400]: IDLE_SCREEN_OFF timeout_ms=60000 idle_ms=0
+========================================================================
+### nuxel_logs  [rc=0 framed=True sha_ok=True elapsed=0.094s]
+total 1944
+-rw-r--r-- 1 root root   13285 Oct 19 16:22 a37-check-final.log
+-rw-r--r-- 1 root root   21602 Oct 19 16:12 a37-check.log
+-rw-r--r-- 1 root root    1194 Oct 19 16:06 a37-cue-test.log
+-rw-r--r-- 1 root root     597 Oct 19 16:08 a37-cue-test2.log
+-rw-r--r-- 1 root root 1924662 Oct 22 10:02 buttons.log
+-rw-r--r-- 1 root root   10235 Oct 21 20:11 sound-cues.log
+========================================================================
+### blp_test  [rc=0 framed=True sha_ok=True elapsed=1.100s]
+sh: echo: write error: Input/output error
+rc=1
+4
+========================================================================
+### power_press  [rc=0 framed=True sha_ok=True elapsed=0.116s]
+/var/log/nuxel/buttons.log:2026-10-17T02:19:34Z CONFIG_LOADED buttons_json=/etc/nuxel/input/buttons.json power_short=screen-toggle power_long=power-menu bixby_short=open-terminal
+/var/log/nuxel/buttons.log:2026-10-17T02:19:35Z CONFIG_LOADED buttons_json=/etc/nuxel/input/buttons.json power_short=screen-toggle power_long=power-menu bixby_short=open-terminal
+/var/log/nuxel/buttons.log:2026-10-17T02:19:36Z CONFIG_LOADED buttons_json=/etc/nuxel/input/buttons.json power_short=screen-toggle power_long=power-menu bixby_short=open-terminal
+/var/log/nuxel/buttons.log:2026-10-17T02:19:37Z CONFIG_LOADED buttons_json=/etc/nuxel/input/buttons.json power_short=screen-toggle power_long=power-menu bixby_short=open-terminal
+/var/log/nuxel/buttons.log:2026-10-17T02:19:38Z CONFIG_LOADED buttons_json=/etc/nuxel/input/buttons.json power_short=screen-toggle power_long=power-menu bixby_short=open-terminal
+/var/log/nuxel/sound-cues.log:{"audible": "unverified", "event": "volume", "output": "alsa", "pcm_gain_percent": 100, "result": "player_timeout", "time": 1792419143, "timeout_seconds": 4}
+/var/log/nuxel/sound-cues.log:{"audible": "unverified", "event": "volume", "output": "alsa", "pcm_gain_percent": 100, "result": "player_timeout", "time": 1792421487, "timeout_seconds": 4}
+/var/log/nuxel/sound-cues.log:{"audible": "unverified", "event": "boot", "output": "alsa", "pcm_gain_percent": 44, "result": "player_timeout", "time": 1792422708, "timeout_seconds": 11}
+/var/log/nuxel/sound-cues.log:{"audible": "unverified", "event": "volume", "output": "alsa", "pcm_gain_percent": 100, "result": "player_timeout", "time": 1792422778, "timeout_seconds": 4}
+/var/log/nuxel/sound-cues.log:{"audible": "unverified", "event": "boot", "output": "alsa", "pcm_gain_percent": 44, "result": "player_timeout", "time": 1792423258, "timeout_seconds": 11}
+/var/log/nuxel/sound-cues.log:{"audible": "unverified", "event": "volume", "output": "alsa", "pcm_gain_percent": 100, "result": "player_timeout", "time": 1792424338, "timeout_seconds": 4}
+/var/log/nuxel/sound-cues.log:{"audible": "unverified", "event": "boot", "output": "alsa", "pcm_gain_percent": 44, "result": "player_timeout", "time": 1792428379, "timeout_seconds": 11}
+/var/log/nuxel/sound-cues.log:{"audible": "unverified", "event": "volume", "output": "alsa", "pcm_gain_percent": 100, "result": "player_timeout", "time": 1792428460, "timeout_seconds": 4}
+/var/log/nuxel/sound-cues.log:{"audible": "unverified", "event": "volume", "output": "alsa", "pcm_gain_percent": 100, "result": "player_timeout", "time": 1792428469, "timeout_seconds": 4}
+/var/log/nuxel/sound-cues.log:{"audible": "unverified", "event": "volume", "output": "alsa", "pcm_gain_percent": 100, "result": "player_timeout", "time": 1792428481, "timeout_seconds": 4}
+/var/log/nuxel/sound-cues.log:{"audible": "unverified", "event": "volume", "output": "alsa", "pcm_gain_percent": 100, "result": "player_timeout", "time": 1792428505, "timeout_seconds": 4}
+/var/log/nuxel/sound-cues.log:{"audible": "unverified", "event": "boot", "output": "alsa", "pcm_gain_percent": 44, "result": "player_timeout", "time": 1792428733, "timeout_seconds": 11}
+/var/log/nuxel/sound-cues.log:{"audible": "unverified", "event": "boot", "output": "alsa", "pcm_gain_percent": 44, "result": "player_timeout", "time": 1792436349, "timeout_seconds": 11}
+/var/log/nuxel/sound-cues.log:{"audible": "unverified", "event": "boot", "output": "alsa", "pcm_gain_percent": 44, "result": "player_timeout", "time": 1792437897, "timeout_seconds": 11}
+/var/log/nuxel/sound-cues.log:{"audible": "unverified", "detail": "", "event": "volume", "output": "alsa", "pcm_gain_percent": 100, "result": "player_timeout", "time": 1792603171, "timeout_seconds": 4}

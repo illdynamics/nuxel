@@ -1,0 +1,13 @@
+========================================================================
+### which_strings  [rc=2 framed=True sha_ok=True elapsed=0.902s]
+ls: cannot access '/usr/bin/strings': No such file or directory
+ls: cannot access '/bin/strings': No such file or directory
+========================================================================
+### str_screen  [rc=0 framed=True sha_ok=True elapsed=0.087s]
+
+========================================================================
+### str_fifo  [rc=0 framed=True sha_ok=True elapsed=0.128s]
+
+========================================================================
+### str_fps  [rc=0 framed=True sha_ok=True elapsed=0.083s]
+

@@ -1,0 +1,26 @@
+========================================================================
+### wlfb_fd  [rc=0 framed=True sha_ok=True elapsed=0.846s]
+total 0
+lr-x------. 1 root root 64 Oct 21 21:06 0 -> /dev/null
+lrwx------. 1 root root 64 Oct 21 21:06 1 -> socket:[3851]
+lrwx------. 1 root root 64 Oct 21 21:06 2 -> socket:[3851]
+lrwx------. 1 root root 64 Oct 21 21:06 3 -> socket:[15752]
+lrwx------. 1 root root 64 Oct 21 21:06 4 -> /dev/fb0
+lrwx------. 1 root root 64 Oct 22 09:59 5 -> /run/nuxel-wl-fb.cmd
+========================================================================
+### wlfb_wchan  [rc=0 framed=True sha_ok=True elapsed=0.089s]
+do_sys_poll
+State:	S (sleeping)
+Threads:	1
+voluntary_ctxt_switches:	61419
+nonvoluntary_ctxt_switches:	1622
+========================================================================
+### wlfb_stack  [rc=0 framed=True sha_ok=True elapsed=0.093s]
+[<0000000000000000>] __switch_to+0xe4/0x160
+[<0000000000000000>] do_sys_poll+0x390/0x580
+[<0000000000000000>] SyS_ppoll+0x1f8/0x298
+[<0000000000000000>] __sys_trace+0x48/0x48
+[<0000000000000000>] 0xffffffffffffffff
+========================================================================
+### wlfb_syscall  [rc=0 framed=True sha_ok=True elapsed=0.090s]
+73 0x7fdb124c88 0x1 0x7fdb124ad0 0x0 0x0 0x0 0x7fdb124ac0 0x7fa285b1a0

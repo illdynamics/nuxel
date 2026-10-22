@@ -1,0 +1,12 @@
+phoc_ini	cat /etc/nuxel/phoc-phone.ini 2>&1
+phoc_ini_alt	find /etc -maxdepth 3 -iname '*phoc*.ini' 2>/dev/null
+wayland_unit	systemctl cat nuxel-wayland.service 2>&1
+wlfb_unit	systemctl cat nuxel-wl-fb.service 2>&1
+units_active	for u in nuxel-wayland nuxel-wl-fb nuxel-button-manager nuxel-touch-arm seatd nuxel-pwa nuxel-console; do printf '%s=%s\n' "$u" "$(systemctl is-active $u 2>&1)"; done
+units_enabled	for u in nuxel-wayland nuxel-wl-fb nuxel-button-manager nuxel-touch-arm seatd nuxel-pwa nuxel-console; do printf '%s=%s\n' "$u" "$(systemctl is-enabled $u 2>&1)"; done
+mainpids	systemctl show -p MainPID -p ExecStart nuxel-wayland.service nuxel-wl-fb.service 2>&1
+failed_units	systemctl --failed --no-legend --no-pager 2>&1
+fb_owner	cat /var/lib/nuxel/fb-owner 2>&1
+wlfb_state	cat /run/nuxel-wl-fb.state 2>&1
+animation	cat /var/lib/nuxel/animation 2>&1
+proc_graph	ps -ef 2>/dev/null | grep -E '[p]hoc|[n]uxel-wl-fb|[W]ebKit|[W]PE|[e]piphany|[p]hosh|[n]uxel' 

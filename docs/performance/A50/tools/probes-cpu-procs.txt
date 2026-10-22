@@ -1,0 +1,7 @@
+stat_a	cat /proc/stat | head -1
+proc_state	ps -eo stat:4 | sort | uniq -c | sort -rn
+top_cpu	ps -eo pid,ppid,stat,%cpu,%mem,comm,wchan:24 --sort=-%cpu 2>/dev/null | head -25
+dstate	ps -eo pid,stat,comm,wchan:20 2>/dev/null | awk '$2 ~ /D/ {print}'
+interrupts_ts	grep -iE 'sec_ts|decon|g3d|gpu' /proc/interrupts
+wakelocks	cat /sys/power/wake_lock 2>&1; cat /sys/power/wake_unlock 2>&1
+suspend_state	cat /sys/power/state 2>&1

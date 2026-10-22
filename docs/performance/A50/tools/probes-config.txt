@@ -1,0 +1,9 @@
+src_ls	find /usr/lib/nuxel/src -maxdepth 3 -type f 2>&1 | head -60
+screen_timeout	cat /etc/nuxel/display/screen-timeout.json 2>&1
+power_json	cat /etc/nuxel/power/power.json 2>&1
+orientation	cat /etc/nuxel/orientation/orientation.json 2>&1
+backlight	for b in /sys/class/backlight/*; do printf '%s brightness=%s bl_power=%s actual=%s\n' "$b" "$(cat $b/brightness 2>/dev/null)" "$(cat $b/bl_power 2>/dev/null)" "$(cat $b/actual_brightness 2>/dev/null)"; done 2>&1
+lcd	for l in /sys/class/lcd/*; do echo "$l"; cat $l/* 2>/dev/null | head -5; done 2>&1
+blank	cat /sys/class/graphics/fb0/blank 2>&1; cat /sys/class/graphics/fb0/pan 2>&1
+display_state	cat /sys/devices/platform/19030000.decon_f/power/runtime_status 2>&1; cat /sys/devices/platform/19030000.decon_f/state 2>&1
+metricsd	systemctl is-active nuxel-metricsd 2>&1; cat /etc/nuxel/paths.conf 2>&1

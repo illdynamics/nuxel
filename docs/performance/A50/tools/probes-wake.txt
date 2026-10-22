@@ -1,0 +1,6 @@
+pre_state	cat /sys/class/backlight/panel/bl_power /sys/class/backlight/panel/brightness /sys/class/backlight/panel/actual_brightness 2>&1
+wake	printf 'screen-on\n' > /run/nuxel-wl-fb.cmd; sleep 3; echo wake-sent
+post_blp	cat /sys/class/backlight/panel/bl_power /sys/class/backlight/panel/brightness /sys/class/backlight/panel/actual_brightness 2>&1
+post_decon	cat /sys/devices/platform/19030000.decon_f/power/runtime_status 2>&1
+post_state	cat /run/nuxel-wl-fb.state 2>&1
+post_disp	cat /var/lib/nuxel/display 2>&1
