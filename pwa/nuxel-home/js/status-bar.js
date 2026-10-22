@@ -178,6 +178,40 @@ class StatusBar {
         }
     }
 
+    // A54: deterministic collision assertion.  Measure every VISIBLE status
+    // cell and report any intersecting pair.  This is the same geometry the
+    // physical panel renders; a PASS means no two indicators share pixels.
+    _assertNoOverlap() {
+        const ids = ['status-signal', 'status-wifi', 'status-battery', 'status-battery-pct'];
+        const boxes = [];
+        ids.forEach((id) => {
+            const el = document.getElementById(id);
+            if (!el || el.hidden || el.style.display === 'none') return;
+            const r = el.getBoundingClientRect();
+            if (r.width === 0 || r.height === 0) return;
+            boxes.push({ id, left: r.left, right: r.right, top: r.top, bottom: r.bottom });
+        });
+        const overlaps = [];
+        for (let i = 0; i < boxes.length; i++) {
+            for (let j = i + 1; j < boxes.length; j++) {
+                const a = boxes[i], b = boxes[j];
+                if (a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top) {
+                    overlaps.push(a.id + '<->' + b.id);
+                }
+            }
+        }
+        const line = 'STATUSBAR_OVERLAP_CHECK cells=' + boxes.length +
+                     ' overlaps=' + (overlaps.length ? overlaps.join(',') : 'none');
+        try { console.log('[status-bar] ' + line); } catch (e) {}
+        try {
+            if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.nuxelDiag) {
+                window.webkit.messageHandlers.nuxelDiag.postMessage(line);
+            }
+        } catch (e) {}
+        this._overlapReport = { cells: boxes.map(b => b.id), overlaps };
+        return overlaps;
+    }
+
     _displayOff() {
         try { return document.body.classList.contains('display-off'); } catch (e) { return false; }
     }
@@ -382,6 +416,7 @@ class StatusBar {
         this._renderWifi();
         this._renderBattery();
         this._applySafeZones();
+        this._assertNoOverlap();
     }
 
     // ---- Notifications (same JSON source as the daemon) ----

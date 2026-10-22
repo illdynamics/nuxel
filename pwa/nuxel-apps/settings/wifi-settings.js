@@ -21,33 +21,76 @@
   }
   let wifiState = null;
   let selectedAp = null;
+  let pollTimer = null;
+
+  // Authoritative NetworkManager stage -> UI phrase.  Association and DHCP are
+  // SEPARATE stages; the old code collapsed both into "Associating / DHCP…" so
+  // the user could never tell whether L2 association or DHCP was failing.
+  const STAGE_LABELS = {
+    authenticating: 'Authenticating…',
+    associating: 'Authenticating & associating…',
+    ip: 'Obtaining IP address (DHCP)…',
+    connected: 'Connected (link up)…',
+    online: 'Connected — NetworkManager reports full internet connectivity.',
+    disabled: 'Wi-Fi disabled',
+    unavailable: 'Wi-Fi adapter unavailable',
+    unmanaged: 'Wi-Fi adapter unmanaged',
+    enabled_disconnected: 'Wi-Fi enabled, not connected',
+  };
+
+  function honestStage(st) {
+    return STAGE_LABELS[st] || st || 'idle';
+  }
+
+  function stopPolling() {
+    if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+  }
+
+  function startPolling() {
+    // Bounded re-render only while a transition is in flight; never a perpetual
+    // spinner.  It stops as soon as the authoritative state is settled.
+    if (pollTimer) return;
+    pollTimer = setInterval(async () => {
+      await refresh();
+      const s = wifiState || {};
+      if (s.wifi_state === 'connected' || s.wifi_state === 'internet' || s.wifi_state === 'enabled_disconnected') {
+        stopPolling();
+      }
+    }, 1500);
+  }
+
   async function refresh() {
     try {
       const response = await rpc(null, {}, false);
       wifiState = response.network || (response.data && response.data.network) || null;
       if (!wifiState || wifiState.available === false) {
         status.textContent = 'Wi-Fi unavailable: check S10+ driver/firmware, rfkill and NetworkManager. ' + ((wifiState && wifiState.error) || '');
+        stopPolling();
       } else {
-        status.textContent = 'Radio: ' + (wifiState.wifi_enabled ? 'ON' : 'OFF') + '\nDevice: ' + (wifiState.wifi_available ? 'detected' : 'not detected') + '\nAssociation: ' + (wifiState.wifi_state || 'unknown') + '\nStage: ' + (wifiState.wifi_stage || 'idle') + '\nInternet check: ' + (wifiState.connectivity === 4 ? 'NetworkManager full' : 'not confirmed') + '\nInterface: ' + (wifiState.wifi_devices || []).map(x => x.interface + (x.path ? '@' + x.path : '')).join(', ');
+        status.textContent = 'Radio: ' + (wifiState.wifi_enabled ? 'ON' : 'OFF') + '\nDevice: ' + (wifiState.wifi_available ? 'detected' : 'not detected') + '\nState: ' + honestStage(wifiState.wifi_stage) + '\nInternet check: ' + (wifiState.connectivity === 4 ? 'NetworkManager full' : 'not confirmed') + '\nInterface: ' + (wifiState.wifi_devices || []).map(x => x.interface).join(', ');
       }
-    } catch (e) { status.textContent = 'Network status unavailable: ' + e.message; }
+    } catch (e) { status.textContent = 'Network status unavailable: ' + e.message; stopPolling(); }
   }
   async function mutate(verb, data) {
     report('Working…');
     try {
       const response = await rpc(verb, data, true);
+      if (response && response.success === false) {
+        report('Error: ' + (response.error || 'NetworkManager refused the request'));
+        stopPolling();
+        return response;
+      }
       if (response.stage) {
-        const labels = { associating: 'Associating / DHCP…', activated: 'Activated; waiting for address…',
-          ip: 'IP address obtained; waiting for route/DNS…', route: 'Default route present; waiting for DNS…',
-          dns: 'DNS configured. Internet is still verified by browsing.', online: 'NetworkManager reports full connectivity.' };
-        report((labels[response.stage] || ('Stage: ' + response.stage)) +
-          (response.note ? ' ' + response.note : ''));
+        report(honestStage(response.stage) + (response.note ? ' ' + response.note : ''));
+      } else if (response.state === 'connecting') {
+        report('Connecting… wait for association and DHCP. Internet is not yet verified.');
       } else {
-        report(response.state === 'connecting' ? 'Connecting… wait for association and DHCP. Internet is not yet verified.' : 'NetworkManager confirmed request.');
+        report('NetworkManager confirmed request.');
       }
       await refresh();
+      if (verb === 'wifi-connect') startPolling();
       return response;
-    } catch (e) { report('Error: ' + e.message); return null; }
+    } catch (e) { report('Error: ' + e.message); stopPolling(); return null; }
   }
   $('wifi-refresh').addEventListener('click', refresh);
   $('wifi-scan').addEventListener('click', async () => {
@@ -84,6 +127,7 @@
   $('wifi-disconnect').addEventListener('click', () => mutate('wifi-disconnect', {}));
   $('wifi-cancel').addEventListener('click', () => {
     $('wifi-password').value = ''; selectedAp = null; form.hidden = true;
+    stopPolling();
     try { document.activeElement && document.activeElement.blur(); } catch (e) {}
   });
   form.addEventListener('submit', async event => {
@@ -102,7 +146,9 @@
     // Release text-input focus once the activation request is in flight. The
     // compositor (Stevia) hides its keyboard; no repeated focus loop follows.
     try { document.activeElement && document.activeElement.blur(); } catch (e) {}
-    if (ok && ok.stage !== 'associating') form.hidden = true;
+    // Keep the dialog visible through the associating/DHCP stages so a failed
+    // passphrase can be corrected in place; hide only once the network is up.
+    if (ok && ok.success === false) { form.hidden = false; }
   });
   document.querySelectorAll('[data-tab=network]').forEach(tab => tab.addEventListener('click', refresh));
 })();

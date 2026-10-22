@@ -30,15 +30,18 @@
     </div>
 
     <!-- Status Bar -->
+    <!-- A54: one right-hand cluster owns signal/Wi-Fi/battery/percent.  Each
+         indicator is a measured flex cell inside a single container with a fixed
+         gap, so no sibling can overlap another during rotation, resizing or the
+         connecting -> connected transition.  There is exactly ONE layout owner
+         for the right cluster (safe-zones.js moves this cluster as a unit). -->
     <div id="status-bar" class="status-bar">
         <div class="status-left">
             <span id="status-time">00:00</span>
         </div>
-        <div class="status-center">
+        <div class="status-right">
             <span id="status-signal" class="status-icon signal-icon"></span>
             <span id="status-wifi" class="status-icon wifi-icon"></span>
-        </div>
-        <div class="status-right">
             <span id="status-battery" class="status-icon battery-icon"></span>
             <span id="status-battery-pct" hidden></span>
         </div>

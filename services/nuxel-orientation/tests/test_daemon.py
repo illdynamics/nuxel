@@ -35,8 +35,8 @@ def test_modes_lists_seven(tmp_path):
     doc = json.loads(r.stdout)
     assert len(doc) == 7
     names = {m["mode"] for m in doc}
-    assert names == {"portrait", "reverse_portrait", "landscape",
-                     "reverse_landscape", "auto", "auto_portrait", "auto_landscape"}
+    assert names == {"portrait", "reverse-portrait", "landscape",
+                     "reverse-landscape", "auto", "auto-portrait", "auto-landscape"}
     assert all(isinstance(m["allowed"], list) for m in doc)
     assert all(isinstance(m["auto"], bool) for m in doc)
 
@@ -67,7 +67,7 @@ def test_set_rejects_garbage(tmp_path):
 def test_set_auto_portrait_from_landscape_picks_legal(tmp_path):
     # Start in landscape, then switch to auto_portrait: 90 is disallowed -> 0 or 180
     run(str(tmp_path), "set", "landscape", "--json")
-    r = run(str(tmp_path), "set", "auto_portrait", "--json")
+    r = run(str(tmp_path), "set", "auto-portrait", "--json")
     doc = json.loads(r.stdout)
     assert doc["success"] is True
     assert doc["effective_orientation"] in (0, 180)

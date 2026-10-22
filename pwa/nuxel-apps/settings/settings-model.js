@@ -46,7 +46,7 @@
     'display.sleep_double_tap': { doc: 'display', kind: 'switch', default: false, label: 'Double-tap to sleep' },
     // Orientation (A49): seven modes, one source of truth
     'orientation.mode': { doc: 'orientation', kind: 'select', default: 'portrait', label: 'Screen rotation',
-      options: ['portrait', 'reverse_portrait', 'landscape', 'reverse_landscape', 'auto', 'auto_portrait', 'auto_landscape'] },
+      options: ['portrait', 'reverse-portrait', 'landscape', 'reverse-landscape', 'auto', 'auto-portrait', 'auto-landscape'] },
     // Sound (mission 14/15)
     'sound.output_route': { doc: 'power', kind: 'select', default: 'auto', label: 'Output route' },
     'sound.notifications': { doc: 'haptics', kind: 'switch', default: true, label: 'Notification sounds' },

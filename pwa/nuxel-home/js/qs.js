@@ -349,20 +349,30 @@ class QuickSettings {
         tile.dataset.enabled = auto ? 'true' : 'false';
         tile.dataset.mode = this.orientationMode;
         const label = tile.querySelector('.qs-label');
-        if (label) label.textContent = auto ? 'Auto' : 'Locked';
-        tile.title = 'Rotation: ' + (st.mode_label || this.orientationMode)
+        // Show the REAL selected mode (one of seven), never a bare Locked/Auto.
+        if (label) label.textContent = this._rotateModeLabel(this.orientationMode);
+        tile.title = 'Rotation: ' + (st.mode_label || this._rotateModeLabel(this.orientationMode))
             + ' | effective ' + (st.effective_orientation === undefined ? '?' : st.effective_orientation + '°')
             + (auto ? (' | sensor ' + (sensorOk ? 'available' : 'unavailable')) : '')
-            + '\nTap = forced portrait/auto, long-press = five primary + advanced modes';
+            + '\nTap = forced portrait/auto, long-press = all seven modes';
+    }
+
+    _rotateModes() {
+        return [
+            ['auto', 'Auto'], ['auto-portrait', 'Auto Portrait'], ['auto-landscape', 'Auto Landscape'],
+            ['portrait', 'Forced Portrait'], ['landscape', 'Forced Landscape'],
+            ['reverse-portrait', 'Reverse Portrait (advanced)'], ['reverse-landscape', 'Reverse Landscape (advanced)'],
+        ];
+    }
+
+    _rotateModeLabel(mode) {
+        const hit = this._rotateModes().find(([m]) => m === mode);
+        return hit ? hit[1] : (mode || 'Portrait');
     }
 
     _openRotateMenu() {
         if (document.getElementById('qs-rotate-menu')) return;
-        const modes = [
-            ['auto', 'Auto'], ['auto_portrait', 'Auto Portrait'], ['auto_landscape', 'Auto Landscape'],
-            ['portrait', 'Forced Portrait'], ['landscape', 'Forced Landscape'],
-            ['reverse_portrait', 'Reverse Portrait (advanced)'], ['reverse_landscape', 'Reverse Landscape (advanced)'],
-        ];
+        const modes = this._rotateModes();
         const menu = document.createElement('div');
         menu.id = 'qs-rotate-menu';
         menu.className = 'qs-rotate-menu';

@@ -10,7 +10,10 @@
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     display: grid;
-    grid-template-columns: 2fr 4fr 4fr;
+    /* A54: left column owns the clock; the right column is a single measured
+       flex cluster for signal/Wi-Fi/battery/percent.  One cluster = one owner,
+       so an icon can never bleed into another icon's cell. */
+    grid-template-columns: 1fr auto;
     align-items: center;
     padding: 0 16px;
     z-index: 100;
@@ -26,18 +29,36 @@
     user-select: none;
 }
 
-.status-left, .status-center, .status-right {
+.status-left, .status-right {
     display: flex;
     align-items: center;
     gap: 6px;
     min-width: 0;
 }
 
-.status-center {
-    gap: 8px;
+.status-right {
     justify-content: flex-end;
+    /* Measured, owned cells: each indicator reserves its own width and the gap
+       is fixed, so no sibling overlaps during connecting/resize/rotation. */
+    gap: 7px;
+    flex: 0 0 auto;
 }
-.status-right { justify-content: flex-end; }
+
+/* Each status cell is a fixed, non-shrinking box; drawing happens INSIDE it. */
+.status-right .status-icon {
+    flex: 0 0 auto;
+    width: 16px;
+    height: 16px;
+}
+.status-right #status-battery {
+    flex: 0 0 auto;
+    width: 32px;
+}
+.status-right #status-battery-pct {
+    flex: 0 0 auto;
+    min-width: 32px;
+    text-align: right;
+}
 
 #status-time {
     font-weight: 600;
@@ -436,10 +457,12 @@
     opacity: 0.5;
 }
 
-/* A39: single responsive status row, battery reads actual status levels. */
-.status-right{display:flex;align-items:center;justify-content:flex-end;gap:5px;min-width:0}
+/* A39/A54: single responsive status row, battery reads actual status levels.
+   ONE battery-size rule set (the earlier duplicate .battery-slot/.battery-icon
+   blocks disagreed and were the layout-collision source; they are consolidated). */
+.status-right{display:flex;align-items:center;justify-content:flex-end;gap:7px;min-width:0}
 #status-battery-pct[hidden]{display:none!important}
-.battery-slot{width:37px;height:19px;flex:none}
+.battery-slot{width:32px;height:17px;flex:none}
 .battery-icon{width:32px;height:15px;border-radius:3px;vertical-align:middle;overflow:visible}
 .battery-icon .battery-level{top:1px;left:1px;bottom:1px;max-width:calc(100% - 2px);opacity:.58}
 .battery-inside-pct{position:absolute;z-index:2;inset:0;display:flex;align-items:center;

@@ -24,24 +24,35 @@ import time
 
 ALL_ORIENTATIONS = (0, 90, 180, 270)
 
+# Legacy A49-A53 underscore keys, normalised to the hyphenated stable keys
+# documented in A54.  A single migration boundary: every read path calls
+# validate_mode()/mode_from_document(), so old persisted state never reaches
+# the frontend as an unknown enum.
+MODE_ALIASES = {
+    "auto_portrait": "auto-portrait",
+    "auto_landscape": "auto-landscape",
+    "reverse_portrait": "reverse-portrait",
+    "reverse_landscape": "reverse-landscape",
+}
+
 # The seven modes and their allowed orientation sets. Order is not significant
 # except that SEVEN_MODES is the exhaustive, authoritative list.
 SEVEN_MODES = {
     "portrait":          {"label": "Forced Portrait",    "allowed": (0,)},
-    "reverse_portrait":  {"label": "Reverse Portrait",   "allowed": (180,)},
+    "reverse-portrait":  {"label": "Reverse Portrait",   "allowed": (180,)},
     "landscape":         {"label": "Forced Landscape",   "allowed": (90,)},
-    "reverse_landscape": {"label": "Reverse Landscape",  "allowed": (270,)},
+    "reverse-landscape": {"label": "Reverse Landscape",  "allowed": (270,)},
     "auto":              {"label": "Auto",               "allowed": (0, 90, 180, 270)},
-    "auto_portrait":     {"label": "Auto Portrait",      "allowed": (0, 180)},
-    "auto_landscape":    {"label": "Auto Landscape",     "allowed": (90, 270)},
+    "auto-portrait":     {"label": "Auto Portrait",      "allowed": (0, 180)},
+    "auto-landscape":    {"label": "Auto Landscape",     "allowed": (90, 270)},
 }
 
 MODE_ORDER = [
     # A53: the five owner-requested primary modes come first; reverse poses are
     # preserved as advanced options and must never displace/hide the core five.
-    "auto", "auto_portrait", "auto_landscape",
+    "auto", "auto-portrait", "auto-landscape",
     "portrait", "landscape",
-    "reverse_portrait", "reverse_landscape",
+    "reverse-portrait", "reverse-landscape",
 ]
 
 DEFAULT_MODE = "portrait"
@@ -52,11 +63,20 @@ class PolicyError(ValueError):
 
 
 def validate_mode(mode):
-    """Return ``mode`` if it is one of the seven names, else raise PolicyError."""
-    if not isinstance(mode, str) or mode not in SEVEN_MODES:
+    """Canonicalise ``mode`` to one of the seven stable names, else raise.
+
+    Legacy A49-A53 underscore keys are migrated to the hyphenated A54 stable
+    keys at this single boundary, so a persisted ``auto_portrait`` never
+    surfaces as an unknown enum to the frontend.
+    """
+    if not isinstance(mode, str):
         raise PolicyError("unknown orientation mode: %r (expected one of %s)"
                           % (mode, ", ".join(MODE_ORDER)))
-    return mode
+    canonical = MODE_ALIASES.get(mode, mode)
+    if canonical not in SEVEN_MODES:
+        raise PolicyError("unknown orientation mode: %r (expected one of %s)"
+                          % (mode, ", ".join(MODE_ORDER)))
+    return canonical
 
 
 def validate_orientation(degrees):

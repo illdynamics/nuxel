@@ -120,6 +120,11 @@ def install_stubs() -> None:
 
 
 def load_bridge():
+    # bridge.py imports its sibling media_store.py; the module dir must be on
+    # sys.path or exec_module raises ModuleNotFoundError (A52 media store).
+    src_dir = os.path.dirname(os.path.abspath(BRIDGE_SRC))
+    if src_dir not in sys.path:
+        sys.path.insert(0, src_dir)
     spec = importlib.util.spec_from_file_location("nuxel_bridge_wifi_under_test", BRIDGE_SRC)
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)          # type: ignore[union-attr]

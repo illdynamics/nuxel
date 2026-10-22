@@ -556,9 +556,9 @@
   // (home document owns it in the VM build). The seven modes below mirror the
   // daemon; the authoritative list is the orientation.modes RPC response.
   var ROTATE_MODES = [
-    ['auto', 'Auto'], ['auto_portrait', 'Auto Portrait'], ['auto_landscape', 'Auto Landscape'],
+    ['auto', 'Auto'], ['auto-portrait', 'Auto Portrait'], ['auto-landscape', 'Auto Landscape'],
     ['portrait', 'Forced Portrait'], ['landscape', 'Forced Landscape'],
-    ['reverse_portrait', 'Reverse Portrait (advanced)'], ['reverse_landscape', 'Reverse Landscape (advanced)']
+    ['reverse-portrait', 'Reverse Portrait (advanced)'], ['reverse-landscape', 'Reverse Landscape (advanced)']
   ];
   function orientationBridge() {
     try {

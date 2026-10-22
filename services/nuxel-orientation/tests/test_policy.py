@@ -14,30 +14,30 @@ def test_seven_modes_exactly():
     assert len(MODE_ORDER) == 7
     assert set(SEVEN_MODES) == set(MODE_ORDER)
     assert set(MODE_ORDER) == {
-        "portrait", "reverse_portrait", "landscape", "reverse_landscape",
-        "auto", "auto_portrait", "auto_landscape",
+        "portrait", "reverse-portrait", "landscape", "reverse-landscape",
+        "auto", "auto-portrait", "auto-landscape",
     }
 
 
 def test_fixed_modes_have_single_allowed():
     assert allowed_orientations("portrait") == (0,)
-    assert allowed_orientations("reverse_portrait") == (180,)
+    assert allowed_orientations("reverse-portrait") == (180,)
     assert allowed_orientations("landscape") == (90,)
-    assert allowed_orientations("reverse_landscape") == (270,)
+    assert allowed_orientations("reverse-landscape") == (270,)
 
 
 def test_auto_modes_have_multiple_allowed():
     assert allowed_orientations("auto") == (0, 90, 180, 270)
-    assert allowed_orientations("auto_portrait") == (0, 180)
-    assert allowed_orientations("auto_landscape") == (90, 270)
+    assert allowed_orientations("auto-portrait") == (0, 180)
+    assert allowed_orientations("auto-landscape") == (90, 270)
 
 
 def test_is_auto():
     assert not is_auto("portrait")
     assert not is_auto("landscape")
     assert is_auto("auto")
-    assert is_auto("auto_portrait")
-    assert is_auto("auto_landscape")
+    assert is_auto("auto-portrait")
+    assert is_auto("auto-landscape")
 
 
 def test_validate_mode_rejects_garbage():
@@ -53,6 +53,13 @@ def test_validate_mode_accepts_all_seven():
     for m in MODE_ORDER:
         assert validate_mode(m) == m
 
+def test_validate_mode_migrates_legacy_underscore_keys():
+    # A49-A53 persisted underscore keys migrate to the A54 hyphenated keys.
+    assert validate_mode("auto_portrait") == "auto-portrait"
+    assert validate_mode("auto_landscape") == "auto-landscape"
+    assert validate_mode("reverse_portrait") == "reverse-portrait"
+    assert validate_mode("reverse_landscape") == "reverse-landscape"
+
 
 def test_mode_from_document_defaults_to_portrait():
     assert mode_from_document({}) == "portrait"
@@ -62,16 +69,16 @@ def test_mode_from_document_defaults_to_portrait():
 
 def test_choose_initial_fixed():
     assert choose_initial_orientation("landscape", 0, 0) == 90
-    assert choose_initial_orientation("reverse_portrait", 0, 0) == 180
+    assert choose_initial_orientation("reverse-portrait", 0, 0) == 180
 
 
 def test_choose_initial_auto_prefers_last_permitted():
     # last=0 is legal in auto_portrait
-    assert choose_initial_orientation("auto_portrait", 0, 180) == 0
+    assert choose_initial_orientation("auto-portrait", 0, 180) == 0
     # last=90 is NOT legal in auto_portrait; sensor 180 is -> 180
-    assert choose_initial_orientation("auto_portrait", 90, 180) == 180
+    assert choose_initial_orientation("auto-portrait", 90, 180) == 180
     # neither legal -> first allowed
-    assert choose_initial_orientation("auto_landscape", 0, 0) == 90
+    assert choose_initial_orientation("auto-landscape", 0, 0) == 90
 
 
 def test_never_outside_allowed_set_on_switch():
@@ -84,8 +91,8 @@ def test_never_outside_allowed_set_on_switch():
 
 def test_normalize_mode_corrects_stale_effective():
     mode, effective, last = normalize_mode(
-        {"mode": "auto_portrait", "effective_orientation": 90})
-    assert mode == "auto_portrait"
+        {"mode": "auto-portrait", "effective_orientation": 90})
+    assert mode == "auto-portrait"
     assert effective in (0, 180)
     # landscape effective corrected to 90
     mode, effective, _ = normalize_mode({"mode": "landscape", "effective_orientation": 0})
@@ -140,7 +147,7 @@ def test_flat_preserves_last_good():
 
 
 def test_auto_portrait_never_rotates_to_landscape():
-    o = Orientator("auto_portrait")
+    o = Orientator("auto-portrait")
     # landscape candidate (90) is disallowed; feed it a long time
     now = 0.0
     for _ in range(30):
@@ -148,7 +155,7 @@ def test_auto_portrait_never_rotates_to_landscape():
         assert o.update((9.8, 0, 0), now) is None
         assert o.current in (0, 180)
     # portrait->reverse portrait is allowed (both in {0,180})
-    o2 = Orientator("auto_portrait")
+    o2 = Orientator("auto-portrait")
     now = 0.0
     for _ in range(8):
         now += 0.2
@@ -157,7 +164,7 @@ def test_auto_portrait_never_rotates_to_landscape():
 
 
 def test_auto_landscape_never_rotates_to_portrait():
-    o = Orientator("auto_landscape")
+    o = Orientator("auto-landscape")
     o.current = 90
     now = 0.0
     for _ in range(30):
