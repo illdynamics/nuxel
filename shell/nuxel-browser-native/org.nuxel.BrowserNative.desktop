@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Nuxel Browser
+GenericName=Web Browser
+Comment=Genuine top-level WebKitGTK browser for Nuxel
+Exec=/usr/lib/nuxel/nuxel-browser-native/nuxel_browser_native.py
+Icon=org.nuxel.BrowserNative
+Terminal=false
+Categories=Network;WebBrowser;GTK;
+StartupNotify=true
+X-GNOME-UsesNotifications=false
