@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """Nuxel Camera Portal backend.
 
-Implements a minimal xdg-desktop-portal-style camera backend that exposes the
-``org.freedesktop.portal.Camera`` interface (ScreenCast-style RunCamera) over
-D-Bus and hands the requesting PWA a PipeWire node id / file descriptor for the
-camera stream.
+Implements a PRIVATE Nuxel camera broker on ``org.nuxel.Camera`` (NOT the
+standard ``org.freedesktop.portal.Camera`` name, which it must never hijack).
+It exposes narrowly-scoped capture verbs and an honest ``IsCameraPresent``
+status. When no capture device exists it reports NO_CAMERA and never
+substitutes a synthetic ``videotestsrc`` as a real camera.
 
 Two backends:
 
@@ -39,14 +40,14 @@ log = logging.getLogger("nuxel-camera-portal")
 # ---------------------------------------------------------------------------
 # D-Bus object model
 #
-# The org.freedesktop.portal.Camera interface is declared from a D-Bus
+# The org.nuxel.Camera interface is declared from a D-Bus
 # introspection XML string (see _CAMERA_INTROSPECTION_XML below) that is parsed
 # into a Gio.DBusNodeInfo. The object is then exported with
 # Gio.DBusConnection.register_object(DBUS_PATH, node_info,
 # _method_call_closure) — the second positional argument is the node info and
 # the third is a PyGObject method-call closure, NOT a bare Python object.
 #
-# Camera: org.freedesktop.portal.Camera
+# Camera: org.nuxel.Camera
 #        + RunCamera(a{sv} options) -> o handle        (single out value)
 #        + Release(o handle) -> ()
 #        + AvailableCameras(a{sv} options) -> a{sv}    (state/cameras)
@@ -54,8 +55,8 @@ log = logging.getLogger("nuxel-camera-portal")
 #        + Unsubscribe(o handle) -> ()
 # ---------------------------------------------------------------------------
 
-DBUS_NAME = "org.freedesktop.portal.Camera"
-DBUS_PATH = "/org/freedesktop/portal/camera"
+DBUS_NAME = "org.nuxel.Camera"
+DBUS_PATH = "/org/nuxel/Camera"
 
 # Global backend handles the PipeWire node management.
 _BACKEND = None
@@ -203,7 +204,7 @@ def _run_dbus_service(backend: CameraBackend, system_bus: bool = False):
     global _BACKEND
     _BACKEND = backend
     # Parse the introspection XML into a Gio.DBusNodeInfo describing the
-    # org.freedesktop.portal.Camera interface, then export the object with a
+    # org.nuxel.Camera interface, then export the object with a
     # PyGObject method-call closure. DoRunCamera returns exactly one out value
     # (an object path), matching the declared `o` out signature.
     node_info = Gio.DBusNodeInfo.new_for_xml(_CAMERA_INTROSPECTION_XML)
@@ -241,14 +242,18 @@ def _run_dbus_service(backend: CameraBackend, system_bus: bool = False):
     loop.run()
 
 
-# D-Bus introspection XML describing org.freedesktop.portal.Camera.
+# D-Bus introspection XML describing org.nuxel.Camera.
 _CAMERA_INTROSPECTION_XML = """<!DOCTYPE node PUBLIC "-//freedesktop//DTD D-BUS Object Introspection 1.0//EN"
 "http://www.freedesktop.org/standards/dbus/1.0/introspect.dtd">
-<node name="/org/freedesktop/portal/camera">
-  <interface name="org.freedesktop.portal.Camera">
+<node name="/org/nuxel/Camera">
+  <interface name="org.nuxel.Camera">
     <method name="AvailableCameras">
       <arg type="a{sv}" name="options" direction="in"/>
       <arg type="a{sv}" name="cameras" direction="out"/>
+    </method>
+    <method name="IsCameraPresent">
+      <arg type="s" name="app_id" direction="in"/>
+      <arg type="b" name="present" direction="out"/>
     </method>
     <method name="RunCamera">
       <arg type="a{sv}" name="options" direction="in"/>
@@ -269,7 +274,7 @@ _CAMERA_INTROSPECTION_XML = """<!DOCTYPE node PUBLIC "-//freedesktop//DTD D-BUS 
 
 
 class CameraPortalNode:
-    """D-Bus object implementing org.freedesktop.portal.Camera.
+    """D-Bus object implementing org.nuxel.Camera.
 
     Rather than being passed as the raw object, this class is driven by the
     module-level :func:`_method_call_closure` which is registered via
@@ -311,6 +316,15 @@ class CameraPortalNode:
         return
 
 
+def _v4l2_nodes_present() -> bool:
+    """A /dev/video* node exists.  NOT a claim that capture works (the S10+
+    FIMC-IS vendor interface does not expose standard capture)."""
+    try:
+        return any(n.startswith("video") for n in os.listdir("/dev"))
+    except OSError:
+        return False
+
+
 def _method_call_closure(
     connection,
     sender_name,
@@ -336,7 +350,7 @@ def _method_call_closure(
         backend = _BACKEND
         node = CameraPortalNode(backend if backend is not None else CameraBackend())
 
-        if interface_name != "org.freedesktop.portal.Camera":
+        if interface_name != "org.nuxel.Camera":
             invocation.return_error(
                 GLib.Error(
                     "org.freedesktop.DBus.Error.UnknownMethod",
@@ -345,6 +359,9 @@ def _method_call_closure(
             )
             return
 
+        if method_name == "IsCameraPresent":
+            present = (not backend.synthetic) and _v4l2_nodes_present()
+            invocation.return_value(GLib.Variant("b", present))
         if method_name == "RunCamera":
             handle = node.run_camera()
             # Declared out signature: `o` (a single D-Bus object path).
@@ -386,7 +403,7 @@ def _method_call_closure(
         log.error("Method-call dispatch failed for %s: %s", method_name, exc)
         try:
             invocation.return_error(
-                GLib.Error("org.freedesktop.portal.Camera.Error.Failed", str(exc))
+                GLib.Error("org.nuxel.Camera.Error.Failed", str(exc))
             )
         except Exception:
             pass
@@ -400,7 +417,12 @@ def main(argv=None):
     parser.add_argument(
         "--synthetic",
         action="store_true",
-        help="Publish a synthetic color-bar camera node (VM default).",
+        help="Publish a synthetic color-bar camera node (explicit test only).",
+    )
+    parser.add_argument(
+        "--test-source",
+        action="store_true",
+        help="Alias for --synthetic (explicit synthetic test source).",
     )
     parser.add_argument(
         "--hardware",
@@ -429,7 +451,7 @@ def main(argv=None):
         print(json.dumps({"status": "ok", **backend.available_state()}))
         return 0
 
-    synthetic = not args.hardware  # default to synthetic unless --hardware
+    synthetic = bool(args.synthetic or args.test_source)
     backend = CameraBackend(synthetic=synthetic, video_source=args.video_source)
     _run_dbus_service(backend, system_bus=args.system_bus)
     return 0

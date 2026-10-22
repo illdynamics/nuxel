@@ -134,8 +134,9 @@ p = run(["bash", TOOL, "portal"])
 check("portal reports the real unit and backend paths from the policy",
       "shell/nuxel-camera-portal/systemd/nuxel-camera-portal.service" in p.stdout
       and "nuxel_camera_portal.py" in p.stdout, p.stdout)
-check("portal names the interface and its methods",
-      "org.freedesktop.portal.Camera" in p.stdout and "RunCamera" in p.stdout, p.stdout)
+check("portal names the PRIVATE interface and its methods (never the freedesktop portal)",
+      "org.nuxel.Camera" in p.stdout and "IsCameraPresent" in p.stdout
+      and "RunCamera" in p.stdout, p.stdout)
 check("portal verifies the capture app exists and its bridge verbs match the policy",
       "present" in p.stdout and "(match)" in p.stdout, p.stdout)
 check("portal reports the synthetic backend without pretending it is hardware",
@@ -144,12 +145,15 @@ check("portal names its own first failing stage and stays chain-only",
       "first failing :" in p.stdout and "PORTAL_READY_UNTESTED" in p.stdout
       and "chain evidence only" in p.stdout, p.stdout)
 pol = json.load(open(POLICY))
-check("policy carries a portal section with a synthetic contract",
-      pol["pipeline"]["portal"]["synthetic_when_no_hardware"]["enabled"] is True
+check("policy makes synthetic opt-in (honest NO_CAMERA default, never a default color-bar camera)",
+      pol["pipeline"]["portal"]["synthetic_when_no_hardware"]["enabled"] is False
+      and pol["pipeline"]["portal"]["interface"] == "org.nuxel.Camera"
       and pol["pipeline"]["portal"]["first_failing_stage_order"][0] == "unit_installed")
-check("policy pairs the capture app with a gallery app and one verb contract",
+check("policy pairs the capture app with a gallery app and a file-backed verb contract",
       pol["gallery"]["capture_app"]["path"] == "pwa/nuxel-apps/camera-gallery"
-      and pol["gallery"]["bridge_verbs"] == pol["gallery"]["capture_app"]["declared_bridge_verbs"])
+      and pol["gallery"]["bridge_verbs"] == pol["gallery"]["capture_app"]["declared_bridge_verbs"]
+      and set(pol["gallery"]["bridge_verbs"]) == {"camera.capture", "camera.list-captures",
+                                                   "camera.open", "camera.delete", "camera.status"})
 check("policy forbids swallowing capture autonomy",
       pol["gallery"]["capture_must_be_owner_initiated"] is True)
 for rel in ("shell/nuxel-camera-portal/nuxel_camera_portal.py",

@@ -70,11 +70,17 @@
     "offline_first": true,
     "network": "none",
     "storage": [
-      "localStorage"
+      "bridge storage",
+      "file-backed media store"
     ],
-    "data_source": "camera.list-captures via the Nuxel bridge",
+    "data_source": "file-backed media store via camera.list-captures/camera.open/camera.delete",
     "facilities": [
       "read-only access to the shared camera-gallery store"
+    ],
+    "bridge_verbs": [
+      "camera.list-captures",
+      "camera.open",
+      "camera.delete"
     ]
   }
 }

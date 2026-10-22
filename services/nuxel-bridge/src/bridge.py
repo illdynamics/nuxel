@@ -36,6 +36,7 @@ from gi.repository import GLib
 import threading
 import time
 import subprocess
+import media_store
 
 logging.basicConfig(
     level=logging.INFO,
@@ -136,6 +137,9 @@ elif os.path.exists(NUXEL_PATHS_CONF):
         PERMISSIONS_DIR = '/var/lib/nuxel/permissions'
 else:
     PERMISSIONS_DIR = '/var/lib/nuxel/permissions' 
+
+# File-backed camera/photo/video store (A52). Files, never browser localStorage.
+MEDIA_DIR = os.environ.get('NUXEL_MEDIA_DIR', '/var/lib/nuxel/media')
 
 
 # ============================================================
@@ -1129,6 +1133,7 @@ class NuxelBridgeService(dbus.service.Object):
         self.network = NetworkManagerConnector()
         self.geoclue = GeoClueConnector()
         self.orientation = OrientationConnector()
+        self.media = media_store.MediaStore(MEDIA_DIR)
         
         # Initialize connectors in background
         self._init_connectors()
@@ -1479,6 +1484,105 @@ class NuxelBridgeService(dbus.service.Object):
     def OrientationSet(self, app_id, mode):
         """Validate and persist a mode; reject malformed values."""
         return json.dumps(self.orientation.set_mode(mode))
+
+
+    # ---------- D-Bus: Camera / media (A52 file-backed store) ----------
+
+    def _camera_status_payload(self):
+        """Honest camera hardware status. A /dev/video* node existing is NOT a
+        claim that a frame can be captured (the S10+ FIMC-IS vendor interface is
+        blocked). The bridge reports the enumerated state truthfully."""
+        nodes = []
+        try:
+            nodes = [n for n in os.listdir("/dev") if n.startswith("video")]
+        except OSError:
+            pass
+        return {
+            "success": True,
+            "camera_present": len(nodes) > 0,
+            "capture_verified": False,  # never claimed without a real frame
+            "error": None if nodes else "NO_CAMERA",
+            "detail": ("V4L2 nodes enumerated (%d); the Exynos FIMC-IS vendor "
+                       "interface does not expose standard capture (see "
+                       "docs/a52-camera/MEDIA-PIPELINE-ANALYSIS.md)" % len(nodes))
+                       if nodes else "no /dev/video* node exists",
+        }
+
+    @dbus.service.method(INTERFACE_NAME, in_signature='s', out_signature='s')
+    def CameraStatus(self, app_id):
+        return json.dumps(self._camera_status_payload())
+
+    @dbus.service.method(INTERFACE_NAME, in_signature='ss', out_signature='s')
+    def CameraListCaptures(self, app_id, kind):
+        if not self._check_capability(app_id, 'camera:preview'):
+            return json.dumps({'success': False, 'error': 'Capability not granted: camera:preview',
+                               'error_code': 'PERMISSION_DENIED'})
+        kind = (kind or '').strip() or None
+        try:
+            records = self.media.list(kind)
+        except Exception as exc:
+            return json.dumps({'success': False, 'error': 'media list failed: %s' % exc})
+        # Do NOT return base64 pixel data: metadata + canonical path only.
+        rows = [{
+            'id': r['id'], 'kind': r['kind'], 'name': r['name'], 'path': r['path'],
+            'size': r.get('size'), 'taken': r.get('taken'), 'mtime': r.get('mtime'),
+            'width': r.get('width'), 'height': r.get('height'),
+            'orientation': r.get('orientation'), 'camera': r.get('camera'),
+            'duration': r.get('duration'), 'mime': r.get('mime'),
+        } for r in records]
+        return json.dumps({'success': True, 'captures': rows, 'count': len(rows)})
+
+    @dbus.service.method(INTERFACE_NAME, in_signature='ssss', out_signature='s')
+    def CameraCapture(self, app_id, kind, mime, data_b64):
+        if not self._check_capability(app_id, 'camera:capture'):
+            return json.dumps({'success': False, 'error': 'Capability not granted: camera:capture',
+                               'error_code': 'PERMISSION_DENIED'})
+        try:
+            import base64
+            data = base64.b64decode(data_b64)
+        except Exception as exc:
+            return json.dumps({'success': False, 'error': 'invalid payload encoding: %s' % exc})
+        cap = media_store.MAX_PHOTO_BYTES if kind == 'photo' else media_store.MAX_VIDEO_BYTES
+        if len(data) > cap:
+            return json.dumps({'success': False, 'error': 'payload exceeds size cap (%d > %d)'
+                               % (len(data), cap), 'error_code': 'PAYLOAD_TOO_LARGE'})
+        try:
+            rec = self.media.save(kind, data, mime=mime or None)
+        except media_store.MediaStoreError as exc:
+            return json.dumps({'success': False, 'error': str(exc), 'error_code': 'SAVE_FAILED'})
+        return json.dumps({'success': True, 'capture': {
+            'id': rec['id'], 'kind': rec['kind'], 'name': rec['name'], 'path': rec['path'],
+            'size': rec['size'], 'taken': rec['taken'], 'mime': rec['mime'],
+        }})
+
+    @dbus.service.method(INTERFACE_NAME, in_signature='ss', out_signature='s')
+    def CameraOpen(self, app_id, capture_id):
+        if not self._check_capability(app_id, 'camera:preview'):
+            return json.dumps({'success': False, 'error': 'Capability not granted: camera:preview',
+                               'error_code': 'PERMISSION_DENIED'})
+        got = self.media.get(capture_id)
+        if got is None:
+            return json.dumps({'success': False, 'error': 'capture not found',
+                               'error_code': 'NOT_FOUND'})
+        rec, data = got
+        if len(data) > media_store.MAX_PHOTO_BYTES * 2:
+            return json.dumps({'success': False, 'error': 'capture too large to inline',
+                               'error_code': 'PAYLOAD_TOO_LARGE'})
+        import base64
+        return json.dumps({'success': True, 'capture': {
+            'id': rec['id'], 'kind': rec['kind'], 'name': rec['name'], 'mime': rec['mime'],
+            'width': rec.get('width'), 'height': rec.get('height'),
+            'data_b64': base64.b64encode(data).decode('ascii'),
+        }})
+
+    @dbus.service.method(INTERFACE_NAME, in_signature='ss', out_signature='s')
+    def CameraDelete(self, app_id, capture_id):
+        if not self._check_capability(app_id, 'camera:capture'):
+            return json.dumps({'success': False, 'error': 'Capability not granted: camera:capture',
+                               'error_code': 'PERMISSION_DENIED'})
+        ok = self.media.delete(capture_id)
+        return json.dumps({'success': ok, 'deleted': ok,
+                           'error': None if ok else 'capture not found or not deletable'})
 
     # ---------- D-Bus: Signals ----------
 
