@@ -1,0 +1,11 @@
+wrap right
+wrap down
+wrap left
+wrap up
+meal 0 meter 0
+meal 1 meter 1
+meal 2 meter 2
+meal 3 meter 3
+meal 4 meter 4
+meal 5 meter 0
+four wraps, five real foods and fatal poop: PASS

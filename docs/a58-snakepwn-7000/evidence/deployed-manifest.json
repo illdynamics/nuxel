@@ -1,0 +1,20 @@
+{
+  "index.html": "5a55a88693a5d5e3fbe2f7295c2eed7529f9ff25be4956c065a4e06cab046b62",
+  "app.json": "b69dc3965d4fbd640bb05b56e0bec51899269dab349e2c8b96faf3a578b1d3c9",
+  "manifest.json": "2a7e3ae9a2049fcb2ab40105c3969b371a519d1c81b3bbca171468778e810d13",
+  "sw.js": "69d90173ac177ca1c191efc0a3e8843fdd377e2742deedbfc6c2fb4930677701",
+  "css/snekbyte.css": "aac630566f0b5977b8a53656bbb0bc4bc27b774d4300aae5eebc0a0667f8c05d",
+  "js/snek-controls.js": "73cb92a07047ca785039cc13632bdca77b4c5d8de7eeb21b1575657813b22621",
+  "js/snekbyte.js": "1236a8447757436cb2ba653748039a725a8264eeb876d60dd2b63fb993c0ba8c",
+  "js/snek-engine.js": "f6995b5495f0a0f3aabc893dcc08359603d7c816aaf2e3f5df21de5f6e7b980d",
+  "icons/icon-144.png": "107d87c823f53f2f95e47b4993455619b7f14fef9dde43bc5bdcece07c23c64d",
+  "icons/icon-192.png": "c05c0c1f1d2b9574ea768ecc5fbe7f61953ee4bb4dec01a4ac084211191515f0",
+  "icons/icon-384.png": "6ab3c194810ce0ed5f086f827cfcd3c7164803602ded410460d0a15b32ace3f0",
+  "icons/icon-48.png": "daa504caa0c0f2ae3303ec9c5c0793812ba697a3ced1f4ec910b64d95d58aec3",
+  "icons/icon-152.png": "45d05a0f769023ce039ef94d54dd7cc044e5cf17ced0bacb637760f2bfdf3f28",
+  "icons/icon.svg": "e4a0aab254f2c1ae8f38bf358effad921fcce90c5d569defe0f1c3af444140e1",
+  "icons/icon-72.png": "f26f5548c1dea86a1c146eee533c439007eaa53e4b338d987f5bf14055ae896b",
+  "icons/icon-96.png": "f7ea476d2519e512081dd27ca3b04590c16ee160ac0227440648ce9125a0a149",
+  "icons/icon-128.png": "91199487afea3433ddcc673c180741427a3a30fb346dc6381688083eb6c1bdb0",
+  "icons/icon-512.png": "0b76817efead516f1c3773f228b28dff6e428d734a0014fa8ada0dbffb3bcb45"
+}

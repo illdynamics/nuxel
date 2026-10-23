@@ -1,0 +1,9 @@
+dev=/dev/cu.usbmodem201 bytes_in=7496 echo_ok=True error=None elapsed=0.320s
+sample:
+tery cv voltage 0x13
+6,223278,45616624167,-;max77705_chg_set_mode_state: current_mode(0x4), state(0)
+6,223279,45616624174,-;max77705_chg_set_mode_state: current_mode(0x5)
+6,223280,45616625144,-;max77705_chg_set_mode_state: CNFG_00 (0x5)
+6,223281,45616625583,-;[MAX77705] irq_reg, complete [1], 80, 0, 0, 0, f0
+6,223282,45616625593,-;[MAX77705] dump_reg, 27, 31, 82, 10, b1, 9, 1, 17
+6,223283,45

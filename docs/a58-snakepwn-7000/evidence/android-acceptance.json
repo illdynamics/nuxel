@@ -1,0 +1,18 @@
+{
+  "device": "emulator-5554",
+  "physical": false,
+  "input": "synthetic CDP + ADB",
+  "originalPrefs": "{\"speedIndex\":0,\"wonqMode\":true,\"wrapWalls\":true,\"showGrid\":false,\"highScore\":0}",
+  "checks": [
+    {
+      "name": "saved speed/WoNQ/grid/highscore retained through cold WebView load",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "native background stops simulation and RAF",
+      "pass": true,
+      "detail": null
+    }
+  ]
+}

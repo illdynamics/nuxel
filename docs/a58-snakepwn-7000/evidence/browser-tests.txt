@@ -1,0 +1,21 @@
+test_a57_service_worker_upgrade_preserves_scores_and_fresh_assets (__main__.BrowserTests.test_a57_service_worker_upgrade_preserves_scores_and_fresh_assets) ... ok
+test_keyboard_repeats_and_assistive_button_activation (__main__.BrowserTests.test_keyboard_repeats_and_assistive_button_activation) ... ok
+test_layout_portrait_landscape_targets_and_seam_draw (__main__.BrowserTests.test_layout_portrait_landscape_targets_and_seam_draw) ... ok
+test_live_speed_rebases_no_reset_and_one_loop (__main__.BrowserTests.test_live_speed_rebases_no_reset_and_one_loop) ... ok
+test_native_pause_visibility_and_pagehide_no_work (__main__.BrowserTests.test_native_pause_visibility_and_pagehide_no_work) ... ok
+test_nuxel_hidden_iframe_lock_and_back_target (__main__.BrowserTests.test_nuxel_hidden_iframe_lock_and_back_target) ... ok
+test_pointercancel_capture_and_resize_clear (__main__.BrowserTests.test_pointercancel_capture_and_resize_clear) ... ok
+test_preferences_migrate_corrupt_values_without_score_loss (__main__.BrowserTests.test_preferences_migrate_corrupt_values_without_score_loss) ... ok
+test_press_before_release_and_no_click_duplicate (__main__.BrowserTests.test_press_before_release_and_no_click_duplicate) ... ok
+test_rapid_sequence_and_projected_reverse (__main__.BrowserTests.test_rapid_sequence_and_projected_reverse) ... ok
+test_real_mouse_press_steers_before_release (__main__.BrowserTests.test_real_mouse_press_steers_before_release) ... ok
+test_repeated_gameover_retry_pause_has_no_stale_turns_or_extra_loops (__main__.BrowserTests.test_repeated_gameover_retry_pause_has_no_stale_turns_or_extra_loops) ... ok
+test_service_worker_offline_assets_and_other_caches (__main__.BrowserTests.test_service_worker_offline_assets_and_other_caches) ... ok
+test_slider_pause_resume_speed_and_back (__main__.BrowserTests.test_slider_pause_resume_speed_and_back) ... ok
+test_swipe_move_segments_without_release (__main__.BrowserTests.test_swipe_move_segments_without_release) ... ok
+test_wrap_toggle_next_round_and_score_persistence_on_menu (__main__.BrowserTests.test_wrap_toggle_next_round_and_score_persistence_on_menu) ... ok
+
+----------------------------------------------------------------------
+Ran 16 tests in 7.878s
+
+OK

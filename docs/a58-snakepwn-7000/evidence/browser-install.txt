@@ -1,0 +1,28 @@
+Removing unused browser at /Users/wicked/Library/Caches/ms-playwright/ffmpeg-1013
+Removing unused browser at /Users/wicked/Library/Caches/ms-playwright/webkit-2370
+Downloading WebKit 26.4 (playwright webkit v2287)[2m from https://cdn.playwright.dev/dbazure/download/playwright/builds/webkit/2287/webkit-mac-15-arm64.zip[22m
+|                                                                                |   0% of 76.7 MiB
+|■■■■■■■■                                                                        |  10% of 76.7 MiB
+|■■■■■■■■■■■■■■■■                                                                |  20% of 76.7 MiB
+|■■■■■■■■■■■■■■■■■■■■■■■■                                                        |  30% of 76.7 MiB
+|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                                                |  40% of 76.7 MiB
+|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                                        |  50% of 76.7 MiB
+|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                                |  60% of 76.7 MiB
+|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                        |  70% of 76.7 MiB
+|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                |  80% of 76.7 MiB
+|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■        |  90% of 76.7 MiB
+|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■| 100% of 76.7 MiB
+WebKit 26.4 (playwright webkit v2287) downloaded to /Users/wicked/Library/Caches/ms-playwright/webkit-2287
+Downloading FFmpeg (playwright ffmpeg v1011)[2m from https://cdn.playwright.dev/dbazure/download/playwright/builds/ffmpeg/1011/ffmpeg-mac-arm64.zip[22m
+|                                                                                |   1% of 1 MiB
+|■■■■■■■■                                                                        |  10% of 1 MiB
+|■■■■■■■■■■■■■■■■                                                                |  21% of 1 MiB
+|■■■■■■■■■■■■■■■■■■■■■■■■                                                        |  30% of 1 MiB
+|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                                                |  40% of 1 MiB
+|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                                        |  51% of 1 MiB
+|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                                |  60% of 1 MiB
+|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                        |  71% of 1 MiB
+|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                |  80% of 1 MiB
+|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■        |  90% of 1 MiB
+|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■| 100% of 1 MiB
+FFmpeg (playwright ffmpeg v1011) downloaded to /Users/wicked/Library/Caches/ms-playwright/ffmpeg-1011

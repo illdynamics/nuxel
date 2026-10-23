@@ -1,25 +1,87 @@
 {
-  "name": "Nuxel SnekByte",
+  "name": "SnekByte \u2014 Nuxel Arcade",
   "short_name": "SnekByte",
-  "description": "Port of the original SnekByte snake game with WoNQ mode, parity-verified against the Python original",
-  "start_url": "/pwa/nuxel-apps/snekbyte/index.html",
-  "scope": "/pwa/nuxel-apps/snekbyte/",
+  "id": "org.nuxel.SnekByte",
+  "description": "SnekByte: live speed, infinite wrap, responsive touch and the five-food WoNQ Poop-o-meter",
+  "start_url": "./index.html",
+  "scope": "./",
   "display": "standalone",
   "orientation": "any",
-  "background_color": "#000000",
-  "theme_color": "#2E7D32",
+  "background_color": "#06121c",
+  "theme_color": "#081a20",
   "icons": [
-    {"src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png"},
-    {"src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png"},
-    {"src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml"}
+    {
+      "src": "icons/icon-48.png",
+      "sizes": "48x48",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-72.png",
+      "sizes": "72x72",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-96.png",
+      "sizes": "96x96",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-128.png",
+      "sizes": "128x128",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-144.png",
+      "sizes": "144x144",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-152.png",
+      "sizes": "152x152",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-384.png",
+      "sizes": "384x384",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
   ],
-  "nuxel": { "bridge_version": 1,
+  "nuxel": {
     "app_id": "org.nuxel.SnekByte",
-    "capabilities": ["input:keyboard", "input:touch"],
     "app_type": "games",
     "offline_first": true,
     "network": "none",
-    "storage": ["localStorage (settings + high score only)"],
-    "features": ["original rules port", "WoNQ mode", "five speed levels", "keyboard, swipe and on-screen controls", "parity-proven against the Python original"]
-  }
+    "capabilities": [
+      "input:keyboard",
+      "input:touch"
+    ],
+    "source": "Original Python/Pygame game in repo root; pure JavaScript parity engine",
+    "features": [
+      "Wrap Walls default ON",
+      "live 5/8/12/16/20 cells per second",
+      "WoNQ five-food meter",
+      "offline touch and keyboard play",
+      "Classic Walls Python parity"
+    ]
+  },
+  "version": "1.1.0-a58"
 }

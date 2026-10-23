@@ -1,0 +1,52 @@
+SnekByte engine — rules
+  PASS grid is 40x30 cells of 20 px (800x600)
+  PASS speed table is the original five rates  — 5,8,12,16,20
+  PASS default speed index is 2 (12 fps)
+  PASS WoNQ poop threshold is 5
+  PASS the snake starts length 1 at (20,15) heading right
+  PASS speed names come from the real rates, not an invented table  — Normal
+  PASS changeSpeed wraps around the table
+  PASS reset(): one segment, score 0, no poops, not over
+  PASS reset(): food comes from the plan when one is given
+  PASS reset(): never leaves food unplaced
+  PASS a length-1 snake may reverse
+  PASS a growing snake may NOT reverse into itself (upstream rule)
+  PASS a perpendicular turn is always allowed
+  PASS eating the food grows the snake and scores one  — score=1 len=2
+  PASS the extra segment appears on the next move (upstream behaviour, fixture-pinned)
+  PASS eating places the next food on a free cell
+  PASS an eat is recorded as an event
+  PASS running off the grid ends the game with cause=wall  — cause=wall at [40,15]
+  PASS the wall tick is recorded as an event
+  PASS biting your own body ends the game with cause=self  — cause=self
+  PASS WoNQ: the fifth meal drops one poop  — [{"position":[21,15]}]
+  PASS WoNQ: the poop lands on the tail cell  — 21,15 vs tail 21,15
+  PASS WoNQ: the poop-o-meter resets after dropping
+  PASS WoNQ: the poop drop is recorded as an event
+  PASS WoNQ: stepping on a poop ends the game with cause=poop  — cause=poop
+  PASS WoNQ off: a poop cell is inert (matches the original)  — cause=null
+  PASS a finished game does not advance further
+  PASS the same seed replays the same game (deterministic engine)
+  PASS a different seed gives a different game
+  PASS a full grid yields no food cell instead of looping forever
+  PASS a plan is consumed in order
+  PASS a plan cell that is occupied is skipped
+  PASS the engine makes no network call
+  PASS the engine requires no native/node module
+  PASS the engine does not depend on pygame or Emscripten (code, not comments)
+  PASS the engine exposes exactly the documented API
+SnekByte engine — parity fixture replay
+  PASS the port reproduces the recorded upstream game tick for tick  — 0 divergence(s) over 41 ticks
+  PASS the fixture covers the three endings the original can have  — wall,self,poop
+  PASS index.html loads the engine and the UI in order
+  PASS index.html declares the registry app id
+  PASS index.html ships touch controls and all live bindings
+  PASS UI contains a five-segment poo meter
+  PASS WoNQ default is enabled in phone shell without changing core defaults
+  PASS UI pauses on lock, home or background
+  PASS UI prevents continuous animation frames while idle
+  PASS the UI drives the canvas and talks only to the engine module
+  PASS the UI never claims successful on-device verification
+  PASS the UI has no leftover reference to a removed canvas provenance state
+
+48 passed, 0 failed

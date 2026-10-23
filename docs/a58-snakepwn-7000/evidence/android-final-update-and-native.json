@@ -1,0 +1,79 @@
+{
+  "device": "emulator-5554",
+  "physical": false,
+  "input": "synthetic CDP + ADB",
+  "originalPrefs": "{\"speedIndex\":1,\"wonqMode\":true,\"wrapWalls\":true,\"showGrid\":false,\"highScore\":0}",
+  "checks": [
+    {
+      "name": "APK update retained previous saved preferences and score",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "saved speed/WoNQ/grid/highscore retained through cold WebView load",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "offline bundled game launches",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "D-pad acknowledges on mouse press",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "accepted turn applied/drawn",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "live speed changes without resetting score/tick",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "native Back pauses",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "paused remains motionless",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "native Home suspends loop",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "foreground requires deliberate resume",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "preferences survive WebView reload",
+      "pass": true,
+      "detail": null
+    }
+  ],
+  "finalPrefs": "{\"speedIndex\":0,\"wonqMode\":true,\"wrapWalls\":true,\"showGrid\":false,\"highScore\":0}",
+  "traces": [
+    {
+      "id": 1,
+      "source": "dpad",
+      "eventAt": 663.6000000000931,
+      "rawEventTimeStamp": 663.6000000000931,
+      "receivedAt": 664.1000000000931,
+      "recognizedAt": 664.1000000000931,
+      "dir": [
+        0,
+        -1
+      ],
+      "result": "accepted"
+    }
+  ]
+}

@@ -1,0 +1,29 @@
+1792689875 HOST_CONFIG_GET name=wlfb-state bytes=93
+1792689877 HOST_CONFIG_GET name=wlfb-state bytes=93
+1792689879 HOST_CONFIG_GET name=wlfb-state bytes=93
+1792689881 HOST_CONFIG_GET name=wlfb-state bytes=93
+1792689883 HOST_CONFIG_GET name=wlfb-state bytes=93
+1792689885 HOST_CONFIG_GET name=wlfb-state bytes=93
+1792689887 HOST_CONFIG_GET name=wlfb-state bytes=93
+1792689889 HOST_CONFIG_GET name=wlfb-state bytes=93
+1792689891 HOST_CONFIG_GET name=wlfb-state bytes=93
+1792689893 HOST_CONFIG_GET name=wlfb-state bytes=93
+1792689895 HOST_CONFIG_GET name=wlfb-state bytes=93
+1792689897 LAUNCH app_id=org.nuxel.SnekByte via launcher registry
+1792689897 NUXEL_INPUT EVT app:launch id=org.nuxel.SnekByte name=SnekByte
+1792689897 NUXEL_INPUT EVT app:lifecycle id=nuxel-settings state=BACKGROUND ts=1792689897159
+1792689897 NUXEL_INPUT EVT app:lifecycle id=org.nuxel.SnekByte state=LAUNCHING ts=1792689897160
+1792689897 NUXEL_INPUT EVT app:lifecycle id=org.nuxel.SnekByte state=LAUNCHING ts=1792689897163
+1792689897 HOST_CONFIG_GET name=wlfb-state bytes=93
+1792689897 NUXEL_INPUT EVT app:lifecycle id=org.nuxel.SnekByte state=ACTIVE ts=1792689897842
+1792689899 HOST_CONFIG_GET name=wlfb-state bytes=93
+1792689901 HOST_CONFIG_GET name=wlfb-state bytes=93
+1792689903 HOST_CONFIG_GET name=wlfb-state bytes=93
+1792689905 HOST_CONFIG_GET name=wlfb-state bytes=93
+1792689907 HOST_CONFIG_GET name=wlfb-state bytes=93
+1792689909 HOST_CONFIG_GET name=wlfb-state bytes=93
+1792689911 HOST_CONFIG_GET name=wlfb-state bytes=93
+1792689913 HOST_CONFIG_GET name=wlfb-state bytes=93
+1792689915 HOST_CONFIG_GET name=wlfb-state bytes=93
+1792689917 HOST_CONFIG_GET name=wlfb-state bytes=93
+1792689918 DISPLAY_SLEEP total=1842 failures=0 owner=nuxel-wl-fb display=off capture=stopped

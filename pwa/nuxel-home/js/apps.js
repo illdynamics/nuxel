@@ -75,9 +75,11 @@ const NUXEL_APPS = {
     },
     'org.nuxel.Browser': {
         id: 'org.nuxel.Browser', name: 'Browser', icon: '🌐', color: '#297ad7',
-        category: 'tools', type: 'pwa',
+        category: 'tools', type: 'native',
         url: '/pwa/nuxel-apps/browser/index.html',
-        description: 'WebKit browser (external navigation by user consent)',
+        nativeAppId: 'org.nuxel.BrowserNative',
+        native_binary: '/usr/lib/nuxel/nuxel-browser-native/nuxel_browser_native.py',
+        description: 'Nuxel Browser — real top-level WebKitGTK browser (HTTPS)',
         capabilities: ['network:outbound', 'storage:persistent'], docked: false,
     },
     'org.nuxel.Notes': {
@@ -112,7 +114,9 @@ const NUXEL_APPS = {
         category: 'media',
         type: 'native',
         url: 'nuxel-camera://',
-        description: 'Take photos and videos',
+        nativeAppId: 'org.nuxel.CameraNative',
+        native_binary: '/usr/lib/nuxel/nuxel-camera-native/nuxel_camera_native.py',
+        description: 'Nuxel Camera — honest hardware status + capture',
         capabilities: ['camera:capture', 'camera:preview'],
         docked: false,
     },
@@ -162,6 +166,72 @@ const NUXEL_APPS = {
         description: 'Live device console and control centre',
         capabilities: [],
         docked: false,
+    },
+
+    // A59: user-facing apps authored in pwa/nuxel-apps but previously missing
+    // from the launcher. Each resolves to a real index.html + manifest.json.
+    'org.nuxel.Calculator': {
+        id: 'org.nuxel.Calculator', name: 'Calculator', icon: '🧮', color: '#009688',
+        category: 'tools', type: 'pwa',
+        url: '/pwa/nuxel-apps/calculator/index.html',
+        description: 'Calculator', capabilities: [], docked: false,
+    },
+    'org.nuxel.Clock': {
+        id: 'org.nuxel.Clock', name: 'Clock', icon: '⏰', color: '#455A64',
+        category: 'tools', type: 'pwa',
+        url: '/pwa/nuxel-apps/clock/index.html',
+        description: 'Clock, alarms and timers',
+        capabilities: ['notifications:send', 'storage:persistent'], docked: false,
+    },
+    'org.nuxel.Photos': {
+        id: 'org.nuxel.Photos', name: 'Photos', icon: '🖼️', color: '#F06292',
+        category: 'media', type: 'pwa',
+        url: '/pwa/nuxel-apps/photos/index.html',
+        description: 'Browse your photos', capabilities: ['storage:persistent'], docked: false,
+    },
+    'org.nuxel.Weather': {
+        id: 'org.nuxel.Weather', name: 'Weather', icon: '⛅', color: '#29B6F6',
+        category: 'tools', type: 'pwa',
+        url: '/pwa/nuxel-apps/weather/index.html',
+        description: 'Weather forecast',
+        capabilities: ['storage:persistent', 'network:outbound'], docked: false,
+    },
+    'org.nuxel.Maps': {
+        id: 'org.nuxel.Maps', name: 'Maps', icon: '🗺️', color: '#7CB342',
+        category: 'tools', type: 'pwa',
+        url: '/pwa/nuxel-apps/maps/index.html',
+        description: 'Maps and navigation',
+        capabilities: ['location:read', 'storage:persistent', 'network:outbound'], docked: false,
+    },
+    'org.nuxel.Nuxtore': {
+        id: 'org.nuxel.Nuxtore', name: 'NuxTore', icon: '🛍️', color: '#FF7043',
+        category: 'tools', type: 'pwa',
+        url: '/pwa/nuxel-apps/nuxtore/index.html',
+        description: 'Nuxel app catalog',
+        capabilities: ['catalog:read', 'catalog:install', 'catalog:remove'], docked: false,
+    },
+    'org.nuxel.Recorder': {
+        id: 'org.nuxel.Recorder', name: 'Recorder', icon: '🎙️', color: '#D32F2F',
+        category: 'media', type: 'pwa',
+        url: '/pwa/nuxel-apps/recorder/index.html',
+        description: 'Voice recorder', capabilities: ['storage:persistent'], docked: false,
+    },
+    'org.nuxel.Snekbyte': {
+        id: 'org.nuxel.Snekbyte', name: 'SnekByte', icon: '🐍', color: '#66BB6A',
+        category: 'games', type: 'pwa',
+        url: '/pwa/nuxel-apps/snekbyte/index.html',
+        description: 'SnekByte — Nuxel Arcade',
+        capabilities: ['input:keyboard', 'input:touch'], docked: false,
+    },
+    'org.gnome.Snapshot': {
+        id: 'org.gnome.Snapshot', name: 'Camera (GNOME Snapshot)', icon: '📸', color: '#8D6E63',
+        category: 'media', type: 'native',
+        url: 'org.gnome.Snapshot://',
+        nativeAppId: 'org.gnome.Snapshot',
+        native_binary: '/usr/bin/snapshot',
+        installed: true,
+        description: 'GNOME Snapshot native camera (installed; camera feed needs PipeWire/libcamera)',
+        capabilities: ['camera:capture', 'camera:preview'], docked: false,
     },
 };
 

@@ -486,13 +486,61 @@ class NuxelHome {
     }
 
     _launchNative(app, url) {
-        console.warn(`Native app not implemented yet: ${app.name} (${url})`);
+        console.log(`Launching native app: ${app.name} (${url})`);
+        const target = app.nativeAppId || app.id;
+        this._setAppState('LAUNCHING', app, null);
 
-        const toast = document.createElement('div');
-        toast.className = 'toast';
-        toast.textContent = `${app.name} native app is not implemented yet`;
-        document.body.appendChild(toast);
-        setTimeout(() => toast.remove(), 3000);
+        // Installed state check for apps that may not be present (e.g. Snapshot).
+        if (app.installed === false) {
+            this._setAppState('FAILED', app, null);
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.textContent = `${app.name} is not installed on this device`;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 4000);
+            return;
+        }
+
+        // The authoritative launch authority is the HTTP bridge's CLOSED-verb
+        // /apps/exec endpoint: it resolves the target from its fixed allowlist /
+        // canonical registry and never executes a client-supplied path.
+        this._httpBridge('POST', '/api/v1/apps/exec', {
+            target: target,
+            app_id: 'org.nuxel.Home',
+            source: 'launcher',
+        }).then((res) => {
+            if (!res || res.success !== true) {
+                throw new Error((res && (res.error || res.detail)) || 'launch refused');
+            }
+            console.log('[Nuxel] native launched:', target, res.pid || '');
+            // Native apps own a separate top-level Wayland surface, so the
+            // launcher records the session without an iframe.
+            this._setAppState('ACTIVE', app, null);
+            if (this.sessions) this.sessions.register(app, null);
+        }).catch((error) => {
+            console.error('[Nuxel] native launch failed:', error);
+            this._setAppState('FAILED', app, null);
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.textContent = `Could not open ${app.name}`;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 4000);
+        });
+    }
+
+    _httpBridge(method, path, body) {
+        // Minimal, bounded client for the local HTTP bridge (dev mode on
+        // 127.0.0.1). The launcher origin (http://127.0.0.1:8000) is on the
+        // bridge's explicit CORS allowlist. Never a general-purpose proxy.
+        return new Promise((resolve) => {
+            const timeout = setTimeout(() => resolve({ success: false, error: 'timeout' }), 8000);
+            const options = { method: method, headers: { 'Content-Type': 'application/json' } };
+            if (body) options.body = JSON.stringify(body);
+            fetch('http://127.0.0.1:8080' + path, options)
+                .then((r) => r.json().catch(() => ({})))
+                .then((data) => { clearTimeout(timeout); resolve(data); })
+                .catch((e) => { clearTimeout(timeout); resolve({ success: false, error: String(e) }); });
+        });
     }
 
     _showUpdateNotification() {
@@ -586,6 +634,11 @@ class NuxelHome {
             // page.  It must work with no app, a loading app, a PWA iframe and
             // a native top-level app (Terminal) alike.
             if (window.launcher) window.launcher.mainDesktop();
+            // Authoritative compositor-level Home: minimize any external native
+            // toplevel (browser/camera/Firefox/…) WITHOUT killing it, then raise
+            // the Home window. The pwa-host already closed the Terminal surface
+            // on this path; this covers every other native window.
+            this._httpBridge('POST', '/api/v1/apps/home', { app_id: 'org.nuxel.Home' });
             this._inputTrace(`home:complete state=${this.appSession.state} page=${window.launcher ? window.launcher.currentPage : '?'}`);
         } catch (error) {
             this._inputTrace(`home:error ${error && error.message ? error.message : error}`);

@@ -1,0 +1,102 @@
+F.F..FF...........F........FF.F..                                        [100%]
+=================================== FAILURES ===================================
+_____________________________ TestSnake.test_draw ______________________________
+/Users/wicked/x/snekbyte/tests/test_snake.py:93: in test_draw
+    self.snake.draw(mock_surface)
+        mock_surface = <MagicMock id='4708271376'>
+        self       = <tests.test_snake.TestSnake testMethod=test_draw>
+/Users/wicked/x/snekbyte/src/snake.py:80: in draw
+    pygame.draw.rect(surface, config.GREEN, r)
+E   TypeError: argument 1 must be pygame.surface.Surface, not MagicMock
+        p          = (22, 15)
+        r          = <rect(440, 300, 20, 20)>
+        self       = <src.snake.Snake object at 0x118a28650>
+        surface    = <MagicMock id='4708271376'>
+________________________ TestSnake.test_initialization _________________________
+/Users/wicked/x/snekbyte/tests/test_snake.py:26: in test_initialization
+    self.assertFalse(self.snake.is_dead)
+                     ^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'Snake' object has no attribute 'is_dead'
+        self       = <tests.test_snake.TestSnake testMethod=test_initialization>
+_____________________________ TestSnake.test_reset _____________________________
+/Users/wicked/x/snekbyte/tests/test_snake.py:82: in test_reset
+    self.assertFalse(self.snake.is_dead)
+E   AssertionError: True is not false
+        self       = <tests.test_snake.TestSnake testMethod=test_reset>
+________________ TestSnake.test_turn_invalid_opposite_direction ________________
+/Users/wicked/x/snekbyte/tests/test_snake.py:47: in test_turn_invalid_opposite_direction
+    self.assertEqual(self.snake.direction, initial_direction)
+E   AssertionError: Tuples differ: (-1, 0) != (1, 0)
+E   
+E   First differing element 0:
+E   -1
+E   1
+E   
+E   - (-1, 0)
+E   ?  -
+E   
+E   + (1, 0)
+        initial_direction = (1, 0)
+        self       = <tests.test_snake.TestSnake testMethod=test_turn_invalid_opposite_direction>
+________________ TestGameLogic.test_update_game_state_hit_self _________________
+/Users/wicked/x/snekbyte/tests/test_game_logic.py:98: in test_update_game_state_hit_self
+    self.assertTrue(game_data['game_over'])
+E   AssertionError: False is not true
+        game_data  = {'food': <src.food.Food object at 0x118c60810>, 'game_over': False, 'poops': [], 'score': 0, ...}
+        self       = <tests.test_game_logic.TestGameLogic testMethod=test_update_game_state_hit_self>
+        snake      = <src.snake.Snake object at 0x10ff7ba50>
+____________ TestEventHandler.test_handle_playing_events_no_reverse ____________
+/Users/wicked/x/snekbyte/tests/test_event_handler.py:49: in test_handle_playing_events_no_reverse
+    self.assertEqual(new_dir, UP) # Should not change
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: Tuples differ: (0, 1) != (0, -1)
+E   
+E   First differing element 1:
+E   1
+E   -1
+E   
+E   - (0, 1)
+E   + (0, -1)
+E   ?     +
+        event      = <Mock id='4562920336'>
+        new_dir    = (0, 1)
+        quit_game  = False
+        self       = <tests.test_event_handler.TestEventHandler testMethod=test_handle_playing_events_no_reverse>
+_______________ TestEventHandler.test_handle_playing_events_quit _______________
+/Users/wicked/x/snekbyte/tests/test_event_handler.py:63: in test_handle_playing_events_quit
+    self.assertTrue(quit_game)
+E   AssertionError: False is not true
+        _          = (0, -1)
+        event_quit = <Mock id='4710553744'>
+        quit_game  = False
+        self       = <tests.test_event_handler.TestEventHandler testMethod=test_handle_playing_events_quit>
+________ TestEventHandler.test_handle_settings_menu_events_back_to_main ________
+/Users/wicked/x/snekbyte/tests/test_event_handler.py:158: in test_handle_settings_menu_events_back_to_main
+    self.assertEqual(new_state, GameState.MAIN_MENU)
+E   AssertionError: None != <GameState.MAIN_MENU: 1>
+        _          = False
+        event      = <Mock id='4710604176'>
+        new_state  = None
+        self       = <tests.test_event_handler.TestEventHandler testMethod=test_handle_settings_menu_events_back_to_main>
+        settings   = GameSettings(speed_index=2, wonq_mode=False)
+=============================== warnings summary ===============================
+../../../../Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/site-packages/pygame/pkgdata.py:25
+  /Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/site-packages/pygame/pkgdata.py:25: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+    from pkg_resources import resource_stream, resource_exists
+
+../../../../Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/site-packages/pkg_resources/__init__.py:3148
+  /Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/site-packages/pkg_resources/__init__.py:3148: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('google')`.
+  Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+    declare_namespace(pkg)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_snake.py::TestSnake::test_draw - TypeError: argument 1 must...
+FAILED tests/test_snake.py::TestSnake::test_initialization - AttributeError: ...
+FAILED tests/test_snake.py::TestSnake::test_reset - AssertionError: True is n...
+FAILED tests/test_snake.py::TestSnake::test_turn_invalid_opposite_direction
+FAILED tests/test_game_logic.py::TestGameLogic::test_update_game_state_hit_self
+FAILED tests/test_event_handler.py::TestEventHandler::test_handle_playing_events_no_reverse
+FAILED tests/test_event_handler.py::TestEventHandler::test_handle_playing_events_quit
+FAILED tests/test_event_handler.py::TestEventHandler::test_handle_settings_menu_events_back_to_main
+8 failed, 25 passed, 2 warnings in 0.91s

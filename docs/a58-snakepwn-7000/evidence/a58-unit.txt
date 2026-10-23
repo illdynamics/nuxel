@@ -1,0 +1,185 @@
+TAP version 13
+# Subtest: wrap right keeps row/column, heading and one-cell cadence
+ok 1 - wrap right keeps row/column, heading and one-cell cadence
+  ---
+  duration_ms: 2.508042
+  ...
+# Subtest: wrap left keeps row/column, heading and one-cell cadence
+ok 2 - wrap left keeps row/column, heading and one-cell cadence
+  ---
+  duration_ms: 1.133417
+  ...
+# Subtest: wrap bottom keeps row/column, heading and one-cell cadence
+ok 3 - wrap bottom keeps row/column, heading and one-cell cadence
+  ---
+  duration_ms: 0.716667
+  ...
+# Subtest: wrap top keeps row/column, heading and one-cell cadence
+ok 4 - wrap top keeps row/column, heading and one-cell cadence
+  ---
+  duration_ms: 0.559459
+  ...
+# Subtest: wrapped food scores exactly once
+ok 5 - wrapped food scores exactly once
+  ---
+  duration_ms: 0.13325
+  ...
+# Subtest: wrapped self collision is fatal
+ok 6 - wrapped self collision is fatal
+  ---
+  duration_ms: 0.072959
+  ...
+# Subtest: wrapped poop collision is fatal
+ok 7 - wrapped poop collision is fatal
+  ---
+  duration_ms: 0.093875
+  ...
+# Subtest: vacated tail across seam is legal and body remains in bounds
+ok 8 - vacated tail across seam is legal and body remains in bounds
+  ---
+  duration_ms: 0.138375
+  ...
+# Subtest: two WoNQ cycles span seam: actual meals only, one tail poop each fifth
+ok 9 - two WoNQ cycles span seam: actual meals only, one tail poop each fifth
+  ---
+  duration_ms: 0.329166
+  ...
+# Subtest: Classic Walls retains wall death and finished state
+ok 10 - Classic Walls retains wall death and finished state
+  ---
+  duration_ms: 0.266417
+  ...
+# Subtest: invalid food plan/rng never creates out-of-bounds food
+ok 11 - invalid food plan/rng never creates out-of-bounds food
+  ---
+  duration_ms: 0.436292
+  ...
+# Subtest: invalid turns cannot corrupt heading
+ok 12 - invalid turns cannot corrupt heading
+  ---
+  duration_ms: 0.121458
+  ...
+# Subtest: Right → Up → Left applies one turn per real tick
+ok 13 - Right → Up → Left applies one turn per real tick
+  ---
+  duration_ms: 0.167167
+  ...
+# Subtest: projected reversal and duplicate are rejected, overflow keeps first two
+ok 14 - projected reversal and duplicate are rejected, overflow keeps first two
+  ---
+  duration_ms: 0.140166
+  ...
+# Subtest: stale projected chain expires together; clear discards inputs
+ok 15 - stale projected chain expires together; clear discards inputs
+  ---
+  duration_ms: 0.12575
+  ...
+# Subtest: swipe recognizes on move, jitter/diagonal/multi-pointer and release are inert
+ok 16 - swipe recognizes on move, jitter/diagonal/multi-pointer and release are inert
+  ---
+  duration_ms: 0.198917
+  ...
+# Subtest: swipe cancellation and capture loss never emit, rejected segment keeps origin
+ok 17 - swipe cancellation and capture loss never emit, rejected segment keeps origin
+  ---
+  duration_ms: 0.077667
+  ...
+# Subtest: 5 ticks/s independent of 30 render FPS
+ok 18 - 5 ticks/s independent of 30 render FPS
+  ---
+  duration_ms: 0.305916
+  ...
+# Subtest: 5 ticks/s independent of 60 render FPS
+ok 19 - 5 ticks/s independent of 60 render FPS
+  ---
+  duration_ms: 0.124209
+  ...
+# Subtest: 5 ticks/s independent of 144 render FPS
+ok 20 - 5 ticks/s independent of 144 render FPS
+  ---
+  duration_ms: 0.258292
+  ...
+# Subtest: 8 ticks/s independent of 30 render FPS
+ok 21 - 8 ticks/s independent of 30 render FPS
+  ---
+  duration_ms: 0.075791
+  ...
+# Subtest: 8 ticks/s independent of 60 render FPS
+ok 22 - 8 ticks/s independent of 60 render FPS
+  ---
+  duration_ms: 0.103541
+  ...
+# Subtest: 8 ticks/s independent of 144 render FPS
+ok 23 - 8 ticks/s independent of 144 render FPS
+  ---
+  duration_ms: 0.252125
+  ...
+# Subtest: 12 ticks/s independent of 30 render FPS
+ok 24 - 12 ticks/s independent of 30 render FPS
+  ---
+  duration_ms: 0.088959
+  ...
+# Subtest: 12 ticks/s independent of 60 render FPS
+ok 25 - 12 ticks/s independent of 60 render FPS
+  ---
+  duration_ms: 0.113083
+  ...
+# Subtest: 12 ticks/s independent of 144 render FPS
+ok 26 - 12 ticks/s independent of 144 render FPS
+  ---
+  duration_ms: 0.211334
+  ...
+# Subtest: 16 ticks/s independent of 30 render FPS
+ok 27 - 16 ticks/s independent of 30 render FPS
+  ---
+  duration_ms: 0.387167
+  ...
+# Subtest: 16 ticks/s independent of 60 render FPS
+ok 28 - 16 ticks/s independent of 60 render FPS
+  ---
+  duration_ms: 0.058417
+  ...
+# Subtest: 16 ticks/s independent of 144 render FPS
+ok 29 - 16 ticks/s independent of 144 render FPS
+  ---
+  duration_ms: 0.086584
+  ...
+# Subtest: 20 ticks/s independent of 30 render FPS
+ok 30 - 20 ticks/s independent of 30 render FPS
+  ---
+  duration_ms: 0.041458
+  ...
+# Subtest: 20 ticks/s independent of 60 render FPS
+ok 31 - 20 ticks/s independent of 60 render FPS
+  ---
+  duration_ms: 0.0545
+  ...
+# Subtest: 20 ticks/s independent of 144 render FPS
+ok 32 - 20 ticks/s independent of 144 render FPS
+  ---
+  duration_ms: 0.152167
+  ...
+# Subtest: live speed rebases to one full new period with no catch-up or state reset
+ok 33 - live speed rebases to one full new period with no catch-up or state reset
+  ---
+  duration_ms: 0.147041
+  ...
+# Subtest: stalls are bounded at three steps, resume has no hidden catch-up
+ok 34 - stalls are bounded at three steps, resume has no hidden catch-up
+  ---
+  duration_ms: 0.05175
+  ...
+# Subtest: no queue consumption on a frame without a simulation tick
+ok 35 - no queue consumption on a frame without a simulation tick
+  ---
+  duration_ms: 0.058333
+  ...
+1..35
+# tests 35
+# suites 0
+# pass 35
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 21.6295

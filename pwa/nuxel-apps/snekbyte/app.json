@@ -1,14 +1,19 @@
 {
   "id": "org.nuxel.SnekByte",
   "name": "SnekByte",
-  "icon": "SB",
-  "color": "#2E7D32",
+  "icon": "/pwa/nuxel-apps/snekbyte/icons/icon-192.png",
+  "color": "#a0ff51",
   "category": "games",
   "type": "pwa",
   "url": "/pwa/nuxel-apps/snekbyte/index.html",
-  "description": "The original SnekByte game, ported and parity-verified",
-  "capabilities": ["input:keyboard", "input:touch"],
+  "description": "SnekByte: live speed, infinite wrap, responsive touch and the five-food WoNQ Poop-o-meter",
+  "capabilities": [
+    "input:keyboard",
+    "input:touch"
+  ],
   "docked": false,
   "network": "none",
-  "provenance": "ported from snekbyte-main.zip — see tools/s10plus/a33/snekbyte/UPSTREAM-PROVENANCE.md"
+  "offline_first": true,
+  "provenance": "Ported from attached snekbyte-main (2).zip; parity fixture shipped under nuxel-dropin/tools/s10plus/a33/snekbyte",
+  "version": "1.1.0-a58"
 }

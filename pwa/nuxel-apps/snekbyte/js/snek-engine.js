@@ -18,7 +18,8 @@
 //   tests/test-snek-engine.js replays that script through THIS engine and requires
 //   identical state after every tick.
 //
-//   Deliberate differences from the original (all invisible to game rules):
+//   A58: wrap is the default. Classic Walls (wrapWalls:false) retains the
+//   original Python fixtures unchanged. Other deliberate differences:
 //     * the RNG is injectable, so a test can pin food placement (the original
 //       called random.randint directly);
 //     * grid dimensions come from a config object instead of a module constant;
@@ -39,6 +40,7 @@
     speedLevels: [5, 8, 12, 16, 20],
     defaultSpeedIndex: 2,
     defaultWonqMode: false,
+    defaultWrapWalls: true,
     wonqModePoopThreshold: 5,
     initialSnakeLength: 1,    // src/snake.py reset(): length = 1
     initialSnakePosition: [20, 15], // (GRID_WIDTH // 2, GRID_HEIGHT // 2)
@@ -86,13 +88,13 @@
     var taken = occupiedKey(occupied);
     while (plan && plan.length) {
       var p = plan.shift();
-      if (!taken[p[0] + ',' + p[1]]) return [p[0], p[1]];
+      if (validCell(p, config) && !taken[p[0] + ',' + p[1]]) return [p[0], p[1]];
     }
     if (rng) {
       for (var attempt = 0; attempt < 1000; attempt++) {
         var x = Math.floor(rng() * config.gridWidth);
         var y = Math.floor(rng() * config.gridHeight);
-        if (!taken[x + ',' + y]) return [x, y];
+        if (validCell([x, y], config) && !taken[x + ',' + y]) return [x, y];
       }
     }
     for (var yy = 0; yy < config.gridHeight; yy++) {
@@ -118,6 +120,8 @@
 
   // src/snake.py turn(): a length>1 snake may not reverse into itself.
   function turn(game, dir) {
+    if (!Array.isArray(dir) || dir.length !== 2 || !Number.isInteger(dir[0]) ||
+        !Number.isInteger(dir[1]) || Math.abs(dir[0]) + Math.abs(dir[1]) !== 1) return false;
     var snake = game.snake;
     var d = snake.direction;
     if (snake.length > 1 && (dir[0] * -1 === d[0] && dir[1] * -1 === d[1])) return false;
@@ -134,6 +138,8 @@
   }
 
   function same(a, b) { return !!a && !!b && a[0] === b[0] && a[1] === b[1]; }
+  function validCell(p, c) { return p && Number.isInteger(p[0]) && Number.isInteger(p[1]) &&
+    p[0] >= 0 && p[0] < c.gridWidth && p[1] >= 0 && p[1] < c.gridHeight; }
 
   // src/game_logic.update_game_state(), statement for statement.
   function step(game, settings) {
@@ -142,6 +148,11 @@
     var config = game.config;
     var snake = game.snake;
     var head = move(snake);
+    var wrap = typeof settings.wrapWalls === 'boolean' ? settings.wrapWalls : config.defaultWrapWalls;
+    if (wrap) {
+      head[0] = ((head[0] % config.gridWidth) + config.gridWidth) % config.gridWidth;
+      head[1] = ((head[1] % config.gridHeight) + config.gridHeight) % config.gridHeight;
+    }
 
     if (same(head, game.food.position)) {
       snake.length += 1;
@@ -184,11 +195,15 @@
 
   // src/game_state.GameSettings
   function settings(cfg, over) {
-    var s = { speedIndex: cfg.defaultSpeedIndex, wonqMode: cfg.defaultWonqMode, foodPlan: null, rng: null };
+    var s = { speedIndex: cfg.defaultSpeedIndex, wonqMode: cfg.defaultWonqMode,
+      wrapWalls: cfg.defaultWrapWalls, foodPlan: null, rng: null };
     if (over) Object.keys(over).forEach(function (k) { s[k] = over[k]; });
     return s;
   }
-  function speedOf(cfg, s) { return cfg.speedLevels[s.speedIndex]; }
+  function speedOf(cfg, s) {
+    var index = Number.isInteger(s.speedIndex) ? Math.max(0, Math.min(cfg.speedLevels.length - 1, s.speedIndex)) : cfg.defaultSpeedIndex;
+    return cfg.speedLevels[index];
+  }
   function changeSpeed(cfg, s, delta) {
     var n = cfg.speedLevels.length;
     s.speedIndex = ((s.speedIndex + delta) % n + n) % n;

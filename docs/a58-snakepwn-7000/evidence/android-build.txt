@@ -1,0 +1,175 @@
+==> npm ci
+
+added 94 packages, and audited 95 packages in 1s
+
+11 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+==> staging web assets
+injected android-shell.js script tag
+Staged web assets:
+app.json
+css/snekbyte.css
+icons/icon-128.png
+icons/icon-144.png
+icons/icon-152.png
+icons/icon-192.png
+icons/icon-384.png
+icons/icon-48.png
+icons/icon-512.png
+icons/icon-72.png
+icons/icon-96.png
+icons/icon.svg
+index.html
+js/android-shell.js
+js/snek-controls.js
+js/snek-engine.js
+js/snekbyte.js
+manifest.json
+sw.js
+==> cap sync android
+✔ Copying web assets from www to android/app/src/main/assets/public in 6.26ms
+✔ Creating capacitor.config.json in android/app/src/main/assets in 284.67μs
+✔ copy android in 9.49ms
+✔ Updating Android plugins in 307.33μs
+[info] Found 1 Capacitor plugin for android:
+       @capacitor/app@7.1.2
+✔ update android in 17.41ms
+[info] Sync finished in 0.03s
+==> gradlew :app:assembleDebug
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/8.11.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+
+> Configure project :app
+WARNING: Using flatDir should be avoided because it doesn't support any meta-data formats.
+
+> Configure project :capacitor-cordova-android-plugins
+WARNING: Using flatDir should be avoided because it doesn't support any meta-data formats.
+
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preDebugBuild UP-TO-DATE
+> Task :app:mergeDebugNativeDebugMetadata NO-SOURCE
+> Task :app:javaPreCompileDebug UP-TO-DATE
+> Task :capacitor-android:preBuild UP-TO-DATE
+> Task :capacitor-android:preDebugBuild UP-TO-DATE
+> Task :capacitor-app:preBuild UP-TO-DATE
+> Task :capacitor-app:preDebugBuild UP-TO-DATE
+> Task :capacitor-cordova-android-plugins:preBuild UP-TO-DATE
+> Task :capacitor-cordova-android-plugins:preDebugBuild UP-TO-DATE
+> Task :app:generateDebugResValues UP-TO-DATE
+> Task :capacitor-android:generateDebugResValues
+> Task :capacitor-cordova-android-plugins:writeDebugAarMetadata
+> Task :capacitor-app:writeDebugAarMetadata
+> Task :capacitor-android:writeDebugAarMetadata
+> Task :app:checkDebugAarMetadata UP-TO-DATE
+> Task :capacitor-android:generateDebugResources
+> Task :capacitor-android:packageDebugResources
+> Task :capacitor-app:generateDebugResValues
+> Task :capacitor-app:generateDebugResources
+> Task :capacitor-app:packageDebugResources
+> Task :capacitor-cordova-android-plugins:generateDebugResValues
+> Task :capacitor-cordova-android-plugins:generateDebugResources
+> Task :capacitor-cordova-android-plugins:packageDebugResources
+> Task :app:mapDebugSourceSetPaths UP-TO-DATE
+> Task :app:generateDebugResources UP-TO-DATE
+> Task :app:mergeDebugResources UP-TO-DATE
+> Task :app:packageDebugResources UP-TO-DATE
+> Task :app:parseDebugLocalResources UP-TO-DATE
+> Task :app:createDebugCompatibleScreenManifests UP-TO-DATE
+> Task :app:extractDeepLinksDebug UP-TO-DATE
+> Task :capacitor-android:extractDeepLinksDebug
+> Task :capacitor-app:extractDeepLinksDebug
+> Task :capacitor-cordova-android-plugins:extractDeepLinksDebug
+> Task :capacitor-app:compileDebugLibraryResources
+> Task :capacitor-cordova-android-plugins:compileDebugLibraryResources
+> Task :capacitor-cordova-android-plugins:processDebugManifest
+> Task :capacitor-app:processDebugManifest
+> Task :capacitor-android:processDebugManifest
+> Task :capacitor-cordova-android-plugins:parseDebugLocalResources
+> Task :capacitor-app:parseDebugLocalResources
+> Task :app:processDebugMainManifest UP-TO-DATE
+> Task :app:processDebugManifest UP-TO-DATE
+> Task :app:processDebugManifestForPackage UP-TO-DATE
+> Task :capacitor-android:parseDebugLocalResources
+> Task :capacitor-android:javaPreCompileDebug
+> Task :capacitor-app:javaPreCompileDebug
+> Task :capacitor-cordova-android-plugins:javaPreCompileDebug
+> Task :app:mergeDebugShaders UP-TO-DATE
+> Task :app:compileDebugShaders NO-SOURCE
+> Task :app:generateDebugAssets UP-TO-DATE
+> Task :capacitor-android:compileDebugLibraryResources
+> Task :capacitor-app:generateDebugRFile
+> Task :capacitor-cordova-android-plugins:generateDebugRFile
+> Task :capacitor-android:generateDebugRFile
+> Task :capacitor-android:mergeDebugShaders
+> Task :app:processDebugResources UP-TO-DATE
+
+> Task :capacitor-android:compileDebugJavaWithJavac
+Note: Some input files use unchecked or unsafe operations.
+Note: Recompile with -Xlint:unchecked for details.
+
+> Task :capacitor-cordova-android-plugins:compileDebugJavaWithJavac NO-SOURCE
+> Task :capacitor-android:compileDebugShaders NO-SOURCE
+> Task :capacitor-android:generateDebugAssets UP-TO-DATE
+> Task :capacitor-cordova-android-plugins:bundleLibCompileToJarDebug
+> Task :capacitor-android:packageDebugAssets
+> Task :capacitor-app:mergeDebugShaders
+> Task :capacitor-app:compileDebugShaders NO-SOURCE
+> Task :capacitor-app:generateDebugAssets UP-TO-DATE
+> Task :capacitor-android:bundleLibCompileToJarDebug
+> Task :capacitor-app:packageDebugAssets
+> Task :capacitor-app:compileDebugJavaWithJavac
+> Task :capacitor-app:bundleLibCompileToJarDebug
+> Task :capacitor-cordova-android-plugins:mergeDebugShaders
+
+> Task :app:compileDebugJavaWithJavac
+Note: /Users/wicked/x/snekbyte/android-app/android/app/src/main/java/com/illdynamics/snekbyte/MainActivity.java uses or overrides a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+
+> Task :capacitor-cordova-android-plugins:compileDebugShaders NO-SOURCE
+> Task :capacitor-cordova-android-plugins:generateDebugAssets UP-TO-DATE
+> Task :capacitor-cordova-android-plugins:packageDebugAssets
+> Task :app:mergeDebugAssets UP-TO-DATE
+> Task :app:compressDebugAssets UP-TO-DATE
+> Task :capacitor-app:bundleLibRuntimeToJarDebug
+> Task :capacitor-cordova-android-plugins:bundleLibRuntimeToJarDebug
+> Task :app:desugarDebugFileDependencies UP-TO-DATE
+> Task :capacitor-android:bundleLibRuntimeToJarDebug
+> Task :app:dexBuilderDebug
+> Task :app:processDebugJavaRes NO-SOURCE
+> Task :capacitor-android:processDebugJavaRes NO-SOURCE
+> Task :capacitor-app:processDebugJavaRes NO-SOURCE
+> Task :capacitor-cordova-android-plugins:processDebugJavaRes NO-SOURCE
+> Task :app:mergeDebugJavaResource UP-TO-DATE
+> Task :app:checkDebugDuplicateClasses UP-TO-DATE
+> Task :app:mergeExtDexDebug UP-TO-DATE
+> Task :app:mergeDebugJniLibFolders UP-TO-DATE
+> Task :capacitor-android:mergeDebugJniLibFolders
+> Task :capacitor-android:mergeDebugNativeLibs NO-SOURCE
+> Task :capacitor-android:copyDebugJniLibsProjectOnly
+> Task :capacitor-app:mergeDebugJniLibFolders
+> Task :capacitor-app:mergeDebugNativeLibs NO-SOURCE
+> Task :capacitor-app:copyDebugJniLibsProjectOnly
+> Task :capacitor-cordova-android-plugins:mergeDebugJniLibFolders
+> Task :capacitor-cordova-android-plugins:mergeDebugNativeLibs NO-SOURCE
+> Task :capacitor-cordova-android-plugins:copyDebugJniLibsProjectOnly
+> Task :app:validateSigningDebug UP-TO-DATE
+> Task :app:mergeDebugNativeLibs NO-SOURCE
+> Task :app:stripDebugDebugSymbols NO-SOURCE
+> Task :app:writeDebugAppMetadata UP-TO-DATE
+> Task :app:writeDebugSigningConfigVersions UP-TO-DATE
+> Task :app:mergeProjectDexDebug
+> Task :app:mergeDebugGlobalSynthetics UP-TO-DATE
+> Task :app:mergeLibDexDebug UP-TO-DATE
+> Task :app:packageDebug
+> Task :app:createDebugApkListingFileRedirect
+> Task :app:assembleDebug
+[Incubating] Problems report is available at: file:///Users/wicked/x/snekbyte/android-app/android/build/reports/problems/problems-report.html
+
+BUILD SUCCESSFUL in 8s
+82 actionable tasks: 55 executed, 27 up-to-date
+
+BUILD COMPLETE
+  APK:   /Users/wicked/x/snekbyte/dist/android/snekbyte-snakepwn-7000-debug.apk
+  SHA-256: 291deab551d69857781486c17a4950dfc4d36069dff7f73faf2757ac0804a6f0

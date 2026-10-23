@@ -1,0 +1,7 @@
+{
+  "intervalSeconds": 10,
+  "pid": "4047",
+  "cpuJiffiesDelta": 0,
+  "rafPending": false,
+  "ticksChanged": 0
+}

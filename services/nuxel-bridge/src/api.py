@@ -23,6 +23,7 @@ from urllib.parse import urlparse, parse_qs
 
 import dbus
 import dbus.mainloop.glib
+import subprocess
 
 logger = logging.getLogger('nuxel-http-bridge')
 
@@ -409,6 +410,106 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
             "detail": "the app was built against a different bridge protocol version; "
                       "the host refuses to serve it rather than answering with skewed data",
         }
+
+
+    # ---- Native app execution + Home action (A59) -------------------------
+    # Both are CLOSED-verb operations: the caller supplies only a registry app
+    # id (or the fixed word "home"); the actual program run is resolved HERE
+    # from the canonical registry / a fixed allowlist. A client-supplied path,
+    # binary or command is ignored by construction, so a compromised PWA cannot
+    # turn "launch an app" into "run an arbitrary program".
+
+    # Graphics/session environment for a native top-level app on this phone.
+    NATIVE_LAUNCH_ENV = {
+        "XDG_RUNTIME_DIR": "/run/nuxel-wayland",
+        "WAYLAND_DISPLAY": "wayland-0",
+        "GSK_RENDERER": "cairo",
+        "LIBGL_ALWAYS_SOFTWARE": "1",
+        "WEBKIT_DISABLE_COMPOSITING_MODE": "1",
+        "GDK_BACKEND": "wayland",
+        # The graphical session units run with a minimal PATH lacking /usr/sbin,
+        # where Fedora installs python3/gtk-launch. A `#!/usr/bin/env python3`
+        # shebang fails under that PATH, so restore the standard search path.
+        "PATH": "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+        "HOME": "/root",
+    }
+
+    # Registry ids that may be launched natively, with their fixed launch argv.
+    # The dict is the ONLY launch authority; nothing else is exec'd on this path.
+    NATIVE_LAUNCH = {
+        "org.nuxel.BrowserNative": [
+            "/usr/lib/nuxel/nuxel-browser-native/nuxel_browser_native.py",
+        ],
+        "org.nuxel.CameraNative": [
+            "/usr/lib/nuxel/nuxel-camera-native/nuxel_camera_native.py",
+        ],
+        "org.gnome.Snapshot": [
+            "/usr/sbin/snapshot",
+        ],
+    }
+
+    def _exec_native_app(self, target_id):
+        """Launch a native app from the fixed allowlist (never a client path)."""
+        if not isinstance(target_id, str) or not APP_ID_RE.match(target_id):
+            return ({"success": False, "error": "invalid_app_id",
+                     "detail": "an app id is an identifier, never a path or a command"}, 400)
+        argv = self.NATIVE_LAUNCH.get(target_id)
+        if not argv:
+            app, _info = self._lookup_registry_app(target_id)
+            if app and app.get("type") == "native" and app.get("native_binary"):
+                # Registry-backed native entry: exec the registered binary only.
+                binary = app["native_binary"]
+                if isinstance(binary, str) and binary.startswith("/"):
+                    argv = [binary]
+            if not argv:
+                return ({"success": False, "error": "not_native_or_unknown",
+                         "app_id": target_id}, 404)
+        # The http-bridge runs with PrivateTmp/ProtectHome/ProtectSystem,
+        # so a GUI app forked directly from it inherits a read-only /root and
+        # a private /tmp and dies. Launch via a systemd transient unit, which
+        # runs in the system manager's normal (unsandboxed) context.
+        import time as _t
+        unit = "nuxel-app-" + target_id.rsplit(".", 1)[-1].lower() + "-%d" % int(_t.time() * 1000)
+        cmd = ["/usr/bin/systemd-run", "--unit=%s" % unit, "--collect",
+               "--setenv=XDG_RUNTIME_DIR=/run/nuxel-wayland",
+               "--setenv=WAYLAND_DISPLAY=wayland-0",
+               "--setenv=GSK_RENDERER=cairo",
+               "--setenv=LIBGL_ALWAYS_SOFTWARE=1",
+               "--setenv=WEBKIT_DISABLE_COMPOSITING_MODE=1",
+               "--setenv=GDK_BACKEND=wayland",
+               "--setenv=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+               "--setenv=HOME=/root"] + argv
+        try:
+            proc = subprocess.run(cmd, capture_output=True, timeout=15)
+        except (OSError, subprocess.TimeoutExpired) as exc:
+            logger.error("native launch failed for %s: %s", target_id, exc)
+            return ({"success": False, "error": "launch_failed",
+                     "app_id": target_id, "detail": str(exc)}, 500)
+        if proc.returncode != 0:
+            err = (proc.stderr or b"").decode("utf-8", "replace").strip()
+            logger.error("native launch refused id=%s rc=%s err=%s", target_id, proc.returncode, err)
+            return ({"success": False, "error": "launch_failed",
+                     "app_id": target_id, "detail": err or ("rc=%s" % proc.returncode)}, 500)
+        logger.info("native app launched id=%s unit=%s argv=%s", target_id, unit, argv)
+        return ({"success": True, "launched": True, "app_id": target_id,
+                 "unit": unit, "action": "exec", "argv": argv}, 200)
+
+    def _home_action(self):
+        """Minimize every non-Home toplevel via wlr-foreign-toplevel (no kill)."""
+        env = dict(os.environ)
+        env.update({"XDG_RUNTIME_DIR": "/run/nuxel-wayland",
+                    "WAYLAND_DISPLAY": "wayland-0"})
+        argv = ["/usr/lib/nuxel/nuxel-foreign-toplevel", "home"]
+        try:
+            proc = subprocess.run(argv, env=env, capture_output=True, timeout=10)
+        except (OSError, subprocess.TimeoutExpired) as exc:
+            logger.error("home action failed: %s", exc)
+            return ({"success": False, "error": "home_action_failed",
+                     "detail": str(exc)}, 500)
+        out = (proc.stdout or b"").decode("utf-8", "replace")
+        logger.info("home action rc=%s out=%s", proc.returncode, out.strip())
+        return ({"success": True, "action": "home", "rc": proc.returncode,
+                 "output": out.strip()}, 200)
 
     def _classify_backends(self):
         """Probe live D-Bus backend providers to classify each data source.
@@ -955,6 +1056,17 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
             target = body.get('target') or body.get('activate') or body.get('target_app_id')
             requester = body.get('requester') or app_id
             result, code = self._activate_app(target, requester, body.get('source') or 'launcher')
+            self._send_json(result, code)
+
+        elif path == '/api/v1/apps/exec':
+            # Launch a native app from the fixed allowlist / canonical registry.
+            target = body.get('target') or body.get('app_target')
+            result, code = self._exec_native_app(target)
+            self._send_json(result, code)
+
+        elif path == '/api/v1/apps/home':
+            # Authoritative Penguin Home: minimize native windows, never kill.
+            result, code = self._home_action()
             self._send_json(result, code)
 
         elif path == '/api/v1/capabilities/revoke':

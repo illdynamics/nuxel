@@ -1,0 +1,21 @@
+PASS: APK exists and is non-empty (4275756 bytes)
+PASS: apksigner verify (debug-signed)
+PASS: package id = com.illdynamics.snekbyte
+PASS: app label = SnekByte
+PASS: launchable activity present
+PASS: minSdkVersion = 23
+PASS: targetSdkVersion = 35
+PASS: no INTERNET permission (fully offline bundle)
+PASS: no dangerous runtime permissions
+PASS: bundled asset: assets/public/index.html
+PASS: bundled asset: assets/public/css/snekbyte.css
+PASS: bundled asset: assets/public/js/snek-engine.js
+PASS: bundled asset: assets/public/js/snek-controls.js
+PASS: bundled asset: assets/public/js/snekbyte.js
+PASS: bundled asset: assets/public/js/android-shell.js
+PASS: bundled asset: assets/public/icons/icon-512.png
+PASS: bundled asset: assets/public/icons/icon-192.png
+PASS: bundled asset: assets/public/manifest.json
+PASS: SHA-256 matches dist manifest
+
+VERIFY: PASS

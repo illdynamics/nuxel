@@ -1,0 +1,31 @@
+SnekByte port verification
+  PASS upstream-manifest.json exists
+  PASS every upstream member is present and unmodified (28 files)
+  PASS the imported tree includes the shipped entry point and its rule modules
+  PASS the committed parity fixture matches a fresh run of the upstream game  — fixture's recorded pygame: real pygame (this host: real pygame; not part of the rule comparison)
+  PASS the fixture records which pygame was used (real pygame)
+  PASS the fixture exercises wall, self AND poop endings  — wall,self,poop
+  PASS the fixture covers >=30 ticks
+  PASS the fixture's grid matches the shipped config (40x30, 20 px cells)
+  PASS the shipped JS engine reproduces the original tick for tick  — parity OK: 3 scenarios, 41 ticks, every field identical (fixture generated with real pygame)
+  PASS PWA ships index.html
+  PASS PWA ships app.json
+  PASS PWA ships manifest.json
+  PASS PWA ships sw.js
+  PASS PWA ships css/snekbyte.css
+  PASS PWA ships js/snekbyte.js
+  PASS PWA ships js/snek-engine.js
+  PASS PWA ships tests/test-snek-engine.js
+  PASS the engine has no pygame/Emscripten dependency (comments excluded)
+  PASS the engine makes no network call
+  PASS index.html loads the engine
+  PASS index.html loads the UI
+  PASS the UI talks only to the engine module
+  PASS the UI drives a canvas
+  PASS UPSTREAM-PROVENANCE.md names the archive
+  PASS UPSTREAM-PROVENANCE.md states the licence position honestly
+  PASS the provenance file records the WoNQ rule
+  PASS the upstream archive really contains no licence file (recorded, not hidden)  — none
+  PASS the archive(s) present on this machine hash to the recorded value  — recorded=97f27d12942c708a7840ea403ebb4d2b9879ba0c6f02040dfaddc799c001f387 found=97f27d12942c708a
+
+28 passed, 0 failed

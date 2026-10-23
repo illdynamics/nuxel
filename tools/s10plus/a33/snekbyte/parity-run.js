@@ -54,7 +54,7 @@ function deepEqual(a, b) { return canon(a) === canon(b); }
 let failures = 0, ticks = 0;
 fixture.scenarios.forEach(function (sc) {
   const game = E.reset(config, [], null);   // food comes from the script
-  const settings = E.settings(config, { wonqMode: !!sc.wonqMode, foodPlan: [], rng: null });
+  const settings = E.settings(config, { wrapWalls: false, wonqMode: !!sc.wonqMode, foodPlan: [], rng: null });
   sc.steps.forEach(function (step, i) {
     if (step.turn) E.turn(game, step.turn);
     if (step.food) game.food.position = step.food.slice();

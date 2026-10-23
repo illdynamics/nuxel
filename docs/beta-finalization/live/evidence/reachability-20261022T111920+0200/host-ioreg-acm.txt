@@ -1,0 +1,40 @@
++-o AppleUSBACMData  <class AppleUSBACMData, id 0x100006b88, registered, matched, active, busy 0 (4 ms), retain 7>
+  | {
+  |   "IOClass" = "AppleUSBACMData"
+  |   "CFBundleIdentifier" = "com.apple.driver.usb.cdc.acm"
+  |   "IOProviderClass" = "IOUSBHostInterface"
+  |   "IOTTYBaseName" = "usbmodem"
+  |   "idProduct" = 20199
+  |   "IOProbeScore" = 49998
+  |   "bInterfaceSubClass" = 0
+  |   "IOMatchedAtBoot" = Yes
+  |   "IOMatchCategory" = "IODefaultMatchCategory"
+  |   "IOMatchDefer" = Yes
+  |   "HiddenPort" = Yes
+  |   "IOPersonalityPublisher" = "com.apple.driver.usb.cdc.acm"
+  |   "idVendor" = 6353
+  |   "CFBundleIdentifierKernel" = "com.apple.driver.usb.cdc.acm"
+  |   "IOTTYSuffix" = "201"
+  |   "bInterfaceClass" = 10
+  | }
+  | 
+  +-o IOSerialBSDClient  <class IOSerialBSDClient, id 0x100006b93, registered, matched, active, busy 0 (1 ms), retain 5>
+      {
+        "IOClass" = "IOSerialBSDClient"
+        "CFBundleIdentifier" = "com.apple.iokit.IOSerialFamily"
+        "IOProviderClass" = "IOSerialStreamSync"
+        "IOTTYBaseName" = "usbmodem"
+        "IOSerialBSDClientType" = "IOSerialStream"
+        "IOProbeScore" = 1000
+        "IOResourceMatch" = "IOBSD"
+        "IOMatchedAtBoot" = Yes
+        "IOMatchCategory" = "IODefaultMatchCategory"
+        "IOTTYDevice" = "usbmodem201"
+        "IOCalloutDevice" = "/dev/cu.usbmodem201"
+        "IODialinDevice" = "/dev/tty.usbmodem201"
+        "IOPersonalityPublisher" = "com.apple.iokit.IOSerialFamily"
+        "CFBundleIdentifierKernel" = "com.apple.iokit.IOSerialFamily"
+        "IOTTYSuffix" = "201"
+      }
+      
+

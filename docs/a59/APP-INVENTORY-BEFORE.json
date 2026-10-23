@@ -1,0 +1,196 @@
+{
+  "generated_at": "2026-10-22",
+  "source": "repo tree + live device console (read-only)",
+  "canonical_registry_version": 4,
+  "registered_ids": [
+    "nuxel-camera",
+    "nuxel-contacts",
+    "nuxel-dialer",
+    "nuxel-messages",
+    "nuxel-settings",
+    "org.nuxel.Browser",
+    "org.nuxel.Calendar",
+    "org.nuxel.Files",
+    "org.nuxel.LiveConsole",
+    "org.nuxel.Mail",
+    "org.nuxel.Notes",
+    "org.nuxel.Terminal"
+  ],
+  "pwa_dirs_with_index_html": [
+    {
+      "dir": "authenticator",
+      "id_hint": "org.nuxel.Authenticator",
+      "has_manifest": true
+    },
+    {
+      "dir": "browser",
+      "id_hint": "org.nuxel.Browser",
+      "has_manifest": true
+    },
+    {
+      "dir": "calculator",
+      "id_hint": "org.nuxel.Calculator",
+      "has_manifest": true
+    },
+    {
+      "dir": "calendar",
+      "id_hint": "org.nuxel.Calendar",
+      "has_manifest": true
+    },
+    {
+      "dir": "camera-gallery",
+      "id_hint": "org.nuxel.CameraGallery",
+      "has_manifest": true
+    },
+    {
+      "dir": "cleanup",
+      "id_hint": "org.nuxel.Cleanup",
+      "has_manifest": true
+    },
+    {
+      "dir": "clock",
+      "id_hint": "org.nuxel.Clock",
+      "has_manifest": true
+    },
+    {
+      "dir": "devmgmt",
+      "id_hint": "org.nuxel.Devmgmt",
+      "has_manifest": true
+    },
+    {
+      "dir": "downloader",
+      "id_hint": "org.nuxel.Downloader",
+      "has_manifest": true
+    },
+    {
+      "dir": "files",
+      "id_hint": "org.nuxel.Files",
+      "has_manifest": true
+    },
+    {
+      "dir": "mail",
+      "id_hint": "org.nuxel.Mail",
+      "has_manifest": true
+    },
+    {
+      "dir": "maps",
+      "id_hint": "org.nuxel.Maps",
+      "has_manifest": true
+    },
+    {
+      "dir": "media",
+      "id_hint": "org.nuxel.Media",
+      "has_manifest": true
+    },
+    {
+      "dir": "notes",
+      "id_hint": "org.nuxel.Notes",
+      "has_manifest": true
+    },
+    {
+      "dir": "nuxtore",
+      "id_hint": "org.nuxel.Nuxtore",
+      "has_manifest": true
+    },
+    {
+      "dir": "photos",
+      "id_hint": "org.nuxel.Photos",
+      "has_manifest": true
+    },
+    {
+      "dir": "recorder",
+      "id_hint": "org.nuxel.Recorder",
+      "has_manifest": true
+    },
+    {
+      "dir": "rootcontrol",
+      "id_hint": "org.nuxel.Rootcontrol",
+      "has_manifest": true
+    },
+    {
+      "dir": "settings",
+      "id_hint": "org.nuxel.Settings",
+      "has_manifest": true
+    },
+    {
+      "dir": "snekbyte",
+      "id_hint": "org.nuxel.Snekbyte",
+      "has_manifest": true
+    },
+    {
+      "dir": "terminal",
+      "id_hint": "org.nuxel.Terminal",
+      "has_manifest": true
+    },
+    {
+      "dir": "weather",
+      "id_hint": "org.nuxel.Weather",
+      "has_manifest": true
+    }
+  ],
+  "pwa_dirs_missing_from_registry": [
+    "authenticator",
+    "calculator",
+    "cleanup",
+    "clock",
+    "devmgmt",
+    "downloader",
+    "maps",
+    "media",
+    "nuxtore",
+    "photos",
+    "recorder",
+    "rootcontrol",
+    "snekbyte",
+    "weather"
+  ],
+  "native_apps_in_repo": [
+    {
+      "id": "nuxel-dialer",
+      "binary": "/usr/bin/nuxel-dialer",
+      "src": "shell/nuxel-shell/nuxel-dialer"
+    },
+    {
+      "id": "nuxel-messages",
+      "binary": "/usr/bin/nuxel-messages",
+      "src": "shell/nuxel-shell/nuxel-messages"
+    },
+    {
+      "id": "nuxel-contacts",
+      "binary": "/usr/bin/nuxel-contacts",
+      "src": "shell/nuxel-shell/nuxel-contacts"
+    },
+    {
+      "id": "org.nuxel.BrowserNative",
+      "binary": "/usr/lib/nuxel/nuxel-browser-native/nuxel_browser_native.py",
+      "src": "shell/nuxel-browser-native"
+    },
+    {
+      "id": "org.nuxel.CameraNative",
+      "binary": "/usr/lib/nuxel/nuxel-camera-native/nuxel_camera_native.py",
+      "src": "shell/nuxel-camera-native"
+    }
+  ],
+  "native_apps_deployed_on_device": {
+    "browser_native": "/usr/lib/nuxel/nuxel-browser-native/nuxel_browser_native.py (deployed, desktop file at /usr/share/nuxel/applications/ NOT /usr/share/applications/)",
+    "camera_native": "/usr/lib/nuxel/nuxel-camera-native/nuxel_camera_native.py (deployed, desktop file at /usr/share/nuxel/applications/)",
+    "dialer/messages/contacts": "NOT present on device (/usr/bin/nuxel-dialer etc absent)"
+  },
+  "device_packages": {
+    "gtk4": "4.20.4",
+    "gtk3": "3.24.52",
+    "webkit2gtk4.1": "2.52.5",
+    "webkitgtk6.0": "2.52.5",
+    "snapshot": "NOT_INSTALLED",
+    "firefox": "NOT_INSTALLED",
+    "chromium": "NOT_INSTALLED",
+    "epiphany": "NOT_INSTALLED",
+    "ladybird": "NOT_INSTALLED",
+    "flatpak": "NOT_INSTALLED",
+    "libcamera": "NOT_INSTALLED",
+    "pipewire": "NOT_INSTALLED",
+    "wireplumber": "NOT_INSTALLED",
+    "dnf": "NOT_INSTALLED (only rpm present)",
+    "gcc": "NOT_INSTALLED"
+  }
+}

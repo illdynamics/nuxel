@@ -1,0 +1,4 @@
+find_src	find / -name 'nuxel-wl-fb.c' 2>/dev/null | head -20
+find_home	ls -la /home/nuxel /root 2>&1 | head -40
+find_build	ls -la /home/nuxel/* /root/* 2>/dev/null | grep -iE 'wl-fb|a4[5-9]|a50|src|build' | head -20
+find_staged	find /usr/lib/nuxel/src -name '*.c' -newer /usr/lib/nuxel/src/a33/nuxel-wl-fb.c 2>/dev/null | head -20
