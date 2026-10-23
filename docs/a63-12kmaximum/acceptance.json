@@ -1,0 +1,19 @@
+{
+  "schema": "nuxel.a63.acceptance/1",
+  "source_commit": "6899841 + 57f803c",
+  "device": "Samsung Galaxy S10+ SM-G975F, Fedora 43 aarch64, kernel 4.14.253",
+  "gates": [
+    {"id":"RECOVERY","status":"PASS","evidence":"private timestamped host backups plus framed USB console","deployed_hash":null,"physical_test":true,"blocker":null,"rollback":"docs/a63-12kmaximum/12-ROLLBACK-RUNBOOK.md"},
+    {"id":"LOCK_NAV_INPUT","status":"BLOCKED","evidence":"androidboot.mode=charger; zero sec_touchscreen nodes","deployed_hash":null,"physical_test":true,"blocker":"owner normal power-on required; automated reboot budget 3/3","rollback":"no code rollback; normal boot recovery"},
+    {"id":"WIFI","status":"FUNCTIONAL_WITH_LIMITATION","evidence":"wlan0 connected; DNS pass; google.nl HTTPS 200 tls=0","deployed_hash":null,"physical_test":true,"blocker":"five UI trials and cold-boot persistence not observed","rollback":"private NetworkManager profile backup"},
+    {"id":"BROWSER","status":"NEEDS_OWNER_TEST","evidence":"real remote HTTPS succeeds; native browser installed","deployed_hash":null,"physical_test":false,"blocker":"touch unavailable in current boot","rollback":"no browser mutation"},
+    {"id":"CAMERA","status":"HARDWARE_BLOCKED","evidence":"video nodes present; media/subdev graph and PipeWire/libcamera absent","deployed_hash":null,"physical_test":true,"blocker":"Exynos ISP/media graph unavailable","rollback":"no camera mutation"},
+    {"id":"BATTERY","status":"AUTOMATED_TESTED","evidence":"kernel and API report 100/Full; direct host hydration tests pass","deployed_hash":"5148a909c318619d12a16dd2567dfa50460e235fab9bf2e4b0cfefc6e7ccab37","physical_test":false,"blocker":"visual startup timing not observed","rollback":"status-bar.js.nuxel-a63-rollback"},
+    {"id":"ROTATION","status":"BLOCKED","evidence":"seven policies configured; sensor scale/compositor transform unavailable","deployed_hash":null,"physical_test":false,"blocker":"no proven display/touch transform","rollback":"no orientation mutation"},
+    {"id":"SNEKBYTE_CURRENT","status":"AUTOMATED_TESTED","evidence":"48 engine + 35 A58 + 27 parity tests; HTTP 200","deployed_hash":"d68efd0f8b3505a68646575f15daaf3d62842d75fe58b50a3e8752a65e198570","physical_test":false,"blocker":"touch unavailable","rollback":"apps.js.nuxel-a63-rollback"},
+    {"id":"SNEKBYTE_LATEST_ARCHIVE","status":"BLOCKED_EXTERNAL_RESOURCE","evidence":"/x/nuxel/snekbyte.zip absent","deployed_hash":null,"physical_test":false,"blocker":"owner must provide archive","rollback":"none; no archive merge occurred"},
+    {"id":"ANDROID_APK","status":"SKIPPED_OWNER_REQUEST","evidence":"owner stated APK build already sorted","deployed_hash":null,"physical_test":false,"blocker":null,"rollback":"none"},
+    {"id":"STARTUP_PERFORMANCE","status":"FUNCTIONAL_WITH_LIMITATION","evidence":"web unit active; HTTP 200; CPU sample 1% busy; memory available ~6.5 GiB","deployed_hash":"b11e5ae7788b40843b541a10be4486d72753554c564812cb656e34d96aaf10f3","physical_test":true,"blocker":"post-normal-boot latency not observed","rollback":"nuxel-web.service.nuxel-a63-rollback"},
+    {"id":"COLD_BOOTS","status":"BLOCKED","evidence":"reboot guard reports budget_exhausted 3/3","deployed_hash":null,"physical_test":false,"blocker":"owner physical normal boot required; do not bypass guard","rollback":"not applicable"}
+  ]
+}
