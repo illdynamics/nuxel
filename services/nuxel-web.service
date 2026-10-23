@@ -27,6 +27,10 @@ EnvironmentFile=-/etc/nuxel/web.conf
 # readable.
 User=nuxel
 Group=nuxel
+# The S10+ 4.14 Android-derived kernel enables the legacy AID_INET gate:
+# unprivileged processes need numeric gid 3003 to create AF_INET sockets.
+# Keep the static server unprivileged and grant only that socket capability.
+SupplementaryGroups=inet
 Environment=NUXEL_WEB_PORT=8000
 Environment=NUXEL_WEB_BIND=127.0.0.1
 ExecStart=/usr/bin/nuxel-web
@@ -42,7 +46,9 @@ NoNewPrivileges=yes
 RestrictAddressFamilies=AF_INET AF_INET6
 ReadOnlyPaths=/
 ReadOnlyPaths=/usr/share/nuxel
-ReadWritePaths=/home/nuxel/nuxel
+# The handset serves /usr/share/nuxel and does not carry the VM/deploy mirror.
+# A missing optional mirror must not fail mount-namespace setup (226/NAMESPACE).
+ReadWritePaths=-/home/nuxel/nuxel
 
 [Install]
 WantedBy=multi-user.target
