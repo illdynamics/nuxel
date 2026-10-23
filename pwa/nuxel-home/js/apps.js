@@ -1,4 +1,4 @@
-// Nuxel Home - App Registry (A33 revision 4)
+// Nuxel Home - App Registry (A63 revision 5)
 // Defines the default app list with metadata.
 //
 // SINGLE SOURCE OF TRUTH (briq-02d): the registry below is what both the handset
@@ -7,7 +7,7 @@
 // REGISTRY_VERSION that the launcher publishes on its evidence channel and that
 // tools/s10plus/a33/tests/launcher-registry-test.js asserts ("org.nuxel.Terminal"
 // and "nuxel-settings" present, every PWA served under /pwa/nuxel-apps/).
-const NUXEL_REGISTRY_VERSION = 4;
+const NUXEL_REGISTRY_VERSION = 5;
 
 const NUXEL_APPS = {
     // Native shell apps
@@ -216,8 +216,8 @@ const NUXEL_APPS = {
         url: '/pwa/nuxel-apps/recorder/index.html',
         description: 'Voice recorder', capabilities: ['storage:persistent'], docked: false,
     },
-    'org.nuxel.Snekbyte': {
-        id: 'org.nuxel.Snekbyte', name: 'SnekByte', icon: '🐍', color: '#66BB6A',
+    'org.nuxel.SnekByte': {
+        id: 'org.nuxel.SnekByte', name: 'SnekByte', icon: '🐍', color: '#66BB6A',
         category: 'games', type: 'pwa',
         url: '/pwa/nuxel-apps/snekbyte/index.html',
         description: 'SnekByte — Nuxel Arcade',
@@ -251,6 +251,7 @@ const NUXEL_APP_ICON_ASSETS = {
     'nuxel-settings': '/assets/nuxel-applications-icon-pack/01-11_settings.png?v=a37',
     'org.nuxel.Terminal': '/assets/nuxel-applications-icon-pack/01-01_terminal.png?v=a37',
     'org.nuxel.LiveConsole': '/assets/nuxel-applications-icon-pack/05-05_live-console.png?v=a37',
+    'org.nuxel.SnekByte': '/assets/nuxel-applications-icon-pack/01-02_snekbyte.png?v=a63',
 };
 
 function nuxelAppIcon(app) {
@@ -459,9 +460,16 @@ class AppRegistry {
             const raw = localStorage.getItem('nuxel-app-registry');
             if (raw) {
                 const state = JSON.parse(raw);
-                this.recentApps = state.recentApps || [];
+                // A59 shipped a case-skewed id. Preserve the owner's recents
+                // while migrating to the canonical app/manifest id.
+                this.recentApps = (state.recentApps || [])
+                    .map(id => id === 'org.nuxel.Snekbyte' ? 'org.nuxel.SnekByte' : id)
+                    .filter((id, index, ids) => ids.indexOf(id) === index);
                 if (state.userApps) {
                     this.userApps = new Map(state.userApps);
+                    if (this.userApps.has('org.nuxel.Snekbyte')) {
+                        this.userApps.delete('org.nuxel.Snekbyte');
+                    }
                 }
             }
         } catch (e) {

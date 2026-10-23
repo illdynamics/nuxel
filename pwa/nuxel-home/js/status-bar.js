@@ -1,4 +1,4 @@
-// Nuxel Status Bar — v0.6.3-beta
+// Nuxel Status Bar — v0.6.4-beta
 //
 // SINGLE SOURCE OF TRUTH (briq-02d).  The handset used to serve a stale
 // v0.3.2 copy of this file while the repo (and the UTM VM) was on v0.4.x, so the
@@ -17,7 +17,7 @@
 class StatusBar {
     // Keep in sync with manifest.json ("nuxel.pwa_version") and sw.js
     // (CACHE_VERSION) - the registry test fails if the three ever diverge.
-    static get VERSION() { return '0.6.3-beta'; }
+    static get VERSION() { return '0.6.4-beta'; }
 
     constructor() {
         this.state = {
@@ -77,6 +77,11 @@ class StatusBar {
     _init() {
         this._updateTime();
         this._renderBattery();
+        // The native page host can read the fuel gauge before the HTTP bridge
+        // has finished waiting for network-online.target.  Hydrate from that
+        // kernel-backed path immediately so boot never invents a charge state
+        // or leaves a real reading hidden for tens of seconds.
+        this._hydrateBatteryFromHost();
         this._renderSignal();
         this._renderWifi();
         this._buildNotificationsUI();
@@ -320,6 +325,39 @@ class StatusBar {
             (inside ? '<span class="battery-inside-pct">' + (level === null ? '—' : level + '%') + '</span>' : '') + '</span>';
         if (this.elements.batteryPct) { this.elements.batteryPct.textContent = ''; this.elements.batteryPct.hidden = true; }
         this._applySafeZones();
+    }
+
+    async _hydrateBatteryFromHost() {
+        try {
+            if (!window.NuxelHost || !window.NuxelHost.available ||
+                typeof window.NuxelHost.statusRead !== 'function') return;
+            const readings = await Promise.all([
+                window.NuxelHost.statusRead('battery-capacity'),
+                window.NuxelHost.statusRead('battery-status'),
+            ]);
+            const capacity = readings[0] || {};
+            const status = readings[1] || {};
+            const level = Number(String(capacity.text == null ? '' : capacity.text).trim());
+            if (!capacity.ok || !Number.isFinite(level) || level < 0 || level > 100) return;
+
+            this.state.batteryLevel = level;
+            // "Full" is externally powered but not actively charging.  Only
+            // the kernel's exact Charging state earns the charging glyph.
+            this.state.batteryCharging = Boolean(status.ok &&
+                String(status.text == null ? '' : status.text).trim().toLowerCase() === 'charging');
+            this._renderBattery();
+            const marker = 'BATTERY_HOST_READY level=' + level +
+                ' charging=' + (this.state.batteryCharging ? '1' : '0');
+            try { console.log('[status-bar] ' + marker); } catch (e) {}
+            try {
+                if (window.webkit && window.webkit.messageHandlers &&
+                    window.webkit.messageHandlers.nuxelDiag) {
+                    window.webkit.messageHandlers.nuxelDiag.postMessage(marker);
+                }
+            } catch (e) {}
+        } catch (e) {
+            console.warn('StatusBar: direct battery hydration failed:', e.message || e);
+        }
     }
 
     async _pollPhoneStatus() {
