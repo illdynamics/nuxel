@@ -265,11 +265,11 @@
   }
 
   function livePreview() {
-    try {
-      var r = compute(true);
-      if (r === null) return;
-      state.lastResult = formatNumber(r.value);
-    } catch (e) { /* keep the previous result while the expression is incomplete */ }
+    // A65-11: the result line must only ever reflect the last COMMITTED
+    // evaluation (Equals). Typing "9 + 8" keeps the expression visible and
+    // leaves the result unchanged until Equals is pressed — no premature
+    // evaluation, no unsafe eval(), the shunting-yard engine still owns
+    // precedence when Equals runs.
     render();
   }
 

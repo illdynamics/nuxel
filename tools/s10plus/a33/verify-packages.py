@@ -140,6 +140,10 @@ ESSENTIAL_GROUPS: "List[Tuple[str, str, List[dict]]]" = [
     ("webkit", "WebKitGTK/GTK runtime for nuxel-pwa-host (the launcher surface)", [
         {"name": "gtk3"}, {"name": "webkit2gtk4.1"}, {"name": "gtk4"},
         {"name": "libadwaita"},
+        # A65-01: real GIO TLS backend (GnuTLS) so libsoup3/WebKitGTK can do
+        # HTTPS. Without this the launcher/browser only has GDummyTlsBackend and
+        # every https:// load fails with "TLS support is not available".
+        {"name": "glib-networking"},
     ]),
     ("network", "Connectivity stack", [
         {"name": "NetworkManager"}, {"name": "NetworkManager-wifi"},

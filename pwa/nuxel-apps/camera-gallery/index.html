@@ -30,6 +30,14 @@
 
         <div id="camera-status" class="camera-status hidden" aria-live="polite"></div>
 
+        <div class="camera-status-actions">
+            <button id="camera-retry" class="cam-btn" type="button" aria-label="Retry camera">Retry camera</button>
+            <details id="camera-diagnostics" class="camera-diagnostics">
+                <summary>Technical diagnostics</summary>
+                <pre id="camera-diagnostics-body" class="camera-diagnostics-body">No camera diagnostics received yet.</pre>
+            </details>
+        </div>
+
         <div class="camera-bottom-bar">
             <button id="gallery-btn" class="cam-btn" aria-label="Open Photos">&#128444;&#65039;</button>
             <button id="capture-btn" class="capture-btn" aria-label="Capture"></button>

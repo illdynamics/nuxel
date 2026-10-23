@@ -12,6 +12,23 @@ The canonical version lives in [`VERSION`](VERSION) and is bumped in lockstep
 across the shell apps, the PWA manifest, the device `APKBUILD`s, the VM tooling
 and the OTA builder (see *Versioning* below).
 
+## [v0.6.5-beta] - 2026-10-23 - *Operation Penguin Hyperfix 14000*
+
+- A65-01: installed glib-networking (GnuTLS GIO backend) on the S10+ and added it
+  to the Fedora rootfs build + essential-package manifest, so WebKitGTK/libpsoup3
+  now performs real HTTPS with certificate verification (google.nl/example.org
+  load; badssl rejected). Root cause: package was missing -> `GDummyTlsBackend`.
+- A65-11: Calculator no longer evaluates while typing; result updates only on Equals.
+- A65-08/15: native browser toolbar made compact/responsive and the redundant GTK
+  titlebar removed; native camera made undecorated.
+- A65-12/13: Camera PWA and native camera show concise status, a Retry action and a
+  collapsible Technical diagnostics panel; native camera gained an explicit Close.
+- A65-02/09: verified Wi-Fi and battery reporting are truthful end-to-end (live
+  NM state 100/connectivity 4; battery 100%/Full) and deployed bytes match repo.
+- A65-10: seven rotation modes remain selectable; sensor auto-rotation is
+  BLOCKED_HARDWARE (BCM4773 exposes no IIO accelerometer channels on this kernel).
+- Documentation and rollback runbook under `docs/a65-hyperfix-14000/`.
+
 ## [v0.6.4-beta] - 2026-10-23 - *Penguin launcher resurrection*
 
 - Emergency UI-only repair: restored the on-device `launcher.css` bytes

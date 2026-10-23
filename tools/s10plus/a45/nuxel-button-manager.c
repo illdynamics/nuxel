@@ -199,22 +199,23 @@ static int vol_cap_pct = 25;   /* from audio.json                              *
 static int vol_cap_active = 0; /* only while the bring-up flag exists          */
 static int64_t now_ms(void); /* forward decl: defined below (monotonic ms) */
 static int64_t last_activity_ms = 0; /* A45 idle: monotonic, real input only   */
-static int64_t idle_timeout_ms = 60000; /* A45 default 60 s, configurable      */
+static int64_t idle_timeout_ms = 300000; /* A63 default 5 min, configurable    */
 static int display_on = 1;         /* A45 local mirror of the panel state      */
 
 /* A45 screen-idle configuration.  Read once per second with the other config so
    the Home Settings app can change the timeout live without a restart.  The
    file is /etc/nuxel/display/screen-timeout.json:
-     {"timeout_ms": 60000, "never": false}
+     {"timeout_ms": 300000, "never": false}
    "never" maps to timeout 0 (screen-off timer disabled) and is the only way to
-   suppress the timer; the default is exactly 60 seconds. */
+   suppress the timer; the default is five minutes so first-boot/lockscreen
+   interaction is not mistaken for a hung display after only one minute. */
 #define IDLE_CFG "/etc/nuxel/display/screen-timeout.json"
 static void idle_load(void) {
-  idle_timeout_ms = 60000;
+  idle_timeout_ms = 300000;
   char *js = slurp(IDLE_CFG, 0);
   if (!js) return;
   if (json_int(js, "never", 0)) { idle_timeout_ms = 0; return; }
-  int64_t v = json_int(js, "timeout_ms", 60000);
+  int64_t v = json_int(js, "timeout_ms", 300000);
   if (v > 0 && v < 1000) v = 1000;
   if (v > 3600000) v = 3600000;
   idle_timeout_ms = v;
@@ -1186,11 +1187,12 @@ int main(int argc, char **argv) {
       char *dstate = slurp("/run/nuxel-wl-fb.state", 0);
       int panel_on = !(dstate && strstr(dstate, "display=off"));
       if (panel_on) {
+        int64_t idle_elapsed_ms = t - last_activity_ms;
         fifo_send(WLFB_FIFO, "screen-off\n");
         display_on = 0;
         last_activity_ms = t;   /* no immediate re-fire while the panel is off */
         audit("IDLE_SCREEN_OFF timeout_ms=%lld idle_ms=%lld",
-              (long long)idle_timeout_ms, (long long)(t - last_activity_ms));
+              (long long)idle_timeout_ms, (long long)idle_elapsed_ms);
       }
     }
 

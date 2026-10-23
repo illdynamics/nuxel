@@ -450,7 +450,7 @@ async function gesture(h, options) {
     check('next real display-off after wake locks again', home._isLocked() === true && h.els.lockscreen.hidden === false);
 
     const bm = fs.readFileSync(BUTTON_MANAGER_C, 'utf8');
-    check('native idle timeout default is still 60000 ms', /idle_timeout_ms\s*=\s*60000/.test(bm));
+    check('native idle timeout default leaves five minutes for first interaction', /idle_timeout_ms\s*=\s*300000/.test(bm));
     check('native idle timeout still reads screen-timeout.json', /IDLE_CFG/.test(bm) && /screen-timeout\.json/.test(bm));
     check('native timeout still emits IDLE_SCREEN_OFF', /IDLE_SCREEN_OFF/.test(bm));
   }

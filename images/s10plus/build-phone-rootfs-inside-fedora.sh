@@ -83,7 +83,7 @@ dnf -y --installroot="$STAGE" --releasever=43 --use-host-config \
     python3 phosh phoc stevia stevia-phosh-osk-provider seatd \
     NetworkManager NetworkManager-wifi wpa_supplicant libnl3 libnl3-cli iw wireless-regdb ModemManager geoclue2 bluez \
     mesa-dri-drivers mesa-libEGL mesa-libgbm libinput \
-    gtk3 webkit2gtk4.1 gtk4 libadwaita \
+    gtk3 webkit2gtk4.1 gtk4 libadwaita glib-networking libproxy \
     pipewire wireplumber alsa-lib mpg123 \
     polkit nftables upower greetd \
     iproute procps-ng kmod e2fsprogs \
