@@ -1,0 +1,12 @@
+{
+  "animation": "ANIM_STAGE=ANIMATION_STOPPED\nANIM_OWNER=nuxel-wl-fb\n",
+  "boot_count": "cat: /var/lib/nuxel/boot-count: No such file or directory\n",
+  "boot_id": "121bae07-6789-4b18-afcb-a8257b3548fc\n",
+  "boot_mode": "androidboot.mode=charger\n",
+  "failed_units": "\u25cf nuxel-touch-arm.service loaded failed failed Nuxel S10+ touchscreen arming (sec_ts stop->start, then hold open)\n",
+  "fb_owner": "schema_version=1\nowner=nuxel-wl-fb\npid=5380\nstage=LAUNCHER_DISPLAY_OWNER\nui_writer=1\nreason=single_owner_takeover\nreceipt=1792749007-ANIMATION_STOP_CONFIRMED-5380\nlock=/run/nuxel-fb-owner.lock\nboot_id=121bae07-6789-4b18-afcb-a8257b3548fc\nts=1792749007\n",
+  "registry_http": "200\n",
+  "units": "nuxel-wayland=active\nnuxel-wl-fb=active\nnuxel-button-manager=active\nnuxel-touch-arm=failed\nseatd=active\n",
+  "uptime": "1198.31 9281.37\n",
+  "wl_fb_state": "1792750185 DISPLAY_SLEEP total=4408 failures=0 owner=nuxel-wl-fb display=off capture=stopped\n"
+}

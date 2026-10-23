@@ -44,6 +44,9 @@ def main():
     start_url = normalize(os.environ.get("NUXEL_BROWSER_URL", "https://www.google.nl"))
     win = Gtk.Window(title="Nuxel Browser")
     win.set_default_size(360, 760)
+    # A65-15: drop the redundant per-app GTK titlebar. The browser's own top
+    # toolbar is the only chrome; global Back/Home/Tabs remain system-owned.
+    win.set_decorated(False)
     win.connect("destroy", Gtk.main_quit)
 
     vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
@@ -57,11 +60,21 @@ def main():
     reload_ = Gtk.Button(label="⟳"); reload_.set_tooltip_text("Reload")
 
     entry = Gtk.Entry()
-    entry.set_placeholder_text("https://www.google.nl")
+    entry.set_placeholder_text("Search or address")
     entry.set_hexpand(True)
+    entry.set_width_chars(8)
 
     go = Gtk.Button(label="Go")
 
+    # Compact touch targets but with a small, fixed footprint so the sum of
+    # back/fwd/reload/go never crowds the address field offscreen.
+    for b in (back, fwd, reload_, go):
+        b.set_relief(Gtk.ReliefStyle.NONE)
+        b.set_focus_on_click(False)
+        try:
+            b.set_margin_top(0); b.set_margin_bottom(0)
+        except Exception:
+            pass
     for w in (back, fwd, reload_, entry, go):
         chrome.pack_start(w, False, False, 0)
     vbox.pack_start(chrome, False, False, 0)

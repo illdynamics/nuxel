@@ -104,6 +104,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <linux/fb.h>
+#include <poll.h>
 #include <signal.h>
 #include <stdarg.h>
 #include <stdint.h>
@@ -793,6 +794,7 @@ static int kmsg_max_loops(void) {
    needed on wake). */
 static int ctrl_fd = -1;
 static int display_on = 1;
+static int force_present = 1;   /* A47: always paint the first frame after wake */
 static int saved_brightness = -1;
 static int max_brightness = -1;
 
@@ -855,6 +857,7 @@ static void display_set(int on, const char *why) {
     panel_assert("screen-on");
     backlight_write(b);
     display_on = 1;
+    force_present = 1;
     st("DISPLAY_ON why=%s brightness=%d bl_power=%d", why, b, read_int_file(BL_POWER));
   } else if (!on && display_on) {
     int cur = read_int_file(BACKLIGHT);
@@ -956,6 +959,33 @@ static int panel_commit_frame(const char *why) {
 static int frame_blit_once(void) {
   blit(frame_buf.data, frame_buf.w, frame_buf.h, frame_buf.stride, frame_buf.format);
   return panel_commit_frame("frame");
+}
+
+/* A47: source-frame fingerprint.  wlr-screencopy is damage-driven only in name:
+   every capture asks the compositor to render, and this bridge's conversion to
+   the 1440x3040 panel costs ~60 ms.  At 30 fps that alone kept the phone hot even
+   when the image was perfectly static.  Hash the captured source and skip the
+   expensive blit/pan when nothing changed; pace idle captures down as well. */
+static uint64_t frame_source_hash(void) {
+  const unsigned char *p = (const unsigned char *)frame_buf.data;
+  size_t n = frame_buf.len;
+  uint64_t h = 1469598103934665603ULL;
+  while (n >= 8) {
+    uint64_t v;
+    memcpy(&v, p, sizeof v);
+    h ^= v;
+    h *= 1099511628211ULL;
+    p += 8;
+    n -= 8;
+  }
+  while (n--) { h ^= *p++; h *= 1099511628211ULL; }
+  return h;
+}
+
+static int64_t mono_ms(void) {
+  struct timespec ts;
+  clock_gettime(CLOCK_MONOTONIC, &ts);
+  return (int64_t)ts.tv_sec * 1000 + ts.tv_nsec / 1000000;
 }
 
 /* Offline, deterministic colour test (mission 17).  Runs on any host, touches no
@@ -1322,13 +1352,33 @@ int main(int argc, char **argv) {
   int fps_target = 30;
   const char *fpsenv = getenv("NUXEL_TARGET_FPS");
   if (fpsenv) { int v = atoi(fpsenv); if (v >= 1 && v <= 120) fps_target = v; }
-  long frame_ns = 1000000000L / fps_target;
   int consec_fail = 0;
   unsigned long long blit_ns_sum = 0;
+  unsigned long long blits = 0, present_skipped = 0;
+  uint64_t last_hash = 0;
+  int have_hash = 0;
+  int64_t last_change_ms = mono_ms();
   time_t now = time(NULL);
   last = now;
   st("OWNERSHIP_LOOP fps_target=%d single_owner=1", fps_target);
+  time_t last_sleep_report = 0;
   for (;;) {
+    /* A47 SCREEN-OFF HEAT: a blanked panel must stop the entire capture/blit
+       pipeline.  The previous loop kept requesting compositor frames at 30 fps
+       while display=off ("so the client stays live"), which pinned WebKit/phoc/
+       wl-fb on the CPU and made the phone hot in a pocket.  Wait on the control
+       FIFO instead; screen-on wakes this poll immediately and resumes scanout.
+       No framebuffer fd is closed, so the single-owner/DECON invariant holds. */
+    while (!display_on) {
+      struct pollfd cp = { .fd = ctrl_fd, .events = POLLIN, .revents = 0 };
+      int pr = ctrl_fd >= 0 ? poll(&cp, 1, 1000) : (usleep(1000000), 0);
+      if (ctrl_fd >= 0 && pr >= 0) ctrl_pump();
+      time_t off_now = time(NULL);
+      if (off_now != last_sleep_report) {
+        last_sleep_report = off_now;
+        st("DISPLAY_SLEEP total=%d failures=%d owner=nuxel-wl-fb display=off capture=stopped", frames, failures);
+      }
+    }
     struct timespec t_start;
     clock_gettime(CLOCK_MONOTONIC, &t_start);
     ctrl_pump();                      /* A32: screen on/off + status requests */
@@ -1344,21 +1394,31 @@ int main(int argc, char **argv) {
     }
     if (frame_failed) { failures++; consec_fail++; }
     else if (!display_on) {
-      /* panel is off: keep consuming compositor frames so the client stays live,
-         but present nothing (mission 11: stop visible frame presentation) */
+      /* Defensive only: the top of the loop blocks while off.  If a queued frame
+         arrives during the transition, present nothing. */
       frames++; consec_fail = 0;
     }
     else {
-      /* Command-mode Samsung DECON: every changed frame MUST be committed.
-         Merely blitting to mmap() is not enough (A35 stale-display fix). */
-      int pan_rc = frame_blit_once();
+      uint64_t h = frame_source_hash();
+      int changed = force_present || !have_hash || h != last_hash;
+      if (changed) {
+        last_hash = h; have_hash = 1; force_present = 0;
+        last_change_ms = mono_ms();
+        /* Command-mode Samsung DECON: every changed frame MUST be committed.
+           Merely blitting to mmap() is not enough (A35 stale-display fix). */
+        int pan_rc = frame_blit_once();
+        blits++;
+        if (pan_rc != 0) { failures++; consec_fail++; }
+        else consec_fail = 0;
+        struct timespec t_end;
+        clock_gettime(CLOCK_MONOTONIC, &t_end);
+        blit_ns_sum += (unsigned long long)(t_end.tv_sec - t_start.tv_sec) * 1000000000ull
+                     + (unsigned long long)(t_end.tv_nsec - t_start.tv_nsec);
+      } else {
+        present_skipped++;
+        consec_fail = 0;
+      }
       frames++;
-      if (pan_rc != 0) { failures++; consec_fail++; }
-      else consec_fail = 0;
-      struct timespec t_end;
-      clock_gettime(CLOCK_MONOTONIC, &t_end);
-      blit_ns_sum += (unsigned long long)(t_end.tv_sec - t_start.tv_sec) * 1000000000ull
-                   + (unsigned long long)(t_end.tv_nsec - t_start.tv_nsec);
     }
     zwlr_screencopy_frame_v1_destroy(frame);
     if (frame_buf.wl) { wl_buffer_destroy(frame_buf.wl); munmap(frame_buf.data, frame_buf.len); frame_buf.wl = NULL; }
@@ -1370,9 +1430,10 @@ int main(int argc, char **argv) {
 
     now = time(NULL);
     if (now != last) {
-      int avg_ms = frames ? (int)(blit_ns_sum / (unsigned long long)frames / 1000000ull) : 0;
-      st("FRAMES_OK total=%d fps_1s=%d failures=%d blit_avg_ms=%d out=%dx%d src=%dx%d scale=%d panel=%ux%u owner=nuxel-wl-fb display=%s src_format=0x%08x colour=R@%u,G@%u,B@%u_abgr8888_override=%d decon_pan_ok=%llu decon_pan_failed=%llu",
-         frames, fps, failures, avg_ms, o->w, o->h, o->w, o->h, o->scale, fb.w, fb.h,
+      int avg_ms = blits ? (int)(blit_ns_sum / blits / 1000000ull) : 0;
+      st("FRAMES_OK total=%d fps_1s=%d failures=%d blits=%llu present_skipped=%llu blit_avg_ms=%d idle_ms=%lld out=%dx%d src=%dx%d scale=%d panel=%ux%u owner=nuxel-wl-fb display=%s src_format=0x%08x colour=R@%u,G@%u,B@%u_abgr8888_override=%d decon_pan_ok=%llu decon_pan_failed=%llu",
+         frames, fps, failures, blits, present_skipped, avg_ms, (long long)(mono_ms() - last_change_ms),
+         o->w, o->h, o->w, o->h, o->scale, fb.w, fb.h,
          display_on ? "on" : "off", src_fmt, hw_r_off, hw_g_off, hw_b_off, hw_order_override,
          decon_pan_ok, decon_pan_failed);
       fps = 0;
@@ -1394,7 +1455,15 @@ int main(int argc, char **argv) {
     struct timespec t_now;
     clock_gettime(CLOCK_MONOTONIC, &t_now);
     long used_ns = (t_now.tv_sec - t_start.tv_sec) * 1000000000L + (t_now.tv_nsec - t_start.tv_nsec);
-    long rest_ns = frame_ns - used_ns;
+    /* Active interaction stays at fps_target.  A static/idle screen drops to
+       10 fps after 1.2 s and 5 fps after 8 s; the first changed frame immediately
+       returns to full rate.  This is measurement-driven, not a timer guess. */
+    long idle = (long)(mono_ms() - last_change_ms);
+    int pace = fps_target;
+    if (idle > 1200) pace = 10;
+    if (idle > 8000) pace = 5;
+    long pace_ns = 1000000000L / (pace > 0 ? pace : 1);
+    long rest_ns = pace_ns - used_ns;
     if (rest_ns > 0) {
       struct timespec ts;
       ts.tv_sec = rest_ns / 1000000000L;

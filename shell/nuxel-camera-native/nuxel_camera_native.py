@@ -92,6 +92,9 @@ class CameraNativeWindow(Gtk.ApplicationWindow):
     def __init__(self, app):
         super().__init__(application=app, title="Nuxel Camera")
         self.set_default_size(420, 720)
+        # A65-15: drop the redundant per-app titlebar; global navigation + the
+        # in-window Close button remain the escape paths.
+        self.set_decorated(False)
         self._build()
 
     def _build(self):
@@ -99,9 +102,6 @@ class CameraNativeWindow(Gtk.ApplicationWindow):
 
         if _HAS_ADW:
             root = Adw.ToolbarView()
-            header = Adw.HeaderBar()
-            header.set_title_widget(Gtk.Label(label="Nuxel Camera"))
-            root.add_top_bar(header)
             self.set_child(root)
             content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=16)
             content.set_margin_top(16)
@@ -126,29 +126,40 @@ class CameraNativeWindow(Gtk.ApplicationWindow):
         viewfinder.append(Gtk.Label(label="Camera viewfinder"))
         content.append(viewfinder)
 
-        # Honest status card.
+        # Honest status card (A65-12): concise top-level truth. The verbose
+        # V4L2/FIMC-IS audit is moved into the collapsible diagnostics below.
         status_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
         status_box.add_css_class("card")
-        state_line = "Camera present" if hw["present"] else "Camera NOT present"
-        status_box.append(Gtk.Label(label=state_line))
         if hw["present"]:
-            status_box.append(Gtk.Label(label="Live capture: " +
-                                       ("VERIFIED" if hw["capture_verified"] else "NOT verified")))
-        reason = Gtk.Label(label=hw["reason"])
-        reason.set_wrap(True)
-        reason.set_xalign(0.0)
-        status_box.append(reason)
+            if hw["capture_verified"]:
+                status_box.append(Gtk.Label(label="Camera ready."))
+            else:
+                status_box.append(Gtk.Label(
+                    label="Camera hardware detected, but live preview is not available on this kernel."))
+        else:
+            status_box.append(Gtk.Label(label="Camera hardware not detected."))
         content.append(status_box)
 
-        # Actions.
+        # Collapsible technical diagnostics (the FIMC-IS/68-node detail).
+        expander = Gtk.Expander(label="Technical diagnostics")
+        detail = Gtk.Label(label=hw["reason"])
+        detail.set_wrap(True)
+        detail.set_xalign(0.0)
+        expander.set_child(detail)
+        content.append(expander)
+
+        # Actions: bounded Retry, Photos, and an explicit Close escape.
         btn_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
         btn_row.set_halign(Gtk.Align.CENTER)
-        refresh = Gtk.Button(label="Refresh status")
-        refresh.connect("clicked", lambda _b: self._refresh())
-        btn_row.append(refresh)
+        retry = Gtk.Button(label="Retry camera")
+        retry.connect("clicked", lambda _b: self._refresh())
+        btn_row.append(retry)
         photos = Gtk.Button(label="Open Photos")
         photos.connect("clicked", lambda _b: self._open_photos())
         btn_row.append(photos)
+        close = Gtk.Button(label="Close")
+        close.connect("clicked", lambda _b: self.close())
+        btn_row.append(close)
         content.append(btn_row)
 
     def _refresh(self):

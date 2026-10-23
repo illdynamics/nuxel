@@ -88,10 +88,67 @@
     var res = await bridgeCall('camera', 'status', {}, { camera_present: false, capture_verified: false });
     state.hardware = (res && res.camera_present) ? 'present' : 'absent';
     state.captureVerified = !!(res && res.capture_verified);
-    if (res && res.detail && !res.capture_verified) {
-      setStatus(res.detail, 'warn');
+    state.diagnostics = res || {};
+    // A65-12: concise top-level truth. The raw V4L2/FIMC-IS audit is moved to
+    // the collapsible "Technical diagnostics" panel so the viewfinder never
+    // opens onto a debug wall by default.
+    if (state.hardware === 'absent') {
+      setStatus('Camera hardware not detected.', 'error');
+    } else if (!state.captureVerified) {
+      setStatus('Camera hardware detected, but live preview is not available on this kernel.', 'warn');
+    } else {
+      setStatus('Camera ready.', 'ok');
     }
+    renderDiagnostics();
     return res;
+  }
+
+  function renderDiagnostics() {
+    var panel = $('camera-diagnostics-body');
+    if (!panel) return;
+    var d = state.diagnostics || {};
+    var lines = [];
+    if (d.camera_present !== undefined) lines.push('camera_present=' + (d.camera_present ? 'true' : 'false'));
+    if (d.capture_verified !== undefined) lines.push('capture_verified=' + (d.capture_verified ? 'true' : 'false'));
+    if (d.source) lines.push('source=' + d.source);
+    if (Number.isFinite(d.video_node_count)) lines.push('video_node_count=' + d.video_node_count);
+    if (d.detail) lines.push('detail=' + d.detail);
+    if (d.error) lines.push('error=' + d.error);
+    panel.textContent = lines.length ? lines.join('\n') : 'No camera diagnostics received from the bridge.';
+  }
+
+  async function retryCamera() {
+    // Bounded retry: stop any hung stream, re-check permission + hardware, then
+    // attempt a fresh preview. Never leaves the shutter busy or a stale stream.
+    if (state.busy) return;
+    state.busy = true;
+    var retryBtn = $('camera-retry');
+    if (retryBtn) { retryBtn.disabled = true; retryBtn.classList.add('busy'); }
+    setStatus('Retrying camera…', 'info');
+    stopStream();
+    try {
+      if (state.permission !== 'granted') {
+        await requestPermission();
+        if (state.permission === 'denied') {
+          setStatus('Camera permission denied — no camera is activated. Grant access in Settings \u2192 Privacy \u2192 Camera.', 'error');
+          return;
+        }
+      }
+      await checkHardware();
+      if (state.hardware === 'absent') {
+        setStatus('Camera hardware unavailable (NO_CAMERA).', 'error');
+        return;
+      }
+      var ok = await startCamera();
+      if (!ok && !state.captureVerified) {
+        setStatus('Camera hardware detected, but live preview is not available on this kernel.', 'warn');
+      } else if (!ok) {
+        setStatus('Camera could not start.', 'error');
+      }
+    } finally {
+      state.busy = false;
+      if (retryBtn) { retryBtn.disabled = false; retryBtn.classList.remove('busy'); }
+    }
   }
 
   // ---- device selection (front/rear fixed) --------------------------------
@@ -376,6 +433,12 @@
 
     var gb = $('gallery-btn');
     if (gb) gb.addEventListener('click', openGallery);
+
+    var retry = $('camera-retry');
+    if (retry) retry.addEventListener('click', function () {
+      if (state.busy) return;
+      retryCamera();
+    });
 
     // Power/privacy: release the camera when hidden or the page unloads.
     document.addEventListener('visibilitychange', function () {
