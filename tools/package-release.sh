@@ -151,8 +151,16 @@ if [[ ${packed} -eq 0 ]]; then
 fi
 fi
 
-# Checksums over every asset produced.
-( cd "${OUT_DIR}" && sha256_of ./*.tar.gz > SHA256SUMS.txt )
+# Checksums over every asset produced, including the captured installed-phone
+# image and its provenance manifest when the release job has staged them.
+(
+    cd "${OUT_DIR}" || exit 1
+    assets=( *.tar.gz )
+    for extra in *.img.gz *.txt.gz INSTALLED-IMAGES.json; do
+        [[ -e "${extra}" ]] && assets+=( "${extra}" )
+    done
+    sha256_of "${assets[@]}" > SHA256SUMS.txt
+)
 
 # Release notes: version + changelog excerpt (if present) + artifact manifest.
 {
@@ -165,7 +173,23 @@ fi
     while IFS=$'\t' read -r dev asset; do
         echo "- \`${asset}\` (device: \`${dev}\`)"
     done < "${OUT_DIR}/.manifest"
-    echo
+    if [[ -f "${OUT_DIR}/INSTALLED-IMAGES.json" ]]; then
+        echo
+        echo "## Exact image installed on the phone"
+        echo
+        echo "The release also ships the BOOT image read back from the owner's"
+        echo "Samsung Galaxy S10+ (SM-G975F), byte-for-byte:"
+        echo
+        echo "- \`nuxel-installed-s10plus-boot.img.gz\` — the installed A27 boot image"
+        echo "  (sha256 \`48ad61afa91b6fe50278443ecae0695724f706a80de383e0acb021d030620cea\`,"
+        echo "  51,605,504 bytes). The CI-built A25 image inside the device archive is"
+        echo "  a source rebuild and is **not** byte-identical to this installed image."
+        echo "- \`nuxel-installed-s10plus-userspace-files.txt.gz\` — SHA-256 inventory"
+        echo "  of the installed userspace files."
+        echo "- \`INSTALLED-IMAGES.json\` — capture provenance, header fields, kernel"
+        echo "  and ramdisk hashes, and the full BOOT-partition readback hash."
+        echo
+    fi
     echo "## Checksums"
     echo
     echo '```'

@@ -36,6 +36,19 @@ static int cpu_percent(const struct cpu_sample *before, const struct cpu_sample 
   return 1;
 }
 
+/* Write the whole buffer.  The old code cast write(2) to void, which is a hard
+ * -Werror=unused-result failure on Fedora (the release gate compiles this file
+ * with -Wall -Wextra -Werror).  A short write simply ends the response: the
+ * collector must never spin or claim a complete body it did not send. */
+static void write_all(int fd, const char *buf, size_t len) {
+  while (len > 0) {
+    ssize_t n = write(fd, buf, len);
+    if (n <= 0) return;
+    buf += (size_t)n;
+    len -= (size_t)n;
+  }
+}
+
 static long long timestamp_ms(void) {
   struct timespec ts;
   if (clock_gettime(CLOCK_REALTIME, &ts) != 0) return 0;
@@ -222,13 +235,13 @@ static void respond(int fd) {
       "Access-Control-Allow-Headers: Cache-Control, Pragma\r\n"
       "Access-Control-Max-Age: 600\r\n"
       "Content-Length: 0\r\nConnection: close\r\n\r\n";
-    (void)write(fd, preflight, strlen(preflight));
+    write_all(fd, preflight, strlen(preflight));
     return;
   }
   if (strncmp(request, "GET /metrics", 12) != 0 ||
       (request[12] != ' ' && request[12] != '?')) {
     const char *not_found = "HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\nConnection: close\r\n\r\n";
-    (void)write(fd, not_found, strlen(not_found)); return;
+    write_all(fd, not_found, strlen(not_found)); return;
   }
   make_json(json, sizeof(json));
   time_t now = time(NULL);
@@ -240,7 +253,7 @@ static void respond(int fd) {
     "Cache-Control: no-store, no-cache, must-revalidate\r\nPragma: no-cache\r\nExpires: 0\r\n"
     "Access-Control-Allow-Origin: http://127.0.0.1:8000\r\nVary: Origin\r\nConnection: close\r\n\r\n%s",
     date, strlen(json), json);
-  (void)write(fd, header, strlen(header));
+  write_all(fd, header, strlen(header));
 }
 
 static int self_test(void) {

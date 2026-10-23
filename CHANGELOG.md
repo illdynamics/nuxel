@@ -12,6 +12,26 @@ The canonical version lives in [`VERSION`](VERSION) and is bumped in lockstep
 across the shell apps, the PWA manifest, the device `APKBUILD`s, the VM tooling
 and the OTA builder (see *Versioning* below).
 
+## [v0.6.3-beta] — 2026-10-23 — *Release ships the exact installed S10+ image*
+
+- The GitHub release now publishes `nuxel-installed-s10plus-boot.img.gz`, the
+  byte-exact A27 BOOT image read back from the owner's SM-G975F
+  (`48ad61afa91b6fe50278443ecae0695724f706a80de383e0acb021d030620cea`,
+  51,605,504 bytes), plus a hash inventory of the installed userspace and
+  `INSTALLED-IMAGES.json` provenance.
+- `tools/release/verify-installed-image.py` gates publication on the gzip
+  stream, v1 `ANDROID!` header, raw arm64 kernel, load addresses and
+  kernel/ramdisk hashes. The CI-built A25 image remains in the device archive
+  but is explicitly labelled a source rebuild, not the installed image.
+- Fixed the Fedora `-Werror=unused-result` build failure in
+  `services/nuxel-metrics/nuxel-metricsd.c` that turned the previous `main`
+  release run red.
+- Aligned the A40 offline gates with the shipped sources (Back long-press
+  threshold, display-off/lockscreen pause, backgrounded-app polling) and made
+  the Home PWA cache version match `sw.js` (`v33-a59-rescue`).
+- Marked the committed Toybox interpreter and asset tools executable so a clean
+  checkout can build the shared initramfs.
+
 ## [v0.6.3-beta] — 2026-10-20 — *S10+ connectivity UI and beta release wiring*
 
 - Restored the background layer's visibility for the four-shortcut dock and fixed

@@ -1,0 +1,75 @@
+{
+  "schema_version": 1,
+  "device": {
+    "model": "Samsung Galaxy S10+ (SM-G975F)",
+    "codename": "beyond2lte",
+    "serial": "R58M75KDB2X"
+  },
+  "source": {
+    "captured_from": "/dev/sda14 (BOOT) and the live root filesystem over the Nuxel USB live console",
+    "captured_at": "2026-10-23T10:09:00+02:00",
+    "repository_head": "d5347532d61a5c1aed708bdf2b7005e1b71a1fb0",
+    "branch": "nuxel/A55-pwnage-4000"
+  },
+  "installed_boot_image": {
+    "file": "nuxel-installed-s10plus-boot.img.gz",
+    "gz_sha256": "174cd2d1ac39848af06fbbd9b77be19ce99928e77df834d8af24bc3e88ee12e7",
+    "gz_bytes": 22610918,
+    "bytes": 51605504,
+    "sha256": "48ad61afa91b6fe50278443ecae0695724f706a80de383e0acb021d030620cea",
+    "content": "the first 51,605,504 bytes of the installed BOOT partition; a complete, flashable A27 boot image"
+  },
+  "boot_header": {
+    "magic": "ANDROID!",
+    "page_size": 2048,
+    "header_version": 1,
+    "header_size": 1648,
+    "os_version": "0x18000171",
+    "kernel_bytes": 48912392,
+    "kernel_addr": "0x10008000",
+    "ramdisk_bytes": 2686976,
+    "ramdisk_addr": "0x11000000",
+    "tags_addr": "0x10000100",
+    "cmdline": "buildvariant=userdebug nuxel.device=s10plus root=/dev/block/platform/13d60000.ufs/by-name/userdata rootfstype=ext4 rootwait rw"
+  },
+  "payloads": {
+    "kernel_sha256": "e104da7e9be713f8b45f84561ba50e614f7f8ff4e9ba2ba4c9a6c0978309cd1e",
+    "ramdisk_sha256": "83c4f8cc1ef029f3e105acfaf6d5477999bbd4e045225fa0668160baaad5405d",
+    "declared_image_end": 51603456,
+    "arm64_magic_at_56": "ARMd"
+  },
+  "installed_userspace_manifest": {
+    "file": "nuxel-installed-s10plus-userspace-files.txt.gz",
+    "gz_sha256": "e83a03530e942be66f27a461a58e7957fc9d195af3db0e67034a8368eb7c0010",
+    "gz_bytes": 53689,
+    "bytes": 176079,
+    "sha256": "63d0152b7c2ef3d8878630392cefeb278f42ba5696b8dc14ccb0b6c3be9236dd",
+    "lines": 1312
+  },
+  "ci_built_image": {
+    "release": "v0.6.0-beta",
+    "asset": "nuxel-v0.6.0-beta-s10plus.tar.gz",
+    "boot_image_sha256": "9a71dcc0ffa7a0aea5aab03483e402794efb4de6b10c5b076eb0c7c7e2aef5c0",
+    "boot_image_bytes": 51718144,
+    "kernel_sha256": "ad37422c4aa81b47ff256f30837e7cd94eebb279244cf39246b3e0899bf0ec52",
+    "initramfs_sha256": "be7c2f83abe57aa8d7c1a373ae1c6a83e3c6e4b254829b01c24748e054807d73",
+    "rootfs_sha256": "bb46fcb3a6fca3e609dd647ca7d5e17079e7afb52b1ff8ddde14b7c0aed9d708",
+    "note": "This is the image the current repository sources build in CI. It is NOT the image installed on the phone. The installed image is the A27 boot image above (48ad61af\u2026), whose kernel and initramfs differ from the A25 CI artifact."
+  },
+  "rootfs": {
+    "note": "The root filesystem is a live, mounted read-write ext4 filesystem. A consistent block-device snapshot needs an owner-approved freeze/remount; this release therefore does not present a live rootfs copy as an exact installed image. It ships the exact installed BOOT image and a hash inventory of the installed userspace files instead."
+  },
+  "provenance": {
+    "boot_partition_read": "dd if=/dev/sda14 bs=1M count=55 on the device; sha256sum produced 07041ba77e273ba220cc399bcf50be808adf1941c47eb214dd3f0eb8dad5375c for the full partition",
+    "trimmed_image_read": "the first 51,605,504 bytes are the installed A27 boot image, sha256 48ad61afa91b6fe50278443ecae0695724f706a80de383e0acb021d030620cea, matching docs/s10plus-autonomous-boot-repair/A27-BOOT-FLASH-RECEIPT.md",
+    "workflow_note": "The CI image builder produces an A25 boot image from repository sources; it is NOT byte-identical to the A27 image installed on the phone. The release workflow publishes the captured installed image (these assets) alongside the CI-built image and labels both explicitly.",
+    "verification": "The gzip streams were integrity-tested and decompressed locally; the boot image was parsed as a v1 ANDROID! container and its kernel/ramdisk payload hashes recorded."
+  },
+  "installed_boot_partition": {
+    "captured": true,
+    "bytes": 57671680,
+    "sha256": "07041ba77e273ba220cc399bcf50be808adf1941c47eb214dd3f0eb8dad5375c",
+    "shipped": false,
+    "note": "The full BOOT partition is 57,671,680 bytes: the 51,605,504-byte image plus 6,066,176 stale trailing bytes from an older, larger candidate. S-Boot reads only header-declared sizes, so the released boot.img.gz is the exact installed image. The full-partition hash is recorded here for readback verification; the extra stale bytes are not shipped because they are not part of the image."
+  }
+}

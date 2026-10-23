@@ -32,7 +32,7 @@ require(recents, "toggle(reason)", "Recents has one reasoned toggle transition")
 require(recents, "close('select-app')", "Recents selection closes deliberately")
 
 nav = source("pwa/nuxel-home/js/navigation.js")
-require(nav, "this.holdMs = 650", "Back long press has a bounded threshold")
+require(nav, "this.holdMs = 700", "Back long press has a bounded threshold")
 require(nav, "global.nuxel.terminateForeground()", "Back long press owns foreground close")
 
 keyboard = source("pwa/nuxel-home/js/touch-keyboard.js")
