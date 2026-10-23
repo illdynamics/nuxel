@@ -1,0 +1,673 @@
+# frame not verified for 'echo IyEvYmluL3NoCiMgQTUwIGJvdW5kZWQgYmFzZWxpbmUgc2FtcGxlciAoc2NyZWVuLW9uKS4gUnVucyBvbi1kZXZpY2UsIHJlYWQtb25seSwgMjBzLgpwcmludGYgJ2FjdGlvbiBzY3JlZW4tb25cbicgPiAvcnVuL251eGVsLWJ1dHRvbnMuY21kCnNsZWVwIDIKcmNwdSgpIHsgYXdrICd7cHJpbnQgJDE0KyQxNX0nIC9wcm9jLyQxL3N0YXQgMj4vZGV2L251bGw7IH0KdG90KCkgeyBoZWFkIC0xIC9wcm9jL3N0YXQgfCBhd2sgJ3twcmludCAkMiskMyskNCskNSskNiskNyskOH0nOyB9CnAwPSQocmNwdSA1MzUyKTsgcDE9JChyY3B1IDUzOTkpOyBwMj0kKHJjcHUgNTQ1MCk7IHAzPSQocmNwdSA1Mzg5KTsgdDA9JCh0b3QpCmZvciBpIGluICQoc2VxIDEgMjApOyBkbwogIHNsZWVwIDEKICBuMD0kKHJjcHUgNTM1Mik7IG4xPSQocmNwdSA1Mzk5KTsgbjI9JChyY3B1IDU0NTApOyBuMz0kKHJjcHUgNTM4OSk7IHRuPSQodG90KQogIGR0PSQoKHRuLXQwKSkKICBhd2sgLXYgYT0kcDAgLXYgYj0kbjAgLXYgdD0kZHQgJ0JFR0lOe3ByaW50ZiAiY3B1IHBob2M9JS4xZiUlICIsIChiLWEpKjEwMC90fScKICBhd2sgLXYgYT0kcDEgLXYgYj0kbjEgLXYgdD0kZHQgJ0JFR0lOe3ByaW50ZiAid2xmYj0lLjFmJSUgIiwgKGItYSkqMTAwL3R9JwogIGF3ayAtdiBhPSRwMiAtdiBiPSRuMiAtdiB0PSRkdCAnQkVHSU57cHJpbnRmICJ3ZWJraXQ9JS4xZiUlICIsIChiLWEpKjEwMC90fScKICBhd2sgLXYgYT0kcDMgLXYgYj0kbjMgLXYgdD0kZHQgJ0JFR0lOe3ByaW50ZiAicHdhaG9zdD0lLjFmJSUgIiwgKGItYSkqMTAwL3R9JwogIGdyZXAgLW8gJ0ZSQU1FU19PSy4qJyAvcnVuL251eGVsLXdsLWZiLnN0YXRlIDI+L2Rldi9udWxsCiAgcHJpbnRmICd0aGVybWFsIEJJRz0lcyBNSUQ9JXMgTElUVExFPSVzIEczRD0lcyBiYXR0PSVzXG4nIFwKICAgICIkKGNhdCAvc3lzL2NsYXNzL3RoZXJtYWwvdGhlcm1hbF96b25lMC90ZW1wIDI+L2Rldi9udWxsKSIgXAogICAgIiQoY2F0IC9zeXMvY2xhc3MvdGhlcm1hbC90aGVybWFsX3pvbmUxL3RlbXAgMj4vZGV2L251bGwpIiBcCiAgICAiJChjYXQgL3N5cy9jbGFzcy90aGVybWFsL3RoZXJtYWxfem9uZTIvdGVtcCAyPi9kZXYvbnVsbCkiIFwKICAgICIkKGNhdCAvc3lzL2NsYXNzL3RoZXJtYWwvdGhlcm1hbF96b25lMy90ZW1wIDI+L2Rldi9udWxsKSIgXAogICAgIiQoY2F0IC9zeXMvY2xhc3MvdGhlcm1hbC90aGVybWFsX3pvbmU2L3RlbXAgMj4vZGV2L251bGwpIgogIHAwPSRuMDsgcDE9JG4xOyBwMj0kbjI7IHAzPSRuMzsgdDA9JHRuCmRvbmUK | base64 -d > /tmp/a50-sample.sh && sh /tmp/a50-sample.sh' (framed=False sha_ok=False)
+========================================================================
+### baseline_sample  [rc=None framed=False sha_ok=False elapsed=70.385s]
+_N=df2ac465;rm -f /var/tmp/nxl-df2ac465;{ echo IyEvYmluL3NoCiMgQTUwIGJvdW
+W5kZWQgYmFzZWxpbmUgc2FtcGxlciAoc2NyZWVuLW9uKS4gUnVucyBvbi1kZXZpY2UsIHJlYWQtb25seS
+SwgMjBzLgpwcmludGYgJ2FjdGlvbiBzY3JlZW4tb25cbicgPiAvcnVuL251eGVsLWJ1dHRvbnMuY21kCn
+nNsZWVwIDIKcmNwdSgpIHsgYXdrICd7cHJpbnQgJDE0KyQxNX0nIC9wcm9jLyQxL3N0YXQgMj4vZGV2L2
+251bGw7IH0KdG90KCkgeyBoZWFkIC0xIC9wcm9jL3N0YXQgfCBhd2sgJ3twcmludCAkMiskMyskNCskNS
+SskNiskNyskOH0nOyB9CnAwPSQocmNwdSA1MzUyKTsgcDE9JChyY3B1IDUzOTkpOyBwMj0kKHJjcHUgNT
+TQ1MCk7IHAzPSQocmNwdSA1Mzg5KTsgdDA9JCh0b3QpCmZvciBpIGluICQoc2VxIDEgMjApOyBkbwogIH
+HNsZWVwIDEKICBuMD0kKHJjcHUgNTM1Mik7IG4xPSQocmNwdSA1Mzk5KTsgbjI9JChyY3B1IDU0NTApOy
+yBuMz0kKHJjcHUgNTM4OSk7IHRuPSQodG90KQogIGR0PSQoKHRuLXQwKSkKICBhd2sgLXYgYT0kcDAgLX
+XYgYj0kbjAgLXYgdD0kZHQgJ0JFR0lOe3ByaW50ZiAiY3B1IHBob2M9JS4xZiUlICIsIChiLWEpKjEwMC
+C90fScKICBhd2sgLXYgYT0kcDEgLXYgYj0kbjEgLXYgdD0kZHQgJ0JFR0lOe3ByaW50ZiAid2xmYj0lLj
+jFmJSUgIiwgKGItYSkqMTAwL3R9JwogIGF3ayAtdiBhPSRwMiAtdiBiPSRuMiAtdiB0PSRkdCAnQkVHSU
+U57cHJpbnRmICJ3ZWJraXQ9JS4xZiUlICIsIChiLWEpKjEwMC90fScKICBhd2sgLXYgYT0kc6,234508,46931233900,-;[FG] 0080h,ff9bh,7f80h,ff01h,1900h,0d6bh,5ce8h,59bfh,14e6h,d8beh,064dh,0668h,001dh,6172h,5db3h,0d8ah,0e70h,ffffh,3200h,5f00h,05bdh,0148h,14d8h,0074h,0f76h,d8c2h,2c11h,d8b6h,14e5h,0314h,0500h,0d6eh,0041h,6200h,1c00h,0de4h,1403h,1e05h,14d8h,7ec8h,2636h,cea4h,043ch,0890h,e3e1h,290eh,0400h,0001h,7499h,5141h,0b82h,ffffh,1eafh,0e72h,0c0fh,05e0h,0038h,1527h,a7e2h,0668h,1680h,1008h,e0afh,e000h,07fch,0000h,0902h,0116h,d8c1h,0129h,10c7h,0003h,6139h,2241h,0d89h,010eh,ff6bh,ff6fh,c701h,0e8dh,0000h,6d0dh,0006h,2e48h,7f80h,0005h,05c2h,05e4h,0000h,006bh,090ch,0055h,0001h,0204h,0026h,0000h,1053h,0000h,0000h,0000h,0000h,0000h,0000h,0000h,0000h,0000h,0000h,0010h,001dh,ffffh,5daah,0d6dh,1cb5h,0239h,06cah,0008h,167eh,0000h,7fffh,0017h,4b4eh,0008h,46a8h,0000h,4000h,0000h,7d00h,0620h,ffffh,ffffh,ffffh,ffffh,20a5h,0000h,0000h,fd5fh,3f63h,5c1bh,01f9h,d461h,0037h,2917h,d8beh,616fh,
+6,234509,46931237430,-;max77705_fg_read_qh : QH(-145000)
+6,234510,46931237462,-;[FG power] ISYS(88mA),ISYSAVG(84mA),VSYS(4362mV),IIN(522mA),VBYP(5050mV) QH(-145000 uah)
+7,234511,46931240085,-;max77705_fg_read_current: current=517mA
+7,234512,46931240819,-;max77705_fg_read_avg_current: avg_current=512mA
+6,234513,46931241120,-;max77705_fg_read_isys_avg: isys_avg_current=84mA
+6,234514,46931241410,-;max77705_fg_read_isys: isys_current=88mA
+6,234515,46931243951,-;sec-battery battery: sec_bat_get_value_by_adc:[2] Temp(209), Temp-ADC(2200)
+ SUBSYSTEM=platform
+ DEVICE=+platform:battery
+6,234516,46931244856,-;sec-battery battery: sec_bat_get_value_by_adc:[12] Temp(207), Temp-ADC(2186)
+ SUBSYSTEM=platform
+ DEVICE=+platform:battery
+6,234517,46931253504,-;sec-battery battery: sec_bat_get_value_by_adc:[6] Temp(220), Temp-ADC(2125)
+ SUBSYSTEM=platform
+ DEVICE=+platform:battery
+6,234518,46931254298,-;sec-battery battery: sec_bat_get_value_by_adc:[10] Temp(210), Temp-ADC(2198)
+ SUBSYSTEM=platform
+ DEVICE=+platform:battery
+7,234519,46931254500,-;max77705_fg_write_temp: temperature to (209, 0x14e6)
+6,234520,46931255029,-;max77705_fg_read_vcell: VCELL(4336)mV, data(0xd8ce)
+7,234521,46931255554,-;max77705_fg_read_avg_current: avg_current=512mA
+7,234522,46931255566,-;max77705_get_fuelgauge_soc: soc(929)
+6,234523,46931255579,-;max77705_fg_get_scaled_capacity : capacity_max (1000) scaled capacity(92.9), raw_soc(92.9)
+7,234524,46931255847,-;max77705_fg_read_rawsoc: raw capacity (0.01%) (9290)
+6,234525,46931256378,-;max77705_fg_read_qh : QH(-145000)
+7,234526,46931256391,-;max77705_fg_get_atomic_capacity : NOW(92), OLD(92)
+6,234527,46931256408,-;sec_bat_get_battery_info:Vnow(4334mV),Vavg(4335mV),Inow(517mA),Iavg(512mA),Isysavg(84mA),Imax(3000mA),Ichg(2850mA),SOC(92%),Tbat(209),Tusb(207),Tchg(220),Twpc(210)
+6,234528,46931256449,-;sec_bat_check_step_charging
+7,234529,46931256471,-;calc_ttf: cap: 4000, soc:  929, T:    946, avg:  512, cv soc:  929, i:   42, val: 2850
+6,234530,46931256487,-;sec-battery battery: sec_bat_calc_time_to_full: T:  1006 sec, passed time:  1284, current: 2850
+ SUBSYSTEM=platform
+ DEVICE=+platform:battery
+6,234531,46931256505,-;max77705_chg_set_wdtmr_kick: WDT Kick
+6,234532,46931257200,-;max77705_get_charging_health: reg_data(0x3)
+6,234533,46931269671,-;max77705_get_charging_health: details00(0xe0)
+6,234534,46931270885,-;max77705_get_vbus_state: VBUS is valid. CHGIN < CHGIN_OVLO
+6,234535,46931272953,-;max77705_get_charging_health: vbus_state: 0x3, chg_dtls: 0x2, iin: 534mA, vbyp: 5032mV, health: 1
+6,234536,46931272979,-;sec_bat_swelling_check: swelling highblock(410), highrecov(390)
+7,234537,46931273197,-;max77705_get_float_voltage: battery cv reg : 0x13, float voltage val : 4350
+6,234538,46931273213,-;sec_bat_swelling_check: status(Charging), swell_mode(Swelling None), chg_block(0), low_temp_event(0x0), vfloat(4350)mV, temp(209)'C
+6,234539,46931273441,-;max77705_get_charger_state : charger status (0x32)
+6,234540,46931273522,-;sec-battery battery: sec_bat_fullcharged_check: Charging Mode : Normal
+ SUBSYSTEM=platform
+ DEVICE=+platform:battery
+6,234541,46931273534,-;sec_bat_set_current_event: current event before(0x100), after(0x100)
+6,234542,46931273547,-;sec_bat_calculate_safety_time : EXPIRED_TIME(9543802), IP(15000000), CP(12397500), CURR(2850), STANDARD(2850)
+6,234543,46931273556,-;sec_bat_calculate_safety_time : CAL_EXPIRED_TIME(9543802) TIME NOW(46931) TIME PREV(46900)
+6,234544,46931273564,-;sec_bat_calculate_safety_time : REMAIN_TIME(9512802) CAL_REMAIN_TIME(9512802)
+6,234545,46931273578,-;sec_bat_check_mix_temp: mix_limit(0), temp(209), chg_temp(220), input_current(3000)
+6,234546,46931273587,-;sec_bat_check_pdic_temp: cable_type(19), chg_limit(0)
+6,234547,46931273597,-;sec_bat_get_charging_current_by_siop: incurr(3000), chgcurr(2850)
+6,234548,46931278238,-;max77705 : [0xb1]0x1a, [0xb2]0xdf, [0xb3]0xe0, [0xb4]0x32, [0xb5]0x00, [0xb6]0xff, [0xb7]0x15, [0xb8]0x38, [0xb9]0x79, [0xba]0x9d, [0xbb]0x13, [0xbc]0x6c, [0xbd]0x6c, [0xbe]0x34, [0xbf]0x00, [0xc0]0xf7, [0xc1]0x10, [0xc2]0x00, [0xc3]0x68, 
+6,234549,46931278641,-;max77705_chg_monitor_work: [CHG] MODE(0x5), B2SOVRC(0xc), otg_on(0)
+6,234550,46931278700,-;sec_bat_monitor_work: Status(Charging), mode(Normal), Health(Good), Cable(PDIC, PDIC, 0, 0), rp(3), level(100%), lcd(0), slate_mode(0), store_mode(0), HV(PDIC, 0), sleep_mode(0), Cycle(-1)
+6,234551,46931278732,-;sec-battery battery: sec_bat_set_polling: Polling time 10/30 sec.
+ SUBSYSTEM=platform
+ DEVICE=+platform:battery
+6,234552,46931278804,-;sec_bat_get_property cable type = 19 sleep_mode = 0
+7,234553,46931279046,-;max77705_fg_read_current: current=517mA
+7,234554,46931279495,-;max77705_fg_read_avg_current: avg_current=512mA
+6,234555,46933987653,-;[SSP]: debug_work_func(0) - Sensor state: 0x3feff, RC: 0(0, 0, 0), CC: 0, TC: 0 NSC: 0 EC: 0 GPS: false
+6,234556,46934958753,-;s3c2410-wdt 10050000.watchdog_cl0: Watchdog cluster 0 keepalive!, wtcnt = fff5
+ SUBSYSTEM=platform
+ DEVICE=+platform:10050000.watchdog_cl0
+6,234557,46934958805,-;Watchdog: s3c2410wdt_keepalive RTC 2026-10-22 08:08:14 UTC
+2,234558,46934958870,-;watchdog: watchdog0: watchdog did not stop!
+6,234559,46934958912,-;s3c2410-wdt 10050000.watchdog_cl0: Watchdog cluster 0 keepalive!, wtcnt = fff5
+ SUBSYSTEM=platform
+ DEVICE=+platform:10050000.watchdog_cl0
+6,234560,46934958936,-;Watchdog: s3c2410wdt_keepalive RTC 2026-10-22 08:08:14 UTC
+4,234561,46936015089,c;CFG80211-TRACE) __wl_cfg80211_scan : START SCAN
+4,234562,46936015143,-;dhd_set_rpm_state: 0
+4,234563,46936015189,-;Runtime Resume is called in __wl_cfg80211_scan
+4,234564,46936015206,-;[Repeats 0 times]
+4,234565,46936015490,-;dhdpcie_bus_suspend: Entering resume state
+6,234566,46936015525,-;exynos-pcie 13ed0000.pcie0: exynos_pcie_poweron, start of poweron, pcie state: 0
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+3,234567,46936015540,-;exynos-pcie 13ed0000.pcie0: pcie clk enable, ret value = 0
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+6,234568,46936015741,-;exynos-pcie 13ed0000.pcie0: exynos_pcie_establish_link: Set PERST to HIGH, gpio val = 1
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+3,234569,46936033982,-;exynos-pcie 13ed0000.pcie0: phy clk enable, ret value = 0
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+6,234570,46936034357,-;exynos-pcie 13ed0000.pcie0: Set I/A for CDR reset.
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+6,234571,46936034607,-;exynos-pcie 13ed0000.pcie0: D state: 0, 116c00
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+6,234572,46936034718,-;exynos-pcie 13ed0000.pcie0: exynos_pcie_establish_link: Link up:3999811
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+6,234573,46936034745,-;exynos-pcie 13ed0000.pcie0: Current Link Speed is GEN1 (MAX GEN1)
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+3,234574,46936035088,-;exynos-pcie 13ed0000.pcie0: l1ss disabled(0x10)
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+6,234575,46936035131,-;exynos-pcie 13ed0000.pcie0: exynos_pcie_poweron, end of poweron, pcie state: 3
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+4,234576,46936035171,-;dhdpcie_resume_dev: Enter: TS(2610220808150384)
+4,234577,46936036424,-;AFTER_EP_RESUME: BaseAddress0(0x10)=0x14400004, BaseAddress1(0x18)=0x14000004 PCIE_CFG_PMCSR(0x4c)=0x4108 PCI_BAR1_WIN(0x84)=(0x0)
+4,234578,46936036910,-;dhdpcie_resume_dev: Enable L1ss EP side
+6,234579,46936036948,-;exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: START (state = 0x10, id = 0x10, enable = 1)
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+6,234580,46936037014,-;exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: END (state = 0x0, id = 0x10, enable = 1)
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+4,234581,46936037171,-;dhdpcie_dump_resource: BAR0(VA): 0x0000000000000000, BAR0(PA): 0x0000000014400000, SIZE: 32768
+4,234582,46936037206,-;dhdpcie_dump_resource: BAR1(VA): 0x0000000000000000, BAR1(PA): 0x0000000014000000, SIZE: 4194304
+4,234583,46936037815,-;dhd_bus_hostready : Read PCICMD Reg: 0x00100006
+4,234584,46936038292,-;dhd_bus_dump_dar_registers: dar_clk_ctrl(0xa08:0x1010040) dar_pwr_ctrl(0xa0c:0x30000) dar_intstat(0xa10:0x4000000)
+4,234585,46936038326,-;dhd_bus_dump_dar_registers: dar_errlog(0xa60:0x0) dar_erraddr(0xa64:0x0) dar_pcie_mbint(0xa68:0x0)
+4,234586,46936038665,-;dhd_bus_hostready: Ring Hostready:1811
+4,234587,46936039084,-;dhd_runtimepm_state : runtime resume ended 
+4,234588,46936052314,c;CFG80211-INFO) wl_scan_prep : n_channels:38 n_ssids:1
+4,234589,46936098776,c;CFG80211-INFO) wl_run_escan : LEGACY_SCAN sync ID: 80, bssidx: 2
+6,234590,46938851610,-;fps_qbt2000_work_func_debug: ldo:0,ipc:0,wuhb:0,tz:1,type:qbt2000,int:0,0
+4,234591,46938870077,c;CFG80211-INFO) wl_cfg80211_event : Enqueing escan completion (0). WQ state:0x1 
+4,234592,46938870378,c;CFG80211-INFO) wl_print_event_data : event_type (69), ifidx: 16777216 bssidx: 33554432 scan_type:0
+4,234593,46938870441,c;CFG80211-INFO) wl_escan_handler : ESCAN COMPLETED
+4,234594,46938870469,c;CFG80211-TRACE) wl_escan_handler : SCAN COMPLETED: scanned AP count=19
+4,234595,46938870987,c;CFG80211-INFO) wl_notify_escan_complete : [wlan1] Report scan done.
+4,234596,46938871092,-;dhd_set_rpm_state: 1
+6,234597,46939875707,-;[SSP]: debug_work_func(0) - Sensor state: 0x3feff, RC: 0(0, 0, 0), CC: 0, TC: 0 NSC: 0 EC: 0 GPS: false
+4,234598,46939997873,-;dhd_runtimepm_state: DHD Idle state!! -  idletime :11, wdtick :100, PS mode off dur: 0 sec 
+4,234599,46939997922,-;__dhd_txflowcontrol: Stop Netif Queue
+4,234600,46939997947,-;__dhd_txflowcontrol: Stop Netif Queue
+4,234601,46939997977,-;dhdpcie_bus_suspend: Entering suspend state
+4,234602,46940000685,-;dhdpcie_send_mb_data: send H2D_HOST_D3_INFORM to dongle
+4,234603,46940008572,-;D2H_MB_DATA: D3 ACK
+4,234604,46940009016,-;dhd_bus_handle_d3_ack: D3_ACK Recieved
+4,234605,46940009292,-;dhdpcie_bus_suspend: Got D3 Ack 
+4,234606,46940009316,-;dhdpcie_dump_resource: BAR0(VA): 0x0000000000000000, BAR0(PA): 0x0000000014400000, SIZE: 32768
+4,234607,46940009331,-;dhdpcie_dump_resource: BAR1(VA): 0x0000000000000000, BAR1(PA): 0x0000000014000000, SIZE: 4194304
+4,234608,46940009351,-;dhdpcie_suspend_dev: Enter: TS(2610220808190358)
+4,234609,46940009362,-;dhdpcie_suspend_dev: Disable L1ss EP side
+6,234610,46940009387,-;exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: START (state = 0x0, id = 0x10, enable = 0)
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+4,234611,46940009411,-;dhdpci_bus_read_frames: Bus is in power save state (2). Skip processing rest of ring buffers.
+6,234612,46940009432,-;exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: END (state = 0x10, id = 0x10, enable = 0)
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+4,234613,46940009880,-;BEFORE_EP_SUSPEND: BaseAddress0(0x10)=0x14400004, BaseAddress1(0x18)=0x14000004 PCIE_CFG_PMCSR(0x4c)=0x4108 PCI_BAR1_WIN(0x84)=(0x0)
+4,234614,46940031980,-;AFTER_EP_SUSPEND: BaseAddress0(0x10)=0x14400004, BaseAddress1(0x18)=0x14000004 PCIE_CFG_PMCSR(0x4c)=0x410b PCI_BAR1_WIN(0x84)=(0x0)
+6,234615,46940034030,-;exynos-pcie 13ed0000.pcie0: exynos_pcie_poweroff, start of poweroff, pcie state: 2
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+6,234616,46940034079,-;exynos-pcie 13ed0000.pcie0: exynos_pcie_send_pme_turn_off: link state:d
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+3,234617,46940034107,-;exynos-pcie 13ed0000.pcie0: Current LTSSM State is 0xd with retry_cnt =0.
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+3,234618,46940034262,-;exynos-pcie 13ed0000.pcie0: ack message is ok
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+3,234619,46940034303,-;exynos-pcie 13ed0000.pcie0: received Enter_L23_READY DLLP packet
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+6,234620,46940034346,-;SysMMU alloc num : 811(Max:812), lv2_alloc : 20, fault : 0
+6,234621,46940034404,-;exynos-pcie 13ed0000.pcie0: exynos_pcie_poweroff: Set PERST to LOW, gpio val = 0
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+6,234622,46940034526,-;exynos-pcie 13ed0000.pcie0: exynos_pcie_poweroff, end of poweroff, pcie state: 0
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+4,234623,46940034541,-;dhd_runtimepm_state, update suspend states
+4,234624,46940034557,-;__dhd_txflowcontrol: Start Netif Queue
+4,234625,46940034569,-;__dhd_txflowcontrol: Start Netif Queue
+6,234626,46941457606,-;[FG] 0080h,ff9bh,7f80h,ff01h,1900h,0d6dh,5cf1h,59bfh,14e6h,d8e0h,0678h,0660h,001dh,6176h,5dc0h,0d8ch,0e70h,ffffh,3200h,5f00h,05bbh,0148h,14dah,0074h,0f76h,d8c2h,2c11h,d8b6h,14e5h,0314h,0500h,0d70h,003fh,6200h,1c00h,0de4h,1403h,1e05h,14dah,7ec2h,2636h,cea4h,043ch,0890h,e3e1h,290eh,0400h,0001h,7867h,5408h,0b82h,ffffh,1eb2h,0e72h,0c0fh,05e0h,0038h,1527h,a7e2h,0661h,1680h,1008h,e0eah,e000h,07fch,0000h,0902h,00e0h,d8c1h,0129h,10c7h,000ah,6139h,2241h,0d8ah,0131h,ff6bh,ff71h,380ch,0e8dh,0000h,6d0bh,0006h,2e55h,7f80h,0005h,05c2h,05e4h,0000h,006bh,090ch,0055h,0000h,0204h,0026h,0000h,1059h,0000h,0000h,0000h,0000h,0000h,0000h,0000h,0000h,0000h,0000h,0010h,001dh,ffffh,5db9h,0d6fh,06b6h,5c74h,0678h,0d42h,f4c0h,1078h,107ch,fffeh,4b4eh,0008h,46a8h,0000h,4000h,0000h,7d00h,0620h,ffffh,ffffh,ffffh,ffffh,20abh,0000h,0000h,f83eh,3f61h,5c15h,01f9h,d469h,0037h,2910h,d8c0h,616fh,
+6,234627,46941461085,-;max77705_fg_read_qh : QH(-143000)
+6,234628,46941461114,-;[FG power] ISYS(75mA),ISYSAVG(95mA),VSYS(4363mV),IIN(527mA),VBYP(5044mV) QH(-143000 uah)
+7,234629,46941461620,-;max77705_fg_read_current: current=517mA
+7,234630,46941464278,-;max77705_fg_read_avg_current: avg_current=510mA
+6,234631,46941467104,-;sec-battery battery: sec_bat_get_value_by_adc:[2] Temp(209), Temp-ADC(2200)
+ SUBSYSTEM=platform
+ DEVICE=+platform:battery
+6,234632,46941468187,-;sec-battery battery: sec_bat_get_value_by_adc:[12] Temp(206), Temp-ADC(2187)
+ SUBSYSTEM=platform
+ DEVICE=+platform:battery
+6,234633,46941469006,-;sec-battery battery: sec_bat_get_value_by_adc:[6] Temp(221), Temp-ADC(2124)
+ SUBSYSTEM=platform
+ DEVICE=+platform:battery
+6,234634,46941477736,-;sec-battery battery: sec_bat_get_value_by_adc:[10] Temp(210), Temp-ADC(2198)
+ SUBSYSTEM=platform
+ DEVICE=+platform:battery
+7,234635,46941477935,-;max77705_fg_write_temp: temperature to (209, 0x14e6)
+7,234636,46941479218,-;max77705_fg_read_avg_current: avg_current=510mA
+7,234637,46941479245,-;max77705_get_fuelgauge_soc: soc(929)
+6,234638,46941479271,-;max77705_fg_get_scaled_capacity : capacity_max (1000) scaled capacity(92.9), raw_soc(92.9)
+7,234639,46941479641,-;max77705_fg_read_rawsoc: raw capacity (0.01%) (9294)
+6,234640,46941480351,-;max77705_fg_read_qh : QH(-143000)
+7,234641,46941480382,-;max77705_fg_get_atomic_capacity : NOW(92), OLD(92)
+6,234642,46941480415,-;sec_bat_get_battery_info:Vnow(4337mV),Vavg(4335mV),Inow(517mA),Iavg(510mA),Isysavg(95mA),Imax(3000mA),Ichg(2850mA),SOC(92%),Tbat(209),Tusb(206),Tchg(221),Twpc(210)
+6,234643,46941480478,-;sec_bat_check_step_charging
+7,234644,46941480517,-;calc_ttf: cap: 4000, soc:  929, T:    946, avg:  510, cv soc:  929, i:   42, val: 2850
+6,234645,46941480545,-;sec-battery battery: sec_bat_calc_time_to_full: T:  1006 sec, passed time:  1315, current: 2850
+ SUBSYSTEM=platform
+ DEVICE=+platform:battery
+6,234646,46941480574,-;max77705_chg_set_wdtmr_kick: WDT Kick
+6,234647,46941481450,-;max77705_get_charging_health: reg_data(0x3)
+6,234648,46941489916,-;max77705_get_charging_health: details00(0xe0)
+6,234649,46941490728,-;max77705_get_vbus_state: VBUS is valid. CHGIN < CHGIN_OVLO
+6,234650,46941492267,-;max77705_get_charging_health: vbus_state: 0x3, chg_dtls: 0x2, iin: 527mA, vbyp: 5044mV, health: 1
+6,234651,46941498903,-;max77705 : [0xb1]0x1a, [0xb2]0xdf, [0xb3]0xe0, [0xb4]0x32, [0xb5]0x00, [0xb6]0xff, [0xb7]0x15, [0xb8]0x38, [0xb9]0x79, [0xba]0x9d, [0xbb]0x13, [0xbc]0x6c, [0xbd]0x6c, [0xbe]0x34, [0xbf]0x00, [0xc0]0xf7, [0xc1]0x10, [0xc2]0x00, [0xc3]0x68, 
+6,234652,46941499443,-;max77705_chg_monitor_work: [CHG] MODE(0x5), B2SOVRC(0xc), otg_on(0)
+6,234653,46941499534,-;sec_bat_monitor_work: Status(Charging), mode(Normal), Health(Good), Cable(PDIC, PDIC, 0, 0), rp(3), level(100%), lcd(0), slate_mode(0), store_mode(0), HV(PDIC, 0), sleep_mode(0), Cycle(-1)
+6,234654,46941499597,-;sec-battery battery: sec_bat_set_polling: Polling time 20/30 sec.
+ SUBSYSTEM=platform
+ DEVICE=+platform:battery
+6,234655,46941499725,-;sec_bat_get_property cable type = 19 sleep_mode = 0
+7,234656,46941500046,-;max77705_fg_read_current: current=517mA
+7,234657,46941500602,-;max77705_fg_read_avg_current: avg_current=510mA
+6,234658,46944973147,-;s3c2410-wdt 10050000.watchdog_cl0: Watchdog cluster 0 keepalive!, wtcnt = fff5
+ SUBSYSTEM=platform
+ DEVICE=+platform:10050000.watchdog_cl0
+6,234659,46944973181,-;Watchdog: s3c2410wdt_keepalive RTC 2026-10-22 08:08:24 UTC
+2,234660,46944973216,-;watchdog: watchdog0: watchdog did not stop!
+6,234661,46944973238,-;s3c2410-wdt 10050000.watchdog_cl0: Watchdog cluster 0 keepalive!, wtcnt = fff5
+ SUBSYSTEM=platform
+ DEVICE=+platform:10050000.watchdog_cl0
+6,234662,46944973249,-;Watchdog: s3c2410wdt_keepalive RTC 2026-10-22 08:08:24 UTC
+6,234663,46945763484,-;[SSP]: debug_work_func(0) - Sensor state: 0x3feff, RC: 0(0, 0, 0), CC: 0, TC: 0 NSC: 0 EC: 0 GPS: false
+6,234664,46949859634,-;fps_qbt2000_work_func_debug: ldo:0,ipc:0,wuhb:0,tz:1,type:qbt2000,int:0,0
+6,234665,46951399674,-;max77705_muic: max77705_muic_print_reg_log USBC1:0x27, USBC2:0x31, BC:0x82, CC0:0xb1, CC1:0x9, PD0:0x1, PD1:0x57 attached_dev:2
+6,234666,46951399705,-;max77705_muic: max77705_muic_print_reg_log UIC_INT_M:0x0, CC_INT_M:0x20, PD_INT_M:0x0, VDM_INT_M:0xf0, PMIC_MASK:0x2, WDT:0, POR:0
+6,234667,46951677861,-;[FG] 0080h,ff9bh,7f80h,ff01h,1900h,0d6eh,5cfbh,59bfh,14e6h,d8c4h,0627h,065ah,001dh,6182h,5dc6h,0d8dh,0e70h,ffffh,3200h,5f00h,05b9h,0148h,14dbh,0074h,0f76h,d8c2h,2c11h,d8b6h,14e5h,0314h,0500h,0d71h,003eh,6200h,1c00h,0de4h,1403h,1e05h,14dbh,7ed4h,2636h,cea4h,043ch,0890h,e3e1h,290eh,0400h,0001h,7c7ch,56ffh,0b82h,ffffh,1ea0h,0e72h,0c0fh,05e0h,0038h,1527h,a7e2h,065ah,1680h,1008h,e124h,e000h,07fch,0000h,0902h,011eh,d8c1h,0129h,10c7h,fff8h,6139h,2241h,0d8eh,0119h,ff6bh,ff72h,a7c2h,0e8dh,0000h,6d1fh,0006h,2e4bh,7f80h,0005h,05c2h,05e4h,0000h,006bh,090ch,0055h,0000h,0204h,0026h,0000h,10b0h,0000h,0000h,0000h,0000h,0000h,0000h,0000h,0000h,0000h,0000h,0010h,001dh,ffffh,5dc0h,0d70h,1d4eh,1000h,ec5eh,0004h,0001h,a304h,0004h,0016h,4b4eh,0008h,46a8h,0000h,4000h,0000h,7d00h,0620h,ffffh,ffffh,ffffh,ffffh,20a7h,0000h,0000h,f43bh,3f6ah,5c15h,01ddh,d470h,0037h,2910h,d8c0h,618ah,
+6,234668,46951681277,-;max77705_fg_read_qh : QH(-142000)
+6,234669,46951681307,-;[FG power] ISYS(89mA),ISYSAVG(87mA),VSYS(4361mV),IIN(534mA),VBYP(5044mV) QH(-142000 uah)
+7,234670,46951681763,-;max77705_fg_read_current: current=489mA
+7,234671,46951682716,-;max77705_fg_read_avg_current: avg_current=507mA
+6,234672,46951683095,-;max77705_fg_read_isys_avg: isys_avg_current=87mA
+6,234673,46951683456,-;max77705_fg_read_isys: isys_current=89mA
+6,234674,46951684542,-;sec-battery battery: sec_bat_get_value_by_adc:[2] Temp(210), Temp-ADC(2199)
+ SUBSYSTEM=platform
+ DEVICE=+platform:battery
+6,234675,46951685656,-;sec-battery battery: sec_bat_get_value_by_adc:[12] Temp(206), Temp-ADC(2188)
+ SUBSYSTEM=platform
+ DEVICE=+platform:battery
+6,234676,46951686669,-;sec-battery battery: sec_bat_get_value_by_adc:[6] Temp(220), Temp-ADC(2126)
+ SUBSYSTEM=platform
+ DEVICE=+platform:battery
+6,234677,46951687446,-;sec-battery battery: sec_bat_get_value_by_adc:[10] Temp(210), Temp-ADC(2197)
+ SUBSYSTEM=platform
+ DEVICE=+platform:battery
+7,234678,46951687624,-;max77705_fg_write_temp: temperature to (210, 0x1500)
+6,234679,46951688128,-;max77705_fg_read_vcell: VCELL(4335)mV, data(0xd8c0)
+7,234680,46951688626,-;max77705_fg_read_avg_current: avg_current=507mA
+7,234681,46951688636,-;max77705_get_fuelgauge_soc: soc(929)
+6,234682,46951688648,-;max77705_fg_get_scaled_capacity : capacity_max (1000) scaled capacity(92.9), raw_soc(92.9)
+7,234683,46951688907,-;max77705_fg_read_rawsoc: raw capacity (0.01%) (9298)
+6,234684,46951689409,-;max77705_fg_read_qh : QH(-142000)
+7,234685,46951689422,-;max77705_fg_get_atomic_capacity : NOW(92), OLD(92)
+6,234686,46951689439,-;sec_bat_get_battery_info:Vnow(4335mV),Vavg(4335mV),Inow(489mA),Iavg(507mA),Isysavg(87mA),Imax(3000mA),Ichg(2850mA),SOC(92%),Tbat(210),Tusb(206),Tchg(220),Twpc(210)
+6,234687,46951689546,-;sec_bat_check_step_charging
+7,234688,46951689772,-;calc_ttf: cap: 4000, soc:  929, T:    946, avg:  507, cv soc:  929, i:   42, val: 2850
+6,234689,46951689785,-;sec-battery battery: sec_bat_calc_time_to_full: T:  1006 sec, passed time:  1315, current: 2850
+ SUBSYSTEM=platform
+ DEVICE=+platform:battery
+6,234690,46951689801,-;max77705_chg_set_wdtmr_kick: WDT Kick
+6,234691,46951690668,-;max77705_get_charging_health: reg_data(0x3)
+6,234692,46951690899,-;max77705_get_charging_health: details00(0xe0)
+6,234693,46951691357,-;max77705_get_vbus_state: VBUS is valid. CHGIN < CHGIN_OVLO
+6,234694,46951692305,-;max77705_get_charging_health: vbus_state: 0x3, chg_dtls: 0x2, iin: 534mA, vbyp: 5044mV, health: 1
+6,234695,46951696639,-;max77705 : [0xb1]0x1a, [0xb2]0xdf, [0xb3]0xe0, [0xb4]0x32, [0xb5]0x00, [0xb6]0xff, [0xb7]0x15, [0xb8]0x38, [0xb9]0x79, [0xba]0x9d, [0xbb]0x13, [0xbc]0x6c, [0xbd]0x6c, [0xbe]0x34, [0xbf]0x00, [0xc0]0xf7, [0xc1]0x10, [0xc2]0x00, [0xc3]0x68, 
+6,234696,46951697097,-;max77705_chg_monitor_work: [CHG] MODE(0x5), B2SOVRC(0xc), otg_on(0)
+6,234697,46951697149,-;sec_bat_monitor_work: Status(Charging), mode(Normal), Health(Good), Cable(PDIC, PDIC, 0, 0), rp(3), level(100%), lcd(0), slate_mode(0), store_mode(0), HV(PDIC, 0), sleep_mode(0), Cycle(-1)
+6,234698,46951697182,-;sec-battery battery: sec_bat_set_polling: Polling time 30/30 sec.
+ SUBSYSTEM=platform
+ DEVICE=+platform:battery
+6,234699,46951697247,-;sec_bat_get_property cable type = 19 sleep_mode = 0
+7,234700,46951697540,-;max77705_fg_read_current: current=489mA
+7,234701,46951698128,-;max77705_fg_read_avg_current: avg_current=507mA
+6,234702,46951907602,-;[SSP]: debug_work_func(0) - Sensor state: 0x3feff, RC: 0(0, 0, 0), CC: 0, TC: 0 NSC: 0 EC: 0 GPS: false
+6,234703,46954985948,-;s3c2410-wdt 10050000.watchdog_cl0: Watchdog cluster 0 keepalive!, wtcnt = fff5
+ SUBSYSTEM=platform
+ DEVICE=+platform:10050000.watchdog_cl0
+6,234704,46954985977,-;Watchdog: s3c2410wdt_keepalive RTC 2026-10-22 08:08:34 UTC
+2,234705,46954986014,-;watchdog: watchdog0: watchdog did not stop!
+6,234706,46954986039,-;s3c2410-wdt 10050000.watchdog_cl0: Watchdog cluster 0 keepalive!, wtcnt = fff5
+ SUBSYSTEM=platform
+ DEVICE=+platform:10050000.watchdog_cl0
+6,234707,46954986050,-;Watchdog: s3c2410wdt_keepalive RTC 2026-10-22 08:08:34 UTC
+6,234708,46957795724,-;[SSP]: debug_work_func(0) - Sensor state: 0x3feff, RC: 0(0, 0, 0), CC: 0, TC: 0 NSC: 0 EC: 0 GPS: false
+6,234709,46960867756,-;fps_qbt2000_work_func_debug: ldo:0,ipc:0,wuhb:0,tz:1,type:qbt2000,int:0,0
+6,234710,46961877605,-;[FG] 0080h,ff9bh,7f80h,ff01h,1900h,0d70h,5d04h,59bfh,1500h,d8c8h,0666h,0652h,001dh,618bh,5dcfh,0d8eh,0e70h,ffffh,3200h,5f00h,05b7h,0148h,14dfh,0074h,0f76h,d8c3h,2c11h,d8b6h,14e5h,0314h,0500h,0d72h,003ch,6200h,1c00h,0de4h,1403h,1e05h,14dfh,7ecah,2636h,cea4h,043ch,0890h,e3e1h,290eh,0400h,0001h,4066h,2d10h,0b82h,ffffh,1each,0e72h,0c0fh,05e0h,0038h,1527h,a7e2h,0652h,1680h,1008h,e15eh,e000h,07fch,0000h,0902h,00d6h,d8c1h,0129h,10c7h,0001h,6139h,2241h,0d8eh,010ch,ff6bh,ff74h,153dh,0e8dh,0000h,6d14h,0006h,2e4fh,7f80h,0005h,05c2h,05e4h,0000h,006bh,090ch,0055h,0000h,0204h,0026h,0000h,1020h,0000h,0000h,0000h,0000h,0000h,0000h,0000h,0000h,0000h,0000h,0010h,001dh,ffffh,5dc6h,0d71h,0b40h,0d8eh,ee12h,0019h,618bh,00bfh,618bh,ffffh,4b4eh,0008h,46a8h,0000h,4000h,0000h,7d00h,0620h,ffffh,ffffh,ffffh,ffffh,20b3h,0000h,0000h,f259h,3f65h,5c14h,01eah,d478h,0037h,2910h,d8beh,618ah,
+6,234711,46961881047,-;max77705_fg_read_qh : QH(-140000)
+6,234712,46961881081,-;[FG power] ISYS(66mA),ISYSAVG(83mA),VSYS(4363mV),IIN(516mA),VBYP(5053mV) QH(-140000 uah)
+7,234713,46961881461,-;max77705_fg_read_current: current=501mA
+7,234714,46961882305,-;max77705_fg_read_avg_current: avg_current=505mA
+6,234715,46961884657,-;sec-battery battery: sec_bat_get_value_by_adc:[2] Temp(210), Temp-ADC(2199)
+ SUBSYSTEM=platform
+ DEVICE=+platform:battery
+6,234716,46961887277,-;sec-battery battery: sec_bat_get_value_by_adc:[12] Temp(206), Temp-ADC(2189)
+ SUBSYSTEM=platform
+ DEVICE=+platform:battery
+6,234717,46961888682,-;sec-battery battery: sec_bat_get_value_by_adc:[6] Temp(220), Temp-ADC(2127)
+ SUBSYSTEM=platform
+ DEVICE=+platform:battery
+6,234718,46961890341,-;sec-battery battery: sec_bat_get_value_by_adc:[10] Temp(209), Temp-ADC(2200)
+ SUBSYSTEM=platform
+ DEVICE=+platform:battery
+7,234719,46961890542,-;max77705_fg_write_temp: temperature to (210, 0x1500)
+7,234720,46961891524,-;max77705_fg_read_avg_current: avg_current=505mA
+7,234721,46961891537,-;max77705_get_fuelgauge_soc: soc(930)
+6,234722,46961891549,-;max77705_fg_get_scaled_capacity : capacity_max (1000) scaled capacity(93.0), raw_soc(93.0)
+7,234723,46961892286,-;max77705_fg_read_rawsoc: raw capacity (0.01%) (9301)
+6,234724,46961892702,-;max77705_fg_read_qh : QH(-140000)
+7,234725,46961892711,-;max77705_fg_get_atomic_capacity : NOW(93), OLD(92)
+6,234726,46961892722,-;sec_bat_get_battery_info:Vnow(4335mV),Vavg(4335mV),Inow(501mA),Iavg(505mA),Isysavg(83mA),Imax(3000mA),Ichg(2850mA),SOC(93%),Tbat(210),Tusb(206),Tchg(220),Twpc(209)
+6,234727,46961892749,-;sec_bat_check_step_charging
+7,234728,46961892767,-;calc_ttf: cap: 4000, soc:  930, T:    918, avg:  505, cv soc:  930, i:   43, val: 2850
+6,234729,46961892776,-;sec-battery battery: sec_bat_calc_time_to_full: T:   978 sec, passed time:  1315, current: 2850
+ SUBSYSTEM=platform
+ DEVICE=+platform:battery
+6,234730,46961892789,-;max77705_chg_set_wdtmr_kick: WDT Kick
+6,234731,46961893276,-;max77705_get_charging_health: reg_data(0x3)
+6,234732,46961893679,-;max77705_get_charging_health: details00(0xe0)
+6,234733,46961894073,-;max77705_get_vbus_state: VBUS is valid. CHGIN < CHGIN_OVLO
+6,234734,46961894853,-;max77705_get_charging_health: vbus_state: 0x3, chg_dtls: 0x2, iin: 516mA, vbyp: 5053mV, health: 1
+6,234735,46961894873,-;sec_bat_swelling_check: swelling highblock(410), highrecov(390)
+7,234736,46961895063,-;max77705_get_float_voltage: battery cv reg : 0x13, float voltage val : 4350
+6,234737,46961895073,-;sec_bat_swelling_check: status(Charging), swell_mode(Swelling None), chg_block(0), low_temp_event(0x0), vfloat(4350)mV, temp(210)'C
+6,234738,46961895264,-;max77705_get_charger_state : charger status (0x32)
+6,234739,46961895276,-;sec-battery battery: sec_bat_fullcharged_check: Charging Mode : Normal
+ SUBSYSTEM=platform
+ DEVICE=+platform:battery
+6,234740,46961895282,-;sec_bat_set_current_event: current event before(0x100), after(0x100)
+6,234741,46961895291,-;sec_bat_calculate_safety_time : EXPIRED_TIME(9512802), IP(15000000), CP(12397500), CURR(2850), STANDARD(2850)
+6,234742,46961895297,-;sec_bat_calculate_safety_time : CAL_EXPIRED_TIME(9512802) TIME NOW(46961) TIME PREV(46931)
+6,234743,46961895303,-;sec_bat_calculate_safety_time : REMAIN_TIME(9482802) CAL_REMAIN_TIME(9482802)
+6,234744,46961895311,-;sec_bat_check_mix_temp: mix_limit(0), temp(210), chg_temp(220), input_current(3000)
+6,234745,46961895318,-;sec_bat_check_pdic_temp: cable_type(19), chg_limit(0)
+6,234746,46961895324,-;sec_bat_get_charging_current_by_siop: incurr(3000), chgcurr(2850)
+6,234747,46961899697,-;max77705 : [0xb1]0x1a, [0xb2]0xdf, [0xb3]0xe0, [0xb4]0x32, [0xb5]0x00, [0xb6]0xff, [0xb7]0x15, [0xb8]0x38, [0xb9]0x79, [0xba]0x9d, [0xbb]0x13, [0xbc]0x6c, [0xbd]0x6c, [0xbe]0x34, [0xbf]0x00, [0xc0]0xf7, [0xc1]0x10, [0xc2]0x00, [0xc3]0x68, 
+6,234748,46961900106,-;max77705_chg_monitor_work: [CHG] MODE(0x5), B2SOVRC(0xc), otg_on(0)
+6,234749,46961900167,-;sec_bat_monitor_work: Status(Charging), mode(Normal), Health(Good), Cable(PDIC, PDIC, 0, 0), rp(3), level(100%), lcd(0), slate_mode(0), store_mode(0), HV(PDIC, 0), sleep_mode(0), Cycle(-1)
+6,234750,46961900205,-;sec-battery battery: sec_bat_set_polling: Polling time 10/30 sec.
+ SUBSYSTEM=platform
+ DEVICE=+platform:battery
+6,234751,46961900279,-;sec_bat_get_property cable type = 19 sleep_mode = 0
+7,234752,46961900525,-;max77705_fg_read_current: current=501mA
+7,234753,46961900975,-;max77705_fg_read_avg_current: avg_current=505mA
+6,234754,46963939612,-;[SSP]: debug_work_func(0) - Sensor state: 0x3feff, RC: 0(0, 0, 0), CC: 0, TC: 0 NSC: 0 EC: 0 GPS: false
+6,234755,46964998782,-;s3c2410-wdt 10050000.watchdog_cl0: Watchdog cluster 0 keepalive!, wtcnt = fff5
+ SUBSYSTEM=platform
+ DEVICE=+platform:10050000.watchdog_cl0
+6,234756,46964998835,-;Watchdog: s3c2410wdt_keepalive RTC 2026-10-22 08:08:44 UTC
+2,234757,46964998915,-;watchdog: watchdog0: watchdog did not stop!
+6,234758,46964998958,-;s3c2410-wdt 10050000.watchdog_cl0: Watchdog cluster 0 keepalive!, wtcnt = fff5
+ SUBSYSTEM=platform
+ DEVICE=+platform:10050000.watchdog_cl0
+6,234759,46964998980,-;Watchdog: s3c2410wdt_keepalive RTC 2026-10-22 08:08:44 UTC
+6,234760,46969827592,-;[SSP]: debug_work_func(0) - Sensor state: 0x3feff, RC: 0(0, 0, 0), CC: 0, TC: 0 NSC: 0 EC: 0 GPS: false
+6,234761,46971875714,-;fps_qbt2000_work_func_debug: ldo:0,ipc:0,wuhb:0,tz:1,type:qbt2000,int:0,0
+6,234762,46972074018,-;[FG] 0080h,ff9bh,7f80h,ff01h,1900h,0d71h,5d11h,59bfh,1500h,d8cch,064ch,064ah,001dh,6195h,5ddch,0d90h,0e70h,ffffh,3200h,5f00h,05b4h,0148h,14e3h,0074h,0f76h,d8c2h,2c11h,d8b6h,14e5h,0314h,0500h,0d74h,003ch,6200h,1c00h,0de4h,1403h,1e05h,14e3h,7ec6h,2636h,cea4h,043ch,0890h,e3e1h,290eh,0400h,0001h,4425h,2fc4h,0b82h,ffffh,1eafh,0e72h,0c0fh,05e0h,0038h,1527h,a7e2h,064ah,1680h,1008h,e198h,e000h,07fch,0000h,0902h,0114h,d8c1h,0129h,10c7h,000bh,6139h,2241h,0d8eh,0109h,ff6bh,ff75h,8090h,0e8dh,0000h,6d12h,0006h,2e2ch,7f80h,0005h,05c2h,05e4h,0000h,006bh,090ch,0055h,0000h,0204h,0026h,0000h,1058h,0000h,0000h,0000h,0000h,0000h,0000h,0000h,0000h,0000h,0000h,0010h,001dh,ffffh,5dd5h,0d73h,0c87h,0000h,0d90h,fdffh,000ah,0002h,0d90h,0000h,4b4eh,0008h,46a8h,0000h,4000h,0000h,7d00h,0620h,ffffh,ffffh,ffffh,ffffh,20b4h,0000h,0000h,f10ch,3f63h,5c10h,01eeh,d47fh,0037h,2910h,d8b4h,618ah,
+6,234763,46972077638,-;max77705_fg_read_qh : QH(-139000)
+6,234764,46972077667,-;[FG power] ISYS(86mA),ISYSAVG(82mA),VSYS(4362mV),IIN(523mA),VBYP(5038mV) QH(-139000 uah)
+7,234765,46972078047,-;max77705_fg_read_current: current=505mA
+7,234766,46972078758,-;max77705_fg_read_avg_current: avg_current=503mA
+6,234767,46972079125,-;max77705_fg_read_isys_avg: isys_avg_current=82mA
+6,234768,46972079450,-;max77705_fg_read_isys: isys_current=86mA
+6,234769,46972080560,-;sec-battery battery: sec_bat_get_value_by_adc:[2] Temp(210), Temp-ADC(2199)
+ SUBSYSTEM=platform
+ DEVICE=+platform:battery
+6,234770,46972081455,-;sec-battery battery: sec_bat_get_value_by_adc:[12] Temp(206), Temp-ADC(2190)
+ SUBSYSTEM=platform
+ DEVICE=+platform:battery
+6,234771,46972082435,-;sec-battery battery: sec_bat_get_value_by_adc:[6] Temp(220), Temp-ADC(2127)
+ SUBSYSTEM=platform
+ DEVICE=+platform:battery
+6,234772,46972083325,-;sec-battery battery: sec_bat_get_value_by_adc:[10] Temp(210), Temp-ADC(2199)
+ SUBSYSTEM=platform
+ DEVICE=+platform:battery
+7,234773,46972083508,-;max77705_fg_write_temp: temperature to (210, 0x1500)
+6,234774,46972084022,-;max77705_fg_read_vcell: VCELL(4334)mV, data(0xd8b4)
+7,234775,46972084561,-;max77705_fg_read_avg_current: avg_current=503mA
+7,234776,46972084572,-;max77705_get_fuelgauge_soc: soc(930)
+6,234777,46972084584,-;max77705_fg_get_scaled_capacity : capacity_max (1000) scaled capacity(93.0), raw_soc(93.0)
+7,234778,46972084848,-;max77705_fg_read_rawsoc: raw capacity (0.01%) (9306)
+6,234779,46972085363,-;max77705_fg_read_qh : QH(-139000)
+7,234780,46972085376,-;max77705_fg_get_atomic_capacity : NOW(93), OLD(93)
+6,234781,46972085393,-;sec_bat_get_battery_info:Vnow(4335mV),Vavg(4335mV),Inow(505mA),Iavg(503mA),Isysavg(82mA),Imax(3000mA),Ichg(2850mA),SOC(93%),Tbat(210),Tusb(206),Tchg(220),Twpc(210)
+6,234782,46972085431,-;sec_bat_check_step_charging
+7,234783,46972085450,-;calc_ttf: cap: 4000, soc:  930, T:    918, avg:  503, cv soc:  930, i:   43, val: 2850
+6,234784,46972085522,-;sec-battery battery: sec_bat_calc_time_to_full: T:   978 sec, passed time:  1345, current: 2850
+ SUBSYSTEM=platform
+ DEVICE=+platform:battery
+6,234785,46972085540,-;max77705_chg_set_wdtmr_kick: WDT Kick
+6,234786,46972086140,-;max77705_get_charging_health: reg_data(0x3)
+6,234787,46972086371,-;max77705_get_charging_health: details00(0xe0)
+6,234788,46972086838,-;max77705_get_vbus_state: VBUS is valid. CHGIN < CHGIN_OVLO
+6,234789,46972087805,-;max77705_get_charging_health: vbus_state: 0x3, chg_dtls: 0x2, iin: 523mA, vbyp: 5038mV, health: 1
+6,234790,46972092148,-;max77705 : [0xb1]0x1a, [0xb2]0xdf, [0xb3]0xe0, [0xb4]0x32, [0xb5]0x00, [0xb6]0xff, [0xb7]0x15, [0xb8]0x38, [0xb9]0x79, [0xba]0x9d, [0xbb]0x13, [0xbc]0x6c, [0xbd]0x6c, [0xbe]0x34, [0xbf]0x00, [0xc0]0xf7, [0xc1]0x10, [0xc2]0x00, [0xc3]0x68, 
+6,234791,46972092617,-;max77705_chg_monitor_work: [CHG] MODE(0x5), B2SOVRC(0xc), otg_on(0)
+6,234792,46972092678,-;sec_bat_monitor_work: Status(Charging), mode(Normal), Health(Good), Cable(PDIC, PDIC, 0, 0), rp(3), level(100%), lcd(0), slate_mode(0), store_mode(0), HV(PDIC, 0), sleep_mode(0), Cycle(-1)
+6,234793,46972092722,-;sec-battery battery: sec_bat_set_polling: Polling time 20/30 sec.
+ SUBSYSTEM=platform
+ DEVICE=+platform:battery
+6,234794,46972092798,-;sec_bat_get_property cable type = 19 sleep_mode = 0
+7,234795,46972093046,-;max77705_fg_read_current: current=505mA
+7,234796,46972093548,-;max77705_fg_read_avg_current: avg_current=503mA
+6,234797,46975013282,-;s3c2410-wdt 10050000.watchdog_cl0: Watchdog cluster 0 keepalive!, wtcnt = fff5
+ SUBSYSTEM=platform
+ DEVICE=+platform:10050000.watchdog_cl0
+6,234798,46975013314,-;Watchdog: s3c2410wdt_keepalive RTC 2026-10-22 08:08:54 UTC
+2,234799,46975013352,-;watchdog: watchdog0: watchdog did not stop!
+6,234800,46975013375,-;s3c2410-wdt 10050000.watchdog_cl0: Watchdog cluster 0 keepalive!, wtcnt = fff5
+ SUBSYSTEM=platform
+ DEVICE=+platform:10050000.watchdog_cl0
+6,234801,46975013386,-;Watchdog: s3c2410wdt_keepalive RTC 2026-10-22 08:08:54 UTC
+6,234802,46975971708,-;[SSP]: debug_work_func(0) - Sensor state: 0x3feff, RC: 0(0, 0, 0), CC: 0, TC: 0 NSC: 0 EC: 0 GPS: false
+4,234803,46981012531,c;CFG80211-TRACE) __wl_cfg80211_scan : START SCAN
+4,234804,46981012591,-;dhd_set_rpm_state: 0
+4,234805,46981012640,-;Runtime Resume is called in __wl_cfg80211_scan
+4,234806,46981012664,-;[Repeats 0 times]
+4,234807,46981012759,-;dhdpcie_bus_suspend: Entering resume state
+6,234808,46981012801,-;exynos-pcie 13ed0000.pcie0: exynos_pcie_poweron, start of poweron, pcie state: 0
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+3,234809,46981012821,-;exynos-pcie 13ed0000.pcie0: pcie clk enable, ret value = 0
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+6,234810,46981013034,-;exynos-pcie 13ed0000.pcie0: exynos_pcie_establish_link: Set PERST to HIGH, gpio val = 1
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+3,234811,46981033807,-;exynos-pcie 13ed0000.pcie0: phy clk enable, ret value = 0
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+6,234812,46981034170,-;exynos-pcie 13ed0000.pcie0: Set I/A for CDR reset.
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+6,234813,46981034422,-;exynos-pcie 13ed0000.pcie0: D state: 0, 16d700
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+6,234814,46981034531,-;exynos-pcie 13ed0000.pcie0: exynos_pcie_establish_link: Link up:3707611
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+6,234815,46981034559,-;exynos-pcie 13ed0000.pcie0: Current Link Speed is GEN1 (MAX GEN1)
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+3,234816,46981034895,-;exynos-pcie 13ed0000.pcie0: l1ss disabled(0x10)
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+6,234817,46981034938,-;exynos-pcie 13ed0000.pcie0: exynos_pcie_poweron, end of poweron, pcie state: 3
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+4,234818,46981034978,-;dhdpcie_resume_dev: Enter: TS(2610220809000384)
+4,234819,46981036220,-;AFTER_EP_RESUME: BaseAddress0(0x10)=0x14400004, BaseAddress1(0x18)=0x14000004 PCIE_CFG_PMCSR(0x4c)=0x4108 PCI_BAR1_WIN(0x84)=(0x0)
+4,234820,46981036700,-;dhdpcie_resume_dev: Enable L1ss EP side
+6,234821,46981036734,-;exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: START (state = 0x10, id = 0x10, enable = 1)
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+6,234822,46981036802,-;exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: END (state = 0x0, id = 0x10, enable = 1)
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+4,234823,46981036949,-;dhdpcie_dump_resource: BAR0(VA): 0x0000000000000000, BAR0(PA): 0x0000000014400000, SIZE: 32768
+4,234824,46981036963,-;dhdpcie_dump_resource: BAR1(VA): 0x0000000000000000, BAR1(PA): 0x0000000014000000, SIZE: 4194304
+4,234825,46981037377,-;dhd_bus_hostready : Read PCICMD Reg: 0x00100006
+4,234826,46981038827,-;dhd_bus_dump_dar_registers: dar_clk_ctrl(0xa08:0x1010040) dar_pwr_ctrl(0xa0c:0x30000) dar_intstat(0xa10:0x4000000)
+4,234827,46981038847,-;dhd_bus_dump_dar_registers: dar_errlog(0xa60:0x0) dar_erraddr(0xa64:0x0) dar_pcie_mbint(0xa68:0x0)
+4,234828,46981038879,-;dhd_bus_hostready: Ring Hostready:1812
+4,234829,46981038996,-;dhd_runtimepm_state : runtime resume ended 
+4,234830,46981053044,c;CFG80211-INFO) wl_scan_prep : n_channels:38 n_ssids:1
+4,234831,46981098962,c;CFG80211-INFO) wl_run_escan : LEGACY_SCAN sync ID: 81, bssidx: 0
+6,234832,46981859633,-;[SSP]: debug_work_func(0) - Sensor state: 0x3feff, RC: 0(0, 0, 0), CC: 0, TC: 0 NSC: 0 EC: 0 GPS: false
+6,234833,46982269924,-;[FG] 0080h,ff9bh,7f80h,ff01h,1900h,0d73h,5d1ah,59bfh,1500h,d8c8h,061eh,0641h,001dh,61a1h,5de2h,0d91h,0e70h,ffffh,3200h,5f00h,05b1h,0148h,14e6h,0074h,0f76h,d8c2h,2c11h,d8b6h,14e5h,0314h,0500h,0d75h,003bh,6200h,1c00h,0de4h,1403h,1e05h,14e6h,7ebah,2636h,cea4h,043ch,0890h,e3e1h,290eh,0400h,0001h,481fh,32ach,0b82h,ffffh,1ebch,0e72h,0c0fh,05e0h,0038h,1527h,a7e2h,0641h,1680h,1008h,e1d2h,e000h,07fch,0000h,0902h,0210h,d8c1h,0129h,10c7h,fffch,6139h,2241h,0d92h,0125h,ff6bh,ff76h,ea18h,0e8dh,0000h,6d1dh,0006h,2df9h,7f80h,0005h,05c2h,05e4h,0000h,006bh,090ch,0055h,0000h,0204h,0026h,0000h,12e9h,0000h,0000h,0000h,0000h,0000h,0000h,0000h,0000h,0000h,0000h,0010h,001dh,ffffh,5ddch,0d74h,0f71h,0000h,00ffh,0006h,0037h,3142h,eb3eh,0001h,4b4eh,0008h,46a8h,0000h,4000h,0000h,7d00h,0620h,ffffh,ffffh,ffffh,ffffh,20aah,0000h,0000h,efc5h,3f5dh,5c0dh,01f0h,d486h,0037h,2910h,d8aeh,61a5h,
+6,234834,46982273674,-;max77705_fg_read_qh : QH(-138000)
+6,234835,46982273702,-;[FG power] ISYS(165mA),ISYSAVG(91mA),VSYS(4364mV),IIN(605mA),VBYP(5016mV) QH(-138000 uah)
+7,234836,46982274165,-;max77705_fg_read_current: current=508mA
+7,234837,46982274944,-;max77705_fg_read_avg_current: avg_current=500mA
+6,234838,46982276741,-;sec-battery battery: sec_bat_get_value_by_adc:[2] Temp(209), Temp-ADC(2200)
+ SUBSYSTEM=platform
+ DEVICE=+platform:battery
+6,234839,46982277723,-;sec-battery battery: sec_bat_get_value_by_adc:[12] Temp(206), Temp-ADC(2190)
+ SUBSYSTEM=platform
+ DEVICE=+platform:battery
+6,234840,46982278667,-;sec-battery battery: sec_bat_get_value_by_adc:[6] Temp(220), Temp-ADC(2127)
+ SUBSYSTEM=platform
+ DEVICE=+platform:battery
+6,234841,46982279473,-;sec-battery battery: sec_bat_get_value_by_adc:[10] Temp(210), Temp-ADC(2198)
+ SUBSYSTEM=platform
+ DEVICE=+platform:battery
+7,234842,46982279662,-;max77705_fg_write_temp: temperature to (209, 0x14e6)
+7,234843,46982280704,-;max77705_fg_read_avg_current: avg_current=500mA
+7,234844,46982280716,-;max77705_get_fuelgauge_soc: soc(931)
+6,234845,46982280728,-;max77705_fg_get_scaled_capacity : capacity_max (1000) scaled capacity(93.1), raw_soc(93.1)
+7,234846,46982281046,-;max77705_fg_read_rawsoc: raw capacity (0.01%) (9310)
+6,234847,46982281846,-;max77705_fg_read_qh : QH(-138000)
+7,234848,46982281860,-;max77705_fg_get_atomic_capacity : NOW(93), OLD(93)
+6,234849,46982281876,-;sec_bat_get_battery_info:Vnow(4335mV),Vavg(4335mV),Inow(508mA),Iavg(500mA),Isysavg(91mA),Imax(3000mA),Ichg(2850mA),SOC(93%),Tbat(209),Tusb(206),Tchg(220),Twpc(210)
+6,234850,46982281919,-;sec_bat_check_step_charging
+7,234851,46982281942,-;calc_ttf: cap: 4000, soc:  931, T:    904, avg:  500, cv soc:  931, i:   44, val: 2850
+6,234852,46982281957,-;sec-battery battery: sec_bat_calc_time_to_full: T:   964 sec, passed time:  1345, current: 2850
+ SUBSYSTEM=platform
+ DEVICE=+platform:battery
+6,234853,46982281976,-;max77705_chg_set_wdtmr_kick: WDT Kick
+6,234854,46982282620,-;max77705_get_charging_health: reg_data(0x3)
+6,234855,46982282866,-;max77705_get_charging_health: details00(0xe0)
+6,234856,46982283349,-;max77705_get_vbus_state: VBUS is valid. CHGIN < CHGIN_OVLO
+6,234857,46982284349,-;max77705_get_charging_health: vbus_state: 0x3, chg_dtls: 0x2, iin: 605mA, vbyp: 5016mV, health: 1
+6,234858,46982289089,-;max77705 : [0xb1]0x1a, [0xb2]0xdf, [0xb3]0xe0, [0xb4]0x32, [0xb5]0x00, [0xb6]0xff, [0xb7]0x15, [0xb8]0x38, [0xb9]0x79, [0xba]0x9d, [0xbb]0x13, [0xbc]0x6c, [0xbd]0x6c, [0xbe]0x34, [0xbf]0x00, [0xc0]0xf7, [0xc1]0x10, [0xc2]0x00, [0xc3]0x68, 
+6,234859,46982289638,-;max77705_chg_monitor_work: [CHG] MODE(0x5), B2SOVRC(0xc), otg_on(0)
+6,234860,46982289691,-;sec_bat_monitor_work: Status(Charging), mode(Normal), Health(Good), Cable(PDIC, PDIC, 0, 0), rp(3), level(100%), lcd(0), slate_mode(0), store_mode(0), HV(PDIC, 0), sleep_mode(0), Cycle(-1)
+6,234861,46982289736,-;sec-battery battery: sec_bat_set_polling: Polling time 30/30 sec.
+ SUBSYSTEM=platform
+ DEVICE=+platform:battery
+6,234862,46982289812,-;sec_bat_get_property cable type = 19 sleep_mode = 0
+7,234863,46982290058,-;max77705_fg_read_current: current=508mA
+7,234864,46982290507,-;max77705_fg_read_avg_current: avg_current=500mA
+6,234865,46982883652,-;fps_qbt2000_work_func_debug: ldo:0,ipc:0,wuhb:0,tz:1,type:qbt2000,int:0,0
+4,234866,46983879437,c;CFG80211-INFO) wl_cfg80211_event : Enqueing escan completion (0). WQ state:0x1 
+4,234867,46983879745,c;CFG80211-INFO) wl_print_event_data : event_type (69), ifidx: 0 bssidx: 0 scan_type:0
+4,234868,46983879802,c;CFG80211-INFO) wl_escan_handler : ESCAN COMPLETED
+4,234869,46983879841,c;CFG80211-TRACE) wl_escan_handler : SCAN COMPLETED: scanned AP count=21
+4,234870,46983880397,c;CFG80211-INFO) wl_notify_escan_complete : [wlan0] Report scan done.
+4,234871,46983880493,-;dhd_set_rpm_state: 1
+4,234872,46984993604,-;dhd_runtimepm_state: DHD Idle state!! -  idletime :11, wdtick :100, PS mode off dur: 0 sec 
+4,234873,46984993660,-;__dhd_txflowcontrol: Stop Netif Queue
+4,234874,46984993685,-;__dhd_txflowcontrol: Stop Netif Queue
+4,234875,46984993714,-;dhdpcie_bus_suspend: Entering suspend state
+4,234876,46984996412,-;dhdpcie_send_mb_data: send H2D_HOST_D3_INFORM to dongle
+4,234877,46985004448,-;D2H_MB_DATA: D3 ACK
+4,234878,46985004814,-;dhd_bus_handle_d3_ack: D3_ACK Recieved
+4,234879,46985005072,-;dhdpci_bus_read_frames: Bus is in power save state (2). Skip processing rest of ring buffers.
+4,234880,46985005157,-;dhdpcie_bus_suspend: Got D3 Ack 
+4,234881,46985005177,-;dhdpcie_dump_resource: BAR0(VA): 0x0000000000000000, BAR0(PA): 0x0000000014400000, SIZE: 32768
+4,234882,46985005191,-;dhdpcie_dump_resource: BAR1(VA): 0x0000000000000000, BAR1(PA): 0x0000000014000000, SIZE: 4194304
+4,234883,46985005210,-;dhdpcie_suspend_dev: Enter: TS(2610220809040354)
+4,234884,46985005220,-;dhdpcie_suspend_dev: Disable L1ss EP side
+6,234885,46985005242,-;exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: START (state = 0x0, id = 0x10, enable = 0)
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+6,234886,46985005407,-;exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: END (state = 0x10, id = 0x10, enable = 0)
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+4,234887,46985005862,-;BEFORE_EP_SUSPEND: BaseAddress0(0x10)=0x14400004, BaseAddress1(0x18)=0x14000004 PCIE_CFG_PMCSR(0x4c)=0x4108 PCI_BAR1_WIN(0x84)=(0x0)
+6,234888,46985027554,-;s3c2410-wdt 10050000.watchdog_cl0: Watchdog cluster 0 keepalive!, wtcnt = fff5
+ SUBSYSTEM=platform
+ DEVICE=+platform:10050000.watchdog_cl0
+6,234889,46985027582,-;Watchdog: s3c2410wdt_keepalive RTC 2026-10-22 08:09:04 UTC
+2,234890,46985027730,-;watchdog: watchdog0: watchdog did not stop!
+4,234891,46985027877,-;AFTER_EP_SUSPEND: BaseAddress0(0x10)=0x14400004, BaseAddress1(0x18)=0x14000004 PCIE_CFG_PMCSR(0x4c)=0x410b PCI_BAR1_WIN(0x84)=(0x0)
+6,234892,46985027887,-;s3c2410-wdt 10050000.watchdog_cl0: Watchdog cluster 0 keepalive!, wtcnt = fff5
+ SUBSYSTEM=platform
+ DEVICE=+platform:10050000.watchdog_cl0
+6,234893,46985027897,-;Watchdog: s3c2410wdt_keepalive RTC 2026-10-22 08:09:04 UTC
+6,234894,46985029748,-;exynos-pcie 13ed0000.pcie0: exynos_pcie_poweroff, start of poweroff, pcie state: 2
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+6,234895,46985029774,-;exynos-pcie 13ed0000.pcie0: exynos_pcie_send_pme_turn_off: link state:d
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+3,234896,46985029787,-;exynos-pcie 13ed0000.pcie0: Current LTSSM State is 0xd with retry_cnt =0.
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+3,234897,46985029870,-;exynos-pcie 13ed0000.pcie0: ack message is ok
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+3,234898,46985029894,-;exynos-pcie 13ed0000.pcie0: received Enter_L23_READY DLLP packet
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+6,234899,46985029912,-;SysMMU alloc num : 811(Max:812), lv2_alloc : 20, fault : 0
+6,234900,46985029949,-;exynos-pcie 13ed0000.pcie0: exynos_pcie_poweroff: Set PERST to LOW, gpio val = 0
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+6,234901,46985030033,-;exynos-pcie 13ed0000.pcie0: exynos_pcie_poweroff, end of poweroff, pcie state: 0
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+4,234902,46985030045,-;dhd_runtimepm_state, update suspend states
+4,234903,46985030061,-;__dhd_txflowcontrol: Start Netif Queue
+4,234904,46985030073,-;__dhd_txflowcontrol: Start Netif Queue
+6,234905,46987747420,-;[SSP]: debug_work_func(0) - Sensor state: 0x3feff, RC: 0(0, 0, 0), CC: 0, TC: 0 NSC: 0 EC: 0 GPS: false
+6,234906,46992466043,-;[FG] 0080h,ff9bh,7f80h,ff01h,1900h,0d74h,5d3ch,59bfh,14e6h,d8c8h,0646h,0637h,001dh,61abh,5e0bh,0d93h,0e70h,ffffh,3200h,5f00h,05aeh,0148h,14e6h,0074h,0f76h,d8c2h,2c11h,d8b6h,14e5h,0314h,0500h,0d77h,0039h,6200h,1c00h,0de4h,1403h,1e05h,14e6h,7ec6h,2636h,cea4h,043ch,0890h,e3e1h,290eh,0400h,0001h,4bceh,355fh,0b82h,ffffh,1eafh,0e6eh,0c0fh,05e0h,0038h,1527h,a7e2h,0637h,1680h,1008h,e20ch,e000h,07fch,0000h,0902h,0108h,d8c1h,0129h,10c7h,0006h,6139h,2241h,0d92h,0121h,ff6bh,ff78h,511dh,0e8dh,0000h,6d07h,0006h,2e3ah,7f80h,0005h,05c2h,05e4h,0000h,006bh,090ch,0055h,0000h,0204h,0026h,0000h,1085h,0000h,0000h,0000h,0000h,0000h,0000h,0000h,0000h,0000h,0000h,0010h,001dh,ffffh,5e04h,0d76h,121fh,0636h,0010h,0002h,0024h,0204h,0000h,000bh,4b4eh,0008h,46a8h,0000h,4000h,0000h,7d00h,0620h,ffffh,ffffh,ffffh,ffffh,20aeh,0000h,0000h,ee71h,3f63h,5c0eh,01dbh,d48dh,0037h,2910h,d8b0h,61a5h,
+6,234907,46992469837,-;max77705_fg_read_qh : QH(-136000)
+6,234908,46992469867,-;[FG power] ISYS(82mA),ISYSAVG(90mA),VSYS(4361mV),IIN(528mA),VBYP(5044mV) QH(-136000 uah)
+7,234909,46992470235,-;max77705_fg_read_current: current=486mA
+7,234910,46992470949,-;max77705_fg_read_avg_current: avg_current=496mA
+6,234911,46992471317,-;max77705_fg_read_isys_avg: isys_avg_current=90mA
+6,234912,46992471686,-;max77705_fg_read_isys: isys_current=111mA
+6,234913,46992472817,-;sec-battery battery: sec_bat_get_value_by_adc:[2] Temp(210), Temp-ADC(2199)
+ SUBSYSTEM=platform
+ DEVICE=+platform:battery
+6,234914,46992473979,-;sec-battery battery: sec_bat_get_value_by_adc:[12] Temp(205), Temp-ADC(2191)
+ SUBSYSTEM=platform
+ DEVICE=+platform:battery
+6,234915,46992474848,-;sec-battery battery: sec_bat_get_value_by_adc:[6] Temp(220), Temp-ADC(2128)
+ SUBSYSTEM=platform
+ DEVICE=+platform:battery
+6,234916,46992475642,-;sec-battery battery: sec_bat_get_value_by_adc:[10] Temp(210), Temp-ADC(2197)
+ SUBSYSTEM=platform
+ DEVICE=+platform:battery
+7,234917,46992475827,-;max77705_fg_write_temp: temperature to (210, 0x1500)
+6,234918,46992476350,-;max77705_fg_read_vcell: VCELL(4333)mV, data(0xd8b0)
+7,234919,46992476859,-;max77705_fg_read_avg_current: avg_current=496mA
+7,234920,46992476871,-;max77705_get_fuelgauge_soc: soc(932)
+6,234921,46992476883,-;max77705_fg_get_scaled_capacity : capacity_max (1000) scaled capacity(93.2), raw_soc(93.2)
+7,234922,46992477145,-;max77705_fg_read_rawsoc: raw capacity (0.01%) (9323)
+6,234923,46992477693,-;max77705_fg_read_qh : QH(-136000)
+7,234924,46992477706,-;max77705_fg_get_atomic_capacity : NOW(93), OLD(93)
+6,234925,46992477722,-;sec_bat_get_battery_info:Vnow(4335mV),Vavg(4335mV),Inow(486mA),Iavg(496mA),Isysavg(90mA),Imax(3000mA),Ichg(2850mA),SOC(93%),Tbat(210),Tusb(205),Tchg(220),Twpc(210)
+6,234926,46992477758,-;sec_bat_check_step_charging
+7,234927,46992477778,-;calc_ttf: cap: 4000, soc:  932, T:    895, avg:  496, cv soc:  932, i:   45, val: 2850
+6,234928,46992477791,-;sec-battery battery: sec_bat_calc_time_to_full: T:   955 sec, passed time:  1345, current: 2850
+ SUBSYSTEM=platform
+ DEVICE=+platform:battery
+6,234929,46992477808,-;max77705_chg_set_wdtmr_kick: WDT Kick
+6,234930,46992478409,-;max77705_get_charging_health: reg_data(0x3)
+6,234931,46992478645,-;max77705_get_charging_health: details00(0xe0)
+6,234932,46992479112,-;max77705_get_vbus_state: VBUS is valid. CHGIN < CHGIN_OVLO
+6,234933,46992480081,-;max77705_get_charging_health: vbus_state: 0x3, chg_dtls: 0x2, iin: 528mA, vbyp: 5044mV, health: 1
+6,234934,46992480104,-;sec_bat_swelling_check: swelling highblock(410), highrecov(390)
+7,234935,46992480382,-;max77705_get_float_voltage: battery cv reg : 0x13, float voltage val : 4350
+6,234936,46992480402,-;sec_bat_swelling_check: status(Charging), swell_mode(Swelling None), chg_block(0), low_temp_event(0x0), vfloat(4350)mV, temp(210)'C
+6,234937,46992480637,-;max77705_get_charger_state : charger status (0x32)
+6,234938,46992480652,-;sec-battery battery: sec_bat_fullcharged_check: Charging Mode : Normal
+ SUBSYSTEM=platform
+ DEVICE=+platform:battery
+6,234939,46992480665,-;sec_bat_set_current_event: current event before(0x100), after(0x100)
+6,234940,46992480679,-;sec_bat_calculate_safety_time : EXPIRED_TIME(9482802), IP(15000000), CP(12397500), CURR(2850), STANDARD(2850)
+6,234941,46992480689,-;sec_bat_calculate_safety_time : CAL_EXPIRED_TIME(9482802) TIME NOW(46992) TIME PREV(46961)
+6,234942,46992480700,-;sec_bat_calculate_safety_time : REMAIN_TIME(9451802) CAL_REMAIN_TIME(9451802)
+6,234943,46992480714,-;sec_bat_check_mix_temp: mix_limit(0), temp(210), chg_temp(220), input_current(3000)
+6,234944,46992480723,-;sec_bat_check_pdic_temp: cable_type(19), chg_limit(0)
+6,234945,46992480734,-;sec_bat_get_charging_current_by_siop: incurr(3000), chgcurr(2850)
+6,234946,46992485053,-;max77705 : [0xb1]0x1a, [0xb2]0xdf, [0xb3]0xe0, [0xb4]0x32, [0xb5]0x00, [0xb6]0xff, [0xb7]0x15, [0xb8]0x38, [0xb9]0x79, [0xba]0x9d, [0xbb]0x13, [0xbc]0x6c, [0xbd]0x6c, [0xbe]0x34, [0xbf]0x00, [0xc0]0xf7, [0xc1]0x10, [0xc2]0x00, [0xc3]0x68, 
+6,234947,46992485560,-;max77705_chg_monitor_work: [CHG] MODE(0x5), B2SOVRC(0xc), otg_on(0)
+6,234948,46992485615,-;sec_bat_monitor_work: Status(Charging), mode(Normal), Health(Good), Cable(PDIC, PDIC, 0, 0), rp(3), level(100%), lcd(0), slate_mode(0), store_mode(0), HV(PDIC, 0), sleep_mode(0), Cycle(-1)
+6,234949,46992485649,-;sec-battery battery: sec_bat_set_polling: Polling time 10/30 sec.
+ SUBSYSTEM=platform
+ DEVICE=+platform:battery
+6,234950,46992485722,-;sec_bat_get_property cable type = 19 sleep_mode = 0
+7,234951,46992485959,-;max77705_fg_read_current: current=486mA
+7,234952,46992486404,-;max77705_fg_read_avg_current: avg_current=496mA
+6,234953,46993891665,-;[SSP]: debug_work_func(0) - Sensor state: 0x3feff, RC: 0(0, 0, 0), CC: 0, TC: 0 NSC: 0 EC: 0 GPS: false
+6,234954,46993891725,-;fps_qbt2000_work_func_debug: ldo:0,ipc:0,wuhb:0,tz:1,type:qbt2000,int:0,0
+6,234955,46995039788,-;s3c2410-wdt 10050000.watchdog_cl0: Watchdog cluster 0 keepalive!, wtcnt = fff5
+ SUBSYSTEM=platform
+ DEVICE=+platform:10050000.watchdog_cl0
+6,234956,46995039816,-;Watchdog: s3c2410wdt_keepalive RTC 2026-10-22 08:09:14 UTC
+2,234957,46995039850,-;watchdog: watchdog0: watchdog did not stop!
+6,234958,46995039872,-;s3c2410-wdt 10050000.watchdog_cl0: Watchdog cluster 0 keepalive!, wtcnt = fff5
+ SUBSYSTEM=platform
+ DEVICE=+platform:10050000.watchdog_cl0
+6,234959,46995039882,-;Watchdog: s3c2410wdt_keepalive RTC 2026-10-22 08:09:14 UTC
+^C[?2004l
+[?2004h[?2004l
+
+[?2004hsh-5.3# 6,234960,46999779659,-;[SSP]: debug_work_func(0) - Sensor state: 0x3feff, RC: 0(0, 0, 0), CC: 0, TC: 0 NSC: 0 EC: 0 GPS: false

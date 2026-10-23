@@ -1,0 +1,87 @@
+========================================================================
+### fb_devices  [rc=0 framed=True sha_ok=True elapsed=0.862s]
+crw------- 1 root root 29, 0 Jan  1  1970 /dev/fb0
+crw------- 1 root root 29, 1 Jan  1  1970 /dev/fb1
+========================================================================
+### dri_devices  [rc=2 framed=True sha_ok=True elapsed=0.134s]
+ls: cannot access '/dev/dri': No such file or directory
+========================================================================
+### graphics_sys  [rc=0 framed=True sha_ok=True elapsed=0.089s]
+total 0
+lrwxrwxrwx 1 root root 0 Oct 21 21:06 fb0 -> ../../devices/platform/19030000.decon_f/graphics/fb0
+lrwxrwxrwx 1 root root 0 Oct 21 21:06 fb1 -> ../../devices/platform/19050000.decon_t/graphics/fb1
+========================================================================
+### fb_vsize  [rc=0 framed=True sha_ok=True elapsed=0.084s]
+/sys/class/graphics/fb0/virtual_size=1440,6080
+/sys/class/graphics/fb1/virtual_size=640,960
+========================================================================
+### fb_bpp  [rc=0 framed=True sha_ok=True elapsed=0.084s]
+/sys/class/graphics/fb0/bits_per_pixel=32
+/sys/class/graphics/fb1/bits_per_pixel=32
+========================================================================
+### fb_stride  [rc=0 framed=True sha_ok=True elapsed=0.086s]
+/sys/class/graphics/fb0/stride=5760
+/sys/class/graphics/fb1/stride=2560
+========================================================================
+### fb_name  [rc=0 framed=True sha_ok=True elapsed=0.135s]
+/sys/class/graphics/fb0/name=
+/sys/class/graphics/fb1/name=
+========================================================================
+### drm_sys  [rc=2 framed=True sha_ok=True elapsed=0.090s]
+ls: cannot access '/sys/class/drm': No such file or directory
+========================================================================
+### drm_render  [rc=0 framed=True sha_ok=True elapsed=0.133s]
+ls: cannot access '/sys/kernel/debug/dri': No such file or directory
+========================================================================
+### cpu_model  [rc=1 framed=True sha_ok=True elapsed=0.085s]
+
+========================================================================
+### cpu_cores  [rc=0 framed=True sha_ok=True elapsed=0.084s]
+8
+========================================================================
+### governors  [rc=0 framed=True sha_ok=True elapsed=0.118s]
+/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor=schedutil
+/sys/devices/system/cpu/cpu1/cpufreq/scaling_governor=schedutil
+/sys/devices/system/cpu/cpu2/cpufreq/scaling_governor=schedutil
+/sys/devices/system/cpu/cpu3/cpufreq/scaling_governor=schedutil
+/sys/devices/system/cpu/cpu4/cpufreq/scaling_governor=schedutil
+/sys/devices/system/cpu/cpu5/cpufreq/scaling_governor=schedutil
+/sys/devices/system/cpu/cpu6/cpufreq/scaling_governor=schedutil
+/sys/devices/system/cpu/cpu7/cpufreq/scaling_governor=schedutil
+========================================================================
+### freqs  [rc=0 framed=True sha_ok=True elapsed=0.120s]
+/sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq=1950000
+/sys/devices/system/cpu/cpu1/cpufreq/scaling_cur_freq=1053000
+/sys/devices/system/cpu/cpu2/cpufreq/scaling_cur_freq=1950000
+/sys/devices/system/cpu/cpu3/cpufreq/scaling_cur_freq=1950000
+/sys/devices/system/cpu/cpu4/cpufreq/scaling_cur_freq=507000
+/sys/devices/system/cpu/cpu5/cpufreq/scaling_cur_freq=1222000
+/sys/devices/system/cpu/cpu6/cpufreq/scaling_cur_freq=520000
+/sys/devices/system/cpu/cpu7/cpufreq/scaling_cur_freq=520000
+========================================================================
+### meminfo  [rc=0 framed=True sha_ok=True elapsed=0.089s]
+MemTotal:        7598228 kB
+MemAvailable:    6750596 kB
+Cached:           525484 kB
+SwapCached:            0 kB
+RbinCached:            0 kB
+SwapTotal:             0 kB
+SwapFree:              0 kB
+========================================================================
+### thermal  [rc=0 framed=True sha_ok=True elapsed=0.209s]
+/sys/class/thermal/thermal_zone0 type=BIG temp=25000
+/sys/class/thermal/thermal_zone1 type=MID temp=25000
+/sys/class/thermal/thermal_zone2 type=LITTLE temp=25000
+/sys/class/thermal/thermal_zone3 type=G3D temp=25000
+/sys/class/thermal/thermal_zone4 type=ISP temp=25000
+/sys/class/thermal/thermal_zone5 type=ac temp=21000
+/sys/class/thermal/thermal_zone6 type=battery temp=19700
+========================================================================
+### soc_model  [rc=1 framed=True sha_ok=True elapsed=0.091s]
+
+========================================================================
+### loadavg  [rc=0 framed=True sha_ok=True elapsed=0.135s]
+11.90 11.97 12.00 1/367 29093
+========================================================================
+### zram  [rc=0 framed=True sha_ok=True elapsed=0.090s]
+Filename				Type		Size	Used	Priority

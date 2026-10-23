@@ -1,0 +1,184 @@
+========================================================================
+### phoc_ini  [rc=0 framed=True sha_ok=True elapsed=0.839s]
+# Nuxel S10+ phoc configuration (beyond2lte).
+#
+# This is /usr/share/phosh/phoc.ini for the phone, with the HEADLESS-1 output
+# geometry set to the handset's own panel: 1440x3040 at scale 2 => 720x1520
+# logical pixels => a 360 CSS-pixel viewport, the same band the UTM VM renders
+# the Nuxel launcher in (VM: [output:Virtual-1] mode = 720x1440, scale = 2,
+# 360 CSS px).  The VM value is kept for reference below; only the physical
+# resolution differs, which the port record documents.
+[output:HEADLESS-1]
+mode = 720x1520
+scale = 2
+========================================================================
+### phoc_ini_alt  [rc=0 framed=True sha_ok=True elapsed=0.122s]
+/etc/nuxel/phoc-phone.ini
+========================================================================
+### wayland_unit  [rc=0 framed=True sha_ok=True elapsed=0.109s]
+# /etc/systemd/system/nuxel-wayland.service
+[Unit]
+Description=Nuxel phone Wayland session (phoc headless + Nuxel Home launcher)
+Documentation=file:/usr/share/doc/nuxel/UTM-LAUNCHER-PORT.md
+# Bounded restarts: never spin into a process storm.
+StartLimitIntervalSec=60
+StartLimitBurst=5
+After=nuxel-touch-arm.service seatd.service
+Wants=nuxel-touch-arm.service seatd.service
+Before=nuxel-wl-fb.service nuxel-fallback.service
+
+[Service]
+Type=simple
+# phoc with wlroots 0.19: headless backend + pixman renderer is the only Wayland
+# output this kernel (CONFIG_DRM unset) can offer.
+Environment=WLR_BACKENDS=headless,libinput
+# The handset has NO VT (/dev/tty0, /sys/class/vtconsole, /proc/consoles all
+# absent), so a VT-bound seat can never activate; libseat's noop backend
+# satisfies wlroots' session requirement and device access is granted by the
+# preloaded libinput path shim.  See tools/s10plus/a31/nuxel-libinput-path.c.
+Environment=LIBSEAT_BACKEND=noop
+# If the panel node is absent (charger mode: sec_ts never binds) wlroots would
+# fail the whole backend and phoc would restart-loop.  The shim records what it
+# found in /run/nuxel-libinput-path.state, so "zero devices" stays visible.
+Environment=WLR_LIBINPUT_NO_DEVICES=1
+# The udev daemon is masked on this image (it cannot register workers on 4.14),
+# so libinput's udev backend discovers zero devices; the shim redirects ONLY
+# libinput's discovery step to its path backend and adds the real
+# /dev/input/eventN node that carries INPUT_PROP_DIRECT.  Real evdev, real
+# libinput parsing, real wl_touch - no synthesised events.
+Environment=LD_PRELOAD=/usr/lib/nuxel/libnuxel-libinput-path.so
+Environment=WLR_RENDERER=pixman
+Environment=WLR_HEADLESS_OUTPUTS=1
+Environment=XDG_RUNTIME_DIR=/run/nuxel-wayland
+Environment=XDG_SESSION_TYPE=wayland
+ExecStartPre=/bin/mkdir -p /run/nuxel-wayland
+ExecStartPre=/bin/chmod 700 /run/nuxel-wayland
+ExecStart=/usr/sbin/phoc --no-xwayland -C /etc/nuxel/phoc-phone.ini -E /usr/lib/nuxel/nuxel-session.sh
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
+
+# /usr/lib/systemd/system/service.d/10-timeout-abort.conf
+# This file is part of the systemd package.
+# See https://fedoraproject.org/wiki/Changes/Shorter_Shutdown_Timer.
+#
+# To facilitate debugging when a service fails to stop cleanly,
+# TimeoutStopFailureMode=abort is set to "crash" services that fail to stop in
+# the time allotted. This will cause the service to be terminated with SIGABRT
+# and a coredump to be generated.
+#
+# To undo this configuration change, create a mask file:
+#   sudo mkdir -p /etc/systemd/system/service.d
+#   sudo ln -sv /dev/null /etc/systemd/system/service.d/10-timeout-abort.conf
+
+[Service]
+TimeoutStopFailureMode=abort
+========================================================================
+### wlfb_unit  [rc=0 framed=True sha_ok=True elapsed=0.112s]
+# /etc/systemd/system/nuxel-wl-fb.service
+[Unit]
+Description=Nuxel display bridge (Wayland screencopy -> /dev/fb0 AMOLED)
+Documentation=file:/usr/share/doc/nuxel/UTM-LAUNCHER-PORT.md
+# Bounded restarts: never spin into a process storm.
+StartLimitIntervalSec=120
+StartLimitBurst=6
+After=nuxel-wayland.service
+Wants=nuxel-wayland.service
+Before=nuxel-fallback.service nuxel-button-manager.service
+
+[Service]
+Type=simple
+Environment=XDG_RUNTIME_DIR=/run/nuxel-wayland
+Environment=XDG_SESSION_TYPE=wayland
+ExecStartPre=/usr/lib/nuxel/nuxel-wait-wayland /run/nuxel-wayland 30
+ExecStart=/usr/lib/nuxel/nuxel-wl-fb
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+
+# /usr/lib/systemd/system/service.d/10-timeout-abort.conf
+# This file is part of the systemd package.
+# See https://fedoraproject.org/wiki/Changes/Shorter_Shutdown_Timer.
+#
+# To facilitate debugging when a service fails to stop cleanly,
+# TimeoutStopFailureMode=abort is set to "crash" services that fail to stop in
+# the time allotted. This will cause the service to be terminated with SIGABRT
+# and a coredump to be generated.
+#
+# To undo this configuration change, create a mask file:
+#   sudo mkdir -p /etc/systemd/system/service.d
+#   sudo ln -sv /dev/null /etc/systemd/system/service.d/10-timeout-abort.conf
+
+[Service]
+TimeoutStopFailureMode=abort
+========================================================================
+### units_active  [rc=0 framed=True sha_ok=True elapsed=0.327s]
+nuxel-wayland=active
+nuxel-wl-fb=active
+nuxel-button-manager=active
+nuxel-touch-arm=active
+seatd=active
+nuxel-pwa=inactive
+nuxel-console=inactive
+========================================================================
+### units_enabled  [rc=0 framed=True sha_ok=True elapsed=0.315s]
+nuxel-wayland=enabled
+nuxel-wl-fb=enabled
+nuxel-button-manager=enabled
+nuxel-touch-arm=enabled
+seatd=disabled
+nuxel-pwa=not-found
+nuxel-console=disabled
+========================================================================
+### mainpids  [rc=0 framed=True sha_ok=True elapsed=0.211s]
+MainPID=5352
+ExecStart={ path=/usr/sbin/phoc ; argv[]=/usr/sbin/phoc --no-xwayland -C /etc/nuxel/phoc-phone.ini -E /usr/lib/nuxel/nuxel-session.sh ; ignore_errors=no ; start_time=[Wed 2026-10-21 21:06:04 CEST] ; stop_time=[n/a] ; pid=5352 ; code=(null) ; status=0/0 }
+
+MainPID=5399
+ExecStart={ path=/usr/lib/nuxel/nuxel-wl-fb ; argv[]=/usr/lib/nuxel/nuxel-wl-fb ; ignore_errors=no ; start_time=[Wed 2026-10-21 21:06:05 CEST] ; stop_time=[n/a] ; pid=5399 ; code=(null) ; status=0/0 }
+========================================================================
+### failed_units  [rc=0 framed=True sha_ok=True elapsed=0.107s]
+
+========================================================================
+### fb_owner  [rc=0 framed=True sha_ok=True elapsed=0.082s]
+schema_version=1
+owner=nuxel-wl-fb
+pid=5399
+stage=LAUNCHER_DISPLAY_OWNER
+ui_writer=1
+reason=single_owner_takeover
+receipt=1792609580-ANIMATION_STOP_CONFIRMED-5399
+lock=/run/nuxel-fb-owner.lock
+boot_id=03567dc6-a765-44fe-85c9-e729c69480c4
+ts=1792609580
+========================================================================
+### wlfb_state  [rc=0 framed=True sha_ok=True elapsed=0.129s]
+1792655541 DISPLAY_SLEEP total=3628 failures=0 owner=nuxel-wl-fb display=off capture=stopped
+========================================================================
+### animation  [rc=0 framed=True sha_ok=True elapsed=0.082s]
+ANIM_STAGE=ANIMATION_STOPPED
+ANIM_OWNER=nuxel-wl-fb
+========================================================================
+### proc_graph  [rc=0 framed=True sha_ok=True elapsed=0.114s]
+root        3522       1  0 Oct21 ?        00:00:12 /opt/nuxel/nuxel-console /newroot
+root        3523       1  0 Oct21 ?        00:00:00 /opt/nuxel/nuxel-console /newroot
+root        5341       1  0 Oct21 ?        00:00:17 python3 /usr/lib/nuxel/nuxel-hapticsd.py
+nuxel-n+    5342       1  0 Oct21 ?        00:00:00 /usr/bin/python3 /usr/lib/nuxel/nuxel-notifications/notifications.py
+root        5343       1  0 Oct21 ?        00:00:01 /usr/lib/nuxel/nuxel-touch-arm
+root        5352       1  1 Oct21 ?        00:11:34 /usr/sbin/phoc --no-xwayland -C /etc/nuxel/phoc-phone.ini -E /usr/lib/nuxel/nuxel-session.sh
+root        5389    5352  0 Oct21 ?        00:03:09 /usr/lib/nuxel/nuxel-pwa-host
+root        5399       1  0 Oct21 ?        00:00:49 /usr/lib/nuxel/nuxel-wl-fb
+root        5400       1  0 Oct21 ?        00:01:44 /usr/lib/nuxel/nuxel-button-manager
+root        5409    5389  0 Oct21 ?        00:00:00 /usr/lib/nuxel/nuxel-navdock
+root        5410    5389  0 Oct21 ?        00:00:00 dbus-run-session -- /usr/bin/phosh-osk-stevia
+root        5413    5410  0 Oct21 ?        00:00:02 /usr/bin/phosh-osk-stevia
+root        5427    5421  0 Oct21 ?        00:00:01 /usr/bin/dbus-daemon --config-file=/usr/share/defaults/at-spi2/accessibility.conf --nofork --print-address 12 --address=unix:path=/run/nuxel-wayland/at-spi/bus
+root        5447    5389  0 Oct21 ?        00:02:10 /usr/libexec/webkit2gtk-4.1/WebKitNetworkProcess 2 14
+root        5450    5389  0 Oct21 ?        00:06:36 /usr/libexec/webkit2gtk-4.1/WebKitWebProcess 4 14
+nuxel       6289       1  0 Oct21 ?        00:00:00 /usr/bin/python3 /usr/lib/nuxel/nuxel-portal/portal.py
+nuxel-b+    6290       1  0 Oct21 ?        00:00:03 /usr/bin/python3 /usr/lib/nuxel/nuxel-bridge/bridge.py
+root        6291       1  0 Oct21 ?        00:00:19 /usr/bin/python3 /usr/lib/nuxel/nuxel-bridge/api.py

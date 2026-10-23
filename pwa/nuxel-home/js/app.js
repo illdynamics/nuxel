@@ -11,6 +11,13 @@ class NuxelHome {
         // Keep one surface per app id so Recents can resume the exact session.
         this.appSurfaces = new Map();
         this.sessions = window.NuxelAppSessions ? new window.NuxelAppSessions() : null;
+        // Input de-duplication: the native nav dock can deliver a long-press
+        // as back-long AND a release/click back for the same gesture, and the
+        // nuxel:action event is registered on both window and document.  A
+        // single physical action must resolve to a single logical action.
+        this._lastAction = null;
+        this._lastActionAt = 0;
+        this._suppressBackUntil = 0;
         this._init();
     }
 
@@ -92,15 +99,31 @@ class NuxelHome {
 
     _backgroundForegroundApp() {
         const { app, frame } = this.appSession;
-        if (!app || !frame) return;
+        if (!app || this.appSession.state === 'CLOSED') return false;
+        // A native application owns a separate top-level Wayland surface, not a
+        // DOM iframe.  Returning early here (the pre-A45 behaviour) left the
+        // Terminal window in front of Home: the penguin/Home tap ran, the
+        // launcher repainted underneath it, and the glass did not change.
+        // Close that surface through the host's narrow, typed action instead.
+        if (!frame) {
+            this._closeAppSurface();
+            return true;
+        }
         const surface = this.appSurfaces.get(app.id);
         if (surface) {
             [surface.frame, surface.bar, surface.status].forEach(el => {
                 if (el) el.hidden = true;
             });
+        } else {
+            frame.hidden = true;
         }
+        // Remember the user's intent for an app that is still loading.  Its
+        // load handler must not flip an intentionally backgrounded surface back
+        // to ACTIVE and paint over Home.
+        frame.__nuxelBackgrounded = true;
         this._setAppState('BACKGROUND', app, frame);
         if (this.sessions && app) this.sessions.home();
+        return true;
     }
 
     _resumeApp(app) {
@@ -110,6 +133,10 @@ class NuxelHome {
         [surface.frame, surface.bar, surface.status].forEach(el => {
             if (el) el.hidden = false;
         });
+        if (surface.frame) {
+            surface.frame.__nuxelBackgrounded = false;
+            this._observeAppFrame(surface.frame, app);
+        }
         this._setAppState('ACTIVE', app, surface.frame);
         if (this.sessions) this.sessions.activate(app.id);
         return true;
@@ -130,6 +157,9 @@ class NuxelHome {
 
         // Bind global events
         this._bindGlobalEvents();
+
+        // A45 Penguin lockscreen + boot lock + display-off re-lock.
+        this._initLockscreen();
 
         this.initialized = true;
         console.log('[Nuxel] Nuxel Home initialized');
@@ -272,11 +302,43 @@ class NuxelHome {
         const onNuxelAction = (event) => {
             const action = event.detail && event.detail.action;
             console.log('[Nuxel] logical action:', action);
+            if (!action) return;
+            const _now = Date.now();
+            // Coalesce the same logical action that arrives twice from the two
+            // registered targets or from the nav dock's pointerup + click.  The
+            // window is far shorter than any deliberate double-press.
+            if (action === this._lastAction && _now - this._lastActionAt < 250) {
+                this._inputTrace('nav:dedupe action=' + action);
+                return;
+            }
+            this._lastAction = action;
+            this._lastActionAt = _now;
+            // A long-press Back terminates the foreground app; the nav dock's
+            // release then emits a short Back for the same gesture.  Swallow it
+            // so one held Back never also performs a second navigation.
+            if (action === 'back' && _now < this._suppressBackUntil) {
+                this._inputTrace('nav:suppress-back-after-long');
+                return;
+            }
+            if (action === 'lock') { this._lock('host'); return; }
+            if (action === 'unlock') {
+                if (this._isLocked()) { this._unlock(); return; }
+                // A45 pwa-host bug: the native nav dock's long-press Back
+                // ("back-long") is dispatched as "unlock" (its js_action map
+                // never added a back-long entry).  A session that is already
+                // unlocked can only receive that misrouted long-press, so honour
+                // the owner's real intent: terminate ONLY the foreground app.
+                this.terminateForeground();
+                return;
+            }
+            if (this._isLocked()) return;   // locked: navigation/app actions are inert
             if (action === 'home') this.home();
             else if (action === 'back') this.back();
+            else if (action === 'back-long' || action === 'terminate') this.terminateForeground();
             else if (action === 'forward') this.forward();
             else if (action === 'stop') this.stopLoading();
             else if (action === 'reload-launcher') this.reloadLauncher();
+            else if (action === 'recents') this.recentsToggle();
             else if (action === 'search' && this.components.search) this.components.search.open();
             else if (action === 'settings') appRegistry.launchApp('nuxel-settings');
         };
@@ -389,6 +451,12 @@ class NuxelHome {
         frame.addEventListener('load', () => {
             if (this.appSession.frame !== frame) return;
             status.remove();
+            if (frame.__nuxelBackgrounded || this.appSession.state === 'BACKGROUND') {
+                // Home was pressed while this document was loading.  Keep it
+                // hidden; Recents can still resume the completed session.
+                this._observeAppFrame(frame, app);
+                return;
+            }
             this._setAppState('ACTIVE', app, frame);
             this._observeAppFrame(frame, app);
         }, { once: true });
@@ -418,13 +486,61 @@ class NuxelHome {
     }
 
     _launchNative(app, url) {
-        console.warn(`Native app not implemented yet: ${app.name} (${url})`);
+        console.log(`Launching native app: ${app.name} (${url})`);
+        const target = app.nativeAppId || app.id;
+        this._setAppState('LAUNCHING', app, null);
 
-        const toast = document.createElement('div');
-        toast.className = 'toast';
-        toast.textContent = `${app.name} native app is not implemented yet`;
-        document.body.appendChild(toast);
-        setTimeout(() => toast.remove(), 3000);
+        // Installed state check for apps that may not be present (e.g. Snapshot).
+        if (app.installed === false) {
+            this._setAppState('FAILED', app, null);
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.textContent = `${app.name} is not installed on this device`;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 4000);
+            return;
+        }
+
+        // The authoritative launch authority is the HTTP bridge's CLOSED-verb
+        // /apps/exec endpoint: it resolves the target from its fixed allowlist /
+        // canonical registry and never executes a client-supplied path.
+        this._httpBridge('POST', '/api/v1/apps/exec', {
+            target: target,
+            app_id: 'org.nuxel.Home',
+            source: 'launcher',
+        }).then((res) => {
+            if (!res || res.success !== true) {
+                throw new Error((res && (res.error || res.detail)) || 'launch refused');
+            }
+            console.log('[Nuxel] native launched:', target, res.pid || '');
+            // Native apps own a separate top-level Wayland surface, so the
+            // launcher records the session without an iframe.
+            this._setAppState('ACTIVE', app, null);
+            if (this.sessions) this.sessions.register(app, null);
+        }).catch((error) => {
+            console.error('[Nuxel] native launch failed:', error);
+            this._setAppState('FAILED', app, null);
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.textContent = `Could not open ${app.name}`;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 4000);
+        });
+    }
+
+    _httpBridge(method, path, body) {
+        // Minimal, bounded client for the local HTTP bridge (dev mode on
+        // 127.0.0.1). The launcher origin (http://127.0.0.1:8000) is on the
+        // bridge's explicit CORS allowlist. Never a general-purpose proxy.
+        return new Promise((resolve) => {
+            const timeout = setTimeout(() => resolve({ success: false, error: 'timeout' }), 8000);
+            const options = { method: method, headers: { 'Content-Type': 'application/json' } };
+            if (body) options.body = JSON.stringify(body);
+            fetch('http://127.0.0.1:8080' + path, options)
+                .then((r) => r.json().catch(() => ({})))
+                .then((data) => { clearTimeout(timeout); resolve(data); })
+                .catch((e) => { clearTimeout(timeout); resolve({ success: false, error: String(e) }); });
+        });
     }
 
     _showUpdateNotification() {
@@ -467,6 +583,7 @@ class NuxelHome {
         }
         if (window.recents) window.recents.close('home');
         if (window.launcher) { window.launcher.closeDrawer(); window.launcher.exitEditMode(); }
+        if (window.NuxelTouchKeyboard) window.NuxelTouchKeyboard.hide();
         document.querySelectorAll('.folder-sheet').forEach(el => el.remove());
         this._backgroundForegroundApp();
     }
@@ -475,12 +592,20 @@ class NuxelHome {
     // controller rather than making the button bar reach into individual app
     // iframes: Back/Home/Recents must work identically for every PWA.
     back() {
+        if (this._isLocked()) return;
         if (this.components.search && this.components.search.isOpen) { this.components.search.close(); return; }
         if (this.components.qs && this.components.qs.isOpen) { this.components.qs.collapseOrClose(); return; }
         if (window.recents && window.recents.isOpen) { window.recents.close('back'); return; }
         const folder = document.querySelector('.folder-sheet'); if (folder) { folder.remove(); return; }
         if (window.launcher && window.launcher.drawerOpen) { window.launcher.closeDrawer(); return; }
         if (window.NuxelTouchKeyboard && window.NuxelTouchKeyboard.visible()) { window.NuxelTouchKeyboard.hide(); return; }
+        // The working keyboard is the compositor's Stevia OSK, not the DOM
+        // fallback.  Back must first remove text-input focus, which asks the
+        // compositor to hide its keyboard while preserving the typed value.
+        if (window.NuxelTouchKeyboard && window.NuxelTouchKeyboard.nativeProvider) {
+            const field = this._activeEditable();
+            if (field) { this._blurActiveField(); return; }
+        }
         const frame = this.appSession.frame;
         if (frame && this.appSession.state === 'ACTIVE') {
             // Same-origin PWAs use their own browser history. Never terminate the
@@ -498,16 +623,154 @@ class NuxelHome {
     }
 
     home() {
-        this._closeOverlays();
-        // System Home always navigates to Desktop 1, never to the current page.
-        if (window.launcher) window.launcher.mainDesktop();
+        if (this._isLocked()) return;
+        try {
+            this._closeOverlays();
+        } catch (error) {
+            this._inputTrace(`home:overlay-error ${error && error.message ? error.message : error}`);
+        }
+        try {
+            // System Home always navigates to Desktop 1, never to the current
+            // page.  It must work with no app, a loading app, a PWA iframe and
+            // a native top-level app (Terminal) alike.
+            if (window.launcher) window.launcher.mainDesktop();
+            // Authoritative compositor-level Home: minimize any external native
+            // toplevel (browser/camera/Firefox/…) WITHOUT killing it, then raise
+            // the Home window. The pwa-host already closed the Terminal surface
+            // on this path; this covers every other native window.
+            this._httpBridge('POST', '/api/v1/apps/home', { app_id: 'org.nuxel.Home' });
+            this._inputTrace(`home:complete state=${this.appSession.state} page=${window.launcher ? window.launcher.currentPage : '?'}`);
+        } catch (error) {
+            this._inputTrace(`home:error ${error && error.message ? error.message : error}`);
+            console.error('[Nuxel] Home failed:', error);
+        }
     }
 
     recentsToggle() {
+        if (this._isLocked()) return;
         if (this.components.search && this.components.search.isOpen) this.components.search.close();
         if (this.components.qs && this.components.qs.isOpen) this.components.qs.close();
         if (window.launcher) { window.launcher.closeDrawer(); window.launcher.exitEditMode(); }
         if (window.recents) window.recents.toggle('system-nav');
+    }
+
+    _isLocked() { return !!(this.lockscreen && this.lockscreen.isLocked()); }
+
+    _lock(reason) {
+        this._inputTrace(`lock reason=${reason}`);
+        if (this.lockscreen) this.lockscreen.show(reason);
+        this._blurActiveField();
+        if (window.NuxelTouchKeyboard) window.NuxelTouchKeyboard.hide();
+        this._setNavDock(false);
+        /* A lock always blanks the panel: idempotent for a display-off lock. */
+        const host = window.NuxelHost;
+        if (host && host.available && typeof host.action === 'function') {
+            Promise.resolve(host.action('screen-off')).catch(() => {});
+        }
+    }
+
+    _unlock(reason) {
+        const ls = this.lockscreen;
+        this._inputTrace(`unlock reason=${reason || 'host'}`);
+        if (!ls) return { ok: false, error: 'no-lockscreen' };
+        if (!ls.isLocked()) return { ok: true, already: true, state: ls.state };
+        ls.hide();
+        this._setNavDock(true);
+        /* The system monitor pauses while the panel is locked or display-off.
+           The boot-lock path never passed through a display ON transition, so
+           its poll loop stayed stopped after unlock (a real startup race).
+           Re-arm it here: the call is idempotent and a no-op when Home is not
+           actually visible. */
+        try {
+            if (window.NuxelSystemMonitor && window.NuxelSystemMonitor.configure) window.NuxelSystemMonitor.configure();
+        } catch (e) { /* a monitor misstep must never block unlock */ }
+        /* A fresh unlocked session must not consume the stale OFF sample that
+           caused the lock in the first place.  `null` means "unknown/armed":
+           one OFF sample records the state but does not re-lock.  After the
+           panel has been observed ON, the next real OFF transition locks. */
+        this._lastDisplayOff = null;
+        this._unlockGeneration = (this._unlockGeneration || 0) + 1;
+        this._inputTrace(`unlock:complete gen=${this._unlockGeneration} locked=${ls.isLocked() ? 1 : 0} ` +
+                         `visible=${ls.el && !ls.el.hidden ? 1 : 0}`);
+        return { ok: true, state: 'UNLOCKED', generation: this._unlockGeneration };
+    }
+
+    /* The ONLY path from the penguin gesture into the authoritative lock state.
+       The active lockscreen instance consumes a one-shot gesture id, then this
+       controller asks the native host for its acknowledgement before hiding the
+       overlay.  A rejected/missing backend leaves the session locked. */
+    unlockFromLockscreen(instance, request) {
+        const ls = this.lockscreen;
+        if (!ls || ls !== instance) {
+            return Promise.resolve({ ok: false, error: 'inactive-lockscreen' });
+        }
+        if (!ls.acceptGestureUnlock || !ls.acceptGestureUnlock(request)) {
+            return Promise.resolve({ ok: false, error: 'invalid-or-replayed-gesture' });
+        }
+        const commit = () => {
+            if (this.lockscreen !== ls) return { ok: false, error: 'lockscreen-changed' };
+            if (!ls.isLocked()) return { ok: true, state: 'UNLOCKED', via: 'host-event' };
+            return this._unlock('penguin-gesture');
+        };
+        const host = window.NuxelHost;
+        if (host && host.available && typeof host.action === 'function') {
+            return Promise.resolve(host.action('unlock')).then((res) => {
+                if (!res || res.ok === false) {
+                    this._inputTrace(`unlock:backend-rejected ${(res && (res.error || res.timeout)) || 'unknown'}`);
+                    return { ok: false, error: 'backend-unlock-failed', backend: res || null };
+                }
+                return commit();
+            }).catch((err) => {
+                this._inputTrace(`unlock:backend-error ${err && err.message ? err.message : err}`);
+                return { ok: false, error: 'backend-unlock-error' };
+            });
+        }
+        /* VM/desktop launcher: there is no native lock surface to release, so
+           the launcher controller itself is authoritative. */
+        return Promise.resolve(commit());
+    }
+
+    _initLockscreen() {
+        if (window.NuxelLockscreen) this.lockscreen = new window.NuxelLockscreen();
+        /* Boot lock: the inline HTML gate left #lockscreen visible in phone
+           launch mode (?boot=os), so mark the session locked. */
+        if (this.lockscreen && this.lockscreen.el && !this.lockscreen.el.hidden) {
+            this.lockscreen.show('boot');
+        }
+        this._inputTrace(`lockscreen-controller version=a45.1 device=${window.NuxelHost && window.NuxelHost.available ? 'phone' : 'local'}`);
+        if (this._isLocked()) this._setNavDock(false);
+        this._watchDisplayForLock();
+    }
+
+    /* Re-lock when the display actually powers down (idle timeout or Power),
+       so waking always shows the lockscreen.  The ON->OFF transition locks;
+       an unknown/stale OFF sample never does. */
+    _watchDisplayForLock() {
+        this._lastDisplayOff = null;
+        const read = () => {
+            const host = window.NuxelHost;
+            if (!host || !host.available || typeof host.statusRead !== 'function') return;
+            Promise.resolve(host.statusRead('wlfb-state')).then((r) => {
+                const t = (r && (r.text || r.value)) || '';
+                /* The running bridge publishes `display=off` in its frame
+                   status line; older display-state documents used DISPLAY_OFF.
+                   Accept both so an idle/power screen-off always re-locks. */
+                const off = /(^|[\s;])display=off([\s;]|$)/i.test(t) || /^DISPLAY_OFF\b/m.test(t);
+                document.body.classList.toggle('display-off', off);
+                document.body.dataset.displayOff = off ? '1' : '0';
+                if (off) {
+                    this._blurActiveField();
+                    if (window.NuxelTouchKeyboard) window.NuxelTouchKeyboard.hide();
+                    if (window.NuxelSystemMonitor && window.NuxelSystemMonitor.stop) window.NuxelSystemMonitor.stop();
+                } else if (this._lastDisplayOff === true && window.NuxelSystemMonitor && window.NuxelSystemMonitor.configure) {
+                    window.NuxelSystemMonitor.configure();
+                }
+                if (this._lastDisplayOff === false && off && !this._isLocked()) this._lock('display-off');
+                this._lastDisplayOff = off;
+            }).catch(() => {});
+        };
+        read();
+        setInterval(read, 2000);
     }
 
     forward() {
@@ -525,7 +788,46 @@ class NuxelHome {
     terminateForeground() {
         // The launcher is never a session, so a held Back can only terminate a
         // foreground app.  On Home this intentionally does nothing.
-        if (this.appSession.app) this._closeAppSurface();
+        const app = this.appSession.app;
+        this._suppressBackUntil = Date.now() + 500;
+        if (!app) return;
+        if (window.NuxelTouchKeyboard) window.NuxelTouchKeyboard.hide();
+        if (this.sessions) this.sessions.close(app.id);
+        this._closeAppSurface();
+        this.home();
+    }
+
+    _setNavDock(visible) {
+        const host = window.NuxelHost;
+        if (!host || !host.available || typeof host.action !== 'function') return;
+        try { Promise.resolve(host.action(visible ? 'nav-show' : 'nav-hide')).catch(() => {}); }
+        catch (e) { /* the native dock FIFO may not exist yet; next lock retries */ }
+    }
+
+    _activeEditable() {
+        let doc = document;
+        for (let depth = 0; depth < 3; depth++) {
+            const active = doc.activeElement;
+            if (!active) return null;
+            const tag = String(active.tagName || '').toUpperCase();
+            if (tag === 'IFRAME') {
+                try { doc = active.contentDocument; continue; } catch (e) { return null; }
+            }
+            if (active.isContentEditable) return active;
+            if (tag === 'TEXTAREA') return active;
+            if (tag === 'INPUT' && !/^(button|checkbox|radio|submit|reset|file|range|color)$/i.test(String(active.type || 'text'))) return active;
+            return null;
+        }
+        return null;
+    }
+
+    _blurActiveField() {
+        try {
+            const field = this._activeEditable();
+            if (field && typeof field.blur === 'function') field.blur();
+            const sel = window.getSelection && window.getSelection();
+            if (sel && sel.removeAllRanges) sel.removeAllRanges();
+        } catch (e) { /* losing focus is best-effort and must never break lock */ }
     }
 
     openHomeSettings() {
@@ -533,6 +835,9 @@ class NuxelHome {
         if (window.NuxelHomeSettings) window.NuxelHomeSettings.open();
     }
 }
+
+// The offline regression harness instantiates this class without a browser.
+try { window.NuxelHome = NuxelHome; } catch (e) { /* non-window test context */ }
 
 // Initialize on DOM ready
 document.addEventListener('DOMContentLoaded', () => {

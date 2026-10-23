@@ -23,6 +23,7 @@ from urllib.parse import urlparse, parse_qs
 
 import dbus
 import dbus.mainloop.glib
+import subprocess
 
 logger = logging.getLogger('nuxel-http-bridge')
 
@@ -410,6 +411,106 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
                       "the host refuses to serve it rather than answering with skewed data",
         }
 
+
+    # ---- Native app execution + Home action (A59) -------------------------
+    # Both are CLOSED-verb operations: the caller supplies only a registry app
+    # id (or the fixed word "home"); the actual program run is resolved HERE
+    # from the canonical registry / a fixed allowlist. A client-supplied path,
+    # binary or command is ignored by construction, so a compromised PWA cannot
+    # turn "launch an app" into "run an arbitrary program".
+
+    # Graphics/session environment for a native top-level app on this phone.
+    NATIVE_LAUNCH_ENV = {
+        "XDG_RUNTIME_DIR": "/run/nuxel-wayland",
+        "WAYLAND_DISPLAY": "wayland-0",
+        "GSK_RENDERER": "cairo",
+        "LIBGL_ALWAYS_SOFTWARE": "1",
+        "WEBKIT_DISABLE_COMPOSITING_MODE": "1",
+        "GDK_BACKEND": "wayland",
+        # The graphical session units run with a minimal PATH lacking /usr/sbin,
+        # where Fedora installs python3/gtk-launch. A `#!/usr/bin/env python3`
+        # shebang fails under that PATH, so restore the standard search path.
+        "PATH": "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+        "HOME": "/root",
+    }
+
+    # Registry ids that may be launched natively, with their fixed launch argv.
+    # The dict is the ONLY launch authority; nothing else is exec'd on this path.
+    NATIVE_LAUNCH = {
+        "org.nuxel.BrowserNative": [
+            "/usr/lib/nuxel/nuxel-browser-native/nuxel_browser_native.py",
+        ],
+        "org.nuxel.CameraNative": [
+            "/usr/lib/nuxel/nuxel-camera-native/nuxel_camera_native.py",
+        ],
+        "org.gnome.Snapshot": [
+            "/usr/sbin/snapshot",
+        ],
+    }
+
+    def _exec_native_app(self, target_id):
+        """Launch a native app from the fixed allowlist (never a client path)."""
+        if not isinstance(target_id, str) or not APP_ID_RE.match(target_id):
+            return ({"success": False, "error": "invalid_app_id",
+                     "detail": "an app id is an identifier, never a path or a command"}, 400)
+        argv = self.NATIVE_LAUNCH.get(target_id)
+        if not argv:
+            app, _info = self._lookup_registry_app(target_id)
+            if app and app.get("type") == "native" and app.get("native_binary"):
+                # Registry-backed native entry: exec the registered binary only.
+                binary = app["native_binary"]
+                if isinstance(binary, str) and binary.startswith("/"):
+                    argv = [binary]
+            if not argv:
+                return ({"success": False, "error": "not_native_or_unknown",
+                         "app_id": target_id}, 404)
+        # The http-bridge runs with PrivateTmp/ProtectHome/ProtectSystem,
+        # so a GUI app forked directly from it inherits a read-only /root and
+        # a private /tmp and dies. Launch via a systemd transient unit, which
+        # runs in the system manager's normal (unsandboxed) context.
+        import time as _t
+        unit = "nuxel-app-" + target_id.rsplit(".", 1)[-1].lower() + "-%d" % int(_t.time() * 1000)
+        cmd = ["/usr/bin/systemd-run", "--unit=%s" % unit, "--collect",
+               "--setenv=XDG_RUNTIME_DIR=/run/nuxel-wayland",
+               "--setenv=WAYLAND_DISPLAY=wayland-0",
+               "--setenv=GSK_RENDERER=cairo",
+               "--setenv=LIBGL_ALWAYS_SOFTWARE=1",
+               "--setenv=WEBKIT_DISABLE_COMPOSITING_MODE=1",
+               "--setenv=GDK_BACKEND=wayland",
+               "--setenv=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+               "--setenv=HOME=/root"] + argv
+        try:
+            proc = subprocess.run(cmd, capture_output=True, timeout=15)
+        except (OSError, subprocess.TimeoutExpired) as exc:
+            logger.error("native launch failed for %s: %s", target_id, exc)
+            return ({"success": False, "error": "launch_failed",
+                     "app_id": target_id, "detail": str(exc)}, 500)
+        if proc.returncode != 0:
+            err = (proc.stderr or b"").decode("utf-8", "replace").strip()
+            logger.error("native launch refused id=%s rc=%s err=%s", target_id, proc.returncode, err)
+            return ({"success": False, "error": "launch_failed",
+                     "app_id": target_id, "detail": err or ("rc=%s" % proc.returncode)}, 500)
+        logger.info("native app launched id=%s unit=%s argv=%s", target_id, unit, argv)
+        return ({"success": True, "launched": True, "app_id": target_id,
+                 "unit": unit, "action": "exec", "argv": argv}, 200)
+
+    def _home_action(self):
+        """Minimize every non-Home toplevel via wlr-foreign-toplevel (no kill)."""
+        env = dict(os.environ)
+        env.update({"XDG_RUNTIME_DIR": "/run/nuxel-wayland",
+                    "WAYLAND_DISPLAY": "wayland-0"})
+        argv = ["/usr/lib/nuxel/nuxel-foreign-toplevel", "home"]
+        try:
+            proc = subprocess.run(argv, env=env, capture_output=True, timeout=10)
+        except (OSError, subprocess.TimeoutExpired) as exc:
+            logger.error("home action failed: %s", exc)
+            return ({"success": False, "error": "home_action_failed",
+                     "detail": str(exc)}, 500)
+        out = (proc.stdout or b"").decode("utf-8", "replace")
+        logger.info("home action rc=%s out=%s", proc.returncode, out.strip())
+        return ({"success": True, "action": "home", "rc": proc.returncode,
+                 "output": out.strip()}, 200)
+
     def _classify_backends(self):
         """Probe live D-Bus backend providers to classify each data source.
 
@@ -532,21 +633,56 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
             except Exception:
                 pass
 
-        # Battery detection (live from sysfs when a battery is present)
+        # Battery detection (live from sysfs).  The S10+ exposes its battery as
+        # /sys/class/power_supply/battery (lowercase), NOT as BAT0/BAT1.  The
+        # old check only matched a "BAT" prefix and therefore fell through to a
+        # fabricated 100% mock on this handset.  Select the node whose `type`
+        # file reads "Battery", which works for both naming schemes, and report
+        # the real current full capacity so the UI can represent it honestly.
         bat_source = "mock"
-        bat_info = {"level": 100, "charging": True}
+        bat_info = {"level": 100, "charging": True, "available": False}
         try:
-            bat_dirs = [d for d in _os.listdir("/sys/class/power_supply") if d.startswith("BAT")]
-            if bat_dirs:
-                bat_source = "live:sysfs"
-                cap_file = "/sys/class/power_supply/" + bat_dirs[0] + "/capacity"
-                status_file = "/sys/class/power_supply/" + bat_dirs[0] + "/status"
+            bat_dir = None
+            for d in sorted(_os.listdir("/sys/class/power_supply")):
+                tfile = "/sys/class/power_supply/" + d + "/type"
+                if not _os.path.exists(tfile):
+                    continue
+                try:
+                    with open(tfile) as f:
+                        if f.read().strip().lower() == "battery":
+                            bat_dir = d
+                            break
+                except Exception:
+                    continue
+            if bat_dir is None:
+                # Fall back to the BAT* convention (standard ACPI laptops).
+                bat_dirs = [d for d in _os.listdir("/sys/class/power_supply") if d.startswith("BAT")]
+                if bat_dirs:
+                    bat_dir = sorted(bat_dirs)[0]
+            if bat_dir:
+                base = "/sys/class/power_supply/" + bat_dir + "/"
+                bat_source = "live:sysfs:" + bat_dir
+                cap_file = base + "capacity"
+                status_file = base + "status"
+                full_file = base + "charge_full"
+                design_file = base + "charge_full_design"
                 if _os.path.exists(cap_file):
                     with open(cap_file) as f:
                         bat_info["level"] = int(f.read().strip())
                 if _os.path.exists(status_file):
                     with open(status_file) as f:
                         bat_info["charging"] = f.read().strip() in ("Charging", "Full")
+                # Actual capacity representation (microampere-hours as reported
+                # by the fuel gauge).  charge_full is the currently usable full
+                # capacity; charge_full_design is the factory design capacity.
+                for key, path in (("capacity_uah", full_file), ("design_capacity_uah", design_file)):
+                    if _os.path.exists(path):
+                        try:
+                            with open(path) as f:
+                                bat_info[key] = int(f.read().strip())
+                        except Exception:
+                            pass
+                bat_info["available"] = True
         except Exception:
             pass
 
@@ -619,7 +755,7 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
             "StorageWrite": {"success": True, **mock_base},
             "StorageRead": {"success": True, "data": None, **mock_base},
             "CameraListCaptures": {"success": True, "captures": [], **mock_base},
-            "CameraCapture": {"success": True, **mock_base},
+            "CameraCapture": {"success": False, "error": "NO_CAMERA", "error_code": "NO_CAMERA", "detail": "mock bridge has no camera; a capture is never fabricated", **mock_base},
             "MailImapList": {"success": True, "messages": [], **mock_base},
             "MailSmtpSend": {"success": True, **mock_base},
         }
@@ -725,6 +861,8 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
         ("network", "wifi-scan"): "NetworkWifiScan",
         ("network", "wifi-connect"): "NetworkWifiConnect",
         ("network", "wifi-disconnect"): "NetworkWifiDisconnect",
+        ("network", "wifi-saved"): "NetworkWifiSaved",
+        ("network", "wifi-forget"): "NetworkWifiForget",
         ("notifications", "list"): "GetNotifications",
         ("permissions", "list"): "GetAppCapabilities",
         ("sms", "list"): "SmsGetMessages",
@@ -737,6 +875,9 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
         ("call", "initiate"): "CallInitiate",
         ("camera", "list-captures"): "CameraListCaptures",
         ("camera", "capture"): "CameraCapture",
+        ("camera", "status"): "CameraStatus",
+        ("camera", "open"): "CameraOpen",
+        ("camera", "delete"): "CameraDelete",
         ("caldav", "list"): "CaldavList",
         ("caldav", "put"): "CaldavPut",
         ("storage", "list-dir"): "StorageListDir",
@@ -744,6 +885,9 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
         ("storage", "read"): "StorageRead",
         ("mail", "imap-list"): "MailImapList",
         ("mail", "smtp-send"): "MailSmtpSend",
+        ("orientation", "get"): "OrientationGet",
+        ("orientation", "modes"): "OrientationModes",
+        ("orientation", "set"): "OrientationSet",
     }
 
     # Map an RPC method to the D-Bus positional args it needs. The bridge's
@@ -756,8 +900,10 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
         "GetPhoneStatus": lambda app_id, params: [app_id],
         "NetworkWifiSetEnabled": lambda app_id, params: [app_id, bool(params.get("enabled", False))],
         "NetworkWifiScan": lambda app_id, params: [app_id],
-        "NetworkWifiConnect": lambda app_id, params: [app_id, params.get("ssid", ""), params.get("password", ""), params.get("security", "wpa2")],
+        "NetworkWifiConnect": lambda app_id, params: [app_id, params.get("ssid", ""), params.get("password", ""), params.get("security", "wpa2"), params.get("ap_path", ""), params.get("bssid", ""), params.get("device", ""), params.get("ssid_hex", "")],
         "NetworkWifiDisconnect": lambda app_id, params: [app_id],
+        "NetworkWifiSaved": lambda app_id, params: [app_id],
+        "NetworkWifiForget": lambda app_id, params: [app_id, params.get("connection", "")],
         "GetNotifications": lambda app_id, params: [],
         "GetAppCapabilities": lambda app_id, params: [app_id],
         "SmsGetMessages": lambda app_id, params: [app_id],
@@ -768,6 +914,14 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
         "CallInitiate": lambda app_id, params: [app_id, params.get("number", "")],
         "SmsSend": lambda app_id, params: [app_id, params.get("number", ""), params.get("text", "")],
         "SendNotification": lambda app_id, params: [app_id, params.get("title", ""), params.get("body", "")],
+        "CameraStatus": lambda app_id, params: [app_id],
+        "CameraListCaptures": lambda app_id, params: [app_id, (params.get("kind") or "") if isinstance(params, dict) else ""],
+        "CameraCapture": lambda app_id, params: [app_id, (params.get("kind") or "photo") if isinstance(params, dict) else "photo", (params.get("mime") or "") if isinstance(params, dict) else "", (params.get("data_b64") or "") if isinstance(params, dict) else ""],
+        "CameraOpen": lambda app_id, params: [app_id, (params.get("id") or "") if isinstance(params, dict) else ""],
+        "CameraDelete": lambda app_id, params: [app_id, (params.get("id") or "") if isinstance(params, dict) else ""],
+        "OrientationGet": lambda app_id, params: [app_id],
+        "OrientationModes": lambda app_id, params: [app_id],
+        "OrientationSet": lambda app_id, params: [app_id, params.get("mode", "")],
     }
 
     def _handle_rpc(self, app_id, body):
@@ -902,6 +1056,17 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
             target = body.get('target') or body.get('activate') or body.get('target_app_id')
             requester = body.get('requester') or app_id
             result, code = self._activate_app(target, requester, body.get('source') or 'launcher')
+            self._send_json(result, code)
+
+        elif path == '/api/v1/apps/exec':
+            # Launch a native app from the fixed allowlist / canonical registry.
+            target = body.get('target') or body.get('app_target')
+            result, code = self._exec_native_app(target)
+            self._send_json(result, code)
+
+        elif path == '/api/v1/apps/home':
+            # Authoritative Penguin Home: minimize native windows, never kill.
+            result, code = self._home_action()
             self._send_json(result, code)
 
         elif path == '/api/v1/capabilities/revoke':

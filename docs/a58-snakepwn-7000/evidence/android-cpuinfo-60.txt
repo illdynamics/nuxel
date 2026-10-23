@@ -1,0 +1,47 @@
+Load: 0.16 / 0.34 / 0.34
+CPU usage from 468478ms to 174056ms ago (2026-10-22 19:18:10.634 to 2026-10-22 19:23:05.056):
+  1.2% 1149/com.google.android.apps.nexuslauncher: 0% user + 1.1% kernel / faults: 1861 minor 1 major
+  0.8% 421/surfaceflinger: 0.2% user + 0.6% kernel / faults: 69 minor
+  0.7% 568/system_server: 0.3% user + 0.4% kernel / faults: 13294 minor 1 major
+  0.7% 397/android.hardware.graphics.composer3-service.ranchu: 0.1% user + 0.5% kernel
+  0.2% 384/android.hardware.sensors-service.multihal: 0% user + 0.1% kernel
+  0.1% 3318/kworker/0:2-virtio_vsock: 0% user + 0.1% kernel
+  0.1% 823/com.android.systemui: 0% user + 0.1% kernel / faults: 2291 minor 1 major
+  0% 381/android.hardware.graphics.allocator@3.0-service.ranchu: 0% user + 0% kernel
+  0% 1388/com.google.android.gms: 0% user + 0% kernel / faults: 2987 minor 7364 major
+  0% 181/kworker/2:2-mm_percpu_wq: 0% user + 0% kernel
+  0% 1027/com.google.android.gms.persistent: 0% user + 0% kernel / faults: 1584 minor
+  0% 1184/com.google.android.apps.wellbeing: 0% user + 0% kernel / faults: 7723 minor 2857 major
+  0% 472/logcat: 0% user + 0% kernel
+  0% 58/kworker/3:1-mm_percpu_wq: 0% user + 0% kernel
+  0% 1851/com.google.android.googlequicksearchbox:search: 0% user + 0% kernel / faults: 1821 minor 5480 major
+  0% 1249/com.google.android.as: 0% user + 0% kernel / faults: 1418 minor
+  0% 1270/com.google.android.googlequicksearchbox:interactor: 0% user + 0% kernel / faults: 1002 minor
+  0% 16/rcu_preempt: 0% user + 0% kernel
+  0% 53/kworker/1:1-mm_percpu_wq: 0% user + 0% kernel
+  0% 161/logd: 0% user + 0% kernel / faults: 2227 minor 2 major
+  0% 425/adbd: 0% user + 0% kernel / faults: 7239 minor
+  0% 3093/kworker/u8:0: 0% user + 0% kernel
+  0% 1093/com.google.android.permissioncontroller: 0% user + 0% kernel / faults: 195 minor 826 major
+  0% 3459/kworker/u8:1-events_unbound: 0% user + 0% kernel
+  0% 164/servicemanager: 0% user + 0% kernel
+  0% 211/jbd2/dm-44-8: 0% user + 0% kernel
+  0% 1165/com.google.android.inputmethod.latin: 0% user + 0% kernel / faults: 214 minor
+  0% 37/migration/3: 0% user + 0% kernel
+  0% 97/kworker/3:1H-kblockd: 0% user + 0% kernel
+  0% 178/vold: 0% user + 0% kernel / faults: 27 minor 2 major
+  0% 189/android.system.suspend-service: 0% user + 0% kernel
+  0% 373/netd: 0% user + 0% kernel / faults: 44 minor
+  0% 382/android.hardware.health-service.example: 0% user + 0% kernel
+  0% 475/cameraserver: 0% user + 0% kernel / faults: 6 minor
+  0% 578/kworker/0:7H-kblockd: 0% user + 0% kernel
+  0% 784/android.hardware.biometrics.fingerprint-service.ranchu: 0% user + 0% kernel / faults: 18 minor
+  0% 950/com.android.phone: 0% user + 0% kernel / faults: 155 minor
+  0% 1362/com.google.android.settings.intelligence: 0% user + 0% kernel / faults: 17 minor 25 major
+  0% 1377/com.android.keychain: 0% user + 0% kernel / faults: 155 minor 145 major
+  0% 3007/com.google.android.webview:webview_service: 0% user + 0% kernel / faults: 341 minor 5 major
+ +0% 3678/kworker/0:0-virtio_vsock: 0% user + 0% kernel
+ +0% 3688/kworker/u9:0: 0% user + 0% kernel
+ +0% 3696/com.illdynamics.snekbyte: 0% user + 0% kernel
+ +0% 3768/com.google.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0: 0% user + 0% kernel
+3% TOTAL: 0.5% user + 1.4% kernel + 0% iowait + 1% irq + 0% softirq

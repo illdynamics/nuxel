@@ -1,0 +1,28 @@
+========================================================================
+### pre_state  [rc=0 framed=True sha_ok=True elapsed=0.858s]
+4
+0
+2
+========================================================================
+### wake  [rc=0 framed=True sha_ok=True elapsed=3.148s]
+wake-sent
+========================================================================
+### post_blp  [rc=0 framed=True sha_ok=True elapsed=0.088s]
+4
+0
+2
+========================================================================
+### post_decon  [rc=0 framed=True sha_ok=True elapsed=0.132s]
+suspended
+========================================================================
+### post_state  [rc=0 framed=True sha_ok=True elapsed=0.082s]
+1792655813 DISPLAY_SLEEP total=3628 failures=0 owner=nuxel-wl-fb display=off capture=stopped
+========================================================================
+### post_disp  [rc=0 framed=True sha_ok=True elapsed=0.132s]
+DISPLAY_OFF
+brightness=0
+actual_brightness=2
+bl_power=4
+saved_brightness=12800
+max_brightness=48600
+owner=nuxel-wl-fb

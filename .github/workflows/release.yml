@@ -245,7 +245,11 @@ jobs:
             || echo "::warning::no aarch64 binfmt handler visible; arm64 podman run may fail"
 
       - name: Populate single-source PWA assets
-        run: make assets
+        run: |
+          # tools/dedupe-assets.sh is committed executable; make it explicit so
+          # an archive that dropped the bit still runs the real asset population.
+          chmod +x tools/dedupe-assets.sh tools/verify-pwa-assets.sh
+          make assets
 
       - name: Build shared initramfs (g7power)
         if: matrix.device == 'g7power'
@@ -361,9 +365,23 @@ jobs:
           merge-multiple: true
           path: dist
 
+      - name: Verify the captured installed phone image
+        run: |
+          # The release must ship the EXACT BOOT image installed on the owner's
+          # handset, not only an image rebuilt from the same sources. The
+          # capture under release/s10plus/ is verified fail-closed here:
+          # decompressed SHA-256/bytes, v1 ANDROID! header, raw arm64 kernel,
+          # kernel/ramdisk hashes and the recorded full-partition readback.
+          python3 tools/release/verify-installed-image.py --json
+
       - name: Assemble release assets (checksums + notes)
         run: |
           ls -lh dist || true
+          # Publish the captured installed image + its provenance manifest
+          # alongside the CI-built device archives.
+          cp release/s10plus/nuxel-installed-s10plus-boot.img.gz dist/
+          cp release/s10plus/nuxel-installed-s10plus-userspace-files.txt.gz dist/
+          cp release/s10plus/INSTALLED-IMAGES.json dist/
           bash tools/package-release.sh \
             --version "${{ needs.prepare.outputs.tag }}" \
             --from-assets --out dist
@@ -413,7 +431,11 @@ jobs:
             exit 0
           fi
           gh release create "$tag" \
-            dist/*.tar.gz dist/SHA256SUMS.txt \
+            dist/*.tar.gz \
+            dist/*.img.gz \
+            dist/INSTALLED-IMAGES.json \
+            dist/*.txt.gz \
+            dist/SHA256SUMS.txt \
             --verify-tag \
             --prerelease \
             --title "Nuxel ${tag}" \

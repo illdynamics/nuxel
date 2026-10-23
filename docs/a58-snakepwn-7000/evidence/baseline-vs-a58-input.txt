@@ -1,0 +1,4 @@
+A57 dpad software event-to-recognition ms 211 turn before release False
+A57 swipe software event-to-recognition ms 210 turn before release False
+A58 dpad software event-to-recognition ms 0 turn before release True
+A58 swipe software event-to-recognition ms 0.0 turn before release True

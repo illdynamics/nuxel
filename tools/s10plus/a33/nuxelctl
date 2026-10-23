@@ -33,6 +33,7 @@ Usage:
     nuxelctl statusbar orientation portrait|landscape_left|landscape_right
     nuxelctl statusbar padding 8
     nuxelctl display off|on|toggle
+    nuxelctl orientation status|get|modes|set <mode>|watch [s]
     nuxelctl volume up|down|mute
     nuxelctl buttons list
     nuxelctl buttons set bixby_short open-terminal
@@ -158,6 +159,38 @@ def delegate(name, args, root=None):
     except OSError as e:
         print("!! cannot execute %s: %s" % (script, e))
         return 126
+
+
+
+
+ORIENTATIOND_CANDIDATES = (
+    "/usr/libexec/nuxel/nuxel-orientationd",
+    "/usr/lib/nuxel/nuxel-orientationd",
+    "/usr/bin/nuxel-orientationd",
+    os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                 "..", "..", "..", "services", "nuxel-orientation", "nuxel-orientationd"),
+)
+
+
+def cmd_orientation(args):
+    """Delegate to the ONE orientation policy implementation (nuxel-orientationd).
+
+    Shares the daemon's state file with Quick Settings and Settings, so the
+    console and the UI can never disagree. The daemon resolves paths through
+    NUXEL_ROOT, exactly like nuxelctl itself.
+    """
+    script = None
+    for c in ORIENTATIOND_CANDIDATES:
+        if os.path.isfile(c):
+            script = os.path.abspath(c)
+            break
+    if not script:
+        print("!! nuxel-orientationd is not installed (searched %s)" %
+              ", ".join(ORIENTATIOND_CANDIDATES))
+        return 127
+    env = dict(os.environ)
+    env["NUXEL_ROOT"] = ROOT
+    return subprocess.call([sys.executable, script] + args, env=env)
 
 
 def _fsm_spec():
@@ -538,6 +571,9 @@ def main():
     # console command and the diagnostic can never produce different answers.
     if cmd in PASSTHROUGH:
         return delegate(PASSTHROUGH[cmd], argv, ROOT)
+
+    if cmd == "orientation":
+        return cmd_orientation(argv)
 
     if cmd == "status":
         return show_status()

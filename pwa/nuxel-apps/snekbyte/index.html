@@ -1,92 +1,87 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="nuxel-app-id" content="org.nuxel.SnekByte">
-<meta name="theme-color" content="#2E7D32">
-<title>SnekByte — the original game, ported</title>
-<link rel="manifest" href="manifest.json">
-<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="css/snekbyte.css">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#081a20">
+  <meta name="nuxel-app-id" content="org.nuxel.SnekByte">
+  <meta name="description" content="SnekByte for Nuxel — WoNQ snake game with a 5-bite poop-o-meter.">
+  <title>SnekByte — Nuxel</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icons/icon-192.png" type="image/png">
+  <link rel="stylesheet" href="css/snekbyte.css">
 </head>
 <body>
-<header class="hdr">
-  <h1>🐍 SnekByte</h1>
-  <span class="badge" id="prov-badge">port of the original pygame game</span>
-  <span class="grow"></span>
-  <button id="pad-toggle" class="ghost" title="Show or hide the on-screen D-pad">D-pad</button>
-  <button id="help" class="ghost" title="How this port is verified">Verify</button>
-  <button id="close" class="ghost" title="Close the game">✕</button>
-</header>
-
-<div class="stage" id="stage">
-  <canvas id="screen" width="800" height="600" role="img"
-          aria-label="SnekByte playfield: 40 by 30 grid, 20 pixel cells"></canvas>
-
-  <div class="pad">
-    <div class="side">
-      <span class="blank"></span>
-      <button id="dp-up" aria-label="Move up">▲</button>
-      <span class="blank"></span>
-      <button id="dp-left" aria-label="Move left">◀</button>
-      <button id="pause" aria-label="Pause or resume">❙❙</button>
-      <button id="dp-right" aria-label="Move right">▶</button>
-      <span class="blank"></span>
-      <button id="dp-down" aria-label="Move down">▼</button>
-      <span class="blank"></span>
-    </div>
-    <div class="side">
-      <span class="blank"></span>
-      <button id="restart" aria-label="Restart the game">↻</button>
-      <span class="blank"></span>
-      <button id="menu" aria-label="Back to the main menu">☰</button>
-      <button id="fast" aria-label="Change speed">»</button>
-      <span class="blank"></span>
-      <span class="blank"></span>
-      <span class="blank"></span>
-      <span class="blank"></span>
-    </div>
+<main id="app">
+  <header class="top">
+    <div class="brand"><img src="icons/icon-96.png" width="38" height="38" alt=""><div><strong>SNEK<span>BYTE</span></strong><small>NUXEL ARCADE // WoNQ EDITION</small></div></div>
+    <div class="actions"><button id="settings-button" class="iconbutton" aria-label="Game settings" title="Settings">⚙</button><button id="help-button" class="iconbutton" aria-label="Instructions" title="Help">?</button></div>
+  </header>
+  <section class="scoreboard" aria-label="Game status">
+    <div class="scorecard"><span>SCORE</span><strong id="score">0</strong></div>
+    <div class="scorecard"><span>BEST</span><strong id="best">0</strong></div>
+    <div class="scorecard"><span>CELLS / SEC</span><strong id="speed">12</strong></div>
+    <div class="scorecard status-card"><span>STATUS</span><strong id="status" aria-live="polite">READY</strong></div>
+  </section>
+  <div class="speed-controls" aria-label="Live speed">
+    <span id="wall-mode">WRAP ON</span>
+    <button id="speed-down" aria-label="Slower snake">−</button>
+    <span>Speed</span><button id="speed-up" aria-label="Faster snake">+</button>
+    <span id="input-ack" aria-label="Last accepted turn">🐍</span>
   </div>
+  <section class="poopmeter" id="meter" aria-label="Poop-o-meter">
+    <div class="meter-head"><div><span class="poop-symbol" aria-hidden="true">💩</span><strong>POOP-O-METER</strong></div><span class="meter-count" id="meter-count" aria-live="polite">0 / 5</span></div>
+    <div class="segments" role="progressbar" id="meter-progress" aria-valuemin="0" aria-valuemax="5" aria-valuenow="0" aria-label="Food eaten towards next poop">
+      <span></span><span></span><span></span><span></span><span></span>
+    </div>
+    <small id="meter-note">Every 5 snacks, the snake drops an obstacle. Don't step in it!</small>
+  </section>
+  <section class="playfield" id="playfield" aria-label="SnekByte playfield">
+    <canvas id="screen" width="800" height="600" tabindex="0" aria-label="Snake game: swipe to steer, or use the arrow controls"></canvas>
+    <div id="overlay" class="overlay" role="dialog" aria-modal="false" aria-labelledby="overlay-title">
+      <img class="overlay-icon" src="icons/icon-192.png" width="72" height="72" alt="">
+      <h1 id="overlay-title">SNEKBYTE</h1>
+      <p id="overlay-subtitle">Old-school snake. Brand-new consequences.</p>
+      <div id="overlay-buttons" class="overlay-buttons"><button id="play-button" class="primary">▶ PLAY</button><button id="overlay-settings-button">⚙ SETTINGS</button></div>
+    </div>
+  </section>
+  <section class="controlbar" aria-label="Game controls">
+    <div class="utility-controls"><button id="back-button" title="Game menu">☰ <span>MENU</span></button><button id="pause-button" title="Pause or resume">⏸ <span>PAUSE</span></button></div>
+    <div class="dpad" aria-label="Direction controls">
+      <span></span><button data-dir="up" aria-label="Up">▲</button><span></span>
+      <button data-dir="left" aria-label="Left">◀</button><span class="dpad-center">✣</span><button data-dir="right" aria-label="Right">▶</button>
+      <span></span><button data-dir="down" aria-label="Down">▼</button><span></span>
+    </div>
+    <div class="control-hint"><span>SWIPE</span><span>TO STEER</span><span>🐍</span></div>
+  </section>
+  <footer>ORIGINAL PYTHON GAME · NUXEL TOUCH EDITION <span id="offline-indicator">● OFFLINE READY</span></footer>
+</main>
+<div class="sheet-backdrop" id="settings-panel" hidden>
+  <section class="sheet" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+    <header><h2 id="settings-title">⚙ GAME SETTINGS</h2><button id="settings-close" aria-label="Close settings">✕</button></header>
+    <label for="speed-setting">Snake speed <output id="speed-label">Normal · 12 ticks/s</output></label>
+    <input id="speed-setting" type="range" min="0" max="4" step="1" value="2">
+    <p>Speed changes apply to this round. Use − / + beside the board while playing.</p>
+    <label class="toggle-row" for="wrap-setting"><span><strong>Wrap Walls</strong><small>ON by default. Off enables Classic Walls next round.</small></span><input id="wrap-setting" type="checkbox" checked></label>
+    <label class="toggle-row" for="wonq-setting"><span><strong>WoNQ Mode</strong><small>Poop obstacle every 5 snacks</small></span><input id="wonq-setting" type="checkbox" checked></label>
+    <label class="toggle-row" for="grid-setting"><span><strong>Pixel grid</strong><small>Show classic arcade grid lines</small></span><input id="grid-setting" type="checkbox" checked></label>
+    <p class="sheet-note">Walls wrap around — leaving one side enters the opposite side. Settings and high score stay on this device. WoNQ and wall-mode changes apply to the next round.</p>
+    <button class="primary wide" id="settings-done">DONE</button>
+  </section>
 </div>
-
-<div class="legend">
-  <span><kbd>↑</kbd><kbd>↓</kbd><kbd>←</kbd><kbd>→</kbd> or <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> turn</span>
-  <span><kbd>Space</kbd> pause</span>
-  <span><kbd>Enter</kbd> select</span>
-  <span><kbd>Esc</kbd> back</span>
-  <span>or swipe on the playfield / use the D-pad</span>
+<div class="sheet-backdrop" id="help-panel" hidden>
+  <section class="sheet" role="dialog" aria-modal="true" aria-labelledby="help-title">
+    <header><h2 id="help-title">🐍 HOW TO PLAY</h2><button id="help-close" aria-label="Close help">✕</button></header>
+    <p>Swipe on the board, press the D-pad, or use your keyboard's arrow/WASD keys. Eat red food to grow. Avoid your body and poop piles.</p>
+    <p>Walls wrap around — leaving one side enters the opposite side. Classic Walls is available in Settings.</p>
+    <p><strong>Poop-o-meter:</strong> In WoNQ Mode, every fifth food drops a persistent brown obstacle at the tail. A collision ends the game.</p>
+    <p><strong>Controls:</strong> Space pauses, Escape/Back pauses or closes an open dialog. Locking the phone or leaving the app automatically pauses the game.</p>
+    <button class="primary wide" id="help-done">GOT IT</button>
+  </section>
 </div>
-
-<div class="panel" id="panel-provenance" data-panel="provenance">
-  <h3>How the port is verified</h3>
-  <p>SnekByte is a port of the original Python/pygame game. Fidelity is not asserted by eye:
-     the real upstream modules are executed by
-     <code>tools/s10plus/a33/snekbyte/gen-parity-fixtures.py</code> over scripted input, and the
-     JavaScript engine in <code>js/snek-engine.js</code> must reproduce that recording tick for tick.</p>
-  <div class="row">
-    <table>
-      <tr><th>Check</th><th>Command</th></tr>
-      <tr><td>Python original vs. fixture</td><td><code>python3 tools/s10plus/a33/snekbyte/gen-parity-fixtures.py --check</code></td></tr>
-      <tr><td>JS port vs. fixture</td><td><code>node tools/s10plus/a33/snekbyte/parity-run.js</code></td></tr>
-      <tr><td>Everything (provenance + parity + shell)</td><td><code>python3 tools/s10plus/a33/snekbyte/tests/test-snek-parity.py</code></td></tr>
-      <tr><td>Engine unit tests</td><td><code>node pwa/nuxel-apps/snekbyte/tests/test-snek-engine.js</code></td></tr>
-    </table>
-  </div>
-  <p>Result recorded in <code>tools/s10plus/a33/snekbyte/fixtures/parity.json</code>: 3 scenarios, 41 ticks,
-     wall + self + WoNQ-poop endings, every field identical.</p>
-  <p>Licence position, stated rather than glossed over: the upstream <code>snekbyte-main.zip</code> archive
-     contains <strong>no licence file</strong> at all, so no licence header could be preserved. See
-     <code>tools/s10plus/a33/snekbyte/UPSTREAM-PROVENANCE.md</code> §2 and
-     <code>docs/beta-finalization/apps/SNEKBYTE.md</code>. Upstream copyright remains with its author.</p>
-  <p>On-device play is <strong>not claimed</strong>: the acceptance verdict is OFFLINE_TESTED /
-     VERIFIED_IN_VM_ONLY. Nothing here has been flashed or installed to a physical phone.</p>
-  <div class="row"><button class="ghost" id="prov-close">Back to the game</button></div>
-</div>
-
-<div class="toast" id="toast" role="status" aria-live="polite"></div>
-
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
 <script src="js/snek-engine.js"></script>
+<script src="js/snek-controls.js"></script>
 <script src="js/snekbyte.js"></script>
 </body>
 </html>

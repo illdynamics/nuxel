@@ -1,0 +1,237 @@
+========================================================================
+### wlfb_ls  [rc=2 framed=True sha_ok=True elapsed=0.869s]
+ls: cannot access '/usr/local/bin/nuxel-wl-fb': No such file or directory
+-rwxr-xr-x 1 root root 78600 Oct 21 08:43 /usr/lib/nuxel/nuxel-wl-fb
+========================================================================
+### wlfb_sha  [rc=0 framed=True sha_ok=True elapsed=0.085s]
+bc38e12d075ebdd9e7a4cec43740760948a35794ad2d51b303f79d4f6191d123  /usr/lib/nuxel/nuxel-wl-fb
+========================================================================
+### wlfb_file  [rc=127 framed=True sha_ok=True elapsed=0.135s]
+sh: file: command not found
+========================================================================
+### wlfb_strings  [rc=0 framed=True sha_ok=True elapsed=0.098s]
+
+========================================================================
+### session_sh  [rc=0 framed=True sha_ok=True elapsed=0.134s]
+#!/bin/sh
+# Nuxel phone session — runs INSIDE the phoc compositor (phoc -E ...).
+#
+# Composition (identical to the UTM VM, minus the VM's browser that is not
+# installed on the handset - nuxel-pwa-host takes that role):
+#   1. the launcher's own static web server (services/nuxel-web.service in the
+#      VM: python3 -m http.server 8000 --bind 127.0.0.1, docroot with the
+#      pwa/ tree), docroot /usr/share/nuxel;
+#   2. the real launcher (WebKitGTK view) through nuxel-pwa-host.
+#
+# DOCROOT LAYOUT (fixed A29b, measured): services/nuxel-web.service does NOT
+# serve pwa/nuxel-home.  It serves the repository root so that the launcher's own
+# relative reference `../nuxel-common/bridge.js` (index.html line 125, enforced
+# by pwa/nuxel-common/verify-wiring.js) resolves.  The launcher URL is therefore
+# /pwa/nuxel-home/index.html and BOTH pwa/nuxel-home and pwa/nuxel-common must
+# exist under the docroot.  The first phone image staged only /usr/share/nuxel/
+# nuxel-home (no pwa/ level, no nuxel-common), which 404'd the index and the
+# bridge module; this script now resolves the layout and says which one it used.
+#
+# Software rendering is forced because this kernel has no DRM/EGL device.
+set -eu
+export XDG_SESSION_TYPE=wayland
+export GDK_BACKEND=wayland
+export WEBKIT_DISABLE_COMPOSITING_MODE=1
+export LIBGL_ALWAYS_SOFTWARE=1
+export GSK_RENDERER=cairo
+LOG=/run/nuxel-session.log
+say() { echo "$(date -u +%FT%TZ) $*" >>"$LOG"; }
+
+DOCROOT=/usr/share/nuxel
+# Layout A = the VM's (and the image builder's) pwa/ tree; layout B = the flat
+# copy the first handset image shipped.  Chosen by the launcher's own index.html.
+HOME_REL=""
+for c in /pwa/nuxel-home /nuxel-home; do
+  if [ -f "$DOCROOT$c/index.html" ]; then HOME_REL="$c"; break; fi
+done
+if [ -z "$HOME_REL" ]; then
+  say "FATAL launcher index.html not found under $DOCROOT (looked for /pwa/nuxel-home, /nuxel-home)"
+  exit 1
+fi
+[ -n "${NUXEL_HOME_URL:-}" ] || NUXEL_HOME_URL="http://127.0.0.1:8000$HOME_REL/index.html"
+# the ES module the launcher imports by relative path
+BRIDGE="$DOCROOT${HOME_REL%/*}/nuxel-common/bridge.js"
+if [ -f "$BRIDGE" ]; then BRIDGE_OK=yes; else BRIDGE_OK=no; fi
+
+say() { echo "$(date -u +%FT%TZ) $*" >>"$LOG"; }
+say "session start WAYLAND_DISPLAY=${WAYLAND_DISPLAY:-?} layout=$HOME_REL bridge_ok=$BRIDGE_OK url=$NUXEL_HOME_URL"
+
+if ! curl -fsS -o /dev/null "$NUXEL_HOME_URL" 2>/dev/null; then
+  ( cd "$DOCROOT" && exec python3 -m http.server 8000 --bind 127.0.0.1 ) >/run/nuxel-web.log 2>&1 &
+  WEB_PID=$!
+  for i in $(seq 1 40); do
+    curl -fsS -o /dev/null "$NUXEL_HOME_URL" && break
+    sleep 0.25
+  done
+  if curl -fsS -o /dev/null "$NUXEL_HOME_URL"; then READY=yes; else READY=no; fi
+  say "web server pid=$WEB_PID ready=$READY"
+else
+  say "web server already serving"
+fi
+# A45 KEYBOARD: the persistent Back/Home/Recents dock is a native
+# zwlr_layer_shell_v1 OVERLAY surface with an exclusive zone, so the native
+# Stevia OSK (the working keyboard) stops above it instead of covering it.
+# Start both as session Wayland clients, before the launcher host takes the
+# foreground.  Stevia is started inside a session D-Bus so its OSK provider
+# registration succeeds.
+say "starting A45 nav dock + Stevia OSK"
+nohup /usr/lib/nuxel/nuxel-navdock </dev/null >/run/nuxel-navdock.out 2>&1 &
+if [ -x /usr/bin/phosh-osk-stevia ]; then
+  nohup dbus-run-session -- /usr/bin/phosh-osk-stevia </dev/null >/run/stevia.out 2>&1 &
+fi
+
+say "starting launcher host url=$NUXEL_HOME_URL"
+exec /usr/lib/nuxel/nuxel-pwa-host
+========================================================================
+### nuxel_cfg  [rc=0 framed=True sha_ok=True elapsed=0.097s]
+/etc/nuxel/statusbar-safezones.json
+/etc/nuxel/bootmode/bootmode-guard.json
+/etc/nuxel/bootmode/README.md
+/etc/nuxel/app-registry/README-app-registry.md
+/etc/nuxel/app-registry/app-registry.schema.json
+/etc/nuxel/app-registry/app_registry.json
+/etc/nuxel/app-registry/app_registry.json.nuxel-rollback
+/etc/nuxel/bridge-version.json
+/etc/nuxel/nfc/nfc.json
+/etc/nuxel/nfc/README.md
+/etc/nuxel/capabilities/connectivity-time-audio-buttons.json
+/etc/nuxel/capabilities/hardware-subsystems.json
+/etc/nuxel/camera/camera.json
+/etc/nuxel/camera/README.md
+/etc/nuxel/buttons/reboot-gate.json
+/etc/nuxel/buttons/reboot-gate.json.prev
+/etc/nuxel/buttons/settings-surface.json
+/etc/nuxel/orientation/orientation.json
+/etc/nuxel/orientation/orientation.schema.json
+/etc/nuxel/orientation/README.md
+/etc/nuxel/input/button-fsm.json
+/etc/nuxel/input/buttons.json.nuxel-staged
+/etc/nuxel/input/button-fsm.json.prev
+/etc/nuxel/input/buttons.json
+/etc/nuxel/input/buttons.json.prev
+/etc/nuxel/boot/verbose-boot.json
+/etc/nuxel/boot/animation-handoff.json
+/etc/nuxel/bluetooth/main.conf.d/60-nuxel.conf
+/etc/nuxel/bluetooth/bluetooth.json
+/etc/nuxel/bluetooth/README.md
+/etc/nuxel/keyboard/keyboard.json
+/etc/nuxel/keyboard/keyboard.schema.json
+/etc/nuxel/keyboard/keyboard.json.nuxel-rollback
+/etc/nuxel/keyboard/README.md
+/etc/nuxel/keyboard/keyboard.schema.json.nuxel-rollback
+/etc/nuxel/touch/bootmode-guard.json
+/etc/nuxel/touch/README.md
+/etc/nuxel/phone-runtime-status
+/etc/nuxel/display/statusbar-safezones.json
+/etc/nuxel/display/screen-timeout.json
+/etc/nuxel/power/power-menu.json
+/etc/nuxel/power/README.md
+/etc/nuxel/power/power.json
+/etc/nuxel/sandbox/profiles/default.json.nuxel-rollback
+/etc/nuxel/sandbox/profiles/default.json
+/etc/nuxel/sandbox/profiles/nuxel-home.json
+/etc/nuxel/sandbox/profiles/nuxel-permissions.json
+/etc/nuxel/sandbox/profiles/pwa-template.json
+/etc/nuxel/sandbox/profiles/nuxel-contacts.json
+/etc/nuxel/sandbox/profiles/nuxel-settings.json
+/etc/nuxel/sandbox/profiles/README.md
+/etc/nuxel/sandbox/profiles/nuxel-privacy.json
+/etc/nuxel/sandbox/profiles/nuxel-messages.json
+/etc/nuxel/sandbox/profiles/nuxel-dialer.json
+/etc/nuxel/paths.conf
+/etc/nuxel/audio/audio.json
+/etc/nuxel/audio/jack-routes.json
+/etc/nuxel/README.md
+/etc/nuxel/haptics/README.md
+/etc/nuxel/haptics/haptics.json
+========================================================================
+### fps_cfg  [rc=0 framed=True sha_ok=True elapsed=0.119s]
+/etc/nuxel/orientation/orientation.json:8:    "panel": "S6E3HA9 Dynamic AMOLED 3040x1440 (portrait scanout 1440x3040)"
+/etc/nuxel/boot/verbose-boot.json:11:  "effect": "verbose_boot=true shows the Nuxel boot log on the glass (launcher boot-log overlay + /var/log/nuxel/boot-stage.log) and shortens the boot animation so the log is visible as early as possible; verbosity_level picks how much that log says; animation_mode picks what the boot animation does. The default (verbose_boot=false, animation_mode=standard, verbosity_level=1) keeps the full 192-frame 24 fps animation and its minimum-cycle receipt handoff.",
+/etc/nuxel/boot/verbose-boot.json:14:    "meaning": "animation_mode=off disables the animation entirely; animation_mode=short trades the animation for the earliest userspace handoff; otherwise an effective verbose_boot=true (config, kernel cmdline nuxel.verbose_boot=1, or the one-time Bixby hold) shortens it, because the operator asked to see the log; otherwise the standard 192-frame/24 fps animation with the minimum-cycle handoff runs. verbosity_level never changes WHETHER the log is shown - only how much it says - so a quiet boot stays quiet.",
+/etc/nuxel/boot/animation-handoff.json:6:  "mp4_fps": 24,
+/etc/nuxel/power/power.json:27:    "candidates": ["battery", "max77705-charger", "max1720x", "bq2597x", "sm5714-charger", "s2mps19-charger"],
+/etc/nuxel/device/s10plus/libinput/99-nuxel-beyond2lte-touch.conf:1:# Samsung S6SY761 sec_ts touch calibration for S10+ (3040×1440)
+/etc/nuxel/device/s10plus/display/nuxel-s10plus-display.sh:5:# Sets the Samsung S6E3HA9 Dynamic AMOLED panel (3040x1440, 19:9, HDR10+,
+/etc/nuxel/device/s10plus/display/nuxel-s10plus-display.sh:16:#   * Applies `wlr-randr --output DSI-1 --mode 1440x3040` (portrait scanout of
+/etc/nuxel/device/s10plus/display/nuxel-s10plus-display.sh:17:#     the 3040x1440 panel spec). Fails gracefully with a WARN (non-fatal):
+/etc/nuxel/device/s10plus/display/nuxel-s10plus-display.sh:41:Sets the S6E3HA9 AMOLED panel to its native 3040x1440 (portrait scanout
+/etc/nuxel/device/s10plus/display/nuxel-s10plus-display.sh:42:1440x3040) mode on the given wlr-randr output.
+/etc/nuxel/device/s10plus/display/nuxel-s10plus-display.sh:85:NUXEL_DISPLAY_RESOLUTION="${NUXEL_DISPLAY_RESOLUTION:-3040x1440}"
+/etc/nuxel/device/s10plus/display/nuxel-s10plus-display.sh:90:# (3040x1440). wlr-randr modes are "WIDTH x HEIGHT" of the scanout, so the
+/etc/nuxel/device/s10plus/display/nuxel-s10plus-display.sh:91:# portrait framebuffer is 1440 wide x 3040 tall.
+/etc/nuxel/device/s10plus/display/nuxel-s10plus-display.sh:92:DISPLAY_W=1440
+/etc/nuxel/device/s10plus/display/nuxel-s10plus-display.sh:93:DISPLAY_H=3040
+/etc/nuxel/nuxel-beyond2lte.conf:7:NUXEL_DISPLAY_RESOLUTION=3040x1440
+/etc/nuxel/phoc-phone.ini:4:# geometry set to the handset's own panel: 1440x3040 at scale 2 => 720x1520
+/etc/nuxel/phoc-phone.ini:6:# the Nuxel launcher in (VM: [output:Virtual-1] mode = 720x1440, scale = 2,
+/etc/nuxel/phoc-phone.ini:10:mode = 720x1520
+========================================================================
+### libnuxel  [rc=0 framed=True sha_ok=True elapsed=0.091s]
+total 1932
+-rwxr-xr-x 1 root root  71376 Sep 15 02:00 libnuxel-libinput-path.so
+-rwxr-xr-x 1 root root  13389 Sep 15 03:14 nuxel-anim-pack.py
+-rwxr-xr-x 1 root root   1216 Sep 15 03:10 nuxel-animation-claim
+drwxr-xr-x 2 root root  36864 Oct 21 19:56 nuxel-bridge
+-rwxr-xr-x 1 root root  72384 Oct 17 14:17 nuxel-button-fsm-sim
+-rwxr-xr-x 1 root root  77360 Oct 21 08:38 nuxel-button-manager
+-rwxr-xr-x 1 root root  77360 Oct 20 22:52 nuxel-button-manager.prev
+-rwxr-xr-x 1 root root  75984 Sep 15 02:35 nuxel-button-manager.prev-a32
+drwxr-xr-x 2 root root   4096 Sep 15 02:49 nuxel-camera-portal
+drwxr-xr-x 2 root root   4096 Sep 15 02:46 nuxel-console
+-rwxr-xr-x 1 root root   1692 Sep 15 02:46 nuxel-console-free
+-rwxr-xr-x 1 root root   4802 Oct 19 09:05 nuxel-hapticsd.py
+-rwxr-xr-x 1 root root   1073 Sep 15 02:46 nuxel-home-kiosk
+drwxr-xr-x 3 root root   4096 Sep 15 02:39 nuxel-home-native
+-rwxr-xr-x 1 root root    517 Sep 15 02:36 nuxel-launcher-ready-wait
+-rwxr-xr-x 1 root root  76072 Oct 21 13:45 nuxel-metricsd
+-rwxr-xr-x 1 root root  73064 Oct 21 13:45 nuxel-metricsd.prev
+-rwxr-xr-x 1 root root  76888 Oct 21 08:37 nuxel-navdock
+-rwxr-xr-x 1 root root 141704 Oct 20 22:13 nuxel-navdock.prev
+drwxr-xr-x 2 root root   4096 Sep 15 02:46 nuxel-notifications
+drwxr-xr-x 2 root root   4096 Sep 15 02:47 nuxel-permissions
+drwxr-xr-x 2 root root   4096 Sep 15 02:46 nuxel-portal
+-rwxr-xr-x 1 root root   3834 Oct 21 21:06 nuxel-postboot.sh
+-rwxr-xr-x 1 root root  78512 Oct 21 08:37 nuxel-pwa-host
+-rwxr-xr-x 1 root root  78336 Oct 20 22:57 nuxel-pwa-host.prev
+-rwxr-xr-x 1 root root  74760 Sep 15 02:31 nuxel-pwa-host.prev-a32
+-rwxr-xr-x 1 root root   3505 Oct 20 22:42 nuxel-session.sh
+-rwxr-xr-x 1 root root   2858 Oct 20 22:42 nuxel-session.sh.prev
+-rwxr-xr-x 1 root root  75432 Oct 20 22:18 nuxel-text-input-probe
+-rwxr-xr-x 1 root root  74920 Oct 20 22:18 nuxel-text-input-probe.prev
+-rwxr-xr-x 1 root root  72624 Sep 15 02:27 nuxel-touch-arm
+-rwxr-xr-x 1 root root  66136 Jan  4  2019 nuxel-ui.A25
+-rwxr-xr-x 1 root root  66136 Jan  4  2019 nuxel-ui.prev
+-rwxr-xr-x 1 root root    305 Sep 15 02:36 nuxel-wait-wayland
+-rwxr-xr-x 1 root root  14765 Sep 15 02:46 nuxel-web-server.py
+-rwxr-xr-x 1 root root  78600 Oct 21 08:43 nuxel-wl-fb
+-rwxr-xr-x 1 root root  78304 Oct 19 02:26 nuxel-wl-fb.prev
+-rwxr-xr-x 1 root root  76160 Sep 15 02:20 nuxel-wl-fb.prev-a32
+-rwxr-xr-x 1 root root  74576 Oct 20 22:05 nuxel-wl-snapshot
+-rw-r--r-- 1 root root  40423 Oct 17 02:11 packages-manifest.json
+-rw-r--r-- 1 root root  40423 Sep 15 03:14 packages-manifest.json.nuxel-rollback
+drwxr-xr-x 4 root root   4096 Sep 15 02:46 src
+-rwxr-xr-x 1 root root   4375 Sep 15 02:15 touch-capture.py
+-rw-rw-rw- 1 root root     20 Oct 20 22:57 ui.pinned
+-rw-r--r-- 1 root root     20 Oct 20 22:57 ui.rev
+-rwxr-xr-x 1 root root  16673 Sep 15 02:39 verify-app-inventory.py
+-rwxr-xr-x 1 root root  29542 Sep 15 02:39 verify-app-registry.py
+========================================================================
+### pwa_host_ls  [rc=0 framed=True sha_ok=True elapsed=0.085s]
+-rwxr-xr-x 1 root root 78512 Oct 21 08:37 /usr/lib/nuxel/nuxel-pwa-host
+
+/usr/share/nuxel:
+total 1436
+drwxr-xr-x 4 root root    4096 Oct 20 22:40 assets
+drwxrwxrwx 2 root root  176128 Sep 15 03:14 boot
+-rw-r--r-- 1 root root 1257938 Oct 14 17:45 nuxel-background.png
+drwxr-xr-x 6 root root   12288 Oct 21 20:00 nuxel-home
+drwxr-xr-x 2 root root    4096 Sep 15 02:44 probes
+drwxr-xr-x 4 root root    4096 Sep 15 02:28 pwa
+drwxr-xr-x 2 root root    4096 Oct 21 21:04 runtime
+drwxr-xr-x 3 root root    4096 Sep 15 02:48 shell

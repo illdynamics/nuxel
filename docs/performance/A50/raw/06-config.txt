@@ -1,0 +1,275 @@
+# frame not verified for 'for l in /sys/class/lcd/*; do echo "$l"; cat $l/* 2>/dev/null | head -5; done 2>&1' (framed=True sha_ok=False)
+========================================================================
+### src_ls  [rc=0 framed=True sha_ok=True elapsed=0.858s]
+/usr/lib/nuxel/src/a33/nuxel-button-fsm.h
+/usr/lib/nuxel/src/a33/nuxel-console.c
+/usr/lib/nuxel/src/a33/nuxel-handoff-logic.h.nuxel-staged
+/usr/lib/nuxel/src/a33/README.md
+/usr/lib/nuxel/src/a33/nuxel-button-manager.c
+/usr/lib/nuxel/src/a33/nuxel-libinput-path.c
+/usr/lib/nuxel/src/a33/nuxel-handoff-logic.h
+/usr/lib/nuxel/src/a33/nuxel-pwa-host.c
+/usr/lib/nuxel/src/a33/nuxel-wl-fb.c
+/usr/lib/nuxel/src/shell/nuxel-phone-data/nuxel-phone-data.c
+/usr/lib/nuxel/src/shell/nuxel-phone-data/nuxel-phone-data.h
+/usr/lib/nuxel/src/shell/nuxel-phone-data/run-tests.sh
+/usr/lib/nuxel/src/shell/nuxel-phone-data/README.md
+/usr/lib/nuxel/src/shell/nuxel-phone-data/nuxel-phone-data-test.c
+/usr/lib/nuxel/src/shell/nuxel-permissions/main.c
+/usr/lib/nuxel/src/shell/nuxel-settings/main.c
+/usr/lib/nuxel/src/shell/meson.build
+/usr/lib/nuxel/src/shell/nuxel-sandbox/sandbox.c
+/usr/lib/nuxel/src/shell/nuxel-sandbox/sandbox.h
+/usr/lib/nuxel/src/shell/nuxel-firstboot/main.py
+/usr/lib/nuxel/src/shell/build-native-apps.sh
+/usr/lib/nuxel/src/shell/nuxel-contacts/main.c
+/usr/lib/nuxel/src/shell/nuxel-messages/main.c
+/usr/lib/nuxel/src/shell/README-cross.md
+/usr/lib/nuxel/src/shell/nuxel-dialer/main.c
+/usr/lib/nuxel/src/shell/aarch64-cross.ini
+========================================================================
+### screen_timeout  [rc=0 framed=True sha_ok=True elapsed=0.085s]
+{"schema_version":1,"timeout_ms":60000,"never":false}
+========================================================================
+### power_json  [rc=0 framed=True sha_ok=True elapsed=0.133s]
+{
+  "schema_version": 1,
+  "comment": "Power-management policy for the Samsung Galaxy S10+ (SM-G975F, beyond2lte). Read by tools/s10plus/a33/nuxel-power-diag.sh (installed as `nuxel-power-diag` / reachable from the Nuxel Settings power surface). Nothing in this file changes a kernel setting by itself: the tool reads the file, applies only the profile the owner selected, and reports what the running system actually exposes. Battery/charging VALUES are inherently owner-verified and are never claimed from a sysfs read alone.",
+  "device": {
+    "model": "Samsung Galaxy S10+ SM-G975F",
+    "codename": "beyond2lte",
+    "soc": "Exynos 9820",
+    "battery_mah": 4100,
+    "charging": "15 W wired / 12-15 W wireless (Samsung spec)"
+  },
+
+  "boot_modes": {
+    "comment": "lpcharge / charger-mode is a DISTINCT boot mode, not a normal boot. A bootloader LPM/charger-mode boot (androidboot.mode=charger) disables sec_ts and other input drivers before userspace runs; there is no userspace workaround on this kernel (CONFIG_KEXEC off, drivers not modular). The correct remedy is an ordinary reboot, never a kernel patch applied from userspace.",
+    "detect": {"kernel_cmdline": "/proc/cmdline", "needle": "androidboot.mode=charger"},
+    "known_modes": {
+      "charger": {"input_expected": false, "state": "blocked_boot_mode",
+                  "remedy": "ordinary reboot into a normal boot; no flashing, no kernel change"},
+      "normal": {"input_expected": true, "state": "ok"}
+    },
+    "dmesg_markers": ["sec_bat_is_lpm_check", "Low power charging mode"]
+  },
+
+  "fuel_gauge": {
+    "comment": "The gauge/charger nodes on this PMIC family are NOT assumed. The tool enumerates /sys/class/power_supply/* and reports the real device names; candidate names below only seed the report. An absent gauge is BLOCKED_KERNEL (no driver bound), not a guessed battery percentage.",
+    "device": "auto",
+    "sysfs_root": "/sys/class/power_supply",
+    "candidates": ["battery", "max77705-charger", "max1720x", "bq2597x", "sm5714-charger", "s2mps19-charger"],
+    "fields": {
+      "capacity": "capacity",
+      "status": "status",
+      "voltage_now": "voltage_now",
+      "current_now": "current_now",
+      "temp": "temp",
+      "health": "health",
+      "charge_full": "charge_full",
+      "charge_full_design": "charge_full_design"
+    },
+    "percent_sanity": {"min": 0, "max": 100},
+    "volt_units": {"micro": 1000000, "milli": 1000},
+    "temp_units": {"deci_celsius": 10, "milli_celsius": 1000},
+    "fresh_window_s": 120,
+    "state_file": "/var/lib/nuxel/power/battery.json"
+  },
+
+  "charger": {
+    "comment": "Charge control writes are NOT performed by this mission. The tool reports the charging state and whether a writable charge-control node exists; it deliberately does not poke voltage/current limits, because a bad write to a charger register is a hardware risk and cannot be verified without the owner watching the phone.",
+    "allow_writes": false,
+    "writable_nodes": ["charge_control_limit", "input_current_limit", "constant_charge_current_max"],
+    "report_only": ["status", "health", "present", "online"]
+  },
+
+  "profiles": {
+    "comment": "Three profiles are defined; exactly one is active at a time and the selection is persisted so a reboot returns to the same profile. Each profile maps to REAL knobs: a cpufreq governor and (where the running kernel exposes it) a cgroup-v2 CPU weight for user.slice. Nothing is claimed about power savings - the profiles are a control surface, and the observed governor/cgroup values are what the tool reports.",
+    "default": "balanced",
+    "persist_file": "/var/lib/nuxel/power/profile.json",
+    "knobs": {
+      "cpufreq_root": "/sys/devices/system/cpu/cpufreq",
+      "governor_file": "policy{policy}/scaling_governor",
+      "available_governors_file": "policy{policy}/scaling_available_governors",
+      "cgroup_root": "/sys/fs/cgroup",
+      "cgroup_v2_weight_file": "/sys/fs/cgroup/user.slice/cpu.weight",
+      "cgroup_v1_weight_file": "/sys/fs/cgroup/cpu/user.slice/cpu.shares",
+      "energy_perf_bias": "/sys/devices/system/cpu/cpu{policy}/cpufreq/energy_performance_preference"
+    },
+    "list": {
+      "adaptive": {
+        "label": "Adaptive",
+        "summary": "Longest runtime. Governor prefers a low-power policy; display and background work are allowed to idle aggressively.",
+        "governor_preference": ["schedutil", "conservative", "powersave", "ondemand", "interactive"],
+        "cgroup_v2_cpu_weight": 50,
+        "cgroup_v1_cpu_shares": 512,
+        "brightness_cap_percent": 70,
+        "background_limit": "restrictive"
+      },
+      "balanced": {
+        "label": "Balanced",
+        "summary": "Default. Governor preference keeps the interactive feel of the launcher without pinning the big cores.",
+        "governor_preference": ["schedutil", "interactive", "ondemand", "conservative"],
+        "cgroup_v2_cpu_weight": 100,
+        "cgroup_v1_cpu_shares": 1024,
+        "brightness_cap_percent": 100,
+        "background_limit": "normal"
+      },
+      "performance": {
+        "label": "Performance",
+        "summary": "Highest responsiveness while charging or when plugged in. Governor is pinned to a performance-class policy when the kernel offers one.",
+        "governor_preference": ["performance", "schedutil", "interactive", "ondemand"],
+        "cgroup_v2_cpu_weight": 200,
+        "cgroup_v1_cpu_shares": 2048,
+        "brightness_cap_percent": 100,
+        "background_limit": "permissive"
+      }
+    },
+    "apply": {
+      "require_available_governor": true,
+      "never_write_unlisted": true,
+      "rollback_file": "/var/lib/nuxel/power/profile.previous.json"
+    }
+  },
+
+  "power_menu": {
+    "reference": "/etc/nuxel/power/power-menu.json",
+    "comment": "The menu table itself lives in power-menu.json so the button FSM (bg-03) and this tool read one source. Recovery and Download Mode ENTRIES EXIST but must never be triggered by an automated path; they are wired only to a confirmation the owner performs in person."
+  },
+
+  "diagnostics": {
+    "log": "/var/log/nuxel/power-diag.log",
+    "service": "/etc/systemd/system/nuxel-power-mode.service",
+    "report_fields": ["boot_mode", "gauge_present", "capacity_percent", "charge_status", "profile_active", "governor", "cgroup_weight", "charger_writable"]
+  }
+}
+========================================================================
+### orientation  [rc=0 framed=True sha_ok=True elapsed=0.135s]
+{
+  "schema_version": 1,
+  "comment": "Orientation policy document for the S10+ (beyond2lte). ONE authoritative source shared by Quick Settings, Settings, nuxelctl and nuxel-orientationd. There are SEVEN named modes exactly (the owner phrase 'six modes' is a count mismatch: four fixed poses plus three auto policies). Selected policy (mode) is distinct from the current effective orientation (effective_degrees). Nothing here rotates pixels by itself: nuxel-orientationd computes the desired transform and asks the compositor, and reports honestly when the compositor cannot apply it.",
+  "device": {
+    "model": "Samsung Galaxy S10+ SM-G975F",
+    "codename": "beyond2lte",
+    "soc": "Exynos 9820",
+    "panel": "S6E3HA9 Dynamic AMOLED 3040x1440 (portrait scanout 1440x3040)"
+  },
+  "modes": {
+    "portrait":            { "label": "Portrait",             "allowed": [0] },
+    "reverse_portrait":    { "label": "Reverse portrait",     "allowed": [180] },
+    "landscape":           { "label": "Landscape",            "allowed": [90] },
+    "reverse_landscape":   { "label": "Reverse landscape",    "allowed": [270] },
+    "auto":                { "label": "Auto (all)",           "allowed": [0, 90, 180, 270], "auto": true },
+    "auto_portrait":       { "label": "Auto portrait",        "allowed": [0, 180],          "auto": true },
+    "auto_landscape":      { "label": "Auto landscape",       "allowed": [90, 270],         "auto": true }
+  },
+  "mode_order": ["portrait", "reverse_portrait", "landscape", "reverse_landscape", "auto", "auto_portrait", "auto_landscape"],
+  "default_mode": "portrait",
+  "policy": {
+    "hysteresis_ms": 450,
+    "cooldown_ms": 250,
+    "debounce_ms": 60,
+    "flat_gravity_ratio": 0.55,
+    "weak_gravity_ms2": 2.0,
+    "sample_interval_ms": 100,
+    "last_good_on_flat": true
+  },
+  "sensor": {
+    "preferred_source": "auto",
+    "sources": ["iio-accel", "iio-sensor-proxy", "manual"],
+    "iio": {
+      "name_hints": ["accel", "bmi160", "lsm6ds", "lsm6dso", "accel_3d"],
+      "channels": ["in_accel_x_raw", "in_accel_y_raw", "in_accel_z_raw"],
+      "scale_files": ["in_accel_scale", "in_accel_x_scale"]
+    },
+    "mount_matrix": {
+      "comment": "3x3 row-major map from sensor axes to display-native axes (x=right, y=up, z=out of screen). This is the DEFAULT convention and MUST be calibrated from observed device motion on hardware; until then it is calibration_status=unverified.",
+      "matrix": [1, 0, 0, 0, 1, 0, 0, 0, 1],
+      "calibration_status": "unverified"
+    },
+    "gravity_reference": {
+      "comment": "Unit gravity vector (display-native) for each discrete orientation. 0=portrait, 90/180/270 clockwise physical poses. Unverified until observed on the actual handset.",
+      "0":   [0.0, -1.0, 0.0],
+      "90":  [1.0,  0.0, 0.0],
+      "180": [0.0,  1.0, 0.0],
+      "270": [-1.0,  0.0, 0.0],
+      "calibration_status": "unverified"
+    }
+  },
+  "compositor": {
+    "backend": "auto",
+    "candidates": ["wlr-randr", "phoc-config", "none"],
+    "output": "DSI-1",
+    "transform_map": { "0": "normal", "90": "270", "180": "180", "270": "90" },
+    "comment_transform_map": "Physical pose -> wlr-randr transform that keeps content upright. The mapping and the matching touch calibration are UNVERIFIED until Phase 3 is exercised on the real device.",
+    "revert_after_ms": 4000,
+    "touch": { "verified": false, "matrix_available": false }
+  },
+  "paths": {
+    "state_file": "/var/lib/nuxel/orientation/state.json",
+    "control_fifo": "/run/nuxel-orientation.cmd",
+    "log": "/var/log/nuxel/orientation.log"
+  },
+  "owner_test": "docs/A49/OWNER-TEST-ORIENTATION.md"
+}
+========================================================================
+### backlight  [rc=0 framed=True sha_ok=True elapsed=0.104s]
+/sys/class/backlight/panel brightness=0 bl_power=4 actual=2
+========================================================================
+### lcd  [rc=0 framed=True sha_ok=False elapsed=0.092s]
+�m��Ox�]tߎx�s�4B�[�֯��h��"����m��]8�]tߎx�f뵫�0��ޖ+'�֜�+��m��]x�]tߎy���4B�^�˭zǪ��g�Z��"����m��]��]tߎy��v�Z��!�ڊW���+�לq������w�u�~:�ܢy�z�!�(�w���K��\���\�����[�[��LNL��MP���Q�L��LXMPL��L��MLДL���͌M��L��B�
+========================================================================
+### blank  [rc=0 framed=True sha_ok=True elapsed=0.848s]
+0,0
+========================================================================
+### display_state  [rc=1 framed=True sha_ok=True elapsed=0.094s]
+suspended
+cat: /sys/devices/platform/19030000.decon_f/state: No such file or directory
+========================================================================
+### metricsd  [rc=0 framed=True sha_ok=True elapsed=0.121s]
+inactive
+# Nuxel path configuration — single source of truth (briq-20)
+#
+# All Nuxel services, the first-boot wizard, the sandbox (nftables.sh /
+# sandbox.c) and the bootstrap scripts source/read this file to resolve the
+# canonical runtime, data, config, and log directories. Values here may be
+# overridden at runtime with the matching NUXEL_* environment variable.
+#
+# Format: KEY=VALUE (one per line). Lines starting with '#' are comments.
+
+NUXEL_CONFIG_DIR=/etc/nuxel
+NUXEL_DATA_DIR=/var/lib/nuxel
+NUXEL_PERMISSIONS_DIR=/var/lib/nuxel/permissions
+# Canonical single-file notification history store (briq-07). The daemon
+# writes /var/lib/nuxel/notifications.json (overridable via the
+# NUXEL_NOTIFICATIONS_FILE env var at runtime). NUXEL_NOTIFICATIONS_DIR is
+# retained below ONLY as a legacy migration fallback; new installs use the
+# single-file NUXEL_NOTIFICATIONS_FILE path.
+NUXEL_NOTIFICATIONS_FILE=/var/lib/nuxel/notifications.json
+NUXEL_NOTIFICATIONS_DIR=/var/lib/nuxel/notifications
+NUXEL_APP_DIR=/var/app
+NUXEL_SANDBOX_DIR=/opt/nuxel/sandbox
+NUXEL_LOG_DIR=/var/log/nuxel
+NUXEL_RUN_DIR=/run/nuxel
+NUXEL_FIRSTBOOT_MARKER=/var/lib/nuxel/.firstboot-complete
+
+# ── Canonical markers (single source of truth) ────────────────────────────
+#
+# First-boot marker:
+#   Presence of NUXEL_FIRSTBOOT_MARKER (/var/lib/nuxel/.firstboot-complete)
+#   means first-boot setup has NOT finished; the wizard removes it on
+#   completion. Consistent across the OpenRC first-boot init, the
+#   nuxel-firstboot wizard, the phosh agent, and vm/nuxel-vm-bootstrap.sh.
+#
+# Notification persistence (canonical single-file source, briq-07):
+#     NUXEL_NOTIFICATIONS_FILE=/var/lib/nuxel/notifications.json
+#   The daemon resolves NUXEL_NOTIFICATIONS_FILE (env -> this paths.conf ->
+#   built-in default /var/lib/nuxel/notifications.json) and writes its whole
+#   history to that single JSON file, capped at NUXEL_NOTIFICATIONS_HISTORY_CAP
+#   entries (oldest evicted first). NUXEL_NOTIFICATIONS_DIR remains only as a
+#   legacy migration fallback so older installs that pinned
+#   {NUXEL_NOTIFICATIONS_DIR}/history.json stay readable while being re-written
+#   to the canonical single file. The packaged systemd unit and the OpenRC
+#   firstboot/notifications scripts pin NUXEL_NOTIFICATIONS_FILE to the
+#   canonical path, and nuxel-home reads the same file, so a restart never loses
+#   delivered/active notification history and no duplicate storage is created.

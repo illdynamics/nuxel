@@ -1,0 +1,31 @@
+========================================================================
+### bm_wake  [rc=0 framed=True sha_ok=True elapsed=4.816s]
+bm-wake-sent
+========================================================================
+### post_state  [rc=0 framed=True sha_ok=True elapsed=0.089s]
+1792656364 FRAMES_OK total=4884 fps_1s=19 failures=0 blits=324 present_skipped=4553 blit_avg_ms=74 idle_ms=571 out=720x1520 src=720x1520 scale=2 panel=1440x3040 owner=nuxel-wl-fb display=on src_format=0x00000001 colour=R@0,G@8,B@16_abgr8888_override=1 decon_pan_ok=325 decon_pan_failed=0
+========================================================================
+### post_disp  [rc=0 framed=True sha_ok=True elapsed=0.097s]
+DISPLAY_ON
+brightness=12800
+actual_brightness=183
+bl_power=4
+saved_brightness=12800
+max_brightness=48600
+owner=nuxel-wl-fb
+========================================================================
+### post_blp  [rc=0 framed=True sha_ok=True elapsed=0.107s]
+4
+12800
+183
+========================================================================
+### post_decon  [rc=0 framed=True sha_ok=True elapsed=0.096s]
+suspended
+========================================================================
+### bm_log  [rc=0 framed=True sha_ok=True elapsed=0.100s]
+2026-10-22T07:47:39Z IDLE_SCREEN_OFF timeout_ms=60000 idle_ms=0
+2026-10-22T07:56:50Z IDLE_SCREEN_OFF timeout_ms=60000 idle_ms=0
+2026-10-22T07:57:53Z FSM_ACTION source=key action=screen-toggle
+2026-10-22T07:58:53Z IDLE_SCREEN_OFF timeout_ms=60000 idle_ms=0
+2026-10-22T08:02:52Z IDLE_SCREEN_OFF timeout_ms=60000 idle_ms=0
+2026-10-22T08:06:00Z FSM_ACTION source=control-fifo action=screen-on

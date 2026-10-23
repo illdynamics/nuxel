@@ -1,6 +1,6 @@
 {
   "schema": "nuxel.app-registry/1",
-  "registry_version": 4,
+  "registry_version": 5,
   "bridge_version": "1",
   "bridge_version_pin": "pwa/nuxel-common/bridge-version.json",
   "url_base": "http://127.0.0.1:8000",
@@ -90,8 +90,8 @@
       "category": "media",
       "type": "native",
       "url": "nuxel-camera://",
-      "native_binary": null,
-      "binary_source": null,
+      "native_binary": "/usr/lib/nuxel/nuxel-camera-native/nuxel_camera_native.py",
+      "binary_source": "shell/nuxel-camera-native",
       "desktop_entry": null,
       "description": "Take photos and videos",
       "capabilities": [
@@ -100,9 +100,8 @@
       ],
       "bridge_version": "1",
       "docked": false,
-      "status": "placeholder",
-      "implementation_note": "No /usr/bin/nuxel-camera exists in this revision. The real camera surface on this device is the Camera Gallery PWA (pwa/nuxel-apps/camera-gallery), which the launcher opens through the fallback_surface below. The hardware camera itself is NEEDS_OWNER_TEST (Priority 7b).",
-      "fallback_surface": "/pwa/nuxel-apps/camera-gallery/index.html"
+      "status": "implemented",
+      "implementation_note": "Custom Nuxel Camera native app (GTK4); hardware capture remains subject to the Exynos FIMC-IS pipeline."
     },
     {
       "id": "org.nuxel.Mail",
@@ -254,6 +253,43 @@
       "runtime_state": "NEEDS_OWNER_TEST (HTTPS iframe restrictions on some websites)",
       "entry": "pwa/nuxel-apps/browser/index.html",
       "manifest": "pwa/nuxel-apps/browser/manifest.json"
+    },
+    {
+      "id": "org.nuxel.BrowserNative",
+      "name": "Nuxel Browser",
+      "icon": "🌐",
+      "color": "#297ad7",
+      "category": "tools",
+      "type": "native",
+      "url": "org.nuxel.BrowserNative://",
+      "native_binary": "/usr/lib/nuxel/nuxel-browser-native/nuxel_browser_native.py",
+      "binary_source": "shell/nuxel-browser-native",
+      "description": "Real top-level WebKitGTK browser (HTTPS, Back/Forward/Reload/Home)",
+      "capabilities": [
+        "network:outbound"
+      ],
+      "bridge_version": "1",
+      "docked": false,
+      "status": "implemented"
+    },
+    {
+      "id": "org.nuxel.CameraNative",
+      "name": "Nuxel Camera",
+      "icon": "📷",
+      "color": "#795548",
+      "category": "media",
+      "type": "native",
+      "url": "org.nuxel.CameraNative://",
+      "native_binary": "/usr/lib/nuxel/nuxel-camera-native/nuxel_camera_native.py",
+      "binary_source": "shell/nuxel-camera-native",
+      "description": "Custom Nuxel Camera native app with honest hardware status",
+      "capabilities": [
+        "camera:capture",
+        "camera:preview"
+      ],
+      "bridge_version": "1",
+      "docked": false,
+      "status": "implemented"
     }
   ],
   "tree_apps": [
@@ -454,7 +490,7 @@
     }
   ],
   "notes": {
-    "revision": "briq-04c rev 2 (cycle 6)",
+    "revision": "A59 rescue: native Browser + native Camera registered; launcher surface extended.",
     "tree_apps_states": "complete | in_progress | shared-assets-not-an-app (the dir MUST exist) | planned (must NOT exist yet; DEFER until it lands). Enforced by tools/s10plus/a33/verify-app-registry.py - a dangling directory in a present-state entry is a FAILED verdict, never a warning.",
     "registry_version_stays_4": "tree_apps/required_apps_not_yet_in_tree are INVENTORY sections: they do not change apps[] or its urls, so NUXEL_REGISTRY_VERSION in pwa/nuxel-home/js/apps.js (owned by the Priority 2 group) must NOT be bumped by this revision. verify-app-registry.py fails on any registry_version drift.",
     "required_apps_not_yet_in_tree": "Concept-level inventory of mission-required apps with no tree directory yet. Each entry names the owning build group and its ledger briq; the verifier fails if that briq file does not exist in docs/beta-finalization/workqueue/ or if the briq's component does not match owner_group."

@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "comment": "Nuxel on-screen / physical keyboard document (mission area 29, mission area 48 group 'Input'). Installed to /etc/nuxel/keyboard/keyboard.json. Read by tools/s10plus/a33/nuxel-keyboard-apply.sh, which either applies a key to a real component on this stack or records the honest reason it could not. This file is the document the Nuxel Settings app writes (pwa/nuxel-apps/settings/settings-model.js, DOCS.keyboard) and the document nuxelctl writes, so the UI and the console share ONE settings system.",
+  "consumer": "tools/s10plus/a33/nuxel-keyboard-apply.sh -> the installed OSK provider (stevia / stevia-phosh-osk-provider) through phoc's zwp_text_input_manager_v3, plus the GNOME/GTK input settings the WebKitGTK session reads",
+  "probe": "keyboard-state (launcher host status.read -> /run/nuxel-keyboard.state, written by the applier)",
+  "evidence": {
+    "state_file": "/run/nuxel-keyboard.state",
+    "log": "/var/log/nuxel/keyboard.log",
+    "probe_page": "tools/s10plus/a33/keyboard-probe.html (last hop: WebKitGTK DOM)"
+  },
+  "stack": {
+    "comment": "Inspected on disk, not assumed: the Fedora 43 ARM64 rootfs manifest ships stevia + stevia-phosh-osk-provider as the phosh OSK, and the UTM VM configuration script writes a squeekboard config. The applier therefore probes for BOTH and configures whichever is actually installed; if neither is installed it says so (NO_OSK_INSTALLED) instead of pretending.",
+    "installed_on_rootfs": [
+      "stevia-0.54.0-1.fc43.aarch64",
+      "stevia-phosh-osk-provider-0.54.0-1.fc43.noarch"
+    ],
+    "alternate_supported": "squeekboard (used by the UTM VM image script artifacts/vm/nuxel-aarch64.utm/scripts/phosh-phone-resolution.sh)",
+    "text_input_protocol": "zwp_text_input_manager_v3 (phoc / wlroots); WebKitGTK focuses a text field -> the compositor raises the OSK, no app-side IPC required",
+    "fallback": "an in-page key pad is allowed ONLY as a labelled last resort (Terminal already carries one); it is never reported as the system keyboard"
+  },
+  "keyboard.enabled": true,
+  "keyboard.auto_show": true,
+  "keyboard.layout": "us",
+  "keyboard.layouts_available": ["us", "gb", "de", "fr", "es", "it", "nl"],
+  "keyboard.numeric_layout": true,
+  "keyboard.height_dp": 300,
+  "keyboard.key_repeat": true,
+  "keyboard.key_repeat_delay_ms": 500,
+  "keyboard.key_repeat_interval_ms": 30,
+  "keyboard.haptics": true,
+  "keyboard.clipboard": true,
+  "keyboard.hardware_passthrough": true,
+  "set_by": "default",
+  "updated_at": 0
+}

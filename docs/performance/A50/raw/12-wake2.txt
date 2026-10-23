@@ -1,0 +1,18 @@
+========================================================================
+### wake_loop  [rc=0 framed=True sha_ok=True elapsed=9.099s]
+T+1 state=1792656172 BL_POWER why=screen-on requested=0 write=-1 readback=4 
+T+1 blp=4 bri=0 decon=suspended
+T+2 state=1792656172 DISPLAY_OFF why=control-fifo saved_brightness=12800 bl_power=4 
+T+2 blp=4 bri=0 decon=suspended
+T+3 state=1792656174 DISPLAY_SLEEP total=4820 failures=0 owner=nuxel-wl-fb display=off capture=stopped 
+T+3 blp=4 bri=0 decon=suspended
+T+4 state=1792656174 DISPLAY_SLEEP total=4820 failures=0 owner=nuxel-wl-fb display=off capture=stopped 
+T+4 blp=4 bri=0 decon=suspended
+T+5 state=1792656176 DISPLAY_SLEEP total=4820 failures=0 owner=nuxel-wl-fb display=off capture=stopped 
+T+5 blp=4 bri=0 decon=suspended
+T+6 state=1792656177 DISPLAY_SLEEP total=4820 failures=0 owner=nuxel-wl-fb display=off capture=stopped 
+T+6 blp=4 bri=0 decon=suspended
+T+7 state=1792656178 DISPLAY_SLEEP total=4820 failures=0 owner=nuxel-wl-fb display=off capture=stopped 
+T+7 blp=4 bri=0 decon=suspended
+T+8 state=1792656179 DISPLAY_SLEEP total=4820 failures=0 owner=nuxel-wl-fb display=off capture=stopped 
+T+8 blp=4 bri=0 decon=suspended

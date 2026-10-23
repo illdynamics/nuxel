@@ -1,0 +1,6 @@
+test_a57_service_worker_upgrade_preserves_scores_and_fresh_assets (__main__.BrowserTests.test_a57_service_worker_upgrade_preserves_scores_and_fresh_assets) ... ok
+
+----------------------------------------------------------------------
+Ran 1 test in 1.928s
+
+OK

@@ -21,7 +21,7 @@
   ],
   "lang": "en",
   "dir": "ltr",
-  "scope": "/pwa/nuxel-apps/camera/",
+  "scope": "/pwa/nuxel-apps/camera-gallery/",
   "nuxel": {
     "bridge_version": "1",
     "capabilities": [
@@ -33,12 +33,16 @@
     "offline_first": true,
     "network": "optional (external services only when configured by the user)",
     "storage": [
-      "bridge storage"
+      "bridge storage",
+      "file-backed media store"
     ],
     "bridge_verbs": [
       "camera.capture",
-      "camera.list-captures"
+      "camera.list-captures",
+      "camera.open",
+      "camera.delete",
+      "camera.status"
     ],
-    "hardware_dependency": "camera (owner test: proof area 15)"
+    "hardware_dependency": "camera (S10+ FIMC-IS enumerated; capture HARDWARE_BLOCKED without vendor HAL — see docs/a52-camera/)"
   }
 }

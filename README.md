@@ -499,11 +499,15 @@ work but is unproven** because the UI cannot be driven reliably yet. Camera,
 radio/modem, sensors and Phosh (no DRM/KMS in this 4.14 vendor kernel) remain
 unproven.
 
-**The current images are the ones flashed on the handset.** The release workflow
-builds the S10+ **A25 boot image** (raw arm64 kernel with the repo-source
-initramfs embedded) plus the Fedora 43 ARM64 userspace containing the **current
-A34 TOUCHDOWN** binaries. There is no dependency on a developer's local build
-output.
+**The release ships the exact image installed on the handset.** The workflow
+publishes `nuxel-installed-s10plus-boot.img.gz` — the byte-exact A27 BOOT image
+read back from the owner's SM-G975F (`48ad61af…`, 51,605,504 bytes) — together
+with a hash inventory of the installed userspace and an
+`INSTALLED-IMAGES.json` provenance manifest. The separately built
+`nuxel-<version>-s10plus.tar.gz` contains the reproducible **A25** source
+rebuild and is explicitly labelled as such: it is not byte-identical to the
+installed A27 image. See
+[`docs/a61-penguin-eyes/INSTALLED-IMAGE-RELEASE.md`](docs/a61-penguin-eyes/INSTALLED-IMAGE-RELEASE.md).
 
 | Area | Score | Notes |
 |---|---|---|

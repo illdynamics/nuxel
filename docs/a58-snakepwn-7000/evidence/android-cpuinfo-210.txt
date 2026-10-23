@@ -1,0 +1,17 @@
+Load: 0.59 / 0.64 / 0.47
+CPU usage from 42681ms to 28055ms ago (2026-10-22 19:27:50.445 to 2026-10-22 19:28:05.072):
+  8.7% 4047/com.illdynamics.snekbyte: 2.5% user + 6.1% kernel / faults: 698 minor
+  3.6% 421/surfaceflinger: 0.9% user + 2.6% kernel
+  3.2% 4120/com.google.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0: 2.1% user + 1% kernel / faults: 711 minor
+  0.8% 397/android.hardware.graphics.composer3-service.ranchu: 0.1% user + 0.7% kernel
+  0.4% 568/system_server: 0.2% user + 0.2% kernel / faults: 597 minor 2 major
+  0.1% 1149/com.google.android.apps.nexuslauncher: 0% user + 0% kernel / faults: 1 minor
+  0% 16/rcu_preempt: 0% user + 0% kernel
+  0% 58/kworker/3:1-mm_percpu_wq: 0% user + 0% kernel
+  0% 384/android.hardware.sensors-service.multihal: 0% user + 0% kernel
+  0% 425/adbd: 0% user + 0% kernel / faults: 1420 minor
+  0% 472/logcat: 0% user + 0% kernel
+  0% 823/com.android.systemui: 0% user + 0% kernel / faults: 68 minor
+  0% 1027/com.google.android.gms.persistent: 0% user + 0% kernel / faults: 11 minor
+  0% 3678/kworker/0:0-virtio_vsock: 0% user + 0% kernel
+7.8% TOTAL: 1.7% user + 3.1% kernel + 0% iowait + 2.9% irq + 0% softirq

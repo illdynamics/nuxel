@@ -1,0 +1,4 @@
+wlfb_fd	ls -l /proc/5399/fd 2>&1
+wlfb_wchan	cat /proc/5399/wchan 2>&1; echo; cat /proc/5399/status 2>&1 | grep -E 'State|Threads|voluntary|nonvoluntary'
+wlfb_stack	cat /proc/5399/stack 2>&1
+wlfb_syscall	cat /proc/5399/syscall 2>&1

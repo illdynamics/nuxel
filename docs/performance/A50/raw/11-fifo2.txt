@@ -1,0 +1,33 @@
+========================================================================
+### fifo_holders  [rc=0 framed=True sha_ok=True elapsed=4.439s]
+pid=5399 fd=5 -> /run/nuxel-wl-fb.cmd
+========================================================================
+### fifo_inode  [rc=0 framed=True sha_ok=True elapsed=0.092s]
+25542 prw------- 1 root root 0 Oct 22 09:58 /run/nuxel-wl-fb.cmd
+48990 lrwx------. 1 root root 64 Oct 22 09:59 /proc/5399/fd/5 -> /run/nuxel-wl-fb.cmd
+========================================================================
+### display_before  [rc=0 framed=True sha_ok=True elapsed=0.092s]
+mtime=1792655933 size=118
+DISPLAY_OFF
+brightness=0
+actual_brightness=2
+bl_power=4
+saved_brightness=12800
+max_brightness=48600
+owner=nuxel-wl-fb
+========================================================================
+### status_cmd  [rc=0 framed=True sha_ok=True elapsed=2.040s]
+status-sent
+========================================================================
+### display_after  [rc=0 framed=True sha_ok=True elapsed=0.085s]
+mtime=1792656104 size=118
+DISPLAY_OFF
+brightness=0
+actual_brightness=2
+bl_power=4
+saved_brightness=12800
+max_brightness=48600
+owner=nuxel-wl-fb
+========================================================================
+### state_after  [rc=0 framed=True sha_ok=True elapsed=0.091s]
+1792656106 DISPLAY_SLEEP total=4814 failures=0 owner=nuxel-wl-fb display=off capture=stopped

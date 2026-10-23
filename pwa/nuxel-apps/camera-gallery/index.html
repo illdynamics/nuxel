@@ -12,32 +12,32 @@
 <body>
     <div id="camera-view" class="camera-view">
         <div class="camera-top-bar">
-            <button id="switch-camera" class="cam-btn">🔄</button>
-            <span id="camera-hdr" class="cam-badge">HDR</span>
+            <button id="switch-camera" class="cam-btn" aria-label="Switch camera">&#128260;</button>
+            <span id="camera-active-indicator" class="active-indicator hidden" aria-live="polite">&#128247; camera active</span>
+            <span class="cam-badge">Nuxel Camera</span>
         </div>
-        
+
         <div id="viewfinder" class="viewfinder">
-            <div class="viewfinder-placeholder">
-                <span class="viewfinder-icon">📷</span>
+            <div id="viewfinder-placeholder" class="viewfinder-placeholder">
+                <span class="viewfinder-icon">&#128247;</span>
                 <p>Camera preview</p>
             </div>
             <video id="video-preview" class="video-preview hidden" autoplay playsinline></video>
+            <div id="record-indicator" class="record-indicator hidden" aria-live="polite">
+                <span class="record-dot"></span><span id="record-time">00:00</span>
+            </div>
         </div>
+
+        <div id="camera-status" class="camera-status hidden" aria-live="polite"></div>
 
         <div class="camera-bottom-bar">
-            <button id="gallery-btn" class="cam-btn">🖼️</button>
-            <button id="capture-btn" class="capture-btn"></button>
-            <button id="switch-mode" class="cam-btn">📹</button>
+            <button id="gallery-btn" class="cam-btn" aria-label="Open Photos">&#128444;&#65039;</button>
+            <button id="capture-btn" class="capture-btn" aria-label="Capture"></button>
+            <button id="switch-mode" class="cam-btn" aria-label="Switch photo/video">&#127909;</button>
         </div>
     </div>
 
-    <div id="gallery-view" class="gallery-view hidden">
-        <div class="gallery-top-bar">
-            <button id="gallery-back" class="cam-btn">←</button>
-            <span>Gallery</span>
-        </div>
-        <div id="photo-grid" class="photo-grid"></div>
-    </div>
+    <p id="camera-toast" class="camera-toast hidden" aria-live="polite"></p>
 
     <script type="module" src="../../nuxel-common/bridge.js"></script>
     <script src="js/camera.js"></script>

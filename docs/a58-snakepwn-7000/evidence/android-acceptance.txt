@@ -1,0 +1,12 @@
+APK update retained previous saved preferences and score True
+saved speed/WoNQ/grid/highscore retained through cold WebView load True
+offline bundled game launches True
+D-pad acknowledges on mouse press True
+accepted turn applied/drawn True
+live speed changes without resetting score/tick True
+native Back pauses True
+paused remains motionless True
+native Home suspends loop True
+Warning: Activity not started, its current task has been brought to the front
+foreground requires deliberate resume True
+preferences survive WebView reload True

@@ -1,0 +1,5 @@
+bm_fds	for p in /proc/5400/fd; do for f in $p/*; do t=$(readlink "$f" 2>/dev/null); case "$t" in *nuxel-wl-fb*|*backlight*|*fb0*) echo "bm fd ${f##*/} -> $t";; esac; done; done 2>&1
+bm_journal	journalctl -u nuxel-button-manager --no-pager -n 25 2>&1 | tail -25
+nuxel_logs	ls -l /var/log/nuxel/ 2>&1 | head -40
+blp_test	echo 0 > /sys/class/backlight/panel/bl_power; echo "rc=$?"; sleep 1; cat /sys/class/backlight/panel/bl_power
+power_press	grep -iE 'power|screen|display|sleep|timeout|wake' /var/log/nuxel/* 2>/dev/null | tail -20

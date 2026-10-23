@@ -1,0 +1,9 @@
+wlfb_ls	ls -l /usr/lib/nuxel/nuxel-wl-fb /usr/local/bin/nuxel-wl-fb 2>&1
+wlfb_sha	sha256sum /usr/lib/nuxel/nuxel-wl-fb 2>&1
+wlfb_file	file /usr/lib/nuxel/nuxel-wl-fb 2>&1
+wlfb_strings	strings /usr/lib/nuxel/nuxel-wl-fb 2>/dev/null | grep -iE 'FPS|720|1520|1440|3040|target|pixman|screencopy|version|blit|pan|scale|DAMAGE|samsung|decon' | head -60
+session_sh	cat /usr/lib/nuxel/nuxel-session.sh 2>&1
+nuxel_cfg	find /etc/nuxel -maxdepth 3 -type f 2>/dev/null | head -60
+fps_cfg	grep -rniE 'FPS|target_fps|720|1520|1440|3040|blit|pixman' /etc/nuxel 2>/dev/null | head -40
+libnuxel	ls -l /usr/lib/nuxel/ 2>&1
+pwa_host_ls	ls -l /usr/lib/nuxel/nuxel-pwa-host /usr/share/nuxel 2>&1

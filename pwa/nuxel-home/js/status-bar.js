@@ -33,6 +33,8 @@ class StatusBar {
             wifiState: 'unavailable',
             batteryLevel: null,
             batteryCharging: false,
+            batteryCapacityUah: null,
+            batteryDesignCapacityUah: null,
         };
 
         this.state.notifications = [];
@@ -176,7 +178,46 @@ class StatusBar {
         }
     }
 
+    // A54: deterministic collision assertion.  Measure every VISIBLE status
+    // cell and report any intersecting pair.  This is the same geometry the
+    // physical panel renders; a PASS means no two indicators share pixels.
+    _assertNoOverlap() {
+        const ids = ['status-signal', 'status-wifi', 'status-battery', 'status-battery-pct'];
+        const boxes = [];
+        ids.forEach((id) => {
+            const el = document.getElementById(id);
+            if (!el || el.hidden || el.style.display === 'none') return;
+            const r = el.getBoundingClientRect();
+            if (r.width === 0 || r.height === 0) return;
+            boxes.push({ id, left: r.left, right: r.right, top: r.top, bottom: r.bottom });
+        });
+        const overlaps = [];
+        for (let i = 0; i < boxes.length; i++) {
+            for (let j = i + 1; j < boxes.length; j++) {
+                const a = boxes[i], b = boxes[j];
+                if (a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top) {
+                    overlaps.push(a.id + '<->' + b.id);
+                }
+            }
+        }
+        const line = 'STATUSBAR_OVERLAP_CHECK cells=' + boxes.length +
+                     ' overlaps=' + (overlaps.length ? overlaps.join(',') : 'none');
+        try { console.log('[status-bar] ' + line); } catch (e) {}
+        try {
+            if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.nuxelDiag) {
+                window.webkit.messageHandlers.nuxelDiag.postMessage(line);
+            }
+        } catch (e) {}
+        this._overlapReport = { cells: boxes.map(b => b.id), overlaps };
+        return overlaps;
+    }
+
+    _displayOff() {
+        try { return document.body.classList.contains('display-off'); } catch (e) { return false; }
+    }
+
     _updateTime() {
+        if (this._displayOff()) return;
         const now = new Date();
         const hours = String(now.getHours()).padStart(2, '0');
         const minutes = String(now.getMinutes()).padStart(2, '0');
@@ -269,6 +310,11 @@ class StatusBar {
         }
         this.elements.battery.style.display = '';
         const inside = style === 'inside';
+        const capacity = this.state.batteryCapacityUah;
+        const capacityLabel = Number.isFinite(capacity) && capacity > 0
+            ? Math.round(capacity / 1000) + ' mAh'
+            : 'capacity unavailable';
+        try { this.elements.battery.title = 'Battery ' + (level === null ? '—' : level + '%') + ' · ' + capacityLabel; } catch (e) {}
         this.elements.battery.innerHTML = '<span class="battery-icon' + (charging ? ' charging' : '') + '">' +
             '<span class="battery-level ' + levelClass + '" style="width:' + width + '%"></span>' +
             (inside ? '<span class="battery-inside-pct">' + (level === null ? '—' : level + '%') + '</span>' : '') + '</span>';
@@ -277,6 +323,7 @@ class StatusBar {
     }
 
     async _pollPhoneStatus() {
+        if (this._displayOff()) return;
         try {
             if (typeof bridge === 'undefined' || !bridge.getPhoneStatus) {
                 console.warn('StatusBar: bridge not available for phone status');
@@ -301,8 +348,16 @@ class StatusBar {
         if (status.battery) {
             const level = status.battery.level == null ? NaN : Number(status.battery.level);
             const charging = Boolean(status.battery.charging);
-            if (Number.isFinite(level) && level >= 0 && level <= 100) this.state.batteryLevel = level;
+            // A missing/out-of-range sysfs reading is UNKNOWN, not 0% and not a
+            // stale old value.  The icon renders an em dash instead.
+            this.state.batteryLevel = (Number.isFinite(level) && level >= 0 && level <= 100) ? level : null;
             this.state.batteryCharging = charging;
+            // Actual capacity representation (A48): microampere-hours from the
+            // fuel gauge. charge_full is the current usable full capacity.
+            const capUah = Number(status.battery.capacity_uah);
+            const designUah = Number(status.battery.design_capacity_uah);
+            this.state.batteryCapacityUah = Number.isFinite(capUah) && capUah > 0 ? capUah : null;
+            this.state.batteryDesignCapacityUah = Number.isFinite(designUah) && designUah > 0 ? designUah : null;
         }
 
         // Modem / cellular.  Only an explicit registered/connected modem is
@@ -361,6 +416,7 @@ class StatusBar {
         this._renderWifi();
         this._renderBattery();
         this._applySafeZones();
+        this._assertNoOverlap();
     }
 
     // ---- Notifications (same JSON source as the daemon) ----
@@ -398,6 +454,7 @@ class StatusBar {
     }
 
     async _pollNotifications() {
+        if (this._displayOff()) return;
         try {
             if (typeof bridge === 'undefined' || !bridge.getNotifications) {
                 return;
@@ -495,7 +552,8 @@ class StatusBar {
     }
 
     setBatteryLevel(level, charging) {
-        this.state.batteryLevel = Math.max(0, Math.min(100, level ?? 100));
+        const n = Number(level);
+        this.state.batteryLevel = Number.isFinite(n) ? Math.max(0, Math.min(100, n)) : null;
         this.state.batteryCharging = !!charging;
         this._renderBattery();
     }

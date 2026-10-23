@@ -1,0 +1,8 @@
+1792689883 HOST_CONFIG_GET name=wlfb-state bytes=93
+1792689885 HOST_CONFIG_GET name=wlfb-state bytes=93
+1792689887 HOST_CONFIG_GET name=wlfb-state bytes=93
+1792689889 HOST_CONFIG_GET name=wlfb-state bytes=93
+1792689891 HOST_CONFIG_GET name=wlfb-state bytes=93
+1792689893 HOST_CONFIG_GET name=wlfb-state bytes=93
+1792689895 HOST_CONFIG_GET name=wlfb-state bytes=93
+1792689897 LAUNCH app_id=org.nuxel.SnekByte via launcher registry

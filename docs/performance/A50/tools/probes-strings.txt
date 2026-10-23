@@ -1,0 +1,4 @@
+which_strings	command -v strings; ls -l /usr/bin/strings /bin/strings 2>&1
+str_screen	strings /usr/lib/nuxel/nuxel-wl-fb 2>&1 | grep -iE 'screen|wake|capture|sleep|toggle|status' | head -40
+str_fifo	strings /usr/lib/nuxel/nuxel-wl-fb 2>&1 | grep -iE 'fifo|/run/nuxel|\.cmd|\.state|\.fifo' | head -40
+str_fps	strings /usr/lib/nuxel/nuxel-wl-fb 2>&1 | grep -iE 'FPS|fps|TARGET|target|damage|DAMAGE|pan|blit' | head -40

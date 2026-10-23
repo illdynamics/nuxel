@@ -1,0 +1,83 @@
+tests/test_event_handler.py::TestEventHandler::test_handle_menu_events_confirm
+tests/test_event_handler.py::TestEventHandler::test_handle_menu_events_navigation
+tests/test_event_handler.py::TestEventHandler::test_handle_menu_events_wrapping
+tests/test_event_handler.py::TestEventHandler::test_handle_playing_events_direction_change
+tests/test_event_handler.py::TestEventHandler::test_handle_playing_events_no_reverse
+tests/test_event_handler.py::TestEventHandler::test_handle_playing_events_quit
+tests/test_event_handler.py::TestEventHandler::test_handle_settings_menu_escape
+tests/test_event_handler.py::TestEventHandler::test_handle_settings_menu_events_back_to_main
+tests/test_event_handler.py::TestEventHandler::test_handle_settings_menu_events_change_value
+tests/test_event_handler.py::TestEventHandler::test_handle_settings_menu_events_toggle_wonq
+tests/test_game_logic.py::TestGameLogic::test_place_item
+tests/test_game_logic.py::TestGameLogic::test_reset_game_state
+tests/test_game_logic.py::TestGameLogic::test_update_game_state_eat_food
+tests/test_game_logic.py::TestGameLogic::test_update_game_state_hit_self
+tests/test_game_logic.py::TestGameLogic::test_update_game_state_hit_wall
+tests/test_game_logic.py::TestGameLogic::test_update_game_state_move
+tests/test_game_logic.py::TestGameLogic::test_wonq_mode_hit_poop
+tests/test_game_logic.py::TestGameLogic::test_wonq_mode_poop_generation
+tests/test_game_state.py::TestGameSettings::test_change_speed_decrease
+tests/test_game_state.py::TestGameSettings::test_change_speed_increase
+tests/test_game_state.py::TestGameSettings::test_change_speed_wraps_around_decrease
+tests/test_game_state.py::TestGameSettings::test_change_speed_wraps_around_increase
+tests/test_game_state.py::TestGameSettings::test_get_speed
+tests/test_game_state.py::TestGameSettings::test_initialization
+tests/test_game_state.py::TestGameSettings::test_toggle_wonq_mode
+tests/test_rendering.py::test_placeholder_rendering
+tests/test_snake.py::TestSnake::test_draw
+tests/test_snake.py::TestSnake::test_get_head_position
+tests/test_snake.py::TestSnake::test_initialization
+tests/test_snake.py::TestSnake::test_move
+tests/test_snake.py::TestSnake::test_move_and_grow
+tests/test_snake.py::TestSnake::test_reset
+tests/test_snake.py::TestSnake::test_turn_invalid_opposite_direction
+tests/test_snake.py::TestSnake::test_turn_valid
+
+==================================== ERRORS ====================================
+_____________________ ERROR collecting tests/test_core.py ______________________
+ImportError while importing test module '/Users/wicked/x/snekbyte/tests/test_core.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_core.py:2: in <module>
+    from snake_game.core import GameState, Direction, Snake, Food
+E   ModuleNotFoundError: No module named 'snake_game'
+________________ ERROR collecting tests/test_input_handling.py _________________
+ImportError while importing test module '/Users/wicked/x/snekbyte/tests/test_input_handling.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_input_handling.py:11: in <module>
+    from snake_game.input_handling import handle_input
+E   ModuleNotFoundError: No module named 'snake_game'
+_______________ ERROR collecting tests/test_rendering_adapter.py _______________
+ImportError while importing test module '/Users/wicked/x/snekbyte/tests/test_rendering_adapter.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_rendering_adapter.py:10: in <module>
+    from snake_game.rendering import adapt_game_state_for_rendering
+E   ModuleNotFoundError: No module named 'snake_game'
+=============================== warnings summary ===============================
+../../../../Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/site-packages/pygame/pkgdata.py:25
+  /Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/site-packages/pygame/pkgdata.py:25: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+    from pkg_resources import resource_stream, resource_exists
+
+../../../../Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/site-packages/pkg_resources/__init__.py:3148
+  /Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/site-packages/pkg_resources/__init__.py:3148: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('google')`.
+  Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+    declare_namespace(pkg)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+ERROR tests/test_core.py
+ERROR tests/test_input_handling.py
+ERROR tests/test_rendering_adapter.py
+!!!!!!!!!!!!!!!!!!! Interrupted: 3 errors during collection !!!!!!!!!!!!!!!!!!!!
+34 tests collected, 3 errors in 0.85s

@@ -1,0 +1,700 @@
+#!/usr/bin/env python3
+"""nuxelctl — the Nuxel live-console control tool (A33).
+
+A33 adds the boot-surface controls that have to agree with the Settings UI:
+    nuxelctl verbose-boot status|on|off     durable verbose-boot setting (briq-02b)
+    nuxelctl verbose-boot animation MODE    boot animation policy: standard|short|off
+    nuxelctl verbose-boot verbosity N       boot-log detail: 0 (quiet) .. 3 (debug)
+    nuxelctl verbose-boot override          one-time Bixby-hold override status
+    nuxelctl handoff status                 single-owner lock + ownership receipt (briq-02a)
+    nuxelctl handoff simulate               replayable handoff timing harness
+    nuxelctl handoff audit                  audit the artefacts as an operator would
+
+Every path is resolved through NUXEL_ROOT (default /) so the whole tool can be
+exercised by the offline harness against a fake root - the same code path the
+device uses.
+
+Everything the graphical Nuxel Settings app can configure is configurable here,
+through the SAME files and the SAME service channels - there is exactly one
+settings system, not a UI path and a console path:
+
+    /etc/nuxel/display/statusbar-safezones.json   status-bar zone editor (mission 9)
+    /etc/nuxel/input/buttons.json                 hardware-button mapping (mission 13)
+
+and live actions are delivered over the running services' own control FIFOs
+(/run/nuxel-wl-fb.cmd for the display bridge, /run/nuxel-buttons.cmd for the
+hardware-button manager), so a console command and a finger tap do the same thing.
+
+Usage:
+    nuxelctl status
+    nuxelctl statusbar show
+    nuxelctl statusbar zones 9,10            # block zones 9 and 10 (current orientation)
+    nuxelctl statusbar preset right_camera|center_camera|left_camera|none|custom
+    nuxelctl statusbar orientation portrait|landscape_left|landscape_right
+    nuxelctl statusbar padding 8
+    nuxelctl display off|on|toggle
+    nuxelctl volume up|down|mute
+    nuxelctl buttons list
+    nuxelctl buttons set bixby_short open-terminal
+    nuxelctl buttons set power_short screen-toggle
+    nuxelctl buttons set bixby_short app:org.nuxel.Mail
+    nuxelctl action open-terminal|home|search|settings
+
+P3 subsystems (connectivity, time, audio, headphones, buttons) delegate to the
+single shipped implementation of each, so there is never a second copy of the
+logic:
+    nuxelctl wifi status|scan|connect <SSID>|firmware|report|selftest
+    nuxelctl time status|verify|rtc|mark|compare|sync|set <ISO8601>|selftest
+    nuxelctl audio status|pipeline|capture|tone|ucm-install|selftest
+    nuxelctl headphone status|jack|usbc|route|watch|selftest
+    nuxelctl buttons fsm|menu|gates        # state machine, menu table, reboot gate
+"""
+import json
+import os
+import subprocess
+import sys
+
+# NUXEL_ROOT lets the offline harness run the REAL tool against a fixture tree
+# instead of a re-implementation of it (default: the live root).
+ROOT = os.environ.get("NUXEL_ROOT", "/").rstrip("/")
+
+
+def P(path):
+    return ROOT + path if ROOT else path
+
+ZONES_FILE = "/etc/nuxel/display/statusbar-safezones.json"
+BUTTONS_FILE = "/etc/nuxel/input/buttons.json"
+WLFB_FIFO = "/run/nuxel-wl-fb.cmd"
+BUTTONS_FIFO = "/run/nuxel-buttons.cmd"
+HOST_FIFO = "/run/nuxel-pwa-host.cmd"
+VERBOSE_CFG = "/etc/nuxel/boot/verbose-boot.json"
+VERBOSE_SVC = "/usr/libexec/nuxel/nuxel-verbose-boot"
+HANDOFF_RECEIPT = "/run/nuxel-anim-handoff"
+FB_OWNER_RECORD = "/var/lib/nuxel/fb-owner"
+FB_OWNER_LOCK = "/run/nuxel-fb-owner.lock"
+HANDOFF_HARNESS = "/usr/libexec/nuxel/nuxel-anim-handoff.py"
+
+# --------------------------------------------------------------------------- #
+# P3 (connectivity / time / audio / buttons) — sibling tools and specs
+# --------------------------------------------------------------------------- #
+# Each subsystem has exactly ONE implementation. nuxelctl does not re-implement
+# the verdict logic of a diagnostic; it locates the shipped tool and runs it, so
+# `nuxelctl wifi status` and `nuxel-wifi-diag.sh status` can never disagree.
+FSM_SPEC = "/etc/nuxel/input/button-fsm.json"
+REBOOT_GATE = "/etc/nuxel/buttons/reboot-gate.json"
+REBOOT_POLICY = "/var/lib/nuxel/reboot/policy.json"
+AUDIO_POLICY = "/etc/nuxel/audio/audio.json"
+PASSTHROUGH = {
+    "wifi": "nuxel-wifi-diag.sh",
+    "time": "nuxel-time.sh",
+    "audio": "nuxel-audio-diag.sh",
+    "headphone": "nuxel-headphone-diag.sh",
+    "headphones": "nuxel-headphone-diag.sh",
+}
+
+DEFAULT_FSM_SPEC = {
+    "schema_version": 1,
+    "press_classes": {
+        "power": {"debounce_ms": 30, "short_max_ms": 2000, "long_min_ms": 2000,
+                  "very_long_min_ms": 8000, "double_gap_ms": 400},
+        "bixby": {"debounce_ms": 20, "short_max_ms": 1500, "long_min_ms": 1500,
+                  "double_gap_ms": 400},
+        "volume": {"debounce_ms": 20, "repeat_delay_ms": 400, "repeat_interval_ms": 250},
+    },
+    "power_menu": {"timeout_ms": 15000, "entries": []},
+    "gestures": {"recognizers": []},
+}
+DEFAULT_GATE = {
+    "schema_version": 1, "enabled": False, "allow_restart": False, "allow_poweroff": False,
+    "min_interval_s": 1800, "max_reboots_per_hour": 1, "require_rollback_path": True,
+    "refusal_reason": "gate closed: owner absent and no repository-side reboot policy has "
+                      "authorised a restart in this cycle",
+}
+
+# The menu table is also compiled into the button manager (single source of
+# truth for execution). nuxelctl shows the same table, including WHY a refused
+# entry is refused, because "you cannot select Recovery" must be visible rather
+# than mysterious.
+MENU_REFUSALS = {
+    "recovery": "NO_FLASH_INVARIANT — entering Recovery means leaving Linux for the "
+                "Samsung bootloader; this mission triggers no bootloader interface",
+    "download-mode": "NO_FLASH_INVARIANT — Download Mode exists only to flash, and this "
+                     "mission performs no flashing of any kind",
+    "restart": "gated — reboot-gate.json is closed (owner absent)",
+    "power-off": "gated — powering off with no owner present would strand the mission",
+}
+
+
+def sibling_script(name):
+    """Locate a shipped diagnostic next to this tool (dev tree), then in the
+    installed locations. Returns None when it is not installed, and the caller
+    must say so instead of silently doing nothing."""
+    here = os.path.dirname(os.path.abspath(__file__))
+    for c in (os.path.join(here, name), "/usr/lib/nuxel/" + name, "/usr/bin/" + name,
+              "/usr/local/lib/nuxel/" + name):
+        if os.path.isfile(c) and os.access(c, os.X_OK):
+            return c
+    for c in (os.path.join(here, name), "/usr/lib/nuxel/" + name, "/usr/bin/" + name):
+        if os.path.isfile(c):
+            return c
+    return None
+
+
+def delegate(name, args, root=None):
+    script = sibling_script(name)
+    if not script:
+        print("!! %s is not installed (looked next to %s, /usr/lib/nuxel, /usr/bin)"
+              % (name, os.path.abspath(__file__)))
+        print("   Nothing was executed. This is a missing-tool finding, not a result.")
+        return 127
+    argv = [script]
+    if root and root not in ("/", ""):
+        argv += ["--root", root]
+    argv += args
+    if script.endswith(".py"):
+        argv = [sys.executable] + argv
+    try:
+        return subprocess.call(argv)
+    except OSError as e:
+        print("!! cannot execute %s: %s" % (script, e))
+        return 126
+
+
+def _fsm_spec():
+    return load(FSM_SPEC, DEFAULT_FSM_SPEC)
+
+
+def _gate_doc():
+    return load(REBOOT_GATE, DEFAULT_GATE)
+
+
+def _buttons_menu():
+    spec = _fsm_spec()
+    entries = spec.get("power_menu", {}).get("entries", [])
+    if not entries:
+        # The compiled table is the execution truth; reproduce it here so the
+        # console still shows the complete, honest menu when the spec is absent.
+        entries = [
+            {"id": "lock-screen", "label": "Lock screen", "trigger_allowed": True},
+            {"id": "screenshot", "label": "Take screenshot", "trigger_allowed": True},
+            {"id": "restart", "label": "Restart", "trigger_allowed": False},
+            {"id": "power-off", "label": "Power off", "trigger_allowed": False},
+            {"id": "recovery", "label": "Recovery (Samsung)", "trigger_allowed": False},
+            {"id": "download-mode", "label": "Download Mode (Odin)", "trigger_allowed": False},
+        ]
+    gate = _gate_doc()
+    print("power menu (long-press POWER); %d entries, timeout %d ms"
+          % (len(entries), spec.get("power_menu", {}).get("timeout_ms", 15000)))
+    print("  #  entry                       triggerable  why")
+    for i, e in enumerate(entries):
+        allowed = bool(e.get("trigger_allowed"))
+        why = "-"
+        if not allowed:
+            why = MENU_REFUSALS.get(e.get("id"), e.get("refusal") or "not allowed")
+        print("  %d  %-27s %-12s %s" % (i + 1, e.get("label", e.get("id")), "yes" if allowed else "NO", why))
+    print("gate: enabled=%s allow_restart=%s allow_poweroff=%s min_interval=%ss hourly_cap=%s"
+          % (gate.get("enabled"), gate.get("allow_restart"), gate.get("allow_poweroff"),
+             gate.get("min_interval_s"), gate.get("max_reboots_per_hour")))
+    print("      %s" % gate.get("refusal_reason", ""))
+    print("NOTE: refused entries exist so the refusals are observable. Selecting Recovery or")
+    print("      Download Mode is refused in code with reason NO_FLASH_INVARIANT and nothing")
+    print("      is executed. Do not attempt to enter either mode by any other means.")
+    return 0
+
+
+def _buttons_fsm():
+    spec = _fsm_spec()
+    pc = spec.get("press_classes", {})
+    print("spec: %s (schema_version=%s)" % (FSM_SPEC, spec.get("schema_version")))
+    for key in ("power", "bixby", "volume"):
+        c = pc.get(key)
+        if not c:
+            continue
+        print("  %-7s %s" % (key, " ".join("%s=%s" % (k, v) for k, v in sorted(c.items()))))
+    g = spec.get("gestures", {})
+    for r in g.get("recognizers", []):
+        print("  gesture %-24s -> action %s" % (r.get("id"), r.get("action")))
+    if not g.get("recognizers"):
+        print("  gesture edge-back                -> action back")
+        print("  gesture swipe-up-home            -> action home")
+        print("  gesture swipe-up-hold-recents    -> action recents")
+    print("--- live state ---")
+    for label, path in (("manager", STATE_FILES.get("buttons", "/var/lib/nuxel/buttons")),
+                        ("fsm-actions", "/var/log/nuxel/buttons.log")):
+        try:
+            with open(P(path)) as f:
+                lines = f.read().strip().splitlines()
+            if label == "fsm-actions":
+                lines = lines[-8:]
+                print("--- %s (%s, last %d lines) ---" % (label, path, len(lines)))
+            else:
+                print("--- %s (%s) ---" % (label, path))
+            for l in lines:
+                print("  " + l)
+        except OSError:
+            print("--- %s (%s) ---\n  (absent: the manager is not running)" % (label, path))
+    print("--- reboot gate ---")
+    return _buttons_gates()
+
+
+def _buttons_gates():
+    gate = _gate_doc()
+    policy = None
+    try:
+        with open(P(REBOOT_POLICY)) as f:
+            policy = json.load(f)
+    except (OSError, ValueError):
+        policy = None
+    print("gate file: %s" % REBOOT_GATE)
+    print("  enabled=%s allow_restart=%s allow_poweroff=%s min_interval_s=%s max_per_hour=%s"
+          % (gate.get("enabled"), gate.get("allow_restart"), gate.get("allow_poweroff"),
+             gate.get("min_interval_s"), gate.get("max_reboots_per_hour")))
+    if policy is None:
+        print("policy file: %s (absent — bg-09's policy is an AND condition, not an override)"
+              % REBOOT_POLICY)
+    else:
+        print("policy file: %s allow_reboot=%s reason=%s"
+              % (REBOOT_POLICY, policy.get("allow_reboot"), policy.get("reason", "-")))
+    allowed = bool(gate.get("enabled")) and (bool(gate.get("allow_restart")) or
+                                             bool(gate.get("allow_poweroff")))
+    if policy is not None and not policy.get("allow_reboot"):
+        allowed = False
+    print("verdict: %s" % ("a restart/power-off MAY execute (all conditions met)" if allowed
+                           else "REFUSED by default — %s" % gate.get("refusal_reason", "gate closed")))
+    print("A very-long power press (>= %ss) emits reboot-request; the gate above decides."
+          % (spec_very_long() / 1000.0))
+    return 0
+
+
+def spec_very_long():
+    try:
+        return _fsm_spec()["press_classes"]["power"]["very_long_min_ms"]
+    except Exception:  # noqa: BLE001
+        return 8000
+STATE_FILES = {
+    "display": "/var/lib/nuxel/display",
+    "bridge": "/run/nuxel-wl-fb.state",
+    "launcher": "/run/nuxel-home.state",
+    "animation": "/var/lib/nuxel/animation",
+    "buttons": "/var/lib/nuxel/buttons",
+    "annotate": "/run/nuxel-anim-stop.confirmed",
+    "verbose-boot": "/run/nuxel/verbose-boot",
+    "fb-owner": "/var/lib/nuxel/fb-owner",
+    "anim-receipt": "/run/nuxel-anim-handoff",
+}
+
+DEFAULT_ZONES = {
+    "schema_version": 1,
+    "zones": 10,
+    "profiles": {
+        "s10plus": {"portrait": [9, 10], "landscape_left": [], "landscape_right": []},
+        "pixel_center": {"portrait": [5, 6], "landscape_left": [], "landscape_right": []},
+        "none": {"portrait": [], "landscape_left": [], "landscape_right": []},
+        "left_camera": {"portrait": [1, 2], "landscape_left": [1, 2], "landscape_right": [9, 10]},
+        "right_camera": {"portrait": [9, 10], "landscape_left": [9, 10], "landscape_right": [1, 2]},
+    },
+    "padding_dp": 6,
+    "profile": "none",
+    "orientation": "portrait",
+    "custom": {"portrait": [], "landscape_left": [], "landscape_right": []},
+}
+DEFAULT_BUTTONS = {
+    "schema_version": 1,
+    "bixby_short": "open-terminal",
+    "bixby_long": "disabled",
+    "power_short": "screen-toggle",
+    "power_long": "power-menu",
+    "volume_up": "volume-up",
+    "volume_down": "volume-down",
+}
+PRESET_ALIAS = {"right": "right_camera", "center": "pixel_center", "centre": "pixel_center",
+                "left": "left_camera", "s10plus": "s10plus"}
+
+
+def load(path, default):
+    """Never overwrite a user's customisation: an absent file yields the default,
+    a present file is read as-is (unknown keys preserved)."""
+    path = P(path)
+    try:
+        with open(path) as f:
+            doc = json.load(f)
+        if not isinstance(doc, dict):
+            raise ValueError("not an object")
+        merged = json.loads(json.dumps(default))
+        merged.update(doc)
+        return merged
+    except FileNotFoundError:
+        return json.loads(json.dumps(default))
+    except Exception as e:
+        print("!! %s is not readable JSON (%s) — refusing to overwrite it" % (path, e))
+        sys.exit(3)
+
+
+def save(path, doc):
+    path = P(path)
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    tmp = path + ".tmp"
+    with open(tmp, "w") as f:
+        json.dump(doc, f, indent=2)
+        f.write("\n")
+    os.replace(tmp, path)
+    print("saved %s" % path)
+
+
+def fifo(path, line):
+    path = P(path)
+    try:
+        fd = os.open(path, os.O_WRONLY | os.O_NONBLOCK)
+    except FileNotFoundError:
+        print("!! %s is absent: the owning service is not running" % path)
+        return 1
+    try:
+        os.write(fd, (line + "\n").encode())
+    finally:
+        os.close(fd)
+    print("%s <- %s" % (path, line))
+    return 0
+
+
+def show_status():
+    for name, path in STATE_FILES.items():
+        try:
+            with open(P(path)) as f:
+                print("--- %s (%s) ---\n%s" % (name, path, f.read().strip()))
+        except OSError:
+            print("--- %s (%s) ---\n(absent)" % (name, path))
+    print("--- statusbar safe zones ---")
+    doc = load(ZONES_FILE, DEFAULT_ZONES)
+    ori = doc.get("orientation", "portrait")
+    prof = doc.get("profile", "none")
+    print("profile=%s orientation=%s padding_dp=%s blocked=%s"
+          % (prof, ori, doc.get("padding_dp"), blocked_zones(doc, prof, ori)))
+    print("--- buttons ---")
+    print(json.dumps(load(BUTTONS_FILE, DEFAULT_BUTTONS), indent=2))
+    return 0
+
+
+def blocked_zones(doc, profile, orientation):
+    if profile == "custom":
+        return doc.get("custom", {}).get(orientation, [])
+    p = doc.get("profiles", {}).get(PRESET_ALIAS.get(profile, profile))
+    if not p:
+        return []
+    return p.get(orientation, [])
+
+
+
+# --------------------------------------------------------------------------- #
+# verbose boot (briq-02b)
+# --------------------------------------------------------------------------- #
+def _verbose_consumer():
+    """The consumer script that owns the decision logic (single implementation)."""
+    cand = [VERBOSE_SVC, VERBOSE_SVC + ".py"]
+    here = os.path.dirname(os.path.abspath(__file__))
+    cand += [os.path.join(here, "nuxel-verbose-boot.py"), os.path.join(here, "nuxel-verbose-boot")]
+    for c in cand:
+        if os.path.isfile(c) and os.access(c, os.X_OK):
+            return c
+    for c in cand:
+        if os.path.isfile(c):
+            return c
+    return None
+
+
+def _verbose_status():
+    svc = _verbose_consumer()
+    if not svc:
+        print("!! nuxel-verbose-boot not installed")
+        return 1
+    try:
+        out = subprocess.run([svc, "--status"], capture_output=True, text=True, timeout=20)
+    except (OSError, subprocess.SubprocessError) as e:
+        print("!! cannot run %s: %s" % (svc, e))
+        return 1
+    sys.stdout.write(out.stdout)
+    if out.returncode:
+        sys.stderr.write(out.stderr)
+    return out.returncode
+
+
+ANIMATION_MODES = ("standard", "short", "off")
+VERBOSITY_MIN, VERBOSITY_MAX = 0, 3
+
+
+def _verbose_doc():
+    """Best-effort read of the durable boot-diagnostics document (never raises)."""
+    try:
+        with open(P(VERBOSE_CFG)) as f:
+            d = json.load(f)
+        return d if isinstance(d, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def _verbose_write(patch):
+    """Atomically MERGE `patch` into the durable boot-diagnostics document,
+    preserving every key this revision does not know about.  This is the SAME
+    file the Settings UI writes through NuxelHost.configSet('verbose-boot') and
+    the Quick Settings tile writes through NuxelSettings, so a console command
+    and a finger tap cannot diverge - and an older/newer launcher cannot clobber
+    the operator's choice."""
+    path = P(VERBOSE_CFG)
+    doc = {}
+    try:
+        with open(path) as f:
+            doc = json.load(f)
+        if not isinstance(doc, dict):
+            raise ValueError("not an object")
+    except FileNotFoundError:
+        doc = {"schema_version": 1}
+    except ValueError as e:
+        print("!! %s is not a readable JSON object (%s) - refusing to overwrite it" % (VERBOSE_CFG, e))
+        return 3
+    doc["schema_version"] = doc.get("schema_version", 1)
+    doc.update(patch)
+    doc["set_by"] = "user"
+    doc["updated_at"] = int(__import__("time").time())
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    tmp = path + ".tmp"
+    with open(tmp, "w") as f:
+        json.dump(doc, f, indent=2)
+        f.write("\n")
+    os.replace(tmp, path)
+    print("saved %s (%s)" % (VERBOSE_CFG, ", ".join("%s=%s" % kv for kv in sorted(patch.items()))))
+    return 0
+
+
+def _verbose_set(value):
+    """The verbose-boot control (on-glass boot log)."""
+    rc = _verbose_write({"verbose_boot": bool(value)})
+    if rc:
+        return rc
+    print("applies from the NEXT boot; the on-glass boot log is shown by the launcher, and "
+          "the boot animation is shortened only while verbose boot is on "
+          "(animation_mode=standard,short,off overrides that).")
+    return 0
+
+
+def _verbose_animation(mode):
+    """The standard-animation control: standard | short | off."""
+    m = (mode or "").strip().lower()
+    if m not in ANIMATION_MODES:
+        print("!! animation_mode must be one of: %s" % ", ".join(ANIMATION_MODES))
+        return 2
+    rc = _verbose_write({"animation_mode": m})
+    if rc:
+        return rc
+    print("animation policy: standard = full 192-frame 24 fps animation with the "
+          "minimum-cycle handoff; short = trade the animation for the earliest handoff; "
+          "off = no animation. Precedence: off > short > verbose_boot > standard.")
+    return 0
+
+
+def _verbose_verbosity(level):
+    """The verbosity-level control: 0 (quiet) .. 3 (debug)."""
+    try:
+        n = int(str(level).strip())
+    except (TypeError, ValueError):
+        print("!! verbosity_level must be an integer %d..%d" % (VERBOSITY_MIN, VERBOSITY_MAX))
+        return 2
+    if n < VERBOSITY_MIN or n > VERBOSITY_MAX:
+        print("!! verbosity_level must be %d..%d (got %d) - refused, not clamped silently"
+              % (VERBOSITY_MIN, VERBOSITY_MAX, n))
+        return 2
+    rc = _verbose_write({"verbosity_level": n})
+    if rc:
+        return rc
+    print("how much the boot log says, not whether it is shown (that is verbose-boot on|off).")
+    return 0
+
+
+def _handoff_harness():
+    here = os.path.dirname(os.path.abspath(__file__))
+    for c in (HANDOFF_HARNESS, os.path.join(here, "nuxel-anim-handoff.py"),
+              os.path.join(here, "nuxel-anim-handoff")):
+        if os.path.isfile(c):
+            return c
+    return None
+
+
+def _handoff_status():
+    for label, path in (("lock", FB_OWNER_LOCK), ("record", FB_OWNER_RECORD),
+                        ("receipt", HANDOFF_RECEIPT)):
+        try:
+            with open(P(path)) as f:
+                print("--- %s (%s) ---\n%s" % (label, path, f.read().strip()))
+        except OSError:
+            print("--- %s (%s) ---\n(absent)" % (label, path))
+    return 0
+
+def main():
+    argv = sys.argv[1:]
+    if not argv or argv[0] in ("-h", "--help"):
+        print(__doc__)
+        return 0
+    cmd = argv.pop(0)
+
+    # P3 subsystems: one implementation each, delegated to the shipped tool so a
+    # console command and the diagnostic can never produce different answers.
+    if cmd in PASSTHROUGH:
+        return delegate(PASSTHROUGH[cmd], argv, ROOT)
+
+    if cmd == "status":
+        return show_status()
+
+    if cmd == "verbose-boot":
+        if not argv or argv[0] in ("status", "show"):
+            return _verbose_status()
+        if argv[0] in ("on", "enable", "true", "1"):
+            rc = _verbose_set(True)
+            _verbose_status()
+            return rc
+        if argv[0] in ("off", "disable", "false", "0"):
+            rc = _verbose_set(False)
+            _verbose_status()
+            return rc
+        if argv[0] in ("animation", "anim"):
+            if len(argv) < 2:
+                d = _verbose_doc()
+                print("animation_mode=%s" % d.get("animation_mode", "standard (default)"))
+                print("usage: nuxelctl verbose-boot animation standard|short|off")
+                return 0
+            rc = _verbose_animation(argv[1])
+            _verbose_status()
+            return rc
+        if argv[0] in ("verbosity", "verbose-level", "level"):
+            if len(argv) < 2:
+                d = _verbose_doc()
+                print("verbosity_level=%s" % d.get("verbosity_level", "1 (default)"))
+                print("usage: nuxelctl verbose-boot verbosity 0|1|2|3")
+                return 0
+            rc = _verbose_verbosity(argv[1])
+            _verbose_status()
+            return rc
+        if argv[0] in ("override", "bixby"):
+            rc = _verbose_status()
+            print("one-time Bixby-hold override: honoured only when the early boot stage "
+                  "publishes bixby-hold-override=1; otherwise BOOT_UPDATE_REQUIRED "
+                  "(no BOOT partition write is performed by this mission).")
+            print("userspace fallback (no BOOT partition write): 'nuxelctl verbose-boot on', "
+                  "the Settings -> Developer -> Boot toggle, or the Quick Settings tile.")
+            return rc
+        print("usage: nuxelctl verbose-boot status|on|off|animation MODE|verbosity N|override")
+        return 2
+
+    if cmd == "handoff":
+        sub = argv[0] if argv else "status"
+        harness = _handoff_harness()
+        if sub == "status":
+            return _handoff_status()
+        if sub in ("simulate", "audit"):
+            if not harness:
+                print("!! handoff harness not installed (%s)" % HANDOFF_HARNESS)
+                return 1
+            args = [harness, sub] + argv[1:]
+            if sub == "audit" and "--root" not in args:
+                args += ["--root", ROOT or "/"]
+            if harness.endswith(".py"):
+                return subprocess.call([sys.executable, harness] + args)
+            return subprocess.call([harness] + args)
+        print("usage: nuxelctl handoff status|simulate|audit")
+        return 2
+
+    if cmd == "statusbar":
+        if not argv:
+            print(__doc__)
+            return 2
+        sub = argv.pop(0)
+        doc = load(ZONES_FILE, DEFAULT_ZONES)
+        ori = doc.get("orientation", "portrait")
+        if sub == "show":
+            print(json.dumps(doc, indent=2))
+            return 0
+        if sub == "zones":
+            if not argv:
+                print("usage: nuxelctl statusbar zones 1,2,3"); return 2
+            zones = [] if argv[0] in ("", "none") else [int(x) for x in argv[0].split(",") if x.strip()]
+            for z in zones:
+                if not 1 <= z <= 10:
+                    print("!! zone %d out of range 1..10" % z); return 2
+            doc["profile"] = "custom"
+            doc.setdefault("custom", {})[ori] = sorted(set(zones))
+            save(ZONES_FILE, doc)
+            print("profile=custom orientation=%s blocked=%s" % (ori, doc["custom"][ori]))
+            return 0
+        if sub == "preset":
+            if not argv: print("usage: nuxelctl statusbar preset <name>"); return 2
+            name = PRESET_ALIAS.get(argv[0], argv[0])
+            if name not in doc["profiles"] and name not in ("custom", "s10plus"):
+                print("!! unknown preset %s (have: %s)" % (argv[0], ", ".join(doc["profiles"]))); return 2
+            doc["profile"] = name
+            save(ZONES_FILE, doc)
+            print("profile=%s blocked=%s" % (name, blocked_zones(doc, name, ori)))
+            return 0
+        if sub == "orientation":
+            if not argv: print("usage: nuxelctl statusbar orientation portrait|landscape_left|landscape_right"); return 2
+            if argv[0] not in ("portrait", "landscape_left", "landscape_right"):
+                print("!! orientation must be portrait|landscape_left|landscape_right"); return 2
+            doc["orientation"] = argv[0]
+            save(ZONES_FILE, doc)
+            print("orientation=%s blocked=%s" % (argv[0], blocked_zones(doc, doc.get("profile", "none"), argv[0])))
+            return 0
+        if sub == "padding":
+            if not argv: print("usage: nuxelctl statusbar padding <dp>"); return 2
+            doc["padding_dp"] = int(argv[0])
+            save(ZONES_FILE, doc)
+            print("padding_dp=%s" % doc["padding_dp"])
+            return 0
+        print("!! unknown statusbar subcommand %s" % sub)
+        return 2
+
+    if cmd == "display":
+        if not argv: print("usage: nuxelctl display off|on|toggle"); return 2
+        return fifo(WLFB_FIFO, {"off": "screen-off", "on": "screen-on", "toggle": "screen-toggle"}.get(argv[0], argv[0]))
+
+    if cmd == "volume":
+        if not argv: print("usage: nuxelctl volume up|down|mute"); return 2
+        return fifo(BUTTONS_FIFO, {"up": "volume-up", "down": "volume-down", "mute": "volume-mute"}.get(argv[0], argv[0]))
+
+    if cmd == "buttons":
+        if not argv: print("usage: nuxelctl buttons list|set <key> <action>"); return 2
+        sub = argv.pop(0)
+        doc = load(BUTTONS_FILE, DEFAULT_BUTTONS)
+        if sub == "list":
+            print(json.dumps(doc, indent=2))
+            return 0
+        if sub == "reload":
+            return fifo(BUTTONS_FIFO, "reload")
+        if sub == "fsm":
+            return _buttons_fsm()
+        if sub == "menu":
+            return _buttons_menu()
+        if sub in ("gates", "gate"):
+            return _buttons_gates()
+        if sub == "set":
+            if len(argv) < 2: print("usage: nuxelctl buttons set <key> <action>"); return 2
+            key, val = argv[0], argv[1]
+            if key not in DEFAULT_BUTTONS:
+                print("!! unknown key %s (have: %s)"
+                      % (key, ", ".join(k for k in DEFAULT_BUTTONS if k != "schema_version"))); return 2
+            doc[key] = val
+            save(BUTTONS_FILE, doc)
+            print("%s=%s (the manager reloads it within 1 s)" % (key, val))
+            return 0
+        print("!! unknown buttons subcommand %s" % sub)
+        return 2
+
+    if cmd == "action":
+        if not argv: print("usage: nuxelctl action <name>"); return 2
+        if argv[0] in ("open-terminal", "close-terminal", "home"):
+            return fifo(HOST_FIFO, argv[0])
+        if argv[0].startswith("app:"):
+            return fifo(HOST_FIFO, "launch " + argv[0][4:])
+        return fifo(BUTTONS_FIFO, "action " + argv[0])
+
+    print("!! unknown command %s" % cmd)
+    return 2
+
+
+if __name__ == "__main__":
+    sys.exit(main())

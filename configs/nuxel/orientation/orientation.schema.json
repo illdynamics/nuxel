@@ -1,0 +1,45 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://nuxel.local/schemas/orientation.schema.json",
+  "title": "Nuxel orientation document",
+  "description": "Schema of /etc/nuxel/orientation/orientation.json and the persisted state file. Validated by services/nuxel-orientation/tests/test_policy.py against the shipped document so a mode value can never be persisted in a shape the daemon does not understand.",
+  "type": "object",
+  "required": ["schema_version", "modes", "mode_order", "default_mode"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "comment": {"type": "string"},
+    "device": {"type": "object", "additionalProperties": true},
+    "modes": {
+      "type": "object",
+      "minProperties": 7,
+      "additionalProperties": {
+        "type": "object",
+        "required": ["label", "allowed"],
+        "properties": {
+          "label": {"type": "string"},
+          "allowed": {
+            "type": "array",
+            "items": {"type": "integer", "enum": [0, 90, 180, 270]},
+            "uniqueItems": true
+          },
+          "auto": {"type": "boolean"}
+        },
+        "additionalProperties": false
+      }
+    },
+    "mode_order": {
+      "type": "array",
+      "minItems": 7,
+      "maxItems": 7,
+      "uniqueItems": true,
+      "items": {"type": "string"}
+    },
+    "default_mode": {"type": "string"},
+    "policy": {"type": "object", "additionalProperties": true},
+    "sensor": {"type": "object", "additionalProperties": true},
+    "compositor": {"type": "object", "additionalProperties": true},
+    "paths": {"type": "object", "additionalProperties": true},
+    "owner_test": {"type": "string"}
+  },
+  "additionalProperties": true
+}

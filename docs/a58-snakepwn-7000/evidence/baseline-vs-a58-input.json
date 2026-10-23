@@ -1,0 +1,232 @@
+{
+  "A57": {
+    "dpad": {
+      "events": [
+        {
+          "type": "pointermove",
+          "at": 168,
+          "rawEventTimeStamp": 814347883376
+        },
+        {
+          "type": "pointerdown",
+          "at": 180,
+          "rawEventTimeStamp": 814347883387
+        },
+        {
+          "type": "pointerup",
+          "at": 391,
+          "rawEventTimeStamp": 814347883598
+        },
+        {
+          "type": "click",
+          "at": 391,
+          "rawEventTimeStamp": 814347883598
+        }
+      ],
+      "turns": [
+        {
+          "at": 391,
+          "dir": [
+            0,
+            -1
+          ]
+        }
+      ],
+      "debug": [],
+      "beforeRelease": {
+        "turns": [],
+        "debug": []
+      }
+    },
+    "swipe": {
+      "events": [
+        {
+          "type": "pointerdown",
+          "at": 128,
+          "rawEventTimeStamp": 128
+        },
+        {
+          "type": "pointermove",
+          "at": 130,
+          "rawEventTimeStamp": 130
+        },
+        {
+          "type": "pointerup",
+          "at": 340,
+          "rawEventTimeStamp": 340
+        }
+      ],
+      "turns": [
+        {
+          "at": 340,
+          "dir": [
+            0,
+            -1
+          ]
+        }
+      ],
+      "debug": [],
+      "beforeRelease": {
+        "turns": [],
+        "debug": []
+      }
+    }
+  },
+  "A58": {
+    "dpad": {
+      "events": [
+        {
+          "type": "pointermove",
+          "at": 145,
+          "rawEventTimeStamp": 814347883352
+        },
+        {
+          "type": "pointerdown",
+          "at": 159,
+          "rawEventTimeStamp": 814347883366
+        },
+        {
+          "type": "pointerup",
+          "at": 369,
+          "rawEventTimeStamp": 814347883576
+        },
+        {
+          "type": "click",
+          "at": 369,
+          "rawEventTimeStamp": 814347883576
+        }
+      ],
+      "turns": [
+        {
+          "at": 225,
+          "dir": [
+            0,
+            -1
+          ]
+        }
+      ],
+      "debug": [
+        {
+          "id": 1,
+          "source": "dpad",
+          "eventAt": null,
+          "rawEventTimeStamp": 814347883366,
+          "receivedAt": 159,
+          "recognizedAt": 159,
+          "dir": [
+            0,
+            -1
+          ],
+          "result": "accepted",
+          "appliedAt": 225,
+          "tick": 1,
+          "drawnAt": 225
+        }
+      ],
+      "beforeRelease": {
+        "turns": [
+          {
+            "at": 225,
+            "dir": [
+              0,
+              -1
+            ]
+          }
+        ],
+        "debug": [
+          {
+            "id": 1,
+            "source": "dpad",
+            "eventAt": null,
+            "rawEventTimeStamp": 814347883366,
+            "receivedAt": 159,
+            "recognizedAt": 159,
+            "dir": [
+              0,
+              -1
+            ],
+            "result": "accepted",
+            "appliedAt": 225,
+            "tick": 1,
+            "drawnAt": 225
+          }
+        ]
+      }
+    },
+    "swipe": {
+      "events": [
+        {
+          "type": "pointerdown",
+          "at": 140,
+          "rawEventTimeStamp": 140
+        },
+        {
+          "type": "pointermove",
+          "at": 142.00000000000003,
+          "rawEventTimeStamp": 142.00000000000003
+        },
+        {
+          "type": "pointerup",
+          "at": 353,
+          "rawEventTimeStamp": 353
+        }
+      ],
+      "turns": [
+        {
+          "at": 222,
+          "dir": [
+            0,
+            -1
+          ]
+        }
+      ],
+      "debug": [
+        {
+          "id": 1,
+          "source": "swipe",
+          "eventAt": 142.00000000000003,
+          "rawEventTimeStamp": 142.00000000000003,
+          "receivedAt": 142.00000000000003,
+          "recognizedAt": 142.00000000000003,
+          "dir": [
+            0,
+            -1
+          ],
+          "result": "accepted",
+          "appliedAt": 222,
+          "tick": 1,
+          "drawnAt": 222
+        }
+      ],
+      "beforeRelease": {
+        "turns": [
+          {
+            "at": 222,
+            "dir": [
+              0,
+              -1
+            ]
+          }
+        ],
+        "debug": [
+          {
+            "id": 1,
+            "source": "swipe",
+            "eventAt": 142.00000000000003,
+            "rawEventTimeStamp": 142.00000000000003,
+            "receivedAt": 142.00000000000003,
+            "recognizedAt": 142.00000000000003,
+            "dir": [
+              0,
+              -1
+            ],
+            "result": "accepted",
+            "appliedAt": 222,
+            "tick": 1,
+            "drawnAt": 222
+          }
+        ]
+      }
+    }
+  }
+}

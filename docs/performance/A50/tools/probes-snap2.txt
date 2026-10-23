@@ -1,0 +1,7 @@
+stat_phoc	awk '{print $14,$15}' /proc/5352/stat 2>&1
+stat_wlfb	awk '{print $14,$15}' /proc/5399/stat 2>&1
+stat_webkit	awk '{print $14,$15}' /proc/5450/stat 2>&1
+stat_pwa	awk '{print $14,$15}' /proc/5389/stat 2>&1
+stat_total	head -1 /proc/stat | awk '{print $2+$3+$4+$5+$6+$7+$8}' 2>&1
+frames_now	grep -o 'FRAMES_OK.*' /run/nuxel-wl-fb.state 2>&1
+thermal	cat /sys/class/thermal/thermal_zone0/temp /sys/class/thermal/thermal_zone6/temp 2>&1

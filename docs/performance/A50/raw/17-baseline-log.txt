@@ -1,0 +1,3 @@
+========================================================================
+### cat /tmp/a50-base.log  [rc=1 framed=True sha_ok=True elapsed=0.852s]
+cat: /tmp/a50-base.log: No such file or directory

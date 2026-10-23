@@ -1,0 +1,6 @@
+bm_wake	printf 'action screen-on\n' > /run/nuxel-buttons.cmd; sleep 4; echo bm-wake-sent
+post_state	cat /run/nuxel-wl-fb.state 2>&1
+post_disp	cat /var/lib/nuxel/display 2>&1
+post_blp	cat /sys/class/backlight/panel/bl_power /sys/class/backlight/panel/brightness /sys/class/backlight/panel/actual_brightness 2>&1
+post_decon	cat /sys/devices/platform/19030000.decon_f/power/runtime_status 2>&1
+bm_log	tail -6 /var/log/nuxel/buttons.log 2>&1

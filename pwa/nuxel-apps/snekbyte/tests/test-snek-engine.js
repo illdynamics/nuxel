@@ -24,7 +24,7 @@ function check(name, cond, detail) {
   else { fail++; console.log('  FAIL ' + name + (detail !== undefined ? '  — ' + detail : '')); }
 }
 const cfg = E.cloneConfig({});
-const S = (o) => E.settings(cfg, o || {});
+const S = (o) => E.settings(cfg, Object.assign({ wrapWalls: false }, o || {}));
 
 console.log('SnekByte engine — rules');
 // ---- config mirrors src/config.py -----------------------------------------
@@ -173,7 +173,7 @@ if (!fs.existsSync(fxPath)) {
   let ticks = 0, diverged = 0;
   fx.scenarios.forEach((sc) => {
     const game = E.reset(pcfg, [], null);
-    const st = E.settings(pcfg, { wonqMode: !!sc.wonqMode, foodPlan: [], rng: null });
+    const st = E.settings(pcfg, { wrapWalls: false, wonqMode: !!sc.wonqMode, foodPlan: [], rng: null });
     sc.steps.forEach((step) => {
       if (step.turn) E.turn(game, step.turn);
       if (step.food) game.food.position = step.food.slice();
@@ -195,13 +195,24 @@ const ui = fs.readFileSync(path.join(__dirname, '..', 'js', 'snekbyte.js'), 'utf
 check('index.html loads the engine and the UI in order',
   html.indexOf('js/snek-engine.js') !== -1 && html.indexOf('js/snek-engine.js') < html.indexOf('js/snekbyte.js'));
 check('index.html declares the registry app id', /name="nuxel-app-id"\s+content="org\.nuxel\.SnekByte"/.test(html));
-check('index.html ships a canvas playfield and every control the UI binds',
+check('index.html ships touch controls and all live bindings',
   html.indexOf('<canvas') !== -1 &&
-  ['screen', 'stage', 'toast', 'pad-toggle', 'help', 'close', 'dp-up', 'dp-down', 'dp-left', 'dp-right',
-   'restart', 'menu', 'pause', 'fast', 'panel-provenance', 'prov-close'].every(id => html.indexOf('id="' + id + '"') !== -1));
+  ['screen','playfield','overlay','score','best','speed','status','meter','meter-count',
+   'meter-progress','settings-button','settings-panel','settings-close','settings-done',
+   'speed-setting','wonq-setting','grid-setting','help-button','help-panel','help-close',
+   'help-done','back-button','pause-button','toast'].every(id=>html.includes('id="'+id+'"')) &&
+   ['up','down','left','right'].every(id=>html.includes('data-dir="'+id+'"')));
+check('UI contains a five-segment poo meter',
+  (html.match(/class="segments"/) || []).length===1 && /aria-valuemax="5"/.test(html));
+check('WoNQ default is enabled in phone shell without changing core defaults',
+  /cfg\.defaultWonqMode\s*=\s*true/.test(ui) && E.cloneConfig({}).defaultWonqMode===false);
+check('UI pauses on lock, home or background',
+  ui.includes('visibilitychange') && ui.includes('pagehide') && ui.includes('setPause(true)'));
+check('UI prevents continuous animation frames while idle',
+  /view\.mode==='playing' && !view\.paused && !view\.dialog/.test(ui));
 check('the UI drives the canvas and talks only to the engine module',
   /getContext/.test(ui) && /SnekEngine/.test(ui));
-check('the UI never claims on-device verification', /OFFLINE_TESTED|VERIFIED_IN_VM_ONLY/.test(html + ui));
+check('the UI never claims successful on-device verification', !/PHYSICAL_TEST_PASSED|ON_DEVICE_VERIFIED/.test(html + ui));
 check('the UI has no leftover reference to a removed canvas provenance state',
   !/STATE\.PROVENANCE|drawProvenance/.test(ui));
 

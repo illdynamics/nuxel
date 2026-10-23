@@ -35,7 +35,7 @@ Type=simple
 # here: in the user manager, User= would require the root template with "%I"
 # (which expands empty in a non-instantiated unit) or an explicit name. Relying
 # on the user manager avoids the empty/root User= trap.
-ExecStart=/usr/bin/python3 /opt/nuxel/camera-portal/nuxel_camera_portal.py --synthetic
+ExecStart=/usr/bin/python3 /opt/nuxel/camera-portal/nuxel_camera_portal.py
 Restart=on-failure
 RestartSec=2
 # The portal should never escape its own slice.

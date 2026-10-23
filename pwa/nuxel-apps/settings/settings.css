@@ -67,3 +67,13 @@ label { display: block; margin: 8px 0; font-size: 13px; }
 .wifi-list {display:grid;gap:7px;margin:10px 0;max-height:42dvh;overflow:auto;overscroll-behavior:contain}
 .wifi-list .wifi-network {text-align:left;min-height:48px;background:#142d50}
 #wifi-connect-form input[type=password] {width:100%;font-size:16px;min-height:44px;background:#0b1c30;color:white;border:1px solid #6b96cc;border-radius:8px;padding:10px}
+
+/* ---- A49: screen-rotation radio group ---- */
+#orientation-modes.radio-group { display: flex; flex-direction: column; gap: 6px; margin: 8px 0; }
+#orientation-modes .radio {
+    display: flex; align-items: center; gap: 10px;
+    background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08);
+    border-radius: 8px; padding: 9px 12px; cursor: pointer;
+}
+#orientation-modes .radio input { accent-color: #5aa0ff; }
+#orientation-modes .radio span { color: #eef1f6; font-size: 14px; }

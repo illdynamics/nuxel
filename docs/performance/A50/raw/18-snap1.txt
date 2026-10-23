@@ -1,0 +1,28 @@
+# frame not verified for "action=$(printf 'action screen-on\\n' > /run/nuxel-buttons.cmd; echo sent); echo $action" (framed=False sha_ok=False)
+========================================================================
+### ls_tmp  [rc=2 framed=True sha_ok=True elapsed=0.835s]
+ls: cannot access '/tmp/a50-*': No such file or directory
+========================================================================
+### state_now  [rc=0 framed=True sha_ok=True elapsed=0.082s]
+1792656826 DISPLAY_SLEEP total=5995 failures=0 owner=nuxel-wl-fb display=off capture=stopped
+========================================================================
+### wake  [rc=0 framed=False sha_ok=False elapsed=0.091s]
+
+========================================================================
+### stat_phoc  [rc=0 framed=True sha_ok=True elapsed=0.909s]
+39859 34730
+========================================================================
+### stat_wlfb  [rc=0 framed=True sha_ok=True elapsed=0.082s]
+4871 2743
+========================================================================
+### stat_webkit  [rc=0 framed=True sha_ok=True elapsed=0.097s]
+37175 7034
+========================================================================
+### stat_pwa  [rc=0 framed=True sha_ok=True elapsed=0.101s]
+11346 8655
+========================================================================
+### stat_total  [rc=0 framed=True sha_ok=True elapsed=0.106s]
+37647996
+========================================================================
+### frames_now  [rc=0 framed=True sha_ok=True elapsed=0.093s]
+FRAMES_OK total=6004 fps_1s=8 failures=0 blits=405 present_skipped=5591 blit_avg_ms=76 idle_ms=318 out=720x1520 src=720x1520 scale=2 panel=1440x3040 owner=nuxel-wl-fb display=on src_format=0x00000001 colour=R@0,G@8,B@16_abgr8888_override=1 decon_pan_ok=406 decon_pan_failed=0

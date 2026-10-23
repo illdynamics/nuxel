@@ -1,266 +1,409 @@
-// Helper: wrap the shared bridge call with a graceful offline fallback.
-async function nuxelBridgeCall(namespace, verb, params, fallback) {
+// Nuxel Camera — completed frontend (A52).
+//
+// Correctness fixes vs the historical v0.6.3 app:
+//   * selected camera device persists independently of stream lifetime
+//     (front/rear toggle no longer loses `facingMode` before teardown);
+//   * captures are saved as real files through the bridge `camera.capture`
+//     verb (never localStorage-as-a-photo-database, never a growing data-URL
+//     array, never silently discarding old photos on quota errors);
+//   * Photo/Video are distinct behaviours (MediaRecorder for video);
+//   * no 1440x3120 hard-coded "ideal" (screen vs sensor resolution);
+//   * honest hardware states: NO_CAMERA / PERMISSION_DENIED / hardware
+//     present-but-unverified are surfaced, never a synthetic "working" preview.
+'use strict';
+
+(function () {
+  'use strict';
+
+  var APP_ID = (document.querySelector('meta[name="nuxel-app-id"]') || {}).content
+    || 'org.nuxel.Camera';
+
+  var els = {};
+  var state = {
+    stream: null,
+    recorder: null,
+    mode: 'photo',           // 'photo' | 'video'
+    selectedDeviceId: null,  // persisted independent of stream lifetime
+    timer: 0,                // capture timer seconds (0/3/10)
+    recording: false,
+    recordStart: 0,
+    recordTimerId: null,
+    permission: 'unknown',   // 'unknown' | 'granted' | 'denied'
+    hardware: 'unknown',     // 'unknown' | 'present' | 'absent'
+    captureVerified: false,  // authoritative: bridge never claims a frame
+    busy: false,
+    lastCapture: null,
+  };
+
+  function $(id) { return document.getElementById(id); }
+  function toast(msg) {
+    var t = $('camera-toast');
+    if (!t) return;
+    t.textContent = msg;
+    t.classList.remove('hidden');
+    clearTimeout(toast._t);
+    toast._t = setTimeout(function () { t.classList.add('hidden'); }, 2600);
+  }
+  function setStatus(msg, kind) {
+    var el = $('camera-status');
+    if (!el) return;
+    el.textContent = msg;
+    el.className = 'camera-status ' + (kind || 'info');
+    el.classList.toggle('hidden', !msg);
+  }
+
+  function bridge() {
+    return (typeof window !== 'undefined' && window.NuxelBridge)
+      ? window.NuxelBridge : null;
+  }
+  function bridgeCall(ns, verb, params, fallback) {
+    var b = bridge();
+    if (!b || typeof b.call !== 'function') return Promise.resolve(fallback);
+    return b.call(ns, verb, params).catch(function () { return fallback; });
+  }
+
+  // ---- lifecycle / state --------------------------------------------------
+  function updateModeUI() {
+    var sel = $('switch-mode');
+    if (sel) sel.textContent = state.mode === 'photo' ? '\u{1F3A5}' : '\u{1F4F7}';
+    var rec = $('record-indicator');
+    if (rec) rec.classList.toggle('hidden', !state.recording);
+  }
+
+  function updateIndicator() {
+    var ind = $('camera-active-indicator');
+    if (ind) ind.classList.toggle('hidden', !(state.stream || state.recording));
+  }
+
+  async function requestPermission() {
+    // Real, revocable permission flow through the Nuxel portal/bridge.
+    var res = await bridgeCall('permissions', 'request', {
+      capability: 'camera:capture',
+    }, { state: 'denied' });
+    state.permission = (res && res.state === 'granted') ? 'granted' : 'denied';
+    return state.permission;
+  }
+
+  async function checkHardware() {
+    var res = await bridgeCall('camera', 'status', {}, { camera_present: false, capture_verified: false });
+    state.hardware = (res && res.camera_present) ? 'present' : 'absent';
+    state.captureVerified = !!(res && res.capture_verified);
+    if (res && res.detail && !res.capture_verified) {
+      setStatus(res.detail, 'warn');
+    }
+    return res;
+  }
+
+  // ---- device selection (front/rear fixed) --------------------------------
+  function currentFacing() {
     try {
-        const b = window.NuxelBridge;
-        if (!b) { window.__nuxelBridgeOffline = true; return fallback; }
-        const res = await b.call(namespace, verb, params);
-        if (!res || res.success === false) { window.__nuxelBridgeOffline = true; return fallback; }
-        window.__nuxelBridgeOffline = false;
-        return res;
-    } catch (e) { window.__nuxelBridgeOffline = true; return fallback; }
-}
+      var track = state.stream && state.stream.getVideoTracks()[0];
+      var settings = track && track.getSettings && track.getSettings();
+      if (settings && settings.facingMode) return settings.facingMode;
+      if (settings && settings.deviceId) return settings.deviceId;
+    } catch (e) { /* ignore */ }
+    return state.selectedDeviceId || null;
+  }
 
-function nuxelBridgeOfflineBanner() {
-    if (!window.__nuxelBridgeOffline) return;
-    if (document.getElementById('bridge-offline-banner')) return;
-    const el = document.createElement('div');
-    el.id = 'bridge-offline-banner';
-    el.textContent = '🔌 Bridge offline — showing local data';
-    el.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:#ef6c00;color:#fff;font-size:13px;padding:6px 12px;z-index:9999;text-align:center;';
-    document.body.appendChild(el);
-}
-
-// Nuxel Camera - Camera & Gallery PWA
-
-class CameraApp {
-    constructor() {
-        this.stream = null;
-        this.photos = [];
-        this.isRecording = false;
-        this.currentMode = 'photo'; // 'photo' or 'video'
-        this._init();
+  async function nextFacing() {
+    // Remember the ACTIVE device BEFORE teardown so we can pick the other one.
+    var previous = currentFacing();
+    var devices = [];
+    try {
+      devices = await navigator.mediaDevices.enumerateDevices();
+    } catch (e) { /* ignore */ }
+    var videoDevices = devices.filter(function (d) { return d.kind === 'videoinput'; });
+    var next = null;
+    if (videoDevices.length >= 2) {
+      var idx = videoDevices.findIndex(function (d) {
+        return d.deviceId === previous || d.label === previous
+          || (previous === 'environment' && !/front|user/i.test(d.label))
+          || (previous === 'user' && /front|user/i.test(d.label));
+      });
+      next = videoDevices[(idx + 1) % videoDevices.length];
+    } else {
+      // Fall back to facingMode toggle when device IDs are unavailable.
+      next = { facing: previous === 'environment' ? 'user' : 'environment' };
     }
+    return next;
+  }
 
-    async _init() {
-        await this._loadGallery();
-        this._bindEvents();
+  async function startCamera() {
+    if (state.permission === 'denied') return false;
+    try {
+      var constraints = { video: {}, audio: state.mode === 'video' };
+      if (state.selectedDeviceId) {
+        constraints.video = { deviceId: { exact: state.selectedDeviceId } };
+      } else {
+        constraints.video = { width: { ideal: 1280 }, height: { ideal: 720 } };
+      }
+      var stream = await navigator.mediaDevices.getUserMedia(constraints);
+      // Stop any previous stream only after the new one is ready.
+      stopStream();
+      state.stream = stream;
+      var video = $('video-preview');
+      if (video) {
+        video.srcObject = stream;
+        await video.play().catch(function () {});
+        video.classList.remove('hidden');
+      }
+      var ph = $('viewfinder-placeholder');
+      if (ph) ph.classList.add('hidden');
+      // Persist the selected device for the next toggle, before teardown later.
+      try {
+        var track = stream.getVideoTracks()[0];
+        if (track && track.getSettings) state.selectedDeviceId = track.getSettings().deviceId || null;
+      } catch (e) { /* ignore */ }
+      updateIndicator();
+      return true;
+    } catch (e) {
+      setStatus('Camera not available: ' + (e && e.message ? e.message : e), 'error');
+      stopStream();
+      return false;
     }
+  }
 
-    async _startCamera(facingMode = 'environment') {
+  function stopStream() {
+    if (state.stream) {
+      try { state.stream.getTracks().forEach(function (t) { t.stop(); }); } catch (e) {}
+      state.stream = null;
+    }
+    var video = $('video-preview');
+    if (video) {
+      video.srcObject = null;
+      video.classList.add('hidden');
+    }
+    var ph = $('viewfinder-placeholder');
+    if (ph) ph.classList.remove('hidden');
+    updateIndicator();
+  }
+
+  // ---- capture ------------------------------------------------------------
+  async function capturePhoto() {
+    if (state.busy) return;
+    var video = $('video-preview');
+    if (!state.stream || !video || !video.videoWidth) {
+      setStatus('No live camera frame to capture', 'error');
+      return;
+    }
+    state.busy = true;
+    setCaptureDisabled(true);
+    try {
+      var canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      var ctx = canvas.getContext('2d');
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      // toBlob -> ArrayBuffer -> base64 (bounded), never an ever-growing data-URL array.
+      var blob = await new Promise(function (resolve) {
+        canvas.toBlob(resolve, 'image/jpeg', 0.92);
+      });
+      if (!blob) throw new Error('encode failed');
+      var buf = await blob.arrayBuffer();
+      var data_b64 = base64FromBuffer(new Uint8Array(buf));
+      var res = await bridgeCall('camera', 'capture', {
+        kind: 'photo', mime: 'image/jpeg', data_b64: data_b64,
+      }, { success: false, error: 'bridge offline' });
+      if (res && res.success) {
+        state.lastCapture = res.capture || null;
+        toast('Photo saved');
+        flashShutter();
+        if (navigator.vibrate) { try { navigator.vibrate(50); } catch (e) {} }
+        refreshThumbnail();
+      } else {
+        setStatus((res && res.error) || 'Save failed', 'error');
+      }
+    } catch (e) {
+      setStatus('Capture failed: ' + (e && e.message ? e.message : e), 'error');
+    } finally {
+      state.busy = false;
+      setCaptureDisabled(false);
+    }
+  }
+
+  function flashShutter() {
+    var f = document.createElement('div');
+    f.style.cssText = 'position:fixed;inset:0;background:#fff;z-index:5;animation:fadeOut .3s ease;pointer-events:none;';
+    document.body.appendChild(f);
+    setTimeout(function () { f.remove(); }, 300);
+  }
+
+  function base64FromBuffer(bytes) {
+    var CHUNK = 0x8000;
+    var out = '';
+    for (var i = 0; i < bytes.length; i += CHUNK) {
+      out += String.fromCharCode.apply(null, bytes.subarray(i, i + CHUNK));
+    }
+    return btoa(out);
+  }
+
+  // ---- video --------------------------------------------------------------
+  async function startRecording() {
+    if (!state.stream) return;
+    var mime = pickRecorderMime();
+    var rec;
+    try {
+      rec = new MediaRecorder(state.stream, mime ? { mimeType: mime } : undefined);
+    } catch (e) {
+      setStatus('Video recording unavailable: ' + (e && e.message ? e.message : e), 'error');
+      return;
+    }
+    var chunks = [];
+    rec.ondataavailable = function (ev) { if (ev.data && ev.data.size) chunks.push(ev.data); };
+    rec.onerror = function () { setStatus('Recording error', 'error'); stopRecording(true); };
+    rec.onstop = async function () {
+      var type = rec.mimeType || mime || 'video/webm';
+      var blob = new Blob(chunks, { type: type });
+      var buf = await blob.arrayBuffer();
+      var data_b64 = base64FromBuffer(new Uint8Array(buf));
+      var res = await bridgeCall('camera', 'capture', {
+        kind: 'video', mime: type, data_b64: data_b64,
+      }, { success: false, error: 'bridge offline' });
+      if (res && res.success) { toast('Video saved'); refreshThumbnail(); }
+      else setStatus((res && res.error) || 'Video save failed', 'error');
+    };
+    state.recorder = rec;
+    state.recording = true;
+    state.recordStart = Date.now();
+    rec.start(1000);
+    updateModeUI(); updateIndicator();
+    state.recordTimerId = setInterval(function () {
+      var el = $('record-time');
+      if (el) {
+        var s = Math.floor((Date.now() - state.recordStart) / 1000);
+        el.textContent = String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
+      }
+    }, 250);
+  }
+
+  function pickRecorderMime() {
+    var candidates = ['video/mp4', 'video/webm', 'video/webm;codecs=vp8'];
+    if (!window.MediaRecorder) return null;
+    for (var i = 0; i < candidates.length; i++) {
+      try { if (MediaRecorder.isTypeSupported(candidates[i])) return candidates[i]; } catch (e) {}
+    }
+    return null;
+  }
+
+  function stopRecording(discard) {
+    if (state.recordTimerId) { clearInterval(state.recordTimerId); state.recordTimerId = null; }
+    state.recording = false;
+    if (state.recorder && state.recorder.state !== 'inactive') {
+      if (discard) { try { state.recorder.onstop = null; } catch (e) {} }
+      try { state.recorder.stop(); } catch (e) {}
+    }
+    state.recorder = null;
+    updateModeUI(); updateIndicator();
+  }
+
+  // ---- gallery / thumbnail -------------------------------------------------
+  async function refreshThumbnail() {
+    var thumb = $('gallery-btn');
+    if (!thumb) return;
+    if (state.lastCapture) {
+      thumb.textContent = state.mode === 'photo' ? '\u{1F5BC}\uFE0F' : '\u{1F3A5}';
+      return;
+    }
+    var res = await bridgeCall('camera', 'list-captures', { kind: '' }, { captures: [] });
+    if (res && Array.isArray(res.captures) && res.captures.length) {
+      thumb.textContent = '\u{1F5BC}\uFE0F';
+    }
+  }
+
+  function openGallery() {
+    // Delegate to the standalone Photos app: single verified library.
+    var b = bridge();
+    if (b && typeof b.openApp === 'function') {
+      b.openApp('org.nuxel.Photos');
+      return;
+    }
+    if (window.location) {
+      window.location.href = '/pwa/nuxel-apps/photos/index.html';
+    }
+  }
+
+  // ---- UI wiring -----------------------------------------------------------
+  function setCaptureDisabled(disabled) {
+    var btn = $('capture-btn');
+    if (btn) { btn.disabled = disabled; btn.classList.toggle('busy', disabled); }
+  }
+
+  function bindEvents() {
+    var cap = $('capture-btn');
+    if (cap) cap.addEventListener('click', function () {
+      if (state.busy) return;
+      if (state.mode === 'photo') capturePhoto();
+      else {
+        if (state.recording) stopRecording(false);
+        else startRecording();
+      }
+    });
+
+    var sw = $('switch-camera');
+    if (sw) sw.addEventListener('click', async function () {
+      var next = await nextFacing();
+      stopStream();
+      if (next && next.deviceId) state.selectedDeviceId = next.deviceId;
+      else if (next && next.facing) {
+        // facingMode fallback: clear exact device, use facing
+        state.selectedDeviceId = null;
+        state._facingFallback = next.facing;
+      }
+      if (state.selectedDeviceId) await startCamera();
+      else {
+        // facing-mode fallback path
         try {
-            const constraints = {
-                video: {
-                    facingMode: facingMode,
-                    width: { ideal: 1440 },
-                    height: { ideal: 3120 },
-                },
-                audio: this.currentMode === 'video',
-            };
+          var s = await navigator.mediaDevices.getUserMedia({ video: { facingMode: state._facingFallback || 'environment' } });
+          stopStream();
+          state.stream = s;
+          var video = $('video-preview');
+          video.srcObject = s; await video.play().catch(function(){}); video.classList.remove('hidden');
+          $('viewfinder-placeholder').classList.add('hidden');
+          updateIndicator();
+        } catch (e) { setStatus('Camera switch failed: ' + (e.message || e), 'error'); }
+      }
+    });
 
-            this.stream = await navigator.mediaDevices.getUserMedia(constraints);
-            
-            const video = document.getElementById('video-preview');
-            video.srcObject = this.stream;
-            video.classList.remove('hidden');
-            await video.play();
+    var sm = $('switch-mode');
+    if (sm) sm.addEventListener('click', function () {
+      if (state.recording) stopRecording(false);
+      state.mode = state.mode === 'photo' ? 'video' : 'photo';
+      updateModeUI();
+      // Reopen stream with/without audio as the mode requires.
+      stopStream();
+      startCamera();
+    });
 
-            document.querySelector('.viewfinder-placeholder').classList.add('hidden');
-            
-        } catch (e) {
-            console.warn('[Camera] Could not access camera:', e.message);
-            // Show placeholder with error
-            document.querySelector('.viewfinder-placeholder p').textContent = 
-                'Camera not available: ' + e.message;
-        }
+    var gb = $('gallery-btn');
+    if (gb) gb.addEventListener('click', openGallery);
+
+    // Power/privacy: release the camera when hidden or the page unloads.
+    document.addEventListener('visibilitychange', function () {
+      if (document.hidden) { stopRecording(true); stopStream(); }
+    });
+    window.addEventListener('pagehide', function () { stopRecording(true); stopStream(); });
+    window.addEventListener('beforeunload', function () { stopRecording(true); stopStream(); });
+  }
+
+  async function init() {
+    els = {};
+    await requestPermission();
+    if (state.permission === 'denied') {
+      setStatus('Camera permission denied — no camera is activated. Grant access in Settings \u2192 Privacy \u2192 Camera.', 'error');
+      return;
     }
-
-    _stopCamera() {
-        if (this.stream) {
-            this.stream.getTracks().forEach(track => track.stop());
-            this.stream = null;
-        }
-        const video = document.getElementById('video-preview');
-        video.classList.add('hidden');
-        video.srcObject = null;
-        document.querySelector('.viewfinder-placeholder').classList.remove('hidden');
-        document.querySelector('.viewfinder-placeholder p').textContent = 'Camera preview';
+    var hw = await checkHardware();
+    if (state.hardware === 'absent') {
+      setStatus('Camera hardware unavailable (NO_CAMERA). The S10+ FIMC-IS camera stack is not accessible through a standard Linux capture path.', 'error');
+    } else if (!state.captureVerified) {
+      setStatus('Camera hardware is enumerated but capture is NOT verified on this device (vendor FIMC-IS interface). Live preview may be unavailable.', 'warn');
     }
+    bindEvents();
+    updateModeUI();
+    refreshThumbnail();
+    // Attempt a real preview; an honest error replaces the placeholder on failure.
+    await startCamera();
+  }
 
-    async _capturePhoto() {
-        if (!this.stream) {
-            await this._startCamera();
-            // Give camera time to warm up
-            await new Promise(r => setTimeout(r, 500));
-        }
-
-        const video = document.getElementById('video-preview');
-        const canvas = document.createElement('canvas');
-        const width = video.videoWidth || 1440;
-        const height = video.videoHeight || 3120;
-        
-        canvas.width = width;
-        canvas.height = height;
-        
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(video, 0, 0, width, height);
-        
-        // Get JPEG data
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
-        
-        // Save to gallery
-        const photo = {
-            id: `photo-${Date.now()}`,
-            dataUrl: dataUrl,
-            timestamp: new Date().toISOString(),
-            width: width,
-            height: height,
-        };
-        
-        this.photos.unshift(photo);
-        this._saveGallery();
-        // Report the capture to the shared bridge (best effort).
-        nuxelBridgeCall('camera', 'capture', { app_id: 'org.nuxel.Camera', captures: this.photos, capture: photo }, null);
-        
-        // Haptic feedback
-        if (navigator.vibrate) navigator.vibrate(50);
-        
-        // Show brief flash effect
-        const flash = document.createElement('div');
-        flash.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:white;z-index:5;animation:fadeOut 0.3s ease;';
-        document.body.appendChild(flash);
-        setTimeout(() => flash.remove(), 300);
-        
-        return photo;
-    }
-
-    _toggleMode() {
-        this.currentMode = this.currentMode === 'photo' ? 'video' : 'photo';
-        document.getElementById('switch-mode').textContent = 
-            this.currentMode === 'photo' ? '📹' : '📷';
-    }
-
-    _openGallery() {
-        this._stopCamera();
-        document.getElementById('camera-view').classList.add('hidden');
-        document.getElementById('gallery-view').classList.remove('hidden');
-        this._renderGallery();
-    }
-
-    _closeGallery() {
-        document.getElementById('gallery-view').classList.add('hidden');
-        document.getElementById('camera-view').classList.remove('hidden');
-    }
-
-    _renderGallery() {
-        const grid = document.getElementById('photo-grid');
-        
-        if (this.photos.length === 0) {
-            grid.innerHTML = `
-                <div style="grid-column:1/-1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px 20px;color:#555;">
-                    <span style="font-size:48px;margin-bottom:12px">🖼️</span>
-                    <p>No photos yet</p>
-                </div>`;
-            return;
-        }
-
-        grid.innerHTML = this.photos.map(photo => `
-            <div class="photo-item" data-id="${photo.id}">
-                <img src="${photo.dataUrl}" alt="Photo ${photo.id}" loading="lazy">
-            </div>
-        `).join('');
-
-        // Click to view full size
-        grid.querySelectorAll('.photo-item').forEach(item => {
-            item.addEventListener('click', () => {
-                const id = item.dataset.id;
-                const photo = this.photos.find(p => p.id === id);
-                if (photo) {
-                    // Show fullscreen viewer
-                    const viewer = document.createElement('div');
-                    viewer.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:#000;z-index:20;display:flex;align-items:center;justify-content:center;';
-                    const img = document.createElement('img');
-                    img.src = photo.dataUrl;
-                    img.style.cssText = 'max-width:100%;max-height:100%;object-fit:contain;';
-                    viewer.appendChild(img);
-                    viewer.addEventListener('click', () => viewer.remove());
-                    document.body.appendChild(viewer);
-                }
-            });
-        });
-    }
-
-    async _loadGallery() {
-        const fallback = () => {
-            try {
-                const raw = localStorage.getItem('nuxel-camera-photos');
-                return raw ? JSON.parse(raw) : [];
-            } catch (e) {
-                return [];
-            }
-        };
-        try {
-            const res = await nuxelBridgeCall('camera', 'list-captures', { app_id: 'org.nuxel.Camera' }, null);
-            if (res && Array.isArray(res.captures)) {
-                this.photos = res.captures;
-            } else {
-                this.photos = fallback();
-            }
-            nuxelBridgeOfflineBanner();
-        } catch (e) {
-            this.photos = fallback();
-        }
-    }
-
-    _saveGallery() {
-        try {
-            // Only keep last 50 photos to manage storage
-            if (this.photos.length > 50) {
-                this.photos = this.photos.slice(0, 50);
-            }
-            localStorage.setItem('nuxel-camera-photos', JSON.stringify(this.photos));
-        } catch (e) {
-            console.warn('[Camera] Storage full, clearing old photos');
-            this.photos = this.photos.slice(0, 10);
-            try {
-                localStorage.setItem('nuxel-camera-photos', JSON.stringify(this.photos));
-            } catch (e2) {}
-        }
-    }
-
-    _bindEvents() {
-        // Capture button
-        document.getElementById('capture-btn').addEventListener('click', async () => {
-            if (this.currentMode === 'photo') {
-                await this._capturePhoto();
-            }
-        });
-
-        // Switch camera
-        document.getElementById('switch-camera').addEventListener('click', () => {
-            this._stopCamera();
-            const currentFacing = this.stream?.getVideoTracks()[0]?.getSettings().facingMode;
-            const newFacing = currentFacing === 'environment' ? 'user' : 'environment';
-            this._startCamera(newFacing);
-        });
-
-        // Switch mode
-        document.getElementById('switch-mode').addEventListener('click', () => this._toggleMode());
-
-        // Gallery
-        document.getElementById('gallery-btn').addEventListener('click', () => this._openGallery());
-        document.getElementById('gallery-back').addEventListener('click', () => this._closeGallery());
-
-        // Animation keyframes
-        const style = document.createElement('style');
-        style.textContent = `
-            @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
-        `;
-        document.head.appendChild(style);
-
-        // Start camera on mount
-        this._startCamera();
-
-        // Handle visibility changes to save power
-        document.addEventListener('visibilitychange', () => {
-            if (document.hidden) {
-                this._stopCamera();
-            } else {
-                this._startCamera();
-            }
-        });
-    }
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-    window.cameraApp = new CameraApp();
-});
+  document.addEventListener('DOMContentLoaded', init);
+})();

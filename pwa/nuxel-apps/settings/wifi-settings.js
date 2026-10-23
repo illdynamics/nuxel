@@ -20,25 +20,77 @@
     return response;
   }
   let wifiState = null;
+  let selectedAp = null;
+  let pollTimer = null;
+
+  // Authoritative NetworkManager stage -> UI phrase.  Association and DHCP are
+  // SEPARATE stages; the old code collapsed both into "Associating / DHCP…" so
+  // the user could never tell whether L2 association or DHCP was failing.
+  const STAGE_LABELS = {
+    authenticating: 'Authenticating…',
+    associating: 'Authenticating & associating…',
+    ip: 'Obtaining IP address (DHCP)…',
+    connected: 'Connected (link up)…',
+    online: 'Connected — NetworkManager reports full internet connectivity.',
+    disabled: 'Wi-Fi disabled',
+    unavailable: 'Wi-Fi adapter unavailable',
+    unmanaged: 'Wi-Fi adapter unmanaged',
+    enabled_disconnected: 'Wi-Fi enabled, not connected',
+  };
+
+  function honestStage(st) {
+    return STAGE_LABELS[st] || st || 'idle';
+  }
+
+  function stopPolling() {
+    if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+  }
+
+  function startPolling() {
+    // Bounded re-render only while a transition is in flight; never a perpetual
+    // spinner.  It stops as soon as the authoritative state is settled.
+    if (pollTimer) return;
+    pollTimer = setInterval(async () => {
+      await refresh();
+      const s = wifiState || {};
+      if (s.wifi_state === 'connected' || s.wifi_state === 'internet' || s.wifi_state === 'enabled_disconnected') {
+        stopPolling();
+      }
+    }, 1500);
+  }
+
   async function refresh() {
     try {
       const response = await rpc(null, {}, false);
       wifiState = response.network || (response.data && response.data.network) || null;
       if (!wifiState || wifiState.available === false) {
         status.textContent = 'Wi-Fi unavailable: check S10+ driver/firmware, rfkill and NetworkManager. ' + ((wifiState && wifiState.error) || '');
+        stopPolling();
       } else {
-        status.textContent = 'Radio: ' + (wifiState.wifi_enabled ? 'ON' : 'OFF') + '\nDevice: ' + (wifiState.wifi_available ? 'detected' : 'not detected') + '\nAssociation: ' + (wifiState.wifi_state || 'unknown') + '\nInternet check: ' + (wifiState.connectivity === 4 ? 'NetworkManager full' : 'not confirmed') + '\nInterface: ' + (wifiState.wifi_devices || []).map(x => x.interface).join(', ');
+        status.textContent = 'Radio: ' + (wifiState.wifi_enabled ? 'ON' : 'OFF') + '\nDevice: ' + (wifiState.wifi_available ? 'detected' : 'not detected') + '\nState: ' + honestStage(wifiState.wifi_stage) + '\nInternet check: ' + (wifiState.connectivity === 4 ? 'NetworkManager full' : 'not confirmed') + '\nInterface: ' + (wifiState.wifi_devices || []).map(x => x.interface).join(', ');
       }
-    } catch (e) { status.textContent = 'Network status unavailable: ' + e.message; }
+    } catch (e) { status.textContent = 'Network status unavailable: ' + e.message; stopPolling(); }
   }
   async function mutate(verb, data) {
     report('Working…');
     try {
       const response = await rpc(verb, data, true);
-      report(response.state === 'connecting' ? 'Connecting… wait for association and DHCP. Internet is not yet verified.' : 'NetworkManager confirmed request.');
+      if (response && response.success === false) {
+        report('Error: ' + (response.error || 'NetworkManager refused the request'));
+        stopPolling();
+        return response;
+      }
+      if (response.stage) {
+        report(honestStage(response.stage) + (response.note ? ' ' + response.note : ''));
+      } else if (response.state === 'connecting') {
+        report('Connecting… wait for association and DHCP. Internet is not yet verified.');
+      } else {
+        report('NetworkManager confirmed request.');
+      }
       await refresh();
+      if (verb === 'wifi-connect') startPolling();
       return response;
-    } catch (e) { report('Error: ' + e.message); return null; }
+    } catch (e) { report('Error: ' + e.message); stopPolling(); return null; }
   }
   $('wifi-refresh').addEventListener('click', refresh);
   $('wifi-scan').addEventListener('click', async () => {
@@ -47,33 +99,56 @@
     if (!response) return;
     const seen = new Set();
     for (const ap of (response.networks || [])) {
-      if (!ap.ssid || seen.has(ap.ssid + '|' + ap.security)) continue;
-      seen.add(ap.ssid + '|' + ap.security);
+      // Duplicate SSIDs are real (2.4/5 GHz, mesh nodes). Keep every AP and
+      // identify it by the AP's own D-Bus path/BSSID instead of dropping rows.
+      const key = (ap.bssid || ap.ap_path) + '|' + ap.ssid + '|' + ap.security + '|' + (ap.frequency || '');
+      if (!ap.ssid || seen.has(key)) continue;
+      seen.add(key);
       const button = document.createElement('button');
       button.type = 'button'; button.className = 'wifi-network';
-      button.textContent = ap.ssid + ' · ' + ap.strength + '% · ' + ap.security;
+      const band = ap.frequency ? (ap.frequency < 3000 ? '2.4 GHz' : '5 GHz') : '';
+      button.textContent = ap.ssid + ' · ' + ap.strength + '% · ' + ap.security + (band ? ' · ' + band : '');
       button.addEventListener('click', () => {
         if (!['wpa2','wpa3','open'].includes(ap.security)) { report('This network security type is not supported by the Settings connector.'); return; }
+        selectedAp = ap;
         $('wifi-ssid').value = ap.ssid; $('wifi-security').value = ap.security;
-        $('wifi-target-label').textContent = ap.ssid; $('wifi-password').value = '';
+        $('wifi-target-label').textContent = ap.ssid + (band ? ' (' + band + ')' : '');
+        $('wifi-password').value = '';
         $('wifi-password').required = ap.security !== 'open';
         $('wifi-password').closest('label').hidden = ap.security === 'open';
         form.hidden = false;
+        if (ap.security !== 'open') { try { $('wifi-password').focus({ preventScroll: false }); } catch (e) { $('wifi-password').focus(); } }
       });
       list.append(button);
     }
-    report(seen.size + ' network(s) reported; select one to connect.');
+    report(seen.size + ' AP(s) reported; select one to connect.');
   });
   $('wifi-power').addEventListener('click', () => mutate('wifi-enabled', {enabled: !(wifiState && wifiState.wifi_enabled)}));
   $('wifi-disconnect').addEventListener('click', () => mutate('wifi-disconnect', {}));
-  $('wifi-cancel').addEventListener('click', () => { $('wifi-password').value = '';form.hidden=true; });
+  $('wifi-cancel').addEventListener('click', () => {
+    $('wifi-password').value = ''; selectedAp = null; form.hidden = true;
+    stopPolling();
+    try { document.activeElement && document.activeElement.blur(); } catch (e) {}
+  });
   form.addEventListener('submit', async event => {
     event.preventDefault();
     const pass = $('wifi-password').value, ssid = $('wifi-ssid').value, security = $('wifi-security').value;
     if (security === 'open' && !confirm('Connect to an unencrypted wireless network?')) return;
-    const ok = await mutate('wifi-connect', {ssid, password: pass, security});
+    const selected = selectedAp || {};
+    const ok = await mutate('wifi-connect', {
+      ssid, password: pass, security,
+      ap_path: selected.ap_path || '',
+      bssid: selected.bssid || '',
+      device: selected.device || '',
+      ssid_hex: selected.ssid_hex || ''
+    });
     $('wifi-password').value = '';
-    if (ok) form.hidden = true;
+    // Release text-input focus once the activation request is in flight. The
+    // compositor (Stevia) hides its keyboard; no repeated focus loop follows.
+    try { document.activeElement && document.activeElement.blur(); } catch (e) {}
+    // Keep the dialog visible through the associating/DHCP stages so a failed
+    // passphrase can be corrected in place; hide only once the network is up.
+    if (ok && ok.success === false) { form.hidden = false; }
   });
   document.querySelectorAll('[data-tab=network]').forEach(tab => tab.addEventListener('click', refresh));
 })();

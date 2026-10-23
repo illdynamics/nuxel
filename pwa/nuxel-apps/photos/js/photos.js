@@ -1,12 +1,12 @@
-// Nuxel Photos (mission area 30; camera/gallery proof area 15)
+// Nuxel Photos — completed file-backed gallery (A52).
 //
-// Reads the captures the Camera PWA produced through the shared Nuxel bridge
-// (verb camera.list-captures) and shows them here.  When the bridge is offline
-// the app reports that honestly and shows only the metadata it has indexed
-// locally - it never renders placeholder imagery pretending to be a photo.
+// Reads real media records from the bridge `camera.list-captures` (metadata
+// only: no base64 in the list) and lazily loads pixel data per visible item via
+// `camera.open`.  Deletes real files via `camera.delete`.  Videos render as
+// playable <video> when small enough to inline; otherwise metadata + path are
+// shown honestly.  Never fabricates imagery.
 (function () {
   'use strict';
-  var K_INDEX = 'nuxel-photos-index';
 
   var els = {
     grid: document.getElementById('grid'),
@@ -16,13 +16,14 @@
     album: document.getElementById('album'),
     badge: document.getElementById('src-badge'),
     viewer: document.getElementById('viewer'),
-    viewerImg: document.getElementById('viewer-img'),
+    viewerMedia: document.getElementById('viewer-media'),
     viewerTitle: document.getElementById('viewer-title'),
     viewerInfo: document.getElementById('viewer-info'),
     toast: document.getElementById('toast')
   };
 
-  var state = { items: [], filter: '', album: '', index: 0, bridgeOnline: false };
+  var state = { items: [], filter: '', album: '', index: 0, online: false, cache: {} };
+  var order = [];
 
   function toast(msg) {
     els.toast.textContent = msg;
@@ -31,14 +32,12 @@
     toast._t = setTimeout(function () { els.toast.classList.add('hidden'); }, 2400);
   }
 
-  function localIndex() {
-    try { return JSON.parse(localStorage.getItem(K_INDEX) || '[]') || []; } catch (e) { return []; }
-  }
-  function saveIndex(rows) {
-    var meta = rows.map(function (r) {
-      return { id: r.id, name: r.name, taken: r.taken, size: r.size, w: r.w, h: r.h };
-    });
-    try { localStorage.setItem(K_INDEX, JSON.stringify(meta)); } catch (e) { /* ignore */ }
+  function bridge() { return window.NuxelBridge || null; }
+
+  function call(ns, verb, params, fb) {
+    var b = bridge();
+    if (!b || typeof b.call !== 'function') return Promise.resolve(fb);
+    return b.call(ns, verb, params).catch(function () { return fb; });
   }
 
   function albumOf(item) {
@@ -47,64 +46,54 @@
   }
 
   function normalise(raw, i) {
-    var taken = raw.taken || raw.timestamp || raw.created_at || raw.mtime || Date.now();
+    var taken = raw.taken || raw.mtime || raw.timestamp || Date.now();
     return {
-      id: raw.id || raw.path || ('capture-' + i),
-      name: raw.name || raw.filename || (raw.path ? String(raw.path).split('/').pop() : ('Capture ' + (i + 1))),
-      taken: typeof taken === 'number' ? taken : Date.parse(taken) || Date.now(),
-      size: raw.size || raw.bytes || null,
-      w: raw.width || raw.w || null,
-      h: raw.height || raw.h || null,
-      album: raw.album || null,
-      path: raw.path || raw.url || null,
-      url: raw.data_url || raw.thumbnail || raw.url || null
+      id: raw.id || ('capture-' + i),
+      name: raw.name || (raw.path ? String(raw.path).split('/').pop() : ('Capture ' + (i + 1))),
+      kind: raw.kind || (/(video|webm|mp4)/i.test(raw.mime || '') ? 'video' : 'photo'),
+      taken: typeof taken === 'number' ? taken : (Date.parse(taken) || Date.now()),
+      size: raw.size || null,
+      w: raw.width || null,
+      h: raw.height || null,
+      mime: raw.mime || null,
+      path: raw.path || null,
+      duration: raw.duration || null,
+      camera: raw.camera || null,
+      orientation: raw.orientation || null
     };
   }
 
-  function load() {
-    var bridge = window.NuxelBridge;
-    els.badge.textContent = 'camera store: reading…';
-    if (!bridge || typeof bridge.call !== 'function') {
-      state.bridgeOnline = false;
-      showOffline('The shared bridge client is not present in this view.');
+  async function load() {
+    els.badge.textContent = 'media store: reading…';
+    var res = await call('camera', 'list-captures', { kind: '' }, null);
+    var raw = res && (res.captures || res.items);
+    if (!raw || !Array.isArray(raw)) {
+      state.online = false;
+      showEmpty('The camera service returned no media list. Take a photo in the Camera app, then press Refresh.');
       return;
     }
-    bridge.call('camera', 'list-captures', {}).then(function (res) {
-      var raw = (res && (res.captures || res.items)) || null;
-      state.bridgeOnline = !!(res && res.success !== false && raw);
-      if (!raw) { showOffline('The camera service returned no capture list.'); return; }
-      state.items = raw.map(normalise);
-      saveIndex(state.items);
-      render();
-    }).catch(function () {
-      state.bridgeOnline = false;
-      showOffline('The camera service could not be reached.');
-    });
+    state.online = true;
+    state.items = raw.map(normalise);
+    render();
   }
 
-  function showOffline(detail) {
-    var cached = localIndex();
-    els.badge.textContent = 'camera store: offline';
+  function showEmpty(detail) {
+    els.badge.textContent = 'media store: offline/empty';
     els.badge.classList.add('warn');
-    els.emptyDetail.textContent = detail + ' Indexed locally: ' + cached.length +
-      ' capture(s). Nuxel Photos will not invent images; re-run Refresh once the bridge is up.';
-    if (!cached.length) {
-      els.grid.classList.add('hidden');
-      els.empty.classList.remove('hidden');
-      return;
-    }
-    state.items = cached.map(function (c, i) { return normalise(c, i); });
-    render();
+    els.emptyDetail.textContent = detail;
+    els.grid.classList.add('hidden');
+    els.empty.classList.remove('hidden');
   }
 
   function fillAlbums() {
     var names = {};
     state.items.forEach(function (i) { names[i.album || albumOf(i)] = true; });
     var current = els.album.value;
-    els.album.innerHTML = '<option value="">All albums</option>';
+    els.album.innerHTML = '<option value="">All</option>';
     Object.keys(names).sort().forEach(function (n) {
       var o = document.createElement('option');
-      o.value = n; o.textContent = n + ' (' + state.items.filter(function (i) { return (i.album || albumOf(i)) === n; }).length + ')';
+      o.value = n;
+      o.textContent = n + ' (' + state.items.filter(function (i) { return (i.album || albumOf(i)) === n; }).length + ')';
       els.album.appendChild(o);
     });
     els.album.value = names[current] ? current : '';
@@ -121,18 +110,37 @@
     });
   }
 
+  async function openData(item) {
+    if (state.cache[item.id]) return state.cache[item.id];
+    var res = await call('camera', 'open', { id: item.id }, null);
+    if (res && res.success && res.capture && res.capture.data_b64) {
+      var mime = res.capture.mime || item.mime || (item.kind === 'video' ? 'video/webm' : 'image/jpeg');
+      var url = 'data:' + mime + ';base64,' + res.capture.data_b64;
+      state.cache[item.id] = url;
+      return url;
+    }
+    return null;
+  }
+
+  function noImage(label) {
+    var d = document.createElement('div');
+    d.className = 'noimg';
+    d.textContent = label || 'metadata only';
+    return d;
+  }
+
   function render() {
     fillAlbums();
     var rows = visible();
     els.grid.innerHTML = '';
-    els.badge.textContent = 'camera store: ' + (state.bridgeOnline ? 'connected' : 'offline');
-    els.badge.classList.toggle('warn', !state.bridgeOnline);
+    els.badge.textContent = 'media store: ' + (state.online ? 'connected' : 'offline');
+    els.badge.classList.toggle('warn', !state.online);
     if (!rows.length) {
       els.empty.classList.remove('hidden');
       els.grid.classList.add('hidden');
       els.emptyDetail.textContent = state.items.length
-        ? 'No capture matches the current filter (' + state.items.length + ' indexed).'
-        : 'The camera store is empty: take a photo in the Camera app, then press Refresh.';
+        ? 'No media matches the current filter (' + state.items.length + ' indexed).'
+        : 'The media store is empty: take a photo in the Camera app, then press Refresh.';
       return;
     }
     els.empty.classList.add('hidden');
@@ -140,80 +148,102 @@
     rows.forEach(function (item) {
       var cell = document.createElement('div');
       cell.className = 'cell';
-      if (item.url) {
-        var img = document.createElement('img');
-        img.loading = 'lazy';
-        img.alt = item.name;
-        img.src = item.url;
-        img.onerror = function () { img.remove(); cell.insertBefore(noImage(), cell.firstChild); };
-        cell.appendChild(img);
-      } else {
-        cell.appendChild(noImage());
+      cell.dataset.id = item.id;
+      var placeholder = noImage(item.kind === 'video' ? 'video' : '…');
+      cell.appendChild(placeholder);
+      cell.appendChild(noImageCaption(item));
+      // Lazy-load pixel data only when the cell becomes visible.
+      if ('IntersectionObserver' in window) {
+        var io = new IntersectionObserver(function (entries) {
+          entries.forEach(function (en) {
+            if (!en.isIntersecting) return;
+            io.disconnect();
+            openData(item).then(function (url) {
+              if (!url) return;
+              cell.replaceChild(mediaEl(item, url, false), placeholder);
+            });
+          });
+        });
+        io.observe(cell);
       }
-      var cap = document.createElement('div');
-      cap.className = 'cap';
-      cap.textContent = new Date(item.taken).toLocaleDateString();
-      cell.appendChild(cap);
       cell.addEventListener('click', function () { openViewer(item); });
       els.grid.appendChild(cell);
     });
   }
-  function noImage() {
-    var d = document.createElement('div');
-    d.className = 'noimg';
-    d.textContent = 'metadata only — the thumbnail is provided by the camera service';
-    return d;
+
+  function noImageCaption(item) {
+    var cap = document.createElement('div');
+    cap.className = 'cap';
+    cap.textContent = new Date(item.taken).toLocaleDateString();
+    return cap;
   }
 
-  var order = [];
+  function mediaEl(item, url, controls) {
+    if (item.kind === 'video') {
+      var v = document.createElement('video');
+      v.src = url; v.muted = true; v.playsInline = true; v.controls = !!controls;
+      v.className = 'media';
+      return v;
+    }
+    var img = document.createElement('img');
+    img.src = url; img.alt = item.name; img.className = 'media';
+    return img;
+  }
+
   function openViewer(item) {
     order = visible();
     state.index = Math.max(0, order.indexOf(item));
     paintViewer();
     els.viewer.classList.remove('hidden');
   }
-  function paintViewer() {
+
+  async function paintViewer() {
     var item = order[state.index];
     if (!item) { els.viewer.classList.add('hidden'); return; }
     els.viewerTitle.textContent = item.name + '  (' + (state.index + 1) + '/' + order.length + ')';
-    if (item.url) {
-      els.viewerImg.style.display = '';
-      els.viewerImg.src = item.url;
+    els.viewerMedia.innerHTML = '';
+    var url = await openData(item);
+    if (url) {
+      els.viewerMedia.appendChild(mediaEl(item, url, true));
     } else {
-      els.viewerImg.removeAttribute('src');
-      els.viewerImg.style.display = 'none';
+      var d = document.createElement('div');
+      d.className = 'noimg';
+      d.textContent = item.kind === 'video'
+        ? 'Video too large to inline — metadata only (path: ' + (item.path || 'unknown') + ')'
+        : 'Pixel data not available in this session (metadata only)';
+      els.viewerMedia.appendChild(d);
     }
     var lines = [
-      'Album        : ' + (item.album || albumOf(item)),
+      'Kind         : ' + item.kind,
       'Taken        : ' + new Date(item.taken).toLocaleString(),
       'Size         : ' + (item.size ? (item.size / 1024).toFixed(1) + ' KiB' : 'not reported'),
       'Dimensions   : ' + (item.w && item.h ? item.w + '×' + item.h : 'not reported'),
-      'Storage path : ' + (item.path || 'not reported by the camera service'),
-      'Pixel data   : ' + (item.url ? 'provided by the camera service' : 'not available in this session (metadata only)')
+      'Duration     : ' + (item.duration ? item.duration + ' s' : 'n/a'),
+      'Camera       : ' + (item.camera || 'not reported'),
+      'Storage path : ' + (item.path || 'not reported')
     ];
     els.viewerInfo.textContent = lines.join('\n');
   }
-  document.getElementById('prev').addEventListener('click', function () { els.viewer.classList.add('hidden'); });
+
   document.getElementById('close').addEventListener('click', function () { els.viewer.classList.add('hidden'); });
+  document.getElementById('prev').addEventListener('click', function () { els.viewer.classList.add('hidden'); });
   document.getElementById('prev-of').addEventListener('click', function () { if (state.index > 0) { state.index--; paintViewer(); } });
   document.getElementById('next-of').addEventListener('click', function () { if (state.index < order.length - 1) { state.index++; paintViewer(); } });
   document.getElementById('next-of2').addEventListener('click', function () { if (state.index < order.length - 1) { state.index++; paintViewer(); } });
-  document.getElementById('delete').addEventListener('click', function () {
+  document.getElementById('delete').addEventListener('click', async function () {
     var item = order[state.index];
     if (!item) return;
-    var bridge = window.NuxelBridge;
-    var done = function () {
+    var res = await call('camera', 'delete', { id: item.id }, null);
+    if (res && res.success) {
       state.items = state.items.filter(function (x) { return x.id !== item.id; });
       order = order.filter(function (x) { return x.id !== item.id; });
       if (state.index >= order.length) state.index = Math.max(0, order.length - 1);
-      saveIndex(state.items);
-      paintViewer();
-      render();
-      toast('Removed ' + item.name + ' from the index');
-    };
-    if (bridge && typeof bridge.call === 'function') {
-      bridge.call('camera', 'delete', { id: item.id, path: item.path }).then(done).catch(done);
-    } else { done(); }
+      delete state.cache[item.id];
+      paintViewer(); render();
+      toast('Deleted ' + item.name);
+    } else {
+      toast('Delete failed: ' + ((res && res.error) || 'unknown error'));
+    }
   });
 
   els.search.addEventListener('input', function (ev) { state.filter = ev.target.value || ''; render(); });
@@ -221,9 +251,9 @@
   document.getElementById('refresh').addEventListener('click', function () { load(); });
   document.getElementById('export').addEventListener('click', function () {
     var rows = state.items.map(function (i) {
-      return { id: i.id, name: i.name, taken: new Date(i.taken).toISOString(), size: i.size, album: i.album || albumOf(i), path: i.path };
+      return { id: i.id, name: i.name, kind: i.kind, taken: new Date(i.taken).toISOString(), size: i.size, path: i.path };
     });
-    var text = JSON.stringify({ schema_version: 1, bridge_online: state.bridgeOnline, captures: rows }, null, 2);
+    var text = JSON.stringify({ schema_version: 2, online: state.online, media: rows }, null, 2);
     try {
       var a = document.createElement('a');
       a.href = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
@@ -235,7 +265,5 @@
   });
 
   load();
-
-  // headless smoke-test hook
   window.nuxelPhotos = { state: state, normalise: normalise, albumOf: albumOf, visible: visible, render: render };
 })();

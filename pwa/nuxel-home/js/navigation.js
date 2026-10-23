@@ -44,13 +44,43 @@
   class SystemNavigation {
     constructor() {
       this.el = document.getElementById('system-navigation');
-      this.holdMs = 650; this.timer = null; this.held = false;
+      this.holdMs = 700; this.timer = null; this.held = false;
       this.activePointer = null;
+      this.nativeDock = false;
       if (!this.el) return;
       this.el.querySelectorAll('button[data-nav]').forEach(button => {
         this._bindImage(button);
         this.bind(button);
       });
+      this._resolveNativeDock();
+    }
+    _resolveNativeDock() {
+      // On the S10+ the authoritative dock is the native layer-shell client
+      // nuxel-navdock. The DOM strip is only the desktop/VM fallback; if both
+      // exist the owner sees two Back and two Recents controls. Hide the DOM
+      // copy before first paint and keep it hidden once the native dock proves
+      // it is running. If the native dock is absent, the DOM fallback returns.
+      const host = global.NuxelHost;
+      if (!host || !host.available || typeof host.statusRead !== 'function') return;
+      try { document.documentElement.classList.add('native-nav-pending'); } catch (e) {}
+      Promise.resolve(host.statusRead('navdock-state')).then((res) => {
+        const text = (res && (res.text || res.value)) || '';
+        const ready = /NAV_DOCK_READY/.test(text);
+        this.nativeDock = ready;
+        try {
+          document.documentElement.classList.toggle('native-nav-present', ready);
+          document.documentElement.classList.toggle('native-nav-pending', !ready);
+        } catch (e) {}
+        this._traceNs('native-dock=' + (ready ? 'present' : 'absent'));
+      }).catch(() => {
+        try { document.documentElement.classList.remove('native-nav-pending'); } catch (e) {}
+      });
+    }
+    _traceNs(message) {
+      try {
+        const diag = global.webkit && global.webkit.messageHandlers && global.webkit.messageHandlers.nuxelDiag;
+        if (diag) diag.postMessage('NAVOWNER ' + message);
+      } catch (e) {}
     }
     _bindImage(button) {
       const image = button.querySelector('img');
@@ -63,6 +93,12 @@
     bind(button) {
       const action = button.dataset.nav;
       let lastPointerTapAt = 0;
+      const trace = (phase) => {
+        try {
+          const diag = global.webkit && global.webkit.messageHandlers && global.webkit.messageHandlers.nuxelDiag;
+          if (diag) diag.postMessage(`NAV ${phase} action=${action} state=${global.nuxel && global.nuxel.appSession ? global.nuxel.appSession.state : '?'} page=${global.launcher ? global.launcher.currentPage : '?'}`);
+        } catch (e) { /* observation only */ }
+      };
       const cancel = () => { if (this.timer) clearTimeout(this.timer); this.timer = null; this.activePointer = null; };
       button.addEventListener('pointerdown', e => {
         if (e.button !== undefined && e.button !== 0) return;
@@ -77,13 +113,13 @@
       button.addEventListener('pointerup', e => {
         if (this.activePointer !== null && e.pointerId !== this.activePointer) return;
         const held = this.held; cancel();
-        if (!held) { this.tap(action); lastPointerTapAt = Date.now(); }
+        if (!held) { lastPointerTapAt = Date.now(); this.tap(action, trace); }
       });
       button.addEventListener('pointercancel', cancel); button.addEventListener('lostpointercapture', cancel);
       // Keyboard and accessibility activations do not generate pointer events.
       button.addEventListener('click', e => {
         if (Date.now() - lastPointerTapAt < 500) return;
-        this.buzz('navigation'); this.tap(action);
+        this.buzz('navigation'); this.tap(action, trace);
       });
     }
     buzz(kind) {
@@ -97,11 +133,18 @@
         try { if (global.navigator && global.navigator.vibrate) global.navigator.vibrate(kind === 'long' ? 25 : 12); } catch (e) {}
       }
     }
-    tap(action) {
-      if (!global.nuxel) return;
-      if (action === 'back') global.nuxel.back();
-      else if (action === 'home') global.nuxel.home();
-      else global.nuxel.recentsToggle();
+    tap(action, trace) {
+      if (trace) trace('tap');
+      if (!global.nuxel) { if (trace) trace('missing-nuxel'); return; }
+      try {
+        if (action === 'back') global.nuxel.back();
+        else if (action === 'home') global.nuxel.home();
+        else global.nuxel.recentsToggle();
+      } catch (error) {
+        if (trace) trace('error:' + (error && error.message ? error.message : error));
+        return;
+      }
+      if (trace) trace('done');
     }
     long(action) {
       if (!global.nuxel) return;
@@ -114,5 +157,9 @@
     }
   }
   global.NuxelAppSessions = AppSessions;
-  document.addEventListener('DOMContentLoaded', () => { global.nuxelNavigation = new SystemNavigation(); });
+  global.NuxelSystemNavigation = SystemNavigation;
+  document.addEventListener('DOMContentLoaded', () => {
+    if (global.nuxelNavigation) return;   // exactly one DOM fallback instance
+    global.nuxelNavigation = new SystemNavigation();
+  });
 })(window);

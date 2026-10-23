@@ -1,0 +1,8 @@
+### frames1  [rc=1 framed=True sha_ok=True elapsed=0.869s]
+### frames2  [rc=1 framed=True sha_ok=True elapsed=0.085s]
+### frames3  [rc=1 framed=True sha_ok=True elapsed=0.085s]
+### frames4  [rc=1 framed=True sha_ok=True elapsed=0.083s]
+### frames5  [rc=1 framed=True sha_ok=True elapsed=0.084s]
+### frames6  [rc=1 framed=True sha_ok=True elapsed=0.083s]
+### frames7  [rc=1 framed=True sha_ok=True elapsed=0.083s]
+### frames8  [rc=1 framed=True sha_ok=True elapsed=0.092s]

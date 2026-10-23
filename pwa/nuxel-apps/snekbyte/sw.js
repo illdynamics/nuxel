@@ -1,39 +1,26 @@
-// Nuxel SnekByte service worker — the game is fully offline: the engine, the
-// renderer and every asset are in this directory.  There is no network path at
-// all, so the cache is cache-first and a fetch that somehow reaches the network
-// is only used to refresh the cache, never to make the game work.
-//
-// CACHE_NAME is versioned; `activate` deletes every other namespace so a stale
-// engine can never be served after a redeploy (the INV-1 lesson from A32).
-const CACHE_NAME = 'nuxel-snekbyte-v1';
-const ASSETS = [
-  './', './index.html', './manifest.json', './app.json',
-  './css/snekbyte.css', './js/snek-engine.js', './js/snekbyte.js',
-  './icons/icon-48.png', './icons/icon-72.png', './icons/icon-96.png',
-  './icons/icon-128.png', './icons/icon-144.png', './icons/icon-152.png',
-  './icons/icon-192.png', './icons/icon-384.png', './icons/icon-512.png',
-  './icons/icon.svg'
+// A58: all assets must be cached before replacing a working offline version.
+const NAME='nuxel-snekbyte-7000-v2';
+const PREFIX='nuxel-snekbyte-';
+const ASSETS=[
+  './','./index.html','./app.json','./manifest.json',
+  './css/snekbyte.css','./js/snek-engine.js','./js/snek-controls.js','./js/snekbyte.js',
+  './icons/icon-48.png','./icons/icon-72.png','./icons/icon-96.png',
+  './icons/icon-128.png','./icons/icon-144.png','./icons/icon-152.png',
+  './icons/icon-192.png','./icons/icon-384.png','./icons/icon-512.png','./icons/icon.svg'
 ];
-self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE_NAME).then(c => c.addAll(ASSETS)).catch(() => {}));
-  self.skipWaiting();
-});
-self.addEventListener('activate', e => {
-  e.waitUntil(caches.keys().then(keys =>
-    Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))));
-  self.clients.claim();
-});
-self.addEventListener('fetch', e => {
-  const req = e.request;
-  if (req.method !== 'GET') return;                       // never cache a mutation
-  e.respondWith(caches.match(req).then(cached => {
-    if (cached) return cached;
-    return fetch(req).then(res => {
-      if (res && res.status === 200 && res.type === 'basic') {
-        const copy = res.clone();
-        caches.open(CACHE_NAME).then(c => c.put(req, copy));
-      }
-      return res;
-    }).catch(() => cached);
-  }));
+self.addEventListener('install',event=>event.waitUntil(
+  caches.open(NAME).then(cache=>cache.addAll(ASSETS)).then(()=>self.skipWaiting())
+));
+self.addEventListener('activate',event=>event.waitUntil(
+  caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith(PREFIX)&&k!==NAME)
+    .map(k=>caches.delete(k)))).then(()=>self.clients.claim())
+));
+self.addEventListener('fetch',event=>{
+  const req=event.request;
+  if(req.method!=='GET')return;
+  const url=new URL(req.url);
+  if(url.origin!==self.location.origin)return;
+  if(!url.pathname.startsWith(new URL(self.registration.scope).pathname))return;
+  // Read only this game's current cache, never a stale shell/other app cache.
+  event.respondWith(caches.open(NAME).then(cache=>cache.match(req,{ignoreSearch:true}).then(found=>found||fetch(req))));
 });

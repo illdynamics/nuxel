@@ -35,6 +35,28 @@ class QuickSettings {
 
     _init() {
         this._bindEvents();
+        this._bindIconAssets();
+    }
+
+    // One decode/error owner for custom tile artwork.  The label remains usable
+    // if a PNG is missing, and the browser's broken-image glyph is suppressed.
+    // Re-opening Quick Settings reuses these nodes, so no second renderer is
+    // created (the A44 duplicate-icon regression).
+    _bindIconAssets() {
+        if (this._iconAssetsBound) return;
+        this._iconAssetsBound = true;
+        document.querySelectorAll('#quick-settings .qs-item img.qs-icon').forEach(img => {
+            const mark = () => {
+                img.dataset.iconState = 'failed';
+                img.hidden = true;
+            };
+            img.addEventListener('load', () => { img.dataset.iconState = 'loaded'; img.hidden = false; });
+            img.addEventListener('error', mark);
+            if (img.complete) {
+                if (img.naturalWidth > 0) img.dataset.iconState = 'loaded';
+                else mark();
+            }
+        });
     }
 
     _bindEvents() {
@@ -51,6 +73,16 @@ class QuickSettings {
                 });
             }
         });
+
+        // A49: long-press the rotate tile for the seven-mode menu.
+        const rotateTile = document.getElementById('qs-rotate');
+        if (rotateTile) {
+            rotateTile.addEventListener('contextmenu', (ev) => { ev.preventDefault(); this._openRotateMenu(); });
+            let rt = null, rf = false;
+            rotateTile.addEventListener('pointerdown', () => { rf = false; rt = setTimeout(() => { rf = true; this._openRotateMenu(); }, 600); });
+            rotateTile.addEventListener('pointerup', () => { if (rt) clearTimeout(rt); if (rf) { /* swallow the click after a long-press */ rotateTile.dataset.longpress = 'true'; setTimeout(() => delete rotateTile.dataset.longpress, 400); } });
+            rotateTile.addEventListener('pointerleave', () => { if (rt) clearTimeout(rt); });
+        }
 
         // A33: the verbose-boot tile (created dynamically, see header comment)
         this._buildVerboseBootTile();
@@ -231,6 +263,10 @@ class QuickSettings {
             await this._setWifiEnabled(!this.state.wifi);
             return;
         }
+        if (id === 'rotate') {
+            await this._toggleRotate();
+            return;
+        }
         // A tile must not become a decorative switch.  Keep unintegrated
         // controls honest until their hardware backend is landed.
         this._osdNotice(`${id} control is unavailable on this build`);
@@ -261,10 +297,109 @@ class QuickSettings {
         }
     }
 
+    // ---- orientation (A53): tap = forced portrait<->auto, long-press = five primary + advanced modes ----
+    async _orientationState() {
+        try {
+            const res = await bridge.call('orientation', 'get', {});
+            return (res && typeof res === 'object') ? res : { mode: 'portrait' };
+        } catch (e) {
+            return { mode: 'portrait', error: String(e && e.message || e) };
+        }
+    }
+
+    async _toggleRotate() {
+        const cur = await this._orientationState();
+        const next = (cur.mode === 'auto') ? 'portrait' : 'auto';
+        await this._setOrientation(next);
+    }
+
+    async _setOrientation(mode) {
+        const tile = document.getElementById('qs-rotate');
+        if (tile) tile.dataset.pending = 'true';
+        try {
+            const res = await bridge.call('orientation', 'set', { mode: mode });
+            if (!res || res.success !== true) {
+                throw new Error((res && res.error) || 'orientation backend unavailable');
+            }
+            this.orientationMode = res.mode || mode;
+            await this._syncRotate();
+            this._osdNotice('Rotation: ' + (res.mode_label || res.mode));
+            this._hapticSwitch();
+        } catch (error) {
+            await this._syncRotate();
+            this._osdNotice('Rotation unchanged: ' + (error && error.message ? error.message : 'backend unavailable'));
+        } finally {
+            if (tile) delete tile.dataset.pending;
+        }
+    }
+
+    _hapticSwitch() {
+        if (window.NuxelHost && window.NuxelHost.available) window.NuxelHost.action('haptics-switch');
+        else if (navigator.vibrate) navigator.vibrate(10);
+    }
+
+    async _syncRotate() {
+        const tile = document.getElementById('qs-rotate');
+        if (!tile) return;
+        const st = await this._orientationState();
+        this.orientationMode = st.mode || 'portrait';
+        const auto = !!(st.auto);
+        const sensor = st.sensor;
+        const sensorOk = !!(sensor && sensor.available);
+        tile.dataset.enabled = auto ? 'true' : 'false';
+        tile.dataset.mode = this.orientationMode;
+        const label = tile.querySelector('.qs-label');
+        // Show the REAL selected mode (one of seven), never a bare Locked/Auto.
+        if (label) label.textContent = this._rotateModeLabel(this.orientationMode);
+        tile.title = 'Rotation: ' + (st.mode_label || this._rotateModeLabel(this.orientationMode))
+            + ' | effective ' + (st.effective_orientation === undefined ? '?' : st.effective_orientation + '°')
+            + (auto ? (' | sensor ' + (sensorOk ? 'available' : 'unavailable')) : '')
+            + '\nTap = forced portrait/auto, long-press = all seven modes';
+    }
+
+    _rotateModes() {
+        return [
+            ['auto', 'Auto'], ['auto-portrait', 'Auto Portrait'], ['auto-landscape', 'Auto Landscape'],
+            ['portrait', 'Forced Portrait'], ['landscape', 'Forced Landscape'],
+            ['reverse-portrait', 'Reverse Portrait (advanced)'], ['reverse-landscape', 'Reverse Landscape (advanced)'],
+        ];
+    }
+
+    _rotateModeLabel(mode) {
+        const hit = this._rotateModes().find(([m]) => m === mode);
+        return hit ? hit[1] : (mode || 'Portrait');
+    }
+
+    _openRotateMenu() {
+        if (document.getElementById('qs-rotate-menu')) return;
+        const modes = this._rotateModes();
+        const menu = document.createElement('div');
+        menu.id = 'qs-rotate-menu';
+        menu.className = 'qs-rotate-menu';
+        modes.forEach(([id, label]) => {
+            const item = document.createElement('button');
+            item.type = 'button';
+            item.className = 'qs-rotate-item';
+            item.textContent = label;
+            if (id === this.orientationMode) item.classList.add('selected');
+            item.addEventListener('click', (ev) => {
+                ev.stopPropagation();
+                menu.remove();
+                this._setOrientation(id);
+            });
+            menu.appendChild(item);
+        });
+        const dismiss = (ev) => { if (menu && !menu.contains(ev.target)) menu.remove(); };
+        menu.addEventListener('pointerdown', (ev) => ev.stopPropagation());
+        document.body.appendChild(menu);
+        setTimeout(() => document.addEventListener('pointerdown', dismiss, { once: true }), 0);
+    }
+
     _render() {
         // Update all toggle states from bridge
         this._syncState();
         this._syncVerboseBoot();
+        this._syncRotate();
     }
 
     async _syncState() {

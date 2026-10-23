@@ -1,0 +1,42 @@
+{
+  "generated_at": "2026-10-22",
+  "source": "live device /api/v1/apps/registry + rpm + foreign-toplevel window list",
+  "canonical_registry_version": 5,
+  "registry_app_count": 14,
+  "native_apps_launchable": [
+    {"id": "org.nuxel.BrowserNative", "binary": "/usr/lib/nuxel/nuxel-browser-native/nuxel_browser_native.py", "status": "LAUNCHES", "network": "NETWORK_VERIFIED"},
+    {"id": "org.nuxel.CameraNative", "binary": "/usr/lib/nuxel/nuxel-camera-native/nuxel_camera_native.py", "status": "LAUNCHES"},
+    {"id": "org.gnome.Snapshot", "binary": "/usr/sbin/snapshot", "status": "LAUNCHES", "feed": "BLOCKED (pipewire/libcamera missing)"}
+  ],
+  "installed_external_browsers": [
+    {"id": "firefox", "nevra": "firefox-157.0.1-1.fc43.aarch64", "status": "NETWORK_VERIFIED", "window": "BLOCKED_WAYLAND"},
+    {"id": "chromium", "nevra": "chromium-155.0.8059.84-1.fc43.aarch64", "status": "PACKAGE_AVAILABLE", "installed": false},
+    {"id": "ladybird", "status": "UPSTREAM_PREALPHA", "installed": false}
+  ],
+  "camera": {
+    "snapshot_installed": true,
+    "snapshot_launchable": true,
+    "nuxel_camera_launchable": true,
+    "sensor_detected": true,
+    "video_nodes": 68,
+    "media_nodes": 0,
+    "live_real_frames": false,
+    "real_jpeg_persisted": false
+  },
+  "home_button": {
+    "authoritative": "zwlr_foreign_toplevel_manager_v1 (phoc/wlroots)",
+    "helper": "/usr/lib/nuxel/nuxel-foreign-toplevel",
+    "endpoint": "POST /api/v1/apps/home",
+    "behavior": "minimise non-Home toplevels without killing; raise Home"
+  },
+  "registered_ids": [
+    "nuxel-dialer","nuxel-messages","nuxel-contacts","nuxel-camera","org.nuxel.Mail",
+    "org.nuxel.Calendar","org.nuxel.Notes","org.nuxel.Files","nuxel-settings",
+    "org.nuxel.Terminal","org.nuxel.LiveConsole","org.nuxel.Browser",
+    "org.nuxel.BrowserNative","org.nuxel.CameraNative"
+  ],
+  "launcher_js_added_pwas": [
+    "org.nuxel.Calculator","org.nuxel.Clock","org.nuxel.Photos","org.nuxel.Weather",
+    "org.nuxel.Maps","org.nuxel.Nuxtore","org.nuxel.Recorder","org.nuxel.Snekbyte"
+  ]
+}

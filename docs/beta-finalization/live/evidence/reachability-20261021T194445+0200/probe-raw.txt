@@ -1,0 +1,11 @@
+dev=/dev/cu.usbmodem201 bytes_in=7403 echo_ok=True error=None elapsed=0.331s
+sample:
+is not state TUI
+6,6668,12935366,-;[SSP] copr_fb_notifier_callback: early_blank = 1, fb_blank = 0
+6,6669,12935369,-;decon-0 UNBLANK mode: 0 type (0: DSI, 1: eDP, 2:DP, 3: WB)
+4,6670,12935373,-;decon-0 already ON state
+6,6671,12935375,-;decon_blank -
+6,6672,12935399,-;PANEL:INFO:panel_fb_notifier:UNBLANK
+6,6673,12935404,-;sec_ts 4-0048: [sec_input] sec_ts_start_device
+ SUBSYSTEM=i2c
+ DEVICE

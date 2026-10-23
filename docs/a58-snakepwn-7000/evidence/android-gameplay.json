@@ -1,0 +1,150 @@
+{
+  "device": "emulator-5554",
+  "input": "synthetic CDP pointer events; unmodified simulation and random foods",
+  "wraps": [
+    {
+      "direction": "right",
+      "from": [
+        39,
+        15
+      ],
+      "to": [
+        0,
+        15
+      ],
+      "tick": 20
+    },
+    {
+      "direction": "down",
+      "from": [
+        0,
+        29
+      ],
+      "to": [
+        0,
+        0
+      ],
+      "tick": 35
+    },
+    {
+      "direction": "left",
+      "from": [
+        0,
+        0
+      ],
+      "to": [
+        39,
+        0
+      ],
+      "tick": 36
+    },
+    {
+      "direction": "up",
+      "from": [
+        39,
+        0
+      ],
+      "to": [
+        39,
+        29
+      ],
+      "tick": 37
+    }
+  ],
+  "meals": [
+    {
+      "score": 0,
+      "meter": 0,
+      "poops": [],
+      "hud": "0 / 5"
+    },
+    {
+      "score": 1,
+      "meter": 1,
+      "poops": [],
+      "hud": "1 / 5"
+    },
+    {
+      "score": 2,
+      "meter": 2,
+      "poops": [],
+      "hud": "2 / 5"
+    },
+    {
+      "score": 3,
+      "meter": 3,
+      "poops": [],
+      "hud": "3 / 5"
+    },
+    {
+      "score": 4,
+      "meter": 4,
+      "poops": [],
+      "hud": "4 / 5"
+    },
+    {
+      "score": 5,
+      "meter": 0,
+      "poops": [
+        [
+          24,
+          11
+        ]
+      ],
+      "hud": "0 / 5"
+    }
+  ],
+  "ending": {
+    "tick": 92,
+    "score": 5,
+    "gameOver": true,
+    "cause": "poop",
+    "shitCounter": 0,
+    "snake": {
+      "positions": [
+        [
+          24,
+          11
+        ],
+        [
+          25,
+          11
+        ],
+        [
+          26,
+          11
+        ],
+        [
+          26,
+          10
+        ],
+        [
+          26,
+          9
+        ],
+        [
+          26,
+          8
+        ]
+      ],
+      "length": 6,
+      "direction": [
+        -1,
+        0
+      ]
+    },
+    "food": [
+      24,
+      25
+    ],
+    "poops": [
+      [
+        24,
+        11
+      ]
+    ]
+  },
+  "nativePrefs": {
+    "value": "{\"speedIndex\":2,\"wonqMode\":true,\"wrapWalls\":true,\"showGrid\":false,\"highScore\":5}"
+  }
+}

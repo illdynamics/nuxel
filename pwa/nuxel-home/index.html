@@ -14,11 +14,12 @@
     <link rel="icon" type="image/png" href="icons/icon-192.png">
     <link rel="apple-touch-icon" href="icons/icon-192.png">
     <title>Nuxel</title>
-    <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="css/launcher.css">
+    <link rel="stylesheet" href="css/style.css?v=a47">
+    <link rel="stylesheet" href="css/launcher.css?v=a47">
     <link rel="stylesheet" href="css/search.css">
-    <link rel="stylesheet" href="css/status-bar.css">
+    <link rel="stylesheet" href="css/status-bar.css?v=a54">
     <link rel="stylesheet" href="css/home-settings.css">
+    <link rel="stylesheet" href="css/lockscreen.css?v=a47">
 </head>
 <body>
     <!-- Boot animation splash (nuxel-boot-animation.mp4) — shown while the
@@ -29,15 +30,18 @@
     </div>
 
     <!-- Status Bar -->
+    <!-- A54: one right-hand cluster owns signal/Wi-Fi/battery/percent.  Each
+         indicator is a measured flex cell inside a single container with a fixed
+         gap, so no sibling can overlap another during rotation, resizing or the
+         connecting -> connected transition.  There is exactly ONE layout owner
+         for the right cluster (safe-zones.js moves this cluster as a unit). -->
     <div id="status-bar" class="status-bar">
         <div class="status-left">
             <span id="status-time">00:00</span>
         </div>
-        <div class="status-center">
+        <div class="status-right">
             <span id="status-signal" class="status-icon signal-icon"></span>
             <span id="status-wifi" class="status-icon wifi-icon"></span>
-        </div>
-        <div class="status-right">
             <span id="status-battery" class="status-icon battery-icon"></span>
             <span id="status-battery-pct" hidden></span>
         </div>
@@ -53,7 +57,7 @@
                 <div class="system-meter" data-meter="cpu"><span class="system-meter-label">CPU</span><span class="system-meter-value">--</span><span class="system-meter-detail">-- MHz</span><span class="system-meter-bar" aria-hidden="true"><i></i></span></div>
                 <div class="system-meter" data-meter="memory"><span class="system-meter-label">MEM</span><span class="system-meter-value">--</span><span class="system-meter-detail">-- GiB</span><span class="system-meter-bar" aria-hidden="true"><i></i></span></div>
                 <div class="system-meter" data-meter="gpu"><span class="system-meter-label">GPU</span><span class="system-meter-value">--</span><span class="system-meter-detail">-- MHz</span><span class="system-meter-bar" aria-hidden="true"><i></i></span></div>
-                <div class="system-meter" data-meter="gpu-memory"><span class="system-meter-label">VRAM</span><span class="system-meter-value">0 MiB</span><span class="system-meter-detail">shared RAM</span><span class="system-meter-bar" aria-hidden="true"><i></i></span></div>
+                <div class="system-meter" data-meter="gpu-memory"><span class="system-meter-label">VRAM</span><span class="system-meter-value">--</span><span class="system-meter-detail">shared RAM</span><span class="system-meter-bar" aria-hidden="true"><i></i></span></div>
             </section>
             <div class="app-grid-indicator">
                 <span class="dot active"></span>
@@ -81,37 +85,37 @@
     <div id="quick-settings" class="quick-settings hidden">
         <div class="qs-row">
             <div class="qs-item" id="qs-wifi" data-enabled="false">
-                <img class="qs-icon" src="/assets/nuxel-quicksettings-icon-pack/01-wifi.png?v=a37" alt="">
+                <img class="qs-icon" src="/assets/nuxel-quicksettings-icon-pack/01-wifi.png?v=a44" alt="" onerror="this.hidden=true">
                 <span class="qs-label">WiFi</span>
             </div>
             <div class="qs-item" id="qs-bluetooth" data-enabled="false">
-                <img class="qs-icon" src="/assets/nuxel-quicksettings-icon-pack/04-bluetooth.png?v=a37" alt="">
+                <img class="qs-icon" src="/assets/nuxel-quicksettings-icon-pack/04-bluetooth.png?v=a44" alt="" onerror="this.hidden=true">
                 <span class="qs-label">BT</span>
             </div>
             <div class="qs-item" id="qs-mobile" data-enabled="false">
-                <img class="qs-icon" src="/assets/nuxel-quicksettings-icon-pack/02-mobile-signal.png?v=a37" alt="">
+                <img class="qs-icon" src="/assets/nuxel-quicksettings-icon-pack/02-mobile-signal.png?v=a44" alt="" onerror="this.hidden=true">
                 <span class="qs-label">Mobile</span>
             </div>
             <div class="qs-item" id="qs-location" data-enabled="false">
-                <img class="qs-icon" src="/assets/nuxel-quicksettings-icon-pack/09-location.png?v=a37" alt="">
+                <img class="qs-icon" src="/assets/nuxel-quicksettings-icon-pack/09-location.png?v=a44" alt="" onerror="this.hidden=true">
                 <span class="qs-label">Location</span>
             </div>
         </div>
         <div class="qs-row">
             <div class="qs-item" id="qs-dnd" data-enabled="false">
-                <img class="qs-icon" src="/assets/nuxel-quicksettings-icon-pack/11-do-not-disturb.png?v=a37" alt="">
+                <img class="qs-icon" src="/assets/nuxel-quicksettings-icon-pack/11-do-not-disturb.png?v=a44" alt="" onerror="this.hidden=true">
                 <span class="qs-label">DND</span>
             </div>
             <div class="qs-item" id="qs-flashlight" data-enabled="false">
-                <img class="qs-icon" src="/assets/nuxel-quicksettings-icon-pack/10-flashlight.png?v=a37" alt="">
+                <img class="qs-icon" src="/assets/nuxel-quicksettings-icon-pack/10-flashlight.png?v=a44" alt="" onerror="this.hidden=true">
                 <span class="qs-label">Flash</span>
             </div>
             <div class="qs-item" id="qs-rotate" data-enabled="false">
-                <img class="qs-icon" src="/assets/nuxel-quicksettings-icon-pack/17-rotation-lock.png?v=a37" alt="">
+                <img class="qs-icon" src="/assets/nuxel-quicksettings-icon-pack/17-rotation-lock.png?v=a44" alt="" onerror="this.hidden=true">
                 <span class="qs-label">Rotate</span>
             </div>
             <div class="qs-item" id="qs-settings" data-enabled="true">
-                <img class="qs-icon" src="/assets/nuxel-quicksettings-icon-pack/30-quick-settings.png?v=a37" alt="">
+                <img class="qs-icon" src="/assets/nuxel-quicksettings-icon-pack/30-quick-settings.png?v=a44" alt="" onerror="this.hidden=true">
                 <span class="qs-label">Settings</span>
             </div>
         </div>
@@ -132,10 +136,49 @@
          files live at the repository asset root so the deployed static root and
          local launcher use the same artwork. -->
     <nav id="system-navigation" class="system-navigation" aria-label="System navigation">
-        <button type="button" id="nav-back" data-nav="back" aria-label="Back"><img src="/assets/button-left.png?v=a37" alt=""><span class="nav-fallback" aria-hidden="true">‹</span></button>
-        <button type="button" id="nav-home" data-nav="home" aria-label="Home"><img src="/assets/button-middle.png?v=a37" alt=""><span class="nav-fallback" aria-hidden="true">●</span></button>
-        <button type="button" id="nav-recents" data-nav="recents" aria-label="Recent apps"><img src="/assets/button-right.png?v=a37" alt=""><span class="nav-fallback" aria-hidden="true">▢</span></button>
+        <button type="button" id="nav-back" data-nav="back" aria-label="Back"><img src="/assets/button-left.png?v=a44" alt=""><span class="nav-fallback" aria-hidden="true">‹</span></button>
+        <button type="button" id="nav-home" data-nav="home" aria-label="Home"><img src="/assets/button-middle.png?v=a44" alt=""><span class="nav-fallback" aria-hidden="true">●</span></button>
+        <button type="button" id="nav-recents" data-nav="recents" aria-label="Recent apps"><img src="/assets/button-right.png?v=a44" alt=""><span class="nav-fallback" aria-hidden="true">▢</span></button>
     </nav>
+
+    <!-- A45 Penguin Lockscreen — full-screen swipe-to-unlock.  Uses the exact
+         owner artwork /assets/nuxel-lockscreen.jpg (wallpaper) and
+         /assets/nuxel-lockhead.png (draggable handle). -->
+    <div id="lockscreen" class="lockscreen" aria-label="Nuxel locked">
+        <div class="lockscreen-wallpaper" aria-hidden="true"></div>
+        <div class="lockscreen-meta">
+            <div class="lockscreen-time" id="lockscreen-time">--:--</div>
+            <div class="lockscreen-date" id="lockscreen-date"></div>
+            <div class="lockscreen-battery" id="lockscreen-battery">—%</div>
+        </div>
+        <div class="lockscreen-handle-wrap" id="lockscreen-handle-wrap">
+            <!-- The outer container owns pointer capture and the drag transform.
+                 The inner image carries only the decorative idle wiggle, so the
+                 two transforms can never fight over the unlock gesture. -->
+            <div id="lockscreen-handle" class="lockscreen-handle" role="button"
+                 aria-label="Drag the penguin upward to unlock">
+                <img id="lockscreen-lockhead" class="lockscreen-lockhead-motion"
+                     src="/assets/nuxel-lockhead.png?v=a45" alt=""
+                     draggable="false" aria-hidden="true">
+            </div>
+            <div class="lockscreen-hint" id="lockscreen-hint" aria-hidden="true">swipe up to unlock</div>
+        </div>
+    </div>
+
+    <script>
+    // Boot-lock gate: the lockscreen is the visible boot surface ONLY in phone
+    // launch mode (?boot=os).  For any other launch mode (the UTM/desktop
+    // launcher) hide it before first paint so the desktop behaviour is intact.
+    (function () {
+        'use strict';
+        try {
+            if (new URLSearchParams(window.location.search).get('boot') !== 'os') {
+                var ls = document.getElementById('lockscreen');
+                if (ls) ls.hidden = true;
+            }
+        } catch (e) { /* URLSearchParams unavailable: keep default (locked) */ }
+    })();
+    </script>
 
     <script>
     // Home is a fixed launcher, not a zoomable document.  Keep pan/swipe
@@ -162,15 +205,15 @@
         document.addEventListener('dblclick', function (event) { event.preventDefault(); }, {passive:false});
     })();
     </script>
-    <script src="js/apps.js"></script>
+    <script src="js/apps.js?v=a59"></script>
     <script src="js/layout-model.js"></script>
     <script src="js/launcher.js"></script>
-    <script src="js/status-bar.js"></script>
+    <script src="js/status-bar.js?v=a54"></script>
     <script src="js/search.js"></script>
     <script type="module" src="../nuxel-common/bridge.js"></script>
     <script src="js/bridge.js"></script>
     <script src="js/recents.js"></script>
-    <script src="js/qs.js"></script>
+    <script src="js/qs.js?v=a54"></script>
     <!-- A32: host backend (settings/buttons/terminal) + status-bar safe zones.
          Both are inert without a host, so the VM/desktop launcher is unchanged. -->
     <script src="js/host-bridge.js"></script>
@@ -178,14 +221,17 @@
          and the verbose-boot log overlay.  Both are inert without a host. -->
     <script src="js/settings-store.js"></script>
     <script src="js/safe-zones.js"></script>
-    <script src="js/osd.js"></script>
+    <script src="js/osd.js?v=a47"></script>
     <script src="js/bootlog.js"></script>
-    <script src="js/touch-keyboard.js"></script>
-    <script src="js/navigation.js"></script>
+    <script src="js/touch-keyboard.js?v=a47"></script>
+    <script src="js/lockscreen.js?v=a47"></script>
+    <script src="js/navigation.js?v=a47"></script>
     <script src="js/gestures.js"></script>
     <script src="js/home-settings.js"></script>
-    <script src="js/system-monitor.js?v=0.6.3-metrics6"></script>
+    <script src="js/system-monitor.js?v=a47"></script>
     <script src="js/scroll-indicators.js"></script>
-    <script src="js/app.js"></script>
+    <!-- A44: one-shot in-engine icon/WebKit/cache health report to nuxelDiag. -->
+    <script src="js/icon-health.js?v=a44"></script>
+    <script src="js/app.js?v=a59"></script>
 </body>
 </html>

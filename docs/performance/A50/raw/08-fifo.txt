@@ -1,0 +1,14 @@
+========================================================================
+### fifo_ls  [rc=0 framed=True sha_ok=True elapsed=0.828s]
+prw------- 1 root root  0 Oct 22 09:56 /run/nuxel-wl-fb.cmd
+-rw-r--r-- 1 root root 93 Oct 22 09:57 /run/nuxel-wl-fb.state
+========================================================================
+### fifo_stat  [rc=0 framed=True sha_ok=True elapsed=0.085s]
+fifo 600 root root 0
+========================================================================
+### wlfb_pid  [rc=0 framed=True sha_ok=True elapsed=0.110s]
+    PID STAT     ELAPSED COMMAND
+   5399 Ss      12:51:18 nuxel-wl-fb
+========================================================================
+### wlfb_proc  [rc=0 framed=True sha_ok=True elapsed=0.191s]
+root        5399       1  0 Oct21 ?        00:00:49 /usr/lib/nuxel/nuxel-wl-fb
