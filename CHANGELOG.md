@@ -12,6 +12,19 @@ The canonical version lives in [`VERSION`](VERSION) and is bumped in lockstep
 across the shell apps, the PWA manifest, the device `APKBUILD`s, the VM tooling
 and the OTA builder (see *Versioning* below).
 
+## [v0.6.4-beta] - 2026-10-23 - *Penguin launcher resurrection*
+
+- Emergency UI-only repair: restored the on-device `launcher.css` bytes
+  (`9d56a005…`, 12764 B) after the A63 partial deploy left it 0-byte, which
+  broke the Home grid, app-icon scaling, status bar and bottom dock. No
+  kernel/partition changes, no reboot, no factory reset.
+- Hot-reloaded the WebKit launcher over the USB Live Console via the
+  `/run/nuxel-pwa-host.cmd` control FIFO and recovered the blanked panel
+  backlight (`bl_power` 4 -> 0).
+- Added the A64 safety baseline, visual diagnosis, change map, test receipts,
+  physical pass matrix and rollback runbook under
+  `docs/a64-launcher-resurrection/`.
+
 ## [v0.6.3-beta] — 2026-10-23 — *Release ships the exact installed S10+ image*
 
 - The GitHub release now publishes `nuxel-installed-s10plus-boot.img.gz`, the

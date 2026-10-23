@@ -67,7 +67,16 @@
         // ---- phone / sms / call / location / notification wrappers ----
         getPhoneStatus: async function () {
             try { return await shared().call('phone', 'status', { app_id: this.appId }); }
-            catch (e) { return { modem: { connected: false }, network: { connected: false }, battery: { level: 100, charging: true } }; }
+            catch (e) {
+                // A bridge outage is not evidence for a battery percentage or
+                // charge state.  Keep it unknown until a hardware-backed path
+                // (HTTP bridge or NuxelHost) returns a valid reading.
+                return {
+                    modem: { connected: false },
+                    network: { connected: false },
+                    battery: { available: false, level: null, charging: false },
+                };
+            }
         },
         getLocation: function () { return shared().getLocation(); },
         sendSms: function (number, text) { return shared().sendSms(number, text); },

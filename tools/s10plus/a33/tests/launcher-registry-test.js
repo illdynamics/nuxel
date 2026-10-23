@@ -74,6 +74,12 @@ check('registry carries a machine-readable revision', Number.isInteger(registryV
 // The two additions this briq is responsible for.
 check('registry has org.nuxel.Terminal', !!apps['org.nuxel.Terminal'], JSON.stringify(Object.keys(apps)));
 check('registry has nuxel-settings', !!apps['nuxel-settings']);
+check('registry has canonical org.nuxel.SnekByte',
+      !!apps['org.nuxel.SnekByte'] && !apps['org.nuxel.Snekbyte']);
+check('SnekByte uses the supplied launcher icon',
+      /'org\.nuxel\.SnekByte':\s*'\/assets\/nuxel-applications-icon-pack\/01-02_snekbyte\.png/.test(appsSrc));
+check('old SnekByte recents id is migrated',
+      /id === 'org\.nuxel\.Snekbyte' \? 'org\.nuxel\.SnekByte'/.test(appsSrc));
 
 // The A32 baseline entries must not have been removed by the A33 refresh.
 for (const id of ['nuxel-dialer', 'nuxel-messages', 'nuxel-contacts', 'org.nuxel.Mail',
@@ -314,6 +320,8 @@ function makeDom(startHash) {
     URLSearchParams: URLSearchParams,
     setTimeout: (fn) => { timers.push(fn); return timers.length; },
     clearTimeout() {},
+    setInterval: () => 1,
+    clearInterval() {},
     navigator: {
       serviceWorker: {
         register: () => Promise.resolve({ scope: '/pwa/nuxel-home/', addEventListener() {}, installing: { addEventListener() {}, state: 'installed' } }),
@@ -387,19 +395,21 @@ function loadLauncher(startHash) {
   check('a labeled Home control is created outside the app document',
         !!closeBtn && closeBtn.textContent === 'Home' && closeBtn.parentNode.className === 'pwa-app-bar');
   closeBtn.onclick();
-  check('closing the app removes the frame (returns to the launcher)',
-        dom.document.querySelectorAll('.pwa-frame').length === 0);
-  check('closing the app removes the close control',
-        dom.document.querySelectorAll('.pwa-close-btn').length === 0 &&
-        dom.document.querySelectorAll('.pwa-app-bar').length === 0);
-  check('closing the app removes loading/error status and enters CLOSED',
-        dom.document.querySelectorAll('.pwa-app-status').length === 0 &&
-        vm.runInContext('window.nuxel.appSession.state', dom.sandbox) === 'CLOSED');
-  // opening a second app must not stack a second frame
+  check('Home backgrounds the frame and returns to the launcher',
+        dom.document.querySelectorAll('.pwa-frame').length === 1 &&
+        dom.document.querySelectorAll('.pwa-frame')[0].hidden === true);
+  check('Home backgrounds the app bar with its frame',
+        dom.document.querySelectorAll('.pwa-close-btn').length === 1 &&
+        dom.document.querySelectorAll('.pwa-app-bar')[0].hidden === true);
+  check('Home preserves the resumable surface in BACKGROUND state',
+        vm.runInContext('window.nuxel.appSession.state', dom.sandbox) === 'BACKGROUND');
+  // Opening another app may retain background surfaces, but exactly one can be
+  // visible/active and reopening an existing app must resume that surface.
   reg.launchApp('org.nuxel.Terminal'); reg.launchApp('nuxel-settings');
-  check('activation of a second app does not stack frames (one owner)',
-        dom.document.querySelectorAll('.pwa-frame').length === 1,
-        dom.document.querySelectorAll('.pwa-frame').length);
+  const visibleFrames = dom.document.querySelectorAll('.pwa-frame').filter((frame) => !frame.hidden);
+  check('activation leaves exactly one visible app surface',
+        visibleFrames.length === 1 && visibleFrames[0].src === reg.getApp('nuxel-settings').url,
+        visibleFrames.length);
   // the controller closes overlays on the logical "home" action
   const nuxel = vm.runInContext('window.nuxel', dom.sandbox);
   let searchClosed = 0, qsClosed = 0;

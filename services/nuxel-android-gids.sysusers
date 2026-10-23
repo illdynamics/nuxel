@@ -1,0 +1,3 @@
+# Legacy Android kernel network gate used by the S10+ 4.14 vendor kernel.
+# The numeric id is Android's stable AID_INET value.
+g inet 3003 -

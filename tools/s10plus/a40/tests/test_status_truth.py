@@ -27,7 +27,8 @@ require("status.network.signal" not in SOURCE and "Fallback to network signal" n
         'generic network status cannot masquerade as cellular signal')
 require('Math.max(1, Math.round' not in SOURCE,
         'zero reported signal does not become one fabricated bar')
-require("manager.GetDevices()" in BRIDGE and "'wifi_state': wifi_state" in BRIDGE,
+require(("manager.GetDevices()" in BRIDGE or "mgr.GetDevices()" in BRIDGE) and
+        "'wifi_state': wifi_state" in BRIDGE,
         'bridge derives Wi-Fi state from actual NetworkManager Wi-Fi devices')
 require('def _refresh_proxy(self):' in BRIDGE and
         'self._refresh_proxy()' in BRIDGE,
@@ -41,3 +42,14 @@ require("_setWifiEnabled" in QS and "network', 'wifi-enabled" in QS and
         'Quick Settings Wi-Fi is backend-confirmed and other unintegrated tiles stay honest')
 require("SupplementaryGroups=nuxel" in BRIDGE_UNIT,
         'bridge receives only group access to the shared portal permission store')
+require("_hydrateBatteryFromHost();" in SOURCE and
+        "statusRead('battery-capacity')" in SOURCE and
+        "statusRead('battery-status')" in SOURCE,
+        'status bar hydrates immediately from host-backed fuel-gauge readings')
+require("=== 'charging'" in SOURCE and 'BATTERY_HOST_READY' in SOURCE,
+        'direct battery path distinguishes Full from Charging and emits evidence')
+
+HOME_BRIDGE = (ROOT / 'pwa/nuxel-home/js/bridge.js').read_text()
+require("level: 100, charging: true" not in HOME_BRIDGE and
+        "available: false, level: null, charging: false" in HOME_BRIDGE,
+        'bridge outage reports unknown battery instead of fabricated 100% charging')
