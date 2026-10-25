@@ -23,18 +23,26 @@ USB data-link truth (A73) is a two-part contract:
 
   * PHYSICAL detach veto — Samsung 4.14 gadget drivers can leave a UDC state
     ``configured`` (and a bound gadget) intact after a physical cable pull.
-    Independent physical signals therefore veto a stale positive:
+    The independent physical signal therefore vetoes a stale positive:
 
       - the Type-C class (max77705-usbc) reports the resolved data role; when a
         host partner is attached the role is ``[device]``.  After a detach the
         bracket is gone / the role is ``[none]``.
-      - the DWC3 debugfs ``link_state`` node reports ``On`` only while a link is
-        up (``Off`` after a disconnect).
 
-    When any of those signals explicitly reports a down link, ``pc_connected``
-    fails closed even if the UDC still says ``configured``.  If none of the
-    independent signals is available, the UDC evidence stands (so the offline
-    fixtures and desktops without Type-C keep working).
+    When that signal explicitly reports no device role, ``pc_connected`` fails
+    closed even if the UDC still says ``configured``.  If the Type-C class is
+    unavailable, the UDC evidence stands (so the offline fixtures and desktops
+    without Type-C keep working).
+
+    A74: the DWC3 debugfs ``link_state`` node is deliberately NOT read.  On the
+    S10+ downstream 4.14 kernel, reading that debugfs attribute dereferences the
+    DWC3 controller registers through debugfs while the controller can be
+    runtime-suspended (FSYS0 / pd-fsys0a powered off) right after a physical
+    detach.  That register access produces a bus ``SLVERR`` which this kernel
+    escalates to a hard lockup on the reading CPU
+    (``Watchdog detected hard LOCKUP on cpu 0``) and a watchdog reset — the
+    reboot the owner observed.  The Type-C data_role read is a safe PMIC class
+    attribute and is sufficient on its own.
 
 Every root is overridable for the offline tests:
 
@@ -47,7 +55,6 @@ Every root is overridable for the offline tests:
   NUXEL_CONSOLE_TTY        ttyGS0
   NUXEL_ANDROID_USB_STATE  /sys/class/android_usb/android0/state
   NUXEL_SYS_TYPEC          /sys/class/typec
-  NUXEL_DEBUGFS            /sys/kernel/debug
 """
 
 from __future__ import annotations
@@ -233,32 +240,14 @@ def _typec_data_role_device() -> Optional[bool]:
     return False
 
 
-def _dwc3_link_on() -> Optional[bool]:
-    """True when the DWC3 debugfs link_state reports ``On``; False for ``Off``.
-
-    Samsung's DWC3 exposes a simplified ``link_state`` (On/Off) that tracks the
-    controller link, not the stale UDC gadget state.  Returns None when debugfs
-    or the node is absent.
-    """
-    debugfs = _root("NUXEL_DEBUGFS", "/sys/kernel/debug")
-    for name in _udc_names():
-        value = _read(os.path.join(debugfs, name, "link_state"))
-        if value is None:
-            continue
-        lowered = value.strip().lower()
-        if lowered == "on":
-            return True
-        if lowered == "off":
-            return False
-    return None
-
-
 def _physical_data_link_veto() -> tuple:
     """Return (veto, evidence) where veto=True means an independent physical
     signal proves the data link is DOWN right now.
 
-    Both sources are read; the first explicit "down" signal wins and both are
-    reported for diagnostics.  A signal that is absent/unreadable is neutral.
+    Only the Type-C data_role is read (the DWC3 debugfs link_state was removed
+    for A74 — reading it after detach can hard-lockup the downstream 4.14
+    kernel, see the module docstring).  A signal that is absent/unreadable is
+    neutral.
     """
     evidence: List[str] = []
     typec = _typec_data_role_device()
@@ -266,12 +255,9 @@ def _physical_data_link_veto() -> tuple:
         evidence.append("typec:no-device-role")
     elif typec is True:
         evidence.append("typec:device-role")
-    link = _dwc3_link_on()
-    if link is False:
-        evidence.append("dwc3:link-off")
-    elif link is True:
-        evidence.append("dwc3:link-on")
-    veto = (typec is False) or (link is False)
+    # A74: the DWC3 debugfs link_state read was removed (see module docstring).
+    # The Type-C data_role is now the sole independent physical detach veto.
+    veto = typec is False
     return veto, evidence
 
 

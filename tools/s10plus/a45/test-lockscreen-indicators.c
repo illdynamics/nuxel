@@ -241,29 +241,33 @@ int main(void) {
   state(&p, &c, &pc, &lv);
   check(p && c && !pc && !lv, "console process without a bound gadget is inactive");
 
-  /* A73 PHYSICAL DETACH VETO: a stale "configured" UDC must not survive an
-     independent physical down signal. */
+  /* A73/A74 PHYSICAL DETACH VETO: a stale "configured" UDC must not survive
+     the independent Type-C data_role down signal.  The DWC3 debugfs link_state
+     read was removed (A74) because it hard-locks-up the downstream 4.14 kernel
+     after detach; Type-C data_role is sufficient and safe. */
   reset_tree(root); battery(root, "Charging\n"); usb_power(root, "1\n");
   gadget(root, "configured\n"); tty_registered(root, 1);
-  typec_role(root, "host [device]\n"); dwc3_link(root, "On\n");
+  typec_role(root, "host [device]\n");
   state(&p, &c, &pc, &lv);
-  check(p && c && pc && !lv, "configured UDC + typec device role + dwc3 On: PC on");
+  check(p && c && pc && !lv, "configured UDC + typec [device] role: PC on");
 
   typec_role(root, "host device\n");  /* no bracket: role not resolved to device */
   state(&p, &c, &pc, &lv);
   check(p && c && !pc && !lv, "typec no-device-role vetoes a stale configured UDC");
 
+  typec_role(root, "host [device]\n");
+  state(&p, &c, &pc, &lv);
+  check(p && c && pc && !lv, "typec [device] role restored: PC on again");
+
+  typec_role(root, NULL);
+  state(&p, &c, &pc, &lv);
+  check(p && c && pc && !lv, "absent Type-C class leaves UDC proof authoritative");
+
+  /* A74 REGRESSION: the DWC3 debugfs link_state is NOT read.  A synthetic
+     "Off" node must have no effect when the Type-C role is [device]. */
   typec_role(root, "host [device]\n"); dwc3_link(root, "Off\n");
   state(&p, &c, &pc, &lv);
-  check(p && c && !pc && !lv, "dwc3 link_state Off vetoes a stale configured UDC");
-
-  dwc3_link(root, "On\n");
-  state(&p, &c, &pc, &lv);
-  check(p && c && pc && !lv, "physical signals restored: PC on again");
-
-  typec_role(root, NULL); dwc3_link(root, NULL);
-  state(&p, &c, &pc, &lv);
-  check(p && c && pc && !lv, "absent physical signals leave UDC proof authoritative");
+  check(p && c && pc && !lv, "A74: dwc3 debugfs link_state is NOT read; PC on via Type-C role");
 
   for (int power = 0; power < 2; power++) {
     for (int wantpc = 0; wantpc < 2; wantpc++) {

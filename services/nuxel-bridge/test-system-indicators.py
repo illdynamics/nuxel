@@ -308,35 +308,40 @@ def main() -> int:
         check(state() == (True, True, False, False),
               "bound gadget plus vendor CONFIGURED but no UDC state: PC stays off")
 
-        # 11c. PHYSICAL DETACH VETO (A73): a stale UDC "configured" must not
-        #      survive an independent physical down signal.
+        # 11c. PHYSICAL DETACH VETO (A73/A74): a stale UDC "configured" must not
+        #      survive the independent Type-C data_role down signal.
         fake.reset()
         fake.battery("Charging")
         fake.usb_power("1")
         fake.bind_gadget("configured")
         fake.typec_role("host [device]")
-        fake.dwc3_link("On")
         check(state() == (True, True, True, False),
-              "configured UDC + typec device role + dwc3 On: PC on")
+              "configured UDC + typec [device] role: PC on")
 
         fake.typec_role("host device")  # no bracket: role not resolved to device
         check(state() == (True, True, False, False),
               "typec no-device-role vetoes a stale configured UDC")
 
         fake.typec_role("host [device]")
-        fake.dwc3_link("Off")
-        check(state() == (True, True, False, False),
-              "dwc3 link_state Off vetoes a stale configured UDC")
-
-        fake.dwc3_link("On")
         check(state() == (True, True, True, False),
-              "physical signals restored: PC on again")
+              "typec [device] role restored: PC on again")
 
-        # Absent physical signals are neutral (desktop / no Type-C kernels).
+        # Absent Type-C class is neutral (desktop / no Type-C kernels).
         fake.typec_role(None)
-        fake.dwc3_link(None)
         check(state() == (True, True, True, False),
-              "absent physical signals leave UDC proof authoritative")
+              "absent Type-C class leaves UDC proof authoritative")
+
+        # A74 REGRESSION: the DWC3 debugfs link_state must NOT be consulted at
+        # all.  A synthetic debugfs "Off" node exists but must have no effect —
+        # proving the dangerous debugfs register read was removed from the
+        # detach-veto path (it hard-locks-up the downstream 4.14 kernel after
+        # detach; see the module docstring in system_indicators.py).
+        fake.typec_role("host [device]")
+        fake.dwc3_link("Off")
+        check(state() == (True, True, True, False),
+              "A74: dwc3 debugfs link_state is NOT read; PC stays on when "
+              "Type-C role is device")
+        fake.dwc3_link(None)
 
         # 12. Prove the state space matches the A71 truth table.  Charging is
         #     independent; the console is only reachable while a data link is

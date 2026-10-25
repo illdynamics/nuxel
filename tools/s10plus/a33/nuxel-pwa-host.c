@@ -236,10 +236,14 @@ static int ind_gadget_bound(void) {
   return bound;
 }
 
-/* A73: independent physical detach signals.  Samsung 4.14 can leave a bound
-   gadget + "configured" UDC intact after a physical cable pull.  The Type-C
-   class and the DWC3 debugfs link_state are therefore read so a real detach
-   vetoes a stale positive.  A signal that is absent/unreadable is neutral. */
+/* A73: independent physical detach signal.  Samsung 4.14 can leave a bound
+   gadget + "configured" UDC intact after a physical cable pull, so the
+   Type-C class data_role is read and a real detach (no [device] role) vetoes
+   a stale positive.  A74: the DWC3 debugfs link_state read was REMOVED — on
+   this downstream 4.14 kernel it dereferences the controller registers while
+   the FSYS0 power domain can be off right after detach, producing a bus
+   SLVERR that escalates to a hard lockup + watchdog reset.  The Type-C
+   data_role is sufficient on its own and is a safe PMIC class attribute. */
 static int ind_typec_device_role(void) {
   /* -1 = Type-C class absent, 0 = present but no [device] role, 1 = [device]. */
   DIR *d = opendir(ind_root("NUXEL_SYS_TYPEC", "/sys/class/typec"));
@@ -260,25 +264,6 @@ static int ind_typec_device_role(void) {
   closedir(d);
   if (!saw_port) return -1;
   return device_role ? 1 : 0;
-}
-
-static int ind_dwc3_link_on(void) {
-  /* -1 = absent, 0 = link_state Off, 1 = On. */
-  DIR *d = opendir(ind_root("NUXEL_SYS_UDC", "/sys/class/udc"));
-  if (!d) return -1;
-  int result = -1;
-  struct dirent *de;
-  while ((de = readdir(d))) {
-    if (!strcmp(de->d_name, ".") || !strcmp(de->d_name, "..")) continue;
-    char path[460], state[64] = "";
-    snprintf(path, sizeof path, "%s/%s/link_state",
-             ind_root("NUXEL_DEBUGFS", "/sys/kernel/debug"), de->d_name);
-    if (!ind_read_line(path, state, sizeof state)) continue;
-    if (ind_eq_ci(state, "on")) { result = 1; break; }
-    if (ind_eq_ci(state, "off")) { result = 0; break; }
-  }
-  closedir(d);
-  return result;
 }
 
 static int ind_udc_configured(void) {
@@ -307,8 +292,7 @@ static int ind_pc_connected_ex(char *source, size_t sourcen) {
     return 0;
   }
   int typec = ind_typec_device_role();
-  int link = ind_dwc3_link_on();
-  if (typec == 0 || link == 0) {
+  if (typec == 0) {
     if (source) snprintf(source, sourcen, "%s",
                          "sysfs:udc:configured-vetoed-by-physical-detach");
     return 0;
