@@ -26,6 +26,7 @@ function check(name, cond, extra) {
 
 function makeNode(id) {
   const classes = new Set();
+  const attrs = new Map();
   return {
     id,
     dataset: {},
@@ -35,6 +36,8 @@ function makeNode(id) {
       contains(c) { return classes.has(c); },
     },
     get className() { return [...classes].join(' '); },
+    setAttribute(k, v) { attrs.set(k, String(v)); },
+    getAttribute(k) { return attrs.has(k) ? attrs.get(k) : null; },
     querySelector() { return { getAttribute() { return null; }, setAttribute() {} }; },
     contains() { return true; },
   };
@@ -87,6 +90,8 @@ async function flush() { for (let i = 0; i < 12; i++) await Promise.resolve(); }
   check('index.html loads lockscreen-indicators.js before lockscreen.js',
         index.indexOf('lockscreen-indicators.js') >= 0 &&
         index.indexOf('lockscreen-indicators.js') < index.indexOf('js/lockscreen.js'));
+  check('runtime reparents stale nested indicator markup to the lockscreen itself',
+        /this\.container\.parentNode !== wrap/.test(fs.readFileSync(MODULE, 'utf8')));
 
   for (let mask = 0; mask < 8; mask++) {
     const power = !!(mask & 1);
@@ -113,6 +118,67 @@ async function flush() { for (let i = 0; i < 12; i++) await Promise.resolve(); }
           c.classList.contains('charging') === (power && power));
     if (!power) check('combination ' + mask + ': inactive charging has no glow class',
                       !c.classList.contains('active'));
+    check('combination ' + mask + ': charging aria visibility follows truth',
+          c.getAttribute('aria-hidden') === (power ? 'false' : 'true'));
+    check('combination ' + mask + ': usb aria visibility follows truth',
+          u.getAttribute('aria-hidden') === (pc ? 'false' : 'true'));
+    check('combination ' + mask + ': console aria visibility follows truth',
+          l.getAttribute('aria-hidden') === (live ? 'false' : 'true'));
+    ind.stop();
+  }
+
+  // A detach event arriving during an older in-flight positive read must queue
+  // a fresh read.  The stale completion cannot re-light USB for 15 seconds.
+  {
+    const h = harness({ charging: {}, usb_data: {}, live_console: {} });
+    const pending = [];
+    let reads = 0;
+    h.sandbox.NuxelHost.statusRead = function () {
+      reads++;
+      return new Promise((resolve, reject) => pending.push({ resolve, reject }));
+    };
+    const ind = new h.sandbox.NuxelLockscreenIndicators();
+    ind.start();
+    await flush();
+    ind.refresh();
+    pending[0].resolve({ ok: true, text: JSON.stringify({
+      charging: { external_power: true, charging: true },
+      usb_data: { pc_connected: true }, live_console: { active: true },
+    }) });
+    await flush();
+    check('refresh during in-flight read queues one fresh backend read', reads === 2,
+          'reads=' + reads);
+    pending[1].resolve({ ok: true, text: JSON.stringify({
+      charging: { external_power: true, charging: true },
+      usb_data: { pc_connected: false }, live_console: { active: false },
+    }) });
+    await flush();
+    check('stale positive response cannot re-light USB after detach',
+          !h.nodes['lockscreen-indicator-usb'].classList.contains('active'));
+    check('fresh detach response keeps charging independent',
+          h.nodes['lockscreen-indicator-charging'].classList.contains('active'));
+    ind.stop();
+  }
+
+  // Proof-only indicators fail closed on backend loss; the last valid power
+  // reading is retained so charging detection is not coupled to USB truth.
+  {
+    const h = harness({
+      charging: { external_power: true, charging: false },
+      usb_data: { pc_connected: true }, live_console: { active: true },
+    });
+    const ind = new h.sandbox.NuxelLockscreenIndicators();
+    ind.start();
+    await flush();
+    h.sandbox.NuxelHost.statusRead = function () { return Promise.reject(new Error('detached')); };
+    ind.refresh();
+    await flush();
+    check('failed refresh hides previously-on USB proof',
+          !h.nodes['lockscreen-indicator-usb'].classList.contains('active'));
+    check('failed refresh hides previously-on console proof',
+          !h.nodes['lockscreen-indicator-live'].classList.contains('active'));
+    check('failed refresh preserves independent external-power state',
+          h.nodes['lockscreen-indicator-charging'].classList.contains('active'));
     ind.stop();
   }
 

@@ -8,7 +8,7 @@ the exact states that are hard to reproduce on a desk can all be proven:
   * a charging-only cable never produces a PC connection;
   * root access alone never produces a live console;
   * a bound gadget with no running console process is NOT a console;
-  * configured/addressed UDC states are data; not-attached is not;
+  * only configured UDC state is data; addressed/not-attached are not;
   * Full/Not-charging are external power but not active charging.
 """
 from __future__ import annotations
@@ -189,6 +189,13 @@ def main() -> int:
         check(ind["live_console"]["source"].startswith("proc:nuxel-console"),
               "console source names the process/tty evidence")
 
+        # Address assignment precedes configuration and is not proof that a
+        # host accepted a data function.
+        fake.bind_gadget("addressed")
+        check(state() == (True, True, False, True),
+              "addressed UDC is pre-enumeration: PC stays off")
+        fake.bind_gadget("configured")
+
         # 7. Root shell alone is not a live console: no nuxel-console process.
         fake.remove_console_process(4242)
         fake.console_process(pid=4343, tty=True, command="/bin/sh")
@@ -234,17 +241,22 @@ def main() -> int:
               "lease for a non-console live PID does NOT light the console")
         fake.write("run/nuxel/live-console-session", "pid=4747\n")
 
-        # 11b. Vendor USB_STATE=CONFIGURED is a corroborating data-link signal
-        # when configfs/UDC is unreadable; DISCONNECTED is not.
+        # 11b. Vendor USB_STATE can be stale after detach.  Without a bound,
+        # configured UDC it is diagnostic only and must fail closed.
         fake.reset()
         fake.battery("Charging")
         fake.usb_power("1")
         fake.write("android_usb/state", "CONFIGURED\n")
-        check(state() == (True, True, True, False),
-              "android USB state CONFIGURED: PC detected without configfs")
+        check(state() == (True, True, False, False),
+              "stale android USB CONFIGURED without UDC proof: PC stays off")
         fake.write("android_usb/state", "DISCONNECTED\n")
         check(state() == (True, True, False, False),
               "android USB state DISCONNECTED is not a PC connection")
+
+        fake.bind_gadget(None)
+        fake.write("android_usb/state", "CONFIGURED\n")
+        check(state() == (True, True, False, False),
+              "bound gadget plus vendor CONFIGURED but no UDC state: PC stays off")
 
         # 12. Exhaustively prove the three indicators are independent: every
         #     combination is produced by a distinct, honest system state.

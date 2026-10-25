@@ -1,22 +1,22 @@
-# NUXEL A72 / 21000 — 07-BLUETOOTH-USB-AUDIO
+# NUXEL A72 / 21000 — 07-BLUETOOTH / USB-AUDIO (live, after bluez install)
 
-## Bluetooth (A69-07)
-- DT `bluetooth` node `samsung,bcm43xx`, status=okay.
-- Boot journal: `Bluetooth: Core ver 2.22` initialized; `[BT] bcm43xx_bluetooth_probe.`
-  and `probe End`; but NO `hci0` registered. rfkill0 `bcm43xx Bluetooth` soft=1 hard=0.
-- No BlueZ (`bluetoothctl`/`btmgmt` absent), no BCM43xx `.hcd` firmware under /lib/firmware.
-- Distinction: BlueZ install (userspace) ≠ HCI hardware (driver+firmware). Even with
-  BlueZ installed, the adapter won't power on until the BCM43xx HCD firmware loads and
-  rfkill is unblocked (an RF behavior change requiring owner approval).
+## Bluetooth (BlueZ installed; HCI still absent)
+- `dnf5 install bluez` → bluez 5.87+git (signed, Fedora 43 aarch64). dbus-org.bluez
+  + bluetooth.service symlinks created.
+- `bluetoothctl list` → empty. `/dev/hci*` → absent.
+- `rfkill`: `bluetooth` soft=1 hard=0 (soft-blocked); `wlan` soft=0 hard=0.
+- Boot journal: `Bluetooth: Core ver 2.22`, `[BT] bcm43xx_bluetooth_probe.` /
+  `[BT] bcm43xx_bluetooth_probe End` — the Samsung BCM43xx driver probed but
+  **never registered hci0** and issued no firmware request.
 
-## USB-C audio (A69-08)
-- Digital USB-C DAC/headset: requires host-role enumeration + `snd-usb-audio`. Not
-  exercised — the USB port carries the recovery Live Console and no DAC accessory exists.
-- Passive analog USB-C adapter: requires analog accessory-mode mux (cannot be fixed by
-  installing a driver). Classified UNSUPPORTED_ACCESSORY until hardware is present.
-- Native 3.5 mm jack: `madera-extcon` headset detect present; independent of USB-C.
+Verdict: BlueZ is now present (userspace dependency resolved), but there is no
+HCI controller exposed by the 4.14 kernel/transport. Status:
+**BLOCKED_FIRMWARE/DRIVER** (BCM43xx HCD/transport bring-up), NOT merely a
+missing BlueZ package. Unblocking rfkill alone will not register an HCI without
+the controller firmware/transport path; not attempted without an owner-supplied,
+license-verified HCD.
 
-## Route plan (after dnf5 + audio server + accessory)
-1. BlueZ + WirePlumber bluez5 endpoint (needs HCD firmware + unblock, owner-approve).
-2. `snd-usb-audio` DAC hotplug + auto-route + return-to-speaker on unplug.
-3. Per-route safe volume; never switch USB role over the only recovery console.
+## USB-C audio / headset
+- No digital USB-C DAC or active adapter accessory is attached (the USB port
+  carries the recovery Live Console). `BLOCKED_EQUIPMENT` — unchanged, and the
+  sole recovery transport was never switched to test a host role.

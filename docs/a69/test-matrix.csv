@@ -1,11 +1,11 @@
 id,gate,status,evidence_path
-T01,battery at boot real/honest,PASS_DEVICE_RUNTIME,logs/boot-state-home.log (+3s level=100)
+T01,battery at boot real/honest,PASS_DEVICE_RUNTIME,logs/live-audit-20261025-sanitized.txt (BATTERY_HOST_READY +3s level=99)
 T02,battery wake 10 cycles,NOT_TESTED,needs owner interactive wake; code path verified
-T03,single nav,NOT_TESTED,code+log verified (NAV_DOCK_READY + CSS hide); visual needs owner
+T03,single nav,NOT_TESTED,code+log verified (NAVOWNER native-dock=present x7 + CSS hide); visual needs owner
 T04,Back in-app/root->Home,NOT_TESTED,existing A68 semantics preserved; needs owner
 T05,Home real launcher,NOT_TESTED,existing path; needs owner
 T06,Tabs recents,NOT_TESTED,existing path; needs owner
-T07,app drawer foregrounding,PASS_DEVICE_RUNTIME,_dismissLauncherChrome + chrome-hide CSS deployed
+T07,app drawer foregrounding,PASS_DEVICE_RUNTIME,_dismissLauncherChrome + chrome-hide CSS deployed (hashes match)
 T08,speaker audible,BLOCKED_FIRMWARE,Madera/CS35L40 DSP firmware absent
 T09,volume press visual+audible,NOT_TESTED,audible blocked; visual OSD path present
 T10,volume hold repeat,NOT_TESTED,needs audible path
@@ -14,23 +14,23 @@ T12,BT pairing,BLOCKED_DEPENDENCY,no BlueZ
 T13,BT A2DP audio,BLOCKED_DEPENDENCY,no BlueZ + no audio server
 T14,USB-C digital audio,NOT_TESTED,no DAC accessory; recovery USB occupied
 T15,analog adapter classify,NOT_TESTED,no adapter present
-T16,VLC installed+opens,BLOCKED_DEPENDENCY,dnf absent + no network
-T17,MP3 player,BLOCKED_DEPENDENCY,dnf absent + no network
+T16,VLC installed+opens,BLOCKED_DEPENDENCY,dnf/yum absent on phone (network is UP; package manager is not)
+T17,MP3 player,BLOCKED_DEPENDENCY,dnf/yum absent on phone
 T18,audio route transitions,BLOCKED_FIRMWARE,no audible route
 T19,accel/gyro real readings,BLOCKED_HARDWARE,SSP down; raw_data 0,0,0
 T20,auto rotation two orientations,BLOCKED_HARDWARE,SSP down
 T21,seven rotation options,NOT_TESTED,policy state machine selftests pass; device forced modes need owner
 T22,GPS satellite fix,BLOCKED_HARDWARE,no GNSS node; SSP GPS:false
-T23,Maps tiles/search,BLOCKED_DEPENDENCY,no network (tiles need HTTPS)
+T23,Maps tiles/search,PASS_OFFLINE_ONLY,app 8/8 offline; OSM tile HTTP 200 + CORS verified on device; owner tap/zoom pending
 T24,NFC tag read,BLOCKED_HARDWARE,no bound NFC device/firmware
 T25,desktop swipe animation,NOT_TESTED,needs owner touch; CSS animation preserved
 T26,app transition foreground,NOT_TESTED,chrome-hide CSS deployed; needs owner
 T27,app drawer animation dismiss,NOT_TESTED,_dismissLauncherChrome deployed; needs owner
 T28,motion settings,NOT_TESTED,prefers-reduced-motion preserved
-T29,smoothness before/after,NOT_TESTED,no device FPS bench (see FINAL-STATUS)
-T30,baseline internet,FAILED,wlan0/wlan1 disconnected; no DNS/route (owner must reconnect)
+T29,smoothness before/after,NOT_TESTED,no device FPS bench (see FINAL-STATUS; load/CPU/thermal measured)
+T30,baseline internet,PASS,wlan0 connected; DNS+TLS OK; https://www.google.nl HTTP 301; OSM tile 200
 T31,baseline SnekByte,NOT_TESTED,unchanged; needs owner
-T32,lockscreen,NOT_TESTED,unchanged artwork/swipe; cold-boot battery fixed
+T32,lockscreen,NOT_TESTED,unchanged artwork/swipe; cold-boot battery fixed (T01)
 T33,native app escapable,NOT_TESTED,unchanged; needs owner
-T34,reboot 3x persist,NOT_TESTED,one physical reboot observed; fixes present after it
-T35,install health,NOT_TESTED,no rpm installs performed this mission (safe)
+T34,reboot 3x persist,NOT_TESTED,one physical reboot observed 10-24; fixes present after it (no agent-initiated reboot)
+T35,install health,NOT_TESTED,no rpm installs performed (safe); maps PWA deployed with sha256 readback

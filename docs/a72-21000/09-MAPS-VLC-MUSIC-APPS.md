@@ -1,18 +1,28 @@
-# NUXEL A72 / 21000 — 09-MAPS-VLC-MUSIC-APPS
+# NUXEL A72 / 21000 — 09-MAPS / VLC / MUSIC (live)
 
-## Maps (A69-05) — improved this run (deployed + hash-verified)
-- One-tap "Use OpenStreetMap standard tiles (go online)" now sets the template AND
-  enables downloads, then fetches ONLY the current viewport (no crawl/prefetch).
-- Added Nominatim place search (Enter key or Search button): single query per
-  action, identifiable UA, © OpenStreetMap contributors, results become pins,
-  nothing auto-opens, network position never shown as GPS.
-- Auto-fetch visible tiles after pan/zoom (350 ms debounce) when downloads are on.
-- SW cache bumped `nuxel-maps-v2` → `nuxel-maps-v3`.
-- Verified from the phone: OSM tile `HTTP/2 200` + `access-control-allow-origin:*`;
-  Nominatim returns valid JSON (Amsterdam lat/lon + ODbL licence).
-- Deployed: index.html 8f356eb7…, maps.js 0f7e2189…, sw.js 99ee8e59… (device==repo).
+## Package manager recovered
+dnf5 5.2.18.0 installed (10-package additive bootstrap, GPG-verified) and
+verified working: `dnf5 repolist` + `dnf5 list --available alsa-utils` resolve
+against Fedora 43 aarch64.
 
-## VLC + separate music player (A69-09) — gated on dnf5
-- Fedora 43 aarch64 has vlc `3.0.21-26` and mpv `0.40.0-3` (verified in GA metadata).
-- Install only after the approved dnf5 bootstrap; then register .desktop/MIME and
-  test real local MP3/WAV playback with an honest audio-route caveat.
+## VLC (installed, root limitation recorded)
+- `dnf5 install vlc` (no weak deps) → vlc 3.0.24 + vlc-gui-qt + qt6-qtbase(-gui)
+  + qt6-qtsvg + vlc-libs + vlc-cli (30 packages, signed).
+- `vlc.desktop` present (Exec=/usr/bin/vlc). `vlc --version` refuses: "VLC is
+  not supposed to be run as root." The Nuxel session runs as root, so VLC needs
+  a non-root wrapper or the documented `--no-...` mitigation (none is
+  safe/appropriate on this root session). Recorded as a genuine limitation;
+  VLC remains installed.
+
+## Separate music player (mpv, runtime verified)
+- `dnf5 install mpv` (no weak deps) → mpv 0.40.0 + FFmpeg-free codec chain
+  (105 packages, signed). `mpv.desktop` present.
+- `mpv --version` → mpv v0.40.0, libplacebo v7.351.0.
+- `mpv --no-video --ao=null /tmp/nuxel-test-tone.wav` → decodes 44100 Hz S16
+  WAV and exits cleanly: **decode/runtime PASS_DEVICE_RUNTIME**.
+- Audible output remains firmware-blocked (see 06-AUDIO); decode is reported
+  separately from heard playback, never faked.
+
+## Maps
+Unchanged from prior A72 run (OSM one-tap tiles + Nominatim search, hash-verified
+on device). Online tile path verified reachable earlier this session.

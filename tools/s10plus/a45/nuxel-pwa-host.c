@@ -140,7 +140,7 @@ static WebKitWebView *g_main_view;
  *
  * charging: any external power_supply node with online=1.
  * charging animation: battery status is exactly "Charging".
- * USB data: a configfs gadget is bound AND the UDC is configured/addressed.
+ * USB data: a configfs gadget is bound AND the UDC is exactly configured.
  *           The power_supply online flag is deliberately not consulted.
  * live console: a running nuxel-console process holds an fd to the console tty
  *           (or a validated session lease from the initramfs launcher).  A
@@ -236,31 +236,24 @@ static int ind_gadget_bound(void) {
   return bound;
 }
 
-static int ind_android_usb_configured(void) {
-  char path[420], state[64] = "";
-  snprintf(path, sizeof path, "%s/state",
-           ind_root("NUXEL_ANDROID_USB_STATE", "/sys/class/android_usb/android0"));
-  return ind_read_line(path, state, sizeof state) && ind_eq_ci(state, "CONFIGURED");
-}
-
 static int ind_pc_connected(void) {
-  if (!ind_gadget_bound()) return ind_android_usb_configured();
+  if (!ind_gadget_bound()) return 0;
   DIR *d = opendir(ind_root("NUXEL_SYS_UDC", "/sys/class/udc"));
-  if (!d) return ind_android_usb_configured();
-  int connected = 0, saw_state = 0;
+  if (!d) return 0;
+  int connected = 0;
   struct dirent *de;
   while ((de = readdir(d))) {
     if (!strcmp(de->d_name, ".") || !strcmp(de->d_name, "..")) continue;
     char path[420], state[64] = "";
     snprintf(path, sizeof path, "%s/%s/state", ind_root("NUXEL_SYS_UDC", "/sys/class/udc"), de->d_name);
     if (!ind_read_line(path, state, sizeof state)) continue;
-    saw_state = 1;
-    if (ind_eq_ci(state, "configured") || ind_eq_ci(state, "addressed")) { connected = 1; break; }
+    if (ind_eq_ci(state, "configured")) { connected = 1; break; }
   }
   closedir(d);
-  /* Vendor fallback is used only when the UDC gives no state at all; when it
-     reports "not attached"/"default" that is authoritative and must stay off. */
-  return saw_state ? connected : ind_android_usb_configured();
+  /* `addressed` is only a pre-configuration handshake.  The vendor
+     android_usb state is deliberately not a fallback because it may remain
+     CONFIGURED after detach.  No fresh UDC proof means PC off. */
+  return connected;
 }
 
 static int ind_cmdline_has(pid_t pid, const char *needle) {

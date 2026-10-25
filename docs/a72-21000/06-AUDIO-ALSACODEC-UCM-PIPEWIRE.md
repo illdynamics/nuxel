@@ -1,37 +1,46 @@
-# NUXEL A72 / 21000 — 06-AUDIO-ALSACODEC-UCM-PIPEWIRE
+# NUXEL A72 / 21000 — 06-AUDIO (live re-measured with real tools)
 
-## Exact chain (fresh)
-Exynos ABox (`abox@18c50000`, needs `calliope_sram.bin`) → ASoC machine
-`samsung,beyond-madera` → Cirrus CS47L93 (needs `cs47l93-dsp*.wmfw/.bin`) →
-2× CS35L40 amps (need `cs35l40-dsp*.wmfw/.bin`). ALSA cards: `beyond-madera`(0),
-`abox_vdma`(1), `abox_dump`(2). PCM: RDMA0-11 playback, WDMA0-7 capture, DP Audio.
+Updated after alsa-utils/alsa-ucm/pipewire/wireplumber were installed via dnf5.
 
-## Root cause of "no sound" (multi-layer, each independently blocking)
-1. ABox calliope DSP firmware absent (journal: `calliope_sram.bin ... error -2`).
-2. Cirrus CS47L93 codec DSP absent (`nuxelctl audio status` → BLOCKED_FIRMWARE).
-3. CS35L40 amp DSP absent.
-4. UCM profile: repo has `configs/s10plus/alsa-ucm/SamsungBeyond2/*` but the card
-   name is `beyond-madera`, so the correct install root is
-   `/usr/share/alsa/ucm2/beyond-madera/` — NOT `SamsungBeyond2/`. The repo profile
-   is also an explicit STUB (empty EnableSequence; "no invented mixer values"), so
-   even a correct copy would not power the amp path.
-5. No audio server: PipeWire / WirePlumber absent (only `pulseaudio-libs` client).
-6. No alsa-utils (`aplay`/`amixer`/`alsaucm` absent).
+## ALSA card truth (fresh)
+- `cat /proc/asound/cards`: `beyond-madera` (0), `abox_vdma` (1), `abox_dump` (2).
+- `aplay -l`: RDMA0-11 playback, WDMA0-7 capture, VTS-Trigger/Record, DP Audio.
+- `amixer -c 0 scontrols`: 813 controls. Present codec/DSP/ABOX controls include
+  `DSP1 Firmware`, `DSP1 Preload`, `DSP1 Rate`, `ABOX DSIF SPK`, AIF1/2TX routing.
 
-## UCM card-ID mismatch resolution
-- Actual card ID (from `/proc/asound/cards`) = `beyond-madera`.
-- `configs/s10plus/alsa-ucm/SamsungBeyond2/` is the historical wrong alias.
-- Correct action (later, after firmware exists): generate a real `beyond-madera`
-  UCM2 profile from real mixer capture (owner TWRP `tinymix` or a safe on-device
-  `amixer -c0 contents` once alsa-utils is installed), never guessed gain values.
+## Root cause of NO speaker sound (proven this run, not assumed)
+1. `dmesg` (recurring, every ABox runtime resume):
+   - `samsung-abox-core 18c55000.abox-core: calliope_sram.bin isn't loaded yet`
+   - `Direct firmware load for calliope_sram.bin failed with error -2`
+2. `aplay -D hw:0,0` (and `plughw:0,0`) on a valid 44100 Hz S16 WAV fails:
+   - `Unable to install hw params` (rc=1), then
+   - `beyond-madera sound: beyond_dai_ops_hw_free: RDMA0-0`
+   The ABox DSP cannot configure the PCM engine without `calliope_sram.bin`.
+3. Cirrus CS47L93 codec DSP (`cs47l93-dsp{,-1,-2}.wmfw/.bin`) and CS35L40 amp DSP
+   (`cs35l40-dsp1/2.wmfw/.bin`) also remain absent (05-FIRMWARE audit).
 
-## Userspace recovery path (needs dnf5 first — approval-gated)
-`alsa-utils`, `alsa-ucm`, `pipewire`, `pipewire-alsa`, `wireplumber` (signed
-Fedora 43 aarch64). These are USERSpace packages; they do NOT substitute for the
-missing DSP firmware. Install order: dnf5 bootstrap → alsa-utils (diagnose) →
-pipewire/wireplumber (server) → then a safe low-volume ALSA/PipeWire signal test,
-human-observed, never a stream return-code alone.
+Conclusion: speaker/headphone output is **BLOCKED_FIRMWARE** at the ABox DSP +
+Cirrus codec/amp layer. Installing PipeWire/alsa-utils cannot fix absent
+Samsung/Cirrus firmware; this is documented as a firmware boundary, not a missing
+userspace package.
 
-## Honest status
-- Speaker audibility: BLOCKED_FIRMWARE (calliope_sram + cs47l93/cs35l40 DSP).
-- USB-C DAC / BT speaker routes: independent, gated on BlueZ/pipewire + an accessory.
+## UCM placement (resolved)
+`alsa-ucm` package now installs upstream UCM profiles under
+`/usr/share/alsa/ucm2/`. The repo's historical `configs/s10plus/alsa-ucm/
+SamsungBeyond2/HiFi.conf` was never the live card alias. The live card is
+`beyond-madera`; a matching `ucm2/beyond-madera/HiFi.conf` does not exist and
+cannot be authored safely without the codec/amp DSP mixer semantics. This is a
+separate (firmware-dependent) gap, not simply a copy-path mistake.
+
+## PipeWire / WirePlumber (installed)
+pipewire 1.4.11, wireplumber 0.5.14, pipewire-alsa, pipewire-pulseaudio installed
+(signed Fedora 43 aarch64, gpgcheck=1). The Nuxel root session has no session
+D-Bus, so `systemctl --user` cannot start them; they can only be launched
+directly. No sink can appear until the ALSA card can install hw params (blocked
+by calliope_sram). PipeWire daemons were NOT left running.
+
+## Media decode vs audible output
+`mpv --no-video --ao=null /tmp/nuxel-test-tone.wav` decodes the 44100 Hz S16 WAV
+and exits cleanly (AO:null, End of file) — **decode/runtime PASS**, audible
+output still firmware-blocked. This separation is reported honestly (no fake
+"audio fixed").

@@ -172,15 +172,21 @@ int main(void) {
   state(&p, &c, &pc, &lv);
   check(p && c && pc && !lv, "configured UDC + tty, no console process: PC only");
 
-  /* Vendor android_usb state is corroborating only when UDC is unavailable. */
+  /* Vendor android_usb state may be stale; without exact UDC configuration it
+     is diagnostic only and must fail closed. */
   reset_tree(root); battery(root, "Charging\n"); usb_power(root, "1\n");
   write_file(root, "android_usb/state", "CONFIGURED\n");
   state(&p, &c, &pc, &lv);
-  check(p && c && pc && !lv, "android USB CONFIGURED: PC via vendor fallback");
+  check(p && c && !pc && !lv, "stale android USB CONFIGURED: no UDC proof, no PC");
   reset_tree(root); battery(root, "Charging\n"); usb_power(root, "1\n");
   write_file(root, "android_usb/state", "DISCONNECTED\n");
   state(&p, &c, &pc, &lv);
   check(p && c && !pc && !lv, "android USB DISCONNECTED: no PC");
+
+  reset_tree(root); battery(root, "Charging\n"); usb_power(root, "1\n");
+  gadget(root, "addressed\n"); tty_registered(root, 1);
+  state(&p, &c, &pc, &lv);
+  check(p && c && !pc && !lv, "addressed UDC is pre-enumeration: no PC");
 
   reset_tree(root); battery(root, "Charging\n"); usb_power(root, "1\n");
   gadget(root, "configured\n"); tty_registered(root, 1);
