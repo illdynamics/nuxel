@@ -28,11 +28,16 @@ import json
 import logging
 import uuid
 import os
-import dbus
-import dbus.service
-import dbus.mainloop.glib
-import dbus.exceptions
-from gi.repository import GLib
+try:
+    import dbus
+    import dbus.service
+    import dbus.mainloop.glib
+    import dbus.exceptions
+    from gi.repository import GLib
+    HAVE_DBUS = True
+except ImportError:
+    dbus = None
+    HAVE_DBUS = False
 import threading
 import time
 import subprocess
@@ -180,6 +185,8 @@ CAPABILITIES = {
     'usb:access': 'Access USB devices',
     'bluetooth:scan': 'Scan for Bluetooth devices',
     'bluetooth:connect': 'Connect to Bluetooth devices',
+    'bluetooth:manage': 'Enable or disable the Bluetooth radio',
+    'location:manage': 'Enable or disable the system location policy',
 }
 
 CAPABILITY_RISK = {
@@ -196,6 +203,7 @@ CAPABILITY_RISK = {
     'display:screenshot': 'high', 'display:screencast': 'high',
     'usb:access': 'high',
     'bluetooth:scan': 'low', 'bluetooth:connect': 'medium',
+    'bluetooth:manage': 'medium', 'location:manage': 'medium',
 }
 
 # Portal types mapped from capabilities
@@ -985,6 +993,302 @@ class GeoClueConnector:
 
 
 
+class BluetoothConnector:
+    """Authoritative Bluetooth status/toggle over rfkill + BlueZ + kernel.
+
+    The bridge runs as the nuxel-bridge user, so SET operations that need root
+    (rfkill unblock, BlueZ Adapter1.Powered writes) are attempted and the
+    ACTUAL result is read back; nothing is faked.  On the S10+ there is no hci0
+    (CONFIG_BT_BCM43XX=y but the controller never registers), so the tile must
+    report that concrete blocker, never a generic 'unavailable in this build'.
+    """
+
+    BLUEZ_BUS = 'org.bluez'
+    ADAPTER_IFACE = 'org.bluez.Adapter1'
+
+    def __init__(self):
+        self.bus = None
+
+    def _connect(self):
+        if self.bus is not None:
+            return self.bus
+        try:
+            self.bus = dbus.SystemBus()
+        except Exception:
+            self.bus = None
+        return self.bus
+
+    # ---- kernel/rfkill evidence (read-only, world-readable) ---------------
+    def _rfkill(self):
+        out = {'present': False, 'soft_blocked': None, 'hard_blocked': None,
+               'names': []}
+        try:
+            names = sorted(os.listdir('/sys/class/rfkill'))
+        except OSError:
+            return out
+        for name in names:
+            base = '/sys/class/rfkill/' + name
+            try:
+                with open(base + '/type') as f:
+                    typ = f.read().strip().lower()
+            except OSError:
+                continue
+            if typ != 'bluetooth':
+                continue
+            out['present'] = True
+            try:
+                with open(base + '/name') as f:
+                    out['names'].append(f.read().strip())
+            except OSError:
+                pass
+            for key, attr in (('soft_blocked', 'soft'), ('hard_blocked', 'hard')):
+                try:
+                    with open(base + '/' + attr) as f:
+                        out[key] = int(f.read().strip()) == 1
+                except (OSError, ValueError):
+                    pass
+        return out
+
+    def _hci_devices(self):
+        try:
+            names = [n for n in os.listdir('/sys/class/bluetooth')
+                     if n.startswith('hci')]
+        except OSError:
+            return []
+        return sorted(names)
+
+    def _kernel_bt_driver(self):
+        """Best-effort: does the running kernel carry a BT controller driver?"""
+        try:
+            import gzip
+            with gzip.open('/proc/config.gz', 'rb') as f:
+                cfg = f.read().decode('utf-8', 'replace')
+        except Exception:
+            return 'unknown'
+        for k in ('CONFIG_BT_BCM43XX', 'CONFIG_BT_HCIBTUSB',
+                  'CONFIG_BT_HCIBTSDIO', 'CONFIG_BT_HCIUART'):
+            if k + '=y' in cfg:
+                return k.split('_', 2)[-1].lower()
+        return 'none'
+
+    # ---- BlueZ D-Bus evidence --------------------------------------------
+    def _bluez_adapters(self):
+        bus = self._connect()
+        if bus is None:
+            return []
+        try:
+            mgr = dbus.Interface(
+                bus.get_object(self.BLUEZ_BUS, '/'),
+                'org.freedesktop.DBus.ObjectManager')
+            managed = mgr.GetManagedObjects()
+        except Exception:
+            return []
+        adapters = []
+        for obj_path, ifaces in managed.items():
+            if self.ADAPTER_IFACE not in ifaces:
+                continue
+            props = ifaces[self.ADAPTER_IFACE]
+            adapters.append({
+                'path': str(obj_path),
+                'address': str(props.get('Address', '')),
+                'name': str(props.get('Name', '')),
+                'powered': bool(props.get('Powered', False)),
+                'discovering': bool(props.get('Discovering', False)),
+            })
+        return adapters
+
+    def get_status(self):
+        rfkill = self._rfkill()
+        hci = self._hci_devices()
+        adapters = self._bluez_adapters()
+        driver = self._kernel_bt_driver()
+
+        adapter_present = bool(hci) or bool(adapters)
+        powered = None
+        discovering = None
+        if adapters:
+            powered = any(a['powered'] for a in adapters)
+            discovering = any(a['discovering'] for a in adapters)
+
+        if rfkill['hard_blocked']:
+            state = 'hardware_blocked'
+        elif not adapter_present:
+            state = 'service_unavailable'
+        elif powered is True:
+            state = 'on'
+        elif powered is False:
+            state = 'off'
+        else:
+            state = 'unsupported'
+
+        detail = []
+        if not adapter_present:
+            detail.append('no hci0 registered (no BlueZ adapter)')
+        if driver in ('none', 'unknown'):
+            detail.append('kernel BT controller driver: ' + driver)
+        elif adapter_present is False:
+            detail.append('kernel BT controller driver: ' + driver +
+                          ' (controller never registers hci0: firmware/transport)')
+        if rfkill['present'] and rfkill['soft_blocked']:
+            detail.append('rfkill soft-blocked')
+
+        return {
+            'success': True,
+            'state': state,
+            'adapter_present': adapter_present,
+            'powered': powered,
+            'discovering': discovering,
+            'rfkill_present': rfkill['present'],
+            'rfkill_soft_blocked': rfkill['soft_blocked'],
+            'rfkill_hard_blocked': rfkill['hard_blocked'],
+            'rfkill_names': rfkill['names'],
+            'hci_devices': hci,
+            'kernel_bt_driver': driver,
+            'adapters': adapters,
+            'detail': '; '.join(detail) if detail else None,
+            'timestamp': time.time(),
+        }
+
+    def set_powered(self, enabled):
+        enabled = bool(enabled)
+        st = self.get_status()
+        if not st['adapter_present']:
+            st['success'] = False
+            st['requested'] = enabled
+            st['error'] = 'NO_ADAPTER'
+            st['powered'] = None
+            return st
+        # Attempt BlueZ Adapter1.Powered write on every available adapter and
+        # READ BACK the actual value (the D-Bus policy only authorises root to
+        # write Properties, so a non-root denial is reported, not masked).
+        bus = self._connect()
+        applied = False
+        err = None
+        for adapter in st.get('adapters', []):
+            try:
+                obj = bus.get_object(self.BLUEZ_BUS, adapter['path'])
+                props = dbus.Interface(obj, 'org.freedesktop.DBus.Properties')
+                props.Set(self.ADAPTER_IFACE, 'Powered', dbus.Boolean(enabled))
+                applied = True
+            except Exception as exc:
+                err = str(exc)
+        # Unblock rfkill soft-block when enabling (best effort; needs root).
+        if enabled and st.get('rfkill_soft_blocked'):
+            try:
+                with open('/sys/class/rfkill/rfkill0/soft', 'w') as f:
+                    f.write('0')
+            except (OSError, PermissionError):
+                pass
+        readback = self.get_status()
+        readback['requested'] = enabled
+        readback['success'] = (readback['powered'] == enabled)
+        if not readback['success']:
+            readback['error'] = err or ('adapter did not confirm Powered=%s' % enabled)
+        return readback
+
+
+class LocationConnector:
+    """Global location permission/provider policy with honest fix reporting.
+
+    `enabled` is a persistent, system-wide PRIVACY/PROVIDER switch — it is NOT
+    a claim that GNSS has a fix.  Turning it OFF denies future position
+    requests through the bridge and marks any displayed fix invalid; turning it
+    ON re-allows consented GeoClue/provider reads.  A satellite fix is a
+    separate, honestly-reported state and is never fabricated from IP data.
+    """
+
+    POLICY_PATH = os.environ.get('NUXEL_LOCATION_POLICY',
+                                 '/var/lib/nuxel/location-policy.json')
+
+    def __init__(self):
+        self.geoclue = None  # set by NuxelBridgeService after connect()
+
+    def _read_policy(self):
+        try:
+            with open(self.POLICY_PATH) as f:
+                doc = json.load(f)
+            return bool(doc.get('enabled', False))
+        except (OSError, ValueError):
+            return False
+
+    def _write_policy(self, enabled):
+        os.makedirs(os.path.dirname(self.POLICY_PATH), exist_ok=True)
+        tmp = self.POLICY_PATH + '.tmp'
+        doc = {'enabled': bool(enabled), 'updated': time.time()}
+        with open(tmp, 'w') as f:
+            json.dump(doc, f)
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(tmp, self.POLICY_PATH)
+        return bool(enabled)
+
+    def _provider_ready(self):
+        if self.geoclue is None:
+            return False
+        return bool(getattr(self.geoclue, 'connected', False))
+
+    def _gnss_hardware(self):
+        """GNSS/Sensor-hub presence only — never a fix claim."""
+        present = []
+        for node in ('/dev/ssp_sensorhub', '/dev/ssp_data_injection',
+                     '/dev/bbd_sensor'):
+            if os.path.exists(node):
+                present.append(node)
+        return {
+            'present': bool(present),
+            'nodes': present,
+            'fix_supported': False,  # no BCM47752 userspace provider is wired
+        }
+
+    def _current_fix(self):
+        """Return the real last fix if GeoClue can produce one right now.
+
+        A fix object is only returned when GeoClue yields valid coordinates;
+        its source is reported as GeoClue (which may itself be IP/3GPP — never
+        relabelled as GNSS).  No coordinates are ever manufactured.
+        """
+        if not self._provider_ready():
+            return {'available': False, 'source': None, 'timestamp': None,
+                    'accuracy': None}
+        try:
+            loc = self.geoclue.get_location()
+        except Exception:
+            return {'available': False, 'source': None, 'timestamp': None,
+                    'accuracy': None}
+        if not loc or not loc.get('success'):
+            return {'available': False, 'source': None, 'timestamp': None,
+                    'accuracy': None}
+        return {'available': True, 'source': 'geoclue2',
+                'timestamp': time.time(), 'accuracy': loc.get('accuracy')}
+
+    def get_status(self):
+        enabled = self._read_policy()
+        provider_ready = self._provider_ready()
+        fix = self._current_fix()
+        gnss = self._gnss_hardware()
+        return {
+            'success': True,
+            'enabled': enabled,
+            'permission_enabled': enabled,
+            'provider': 'geoclue2',
+            'provider_ready': provider_ready,
+            'location_fix_available': fix['available'],
+            'fix_source': fix['source'],
+            'fix_timestamp': fix['timestamp'],
+            'accuracy': fix['accuracy'],
+            'gnss': gnss,
+            'timestamp': time.time(),
+        }
+
+    def set_enabled(self, enabled):
+        enabled = bool(enabled)
+        self._write_policy(enabled)
+        st = self.get_status()
+        st['requested'] = enabled
+        st['success'] = (st['enabled'] == enabled)
+        return st
+
+
 class OrientationConnector:
     """Proxy to the ONE orientation policy implementation (nuxel-orientationd).
 
@@ -1141,6 +1445,9 @@ class NuxelBridgeService(dbus.service.Object):
         self.network = NetworkManagerConnector()
         self.geoclue = GeoClueConnector()
         self.orientation = OrientationConnector()
+        self.bluetooth = BluetoothConnector()
+        self.location = LocationConnector()
+        self.location.geoclue = self.geoclue
         self.media = media_store.MediaStore(MEDIA_DIR)
         
         # Initialize connectors in background
@@ -1440,10 +1747,42 @@ class NuxelBridgeService(dbus.service.Object):
             return json.dumps({'success': False, 'error': 'Network permission denied'})
         return json.dumps(self.network.forget_wifi(connection_path=(str(connection_path) if connection_path else None)))
 
+    # ---------- D-Bus: Bluetooth (A73) ----------
+
+    @dbus.service.method(INTERFACE_NAME, in_signature='s', out_signature='s')
+    def BluetoothGetStatus(self, app_id):
+        return json.dumps(self.bluetooth.get_status())
+
+    @dbus.service.method(INTERFACE_NAME, in_signature='sb', out_signature='s')
+    def BluetoothSetPowered(self, app_id, enabled):
+        if not self._check_capability(app_id, 'bluetooth:manage'):
+            return json.dumps({'success': False,
+                               'error': 'Capability not granted: bluetooth:manage',
+                               'error_code': 'CAPABILITY_DENIED'})
+        return json.dumps(self.bluetooth.set_powered(bool(enabled)))
+
+    # ---------- D-Bus: Location (A73) ----------
+
+    @dbus.service.method(INTERFACE_NAME, in_signature='s', out_signature='s')
+    def LocationGetStatus(self, app_id):
+        return json.dumps(self.location.get_status())
+
+    @dbus.service.method(INTERFACE_NAME, in_signature='sb', out_signature='s')
+    def LocationSetEnabled(self, app_id, enabled):
+        if not self._check_capability(app_id, 'location:manage'):
+            return json.dumps({'success': False,
+                               'error': 'Capability not granted: location:manage',
+                               'error_code': 'CAPABILITY_DENIED'})
+        return json.dumps(self.location.set_enabled(bool(enabled)))
+
     # ---------- D-Bus: Location ----------
     
     @dbus.service.method(INTERFACE_NAME, in_signature='s', out_signature='s')
     def GetLocation(self, app_id):
+        if not self.location.get_status()['enabled']:
+            return json.dumps({'success': False,
+                               'error': 'Location is disabled (global policy)',
+                               'error_code': 'LOCATION_DISABLED'})
         if not self._check_capability(app_id, 'location:read'):
             return json.dumps({'success': False, 'error': 'Capability not granted: location:read',
                                'error_code': 'CAPABILITY_DENIED'})

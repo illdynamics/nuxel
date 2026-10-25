@@ -267,6 +267,14 @@ class QuickSettings {
             await this._toggleRotate();
             return;
         }
+        if (id === 'bluetooth') {
+            await this._setBluetoothEnabled(!this.state.bluetooth);
+            return;
+        }
+        if (id === 'location') {
+            await this._setLocationEnabled(!this.state.location);
+            return;
+        }
         // A tile must not become a decorative switch.  Keep unintegrated
         // controls honest until their hardware backend is landed.
         this._osdNotice(`${id} control is unavailable on this build`);
@@ -395,11 +403,124 @@ class QuickSettings {
         setTimeout(() => document.addEventListener('pointerdown', dismiss, { once: true }), 0);
     }
 
+    // ---- Bluetooth (A73): real BlueZ/rfkill/HCI status + powered toggle ----
+    _bluetoothLabel(st) {
+        if (!st) return 'Bluetooth';
+        const s = st.state;
+        if (s === 'on') return st.discovering ? 'Bluetooth<br>discovering' : 'Bluetooth';
+        if (s === 'off') return 'Bluetooth';
+        if (s === 'hardware_blocked') return 'Bluetooth<br>blocked';
+        if (s === 'service_unavailable') return 'Bluetooth<br>no radio';
+        return 'Bluetooth';
+    }
+
+    async _syncBluetooth() {
+        const tile = document.getElementById('qs-bluetooth');
+        if (!tile) return;
+        try {
+            const st = await bridge.call('bluetooth', 'status', {});
+            this.state.bluetooth = !!(st && st.powered === true);
+            tile.dataset.enabled = this.state.bluetooth ? 'true' : 'false';
+            tile.dataset.state = (st && st.state) ? st.state : 'unknown';
+            if (st && st.adapter_present === false) tile.dataset.state = 'no_adapter';
+            const label = tile.querySelector('.qs-label');
+            if (label) label.innerHTML = this._bluetoothLabel(st);
+            tile.title = 'Bluetooth: ' + ((st && st.state) || 'unknown')
+                + (st && st.detail ? '\n' + st.detail : '')
+                + '\nTap = power on/off (real BlueZ/rfkill state)';
+        } catch (e) {
+            tile.dataset.enabled = 'false';
+            tile.dataset.state = 'error';
+        }
+    }
+
+    async _setBluetoothEnabled(enabled) {
+        const el = document.getElementById('qs-bluetooth');
+        if (el) el.dataset.pending = 'true';
+        try {
+            const grant = await bridge.requestCapability('bluetooth:manage', 'Toggle Bluetooth radio');
+            if (grant === false) throw new Error('Bluetooth control permission denied');
+            const result = await bridge.call('bluetooth', 'set-powered', { enabled: !!enabled });
+            if (!result || result.success !== true) {
+                throw new Error((result && (result.error || result.detail)) || 'Bluetooth radio did not confirm');
+            }
+            this.state.bluetooth = Boolean(result.powered);
+            this._updateUI();
+            this._hapticSwitch();
+            this._syncBluetooth();
+        } catch (error) {
+            await this._syncBluetooth();
+            this._osdNotice('Bluetooth unchanged: ' + (error && error.message ? error.message : 'backend unavailable'));
+        } finally {
+            if (el) delete el.dataset.pending;
+        }
+    }
+
+    // ---- Location (A73): real global privacy/provider switch ----
+    _locationLabel(st) {
+        if (!st) return 'Location';
+        if (st.enabled) {
+            if (st.location_fix_available) return 'Location<br>fix';
+            if (st.provider_ready) return 'Location<br>locating';
+            return 'Location<br>no fix';
+        }
+        return 'Location';
+    }
+
+    async _syncLocation() {
+        const tile = document.getElementById('qs-location');
+        if (!tile) return;
+        try {
+            const st = await bridge.call('location', 'get-status', {});
+            this.state.location = !!(st && st.enabled);
+            tile.dataset.enabled = this.state.location ? 'true' : 'false';
+            tile.dataset.state = (st && st.enabled) ? 'on' : 'off';
+            const label = tile.querySelector('.qs-label');
+            if (label) label.innerHTML = this._locationLabel(st);
+            const fix = (st && st.location_fix_available) ? ('source=' + (st.fix_source || 'none')) : 'no fix';
+            tile.title = 'Location: ' + (this.state.location ? 'ON (policy enabled)' : 'off (policy disabled)')
+                + ' | provider=' + ((st && st.provider) || 'geoclue2')
+                + ' | ' + ((st && st.provider_ready) ? 'ready' : 'not ready')
+                + ' | ' + fix
+                + '\nTap = global location permission/provider ON/OFF (independent of a GPS fix)';
+        } catch (e) {
+            tile.dataset.enabled = 'false';
+            tile.dataset.state = 'error';
+        }
+    }
+
+    async _setLocationEnabled(enabled) {
+        const el = document.getElementById('qs-location');
+        if (el) el.dataset.pending = 'true';
+        try {
+            const grant = await bridge.requestCapability('location:manage', 'Toggle location policy');
+            if (grant === false) throw new Error('Location control permission denied');
+            const result = await bridge.call('location', 'set-enabled', { enabled: !!enabled });
+            if (!result || result.success !== true) {
+                throw new Error((result && (result.error || result.detail)) || 'Location policy did not confirm');
+            }
+            this.state.location = Boolean(result.enabled);
+            this._updateUI();
+            this._hapticSwitch();
+            this._syncLocation();
+            document.dispatchEvent(new CustomEvent('nuxel:location-policy', {
+                detail: { enabled: this.state.location }, bubbles: true,
+            }));
+        } catch (error) {
+            await this._syncLocation();
+            this._osdNotice('Location unchanged: ' + (error && error.message ? error.message : 'backend unavailable'));
+        } finally {
+            if (el) delete el.dataset.pending;
+        }
+    }
+
     _render() {
         // Update all toggle states from bridge
         this._syncState();
         this._syncVerboseBoot();
         this._syncRotate();
+        this._syncBluetooth();
+        this._syncLocation();
     }
 
     async _syncState() {
@@ -415,6 +536,8 @@ class QuickSettings {
         } catch (e) {
             // Use defaults
         }
+        this._syncBluetooth();
+        this._syncLocation();
     }
 
     _updateUI() {
