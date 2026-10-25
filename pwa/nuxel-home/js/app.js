@@ -271,10 +271,10 @@ class NuxelHome {
         // Handle app launch events from search or recents
         document.addEventListener('app:launch', (event) => {
             console.log(`[Nuxel] Launching app: ${event.detail.app.name}`);
-            // Close search if open
-            if (this.components.search) {
-                this.components.search.close();
-            }
+            // A69-13: dismiss launcher chrome (app drawer, search, recents,
+            // folder sheet, edit mode) BEFORE the app surface is created, so the
+            // chosen app can never be raised behind the Applications drawer.
+            this._dismissLauncherChrome();
         });
 
         // Handle PWA open events
@@ -390,6 +390,7 @@ class NuxelHome {
 
     _openPwa(app, url) {
         console.log(`Opening PWA: ${app.name} at ${url}`);
+        this._dismissLauncherChrome();
         if (this._resumeApp(app)) return;
         this._backgroundForegroundApp();
         const generation = this.appGeneration;
@@ -487,6 +488,7 @@ class NuxelHome {
 
     _launchNative(app, url) {
         console.log(`Launching native app: ${app.name} (${url})`);
+        this._dismissLauncherChrome();
         const target = app.nativeAppId || app.id;
         this._setAppState('LAUNCHING', app, null);
 
@@ -586,6 +588,18 @@ class NuxelHome {
         if (window.NuxelTouchKeyboard) window.NuxelTouchKeyboard.hide();
         document.querySelectorAll('.folder-sheet').forEach(el => el.remove());
         this._backgroundForegroundApp();
+    }
+
+    // A69-13: dismiss launcher chrome without touching the foreground app. This
+    // is the launch-time counterpart of _closeOverlays(): close the Applications
+    // drawer, search, recents, folder sheet and edit mode so the app surface the
+    // launcher is about to create owns the foreground (and body[data-app-state]
+    // hides the dock/drawer chrome once ACTIVE/LAUNCHING is set).
+    _dismissLauncherChrome() {
+        if (this.components.search) this.components.search.close();
+        if (window.recents) window.recents.close('launch');
+        if (window.launcher) { window.launcher.closeDrawer(); window.launcher.exitEditMode(); }
+        document.querySelectorAll('.folder-sheet').forEach(el => el.remove());
     }
 
     // Public system-navigation contract.  Keep these methods on the Home
@@ -764,6 +778,16 @@ class NuxelHome {
                     if (window.NuxelSystemMonitor && window.NuxelSystemMonitor.stop) window.NuxelSystemMonitor.stop();
                 } else if (this._lastDisplayOff === true && window.NuxelSystemMonitor && window.NuxelSystemMonitor.configure) {
                     window.NuxelSystemMonitor.configure();
+                }
+                /* A wake is an event, not a reason to wait for the next poll:
+                   refresh the lockhead indicators as soon as the panel is ON. */
+                if (!off) {
+                    try {
+                        document.dispatchEvent(new CustomEvent('nuxel:display-on'));
+                        if (this.lockscreen && typeof this.lockscreen.refreshIndicators === 'function') {
+                            this.lockscreen.refreshIndicators();
+                        }
+                    } catch (e) {}
                 }
                 if (this._lastDisplayOff === false && off && !this._isLocked()) this._lock('display-off');
                 this._lastDisplayOff = off;

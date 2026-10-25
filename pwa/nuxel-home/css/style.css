@@ -354,6 +354,23 @@ html, body {
 .system-navigation button img[hidden] { display: none; }
 .system-navigation button:not(.has-image) { color: #dbeafe; font-size: 15px; }
 
+/* A69-02: exactly ONE nav host. On the S10+ the authoritative Back/Penguin/
+   Tabs strip is the native layer-shell client (nuxel-navdock). The DOM strip is
+   only the desktop/VM fallback; when the native dock proves it is running
+   (navigation.js adds native-nav-present) hide the DOM copy before it can be
+   seen. Never hide BOTH hosts: if the native dock is absent the DOM fallback
+   remains the one true nav surface. */
+.native-nav-present #system-navigation { display: none; }
+
+/* A69-13: while an app is the foreground surface the four-icon desktop dock and
+   the app drawer are Home chrome and must not paint above app content. The dock
+   and drawer are z-index 90/80 while the PWA frame is z-index 60, so without
+   these rules an app launches BEHIND the drawer/dock. */
+body[data-app-state="ACTIVE"] #dock,
+body[data-app-state="LAUNCHING"] #dock,
+body[data-app-state="ACTIVE"] #app-grid,
+body[data-app-state="LAUNCHING"] #app-grid { display: none; }
+
 /* ── Boot animation splash ───────────────────────────────────────────────
    Fullscreen nuxel-boot-animation.mp4 overlay shown while the home PWA
    boots. Faded out by js/app.js (body.ready) once the app is initialized

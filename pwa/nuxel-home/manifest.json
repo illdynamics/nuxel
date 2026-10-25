@@ -101,7 +101,7 @@
     "native_fallback": false,
     "bridge_version": "0.6.5-beta",
     "pwa_version": "0.6.5-beta",
-    "cache_version": "v35-a65-hyperfix",
+    "cache_version": "v38-a68-indicators-2",
     "registry_version": 5,
     "single_source_of_truth": "pwa/nuxel-home (index.html, css/, js/, manifest.json, sw.js)",
     "apps_in_registry": [

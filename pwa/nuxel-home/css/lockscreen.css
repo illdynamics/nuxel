@@ -45,6 +45,7 @@
    default is a horizontal centre near the bottom. */
 .lockscreen-handle-wrap {
     position: absolute;
+    overflow: visible;
     left: 0;
     right: 0;
     bottom: 16%;
@@ -134,3 +135,142 @@ body.display-off .lockscreen-hint::before { animation-play-state: paused; }
 
 /* Progress ring is intentionally omitted: the subtle glow on .grabbed plus the
    handle following the finger is the whole affordance. */
+
+/* ==========================================================================
+   Lockhead status indicators (charging / PC / live console)
+
+   The row is an in-flow sibling of the clock/date/battery meta block, so it
+   renders directly BELOW that block (top third) and well ABOVE the vertical
+   centre — clear of the draggable lockhead, which rests near ~62% height.
+
+   The shipped PNGs carry a wide transparent margin, so each icon's artwork is
+   cropped at paint time with a per-asset clip-path (the source PNG is never
+   modified).  Each visible box is ~108 px CSS on the 360 px lockscreen
+   (~1.6x the original 68 px box, ~2.5x the visual area), capped so three icons
+   can never overflow the row.  Inactive = 26% opacity, no glow.  Active states
+   animate compositor-friendly properties only (opacity/transform), so the
+   software-rendered compositor stays light.
+   ========================================================================== */
+.lockscreen-indicators {
+    position: relative;
+    z-index: 3;
+    margin-top: 10px;
+    min-height: 108px;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 0 6px;
+    pointer-events: none;
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+.lockscreen-indicator {
+    --glow: rgba(124, 224, 138, 0.8);
+    position: relative;
+    display: block;
+    flex: 0 0 auto;
+    width: clamp(100px, 30vw, 108px);
+    height: clamp(100px, 30vw, 108px);
+    max-width: calc((100vw - 20px) / 3);
+    opacity: .26;
+    filter: saturate(.35) brightness(.86);
+    transition: opacity .34s ease, filter .34s ease;
+    will-change: opacity, filter;
+}
+
+.lockscreen-indicator img {
+    position: relative;
+    z-index: 1;
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    -webkit-user-drag: none;
+    pointer-events: none;
+}
+
+/* Per-asset transparent-padding crop, measured from the shipped alpha
+   channel.  This preserves the original aspect ratio while making the artwork
+   fill the box (without clip-path the ~1250 px canvases render as a tiny smear
+   inside a 108 px box).  Inset percentages are relative to each box edge. */
+.lockscreen-indicator.charging-ind img { clip-path: inset(1.7% 2.9% 0 1.4%); }
+.lockscreen-indicator.usb-ind img      { clip-path: inset(2.7% 0 0 2.3%); }
+.lockscreen-indicator.live-ind img     { clip-path: inset(0.7% 1.1% 0 3.3%); }
+
+.lockscreen-indicator .lockscreen-indicator-glow {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 190%;
+    height: 190%;
+    transform: translate(-50%, -50%);
+    background: radial-gradient(circle, var(--glow) 0%, rgba(0,0,0,0) 68%);
+    opacity: 0;
+    z-index: 0;
+    pointer-events: none;
+    transition: opacity .34s ease;
+    will-change: opacity;
+}
+
+.lockscreen-indicator.charging-ind { --glow: rgba(124, 224, 138, 0.82); }
+.lockscreen-indicator.usb-ind      { --glow: rgba(127, 212, 255, 0.86); }
+.lockscreen-indicator.live-ind     { --glow: rgba(255, 154, 90, 0.86); }
+
+.lockscreen-indicator.active {
+    opacity: 1;
+    filter: saturate(1.08) brightness(1.08);
+}
+.lockscreen-indicator.active .lockscreen-indicator-glow {
+    opacity: .78;
+    animation: nuxel-indicator-breathe 3.4s ease-in-out infinite;
+}
+.lockscreen-indicator.charging-ind.active.charging img {
+    animation: nuxel-indicator-charge 1.45s ease-in-out infinite;
+}
+.lockscreen-indicator.usb-ind.active img {
+    animation: nuxel-indicator-usb 3.0s ease-in-out infinite;
+}
+.lockscreen-indicator.live-ind.active img {
+    animation: nuxel-indicator-live 1.9s ease-in-out infinite;
+}
+
+@keyframes nuxel-indicator-breathe {
+    0%, 100% { opacity: .34; transform: translate(-50%, -50%) scale(.94); }
+    50%      { opacity: .78; transform: translate(-50%, -50%) scale(1.05); }
+}
+@keyframes nuxel-indicator-charge {
+    0%, 100% { opacity: .82; transform: scale(.96); }
+    50%      { opacity: 1;   transform: scale(1.04); }
+}
+@keyframes nuxel-indicator-usb {
+    0%, 100% { opacity: .84; transform: translateY(0); }
+    50%      { opacity: 1;   transform: translateY(-1px); }
+}
+@keyframes nuxel-indicator-live {
+    0%, 100% { opacity: .78; }
+    45%      { opacity: 1; }
+    55%      { opacity: .9; }
+}
+
+/* The display-off / unlocked surface must not composite hidden animation. */
+body.display-off .lockscreen-indicator,
+body.display-off .lockscreen-indicator img,
+body.display-off .lockscreen-indicator .lockscreen-indicator-glow {
+    animation-play-state: paused !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .lockscreen-indicator,
+    .lockscreen-indicator img,
+    .lockscreen-indicator.active .lockscreen-indicator-glow {
+        animation: none !important;
+        transition: none !important;
+    }
+    .lockscreen-indicator.active .lockscreen-indicator-glow { opacity: .6; }
+}

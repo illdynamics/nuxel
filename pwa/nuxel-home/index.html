@@ -19,7 +19,7 @@
     <link rel="stylesheet" href="css/search.css">
     <link rel="stylesheet" href="css/status-bar.css?v=a54">
     <link rel="stylesheet" href="css/home-settings.css">
-    <link rel="stylesheet" href="css/lockscreen.css?v=a47">
+    <link rel="stylesheet" href="css/lockscreen.css?v=a68.3">
 </head>
 <body>
     <!-- Boot animation splash (nuxel-boot-animation.mp4) — shown while the
@@ -163,6 +163,16 @@
             </div>
             <div class="lockscreen-hint" id="lockscreen-hint" aria-hidden="true">swipe up to unlock</div>
         </div>
+        <div class="lockscreen-indicators" id="lockscreen-indicators"
+             role="status" aria-label="Device status"
+             data-power-source="" data-usb-source="" data-live-source="">
+            <span class="lockscreen-indicator charging-ind" id="lockscreen-indicator-charging"
+                  role="img" aria-label="Charging" aria-live="polite"><span class="lockscreen-indicator-glow" aria-hidden="true"></span><img src="/assets/nuxel-charging.png?v=a68.3" alt="" draggable="false"></span>
+            <span class="lockscreen-indicator usb-ind" id="lockscreen-indicator-usb"
+                  role="img" aria-label="USB connected to computer" aria-live="polite"><span class="lockscreen-indicator-glow" aria-hidden="true"></span><img src="/assets/nuxel-connected-pc.png?v=a68.3" alt="" draggable="false"></span>
+            <span class="lockscreen-indicator live-ind" id="lockscreen-indicator-live"
+                  role="img" aria-label="Live console active" aria-live="polite"><span class="lockscreen-indicator-glow" aria-hidden="true"></span><img src="/assets/nuxel-live-console-active.png?v=a68.3" alt="" draggable="false"></span>
+        </div>
     </div>
 
     <script>
@@ -224,13 +234,14 @@
     <script src="js/osd.js?v=a47"></script>
     <script src="js/bootlog.js"></script>
     <script src="js/touch-keyboard.js?v=a47"></script>
-    <script src="js/lockscreen.js?v=a47"></script>
+    <script src="js/lockscreen-indicators.js?v=a68.3"></script>
+    <script src="js/lockscreen.js?v=a68.3"></script>
     <script src="js/navigation.js?v=a47"></script>
     <script src="js/gestures.js"></script>
     <script src="js/home-settings.js"></script>
     <script src="js/system-monitor.js?v=a47"></script>
     <script src="js/scroll-indicators.js"></script>
     <!-- A44: one-shot in-engine icon/WebKit/cache health report to nuxelDiag. -->
-    <script src="js/app.js?v=a59"></script>
+    <script src="js/app.js?v=a69"></script>
 </body>
 </html>

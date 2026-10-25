@@ -40,6 +40,7 @@
       this.timeEl = document.getElementById('lockscreen-time');
       this.dateEl = document.getElementById('lockscreen-date');
       this.batteryEl = document.getElementById('lockscreen-battery');
+      this.indicators = null;
       this.locked = false;
       this.state = 'IDLE';
       this.startY = 0;
@@ -62,7 +63,42 @@
       this._startClock();
       this._startBattery();
       this._startWiggle();
+      this._initIndicators();
       this._positionHandle();
+    }
+
+    /* A68 status indicators (charging / PC-connected / live console).  They
+       are three independent state machines driven by real Linux state; each one
+       lights independently and can combine with any other. */
+    _initIndicators() {
+      if (typeof global.NuxelLockscreenIndicators !== 'function') return;
+      try {
+        this.indicators = new global.NuxelLockscreenIndicators();
+        if (this.indicators && this.el) this.indicators.ensureDom(this.el);
+      } catch (err) {
+        this.indicators = null;
+        this._trace('indicators-init-failed ' + (err && err.message ? err.message : err));
+      }
+    }
+
+    _startIndicators() {
+      if (this.indicators) {
+        try { this.indicators.start(); } catch (err) { this._trace('indicators-start-failed ' + (err && err.message ? err.message : err)); }
+      }
+    }
+
+    _stopIndicators() {
+      if (this.indicators) {
+        try { this.indicators.stop(); } catch (err) { this._trace('indicators-stop-failed ' + (err && err.message ? err.message : err)); }
+      }
+    }
+
+    /* Wake is an event: refresh immediately without waiting for the safety
+       interval.  Kept here so the lockscreen owns indicator lifecycle. */
+    refreshIndicators() {
+      if (this.indicators && typeof this.indicators.refresh === 'function') {
+        try { this.indicators.refresh(); } catch (err) { this._trace('indicators-refresh-failed ' + (err && err.message ? err.message : err)); }
+      }
     }
 
     /* Map a wallpaper pixel coordinate to CSS under background-size: cover. */
@@ -369,6 +405,7 @@
       this._positionHandle();
       this._updateClock();
       this._updateBattery();
+      this._startIndicators();
       this._trace('show version=' + VERSION + ' reason=' + (reason || 'unknown') +
                   ' locked=1 visible=1 threshold=' + this._effectiveThreshold());
     }
@@ -391,6 +428,7 @@
       this.handle.style.transition = '';
       this.handle.style.transform = '';
       this.handle.style.opacity = '';
+      this._stopIndicators();
       this._trace('hide version=' + VERSION + ' state=UNLOCKED locked=0 visible=0');
     }
 
@@ -460,17 +498,31 @@
         this.batteryEl.textContent = (charging ? '⚡ ' : '') + (shown === null ? '—' : shown + '%');
       };
       paint(null, false);
+      // A69-01: ONE authoritative, immediate source. The host reads
+      // /sys/class/power_supply/<type=Battery>/capacity directly through
+      // nuxel-pwa-host and is available the moment the launcher document is
+      // alive — it does NOT wait for the HTTP bridge daemon. Try the host path
+      // first, then the HTTP bridge for the charging glyph. An absent reading
+      // stays the neutral em dash, never a fabricated 0%.
+      const hostReady = global.NuxelHost && global.NuxelHost.available &&
+                        typeof global.NuxelHost.statusRead === 'function';
+      if (hostReady) {
+        Promise.resolve(global.NuxelHost.statusRead('battery-capacity')).then((r) => {
+          const t = (r && (r.text || r.value)) || '';
+          const m = t.match(/([-+]?\d+(?:\.\d+)?)/);
+          if (m) paint(m[1], false);
+        }).catch(() => {});
+      }
       try {
-        // Same authoritative HTTP-bridge status source as the Home status bar.
-        // It reads /sys/class/power_supply/<type=Battery>/capacity (the S10+
-        // node is named `battery`, not BAT*), never a fabricated percentage.
         if (typeof bridge !== 'undefined' && bridge && typeof bridge.getPhoneStatus === 'function') {
           Promise.resolve(bridge.getPhoneStatus()).then((st) => {
             const bat = st && st.battery;
-            if (bat) paint(bat.level, !!bat.charging);
+            // Only the bridge path knows charging state; accept a valid level
+            // and charging flag. A bridge mock/absence yields no battery object
+            // and is ignored, leaving the host value (or —) in place.
+            if (bat && Number.isFinite(Number(bat.level))) paint(Number(bat.level), !!bat.charging);
           }).catch(() => {});
-        } else if (global.NuxelHost && global.NuxelHost.available &&
-                   typeof global.NuxelHost.statusRead === 'function') {
+        } else if (!hostReady && global.NuxelHost && typeof global.NuxelHost.statusRead === 'function') {
           global.NuxelHost.statusRead('battery-capacity').then((r) => {
             const t = (r && (r.text || r.value)) || '';
             const m = t.match(/([-+]?\d+(?:\.\d+)?)/);
@@ -482,6 +534,11 @@
 
     _startBattery() {
       this._updateBattery();
+      // First-boot convergence: re-check after 1s and 3s so the lockscreen
+      // reflects the kernel value as soon as it is readable, then settle to a
+      // slow event-pace poll. No minutes-long unknown window.
+      global.setTimeout(() => this._updateBattery(), 1000);
+      global.setTimeout(() => this._updateBattery(), 3000);
       global.setInterval(() => this._updateBattery(), 20000);
     }
 

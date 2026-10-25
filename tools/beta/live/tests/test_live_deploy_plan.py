@@ -256,6 +256,28 @@ class TestCoverageOfTheBuiltProgramme(unittest.TestCase):
             self.assertIn(tgt, targets, "%s must be installed from assets/" % tgt)
         self.assertIn("assets/nuxel-background.png", sources)
 
+    def test_lockhead_indicator_assets_and_state_are_deployed(self):
+        """The lockscreen indicator row is inert unless every piece ships.
+
+        This is the regression for the reported "no icons at all": the CSS/JS,
+        the three owner PNGs, the shared detector, and the host that serves the
+        state must all be present in the live plan, not merely in the checkout.
+        """
+        sources, targets = self._plan_sets()
+        for rel in ("pwa/nuxel-home/css/lockscreen.css",
+                    "pwa/nuxel-home/js/lockscreen.js",
+                    "pwa/nuxel-home/js/lockscreen-indicators.js",
+                    "assets/nuxel-charging.png",
+                    "assets/nuxel-connected-pc.png",
+                    "assets/nuxel-live-console-active.png",
+                    "services/nuxel-bridge/src/system_indicators.py",
+                    "tools/s10plus/a45/nuxel-pwa-host.c"):
+            self.assertIn(rel, sources, "%s must be deployed" % rel)
+        for rel in ("nuxel-charging.png", "nuxel-connected-pc.png",
+                    "nuxel-live-console-active.png"):
+            self.assertIn(device_root() + "/assets/" + rel, targets,
+                          "the lockscreen's /assets/%s URL must resolve on device" % rel)
+
     def test_registry_consumers_are_deployed(self):
         sources = self._targets()
         for rel in ("pwa/nuxel-common/app-registry.json",

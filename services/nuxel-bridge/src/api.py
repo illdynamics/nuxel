@@ -27,6 +27,15 @@ import subprocess
 
 logger = logging.getLogger('nuxel-http-bridge')
 
+# Lockhead indicators are computed in-process (sysfs + /proc), next to this file.
+# The import is deliberately after logger setup and failure is contained: an
+# unavailable sensor module yields a 503 and a dimmed UI, never invented state.
+try:
+    import system_indicators
+except Exception as _e:  # pragma: no cover - api.py must not fail import without it
+    system_indicators = None
+    logger.warning('system_indicators unavailable: %s', _e)
+
 # ── Environment-driven configuration ────────────────────────────
 
 HTTP_BIND = os.environ.get('NUXEL_HTTP_BIND', '127.0.0.1')
@@ -770,7 +779,7 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
         if cors_origin:
             self.send_header('Access-Control-Allow-Origin', cors_origin)
         self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
-        self.send_header('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+        self.send_header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Nuxel-Bridge-Version')
         self.end_headers()
 
     def do_GET(self):
@@ -818,6 +827,21 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
             app_id = parse_qs(parsed.query).get('app_id', ['unknown'])[0]
             result = self._call_bridge('GetPhoneStatus', app_id)
             self._send_json(result)
+
+        elif path == '/api/v1/system/indicators':
+            # Lockhead status indicators.  These read real kernel state
+            # directly (power_supply, configfs/UDC, android_usb, and the
+            # console process's tty fd) so a charging-only cable can never
+            # light the PC indicator and root access can never light the
+            # live-console indicator.
+            if system_indicators is not None:
+                try:
+                    self._send_json(system_indicators.get_indicators())
+                except Exception as exc:  # noqa: BLE001
+                    logger.error('system indicators read failed: %s', exc)
+                    self._send_json({'success': False, 'error': str(exc)}, 500)
+            else:
+                self._send_json({'success': False, 'error': 'system_indicators unavailable'}, 503)
 
         elif path == '/api/v1/location':
             app_id = parse_qs(parsed.query).get('app_id', ['unknown'])[0]
@@ -929,6 +953,16 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
         namespace = body.get('namespace', '')
         verb = body.get('verb', '')
         params = body.get('params', {}) or {}
+        # Lockhead indicators are computed in-process from kernel state; they
+        # are deliberately NOT routed to D-Bus (the D-Bus bridge has no such
+        # method and a dbus-error fallback would make the UI dim real states).
+        if namespace == 'system' and verb == 'indicators':
+            if system_indicators is not None:
+                try:
+                    return system_indicators.get_indicators()
+                except Exception as exc:  # noqa: BLE001
+                    return {'success': False, 'error': str(exc)}
+            return {'success': False, 'error': 'system_indicators unavailable'}
         method = self.RPC_METHODS.get((namespace, verb))
         if method is None:
             logger.warning("Unknown RPC %s.%s", namespace, verb)

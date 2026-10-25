@@ -27,9 +27,12 @@ for svc in portal bridge notifications; do
         log_ok "nuxel-portal installed"
     elif [ "$svc" = "bridge" ]; then
         install -Dm755 "${src}/bridge.py" "/usr/bin/nuxel-bridge"
-        install -Dm755 "${src}/api.py" "/usr/lib/nuxel/bridge/api.py"
+        install -Dm755 "${src}/api.py" "/usr/lib/nuxel/nuxel-bridge/api.py"
         if [ -f "${src}/capabilities.py" ]; then
-            install -Dm644 "${src}/capabilities.py" "/usr/lib/nuxel/bridge/capabilities.py"
+            install -Dm644 "${src}/capabilities.py" "/usr/lib/nuxel/nuxel-bridge/capabilities.py"
+        fi
+        if [ -f "${src}/system_indicators.py" ]; then
+            install -Dm644 "${src}/system_indicators.py" "/usr/lib/nuxel/nuxel-bridge/system_indicators.py"
         fi
         log_ok "nuxel-bridge installed"
     elif [ "$svc" = "notifications" ]; then

@@ -18,7 +18,11 @@ NoNewPrivileges=yes
 PrivateTmp=yes
 ProtectSystem=strict
 ProtectHome=yes
-PrivateDevices=yes
+# The lockhead indicator reads sysfs and validates the console process's tty
+# fd.  PrivateDevices=yes hides /dev/ttyGS0 from this process, which would make a
+# real live console read as inactive through the HTTP path.  The service is still
+# root-only, loopback-only and ProtectSystem=strict.
+PrivateDevices=no
 RestrictAddressFamilies=AF_INET AF_UNIX
 ReadOnlyPaths=/
 ReadWritePaths=/var/lib/nuxel /var/log/nuxel
