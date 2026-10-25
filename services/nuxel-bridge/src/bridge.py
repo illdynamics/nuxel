@@ -218,6 +218,7 @@ CAPABILITY_PORTAL_MAP = {
     'background:execution': 'background',
     'usb:access': 'usb',
     'bluetooth:scan': 'bluetooth', 'bluetooth:connect': 'bluetooth',
+    'bluetooth:manage': 'bluetooth', 'location:manage': 'location',
 }
 
 
@@ -1198,7 +1199,7 @@ class LocationConnector:
     """
 
     POLICY_PATH = os.environ.get('NUXEL_LOCATION_POLICY',
-                                 '/var/lib/nuxel/location-policy.json')
+                                 '/var/lib/nuxel/permissions/location-policy.json')
 
     def __init__(self):
         self.geoclue = None  # set by NuxelBridgeService after connect()
