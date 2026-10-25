@@ -53,3 +53,21 @@ dl.fedoraproject.org (exact URLs), verify sha256 + `rpmkeys -K`. 3. `rpm --test
 -Uvh <13 rpms>` preview. 4. `rpm -Uvh` install. 5. Verify `dnf5 --version`,
 `rpm -q` each, re-verify internet + shell + USB console. Rollback: `rpm -e` the
 13 packages in reverse order (receipts in package-install-manifest.csv).
+
+## 04C. Staged package-family plan (post-dnf5, each a separate approved transaction)
+Sizes below are the FRESH-rootfs full closure via aarch64 container; on the phone
+the already-installed base is subtracted, so real "new package" counts are smaller.
+
+| family | packages | size | purpose |
+|---|---|---|---|
+| dnf5 bootstrap | 13 | 4.1 MiB | package manager (this plan) |
+| alsa-utils + alsa-ucm | ~66 | 29 MiB | aplay/amixer/alsaucm diagnostics |
+| pipewire + pipewire-alsa + wireplumber | ~104 | 42 MiB | audio server/routing |
+| bluez (+bluez-tools) | ~70 | 33 MiB | Bluetooth stack |
+| vlc (Qt GUI) | heavy (Qt6/ffmpeg chain) | large | media player (mandatory) |
+| mpv | ~353 | 211 MiB | lighter media player |
+
+Note: `vlc` GUI pulls Qt6 + a large codec chain; per the mission's "avoid gratuitous
+packages", media install will be sized to the smallest set that provides a real
+GUI player + a separate music player, installed only after the audio server and
+with owner approval. No package family is installed without the dnf5 bootstrap first.
