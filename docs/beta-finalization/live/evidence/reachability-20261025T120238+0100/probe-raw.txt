@@ -1,0 +1,8 @@
+dev=/dev/cu.usbmodem201 bytes_in=7241 echo_ok=True error=None elapsed=0.333s
+sample:
+05_pd_check_pdmsg:  pd_msg [43]
+6,696012,60464464081,-;max77705: max77705_pdmsg_irq: IRQ(305)_OUT
+6,696013,60464506984,-;max77705:max77705_irq_thread: irq[318] 318/276/14 irq_src=0x01 pmic_rev=0x05
+6,696014,60464507403,-;max77705_irq_thread ic_alt_mode=1
+6,696015,60464507426,-;max77705_aicl_irq: irq(287)
+6,696016,60465569168,-;max77705_chgin_isr_work: irq(286), chgin(0x3), chg_dtls(0x1) prev 

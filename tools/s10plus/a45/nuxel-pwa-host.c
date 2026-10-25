@@ -35,6 +35,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/ioctl.h>
+#include <sys/socket.h>
+#ifdef __linux__
+#include <linux/netlink.h>
+#endif
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -126,8 +130,346 @@ static void st(const char *fmt, ...) {
 
 static WebKitWebView *view_new(void);
 static void term_open_window(void);
+static void uevent_open(void);
+static void indicators_json(char *out, size_t outn);
 static GtkWidget *g_main_window;
 static WebKitWebView *g_main_view;
+
+/* ============================================================================
+ * Lockhead indicators — real sysfs/proc state, no invented values.
+ *
+ * charging: any external power_supply node with online=1.
+ * charging animation: battery status is exactly "Charging".
+ * USB data: a configfs gadget is bound AND the UDC is configured/addressed.
+ *           The power_supply online flag is deliberately not consulted.
+ * live console: a running nuxel-console process holds an fd to the console tty
+ *           (or a validated session lease from the initramfs launcher).  A
+ *           bind-mounted gadget, an existing /dev/ttyGS0 node, or root access
+ *           alone are each insufficient.
+ * ==========================================================================*/
+static int ind_read_line(const char *path, char *out, size_t outn) {
+  if (!path || !out || outn < 2) return 0;
+  FILE *f = fopen(path, "rb");
+  if (!f) return 0;
+  out[0] = 0;
+  if (fgets(out, (int)outn, f)) {
+    size_t n = strlen(out);
+    while (n && (out[n-1] == '\n' || out[n-1] == '\r')) out[--n] = 0;
+  }
+  fclose(f);
+  return out[0] != 0;
+}
+
+static int ind_path_exists(const char *p) {
+  struct stat sb;
+  return p && stat(p, &sb) == 0;
+}
+
+/* Roots are env-overridable so the offline C harness can exercise the exact
+   same reader against a synthetic tree (the live host uses the defaults). */
+static const char *ind_root(const char *env, const char *fallback) {
+  const char *v = getenv(env);
+  return (v && *v) ? v : fallback;
+}
+
+static int ind_eq_ci(const char *a, const char *b) {
+  while (*a && *b) {
+    if (tolower((unsigned char)*a) != tolower((unsigned char)*b)) return 0;
+    a++; b++;
+  }
+  return *a == *b;
+}
+
+static int ind_online(const char *path) {
+  char b[32];
+  if (!ind_read_line(path, b, sizeof b)) return -1;
+  return (b[0] == '1') ? 1 : (b[0] == '0' ? 0 : -1);
+}
+
+static void ind_power(int *external_power, int *charging) {
+  int seen_battery = 0;
+  char status[64] = "unknown";
+  *external_power = 0;
+  *charging = 0;
+  DIR *d = opendir(ind_root("NUXEL_SYS_POWER_SUPPLY", "/sys/class/power_supply"));
+  if (!d) return;
+  struct dirent *de;
+  while ((de = readdir(d))) {
+    if (!strcmp(de->d_name, ".") || !strcmp(de->d_name, "..")) continue;
+    char base[360], path[420], type[64] = "unknown", capbuf[32] = "";
+    snprintf(base, sizeof base, "%s/%s", ind_root("NUXEL_SYS_POWER_SUPPLY", "/sys/class/power_supply"), de->d_name);
+    if (!ind_path_exists(base)) continue;
+    snprintf(path, sizeof path, "%s/type", base);
+    ind_read_line(path, type, sizeof type);
+    snprintf(path, sizeof path, "%s/capacity", base);
+    ind_read_line(path, capbuf, sizeof capbuf);
+    int capacity = capbuf[0] ? atoi(capbuf) : -1;
+    if (ind_eq_ci(type, "Battery") || (ind_eq_ci(type, "unknown") && capacity >= 0)) {
+      if (!seen_battery) {
+        seen_battery = 1;
+        snprintf(path, sizeof path, "%s/status", base);
+        ind_read_line(path, status, sizeof status);
+      }
+      continue;
+    }
+    /* OTG/host mode is not charging. */
+    if (ind_eq_ci(type, "otg") || ind_eq_ci(type, "usb_host")) continue;
+    snprintf(path, sizeof path, "%s/online", base);
+    if (ind_online(path) == 1) *external_power = 1;
+  }
+  closedir(d);
+  *charging = seen_battery && ind_eq_ci(status, "Charging");
+}
+
+static int ind_gadget_bound(void) {
+  DIR *d = opendir(ind_root("NUXEL_CONFIGFS_GADGET", "/sys/kernel/config/usb_gadget"));
+  if (!d) return 0;
+  int bound = 0;
+  struct dirent *de;
+  while ((de = readdir(d))) {
+    if (!strcmp(de->d_name, ".") || !strcmp(de->d_name, "..")) continue;
+    char path[420], value[128] = "";
+    snprintf(path, sizeof path, "%s/%s/UDC", ind_root("NUXEL_CONFIGFS_GADGET", "/sys/kernel/config/usb_gadget"), de->d_name);
+    if (ind_read_line(path, value, sizeof value) && value[0]) { bound = 1; break; }
+  }
+  closedir(d);
+  return bound;
+}
+
+static int ind_android_usb_configured(void) {
+  char path[420], state[64] = "";
+  snprintf(path, sizeof path, "%s/state",
+           ind_root("NUXEL_ANDROID_USB_STATE", "/sys/class/android_usb/android0"));
+  return ind_read_line(path, state, sizeof state) && ind_eq_ci(state, "CONFIGURED");
+}
+
+static int ind_pc_connected(void) {
+  if (!ind_gadget_bound()) return ind_android_usb_configured();
+  DIR *d = opendir(ind_root("NUXEL_SYS_UDC", "/sys/class/udc"));
+  if (!d) return ind_android_usb_configured();
+  int connected = 0, saw_state = 0;
+  struct dirent *de;
+  while ((de = readdir(d))) {
+    if (!strcmp(de->d_name, ".") || !strcmp(de->d_name, "..")) continue;
+    char path[420], state[64] = "";
+    snprintf(path, sizeof path, "%s/%s/state", ind_root("NUXEL_SYS_UDC", "/sys/class/udc"), de->d_name);
+    if (!ind_read_line(path, state, sizeof state)) continue;
+    saw_state = 1;
+    if (ind_eq_ci(state, "configured") || ind_eq_ci(state, "addressed")) { connected = 1; break; }
+  }
+  closedir(d);
+  /* Vendor fallback is used only when the UDC gives no state at all; when it
+     reports "not attached"/"default" that is authoritative and must stay off. */
+  return saw_state ? connected : ind_android_usb_configured();
+}
+
+static int ind_cmdline_has(pid_t pid, const char *needle) {
+  char path[512], buf[4096];
+  snprintf(path, sizeof path, "%s/%d/cmdline", ind_root("NUXEL_PROC", "/proc"), (int)pid);
+  FILE *f = fopen(path, "rb");
+  if (!f) return 0;
+  size_t n = fread(buf, 1, sizeof buf - 1, f);
+  fclose(f);
+  buf[n] = 0;
+  return n && strstr(buf, needle) != NULL;
+}
+
+static int ind_pid_holds_tty(pid_t pid, const char *ttybase) {
+  char fdpath[512];
+  snprintf(fdpath, sizeof fdpath, "%s/%d/fd", ind_root("NUXEL_PROC", "/proc"), (int)pid);
+  DIR *d = opendir(fdpath);
+  if (!d) return 0;
+  int held = 0;
+  struct dirent *de;
+  while ((de = readdir(d))) {
+    if (!strcmp(de->d_name, ".") || !strcmp(de->d_name, "..")) continue;
+    char linkpath[512], target[512];
+    snprintf(linkpath, sizeof linkpath, "%s/%s", fdpath, de->d_name);
+    ssize_t n = readlink(linkpath, target, sizeof target - 1);
+    if (n <= 0) continue;
+    target[n] = 0;
+    const char *base = strrchr(target, '/');
+    if ((base && !strcmp(base + 1, ttybase)) || !strcmp(target, ttybase)) { held = 1; break; }
+  }
+  closedir(d);
+  return held;
+}
+
+static pid_t ind_lease_pid(void) {
+  static const char *names[] = {
+    "live-console-session", NULL
+  };
+  for (int i = 0; names[i]; i++) {
+    char path[420], text[256];
+    snprintf(path, sizeof path, "%s/nuxel/%s", ind_root("NUXEL_RUN", "/run"), names[i]);
+    if (!ind_read_line(path, text, sizeof text)) continue;
+    const char *p = strstr(text, "pid=");
+    if (p) {
+      long pid = strtol(p + 4, NULL, 10);
+      if (pid > 0) return (pid_t)pid;
+    }
+  }
+  return 0;
+}
+
+static int ind_live_console(void) {
+  const char *ttybase = "ttyGS0";
+  int active = 0;
+  DIR *d = opendir(ind_root("NUXEL_PROC", "/proc"));
+  if (d) {
+    struct dirent *de;
+    while ((de = readdir(d))) {
+      if (de->d_name[0] < '0' || de->d_name[0] > '9') continue;
+      pid_t pid = (pid_t)atoi(de->d_name);
+      if (pid <= 0 || !ind_cmdline_has(pid, "nuxel-console")) continue;
+      if (ind_pid_holds_tty(pid, ttybase)) { active = 1; break; }
+    }
+    closedir(d);
+  }
+  if (!active) {
+    pid_t lease = ind_lease_pid();
+    if (lease > 0) {
+      char procpath[512];
+      snprintf(procpath, sizeof procpath, "%s/%d", ind_root("NUXEL_PROC", "/proc"), (int)lease);
+      /* A lease is not self-authenticating: the PID must still belong to the
+         console implementation (defeats PID reuse and stale markers). */
+      if (ind_path_exists(procpath) && ind_cmdline_has(lease, "nuxel-console")) {
+        active = 1;
+      }
+    }
+  }
+  if (!active) return 0;
+  char ttypath[420];
+  snprintf(ttypath, sizeof ttypath, "%s/ttyGS0", ind_root("NUXEL_SYS_TTY", "/sys/class/tty"));
+  return ind_gadget_bound() && ind_path_exists(ttypath);
+}
+
+static void indicators_json(char *out, size_t outn) {
+  int external_power = 0, charging = 0;
+  ind_power(&external_power, &charging);
+  int pc = ind_pc_connected();
+  int live = ind_live_console();
+  int level = -1;
+  char levelbuf[32] = "";
+  /* Level is informational only; the icon is driven by the two booleans. */
+  const char *psroot = ind_root("NUXEL_SYS_POWER_SUPPLY", "/sys/class/power_supply");
+  DIR *ps = opendir(psroot);
+  if (ps) {
+    struct dirent *de;
+    while ((de = readdir(ps))) {
+      if (!strcmp(de->d_name, ".") || !strcmp(de->d_name, "..")) continue;
+      char typepath[420], type[64] = "unknown", cappath[420];
+      snprintf(typepath, sizeof typepath, "%s/%s/type", psroot, de->d_name);
+      ind_read_line(typepath, type, sizeof type);
+      if (!ind_eq_ci(type, "Battery")) continue;
+      snprintf(cappath, sizeof cappath, "%s/%s/capacity", psroot, de->d_name);
+      if (ind_read_line(cappath, levelbuf, sizeof levelbuf)) level = atoi(levelbuf);
+      break;
+    }
+    closedir(ps);
+  }
+  snprintf(out, outn,
+    "{\"charging\":{\"external_power\":%d,\"charging\":%d,\"battery_level\":%d,\"source\":\"sysfs\"},"
+    "\"usb_data\":{\"pc_connected\":%d,\"source\":\"sysfs:udc\"},"
+    "\"live_console\":{\"active\":%d,\"source\":\"proc:nuxel-console:tty\"}}",
+    external_power, charging, level, pc, live);
+}
+
+/* Event-driven refresh: the kernel's kobject uevent stream tells us the exact
+   moment a power supply, UDC, Type-C port or tty changes.  Pushing one small JS
+   event is cheaper than polling /proc and /sys, and makes plug/unplug visible
+   while the lockscreen is on screen.  A failed socket is non-fatal: the UI's
+   bounded safety read remains the fallback. */
+static guint ind_uevent_timeout;
+static guint ind_uevent_source;
+
+static gboolean ind_push_event(gpointer data) {
+  (void)data;
+  ind_uevent_timeout = 0;
+  if (!g_main_view) return FALSE;
+  webkit_web_view_evaluate_javascript(g_main_view,
+      "window.__nuxelHostEvent && window.__nuxelHostEvent('system-indicators', {});",
+      -1, NULL, NULL, NULL, NULL, NULL);
+  return FALSE;
+}
+
+static gboolean ind_uevent_in(GIOChannel *ch, GIOCondition cond, gpointer data) {
+  (void)data;
+  if (cond & (G_IO_HUP | G_IO_ERR)) return TRUE;
+  char buf[4096];
+  gsize got = 0;
+  GError *err = NULL;
+  if (g_io_channel_read_chars(ch, buf, sizeof buf - 1, &got, &err) != G_IO_STATUS_NORMAL) {
+    if (err) g_error_free(err);
+    return TRUE;
+  }
+  buf[got] = 0;
+  if (strstr(buf, "power_supply") || strstr(buf, "usb") || strstr(buf, "udc") ||
+      strstr(buf, "typec") || strstr(buf, "ttyGS0") || strstr(buf, "dwc3")) {
+    if (!ind_uevent_timeout) ind_uevent_timeout = (guint)g_timeout_add(120, ind_push_event, NULL);
+  }
+  return TRUE;
+}
+
+/* Fallback for kernels where a non-root session cannot bind the kobject
+   uevent socket (NETLINK_KOBJECT_UEVENT normally requires CAP_NET_ADMIN).  This
+   is signature-based: it re-reads the cheap sysfs/proc state once a second while
+   the lockscreen is visible, but pushes JS ONLY when something changed.  It is
+   therefore still event-driven at the UI boundary and costs no wakeups on an
+   unchanged system.  The JS layer's 15 s safety read covers bridge/host outages. */
+static char ind_last_signature[256];
+static guint ind_fallback_timer;
+
+static void ind_signature(char *out, size_t outn) {
+  int power = 0, charging = 0, pc = 0, live = 0;
+  ind_power(&power, &charging);
+  pc = ind_pc_connected();
+  live = ind_live_console();
+  snprintf(out, outn, "p%d c%d pc%d l%d", power, charging, pc, live);
+}
+
+static gboolean ind_signature_tick(gpointer data) {
+  (void)data;
+  if (!g_main_view) return TRUE;
+  char now[256];
+  ind_signature(now, sizeof now);
+  if (strcmp(now, ind_last_signature) != 0) {
+    snprintf(ind_last_signature, sizeof ind_last_signature, "%s", now);
+    webkit_web_view_evaluate_javascript(g_main_view,
+        "window.__nuxelHostEvent && window.__nuxelHostEvent('system-indicators', {});",
+        -1, NULL, NULL, NULL, NULL, NULL);
+  }
+  return TRUE;
+}
+
+static void uevent_open(void) {
+#ifdef __linux__
+  int fd = socket(AF_NETLINK, SOCK_DGRAM | SOCK_CLOEXEC | SOCK_NONBLOCK,
+                  NETLINK_KOBJECT_UEVENT);
+  if (fd < 0) { st("HOST_UEVENT_OPEN_FAIL errno=%d (safety read remains)", errno); return; }
+  struct sockaddr_nl addr;
+  memset(&addr, 0, sizeof addr);
+  addr.nl_family = AF_NETLINK;
+  addr.nl_groups = 1;                 /* kernel broadcast group */
+  if (bind(fd, (struct sockaddr *)&addr, sizeof addr) != 0) {
+    st("HOST_UEVENT_BIND_FAIL errno=%d (safety read remains)", errno);
+    close(fd);
+    return;
+  }
+  GIOChannel *ch = g_io_channel_unix_new(fd);
+  g_io_channel_set_encoding(ch, NULL, NULL);
+  ind_uevent_source = g_io_add_watch(ch, G_IO_IN | G_IO_HUP | G_IO_ERR, ind_uevent_in, NULL);
+  st("HOST_UEVENT_READY events=power_supply,usb,udc,typec,tty");
+#else
+  st("HOST_UEVENT_SKIPPED platform=non-linux");
+#endif
+}
+
+static void indicator_fallback_start(void) {
+  ind_signature(ind_last_signature, sizeof ind_last_signature);
+  ind_fallback_timer = (guint)g_timeout_add(250, ind_signature_tick, NULL);
+  st("HOST_INDICATOR_FALLBACK interval=250ms push-on-change=1");
+}
 
 struct cfgfile { const char *name; const char *path; int writable; };
 static const struct cfgfile CFG[] = {
@@ -163,10 +505,16 @@ static const struct cfgfile CFG[] = {
   /* A45 Display & Lockscreen: the Home Settings timeout selector writes this
      document, which nuxel-button-manager (the single idle owner) reads live. */
   { "display-timeout",     "/etc/nuxel/display/screen-timeout.json",      1 },
+  /* A68 lockhead indicators: computed in-process from sysfs, not a file read. */
+  { "system-indicators",   NULL,                                           0 },
   { NULL, NULL, 0 }
 };
 
 static const char *cfg_lookup(const char *name, int *writable) {
+  if (!strcmp(name, "system-indicators")) {
+    if (writable) *writable = 0;
+    return "computed:system-indicators";
+  }
   for (int i = 0; CFG[i].name; i++)
     if (!strcmp(CFG[i].name, name)) { if (writable) *writable = CFG[i].writable; return CFG[i].path; }
   return NULL;
@@ -457,6 +805,21 @@ static void on_host_message(WebKitUserContentManager *m, WebKitJavascriptResult 
     int wr = 0;
     const char *path = cfg_lookup(name, &wr);
     if (!path) { host_reply(v, id, 0, "{\"error\":\"unknown-config\"}"); st("HOST_CONFIG_REFUSED name=%s", name); g_free(js); return; }
+    /* A68: the lockhead indicators are a live sysfs computation, not a file. */
+    if (!strcmp(name, "system-indicators")) {
+      char ind[1024];
+      indicators_json(ind, sizeof ind);
+      char *esc = json_escape(ind, strlen(ind));
+      GString *io = g_string_new("{\"ok\":true,\"text\":");
+      g_string_append(io, esc);
+      g_string_append_printf(io, ",\"name\":\"%s\"}", name);
+      host_reply(v, id, 1, io->str);
+      g_string_free(io, TRUE);
+      g_free(esc);
+      st("HOST_STATUS_INDICATORS ok");
+      g_free(js);
+      return;
+    }
     FILE *f = fopen(path, "rb");
     if (!f) { host_reply(v, id, 0, "{\"error\":\"unreadable\"}"); g_free(js); return; }
     size_t cap = 1 << 16, n = 0;
@@ -1000,6 +1363,8 @@ int main(int argc, char **argv) {
   g_main_window = win;
   g_main_view = WEBKIT_WEB_VIEW(v);
   ctl_open();
+  uevent_open();
+  indicator_fallback_start();
   gtk_widget_show_all(win);
   gtk_window_fullscreen(GTK_WINDOW(win));
 

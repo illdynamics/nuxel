@@ -129,10 +129,13 @@ gcc $CFLAGS_COMMON $(pkg-config --cflags wayland-client) \
     "$B/wlr-screencopy-unstable-v1-protocol.c" \
     $(pkg-config --libs wayland-client)
 
-# A33/A34 PWA host: the current terminal-window close + host-action fixes.
+# A45 PWA host: the current terminal-window close + host-action fixes, the
+# lockscreen/navdock actions, and the lockhead indicator reader (sysfs + /proc,
+# with an event-driven uevent refresh).  The source is deliberately compiled from
+# tools/s10plus/a45 so the image and the live deployment cannot drift.
 gcc $CFLAGS_COMMON $(pkg-config --cflags gtk+-3.0 webkit2gtk-4.1) \
-    -I /nuxel/tools/s10plus/a33 -o "$B/nuxel-pwa-host" \
-    /nuxel/tools/s10plus/a33/nuxel-pwa-host.c \
+    -I /nuxel/tools/s10plus/a45 -I /nuxel/tools/s10plus/a33 -o "$B/nuxel-pwa-host" \
+    /nuxel/tools/s10plus/a45/nuxel-pwa-host.c \
     $(pkg-config --libs gtk+-3.0 webkit2gtk-4.1) -lutil
 
 # A34 button manager: SYN_REPORT touch translation, power menu, Bixby cancel.

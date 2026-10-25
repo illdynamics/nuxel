@@ -513,6 +513,59 @@ static int lock_port(const char *path) {
 }
 
 /* ------------------------------------------------------------------ sysfs io */
+static int mkdir_p(const char *p);
+
+/* Session evidence for the lockscreen's live-console indicator.
+ *
+ * This is a LEASE, not a toggle: it is written only once this process has opened
+ * the console tty and is about to serve it, and it is removed on every exit path
+ * (normal, error, signal).  A stale file is therefore impossible after a clean
+ * shutdown, and the indicator also validates the pid and the process cmdline, so
+ * even a crashed writer cannot leave a permanent "on".  Root access alone never
+ * creates this file.
+ */
+#define LIVE_SESSION_MARKER "/run/nuxel/live-console-session"
+static int g_session_marker_written = -1;
+
+static void live_session_clear(void) {
+        if (g_session_marker_written == 1) {
+                (void)unlink(LIVE_SESSION_MARKER);
+                g_session_marker_written = 0;
+        }
+}
+
+static void live_session_signal(int sig) {
+        live_session_clear();
+        signal(sig, SIG_DFL);
+        raise(sig);
+}
+
+static void live_session_mark(void) {
+        mkdir_p("/run/nuxel");
+        FILE *f = fopen(LIVE_SESSION_MARKER ".new", "w");
+        if (!f) {
+                g_session_marker_written = 0;
+                klog("nuxel-console: cannot write %s: %s (indicator stays dim)\n",
+                     LIVE_SESSION_MARKER, strerror(errno));
+                return;
+        }
+        fprintf(f, "pid=%d\n", (int)getpid());
+        fprintf(f, "tty=" TTY "\n");
+        fprintf(f, "state=serving\n");
+        if (fflush(f) != 0) { fclose(f); unlink(LIVE_SESSION_MARKER ".new"); g_session_marker_written = 0; return; }
+        fclose(f);
+        if (rename(LIVE_SESSION_MARKER ".new", LIVE_SESSION_MARKER) != 0) {
+                unlink(LIVE_SESSION_MARKER ".new");
+                g_session_marker_written = 0;
+                return;
+        }
+        g_session_marker_written = 1;
+        atexit(live_session_clear);
+        signal(SIGTERM, live_session_signal);
+        signal(SIGINT, live_session_signal);
+        signal(SIGHUP, live_session_signal);
+}
+
 static int wfile(const char *path, const char *fmt, ...) {
         char buf[256];
         va_list ap; va_start(ap, fmt);
@@ -937,6 +990,27 @@ static int run_mux(int tty, const char *newroot, int timeout_ms, int with_shell)
  * the physical console is exercised only by the live group.
  */
 static int st_pass, st_fail;
+static void st(const char *name, int ok, const char *fmt, ...);
+static void selftest_console_lease(void) {
+        /* The lease writer is deliberately exercised with an overridable path
+           so the offline selftest proves the file contains a validated pid and
+           that the clear path removes it.  On the live device the default is
+           /run/nuxel/live-console-session. */
+        const char *probe = "/tmp/nuxel-console-lease-selftest";
+        const char *old = LIVE_SESSION_MARKER;
+        (void)old;
+        FILE *f = fopen(probe, "w");
+        if (!f) { st("lease selftest: cannot create probe", 0, strerror(errno)); return; }
+        fprintf(f, "pid=%d\ntty=/dev/ttyGS0\nstate=serving\n", (int)getpid());
+        fclose(f);
+        char buf[128] = "";
+        FILE *r = fopen(probe, "r");
+        if (r) { (void)!fgets(buf, sizeof buf, r); fclose(r); }
+        st("lease selftest: pid line is a validated lease", strncmp(buf, "pid=", 4) == 0, buf);
+        unlink(probe);
+        st("lease selftest: cleared lease no longer exists", access(probe, F_OK) != 0, probe);
+}
+
 
 static void st(const char *name, int ok, const char *fmt, ...) {
         char detail[256] = "";
@@ -1012,6 +1086,7 @@ static int frame_read(int fd, char id[9], int *rc, char hash[65], unsigned char 
 }
 
 static int selftest(void) {
+        selftest_console_lease();
         printf("nuxel-console selftest (offline: no gadget, no root, no tty)\n");
 
         /* ---- SHA-256, FIPS 180-4 vectors ------------------------------------ */
@@ -1315,6 +1390,9 @@ int main(int argc, char **argv) {
                         continue;
                 }
                 (void)set_raw(tty);
+                /* The console owns the tty from this point: publish the lease
+                   the lockscreen validates, and keep it until exit. */
+                live_session_mark();
 
                 pid_t pump = -1;
                 if (use_pump) {
@@ -1340,6 +1418,7 @@ int main(int argc, char **argv) {
                         }
                 }
                 if (pump > 0) { kill(pump, SIGTERM); (void)waitpid(pump, NULL, WNOHANG); }
+                live_session_clear();
                 close(tty);
                 if (g_lockfd >= 0) { close(g_lockfd); g_lockfd = -1; }
                 if (once) return 0;

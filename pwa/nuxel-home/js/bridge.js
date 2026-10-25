@@ -78,6 +78,38 @@
                 };
             }
         },
+        // Lockhead status indicators: the bridge computes these in-process from
+        // kernel state (power_supply / UDC / live-console marker), so the VM
+        // and desktop launcher get the same honest answer the handset host
+        // serves through NuxelHost.statusRead('system-indicators').
+        getSystemIndicators: async function () {
+            try {
+                // The shared client owns token bootstrap and the protocol pin.
+                // Using `_request` directly (before it is connected) would send no
+                // Authorization and get a 401; call `_init()` first.
+                const client = shared();
+                if (client && typeof client._request === 'function') {
+                    if (typeof client._init === 'function') await client._init();
+                    return await client._request('/system/indicators', null, 'GET');
+                }
+                const url = this.apiUrl + '/system/indicators';
+                const controller = (typeof AbortController === 'function') ? new AbortController() : null;
+                const timer = controller ? setTimeout(() => controller.abort(), 4000) : null;
+                try {
+                    const res = await fetch(url, {
+                        cache: 'no-store',
+                        credentials: 'omit',
+                        signal: controller ? controller.signal : undefined,
+                    });
+                    if (!res.ok) throw new Error('indicators status ' + res.status);
+                    return await res.json();
+                } finally {
+                    if (timer !== null) clearTimeout(timer);
+                }
+            } catch (e) {
+                return { success: false, error: String(e && e.message ? e.message : e) };
+            }
+        },
         getLocation: function () { return shared().getLocation(); },
         sendSms: function (number, text) { return shared().sendSms(number, text); },
         getSmsMessages: async function () {

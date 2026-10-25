@@ -116,6 +116,7 @@ function makeHarness(options) {
   const sandbox = {
     console: options.quiet ? { log() {}, warn() {}, error() {} } : console,
     document: doc,
+    CustomEvent: function (type, opts) { this.type = type; Object.assign(this, opts || {}); },
     navigator: { vibrate() {} },
     location: { search: options.search || '?boot=os' },
     webkit: undefined,
@@ -516,8 +517,8 @@ async function gesture(h, options) {
 
     const index = fs.readFileSync(INDEX_HTML, 'utf8');
     check('boot gate still keys on ?boot=os', /get\('boot'\)\s*!==\s*'os'/.test(index));
-    check('lockscreen script uses the A45.1 cache-busting revision', /lockscreen\.js\?v=a451/.test(index));
-    check('app controller uses the A45.1 cache-busting revision', /app\.js\?v=a451/.test(index));
+    check('lockscreen script uses the current cache-busting revision', /lockscreen\.js\?v=a68/.test(index));
+    check('app controller uses the current cache-busting revision', /app\.js\?v=a69/.test(index));
   }
 
   console.log('\nNOTE: all checks above are MOCKED/OFFLINE.  Wayland/phoc/WebKitGTK');
