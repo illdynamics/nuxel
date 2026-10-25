@@ -206,11 +206,13 @@ int main(void) {
   state(&p, &c, &pc, &lv);
   check(p && c && pc && !lv, "console process without tty fd does NOT light live console");
 
+  /* A live USB console cannot outlive the data link (A71): a surviving daemon
+     and tty fd must not keep the console icon lit after detach. */
   reset_tree(root); battery(root, "Charging\n"); usb_power(root, "1\n");
   gadget(root, "not attached\n"); tty_registered(root, 1);
   console_proc(root, 4545, 1, "/opt/nuxel/nuxel-console\0/newroot\0");
   state(&p, &c, &pc, &lv);
-  check(p && c && !pc && lv, "not-attached UDC: no PC, console stays independent");
+  check(p && c && !pc && !lv, "not-attached UDC: console cannot stay active without a data link");
 
   reset_tree(root); battery(root, "Charging\n"); usb_power(root, "1\n");
   unbound_gadget(root); tty_registered(root, 1);
@@ -236,10 +238,11 @@ int main(void) {
         }
         state(&p, &c, &pc, &lv);
         char label[180];
+        int want_live = wantlive && wantpc;
         snprintf(label, sizeof label,
                  "combination power=%d pc=%d live=%d -> (%d,%d,%d,%d)",
                  power, wantpc, wantlive, p, c, pc, lv);
-        check(p == power && c == power && pc == wantpc && lv == wantlive, label);
+        check(p == power && c == power && pc == wantpc && lv == want_live, label);
       }
     }
   }
@@ -252,6 +255,20 @@ int main(void) {
   console_proc(root, 4747, 0, "/opt/nuxel/nuxel-console\0/newroot\0");
   write_file(root, "run/nuxel/live-console-session", "pid=4747\n");
   check(ind_live_console(), "validated live lease lights the console");
+
+  reset_tree(root); gadget(root, "configured\n"); tty_registered(root, 1);
+  console_proc(root, 4747, 0, "/opt/nuxel/nuxel-console\0/newroot\0");
+  write_file(root, "proc/4747/stat",
+             "4747 (nuxel-console) S 1 4747 4747 0 -1 0 0 0 0 0 0 0 0 0 20 0 1 0 777 0 0\n");
+  write_file(root, "run/nuxel/live-console-session",
+             "pid=4747\nstate=serving\nstart_ticks=777\n");
+  check(ind_live_console(), "start_ticks-bound serving lease lights the console");
+  write_file(root, "run/nuxel/live-console-session",
+             "pid=4747\nstate=serving\nstart_ticks=778\n");
+  check(!ind_live_console(), "reused PID with the wrong start_ticks is rejected");
+  write_file(root, "run/nuxel/live-console-session",
+             "pid=4747\nstate=stopped\n");
+  check(!ind_live_console(), "a non-serving lease state does not light the console");
 
   /* Exercise the exact JSON envelope the host sends to the JS UI. */
   reset_tree(root);

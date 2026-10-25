@@ -4,7 +4,8 @@
 No device, no root, no D-Bus.  A synthetic /sys, /proc and /run tree is built so
 the exact states that are hard to reproduce on a desk can all be proven:
 
-  * all eight on/off combinations are independent;
+  * every reachable on/off combination is independent (the console is
+    deliberately unreachable without a USB data link);
   * a charging-only cable never produces a PC connection;
   * root access alone never produces a live console;
   * a bound gadget with no running console process is NOT a console;
@@ -190,10 +191,11 @@ def main() -> int:
               "console source names the process/tty evidence")
 
         # Address assignment precedes configuration and is not proof that a
-        # host accepted a data function.
+        # host accepted a data function.  The console icon is gated by a real
+        # data link (A71), so it must fall with the PC indicator.
         fake.bind_gadget("addressed")
-        check(state() == (True, True, False, True),
-              "addressed UDC is pre-enumeration: PC stays off")
+        check(state() == (True, True, False, False),
+              "addressed UDC is pre-enumeration: PC and console stay off")
         fake.bind_gadget("configured")
 
         # 7. Root shell alone is not a live console: no nuxel-console process.
@@ -209,12 +211,15 @@ def main() -> int:
               "nuxel-console with no console tty fd does NOT light live console")
         fake.remove_console_process(4444)
 
-        # 9. Gadget bound but not attached to a host: no PC; console may still be
-        #    device-side live, independent of host attachment.
+        # 9. Gadget bound but not attached to a host: no PC, and therefore no
+        #    live USB console either -- the session cannot outlive the link.
         fake.bind_gadget("not attached")
         fake.console_process(pid=4545, tty=True)
-        check(state() == (True, True, False, True),
-              "not-attached UDC: no PC, but device-side console is independent")
+        ind = mod.get_indicators()
+        check(state() == (True, True, False, False),
+              "not-attached UDC: console cannot stay active without a data link")
+        check(ind["live_console"]["source"] == "inactive:no-usb-data-link",
+              "detached console reports the missing USB data link")
         fake.remove_console_process(4545)
 
         # 10. Console process alive but gadget gone: do not keep a stale "on".
@@ -230,6 +235,9 @@ def main() -> int:
         fake.write("proc/4747/cmdline", "/opt/nuxel/nuxel-console\0/newroot\0")
         check(state() == (True, True, True, True),
               "validated session lease + live pid lights the console")
+        check(mod.get_indicators()["live_console"]["source"] ==
+              "lease:nuxel-console:serving",
+              "serving lease source is reported as the console lease")
         fake.write("run/nuxel/live-console-session", "pid=999999\n")
         check(state() == (True, True, True, False),
               "stale/dead lease pid does NOT light the console")
@@ -239,6 +247,21 @@ def main() -> int:
         fake.write("proc/4748/cmdline", "/bin/sh\0")
         check(state() == (True, True, True, False),
               "lease for a non-console live PID does NOT light the console")
+
+        # A lease is bound to the process generation, not just a reusable PID.
+        fake.write("proc/4747/stat", "4747 (nuxel-console) S 1 4747 4747 0 -1 0 0 0 0 0 0 0 0 0 20 0 1 0 777 0 0\n")
+        fake.write("run/nuxel/live-console-session",
+                   "pid=4747\nstate=serving\nstart_ticks=777\n")
+        check(state() == (True, True, True, True),
+              "start_ticks-bound serving lease lights the console")
+        fake.write("run/nuxel/live-console-session",
+                   "pid=4747\nstate=serving\nstart_ticks=778\n")
+        check(state() == (True, True, True, False),
+              "reused PID with the wrong start_ticks is rejected")
+        fake.write("run/nuxel/live-console-session",
+                   "pid=4747\nstate=stopped\n")
+        check(state() == (True, True, True, False),
+              "a non-serving lease state does not light the console")
         fake.write("run/nuxel/live-console-session", "pid=4747\n")
 
         # 11b. Vendor USB_STATE can be stale after detach.  Without a bound,
@@ -258,8 +281,9 @@ def main() -> int:
         check(state() == (True, True, False, False),
               "bound gadget plus vendor CONFIGURED but no UDC state: PC stays off")
 
-        # 12. Exhaustively prove the three indicators are independent: every
-        #     combination is produced by a distinct, honest system state.
+        # 12. Prove the state space matches the A71 truth table.  Charging is
+        #     independent; the console is only reachable while a data link is
+        #     present, so "live without PC" must collapse to live=off.
         combinations = set()
         for power, pc, live in itertools.product((False, True), repeat=3):
             fake.reset()
@@ -270,8 +294,6 @@ def main() -> int:
                 fake.battery("Discharging")
                 fake.usb_power("0")
             if live:
-                # A device-side console can be live with no host attached; the
-                # UDC therefore proves data only when the combination asks for it.
                 fake.bind_gadget("configured" if pc else "not attached")
                 fake.tty_registered(True)
                 fake.console_process(pid=5000, tty=True)
@@ -280,11 +302,13 @@ def main() -> int:
             else:
                 fake.unbind_gadget()
             combined = state()
+            want_live = live and pc
             combinations.add((combined[0], combined[2], combined[3]))
-            check(combined == (power, power, pc, live),
+            check(combined == (power, power, pc, want_live),
                   "combination power=%d pc=%d live=%d -> %s"
                   % (power, pc, live, combined))
-        check(len(combinations) == 8, "all 8 indicator combinations are reachable")
+        check(len(combinations) == 6,
+              "the six reachable indicators combinations are distinct")
     finally:
         fake.cleanup()
 

@@ -142,9 +142,10 @@ static WebKitWebView *g_main_view;
  * USB data: a configfs gadget is bound AND the UDC is exactly configured.
  *           The power_supply online flag is deliberately not consulted.
  * live console: a running nuxel-console process holds an fd to the console tty
- *           (or a validated session lease from the initramfs launcher).  A
- *           bind-mounted gadget, an existing /dev/ttyGS0 node, or root access
- *           alone are each insufficient.
+ *           (or a validated session lease from the initramfs launcher) AND the
+ *           USB data link is currently configured.  A bind-mounted gadget, an
+ *           existing /dev/ttyGS0 node, a lease that outlives the cable, or root
+ *           access alone are each insufficient.
  * ==========================================================================*/
 static int ind_read_line(const char *path, char *out, size_t outn) {
   if (!path || !out || outn < 2) return 0;
@@ -287,26 +288,96 @@ static int ind_pid_holds_tty(pid_t pid, const char *ttybase) {
   return held;
 }
 
-static pid_t ind_lease_pid(void) {
-  static const char *names[] = {
-    "live-console-session", NULL
-  };
-  for (int i = 0; names[i]; i++) {
-    char path[420], text[256];
-    snprintf(path, sizeof path, "%s/nuxel/%s", ind_root("NUXEL_RUN", "/run"), names[i]);
-    if (!ind_read_line(path, text, sizeof text)) continue;
-    const char *p = strstr(text, "pid=");
-    if (p) {
-      long pid = strtol(p + 4, NULL, 10);
-      if (pid > 0) return (pid_t)pid;
+/* Read one "key=value" field from nuxel-console's atomic session lease.  The
+   lease is a multi-line file (pid, tty, state, start_ticks), so the single-line
+   reader above is not enough: reading only line 1 would silently ignore the
+   generation/state that makes the lease trustworthy. */
+static int ind_lease_field(const char *key, char *out, size_t outn) {
+  char path[420], text[512];
+  size_t n = 0;
+  out[0] = 0;
+  snprintf(path, sizeof path, "%s/nuxel/live-console-session",
+           ind_root("NUXEL_RUN", "/run"));
+  FILE *f = fopen(path, "rb");
+  if (!f) return 0;
+  n = fread(text, 1, sizeof text - 1, f);
+  fclose(f);
+  text[n] = 0;
+  size_t klen = strlen(key);
+  for (char *p = text; *p; ) {
+    while (*p == ' ' || *p == '\t' || *p == '\n' || *p == '\r') p++;
+    if (!*p) break;
+    char *end = p;
+    while (*end && *end != ' ' && *end != '\t' && *end != '\n' && *end != '\r') end++;
+    char saved = *end;
+    *end = 0;
+    if (!strncmp(p, key, klen) && p[klen] == '=') {
+      snprintf(out, outn, "%s", p + klen + 1);
+      *end = saved;
+      return out[0] != 0;
     }
+    *end = saved;
+    p = end;
   }
   return 0;
 }
 
+/* /proc/<pid>/stat field 22, parsed without trusting comm spacing.  The lease
+   carries this value so a recycled PID cannot reactivate an old session. */
+static long ind_proc_start_ticks(pid_t pid) {
+  char path[512], text[1024];
+  snprintf(path, sizeof path, "%s/%d/stat", ind_root("NUXEL_PROC", "/proc"), (int)pid);
+  FILE *f = fopen(path, "rb");
+  if (!f) return -1;
+  size_t n = fread(text, 1, sizeof text - 1, f);
+  fclose(f);
+  text[n] = 0;
+  char *end = strrchr(text, ')');
+  if (!end) return -1;
+  char *save = NULL;
+  int field = 3;
+  for (char *tok = strtok_r(end + 1, " \t\n\r", &save); tok;
+       tok = strtok_r(NULL, " \t\n\r", &save), field++) {
+    if (field == 22) return strtol(tok, NULL, 10);
+  }
+  return -1;
+}
+
+static int ind_pid_alive(pid_t pid) {
+  char path[512];
+  snprintf(path, sizeof path, "%s/%d", ind_root("NUXEL_PROC", "/proc"), (int)pid);
+  return ind_path_exists(path);
+}
+
+static int ind_lease_valid(pid_t *lease_out) {
+  char buf[128];
+  long pid = 0, start = 0;
+  if (lease_out) *lease_out = 0;
+  if (!ind_lease_field("pid", buf, sizeof buf)) return 0;
+  pid = strtol(buf, NULL, 10);
+  if (pid <= 0 || pid > 0x7fffffffL) return 0;
+  if (ind_lease_field("state", buf, sizeof buf) &&
+      !ind_eq_ci(buf, "serving") && !ind_eq_ci(buf, "active")) return 0;
+  if (!ind_pid_alive((pid_t)pid)) return 0;
+  if (!ind_cmdline_has((pid_t)pid, "nuxel-console")) return 0;
+  if (ind_lease_field("start_ticks", buf, sizeof buf)) {
+    start = strtol(buf, NULL, 10);
+    if (start > 0 && ind_proc_start_ticks((pid_t)pid) != start) return 0;
+  }
+  if (lease_out) *lease_out = (pid_t)pid;
+  return 1;
+}
+
 static int ind_live_console(void) {
   const char *ttybase = "ttyGS0";
-  int active = 0;
+  char ttypath[420];
+  snprintf(ttypath, sizeof ttypath, "%s/ttyGS0", ind_root("NUXEL_SYS_TTY", "/sys/class/tty"));
+  /* A live USB console cannot outlive the USB data link (A71).  Checking this
+     first is what clears the icon promptly after a cable pull even while the
+     daemon and its tty fd survive. */
+  if (!ind_pc_connected()) return 0;
+  if (!ind_path_exists(ttypath)) return 0;
+
   DIR *d = opendir(ind_root("NUXEL_PROC", "/proc"));
   if (d) {
     struct dirent *de;
@@ -314,26 +385,13 @@ static int ind_live_console(void) {
       if (de->d_name[0] < '0' || de->d_name[0] > '9') continue;
       pid_t pid = (pid_t)atoi(de->d_name);
       if (pid <= 0 || !ind_cmdline_has(pid, "nuxel-console")) continue;
-      if (ind_pid_holds_tty(pid, ttybase)) { active = 1; break; }
+      if (ind_pid_holds_tty(pid, ttybase)) { closedir(d); return 1; }
     }
     closedir(d);
   }
-  if (!active) {
-    pid_t lease = ind_lease_pid();
-    if (lease > 0) {
-      char procpath[512];
-      snprintf(procpath, sizeof procpath, "%s/%d", ind_root("NUXEL_PROC", "/proc"), (int)lease);
-      /* A lease is not self-authenticating: the PID must still belong to the
-         console implementation (defeats PID reuse and stale markers). */
-      if (ind_path_exists(procpath) && ind_cmdline_has(lease, "nuxel-console")) {
-        active = 1;
-      }
-    }
-  }
-  if (!active) return 0;
-  char ttypath[420];
-  snprintf(ttypath, sizeof ttypath, "%s/ttyGS0", ind_root("NUXEL_SYS_TTY", "/sys/class/tty"));
-  return ind_gadget_bound() && ind_path_exists(ttypath);
+  /* A lease is not self-authenticating: it must name a live nuxel-console
+     process, carry a serving/active state, and match the process generation. */
+  return ind_lease_valid(NULL);
 }
 
 static void indicators_json(char *out, size_t outn) {

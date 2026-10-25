@@ -6,13 +6,14 @@ Three independent states are derived from real Linux interfaces:
   charging      external power present, plus the kernel's active-charge state
   usb_data      configfs gadget bound to a UDC whose state is exactly
                 ``configured`` (completed host enumeration)
-  live_console  an authenticated active-session lease from nuxel-console,
-                gated by a currently configured USB data link
+  live_console  a running nuxel-console session (open console tty or a validated
+                session lease), gated by a currently configured USB data link
 
 Nothing here is inferred from "root is available".  In particular the live
 console indicator requires a running ``nuxel-console`` process with an open fd
-to the console tty (or a validated session lease written by that process).  A
-bare ``/dev/ttyGS0`` node, a bound gadget, and root access are each insufficient.
+to the console tty (or a validated session lease written by that process) AND a
+viable USB data link.  A bare ``/dev/ttyGS0`` node, a bound gadget, a lease that
+outlives the cable, and root access are each insufficient.
 
 Every root is overridable for the offline tests:
 
@@ -282,18 +283,28 @@ def _proc_start_ticks(pid: int, procroot: str) -> Optional[int]:
 
 
 def live_console(pc_connected: Optional[bool] = None) -> Dict[str, Any]:
-    """Return {active, source, pids}.
+    """Return {active, source, pids} for a live USB console session.
 
-    Active means nuxel-console has observed host input for its current connection
-    and published an ``state=active`` lease.  The lease is bound to both the PID
-    and /proc start ticks, then gated by a currently configured USB data link.
-    A daemon that merely keeps ttyGS0 open is only a listener and is not active.
+    The lockhead contract (A71) makes the console indicator dependent on a
+    *viable USB data host*: a console process, tty node or lease that survives a
+    cable pull must never keep the icon lit.  Within that gate, a session is
+    proven by either
+
+      * a running ``nuxel-console`` process holding an fd to the console tty, or
+      * the console's atomic session lease, whose PID still belongs to
+        ``nuxel-console``.
+
+    When the lease carries ``start_ticks`` it is also checked against
+    /proc/<pid>/stat, which defeats PID reuse.  ``state=serving`` is the value
+    nuxel-console publishes while it owns the tty; ``state=active`` is accepted
+    for forward compatibility.  Root access alone never creates a session.
     """
     procroot = _root("NUXEL_PROC", "/proc")
     ttynames = _console_tty_basenames()
     ttyset = {"/dev/" + name for name in ttynames} | set(ttynames)
 
     pids: List[int] = []
+    tty_pids: List[int] = []
     for pid in _list_dir(procroot):
         if not pid.isdigit():
             continue
@@ -309,12 +320,24 @@ def live_console(pc_connected: Optional[bool] = None) -> Dict[str, Any]:
             base = os.path.basename(target)
             if target in ttyset or base in ttynames:
                 pids.append(int(pid))
+                tty_pids.append(int(pid))
                 break
 
     if pc_connected is None:
         pc_connected = bool(usb_connection()["pc_connected"])
     if not pc_connected:
+        # Fail closed on detach even if the daemon and its lease are still alive.
         return {"active": False, "source": "inactive:no-usb-data-link",
+                "pids": sorted(set(pids))}
+
+    ttyroot = _root("NUXEL_SYS_TTY", "/sys/class/tty")
+    tty_registered = any(os.path.exists(os.path.join(ttyroot, name)) for name in ttynames)
+    if not tty_registered:
+        return {"active": False, "source": "inactive:console-tty-missing",
+                "pids": sorted(set(pids))}
+
+    if tty_pids:
+        return {"active": True, "source": "proc:nuxel-console:tty",
                 "pids": sorted(set(pids))}
 
     fields = _lease_fields()
@@ -323,26 +346,22 @@ def live_console(pc_connected: Optional[bool] = None) -> Dict[str, Any]:
         lease_start = int(fields.get("start_ticks", "0"))
     except (TypeError, ValueError):
         lease_pid, lease_start = 0, 0
-    if fields.get("state", "").lower() != "active":
-        return {"active": False, "source": "inactive:no-active-session-lease",
+    if fields.get("state", "").lower() not in ("", "serving", "active"):
+        return {"active": False, "source": "inactive:unrecognised-session-lease",
                 "pids": sorted(set(pids))}
-    if not lease_pid or not lease_start or not _pid_is_alive(lease_pid, procroot):
+    if not lease_pid or not _pid_is_alive(lease_pid, procroot):
         return {"active": False, "source": "inactive:stale-session-lease",
                 "pids": sorted(set(pids))}
-    if _proc_start_ticks(lease_pid, procroot) != lease_start:
-        return {"active": False, "source": "inactive:lease-pid-reused",
-                "pids": sorted(set(pids))}
-    if "nuxel-console" not in _cmdline(str(lease_pid), procroot) or lease_pid not in pids:
+    if "nuxel-console" not in _cmdline(str(lease_pid), procroot):
         return {"active": False, "source": "inactive:lease-owner-invalid",
                 "pids": sorted(set(pids))}
+    if lease_start:
+        if _proc_start_ticks(lease_pid, procroot) != lease_start:
+            return {"active": False, "source": "inactive:lease-pid-reused",
+                    "pids": sorted(set(pids))}
 
-    ttyroot = _root("NUXEL_SYS_TTY", "/sys/class/tty")
-    tty_registered = any(os.path.exists(os.path.join(ttyroot, name)) for name in ttynames)
-    if tty_registered:
-        return {"active": True, "source": "lease:nuxel-console:active",
-                "pids": sorted(set(pids))}
-    return {"active": False, "source": "inactive:console-tty-missing",
-            "pids": sorted(set(pids))}
+    return {"active": True, "source": "lease:nuxel-console:serving",
+            "pids": sorted(set(pids + [lease_pid]))}
 
 
 def get_indicators() -> Dict[str, Any]:
