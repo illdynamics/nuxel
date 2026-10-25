@@ -370,6 +370,10 @@
 
   function persistView() {
     save(K_VIEW, { lat: state.center.lat, lon: state.center.lon, zoom: state.zoom });
+    if (state.conf.allowNet && state.conf.template) {
+      clearTimeout(persistView._t);
+      persistView._t = setTimeout(fetchVisibleTiles, 350);
+    }
   }
 
   document.getElementById('zoom-in').addEventListener('click', function () {
@@ -509,6 +513,24 @@
   });
 
   /* ---------- tile cache controls ---------- */
+  // One-tap, opt-in OSM standard tile preset.  It only FILLS the template
+  // input (a lawful, attributed source the owner can edit or clear); it never
+  // enables downloads and never issues a network request by itself.
+  document.getElementById('osm-preset').addEventListener('click', function () {
+    var v = document.getElementById('tile-url');
+    v.value = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+    state.conf.template = v.value;
+    // 21000: internet is a working baseline now, so this is a genuine one-tap
+    // "go online" action. It still obeys the OSM tile usage policy: only the
+    // tiles for the current view are fetched, never a crawl or prefetch.
+    state.conf.allowNet = true;
+    save(K_CONF, state.conf);
+    writeBadge();
+    state.tileCache = {};
+    toast('OpenStreetMap tiles enabled — fetching the current view (attribution shown on map)');
+    fetchVisibleTiles();
+  });
+
   document.getElementById('save-tile').addEventListener('click', function () {
     var t = (document.getElementById('tile-url').value || '').trim();
     if (t && !/\{z\}.*\{x\}.*\{y\}|^https?:\/\//.test(t)) {
@@ -560,6 +582,63 @@
       requestDraw();
       cacheReport.textContent = 'Tile cache emptied.';
     });
+  });
+
+  /* ---------- online tile fetch + place search (21000) ---------- */
+  // Fetch ONLY the tiles for the current viewport at the current zoom. Respects
+  // OSM tile usage policy: no prefetch beyond the visible view, no bulk crawl.
+  function fetchVisibleTiles() {
+    if (!state.conf.allowNet || !state.conf.template) return;
+    var list = currentTileRange(), ok = 0, fail = 0;
+    Promise.all(list.map(function (t) {
+      return downloadTile(state.zoom, t.x, t.y).then(function (done) { if (done) ok++; else fail++; });
+    })).then(function () {
+      if (ok > 0) { state.tileCache = {}; requestDraw(); }
+      if (fail > 0) toast('Fetched ' + ok + ' tiles; ' + fail + ' unavailable (network/CORS/rate limit)');
+    });
+  }
+
+  // Search places via OpenStreetMap Nominatim (policy-compliant: single query per
+  // user action, identifiable UA, attribution). Network position is NEVER shown
+  // as GPS. Results are inserted as selectable pins; nothing opens externally.
+  var NOMINATIM = 'https://nominatim.openstreetmap.org/search';
+  function searchPlaces(q) {
+    q = (q || '').trim();
+    if (!q) return;
+    if (q.length < 3) { toast('Type at least 3 characters to search places'); return; }
+    toast('Searching places…');
+    var url = NOMINATIM + '?format=jsonv2&limit=6&accept-language=en&q=' + encodeURIComponent(q);
+    fetch(url, {
+      mode: 'cors', credentials: 'omit',
+      headers: { 'User-Agent': 'NuxelMaps/21000 (personal use; contact owner)' }
+    }).then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      .then(function (results) {
+        if (!Array.isArray(results) || !results.length) { toast('No places found for “' + q + '”'); return; }
+        results.forEach(function (item) {
+          var lat = parseFloat(item.lat), lon = parseFloat(item.lon);
+          if (!isFinite(lat) || !isFinite(lon)) return;
+          state.pins.push({ id: 'place-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7),
+            lat: lat, lon: lon, label: (item.display_name || 'Place').split(',').slice(0, 3).join(','), at: Date.now() });
+        });
+        save(K_PINS, state.pins);
+        if (state.pins.length) {
+          var last = state.pins[state.pins.length - 1];
+          state.center = { lat: last.lat, lon: last.lon }; state.zoom = Math.max(state.zoom, 12);
+        }
+        renderPins(document.getElementById('search').value);
+        persistView(); requestDraw();
+        toast('Found ' + results.length + ' place(s) — added as pins (© OpenStreetMap contributors)');
+      }).catch(function (e) {
+        toast('Place search unavailable: ' + (e && e.message ? e.message : 'network error'));
+      });
+  }
+
+  // Enter in the search box runs a real place search; typing still filters saved pins.
+  document.getElementById('search').addEventListener('keydown', function (ev) {
+    if (ev.key === 'Enter') { ev.preventDefault(); searchPlaces(ev.target.value); }
+  });
+  document.getElementById('search-panel').addEventListener('click', function () {
+    searchPlaces(document.getElementById('search').value);
   });
 
   /* ---------- boot ---------- */
