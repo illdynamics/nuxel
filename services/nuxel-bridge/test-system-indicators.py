@@ -46,8 +46,11 @@ class FakeSystem:
         self.proc = os.path.join(self.root, "proc")
         self.run = os.path.join(self.root, "run")
         self.android_usb = os.path.join(self.root, "android_usb")
+        self.typec = os.path.join(self.root, "typec")
+        self.debugfs = os.path.join(self.root, "debugfs")
         for path in (self.ps, self.udc, self.tty, self.gadget, self.proc,
-                     self.android_usb, os.path.join(self.run, "nuxel")):
+                     self.android_usb, self.typec, self.debugfs,
+                     os.path.join(self.run, "nuxel")):
             os.makedirs(path, exist_ok=True)
         os.environ.update({
             "NUXEL_SYS_POWER_SUPPLY": self.ps,
@@ -58,6 +61,8 @@ class FakeSystem:
             "NUXEL_RUN": self.run,
             "NUXEL_CONSOLE_TTY": "ttyGS0",
             "NUXEL_ANDROID_USB_STATE": os.path.join(self.android_usb, "state"),
+            "NUXEL_SYS_TYPEC": self.typec,
+            "NUXEL_DEBUGFS": self.debugfs,
         })
 
     def write(self, rel: str, value: str) -> None:
@@ -100,6 +105,27 @@ class FakeSystem:
     def remove_console_process(self, pid: int = 4242) -> None:
         shutil.rmtree(os.path.join(self.proc, str(pid)), ignore_errors=True)
 
+
+    def typec_role(self, role: str | None) -> None:
+        """role=None removes the Type-C class (absent); otherwise writes the
+        port0/data_role string (brackets mark the resolved role)."""
+        path = os.path.join(self.typec, "port0")
+        if role is None:
+            shutil.rmtree(self.typec, ignore_errors=True)
+            os.makedirs(self.typec, exist_ok=True)
+            return
+        os.makedirs(path, exist_ok=True)
+        self.write("typec/port0/data_role", role + "\n")
+
+    def dwc3_link(self, state: str | None) -> None:
+        path = os.path.join(self.debugfs, "10c00000.dwc3")
+        if state is None:
+            shutil.rmtree(self.debugfs, ignore_errors=True)
+            os.makedirs(self.debugfs, exist_ok=True)
+            return
+        os.makedirs(path, exist_ok=True)
+        self.write("debugfs/10c00000.dwc3/link_state", state + "\n")
+
     def tty_registered(self, present: bool = True) -> None:
         path = os.path.join(self.tty, "ttyGS0", "dev")
         if present:
@@ -115,7 +141,8 @@ class FakeSystem:
             else:
                 os.unlink(path)
         for path in (self.ps, self.udc, self.tty, self.gadget, self.proc,
-                     self.android_usb, os.path.join(self.run, "nuxel")):
+                     self.android_usb, self.typec, self.debugfs,
+                     os.path.join(self.run, "nuxel")):
             os.makedirs(path, exist_ok=True)
 
     def cleanup(self) -> None:
@@ -280,6 +307,36 @@ def main() -> int:
         fake.write("android_usb/state", "CONFIGURED\n")
         check(state() == (True, True, False, False),
               "bound gadget plus vendor CONFIGURED but no UDC state: PC stays off")
+
+        # 11c. PHYSICAL DETACH VETO (A73): a stale UDC "configured" must not
+        #      survive an independent physical down signal.
+        fake.reset()
+        fake.battery("Charging")
+        fake.usb_power("1")
+        fake.bind_gadget("configured")
+        fake.typec_role("host [device]")
+        fake.dwc3_link("On")
+        check(state() == (True, True, True, False),
+              "configured UDC + typec device role + dwc3 On: PC on")
+
+        fake.typec_role("host device")  # no bracket: role not resolved to device
+        check(state() == (True, True, False, False),
+              "typec no-device-role vetoes a stale configured UDC")
+
+        fake.typec_role("host [device]")
+        fake.dwc3_link("Off")
+        check(state() == (True, True, False, False),
+              "dwc3 link_state Off vetoes a stale configured UDC")
+
+        fake.dwc3_link("On")
+        check(state() == (True, True, True, False),
+              "physical signals restored: PC on again")
+
+        # Absent physical signals are neutral (desktop / no Type-C kernels).
+        fake.typec_role(None)
+        fake.dwc3_link(None)
+        check(state() == (True, True, True, False),
+              "absent physical signals leave UDC proof authoritative")
 
         # 12. Prove the state space matches the A71 truth table.  Charging is
         #     independent; the console is only reachable while a data link is

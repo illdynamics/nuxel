@@ -68,6 +68,8 @@ static void reset_tree(const char *root) {
   snprintf(p, sizeof p, "%s/usb_gadget", root); mkdir(p, 0755);
   snprintf(p, sizeof p, "%s/proc", root); mkdir(p, 0755);
   snprintf(p, sizeof p, "%s/android_usb", root); mkdir(p, 0755);
+  snprintf(p, sizeof p, "%s/typec", root); mkdir(p, 0755);
+  snprintf(p, sizeof p, "%s/debugfs", root); mkdir(p, 0755);
   snprintf(p, sizeof p, "%s/run/nuxel", root); mkdir_p(p);
 }
 
@@ -85,6 +87,20 @@ static void usb_power(const char *root, const char *online) {
 static void gadget(const char *root, const char *state) {
   write_file(root, "usb_gadget/nuxel/UDC", "10c00000.dwc3\n");
   if (state) write_file(root, "udc/10c00000.dwc3/state", state);
+}
+
+
+static void typec_role(const char *root, const char *role) {
+  /* role == NULL clears the Type-C class (absent); otherwise writes
+     typec/port0/data_role (brackets mark the resolved role). */
+  if (!role) { write_file(root, "typec/.absent", ""); return; }
+  write_file(root, "typec/port0/data_role", role);
+}
+
+static void dwc3_link(const char *root, const char *state) {
+  /* state == NULL clears debugfs; otherwise writes the dwc3 link_state. */
+  if (!state) { write_file(root, "debugfs/.absent", ""); return; }
+  write_file(root, "debugfs/10c00000.dwc3/link_state", state);
 }
 
 static void unbound_gadget(const char *root) {
@@ -109,7 +125,7 @@ static void tty_registered(const char *root, int present) {
 }
 
 static void set_roots(const char *root) {
-  char buf[6][1024];
+  char buf[8][1024];
   static const char *vars[6] = {
     "NUXEL_SYS_POWER_SUPPLY", "NUXEL_SYS_UDC", "NUXEL_SYS_TTY",
     "NUXEL_CONFIGFS_GADGET", "NUXEL_PROC", "NUXEL_RUN"
@@ -125,6 +141,11 @@ static void set_roots(const char *root) {
      matching the live sysfs layout. */
   snprintf(buf[0], sizeof buf[0], "%s/android_usb", root);
   setenv("NUXEL_ANDROID_USB_STATE", buf[0], 1);
+  /* A73 physical detach signals. */
+  snprintf(buf[6], sizeof buf[6], "%s/typec", root);
+  setenv("NUXEL_SYS_TYPEC", buf[6], 1);
+  snprintf(buf[7], sizeof buf[7], "%s/debugfs", root);
+  setenv("NUXEL_DEBUGFS", buf[7], 1);
 }
 
 static void state(int *power, int *charging, int *pc, int *live) {
@@ -219,6 +240,30 @@ int main(void) {
   console_proc(root, 4646, 1, "/opt/nuxel/nuxel-console\0/newroot\0");
   state(&p, &c, &pc, &lv);
   check(p && c && !pc && !lv, "console process without a bound gadget is inactive");
+
+  /* A73 PHYSICAL DETACH VETO: a stale "configured" UDC must not survive an
+     independent physical down signal. */
+  reset_tree(root); battery(root, "Charging\n"); usb_power(root, "1\n");
+  gadget(root, "configured\n"); tty_registered(root, 1);
+  typec_role(root, "host [device]\n"); dwc3_link(root, "On\n");
+  state(&p, &c, &pc, &lv);
+  check(p && c && pc && !lv, "configured UDC + typec device role + dwc3 On: PC on");
+
+  typec_role(root, "host device\n");  /* no bracket: role not resolved to device */
+  state(&p, &c, &pc, &lv);
+  check(p && c && !pc && !lv, "typec no-device-role vetoes a stale configured UDC");
+
+  typec_role(root, "host [device]\n"); dwc3_link(root, "Off\n");
+  state(&p, &c, &pc, &lv);
+  check(p && c && !pc && !lv, "dwc3 link_state Off vetoes a stale configured UDC");
+
+  dwc3_link(root, "On\n");
+  state(&p, &c, &pc, &lv);
+  check(p && c && pc && !lv, "physical signals restored: PC on again");
+
+  typec_role(root, NULL); dwc3_link(root, NULL);
+  state(&p, &c, &pc, &lv);
+  check(p && c && pc && !lv, "absent physical signals leave UDC proof authoritative");
 
   for (int power = 0; power < 2; power++) {
     for (int wantpc = 0; wantpc < 2; wantpc++) {

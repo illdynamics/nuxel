@@ -237,8 +237,52 @@ static int ind_gadget_bound(void) {
   return bound;
 }
 
-static int ind_pc_connected(void) {
-  if (!ind_gadget_bound()) return 0;
+/* A73: independent physical detach signals.  Samsung 4.14 can leave a bound
+   gadget + "configured" UDC intact after a physical cable pull.  The Type-C
+   class and the DWC3 debugfs link_state are therefore read so a real detach
+   vetoes a stale positive.  A signal that is absent/unreadable is neutral. */
+static int ind_typec_device_role(void) {
+  /* -1 = Type-C class absent, 0 = present but no [device] role, 1 = [device]. */
+  DIR *d = opendir(ind_root("NUXEL_SYS_TYPEC", "/sys/class/typec"));
+  if (!d) return -1;
+  int saw_port = 0, device_role = 0;
+  struct dirent *de;
+  while ((de = readdir(d))) {
+    if (!strcmp(de->d_name, ".") || !strcmp(de->d_name, "..")) continue;
+    if (strstr(de->d_name, "-partner") || strstr(de->d_name, "-cable")) continue;
+    char path[420], role[128] = "";
+    snprintf(path, sizeof path, "%s/%s/data_role",
+             ind_root("NUXEL_SYS_TYPEC", "/sys/class/typec"), de->d_name);
+    if (ind_read_line(path, role, sizeof role)) {
+      saw_port = 1;
+      if (strstr(role, "[device]")) { device_role = 1; break; }
+    }
+  }
+  closedir(d);
+  if (!saw_port) return -1;
+  return device_role ? 1 : 0;
+}
+
+static int ind_dwc3_link_on(void) {
+  /* -1 = absent, 0 = link_state Off, 1 = On. */
+  DIR *d = opendir(ind_root("NUXEL_SYS_UDC", "/sys/class/udc"));
+  if (!d) return -1;
+  int result = -1;
+  struct dirent *de;
+  while ((de = readdir(d))) {
+    if (!strcmp(de->d_name, ".") || !strcmp(de->d_name, "..")) continue;
+    char path[460], state[64] = "";
+    snprintf(path, sizeof path, "%s/%s/link_state",
+             ind_root("NUXEL_DEBUGFS", "/sys/kernel/debug"), de->d_name);
+    if (!ind_read_line(path, state, sizeof state)) continue;
+    if (ind_eq_ci(state, "on")) { result = 1; break; }
+    if (ind_eq_ci(state, "off")) { result = 0; break; }
+  }
+  closedir(d);
+  return result;
+}
+
+static int ind_udc_configured(void) {
   DIR *d = opendir(ind_root("NUXEL_SYS_UDC", "/sys/class/udc"));
   if (!d) return 0;
   int connected = 0;
@@ -251,10 +295,30 @@ static int ind_pc_connected(void) {
     if (ind_eq_ci(state, "configured")) { connected = 1; break; }
   }
   closedir(d);
-  /* `addressed` is only a pre-configuration handshake.  The vendor
-     android_usb state is deliberately not a fallback because it may remain
-     CONFIGURED after detach.  No fresh UDC proof means PC off. */
   return connected;
+}
+
+static int ind_pc_connected_ex(char *source, size_t sourcen) {
+  if (!ind_gadget_bound()) {
+    if (source) snprintf(source, sourcen, "%s", "unavailable:gadget-not-bound");
+    return 0;
+  }
+  if (!ind_udc_configured()) {
+    if (source) snprintf(source, sourcen, "%s", "unavailable:no-udc-config");
+    return 0;
+  }
+  int typec = ind_typec_device_role();
+  int link = ind_dwc3_link_on();
+  if (typec == 0 || link == 0) {
+    if (source) snprintf(source, sourcen, "%s",
+                         "sysfs:udc:configured-vetoed-by-physical-detach");
+    return 0;
+  }
+  if (source) snprintf(source, sourcen, "%s", "sysfs:udc:configured");
+  return 1;
+}
+static int ind_pc_connected(void) {
+  return ind_pc_connected_ex(NULL, 0);
 }
 
 static int ind_cmdline_has(pid_t pid, const char *needle) {
@@ -395,14 +459,34 @@ static int ind_live_console(void) {
   return ind_lease_valid(NULL);
 }
 
+static int ind_console_service_armed(void) {
+  /* True when any nuxel-console process is alive (daemon armed), independent
+     of whether a host is attached or a session is active.  This is the
+     "service armed" layer; the display predicate is ind_live_console(). */
+  DIR *d = opendir(ind_root("NUXEL_PROC", "/proc"));
+  if (!d) return 0;
+  int armed = 0;
+  struct dirent *de;
+  while ((de = readdir(d))) {
+    if (!strcmp(de->d_name, ".") || !strcmp(de->d_name, "..")) continue;
+    if (de->d_name[0] < '0' || de->d_name[0] > '9') continue;
+    pid_t pid = (pid_t)atoi(de->d_name);
+    if (pid > 0 && ind_cmdline_has(pid, "nuxel-console")) { armed = 1; break; }
+  }
+  closedir(d);
+  return armed;
+}
+
 static void indicators_json(char *out, size_t outn) {
   int external_power = 0, charging = 0;
   ind_power(&external_power, &charging);
-  int pc = ind_pc_connected();
+  char pcsrc[96] = "";
+  int pc = ind_pc_connected_ex(pcsrc, sizeof pcsrc);
   int live = ind_live_console();
+  int armed = ind_console_service_armed();
   int level = -1;
   char levelbuf[32] = "";
-  /* Level is informational only; the icon is driven by the two booleans. */
+  /* Level is informational only; the icon is driven by the booleans. */
   const char *psroot = ind_root("NUXEL_SYS_POWER_SUPPLY", "/sys/class/power_supply");
   DIR *ps = opendir(psroot);
   if (ps) {
@@ -421,9 +505,9 @@ static void indicators_json(char *out, size_t outn) {
   }
   snprintf(out, outn,
     "{\"charging\":{\"external_power\":%d,\"charging\":%d,\"battery_level\":%d,\"source\":\"sysfs\"},"
-    "\"usb_data\":{\"pc_connected\":%d,\"source\":\"sysfs:udc\"},"
-    "\"live_console\":{\"active\":%d,\"source\":\"proc:nuxel-console:tty\"}}",
-    external_power, charging, level, pc, live);
+    "\"usb_data\":{\"pc_connected\":%d,\"source\":\"%s\"},"
+    "\"live_console\":{\"active\":%d,\"service_armed\":%d,\"transport_connected\":%d,\"session_active\":%d,\"source\":\"proc:nuxel-console:tty\"}}",
+    external_power, charging, level, pc, pcsrc, live, armed, pc, live);
 }
 
 /* Event-driven refresh: the kernel's kobject uevent stream tells us the exact
