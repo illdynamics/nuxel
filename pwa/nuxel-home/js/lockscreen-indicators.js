@@ -17,13 +17,13 @@
 (function (global) {
   'use strict';
 
-  var VERSION = 'a68.3';
-  var SAFETY_MS = 15000;
+  var VERSION = 'a70.3';
+  var SAFETY_MS = 3000;
   var API_PATH = 'http://127.0.0.1:8080/api/v1/system/indicators';
   var ICONS = {
-    charging: '/assets/nuxel-charging.png?v=a68',
-    usb: '/assets/nuxel-connected-pc.png?v=a68',
-    live: '/assets/nuxel-live-console-active.png?v=a68'
+    charging: '/assets/nuxel-charging.png?v=a70.3',
+    usb: '/assets/nuxel-connected-pc.png?v=a70.3',
+    live: '/assets/nuxel-live-console-active.png?v=a70.3'
   };
 
   function el(id) { return global.document ? global.document.getElementById(id) : null; }
@@ -66,6 +66,7 @@
     this.version = VERSION;
     this._timer = null;
     this._inFlight = false;
+    this._pending = false;
     this._visible = false;
     this._generation = 0;
 
@@ -154,17 +155,43 @@
     this._inFlight = true;
     settle(this._read(), function (next) {
       self._inFlight = false;
-      if (!self._visible || generation !== self._generation) return;
-      if (!same(self.state, next)) {
+      if (self._visible && generation === self._generation && !same(self.state, next)) {
         self.state = next;
         self._render();
         self._trace('update power=' + (next.externalPower ? (next.charging ? 'charging' : 'power') : 'off') +
                     ' usb=' + (next.pcConnected ? 1 : 0) + ' live=' + (next.liveConsole ? 1 : 0));
       }
+      self._drainPending();
     }, function (err) {
       self._inFlight = false;
-      if (generation === self._generation) self._trace('read-failed ' + (err && err.message ? err.message : err));
+      if (generation === self._generation) {
+        /* PC and console are proof-only indicators.  A failed read cannot keep
+           an old positive assertion glowing after detach; charging retains its
+           last good power-subsystem reading. */
+        if (self.state.pcConnected || self.state.liveConsole) {
+          self.state = {
+            externalPower: self.state.externalPower,
+            charging: self.state.charging,
+            pcConnected: false,
+            liveConsole: false,
+            sources: {
+              power: self.state.sources.power,
+              usb: 'unavailable:read-failed',
+              live: 'unavailable:read-failed'
+            }
+          };
+          self._render();
+        }
+        self._trace('read-failed ' + (err && err.message ? err.message : err));
+      }
+      self._drainPending();
     });
+  };
+
+  LockscreenIndicators.prototype._drainPending = function () {
+    if (!this._pending || !this._visible) return;
+    this._pending = false;
+    this._tick();
   };
 
   LockscreenIndicators.prototype._displayOff = function () {
@@ -178,6 +205,10 @@
   LockscreenIndicators.prototype.refresh = function () {
     if (!this._visible) return;
     this._generation++;
+    if (this._inFlight) {
+      this._pending = true;
+      return;
+    }
     this._tick();
   };
 
@@ -189,7 +220,7 @@
     try { global.document.addEventListener('visibilitychange', refresh, { passive: true }); } catch (e) {}
     try { global.addEventListener('online', refresh, { passive: true }); } catch (e) {}
     try { global.addEventListener('focus', refresh, { passive: true }); } catch (e) {}
-    try { global.addEventListener('nuxel:display-on', refresh, { passive: true }); } catch (e) {}
+    try { global.document.addEventListener('nuxel:display-on', refresh, { passive: true }); } catch (e) {}
     try {
       if (global.NuxelHost && typeof global.NuxelHost.onEvent === 'function') {
         global.NuxelHost.onEvent(function (name) {
@@ -203,8 +234,13 @@
   LockscreenIndicators.prototype.start = function () {
     this._visible = true;
     this._generation++;
+    this._pending = false;
     this._wireEvents();
     this._stopTimer();
+    /* Render even when the first read equals retained state.  Besides restoring
+       ARIA/class truth on every lock, this emits a fresh physical geometry
+       receipt for the currently visible lockscreen. */
+    this._render();
     this._tick();
     var self = this;
     this._timer = global.setInterval(function () { self._tick(); }, SAFETY_MS);
@@ -213,6 +249,7 @@
   LockscreenIndicators.prototype.stop = function () {
     this._visible = false;
     this._generation++;
+    this._pending = false;
     this._stopTimer();
   };
 
@@ -232,12 +269,50 @@
         this.container.dataset.liveSource = this.state.sources.live;
       }
     } catch (e) {}
+    this._traceGeometry();
   };
 
   LockscreenIndicators.prototype._apply = function (node, className, on) {
     if (!node || !node.classList) return;
-    try { on ? node.classList.add(className) : node.classList.remove(className); }
+    try {
+      on ? node.classList.add(className) : node.classList.remove(className);
+      if (className === 'active' && typeof node.setAttribute === 'function') {
+        node.setAttribute('aria-hidden', on ? 'false' : 'true');
+      }
+    }
     catch (e) {}
+  };
+
+  LockscreenIndicators.prototype._traceGeometry = function () {
+    var self = this;
+    if (!this._visible || !this.container || !this.container.getBoundingClientRect) return;
+    var schedule = global.requestAnimationFrame || function (fn) { global.setTimeout(fn, 0); };
+    schedule(function () {
+      try {
+        var battery = el('lockscreen-battery');
+        var row = self.container.getBoundingClientRect();
+        var br = battery && battery.getBoundingClientRect ? battery.getBoundingClientRect() : null;
+        var lock = el('lockscreen');
+        var lr = lock && lock.getBoundingClientRect ? lock.getBoundingClientRect() : null;
+        var cs = global.getComputedStyle ? global.getComputedStyle(self.container) : null;
+        var visible = [];
+        Object.keys(self.els).forEach(function (key) {
+          var node = self.els[key];
+          if (!node || !node.classList.contains('active') || !node.getBoundingClientRect) return;
+          var r = node.getBoundingClientRect();
+          visible.push(key + ':' + Math.round(r.left) + ',' + Math.round(r.top) + ',' +
+                       Math.round(r.width) + 'x' + Math.round(r.height));
+        });
+        self._trace('geometry batteryBottom=' + (br ? Math.round(br.bottom) : -1) +
+                    ' row=' + Math.round(row.left) + ',' + Math.round(row.top) + ',' +
+                    Math.round(row.width) + 'x' + Math.round(row.height) +
+                    ' parent=' + (self.container.parentNode && self.container.parentNode.id || '-') +
+                    ' offsetParent=' + (self.container.offsetParent && self.container.offsetParent.id || '-') +
+                    ' css=' + (cs ? [cs.position, cs.top, cs.bottom].join('/') : '-') +
+                    ' lock=' + (lr ? [Math.round(lr.left), Math.round(lr.top), Math.round(lr.width), Math.round(lr.height)].join(',') : '-') +
+                    ' vh=' + (global.innerHeight || 0) + ' active=' + visible.join('|'));
+      } catch (e) {}
+    });
   };
 
   LockscreenIndicators.prototype._trace = function (msg) {
@@ -251,7 +326,10 @@
 
   LockscreenIndicators.prototype.ensureDom = function (wrap) {
     if (!wrap || !this.container) return;
-    if (!wrap.contains(this.container)) wrap.appendChild(this.container);
+    /* A68.2 cached markup nested this row in the bottom handle.  `contains()`
+       accepted that stale descendant and kept absolute positioning relative to
+       y=579.  Enforce the current contract: a DIRECT lockscreen child. */
+    if (this.container.parentNode !== wrap) wrap.appendChild(this.container);
   };
 
   global.NuxelLockscreenIndicators = LockscreenIndicators;

@@ -1,0 +1,50 @@
+id,gate,status,observation_timestamp,os_app_version,evidence,who_observed
+T01,battery at boot real/honest,PASS_DEVICE_RUNTIME,2026-10-25T16:00Z,Linux 4.14.253 Fedora43,battery node capacity=100; lockscreen.js host-first read; UNKNOWN guard present,agent(console)
+T02,battery wake 10 cycles,NOT_TESTED,2026-10-25T16:00Z,,code path verified; needs owner interactive wake,owner
+T03,single nav no duplicates,PASS_DEVICE_RUNTIME,2026-10-25T16:10Z,style.css rev,style.css:363 hide rule + NAVOWNER native-dock=present,agent(console)
+T04,Back in-app/root->Home,NOT_TESTED,2026-10-25T16:00Z,,existing A68 semantics; needs owner touch,owner
+T05,Home real launcher,NOT_TESTED,2026-10-25T16:00Z,,needs owner touch,owner
+T06,Tabs recents,NOT_TESTED,2026-10-25T16:00Z,,needs owner touch,owner
+T07,app drawer foregrounding,PASS_DEVICE_RUNTIME,2026-10-25T16:10Z,app.js rev,_dismissLauncherChrome x4 + body[data-app-state] hide rules,agent(console)
+T08,speaker audible,BLOCKED_FIRMWARE,2026-10-25T16:12Z,,calliope_sram.bin + cs47l93/cs35l40 DSP absent,agent(console)
+T09,volume press visual+audible,PASS_DEVICE_RUNTIME (visual only),2026-10-25T16:00Z,,button-manager drives ALSA mixer; audible blocked,agent(console)
+T10,volume hold repeat,NOT_TESTED,2026-10-25T16:00Z,,needs audible path,owner
+T11,BT adapter scan,BLOCKED_DEPENDENCY,2026-10-25T16:12Z,,no BlueZ; rfkill soft=1; no hci0,agent(console)
+T12,BT pairing,BLOCKED_DEPENDENCY,2026-10-25T16:12Z,,no BlueZ,agent(console)
+T13,BT A2DP audio,BLOCKED_DEPENDENCY,2026-10-25T16:12Z,,no BlueZ + no audio server,agent(console)
+T14,USB-C digital audio,NOT_TESTED,2026-10-25T16:00Z,,no DAC accessory; recovery USB occupied,owner/equipment
+T15,analog adapter classify,NOT_TESTED,2026-10-25T16:00Z,,no adapter present,owner/equipment
+T16,VLC installed+opens,BLOCKED_DEPENDENCY,2026-10-25T16:00Z,,dnf absent (pending dnf5 bootstrap approval),agent(console)
+T17,MP3 player,BLOCKED_DEPENDENCY,2026-10-25T16:00Z,,dnf absent,agent(console)
+T18,audio route transitions,BLOCKED_FIRMWARE,2026-10-25T16:00Z,,no audible route,agent(console)
+T19,accel/gyro real readings,BLOCKED_FIRMWARE,2026-10-25T16:12Z,,SSP down; raw 0,0,0,agent(console)
+T20,auto rotation two orientations,BLOCKED_FIRMWARE,2026-10-25T16:12Z,,SSP down,agent(console)
+T21,seven rotation options,NOT_TESTED,2026-10-25T16:00Z,,policy state machine intact; forced modes need owner,owner
+T22,GPS satellite fix,BLOCKED_FIRMWARE,2026-10-25T16:12Z,,no GNSS node; SSP GPS:false,agent(console)
+T23,Maps tiles/search,PASS_DEVICE_RUNTIME,2026-10-25T16:20Z,maps.js v3,OSM tile HTTP200+CORS + Nominatim JSON verified from phone; deployed hash-verified,agent(console)
+T24,NFC tag read,BLOCKED_FIRMWARE/DRIVER,2026-10-25T16:12Z,,no bound NFC device,agent(console)
+T25,desktop swipe animation,NOT_TESTED,2026-10-25T16:00Z,,needs owner touch,owner
+T26,app transition foreground,NOT_TESTED,2026-10-25T16:00Z,,chrome-hide CSS deployed; needs owner,owner
+T27,app drawer animation dismiss,NOT_TESTED,2026-10-25T16:00Z,,_dismissLauncherChrome deployed; needs owner,owner
+T28,motion settings,NOT_TESTED,2026-10-25T16:00Z,,prefers-reduced-motion preserved; needs owner,owner
+T29,smoothness before/after,NOT_TESTED,2026-10-25T16:00Z,,no device FPS bench yet (load/CPU measured),agent/owner
+T30,baseline internet,PASS_PHYSICAL,2026-10-25T16:00Z,wlan0,route+DNS+TLS verified; https fedoraproject HTTP/2 302,agent(console)
+T31,baseline SnekByte,NOT_TESTED,2026-10-25T16:00Z,,unchanged; needs owner,owner
+T32,lockscreen,NOT_TESTED,2026-10-25T16:00Z,,unchanged artwork/swipe; battery fix verified (T01),owner
+T33,native app escapable,NOT_TESTED,2026-10-25T16:00Z,,unchanged; needs owner,owner
+T34,reboot 3x persist,NOT_TESTED,2026-10-25T16:00Z,,needs owner-approved reboot,owner
+T35,install health,PASS_OFFLINE_ONLY,2026-10-25T16:20Z,,no rpm installs yet (safe); maps PWA deployed with sha256 readback,agent(console)
+T36,wifi+dns+tls+browser before/after every batch,PASS_PHYSICAL,2026-10-25T16:20Z,wlan0,re-verified after Maps deploy (no regression),agent(console)
+T37,Fedora43 aarch64 repo+signature verified,PASS_OFFLINE_ONLY,2026-10-25T16:15Z,,GA+updates repomd HTTP200 from phone; closure resolved via aarch64 container,agent(console)
+T38,package manager working where supported,NOT_TESTED,2026-10-25T16:15Z,,dnf5 bootstrap planned but not yet installed (approval pending),agent(console)
+T39,audio UCM vs card-ID + firmware evidenced,PASS_OFFLINE_ONLY,2026-10-25T16:15Z,,card-ID mismatch SamsungBeyond2 vs beyond-madera documented; firmware requests evidenced,agent(console)
+T40,BlueZ vs powered HCI distinguished,BLOCKED_DEPENDENCY,2026-10-25T16:12Z,,no BlueZ; no hci0; probe End in journal,agent(console)
+T41,Maps tiles/search/pan/zoom independent of GPS,PASS_DEVICE_RUNTIME,2026-10-25T16:20Z,maps.js v3,deployed + endpoint reachability verified; GNSS separately blocked,agent(console)
+T42,seven rotation modes survive; real auto only with physical samples,BLOCKED_FIRMWARE,2026-10-25T16:12Z,,SSP down; 7 policies intact but auto needs firmware,agent(console)
+T43,BT/USB-DAC/internal audio routed when hardware present,BLOCKED_FIRMWARE,2026-10-25T16:12Z,,audio firmware absent,agent(console)
+T44,19000/20000 penguin icon position/size/animations preserved,PASS_OFFLINE_ONLY,2026-10-25T16:10Z,,lockscreen-indicators.js hash unchanged; no deploy touched it,agent(console)
+T45,repo->live install/sha256 provenance for changed components,PASS_DEVICE_RUNTIME,2026-10-25T16:20Z,,maps deploy hash-verified; 01-REPO-LIVE-DELTA.md table,agent(console)
+T46,device/host arch; no host rpm on phone; no signature bypass,PASS_OFFLINE_ONLY,2026-10-25T16:15Z,,aarch64 confirmed; closure via aarch64 container; gpgcheck=1 preserved,agent(console)
+T47,3 cold boots + USB recovery + auto connectivity,PARTIAL (recovery verified; boots pending),2026-10-25T16:00Z,,USB console verified; owner-approved cold boots pending,agent/owner
+T48,before/after perf + animations no placebo,PASS_OFFLINE_ONLY (baseline captured),2026-10-25T16:00Z,,load 14.13 baseline captured; after pending,agent(console)
+T49,all 13 A69 issues revisited not assumed,PASS_OFFLINE_ONLY,2026-10-25T16:20Z,,fresh console re-verification of every item,agent(console)

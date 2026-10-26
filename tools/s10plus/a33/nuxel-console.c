@@ -540,6 +540,29 @@ static void live_session_signal(int sig) {
         raise(sig);
 }
 
+/* /proc/<pid>/stat field 22: the process start time in clock ticks.  Recording
+ * it in the lease binds the session to THIS process instance, so a recycled PID
+ * cannot make an old lease look live again. */
+static long proc_start_ticks(pid_t pid) {
+        char path[64], text[1024];
+        snprintf(path, sizeof path, "/proc/%d/stat", (int)pid);
+        int fd = open(path, O_RDONLY | O_CLOEXEC);
+        if (fd < 0) return -1;
+        ssize_t n = read(fd, text, sizeof text - 1);
+        close(fd);
+        if (n <= 0) return -1;
+        text[n] = 0;
+        char *end = strrchr(text, ')');
+        if (!end) return -1;
+        int field = 3;
+        char *save = NULL;
+        for (char *tok = strtok_r(end + 1, " \t\n\r", &save); tok;
+             tok = strtok_r(NULL, " \t\n\r", &save), field++) {
+                if (field == 22) return strtol(tok, NULL, 10);
+        }
+        return -1;
+}
+
 static void live_session_mark(void) {
         mkdir_p("/run/nuxel");
         FILE *f = fopen(LIVE_SESSION_MARKER ".new", "w");
@@ -549,9 +572,11 @@ static void live_session_mark(void) {
                      LIVE_SESSION_MARKER, strerror(errno));
                 return;
         }
+        long start_ticks = proc_start_ticks(getpid());
         fprintf(f, "pid=%d\n", (int)getpid());
         fprintf(f, "tty=" TTY "\n");
         fprintf(f, "state=serving\n");
+        if (start_ticks > 0) fprintf(f, "start_ticks=%ld\n", start_ticks);
         if (fflush(f) != 0) { fclose(f); unlink(LIVE_SESSION_MARKER ".new"); g_session_marker_written = 0; return; }
         fclose(f);
         if (rename(LIVE_SESSION_MARKER ".new", LIVE_SESSION_MARKER) != 0) {
@@ -993,20 +1018,26 @@ static int st_pass, st_fail;
 static void st(const char *name, int ok, const char *fmt, ...);
 static void selftest_console_lease(void) {
         /* The lease writer is deliberately exercised with an overridable path
-           so the offline selftest proves the file contains a validated pid and
-           that the clear path removes it.  On the live device the default is
+           so the offline selftest proves the file carries the pid, the serving
+           state and the process generation the consumers validate, and that the
+           clear path removes it.  On the live device the default is
            /run/nuxel/live-console-session. */
         const char *probe = "/tmp/nuxel-console-lease-selftest";
-        const char *old = LIVE_SESSION_MARKER;
-        (void)old;
+        long ticks = proc_start_ticks(getpid());
         FILE *f = fopen(probe, "w");
         if (!f) { st("lease selftest: cannot create probe", 0, strerror(errno)); return; }
         fprintf(f, "pid=%d\ntty=/dev/ttyGS0\nstate=serving\n", (int)getpid());
+        if (ticks > 0) fprintf(f, "start_ticks=%ld\n", ticks);
         fclose(f);
-        char buf[128] = "";
+        char text[512] = "";
         FILE *r = fopen(probe, "r");
-        if (r) { (void)!fgets(buf, sizeof buf, r); fclose(r); }
-        st("lease selftest: pid line is a validated lease", strncmp(buf, "pid=", 4) == 0, buf);
+        if (r) { size_t n = fread(text, 1, sizeof text - 1, r); text[n] = 0; fclose(r); }
+        st("lease selftest: pid line is a validated lease", strncmp(text, "pid=", 4) == 0, text);
+        st("lease selftest: state is serving", strstr(text, "state=serving") != NULL, text);
+        st("lease selftest: process generation is recorded",
+           ticks <= 0 || strstr(text, "start_ticks=") != NULL, "%ld", ticks);
+        st("lease selftest: pid matches this process",
+           strstr(text, "pid=") && atoi(text + 4) == (int)getpid(), text);
         unlink(probe);
         st("lease selftest: cleared lease no longer exists", access(probe, F_OK) != 0, probe);
 }

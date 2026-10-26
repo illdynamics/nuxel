@@ -1,0 +1,276 @@
+/* Nuxel A45 Penguin Lockscreen — full-screen swipe-to-unlock surface.
+   The wallpaper is the owner-supplied nuxel-lockscreen.jpg; the draggable
+   unlock handle is the owner-supplied nuxel-lockhead.png.  This overlay is the
+   topmost element of the launcher document, above the nav dock and keyboard. */
+#lockscreen {
+    position: fixed;
+    inset: 0;
+    z-index: 500;
+    background: #04121f;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+#lockscreen[hidden] { display: none; }
+
+.lockscreen-wallpaper {
+    position: absolute;
+    inset: 0;
+    background-image: url('/assets/nuxel-lockscreen.jpg');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+/* Clock / date / battery sit at the top, clear of the illustrated penguin. */
+.lockscreen-meta {
+    position: relative;
+    z-index: 1;
+    margin-top: calc(44px + env(safe-area-inset-top, 0px));
+    text-align: center;
+    color: #eaf4ff;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.7);
+    pointer-events: none;
+}
+.lockscreen-time { font-size: 64px; font-weight: 600; line-height: 1; letter-spacing: -1px; }
+.lockscreen-date { font-size: 18px; margin-top: 8px; opacity: .92; }
+.lockscreen-battery { font-size: 14px; margin-top: 6px; opacity: .85; }
+
+/* The draggable handle.  Resting position is computed by js/lockscreen.js so
+   the lockhead lands BELOW the wallpaper penguin with real spacing; the CSS
+   default is a horizontal centre near the bottom. */
+.lockscreen-handle-wrap {
+    position: absolute;
+    overflow: visible;
+    left: 0;
+    right: 0;
+    bottom: 16%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    z-index: 2;
+}
+/* Pointer-captured / drag-transformed container.  The artwork lives in the
+   nested child below so the decorative idle motion is a separate transform. */
+.lockscreen-handle {
+    position: relative;
+    width: 118px;
+    height: 118px;
+    display: block;
+    filter: drop-shadow(0 6px 18px rgba(0, 0, 0, 0.55));
+    will-change: transform;
+    pointer-events: auto;
+    touch-action: none;
+    -webkit-user-drag: none;
+    cursor: grab;
+}
+.lockscreen-lockhead-motion {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    pointer-events: none;
+    -webkit-user-drag: none;
+    transform-origin: 50% 72%;
+    will-change: transform;
+}
+/* One short wiggle every ~9 s (driven by a low-frequency JS scheduler).  An
+   infinite CSS animation kept WebKit/phoc compositing every frame even during
+   the "pause" segments on this software-rendered phone. */
+.lockscreen-handle.wiggling .lockscreen-lockhead-motion {
+    animation: nuxel-lockhead-wiggle 1.35s cubic-bezier(.36,.07,.19,.97) 1;
+}
+/* Gentle, low-energy invitation: a short wiggle followed by a long rest. */
+@keyframes nuxel-lockhead-wiggle {
+    0%, 58%, 100% { transform: rotate(0deg) translateX(0); }
+    62% { transform: rotate(-1.4deg) translateX(-1px); }
+    66% { transform: rotate(1.3deg) translateX(1px); }
+    70% { transform: rotate(-0.8deg) translateX(0); }
+    74% { transform: rotate(0.4deg) translateX(0); }
+}
+.lockscreen-handle.grabbed { filter: drop-shadow(0 6px 22px rgba(80, 200, 255, 0.55)); cursor: grabbing; }
+/* Stop the invitation the instant a real drag starts; the drag gesture owns
+   the container transform and this child stays still until the gesture ends. */
+.lockscreen-handle.grabbed .lockscreen-lockhead-motion,
+.lockscreen-handle.armed .lockscreen-lockhead-motion,
+.lockscreen-handle.unlocking .lockscreen-lockhead-motion,
+body.display-off .lockscreen-lockhead-motion,
+body.display-off .lockscreen-hint::before { animation-play-state: paused; }
+/* Subtle armed acknowledgement once the upward distance reaches the threshold.
+   Geometry, position and artwork are untouched. */
+.lockscreen-handle.armed { filter: drop-shadow(0 0 24px rgba(120, 220, 255, 0.85)); }
+.lockscreen-handle.unlocking { opacity: 0; transform: translateY(-160px) scale(1.15); transition: transform .28s ease-out, opacity .28s ease-out; }
+@media (prefers-reduced-motion: reduce) {
+    .lockscreen-lockhead-motion { animation: none !important; }
+    .lockscreen-hint::before { animation: none !important; }
+}
+
+.lockscreen-hint {
+    margin-top: 14px;
+    color: rgba(234, 244, 255, 0.82);
+    font-size: 13px;
+    letter-spacing: .12em;
+    text-shadow: 0 1px 6px rgba(0, 0, 0, 0.7);
+    pointer-events: none;
+}
+.lockscreen-hint::before {
+    content: '';
+    display: block;
+    width: 2px;
+    height: 14px;
+    margin: 0 auto 6px;
+    background: rgba(234, 244, 255, 0.7);
+    /* A47: static cue.  The previous infinite 1.8 s loop forced WebKit/phoc to
+       composite continuously even when the owner was not touching the phone. */
+    opacity: .62;
+}
+@keyframes nuxel-swipe-hint {
+    0%, 100% { opacity: .25; transform: translateY(3px); }
+    50% { opacity: .9; transform: translateY(-3px); }
+}
+
+/* Progress ring is intentionally omitted: the subtle glow on .grabbed plus the
+   handle following the finger is the whole affordance. */
+
+/* ==========================================================================
+   Lockhead status indicators (charging / PC / live console)
+
+   The row is a sibling of the draggable lockhead, positioned in the gap just
+   above it.  The PNGs contain a wide transparent margin, so each icon uses a
+   CSS clip-path to crop that padding at paint time (the source PNG is never
+   modified) and a 34 px visible box.  Inactive = 26% opacity, no glow.  Active
+   states animate compositor-friendly properties only (opacity/transform).
+   ========================================================================== */
+.lockscreen-indicators {
+    position: absolute;
+    left: 50%;
+    bottom: calc(100% + 8px);
+    min-height: 34px;
+    transform: translateX(-50%);
+    z-index: 3;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 3px 8px;
+    pointer-events: none;
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+.lockscreen-indicator {
+    --glow: rgba(124, 224, 138, 0.8);
+    --icon-scale: 1;
+    position: relative;
+    display: block;
+    width: 34px;
+    height: 34px;
+    opacity: .26;
+    filter: saturate(.35) brightness(.86);
+    transition: opacity .34s ease, filter .34s ease;
+    will-change: opacity, filter;
+}
+
+.lockscreen-indicator img {
+    position: relative;
+    z-index: 1;
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    -webkit-user-drag: none;
+    pointer-events: none;
+}
+
+/* Per-asset transparent-padding crop, measured from the shipped alpha
+   channel.  This preserves the original aspect ratio while making the artwork
+   fill the row (without clip-path the 1254/1374 px canvases render as a tiny
+   smear inside a 34 px box). */
+.lockscreen-indicator.charging-ind img {
+    clip-path: inset(4.2% 2.3% 0 2.9%);
+}
+.lockscreen-indicator.usb-ind img {
+    clip-path: inset(3.0% 0 3.0% 0.4%);
+}
+.lockscreen-indicator.live-ind img {
+    clip-path: inset(0.8% 1.2% 0 3.4%);
+}
+
+.lockscreen-indicator .lockscreen-indicator-glow {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 190%;
+    height: 190%;
+    transform: translate(-50%, -50%);
+    background: radial-gradient(circle, var(--glow) 0%, rgba(0,0,0,0) 68%);
+    opacity: 0;
+    z-index: 0;
+    pointer-events: none;
+    transition: opacity .34s ease;
+    will-change: opacity;
+}
+
+.lockscreen-indicator.charging-ind { --glow: rgba(124, 224, 138, 0.82); }
+.lockscreen-indicator.usb-ind      { --glow: rgba(127, 212, 255, 0.86); }
+.lockscreen-indicator.live-ind     { --glow: rgba(255, 154, 90, 0.86); }
+
+.lockscreen-indicator.active {
+    opacity: 1;
+    filter: saturate(1.08) brightness(1.08);
+}
+.lockscreen-indicator.active .lockscreen-indicator-glow {
+    opacity: .78;
+    animation: nuxel-indicator-breathe 3.4s ease-in-out infinite;
+}
+.lockscreen-indicator.charging-ind.active.charging img {
+    animation: nuxel-indicator-charge 1.45s ease-in-out infinite;
+}
+.lockscreen-indicator.usb-ind.active img {
+    animation: nuxel-indicator-usb 3.0s ease-in-out infinite;
+}
+.lockscreen-indicator.live-ind.active img {
+    animation: nuxel-indicator-live 1.9s ease-in-out infinite;
+}
+
+@keyframes nuxel-indicator-breathe {
+    0%, 100% { opacity: .34; transform: translate(-50%, -50%) scale(.94); }
+    50%      { opacity: .78; transform: translate(-50%, -50%) scale(1.05); }
+}
+@keyframes nuxel-indicator-charge {
+    0%, 100% { opacity: .82; transform: scale(.96); }
+    50%      { opacity: 1;   transform: scale(1.04); }
+}
+@keyframes nuxel-indicator-usb {
+    0%, 100% { opacity: .84; transform: translateY(0); }
+    50%      { opacity: 1;   transform: translateY(-1px); }
+}
+@keyframes nuxel-indicator-live {
+    0%, 100% { opacity: .78; }
+    45%      { opacity: 1; }
+    55%      { opacity: .9; }
+}
+
+/* The display-off / unlocked surface must not composite hidden animation. */
+body.display-off .lockscreen-indicator,
+body.display-off .lockscreen-indicator img,
+body.display-off .lockscreen-indicator .lockscreen-indicator-glow {
+    animation-play-state: paused !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .lockscreen-indicator,
+    .lockscreen-indicator img,
+    .lockscreen-indicator.active .lockscreen-indicator-glow {
+        animation: none !important;
+        transition: none !important;
+    }
+    .lockscreen-indicator.active .lockscreen-indicator-glow { opacity: .6; }
+}

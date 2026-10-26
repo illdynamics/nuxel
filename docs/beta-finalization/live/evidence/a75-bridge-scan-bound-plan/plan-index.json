@@ -1,0 +1,12 @@
+[
+  {
+    "group": "a75-bridge-grant-loader-recovery",
+    "n": 1,
+    "risk": "medium",
+    "script": "scripts/001-bridge.py.sh",
+    "service": "nuxel-bridge.service",
+    "source": "services/nuxel-bridge/src/bridge.py",
+    "source_sha256": "3a73d96d83205962c3ca1a10491ce67bdd77e6b8cba8740cd16c4a50b0e4edb5",
+    "target": "/usr/lib/nuxel/nuxel-bridge/bridge.py"
+  }
+]

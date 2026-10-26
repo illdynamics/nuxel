@@ -1,0 +1,9 @@
+dev=/dev/cu.usbmodem101 bytes_in=8155 echo_ok=True error=None elapsed=0.301s
+sample:
+dtls(0x2) prev 0x3
+6,17463,915433420,-;s3c2410-wdt 10050000.watchdog_cl0: Watchdog cluster 0 keepalive!, wtcnt = fff5
+ SUBSYSTEM=platform
+ DEVICE=+platform:10050000.watchdog_cl0
+6,17464,915433439,-;Watchdog: s3c2410wdt_keepalive RTC 2026-10-25 18:56:47 UTC
+2,17465,915433465,-;watchdog: watchdog0: watchdog did not stop!
+6,17466,915433478,-;s3c2410-wdt 10050000.watchdog_cl0: Watchdog cluster 0

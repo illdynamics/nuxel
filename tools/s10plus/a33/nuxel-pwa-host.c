@@ -139,12 +139,13 @@ static WebKitWebView *g_main_view;
  *
  * charging: any external power_supply node with online=1.
  * charging animation: battery status is exactly "Charging".
- * USB data: a configfs gadget is bound AND the UDC is configured/addressed.
+ * USB data: a configfs gadget is bound AND the UDC is exactly configured.
  *           The power_supply online flag is deliberately not consulted.
  * live console: a running nuxel-console process holds an fd to the console tty
- *           (or a validated session lease from the initramfs launcher).  A
- *           bind-mounted gadget, an existing /dev/ttyGS0 node, or root access
- *           alone are each insufficient.
+ *           (or a validated session lease from the initramfs launcher) AND the
+ *           USB data link is currently configured.  A bind-mounted gadget, an
+ *           existing /dev/ttyGS0 node, a lease that outlives the cable, or root
+ *           access alone are each insufficient.
  * ==========================================================================*/
 static int ind_read_line(const char *path, char *out, size_t outn) {
   if (!path || !out || outn < 2) return 0;
@@ -235,31 +236,72 @@ static int ind_gadget_bound(void) {
   return bound;
 }
 
-static int ind_android_usb_configured(void) {
-  char path[420], state[64] = "";
-  snprintf(path, sizeof path, "%s/state",
-           ind_root("NUXEL_ANDROID_USB_STATE", "/sys/class/android_usb/android0"));
-  return ind_read_line(path, state, sizeof state) && ind_eq_ci(state, "CONFIGURED");
+/* A73: independent physical detach signal.  Samsung 4.14 can leave a bound
+   gadget + "configured" UDC intact after a physical cable pull, so the
+   Type-C class data_role is read and a real detach (no [device] role) vetoes
+   a stale positive.  A74: the DWC3 debugfs link_state read was REMOVED — on
+   this downstream 4.14 kernel it dereferences the controller registers while
+   the FSYS0 power domain can be off right after detach, producing a bus
+   SLVERR that escalates to a hard lockup + watchdog reset.  The Type-C
+   data_role is sufficient on its own and is a safe PMIC class attribute. */
+static int ind_typec_device_role(void) {
+  /* -1 = Type-C class absent, 0 = present but no [device] role, 1 = [device]. */
+  DIR *d = opendir(ind_root("NUXEL_SYS_TYPEC", "/sys/class/typec"));
+  if (!d) return -1;
+  int saw_port = 0, device_role = 0;
+  struct dirent *de;
+  while ((de = readdir(d))) {
+    if (!strcmp(de->d_name, ".") || !strcmp(de->d_name, "..")) continue;
+    if (strstr(de->d_name, "-partner") || strstr(de->d_name, "-cable")) continue;
+    char path[420], role[128] = "";
+    snprintf(path, sizeof path, "%s/%s/data_role",
+             ind_root("NUXEL_SYS_TYPEC", "/sys/class/typec"), de->d_name);
+    if (ind_read_line(path, role, sizeof role)) {
+      saw_port = 1;
+      if (strstr(role, "[device]")) { device_role = 1; break; }
+    }
+  }
+  closedir(d);
+  if (!saw_port) return -1;
+  return device_role ? 1 : 0;
 }
 
-static int ind_pc_connected(void) {
-  if (!ind_gadget_bound()) return ind_android_usb_configured();
+static int ind_udc_configured(void) {
   DIR *d = opendir(ind_root("NUXEL_SYS_UDC", "/sys/class/udc"));
-  if (!d) return ind_android_usb_configured();
-  int connected = 0, saw_state = 0;
+  if (!d) return 0;
+  int connected = 0;
   struct dirent *de;
   while ((de = readdir(d))) {
     if (!strcmp(de->d_name, ".") || !strcmp(de->d_name, "..")) continue;
     char path[420], state[64] = "";
     snprintf(path, sizeof path, "%s/%s/state", ind_root("NUXEL_SYS_UDC", "/sys/class/udc"), de->d_name);
     if (!ind_read_line(path, state, sizeof state)) continue;
-    saw_state = 1;
-    if (ind_eq_ci(state, "configured") || ind_eq_ci(state, "addressed")) { connected = 1; break; }
+    if (ind_eq_ci(state, "configured")) { connected = 1; break; }
   }
   closedir(d);
-  /* Vendor fallback is used only when the UDC gives no state at all; when it
-     reports "not attached"/"default" that is authoritative and must stay off. */
-  return saw_state ? connected : ind_android_usb_configured();
+  return connected;
+}
+
+static int ind_pc_connected_ex(char *source, size_t sourcen) {
+  if (!ind_gadget_bound()) {
+    if (source) snprintf(source, sourcen, "%s", "unavailable:gadget-not-bound");
+    return 0;
+  }
+  if (!ind_udc_configured()) {
+    if (source) snprintf(source, sourcen, "%s", "unavailable:no-udc-config");
+    return 0;
+  }
+  int typec = ind_typec_device_role();
+  if (typec == 0) {
+    if (source) snprintf(source, sourcen, "%s",
+                         "sysfs:udc:configured-vetoed-by-physical-detach");
+    return 0;
+  }
+  if (source) snprintf(source, sourcen, "%s", "sysfs:udc:configured");
+  return 1;
+}
+static int ind_pc_connected(void) {
+  return ind_pc_connected_ex(NULL, 0);
 }
 
 static int ind_cmdline_has(pid_t pid, const char *needle) {
@@ -294,26 +336,96 @@ static int ind_pid_holds_tty(pid_t pid, const char *ttybase) {
   return held;
 }
 
-static pid_t ind_lease_pid(void) {
-  static const char *names[] = {
-    "live-console-session", NULL
-  };
-  for (int i = 0; names[i]; i++) {
-    char path[420], text[256];
-    snprintf(path, sizeof path, "%s/nuxel/%s", ind_root("NUXEL_RUN", "/run"), names[i]);
-    if (!ind_read_line(path, text, sizeof text)) continue;
-    const char *p = strstr(text, "pid=");
-    if (p) {
-      long pid = strtol(p + 4, NULL, 10);
-      if (pid > 0) return (pid_t)pid;
+/* Read one "key=value" field from nuxel-console's atomic session lease.  The
+   lease is a multi-line file (pid, tty, state, start_ticks), so the single-line
+   reader above is not enough: reading only line 1 would silently ignore the
+   generation/state that makes the lease trustworthy. */
+static int ind_lease_field(const char *key, char *out, size_t outn) {
+  char path[420], text[512];
+  size_t n = 0;
+  out[0] = 0;
+  snprintf(path, sizeof path, "%s/nuxel/live-console-session",
+           ind_root("NUXEL_RUN", "/run"));
+  FILE *f = fopen(path, "rb");
+  if (!f) return 0;
+  n = fread(text, 1, sizeof text - 1, f);
+  fclose(f);
+  text[n] = 0;
+  size_t klen = strlen(key);
+  for (char *p = text; *p; ) {
+    while (*p == ' ' || *p == '\t' || *p == '\n' || *p == '\r') p++;
+    if (!*p) break;
+    char *end = p;
+    while (*end && *end != ' ' && *end != '\t' && *end != '\n' && *end != '\r') end++;
+    char saved = *end;
+    *end = 0;
+    if (!strncmp(p, key, klen) && p[klen] == '=') {
+      snprintf(out, outn, "%s", p + klen + 1);
+      *end = saved;
+      return out[0] != 0;
     }
+    *end = saved;
+    p = end;
   }
   return 0;
 }
 
+/* /proc/<pid>/stat field 22, parsed without trusting comm spacing.  The lease
+   carries this value so a recycled PID cannot reactivate an old session. */
+static long ind_proc_start_ticks(pid_t pid) {
+  char path[512], text[1024];
+  snprintf(path, sizeof path, "%s/%d/stat", ind_root("NUXEL_PROC", "/proc"), (int)pid);
+  FILE *f = fopen(path, "rb");
+  if (!f) return -1;
+  size_t n = fread(text, 1, sizeof text - 1, f);
+  fclose(f);
+  text[n] = 0;
+  char *end = strrchr(text, ')');
+  if (!end) return -1;
+  char *save = NULL;
+  int field = 3;
+  for (char *tok = strtok_r(end + 1, " \t\n\r", &save); tok;
+       tok = strtok_r(NULL, " \t\n\r", &save), field++) {
+    if (field == 22) return strtol(tok, NULL, 10);
+  }
+  return -1;
+}
+
+static int ind_pid_alive(pid_t pid) {
+  char path[512];
+  snprintf(path, sizeof path, "%s/%d", ind_root("NUXEL_PROC", "/proc"), (int)pid);
+  return ind_path_exists(path);
+}
+
+static int ind_lease_valid(pid_t *lease_out) {
+  char buf[128];
+  long pid = 0, start = 0;
+  if (lease_out) *lease_out = 0;
+  if (!ind_lease_field("pid", buf, sizeof buf)) return 0;
+  pid = strtol(buf, NULL, 10);
+  if (pid <= 0 || pid > 0x7fffffffL) return 0;
+  if (ind_lease_field("state", buf, sizeof buf) &&
+      !ind_eq_ci(buf, "serving") && !ind_eq_ci(buf, "active")) return 0;
+  if (!ind_pid_alive((pid_t)pid)) return 0;
+  if (!ind_cmdline_has((pid_t)pid, "nuxel-console")) return 0;
+  if (ind_lease_field("start_ticks", buf, sizeof buf)) {
+    start = strtol(buf, NULL, 10);
+    if (start > 0 && ind_proc_start_ticks((pid_t)pid) != start) return 0;
+  }
+  if (lease_out) *lease_out = (pid_t)pid;
+  return 1;
+}
+
 static int ind_live_console(void) {
   const char *ttybase = "ttyGS0";
-  int active = 0;
+  char ttypath[420];
+  snprintf(ttypath, sizeof ttypath, "%s/ttyGS0", ind_root("NUXEL_SYS_TTY", "/sys/class/tty"));
+  /* A live USB console cannot outlive the USB data link (A71).  Checking this
+     first is what clears the icon promptly after a cable pull even while the
+     daemon and its tty fd survive. */
+  if (!ind_pc_connected()) return 0;
+  if (!ind_path_exists(ttypath)) return 0;
+
   DIR *d = opendir(ind_root("NUXEL_PROC", "/proc"));
   if (d) {
     struct dirent *de;
@@ -321,36 +433,43 @@ static int ind_live_console(void) {
       if (de->d_name[0] < '0' || de->d_name[0] > '9') continue;
       pid_t pid = (pid_t)atoi(de->d_name);
       if (pid <= 0 || !ind_cmdline_has(pid, "nuxel-console")) continue;
-      if (ind_pid_holds_tty(pid, ttybase)) { active = 1; break; }
+      if (ind_pid_holds_tty(pid, ttybase)) { closedir(d); return 1; }
     }
     closedir(d);
   }
-  if (!active) {
-    pid_t lease = ind_lease_pid();
-    if (lease > 0) {
-      char procpath[512];
-      snprintf(procpath, sizeof procpath, "%s/%d", ind_root("NUXEL_PROC", "/proc"), (int)lease);
-      /* A lease is not self-authenticating: the PID must still belong to the
-         console implementation (defeats PID reuse and stale markers). */
-      if (ind_path_exists(procpath) && ind_cmdline_has(lease, "nuxel-console")) {
-        active = 1;
-      }
-    }
+  /* A lease is not self-authenticating: it must name a live nuxel-console
+     process, carry a serving/active state, and match the process generation. */
+  return ind_lease_valid(NULL);
+}
+
+static int ind_console_service_armed(void) {
+  /* True when any nuxel-console process is alive (daemon armed), independent
+     of whether a host is attached or a session is active.  This is the
+     "service armed" layer; the display predicate is ind_live_console(). */
+  DIR *d = opendir(ind_root("NUXEL_PROC", "/proc"));
+  if (!d) return 0;
+  int armed = 0;
+  struct dirent *de;
+  while ((de = readdir(d))) {
+    if (!strcmp(de->d_name, ".") || !strcmp(de->d_name, "..")) continue;
+    if (de->d_name[0] < '0' || de->d_name[0] > '9') continue;
+    pid_t pid = (pid_t)atoi(de->d_name);
+    if (pid > 0 && ind_cmdline_has(pid, "nuxel-console")) { armed = 1; break; }
   }
-  if (!active) return 0;
-  char ttypath[420];
-  snprintf(ttypath, sizeof ttypath, "%s/ttyGS0", ind_root("NUXEL_SYS_TTY", "/sys/class/tty"));
-  return ind_gadget_bound() && ind_path_exists(ttypath);
+  closedir(d);
+  return armed;
 }
 
 static void indicators_json(char *out, size_t outn) {
   int external_power = 0, charging = 0;
   ind_power(&external_power, &charging);
-  int pc = ind_pc_connected();
+  char pcsrc[96] = "";
+  int pc = ind_pc_connected_ex(pcsrc, sizeof pcsrc);
   int live = ind_live_console();
+  int armed = ind_console_service_armed();
   int level = -1;
   char levelbuf[32] = "";
-  /* Level is informational only; the icon is driven by the two booleans. */
+  /* Level is informational only; the icon is driven by the booleans. */
   const char *psroot = ind_root("NUXEL_SYS_POWER_SUPPLY", "/sys/class/power_supply");
   DIR *ps = opendir(psroot);
   if (ps) {
@@ -369,9 +488,9 @@ static void indicators_json(char *out, size_t outn) {
   }
   snprintf(out, outn,
     "{\"charging\":{\"external_power\":%d,\"charging\":%d,\"battery_level\":%d,\"source\":\"sysfs\"},"
-    "\"usb_data\":{\"pc_connected\":%d,\"source\":\"sysfs:udc\"},"
-    "\"live_console\":{\"active\":%d,\"source\":\"proc:nuxel-console:tty\"}}",
-    external_power, charging, level, pc, live);
+    "\"usb_data\":{\"pc_connected\":%d,\"source\":\"%s\"},"
+    "\"live_console\":{\"active\":%d,\"service_armed\":%d,\"transport_connected\":%d,\"session_active\":%d,\"source\":\"proc:nuxel-console:tty\"}}",
+    external_power, charging, level, pc, pcsrc, live, armed, pc, live);
 }
 
 /* Event-driven refresh: the kernel's kobject uevent stream tells us the exact
@@ -779,7 +898,7 @@ static void on_host_message(WebKitUserContentManager *m, WebKitJavascriptResult 
     if (!path) { host_reply(v, id, 0, "{\"error\":\"unknown-config\"}"); st("HOST_CONFIG_REFUSED name=%s", name); g_free(js); return; }
     /* Indicators are a live sysfs/proc computation, not a file. */
     if (!strcmp(name, "system-indicators")) {
-      char ind[768];
+      char ind[2048];
       indicators_json(ind, sizeof ind);
       char *esc = json_escape(ind, strlen(ind));
       GString *io = g_string_new("{\"ok\":true,\"text\":");

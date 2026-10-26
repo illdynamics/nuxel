@@ -1,0 +1,9 @@
+family,transaction,tool,count,packages,source,sha256_of_bootstrap_rpms,verified
+dnf5-bootstrap,rpm -Uvh,plain-rpm,10,"dnf5,libdnf5,libdnf5-cli,libmodulemd,librepo,libsolv,fmt,sdbus-cpp,libyaml,zchunk-libs",dl.fedoraproject.org (updates+GA),see-04 doc,sha256+rpmkeys-K
+alsa-utils,dnf5-install,dnf5,3,"alsa-utils,alsa-ucm,libsamplerate",Fedora 43 aarch64 (updates/fedora),-,gpgcheck=1
+bluez,dnf5-install,dnf5,1,"bluez",Fedora 43 aarch64 (updates),-,gpgcheck=1
+pipewire-stack,dnf5-install-no-weak,dnf5,15,"pipewire,pipewire-libs,pipewire-alsa,pipewire-pulseaudio,wireplumber,wireplumber-libs,rtkit,webrtc-audio-processing,spa/... ",Fedora 43 aarch64 (updates/fedora),-,gpgcheck=1
+mpv,dnf5-install-no-weak,dnf5,105,"mpv,libavcodec-free,libavformat-free,libplacebo,ffmpeg-free chain",Fedora 43 aarch64,no, gpgcheck=1
+vlc,dnf5-install-no-weak,dnf5,30,"vlc,vlc-gui-qt,vlc-libs,vlc-cli,qt6-qtbase(+gui),qt6-qtsvg",Fedora 43 aarch64,no, gpgcheck=1
+total,,,164,,,,
+notes,The original 13-package plan dropped 3 WRONG packages: coreutils-single (conflicts with installed coreutils), systemd-standalone-sysusers (systemd-sysusers already present), glibc-minimal-langpack (glibc-langpack-en already present). Actual additive dnf5 bootstrap was 10 packages, all GPG-signed and sha256-verified before install.

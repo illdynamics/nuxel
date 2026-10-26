@@ -1,0 +1,3 @@
+f351b5ce78ac24f63e69631017a6ff1b7800ac6cab51f9c3b0ce4c71ca55f08c  assets/nuxel-charging.png
+2c9e92f4c83f8f44083ccf9464de84022c0715d7203f85461fdd1ed5487eda65  assets/nuxel-connected-pc.png
+c022775f760b1b57864fb4cd27c8f62fdafee33dbd15358c4bb390863e728c9f  assets/nuxel-live-console-active.png

@@ -1,0 +1,66 @@
+{
+  "adb_devices": [],
+  "at": "2026-10-25T14:45:36+0100",
+  "blocked_reason": null,
+  "capability": {
+    "pid": "0x4ee7",
+    "serial": "NUXEL-S10PLUS-0001",
+    "vid": "0x18d1"
+  },
+  "evidence_dir": "/Users/wicked/x/nuxel/docs/beta-finalization/live/evidence/reachability-20261025T144536+0100",
+  "exit_code": 0,
+  "finished": "2026-10-25T14:45:37+0100",
+  "gadget_descriptor_present": true,
+  "host": "Darwin 24.6.0",
+  "nodes": [
+    {
+      "callout": "/dev/cu.usbmodem201",
+      "dialin": "/dev/tty.usbmodem201",
+      "pid": 20199,
+      "tty_base": "usbmodem",
+      "tty_device": "usbmodem201",
+      "tty_suffix": "201",
+      "vid": 6353
+    }
+  ],
+  "probe": {
+    "at": "2026-10-25T14:45:37+0100",
+    "bytes_in": 3838,
+    "dev": "/dev/cu.usbmodem201",
+    "echo_ok": true,
+    "elapsed_s": 0.327,
+    "error": null,
+    "reachable": true,
+    "sample": " nothing\n4,50708,3536505142,c;CFG80211-INFO2) wl_cfg80211_netdev_notifier_call : wdev null. Do nothing\n4,50709,3536505807,c;CFG80211-INFO2) wl_cfg80211_netdev_notifier_call : wdev null. Do nothing\n4,50710,3536511348,c;CFG80211-INFO2) wl_cfg80211_netdev_notifier_call : wdev null. Do nothing\n4,50711,3536511568,c;CFG80211-INFO2) wl_cfg80211_netdev_notifier_call : wdev null. Do nothing\n3,50712,35"
+  },
+  "reachable": true,
+  "selected": {
+    "callout": "/dev/cu.usbmodem201",
+    "match_stage": "explicit"
+  },
+  "steps": [
+    {
+      "detail": "/dev/cu.usbmodem201 (matched explicit)",
+      "ok": true,
+      "step": "select-by-capability"
+    },
+    {
+      "detail": {
+        "elapsed_s": 0.888,
+        "framed": true,
+        "output_bytes": 52,
+        "raw_len": 4145,
+        "rc": 0,
+        "rid": "1b0b0801",
+        "sha_ok": true
+      },
+      "ok": true,
+      "output": "uid=0(root) gid=0(root) groups=0(root)\nNXL-REACH-OK",
+      "step": "framed-command"
+    }
+  ],
+  "verdict": "REACHABLE",
+  "verdicts": {
+    "briq-10a-live-reachability-preflight": "REACHABLE"
+  }
+}

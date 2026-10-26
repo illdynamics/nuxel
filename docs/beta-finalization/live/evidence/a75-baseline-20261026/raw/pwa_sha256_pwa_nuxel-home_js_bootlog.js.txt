@@ -1,0 +1,4 @@
+cmd: sha256sum /usr/share/nuxel/pwa/nuxel-home/js/bootlog.js 2>&1
+ok: True rc: 0 framed: True sha_ok: True
+---
+d2f766a1e3e128fef72389bf99ff43953c0cea7fd54cdf78edd37a612e52ea3b  /usr/share/nuxel/pwa/nuxel-home/js/bootlog.js

@@ -1,0 +1,43 @@
+{
+  "adb_devices": [],
+  "at": "2026-10-26T09:21:40+0100",
+  "blocked_reason": "cannot take the console: /dev/cu.usbmodem2101 is owned by another host tool (lock /tmp/nuxel-live._dev_cu_usbmodem2101.lock) \u2014 the live group is serialised on purpose",
+  "capability": {
+    "pid": "0x4ee7",
+    "serial": "NUXEL-S10PLUS-0001",
+    "vid": "0x18d1"
+  },
+  "evidence_dir": "/Users/wicked/x/nuxel/docs/beta-finalization/live/evidence/a75-reachability-post-bridge-deploy",
+  "exit_code": 4,
+  "finished": "2026-10-26T09:21:48+0100",
+  "gadget_descriptor_present": true,
+  "host": "Darwin 24.6.0",
+  "nodes": [
+    {
+      "callout": "/dev/cu.usbmodem2101",
+      "dialin": "/dev/tty.usbmodem2101",
+      "pid": 20199,
+      "tty_base": "usbmodem",
+      "tty_device": "usbmodem2101",
+      "tty_suffix": "2101",
+      "vid": 6353
+    }
+  ],
+  "port_busy": true,
+  "reachable": false,
+  "selected": {
+    "callout": "/dev/cu.usbmodem2101",
+    "match_stage": "explicit"
+  },
+  "steps": [
+    {
+      "detail": "/dev/cu.usbmodem2101 (matched explicit)",
+      "ok": true,
+      "step": "select-by-capability"
+    }
+  ],
+  "verdict": "BLOCKED_EXTERNAL_RESOURCE",
+  "verdicts": {
+    "briq-10a-live-reachability-preflight": "BLOCKED_EXTERNAL_RESOURCE"
+  }
+}

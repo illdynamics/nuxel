@@ -1,0 +1,13 @@
+cmd: cat /var/lib/nuxel/fb-owner 2>&1
+ok: True rc: 0 framed: True sha_ok: True
+---
+schema_version=1
+owner=nuxel-wl-fb
+pid=5403
+stage=LAUNCHER_DISPLAY_OWNER
+ui_writer=1
+reason=single_owner_takeover
+receipt=1793001595-ANIMATION_STOP_CONFIRMED-5403
+lock=/run/nuxel-fb-owner.lock
+boot_id=97abf0d4-03f0-49b7-9a56-b4be6dde2cc3
+ts=1793001595

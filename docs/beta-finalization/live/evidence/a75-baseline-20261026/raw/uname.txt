@@ -1,0 +1,4 @@
+cmd: uname -r
+ok: True rc: 0 framed: True sha_ok: True
+---
+4.14.253

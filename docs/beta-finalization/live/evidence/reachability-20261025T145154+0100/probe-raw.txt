@@ -1,0 +1,9 @@
+dev=/dev/cu.usbmodem201 bytes_in=6839 echo_ok=True error=None elapsed=0.323s
+sample:
+32768
+4,56328,3914195025,-;dhdpcie_dump_resource: BAR1(VA): 0x0000000000000000, BAR1(PA): 0x0000000014000000, SIZE: 4194304
+4,56329,3914195058,-;dhdpcie_suspend_dev: Enter: TS(2610251351580528)
+4,56330,3914195076,-;dhdpcie_suspend_dev: Disable L1ss EP side
+6,56331,3914195112,-;exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: START (state = 0x0, id = 0x10, enable = 0)
+ SUBSYSTEM=platform
+ DE

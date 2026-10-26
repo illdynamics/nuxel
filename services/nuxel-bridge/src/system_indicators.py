@@ -4,15 +4,45 @@
 Three independent states are derived from real Linux interfaces:
 
   charging      external power present, plus the kernel's active-charge state
-  usb_data      configfs gadget bound AND UDC enumerated (data-capable link);
-                when that controller state is unavailable, the vendor
-                android_usb CONFIGURED state is accepted as corroboration
-  live_console  the nuxel-console process itself holds the console tty
+  usb_data      a real enumerated USB data link to a host, NOT merely a bound
+                gadget or a stale vendor/UDC "configured" string
+  live_console  an actually usable host-connected Live Console transport/session
 
 Nothing here is inferred from "root is available".  In particular the live
 console indicator requires a running ``nuxel-console`` process with an open fd
-to the console tty (or a validated session lease written by that process).  A
-bare ``/dev/ttyGS0`` node, a bound gadget, and root access are each insufficient.
+to the console tty (or a validated session lease written by that process) AND a
+viable USB data link.  A bare ``/dev/ttyGS0`` node, a bound gadget, a lease that
+outlives the cable, and root access are each insufficient.
+
+USB data-link truth (A73) is a two-part contract:
+
+  * POSITIVE proof — a configfs gadget is bound to a UDC whose state is exactly
+    ``configured`` (completed host enumeration).  ``addressed`` is a pre-
+    configuration handshake and is never sufficient; a charging-only cable never
+    enumerates the controller.
+
+  * PHYSICAL detach veto — Samsung 4.14 gadget drivers can leave a UDC state
+    ``configured`` (and a bound gadget) intact after a physical cable pull.
+    The independent physical signal therefore vetoes a stale positive:
+
+      - the Type-C class (max77705-usbc) reports the resolved data role; when a
+        host partner is attached the role is ``[device]``.  After a detach the
+        bracket is gone / the role is ``[none]``.
+
+    When that signal explicitly reports no device role, ``pc_connected`` fails
+    closed even if the UDC still says ``configured``.  If the Type-C class is
+    unavailable, the UDC evidence stands (so the offline fixtures and desktops
+    without Type-C keep working).
+
+    A74: the DWC3 debugfs ``link_state`` node is deliberately NOT read.  On the
+    S10+ downstream 4.14 kernel, reading that debugfs attribute dereferences the
+    DWC3 controller registers through debugfs while the controller can be
+    runtime-suspended (FSYS0 / pd-fsys0a powered off) right after a physical
+    detach.  That register access produces a bus ``SLVERR`` which this kernel
+    escalates to a hard lockup on the reading CPU
+    (``Watchdog detected hard LOCKUP on cpu 0``) and a watchdog reset — the
+    reboot the owner observed.  The Type-C data_role read is a safe PMIC class
+    attribute and is sufficient on its own.
 
 Every root is overridable for the offline tests:
 
@@ -24,6 +54,7 @@ Every root is overridable for the offline tests:
   NUXEL_RUN                /run
   NUXEL_CONSOLE_TTY        ttyGS0
   NUXEL_ANDROID_USB_STATE  /sys/class/android_usb/android0/state
+  NUXEL_SYS_TYPEC          /sys/class/typec
 """
 
 from __future__ import annotations
@@ -146,18 +177,28 @@ def _bound_gadgets() -> List[str]:
     return bound
 
 
+def _bound_udc_names() -> List[str]:
+    """Controller names selected by bound configfs gadgets."""
+    root = _root("NUXEL_CONFIGFS_GADGET", "/sys/kernel/config/usb_gadget")
+    names = []
+    for gadget in _list_dir(root):
+        value = _read(os.path.join(root, gadget, "UDC"))
+        if value and value.strip():
+            names.append(value.strip())
+    return sorted(set(names))
+
+
 def _udc_states() -> Dict[str, Optional[str]]:
     root = _root("NUXEL_SYS_UDC", "/sys/class/udc")
     return {name: _read(os.path.join(root, name, "state")) for name in _udc_names()}
 
 
 def _android_usb_state() -> Optional[str]:
-    """Vendor Android gadget state, read as a corroborating signal only.
+    """Vendor Android gadget state, retained for diagnostics only.
 
-    The S10+ kernel logs `android_work: sent uevent USB_STATE=CONFIGURED` when the
-    host enumerates the device.  This is accepted as a corroborating fallback
-    only when configfs/UDC state is unavailable; a power_supply online flag is
-    still never sufficient.  A DISCONNECTED/CONNECTED state is never PC.
+    This value can remain CONFIGURED after detach on vendor kernels, so it is
+    never allowed to create a positive PC assertion.  Exact UDC `configured`
+    state is the live target's enumeration proof.
     """
     configured = _root("NUXEL_ANDROID_USB_STATE",
                        "/sys/class/android_usb/android0")
@@ -166,48 +207,116 @@ def _android_usb_state() -> Optional[str]:
     return _read(configured)
 
 
+# --------------------------------------------------------------------------- #
+# Physical detach veto (A73): independent signals that must override a stale
+# UDC "configured" / bound gadget after a real cable pull.
+# --------------------------------------------------------------------------- #
+
+def _typec_data_role_device() -> Optional[bool]:
+    """True when a Type-C port reports the ``[device]`` data role.
+
+    The bracket marks the *resolved* role: ``host [device]`` means the phone is
+    a peripheral attached to a host partner.  After a physical detach the
+    bracket disappears (``[none]``) — there is no partner.  Returns:
+
+      True   at least one port is currently ``[device]``
+      False  Type-C ports exist but none is ``[device]``
+      None   the Type-C class is absent on this kernel
+    """
+    root = _root("NUXEL_SYS_TYPEC", "/sys/class/typec")
+    ports: List[str] = []
+    for name in _list_dir(root):
+        # port0-partner / port0-cable are symlinked sub-objects, not ports.
+        if name.endswith("-partner") or name.endswith("-cable"):
+            continue
+        if os.path.isdir(os.path.join(root, name)):
+            ports.append(name)
+    if not ports:
+        return None
+    for name in ports:
+        role = _read(os.path.join(root, name, "data_role")) or ""
+        if "[device]" in role.lower():
+            return True
+    return False
+
+
+def _physical_data_link_veto() -> tuple:
+    """Return (veto, evidence) where veto=True means an independent physical
+    signal proves the data link is DOWN right now.
+
+    Only the Type-C data_role is read (the DWC3 debugfs link_state was removed
+    for A74 — reading it after detach can hard-lockup the downstream 4.14
+    kernel, see the module docstring).  A signal that is absent/unreadable is
+    neutral.
+    """
+    evidence: List[str] = []
+    typec = _typec_data_role_device()
+    if typec is False:
+        evidence.append("typec:no-device-role")
+    elif typec is True:
+        evidence.append("typec:device-role")
+    # A74: the DWC3 debugfs link_state read was removed (see module docstring).
+    # The Type-C data_role is now the sole independent physical detach veto.
+    veto = typec is False
+    return veto, evidence
+
+
 def usb_connection() -> Dict[str, Any]:
     """Return {pc_connected, source} for a real USB data link.
 
     A charging-only cable can still power the board but does not enumerate the
-    device controller.  Requiring BOTH a bound configfs gadget and a UDC state of
-    ``configured``/``addressed`` is what distinguishes data from charging.  When
-    the UDC exposes no state at all, the vendor android_usb CONFIGURED signal is
-    accepted as corroboration.  The power_supply online flag is never consulted.
+    device controller.  Requiring a configfs gadget bound to the SAME UDC whose
+    state is exactly ``configured`` distinguishes completed host enumeration
+    from VBUS, gadget preparation and the pre-configuration ``addressed`` state.
+
+    A stale ``configured`` is then vetoed by the independent physical signals
+    (Type-C data role / DWC3 link_state), so a physical unplug clears the PC
+    icon promptly instead of leaving a ghost.  The vendor CONFIGURED value is
+    diagnostic only.
     """
     gadgets = _bound_gadgets()
+    bound_udcs = _bound_udc_names()
     android_state = _android_usb_state()
-    if not gadgets:
-        connected = bool(android_state and android_state.strip().upper() == "CONFIGURED")
-        source = ("sysfs:android_usb:configured" if connected
-                  else "unavailable:gadget-not-bound")
-        return {"pc_connected": connected, "source": source,
+    veto, physical_evidence = _physical_data_link_veto()
+    if not gadgets or not bound_udcs:
+        return {"pc_connected": False, "source": "unavailable:gadget-not-bound",
                 "bound_gadgets": [], "udc_states": {},
-                "android_usb_state": android_state}
+                "android_usb_state": android_state,
+                "physical": physical_evidence}
 
     states = _udc_states()
     data_states = {name: state for name, state in states.items()
-                   if state and state.strip().lower() in ("configured", "addressed")}
+                   if name in bound_udcs and state and
+                   state.strip().lower() == "configured"}
     if data_states:
         name = sorted(data_states)[0]
+        if veto:
+            return {
+                "pc_connected": False,
+                "source": "sysfs:udc:" + name + ":configured-vetoed-by-physical-detach",
+                "bound_gadgets": gadgets,
+                "udc_states": states,
+                "android_usb_state": android_state,
+                "physical": physical_evidence,
+            }
         return {
             "pc_connected": True,
             "source": "sysfs:udc:" + name + ":" + str(data_states[name]).strip().lower(),
             "bound_gadgets": gadgets,
             "udc_states": states,
+            "android_usb_state": android_state,
+            "physical": physical_evidence,
         }
     if not states:
-        if android_state and android_state.strip().upper() == "CONFIGURED":
-            return {"pc_connected": True, "source": "sysfs:android_usb:configured",
-                    "bound_gadgets": gadgets, "udc_states": states,
-                    "android_usb_state": android_state}
-        return {"pc_connected": False, "source": "unknown:no-udc",
+        return {"pc_connected": False, "source": "unavailable:no-udc-state",
                 "bound_gadgets": gadgets, "udc_states": states,
-                "android_usb_state": android_state}
+                "android_usb_state": android_state,
+                "physical": physical_evidence}
     rendered = ",".join("%s=%s" % (k, v) for k, v in sorted(states.items()))
     return {"pc_connected": False, "source": "sysfs:udc:" + rendered,
             "bound_gadgets": gadgets, "udc_states": states,
-            "android_usb_state": android_state}
+            "android_usb_state": android_state,
+            "physical": physical_evidence}
 
 
 def _console_tty_basenames() -> List[str]:
@@ -242,45 +351,70 @@ def _cmdline(pid: str, procroot: str) -> str:
     return raw.replace(b"\x00", b" ").decode("utf-8", "replace").strip()
 
 
-def _lease_pid() -> Optional[int]:
+def _lease_fields() -> Dict[str, str]:
     runroot = _root("NUXEL_RUN", "/run")
     for name in ("live-console-session",):
         path = os.path.join(runroot, "nuxel", name)
         text = _read(path)
         if not text:
             continue
+        fields: Dict[str, str] = {}
         for token in text.replace("\n", " ").split():
             key, sep, value = token.partition("=")
-            if sep and key.lower() in ("pid", "session_pid"):
-                try:
-                    return int(value)
-                except ValueError:
-                    return None
-    return None
+            if sep:
+                fields[key.lower()] = value
+        return fields
+    return {}
 
 
-def live_console() -> Dict[str, Any]:
-    """Return {active, source, pids}.
+def _proc_start_ticks(pid: int, procroot: str) -> Optional[int]:
+    """Return Linux /proc/<pid>/stat field 22 without trusting comm spacing."""
+    text = _read(os.path.join(procroot, str(pid), "stat"))
+    if not text:
+        return None
+    end = text.rfind(")")
+    if end < 0:
+        return None
+    fields = text[end + 1:].strip().split()
+    # fields[0] is stat field 3 (state); field 22 is therefore index 19.
+    if len(fields) <= 19:
+        return None
+    try:
+        return int(fields[19])
+    except (TypeError, ValueError):
+        return None
 
-    Active means the live-console implementation is actually running AND is
-    attached to the console tty.  The process scan is authoritative: it requires
-    a ``nuxel-console`` command line plus an fd that resolves to the console tty.
-    That excludes a shell merely running as root, a present tty node left behind
-    by the gadget, and a stale marker file.
+
+def live_console(pc_connected: Optional[bool] = None) -> Dict[str, Any]:
+    """Return the Live Console model with three distinct layers (A73-02):
+
+      service_armed        the nuxel-console daemon is running (process exists)
+      transport_connected  the console tty is registered AND the USB data link
+                           is up (gadget bound + UDC configured, not vetoed)
+      session_active       the daemon holds the console tty fd, or a validated
+                           session lease names a live nuxel-console PID
+
+    The display predicate (``active``) requires ALL THREE: a prestarted console
+    service, an open gadget TTY, a stale pid/lease or an enabled service without
+    an attached host is NOT sufficient.  After a physical detach it turns OFF
+    promptly even while the daemon remains enabled.
+
+    The console daemon itself is never terminated just to extinguish its icon.
     """
     procroot = _root("NUXEL_PROC", "/proc")
-    runroot = _root("NUXEL_RUN", "/run")
     ttynames = _console_tty_basenames()
     ttyset = {"/dev/" + name for name in ttynames} | set(ttynames)
 
     pids: List[int] = []
-    session_source = ""
+    tty_pids: List[int] = []
+    service_pids: List[int] = []
     for pid in _list_dir(procroot):
         if not pid.isdigit():
             continue
         command = _cmdline(pid, procroot)
         if "nuxel-console" not in command:
             continue
+        service_pids.append(int(pid))
         fdroot = os.path.join(procroot, pid, "fd")
         for fd in _list_dir(fdroot):
             try:
@@ -290,39 +424,91 @@ def live_console() -> Dict[str, Any]:
             base = os.path.basename(target)
             if target in ttyset or base in ttynames:
                 pids.append(int(pid))
-                session_source = "proc:nuxel-console:tty"
+                tty_pids.append(int(pid))
                 break
 
-    lease_pid = _lease_pid()
-    if lease_pid and _pid_is_alive(lease_pid, procroot):
-        command = _cmdline(str(lease_pid), procroot)
-        # A lease is not self-authenticating: require the PID to still belong to
-        # the console implementation.  This defeats PID reuse and stale markers.
-        if "nuxel-console" in command:
-            if lease_pid not in pids:
-                pids.append(lease_pid)
-            if not session_source:
-                session_source = "lease:nuxel-console"
+    service_armed = bool(service_pids)
 
-    if not pids:
-        return {"active": False, "source": "inactive:no-console-session", "pids": []}
+    if pc_connected is None:
+        pc_connected = bool(usb_connection()["pc_connected"])
+    transport_connected = bool(pc_connected)
 
-    gadget_bound = bool(_bound_gadgets())
+    # Validate the session lease independently of the tty-fd scan (defeats PID
+    # reuse and stale markers); a serving/active lease plus a live owner counts.
+    fields = _lease_fields()
+    try:
+        lease_pid = int(fields.get("pid", fields.get("session_pid", "0")))
+        lease_start = int(fields.get("start_ticks", "0"))
+    except (TypeError, ValueError):
+        lease_pid, lease_start = 0, 0
+    lease_valid = False
+    if fields.get("state", "").lower() in ("", "serving", "active"):
+        if lease_pid and _pid_is_alive(lease_pid, procroot):
+            if "nuxel-console" in _cmdline(str(lease_pid), procroot):
+                if not lease_start or _proc_start_ticks(lease_pid, procroot) == lease_start:
+                    lease_valid = True
+
+    session_active = bool(tty_pids) or lease_valid
+    if lease_valid and lease_pid not in pids:
+        pids.append(lease_pid)
+
+    if not pc_connected:
+        # Fail closed on detach even if the daemon and its lease are still alive.
+        return {
+            "active": False,
+            "service_armed": service_armed,
+            "transport_connected": False,
+            "session_active": session_active,
+            "source": "inactive:no-usb-data-link",
+            "pids": sorted(set(pids)),
+        }
+
     ttyroot = _root("NUXEL_SYS_TTY", "/sys/class/tty")
     tty_registered = any(os.path.exists(os.path.join(ttyroot, name)) for name in ttynames)
-    if gadget_bound and tty_registered:
-        return {"active": True, "source": session_source or "proc:nuxel-console",
-                "pids": sorted(set(pids))}
-    # The process is real but its backing gadget/tty is gone: report the session
-    # as inactive rather than keeping a stale "on" after a disconnect.
-    return {"active": False, "source": "console-process-without-gadget",
-            "pids": sorted(set(pids))}
+    if not tty_registered:
+        return {
+            "active": False,
+            "service_armed": service_armed,
+            "transport_connected": False,
+            "session_active": session_active,
+            "source": "inactive:console-tty-missing",
+            "pids": sorted(set(pids)),
+        }
+
+    if not session_active:
+        return {
+            "active": False,
+            "service_armed": service_armed,
+            "transport_connected": True,
+            "session_active": False,
+            "source": "inactive:no-console-session",
+            "pids": sorted(set(pids)),
+        }
+
+    if tty_pids:
+        return {
+            "active": True,
+            "service_armed": service_armed,
+            "transport_connected": True,
+            "session_active": True,
+            "source": "proc:nuxel-console:tty",
+            "pids": sorted(set(pids)),
+        }
+
+    return {
+        "active": True,
+        "service_armed": service_armed,
+        "transport_connected": True,
+        "session_active": True,
+        "source": "lease:nuxel-console:serving",
+        "pids": sorted(set(pids)),
+    }
 
 
 def get_indicators() -> Dict[str, Any]:
     power = power_state()
     usb = usb_connection()
-    console = live_console()
+    console = live_console(bool(usb["pc_connected"]))
     return {
         "charging": {
             "external_power": bool(power["external_power"]),
@@ -333,9 +519,13 @@ def get_indicators() -> Dict[str, Any]:
         "usb_data": {
             "pc_connected": bool(usb["pc_connected"]),
             "source": usb["source"],
+            "physical": usb.get("physical", []),
         },
         "live_console": {
             "active": bool(console["active"]),
+            "service_armed": bool(console["service_armed"]),
+            "transport_connected": bool(console["transport_connected"]),
+            "session_active": bool(console["session_active"]),
             "source": console["source"],
             "pids": console.get("pids", []),
         },

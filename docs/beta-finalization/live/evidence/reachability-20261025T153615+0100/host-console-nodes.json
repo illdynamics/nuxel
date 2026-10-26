@@ -1,0 +1,11 @@
+[
+  {
+    "callout": "/dev/cu.usbmodem101",
+    "dialin": "/dev/tty.usbmodem101",
+    "pid": 20199,
+    "tty_base": "usbmodem",
+    "tty_device": "usbmodem101",
+    "tty_suffix": "101",
+    "vid": 6353
+  }
+]

@@ -1,0 +1,10 @@
+dev=/dev/cu.usbmodem201 bytes_in=7397 echo_ok=True error=None elapsed=0.335s
+sample:
+L:INFO:panel_fb_notifier:EARLY UNBLANK
+3,6726,12930631,-;[STUI] stui_notifier_callback is not state TUI
+6,6727,12930635,-;[SSP] copr_fb_notifier_callback: early_blank = 1, fb_blank = 0
+6,6728,12930639,-;decon-0 UNBLANK mode: 0 type (0: DSI, 1: eDP, 2:DP, 3: WB)
+4,6729,12930643,-;decon-0 already ON state
+6,6730,12930645,-;decon_blank -
+6,6731,12930671,-;PANEL:INFO:panel_fb_notifier:UNBLANK
+6

@@ -1,0 +1,4 @@
+cmd: sha256sum /usr/share/nuxel/pwa/nuxel-home/js/osd.js 2>&1
+ok: True rc: 0 framed: True sha_ok: True
+---
+0866abb04285a0b8174a165d6cf2179be025ea61f081d7e25ef37a08b7680768  /usr/share/nuxel/pwa/nuxel-home/js/osd.js

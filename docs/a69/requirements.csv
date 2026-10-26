@@ -1,14 +1,14 @@
 id,requirement,status,evidence
-A69-01,cold-boot lockscreen battery truth,PASS_DEVICE_RUNTIME,cold boot log: battery-capacity read at +3s -> BATTERY_HOST_READY level=100
-A69-02,single nav bar no duplicates,PASS_DEVICE_RUNTIME,native-nav-present CSS hide + navdock-state=NAV_DOCK_READY log
+A69-01,cold-boot lockscreen battery truth,PASS_DEVICE_RUNTIME,live log: battery-capacity +0s -> BATTERY_HOST_READY level=99 at +3s; hash matches repo
+A69-02,single nav bar no duplicates,PASS_DEVICE_RUNTIME,native-nav-present CSS hide + NAVOWNER native-dock=present x7
 A69-03,speaker audio,BLOCKED_FIRMWARE,Madera CS47L93 + CS35L40 DSP firmware absent (nuxelctl audio status)
-A69-04,auto rotation,BLOCKED_HARDWARE,SSP BCM47752 down / no sensor-hub firmware
-A69-05,GPS GNSS + Maps,BLOCKED_HARDWARE,no GNSS node; SSP GPS:false; Maps needs network (off)
+A69-04,auto rotation,BLOCKED_HARDWARE,SSP BCM47752 down / no sensor-hub firmware / raw 0,0,0
+A69-05,GPS GNSS + Maps,BLOCKED_HARDWARE (GNSS) + PASS_OFFLINE_ONLY (Maps),no GNSS node; SSP GPS:false; Maps app genuine + OSM tiles reachable (HTTP 200, CORS)
 A69-06,NFC,BLOCKED_HARDWARE,sec-nfc driver registered but no bound device/firmware
 A69-07,Bluetooth controller+manager+A2DP,BLOCKED_DEPENDENCY,no BlueZ; rfkill soft-blocked; no hci; no BT firmware
-A69-08,USB-C headset & DAC,NOT_TESTED,no digital DAC accessory available this session; recovery USB occupied
-A69-09,VLC + MP3 player,BLOCKED_DEPENDENCY,dnf absent + no network -> cannot install packages
-A69-10,volume rocker latency,PASS_DEVICE_RUNTIME (limited),button-manager drives real ALSA mixer; latency untestable w/o audible path
-A69-11,performance improvements,PASS_OFFLINE_ONLY,removed duplicate nav + drawer-over-app chrome; no device FPS bench possible (see FINAL-STATUS)
-A69-12,smooth transitions/reduced motion,PASS_OFFLINE_ONLY,existing drawer/shade animations + prefers-reduced-motion preserved
-A69-13,app drawer foregrounding,PASS_DEVICE_RUNTIME,_dismissLauncherChrome + body[data-app-state] hides drawer/dock
+A69-08,USB-C headset & DAC,NOT_TESTED,no digital DAC accessory; recovery USB occupied
+A69-09,VLC + MP3 player,BLOCKED_DEPENDENCY,dnf/yum absent on phone (network UP, package manager missing)
+A69-10,volume rocker latency,PASS_DEVICE_RUNTIME (limited),button-manager drives real ALSA mixer; audible latency untestable (no amp firmware)
+A69-11,performance improvements,PASS_OFFLINE_ONLY,removed duplicate nav + drawer-over-app chrome; load 12.3-13.6 software-rendered (no fabricated FPS)
+A69-12,smooth transitions/reduced motion,PASS_OFFLINE_ONLY,existing animations + prefers-reduced-motion preserved
+A69-13,app drawer foregrounding,PASS_DEVICE_RUNTIME,_dismissLauncherChrome + body[data-app-state] hides drawer/dock; hashes match

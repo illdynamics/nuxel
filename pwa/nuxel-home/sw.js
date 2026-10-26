@@ -17,7 +17,13 @@
 // nuxel.cache_version, so a launcher that was served from a stale bundle is a
 // detectable state rather than a mystery.
 // v0.5.2-beta changes launcher lifecycle and Terminal interaction assets.
-const CACHE_VERSION = 'v38-a68-indicators-2';
+// A73/22000 bumps to v43 for js/qs.js Bluetooth+Location tiles and the USB
+// truth veto: without the bump the v42 cache would keep serving the old
+// 'unavailable on this build' placeholders.
+// A76 bumps to v44 for the v0.6.5-beta lockstep release: home-settings.js,
+// status-bar.js, bridge.js and the radio/USB truth paths must never be served
+// from the v43 namespace.
+const CACHE_VERSION = 'v44-a76-lockstep';
 const CACHE_NAME = 'nuxel-home-' + CACHE_VERSION;   // version marker sent to clients
 const STATIC_CACHE = 'nuxel-static-' + CACHE_VERSION;
 const DYNAMIC_CACHE = 'nuxel-dynamic-' + CACHE_VERSION;

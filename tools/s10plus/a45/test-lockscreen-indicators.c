@@ -68,6 +68,8 @@ static void reset_tree(const char *root) {
   snprintf(p, sizeof p, "%s/usb_gadget", root); mkdir(p, 0755);
   snprintf(p, sizeof p, "%s/proc", root); mkdir(p, 0755);
   snprintf(p, sizeof p, "%s/android_usb", root); mkdir(p, 0755);
+  snprintf(p, sizeof p, "%s/typec", root); mkdir(p, 0755);
+  snprintf(p, sizeof p, "%s/debugfs", root); mkdir(p, 0755);
   snprintf(p, sizeof p, "%s/run/nuxel", root); mkdir_p(p);
 }
 
@@ -85,6 +87,20 @@ static void usb_power(const char *root, const char *online) {
 static void gadget(const char *root, const char *state) {
   write_file(root, "usb_gadget/nuxel/UDC", "10c00000.dwc3\n");
   if (state) write_file(root, "udc/10c00000.dwc3/state", state);
+}
+
+
+static void typec_role(const char *root, const char *role) {
+  /* role == NULL clears the Type-C class (absent); otherwise writes
+     typec/port0/data_role (brackets mark the resolved role). */
+  if (!role) { write_file(root, "typec/.absent", ""); return; }
+  write_file(root, "typec/port0/data_role", role);
+}
+
+static void dwc3_link(const char *root, const char *state) {
+  /* state == NULL clears debugfs; otherwise writes the dwc3 link_state. */
+  if (!state) { write_file(root, "debugfs/.absent", ""); return; }
+  write_file(root, "debugfs/10c00000.dwc3/link_state", state);
 }
 
 static void unbound_gadget(const char *root) {
@@ -109,7 +125,7 @@ static void tty_registered(const char *root, int present) {
 }
 
 static void set_roots(const char *root) {
-  char buf[6][1024];
+  char buf[8][1024];
   static const char *vars[6] = {
     "NUXEL_SYS_POWER_SUPPLY", "NUXEL_SYS_UDC", "NUXEL_SYS_TTY",
     "NUXEL_CONFIGFS_GADGET", "NUXEL_PROC", "NUXEL_RUN"
@@ -125,6 +141,11 @@ static void set_roots(const char *root) {
      matching the live sysfs layout. */
   snprintf(buf[0], sizeof buf[0], "%s/android_usb", root);
   setenv("NUXEL_ANDROID_USB_STATE", buf[0], 1);
+  /* A73 physical detach signals. */
+  snprintf(buf[6], sizeof buf[6], "%s/typec", root);
+  setenv("NUXEL_SYS_TYPEC", buf[6], 1);
+  snprintf(buf[7], sizeof buf[7], "%s/debugfs", root);
+  setenv("NUXEL_DEBUGFS", buf[7], 1);
 }
 
 static void state(int *power, int *charging, int *pc, int *live) {
@@ -172,15 +193,21 @@ int main(void) {
   state(&p, &c, &pc, &lv);
   check(p && c && pc && !lv, "configured UDC + tty, no console process: PC only");
 
-  /* Vendor android_usb state is corroborating only when UDC is unavailable. */
+  /* Vendor android_usb state may be stale; without exact UDC configuration it
+     is diagnostic only and must fail closed. */
   reset_tree(root); battery(root, "Charging\n"); usb_power(root, "1\n");
   write_file(root, "android_usb/state", "CONFIGURED\n");
   state(&p, &c, &pc, &lv);
-  check(p && c && pc && !lv, "android USB CONFIGURED: PC via vendor fallback");
+  check(p && c && !pc && !lv, "stale android USB CONFIGURED: no UDC proof, no PC");
   reset_tree(root); battery(root, "Charging\n"); usb_power(root, "1\n");
   write_file(root, "android_usb/state", "DISCONNECTED\n");
   state(&p, &c, &pc, &lv);
   check(p && c && !pc && !lv, "android USB DISCONNECTED: no PC");
+
+  reset_tree(root); battery(root, "Charging\n"); usb_power(root, "1\n");
+  gadget(root, "addressed\n"); tty_registered(root, 1);
+  state(&p, &c, &pc, &lv);
+  check(p && c && !pc && !lv, "addressed UDC is pre-enumeration: no PC");
 
   reset_tree(root); battery(root, "Charging\n"); usb_power(root, "1\n");
   gadget(root, "configured\n"); tty_registered(root, 1);
@@ -200,17 +227,47 @@ int main(void) {
   state(&p, &c, &pc, &lv);
   check(p && c && pc && !lv, "console process without tty fd does NOT light live console");
 
+  /* A live USB console cannot outlive the data link (A71): a surviving daemon
+     and tty fd must not keep the console icon lit after detach. */
   reset_tree(root); battery(root, "Charging\n"); usb_power(root, "1\n");
   gadget(root, "not attached\n"); tty_registered(root, 1);
   console_proc(root, 4545, 1, "/opt/nuxel/nuxel-console\0/newroot\0");
   state(&p, &c, &pc, &lv);
-  check(p && c && !pc && lv, "not-attached UDC: no PC, console stays independent");
+  check(p && c && !pc && !lv, "not-attached UDC: console cannot stay active without a data link");
 
   reset_tree(root); battery(root, "Charging\n"); usb_power(root, "1\n");
   unbound_gadget(root); tty_registered(root, 1);
   console_proc(root, 4646, 1, "/opt/nuxel/nuxel-console\0/newroot\0");
   state(&p, &c, &pc, &lv);
   check(p && c && !pc && !lv, "console process without a bound gadget is inactive");
+
+  /* A73/A74 PHYSICAL DETACH VETO: a stale "configured" UDC must not survive
+     the independent Type-C data_role down signal.  The DWC3 debugfs link_state
+     read was removed (A74) because it hard-locks-up the downstream 4.14 kernel
+     after detach; Type-C data_role is sufficient and safe. */
+  reset_tree(root); battery(root, "Charging\n"); usb_power(root, "1\n");
+  gadget(root, "configured\n"); tty_registered(root, 1);
+  typec_role(root, "host [device]\n");
+  state(&p, &c, &pc, &lv);
+  check(p && c && pc && !lv, "configured UDC + typec [device] role: PC on");
+
+  typec_role(root, "host device\n");  /* no bracket: role not resolved to device */
+  state(&p, &c, &pc, &lv);
+  check(p && c && !pc && !lv, "typec no-device-role vetoes a stale configured UDC");
+
+  typec_role(root, "host [device]\n");
+  state(&p, &c, &pc, &lv);
+  check(p && c && pc && !lv, "typec [device] role restored: PC on again");
+
+  typec_role(root, NULL);
+  state(&p, &c, &pc, &lv);
+  check(p && c && pc && !lv, "absent Type-C class leaves UDC proof authoritative");
+
+  /* A74 REGRESSION: the DWC3 debugfs link_state is NOT read.  A synthetic
+     "Off" node must have no effect when the Type-C role is [device]. */
+  typec_role(root, "host [device]\n"); dwc3_link(root, "Off\n");
+  state(&p, &c, &pc, &lv);
+  check(p && c && pc && !lv, "A74: dwc3 debugfs link_state is NOT read; PC on via Type-C role");
 
   for (int power = 0; power < 2; power++) {
     for (int wantpc = 0; wantpc < 2; wantpc++) {
@@ -230,10 +287,11 @@ int main(void) {
         }
         state(&p, &c, &pc, &lv);
         char label[180];
+        int want_live = wantlive && wantpc;
         snprintf(label, sizeof label,
                  "combination power=%d pc=%d live=%d -> (%d,%d,%d,%d)",
                  power, wantpc, wantlive, p, c, pc, lv);
-        check(p == power && c == power && pc == wantpc && lv == wantlive, label);
+        check(p == power && c == power && pc == wantpc && lv == want_live, label);
       }
     }
   }
@@ -246,6 +304,20 @@ int main(void) {
   console_proc(root, 4747, 0, "/opt/nuxel/nuxel-console\0/newroot\0");
   write_file(root, "run/nuxel/live-console-session", "pid=4747\n");
   check(ind_live_console(), "validated live lease lights the console");
+
+  reset_tree(root); gadget(root, "configured\n"); tty_registered(root, 1);
+  console_proc(root, 4747, 0, "/opt/nuxel/nuxel-console\0/newroot\0");
+  write_file(root, "proc/4747/stat",
+             "4747 (nuxel-console) S 1 4747 4747 0 -1 0 0 0 0 0 0 0 0 0 20 0 1 0 777 0 0\n");
+  write_file(root, "run/nuxel/live-console-session",
+             "pid=4747\nstate=serving\nstart_ticks=777\n");
+  check(ind_live_console(), "start_ticks-bound serving lease lights the console");
+  write_file(root, "run/nuxel/live-console-session",
+             "pid=4747\nstate=serving\nstart_ticks=778\n");
+  check(!ind_live_console(), "reused PID with the wrong start_ticks is rejected");
+  write_file(root, "run/nuxel/live-console-session",
+             "pid=4747\nstate=stopped\n");
+  check(!ind_live_console(), "a non-serving lease state does not light the console");
 
   /* Exercise the exact JSON envelope the host sends to the JS UI. */
   reset_tree(root);

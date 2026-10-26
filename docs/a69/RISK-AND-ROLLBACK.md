@@ -36,3 +36,24 @@ This agent is the sole writer. No parallel phone writers were run.
 - No dnf/systemwide upgrade (dnf is absent; no network).
 - No kernel/dtb/driver replacement; no boot flash; no modem/APN/AT provisioning.
 - Wi-Fi credentials were never read; saved profiles listed by name only.
+
+## 2026-10-25 addition — Maps PWA (three files)
+Changed on the phone (low-risk userspace, no kernel/firmware/boot/package):
+`/usr/share/nuxel/pwa/nuxel-apps/maps/{index.html,js/maps.js,sw.js}`.
+
+Backup (on phone): `/var/lib/nuxel/a69-backup-maps/` with pre-patch sha256:
+- index.html 152d58179152631c4915ca1cc3d85f0beb7208c6b56a3a36b3bae719b9718a4e
+- js/maps.js 4190a630e7bf5bd9ee0583f2d4810ffc98a38fd44ab1232d16e82091c5bb4589
+- sw.js      d2ec2ba17c6b1b04380511dd0ba332da4c17f01cf4aa292b56eef0445b782f54
+
+Rollback (USB Live Console):
+```sh
+cp -a /var/lib/nuxel/a69-backup-maps/index.html /usr/share/nuxel/pwa/nuxel-apps/maps/index.html
+cp -a /var/lib/nuxel/a69-backup-maps/maps.js    /usr/share/nuxel/pwa/nuxel-apps/maps/js/maps.js
+cp -a /var/lib/nuxel/a69-backup-maps/sw.js      /usr/share/nuxel/pwa/nuxel-apps/maps/sw.js
+printf 'action reload-launcher\n' > /run/nuxel-pwa-host.cmd
+```
+Post-deploy verification (measured): device sha256 readback == repo sha256 for
+all three files; HTTP endpoint serves the new `osm-preset` content; launcher
+reloaded with `NAVOWNER native-dock=present` and `STATUSBAR_OVERLAP_CHECK
+cells=2 overlaps=none` intact.

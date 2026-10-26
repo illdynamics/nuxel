@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "groups": [
+    {
+      "id": "a75-bridge-grant-loader-recovery",
+      "component": "A75 shared system-bus bridge startup recovery",
+      "priority": 1,
+      "risk": "medium",
+      "restart_service": "nuxel-bridge.service",
+      "health_check": "systemctl is-active --quiet nuxel-bridge.service && sleep 1 && busctl --system call org.nuxel.Bridge /org/nuxel/Bridge org.nuxel.Bridge Ping s health >/dev/null",
+      "rollback": "restore /usr/lib/nuxel/nuxel-bridge/bridge.py.nuxel-rollback and restart nuxel-bridge.service",
+      "files": [
+        {
+          "source": "services/nuxel-bridge/src/bridge.py",
+          "target": "/usr/lib/nuxel/nuxel-bridge/bridge.py",
+          "mode": "0644"
+        }
+      ]
+    }
+  ]
+}

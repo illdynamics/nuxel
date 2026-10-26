@@ -50,7 +50,7 @@ HTTP_MODE = os.environ.get('NUXEL_HTTP_MODE', 'dev')
 # downgrade. NUXEL_BRIDGE_VERSION is the host IMPLEMENTATION version and is
 # allowed to move independently.
 BRIDGE_PROTOCOL_VERSION = os.environ.get('NUXEL_BRIDGE_PROTOCOL_VERSION', '1')
-BRIDGE_HOST_VERSION = os.environ.get('NUXEL_BRIDGE_VERSION', '0.6.3-beta')
+BRIDGE_HOST_VERSION = os.environ.get('NUXEL_BRIDGE_VERSION', '0.6.5-beta')
 
 # Canonical launcher registry, shared with the PWA (pwa/nuxel-common/app-registry.json)
 # and the native shell. The rootfs installs it at /etc/nuxel/app-registry/.
@@ -892,6 +892,10 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
         ("sms", "list"): "SmsGetMessages",
         ("call", "end"): "CallEnd",
         ("location", "status"): "GetLocation",
+        ("location", "get-status"): "LocationGetStatus",
+        ("location", "set-enabled"): "LocationSetEnabled",
+        ("bluetooth", "status"): "BluetoothGetStatus",
+        ("bluetooth", "set-powered"): "BluetoothSetPowered",
         ("permissions", "request"): "RequestCapability",
         ("permissions", "revoke"): "RevokeCapability",
         ("sms", "send"): "SmsSend",
@@ -933,6 +937,10 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
         "SmsGetMessages": lambda app_id, params: [app_id],
         "CallEnd": lambda app_id, params: [app_id, params.get("call_id", "")],
         "GetLocation": lambda app_id, params: [app_id],
+        "LocationGetStatus": lambda app_id, params: [app_id],
+        "LocationSetEnabled": lambda app_id, params: [app_id, bool((params or {}).get("enabled", False))],
+        "BluetoothGetStatus": lambda app_id, params: [app_id],
+        "BluetoothSetPowered": lambda app_id, params: [app_id, bool((params or {}).get("enabled", False))],
         "RequestCapability": lambda app_id, params: [app_id, params.get("capability", "")],
         "RevokeCapability": lambda app_id, params: [app_id, params.get("capability", "")],
         "CallInitiate": lambda app_id, params: [app_id, params.get("number", "")],

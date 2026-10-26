@@ -77,6 +77,10 @@ class Capability(str, Enum):
     # Bluetooth
     BLUETOOTH_SCAN = 'bluetooth:scan'
     BLUETOOTH_CONNECT = 'bluetooth:connect'
+    BLUETOOTH_MANAGE = 'bluetooth:manage'
+
+    # Location policy
+    LOCATION_MANAGE = 'location:manage'
 
 
 class CapabilityState(Enum):
@@ -281,6 +285,22 @@ CAPABILITY_INFO = {
         'prompt': 'Allow this app to connect to Bluetooth devices?',
         'portal_type': 'bluetooth',
     },
+    Capability.BLUETOOTH_MANAGE: {
+        'name': 'Manage Bluetooth Radio',
+        'description': 'Allows the app to enable or disable the Bluetooth radio',
+        'risk': 'medium',
+        'persistent': True,
+        'prompt': 'Allow this app to manage the Bluetooth radio?',
+        'portal_type': 'bluetooth',
+    },
+    Capability.LOCATION_MANAGE: {
+        'name': 'Manage Location Policy',
+        'description': 'Allows the app to enable or disable the system location policy',
+        'risk': 'medium',
+        'persistent': True,
+        'prompt': 'Allow this app to manage the system location policy?',
+        'portal_type': 'location',
+    },
 }
 
 
@@ -319,8 +339,14 @@ EXTENDED_CAPABILITY_HIERARCHY = {
     'bluetooth': {
         'name': 'Bluetooth',
         'icon': 'bluetooth',
-        'description': 'Bluetooth device scanning and connections',
-        'capabilities': ['bluetooth:scan', 'bluetooth:connect'],
+        'description': 'Bluetooth device scanning, connections and radio power',
+        'capabilities': ['bluetooth:scan', 'bluetooth:connect', 'bluetooth:manage'],
+    },
+    'location': {
+        'name': 'Location',
+        'icon': 'location',
+        'description': 'Location reads and the global privacy policy',
+        'capabilities': ['location:read', 'location:manage'],
     },
 }
 

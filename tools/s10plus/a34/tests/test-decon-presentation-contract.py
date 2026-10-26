@@ -9,7 +9,12 @@ rootfs = (ROOT / 'images/s10plus/build-phone-rootfs-inside-fedora.sh').read_text
 unit = (ROOT / 'services/nuxel-session/systemd/nuxel-wl-fb.service').read_text()
 
 assert 'return panel_commit_frame("frame");' in bridge, 'blit must commit each frame'
-assert re.search(r'else\s*\{\s*/\* Command-mode Samsung DECON:.*?frame_blit_once\(\)',bridge,re.S), 'live steady loop must use committed frame'
+# A65 wrapped the steady-state blit in `if (changed)`: unchanged frames are
+# skipped on purpose, but EVERY changed frame must still be committed.  Assert
+# the invariant, not one historical brace layout (the old regex required the
+# comment to sit directly after `else {`, which stopped matching and turned
+# every release run red).
+assert re.search(r'if \(changed\) \{.*?/\* Command-mode Samsung DECON:.*?frame_blit_once\(\)',bridge,re.S), 'live steady loop must use committed frame'
 assert 'panel_assert("post-stop");' in bridge and 'bl_power_write(0, "launcher-first-frame");' in bridge
 assert re.search(r'panel_assert\("post-stop"\);.*?frame_blit_once\(\)',bridge,re.S), 'initial frame must pan'
 assert 'panel_blank_powerdown("screen-off");' in bridge, 'real panel blank must be attempted'

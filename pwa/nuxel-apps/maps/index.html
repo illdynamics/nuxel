@@ -38,8 +38,11 @@
     <button id="add-pin" class="primary">Add pin here</button>
   </div>
   <div class="row">
-    <input id="search" type="text" placeholder="Search saved pins and places">
+    <input id="search" type="text" placeholder="Search places (Enter) or filter pins">
+    <button id="search-panel">Search</button>
   </div>
+  <p class="hint">Search uses OpenStreetMap Nominatim (one query per action, © OpenStreetMap contributors).
+    Results are added as pins; nothing opens externally and no network position is ever shown as GPS.</p>
 </section>
 
 <section class="card">
@@ -62,6 +65,12 @@
     <input id="tile-url" type="text" placeholder="https://tile.example/{z}/{x}/{y}.png" class="grow">
     <button id="save-tile">Save template</button>
   </div>
+  <div class="row">
+    <button id="osm-preset" class="primary">Use OpenStreetMap standard tiles (go online)</button>
+  </div>
+  <p class="hint">The preset fills the official OpenStreetMap tile URL only. Downloads stay
+    disabled until you tick &ldquo;Allow tile downloads&rdquo;, and map attribution is shown on
+    the canvas. Nuxel never crawls or prefetches tiles on its own.</p>
   <label class="check"><input id="allow-net" type="checkbox"> Allow tile downloads from the template above</label>
   <div class="row">
     <button id="cache-here">Cache the visible tiles</button>

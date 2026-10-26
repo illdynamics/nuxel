@@ -1,0 +1,85 @@
+{
+  "at": "2026-10-26T09:18:57+0100",
+  "baseline_deltas": [
+    {
+      "expected": "0",
+      "item": "failed-units",
+      "observed": [
+        "\u25cf NetworkManager-wait-online.service loaded failed failed Network Manager Wait Online",
+        "\u25cf nuxel-bridge.service               loaded failed failed Nuxel Bridge - PWA to Native Phone Service Mediator"
+      ],
+      "severity": "regression-signal"
+    }
+  ],
+  "blocked_reason": null,
+  "briq": "briq-10a-live-reachability-preflight",
+  "console": {
+    "callout": "/dev/cu.usbmodem2101",
+    "match_stage": "explicit"
+  },
+  "evidence_dir": "/Users/wicked/x/nuxel/docs/beta-finalization/live/evidence/a75-baseline-20261026",
+  "exit_code": 0,
+  "fake_console": false,
+  "probe": {
+    "at": "2026-10-26T09:18:57+0100",
+    "bytes_in": 54,
+    "dev": "/dev/cu.usbmodem2101",
+    "echo_ok": true,
+    "elapsed_s": 0.325,
+    "error": null,
+    "reachable": true,
+    "sample": "\u001b[?2004l\n\u001b[?2004hsh-5.3# \u001b[?2004l\n\u001b[?2004hsh-5.3# "
+  },
+  "pwa_drift": [
+    {
+      "device": "1bbcd4697ea1c9094970dc7470ae8003b092f75858bb15d3fd4630d8e4007dda",
+      "file": "pwa/nuxel-home/css/launcher.css",
+      "repo": "9d56a005af3bf09e0c31d1869b7c34f071b285676a3cd7184371dd1de18573e3"
+    },
+    {
+      "device": "163c8511d7fbb6f0b1a23606fd33b300bb558a2d2a1c8798a9402c4c906a148a",
+      "file": "pwa/nuxel-home/js/touch-keyboard.js",
+      "repo": "aac1d0f22c402b49b4cc577a71cf48fd63a09dc2a4e7e74f0645ee2ab8ac7dd6"
+    },
+    {
+      "device": "0866abb04285a0b8174a165d6cf2179be025ea61f081d7e25ef37a08b7680768",
+      "file": "pwa/nuxel-home/js/osd.js",
+      "repo": "7c658be63ae365cc4bcf84d9b3975d14108fae5ce37a3c5cca120ceb49c427b6"
+    },
+    {
+      "device": "77f0474f117dbeb6ff124aad8864c3ffaf80fea3a15bd9d436d26111f7b8d77e",
+      "file": "pwa/nuxel-home/js/status-bar.js",
+      "repo": "584c8baf2e47eac3e058fc905ee28cc1bfc80e3838a52262309aa38058a6731f"
+    }
+  ],
+  "pwa_files": [
+    "pwa/nuxel-home/index.html",
+    "pwa/nuxel-home/manifest.json",
+    "pwa/nuxel-home/sw.js",
+    "pwa/nuxel-home/colour-test.html",
+    "pwa/nuxel-home/css/launcher.css",
+    "pwa/nuxel-home/css/search.css",
+    "pwa/nuxel-home/css/status-bar.css",
+    "pwa/nuxel-home/css/style.css",
+    "pwa/nuxel-home/js/app.js",
+    "pwa/nuxel-home/js/touch-keyboard.js",
+    "pwa/nuxel-home/js/apps.js",
+    "pwa/nuxel-home/js/bootlog.js",
+    "pwa/nuxel-home/js/bridge.js",
+    "pwa/nuxel-home/js/host-bridge.js",
+    "pwa/nuxel-home/js/launcher.js",
+    "pwa/nuxel-home/js/osd.js",
+    "pwa/nuxel-home/js/qs.js",
+    "pwa/nuxel-home/js/recents.js",
+    "pwa/nuxel-home/js/safe-zones.js",
+    "pwa/nuxel-home/js/search.js",
+    "pwa/nuxel-home/js/settings-store.js",
+    "pwa/nuxel-home/js/status-bar.js"
+  ],
+  "reachable": true,
+  "verdict": "DEPLOYED_UNVERIFIED",
+  "verdict_note": "baseline read from the running device; this is a read-only observation and proves nothing about hardware that reports no evidence (e.g. a registered sec_ts driver is not proof of a working touchscreen)",
+  "verdicts": {
+    "briq-10a-live-reachability-preflight": "DEPLOYED_UNVERIFIED"
+  }
+}

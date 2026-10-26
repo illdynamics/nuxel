@@ -1,0 +1,66 @@
+{
+  "adb_devices": [],
+  "at": "2026-10-25T14:41:14+0100",
+  "blocked_reason": null,
+  "capability": {
+    "pid": "0x4ee7",
+    "serial": "NUXEL-S10PLUS-0001",
+    "vid": "0x18d1"
+  },
+  "evidence_dir": "/Users/wicked/x/nuxel/docs/beta-finalization/live/evidence/reachability-20261025T144114+0100",
+  "exit_code": 0,
+  "finished": "2026-10-25T14:41:15+0100",
+  "gadget_descriptor_present": true,
+  "host": "Darwin 24.6.0",
+  "nodes": [
+    {
+      "callout": "/dev/cu.usbmodem201",
+      "dialin": "/dev/tty.usbmodem201",
+      "pid": 20199,
+      "tty_base": "usbmodem",
+      "tty_device": "usbmodem201",
+      "tty_suffix": "201",
+      "vid": 6353
+    }
+  ],
+  "probe": {
+    "at": "2026-10-25T14:41:14+0100",
+    "bytes_in": 6301,
+    "dev": "/dev/cu.usbmodem201",
+    "echo_ok": true,
+    "elapsed_s": 0.336,
+    "error": null,
+    "reachable": true,
+    "sample": "0(PA): 0x0000000014400000, SIZE: 32768\n4,47270,3272194938,-;dhdpcie_dump_resource: BAR1(VA): 0x0000000000000000, BAR1(PA): 0x0000000014000000, SIZE: 4194304\n4,47271,3272194950,-;dhdpcie_suspend_dev: Enter: TS(2610251341160528)\n4,47272,3272194957,-;dhdpcie_suspend_dev: Disable L1ss EP side\n6,47273,3272194970,-;exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: START (state = 0x0, id = 0x10, enab"
+  },
+  "reachable": true,
+  "selected": {
+    "callout": "/dev/cu.usbmodem201",
+    "match_stage": "explicit"
+  },
+  "steps": [
+    {
+      "detail": "/dev/cu.usbmodem201 (matched explicit)",
+      "ok": true,
+      "step": "select-by-capability"
+    },
+    {
+      "detail": {
+        "elapsed_s": 0.805,
+        "framed": true,
+        "output_bytes": 52,
+        "raw_len": 9790,
+        "rc": 0,
+        "rid": "19b006fa",
+        "sha_ok": true
+      },
+      "ok": true,
+      "output": "uid=0(root) gid=0(root) groups=0(root)\nNXL-REACH-OK",
+      "step": "framed-command"
+    }
+  ],
+  "verdict": "REACHABLE",
+  "verdicts": {
+    "briq-10a-live-reachability-preflight": "REACHABLE"
+  }
+}

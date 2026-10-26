@@ -191,6 +191,7 @@ if CC and os.path.exists(BIN):
     proc.stdin.flush()
     time.sleep(0.4)
     proc.stdin.close()                       # the "cable" is pulled
+    proc.stdin = None                        # communicate() must not flush it again
     try:
         out, err = proc.communicate(timeout=30)
     except subprocess.TimeoutExpired:

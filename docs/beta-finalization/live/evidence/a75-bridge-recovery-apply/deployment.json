@@ -1,0 +1,82 @@
+{
+  "apply": true,
+  "at": "2026-10-26T09:21:07+0100",
+  "blocked_reason": "a deploy step failed and was rolled back to the recorded previous hash; no further writes attempted",
+  "briq": "briq-10b-live-deploy-userspace",
+  "evidence_dir": "/Users/wicked/x/nuxel/docs/beta-finalization/live/evidence/a75-bridge-recovery-apply",
+  "exit_code": 5,
+  "groups": [
+    {
+      "declared_reload": null,
+      "declared_reload_source": null,
+      "group": "a75-bridge-grant-loader-recovery",
+      "priority": 1,
+      "restart_service": "nuxel-bridge.service",
+      "risk": "medium",
+      "risk_rank": 1,
+      "steps": 1
+    }
+  ],
+  "health": [
+    {
+      "check": "systemctl is-active --quiet nuxel-bridge.service && busctl --system call org.nuxel.Bridge /org/nuxel/Bridge org.nuxel.Bridge Ping s health >/dev/null",
+      "group": "a75-bridge-grant-loader-recovery",
+      "ok": false,
+      "output": "Call failed: The name org.nuxel.Bridge was not provided by any .service files"
+    }
+  ],
+  "manifest": "tools/beta/live/a75-bridge-recovery-manifest.json",
+  "order": "manifest",
+  "probe": {
+    "at": "2026-10-26T09:21:07+0100",
+    "bytes_in": 54,
+    "dev": "/dev/cu.usbmodem2101",
+    "echo_ok": true,
+    "elapsed_s": 0.326,
+    "error": null,
+    "reachable": true,
+    "sample": "\u001b[?2004l\n\u001b[?2004hsh-5.3# \u001b[?2004l\n\u001b[?2004hsh-5.3# "
+  },
+  "reconnects": [],
+  "results": [
+    {
+      "declared_reload": null,
+      "group": "a75-bridge-grant-loader-recovery",
+      "health_check": "systemctl is-active --quiet nuxel-bridge.service && busctl --system call org.nuxel.Bridge /org/nuxel/Bridge org.nuxel.Bridge Ping s health >/dev/null",
+      "install": {
+        "framed": true,
+        "output": "PREV=b3397a2a5731cb8c9d5e48a6773c2c6cbe99926d0baad9413999638b7d101e0f\n/usr/lib/nuxel/nuxel-bridge/bridge.py.nuxel-staged: OK\nactive\nINSTALL-OK\nNXLSCRIPT-RC=0\n",
+        "rc": 0
+      },
+      "installed_hash": "082349d170bdb8f46fef905ca92c63e604237f415650da66a6d2ae765a2354f5",
+      "mode": "0644",
+      "n": 1,
+      "ok": true,
+      "previous_hash": "b3397a2a5731cb8c9d5e48a6773c2c6cbe99926d0baad9413999638b7d101e0f",
+      "risk": "medium",
+      "risk_rank": 1,
+      "rollback": null,
+      "rollback_route": "restore /usr/lib/nuxel/nuxel-bridge/bridge.py.nuxel-rollback and restart nuxel-bridge.service",
+      "service": "nuxel-bridge.service",
+      "source": "services/nuxel-bridge/src/bridge.py",
+      "source_sha256": "082349d170bdb8f46fef905ca92c63e604237f415650da66a6d2ae765a2354f5",
+      "staged_push": {
+        "bytes": 92468,
+        "parts": 964,
+        "sha256": "082349d170bdb8f46fef905ca92c63e604237f415650da66a6d2ae765a2354f5"
+      },
+      "target": "/usr/lib/nuxel/nuxel-bridge/bridge.py",
+      "verify_output": "INSTALL-OK (hash checked in-frame)"
+    }
+  ],
+  "risk_envelope": {
+    "medium": 1
+  },
+  "skipped": [],
+  "steps": 1,
+  "verdict": "FAILED",
+  "verdicts": {
+    "briq-10b-live-deploy-userspace": "FAILED"
+  },
+  "violations": []
+}
