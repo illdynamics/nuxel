@@ -1,0 +1,7 @@
+pushed={"b64_chars": 1976, "bytes": 1482, "decoded_sha256": "1bf29e627d973f627259edc2c3b194ec30f5cb2357e96f8ef651d1c7230ad659", "parts": 16, "path": "/var/tmp/nxl-install-007.sh"}
+ok=True rc=0
+---
+PREV=75dd178ccdd9b8b886c95392f551d66dbc78e764df4ae64dc1302fd3d51bb454
+/usr/share/nuxel/pwa/nuxel-common/bridge.js.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

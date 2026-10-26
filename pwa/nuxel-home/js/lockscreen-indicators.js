@@ -17,13 +17,13 @@
 (function (global) {
   'use strict';
 
-  var VERSION = 'a70.3';
+  var VERSION = 'a77.1';
   var SAFETY_MS = 3000;
   var API_PATH = 'http://127.0.0.1:8080/api/v1/system/indicators';
   var ICONS = {
-    charging: '/assets/nuxel-charging.png?v=a70.3',
-    usb: '/assets/nuxel-connected-pc.png?v=a70.3',
-    live: '/assets/nuxel-live-console-active.png?v=a70.3'
+    charging: '/assets/nuxel-charging.png?v=a77.1',
+    usb: '/assets/nuxel-connected-pc.png?v=a77.1',
+    live: '/assets/nuxel-live-console-active.png?v=a77.1'
   };
 
   function el(id) { return global.document ? global.document.getElementById(id) : null; }

@@ -21,18 +21,22 @@ USB data-link truth (A73) is a two-part contract:
     configuration handshake and is never sufficient; a charging-only cable never
     enumerates the controller.
 
-  * PHYSICAL detach veto — Samsung 4.14 gadget drivers can leave a UDC state
-    ``configured`` (and a bound gadget) intact after a physical cable pull.
-    The independent physical signal therefore vetoes a stale positive:
+  * PHYSICAL detach vetoes (A77) — Samsung 4.14 gadget drivers can leave a UDC
+    state ``configured`` (and a bound gadget) intact after a physical cable
+    pull.  The owner's SM-G975F detach log proves ``typec/port0/data_role``
+    ALSO stays ``host [device]``, so the A73 Type-C role check alone can never
+    clear the icons.  The independent signals that do change on this board are:
 
-      - the Type-C class (max77705-usbc) reports the resolved data role; when a
-        host partner is attached the role is ``[device]``.  After a detach the
-        bracket is gone / the role is ``[none]``.
+      - ``/sys/class/udc/<udc>/current_speed`` becomes ``UNKNOWN`` on detach
+        while the stale UDC still reports ``configured``.
+      - the wired power supplies (``ac``/``usb``) report ``online=0`` once VBUS
+        is gone.  A bus-powered USB gadget cannot carry a data link without
+        VBUS; wireless charging is excluded because it never carries data.
+      - the Type-C resolved role is still honoured when it *does* report no
+        ``[device]`` role.
 
-    When that signal explicitly reports no device role, ``pc_connected`` fails
-    closed even if the UDC still says ``configured``.  If the Type-C class is
-    unavailable, the UDC evidence stands (so the offline fixtures and desktops
-    without Type-C keep working).
+    Absent signals are neutral (desktops/VMs and kernels without these
+    attributes keep working); any explicit down signal fails closed.
 
     A74: the DWC3 debugfs ``link_state`` node is deliberately NOT read.  On the
     S10+ downstream 4.14 kernel, reading that debugfs attribute dereferences the
@@ -193,6 +197,60 @@ def _udc_states() -> Dict[str, Optional[str]]:
     return {name: _read(os.path.join(root, name, "state")) for name in _udc_names()}
 
 
+# Speeds a connected gadget controller can report.  ``UNKNOWN`` (or an empty
+# file) is what the S10+ DWC3 controller leaves behind after a physical detach,
+# even while the gadget framework still says ``configured``.
+_UDC_CONNECTED_SPEEDS = {
+    "low-speed", "full-speed", "high-speed", "super-speed", "super-speed-plus",
+}
+
+
+def _udc_speeds() -> Dict[str, Optional[str]]:
+    root = _root("NUXEL_SYS_UDC", "/sys/class/udc")
+    return {name: _read(os.path.join(root, name, "current_speed"))
+            for name in _udc_names()}
+
+
+def _udc_speed_is_connected(speed: Optional[str]) -> Optional[bool]:
+    """True/False when a speed is readable; None when the attribute is absent.
+
+    A readable but non-connected value (``UNKNOWN``, ``not attached``) is a
+    positive detach signal.
+    """
+    if speed is None:
+        return None
+    return speed.strip().lower() in _UDC_CONNECTED_SPEEDS
+
+
+# Wired charging supplies prove VBUS.  Wireless is excluded: it powers the
+# battery but can never carry the USB data link.
+_WIRED_VBUS_TYPES = {
+    "usb", "usb-pd", "usb_typec", "usb_type_c", "usb_c", "mains", "ac", "dc",
+    "charger", "quick_charge", "hv_charger",
+}
+
+
+def _wired_vbus_state() -> Optional[bool]:
+    """True/False when wired supplies are readable; None when there are none.
+
+    True  at least one wired supply reports online=1 (VBUS present)
+    False every readable wired supply reports online=0 (no cable power)
+    None  no readable wired supply attribute (desktop/VM/other kernel)
+    """
+    supplies = _read_power_supplies()
+    seen = False
+    for supply in supplies:
+        if supply["type"] not in _WIRED_VBUS_TYPES:
+            continue
+        online = supply.get("online_raw")
+        if online is None:
+            continue
+        seen = True
+        if online == 1:
+            return True
+    return False if seen else None
+
+
 def _android_usb_state() -> Optional[str]:
     """Vendor Android gadget state, retained for diagnostics only.
 
@@ -269,10 +327,10 @@ def usb_connection() -> Dict[str, Any]:
     state is exactly ``configured`` distinguishes completed host enumeration
     from VBUS, gadget preparation and the pre-configuration ``addressed`` state.
 
-    A stale ``configured`` is then vetoed by the independent physical signals
-    (Type-C data role / DWC3 link_state), so a physical unplug clears the PC
-    icon promptly instead of leaving a ghost.  The vendor CONFIGURED value is
-    diagnostic only.
+    A stale ``configured`` is then vetoed by independent physical signals (UDC
+    speed, wired VBUS and Type-C data role), so a physical unplug clears the PC
+    and Live Console icons promptly instead of leaving a ghost.  The vendor
+    CONFIGURED value is diagnostic only.
     """
     gadgets = _bound_gadgets()
     bound_udcs = _bound_udc_names()
@@ -280,43 +338,57 @@ def usb_connection() -> Dict[str, Any]:
     veto, physical_evidence = _physical_data_link_veto()
     if not gadgets or not bound_udcs:
         return {"pc_connected": False, "source": "unavailable:gadget-not-bound",
-                "bound_gadgets": [], "udc_states": {},
+                "bound_gadgets": [], "udc_states": {}, "udc_speeds": {},
+                "vbus_present": None,
                 "android_usb_state": android_state,
                 "physical": physical_evidence}
 
     states = _udc_states()
+    speeds = _udc_speeds()
+    vbus = _wired_vbus_state()
     data_states = {name: state for name, state in states.items()
                    if name in bound_udcs and state and
                    state.strip().lower() == "configured"}
+    base = {
+        "bound_gadgets": gadgets,
+        "udc_states": states,
+        "udc_speeds": speeds,
+        "vbus_present": vbus,
+        "android_usb_state": android_state,
+        "physical": physical_evidence,
+    }
     if data_states:
         name = sorted(data_states)[0]
+        speed = speeds.get(name)
         if veto:
-            return {
+            return dict(base, **{
                 "pc_connected": False,
                 "source": "sysfs:udc:" + name + ":configured-vetoed-by-physical-detach",
-                "bound_gadgets": gadgets,
-                "udc_states": states,
-                "android_usb_state": android_state,
-                "physical": physical_evidence,
-            }
-        return {
+            })
+        if _udc_speed_is_connected(speed) is False:
+            evidence = list(physical_evidence) + [
+                "udc:speed-" + (speed or "unknown").strip().lower()]
+            return dict(base, **{
+                "physical": evidence,
+                "pc_connected": False,
+                "source": "sysfs:udc:" + name + ":configured-vetoed-by-udc-speed",
+            })
+        if vbus is False:
+            evidence = list(physical_evidence) + ["power:wired-vbus-off"]
+            return dict(base, **{
+                "physical": evidence,
+                "pc_connected": False,
+                "source": "sysfs:udc:" + name + ":configured-vetoed-by-no-vbus",
+            })
+        return dict(base, **{
             "pc_connected": True,
             "source": "sysfs:udc:" + name + ":" + str(data_states[name]).strip().lower(),
-            "bound_gadgets": gadgets,
-            "udc_states": states,
-            "android_usb_state": android_state,
-            "physical": physical_evidence,
-        }
+        })
     if not states:
-        return {"pc_connected": False, "source": "unavailable:no-udc-state",
-                "bound_gadgets": gadgets, "udc_states": states,
-                "android_usb_state": android_state,
-                "physical": physical_evidence}
+        return dict(base, **{"pc_connected": False,
+                             "source": "unavailable:no-udc-state"})
     rendered = ",".join("%s=%s" % (k, v) for k, v in sorted(states.items()))
-    return {"pc_connected": False, "source": "sysfs:udc:" + rendered,
-            "bound_gadgets": gadgets, "udc_states": states,
-            "android_usb_state": android_state,
-            "physical": physical_evidence}
+    return dict(base, **{"pc_connected": False, "source": "sysfs:udc:" + rendered})
 
 
 def _console_tty_basenames() -> List[str]:
@@ -520,6 +592,8 @@ def get_indicators() -> Dict[str, Any]:
             "pc_connected": bool(usb["pc_connected"]),
             "source": usb["source"],
             "physical": usb.get("physical", []),
+            "vbus_present": usb.get("vbus_present"),
+            "udc_speeds": usb.get("udc_speeds", {}),
         },
         "live_console": {
             "active": bool(console["active"]),

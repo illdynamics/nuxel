@@ -47,15 +47,16 @@
   </screenshots>
 
   <releases>
-    <release version="0.6.5-beta" date="2026-10-26">
-      <url>https://github.com/illdynamics/nuxel/releases/tag/v0.6.5-beta</url>
+    <release version="0.6.6-beta" date="2026-10-26">
+      <url>https://github.com/illdynamics/nuxel/releases/tag/v0.6.6-beta</url>
       <description>
-        <p>Nuxel Home v0.6.5-beta — pre-release aligned with Nuxel Phone OS v0.6.5-beta
-        (radio/privacy truth, USB detach safety, Wi-Fi scan bound and the A75 network
-        restore work on the Galaxy S10+).</p>
+        <p>Nuxel Home v0.6.6-beta — aligned with Nuxel Phone OS v0.6.6-beta
+        (A77 USB-detach truth: the PC and Live Console lockscreen penguins clear
+        when the cable is unplugged).</p>
         <ul>
-          <li>Whole-repo version bump in lockstep with the Nuxel OS v0.6.5-beta pre-release</li>
-          <li>Launcher cache advanced to v44-a76-lockstep</li>
+          <li>PC / Live Console indicators fall with the real USB data link</li>
+          <li>Launcher cache advanced to v45-a77-usb-detach</li>
+          <li>Whole-repo version bump in lockstep with the Nuxel OS v0.6.6-beta release</li>
           <li>No shell surface redesign</li>
         </ul>
       </description>

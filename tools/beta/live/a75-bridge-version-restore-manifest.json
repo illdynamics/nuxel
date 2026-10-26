@@ -1,0 +1,81 @@
+{
+  "schema_version": 1,
+  "id": "a75-bridge-version-restore",
+  "device": {
+    "codename": "beyond2lte",
+    "model": "SM-G975F",
+    "soc": "Exynos 9820",
+    "os": "Nuxel (Fedora 43 ARM64, kernel 4.14.253)"
+  },
+  "groups": [
+    {
+      "id": "a75-bridge-dbus-code",
+      "component": "nuxel-bridge D-Bus service code (Wi-Fi scan timeout bound + version pin)",
+      "priority": 1,
+      "risk": "medium",
+      "restart_service": "nuxel-bridge.service",
+      "health_check": "for i in 1 2 3 4 5 6 7 8 9 10; do busctl --system call org.nuxel.Bridge /org/nuxel/Bridge org.nuxel.Bridge Ping s health >/dev/null 2>&1 && exit 0; sleep 1; done; exit 1",
+      "rollback": "restore /usr/lib/nuxel/nuxel-bridge/bridge.py.nuxel-rollback and restart nuxel-bridge.service",
+      "files": [
+        {
+          "source": "services/nuxel-bridge/src/bridge.py",
+          "target": "/usr/lib/nuxel/nuxel-bridge/bridge.py",
+          "mode": "0644"
+        }
+      ]
+    },
+    {
+      "id": "a75-http-bridge-code",
+      "component": "nuxel-http-bridge REST code (version pin)",
+      "priority": 2,
+      "risk": "medium",
+      "restart_service": "nuxel-http-bridge.service",
+      "health_check": "test \"$(curl -s -m 5 -o /dev/null -w '%{http_code}' http://127.0.0.1:8080/api/v1/health)\" = 200",
+      "rollback": "restore /usr/lib/nuxel/nuxel-bridge/api.py.nuxel-rollback and restart nuxel-http-bridge.service",
+      "files": [
+        {
+          "source": "services/nuxel-bridge/src/api.py",
+          "target": "/usr/lib/nuxel/nuxel-bridge/api.py",
+          "mode": "0644"
+        }
+      ]
+    },
+    {
+      "id": "a75-bridge-version-units-and-pwa",
+      "component": "systemd unit env pins + bridge-version.json + shared PWA bridge honesty fallback",
+      "priority": 3,
+      "risk": "medium",
+      "restart_service": null,
+      "declared_reload": "systemctl daemon-reload && (systemctl restart nuxel-bridge.service nuxel-http-bridge.service || true)",
+      "health_check": "test \"$(grep -c 'NUXEL_BRIDGE_VERSION=0.6.5-beta' /etc/systemd/system/nuxel-bridge.service /etc/systemd/system/nuxel-http-bridge.service 2>/dev/null)\" = 2 && grep -q '\"host_version\": \"0.6.5-beta\"' /etc/nuxel/bridge-version.json",
+      "rollback": "restore each <target>.nuxel-rollback, systemctl daemon-reload, restart nuxel-bridge.service nuxel-http-bridge.service",
+      "files": [
+        {
+          "source": "services/nuxel-bridge/systemd/nuxel-bridge.service",
+          "target": "/etc/systemd/system/nuxel-bridge.service",
+          "mode": "0644"
+        },
+        {
+          "source": "services/nuxel-bridge/systemd/nuxel-http-bridge.service",
+          "target": "/etc/systemd/system/nuxel-http-bridge.service",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-common/bridge-version.json",
+          "target": "/etc/nuxel/bridge-version.json",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-common/bridge-version.json",
+          "target": "/usr/share/nuxel/pwa/nuxel-common/bridge-version.json",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-common/bridge.js",
+          "target": "/usr/share/nuxel/pwa/nuxel-common/bridge.js",
+          "mode": "0644"
+        }
+      ]
+    }
+  ]
+}

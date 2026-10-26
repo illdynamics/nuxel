@@ -13,7 +13,7 @@ assert version in (r/'CHANGELOG.md').read_text()
 assert re.search(r'^## \['+re.escape(version)+r'\]', (r/'CHANGELOG.md').read_text(), re.M)
 assert 'branches: [main]' in (r/'.github/workflows/release.yml').read_text()
 workflow = (r/'.github/workflows/release.yml').read_text()
-assert '--prerelease' in workflow
+assert '--latest' in workflow
 assert 'push:\n    branches: [main]' in workflow
 assert 'tags:\n' not in workflow
 assert 'refs/tags/$tag' in workflow

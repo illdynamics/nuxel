@@ -12,6 +12,38 @@ The canonical version lives in [`VERSION`](VERSION) and is bumped in lockstep
 across the shell apps, the PWA manifest, the device `APKBUILD`s, the VM tooling
 and the OTA builder (see *Versioning* below).
 
+## [v0.6.6-beta] - 2026-10-26 - *Released: A77 USB-detach truth + release visibility*
+
+- **Ghost PC / Live Console penguins fixed.** After connecting to a PC and
+  physically unplugging, the cyan PC penguin and the amber Live Console penguin
+  now clear. Root cause proven from the phone's own detach log: on this
+  SM-G975F 4.14.253 kernel `typec/port0/data_role` stays `host [device]` and
+  `udc/10c00000.dwc3/state` stays `configured` after a real cable pull, so the
+  A73/A74 Type-C veto could never fire. A77 adds two independent, safe detach
+  signals to both truth providers: a readable non-connected UDC
+  `current_speed` (`UNKNOWN`) and wired VBUS `online=0`. Wireless charging is
+  excluded; absent signals stay neutral. Charging remains independent.
+- **Live Console follows the corrected data link.** `live_console.active` is
+  gated by `usb_data.pc_connected`, so one detach clears both icons in the same
+  read; the console daemon is never killed to hide the icon. The indicator API
+  now also reports `usb_data.vbus_present` and `usb_data.udc_speeds`.
+- **Launcher cache `v45-a77-usb-detach`** with `a77.1` cache-busters, because
+  `js/lockscreen-indicators.js`, `index.html`, the manifest and `sw.js` all
+  changed. A v44 cache must not survive this release.
+- **Release visibility fixed.** The release workflow now publishes the built
+  beta as a normal release and explicitly marks it **Latest**, instead of
+  publishing only a prerelease. Prereleases cannot be GitHub's "Latest
+  release", which is why the sidebar still showed v0.6.0-beta while v0.6.3 and
+  v0.6.5 were visible only on the Releases page. The tag/title still carry the
+  `-beta` suffix and the notes state the beta status.
+- **Whole-repo lockstep bump to `v0.6.6-beta`** across `VERSION`, device
+  `APKBUILD`s, PWA/bridge manifests, services and systemd `Environment=` pins,
+  shell apps, OTA/VM tooling, the animated-home `metainfo.xml` and release docs.
+- **Installed-phone capture refreshed.** `release/s10plus/` now carries the
+  SHA-256 inventory of the userspace actually running after the A77 live
+  deployment (2,959 entries) plus the re-verified byte-exact installed BOOT
+  image. The workflow publishes these with the CI-built image set.
+
 ## [v0.6.5-beta] - 2026-10-26 - *Released: A76 whole-repo lockstep + green release gate*
 
 - Whole-repo lockstep bump to `v0.6.5-beta`: the `VERSION` file already said

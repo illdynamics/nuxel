@@ -1,0 +1,56 @@
+{
+  "at": "2026-10-26T16:15:00+02:00",
+  "boot_id": "9ff44f39-69e4-4444-bb47-24ca923a0d69",
+  "repo_commit": "d545289",
+  "repo_branch": "main",
+  "kernel": "4.14.253",
+  "changed_by_this_mission": {
+    "/usr/lib/nuxel/nuxel-bridge/bridge.py": {
+      "before": "082349d170bdb8f46fef905ca92c63e604237f415650da66a6d2ae765a2354f5",
+      "after": "6fb991669953eba540fcd9ce39193aab23199c4d57a77b6b571d7ade7346c7f0",
+      "repo": "6fb991669953eba540fcd9ce39193aab23199c4d57a77b6b571d7ade7346c7f0",
+      "rollback": "/usr/lib/nuxel/nuxel-bridge/bridge.py.nuxel-rollback"
+    },
+    "/usr/lib/nuxel/nuxel-bridge/api.py": {
+      "before": "ab8b432034fc377405b44c3a7be52ed65ae5881d36efda3530ad4ccd76b27853",
+      "after": "64be1b6a550053c6c5f8e6b90d27718d4605ed74d5ce1f74b3757d5979f25227",
+      "repo": "64be1b6a550053c6c5f8e6b90d27718d4605ed74d5ce1f74b3757d5979f25227",
+      "rollback": "/usr/lib/nuxel/nuxel-bridge/api.py.nuxel-rollback"
+    },
+    "/etc/systemd/system/nuxel-bridge.service": {
+      "before": "5528803386af91c1086da0b683c77b1c3c3820beb1cfb14915a0265f86c65335",
+      "after": "9e04be9a548580cab388ae8b06c8946f8432287611f04e28fd86b2364f1f8ce0",
+      "repo": "9e04be9a548580cab388ae8b06c8946f8432287611f04e28fd86b2364f1f8ce0",
+      "rollback": "/etc/systemd/system/nuxel-bridge.service.nuxel-rollback"
+    },
+    "/etc/systemd/system/nuxel-http-bridge.service": {
+      "before": "c95783696bd93506122f8444516a3ec7cd4486eb2c2e22133d65a0b43101794f",
+      "after": "90e584597c1a025667f781df7c82fea3397188300ca15c14a74a7de28f53fd8e",
+      "repo": "90e584597c1a025667f781df7c82fea3397188300ca15c14a74a7de28f53fd8e",
+      "rollback": "/etc/systemd/system/nuxel-http-bridge.service.nuxel-rollback"
+    },
+    "/etc/nuxel/bridge-version.json": {
+      "before": "510f0ce31556e175133295715cc822c93c88610e1c6188941b2580771864ad9a",
+      "after": "b17a96a2851bae442d07925b8fb184970e49564c4659165565dd219f62c33fca",
+      "repo": "b17a96a2851bae442d07925b8fb184970e49564c4659165565dd219f62c33fca",
+      "rollback": "/etc/nuxel/bridge-version.json.nuxel-rollback"
+    },
+    "/usr/share/nuxel/pwa/nuxel-common/bridge-version.json": {
+      "before": "510f0ce31556e175133295715cc822c93c88610e1c6188941b2580771864ad9a",
+      "after": "b17a96a2851bae442d07925b8fb184970e49564c4659165565dd219f62c33fca",
+      "repo": "b17a96a2851bae442d07925b8fb184970e49564c4659165565dd219f62c33fca",
+      "rollback": "/usr/share/nuxel/pwa/nuxel-common/bridge-version.json.nuxel-rollback"
+    },
+    "/usr/share/nuxel/pwa/nuxel-common/bridge.js": {
+      "before": "75dd178ccdd9b8b886c95392f551d66dbc78e764df4ae64dc1302fd3d51bb454",
+      "after": "1b409e04facb7f185c7bdbf810082251fd802246444c2ca3d94f7c9877b0b75e",
+      "repo": "1b409e04facb7f185c7bdbf810082251fd802246444c2ca3d94f7c9877b0b75e",
+      "rollback": "/usr/share/nuxel/pwa/nuxel-common/bridge.js.nuxel-rollback"
+    }
+  },
+  "unchanged_reference": {
+    "/usr/share/nuxel/nuxel-home/js/qs.js": "064bd03a21b70c03491060231a50900ca50c47bc68b385e85ee620ccecd6a192",
+    "/usr/share/nuxel/nuxel-home/js/bridge.js": "b84f2789fb3687b514b1fb7d6915e100b8887b877b0aff4d870228e622122585",
+    "system_indicators.py": "d68c36318f4525263eca19c1f428d2ecc70fdfa86a6a663fb786a246db6b4a5a"
+  }
+}

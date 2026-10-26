@@ -22,7 +22,7 @@ release is created:
 | Asset | Bytes | SHA-256 |
 |---|---:|---|
 | `nuxel-installed-s10plus-boot.img.gz` | 51,605,504 (22,610,918 gz) | boot `48ad61afa91b6fe50278443ecae0695724f706a80de383e0acb021d030620cea`; gz `174cd2d1…` |
-| `nuxel-installed-s10plus-userspace-files.txt.gz` | 176,079 (53,689 gz) | `63d0152b…`; gz `e83a0353…` |
+| `nuxel-installed-s10plus-userspace-files.txt.gz` | 366,654 (129,476 gz) | `11a45bd8…`; gz `c12b7513…` (A77 refresh, 2026-10-26) |
 | `INSTALLED-IMAGES.json` | — | provenance + all hashes |
 
 The boot capture is the first 51,605,504 bytes of `/dev/sda14`, i.e. exactly the
@@ -34,7 +34,9 @@ remaining 6,066,176 bytes are stale tail bytes from an older, larger candidate
 The userspace inventory is `sha256sum` + `stat` over every Nuxel-installed file
 under `/usr/lib/nuxel`, `/usr/libexec/nuxel`, `/usr/bin`, `/usr/local/bin`,
 `/usr/share/nuxel`, `/usr/share/applications`, `/etc/nuxel`, `/etc/systemd/system`,
-`/etc/dbus-1` and `/etc/polkit-1` — 1,312 entries.
+`/etc/dbus-1` and `/etc/polkit-1` — 2,959 entries after the A77 refresh
+(2,831 regular files + 128 symlinks; the earlier capture listed regular files
+only).
 
 ## Why the root filesystem is not shipped as a byte image
 

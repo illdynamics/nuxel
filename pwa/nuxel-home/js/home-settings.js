@@ -50,7 +50,7 @@
             console.warn('[Nuxel] Missing/corrupt dock artwork:', artwork);
         };
         image.onload = () => docks.forEach(dock => { if (dock.dataset.background === value) delete dock.dataset.backgroundFallback; });
-        image.src = artwork + '?v=0.6.5-beta';
+        image.src = artwork + '?v=0.6.6-beta';
         document.dispatchEvent(new CustomEvent('nuxel:dock-background', {detail:{id:value,path:artwork}}));
     }
     const DEFAULT_WALLPAPER = "url('assets/nuxel-background.png')";
@@ -106,6 +106,10 @@
             '<label>Refresh interval <select data-system-monitor-interval>' + [1, 2, 3, 5, 10].map(v => '<option value="' + v + '"' + (Number(appearance.systemMonitorInterval || 3) === v ? ' selected' : '') + '>' + v + ' seconds</option>').join('') + '</select></label>' +
             '<label>Detailed values <input type="checkbox" data-system-monitor-detailed' + (appearance.systemMonitorDetailed !== false ? ' checked' : '') + '></label>' +
             '<p class="home-setting-hint">3 seconds is recommended. One-second updates can use more battery.</p></div>' +
+            '<h3>Lock &amp; display</h3><div class="home-setting-row"><label>Lock after screen turns off <select data-lock-after-off>' +
+            [['0','Immediately'],['5000','After 5 seconds'],['15000','After 15 seconds'],['30000','After 30 seconds'],['60000','After 1 minute'],['300000','After 5 minutes']].map(v => '<option value="' + v[0] + '">' + v[1] + '</option>').join('') +
+            '</select></label></div>' +
+            '<p class="home-setting-hint">Immediately is the secure default. A delay keeps the session briefly while the panel is off.</p>' +
             '<footer><button type="button" data-home-restore>Restore hidden apps</button><button type="button" class="reset-home" data-home-reset>Reset launcher layout</button></footer></div>';
         panel.hidden = false;
         panel.querySelector('[data-home-close]').onclick = close;
@@ -149,6 +153,28 @@
         panel.querySelector('[data-grid-rows]').onchange = update;
         panel.querySelector('[data-desktop-count]').onchange = update;
         panel.querySelector('[data-home-locked]').onchange = update;
+        const lockSel = panel.querySelector('[data-lock-after-off]');
+        if (lockSel) {
+            const applyLockDelay = (ms) => {
+                const host = global.NuxelHost;
+                if (!host || !host.available || typeof host.configGet !== 'function') return;
+                const doc = { timeout_ms: 300000, never: false, lock_after_off_ms: ms };
+                host.configSet('display-timeout', JSON.stringify(doc)).catch(() => {});
+            };
+            const hydrateLockDelay = () => {
+                const host = global.NuxelHost;
+                if (!host || !host.available || typeof host.configGet !== 'function') return;
+                host.configGet('display-timeout').then((r) => {
+                    try {
+                        const doc = JSON.parse((r && r.text) || '{}');
+                        const v = String(doc.lock_after_off_ms == null ? 0 : doc.lock_after_off_ms);
+                        if ([...lockSel.options].some(o => o.value === v)) lockSel.value = v;
+                    } catch (e) {}
+                }).catch(() => {});
+            };
+            lockSel.onchange = () => applyLockDelay(Number(lockSel.value));
+            hydrateLockDelay();
+        }
         panel.querySelector('[data-home-restore]').onclick = () => { if (launcher) launcher.restoreHiddenApps(); };
         panel.querySelector('[data-home-reset]').onclick = () => { if (launcher) launcher.resetOrder(); close(); };
     }
