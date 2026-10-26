@@ -1,0 +1,53 @@
+{
+  "apply": false,
+  "at": "2026-10-26T16:01:07+0100",
+  "briq": "briq-10b-live-deploy-userspace",
+  "evidence_dir": "/Users/wicked/x/nuxel/docs/beta-finalization/live/evidence/a75-bridge-version-restore-plan",
+  "exit_code": 0,
+  "groups": [
+    {
+      "declared_reload": null,
+      "declared_reload_source": null,
+      "group": "a75-bridge-dbus-code",
+      "priority": 1,
+      "restart_service": "nuxel-bridge.service",
+      "risk": "medium",
+      "risk_rank": 1,
+      "steps": 1
+    },
+    {
+      "declared_reload": null,
+      "declared_reload_source": null,
+      "group": "a75-http-bridge-code",
+      "priority": 2,
+      "restart_service": "nuxel-http-bridge.service",
+      "risk": "medium",
+      "risk_rank": 1,
+      "steps": 1
+    },
+    {
+      "declared_reload": "systemctl daemon-reload && (systemctl restart nuxel-bridge.service nuxel-http-bridge.service || true)",
+      "declared_reload_source": "group",
+      "group": "a75-bridge-version-units-and-pwa",
+      "priority": 3,
+      "restart_service": null,
+      "risk": "medium",
+      "risk_rank": 1,
+      "steps": 5
+    }
+  ],
+  "manifest": "tools/beta/live/a75-bridge-version-restore-manifest.json",
+  "order": "manifest",
+  "results": [],
+  "risk_envelope": {
+    "medium": 7
+  },
+  "skipped": [],
+  "steps": 7,
+  "verdict": "IMPLEMENTED_NOT_DEPLOYED",
+  "verdict_note": "plan + install scripts generated and guarded; no device write attempted (pass --apply for the live run)",
+  "verdicts": {
+    "briq-10b-live-deploy-userspace": "IMPLEMENTED_NOT_DEPLOYED"
+  },
+  "violations": []
+}
