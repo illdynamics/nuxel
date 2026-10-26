@@ -599,6 +599,125 @@ def push_bytes(con, data, path, chunk=None, mode="+x"):
     raise ConsoleLost("staged %s failed the on-device sha256 check after decode" % path)
 
 
+def block_push_bytes(con, data, path, mode="0644", chunk=None, block=None,
+                     max_retries=5):
+    """Stage `data` on-device with bounded, acknowledged BLOCK writes.
+
+    This is the fast path that replaces one framed round trip per 128-char
+    part (``push_bytes``) with a few raw transport writes, while keeping the
+    single-writer rule: every write and every read goes through `con`, so no
+    second process can interleave with the physical serial stream.
+
+    Protocol (reusing the line/block limits measured by nuxel-push.py,
+    2026-10-16: 380-char lines, 24 lines per block):
+
+      * one framed setup command truncates the part file and disables echo;
+      * each BLOCK is one raw write of `block` base64 lines (append), followed
+        by a `wc -c < part` receipt line;
+      * the cumulative file length is the acknowledgement: if it does not land
+        exactly on the expected boundary, the partial file is truncated back to
+        the last verified length and the block is retried with a bounded budget;
+      * a final framed command decodes, verifies the SHA-256 and atomically
+        moves the decoded bytes to `path`.
+
+    Integrity is end-to-end: nothing is activated until the reconstructed byte
+    count and SHA-256 match the source.  `push_bytes` remains the fallback for
+    callers that must stay on the frame-per-chunk protocol.
+    """
+    import base64
+    path = assert_userspace_path(path)
+    b64 = base64.b64encode(data).decode()
+    want = hashlib.sha256(data).hexdigest()
+    part = path + "." + want[:16] + ".b64"
+
+    if chunk is None:
+        # Measured safe console line limit from nuxel-push.py (380 chars), not
+        # the 128-char frame cap: block streaming reads a cumulative length
+        # receipt, so a single shredded line is recovered by block retry.
+        chunk = 380
+    if block is None:
+        block = 24
+
+    mkdir = con.run('mkdir -p "$(dirname %s)"' % path, timeout=con.timeout)
+    if not mkdir.ok or mkdir.rc != 0:
+        raise ConsoleLost("cannot create parent directory for %s (%s)"
+                          % (path, mkdir.output.strip()[:80]))
+    # One framed command for setup; the bulk lines below are raw writes.
+    setup = con.run("stty -echo 2>/dev/null; : > %s; echo NXLBLOCK-READY" % part,
+                    timeout=con.timeout)
+    if not setup.ok:
+        raise ConsoleLost("block push setup failed for %s (%s)"
+                          % (path, setup.output.strip()[:80]))
+
+    segs = [b64[i:i + chunk] for i in range(0, len(b64), chunk)]
+    good = 0
+    idx = 0
+    attempts = 0
+    while idx < len(segs):
+        blk = segs[idx:idx + block]
+        want_len = good + sum(len(s) for s in blk)
+        con.buf.clear()
+        # Write the block as a burst of raw lines (one os.write per line, with a
+        # tiny pump so the far-end line discipline never drops part of the burst)
+        # and ACK at the block boundary with a single cumulative length read.
+        for s in blk:
+            con.send(("printf '%s' '%s' >> %s\r" % ("%s", s, part)).encode())
+            con.pump(0.02)
+        con.send(("wc -c < %s\r" % part).encode())
+        t0 = time.time()
+        seen = None
+        deadline = t0 + max(6.0, con.timeout)
+        while time.time() < deadline:
+            con.pump(0.2)
+            m = None
+            for m in re.finditer(r"(?m)^\s*(\d+)\s*$", con.text()):
+                pass
+            if m:
+                seen = int(m.group(1))
+                if seen == want_len:
+                    break
+        if seen == want_len:
+            good = want_len
+            idx += len(blk)
+            attempts = 0
+            continue
+        # Rewind to the last verified boundary and retry this exact block.
+        attempts += 1
+        if attempts > max_retries:
+            raise ConsoleLost(
+                "block %d of %s could not reach %d bytes (last verified %d)"
+                % (idx // block + 1, path, want_len, good))
+        con.interrupt()
+        if good:
+            rewind = con.run("head -c %d %s > %s.t && mv %s.t %s"
+                             % (good, part, part, part, part), timeout=con.timeout)
+        else:
+            rewind = con.run(": > %s" % part, timeout=con.timeout)
+        if not rewind.ok:
+            raise ConsoleLost("could not rewind %s to verified boundary %d"
+                              % (path, good))
+
+    dec = ("cat %s > %s.b64 && base64 -d < %s.b64 > %s.decode && "
+           "chmod %s %s.decode && mv -f %s.decode %s"
+           % (part, path, path, path, mode or "0644", path, path, path))
+    for _try in range(3):
+        res = con.run(dec, timeout=con.timeout)
+        if res.ok:
+            chk = con.run("sha256sum %s 2>/dev/null | cut -d' ' -f1" % path,
+                          timeout=con.timeout)
+            if chk.ok and want in chk.output:
+                con.run("stty echo 2>/dev/null; rm -f %s.b64 %s %s.t"
+                        % (path, part, part), timeout=con.timeout)
+                return {"path": path, "bytes": len(data), "b64_chars": len(b64),
+                        "blocks": (len(segs) + block - 1) // block,
+                        "lines": len(segs), "raw_writes": (len(segs) + block - 1) // block,
+                        "retries": attempts, "decoded_sha256": want,
+                        "mode": "block"}
+        con.interrupt()
+        time.sleep(0.5)
+    raise ConsoleLost("staged %s failed the on-device sha256 check after block decode" % path)
+
+
 def _sanitized_dev(dev: str) -> str:
     """Reduce a tty/device name to a filename-safe token (mirrors nuxel-live.sh)."""
     return re.sub(r"[^A-Za-z0-9]", "_", dev)
@@ -1062,6 +1181,75 @@ def group_reload(group, manifest=None):
     return str(note.get("declared_reload") or "").strip()
 
 
+def normalize_reload(action):
+    """Canonical form of a reload command so semantically-identical actions match.
+
+    Whitespace runs and separators (`;`, `&&`, `||`) are normalised, surrounding
+    separators are removed, and multi-line declarations are folded to one line.
+    This is for *deduplication only*; the original command text is what gets
+    executed, never a shell-string rewrite.
+    """
+    cmd = str(action or "").replace("\\n", " ").replace("\n", " ").strip()
+    cmd = re.sub(r"[ \t]+", " ", cmd)
+    cmd = re.sub(r"\s*;\s*", "; ", cmd)
+    cmd = re.sub(r"\s*&&\s*", " && ", cmd)
+    cmd = re.sub(r"\s*\|\|\s*", " || ", cmd)
+    cmd = re.sub(r"\s+", " ", cmd).strip()
+    return cmd.strip(" ;")
+
+
+def coalesce_reload_actions(steps):
+    """Coalesce identical `declared_reload` actions across a multi-file group.
+
+    Returns a deterministic list of ``{"group": gid, "action": original_text}``
+    in first-seen order.  Identical actions in the same group collapse to one
+    entry (the five-file case must not restart nuxel-bridge five times), while
+    *different* actions are preserved because the order can matter.
+    """
+    ordered, seen = [], set()
+    for step in steps:
+        gid = step.get("group")
+        action = str(step.get("declared_reload") or "").strip()
+        if not action:
+            continue
+        key = (gid, normalize_reload(action))
+        if key in seen:
+            continue
+        seen.add(key)
+        ordered.append({"group": gid, "action": action})
+    return ordered
+
+
+def group_reload_plan(steps):
+    """The transaction-level activation plan for a completed group.
+
+    Two independent pieces are returned so the deploy tool can run them once,
+    not once per file:
+
+    * ``restarts`` — each affected service exactly once, in first-seen order
+      (``restart_service`` carries this).
+    * ``reloads`` — each distinct ``declared_reload`` action exactly once per
+      group, in first-seen order.
+
+    An action is classified as needing ``daemon-reload`` when its normalised
+    form requests a daemon-reload as the first step.  This is what lets a
+    changed unit-file group run exactly one ``systemctl daemon-reload`` while a
+    group with no unit changes skips it.
+    """
+    restarts, restarts_seen = [], set()
+    for step in steps:
+        unit = str(step.get("service") or "").strip()
+        if unit and unit not in restarts_seen:
+            restarts_seen.add(unit)
+            restarts.append({"group": step.get("group"), "service": unit})
+    reloads = coalesce_reload_actions(steps)
+    for entry in reloads:
+        norm = normalize_reload(entry["action"])
+        entry["needs_daemon_reload"] = norm.startswith("systemctl daemon-reload") \
+            or norm.startswith("systemctl --system daemon-reload")
+    return {"restarts": restarts, "reloads": reloads}
+
+
 def validate_manifest(manifest, repo_root):
     """Structural + policy checks on a deploy manifest (no device contact).
 
@@ -1347,8 +1535,10 @@ def build_deploy_plan(manifest, repo_root):
                         else None)),
               "steps": len(g.get("files", []) or [])}
              for g in manifest.get("groups", [])]
+    activation_plan = group_reload_plan(steps)
     return {"steps": steps, "violations": violations, "skipped": skipped,
             "risk_envelope": envelope, "group_order": order,
+            "activation_plan": activation_plan,
             "schema_version": manifest.get("schema_version")}
 
 
@@ -1364,31 +1554,34 @@ def sha256_file(path, buf=1 << 20):
 
 
 def install_script(step, push_tool="scripts/s10plus-debug-pack/nuxel-push.py"):
-    """Emit the exact stage→verify→atomic-install→restart→rollback shell text.
+    """Emit the exact stage→verify→atomic-install→rollback shell text.
 
-    This is the only write path this group ever uses for live deploys, and it
-    contains no reference to a raw device, partition, kernel image or bootloader.
+    This function only installs and verifies ONE file.  Service restarts,
+    `declared_reload` actions and `systemctl daemon-reload` are deliberately NOT
+    run here any more: they belong to the transaction boundary, where identical
+    actions across a multi-file group are coalesced and run exactly once (see
+    `group_reload_plan` and `nuxel-live-deploy.run_group_activation`).
+
+    The only exception is a non-reload `pre`/`post` assertion (for example the
+    framebuffer-owner check in the boot-animation group), which is a per-file
+    precondition, not a reload, and is preserved.
     """
     tgt, staged, backup = step["target"], step["staged"], step["backup"]
-    svc = step["service"]
-    restart = ("systemctl restart %s" % svc) if svc else "true"
-    # The rollback must fire ONLY when a step below failed.  The earlier revision
-    # ended the script with a bare `if [ -e <backup> ]; then cp <backup> <target>`,
-    # so every install atomically wrote the new file and then immediately restored
-    # the old one — measured on the S10+ 2026-10-16: the install reported OK while
-    # the target kept its previous hash and the step was flagged FAILED.  An EXIT
-    # trap keyed on the exit status restores the recorded baseline on ANY failure
-    # (a bad stage, a hash mismatch, a failed restart or a failed health check)
-    # and leaves a successful install untouched.
+    # The rollback trap restores the recorded baseline ONLY when a step below
+    # failed.  It never restarts a service; the caller's coalesced rollback does
+    # that once for the whole group.
     lines = [
         "set -u",
         "_NXL_ROLLBACK() { _rc=$?; if [ \"$_rc\" -ne 0 ]; then "
-        "if [ -e %s ]; then cp -a %s %s; %s; fi; echo \"ROLLED-BACK rc=$_rc\"; fi; }"
-        % (backup, backup, tgt, restart),
+        "if [ -e %s ]; then cp -a %s %s; fi; echo \"ROLLED-BACK rc=$_rc\"; fi; }"
+        % (backup, backup, tgt),
         "trap _NXL_ROLLBACK EXIT",
         "set -e",
     ]
     for pre in step.get("pre", []):
+        if normalize_reload(pre) in ("systemctl daemon-reload",
+                                     "systemctl --system daemon-reload"):
+            continue
         lines.append(pre)
     lines += [
         "if [ -e %s ]; then printf 'PREV=%s\\n' \"$(sha256sum %s | cut -d' ' -f1)\"; "
@@ -1405,24 +1598,12 @@ def install_script(step, push_tool="scripts/s10plus-debug-pack/nuxel-push.py"):
         "mv -f %s %s" % (staged, tgt),
         "%s | grep -q %s" % (step["verify"], step["source_sha256"]),
     ]
-    if svc:
-        lines.append("systemctl restart %s" % svc)
-        lines.append("systemctl is-active %s" % svc)
-    elif step.get("declared_reload"):
-        # No single service is affected, so the plan still says WHAT makes the new
-        # bytes take effect (the group's deliberate reload).  That reload may name
-        # units this device does not have (e.g. nuxel-bridge.service is only defined
-        # once the session-units group lands), so it is attempted best-effort and
-        # RECORDED, not fatal: a missing *consumer* must not roll back a file that
-        # installed and hash-verified correctly.
-        lines.append("( %s ) || echo DECLARED-RELOAD-DEFERRED"
-                     % step["declared_reload"].replace("\n", "; "))
-    # NOTE: the group health_check is deliberately NOT run here.  It asserts the
-    # state of the WHOLE group (e.g. "settings/index.html AND clock/index.html are
-    # servable"), so running it inside every file's install script made the first
-    # few files of a 380-file group fail their check and roll themselves back.  The
-    # deploy tool runs each group's health check once, after the group is complete.
+    # The group health_check and coalesced reload/restart are run ONCE by the
+    # deploy tool after the whole group is installed and verified.
     for post in step.get("post", []):
+        if normalize_reload(post) in ("systemctl daemon-reload",
+                                      "systemctl --system daemon-reload"):
+            continue
         lines.append(post)
     lines.append("echo INSTALL-OK")
     return "\n".join(lines)

@@ -3,18 +3,19 @@
 
 ![Nuxel](./nuxel.jpg)
 
-**v0.6.6-beta** — _Build the bunker first. Add the rave lights later._
+**v0.6.7-beta** — _Build the bunker first. Add the rave lights later._
 
-> **v0.6.6-beta (2026-10-26).** This release fixes the lockscreen USB truth:
-> after connecting to a PC and unplugging the cable, the PC and Live Console
-> penguins now clear. On this S10+ kernel the Type-C role and the UDC state both
-> stay stale after a real detach, so A77 adds independent UDC-speed and wired
-> VBUS vetoes in both truth providers. The release workflow also marks the
-> newest build as GitHub's **Latest** release, so the repository sidebar no
-> longer points at an older version. **Hardware acceptance is still pending**
-> for Wi-Fi association, Bluetooth, NFC, GNSS, speaker and camera; a completed
-> GitHub Release is not proof of on-phone function. See
-> [`docs/releases/v0.6.6-beta.md`](docs/releases/v0.6.6-beta.md) and
+> **v0.6.7-beta (2026-10-26).** This release repairs the release gate that
+> failed the v0.6.6-beta `main` run: both native host copies now compile clean
+> under GCC's `-Werror=format-truncation`, so the indicator gate no longer
+> depends on the runner compiler. It also ships the A77 USB-detach truth fix
+> (the PC and Live Console penguins clear after a real cable pull), the
+> group-coalesced transactional Live Console deploy, and a workflow that
+> publishes the build as GitHub's **Latest** release so the repository sidebar
+> shows the newest version. **Hardware acceptance is still pending** for Wi-Fi
+> association, Bluetooth, NFC, GNSS, speaker and camera; a completed GitHub
+> Release is not proof of on-phone function. See
+> [`docs/releases/v0.6.7-beta.md`](docs/releases/v0.6.7-beta.md) and
 > [`docs/a77-usb-detach/ROOT-CAUSE.md`](docs/a77-usb-detach/ROOT-CAUSE.md).
 
 > **Samsung S10+ engineering reality.** The active `beyond2lte` port is Fedora
@@ -168,13 +169,26 @@ NUXEL_DEVICE=mustang bash boot/flash.sh --unlock --wipe
 | `ci/` | Build validation |
 | `assets/` | Wallpaper + boot animation |
 
-## What's new in v0.6.6-beta
+## What's new in v0.6.7-beta
 
 A beta release cut from the exact current repository sources by the GitHub
 Actions pipeline. The phone does not need to be connected: the workflow builds,
 verifies and packages the merged `main` commit, and the release also carries the
 captured installed-phone image and the refreshed installed-userspace inventory.
 
+- **Release gate fixed.** The v0.6.6-beta `main` run was red in
+  `tools/s10plus/a45/test-lockscreen-indicators.py`: Ubuntu's GCC rejected
+  several `snprintf` indicator paths with `-Werror=format-truncation`. The
+  buffers in both `a33` and `a45` host sources are now sized for the worst
+  case and the `ind_pid_holds_tty()` result is checked. The same offline
+  indicator sequence the workflow runs passes locally under GCC 13 before this
+  tag is cut.
+- **Transactional Live Console deploy.** `declared_reload` and
+  `systemctl restart` run once per deploy group instead of once per file; a
+  failed group restores its files and re-applies the coalesced activation plan.
+  Large payloads use acknowledged block transfer with bounded retry/rewind and
+  fall back to the proven per-frame path. Unit tests:
+  `tools/beta/live/tests/test_live_reload_and_transport.py`.
 - **A77 USB-detach truth fix.** The PC and Live Console penguins now disappear
   when the cable is unplugged. The measured detach log showed
   `typec/port0/data_role` and the UDC `state` both stay stale on this kernel;
@@ -185,12 +199,12 @@ captured installed-phone image and the refreshed installed-userspace inventory.
 - **Release is now GitHub's Latest.** The workflow publishes the beta as a
   normal release with `--latest`, so the sidebar shows the newest version
   instead of v0.6.0-beta. The `-beta` tag and title are preserved.
-- **Launcher cache `v45-a77-usb-detach`** with `a77.1` asset cache-busters.
-- **Whole-repo lockstep at `v0.6.6-beta`** (`VERSION`, APKBUILDs, PWA/bridge
+- **Launcher cache `v46-a77-usb-detach`** with `a77.1` asset cache-busters.
+- **Whole-repo lockstep at `v0.6.7-beta`** (`VERSION`, APKBUILDs, PWA/bridge
   manifests, systemd pins, shell apps, OTA/VM tooling and docs).
 - **Not hardware verified:** Wi-Fi association/internet, speaker, camera,
   Bluetooth, NFC, GNSS and a fresh-image physical boot still require owner
-  testing. See [`docs/releases/v0.6.6-beta.md`](docs/releases/v0.6.6-beta.md).
+  testing. See [`docs/releases/v0.6.7-beta.md`](docs/releases/v0.6.7-beta.md).
 
 ## What's new in v0.6.5-beta
 
@@ -510,7 +524,7 @@ remaining interactive gap. The Moto G7 Power is flashed but still hangs at a
 black screen; the Pixel 10 Pro XL is still a scaffold. The UTM VM demo boots
 (display + network + sound).
 
-## Honest Status — v0.6.6-beta
+## Honest Status — v0.6.7-beta
 
 **S10+ (SM-G975F, beyond2lte) — NUXEL BOOTS AND TOUCH INPUT WORKS.**
 S-Boot loads the raw arm64 `Image` with the initramfs embedded, the Fedora 43
@@ -742,7 +756,7 @@ The other two bring-up targets are the **Samsung Galaxy S10+** (Exynos 9820,
 
 | Document | Description |
 |---|---|
-| [CHANGELOG.md](CHANGELOG.md) | Release notes — everything from v0.1.0 to v0.6.6-beta + readiness |
+| [CHANGELOG.md](CHANGELOG.md) | Release notes — everything from v0.1.0 to v0.6.7-beta + readiness |
 | [prompts/QUICKSTART.md](prompts/QUICKSTART.md) | Get running in 5 minutes |
 | [design/nuxel-linux-phone-design.md](design/nuxel-linux-phone-design.md) | Design bible — the full vision |
 | [design/Nuxel Phone OS Project Plan and Architecture.md](design/Nuxel%20Phone%20OS%20Project%20Plan%20and%20Architecture.md) | Technical architecture + component map |
@@ -751,7 +765,7 @@ The other two bring-up targets are the **Samsung Galaxy S10+** (Exynos 9820,
 | [docs/app-store.md](docs/app-store.md) | App distribution model (Flatpak + portals, signed packages) |
 | [docs/pwa-model.md](docs/pwa-model.md) | Hardened PWA runtime spec |
 | [docs/build-guide.md](docs/build-guide.md) | Full build pipeline |
-| [.github/workflows/release.yml](.github/workflows/release.yml) | Merged-PR (`main`) build → auto-tag → GitHub prerelease pipeline |
+| [.github/workflows/release.yml](.github/workflows/release.yml) | Merged-PR (`main`) build → auto-tag → GitHub **Latest** release pipeline |
 | [docs/device-setup.md](docs/device-setup.md) | Mustang hardware setup |
 | [docs/bootloader-unlock-guide.md](docs/bootloader-unlock-guide.md) | Unlock + relock guide |
 | [docs/driver-status.md](docs/driver-status.md) | Hardware driver matrix |
@@ -779,8 +793,10 @@ scripts in `images/` and `kernel/`, not committed. To publish them on GitHub:
   [`.github/workflows/release.yml`](.github/workflows/release.yml) runs for the
   merge commit, builds the S10+ image from repo sources, verifies the
   source-to-image parity gates, creates the annotated `v<VERSION>` tag, and
-  publishes a GitHub **prerelease**. Tag pushes and direct pushes to `main` do
-  not trigger it; `main` is protected so the only route is a merged PR.
+  publishes a GitHub release explicitly marked **Latest** (the `-beta` tag and
+  title keep the beta status). The sidebar therefore shows the newest release.
+  Tag pushes do not trigger the workflow; `main` is protected, so the release
+  route is a merged PR.
   The S10+ build runs `images/s10plus/build-a25-boot.sh` (raw arm64 kernel with
   the repo-source initramfs embedded) plus the Fedora 43 ARM64 phone rootfs,
   which **compiles the current A34 TOUCHDOWN userspace and socket-activated

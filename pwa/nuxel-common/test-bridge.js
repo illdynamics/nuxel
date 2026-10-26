@@ -48,7 +48,7 @@ const server = createServer((req, res) => {
 
         if (path === '/api/v1/ping' && req.method === 'GET') {
             const proto = VERSION_OVERRIDE === undefined ? NUXEL_BRIDGE_VERSION : VERSION_OVERRIDE;
-            const body = { status: 'ok', version: '0.6.6-beta' };
+            const body = { status: 'ok', version: '0.6.7-beta' };
             if (proto !== null) body.bridge_version = proto;
             return send(200, body);
         }

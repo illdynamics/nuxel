@@ -109,7 +109,10 @@ esac
 
 SHIM_SYSTEMCTL = """#!/bin/sh
 # target shim: stateful fake systemd. Unit state lives in $NXL_FAKE_ROOT/run/nuxel-units/<unit>
+# Every invocation is appended to run/nuxel-systemctl.log so offline tests can
+# assert restart/reload coalescing without guessing.
 S="$NXL_FAKE_ROOT/run/nuxel-units"; mkdir -p "$S"
+printf '%s\n' "$*" >> "$NXL_FAKE_ROOT/run/nuxel-systemctl.log"
 act() { echo "$1" > "$S/$2"; }
 case "$1" in
   is-active) u="$2"; [ -f "$S/$u" ] && cat "$S/$u" || echo inactive; exit 0 ;;
@@ -226,7 +229,7 @@ def build_fake_root(root: str, mode: str = "healthy"):
         with open(p, "w") as fh:
             fh.write(body)
         os.chmod(p, 0o755)
-    for name, body in (("reboot", SHIM_REBOOT),):
+    for name, body in (("reboot", SHIM_REBOOT), ("stty", "#!/bin/sh\nexit 0\n")):
         p = os.path.join(shim, name)
         with open(p, "w") as fh:
             fh.write(body)
@@ -314,8 +317,20 @@ class FakeConsole:
             return
         m = WRAPPER_RE.search(line)
         if not m:
-            if self.mode != "silent":
-                os.write(self.master, ("\r\nsh: %s\r\nnuxel@s10plus:~$ " % line[:120]).encode())
+            # A real CDC-ACM login shell also executes plain (unframed) lines.
+            # The block-transfer protocol streams many plain printf/wc lines and
+            # reads the raw output back, so emulate that faithfully instead of
+            # pretending every non-framed line is a shell error.
+            if self.mode == "silent":
+                return
+            rc, body = self.execute(line)
+            self.log.append({"rid": None, "cmd": line, "rc": rc,
+                             "bytes": len(body)})
+            if body:
+                # Command output starts on its own line (the prompt stayed on
+                # the previous one), exactly like a shell with echo off.
+                os.write(self.master, b"\r\n" + body)
+            os.write(self.master, b"\r\nnuxel@s10plus:~$ ")
             return
         self.requests += 1
         rid = m.group("rid")

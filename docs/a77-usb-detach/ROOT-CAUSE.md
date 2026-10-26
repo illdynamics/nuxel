@@ -1,7 +1,7 @@
 # A77 — ghost PC + Live Console penguins after USB disconnect
 
 **Device:** Samsung Galaxy S10+ (SM-G975F, beyond2lte), Linux 4.14.253, Fedora 43
-**Release:** v0.6.6-beta
+**Release:** v0.6.7-beta
 **Symptom:** after connecting the phone to a PC and then physically unplugging
 the cable, the cyan "USB connected to PC" penguin and the amber "Live Console
 active" penguin stayed lit. Charging behaved correctly.

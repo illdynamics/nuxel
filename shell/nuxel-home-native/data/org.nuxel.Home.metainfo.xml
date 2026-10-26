@@ -47,17 +47,17 @@
   </screenshots>
 
   <releases>
-    <release version="0.6.6-beta" date="2026-10-26">
-      <url>https://github.com/illdynamics/nuxel/releases/tag/v0.6.6-beta</url>
+    <release version="0.6.7-beta" date="2026-10-26">
+      <url>https://github.com/illdynamics/nuxel/releases/tag/v0.6.7-beta</url>
       <description>
-        <p>Nuxel Home v0.6.6-beta — aligned with Nuxel Phone OS v0.6.6-beta
-        (A77 USB-detach truth: the PC and Live Console lockscreen penguins clear
-        when the cable is unplugged).</p>
+        <p>Nuxel Home v0.6.7-beta — aligned with Nuxel Phone OS v0.6.7-beta
+        (green release gate: the native host indicator sources compile under
+        GCC's -Werror=format-truncation; A77 USB-detach truth remains shipped).</p>
         <ul>
+          <li>Release gate repaired and verified offline before tagging</li>
           <li>PC / Live Console indicators fall with the real USB data link</li>
-          <li>Launcher cache advanced to v45-a77-usb-detach</li>
-          <li>Whole-repo version bump in lockstep with the Nuxel OS v0.6.6-beta release</li>
-          <li>No shell surface redesign</li>
+          <li>Launcher cache advanced to v46-a77-usb-detach</li>
+          <li>Whole-repo version bump in lockstep with the Nuxel OS v0.6.7-beta release</li>
         </ul>
       </description>
     </release>
