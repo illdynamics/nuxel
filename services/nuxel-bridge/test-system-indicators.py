@@ -87,13 +87,20 @@ class FakeSystem:
         self.write("power_supply/usb/type", "USB")
         self.write("power_supply/usb/online", online)
 
-    def bind_gadget(self, state: str | None) -> None:
+    def bind_gadget(self, state: str | None, speed: str | None = None) -> None:
         self.write("usb_gadget/nuxel/UDC", "10c00000.dwc3")
         if state is not None:
             self.write("udc/10c00000.dwc3/state", state + "\n")
+        if speed is not None:
+            self.write("udc/10c00000.dwc3/current_speed", speed + "\n")
 
     def unbind_gadget(self) -> None:
         self.write("usb_gadget/nuxel/UDC", "\n")
+
+    def clear_udc_speed(self) -> None:
+        path = os.path.join(self.udc, "10c00000.dwc3", "current_speed")
+        if os.path.exists(path):
+            os.unlink(path)
 
     def console_process(self, pid: int = 4242, tty: bool = True,
                         command: str = "/opt/nuxel/nuxel-console /newroot") -> None:
@@ -313,16 +320,51 @@ def main() -> int:
         fake.reset()
         fake.battery("Charging")
         fake.usb_power("1")
-        fake.bind_gadget("configured")
+        fake.bind_gadget("configured", "super-speed")
         fake.typec_role("host [device]")
         check(state() == (True, True, True, False),
               "configured UDC + typec [device] role: PC on")
+
+        # A77: the owner's detach log shows BOTH data_role and UDC state stay
+        # stale after a physical pull.  The signals that DO change must veto.
+        fake.bind_gadget("configured", "UNKNOWN")
+        ind = mod.get_indicators()
+        check(state() == (True, True, False, False),
+              "configured UDC with UNKNOWN speed after detach: PC and console off")
+        check("udc-speed" in ind["usb_data"]["source"],
+              "detached UDC source names the speed veto")
+        fake.bind_gadget("configured", "super-speed")
+        check(state() == (True, True, True, False),
+              "connected speed restores the PC truth")
+
+        # A bus-powered USB gadget cannot have a data link without VBUS, even
+        # while the stale UDC still reports configured.
+        fake.usb_power("0")
+        ind = mod.get_indicators()
+        check(state() == (False, True, False, False),
+              "configured UDC with wired VBUS offline: PC and console off")
+        check("no-vbus" in ind["usb_data"]["source"],
+              "detached UDC source names the VBUS veto")
+        check(ind["usb_data"]["vbus_present"] is False,
+              "VBUS state is reported as false")
+        fake.write("power_supply/wireless/type", "Wireless\n")
+        fake.write("power_supply/wireless/online", "1\n")
+        check(state() == (True, True, False, False),
+              "wireless charging alone never restores a USB data link")
+        os.unlink(os.path.join(fake.ps, "wireless", "type"))
+        os.unlink(os.path.join(fake.ps, "wireless", "online"))
+        fake.usb_power("1")
+        fake.clear_udc_speed()
+        check(state() == (True, True, True, False),
+              "absent speed/VBUS attributes stay neutral (desktop/VM fixtures)")
+        fake.bind_gadget("configured", "super-speed")
 
         fake.typec_role("host device")  # no bracket: role not resolved to device
         check(state() == (True, True, False, False),
               "typec no-device-role vetoes a stale configured UDC")
 
         fake.typec_role("host [device]")
+        fake.bind_gadget("configured", "super-speed")
         check(state() == (True, True, True, False),
               "typec [device] role restored: PC on again")
 
@@ -351,26 +393,34 @@ def main() -> int:
             fake.reset()
             if power:
                 fake.battery("Charging")
-                fake.usb_power("1")
             else:
                 fake.battery("Discharging")
-                fake.usb_power("0")
+            # A data link implies VBUS even when the battery is not charging.
+            fake.usb_power("1" if (power or pc) else "0")
             if live:
-                fake.bind_gadget("configured" if pc else "not attached")
+                fake.bind_gadget("configured" if pc else "not attached",
+                                 "super-speed" if pc else "UNKNOWN")
                 fake.tty_registered(True)
                 fake.console_process(pid=5000, tty=True)
             elif pc:
-                fake.bind_gadget("configured")
+                fake.bind_gadget("configured", "super-speed")
             else:
                 fake.unbind_gadget()
             combined = state()
             want_live = live and pc
+            # A USB data link requires VBUS, so pc implies external_power even
+            # when the battery is not actively charging (power=0).
+            want_power = power or pc
             combinations.add((combined[0], combined[2], combined[3]))
-            check(combined == (power, power, pc, want_live),
+            check(combined == (want_power, power, pc, want_live),
                   "combination power=%d pc=%d live=%d -> %s"
                   % (power, pc, live, combined))
-        check(len(combinations) == 6,
-              "the six reachable indicators combinations are distinct")
+        # A data link necessarily implies external power (VBUS), so the
+        # reachable independent states are power-off, power-only,
+        # power+data and power+data+console.
+        check(combinations == {(False, False, False), (True, False, False),
+                               (True, True, False), (True, True, True)},
+              "the reachable indicator combinations are the four physical states")
     finally:
         fake.cleanup()
 

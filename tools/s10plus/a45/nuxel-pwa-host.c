@@ -267,7 +267,19 @@ static int ind_typec_device_role(void) {
   return device_role ? 1 : 0;
 }
 
-static int ind_udc_configured(void) {
+/* Speeds a connected gadget controller can report.  The S10+ DWC3 controller
+   reports ``UNKNOWN`` after a physical detach while the gadget framework still
+   says ``configured`` (measured: /var/lib/nuxel/a74-usb-unplug.log). */
+static int ind_speed_connected(const char *speed) {
+  return ind_eq_ci(speed, "low-speed") || ind_eq_ci(speed, "full-speed") ||
+         ind_eq_ci(speed, "high-speed") || ind_eq_ci(speed, "super-speed") ||
+         ind_eq_ci(speed, "super-speed-plus");
+}
+
+/* Return 1 when a UDC is configured, and report that controller's
+   current_speed (empty when the attribute is absent, which is neutral). */
+static int ind_udc_configured(char *speed, size_t speedn) {
+  if (speed && speedn) speed[0] = 0;
   DIR *d = opendir(ind_root("NUXEL_SYS_UDC", "/sys/class/udc"));
   if (!d) return 0;
   int connected = 0;
@@ -277,10 +289,52 @@ static int ind_udc_configured(void) {
     char path[420], state[64] = "";
     snprintf(path, sizeof path, "%s/%s/state", ind_root("NUXEL_SYS_UDC", "/sys/class/udc"), de->d_name);
     if (!ind_read_line(path, state, sizeof state)) continue;
-    if (ind_eq_ci(state, "configured")) { connected = 1; break; }
+    if (ind_eq_ci(state, "configured")) {
+      connected = 1;
+      if (speed && speedn) {
+        snprintf(path, sizeof path, "%s/%s/current_speed",
+                 ind_root("NUXEL_SYS_UDC", "/sys/class/udc"), de->d_name);
+        if (!ind_read_line(path, speed, speedn)) speed[0] = 0;
+      }
+      break;
+    }
   }
   closedir(d);
   return connected;
+}
+
+/* A bus-powered USB gadget cannot carry a data link without VBUS.  Wireless
+   charging is deliberately excluded: it powers the battery but never data.
+   -1 = no readable wired supply, 0 = every readable wired supply offline,
+    1 = at least one wired supply online. */
+static int ind_wired_vbus(void) {
+  int seen = 0;
+  DIR *d = opendir(ind_root("NUXEL_SYS_POWER_SUPPLY", "/sys/class/power_supply"));
+  if (!d) return -1;
+  struct dirent *de;
+  while ((de = readdir(d))) {
+    if (!strcmp(de->d_name, ".") || !strcmp(de->d_name, "..")) continue;
+    char base[360], type[64] = "unknown", path[420];
+    snprintf(base, sizeof base, "%s/%s",
+             ind_root("NUXEL_SYS_POWER_SUPPLY", "/sys/class/power_supply"), de->d_name);
+    if (!ind_path_exists(base)) continue;
+    snprintf(path, sizeof path, "%s/type", base);
+    if (!ind_read_line(path, type, sizeof type)) continue;
+    int wired = ind_eq_ci(type, "usb") || ind_eq_ci(type, "usb-pd") ||
+                ind_eq_ci(type, "usb_typec") || ind_eq_ci(type, "usb_type_c") ||
+                ind_eq_ci(type, "usb_c") || ind_eq_ci(type, "mains") ||
+                ind_eq_ci(type, "ac") || ind_eq_ci(type, "dc") ||
+                ind_eq_ci(type, "charger") || ind_eq_ci(type, "quick_charge") ||
+                ind_eq_ci(type, "hv_charger");
+    if (!wired) continue;
+    snprintf(path, sizeof path, "%s/online", base);
+    int online = ind_online(path);
+    if (online < 0) continue;
+    seen = 1;
+    if (online == 1) { closedir(d); return 1; }
+  }
+  closedir(d);
+  return seen ? 0 : -1;
 }
 
 static int ind_pc_connected_ex(char *source, size_t sourcen) {
@@ -288,7 +342,8 @@ static int ind_pc_connected_ex(char *source, size_t sourcen) {
     if (source) snprintf(source, sourcen, "%s", "unavailable:gadget-not-bound");
     return 0;
   }
-  if (!ind_udc_configured()) {
+  char speed[64] = "";
+  if (!ind_udc_configured(speed, sizeof speed)) {
     if (source) snprintf(source, sourcen, "%s", "unavailable:no-udc-config");
     return 0;
   }
@@ -296,6 +351,19 @@ static int ind_pc_connected_ex(char *source, size_t sourcen) {
   if (typec == 0) {
     if (source) snprintf(source, sourcen, "%s",
                          "sysfs:udc:configured-vetoed-by-physical-detach");
+    return 0;
+  }
+  /* A77: data_role and UDC state both stay stale on this board after a real
+     cable pull.  A non-connected current_speed is a positive detach signal. */
+  if (speed[0] && !ind_speed_connected(speed)) {
+    if (source) snprintf(source, sourcen, "%s",
+                         "sysfs:udc:configured-vetoed-by-udc-speed");
+    return 0;
+  }
+  /* A77: no wired VBUS means the bus-powered gadget cannot be attached. */
+  if (ind_wired_vbus() == 0) {
+    if (source) snprintf(source, sourcen, "%s",
+                         "sysfs:udc:configured-vetoed-by-no-vbus");
     return 0;
   }
   if (source) snprintf(source, sourcen, "%s", "sysfs:udc:configured");

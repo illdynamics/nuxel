@@ -3,16 +3,19 @@
 
 ![Nuxel](./nuxel.jpg)
 
-**v0.6.5-beta** — _Build the bunker first. Add the rave lights later._
+**v0.6.6-beta** — _Build the bunker first. Add the rave lights later._
 
-> **v0.6.5-beta candidate (2026-10-26).** This source includes corrected Home
-> dock layering and touch gestures, Wi-Fi Settings backed by NetworkManager,
-> refreshed WebKit caches and a release workflow that builds the S10+ image
-> after a VERSION-bumping PR merge. **No hardware acceptance has been run for
-> these changes:** real speaker, WLAN association, Bluetooth, NFC, GNSS and
-> camera still require on-device drivers/firmware and physical verification.
-> A completed GitHub Release is not proof of on-phone function; see
-> [`docs/releases/v0.6.5-beta.md`](docs/releases/v0.6.5-beta.md).
+> **v0.6.6-beta (2026-10-26).** This release fixes the lockscreen USB truth:
+> after connecting to a PC and unplugging the cable, the PC and Live Console
+> penguins now clear. On this S10+ kernel the Type-C role and the UDC state both
+> stay stale after a real detach, so A77 adds independent UDC-speed and wired
+> VBUS vetoes in both truth providers. The release workflow also marks the
+> newest build as GitHub's **Latest** release, so the repository sidebar no
+> longer points at an older version. **Hardware acceptance is still pending**
+> for Wi-Fi association, Bluetooth, NFC, GNSS, speaker and camera; a completed
+> GitHub Release is not proof of on-phone function. See
+> [`docs/releases/v0.6.6-beta.md`](docs/releases/v0.6.6-beta.md) and
+> [`docs/a77-usb-detach/ROOT-CAUSE.md`](docs/a77-usb-detach/ROOT-CAUSE.md).
 
 > **Samsung S10+ engineering reality.** The active `beyond2lte` port is Fedora
 > 43 aarch64 on Samsung Linux 4.14.253. Its launcher is Nuxel Home in WebKitGTK,
@@ -165,12 +168,31 @@ NUXEL_DEVICE=mustang bash boot/flash.sh --unlock --wipe
 | `ci/` | Build validation |
 | `assets/` | Wallpaper + boot animation |
 
-## What's new in v0.6.5-beta
+## What's new in v0.6.6-beta
 
 A beta release cut from the exact current repository sources by the GitHub
 Actions pipeline. The phone does not need to be connected: the workflow builds,
 verifies and packages the merged `main` commit, and the release also carries the
-captured installed-phone image.
+captured installed-phone image and the refreshed installed-userspace inventory.
+
+- **A77 USB-detach truth fix.** The PC and Live Console penguins now disappear
+  when the cable is unplugged. The measured detach log showed
+  `typec/port0/data_role` and the UDC `state` both stay stale on this kernel;
+  A77 vetoes the stale `configured` evidence on a non-connected UDC
+  `current_speed` (`UNKNOWN`) or on wired VBUS being offline. The bridge and
+  the native phone host share the same rules, and the console icon is gated by
+  the corrected data link.
+- **Release is now GitHub's Latest.** The workflow publishes the beta as a
+  normal release with `--latest`, so the sidebar shows the newest version
+  instead of v0.6.0-beta. The `-beta` tag and title are preserved.
+- **Launcher cache `v45-a77-usb-detach`** with `a77.1` asset cache-busters.
+- **Whole-repo lockstep at `v0.6.6-beta`** (`VERSION`, APKBUILDs, PWA/bridge
+  manifests, systemd pins, shell apps, OTA/VM tooling and docs).
+- **Not hardware verified:** Wi-Fi association/internet, speaker, camera,
+  Bluetooth, NFC, GNSS and a fresh-image physical boot still require owner
+  testing. See [`docs/releases/v0.6.6-beta.md`](docs/releases/v0.6.6-beta.md).
+
+## What's new in v0.6.5-beta
 
 - **A44 launcher/navigation fixes.** The shortcut dock no longer paints a
   duplicate half-height artwork bar, dock artwork is confined to the
@@ -488,7 +510,7 @@ remaining interactive gap. The Moto G7 Power is flashed but still hangs at a
 black screen; the Pixel 10 Pro XL is still a scaffold. The UTM VM demo boots
 (display + network + sound).
 
-## Honest Status — v0.6.5-beta
+## Honest Status — v0.6.6-beta
 
 **S10+ (SM-G975F, beyond2lte) — NUXEL BOOTS AND TOUCH INPUT WORKS.**
 S-Boot loads the raw arm64 `Image` with the initramfs embedded, the Fedora 43
@@ -720,7 +742,7 @@ The other two bring-up targets are the **Samsung Galaxy S10+** (Exynos 9820,
 
 | Document | Description |
 |---|---|
-| [CHANGELOG.md](CHANGELOG.md) | Release notes — everything from v0.1.0 to v0.6.5-beta + readiness |
+| [CHANGELOG.md](CHANGELOG.md) | Release notes — everything from v0.1.0 to v0.6.6-beta + readiness |
 | [prompts/QUICKSTART.md](prompts/QUICKSTART.md) | Get running in 5 minutes |
 | [design/nuxel-linux-phone-design.md](design/nuxel-linux-phone-design.md) | Design bible — the full vision |
 | [design/Nuxel Phone OS Project Plan and Architecture.md](design/Nuxel%20Phone%20OS%20Project%20Plan%20and%20Architecture.md) | Technical architecture + component map |

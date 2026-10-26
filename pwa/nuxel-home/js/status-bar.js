@@ -1,4 +1,4 @@
-// Nuxel Status Bar — v0.6.5-beta
+// Nuxel Status Bar — v0.6.6-beta
 //
 // SINGLE SOURCE OF TRUTH (briq-02d).  The handset used to serve a stale
 // v0.3.2 copy of this file while the repo (and the UTM VM) was on v0.4.x, so the
@@ -17,7 +17,7 @@
 class StatusBar {
     // Keep in sync with manifest.json ("nuxel.pwa_version") and sw.js
     // (CACHE_VERSION) - the registry test fails if the three ever diverge.
-    static get VERSION() { return '0.6.5-beta'; }
+    static get VERSION() { return '0.6.6-beta'; }
 
     constructor() {
         this.state = {
@@ -337,8 +337,12 @@ class StatusBar {
             ]);
             const capacity = readings[0] || {};
             const status = readings[1] || {};
-            const level = Number(String(capacity.text == null ? '' : capacity.text).trim());
-            if (!capacity.ok || !Number.isFinite(level) || level < 0 || level > 100) return;
+            const rawText = String(capacity.text == null ? '' : capacity.text).trim();
+            // A66-02: an absent/empty sysfs read during boot is UNKNOWN, not 0%.
+            // Number('') === 0, so it must be rejected BEFORE numeric coercion.
+            if (!capacity.ok || !rawText) return;
+            const level = Number(rawText);
+            if (!Number.isFinite(level) || level < 0 || level > 100) return;
 
             this.state.batteryLevel = level;
             // "Full" is externally powered but not actively charging.  Only

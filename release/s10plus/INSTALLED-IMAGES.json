@@ -6,10 +6,11 @@
     "serial": "R58M75KDB2X"
   },
   "source": {
-    "captured_from": "/dev/sda14 (BOOT) and the live root filesystem over the Nuxel USB live console",
-    "captured_at": "2026-10-23T10:09:00+02:00",
-    "repository_head": "d5347532d61a5c1aed708bdf2b7005e1b71a1fb0",
-    "branch": "nuxel/A55-pwnage-4000"
+    "captured_from": "BOOT partition /dev/sda14 captured 2026-10-23; userspace inventory refreshed 2026-10-26 from the running phone after the A77 v0.6.6-beta deployment and service restarts",
+    "captured_at": "2026-10-26T17:55:00+01:00",
+    "repository_head": "the commit named by the annotated v0.6.6-beta tag (created by the release workflow from the merged main commit)",
+    "branch": "main",
+    "repository_version": "v0.6.6-beta"
   },
   "installed_boot_image": {
     "file": "nuxel-installed-s10plus-boot.img.gz",
@@ -17,7 +18,8 @@
     "gz_bytes": 22610918,
     "bytes": 51605504,
     "sha256": "48ad61afa91b6fe50278443ecae0695724f706a80de383e0acb021d030620cea",
-    "content": "the first 51,605,504 bytes of the installed BOOT partition; a complete, flashable A27 boot image"
+    "content": "the first 51,605,504 bytes of the installed BOOT partition; a complete, flashable A27 boot image",
+    "note": "unchanged by v0.6.6-beta: this userspace-only release did not rewrite BOOT; the archive hash was re-verified on 2026-10-26 (full partition 07041ba7..., image 48ad61af...)"
   },
   "boot_header": {
     "magic": "ANDROID!",
@@ -40,11 +42,17 @@
   },
   "installed_userspace_manifest": {
     "file": "nuxel-installed-s10plus-userspace-files.txt.gz",
-    "gz_sha256": "e83a03530e942be66f27a461a58e7957fc9d195af3db0e67034a8368eb7c0010",
-    "gz_bytes": 53689,
-    "bytes": 176079,
-    "sha256": "63d0152b7c2ef3d8878630392cefeb278f42ba5696b8dc14ccb0b6c3be9236dd",
-    "lines": 1312
+    "gz_sha256": "20aa0946cfdcc8ca750331b9fa94afcb6f9f8bc8c406747f24f782e728ccad6f",
+    "gz_bytes": 129475,
+    "bytes": 366654,
+    "sha256": "fa8c3d61b2edd81146433bf399811312c72af935dd925a3f591b352e0d427528",
+    "lines": 2959,
+    "entries": {
+      "files": 2831,
+      "symlinks": 128
+    },
+    "format": "one entry per line: \"F <sha256> <bytes> <path>\" or \"L <target-sha256> <path>\"",
+    "note": "A77 refresh: the inventory now includes the A77 bridge/native-host/PWA bytes actually running after the live deployment. It is a hash inventory, not a rootfs snapshot."
   },
   "ci_built_image": {
     "release": "v0.6.0-beta",

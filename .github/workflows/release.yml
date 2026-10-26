@@ -3,8 +3,11 @@
 #
 # Triggers
 #   * push to main (merged PR)   -> build the S10+ phone image, then create the
-#                                  annotated v<VERSION> tag and publish a
-#                                  GitHub prerelease from the merge commit
+#                                  annotated v<VERSION> tag and publish the
+#                                  GitHub release from the merge commit.  The
+#                                  release is explicitly marked "Latest" so the
+#                                  repository sidebar shows the newest build;
+#                                  the -beta tag still declares the beta status.
 #   * manual (workflow_dispatch) -> operator recovery only; never automatic
 #
 # Tag pushes deliberately do NOT trigger this workflow. main is protected and
@@ -65,7 +68,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Manual recovery tag (e.g. v0.6.5-beta). Empty => v<VERSION>.'
+        description: 'Manual recovery tag (e.g. v0.6.6-beta). Empty => v<VERSION>.'
         required: false
         default: ''
       devices:
@@ -321,6 +324,13 @@ jobs:
           bash tools/s10plus/a34/tests/run-a34-tests.sh
           bash tools/s10plus/a33/tests/run-touch-tests.sh --quick
           bash tools/s10plus/a40/tests/run-a40-tests.sh
+          # A77: the three lockscreen indicators (charging / PC / Live Console)
+          # are the surface that regressed.  Gate BOTH truth providers (Python
+          # bridge + native C host) and the shipped DOM layer, so a stale
+          # "pc_connected" after a physical detach can never ship again.
+          python3 services/nuxel-bridge/test-system-indicators.py
+          python3 tools/s10plus/a45/test-lockscreen-indicators.py
+          node tools/s10plus/a45/test-lockscreen-indicators.js
 
       - name: Verify artifacts (${{ matrix.device }})
         run: bash tools/verify-artifacts.sh --device "${{ matrix.device }}"
@@ -416,7 +426,7 @@ jobs:
             echo "Created and pushed annotated tag $tag"
           fi
 
-      - name: Create GitHub prerelease
+      - name: Create GitHub release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -437,7 +447,7 @@ jobs:
             dist/*.txt.gz \
             dist/SHA256SUMS.txt \
             --verify-tag \
-            --prerelease \
+            --latest \
             --title "Nuxel ${tag}" \
             --notes-file dist/RELEASE-NOTES.md
           echo "### Published ${tag}" >> "$GITHUB_STEP_SUMMARY"

@@ -47,6 +47,12 @@ static void write_file(const char *root, const char *rel, const char *value) {
   fclose(f);
 }
 
+static void unlink_file(const char *root, const char *rel) {
+  char path[1024];
+  snprintf(path, sizeof path, "%s/%s", root, rel);
+  unlink(path);
+}
+
 static void link_file(const char *root, const char *rel, const char *target) {
   char path[1024], dir[1024];
   snprintf(path, sizeof path, "%s/%s", root, rel);
@@ -87,6 +93,17 @@ static void usb_power(const char *root, const char *online) {
 static void gadget(const char *root, const char *state) {
   write_file(root, "usb_gadget/nuxel/UDC", "10c00000.dwc3\n");
   if (state) write_file(root, "udc/10c00000.dwc3/state", state);
+}
+
+static void gadget_speed(const char *root, const char *state, const char *speed) {
+  gadget(root, state);
+  if (speed) write_file(root, "udc/10c00000.dwc3/current_speed", speed);
+}
+
+static void clear_udc_speed(const char *root) {
+  char p[1024];
+  snprintf(p, sizeof p, "%s/udc/10c00000.dwc3/current_speed", root);
+  unlink(p);
 }
 
 
@@ -251,6 +268,30 @@ int main(void) {
   state(&p, &c, &pc, &lv);
   check(p && c && pc && !lv, "configured UDC + typec [device] role: PC on");
 
+  /* A77: the owner's detach log proves data_role AND UDC state both stay stale
+     after a physical pull.  The signals that DO change must veto. */
+  gadget_speed(root, "configured\n", "UNKNOWN\n");
+  state(&p, &c, &pc, &lv);
+  check(p && c && !pc && !lv, "A77: UNKNOWN udc speed after detach clears PC + console");
+  gadget_speed(root, "configured\n", "super-speed\n");
+  state(&p, &c, &pc, &lv);
+  check(p && c && pc && !lv, "connected udc speed restores the PC truth");
+
+  /* A bus-powered gadget cannot carry data without wired VBUS. */
+  usb_power(root, "0\n");
+  state(&p, &c, &pc, &lv);
+  check(!p && c && !pc && !lv, "A77: no wired VBUS clears PC + console");
+  write_file(root, "power_supply/wireless/type", "Wireless\n");
+  write_file(root, "power_supply/wireless/online", "1\n");
+  state(&p, &c, &pc, &lv);
+  check(p && c && !pc && !lv, "wireless charging alone never restores a data link");
+  unlink_file(root, "power_supply/wireless/type");
+  unlink_file(root, "power_supply/wireless/online");
+  usb_power(root, "1\n");
+  clear_udc_speed(root);
+  state(&p, &c, &pc, &lv);
+  check(p && c && pc && !lv, "absent speed/VBUS attributes stay neutral");
+
   typec_role(root, "host device\n");  /* no bracket: role not resolved to device */
   state(&p, &c, &pc, &lv);
   check(p && c && !pc && !lv, "typec no-device-role vetoes a stale configured UDC");
@@ -274,13 +315,15 @@ int main(void) {
       for (int wantlive = 0; wantlive < 2; wantlive++) {
         reset_tree(root);
         battery(root, power ? "Charging\n" : "Discharging\n");
-        usb_power(root, power ? "1\n" : "0\n");
+        /* A data link implies VBUS even when the battery is not charging. */
+        usb_power(root, (power || wantpc) ? "1\n" : "0\n");
         if (wantlive) {
-          gadget(root, wantpc ? "configured\n" : "not attached\n");
+          gadget_speed(root, wantpc ? "configured\n" : "not attached\n",
+                       wantpc ? "super-speed\n" : "UNKNOWN\n");
           tty_registered(root, 1);
           console_proc(root, 5000, 1, "/opt/nuxel/nuxel-console\0/newroot\0");
         } else if (wantpc) {
-          gadget(root, "configured\n");
+          gadget_speed(root, "configured\n", "super-speed\n");
           tty_registered(root, 1);
         } else {
           unbound_gadget(root);
@@ -288,10 +331,11 @@ int main(void) {
         state(&p, &c, &pc, &lv);
         char label[180];
         int want_live = wantlive && wantpc;
+        int want_power = power || wantpc;
         snprintf(label, sizeof label,
                  "combination power=%d pc=%d live=%d -> (%d,%d,%d,%d)",
                  power, wantpc, wantlive, p, c, pc, lv);
-        check(p == power && c == power && pc == wantpc && lv == want_live, label);
+        check(p == want_power && c == power && pc == wantpc && lv == want_live, label);
       }
     }
   }

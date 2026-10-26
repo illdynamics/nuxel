@@ -99,9 +99,9 @@
     ],
     "app_type": "home",
     "native_fallback": false,
-    "bridge_version": "0.6.5-beta",
-    "pwa_version": "0.6.5-beta",
-    "cache_version": "v44-a76-lockstep",
+    "bridge_version": "0.6.6-beta",
+    "pwa_version": "0.6.6-beta",
+    "cache_version": "v45-a77-usb-detach",
     "registry_version": 5,
     "single_source_of_truth": "pwa/nuxel-home (index.html, css/, js/, manifest.json, sw.js)",
     "apps_in_registry": [
