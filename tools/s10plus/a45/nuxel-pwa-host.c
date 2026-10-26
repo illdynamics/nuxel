@@ -197,7 +197,7 @@ static void ind_power(int *external_power, int *charging) {
   struct dirent *de;
   while ((de = readdir(d))) {
     if (!strcmp(de->d_name, ".") || !strcmp(de->d_name, "..")) continue;
-    char base[360], path[420], type[64] = "unknown", capbuf[32] = "";
+    char base[1536], path[1600], type[64] = "unknown", capbuf[32] = "";
     snprintf(base, sizeof base, "%s/%s", ind_root("NUXEL_SYS_POWER_SUPPLY", "/sys/class/power_supply"), de->d_name);
     if (!ind_path_exists(base)) continue;
     snprintf(path, sizeof path, "%s/type", base);
@@ -229,7 +229,7 @@ static int ind_gadget_bound(void) {
   struct dirent *de;
   while ((de = readdir(d))) {
     if (!strcmp(de->d_name, ".") || !strcmp(de->d_name, "..")) continue;
-    char path[420], value[128] = "";
+    char path[1600], value[128] = "";
     snprintf(path, sizeof path, "%s/%s/UDC", ind_root("NUXEL_CONFIGFS_GADGET", "/sys/kernel/config/usb_gadget"), de->d_name);
     if (ind_read_line(path, value, sizeof value) && value[0]) { bound = 1; break; }
   }
@@ -254,7 +254,7 @@ static int ind_typec_device_role(void) {
   while ((de = readdir(d))) {
     if (!strcmp(de->d_name, ".") || !strcmp(de->d_name, "..")) continue;
     if (strstr(de->d_name, "-partner") || strstr(de->d_name, "-cable")) continue;
-    char path[420], role[128] = "";
+    char path[1600], role[128] = "";
     snprintf(path, sizeof path, "%s/%s/data_role",
              ind_root("NUXEL_SYS_TYPEC", "/sys/class/typec"), de->d_name);
     if (ind_read_line(path, role, sizeof role)) {
@@ -286,7 +286,7 @@ static int ind_udc_configured(char *speed, size_t speedn) {
   struct dirent *de;
   while ((de = readdir(d))) {
     if (!strcmp(de->d_name, ".") || !strcmp(de->d_name, "..")) continue;
-    char path[420], state[64] = "";
+    char path[1600], state[64] = "";
     snprintf(path, sizeof path, "%s/%s/state", ind_root("NUXEL_SYS_UDC", "/sys/class/udc"), de->d_name);
     if (!ind_read_line(path, state, sizeof state)) continue;
     if (ind_eq_ci(state, "configured")) {
@@ -314,7 +314,7 @@ static int ind_wired_vbus(void) {
   struct dirent *de;
   while ((de = readdir(d))) {
     if (!strcmp(de->d_name, ".") || !strcmp(de->d_name, "..")) continue;
-    char base[360], type[64] = "unknown", path[420];
+    char base[1536], type[64] = "unknown", path[1600];
     snprintf(base, sizeof base, "%s/%s",
              ind_root("NUXEL_SYS_POWER_SUPPLY", "/sys/class/power_supply"), de->d_name);
     if (!ind_path_exists(base)) continue;
@@ -393,8 +393,12 @@ static int ind_pid_holds_tty(pid_t pid, const char *ttybase) {
   struct dirent *de;
   while ((de = readdir(d))) {
     if (!strcmp(de->d_name, ".") || !strcmp(de->d_name, "..")) continue;
-    char linkpath[512], target[512];
-    snprintf(linkpath, sizeof linkpath, "%s/%s", fdpath, de->d_name);
+    /* fdpath is up to 511 chars and de->d_name up to 255, so a 512-byte
+       linkpath can truncate.  GCC's -Werror=format-truncation caught this on
+       Ubuntu; size it for the worst case and check the result. */
+    char linkpath[768], target[512];
+    int ln = snprintf(linkpath, sizeof linkpath, "%s/%s", fdpath, de->d_name);
+    if (ln < 0 || (size_t)ln >= sizeof linkpath) continue;
     ssize_t n = readlink(linkpath, target, sizeof target - 1);
     if (n <= 0) continue;
     target[n] = 0;
@@ -545,7 +549,7 @@ static void indicators_json(char *out, size_t outn) {
     struct dirent *de;
     while ((de = readdir(ps))) {
       if (!strcmp(de->d_name, ".") || !strcmp(de->d_name, "..")) continue;
-      char typepath[420], type[64] = "unknown", cappath[420];
+      char typepath[1600], type[64] = "unknown", cappath[1600];
       snprintf(typepath, sizeof typepath, "%s/%s/type", psroot, de->d_name);
       ind_read_line(typepath, type, sizeof type);
       if (!ind_eq_ci(type, "Battery")) continue;

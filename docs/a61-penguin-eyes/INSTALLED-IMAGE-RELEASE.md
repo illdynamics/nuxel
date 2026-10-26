@@ -22,7 +22,7 @@ release is created:
 | Asset | Bytes | SHA-256 |
 |---|---:|---|
 | `nuxel-installed-s10plus-boot.img.gz` | 51,605,504 (22,610,918 gz) | boot `48ad61afa91b6fe50278443ecae0695724f706a80de383e0acb021d030620cea`; gz `174cd2d1…` |
-| `nuxel-installed-s10plus-userspace-files.txt.gz` | 366,654 (129,476 gz) | `11a45bd8…`; gz `c12b7513…` (A77 refresh, 2026-10-26) |
+| `nuxel-installed-s10plus-userspace-files.txt.gz` | 366,654 (129,475 gz) | `fa8c3d61…`; gz `20aa0946…` (A77 refresh, 2026-10-26) |
 | `INSTALLED-IMAGES.json` | — | provenance + all hashes |
 
 The boot capture is the first 51,605,504 bytes of `/dev/sda14`, i.e. exactly the
@@ -60,7 +60,7 @@ freeze or a maintenance-window remount and is deliberately out of scope here.
    labelling the CI-built A25 image as a source rebuild rather than the
    installed image;
 4. uploads `dist/*.img.gz`, `dist/*.txt.gz` and `INSTALLED-IMAGES.json` to the
-   GitHub prerelease.
+   GitHub **Latest** release (beta tag/title retained).
 
 ## Verification performed
 

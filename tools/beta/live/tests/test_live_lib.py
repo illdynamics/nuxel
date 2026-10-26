@@ -175,10 +175,15 @@ class TestDeployPlanning(unittest.TestCase):
                 "backup": "/etc/nuxel/touch/touch.conf.nuxel-rollback",
                 "service": "nuxel-touch-arm", "verify": "sha256sum /etc/nuxel/touch/touch.conf"}
         script = nl.install_script(step)
-        for needle in ("sha256sum -c", "mv -f", "systemctl restart nuxel-touch-arm",
-                       "systemctl is-active nuxel-touch-arm", "rollback"):
+        for needle in ("sha256sum -c", "mv -f", "rollback", "INSTALL-OK"):
             self.assertIn(needle, script)
         self.assertNotIn("/dev/block", script)
+        # Restart/health now belong at the group boundary, never per file.
+        self.assertNotIn("systemctl restart nuxel-touch-arm", script)
+        self.assertNotIn("systemctl is-active nuxel-touch-arm", script)
+        plan = nl.group_reload_plan([step])
+        self.assertEqual([r["service"] for r in plan["restarts"]],
+                         ["nuxel-touch-arm"])
 
 
 class TestRebootPolicy(unittest.TestCase):

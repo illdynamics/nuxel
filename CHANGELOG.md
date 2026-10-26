@@ -12,7 +12,45 @@ The canonical version lives in [`VERSION`](VERSION) and is bumped in lockstep
 across the shell apps, the PWA manifest, the device `APKBUILD`s, the VM tooling
 and the OTA builder (see *Versioning* below).
 
-## [v0.6.6-beta] - 2026-10-26 - *Released: A77 USB-detach truth + release visibility*
+## [v0.6.7-beta] - 2026-10-26 - *Release: green release gate + transactional Live Console deploy*
+
+- **The red release gate from the last `main` run is fixed.** The
+  v0.6.6-beta run failed in
+  `tools/s10plus/a45/test-lockscreen-indicators.py`: GCC's
+  `-Werror=format-truncation` rejected `ind_pid_holds_tty()` and the indicator
+  path buffers in BOTH native host copies. The paths are now sized for the
+  worst case (root + a 255-byte dirent + the `/state`/`/online` suffix) and
+  truncation is checked before use. Both `a33` and `a45` sources compile clean
+  under `-Wall -Wextra -Werror`; the release-gate compile no longer depends on
+  the host compiler's warning heuristics.
+- **A77 USB-detach truth ships in this release.** After a real cable pull the
+  cyan PC penguin and the amber Live Console penguin now clear. The measured
+  detach log shows this kernel leaves `typec/port0/data_role` and the UDC
+  `state` stale at `host [device]` / `configured`, so A77 adds two independent
+  detach signals to both truth providers: a non-connected UDC
+  `current_speed` (`UNKNOWN`) and wired VBUS `online=0`. Wireless charging is
+  excluded; absent signals stay neutral. `live_console.active` follows the
+  corrected data link; the console daemon is never killed to hide the icon.
+- **Live Console deploys are transactional.** `declared_reload` and
+  `systemctl restart` now run once per deploy group instead of once per file;
+  a failed group rolls its files back and re-runs the coalesced activation
+  plan. Large payloads use an acknowledged block transfer with a bounded
+  retry/rewind and the proven frame-per-chunk path as fallback. Offline
+  coverage is in `tools/beta/live/tests/test_live_reload_and_transport.py`;
+  the protocol is documented in
+  `docs/beta-finalization/live/TRANSACTION-RELOAD-AND-BLOCK-TRANSPORT.md`.
+- **Release visibility.** The workflow still publishes the beta as GitHub's
+  **Latest** release (`--latest`), which is what puts it in the repository
+  sidebar; the tag and title keep the `-beta` suffix.
+- **Whole-repo lockstep bump to `v0.6.7-beta`** across `VERSION`, device
+  `APKBUILD`s, PWA/bridge manifests, services and systemd `Environment=` pins,
+  shell apps, OTA/VM tooling and release docs.
+- **Release status:** all offline gates that the release workflow runs were
+  executed locally before the tag; the workflow then builds the S10+ image set
+  from the merged commit and publishes it. Hardware acceptance remains
+  pending (see `docs/releases/v0.6.7-beta.md`).
+
+## [v0.6.6-beta] - 2026-10-26 - *Unreleased: release workflow failed; superseded by v0.6.7-beta*
 
 - **Ghost PC / Live Console penguins fixed.** After connecting to a PC and
   physically unplugging, the cyan PC penguin and the amber Live Console penguin
@@ -27,7 +65,7 @@ and the OTA builder (see *Versioning* below).
   gated by `usb_data.pc_connected`, so one detach clears both icons in the same
   read; the console daemon is never killed to hide the icon. The indicator API
   now also reports `usb_data.vbus_present` and `usb_data.udc_speeds`.
-- **Launcher cache `v45-a77-usb-detach`** with `a77.1` cache-busters, because
+- **Launcher cache `v46-a77-usb-detach`** with `a77.1` cache-busters, because
   `js/lockscreen-indicators.js`, `index.html`, the manifest and `sw.js` all
   changed. A v44 cache must not survive this release.
 - **Release visibility fixed.** The release workflow now publishes the built

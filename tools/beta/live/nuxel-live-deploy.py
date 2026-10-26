@@ -60,6 +60,15 @@ def write_plan_artifacts(bundle, plan, repo):
                       "script": name})
     bundle.write_json("plan-index.json", index)
     bundle.write_json("skipped-groups.json", plan["skipped"])
+    activation = plan.get("activation_plan") or nl.group_reload_plan(plan["steps"])
+    bundle.write_json("activation-plan.json", activation)
+    act_body = ["#!/bin/sh", "# coalesced transaction-level activation plan"]
+    for r in activation["restarts"]:
+        act_body.append("systemctl restart %s && systemctl is-active %s"
+                        % (r["service"], r["service"]))
+    for r in activation["reloads"]:
+        act_body.append("( %s )" % r["action"].replace("\n", "; "))
+    bundle.write("scripts/000-activate.sh", "\n".join(act_body) + "\n")
     if plan["violations"]:
         bundle.write_json("plan-violations.json", plan["violations"])
     return index
@@ -91,7 +100,8 @@ def run_script(con, bundle, name, script_text, timeout=None):
 
 
 def run_step(con, bundle, step, i):
-    """stage -> verify -> atomic install -> restart smallest service -> health."""
+    """stage -> verify -> atomic install (restart/reload happen at group boundary)."""
+    t0 = time.time()
     rec = {"n": i, "group": step["group"], "target": step["target"],
            "service": step["service"], "risk": step["risk"],
            "risk_rank": step.get("risk_rank"), "mode": step.get("mode"),
@@ -108,14 +118,42 @@ def run_step(con, bundle, step, i):
     if cur.ok and step["source_sha256"] in cur.output:
         rec.update({"already_deployed": True, "ok": True,
                     "previous_hash": step["source_sha256"],
-                    "installed_hash": step["source_sha256"]})
+                    "installed_hash": step["source_sha256"],
+                    "elapsed_s": round(time.time() - t0, 3)})
         return rec
     # record the previous hash / keep a rollback copy
-    data = open(os.path.join(nl.repo_root_from_here(), step["source"]), "rb").read()
-    push = nl.push_bytes(con, data, step["staged"], mode=step.get("mode") or "0644")
-    rec["staged_push"] = {"bytes": push["bytes"],
-                          "parts": push.get("parts", push.get("frames")),
-                          "sha256": push["decoded_sha256"]}
+    with open(os.path.join(nl.repo_root_from_here(), step["source"]), "rb") as fh:
+        data = fh.read()
+    mode = step.get("mode") or "0644"
+    t_push = time.time()
+    push = None
+    if len(data) >= 8192:
+        # Fast path: bounded, acknowledged block writes (one raw write per
+        # 24-line block instead of one framed round trip per 128-char part).
+        try:
+            push = nl.block_push_bytes(con, data, step["staged"], mode=mode)
+        except nl.ConsoleLost:
+            # Fallback to the proven frame-per-chunk protocol if block streaming
+            # is unsupported by the far end; never leave echo disabled behind.
+            try:
+                con.run("stty echo 2>/dev/null", timeout=con.timeout)
+            except nl.ConsoleLost:
+                pass
+            push = nl.push_bytes(con, data, step["staged"], mode=mode)
+            push["fallback"] = True
+    else:
+        push = nl.push_bytes(con, data, step["staged"], mode=mode)
+    push["elapsed_s"] = round(time.time() - t_push, 3)
+    rec["staged_push"] = {
+        "bytes": push["bytes"],
+        "parts": push.get("parts", push.get("lines")),
+        "blocks": push.get("blocks"),
+        "raw_writes": push.get("raw_writes"),
+        "mode": push.get("mode"),
+        "sha256": push["decoded_sha256"],
+        "elapsed_s": push.get("elapsed_s"),
+        "fallback": push.get("fallback", False),
+    }
 
     svc = step["service"]
     if svc and service_exists(con, svc) is False:
@@ -132,9 +170,6 @@ def run_step(con, bundle, step, i):
     # good install was reported as FAILED and rolled back).  The install script's
     # EXIT trap already restored the baseline if the install genuinely failed, so a
     # read-back that still shows the source hash means the install really worked.
-    # A verified install frame that says INSTALL-OK already ran `sha256sum <target>
-    # | grep -q <hash>` on the device; only read the target back when that frame
-    # was unreadable (the noisy-console case), which saves a frame per file.
     payload_ok = False
     if inst["framed"] and inst["rc"] == 0 and "INSTALL-OK" in inst["output"]:
         payload_ok = True
@@ -150,12 +185,99 @@ def run_step(con, bundle, step, i):
     rec["ok"] = bool(payload_ok)
     if not rec["ok"]:
         rb = run_script(con, bundle, "rollback-%03d" % i,
-                        "#!/bin/sh\nset -u\nif [ -e %s ]; then cp -a %s %s; %s; echo ROLLED-BACK; "
+                        "#!/bin/sh\nset -u\nif [ -e %s ]; then cp -a %s %s; echo ROLLED-BACK; "
                         "else echo NO-BACKUP; fi\n"
-                        % (step["backup"], step["backup"], step["target"],
-                           ("systemctl restart %s" % svc) if svc else "true"))
+                        % (step["backup"], step["backup"], step["target"]))
         rec["rollback"] = {"rc": rb["rc"], "output": rb["output"][-600:]}
+    rec["elapsed_s"] = round(time.time() - t0, 3)
     return rec
+
+
+def run_reload_action(con, bundle, name, action, timeout=None):
+    """Run one coalesced `declared_reload` action on the device, recorded."""
+    script = "#!/bin/sh\nset -u\n%s\necho NXLRELOAD-RC=$?\n" % action.replace("\n", "; ")
+    inst = run_script(con, bundle, name, script, timeout=timeout)
+    m = re.search(r"NXLRELOAD-RC=(-?\d+)", inst["output"])
+    rc = int(m.group(1)) if m else None
+    return {"action": action, "framed": inst["framed"], "rc": rc,
+            "output": inst["output"][-600:]}
+
+
+def run_group_activation(con, bundle, group, steps, i):
+    """Run one group's coalesced restart/reload plan and its health check.
+
+    Restarts and reload actions are executed ONCE per group (never once per
+    file); a health check that fails is a failure, and the caller rolls the
+    group back.  Returns ``(records, ok)``.
+    """
+    plan = nl.group_reload_plan(steps)
+    records = []
+    for entry in plan["restarts"]:
+        out = run_script(con, bundle, "activate-%03d" % i,
+                         "#!/bin/sh\nset -e\nsystemctl restart %s\n"
+                         "systemctl is-active %s\necho ACTIVATE-OK\n"
+                         % (entry["service"], entry["service"]))
+        records.append({"kind": "restart", "group": group,
+                        "service": entry["service"],
+                        "framed": out["framed"], "rc": out["rc"],
+                        "output": out["output"][-300:]})
+        if not out["framed"] or out["rc"] != 0:
+            return records, False
+    for n, entry in enumerate(plan["reloads"], 1):
+        out = run_reload_action(con, bundle, "reload-%03d" % i, entry["action"])
+        records.append({"kind": "reload", "group": group,
+                        "action": entry["action"],
+                        "framed": out["framed"], "rc": out["rc"],
+                        "output": out["output"][-300:]})
+        if not out["framed"] or out["rc"] != 0:
+            return records, False
+    hc = next((s.get("health_check") for s in steps if s.get("health_check")), None)
+    if hc:
+        ok = False
+        out = ""
+        for _try in range(3):
+            res = con.run(hc, timeout=max(con.timeout, 30.0))
+            out = res.output.strip()[:200]
+            if res.ok:
+                ok = (res.rc == 0)
+                break
+        records.append({"kind": "health", "group": group, "check": hc,
+                        "ok": bool(ok), "output": out})
+        return records, bool(ok)
+    return records, True
+
+
+def run_group_rollback(con, bundle, group, steps, i):
+    """Restore every file in a group from its on-device backup, then coalesce
+    the group's restart/reload plan.  Returns (records, ok)."""
+    records = []
+    for n, step in enumerate(steps, 1):
+        svc = step["service"]
+        rb = run_script(con, bundle, "rollback-%03d" % i,
+                        "#!/bin/sh\nset -u\nif [ -e %s ]; then cp -a %s %s; echo ROLLED-BACK; "
+                        "else echo NO-BACKUP; fi\n"
+                        % (step["backup"], step["backup"], step["target"]))
+        records.append({"kind": "file-rollback", "group": group, "target": step["target"],
+                        "rc": rb["rc"], "output": rb["output"][-300:]})
+    plan = nl.group_reload_plan(steps)
+    for entry in plan["restarts"]:
+        out = run_script(con, bundle, "rollback-activate-%03d" % i,
+                         "#!/bin/sh\nset -e\nsystemctl restart %s\n"
+                         "systemctl is-active %s\necho ROLLBACK-ACTIVATE-OK\n"
+                         % (entry["service"], entry["service"]))
+        records.append({"kind": "rollback-restart", "group": group,
+                        "service": entry["service"], "framed": out["framed"],
+                        "rc": out["rc"], "output": out["output"][-300:]})
+        if not out["framed"] or out["rc"] != 0:
+            return records, False
+    for entry in plan["reloads"]:
+        out = run_reload_action(con, bundle, "rollback-reload-%03d" % i, entry["action"])
+        records.append({"kind": "rollback-reload", "group": group,
+                        "action": entry["action"], "framed": out["framed"],
+                        "rc": out["rc"], "output": out["output"][-300:]})
+        if not out["framed"] or out["rc"] != 0:
+            return records, False
+    return records, True
 
 
 def main(argv=None):
@@ -275,103 +397,114 @@ def main(argv=None):
         failed = False
         steps = plan["steps"]
         reconnects = 0
-        i = 0
-        while i < len(steps):
-            step = steps[i]
-            try:
-                rec = run_step(con, bundle, step, i + 1)
-                # A single dropped/corrupted frame on a step that actually landed
-                # must not abort a 400-file deploy: re-attempt the step (it skips
-                # itself if the target already carries the source bytes).
-                tries = 1
-                while not rec["ok"] and tries < 3:
-                    tries += 1
-                    time.sleep(1)
-                    rec = run_step(con, bundle, step, i + 1)
-                    rec["attempts"] = tries
-            except nl.ConsoleLost as e:
-                # The S10+ console gadget re-enumerates under sustained load
-                # (measured 2026-10-16, several times per deploy).  A lost console
-                # is not a failed step: reopen the port, re-probe, and RESUME from
-                # the same step (already-installed files skip themselves).
-                if reconnects >= 8:
-                    report["verdict"] = "BLOCKED_EXTERNAL_RESOURCE"
-                    report["blocked_reason"] = ("console lost after %d reconnects: %s"
-                                                % (reconnects, e))
-                    return finish(bundle, report, args, 3)
-                reconnects += 1
-                report.setdefault("reconnects", []).append({"at_step": i + 1, "error": str(e)})
-                con.close()
-                waited = 0.0
-                reopened = None
-                while waited < args.reconnect_timeout:
-                    time.sleep(3)
-                    waited += 3
-                    try:
-                        reopened = nl.Console(node["callout"], timeout=args.timeout,
-                                              lock_wait=args.lock_wait)
-                        reopened.open()
-                        if reopened.probe(6.0).reachable:
-                            break
-                        reopened.close()
-                        reopened = None
-                    except nl.ConsoleLost:
-                        reopened = None
-                if reopened is None:
-                    report["verdict"] = "BLOCKED_EXTERNAL_RESOURCE"
-                    report["blocked_reason"] = ("console did not return within %.0fs "
-                                                "after step %d" % (args.reconnect_timeout, i + 1))
-                    return finish(bundle, report, args, 3)
-                con = reopened
-                continue  # retry the same step
-            report["results"].append(rec)
-            if not rec["ok"]:
-                failed = True
-                if args.fail_fast:
-                    break
-            i += 1
-        report["reconnects"] = report.get("reconnects", [])
+        report["reconnects"] = []
 
-        # --- group health checks, once each, now that the group is complete --- #
-        if not failed:
-            health = []
-            seen = []
-            for st in steps:
-                if st["group"] not in seen:
-                    seen.append(st["group"])
-            for gid in seen:
-                hc = next((st.get("health_check") for st in steps
-                           if st["group"] == gid and st.get("health_check")), None)
-                if not hc:
-                    continue
-                ok = False
-                out = ""
-                for _try in range(3):
-                    res = con.run(hc, timeout=max(args.timeout, 30.0))
-                    out = res.output.strip()[:200]
-                    if res.ok:
-                        ok = (res.rc == 0)
-                        break
-                health.append({"group": gid, "check": hc, "ok": bool(ok), "output": out})
-                print("# health %s -> %s" % (gid, "ok" if ok else "FAILED"), file=sys.stderr)
-            report["health"] = health
-            if any(not h["ok"] for h in health):
+        def reopen_console(step_no, error):
+            nonlocal con, reconnects
+            if reconnects >= 8:
+                return False
+            reconnects += 1
+            report["reconnects"].append({"at_step": step_no, "error": str(error)})
+            con.close()
+            waited = 0.0
+            while waited < args.reconnect_timeout:
+                time.sleep(3)
+                waited += 3
+                try:
+                    reopened = nl.Console(node["callout"], timeout=args.timeout,
+                                          lock_wait=args.lock_wait)
+                    reopened.open()
+                    if reopened.probe(6.0).reachable:
+                        con = reopened
+                        return True
+                    reopened.close()
+                except nl.ConsoleLost:
+                    pass
+            return False
+
+        # Group the plan so every group is installed AND verified in full before
+        # its coalesced restart/reload plan runs.  This is the transaction
+        # boundary that fixes the five-files-five-restarts bug.
+        groups = []
+        by_group = {}
+        for step in steps:
+            g = by_group.get(step["group"])
+            if g is None:
+                g = {"id": step["group"], "steps": []}
+                by_group[step["group"]] = g
+                groups.append(g)
+            g["steps"].append(step)
+
+        all_results, activations, rollbacks = [], [], []
+        offset = 0
+        for g in groups:
+            gid = g["id"]
+            gsteps = g["steps"]
+            group_results = []
+            step_ok = True
+            for j, step in enumerate(gsteps):
+                n = offset + j + 1
+                tries = 0
+                while True:
+                    try:
+                        rec = run_step(con, bundle, step, n)
+                        tries += 1
+                        if rec["ok"] or tries >= 3:
+                            break
+                        time.sleep(1)
+                    except nl.ConsoleLost as e:
+                        if not reopen_console(n, e):
+                            report["verdict"] = "BLOCKED_EXTERNAL_RESOURCE"
+                            report["blocked_reason"] = (
+                                "console lost after %d reconnects during step %d: %s"
+                                % (reconnects, n, e))
+                            return finish(bundle, report, args, 3)
+                        continue
+                rec["attempts"] = tries
+                group_results.append(rec)
+                if not rec["ok"]:
+                    step_ok = False
+                    break
+            all_results.extend(group_results)
+            if not step_ok:
+                rb, _ = run_group_rollback(con, bundle, gid, gsteps, offset + 1)
+                rollbacks.append({"group": gid, "ok": False, "records": rb})
                 failed = True
-                report["blocked_reason"] = ("a group health check failed after install: %s"
-                                            % json.dumps([h for h in health if not h["ok"]]))
+                break
+            act, ok = run_group_activation(con, bundle, gid, gsteps, offset + 1)
+            activations.extend(act)
+            if not ok:
+                rb, _ = run_group_rollback(con, bundle, gid, gsteps, offset + 1)
+                rollbacks.append({"group": gid, "ok": False, "records": rb})
+                failed = True
+                break
+            offset += len(gsteps)
+
+        report["results"] = all_results
+        report["activation"] = activations
+        report["rollbacks"] = rollbacks
+        report["health"] = [a for a in activations if a["kind"] == "health"]
+
         if failed:
             report["verdict"] = "FAILED"
-            report["blocked_reason"] = ("a deploy step failed and was rolled back to the "
-                                        "recorded previous hash; no further writes attempted")
+            report["blocked_reason"] = (
+                "a deploy group failed and was rolled back to the recorded "
+                "previous hashes; no further groups were attempted")
             return finish(bundle, report, args, 5)
         report["verdict"] = "VERIFIED_ON_S10PLUS" if args.observation else "DEPLOYED_UNVERIFIED"
         report["observation"] = args.observation
         report["verdict_note"] = (
-            "files staged, hash-verified, atomically installed and the smallest affected "
-            "service restarted with a passing health check. DEPLOYED_UNVERIFIED means the "
-            "deploy succeeded but no human-visible behaviour was observed."
+            "files staged, hash-verified, atomically installed and the affected "
+            "services/reload actions run ONCE per group with passing health "
+            "checks. DEPLOYED_UNVERIFIED means the deploy succeeded but no "
+            "human-visible behaviour was observed."
             if not args.observation else
             "upgraded on the strength of a recorded on-device observation: %s" % args.observation)
+        report["activation_counts"] = {
+            "restarts": sum(1 for a in activations if a["kind"] == "restart"),
+            "reloads": sum(1 for a in activations if a["kind"] == "reload"),
+            "health_checks": sum(1 for a in activations if a["kind"] == "health"),
+        }
         return finish(bundle, report, args, 0)
     finally:
         con.close()
