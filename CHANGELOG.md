@@ -12,7 +12,36 @@ The canonical version lives in [`VERSION`](VERSION) and is bumped in lockstep
 across the shell apps, the PWA manifest, the device `APKBUILD`s, the VM tooling
 and the OTA builder (see *Versioning* below).
 
-## [v0.6.5-beta] - 2026-10-23 - *Operation Penguin Hyperfix 14000*
+## [v0.6.5-beta] - 2026-10-26 - *Released: A76 whole-repo lockstep + green release gate*
+
+- Whole-repo lockstep bump to `v0.6.5-beta`: the `VERSION` file already said
+  `v0.6.5-beta`, but the device `APKBUILD`s, PWA/bridge manifests, bridge,
+  portal and notifications hosts, systemd `Environment=` pins, shell apps,
+  OTA/VM tooling and Home `metainfo.xml` were still pinned to `0.6.3-beta`.
+  `pwa/nuxel-common/bridge-version.json` `host_version` now agrees with the
+  installed `NUXEL_BRIDGE_VERSION` pins, which `verify-app-registry.py` checks.
+- Release gate repair — the reason every `main` release run went red:
+  `tools/s10plus/a43/test-a43-source.py` and
+  `tools/s10plus/a34/tests/test-qs-gesture.js` hard-coded `0.6.3-beta`, so the
+  A43 source contract failed the moment `VERSION` moved. Both now derive the
+  expected version from `VERSION`, so a future bump cannot break CI again.
+  `tools/s10plus/a34/test-decon-presentation-contract.py` also asserted a
+  pre-A65 brace layout; it now asserts the real invariant (every *changed*
+  frame is committed) instead of one historical `else {` arrangement.
+- Launcher cache advanced to `v44-a76-lockstep` (`sw.js` + manifest
+  `nuxel.cache_version`) because `home-settings.js`, `status-bar.js` and
+  `bridge.js` changed; a v43 cache must not survive this release.
+- Radio/privacy truth: the PWA bridge no longer answers
+  `permissions.request`, `network.wifi-*`, `bluetooth.*` or `location.*` with
+  the development mock-success fallback — an unavailable provider now returns
+  an explicit `offline` error. The bridge also bounds `RequestScan` to 5 s so a
+  recovering radio cannot block the shared D-Bus handler, and grant loading
+  ignores malformed/boolean/policy files instead of crashing at startup.
+- Release path unchanged: the workflow builds `s10plus` on the merged `main`
+  commit, verifies every gate, creates the annotated `v0.6.5-beta` tag and
+  publishes the prerelease, including the captured installed-phone boot image.
+
+## [v0.6.5-beta] - 2026-10-23 - *Operation Penguin Hyperfix 14000 (interim, unreleased)*
 
 - A65-01: installed glib-networking (GnuTLS GIO backend) on the S10+ and added it
   to the Fedora rootfs build + essential-package manifest, so WebKitGTK/libpsoup3

@@ -119,7 +119,7 @@ def read_battery_status():
 # PWA<->host protocol pin (briq-04c). Same env names as the systemd units and the
 # HTTP layer, so `systemctl show -p Environment` shows exactly what is enforced.
 BRIDGE_PROTOCOL_VERSION = os.environ.get('NUXEL_BRIDGE_PROTOCOL_VERSION', '1')
-BRIDGE_HOST_VERSION = os.environ.get('NUXEL_BRIDGE_VERSION', '0.6.3-beta')
+BRIDGE_HOST_VERSION = os.environ.get('NUXEL_BRIDGE_VERSION', '0.6.5-beta')
 OBJECT_PATH = '/org/nuxel/Bridge'
 PORTAL_BUS_NAME = 'org.nuxel.Portal'
 PORTAL_OBJECT_PATH = '/org/nuxel/Portal'
@@ -357,6 +357,11 @@ class NetworkManagerConnector:
     """
 
     NM_BUS = 'org.freedesktop.NetworkManager'
+    # A scan is advisory: NetworkManager may take substantially longer while a
+    # vendor radio/firmware is recovering.  Never hold the shared bridge's
+    # D-Bus handler at the default (effectively UI-visible) timeout; cached APs
+    # are still useful and an unavailable radio must return an honest result.
+    SCAN_REQUEST_TIMEOUT_SECONDS = 5
     NM_IFACE = 'org.freedesktop.NetworkManager'
     DEV_IFACE = 'org.freedesktop.NetworkManager.Device'
     WIRELESS_IFACE = 'org.freedesktop.NetworkManager.Device.Wireless'
@@ -768,9 +773,11 @@ class NetworkManagerConnector:
             path, device, props = self._wifi_device()
             wireless = dbus.Interface(device, self.WIRELESS_IFACE)
             try:
-                wireless.RequestScan(dbus.Dictionary({}, signature='sv'))
+                wireless.RequestScan(dbus.Dictionary({}, signature='sv'),
+                                     timeout=self.SCAN_REQUEST_TIMEOUT_SECONDS)
             except dbus.DBusException as exc:
-                logger.info('Wi-Fi scan request deferred: %s', exc.get_dbus_name())
+                logger.info('Wi-Fi scan request deferred after bounded wait: %s',
+                            exc.get_dbus_name())
             results = []
             for ap in self._access_points(path):
                 raw = ap['ssid_bytes']
@@ -1496,21 +1503,53 @@ class NuxelBridgeService(dbus.service.Object):
         thread.start()
     
     def _load_all_grants(self):
-        """Load all capability grants from disk."""
+        """Load valid capability grants without treating policy state as grants.
+
+        ``PERMISSIONS_DIR`` is intentionally shared with the location privacy
+        policy.  Grant files contain ``capability -> {duration, ...}``, whereas
+        the policy is ``{enabled: bool, updated: number}``.  A previous loader
+        assumed every value had ``.get``; one location toggle could therefore
+        crash the bridge before it exported its D-Bus object and take Wi-Fi,
+        Bluetooth, and Location down together.
+
+        Accept the historical boolean grant representation for compatibility,
+        but ignore false/unknown entries and the policy document itself.  Bad
+        persisted state must be observable in the journal, never prevent the
+        provider from starting.
+        """
         grants = {}
         permissions_dir = PERMISSIONS_DIR
+        policy_name = os.path.basename(os.environ.get(
+            'NUXEL_LOCATION_POLICY',
+            '/var/lib/nuxel/permissions/location-policy.json'))
         if os.path.isdir(permissions_dir):
             for fname in os.listdir(permissions_dir):
-                if fname.endswith('.json'):
-                    app_id = fname[:-5].replace('_', '/')
-                    try:
-                        with open(os.path.join(permissions_dir, fname)) as f:
-                            data = json.load(f)
-                            grants[app_id] = {}
-                            for cap, info in data.items():
-                                grants[app_id][cap] = info.get('duration', 'always')
-                    except (json.JSONDecodeError, OSError):
-                        pass
+                if not fname.endswith('.json') or fname == policy_name:
+                    continue
+                app_id = fname[:-5].replace('_', '/')
+                try:
+                    with open(os.path.join(permissions_dir, fname)) as f:
+                        data = json.load(f)
+                except (json.JSONDecodeError, OSError) as exc:
+                    logger.warning('Ignoring unreadable capability grant file %s: %s', fname, exc)
+                    continue
+                if not isinstance(data, dict):
+                    logger.warning('Ignoring non-object capability grant file %s', fname)
+                    continue
+
+                app_grants = {}
+                for cap, info in data.items():
+                    if isinstance(info, dict):
+                        app_grants[str(cap)] = info.get('duration', 'always')
+                    elif info is True:
+                        # Older grant stores used capability -> true.  Retain a
+                        # positive user grant rather than making a bridge repair
+                        # revoke it, while migrating new writes to the object form.
+                        app_grants[str(cap)] = 'always'
+                    elif info is not False:
+                        logger.warning('Ignoring malformed capability grant %s in %s', cap, fname)
+                if app_grants:
+                    grants[app_id] = app_grants
         return grants
     
     def _save_grant(self, app_id, capability, duration='always'):
@@ -1970,7 +2009,7 @@ class NuxelBridgeService(dbus.service.Object):
 
 
 def main():
-    logger.info("Starting Nuxel Bridge v0.6.3-beta...")
+    logger.info("Starting Nuxel Bridge v0.6.5-beta...")
     
     dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
     bus = dbus.SystemBus()

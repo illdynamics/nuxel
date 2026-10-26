@@ -197,6 +197,9 @@ def main() -> int:
     check(m is not None, "NetworkWifiConnect D-Bus signature widened to carry AP identity")
     check("params.get(\"ap_path\", \"\")" in api_src and "params.get(\"bssid\", \"\")" in api_src,
           "api.py forwards ap_path/bssid to NetworkWifiConnect")
+    check("SCAN_REQUEST_TIMEOUT_SECONDS = 5" in bridge_src and
+          "timeout=self.SCAN_REQUEST_TIMEOUT_SECONDS" in bridge_src,
+          "Wi-Fi scan request has a finite five-second backend timeout")
 
     # ------------------------------------------------------------------ #
     # 2. Pure helpers.

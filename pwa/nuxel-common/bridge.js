@@ -369,6 +369,24 @@ export class NuxelBridgeClient {
                 return { success: true, messages: (MOCK_STORE['mail:messages'] || []), mock: true };
             case 'mail.smtp-send':
                 return { success: true, mock: true };
+            // Radio and privacy controls change real device state.  They must
+            // never receive the development fallback that is useful for static
+            // PWA demos: an unavailable provider is an error, not a successful
+            // toggle or permission grant.
+            case 'permissions.request':
+            case 'network.wifi-enabled':
+            case 'network.wifi-scan':
+            case 'network.wifi-connect':
+            case 'network.wifi-disconnect':
+            case 'network.wifi-saved':
+            case 'network.wifi-forget':
+            case 'bluetooth.status':
+            case 'bluetooth.set-powered':
+            case 'location.status':
+            case 'location.get-status':
+            case 'location.set-enabled':
+                return { success: false, offline: true,
+                    error: 'Nuxel bridge provider is unavailable; ' + key + ' was not performed' };
             default:
                 return { success: true, mock: true, _key: key };
         }

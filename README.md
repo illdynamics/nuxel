@@ -3,16 +3,16 @@
 
 ![Nuxel](./nuxel.jpg)
 
-**v0.6.3-beta** — _Build the bunker first. Add the rave lights later._
+**v0.6.5-beta** — _Build the bunker first. Add the rave lights later._
 
-> **v0.6.3-beta candidate (2026-10-20).** This source includes corrected Home
+> **v0.6.5-beta candidate (2026-10-26).** This source includes corrected Home
 > dock layering and touch gestures, Wi-Fi Settings backed by NetworkManager,
 > refreshed WebKit caches and a release workflow that builds the S10+ image
 > after a VERSION-bumping PR merge. **No hardware acceptance has been run for
 > these changes:** real speaker, WLAN association, Bluetooth, NFC, GNSS and
 > camera still require on-device drivers/firmware and physical verification.
 > A completed GitHub Release is not proof of on-phone function; see
-> [`docs/releases/v0.6.3-beta.md`](docs/releases/v0.6.3-beta.md).
+> [`docs/releases/v0.6.5-beta.md`](docs/releases/v0.6.5-beta.md).
 
 > **Samsung S10+ engineering reality.** The active `beyond2lte` port is Fedora
 > 43 aarch64 on Samsung Linux 4.14.253. Its launcher is Nuxel Home in WebKitGTK,
@@ -165,9 +165,12 @@ NUXEL_DEVICE=mustang bash boot/flash.sh --unlock --wipe
 | `ci/` | Build validation |
 | `assets/` | Wallpaper + boot animation |
 
-## What's new in v0.6.3-beta
+## What's new in v0.6.5-beta
 
-A beta release built from the exact userspace that is live on the S10+:
+A beta release cut from the exact current repository sources by the GitHub
+Actions pipeline. The phone does not need to be connected: the workflow builds,
+verifies and packages the merged `main` commit, and the release also carries the
+captured installed-phone image.
 
 - **A44 launcher/navigation fixes.** The shortcut dock no longer paints a
   duplicate half-height artwork bar, dock artwork is confined to the
@@ -181,13 +184,13 @@ A beta release built from the exact userspace that is live on the S10+:
   connection activation and disconnect use the existing bridge; no independent
   supplicant is started and credentials never appear in argv.
 - **Release flow is PR-only.** A merged PR to `main` builds the S10+ image,
-  verifies exact source parity, creates the annotated `v0.6.3-beta` tag and
+  verifies exact source parity, creates the annotated `v0.6.5-beta` tag and
   publishes a GitHub prerelease. Tag pushes do not trigger the workflow.
-- **Whole-repo bump to `v0.6.3-beta`:** `VERSION`, device `APKBUILD`s,
+- **Whole-repo bump to `v0.6.5-beta`:** `VERSION`, device `APKBUILD`s,
   PWA/bridge manifests, shell apps, services, OTA/VM tooling and release docs.
 - **Not hardware verified:** Wi-Fi association/internet, speaker, camera,
   Bluetooth, NFC, GNSS and a fresh-image physical boot still require owner
-  testing. See [`docs/releases/v0.6.3-beta.md`](docs/releases/v0.6.3-beta.md).
+  testing. See [`docs/releases/v0.6.5-beta.md`](docs/releases/v0.6.5-beta.md).
 
 ## What's new in v0.6.1-beta
 
@@ -485,7 +488,7 @@ remaining interactive gap. The Moto G7 Power is flashed but still hangs at a
 black screen; the Pixel 10 Pro XL is still a scaffold. The UTM VM demo boots
 (display + network + sound).
 
-## Honest Status — v0.6.3-beta
+## Honest Status — v0.6.5-beta
 
 **S10+ (SM-G975F, beyond2lte) — NUXEL BOOTS AND TOUCH INPUT WORKS.**
 S-Boot loads the raw arm64 `Image` with the initramfs embedded, the Fedora 43
@@ -717,7 +720,7 @@ The other two bring-up targets are the **Samsung Galaxy S10+** (Exynos 9820,
 
 | Document | Description |
 |---|---|
-| [CHANGELOG.md](CHANGELOG.md) | Release notes — everything from v0.1.0 to v0.6.3-beta + readiness |
+| [CHANGELOG.md](CHANGELOG.md) | Release notes — everything from v0.1.0 to v0.6.5-beta + readiness |
 | [prompts/QUICKSTART.md](prompts/QUICKSTART.md) | Get running in 5 minutes |
 | [design/nuxel-linux-phone-design.md](design/nuxel-linux-phone-design.md) | Design bible — the full vision |
 | [design/Nuxel Phone OS Project Plan and Architecture.md](design/Nuxel%20Phone%20OS%20Project%20Plan%20and%20Architecture.md) | Technical architecture + component map |

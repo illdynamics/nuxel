@@ -3,8 +3,14 @@
 from pathlib import Path
 import re,json,hashlib,sys
 r=Path(__file__).resolve().parents[3]
-assert (r/'VERSION').read_text().strip()=='v0.6.3-beta'
-assert 'v0.6.3-beta' in (r/'CHANGELOG.md').read_text()
+# The declared version is the single source of truth (VERSION).  The release
+# workflow builds the tag from this file, so a hard-coded literal here can only
+# ever fail a future bump (it did: every v0.6.5-beta main run went red on the
+# stale '0.6.3-beta' literal).  Assert the CONTRACT, not one snapshot's value.
+version=(r/'VERSION').read_text().strip()
+assert re.fullmatch(r'v\d+\.\d+\.\d+(-[A-Za-z0-9.-]+)?', version), version
+assert version in (r/'CHANGELOG.md').read_text()
+assert re.search(r'^## \['+re.escape(version)+r'\]', (r/'CHANGELOG.md').read_text(), re.M)
 assert 'branches: [main]' in (r/'.github/workflows/release.yml').read_text()
 workflow = (r/'.github/workflows/release.yml').read_text()
 assert '--prerelease' in workflow
