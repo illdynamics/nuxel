@@ -1,0 +1,4 @@
+cmd: systemctl is-active nuxel-pwa 2>&1
+ok: True rc: 4 framed: True sha_ok: True
+---
+inactive

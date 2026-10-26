@@ -1,0 +1,8 @@
+dev=/dev/cu.usbmodem201 bytes_in=3838 echo_ok=True error=None elapsed=0.327s
+sample:
+ nothing
+4,50708,3536505142,c;CFG80211-INFO2) wl_cfg80211_netdev_notifier_call : wdev null. Do nothing
+4,50709,3536505807,c;CFG80211-INFO2) wl_cfg80211_netdev_notifier_call : wdev null. Do nothing
+4,50710,3536511348,c;CFG80211-INFO2) wl_cfg80211_netdev_notifier_call : wdev null. Do nothing
+4,50711,3536511568,c;CFG80211-INFO2) wl_cfg80211_netdev_notifier_call : wdev null. Do nothing
+3,50712,35

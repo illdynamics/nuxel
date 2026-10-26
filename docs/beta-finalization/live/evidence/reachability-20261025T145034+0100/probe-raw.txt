@@ -1,0 +1,9 @@
+dev=/dev/cu.usbmodem201 bytes_in=7973 echo_ok=True error=None elapsed=0.330s
+sample:
+g cluster 0 keepalive!, wtcnt = fff5
+ SUBSYSTEM=platform
+ DEVICE=+platform:10050000.watchdog_cl0
+6,54905,3833595852,-;Watchdog: s3c2410wdt_keepalive RTC 2026-10-25 13:50:37 UTC
+3,54906,3833618997,-;<keyctl> add_key succeeded(0). type: user, desc: invocation_id
+4,54907,3833629453,-;audit: audit_lost=31 audit_rate_limit=0 audit_backlog_limit=64
+3,54908,3833629470,-;audit: kauditd hold queue ov

@@ -1,0 +1,66 @@
+{
+  "adb_devices": [],
+  "at": "2026-10-26T09:24:38+0100",
+  "blocked_reason": null,
+  "capability": {
+    "pid": "0x4ee7",
+    "serial": "NUXEL-S10PLUS-0001",
+    "vid": "0x18d1"
+  },
+  "evidence_dir": "/Users/wicked/x/nuxel/docs/beta-finalization/live/evidence/a75-reachability-after-scan-probe",
+  "exit_code": 0,
+  "finished": "2026-10-26T09:24:39+0100",
+  "gadget_descriptor_present": true,
+  "host": "Darwin 24.6.0",
+  "nodes": [
+    {
+      "callout": "/dev/cu.usbmodem2101",
+      "dialin": "/dev/tty.usbmodem2101",
+      "pid": 20199,
+      "tty_base": "usbmodem",
+      "tty_device": "usbmodem2101",
+      "tty_suffix": "2101",
+      "vid": 6353
+    }
+  ],
+  "probe": {
+    "at": "2026-10-26T09:24:39+0100",
+    "bytes_in": 54,
+    "dev": "/dev/cu.usbmodem2101",
+    "echo_ok": true,
+    "elapsed_s": 0.331,
+    "error": null,
+    "reachable": true,
+    "sample": "\u001b[?2004l\n\u001b[?2004hsh-5.3# \u001b[?2004l\n\u001b[?2004hsh-5.3# "
+  },
+  "reachable": true,
+  "selected": {
+    "callout": "/dev/cu.usbmodem2101",
+    "match_stage": "explicit"
+  },
+  "steps": [
+    {
+      "detail": "/dev/cu.usbmodem2101 (matched explicit)",
+      "ok": true,
+      "step": "select-by-capability"
+    },
+    {
+      "detail": {
+        "elapsed_s": 0.875,
+        "framed": true,
+        "output_bytes": 52,
+        "raw_len": 361,
+        "rc": 0,
+        "rid": "f9e00e47",
+        "sha_ok": true
+      },
+      "ok": true,
+      "output": "uid=0(root) gid=0(root) groups=0(root)\nNXL-REACH-OK",
+      "step": "framed-command"
+    }
+  ],
+  "verdict": "REACHABLE",
+  "verdicts": {
+    "briq-10a-live-reachability-preflight": "REACHABLE"
+  }
+}

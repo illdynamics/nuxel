@@ -1,0 +1,43 @@
+{
+  "group_order": [
+    {
+      "declared_reload": null,
+      "declared_reload_source": null,
+      "group": "a75-bridge-grant-loader-recovery",
+      "priority": 1,
+      "restart_service": "nuxel-bridge.service",
+      "risk": "medium",
+      "risk_rank": 1,
+      "steps": 1
+    }
+  ],
+  "risk_envelope": {
+    "medium": 1
+  },
+  "schema_version": 1,
+  "skipped": [],
+  "steps": [
+    {
+      "backup": "/usr/lib/nuxel/nuxel-bridge/bridge.py.nuxel-rollback",
+      "component": "A75 shared system-bus bridge startup recovery",
+      "declared_reload": "",
+      "group": "a75-bridge-grant-loader-recovery",
+      "health_check": "systemctl is-active --quiet nuxel-bridge.service && sleep 1 && busctl --system call org.nuxel.Bridge /org/nuxel/Bridge org.nuxel.Bridge Ping s health >/dev/null",
+      "install_procedure": null,
+      "mode": "0644",
+      "post": [],
+      "pre": [],
+      "priority": 1,
+      "risk": "medium",
+      "risk_rank": 1,
+      "rollback": "restore /usr/lib/nuxel/nuxel-bridge/bridge.py.nuxel-rollback and restart nuxel-bridge.service",
+      "service": "nuxel-bridge.service",
+      "source": "services/nuxel-bridge/src/bridge.py",
+      "source_sha256": "3a73d96d83205962c3ca1a10491ce67bdd77e6b8cba8740cd16c4a50b0e4edb5",
+      "staged": "/usr/lib/nuxel/nuxel-bridge/bridge.py.nuxel-staged",
+      "target": "/usr/lib/nuxel/nuxel-bridge/bridge.py",
+      "verify": "sha256sum /usr/lib/nuxel/nuxel-bridge/bridge.py"
+    }
+  ],
+  "violations": []
+}

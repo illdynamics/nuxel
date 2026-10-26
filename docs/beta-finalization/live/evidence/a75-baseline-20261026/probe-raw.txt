@@ -1,0 +1,10 @@
+{
+  "at": "2026-10-26T09:18:57+0100",
+  "bytes_in": 54,
+  "dev": "/dev/cu.usbmodem2101",
+  "echo_ok": true,
+  "elapsed_s": 0.325,
+  "error": null,
+  "reachable": true,
+  "sample": "\u001b[?2004l\n\u001b[?2004hsh-5.3# \u001b[?2004l\n\u001b[?2004hsh-5.3# "
+}

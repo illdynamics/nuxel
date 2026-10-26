@@ -1,0 +1,72 @@
+{
+  "adb_devices": [],
+  "at": "2026-10-25T19:58:33+0100",
+  "blocked_reason": null,
+  "capability": {
+    "pid": "0x4ee7",
+    "serial": "NUXEL-S10PLUS-0001",
+    "vid": "0x18d1"
+  },
+  "evidence_dir": "/Users/wicked/x/nuxel/docs/beta-finalization/live/evidence/reachability-20261025T195833+0100",
+  "exit_code": 0,
+  "finished": "2026-10-25T19:58:35+0100",
+  "gadget_descriptor_present": true,
+  "host": "Darwin 24.6.0",
+  "nodes": [
+    {
+      "callout": "/dev/cu.usbmodem101",
+      "dialin": "/dev/tty.usbmodem101",
+      "pid": 20199,
+      "tty_base": "usbmodem",
+      "tty_device": "usbmodem101",
+      "tty_suffix": "101",
+      "vid": 6353
+    }
+  ],
+  "probe": {
+    "at": "2026-10-25T19:58:34+0100",
+    "bytes_in": 8155,
+    "dev": "/dev/cu.usbmodem101",
+    "echo_ok": true,
+    "elapsed_s": 0.301,
+    "error": null,
+    "reachable": true,
+    "sample": "dtls(0x2) prev 0x3\n6,17463,915433420,-;s3c2410-wdt 10050000.watchdog_cl0: Watchdog cluster 0 keepalive!, wtcnt = fff5\n SUBSYSTEM=platform\n DEVICE=+platform:10050000.watchdog_cl0\n6,17464,915433439,-;Watchdog: s3c2410wdt_keepalive RTC 2026-10-25 18:56:47 UTC\n2,17465,915433465,-;watchdog: watchdog0: watchdog did not stop!\n6,17466,915433478,-;s3c2410-wdt 10050000.watchdog_cl0: Watchdog cluster 0"
+  },
+  "reachable": true,
+  "selected": {
+    "callout": "/dev/cu.usbmodem101",
+    "dialin": "/dev/tty.usbmodem101",
+    "match_stage": "vid+pid+ttybase+serial",
+    "pid": 20199,
+    "tty_base": "usbmodem",
+    "tty_device": "usbmodem101",
+    "tty_suffix": "101",
+    "vid": 6353
+  },
+  "steps": [
+    {
+      "detail": "/dev/cu.usbmodem101 (matched vid+pid+ttybase+serial)",
+      "ok": true,
+      "step": "select-by-capability"
+    },
+    {
+      "detail": {
+        "elapsed_s": 0.881,
+        "framed": true,
+        "output_bytes": 52,
+        "raw_len": 11078,
+        "rc": 0,
+        "rid": "240e515a",
+        "sha_ok": true
+      },
+      "ok": true,
+      "output": "uid=0(root) gid=0(root) groups=0(root)\nNXL-REACH-OK",
+      "step": "framed-command"
+    }
+  ],
+  "verdict": "REACHABLE",
+  "verdicts": {
+    "briq-10a-live-reachability-preflight": "REACHABLE"
+  }
+}

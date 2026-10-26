@@ -1,0 +1,11 @@
+dev=/dev/cu.usbmodem2101 bytes_in=7241 echo_ok=True error=None elapsed=0.331s
+sample:
+ = 1, fb_blank = 0
+6,6754,12911686,-;decon-0 UNBLANK mode: 0 type (0: DSI, 1: eDP, 2:DP, 3: WB)
+4,6755,12911693,-;decon-0 already ON state
+6,6756,12911696,-;decon_blank -
+6,6757,12911740,-;PANEL:INFO:panel_fb_notifier:UNBLANK
+6,6758,12911749,-;sec_ts 4-0048: [sec_input] sec_ts_start_device
+ SUBSYSTEM=i2c
+ DEVICE=+i2c:4-0048
+6,6759,12911758,-;sec_ts 4-0048: [sec_input] sec_ts_pinctrl_config

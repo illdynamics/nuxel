@@ -1,0 +1,11 @@
+[
+  {
+    "expected": "0",
+    "item": "failed-units",
+    "observed": [
+      "\u25cf NetworkManager-wait-online.service loaded failed failed Network Manager Wait Online",
+      "\u25cf nuxel-bridge.service               loaded failed failed Nuxel Bridge - PWA to Native Phone Service Mediator"
+    ],
+    "severity": "regression-signal"
+  }
+]

@@ -1,0 +1,4 @@
+cmd: sha256sum /usr/share/nuxel/pwa/nuxel-home/index.html 2>&1
+ok: True rc: 0 framed: True sha_ok: True
+---
+3f1fe724b56b40b35b1bd1389e89cf8af0b206afacfb6f5698334b9203867bdf  /usr/share/nuxel/pwa/nuxel-home/index.html
