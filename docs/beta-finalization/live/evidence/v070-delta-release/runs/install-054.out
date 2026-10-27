@@ -1,0 +1,7 @@
+pushed={"acked_bytes": 1426, "b64_chars": 1904, "bytes": 1426, "decoded_sha256": "837ca94fdf28075bae7a5be950e10c4a5f597f6f5623327b999e6e0b9e95a52d", "frames": 15, "mode": "frame", "parts": 15, "path": "/var/tmp/nxl-install-054.sh", "raw_writes": 0, "retries": 0}
+ok=True rc=0
+---
+PREV=4d9710dd847789380761c118185c84d5593ed9c829f4a852402780f5ec3876de
+/etc/nuxel/bridge-version.json.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

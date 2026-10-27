@@ -90,6 +90,65 @@ def test_audio_volume_discovery_and_clamp():
     check(r["control"] == "HPOUT1 Digital", "set targets the discovered control")
 
 
+def test_audio_scontrols_discovers_real_madera_name():
+    """The S10+ exposes HPOUT1 Digital Volume, not HPOUT1 Digital."""
+    root = tempfile.mkdtemp(prefix="nx-audio-")
+    write(root, "proc/asound/cards", " 0 [beyondmadera   ]: beyond-madera - beyond-madera\n")
+    write(root, "proc/asound/pcm", "00-00: RDMA0 (*) :  : playback 1\n")
+    ap = mod.AudioProvider(root=root, card=0, volume_cap=25)
+
+    def fake_amixer(*args):
+        if args and args[0] == "scontrols":
+            return ("Simple mixer control 'FM IN',0\n"
+                    "Simple mixer control 'HPOUT1 Digital Volume',0\n"
+                    "Simple mixer control 'HPOUT1 EDRE Switch',0\n", None)
+        if args and args[0] == "sget" and args[1] == "HPOUT1 Digital Volume":
+            return ("Simple mixer control 'HPOUT1 Digital Volume',0\n"
+                    "  Playback channels: Front Left - Front Right\n"
+                    "  Front Left: Playback 15 [15%]\n", None)
+        return (None, "not found")
+    ap._run_amixer = fake_amixer
+    st = ap.get_status()
+    check(st["volume_control"] == "HPOUT1 Digital Volume",
+          "scontrols discovery picks the real HPOUT1 Digital Volume control")
+    check(st["volume_percent"] == 15, "real control volume read back")
+    check(st["volume_supported"] is True, "real control marks volume supported")
+
+def test_audio_numid_path_avoids_hanging_name_sget():
+    """Name-based sget hangs ~50 s on MADERA; cget/cset numid is instantaneous."""
+    root = tempfile.mkdtemp(prefix="nx-audio-")
+    write(root, "proc/asound/cards", " 0 [beyondmadera   ]: beyond-madera - beyond-madera\n")
+    write(root, "proc/asound/pcm", "00-00: RDMA0 (*) :  : playback 1\n")
+    ap = mod.AudioProvider(root=root, card=0, volume_cap=25)
+    calls = []
+    state = {"raw": 29}
+
+    def fake_amixer(*args):
+        calls.append(args)
+        if args and args[0] == "controls":
+            return ("numid=387,iface=MIXER,name='HPOUT1 Digital Volume'\n"
+                    "numid=395,iface=MIXER,name='HPOUT1 EDRE Switch'\n", None)
+        if args and args[0] == "cget" and args[1] == "numid=387":
+            v = state["raw"]
+            return ("numid=387,iface=MIXER,name='HPOUT1 Digital Volume'\n"
+                    "  ; type=INTEGER,access=rw---R--,values=2,min=0,max=191,step=0\n"
+                    "  : values=%d,%d\n" % (v, v), None)
+        if args and args[0] == "cset" and args[1] == "numid=387":
+            state["raw"] = int(str(args[2]).split(",")[0])
+            return "", None
+        if args and args[0] == "sget":
+            raise AssertionError("name-based sget must not be used when a numid is known")
+        return (None, "unexpected")
+    ap._run_amixer = fake_amixer
+    st = ap.get_status()
+    check(st["volume_control"] == "HPOUT1 Digital Volume", "numid discovery picks the real control")
+    check(st["volume_percent"] == 15, "numid cget computes the real percentage (29/191)")
+    check(st["volume_supported"] is True, "numid control marks volume supported")
+    r = ap.set_volume(25)
+    check(r["success"] is True, "numid cset succeeds")
+    check(any(c and c[0] == "cset" and c[1] == "numid=387" for c in calls),
+          "volume write uses cset numid, not the hanging name path")
+
 def test_audio_unmute_refused():
     root = tempfile.mkdtemp(prefix="nx-audio-")
     write(root, "proc/asound/cards", " 0 [beyondmadera   ]: beyond-madera - beyond-madera\n")
@@ -155,6 +214,8 @@ def test_bluetooth_power_rfkill_and_service():
 def main():
     test_audio_inventory()
     test_audio_volume_discovery_and_clamp()
+    test_audio_scontrols_discovers_real_madera_name()
+    test_audio_numid_path_avoids_hanging_name_sget()
     test_audio_missing_hardware()
     test_audio_unmute_refused()
     test_display_no_drm_blocker()

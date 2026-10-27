@@ -1,0 +1,14 @@
+{
+  "blocked_reason": null,
+  "changed_steps": 1,
+  "exit_code": 0,
+  "finished_at": "2026-10-27T18:42:43+0100",
+  "host": "dextronux",
+  "no_op": false,
+  "operation_id": "v070-audio-numid",
+  "pid": 2215607,
+  "pid_start": "34450098",
+  "rollback_ok": null,
+  "state": "COMPLETE",
+  "verdict": "DEPLOYED_UNVERIFIED"
+}

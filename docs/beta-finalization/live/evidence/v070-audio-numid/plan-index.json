@@ -1,0 +1,12 @@
+[
+  {
+    "group": "v070-audio-provider",
+    "n": 1,
+    "risk": "medium",
+    "script": "scripts/001-hw_providers.py.sh",
+    "service": "nuxel-http-bridge",
+    "source": "services/nuxel-bridge/src/hw_providers.py",
+    "source_sha256": "7dfd240600b85a41380f98a74114aaf2ddf1c51c40549e1ef0d76347acb89b11",
+    "target": "/usr/lib/nuxel/nuxel-bridge/hw_providers.py"
+  }
+]

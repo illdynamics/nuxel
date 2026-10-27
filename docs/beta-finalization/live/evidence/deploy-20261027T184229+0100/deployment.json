@@ -1,0 +1,41 @@
+{
+  "apply": false,
+  "at": "2026-10-27T18:42:29+0100",
+  "boot_id_after": null,
+  "boot_id_before": null,
+  "boot_id_changed": null,
+  "briq": "briq-10b-live-deploy-userspace",
+  "cancelled": false,
+  "evidence_dir": "/x/nuxel/docs/beta-finalization/live/evidence/deploy-20261027T184229+0100",
+  "exit_code": 0,
+  "finished_at": "2026-10-27T18:42:29+0100",
+  "groups": [
+    {
+      "declared_reload": null,
+      "declared_reload_source": null,
+      "group": "v070-audio-provider",
+      "priority": 1,
+      "restart_service": "nuxel-http-bridge",
+      "risk": "medium",
+      "risk_rank": 1,
+      "steps": 1
+    }
+  ],
+  "journal": "/x/nuxel/docs/beta-finalization/live/evidence/deploy-20261027T184229+0100/transaction.jsonl",
+  "manifest": "tools/beta/live/nuxel-070-beta-hotfix-manifest.json",
+  "operation_id": "deploy-20261027T184229-2215502",
+  "order": "manifest",
+  "results": [],
+  "risk_envelope": {
+    "medium": 3
+  },
+  "skipped": [],
+  "steps": 1,
+  "transfer": {},
+  "verdict": "IMPLEMENTED_NOT_DEPLOYED",
+  "verdict_note": "plan + install scripts generated and guarded; no device write attempted (pass --apply for the live run)",
+  "verdicts": {
+    "briq-10b-live-deploy-userspace": "IMPLEMENTED_NOT_DEPLOYED"
+  },
+  "violations": []
+}

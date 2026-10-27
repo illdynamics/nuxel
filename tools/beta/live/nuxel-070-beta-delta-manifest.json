@@ -1,0 +1,370 @@
+{
+  "schema_version": 1,
+  "id": "nuxel-070-beta-live-delta",
+  "device": {
+    "codename": "beyond2lte",
+    "model": "SM-G975F",
+    "soc": "Exynos 9820",
+    "os": "Nuxel (Fedora 43 ARM64, kernel 4.14.253)"
+  },
+  "note": "NUXEL v0.7.0-beta DELTA userspace manifest: only files changed by the 25000-29000 merge plus the version pins/config grants. The full 237-file release payload is hash-audited on the device after this transaction.",
+  "target_root_map": {
+    "/home/nuxel/nuxel": "/usr/share/nuxel"
+  },
+  "groups": [
+    {
+      "id": "v070-pwa-static",
+      "component": "Nuxel Home, Settings, Maps and the three Tri-Link consoles",
+      "priority": 1,
+      "risk": "low",
+      "restart_service": null,
+      "declared_reload": "python3 -c \"import json;json.load(open('/usr/share/nuxel/pwa/nuxel-common/app-registry.json'))\" && test -s /usr/share/nuxel/pwa/nuxel-apps/console/console.js && test -s /usr/share/nuxel/pwa/nuxel-apps/settings/hardware-settings.js",
+      "pre": [],
+      "health_check": "ok=0; i=0; while [ \"$i\" -lt 60 ]; do if test \"$(curl -s -m 5 -o /dev/null -w '%{http_code}' http://127.0.0.1:8000/pwa/nuxel-home/index.html)\" = 200 && test \"$(curl -s -m 5 -o /dev/null -w '%{http_code}' http://127.0.0.1:8000/pwa/nuxel-apps/settings/index.html)\" = 200 && test \"$(curl -s -m 5 -o /dev/null -w '%{http_code}' http://127.0.0.1:8000/pwa/nuxel-apps/console/index.html)\" = 200 && test \"$(curl -s -m 5 -o /dev/null -w '%{http_code}' http://127.0.0.1:8000/pwa/nuxel-apps/console-usb/index.html)\" = 200 && test \"$(curl -s -m 5 -o /dev/null -w '%{http_code}' http://127.0.0.1:8000/pwa/nuxel-apps/console-wifi/index.html)\" = 200 && test \"$(curl -s -m 5 -o /dev/null -w '%{http_code}' http://127.0.0.1:8000/pwa/nuxel-apps/maps/index.html)\" = 200; then ok=1; break; fi; i=$((i+1)); sleep 1; done; test \"$ok\" = 1",
+      "rollback": "restore every <target>.nuxel-rollback; static files are served per-request",
+      "files": [
+        {
+          "source": "pwa/nuxel-home/index.html",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/index.html",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/js/app.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/js/app.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/js/apps.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/js/apps.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/js/home-settings.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/js/home-settings.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/js/qs.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/js/qs.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/js/status-bar.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/js/status-bar.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/manifest.json",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/manifest.json",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/sw.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/sw.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/settings/app.json",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/settings/app.json",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/settings/hardware-settings.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/settings/hardware-settings.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/settings/index.html",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/settings/index.html",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/settings/location-maps.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/settings/location-maps.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/settings/manifest.json",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/settings/manifest.json",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/settings/settings.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/settings/settings.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/console/app.json",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/console/app.json",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/console/console.css",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/console/console.css",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/console/console.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/console/console.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/console/index.html",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/console/index.html",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/console/manifest.json",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/console/manifest.json",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/console-usb/app.json",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/console-usb/app.json",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/console-usb/icons/icon.svg",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/console-usb/icons/icon.svg",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/console-usb/index.html",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/console-usb/index.html",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/console-usb/manifest.json",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/console-usb/manifest.json",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/console-wifi/app.json",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/console-wifi/app.json",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/console-wifi/icons/icon.svg",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/console-wifi/icons/icon.svg",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/console-wifi/index.html",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/console-wifi/index.html",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/console-wifi/manifest.json",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/console-wifi/manifest.json",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/maps/app.json",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/maps/app.json",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/maps/css/maps.css",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/maps/css/maps.css",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/maps/index.html",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/maps/index.html",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/maps/js/maps.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/maps/js/maps.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/maps/manifest.json",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/maps/manifest.json",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/maps/sw.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/maps/sw.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-common/app-registry.json",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-common/app-registry.json",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-common/bridge-version.json",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-common/bridge-version.json",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-common/bridge.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-common/bridge.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-common/maps-core.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-common/maps-core.js",
+          "mode": "0644"
+        }
+      ]
+    },
+    {
+      "id": "v070-diagnostics",
+      "component": "Typecast and Type-C diagnostics",
+      "priority": 2,
+      "risk": "low",
+      "restart_service": null,
+      "declared_reload": "test -x /usr/local/bin/nuxel-typec-diag.sh && test -x /usr/local/bin/nuxel-cast-diag.sh",
+      "pre": [],
+      "health_check": "test -s /usr/local/bin/nuxel-typec-diag.sh && test -s /usr/local/bin/nuxel-cast-diag.sh",
+      "rollback": "restore every <target>.nuxel-rollback",
+      "files": [
+        {
+          "source": "tools/s10plus/a33/nuxel-cast-diag.sh",
+          "target": "/usr/local/bin/nuxel-cast-diag.sh",
+          "mode": "0755"
+        },
+        {
+          "source": "tools/s10plus/a33/nuxel-typec-diag.sh",
+          "target": "/usr/local/bin/nuxel-typec-diag.sh",
+          "mode": "0755"
+        }
+      ]
+    },
+    {
+      "id": "v070-providers-dbus",
+      "component": "nuxel-bridge Bluetooth/location providers and media store",
+      "priority": 3,
+      "risk": "medium",
+      "restart_service": "nuxel-bridge",
+      "pre": [],
+      "health_check": "systemctl is-active nuxel-bridge && busctl --system call org.nuxel.Bridge /org/nuxel/Bridge org.nuxel.Bridge Ping s health | grep -q 'bridge_version' && busctl --system call org.nuxel.Bridge /org/nuxel/Bridge org.nuxel.Bridge BluetoothGetStatus s nuxel-settings | grep -q 'BLOCKED_KERNEL'",
+      "rollback": "restore every <target>.nuxel-rollback and `systemctl restart nuxel-bridge`",
+      "files": [
+        {
+          "source": "services/nuxel-bridge/src/bridge.py",
+          "target": "/usr/lib/nuxel/nuxel-bridge/bridge.py",
+          "mode": "0644"
+        },
+        {
+          "source": "services/nuxel-bridge/src/tri_link_status.py",
+          "target": "/usr/lib/nuxel/nuxel-bridge/tri_link_status.py",
+          "mode": "0644"
+        },
+        {
+          "source": "services/nuxel-bridge/src/media_store.py",
+          "target": "/usr/lib/nuxel/nuxel-bridge/media_store.py",
+          "mode": "0644"
+        },
+        {
+          "source": "services/nuxel-bridge/dbus/org.nuxel.Bridge.conf",
+          "target": "/etc/dbus-1/system.d/org.nuxel.Bridge.conf",
+          "mode": "0644"
+        }
+      ]
+    },
+    {
+      "id": "v070-http-providers",
+      "component": "nuxel-http-bridge audio/display/Bluetooth power providers",
+      "priority": 4,
+      "risk": "medium",
+      "restart_service": "nuxel-http-bridge",
+      "pre": [],
+      "health_check": "systemctl is-active nuxel-http-bridge && curl -fsS http://127.0.0.1:8080/api/v1/health | grep -q 'bridge_version' && curl -fsS -X POST http://127.0.0.1:8080/api/v1/rpc -H 'Content-Type: application/json' -d '{\"app_id\":\"nuxel-settings\",\"namespace\":\"audio\",\"verb\":\"status\",\"params\":{}}' | grep -q '\"cards\"' && curl -fsS -X POST http://127.0.0.1:8080/api/v1/rpc -H 'Content-Type: application/json' -d '{\"app_id\":\"nuxel-settings\",\"namespace\":\"display\",\"verb\":\"status\",\"params\":{}}' | grep -q '\"drm_present\"'",
+      "rollback": "restore every <target>.nuxel-rollback and `systemctl restart nuxel-http-bridge`",
+      "files": [
+        {
+          "source": "services/nuxel-bridge/src/api.py",
+          "target": "/usr/lib/nuxel/nuxel-bridge/api.py",
+          "mode": "0644"
+        },
+        {
+          "source": "services/nuxel-bridge/src/hw_providers.py",
+          "target": "/usr/lib/nuxel/nuxel-bridge/hw_providers.py",
+          "mode": "0644"
+        }
+      ]
+    },
+    {
+      "id": "v070-grants-configs",
+      "component": "first-party capability grants and hardware config documents",
+      "priority": 5,
+      "risk": "medium",
+      "restart_service": "nuxel-bridge",
+      "pre": [
+        "test -d /var/lib/nuxel/permissions"
+      ],
+      "health_check": "python3 -c \"import json;d=json.load(open('/var/lib/nuxel/permissions/nuxel-settings.json'));assert 'bluetooth:manage' in d and 'location:manage' in d\" && python3 -c \"import json;json.load(open('/etc/nuxel/gnss/gnss.json'))\"",
+      "rollback": "restore every <target>.nuxel-rollback and `systemctl restart nuxel-bridge`",
+      "files": [
+        {
+          "source": "configs/nuxel/permissions/org.nuxel.Home.json",
+          "target": "/var/lib/nuxel/permissions/org.nuxel.Home.json",
+          "mode": "0644"
+        },
+        {
+          "source": "configs/nuxel/permissions/nuxel-settings.json",
+          "target": "/var/lib/nuxel/permissions/nuxel-settings.json",
+          "mode": "0644"
+        },
+        {
+          "source": "configs/nuxel/permissions/org.nuxel.Maps.json",
+          "target": "/var/lib/nuxel/permissions/org.nuxel.Maps.json",
+          "mode": "0644"
+        },
+        {
+          "source": "configs/nuxel/gnss/gnss.json",
+          "target": "/etc/nuxel/gnss/gnss.json",
+          "mode": "0644"
+        },
+        {
+          "source": "configs/nuxel/security/remote-access.json",
+          "target": "/etc/nuxel/security/remote-access.json",
+          "mode": "0644"
+        }
+      ]
+    },
+    {
+      "id": "v070-version-pins",
+      "component": "systemd version pins and canonical bridge-version documents",
+      "priority": 6,
+      "risk": "medium",
+      "restart_service": null,
+      "declared_reload": "systemctl daemon-reload && systemctl restart nuxel-bridge nuxel-http-bridge",
+      "pre": [
+        "systemctl daemon-reload"
+      ],
+      "health_check": "grep -q '^Environment=.*NUXEL_BRIDGE_VERSION=0.7.0-beta' /etc/systemd/system/nuxel-bridge.service && grep -q '^Environment=.*NUXEL_BRIDGE_VERSION=0.7.0-beta' /etc/systemd/system/nuxel-http-bridge.service && grep -q '\"host_version\": \"0.7.0-beta\"' /etc/nuxel/bridge-version.json && grep -q '\"host_version\": \"0.7.0-beta\"' /usr/share/nuxel/pwa/nuxel-common/bridge-version.json && systemctl show nuxel-bridge.service -p Environment | grep -q 'NUXEL_BRIDGE_VERSION=0.7.0-beta' && systemctl show nuxel-http-bridge.service -p Environment | grep -q 'NUXEL_BRIDGE_VERSION=0.7.0-beta'",
+      "rollback": "restore every <target>.nuxel-rollback; `systemctl daemon-reload`; restart both bridges",
+      "files": [
+        {
+          "source": "services/nuxel-bridge/systemd/nuxel-bridge.service",
+          "target": "/etc/systemd/system/nuxel-bridge.service",
+          "mode": "0644"
+        },
+        {
+          "source": "services/nuxel-bridge/systemd/nuxel-http-bridge.service",
+          "target": "/etc/systemd/system/nuxel-http-bridge.service",
+          "mode": "0644"
+        },
+        {
+          "source": "services/nuxel-notifications/systemd/nuxel-notifications.service",
+          "target": "/etc/systemd/system/nuxel-notifications.service",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-common/bridge-version.json",
+          "target": "/etc/nuxel/bridge-version.json",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-common/bridge-version.json",
+          "target": "/usr/share/nuxel/pwa/nuxel-common/bridge-version.json",
+          "mode": "0644"
+        }
+      ]
+    }
+  ]
+}

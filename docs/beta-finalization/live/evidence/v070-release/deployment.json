@@ -1,0 +1,250 @@
+{
+  "activation": [],
+  "apply": true,
+  "at": "2026-10-27T18:11:11+0100",
+  "blocked_reason": "block push cancelled at block 94/707 for /usr/share/nuxel/pwa/nuxel-home/assets/branding/button-right.png.nuxel-staged",
+  "boot_id_after": "a269e14b-2ccd-4f0a-bbeb-088e84daa5a3",
+  "boot_id_before": "a269e14b-2ccd-4f0a-bbeb-088e84daa5a3",
+  "boot_id_changed": false,
+  "briq": "briq-10b-live-deploy-userspace",
+  "cancelled": true,
+  "evidence_dir": "/x/nuxel/docs/beta-finalization/live/evidence/v070-release",
+  "exit_code": 6,
+  "finished_at": "2026-10-27T18:14:58+0100",
+  "groups": [
+    {
+      "declared_reload": "python3 -c \"import json;json.load(open('/usr/share/nuxel/pwa/nuxel-common/app-registry.json'))\" && test -s /usr/share/nuxel/pwa/nuxel-apps/console/console.js && test -s /usr/share/nuxel/pwa/nuxel-apps/settings/hardware-settings.js\"",
+      "declared_reload_source": "group",
+      "group": "v070-pwa-static",
+      "priority": 1,
+      "restart_service": null,
+      "risk": "low",
+      "risk_rank": 0,
+      "steps": 210
+    },
+    {
+      "declared_reload": "test -x /usr/local/bin/nuxel-typec-diag.sh && test -x /usr/local/bin/nuxel-cast-diag.sh",
+      "declared_reload_source": "group",
+      "group": "v070-diagnostics",
+      "priority": 2,
+      "restart_service": null,
+      "risk": "low",
+      "risk_rank": 0,
+      "steps": 2
+    },
+    {
+      "declared_reload": null,
+      "declared_reload_source": null,
+      "group": "v070-providers-dbus",
+      "priority": 3,
+      "restart_service": "nuxel-bridge",
+      "risk": "medium",
+      "risk_rank": 1,
+      "steps": 4
+    },
+    {
+      "declared_reload": null,
+      "declared_reload_source": null,
+      "group": "v070-http-providers",
+      "priority": 4,
+      "restart_service": "nuxel-http-bridge",
+      "risk": "medium",
+      "risk_rank": 1,
+      "steps": 2
+    },
+    {
+      "declared_reload": null,
+      "declared_reload_source": null,
+      "group": "v070-grants-configs",
+      "priority": 5,
+      "restart_service": "nuxel-bridge",
+      "risk": "medium",
+      "risk_rank": 1,
+      "steps": 5
+    },
+    {
+      "declared_reload": "systemctl daemon-reload && systemctl restart nuxel-bridge nuxel-http-bridge",
+      "declared_reload_source": "group",
+      "group": "v070-version-pins",
+      "priority": 6,
+      "restart_service": null,
+      "risk": "medium",
+      "risk_rank": 1,
+      "steps": 5
+    }
+  ],
+  "host": "dextronux",
+  "journal": "/x/nuxel/docs/beta-finalization/live/evidence/v070-release/transaction.jsonl",
+  "manifest": "tools/beta/live/nuxel-070-beta-live-manifest.json",
+  "operation_id": "v070-release",
+  "order": "manifest",
+  "pid": 2196465,
+  "pid_start": "34262286",
+  "probe": {
+    "at": "2026-10-27T18:11:11+0100",
+    "bytes_in": 54,
+    "dev": "/dev/ttyACM0",
+    "echo_ok": true,
+    "elapsed_s": 0.303,
+    "error": null,
+    "reachable": true,
+    "sample": "\u001b[?2004l\n\u001b[?2004hsh-5.3# \u001b[?2004l\n\u001b[?2004hsh-5.3# "
+  },
+  "reconnects": [],
+  "results": [
+    {
+      "attempts": 1,
+      "changed": true,
+      "declared_reload": "python3 -c \"import json;json.load(open('/usr/share/nuxel/pwa/nuxel-common/app-registry.json'))\" && test -s /usr/share/nuxel/pwa/nuxel-apps/console/console.js && test -s /usr/share/nuxel/pwa/nuxel-apps/settings/hardware-settings.js\"",
+      "elapsed_s": 51.002,
+      "group": "v070-pwa-static",
+      "health_check": "test \"$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8000/pwa/nuxel-home/index.html)\" = 200 && test \"$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8000/pwa/nuxel-apps/settings/index.html)\" = 200 && test \"$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8000/pwa/nuxel-apps/console/index.html)\" = 200 && test \"$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8000/pwa/nuxel-apps/console-usb/index.html)\" = 200 && test \"$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8000/pwa/nuxel-apps/console-wifi/index.html)\" = 200 && test \"$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8000/pwa/nuxel-apps/maps/index.html)\" = 200",
+      "install": {
+        "framed": true,
+        "output": "PREV=NONE\n/usr/share/nuxel/pwa/nuxel-home/assets/branding/button-left.png.nuxel-staged: OK\nINSTALL-OK\nNXLSCRIPT-RC=0\n",
+        "rc": 0
+      },
+      "installed_hash": "3cc3c77a073788b5ee6192af7bbe5c970c971c68146e4c17ef404b246cc62b6a",
+      "mode": "0644",
+      "n": 1,
+      "ok": true,
+      "previous_hash": "NONE",
+      "risk": "low",
+      "risk_rank": 0,
+      "rollback": null,
+      "rollback_route": "restore every <target>.nuxel-rollback; static files are served per-request",
+      "service": "nuxel-wayland",
+      "source": "pwa/nuxel-home/assets/branding/button-left.png",
+      "source_sha256": "3cc3c77a073788b5ee6192af7bbe5c970c971c68146e4c17ef404b246cc62b6a",
+      "staged_push": {
+        "ack_writes": 251,
+        "acked_bytes": 357388,
+        "blocks": 251,
+        "bytes": 357388,
+        "elapsed_s": 47.078,
+        "fallback": false,
+        "mode": "block",
+        "parts": 1254,
+        "raw_writes": 251,
+        "resume_used": false,
+        "resumed_b64_chars": 0,
+        "retries": 0,
+        "sha256": "3cc3c77a073788b5ee6192af7bbe5c970c971c68146e4c17ef404b246cc62b6a",
+        "throughput_bytes_s": 7591.4,
+        "write_bytes": 725744
+      },
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/button-left.png",
+      "txn_backup": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/button-left.png.nuxel-rollback.pre-v070-release",
+      "verify_output": "INSTALL-OK (hash checked in-frame)"
+    },
+    {
+      "attempts": 1,
+      "changed": true,
+      "declared_reload": "python3 -c \"import json;json.load(open('/usr/share/nuxel/pwa/nuxel-common/app-registry.json'))\" && test -s /usr/share/nuxel/pwa/nuxel-apps/console/console.js && test -s /usr/share/nuxel/pwa/nuxel-apps/settings/hardware-settings.js\"",
+      "elapsed_s": 151.192,
+      "group": "v070-pwa-static",
+      "health_check": "test \"$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8000/pwa/nuxel-home/index.html)\" = 200 && test \"$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8000/pwa/nuxel-apps/settings/index.html)\" = 200 && test \"$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8000/pwa/nuxel-apps/console/index.html)\" = 200 && test \"$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8000/pwa/nuxel-apps/console-usb/index.html)\" = 200 && test \"$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8000/pwa/nuxel-apps/console-wifi/index.html)\" = 200 && test \"$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8000/pwa/nuxel-apps/maps/index.html)\" = 200",
+      "install": {
+        "framed": true,
+        "output": "PREV=NONE\n/usr/share/nuxel/pwa/nuxel-home/assets/branding/button-middle.png.nuxel-staged: OK\nINSTALL-OK\nNXLSCRIPT-RC=0\n",
+        "rc": 0
+      },
+      "installed_hash": "c9b34ac7e3a387626a5ee6694519b779bced64bf32869be096f73cf4c7011fc1",
+      "mode": "0644",
+      "n": 2,
+      "ok": true,
+      "previous_hash": "NONE",
+      "risk": "low",
+      "risk_rank": 0,
+      "rollback": null,
+      "rollback_route": "restore every <target>.nuxel-rollback; static files are served per-request",
+      "service": "nuxel-wayland",
+      "source": "pwa/nuxel-home/assets/branding/button-middle.png",
+      "source_sha256": "c9b34ac7e3a387626a5ee6694519b779bced64bf32869be096f73cf4c7011fc1",
+      "staged_push": {
+        "ack_writes": 802,
+        "acked_bytes": 1142701,
+        "blocks": 802,
+        "bytes": 1142701,
+        "elapsed_s": 147.461,
+        "fallback": false,
+        "mode": "block",
+        "parts": 4010,
+        "raw_writes": 802,
+        "resume_used": false,
+        "resumed_b64_chars": 0,
+        "retries": 0,
+        "sha256": "c9b34ac7e3a387626a5ee6694519b779bced64bf32869be096f73cf4c7011fc1",
+        "throughput_bytes_s": 7749.2,
+        "write_bytes": 2330306
+      },
+      "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/button-middle.png",
+      "txn_backup": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/button-middle.png.nuxel-rollback.pre-v070-release",
+      "verify_output": "INSTALL-OK (hash checked in-frame)"
+    }
+  ],
+  "risk_envelope": {
+    "low": 212,
+    "medium": 16
+  },
+  "rollback_ok": false,
+  "rollbacks": [
+    {
+      "group": "transaction",
+      "ok": false,
+      "reason": "operator cancelled: block push cancelled at block 94/707 for /usr/share/nuxel/pwa/nuxel-home/assets/branding/button-right.png.nuxel-staged",
+      "records": [
+        {
+          "backup_used": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/button-middle.png.nuxel-rollback.pre-v070-release",
+          "group": "v070-pwa-static",
+          "kind": "file-rollback",
+          "output": "REMOVED-NEW\nNXLSCRIPT-RC=0\n",
+          "previous_hash": "NONE",
+          "rc": 0,
+          "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/button-middle.png",
+          "verified": true,
+          "verify_output": "NUXEL-ABSENT"
+        },
+        {
+          "backup_used": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/button-left.png.nuxel-rollback.pre-v070-release",
+          "group": "v070-pwa-static",
+          "kind": "file-rollback",
+          "output": "REMOVED-NEW\nNXLSCRIPT-RC=0\n",
+          "previous_hash": "NONE",
+          "rc": 0,
+          "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/button-left.png",
+          "verified": true,
+          "verify_output": "NUXEL-ABSENT"
+        },
+        {
+          "action": "python3 -c \"import json;json.load(open('/usr/share/nuxel/pwa/nuxel-common/app-registry.json'))\" && test -s /usr/share/nuxel/pwa/nuxel-apps/console/console.js && test -s /usr/share/nuxel/pwa/nuxel-apps/settings/hardware-settings.js\"",
+          "framed": true,
+          "group": "v070-pwa-static",
+          "kind": "rollback-reload",
+          "output": "/var/tmp/nxl-rollback-reload-001-1.sh: line 3: unexpected EOF while looking for matching `\"'\nNXLSCRIPT-RC=2\n",
+          "rc": null,
+          "restart_services": []
+        }
+      ]
+    }
+  ],
+  "skipped": [],
+  "steps": 228,
+  "transfer": {
+    "ack_writes": 1053,
+    "blocks": 1053,
+    "bytes": 1500089,
+    "elapsed_s": 194.539,
+    "parts": 5264,
+    "raw_writes": 1053,
+    "resumes": 0,
+    "retries": 0,
+    "throughput_bytes_s": 7711.0,
+    "write_bytes": 3056050
+  },
+  "verdict": "NEEDS_RECOVERY",
+  "verdicts": {
+    "briq-10b-live-deploy-userspace": "NEEDS_RECOVERY"
+  },
+  "violations": []
+}

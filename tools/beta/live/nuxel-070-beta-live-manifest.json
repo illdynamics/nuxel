@@ -18,9 +18,9 @@
       "priority": 1,
       "risk": "low",
       "restart_service": null,
-      "declared_reload": "python3 -c \"import json;json.load(open('/usr/share/nuxel/pwa/nuxel-common/app-registry.json'))\" && test -s /usr/share/nuxel/pwa/nuxel-apps/console/console.js && test -s /usr/share/nuxel/pwa/nuxel-apps/settings/hardware-settings.js\"",
+      "declared_reload": "python3 -c \"import json;json.load(open('/usr/share/nuxel/pwa/nuxel-common/app-registry.json'))\" && test -s /usr/share/nuxel/pwa/nuxel-apps/console/console.js && test -s /usr/share/nuxel/pwa/nuxel-apps/settings/hardware-settings.js",
       "pre": [],
-      "health_check": "test \"$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8000/pwa/nuxel-home/index.html)\" = 200 && test \"$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8000/pwa/nuxel-apps/settings/index.html)\" = 200 && test \"$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8000/pwa/nuxel-apps/console/index.html)\" = 200 && test \"$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8000/pwa/nuxel-apps/console-usb/index.html)\" = 200 && test \"$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8000/pwa/nuxel-apps/console-wifi/index.html)\" = 200 && test \"$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8000/pwa/nuxel-apps/maps/index.html)\" = 200",
+      "health_check": "ok=0; i=0; while [ \"$i\" -lt 60 ]; do if test \"$(curl -s -m 5 -o /dev/null -w '%{http_code}' http://127.0.0.1:8000/pwa/nuxel-home/index.html)\" = 200 && test \"$(curl -s -m 5 -o /dev/null -w '%{http_code}' http://127.0.0.1:8000/pwa/nuxel-apps/settings/index.html)\" = 200 && test \"$(curl -s -m 5 -o /dev/null -w '%{http_code}' http://127.0.0.1:8000/pwa/nuxel-apps/console/index.html)\" = 200 && test \"$(curl -s -m 5 -o /dev/null -w '%{http_code}' http://127.0.0.1:8000/pwa/nuxel-apps/console-usb/index.html)\" = 200 && test \"$(curl -s -m 5 -o /dev/null -w '%{http_code}' http://127.0.0.1:8000/pwa/nuxel-apps/console-wifi/index.html)\" = 200 && test \"$(curl -s -m 5 -o /dev/null -w '%{http_code}' http://127.0.0.1:8000/pwa/nuxel-apps/maps/index.html)\" = 200; then ok=1; break; fi; i=$((i+1)); sleep 1; done; test \"$ok\" = 1",
       "rollback": "restore every <target>.nuxel-rollback; static files are served per-request",
       "files": [
         {
@@ -1089,12 +1089,12 @@
         {
           "source": "tools/s10plus/a33/nuxel-cast-diag.sh",
           "target": "/usr/local/bin/nuxel-cast-diag.sh",
-          "mode": "0644"
+          "mode": "0755"
         },
         {
           "source": "tools/s10plus/a33/nuxel-typec-diag.sh",
           "target": "/usr/local/bin/nuxel-typec-diag.sh",
-          "mode": "0644"
+          "mode": "0755"
         }
       ]
     },

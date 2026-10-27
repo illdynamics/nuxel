@@ -32,9 +32,11 @@ and the OTA builder (see *Versioning* below).
   unlock-to-Home state-machine fix.
 - **29000 — hardware providers.** Settings gains Bluetooth, Location/GPS,
   Audio and Displays pages backed by the same authoritative providers as Quick
-  Settings. Audio uses the real ALSA inventory and low-volume mixer control;
-  Bluetooth power uses `rfkill` + `bluetooth.service`; Displays reports the
-  missing DRM layer instead of inventing a monitor.
+  Settings. Audio uses the real ALSA inventory and a numid-based low-volume
+  mixer control (`HPOUT1 Digital Volume`) so status returns in <0.1 s instead
+  of hanging in the MADERA name-based sget path; Bluetooth power uses `rfkill`
+  + `bluetooth.service`; Displays reports the missing DRM layer instead of
+  inventing a monitor.
 - **Corrected Bluetooth blocker.** The owner-supplied BCM4375 HCD is present
   and checksum-verified, but the running 4.14.253 kernel was built with
   `CONFIG_BT_HCIUART` **not set**. `bcm43xx_bluetooth` is only the power/rfkill

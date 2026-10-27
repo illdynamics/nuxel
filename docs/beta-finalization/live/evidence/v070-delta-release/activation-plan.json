@@ -1,0 +1,55 @@
+{
+  "counts": {
+    "daemon_reloads_planned": 1,
+    "declared_reloads_seen": 3,
+    "independent_restarts_planned": 1,
+    "reloads_planned": 4,
+    "restarts_planned": 3
+  },
+  "daemon_reload": true,
+  "daemon_reload_action": {
+    "action": "systemctl daemon-reload",
+    "group": "v070-version-pins",
+    "needs_daemon_reload": true,
+    "restart_services": [],
+    "synthesized": true
+  },
+  "daemon_reloads_uncoalesced": 0,
+  "reloads": [
+    {
+      "action": "python3 -c \"import json;json.load(open('/usr/share/nuxel/pwa/nuxel-common/app-registry.json'))\" && test -s /usr/share/nuxel/pwa/nuxel-apps/console/console.js && test -s /usr/share/nuxel/pwa/nuxel-apps/settings/hardware-settings.js\"",
+      "group": "v070-pwa-static",
+      "needs_daemon_reload": false,
+      "restart_services": []
+    },
+    {
+      "action": "test -x /usr/local/bin/nuxel-typec-diag.sh && test -x /usr/local/bin/nuxel-cast-diag.sh",
+      "group": "v070-diagnostics",
+      "needs_daemon_reload": false,
+      "restart_services": []
+    },
+    {
+      "action": "systemctl restart nuxel-bridge nuxel-http-bridge",
+      "daemon_reload_split": true,
+      "group": "v070-version-pins",
+      "needs_daemon_reload": true,
+      "restart_services": [
+        "nuxel-bridge.service",
+        "nuxel-http-bridge.service"
+      ]
+    }
+  ],
+  "restart_services": [
+    "nuxel-wayland.service"
+  ],
+  "restart_services_in_reloads": [
+    "nuxel-bridge.service",
+    "nuxel-http-bridge.service"
+  ],
+  "restarts": [
+    {
+      "group": "v070-pwa-static",
+      "service": "nuxel-wayland.service"
+    }
+  ]
+}

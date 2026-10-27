@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "id": "nuxel-070-beta-hotfix",
+  "device": {
+    "codename": "beyond2lte",
+    "model": "SM-G975F",
+    "soc": "Exynos 9820",
+    "os": "Nuxel (Fedora 43 ARM64, kernel 4.14.253)"
+  },
+  "note": "v0.7.0-beta post-merge provider fix: bounded scontrols audio discovery and auxiliary service version sources. Userspace only; staged, verified, rolled back.",
+  "target_root_map": {
+    "/home/nuxel/nuxel": "/usr/share/nuxel"
+  },
+  "groups": [
+    {
+      "id": "v070-audio-provider",
+      "component": "AudioProvider bounded scontrols discovery",
+      "priority": 1,
+      "risk": "medium",
+      "restart_service": "nuxel-http-bridge",
+      "pre": [],
+      "health_check": "systemctl is-active nuxel-http-bridge && sleep 3 && curl -fsS -m 15 -X POST http://127.0.0.1:8080/api/v1/rpc -H 'Content-Type: application/json' -d '{\"app_id\":\"nuxel-settings\",\"namespace\":\"audio\",\"verb\":\"status\",\"params\":{}}' | grep -q 'HPOUT1 Digital Volume'",
+      "rollback": "restore /usr/lib/nuxel/nuxel-bridge/hw_providers.py.nuxel-rollback and restart nuxel-http-bridge",
+      "files": [
+        {
+          "source": "services/nuxel-bridge/src/hw_providers.py",
+          "target": "/usr/lib/nuxel/nuxel-bridge/hw_providers.py",
+          "mode": "0644"
+        }
+      ]
+    },
+    {
+      "id": "v070-notifications-source",
+      "component": "notifications host version source",
+      "priority": 2,
+      "risk": "medium",
+      "restart_service": "nuxel-notifications",
+      "pre": [],
+      "health_check": "systemctl is-active nuxel-notifications",
+      "rollback": "restore <target>.nuxel-rollback and restart nuxel-notifications",
+      "files": [
+        {
+          "source": "services/nuxel-notifications/src/notifications.py",
+          "target": "/usr/lib/nuxel/nuxel-notifications/notifications.py",
+          "mode": "0644"
+        }
+      ]
+    },
+    {
+      "id": "v070-portal-source",
+      "component": "portal host version source",
+      "priority": 3,
+      "risk": "medium",
+      "restart_service": "nuxel-portal",
+      "pre": [],
+      "health_check": "systemctl is-active nuxel-portal",
+      "rollback": "restore <target>.nuxel-rollback and restart nuxel-portal",
+      "files": [
+        {
+          "source": "services/nuxel-portal/src/portal.py",
+          "target": "/usr/lib/nuxel/nuxel-portal/portal.py",
+          "mode": "0644"
+        }
+      ]
+    }
+  ]
+}

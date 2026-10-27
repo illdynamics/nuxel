@@ -1,0 +1,286 @@
+{
+  "activation": [
+    {
+      "framed": true,
+      "group": "v070-notifications-source",
+      "kind": "restart",
+      "output": "active\nACTIVATE-OK\nNXLSCRIPT-RC=0\n",
+      "rc": 0,
+      "service": "nuxel-notifications.service"
+    },
+    {
+      "framed": true,
+      "group": "v070-portal-source",
+      "kind": "restart",
+      "output": "active\nACTIVATE-OK\nNXLSCRIPT-RC=0\n",
+      "rc": 0,
+      "service": "nuxel-portal.service"
+    },
+    {
+      "check": "systemctl is-active nuxel-notifications",
+      "group": "v070-notifications-source",
+      "kind": "health",
+      "ok": true,
+      "output": "active"
+    },
+    {
+      "check": "systemctl is-active nuxel-portal",
+      "group": "v070-portal-source",
+      "kind": "health",
+      "ok": true,
+      "output": "active"
+    }
+  ],
+  "activation_counts": {
+    "daemon_reloads": 0,
+    "health_checks": 2,
+    "reloads": 0,
+    "restarts": 2
+  },
+  "apply": true,
+  "at": "2026-10-27T18:42:47+0100",
+  "boot_id_after": "a269e14b-2ccd-4f0a-bbeb-088e84daa5a3",
+  "boot_id_before": "a269e14b-2ccd-4f0a-bbeb-088e84daa5a3",
+  "boot_id_changed": false,
+  "briq": "briq-10b-live-deploy-userspace",
+  "cancelled": false,
+  "changed_steps": 2,
+  "evidence_dir": "/x/nuxel/docs/beta-finalization/live/evidence/v070-aux-sources",
+  "executed_activation_plan": {
+    "counts": {
+      "daemon_reloads_planned": 0,
+      "declared_reloads_seen": 0,
+      "independent_restarts_planned": 2,
+      "reloads_planned": 0,
+      "restarts_planned": 2
+    },
+    "daemon_reload": false,
+    "daemon_reload_action": null,
+    "daemon_reloads_uncoalesced": 0,
+    "reloads": [],
+    "restart_services": [
+      "nuxel-notifications.service",
+      "nuxel-portal.service"
+    ],
+    "restart_services_in_reloads": [],
+    "restarts": [
+      {
+        "group": "v070-notifications-source",
+        "service": "nuxel-notifications.service"
+      },
+      {
+        "group": "v070-portal-source",
+        "service": "nuxel-portal.service"
+      }
+    ]
+  },
+  "exit_code": 0,
+  "finished_at": "2026-10-27T18:43:05+0100",
+  "groups": [
+    {
+      "declared_reload": null,
+      "declared_reload_source": null,
+      "group": "v070-notifications-source",
+      "priority": 2,
+      "restart_service": "nuxel-notifications",
+      "risk": "medium",
+      "risk_rank": 1,
+      "steps": 1
+    },
+    {
+      "declared_reload": null,
+      "declared_reload_source": null,
+      "group": "v070-portal-source",
+      "priority": 3,
+      "restart_service": "nuxel-portal",
+      "risk": "medium",
+      "risk_rank": 1,
+      "steps": 1
+    }
+  ],
+  "health": [
+    {
+      "check": "systemctl is-active nuxel-notifications",
+      "group": "v070-notifications-source",
+      "kind": "health",
+      "ok": true,
+      "output": "active"
+    },
+    {
+      "check": "systemctl is-active nuxel-portal",
+      "group": "v070-portal-source",
+      "kind": "health",
+      "ok": true,
+      "output": "active"
+    }
+  ],
+  "host": "dextronux",
+  "journal": "/x/nuxel/docs/beta-finalization/live/evidence/v070-aux-sources/transaction.jsonl",
+  "manifest": "tools/beta/live/nuxel-070-beta-hotfix-manifest.json",
+  "no_op": false,
+  "observation": null,
+  "operation_id": "v070-aux-sources",
+  "order": "manifest",
+  "pid": 2215722,
+  "pid_start": "34451854",
+  "planned_activation_plan": {
+    "counts": {
+      "daemon_reloads_planned": 0,
+      "declared_reloads_seen": 0,
+      "independent_restarts_planned": 3,
+      "reloads_planned": 0,
+      "restarts_planned": 3
+    },
+    "daemon_reload": false,
+    "daemon_reload_action": null,
+    "daemon_reloads_uncoalesced": 0,
+    "reloads": [],
+    "restart_services": [
+      "nuxel-http-bridge.service",
+      "nuxel-notifications.service",
+      "nuxel-portal.service"
+    ],
+    "restart_services_in_reloads": [],
+    "restarts": [
+      {
+        "group": "v070-audio-provider",
+        "service": "nuxel-http-bridge.service"
+      },
+      {
+        "group": "v070-notifications-source",
+        "service": "nuxel-notifications.service"
+      },
+      {
+        "group": "v070-portal-source",
+        "service": "nuxel-portal.service"
+      }
+    ]
+  },
+  "probe": {
+    "at": "2026-10-27T18:42:47+0100",
+    "bytes_in": 54,
+    "dev": "/dev/ttyACM0",
+    "echo_ok": true,
+    "elapsed_s": 0.303,
+    "error": null,
+    "reachable": true,
+    "sample": "\u001b[?2004l\n\u001b[?2004hsh-5.3# \u001b[?2004l\n\u001b[?2004hsh-5.3# "
+  },
+  "reconnects": [],
+  "results": [
+    {
+      "attempts": 1,
+      "changed": true,
+      "declared_reload": null,
+      "elapsed_s": 6.314,
+      "group": "v070-notifications-source",
+      "health_check": "systemctl is-active nuxel-notifications",
+      "install": {
+        "framed": true,
+        "output": "PREV=d8b8da4b6ff4e703d92ac9bf0a6c70d449528dcaa53c2905fc42ba36b068e0c4\n/usr/lib/nuxel/nuxel-notifications/notifications.py.nuxel-staged: OK\nINSTALL-OK\nNXLSCRIPT-RC=0\n",
+        "rc": 0
+      },
+      "installed_hash": "7dc49d6acc43c6818c54ddb1f99a6e903c1d0de4b23a6433c20d0424ef27094a",
+      "mode": "0644",
+      "n": 1,
+      "ok": true,
+      "previous_hash": "d8b8da4b6ff4e703d92ac9bf0a6c70d449528dcaa53c2905fc42ba36b068e0c4",
+      "risk": "medium",
+      "risk_rank": 1,
+      "rollback": null,
+      "rollback_route": "restore <target>.nuxel-rollback and restart nuxel-notifications",
+      "service": "nuxel-notifications",
+      "source": "services/nuxel-notifications/src/notifications.py",
+      "source_sha256": "7dc49d6acc43c6818c54ddb1f99a6e903c1d0de4b23a6433c20d0424ef27094a",
+      "staged_push": {
+        "ack_writes": 10,
+        "acked_bytes": 13335,
+        "blocks": 10,
+        "bytes": 13335,
+        "elapsed_s": 2.856,
+        "fallback": false,
+        "mode": "block",
+        "parts": 47,
+        "raw_writes": 10,
+        "resume_used": false,
+        "resumed_b64_chars": 0,
+        "retries": 0,
+        "sha256": "7dc49d6acc43c6818c54ddb1f99a6e903c1d0de4b23a6433c20d0424ef27094a",
+        "throughput_bytes_s": 4669.1,
+        "write_bytes": 26536
+      },
+      "target": "/usr/lib/nuxel/nuxel-notifications/notifications.py",
+      "txn_backup": "/usr/lib/nuxel/nuxel-notifications/notifications.py.nuxel-rollback.pre-v070-aux-sources",
+      "verify_output": "INSTALL-OK (hash checked in-frame)"
+    },
+    {
+      "attempts": 1,
+      "changed": true,
+      "declared_reload": null,
+      "elapsed_s": 7.355,
+      "group": "v070-portal-source",
+      "health_check": "systemctl is-active nuxel-portal",
+      "install": {
+        "framed": true,
+        "output": "PREV=7a8295dfcebbc41849b97d1eec8e35b47bf9df286ccc3967ad0af4cde7ec6c28\n/usr/lib/nuxel/nuxel-portal/portal.py.nuxel-staged: OK\nINSTALL-OK\nNXLSCRIPT-RC=0\n",
+        "rc": 0
+      },
+      "installed_hash": "673b3a683a6e64dff58d2cf4455c8ce5cbd22c6cc5871be521f552bceada874c",
+      "mode": "0644",
+      "n": 2,
+      "ok": true,
+      "previous_hash": "7a8295dfcebbc41849b97d1eec8e35b47bf9df286ccc3967ad0af4cde7ec6c28",
+      "risk": "medium",
+      "risk_rank": 1,
+      "rollback": null,
+      "rollback_route": "restore <target>.nuxel-rollback and restart nuxel-portal",
+      "service": "nuxel-portal",
+      "source": "services/nuxel-portal/src/portal.py",
+      "source_sha256": "673b3a683a6e64dff58d2cf4455c8ce5cbd22c6cc5871be521f552bceada874c",
+      "staged_push": {
+        "ack_writes": 16,
+        "acked_bytes": 22741,
+        "blocks": 16,
+        "bytes": 22741,
+        "elapsed_s": 4.077,
+        "fallback": false,
+        "mode": "block",
+        "parts": 80,
+        "raw_writes": 16,
+        "resume_used": false,
+        "resumed_b64_chars": 0,
+        "retries": 0,
+        "sha256": "673b3a683a6e64dff58d2cf4455c8ce5cbd22c6cc5871be521f552bceada874c",
+        "throughput_bytes_s": 5577.9,
+        "write_bytes": 43706
+      },
+      "target": "/usr/lib/nuxel/nuxel-portal/portal.py",
+      "txn_backup": "/usr/lib/nuxel/nuxel-portal/portal.py.nuxel-rollback.pre-v070-aux-sources",
+      "verify_output": "INSTALL-OK (hash checked in-frame)"
+    }
+  ],
+  "risk_envelope": {
+    "medium": 3
+  },
+  "rollbacks": [],
+  "skipped": [],
+  "steps": 2,
+  "transfer": {
+    "ack_writes": 26,
+    "blocks": 26,
+    "bytes": 36076,
+    "elapsed_s": 6.933,
+    "parts": 127,
+    "raw_writes": 26,
+    "resumes": 0,
+    "retries": 0,
+    "throughput_bytes_s": 5203.5,
+    "write_bytes": 70242
+  },
+  "verdict": "DEPLOYED_UNVERIFIED",
+  "verdict_note": "files staged, hash-verified, atomically installed and the transaction's coalesced reload/restart actions run once. DEPLOYED_UNVERIFIED means the deploy succeeded but no human-visible behaviour was observed.",
+  "verdicts": {
+    "briq-10b-live-deploy-userspace": "DEPLOYED_UNVERIFIED"
+  },
+  "violations": []
+}

@@ -1,0 +1,14 @@
+{
+  "blocked_reason": "activation/health check failed; every changed file was restored to its recorded previous hash; rollback did not verify \u2014 operator recovery is required",
+  "changed_steps": 15,
+  "exit_code": 6,
+  "finished_at": "2026-10-27T18:21:38+0100",
+  "host": "dextronux",
+  "no_op": false,
+  "operation_id": "v070-delta-release2",
+  "pid": 2200856,
+  "pid_start": "34307765",
+  "rollback_ok": false,
+  "state": "NEEDS_RECOVERY",
+  "verdict": "NEEDS_RECOVERY"
+}
