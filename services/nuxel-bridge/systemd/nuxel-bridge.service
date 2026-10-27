@@ -24,7 +24,7 @@ ExecStart=/usr/bin/nuxel-bridge
 #   NUXEL_BRIDGE_PROTOCOL_VERSION = the pinned PWA<->host contract ("1")
 #   NUXEL_BRIDGE_VERSION          = the host implementation version
 Environment=NUXEL_BRIDGE_PROTOCOL_VERSION=1
-Environment=NUXEL_BRIDGE_VERSION=0.7.0-beta
+Environment=NUXEL_BRIDGE_VERSION=0.7.1-beta
 Environment=NUXEL_PATHS_CONF=/etc/nuxel/paths.conf
 Restart=on-failure
 RestartSec=5

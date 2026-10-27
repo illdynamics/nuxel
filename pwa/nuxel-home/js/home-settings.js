@@ -50,7 +50,7 @@
             console.warn('[Nuxel] Missing/corrupt dock artwork:', artwork);
         };
         image.onload = () => docks.forEach(dock => { if (dock.dataset.background === value) delete dock.dataset.backgroundFallback; });
-        image.src = artwork + '?v=0.7.0-beta';
+        image.src = artwork + '?v=0.7.1-beta';
         document.dispatchEvent(new CustomEvent('nuxel:dock-background', {detail:{id:value,path:artwork}}));
     }
     const DEFAULT_WALLPAPER = "url('assets/nuxel-background.png')";
@@ -81,6 +81,12 @@
         const settings = launcher ? launcher.settings : { gridColumns: 4, gridRows: 5, dockColumns: 5 };
         const appearance = read();
         const selectedDock = dockChoice(appearance.dockBackground);
+        const widgetState = global.NuxelWidgets ? global.NuxelWidgets.state() : { enabled: true, items: [] };
+        const widgetsEnabled = widgetState.enabled !== false;
+        const widgetNotes = global.NuxelWidgets ? global.NuxelWidgets.notes() : [];
+        const noteOptions = '<option value="">Most recent note</option>' +
+            widgetNotes.map(n => '<option value="' + n.id.replace(/[^A-Za-z0-9._-]/g, '') + '">' +
+                (n.title || 'Untitled').replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</option>').join('');
         panel.innerHTML = '<div class="home-settings-card">' +
             '<header><h2>Home settings</h2><button type="button" data-home-close>Done</button></header>' +
             '<h3>Wallpaper</h3><div class="wallpaper-choices">' +
@@ -106,6 +112,12 @@
             '<label>Refresh interval <select data-system-monitor-interval>' + [1, 2, 3, 5, 10].map(v => '<option value="' + v + '"' + (Number(appearance.systemMonitorInterval || 3) === v ? ' selected' : '') + '>' + v + ' seconds</option>').join('') + '</select></label>' +
             '<label>Detailed values <input type="checkbox" data-system-monitor-detailed' + (appearance.systemMonitorDetailed !== false ? ' checked' : '') + '></label>' +
             '<p class="home-setting-hint">3 seconds is recommended. One-second updates can use more battery.</p></div>' +
+            '<h3>Widgets</h3>' +
+            '<div class="home-setting-row"><label>Enable widgets <input type="checkbox" data-widgets-enabled' + (widgetsEnabled ? ' checked' : '') + '></label>' +
+            '<label>Desktop <input type="number" min="1" max="8" value="2" data-widget-desktop></label></div>' +
+            '<div class="home-setting-row"><label>Note <select data-widget-note>' + noteOptions + '</select></label></div>' +
+            '<div class="row"><button type="button" data-add-notes-widget>Add Notes widget</button></div>' +
+            '<p class="home-setting-hint">The Notes widget shows a chosen note on the selected desktop and opens the full editor when tapped.</p>' +
             '<h3>Lock &amp; display</h3><div class="home-setting-row"><label>Lock after screen turns off <select data-lock-after-off>' +
             [['0','Immediately'],['5000','After 5 seconds'],['15000','After 15 seconds'],['30000','After 30 seconds'],['60000','After 1 minute'],['300000','After 5 minutes']].map(v => '<option value="' + v[0] + '">' + v[1] + '</option>').join('') +
             '</select></label></div>' +
@@ -177,6 +189,26 @@
         }
         panel.querySelector('[data-home-restore]').onclick = () => { if (launcher) launcher.restoreHiddenApps(); };
         panel.querySelector('[data-home-reset]').onclick = () => { if (launcher) launcher.resetOrder(); close(); };
+
+        if (global.NuxelWidgets) {
+            panel.querySelector('[data-widgets-enabled]').onchange = event => {
+                global.NuxelWidgets.setEnabled(event.target.checked);
+            };
+            panel.querySelector('[data-add-notes-widget]').onclick = () => {
+                var noteSel = panel.querySelector('[data-widget-note]');
+                var noteId = noteSel ? noteSel.value : '';
+                var desktop = Number(panel.querySelector('[data-widget-desktop]').value || 2);
+                var item = global.NuxelWidgets.add('notes', { desktop: desktop, noteId: noteId });
+                if (item) {
+                    var note = noteId ? (global.NuxelWidgets.notes().find(n => n.id === noteId)) : null;
+                    if (!note) note = global.NuxelWidgets.notes()[0];
+                    if (!note) {
+                        global.NuxelWidgets.notes; // noop to keep linters honest
+                        alert('No note exists yet. Create one in the Notes app first.');
+                    }
+                }
+            };
+        }
     }
     function options(min, max, selected) {
         let out = ''; for (let i = min; i <= max; i++) out += '<option value="' + i + '"' + (i === selected ? ' selected' : '') + '>' + i + '</option>';

@@ -1,0 +1,71 @@
+{
+  "schema_version": 1,
+  "id": "nuxel-071-beta-live-userspace",
+  "component": "Nuxel v0.7.1-beta version pins and PWA server ownership repair",
+  "note": "Live userspace delta for v0.7.1-beta: version pins, bridge/systemd environment updates, and the nuxel-web :8000 single-owner fix. No kernel, partition, modem or USB gadget mutation.",
+  "invariants": [
+    "No write may resolve onto a raw partition block device, a BOOT/USERDATA/SYSTEM/RECOVERY/DTB/DTBO/VBMETA image, the radio/modem, EFS/SEC_EFS/calibration/IMEI/PIT or any partition metadata.",
+    "Every deploy target must live under an allowed userspace root (assert_userspace_path).",
+    "Stage -> verify SHA-256 -> atomic install -> restart the smallest affected service -> health check -> automatic rollback on failure.",
+    "Sources must resolve INSIDE this repository (no absolute path, no '..')."
+  ],
+  "groups": [
+    {
+      "id": "v071-pwa-version",
+      "component": "v0.7.1-beta PWA version pins and launcher cache namespace",
+      "priority": 1,
+      "risk": "low",
+      "restart_service": "nuxel-web",
+      "declared_reload": null,
+      "pre": [],
+      "health_check": "test \"$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8000/pwa/nuxel-home/index.html)\" = 200 && grep -q '\"host_version\": \"0.7.1-beta\"' /usr/share/nuxel/pwa/nuxel-common/bridge-version.json && grep -q '\"pwa_version\": \"0.7.1-beta\"' /usr/share/nuxel/pwa/nuxel-home/manifest.json && grep -q 'v49-v071-release' /usr/share/nuxel/pwa/nuxel-home/sw.js && grep -qx 'v0.7.1-beta' /usr/share/nuxel/VERSION",
+      "rollback": "restore each <target>.nuxel-rollback and `systemctl restart nuxel-web`",
+      "files": [
+        {"source": "VERSION", "target": "/usr/share/nuxel/VERSION", "mode": "0644"},
+        {"source": "pwa/nuxel-common/bridge-version.json", "target": "/usr/share/nuxel/pwa/nuxel-common/bridge-version.json", "mode": "0644"},
+        {"source": "pwa/nuxel-common/package.json", "target": "/usr/share/nuxel/pwa/nuxel-common/package.json", "mode": "0644"},
+        {"source": "pwa/nuxel-home/index.html", "target": "/usr/share/nuxel/pwa/nuxel-home/index.html", "mode": "0644"},
+        {"source": "pwa/nuxel-home/manifest.json", "target": "/usr/share/nuxel/pwa/nuxel-home/manifest.json", "mode": "0644"},
+        {"source": "pwa/nuxel-home/sw.js", "target": "/usr/share/nuxel/pwa/nuxel-home/sw.js", "mode": "0644"},
+        {"source": "pwa/nuxel-home/js/home-settings.js", "target": "/usr/share/nuxel/pwa/nuxel-home/js/home-settings.js", "mode": "0644"},
+        {"source": "pwa/nuxel-home/js/status-bar.js", "target": "/usr/share/nuxel/pwa/nuxel-home/js/status-bar.js", "mode": "0644"}
+      ]
+    },
+    {
+      "id": "v071-service-pins",
+      "component": "v0.7.1-beta bridge, notification and portal version pins",
+      "priority": 2,
+      "risk": "medium",
+      "restart_service": null,
+      "declared_reload": "systemctl daemon-reload && systemctl restart nuxel-bridge nuxel-http-bridge nuxel-notifications nuxel-portal",
+      "pre": ["systemctl daemon-reload"],
+      "health_check": "grep -q '^Environment=.*NUXEL_BRIDGE_VERSION=0.7.1-beta' /etc/systemd/system/nuxel-bridge.service && grep -q '^Environment=.*NUXEL_BRIDGE_VERSION=0.7.1-beta' /etc/systemd/system/nuxel-http-bridge.service && grep -q '^Environment=.*NUXEL_BRIDGE_VERSION=0.7.1-beta' /etc/systemd/system/nuxel-notifications.service && grep -q '\"host_version\": \"0.7.1-beta\"' /etc/nuxel/bridge-version.json && systemctl is-active --quiet nuxel-bridge nuxel-http-bridge nuxel-notifications nuxel-portal && systemctl show nuxel-bridge.service -p Environment | grep -q 'NUXEL_BRIDGE_VERSION=0.7.1-beta' && systemctl show nuxel-http-bridge.service -p Environment | grep -q 'NUXEL_BRIDGE_VERSION=0.7.1-beta'",
+      "rollback": "restore every <target>.nuxel-rollback; `systemctl daemon-reload`; restart nuxel-bridge nuxel-http-bridge nuxel-notifications nuxel-portal",
+      "files": [
+        {"source": "pwa/nuxel-common/bridge-version.json", "target": "/etc/nuxel/bridge-version.json", "mode": "0644"},
+        {"source": "services/nuxel-bridge/src/api.py", "target": "/usr/lib/nuxel/nuxel-bridge/api.py", "mode": "0644"},
+        {"source": "services/nuxel-bridge/src/bridge.py", "target": "/usr/lib/nuxel/nuxel-bridge/bridge.py", "mode": "0644"},
+        {"source": "services/nuxel-bridge/systemd/nuxel-bridge.service", "target": "/etc/systemd/system/nuxel-bridge.service", "mode": "0644"},
+        {"source": "services/nuxel-bridge/systemd/nuxel-http-bridge.service", "target": "/etc/systemd/system/nuxel-http-bridge.service", "mode": "0644"},
+        {"source": "services/nuxel-notifications/src/notifications.py", "target": "/usr/lib/nuxel/nuxel-notifications/notifications.py", "mode": "0644"},
+        {"source": "services/nuxel-notifications/systemd/nuxel-notifications.service", "target": "/etc/systemd/system/nuxel-notifications.service", "mode": "0644"},
+        {"source": "services/nuxel-portal/src/portal.py", "target": "/usr/lib/nuxel/nuxel-portal/portal.py", "mode": "0644"}
+      ]
+    },
+    {
+      "id": "v071-session-order",
+      "component": "nuxel-web single-owner port and Wayland ordering repair",
+      "priority": 3,
+      "risk": "low",
+      "restart_service": null,
+      "declared_reload": "systemctl daemon-reload",
+      "pre": [],
+      "health_check": "grep -q 'FALLBACK_PORT=8001' /usr/lib/nuxel/nuxel-session.sh && grep -q 'After=.*nuxel-web.service' /etc/systemd/system/nuxel-wayland.service && systemctl show nuxel-wayland.service -p After | grep -q 'nuxel-web.service' && systemctl is-active --quiet nuxel-web",
+      "rollback": "restore each <target>.nuxel-rollback and `systemctl daemon-reload`",
+      "files": [
+        {"source": "tools/s10plus/a29/nuxel-session.sh", "target": "/usr/lib/nuxel/nuxel-session.sh", "mode": "0755"},
+        {"source": "services/nuxel-session/systemd/nuxel-wayland.service", "target": "/etc/systemd/system/nuxel-wayland.service", "mode": "0644"}
+      ]
+    }
+  ]
+}

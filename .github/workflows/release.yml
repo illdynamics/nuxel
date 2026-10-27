@@ -68,7 +68,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Manual recovery tag (e.g. v0.7.0-beta). Empty => v<VERSION>.'
+        description: 'Manual recovery tag (e.g. v0.7.1-beta). Empty => v<VERSION>.'
         required: false
         default: ''
       devices:
@@ -331,6 +331,15 @@ jobs:
           python3 services/nuxel-bridge/test-system-indicators.py
           python3 tools/s10plus/a45/test-lockscreen-indicators.py
           node tools/s10plus/a45/test-lockscreen-indicators.js
+
+      - name: PWNAGE-30000 app-suite regression tests
+        if: matrix.device == 's10plus'
+        run: |
+          # Offline acceptance for the PWA application-suite changes: the
+          # bridge persistence/mail transports, the WAV encoder, the widget
+          # framework/theme/haptics clients, and the static PWA DOM wiring.
+          python3 -m pytest tests/pwnage30000 -q
+          python3 tools/s10plus/a33/tests/test-core-apps.py --no-runtime
 
       - name: Verify artifacts (${{ matrix.device }})
         run: bash tools/verify-artifacts.sh --device "${{ matrix.device }}"

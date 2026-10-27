@@ -1,7 +1,7 @@
 * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 :root {
-  --bg: #0a1628; --bg2: #0d1f3c; --card: #122952; --card2: #17356b;
-  --text: #e8e8e8; --text2: #9fb0c8; --accent: #1565C0; --accent2: #42a5f5;
+  --bg: var(--nx-bg); --bg2: var(--nx-bg-2); --card: var(--nx-surface); --card2: var(--nx-surface-2);
+  --text: var(--nx-text); --text2: var(--nx-text-dim); --accent: var(--nx-primary); --accent2: var(--nx-accent);
   --ok: #2e7d32; --ok2: #66bb6a; --warn: #ef6c00; --bad: #b71c1c; --bad2: #ef5350;
   --radius: 12px; --mono: "DejaVu Sans Mono", Menlo, monospace;
 }

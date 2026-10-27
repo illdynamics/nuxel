@@ -1,0 +1,7 @@
+pushed={"acked_bytes": 2044, "b64_chars": 2728, "bytes": 2044, "decoded_sha256": "c8c25a345d89b82903f5f442c8512561ac453f4d3ea9d7f72b1854684de4377e", "frames": 22, "mode": "frame", "parts": 22, "path": "/var/tmp/nxl-install-020.sh", "raw_writes": 0, "retries": 0}
+ok=True rc=0
+---
+PREV=NONE
+/usr/share/nuxel/pwa/nuxel-apps/photos/tools/seed-samples.py.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

@@ -138,6 +138,7 @@ class Launcher {
         const grid = document.getElementById('app-grid');
         if (grid) grid.scrollTop = 0;
         this._renderAppGrid();
+        if (window.NuxelWidgets) window.NuxelWidgets.renderPage(this.currentPage);
     }
 
     _saveOrder() {
@@ -211,6 +212,7 @@ class Launcher {
     _renderAll() {
         this._renderDock();
         this._renderAppGrid();
+        if (window.NuxelWidgets) window.NuxelWidgets.renderPage(this.currentPage);
     }
 
     _renderDock() {

@@ -1,0 +1,7 @@
+pushed={"acked_bytes": 1607, "b64_chars": 2144, "bytes": 1607, "decoded_sha256": "1c6486fb12d9e9c9a1b6bad91f024bb064bffeaa29a126a6b5c66f24762d1dbd", "frames": 17, "mode": "frame", "parts": 17, "path": "/var/tmp/nxl-install-018.sh", "raw_writes": 0, "retries": 0}
+ok=True rc=0
+---
+PREV=673b3a683a6e64dff58d2cf4455c8ce5cbd22c6cc5871be521f552bceada874c
+/usr/lib/nuxel/nuxel-portal/portal.py.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

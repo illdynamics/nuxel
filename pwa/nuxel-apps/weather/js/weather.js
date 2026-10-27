@@ -1,243 +1,261 @@
-// Nuxel Weather (mission area 30)
-//
-// OFFLINE BY DESIGN: this app performs no network request at all - there is no
-// fetch() of a weather provider anywhere in this file, and the manifest declares
-// "network": "none".  Data comes from manual entry or an imported JSON file, and
-// is stored in localStorage.  The UI says "manual / offline data" rather than
-// implying a live forecast feed.
+/* Nuxel Weather (PWNAGE-30000)
+ * Live online weather from Open-Meteo.  Geocoding + forecast run over HTTPS.
+ * A manual city lookup (including Eindhoven) works even when automatic
+ * location is disabled; the last successful result is cached and clearly
+ * marked stale when the provider cannot be reached.
+ */
 (function () {
   'use strict';
+  var CACHE_KEY = 'nuxel-weather-cache';
+  var SETTINGS_KEY = 'nuxel-weather-settings';
+  var GEO_URL = 'https://geocoding-api.open-meteo.com/v1/search';
+  var WX_URL = 'https://api.open-meteo.com/v1/forecast';
 
-  var K = 'nuxel-weather';
-  var doc = load();
-
-  function load() {
-    try {
-      var raw = localStorage.getItem(K);
-      if (raw) {
-        var d = JSON.parse(raw);
-        if (d && typeof d === 'object') {
-          d.forecast = d.forecast || [];
-          return d;
-        }
-      }
-    } catch (e) { /* fall through to a fresh document */ }
-    return { place: '', unit: 'C', now: null, forecast: [], updated: null };
-  }
-  function save() {
-    try { localStorage.setItem(K, JSON.stringify(doc)); } catch (e) { /* ignore */ }
-  }
-  function toast(msg) {
-    var t = document.getElementById('toast');
-    t.textContent = msg;
-    t.classList.remove('hidden');
-    clearTimeout(toast._t);
-    toast._t = setTimeout(function () { t.classList.add('hidden'); }, 2400);
-  }
-
-  var glyphs = { 'Clear': '☀', 'Partly cloudy': '⛅', 'Cloudy': '☁', 'Rain': '🌧',
-    'Thunderstorm': '⛈', 'Snow': '❄', 'Fog': '🌫', 'Windy': '💨' };
-
-  function toDisplay(temp, unit) {
-    if (temp === null || temp === undefined || isNaN(temp)) return '--';
-    if (doc.unit === unit) return round(temp) + '°';
-    return round(unit === 'F' ? temp * 9 / 5 + 32 : (temp - 32) * 5 / 9) + '°';
-  }
-  function round(n) { return Math.round(n * 10) / 10; }
-
-  var els = {
-    place: document.getElementById('place'),
+  var el = {
+    city: document.getElementById('city'),
+    search: document.getElementById('search'),
+    placeResults: document.getElementById('place-results'),
+    autoLoc: document.getElementById('auto-loc'),
+    useLocation: document.getElementById('use-location'),
     nowTemp: document.getElementById('now-temp'),
+    nowPlace: document.getElementById('now-place'),
     nowCond: document.getElementById('now-cond'),
     nowUpdated: document.getElementById('now-updated'),
     nowSrc: document.getElementById('now-src'),
     nowGlyph: document.getElementById('now-glyph'),
-    inTemp: document.getElementById('in-temp'),
-    inUnit: document.getElementById('in-unit'),
-    inCond: document.getElementById('in-cond'),
-    inHum: document.getElementById('in-hum'),
-    inWind: document.getElementById('in-wind'),
+    unit: document.getElementById('unit'),
+    refresh: document.getElementById('refresh'),
     forecast: document.getElementById('forecast'),
-    chart: document.getElementById('chart'),
-    fDay: document.getElementById('f-day'),
-    fHigh: document.getElementById('f-high'),
-    fLow: document.getElementById('f-low'),
-    ioReport: document.getElementById('io-report')
+    ioReport: document.getElementById('io-report'),
+    netBadge: document.getElementById('net-badge'),
+    toast: document.getElementById('toast')
   };
 
-  function renderNow() {
-    els.place.value = doc.place || '';
-    els.inUnit.value = doc.unit;
-    if (doc.now) {
-      els.nowTemp.textContent = toDisplay(doc.now.temp, doc.unit === 'C' ? 'C' : 'F');
-      els.nowCond.textContent = doc.now.cond + (doc.now.humidity != null ? '  ·  ' + doc.now.humidity + '% humidity' : '') +
-        (doc.now.wind != null ? '  ·  ' + doc.now.wind + ' km/h wind' : '');
-      els.nowGlyph.textContent = glyphs[doc.now.cond] || '☁';
-      els.nowUpdated.textContent = 'Updated ' + new Date(doc.now.at).toLocaleString() + ' (manual entry)';
-      els.nowSrc.textContent = 'Source: manual entry - no network provider is configured';
-      els.inTemp.value = doc.now.temp; els.inCond.value = doc.now.cond;
-      els.inHum.value = doc.now.humidity == null ? '' : doc.now.humidity;
-      els.inWind.value = doc.now.wind == null ? '' : doc.now.wind;
-    } else {
-      els.nowTemp.textContent = '--°';
-      els.nowCond.textContent = 'No data yet';
-      els.nowGlyph.textContent = '☁';
-      els.nowUpdated.textContent = 'Never updated';
-      els.nowSrc.textContent = 'Source: manual entry (no network)';
-    }
+  var settings = loadSettings();
+  el.autoLoc.checked = settings.autoLoc !== false;
+  el.unit.value = settings.unit === 'F' ? 'F' : 'C';
+
+  function loadSettings() {
+    try { var raw = localStorage.getItem(SETTINGS_KEY); return raw ? JSON.parse(raw) : { autoLoc: true, unit: 'C' }; }
+    catch (e) { return { autoLoc: true, unit: 'C' }; }
+  }
+  function saveSettings() {
+    try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch (e) {}
+  }
+  function cacheGet() {
+    try { var raw = localStorage.getItem(CACHE_KEY); return raw ? JSON.parse(raw) : null; }
+    catch (e) { return null; }
+  }
+  function cacheSet(doc) {
+    try { localStorage.setItem(CACHE_KEY, JSON.stringify(doc)); } catch (e) {}
   }
 
-  // Temperatures are stored in Celsius; display follows doc.unit.
-  function toCelsius(v, unit) { return unit === 'F' ? (v - 32) * 5 / 9 : v; }
+  var codes = {0:'Clear',1:'Mostly clear',2:'Partly cloudy',3:'Cloudy',45:'Fog',48:'Frost fog',
+    51:'Light drizzle',53:'Drizzle',55:'Heavy drizzle',61:'Light rain',63:'Rain',65:'Heavy rain',
+    71:'Light snow',73:'Snow',75:'Heavy snow',80:'Rain showers',81:'Rain showers',82:'Violent rain showers',
+    85:'Snow showers',86:'Snow showers',95:'Thunderstorm',96:'Thunderstorm + hail',99:'Thunderstorm + hail'};
+  var glyphs = {0:'☀',1:'🌤',2:'⛅',3:'☁',45:'🌫',48:'🌫',51:'🌦',53:'🌧',55:'🌧',61:'🌧',63:'🌧',65:'🌧',
+    71:'🌨',73:'🌨',75:'🌨',80:'🌦',81:'🌦',82:'🌧',85:'🌨',86:'🌨',95:'⛈',96:'⛈',99:'⛈'};
+  function condLabel(c) { return codes[c] || 'Unknown'; }
+  function glyph(c) { return glyphs[c] || '☁'; }
 
-  function renderForecast() {
-    doc.forecast.sort(function (a, b) { return a.day.localeCompare(b.day); });
-    els.forecast.innerHTML = '';
-    els.chart.innerHTML = '';
-    var highs = doc.forecast.map(function (d) { return d.high; });
-    var lows = doc.forecast.map(function (d) { return d.low; });
-    var all = highs.concat(lows).filter(function (v) { return typeof v === 'number' && !isNaN(v); });
-    var max = all.length ? Math.max.apply(null, all) : 1;
-    var min = all.length ? Math.min.apply(null, all) : 0;
-    var span = Math.max(1, max - min);
+  function bridgeCall(ns, verb, params) {
+    if (window.NuxelBridge && typeof window.NuxelBridge.call === 'function') {
+      return window.NuxelBridge.call(ns, verb, params).catch(function (e) { return { success: false, error: e && e.message }; });
+    }
+    return Promise.resolve({ success: false, offline: true });
+  }
 
-    doc.forecast.forEach(function (d, i) {
-      var li = document.createElement('li');
-      var left = document.createElement('div');
-      left.textContent = new Date(d.day + 'T12:00:00').toLocaleDateString(undefined,
-        { weekday: 'short', month: 'short', day: 'numeric' });
-      var mid = document.createElement('div');
-      mid.className = 'mono';
-      mid.textContent = toDisplay(d.high, 'C') + ' / ' + toDisplay(d.low, 'C') + '  ·  ' + toDisplay(d.high, 'F') + ' / ' + toDisplay(d.low, 'F');
-      var actions = document.createElement('div');
-      actions.className = 'row';
-      var del = document.createElement('button');
-      del.textContent = 'Delete';
-      del.addEventListener('click', function () {
-        doc.forecast.splice(i, 1); save(); renderForecast(); toast('Removed ' + d.day);
+  function fetchJson(url, timeoutMs) {
+    var ctl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    var timer = setTimeout(function () { if (ctl) ctl.abort(); }, timeoutMs || 12000);
+    return fetch(url, { signal: ctl && ctl.signal, headers: { 'Accept': 'application/json' } })
+      .then(function (r) {
+        clearTimeout(timer);
+        if (!r.ok) throw new Error('provider HTTP ' + r.status);
+        return r.json();
+      })
+      .catch(function (e) {
+        clearTimeout(timer);
+        throw new Error((e && e.name === 'AbortError') ? 'request timed out' : ('network error: ' + (e && e.message)));
       });
-      actions.appendChild(del);
-      li.appendChild(left); li.appendChild(mid); li.appendChild(actions);
-      els.forecast.appendChild(li);
+  }
 
-      var wrap = document.createElement('div');
-      wrap.className = 'bar-wrap';
-      var bar = document.createElement('div');
-      bar.className = 'bar';
-      var h = 12 + Math.round(((d.high - min) / span) * 74);
-      bar.style.height = h + 'px';
-      bar.title = d.day + ': ' + toDisplay(d.high, 'C') + ' / ' + toDisplay(d.low, 'C');
-      var lab = document.createElement('div');
-      lab.className = 'bar-label';
-      lab.textContent = new Date(d.day + 'T12:00:00').toLocaleDateString(undefined, { weekday: 'narrow' });
-      wrap.appendChild(bar); wrap.appendChild(lab);
-      els.chart.appendChild(wrap);
+  function toast(msg) {
+    el.toast.textContent = msg;
+    el.toast.classList.remove('hidden');
+    clearTimeout(toast._t);
+    toast._t = setTimeout(function () { el.toast.classList.add('hidden'); }, 2400);
+  }
+
+  function statusText(lines) { el.ioReport.textContent = lines.join('\n'); }
+
+  function round(n) { return Math.round(n * 10) / 10; }
+  function toDisplayC(v) { return settings.unit === 'F' ? round(v * 9 / 5 + 32) : round(v); }
+  function unitChar() { return settings.unit === 'F' ? '°F' : '°C'; }
+
+  async function geocode(name) {
+    var url = GEO_URL + '?name=' + encodeURIComponent(name) + '&count=5&language=en&format=json';
+    var doc = await fetchJson(url);
+    var results = doc && doc.results;
+    if (!Array.isArray(results) || !results.length) return [];
+    return results.map(function (r) {
+      return { name: r.name, admin: [r.admin1, r.admin2, r.country].filter(Boolean).join(', '),
+               latitude: r.latitude, longitude: r.longitude, timezone: r.timezone };
     });
+  }
 
-    if (!doc.forecast.length) {
-      var p = document.createElement('div');
-      p.className = 'li-sub';
-      p.textContent = 'No forecast days entered yet.';
-      els.chart.appendChild(p);
+  async function weatherFor(place) {
+    var url = WX_URL + '?latitude=' + encodeURIComponent(place.latitude) +
+      '&longitude=' + encodeURIComponent(place.longitude) +
+      '&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m' +
+      '&daily=temperature_2m_max,temperature_2m_min,weather_code&timezone=auto&forecast_days=7';
+    var doc = await fetchJson(url);
+    var cur = doc && doc.current;
+    var daily = doc && doc.daily;
+    if (!cur || !daily) throw new Error('provider returned no current conditions');
+    return {
+      place: place.name + (place.admin ? ', ' + place.admin : ''),
+      latitude: place.latitude,
+      longitude: place.longitude,
+      timezone: doc.timezone || place.timezone,
+      current: {
+        temp_c: cur.temperature_2m,
+        feels_c: cur.apparent_temperature,
+        humidity: cur.relative_humidity_2m,
+        wind: cur.wind_speed_10m,
+        code: cur.weather_code,
+        at: Date.now()
+      },
+      forecast: daily.time.map(function (day, i) {
+        return { day: day, high_c: daily.temperature_2m_max[i], low_c: daily.temperature_2m_min[i], code: daily.weather_code[i] };
+      })
+    };
+  }
+
+  function render(data) {
+    el.nowPlace.textContent = data.place;
+    el.nowTemp.textContent = toDisplayC(data.current.temp_c) + '°';
+    el.nowCond.textContent = condLabel(data.current.code) +
+      (data.current.humidity != null ? ' · ' + data.current.humidity + '% humidity' : '') +
+      (data.current.wind != null ? ' · ' + round(data.current.wind) + ' km/h wind' : '');
+    el.nowGlyph.textContent = glyph(data.current.code);
+    el.nowUpdated.textContent = 'Updated ' + new Date(data.current.at).toLocaleString() +
+      (data.current.at + 3 * 3600 * 1000 < Date.now() ? ' · stale cache' : '');
+    el.nowSrc.textContent = 'Source: Open-Meteo (HTTPS) · ' + (data.timezone || 'auto timezone');
+    el.netBadge.textContent = 'online';
+    el.netBadge.classList.remove('warn');
+
+    el.forecast.innerHTML = '';
+    data.forecast.forEach(function (d) {
+      var li = document.createElement('li');
+      var day = document.createElement('span');
+      day.textContent = new Date(d.day + 'T12:00:00').toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
+      var cond = document.createElement('span');
+      cond.textContent = glyph(d.code) + ' ' + condLabel(d.code);
+      var temps = document.createElement('span');
+      temps.className = 'mono';
+      temps.textContent = toDisplayC(d.high_c) + '° / ' + toDisplayC(d.low_c) + '°';
+      li.appendChild(day); li.appendChild(cond); li.appendChild(temps);
+      el.forecast.appendChild(li);
+    });
+  }
+
+  function renderCache() {
+    var c = cacheGet();
+    if (!c) {
+      el.nowPlace.textContent = 'No cached weather';
+      el.nowTemp.textContent = '--°';
+      el.nowCond.textContent = 'Offline — no cached result';
+      el.nowUpdated.textContent = 'Never updated';
+      el.netBadge.textContent = 'offline';
+      el.netBadge.classList.add('warn');
+      el.forecast.innerHTML = '';
+      return;
+    }
+    render(c);
+    el.netBadge.textContent = 'offline · showing cache';
+    el.netBadge.classList.add('warn');
+  }
+
+  async function searchCity(name) {
+    if (!name) { toast('Enter a city name'); return; }
+    el.placeResults.innerHTML = '';
+    statusText(['Searching for “' + name + '”…']);
+    try {
+      var results = await geocode(name);
+      if (!results.length) {
+        statusText(['No matching place found for “' + name + '”.']);
+        return;
+      }
+      el.placeResults.innerHTML = results.map(function (r, i) {
+        return '<button data-i="' + i + '" class="result">' + esc(r.name + (r.admin ? ', ' + r.admin : '')) + '</button>';
+      }).join('');
+      el.placeResults.querySelectorAll('.result').forEach(function (b) {
+        b.addEventListener('click', function () { loadPlace(results[+b.dataset.i]); });
+      });
+      statusText(['Found ' + results.length + ' place(s). Choose one to load its weather.']);
+    } catch (e) {
+      renderCache();
+      statusText(['Lookup failed: ' + e.message, 'Showing the last cached result if present.']);
+      el.netBadge.textContent = 'offline';
+      el.netBadge.classList.add('warn');
     }
   }
 
-  document.getElementById('save-place').addEventListener('click', function () {
-    doc.place = (els.place.value || '').trim();
-    save();
-    toast(doc.place ? 'Place set to ' + doc.place : 'Place cleared');
-  });
-
-  document.getElementById('save-now').addEventListener('click', function () {
-    var raw = parseFloat(els.inTemp.value);
-    if (isNaN(raw)) { toast('Enter a temperature first'); return; }
-    doc.unit = els.inUnit.value;
-    doc.now = {
-      temp: toCelsius(raw, doc.unit),
-      cond: els.inCond.value,
-      humidity: els.inHum.value === '' ? null : Number(els.inHum.value),
-      wind: els.inWind.value === '' ? null : Number(els.inWind.value),
-      at: Date.now()
-    };
-    save(); renderNow(); save();
-    toast('Current conditions saved locally');
-  });
-
-  els.inUnit.addEventListener('change', function () {
-    doc.unit = els.inUnit.value;
-    save(); renderNow(); renderForecast();
-  });
-
-  document.getElementById('f-add').addEventListener('click', function () {
-    var day = els.fDay.value;
-    var high = parseFloat(els.fHigh.value), low = parseFloat(els.fLow.value);
-    if (!day) { toast('Pick a day'); return; }
-    if (isNaN(high) || isNaN(low)) { toast('Enter both a high and a low'); return; }
-    if (low > high) { toast('The low cannot be above the high'); return; }
-    doc.forecast = doc.forecast.filter(function (d) { return d.day !== day; });
-    doc.forecast.push({ day: day, high: toCelsius(high, doc.unit), low: toCelsius(low, doc.unit) });
-    save(); renderForecast();
-    els.fHigh.value = ''; els.fLow.value = '';
-    toast('Forecast day saved');
-  });
-
-  document.getElementById('export').addEventListener('click', function () {
-    var text = JSON.stringify(doc, null, 2);
+  async function loadPlace(place) {
+    el.placeResults.innerHTML = '';
+    statusText(['Loading weather for ' + place.name + '…']);
     try {
-      var blob = new Blob([text], { type: 'application/json' });
-      var a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = 'nuxel-weather.json';
-      document.body.appendChild(a); a.click();
-      setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 2000);
-      els.ioReport.textContent = 'Exported ' + text.length + ' bytes of local weather data.';
+      var data = await weatherFor(place);
+      cacheSet(data);
+      render(data);
+      statusText(['Loaded ' + data.place + '.', 'Provider: Open-Meteo (HTTPS).']);
     } catch (e) {
-      els.ioReport.textContent = 'Export not available in this view; the data is stored under localStorage key "nuxel-weather".';
+      renderCache();
+      statusText(['Weather fetch failed: ' + e.message, 'Showing the last cached result if present.']);
     }
+  }
+
+  async function useMyLocation() {
+    statusText(['Asking the Nuxel location provider for a fix…']);
+    var res = await bridgeCall('location', 'request', {});
+    var lat = res && (res.latitude != null ? res.latitude : res.lat);
+    var lon = res && (res.longitude != null ? res.longitude : res.lon);
+    if (res && res.success !== false && lat != null && lon != null) {
+      await loadPlace({ name: 'Current location', admin: '', latitude: lat, longitude: lon, timezone: res.timezone });
+    } else {
+      renderCache();
+      statusText(['No usable location fix is available.', (res && res.error) ? 'Provider said: ' + res.error : 'Search for a city instead.']);
+      toast('Location unavailable — search for a city');
+    }
+  }
+
+  el.search.addEventListener('click', function () { searchCity(el.city.value.trim()); });
+  el.city.addEventListener('keydown', function (e) { if (e.key === 'Enter') searchCity(el.city.value.trim()); });
+  el.useLocation.addEventListener('click', useMyLocation);
+  el.refresh.addEventListener('click', function () {
+    var c = cacheGet();
+    if (c && c.latitude != null) loadPlace({ name: c.place.split(',')[0], admin: '', latitude: c.latitude, longitude: c.longitude });
+    else searchCity(el.city.value.trim() || 'Eindhoven');
+  });
+  el.unit.addEventListener('change', function () {
+    settings.unit = el.unit.value; saveSettings();
+    var c = cacheGet(); if (c) render(c);
+  });
+  el.autoLoc.addEventListener('change', function () {
+    settings.autoLoc = el.autoLoc.checked; saveSettings();
   });
 
-  document.getElementById('import').addEventListener('click', function () {
-    document.getElementById('file').click();
-  });
-  document.getElementById('file').addEventListener('change', function (ev) {
-    var f = ev.target.files && ev.target.files[0];
-    if (!f) return;
-    var reader = new FileReader();
-    reader.onload = function () {
-      try {
-        var incoming = JSON.parse(String(reader.result));
-        if (!incoming || typeof incoming !== 'object') throw new Error('not an object');
-        doc.place = incoming.place || doc.place;
-        doc.unit = incoming.unit === 'F' ? 'F' : 'C';
-        if (incoming.now) doc.now = incoming.now;
-        if (Array.isArray(incoming.forecast)) {
-          incoming.forecast.forEach(function (d) {
-            if (d && d.day && typeof d.high === 'number' && typeof d.low === 'number') {
-              doc.forecast = doc.forecast.filter(function (x) { return x.day !== d.day; });
-              doc.forecast.push({ day: d.day, high: d.high, low: d.low });
-            }
-          });
-        }
-        save(); renderNow(); renderForecast();
-        els.ioReport.textContent = 'Imported ' + f.name + ' (' + doc.forecast.length + ' forecast days).';
-        toast('Import complete');
-      } catch (e) {
-        els.ioReport.textContent = 'Import failed: ' + e.message;
-      }
-      ev.target.value = '';
-    };
-    reader.readAsText(f);
-  });
+  function esc(s) { var d = document.createElement('div'); d.textContent = String(s == null ? '' : s); return d.innerHTML; }
 
-  document.getElementById('clear').addEventListener('click', function () {
-    doc = { place: doc.place, unit: doc.unit, now: null, forecast: [], updated: null };
-    save(); renderNow(); renderForecast();
-    toast('Local weather data cleared');
-  });
+  renderCache();
 
-  renderNow();
-  renderForecast();
+  // On first open, if auto-location is enabled, attempt it (honest failure
+  // falls back to a manual city prompt rather than inventing coordinates).
+  if (settings.autoLoc !== false) {
+    useMyLocation();
+  }
 
-  // headless smoke-test hook
-  window.nuxelWeather = { doc: doc, toCelsius: toCelsius, toDisplay: toDisplay, renderForecast: renderForecast };
+  window.nuxelWeather = { geocode: geocode, weatherFor: weatherFor, condLabel: condLabel, toDisplayC: toDisplayC };
 })();

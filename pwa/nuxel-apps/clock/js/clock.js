@@ -19,8 +19,18 @@
    'cities','city','utc-offset','add-city','alarm-time','alarm-label','add-alarm','alarm-repeat',
    'alarm-capability','alarms','ring-status','snooze','stop-ring','sw-time','sw-state','sw-start',
    'sw-lap','sw-reset','laps','tm-time','tm-state','tm-min','tm-sec','tm-set','tm-start','tm-pause',
-   'tm-reset','toast'].forEach(function (id) {
+   'tm-reset','toast','alarm-vibrate'].forEach(function (id) {
     el[id.replace(/-([a-z])/g, function (m, c) { return c.toUpperCase(); })] = document.getElementById(id);
+  });
+
+  /* ---------- tab switching (the tabs used to have no handler) ---------- */
+  document.querySelectorAll('.tab').forEach(function (tab) {
+    tab.addEventListener('click', function () {
+      document.querySelectorAll('.tab').forEach(function (t) { t.classList.toggle('active', t === tab); });
+      document.querySelectorAll('.panel').forEach(function (p) {
+        p.classList.toggle('active', p.id === 'tab-' + tab.dataset.tab);
+      });
+    });
   });
 
   /* ---------- host + bridge ---------- */
@@ -195,6 +205,41 @@
   var snoozeUntil = 0;
   var lastRingKey = '';
 
+  function alarmSettings() {
+    try {
+      var raw = localStorage.getItem('nuxel-clock-settings');
+      return raw ? JSON.parse(raw) : { vibrate: true, sound: true };
+    } catch (e) { return { vibrate: true, sound: true }; }
+  }
+  function saveAlarmSettings(s) {
+    try { localStorage.setItem('nuxel-clock-settings', JSON.stringify(s)); } catch (e) {}
+  }
+  var alarmPrefs = alarmSettings();
+  if (el.alarmVibrate) el.alarmVibrate.checked = alarmPrefs.vibrate !== false;
+  if (el.alarmVibrate) {
+    el.alarmVibrate.addEventListener('change', function () {
+      alarmPrefs.vibrate = el.alarmVibrate.checked;
+      saveAlarmSettings(alarmPrefs);
+    });
+  }
+  // Durable copy through the bridge; localStorage remains the offline fallback.
+  function persistAlarms() {
+    save(K_ALARMS, alarms);
+    if (window.NuxelBridge && window.NuxelBridge.call) {
+      window.NuxelBridge.call('storage', 'write', { key: K_ALARMS, data: alarms }).catch(function () {});
+    }
+  }
+  function hydrateAlarms() {
+    if (window.NuxelBridge && window.NuxelBridge.call) {
+      window.NuxelBridge.call('storage', 'read', { key: K_ALARMS }).then(function (res) {
+        if (res && res.success !== false && Array.isArray(res.data)) {
+          alarms = res.data;
+          renderAlarms();
+        }
+      }).catch(function () {});
+    }
+  }
+
   function renderAlarms() {
     el.alarms.innerHTML = '';
     if (!alarms.length) {
@@ -221,12 +266,12 @@
       toggle.textContent = a.enabled ? 'On' : 'Off';
       toggle.addEventListener('click', function () {
         alarms[i].enabled = !alarms[i].enabled;
-        save(K_ALARMS, alarms); renderAlarms();
+        persistAlarms(); renderAlarms();
       });
       var del = document.createElement('button');
       del.textContent = 'Delete';
       del.addEventListener('click', function () {
-        alarms.splice(i, 1); save(K_ALARMS, alarms); renderAlarms();
+        alarms.splice(i, 1); persistAlarms(); renderAlarms();
       });
       actions.appendChild(toggle); actions.appendChild(del);
       li.appendChild(left); li.appendChild(actions);
@@ -242,10 +287,11 @@
       time: t,
       label: (el.alarmLabel.value || '').trim() || 'Alarm',
       repeat: !!el.alarmRepeat.checked,
-      enabled: true
+      enabled: true,
+      vibrate: alarmPrefs.vibrate !== false
     });
     alarms.sort(function (a, b) { return a.time.localeCompare(b.time); });
-    save(K_ALARMS, alarms);
+    persistAlarms();
     el.alarmLabel.value = '';
     el.alarmRepeat.checked = false;
     renderAlarms();
@@ -272,6 +318,10 @@
     el.ringStatus.textContent = 'Ringing: ' + a.time + ' — ' + (a.label || 'Alarm');
     el.snooze.disabled = false;
     el.stopRing.disabled = false;
+    var vibrate = a.vibrate !== false && alarmPrefs.vibrate !== false;
+    if (vibrate && window.NuxelHaptics && window.NuxelHaptics.alarm) {
+      window.NuxelHaptics.alarm();
+    }
     var ok = beep(a.repeat ? 3 : 1);
     if (!ok) toast('Alarm ringing, but no audio device is available for the tone');
     if (window.NuxelBridge && window.NuxelBridge.sendNotification) {
@@ -404,6 +454,7 @@
 
   refreshSource();
   renderAlarms();
+  hydrateAlarms();
 
   hostRead('alarm').then(function (r) {
     if (r && r.ok) el.alarmCapability.textContent = 'Wake alarm service: ' + String(r.text || '').trim();

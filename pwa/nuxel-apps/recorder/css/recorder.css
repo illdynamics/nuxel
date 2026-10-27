@@ -1,6 +1,6 @@
 /* Nuxel Recorder - mic provisioning UI */
 :root {
-  --bg: #1a1024; --card: #241635; --card2: #32204b; --ink: #f3ecff; --dim: #a795c4;
+  --bg: var(--nx-bg); --card: #241635; --card2: #32204b; --ink: #f3ecff; --dim: #a795c4;
   --accent: #c084fc; --danger: #ff6b6b; --ok: #4ade80;
   --safe-top: env(safe-area-inset-top, 0px); --safe-bottom: env(safe-area-inset-bottom, 0px);
 }

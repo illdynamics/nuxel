@@ -1,0 +1,255 @@
+{
+  "component": "PWNAGE-30000 Nuxel application suite",
+  "groups": [
+    {
+      "component": "PWNAGE-30000 PWA apps, theme, haptics and widgets",
+      "files": [
+        {
+          "mode": "0644",
+          "source": "pwa/nuxel-common/theme.css",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-common/theme.css"
+        },
+        {
+          "mode": "0644",
+          "source": "pwa/nuxel-common/theme.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-common/theme.js"
+        },
+        {
+          "mode": "0644",
+          "source": "pwa/nuxel-common/haptics.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-common/haptics.js"
+        },
+        {
+          "mode": "0644",
+          "source": "pwa/nuxel-home/index.html",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/index.html"
+        },
+        {
+          "mode": "0644",
+          "source": "pwa/nuxel-home/js/widgets.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/js/widgets.js"
+        },
+        {
+          "mode": "0644",
+          "source": "pwa/nuxel-home/css/widgets.css",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/css/widgets.css"
+        },
+        {
+          "mode": "0644",
+          "source": "pwa/nuxel-home/js/touch-keyboard.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/js/touch-keyboard.js"
+        },
+        {
+          "mode": "0644",
+          "source": "pwa/nuxel-home/js/app.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/js/app.js"
+        },
+        {
+          "mode": "0644",
+          "source": "pwa/nuxel-home/js/launcher.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/js/launcher.js"
+        },
+        {
+          "mode": "0644",
+          "source": "pwa/nuxel-home/js/home-settings.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/js/home-settings.js"
+        },
+        {
+          "mode": "0644",
+          "source": "pwa/nuxel-apps/calendar/index.html",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/calendar/index.html"
+        },
+        {
+          "mode": "0644",
+          "source": "pwa/nuxel-apps/calendar/js/calendar.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/calendar/js/calendar.js"
+        },
+        {
+          "mode": "0644",
+          "source": "pwa/nuxel-apps/calendar/css/calendar.css",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/calendar/css/calendar.css"
+        },
+        {
+          "mode": "0644",
+          "source": "pwa/nuxel-apps/clock/index.html",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/clock/index.html"
+        },
+        {
+          "mode": "0644",
+          "source": "pwa/nuxel-apps/clock/js/clock.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/clock/js/clock.js"
+        },
+        {
+          "mode": "0644",
+          "source": "pwa/nuxel-apps/clock/css/clock.css",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/clock/css/clock.css"
+        },
+        {
+          "mode": "0644",
+          "source": "pwa/nuxel-apps/notes/index.html",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/notes/index.html"
+        },
+        {
+          "mode": "0644",
+          "source": "pwa/nuxel-apps/notes/js/notes.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/notes/js/notes.js"
+        },
+        {
+          "mode": "0644",
+          "source": "pwa/nuxel-apps/notes/css/notes.css",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/notes/css/notes.css"
+        },
+        {
+          "mode": "0644",
+          "source": "pwa/nuxel-apps/files/index.html",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/files/index.html"
+        },
+        {
+          "mode": "0644",
+          "source": "pwa/nuxel-apps/files/js/files.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/files/js/files.js"
+        },
+        {
+          "mode": "0644",
+          "source": "pwa/nuxel-apps/files/css/files.css",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/files/css/files.css"
+        },
+        {
+          "mode": "0644",
+          "source": "pwa/nuxel-apps/weather/index.html",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/weather/index.html"
+        },
+        {
+          "mode": "0644",
+          "source": "pwa/nuxel-apps/weather/js/weather.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/weather/js/weather.js"
+        },
+        {
+          "mode": "0644",
+          "source": "pwa/nuxel-apps/weather/css/weather.css",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/weather/css/weather.css"
+        },
+        {
+          "mode": "0644",
+          "source": "pwa/nuxel-apps/photos/index.html",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/photos/index.html"
+        },
+        {
+          "mode": "0644",
+          "source": "pwa/nuxel-apps/photos/manifest.json",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/photos/manifest.json"
+        },
+        {
+          "mode": "0644",
+          "source": "pwa/nuxel-apps/photos/app.json",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/photos/app.json"
+        },
+        {
+          "mode": "0644",
+          "source": "pwa/nuxel-apps/photos/tools/seed-samples.py",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/photos/tools/seed-samples.py"
+        },
+        {
+          "mode": "0644",
+          "source": "pwa/nuxel-apps/recorder/index.html",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/recorder/index.html"
+        },
+        {
+          "mode": "0644",
+          "source": "pwa/nuxel-apps/recorder/js/recorder.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/recorder/js/recorder.js"
+        },
+        {
+          "mode": "0644",
+          "source": "pwa/nuxel-apps/recorder/js/recorder-wav.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/recorder/js/recorder-wav.js"
+        },
+        {
+          "mode": "0644",
+          "source": "pwa/nuxel-apps/recorder/css/recorder.css",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/recorder/css/recorder.css"
+        },
+        {
+          "mode": "0644",
+          "source": "pwa/nuxel-apps/mail/index.html",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/mail/index.html"
+        },
+        {
+          "mode": "0644",
+          "source": "pwa/nuxel-apps/mail/js/mail.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/mail/js/mail.js"
+        },
+        {
+          "mode": "0644",
+          "source": "pwa/nuxel-apps/nuxtore/index.html",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/nuxtore/index.html"
+        },
+        {
+          "mode": "0644",
+          "source": "pwa/nuxel-apps/nuxtore/css/nuxtore.css",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/nuxtore/css/nuxtore.css"
+        },
+        {
+          "mode": "0644",
+          "source": "pwa/nuxel-apps/settings/index.html",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/settings/index.html"
+        },
+        {
+          "mode": "0644",
+          "source": "pwa/nuxel-apps/settings/settings.css",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/settings/settings.css"
+        },
+        {
+          "mode": "0644",
+          "source": "pwa/nuxel-apps/settings/theme-settings.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/settings/theme-settings.js"
+        }
+      ],
+      "health_check": "test \"$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8000/pwa/nuxel-apps/settings/index.html)\" = 200 && test -s /home/nuxel/nuxel/pwa/nuxel-common/theme.css",
+      "id": "pwnage-30000-pwa",
+      "pre": [],
+      "priority": 1,
+      "restart_service": "nuxel-web",
+      "risk": "low",
+      "rollback": "restore each <target>.nuxel-rollback and `systemctl restart nuxel-web`"
+    },
+    {
+      "component": "PWNAGE-30000 bridge persistence and mail transport",
+      "files": [
+        {
+          "mode": "0644",
+          "source": "services/nuxel-bridge/src/pwa_store.py",
+          "target": "/usr/lib/nuxel/nuxel-bridge/pwa_store.py"
+        },
+        {
+          "mode": "0644",
+          "source": "services/nuxel-bridge/src/mail_client.py",
+          "target": "/usr/lib/nuxel/nuxel-bridge/mail_client.py"
+        },
+        {
+          "mode": "0644",
+          "source": "services/nuxel-bridge/src/api.py",
+          "target": "/usr/lib/nuxel/nuxel-bridge/api.py"
+        }
+      ],
+      "health_check": "test -s /usr/lib/nuxel/nuxel-bridge/pwa_store.py && test -s /usr/lib/nuxel/nuxel-bridge/mail_client.py",
+      "id": "pwnage-30000-bridge",
+      "pre": [],
+      "priority": 1,
+      "restart_service": "nuxel-http-bridge.service",
+      "risk": "medium",
+      "rollback": "restore each <target>.nuxel-rollback and `systemctl restart nuxel-http-bridge.service`"
+    }
+  ],
+  "id": "pwnage-30000-app-apocalypse",
+  "invariants": [
+    "No write may resolve onto a raw partition block device, a BOOT/USERDATA/SYSTEM/RECOVERY/DTB/DTBO/VBMETA image, the radio/modem, EFS/SEC_EFS/calibration/IMEI/PIT or any partition metadata.",
+    "Every deploy target must live under an allowed userspace root (assert_userspace_path).",
+    "Stage -> verify SHA-256 -> atomic install -> restart the smallest affected service -> health check -> automatic rollback on failure.",
+    "Sources must resolve INSIDE this repository (no absolute path, no '..')."
+  ],
+  "schema_version": 1,
+  "target_root_map": {
+    "/home/nuxel/nuxel": "/usr/share/nuxel"
+  }
+}

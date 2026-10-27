@@ -8,6 +8,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" type="image/png" href="icons/icon-192.png">
 <title>Nuxel Mail</title>
+<link rel="stylesheet" href="../../nuxel-common/theme.css">
 <link rel="stylesheet" href="css/mail.css">
 </head>
 <body>
@@ -100,6 +101,10 @@
       <label>SMTP host <input id="acct-smtp-host" type="text" placeholder="smtp.example.org"></label>
       <label>SMTP port <input id="acct-smtp-port" type="number" value="587"></label>
       <label class="check"><input id="acct-tls" type="checkbox" checked> Require TLS</label>
+      <label>Password (test/send only — never stored) <input id="acct-password" type="password" autocomplete="new-password"></label>
+      <button id="acct-discover" class="btn-ghost">Auto-fill Gmail / Microsoft</button>
+      <button id="acct-test" class="btn-ghost">Test connection</button>
+      <p id="acct-test-result" class="state"></p>
       <p id="acct-error" class="error hidden"></p>
       <div class="row-actions">
         <button id="acct-save" class="btn-primary">Save account</button>
@@ -109,6 +114,8 @@
   </div>
 </div>
 
+<script src="../../nuxel-common/theme.js"></script>
+<script src="../../nuxel-common/haptics.js"></script>
 <script type="module" src="../../nuxel-common/bridge.js"></script>
 <script src="js/storage.js"></script>
 <script src="js/transport.js"></script>

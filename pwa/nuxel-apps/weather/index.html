@@ -3,76 +3,67 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<meta name="theme-color" content="#101c2e">
+<meta name="theme-color" content="#3beaa1">
 <meta name="nuxel-app-id" content="org.nuxel.Weather">
 <title>Nuxel Weather</title>
 <link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="../../nuxel-common/theme.css">
 <link rel="stylesheet" href="css/weather.css">
 </head>
 <body>
 <header class="top-bar">
   <h1>Weather</h1>
-  <span class="badge" id="net-badge">manual / offline data</span>
+  <span class="badge" id="net-badge">checking…</span>
 </header>
 
 <main>
-  <section class="now-card">
-    <div class="place">
-      <input id="place" type="text" placeholder="Place (manual label)">
-      <button id="save-place">Save</button>
+  <section class="card">
+    <h3>Location</h3>
+    <div class="add-row">
+      <input id="city" type="text" placeholder="City (e.g. Eindhoven)">
+      <button id="search" class="primary">Check</button>
     </div>
+    <div id="place-results" class="results"></div>
+    <label class="check"><input id="auto-loc" type="checkbox"> Use my current location when available</label>
+    <button id="use-location" class="nx-btn">Use my current location</button>
+    <p class="hint">Weather is fetched live from Open-Meteo. Coordinates are only sent to the
+      provider after you choose a place or use your location, and never to any other service.</p>
+  </section>
+
+  <section class="card now-card">
     <div class="now-main">
       <div id="now-temp" class="now-temp">--°</div>
       <div class="now-meta">
-        <div id="now-cond" class="now-cond">No data yet</div>
-        <div id="now-updated" class="now-updated">Never updated</div>
-        <div id="now-src" class="li-sub">Source: manual entry (no network)</div>
+        <div id="now-place" class="now-cond">No place selected</div>
+        <div id="now-cond" class="now-cond">—</div>
+        <div id="now-updated" class="li-sub">Never updated</div>
+        <div id="now-src" class="li-sub">Provider: Open-Meteo (HTTPS)</div>
       </div>
       <div id="now-glyph" class="now-glyph" aria-hidden="true">☁</div>
     </div>
-    <div class="now-extra">
-      <label>Temp <input id="in-temp" type="number" step="0.1" placeholder="18"></label>
-      <label>Unit
-        <select id="in-unit"><option value="C">°C</option><option value="F">°F</option></select>
+    <div class="units">
+      <label>Units
+        <select id="unit"><option value="C">°C</option><option value="F">°F</option></select>
       </label>
-      <label>Condition
-        <select id="in-cond">
-          <option>Clear</option><option>Partly cloudy</option><option>Cloudy</option>
-          <option>Rain</option><option>Thunderstorm</option><option>Snow</option>
-          <option>Fog</option><option>Windy</option>
-        </select>
-      </label>
-      <label>Humidity % <input id="in-hum" type="number" min="0" max="100" placeholder="60"></label>
-      <label>Wind km/h <input id="in-wind" type="number" min="0" step="0.1" placeholder="12"></label>
+      <button id="refresh" class="nx-btn">Refresh</button>
     </div>
-    <button id="save-now" class="primary">Save current conditions</button>
-    <p class="hint">Nuxel Weather is deliberately offline: it stores what you enter or import and
-      never performs a network request. A networked provider can be added later behind the Nuxel
-      bridge; until then this app does not pretend to know the real weather.</p>
   </section>
 
   <section class="card">
     <h3>Forecast</h3>
-    <div class="add-row">
-      <label>Day <input id="f-day" type="date"></label>
-      <label>High <input id="f-high" type="number" step="0.1" placeholder="21"></label>
-      <label>Low <input id="f-low" type="number" step="0.1" placeholder="12"></label>
-      <button id="f-add">Add day</button>
-    </div>
-    <div id="chart" class="chart"></div>
-    <ul id="forecast" class="forecast"></ul>
-    <div class="row">
-      <button id="export">Export JSON</button>
-      <button id="import">Import JSON</button>
-      <button id="clear" class="danger">Clear all data</button>
-    </div>
-    <input id="file" type="file" accept="application/json,.json" class="hidden">
-    <p id="io-report" class="li-sub">—</p>
+    <div id="forecast" class="forecast"></div>
+  </section>
+
+  <section class="card">
+    <h3>Status</h3>
+    <pre id="io-report" class="state">No weather loaded yet.</pre>
   </section>
 </main>
 
 <p id="toast" class="toast hidden"></p>
 
+<script src="../../nuxel-common/theme.js"></script>
+<script src="../../nuxel-common/haptics.js"></script>
 <script type="module" src="../../nuxel-common/bridge.js"></script>
 <script src="js/weather.js"></script>
 </body>

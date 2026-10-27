@@ -1,0 +1,7 @@
+pushed={"acked_bytes": 1702, "b64_chars": 2272, "bytes": 1702, "decoded_sha256": "96c488246749e065ba22301ac4bf6d034810d2e4f6ff7a92f854fcc1a7c19a3e", "frames": 18, "mode": "frame", "parts": 18, "path": "/var/tmp/nxl-install-042.sh", "raw_writes": 0, "retries": 0}
+ok=True rc=0
+---
+PREV=NONE
+/usr/lib/nuxel/nuxel-bridge/mail_client.py.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

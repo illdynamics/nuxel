@@ -1,0 +1,182 @@
+[
+  {
+    "group": "v071-pwa-version",
+    "n": 1,
+    "risk": "low",
+    "script": "scripts/001-VERSION.sh",
+    "service": "nuxel-web",
+    "source": "VERSION",
+    "source_sha256": "b287d08216e6d93bf363f67d448919c67711c1fb80aa148d45be77cf585a8be2",
+    "target": "/usr/share/nuxel/VERSION"
+  },
+  {
+    "group": "v071-pwa-version",
+    "n": 2,
+    "risk": "low",
+    "script": "scripts/002-bridge-version.json.sh",
+    "service": "nuxel-web",
+    "source": "pwa/nuxel-common/bridge-version.json",
+    "source_sha256": "6d756a9ab10c4370c7be75b1eba5f38cdaed86d44cb25784ff7d0779ff87de8a",
+    "target": "/usr/share/nuxel/pwa/nuxel-common/bridge-version.json"
+  },
+  {
+    "group": "v071-pwa-version",
+    "n": 3,
+    "risk": "low",
+    "script": "scripts/003-package.json.sh",
+    "service": "nuxel-web",
+    "source": "pwa/nuxel-common/package.json",
+    "source_sha256": "d829f4330dbf076f6135e127d99586ae7ca46e4e5138302ff18010d5818621e1",
+    "target": "/usr/share/nuxel/pwa/nuxel-common/package.json"
+  },
+  {
+    "group": "v071-pwa-version",
+    "n": 4,
+    "risk": "low",
+    "script": "scripts/004-index.html.sh",
+    "service": "nuxel-web",
+    "source": "pwa/nuxel-home/index.html",
+    "source_sha256": "3f782e09313cadbd813f68f1c8136341c0c12edcdbf9301d18f5dd5708d9a920",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/index.html"
+  },
+  {
+    "group": "v071-pwa-version",
+    "n": 5,
+    "risk": "low",
+    "script": "scripts/005-manifest.json.sh",
+    "service": "nuxel-web",
+    "source": "pwa/nuxel-home/manifest.json",
+    "source_sha256": "30fd507f98491710f8a429168a2e72d2c933b693c0dfe8dd4e7d65d8d9ad8bc2",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/manifest.json"
+  },
+  {
+    "group": "v071-pwa-version",
+    "n": 6,
+    "risk": "low",
+    "script": "scripts/006-sw.js.sh",
+    "service": "nuxel-web",
+    "source": "pwa/nuxel-home/sw.js",
+    "source_sha256": "b063da78e324cb761da966be80843f578d0bdd88db3252643255faee6643566b",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/sw.js"
+  },
+  {
+    "group": "v071-pwa-version",
+    "n": 7,
+    "risk": "low",
+    "script": "scripts/007-home-settings.js.sh",
+    "service": "nuxel-web",
+    "source": "pwa/nuxel-home/js/home-settings.js",
+    "source_sha256": "2a1dffa724ff5c05d87b0a86a4f230b639f3d4338aaa2b0478a72715b0163190",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/js/home-settings.js"
+  },
+  {
+    "group": "v071-pwa-version",
+    "n": 8,
+    "risk": "low",
+    "script": "scripts/008-status-bar.js.sh",
+    "service": "nuxel-web",
+    "source": "pwa/nuxel-home/js/status-bar.js",
+    "source_sha256": "bc12cd4443cc1cdbe524a9d63e5d4b6dbdbfb5b7b4f1027f61e2dfdfb5028e0e",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/js/status-bar.js"
+  },
+  {
+    "group": "v071-service-pins",
+    "n": 9,
+    "risk": "medium",
+    "script": "scripts/009-bridge-version.json.sh",
+    "service": null,
+    "source": "pwa/nuxel-common/bridge-version.json",
+    "source_sha256": "6d756a9ab10c4370c7be75b1eba5f38cdaed86d44cb25784ff7d0779ff87de8a",
+    "target": "/etc/nuxel/bridge-version.json"
+  },
+  {
+    "group": "v071-service-pins",
+    "n": 10,
+    "risk": "medium",
+    "script": "scripts/010-api.py.sh",
+    "service": null,
+    "source": "services/nuxel-bridge/src/api.py",
+    "source_sha256": "db5dab331264b30223fd5a063e1419e1e5915181cd050a08e7bd7642e0f976e7",
+    "target": "/usr/lib/nuxel/nuxel-bridge/api.py"
+  },
+  {
+    "group": "v071-service-pins",
+    "n": 11,
+    "risk": "medium",
+    "script": "scripts/011-bridge.py.sh",
+    "service": null,
+    "source": "services/nuxel-bridge/src/bridge.py",
+    "source_sha256": "4d296f54bced4ed823a9b7acb7793558f62c86979fc9dd8d9070a19356481abb",
+    "target": "/usr/lib/nuxel/nuxel-bridge/bridge.py"
+  },
+  {
+    "group": "v071-service-pins",
+    "n": 12,
+    "risk": "medium",
+    "script": "scripts/012-nuxel-bridge.service.sh",
+    "service": null,
+    "source": "services/nuxel-bridge/systemd/nuxel-bridge.service",
+    "source_sha256": "b0258b6fc11f379870532806d61f190f2705c7af6ad171ba7f567c08023dca2c",
+    "target": "/etc/systemd/system/nuxel-bridge.service"
+  },
+  {
+    "group": "v071-service-pins",
+    "n": 13,
+    "risk": "medium",
+    "script": "scripts/013-nuxel-http-bridge.service.sh",
+    "service": null,
+    "source": "services/nuxel-bridge/systemd/nuxel-http-bridge.service",
+    "source_sha256": "85427be3e66f1c6fcfdbbc1f02d8a1bbfbd1b65725e13d8b3c227a8b3b818e98",
+    "target": "/etc/systemd/system/nuxel-http-bridge.service"
+  },
+  {
+    "group": "v071-service-pins",
+    "n": 14,
+    "risk": "medium",
+    "script": "scripts/014-notifications.py.sh",
+    "service": null,
+    "source": "services/nuxel-notifications/src/notifications.py",
+    "source_sha256": "4d2e480847c53ae7b6d49e7b5d99c02450da3bb978790c2f4ba139de99117d14",
+    "target": "/usr/lib/nuxel/nuxel-notifications/notifications.py"
+  },
+  {
+    "group": "v071-service-pins",
+    "n": 15,
+    "risk": "medium",
+    "script": "scripts/015-nuxel-notifications.service.sh",
+    "service": null,
+    "source": "services/nuxel-notifications/systemd/nuxel-notifications.service",
+    "source_sha256": "81baaef33731ee6f5cb6caec5b61720e8f048a1ee9b402d1c0d3abba872c62f2",
+    "target": "/etc/systemd/system/nuxel-notifications.service"
+  },
+  {
+    "group": "v071-service-pins",
+    "n": 16,
+    "risk": "medium",
+    "script": "scripts/016-portal.py.sh",
+    "service": null,
+    "source": "services/nuxel-portal/src/portal.py",
+    "source_sha256": "78fe97fa4e1f86069745db7ba679d4e55e86a20d2bb20201af49feb889a121c2",
+    "target": "/usr/lib/nuxel/nuxel-portal/portal.py"
+  },
+  {
+    "group": "v071-session-order",
+    "n": 17,
+    "risk": "low",
+    "script": "scripts/017-nuxel-session.sh.sh",
+    "service": null,
+    "source": "tools/s10plus/a29/nuxel-session.sh",
+    "source_sha256": "fc202ea3873bc883c51dc07db7b1264be6182c5edbb5ce0749be93f15d6c9e78",
+    "target": "/usr/lib/nuxel/nuxel-session.sh"
+  },
+  {
+    "group": "v071-session-order",
+    "n": 18,
+    "risk": "low",
+    "script": "scripts/018-nuxel-wayland.service.sh",
+    "service": null,
+    "source": "services/nuxel-session/systemd/nuxel-wayland.service",
+    "source_sha256": "11a5d6725fa997ca9a6fc314ec3a1931b0b680f38655e5520f7010b9d7660a80",
+    "target": "/etc/systemd/system/nuxel-wayland.service"
+  }
+]

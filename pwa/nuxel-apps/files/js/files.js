@@ -1,445 +1,309 @@
-// Helper: wrap the shared bridge call with a graceful offline fallback.
-async function nuxelBridgeCall(namespace, verb, params, fallback) {
-    try {
-        const b = window.NuxelBridge;
-        if (!b) { window.__nuxelBridgeOffline = true; return fallback; }
-        const res = await b.call(namespace, verb, params);
-        if (!res || res.success === false) { window.__nuxelBridgeOffline = true; return fallback; }
-        window.__nuxelBridgeOffline = false;
-        return res;
-    } catch (e) { window.__nuxelBridgeOffline = true; return fallback; }
-}
+/* Nuxel Files (PWNAGE-30000)
+ * Real directory browser + CRUD/copy/move/archive through the bridge storage
+ * store.  The modal lifecycle is single-dialog (no hidden overlay stealing
+ * input), selection is explicit, and clipboard mode clears only after a
+ * successful move.  No file tree is invented when the backend is unavailable. */
+(function () {
+  'use strict';
+  var el = {};
+  ['back-btn','refresh-btn','select-btn','selection-bar','selection-label','sel-all','sel-none','sel-cancel',
+   'toolbar','new-folder-btn','upload-btn','rename-btn','delete-btn','copy-btn','cut-btn','paste-btn',
+   'archive-btn','extract-btn','clipboard-info','file-grid','status','file-input',
+   'prompt-dialog','prompt-title','prompt-input','prompt-error','prompt-cancel','prompt-ok',
+   'confirm-dialog','confirm-text','confirm-cancel','confirm-ok','breadcrumb'].forEach(function (id) {
+    el[id] = document.getElementById(id);
+  });
 
-function nuxelBridgeOfflineBanner() {
-    if (!window.__nuxelBridgeOffline) return;
-    if (document.getElementById('bridge-offline-banner')) return;
-    const el = document.createElement('div');
-    el.id = 'bridge-offline-banner';
-    el.textContent = '🔌 Bridge offline — showing local data';
-    el.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:#ef6c00;color:#fff;font-size:13px;padding:6px 12px;z-index:9999;text-align:center;';
-    document.body.appendChild(el);
-}
-
-// Nuxel Files - File Browser PWA
-
-class FilesApp {
-    constructor() {
-        this.currentPath = '/';
-        this.files = [];
-        this._init();
+  function bridgeCall(ns, verb, params) {
+    if (window.NuxelBridge && typeof window.NuxelBridge.call === 'function') {
+      return window.NuxelBridge.call(ns, verb, params).catch(function (e) { return { success: false, error: e && e.message }; });
     }
+    return Promise.resolve({ success: false, offline: true, error: 'bridge unavailable' });
+  }
 
-    async _init() {
-        await this._loadFiles();
-        this._render();
-        this._bindEvents();
-    }
+  var app = {
+    cwd: '/',
+    entries: [],
+    selected: new Set(),
+    selecting: false,
+    clipboard: null,           // {mode:'copy'|'cut', paths:[...]}
+    busy: false,
+    prompt: null,              // {kind, title, placeholder, ok}
 
-    async _loadFiles() {
-        const fallback = () => {
-            try {
-                const raw = localStorage.getItem('nuxel-files-index');
-                return raw ? JSON.parse(raw) : this._getDefaultFiles();
-            } catch (e) {
-                return this._getDefaultFiles();
-            }
-        };
+    init: async function () {
+      this.bind();
+      await this.refresh();
+    },
 
+    bind: function () {
+      var self = this;
+      el.backBtn.addEventListener('click', function () { self.goUp(); });
+      el.refreshBtn.addEventListener('click', function () { self.refresh(); });
+      el.selectBtn.addEventListener('click', function () { self.toggleSelect(); });
+      el.selAll.addEventListener('click', function () { self.entries.forEach(function (e) { self.selected.add(e.path); }); self.render(); });
+      el.selNone.addEventListener('click', function () { self.selected.clear(); self.render(); });
+      el.selCancel.addEventListener('click', function () { self.selecting = false; self.selected.clear(); self.render(); });
+
+      el.newFolderBtn.addEventListener('click', function () {
+        self.openPrompt('mkdir', 'New folder', 'Folder name', function (name) { return self.mkdir(name); });
+      });
+      el.uploadBtn.addEventListener('click', function () { el.fileInput.click(); });
+      el.fileInput.addEventListener('change', function (ev) { self.upload(ev.target.files); ev.target.value = ''; });
+      el.renameBtn.addEventListener('click', function () {
+        var one = self.oneSelected(); if (!one) return;
+        self.openPrompt('rename', 'Rename', 'New name', function (name) { return self.rename(one, name); });
+      });
+      el.deleteBtn.addEventListener('click', function () { self.confirmDelete(); });
+      el.copyBtn.addEventListener('click', function () { self.clipboard = { mode: 'copy', paths: Array.from(self.selected) }; self.render(); });
+      el.cutBtn.addEventListener('click', function () { self.clipboard = { mode: 'cut', paths: Array.from(self.selected) }; self.render(); });
+      el.pasteBtn.addEventListener('click', function () { self.paste(); });
+      el.archiveBtn.addEventListener('click', function () {
+        var paths = Array.from(self.selected); if (!paths.length) return;
+        self.openPrompt('archive', 'Create ZIP archive', 'Archive name (e.g. backup.zip)', function (name) { return self.archive(paths, name); });
+      });
+      el.extractBtn.addEventListener('click', function () {
+        var one = self.oneSelected(); if (!one) return;
+        if (!one.name.toLowerCase().endsWith('.zip')) { self.status('Select a .zip file to extract'); return; }
+        self.openPrompt('extract', 'Extract archive', 'Destination folder (blank = here)', function (name) { return self.extract(one, name); });
+      });
+
+      el.promptCancel.addEventListener('click', function () { self.closePrompt(); });
+      el.promptOk.addEventListener('click', function () { self.submitPrompt(); });
+      el.promptInput.addEventListener('keydown', function (e) { if (e.key === 'Enter') self.submitPrompt(); });
+      el.confirmCancel.addEventListener('click', function () { el.confirmDialog.classList.add('hidden'); });
+      el.confirmOk.addEventListener('click', function () { self.doDelete(); });
+    },
+
+    async refresh() {
+      this.status('Loading…');
+      var res = await bridgeCall('storage', 'list-dir', { path: this.cwd });
+      if (res && res.success !== false && Array.isArray(res.entries)) {
+        this.entries = res.entries;
+        this.selected = new Set(Array.from(this.selected).filter(function (p) { return res.entries.some(function (e) { return e.path === p; }); }));
+        this.status(res.count ? (res.count + ' item(s)') : 'Folder is empty');
+      } else {
+        this.entries = [];
+        this.status('Cannot list this folder: ' + ((res && res.error) || 'bridge unavailable'));
+      }
+      this.render();
+    },
+
+    render() {
+      this.renderBreadcrumb();
+      var self = this;
+      el.selectionBar.classList.toggle('hidden', !this.selecting);
+      el.selectionLabel.textContent = this.selected.size + ' selected';
+      el.renameBtn.disabled = this.selected.size !== 1;
+      el.deleteBtn.disabled = this.selected.size === 0;
+      el.copyBtn.disabled = this.selected.size === 0;
+      el.cutBtn.disabled = this.selected.size === 0;
+      el.pasteBtn.disabled = !this.clipboard || this.clipboard.paths.length === 0;
+      el.archiveBtn.disabled = this.selected.size === 0;
+      el.extractBtn.disabled = this.selected.size !== 1;
+      el.clipboardInfo.textContent = this.clipboard ? ((this.clipboard.mode === 'cut' ? 'Moving: ' : 'Copying: ') + this.clipboard.paths.length) : '';
+
+      if (!this.entries.length) {
+        el.fileGrid.innerHTML = '<div class="empty-state"><div class="empty-icon">📁</div><p>This folder is empty</p><p class="hint">Use New folder or Upload to add content. Listing comes from the Nuxel bridge storage store — nothing is invented.</p></div>';
+        return;
+      }
+      el.fileGrid.innerHTML = this.entries.map(function (f) {
+        var isSel = self.selected.has(f.path);
+        var icon = f.type === 'folder' ? '📁' : self.iconFor(f.name);
+        var meta = f.type === 'folder' ? 'Folder' : self.formatSize(f.size);
+        return '<div class="file-item' + (isSel ? ' selected' : '') + (f.type === 'unreadable' ? ' unreadable' : '') + '" data-path="' + self.esc(f.path) + '" data-type="' + self.esc(f.type) + '">' +
+          '<div class="file-icon">' + icon + '</div>' +
+          '<div class="file-name">' + self.esc(f.name) + '</div>' +
+          '<div class="file-meta">' + self.esc(meta) + '</div></div>';
+      }).join('');
+      el.fileGrid.querySelectorAll('.file-item').forEach(function (item) {
+        item.addEventListener('click', function () { self.onItem(item); });
+      });
+    },
+
+    renderBreadcrumb() {
+      var parts = this.cwd.split('/').filter(Boolean);
+      var html = '<span data-path="/">Files</span>';
+      var cum = '';
+      parts.forEach(function (p) {
+        cum += '/' + p;
+        html += '<span class="sep">/</span><span data-path="' + cum + '">' + app.esc(p) + '</span>';
+      });
+      el.breadcrumb.innerHTML = html;
+      el.breadcrumb.querySelectorAll('span[data-path]').forEach(function (sp) {
+        sp.addEventListener('click', function () { app.cwd = sp.dataset.path || '/'; app.refresh(); });
+      });
+    },
+
+    onItem(item) {
+      var path = item.dataset.path, type = item.dataset.type;
+      if (this.selecting) {
+        if (this.selected.has(path)) this.selected.delete(path); else this.selected.add(path);
+        this.render();
+        return;
+      }
+      if (type === 'folder') { this.cwd = path; this.refresh(); }
+      else this.status('Open file "' + path + '" with the platform handler (bridge stores metadata, not an inline viewer).');
+    },
+
+    goUp() {
+      if (this.cwd === '/') return;
+      var parts = this.cwd.split('/').filter(Boolean);
+      parts.pop();
+      this.cwd = parts.length ? '/' + parts.join('/') : '/';
+      this.refresh();
+    },
+
+    toggleSelect() {
+      this.selecting = !this.selecting;
+      this.selected.clear();
+      this.render();
+    },
+
+    oneSelected() {
+      if (this.selected.size !== 1) { this.status('Select exactly one item'); return null; }
+      var p = Array.from(this.selected)[0];
+      return this.entries.find(function (e) { return e.path === p; }) || null;
+    },
+
+    // ---- dialogs ---------------------------------------------------------
+    openPrompt(kind, title, placeholder, cb) {
+      this.prompt = { kind: kind, title: title, placeholder: placeholder, ok: cb };
+      el.promptTitle.textContent = title;
+      el.promptInput.value = '';
+      el.promptInput.placeholder = placeholder;
+      el.promptError.textContent = '';
+      el.promptDialog.classList.remove('hidden');
+      setTimeout(function () { el.promptInput.focus(); }, 50);
+    },
+    closePrompt() {
+      el.promptDialog.classList.add('hidden');
+      this.prompt = null;
+    },
+    async submitPrompt() {
+      if (!this.prompt) return;
+      var value = el.promptInput.value.trim();
+      if (!value) { el.promptError.textContent = 'A value is required'; return; }
+      el.promptError.textContent = '';
+      var cb = this.prompt.ok;
+      this.closePrompt();
+      await cb(value);
+    },
+    confirmDelete() {
+      if (!this.selected.size) return;
+      el.confirmText.textContent = 'Delete ' + this.selected.size + ' item(s)? This cannot be undone.';
+      el.confirmDialog.classList.remove('hidden');
+    },
+    async doDelete() {
+      el.confirmDialog.classList.add('hidden');
+      var paths = Array.from(this.selected);
+      var failed = 0;
+      for (var i = 0; i < paths.length; i++) {
+        var res = await bridgeCall('storage', 'delete', { path: paths[i] });
+        if (!res || res.success === false) failed++;
+      }
+      this.selected.clear();
+      this.status(failed ? ('Deleted with ' + failed + ' failure(s)') : 'Deleted');
+      await this.refresh();
+    },
+
+    // ---- operations ------------------------------------------------------
+    async mkdir(name) {
+      var path = this.cwd === '/' ? '/' + name : this.cwd + '/' + name;
+      var res = await bridgeCall('storage', 'mkdir', { path: path });
+      this.status(res && res.success !== false ? 'Folder created' : ('Create failed: ' + (res && res.error)));
+      await this.refresh();
+    },
+    async rename(item, name) {
+      var base = item.path.substring(0, item.path.lastIndexOf('/'));
+      var dst = (base || '') + '/' + name;
+      var res = await bridgeCall('storage', 'rename', { src: item.path, dst: dst });
+      this.status(res && res.success !== false ? 'Renamed' : ('Rename failed: ' + (res && res.error)));
+      await this.refresh();
+    },
+    async paste() {
+      if (!this.clipboard || !this.clipboard.paths.length) return;
+      var failed = 0;
+      for (var i = 0; i < this.clipboard.paths.length; i++) {
+        var src = this.clipboard.paths[i];
+        var name = src.split('/').filter(Boolean).pop();
+        var dst = (this.cwd === '/' ? '' : this.cwd) + '/' + name;
+        if (dst === src) continue;
+        var res = this.clipboard.mode === 'copy'
+          ? await bridgeCall('storage', 'copy', { src: src, dst: dst })
+          : await bridgeCall('storage', 'move', { src: src, dst: dst });
+        if (!res || res.success === false) failed++;
+      }
+      if (failed) this.status('Paste finished with ' + failed + ' failure(s)');
+      else {
+        if (this.clipboard.mode === 'cut') this.clipboard = null;
+        this.status(this.clipboard ? 'Copied' : 'Moved');
+      }
+      await this.refresh();
+    },
+    async archive(paths, name) {
+      if (!/\.zip$/i.test(name)) name += '.zip';
+      var dest = (this.cwd === '/' ? '' : this.cwd) + '/' + name;
+      var res = await bridgeCall('storage', 'archive-create', { sources: paths, dest: dest });
+      this.status(res && res.success !== false ? 'Archive created' : ('Archive failed: ' + (res && res.error)));
+      await this.refresh();
+    },
+    async extract(item, name) {
+      var dest = name ? (this.cwd === '/' ? '/' + name : this.cwd + '/' + name) : this.cwd;
+      var res = await bridgeCall('storage', 'archive-extract', { archive: item.path, dest: dest });
+      this.status(res && res.success !== false ? 'Extracted' : ('Extract failed: ' + (res && res.error)));
+      await this.refresh();
+    },
+    async upload(files) {
+      var done = 0, failed = 0;
+      for (var i = 0; i < files.length; i++) {
+        var f = files[i];
+        var path = (this.cwd === '/' ? '' : this.cwd) + '/' + f.name;
         try {
-            const res = await nuxelBridgeCall('storage', 'list-dir', { app_id: 'org.nuxel.Files', path: '/' }, null);
-            if (res && Array.isArray(res.entries) && res.entries.length) {
-                this.files = res.entries;
-            } else {
-                this.files = fallback();
-            }
-            nuxelBridgeOfflineBanner();
-        } catch (e) {
-            this.files = fallback();
-        }
+          var b64 = await readAsDataURL(f);
+          var comma = b64.indexOf(',');
+          var res = await bridgeCall('storage', 'write-file', { path: path, data_b64: comma >= 0 ? b64.slice(comma + 1) : b64 });
+          if (res && res.success !== false) done++; else failed++;
+        } catch (e) { failed++; }
+      }
+      this.status('Uploaded ' + done + (failed ? ', ' + failed + ' failed' : ''));
+      await this.refresh();
+    },
 
-        // Never fabricate a file tree.  If the portal returned nothing we keep the
-        // (unavailable) portal roots so the empty state can explain itself.
-        if (this.files.length === 0) {
-            this.files = this._getDefaultFiles();
-            this.portalEmpty = true;
-        }
+    iconFor(name) {
+      var ext = (name.split('.').pop() || '').toLowerCase();
+      if (['jpg','jpeg','png','gif','webp','svg'].includes(ext)) return '🖼️';
+      if (['mp3','wav','flac','ogg'].includes(ext)) return '🎵';
+      if (['mp4','mov','avi','mkv','webm'].includes(ext)) return '🎬';
+      if (['zip','tar','gz','bz2','7z'].includes(ext)) return '📦';
+      if (['txt','md','log'].includes(ext)) return '📃';
+      if (['pdf'].includes(ext)) return '📄';
+      if (['json','xml','yaml','yml'].includes(ext)) return '📋';
+      return '📄';
+    },
+    formatSize(n) {
+      if (!n && n !== 0) return '';
+      var units = ['B','KB','MB','GB'];
+      var i = 0, size = n;
+      while (size >= 1024 && i < units.length - 1) { size /= 1024; i++; }
+      return size.toFixed(i === 0 ? 0 : 1) + ' ' + units[i];
+    },
+    status(msg) { el.status.textContent = msg; },
+    esc(s) {
+      var d = document.createElement('div');
+      d.textContent = String(s == null ? '' : s);
+      return d.innerHTML;
     }
+  };
 
-    // The real portal roots this PWA may browse.  No fabricated files: when the
-    // portal cannot be reached the browser shows the roots as unavailable rather
-    // than inventing a Documents/Downloads tree that does not exist on disk.
-    _getPortalRoots() {
-        return [
-            { name: 'home', path: '/home/nuxel', type: 'folder', size: 0, portal: true, note: 'user files' },
-            { name: 'nuxel-share', path: '/usr/share/nuxel', type: 'folder', size: 0, portal: true, note: 'system assets' },
-            { name: 'nuxel-state', path: '/var/lib/nuxel', type: 'folder', size: 0, portal: true, note: 'app state and caches' },
-        ];
-    }
+  function readAsDataURL(file) {
+    return new Promise(function (resolve, reject) {
+      var r = new FileReader();
+      r.onload = function () { resolve(r.result); };
+      r.onerror = function () { reject(r.error); };
+      r.readAsDataURL(file);
+    });
+  }
 
-    _getDefaultFiles() {
-        // Offline (no portal/bridge): only the portal roots are listed, flagged as
-        // unavailable, so the user can see why the tree is empty.
-        return this._getPortalRoots().map((r) => ({ ...r, unavailable: true }));
-    }
-
-    _render() {
-        this._renderBreadcrumb();
-        this._renderFiles();
-    }
-
-    _renderBreadcrumb() {
-        const bread = document.getElementById('breadcrumb');
-        const parts = this.currentPath.split('/').filter(Boolean);
-        
-        let html = '<span data-path="/">Files</span>';
-        let cumPath = '';
-        for (const part of parts) {
-            cumPath += '/' + part;
-            html += `<span class="sep">/</span><span data-path="${cumPath}">${part}</span>`;
-        }
-        bread.innerHTML = html;
-
-        bread.querySelectorAll('span[data-path]').forEach(el => {
-            el.style.cursor = 'pointer';
-            el.addEventListener('click', () => {
-                this._navigateTo(el.dataset.path);
-            });
-        });
-    }
-
-    _renderFiles() {
-        const grid = document.getElementById('file-grid');
-        
-        // Get files in current directory
-        const currentDir = this.currentPath === '/' ? '' : this.currentPath;
-        // At the root, the portal roots are the content (they live at /home/nuxel etc).
-        const roots = currentDir === '' ? this._getPortalRoots() : [];
-        const dirFiles = this.files.filter(f => {
-            const parentPath = f.path.substring(0, f.path.lastIndexOf('/'));
-            return parentPath === currentDir || (currentDir === '' && !f.path.includes('/'));
-        });
-
-        // Also match subdirectories
-        const subdirs = this.files.filter(f => {
-            if (f.type !== 'folder') return false;
-            const parentDir = f.path.substring(0, f.path.lastIndexOf('/'));
-            return parentDir === currentDir || (currentDir === '' && !f.path.includes('/'));
-        });
-
-        // Merge and deduplicate
-        const seen = new Set();
-        const allItems = [];
-        
-        for (const f of [...roots, ...subdirs, ...dirFiles]) {
-            if (!seen.has(f.path)) {
-                seen.add(f.path);
-                allItems.push(f);
-            }
-        }
-
-        // Sort: folders first, then alphabetical
-        allItems.sort((a, b) => {
-            if (a.type === 'folder' && b.type !== 'folder') return -1;
-            if (a.type !== 'folder' && b.type === 'folder') return 1;
-            return a.name.localeCompare(b.name);
-        });
-
-        if (allItems.length === 0) {
-            grid.innerHTML = `
-                <div class="empty-state">
-                    <div class="empty-icon">📁</div>
-                    <p>This folder is empty</p>
-                    <p class="portal-hint">Nuxel Files shows the PWA-visible tree through the
-                    Nuxel bridge (verb <code>storage.list-dir</code>). When the bridge is offline
-                    only the portal roots can be listed, and no files are invented.</p>
-                </div>`;
-            return;
-        }
-
-        grid.innerHTML = allItems.map(file => `
-            <div class="file-item${file.unavailable ? ' unavailable' : ''}" data-path="${file.path}" data-type="${file.type}"
-                 title="${file.note ? file.note : ''}${file.unavailable ? ' — portal unreachable' : ''}">
-                <div class="file-icon ${file.type === 'folder' ? 'folder' : this._getFileTypeClass(file.name)}">
-                    ${this._getFileIcon(file)}
-                </div>
-                <div class="file-name">${file.name}</div>
-                ${file.note ? `<div class="file-size">${file.note}${file.unavailable ? ' · offline' : ''}</div>` : ''}
-                ${file.type !== 'folder' && file.size ? `<div class="file-size">${this._formatSize(file.size)}</div>` : ''}
-            </div>
-        `).join('');
-
-        // Bind events
-        grid.querySelectorAll('.file-item').forEach(item => {
-            item.addEventListener('click', () => {
-                const path = item.dataset.path;
-                const type = item.dataset.type;
-                const file = this.files.find(f => f.path === path);
-                
-                if (type === 'folder') {
-                    this._navigateTo(path);
-                } else {
-                    this._openFile(file);
-                }
-            });
-
-            // Long press for context menu
-            let longTimer;
-            item.addEventListener('touchstart', () => {
-                longTimer = setTimeout(() => this._showContextMenu(item.dataset.path), 500);
-            }, { passive: true });
-            item.addEventListener('touchend', () => clearTimeout(longTimer), { passive: true });
-        });
-    }
-
-    _navigateTo(path) {
-        this.currentPath = path;
-        this._render();
-    }
-
-    _openFile(file) {
-        if (!file) return;
-        
-        // Try to open in appropriate viewer
-        const ext = file.name.split('.').pop()?.toLowerCase();
-        
-        if (['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp'].includes(ext)) {
-            // Show image viewer
-            this._showImageViewer(file);
-        } else if (['txt', 'md', 'json', 'xml', 'html', 'css', 'js'].includes(ext)) {
-            // Show text viewer
-            this._showTextViewer(file);
-        } else {
-            // Download
-            this._downloadFile(file);
-        }
-    }
-
-    _showImageViewer(file) {
-        alert(`[Preview] ${file.name} (${this._formatSize(file.size)})\n\nImage viewer would display this file.`);
-    }
-
-    _showTextViewer(file) {
-        alert(`[Text] ${file.name}\n\nText viewer would display this file's contents.`);
-    }
-
-    _downloadFile(file) {
-        // Create a download from stored data
-        const data = localStorage.getItem(`nuxel-file-data:${file.path}`);
-        if (data) {
-            const a = document.createElement('a');
-            a.href = data;
-            a.download = file.name;
-            a.click();
-        } else {
-            this._showToast('File not available offline');
-        }
-    }
-
-    _createFolder(name) {
-        const folderPath = this.currentPath === '/' ? `/${name}` : `${this.currentPath}/${name}`;
-        
-        if (this.files.some(f => f.path === folderPath)) {
-            this._showToast('Folder already exists');
-            return;
-        }
-
-        this.files.push({
-            path: folderPath,
-            name: name,
-            type: 'folder',
-            size: 0,
-            modified: new Date().toISOString(),
-        });
-
-        this._saveFiles();
-        this._render();
-        this._showToast(`Folder "${name}" created`);
-    }
-
-    _deleteItem(path) {
-        const file = this.files.find(f => f.path === path);
-        if (!file) return;
-        
-        // Remove file and any children (for folders)
-        this.files = this.files.filter(f => {
-            if (f.path === path) return false;
-            if (file.type === 'folder' && f.path.startsWith(path + '/')) return false;
-            return true;
-        });
-
-        // Remove stored data
-        localStorage.removeItem(`nuxel-file-data:${path}`);
-
-        this._saveFiles();
-        this._render();
-    }
-
-    _showContextMenu(path) {
-        const file = this.files.find(f => f.path === path);
-        if (!file) return;
-
-        const action = confirm(`Actions for "${file.name}"\n\nOK = Delete, Cancel = Cancel`);
-        if (action) {
-            if (confirm(`Delete "${file.name}"?`)) {
-                this._deleteItem(path);
-            }
-        }
-    }
-
-    _bindEvents() {
-        document.getElementById('back-btn').addEventListener('click', () => {
-            if (this.currentPath !== '/') {
-                const parent = this.currentPath.substring(0, this.currentPath.lastIndexOf('/')) || '/';
-                this._navigateTo(parent);
-            }
-        });
-
-        document.getElementById('new-folder-btn').addEventListener('click', () => {
-            document.getElementById('folder-dialog').classList.remove('hidden');
-            document.getElementById('folder-name').value = '';
-            setTimeout(() => document.getElementById('folder-name').focus(), 100);
-        });
-
-        document.getElementById('dialog-cancel').addEventListener('click', () => {
-            document.getElementById('folder-dialog').classList.add('hidden');
-        });
-
-        document.getElementById('dialog-create').addEventListener('click', () => {
-            const name = document.getElementById('folder-name').value.trim();
-            if (name) {
-                this._createFolder(name);
-                document.getElementById('folder-dialog').classList.add('hidden');
-            }
-        });
-
-        // Handle file uploads via drag-and-drop
-        document.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            document.getElementById('upload-area').classList.remove('hidden');
-        });
-
-        document.addEventListener('dragleave', (e) => {
-            e.preventDefault();
-            document.getElementById('upload-area').classList.add('hidden');
-        });
-
-        document.addEventListener('drop', (e) => {
-            e.preventDefault();
-            document.getElementById('upload-area').classList.add('hidden');
-            this._handleFileUpload(e.dataTransfer.files);
-        });
-
-        // Handle file input via input element
-        const fileInput = document.createElement('input');
-        fileInput.type = 'file';
-        fileInput.multiple = true;
-        fileInput.style.display = 'none';
-        document.body.appendChild(fileInput);
-
-        // Long press on empty area to upload
-        document.getElementById('file-grid').addEventListener('touchstart', (e) => {
-            if (e.target === document.getElementById('file-grid') || 
-                e.target.classList.contains('empty-state')) {
-                fileInput.click();
-            }
-        }, { passive: true });
-    }
-
-    async _handleFileUpload(files) {
-        for (const file of files) {
-            const path = this.currentPath === '/' ? `/${file.name}` : `${this.currentPath}/${file.name}`;
-            
-            // Read as data URL
-            const reader = new FileReader();
-            const dataUrl = await new Promise((resolve) => {
-                reader.onload = () => resolve(reader.result);
-                reader.readAsDataURL(file);
-            });
-
-            // Store file metadata
-            this.files.push({
-                path: path,
-                name: file.name,
-                type: file.type.split('/')[0] || 'document',
-                size: file.size,
-                modified: new Date().toISOString(),
-            });
-
-            // Store file data
-            try {
-                localStorage.setItem(`nuxel-file-data:${path}`, dataUrl);
-            } catch (e) {
-                this._showToast('File too large for offline storage');
-            }
-        }
-
-        this._saveFiles();
-        this._render();
-        this._showToast(`${files.length} file(s) uploaded`);
-    }
-
-    _saveFiles() {
-        try {
-            localStorage.setItem('nuxel-files-index', JSON.stringify(this.files));
-        } catch (e) {
-            console.warn('Failed to save file index locally:', e);
-        }
-        nuxelBridgeCall('storage', 'write', { app_id: 'org.nuxel.Files', key: 'nuxel-files-index', data: this.files }, null);
-    }
-
-    _getFileIcon(file) {
-        if (file.type === 'folder') return '📁';
-        const ext = file.name.split('.').pop()?.toLowerCase();
-        const iconMap = {
-            'jpg': '🖼️', 'jpeg': '🖼️', 'png': '🖼️', 'gif': '🖼️', 'svg': '🖼️',
-            'pdf': '📄', 'doc': '📝', 'docx': '📝',
-            'mp3': '🎵', 'wav': '🎵', 'flac': '🎵',
-            'mp4': '🎬', 'mov': '🎬', 'avi': '🎬',
-            'zip': '📦', 'tar': '📦', 'gz': '📦',
-            'txt': '📃', 'md': '📃',
-            'html': '🌐', 'css': '🎨', 'js': '⚡',
-            'json': '📋', 'xml': '📋',
-        };
-        return iconMap[ext] || '📄';
-    }
-
-    _getFileTypeClass(name) {
-        const ext = name.split('.').pop()?.toLowerCase();
-        if (['jpg','jpeg','png','gif','svg','webp'].includes(ext)) return 'image';
-        if (['mp3','wav','flac','aac','ogg'].includes(ext)) return 'audio';
-        if (['mp4','mov','avi','mkv','webm'].includes(ext)) return 'video';
-        if (['zip','tar','gz','bz2','rar','7z'].includes(ext)) return 'archive';
-        if (['js','ts','py','rb','go','rs','c','cpp','h','html','css','json','xml','yaml','yml','md','sh'].includes(ext)) return 'code';
-        if (['pdf','doc','docx','xls','xlsx','ppt','pptx'].includes(ext)) return 'document';
-        return 'other';
-    }
-
-    _formatSize(bytes) {
-        if (!bytes) return '';
-        const units = ['B', 'KB', 'MB', 'GB'];
-        let i = 0;
-        let size = bytes;
-        while (size >= 1024 && i < units.length - 1) {
-            size /= 1024;
-            i++;
-        }
-        return `${size.toFixed(i === 0 ? 0 : 1)} ${units[i]}`;
-    }
-
-    _showToast(msg) {
-        const existing = document.querySelector('.toast');
-        if (existing) existing.remove();
-        const toast = document.createElement('div');
-        toast.className = 'toast';
-        toast.textContent = msg;
-        toast.style.cssText = 'position:fixed;bottom:40px;left:50%;transform:translateX(-50%);background:#0f3460;padding:12px 24px;border-radius:12px;font-size:14px;z-index:100;box-shadow:0 4px 20px rgba(0,0,0,0.4);';
-        document.body.appendChild(toast);
-        setTimeout(() => toast.remove(), 3000);
-    }
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-    window.filesApp = new FilesApp();
-});
-// headless smoke-test hook (documented app API; used by tools/s10plus/a33/tests/test-core-apps.py)
-window.nuxelFiles = { app: () => window.filesApp, portalRoots: () => (window.filesApp ? window.filesApp._getPortalRoots() : []) };
+  window.nuxelFiles = { app: function () { return app; } };
+  document.addEventListener('DOMContentLoaded', function () { app.init(); });
+})();

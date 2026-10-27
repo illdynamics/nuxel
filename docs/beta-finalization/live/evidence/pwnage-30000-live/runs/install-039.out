@@ -1,0 +1,7 @@
+pushed={"acked_bytes": 1892, "b64_chars": 2524, "bytes": 1892, "decoded_sha256": "2edf7df6b8b478904dcd42f9e337fc3721a25b78ac43c854134d97d88665704a", "frames": 20, "mode": "frame", "parts": 20, "path": "/var/tmp/nxl-install-039.sh", "raw_writes": 0, "retries": 0}
+ok=True rc=0
+---
+PREV=aac1d0f22c402b49b4cc577a71cf48fd63a09dc2a4e7e74f0645ee2ab8ac7dd6
+/usr/share/nuxel/pwa/nuxel-home/js/touch-keyboard.js.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

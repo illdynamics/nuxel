@@ -638,7 +638,7 @@ async function gesture(h, options) {
     const index = fs.readFileSync(INDEX_HTML, 'utf8');
     check('boot gate still keys on ?boot=os', /get\('boot'\)\s*!==\s*'os'/.test(index));
     check('lockscreen script uses the current cache-busting revision', /lockscreen\.js\?v=a77\.1/.test(index));
-    check('app controller uses the current cache-busting revision', /app\.js\?v=a80/.test(index));
+    check('app controller uses the current cache-busting revision', /app\.js\?v=a81/.test(index));
   }
 
   console.log('\nNOTE: all checks above are MOCKED/OFFLINE.  Wayland/phoc/WebKitGTK');

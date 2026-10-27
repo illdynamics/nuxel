@@ -1,0 +1,178 @@
+{
+  "files": {
+    "pwa/nuxel-apps/calendar/css/calendar.css": {
+      "sha256": "a2f8aaf4c7e1db972c47b456660f3d276f8adb1bf8eb645295cea701c375039f",
+      "size": 5275
+    },
+    "pwa/nuxel-apps/calendar/index.html": {
+      "sha256": "484cfa8b0ad600e6947399c961d322b52c8dcfb284f6c7a08153820f7926259a",
+      "size": 3741
+    },
+    "pwa/nuxel-apps/calendar/js/calendar.js": {
+      "sha256": "2d85f926248014c2dedd8be531130589e1e3c62900777501ec196fa300a320de",
+      "size": 11442
+    },
+    "pwa/nuxel-apps/clock/css/clock.css": {
+      "sha256": "21e091b8d7c1db101fa92cfba4c43b539f024bb94983a4358b2e4b19b5cfbb64",
+      "size": 4352
+    },
+    "pwa/nuxel-apps/clock/index.html": {
+      "sha256": "73713b0f3eb5ce33acabca87b0df1b0fabb3fb6e2d0030eb919c112d5def603a",
+      "size": 4935
+    },
+    "pwa/nuxel-apps/clock/js/clock.js": {
+      "sha256": "00ee4312bf49146c6fb9d341aeb6396a71799e867d31199a8fb32eb2026a3201",
+      "size": 19125
+    },
+    "pwa/nuxel-apps/files/css/files.css": {
+      "sha256": "62039d0894b4f84468345458f2161fbdd88966895ff43a77a582c7733e4ce2e5",
+      "size": 4265
+    },
+    "pwa/nuxel-apps/files/index.html": {
+      "sha256": "4119d5331e69f098bee3334752f81de6dec3f65ed4b7175966e70df28c88a1d8",
+      "size": 2716
+    },
+    "pwa/nuxel-apps/files/js/files.js": {
+      "sha256": "643dbf4f6f98930251b5d574959fa04b01c97b80616cbe971004bc4c6d04d282",
+      "size": 14757
+    },
+    "pwa/nuxel-apps/mail/index.html": {
+      "sha256": "c48488ee5e9f516a59351723f23cef6f1ac958feda5a525067a05d8b7c019a4a",
+      "size": 5953
+    },
+    "pwa/nuxel-apps/mail/js/mail.js": {
+      "sha256": "7d95118b98b13162c90489ab8087ced79b35b99ced061aeb1b9a53549b16e70f",
+      "size": 23232
+    },
+    "pwa/nuxel-apps/notes/css/notes.css": {
+      "sha256": "d7b18c9c5befa1cf2412330cc7374c58be2de9635e04ce7b4050e57a46d1bc15",
+      "size": 3461
+    },
+    "pwa/nuxel-apps/notes/index.html": {
+      "sha256": "bc3691a908ca314d7d7ec799214548b4acfd7eed7783a0fc2e8f63a569da038d",
+      "size": 1961
+    },
+    "pwa/nuxel-apps/notes/js/notes.js": {
+      "sha256": "7c8bc45ac8d89ee2c352486e5dcc6e650d0999ad86f618001a8374fc8ff2e125",
+      "size": 8822
+    },
+    "pwa/nuxel-apps/nuxtore/css/nuxtore.css": {
+      "sha256": "3a9f02d78e62d8a62daf09301b7a06da2ef3b131bb34ca76a0faef8a4329c417",
+      "size": 4773
+    },
+    "pwa/nuxel-apps/nuxtore/index.html": {
+      "sha256": "aeee92fd2d56a849fcf5d45cfcf3f94dcf829e3b93e6bcb47c3847bf5ab057d2",
+      "size": 5321
+    },
+    "pwa/nuxel-apps/photos/app.json": {
+      "sha256": "22bf87a589821262fb9eed2255f6d9e3dc67a35fbc216d5f57b93fbfa76a838d",
+      "size": 464
+    },
+    "pwa/nuxel-apps/photos/index.html": {
+      "sha256": "21b1ae1f1d593f0faecc723ee715abc5e4de9c4275895cc5f329fc50a1a8be5b",
+      "size": 2238
+    },
+    "pwa/nuxel-apps/photos/manifest.json": {
+      "sha256": "5dcdda22e66f69bffd418ba6cebdc01a81de784c9904be6afbf7102e8a67bcba",
+      "size": 1931
+    },
+    "pwa/nuxel-apps/photos/tools/seed-samples.py": {
+      "sha256": "194abafa2f32febd749ce1301d223322f4d227a89c9783f6d83ed6a0c89ec689",
+      "size": 2608
+    },
+    "pwa/nuxel-apps/recorder/css/recorder.css": {
+      "sha256": "b35de68d980bdca8eec2a2cbbb67f1c005907ff63d8846d085d7483740c2ff5e",
+      "size": 2976
+    },
+    "pwa/nuxel-apps/recorder/index.html": {
+      "sha256": "3ff480039b0d8248a118f7c14177efd1692c0cb3643ae2925294987232f7e5da",
+      "size": 2201
+    },
+    "pwa/nuxel-apps/recorder/js/recorder-wav.js": {
+      "sha256": "0a6f9d7136dfc5887cf2e74ec6c68b56579d5878002680a5e7edf139d352230b",
+      "size": 2992
+    },
+    "pwa/nuxel-apps/recorder/js/recorder.js": {
+      "sha256": "1b7f1c80eeb3200f2a5fa265532911f83773149c54e4eab90f98bd479db01bc0",
+      "size": 8744
+    },
+    "pwa/nuxel-apps/settings/index.html": {
+      "sha256": "11285104b2a9842f35e371d67e9e00d4706de96e15cdbdde3386299d96050d3f",
+      "size": 16318
+    },
+    "pwa/nuxel-apps/settings/settings.css": {
+      "sha256": "f077cb2bb4e602e36dedf11a2474c5f5103d495f150500ff542c67a0555834dd",
+      "size": 6248
+    },
+    "pwa/nuxel-apps/settings/theme-settings.js": {
+      "sha256": "67579b9a7719bca818585463a21f204637b27d8464ca722948fe0bfa52147eb3",
+      "size": 3583
+    },
+    "pwa/nuxel-apps/weather/css/weather.css": {
+      "sha256": "e4706d8a9aab68f40208b8469fb458b6d4b4fa7c9556131d48415332097112a0",
+      "size": 3523
+    },
+    "pwa/nuxel-apps/weather/index.html": {
+      "sha256": "5b1452aef6b4eb997f4fd855526e98be365899813188502b2c776b0227481d42",
+      "size": 2512
+    },
+    "pwa/nuxel-apps/weather/js/weather.js": {
+      "sha256": "69f9b82eb56527b1fd878120bc1de4380d1ab95bae0fcc61c404e45af7b453c3",
+      "size": 11689
+    },
+    "pwa/nuxel-common/haptics.js": {
+      "sha256": "088792268134bbcf01552a3f810ecdd2bc12160268076500e355532d7420b93c",
+      "size": 2831
+    },
+    "pwa/nuxel-common/theme.css": {
+      "sha256": "fb39d474dcabf6dfd48c337931068df6f62733716e82cdcc71dc0ed67caa085f",
+      "size": 1994
+    },
+    "pwa/nuxel-common/theme.js": {
+      "sha256": "f8d48ee1368e3c7a2b814c6befe0a79847b03dd108c273013713aa04a9069be7",
+      "size": 2781
+    },
+    "pwa/nuxel-home/css/widgets.css": {
+      "sha256": "5c25b127ad02cd885b363217db24ecd61d6fe33264949cf78ff117c297f95c05",
+      "size": 790
+    },
+    "pwa/nuxel-home/index.html": {
+      "sha256": "ecb12c7e30d4daaa59c3fe1f14e9f90c7eee9eef669312e3907ea3afe4616803",
+      "size": 14892
+    },
+    "pwa/nuxel-home/js/app.js": {
+      "sha256": "96768d638c8f6663c53d33f7fa6789bd1ea3a80eb371cd39e4a88e834c5e1889",
+      "size": 44952
+    },
+    "pwa/nuxel-home/js/home-settings.js": {
+      "sha256": "6838ce96322e416c2b3c1115c429b434743d45e20bab900188da8e26f63a7403",
+      "size": 16948
+    },
+    "pwa/nuxel-home/js/launcher.js": {
+      "sha256": "d6ced9efa9794406a90340cc47eb800c932ef09f4568aca6650e79ec5ddf4e68",
+      "size": 34784
+    },
+    "pwa/nuxel-home/js/touch-keyboard.js": {
+      "sha256": "75584275ad75d65200b77b9ba5d637421c7c4c8487a61260408436c3d9a210f9",
+      "size": 8853
+    },
+    "pwa/nuxel-home/js/widgets.js": {
+      "sha256": "ded8666538126ea5e93a45009f62185ab116598254f1e3a894b58ffc9c34d9a0",
+      "size": 4817
+    },
+    "services/nuxel-bridge/src/api.py": {
+      "sha256": "6f095bd2bab92e751429c184a925232319f22f274cebccd0ea73b0be7f201434",
+      "size": 68566
+    },
+    "services/nuxel-bridge/src/mail_client.py": {
+      "sha256": "00f5f5b84ecea42d950d5d7379fd17af3df3a9d58d191d97c24f6aabc0c2404d",
+      "size": 15752
+    },
+    "services/nuxel-bridge/src/pwa_store.py": {
+      "sha256": "555a1bac9e611ca0672358f21aff4c18c08e6be1da0f76efdfcbc98c3f546041",
+      "size": 20933
+    }
+  },
+  "id": "pwnage-30000-hashes",
+  "schema_version": 1
+}

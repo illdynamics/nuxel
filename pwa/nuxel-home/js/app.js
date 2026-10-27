@@ -524,7 +524,9 @@ class NuxelHome {
             source: 'launcher',
         }).then((res) => {
             if (!res || res.success !== true) {
-                throw new Error((res && (res.error || res.detail)) || 'launch refused');
+                const err = new Error((res && (res.error || res.detail)) || 'launch refused');
+                err.detail = (res && res.detail) || null;
+                throw err;
             }
             console.log('[Nuxel] native launched:', target, res.pid || '');
             // Native apps own a separate top-level Wayland surface, so the
@@ -534,9 +536,10 @@ class NuxelHome {
         }).catch((error) => {
             console.error('[Nuxel] native launch failed:', error);
             this._setAppState('FAILED', app, null);
+            const detail = error && (error.detail || error.message);
             const toast = document.createElement('div');
             toast.className = 'toast';
-            toast.textContent = `Could not open ${app.name}`;
+            toast.textContent = detail ? `${app.name}: ${detail}` : `Could not open ${app.name}`;
             document.body.appendChild(toast);
             setTimeout(() => toast.remove(), 4000);
         });

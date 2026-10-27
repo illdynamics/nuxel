@@ -1,0 +1,3 @@
+pushed={"acked_bytes": 1835, "b64_chars": 2448, "bytes": 1835, "decoded_sha256": "259515b8cf2c5e4b375479424a3701ed089582d6df4b28bb157bcffc8bd4d476", "frames": 20, "mode": "frame", "parts": 20, "path": "/var/tmp/nxl-install-009.sh", "raw_writes": 0, "retries": 0}
+ok=False rc=0
+---

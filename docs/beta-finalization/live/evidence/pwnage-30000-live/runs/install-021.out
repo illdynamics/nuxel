@@ -1,0 +1,7 @@
+pushed={"acked_bytes": 1987, "b64_chars": 2652, "bytes": 1987, "decoded_sha256": "38babd905e14c7930080882d538a2eb54262adfea0826c3e8a9c4f6af45eb714", "frames": 21, "mode": "frame", "parts": 21, "path": "/var/tmp/nxl-install-021.sh", "raw_writes": 0, "retries": 0}
+ok=True rc=0
+---
+PREV=7ed3e7dcdc84edbc22a63cdb1520c956dbb83d43830533fa86ac8958a0028672
+/usr/share/nuxel/pwa/nuxel-apps/recorder/css/recorder.css.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

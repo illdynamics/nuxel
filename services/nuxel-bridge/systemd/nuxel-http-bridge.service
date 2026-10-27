@@ -35,7 +35,7 @@ Environment=NUXEL_PATHS_CONF=/etc/nuxel/paths.conf
 # shell use, so /api/v1/apps/registry cannot drift from the launcher.
 Environment=NUXEL_APP_REGISTRY=/usr/share/nuxel/pwa/nuxel-common/app-registry.json
 Environment=NUXEL_BRIDGE_PROTOCOL_VERSION=1
-Environment=NUXEL_BRIDGE_VERSION=0.7.0-beta
+Environment=NUXEL_BRIDGE_VERSION=0.7.1-beta
 Environment=NUXEL_API_ALLOW_ORIGIN=http://127.0.0.1:8000,http://localhost:8000
 
 [Install]
