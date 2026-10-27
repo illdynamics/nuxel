@@ -1,0 +1,5 @@
+pushed={"acked_bytes": 280, "b64_chars": 376, "bytes": 280, "decoded_sha256": "f91253bbf72df022595ff37ad3f17d7630d98b3afa9f489b82051f4523e64f44", "frames": 3, "mode": "frame", "parts": 3, "path": "/var/tmp/nxl-reload-001-1.sh", "raw_writes": 0, "retries": 0}
+ok=True rc=0
+---
+NXLRELOAD-RC=0
+NXLSCRIPT-RC=0

@@ -1,0 +1,7 @@
+pushed={"acked_bytes": 1487, "b64_chars": 1984, "bytes": 1487, "decoded_sha256": "887858310460be5eeb40048186bebc8488eb2773fd26e0737af79c698041c767", "frames": 16, "mode": "frame", "parts": 16, "path": "/var/tmp/nxl-install-038.sh", "raw_writes": 0, "retries": 0}
+ok=True rc=0
+---
+PREV=NONE
+/usr/local/bin/nuxel-cast-diag.sh.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

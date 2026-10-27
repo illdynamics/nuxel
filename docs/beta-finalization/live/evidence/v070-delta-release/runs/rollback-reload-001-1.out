@@ -1,0 +1,5 @@
+pushed={"acked_bytes": 281, "b64_chars": 376, "bytes": 281, "decoded_sha256": "cc0f6a34eb8e48c31313ddade0726370e56e7a1964b4dbdbd14be2faa41b4a38", "frames": 3, "mode": "frame", "parts": 3, "path": "/var/tmp/nxl-rollback-reload-001-1.sh", "raw_writes": 0, "retries": 0}
+ok=True rc=0
+---
+/var/tmp/nxl-rollback-reload-001-1.sh: line 3: unexpected EOF while looking for matching `"'
+NXLSCRIPT-RC=2

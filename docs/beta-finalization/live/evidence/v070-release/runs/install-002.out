@@ -1,0 +1,7 @@
+pushed={"acked_bytes": 2067, "b64_chars": 2756, "bytes": 2067, "decoded_sha256": "8cddd3573ba6fef4e43d6757477543078e85fdcb062d2e0004a7405bd7a7d4d6", "frames": 22, "mode": "frame", "parts": 22, "path": "/var/tmp/nxl-install-002.sh", "raw_writes": 0, "retries": 0}
+ok=True rc=0
+---
+PREV=NONE
+/usr/share/nuxel/pwa/nuxel-home/assets/branding/button-middle.png.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

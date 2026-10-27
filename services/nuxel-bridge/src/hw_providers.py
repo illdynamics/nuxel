@@ -30,6 +30,8 @@ DEFAULT_VOLUME_CAP_PERCENT = 25
 # real card and picks the first name it actually observes, so no control name
 # is invented.
 VOLUME_CONTROL_CANDIDATES = (
+    "HPOUT1 Digital Volume",
+    "HPOUT2 Digital Volume",
     "HPOUT1 Digital",
     "HPOUT2 Digital",
     "DAC1 Playback Volume",
@@ -68,6 +70,11 @@ class AudioProvider:
         self.volume_cap = int(volume_cap)
         self._control_cache = None
         self._control_cache_valid = False
+        # MADERA's name-based sget can sleep in D-state; the numid form is fast.
+        self._control_numid = None
+        self._control_min = None
+        self._control_max = None
+        self._control_channels = None
 
     def _abs(self, rel):
         return os.path.join(self.root, rel.lstrip("/")) if rel.startswith("/") else rel
@@ -201,9 +208,56 @@ class AudioProvider:
         return out.decode("utf-8", "replace"), None
 
     def _probe_candidates(self):
-        """Return the first observed volume-control name, without a full walk."""
+        """Return the first observed volume-control name, without a full walk.
+
+        ``amixer scontrols`` is ONE bounded call (~2 s on the S10+ for 813
+        controls) and is authoritative: the MADERA card exposes
+        ``HPOUT1 Digital Volume``, not ``HPOUT1 Digital``.  Probing candidates
+        with ``sget`` first was both wrong and slow (up to N * 4 s when a
+        candidate sits behind a sleeping codec).  A fake/absent amixer falls
+        back to the old sget probe so offline tests remain deterministic.
+        """
         if self._control_cache_valid:
             return self._control_cache
+        # `amixer controls` is ONE bounded call and carries the numid.  Prefer
+        # the numid form for every read/write: on this MADERA codec the
+        # name-based sget can sleep in kernel D-state for ~50 s, while
+        # `cget numid=N` answers immediately.
+        out, err = self._run_amixer("controls")
+        if not err and out:
+            control_map = {}
+            for line in out.splitlines():
+                m = re.search(r"numid=(\d+).*name='([^']+)'", line)
+                if m:
+                    control_map[m.group(2)] = int(m.group(1))
+            chosen = None
+            for candidate in VOLUME_CONTROL_CANDIDATES:
+                if candidate in control_map:
+                    chosen = candidate
+                    break
+            if chosen is None:
+                ranked = []
+                for name in control_map:
+                    low = name.lower()
+                    if "volume" not in low or "switch" in low:
+                        continue
+                    if not VOLUME_CONTROL_PATTERN.search(name):
+                        continue
+                    score = 0
+                    if "hpout1" in low: score += 40
+                    elif "hpout" in low: score += 30
+                    elif "speaker" in low or "spk" in low: score += 20
+                    elif "dac" in low: score += 10
+                    if "digital" in low: score += 5
+                    ranked.append((-score, name))
+                if ranked:
+                    chosen = sorted(ranked)[0][1]
+            if chosen:
+                self._control_cache = chosen
+                self._control_numid = control_map[chosen]
+                self._control_cache_valid = True
+                return chosen
+        # Fallback for an amixer that cannot list controls (offline fixtures).
         for candidate in VOLUME_CONTROL_CANDIDATES:
             out, err = self._run_amixer("sget", candidate)
             if err:
@@ -218,6 +272,31 @@ class AudioProvider:
         return None
 
     def _parse_amixer_value(self, control):
+        text = None
+        if self._control_numid is not None and control == self._control_cache:
+            out, err = self._run_amixer("cget", "numid=%d" % self._control_numid)
+            if err:
+                return None, err
+            text = out or ""
+            mm = re.search(r"min=(-?\d+),max=(-?\d+)", text)
+            mv = re.search(r"^\s*:\s*values=([\d,]+)", text, re.M)
+            if not mm or not mv:
+                return None, "cannot parse numid control %d" % self._control_numid
+            lo, hi = int(mm.group(1)), int(mm.group(2))
+            vals = [int(v) for v in mv.group(1).split(",") if v != ""]
+            if not vals or hi <= lo:
+                return None, "invalid numid control range"
+            self._control_min, self._control_max = lo, hi
+            self._control_channels = len(vals)
+            avg = sum(vals) / float(len(vals))
+            percent = int(round((avg - lo) * 100.0 / (hi - lo)))
+            return {
+                "control": control,
+                "numid": self._control_numid,
+                "percent": max(0, min(100, percent)),
+                "muted": None,
+                "raw": text.strip()[:240],
+            }, None
         out, err = self._run_amixer("sget", control)
         if err:
             return None, err
@@ -306,7 +385,18 @@ class AudioProvider:
         if not control:
             return {"success": False,
                     "error": "no safe playback volume control discovered"}
-        _, err = self._run_amixer("sset", control, "%d%%" % percent)
+        if self._control_numid is not None and control == self._control_cache:
+            read, rerr = self._parse_amixer_value(control)
+            if rerr or not read:
+                return {"success": False, "error": rerr, "control": control}
+            lo, hi = self._control_min, self._control_max
+            raw = int(round(lo + (hi - lo) * percent / 100.0))
+            channels = self._control_channels or 1
+            _, err = self._run_amixer(
+                "cset", "numid=%d" % self._control_numid,
+                ",".join([str(raw)] * channels))
+        else:
+            _, err = self._run_amixer("sset", control, "%d%%" % percent)
         if err:
             return {"success": False, "error": err, "control": control}
         read, rerr = self._parse_amixer_value(control)

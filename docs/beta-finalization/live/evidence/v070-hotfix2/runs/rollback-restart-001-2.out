@@ -1,0 +1,6 @@
+pushed={"acked_bytes": 128, "b64_chars": 172, "bytes": 128, "decoded_sha256": "afda95a0f34867110fc8c8e9fda4dbe968a12cde576faf63801558a521bfba99", "frames": 2, "mode": "frame", "parts": 2, "path": "/var/tmp/nxl-rollback-restart-001-2.sh", "raw_writes": 0, "retries": 0}
+ok=True rc=0
+---
+active
+ACTIVATE-OK
+NXLSCRIPT-RC=0

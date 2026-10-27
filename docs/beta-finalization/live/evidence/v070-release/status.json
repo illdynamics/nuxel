@@ -1,0 +1,14 @@
+{
+  "blocked_reason": "block push cancelled at block 94/707 for /usr/share/nuxel/pwa/nuxel-home/assets/branding/button-right.png.nuxel-staged",
+  "changed_steps": null,
+  "exit_code": 6,
+  "finished_at": "2026-10-27T18:14:58+0100",
+  "host": "dextronux",
+  "no_op": null,
+  "operation_id": "v070-release",
+  "pid": 2196465,
+  "pid_start": "34262286",
+  "rollback_ok": false,
+  "state": "NEEDS_RECOVERY",
+  "verdict": "NEEDS_RECOVERY"
+}

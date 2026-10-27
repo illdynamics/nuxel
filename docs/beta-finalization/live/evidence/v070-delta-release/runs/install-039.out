@@ -1,0 +1,7 @@
+pushed={"acked_bytes": 1502, "b64_chars": 2004, "bytes": 1502, "decoded_sha256": "fa26e2b0ad3912566b723c22d28a494d100a878f5d145267fc3521e0c0fbf8db", "frames": 16, "mode": "frame", "parts": 16, "path": "/var/tmp/nxl-install-039.sh", "raw_writes": 0, "retries": 0}
+ok=True rc=0
+---
+PREV=NONE
+/usr/local/bin/nuxel-typec-diag.sh.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

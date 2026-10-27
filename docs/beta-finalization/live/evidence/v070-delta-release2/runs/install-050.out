@@ -1,0 +1,7 @@
+pushed={"acked_bytes": 1617, "b64_chars": 2156, "bytes": 1617, "decoded_sha256": "e86814a8d6f731b26d52c53d54f19fbc2ebfcc4f71040b5c20461b2fc7b0d14c", "frames": 17, "mode": "frame", "parts": 17, "path": "/var/tmp/nxl-install-050.sh", "raw_writes": 0, "retries": 0}
+ok=True rc=0
+---
+PREV=baf17e455be7206b665cbbb2574971244b8366122552a6e5e9c35f0fba619c60
+/etc/nuxel/security/remote-access.json.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

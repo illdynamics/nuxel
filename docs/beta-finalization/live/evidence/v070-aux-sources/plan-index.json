@@ -1,0 +1,22 @@
+[
+  {
+    "group": "v070-notifications-source",
+    "n": 1,
+    "risk": "medium",
+    "script": "scripts/001-notifications.py.sh",
+    "service": "nuxel-notifications",
+    "source": "services/nuxel-notifications/src/notifications.py",
+    "source_sha256": "7dc49d6acc43c6818c54ddb1f99a6e903c1d0de4b23a6433c20d0424ef27094a",
+    "target": "/usr/lib/nuxel/nuxel-notifications/notifications.py"
+  },
+  {
+    "group": "v070-portal-source",
+    "n": 2,
+    "risk": "medium",
+    "script": "scripts/002-portal.py.sh",
+    "service": "nuxel-portal",
+    "source": "services/nuxel-portal/src/portal.py",
+    "source_sha256": "673b3a683a6e64dff58d2cf4455c8ce5cbd22c6cc5871be521f552bceada874c",
+    "target": "/usr/lib/nuxel/nuxel-portal/portal.py"
+  }
+]
