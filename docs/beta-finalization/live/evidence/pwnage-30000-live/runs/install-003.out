@@ -1,0 +1,7 @@
+pushed={"acked_bytes": 1949, "b64_chars": 2600, "bytes": 1949, "decoded_sha256": "7112f3c82bdfc005f50966e94ab562418961d34835be16ebfba385fc4f10d281", "frames": 21, "mode": "frame", "parts": 21, "path": "/var/tmp/nxl-install-003.sh", "raw_writes": 0, "retries": 0}
+ok=True rc=0
+---
+PREV=4cb613aeb09efd687d99b83e03d901f20d4ecc8e6b8e28f62852cabf42ea624c
+/usr/share/nuxel/pwa/nuxel-apps/calendar/js/calendar.js.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

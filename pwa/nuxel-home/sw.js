@@ -22,11 +22,13 @@
 // 'unavailable on this build' placeholders.
 // v0.7.0 bumps to v48 for the Tri-Link console entries, the unlock-to-Home
 // fix, the hardware Settings pages and the version lockstep bump.
+// v0.7.1 bumps to v49 for the PWNAGE-30000 app suite, widgets.js/widgets.css,
+// the shared theme/haptics clients and the version lockstep bump.
 // A77/v0.6.7 bumps to v46: the lockscreen indicator script and the status
 // receives the A77 USB-detach truth (UDC speed + wired VBUS vetoes) and the
 // three indicator assets carry a new cache-buster, so a launcher restored from
 // the v44 namespace would keep showing the ghost PC/console penguins.
-const CACHE_VERSION = 'v48-v070-release';
+const CACHE_VERSION = 'v49-v071-release';
 const CACHE_NAME = 'nuxel-home-' + CACHE_VERSION;   // version marker sent to clients
 const STATIC_CACHE = 'nuxel-static-' + CACHE_VERSION;
 const DYNAMIC_CACHE = 'nuxel-dynamic-' + CACHE_VERSION;
@@ -43,6 +45,7 @@ const PRECACHE_ASSETS = [
     './css/launcher.css',
     './css/status-bar.css',
     './css/home-settings.css',
+    './css/widgets.css',
     './css/search.css',
     './css/lockscreen.css',
     './js/lockscreen.js',
@@ -65,6 +68,7 @@ const PRECACHE_ASSETS = [
     './js/navigation.js',
     './js/gestures.js',
     './js/home-settings.js',
+    './js/widgets.js',
     './js/system-monitor.js',
     './js/scroll-indicators.js',
     './icons/icon-192.png',

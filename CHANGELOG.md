@@ -12,6 +12,48 @@ The canonical version lives in [`VERSION`](VERSION) and is bumped in lockstep
 across the shell apps, the PWA manifest, the device `APKBUILD`s, the VM tooling
 and the OTA builder (see *Versioning* below).
 
+## [v0.7.1-beta] - 2026-10-27 - *Release: PWNAGE-30000 application suite + live USB deployment*
+
+- **PWNAGE-30000 application suite.** Calendar, Clock, Contacts, Files, Mail,
+  Notes, Weather, Gallery, Recorder and Nuxtore now have real, durable flows.
+  Calendar/Notes/Contacts use an in-process, atomic file-backed store instead of
+  the non-existent `CaldavList`/`StorageListDir`/`MailImapList` D-Bus methods;
+  Files is a traversal-safe browser with CRUD, copy/move, ZIP and upload;
+  Clock tabs switch; Weather uses live Open-Meteo; Gallery seeds real PNGs;
+  Recorder writes a real 16-bit PCM WAV; Mail performs TLS-only IMAP/SMTP
+  discovery and connection tests without storing passwords.
+- **Shared theme, haptics and widgets.** New `pwa/nuxel-common/theme.css`,
+  `theme.js` and `haptics.js` provide Nuxel Grove (default) / Test Theme,
+  immediate same-origin theme propagation and the haptics FIFO client.
+  `pwa/nuxel-home/js/widgets.js` adds a per-desktop widget registry and the
+  Notes widget; the desktop-2 isolation test covers it.
+- **Live USB deployment completed on the connected S10+.** The framed/
+  acknowledged Live Console transport staged 43 files into
+  `/usr/share/nuxel` and `/usr/lib/nuxel`, verified every target by SHA-256,
+  installed atomically and re-ran the coalesced service restarts and health
+  checks. A second 18-file pass pinned `v0.7.1-beta`, updated the bridge/
+  notification/portal units and applied the PWA server ownership fix. Installed
+  bytes match the repository; no partition or kernel flash was performed.
+- **PWA server ownership race fixed.** `nuxel-web.service` is the single owner
+  of `127.0.0.1:8000`. The launcher session's development fallback now binds
+  `127.0.0.1:8001`, and `nuxel-wayland.service` is ordered after
+  `nuxel-web.service`. A `nuxel-web` restart can no longer fail with
+  `OSError: [Errno 98] Address already in use` because the session fallback
+  already holds the port.
+- **Launcher cache `v49-v071-release`** with `a81` cache-busters for the theme,
+  haptics, widgets, launcher, home-settings, touch-keyboard, status-bar and
+  `app.js` assets.
+- **Whole-repo lockstep bump to `v0.7.1-beta`** across `VERSION`, device
+  `APKBUILD`s, PWA/bridge manifests, services and systemd environment pins,
+  shell apps, OTA/VM tooling, captured-image provenance and release docs.
+- **Verification:** the PWNAGE-30000 pytest suite, the core-app suite, the
+  theme/haptics/widgets/WAV JS tests, the live-tool offline subset and
+  `tools/verify-pwa-assets.sh` were run locally; the deploy transaction
+  recorded 43/43 changed files with zero rollbacks and two passing health
+  checks. The full repository-wide gate still reports the pre-existing
+  infrastructure-group failures documented in the release notes. Physical
+  touch-driven app acceptance remains the owner's test.
+
 ## [v0.7.0-beta] - 2026-10-27 - *Release: Tri-Link consoles, real hardware providers, GPS/Maps truth*
 
 - **25000 — Live Console++.** The serial Live Console keeps its exclusive lock,

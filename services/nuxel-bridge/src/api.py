@@ -53,6 +53,20 @@ except Exception as _e:  # pragma: no cover - optional module
     hw_providers = None
     logger.warning('hw_providers unavailable: %s', _e)
 
+# PWA application persistence (calendar/notes/contacts/files) + haptics FIFO.
+# Imported lazily by _handle_rpc so a missing store never blocks the REST API.
+try:
+    import pwa_store
+except Exception as _e:  # pragma: no cover - optional module
+    pwa_store = None
+    logger.warning('pwa_store unavailable: %s', _e)
+
+try:
+    import mail_client
+except Exception as _e:  # pragma: no cover - optional module
+    mail_client = None
+    logger.warning('mail_client unavailable: %s', _e)
+
 # ── Environment-driven configuration ────────────────────────────
 
 HTTP_BIND = os.environ.get('NUXEL_HTTP_BIND', '127.0.0.1')
@@ -67,7 +81,7 @@ HTTP_MODE = os.environ.get('NUXEL_HTTP_MODE', 'dev')
 # downgrade. NUXEL_BRIDGE_VERSION is the host IMPLEMENTATION version and is
 # allowed to move independently.
 BRIDGE_PROTOCOL_VERSION = os.environ.get('NUXEL_BRIDGE_PROTOCOL_VERSION', '1')
-BRIDGE_HOST_VERSION = os.environ.get('NUXEL_BRIDGE_VERSION', '0.7.0-beta')
+BRIDGE_HOST_VERSION = os.environ.get('NUXEL_BRIDGE_VERSION', '0.7.1-beta')
 
 # Canonical launcher registry, shared with the PWA (pwa/nuxel-common/app-registry.json)
 # and the native shell. The rootfs installs it at /etc/nuxel/app-registry/.
@@ -472,6 +486,12 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
         "org.gnome.Snapshot": [
             "/usr/sbin/snapshot",
         ],
+        # Core communication apps (PWNAGE-30000).  These were previously only
+        # resolved through the registry fallback, so a missing/not-yet-installed
+        # binary surfaced as a generic launch failure in the launcher.
+        "nuxel-contacts": ["/usr/bin/nuxel-contacts"],
+        "nuxel-dialer": ["/usr/bin/nuxel-dialer"],
+        "nuxel-messages": ["/usr/bin/nuxel-messages"],
     }
 
     def _exec_native_app(self, target_id):
@@ -490,6 +510,12 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
             if not argv:
                 return ({"success": False, "error": "not_native_or_unknown",
                          "app_id": target_id}, 404)
+        # A clear, honest failure for an unbuilt/absent native binary is more
+        # useful than a systemd-run rc!=0 (which masked the real cause).
+        if not os.path.exists(argv[0]):
+            return ({"success": False, "error": "native_binary_missing",
+                     "app_id": target_id, "binary": argv[0],
+                     "detail": "the registered native program is not installed: %s" % argv[0]}, 404)
         # The http-bridge runs with PrivateTmp/ProtectHome/ProtectSystem,
         # so a GUI app forked directly from it inherits a read-only /root and
         # a private /tmp and dies. Launch via a systemd transient unit, which
@@ -992,6 +1018,13 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
         namespace = body.get('namespace', '')
         verb = body.get('verb', '')
         params = body.get('params', {}) or {}
+        # PWA persistence is served in-process from the root-owned store.  The
+        # sandboxed D-Bus bridge has no storage/caldav/contacts implementation,
+        # and routing these verbs to it made every calendar/notes/files save
+        # fail with a dbus-error.  Handle them here with the same honest error
+        # shape instead.
+        if namespace in ('storage', 'caldav', 'contacts', 'haptics', 'mail'):
+            return self._handle_app_store_rpc(namespace, verb, params)
         # Lockhead indicators are computed in-process from kernel state; they
         # are deliberately NOT routed to D-Bus (the D-Bus bridge has no such
         # method and a dbus-error fallback would make the UI dim real states).
@@ -1089,6 +1122,110 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
                 result["capabilities"] = [k for k, v in caps.items() if v]
         return result
 
+
+    def _app_store(self):
+        if pwa_store is None:
+            raise RuntimeError('pwa_store unavailable')
+        if getattr(self, '_pwa_store', None) is None:
+            self._pwa_store = pwa_store.PwaStore()
+        return self._pwa_store
+
+    def _mail_client(self):
+        if mail_client is None:
+            raise RuntimeError('mail_client unavailable')
+        if getattr(self, '_mail_client_obj', None) is None:
+            self._mail_client_obj = mail_client.MailClient()
+        return self._mail_client_obj
+
+    def _handle_mail_rpc(self, verb, params):
+        """Mail transport runs in the bridge; credentials are per-call only."""
+        if not isinstance(params, dict):
+            params = {}
+        try:
+            client = self._mail_client()
+            if verb == 'accounts-list':
+                return client.accounts_list()
+            if verb == 'account-save':
+                return client.account_save(params.get('account') or {})
+            if verb == 'account-delete':
+                return client.account_delete(params.get('id', ''))
+            if verb == 'discover':
+                return client.discover(params.get('email', ''))
+            if verb == 'test-connection':
+                return client.test_connection(params.get('account', ''), params.get('password', ''))
+            if verb == 'imap-list':
+                return client.imap_list(params.get('account', ''), params.get('password', ''),
+                                        params.get('folder', 'INBOX'))
+            if verb == 'smtp-send':
+                return client.smtp_send(params.get('account', ''), params.get('password', ''),
+                                        params.get('to', []), params.get('subject', ''),
+                                        params.get('body', ''))
+            return {'success': False, 'error': 'Unknown RPC: mail.%s' % verb,
+                    'error_code': 'UNKNOWN_VERB', 'code': 400}
+        except mail_client.MailError as exc:
+            return {'success': False, 'error': str(exc), 'error_code': 'MAIL_ERROR'}
+        except Exception as exc:  # noqa: BLE001
+            logger.warning('mail RPC %s failed: %s', verb, exc)
+            return {'success': False, 'error': 'mail transport unavailable: %s' % exc,
+                    'error_code': 'MAIL_UNAVAILABLE'}
+
+    def _handle_app_store_rpc(self, namespace, verb, params):
+        """In-process dispatch for durable PWA data + haptics requests."""
+        if not isinstance(params, dict):
+            params = {}
+        try:
+            store = self._app_store()
+            if namespace == 'storage':
+                if verb == 'read':
+                    return store.storage_read(params.get('key', ''))
+                if verb == 'write':
+                    return store.storage_write(params.get('key', ''), params.get('data'))
+                if verb == 'list-dir':
+                    return store.storage_list_dir(params.get('path', '/'))
+                if verb == 'mkdir':
+                    return store.storage_mkdir(params.get('path', ''))
+                if verb == 'rename':
+                    return store.storage_rename(params.get('src', ''), params.get('dst', ''))
+                if verb == 'delete':
+                    return store.storage_delete(params.get('path', ''))
+                if verb == 'copy':
+                    return store.storage_copy(params.get('src', ''), params.get('dst', ''))
+                if verb == 'move':
+                    return store.storage_move(params.get('src', ''), params.get('dst', ''))
+                if verb == 'archive-create':
+                    return store.storage_archive_create(params.get('sources') or [], params.get('dest', ''))
+                if verb == 'archive-extract':
+                    return store.storage_archive_extract(params.get('archive', ''), params.get('dest', ''))
+                if verb == 'write-file':
+                    return store.storage_write_file(params.get('path', ''), params.get('data_b64', ''),
+                                                    bool(params.get('overwrite', False)))
+                if verb == 'read-file':
+                    return store.storage_read_file(params.get('path', ''))
+            elif namespace == 'caldav':
+                if verb == 'list':
+                    return store.caldav_list()
+                if verb == 'put':
+                    return store.caldav_put(params.get('events') or [])
+            elif namespace == 'contacts':
+                if verb == 'list':
+                    return store.contacts_list()
+                if verb == 'upsert':
+                    return store.contacts_upsert(params.get('contact') or {})
+                if verb == 'delete':
+                    return store.contacts_delete(params.get('id', ''))
+            elif namespace == 'haptics':
+                if verb == 'pulse':
+                    return store.haptics_pulse(params.get('kind', 'tap'))
+            elif namespace == 'mail':
+                return self._handle_mail_rpc(verb, params)
+            return {'success': False, 'error': 'Unknown RPC: %s.%s' % (namespace, verb),
+                    'error_code': 'UNKNOWN_VERB', 'code': 400}
+        except pwa_store.StoreError as exc:
+            return {'success': False, 'error': str(exc), 'error_code': 'STORE_ERROR'}
+        except Exception as exc:  # noqa: BLE001 - report, never let a store crash the API
+            logger.warning('app store RPC %s.%s failed: %s', namespace, verb, exc)
+            return {'success': False, 'error': 'app store unavailable: %s' % exc,
+                    'error_code': 'STORE_UNAVAILABLE'}
 
     def do_POST(self):
         parsed = urlparse(self.path)

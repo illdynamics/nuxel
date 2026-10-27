@@ -4,8 +4,8 @@ Documentation=file:/usr/share/doc/nuxel/UTM-LAUNCHER-PORT.md
 # Bounded restarts: never spin into a process storm.
 StartLimitIntervalSec=60
 StartLimitBurst=5
-After=nuxel-touch-arm.service seatd.service
-Wants=nuxel-touch-arm.service seatd.service
+After=nuxel-touch-arm.service seatd.service nuxel-web.service
+Wants=nuxel-touch-arm.service seatd.service nuxel-web.service
 Before=nuxel-wl-fb.service nuxel-fallback.service
 
 [Service]

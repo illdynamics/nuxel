@@ -1,7 +1,7 @@
 {
   "id": "org.nuxel.Photos",
-  "name": "Photos",
-  "icon": "\ud83d\uddbc\ufe0f",
+  "name": "Gallery",
+  "icon": "🖼️",
   "color": "#2b1b3d",
   "category": "media",
   "type": "pwa",

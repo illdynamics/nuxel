@@ -1,0 +1,22 @@
+/* Nuxel home-screen widgets (PWNAGE-30000). */
+.widgets-layer {
+  display: grid;
+  gap: 10px;
+  padding: 0 14px 12px;
+  grid-auto-rows: 64px;
+}
+.widgets-layer[hidden] { display: none; }
+.nx-widget {
+  background: var(--nx-surface);
+  border: 1px solid var(--nx-border);
+  border-radius: 14px;
+  padding: 10px 12px;
+  color: var(--nx-text);
+  overflow: hidden;
+  cursor: default;
+  min-height: 0;
+}
+.nx-widget:active { border-color: var(--nx-primary); }
+.nx-widget-title { font-size: 12px; font-weight: 600; color: var(--nx-accent); margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nx-widget-body { font-size: 13px; line-height: 1.45; white-space: pre-wrap; overflow: hidden; color: var(--nx-text); }
+.nx-widget-body.dim { color: var(--nx-text-dim); }

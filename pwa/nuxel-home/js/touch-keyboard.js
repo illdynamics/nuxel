@@ -98,6 +98,13 @@
         },
         visible() { return !!(this.panel && !this.panel.hidden); },
         haptic() {
+            // Centralized haptics path (PWNAGE-30000): bridge FIFO first, then
+            // the native host action, then navigator.vibrate.  Rate-limited and
+            // disabled-aware so keypress feedback never stacks or blocks typing.
+            if (global.NuxelHaptics && typeof global.NuxelHaptics.tap === 'function') {
+                global.NuxelHaptics.tap();
+                return;
+            }
             if (global.NuxelHost && global.NuxelHost.available) global.NuxelHost.action('haptics-tap');
             else { try { if (global.navigator && global.navigator.vibrate) global.navigator.vibrate(12); } catch (e) {} }
         },

@@ -9,11 +9,11 @@ verifies them with `tools/release/verify-installed-image.py`.
 - `nuxel-installed-s10plus-userspace-files.txt.gz` — SHA-256 inventory of the
   installed userspace (2,959 entries: 2,831 files + 128 symlinks), refreshed
   from the running phone after the A77 deployment (v0.6.6-beta sources);
-  it is republished unchanged with v0.7.0-beta; the live userspace delta is deployed from the same v0.7.0-beta commit.
+  it is republished unchanged with v0.7.1-beta; the PWNAGE-30000 live userspace delta was deployed from the same v0.7.1-beta sources.
 - `INSTALLED-IMAGES.json` — provenance, header fields, payload hashes and the
   full-partition readback hash.
 
-The BOOT image is unchanged by the v0.7.0-beta release; its
+The BOOT image is unchanged by the v0.7.1-beta release; its
 partition and image hashes were re-verified on 2026-10-26. The root filesystem
 is a live mounted ext4 filesystem; no consistent block snapshot is claimed. See
 [`docs/a61-penguin-eyes/INSTALLED-IMAGE-RELEASE.md`](../docs/a61-penguin-eyes/INSTALLED-IMAGE-RELEASE.md).

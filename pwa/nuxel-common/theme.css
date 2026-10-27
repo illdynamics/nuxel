@@ -1,0 +1,71 @@
+/* Nuxel shared theme tokens (PWNAGE-30000).
+   Load this BEFORE an app's own stylesheet.  Apps reference var(--nx-*) so the
+   launcher Settings theme switch applies immediately without a reload. */
+:root,
+:root[data-theme="nuxel-grove"] {
+  --nx-theme: "Nuxel Grove";
+  --nx-bg: #081710;
+  --nx-bg-2: #0c1f18;
+  --nx-surface: #122b21;
+  --nx-surface-2: #183528;
+  --nx-text: #e9f5ee;
+  --nx-text-dim: #8fb3a0;
+  --nx-border: #224936;
+  --nx-primary: #3beaa1;
+  --nx-primary-strong: #2bcb8a;
+  --nx-primary-contrast: #062018;
+  --nx-accent: #63f0bd;
+  --nx-focus: #7df2c4;
+  --nx-danger: #ff6b6b;
+  --nx-warning: #ffb454;
+  --nx-success: #3beaa1;
+  --nx-overlay: rgba(4, 14, 10, 0.72);
+  color-scheme: dark;
+}
+:root[data-theme="test-theme"] {
+  --nx-theme: "Test Theme";
+  --nx-bg: #160e06;
+  --nx-bg-2: #1f150a;
+  --nx-surface: #2a1c0e;
+  --nx-surface-2: #342313;
+  --nx-text: #f7efe8;
+  --nx-text-dim: #c09b78;
+  --nx-border: #4a331c;
+  --nx-primary: #ff9f43;
+  --nx-primary-strong: #e8842a;
+  --nx-primary-contrast: #2a1604;
+  --nx-accent: #ffb454;
+  --nx-focus: #ffc37a;
+  --nx-danger: #ff6b6b;
+  --nx-warning: #ffd166;
+  --nx-success: #66d9a2;
+  --nx-overlay: rgba(22, 12, 4, 0.72);
+  color-scheme: dark;
+}
+
+/* Small shared primitives; they never set layout, only color/font. */
+.nx-btn {
+  background: var(--nx-surface-2);
+  color: var(--nx-text);
+  border: 1px solid var(--nx-border);
+  border-radius: 11px;
+  min-height: 40px;
+  padding: 8px 14px;
+  font-size: 14px;
+}
+.nx-btn:active { background: var(--nx-primary); color: var(--nx-primary-contrast); }
+.nx-btn.primary {
+  background: var(--nx-primary);
+  border-color: var(--nx-primary);
+  color: var(--nx-primary-contrast);
+  font-weight: 600;
+}
+.nx-btn.ghost { background: transparent; }
+.nx-btn.danger { background: transparent; border-color: var(--nx-danger); color: var(--nx-danger); }
+.nx-badge {
+  font-size: 11px;
+  color: var(--nx-accent);
+  border: 1px solid var(--nx-border);
+  border-radius: 999px;
+  padding: 3px 9px;
+}

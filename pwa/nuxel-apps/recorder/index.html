@@ -7,6 +7,7 @@
 <meta name="nuxel-app-id" content="org.nuxel.Recorder">
 <title>Nuxel Recorder</title>
 <link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="../../nuxel-common/theme.css">
 <link rel="stylesheet" href="css/recorder.css">
 </head>
 <body>
@@ -28,6 +29,15 @@
     </div>
     <label class="check"><input id="monitor" type="checkbox"> Play back while recording (loopback monitor)</label>
     <p id="capability" class="hint">Checking the capture path…</p>
+  </section>
+
+  <section class="card">
+    <h3>Save location</h3>
+    <div class="row">
+      <input id="save-loc" type="text" placeholder="/VoiceRecordings">
+      <button id="save-loc-save">Save location</button>
+    </div>
+    <p class="hint">WAV recordings are written under this folder in the bridge storage store. A failed write keeps the recording locally and reports the error.</p>
   </section>
 
   <section class="card">

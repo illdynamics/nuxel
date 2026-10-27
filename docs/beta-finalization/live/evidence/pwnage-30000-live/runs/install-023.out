@@ -1,0 +1,7 @@
+pushed={"acked_bytes": 2025, "b64_chars": 2700, "bytes": 2025, "decoded_sha256": "9abb0f4e72468ccdee07a3c7c2220c69573c2bd4c7a807d45f8f291f37550b1f", "frames": 22, "mode": "frame", "parts": 22, "path": "/var/tmp/nxl-install-023.sh", "raw_writes": 0, "retries": 0}
+ok=True rc=0
+---
+PREV=NONE
+/usr/share/nuxel/pwa/nuxel-apps/recorder/js/recorder-wav.js.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

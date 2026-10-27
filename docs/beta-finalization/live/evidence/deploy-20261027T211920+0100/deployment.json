@@ -1,0 +1,52 @@
+{
+  "apply": false,
+  "at": "2026-10-27T21:19:20+0100",
+  "boot_id_after": null,
+  "boot_id_before": null,
+  "boot_id_changed": null,
+  "briq": "briq-10b-live-deploy-userspace",
+  "cancelled": false,
+  "evidence_dir": "/x/nuxel/docs/beta-finalization/live/evidence/deploy-20261027T211920+0100",
+  "exit_code": 0,
+  "finished_at": "2026-10-27T21:19:20+0100",
+  "groups": [
+    {
+      "declared_reload": null,
+      "declared_reload_source": null,
+      "group": "pwnage-30000-pwa",
+      "priority": 1,
+      "restart_service": "nuxel-web",
+      "risk": "low",
+      "risk_rank": 0,
+      "steps": 40
+    },
+    {
+      "declared_reload": null,
+      "declared_reload_source": null,
+      "group": "pwnage-30000-bridge",
+      "priority": 1,
+      "restart_service": "nuxel-http-bridge.service",
+      "risk": "medium",
+      "risk_rank": 1,
+      "steps": 3
+    }
+  ],
+  "journal": "/x/nuxel/docs/beta-finalization/live/evidence/deploy-20261027T211920+0100/transaction.jsonl",
+  "manifest": "tools/beta/live/nuxel-30000-pwnage-manifest.json",
+  "operation_id": "deploy-20261027T211920-2300900",
+  "order": "manifest",
+  "results": [],
+  "risk_envelope": {
+    "low": 40,
+    "medium": 3
+  },
+  "skipped": [],
+  "steps": 43,
+  "transfer": {},
+  "verdict": "IMPLEMENTED_NOT_DEPLOYED",
+  "verdict_note": "plan + install scripts generated and guarded; no device write attempted (pass --apply for the live run)",
+  "verdicts": {
+    "briq-10b-live-deploy-userspace": "IMPLEMENTED_NOT_DEPLOYED"
+  },
+  "violations": []
+}

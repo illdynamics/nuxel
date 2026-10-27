@@ -32,7 +32,9 @@
     var self = this;
     ['menu-btn', 'sidebar-close', 'add-account-btn', 'refresh-btn', 'compose-btn', 'compose-back',
      'send-btn', 'msg-back', 'msg-reply', 'msg-archive', 'msg-delete', 'data-export', 'data-import',
-     'data-file', 'data-clear', 'acct-save', 'acct-cancel'].forEach(function (id) { els[id] = $(id); });
+     'data-file', 'data-clear', 'acct-save', 'acct-cancel', 'acct-discover', 'acct-test',
+     'acct-password', 'acct-test-result', 'acct-email', 'acct-imap-host', 'acct-imap-port',
+     'acct-smtp-host', 'acct-smtp-port'].forEach(function (id) { els[id] = $(id); });
     return global_mailStorage().init().then(function (backend) {
       self.backend = backend;
       self.bind();
@@ -67,6 +69,8 @@
     els['add-account-btn'].addEventListener('click', function () { $('account-form').classList.remove('hidden'); });
     els['acct-cancel'].addEventListener('click', function () { $('account-form').classList.add('hidden'); });
     els['acct-save'].addEventListener('click', function () { self.saveAccount(); });
+    els['acct-discover'].addEventListener('click', function () { self.discoverAccount(); });
+    els['acct-test'].addEventListener('click', function () { self.testAccountConnection(); });
     document.querySelectorAll('.folder').forEach(function (btn) {
       btn.addEventListener('click', function () {
         self.folder = btn.dataset.folder;
@@ -138,6 +142,45 @@
     });
   };
 
+  MailApp.prototype.bridgeCall = function (verb, params) {
+    var b = window.NuxelBridge;
+    if (b && typeof b.call === 'function') return b.call('mail', verb, params);
+    return Promise.resolve({ success: false, offline: true, error: 'bridge unavailable' });
+  };
+
+  MailApp.prototype.discoverAccount = function () {
+    var self = this;
+    var email = els['acct-email'].value.trim();
+    this.bridgeCall('discover', { email: email }).then(function (res) {
+      if (res && res.found && res.provider) {
+        var p = res.provider;
+        if (!els['acct-imap-host'].value) { els['acct-imap-host'].value = p.incoming.host; els['acct-imap-port'].value = p.incoming.port; }
+        if (!els['acct-smtp-host'].value) { els['acct-smtp-host'].value = p.outgoing.host; els['acct-smtp-port'].value = p.outgoing.port; }
+        els['acct-test-result'].textContent = p.note || ('Discovered endpoints for ' + res.domain + '.');
+      } else {
+        els['acct-test-result'].textContent = (res && res.detail) || 'No official autodiscover entry; enter hosts manually.';
+      }
+    });
+  };
+
+  MailApp.prototype.testAccountConnection = function () {
+    var self = this;
+    var email = els['acct-email'].value.trim();
+    if (!email) { els['acct-test-result'].textContent = 'Enter an email address first.'; return; }
+    els['acct-test-result'].textContent = 'Testing connection…';
+    this.bridgeCall('test-connection', {
+      account: email,
+      password: els['acct-password'].value
+    }).then(function (res) {
+      if (res && res.success === true) {
+        els['acct-test-result'].textContent = 'Connection test passed (incoming and outgoing).';
+      } else {
+        els['acct-test-result'].textContent = 'Test failed at ' + ((res && res.stage) || 'unknown') +
+          ' stage: ' + ((res && res.error) || 'unknown error');
+      }
+    });
+  };
+
   MailApp.prototype.saveAccount = function () {
     var self = this;
     var email = $('acct-email').value.trim();
@@ -152,6 +195,15 @@
       smtp_port: $('acct-smtp-port').value,
       use_tls: $('acct-tls').checked
     }).then(function (account) {
+      // Mirror the account CONFIG (never a password) to the bridge store so the
+      // transport owner can resolve it for connection tests and fetch/send.
+      self.bridgeCall('account-save', {
+        account: {
+          id: account.id, email: account.email, name: account.name,
+          imap_host: account.imap_host, imap_port: account.imap_port,
+          smtp_host: account.smtp_host, smtp_port: account.smtp_port, tls: account.use_tls
+        }
+      }).catch(function () { /* local account still usable */ });
       $('account-form').classList.add('hidden');
       self.account = account;
       window.mailTransport.state = 'unconfigured';

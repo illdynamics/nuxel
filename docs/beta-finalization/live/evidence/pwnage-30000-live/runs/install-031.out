@@ -1,0 +1,7 @@
+pushed={"acked_bytes": 1740, "b64_chars": 2320, "bytes": 1740, "decoded_sha256": "e1f4fd14d3998e5c27f5b281fd0e163cf479cb1fa5630786b166ba5691630475", "frames": 19, "mode": "frame", "parts": 19, "path": "/var/tmp/nxl-install-031.sh", "raw_writes": 0, "retries": 0}
+ok=True rc=0
+---
+PREV=NONE
+/usr/share/nuxel/pwa/nuxel-common/haptics.js.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

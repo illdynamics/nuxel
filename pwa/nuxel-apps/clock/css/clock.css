@@ -1,13 +1,13 @@
 /* Nuxel Clock - offline; no webfonts, no remote assets */
 :root {
-  --bg: #0b1020;
-  --card: #151d33;
-  --card2: #1d2846;
-  --ink: #e9f0ff;
-  --dim: #8fa0c4;
-  --accent: #63e6be;
-  --accent-2: #4cc2ff;
-  --danger: #ff6b6b;
+  --bg: var(--nx-bg);
+  --card: var(--nx-surface);
+  --card2: var(--nx-surface-2);
+  --ink: var(--nx-text);
+  --dim: var(--nx-text-dim);
+  --accent: var(--nx-primary);
+  --accent-2: var(--nx-accent);
+  --danger: var(--nx-danger);
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
 }

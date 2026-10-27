@@ -3,18 +3,19 @@
 
 ![Nuxel](./nuxel.jpg)
 
-**v0.7.0-beta** — _Build the bunker first. Add the rave lights later._
+**v0.7.1-beta** — _Build the bunker first. Add the rave lights later._
 
-> **v0.7.0-beta (2026-10-27).** This release merges the 25000–29000 work:
-> the Tri-Link serial/Wi-Fi/USB console entries, the unlock-to-Home repair,
-> canonical GPS/Maps state, and first-class Bluetooth, Location, Audio and
-> Displays pages backed by real hardware providers. Bluetooth scanning is
-> **honestly blocked**, not faked: the BCM4375 HCD is present and verified,
-> but the running kernel has `CONFIG_BT_HCIUART` unset, so no HCI transport can
-> register `hci0`. GNSS firmware, HDMI/DRM and the MADERA unmute path remain
-> documented blockers. A completed GitHub Release is not proof of on-phone
-> function; physical audio confirmation is still the owner's test. See
-> [`docs/releases/v0.7.0-beta.md`](docs/releases/v0.7.0-beta.md).
+> **v0.7.1-beta (2026-10-27).** This release ships **PWNAGE-30000**: a working
+> application suite (Calendar, Clock, Contacts, Files, Mail, Notes, Weather,
+> Gallery, Recorder, Nuxtore), durable file-backed persistence in the bridge,
+> a shared theme/haptics layer, and a widget framework. The delta was deployed
+> to the connected Galaxy S10+ over the USB Live Console: a 43-file app-suite
+> pass and an 18-file version-pin/service-ownership pass, every file SHA-256
+> verified, atomically installed, services restarted and health-checked.
+> The 25000–29000 Tri-Link/hardware-provider work is carried forward. Bluetooth,
+> GNSS, HDMI/DRM and the MADERA unmute path remain documented hardware blockers;
+> physical app interaction and audio acceptance remain the owner's test. See
+> [`docs/releases/v0.7.1-beta.md`](docs/releases/v0.7.1-beta.md).
 
 > **Samsung S10+ engineering reality.** The active `beyond2lte` port is Fedora
 > 43 aarch64 on Samsung Linux 4.14.253. Its launcher is Nuxel Home in WebKitGTK,
@@ -167,8 +168,33 @@ NUXEL_DEVICE=mustang bash boot/flash.sh --unlock --wipe
 | `ci/` | Build validation |
 | `assets/` | Wallpaper + boot animation |
 
-## What's new in v0.7.0-beta
+## What's new in v0.7.1-beta
 
+- **PWNAGE-30000 application suite.** Calendar, Clock, Contacts, Files, Mail,
+  Notes, Weather, Gallery, Recorder and Nuxtore now have real, durable flows:
+  file-backed bridge persistence replaces the dead D-Bus storage/CalDAV/IMAP
+  method names; Clock tabs switch; Files is a full browser with CRUD, copy/move,
+  ZIP and upload; Weather uses live Open-Meteo; Gallery seeds real PNG samples;
+  Recorder writes a real 16-bit PCM WAV; Notes autosaves and Mail performs real
+  TLS IMAP/SMTP discovery and connection tests (fetch/send stays honest until
+  credentials are supplied).
+- **Shared theme, haptics and widgets.** `nuxel-common/theme.css`, `theme.js`
+  and `haptics.js` provide Nuxel Grove (default) and Test Theme, immediate
+  theme switching and the haptics FIFO client. `widgets.js` adds a per-desktop
+  widget registry and the Notes widget, covered by an automated desktop-2 test.
+- **Live deployment receipt.** The connected S10+ (`NUXEL-S10PLUS-0001`,
+  `/dev/ttyACM0`) received all 43 delta files through the framed/acknowledged
+  USB Live Console transport. Installed bytes match the repository hashes;
+  `nuxel-web`, `nuxel-http-bridge` and `nuxel-wayland` are active; the PWA
+  endpoints answer 200 from the phone.
+- **Single-owner PWA server.** `nuxel-web.service` remains the only owner of
+  `127.0.0.1:8000`; the launcher session's development fallback now binds
+  `127.0.0.1:8001`, and `nuxel-wayland.service` starts after `nuxel-web`. This
+  removes the boot/restart race that previously made `nuxel-web` fail with
+  `EADDRINUSE`.
+- **Carried forward from v0.7.0-beta:** Tri-Link consoles (25000/26000/28000),
+  unlock → Home, GPS/Maps truth (27000) and the Bluetooth/Location/Audio/
+  Displays providers (29000).
 - **Tri-Link consoles (25000/26000/28000).** Serial Live Console, Wi-Fi SSH
   Console and USB SSH Console are registered exactly once, launch from the
   Applications drawer, and share one transport-status API. Serial keeps its
@@ -192,8 +218,8 @@ NUXEL_DEVICE=mustang bash boot/flash.sh --unlock --wipe
 - **Release tooling.** The deploy manifest covers all new console/Settings/
   Maps/bridge/diagnostic files, repository-only tests are explicitly named
   non-deployable, and the reboot policy refuses repeated reasons/diagnostics
-  before issuing a reboot. Launcher cache namespace: `v48-v070-release`.
-- **Whole-repo lockstep at `v0.7.0-beta`** (`VERSION`, APKBUILDs, PWA/bridge
+  before issuing a reboot. Launcher cache namespace: `v49-v071-release`.
+- **Whole-repo lockstep at `v0.7.1-beta`** (`VERSION`, APKBUILDs, PWA/bridge
   manifests, systemd pins, shell apps, OTA/VM tooling and docs).
 
 ## What's new in v0.6.7-beta
@@ -551,7 +577,7 @@ remaining interactive gap. The Moto G7 Power is flashed but still hangs at a
 black screen; the Pixel 10 Pro XL is still a scaffold. The UTM VM demo boots
 (display + network + sound).
 
-## Honest Status — v0.7.0-beta
+## Honest Status — v0.7.1-beta
 
 **S10+ (SM-G975F, beyond2lte) — NUXEL BOOTS AND TOUCH INPUT WORKS.**
 S-Boot loads the raw arm64 `Image` with the initramfs embedded, the Fedora 43
@@ -569,6 +595,19 @@ stack, and the MADERA `HPOUT1 Digital` unmute path wedges in kernel D-state.
 the owner's physical confirmation.** Camera, radio/modem and the remaining
 sensors stay unproven.
 
+**PWNAGE-30000 was deployed live to the connected S10+ on 2026-10-27.**
+The USB Live Console staged 43 app-suite files in two transaction groups,
+then an 18-file version-pin/service-ownership pass; every target's SHA-256 was
+verified, files were installed atomically, and the coalesced service restarts
+and health checks ran. The installed bytes for the shared theme/haptics
+clients, widgets, WAV encoder, `pwa_store.py`, `mail_client.py`, version pins
+and session scripts match the repository. `/usr/share/nuxel/VERSION` reads `v0.7.1-beta`;
+`nuxel-web`, `nuxel-bridge`, `nuxel-http-bridge`, `nuxel-notifications`,
+`nuxel-portal` and `nuxel-wayland` are active. This is a
+software-deployment receipt, not a claim that every app has been physically
+exercised; owner acceptance for touch-driven app flows, microphone/WAV,
+haptics feel and the desktop-2 Notes widget remains open.
+
 **The release ships the exact image installed on the handset.** The workflow
 publishes `nuxel-installed-s10plus-boot.img.gz` — the byte-exact A27 BOOT image
 read back from the owner's SM-G975F (`48ad61af…`, 51,605,504 bytes) — together
@@ -583,10 +622,10 @@ installed A27 image. See
 |---|---|---|
 | Design/docs | 85% | Architecture, security model, PWA spec, three device bundles, plus the A25–A34 hardware evidence set |
 | Repo structure | 90% | Legacy scratch trees and duplicate guides removed; canonical images only |
-| PWA apps | 55% | Manifests, service workers and launcher integration exist; live app interaction still limited by the clickable gap |
+| PWA apps | 70% | PWNAGE-30000 ships durable app flows, shared theme/haptics and widgets; physical app interaction and hardware acceptance remain open |
 | Flatpak app model | 20% | Manifests + launcher exist (`pwa/flatpak/`, `org.nuxel.Platform`); runtime not built or integration-tested |
 | Native GTK apps | 30% | C source exists; not yet proven end-to-end in the phone UI |
-| D-Bus bridge/portal | 45% | Bridge/portal/notifications run on the phone with real bus policies; deeper app integration is partial |
+| D-Bus bridge/portal | 55% | Bridge persistence, mail transport and provider routes are live; deeper portal integration is still partial |
 | Sandbox/security | 25% | Configs exist; enforcement is not wired end-to-end |
 | Build system | 90% | Fail-closed CI builds the A25 boot image and **compiles the current A34 userspace from repo sources**; artifact verification is content-based |
 | Flashable images | 90% | S10+ boot + Fedora rootfs and G7 Power lk2nd/boot/rootfs are byte-verified on hardware; S10+ boots |
@@ -595,7 +634,7 @@ installed A27 image. See
 | Moto G7 Power (ocean) | 40% | Images flashed (lk2nd + boot + ext4 rootfs); still hangs at a black/flashy screen |
 | UTM VM | 70% | Boots Fedora 43 + Phosh at 720×1440 with working network and **audio** (local, gitignored artifact) |
 
-**Overall: ~70% MVP.** One of three phones (S10+) boots a Nuxel-built image,
+**Overall: ~72% MVP.** One of three phones (S10+) boots a Nuxel-built image,
 its display path is live, and its **touchscreen delivers real contacts**; the
 phone is not yet a usable interactive device because clicking/navigation is not
 signed off. G7 Power still hangs at a black screen; mustang is UART/initramfs
@@ -787,7 +826,7 @@ The other two bring-up targets are the **Samsung Galaxy S10+** (Exynos 9820,
 
 | Document | Description |
 |---|---|
-| [CHANGELOG.md](CHANGELOG.md) | Release notes — everything from v0.1.0 to v0.7.0-beta + readiness |
+| [CHANGELOG.md](CHANGELOG.md) | Release notes — everything from v0.1.0 to v0.7.1-beta + readiness |
 | [prompts/QUICKSTART.md](prompts/QUICKSTART.md) | Get running in 5 minutes |
 | [design/nuxel-linux-phone-design.md](design/nuxel-linux-phone-design.md) | Design bible — the full vision |
 | [design/Nuxel Phone OS Project Plan and Architecture.md](design/Nuxel%20Phone%20OS%20Project%20Plan%20and%20Architecture.md) | Technical architecture + component map |

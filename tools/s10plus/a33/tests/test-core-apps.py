@@ -113,7 +113,7 @@ CORE_APPS = {
     },
     "weather": {
         "hook": "nuxelWeather",
-        "ids": ["now-temp", "forecast", "chart"],
+        "ids": ["now-temp", "forecast", "now-place", "city", "search"],
         "manifest_caps": "network:outbound",
     },
     "maps": {

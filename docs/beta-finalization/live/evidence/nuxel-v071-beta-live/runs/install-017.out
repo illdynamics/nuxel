@@ -1,0 +1,7 @@
+pushed={"acked_bytes": 1873, "b64_chars": 2500, "bytes": 1873, "decoded_sha256": "371129f325caf953805a03e92e24606a5658fb978b593e926a8d57b0b81177cb", "frames": 20, "mode": "frame", "parts": 20, "path": "/var/tmp/nxl-install-017.sh", "raw_writes": 0, "retries": 0}
+ok=True rc=0
+---
+PREV=7dc49d6acc43c6818c54ddb1f99a6e903c1d0de4b23a6433c20d0424ef27094a
+/usr/lib/nuxel/nuxel-notifications/notifications.py.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

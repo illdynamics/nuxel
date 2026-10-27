@@ -1,7 +1,7 @@
 {
-  "name": "Nuxel Photos",
-  "short_name": "Photos",
-  "description": "Gallery over the shared camera store: albums, search, viewer, index export (no fabricated imagery)",
+  "name": "Nuxel Gallery",
+  "short_name": "Gallery",
+  "description": "Folder-backed gallery over the shared media store: albums, thumbnails, viewer (no fabricated imagery)",
   "start_url": "/pwa/nuxel-apps/photos/index.html",
   "scope": "/pwa/nuxel-apps/photos/",
   "display": "fullscreen",

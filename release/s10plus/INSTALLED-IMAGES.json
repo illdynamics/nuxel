@@ -6,11 +6,11 @@
     "serial": "R58M75KDB2X"
   },
   "source": {
-    "captured_from": "BOOT partition /dev/sda14 captured 2026-10-23; userspace inventory refreshed 2026-10-26 from the running phone after the A77 deployment from v0.6.6-beta sources; republished with v0.7.0-beta",
+    "captured_from": "BOOT partition /dev/sda14 captured 2026-10-23; userspace inventory refreshed 2026-10-26 from the running phone after the A77 deployment from v0.6.6-beta sources; republished unchanged with v0.7.1-beta while the PWNAGE-30000 live userspace delta was deployed separately",
     "captured_at": "2026-10-26T17:55:00+01:00",
-    "repository_head": "the commit named by the annotated v0.7.0-beta tag (created by the release workflow from the merged main commit)",
+    "repository_head": "the commit named by the annotated v0.7.1-beta tag (created by the release workflow from the merged main commit)",
     "branch": "main",
-    "repository_version": "v0.7.0-beta"
+    "repository_version": "v0.7.1-beta"
   },
   "installed_boot_image": {
     "file": "nuxel-installed-s10plus-boot.img.gz",
@@ -19,7 +19,7 @@
     "bytes": 51605504,
     "sha256": "48ad61afa91b6fe50278443ecae0695724f706a80de383e0acb021d030620cea",
     "content": "the first 51,605,504 bytes of the installed BOOT partition; a complete, flashable A27 boot image",
-    "note": "unchanged by v0.7.0-beta: this release did not rewrite BOOT; the archive hash was re-verified on 2026-10-26 (full partition 07041ba7..., image 48ad61af...)"
+    "note": "unchanged by v0.7.1-beta: this release did not rewrite BOOT; the archive hash was re-verified on 2026-10-26 (full partition 07041ba7..., image 48ad61af...)"
   },
   "boot_header": {
     "magic": "ANDROID!",
@@ -52,7 +52,7 @@
       "symlinks": 128
     },
     "format": "one entry per line: \"F <sha256> <bytes> <path>\" or \"L <target-sha256> <path>\"",
-    "note": "A77 refresh: the inventory now includes the A77 bridge/native-host/PWA bytes actually running after the live deployment. It is a hash inventory, not a rootfs snapshot."
+    "note": "A77 refresh: the inventory includes the A77 bridge/native-host/PWA bytes running after that deployment. v0.7.1-beta republishes it unchanged; the newer PWNAGE-30000 delta was deployed live and is not a block snapshot. It is a hash inventory, not a rootfs snapshot."
   },
   "ci_built_image": {
     "release": "v0.6.0-beta",

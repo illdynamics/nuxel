@@ -47,6 +47,22 @@
   </screenshots>
 
   <releases>
+    <release version="0.7.1-beta" date="2026-10-27">
+      <url>https://github.com/illdynamics/nuxel/releases/tag/v0.7.1-beta</url>
+      <description>
+        <p>Nuxel Home v0.7.1-beta — aligned with Nuxel Phone OS v0.7.1-beta
+        (PWNAGE-30000: durable app suite, bridge persistence, live Weather,
+        Gallery/Recorder, shared theme/haptics and desktop widgets).</p>
+        <ul>
+          <li>Calendar/Notes/Files/Mail gain durable file-backed persistence</li>
+          <li>Clock tabs, live Weather and Gallery/Recorder flows are real</li>
+          <li>Nuxel Grove and Test Theme apply immediately through the shared layer</li>
+          <li>Widgets registry and the Notes widget persist per desktop</li>
+          <li>Launcher cache advanced to v49-v071-release</li>
+          <li>Whole-repo version bump in lockstep with Nuxel OS v0.7.1-beta</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.7.0-beta" date="2026-10-27">
       <url>https://github.com/illdynamics/nuxel/releases/tag/v0.7.0-beta</url>
       <description>
