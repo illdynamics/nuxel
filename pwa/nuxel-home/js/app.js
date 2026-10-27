@@ -390,6 +390,13 @@ class NuxelHome {
 
     _openPwa(app, url) {
         console.log(`Opening PWA: ${app.name} at ${url}`);
+        // A deep link, manifest shortcut or late startup callback must never
+        // build an app surface over the lockscreen.  The user can launch it
+        // again after the boot unlock, which always lands on Home.
+        if (this._isLocked()) {
+            this._inputTrace(`launch:blocked-locked app=${app.id}`);
+            return;
+        }
         this._dismissLauncherChrome();
         if (this._resumeApp(app)) return;
         this._backgroundForegroundApp();
@@ -488,6 +495,11 @@ class NuxelHome {
 
     _launchNative(app, url) {
         console.log(`Launching native app: ${app.name} (${url})`);
+        // Same lock gate for registry/host deep links as _openPwa().
+        if (this._isLocked()) {
+            this._inputTrace(`launch:blocked-locked app=${app.id}`);
+            return;
+        }
         this._dismissLauncherChrome();
         const target = app.nativeAppId || app.id;
         this._setAppState('LAUNCHING', app, null);
@@ -690,6 +702,12 @@ class NuxelHome {
         if (!ls.isLocked()) return { ok: true, already: true, state: ls.state };
         ls.hide();
         this._setNavDock(true);
+        // Boot/unlock navigation contract: a successful unlock is an explicit
+        // transition to the canonical Home desktop.  Hiding the overlay alone
+        // revealed whatever route was underneath it (notably the Applications
+        // drawer kept open before locking).  Do this synchronously with hide()
+        // so there is no frame in which stale chrome can paint.
+        this._enterHomeAfterUnlock(reason || 'unlock');
         /* The system monitor pauses while the panel is locked or display-off.
            The boot-lock path never passed through a display ON transition, so
            its poll loop stayed stopped after unlock (a real startup race).
@@ -709,6 +727,25 @@ class NuxelHome {
         return { ok: true, state: 'UNLOCKED', generation: this._unlockGeneration };
     }
 
+    /* Canonical post-unlock destination.  Kept separate from home() so the
+       contract is testable and so a failed unlock can never call it. */
+    _enterHomeAfterUnlock(reason) {
+        this._inputTrace(`unlock:home reason=${reason}`);
+        // A stale #app=<id> is a route from before the lock; clear it so a
+        // later hashchange/reload cannot reopen the Applications window.
+        try {
+            if (typeof history !== 'undefined' && history.replaceState && /(?:^#|&)app=/.test(location.hash || '')) {
+                history.replaceState(null, '', location.pathname + location.search);
+            }
+        } catch (e) { /* history is best-effort; the explicit Home call is authoritative */ }
+        try {
+            this.home();
+        } catch (error) {
+            this._inputTrace(`unlock:home-error ${error && error.message ? error.message : error}`);
+            console.error('[Nuxel] post-unlock Home failed:', error);
+        }
+    }
+
     /* The ONLY path from the penguin gesture into the authoritative lock state.
        The active lockscreen instance consumes a one-shot gesture id, then this
        controller asks the native host for its acknowledgement before hiding the
@@ -723,7 +760,12 @@ class NuxelHome {
         }
         const commit = () => {
             if (this.lockscreen !== ls) return { ok: false, error: 'lockscreen-changed' };
-            if (!ls.isLocked()) return { ok: true, state: 'UNLOCKED', via: 'host-event' };
+            if (!ls.isLocked()) {
+                // The native host may already have released its own lock view.
+                // The launcher still owns the visible Home transition.
+                this._enterHomeAfterUnlock('penguin-host-event');
+                return { ok: true, state: 'UNLOCKED', via: 'host-event' };
+            }
             return this._unlock('penguin-gesture');
         };
         const host = window.NuxelHost;

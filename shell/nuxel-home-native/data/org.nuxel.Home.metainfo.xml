@@ -47,6 +47,21 @@
   </screenshots>
 
   <releases>
+    <release version="0.7.0-beta" date="2026-10-27">
+      <url>https://github.com/illdynamics/nuxel/releases/tag/v0.7.0-beta</url>
+      <description>
+        <p>Nuxel Home v0.7.0-beta — aligned with Nuxel Phone OS v0.7.0-beta
+        (three Tri-Link console entries, unlock-to-Home repair, canonical
+        GPS/Maps state and real Bluetooth/Location/Audio/Displays providers).</p>
+        <ul>
+          <li>Serial, Wi-Fi SSH and USB SSH consoles registered once and launchable</li>
+          <li>Unlock now lands on Home with the stale launcher route removed</li>
+          <li>Hardware Settings pages show real provider evidence and blockers</li>
+          <li>Launcher cache advanced to v48-v070-release</li>
+          <li>Whole-repo version bump in lockstep with Nuxel OS v0.7.0-beta</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.6.7-beta" date="2026-10-26">
       <url>https://github.com/illdynamics/nuxel/releases/tag/v0.6.7-beta</url>
       <description>

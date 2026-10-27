@@ -1,0 +1,16 @@
+{
+  "id": "org.nuxel.LiveConsole",
+  "name": "Serial Live Console",
+  "icon": "📟",
+  "color": "#37474F",
+  "category": "system",
+  "type": "pwa",
+  "url": "/pwa/nuxel-apps/console/index.html",
+  "manifest": "pwa/nuxel-apps/console/manifest.json",
+  "description": "USB CDC-ACM recovery console with exclusive serial ownership; the host-side launcher performs framed commands and never shares the port.",
+  "capabilities": [],
+  "bridge_version": "1",
+  "docked": false,
+  "console_transport": "serial",
+  "status": "implemented"
+}

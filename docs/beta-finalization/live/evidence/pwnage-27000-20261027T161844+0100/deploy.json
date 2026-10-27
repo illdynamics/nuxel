@@ -1,0 +1,225 @@
+{
+  "stamp": "20261027T161844+0100",
+  "console": {
+    "tty_device": "ttyACM0",
+    "callout": "/dev/ttyACM0",
+    "dialin": "/dev/ttyACM0",
+    "tty_base": "ttyACM",
+    "tty_suffix": "0",
+    "vid": 6353,
+    "pid": 20199,
+    "match_stage": "vid+pid"
+  },
+  "notes": [],
+  "archive_sha256": "e678372511b5066097912221a6ea4e544c3a30af7f1dd3bccbd49b7b9e526d3f",
+  "files": [
+    {
+      "source": "pwa/nuxel-common/maps-core.js",
+      "target": "/usr/share/nuxel/pwa/nuxel-common/maps-core.js",
+      "mode": "0644",
+      "sha256": "ba6b651f2ddbd001194ee4b7ca1ac07dfbafc4c11b8dd970d44b4814c00e5128",
+      "before": "ba6b651f2ddbd001194ee4b7ca1ac07dfbafc4c11b8dd970d44b4814c00e5128",
+      "action": "unchanged"
+    },
+    {
+      "source": "pwa/nuxel-common/bridge.js",
+      "target": "/usr/share/nuxel/pwa/nuxel-common/bridge.js",
+      "mode": "0644",
+      "sha256": "4fa07463e417759ff3d1e294909136404fb0ac2c7837679bc3bbbc5be60b4a7d",
+      "before": "4fa07463e417759ff3d1e294909136404fb0ac2c7837679bc3bbbc5be60b4a7d",
+      "action": "unchanged"
+    },
+    {
+      "source": "pwa/nuxel-apps/maps/index.html",
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/maps/index.html",
+      "mode": "0644",
+      "sha256": "03e5d84f54f13dcfbb18bef9b444689fc42c8b83856490136ecefe7040f64ddd",
+      "before": "03e5d84f54f13dcfbb18bef9b444689fc42c8b83856490136ecefe7040f64ddd",
+      "action": "unchanged"
+    },
+    {
+      "source": "pwa/nuxel-apps/maps/app.json",
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/maps/app.json",
+      "mode": "0644",
+      "sha256": "be8f8cb5fdda78d7227de921b6c6ea4425ae60c00c122fd50bf311a631e78f57",
+      "before": "be8f8cb5fdda78d7227de921b6c6ea4425ae60c00c122fd50bf311a631e78f57",
+      "action": "unchanged"
+    },
+    {
+      "source": "pwa/nuxel-apps/maps/manifest.json",
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/maps/manifest.json",
+      "mode": "0644",
+      "sha256": "217eeaf1d3f6d2568452ffabae4224171476303b61c990073ed92836b61b98fa",
+      "before": "217eeaf1d3f6d2568452ffabae4224171476303b61c990073ed92836b61b98fa",
+      "action": "unchanged"
+    },
+    {
+      "source": "pwa/nuxel-apps/maps/sw.js",
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/maps/sw.js",
+      "mode": "0644",
+      "sha256": "69f7330a125749a6774c53f3048e9f96b223fad995b76bd24b610d9613d9a72d",
+      "before": "69f7330a125749a6774c53f3048e9f96b223fad995b76bd24b610d9613d9a72d",
+      "action": "unchanged"
+    },
+    {
+      "source": "pwa/nuxel-apps/maps/js/maps.js",
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/maps/js/maps.js",
+      "mode": "0644",
+      "sha256": "5541edf0c04a32b70719c1b1254b298e199d13e31567a9291528c77b358fb144",
+      "before": "aefc2d743a952167dedf74113b5d640961cea969340a0991ea8a8d5aeb13c229",
+      "action": "installed"
+    },
+    {
+      "source": "pwa/nuxel-apps/maps/css/maps.css",
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/maps/css/maps.css",
+      "mode": "0644",
+      "sha256": "803c933290da3f3cd7c6a74e1d7f00b7a478d29e8923b495aa06d86153582ebb",
+      "before": "803c933290da3f3cd7c6a74e1d7f00b7a478d29e8923b495aa06d86153582ebb",
+      "action": "unchanged"
+    },
+    {
+      "source": "pwa/nuxel-home/js/qs.js",
+      "target": "/usr/share/nuxel/pwa/nuxel-home/js/qs.js",
+      "mode": "0644",
+      "sha256": "1b1dad0d6d712e435b4a34c97b32108b45d12bc2b63edfef7cf0c830fc158725",
+      "before": "1b1dad0d6d712e435b4a34c97b32108b45d12bc2b63edfef7cf0c830fc158725",
+      "action": "unchanged"
+    },
+    {
+      "source": "pwa/nuxel-apps/settings/index.html",
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/settings/index.html",
+      "mode": "0644",
+      "sha256": "7731f1e6e9b7b44a824526905418e510ba8e2951fcf3a4460dc63f8d56b7398f",
+      "before": "7731f1e6e9b7b44a824526905418e510ba8e2951fcf3a4460dc63f8d56b7398f",
+      "action": "unchanged"
+    },
+    {
+      "source": "pwa/nuxel-apps/settings/app.json",
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/settings/app.json",
+      "mode": "0644",
+      "sha256": "3d4b689923d82776a3576824567c521f0fd8836fa09718c0eada384baecff3b2",
+      "before": "3d4b689923d82776a3576824567c521f0fd8836fa09718c0eada384baecff3b2",
+      "action": "unchanged"
+    },
+    {
+      "source": "pwa/nuxel-apps/settings/manifest.json",
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/settings/manifest.json",
+      "mode": "0644",
+      "sha256": "de95552f766c6a62125f41d2f74c4520a922b1d1365d6cd9087cca4c20825835",
+      "before": "de95552f766c6a62125f41d2f74c4520a922b1d1365d6cd9087cca4c20825835",
+      "action": "unchanged"
+    },
+    {
+      "source": "pwa/nuxel-apps/settings/settings.js",
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/settings/settings.js",
+      "mode": "0644",
+      "sha256": "2caf9f86ecec2301f027908b6d05faac5859673b4f0d0bc614a143c2370f70e2",
+      "before": "2caf9f86ecec2301f027908b6d05faac5859673b4f0d0bc614a143c2370f70e2",
+      "action": "unchanged"
+    },
+    {
+      "source": "pwa/nuxel-apps/settings/location-maps.js",
+      "target": "/usr/share/nuxel/pwa/nuxel-apps/settings/location-maps.js",
+      "mode": "0644",
+      "sha256": "c7c171d33b124463d63545f49a485510bd0dc06b3f425ae5b67d772c4e074e96",
+      "before": "237d177b007795f153804aa9673ad2f482a21b0381bc54b78319b4b4cfde54bb",
+      "action": "installed"
+    },
+    {
+      "source": "services/nuxel-bridge/src/bridge.py",
+      "target": "/usr/lib/nuxel/nuxel-bridge/bridge.py",
+      "mode": "0644",
+      "sha256": "ad43ddb8b0a15675affe5d97a5e38dc2f735f4bc1773e4ac30a5ae24b9c5826f",
+      "before": "ad43ddb8b0a15675affe5d97a5e38dc2f735f4bc1773e4ac30a5ae24b9c5826f",
+      "action": "unchanged"
+    },
+    {
+      "source": "services/nuxel-bridge/src/api.py",
+      "target": "/usr/lib/nuxel/nuxel-bridge/api.py",
+      "mode": "0644",
+      "sha256": "7d20ff31a90bcec587d247716f64d489b8f7624aaf01bf859906e75a631a05a3",
+      "before": "7d20ff31a90bcec587d247716f64d489b8f7624aaf01bf859906e75a631a05a3",
+      "action": "unchanged"
+    },
+    {
+      "source": "configs/nuxel/gnss/gnss.json",
+      "target": "/etc/nuxel/gnss/gnss.json",
+      "mode": "0644",
+      "sha256": "f7286633090abe321c9d50d48d1eb04299a6a59c947e391f3b21bf8d0ab6c61b",
+      "before": "f7286633090abe321c9d50d48d1eb04299a6a59c947e391f3b21bf8d0ab6c61b",
+      "action": "unchanged"
+    },
+    {
+      "source": "configs/nuxel/gnss/osm-tiles.json",
+      "target": "/etc/nuxel/gnss/osm-tiles.json",
+      "mode": "0644",
+      "sha256": "879346a344b589c49a1222f884de4958400e584b937fb53f639d8aa8dfee0516",
+      "before": "879346a344b589c49a1222f884de4958400e584b937fb53f639d8aa8dfee0516",
+      "action": "unchanged"
+    },
+    {
+      "source": "configs/nuxel/permissions/org.nuxel.Home.json",
+      "target": "/var/lib/nuxel/permissions/org.nuxel.Home.json",
+      "mode": "0644",
+      "sha256": "e777f5bd7f341131cdad7c0936b1972753ed92e21faf741040af77308890407c",
+      "before": "e777f5bd7f341131cdad7c0936b1972753ed92e21faf741040af77308890407c",
+      "action": "unchanged"
+    },
+    {
+      "source": "configs/nuxel/permissions/nuxel-settings.json",
+      "target": "/var/lib/nuxel/permissions/nuxel-settings.json",
+      "mode": "0644",
+      "sha256": "65954514a2594765156f1c7dbe69cb05f2aedabbccacbd1ce2ce53b52b58ccce",
+      "before": "65954514a2594765156f1c7dbe69cb05f2aedabbccacbd1ce2ce53b52b58ccce",
+      "action": "unchanged"
+    },
+    {
+      "source": "configs/nuxel/permissions/org.nuxel.Maps.json",
+      "target": "/var/lib/nuxel/permissions/org.nuxel.Maps.json",
+      "mode": "0644",
+      "sha256": "5ae4dd9ddc54b128cf5cb036d63dbac2b22c42c713767ad86dee3817ea6ef587",
+      "before": "5ae4dd9ddc54b128cf5cb036d63dbac2b22c42c713767ad86dee3817ea6ef587",
+      "action": "unchanged"
+    },
+    {
+      "source": "tools/s10plus/a33/nuxel-gnss-diag.sh",
+      "target": "/usr/local/bin/nuxel-gnss-diag.sh",
+      "mode": "0755",
+      "sha256": "d93092a6647fd938af9f3fba1b39dcf0efb941996ed2235883cfc7c46b91a5ef",
+      "before": "d93092a6647fd938af9f3fba1b39dcf0efb941996ed2235883cfc7c46b91a5ef",
+      "action": "unchanged"
+    }
+  ],
+  "checks": {
+    "bridge_units": {
+      "rc": 0,
+      "output": "active\nactive"
+    },
+    "preserved_units": {
+      "rc": 0,
+      "output": "active\nactive\ninactive"
+    },
+    "gnss_diag": {
+      "rc": 0,
+      "output": "{\"device\":\"beyond2lte\",\"tool\":\"nuxel-gnss-diag\",\"stages\":{\"device_node\":\"node:/dev/ttyBCM\",\"module\":\"bound:/sys/bus/spi/drivers/brcm gps spi/spi17.0\",\"firmware\":\"missing\",\"stream\":\"readable:/dev/ttyBCM\",\"userspace\":\"no-consumer\"},\"first_failing_stage\":\"firmware\",\"state\":\"BLOCKED_FIRMWARE\",\"fix_verified\":false,\"owner_test\":\"docs/beta-finalization/manual-proof/13-gps.md\"}"
+    },
+    "location_status": {
+      "rc": 0,
+      "output": "{\"success\": true, \"state\": \"disabled\", \"enabled\": false, \"permission_enabled\": false, \"provider\": \"geoclue2\", \"provider_available\": true, \"provider_ready\": false, \"provider_detail\": null, \"detail\": null, \"location_fix_available\": false, \"fix_valid\": false, \"stale\": false, \"fix_source\": null, \"fix_timestamp\": null, \"last_fix_timestamp\": null, \"last_fix_age_s\": null, \"accuracy\": null, \"latitude\": null, \"longitude\": null, \"freshness_seconds\": 60.0, \"stale_after_seconds\": 600.0, \"acquiring\": false, \"acquisition_started_at\": null, \"last_error\": null, \"gnss\": {\"present\": true, \"nodes\": [], \"node_visible_to_bridge\": false, \"private_devices\": true, \"driver\": \"brcm gps spi\", \"driver_bound\": true, \"spi_bindings\": [\"/sys/bus/spi/drivers/brcm gps spi/spi17.0\"], \"firmware_present\": false, \"firmware\": [], \"fix_supported\": false, \"blocker\": \"no GNSS/sensor-hub firmware in /lib/firmware\"}, \"timestamp\": 1793114341.3174448}"
+    },
+    "maps_marker": {
+      "rc": 0,
+      "output": "1"
+    },
+    "core_marker": {
+      "rc": 0,
+      "output": "4"
+    },
+    "settings_marker": {
+      "rc": 0,
+      "output": "2"
+    }
+  },
+  "backup_dir": "/var/lib/nuxel/a72/rollback-fast-20261027T161844+0100",
+  "rollback_file": "/var/lib/nuxel/a72/ROLLBACK-27000-20261027T161844+0100.txt"
+}

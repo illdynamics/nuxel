@@ -1,0 +1,14 @@
+{
+  "blocked_reason": null,
+  "changed_steps": 0,
+  "exit_code": 0,
+  "finished_at": "2026-10-27T15:31:30+0100",
+  "host": "dextronux",
+  "no_op": true,
+  "operation_id": "tri-link-ssh-noop-n26000",
+  "pid": 2009003,
+  "pid_start": "33304008",
+  "rollback_ok": null,
+  "state": "COMPLETE",
+  "verdict": "DEPLOYED_UNVERIFIED"
+}

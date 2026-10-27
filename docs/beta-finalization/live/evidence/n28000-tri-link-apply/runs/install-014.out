@@ -1,0 +1,7 @@
+pushed={"acked_bytes": 1894, "b64_chars": 2528, "bytes": 1894, "decoded_sha256": "d153c5903cf7d78803a4f468e065a641793c5aa0e365c5af97587ea351629bcc", "frames": 20, "mode": "frame", "parts": 20, "path": "/var/tmp/nxl-install-014.sh", "raw_writes": 0, "retries": 0}
+ok=True rc=0
+---
+PREV=NONE
+/usr/share/nuxel/pwa/nuxel-apps/console-usb/index.html.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

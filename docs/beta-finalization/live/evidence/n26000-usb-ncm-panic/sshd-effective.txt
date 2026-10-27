@@ -1,0 +1,9 @@
+permitrootlogin without-password
+passwordauthentication no
+kbdinteractiveauthentication no
+allowusers nuxel@10.20.30.0/24
+allowusers root@10.20.30.0/24
+allowusers nuxel@10.15.19.0/24
+allowusers root@10.15.19.0/24
+allowusers nuxel@127.0.0.1/32
+allowusers root@127.0.0.1/32

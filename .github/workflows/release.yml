@@ -68,7 +68,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Manual recovery tag (e.g. v0.6.7-beta). Empty => v<VERSION>.'
+        description: 'Manual recovery tag (e.g. v0.7.0-beta). Empty => v<VERSION>.'
         required: false
         default: ''
       devices:

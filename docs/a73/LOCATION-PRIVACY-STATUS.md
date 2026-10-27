@@ -1,5 +1,11 @@
 # NUXEL A73 — Location Privacy Status (honest)
 
+> **Update (PWNAGE 27000):** the state model, provider failure reporting,
+> first-party grants, D-Bus policy and Maps tile pipeline were repaired in
+> `docs/pwnage-27000/GPS-MAPS-REPORT.md`. This document remains as the A73
+> design record; where it says “no fix” for an unavailable provider, the newer
+> state is `unavailable`.
+
 ## Design
 The Location Quick Setting is a **global permission/provider policy** switch,
 deliberately decoupled from whether a GNSS satellite fix exists.
@@ -41,10 +47,11 @@ Set-enabled round trip verified **both ways** on-device:
 - With no GNSS userspace provider wired, `location_fix_available` stays false;
   the tile shows "Location · no fix" while ON — the policy is still ON, which is
   the correct semantic.
-- The bridge runs as `nuxel-bridge` (DevicePolicy closed); `/dev/ssp_*` are
-  root-only, so GNSS *hardware presence* as seen by the bridge may under-report
-  (reported as `present:false` when not stat-able by the bridge user). The
-  global policy does not depend on that and remains authoritative.
+- The bridge runs as `nuxel-bridge` (`PrivateDevices=true`); `/dev/ssp_*` and
+  `/dev/ttyBCM` are root-only. PWNAGE 27000 therefore also reports the bound
+  BCM GPS SPI device from sysfs (`present:true`, `node_visible_to_bridge:false`)
+  instead of under-reporting the hardware as absent. See
+  `docs/pwnage-27000/GPS-MAPS-REPORT.md`.
 - Complete system-wide privacy is bounded by the provider surface: any client
   that can reach GeoClue outside the bridge would need its own D-Bus policy
   review; the bridge-side denial is the enforced path for Nuxel PWAs.

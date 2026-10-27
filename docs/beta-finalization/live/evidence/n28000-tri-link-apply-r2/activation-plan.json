@@ -1,0 +1,35 @@
+{
+  "counts": {
+    "daemon_reloads_planned": 0,
+    "declared_reloads_seen": 1,
+    "independent_restarts_planned": 2,
+    "reloads_planned": 1,
+    "restarts_planned": 2
+  },
+  "daemon_reload": false,
+  "daemon_reload_action": null,
+  "daemon_reloads_uncoalesced": 0,
+  "reloads": [
+    {
+      "action": "python3 -c \"import json;json.load(open('/usr/share/nuxel/pwa/nuxel-common/app-registry.json'))\"",
+      "group": "tri-link-pwa",
+      "needs_daemon_reload": false,
+      "restart_services": []
+    }
+  ],
+  "restart_services": [
+    "nuxel-wayland.service",
+    "nuxel-http-bridge.service"
+  ],
+  "restart_services_in_reloads": [],
+  "restarts": [
+    {
+      "group": "tri-link-pwa",
+      "service": "nuxel-wayland.service"
+    },
+    {
+      "group": "tri-link-status-api",
+      "service": "nuxel-http-bridge.service"
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+pushed={"acked_bytes": 1813, "b64_chars": 2420, "bytes": 1813, "decoded_sha256": "b599aa6a9f8141e749cd3adf9d5525ed15f994d46e4dbe2e2a4f69228ab16eed", "frames": 19, "mode": "frame", "parts": 19, "path": "/var/tmp/nxl-install-026.sh", "raw_writes": 0, "retries": 0}
+ok=True rc=0
+---
+PREV=NONE
+/usr/lib/nuxel/nuxel-bridge/tri_link_status.py.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

@@ -1,0 +1,15 @@
+{
+  "_note": "Recorded Tri-Link targets. These are discovery results, not guesses: wlan_host was read from the phone's wlan0 (10.20.30.16/24) on 2026-10-27; usb_host is the reserved NCM address and is only usable when usb0 exists.",
+  "host_key_alias": "nuxel-s10plus",
+  "key": "~/.ssh/nuxel-tri-link_ed25519",
+  "known_hosts": "configs/nuxel/security/ssh/known_hosts",
+  "port": 22,
+  "serial_dev": "/dev/ttyACM0",
+  "serial_recovery": "scripts/s10plus-debug-pack/nuxel-live.sh --run <cmd>",
+  "updated_at": "2026-10-27T15:05:00+0100",
+  "usb_evidence": "docs/beta-finalization/live/evidence/n26000-usb-ncm-panic/README.md",
+  "usb_host": "10.15.19.82",
+  "usb_status": "BLOCKED_KERNEL_PANIC",
+  "user": "nuxel",
+  "wlan_host": "10.20.30.16"
+}

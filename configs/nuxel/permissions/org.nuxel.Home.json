@@ -1,0 +1,24 @@
+{
+  "network:manage": {
+    "duration": "session",
+    "granted_at": 1792485668.0579317,
+    "source": "preserved first-party grant: Home Wi-Fi Quick Setting"
+  },
+  "bluetooth:manage": {
+    "duration": "session",
+    "granted_at": 1792951866.8933513,
+    "source": "preserved first-party grant: Home Bluetooth Quick Setting"
+  },
+  "location:manage": {
+    "duration": "always",
+    "granted_at": 0,
+    "portal_type": "location",
+    "source": "first-party-system-grant: Home Quick Setting controls the global location policy"
+  },
+  "location:read": {
+    "duration": "always",
+    "granted_at": 0,
+    "portal_type": "location",
+    "source": "first-party-system-grant: Home may display provider state"
+  }
+}

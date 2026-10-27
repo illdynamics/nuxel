@@ -33,5 +33,38 @@
     "enabling remote access without the indicator",
     "remote access over the cellular interface (rmnet0 is disabled in the firewall config)"
   ],
-  "enforcement_note": "Enforced by the CLI (which refuses the forbidden states) and by the firewall interface policy (configs/nftables/nuxel-firewall-config.json: usb0 is the console interface, rmnet0 is disabled). This is a userspace + nftables boundary against unprivileged apps; root can change anything and is out of scope."
+  "enforcement_note": "Enforced by the CLI (which refuses the forbidden states) and by the firewall interface policy (configs/nftables/nuxel-firewall-config.json: usb0 is the console interface, rmnet0 is disabled). This is a userspace + nftables boundary against unprivileged apps; root can change anything and is out of scope.",
+  "tri_link": {
+    "provisioned_by": "NUXEL-26000 Tri-Link Console Revolution",
+    "serial": {
+      "status": "recovery transport preserved",
+      "device": "/dev/ttyGS0"
+    },
+    "wlan_ssh": {
+      "status": "ACTIVE on the physical S10+ (verified 2026-10-27)",
+      "service": "sshd.service",
+      "interface": "wlan0",
+      "listen": "0.0.0.0:22 and [::]:22, but authentication is restricted by sshd AllowUsers host CIDRs",
+      "allowed_cidrs": [
+        "10.20.30.0/24",
+        "10.15.19.0/24",
+        "127.0.0.1/32"
+      ],
+      "accounts": [
+        "nuxel",
+        "root (existing key only, prohibit-password)"
+      ],
+      "auth": [
+        "publickey"
+      ],
+      "authorized_keys": "/home/nuxel/.ssh/authorized_keys",
+      "host_key_fingerprint": "SHA256:LegjMkabj0ig6rTzMMiiekWQLzCJt0LsJUeTm3c7JGs",
+      "firewall_note": "The live Fedora image has no nft/iptables binary; the effective restriction is sshd AllowUsers user@CIDR plus the absence of any port-forward/NAT rule. Port 22 is not exposed to the public Internet."
+    },
+    "usb_ssh": {
+      "status": "BLOCKED_KERNEL_PANIC on the live Samsung-derived 4.14.253 kernel",
+      "evidence": "docs/beta-finalization/live/evidence/n26000-usb-ncm-panic/",
+      "note": "CONFIG_USB_F_NCM/CONFIG_USB_CONFIGFS_NCM are compiled in, but the NCM function teardown (ncm_free_inst -> misc_deregister) panicked the kernel and the watchdog rebooted the phone. No USB network transport is claimed."
+    }
+  }
 }

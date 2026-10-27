@@ -3,20 +3,18 @@
 
 ![Nuxel](./nuxel.jpg)
 
-**v0.6.7-beta** — _Build the bunker first. Add the rave lights later._
+**v0.7.0-beta** — _Build the bunker first. Add the rave lights later._
 
-> **v0.6.7-beta (2026-10-26).** This release repairs the release gate that
-> failed the v0.6.6-beta `main` run: both native host copies now compile clean
-> under GCC's `-Werror=format-truncation`, so the indicator gate no longer
-> depends on the runner compiler. It also ships the A77 USB-detach truth fix
-> (the PC and Live Console penguins clear after a real cable pull), the
-> group-coalesced transactional Live Console deploy, and a workflow that
-> publishes the build as GitHub's **Latest** release so the repository sidebar
-> shows the newest version. **Hardware acceptance is still pending** for Wi-Fi
-> association, Bluetooth, NFC, GNSS, speaker and camera; a completed GitHub
-> Release is not proof of on-phone function. See
-> [`docs/releases/v0.6.7-beta.md`](docs/releases/v0.6.7-beta.md) and
-> [`docs/a77-usb-detach/ROOT-CAUSE.md`](docs/a77-usb-detach/ROOT-CAUSE.md).
+> **v0.7.0-beta (2026-10-27).** This release merges the 25000–29000 work:
+> the Tri-Link serial/Wi-Fi/USB console entries, the unlock-to-Home repair,
+> canonical GPS/Maps state, and first-class Bluetooth, Location, Audio and
+> Displays pages backed by real hardware providers. Bluetooth scanning is
+> **honestly blocked**, not faked: the BCM4375 HCD is present and verified,
+> but the running kernel has `CONFIG_BT_HCIUART` unset, so no HCI transport can
+> register `hci0`. GNSS firmware, HDMI/DRM and the MADERA unmute path remain
+> documented blockers. A completed GitHub Release is not proof of on-phone
+> function; physical audio confirmation is still the owner's test. See
+> [`docs/releases/v0.7.0-beta.md`](docs/releases/v0.7.0-beta.md).
 
 > **Samsung S10+ engineering reality.** The active `beyond2lte` port is Fedora
 > 43 aarch64 on Samsung Linux 4.14.253. Its launcher is Nuxel Home in WebKitGTK,
@@ -168,6 +166,35 @@ NUXEL_DEVICE=mustang bash boot/flash.sh --unlock --wipe
 | `firmware/` | Per-device firmware manifests, install/verify, blobs |
 | `ci/` | Build validation |
 | `assets/` | Wallpaper + boot animation |
+
+## What's new in v0.7.0-beta
+
+- **Tri-Link consoles (25000/26000/28000).** Serial Live Console, Wi-Fi SSH
+  Console and USB SSH Console are registered exactly once, launch from the
+  Applications drawer, and share one transport-status API. Serial keeps its
+  exclusive lock and framed verified transfer; Wi-Fi SSH uses a pinned Ed25519
+  host key and public-key auth; USB-NCM reports the measured kernel-panic
+  blocker instead of pretending to connect.
+- **Unlock → Home.** The A80 state-machine fix removes the stale launcher route
+  after a successful unlock and refuses locked deep links.
+- **GPS/Maps (27000).** Location exposes provider, permission, searching,
+  no-fix, stale-fix and fresh-fix states separately. Maps consumes the same
+  canonical provider and never treats a pin or cached coordinate as a fix.
+- **Hardware Settings (29000).** Bluetooth, Location, Audio and Displays pages
+  read the same authoritative state as Quick Settings. Audio shows the real
+  ALSA cards/PCMs and writes the discovered low-volume mixer control; Bluetooth
+  shows rfkill/BlueZ/firmware/HCI-transport evidence; Displays reports the
+  missing `CONFIG_DRM` layer honestly.
+- **Bluetooth correction.** The BCM4375 HCD is now present and SHA-256
+  verified, but this kernel has `CONFIG_BT_HCIUART` unset. The provider reports
+  `BLOCKED_KERNEL` with that exact evidence; a userspace blob alone cannot
+  create `hci0` or make scanning return devices.
+- **Release tooling.** The deploy manifest covers all new console/Settings/
+  Maps/bridge/diagnostic files, repository-only tests are explicitly named
+  non-deployable, and the reboot policy refuses repeated reasons/diagnostics
+  before issuing a reboot. Launcher cache namespace: `v48-v070-release`.
+- **Whole-repo lockstep at `v0.7.0-beta`** (`VERSION`, APKBUILDs, PWA/bridge
+  manifests, systemd pins, shell apps, OTA/VM tooling and docs).
 
 ## What's new in v0.6.7-beta
 
@@ -524,7 +551,7 @@ remaining interactive gap. The Moto G7 Power is flashed but still hangs at a
 black screen; the Pixel 10 Pro XL is still a scaffold. The UTM VM demo boots
 (display + network + sound).
 
-## Honest Status — v0.6.7-beta
+## Honest Status — v0.7.0-beta
 
 **S10+ (SM-G975F, beyond2lte) — NUXEL BOOTS AND TOUCH INPUT WORKS.**
 S-Boot loads the raw arm64 `Image` with the initramfs embedded, the Fedora 43
@@ -532,11 +559,15 @@ ext4 rootfs mounts, `switch_root` hands over to **systemd 258 as PID 1**, the
 service graph reaches `running`, and the panel shows the boot animation before
 the launcher takes ownership. The **touchscreen produces real finger contact
 events** and they are delivered through evdev → libinput → phoc → WebKit.
-**Clickable UI interaction is not yet signed off**: taps reach the page, but
-reliable app clicking/navigation remains the open owner test. **Sound should
-work but is unproven** because the UI cannot be driven reliably yet. Camera,
-radio/modem, sensors and Phosh (no DRM/KMS in this 4.14 vendor kernel) remain
-unproven.
+Unlock → Home, the three Tri-Link console entries and app launching are
+physically verified. **Bluetooth scanning cannot work on this kernel**:
+`CONFIG_BT_HCIUART` is not set and `bcm43xx_bluetooth` is only the power/rfkill
+driver, so even with the verified BCM4375 HCD no `hci0` can register. GNSS has
+no firmware/reader, USB-C HDMI needs `CONFIG_DRM` plus a Type-C DP Alt Mode
+stack, and the MADERA `HPOUT1 Digital` unmute path wedges in kernel D-state.
+**Audio inventory and low-volume control are real; audible output still needs
+the owner's physical confirmation.** Camera, radio/modem and the remaining
+sensors stay unproven.
 
 **The release ships the exact image installed on the handset.** The workflow
 publishes `nuxel-installed-s10plus-boot.img.gz` — the byte-exact A27 BOOT image
@@ -756,7 +787,7 @@ The other two bring-up targets are the **Samsung Galaxy S10+** (Exynos 9820,
 
 | Document | Description |
 |---|---|
-| [CHANGELOG.md](CHANGELOG.md) | Release notes — everything from v0.1.0 to v0.6.7-beta + readiness |
+| [CHANGELOG.md](CHANGELOG.md) | Release notes — everything from v0.1.0 to v0.7.0-beta + readiness |
 | [prompts/QUICKSTART.md](prompts/QUICKSTART.md) | Get running in 5 minutes |
 | [design/nuxel-linux-phone-design.md](design/nuxel-linux-phone-design.md) | Design bible — the full vision |
 | [design/Nuxel Phone OS Project Plan and Architecture.md](design/Nuxel%20Phone%20OS%20Project%20Plan%20and%20Architecture.md) | Technical architecture + component map |

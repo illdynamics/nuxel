@@ -94,14 +94,34 @@ def main() -> int:
     lc2.set_enabled(False)
     check(lc2.get_status()["enabled"] is False, "policy can be turned back off")
 
-    # Bluetooth: no adapter anywhere on an offline host -> concrete blocker.
+    # Bluetooth: force the no-adapter case so the test is independent of the
+    # host's own radios (a CI host with hci0 is not the phone under test).
     bc = mod.BluetoothConnector()
+    bc._rfkill = lambda: {'present': False, 'soft_blocked': None, 'hard_blocked': None, 'names': []}
+    bc._hci_devices = lambda: []
+    bc._bluez_adapters = lambda: []
+    bc._kernel_bt_driver = lambda: 'none'
     bst = bc.get_status()
     check(bst["adapter_present"] is False, "offline host has no Bluetooth adapter")
     check(bst["state"] == "service_unavailable",
           "no-adapter state is a concrete 'service_unavailable', not generic build placeholder")
     check(isinstance(bst.get("detail"), str) and "no hci0" in (bst.get("detail") or ""),
           "blocker names the missing hci0 controller")
+
+    # The measured S10+ kernel has CONFIG_BT_BCM43XX=y but no HCI transport.
+    # A correct HCD blob alone cannot create hci0, so the provider must report
+    # BLOCKED_KERNEL and name the missing CONFIG_BT_HCIUART, not BLOCKED_FIRMWARE.
+    bc._kernel_config = lambda: ("CONFIG_BT=y\nCONFIG_BT_BCM43XX=y\n"
+                                 "# CONFIG_BT_HCIUART is not set\n")
+    bc._firmware_status = lambda: {'present': True, 'found': ['/lib/firmware/bcm4375B1_semco.hcd'],
+                                   'checked': [], 'hcd_candidates': ['bcm4375B1_semco.hcd']}
+    kst = bc.get_status()
+    check(kst.get("kernel_hci_transport") is False,
+          "kernel HCI transport is reported absent when CONFIG_BT_HCIUART is not set")
+    check(kst.get("blocker") == "BLOCKED_KERNEL",
+          "firmware-present but no-HCIUART reports BLOCKED_KERNEL, not BLOCKED_FIRMWARE")
+    check("CONFIG_BT_HCIUART" in (kst.get("detail") or ""),
+          "blocker detail names the missing CONFIG_BT_HCIUART")
 
     print("\n" + ("ALL PASS" if not FAILURES else "%d FAILURES" % len(FAILURES)))
     return 1 if FAILURES else 0

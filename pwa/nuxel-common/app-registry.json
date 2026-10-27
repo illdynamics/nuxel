@@ -1,6 +1,6 @@
 {
   "schema": "nuxel.app-registry/1",
-  "registry_version": 5,
+  "registry_version": 6,
   "bridge_version": "1",
   "bridge_version_pin": "pwa/nuxel-common/bridge-version.json",
   "url_base": "http://127.0.0.1:8000",
@@ -182,13 +182,13 @@
       "url": "/pwa/nuxel-apps/settings/index.html",
       "entry": "pwa/nuxel-apps/settings/index.html",
       "manifest": "pwa/nuxel-apps/settings/manifest.json",
-      "description": "System settings",
-      "capabilities": [],
+      "description": "System settings (display, network, input, location & maps diagnostics)",
+      "capabilities": [
+        "location:read",
+        "location:manage"
+      ],
       "bridge_version": "1",
-      "docked": true,
-      "cross_group_gaps": [
-        "pwa/nuxel-apps/settings/manifest.json (owned by the Priority 2 / Priority 6 groups) declares no nuxel{} block yet, so nuxel.capabilities and nuxel.bridge_version are only recorded here. verify-app-registry.py reports this as a WARN (FAIL under --strict) until that manifest is completed by its owning group; the bridge_version recorded above is the pin value the PWA is built against."
-      ]
+      "docked": true
     },
     {
       "id": "org.nuxel.Terminal",
@@ -209,7 +209,7 @@
     },
     {
       "id": "org.nuxel.LiveConsole",
-      "name": "Live Console",
+      "name": "Serial Live Console",
       "icon": "📟",
       "color": "#37474F",
       "category": "system",
@@ -217,23 +217,47 @@
       "url": "/pwa/nuxel-apps/console/index.html",
       "entry": "pwa/nuxel-apps/console/index.html",
       "manifest": "pwa/nuxel-apps/console/manifest.json",
-      "description": "Live device console and control centre",
+      "description": "USB CDC-ACM recovery console with exclusive serial ownership",
       "capabilities": [],
       "bridge_version": "1",
       "docked": false,
-      "resolution": "pending",
-      "pending": {
-        "owner_groups": [
-          "bg-02-boot-animation-launcher",
-          "bg-07-specialty-apps"
-        ],
-        "reason": "apps.js (NUXEL_REGISTRY_VERSION=4) lists org.nuxel.LiveConsole and its manifest shortcut, but pwa/nuxel-apps/console/ ships no index.html or manifest.json yet in this cycle. verify-app-registry.py reports this as DEFER, never as a silent pass, and --strict makes it fatal once every group has merged.",
-        "expected": [
-          "pwa/nuxel-apps/console/index.html",
-          "pwa/nuxel-apps/console/manifest.json"
-        ],
-        "asserted_by": "tools/s10plus/a33/verify-app-registry.py"
-      }
+      "console_transport": "serial",
+      "status": "implemented"
+    },
+    {
+      "id": "org.nuxel.USBSSHConsole",
+      "name": "USB SSH Console",
+      "icon": "🔌",
+      "color": "#6D4C41",
+      "category": "system",
+      "type": "pwa",
+      "url": "/pwa/nuxel-apps/console-usb/index.html",
+      "entry": "pwa/nuxel-apps/console-usb/index.html",
+      "manifest": "pwa/nuxel-apps/console-usb/manifest.json",
+      "description": "SSH over the USB network gadget; unavailable on the current 4.14.253 NCM stack",
+      "capabilities": [],
+      "bridge_version": "1",
+      "docked": false,
+      "console_transport": "usb",
+      "status": "implemented",
+      "runtime_state": "BLOCKED_KERNEL_PANIC on 4.14.253 (documented NCM teardown panic; no fake connection)"
+    },
+    {
+      "id": "org.nuxel.WiFiSSHConsole",
+      "name": "Wi-Fi SSH Console",
+      "icon": "📶",
+      "color": "#0288D1",
+      "category": "system",
+      "type": "pwa",
+      "url": "/pwa/nuxel-apps/console-wifi/index.html",
+      "entry": "pwa/nuxel-apps/console-wifi/index.html",
+      "manifest": "pwa/nuxel-apps/console-wifi/manifest.json",
+      "description": "Key-only SSH over the phone's Wi-Fi address (pinned host key on the host)",
+      "capabilities": [],
+      "bridge_version": "1",
+      "docked": false,
+      "console_transport": "wifi",
+      "status": "implemented"
     },
     {
       "id": "org.nuxel.Browser",
@@ -338,8 +362,20 @@
     {
       "dir": "pwa/nuxel-apps/console",
       "owner_group": "bg-07-specialty-apps",
-      "state": "in_progress",
-      "note": "Owner-group work in progress in this cycle."
+      "state": "complete",
+      "note": "Serial Live Console: real index.html + manifest.json plus the shared Tri-Link console CSS/JS. Registered exactly once as org.nuxel.LiveConsole."
+    },
+    {
+      "dir": "pwa/nuxel-apps/console-usb",
+      "owner_group": "bg-07-specialty-apps",
+      "state": "complete",
+      "note": "USB SSH Console: truthful unavailable view on the current 4.14.253 kernel; distinct icon/handler."
+    },
+    {
+      "dir": "pwa/nuxel-apps/console-wifi",
+      "owner_group": "bg-07-specialty-apps",
+      "state": "complete",
+      "note": "Wi-Fi SSH Console: key-only SSH endpoint status; distinct icon/handler."
     },
     {
       "dir": "pwa/nuxel-apps/devmgmt",
@@ -449,9 +485,7 @@
       "note": "The Terminal's PTY is opened by the native PWA host (tools/s10plus/a3x/nuxel-pwa-host.c), NOT through the bridge capability model, so no bridge enum entry exists. Recorded so the gap is visible instead of implied."
     }
   ],
-  "launcher_manifest_notes": [
-    "pwa/nuxel-home/manifest.json (owned by the Priority 2 group) declares nuxel.bridge_version 0.5.2-beta, which is the HOST version, not the protocol pin '1'. Reported as a WARN by the verifier: the launcher is a system surface, not a third-party app, so it is not part of apps[] and the mismatch cannot reject a PWA, but the two fields should not be conflated."
-  ],
+  "launcher_manifest_notes": [],
   "required_apps_not_yet_in_tree": [
     {
       "app": "Permissions & Privacy manager",
@@ -492,7 +526,7 @@
   "notes": {
     "revision": "A59 rescue: native Browser + native Camera registered; launcher surface extended.",
     "tree_apps_states": "complete | in_progress | shared-assets-not-an-app (the dir MUST exist) | planned (must NOT exist yet; DEFER until it lands). Enforced by tools/s10plus/a33/verify-app-registry.py - a dangling directory in a present-state entry is a FAILED verdict, never a warning.",
-    "registry_version_stays_4": "tree_apps/required_apps_not_yet_in_tree are INVENTORY sections: they do not change apps[] or its urls, so NUXEL_REGISTRY_VERSION in pwa/nuxel-home/js/apps.js (owned by the Priority 2 group) must NOT be bumped by this revision. verify-app-registry.py fails on any registry_version drift.",
-    "required_apps_not_yet_in_tree": "Concept-level inventory of mission-required apps with no tree directory yet. Each entry names the owning build group and its ledger briq; the verifier fails if that briq file does not exist in docs/beta-finalization/workqueue/ or if the briq's component does not match owner_group."
+    "required_apps_not_yet_in_tree": "Concept-level inventory of mission-required apps with no tree directory yet. Each entry names the owning build group and its ledger briq; the verifier fails if that briq file does not exist in docs/beta-finalization/workqueue/ or if the briq's component does not match owner_group.",
+    "registry_version_6_tri_link": "NUXEL-28000 registers three distinct console entries in apps[] and apps.js; the registry revision is 6 so launcher/native/HTTP consumers cannot drift silently."
   }
 }

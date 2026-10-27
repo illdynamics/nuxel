@@ -7,7 +7,7 @@
 // REGISTRY_VERSION that the launcher publishes on its evidence channel and that
 // tools/s10plus/a33/tests/launcher-registry-test.js asserts ("org.nuxel.Terminal"
 // and "nuxel-settings" present, every PWA served under /pwa/nuxel-apps/).
-const NUXEL_REGISTRY_VERSION = 5;
+const NUXEL_REGISTRY_VERSION = 6;
 
 const NUXEL_APPS = {
     // Native shell apps
@@ -153,19 +153,47 @@ const NUXEL_APPS = {
         capabilities: [],
         docked: true,
     },
+    // NUXEL-28000 Tri-Link: three distinct Applications entries.  They stay
+    // visible even when a transport is unavailable; the app itself reports the
+    // truthful state.  Each entry has its own icon and its own handler page.
     'org.nuxel.LiveConsole': {
         id: 'org.nuxel.LiveConsole',
-        name: 'Live Console',
+        name: 'Serial Live Console',
         icon: '📟',
         color: '#37474F',
         category: 'system',
-        // A33: the manifest shortcut "Console" launches THIS id, so the two files
-        // cannot disagree.  The app tree lives under /pwa/nuxel-apps/console/.
         type: 'pwa',
         url: '/pwa/nuxel-apps/console/index.html',
-        description: 'Live device console and control centre',
+        description: 'USB CDC-ACM recovery console (exclusive serial owner)',
         capabilities: [],
         docked: false,
+        consoleTransport: 'serial',
+    },
+    'org.nuxel.USBSSHConsole': {
+        id: 'org.nuxel.USBSSHConsole',
+        name: 'USB SSH Console',
+        icon: '🔌',
+        color: '#6D4C41',
+        category: 'system',
+        type: 'pwa',
+        url: '/pwa/nuxel-apps/console-usb/index.html',
+        description: 'SSH over the USB network gadget (honest kernel blocker state)',
+        capabilities: [],
+        docked: false,
+        consoleTransport: 'usb',
+    },
+    'org.nuxel.WiFiSSHConsole': {
+        id: 'org.nuxel.WiFiSSHConsole',
+        name: 'Wi-Fi SSH Console',
+        icon: '📶',
+        color: '#0288D1',
+        category: 'system',
+        type: 'pwa',
+        url: '/pwa/nuxel-apps/console-wifi/index.html',
+        description: 'Key-only SSH over the phone Wi-Fi address',
+        capabilities: [],
+        docked: false,
+        consoleTransport: 'wifi',
     },
 
     // A59: user-facing apps authored in pwa/nuxel-apps but previously missing
@@ -250,7 +278,9 @@ const NUXEL_APP_ICON_ASSETS = {
     'nuxel-camera': '/assets/nuxel-applications-icon-pack/03-01_camera.png?v=a37',
     'nuxel-settings': '/assets/nuxel-applications-icon-pack/01-11_settings.png?v=a37',
     'org.nuxel.Terminal': '/assets/nuxel-applications-icon-pack/01-01_terminal.png?v=a37',
-    'org.nuxel.LiveConsole': '/assets/nuxel-applications-icon-pack/05-05_live-console.png?v=a37',
+    'org.nuxel.LiveConsole': '/assets/nuxel-applications-icon-pack/05-05_live-console.png?v=a80',
+    'org.nuxel.USBSSHConsole': '/assets/nuxel-applications-icon-pack/06-05_usb-connection.png?v=a80',
+    'org.nuxel.WiFiSSHConsole': '/assets/nuxel-quicksettings-icon-pack/01-wifi.png?v=a80',
     'org.nuxel.SnekByte': '/assets/nuxel-applications-icon-pack/01-02_snekbyte.png?v=a63',
 };
 

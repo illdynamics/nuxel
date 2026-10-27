@@ -1,0 +1,13 @@
+UDC=10c00000.dwc3
+total 0
+drwxr-xr-x 3 root root 0 Oct 27 15:26 .
+drwxr-xr-x 6 root root 0 Oct 27 15:29 ..
+drwxr-xr-x 2 root root 0 Oct 27 15:26 acm.usb0
+total 0
+drwxr-xr-x 3 root root    0 Oct 27 15:26 .
+drwxr-xr-x 3 root root    0 Oct 27 15:26 ..
+-rw-r--r-- 1 root root 4096 Oct 27 15:29 MaxPower
+lrwxrwxrwx 1 root root    0 Oct 27 15:26 acm.usb0 -> ../../../../usb_gadget/nuxel/functions/acm.usb0
+-rw-r--r-- 1 root root 4096 Oct 27 15:29 bmAttributes
+drwxr-xr-x 3 root root    0 Oct 27 15:26 strings
+configured

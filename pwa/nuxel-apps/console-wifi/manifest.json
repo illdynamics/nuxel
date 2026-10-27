@@ -1,0 +1,36 @@
+{
+  "display": "fullscreen",
+  "orientation": "any",
+  "background_color": "#071426",
+  "theme_color": "#071426",
+  "lang": "en",
+  "dir": "ltr",
+  "categories": [
+    "utilities",
+    "system"
+  ],
+  "name": "Wi-Fi SSH Console",
+  "short_name": "Wi-Fi SSH",
+  "description": "Key-only SSH over the phone's current Wi-Fi address, with the host key verified by the host-side launcher.",
+  "start_url": "/pwa/nuxel-apps/console-wifi/index.html",
+  "scope": "/pwa/nuxel-apps/console-wifi/",
+  "icons": [
+    {
+      "src": "icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "nuxel": {
+    "bridge_version": "1",
+    "capabilities": [],
+    "app_type": "tri-link-console",
+    "transport": "wifi",
+    "read_only_status": true,
+    "facilities": [
+      "phone-side transport discovery and truthful state",
+      "host-side authenticated session command; the app never starts a second serial owner"
+    ]
+  }
+}

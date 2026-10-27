@@ -1,0 +1,36 @@
+{
+  "display": "fullscreen",
+  "orientation": "any",
+  "background_color": "#071426",
+  "theme_color": "#071426",
+  "lang": "en",
+  "dir": "ltr",
+  "categories": [
+    "utilities",
+    "system"
+  ],
+  "name": "Serial Live Console",
+  "short_name": "Serial Live Console",
+  "description": "USB CDC-ACM recovery console with exclusive serial ownership; the host-side launcher performs framed commands and never shares the port.",
+  "start_url": "/pwa/nuxel-apps/console/index.html",
+  "scope": "/pwa/nuxel-apps/console/",
+  "icons": [
+    {
+      "src": "icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "nuxel": {
+    "bridge_version": "1",
+    "capabilities": [],
+    "app_type": "tri-link-console",
+    "transport": "serial",
+    "read_only_status": true,
+    "facilities": [
+      "phone-side transport discovery and truthful state",
+      "host-side authenticated session command; the app never starts a second serial owner"
+    ]
+  }
+}

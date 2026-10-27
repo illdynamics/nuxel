@@ -1,0 +1,148 @@
+{
+  "schema_version": 1,
+  "id": "nuxel-28000-tri-link-ui",
+  "device": {
+    "codename": "beyond2lte",
+    "model": "SM-G975F",
+    "soc": "Exynos 9820",
+    "os": "Nuxel (Fedora 43 ARM64, kernel 4.14.253)"
+  },
+  "note": "NUXEL-28000 Applications-window Tri-Link entries, unlock-to-Home fix and read-only transport status. Every file is staged, SHA-256 verified, installed atomically and rolled back by nuxel-live-deploy.py. No kernel, partition, modem or USB gadget mutation is included.",
+  "target_root_map": {
+    "/home/nuxel/nuxel": "/usr/share/nuxel"
+  },
+  "groups": [
+    {
+      "id": "tri-link-pwa",
+      "component": "Nuxel Home + three Tri-Link PWA console entries",
+      "priority": 1,
+      "risk": "low",
+      "restart_service": null,
+      "pre": [],
+      "health_check": "test \"$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8000/pwa/nuxel-home/index.html)\" = 200 && test \"$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8000/pwa/nuxel-apps/console/index.html)\" = 200 && test \"$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8000/pwa/nuxel-apps/console-usb/index.html)\" = 200 && test \"$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8000/pwa/nuxel-apps/console-wifi/index.html)\" = 200",
+      "rollback": "restore every <target>.nuxel-rollback; these are static files under /usr/share/nuxel served by the running nuxel-session fallback, so no service restart is required",
+      "files": [
+        {
+          "source": "pwa/nuxel-home/index.html",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/index.html"
+        },
+        {
+          "source": "pwa/nuxel-home/manifest.json",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/manifest.json"
+        },
+        {
+          "source": "pwa/nuxel-home/sw.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/sw.js"
+        },
+        {
+          "source": "pwa/nuxel-home/js/app.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/js/app.js"
+        },
+        {
+          "source": "pwa/nuxel-home/js/apps.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/js/apps.js"
+        },
+        {
+          "source": "pwa/nuxel-common/app-registry.json",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-common/app-registry.json"
+        },
+        {
+          "source": "pwa/nuxel-common/bridge.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-common/bridge.js"
+        },
+        {
+          "source": "pwa/nuxel-apps/console/index.html",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/console/index.html"
+        },
+        {
+          "source": "pwa/nuxel-apps/console/manifest.json",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/console/manifest.json"
+        },
+        {
+          "source": "pwa/nuxel-apps/console/app.json",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/console/app.json"
+        },
+        {
+          "source": "pwa/nuxel-apps/console/console.css",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/console/console.css"
+        },
+        {
+          "source": "pwa/nuxel-apps/console/console.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/console/console.js"
+        },
+        {
+          "source": "pwa/nuxel-apps/console/icons/icon.svg",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/console/icons/icon.svg"
+        },
+        {
+          "source": "pwa/nuxel-apps/console-usb/index.html",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/console-usb/index.html"
+        },
+        {
+          "source": "pwa/nuxel-apps/console-usb/manifest.json",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/console-usb/manifest.json"
+        },
+        {
+          "source": "pwa/nuxel-apps/console-usb/app.json",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/console-usb/app.json"
+        },
+        {
+          "source": "pwa/nuxel-apps/console-usb/icons/icon.svg",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/console-usb/icons/icon.svg"
+        },
+        {
+          "source": "pwa/nuxel-apps/console-wifi/index.html",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/console-wifi/index.html"
+        },
+        {
+          "source": "pwa/nuxel-apps/console-wifi/manifest.json",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/console-wifi/manifest.json"
+        },
+        {
+          "source": "pwa/nuxel-apps/console-wifi/app.json",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/console-wifi/app.json"
+        },
+        {
+          "source": "pwa/nuxel-apps/console-wifi/icons/icon.svg",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/console-wifi/icons/icon.svg"
+        },
+        {
+          "source": "assets/nuxel-applications-icon-pack/05-05_live-console.png",
+          "target": "/home/nuxel/nuxel/assets/nuxel-applications-icon-pack/05-05_live-console.png"
+        },
+        {
+          "source": "assets/nuxel-applications-icon-pack/06-05_usb-connection.png",
+          "target": "/home/nuxel/nuxel/assets/nuxel-applications-icon-pack/06-05_usb-connection.png"
+        },
+        {
+          "source": "assets/nuxel-quicksettings-icon-pack/01-wifi.png",
+          "target": "/home/nuxel/nuxel/assets/nuxel-quicksettings-icon-pack/01-wifi.png"
+        }
+      ],
+      "declared_reload": "python3 -c \"import json;json.load(open('/usr/share/nuxel/pwa/nuxel-common/app-registry.json'))\""
+    },
+    {
+      "id": "tri-link-status-api",
+      "component": "nuxel-http-bridge read-only Tri-Link status endpoint",
+      "priority": 2,
+      "risk": "medium",
+      "restart_service": "nuxel-http-bridge",
+      "pre": [
+        "test -x /usr/bin/nuxel-http-bridge",
+        "test -d /usr/lib/nuxel/nuxel-bridge"
+      ],
+      "health_check": "test -s /usr/lib/nuxel/nuxel-bridge/tri_link_status.py && curl -fsS http://127.0.0.1:8080/api/v1/system/tri-link | grep -q '\"transports\"'",
+      "rollback": "restore /usr/lib/nuxel/nuxel-bridge/api.py.nuxel-rollback and tri_link_status.py.nuxel-rollback (or remove a newly-created module), then `systemctl restart nuxel-http-bridge`; the serial console and sshd are not touched",
+      "files": [
+        {
+          "source": "services/nuxel-bridge/src/api.py",
+          "target": "/usr/lib/nuxel/nuxel-bridge/api.py"
+        },
+        {
+          "source": "services/nuxel-bridge/src/tri_link_status.py",
+          "target": "/usr/lib/nuxel/nuxel-bridge/tri_link_status.py"
+        }
+      ]
+    }
+  ]
+}

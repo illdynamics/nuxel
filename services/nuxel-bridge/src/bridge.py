@@ -26,6 +26,7 @@ Capability Model (extended):
 import sys
 import json
 import logging
+import math
 import uuid
 import os
 try:
@@ -119,7 +120,7 @@ def read_battery_status():
 # PWA<->host protocol pin (briq-04c). Same env names as the systemd units and the
 # HTTP layer, so `systemctl show -p Environment` shows exactly what is enforced.
 BRIDGE_PROTOCOL_VERSION = os.environ.get('NUXEL_BRIDGE_PROTOCOL_VERSION', '1')
-BRIDGE_HOST_VERSION = os.environ.get('NUXEL_BRIDGE_VERSION', '0.6.7-beta')
+BRIDGE_HOST_VERSION = os.environ.get('NUXEL_BRIDGE_VERSION', '0.7.0-beta')
 OBJECT_PATH = '/org/nuxel/Bridge'
 PORTAL_BUS_NAME = 'org.nuxel.Portal'
 PORTAL_OBJECT_PATH = '/org/nuxel/Portal'
@@ -957,48 +958,120 @@ class NetworkManagerConnector:
             return {'success': False, 'error': str(exc)}
 
 class GeoClueConnector:
+    """Bounded GeoClue2 client.
+
+    GeoClue is the canonical location provider on a normal Linux userspace, but
+    it is not always present or responsive on the S10+ port.  Every D-Bus call
+    here is bounded: a missing GPS backend must produce an honest provider
+    status, not a 25-second D-Bus timeout that also stalls Quick Settings.
+    """
+
+    DBUS_TIMEOUT = float(os.environ.get('NUXEL_GEOCLUE_TIMEOUT', '2.0'))
+    RETRY_SECONDS = float(os.environ.get('NUXEL_GEOCLUE_RETRY', '20.0'))
+    SERVICE_FILE = '/usr/share/dbus-1/system-services/org.freedesktop.GeoClue2.service'
+
     def __init__(self):
         self.bus = None
         self.client = None
+        self.client_iface = None
         self.connected = False
-    
-    def connect(self):
+        self.present = False
+        self.last_error = None
+        self.last_attempt = 0.0
+        self.acquiring = False
+        self.acquire_started_at = None
+
+    @classmethod
+    def service_installed(cls):
+        return os.path.exists(cls.SERVICE_FILE)
+
+    def _call(self, iface, method, *args):
+        return getattr(iface, method)(*args, timeout=self.DBUS_TIMEOUT)
+
+    def connect(self, force=False):
+        now = time.time()
+        if self.connected:
+            return True
+        if not force and self.last_error and (now - self.last_attempt) < self.RETRY_SECONDS:
+            return False
+        self.last_attempt = now
         try:
             self.bus = dbus.SystemBus()
             geo_obj = self.bus.get_object('org.freedesktop.GeoClue2',
-                                           '/org/freedesktop/GeoClue2/Manager')
+                                          '/org/freedesktop/GeoClue2/Manager')
             manager = dbus.Interface(geo_obj, 'org.freedesktop.GeoClue2.Manager')
-            client_path = manager.GetClient()
+            client_path = self._call(manager, 'GetClient')
             self.client = self.bus.get_object('org.freedesktop.GeoClue2', client_path)
-            client_iface = dbus.Interface(self.client, 'org.freedesktop.GeoClue2.Client')
-            client_iface.SetDesktopId('org.nuxel.Bridge')
-            client_iface.SetRequestedAccuracyLevel(1)
+            self.client_iface = dbus.Interface(self.client, 'org.freedesktop.GeoClue2.Client')
+            self._call(self.client_iface, 'SetDesktopId', 'org.nuxel.Bridge')
+            self._call(self.client_iface, 'SetRequestedAccuracyLevel', 1)
             self.connected = True
-            logger.info("GeoClue connected")
-        except Exception as e:
-            logger.error(f"GeoClue connect failed: {e}")
-    
-    def get_location(self):
-        if not self.connected:
-            return {'success': False, 'error': 'GeoClue not connected'}
+            self.present = True
+            self.last_error = None
+            logger.info('GeoClue connected')
+            return True
+        except Exception as exc:
+            self.connected = False
+            self.client_iface = None
+            self.last_error = str(exc)
+            logger.warning('GeoClue connect failed: %s', exc)
+            return False
+
+    def start_acquisition(self):
+        """Ask GeoClue to start locating.  Returns (ok, error), never a fix."""
+        if not self.connected and not self.connect():
+            return False, self.last_error or 'GeoClue not connected'
         try:
-            client_iface = dbus.Interface(self.client, 'org.freedesktop.GeoClue2.Client')
-            location_path = client_iface.GetLocation()
+            self._call(self.client_iface, 'Start')
+            self.acquiring = True
+            self.acquire_started_at = time.time()
+            return True, None
+        except Exception as exc:
+            self.acquiring = False
+            self.last_error = str(exc)
+            return False, str(exc)
+
+    def get_location(self):
+        """Read the provider's current location, bounded by DBUS_TIMEOUT.
+
+        ``timestamp`` is GeoClue's own Location.Timestamp when available.  The
+        caller must not substitute the poll time for a missing provider time.
+        """
+        if not self.connected and not self.connect():
+            return {'success': False, 'error': self.last_error or 'GeoClue not connected',
+                    'error_code': 'PROVIDER_UNAVAILABLE'}
+        try:
+            location_path = self._call(self.client_iface, 'GetLocation')
             if not location_path or location_path == '/':
-                return {'success': False, 'error': 'No location available'}
+                return {'success': False, 'error': 'No location available',
+                        'error_code': 'NO_FIX'}
             loc_obj = self.bus.get_object('org.freedesktop.GeoClue2', location_path)
             loc_props = dbus.Interface(loc_obj, 'org.freedesktop.DBus.Properties')
-            props = loc_props.GetAll('org.freedesktop.GeoClue2.Location')
+            props = self._call(loc_props, 'GetAll', 'org.freedesktop.GeoClue2.Location')
+            lat = props.get('Latitude')
+            lon = props.get('Longitude')
+            if lat is None or lon is None:
+                return {'success': False, 'error': 'Provider returned no coordinates',
+                        'error_code': 'NO_FIX'}
+            timestamp = props.get('Timestamp')
+            try:
+                timestamp = float(timestamp) if timestamp is not None else None
+            except (TypeError, ValueError):
+                timestamp = None
+            self.last_error = None
             return {
-                'success': True, 'latitude': float(props.get('Latitude', 0.0)),
-                'longitude': float(props.get('Longitude', 0.0)),
-                'accuracy': float(props.get('Accuracy', 0.0)),
-                'altitude': float(props.get('Altitude', 0.0)),
+                'success': True,
+                'latitude': float(lat),
+                'longitude': float(lon),
+                'accuracy': float(props.get('Accuracy')) if props.get('Accuracy') is not None else None,
+                'altitude': float(props.get('Altitude')) if props.get('Altitude') is not None else None,
+                'timestamp': timestamp,
+                'observed_at': time.time(),
+                'source': 'geoclue2',
             }
-        except Exception as e:
-            return {'success': False, 'error': str(e)}
-
-
+        except Exception as exc:
+            self.last_error = str(exc)
+            return {'success': False, 'error': str(exc), 'error_code': 'PROVIDER_ERROR'}
 
 
 class BluetoothConnector:
@@ -1065,19 +1138,63 @@ class BluetoothConnector:
             return []
         return sorted(names)
 
-    def _kernel_bt_driver(self):
-        """Best-effort: does the running kernel carry a BT controller driver?"""
+    def _kernel_config(self):
+        """Return the running kernel config text, or '' when it is unavailable."""
         try:
             import gzip
             with gzip.open('/proc/config.gz', 'rb') as f:
-                cfg = f.read().decode('utf-8', 'replace')
+                return f.read().decode('utf-8', 'replace')
         except Exception:
+            return ''
+
+    def _kernel_bt_driver(self):
+        """Best-effort: which BT driver does the running kernel carry?"""
+        cfg = self._kernel_config()
+        if not cfg:
             return 'unknown'
-        for k in ('CONFIG_BT_BCM43XX', 'CONFIG_BT_HCIBTUSB',
-                  'CONFIG_BT_HCIBTSDIO', 'CONFIG_BT_HCIUART'):
+        for k in ('CONFIG_BT_HCIUART', 'CONFIG_BT_HCIBTUSB',
+                  'CONFIG_BT_HCIBTSDIO', 'CONFIG_BT_BCM43XX'):
             if k + '=y' in cfg:
                 return k.split('_', 2)[-1].lower()
         return 'none'
+
+    def _kernel_hci_transport(self):
+        """True/False when the config is readable, None when it is not.
+
+        ``CONFIG_BT_BCM43XX`` is only the Samsung power/rfkill driver; it does
+        not create an HCI transport.  Without ``CONFIG_BT_HCIUART`` (or a USB
+        transport) the controller can be powered but can never register hci0.
+        This is the measured S10+ 4.14.253 configuration: BCM43XX=y,
+        HCIUART is not set.
+        """
+        cfg = self._kernel_config()
+        if not cfg:
+            return None
+        return any(k + '=y' in cfg for k in
+                   ('CONFIG_BT_HCIUART', 'CONFIG_BT_HCIBTUSB',
+                    'CONFIG_BT_HCIBTSDIO'))
+
+    def _firmware_status(self):
+        """Check the BCM43xx HCD firmware candidates (read-only).
+
+        The S10+ uses ``CONFIG_BT_BCM43XX=y`` (platform driver bcm43xx_bluetooth)
+        and its HCD blob is the Samsung vendor file.  A missing blob is the
+        concrete reason the controller powers on but never registers hci0.
+        """
+        candidates = ('bcm4375B1_semco.hcd', 'BCM4375B1.hcd', 'bcm4375b1.hcd',
+                      'BCM4375.hcd', 'bcm4375.hcd')
+        dirs = ('/lib/firmware/brcm', '/lib/firmware', '/usr/lib/firmware/brcm',
+                '/usr/lib/firmware', '/vendor/firmware')
+        found = []
+        checked = []
+        for d in dirs:
+            for c in candidates:
+                path = os.path.join(d, c)
+                checked.append(path)
+                if os.path.isfile(path):
+                    found.append(path)
+        return {'present': bool(found), 'found': found, 'checked': checked,
+                'hcd_candidates': candidates}
 
     # ---- BlueZ D-Bus evidence --------------------------------------------
     def _bluez_adapters(self):
@@ -1110,6 +1227,7 @@ class BluetoothConnector:
         hci = self._hci_devices()
         adapters = self._bluez_adapters()
         driver = self._kernel_bt_driver()
+        hci_transport = self._kernel_hci_transport()
 
         adapter_present = bool(hci) or bool(adapters)
         powered = None
@@ -1129,16 +1247,41 @@ class BluetoothConnector:
         else:
             state = 'unsupported'
 
+        firmware = self._firmware_status()
+
         detail = []
         if not adapter_present:
             detail.append('no hci0 registered (no BlueZ adapter)')
         if driver in ('none', 'unknown'):
             detail.append('kernel BT controller driver: ' + driver)
         elif adapter_present is False:
-            detail.append('kernel BT controller driver: ' + driver +
-                          ' (controller never registers hci0: firmware/transport)')
+            detail.append('kernel BT controller driver: ' + driver)
+        if hci_transport is False:
+            detail.append('kernel HCI transport missing: CONFIG_BT_HCIUART is not set '
+                          '(bcm43xx_bluetooth is power/rfkill only)')
         if rfkill['present'] and rfkill['soft_blocked']:
             detail.append('rfkill soft-blocked')
+        if not adapter_present and not firmware['present']:
+            detail.append('BCM43xx HCD firmware missing (%s)' %
+                          ', '.join(firmware['hcd_candidates'][:2]) +
+                          ('…' if len(firmware['hcd_candidates']) > 2 else ''))
+
+        # A distinct, machine-readable blocker string for the UI.  Kernel
+        # transport is checked before firmware: a blob cannot create hci0 when
+        # no HCI UART/USB transport driver is built in.
+        blocker = None
+        if rfkill['hard_blocked']:
+            blocker = 'RFKILL_HARD_BLOCKED'
+        elif not adapter_present and hci_transport is False:
+            blocker = 'BLOCKED_KERNEL'
+        elif not adapter_present and not firmware['present']:
+            blocker = 'BLOCKED_FIRMWARE'
+        elif not adapter_present:
+            blocker = 'BLOCKED_TRANSPORT'
+        elif not powered:
+            blocker = 'ADAPTER_OFF'
+        else:
+            blocker = None
 
         return {
             'success': True,
@@ -1152,7 +1295,11 @@ class BluetoothConnector:
             'rfkill_names': rfkill['names'],
             'hci_devices': hci,
             'kernel_bt_driver': driver,
+            'kernel_hci_transport': hci_transport,
             'adapters': adapters,
+            'firmware_present': firmware['present'],
+            'firmware_found': firmware['found'],
+            'blocker': blocker,
             'detail': '; '.join(detail) if detail else None,
             'timestamp': time.time(),
         }
@@ -1160,10 +1307,32 @@ class BluetoothConnector:
     def set_powered(self, enabled):
         enabled = bool(enabled)
         st = self.get_status()
+
+        # Best-effort rfkill unblock/reblock even when no adapter is present.
+        # The bridge unit runs as nuxel-bridge with /sys read-only, so this
+        # usually cannot write; the root HTTP bridge owns the real rfkill write.
+        # It is still attempted here so a direct D-Bus caller is not lied to.
+        if enabled:
+            try:
+                with open('/sys/class/rfkill/rfkill0/soft', 'w') as f:
+                    f.write('0')
+            except (OSError, PermissionError):
+                pass
+        else:
+            try:
+                with open('/sys/class/rfkill/rfkill0/soft', 'w') as f:
+                    f.write('1')
+            except (OSError, PermissionError):
+                pass
+
         if not st['adapter_present']:
+            st = self.get_status()
             st['success'] = False
             st['requested'] = enabled
             st['error'] = 'NO_ADAPTER'
+            st['error_detail'] = (st.get('detail') or
+                                  'no hci0 registered (no BlueZ adapter)')
+            st['blocker'] = st.get('blocker') or 'BLOCKED_TRANSPORT'
             st['powered'] = None
             return st
         # Attempt BlueZ Adapter1.Powered write on every available adapter and
@@ -1196,20 +1365,36 @@ class BluetoothConnector:
 
 
 class LocationConnector:
-    """Global location permission/provider policy with honest fix reporting.
+    """Canonical location policy and provider state with honest fix reporting.
 
-    `enabled` is a persistent, system-wide PRIVACY/PROVIDER switch — it is NOT
-    a claim that GNSS has a fix.  Turning it OFF denies future position
-    requests through the bridge and marks any displayed fix invalid; turning it
-    ON re-allows consented GeoClue/provider reads.  A satellite fix is a
-    separate, honestly-reported state and is never fabricated from IP data.
+    The state machine is deliberately explicit:
+
+        unavailable  no provider/hardware path can answer (or the provider is
+                     installed but not responsive)
+        disabled     the persistent global privacy/provider switch is off
+        searching    acquisition was requested from a ready provider and no
+                     fix has arrived yet
+        no_fix       provider is ready but has no valid current or recent fix
+        stale        a real previous fix exists but is older than the documented
+                     freshness window
+        fixed        a real provider fix within the freshness window
+        error        the provider failed and reported a meaningful error
+
+    A coordinate is only exposed when it came from the provider.  Geocoding,
+    manual map coordinates and saved pins never enter this object.
     """
 
     POLICY_PATH = os.environ.get('NUXEL_LOCATION_POLICY',
                                  '/var/lib/nuxel/permissions/location-policy.json')
+    FRESH_SECONDS = float(os.environ.get('NUXEL_LOCATION_FRESH_SECONDS', '60'))
+    STALE_SECONDS = float(os.environ.get('NUXEL_LOCATION_STALE_SECONDS', '600'))
+    SEARCH_WINDOW_SECONDS = float(os.environ.get('NUXEL_LOCATION_SEARCH_WINDOW', '600'))
 
     def __init__(self):
         self.geoclue = None  # set by NuxelBridgeService after connect()
+        self._last_fix = None
+        self._last_error = None
+        self._acquisition_started_at = None
 
     def _read_policy(self):
         try:
@@ -1235,63 +1420,253 @@ class LocationConnector:
             return False
         return bool(getattr(self.geoclue, 'connected', False))
 
+    def _provider_installed(self):
+        if self.geoclue is not None and hasattr(self.geoclue, 'service_installed'):
+            try:
+                if self.geoclue.service_installed():
+                    return True
+            except Exception:
+                pass
+        return os.path.exists('/usr/share/dbus-1/system-services/org.freedesktop.GeoClue2.service')
+
+    def _ensure_provider(self):
+        """One bounded connection attempt; never waits on a wedged provider."""
+        if self._provider_ready() or self.geoclue is None:
+            return self._provider_ready()
+        try:
+            ok = bool(self.geoclue.connect())
+            if not ok:
+                err = getattr(self.geoclue, 'last_error', None)
+                self._last_error = (str(err)[:300] if err else
+                                    self._last_error or 'provider did not connect')
+            return ok
+        except Exception as exc:
+            self._last_error = str(exc)[:300]
+            return False
+
     def _gnss_hardware(self):
-        """GNSS/Sensor-hub presence only — never a fix claim."""
-        present = []
-        for node in ('/dev/ssp_sensorhub', '/dev/ssp_data_injection',
-                     '/dev/bbd_sensor'):
-            if os.path.exists(node):
-                present.append(node)
+        """Read-only GNSS path inventory; never a fix claim."""
+        nodes = [n for n in ('/dev/ttyBCM', '/dev/ssp_sensorhub',
+                             '/dev/ssp_data_injection', '/dev/bbd_sensor')
+                 if os.path.exists(n)]
+        spi_dir = '/sys/bus/spi/drivers/brcm gps spi'
+        bound = []
+        try:
+            for name in sorted(os.listdir(spi_dir)):
+                if name.startswith('spi'):
+                    bound.append(os.path.join(spi_dir, name))
+        except OSError:
+            pass
+        firmware = []
+        for d in ('/lib/firmware/gnss', '/lib/firmware'):
+            try:
+                for name in sorted(os.listdir(d)):
+                    low = name.lower()
+                    if ('bcm477' in low or low.startswith('gps') or low.startswith('gnss')):
+                        firmware.append(os.path.join(d, name))
+            except OSError:
+                continue
+        blocker = None
+        if not nodes and not bound:
+            blocker = 'no GNSS device node or BCM GPS SPI driver binding'
+        elif not bound:
+            blocker = 'no BCM GPS SPI driver binding'
+        if blocker is None and not firmware:
+            blocker = 'no GNSS/sensor-hub firmware in /lib/firmware'
+        if blocker is None and not nodes:
+            blocker = ('GNSS driver is bound but /dev is private to the bridge; '
+                       'no GNSS userspace provider is wired')
+        if blocker is None:
+            blocker = 'no GNSS userspace reader (NMEA/gpsd) is wired'
         return {
-            'present': bool(present),
-            'nodes': present,
-            'fix_supported': False,  # no BCM47752 userspace provider is wired
+            # The bridge unit has PrivateDevices=true, so a node may exist in
+            # the real /dev while being hidden here.  A bound SPI device is
+            # still positive evidence that the GNSS hardware path is present.
+            'present': bool(nodes or bound),
+            'nodes': nodes,
+            'node_visible_to_bridge': bool(nodes),
+            'private_devices': True,
+            'driver': 'brcm gps spi',
+            'driver_bound': bool(bound),
+            'spi_bindings': bound,
+            'firmware_present': bool(firmware),
+            'firmware': firmware,
+            'fix_supported': False,
+            'blocker': blocker,
         }
 
-    def _current_fix(self):
-        """Return the real last fix if GeoClue can produce one right now.
+    def _remember_fix(self, loc):
+        ts = loc.get('timestamp')
+        if ts is None:
+            # Do not pretend GeoClue supplied a time.  Use the observation time
+            # only when the coordinate is new; a repeated UI poll of the same
+            # coordinate must not refresh its age.
+            same = (self._last_fix is not None and
+                    self._last_fix.get('latitude') == loc.get('latitude') and
+                    self._last_fix.get('longitude') == loc.get('longitude') and
+                    self._last_fix.get('timestamp_source') == 'observed')
+            ts = self._last_fix['timestamp'] if same else (loc.get('observed_at') or time.time())
+            ts_source = 'observed'
+        else:
+            ts_source = 'provider'
+        self._last_fix = {
+            'latitude': loc['latitude'],
+            'longitude': loc['longitude'],
+            'accuracy': loc.get('accuracy'),
+            'timestamp': float(ts),
+            'timestamp_source': ts_source,
+            'source': loc.get('source') or 'geoclue2',
+            'kind': 'provider',
+        }
+        self._last_error = None
+        return self._last_fix
 
-        A fix object is only returned when GeoClue yields valid coordinates;
-        its source is reported as GeoClue (which may itself be IP/3GPP — never
-        relabelled as GNSS).  No coordinates are ever manufactured.
-        """
-        if not self._provider_ready():
-            return {'available': False, 'source': None, 'timestamp': None,
-                    'accuracy': None}
+    def _fix_view(self, now):
+        fix = self._last_fix
+        if not fix:
+            return None
+        age = max(0.0, now - fix['timestamp'])
+        if age <= self.FRESH_SECONDS:
+            freshness = 'fresh'
+        elif age <= self.STALE_SECONDS:
+            freshness = 'stale'
+        else:
+            return None
+        return dict(fix, age_seconds=age, freshness=freshness)
+
+    def _current_fix(self):
+        """Return the provider's real fix, if any.  No coordinate is invented."""
+        if not self._ensure_provider():
+            return None
         try:
             loc = self.geoclue.get_location()
-        except Exception:
-            return {'available': False, 'source': None, 'timestamp': None,
-                    'accuracy': None}
+        except Exception as exc:
+            self._last_error = str(exc)
+            return None
         if not loc or not loc.get('success'):
-            return {'available': False, 'source': None, 'timestamp': None,
-                    'accuracy': None}
-        return {'available': True, 'source': 'geoclue2',
-                'timestamp': time.time(), 'accuracy': loc.get('accuracy')}
+            code = (loc or {}).get('error_code')
+            if code == 'PROVIDER_ERROR':
+                self._last_error = (loc or {}).get('error') or 'provider error'
+            elif code == 'NO_FIX':
+                # The provider answered; "no fix" is not a provider failure.
+                self._last_error = None
+            return None
+        try:
+            lat = float(loc['latitude'])
+            lon = float(loc['longitude'])
+            if not (math.isfinite(lat) and math.isfinite(lon)) or not (-90 <= lat <= 90) or not (-180 <= lon <= 180):
+                raise ValueError('coordinates out of range')
+            loc = dict(loc, latitude=lat, longitude=lon)
+            return self._remember_fix(loc)
+        except (KeyError, TypeError, ValueError) as exc:
+            self._last_error = 'invalid provider fix: %s' % exc
+            return None
 
-    def get_status(self):
+    def start_acquisition(self):
+        if not self._ensure_provider():
+            return False, self._last_error or 'location provider unavailable'
+        try:
+            ok, err = self.geoclue.start_acquisition()
+        except Exception as exc:
+            ok, err = False, str(exc)
+        if ok:
+            self._acquisition_started_at = time.time()
+            self._last_error = None
+        else:
+            self._last_error = err or 'provider did not start acquisition'
+        return ok, self._last_error
+
+    def _state(self, enabled, provider_ready, provider_installed, fix, now):
+        if not enabled:
+            return 'disabled'
+        if not provider_ready:
+            return 'unavailable'
+        if self._last_error and not fix:
+            return 'error'
+        if fix:
+            return 'fixed' if fix['freshness'] == 'fresh' else 'stale'
+        started = self._acquisition_started_at
+        if started is not None and (now - started) <= self.SEARCH_WINDOW_SECONDS:
+            return 'searching'
+        return 'no_fix'
+
+    def get_status(self, include_coordinates=True):
+        now = time.time()
         enabled = self._read_policy()
         provider_ready = self._provider_ready()
-        fix = self._current_fix()
+        provider_installed = self._provider_installed()
+        if enabled:
+            provider_ready = self._ensure_provider()
+            self._current_fix()
+        fix = self._fix_view(now)
+        state = self._state(enabled, provider_ready, provider_installed, fix, now)
         gnss = self._gnss_hardware()
+        detail = None
+        if state == 'unavailable':
+            if provider_installed:
+                if self._last_error:
+                    detail = 'GeoClue2 is installed but unavailable: ' + self._last_error
+                else:
+                    detail = 'GeoClue2 is installed but did not answer within %.1fs' % getattr(
+                        self.geoclue, 'DBUS_TIMEOUT', 2.0)
+            else:
+                detail = 'GeoClue2 is not installed'
+        elif state == 'error':
+            detail = self._last_error or 'location provider error'
+        elif state == 'searching':
+            detail = 'acquisition requested; waiting for the provider to produce a fix'
+        elif state in ('no_fix', 'stale'):
+            detail = gnss.get('blocker')
+        # Only a fixed/stale state may expose a coordinate.  In particular a
+        # provider that has just disappeared must not leave a "current" fix on
+        # screen merely because its last timestamp is still recent.
+        expose = fix if state in ('fixed', 'stale') else None
         return {
             'success': True,
+            'state': state,
             'enabled': enabled,
             'permission_enabled': enabled,
             'provider': 'geoclue2',
-            'provider_ready': provider_ready,
-            'location_fix_available': fix['available'],
-            'fix_source': fix['source'],
-            'fix_timestamp': fix['timestamp'],
-            'accuracy': fix['accuracy'],
+            'provider_available': bool(provider_installed),
+            'provider_ready': bool(provider_ready),
+            'provider_detail': detail,
+            'detail': detail,
+            'location_fix_available': state == 'fixed',
+            'fix_valid': state == 'fixed',
+            'stale': state == 'stale',
+            'fix_source': expose['source'] if expose else None,
+            'fix_kind': expose.get('kind', 'provider') if expose else None,
+            'gnss_fix': False,
+            'fix_timestamp': expose['timestamp'] if expose else None,
+            'last_fix_timestamp': expose['timestamp'] if expose else None,
+            'last_fix_age_s': expose['age_seconds'] if expose else None,
+            'accuracy': expose['accuracy'] if (expose and include_coordinates) else None,
+            'latitude': expose['latitude'] if (expose and include_coordinates) else None,
+            'longitude': expose['longitude'] if (expose and include_coordinates) else None,
+            'freshness_seconds': self.FRESH_SECONDS,
+            'stale_after_seconds': self.STALE_SECONDS,
+            'acquiring': state == 'searching',
+            'acquisition_started_at': self._acquisition_started_at,
+            'last_error': self._last_error,
             'gnss': gnss,
-            'timestamp': time.time(),
+            'timestamp': now,
         }
 
     def set_enabled(self, enabled):
         enabled = bool(enabled)
         self._write_policy(enabled)
-        st = self.get_status()
+        if enabled:
+            self.start_acquisition()
+        else:
+            if self.geoclue is not None and getattr(self.geoclue, 'connected', False):
+                try:
+                    self.geoclue.client_iface.Stop(timeout=getattr(self.geoclue, 'DBUS_TIMEOUT', 2.0))
+                except Exception:
+                    pass
+            self._acquisition_started_at = None
+        # The policy toggle itself is not a position read; never echo a
+        # coordinate from this administrative response.
+        st = self.get_status(include_coordinates=False)
         st['requested'] = enabled
         st['success'] = (st['enabled'] == enabled)
         return st
@@ -1805,7 +2180,10 @@ class NuxelBridgeService(dbus.service.Object):
 
     @dbus.service.method(INTERFACE_NAME, in_signature='s', out_signature='s')
     def LocationGetStatus(self, app_id):
-        return json.dumps(self.location.get_status())
+        # Status is a diagnostic surface.  State, age and the GNSS blocker are
+        # useful to any local caller; coordinates/accuracy require location:read.
+        granted = 'location:read' in self.capability_grants.get(app_id, {})
+        return json.dumps(self.location.get_status(include_coordinates=granted))
 
     @dbus.service.method(INTERFACE_NAME, in_signature='sb', out_signature='s')
     def LocationSetEnabled(self, app_id, enabled):
@@ -1815,18 +2193,55 @@ class NuxelBridgeService(dbus.service.Object):
                                'error_code': 'CAPABILITY_DENIED'})
         return json.dumps(self.location.set_enabled(bool(enabled)))
 
+    @dbus.service.method(INTERFACE_NAME, in_signature='s', out_signature='s')
+    def LocationAcquire(self, app_id):
+        """Request acquisition without ever manufacturing a fix."""
+        if not self._check_capability(app_id, 'location:read'):
+            return json.dumps({'success': False,
+                               'error': 'Capability not granted: location:read',
+                               'error_code': 'CAPABILITY_DENIED'})
+        if not self.location.get_status().get('enabled'):
+            return json.dumps({'success': False,
+                               'error': 'Location is disabled (global policy)',
+                               'error_code': 'LOCATION_DISABLED',
+                               'enabled': False, 'state': 'disabled'})
+        ok, err = self.location.start_acquisition()
+        st = self.location.get_status()
+        st['acquire_requested'] = bool(ok)
+        if not ok:
+            st['last_error'] = err or st.get('last_error')
+        return json.dumps(st)
+
     # ---------- D-Bus: Location ----------
     
     @dbus.service.method(INTERFACE_NAME, in_signature='s', out_signature='s')
     def GetLocation(self, app_id):
-        if not self.location.get_status()['enabled']:
+        st = self.location.get_status()
+        if not st.get('enabled'):
             return json.dumps({'success': False,
                                'error': 'Location is disabled (global policy)',
-                               'error_code': 'LOCATION_DISABLED'})
+                               'error_code': 'LOCATION_DISABLED',
+                               'state': st.get('state')})
         if not self._check_capability(app_id, 'location:read'):
             return json.dumps({'success': False, 'error': 'Capability not granted: location:read',
                                'error_code': 'CAPABILITY_DENIED'})
-        return json.dumps(self.geoclue.get_location())
+        if st.get('state') != 'fixed':
+            return json.dumps({'success': False,
+                               'error': st.get('detail') or ('Location state: %s' % st.get('state')),
+                               'error_code': 'STALE_FIX' if st.get('state') == 'stale' else 'NO_FIX',
+                               'state': st.get('state'),
+                               'provider_ready': st.get('provider_ready'),
+                               'last_fix_timestamp': st.get('last_fix_timestamp'),
+                               'last_fix_age_s': st.get('last_fix_age_s')})
+        return json.dumps({
+            'success': True,
+            'latitude': st.get('latitude'),
+            'longitude': st.get('longitude'),
+            'accuracy': st.get('accuracy'),
+            'timestamp': st.get('last_fix_timestamp'),
+            'source': st.get('fix_source'),
+            'state': st.get('state'),
+        })
     
     # ---------- D-Bus: Notifications ----------
     
@@ -2009,7 +2424,7 @@ class NuxelBridgeService(dbus.service.Object):
 
 
 def main():
-    logger.info("Starting Nuxel Bridge v0.6.7-beta...")
+    logger.info("Starting Nuxel Bridge v0.7.0-beta...")
     
     dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
     bus = dbus.SystemBus()

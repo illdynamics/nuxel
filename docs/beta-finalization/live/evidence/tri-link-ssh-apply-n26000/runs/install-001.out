@@ -1,0 +1,7 @@
+pushed={"acked_bytes": 1988, "b64_chars": 2652, "bytes": 1988, "decoded_sha256": "1fe9bb86c0a11e615d99c927c701a0635838ef8d37a5a4ce6adc1a52ad5e642b", "frames": 21, "mode": "frame", "parts": 21, "path": "/var/tmp/nxl-install-001.sh", "raw_writes": 0, "retries": 0}
+ok=True rc=0
+---
+PREV=NONE
+/etc/ssh/sshd_config.d/60-nuxel-tri-link.conf.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

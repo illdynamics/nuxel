@@ -1,0 +1,80 @@
+[   55.269770] usb 2-3: Product: Nuxel S10+ Live Console
+[   55.269772] usb 2-3: Manufacturer: Nuxel
+[   55.269774] usb 2-3: SerialNumber: NUXEL-S10PLUS-0001
+[   55.334443] cdc_acm 2-3:1.0: ttyACM0: USB ACM device
+[   55.334812] usbcore: registered new interface driver cdc_acm
+[   55.334815] cdc_acm: USB Abstract Control Model driver for USB modems and ISDN adapters
+[22473.776727] usb 2-3: USB disconnect, device number 4
+[22502.041615] usb 2-3: new SuperSpeed USB device number 5 using xhci_hcd
+[22502.053889] usb 2-3: New USB device found, idVendor=18d1, idProduct=4ee7, bcdDevice= 1.00
+[22502.053894] usb 2-3: New USB device strings: Mfr=1, Product=2, SerialNumber=3
+[22502.053895] usb 2-3: Product: Nuxel S10+ Live Console
+[22502.053896] usb 2-3: Manufacturer: Nuxel
+[22502.053897] usb 2-3: SerialNumber: NUXEL-S10PLUS-0001
+[22502.055741] cdc_acm 2-3:1.0: ttyACM0: USB ACM device
+[28677.759174] usb 2-3: USB disconnect, device number 5
+[36046.176258] usb 2-3: new SuperSpeed USB device number 6 using xhci_hcd
+[36046.188965] usb 2-3: New USB device found, idVendor=18d1, idProduct=4ee7, bcdDevice= 1.00
+[36046.188970] usb 2-3: New USB device strings: Mfr=1, Product=2, SerialNumber=3
+[36046.188971] usb 2-3: Product: Nuxel S10+ Live Console
+[36046.188972] usb 2-3: Manufacturer: Nuxel
+[36046.188972] usb 2-3: SerialNumber: NUXEL-S10PLUS-0001
+[36046.191341] cdc_acm 2-3:1.0: ttyACM0: USB ACM device
+[37469.363552] usb 2-3: USB disconnect, device number 6
+[45690.214574] usb 2-3: new SuperSpeed USB device number 7 using xhci_hcd
+[45690.227167] usb 2-3: New USB device found, idVendor=18d1, idProduct=4ee7, bcdDevice= 1.00
+[45690.227171] usb 2-3: New USB device strings: Mfr=1, Product=2, SerialNumber=3
+[45690.227172] usb 2-3: Product: Nuxel S10+ Live Console
+[45690.227173] usb 2-3: Manufacturer: Nuxel
+[45690.227174] usb 2-3: SerialNumber: NUXEL-S10PLUS-0001
+[45690.228969] cdc_acm 2-3:1.0: ttyACM0: USB ACM device
+[46292.565127] usb 2-3: USB disconnect, device number 7
+[46320.648110] usb 2-3: new SuperSpeed USB device number 8 using xhci_hcd
+[46320.660631] usb 2-3: New USB device found, idVendor=18d1, idProduct=4ee7, bcdDevice= 1.00
+[46320.660636] usb 2-3: New USB device strings: Mfr=1, Product=2, SerialNumber=3
+[46320.660637] usb 2-3: Product: Nuxel S10+ Live Console
+[46320.660638] usb 2-3: Manufacturer: Nuxel
+[46320.660638] usb 2-3: SerialNumber: NUXEL-S10PLUS-0001
+[46320.662365] cdc_acm 2-3:1.0: ttyACM0: USB ACM device
+[51565.365408] usb 2-3: USB disconnect, device number 8
+[54489.335927] usb 2-3: new SuperSpeed USB device number 9 using xhci_hcd
+[54489.349357] usb 2-3: New USB device found, idVendor=18d1, idProduct=4ee7, bcdDevice= 1.00
+[54489.349362] usb 2-3: New USB device strings: Mfr=1, Product=2, SerialNumber=3
+[54489.349363] usb 2-3: Product: Nuxel S10+ Live Console
+[54489.349363] usb 2-3: Manufacturer: Nuxel
+[54489.349364] usb 2-3: SerialNumber: NUXEL-S10PLUS-0001
+[54489.352480] cdc_acm 2-3:1.0: ttyACM0: USB ACM device
+[54654.540593] usb 2-3: USB disconnect, device number 9
+[265889.397307] usb 2-3: new SuperSpeed USB device number 10 using xhci_hcd
+[265889.410105] usb 2-3: New USB device found, idVendor=18d1, idProduct=4ee7, bcdDevice= 1.00
+[265889.410107] usb 2-3: New USB device strings: Mfr=1, Product=2, SerialNumber=3
+[265889.410109] usb 2-3: Product: Nuxel S10+ Live Console
+[265889.410109] usb 2-3: Manufacturer: Nuxel
+[265889.410110] usb 2-3: SerialNumber: NUXEL-S10PLUS-0001
+[265889.411990] cdc_acm 2-3:1.0: ttyACM0: USB ACM device
+[327320.250660] usb 2-3: USB disconnect, device number 10
+[327390.904714] usb 2-3: new SuperSpeed USB device number 11 using xhci_hcd
+[327390.916957] usb 2-3: New USB device found, idVendor=18d1, idProduct=4ee7, bcdDevice= 1.00
+[327390.916962] usb 2-3: New USB device strings: Mfr=1, Product=2, SerialNumber=3
+[327390.916963] usb 2-3: Product: Nuxel S10+ Live Console
+[327390.916964] usb 2-3: Manufacturer: Nuxel
+[327390.916965] usb 2-3: SerialNumber: NUXEL-S10PLUS-0001
+[327390.918845] cdc_acm 2-3:1.0: ttyACM0: USB ACM device
+[332603.101970] usb 2-3: disable of device-initiated U1 failed.
+[332603.109235] usb 2-3: enable of device-initiated U1 failed.
+[332603.116297] usb 2-3: disable of device-initiated U1 failed.
+[332604.132069] usb 2-3: can't set config #1, error -71
+[332604.132074] usb 2-3: authorized to connect
+[332636.416516] usb 2-3: can't set config #1, error -71
+[332653.473622] usb 2-3: reset SuperSpeed USB device number 11 using xhci_hcd
+[332661.609713] cdc_acm 2-3:1.0: ttyACM0: USB ACM device
+[332664.697366] cdc_acm 2-3:1.0: ttyACM0: USB ACM device
+[332664.697691] usb 2-3: authorized to connect
+[332680.353532] usb 2-3: USB disconnect, device number 11
+[332710.970068] usb 2-3: new SuperSpeed USB device number 12 using xhci_hcd
+[332710.981998] usb 2-3: New USB device found, idVendor=18d1, idProduct=4ee7, bcdDevice= 1.00
+[332710.982003] usb 2-3: New USB device strings: Mfr=1, Product=2, SerialNumber=3
+[332710.982004] usb 2-3: Product: Nuxel S10+ Live Console
+[332710.982005] usb 2-3: Manufacturer: Nuxel
+[332710.982005] usb 2-3: SerialNumber: NUXEL-S10PLUS-0001
+[332710.983880] cdc_acm 2-3:1.0: ttyACM0: USB ACM device

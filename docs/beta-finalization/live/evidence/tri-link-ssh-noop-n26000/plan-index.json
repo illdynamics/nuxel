@@ -1,0 +1,32 @@
+[
+  {
+    "group": "tri-link-ssh",
+    "n": 1,
+    "risk": "low",
+    "script": "scripts/001-50-nuxel-a74-recovery.conf.sh",
+    "service": "sshd.service",
+    "source": "configs/nuxel/security/ssh/50-nuxel-a74-recovery.conf",
+    "source_sha256": "97ac6bfebb400f3f44c2721e3b4661a469ee82d8d2316daa7058dc7ccce5973f",
+    "target": "/etc/ssh/sshd_config.d/50-nuxel-a74-recovery.conf"
+  },
+  {
+    "group": "tri-link-ssh",
+    "n": 2,
+    "risk": "low",
+    "script": "scripts/002-60-nuxel-tri-link.conf.sh",
+    "service": "sshd.service",
+    "source": "configs/nuxel/security/ssh/60-nuxel-tri-link.conf",
+    "source_sha256": "0243d182c6f7012b983431e616726cc5d70614a566d359eb4f75bd2b8138ca11",
+    "target": "/etc/ssh/sshd_config.d/60-nuxel-tri-link.conf"
+  },
+  {
+    "group": "tri-link-ssh",
+    "n": 3,
+    "risk": "low",
+    "script": "scripts/003-authorized_keys.sh",
+    "service": "sshd.service",
+    "source": "configs/nuxel/security/ssh/authorized_keys.nuxel",
+    "source_sha256": "5d070910188a6c8518f5f215f8b4e4871db5797bbaaa49f0bb3e4f3a109a5501",
+    "target": "/home/nuxel/.ssh/authorized_keys"
+  }
+]

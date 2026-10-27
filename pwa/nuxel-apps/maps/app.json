@@ -7,7 +7,7 @@
   "type": "pwa",
   "url": "/pwa/nuxel-apps/maps/index.html",
   "manifest": "pwa/nuxel-apps/maps/manifest.json",
-  "description": "Offline-first OSM tile cache with an opt-in online tile source",
+  "description": "OpenStreetMap tiles with an attributed online source and an offline tile cache",
   "capabilities": [
     "location:read",
     "storage:persistent",

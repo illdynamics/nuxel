@@ -1,0 +1,31 @@
+# console /dev/ttyACM0
+===== echo "== services =="; systemctl is-active nuxel-wayland.service nuxel-http-bridge.service sshd.service; systemctl is-active nuxel-web.service || true; echo "== web =="; for p in /pwa/nuxel-home/index.html /pwa/nuxel-apps/browser/index.html /pwa/nuxel-apps/console/index.html /pwa/nuxel-apps/console-usb/index.html /pwa/nuxel-apps/console-wifi/index.html; do printf "%s " "$p"; curl -s -o /dev/null -w "%{http_code}\n" "http://127.0.0.1:8000$p"; done; echo "== wifi =="; ip -4 -o addr show wlan0; cat /proc/net/wireless 2>/dev/null | head -4; echo "== indicators =="; curl -sS http://127.0.0.1:8080/api/v1/system/indicators; echo; echo "== sshd =="; sshd -t && echo SSHD_CONFIG_OK; sshd -T 2>/dev/null | grep -E "^(passwordauthentication|kbdinteractiveauthentication|permitrootlogin|allowusers) " | head -10; echo "== kernel =="; uname -r; cat /proc/sys/kernel/random/boot_id   [rc=0 frame=d643c878 sha_ok=yes]
+    == services ==
+    active
+    active
+    active
+    inactive
+    == web ==
+    /pwa/nuxel-home/index.html 200
+    /pwa/nuxel-apps/browser/index.html 200
+    /pwa/nuxel-apps/console/index.html 200
+    /pwa/nuxel-apps/console-usb/index.html 200
+    /pwa/nuxel-apps/console-wifi/index.html 200
+    == wifi ==
+    17: wlan0    inet 10.20.30.16/24 brd 10.20.30.255 scope global dynamic noprefixroute wlan0\       valid_lft 9324sec preferred_lft 9324sec
+    == indicators ==
+    {"charging": {"external_power": true, "charging": false, "battery_level": 100, "source": "sysfs"}, "usb_data": {"pc_connected": true, "source": "sysfs:udc:10c00000.dwc3:configured", "physical": ["typec:device-role"], "vbus_present": true, "udc_speeds": {"10c00000.dwc3": "super-speed"}}, "live_console": {"active": true, "service_armed": true, "transport_connected": true, "session_active": true, "source": "proc:nuxel-console:tty", "pids": [3525, 3526]}, "sources": {"power": "sysfs", "usb": "sysfs:udc:10c00000.dwc3:configured", "live_console": "proc:nuxel-console:tty"}}
+    == sshd ==
+    SSHD_CONFIG_OK
+    permitrootlogin without-password
+    passwordauthentication no
+    kbdinteractiveauthentication no
+    allowusers nuxel@10.20.30.0/24
+    allowusers root@10.20.30.0/24
+    allowusers nuxel@10.15.19.0/24
+    allowusers root@10.15.19.0/24
+    allowusers nuxel@127.0.0.1/32
+    allowusers root@127.0.0.1/32
+    == kernel ==
+    4.14.253
+    a269e14b-2ccd-4f0a-bbeb-088e84daa5a3

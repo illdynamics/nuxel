@@ -1,0 +1,36 @@
+{
+  "counts": {
+    "daemon_reloads_planned": 1,
+    "declared_reloads_seen": 1,
+    "independent_restarts_planned": 0,
+    "reloads_planned": 2,
+    "restarts_planned": 2
+  },
+  "daemon_reload": true,
+  "daemon_reload_action": {
+    "action": "systemctl daemon-reload",
+    "group": "a75-bridge-version-units-and-pwa",
+    "needs_daemon_reload": true,
+    "restart_services": [],
+    "synthesized": true
+  },
+  "daemon_reloads_uncoalesced": 0,
+  "reloads": [
+    {
+      "action": "(systemctl restart nuxel-bridge.service nuxel-http-bridge.service || true)",
+      "daemon_reload_split": true,
+      "group": "a75-bridge-version-units-and-pwa",
+      "needs_daemon_reload": true,
+      "restart_services": [
+        "nuxel-bridge.service",
+        "nuxel-http-bridge.service"
+      ]
+    }
+  ],
+  "restart_services": [],
+  "restart_services_in_reloads": [
+    "nuxel-bridge.service",
+    "nuxel-http-bridge.service"
+  ],
+  "restarts": []
+}

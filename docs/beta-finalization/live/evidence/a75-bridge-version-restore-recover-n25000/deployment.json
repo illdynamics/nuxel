@@ -1,0 +1,484 @@
+{
+  "activation": [
+    {
+      "action": "systemctl daemon-reload",
+      "framed": true,
+      "group": "a75-bridge-version-units-and-pwa",
+      "kind": "daemon-reload",
+      "output": "NXLRELOAD-RC=0\nNXLSCRIPT-RC=0\n",
+      "rc": 0
+    },
+    {
+      "action": "(systemctl restart nuxel-bridge.service nuxel-http-bridge.service || true)",
+      "framed": true,
+      "group": "a75-bridge-version-units-and-pwa",
+      "kind": "reload",
+      "output": "NXLRELOAD-RC=0\nNXLSCRIPT-RC=0\n",
+      "rc": 0,
+      "restart_services": [
+        "nuxel-bridge.service",
+        "nuxel-http-bridge.service"
+      ]
+    },
+    {
+      "check": "ok=0; for i in 1 2 3 4 5 6 7 8 9 10; do timeout 5 busctl --system call org.nuxel.Bridge /org/nuxel/Bridge org.nuxel.Bridge Ping s health >/dev/null 2>&1 && { ok=1; break; }; sleep 1; done; test \"$ok\" = 1",
+      "group": "a75-bridge-dbus-code",
+      "kind": "health",
+      "ok": true,
+      "output": ""
+    },
+    {
+      "check": "ok=0; for i in 1 2 3 4 5 6 7 8 9 10; do test \"$(curl -s -m 5 -o /dev/null -w '%{http_code}' http://127.0.0.1:8080/api/v1/health)\" = 200 && { ok=1; break; }; sleep 1; done; test \"$ok\" = 1",
+      "group": "a75-http-bridge-code",
+      "kind": "health",
+      "ok": true,
+      "output": ""
+    },
+    {
+      "check": "grep -q '^Environment=.*NUXEL_BRIDGE_VERSION=0.6.7-beta' /etc/systemd/system/nuxel-bridge.service && grep -q '^Environment=.*NUXEL_BRIDGE_VERSION=0.6.7-beta' /etc/systemd/system/nuxel-http-bridge.service && grep -q '\"host_version\": \"0.6.7-beta\"' /etc/nuxel/bridge-version.json && grep -q '\"host_version\": \"0.6.7-beta\"' /usr/share/nuxel/pwa/nuxel-common/bridge-version.json && systemctl show nuxel-bridge.service -p Environment | grep -q 'NUXEL_BRIDGE_VERSION=0.6.7-beta' && systemctl show nuxel-http-bridge.service -p Environment | grep -q 'NUXEL_BRIDGE_VERSION=0.6.7-beta'",
+      "group": "a75-bridge-version-units-and-pwa",
+      "kind": "health",
+      "ok": true,
+      "output": ""
+    }
+  ],
+  "activation_counts": {
+    "daemon_reloads": 1,
+    "health_checks": 3,
+    "reloads": 1,
+    "restarts": 2
+  },
+  "apply": true,
+  "at": "2026-10-27T14:53:53+0100",
+  "boot_id_after": "96f40ab6-e1ea-4952-af24-6f7efae499d2",
+  "boot_id_before": "96f40ab6-e1ea-4952-af24-6f7efae499d2",
+  "boot_id_changed": false,
+  "briq": "briq-10b-live-deploy-userspace",
+  "cancelled": false,
+  "changed_steps": 4,
+  "evidence_dir": "/x/nuxel/docs/beta-finalization/live/evidence/a75-bridge-version-restore-recover-n25000",
+  "executed_activation_plan": {
+    "counts": {
+      "daemon_reloads_planned": 1,
+      "declared_reloads_seen": 1,
+      "independent_restarts_planned": 0,
+      "reloads_planned": 2,
+      "restarts_planned": 2
+    },
+    "daemon_reload": true,
+    "daemon_reload_action": {
+      "action": "systemctl daemon-reload",
+      "group": "a75-bridge-version-units-and-pwa",
+      "needs_daemon_reload": true,
+      "restart_services": [],
+      "synthesized": true
+    },
+    "daemon_reloads_uncoalesced": 0,
+    "reloads": [
+      {
+        "action": "(systemctl restart nuxel-bridge.service nuxel-http-bridge.service || true)",
+        "daemon_reload_split": true,
+        "group": "a75-bridge-version-units-and-pwa",
+        "needs_daemon_reload": true,
+        "restart_services": [
+          "nuxel-bridge.service",
+          "nuxel-http-bridge.service"
+        ]
+      }
+    ],
+    "restart_services": [],
+    "restart_services_in_reloads": [
+      "nuxel-bridge.service",
+      "nuxel-http-bridge.service"
+    ],
+    "restarts": []
+  },
+  "exit_code": 0,
+  "finished_at": "2026-10-27T14:54:25+0100",
+  "groups": [
+    {
+      "declared_reload": null,
+      "declared_reload_source": null,
+      "group": "a75-bridge-dbus-code",
+      "priority": 1,
+      "restart_service": "nuxel-bridge.service",
+      "risk": "medium",
+      "risk_rank": 1,
+      "steps": 1
+    },
+    {
+      "declared_reload": null,
+      "declared_reload_source": null,
+      "group": "a75-http-bridge-code",
+      "priority": 2,
+      "restart_service": "nuxel-http-bridge.service",
+      "risk": "medium",
+      "risk_rank": 1,
+      "steps": 1
+    },
+    {
+      "declared_reload": "systemctl daemon-reload && (systemctl restart nuxel-bridge.service nuxel-http-bridge.service || true)",
+      "declared_reload_source": "group",
+      "group": "a75-bridge-version-units-and-pwa",
+      "priority": 3,
+      "restart_service": null,
+      "risk": "medium",
+      "risk_rank": 1,
+      "steps": 5
+    }
+  ],
+  "health": [
+    {
+      "check": "ok=0; for i in 1 2 3 4 5 6 7 8 9 10; do timeout 5 busctl --system call org.nuxel.Bridge /org/nuxel/Bridge org.nuxel.Bridge Ping s health >/dev/null 2>&1 && { ok=1; break; }; sleep 1; done; test \"$ok\" = 1",
+      "group": "a75-bridge-dbus-code",
+      "kind": "health",
+      "ok": true,
+      "output": ""
+    },
+    {
+      "check": "ok=0; for i in 1 2 3 4 5 6 7 8 9 10; do test \"$(curl -s -m 5 -o /dev/null -w '%{http_code}' http://127.0.0.1:8080/api/v1/health)\" = 200 && { ok=1; break; }; sleep 1; done; test \"$ok\" = 1",
+      "group": "a75-http-bridge-code",
+      "kind": "health",
+      "ok": true,
+      "output": ""
+    },
+    {
+      "check": "grep -q '^Environment=.*NUXEL_BRIDGE_VERSION=0.6.7-beta' /etc/systemd/system/nuxel-bridge.service && grep -q '^Environment=.*NUXEL_BRIDGE_VERSION=0.6.7-beta' /etc/systemd/system/nuxel-http-bridge.service && grep -q '\"host_version\": \"0.6.7-beta\"' /etc/nuxel/bridge-version.json && grep -q '\"host_version\": \"0.6.7-beta\"' /usr/share/nuxel/pwa/nuxel-common/bridge-version.json && systemctl show nuxel-bridge.service -p Environment | grep -q 'NUXEL_BRIDGE_VERSION=0.6.7-beta' && systemctl show nuxel-http-bridge.service -p Environment | grep -q 'NUXEL_BRIDGE_VERSION=0.6.7-beta'",
+      "group": "a75-bridge-version-units-and-pwa",
+      "kind": "health",
+      "ok": true,
+      "output": ""
+    }
+  ],
+  "host": "dextronux",
+  "journal": "/x/nuxel/docs/beta-finalization/live/evidence/a75-bridge-version-restore-recover-n25000/transaction.jsonl",
+  "manifest": "tools/beta/live/a75-bridge-version-restore-manifest.json",
+  "no_op": false,
+  "observation": null,
+  "operation_id": "a75-bridge-version-restore-recover-n25000",
+  "order": "manifest",
+  "pid": 1971464,
+  "pid_start": "33078499",
+  "planned_activation_plan": {
+    "counts": {
+      "daemon_reloads_planned": 1,
+      "declared_reloads_seen": 1,
+      "independent_restarts_planned": 0,
+      "reloads_planned": 2,
+      "restarts_planned": 2
+    },
+    "daemon_reload": true,
+    "daemon_reload_action": {
+      "action": "systemctl daemon-reload",
+      "group": "a75-bridge-version-units-and-pwa",
+      "needs_daemon_reload": true,
+      "restart_services": [],
+      "synthesized": true
+    },
+    "daemon_reloads_uncoalesced": 0,
+    "reloads": [
+      {
+        "action": "(systemctl restart nuxel-bridge.service nuxel-http-bridge.service || true)",
+        "daemon_reload_split": true,
+        "group": "a75-bridge-version-units-and-pwa",
+        "needs_daemon_reload": true,
+        "restart_services": [
+          "nuxel-bridge.service",
+          "nuxel-http-bridge.service"
+        ]
+      }
+    ],
+    "restart_services": [],
+    "restart_services_in_reloads": [
+      "nuxel-bridge.service",
+      "nuxel-http-bridge.service"
+    ],
+    "restarts": []
+  },
+  "probe": {
+    "at": "2026-10-27T14:53:54+0100",
+    "bytes_in": 54,
+    "dev": "/dev/ttyACM0",
+    "echo_ok": true,
+    "elapsed_s": 0.304,
+    "error": null,
+    "reachable": true,
+    "sample": "\u001b[?2004l\n\u001b[?2004hsh-5.3# \u001b[?2004l\n\u001b[?2004hsh-5.3# "
+  },
+  "reconnects": [],
+  "results": [
+    {
+      "already_deployed": true,
+      "attempts": 1,
+      "changed": false,
+      "declared_reload": null,
+      "elapsed_s": 0.086,
+      "group": "a75-bridge-dbus-code",
+      "health_check": "ok=0; for i in 1 2 3 4 5 6 7 8 9 10; do timeout 5 busctl --system call org.nuxel.Bridge /org/nuxel/Bridge org.nuxel.Bridge Ping s health >/dev/null 2>&1 && { ok=1; break; }; sleep 1; done; test \"$ok\" = 1",
+      "installed_hash": "03d1349444cbba752a9e9b0690a40756b177c25b1c9d235276fda1a2e29fafca",
+      "mode": "0644",
+      "n": 1,
+      "ok": true,
+      "previous_hash": "03d1349444cbba752a9e9b0690a40756b177c25b1c9d235276fda1a2e29fafca",
+      "risk": "medium",
+      "risk_rank": 1,
+      "rollback": null,
+      "rollback_route": "restore /usr/lib/nuxel/nuxel-bridge/bridge.py.nuxel-rollback and restart nuxel-bridge.service",
+      "service": "nuxel-bridge.service",
+      "source": "services/nuxel-bridge/src/bridge.py",
+      "source_sha256": "03d1349444cbba752a9e9b0690a40756b177c25b1c9d235276fda1a2e29fafca",
+      "target": "/usr/lib/nuxel/nuxel-bridge/bridge.py",
+      "txn_backup": "/usr/lib/nuxel/nuxel-bridge/bridge.py.nuxel-rollback.pre-a75-bridge-version-restore-recover-n25000"
+    },
+    {
+      "already_deployed": true,
+      "attempts": 1,
+      "changed": false,
+      "declared_reload": null,
+      "elapsed_s": 0.086,
+      "group": "a75-http-bridge-code",
+      "health_check": "ok=0; for i in 1 2 3 4 5 6 7 8 9 10; do test \"$(curl -s -m 5 -o /dev/null -w '%{http_code}' http://127.0.0.1:8080/api/v1/health)\" = 200 && { ok=1; break; }; sleep 1; done; test \"$ok\" = 1",
+      "installed_hash": "1752beb415f73b0d686d94b44fd791625f6ee7ae2dd9df20d56d62500dbd9079",
+      "mode": "0644",
+      "n": 2,
+      "ok": true,
+      "previous_hash": "1752beb415f73b0d686d94b44fd791625f6ee7ae2dd9df20d56d62500dbd9079",
+      "risk": "medium",
+      "risk_rank": 1,
+      "rollback": null,
+      "rollback_route": "restore /usr/lib/nuxel/nuxel-bridge/api.py.nuxel-rollback and restart nuxel-http-bridge.service",
+      "service": "nuxel-http-bridge.service",
+      "source": "services/nuxel-bridge/src/api.py",
+      "source_sha256": "1752beb415f73b0d686d94b44fd791625f6ee7ae2dd9df20d56d62500dbd9079",
+      "target": "/usr/lib/nuxel/nuxel-bridge/api.py",
+      "txn_backup": "/usr/lib/nuxel/nuxel-bridge/api.py.nuxel-rollback.pre-a75-bridge-version-restore-recover-n25000"
+    },
+    {
+      "attempts": 1,
+      "changed": true,
+      "declared_reload": "systemctl daemon-reload && (systemctl restart nuxel-bridge.service nuxel-http-bridge.service || true)",
+      "elapsed_s": 7.359,
+      "group": "a75-bridge-version-units-and-pwa",
+      "health_check": "grep -q '^Environment=.*NUXEL_BRIDGE_VERSION=0.6.7-beta' /etc/systemd/system/nuxel-bridge.service && grep -q '^Environment=.*NUXEL_BRIDGE_VERSION=0.6.7-beta' /etc/systemd/system/nuxel-http-bridge.service && grep -q '\"host_version\": \"0.6.7-beta\"' /etc/nuxel/bridge-version.json && grep -q '\"host_version\": \"0.6.7-beta\"' /usr/share/nuxel/pwa/nuxel-common/bridge-version.json && systemctl show nuxel-bridge.service -p Environment | grep -q 'NUXEL_BRIDGE_VERSION=0.6.7-beta' && systemctl show nuxel-http-bridge.service -p Environment | grep -q 'NUXEL_BRIDGE_VERSION=0.6.7-beta'",
+      "install": {
+        "framed": true,
+        "output": "PREV=5528803386af91c1086da0b683c77b1c3c3820beb1cfb14915a0265f86c65335\n/etc/systemd/system/nuxel-bridge.service.nuxel-staged: OK\nINSTALL-OK\nNXLSCRIPT-RC=0\n",
+        "rc": 0
+      },
+      "installed_hash": "67ce1cea694617887d65142f35e110a705aabc31eef76430915b14f1327399a0",
+      "mode": "0644",
+      "n": 3,
+      "ok": true,
+      "previous_hash": "5528803386af91c1086da0b683c77b1c3c3820beb1cfb14915a0265f86c65335",
+      "risk": "medium",
+      "risk_rank": 1,
+      "rollback": null,
+      "rollback_route": "restore each <target>.nuxel-rollback, systemctl daemon-reload, restart nuxel-bridge.service nuxel-http-bridge.service",
+      "service": null,
+      "source": "services/nuxel-bridge/systemd/nuxel-bridge.service",
+      "source_sha256": "67ce1cea694617887d65142f35e110a705aabc31eef76430915b14f1327399a0",
+      "staged_push": {
+        "ack_writes": 0,
+        "acked_bytes": 2801,
+        "blocks": 0,
+        "bytes": 2801,
+        "elapsed_s": 4.207,
+        "fallback": false,
+        "mode": "frame",
+        "parts": 30,
+        "raw_writes": 0,
+        "resume_used": false,
+        "resumed_b64_chars": 0,
+        "retries": 0,
+        "sha256": "67ce1cea694617887d65142f35e110a705aabc31eef76430915b14f1327399a0",
+        "throughput_bytes_s": 665.8,
+        "write_bytes": 0
+      },
+      "target": "/etc/systemd/system/nuxel-bridge.service",
+      "txn_backup": "/etc/systemd/system/nuxel-bridge.service.nuxel-rollback.pre-a75-bridge-version-restore-recover-n25000",
+      "verify_output": "INSTALL-OK (hash checked in-frame)"
+    },
+    {
+      "attempts": 1,
+      "changed": true,
+      "declared_reload": "systemctl daemon-reload && (systemctl restart nuxel-bridge.service nuxel-http-bridge.service || true)",
+      "elapsed_s": 6.16,
+      "group": "a75-bridge-version-units-and-pwa",
+      "health_check": "grep -q '^Environment=.*NUXEL_BRIDGE_VERSION=0.6.7-beta' /etc/systemd/system/nuxel-bridge.service && grep -q '^Environment=.*NUXEL_BRIDGE_VERSION=0.6.7-beta' /etc/systemd/system/nuxel-http-bridge.service && grep -q '\"host_version\": \"0.6.7-beta\"' /etc/nuxel/bridge-version.json && grep -q '\"host_version\": \"0.6.7-beta\"' /usr/share/nuxel/pwa/nuxel-common/bridge-version.json && systemctl show nuxel-bridge.service -p Environment | grep -q 'NUXEL_BRIDGE_VERSION=0.6.7-beta' && systemctl show nuxel-http-bridge.service -p Environment | grep -q 'NUXEL_BRIDGE_VERSION=0.6.7-beta'",
+      "install": {
+        "framed": true,
+        "output": "PREV=3d78284e5e46e6e7d5c73ef21f2256dde4a6ddf38c365b61be02f2d455934702\n/etc/systemd/system/nuxel-http-bridge.service.nuxel-staged: OK\nINSTALL-OK\nNXLSCRIPT-RC=0\n",
+        "rc": 0
+      },
+      "installed_hash": "97944ab8d75261cf335468efae2bb76cac4da4a84c7607b615fddc59b59e5def",
+      "mode": "0644",
+      "n": 4,
+      "ok": true,
+      "previous_hash": "3d78284e5e46e6e7d5c73ef21f2256dde4a6ddf38c365b61be02f2d455934702",
+      "risk": "medium",
+      "risk_rank": 1,
+      "rollback": null,
+      "rollback_route": "restore each <target>.nuxel-rollback, systemctl daemon-reload, restart nuxel-bridge.service nuxel-http-bridge.service",
+      "service": null,
+      "source": "services/nuxel-bridge/systemd/nuxel-http-bridge.service",
+      "source_sha256": "97944ab8d75261cf335468efae2bb76cac4da4a84c7607b615fddc59b59e5def",
+      "staged_push": {
+        "ack_writes": 0,
+        "acked_bytes": 1580,
+        "blocks": 0,
+        "bytes": 1580,
+        "elapsed_s": 2.807,
+        "fallback": false,
+        "mode": "frame",
+        "parts": 17,
+        "raw_writes": 0,
+        "resume_used": false,
+        "resumed_b64_chars": 0,
+        "retries": 0,
+        "sha256": "97944ab8d75261cf335468efae2bb76cac4da4a84c7607b615fddc59b59e5def",
+        "throughput_bytes_s": 562.9,
+        "write_bytes": 0
+      },
+      "target": "/etc/systemd/system/nuxel-http-bridge.service",
+      "txn_backup": "/etc/systemd/system/nuxel-http-bridge.service.nuxel-rollback.pre-a75-bridge-version-restore-recover-n25000",
+      "verify_output": "INSTALL-OK (hash checked in-frame)"
+    },
+    {
+      "attempts": 1,
+      "changed": true,
+      "declared_reload": "systemctl daemon-reload && (systemctl restart nuxel-bridge.service nuxel-http-bridge.service || true)",
+      "elapsed_s": 5.727,
+      "group": "a75-bridge-version-units-and-pwa",
+      "health_check": "grep -q '^Environment=.*NUXEL_BRIDGE_VERSION=0.6.7-beta' /etc/systemd/system/nuxel-bridge.service && grep -q '^Environment=.*NUXEL_BRIDGE_VERSION=0.6.7-beta' /etc/systemd/system/nuxel-http-bridge.service && grep -q '\"host_version\": \"0.6.7-beta\"' /etc/nuxel/bridge-version.json && grep -q '\"host_version\": \"0.6.7-beta\"' /usr/share/nuxel/pwa/nuxel-common/bridge-version.json && systemctl show nuxel-bridge.service -p Environment | grep -q 'NUXEL_BRIDGE_VERSION=0.6.7-beta' && systemctl show nuxel-http-bridge.service -p Environment | grep -q 'NUXEL_BRIDGE_VERSION=0.6.7-beta'",
+      "install": {
+        "framed": true,
+        "output": "PREV=510f0ce31556e175133295715cc822c93c88610e1c6188941b2580771864ad9a\n/etc/nuxel/bridge-version.json.nuxel-staged: OK\nINSTALL-OK\nNXLSCRIPT-RC=0\n",
+        "rc": 0
+      },
+      "installed_hash": "4d9710dd847789380761c118185c84d5593ed9c829f4a852402780f5ec3876de",
+      "mode": "0644",
+      "n": 5,
+      "ok": true,
+      "previous_hash": "510f0ce31556e175133295715cc822c93c88610e1c6188941b2580771864ad9a",
+      "risk": "medium",
+      "risk_rank": 1,
+      "rollback": null,
+      "rollback_route": "restore each <target>.nuxel-rollback, systemctl daemon-reload, restart nuxel-bridge.service nuxel-http-bridge.service",
+      "service": null,
+      "source": "pwa/nuxel-common/bridge-version.json",
+      "source_sha256": "4d9710dd847789380761c118185c84d5593ed9c829f4a852402780f5ec3876de",
+      "staged_push": {
+        "ack_writes": 0,
+        "acked_bytes": 1585,
+        "blocks": 0,
+        "bytes": 1585,
+        "elapsed_s": 2.617,
+        "fallback": false,
+        "mode": "frame",
+        "parts": 17,
+        "raw_writes": 0,
+        "resume_used": false,
+        "resumed_b64_chars": 0,
+        "retries": 0,
+        "sha256": "4d9710dd847789380761c118185c84d5593ed9c829f4a852402780f5ec3876de",
+        "throughput_bytes_s": 605.7,
+        "write_bytes": 0
+      },
+      "target": "/etc/nuxel/bridge-version.json",
+      "txn_backup": "/etc/nuxel/bridge-version.json.nuxel-rollback.pre-a75-bridge-version-restore-recover-n25000",
+      "verify_output": "INSTALL-OK (hash checked in-frame)"
+    },
+    {
+      "attempts": 1,
+      "changed": true,
+      "declared_reload": "systemctl daemon-reload && (systemctl restart nuxel-bridge.service nuxel-http-bridge.service || true)",
+      "elapsed_s": 6.241,
+      "group": "a75-bridge-version-units-and-pwa",
+      "health_check": "grep -q '^Environment=.*NUXEL_BRIDGE_VERSION=0.6.7-beta' /etc/systemd/system/nuxel-bridge.service && grep -q '^Environment=.*NUXEL_BRIDGE_VERSION=0.6.7-beta' /etc/systemd/system/nuxel-http-bridge.service && grep -q '\"host_version\": \"0.6.7-beta\"' /etc/nuxel/bridge-version.json && grep -q '\"host_version\": \"0.6.7-beta\"' /usr/share/nuxel/pwa/nuxel-common/bridge-version.json && systemctl show nuxel-bridge.service -p Environment | grep -q 'NUXEL_BRIDGE_VERSION=0.6.7-beta' && systemctl show nuxel-http-bridge.service -p Environment | grep -q 'NUXEL_BRIDGE_VERSION=0.6.7-beta'",
+      "install": {
+        "framed": true,
+        "output": "PREV=510f0ce31556e175133295715cc822c93c88610e1c6188941b2580771864ad9a\n/usr/share/nuxel/pwa/nuxel-common/bridge-version.json.nuxel-staged: OK\nINSTALL-OK\nNXLSCRIPT-RC=0\n",
+        "rc": 0
+      },
+      "installed_hash": "4d9710dd847789380761c118185c84d5593ed9c829f4a852402780f5ec3876de",
+      "mode": "0644",
+      "n": 6,
+      "ok": true,
+      "previous_hash": "510f0ce31556e175133295715cc822c93c88610e1c6188941b2580771864ad9a",
+      "risk": "medium",
+      "risk_rank": 1,
+      "rollback": null,
+      "rollback_route": "restore each <target>.nuxel-rollback, systemctl daemon-reload, restart nuxel-bridge.service nuxel-http-bridge.service",
+      "service": null,
+      "source": "pwa/nuxel-common/bridge-version.json",
+      "source_sha256": "4d9710dd847789380761c118185c84d5593ed9c829f4a852402780f5ec3876de",
+      "staged_push": {
+        "ack_writes": 0,
+        "acked_bytes": 1585,
+        "blocks": 0,
+        "bytes": 1585,
+        "elapsed_s": 2.752,
+        "fallback": false,
+        "mode": "frame",
+        "parts": 17,
+        "raw_writes": 0,
+        "resume_used": false,
+        "resumed_b64_chars": 0,
+        "retries": 0,
+        "sha256": "4d9710dd847789380761c118185c84d5593ed9c829f4a852402780f5ec3876de",
+        "throughput_bytes_s": 575.9,
+        "write_bytes": 0
+      },
+      "target": "/usr/share/nuxel/pwa/nuxel-common/bridge-version.json",
+      "txn_backup": "/usr/share/nuxel/pwa/nuxel-common/bridge-version.json.nuxel-rollback.pre-a75-bridge-version-restore-recover-n25000",
+      "verify_output": "INSTALL-OK (hash checked in-frame)"
+    },
+    {
+      "already_deployed": true,
+      "attempts": 1,
+      "changed": false,
+      "declared_reload": "systemctl daemon-reload && (systemctl restart nuxel-bridge.service nuxel-http-bridge.service || true)",
+      "elapsed_s": 0.101,
+      "group": "a75-bridge-version-units-and-pwa",
+      "health_check": "grep -q '^Environment=.*NUXEL_BRIDGE_VERSION=0.6.7-beta' /etc/systemd/system/nuxel-bridge.service && grep -q '^Environment=.*NUXEL_BRIDGE_VERSION=0.6.7-beta' /etc/systemd/system/nuxel-http-bridge.service && grep -q '\"host_version\": \"0.6.7-beta\"' /etc/nuxel/bridge-version.json && grep -q '\"host_version\": \"0.6.7-beta\"' /usr/share/nuxel/pwa/nuxel-common/bridge-version.json && systemctl show nuxel-bridge.service -p Environment | grep -q 'NUXEL_BRIDGE_VERSION=0.6.7-beta' && systemctl show nuxel-http-bridge.service -p Environment | grep -q 'NUXEL_BRIDGE_VERSION=0.6.7-beta'",
+      "installed_hash": "1b409e04facb7f185c7bdbf810082251fd802246444c2ca3d94f7c9877b0b75e",
+      "mode": "0644",
+      "n": 7,
+      "ok": true,
+      "previous_hash": "1b409e04facb7f185c7bdbf810082251fd802246444c2ca3d94f7c9877b0b75e",
+      "risk": "medium",
+      "risk_rank": 1,
+      "rollback": null,
+      "rollback_route": "restore each <target>.nuxel-rollback, systemctl daemon-reload, restart nuxel-bridge.service nuxel-http-bridge.service",
+      "service": null,
+      "source": "pwa/nuxel-common/bridge.js",
+      "source_sha256": "1b409e04facb7f185c7bdbf810082251fd802246444c2ca3d94f7c9877b0b75e",
+      "target": "/usr/share/nuxel/pwa/nuxel-common/bridge.js",
+      "txn_backup": "/usr/share/nuxel/pwa/nuxel-common/bridge.js.nuxel-rollback.pre-a75-bridge-version-restore-recover-n25000"
+    }
+  ],
+  "risk_envelope": {
+    "medium": 7
+  },
+  "rollbacks": [],
+  "skipped": [],
+  "steps": 7,
+  "transfer": {
+    "ack_writes": 0,
+    "blocks": 0,
+    "bytes": 7551,
+    "elapsed_s": 12.383,
+    "parts": 81,
+    "raw_writes": 0,
+    "resumes": 0,
+    "retries": 0,
+    "throughput_bytes_s": 609.8,
+    "write_bytes": 0
+  },
+  "verdict": "DEPLOYED_UNVERIFIED",
+  "verdict_note": "files staged, hash-verified, atomically installed and the transaction's coalesced reload/restart actions run once. DEPLOYED_UNVERIFIED means the deploy succeeded but no human-visible behaviour was observed.",
+  "verdicts": {
+    "briq-10b-live-deploy-userspace": "DEPLOYED_UNVERIFIED"
+  },
+  "violations": []
+}

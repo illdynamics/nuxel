@@ -1,0 +1,4 @@
+org.nuxel.LiveConsole 1
+org.nuxel.USBSSHConsole 1
+org.nuxel.WiFiSSHConsole 1
+registry_version 6

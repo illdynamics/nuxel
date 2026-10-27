@@ -43,7 +43,23 @@ stage_node() {
   printf 'absent'
 }
 stage_module() {
-  local m
+  local m d g
+  # A driver can be built in and bound through sysfs without appearing in
+  # /proc/modules.  The BCM4773 sensor-hub GPS is exactly that case (and its
+  # driver directory legitimately contains spaces).
+  for d in $(pol 'evidence_sources.driver_bindings'); do
+    [ -e "$(abs "$d")" ] && { printf 'bound:%s' "$d"; return; }
+  done
+  # Literal because the upstream driver directory name contains a space
+  # ("brcm gps spi"); word-splitting a policy list would corrupt it.
+  d="$(abs "/sys/bus/spi/drivers/brcm gps spi/spi17.0")"
+  [ -e "$d" ] && { printf 'bound:%s' "/sys/bus/spi/drivers/brcm gps spi/spi17.0"; return; }
+  for g in $(pol 'evidence_sources.driver_globs'); do
+    case "$g" in /*) ;; *) continue ;; esac
+    for d in "$(abs "$g")"; do
+      [ -e "$d" ] && { printf 'bound:%s' "${d#"$ROOT"}"; return; }
+    done
+  done
   [ -r "$(abs /proc/modules)" ] || { printf 'proc-modules-unreadable'; return; }
   for m in $(pol 'evidence_sources.driver_candidates'); do
     grep -q "^$m " "$(abs /proc/modules)" 2>/dev/null && { printf 'loaded:%s' "$m"; return; }
@@ -74,11 +90,11 @@ stage_userspace() {
   done
   printf 'no-consumer'
 }
-verdict() { # node module firmware stream
+verdict() { # node module firmware stream userspace
   case "$1" in absent) printf 'BLOCKED_KERNEL' ;;
     *) case "$2" in none-loaded) printf 'PARTIAL' ;;
        *) case "$3" in missing) printf 'BLOCKED_FIRMWARE' ;;
-          *) case "$4" in readable:*) printf 'READY_FOR_SKY' ;; *) printf 'BLOCKED_KERNEL' ;; esac ;; esac ;; esac ;;
+          *) case "$4" in readable:*) case "$5" in no-consumer) printf 'BLOCKED_EXTERNAL_RESOURCE' ;; *) printf 'READY_FOR_SKY' ;; esac ;; *) printf 'BLOCKED_KERNEL' ;; esac ;; esac ;; esac ;;
   esac
 }
 first_failing() {
@@ -88,7 +104,7 @@ first_failing() {
 cmd_status() {
   local n m f s u v ff
   n="$(stage_node)"; m="$(stage_module)"; f="$(stage_firmware)"; s="$(stage_stream)"; u="$(stage_userspace)"
-  v="$(verdict "$n" "$m" "$f" "$s")"; ff="$(first_failing "$n" "$m" "$f" "$s")"
+  v="$(verdict "$n" "$m" "$f" "$s" "$u")"; ff="$(first_failing "$n" "$m" "$f" "$s")"
   if [ "$JSON" = 1 ]; then
     printf '{"device":"beyond2lte","tool":"nuxel-gnss-diag","stages":{"device_node":"%s","module":"%s","firmware":"%s","stream":"%s","userspace":"%s"},"first_failing_stage":"%s","state":"%s","fix_verified":false,"owner_test":"docs/beta-finalization/manual-proof/13-gps.md"}\n' \
       "$(jesc "$n")" "$(jesc "$m")" "$(jesc "$f")" "$(jesc "$s")" "$(jesc "$u")" "$ff" "$v"
@@ -112,6 +128,8 @@ cmd_status() {
                     say "  will ever be invented here." ;;
     BLOCKED_FIRMWARE) say "  driver/node present but no GNSS firmware blob. Deploy into /lib/firmware/gnss"
                       say "  (repository-only); never a partition write." ;;
+    BLOCKED_EXTERNAL_RESOURCE) say "  the receiver path exists but no userspace NMEA consumer is installed."
+                      say "  A node without a reader/provider is not a location provider." ;;
     PARTIAL) say "  read the per-stage lines; a node without a module is not a working receiver." ;;
   esac
 }

@@ -1,0 +1,239 @@
+{
+  "activation": [
+    {
+      "framed": true,
+      "group": "tri-link-ssh",
+      "kind": "restart",
+      "output": "active\nACTIVATE-OK\nNXLSCRIPT-RC=0\n",
+      "rc": 0,
+      "service": "sshd.service"
+    },
+    {
+      "check": "sshd -t && systemctl is-active sshd.service && sshd -T | grep -qx 'passwordauthentication no' && sshd -T | grep -qx 'kbdinteractiveauthentication no' && sshd -T | grep -q '^allowusers nuxel@10.20.30.0/24$'",
+      "group": "tri-link-ssh",
+      "kind": "health",
+      "ok": true,
+      "output": "active"
+    }
+  ],
+  "activation_counts": {
+    "daemon_reloads": 0,
+    "health_checks": 1,
+    "reloads": 0,
+    "restarts": 1
+  },
+  "apply": true,
+  "at": "2026-10-27T15:05:47+0100",
+  "boot_id_after": "96f40ab6-e1ea-4952-af24-6f7efae499d2",
+  "boot_id_before": "96f40ab6-e1ea-4952-af24-6f7efae499d2",
+  "boot_id_changed": false,
+  "briq": "briq-10b-live-deploy-userspace",
+  "cancelled": false,
+  "changed_steps": 2,
+  "evidence_dir": "/x/nuxel/docs/beta-finalization/live/evidence/tri-link-ssh-apply-n26000",
+  "executed_activation_plan": {
+    "counts": {
+      "daemon_reloads_planned": 0,
+      "declared_reloads_seen": 0,
+      "independent_restarts_planned": 1,
+      "reloads_planned": 0,
+      "restarts_planned": 1
+    },
+    "daemon_reload": false,
+    "daemon_reload_action": null,
+    "daemon_reloads_uncoalesced": 0,
+    "reloads": [],
+    "restart_services": [
+      "sshd.service"
+    ],
+    "restart_services_in_reloads": [],
+    "restarts": [
+      {
+        "group": "tri-link-ssh",
+        "service": "sshd.service"
+      }
+    ]
+  },
+  "exit_code": 0,
+  "finished_at": "2026-10-27T15:06:01+0100",
+  "groups": [
+    {
+      "declared_reload": null,
+      "declared_reload_source": null,
+      "group": "tri-link-ssh",
+      "priority": 1,
+      "restart_service": "sshd.service",
+      "risk": "low",
+      "risk_rank": 0,
+      "steps": 2
+    }
+  ],
+  "health": [
+    {
+      "check": "sshd -t && systemctl is-active sshd.service && sshd -T | grep -qx 'passwordauthentication no' && sshd -T | grep -qx 'kbdinteractiveauthentication no' && sshd -T | grep -q '^allowusers nuxel@10.20.30.0/24$'",
+      "group": "tri-link-ssh",
+      "kind": "health",
+      "ok": true,
+      "output": "active"
+    }
+  ],
+  "host": "dextronux",
+  "journal": "/x/nuxel/docs/beta-finalization/live/evidence/tri-link-ssh-apply-n26000/transaction.jsonl",
+  "manifest": "tools/beta/live/nuxel-ssh-provision-manifest.json",
+  "no_op": false,
+  "observation": null,
+  "operation_id": "tri-link-ssh-apply-n26000",
+  "order": "manifest",
+  "pid": 1986507,
+  "pid_start": "33149910",
+  "planned_activation_plan": {
+    "counts": {
+      "daemon_reloads_planned": 0,
+      "declared_reloads_seen": 0,
+      "independent_restarts_planned": 1,
+      "reloads_planned": 0,
+      "restarts_planned": 1
+    },
+    "daemon_reload": false,
+    "daemon_reload_action": null,
+    "daemon_reloads_uncoalesced": 0,
+    "reloads": [],
+    "restart_services": [
+      "sshd.service"
+    ],
+    "restart_services_in_reloads": [],
+    "restarts": [
+      {
+        "group": "tri-link-ssh",
+        "service": "sshd.service"
+      }
+    ]
+  },
+  "probe": {
+    "at": "2026-10-27T15:05:48+0100",
+    "bytes_in": 54,
+    "dev": "/dev/ttyACM0",
+    "echo_ok": true,
+    "elapsed_s": 0.303,
+    "error": null,
+    "reachable": true,
+    "sample": "\u001b[?2004l\n\u001b[?2004hsh-5.3# \u001b[?2004l\n\u001b[?2004hsh-5.3# "
+  },
+  "reconnects": [],
+  "results": [
+    {
+      "attempts": 1,
+      "changed": true,
+      "declared_reload": null,
+      "elapsed_s": 6.569,
+      "group": "tri-link-ssh",
+      "health_check": "sshd -t && systemctl is-active sshd.service && sshd -T | grep -qx 'passwordauthentication no' && sshd -T | grep -qx 'kbdinteractiveauthentication no' && sshd -T | grep -q '^allowusers nuxel@10.20.30.0/24$'",
+      "install": {
+        "framed": true,
+        "output": "PREV=NONE\n/etc/ssh/sshd_config.d/60-nuxel-tri-link.conf.nuxel-staged: OK\nINSTALL-OK\nNXLSCRIPT-RC=0\n",
+        "rc": 0
+      },
+      "installed_hash": "0243d182c6f7012b983431e616726cc5d70614a566d359eb4f75bd2b8138ca11",
+      "mode": "0644",
+      "n": 1,
+      "ok": true,
+      "previous_hash": "NONE",
+      "risk": "low",
+      "risk_rank": 0,
+      "rollback": null,
+      "rollback_route": "restore <target>.nuxel-rollback (or remove a newly-created <target>), then systemctl restart sshd.service; the root authorized_keys and the serial console are never modified",
+      "service": "sshd.service",
+      "source": "configs/nuxel/security/ssh/60-nuxel-tri-link.conf",
+      "source_sha256": "0243d182c6f7012b983431e616726cc5d70614a566d359eb4f75bd2b8138ca11",
+      "staged_push": {
+        "ack_writes": 0,
+        "acked_bytes": 1565,
+        "blocks": 0,
+        "bytes": 1565,
+        "elapsed_s": 2.667,
+        "fallback": false,
+        "mode": "frame",
+        "parts": 17,
+        "raw_writes": 0,
+        "resume_used": false,
+        "resumed_b64_chars": 0,
+        "retries": 0,
+        "sha256": "0243d182c6f7012b983431e616726cc5d70614a566d359eb4f75bd2b8138ca11",
+        "throughput_bytes_s": 586.8,
+        "write_bytes": 0
+      },
+      "target": "/etc/ssh/sshd_config.d/60-nuxel-tri-link.conf",
+      "txn_backup": "/etc/ssh/sshd_config.d/60-nuxel-tri-link.conf.nuxel-rollback.pre-tri-link-ssh-apply-n26000",
+      "verify_output": "INSTALL-OK (hash checked in-frame)"
+    },
+    {
+      "attempts": 1,
+      "changed": true,
+      "declared_reload": null,
+      "elapsed_s": 4.525,
+      "group": "tri-link-ssh",
+      "health_check": "sshd -t && systemctl is-active sshd.service && sshd -T | grep -qx 'passwordauthentication no' && sshd -T | grep -qx 'kbdinteractiveauthentication no' && sshd -T | grep -q '^allowusers nuxel@10.20.30.0/24$'",
+      "install": {
+        "framed": true,
+        "output": "PREV=NONE\n/home/nuxel/.ssh/authorized_keys.nuxel-staged: OK\nINSTALL-OK\nNXLSCRIPT-RC=0\n",
+        "rc": 0
+      },
+      "installed_hash": "5d070910188a6c8518f5f215f8b4e4871db5797bbaaa49f0bb3e4f3a109a5501",
+      "mode": "0600",
+      "n": 2,
+      "ok": true,
+      "previous_hash": "NONE",
+      "risk": "low",
+      "risk_rank": 0,
+      "rollback": null,
+      "rollback_route": "restore <target>.nuxel-rollback (or remove a newly-created <target>), then systemctl restart sshd.service; the root authorized_keys and the serial console are never modified",
+      "service": "sshd.service",
+      "source": "configs/nuxel/security/ssh/authorized_keys.nuxel",
+      "source_sha256": "5d070910188a6c8518f5f215f8b4e4871db5797bbaaa49f0bb3e4f3a109a5501",
+      "staged_push": {
+        "ack_writes": 0,
+        "acked_bytes": 106,
+        "blocks": 0,
+        "bytes": 106,
+        "elapsed_s": 1.159,
+        "fallback": false,
+        "mode": "frame",
+        "parts": 2,
+        "raw_writes": 0,
+        "resume_used": false,
+        "resumed_b64_chars": 0,
+        "retries": 0,
+        "sha256": "5d070910188a6c8518f5f215f8b4e4871db5797bbaaa49f0bb3e4f3a109a5501",
+        "throughput_bytes_s": 91.5,
+        "write_bytes": 0
+      },
+      "target": "/home/nuxel/.ssh/authorized_keys",
+      "txn_backup": "/home/nuxel/.ssh/authorized_keys.nuxel-rollback.pre-tri-link-ssh-apply-n26000",
+      "verify_output": "INSTALL-OK (hash checked in-frame)"
+    }
+  ],
+  "risk_envelope": {
+    "low": 2
+  },
+  "rollbacks": [],
+  "skipped": [],
+  "steps": 2,
+  "transfer": {
+    "ack_writes": 0,
+    "blocks": 0,
+    "bytes": 1671,
+    "elapsed_s": 3.826,
+    "parts": 19,
+    "raw_writes": 0,
+    "resumes": 0,
+    "retries": 0,
+    "throughput_bytes_s": 436.7,
+    "write_bytes": 0
+  },
+  "verdict": "DEPLOYED_UNVERIFIED",
+  "verdict_note": "files staged, hash-verified, atomically installed and the transaction's coalesced reload/restart actions run once. DEPLOYED_UNVERIFIED means the deploy succeeded but no human-visible behaviour was observed.",
+  "verdicts": {
+    "briq-10b-live-deploy-userspace": "DEPLOYED_UNVERIFIED"
+  },
+  "violations": []
+}

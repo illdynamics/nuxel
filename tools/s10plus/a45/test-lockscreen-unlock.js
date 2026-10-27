@@ -32,6 +32,11 @@ function classList() {
     add(...names) { names.forEach(n => set.add(n)); },
     remove(...names) { names.forEach(n => set.delete(n)); },
     contains(name) { return set.has(name); },
+    toggle(name, force) {
+      const want = force === undefined ? !set.has(name) : !!force;
+      if (want) set.add(name); else set.delete(name);
+      return want;
+    },
     values() { return Array.from(set); },
   };
 }
@@ -90,7 +95,7 @@ function makeHarness(options) {
   const documentTarget = target();
   const doc = Object.assign(documentTarget, {
     hidden: false,
-    body: { dataset: {} },
+    body: { dataset: {}, classList: classList() },
     activeElement: null,
     getElementById(id) { return els[id] || null; },
     querySelectorAll() { return []; },
@@ -118,7 +123,11 @@ function makeHarness(options) {
     document: doc,
     CustomEvent: function (type, opts) { this.type = type; Object.assign(this, opts || {}); },
     navigator: { vibrate() {} },
-    location: { search: options.search || '?boot=os' },
+    location: {
+      search: options.search || '?boot=os',
+      hash: options.hash || '',
+      pathname: '/pwa/nuxel-home/index.html',
+    },
     webkit: undefined,
     NuxelHost: host,
     Promise, Date, Object, Number, String, Math, JSON, RegExp, Error,
@@ -137,10 +146,20 @@ function makeHarness(options) {
       intervals.push({ id, fn, ms });
       return id;
     },
+    // Browser parity: Home's compositor-level minimise call uses fetch(2).
+    // The offline harness must return a resolved JSON response, not leave a
+    // rejected promise behind (which would make later interval assertions flaky).
+    fetch() {
+      return Promise.resolve({ ok: true, json() { return Promise.resolve({ success: true }); } });
+    },
     clearInterval(id) {
       const i = intervals.findIndex(t => t.id === id);
       if (i >= 0) intervals.splice(i, 1);
     },
+  };
+  const historyCalls = [];
+  sandbox.history = {
+    replaceState(state, title, url) { historyCalls.push({ state, title, url }); },
   };
   sandbox.window = sandbox;
   sandbox.globalThis = sandbox;
@@ -171,7 +190,7 @@ function makeHarness(options) {
   }
 
   return {
-    sandbox, els, doc, host, hostState, hostCalls, timers, intervals,
+    sandbox, els, doc, host, hostState, hostCalls, timers, intervals, historyCalls,
     microtasks, flushTimers, flushIntervals,
   };
 }
@@ -402,8 +421,9 @@ async function gesture(h, options) {
           JSON.stringify({ hidden: h.els.lockscreen.hidden, locked: home._isLocked() }));
     check('native host unlock action was requested', h.hostCalls.indexOf('unlock') >= 0, h.hostCalls.join(','));
 
+    check('successful unlock lands on the canonical Home desktop', desktop === 1, desktop);
     home.home();
-    check('unlocked session restores application interaction', desktop === 1, desktop);
+    check('unlocked session restores application interaction', desktop === 2, desktop);
 
     home._lock('power');
     check('next Power-button lock re-shows the lockscreen', home._isLocked() === true && h.els.lockscreen.hidden === false);
@@ -507,6 +527,106 @@ async function gesture(h, options) {
     check('an application element can take focus after unlock', focused === 1 && h.doc.activeElement === input);
   }
 
+  // 12b. Boot unlock deterministically resets the Applications drawer to Home.
+  {
+    const h = makeHarness({ withApp: true });
+    const Home = h.sandbox.NuxelHome;
+    class TestHome extends Home { _init() {} }
+    const home = new TestHome();
+    home.components = {};
+    home._closeOverlays = () => {};
+    home._inputTrace = () => {};
+    let desktop = 0;
+    let drawerClosed = 0;
+    const order = [];
+    h.sandbox.launcher = {
+      currentPage: 4,
+      drawerOpen: true,
+      closeDrawer() { drawerClosed++; this.drawerOpen = false; },
+      exitEditMode() {},
+      mainDesktop() { this.closeDrawer(); desktop++; order.push('mainDesktop'); this.currentPage = 0; },
+    };
+    const ls = new h.sandbox.NuxelLockscreen();
+    home.lockscreen = ls;
+    h.sandbox.nuxel = home;
+    const realHide = ls.hide.bind(ls);
+    ls.hide = function () { order.push('hide'); return realHide(); };
+    ls.show('boot');
+    home._unlock('boot-gesture');
+    check('successful boot unlock calls the canonical Home reset exactly once',
+          desktop === 1, desktop);
+    check('successful boot unlock closes a stale Applications drawer',
+          drawerClosed >= 1 && h.sandbox.launcher.drawerOpen === false, drawerClosed);
+    check('lockscreen is hidden before Home is selected (no drawer flash)',
+          order.indexOf('hide') >= 0 && order.indexOf('hide') < order.indexOf('mainDesktop'), order.join(','));
+    check('Home reset returns the launcher to desktop 1', h.sandbox.launcher.currentPage === 0);
+  }
+
+  // 12c. A late/deep-link application launch cannot build a surface over the lock.
+  {
+    const h = makeHarness({ withApp: true });
+    const Home = h.sandbox.NuxelHome;
+    class TestHome extends Home { _init() {} }
+    const home = new TestHome();
+    home.components = {};
+    home._closeOverlays = () => {};
+    home._inputTrace = () => {};
+    const ls = new h.sandbox.NuxelLockscreen();
+    home.lockscreen = ls;
+    h.sandbox.nuxel = home;
+    ls.show('boot');
+    home._openPwa({ id: 'org.nuxel.WiFiSSHConsole', name: 'Wi-Fi SSH Console', type: 'pwa' }, '/pwa/nuxel-apps/console-wifi/index.html');
+    check('locked deep-link launch is ignored, not rendered behind the lock',
+          home.appSurfaces.size === 0 && home.appSession.state === 'CLOSED',
+          JSON.stringify({ surfaces: home.appSurfaces.size, state: home.appSession.state }));
+  }
+
+  // 12d. Failed unlock never navigates Home and keeps the lockscreen.
+  {
+    const h = makeHarness({ withApp: true, unlockResult: { ok: false, error: 'denied' } });
+    const Home = h.sandbox.NuxelHome;
+    class TestHome extends Home { _init() {} }
+    const home = new TestHome();
+    home.components = {};
+    home._closeOverlays = () => {};
+    home._inputTrace = () => {};
+    let desktop = 0;
+    h.sandbox.launcher = {
+      currentPage: 2, closeDrawer() {}, exitEditMode() {},
+      mainDesktop() { desktop++; this.currentPage = 0; },
+    };
+    const ls = new h.sandbox.NuxelLockscreen();
+    home.lockscreen = ls;
+    h.sandbox.nuxel = home;
+    ls.show('boot');
+    await gesture(h, { points: [400, 300] });
+    check('failed backend unlock does not navigate to Home', desktop === 0, desktop);
+    check('failed backend unlock keeps the lockscreen mounted and locked',
+          ls.isLocked() === true && h.els.lockscreen.hidden === false);
+  }
+
+  // 12e. A pre-lock #app deep link is cleared by the Home transition.
+  {
+    const h = makeHarness({ withApp: true, hash: '#app=org.nuxel.LiveConsole' });
+    const Home = h.sandbox.NuxelHome;
+    class TestHome extends Home { _init() {} }
+    const home = new TestHome();
+    home.components = {};
+    home._closeOverlays = () => {};
+    home._inputTrace = () => {};
+    h.sandbox.launcher = {
+      currentPage: 0, closeDrawer() {}, exitEditMode() {}, mainDesktop() {},
+    };
+    const ls = new h.sandbox.NuxelLockscreen();
+    home.lockscreen = ls;
+    h.sandbox.nuxel = home;
+    ls.show('boot');
+    home._unlock('hash-test');
+    check('post-unlock clears a stale #app route so it cannot reopen later',
+          h.historyCalls.length === 1 && !/#|app=/.test(h.historyCalls[0].url || ''),
+          JSON.stringify(h.historyCalls));
+  }
+
   // 17. Cold boot still begins at the lockscreen.
   {
     const h = makeHarness();
@@ -517,8 +637,8 @@ async function gesture(h, options) {
 
     const index = fs.readFileSync(INDEX_HTML, 'utf8');
     check('boot gate still keys on ?boot=os', /get\('boot'\)\s*!==\s*'os'/.test(index));
-    check('lockscreen script uses the current cache-busting revision', /lockscreen\.js\?v=a68/.test(index));
-    check('app controller uses the current cache-busting revision', /app\.js\?v=a69/.test(index));
+    check('lockscreen script uses the current cache-busting revision', /lockscreen\.js\?v=a77\.1/.test(index));
+    check('app controller uses the current cache-busting revision', /app\.js\?v=a80/.test(index));
   }
 
   console.log('\nNOTE: all checks above are MOCKED/OFFLINE.  Wayland/phoc/WebKitGTK');

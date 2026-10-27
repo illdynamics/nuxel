@@ -1,0 +1,7 @@
+pushed={"acked_bytes": 2068, "b64_chars": 2760, "bytes": 2068, "decoded_sha256": "e202f68a221a4a08433fb5b4e3066a8d3d140f9ce4d29c35ee0957aabe792bef", "frames": 22, "mode": "frame", "parts": 22, "path": "/var/tmp/nxl-install-001.sh", "raw_writes": 0, "retries": 0}
+ok=True rc=0
+---
+PREV=124b9c0789af04707e1ece16415b598573462ce4d07c16865f9421cc38a6b3cf
+/etc/ssh/sshd_config.d/50-nuxel-a74-recovery.conf.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

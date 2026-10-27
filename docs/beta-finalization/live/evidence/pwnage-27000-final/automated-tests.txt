@@ -1,0 +1,43 @@
+== syntax ==
+PASS
+PY_PASS
+SH_PASS
+
+== core ==
+
+ALL PASS (17 passed)
+
+== pytest a72 ==
+.............................                                            [100%]
+29 passed in 1.25s
+
+== pytest a69 ==
+.....                                                                    [100%]
+5 passed in 0.04s
+
+== maps L1-L4 ==
+
+RESULT: PASS=12 FAIL=0 WARN=0 verdict=OFFLINE_RUNTIME_PASSED
+
+== gnss ==
+
+all checks PASS — OFFLINE_TESTED for config + diagnostic; NEEDS_OWNER_TEST for a real fix
+
+== bluetooth/location ==
+
+ALL PASS
+
+== grant store ==
+
+ALL PASS
+
+== bridge ==
+
+[test] ALL TESTS PASSED
+[verify-wiring] ALL 6 PWA SURFACES OK
+
+== registry verifier (pre-existing drift) ==
+apps=14 problems=4 warnings=4 deferred=2 required_apps_pending=5 verdict=FAILED
+
+== settings jsdom ==
+rc=0

@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="nuxel-app-id" content="org.nuxel.LiveConsole">
+  <meta name="theme-color" content="#071426">
+  <title>Serial Live Console</title>
+  <link rel="stylesheet" href="console.css?v=a80">
+</head>
+<body data-transport="serial">
+  <main id="tri-link-console"></main>
+  <script type="module">
+    import { startTriLinkConsole } from './console.js?v=a80';
+    startTriLinkConsole('serial');
+  </script>
+</body>
+</html>

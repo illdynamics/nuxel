@@ -1,0 +1,105 @@
+{
+  "activation_plan": {
+    "counts": {
+      "daemon_reloads_planned": 0,
+      "declared_reloads_seen": 0,
+      "independent_restarts_planned": 1,
+      "reloads_planned": 0,
+      "restarts_planned": 1
+    },
+    "daemon_reload": false,
+    "daemon_reload_action": null,
+    "daemon_reloads_uncoalesced": 0,
+    "reloads": [],
+    "restart_services": [
+      "sshd.service"
+    ],
+    "restart_services_in_reloads": [],
+    "restarts": [
+      {
+        "group": "tri-link-ssh",
+        "service": "sshd.service"
+      }
+    ]
+  },
+  "group_order": [
+    {
+      "declared_reload": null,
+      "declared_reload_source": null,
+      "group": "tri-link-ssh",
+      "priority": 1,
+      "restart_service": "sshd.service",
+      "risk": "low",
+      "risk_rank": 0,
+      "steps": 2
+    }
+  ],
+  "risk_envelope": {
+    "low": 2
+  },
+  "schema_version": 1,
+  "skipped": [],
+  "steps": [
+    {
+      "backup": "/etc/ssh/sshd_config.d/60-nuxel-tri-link.conf.nuxel-rollback",
+      "component": "WLAN/USB SSH console (OpenSSH, public key only)",
+      "declared_reload": "",
+      "group": "tri-link-ssh",
+      "health_check": "sshd -t && systemctl is-active sshd.service && sshd -T | grep -qx 'passwordauthentication no' && sshd -T | grep -qx 'kbdinteractiveauthentication no' && sshd -T | grep -q '^allowusers nuxel@10.20.30.0/24$'",
+      "install_procedure": null,
+      "mode": "0644",
+      "post": [
+        "install -d -m 0700 -o nuxel -g nuxel /home/nuxel/.ssh",
+        "chown nuxel:nuxel /home/nuxel/.ssh/authorized_keys 2>/dev/null || true",
+        "chmod 0600 /home/nuxel/.ssh/authorized_keys 2>/dev/null || true",
+        "sshd -t"
+      ],
+      "pre": [
+        "test -x /usr/sbin/sshd",
+        "test -f /etc/ssh/sshd_config"
+      ],
+      "priority": 1,
+      "risk": "low",
+      "risk_rank": 0,
+      "rollback": "restore <target>.nuxel-rollback (or remove a newly-created <target>), then systemctl restart sshd.service; the root authorized_keys and the serial console are never modified",
+      "service": "sshd.service",
+      "source": "configs/nuxel/security/ssh/60-nuxel-tri-link.conf",
+      "source_sha256": "0243d182c6f7012b983431e616726cc5d70614a566d359eb4f75bd2b8138ca11",
+      "staged": "/etc/ssh/sshd_config.d/60-nuxel-tri-link.conf.nuxel-staged",
+      "target": "/etc/ssh/sshd_config.d/60-nuxel-tri-link.conf",
+      "txn_backup": "/etc/ssh/sshd_config.d/60-nuxel-tri-link.conf.nuxel-rollback.pre-deploy-20261027T150544-1986364",
+      "verify": "sha256sum /etc/ssh/sshd_config.d/60-nuxel-tri-link.conf"
+    },
+    {
+      "backup": "/home/nuxel/.ssh/authorized_keys.nuxel-rollback",
+      "component": "WLAN/USB SSH console (OpenSSH, public key only)",
+      "declared_reload": "",
+      "group": "tri-link-ssh",
+      "health_check": "sshd -t && systemctl is-active sshd.service && sshd -T | grep -qx 'passwordauthentication no' && sshd -T | grep -qx 'kbdinteractiveauthentication no' && sshd -T | grep -q '^allowusers nuxel@10.20.30.0/24$'",
+      "install_procedure": null,
+      "mode": "0600",
+      "post": [
+        "install -d -m 0700 -o nuxel -g nuxel /home/nuxel/.ssh",
+        "chown nuxel:nuxel /home/nuxel/.ssh/authorized_keys 2>/dev/null || true",
+        "chmod 0600 /home/nuxel/.ssh/authorized_keys 2>/dev/null || true",
+        "sshd -t"
+      ],
+      "pre": [
+        "test -x /usr/sbin/sshd",
+        "test -f /etc/ssh/sshd_config"
+      ],
+      "priority": 1,
+      "risk": "low",
+      "risk_rank": 0,
+      "rollback": "restore <target>.nuxel-rollback (or remove a newly-created <target>), then systemctl restart sshd.service; the root authorized_keys and the serial console are never modified",
+      "service": "sshd.service",
+      "source": "configs/nuxel/security/ssh/authorized_keys.nuxel",
+      "source_sha256": "5d070910188a6c8518f5f215f8b4e4871db5797bbaaa49f0bb3e4f3a109a5501",
+      "staged": "/home/nuxel/.ssh/authorized_keys.nuxel-staged",
+      "target": "/home/nuxel/.ssh/authorized_keys",
+      "txn_backup": "/home/nuxel/.ssh/authorized_keys.nuxel-rollback.pre-deploy-20261027T150544-1986364",
+      "verify": "sha256sum /home/nuxel/.ssh/authorized_keys"
+    }
+  ],
+  "violations": []
+}

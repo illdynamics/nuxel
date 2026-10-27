@@ -1,10 +1,11 @@
-// Nuxel Calculator service worker - cache-first (the app is fully offline).
-const CACHE_NAME = 'nuxel-maps-v3';
+// Nuxel Maps service worker - cache-first app shell; map tiles use IndexedDB.
+const CACHE_NAME = 'nuxel-maps-v4';
 const ASSETS = [
   './',
   './index.html',
   './css/maps.css',
   './js/maps.js',
+  '../../nuxel-common/maps-core.js',
   './manifest.json',
   '../../nuxel-common/bridge.js',
   './icons/icon-48.png',

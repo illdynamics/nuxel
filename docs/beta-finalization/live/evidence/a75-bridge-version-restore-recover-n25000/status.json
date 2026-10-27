@@ -1,0 +1,14 @@
+{
+  "blocked_reason": null,
+  "changed_steps": 4,
+  "exit_code": 0,
+  "finished_at": "2026-10-27T14:54:25+0100",
+  "host": "dextronux",
+  "no_op": false,
+  "operation_id": "a75-bridge-version-restore-recover-n25000",
+  "pid": 1971464,
+  "pid_start": "33078499",
+  "rollback_ok": null,
+  "state": "COMPLETE",
+  "verdict": "DEPLOYED_UNVERIFIED"
+}

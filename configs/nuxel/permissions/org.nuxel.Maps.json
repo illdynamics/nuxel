@@ -1,0 +1,8 @@
+{
+  "location:read": {
+    "duration": "always",
+    "granted_at": 0,
+    "portal_type": "location",
+    "source": "first-party-system-grant: Maps current-position marker"
+  }
+}

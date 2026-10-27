@@ -382,11 +382,25 @@ export class NuxelBridgeClient {
             case 'network.wifi-forget':
             case 'bluetooth.status':
             case 'bluetooth.set-powered':
+            case 'bluetooth.power':
+            case 'audio.status':
+            case 'audio.set-volume':
+            case 'audio.set-muted':
+            case 'display.status':
             case 'location.status':
+            case 'location.request':
             case 'location.get-status':
             case 'location.set-enabled':
+            case 'location.acquire':
                 return { success: false, offline: true,
-                    error: 'Nuxel bridge provider is unavailable; ' + key + ' was not performed' };
+                    state: 'unavailable',
+                    error: 'Nuxel bridge location provider is unavailable; ' + key + ' was not performed' };
+            // Transport readiness is a real capability claim. A demo fallback
+            // here would make an unavailable console look connected.
+            case 'system.tri-link':
+                return { success: false, offline: true,
+                    state: 'unavailable',
+                    error: 'Nuxel bridge is unreachable; tri-link status was not read' };
             default:
                 return { success: true, mock: true, _key: key };
         }

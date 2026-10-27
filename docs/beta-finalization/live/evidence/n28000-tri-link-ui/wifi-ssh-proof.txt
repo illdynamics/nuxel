@@ -1,0 +1,17 @@
+# NUXEL-28000 physical Wi-Fi SSH checks (S10+ / 4.14.253)
+# Host: dextronux; target: nuxel@10.20.30.16:22
+# Host key pinned; public-key auth only; key remains host-side.
+
+$ nuxel-live-ssh.sh --transport wlan --host 10.20.30.16 --exec 'printf ...; exit 7'
+remote-ok 4.14.253 a269e14b-2ccd-4f0a-bbeb-088e84daa5a3
+exec_rc=7   # remote exit status preserved
+
+$ nuxel-live-ssh.sh --transport wlan --host 10.20.30.16 --put /tmp/n28000-wifi-src.txt /var/tmp/n28000-wifi-roundtrip.txt
+# put 44 bytes, sha256 6edc5c58bccb6fd5deb5166fb5eb3c9b924e776d367facae09d7b4a63c2bd67f verified
+
+$ nuxel-live-ssh.sh --transport wlan --host 10.20.30.16 --get /var/tmp/n28000-wifi-roundtrip.txt /tmp/n28000-wifi-back.txt
+# get 44 bytes, same sha256 verified
+6edc5c58bccb6fd5deb5166fb5eb3c9b924e776d367facae09d7b4a63c2bd67f  /tmp/n28000-wifi-src.txt
+6edc5c58bccb6fd5deb5166fb5eb3c9b924e776d367facae09d7b4a63c2bd67f  /tmp/n28000-wifi-back.txt
+ROUNDTRIP_IDENTICAL
+REMOTE_CLEAN
