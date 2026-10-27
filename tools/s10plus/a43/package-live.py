@@ -26,8 +26,11 @@ for base in ('pwa/nuxel-home', 'pwa/nuxel-apps/settings',
              'pwa/nuxel-apps/console', 'pwa/nuxel-apps/console-usb',
              'pwa/nuxel-apps/console-wifi', 'pwa/nuxel-apps/maps'):
     for path in (root / base).rglob('*'):
-        if path.is_file() and not path.is_symlink():
-            items.add(path.relative_to(root).as_posix())
+        if not path.is_file() or path.is_symlink():
+            continue
+        if path.name in ('.keep',) or path.name.endswith(('.a59-bak', '.bak')):
+            continue
+        items.add(path.relative_to(root).as_posix())
 items.update({
     'pwa/nuxel-common/app-registry.json',
     'pwa/nuxel-common/bridge-version.json',
@@ -61,9 +64,9 @@ items.update({
     'assets/nuxel-applications-icon-pack/06-05_usb-connection.png',
     'assets/nuxel-quicksettings-icon-pack/01-wifi.png',
 })
-metrics_binary = root / 'build/a40/nuxel-metricsd'
-if metrics_binary.is_file() and not metrics_binary.is_symlink():
-    items.add('build/a40/nuxel-metricsd')
+# The metrics daemon is compiled into the phone rootfs by the image builder.
+# A developer-only build/a40 binary is deliberately NOT packaged: CI does not
+# have it, so including it would make the live payload differ from the release.
 
 manifest = []
 out.parent.mkdir(parents=True, exist_ok=True)

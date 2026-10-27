@@ -654,28 +654,13 @@
           "mode": "0644"
         },
         {
-          "source": "pwa/nuxel-home/index.html.a59-bak",
-          "target": "/home/nuxel/nuxel/pwa/nuxel-home/index.html.a59-bak",
-          "mode": "0644"
-        },
-        {
           "source": "pwa/nuxel-home/js/app.js",
           "target": "/home/nuxel/nuxel/pwa/nuxel-home/js/app.js",
           "mode": "0644"
         },
         {
-          "source": "pwa/nuxel-home/js/app.js.a59-bak",
-          "target": "/home/nuxel/nuxel/pwa/nuxel-home/js/app.js.a59-bak",
-          "mode": "0644"
-        },
-        {
           "source": "pwa/nuxel-home/js/apps.js",
           "target": "/home/nuxel/nuxel/pwa/nuxel-home/js/apps.js",
-          "mode": "0644"
-        },
-        {
-          "source": "pwa/nuxel-home/js/apps.js.a59-bak",
-          "target": "/home/nuxel/nuxel/pwa/nuxel-home/js/apps.js.a59-bak",
           "mode": "0644"
         },
         {
@@ -786,16 +771,6 @@
         {
           "source": "pwa/nuxel-home/sw.js",
           "target": "/home/nuxel/nuxel/pwa/nuxel-home/sw.js",
-          "mode": "0644"
-        },
-        {
-          "source": "pwa/nuxel-home/sw.js.a59-bak",
-          "target": "/home/nuxel/nuxel/pwa/nuxel-home/sw.js.a59-bak",
-          "mode": "0644"
-        },
-        {
-          "source": "pwa/nuxel-apps/settings/.keep",
-          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/settings/.keep",
           "mode": "0644"
         },
         {
