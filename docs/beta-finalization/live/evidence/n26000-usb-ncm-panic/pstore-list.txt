@@ -1,0 +1,4 @@
+total 0
+drwxr-x---  2 root root     0 Oct 27 15:26 .
+drwxr-xr-x 13 root root     0 Oct 27 15:28 ..
+-r--r--r--  1 root root 27206 Oct 27 15:25 dmesg-ramoops-0

@@ -36,6 +36,23 @@ except Exception as _e:  # pragma: no cover - api.py must not fail import withou
     system_indicators = None
     logger.warning('system_indicators unavailable: %s', _e)
 
+# Tri-Link is a read-only capability/status view for the three console apps.
+# It never starts sshd, touches configfs, opens serial or changes routes.
+try:
+    import tri_link_status
+except Exception as _e:  # pragma: no cover - optional module
+    tri_link_status = None
+    logger.warning('tri_link_status unavailable: %s', _e)
+
+# Privileged hardware providers (audio mixer, Type-C/display inventory, and the
+# Bluetooth rfkill/systemctl actuator).  These run in this ROOT process because
+# the D-Bus bridge is sandboxed away from /dev/snd and /sys/class/rfkill writes.
+try:
+    import hw_providers
+except Exception as _e:  # pragma: no cover - optional module
+    hw_providers = None
+    logger.warning('hw_providers unavailable: %s', _e)
+
 # ── Environment-driven configuration ────────────────────────────
 
 HTTP_BIND = os.environ.get('NUXEL_HTTP_BIND', '127.0.0.1')
@@ -50,7 +67,7 @@ HTTP_MODE = os.environ.get('NUXEL_HTTP_MODE', 'dev')
 # downgrade. NUXEL_BRIDGE_VERSION is the host IMPLEMENTATION version and is
 # allowed to move independently.
 BRIDGE_PROTOCOL_VERSION = os.environ.get('NUXEL_BRIDGE_PROTOCOL_VERSION', '1')
-BRIDGE_HOST_VERSION = os.environ.get('NUXEL_BRIDGE_VERSION', '0.6.7-beta')
+BRIDGE_HOST_VERSION = os.environ.get('NUXEL_BRIDGE_VERSION', '0.7.0-beta')
 
 # Canonical launcher registry, shared with the PWA (pwa/nuxel-common/app-registry.json)
 # and the native shell. The rootfs installs it at /etc/nuxel/app-registry/.
@@ -750,6 +767,7 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
             "GetCapabilities": {"capabilities": [{"id": k, "description": "Dev mock", "risk": "low", "data_source": "mock"} for k in ["phone:status", "location:read", "camera:capture", "sms:send", "notifications:send"]], **mock_base},
             "GetPhoneStatus": self._get_system_phone_status(app_id),
             "GetLocation": {"success": False, "error": "Location not available in VM (GeoClue2 absent)", "data_source": "mock", "backend_layer": "GeoClue2", "backend_audit": audit, "vm_mode": True},
+            "LocationAcquire": {"success": False, "error": "Location not available in VM (GeoClue2 absent)", "data_source": "mock", "backend_layer": "GeoClue2", "backend_audit": audit, "vm_mode": True},
             "SmsGetMessages": {"success": True, "messages": [], **mock_base},
             "SmsSend": {"success": True, "mock": True, "message_id": "mock-sms-1", "number": args[1] if len(args) > 1 else "", "portal_auto_grant": True, **mock_base},
             "GetAppCapabilities": {"app_id": app_id, "capabilities": {}, **mock_base},
@@ -828,6 +846,16 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
             result = self._call_bridge('GetPhoneStatus', app_id)
             self._send_json(result)
 
+        elif path == '/api/v1/system/tri-link':
+            if tri_link_status is not None:
+                try:
+                    self._send_json(tri_link_status.get_status())
+                except Exception as exc:  # noqa: BLE001
+                    logger.error('tri-link status read failed: %s', exc)
+                    self._send_json({'success': False, 'error': str(exc)}, 500)
+            else:
+                self._send_json({'success': False, 'error': 'tri_link_status unavailable'}, 503)
+
         elif path == '/api/v1/system/indicators':
             # Lockhead status indicators.  These read real kernel state
             # directly (power_supply, configfs/UDC, android_usb, and the
@@ -892,8 +920,10 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
         ("sms", "list"): "SmsGetMessages",
         ("call", "end"): "CallEnd",
         ("location", "status"): "GetLocation",
+        ("location", "request"): "GetLocation",
         ("location", "get-status"): "LocationGetStatus",
         ("location", "set-enabled"): "LocationSetEnabled",
+        ("location", "acquire"): "LocationAcquire",
         ("bluetooth", "status"): "BluetoothGetStatus",
         ("bluetooth", "set-powered"): "BluetoothSetPowered",
         ("permissions", "request"): "RequestCapability",
@@ -939,6 +969,7 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
         "GetLocation": lambda app_id, params: [app_id],
         "LocationGetStatus": lambda app_id, params: [app_id],
         "LocationSetEnabled": lambda app_id, params: [app_id, bool((params or {}).get("enabled", False))],
+        "LocationAcquire": lambda app_id, params: [app_id],
         "BluetoothGetStatus": lambda app_id, params: [app_id],
         "BluetoothSetPowered": lambda app_id, params: [app_id, bool((params or {}).get("enabled", False))],
         "RequestCapability": lambda app_id, params: [app_id, params.get("capability", "")],
@@ -971,6 +1002,56 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
                 except Exception as exc:  # noqa: BLE001
                     return {'success': False, 'error': str(exc)}
             return {'success': False, 'error': 'system_indicators unavailable'}
+        if namespace == 'system' and verb == 'tri-link':
+            if tri_link_status is not None:
+                try:
+                    return tri_link_status.get_status()
+                except Exception as exc:  # noqa: BLE001
+                    return {'success': False, 'error': str(exc)}
+            return {'success': False, 'error': 'tri_link_status unavailable'}
+        # Privileged hardware control.  These verbs are handled in this root
+        # process (never forwarded to the sandboxed D-Bus bridge) because they
+        # read /dev/snd or write /sys/class/rfkill.
+        if namespace == 'audio':
+            if hw_providers is None:
+                return {'success': False, 'error': 'audio provider unavailable'}
+            if getattr(self, '_audio_provider', None) is None:
+                self._audio_provider = hw_providers.AudioProvider()
+            if verb == 'status':
+                st = self._audio_provider.get_status()
+                st['timestamp'] = time.time()
+                return st
+            if verb == 'set-volume':
+                return self._audio_provider.set_volume(
+                    params.get('volume') if isinstance(params, dict) else None)
+            if verb == 'set-muted':
+                return self._audio_provider.set_muted(
+                    bool(params.get('muted', False)) if isinstance(params, dict) else False)
+        if namespace == 'display' and verb == 'status':
+            if hw_providers is None:
+                return {'success': False, 'error': 'display provider unavailable'}
+            return hw_providers.DisplayProvider().get_status()
+        if namespace == 'bluetooth' and verb == 'power':
+            if hw_providers is None:
+                return {'success': False, 'error': 'bluetooth power provider unavailable'}
+            # Same capability gate as the D-Bus BluetoothSetPowered method: the
+            # privileged actuator must not be weaker than the sandboxed path.
+            perm = self._call_bridge('CheckPermission', app_id, 'bluetooth:manage')
+            if not (perm and perm.get('granted')):
+                return {'success': False, 'error': 'Capability not granted: bluetooth:manage',
+                        'error_code': 'CAPABILITY_DENIED'}
+            enabled = bool((params or {}).get('enabled', False))
+            act = hw_providers.bluetooth_set_power(enabled)
+            # Re-read the AUTHORITATIVE controller state from the D-Bus bridge,
+            # so Quick Settings and Settings can never disagree about the result.
+            try:
+                st = self._call_bridge('BluetoothGetStatus', app_id)
+            except Exception as exc:  # noqa: BLE001
+                st = {'success': False, 'error': str(exc)}
+            st = dict(st) if isinstance(st, dict) else {}
+            st.update(act)
+            st['success'] = bool(act.get('success'))
+            return st
         method = self.RPC_METHODS.get((namespace, verb))
         if method is None:
             logger.warning("Unknown RPC %s.%s", namespace, verb)

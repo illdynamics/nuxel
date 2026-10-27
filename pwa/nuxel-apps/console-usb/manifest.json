@@ -1,0 +1,36 @@
+{
+  "display": "fullscreen",
+  "orientation": "any",
+  "background_color": "#071426",
+  "theme_color": "#071426",
+  "lang": "en",
+  "dir": "ltr",
+  "categories": [
+    "utilities",
+    "system"
+  ],
+  "name": "USB SSH Console",
+  "short_name": "USB SSH",
+  "description": "SSH over the phone's USB network gadget. Truthfully unavailable on the current 4.14.253 NCM stack; no fake connection is shown.",
+  "start_url": "/pwa/nuxel-apps/console-usb/index.html",
+  "scope": "/pwa/nuxel-apps/console-usb/",
+  "icons": [
+    {
+      "src": "icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "nuxel": {
+    "bridge_version": "1",
+    "capabilities": [],
+    "app_type": "tri-link-console",
+    "transport": "usb",
+    "read_only_status": true,
+    "facilities": [
+      "phone-side transport discovery and truthful state",
+      "host-side authenticated session command; the app never starts a second serial owner"
+    ]
+  }
+}

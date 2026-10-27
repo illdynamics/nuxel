@@ -1,0 +1,7 @@
+pushed={"acked_bytes": 2063, "b64_chars": 2752, "bytes": 2063, "decoded_sha256": "ddf067844c6976a8bf7266ffd6669df75ce8e14e3aaf6e5b7d3b5a732a31dfdb", "frames": 22, "mode": "frame", "parts": 22, "path": "/var/tmp/nxl-install-003.sh", "raw_writes": 0, "retries": 0}
+ok=True rc=0
+---
+PREV=9fd85d2bbfaf157a5d116fcb8700ce78a21bf22c554667dc12c4be871054b430
+/usr/share/nuxel/pwa/nuxel-apps/settings/hardware-settings.js.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

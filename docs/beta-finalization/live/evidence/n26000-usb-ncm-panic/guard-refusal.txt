@@ -1,0 +1,14 @@
+# nuxel-usb-net.py --status (post-reboot, deployed over WLAN SSH)
+kernel_release: 4.14.253
+known_bad_kernel: true
+compiled_ncm: true
+functions: ["acm.usb0"]
+has_usb0: false
+status: BLOCKED_KERNEL_PANIC
+
+# nuxel-usb-net.py --apply --i-understand-serial-may-reenumerate
+!! BLOCKED_KERNEL_PANIC: the live 4.14.253 NCM/configfs path panicked the kernel
+   (pstore Panic#2; watchdog reboot) during NUXEL-26000; do not retry without a
+   fixed kernel/gadget stack (use --allow-unsafe-kernel only for a deliberate
+   experiment)
+apply_rc=2

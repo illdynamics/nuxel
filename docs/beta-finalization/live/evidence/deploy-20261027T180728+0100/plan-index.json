@@ -1,0 +1,2282 @@
+[
+  {
+    "group": "v070-pwa-static",
+    "n": 1,
+    "risk": "low",
+    "script": "scripts/001-button-left.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/branding/button-left.png",
+    "source_sha256": "3cc3c77a073788b5ee6192af7bbe5c970c971c68146e4c17ef404b246cc62b6a",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/button-left.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 2,
+    "risk": "low",
+    "script": "scripts/002-button-middle.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/branding/button-middle.png",
+    "source_sha256": "c9b34ac7e3a387626a5ee6694519b779bced64bf32869be096f73cf4c7011fc1",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/button-middle.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 3,
+    "risk": "low",
+    "script": "scripts/003-button-right.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/branding/button-right.png",
+    "source_sha256": "23257499b1617e95afd9b02a1bd99c86633f13e9f1f83d781b315d94873ee921",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/button-right.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 4,
+    "risk": "low",
+    "script": "scripts/004-01-01_terminal.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/01-01_terminal.png",
+    "source_sha256": "b23d3cbfe130bcb6ecaa209e2e51f303f01aed1c20fd40b3b448da33d605ce3d",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/01-01_terminal.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 5,
+    "risk": "low",
+    "script": "scripts/005-01-02_snekbyte.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/01-02_snekbyte.png",
+    "source_sha256": "9859e38325b643735aed45d0a8b31d11c9f70551a2808fc66e2cf41db5163119",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/01-02_snekbyte.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 6,
+    "risk": "low",
+    "script": "scripts/006-01-03_poop-o-meter.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/01-03_poop-o-meter.png",
+    "source_sha256": "6b113b3cd9559924b6c534a93d6154efcb08c1a0a25fa21ae2cd646e4e8b6c40",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/01-03_poop-o-meter.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 7,
+    "risk": "low",
+    "script": "scripts/007-01-04_authenticator.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/01-04_authenticator.png",
+    "source_sha256": "ba0fc865cc3c054e5bc86e8d0c3b684a6f1cf77e78824095e0553ab92d289bff",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/01-04_authenticator.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 8,
+    "risk": "low",
+    "script": "scripts/008-01-05_penguinterface.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/01-05_penguinterface.png",
+    "source_sha256": "c53c006b6e082b2b7bb81e23a34e51cd6e0246af27ae2f5d1f6af197a548c031",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/01-05_penguinterface.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 9,
+    "risk": "low",
+    "script": "scripts/009-01-06_pixel-envelope.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/01-06_pixel-envelope.png",
+    "source_sha256": "2b728648ca6ce4b58522496edad7ed647fbbe85f3f385ae7f643e20deb3f9e97",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/01-06_pixel-envelope.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 10,
+    "risk": "low",
+    "script": "scripts/010-01-07_pixel-wings.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/01-07_pixel-wings.png",
+    "source_sha256": "a6ee6424e84660adaa68cb554950b60bb8d5deed805996a3f94e0bd19bc3b1ff",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/01-07_pixel-wings.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 11,
+    "risk": "low",
+    "script": "scripts/011-01-08_phone.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/01-08_phone.png",
+    "source_sha256": "ba6e3c4ab20e966adebd86a58bc5e55d0dda7975e0d0ba6be0d80cf4c08ad93d",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/01-08_phone.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 12,
+    "risk": "low",
+    "script": "scripts/012-01-09_browser-swirl.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/01-09_browser-swirl.png",
+    "source_sha256": "d29c012158ec6a85d7375cfc475d9e9feab44842b7b473710f053419023ed1c1",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/01-09_browser-swirl.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 13,
+    "risk": "low",
+    "script": "scripts/013-01-10_document.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/01-10_document.png",
+    "source_sha256": "8c2d8c73a2143c728176ada52243f2055985a941bf104c57ffaa621391d2cc67",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/01-10_document.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 14,
+    "risk": "low",
+    "script": "scripts/014-01-11_settings.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/01-11_settings.png",
+    "source_sha256": "e1475756010e3314ce9b2cf47286c719971bbd40b56ed2e46e6999854bc584c8",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/01-11_settings.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 15,
+    "risk": "low",
+    "script": "scripts/015-01-12_phone-alternative.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/01-12_phone-alternative.png",
+    "source_sha256": "76a730c35c6cdfdc6b6a636c9db357261626247d0cf959b723ffdbb17ba48f90",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/01-12_phone-alternative.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 16,
+    "risk": "low",
+    "script": "scripts/016-02-01_messages.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/02-01_messages.png",
+    "source_sha256": "fe1f515772eafbe77f401791564ac501da23b9662576f01d5417c2fd00c4b347",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/02-01_messages.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 17,
+    "risk": "low",
+    "script": "scripts/017-02-02_contacts.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/02-02_contacts.png",
+    "source_sha256": "a1d161080b61e2549dd1c6a6b3c32c197d204c58e587252286b667ca48a3b07f",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/02-02_contacts.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 18,
+    "risk": "low",
+    "script": "scripts/018-02-03_day-calendar.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/02-03_day-calendar.png",
+    "source_sha256": "e4460c41e03c82c51b95eda2e04e569588b61068e0e90977759249d58c1e4016",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/02-03_day-calendar.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 19,
+    "risk": "low",
+    "script": "scripts/019-02-04_reader.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/02-04_reader.png",
+    "source_sha256": "88e08fb8996d8800d65003b06e6ea7f7270550584b83cfd2ed7031437356010f",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/02-04_reader.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 20,
+    "risk": "low",
+    "script": "scripts/020-02-05_folders.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/02-05_folders.png",
+    "source_sha256": "ee6562f1839ff3ac3bc6f88545cc3b7a6eb3dc7166bc625c88fd4371036d4e20",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/02-05_folders.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 21,
+    "risk": "low",
+    "script": "scripts/021-02-06_file-explorer.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/02-06_file-explorer.png",
+    "source_sha256": "94a22e4b05e0a7a7805e6f3d471639e541a923f379a055d5af9e57d7368d122d",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/02-06_file-explorer.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 22,
+    "risk": "low",
+    "script": "scripts/022-02-07_nuxtore.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/02-07_nuxtore.png",
+    "source_sha256": "8a91daf351204f2b78db0cf53b22645462d6893a0eb168f9c804df96061e69f4",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/02-07_nuxtore.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 23,
+    "risk": "low",
+    "script": "scripts/023-02-08_sync.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/02-08_sync.png",
+    "source_sha256": "9aa5f82017e3103ccb2c4d6c40bc86d5e4f93fe38c0048f76406a76b788ce109",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/02-08_sync.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 24,
+    "risk": "low",
+    "script": "scripts/024-02-09_notes.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/02-09_notes.png",
+    "source_sha256": "030d30414a1648135912e7353ec4ff6f00a8fcb5c5d2a88f726215defd62e283",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/02-09_notes.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 25,
+    "risk": "low",
+    "script": "scripts/025-02-10_calendar-check.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/02-10_calendar-check.png",
+    "source_sha256": "2b165c23bf7ccd794c70f87b468ecb648ebf6bad40e1554dac1f32ea6e15b86b",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/02-10_calendar-check.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 26,
+    "risk": "low",
+    "script": "scripts/026-02-11_software-updates.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/02-11_software-updates.png",
+    "source_sha256": "72ff05afcdc2337b6d06cf1bcada4cabda52ba431cdc81fe7ec28a3d1c30175b",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/02-11_software-updates.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 27,
+    "risk": "low",
+    "script": "scripts/027-02-12_apps.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/02-12_apps.png",
+    "source_sha256": "85b7b81edb1402f00df4803bcfd84680433491f289182e106591ce914aa7a0e7",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/02-12_apps.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 28,
+    "risk": "low",
+    "script": "scripts/028-03-01_camera.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/03-01_camera.png",
+    "source_sha256": "89fa0c84db76ca083a51c882a562d78881f200651b050a2f377b00e045de5af1",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/03-01_camera.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 29,
+    "risk": "low",
+    "script": "scripts/029-03-02_gallery.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/03-02_gallery.png",
+    "source_sha256": "ba6ca7fc18f622362b4ad336d3f344fcb960a2cf4386b12343782567a21466b7",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/03-02_gallery.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 30,
+    "risk": "low",
+    "script": "scripts/030-03-03_audio-player.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/03-03_audio-player.png",
+    "source_sha256": "e5e0cfd404ba492c57bec2a5903c10cd44db02f0a7db0709b89cb2b65e37b3bc",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/03-03_audio-player.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 31,
+    "risk": "low",
+    "script": "scripts/031-03-04_video-player.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/03-04_video-player.png",
+    "source_sha256": "01954277879f9431c81abf9bca5ccec548e6a1deb9fa971b3c3dfb836252a218",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/03-04_video-player.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 32,
+    "risk": "low",
+    "script": "scripts/032-03-05_maps.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/03-05_maps.png",
+    "source_sha256": "78813c9510c8752c2f921d9791c8de77b8cf89e27f014b624f781f0be12481d8",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/03-05_maps.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 33,
+    "risk": "low",
+    "script": "scripts/033-03-06_vpn.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/03-06_vpn.png",
+    "source_sha256": "0c7e3400c4f0a97151378488741f70150cc7ca117800f50025f8a02536454a6e",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/03-06_vpn.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 34,
+    "risk": "low",
+    "script": "scripts/034-03-07_vpn-protected.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/03-07_vpn-protected.png",
+    "source_sha256": "827ba4b125074f36eaf8c0a78660ed1fbfc422d38cb82696f8b88944d4fcc22a",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/03-07_vpn-protected.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 35,
+    "risk": "low",
+    "script": "scripts/035-03-08_calendar.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/03-08_calendar.png",
+    "source_sha256": "e5bbc4b3a3ff3c284006211834c14ddcd0efe50191f93f0278778795cf353957",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/03-08_calendar.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 36,
+    "risk": "low",
+    "script": "scripts/036-03-09_brightness.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/03-09_brightness.png",
+    "source_sha256": "1ee93906798206de890686adb596caa10cb17a99796ecdb310823335534f44df",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/03-09_brightness.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 37,
+    "risk": "low",
+    "script": "scripts/037-03-10_volume.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/03-10_volume.png",
+    "source_sha256": "305639f42b9b749d964ef7dd932e984548f78ecb9a5e7b15f3cb39b9f2c437b9",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/03-10_volume.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 38,
+    "risk": "low",
+    "script": "scripts/038-03-11_battery.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/03-11_battery.png",
+    "source_sha256": "5a58228fc231c5ee45e5d67f1f9fb2b2a83ce82563ab808c1470d090429567f8",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/03-11_battery.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 39,
+    "risk": "low",
+    "script": "scripts/039-03-12_settings-alternative.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/03-12_settings-alternative.png",
+    "source_sha256": "1aaad3699b8ef7481852786734372e7ca5d3e0ccec94d8ee66da62201d6c9f9e",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/03-12_settings-alternative.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 40,
+    "risk": "low",
+    "script": "scripts/040-04-01_tor-privacy-tool.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/04-01_tor-privacy-tool.png",
+    "source_sha256": "6851c02f64f044fdbd99531d5367ffc791f97993ed4b3e3b639f6f692c694e6a",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/04-01_tor-privacy-tool.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 41,
+    "risk": "low",
+    "script": "scripts/041-04-02_permissions.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/04-02_permissions.png",
+    "source_sha256": "abb0aac5a3035684d4f962e38627e89a256dfffe3702baebdc614b4a5d22d38d",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/04-02_permissions.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 42,
+    "risk": "low",
+    "script": "scripts/042-04-03_firewall.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/04-03_firewall.png",
+    "source_sha256": "27fa2a24d9c044dfb89c0cdd0d03c75499bd9c6de6cec62eeb6ede7916b82c5b",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/04-03_firewall.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 43,
+    "risk": "low",
+    "script": "scripts/043-04-04_system-settings.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/04-04_system-settings.png",
+    "source_sha256": "62669fc6f6daaa94b0fd98a150f445a44872ac9ff459b26d2f789a4b4e4a1229",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/04-04_system-settings.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 44,
+    "risk": "low",
+    "script": "scripts/044-04-05_network-settings.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/04-05_network-settings.png",
+    "source_sha256": "75fea0f8e2adc902ff88d992991c0b5922b4eb99667146abcf1128e6eee3328a",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/04-05_network-settings.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 45,
+    "risk": "low",
+    "script": "scripts/045-04-06_bluetooth-settings.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/04-06_bluetooth-settings.png",
+    "source_sha256": "0d237de9eece6ecafa18768990e7287c7e38c34fc51728f202bef182b4167852",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/04-06_bluetooth-settings.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 46,
+    "risk": "low",
+    "script": "scripts/046-04-07_system-info.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/04-07_system-info.png",
+    "source_sha256": "0a81ae4c9b7e717d6694ea8a3e90361769dea094934bb862982121371a027ab4",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/04-07_system-info.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 47,
+    "risk": "low",
+    "script": "scripts/047-04-08_information.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/04-08_information.png",
+    "source_sha256": "e1532f547f0e1c2b896c530c314066c07128bc800c31b0e79c8842abcdfbc8b9",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/04-08_information.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 48,
+    "risk": "low",
+    "script": "scripts/048-04-09_brightness-control.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/04-09_brightness-control.png",
+    "source_sha256": "3af2552a0b9556397f2b5e958a8274ece31d29ba4c1a91358218fe822fdb2bb5",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/04-09_brightness-control.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 49,
+    "risk": "low",
+    "script": "scripts/049-04-10_volume-control.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/04-10_volume-control.png",
+    "source_sha256": "89ac6fb987187ea12cfb2600070512c0a51ad4cc9523d70c5b5795c1df7e6814",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/04-10_volume-control.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 50,
+    "risk": "low",
+    "script": "scripts/050-04-11_battery-indicator.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/04-11_battery-indicator.png",
+    "source_sha256": "499fc20a5131128b6e9d310a2e52571b2ca60c61f8f53fe0245d8a2411e74245",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/04-11_battery-indicator.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 51,
+    "risk": "low",
+    "script": "scripts/051-04-12_utilities.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/04-12_utilities.png",
+    "source_sha256": "c5157174a661ad78963907fd90455ee33446f5521c8e619681251b013431dc2c",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/04-12_utilities.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 52,
+    "risk": "low",
+    "script": "scripts/052-05-01_root-sudo-control.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/05-01_root-sudo-control.png",
+    "source_sha256": "cb2f2746a23c5fed3b270cdced2a628316e64141c6e1dd8cd9f9212bd8272851",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/05-01_root-sudo-control.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 53,
+    "risk": "low",
+    "script": "scripts/053-05-02_system-monitor.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/05-02_system-monitor.png",
+    "source_sha256": "79028fd0deb88fe79659d761fda5530a3140e6aa99cd21763b1f3bd73dee9fda",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/05-02_system-monitor.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 54,
+    "risk": "low",
+    "script": "scripts/054-05-03_security-audit.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/05-03_security-audit.png",
+    "source_sha256": "1299fd4b61eaae90cfd0cfa8a2b77e29a18f46e1fa9f8c6e45c5585718a682bd",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/05-03_security-audit.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 55,
+    "risk": "low",
+    "script": "scripts/055-05-04_developer-management.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/05-04_developer-management.png",
+    "source_sha256": "c3c1c44e06c2b122439eb16e2e17c047d591ddec8e55dd1e730c832ada523271",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/05-04_developer-management.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 56,
+    "risk": "low",
+    "script": "scripts/056-05-05_live-console.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/05-05_live-console.png",
+    "source_sha256": "c695dedd90d5025e33902e2e8ad5f072480084af8950f7c27f435399ac79e6c2",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/05-05_live-console.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 57,
+    "risk": "low",
+    "script": "scripts/057-05-06_downloader.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/05-06_downloader.png",
+    "source_sha256": "c4d8c1594528b1eaa35a7b222a73ddc13c4ca08c972785f9a0cdee089cc31ba3",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/05-06_downloader.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 58,
+    "risk": "low",
+    "script": "scripts/058-05-07_web-window.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/05-07_web-window.png",
+    "source_sha256": "77b5e77bbbf5111ffe07f64f81dd8f8846af998ba38b265f826d6b258642e6b6",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/05-07_web-window.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 59,
+    "risk": "low",
+    "script": "scripts/059-05-08_notepad.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/05-08_notepad.png",
+    "source_sha256": "f5e05b56ec9bae631661dcd249608fb7187bd5415dd53cf193190756e277f4dc",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/05-08_notepad.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 60,
+    "risk": "low",
+    "script": "scripts/060-05-09_clipboard.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/05-09_clipboard.png",
+    "source_sha256": "d159c288d7e297d26b07b36058e7b649d683fa8a4a2d9098430a9d0b9590b39d",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/05-09_clipboard.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 61,
+    "risk": "low",
+    "script": "scripts/061-05-10_transfer.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/05-10_transfer.png",
+    "source_sha256": "e635ccaddfd565ca30bb8de87928472ebe4068f87ea09092aef455ff8d2d942d",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/05-10_transfer.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 62,
+    "risk": "low",
+    "script": "scripts/062-05-11_terminal-alternative.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/05-11_terminal-alternative.png",
+    "source_sha256": "4a7a400228b625ca90823827de460f14cbd68c021a27f86b0894a1baa6461218",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/05-11_terminal-alternative.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 63,
+    "risk": "low",
+    "script": "scripts/063-05-12_app-hub.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/05-12_app-hub.png",
+    "source_sha256": "348ae5743e542fe11f211bb8e9938a7c92b4167e828115bdeff8efb05afadf28",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/05-12_app-hub.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 64,
+    "risk": "low",
+    "script": "scripts/064-06-01_recorder.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/06-01_recorder.png",
+    "source_sha256": "c417d2b6c309a04ee5ae3d66ed2f3962befcb667a00a978edf96a670227f7437",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/06-01_recorder.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 65,
+    "risk": "low",
+    "script": "scripts/065-06-02_calculator.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/06-02_calculator.png",
+    "source_sha256": "a04e185440a91d1d1ea4b86d4c0d0793b62fbddbdd296e2208af13d598ed2a11",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/06-02_calculator.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 66,
+    "risk": "low",
+    "script": "scripts/066-06-03_clock.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/06-03_clock.png",
+    "source_sha256": "32e902705b66f4cd67a29e23bf581bbc9f683217a4544ea332951a6144014d66",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/06-03_clock.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 67,
+    "risk": "low",
+    "script": "scripts/067-06-04_casting-screen.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/06-04_casting-screen.png",
+    "source_sha256": "b10a79025ac113dc47462c87e1abfcd5893f3e91ef2ee90647ead42b6b4873c1",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/06-04_casting-screen.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 68,
+    "risk": "low",
+    "script": "scripts/068-06-05_usb-connection.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/06-05_usb-connection.png",
+    "source_sha256": "8f2b2cb963ba85462b517573940e2a54c38994fd22b69ddd5300193a8b9024d1",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/06-05_usb-connection.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 69,
+    "risk": "low",
+    "script": "scripts/069-06-06_audio-mixer.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/06-06_audio-mixer.png",
+    "source_sha256": "5808a5c03367a5a6a064259dfbc03d535fb10fad6241883d51b0319e37329730",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/06-06_audio-mixer.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 70,
+    "risk": "low",
+    "script": "scripts/070-06-08_workspace.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/06-08_workspace.png",
+    "source_sha256": "adb3a8e45a37ea7409448f17bc2b2fa972690da9b593391a1b5bb706b2a72a8b",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/06-08_workspace.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 71,
+    "risk": "low",
+    "script": "scripts/071-06-09_game-controller.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/06-09_game-controller.png",
+    "source_sha256": "d0bf459351db48771b4d4768696d6979a7c0c713764930c847b368d57d89df58",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/06-09_game-controller.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 72,
+    "risk": "low",
+    "script": "scripts/072-06-10_network-tools.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/06-10_network-tools.png",
+    "source_sha256": "1da85324ec8a0827afb372f859c574d79defd0c5ee5a143aba39764384aa2363",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/06-10_network-tools.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 73,
+    "risk": "low",
+    "script": "scripts/073-06-11_linux-tux.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/06-11_linux-tux.png",
+    "source_sha256": "29e3db760fd5a842c84ca110c4583bfbf878686b0d137e7a2c45d88665dbc633",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/06-11_linux-tux.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 74,
+    "risk": "low",
+    "script": "scripts/074-06-12_linux-tux-alternative.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/06-12_linux-tux-alternative.png",
+    "source_sha256": "8ee25e68c26a4453d62972f3713e015e97afa987ba6766f4e9374544610d6791",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/06-12_linux-tux-alternative.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 75,
+    "risk": "low",
+    "script": "scripts/075-01-wifi.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/01-wifi.png",
+    "source_sha256": "588920a76e1b270dddcb0b853a7f55afb9ae21aeb9f4d488dcb50bcc4d086f2b",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/01-wifi.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 76,
+    "risk": "low",
+    "script": "scripts/076-02-mobile-signal.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/02-mobile-signal.png",
+    "source_sha256": "7ecf9d4fc640282bfef137e04ba2d189ef5c0bf78cac98159e01b37b5dcdc091",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/02-mobile-signal.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 77,
+    "risk": "low",
+    "script": "scripts/077-03-airplane-mode.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/03-airplane-mode.png",
+    "source_sha256": "db5825066b92cb6cf5924c7fc2e9f536ebf81159b0f40a1aded23d0efb7defdb",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/03-airplane-mode.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 78,
+    "risk": "low",
+    "script": "scripts/078-04-bluetooth.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/04-bluetooth.png",
+    "source_sha256": "9a9b67f421d0ed2f83c086816b078c3be85bfdc3fc76a3743dd13c8509b2fda1",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/04-bluetooth.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 79,
+    "risk": "low",
+    "script": "scripts/079-05-wireless-hotspot.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/05-wireless-hotspot.png",
+    "source_sha256": "ec61cea3f63380aa202c3595f52f513542c6d212324232898daca19960b60c88",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/05-wireless-hotspot.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 80,
+    "risk": "low",
+    "script": "scripts/080-06-vpn.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/06-vpn.png",
+    "source_sha256": "6d703c349bceb8d5ad969aab7eeb09c19d2f2ddc546e03dabaae04d7ce641839",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/06-vpn.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 81,
+    "risk": "low",
+    "script": "scripts/081-07-tor.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/07-tor.png",
+    "source_sha256": "6e8da052c5c5544b0bd686648fb01514de4792604b5c08c559d0d4437c5209be",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/07-tor.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 82,
+    "risk": "low",
+    "script": "scripts/082-08-nfc.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/08-nfc.png",
+    "source_sha256": "7a27e6dc1a039e6129bf213683054483fb9782f6f9a7645f7270e2f14f3d56a8",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/08-nfc.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 83,
+    "risk": "low",
+    "script": "scripts/083-09-location.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/09-location.png",
+    "source_sha256": "a9b62d842b00b4866d7154fce53f683f3f7ebcf36c0ee6e469c2e4303757c641",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/09-location.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 84,
+    "risk": "low",
+    "script": "scripts/084-10-flashlight.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/10-flashlight.png",
+    "source_sha256": "3e4780671dafa2c81fc4bd844a6f022b429ff14a977688134a20c411efdbe38c",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/10-flashlight.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 85,
+    "risk": "low",
+    "script": "scripts/085-11-do-not-disturb.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/11-do-not-disturb.png",
+    "source_sha256": "1e53bd1b1ee385a51d897a2c49b370ce7f2442b9541f7b745441aa3927926fdf",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/11-do-not-disturb.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 86,
+    "risk": "low",
+    "script": "scripts/086-12-volume.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/12-volume.png",
+    "source_sha256": "51b87b4999245c98085eaf7252d6546ef3c8f22c6ae46477d6bda1a6fed5dbc8",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/12-volume.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 87,
+    "risk": "low",
+    "script": "scripts/087-13-vibrate.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/13-vibrate.png",
+    "source_sha256": "f516db8052ac18b7895c12bc13c874d1156344d4e3684eafe62af8581fd0e27b",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/13-vibrate.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 88,
+    "risk": "low",
+    "script": "scripts/088-14-mute.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/14-mute.png",
+    "source_sha256": "6cbac20323ea70c7e7f090305188ff83d0925ac753df06ec820643413afe3287",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/14-mute.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 89,
+    "risk": "low",
+    "script": "scripts/089-15-brightness.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/15-brightness.png",
+    "source_sha256": "d023e48fa2c07a8ba49c16b2966616d335f86e54e03b28be4f1b1de2bbb43671",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/15-brightness.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 90,
+    "risk": "low",
+    "script": "scripts/090-16-adaptive-brightness.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/16-adaptive-brightness.png",
+    "source_sha256": "ca435e6e2c540531aa184f57de4cdb9cd9f9ae211c72ddd67ddc05036d94c595",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/16-adaptive-brightness.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 91,
+    "risk": "low",
+    "script": "scripts/091-17-rotation-lock.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/17-rotation-lock.png",
+    "source_sha256": "99ede17594b30f04ed2904f7460335857e44f2d11a7335d4f4815ce76a0fef65",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/17-rotation-lock.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 92,
+    "risk": "low",
+    "script": "scripts/092-18-night-light.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/18-night-light.png",
+    "source_sha256": "f185f1a7ff1bb9bba40cc720e1b4ff43b846aa6a42bb74d15875311c2194cc40",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/18-night-light.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 93,
+    "risk": "low",
+    "script": "scripts/093-19-battery-saver.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/19-battery-saver.png",
+    "source_sha256": "f07f9c517f022e5ea035ec48428c17707ff92014a13fcde9b49a3f116a11c64b",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/19-battery-saver.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 94,
+    "risk": "low",
+    "script": "scripts/094-20-battery-charging.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/20-battery-charging.png",
+    "source_sha256": "3f0769393cc1c414b9ac5eb2fe186b8664bf5c20892721417972ab5ef3b48f01",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/20-battery-charging.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 95,
+    "risk": "low",
+    "script": "scripts/095-21-sync.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/21-sync.png",
+    "source_sha256": "22487f70ae9a09dcd483801aa7a3ccbbb0fe1a870ce7b4553e85148350e3a195",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/21-sync.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 96,
+    "risk": "low",
+    "script": "scripts/096-22-terminal.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/22-terminal.png",
+    "source_sha256": "57b852bd3eb0807c1837abe3e6deb033d06cf925e8b3b24c8374868391192e3f",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/22-terminal.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 97,
+    "risk": "low",
+    "script": "scripts/097-23-firewall.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/23-firewall.png",
+    "source_sha256": "c9aa81a6d6f8fde6075f858ed26111812d317bac665fc157a7ceb7df258e1c68",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/23-firewall.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 98,
+    "risk": "low",
+    "script": "scripts/098-24-microphone-muted.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/24-microphone-muted.png",
+    "source_sha256": "580ccd37d968447fe5cabadb95d923223a151799ccc98378aa7a5f17980b0a84",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/24-microphone-muted.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 99,
+    "risk": "low",
+    "script": "scripts/099-25-camera-disabled.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/25-camera-disabled.png",
+    "source_sha256": "0132c48a500a58155e02eae329d9f6fa528c200ed44ecfbd834803f8e0b909e5",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/25-camera-disabled.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 100,
+    "risk": "low",
+    "script": "scripts/100-26-screenshot.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/26-screenshot.png",
+    "source_sha256": "e86943313e2aee81fbbead831cc1ece2c59d3eaa298ec0c3a95f24b015afef21",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/26-screenshot.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 101,
+    "risk": "low",
+    "script": "scripts/101-27-screen-record.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/27-screen-record.png",
+    "source_sha256": "b0e9a4f6375f6c8b07bab76f6aaf3801da674f8667151a21343447dcbd7ec412",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/27-screen-record.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 102,
+    "risk": "low",
+    "script": "scripts/102-28-unlocked.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/28-unlocked.png",
+    "source_sha256": "292a546ce7f0fdc7fe5861b2288143247aa3b9b6fd0b371a032cf33b89b9cac3",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/28-unlocked.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 103,
+    "risk": "low",
+    "script": "scripts/103-29-terminal-alternate.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/29-terminal-alternate.png",
+    "source_sha256": "34e095eeee848c5d14161f937410a8e3ab40bac1b3ed2d57f9b3e1bf18c3e0a1",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/29-terminal-alternate.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 104,
+    "risk": "low",
+    "script": "scripts/104-30-quick-settings.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/30-quick-settings.png",
+    "source_sha256": "1a5bcd1ebafd71f66cb719530d81c2a73d2a83f07643500723974674841be693",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/30-quick-settings.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 105,
+    "risk": "low",
+    "script": "scripts/105-nuxel-background.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/nuxel-background.png",
+    "source_sha256": "6e337ef2d506a16778fd3c79159f0cf053eb07ace40cf43387a33486da76cb29",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/nuxel-background.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 106,
+    "risk": "low",
+    "script": "scripts/106-nuxel-boot-animation.mp4.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/nuxel-boot-animation.mp4",
+    "source_sha256": "280e094fb3efe54eaf15f0d964bf8ad834eeebde2e34901e1bf1e3520b95184c",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/nuxel-boot-animation.mp4"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 107,
+    "risk": "low",
+    "script": "scripts/107-nuxel-bottom-bar.jpg.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/nuxel-bottom-bar.jpg",
+    "source_sha256": "e40c6b64e828fd6bf5e7ff4c9fecd63c6404fb4ccea84716f361b62dcc0db984",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/nuxel-bottom-bar.jpg"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 108,
+    "risk": "low",
+    "script": "scripts/108-nuxel-bottom-bar2.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/assets/nuxel-bottom-bar2.png",
+    "source_sha256": "be60ece34adcf0179d1a94e4cbca309bd8f9bd629c14aedbd00d6b32d1ccf0e3",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/assets/nuxel-bottom-bar2.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 109,
+    "risk": "low",
+    "script": "scripts/109-colour-test.html.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/colour-test.html",
+    "source_sha256": "1a1f15416829c1c8194ca6c638924156420104ac11095dd94458903b6dba574d",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/colour-test.html"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 110,
+    "risk": "low",
+    "script": "scripts/110-home-settings.css.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/css/home-settings.css",
+    "source_sha256": "cdc435a3ad3857745587fd3507930d3eefc88074949e696742bf6f0bea92df2f",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/css/home-settings.css"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 111,
+    "risk": "low",
+    "script": "scripts/111-launcher.css.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/css/launcher.css",
+    "source_sha256": "9d56a005af3bf09e0c31d1869b7c34f071b285676a3cd7184371dd1de18573e3",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/css/launcher.css"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 112,
+    "risk": "low",
+    "script": "scripts/112-lockscreen.css.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/css/lockscreen.css",
+    "source_sha256": "74bf60926bcd256008a2428bdb33eedcf5ea53016fc952725aa1d8e26f08f01d",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/css/lockscreen.css"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 113,
+    "risk": "low",
+    "script": "scripts/113-search.css.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/css/search.css",
+    "source_sha256": "7854223714fe77cb7e69c62ca1ca9a1ffd02a41d7d3cc3014424f449ff4668f1",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/css/search.css"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 114,
+    "risk": "low",
+    "script": "scripts/114-status-bar.css.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/css/status-bar.css",
+    "source_sha256": "b6e469ee2ee1781f3e855180da40afeb2850563f9907a3a9579744463020e9e3",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/css/status-bar.css"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 115,
+    "risk": "low",
+    "script": "scripts/115-style.css.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/css/style.css",
+    "source_sha256": "acfb751e68598e36c1d2df5eee5069652eedf27f32105f870ab540a80d816cb5",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/css/style.css"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 116,
+    "risk": "low",
+    "script": "scripts/116-icon-128.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/icons/icon-128.png",
+    "source_sha256": "10e4414ee469b24878aab53efe3c62ef60975b793ae672eeb9d3f5d156334171",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/icons/icon-128.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 117,
+    "risk": "low",
+    "script": "scripts/117-icon-144.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/icons/icon-144.png",
+    "source_sha256": "99a73c616072eb70f30e2b0ab1704b6eb364ecd199933aa85caecdbf4ee03672",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/icons/icon-144.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 118,
+    "risk": "low",
+    "script": "scripts/118-icon-152.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/icons/icon-152.png",
+    "source_sha256": "ec29f0eaca2b0584846a37b8090cb67af09451112d3ad9cc82347a4230ec24e3",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/icons/icon-152.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 119,
+    "risk": "low",
+    "script": "scripts/119-icon-192.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/icons/icon-192.png",
+    "source_sha256": "e78e81d831cb310d1c4361ef07830b6f4aaca330c0b60aa12e798bdbb02f646e",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/icons/icon-192.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 120,
+    "risk": "low",
+    "script": "scripts/120-icon-384.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/icons/icon-384.png",
+    "source_sha256": "544787195c748c442b562161451d2757d9e752dd0ac7612f99cf88ba738dd844",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/icons/icon-384.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 121,
+    "risk": "low",
+    "script": "scripts/121-icon-48.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/icons/icon-48.png",
+    "source_sha256": "4e8202e16f2bcccb6d6f77cdfbefe04a2b4b08e9ef6147ab8a56b187ebdb9015",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/icons/icon-48.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 122,
+    "risk": "low",
+    "script": "scripts/122-icon-512.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/icons/icon-512.png",
+    "source_sha256": "3f72dea12870fe315349d24aac0326fb1352f38756682253b99a9276f0da248f",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/icons/icon-512.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 123,
+    "risk": "low",
+    "script": "scripts/123-icon-72.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/icons/icon-72.png",
+    "source_sha256": "27e890f30d925bf9fa08b4d1ea4ad6c4721530f3dda9077eb4d0aa4fb8898417",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/icons/icon-72.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 124,
+    "risk": "low",
+    "script": "scripts/124-icon-96.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/icons/icon-96.png",
+    "source_sha256": "de2227e0254065590ff0171b773d0ab111fe9e9fc0668337b211ac84d59b49b5",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/icons/icon-96.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 125,
+    "risk": "low",
+    "script": "scripts/125-icon.svg.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/icons/icon.svg",
+    "source_sha256": "63fce7256bcf6b1f761eae5b2e401d99e6bbdd5dfbe1694844bcb42a0caf89a5",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/icons/icon.svg"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 126,
+    "risk": "low",
+    "script": "scripts/126-index.html.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/index.html",
+    "source_sha256": "16a2ded2bc54fd3304e697c7ac9779469d46b0e9b8e2e6e5d5eb9f9b2cf19328",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/index.html"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 127,
+    "risk": "low",
+    "script": "scripts/127-index.html.a59-bak.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/index.html.a59-bak",
+    "source_sha256": "948ab7cfe4874e471ba1a3a30b752073d48aa08ea4cc2e29236d085e82f05677",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/index.html.a59-bak"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 128,
+    "risk": "low",
+    "script": "scripts/128-app.js.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/js/app.js",
+    "source_sha256": "ac5ae9490bd0af69812c1372a2e5f30fc52c072281976c1e4545059ff8d9509f",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/js/app.js"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 129,
+    "risk": "low",
+    "script": "scripts/129-app.js.a59-bak.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/js/app.js.a59-bak",
+    "source_sha256": "da73ffcf830ce92158e1545b6595db924a11e924bffdb9555cced829611d723c",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/js/app.js.a59-bak"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 130,
+    "risk": "low",
+    "script": "scripts/130-apps.js.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/js/apps.js",
+    "source_sha256": "4ec589c1827d9e6bafcd04212f082fae3644dcc2fcaa54a903750b318cea8bc8",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/js/apps.js"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 131,
+    "risk": "low",
+    "script": "scripts/131-apps.js.a59-bak.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/js/apps.js.a59-bak",
+    "source_sha256": "c6a72cc0292ea145f59355ddc3dd70cf1640bf9752dbd9e3bee9ffab9a9f3e98",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/js/apps.js.a59-bak"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 132,
+    "risk": "low",
+    "script": "scripts/132-bootlog.js.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/js/bootlog.js",
+    "source_sha256": "d2f766a1e3e128fef72389bf99ff43953c0cea7fd54cdf78edd37a612e52ea3b",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/js/bootlog.js"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 133,
+    "risk": "low",
+    "script": "scripts/133-bridge.js.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/js/bridge.js",
+    "source_sha256": "b84f2789fb3687b514b1fb7d6915e100b8887b877b0aff4d870228e622122585",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/js/bridge.js"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 134,
+    "risk": "low",
+    "script": "scripts/134-gestures.js.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/js/gestures.js",
+    "source_sha256": "c56a79782bc39f3f27d299049c40c94d4fca501c07a7dff2232b7b3c3938eb31",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/js/gestures.js"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 135,
+    "risk": "low",
+    "script": "scripts/135-home-settings.js.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/js/home-settings.js",
+    "source_sha256": "ab3ccd445e8dba89f8bc1b8e6482362422fe9a95538ef570b38c166a5410686a",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/js/home-settings.js"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 136,
+    "risk": "low",
+    "script": "scripts/136-host-bridge.js.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/js/host-bridge.js",
+    "source_sha256": "35d18f88f5f9564a9a1ee41027968f9c3227549b2689f5be31b9d7f08d9e6762",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/js/host-bridge.js"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 137,
+    "risk": "low",
+    "script": "scripts/137-launcher.js.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/js/launcher.js",
+    "source_sha256": "2171f661c354a46cf1f11f515b333f7171f7f3c41c2bc29950c294dfc3fef91b",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/js/launcher.js"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 138,
+    "risk": "low",
+    "script": "scripts/138-layout-model.js.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/js/layout-model.js",
+    "source_sha256": "d2bd5fb9a5bdab00572730e4d4ba472e22413f771557c79ed246920d064b7936",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/js/layout-model.js"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 139,
+    "risk": "low",
+    "script": "scripts/139-lockscreen-indicators.js.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/js/lockscreen-indicators.js",
+    "source_sha256": "fb9627ee7bb88bd22de05b49ceb418445779aaac182c88f967b0edf7114eeee7",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/js/lockscreen-indicators.js"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 140,
+    "risk": "low",
+    "script": "scripts/140-lockscreen.js.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/js/lockscreen.js",
+    "source_sha256": "94849e33ab9862c986d15d3f11d84d2dfaeeb104cc4e0988da391eafc2e4c517",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/js/lockscreen.js"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 141,
+    "risk": "low",
+    "script": "scripts/141-navigation.js.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/js/navigation.js",
+    "source_sha256": "8709890834b93ca2fd345d852f462ba22a4859f1df616c1c1cd3b222039ca4d7",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/js/navigation.js"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 142,
+    "risk": "low",
+    "script": "scripts/142-osd.js.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/js/osd.js",
+    "source_sha256": "7c658be63ae365cc4bcf84d9b3975d14108fae5ce37a3c5cca120ceb49c427b6",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/js/osd.js"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 143,
+    "risk": "low",
+    "script": "scripts/143-qs.js.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/js/qs.js",
+    "source_sha256": "92bfd26af4cd23ba21f4ee8aac3f841799f736851cf7b3b817a8271bacdddb79",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/js/qs.js"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 144,
+    "risk": "low",
+    "script": "scripts/144-recents.js.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/js/recents.js",
+    "source_sha256": "009021c709e2eb38a59890c10f00ae2fa52367831dd2dcdf4800f80f128c743c",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/js/recents.js"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 145,
+    "risk": "low",
+    "script": "scripts/145-safe-zones.js.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/js/safe-zones.js",
+    "source_sha256": "0ef0c91a45b599881f4eea26fca2c08ffdde806ec52dd48472c042ecb5806a0f",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/js/safe-zones.js"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 146,
+    "risk": "low",
+    "script": "scripts/146-scroll-indicators.js.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/js/scroll-indicators.js",
+    "source_sha256": "a5d51cd76677f6ddb34b7d8782a5f5bbc17401dd615d5f372bdc3f600319b2c5",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/js/scroll-indicators.js"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 147,
+    "risk": "low",
+    "script": "scripts/147-search.js.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/js/search.js",
+    "source_sha256": "b2d46748ccd1ba3e4be2257a9728236bd8102eb73ba37de496627ba3bd3015fc",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/js/search.js"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 148,
+    "risk": "low",
+    "script": "scripts/148-settings-store.js.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/js/settings-store.js",
+    "source_sha256": "383e068515aba43da0026d6dc1e0250f34cd87f8f1d7014db2c7831cd18c9c1d",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/js/settings-store.js"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 149,
+    "risk": "low",
+    "script": "scripts/149-status-bar.js.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/js/status-bar.js",
+    "source_sha256": "5e6741e1f3bf02c0e31245cedd5925514d67c6347cc54c7672c68598c96c9c8f",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/js/status-bar.js"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 150,
+    "risk": "low",
+    "script": "scripts/150-system-monitor.js.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/js/system-monitor.js",
+    "source_sha256": "dfac5c203d0c9c25bc620e6397f10132dd1a21e4e013d018d30143ab33643f37",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/js/system-monitor.js"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 151,
+    "risk": "low",
+    "script": "scripts/151-touch-keyboard.js.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/js/touch-keyboard.js",
+    "source_sha256": "aac1d0f22c402b49b4cc577a71cf48fd63a09dc2a4e7e74f0645ee2ab8ac7dd6",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/js/touch-keyboard.js"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 152,
+    "risk": "low",
+    "script": "scripts/152-manifest.json.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/manifest.json",
+    "source_sha256": "419f61d5c2c1ac5fc7b962809d3e2cace9e2b3fa9f3d4e3434f9e5ccd48b5867",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/manifest.json"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 153,
+    "risk": "low",
+    "script": "scripts/153-sw.js.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/sw.js",
+    "source_sha256": "f45eea2d0fe59155cb2ca33a229b9328b4760ad5735b22176d0023b612af1fba",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/sw.js"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 154,
+    "risk": "low",
+    "script": "scripts/154-sw.js.a59-bak.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/sw.js.a59-bak",
+    "source_sha256": "62121464e759b385aa13b61fb0e745f8c3a810b65bab6b814fb709cfc13ad055",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/sw.js.a59-bak"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 155,
+    "risk": "low",
+    "script": "scripts/155-.keep.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-apps/settings/.keep",
+    "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "target": "/usr/share/nuxel/pwa/nuxel-apps/settings/.keep"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 156,
+    "risk": "low",
+    "script": "scripts/156-app.json.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-apps/settings/app.json",
+    "source_sha256": "bc5da102e414875cfb7f4154f9dd1fcf5328b8383e218a5ab08699eb9c0eda8c",
+    "target": "/usr/share/nuxel/pwa/nuxel-apps/settings/app.json"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 157,
+    "risk": "low",
+    "script": "scripts/157-hardware-settings.js.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-apps/settings/hardware-settings.js",
+    "source_sha256": "66c7fb23a6a6b3c77b9dff75840fb1003b992a282054be147d900bb836096884",
+    "target": "/usr/share/nuxel/pwa/nuxel-apps/settings/hardware-settings.js"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 158,
+    "risk": "low",
+    "script": "scripts/158-index.html.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-apps/settings/index.html",
+    "source_sha256": "2266b153d003f95fb3db69c29d049149ef0608d77b431649052e34c8f4e33ab2",
+    "target": "/usr/share/nuxel/pwa/nuxel-apps/settings/index.html"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 159,
+    "risk": "low",
+    "script": "scripts/159-location-maps.js.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-apps/settings/location-maps.js",
+    "source_sha256": "b0cfeefe39aaf11355e9220ab864a1155eda30ffba9cb4e718e848e652411a6e",
+    "target": "/usr/share/nuxel/pwa/nuxel-apps/settings/location-maps.js"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 160,
+    "risk": "low",
+    "script": "scripts/160-manifest.json.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-apps/settings/manifest.json",
+    "source_sha256": "de95552f766c6a62125f41d2f74c4520a922b1d1365d6cd9087cca4c20825835",
+    "target": "/usr/share/nuxel/pwa/nuxel-apps/settings/manifest.json"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 161,
+    "risk": "low",
+    "script": "scripts/161-power-menu.css.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-apps/settings/power-menu.css",
+    "source_sha256": "b649aac15b48d8f5a65115d0a0a79b7b67f5874c805d21561eaace56c7630fdb",
+    "target": "/usr/share/nuxel/pwa/nuxel-apps/settings/power-menu.css"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 162,
+    "risk": "low",
+    "script": "scripts/162-power-menu.html.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-apps/settings/power-menu.html",
+    "source_sha256": "e4a0f55becbad9015fd70a6ed2c37790131e93c1ce8032724ef2b1b8dafa052f",
+    "target": "/usr/share/nuxel/pwa/nuxel-apps/settings/power-menu.html"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 163,
+    "risk": "low",
+    "script": "scripts/163-power-menu.js.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-apps/settings/power-menu.js",
+    "source_sha256": "f51580c53fba527538340b6843b89b878618d0ea120755ea4325bb531cfe8936",
+    "target": "/usr/share/nuxel/pwa/nuxel-apps/settings/power-menu.js"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 164,
+    "risk": "low",
+    "script": "scripts/164-settings-model.js.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-apps/settings/settings-model.js",
+    "source_sha256": "5151b39723276ff627709ef819da3fd7d6d31bff3de020b0093c4bb9d95d63b7",
+    "target": "/usr/share/nuxel/pwa/nuxel-apps/settings/settings-model.js"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 165,
+    "risk": "low",
+    "script": "scripts/165-settings.css.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-apps/settings/settings.css",
+    "source_sha256": "13292e21cdcfdf379aa6489bdc87cad4a857e92d6f163242d177ce1d54056c71",
+    "target": "/usr/share/nuxel/pwa/nuxel-apps/settings/settings.css"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 166,
+    "risk": "low",
+    "script": "scripts/166-settings.js.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-apps/settings/settings.js",
+    "source_sha256": "93cedc2b5a9faf53ed777b9473adc58e3395415e48dc34ac0abd5967c2076a4d",
+    "target": "/usr/share/nuxel/pwa/nuxel-apps/settings/settings.js"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 167,
+    "risk": "low",
+    "script": "scripts/167-wifi-settings.js.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-apps/settings/wifi-settings.js",
+    "source_sha256": "c636ce914fb4ea54fc23a8887a9a15e487030d76a9c0ceed4d838fbaa0d9af77",
+    "target": "/usr/share/nuxel/pwa/nuxel-apps/settings/wifi-settings.js"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 168,
+    "risk": "low",
+    "script": "scripts/168-app.json.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-apps/console/app.json",
+    "source_sha256": "dcb31a1503c9ec12ecf84c1542e5bbe2bdb5fd750b2ec3cacb9a41744679b9ba",
+    "target": "/usr/share/nuxel/pwa/nuxel-apps/console/app.json"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 169,
+    "risk": "low",
+    "script": "scripts/169-console.css.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-apps/console/console.css",
+    "source_sha256": "4f985e8a57dee42278993e469bd38ac3b6cb47a122fd3bd7e4fe6e8937e5987a",
+    "target": "/usr/share/nuxel/pwa/nuxel-apps/console/console.css"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 170,
+    "risk": "low",
+    "script": "scripts/170-console.js.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-apps/console/console.js",
+    "source_sha256": "bd20a9c139d03800ef3f9d1e1fc43d8805c8739e34cf2ed77e805304f2c72b11",
+    "target": "/usr/share/nuxel/pwa/nuxel-apps/console/console.js"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 171,
+    "risk": "low",
+    "script": "scripts/171-icon-128.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-apps/console/icons/icon-128.png",
+    "source_sha256": "e165a24f19a16a6bf4810e7277651d332ff3252b38ccaf92d2a67dadded7c037",
+    "target": "/usr/share/nuxel/pwa/nuxel-apps/console/icons/icon-128.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 172,
+    "risk": "low",
+    "script": "scripts/172-icon-144.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-apps/console/icons/icon-144.png",
+    "source_sha256": "a2a4481f51570f486132259e0ab08d57ec2af2f109b3c9491aa10eb5250a9dc6",
+    "target": "/usr/share/nuxel/pwa/nuxel-apps/console/icons/icon-144.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 173,
+    "risk": "low",
+    "script": "scripts/173-icon-152.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-apps/console/icons/icon-152.png",
+    "source_sha256": "d480fc18fe460c20e795fea7defed41506bf39c5e039bafb0fbf447c89f17459",
+    "target": "/usr/share/nuxel/pwa/nuxel-apps/console/icons/icon-152.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 174,
+    "risk": "low",
+    "script": "scripts/174-icon-192.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-apps/console/icons/icon-192.png",
+    "source_sha256": "e7cdb228b7ceb3baf3218edd9f7c269a179ec7f915be030765913a11ca0a2160",
+    "target": "/usr/share/nuxel/pwa/nuxel-apps/console/icons/icon-192.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 175,
+    "risk": "low",
+    "script": "scripts/175-icon-384.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-apps/console/icons/icon-384.png",
+    "source_sha256": "42463189c16b5040d4b125898d64e901a663ed266c0ba0956527dfb1164c7e65",
+    "target": "/usr/share/nuxel/pwa/nuxel-apps/console/icons/icon-384.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 176,
+    "risk": "low",
+    "script": "scripts/176-icon-48.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-apps/console/icons/icon-48.png",
+    "source_sha256": "395200d5e20520e0c5ecfb8fa4219afde5373dc5fb775e07c751828e1330ca0b",
+    "target": "/usr/share/nuxel/pwa/nuxel-apps/console/icons/icon-48.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 177,
+    "risk": "low",
+    "script": "scripts/177-icon-512.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-apps/console/icons/icon-512.png",
+    "source_sha256": "3b329d853843aeb0dcacd0c648618718986bbda8a2882239cdaeb548fa6bc6af",
+    "target": "/usr/share/nuxel/pwa/nuxel-apps/console/icons/icon-512.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 178,
+    "risk": "low",
+    "script": "scripts/178-icon-72.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-apps/console/icons/icon-72.png",
+    "source_sha256": "957c46f9fba2424112b1e6b84408bd9c4d29176b4dacbb9b49dc9ddb27039c65",
+    "target": "/usr/share/nuxel/pwa/nuxel-apps/console/icons/icon-72.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 179,
+    "risk": "low",
+    "script": "scripts/179-icon-96.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-apps/console/icons/icon-96.png",
+    "source_sha256": "4e2cae66544e076e982f09d4589cb5ffcb316c79c383efc5697b25e89347801f",
+    "target": "/usr/share/nuxel/pwa/nuxel-apps/console/icons/icon-96.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 180,
+    "risk": "low",
+    "script": "scripts/180-icon.svg.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-apps/console/icons/icon.svg",
+    "source_sha256": "dc2d5a956cf51c38fd162facbe5d52127df1f1e892ef10c91841ac597d41b878",
+    "target": "/usr/share/nuxel/pwa/nuxel-apps/console/icons/icon.svg"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 181,
+    "risk": "low",
+    "script": "scripts/181-index.html.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-apps/console/index.html",
+    "source_sha256": "b7fc76d120ddb21535f616f82c761fa142cd3b662757e8d953f2fac58b96f8dc",
+    "target": "/usr/share/nuxel/pwa/nuxel-apps/console/index.html"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 182,
+    "risk": "low",
+    "script": "scripts/182-manifest.json.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-apps/console/manifest.json",
+    "source_sha256": "11eade2b546f54d141dd42d0574e8f2f3c70300299f2d2fafc8c5ed475269211",
+    "target": "/usr/share/nuxel/pwa/nuxel-apps/console/manifest.json"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 183,
+    "risk": "low",
+    "script": "scripts/183-app.json.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-apps/console-usb/app.json",
+    "source_sha256": "70647d22da9817c8ba4aa1e071bc815da9e2523259e09814ccccac2d84ffcdbf",
+    "target": "/usr/share/nuxel/pwa/nuxel-apps/console-usb/app.json"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 184,
+    "risk": "low",
+    "script": "scripts/184-icon.svg.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-apps/console-usb/icons/icon.svg",
+    "source_sha256": "ca06cc37e2405f6a8f2f7e94cd1c396edc20b91e2453669d219b32c81b9b5f47",
+    "target": "/usr/share/nuxel/pwa/nuxel-apps/console-usb/icons/icon.svg"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 185,
+    "risk": "low",
+    "script": "scripts/185-index.html.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-apps/console-usb/index.html",
+    "source_sha256": "db2b5d0a02701cfcb46333b5d8e241053ccab52c0e5a46c04952ab31c39cb5b9",
+    "target": "/usr/share/nuxel/pwa/nuxel-apps/console-usb/index.html"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 186,
+    "risk": "low",
+    "script": "scripts/186-manifest.json.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-apps/console-usb/manifest.json",
+    "source_sha256": "9fb96ccd675e264d71e6489fce5d3ad3ba25a69a31783bc7774ca129b2071752",
+    "target": "/usr/share/nuxel/pwa/nuxel-apps/console-usb/manifest.json"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 187,
+    "risk": "low",
+    "script": "scripts/187-app.json.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-apps/console-wifi/app.json",
+    "source_sha256": "2dc3ade2116e7c5b131fcf29705fc98c63836f20b6c6bf10b6983c04b8a3f6e5",
+    "target": "/usr/share/nuxel/pwa/nuxel-apps/console-wifi/app.json"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 188,
+    "risk": "low",
+    "script": "scripts/188-icon.svg.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-apps/console-wifi/icons/icon.svg",
+    "source_sha256": "57da8f57c7ebe18a69e6bd4a2e5f1cd1aa239ef3bf881f3ddf1431a3ab0a1529",
+    "target": "/usr/share/nuxel/pwa/nuxel-apps/console-wifi/icons/icon.svg"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 189,
+    "risk": "low",
+    "script": "scripts/189-index.html.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-apps/console-wifi/index.html",
+    "source_sha256": "5225d0c2c635af93ad31bd9242b879eaba14da37f3b3c4098630a651fb6ac85f",
+    "target": "/usr/share/nuxel/pwa/nuxel-apps/console-wifi/index.html"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 190,
+    "risk": "low",
+    "script": "scripts/190-manifest.json.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-apps/console-wifi/manifest.json",
+    "source_sha256": "06fc0389ebb8e75eccb7d813b6162932d804cdada0cc3c334fc88c85a96105a5",
+    "target": "/usr/share/nuxel/pwa/nuxel-apps/console-wifi/manifest.json"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 191,
+    "risk": "low",
+    "script": "scripts/191-app.json.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-apps/maps/app.json",
+    "source_sha256": "be8f8cb5fdda78d7227de921b6c6ea4425ae60c00c122fd50bf311a631e78f57",
+    "target": "/usr/share/nuxel/pwa/nuxel-apps/maps/app.json"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 192,
+    "risk": "low",
+    "script": "scripts/192-maps.css.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-apps/maps/css/maps.css",
+    "source_sha256": "803c933290da3f3cd7c6a74e1d7f00b7a478d29e8923b495aa06d86153582ebb",
+    "target": "/usr/share/nuxel/pwa/nuxel-apps/maps/css/maps.css"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 193,
+    "risk": "low",
+    "script": "scripts/193-icon-128.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-apps/maps/icons/icon-128.png",
+    "source_sha256": "8ede5f3ce48b354a5e02a30ebcb970648c6aa28f61ecb24de5ef944664e803db",
+    "target": "/usr/share/nuxel/pwa/nuxel-apps/maps/icons/icon-128.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 194,
+    "risk": "low",
+    "script": "scripts/194-icon-144.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-apps/maps/icons/icon-144.png",
+    "source_sha256": "1ba09a6097fcb7bbc97ffe4fee358013a257f5e881fb0d23d2cb6942f61458ff",
+    "target": "/usr/share/nuxel/pwa/nuxel-apps/maps/icons/icon-144.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 195,
+    "risk": "low",
+    "script": "scripts/195-icon-152.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-apps/maps/icons/icon-152.png",
+    "source_sha256": "debe6f2a711d23af22d9ac93ea7546b24140dbcc4cbab2372038b37ffeca02e9",
+    "target": "/usr/share/nuxel/pwa/nuxel-apps/maps/icons/icon-152.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 196,
+    "risk": "low",
+    "script": "scripts/196-icon-192.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-apps/maps/icons/icon-192.png",
+    "source_sha256": "9e218d5187268dc5f727df51e9dce712f71ee24d5ae3e6968ef41393deffec9c",
+    "target": "/usr/share/nuxel/pwa/nuxel-apps/maps/icons/icon-192.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 197,
+    "risk": "low",
+    "script": "scripts/197-icon-384.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-apps/maps/icons/icon-384.png",
+    "source_sha256": "74d7a712ef5465c6f3d5e7912bbda1584dc821ba77e0c535a3095b94466e4660",
+    "target": "/usr/share/nuxel/pwa/nuxel-apps/maps/icons/icon-384.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 198,
+    "risk": "low",
+    "script": "scripts/198-icon-48.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-apps/maps/icons/icon-48.png",
+    "source_sha256": "f1cbb2e67dbdb75e1d33716ef0ecb85bdcccac0d340cab8aef536be9af735e88",
+    "target": "/usr/share/nuxel/pwa/nuxel-apps/maps/icons/icon-48.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 199,
+    "risk": "low",
+    "script": "scripts/199-icon-512.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-apps/maps/icons/icon-512.png",
+    "source_sha256": "309fb79208eaa00318d02c8e50333fea91891d8c01db826073bc430ccc246a4f",
+    "target": "/usr/share/nuxel/pwa/nuxel-apps/maps/icons/icon-512.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 200,
+    "risk": "low",
+    "script": "scripts/200-icon-72.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-apps/maps/icons/icon-72.png",
+    "source_sha256": "c9a4234cddf234e5acd859a5f1f110ead1a70418480e26a912220f1920eab182",
+    "target": "/usr/share/nuxel/pwa/nuxel-apps/maps/icons/icon-72.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 201,
+    "risk": "low",
+    "script": "scripts/201-icon-96.png.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-apps/maps/icons/icon-96.png",
+    "source_sha256": "227711055267e8312b11957ed6139ebe009665a8882d1fa9ac9dc74b6ae913c3",
+    "target": "/usr/share/nuxel/pwa/nuxel-apps/maps/icons/icon-96.png"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 202,
+    "risk": "low",
+    "script": "scripts/202-index.html.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-apps/maps/index.html",
+    "source_sha256": "03e5d84f54f13dcfbb18bef9b444689fc42c8b83856490136ecefe7040f64ddd",
+    "target": "/usr/share/nuxel/pwa/nuxel-apps/maps/index.html"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 203,
+    "risk": "low",
+    "script": "scripts/203-maps.js.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-apps/maps/js/maps.js",
+    "source_sha256": "f0e303322f6eb3e48145fd553392d548e81867d6ecf0866c8b45c1083b316964",
+    "target": "/usr/share/nuxel/pwa/nuxel-apps/maps/js/maps.js"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 204,
+    "risk": "low",
+    "script": "scripts/204-manifest.json.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-apps/maps/manifest.json",
+    "source_sha256": "217eeaf1d3f6d2568452ffabae4224171476303b61c990073ed92836b61b98fa",
+    "target": "/usr/share/nuxel/pwa/nuxel-apps/maps/manifest.json"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 205,
+    "risk": "low",
+    "script": "scripts/205-sw.js.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-apps/maps/sw.js",
+    "source_sha256": "69f7330a125749a6774c53f3048e9f96b223fad995b76bd24b610d9613d9a72d",
+    "target": "/usr/share/nuxel/pwa/nuxel-apps/maps/sw.js"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 206,
+    "risk": "low",
+    "script": "scripts/206-app-registry.json.sh",
+    "service": null,
+    "source": "pwa/nuxel-common/app-registry.json",
+    "source_sha256": "bae591391417121a5933ff3b2504bf26af634aa9b7d2e584bec9d28a506996c1",
+    "target": "/usr/share/nuxel/pwa/nuxel-common/app-registry.json"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 207,
+    "risk": "low",
+    "script": "scripts/207-bridge-version.json.sh",
+    "service": null,
+    "source": "pwa/nuxel-common/bridge-version.json",
+    "source_sha256": "33fc2c28c5265ef3bce984bfc274c587e4cc3aaa45005e2f6f43baa30cd498c5",
+    "target": "/usr/share/nuxel/pwa/nuxel-common/bridge-version.json"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 208,
+    "risk": "low",
+    "script": "scripts/208-bridge.js.sh",
+    "service": null,
+    "source": "pwa/nuxel-common/bridge.js",
+    "source_sha256": "d0b9645e26dd2c043c345e7c24de6bb433e1475e347a1782f3b9c24d284a3e54",
+    "target": "/usr/share/nuxel/pwa/nuxel-common/bridge.js"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 209,
+    "risk": "low",
+    "script": "scripts/209-geolocation.js.sh",
+    "service": null,
+    "source": "pwa/nuxel-common/geolocation.js",
+    "source_sha256": "c451b588240022537ca2ff29d8c2eb301b18dfad388f0dbfeda6306280980d64",
+    "target": "/usr/share/nuxel/pwa/nuxel-common/geolocation.js"
+  },
+  {
+    "group": "v070-pwa-static",
+    "n": 210,
+    "risk": "low",
+    "script": "scripts/210-maps-core.js.sh",
+    "service": null,
+    "source": "pwa/nuxel-common/maps-core.js",
+    "source_sha256": "2ad0cbd20d4553118101ccafadabcb9d3dba0647eec2de035465fedca89bf53a",
+    "target": "/usr/share/nuxel/pwa/nuxel-common/maps-core.js"
+  },
+  {
+    "group": "v070-diagnostics",
+    "n": 211,
+    "risk": "low",
+    "script": "scripts/211-nuxel-cast-diag.sh.sh",
+    "service": null,
+    "source": "tools/s10plus/a33/nuxel-cast-diag.sh",
+    "source_sha256": "d2516a57150576a992d870709824ca34d91a4b2b70d5c68e58eb805f562910b8",
+    "target": "/usr/local/bin/nuxel-cast-diag.sh"
+  },
+  {
+    "group": "v070-diagnostics",
+    "n": 212,
+    "risk": "low",
+    "script": "scripts/212-nuxel-typec-diag.sh.sh",
+    "service": null,
+    "source": "tools/s10plus/a33/nuxel-typec-diag.sh",
+    "source_sha256": "9eaa18184750d0b3a17d0178aa996af42871a06cdc709d70d1e474dbde32005b",
+    "target": "/usr/local/bin/nuxel-typec-diag.sh"
+  },
+  {
+    "group": "v070-providers-dbus",
+    "n": 213,
+    "risk": "medium",
+    "script": "scripts/213-bridge.py.sh",
+    "service": "nuxel-bridge",
+    "source": "services/nuxel-bridge/src/bridge.py",
+    "source_sha256": "7b3b627da22b37889372472e1eb9c665d26ccd7afa6835063571ceb6e3d06623",
+    "target": "/usr/lib/nuxel/nuxel-bridge/bridge.py"
+  },
+  {
+    "group": "v070-providers-dbus",
+    "n": 214,
+    "risk": "medium",
+    "script": "scripts/214-tri_link_status.py.sh",
+    "service": "nuxel-bridge",
+    "source": "services/nuxel-bridge/src/tri_link_status.py",
+    "source_sha256": "7dc88a1a985f70a9ac2eb8ec2d1bde528a59f38d809920055b41cff6843d923e",
+    "target": "/usr/lib/nuxel/nuxel-bridge/tri_link_status.py"
+  },
+  {
+    "group": "v070-providers-dbus",
+    "n": 215,
+    "risk": "medium",
+    "script": "scripts/215-media_store.py.sh",
+    "service": "nuxel-bridge",
+    "source": "services/nuxel-bridge/src/media_store.py",
+    "source_sha256": "87029f4c186b850c1e0f0872b44e9c2132fec0a79ec6fc971804fea84a7234a0",
+    "target": "/usr/lib/nuxel/nuxel-bridge/media_store.py"
+  },
+  {
+    "group": "v070-providers-dbus",
+    "n": 216,
+    "risk": "medium",
+    "script": "scripts/216-org.nuxel.Bridge.conf.sh",
+    "service": "nuxel-bridge",
+    "source": "services/nuxel-bridge/dbus/org.nuxel.Bridge.conf",
+    "source_sha256": "7eddb60ce4291759a3a3de365d27df1c690cb0538dfc323bf37b1618c2cc1e21",
+    "target": "/etc/dbus-1/system.d/org.nuxel.Bridge.conf"
+  },
+  {
+    "group": "v070-http-providers",
+    "n": 217,
+    "risk": "medium",
+    "script": "scripts/217-api.py.sh",
+    "service": "nuxel-http-bridge",
+    "source": "services/nuxel-bridge/src/api.py",
+    "source_sha256": "59c80b485e63bb2216cde29c3e7f3f36e411acee47d200339225e7d14e67c09a",
+    "target": "/usr/lib/nuxel/nuxel-bridge/api.py"
+  },
+  {
+    "group": "v070-http-providers",
+    "n": 218,
+    "risk": "medium",
+    "script": "scripts/218-hw_providers.py.sh",
+    "service": "nuxel-http-bridge",
+    "source": "services/nuxel-bridge/src/hw_providers.py",
+    "source_sha256": "94978a2589c369b0536222152af574d5d79f8a4f0b2ae8f5a35cca5ca78496ed",
+    "target": "/usr/lib/nuxel/nuxel-bridge/hw_providers.py"
+  },
+  {
+    "group": "v070-grants-configs",
+    "n": 219,
+    "risk": "medium",
+    "script": "scripts/219-org.nuxel.Home.json.sh",
+    "service": "nuxel-bridge",
+    "source": "configs/nuxel/permissions/org.nuxel.Home.json",
+    "source_sha256": "e777f5bd7f341131cdad7c0936b1972753ed92e21faf741040af77308890407c",
+    "target": "/var/lib/nuxel/permissions/org.nuxel.Home.json"
+  },
+  {
+    "group": "v070-grants-configs",
+    "n": 220,
+    "risk": "medium",
+    "script": "scripts/220-nuxel-settings.json.sh",
+    "service": "nuxel-bridge",
+    "source": "configs/nuxel/permissions/nuxel-settings.json",
+    "source_sha256": "dce7f242c18b5a56328b53d9c4a681141a3075298bd13030d463b5cfcadb77b8",
+    "target": "/var/lib/nuxel/permissions/nuxel-settings.json"
+  },
+  {
+    "group": "v070-grants-configs",
+    "n": 221,
+    "risk": "medium",
+    "script": "scripts/221-org.nuxel.Maps.json.sh",
+    "service": "nuxel-bridge",
+    "source": "configs/nuxel/permissions/org.nuxel.Maps.json",
+    "source_sha256": "5ae4dd9ddc54b128cf5cb036d63dbac2b22c42c713767ad86dee3817ea6ef587",
+    "target": "/var/lib/nuxel/permissions/org.nuxel.Maps.json"
+  },
+  {
+    "group": "v070-grants-configs",
+    "n": 222,
+    "risk": "medium",
+    "script": "scripts/222-gnss.json.sh",
+    "service": "nuxel-bridge",
+    "source": "configs/nuxel/gnss/gnss.json",
+    "source_sha256": "f7286633090abe321c9d50d48d1eb04299a6a59c947e391f3b21bf8d0ab6c61b",
+    "target": "/etc/nuxel/gnss/gnss.json"
+  },
+  {
+    "group": "v070-grants-configs",
+    "n": 223,
+    "risk": "medium",
+    "script": "scripts/223-remote-access.json.sh",
+    "service": "nuxel-bridge",
+    "source": "configs/nuxel/security/remote-access.json",
+    "source_sha256": "9c107eddcd780874f0e018d3f75198e2af162a259a5e229d9584815f989f8d67",
+    "target": "/etc/nuxel/security/remote-access.json"
+  },
+  {
+    "group": "v070-version-pins",
+    "n": 224,
+    "risk": "medium",
+    "script": "scripts/224-nuxel-bridge.service.sh",
+    "service": null,
+    "source": "services/nuxel-bridge/systemd/nuxel-bridge.service",
+    "source_sha256": "45b5178db8ced3269eafc22e548232cac12924b6fbb6e1448ac65c01d9c34c96",
+    "target": "/etc/systemd/system/nuxel-bridge.service"
+  },
+  {
+    "group": "v070-version-pins",
+    "n": 225,
+    "risk": "medium",
+    "script": "scripts/225-nuxel-http-bridge.service.sh",
+    "service": null,
+    "source": "services/nuxel-bridge/systemd/nuxel-http-bridge.service",
+    "source_sha256": "2cd5c0fb386d3bd02b9f74c77de3da54546d4a6c69d15a4f36a44a1582550007",
+    "target": "/etc/systemd/system/nuxel-http-bridge.service"
+  },
+  {
+    "group": "v070-version-pins",
+    "n": 226,
+    "risk": "medium",
+    "script": "scripts/226-nuxel-notifications.service.sh",
+    "service": null,
+    "source": "services/nuxel-notifications/systemd/nuxel-notifications.service",
+    "source_sha256": "e7918f28419c23cc210d39fa782c7cd603a18353f7bfe730f98ad8369a5382cd",
+    "target": "/etc/systemd/system/nuxel-notifications.service"
+  },
+  {
+    "group": "v070-version-pins",
+    "n": 227,
+    "risk": "medium",
+    "script": "scripts/227-bridge-version.json.sh",
+    "service": null,
+    "source": "pwa/nuxel-common/bridge-version.json",
+    "source_sha256": "33fc2c28c5265ef3bce984bfc274c587e4cc3aaa45005e2f6f43baa30cd498c5",
+    "target": "/etc/nuxel/bridge-version.json"
+  },
+  {
+    "group": "v070-version-pins",
+    "n": 228,
+    "risk": "medium",
+    "script": "scripts/228-bridge-version.json.sh",
+    "service": null,
+    "source": "pwa/nuxel-common/bridge-version.json",
+    "source_sha256": "33fc2c28c5265ef3bce984bfc274c587e4cc3aaa45005e2f6f43baa30cd498c5",
+    "target": "/usr/share/nuxel/pwa/nuxel-common/bridge-version.json"
+  }
+]

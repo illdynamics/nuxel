@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="Wi-Fi SSH console">
+  <rect width="512" height="512" rx="112" fill="#08283f"/>
+  <circle cx="256" cy="372" r="30" fill="#48d597"/>
+  <path d="M166 290a128 128 0 0 1 180 0" fill="none" stroke="#5db7ff" stroke-width="28" stroke-linecap="round"/>
+  <path d="M112 230a208 208 0 0 1 288 0" fill="none" stroke="#5db7ff" stroke-width="28" stroke-linecap="round"/>
+  <path d="M58 170a288 288 0 0 1 396 0" fill="none" stroke="#5db7ff" stroke-width="28" stroke-linecap="round"/>
+</svg>

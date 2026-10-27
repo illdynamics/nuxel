@@ -1,0 +1,18 @@
+#!/bin/sh
+# Nuxel Home + three Tri-Link PWA console entries -> /usr/share/nuxel/pwa/nuxel-home/manifest.json (service: nuxel-web, risk: low)
+# staged source: pwa/nuxel-home/manifest.json
+# previous-hash: a9b80b9322dfbda2b9706d6643a65e13b8279e60ef71f1e31040301a04835e8b
+set -u
+_NXL_ROLLBACK() { _rc=$?; if [ "$_rc" -ne 0 ]; then if [ -e /usr/share/nuxel/pwa/nuxel-home/manifest.json.nuxel-rollback.pre-n28000-tri-link-apply ]; then cp -a /usr/share/nuxel/pwa/nuxel-home/manifest.json.nuxel-rollback.pre-n28000-tri-link-apply /usr/share/nuxel/pwa/nuxel-home/manifest.json; fi; echo "ROLLED-BACK rc=$_rc"; fi; }
+trap _NXL_ROLLBACK EXIT
+set -e
+if [ -e /usr/share/nuxel/pwa/nuxel-home/manifest.json ]; then printf 'PREV=%s\n' "$(sha256sum /usr/share/nuxel/pwa/nuxel-home/manifest.json | cut -d' ' -f1)"; else echo PREV=NONE; fi
+mkdir -p "$(dirname /usr/share/nuxel/pwa/nuxel-home/manifest.json)"
+if [ -e /usr/share/nuxel/pwa/nuxel-home/manifest.json ] && [ ! -e /usr/share/nuxel/pwa/nuxel-home/manifest.json.nuxel-rollback ]; then cp -a /usr/share/nuxel/pwa/nuxel-home/manifest.json /usr/share/nuxel/pwa/nuxel-home/manifest.json.nuxel-rollback; fi
+if [ -e /usr/share/nuxel/pwa/nuxel-home/manifest.json ] && [ ! -e /usr/share/nuxel/pwa/nuxel-home/manifest.json.nuxel-rollback.pre-n28000-tri-link-apply ]; then cp -a /usr/share/nuxel/pwa/nuxel-home/manifest.json /usr/share/nuxel/pwa/nuxel-home/manifest.json.nuxel-rollback.pre-n28000-tri-link-apply; fi
+test -f /usr/share/nuxel/pwa/nuxel-home/manifest.json.nuxel-staged
+printf '%s  %s\n' a9b80b9322dfbda2b9706d6643a65e13b8279e60ef71f1e31040301a04835e8b /usr/share/nuxel/pwa/nuxel-home/manifest.json.nuxel-staged > /var/tmp/nxl-verify.sha256
+sha256sum -c /var/tmp/nxl-verify.sha256
+mv -f /usr/share/nuxel/pwa/nuxel-home/manifest.json.nuxel-staged /usr/share/nuxel/pwa/nuxel-home/manifest.json
+sha256sum /usr/share/nuxel/pwa/nuxel-home/manifest.json | grep -q a9b80b9322dfbda2b9706d6643a65e13b8279e60ef71f1e31040301a04835e8b
+echo INSTALL-OK

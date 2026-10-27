@@ -157,10 +157,17 @@ def rule_fb_owner(out, rc):
 def rule_sec_ts_irq(out, rc):
     counts = []
     for line in nl.clean_lines(out):
-        if "sec_t" in line:
-            for tok in line.split():
-                if tok.isdigit():
-                    counts.append(int(tok))
+        if "sec_t" not in line or ":" not in line:
+            continue
+        # /proc/interrupts: "<irq>: <count...> <chip> <irq> <type> <name>".
+        # Only the columns AFTER the colon are counters; the IRQ number before
+        # the colon and the duplicate IRQ number after the chip name are not.
+        tail = line.split(":", 1)[1].split()
+        for tok in tail:
+            if tok.isdigit():
+                counts.append(int(tok))
+            else:
+                break
     if counts and sum(counts) > 0:
         return ("DEPLOYED_UNVERIFIED",
                 "sec_ts has a live interrupt counter (sum=%d): this proves the "
@@ -762,17 +769,20 @@ def do_reboot(con, args, report, bundle, pol, history, hist_path):
         report["reboot"]["verdict"] = "DEFERRED"
         report["reboot"]["reason"] = ("a reboot needs both --reason and --diagnostic; "
                                       "refusing a blind reboot")
+        report["verdict"] = "DEFERRED"
         return None, 4
-    allowed = pol.next_reboot(history)
+    allowed = pol.next_reboot(history, reason=args.reason, diagnostic=args.diagnostic)
     if not allowed["allowed"]:
         report["reboot"]["verdict"] = "DEFERRED"
         report["reboot"]["reason"] = allowed["reason"]
         report["reboot"]["policy"] = allowed
+        report["verdict"] = "DEFERRED"
         return None, 4
     failed = [i["id"] for i in report["checklists"]["pre"] if i["status"] == "fail"]
     if failed:
         report["reboot"]["verdict"] = "DEFERRED"
         report["reboot"]["reason"] = ("pre-reboot checklist failed: %s" % ",".join(failed))
+        report["verdict"] = "DEFERRED"
         return None, 4
 
     report["reboot"]["issued_at"] = time.strftime("%Y-%m-%dT%H:%M:%S%z")
@@ -880,7 +890,8 @@ def verdict_note(report):
 
 def finish(bundle, report, args, code):
     report["exit_code"] = code
-    report.setdefault("verdict", "BLOCKED_EXTERNAL_RESOURCE")
+    if report.get("verdict") is None:
+        report["verdict"] = "BLOCKED_EXTERNAL_RESOURCE"
     report["verdicts"] = {"briq-10c-live-reboot-and-verify": report["verdict"],
                           "per-item": {p["id"]: p["verdict"] for p in report["probes"]}}
     bundle.write_json("reboot-and-verify.json", report)

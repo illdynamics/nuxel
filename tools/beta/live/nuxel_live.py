@@ -42,6 +42,7 @@ import os
 import random
 import re
 import select
+import socket
 import subprocess
 import sys
 import termios
@@ -109,6 +110,87 @@ class SelectionError(RuntimeError):
 
 class GuardViolation(RuntimeError):
     """A live operation was about to touch something flash-adjacent."""
+
+
+class OperationCancelled(RuntimeError):
+    """The operator cancelled a live operation at a safe boundary."""
+
+
+# --------------------------------------------------------------------------- #
+# Operator-facing state machine
+# --------------------------------------------------------------------------- #
+#: The operator-facing phases a live console operation may be in.  A transition
+#: to an unexpected phase is a bug and must be raised, not silently accepted, so
+#: a failed reconnect can never be reported as CONNECTED and a failed health
+#: check can never be reported as SUCCEEDED.
+CONSOLE_STATES = (
+    "DISCONNECTED", "CONNECTING", "CONNECTED_IDLE", "COMMAND_RUNNING",
+    "TRANSFER_PREPARING", "TRANSFER_RUNNING", "TRANSFER_VERIFYING",
+    "DEPLOY_STAGING", "DEPLOY_ACTIVATING", "SERVICE_RESTARTING",
+    "RECONNECTING", "HEALTH_CHECK", "ROLLING_BACK", "ROLLED_BACK",
+    "SUCCEEDED", "FAILED", "CANCELLED", "NEEDS_RECOVERY",
+)
+
+#: Valid direct transitions.  Forward progress is explicit; recovery moves are
+#: the only paths that may leave the terminal SUCCEEDED/FAILED/CANCELLED set.
+#: Any active state may move to FAILED/CANCELLED/ROLLING_BACK so a failure or an
+#: operator Ctrl-C can always be represented truthfully at the current boundary.
+_ACTIVE = ("COMMAND_RUNNING", "TRANSFER_PREPARING", "TRANSFER_RUNNING",
+           "TRANSFER_VERIFYING", "DEPLOY_STAGING", "DEPLOY_ACTIVATING",
+           "SERVICE_RESTARTING", "RECONNECTING", "HEALTH_CHECK")
+CONSOLE_TRANSITIONS = {
+    "DISCONNECTED": ("CONNECTING",),
+    "CONNECTING": ("CONNECTED_IDLE", "DISCONNECTED", "FAILED"),
+    "CONNECTED_IDLE": ("COMMAND_RUNNING", "TRANSFER_PREPARING",
+                       "DEPLOY_STAGING", "DEPLOY_ACTIVATING",
+                       "SERVICE_RESTARTING", "HEALTH_CHECK",
+                       "RECONNECTING", "DISCONNECTED",
+                       "CANCELLED", "FAILED", "SUCCEEDED", "ROLLING_BACK"),
+}
+for _s in _ACTIVE:
+    CONSOLE_TRANSITIONS[_s] = ("FAILED", "CANCELLED", "ROLLING_BACK")
+CONSOLE_TRANSITIONS.update({
+    "COMMAND_RUNNING": ("CONNECTED_IDLE", "RECONNECTING", "FAILED", "CANCELLED",
+                        "ROLLING_BACK"),
+    "TRANSFER_PREPARING": ("TRANSFER_RUNNING", "TRANSFER_VERIFYING", "FAILED",
+                           "CANCELLED", "ROLLING_BACK"),
+    "TRANSFER_RUNNING": ("TRANSFER_VERIFYING", "RECONNECTING", "FAILED",
+                         "CANCELLED", "ROLLING_BACK"),
+    "TRANSFER_VERIFYING": ("DEPLOY_STAGING", "RECONNECTING", "FAILED",
+                           "CANCELLED", "ROLLING_BACK"),
+    "DEPLOY_STAGING": ("DEPLOY_ACTIVATING", "HEALTH_CHECK", "RECONNECTING",
+                       "FAILED", "CANCELLED", "ROLLING_BACK"),
+    "DEPLOY_ACTIVATING": ("SERVICE_RESTARTING", "HEALTH_CHECK", "RECONNECTING",
+                          "FAILED", "CANCELLED", "SUCCEEDED", "ROLLING_BACK"),
+    "SERVICE_RESTARTING": ("HEALTH_CHECK", "RECONNECTING", "FAILED",
+                           "CANCELLED", "ROLLING_BACK"),
+    "RECONNECTING": ("CONNECTED_IDLE", "TRANSFER_RUNNING", "DEPLOY_ACTIVATING",
+                     "HEALTH_CHECK", "FAILED", "CANCELLED", "ROLLING_BACK"),
+    "HEALTH_CHECK": ("SUCCEEDED", "FAILED", "RECONNECTING", "CANCELLED",
+                     "NEEDS_RECOVERY", "ROLLING_BACK"),
+    "ROLLING_BACK": ("RECONNECTING", "ROLLED_BACK", "FAILED", "CANCELLED",
+                     "NEEDS_RECOVERY"),
+    "SUCCEEDED": ("SUCCEEDED",),
+    "FAILED": ("ROLLING_BACK",),
+    "CANCELLED": ("ROLLING_BACK", "NEEDS_RECOVERY"),
+    "NEEDS_RECOVERY": ("ROLLING_BACK",),
+    "ROLLED_BACK": ("SUCCEEDED", "FAILED", "CANCELLED", "NEEDS_RECOVERY"),
+})
+
+
+def transition_state(current, new):
+    """Validate and return the next state; raise ValueError on an invalid move."""
+    if new not in CONSOLE_STATES:
+        raise ValueError("unknown console state %r" % new)
+    if new == current:
+        # Re-entering the same phase is always valid (for example activating
+        # group 2 after group 1); it is not an illegal move and changes nothing.
+        return current
+    allowed = CONSOLE_TRANSITIONS.get(current)
+    if allowed is None or new not in allowed:
+        raise ValueError("illegal console state transition %r -> %r"
+                         % (current, new))
+    return new
 
 
 # --------------------------------------------------------------------------- #
@@ -348,6 +430,10 @@ ALLOWED_TARGET_ROOTS = (
     "/usr/share/nuxel", "/var/lib/nuxel", "/etc/systemd/system", "/etc/xdg",
     "/run/nuxel", "/var/tmp",
     "/usr/bin", "/usr/libexec/nuxel", "/etc/systemd", "/etc/dbus-1/system.d",
+    # NUXEL-26000: key-only owner SSH.  These are ordinary userspace config
+    # locations (no partition, boot image, modem or kernel path); the guards
+    # above still reject every flash-adjacent path.
+    "/etc/ssh/sshd_config.d", "/home/nuxel/.ssh",
 )
 
 #: The device's writable userspace tree for the *phone*.  On the handset the whole
@@ -506,6 +592,40 @@ def wrap_length(command, rid="00000000", tmp="/var/tmp/nxl-00000000"):
     return len(build_wrapper(rid, tmp, command))
 
 
+def parse_run_frame(txt, rid, end):
+    """Parse a framed reply while tolerating interleaved kmsg lines.
+
+    The S10+ console mirrors /dev/kmsg, so kernel lines may land between our
+    unique ``@@B/@@R/@@S/@@E`` markers.  The markers are located independently
+    (not as one contiguous regex) and the base64 body is reconstructed as the
+    run of base64-only lines between the R and S markers.  The real body is one
+    ``base64 -w0`` line, so a kmsg line mixed into the gap is ignored rather than
+    polluting the decoded bytes.
+    """
+    if end not in txt:
+        return None
+    m_b = re.search(r"@@B%s@@" % rid, txt)
+    m_r = re.search(r"@@R%s:(-?\d+)@@" % rid, txt)
+    m_s = re.search(r"@@S%s:([0-9a-f]*)@@" % rid, txt)
+    if not (m_b and m_r and m_s):
+        return None
+    rc = int(m_r.group(1))
+    middle = txt[m_r.end():m_s.start()]
+    body_b64 = "".join(
+        ln for ln in re.split(r"[\r\n]+", middle)
+        if re.fullmatch(r"[A-Za-z0-9+/=]+", ln)
+    )
+    import base64
+    try:
+        out = base64.b64decode(body_b64 + "=" * (-len(body_b64) % 4)).decode(
+            "utf-8", "replace")
+    except Exception:  # noqa: BLE001 - degenerate base64 is an unverified frame
+        return {"framed": False, "rc": rc, "output": "", "sha_ok": False}
+    sha = m_s.group(1)
+    sha_ok = bool(sha) and hashlib.sha256(out.encode()).hexdigest() == sha
+    return {"framed": True, "rc": rc, "output": out, "sha_ok": sha_ok}
+
+
 def chunk_size_for(make_command, limit=MAX_WRAPPER_LEN, start=64, step=64,
                    max_size=128):
     """Largest payload size whose fully wrapped push command still fits.
@@ -533,7 +653,51 @@ def chunk_size_for(make_command, limit=MAX_WRAPPER_LEN, start=64, step=64,
     return best
 
 
-def push_bytes(con, data, path, chunk=None, mode="+x"):
+def _device_sha256(con, path):
+    """Return the on-device SHA-256 of `path`, or None when it cannot be read."""
+    res = con.run("sha256sum %s 2>/dev/null | cut -d' ' -f1" % path,
+                  timeout=con.timeout)
+    if not (res.ok and res.rc == 0):
+        return None
+    m = re.search(r"\b([0-9a-f]{64})\b", res.output)
+    return m.group(1) if m else None
+
+
+def _decode_verified(con, b64_path, path, want, mode, cancel_check=None):
+    """Decode a fully-received base64 artifact, verify it, THEN atomically move it.
+
+    The decoded bytes are written to ``<path>.nuxel-decode`` and never promoted
+    to ``path`` until the device-side SHA-256 matches the source.  A truncated
+    or corrupted transfer therefore cannot make a partial file visible.
+    """
+    tmp = path + ".nuxel-decode"
+    for attempt in range(3):
+        if cancel_check is not None and cancel_check():
+            raise OperationCancelled("cancelled before decoding %s" % path)
+        con.run("rm -f %s" % tmp, timeout=con.timeout)
+        dec = con.run("base64 -d < %s > %s" % (b64_path, tmp),
+                      timeout=con.timeout)
+        if dec.ok and dec.rc == 0:
+            got = _device_sha256(con, tmp)
+            if got != want:
+                # The staged bytes are wrong; retrying the same local decode
+                # cannot fix them.  Leave `path` untouched and fail truthfully.
+                return False
+            if cancel_check is not None and cancel_check():
+                raise OperationCancelled("cancelled before promoting %s" % path)
+            mv = con.run("chmod %s %s && mv -f %s %s"
+                         % (mode or "0644", tmp, tmp, path),
+                         timeout=con.timeout)
+            if mv.ok and mv.rc == 0 and _device_sha256(con, path) == want:
+                return True
+            return False
+        con.interrupt()  # a frame receipt was lost; retry the local decode
+        time.sleep(0.5)
+    return False
+
+
+def push_bytes(con, data, path, chunk=None, mode="+x", cancel_check=None,
+               progress=None):
     """Stage `data` at a device path through verified frames (no scp/adb).
 
     Robustness contract (measured on the S10+ 2026-10-16): the console drops the
@@ -544,178 +708,362 @@ def push_bytes(con, data, path, chunk=None, mode="+x"):
     concatenated once every part is confirmed.  The whole payload is base64-encoded
     in flight and the staged file's SHA-256 is read back from the device before the
     push is reported successful.
+
+    This is the conservative fallback.  It is one framed round trip per 128-char
+    part; `block_push_bytes` is the bounded-block fast path.
     """
     import base64
     path = assert_userspace_path(path)
     b64 = base64.b64encode(data).decode()
     want = hashlib.sha256(data).hexdigest()
-    part_prefix = path + "." + want[:16] + ".b64"
+    part_prefix = path + "." + want + ".part"
+    b64_path = path + "." + want + ".b64"
+    transfer_t0 = time.monotonic()
 
     def mk(seg, part):
         return "printf '%s' '%s' > %s" % ("%s", seg, part)
+
+    def _cancelled():
+        return bool(cancel_check is not None and cancel_check())
+
+    def _emit(done_chars, retries):
+        if progress is None:
+            return
+        acked = min(len(data), int(done_chars * 3 / 4))
+        elapsed = max(0.001, time.monotonic() - transfer_t0)
+        progress({"acked_b64_chars": done_chars, "total_b64_chars": len(b64),
+                  "acked_bytes": acked, "total_bytes": len(data),
+                  "parts_done": (done_chars + chunk - 1) // chunk if chunk else 0,
+                  "parts_total": (len(b64) + chunk - 1) // chunk if chunk else 0,
+                  "retries": retries, "phase": "transfer", "mode": "frame",
+                  "elapsed_s": round(elapsed, 3),
+                  "throughput_bytes_s": round(acked / elapsed, 1)})
+
     if chunk is None:
         chunk = chunk_size_for(lambda seg: mk(seg, part_prefix + ".00000"))
     mkdir = con.run('mkdir -p "$(dirname %s)"' % path, timeout=con.timeout)
     if not mkdir.ok or mkdir.rc != 0:
         raise ConsoleLost("cannot create parent directory for %s (%s)"
                           % (path, mkdir.output.strip()[:80]))
+
+    def _cleanup():
+        try:
+            con.run("rm -f %s %s.b64 %s.* %s.nuxel-decode"
+                    % (b64_path, path, part_prefix, path), timeout=con.timeout)
+        except ConsoleLost:
+            pass
+
     parts = []
+    retries = 0
     for i in range(0, len(b64), chunk):
+        if _cancelled():
+            _cleanup()
+            raise OperationCancelled(
+                "push cancelled at chunk %d of %d for %s"
+                % (len(parts) + 1, (len(b64) + chunk - 1) // chunk, path))
         seg = b64[i:i + chunk]
         part = "%s.%05d" % (part_prefix, len(parts))
         cmd = mk(seg, part)
         got = False
         for _try in range(5):
+            if _cancelled():
+                _cleanup()
+                raise OperationCancelled("push cancelled at %s" % path)
             res = con.run(cmd, timeout=con.timeout, guard=False)
             if res.ok:
                 got = True
                 break
+            retries += 1
             con.interrupt()  # clear a half-line before re-sending this chunk
             time.sleep(0.3)
         if not got:
             raise ConsoleLost("chunk %d of %s could not be written to %s"
                               % (len(parts) + 1, path, part))
         parts.append(part)
+        _emit(i + len(seg), retries)
+
     # Retain the parts until destination readback succeeds. A lost console
     # receipt after a successful decode must be safe to retry: removing the
     # parts first made the second attempt truncate the correctly staged file.
-    dec = ("cat %s.* > %s.b64 && "
-           "base64 -d < %s.b64 > %s.decode && "
-           "chmod %s %s.decode && mv -f %s.decode %s"
-           % (part_prefix, path, path, path, mode or "0644", path, path, path))
+    if b64:
+        cat = "cat %s.* > %s" % (part_prefix, b64_path)
+    else:
+        cat = ": > %s" % b64_path
     for _try in range(3):
-        res = con.run(dec, timeout=con.timeout)
-        if res.ok:
-            chk = con.run("sha256sum %s 2>/dev/null | cut -d' ' -f1" % path,
-                          timeout=con.timeout)
-            if chk.ok and want in chk.output:
-                # Cleanup is best effort after verification; it never changes
-                # the verified destination and is itself idempotent.
-                con.run("rm -f %s.b64 %s.*" % (path, part_prefix), timeout=con.timeout)
-                return {"path": path, "bytes": len(data), "b64_chars": len(b64),
-                        "parts": len(parts), "decoded_sha256": want}
+        res = con.run(cat, timeout=con.timeout)
+        if res.ok and res.rc == 0:
+            lenres = con.run("wc -c < %s" % b64_path, timeout=con.timeout)
+            m = re.search(r"(?m)^\s*(\d+)\s*$", lenres.output) if lenres.ok else None
+            if m and int(m.group(1)) == len(b64):
+                if _decode_verified(con, b64_path, path, want, mode,
+                                    cancel_check=cancel_check):
+                    _cleanup()
+                    return {"path": path, "bytes": len(data),
+                            "acked_bytes": len(data), "b64_chars": len(b64),
+                            "parts": len(parts), "frames": len(parts),
+                            "raw_writes": 0, "retries": retries,
+                            "decoded_sha256": want, "mode": "frame"}
         con.interrupt()
         time.sleep(0.5)
     raise ConsoleLost("staged %s failed the on-device sha256 check after decode" % path)
 
 
 def block_push_bytes(con, data, path, mode="0644", chunk=None, block=None,
-                     max_retries=5):
+                     max_retries=5, progress=None, cancel_check=None,
+                     max_block_bytes=3072, ack_timeout=None, resume=True):
     """Stage `data` on-device with bounded, acknowledged BLOCK writes.
 
-    This is the fast path that replaces one framed round trip per 128-char
-    part (``push_bytes``) with a few raw transport writes, while keeping the
-    single-writer rule: every write and every read goes through `con`, so no
-    second process can interleave with the physical serial stream.
+    One block is a bounded burst of base64 lines sent in a SINGLE host write,
+    followed by one uniquely-framed cumulative-length acknowledgement.  This
+    keeps the single-writer rule (every byte goes through `con`) while removing
+    the per-part round trip that made the old frame path ~200-350 B/s.
 
-    Protocol (reusing the line/block limits measured by nuxel-push.py,
-    2026-10-16: 380-char lines, 24 lines per block):
+    Protocol:
+      * a framed setup disables echo, creates the transaction part file and
+        reports its current length;
+      * if a part file from the same target+expected-SHA exists, a verified
+        prefix hash allows a safe resume at a block boundary; otherwise it is
+        truncated and the transfer starts at zero;
+      * each burst is one `write()` of at most ``max_block_bytes`` bytes and a
+        single ACK command carrying ``@@AB<rid>:<block>:<length>@@``;
+      * a missing/mismatched ACK rewinds the part file to the last verified
+        boundary and retries with a finite budget;
+      * the finished b64 file is length-checked, decoded to
+        ``<path>.nuxel-decode``, SHA-256-verified, and only THEN atomically
+        promoted.  A partial artifact never becomes visible at `path`.
 
-      * one framed setup command truncates the part file and disables echo;
-      * each BLOCK is one raw write of `block` base64 lines (append), followed
-        by a `wc -c < part` receipt line;
-      * the cumulative file length is the acknowledgement: if it does not land
-        exactly on the expected boundary, the partial file is truncated back to
-        the last verified length and the block is retried with a bounded budget;
-      * a final framed command decodes, verifies the SHA-256 and atomically
-        moves the decoded bytes to `path`.
-
-    Integrity is end-to-end: nothing is activated until the reconstructed byte
-    count and SHA-256 match the source.  `push_bytes` remains the fallback for
-    callers that must stay on the frame-per-chunk protocol.
+    Progress is emitted only after an acknowledged boundary.  `acked_bytes`
+    therefore means bytes the device confirmed, not bytes queued on the host.
     """
     import base64
+    import bisect
+
     path = assert_userspace_path(path)
     b64 = base64.b64encode(data).decode()
     want = hashlib.sha256(data).hexdigest()
-    part = path + "." + want[:16] + ".b64"
+    part = path + "." + want + ".b64"
+    decoded_tmp = path + ".nuxel-decode"
+    transfer_t0 = time.monotonic()
+
+    def _cancelled():
+        return bool(cancel_check is not None and cancel_check())
 
     if chunk is None:
-        # Measured safe console line limit from nuxel-push.py (380 chars), not
-        # the 128-char frame cap: block streaming reads a cumulative length
-        # receipt, so a single shredded line is recovered by block retry.
+        # Measured safe console line payload (nuxel-push.py, 2026-10-16): 380
+        # base64 characters.  A raw line is not wrapper-limited, but keeping the
+        # same measured cap avoids console line shredding.
         chunk = 380
     if block is None:
-        block = 24
-
-    mkdir = con.run('mkdir -p "$(dirname %s)"' % path, timeout=con.timeout)
-    if not mkdir.ok or mkdir.rc != 0:
-        raise ConsoleLost("cannot create parent directory for %s (%s)"
-                          % (path, mkdir.output.strip()[:80]))
-    # One framed command for setup; the bulk lines below are raw writes.
-    setup = con.run("stty -echo 2>/dev/null; : > %s; echo NXLBLOCK-READY" % part,
-                    timeout=con.timeout)
-    if not setup.ok:
-        raise ConsoleLost("block push setup failed for %s (%s)"
-                          % (path, setup.output.strip()[:80]))
+        # 8 x ~500-byte lines, additionally capped to 3072 payload bytes, keeps
+        # a burst comfortably under the 4 KiB N_TTY input ring.  Measured on the
+        # S10+ 2026-10-27: 3/3 runs of 92,944 bytes, 55 blocks, 0 retries.
+        block = 8
+    if ack_timeout is None:
+        ack_timeout = max(4.0, min(15.0, float(con.timeout or 15.0)))
 
     segs = [b64[i:i + chunk] for i in range(0, len(b64), chunk)]
+    boundaries = [0]
+    for seg in segs:
+        boundaries.append(boundaries[-1] + len(seg))
+    # The byte budget can reduce the requested line count.  Compute the actual
+    # burst geometry once, so block indexes and metrics match the wire.
+    max_line = max((len("printf %%s %s >> %s\r" % (s, part)) for s in segs),
+                   default=1)
+    effective_block = max(1, min(block, max_block_bytes // max(1, max_line)))
+    block_count = ((len(segs) + effective_block - 1) // effective_block
+                   if segs else 0)
     good = 0
     idx = 0
     attempts = 0
-    while idx < len(segs):
-        blk = segs[idx:idx + block]
-        want_len = good + sum(len(s) for s in blk)
-        con.buf.clear()
-        # Write the block as a burst of raw lines (one os.write per line, with a
-        # tiny pump so the far-end line discipline never drops part of the burst)
-        # and ACK at the block boundary with a single cumulative length read.
-        for s in blk:
-            con.send(("printf '%s' '%s' >> %s\r" % ("%s", s, part)).encode())
-            con.pump(0.02)
-        con.send(("wc -c < %s\r" % part).encode())
-        t0 = time.time()
-        seen = None
-        deadline = t0 + max(6.0, con.timeout)
-        while time.time() < deadline:
-            con.pump(0.2)
-            m = None
-            for m in re.finditer(r"(?m)^\s*(\d+)\s*$", con.text()):
-                pass
-            if m:
-                seen = int(m.group(1))
-                if seen == want_len:
-                    break
-        if seen == want_len:
-            good = want_len
-            idx += len(blk)
-            attempts = 0
-            continue
-        # Rewind to the last verified boundary and retry this exact block.
-        attempts += 1
-        if attempts > max_retries:
-            raise ConsoleLost(
-                "block %d of %s could not reach %d bytes (last verified %d)"
-                % (idx // block + 1, path, want_len, good))
-        con.interrupt()
-        if good:
-            rewind = con.run("head -c %d %s > %s.t && mv %s.t %s"
-                             % (good, part, part, part, part), timeout=con.timeout)
-        else:
-            rewind = con.run(": > %s" % part, timeout=con.timeout)
-        if not rewind.ok:
-            raise ConsoleLost("could not rewind %s to verified boundary %d"
-                              % (path, good))
+    total_retries = 0
+    raw_writes = 0
+    ack_writes = 0
+    write_bytes = 0
+    resume_used = False
+    resumed_b64_chars = 0
+    restored_echo = False
 
-    dec = ("cat %s > %s.b64 && base64 -d < %s.b64 > %s.decode && "
-           "chmod %s %s.decode && mv -f %s.decode %s"
-           % (part, path, path, path, mode or "0644", path, path, path))
-    for _try in range(3):
-        res = con.run(dec, timeout=con.timeout)
-        if res.ok:
-            chk = con.run("sha256sum %s 2>/dev/null | cut -d' ' -f1" % path,
-                          timeout=con.timeout)
-            if chk.ok and want in chk.output:
-                con.run("stty echo 2>/dev/null; rm -f %s.b64 %s %s.t"
-                        % (path, part, part), timeout=con.timeout)
-                return {"path": path, "bytes": len(data), "b64_chars": len(b64),
-                        "blocks": (len(segs) + block - 1) // block,
-                        "lines": len(segs), "raw_writes": (len(segs) + block - 1) // block,
-                        "retries": attempts, "decoded_sha256": want,
-                        "mode": "block"}
-        con.interrupt()
-        time.sleep(0.5)
-    raise ConsoleLost("staged %s failed the on-device sha256 check after block decode" % path)
+    def _emit():
+        if progress is None:
+            return
+        acked = min(len(data), int(good * 3 / 4))
+        elapsed = max(0.001, time.monotonic() - transfer_t0)
+        progress({
+            "acked_b64_chars": good, "total_b64_chars": len(b64),
+            "acked_bytes": acked, "total_bytes": len(data),
+            "block_index": idx // max(1, effective_block),
+            "block_count": block_count,
+            "retries": total_retries, "phase": "transfer", "mode": "block",
+            "resume_used": resume_used,
+            "elapsed_s": round(elapsed, 3),
+            "throughput_bytes_s": round(acked / elapsed, 1),
+        })
+
+    def _restore_echo():
+        nonlocal restored_echo
+        if restored_echo:
+            return
+        restored_echo = True
+        try:
+            con.run("stty echo 2>/dev/null", timeout=min(5.0, con.timeout))
+        except Exception:  # noqa: BLE001 - cleanup must never mask the real error
+            pass
+
+    def _parse_uint(output):
+        m = re.search(r"(?m)^\s*(\d+)\s*$", output or "")
+        return int(m.group(1)) if m else None
+
+    def _query_ack(block_no):
+        """Ask for the cumulative length with a unique, nonce-framed marker."""
+        ack_rid = "%04x%04x" % (random.getrandbits(16),
+                                (block_no * 131 + good) & 0xFFFF)
+        marker = "@@AB%s:%d:" % (ack_rid, block_no)
+        cmd = ("printf '\\n@@AB%s:%d:%%s@@\\n' \"$(wc -c < %s)\""
+               % (ack_rid, block_no, part))
+        con.buf.clear()
+        con.send(cmd.encode() + b"\r")
+        deadline = time.time() + ack_timeout
+        pat = re.compile(r"@@AB%s:%d:(\d+)@@" % (ack_rid, block_no))
+        while time.time() < deadline:
+            con.pump(0.15)
+            m = pat.search(con.text())
+            if m:
+                return int(m.group(1)), len(cmd) + 1
+        return None, len(cmd) + 1
+
+    try:
+        mkdir = con.run('mkdir -p "$(dirname %s)"' % path, timeout=con.timeout)
+        if not mkdir.ok or mkdir.rc != 0:
+            raise ConsoleLost("cannot create parent directory for %s (%s)"
+                              % (path, mkdir.output.strip()[:80]))
+
+        # One framed setup: disable echo, create parent, and report the existing
+        # part length WITHOUT truncating it (resume is verified below).
+        setup = con.run(
+            "stty -echo 2>/dev/null; mkdir -p \"$(dirname %s)\"; "
+            ": >> %s; wc -c < %s"
+            % (part, part, part), timeout=con.timeout)
+        if not setup.ok or setup.rc != 0:
+            raise ConsoleLost("block push setup failed for %s (%s)"
+                              % (path, setup.output.strip()[:80]))
+        existing = _parse_uint(setup.output)
+        if existing is None:
+            raise ConsoleLost("block push setup for %s returned no length" % path)
+
+        raw_existing = existing
+        if resume and existing:
+            if existing > len(b64):
+                existing = 0
+            idx = max(0, bisect.bisect_right(boundaries, existing) - 1)
+            off = boundaries[idx]
+            if off > 0:
+                pref = b64[:off].encode()
+                expect = hashlib.sha256(pref).hexdigest()
+                check = con.run("head -c %d %s | sha256sum | cut -d' ' -f1"
+                                % (off, part), timeout=con.timeout)
+                got = (re.search(r"\b([0-9a-f]{64})\b", check.output)
+                       if check.ok and check.rc == 0 else None)
+                if got and got.group(1) == expect:
+                    resume_used = existing > 0
+                    resumed_b64_chars = off
+                    if existing != off:
+                        tr = con.run("head -c %d %s > %s.t && mv -f %s.t %s"
+                                     % (off, part, part, part, part),
+                                     timeout=con.timeout)
+                        if not (tr.ok and tr.rc == 0):
+                            raise ConsoleLost("could not truncate %s to resume "
+                                              "boundary %d" % (part, off))
+                    good = off
+                else:
+                    # A different/corrupt prefix is never trusted.
+                    idx = 0
+                    tr = con.run(": > %s" % part, timeout=con.timeout)
+                    if not (tr.ok and tr.rc == 0):
+                        raise ConsoleLost("could not discard stale part %s" % part)
+            elif raw_existing:
+                tr = con.run(": > %s" % part, timeout=con.timeout)
+                if not (tr.ok and tr.rc == 0):
+                    raise ConsoleLost("could not discard stale part %s" % part)
+        elif raw_existing:
+            tr = con.run(": > %s" % part, timeout=con.timeout)
+            if not (tr.ok and tr.rc == 0):
+                raise ConsoleLost("could not truncate stale part %s" % part)
+
+        _emit()
+        while idx < len(segs):
+            if _cancelled():
+                raise OperationCancelled(
+                    "block push cancelled at block %d/%d for %s"
+                    % (idx // effective_block + 1, block_count, path))
+            # Bound the burst by BOTH line count and bytes.  Keep one line even
+            # if a caller sets an unrealistically small byte budget.
+            blk = segs[idx:idx + effective_block]
+            want_len = good + sum(len(s) for s in blk)
+            burst = b"".join(
+                ("printf %%s %s >> %s\r" % (s, part)).encode() for s in blk)
+            con.buf.clear()
+            con.send(burst)
+            raw_writes += 1
+            write_bytes += len(burst)
+            seen, ack_len = _query_ack(idx // max(1, effective_block))
+            ack_writes += 1
+            write_bytes += ack_len
+            if seen == want_len:
+                good = want_len
+                idx += len(blk)
+                attempts = 0
+                _emit()
+                continue
+
+            # Never trust a missing/short ACK.  Clear the line, rewind to the
+            # last verified boundary and retry this exact block.
+            attempts += 1
+            total_retries += 1
+            if attempts > max_retries:
+                raise ConsoleLost(
+                    "block %d of %s did not acknowledge %d bytes (last verified "
+                    "%d, last ACK %r, %d retries)"
+                    % (idx // effective_block + 1, path, want_len, good, seen,
+                       total_retries))
+            con.interrupt()
+            if good:
+                rw = con.run("head -c %d %s > %s.t && mv -f %s.t %s"
+                             % (good, part, part, part, part), timeout=con.timeout)
+            else:
+                rw = con.run(": > %s" % part, timeout=con.timeout)
+            if not (rw.ok and rw.rc == 0):
+                raise ConsoleLost("could not rewind %s to verified boundary %d"
+                                  % (path, good))
+            time.sleep(min(1.0, 0.2 * attempts))
+
+        if _cancelled():
+            raise OperationCancelled("block push cancelled before decode for %s" % path)
+
+        final = con.run("wc -c < %s" % part, timeout=con.timeout)
+        final_len = _parse_uint(final.output) if final.ok else None
+        if final_len != len(b64):
+            raise ConsoleLost("transfer %s ended at %r/%d base64 bytes"
+                              % (path, final_len, len(b64)))
+        if not _decode_verified(con, part, path, want, mode,
+                                cancel_check=cancel_check):
+            raise ConsoleLost("staged %s failed the on-device sha256 check "
+                              "after block decode" % path)
+        _restore_echo()
+        try:
+            con.run("rm -f %s %s" % (part, decoded_tmp), timeout=con.timeout)
+        except ConsoleLost:
+            pass
+        return {"path": path, "bytes": len(data), "acked_bytes": len(data),
+                "b64_chars": len(b64), "blocks": block_count,
+                "block_lines": effective_block, "parts": len(segs),
+                "lines": len(segs), "raw_writes": raw_writes,
+                "ack_writes": ack_writes, "write_bytes": write_bytes,
+                "retries": total_retries,
+                "resumed_b64_chars": resumed_b64_chars,
+                "resume_used": resume_used,
+                "decoded_sha256": want, "mode": "block"}
+    finally:
+        _restore_echo()
 
 
 def _sanitized_dev(dev: str) -> str:
@@ -740,34 +1088,236 @@ def _lock_path(dev: str) -> str:
     return _shared_lock_path(dev)
 
 
-def take_console_lock(dev: str, lock_wait: float = 0.0, opener=open):
+def _lock_owner_path(shared: str) -> str:
+    """A sidecar metadata file that records who owns `shared` (not the lock).
+
+    The flock itself lives on `shared`; the sidecar is documentation for status
+    views and for a human being deciding whether a lock is stale.  It is never
+    used to grant or deny the lock and it is never deleted as a shortcut.
+    """
+    return shared + ".owner.json"
+
+
+def _proc_start_ticks(pid):
+    """Linux process start time (field 22 of /proc/<pid>/stat), or None.
+
+    A PID can be reused; the start time makes the advisory owner identity
+    specific enough that a dead owner's sidecar cannot be mistaken for a live
+    one after PID reuse.  The flock remains the authoritative lock.
+    """
+    try:
+        with open("/proc/%d/stat" % int(pid)) as fh:
+            data = fh.read()
+        rest = data[data.rfind(")") + 2:].split()
+        return rest[19]
+    except (OSError, ValueError, TypeError, IndexError):
+        return None
+
+
+def _pid_alive(pid, pid_start=None) -> bool:
+    """True when `pid` exists (and, if given, still has the recorded start time)."""
+    try:
+        os.kill(int(pid), 0)
+    except (OSError, ValueError, TypeError):
+        return False
+    if pid_start is not None:
+        return str(_proc_start_ticks(pid)) == str(pid_start)
+    return True
+
+
+def _owner_document(dev: str, op_id: str) -> dict:
+    pid = os.getpid()
+    return {
+        "dev": dev,
+        "pid": pid,
+        "pid_start": _proc_start_ticks(pid),
+        "host": socket.gethostname(),
+        "op": op_id or "console",
+        "acquired_at": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
+        "owner": "%s:%s" % (socket.gethostname(), pid),
+    }
+
+
+def _write_lock_owner(shared: str, dev: str, op_id: str) -> None:
+    """Best-effort metadata write; a missing sidecar never blocks acquisition."""
+    path = _lock_owner_path(shared)
+    tmp = path + ".%d.tmp" % os.getpid()
+    try:
+        with open(tmp, "w") as fh:
+            json.dump(_owner_document(dev, op_id), fh, sort_keys=True)
+        os.replace(tmp, path)
+    except OSError:
+        try:
+            if os.path.exists(tmp):
+                os.unlink(tmp)
+        except OSError:
+            pass
+
+
+def _clear_lock_owner(shared: str, dev: str, pid: int) -> None:
+    """Remove our own sidecar after release; never remove a stranger's."""
+    path = _lock_owner_path(shared)
+    try:
+        doc = json.load(open(path))
+    except (OSError, ValueError):
+        return
+    if str(doc.get("pid")) == str(pid) and doc.get("dev") == dev:
+        try:
+            os.unlink(path)
+        except OSError:
+            pass
+
+
+def release_console_lock(fd, shared, dev):
+    """Clear our own advisory sidecar, then close the shared flock descriptor."""
+    try:
+        _clear_lock_owner(shared, dev, os.getpid())
+    except Exception:  # noqa: BLE001 - release must never mask the caller's error
+        pass
+    try:
+        fd.close()
+    except OSError:
+        pass
+
+
+def _lock_probe(shared: str) -> str:
+    """Return ``held``, ``free``, ``absent`` or ``unknown`` WITHOUT opening a port.
+
+    The probe briefly takes and releases the same exclusive flock.  Crucially,
+    a lock file this user cannot even read is reported as ``unknown`` (fail
+    closed), not as "free": absence of permission is not evidence of absence of
+    an owner.
+    """
+    import fcntl
+    flags = getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NOFOLLOW", 0)
+    fd = None
+    try:
+        fd = os.open(shared, os.O_RDWR | flags)
+    except PermissionError:
+        try:
+            fd = os.open(shared, os.O_RDONLY | flags)
+        except FileNotFoundError:
+            return "absent"
+        except OSError:
+            return "unknown"
+    except FileNotFoundError:
+        return "absent"
+    except OSError:
+        return "unknown"
+    try:
+        try:
+            fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            return "held"
+        fcntl.flock(fd, fcntl.LOCK_UN)
+        return "free"
+    finally:
+        os.close(fd)
+
+
+def _lock_held(shared: str) -> bool:
+    """Backward-compatible boolean: True only when the flock is provably held."""
+    return _lock_probe(shared) == "held"
+
+
+def read_lock_owner(dev: str) -> dict:
+    """Read the current owner document for `dev` WITHOUT contending for the port.
+
+    Returns ``{}`` when no sidecar exists.  Callers must treat this as advisory:
+    a live owner is not proven stale merely because the sidecar is missing or
+    the recorded PID is gone — the flock, not the sidecar, is the truth.
+    """
+    shared = _shared_lock_path(dev)
+    probe = _lock_probe(shared)
+    try:
+        with open(_lock_owner_path(shared)) as fh:
+            doc = json.load(fh)
+        doc["lock_path"] = shared
+        doc["pid_alive"] = _pid_alive(doc.get("pid"), doc.get("pid_start"))
+        doc["lock_state"] = probe
+        doc["lock_held"] = probe == "held"
+        return doc
+    except (OSError, ValueError):
+        return {"lock_path": shared, "owned": False, "lock_state": probe,
+                "lock_held": probe == "held"}
+
+
+def lock_status_text(dev: str) -> str:
+    """Human-readable, advisory lock status for `dev` (never opens the port)."""
+    doc = read_lock_owner(dev)
+    state = doc.get("lock_state") or ("held" if doc.get("lock_held") else "free")
+    if state == "unknown":
+        return ("%s lock status is UNKNOWN (lock %s is unreadable by %s) — "
+                "treat it as held and do not delete it"
+                % (dev, doc.get("lock_path"), os.getuid()))
+    if not doc.get("pid"):
+        return ("no recorded owner for %s (lock %s, %s)"
+                % (dev, doc.get("lock_path"), state))
+    alive = doc.get("pid_alive", _pid_alive(doc.get("pid"), doc.get("pid_start")))
+    owner_state = "alive" if alive else "recorded pid no longer alive"
+    if state != "held":
+        return ("%s is NOT currently locked; the sidecar records pid %s "
+                "(host %s, op %r, acquired %s, %s) — advisory/stale"
+                % (dev, doc.get("pid"), doc.get("host"), doc.get("op"),
+                   doc.get("acquired_at"), owner_state))
+    return ("%s is locked now by pid %s (host %s, op %r, acquired %s, %s)"
+            % (dev, doc.get("pid"), doc.get("host"), doc.get("op"),
+               doc.get("acquired_at"), owner_state))
+
+
+def take_console_lock(dev: str, lock_wait: float = 0.0, opener=open, op_id=None):
     """Acquire the shared inode, never a private lock that bypasses a peer.
 
     Fedora protected_regular rejects O_CREAT on another user's existing /tmp
     file. Opening that SAME file without O_CREAT preserves mutual exclusion.
     If its permissions also deny that open, refuse the port; never unlink it.
+
+    On success the owner sidecar is (re)written so a waiter or operator can see
+    who owns the port.  On timeout the error carries the recorded owner details.
     """
     shared = _shared_lock_path(dev)
     try:
-        return _flock(shared, lock_wait, opener), shared
+        fd = _flock(shared, lock_wait, opener)
     except BlockingIOError:
+        owner = read_lock_owner(dev)
+        detail = ""
+        if owner.get("pid"):
+            detail = " (recorded owner pid %s host %s op %r)" % (
+                owner.get("pid"), owner.get("host"), owner.get("op"))
         raise ConsoleLost(
-            "%s is owned by another host tool (lock %s) — "
-            "the live group is serialised on purpose" % (dev, shared))
+            "%s is owned by another host tool (lock %s)%s — "
+            "the live group is serialised on purpose" % (dev, shared, detail))
     except OSError as e:
         raise ConsoleLost(
             "cannot take a port lock for %s (%s) — refusing to share the serial port"
             % (dev, e)) from e
+    _write_lock_owner(shared, dev, op_id)
+    return fd, shared
 
 
 def _flock(path, lock_wait=0.0, opener=open):
-    """Open without truncating, then take a bounded exclusive flock."""
+    """Open the shared inode without truncating, then take a bounded flock.
+
+    The default path uses O_NOFOLLOW|O_CLOEXEC and never truncates.  If the
+    existing inode is another user's protected_regular file (the observed
+    root-owned /tmp lock), O_CREAT is denied; reopening the SAME inode read-only
+    still supports flock(2) on Linux, so mutual exclusion is preserved without
+    deleting or replacing the lock.  A symlink or unreadable inode fails closed.
+    """
     import fcntl
-    try:
-        fd = opener(path, "a+")
-    except PermissionError:
-        # No O_CREAT: bypasses protected_regular, NOT the shared lock.
-        fd = opener(path, "r")
+    if opener is open:
+        flags = getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NOFOLLOW", 0)
+        try:
+            fd = os.fdopen(os.open(path, os.O_RDWR | os.O_CREAT | flags, 0o666),
+                           "r+")
+        except PermissionError:
+            fd = os.fdopen(os.open(path, os.O_RDONLY | flags), "r")
+    else:
+        try:
+            fd = opener(path, "a+")
+        except PermissionError:
+            # No O_CREAT: bypasses protected_regular, NOT the shared lock.
+            fd = opener(path, "r")
     deadline = time.monotonic() + max(0.0, float(lock_wait))
     try:
         while True:
@@ -798,12 +1348,14 @@ class Console:
     # 9600 is kept only as the explicit fallback a caller may request.
     BAUDS = (115200, 9600)
 
-    def __init__(self, dev, baud=115200, timeout=20.0, lock=True, lock_wait=0.0):
+    def __init__(self, dev, baud=115200, timeout=20.0, lock=True, lock_wait=0.0,
+                 op_id=None):
         self.dev = dev
         self.baud = baud
         self.timeout = float(timeout)
         self.want_lock = lock
         self.lock_wait = float(lock_wait)
+        self.op_id = op_id
         self.fd = None
         self.buf = bytearray()
         self.eof_streak = 0
@@ -824,7 +1376,7 @@ class Console:
     def open(self):
         if self.want_lock:
             self._lock_fd, self.lock_path = take_console_lock(
-                self.dev, lock_wait=self.lock_wait)
+                self.dev, lock_wait=self.lock_wait, op_id=self.op_id)
         try:
             self.fd = os.open(self.dev, os.O_RDWR | os.O_NOCTTY | os.O_NONBLOCK)
             import fcntl
@@ -857,6 +1409,10 @@ class Console:
             self.fd = None
         if self._lock_fd is not None:
             try:
+                _clear_lock_owner(self.lock_path, self.dev, os.getpid())
+            except Exception:  # noqa: BLE001 - release must never raise
+                pass
+            try:
                 self._lock_fd.close()
             except OSError:
                 pass
@@ -886,10 +1442,30 @@ class Console:
                     raise ConsoleLost("end of stream on %s (gadget disconnected)" % self.dev)
 
     def send(self, data: bytes):
-        try:
-            os.write(self.fd, data)
-        except OSError as e:
-            raise ConsoleLost("write failed on %s: %s" % (self.dev, e))
+        """Write ALL bytes, tolerating a non-blocking tty's partial writes.
+
+        A burst is one logical protocol unit; a short `write()` must not silently
+        drop its tail (that would make a block ACK describe bytes the far end
+        never received).  This still uses one owner and one ordered byte stream.
+        """
+        view = memoryview(data)
+        deadline = time.monotonic() + max(2.0, self.timeout)
+        while view:
+            try:
+                n = os.write(self.fd, view)
+            except BlockingIOError:
+                if time.monotonic() >= deadline:
+                    raise ConsoleLost("write timed out on %s" % self.dev)
+                try:
+                    select.select([], [self.fd], [], 0.1)
+                except (OSError, ValueError) as e:
+                    raise ConsoleLost("write select failed on %s: %s" % (self.dev, e))
+                continue
+            except OSError as e:
+                raise ConsoleLost("write failed on %s: %s" % (self.dev, e))
+            if n <= 0:
+                raise ConsoleLost("write returned %d on %s" % (n, self.dev))
+            view = view[n:]
 
     def wait_for(self, needle, secs):
         nb = needle.encode() if isinstance(needle, str) else needle
@@ -997,30 +1573,29 @@ class Console:
         # correctly (measured on the S10+ 2026-10-16: framed=false, sha_ok=false
         # for all 41 baseline probes while the bash client saw sha_ok=yes).
         txt = self.text().replace("\r\n", "\n").replace("\r", "\n")
-        # Frame layout emitted by the wrapper below is strictly
+        # Frame layout emitted by the wrapper is
         #   B<rid> / R<rid>:<rc> / <base64 body> / S<rid>:<sha256> / E<rid>
-        # so the body sits between the R and S markers.  (Parsing it between B
-        # and R silently produced an empty body and failed the SHA check on a
-        # perfectly good frame — caught by tools/beta/live/tests/test_live_lib.py.)
-        m_body = re.search(r"@@B%s@@\n@@R%s:(-?\d+)@@\n(.*?)\n@@S%s:" % (rid, rid, rid),
-                           txt, re.S)
-        m_sha = re.search(r"@@S%s:([0-9a-f]*)@@" % rid, txt)
-        if got_end and m_body:
+        # but the console mirrors /dev/kmsg, so kernel lines may be interleaved
+        # between the markers.  parse_run_frame locates the unique markers
+        # independently and reconstructs the single base64 body line.
+        frame = parse_run_frame(txt, rid, end)
+        if frame is not None and frame["framed"]:
             framed = True
-            rc = int(m_body.group(1))
-            body_b64 = re.sub(r"[^A-Za-z0-9+/=]", "", m_body.group(2))
-            import base64
-            try:
-                out = base64.b64decode(body_b64 + "=" * (-len(body_b64) % 4)).decode("utf-8", "replace")
-            except Exception:  # noqa: BLE001 - degenerate base64 => frame failure
-                out = ""
-                framed = False
-            if framed and verify_sha and m_sha:
-                sha_ok = (hashlib.sha256(out.encode()).hexdigest() == m_sha.group(1))
-            elif framed:
+            rc = frame["rc"]
+            out = frame["output"]
+            sha_ok = frame["sha_ok"]
+            if not verify_sha:
                 sha_ok = True
-        else:
+        elif frame is not None:
+            framed = False
+            rc = frame["rc"]
             out = txt
+            sha_ok = False
+        else:
+            framed = False
+            rc = None
+            out = txt
+            sha_ok = False
         res = RunResult(rid, rc, out, framed, sha_ok, time.time() - t0, self.raw_total)
         self._last_clean = bool(res.ok)
         if not silent and not res.ok:
@@ -1220,34 +1795,158 @@ def coalesce_reload_actions(steps):
     return ordered
 
 
-def group_reload_plan(steps):
-    """The transaction-level activation plan for a completed group.
+_UNIT_TOKEN_RE = re.compile(r"^[A-Za-z0-9_@.:\\-]+$")
+_RESTART_RE = re.compile(
+    r"\bsystemctl(?:\s+--system)?\s+(?:restart|try-restart|reload-or-restart)"
+    r"\s+([^;&|)\n]+)")
+_DAEMON_RE = re.compile(
+    r"(?:^|[;&|]\s*)systemctl(?:\s+--system)?\s+daemon-reload(?:\s|$)")
 
-    Two independent pieces are returned so the deploy tool can run them once,
-    not once per file:
 
-    * ``restarts`` — each affected service exactly once, in first-seen order
-      (``restart_service`` carries this).
-    * ``reloads`` — each distinct ``declared_reload`` action exactly once per
-      group, in first-seen order.
+def _unit_name(tok):
+    """Normalise an explicit systemd unit token; return None if it is not one."""
+    t = str(tok or "").strip().strip("()")
+    if not t or not _UNIT_TOKEN_RE.match(t):
+        return None
+    return t if "." in t.split("@")[0] else t + ".service"
 
-    An action is classified as needing ``daemon-reload`` when its normalised
-    form requests a daemon-reload as the first step.  This is what lets a
-    changed unit-file group run exactly one ``systemctl daemon-reload`` while a
-    group with no unit changes skips it.
+
+def reload_restart_services(action):
+    """Services an explicit `systemctl restart ...` inside a reload action names.
+
+    This is used ONLY to avoid planning a second restart of the same unit.  It
+    never rewrites or removes the declared shell action; ambiguous text yields
+    no claim.
     """
-    restarts, restarts_seen = [], set()
+    out = []
+    for m in _RESTART_RE.finditer(str(action or "")):
+        for tok in m.group(1).split():
+            unit = _unit_name(tok)
+            if unit and unit not in out:
+                out.append(unit)
+    return out
+
+
+def _is_pure_daemon_reload(action):
+    return normalize_reload(action) in ("systemctl daemon-reload",
+                                        "systemctl --system daemon-reload")
+
+
+def _coalesce_activation(steps, key_groups=False):
+    """Coalesce reload/restart actions at one transaction boundary.
+
+    Identical reload actions are deduplicated by their normalized text (and,
+    for a group-scoped plan, by group).  A pure ``systemctl daemon-reload`` is
+    represented once as ``daemon_reload_action``; a compound declared action
+    that already contains daemon-reload keeps its original text and supplies the
+    one reload itself.  Restarts named inside a declared action are removed from
+    the independent restart list so the same unit is not restarted twice.
+    """
+    ordered, seen = [], set()
     for step in steps:
-        unit = str(step.get("service") or "").strip()
-        if unit and unit not in restarts_seen:
-            restarts_seen.add(unit)
+        action = str(step.get("declared_reload") or "").strip()
+        if not action:
+            continue
+        norm = normalize_reload(action)
+        key = ((step.get("group") if key_groups else None), norm)
+        if key in seen:
+            continue
+        seen.add(key)
+        # Split ONLY an exact leading `systemctl daemon-reload &&|;` prefix.
+        # The remainder keeps its original text.  This is a semantic split, not
+        # a general shell rewrite: it is the one operation whose position is
+        # defined and whose coalescing the mission requires.
+        split = re.match(
+            r"^\s*systemctl\s+(?:--system\s+)?daemon-reload\s*(?:&&|;)\s*(.+)$",
+            action, re.S)
+        rest = split.group(1).strip() if split else action
+        ordered.append({
+            "group": step.get("group"),
+            "action": action,
+            "rest_action": rest,
+            "leading_daemon_reload": bool(split),
+            "needs_daemon_reload": bool(_DAEMON_RE.search(norm)),
+            "restart_services": reload_restart_services(rest),
+        })
+
+    pure = [e for e in ordered if _is_pure_daemon_reload(e["action"])]
+    leading = [e for e in ordered if e["leading_daemon_reload"]]
+    # A daemon-reload that is NOT a leading prefix cannot be split safely; count
+    # it honestly rather than claiming one reload when several are unavoidable.
+    nonleading = [e for e in ordered
+                  if e["needs_daemon_reload"] and not e["leading_daemon_reload"]
+                  and not _is_pure_daemon_reload(e["action"])]
+    daemon_action = None
+    if pure or leading:
+        first = (pure or leading)[0]
+        daemon_action = {
+            "group": first.get("group"),
+            "action": "systemctl daemon-reload",
+            "needs_daemon_reload": True,
+            "restart_services": [],
+            "synthesized": True,
+        }
+
+    reloads = []
+    for e in ordered:
+        if _is_pure_daemon_reload(e["action"]):
+            continue
+        if e["leading_daemon_reload"]:
+            reloads.append({"group": e["group"], "action": e["rest_action"],
+                            "needs_daemon_reload": True,
+                            "daemon_reload_split": True,
+                            "restart_services": e["restart_services"]})
+        else:
+            reloads.append({"group": e["group"], "action": e["action"],
+                            "needs_daemon_reload": e["needs_daemon_reload"],
+                            "restart_services": e["restart_services"]})
+
+    restarts, seen_services = [], set()
+    for step in steps:
+        raw_unit = str(step.get("service") or "").strip()
+        unit = _unit_name(raw_unit) if raw_unit else None
+        if unit and unit not in seen_services:
+            seen_services.add(unit)
             restarts.append({"group": step.get("group"), "service": unit})
-    reloads = coalesce_reload_actions(steps)
-    for entry in reloads:
-        norm = normalize_reload(entry["action"])
-        entry["needs_daemon_reload"] = norm.startswith("systemctl daemon-reload") \
-            or norm.startswith("systemctl --system daemon-reload")
-    return {"restarts": restarts, "reloads": reloads}
+
+    restart_services_in_reloads = set()
+    for e in reloads:
+        restart_services_in_reloads.update(e["restart_services"])
+    restarts = [r for r in restarts
+                if r["service"] not in restart_services_in_reloads]
+    remaining = [r["service"] for r in restarts]
+    daemon_count = (1 if daemon_action else 0) + len(nonleading)
+    counts = {
+        "declared_reloads_seen": len(ordered),
+        "reloads_planned": len(reloads) + (1 if daemon_action else 0),
+        "daemon_reloads_planned": daemon_count,
+        # Units restarted by a declared reload count too; the operator should
+        # see the real number of service restarts, not only the independent list.
+        "restarts_planned": len(restarts) + len(restart_services_in_reloads),
+        "independent_restarts_planned": len(restarts),
+    }
+    return {"reloads": reloads, "restarts": restarts,
+            "daemon_reload": bool(daemon_count),
+            "daemon_reload_action": daemon_action,
+            "daemon_reloads_uncoalesced": len(nonleading),
+            "restart_services": remaining,
+            "restart_services_in_reloads": sorted(restart_services_in_reloads),
+            "counts": counts}
+
+
+def group_reload_plan(steps):
+    """The activation plan for ONE deploy group (legacy-compatible view)."""
+    return _coalesce_activation(steps, key_groups=True)
+
+
+def transaction_activation_plan(steps):
+    """The coalesced activation plan for a WHOLE deployment transaction.
+
+    Unlike `group_reload_plan`, identical actions declared by different groups
+    collapse here.  This is what makes a manifest with several unit-file groups
+    run exactly one ``daemon-reload`` and restart each affected unit once.
+    """
+    return _coalesce_activation(steps, key_groups=False)
 
 
 def validate_manifest(manifest, repo_root):
@@ -1535,7 +2234,7 @@ def build_deploy_plan(manifest, repo_root):
                         else None)),
               "steps": len(g.get("files", []) or [])}
              for g in manifest.get("groups", [])]
-    activation_plan = group_reload_plan(steps)
+    activation_plan = transaction_activation_plan(steps)
     return {"steps": steps, "violations": violations, "skipped": skipped,
             "risk_envelope": envelope, "group_order": order,
             "activation_plan": activation_plan,
@@ -1567,14 +2266,17 @@ def install_script(step, push_tool="scripts/s10plus-debug-pack/nuxel-push.py"):
     precondition, not a reload, and is preserved.
     """
     tgt, staged, backup = step["target"], step["staged"], step["backup"]
-    # The rollback trap restores the recorded baseline ONLY when a step below
-    # failed.  It never restarts a service; the caller's coalesced rollback does
-    # that once for the whole group.
+    txn_backup = step.get("txn_backup")
+    # The rollback trap restores the pre-transaction bytes ONLY when a step
+    # below failed.  A per-transaction backup is preferred; the long-lived
+    # `.nuxel-rollback` baseline is preserved separately and never substituted
+    # for bytes this transaction actually saw.
+    trap_backup = txn_backup or backup
     lines = [
         "set -u",
         "_NXL_ROLLBACK() { _rc=$?; if [ \"$_rc\" -ne 0 ]; then "
         "if [ -e %s ]; then cp -a %s %s; fi; echo \"ROLLED-BACK rc=$_rc\"; fi; }"
-        % (backup, backup, tgt),
+        % (trap_backup, trap_backup, tgt),
         "trap _NXL_ROLLBACK EXIT",
         "set -e",
     ]
@@ -1588,9 +2290,15 @@ def install_script(step, push_tool="scripts/s10plus-debug-pack/nuxel-push.py"):
         "else echo PREV=NONE; fi" % (tgt, "%s", tgt),
         "mkdir -p \"$(dirname %s)\"" % tgt,
         # Preserve the FIRST recorded baseline across re-runs: only capture the
-        # backup if none exists yet, otherwise a resumed deploy would overwrite the
-        # only route back to the pre-deploy file with the new bytes.
+        # long-lived backup if none exists yet.  Separately capture THIS
+        # transaction's pre-change bytes once; rollback uses that copy, so a
+        # stale historical baseline can never masquerade as the pre-deploy state.
         "if [ -e %s ] && [ ! -e %s ]; then cp -a %s %s; fi" % (tgt, backup, tgt, backup),
+    ]
+    if txn_backup:
+        lines.append("if [ -e %s ] && [ ! -e %s ]; then cp -a %s %s; fi"
+                     % (tgt, txn_backup, tgt, txn_backup))
+    lines += [
         "test -f %s" % staged,
         "printf '%%s  %%s\\n' %s %s > /var/tmp/nxl-verify.sha256"
         % (step["source_sha256"], staged),
@@ -1619,7 +2327,7 @@ class RebootPolicy:
         self.max_reboots = max_reboots
         self.min_interval_s = min_interval_s
 
-    def next_reboot(self, history):
+    def next_reboot(self, history, reason=None, diagnostic=None):
         """-> dict(allowed, code, reason). `history` = list of reboot records.
 
         A reboot is allowed only when ALL of these hold:
@@ -1633,8 +2341,8 @@ class RebootPolicy:
         n = len(history)
         if n >= self.max_reboots:
             return {"allowed": False, "code": "budget_exhausted",
-                    "reason": "%d/%d reboots already used — change strategy, "
-                              "do not reboot again" % (n, self.max_reboots)}
+                    "reason": "budget exhausted: %d/%d reboots already used — change "
+                              "strategy, do not reboot again" % (n, self.max_reboots)}
         if history:
             last = history[-1]
             if not last.get("returned_to_nuxel"):
@@ -1646,6 +2354,17 @@ class RebootPolicy:
                 return {"allowed": False, "code": "no_rollback",
                         "reason": "no known-good userspace rollback after the last "
                                   "reboot; fix that before rebooting again"}
+            # Reject the repeat BEFORE issuing the reboot.  record() keeps the
+            # same check as a second line of defence, but a policy that only
+            # fails after the phone has already gone down is not a policy.
+            if reason is not None and last.get("reason") == reason:
+                return {"allowed": False, "code": "repeat_reason",
+                        "reason": "reason %r repeats the previous reboot — that "
+                                  "would be a blind repeat" % reason}
+            if diagnostic is not None and last.get("diagnostic") == diagnostic:
+                return {"allowed": False, "code": "repeat_diagnostic",
+                        "reason": "diagnostic %r unchanged from the previous "
+                                  "reboot — that would be a blind repeat" % diagnostic}
         return {"allowed": True, "code": "ok", "reason": "budget and prerequisites satisfied"}
 
     def record(self, history, reason, diagnostic, returned_to_nuxel,
@@ -1742,9 +2461,21 @@ class EvidenceBundle:
     def write_json(self, filename, obj):
         return self.write(filename, json.dumps(obj, indent=2, sort_keys=True))
 
+    def journal(self, event):
+        """Append one structured transaction transition to the JSONL journal."""
+        if not isinstance(event, dict):
+            event = {"event": event}
+        rec = {"at": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
+               "op": getattr(self, "op_id", None)}
+        rec.update(event)
+        path = os.path.join(self.dir, "transaction.jsonl")
+        with open(path, "a") as fh:
+            fh.write(json.dumps(rec, sort_keys=True) + "\n")
+        return path
+
     def manifest(self, filename="SHA256SUMS"):
         lines = []
-        for p in sorted(self.files):
+        for p in sorted(set(self.files)):
             lines.append("%s  %s" % (sha256_file(p), os.path.basename(p)))
         path = os.path.join(self.dir, filename)
         with open(path, "w") as fh:

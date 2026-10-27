@@ -1,0 +1,16 @@
+{
+  "id": "org.nuxel.USBSSHConsole",
+  "name": "USB SSH Console",
+  "icon": "🔌",
+  "color": "#6D4C41",
+  "category": "system",
+  "type": "pwa",
+  "url": "/pwa/nuxel-apps/console-usb/index.html",
+  "manifest": "pwa/nuxel-apps/console-usb/manifest.json",
+  "description": "SSH over the phone's USB network gadget. Truthfully unavailable on the current 4.14.253 NCM stack; no fake connection is shown.",
+  "capabilities": [],
+  "bridge_version": "1",
+  "docked": false,
+  "console_transport": "usb",
+  "status": "implemented"
+}

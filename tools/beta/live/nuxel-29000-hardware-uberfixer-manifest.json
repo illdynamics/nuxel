@@ -1,0 +1,112 @@
+{
+  "schema_version": 1,
+  "id": "nuxel-29000-hardware-uberfixer",
+  "device": {
+    "codename": "beyond2lte",
+    "model": "SM-G975F",
+    "soc": "Exynos 9820",
+    "os": "Nuxel (Fedora 43 ARM64, kernel 4.14.253)"
+  },
+  "note": "PWNAGE 29000: real Bluetooth/audio/display providers, Settings pages and Quick Settings wiring. Userspace only. No kernel, partition, modem or gadget mutation. Staged, SHA-256 verified, atomically installed and rolled back by nuxel-live-deploy.py.",
+  "groups": [
+    {
+      "id": "settings-pwa-29000",
+      "component": "Settings PWA (Bluetooth/Displays/Audio pages) + Home QS + shared bridge client",
+      "priority": 1,
+      "risk": "low",
+      "restart_service": "nuxel-http-bridge",
+      "pre": [],
+      "health_check": "test \"$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8000/pwa/nuxel-apps/settings/index.html)\" = 200 && curl -s http://127.0.0.1:8000/pwa/nuxel-apps/settings/index.html | grep -q 'tab-bluetooth' && curl -s http://127.0.0.1:8000/pwa/nuxel-apps/settings/index.html | grep -q 'tab-displays'",
+      "rollback": "restore each <target>.nuxel-rollback; static files are served per-request by the running nuxel-pwa-host python http.server",
+      "files": [
+        {
+          "source": "pwa/nuxel-apps/settings/index.html",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/settings/index.html"
+        },
+        {
+          "source": "pwa/nuxel-apps/settings/settings.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/settings/settings.js"
+        },
+        {
+          "source": "pwa/nuxel-apps/settings/hardware-settings.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/settings/hardware-settings.js"
+        },
+        {
+          "source": "pwa/nuxel-apps/settings/location-maps.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/settings/location-maps.js"
+        },
+        {
+          "source": "pwa/nuxel-apps/settings/app.json",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/settings/app.json"
+        },
+        {
+          "source": "pwa/nuxel-common/bridge.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-common/bridge.js"
+        },
+        {
+          "source": "pwa/nuxel-home/js/qs.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/js/qs.js"
+        }
+      ],
+      "declared_reload": "python3 -c \"import json;json.load(open('/usr/share/nuxel/pwa/nuxel-apps/settings/app.json'))\" && test -s /usr/share/nuxel/pwa/nuxel-apps/settings/hardware-settings.js"
+    },
+    {
+      "id": "settings-grant-29000",
+      "component": "first-party Settings capability grant (bluetooth:manage/scan)",
+      "priority": 2,
+      "risk": "medium",
+      "restart_service": "nuxel-bridge",
+      "pre": [
+        "test -d /var/lib/nuxel/permissions"
+      ],
+      "health_check": "python3 -c \"import json;d=json.load(open('/var/lib/nuxel/permissions/nuxel-settings.json'));assert 'bluetooth:manage' in d\"",
+      "rollback": "restore /var/lib/nuxel/permissions/nuxel-settings.json.nuxel-rollback and `systemctl restart nuxel-bridge`",
+      "files": [
+        {
+          "source": "configs/nuxel/permissions/nuxel-settings.json",
+          "target": "/var/lib/nuxel/permissions/nuxel-settings.json"
+        }
+      ]
+    },
+    {
+      "id": "bridge-bt-29000",
+      "component": "nuxel-bridge D-Bus provider (firmware-aware Bluetooth status)",
+      "priority": 3,
+      "risk": "medium",
+      "restart_service": "nuxel-bridge",
+      "pre": [
+        "test -d /usr/lib/nuxel/nuxel-bridge"
+      ],
+      "health_check": "systemctl is-active nuxel-bridge && busctl --system call org.nuxel.Bridge /org/nuxel/Bridge org.nuxel.Bridge BluetoothGetStatus s nuxel-settings | grep -q 'firmware_present'",
+      "rollback": "restore /usr/lib/nuxel/nuxel-bridge/bridge.py.nuxel-rollback and `systemctl restart nuxel-bridge`",
+      "files": [
+        {
+          "source": "services/nuxel-bridge/src/bridge.py",
+          "target": "/usr/lib/nuxel/nuxel-bridge/bridge.py"
+        }
+      ]
+    },
+    {
+      "id": "http-bridge-hw-29000",
+      "component": "nuxel-http-bridge root hardware providers (audio/display/bluetooth-power)",
+      "priority": 4,
+      "risk": "medium",
+      "restart_service": "nuxel-http-bridge",
+      "pre": [
+        "test -d /usr/lib/nuxel/nuxel-bridge"
+      ],
+      "health_check": "systemctl is-active nuxel-http-bridge && curl -fsS -X POST http://127.0.0.1:8080/api/v1/rpc -H 'Content-Type: application/json' -d '{\"app_id\":\"nuxel-settings\",\"namespace\":\"display\",\"verb\":\"status\",\"params\":{}}' | grep -q '\"drm_present\"'",
+      "rollback": "restore /usr/lib/nuxel/nuxel-bridge/api.py.nuxel-rollback, remove a newly-created hw_providers.py, and `systemctl restart nuxel-http-bridge`",
+      "files": [
+        {
+          "source": "services/nuxel-bridge/src/api.py",
+          "target": "/usr/lib/nuxel/nuxel-bridge/api.py"
+        },
+        {
+          "source": "services/nuxel-bridge/src/hw_providers.py",
+          "target": "/usr/lib/nuxel/nuxel-bridge/hw_providers.py"
+        }
+      ]
+    }
+  ]
+}

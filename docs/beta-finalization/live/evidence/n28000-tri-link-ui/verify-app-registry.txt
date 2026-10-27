@@ -1,0 +1,37 @@
+OK    capability_gaps documented: shell:local-pty, storage:read, storage:write
+OK    native nuxel-dialer -> /usr/bin/nuxel-dialer (source shell/nuxel-shell/nuxel-dialer)
+OK    native nuxel-messages -> /usr/bin/nuxel-messages (source shell/nuxel-shell/nuxel-messages)
+OK    native nuxel-contacts -> /usr/bin/nuxel-contacts (source shell/nuxel-shell/nuxel-contacts)
+OK    native nuxel-camera -> /usr/lib/nuxel/nuxel-camera-native/nuxel_camera_native.py (source shell/nuxel-camera-native)
+OK    pwa org.nuxel.Mail -> pwa/nuxel-apps/mail/index.html + pwa/nuxel-apps/mail/manifest.json
+OK    pwa org.nuxel.Calendar -> pwa/nuxel-apps/calendar/index.html + pwa/nuxel-apps/calendar/manifest.json
+OK    pwa org.nuxel.Notes -> pwa/nuxel-apps/notes/index.html + pwa/nuxel-apps/notes/manifest.json
+OK    pwa org.nuxel.Files -> pwa/nuxel-apps/files/index.html + pwa/nuxel-apps/files/manifest.json
+OK    pwa nuxel-settings -> pwa/nuxel-apps/settings/index.html + pwa/nuxel-apps/settings/manifest.json
+OK    pwa org.nuxel.Terminal -> pwa/nuxel-apps/terminal/index.html + pwa/nuxel-apps/terminal/manifest.json
+OK    pwa org.nuxel.LiveConsole -> pwa/nuxel-apps/console/index.html + pwa/nuxel-apps/console/manifest.json
+OK    pwa org.nuxel.USBSSHConsole -> pwa/nuxel-apps/console-usb/index.html + pwa/nuxel-apps/console-usb/manifest.json
+OK    pwa org.nuxel.WiFiSSHConsole -> pwa/nuxel-apps/console-wifi/index.html + pwa/nuxel-apps/console-wifi/manifest.json
+OK    pwa org.nuxel.Browser -> pwa/nuxel-apps/browser/index.html + pwa/nuxel-apps/browser/manifest.json
+OK    native org.nuxel.BrowserNative -> /usr/lib/nuxel/nuxel-browser-native/nuxel_browser_native.py (source shell/nuxel-browser-native)
+OK    native org.nuxel.CameraNative -> /usr/lib/nuxel/nuxel-camera-native/nuxel_camera_native.py (source shell/nuxel-camera-native)
+OK    capability 'shell:local-pty' is declared by org.nuxel.Terminal but not yet in the bridge enum — documented gap (owner bg-06-core-phone-apps, status not-in-capabilities.py-enum): The Terminal's PTY is opened by the native PWA host (tools/s10plus/a3x/nuxel-pwa-host.c), NOT through the bridge capability model, so no bridge enum e
+OK    capability 'storage:read' is declared by org.nuxel.Calendar, org.nuxel.Mail but not yet in the bridge enum — documented gap (owner bg-06-core-phone-apps, status not-in-capabilities.py-enum): The apps ask for a read/write storage pair; the bridge enum defines storage:persistent only. Not fatal for the registry (the ids are a manifest contra
+OK    capability 'storage:write' is declared by org.nuxel.Calendar, org.nuxel.Mail but not yet in the bridge enum — documented gap (owner bg-06-core-phone-apps, status not-in-capabilities.py-enum): See storage:read.
+OK    native shell copy matches the canonical registry (16 apps)
+OK    required app not yet in the tree: Permissions & Privacy manager (owner bg-05-security-permissions, briq-05a-permission-manager, status not-started/in_progress)
+OK    required app not yet in the tree: Firewall manager (owner bg-05-security-permissions, briq-05b-firewall-app, status not-started/in_progress)
+OK    required app not yet in the tree: VPN, Tor and remote access (owner bg-05-security-permissions, briq-05c-vpn-tor-remote, status not-started/in_progress)
+OK    required app not yet in the tree: Security auditor (owner bg-05-security-permissions, briq-05d-security-auditor, status not-started/pending)
+OK    required app not yet in the tree: System monitor / diagnostics (owner bg-06-core-phone-apps, briq-06b-missing-core-apps, status not-started/in_progress)
+OK    tree_apps documents pwa/nuxel-apps/_shared (no index.html yet: shared-assets-not-an-app)
+OK    tree_apps documents pwa/nuxel-apps/penguinterface (no index.html yet: in_progress)
+OK    tree_apps documents pwa/nuxel-apps/privacy (no index.html yet: planned)
+OK    bridge.js NUXEL_BRIDGE_VERSION == pin (1)
+DEFER pwa/nuxel-apps/privacy: declared planned, not landed yet (owners: bg-05-security-permissions, ledger: briq-05a-permission-manager) — declared `planned`: the owner group has not landed the app tree in this revision. Recorded as a DEFER (never a silent pass); the entry is promoted automatically when index.html + manifest.json appear.
+WARN  app org.nuxel.Mail: manifest capabilities ['notifications:receive', 'notifications:send', 'storage:persistent'] != registry capabilities ['notifications:receive', 'notifications:send', 'storage:read', 'storage:write']
+WARN  app org.nuxel.Calendar: manifest capabilities ['notifications:send', 'storage:persistent'] != registry capabilities ['notifications:send', 'storage:read', 'storage:write']
+WARN  app org.nuxel.Notes: manifest capabilities ['storage:persistent'] != registry capabilities []
+FAIL  launcher apps.js does not serve registry app(s): org.nuxel.BrowserNative, org.nuxel.CameraNative
+FAIL  launcher apps.js serves app(s) absent from the canonical registry: org.gnome.Snapshot, org.nuxel.Calculator, org.nuxel.Clock, org.nuxel.Maps, org.nuxel.Nuxtore, org.nuxel.Photos, org.nuxel.Recorder, org.nuxel.SnekByte, org.nuxel.Weather
+apps=16 problems=2 warnings=3 deferred=1 required_apps_pending=5 verdict=FAILED

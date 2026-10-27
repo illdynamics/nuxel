@@ -22,21 +22,44 @@ out = Path(sys.argv[1]).resolve() if len(sys.argv) > 1 else (
     root / f'build/out/nuxel-{version}-live-userspace.tar.gz')
 
 items = set()
-for base in ('pwa/nuxel-home', 'pwa/nuxel-apps/settings'):
+for base in ('pwa/nuxel-home', 'pwa/nuxel-apps/settings',
+             'pwa/nuxel-apps/console', 'pwa/nuxel-apps/console-usb',
+             'pwa/nuxel-apps/console-wifi', 'pwa/nuxel-apps/maps'):
     for path in (root / base).rglob('*'):
         if path.is_file() and not path.is_symlink():
             items.add(path.relative_to(root).as_posix())
 items.update({
     'pwa/nuxel-common/app-registry.json',
     'pwa/nuxel-common/bridge-version.json',
+    'pwa/nuxel-common/bridge.js',
+    'pwa/nuxel-common/geolocation.js',
+    'pwa/nuxel-common/maps-core.js',
     'services/nuxel-bridge/src/api.py',
     'services/nuxel-bridge/src/bridge.py',
+    'services/nuxel-bridge/src/hw_providers.py',
+    'services/nuxel-bridge/src/tri_link_status.py',
+    'services/nuxel-bridge/src/media_store.py',
+    'services/nuxel-bridge/systemd/nuxel-bridge.service',
+    'services/nuxel-bridge/systemd/nuxel-http-bridge.service',
+    'services/nuxel-notifications/systemd/nuxel-notifications.service',
+    'services/nuxel-notifications/src/notifications.py',
+    'services/nuxel-portal/src/portal.py',
     'services/nuxel-metrics/nuxel-metrics.service',
     'services/nuxel-metrics/nuxel-metrics.socket',
     'services/nuxel-session/systemd/nuxel-boot-sound.service',
     'tools/s10plus/a33/nuxel-sound-cue.py',
+    'configs/nuxel/permissions/org.nuxel.Home.json',
+    'configs/nuxel/permissions/nuxel-settings.json',
+    'configs/nuxel/permissions/org.nuxel.Maps.json',
+    'configs/nuxel/gnss/gnss.json',
+    'configs/nuxel/security/remote-access.json',
+    'configs/dbus/org.nuxel.Bridge.conf',
+    'services/nuxel-bridge/dbus/org.nuxel.Bridge.conf',
     'assets/nuxel-bottom-bar.jpg',
     'assets/nuxel-bottom-bar2.png',
+    'assets/nuxel-applications-icon-pack/05-05_live-console.png',
+    'assets/nuxel-applications-icon-pack/06-05_usb-connection.png',
+    'assets/nuxel-quicksettings-icon-pack/01-wifi.png',
 })
 metrics_binary = root / 'build/a40/nuxel-metricsd'
 if metrics_binary.is_file() and not metrics_binary.is_symlink():

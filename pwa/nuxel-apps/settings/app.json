@@ -8,7 +8,12 @@
   "url": "/pwa/nuxel-apps/settings/index.html",
   "manifest": "pwa/nuxel-apps/settings/manifest.json",
   "description": "The real Nuxel control surface (display, sound, network, input, buttons, apps, privacy, security, system, developer, about, performance)",
-  "capabilities": [],
+  "capabilities": [
+    "location:read",
+    "location:manage",
+    "bluetooth:manage",
+    "bluetooth:scan"
+  ],
   "bridge_version": "1",
   "docked": true,
   "source": "pwa/nuxel-apps tree (bg-06-core-phone-apps)"

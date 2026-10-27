@@ -12,22 +12,23 @@
 <body>
 <header class="top-bar">
   <h1>Maps</h1>
-  <span id="tile-badge" class="badge">no tile source configured</span>
+  <span id="tile-badge" class="badge warn">checking tile source</span>
 </header>
 
 <div class="map-wrap">
   <canvas id="map" class="map"></canvas>
-  <div id="overlay-msg" class="overlay-msg"></div>
+  <div id="overlay-msg" class="overlay-msg">Loading tile configuration…</div>
   <div class="zoom-buttons">
     <button id="zoom-in" title="Zoom in">＋</button>
     <button id="zoom-out" title="Zoom out">−</button>
-    <button id="locate" title="Go to a coordinate">⌖</button>
+    <button id="locate" title="Use current provider position">⌖</button>
   </div>
-  <div class="attribution">Tiles, when present, are OpenStreetMap data © OpenStreetMap contributors — offline cache only.</div>
+  <div class="attribution">Map data © OpenStreetMap contributors</div>
   <div id="scale" class="scale">—</div>
 </div>
 
 <section class="controls">
+  <p id="provider-state" class="hint" role="status" aria-live="polite">Location provider: checking…</p>
   <div class="row">
     <input id="goto-lat" type="text" placeholder="lat e.g. 52.3702">
     <input id="goto-lon" type="text" placeholder="lon e.g. 4.8952">
@@ -35,46 +36,51 @@
   </div>
   <div class="row">
     <input id="marker-label" type="text" placeholder="Pin label">
-    <button id="add-pin" class="primary">Add pin here</button>
+    <button id="add-pin" class="primary">Add pin at selection</button>
   </div>
   <div class="row">
-    <input id="search" type="text" placeholder="Search places (Enter) or filter pins">
+    <input id="search" type="text" placeholder="Search places (Enter) or filter saved pins">
     <button id="search-panel">Search</button>
   </div>
-  <p class="hint">Search uses OpenStreetMap Nominatim (one query per action, © OpenStreetMap contributors).
-    Results are added as pins; nothing opens externally and no network position is ever shown as GPS.</p>
+  <p class="hint">Place search uses OpenStreetMap Nominatim, one explicit query per action.
+    Search results are transient and are never GPS positions; save one as a pin if you want it kept.
+    The green marker is drawn only from a fresh provider fix.</p>
 </section>
 
 <section class="card">
-  <h3>Pins and places <span id="pin-count" class="li-sub">0</span></h3>
+  <h3>Search results <span id="search-count" class="li-sub"></span></h3>
+  <ul id="search-results" class="pins"></ul>
+  <p class="hint">Selecting a result only moves the viewport. It does not change the Location
+    Quick Setting or claim a GPS fix.</p>
+</section>
+
+<section class="card">
+  <h3>Saved pins and places <span id="pin-count" class="li-sub">0</span></h3>
   <ul id="pins" class="pins"></ul>
   <div class="row">
     <button id="export">Export places</button>
     <button id="import">Import places</button>
-    <button id="clear-pins" class="danger">Clear pins</button>
+    <button id="clear-pins" class="danger">Clear saved pins</button>
   </div>
   <input id="file" type="file" accept="application/json,.json" class="hidden">
 </section>
 
 <section class="card">
-  <h3>Offline tile cache</h3>
-  <p class="hint">Nuxel Maps works completely offline. Tiles are only drawn if they are already in
-    the local cache. Set a tile URL template to fetch tiles into the cache; this is the single
-    place where the app can touch the network and it stays disabled until you turn it on.</p>
+  <h3>Tile source and offline cache</h3>
+  <p class="hint">The default is the attributed OpenStreetMap standard tile service. Only tiles
+    in the visible viewport are requested; there is no prefetch or crawl. Cached tiles remain
+    available when the network is off. The source is editable here and in Settings → Location &amp; Maps.</p>
   <div class="row">
-    <input id="tile-url" type="text" placeholder="https://tile.example/{z}/{x}/{y}.png" class="grow">
-    <button id="save-tile">Save template</button>
+    <input id="tile-url" type="text" placeholder="https://tile.openstreetmap.org/{z}/{x}/{y}.png" class="grow">
+    <button id="save-tile">Save source</button>
   </div>
   <div class="row">
-    <button id="osm-preset" class="primary">Use OpenStreetMap standard tiles (go online)</button>
+    <button id="osm-preset" class="primary">Use OpenStreetMap standard tiles</button>
   </div>
-  <p class="hint">The preset fills the official OpenStreetMap tile URL only. Downloads stay
-    disabled until you tick &ldquo;Allow tile downloads&rdquo;, and map attribution is shown on
-    the canvas. Nuxel never crawls or prefetches tiles on its own.</p>
-  <label class="check"><input id="allow-net" type="checkbox"> Allow tile downloads from the template above</label>
+  <label class="check"><input id="allow-net" type="checkbox" checked> Allow online tile downloads</label>
   <div class="row">
-    <button id="cache-here">Cache the visible tiles</button>
-    <button id="cache-stats">Cache statistics</button>
+    <button id="cache-here">Cache visible tiles</button>
+    <button id="cache-stats">Cache and source status</button>
     <button id="cache-clear" class="danger">Empty tile cache</button>
   </div>
   <pre id="cache-report" class="state">—</pre>
@@ -82,6 +88,7 @@
 
 <p id="toast" class="toast hidden"></p>
 
+<script src="../../nuxel-common/maps-core.js"></script>
 <script type="module" src="../../nuxel-common/bridge.js"></script>
 <script src="js/maps.js"></script>
 </body>

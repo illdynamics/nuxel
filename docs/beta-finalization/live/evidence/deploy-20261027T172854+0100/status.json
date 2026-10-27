@@ -1,0 +1,14 @@
+{
+  "blocked_reason": null,
+  "changed_steps": 0,
+  "exit_code": 0,
+  "finished_at": "2026-10-27T17:28:57+0100",
+  "host": "dextronux",
+  "no_op": true,
+  "operation_id": "deploy-20261027T172854-2155739",
+  "pid": 2155739,
+  "pid_start": "34008575",
+  "rollback_ok": null,
+  "state": "COMPLETE",
+  "verdict": "DEPLOYED_UNVERIFIED"
+}

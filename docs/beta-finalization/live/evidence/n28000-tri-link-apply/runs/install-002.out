@@ -1,0 +1,7 @@
+pushed={"acked_bytes": 1723, "b64_chars": 2300, "bytes": 1723, "decoded_sha256": "576caa6c3984d8525af012fc737c8905cc50e5bf70657389e3a93221744b6121", "frames": 18, "mode": "frame", "parts": 18, "path": "/var/tmp/nxl-install-002.sh", "raw_writes": 0, "retries": 0}
+ok=True rc=0
+---
+PREV=71cc879514f451d17ef9683871ef20bd90f2cd8930f95f53f6ab3242253d886b
+/usr/share/nuxel/pwa/nuxel-home/manifest.json.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

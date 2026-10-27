@@ -1,0 +1,7 @@
+pushed={"acked_bytes": 1875, "b64_chars": 2500, "bytes": 1875, "decoded_sha256": "e9d0817cd1ab0653dc530d19180994c8827ea5c7a3c3b2b00ddce364f90d2cd2", "frames": 20, "mode": "frame", "parts": 20, "path": "/var/tmp/nxl-install-020.sh", "raw_writes": 0, "retries": 0}
+ok=True rc=0
+---
+PREV=NONE
+/usr/share/nuxel/pwa/nuxel-apps/console-wifi/app.json.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

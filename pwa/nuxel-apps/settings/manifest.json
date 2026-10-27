@@ -1,7 +1,7 @@
 {
   "name": "Nuxel Settings",
   "short_name": "Settings",
-  "description": "Nuxel system settings (display, status bar cutout safe zones, sound, hardware buttons)",
+  "description": "Nuxel system settings (display, status bar, sound, network, input, location and maps diagnostics)",
   "start_url": "./index.html",
   "display": "fullscreen",
   "orientation": "portrait-primary",
@@ -24,7 +24,10 @@
   ],
   "nuxel": {
     "bridge_version": "1",
-    "capabilities": [],
+    "capabilities": [
+      "location:read",
+      "location:manage"
+    ],
     "app_type": "settings",
     "app_id": "nuxel-settings",
     "offline_first": true,

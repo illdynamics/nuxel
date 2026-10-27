@@ -1,0 +1,72 @@
+[
+  {
+    "group": "a75-bridge-dbus-code",
+    "n": 1,
+    "risk": "medium",
+    "script": "scripts/001-bridge.py.sh",
+    "service": "nuxel-bridge.service",
+    "source": "services/nuxel-bridge/src/bridge.py",
+    "source_sha256": "03d1349444cbba752a9e9b0690a40756b177c25b1c9d235276fda1a2e29fafca",
+    "target": "/usr/lib/nuxel/nuxel-bridge/bridge.py"
+  },
+  {
+    "group": "a75-http-bridge-code",
+    "n": 2,
+    "risk": "medium",
+    "script": "scripts/002-api.py.sh",
+    "service": "nuxel-http-bridge.service",
+    "source": "services/nuxel-bridge/src/api.py",
+    "source_sha256": "1752beb415f73b0d686d94b44fd791625f6ee7ae2dd9df20d56d62500dbd9079",
+    "target": "/usr/lib/nuxel/nuxel-bridge/api.py"
+  },
+  {
+    "group": "a75-bridge-version-units-and-pwa",
+    "n": 3,
+    "risk": "medium",
+    "script": "scripts/003-nuxel-bridge.service.sh",
+    "service": null,
+    "source": "services/nuxel-bridge/systemd/nuxel-bridge.service",
+    "source_sha256": "67ce1cea694617887d65142f35e110a705aabc31eef76430915b14f1327399a0",
+    "target": "/etc/systemd/system/nuxel-bridge.service"
+  },
+  {
+    "group": "a75-bridge-version-units-and-pwa",
+    "n": 4,
+    "risk": "medium",
+    "script": "scripts/004-nuxel-http-bridge.service.sh",
+    "service": null,
+    "source": "services/nuxel-bridge/systemd/nuxel-http-bridge.service",
+    "source_sha256": "97944ab8d75261cf335468efae2bb76cac4da4a84c7607b615fddc59b59e5def",
+    "target": "/etc/systemd/system/nuxel-http-bridge.service"
+  },
+  {
+    "group": "a75-bridge-version-units-and-pwa",
+    "n": 5,
+    "risk": "medium",
+    "script": "scripts/005-bridge-version.json.sh",
+    "service": null,
+    "source": "pwa/nuxel-common/bridge-version.json",
+    "source_sha256": "4d9710dd847789380761c118185c84d5593ed9c829f4a852402780f5ec3876de",
+    "target": "/etc/nuxel/bridge-version.json"
+  },
+  {
+    "group": "a75-bridge-version-units-and-pwa",
+    "n": 6,
+    "risk": "medium",
+    "script": "scripts/006-bridge-version.json.sh",
+    "service": null,
+    "source": "pwa/nuxel-common/bridge-version.json",
+    "source_sha256": "4d9710dd847789380761c118185c84d5593ed9c829f4a852402780f5ec3876de",
+    "target": "/usr/share/nuxel/pwa/nuxel-common/bridge-version.json"
+  },
+  {
+    "group": "a75-bridge-version-units-and-pwa",
+    "n": 7,
+    "risk": "medium",
+    "script": "scripts/007-bridge.js.sh",
+    "service": null,
+    "source": "pwa/nuxel-common/bridge.js",
+    "source_sha256": "1b409e04facb7f185c7bdbf810082251fd802246444c2ca3d94f7c9877b0b75e",
+    "target": "/usr/share/nuxel/pwa/nuxel-common/bridge.js"
+  }
+]

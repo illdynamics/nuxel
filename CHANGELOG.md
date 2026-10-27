@@ -12,6 +12,52 @@ The canonical version lives in [`VERSION`](VERSION) and is bumped in lockstep
 across the shell apps, the PWA manifest, the device `APKBUILD`s, the VM tooling
 and the OTA builder (see *Versioning* below).
 
+## [v0.7.0-beta] - 2026-10-27 - *Release: Tri-Link consoles, real hardware providers, GPS/Maps truth*
+
+- **25000 — Live Console++.** The serial Live Console keeps its exclusive lock,
+  framed command transport, verified output and recovery path while the
+  launcher gains the indicator truth that a real USB data link is required.
+- **26000 — Tri-Link.** Adds explicit `serial`, `wlan`, `usb` and `auto`
+  transports, pinned Ed25519 host-key verification, public-key SSH, SHA-256
+  verified put/get, exit-code preservation and a cross-transport deployment
+  guard. Wi-Fi SSH is physically verified; USB-NCM remains an honest
+  `BLOCKED_KERNEL_PANIC` (teardown panics this 4.14.253 kernel).
+- **27000 — GPS/GNSS truth.** Location keeps distinct provider-unavailable,
+  disabled, searching, no-fix, stale-fix and fresh-fix states. Maps consumes
+  the canonical location provider; pins and cached coordinates are never
+  presented as a GNSS fix.
+- **28000 — Tri-Link UI.** The Applications drawer registers
+  `org.nuxel.LiveConsole`, `org.nuxel.USBSSHConsole` and
+  `org.nuxel.WiFiSSHConsole` exactly once, with real launch handlers and the
+  unlock-to-Home state-machine fix.
+- **29000 — hardware providers.** Settings gains Bluetooth, Location/GPS,
+  Audio and Displays pages backed by the same authoritative providers as Quick
+  Settings. Audio uses the real ALSA inventory and low-volume mixer control;
+  Bluetooth power uses `rfkill` + `bluetooth.service`; Displays reports the
+  missing DRM layer instead of inventing a monitor.
+- **Corrected Bluetooth blocker.** The owner-supplied BCM4375 HCD is present
+  and checksum-verified, but the running 4.14.253 kernel was built with
+  `CONFIG_BT_HCIUART` **not set**. `bcm43xx_bluetooth` is only the power/rfkill
+  driver, so no HCI transport can register `hci0`; scanning cannot return
+  devices until a scoped kernel rebuild. The provider now reports
+  `BLOCKED_KERNEL` with that exact evidence, not a stale firmware-only error.
+- **Remaining hardware blockers, stated plainly:** GNSS firmware/reader is
+  absent; the MADERA `HPOUT1 Digital` unmute path wedges in kernel D-state;
+  USB-C HDMI needs `CONFIG_DRM` + a Type-C DP Alt Mode stack. No fake device,
+  fix, monitor or audible-sound claim is made.
+- **Release/tooling fixes.** The live-deploy plan now covers every new console,
+  Settings, Maps, bridge-provider and diagnostics file and explicitly names
+  repository-only tests/backups plus image-managed orientation/metrics sources.
+  The reboot policy now refuses repeated reasons/diagnostics **before** issuing
+  a reboot, and its offline evidence-directory/thread handling was repaired.
+- **Whole-repo lockstep bump to `v0.7.0-beta`** across `VERSION`, APKBUILDs,
+  PWA/bridge manifests, service/version pins, shell apps, OTA/VM tooling,
+  launcher cache namespace (`v48-v070-release`) and release docs.
+- **Verification:** `tests/` 56 passed; `tools/beta/live/tests` 187 passed;
+  the bridge hardware/app suites, A34 touch suite, A40 launcher suite, A45
+  lockscreen/unlock tests and the packages/registry checks were run locally.
+  The GitHub workflow rebuilds the S10+ image set from this same commit.
+
 ## [v0.6.7-beta] - 2026-10-26 - *Release: green release gate + transactional Live Console deploy*
 
 - **The red release gate from the last `main` run is fixed.** The

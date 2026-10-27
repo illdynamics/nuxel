@@ -331,17 +331,24 @@
   }, function () { return Object.assign({}, HAPTICS_DEFAULTS); }); }
   function hapticValue(id, suffix) { document.getElementById(id + suffix).textContent = document.getElementById(id).value + (suffix.indexOf('ms') >= 0 ? ' ms' : '%'); }
   function renderHaptics(doc) {
+    // The haptics card is optional in the current Settings shell.  Render it
+    // only when its nodes exist; a missing optional card must not abort the
+    // rest of Settings (Location/Maps diagnostics included).
+    if (!document.getElementById('haptics-enabled') || !document.getElementById('haptics-state')) return Promise.resolve();
     var map = [['haptics-enabled','enabled'], ['haptics-touch','touch_feedback'], ['haptics-scroll','scroll_feedback'], ['haptics-navigation','navigation_feedback'], ['haptics-long','long_press_feedback']];
-    map.forEach(function (p) { document.getElementById(p[0]).checked = !!doc[p[1]]; });
-    [['haptics-intensity','intensity_percent'], ['haptics-tap-ms','tap_ms'], ['haptics-scroll-ms','scroll_ms'], ['haptics-long-ms','long_press_ms']].forEach(function (p) { document.getElementById(p[0]).value = doc[p[1]]; });
+    map.forEach(function (p) { var el = document.getElementById(p[0]); if (el) el.checked = !!doc[p[1]]; });
+    [['haptics-intensity','intensity_percent'], ['haptics-tap-ms','tap_ms'], ['haptics-scroll-ms','scroll_ms'], ['haptics-long-ms','long_press_ms']].forEach(function (p) { var el = document.getElementById(p[0]); if (el) el.value = doc[p[1]]; });
     hapticValue('haptics-intensity','-val'); hapticValue('haptics-tap-ms','-val'); hapticValue('haptics-scroll-ms','-val'); hapticValue('haptics-long-ms','-val');
     return call('status.read', { name: 'haptics-state' }).then(function (r) {
       var state = (r && r.ok && r.text) ? r.text.trim() : 'service unavailable';
       document.getElementById('haptics-state').textContent = state;
       var amplitude = /amplitude_supported=1/.test(state);
-      document.getElementById('haptics-intensity').disabled = !amplitude;
-      document.getElementById('haptics-intensity-row').classList.toggle('disabled', !amplitude);
-      document.getElementById('haptics-capability').textContent = amplitude ? 'Samsung timed_output vibrator; hardware amplitude control is available.' : 'Vibration duration is available; this kernel did not report adjustable hardware amplitude.';
+      var intensity = document.getElementById('haptics-intensity');
+      var intensityRow = document.getElementById('haptics-intensity-row');
+      if (intensity) intensity.disabled = !amplitude;
+      if (intensityRow) intensityRow.classList.toggle('disabled', !amplitude);
+      var cap = document.getElementById('haptics-capability');
+      if (cap) cap.textContent = amplitude ? 'Samsung timed_output vibrator; hardware amplitude control is available.' : 'Vibration duration is available; this kernel did not report adjustable hardware amplitude.';
     });
   }
   function saveHaptics() {
@@ -359,10 +366,12 @@
       return cfgSet(HAPTICS_NAME, JSON.stringify(doc, null, 2) + '\n').then(function (r) { return renderHaptics(doc).then(function () { return r; }); });
     });
   }
-  ['haptics-enabled','haptics-touch','haptics-scroll','haptics-navigation','haptics-long'].forEach(function (id) { document.getElementById(id).addEventListener('change', saveHaptics); });
-  [['haptics-intensity','-val'],['haptics-tap-ms','-val'],['haptics-scroll-ms','-val'],['haptics-long-ms','-val']].forEach(function (p) { document.getElementById(p[0]).addEventListener('input', function () { hapticValue(p[0], p[1]); }); document.getElementById(p[0]).addEventListener('change', saveHaptics); });
-  document.getElementById('haptics-test').addEventListener('click', function () { saveHaptics().then(function (r) { if (r && r.ok) return act('haptics-test'); }); });
-  document.getElementById('haptics-reset').addEventListener('click', function () { cfgSet(HAPTICS_NAME, JSON.stringify(HAPTICS_DEFAULTS, null, 2) + '\n').then(function () { renderHaptics(HAPTICS_DEFAULTS); }); });
+  ['haptics-enabled','haptics-touch','haptics-scroll','haptics-navigation','haptics-long'].forEach(function (id) { var el = document.getElementById(id); if (el) el.addEventListener('change', saveHaptics); });
+  [['haptics-intensity','-val'],['haptics-tap-ms','-val'],['haptics-scroll-ms','-val'],['haptics-long-ms','-val']].forEach(function (p) { var el = document.getElementById(p[0]); if (!el) return; el.addEventListener('input', function () { hapticValue(p[0], p[1]); }); el.addEventListener('change', saveHaptics); });
+  var hapticsTest = document.getElementById('haptics-test');
+  if (hapticsTest) hapticsTest.addEventListener('click', function () { saveHaptics().then(function (r) { if (r && r.ok) return act('haptics-test'); }); });
+  var hapticsReset = document.getElementById('haptics-reset');
+  if (hapticsReset) hapticsReset.addEventListener('click', function () { cfgSet(HAPTICS_NAME, JSON.stringify(HAPTICS_DEFAULTS, null, 2) + '\n').then(function () { renderHaptics(HAPTICS_DEFAULTS); }); });
 
   // ---------- developer status ----------
   function statusLine(name) {
@@ -382,9 +391,9 @@
         return p[1] + ': ' + ((r && r.ok && r.text) ? r.text.trim() : '(unavailable)');
       });
     })).then(function (l) { document.getElementById('dev-input').textContent = l.join('\n'); });
-    fetch('/runtime/osd.json', { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : null; })
-      .then(function (t) { if (t) document.getElementById('volume-state').textContent = t; })
-      .catch(function () {});
+    // Volume/mute state now comes from the real ALSA hardware provider
+    // (hardware-settings.js owns #volume-state); the native OSD JSON is no
+    // longer written over the same element, so the two cannot disagree.
   }
   document.getElementById('refresh-dev').addEventListener('click', refreshDev);
 

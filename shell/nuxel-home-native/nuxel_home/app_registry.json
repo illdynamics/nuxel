@@ -1,6 +1,6 @@
 {
   "schema": "nuxel.app-registry.native-consumer/1",
-  "version": 4,
+  "version": 6,
   "generated_from": "pwa/nuxel-common/app-registry.json",
   "bridge_version": "1",
   "do_not_edit": "Rendered by tools/s10plus/a33/verify-app-registry.py --sync-native. Edit the canonical registry instead.",
@@ -65,7 +65,7 @@
       "icon": "\ud83d\udcf7",
       "kind": "native",
       "url": "nuxel-camera://",
-      "native_binary": null,
+      "native_binary": "/usr/lib/nuxel/nuxel-camera-native/nuxel_camera_native.py",
       "color": "#795548",
       "category": "media",
       "description": "Take photos and videos",
@@ -74,7 +74,7 @@
         "camera:preview"
       ],
       "bridge_version": "1",
-      "status": "placeholder"
+      "status": "implemented"
     },
     {
       "id": "org.nuxel.Mail",
@@ -150,8 +150,11 @@
       "native_binary": null,
       "color": "#78909C",
       "category": "system",
-      "description": "System settings",
-      "capabilities": [],
+      "description": "System settings (display, network, input, location & maps diagnostics)",
+      "capabilities": [
+        "location:read",
+        "location:manage"
+      ],
       "bridge_version": "1",
       "status": "implemented"
     },
@@ -173,14 +176,42 @@
     },
     {
       "id": "org.nuxel.LiveConsole",
-      "name": "Live Console",
+      "name": "Serial Live Console",
       "icon": "\ud83d\udcdf",
       "kind": "pwa",
       "url": "http://127.0.0.1:8000/pwa/nuxel-apps/console/index.html",
       "native_binary": null,
       "color": "#37474F",
       "category": "system",
-      "description": "Live device console and control centre",
+      "description": "USB CDC-ACM recovery console with exclusive serial ownership",
+      "capabilities": [],
+      "bridge_version": "1",
+      "status": "implemented"
+    },
+    {
+      "id": "org.nuxel.USBSSHConsole",
+      "name": "USB SSH Console",
+      "icon": "\ud83d\udd0c",
+      "kind": "pwa",
+      "url": "http://127.0.0.1:8000/pwa/nuxel-apps/console-usb/index.html",
+      "native_binary": null,
+      "color": "#6D4C41",
+      "category": "system",
+      "description": "SSH over the USB network gadget; unavailable on the current 4.14.253 NCM stack",
+      "capabilities": [],
+      "bridge_version": "1",
+      "status": "implemented"
+    },
+    {
+      "id": "org.nuxel.WiFiSSHConsole",
+      "name": "Wi-Fi SSH Console",
+      "icon": "\ud83d\udcf6",
+      "kind": "pwa",
+      "url": "http://127.0.0.1:8000/pwa/nuxel-apps/console-wifi/index.html",
+      "native_binary": null,
+      "color": "#0288D1",
+      "category": "system",
+      "description": "Key-only SSH over the phone's Wi-Fi address (pinned host key on the host)",
       "capabilities": [],
       "bridge_version": "1",
       "status": "implemented"
@@ -200,6 +231,39 @@
       ],
       "bridge_version": "1",
       "status": "implemented-source-only"
+    },
+    {
+      "id": "org.nuxel.BrowserNative",
+      "name": "Nuxel Browser",
+      "icon": "\ud83c\udf10",
+      "kind": "native",
+      "url": "org.nuxel.BrowserNative://",
+      "native_binary": "/usr/lib/nuxel/nuxel-browser-native/nuxel_browser_native.py",
+      "color": "#297ad7",
+      "category": "tools",
+      "description": "Real top-level WebKitGTK browser (HTTPS, Back/Forward/Reload/Home)",
+      "capabilities": [
+        "network:outbound"
+      ],
+      "bridge_version": "1",
+      "status": "implemented"
+    },
+    {
+      "id": "org.nuxel.CameraNative",
+      "name": "Nuxel Camera",
+      "icon": "\ud83d\udcf7",
+      "kind": "native",
+      "url": "org.nuxel.CameraNative://",
+      "native_binary": "/usr/lib/nuxel/nuxel-camera-native/nuxel_camera_native.py",
+      "color": "#795548",
+      "category": "media",
+      "description": "Custom Nuxel Camera native app with honest hardware status",
+      "capabilities": [
+        "camera:capture",
+        "camera:preview"
+      ],
+      "bridge_version": "1",
+      "status": "implemented"
     }
   ]
 }

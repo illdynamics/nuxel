@@ -49,16 +49,21 @@ _spec.loader.exec_module(rv)
 
 
 def run_tool(extra, timeout=240):
-    """Run the real CLI in a subprocess and return (rc, report-dict, stdout)."""
-    with tempfile.TemporaryDirectory(prefix="nxl-rv-ev-") as ev:
-        cmd = [sys.executable, TOOL, "--evidence-dir", ev, "--json"] + extra
-        p = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
-        report = {}
-        try:
-            report = json.loads(p.stdout[p.stdout.index("{"):])
-        except (ValueError, IndexError):
-            pass
-        return p.returncode, report, p.stdout + p.stderr, ev
+    """Run the real CLI in a subprocess and return (rc, report-dict, stdout, ev).
+
+    The evidence directory is deliberately NOT a TemporaryDirectory: callers
+    assert on the persisted history/bundle after the subprocess exits, and a
+    context manager here deleted the very evidence the tests must inspect.
+    """
+    ev = tempfile.mkdtemp(prefix="nxl-rv-ev-")
+    cmd = [sys.executable, TOOL, "--evidence-dir", ev, "--json"] + extra
+    p = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
+    report = {}
+    try:
+        report = json.loads(p.stdout[p.stdout.index("{"):])
+    except (ValueError, IndexError):
+        pass
+    return p.returncode, report, p.stdout + p.stderr, ev
 
 
 class TestProbeRules(unittest.TestCase):
@@ -205,6 +210,7 @@ class TestEndToEndRebootCycle(unittest.TestCase):
                                  args=(devfile,), kwargs={"mode": "post-reboot",
                                                           "timeout": 60},
                                  daemon=True)
+            t.start()
             rc, report, out, ev = run_tool([
                 "--dev-file", devfile, "--reboot",
                 "--reason", "apply the staged userspace deploy and prove return-to-Nuxel",

@@ -8,7 +8,7 @@ Nuxel phone: VPN, Tor, remote access and the privacy daemon that the
 |---|---|---|
 | `privacy-config.json` | `tools/s10plus/a33/nuxel-vpn-tor.sh`, `shell/nuxel-shell/nuxel-privacy/nuxel-privacyd.py` | Profiles, timeouts, bind addresses, default-off policy for remote access, and the claim vocabulary |
 | `tor/torrc` | `tor.service` (`/etc/tor/torrc`) | Client-only Tor: SOCKS 9050, DNS 9053, TransPort 9040, control port 9051 with cookie auth, disk-write avoidance |
-| `remote-access.json` | `nuxel-vpn-tor.sh remote`, the remote-access unit | Remote access is **off by default** and, when enabled, binds only to the owner console interface |
+| `remote-access.json` | `nuxel-vpn-tor.sh remote`, the remote-access unit | Remote access is **off by default** and, when enabled, binds only to the owner console interface. NUXEL-26000 records the actual Tri-Link state there: WLAN key-only SSH is active; USB NCM is blocked by a kernel panic. |
 
 ## The truth ladder (why this directory exists)
 

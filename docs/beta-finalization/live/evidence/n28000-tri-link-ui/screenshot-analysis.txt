@@ -1,0 +1,9 @@
+home-after-unlock.png dock template match:
+  Settings ncc=0.915 at (112, 386, 1260)
+  Terminal ncc=0.921 at (112, 549, 1260)
+  interpretation: the Home dock is visible after unlock (not a blank/lock surface).
+
+console page screenshots are distinct compositor captures:
+  serial-live-console  size=(720, 1520) near-ui-bg=0.120
+  usb-ssh-console      size=(720, 1520) near-ui-bg=0.123
+  wifi-ssh-console     size=(720, 1520) near-ui-bg=0.248

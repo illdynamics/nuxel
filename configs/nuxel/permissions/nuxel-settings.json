@@ -1,0 +1,31 @@
+{
+  "network:manage": {
+    "duration": "session",
+    "granted_at": 1792500231.2952952,
+    "source": "preserved first-party grant: Settings Wi-Fi controls"
+  },
+  "location:manage": {
+    "duration": "always",
+    "granted_at": 0,
+    "portal_type": "location",
+    "source": "first-party-system-grant: Settings Location & Maps diagnostics"
+  },
+  "location:read": {
+    "duration": "always",
+    "granted_at": 0,
+    "portal_type": "location",
+    "source": "first-party-system-grant: Settings may request a real provider fix"
+  },
+  "bluetooth:manage": {
+    "duration": "always",
+    "granted_at": 0,
+    "portal_type": "bluetooth",
+    "source": "first-party-system-grant: Settings Bluetooth page (29000)"
+  },
+  "bluetooth:scan": {
+    "duration": "always",
+    "granted_at": 0,
+    "portal_type": "bluetooth",
+    "source": "first-party-system-grant: Settings Bluetooth scanning (29000)"
+  }
+}

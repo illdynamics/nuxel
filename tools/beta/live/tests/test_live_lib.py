@@ -24,6 +24,7 @@ from pathlib import Path
 import contextlib
 import fcntl
 import io
+import json
 import os
 import sys
 import tempfile
@@ -123,6 +124,23 @@ class TestFramingOverPty(unittest.TestCase):
                 res = c.run("id", timeout=4)
                 self.assertFalse(res.ok, "an unframed reply must never look like success")
 
+    def test_frame_parser_tolerates_interleaved_kmsg(self):
+        import base64
+        rid = "abcd1234"
+        end = "@@E%s@@" % rid
+        body = b"uid=0(root)\n"
+        b64 = base64.b64encode(body).decode()
+        sha = nl.hashlib.sha256(body).hexdigest()
+        kmsg = "[  123.456789] wlan0: scan complete 2.4 GHz"
+        txt = ("%s\n@@B%s@@\n%s\n@@R%s:0@@\n%s\n%s\n@@S%s:%s@@\n%s\n%s\n"
+               % (kmsg, rid, kmsg, rid, b64, kmsg, rid, sha, kmsg, end))
+        frame = nl.parse_run_frame(txt, rid, end)
+        self.assertIsNotNone(frame)
+        self.assertTrue(frame["framed"])
+        self.assertEqual(frame["rc"], 0)
+        self.assertEqual(frame["output"], body.decode())
+        self.assertTrue(frame["sha_ok"])
+
     def test_long_wrapped_command_is_refused(self):
         # The ceiling is the tty line buffer (nl.MAX_WRAPPER_LEN), not a fixed
         # 480: a wrapped command past it must still be refused.
@@ -183,7 +201,7 @@ class TestDeployPlanning(unittest.TestCase):
         self.assertNotIn("systemctl is-active nuxel-touch-arm", script)
         plan = nl.group_reload_plan([step])
         self.assertEqual([r["service"] for r in plan["restarts"]],
-                         ["nuxel-touch-arm"])
+                         ["nuxel-touch-arm.service"])
 
 
 class TestRebootPolicy(unittest.TestCase):
@@ -303,7 +321,12 @@ class TestConsoleLock(unittest.TestCase):
         try:
             with self.assertRaisesRegex(nl.ConsoleLost, "owned by another host tool"):
                 nl.take_console_lock("/dev/test", opener=self.protected_open)
-            self.assertEqual(os.listdir(self.tmp.name), ["shared.lock"])
+            # The lock inode and its advisory owner sidecar are the only files.
+            self.assertEqual(sorted(os.listdir(self.tmp.name)),
+                             ["shared.lock", "shared.lock.owner.json"])
+            owner = json.load(open(os.path.join(self.tmp.name,
+                                                "shared.lock.owner.json")))
+            self.assertEqual(owner["pid"], os.getpid())
         finally:
             fd.close()
 

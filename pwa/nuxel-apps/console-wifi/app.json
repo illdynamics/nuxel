@@ -1,0 +1,16 @@
+{
+  "id": "org.nuxel.WiFiSSHConsole",
+  "name": "Wi-Fi SSH Console",
+  "icon": "📶",
+  "color": "#0288D1",
+  "category": "system",
+  "type": "pwa",
+  "url": "/pwa/nuxel-apps/console-wifi/index.html",
+  "manifest": "pwa/nuxel-apps/console-wifi/manifest.json",
+  "description": "Key-only SSH over the phone's current Wi-Fi address, with the host key verified by the host-side launcher.",
+  "capabilities": [],
+  "bridge_version": "1",
+  "docked": false,
+  "console_transport": "wifi",
+  "status": "implemented"
+}

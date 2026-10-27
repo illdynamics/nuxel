@@ -1,0 +1,7 @@
+pushed={"acked_bytes": 1989, "b64_chars": 2652, "bytes": 1989, "decoded_sha256": "3da124ec72c6273b6c347df8ae43f99b37fd0f550a7190b9b7e15aad5c62a06a", "frames": 21, "mode": "frame", "parts": 21, "path": "/var/tmp/nxl-install-021.sh", "raw_writes": 0, "retries": 0}
+ok=True rc=0
+---
+PREV=NONE
+/usr/share/nuxel/pwa/nuxel-apps/console-wifi/icons/icon.svg.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

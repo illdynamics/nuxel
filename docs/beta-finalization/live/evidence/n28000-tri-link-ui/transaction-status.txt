@@ -1,0 +1,5 @@
+# transaction: COMPLETE (n28000-tri-link-apply-r3)
+# evidence: /x/nuxel/docs/beta-finalization/live/evidence/n28000-tri-link-apply-r3
+# verdict: DEPLOYED_UNVERIFIED; last event: finished
+# changed targets: /usr/share/nuxel/pwa/nuxel-common/app-registry.json, /usr/lib/nuxel/nuxel-bridge/tri_link_status.py
+# next: none — transaction recorded as finished

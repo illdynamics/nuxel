@@ -20,11 +20,13 @@
 // A73/22000 bumps to v43 for js/qs.js Bluetooth+Location tiles and the USB
 // truth veto: without the bump the v42 cache would keep serving the old
 // 'unavailable on this build' placeholders.
+// v0.7.0 bumps to v48 for the Tri-Link console entries, the unlock-to-Home
+// fix, the hardware Settings pages and the version lockstep bump.
 // A77/v0.6.7 bumps to v46: the lockscreen indicator script and the status
 // receives the A77 USB-detach truth (UDC speed + wired VBUS vetoes) and the
 // three indicator assets carry a new cache-buster, so a launcher restored from
 // the v44 namespace would keep showing the ghost PC/console penguins.
-const CACHE_VERSION = 'v46-a77-usb-detach';
+const CACHE_VERSION = 'v48-v070-release';
 const CACHE_NAME = 'nuxel-home-' + CACHE_VERSION;   // version marker sent to clients
 const STATIC_CACHE = 'nuxel-static-' + CACHE_VERSION;
 const DYNAMIC_CACHE = 'nuxel-dynamic-' + CACHE_VERSION;

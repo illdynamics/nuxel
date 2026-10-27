@@ -15,10 +15,13 @@
 </header>
 
 <nav class="tabs">
-  <button class="tab active" data-tab="display">Display</button>
+  <button class="tab active" data-tab="display">Screen</button>
+  <button class="tab" data-tab="bluetooth">Bluetooth</button>
+  <button class="tab" data-tab="displays">Displays</button>
   <button class="tab" data-tab="network">Wi-Fi</button>
-    <button class="tab" data-tab="sound">Sound</button>
+  <button class="tab" data-tab="sound">Sound</button>
   <button class="tab" data-tab="buttons">Buttons &amp; Gestures</button>
+  <button class="tab" data-tab="location">Location &amp; Maps</button>
   <button class="tab" data-tab="dev">Developer</button>
 </nav>
 
@@ -123,18 +126,54 @@
     </div>
   </section>
 
+  <!-- ── BLUETOOTH (29000) ─────────────────────────────────────────────── -->
+  <section id="tab-bluetooth" class="panel">
+    <h2>Bluetooth</h2>
+    <div class="card">
+      <h3>Controller &amp; service</h3>
+      <p class="hint">Real controller/rfkill/BlueZ/firmware state from the same authoritative
+        provider as the Bluetooth Quick Setting.</p>
+      <div class="row">
+        <button id="bt-refresh">Refresh</button>
+        <button id="bt-power" class="primary">Turn Bluetooth on/off</button>
+      </div>
+      <pre id="bt-state" class="state">Checking Bluetooth…</pre>
+      <p id="bt-detail" class="hint">—</p>
+    </div>
+  </section>
+
+  <!-- ── DISPLAYS (29000) ──────────────────────────────────────────────── -->
+  <section id="tab-displays" class="panel">
+    <h2>Displays</h2>
+    <div class="card">
+      <h3>External display (USB-C / HDMI)</h3>
+      <p class="hint">Actual DRM, Type-C and extcon state. Mirror and Desktop are only offered when
+        the kernel and compositor genuinely support an independent external output.</p>
+      <div class="row"><button id="display-refresh">Refresh</button></div>
+      <pre id="display-state" class="state">Checking display path…</pre>
+      <p id="display-detail" class="hint">—</p>
+    </div>
+  </section>
+
   <!-- ── SOUND ────────────────────────────────────────────────────────── -->
   <section id="tab-sound" class="panel">
     <h2>Sound</h2>
     <div class="card">
-      <h3>Output volume</h3>
-      <p class="hint">Wired to the real ALSA mixer of this device (the manager logs every
-        control it uses). If the audio path exposes no writable playback control the OSD says so
-        instead of pretending.</p>
+      <h3>Audio devices &amp; service</h3>
+      <p class="hint">Real ALSA cards, playback/capture endpoints and audio-service state from the
+        Nuxel hardware provider. A listed card is not an audible claim.</p>
+      <div class="row"><button id="audio-refresh">Refresh</button></div>
+      <pre id="audio-state" class="state">Checking audio hardware…</pre>
+    </div>
+    <div class="card">
+      <h3>Output volume &amp; mute</h3>
+      <p class="hint">Wired to the real ALSA mixer of this device (low-volume cap applied). If the
+        audio path exposes no writable playback control, the controls report unsupported instead of
+        pretending.</p>
       <div class="row">
-        <button data-action="volume-down">Volume −</button>
-        <button data-action="volume-up">Volume +</button>
-        <button data-action="volume-mute">Mute</button>
+        <button id="volume-down">Volume −</button>
+        <button id="volume-up">Volume +</button>
+        <button id="volume-mute">Mute</button>
       </div>
       <pre id="volume-state" class="state">—</pre>
     </div>
@@ -165,6 +204,39 @@
       <button id="reload-buttons">Reload</button>
     </div>
     <p id="buttons-report" class="state">—</p>
+  </section>
+
+
+  <!-- ── LOCATION & MAPS (27000) ──────────────────────────────────────── -->
+  <section id="tab-location" class="panel">
+    <h2>Location &amp; Maps</h2>
+    <div class="card">
+      <h3>GNSS / location provider</h3>
+      <p class="hint">The authoritative state comes from the Nuxel bridge's canonical location
+        provider. A coordinate, manual map point or place search is never reported as a GPS fix.</p>
+      <pre id="location-state" class="state" role="status" aria-live="polite">Checking location provider…</pre>
+      <div class="row">
+        <button id="location-refresh">Refresh</button>
+        <button id="location-acquire" class="primary">Request provider fix</button>
+      </div>
+      <p id="location-detail" class="hint">—</p>
+    </div>
+
+    <div class="card">
+      <h3>Maps tile source</h3>
+      <p class="hint">One configuration is shared with the Maps app. The default is the attributed
+        OpenStreetMap standard tile service; only visible tiles are requested.</p>
+      <label>Tile URL template
+        <input id="maps-tile-url" type="text" class="grow" placeholder="https://tile.openstreetmap.org/{z}/{x}/{y}.png">
+      </label>
+      <label class="check"><input id="maps-allow-net" type="checkbox"> Allow online tile downloads</label>
+      <div class="row">
+        <button id="maps-save" class="primary">Save tile source</button>
+        <button id="maps-default">Restore default</button>
+        <button id="maps-refresh">Check status</button>
+      </div>
+      <pre id="maps-state" class="state" role="status" aria-live="polite">—</pre>
+    </div>
   </section>
 
   <!-- ── DEVELOPER ────────────────────────────────────────────────────── -->
@@ -222,8 +294,11 @@
   </section>
 </main>
 
+<script src="../../nuxel-common/maps-core.js"></script>
 <script type="module" src="../../nuxel-common/bridge.js"></script>
 <script src="settings.js"></script>
 <script src="wifi-settings.js"></script>
+<script src="location-maps.js"></script>
+<script src="hardware-settings.js"></script>
 </body>
 </html>

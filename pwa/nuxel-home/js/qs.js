@@ -240,6 +240,11 @@ class QuickSettings {
         this._render();
         this._syncVerboseBoot();
         this.panel.classList.remove('hidden');
+        // Bounded refresh while the panel is visible: provider state can change
+        // (searching -> fix, or provider disappearance) without excessive polling.
+        if (!this._locationTimer) {
+            this._locationTimer = setInterval(() => { if (this.isOpen) this._syncLocation(); }, 5000);
+        }
     }
 
     close() {
@@ -248,6 +253,7 @@ class QuickSettings {
         this.expanded = false;
         this.panel.classList.remove('expanded');
         this.panel.classList.add('hidden');
+        if (this._locationTimer) { clearInterval(this._locationTimer); this._locationTimer = null; }
     }
 
     expand() { if (!this.isOpen) return this.open(); this.expanded = true; this.panel.classList.add('expanded'); }
@@ -426,6 +432,7 @@ class QuickSettings {
             const label = tile.querySelector('.qs-label');
             if (label) label.innerHTML = this._bluetoothLabel(st);
             tile.title = 'Bluetooth: ' + ((st && st.state) || 'unknown')
+                + (st && st.blocker ? ('\nblocker: ' + st.blocker) : '')
                 + (st && st.detail ? '\n' + st.detail : '')
                 + '\nTap = power on/off (real BlueZ/rfkill state)';
         } catch (e) {
@@ -440,7 +447,7 @@ class QuickSettings {
         try {
             const grant = await bridge.requestCapability('bluetooth:manage', 'Toggle Bluetooth radio');
             if (grant === false) throw new Error('Bluetooth control permission denied');
-            const result = await bridge.call('bluetooth', 'set-powered', { enabled: !!enabled });
+            const result = await bridge.call('bluetooth', 'power', { enabled: !!enabled });
             if (!result || result.success !== true) {
                 throw new Error((result && (result.error || result.detail)) || 'Bluetooth radio did not confirm');
             }
@@ -456,15 +463,19 @@ class QuickSettings {
         }
     }
 
-    // ---- Location (A73): real global privacy/provider switch ----
+    // ---- Location (A73/27000): canonical provider state, never a fix claim ----
     _locationLabel(st) {
-        if (!st) return 'Location';
-        if (st.enabled) {
-            if (st.location_fix_available) return 'Location<br>fix';
-            if (st.provider_ready) return 'Location<br>locating';
-            return 'Location<br>no fix';
+        const state = (st && st.state) || (!st ? 'unavailable' : (st.enabled ? 'no_fix' : 'disabled'));
+        switch (state) {
+            case 'fixed': return 'Location<br>provider fix';
+            case 'stale': return 'Location<br>stale fix';
+            case 'searching': return 'Location<br>searching';
+            case 'no_fix': return 'Location<br>no fix';
+            case 'disabled': return 'Location<br>off';
+            case 'error': return 'Location<br>error';
+            case 'unavailable':
+            default: return 'Location<br>unavailable';
         }
-        return 'Location';
     }
 
     async _syncLocation() {
@@ -472,20 +483,29 @@ class QuickSettings {
         if (!tile) return;
         try {
             const st = await bridge.call('location', 'get-status', {});
-            this.state.location = !!(st && st.enabled);
+            if (!st || st.success === false) throw new Error((st && (st.error || st.detail)) || 'provider unavailable');
+            const state = st.state || (st.enabled ? (st.location_fix_available ? 'fixed' : 'no_fix') : 'disabled');
+            this.state.location = !!st.enabled;
             tile.dataset.enabled = this.state.location ? 'true' : 'false';
-            tile.dataset.state = (st && st.enabled) ? 'on' : 'off';
+            tile.dataset.state = state;
             const label = tile.querySelector('.qs-label');
             if (label) label.innerHTML = this._locationLabel(st);
-            const fix = (st && st.location_fix_available) ? ('source=' + (st.fix_source || 'none')) : 'no fix';
-            tile.title = 'Location: ' + (this.state.location ? 'ON (policy enabled)' : 'off (policy disabled)')
-                + ' | provider=' + ((st && st.provider) || 'geoclue2')
-                + ' | ' + ((st && st.provider_ready) ? 'ready' : 'not ready')
-                + ' | ' + fix
-                + '\nTap = global location permission/provider ON/OFF (independent of a GPS fix)';
+            const age = (typeof st.last_fix_age_s === 'number') ? (' | last provider fix ' + Math.round(st.last_fix_age_s) + ' s ago') : '';
+            const acc = (typeof st.accuracy === 'number') ? (' | accuracy ±' + Math.round(st.accuracy) + ' m') : '';
+            const provider = (st.provider || 'unknown') + ' (' + (st.provider_ready ? 'ready' : (st.provider_available ? 'installed, not answering' : 'unavailable')) + ')';
+            tile.title = 'Location: ' + state
+                + ' | provider=' + provider
+                + age + acc
+                + (st.detail ? ('\n' + st.detail) : '')
+                + (st.gnss && st.gnss.blocker ? ('\nGNSS: ' + st.gnss.blocker) : '')
+                + '\nTap = global location permission/provider ON/OFF (independent of a position fix)';
         } catch (e) {
+            this.state.location = false;
             tile.dataset.enabled = 'false';
-            tile.dataset.state = 'error';
+            tile.dataset.state = 'unavailable';
+            const label = tile.querySelector('.qs-label');
+            if (label) label.innerHTML = this._locationLabel(null);
+            tile.title = 'Location provider unavailable: ' + (e && e.message ? e.message : 'bridge error');
         }
     }
 
@@ -493,9 +513,14 @@ class QuickSettings {
         const el = document.getElementById('qs-location');
         if (el) el.dataset.pending = 'true';
         try {
-            const grant = await bridge.requestCapability('location:manage', 'Toggle location policy');
-            if (grant === false) throw new Error('Location control permission denied');
-            const result = await bridge.call('location', 'set-enabled', { enabled: !!enabled });
+            let result = await bridge.call('location', 'set-enabled', { enabled: !!enabled });
+            if (result && result.error_code === 'CAPABILITY_DENIED') {
+                const grant = await bridge.requestCapability('location:manage', 'Toggle location policy');
+                if (grant === false || (grant && grant.granted === false)) {
+                    throw new Error((grant && grant.error) || 'Location control permission denied');
+                }
+                result = await bridge.call('location', 'set-enabled', { enabled: !!enabled });
+            }
             if (!result || result.success !== true) {
                 throw new Error((result && (result.error || result.detail)) || 'Location policy did not confirm');
             }

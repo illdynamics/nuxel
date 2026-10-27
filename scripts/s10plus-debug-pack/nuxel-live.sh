@@ -149,12 +149,15 @@ def lost(what, e):
 # Fedora protected_regular fallback reopens that same inode without O_CREAT;
 # inaccessible locks fail closed. Never unlink a peer's lock or use a private one.
 sys.path.insert(0, sys.argv[8])
-from nuxel_live import take_console_lock, ConsoleLost as LockError
+from nuxel_live import (take_console_lock, release_console_lock,
+                        ConsoleLost as LockError)
 try:
     _lk, LOCK = take_console_lock(dev)
 except LockError as e:
     print("!! %s" % e, file=sys.stderr)
     sys.exit(3)
+import atexit
+atexit.register(lambda: release_console_lock(_lk, LOCK, dev))
 
 # ---- framing constants ---------------------------------------------------------------
 B64 = re.compile(r"^[A-Za-z0-9+/=]+$")

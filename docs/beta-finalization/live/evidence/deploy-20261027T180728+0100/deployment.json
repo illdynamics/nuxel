@@ -1,0 +1,92 @@
+{
+  "apply": false,
+  "at": "2026-10-27T18:07:28+0100",
+  "boot_id_after": null,
+  "boot_id_before": null,
+  "boot_id_changed": null,
+  "briq": "briq-10b-live-deploy-userspace",
+  "cancelled": false,
+  "evidence_dir": "/x/nuxel/docs/beta-finalization/live/evidence/deploy-20261027T180728+0100",
+  "exit_code": 0,
+  "finished_at": "2026-10-27T18:07:28+0100",
+  "groups": [
+    {
+      "declared_reload": "python3 -c \"import json;json.load(open('/usr/share/nuxel/pwa/nuxel-common/app-registry.json'))\" && test -s /usr/share/nuxel/pwa/nuxel-apps/console/console.js && test -s /usr/share/nuxel/pwa/nuxel-apps/settings/hardware-settings.js\"",
+      "declared_reload_source": "group",
+      "group": "v070-pwa-static",
+      "priority": 1,
+      "restart_service": null,
+      "risk": "low",
+      "risk_rank": 0,
+      "steps": 210
+    },
+    {
+      "declared_reload": "test -x /usr/local/bin/nuxel-typec-diag.sh && test -x /usr/local/bin/nuxel-cast-diag.sh",
+      "declared_reload_source": "group",
+      "group": "v070-diagnostics",
+      "priority": 2,
+      "restart_service": null,
+      "risk": "low",
+      "risk_rank": 0,
+      "steps": 2
+    },
+    {
+      "declared_reload": null,
+      "declared_reload_source": null,
+      "group": "v070-providers-dbus",
+      "priority": 3,
+      "restart_service": "nuxel-bridge",
+      "risk": "medium",
+      "risk_rank": 1,
+      "steps": 4
+    },
+    {
+      "declared_reload": null,
+      "declared_reload_source": null,
+      "group": "v070-http-providers",
+      "priority": 4,
+      "restart_service": "nuxel-http-bridge",
+      "risk": "medium",
+      "risk_rank": 1,
+      "steps": 2
+    },
+    {
+      "declared_reload": null,
+      "declared_reload_source": null,
+      "group": "v070-grants-configs",
+      "priority": 5,
+      "restart_service": "nuxel-bridge",
+      "risk": "medium",
+      "risk_rank": 1,
+      "steps": 5
+    },
+    {
+      "declared_reload": "systemctl daemon-reload && systemctl restart nuxel-bridge nuxel-http-bridge",
+      "declared_reload_source": "group",
+      "group": "v070-version-pins",
+      "priority": 6,
+      "restart_service": null,
+      "risk": "medium",
+      "risk_rank": 1,
+      "steps": 5
+    }
+  ],
+  "journal": "/x/nuxel/docs/beta-finalization/live/evidence/deploy-20261027T180728+0100/transaction.jsonl",
+  "manifest": "tools/beta/live/nuxel-070-beta-live-manifest.json",
+  "operation_id": "deploy-20261027T180728-2189607",
+  "order": "manifest",
+  "results": [],
+  "risk_envelope": {
+    "low": 212,
+    "medium": 16
+  },
+  "skipped": [],
+  "steps": 228,
+  "transfer": {},
+  "verdict": "IMPLEMENTED_NOT_DEPLOYED",
+  "verdict_note": "plan + install scripts generated and guarded; no device write attempted (pass --apply for the live run)",
+  "verdicts": {
+    "briq-10b-live-deploy-userspace": "IMPLEMENTED_NOT_DEPLOYED"
+  },
+  "violations": []
+}

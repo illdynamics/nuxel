@@ -1,0 +1,6 @@
+pushed={"acked_bytes": 108, "b64_chars": 144, "bytes": 108, "decoded_sha256": "08190697ca436ad72d7a02fd0a2fc35478407c789301fd8cd35bd9d63e9d3219", "frames": 2, "mode": "frame", "parts": 2, "path": "/var/tmp/nxl-restart-001-1.sh", "raw_writes": 0, "retries": 0}
+ok=True rc=0
+---
+active
+ACTIVATE-OK
+NXLSCRIPT-RC=0

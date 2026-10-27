@@ -1,7 +1,7 @@
 {
   "name": "Nuxel Maps",
   "short_name": "Maps",
-  "description": "Offline-first OpenStreetMap viewer: IndexedDB tile cache, pins, coordinate grid, haversine measurement",
+  "description": "OpenStreetMap viewer with an attributed online tile source and an offline IndexedDB tile cache",
   "start_url": "/pwa/nuxel-apps/maps/index.html",
   "scope": "/pwa/nuxel-apps/maps/",
   "display": "fullscreen",
@@ -71,11 +71,11 @@
     ],
     "app_type": "maps",
     "offline_first": true,
-    "network": "opt-in-tile-downloads-only",
+    "network": "visible-viewport-only",
     "storage": [
       "localStorage",
       "indexedDB"
     ],
-    "data_source": "OpenStreetMap tiles (cache-only until downloads are enabled)"
+    "data_source": "OpenStreetMap tiles, cached locally; Nominatim search is separate"
   }
 }

@@ -1,0 +1,44 @@
+{
+  "device": "Samsung Galaxy S10+ SM-G975F / beyond2lte",
+  "groups": [
+    {
+      "component": "WLAN/USB SSH console (OpenSSH, public key only)",
+      "files": [
+        {
+          "mode": "0644",
+          "source": "configs/nuxel/security/ssh/50-nuxel-a74-recovery.conf",
+          "target": "/etc/ssh/sshd_config.d/50-nuxel-a74-recovery.conf"
+        },
+        {
+          "mode": "0644",
+          "source": "configs/nuxel/security/ssh/60-nuxel-tri-link.conf",
+          "target": "/etc/ssh/sshd_config.d/60-nuxel-tri-link.conf"
+        },
+        {
+          "mode": "0600",
+          "source": "configs/nuxel/security/ssh/authorized_keys.nuxel",
+          "target": "/home/nuxel/.ssh/authorized_keys"
+        }
+      ],
+      "health_check": "sshd -t && systemctl is-active sshd.service && sshd -T | grep -qx 'passwordauthentication no' && sshd -T | grep -qx 'kbdinteractiveauthentication no' && sshd -T | grep -q '^allowusers nuxel@10.20.30.0/24$'",
+      "id": "tri-link-ssh",
+      "post": [
+        "install -d -m 0700 -o nuxel -g nuxel /home/nuxel/.ssh",
+        "chown nuxel:nuxel /home/nuxel/.ssh/authorized_keys 2>/dev/null || true",
+        "chmod 0600 /home/nuxel/.ssh/authorized_keys 2>/dev/null || true",
+        "sshd -t"
+      ],
+      "pre": [
+        "test -x /usr/sbin/sshd",
+        "test -f /etc/ssh/sshd_config"
+      ],
+      "priority": 1,
+      "restart_service": "sshd.service",
+      "risk": "low",
+      "rollback": "restore <target>.nuxel-rollback (or remove a newly-created <target>), then systemctl restart sshd.service; the root authorized_keys and the serial console are never modified"
+    }
+  ],
+  "id": "nuxel-26000-tri-link-ssh",
+  "note": "Key-only WLAN/USB SSH policy. Every write is staged, hashed, installed atomically and rolled back by nuxel-live-deploy.py. Does not flash, reboot or touch the kernel.",
+  "schema_version": 1
+}

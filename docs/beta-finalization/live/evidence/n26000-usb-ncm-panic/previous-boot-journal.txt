@@ -1,0 +1,120 @@
+Oct 27 15:25:20 fedora kernel: usb: dwc3_gadget_linksts_change_interrupt : evtinfo = 0x10 link state = 0
+Oct 27 15:25:20 fedora kernel: dwc3 10c00000.dwc3: failed to send remote wakeup
+Oct 27 15:25:20 fedora kernel: usb: dwc3_gadget_linksts_change_interrupt : evtinfo = 0x11 link state = 1
+Oct 27 15:25:20 fedora kernel: android_work: sent uevent USB_STATE=CONFIGURED
+Oct 27 15:25:21 fedora kernel: CFG80211-TRACE) __wl_cfg80211_scan : START SCAN
+Oct 27 15:25:21 fedora kernel: dhd_set_rpm_state: 0
+Oct 27 15:25:21 fedora kernel: CFG80211-INFO) wl_scan_prep : n_channels:38 n_ssids:1
+Oct 27 15:25:21 fedora kernel: CFG80211-INFO) wl_run_escan : LEGACY_SCAN sync ID: 190, bssidx: 2
+Oct 27 15:25:22 fedora kernel: s3c2410-wdt 10050000.watchdog_cl0: Watchdog cluster 0 keepalive!, wtcnt = fff5
+Oct 27 15:25:22 fedora kernel: Watchdog: s3c2410wdt_keepalive RTC 2026-10-27 14:25:22 UTC
+Oct 27 15:25:22 fedora kernel: watchdog: watchdog0: watchdog did not stop!
+Oct 27 15:25:22 fedora kernel: s3c2410-wdt 10050000.watchdog_cl0: Watchdog cluster 0 keepalive!, wtcnt = fff5
+Oct 27 15:25:22 fedora kernel: Watchdog: s3c2410wdt_keepalive RTC 2026-10-27 14:25:22 UTC
+Oct 27 15:25:22 fedora kernel: usb: dwc3_gadget_linksts_change_interrupt : evtinfo = 0x10 link state = 0
+Oct 27 15:25:22 fedora kernel: usb: dwc3_gadget_linksts_change_interrupt : evtinfo = 0x11 link state = 1
+Oct 27 15:25:22 fedora kernel: usb: dwc3_gadget_linksts_change_interrupt : evtinfo = 0x10 link state = 0
+Oct 27 15:25:22 fedora kernel: usb: dwc3_gadget_linksts_change_interrupt : evtinfo = 0x11 link state = 1
+Oct 27 15:25:22 fedora kernel: usb: dwc3_gadget_linksts_change_interrupt : evtinfo = 0x10 link state = 0
+Oct 27 15:25:22 fedora kernel: configfs-gadget gadget: super-speed config #0: unconfigured
+Oct 27 15:25:22 fedora kernel: usb: SET_CON
+Oct 27 15:25:22 fedora kernel: sec_bat_set_property: usb configured 875
+Oct 27 15:25:22 fedora kernel: sec_bat_set_misc_event: misc event before(0x0), after(0x0)
+Oct 27 15:25:22 fedora kernel: sec_bat_set_current_event: current event before(0x100), after(0x100)
+Oct 27 15:25:22 fedora kernel: sec_bat_change_default_current: cable_type: 4 input: 875 output: 875
+Oct 27 15:25:22 fedora kernel: sec_bat_check_mix_temp: mix_limit(0), temp(228), chg_temp(234), input_current(3000)
+Oct 27 15:25:22 fedora kernel: sec_bat_check_pdic_temp: cable_type(19), chg_limit(0)
+Oct 27 15:25:22 fedora kernel: sec_bat_get_charging_current_by_siop: incurr(3000), chgcurr(2850)
+Oct 27 15:25:23 fedora nuxel-console: shell tty fd=5 (own_open=4)
+Oct 27 15:25:23 fedora nuxel-console: shell tty fd=5 (own_open=4)
+Oct 27 15:25:23 fedora kernel: configfs-gadget gadget: super-speed config #1: c
+Oct 27 15:25:23 fedora kernel: usb: set_config e acm[0]
+Oct 27 15:25:23 fedora kernel: usb: set_config e acm[1]
+Oct 27 15:25:23 fedora kernel: usb: SET_CON
+Oct 27 15:25:23 fedora kernel: usb: set_config_number single config num=0
+Oct 27 15:25:23 fedora kernel: sec_bat_set_property: usb configured 875
+Oct 27 15:25:23 fedora kernel: sec_bat_set_misc_event: misc event before(0x0), after(0x0)
+Oct 27 15:25:23 fedora kernel: sec_bat_set_current_event: current event before(0x100), after(0x100)
+Oct 27 15:25:23 fedora kernel: sec_bat_change_default_current: cable_type: 4 input: 875 output: 875
+Oct 27 15:25:23 fedora kernel: sec_bat_check_mix_temp: mix_limit(0), temp(228), chg_temp(234), input_current(3000)
+Oct 27 15:25:23 fedora kernel: sec_bat_check_pdic_temp: cable_type(19), chg_limit(0)
+Oct 27 15:25:23 fedora kernel: sec_bat_get_charging_current_by_siop: incurr(3000), chgcurr(2850)
+Oct 27 15:25:23 fedora kernel: android_work: sent uevent USB_STATE=CONFIGURED
+Oct 27 15:25:23 fedora kernel: dwc3 10c00000.dwc3: failed to send remote wakeup
+Oct 27 15:25:23 fedora kernel: max77705_muic: max77705_muic_print_reg_log USBC1:0x27, USBC2:0x31, BC:0x81, CC0:0xb1, CC1:0x9, PD0:0x43, PD1:0x57 attached_dev:1
+Oct 27 15:25:23 fedora kernel: max77705_muic: max77705_muic_print_reg_log UIC_INT_M:0x0, CC_INT_M:0x20, PD_INT_M:0x0, VDM_INT_M:0xf0, PMIC_MASK:0x2, WDT:0, POR:0
+Oct 27 15:25:24 fedora kernel: CFG80211-INFO) wl_cfg80211_event : Enqueing escan completion (0). WQ state:0x1 
+Oct 27 15:25:24 fedora kernel: CFG80211-INFO) wl_print_event_data : event_type (69), ifidx: 16777216 bssidx: 33554432 scan_type:0
+Oct 27 15:25:24 fedora kernel: CFG80211-INFO) wl_escan_handler : ESCAN COMPLETED
+Oct 27 15:25:24 fedora kernel: CFG80211-TRACE) wl_escan_handler : SCAN COMPLETED: scanned AP count=16
+Oct 27 15:25:24 fedora kernel: CFG80211-INFO) wl_notify_escan_complete : [wlan1] Report scan done.
+Oct 27 15:25:24 fedora kernel: dhd_set_rpm_state: 1
+Oct 27 15:25:25 fedora kernel: [SSP]: debug_work_func(0) - Sensor state: 0x3feff, RC: 0(0, 0, 0), CC: 0, TC: 0 NSC: 0 EC: 0 GPS: false
+Oct 27 15:25:25 fedora kernel: dhd_runtimepm_state: DHD Idle state!! -  idletime :11, wdtick :100, PS mode off dur: 0 sec 
+Oct 27 15:25:25 fedora kernel: __dhd_txflowcontrol: Stop Netif Queue
+Oct 27 15:25:25 fedora kernel: __dhd_txflowcontrol: Stop Netif Queue
+Oct 27 15:25:25 fedora kernel: dhdpcie_bus_suspend: Entering suspend state
+Oct 27 15:25:25 fedora kernel: dhdpcie_send_mb_data: send H2D_HOST_D3_INFORM to dongle
+Oct 27 15:25:25 fedora kernel: D2H_MB_DATA: D3 ACK
+Oct 27 15:25:25 fedora kernel: dhd_bus_handle_d3_ack: D3_ACK Recieved
+Oct 27 15:25:25 fedora kernel: dhdpcie_bus_suspend: Got D3 Ack 
+Oct 27 15:25:25 fedora kernel: dhdpcie_dump_resource: BAR0(VA): 0x0000000000000000, BAR0(PA): 0x0000000014400000, SIZE: 32768
+Oct 27 15:25:25 fedora kernel: dhdpcie_dump_resource: BAR1(VA): 0x0000000000000000, BAR1(PA): 0x0000000014000000, SIZE: 4194304
+Oct 27 15:25:25 fedora kernel: dhdpcie_suspend_dev: Enter: TS(2610271425250936)
+Oct 27 15:25:25 fedora kernel: dhdpcie_suspend_dev: Disable L1ss EP side
+Oct 27 15:25:25 fedora kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: START (state = 0x0, id = 0x10, enable = 0)
+Oct 27 15:25:25 fedora kernel: dhdpci_bus_read_frames: Bus is in power save state (2). Skip processing rest of ring buffers.
+Oct 27 15:25:25 fedora kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: END (state = 0x10, id = 0x10, enable = 0)
+Oct 27 15:25:25 fedora kernel: BEFORE_EP_SUSPEND: BaseAddress0(0x10)=0x14400004, BaseAddress1(0x18)=0x14000004 PCIE_CFG_PMCSR(0x4c)=0x4108 PCI_BAR1_WIN(0x84)=(0x0)
+Oct 27 15:25:25 fedora kernel: AFTER_EP_SUSPEND: BaseAddress0(0x10)=0x14400004, BaseAddress1(0x18)=0x14000004 PCIE_CFG_PMCSR(0x4c)=0x410b PCI_BAR1_WIN(0x84)=(0x0)
+Oct 27 15:25:25 fedora kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_poweroff, start of poweroff, pcie state: 2
+Oct 27 15:25:25 fedora kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_send_pme_turn_off: link state:d
+Oct 27 15:25:25 fedora kernel: exynos-pcie 13ed0000.pcie0: Current LTSSM State is 0xd with retry_cnt =0.
+Oct 27 15:25:25 fedora kernel: exynos-pcie 13ed0000.pcie0: ack message is ok
+Oct 27 15:25:25 fedora kernel: exynos-pcie 13ed0000.pcie0: received Enter_L23_READY DLLP packet
+Oct 27 15:25:25 fedora kernel: SysMMU alloc num : 1061(Max:1085), lv2_alloc : 26, fault : 0
+Oct 27 15:25:25 fedora kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_poweroff: Set PERST to LOW, gpio val = 0
+Oct 27 15:25:25 fedora kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_poweroff, end of poweroff, pcie state: 0
+Oct 27 15:25:25 fedora kernel: dhd_runtimepm_state, update suspend states
+Oct 27 15:25:25 fedora kernel: __dhd_txflowcontrol: Start Netif Queue
+Oct 27 15:25:25 fedora kernel: __dhd_txflowcontrol: Start Netif Queue
+Oct 27 15:25:26 fedora kernel: fps_qbt2000_work_func_debug: ldo:0,ipc:0,wuhb:0,tz:1,type:qbt2000,int:0,0
+Oct 27 15:25:28 fedora kernel: CFG80211-TRACE) __wl_cfg80211_scan : START SCAN
+Oct 27 15:25:28 fedora kernel: dhd_set_rpm_state: 0
+Oct 27 15:25:28 fedora kernel: Runtime Resume is called in __wl_cfg80211_scan
+Oct 27 15:25:28 fedora kernel: [Repeats 1 times]
+Oct 27 15:25:28 fedora kernel: dhdpcie_bus_suspend: Entering resume state
+Oct 27 15:25:28 fedora kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_poweron, start of poweron, pcie state: 0
+Oct 27 15:25:28 fedora kernel: exynos-pcie 13ed0000.pcie0: pcie clk enable, ret value = 0
+Oct 27 15:25:28 fedora kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_establish_link: Set PERST to HIGH, gpio val = 1
+Oct 27 15:25:28 fedora kernel: exynos-pcie 13ed0000.pcie0: phy clk enable, ret value = 0
+Oct 27 15:25:28 fedora kernel: exynos-pcie 13ed0000.pcie0: Set I/A for CDR reset.
+Oct 27 15:25:28 fedora kernel: exynos-pcie 13ed0000.pcie0: D state: 0, bb9d00
+Oct 27 15:25:28 fedora kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_establish_link: Link up:3996c11
+Oct 27 15:25:28 fedora kernel: exynos-pcie 13ed0000.pcie0: Current Link Speed is GEN1 (MAX GEN1)
+Oct 27 15:25:28 fedora kernel: exynos-pcie 13ed0000.pcie0: l1ss disabled(0x10)
+Oct 27 15:25:28 fedora kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_poweron, end of poweron, pcie state: 3
+Oct 27 15:25:28 fedora kernel: dhdpcie_resume_dev: Enter: TS(2610271425280353)
+Oct 27 15:25:28 fedora kernel: AFTER_EP_RESUME: BaseAddress0(0x10)=0x14400004, BaseAddress1(0x18)=0x14000004 PCIE_CFG_PMCSR(0x4c)=0x4108 PCI_BAR1_WIN(0x84)=(0x0)
+Oct 27 15:25:28 fedora kernel: dhdpcie_resume_dev: Enable L1ss EP side
+Oct 27 15:25:28 fedora kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: START (state = 0x10, id = 0x10, enable = 1)
+Oct 27 15:25:28 fedora kernel: exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: END (state = 0x0, id = 0x10, enable = 1)
+Oct 27 15:25:28 fedora kernel: dhdpcie_dump_resource: BAR0(VA): 0x0000000000000000, BAR0(PA): 0x0000000014400000, SIZE: 32768
+Oct 27 15:25:28 fedora kernel: dhdpcie_dump_resource: BAR1(VA): 0x0000000000000000, BAR1(PA): 0x0000000014000000, SIZE: 4194304
+Oct 27 15:25:28 fedora kernel: dhd_bus_hostready : Read PCICMD Reg: 0x00100006
+Oct 27 15:25:28 fedora kernel: dhd_bus_dump_dar_registers: dar_clk_ctrl(0xa08:0x1010040) dar_pwr_ctrl(0xa0c:0x30000) dar_intstat(0xa10:0x4000000)
+Oct 27 15:25:28 fedora kernel: dhd_bus_dump_dar_registers: dar_errlog(0xa60:0x0) dar_erraddr(0xa64:0x0) dar_pcie_mbint(0xa68:0x0)
+Oct 27 15:25:28 fedora kernel: dhd_bus_hostready: Ring Hostready:15179
+Oct 27 15:25:28 fedora kernel: dhd_runtimepm_state : runtime resume ended 
+Oct 27 15:25:28 fedora kernel: CFG80211-INFO) wl_scan_prep : n_channels:38 n_ssids:1
+Oct 27 15:25:28 fedora kernel: CFG80211-INFO) wl_run_escan : LEGACY_SCAN sync ID: 191, bssidx: 2
+Oct 27 15:25:31 fedora kernel: [SSP]: debug_work_func(0) - Sensor state: 0x3feff, RC: 0(0, 0, 0), CC: 0, TC: 0 NSC: 0 EC: 0 GPS: false
+Oct 27 15:25:31 fedora kernel: CFG80211-INFO) wl_cfg80211_event : Enqueing escan completion (0). WQ state:0x1 
+Oct 27 15:25:31 fedora kernel: CFG80211-INFO) wl_print_event_data : event_type (69), ifidx: 16777216 bssidx: 33554432 scan_type:0
+Oct 27 15:25:31 fedora kernel: CFG80211-INFO) wl_escan_handler : ESCAN COMPLETED
+Oct 27 15:25:31 fedora kernel: CFG80211-TRACE) wl_escan_handler : SCAN COMPLETED: scanned AP count=15
+Oct 27 15:25:31 fedora kernel: CFG80211-INFO) wl_notify_escan_complete : [wlan1] Report scan done.
+Oct 27 15:25:31 fedora kernel: dhd_set_rpm_state: 1
+Oct 27 15:25:32 fedora kernel: s3c2410-wdt 10050000.watchdog_cl0: Watchdog cluster 0 keepalive!, wtcnt = fff5
+Oct 27 15:25:32 fedora kernel: Watchdog: s3c2410wdt_keepalive RTC 2026-10-27 14:25:32 UTC
+Oct 27 15:25:32 fedora kernel: watchdog: watchdog0: watchdog did not stop!

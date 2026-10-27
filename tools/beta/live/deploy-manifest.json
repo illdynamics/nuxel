@@ -2159,6 +2159,91 @@
           "source": "pwa/nuxel-apps/weather/sw.js",
           "target": "/home/nuxel/nuxel/pwa/nuxel-apps/weather/sw.js",
           "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/settings/location-maps.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/settings/location-maps.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/console/app.json",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/console/app.json",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/console/index.html",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/console/index.html",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/console/manifest.json",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/console/manifest.json",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/console-usb/app.json",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/console-usb/app.json",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/console-usb/index.html",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/console-usb/index.html",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/console-usb/manifest.json",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/console-usb/manifest.json",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/console-usb/icons/icon.svg",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/console-usb/icons/icon.svg",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/console-wifi/app.json",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/console-wifi/app.json",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/console-wifi/index.html",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/console-wifi/index.html",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/console-wifi/manifest.json",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/console-wifi/manifest.json",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/console-wifi/icons/icon.svg",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/console-wifi/icons/icon.svg",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/console/console.css",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/console/console.css",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/console/console.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/console/console.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/settings/hardware-settings.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/settings/hardware-settings.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/settings/wifi-settings.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/settings/wifi-settings.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/snekbyte/js/snek-controls.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/snekbyte/js/snek-controls.js",
+          "mode": "0644"
         }
       ],
       "notes": "Every installed PWA under pwa/nuxel-apps/ \u2014 index.html, app.json, manifest.json, sw.js, js/, css/, icons/, assets/, samples/ and the shared _shared/ runtime \u2014 staged to the SAME docroot the existing launcher-pwa group uses (/home/nuxel/nuxel). Repository-only test fixtures are excluded and named in non_deployable."
@@ -2271,6 +2356,11 @@
         {
           "source": "assets/nuxel-live-console-active.png",
           "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/nuxel-live-console-active.png"
+        },
+        {
+          "source": "pwa/nuxel-common/maps-core.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-common/maps-core.js",
+          "mode": "0644"
         }
       ],
       "notes": "The core launcher-pwa group covers index.html/manifest.json/sw.js/css/js but NOT the shared ES module the launcher imports (../nuxel-common/bridge.js), the launcher icons or its assets \u2014 a launcher restored from the core plan alone renders without wallpaper (measured A31) or 404s its bridge module (measured A29b). This group closes that gap and carries the registry copy the PWA fetches over HTTP."
@@ -2585,6 +2675,41 @@
           "source": "configs/nuxel/touch/nuxel-bootmode-reboot.service",
           "target": "/etc/systemd/system/nuxel-bootmode-reboot.service",
           "mode": "0644"
+        },
+        {
+          "source": "configs/nuxel/permissions/org.nuxel.Home.json",
+          "target": "/var/lib/nuxel/permissions/org.nuxel.Home.json",
+          "mode": "0644"
+        },
+        {
+          "source": "configs/nuxel/permissions/nuxel-settings.json",
+          "target": "/var/lib/nuxel/permissions/nuxel-settings.json",
+          "mode": "0644"
+        },
+        {
+          "source": "configs/nuxel/permissions/org.nuxel.Maps.json",
+          "target": "/var/lib/nuxel/permissions/org.nuxel.Maps.json",
+          "mode": "0644"
+        },
+        {
+          "source": "configs/nuxel/orientation/README.md",
+          "target": "/etc/nuxel/orientation/README.md",
+          "mode": "0644"
+        },
+        {
+          "source": "configs/nuxel/orientation/orientation.json",
+          "target": "/etc/nuxel/orientation/orientation.json",
+          "mode": "0644"
+        },
+        {
+          "source": "configs/nuxel/orientation/orientation.schema.json",
+          "target": "/etc/nuxel/orientation/orientation.schema.json",
+          "mode": "0644"
+        },
+        {
+          "source": "configs/nuxel/permissions/README.md",
+          "target": "/etc/nuxel/permissions/README.md",
+          "mode": "0644"
         }
       ],
       "notes": "Canonical consumer paths win where the repository and the tools disagree: statusbar-safezones.json -> /etc/nuxel/display/ (nuxelctl ZONES_FILE and the rootfs builder), buttons.json -> /etc/nuxel/input/ (nuxelctl BUTTONS_FILE, the builder and configs/nuxel/README.md), the timesyncd drop-in -> /etc/systemd/timesyncd.conf.d/ (its real systemd location). The core status-bar-safe-zones group keeps its frozen /etc/nuxel/statusbar-safezones.json target; the canonical path is installed here as well, see target_overrides[]."
@@ -2861,6 +2986,16 @@
           "source": "tools/s10plus/a45/nuxel-pwa-host.c",
           "target": "/usr/lib/nuxel/src/a45/nuxel-pwa-host.c",
           "mode": "0644"
+        },
+        {
+          "source": "tools/s10plus/a33/nuxel-cast-diag.sh",
+          "target": "/usr/local/bin/nuxel-cast-diag.sh",
+          "mode": "0644"
+        },
+        {
+          "source": "tools/s10plus/a33/nuxel-typec-diag.sh",
+          "target": "/usr/local/bin/nuxel-typec-diag.sh",
+          "mode": "0644"
         }
       ],
       "notes": "Paths follow the SHIPPED consumers, not a guess: nuxelctl resolves its sibling diagnostics next to itself and then in /usr/lib/nuxel, /usr/bin, /usr/local/lib/nuxel (tools/s10plus/a33/nuxelctl sibling_script()), so nuxelctl and the nuxel-*.sh diagnostics install together in /usr/local/bin; nuxel-verbose-boot.service ExecStart= and nuxelctl VERBOSE_SVC/ HANDOFF_HARNESS name /usr/libexec/nuxel/; the libinput shim, the button manager and the bridge sources ship to /usr/lib/nuxel/src/a33/ so the documented aarch64 build recipe can be re-run on the device. Compiled aarch64 artefacts are NOT staged from build/ (gitignored): see non_deployable + the procedure."
@@ -3010,6 +3145,21 @@
         {
           "source": "services/nuxel-bridge/src/system_indicators.py",
           "target": "/usr/lib/nuxel/nuxel-bridge/system_indicators.py",
+          "mode": "0644"
+        },
+        {
+          "source": "services/nuxel-bridge/src/media_store.py",
+          "target": "/usr/lib/nuxel/nuxel-bridge/media_store.py",
+          "mode": "0644"
+        },
+        {
+          "source": "services/nuxel-bridge/src/hw_providers.py",
+          "target": "/usr/lib/nuxel/nuxel-bridge/hw_providers.py",
+          "mode": "0644"
+        },
+        {
+          "source": "services/nuxel-bridge/src/tri_link_status.py",
+          "target": "/usr/lib/nuxel/nuxel-bridge/tri_link_status.py",
           "mode": "0644"
         }
       ],
@@ -4465,6 +4615,14 @@
         "images/s10plus/*.img"
       ],
       "what": "why the BOOT container, the kernel and the packed animation are outside this plan (BLOCKED_FIRMWARE) and what an owner-authorised BOOT update would require"
+    },
+    {
+      "id": "tri-link-ssh-provision",
+      "path": "docs/beta-finalization/live/NUXEL-26000-TRI-LINK-REPORT.md",
+      "for": [
+        "configs/nuxel/security/ssh/**"
+      ],
+      "what": "transactional key-only SSH policy deployment via tools/beta/live/nuxel-ssh-provision-manifest.json; the report records the exact command, physical evidence, the USB blocker and rollback"
     }
   ],
   "non_deployable": [
@@ -4749,6 +4907,47 @@
     {
       "path": "pwa/(nuxel-apps|nuxel-home|nuxel-common)/**/__pycache__/",
       "reason": "interpreter caches",
+      "terminal_state": "IMPLEMENTED_NOT_DEPLOYED"
+    },
+    {
+      "path": "configs/nuxel/security/ssh/",
+      "reason": "host-side SSH policy and pinned host-key source. It is applied by its own transactional manifest, tools/beta/live/nuxel-ssh-provision-manifest.json (staged, SHA-256 verified and rolled back by nuxel-live-deploy.py); it is not part of the launcher artefact plan.",
+      "terminal_state": "INSTALL_PROCEDURE_REQUIRED",
+      "procedure": "docs/beta-finalization/live/NUXEL-26000-TRI-LINK-REPORT.md"
+    },
+    {
+      "path": "configs/nuxel/live-ssh.json",
+      "reason": "host-side Tri-Link discovery record (wlan/usb/serial targets). It is consumed by scripts/s10plus-debug-pack/nuxel-live-ssh.sh on the development host, not by the phone.",
+      "terminal_state": "IMPLEMENTED_NOT_DEPLOYED"
+    },
+    {
+      "path": "services/**/test-*.py",
+      "reason": "repository-side offline test drivers (unit/integration gates); not runtime artefacts and with no on-device consumer",
+      "terminal_state": "IMPLEMENTED_NOT_DEPLOYED"
+    },
+    {
+      "path": "services/nuxel-bridge/src/api.py.a59-bak",
+      "reason": "developer backup of an older bridge API source; the live file is api.py and no runtime path reads this backup",
+      "terminal_state": "IMPLEMENTED_NOT_DEPLOYED"
+    },
+    {
+      "path": "services/nuxel-orientation/",
+      "reason": "orientation policy daemon and sources are baked into the S10+ phone rootfs by images/s10plus/build-phone-rootfs-inside-fedora.sh; they are not modified by the 25000-29000 live-userspace work and are not part of this transactional deploy plan",
+      "terminal_state": "IMPLEMENTED_NOT_DEPLOYED"
+    },
+    {
+      "path": "services/nuxel-metrics/",
+      "reason": "metrics daemon source and socket/service units are compiled and installed into the S10+ phone rootfs by images/s10plus/build-phone-rootfs-inside-fedora.sh; the aarch64 binary is a build artefact and cannot be staged from the repository",
+      "terminal_state": "IMPLEMENTED_NOT_DEPLOYED"
+    },
+    {
+      "path": "services/nuxel-bridge/polkit/50-nuxel-bridge-network.rules",
+      "reason": "image-rootfs policy file: the flash-free live guard intentionally allows only /etc/dbus-1/system.d (not /etc/polkit-1/rules.d), and the S10+ image builder installs this exact file into the rootfs at images/s10plus/build-phone-rootfs-inside-fedora.sh. A live update requires the documented hash-verified manual procedure, not a guard relaxation.",
+      "terminal_state": "IMPLEMENTED_NOT_DEPLOYED"
+    },
+    {
+      "path": "services/nuxel-android-gids.sysusers",
+      "reason": "image-rootfs sysusers fragment for the Android AID_INET group; the live guard allows /etc/systemd but not /etc/sysusers.d, and the S10+ image builder installs this file into the rootfs. It is not needed by the 25000-29000 userspace delta.",
       "terminal_state": "IMPLEMENTED_NOT_DEPLOYED"
     }
   ],

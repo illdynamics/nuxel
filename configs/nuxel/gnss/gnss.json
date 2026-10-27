@@ -1,36 +1,94 @@
 {
   "schema_version": 1,
-  "comment": "GNSS/GPS policy for the S10+ (beyond2lte), Exynos 9820 platform. Read by tools/s10plus/a33/nuxel-gnss-diag.sh. The GNSS path is ENUMERATED stage by stage (device node -> driver module -> firmware -> NMEA stream -> fix) and the FIRST failing stage is reported. A device node existing is not a fix and a fix cannot be observed indoors: outside-sky observation is the owner's, so the terminal verdict is NEEDS_OWNER_TEST and no coordinate is ever fabricated.",
+  "comment": "GNSS/GPS policy for the S10+ (beyond2lte), Exynos 9820 platform. Read by tools/s10plus/a33/nuxel-gnss-diag.sh. The BCM4773 sensor-hub path is enumerated as well as generic GNSS nodes: device node -> driver binding -> firmware -> NMEA stream -> fix. The first failing stage is reported. A device node existing is not a fix and a fix cannot be observed indoors: outside-sky observation is the owner's, so the terminal verdict is NEEDS_OWNER_TEST and no coordinate is ever fabricated.",
   "device": {
     "model": "Samsung Galaxy S10+ SM-G975F",
     "codename": "beyond2lte",
     "soc": "Exynos 9820 (integrated GNSS path; vendor userspace required for assisted fix)"
   },
-
   "evidence_sources": {
-    "device_nodes": ["/dev/gnss0", "/dev/gnss1", "/dev/ttyGPS0", "/dev/ttyGPS", "/dev/gps"],
-    "sysfs": ["/sys/class/gnss", "/sys/kernel/debug/gnss"],
-    "modules": ["/proc/modules"],
-    "driver_candidates": ["gnss", "gnss_serial", "gnss_sirf", "s5p_gnss", "exynos_gnss", "bcm47755", "gps"],
-    "firmware_dirs": ["/lib/firmware/gnss", "/lib/firmware", "/vendor/firmware"],
-    "firmware_candidates": ["gnss.bin", "gnss_firmware.bin", "gns.bin", "gps.bin", "gnss/gnss.bin", "gnss/lto.dat"],
-    "stream": {"baud": 9600, "protocol": "NMEA-0183", "sentence_hints": ["$GPGGA", "$GNGGA", "$GPRMC", "$GNRMC"]},
+    "device_nodes": [
+      "/dev/ttyBCM",
+      "/dev/gnss0",
+      "/dev/gnss1",
+      "/dev/ttyGPS0",
+      "/dev/ttyGPS",
+      "/dev/gps"
+    ],
+    "sysfs": [
+      "/sys/class/gnss",
+      "/sys/kernel/debug/gnss",
+      "/sys/class/misc/ttyBCM"
+    ],
+    "modules": [
+      "/proc/modules"
+    ],
+    "driver_candidates": [
+      "ssp_bcm4773",
+      "bcm_gps_spi",
+      "gnss",
+      "gnss_serial",
+      "gnss_sirf",
+      "s5p_gnss",
+      "exynos_gnss",
+      "gps"
+    ],
+    "firmware_dirs": [
+      "/lib/firmware/gnss",
+      "/lib/firmware",
+      "/vendor/firmware"
+    ],
+    "firmware_candidates": [
+      "gnss.bin",
+      "gnss_firmware.bin",
+      "gns.bin",
+      "gps.bin",
+      "gnss/gnss.bin",
+      "gnss/lto.dat",
+      "bcm4773.bin",
+      "bcm47752.bin",
+      "bcm47755.bin"
+    ],
+    "stream": {
+      "baud": 9600,
+      "protocol": "NMEA-0183",
+      "sentence_hints": [
+        "$GPGGA",
+        "$GNGGA",
+        "$GPRMC",
+        "$GNRMC"
+      ]
+    },
     "userspace": {
-      "daemon_candidates": ["gpsd.service", "gpsd.socket"],
-      "client_candidates": ["gpsmon", "cgps", "gpspipe", "gpsd"]
-    }
+      "daemon_candidates": [
+        "gpsd.service",
+        "gpsd.socket"
+      ],
+      "client_candidates": [
+        "gpsmon",
+        "cgps",
+        "gpspipe",
+        "gpsd"
+      ]
+    },
+    "driver_bindings": [],
+    "driver_globs": []
   },
-
-  "first_failing_stage_order": ["device_node", "module", "firmware", "stream", "fix"],
+  "first_failing_stage_order": [
+    "device_node",
+    "module",
+    "firmware",
+    "stream",
+    "fix"
+  ],
   "verdicts": {
-    "READY_FOR_SKY": "device node present, driver bound, NMEA sentences observed — an owner outdoors may wait for a fix (still NEEDS_OWNER_TEST)",
+    "READY_FOR_SKY": "device node present, driver bound, NMEA sentences observed \u2014 an owner outdoors may wait for a fix (still NEEDS_OWNER_TEST)",
     "BLOCKED_KERNEL": "no GNSS device node and no GNSS driver module bound",
     "BLOCKED_FIRMWARE": "driver/node path exists but no GNSS firmware blob is present",
     "BLOCKED_EXTERNAL_RESOURCE": "kernel GNSS up but no userspace consumer (gpsd/gpspipe) installed",
     "NO_FIX": "a stream is present but no position sentence has been decoded yet (indoors or cold start)",
-    "PARTIAL": "some stages present, some missing — read the per-stage lines"
+    "PARTIAL": "some stages present, some missing \u2014 read the per-stage lines"
   },
-
   "fix_test": {
     "comment": "Owner procedure only. The repository scripts the monitor and the sentence counting; it never prints a coordinate it did not read, and it never claims a fix indoors.",
     "outdoors_required": true,
@@ -51,7 +109,6 @@
       "time-to-first-fix is recorded (cold vs warm start stated)"
     ]
   },
-
   "offline_map": {
     "comment": "Offline-first OSM integration: the Maps app must work with cached/offline tiles and must NOT require network for a cached area. The repository ships the tile layout policy and the attribution; it ships no fabricated map data.",
     "tiles_dir": "/usr/share/nuxel/maps/osm-tiles",
@@ -64,6 +121,8 @@
     "reuse_raster": true,
     "declared_offline_areas": []
   },
-
-  "diagnostics": { "log": "/var/log/nuxel/gnss-diag.log", "monitor_seconds_max": 600 }
+  "diagnostics": {
+    "log": "/var/log/nuxel/gnss-diag.log",
+    "monitor_seconds_max": 600
+  }
 }

@@ -1,0 +1,14 @@
+{
+  "blocked_reason": null,
+  "changed_steps": 1,
+  "exit_code": 0,
+  "finished_at": "2026-10-27T16:43:26+0100",
+  "host": "dextronux",
+  "no_op": false,
+  "operation_id": "n28000-tri-link-apply-r2",
+  "pid": 2129189,
+  "pid_start": "33734436",
+  "rollback_ok": null,
+  "state": "COMPLETE",
+  "verdict": "DEPLOYED_UNVERIFIED"
+}

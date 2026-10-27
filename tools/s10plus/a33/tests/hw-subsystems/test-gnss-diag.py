@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Offline tests for the S10+ GNSS/GPS + offline-OSM work (briq-08f, area 25).
 
-Proven offline: per-stage evidence + verdict (four fixtures: no receiver /
-no firmware / node-without-module / stream-ready), that no coordinate is ever
+Proven offline: per-stage evidence + verdict (five fixtures: no receiver /
+no firmware / BCM4773 ttyBCM without firmware / node-without-module / stream-ready), that no coordinate is ever
 fabricated by `monitor` or `stream`, the offline-first map contract, faked-root
 safety and the manual-proof fragment. A real fix stays NEEDS_OWNER_TEST.
 """
@@ -79,6 +79,7 @@ check("ready fixture refuses a fix claim from a stream alone",
 
 for name, state, stage in (("gnss-absent", "BLOCKED_KERNEL", "device_node"),
                            ("gnss-nofw", "BLOCKED_FIRMWARE", "firmware"),
+                           ("gnss-bcm-nofw", "BLOCKED_FIRMWARE", "firmware"),
                            ("gnss-partial", "PARTIAL", "module")):
     p = run(["bash", TOOL, "--root", os.path.join(FIX, name), "status"], {"NUXEL_DIAG_NO_SYSTEM": "1"})
     check("%s names stage=%s and verdict=%s" % (name, stage, state),

@@ -1,0 +1,1235 @@
+{
+  "schema_version": 1,
+  "id": "nuxel-070-beta-live-userspace",
+  "device": {
+    "codename": "beyond2lte",
+    "model": "SM-G975F",
+    "soc": "Exynos 9820",
+    "os": "Nuxel (Fedora 43 ARM64, kernel 4.14.253)"
+  },
+  "note": "NUXEL v0.7.0-beta live userspace delta. Generated from the same commit as tools/s10plus/a43/package-live.py; staged, SHA-256 verified, atomically installed and rolled back by nuxel-live-deploy.py. No kernel, partition, modem or USB gadget mutation.",
+  "target_root_map": {
+    "/home/nuxel/nuxel": "/usr/share/nuxel"
+  },
+  "groups": [
+    {
+      "id": "v070-pwa-static",
+      "component": "Nuxel Home, Settings, Maps and the three Tri-Link consoles",
+      "priority": 1,
+      "risk": "low",
+      "restart_service": null,
+      "declared_reload": "python3 -c \"import json;json.load(open('/usr/share/nuxel/pwa/nuxel-common/app-registry.json'))\" && test -s /usr/share/nuxel/pwa/nuxel-apps/console/console.js && test -s /usr/share/nuxel/pwa/nuxel-apps/settings/hardware-settings.js\"",
+      "pre": [],
+      "health_check": "test \"$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8000/pwa/nuxel-home/index.html)\" = 200 && test \"$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8000/pwa/nuxel-apps/settings/index.html)\" = 200 && test \"$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8000/pwa/nuxel-apps/console/index.html)\" = 200 && test \"$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8000/pwa/nuxel-apps/console-usb/index.html)\" = 200 && test \"$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8000/pwa/nuxel-apps/console-wifi/index.html)\" = 200 && test \"$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8000/pwa/nuxel-apps/maps/index.html)\" = 200",
+      "rollback": "restore every <target>.nuxel-rollback; static files are served per-request",
+      "files": [
+        {
+          "source": "pwa/nuxel-home/assets/branding/button-left.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/branding/button-left.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/branding/button-middle.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/branding/button-middle.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/branding/button-right.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/branding/button-right.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/01-01_terminal.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/01-01_terminal.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/01-02_snekbyte.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/01-02_snekbyte.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/01-03_poop-o-meter.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/01-03_poop-o-meter.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/01-04_authenticator.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/01-04_authenticator.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/01-05_penguinterface.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/01-05_penguinterface.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/01-06_pixel-envelope.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/01-06_pixel-envelope.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/01-07_pixel-wings.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/01-07_pixel-wings.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/01-08_phone.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/01-08_phone.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/01-09_browser-swirl.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/01-09_browser-swirl.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/01-10_document.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/01-10_document.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/01-11_settings.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/01-11_settings.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/01-12_phone-alternative.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/01-12_phone-alternative.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/02-01_messages.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/02-01_messages.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/02-02_contacts.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/02-02_contacts.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/02-03_day-calendar.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/02-03_day-calendar.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/02-04_reader.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/02-04_reader.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/02-05_folders.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/02-05_folders.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/02-06_file-explorer.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/02-06_file-explorer.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/02-07_nuxtore.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/02-07_nuxtore.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/02-08_sync.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/02-08_sync.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/02-09_notes.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/02-09_notes.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/02-10_calendar-check.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/02-10_calendar-check.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/02-11_software-updates.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/02-11_software-updates.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/02-12_apps.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/02-12_apps.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/03-01_camera.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/03-01_camera.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/03-02_gallery.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/03-02_gallery.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/03-03_audio-player.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/03-03_audio-player.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/03-04_video-player.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/03-04_video-player.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/03-05_maps.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/03-05_maps.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/03-06_vpn.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/03-06_vpn.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/03-07_vpn-protected.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/03-07_vpn-protected.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/03-08_calendar.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/03-08_calendar.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/03-09_brightness.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/03-09_brightness.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/03-10_volume.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/03-10_volume.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/03-11_battery.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/03-11_battery.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/03-12_settings-alternative.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/03-12_settings-alternative.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/04-01_tor-privacy-tool.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/04-01_tor-privacy-tool.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/04-02_permissions.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/04-02_permissions.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/04-03_firewall.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/04-03_firewall.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/04-04_system-settings.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/04-04_system-settings.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/04-05_network-settings.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/04-05_network-settings.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/04-06_bluetooth-settings.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/04-06_bluetooth-settings.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/04-07_system-info.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/04-07_system-info.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/04-08_information.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/04-08_information.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/04-09_brightness-control.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/04-09_brightness-control.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/04-10_volume-control.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/04-10_volume-control.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/04-11_battery-indicator.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/04-11_battery-indicator.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/04-12_utilities.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/04-12_utilities.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/05-01_root-sudo-control.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/05-01_root-sudo-control.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/05-02_system-monitor.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/05-02_system-monitor.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/05-03_security-audit.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/05-03_security-audit.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/05-04_developer-management.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/05-04_developer-management.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/05-05_live-console.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/05-05_live-console.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/05-06_downloader.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/05-06_downloader.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/05-07_web-window.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/05-07_web-window.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/05-08_notepad.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/05-08_notepad.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/05-09_clipboard.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/05-09_clipboard.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/05-10_transfer.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/05-10_transfer.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/05-11_terminal-alternative.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/05-11_terminal-alternative.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/05-12_app-hub.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/05-12_app-hub.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/06-01_recorder.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/06-01_recorder.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/06-02_calculator.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/06-02_calculator.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/06-03_clock.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/06-03_clock.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/06-04_casting-screen.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/06-04_casting-screen.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/06-05_usb-connection.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/06-05_usb-connection.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/06-06_audio-mixer.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/06-06_audio-mixer.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/06-08_workspace.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/06-08_workspace.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/06-09_game-controller.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/06-09_game-controller.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/06-10_network-tools.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/06-10_network-tools.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/06-11_linux-tux.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/06-11_linux-tux.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/06-12_linux-tux-alternative.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/branding/nuxel-applications-icon-pack/06-12_linux-tux-alternative.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/01-wifi.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/01-wifi.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/02-mobile-signal.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/02-mobile-signal.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/03-airplane-mode.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/03-airplane-mode.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/04-bluetooth.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/04-bluetooth.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/05-wireless-hotspot.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/05-wireless-hotspot.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/06-vpn.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/06-vpn.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/07-tor.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/07-tor.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/08-nfc.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/08-nfc.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/09-location.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/09-location.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/10-flashlight.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/10-flashlight.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/11-do-not-disturb.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/11-do-not-disturb.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/12-volume.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/12-volume.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/13-vibrate.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/13-vibrate.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/14-mute.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/14-mute.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/15-brightness.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/15-brightness.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/16-adaptive-brightness.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/16-adaptive-brightness.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/17-rotation-lock.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/17-rotation-lock.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/18-night-light.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/18-night-light.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/19-battery-saver.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/19-battery-saver.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/20-battery-charging.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/20-battery-charging.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/21-sync.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/21-sync.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/22-terminal.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/22-terminal.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/23-firewall.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/23-firewall.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/24-microphone-muted.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/24-microphone-muted.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/25-camera-disabled.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/25-camera-disabled.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/26-screenshot.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/26-screenshot.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/27-screen-record.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/27-screen-record.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/28-unlocked.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/28-unlocked.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/29-terminal-alternate.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/29-terminal-alternate.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/30-quick-settings.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/branding/nuxel-quicksettings-icon-pack/30-quick-settings.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/nuxel-background.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/nuxel-background.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/nuxel-boot-animation.mp4",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/nuxel-boot-animation.mp4",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/nuxel-bottom-bar.jpg",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/nuxel-bottom-bar.jpg",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/assets/nuxel-bottom-bar2.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/assets/nuxel-bottom-bar2.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/colour-test.html",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/colour-test.html",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/css/home-settings.css",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/css/home-settings.css",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/css/launcher.css",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/css/launcher.css",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/css/lockscreen.css",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/css/lockscreen.css",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/css/search.css",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/css/search.css",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/css/status-bar.css",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/css/status-bar.css",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/css/style.css",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/css/style.css",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/icons/icon-128.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/icons/icon-128.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/icons/icon-144.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/icons/icon-144.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/icons/icon-152.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/icons/icon-152.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/icons/icon-192.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/icons/icon-192.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/icons/icon-384.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/icons/icon-384.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/icons/icon-48.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/icons/icon-48.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/icons/icon-512.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/icons/icon-512.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/icons/icon-72.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/icons/icon-72.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/icons/icon-96.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/icons/icon-96.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/icons/icon.svg",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/icons/icon.svg",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/index.html",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/index.html",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/index.html.a59-bak",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/index.html.a59-bak",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/js/app.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/js/app.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/js/app.js.a59-bak",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/js/app.js.a59-bak",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/js/apps.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/js/apps.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/js/apps.js.a59-bak",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/js/apps.js.a59-bak",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/js/bootlog.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/js/bootlog.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/js/bridge.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/js/bridge.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/js/gestures.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/js/gestures.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/js/home-settings.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/js/home-settings.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/js/host-bridge.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/js/host-bridge.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/js/launcher.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/js/launcher.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/js/layout-model.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/js/layout-model.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/js/lockscreen-indicators.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/js/lockscreen-indicators.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/js/lockscreen.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/js/lockscreen.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/js/navigation.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/js/navigation.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/js/osd.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/js/osd.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/js/qs.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/js/qs.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/js/recents.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/js/recents.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/js/safe-zones.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/js/safe-zones.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/js/scroll-indicators.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/js/scroll-indicators.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/js/search.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/js/search.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/js/settings-store.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/js/settings-store.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/js/status-bar.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/js/status-bar.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/js/system-monitor.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/js/system-monitor.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/js/touch-keyboard.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/js/touch-keyboard.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/manifest.json",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/manifest.json",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/sw.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/sw.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/sw.js.a59-bak",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-home/sw.js.a59-bak",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/settings/.keep",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/settings/.keep",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/settings/app.json",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/settings/app.json",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/settings/hardware-settings.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/settings/hardware-settings.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/settings/index.html",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/settings/index.html",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/settings/location-maps.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/settings/location-maps.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/settings/manifest.json",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/settings/manifest.json",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/settings/power-menu.css",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/settings/power-menu.css",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/settings/power-menu.html",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/settings/power-menu.html",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/settings/power-menu.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/settings/power-menu.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/settings/settings-model.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/settings/settings-model.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/settings/settings.css",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/settings/settings.css",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/settings/settings.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/settings/settings.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/settings/wifi-settings.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/settings/wifi-settings.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/console/app.json",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/console/app.json",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/console/console.css",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/console/console.css",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/console/console.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/console/console.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/console/icons/icon-128.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/console/icons/icon-128.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/console/icons/icon-144.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/console/icons/icon-144.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/console/icons/icon-152.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/console/icons/icon-152.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/console/icons/icon-192.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/console/icons/icon-192.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/console/icons/icon-384.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/console/icons/icon-384.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/console/icons/icon-48.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/console/icons/icon-48.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/console/icons/icon-512.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/console/icons/icon-512.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/console/icons/icon-72.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/console/icons/icon-72.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/console/icons/icon-96.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/console/icons/icon-96.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/console/icons/icon.svg",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/console/icons/icon.svg",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/console/index.html",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/console/index.html",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/console/manifest.json",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/console/manifest.json",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/console-usb/app.json",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/console-usb/app.json",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/console-usb/icons/icon.svg",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/console-usb/icons/icon.svg",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/console-usb/index.html",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/console-usb/index.html",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/console-usb/manifest.json",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/console-usb/manifest.json",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/console-wifi/app.json",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/console-wifi/app.json",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/console-wifi/icons/icon.svg",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/console-wifi/icons/icon.svg",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/console-wifi/index.html",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/console-wifi/index.html",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/console-wifi/manifest.json",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/console-wifi/manifest.json",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/maps/app.json",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/maps/app.json",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/maps/css/maps.css",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/maps/css/maps.css",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/maps/icons/icon-128.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/maps/icons/icon-128.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/maps/icons/icon-144.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/maps/icons/icon-144.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/maps/icons/icon-152.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/maps/icons/icon-152.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/maps/icons/icon-192.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/maps/icons/icon-192.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/maps/icons/icon-384.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/maps/icons/icon-384.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/maps/icons/icon-48.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/maps/icons/icon-48.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/maps/icons/icon-512.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/maps/icons/icon-512.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/maps/icons/icon-72.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/maps/icons/icon-72.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/maps/icons/icon-96.png",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/maps/icons/icon-96.png",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/maps/index.html",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/maps/index.html",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/maps/js/maps.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/maps/js/maps.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/maps/manifest.json",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/maps/manifest.json",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-apps/maps/sw.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-apps/maps/sw.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-common/app-registry.json",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-common/app-registry.json",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-common/bridge-version.json",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-common/bridge-version.json",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-common/bridge.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-common/bridge.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-common/geolocation.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-common/geolocation.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-common/maps-core.js",
+          "target": "/home/nuxel/nuxel/pwa/nuxel-common/maps-core.js",
+          "mode": "0644"
+        }
+      ]
+    },
+    {
+      "id": "v070-diagnostics",
+      "component": "Typecast and Type-C diagnostics",
+      "priority": 2,
+      "risk": "low",
+      "restart_service": null,
+      "declared_reload": "test -x /usr/local/bin/nuxel-typec-diag.sh && test -x /usr/local/bin/nuxel-cast-diag.sh",
+      "pre": [],
+      "health_check": "test -s /usr/local/bin/nuxel-typec-diag.sh && test -s /usr/local/bin/nuxel-cast-diag.sh",
+      "rollback": "restore every <target>.nuxel-rollback",
+      "files": [
+        {
+          "source": "tools/s10plus/a33/nuxel-cast-diag.sh",
+          "target": "/usr/local/bin/nuxel-cast-diag.sh",
+          "mode": "0644"
+        },
+        {
+          "source": "tools/s10plus/a33/nuxel-typec-diag.sh",
+          "target": "/usr/local/bin/nuxel-typec-diag.sh",
+          "mode": "0644"
+        }
+      ]
+    },
+    {
+      "id": "v070-providers-dbus",
+      "component": "nuxel-bridge Bluetooth/location providers and media store",
+      "priority": 3,
+      "risk": "medium",
+      "restart_service": "nuxel-bridge",
+      "pre": [],
+      "health_check": "systemctl is-active nuxel-bridge && busctl --system call org.nuxel.Bridge /org/nuxel/Bridge org.nuxel.Bridge Ping s health | grep -q 'bridge_version' && busctl --system call org.nuxel.Bridge /org/nuxel/Bridge org.nuxel.Bridge BluetoothGetStatus s nuxel-settings | grep -q 'BLOCKED_KERNEL'",
+      "rollback": "restore every <target>.nuxel-rollback and `systemctl restart nuxel-bridge`",
+      "files": [
+        {
+          "source": "services/nuxel-bridge/src/bridge.py",
+          "target": "/usr/lib/nuxel/nuxel-bridge/bridge.py",
+          "mode": "0644"
+        },
+        {
+          "source": "services/nuxel-bridge/src/tri_link_status.py",
+          "target": "/usr/lib/nuxel/nuxel-bridge/tri_link_status.py",
+          "mode": "0644"
+        },
+        {
+          "source": "services/nuxel-bridge/src/media_store.py",
+          "target": "/usr/lib/nuxel/nuxel-bridge/media_store.py",
+          "mode": "0644"
+        },
+        {
+          "source": "services/nuxel-bridge/dbus/org.nuxel.Bridge.conf",
+          "target": "/etc/dbus-1/system.d/org.nuxel.Bridge.conf",
+          "mode": "0644"
+        }
+      ]
+    },
+    {
+      "id": "v070-http-providers",
+      "component": "nuxel-http-bridge audio/display/Bluetooth power providers",
+      "priority": 4,
+      "risk": "medium",
+      "restart_service": "nuxel-http-bridge",
+      "pre": [],
+      "health_check": "systemctl is-active nuxel-http-bridge && curl -fsS http://127.0.0.1:8080/api/v1/health | grep -q 'bridge_version' && curl -fsS -X POST http://127.0.0.1:8080/api/v1/rpc -H 'Content-Type: application/json' -d '{\"app_id\":\"nuxel-settings\",\"namespace\":\"audio\",\"verb\":\"status\",\"params\":{}}' | grep -q '\"cards\"' && curl -fsS -X POST http://127.0.0.1:8080/api/v1/rpc -H 'Content-Type: application/json' -d '{\"app_id\":\"nuxel-settings\",\"namespace\":\"display\",\"verb\":\"status\",\"params\":{}}' | grep -q '\"drm_present\"'",
+      "rollback": "restore every <target>.nuxel-rollback and `systemctl restart nuxel-http-bridge`",
+      "files": [
+        {
+          "source": "services/nuxel-bridge/src/api.py",
+          "target": "/usr/lib/nuxel/nuxel-bridge/api.py",
+          "mode": "0644"
+        },
+        {
+          "source": "services/nuxel-bridge/src/hw_providers.py",
+          "target": "/usr/lib/nuxel/nuxel-bridge/hw_providers.py",
+          "mode": "0644"
+        }
+      ]
+    },
+    {
+      "id": "v070-grants-configs",
+      "component": "first-party capability grants and hardware config documents",
+      "priority": 5,
+      "risk": "medium",
+      "restart_service": "nuxel-bridge",
+      "pre": [
+        "test -d /var/lib/nuxel/permissions"
+      ],
+      "health_check": "python3 -c \"import json;d=json.load(open('/var/lib/nuxel/permissions/nuxel-settings.json'));assert 'bluetooth:manage' in d and 'location:manage' in d\" && python3 -c \"import json;json.load(open('/etc/nuxel/gnss/gnss.json'))\"",
+      "rollback": "restore every <target>.nuxel-rollback and `systemctl restart nuxel-bridge`",
+      "files": [
+        {
+          "source": "configs/nuxel/permissions/org.nuxel.Home.json",
+          "target": "/var/lib/nuxel/permissions/org.nuxel.Home.json",
+          "mode": "0644"
+        },
+        {
+          "source": "configs/nuxel/permissions/nuxel-settings.json",
+          "target": "/var/lib/nuxel/permissions/nuxel-settings.json",
+          "mode": "0644"
+        },
+        {
+          "source": "configs/nuxel/permissions/org.nuxel.Maps.json",
+          "target": "/var/lib/nuxel/permissions/org.nuxel.Maps.json",
+          "mode": "0644"
+        },
+        {
+          "source": "configs/nuxel/gnss/gnss.json",
+          "target": "/etc/nuxel/gnss/gnss.json",
+          "mode": "0644"
+        },
+        {
+          "source": "configs/nuxel/security/remote-access.json",
+          "target": "/etc/nuxel/security/remote-access.json",
+          "mode": "0644"
+        }
+      ]
+    },
+    {
+      "id": "v070-version-pins",
+      "component": "systemd version pins and canonical bridge-version documents",
+      "priority": 6,
+      "risk": "medium",
+      "restart_service": null,
+      "declared_reload": "systemctl daemon-reload && systemctl restart nuxel-bridge nuxel-http-bridge",
+      "pre": [
+        "systemctl daemon-reload"
+      ],
+      "health_check": "grep -q '^Environment=.*NUXEL_BRIDGE_VERSION=0.7.0-beta' /etc/systemd/system/nuxel-bridge.service && grep -q '^Environment=.*NUXEL_BRIDGE_VERSION=0.7.0-beta' /etc/systemd/system/nuxel-http-bridge.service && grep -q '\"host_version\": \"0.7.0-beta\"' /etc/nuxel/bridge-version.json && grep -q '\"host_version\": \"0.7.0-beta\"' /usr/share/nuxel/pwa/nuxel-common/bridge-version.json && systemctl show nuxel-bridge.service -p Environment | grep -q 'NUXEL_BRIDGE_VERSION=0.7.0-beta' && systemctl show nuxel-http-bridge.service -p Environment | grep -q 'NUXEL_BRIDGE_VERSION=0.7.0-beta'",
+      "rollback": "restore every <target>.nuxel-rollback; `systemctl daemon-reload`; restart both bridges",
+      "files": [
+        {
+          "source": "services/nuxel-bridge/systemd/nuxel-bridge.service",
+          "target": "/etc/systemd/system/nuxel-bridge.service",
+          "mode": "0644"
+        },
+        {
+          "source": "services/nuxel-bridge/systemd/nuxel-http-bridge.service",
+          "target": "/etc/systemd/system/nuxel-http-bridge.service",
+          "mode": "0644"
+        },
+        {
+          "source": "services/nuxel-notifications/systemd/nuxel-notifications.service",
+          "target": "/etc/systemd/system/nuxel-notifications.service",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-common/bridge-version.json",
+          "target": "/etc/nuxel/bridge-version.json",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-common/bridge-version.json",
+          "target": "/usr/share/nuxel/pwa/nuxel-common/bridge-version.json",
+          "mode": "0644"
+        }
+      ]
+    }
+  ]
+}
