@@ -1,0 +1,217 @@
+{
+  "activation": [
+    {
+      "action": "true",
+      "framed": true,
+      "group": "pwnage32000-manifest-parity",
+      "kind": "reload",
+      "output": "NXLRELOAD-RC=0\nNXLSCRIPT-RC=0\n",
+      "rc": 0,
+      "restart_services": []
+    },
+    {
+      "framed": true,
+      "group": "pwnage32000-manifest-parity",
+      "kind": "restart",
+      "output": "active\nACTIVATE-OK\nNXLSCRIPT-RC=0\n",
+      "rc": 0,
+      "service": "nuxel-wayland.service"
+    },
+    {
+      "check": "grep -q '\"cache_version\": \"v51-pwnage-32000\"' /usr/share/nuxel/pwa/nuxel-home/manifest.json",
+      "group": "pwnage32000-manifest-parity",
+      "kind": "health",
+      "ok": true,
+      "output": ""
+    }
+  ],
+  "activation_counts": {
+    "daemon_reloads": 0,
+    "health_checks": 1,
+    "reloads": 1,
+    "restarts": 1
+  },
+  "apply": true,
+  "at": "2026-10-28T10:22:17+0100",
+  "boot_id_after": "afb38298-1bd0-466c-bf1c-af0bb42bd0ba",
+  "boot_id_before": "afb38298-1bd0-466c-bf1c-af0bb42bd0ba",
+  "boot_id_changed": false,
+  "briq": "briq-10b-live-deploy-userspace",
+  "cancelled": false,
+  "changed_steps": 1,
+  "evidence_dir": "/x/nuxel/docs/beta-finalization/live/evidence/deploy-20261028T102217+0100",
+  "executed_activation_plan": {
+    "counts": {
+      "daemon_reloads_planned": 0,
+      "declared_reloads_seen": 1,
+      "independent_restarts_planned": 1,
+      "reloads_planned": 1,
+      "restarts_planned": 1
+    },
+    "daemon_reload": false,
+    "daemon_reload_action": null,
+    "daemon_reloads_uncoalesced": 0,
+    "reloads": [
+      {
+        "action": "true",
+        "group": "pwnage32000-manifest-parity",
+        "needs_daemon_reload": false,
+        "restart_services": []
+      }
+    ],
+    "restart_services": [
+      "nuxel-wayland.service"
+    ],
+    "restart_services_in_reloads": [],
+    "restarts": [
+      {
+        "group": "pwnage32000-manifest-parity",
+        "service": "nuxel-wayland.service"
+      }
+    ]
+  },
+  "exit_code": 0,
+  "finished_at": "2026-10-28T10:22:34+0100",
+  "groups": [
+    {
+      "declared_reload": "true",
+      "declared_reload_source": "group",
+      "group": "pwnage32000-manifest-parity",
+      "priority": 1,
+      "restart_service": null,
+      "risk": "low",
+      "risk_rank": 0,
+      "steps": 1
+    }
+  ],
+  "health": [
+    {
+      "check": "grep -q '\"cache_version\": \"v51-pwnage-32000\"' /usr/share/nuxel/pwa/nuxel-home/manifest.json",
+      "group": "pwnage32000-manifest-parity",
+      "kind": "health",
+      "ok": true,
+      "output": ""
+    }
+  ],
+  "host": "dextronux",
+  "journal": "/x/nuxel/docs/beta-finalization/live/evidence/deploy-20261028T102217+0100/transaction.jsonl",
+  "manifest": "tools/beta/live/nuxel-32000-manifest-only.json",
+  "no_op": false,
+  "observation": null,
+  "operation_id": "deploy-20261028T102217-2802128",
+  "order": "manifest",
+  "pid": 2802128,
+  "pid_start": "40088829",
+  "planned_activation_plan": {
+    "counts": {
+      "daemon_reloads_planned": 0,
+      "declared_reloads_seen": 1,
+      "independent_restarts_planned": 1,
+      "reloads_planned": 1,
+      "restarts_planned": 1
+    },
+    "daemon_reload": false,
+    "daemon_reload_action": null,
+    "daemon_reloads_uncoalesced": 0,
+    "reloads": [
+      {
+        "action": "true",
+        "group": "pwnage32000-manifest-parity",
+        "needs_daemon_reload": false,
+        "restart_services": []
+      }
+    ],
+    "restart_services": [
+      "nuxel-wayland.service"
+    ],
+    "restart_services_in_reloads": [],
+    "restarts": [
+      {
+        "group": "pwnage32000-manifest-parity",
+        "service": "nuxel-wayland.service"
+      }
+    ]
+  },
+  "probe": {
+    "at": "2026-10-28T10:22:17+0100",
+    "bytes_in": 54,
+    "dev": "/dev/ttyACM0",
+    "echo_ok": true,
+    "elapsed_s": 0.304,
+    "error": null,
+    "reachable": true,
+    "sample": "\n\u001b[?2004l\u001b[?2004hsh-5.3# \n\u001b[?2004l\u001b[?2004hsh-5.3# "
+  },
+  "reconnects": [],
+  "results": [
+    {
+      "attempts": 1,
+      "changed": true,
+      "declared_reload": "true",
+      "elapsed_s": 10.705,
+      "group": "pwnage32000-manifest-parity",
+      "health_check": "grep -q '\"cache_version\": \"v51-pwnage-32000\"' /usr/share/nuxel/pwa/nuxel-home/manifest.json",
+      "install": {
+        "framed": true,
+        "output": "PREV=a8d59d10b4886ace928fca19f299a2309243dfd80c9b8134d0978180a54d6b00\n/usr/share/nuxel/pwa/nuxel-home/manifest.json.nuxel-staged: OK\nINSTALL-OK\nNXLSCRIPT-RC=0\n",
+        "rc": 0
+      },
+      "installed_hash": "ecabebc41b976aa69d08491d18eaff4dd150346537f9abd5e7bf0dfdc6690f0b",
+      "mode": "0644",
+      "n": 1,
+      "ok": true,
+      "previous_hash": "a8d59d10b4886ace928fca19f299a2309243dfd80c9b8134d0978180a54d6b00",
+      "risk": "low",
+      "risk_rank": 0,
+      "rollback": null,
+      "rollback_route": "restore /usr/share/nuxel/pwa/nuxel-home/manifest.json.nuxel-rollback",
+      "service": "nuxel-wayland",
+      "source": "pwa/nuxel-home/manifest.json",
+      "source_sha256": "ecabebc41b976aa69d08491d18eaff4dd150346537f9abd5e7bf0dfdc6690f0b",
+      "staged_push": {
+        "ack_writes": 0,
+        "acked_bytes": 4654,
+        "blocks": 0,
+        "bytes": 4654,
+        "elapsed_s": 6.25,
+        "fallback": false,
+        "mode": "frame",
+        "parts": 49,
+        "raw_writes": 0,
+        "resume_used": false,
+        "resumed_b64_chars": 0,
+        "retries": 0,
+        "sha256": "ecabebc41b976aa69d08491d18eaff4dd150346537f9abd5e7bf0dfdc6690f0b",
+        "throughput_bytes_s": 744.6,
+        "write_bytes": 0
+      },
+      "target": "/usr/share/nuxel/pwa/nuxel-home/manifest.json",
+      "txn_backup": "/usr/share/nuxel/pwa/nuxel-home/manifest.json.nuxel-rollback.pre-deploy-20261028T102217-2802128",
+      "verify_output": "INSTALL-OK (hash checked in-frame)"
+    }
+  ],
+  "risk_envelope": {
+    "low": 1
+  },
+  "rollbacks": [],
+  "skipped": [],
+  "steps": 1,
+  "transfer": {
+    "ack_writes": 0,
+    "blocks": 0,
+    "bytes": 4654,
+    "elapsed_s": 6.25,
+    "parts": 49,
+    "raw_writes": 0,
+    "resumes": 0,
+    "retries": 0,
+    "throughput_bytes_s": 744.6,
+    "write_bytes": 0
+  },
+  "verdict": "DEPLOYED_UNVERIFIED",
+  "verdict_note": "files staged, hash-verified, atomically installed and the transaction's coalesced reload/restart actions run once. DEPLOYED_UNVERIFIED means the deploy succeeded but no human-visible behaviour was observed.",
+  "verdicts": {
+    "briq-10b-live-deploy-userspace": "DEPLOYED_UNVERIFIED"
+  },
+  "violations": []
+}

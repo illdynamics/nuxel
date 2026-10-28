@@ -1,4 +1,4 @@
-// Nuxel Status Bar — v0.7.1-beta
+// Nuxel Status Bar — v0.7.2-beta
 //
 // SINGLE SOURCE OF TRUTH (briq-02d).  The handset used to serve a stale
 // v0.3.2 copy of this file while the repo (and the UTM VM) was on v0.4.x, so the
@@ -17,7 +17,7 @@
 class StatusBar {
     // Keep in sync with manifest.json ("nuxel.pwa_version") and sw.js
     // (CACHE_VERSION) - the registry test fails if the three ever diverge.
-    static get VERSION() { return '0.7.1-beta'; }
+    static get VERSION() { return '0.7.2-beta'; }
 
     constructor() {
         this.state = {
@@ -36,6 +36,12 @@ class StatusBar {
             batteryCapacityUah: null,
             batteryDesignCapacityUah: null,
         };
+        /* The same 100% -> 0% guard the lockscreen uses.  A one-sample gauge
+           reset must not replace a known-good reading. */
+        this._batteryZeroCount = 0;
+        this._batteryBigCandidate = null;
+        this._batteryBigCount = 0;
+        this._batteryRenderKey = '';
 
         this.state.notifications = [];
         this.elements = {
@@ -96,12 +102,19 @@ class StatusBar {
 
         // Poll phone status every 5 seconds (dev mode)
         this._pollPhoneStatus();
-        this._pollTimer = setInterval(() => this._pollPhoneStatus(), 5000);
+        this._pollTimer = setInterval(() => this._pollPhoneStatus(), 10000);
 
         // Poll notifications from the same JSON source (canonical
         // /var/lib/nuxel/notifications.json surfaced via the bridge).
         this._pollNotifications();
-        this._notifPollTimer = setInterval(() => this._pollNotifications(), 5000);
+        this._notifPollTimer = setInterval(() => this._pollNotifications(), 10000);
+        // A wake is an event: refresh immediately instead of waiting a poll.
+        document.addEventListener('nuxel:display-on', () => {
+            this._updateTime();
+            this._hydrateBatteryFromHost();
+            this._pollPhoneStatus();
+            this._pollNotifications();
+        });
 
         // Listen for bridge push events if available
         if (typeof bridge !== 'undefined' && bridge.on) {
@@ -226,8 +239,9 @@ class StatusBar {
         const now = new Date();
         const hours = String(now.getHours()).padStart(2, '0');
         const minutes = String(now.getMinutes()).padStart(2, '0');
-        if (this.elements.time) {
-            this.elements.time.textContent = hours + ':' + minutes;
+        const text = hours + ':' + minutes;
+        if (this.elements.time && this.elements.time.textContent !== text) {
+            this.elements.time.textContent = text;
         }
     }
 
@@ -307,6 +321,9 @@ class StatusBar {
 
         const style = this.batteryStyle || 'inside';
         const width = level === null ? 0 : level;
+        const renderKey = [level, charging ? 1 : 0, style, this.state.batteryCapacityUah].join('|');
+        if (this._batteryRenderKey === renderKey) return;
+        this._batteryRenderKey = renderKey;
         if (style === 'percentage') {
             this.elements.battery.innerHTML = '';
             this.elements.battery.style.display = 'none';
@@ -327,6 +344,38 @@ class StatusBar {
         this._applySafeZones();
     }
 
+    _acceptBatteryLevel(level, charging, status) {
+        const n = Number(level);
+        if (!Number.isFinite(n) || n < 0 || n > 100) return false;
+        const next = Math.round(n);
+        const st = String(status == null ? '' : status).trim().toLowerCase();
+        const prev = Number.isFinite(this.state.batteryLevel) ? this.state.batteryLevel : null;
+
+        if (next === 0) {
+            if (st === 'full') { this._batteryZeroCount = 0; return false; }
+            if (prev !== null && prev >= 5) {
+                this._batteryZeroCount++;
+                if (this._batteryZeroCount < 3) return false;
+            }
+        } else {
+            this._batteryZeroCount = 0;
+        }
+
+        const zeroConfirmed = next === 0 && (prev === null || prev < 5 || this._batteryZeroCount >= 3);
+        if (!zeroConfirmed && prev !== null && next !== prev && Math.abs(next - prev) > 30) {
+            if (this._batteryBigCandidate === next) this._batteryBigCount++;
+            else { this._batteryBigCandidate = next; this._batteryBigCount = 1; }
+            if (this._batteryBigCount < 2) return false;
+        } else {
+            this._batteryBigCandidate = null;
+            this._batteryBigCount = 0;
+        }
+
+        this.state.batteryLevel = next;
+        this.state.batteryCharging = !!charging || st === 'charging' || st === 'full';
+        return true;
+    }
+
     async _hydrateBatteryFromHost() {
         try {
             if (!window.NuxelHost || !window.NuxelHost.available ||
@@ -344,11 +393,10 @@ class StatusBar {
             const level = Number(rawText);
             if (!Number.isFinite(level) || level < 0 || level > 100) return;
 
-            this.state.batteryLevel = level;
             // "Full" is externally powered but not actively charging.  Only
             // the kernel's exact Charging state earns the charging glyph.
-            this.state.batteryCharging = Boolean(status.ok &&
-                String(status.text == null ? '' : status.text).trim().toLowerCase() === 'charging');
+            const statusText = String(status.text == null ? '' : status.text).trim();
+            this._acceptBatteryLevel(level, statusText.toLowerCase() === 'charging', statusText);
             this._renderBattery();
             const marker = 'BATTERY_HOST_READY level=' + level +
                 ' charging=' + (this.state.batteryCharging ? '1' : '0');
@@ -391,9 +439,14 @@ class StatusBar {
             const level = status.battery.level == null ? NaN : Number(status.battery.level);
             const charging = Boolean(status.battery.charging);
             // A missing/out-of-range sysfs reading is UNKNOWN, not 0% and not a
-            // stale old value.  The icon renders an em dash instead.
-            this.state.batteryLevel = (Number.isFinite(level) && level >= 0 && level <= 100) ? level : null;
-            this.state.batteryCharging = charging;
+            // stale old value.  The icon renders an em dash instead.  A valid
+            // reading still goes through the same 100% -> 0% guard.
+            if (Number.isFinite(level) && level >= 0 && level <= 100) {
+                this._acceptBatteryLevel(
+                    level, charging,
+                    status.battery.status == null ? '' : status.battery.status
+                );
+            }
             // Actual capacity representation (A48): microampere-hours from the
             // fuel gauge. charge_full is the current usable full capacity.
             const capUah = Number(status.battery.capacity_uah);

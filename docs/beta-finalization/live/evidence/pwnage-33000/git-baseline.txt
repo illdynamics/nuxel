@@ -1,0 +1,126 @@
+ M configs/nuxel/audio/audio.json
+ M images/mkrootfs.sh
+ M images/s10plus/build-phone-rootfs-inside-fedora.sh
+ M images/s10plus/packages-manifest.json
+ M pwa/nuxel-home/css/lockscreen.css
+ M pwa/nuxel-home/css/style.css
+ M pwa/nuxel-home/index.html
+ M pwa/nuxel-home/js/app.js
+ M pwa/nuxel-home/js/lockscreen.js
+ M pwa/nuxel-home/js/status-bar.js
+ M pwa/nuxel-home/js/touch-keyboard.js
+ M pwa/nuxel-home/manifest.json
+ M pwa/nuxel-home/sw.js
+ M services/nuxel-bridge/src/api.py
+ M services/nuxel-bridge/systemd/nuxel-bridge.service
+ M services/nuxel-portal/systemd/nuxel-portal.service
+ M services/nuxel-web.service
+ M shell/nuxel-browser-native/nuxel_browser_native.py
+ M tools/beta/run-all-tests.sh
+ M tools/s10plus/a29/nuxel-session.sh
+ M tools/s10plus/a33/build-a33-boot.sh
+ M tools/s10plus/a33/nuxel-keyboard-apply.sh
+ M tools/s10plus/a33/tests/run-boot-tests.sh
+ M tools/s10plus/a33/verify-packages.py
+ M tools/s10plus/a33/verify-service-graph.py
+ M tools/s10plus/a45/test-home-keyboard.js
+ M tools/s10plus/a45/test-lockscreen-layout.js
+ M tools/s10plus/a45/test-lockscreen-unlock.js
+ M tools/s10plus/newc.py
+ M tools/s10plus/unpack-boot-image.py
+ M tools/s10plus/verify-boot-image.py
+ M tools/s10plus/verify-fedora-phone-rootfs.py
+?? DIAGNOSING-ISSUES-QUICKSTART.md
+?? assets/nuxel-charging-animation.jpg
+?? assets/nuxel-connection-mode.png
+?? assets/nuxel-console-serial.png
+?? assets/nuxel-console-usb.png
+?? assets/nuxel-console-wlan.png
+?? assets/nuxel-file-transfer.png
+?? assets/nuxel-preloading-screen.mp4
+?? banner
+?? charge.md
+?? configs/nuxel/boot/preload-cinema.json
+?? configs/nuxel/gnss/99-geoclue-nuxel.conf
+?? configs/s10plus/alsa/
+?? configs/s10plus/geoclue/
+?? configs/s10plus/pipewire/50-nuxel-s10-alsa.conf
+?? configs/s10plus/udev/
+?? configs/s10plus/wireplumber/99-nuxel-no-v4l2.conf
+?? docs/beta-finalization/live/NUXEL-A82-LOCK-BATTERY-PERF-REPORT.md
+?? docs/beta-finalization/live/evidence/baseline-20261028T091432+0100/
+?? docs/beta-finalization/live/evidence/baseline-20261028T091438+0100/
+?? docs/beta-finalization/live/evidence/baseline-20261028T093120+0100/
+?? docs/beta-finalization/live/evidence/deploy-20261027T222436+0100/
+?? docs/beta-finalization/live/evidence/deploy-20261027T222439+0100/
+?? docs/beta-finalization/live/evidence/deploy-20261027T222442+0100/
+?? docs/beta-finalization/live/evidence/deploy-20261028T095312+0100/
+?? docs/beta-finalization/live/evidence/deploy-20261028T095324+0100/
+?? docs/beta-finalization/live/evidence/deploy-20261028T095726+0100/
+?? docs/beta-finalization/live/evidence/deploy-20261028T100242+0100/
+?? docs/beta-finalization/live/evidence/deploy-20261028T100542+0100/
+?? docs/beta-finalization/live/evidence/deploy-20261028T101758+0100/
+?? docs/beta-finalization/live/evidence/deploy-20261028T102217+0100/
+?? docs/beta-finalization/live/evidence/deploy-20261028T104518+0100/
+?? docs/beta-finalization/live/evidence/deploy-20261028T110526+0100/
+?? docs/beta-finalization/live/evidence/deploy-20261028T111654+0100/
+?? docs/beta-finalization/live/evidence/pwnage-31000/
+?? docs/beta-finalization/live/evidence/pwnage-32000/
+?? docs/beta-finalization/live/evidence/pwnage-33000/
+?? docs/beta-finalization/live/evidence/pwnage31000-preload-cinema-doc-final/
+?? docs/beta-finalization/live/evidence/pwnage31000-preload-cinema-final/
+?? docs/beta-finalization/live/evidence/pwnage31000-preload-cinema-rev2/
+?? docs/beta-finalization/live/evidence/pwnage31000-preload-cinema-rev3/
+?? docs/beta-finalization/live/evidence/pwnage31000-preload-cinema/
+?? docs/beta-finalization/live/evidence/pwnage31000-reachability-root/
+?? docs/beta-finalization/live/evidence/pwnage31000-reachability/
+?? docs/beta-finalization/live/evidence/reachability-20261027T221232+0100/
+?? docs/beta-finalization/live/evidence/reachability-20261028T093103+0100/
+?? docs/beta-finalization/live/evidence/reachability-20261028T093112+0100/
+?? docs/beta-finalization/live/evidence/reachability-20261028T101109+0100/
+?? docs/pwnage-31000/
+?? docs/s10plus-live-fixes-20261028.md
+?? finish.md
+?? full-pwnage-31000.md
+?? full-pwnage-32000.md
+?? full-pwnage-33000.md
+?? full-pwnage-34000.md
+?? full-pwnage-35000.md
+?? kernel/s10plus/patches/0004-nuxel-abox-boot-done-and-bt-hciuart.patch
+?? pwa/nuxel-home/assets/nuxel-preload-cover.jpg
+?? pwa/nuxel-home/index.html.pwnage-32000-bak
+?? pwa/nuxel-home/js/app.js.pwnage-32000-bak
+?? pwa/nuxel-home/manifest.json.pwnage-32000-bak
+?? pwa/nuxel-home/sw.js.pwnage-32000-bak
+?? pwnage-31000.md
+?? pwnage-32000.md
+?? pwnage-33000.md
+?? pwnage-34000.md
+?? pwnage-35000.md
+?? pwnage-36000.md
+?? services/nuxel-bridge/src/api.py.pwnage-32000-bak
+?? services/nuxel-bridge/systemd/nuxel-bridge.service.pwnage-32000-bak
+?? services/nuxel-portal/systemd/nuxel-portal.service.pwnage-32000-bak
+?? services/nuxel-preload-cinema/
+?? services/nuxel-s10/
+?? services/nuxel-zsh/
+?? shell/nuxel-browser-native/nuxel_browser_native.py.pwnage-32000-bak
+?? tests/nuxel-zsh/
+?? tests/pwnage31000/
+?? tools/beta/live/nuxel-31000-preload-cinema-manifest.json
+?? tools/beta/live/nuxel-32000-manifest-only.json
+?? tools/beta/live/nuxel-32000-pwnage-manifest.json
+?? tools/beta/live/nuxel-a82-lock-battery-perf-manifest.json
+?? tools/pwnage31000/
+?? tools/s10plus/a29/nuxel-session.sh.pwnage-32000-bak
+?? tools/s10plus/a67/
+?? tools/s10plus/a68/nuxel-foreign-toplevel.c
+?? tools/s10plus/a68/nuxel-screenshot.c
+?? tools/s10plus/pwnage36000/
+?? triplefix.md
+?? zsh.md
+--- HEAD ---
+da0426b89f0ff85274f80f2932b8cdfcc80ae2c7
+da0426b release(v0.7.1-beta): ship PWNAGE-30000 app suite + live USB deploy
+52a5ca9 Merge pull request #15 from illdynamics/nuxel/v0.7.0-numid-audio
+e12050b chore(v0.7.0-beta): make live payload CI-identical (exclude backups/local metrics)

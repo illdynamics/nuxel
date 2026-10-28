@@ -40,7 +40,23 @@
       this.timeEl = document.getElementById('lockscreen-time');
       this.dateEl = document.getElementById('lockscreen-date');
       this.batteryEl = document.getElementById('lockscreen-battery');
+      this.touchWarningEl = document.getElementById('lockscreen-touch-warning');
+      this.touchWarningDetailEl = document.getElementById('lockscreen-touch-warning-detail');
       this.indicators = null;
+      /* Battery truth state.  The gauge can briefly expose 0 while the
+         charger/PMIC re-initialises; a 100% -> 0% paint is therefore a bug, not
+         a reading.  A new 0 (or any >30 point swing) has to be observed more
+         than once before it replaces a known-good value. */
+      this.batteryLevel = null;
+      this.batteryCharging = false;
+      this.batteryStatus = '';
+      this.batteryText = '';
+      this._batteryInFlight = false;
+      this._batteryZeroCount = 0;
+      this._batteryBigCandidate = null;
+      this._batteryBigCount = 0;
+      this._touchInFlight = false;
+      this._touchTimer = null;
       this.locked = false;
       this.state = 'IDLE';
       this.startY = 0;
@@ -62,9 +78,17 @@
       this._bindHandle();
       this._startClock();
       this._startBattery();
+      this._startTouchWarning();
       this._startWiggle();
       this._initIndicators();
       this._positionHandle();
+      try {
+        document.addEventListener('nuxel:display-on', () => {
+          this._updateClock();
+          this._updateBattery();
+          this._updateTouchWarning();
+        });
+      } catch (e) { /* observation only */ }
     }
 
     /* A68 status indicators (charging / PC-connected / live console).  They
@@ -146,6 +170,10 @@
       const h = this.handle;
 
       h.addEventListener('pointerdown', (e) => this._pointerDown(e));
+      /* The owner should not have to hit the 108 px artwork exactly.  A swipe
+         that starts anywhere in the lower band (full screen width) is the same
+         unlock gesture; the handle still follows the finger. */
+      this.el.addEventListener('pointerdown', (e) => this._lockscreenPointerDown(e));
       h.addEventListener('pointermove', (e) => this._pointerMove(e));
       h.addEventListener('pointerup', (e) => this._finishPointer(e, 'pointerup'));
       h.addEventListener('pointercancel', () => this._cancelGesture('pointercancel'));
@@ -159,8 +187,20 @@
       global.addEventListener('pointercancel', () => this._cancelGesture('window-pointercancel'), true);
     }
 
+    _lockscreenPointerDown(e) {
+      if (!this.locked || this.gesture) return;
+      if (this.handle && typeof this.handle.contains === 'function' &&
+          e && e.target && this.handle.contains(e.target)) return; /* handle owns it */
+      const y = Number(e && e.clientY);
+      const baseTop = Number.isFinite(this.baseTop) ? this.baseTop : (global.innerHeight || 760) * 0.62;
+      if (Number.isFinite(y) && y >= baseTop - 80) this._pointerDown(e);
+    }
+
     _pointerDown(e) {
       if (e && e.isTrusted === false) return; /* never accept untrusted script gestures */
+      if (e && typeof e.preventDefault === 'function' && e.cancelable !== false) {
+        try { e.preventDefault(); } catch (err) { /* touch-action also applies */ }
+      }
       if (!this.locked || this.state === 'UNLOCKING' || this.state === 'UNLOCKED') return;
       if (e.button !== undefined && e.button !== 0) return;
       if (this.gesture) return; /* one gesture at a time */
@@ -405,6 +445,7 @@
       this._positionHandle();
       this._updateClock();
       this._updateBattery();
+      this._updateTouchWarning();
       this._startIndicators();
       this._trace('show version=' + VERSION + ' reason=' + (reason || 'unknown') +
                   ' locked=1 visible=1 threshold=' + this._effectiveThreshold());
@@ -429,6 +470,10 @@
       this.handle.style.transform = '';
       this.handle.style.opacity = '';
       this._stopIndicators();
+      if (this.touchWarningEl) {
+        this.touchWarningEl.hidden = true;
+        try { this.touchWarningEl.classList.remove('visible'); } catch (e) {}
+      }
       this._trace('hide version=' + VERSION + ' state=UNLOCKED locked=0 visible=0');
     }
 
@@ -463,9 +508,12 @@
     _updateClock() {
       if (!this.timeEl || !this.dateEl || this._displayOff()) return;
       const d = new Date();
-      this.timeEl.textContent = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const timeText = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       const opts = { weekday: 'long', month: 'long', day: 'numeric' };
-      this.dateEl.textContent = d.toLocaleDateString([], opts);
+      const dateText = d.toLocaleDateString([], opts);
+      /* Do not dirty the DOM 60 times a minute to repaint an unchanged clock. */
+      if (this.timeEl.textContent !== timeText) this.timeEl.textContent = timeText;
+      if (this.dateEl.textContent !== dateText) this.dateEl.textContent = dateText;
     }
 
     _startWiggle() {
@@ -489,47 +537,108 @@
       global.setInterval(() => this._updateClock(), 1000);
     }
 
-    _updateBattery() {
-      if (!this.batteryEl || this._displayOff()) return;
-      const paint = (level, charging) => {
-        if (!this.batteryEl) return;
-        const ok = Number.isFinite(Number(level)) && Number(level) >= 0 && Number(level) <= 100;
-        const shown = ok ? Math.round(Number(level)) : null;
-        this.batteryEl.textContent = (charging ? '⚡ ' : '') + (shown === null ? '—' : shown + '%');
-      };
-      paint(null, false);
-      // A69-01: ONE authoritative, immediate source. The host reads
-      // /sys/class/power_supply/<type=Battery>/capacity directly through
-      // nuxel-pwa-host and is available the moment the launcher document is
-      // alive — it does NOT wait for the HTTP bridge daemon. Try the host path
-      // first, then the HTTP bridge for the charging glyph. An absent reading
-      // stays the neutral em dash, never a fabricated 0%.
-      const hostReady = global.NuxelHost && global.NuxelHost.available &&
-                        typeof global.NuxelHost.statusRead === 'function';
-      if (hostReady) {
-        Promise.resolve(global.NuxelHost.statusRead('battery-capacity')).then((r) => {
-          const t = (r && (r.text || r.value)) || '';
-          const m = t.match(/([-+]?\d+(?:\.\d+)?)/);
-          if (m) paint(m[1], false);
-        }).catch(() => {});
+    _acceptBattery(level, charging, status) {
+      const n = Number(level);
+      if (!Number.isFinite(n) || n < 0 || n > 100) return false;
+      const next = Math.round(n);
+      const st = String(status == null ? '' : status).trim().toLowerCase();
+      const prev = this.batteryLevel;
+
+      if (next === 0) {
+        /* "Full" can never truthfully be 0%.  A charging/known-good pack also
+           needs three consecutive zero samples before the UI believes it, so a
+           one-sample fuel-gauge reset cannot paint 0%. */
+        if (st === 'full') { this._batteryZeroCount = 0; return false; }
+        if (prev !== null && prev >= 5) {
+          this._batteryZeroCount++;
+          if (this._batteryZeroCount < 3) return false;
+        }
+      } else {
+        this._batteryZeroCount = 0;
       }
+
+      /* A confirmed zero (three samples) is already debounced; do not demand
+         a fourth sample from the separate large-swing guard. */
+      const zeroConfirmed = next === 0 && (prev === null || prev < 5 || this._batteryZeroCount >= 3);
+      if (!zeroConfirmed && prev !== null && next !== prev && Math.abs(next - prev) > 30) {
+        if (this._batteryBigCandidate === next) this._batteryBigCount++;
+        else { this._batteryBigCandidate = next; this._batteryBigCount = 1; }
+        if (this._batteryBigCount < 2) return false;
+      } else {
+        this._batteryBigCandidate = null;
+        this._batteryBigCount = 0;
+      }
+
+      this.batteryLevel = next;
+      this.batteryCharging = !!charging || st === 'charging' || st === 'full';
+      this.batteryStatus = st;
+      return true;
+    }
+
+    _paintBattery() {
+      if (!this.batteryEl) return;
+      const shown = Number.isFinite(this.batteryLevel) ? Math.round(this.batteryLevel) : null;
+      const glyph = this.batteryCharging ? '⚡ ' : '';
+      const text = glyph + (shown === null ? '—' : shown + '%');
+      if (this.batteryText === text) return; /* no DOM write, no repaint */
+      this.batteryText = text;
+      this.batteryEl.textContent = text;
+    }
+
+    _readBatteryFromHost() {
+      const host = global.NuxelHost;
+      if (!host || !host.available || typeof host.statusRead !== 'function') {
+        return global.Promise.resolve(null);
+      }
+      return global.Promise.all([
+        global.Promise.resolve(host.statusRead('battery-capacity')),
+        global.Promise.resolve(host.statusRead('battery-status')),
+      ]).then((readings) => {
+        const cap = readings[0] || {};
+        const st = readings[1] || {};
+        const raw = String(cap.text == null ? '' : cap.text).trim();
+        if (cap.ok !== true || !raw) return null;
+        const m = raw.match(/([-+]?\d+(?:\.\d+)?)/);
+        if (!m) return null;
+        const level = Number(m[1]);
+        if (!Number.isFinite(level) || level < 0 || level > 100) return null;
+        const status = String(st.text == null ? '' : st.text).trim();
+        return { level: level, status: status, charging: status.toLowerCase() === 'charging' };
+      }).catch(() => null);
+    }
+
+    _readBatteryFromBridge() {
       try {
         if (typeof bridge !== 'undefined' && bridge && typeof bridge.getPhoneStatus === 'function') {
-          Promise.resolve(bridge.getPhoneStatus()).then((st) => {
-            const bat = st && st.battery;
-            // Only the bridge path knows charging state; accept a valid level
-            // and charging flag. A bridge mock/absence yields no battery object
-            // and is ignored, leaving the host value (or —) in place.
-            if (bat && Number.isFinite(Number(bat.level))) paint(Number(bat.level), !!bat.charging);
-          }).catch(() => {});
-        } else if (!hostReady && global.NuxelHost && typeof global.NuxelHost.statusRead === 'function') {
-          global.NuxelHost.statusRead('battery-capacity').then((r) => {
-            const t = (r && (r.text || r.value)) || '';
-            const m = t.match(/([-+]?\d+(?:\.\d+)?)/);
-            paint(m ? m[1] : null, false);
-          }).catch(() => {});
+          return global.Promise.resolve(bridge.getPhoneStatus()).then((phone) => {
+            const bat = phone && phone.battery;
+            if (!bat || bat.available === false || bat.level == null) return null;
+            const level = Number(bat.level);
+            if (!Number.isFinite(level) || level < 0 || level > 100) return null;
+            return { level: level, status: bat.charging ? 'charging' : '', charging: !!bat.charging };
+          }).catch(() => null);
         }
-      } catch (e) { /* show — rather than a fabricated number */ }
+      } catch (e) { /* bridge is optional */ }
+      return global.Promise.resolve(null);
+    }
+
+    _updateBattery() {
+      if (!this.batteryEl || this._displayOff() || this._batteryInFlight) return;
+      this._batteryInFlight = true;
+      const finish = (reading) => {
+        if (reading) this._acceptBattery(reading.level, reading.charging, reading.status);
+        this._paintBattery();
+        this._batteryInFlight = false;
+      };
+      const host = global.NuxelHost;
+      const hostReady = host && host.available && typeof host.statusRead === 'function';
+      if (hostReady) {
+        return this._readBatteryFromHost().then((reading) => {
+          if (reading) { finish(reading); return; }
+          return this._readBatteryFromBridge().then(finish, () => finish(null));
+        }, () => this._readBatteryFromBridge().then(finish, () => finish(null)));
+      }
+      return this._readBatteryFromBridge().then(finish, () => finish(null));
     }
 
     _startBattery() {
@@ -540,6 +649,50 @@
       global.setTimeout(() => this._updateBattery(), 1000);
       global.setTimeout(() => this._updateBattery(), 3000);
       global.setInterval(() => this._updateBattery(), 20000);
+    }
+
+    /* Charger/LPM boot detection.  The state file is append-only and the touch
+       arming service logs NO_TOUCH_DEVICE on every retry when the kernel did not
+       bind sec_ts; a successful arming ends with ARMED_OK.  We only react to the
+       last line, so an old boot's receipt can never create a false warning. */
+    _readTouchState() {
+      const host = global.NuxelHost;
+      if (!host || !host.available || typeof host.statusRead !== 'function') {
+        return global.Promise.resolve(null);
+      }
+      return global.Promise.resolve(host.statusRead('touch-arm-state')).then((r) => {
+        if (!r || r.ok !== true) return null;
+        return String(r.text == null ? '' : r.text);
+      }).catch(() => null);
+    }
+
+    _updateTouchWarning() {
+      if (!this.locked || !this.touchWarningEl || this._touchInFlight) return;
+      this._touchInFlight = true;
+      this._readTouchState().then((text) => {
+        this._touchInFlight = false;
+        if (text === null) return; /* no evidence: never invent a warning */
+        const lines = text.split(/\r?\n/).filter((line) => line.trim().length);
+        const last = lines.length ? lines[lines.length - 1].trim() : '';
+        const noTouch = /NO_TOUCH_DEVICE|SCAN_FAIL|ARM_OPEN_FAIL/.test(last);
+        const armed = /ARMED_OK/.test(last);
+        const show = noTouch && !armed;
+        this.touchWarningEl.hidden = !show;
+        try { this.touchWarningEl.classList.toggle('visible', show); } catch (e) {}
+        if (show && this.touchWarningDetailEl) {
+          this.touchWarningDetailEl.textContent =
+            'Charging-mode boot: unplug the charger, then hold POWER to restart.';
+        }
+        this._trace('touch-warning show=' + (show ? 1 : 0) + ' last=' + last.slice(0, 96));
+      }, () => { this._touchInFlight = false; });
+    }
+
+    _startTouchWarning() {
+      this._updateTouchWarning();
+      if (this._touchTimer) return;
+      this._touchTimer = global.setInterval(() => {
+        if (this.locked) this._updateTouchWarning();
+      }, 10000);
     }
 
     _trace(msg) {

@@ -1,0 +1,97 @@
+[
+  {
+    "path": "pwa/nuxel-apps/cleanup/app.json",
+    "sha256": "0ce9e8295a8e2cb81ec369b7f3e631bd0d031e608dcc39edfff5d922eea19393",
+    "size": 328
+  },
+  {
+    "path": "pwa/nuxel-apps/cleanup/css/cleanup.css",
+    "sha256": "8ed47af64926f34e80a462e770b9b48084ca9efd7a9885845c0648935cc36563",
+    "size": 3469
+  },
+  {
+    "path": "pwa/nuxel-apps/cleanup/icons/icon-128.png",
+    "sha256": "bc02068cc6bea9270578688032b83372c5b81196345a3e54970dad347d2347bb",
+    "size": 5362
+  },
+  {
+    "path": "pwa/nuxel-apps/cleanup/icons/icon-144.png",
+    "sha256": "7de9ff2b67c87d1540cc659ce06cf3072df8e57b3ad206adead726b004d10307",
+    "size": 5920
+  },
+  {
+    "path": "pwa/nuxel-apps/cleanup/icons/icon-152.png",
+    "sha256": "060310e1eca4c323167e8cfcd228cfc98ddf6612d58c188f4a33bfc8c0e8a694",
+    "size": 6398
+  },
+  {
+    "path": "pwa/nuxel-apps/cleanup/icons/icon-192.png",
+    "sha256": "666d405fdf7f57f08ced582a1f76087c6568736eb6391ecdda79815d2cc866e4",
+    "size": 8049
+  },
+  {
+    "path": "pwa/nuxel-apps/cleanup/icons/icon-384.png",
+    "sha256": "77fd7768b6dedf86ec0dcc06a5d56f879864e5c1ccedbb9341dc34126536b1d8",
+    "size": 16499
+  },
+  {
+    "path": "pwa/nuxel-apps/cleanup/icons/icon-48.png",
+    "sha256": "3a177a445b7b44e321f71133e347756263ccdd3728427988f205c055ae3b9cb1",
+    "size": 1793
+  },
+  {
+    "path": "pwa/nuxel-apps/cleanup/icons/icon-512.png",
+    "sha256": "a395c11e7eef9cc90387866383387bd4c254448c981a3cf96c69aab8ce0e07cc",
+    "size": 22349
+  },
+  {
+    "path": "pwa/nuxel-apps/cleanup/icons/icon-72.png",
+    "sha256": "c74377a5eb4a837a7cf65bbce1fda7694acf7c621bb82e47e29134fa756a41e6",
+    "size": 2815
+  },
+  {
+    "path": "pwa/nuxel-apps/cleanup/icons/icon-96.png",
+    "sha256": "92773c85a3a9cce2fe93d06b2a2fe158c36fd2f121ff5e00d36d9ecf269e5de7",
+    "size": 3936
+  },
+  {
+    "path": "pwa/nuxel-apps/cleanup/icons/icon.svg",
+    "sha256": "72e77a53fe528e90f7a4736a384afd9aefe106bd08e5866fa3150c191954a3d4",
+    "size": 401
+  },
+  {
+    "path": "pwa/nuxel-apps/cleanup/index.html",
+    "sha256": "61974ccd1d34a8679734f2503cb18d5e383e8b8c90d99797b34e0a216bd33f54",
+    "size": 3647
+  },
+  {
+    "path": "pwa/nuxel-apps/cleanup/js/cleanup-plan.js",
+    "sha256": "ad3f42de528a6ee07ae6cf4e7046e2ccec7864c6e1fa894e7a9f39dc8b7739a0",
+    "size": 7823
+  },
+  {
+    "path": "pwa/nuxel-apps/cleanup/js/cleanup.js",
+    "sha256": "6467f151843904d08cae338fdc91b454c1dae60218dc3da2d858f369d033b291",
+    "size": 6791
+  },
+  {
+    "path": "pwa/nuxel-apps/cleanup/js/sample-scan.json",
+    "sha256": "ca13ec71175e3029a598679b1f2c3c0248a96ee1bd4070583e6ddf19930fe5c2",
+    "size": 1093
+  },
+  {
+    "path": "pwa/nuxel-apps/cleanup/manifest.json",
+    "sha256": "33d51d3d16adfc00c2b91925bba06ab28d4c3fdf13080639c15799152fd2512d",
+    "size": 805
+  },
+  {
+    "path": "pwa/nuxel-apps/cleanup/sw.js",
+    "sha256": "5e8cab37df9ee5d1bc3198c70db4c4652aa68bc39a266e65cba0a3c49f8e66d6",
+    "size": 697
+  },
+  {
+    "path": "pwa/nuxel-apps/cleanup/tests/test-cleanup-plan.js",
+    "sha256": "b4158677b1ad2e1e20f088f13a983f67cb601a5b367f7f0df7dddb29e098321d",
+    "size": 4243
+  }
+]

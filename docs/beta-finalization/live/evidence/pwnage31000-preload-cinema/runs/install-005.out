@@ -1,0 +1,7 @@
+pushed={"acked_bytes": 1588, "b64_chars": 2120, "bytes": 1588, "decoded_sha256": "bf57d0972c18e1411e60a8c6685fe6a8b88e0bf1d2c23b03c9018b02bd02b67d", "frames": 17, "mode": "frame", "parts": 17, "path": "/var/tmp/nxl-install-005.sh", "raw_writes": 0, "retries": 0}
+ok=True rc=0
+---
+PREV=NONE
+/usr/share/nuxel/doc/PWNAGE-31000.md.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

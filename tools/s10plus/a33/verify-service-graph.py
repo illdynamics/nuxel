@@ -74,6 +74,7 @@ UNIT_SOURCES = [
     "services/nuxel-session/systemd/nuxel-fallback.service",
     "services/nuxel-session/systemd/nuxel-button-manager.service",
     "services/nuxel-animation/systemd/nuxel-animation.service",
+    "services/nuxel-preload-cinema/nuxel-preload-cinema.service",
     "services/nuxel-console/systemd/nuxel-console.service",
     "images/s10plus/nuxel-firstlight.service",
     "shell/nuxel-camera-portal/systemd/nuxel-camera-portal.service",

@@ -314,6 +314,46 @@ class AudioProvider:
         }, None
 
     # ---- public API ------------------------------------------------------
+    def capture_route(self):
+        """Report whether the session audio server exposes a capture source.
+
+        This is deliberately a *read-only* probe: opening an ALSA capture PCM
+        on this vendor kernel can block in abox_wait_restored (D state), so the
+        Recorder must not call getUserMedia until a routed source exists.  The
+        check runs wpctl with a bounded timeout and only parses the Sources
+        section; it never opens /dev/snd.
+        """
+        import shutil
+        wpctl = shutil.which("wpctl") or "/usr/bin/wpctl"
+        env = dict(os.environ)
+        env.setdefault("XDG_RUNTIME_DIR", "/run/nuxel-wayland")
+        env.setdefault("PULSE_SERVER", "unix:/run/nuxel-wayland/pulse/native")
+        try:
+            proc = subprocess.run([wpctl, "status"], env=env,
+                                  capture_output=True, text=True,
+                                  timeout=self.timeout)
+        except (OSError, subprocess.TimeoutExpired) as exc:
+            return {"success": False, "available": False,
+                    "error": "audio session query failed: %s" % exc,
+                    "sources": []}
+        sources = []
+        in_sources = False
+        for line in (proc.stdout or "").splitlines():
+            if re.search(r"\bSources\s*:", line):
+                in_sources = True
+                continue
+            if in_sources and re.search(r"\b(Filters|Streams|Settings)\s*:", line):
+                break
+            if not in_sources:
+                continue
+            if not line.strip():
+                continue
+            if re.search(r"\b\d+\.\s+", line):
+                sources.append(re.sub(r"^[^0-9]*", "", line).strip())
+        return {"success": True, "available": bool(sources),
+                "sources": sources,
+                "reason": None if sources else "no capture source routed by the session audio server"}
+
     def get_status(self):
         cards = self._cards()
         pcms = self._pcms()

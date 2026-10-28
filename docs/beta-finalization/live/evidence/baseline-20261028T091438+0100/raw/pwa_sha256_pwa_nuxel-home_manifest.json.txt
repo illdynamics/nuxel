@@ -1,0 +1,4 @@
+cmd: sha256sum /usr/share/nuxel/pwa/nuxel-home/manifest.json 2>&1
+ok: True rc: 0 framed: True sha_ok: True
+---
+a8d59d10b4886ace928fca19f299a2309243dfd80c9b8134d0978180a54d6b00  /usr/share/nuxel/pwa/nuxel-home/manifest.json

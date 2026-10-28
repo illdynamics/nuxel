@@ -47,6 +47,22 @@
   </screenshots>
 
   <releases>
+    <release version="0.7.2-beta" date="2026-10-28">
+      <url>https://github.com/illdynamics/nuxel/releases/tag/v0.7.2-beta</url>
+      <description>
+        <p>Nuxel Home v0.7.2-beta — aligned with Nuxel Phone OS v0.7.2-beta
+        (PWNAGE-31000..36000: preload cinema, restored keyboard and haptics,
+        global Back/navigation, connection modes and the S10+ hardware fixes).</p>
+        <ul>
+          <li>Bounded pre-lockscreen video with a fail-open cover and fallback</li>
+          <li>Restored system keyboard, global Back/Home/Recents and lower-band unlock</li>
+          <li>Charging/File Transfer mode selector with genuine transport indicators</li>
+          <li>Battery truth, touch-unavailable warning and software-render performance fixes</li>
+          <li>Launcher cache advanced to v54-v072-release</li>
+          <li>Whole-repo version bump in lockstep with Nuxel OS v0.7.2-beta</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.7.1-beta" date="2026-10-27">
       <url>https://github.com/illdynamics/nuxel/releases/tag/v0.7.1-beta</url>
       <description>

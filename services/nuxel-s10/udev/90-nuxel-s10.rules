@@ -1,0 +1,10 @@
+# Nuxel S10+ stable permissions / aliases.  Only effective when systemd-udevd
+# is running; services/nuxel-s10/bin/nuxel-device-permissions.sh mirrors this
+# policy for the 4.14 image where udevd is masked.
+SUBSYSTEM=="sound", KERNEL=="controlC*", GROUP="audio", MODE="0660"
+SUBSYSTEM=="sound", KERNEL=="pcmC*", GROUP="audio", MODE="0660"
+SUBSYSTEM=="sound", KERNEL=="timer", GROUP="audio", MODE="0660"
+SUBSYSTEM=="tty", KERNEL=="ttySAC1", GROUP="dialout", MODE="0660", SYMLINK+="nuxel-bluetooth"
+SUBSYSTEM=="tty", KERNEL=="ttyBCM", GROUP="dialout", MODE="0660", SYMLINK+="nuxel-gps"
+SUBSYSTEM=="input", KERNEL=="event*", GROUP="input", MODE="0660"
+SUBSYSTEM=="rfkill", GROUP="wheel", MODE="0660"

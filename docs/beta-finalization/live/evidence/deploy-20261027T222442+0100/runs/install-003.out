@@ -1,0 +1,7 @@
+pushed={"acked_bytes": 1816, "b64_chars": 2424, "bytes": 1816, "decoded_sha256": "d89a4e5035d5239f68655dc823eda780af1321c0a8ff22d99a75602281c36f30", "frames": 19, "mode": "frame", "parts": 19, "path": "/var/tmp/nxl-install-003.sh", "raw_writes": 0, "retries": 0}
+ok=True rc=0
+---
+PREV=94849e33ab9862c986d15d3f11d84d2dfaeeb104cc4e0988da391eafc2e4c517
+/usr/share/nuxel/pwa/nuxel-home/js/lockscreen.js.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

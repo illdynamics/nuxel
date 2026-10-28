@@ -1,0 +1,79 @@
+=== root cause evidence (current boot journal) ===
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+2026-10-28T16:55:06+01:00 fedora systemd[1]: Expecting device sys-subsystem-net-devices-wlan0.device - /sys/subsystem/net/devices/wlan0...
+2026-10-28T16:55:50+01:00 fedora systemd[1]: sys-subsystem-net-devices-wlan0.device: Job sys-subsystem-net-devices-wlan0.device/start timed out.
+2026-10-28T16:55:50+01:00 fedora systemd[1]: Timed out waiting for device sys-subsystem-net-devices-wlan0.device - /sys/subsystem/net/devices/wlan0.
+2026-10-28T16:55:50+01:00 fedora systemd[1]: sys-subsystem-net-devices-wlan0.device: Job sys-subsystem-net-devices-wlan0.device/start failed with result 'timeout'.
+2026-10-28T16:55:50+01:00 fedora systemd[1]: Starting nuxel-network-udev-seed.service - Nuxel NetworkManager udev compatibility seed for S10+ Wi-Fi...
+2026-10-28T16:55:50+01:00 fedora systemd[1]: nuxel-network-udev-seed.service: Deactivated successfully.
+2026-10-28T16:55:50+01:00 fedora systemd[1]: Finished nuxel-network-udev-seed.service - Nuxel NetworkManager udev compatibility seed for S10+ Wi-Fi.
+2026-10-28T16:55:50+01:00 fedora audit[1]: SERVICE_START pid=1 uid=0 auid=4294967295 ses=4294967295 subj=kernel msg='unit=nuxel-network-udev-seed comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'
+2026-10-28T16:55:50+01:00 fedora audit[1]: SERVICE_STOP pid=1 uid=0 auid=4294967295 ses=4294967295 subj=kernel msg='unit=nuxel-network-udev-seed comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'
+2026-10-28T16:55:52+01:00 fedora systemd[1]: Started NetworkManager.service - Network Manager.
+2026-10-28T16:55:56+01:00 fedora NetworkManager[6949]: <info>  [1793202956.4181] device (wlan0): Activation: successful, device activated.
+2026-10-28T17:27:32+01:00 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net systemd[1]: Starting nuxel-network-udev-seed.service - Nuxel NetworkManager udev compatibility seed for S10+ Wi-Fi...
+2026-10-28T17:27:32+01:00 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net systemd[1]: nuxel-network-udev-seed.service: Deactivated successfully.
+2026-10-28T17:27:32+01:00 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net systemd[1]: Finished nuxel-network-udev-seed.service - Nuxel NetworkManager udev compatibility seed for S10+ Wi-Fi.
+2026-10-28T17:27:32+01:00 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net audit[1]: SERVICE_START pid=1 uid=0 auid=4294967295 ses=4294967295 subj=kernel msg='unit=nuxel-network-udev-seed comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'
+2026-10-28T17:27:32+01:00 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net audit[1]: SERVICE_STOP pid=1 uid=0 auid=4294967295 ses=4294967295 subj=kernel msg='unit=nuxel-network-udev-seed comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'
+2026-10-28T17:27:33+01:00 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net systemd[1]: Started NetworkManager.service - Network Manager.
+2026-10-28T17:27:35+01:00 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net NetworkManager[17047]: <info>  [1793204855.4185] device (wlan0): Activation: successful, device activated.
+=== installed unit ordering (device unit dependency removed) ===
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+Wants=
+After=sysinit.target system.slice basic.target systemd-journald.socket local-fs.target
+Result=success
+# /etc/systemd/system/nuxel-network-udev-seed.service
+[Unit]
+Description=Nuxel NetworkManager udev compatibility seed for S10+ Wi-Fi
+Documentation=file:/usr/share/doc/nuxel/
+After=local-fs.target
+# Deliberately no .device dependency: systemd-udevd is masked on this kernel,
+# so sys-subsystem-net-devices-wlan0.device never appears and used to delay
+# NetworkManager (and Wi-Fi autoconnect) by the full 50 s device timeout.
+Before=NetworkManager.service
+ConditionPathExists=/sys/class/net
+
+[Service]
+Type=oneshot
+ExecStart=/usr/libexec/nuxel/nuxel-network-udev-seed
+
+[Install]
+RequiredBy=NetworkManager.service
+
+---
+ExecStart={ path=/usr/bin/nm-online ; argv[]=/usr/bin/nm-online -s -q --timeout=15 ; ignore_errors=no ; start_time=[n/a] ; stop_time=[n/a] ; pid=0 ; code=(null) ; status=0/0 }
+=== observed reconnect after NetworkManager restart (userspace only) ===
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+2026-10-28T16:55:50+01:00 fedora systemd[1]: Starting NetworkManager.service - Network Manager...
+2026-10-28T16:55:56+01:00 fedora NetworkManager[6949]: <info>  [1793202956.1565] device (wlan0): Activation: (wifi) Stage 2 of 5 (Device Configure) successful. Connected to wireless network "Snoerbreuk"
+2026-10-28T16:55:56+01:00 fedora NetworkManager[6949]: <info>  [1793202956.4181] device (wlan0): Activation: successful, device activated.
+2026-10-28T17:27:32+01:00 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net systemd[1]: Starting NetworkManager.service - Network Manager...
+2026-10-28T17:27:35+01:00 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net NetworkManager[17047]: <info>  [1793204855.1548] device (wlan0): Activation: (wifi) Stage 2 of 5 (Device Configure) successful. Connected to wireless network "Snoerbreuk"
+2026-10-28T17:27:35+01:00 2a02-a472-fcbc-0-1b0c-b777-2d3b-74ff.fixed6.kpn.net NetworkManager[17047]: <info>  [1793204855.4185] device (wlan0): Activation: successful, device activated.
+wlan0:connected:Nuxel Snoerbreuk
+p2p-dev-wlan0:disconnected:

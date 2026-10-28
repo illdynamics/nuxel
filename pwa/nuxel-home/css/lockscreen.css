@@ -61,8 +61,12 @@
     width: 118px;
     height: 118px;
     display: block;
-    filter: drop-shadow(0 6px 18px rgba(0, 0, 0, 0.55));
-    will-change: transform;
+    /* PERF (S10+ / llvmpipe): a non-interactive filter on this alpha PNG kept
+       WebKit's software rasteriser busy every frame.  The idle shadow is gone;
+       the same drop-shadow is applied only while the owner is actually dragging
+       (.grabbed/.armed/.unlocking below), where interaction already costs
+       frames.  Measured: WebKitWebProcess ~440% -> ~78% CPU with the handle and
+       indicator filters removed. */
     pointer-events: auto;
     touch-action: none;
     -webkit-user-drag: none;
@@ -76,7 +80,6 @@
     pointer-events: none;
     -webkit-user-drag: none;
     transform-origin: 50% 72%;
-    will-change: transform;
 }
 /* One short wiggle every ~9 s (driven by a low-frequency JS scheduler).  An
    infinite CSS animation kept WebKit/phoc compositing every frame even during
@@ -92,7 +95,7 @@
     70% { transform: rotate(-0.8deg) translateX(0); }
     74% { transform: rotate(0.4deg) translateX(0); }
 }
-.lockscreen-handle.grabbed { filter: drop-shadow(0 6px 22px rgba(80, 200, 255, 0.55)); cursor: grabbing; }
+.lockscreen-handle.grabbed { will-change: transform; filter: drop-shadow(0 6px 22px rgba(80, 200, 255, 0.55)); cursor: grabbing; }
 /* Stop the invitation the instant a real drag starts; the drag gesture owns
    the container transform and this child stays still until the gesture ends. */
 .lockscreen-handle.grabbed .lockscreen-lockhead-motion,
@@ -102,8 +105,9 @@ body.display-off .lockscreen-lockhead-motion,
 body.display-off .lockscreen-hint::before { animation-play-state: paused; }
 /* Subtle armed acknowledgement once the upward distance reaches the threshold.
    Geometry, position and artwork are untouched. */
-.lockscreen-handle.armed { filter: drop-shadow(0 0 24px rgba(120, 220, 255, 0.85)); }
-.lockscreen-handle.unlocking { opacity: 0; transform: translateY(-160px) scale(1.15); transition: transform .28s ease-out, opacity .28s ease-out; }
+.lockscreen-handle.armed { will-change: transform; filter: drop-shadow(0 0 24px rgba(120, 220, 255, 0.85)); }
+.lockscreen-handle.unlocking { will-change: transform, opacity; opacity: 0; transform: translateY(-160px) scale(1.15); transition: transform .28s ease-out, opacity .28s ease-out; }
+.lockscreen-handle.wiggling .lockscreen-lockhead-motion { will-change: transform; }
 @media (prefers-reduced-motion: reduce) {
     .lockscreen-lockhead-motion { animation: none !important; }
     .lockscreen-hint::before { animation: none !important; }
@@ -180,9 +184,10 @@ body.display-off .lockscreen-hint::before { animation-play-state: paused; }
     height: 68px;
     opacity: 0;
     visibility: hidden;
-    filter: saturate(1.08) brightness(1.08);
+    /* PERF: the saturate/brightness filter forced a software raster pass on
+       every indicator frame.  The source PNGs already carry their colour; the
+       radial glow and the existing pulse animations are unchanged. */
     transition: opacity .22s ease;
-    will-change: opacity, filter;
 }
 
 .lockscreen-indicator img {
@@ -272,6 +277,32 @@ body.display-off .lockscreen-indicator img,
 body.display-off .lockscreen-indicator .lockscreen-indicator-glow {
     animation-play-state: paused !important;
 }
+
+/* Charger/LPM boot warning.  On a charger-mode boot the vendor kernel does
+   not bind sec_ts at all, so no touch device exists and no gesture can unlock.
+   The state is read from /run/nuxel-touch-arm.state; this is an explanation,
+   not a fake control (there is deliberately no button that cannot be tapped). */
+.lockscreen-touch-warning {
+    position: absolute;
+    top: 264px;
+    left: 16px;
+    right: 16px;
+    z-index: 3;
+    display: none;
+    padding: 10px 12px;
+    color: #fff3d6;
+    background: rgba(58, 34, 8, 0.92);
+    border: 1px solid rgba(255, 190, 92, 0.75);
+    border-radius: 10px;
+    font-size: 12px;
+    line-height: 1.35;
+    text-align: center;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+    pointer-events: none;
+}
+.lockscreen-touch-warning.visible { display: block; }
+.lockscreen-touch-warning strong { display: block; font-size: 13px; letter-spacing: .02em; }
+.lockscreen-touch-warning span { display: block; margin-top: 3px; opacity: .92; }
 
 /* The handset is portrait-locked.  If a diagnostic/desktop surface forces a
    short landscape viewport, keep the status art out of the clock and lockhead

@@ -1,0 +1,7 @@
+pushed={"acked_bytes": 116, "b64_chars": 156, "bytes": 116, "decoded_sha256": "9ba87875cd7c766d4223deaee20d7a55a2f2d75f1f06d9f625f34d0f38b9e385", "frames": 2, "mode": "frame", "parts": 2, "path": "/var/tmp/nxl-rollback-restart-001-1.sh", "raw_writes": 0, "retries": 0}
+ok=False rc=None
+---
+[?2004l
+
+
+[?2004hsh-5.3# 

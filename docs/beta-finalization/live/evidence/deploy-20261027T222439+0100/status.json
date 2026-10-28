@@ -1,0 +1,14 @@
+{
+  "blocked_reason": "cannot take the console: cannot open/configure /dev/ttyACM0: [Errno 13] Permission denied: '/dev/ttyACM0'",
+  "changed_steps": null,
+  "exit_code": 3,
+  "finished_at": "2026-10-27T22:24:39+0100",
+  "host": "dextronux",
+  "no_op": null,
+  "operation_id": "deploy-20261027T222439-2425125",
+  "pid": 2425125,
+  "pid_start": "35783028",
+  "rollback_ok": null,
+  "state": "COMPLETE",
+  "verdict": "BLOCKED_EXTERNAL_RESOURCE"
+}

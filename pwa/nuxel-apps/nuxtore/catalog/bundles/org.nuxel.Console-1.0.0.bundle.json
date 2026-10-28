@@ -1,0 +1,77 @@
+[
+  {
+    "path": "pwa/nuxel-apps/console/app.json",
+    "sha256": "dcb31a1503c9ec12ecf84c1542e5bbe2bdb5fd750b2ec3cacb9a41744679b9ba",
+    "size": 534
+  },
+  {
+    "path": "pwa/nuxel-apps/console/console.css",
+    "sha256": "4f985e8a57dee42278993e469bd38ac3b6cb47a122fd3bd7e4fe6e8937e5987a",
+    "size": 3191
+  },
+  {
+    "path": "pwa/nuxel-apps/console/console.js",
+    "sha256": "bd20a9c139d03800ef3f9d1e1fc43d8805c8739e34cf2ed77e805304f2c72b11",
+    "size": 8255
+  },
+  {
+    "path": "pwa/nuxel-apps/console/icons/icon-128.png",
+    "sha256": "e165a24f19a16a6bf4810e7277651d332ff3252b38ccaf92d2a67dadded7c037",
+    "size": 3900
+  },
+  {
+    "path": "pwa/nuxel-apps/console/icons/icon-144.png",
+    "sha256": "a2a4481f51570f486132259e0ab08d57ec2af2f109b3c9491aa10eb5250a9dc6",
+    "size": 4422
+  },
+  {
+    "path": "pwa/nuxel-apps/console/icons/icon-152.png",
+    "sha256": "d480fc18fe460c20e795fea7defed41506bf39c5e039bafb0fbf447c89f17459",
+    "size": 4604
+  },
+  {
+    "path": "pwa/nuxel-apps/console/icons/icon-192.png",
+    "sha256": "e7cdb228b7ceb3baf3218edd9f7c269a179ec7f915be030765913a11ca0a2160",
+    "size": 5738
+  },
+  {
+    "path": "pwa/nuxel-apps/console/icons/icon-384.png",
+    "sha256": "42463189c16b5040d4b125898d64e901a663ed266c0ba0956527dfb1164c7e65",
+    "size": 11530
+  },
+  {
+    "path": "pwa/nuxel-apps/console/icons/icon-48.png",
+    "sha256": "395200d5e20520e0c5ecfb8fa4219afde5373dc5fb775e07c751828e1330ca0b",
+    "size": 1403
+  },
+  {
+    "path": "pwa/nuxel-apps/console/icons/icon-512.png",
+    "sha256": "3b329d853843aeb0dcacd0c648618718986bbda8a2882239cdaeb548fa6bc6af",
+    "size": 15753
+  },
+  {
+    "path": "pwa/nuxel-apps/console/icons/icon-72.png",
+    "sha256": "957c46f9fba2424112b1e6b84408bd9c4d29176b4dacbb9b49dc9ddb27039c65",
+    "size": 2056
+  },
+  {
+    "path": "pwa/nuxel-apps/console/icons/icon-96.png",
+    "sha256": "4e2cae66544e076e982f09d4589cb5ffcb316c79c383efc5697b25e89347801f",
+    "size": 2877
+  },
+  {
+    "path": "pwa/nuxel-apps/console/icons/icon.svg",
+    "sha256": "dc2d5a956cf51c38fd162facbe5d52127df1f1e892ef10c91841ac597d41b878",
+    "size": 401
+  },
+  {
+    "path": "pwa/nuxel-apps/console/index.html",
+    "sha256": "b7fc76d120ddb21535f616f82c761fa142cd3b662757e8d953f2fac58b96f8dc",
+    "size": 580
+  },
+  {
+    "path": "pwa/nuxel-apps/console/manifest.json",
+    "sha256": "11eade2b546f54d141dd42d0574e8f2f3c70300299f2d2fafc8c5ed475269211",
+    "size": 997
+  }
+]

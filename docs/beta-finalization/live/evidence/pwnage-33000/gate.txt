@@ -1,0 +1,35 @@
+
+in-flight allowance register (evidence-derived from the work queue):
+  groups with unfinished records: bg-05-security-permissions bg-06-core-phone-apps bg-07-specialty-apps bg-08-hardware-subsystems bg-09-integration-release bg-11-vm-parity bg-12-reports
+  live  U-security-vpn-tor           owner bg-05-security-permissions (expires 2026-11-15)
+  live  U-verify-app-registry        owner bg-06-core-phone-apps (expires 2026-11-15)
+  live  U-verify-app-inventory       owner bg-06-core-phone-apps (expires 2026-11-15)
+  live  U-shell-phone-data           owner bg-06-core-phone-apps (expires 2026-11-15)
+  live  U-snek-parity                owner bg-07-specialty-apps (expires 2026-11-15)
+  live  U-snek-upstream-pytest       owner bg-07-specialty-apps (expires 2026-11-15)
+  [32mPASS[0m U-verify-app-registry             2s      35 checks
+  [32mPASS[0m U-verify-app-inventory            2s      47 checks
+  [32mPASS[0m U-shell-phone-data                2s      76 checks
+  [32mPASS[0m U-pwa-wiring                      2s       1 checks
+  [32mPASS[0m U-nuxtore-pwa                     2s      17 checks
+  [32mPASS[0m U-apps-js                         2s      13 checks
+  [32mPASS[0m U-pwa-assets                      2s       - checks
+
+────────────────────────────────────────────────────────────────────
+ID                             TIER     STATUS    OWNER                                    CHECKS   SECS
+────────────────────────────────────────────────────────────────────
+U-verify-app-registry          unit     PASS      bg-06-core-phone-apps                        35      2
+U-verify-app-inventory         unit     PASS      bg-06-core-phone-apps                        47      2
+U-shell-phone-data             unit     PASS      bg-06-core-phone-apps                        76      2
+U-pwa-wiring                   unit     PASS      bg-04-userspace-completion                    1      2
+U-nuxtore-pwa                  unit     PASS      bg-07-specialty-apps                         17      2
+U-apps-js                      unit     PASS      bg-06-core-phone-apps                        13      2
+U-pwa-assets                   unit     PASS      bg-02-boot-animation-launcher                 -      2
+────────────────────────────────────────────────────────────────────
+
+run-all-tests: 7 suites  pass=7 fail=0 warn=0 (cross-group=0) skip=0 external=0  14s
+gate: green   verdict: OFFLINE_TESTED   (OFFLINE_TESTED only — never VERIFIED_ON_S10PLUS)
+raw gate (--strict, no cross-group allowances): green  fail=0
+summary: /x/nuxel/build/reports/beta-tests/summary.json
+logs:    /x/nuxel/build/reports/beta-tests/logs
+────────────────────────────────────────────────────────────────────

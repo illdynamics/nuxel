@@ -117,7 +117,7 @@
       "install": {"type": "pwa", "app_id": "org.nuxel.SnekByte", "start_url": "/pwa/nuxel-apps/snekbyte/index.html", "mode": "staged"},
       "requires": [],
       "capabilities": ["input:keyboard", "input:touch"],
-      "license": "original SnekByte sources shipped without a licence file — see UPSTREAM-PROVENANCE.md",
+      "license": "original SnekByte sources shipped without a licence file - see UPSTREAM-PROVENANCE.md",
       "state_hint": "available"
     },
     {

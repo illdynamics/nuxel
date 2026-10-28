@@ -1,0 +1,162 @@
+{
+  "activation_plan": {
+    "counts": {
+      "daemon_reloads_planned": 1,
+      "declared_reloads_seen": 1,
+      "independent_restarts_planned": 0,
+      "reloads_planned": 2,
+      "restarts_planned": 0
+    },
+    "daemon_reload": true,
+    "daemon_reload_action": {
+      "action": "systemctl daemon-reload",
+      "group": "preload-cinema-runtime",
+      "needs_daemon_reload": true,
+      "restart_services": [],
+      "synthesized": true
+    },
+    "daemon_reloads_uncoalesced": 0,
+    "reloads": [
+      {
+        "action": "systemctl enable nuxel-preload-cinema.service",
+        "daemon_reload_split": true,
+        "group": "preload-cinema-runtime",
+        "needs_daemon_reload": true,
+        "restart_services": []
+      }
+    ],
+    "restart_services": [],
+    "restart_services_in_reloads": [],
+    "restarts": []
+  },
+  "group_order": [
+    {
+      "declared_reload": "systemctl daemon-reload && systemctl enable nuxel-preload-cinema.service",
+      "declared_reload_source": "group",
+      "group": "preload-cinema-runtime",
+      "priority": 1,
+      "restart_service": null,
+      "risk": "low",
+      "risk_rank": 0,
+      "steps": 5
+    }
+  ],
+  "risk_envelope": {
+    "low": 5
+  },
+  "schema_version": 1,
+  "skipped": [],
+  "steps": [
+    {
+      "backup": "/usr/lib/nuxel/nuxel-preload-cinema.nuxel-rollback",
+      "component": "Bounded pre-lockscreen video controller, systemd unit, durable config and supplied clip",
+      "declared_reload": "systemctl daemon-reload && systemctl enable nuxel-preload-cinema.service",
+      "group": "preload-cinema-runtime",
+      "health_check": "test -x /usr/lib/nuxel/nuxel-preload-cinema && test -f /etc/nuxel/boot/preload-cinema.json && test -f /etc/systemd/system/nuxel-preload-cinema.service && test -s /usr/share/nuxel/preload/nuxel-preloading-screen.mp4 && test \"$(sha256sum /usr/share/nuxel/preload/nuxel-preloading-screen.mp4 | cut -d' ' -f1)\" = b059f121e62b167fde8664e24c879ca443df8740d95441e7948abdbcc6cdbbf1 && grep -q '\"asset_sha256\": \"b059f121e62b167fde8664e24c879ca443df8740d95441e7948abdbcc6cdbbf1\"' /etc/nuxel/boot/preload-cinema.json && test -x /usr/bin/mpv && python3 -m py_compile /usr/lib/nuxel/nuxel-preload-cinema && systemctl is-enabled --quiet nuxel-preload-cinema.service",
+      "install_procedure": null,
+      "mode": "0755",
+      "post": [],
+      "pre": [],
+      "priority": 1,
+      "risk": "low",
+      "risk_rank": 0,
+      "rollback": "restore each <target>.nuxel-rollback; systemctl daemon-reload; systemctl disable --now nuxel-preload-cinema.service 2>/dev/null || true; remove /etc/systemd/system/multi-user.target.wants/nuxel-preload-cinema.service if it remains",
+      "service": null,
+      "source": "services/nuxel-preload-cinema/nuxel-preload-cinema",
+      "source_sha256": "488d9cc8333faf2bae474c00f509db73bec35e76a661e2ae4a7178f89086f6e0",
+      "staged": "/usr/lib/nuxel/nuxel-preload-cinema.nuxel-staged",
+      "target": "/usr/lib/nuxel/nuxel-preload-cinema",
+      "txn_backup": "/usr/lib/nuxel/nuxel-preload-cinema.nuxel-rollback.pre-deploy-20261028T105710-2836090",
+      "verify": "sha256sum /usr/lib/nuxel/nuxel-preload-cinema"
+    },
+    {
+      "backup": "/etc/nuxel/boot/preload-cinema.json.nuxel-rollback",
+      "component": "Bounded pre-lockscreen video controller, systemd unit, durable config and supplied clip",
+      "declared_reload": "systemctl daemon-reload && systemctl enable nuxel-preload-cinema.service",
+      "group": "preload-cinema-runtime",
+      "health_check": "test -x /usr/lib/nuxel/nuxel-preload-cinema && test -f /etc/nuxel/boot/preload-cinema.json && test -f /etc/systemd/system/nuxel-preload-cinema.service && test -s /usr/share/nuxel/preload/nuxel-preloading-screen.mp4 && test \"$(sha256sum /usr/share/nuxel/preload/nuxel-preloading-screen.mp4 | cut -d' ' -f1)\" = b059f121e62b167fde8664e24c879ca443df8740d95441e7948abdbcc6cdbbf1 && grep -q '\"asset_sha256\": \"b059f121e62b167fde8664e24c879ca443df8740d95441e7948abdbcc6cdbbf1\"' /etc/nuxel/boot/preload-cinema.json && test -x /usr/bin/mpv && python3 -m py_compile /usr/lib/nuxel/nuxel-preload-cinema && systemctl is-enabled --quiet nuxel-preload-cinema.service",
+      "install_procedure": null,
+      "mode": "0644",
+      "post": [],
+      "pre": [],
+      "priority": 1,
+      "risk": "low",
+      "risk_rank": 0,
+      "rollback": "restore each <target>.nuxel-rollback; systemctl daemon-reload; systemctl disable --now nuxel-preload-cinema.service 2>/dev/null || true; remove /etc/systemd/system/multi-user.target.wants/nuxel-preload-cinema.service if it remains",
+      "service": null,
+      "source": "configs/nuxel/boot/preload-cinema.json",
+      "source_sha256": "fc1f578ceee799e86130833325fab75f80c92e414233ce04cd743594dfb8810b",
+      "staged": "/etc/nuxel/boot/preload-cinema.json.nuxel-staged",
+      "target": "/etc/nuxel/boot/preload-cinema.json",
+      "txn_backup": "/etc/nuxel/boot/preload-cinema.json.nuxel-rollback.pre-deploy-20261028T105710-2836090",
+      "verify": "sha256sum /etc/nuxel/boot/preload-cinema.json"
+    },
+    {
+      "backup": "/usr/share/nuxel/preload/nuxel-preloading-screen.mp4.nuxel-rollback",
+      "component": "Bounded pre-lockscreen video controller, systemd unit, durable config and supplied clip",
+      "declared_reload": "systemctl daemon-reload && systemctl enable nuxel-preload-cinema.service",
+      "group": "preload-cinema-runtime",
+      "health_check": "test -x /usr/lib/nuxel/nuxel-preload-cinema && test -f /etc/nuxel/boot/preload-cinema.json && test -f /etc/systemd/system/nuxel-preload-cinema.service && test -s /usr/share/nuxel/preload/nuxel-preloading-screen.mp4 && test \"$(sha256sum /usr/share/nuxel/preload/nuxel-preloading-screen.mp4 | cut -d' ' -f1)\" = b059f121e62b167fde8664e24c879ca443df8740d95441e7948abdbcc6cdbbf1 && grep -q '\"asset_sha256\": \"b059f121e62b167fde8664e24c879ca443df8740d95441e7948abdbcc6cdbbf1\"' /etc/nuxel/boot/preload-cinema.json && test -x /usr/bin/mpv && python3 -m py_compile /usr/lib/nuxel/nuxel-preload-cinema && systemctl is-enabled --quiet nuxel-preload-cinema.service",
+      "install_procedure": null,
+      "mode": "0644",
+      "post": [],
+      "pre": [],
+      "priority": 1,
+      "risk": "low",
+      "risk_rank": 0,
+      "rollback": "restore each <target>.nuxel-rollback; systemctl daemon-reload; systemctl disable --now nuxel-preload-cinema.service 2>/dev/null || true; remove /etc/systemd/system/multi-user.target.wants/nuxel-preload-cinema.service if it remains",
+      "service": null,
+      "source": "assets/nuxel-preloading-screen.mp4",
+      "source_sha256": "b059f121e62b167fde8664e24c879ca443df8740d95441e7948abdbcc6cdbbf1",
+      "staged": "/usr/share/nuxel/preload/nuxel-preloading-screen.mp4.nuxel-staged",
+      "target": "/usr/share/nuxel/preload/nuxel-preloading-screen.mp4",
+      "txn_backup": "/usr/share/nuxel/preload/nuxel-preloading-screen.mp4.nuxel-rollback.pre-deploy-20261028T105710-2836090",
+      "verify": "sha256sum /usr/share/nuxel/preload/nuxel-preloading-screen.mp4"
+    },
+    {
+      "backup": "/etc/systemd/system/nuxel-preload-cinema.service.nuxel-rollback",
+      "component": "Bounded pre-lockscreen video controller, systemd unit, durable config and supplied clip",
+      "declared_reload": "systemctl daemon-reload && systemctl enable nuxel-preload-cinema.service",
+      "group": "preload-cinema-runtime",
+      "health_check": "test -x /usr/lib/nuxel/nuxel-preload-cinema && test -f /etc/nuxel/boot/preload-cinema.json && test -f /etc/systemd/system/nuxel-preload-cinema.service && test -s /usr/share/nuxel/preload/nuxel-preloading-screen.mp4 && test \"$(sha256sum /usr/share/nuxel/preload/nuxel-preloading-screen.mp4 | cut -d' ' -f1)\" = b059f121e62b167fde8664e24c879ca443df8740d95441e7948abdbcc6cdbbf1 && grep -q '\"asset_sha256\": \"b059f121e62b167fde8664e24c879ca443df8740d95441e7948abdbcc6cdbbf1\"' /etc/nuxel/boot/preload-cinema.json && test -x /usr/bin/mpv && python3 -m py_compile /usr/lib/nuxel/nuxel-preload-cinema && systemctl is-enabled --quiet nuxel-preload-cinema.service",
+      "install_procedure": null,
+      "mode": "0644",
+      "post": [],
+      "pre": [],
+      "priority": 1,
+      "risk": "low",
+      "risk_rank": 0,
+      "rollback": "restore each <target>.nuxel-rollback; systemctl daemon-reload; systemctl disable --now nuxel-preload-cinema.service 2>/dev/null || true; remove /etc/systemd/system/multi-user.target.wants/nuxel-preload-cinema.service if it remains",
+      "service": null,
+      "source": "services/nuxel-preload-cinema/nuxel-preload-cinema.service",
+      "source_sha256": "070566f55b4cdd9dcc792e2d02026d1b57bd468d20a62bf98acb72b02f07d865",
+      "staged": "/etc/systemd/system/nuxel-preload-cinema.service.nuxel-staged",
+      "target": "/etc/systemd/system/nuxel-preload-cinema.service",
+      "txn_backup": "/etc/systemd/system/nuxel-preload-cinema.service.nuxel-rollback.pre-deploy-20261028T105710-2836090",
+      "verify": "sha256sum /etc/systemd/system/nuxel-preload-cinema.service"
+    },
+    {
+      "backup": "/usr/share/nuxel/doc/PWNAGE-31000.md.nuxel-rollback",
+      "component": "Bounded pre-lockscreen video controller, systemd unit, durable config and supplied clip",
+      "declared_reload": "systemctl daemon-reload && systemctl enable nuxel-preload-cinema.service",
+      "group": "preload-cinema-runtime",
+      "health_check": "test -x /usr/lib/nuxel/nuxel-preload-cinema && test -f /etc/nuxel/boot/preload-cinema.json && test -f /etc/systemd/system/nuxel-preload-cinema.service && test -s /usr/share/nuxel/preload/nuxel-preloading-screen.mp4 && test \"$(sha256sum /usr/share/nuxel/preload/nuxel-preloading-screen.mp4 | cut -d' ' -f1)\" = b059f121e62b167fde8664e24c879ca443df8740d95441e7948abdbcc6cdbbf1 && grep -q '\"asset_sha256\": \"b059f121e62b167fde8664e24c879ca443df8740d95441e7948abdbcc6cdbbf1\"' /etc/nuxel/boot/preload-cinema.json && test -x /usr/bin/mpv && python3 -m py_compile /usr/lib/nuxel/nuxel-preload-cinema && systemctl is-enabled --quiet nuxel-preload-cinema.service",
+      "install_procedure": null,
+      "mode": "0644",
+      "post": [],
+      "pre": [],
+      "priority": 1,
+      "risk": "low",
+      "risk_rank": 0,
+      "rollback": "restore each <target>.nuxel-rollback; systemctl daemon-reload; systemctl disable --now nuxel-preload-cinema.service 2>/dev/null || true; remove /etc/systemd/system/multi-user.target.wants/nuxel-preload-cinema.service if it remains",
+      "service": null,
+      "source": "docs/pwnage-31000/IMPLEMENTATION.md",
+      "source_sha256": "fbc60cbcf7543ef5fd5971975b11faddb8033aa123954bc50f6914b4b77b76bd",
+      "staged": "/usr/share/nuxel/doc/PWNAGE-31000.md.nuxel-staged",
+      "target": "/usr/share/nuxel/doc/PWNAGE-31000.md",
+      "txn_backup": "/usr/share/nuxel/doc/PWNAGE-31000.md.nuxel-rollback.pre-deploy-20261028T105710-2836090",
+      "verify": "sha256sum /usr/share/nuxel/doc/PWNAGE-31000.md"
+    }
+  ],
+  "violations": []
+}

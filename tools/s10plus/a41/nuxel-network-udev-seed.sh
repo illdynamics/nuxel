@@ -15,6 +15,19 @@ UDEV_DATA_DIR="${NUXEL_UDEV_DATA_DIR:-/run/udev/data}"
 
 mkdir -p "$UDEV_DATA_DIR"
 
+# NetworkManager must not start before the vendor wlan interface exists.  The
+# kernel registers it synchronously on this image; this bounded wait only
+# covers a slower mmc/pcie probe and never relies on masked udevd device units.
+i=0
+while [ "$i" -lt 100 ]; do
+    found=0
+    for n in "$SYS_CLASS_NET"/wlan*; do
+        [ -e "$n/phy80211" ] && found=1 && break
+    done
+    [ "$found" = "1" ] && break
+    i=$((i + 1)); sleep 0.1
+done
+
 for netdev in "$SYS_CLASS_NET"/wlan*; do
     [ -d "$netdev" ] || continue
     [ -e "$netdev/phy80211" ] || continue

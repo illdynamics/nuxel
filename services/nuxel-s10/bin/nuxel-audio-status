@@ -1,0 +1,11 @@
+#!/bin/sh
+# Read-only audio status.  Never opens an ALSA PCM or mixer control: on this
+# unit open() can block in rpm_resume.  Reads procfs and the session files.
+set -u
+echo "cards:"; sed -n '1,40p' /proc/asound/cards 2>/dev/null || echo "  /proc/asound/cards unavailable"
+echo "pcms:"; grep -E '^[[:space:]]*[0-9]+-' /proc/asound/pcm 2>/dev/null | head -20
+echo "route: $(cat /run/nuxel-audio-route.state 2>/dev/null || echo unavailable)"
+echo "pipewire_socket=$([ -S /run/nuxel-wayland/pipewire-0 ] && echo present || echo absent)"
+echo "pulse_socket=$([ -S /run/nuxel-wayland/pulse/native ] && echo present || echo absent)"
+echo "wireplumber=$(pgrep -x wireplumber >/dev/null 2>&1 && echo running || echo stopped)"
+echo "pipewire=$(pgrep -x pipewire >/dev/null 2>&1 && echo running || echo stopped)"

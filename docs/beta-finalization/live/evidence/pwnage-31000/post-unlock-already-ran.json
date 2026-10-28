@@ -1,0 +1,13 @@
+{
+  "boot_id": "91dfb631-bd6b-40ed-aa8f-30beb9cef6fd",
+  "controller_pid": 6768,
+  "finished_at": "2026-10-28T11:15:55+0100",
+  "framebuffer_owner": "nuxel-wl-fb",
+  "marker": "/run/nuxel/preload-cinema.done",
+  "milestone": "PWNAGE-31000",
+  "reason": "one-shot-boot-marker-present",
+  "schema_version": 1,
+  "started_at": "2026-10-28T11:15:55+0100",
+  "unlock_actions": 0,
+  "verdict": "ALREADY_RAN"
+}

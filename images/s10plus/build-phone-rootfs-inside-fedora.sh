@@ -81,10 +81,10 @@ dnf -y --installroot="$STAGE" --releasever=43 --use-host-config \
     bash coreutils util-linux findutils grep sed gawk \
     systemd-258.11-1.fc43 systemd-udev systemd-networkd dbus-broker dbus-daemon \
     python3 phosh phoc stevia stevia-phosh-osk-provider seatd \
-    NetworkManager NetworkManager-wifi wpa_supplicant libnl3 libnl3-cli iw wireless-regdb ModemManager geoclue2 bluez \
+    NetworkManager NetworkManager-wifi wpa_supplicant libnl3 libnl3-cli iw wireless-regdb ModemManager geoclue2 geoclue2-demos bluez bluez-deprecated \
     mesa-dri-drivers mesa-libEGL mesa-libgbm libinput \
     gtk3 webkit2gtk4.1 gtk4 libadwaita glib-networking libproxy \
-    pipewire wireplumber alsa-lib mpg123 \
+    pipewire wireplumber pipewire-utils alsa-lib mpg123 mpv \
     polkit nftables upower greetd \
     iproute procps-ng kmod e2fsprogs \
     shadow-utils ca-certificates curl
@@ -95,6 +95,14 @@ case "$INSTALLED_SYSTEMD" in
   systemd-258.11-1.fc43*) echo "[nuxel] systemd pin OK: $INSTALLED_SYSTEMD" ;;
   *) echo "ERROR: installed $INSTALLED_SYSTEMD, expected systemd-258.11-1.fc43 (carried 4.14 libsystemd patch)" >&2; exit 1 ;;
 esac
+# PWNAGE-31000: the pre-lockscreen controller invokes mpv by absolute path.  It
+# must exist in a freshly built image, not only on a handset where a previous
+# live session installed it.  The image is built with weak deps disabled, so
+# this is the same lean FFmpeg-free chain measured on the phone (A72).
+test -x "$STAGE/usr/bin/mpv" || {
+  echo "ERROR: mpv is absent from the built rootfs; preload cinema cannot decode the supplied H.264 clip" >&2
+  exit 1
+}
 # --- current S10+ userspace binaries (A34 TOUCHDOWN) -----------------------
 # Build the exact binaries the handset runs from the repository sources *inside
 # this arm64 container*.  Earlier builders copied build/out/s10plus/a32/*,
@@ -183,8 +191,32 @@ cp -a /nuxel/pwa "$STAGE/usr/share/nuxel/pwa"
 # Root-relative /assets URLs used by launcher icons, Quick Settings and
 # navigation images must exist in the STATIC WEBROOT, not just in the repo.
 # Also stage the owner's real MP3 audio cues (no synthetic substitutes).
-install -d "$STAGE/usr/share/nuxel/assets"
+install -d "$STAGE/usr/share/nuxel/assets" "$STAGE/usr/share/nuxel/boot" \
+    "$STAGE/usr/share/nuxel/preload"
 cp -a /nuxel/assets/. "$STAGE/usr/share/nuxel/assets/"
+# PWNAGE-31000: the supplied pre-lockscreen clip is a runtime asset, not an
+# initramfs or boot-partition payload.  It is installed only when the owner has
+# supplied it; the controller's missing-asset path is the safe fallback.
+if [ -s /nuxel/assets/nuxel-preloading-screen.mp4 ]; then
+  install -m 0644 /nuxel/assets/nuxel-preloading-screen.mp4 \
+    "$STAGE/usr/share/nuxel/preload/nuxel-preloading-screen.mp4"
+  # The asset also arrived via the broad assets/ copy into the static webroot;
+  # the preload clip is a boot asset, not a PWA asset.  Remove that duplicate so
+  # the image carries one verified copy (7.3 MB, not 14.6 MB).
+  rm -f "$STAGE/usr/share/nuxel/assets/nuxel-preloading-screen.mp4"
+  _preload_sha="$(sha256sum "$STAGE/usr/share/nuxel/preload/nuxel-preloading-screen.mp4" | cut -d' ' -f1)"
+  _preload_want="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("asset_sha256") or "")' \
+    /nuxel/configs/nuxel/boot/preload-cinema.json)"
+  if [ -n "$_preload_want" ] && [ "$_preload_sha" != "$_preload_want" ]; then
+    echo "ERROR: nuxel-preloading-screen.mp4 sha256 $_preload_sha != configured $_preload_want" >&2
+    exit 1
+  fi
+  printf '%s  %s\n' "$_preload_sha" nuxel-preloading-screen.mp4 \
+    > "$STAGE/usr/share/nuxel/preload/nuxel-preloading-screen.mp4.sha256"
+  echo "[nuxel] preload cinema asset sha256 OK: $_preload_sha"
+else
+  echo "[nuxel] WARN assets/nuxel-preloading-screen.mp4 absent: preload cinema will fall back to lockscreen" >&2
+fi
 for _cue in nuxel-boot-audio.mp3 nuxel-pow.mp3; do
   test -s "$STAGE/usr/share/nuxel/assets/$_cue" || { echo "ERROR: missing cue $_cue" >&2; exit 1; }
 done
@@ -268,6 +300,34 @@ install -m 0644 /nuxel/configs/nuxel/input/button-fsm.json    "$STAGE/etc/nuxel/
 install -d "$STAGE/etc/nuxel/buttons"
 install -m 0644 /nuxel/configs/nuxel/buttons/reboot-gate.json "$STAGE/etc/nuxel/buttons/reboot-gate.json"
 install -m 0755 /nuxel/tools/s10plus/a29/nuxel-session.sh            "$STAGE/usr/lib/nuxel/nuxel-session.sh"
+# PWNAGE-36000: S10+ audio/geoclue runtime configuration.
+#   * static PipeWire ALSA sink on RDMA1 (hw:0,1, 44.1 kHz): the image has no
+#     udev daemon, so WirePlumber's api.alsa.enum.udev monitor cannot enumerate
+#     beyond-madera and would fall back to Dummy Output;
+#   * WirePlumber video-capture disabled: the Samsung MFC V4L2 open blocks in
+#     request_firmware/mfc_load_firmware and wedges the audio session manager;
+#   * /etc/asound.conf points ALSA direct consumers at RDMA1 as well;
+#   * geoclue runs WiFi/IP sources, with modem-GPS explicitly disabled (there is
+#     no modem-GPS source on this device and leaving it enabled makes geoclue
+#     treat it as the exclusive provider);
+#   * the udev rules are a fallback; nuxel-session.sh also re-applies /dev/snd
+#     group/mode every boot because this image does not run udev.
+install -d "$STAGE/etc/pipewire/pipewire.conf.d" \
+           "$STAGE/etc/wireplumber/wireplumber.conf.d" \
+           "$STAGE/etc/dbus-1/system.d" \
+           "$STAGE/etc/geoclue"
+install -m 0644 /nuxel/configs/s10plus/pipewire/50-nuxel-s10-alsa.conf \
+    "$STAGE/etc/pipewire/pipewire.conf.d/50-nuxel-s10-alsa.conf"
+install -m 0644 /nuxel/configs/s10plus/wireplumber/99-nuxel-no-v4l2.conf \
+    "$STAGE/etc/wireplumber/wireplumber.conf.d/99-nuxel-no-v4l2.conf"
+install -m 0644 /nuxel/configs/s10plus/alsa/asound.conf "$STAGE/etc/asound.conf"
+install -m 0644 /nuxel/configs/s10plus/geoclue/geoclue.conf "$STAGE/etc/geoclue/geoclue.conf"
+install -m 0644 /nuxel/configs/nuxel/gnss/99-geoclue-nuxel.conf \
+    "$STAGE/etc/dbus-1/system.d/99-geoclue-nuxel.conf"
+install -m 0644 /nuxel/configs/s10plus/udev/90-nuxel-audio.rules \
+    "$STAGE/etc/udev/rules.d/90-nuxel-audio.rules"
+install -m 0644 /nuxel/configs/s10plus/udev/90-nuxel-bluetooth.rules \
+    "$STAGE/etc/udev/rules.d/90-nuxel-bluetooth.rules"
 install -m 0755 /nuxel/tools/s10plus/a29/nuxel-wait-wayland          "$STAGE/usr/lib/nuxel/nuxel-wait-wayland"
 install -m 0755 /nuxel/tools/s10plus/a29/nuxel-launcher-ready-wait.sh "$STAGE/usr/lib/nuxel/nuxel-launcher-ready-wait"
 install -m 0644 /nuxel/tools/s10plus/a29/phoc-phone.ini              "$STAGE/etc/nuxel/phoc-phone.ini"
@@ -332,6 +392,20 @@ if [ "${NUXEL_ENABLE_LAUNCHER:-1}" = "1" ]; then
   ln -sf ../nuxel-wl-fb.service          "$STAGE/etc/systemd/system/multi-user.target.wants/nuxel-wl-fb.service"
   ln -sf ../nuxel-fallback.service       "$STAGE/etc/systemd/system/multi-user.target.wants/nuxel-fallback.service"
   ln -sf ../nuxel-button-manager.service "$STAGE/etc/systemd/system/multi-user.target.wants/nuxel-button-manager.service"
+  # PWNAGE-31000: bounded, fail-open pre-lockscreen video.  This unit is enabled
+  # only on launcher images; it observes nuxel-wayland + nuxel-wl-fb and never
+  # owns the framebuffer or starts an application service.
+  install -d "$STAGE/etc/nuxel/boot"
+  install -m 0755 /nuxel/services/nuxel-preload-cinema/nuxel-preload-cinema \
+    "$STAGE/usr/lib/nuxel/nuxel-preload-cinema"
+  install -m 0644 /nuxel/configs/nuxel/boot/preload-cinema.json \
+    "$STAGE/etc/nuxel/boot/preload-cinema.json"
+  install -m 0644 /nuxel/services/nuxel-preload-cinema/nuxel-preload-cinema.service \
+    "$STAGE/etc/systemd/system/nuxel-preload-cinema.service"
+  install -Dm0644 /nuxel/docs/pwnage-31000/IMPLEMENTATION.md \
+    "$STAGE/usr/share/nuxel/doc/PWNAGE-31000.md"
+  ln -sf ../nuxel-preload-cinema.service \
+    "$STAGE/etc/systemd/system/multi-user.target.wants/nuxel-preload-cinema.service"
 fi
 
 # A28: the launcher's port record (nuxel-ui.service Documentation= points here)

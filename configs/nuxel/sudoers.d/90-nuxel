@@ -1,0 +1,4 @@
+# Nuxel owner account: full sudo rights without an interactive password.
+# Installed as /etc/sudoers.d/90-nuxel with mode 0440 and validated by visudo.
+Defaults:nuxel !requiretty
+nuxel ALL=(ALL:ALL) NOPASSWD: ALL

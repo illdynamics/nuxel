@@ -1,0 +1,368 @@
+{
+  "catalog_id": "nuxel-beta-local",
+  "generated": "2026-10-16T00:00:00Z",
+  "notice": "Local, offline-first catalog. NuxTore never publishes or submits packages to any external store; every package is staged from this repository and hash-pinned here.",
+  "packages": [
+    {
+      "bundle": "bundles/org.nuxel.NuxTore-1.0.0.bundle.json",
+      "capabilities": [],
+      "category": "system",
+      "description": "NuxTore lists what the device already has and what the repository can stage. Every package carries a SHA-256 bundle digest, a provenance record and (normally) an Ed25519 signature; unsigned packages are refused unless the user turns on the unsigned-install policy and confirms each one by hand.",
+      "file_count": 24,
+      "id": "org.nuxel.NuxTore",
+      "install": {
+        "app_id": "org.nuxel.NuxTore",
+        "mode": "staged",
+        "start_url": "/pwa/nuxel-apps/nuxtore/index.html",
+        "type": "pwa"
+      },
+      "license": "GPL-3.0-or-later (Nuxel project)",
+      "name": "NuxTore",
+      "requires": [],
+      "sha256": "32788d253141df896e3dec777e621821a40ac516e2a76caef256c8255703d137",
+      "signature": {
+        "alg": "ed25519",
+        "key_id": "nuxel-beta-dev-2026",
+        "value": "6HOFhrVWBZ7Tn43yyqZ6ACigdFEPIxqpUwF4SJ1FoiCfPuliHyMMbpxiZUGM7hrrbKd1a1Pmti3aKjHdSxuCCg=="
+      },
+      "size_bytes": 174408,
+      "source": {
+        "provenance": "built in this repository during beta finalization (A32 baseline); no external publisher, no network fetch",
+        "type": "local-bundle",
+        "uri": "pwa/nuxel-apps/nuxtore"
+      },
+      "state_hint": "installed",
+      "summary": "Offline-first app catalog with signature and provenance checks",
+      "version": "1.0.0"
+    },
+    {
+      "bundle": "bundles/org.nuxel.Media-1.0.0.bundle.json",
+      "capabilities": [
+        "audio:playback",
+        "media:library"
+      ],
+      "category": "media",
+      "description": "Plays local audio/video through the running playback service (PipeWire/ALSA on the handset, sample library offline) and shows the honest output route instead of claiming sound that was never heard.",
+      "file_count": 22,
+      "id": "org.nuxel.Media",
+      "install": {
+        "app_id": "org.nuxel.Media",
+        "mode": "staged",
+        "start_url": "/pwa/nuxel-apps/media/index.html",
+        "type": "pwa"
+      },
+      "license": "GPL-3.0-or-later (Nuxel project)",
+      "name": "Media Player",
+      "requires": [
+        "audio:playback"
+      ],
+      "sha256": "d2a3f3ef255243909c3df7341d5ecd8202aad4ab1c628acd463acb22805b6a10",
+      "signature": {
+        "alg": "ed25519",
+        "key_id": "nuxel-beta-dev-2026",
+        "value": "ouVg71K2LHuyG9Fl3BT8X8OHff3dDudlgRLP2hvvJ0S45ck3aKDbsp/O3lPJhWMAb1WWq4E2qnTzH6eanGgvDw=="
+      },
+      "size_bytes": 152084,
+      "source": {
+        "provenance": "Nuxel repository, beta finalization A33",
+        "type": "local-bundle",
+        "uri": "pwa/nuxel-apps/media"
+      },
+      "state_hint": "available",
+      "summary": "Audio and video playback over the real playback path",
+      "version": "1.0.0"
+    },
+    {
+      "bundle": "bundles/org.nuxel.Downloader-1.0.0.bundle.json",
+      "capabilities": [
+        "download:queue"
+      ],
+      "category": "media",
+      "description": "Adds URLs to a persistent queue and downloads them with resume, per-item checksums and a hard legal-use notice gate. No Google, Apple or Android service is contacted at any point.",
+      "file_count": 19,
+      "id": "org.nuxel.Downloader",
+      "install": {
+        "app_id": "org.nuxel.Downloader",
+        "mode": "staged",
+        "start_url": "/pwa/nuxel-apps/downloader/index.html",
+        "type": "pwa"
+      },
+      "license": "GPL-3.0-or-later (Nuxel project)",
+      "name": "Media Downloader",
+      "requires": [
+        "network:optional",
+        "storage:downloads"
+      ],
+      "sha256": "be5a217e76f53de7637674d43de75f5f2dddec4e9774507d901936b3026c78dd",
+      "signature": {
+        "alg": "ed25519",
+        "key_id": "nuxel-beta-dev-2026",
+        "value": "l53Rjf6Vb7dGOUWNncsS5WSt5h8pUfRgG5DufqAfSsoMhrru144hyztCzk8+AgkLrFLKg3FWJ9ehXxXABKxxDw=="
+      },
+      "size_bytes": 92080,
+      "source": {
+        "provenance": "Nuxel repository, beta finalization A33",
+        "type": "local-bundle",
+        "uri": "pwa/nuxel-apps/downloader"
+      },
+      "state_hint": "available",
+      "summary": "Queue-based, offline-first media downloader",
+      "version": "1.0.0"
+    },
+    {
+      "bundle": "bundles/org.nuxel.Authenticator-1.0.0.bundle.json",
+      "capabilities": [
+        "storage:encrypted"
+      ],
+      "category": "security",
+      "description": "Standards-only TOTP (SHA-1/256/512, 6-8 digits, 30/60s). Secrets are encrypted at rest with AES-GCM under a passphrase-derived key, and never leave the device.",
+      "file_count": 21,
+      "id": "org.nuxel.Authenticator",
+      "install": {
+        "app_id": "org.nuxel.Authenticator",
+        "mode": "staged",
+        "start_url": "/pwa/nuxel-apps/authenticator/index.html",
+        "type": "pwa"
+      },
+      "license": "GPL-3.0-or-later (Nuxel project)",
+      "name": "Authenticator",
+      "requires": [],
+      "sha256": "4c25cb99c111439bafb4cbf144a2f51ffa8f96a20a8b41004bc16c305a824806",
+      "signature": {
+        "alg": "ed25519",
+        "key_id": "nuxel-beta-dev-2026",
+        "value": "lNOlIG1dsXH3rpG8AyNUEflgKElOVseLCGjVkSA7Xxdx7yeXj/kuMgVfnk8WHMWYLLYg9zAxKpAD3FBAweCxDQ=="
+      },
+      "size_bytes": 150141,
+      "source": {
+        "provenance": "Nuxel repository, beta finalization A33",
+        "type": "local-bundle",
+        "uri": "pwa/nuxel-apps/authenticator"
+      },
+      "state_hint": "available",
+      "summary": "RFC 6238 TOTP with encrypted on-device secrets",
+      "version": "1.0.0"
+    },
+    {
+      "bundle": "bundles/org.nuxel.Cleanup-1.0.0.bundle.json",
+      "capabilities": [
+        "storage:cleanup"
+      ],
+      "category": "tools",
+      "description": "Scans an explicit allowlist of cache/log paths, reports the exact reclaimable bytes and only deletes after a typed confirmation. Nothing outside the allowlist is ever touched.",
+      "file_count": 19,
+      "id": "org.nuxel.Cleanup",
+      "install": {
+        "app_id": "org.nuxel.Cleanup",
+        "mode": "staged",
+        "start_url": "/pwa/nuxel-apps/cleanup/index.html",
+        "type": "pwa"
+      },
+      "license": "GPL-3.0-or-later (Nuxel project)",
+      "name": "Safe Cleanup",
+      "requires": [
+        "storage:appdata"
+      ],
+      "sha256": "4cdbad87462ea02142fea20123b06c6297fb1340a63d279d40f12eabd32cfaa9",
+      "signature": {
+        "alg": "ed25519",
+        "key_id": "nuxel-beta-dev-2026",
+        "value": "GdWNbLdNPx0WBf4IHE+BwUSXFvBn4iuB/Kz5QdDIvo3lEVML/RoP0VWaUOTKcriFtrLEs8kYNusOY1oMlWlMAA=="
+      },
+      "size_bytes": 102418,
+      "source": {
+        "provenance": "Nuxel repository, beta finalization A33",
+        "type": "local-bundle",
+        "uri": "pwa/nuxel-apps/cleanup"
+      },
+      "state_hint": "available",
+      "summary": "Preview-then-delete cache and log cleanup",
+      "version": "1.0.0"
+    },
+    {
+      "bundle": "bundles/org.nuxel.DevMgmt-1.0.0.bundle.json",
+      "capabilities": [
+        "system:inspect"
+      ],
+      "category": "tools",
+      "description": "Shows what /sys and /proc actually report (USB, DRM/panel, touch, block, thermal, kernel). Read-only by default; privileged actions are labelled as privileged and require the Root & Sudo surface.",
+      "file_count": 18,
+      "id": "org.nuxel.DevMgmt",
+      "install": {
+        "app_id": "org.nuxel.DevMgmt",
+        "mode": "staged",
+        "start_url": "/pwa/nuxel-apps/devmgmt/index.html",
+        "type": "pwa"
+      },
+      "license": "GPL-3.0-or-later (Nuxel project)",
+      "name": "DevMgmt",
+      "requires": [
+        "sysfs:read"
+      ],
+      "sha256": "0093772c770c4206d50b64bdce7cac120280148484fa2a9809b2a2eb310b4f09",
+      "signature": {
+        "alg": "ed25519",
+        "key_id": "nuxel-beta-dev-2026",
+        "value": "5vdQPt0KSCVe61b/yaC7e9ZcMwTCmBVpNfRP2tVJ5fmumnfTpI4jJMVKcVmfRCokqo8Beq3wjenZKM7UfBxlCQ=="
+      },
+      "size_bytes": 124953,
+      "source": {
+        "provenance": "Nuxel repository, beta finalization A33",
+        "type": "local-bundle",
+        "uri": "pwa/nuxel-apps/devmgmt"
+      },
+      "state_hint": "available",
+      "summary": "Read-only device and peripheral inspection",
+      "version": "1.0.0"
+    },
+    {
+      "bundle": "bundles/org.nuxel.SnekByte-1.0.0.bundle.json",
+      "capabilities": [
+        "input:keyboard",
+        "input:touch"
+      ],
+      "category": "games",
+      "description": "Faithful HTML5 port of the original Pygame snake game including WoNQ mode (a persistent obstacle every five foods), speed levels and the menu/settings/game-over flow.",
+      "file_count": 20,
+      "id": "org.nuxel.SnekByte",
+      "install": {
+        "app_id": "org.nuxel.SnekByte",
+        "mode": "staged",
+        "start_url": "/pwa/nuxel-apps/snekbyte/index.html",
+        "type": "pwa"
+      },
+      "license": "original SnekByte sources shipped without a licence file - see UPSTREAM-PROVENANCE.md",
+      "name": "SnekByte",
+      "requires": [],
+      "sha256": "ae65c8eeaf97493e0024f70c06f887d1787640cae09523eab11bda406d3d7f8b",
+      "signature": {
+        "alg": "ed25519",
+        "key_id": "nuxel-beta-dev-2026",
+        "value": "hu7lumSA5WmmV7Q1Uup8gC20k5VOe3cSBOYtbEVieZyhRI0OOqMGgRkFmmd2KJcCHKK+Fqx2sz7COFRmHBXDCg=="
+      },
+      "size_bytes": 210600,
+      "source": {
+        "provenance": "ported from snekbyte-main.zip (see tools/s10plus/a33/snekbyte/UPSTREAM-PROVENANCE.md)",
+        "type": "local-bundle",
+        "uri": "pwa/nuxel-apps/snekbyte"
+      },
+      "state_hint": "available",
+      "summary": "The original SnekByte snake game, ported",
+      "version": "1.0.0"
+    },
+    {
+      "bundle": "bundles/org.nuxel.PenguInterface-1.0.0.bundle.json",
+      "capabilities": [
+        "system:inspect"
+      ],
+      "category": "system",
+      "description": "Maps a device codename to its capabilities, quirks and required configuration documents, with strict isolation so one device's profile can never leak into another's.",
+      "file_count": 10,
+      "id": "org.nuxel.PenguInterface",
+      "install": {
+        "app_id": "org.nuxel.PenguInterface",
+        "mode": "staged",
+        "start_url": "/pwa/nuxel-apps/penguinterface/index.html",
+        "type": "pwa"
+      },
+      "license": "GPL-3.0-or-later (Nuxel project)",
+      "name": "PenguInterface",
+      "requires": [],
+      "sha256": "9b6eda7bc8928811a8f55cca1ba4c6f9062f12158b51aeab3159de8a6cdd3a57",
+      "signature": {
+        "alg": "ed25519",
+        "key_id": "nuxel-beta-dev-2026",
+        "value": "0RF22Q1PmWQub07wy3In0U2C08Oyjm0YUX3IVUQLCg6yxkFp53dl3CsH4l47G9sWz+L2kgXuNtudCw/X7s22Dg=="
+      },
+      "size_bytes": 88511,
+      "source": {
+        "provenance": "Nuxel repository, beta finalization A33",
+        "type": "local-bundle",
+        "uri": "pwa/nuxel-apps/penguinterface"
+      },
+      "state_hint": "available",
+      "summary": "Per-device compatibility profiles",
+      "version": "1.0.0"
+    },
+    {
+      "bundle": "bundles/org.nuxel.Console-1.0.0.bundle.json",
+      "capabilities": [
+        "system:console"
+      ],
+      "category": "system",
+      "description": "Bounded command execution, unique request ids, real exit status, Ctrl-C cancellation and verified file pulls over the protected framed console protocol, plus status/navigation across home, settings, system and logs.",
+      "file_count": 15,
+      "id": "org.nuxel.Console",
+      "install": {
+        "app_id": "org.nuxel.Console",
+        "mode": "staged",
+        "start_url": "/pwa/nuxel-apps/console/index.html",
+        "type": "pwa"
+      },
+      "license": "GPL-3.0-or-later (Nuxel project)",
+      "name": "Live Console",
+      "requires": [
+        "console:local"
+      ],
+      "sha256": "6c60339c2fd860a87cc8d7ae2e7fae3581efa6eb1aad77b73e4b3decf4a60518",
+      "signature": {
+        "alg": "ed25519",
+        "key_id": "nuxel-beta-dev-2026",
+        "value": "vpaz1FBcTmaBeXHiYW9+fOEuP0c6t3m+jV/oP6p3fP/XsiaIc508LX5+Hkl+zuKqK/ZDY2Z0+AtehUirWF8xCQ=="
+      },
+      "size_bytes": 66241,
+      "source": {
+        "provenance": "Nuxel repository, beta finalization A33",
+        "type": "local-bundle",
+        "uri": "pwa/nuxel-apps/console"
+      },
+      "state_hint": "available",
+      "summary": "Control centre over the SHA-256 verified live console",
+      "version": "1.0.0"
+    },
+    {
+      "bundle": "bundles/org.example.UnsignedDemo-0.0.1.bundle.json",
+      "capabilities": [],
+      "category": "tools",
+      "description": "This entry ships WITHOUT a signature on purpose. NuxTore must refuse it by default, must never auto-install it, and may only install it after the operator enables unsigned installs and types the package id as a confirmation. It exists so the refusal path is exercised by the offline test suite, not just described.",
+      "file_count": 24,
+      "id": "org.example.UnsignedDemo",
+      "install": {
+        "app_id": "org.example.UnsignedDemo",
+        "mode": "staged",
+        "start_url": "/pwa/nuxel-apps/nuxtore/index.html",
+        "type": "pwa"
+      },
+      "license": "GPL-3.0-or-later (Nuxel project)",
+      "name": "Unsigned Demo Package",
+      "requires": [],
+      "sha256": "32788d253141df896e3dec777e621821a40ac516e2a76caef256c8255703d137",
+      "size_bytes": 174408,
+      "source": {
+        "provenance": "test fixture \u2014 no publisher claims, no signature",
+        "type": "local-bundle",
+        "uri": "pwa/nuxel-apps/nuxtore"
+      },
+      "state_hint": "available",
+      "summary": "Deliberately unsigned entry used to prove the safety gate",
+      "version": "0.0.1"
+    }
+  ],
+  "policy": {
+    "allow_external_publish": false,
+    "allow_http": false,
+    "allow_unsigned_with_confirmation": true,
+    "allowed_source_types": [
+      "local-bundle"
+    ],
+    "max_package_bytes": 33554432,
+    "note": "NuxTore is offline-first: it may only install packages staged in this repository. No network fetch, no store submission, no auto-install, no unsigned auto-install.",
+    "require_signature": true
+  },
+  "publisher": {
+    "key_id": "nuxel-beta-dev-2026",
+    "key_note": "PUBLISHED TEST FIXTURE key. It is not a trust anchor; it signs nothing of value. Production catalogs must use a key whose private half never enters the repository.",
+    "name": "Nuxel Beta (local staging)"
+  },
+  "schema_version": 1
+}

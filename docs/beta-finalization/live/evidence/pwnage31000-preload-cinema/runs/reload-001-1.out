@@ -1,0 +1,6 @@
+pushed={"acked_bytes": 95, "b64_chars": 128, "bytes": 95, "decoded_sha256": "5042f56214d4769158880e191a8cf1c9ba28d065af7574d8b0dde9a8abb30b7c", "frames": 1, "mode": "frame", "parts": 1, "path": "/var/tmp/nxl-reload-001-1.sh", "raw_writes": 0, "retries": 0}
+ok=True rc=0
+---
+Created symlink '/etc/systemd/system/multi-user.target.wants/nuxel-preload-cinema.service' → '/etc/systemd/system/nuxel-preload-cinema.service'.
+NXLRELOAD-RC=0
+NXLSCRIPT-RC=0

@@ -1,0 +1,17 @@
+[Unit]
+Description=Nuxel Wi-Fi boot enable and known-profile autoconnect
+After=NetworkManager.service network.target
+Wants=NetworkManager.service
+StartLimitIntervalSec=0
+
+[Service]
+Type=oneshot
+ExecStart=/usr/lib/nuxel/nuxel-wifi-up.sh
+RemainAfterExit=yes
+Restart=no
+TimeoutStartSec=120
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,1169 @@
+#!/usr/bin/env python3
+"""Nuxel pre-lockscreen cinema controller (PWNAGE-31000).
+
+The controller is deliberately a *presentation overlay*, not a service manager:
+it never starts, stops, fakes or waits for application services.  It starts the
+already-installed ``mpv`` as a fullscreen, audio-free Wayland client after the
+compositor and the ``nuxel-wl-fb`` display bridge are up, keeps the real Nuxel
+lockscreen alive underneath, and releases the overlay only when:
+
+  * the video has reached EOF (or the bounded display interval has paused it), and
+  * the real lockscreen has published its readiness receipt,
+  * the display bridge is still healthy and the panel is on, and
+  * the touch path has settled (ARMED_OK, or an honest NO_TOUCH_DEVICE warning).
+
+Every failure path is fail-open: the overlay exits and the existing lockscreen /
+fallback remains.  The controller never calls ``unlock``, never writes a display
+surface, and never owns ``/dev/fb0``.  The running ``nuxel-wl-fb`` remains the
+single framebuffer owner.
+
+Why mpv and not WebKit's <video> on this handset
+------------------------------------------------
+The deployed WebKitGTK 2.52 host deliberately disables media when
+``libgstautodetect.so`` is absent (measured A29b: ``autoaudiosink`` missing
+aborts WebKitWebProcess).  ``mpv`` 0.40 + FFmpeg 7.1 is installed, decodes the
+existing H.264 High 1080x1920 asset in software, and exposes ``vo=wlshm`` (a
+real Wayland SHM client), so it needs no new package or DRM/EGL path.
+
+This file is stdlib-only.  It is exercised offline by
+tests/pwnage31000/test_preload_cinema.py with a fake mpv/IPC peer.
+"""
+
+from __future__ import annotations
+
+import errno
+import fcntl
+import hashlib
+import json
+import os
+import re
+import shutil
+import signal
+import socket
+import struct
+import subprocess
+import sys
+import time
+from dataclasses import dataclass, field
+from pathlib import Path
+from typing import Any
+
+SCHEMA_VERSION = 1
+TAG = "PRELOAD_CINEMA"
+DEFAULT_CONFIG = "/etc/nuxel/boot/preload-cinema.json"
+DEFAULT_ASSET = "/usr/share/nuxel/preload/nuxel-preloading-screen.mp4"
+DEFAULT_PLAYER = "/usr/bin/mpv"
+DEFAULT_RUNTIME_DIR = "/run/nuxel"
+DEFAULT_LOCK = "/run/nuxel/preload-cinema.lock"
+DEFAULT_RECEIPT = "/run/nuxel/preload-cinema.receipt"
+DEFAULT_LOG = "/var/log/nuxel/preload-cinema.log"
+DEFAULT_DONE = "/run/nuxel/preload-cinema.done"
+DEFAULT_OVERLAY = "/run/nuxel/preload-cinema.overlay"
+DEFAULT_STATUS = "/usr/share/nuxel/nuxel-home/preload-status.json"
+DEFAULT_HOME_STATE = "/run/nuxel-home.state"
+DEFAULT_LAUNCHER_READY = "/run/nuxel-launcher-ready"
+DEFAULT_WLFB_STATE = "/run/nuxel-wl-fb.state"
+DEFAULT_DISPLAY_STATE = "/var/lib/nuxel/display"
+DEFAULT_TOUCH_STATE = "/run/nuxel-touch-arm.state"
+DEFAULT_SESSION_OWNER = "/run/nuxel-preload-session.owner"
+DEFAULT_SESSION_LOG = "/run/nuxel-session.log"
+DEFAULT_WAYLAND_RUNTIME = "/run/nuxel-wayland"
+DEFAULT_WAYLAND_DISPLAY = "wayland-0"
+
+# Bounded defaults.  They are durations, not guessed startup progress: the
+# controller logs and releases the overlay when they expire.
+DEFAULT_MAX_DISPLAY_MS = 20_000
+DEFAULT_START_TIMEOUT_MS = 30_000  # covers the initramfs animation handoff
+DEFAULT_READINESS_GRACE_MS = 12_000
+DEFAULT_HARD_TIMEOUT_MS = 25_000
+DEFAULT_POLL_MS = 100
+DEFAULT_PREFLIGHT_TIMEOUT_MS = 8_000
+# Early mode starts from nuxel-session.sh before nuxel-pwa-host maps.  Waiting
+# for the launcher's readiness marker makes mpv the LAST mapped toplevel, so the
+# video is above WebKit instead of behind it.  The PWA's opaque first-frame
+# cover hides the lockscreen during this wait.  Bounded and fail-open.
+DEFAULT_EARLY_WAIT_LAUNCHER_MS = 6_000
+# After the launcher reports ready, WebKit still has one or more GTK/Wayland
+# map+fullscreen commits to make.  Measured 2026-10-28: an mpv spawned at the
+# first launcher_ready can be mapped *below* that later commit (the video is
+# then invisible while the PWA shows its lockscreen).  Waiting for the launcher
+# to settle makes mpv the last mapped toplevel.  The opaque first-frame cover
+# stays up during this bounded delay, so the user sees a still frame, not the
+# lockscreen.
+DEFAULT_EARLY_MAP_DELAY_MS = 800
+
+CONFIG_DEFAULTS: dict[str, Any] = {
+    "schema_version": SCHEMA_VERSION,
+    "enabled": True,
+    "asset": DEFAULT_ASSET,
+    "asset_sha256": None,
+    "player": DEFAULT_PLAYER,
+    "video_output": "wlshm",
+    "max_display_ms": DEFAULT_MAX_DISPLAY_MS,
+    "start_timeout_ms": DEFAULT_START_TIMEOUT_MS,
+    "readiness_grace_ms": DEFAULT_READINESS_GRACE_MS,
+    "hard_timeout_ms": DEFAULT_HARD_TIMEOUT_MS,
+    "poll_ms": DEFAULT_POLL_MS,
+    "preflight_timeout_ms": DEFAULT_PREFLIGHT_TIMEOUT_MS,
+    "early_wait_launcher_ms": DEFAULT_EARLY_WAIT_LAUNCHER_MS,
+    "early_map_delay_ms": DEFAULT_EARLY_MAP_DELAY_MS,
+    "require_boot_os": True,
+    "early": False,
+    "audio": "never",
+}
+
+ENV_MAP = {
+    "asset": "NUXEL_PRELOAD_ASSET",
+    "asset_sha256": "NUXEL_PRELOAD_ASSET_SHA256",
+    "player": "NUXEL_PRELOAD_MPV",
+    "video_output": "NUXEL_PRELOAD_VO",
+    "max_display_ms": "NUXEL_PRELOAD_MAX_DISPLAY_MS",
+    "start_timeout_ms": "NUXEL_PRELOAD_START_TIMEOUT_MS",
+    "readiness_grace_ms": "NUXEL_PRELOAD_READINESS_GRACE_MS",
+    "hard_timeout_ms": "NUXEL_PRELOAD_HARD_TIMEOUT_MS",
+    "poll_ms": "NUXEL_PRELOAD_POLL_MS",
+    "preflight_timeout_ms": "NUXEL_PRELOAD_PREFLIGHT_TIMEOUT_MS",
+    "early_wait_launcher_ms": "NUXEL_PRELOAD_EARLY_WAIT_LAUNCHER_MS",
+    "early_map_delay_ms": "NUXEL_PRELOAD_EARLY_MAP_DELAY_MS",
+    "require_boot_os": "NUXEL_PRELOAD_REQUIRE_BOOT_OS",
+    "early": "NUXEL_PRELOAD_EARLY",
+}
+
+PATH_ENV = {
+    "config": ("NUXEL_PRELOAD_CONFIG", DEFAULT_CONFIG),
+    "runtime_dir": ("NUXEL_PRELOAD_RUNTIME_DIR", DEFAULT_RUNTIME_DIR),
+    "lock": ("NUXEL_PRELOAD_LOCK", DEFAULT_LOCK),
+    "receipt": ("NUXEL_PRELOAD_RECEIPT", DEFAULT_RECEIPT),
+    "log": ("NUXEL_PRELOAD_LOG", DEFAULT_LOG),
+    "done": ("NUXEL_PRELOAD_DONE", DEFAULT_DONE),
+    "overlay": ("NUXEL_PRELOAD_OVERLAY", DEFAULT_OVERLAY),
+    "status": ("NUXEL_PRELOAD_STATUS", DEFAULT_STATUS),
+    "home_state": ("NUXEL_PRELOAD_HOME_STATE", DEFAULT_HOME_STATE),
+    "launcher_ready": ("NUXEL_PRELOAD_LAUNCHER_READY", DEFAULT_LAUNCHER_READY),
+    "wlfb_state": ("NUXEL_PRELOAD_WLFB_STATE", DEFAULT_WLFB_STATE),
+    "display_state": ("NUXEL_PRELOAD_DISPLAY_STATE", DEFAULT_DISPLAY_STATE),
+    "touch_state": ("NUXEL_PRELOAD_TOUCH_STATE", DEFAULT_TOUCH_STATE),
+    "session_owner": ("NUXEL_PRELOAD_SESSION_OWNER", DEFAULT_SESSION_OWNER),
+    "session_log": ("NUXEL_PRELOAD_SESSION_LOG", DEFAULT_SESSION_LOG),
+    "wayland_runtime_dir": ("NUXEL_PRELOAD_WAYLAND_RUNTIME", DEFAULT_WAYLAND_RUNTIME),
+    "wayland_display": ("NUXEL_PRELOAD_WAYLAND_DISPLAY", DEFAULT_WAYLAND_DISPLAY),
+}
+
+_TOUCH_SETTLED = re.compile(r"\b(ARMED_OK|NO_TOUCH_DEVICE|SCAN_FAIL|ARM_OPEN_FAIL)\b")
+
+
+def now_iso() -> str:
+    return time.strftime("%Y-%m-%dT%H:%M:%S%z")
+
+
+def _as_bool(value: Any, default: bool) -> bool:
+    if isinstance(value, bool):
+        return value
+    if value is None:
+        return default
+    if isinstance(value, (int, float)):
+        return bool(value)
+    text = str(value).strip().lower()
+    if text in ("1", "true", "yes", "on"):
+        return True
+    if text in ("0", "false", "no", "off"):
+        return False
+    return default
+
+
+def _as_int(value: Any, default: int, minimum: int = 0) -> int:
+    try:
+        out = int(value)
+    except (TypeError, ValueError):
+        return default
+    return max(minimum, out)
+
+
+def _read_text(path: Path, limit: int = 65536) -> str:
+    try:
+        with path.open("r", encoding="utf-8", errors="replace") as fh:
+            return fh.read(limit)
+    except OSError:
+        return ""
+
+
+def _atomic_json(path: Path, doc: dict[str, Any]) -> None:
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        tmp = path.with_name(path.name + ".%d.tmp" % os.getpid())
+        tmp.write_text(json.dumps(doc, indent=2, sort_keys=True) + "\n",
+                       encoding="utf-8")
+        os.replace(tmp, path)
+    except OSError:
+        pass
+
+
+def sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as fh:
+        for chunk in iter(lambda: fh.read(1 << 20), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def mp4_duration_seconds(path: Path) -> float | None:
+    """Read mvhd duration/timescale from an ISO-BMFF file, no external tools.
+
+    Returns None when the container cannot be parsed.  This is only a timing
+    hint; EOF from mpv remains the authority.
+    """
+    def boxes(fh, start: int, end: int):
+        pos = start
+        while pos + 8 <= end:
+            fh.seek(pos)
+            hdr = fh.read(8)
+            if len(hdr) != 8:
+                return
+            size = int.from_bytes(hdr[:4], "big")
+            kind = hdr[4:8]
+            header = 8
+            if size == 1:
+                ext = fh.read(8)
+                if len(ext) != 8:
+                    return
+                size = int.from_bytes(ext, "big")
+                header = 16
+            elif size == 0:
+                size = end - pos
+            if size < header or pos + size > end:
+                return
+            yield kind, pos, header, size
+            pos += size
+
+    try:
+        total = path.stat().st_size
+        with path.open("rb") as fh:
+            for kind, pos, header, size in boxes(fh, 0, total):
+                if kind != b"moov":
+                    continue
+                for child, cpos, cheader, csize in boxes(fh, pos + header, pos + size):
+                    if child != b"mvhd":
+                        continue
+                    fh.seek(cpos + cheader)
+                    version = fh.read(1)
+                    if not version:
+                        return None
+                    # `version` is the first byte of the FullBox header; the
+                    # payload that follows starts with the 3 flag bytes.
+                    #   v0: flags(3) ctime(4) mtime(4) timescale(4) duration(4)
+                    #   v1: flags(3) ctime(8) mtime(8) timescale(4) duration(8)
+                    # The previous offsets were one byte late (and v1 read only
+                    # 28 bytes), so a real 6.016 s asset parsed as None.
+                    if version[0] == 1:
+                        payload = fh.read(31)
+                        if len(payload) < 31:
+                            return None
+                        timescale = struct.unpack(">I", payload[19:23])[0]
+                        duration = struct.unpack(">Q", payload[23:31])[0]
+                    else:
+                        payload = fh.read(19)
+                        if len(payload) < 19:
+                            return None
+                        timescale = struct.unpack(">I", payload[11:15])[0]
+                        duration = struct.unpack(">I", payload[15:19])[0]
+                    if timescale <= 0:
+                        return None
+                    return float(duration) / float(timescale)
+    except (OSError, struct.error):
+        return None
+    return None
+
+
+@dataclass
+class Config:
+    path: Path
+    values: dict[str, Any]
+    paths: dict[str, Path]
+    wayland_display: str
+
+    def get(self, key: str, default: Any = None) -> Any:
+        return self.values.get(key, default)
+
+
+def load_config(argv: list[str]) -> Config:
+    config_path = Path(os.environ.get("NUXEL_PRELOAD_CONFIG", DEFAULT_CONFIG))
+    raw: dict[str, Any] = {}
+    if config_path.is_file():
+        try:
+            loaded = json.loads(config_path.read_text(encoding="utf-8"))
+            if isinstance(loaded, dict):
+                raw = loaded
+        except (OSError, ValueError):
+            raw = {}
+    values = dict(CONFIG_DEFAULTS)
+    values.update({k: v for k, v in raw.items() if k in CONFIG_DEFAULTS})
+    for key, env_name in ENV_MAP.items():
+        if env_name in os.environ:
+            values[key] = os.environ[env_name]
+    values["enabled"] = _as_bool(values.get("enabled"), True)
+    values["require_boot_os"] = _as_bool(values.get("require_boot_os"), True)
+    values["early"] = _as_bool(values.get("early"), False)
+    for key, default, minimum in (
+        ("max_display_ms", DEFAULT_MAX_DISPLAY_MS, 100),
+        ("start_timeout_ms", DEFAULT_START_TIMEOUT_MS, 100),
+        ("readiness_grace_ms", DEFAULT_READINESS_GRACE_MS, 0),
+        ("hard_timeout_ms", DEFAULT_HARD_TIMEOUT_MS, 100),
+        ("poll_ms", DEFAULT_POLL_MS, 20),
+        ("preflight_timeout_ms", DEFAULT_PREFLIGHT_TIMEOUT_MS, 100),
+        ("early_wait_launcher_ms", DEFAULT_EARLY_WAIT_LAUNCHER_MS, 0),
+    ):
+        values[key] = _as_int(values.get(key), default, minimum)
+    if values["hard_timeout_ms"] < values["max_display_ms"]:
+        values["hard_timeout_ms"] = values["max_display_ms"]
+    paths: dict[str, Path] = {}
+    for key, (env_name, default) in PATH_ENV.items():
+        paths[key] = Path(os.environ.get(env_name, default))
+    # The config document itself may not be readable; the controller still uses
+    # its real path for the receipt/log context.
+    paths["config"] = config_path
+    return Config(config_path, values, paths,
+                  os.environ.get("NUXEL_PRELOAD_WAYLAND_DISPLAY", DEFAULT_WAYLAND_DISPLAY))
+
+
+class Logger:
+    def __init__(self, path: Path):
+        self.path = path
+        self._last = None
+
+    def log(self, level: str, event: str, **fields: Any) -> None:
+        line = "%s %s %s %s" % (now_iso(), TAG, level, event)
+        if fields:
+            pairs = []
+            for key in sorted(fields):
+                value = fields[key]
+                if isinstance(value, bool):
+                    value = "1" if value else "0"
+                text = str(value).replace("\n", " ")[:300]
+                pairs.append("%s=%s" % (key, text))
+            line += " " + " ".join(pairs)
+        self._last = event
+        try:
+            sys.stderr.write(line + "\n")
+            sys.stderr.flush()
+        except OSError:
+            pass
+        try:
+            self.path.parent.mkdir(parents=True, exist_ok=True)
+            with self.path.open("a", encoding="utf-8") as fh:
+                fh.write(line + "\n")
+        except OSError:
+            pass
+
+
+@dataclass
+class Readiness:
+    launcher_ready: bool = False
+    boot_os: bool = False
+    wlfb_ready: bool = False
+    display_on: bool = False
+    touch_settled: bool = False
+    touch_unknown: bool = False
+    detail: dict[str, Any] = field(default_factory=dict)
+
+    @property
+    def critical(self) -> bool:
+        return self.launcher_ready and self.boot_os and self.wlfb_ready and self.display_on
+
+    @property
+    def ready(self) -> bool:
+        return self.critical and (self.touch_settled or self.touch_unknown)
+
+    def as_dict(self) -> dict[str, Any]:
+        return {
+            "launcher_ready": self.launcher_ready,
+            "boot_os": self.boot_os,
+            "wlfb_ready": self.wlfb_ready,
+            "display_on": self.display_on,
+            "touch_settled": self.touch_settled,
+            "touch_unknown": self.touch_unknown,
+            "critical": self.critical,
+            "ready": self.ready,
+            "detail": self.detail,
+        }
+
+    def signature(self) -> tuple:
+        return (self.launcher_ready, self.boot_os, self.wlfb_ready,
+                self.display_on, self.touch_settled, self.touch_unknown)
+
+
+def _fresh_for_boot(path: Path) -> bool:
+    """True when a persistent receipt was written during THIS boot.
+
+    `/var/lib/nuxel/display` is persistent; `/run` is not.  A stale DISPLAY_ON
+    from a previous boot must never be used as a readiness gate.  Compare its
+    mtime with the kernel boot time derived from /proc/uptime.
+    """
+    try:
+        mtime = path.stat().st_mtime
+        uptime = float(_read_text(Path("/proc/uptime"), 200).split()[0])
+    except (OSError, ValueError, IndexError):
+        return False
+    boot_time = time.time() - uptime
+    return mtime >= (boot_time - 2.0)
+
+
+def _display_signals(cfg: Config) -> tuple[bool, bool, dict[str, Any]]:
+    """Return (bridge_ready, display_on, evidence).
+
+    `/run/nuxel-wl-fb.state` is rewritten only when the frame state changes.
+    On a static lockscreen the last line can remain `DISPLAY_SLEEP` even after
+    the panel is back on (measured on the S10+ at boot: /run said display=off
+    while /var/lib/nuxel/display said DISPLAY_ON and the glass was lit).  The
+    persistent display receipt is therefore authoritative when it is fresh for
+    this boot; the /run line is the fallback.
+    """
+    wl_state = _read_text(cfg.paths["wlfb_state"], 100_000)
+    disp_path = cfg.paths["display_state"]
+    disp_state = _read_text(disp_path, 100_000)
+    disp_fresh = _fresh_for_boot(disp_path)
+    wl_owner = "owner=nuxel-wl-fb" in wl_state
+    disp_owner = "owner=nuxel-wl-fb" in disp_state
+    frames_ok = "FRAMES_OK" in wl_state
+    disp_on = bool(re.search(r"(?:^|\s)DISPLAY_ON(?:\s|$)", disp_state))
+    disp_off = bool(re.search(r"(?:^|\s)DISPLAY_OFF(?:\s|$)", disp_state))
+    if disp_fresh and (disp_on or disp_off):
+        display_on = disp_on and not disp_off
+    else:
+        display_on = bool(re.search(r"(?:^|\s)display=on(?:\s|$)", wl_state))
+        if re.search(r"(?:^|\s)display=off(?:\s|$)", wl_state):
+            display_on = False
+    bridge_ready = (wl_owner or (disp_fresh and disp_owner)) and (frames_ok or (disp_fresh and disp_on))
+    return bridge_ready, display_on, {
+        "wlfb_state": wl_state.strip().splitlines()[-1][:200] if wl_state.strip() else "",
+        "display_state": disp_state.strip().splitlines()[0][:80] if disp_state.strip() else "",
+        "display_state_fresh": disp_fresh,
+        "display_state_path": str(disp_path),
+    }
+
+
+def read_readiness(cfg: Config, started_monotonic: float) -> Readiness:
+    home = _read_text(cfg.paths["home_state"], 200_000)
+    launcher_ready = False
+    try:
+        launcher_ready = cfg.paths["launcher_ready"].stat().st_size > 0
+    except OSError:
+        pass
+    boot_os = (not bool(cfg.get("require_boot_os", True))) or \
+        ("boot=os" in home or "NUXEL_HOME_BOOT_OWNER os_animation=1" in home)
+    wlfb_ready, display_on, display_detail = _display_signals(cfg)
+    touch_text = _read_text(cfg.paths["touch_state"], 100_000)
+    lines = [ln.strip() for ln in touch_text.splitlines() if ln.strip()]
+    # nuxel-touch-arm appends a TOUCH_POINT line for every real touch after the
+    # one-shot ARMED_OK receipt.  The last *status* line is therefore the
+    # readiness statement; taking the literal last line made any user touch
+    # (or the preload player's own surface focus) look like "touch not armed".
+    status_lines = [ln for ln in lines if "TOUCH_POINT" not in ln]
+    last_touch = status_lines[-1] if status_lines else ""
+    touch_settled = bool(_TOUCH_SETTLED.search(last_touch))
+    elapsed_ms = (time.monotonic() - started_monotonic) * 1000.0
+    touch_unknown = (not touch_settled and launcher_ready and wlfb_ready and
+                     elapsed_ms >= int(cfg.get("readiness_grace_ms", DEFAULT_READINESS_GRACE_MS)))
+    return Readiness(
+        launcher_ready=launcher_ready,
+        boot_os=boot_os,
+        wlfb_ready=wlfb_ready,
+        display_on=display_on,
+        touch_settled=touch_settled,
+        touch_unknown=touch_unknown,
+        detail={
+            "launcher_ready_path": str(cfg.paths["launcher_ready"]),
+            "home_state_path": str(cfg.paths["home_state"]),
+            "wlfb_state_path": str(cfg.paths["wlfb_state"]),
+            "touch_state_path": str(cfg.paths["touch_state"]),
+            "touch_last_line": last_touch[:160],
+            "display_off": not display_on,
+            **display_detail,
+        },
+    )
+
+
+class MpvIPC:
+    """Small newline-JSON mpv IPC client with bounded reads."""
+
+    def __init__(self, path: Path, timeout: float = 0.5):
+        self.path = path
+        self.timeout = timeout
+        self.sock: socket.socket | None = None
+        self.buf = b""
+        self.request_id = 0
+
+    def connect(self, deadline: float) -> bool:
+        while time.monotonic() < deadline:
+            sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+            sock.settimeout(self.timeout)
+            try:
+                sock.connect(str(self.path))
+                self.sock = sock
+                return True
+            except OSError:
+                sock.close()
+                time.sleep(0.05)
+        return False
+
+    def _recv_line(self, deadline: float) -> bytes | None:
+        assert self.sock is not None
+        while b"\n" not in self.buf:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                return None
+            self.sock.settimeout(min(0.25, max(0.01, remaining)))
+            try:
+                chunk = self.sock.recv(4096)
+            except socket.timeout:
+                continue
+            except OSError:
+                return None
+            if not chunk:
+                return None
+            self.buf += chunk
+        line, _, self.buf = self.buf.partition(b"\n")
+        return line
+
+    def command(self, command: list[Any], timeout: float | None = None) -> dict[str, Any] | None:
+        if not self.sock:
+            return None
+        self.request_id += 1
+        rid = self.request_id
+        payload = {"command": command, "request_id": rid}
+        try:
+            self.sock.sendall((json.dumps(payload) + "\n").encode())
+        except OSError:
+            return None
+        deadline = time.monotonic() + (timeout if timeout is not None else self.timeout)
+        while True:
+            line = self._recv_line(deadline)
+            if line is None:
+                return None
+            try:
+                doc = json.loads(line.decode("utf-8", "replace"))
+            except ValueError:
+                continue
+            if doc.get("request_id") == rid:
+                return doc
+
+    def close(self) -> None:
+        if self.sock:
+            try:
+                self.sock.close()
+            except OSError:
+                pass
+            self.sock = None
+        try:
+            self.path.unlink()
+        except OSError:
+            pass
+
+
+def _display_state(cfg: Config) -> tuple[bool, bool]:
+    ready, on, _detail = _display_signals(cfg)
+    return ready, on
+
+
+def preflight(cfg: Config, log: Logger) -> tuple[bool, str]:
+    player = Path(str(cfg.get("player")))
+    asset = Path(str(cfg.get("asset")))
+    if not player.is_file() or not os.access(player, os.X_OK):
+        return False, "player-missing"
+    cmd = [str(player), "--no-config", "--no-audio", "--mute=yes",
+           "--vo=null", "--frames=1", "--really-quiet", "--no-terminal",
+           "--hwdec=no", "--", str(asset)]
+    timeout = int(cfg.get("preflight_timeout_ms", DEFAULT_PREFLIGHT_TIMEOUT_MS)) / 1000.0
+    try:
+        done = subprocess.run(cmd, stdout=subprocess.DEVNULL,
+                              stderr=subprocess.PIPE, timeout=timeout)
+    except subprocess.TimeoutExpired:
+        return False, "preflight-timeout"
+    except OSError as exc:
+        return False, "preflight-oserror:%s" % exc
+    if done.returncode != 0:
+        tail = (done.stderr or b"").decode("utf-8", "replace").strip().replace("\n", " ")[-300:]
+        log.log("WARN", "decode_failed", rc=done.returncode, stderr=tail)
+        return False, "decode-failed:%d" % done.returncode
+    return True, "ok"
+
+
+def player_command(cfg: Config, ipc_path: Path, log_path: Path, asset: Path) -> list[str]:
+    vo = str(cfg.get("video_output") or "wlshm")
+    return [
+        str(cfg.get("player")),
+        "--no-config",
+        "--no-audio",
+        "--mute=yes",
+        "--vo=" + vo,
+        "--fullscreen",
+        "--no-border",
+        "--osc=no",
+        "--osd-bar=no",
+        "--osd-level=0",
+        "--input-default-bindings=no",
+        "--input-terminal=no",
+        "--input-vo-keyboard=no",
+        "--no-input-cursor",
+        "--cursor-autohide=no",
+        "--keepaspect=yes",
+        "--panscan=0",
+        "--background-color=#000000",
+        "--keep-open=yes",
+        "--idle=yes",
+        "--hwdec=no",
+        "--vd-lavc-threads=4",
+        "--really-quiet",
+        "--no-terminal",
+        "--log-file=" + str(log_path),
+        "--input-ipc-server=" + str(ipc_path),
+        "--title=Nuxel",
+        "--",
+        str(asset),
+    ]
+
+
+def _stop_player(proc: subprocess.Popen | None, ipc: MpvIPC | None,
+                 log: Logger, reason: str) -> None:
+    if ipc:
+        try:
+            ipc.command(["quit"], timeout=0.5)
+        except Exception:
+            pass
+    if proc is not None and proc.poll() is None:
+        try:
+            proc.terminate()
+        except OSError:
+            pass
+        try:
+            proc.wait(timeout=2.0)
+        except subprocess.TimeoutExpired:
+            try:
+                proc.kill()
+            except OSError:
+                pass
+            try:
+                proc.wait(timeout=2.0)
+            except subprocess.TimeoutExpired:
+                pass
+    if ipc:
+        ipc.close()
+    log.log("INFO", "player_stopped", reason=reason,
+            pid=(proc.pid if proc is not None else None))
+
+
+def _write_receipt(cfg: Config, doc: dict[str, Any]) -> None:
+    base = {
+        "schema_version": SCHEMA_VERSION,
+        "milestone": "PWNAGE-31000",
+        "controller_pid": os.getpid(),
+        "boot_id": _read_text(Path("/proc/sys/kernel/random/boot_id"), 200).strip(),
+        "finished_at": now_iso(),
+        "unlock_actions": 0,
+        "framebuffer_owner": "nuxel-wl-fb",
+    }
+    base.update(doc)
+    _atomic_json(cfg.paths["receipt"], base)
+
+
+def _write_overlay(cfg: Config, doc: dict[str, Any]) -> None:
+    """Publish the pre-lockscreen cover state for the launcher.
+
+    The launcher cannot read /run directly.  It fetches the symlinked
+    preload-status.json served by nuxel-web, so this file must be written
+    atomically and must never disappear while the PWA is polling it.
+
+    States:
+      starting  the controller is verifying/starting the player; keep the cover
+      covered   mpv has presented its first frame; the real lockscreen may now
+                be revealed underneath the video
+      fallback  the video will not be presented; reveal the lockscreen
+      done      playback finished; reveal the lockscreen
+    """
+    base = {
+        "schema_version": SCHEMA_VERSION,
+        "milestone": "PWNAGE-31000",
+        "pid": os.getpid(),
+        "boot_id": _read_text(Path("/proc/sys/kernel/random/boot_id"), 200).strip(),
+        "updated_at": now_iso(),
+    }
+    base.update(doc)
+    # /run is the authoritative diagnostic copy.  The PWA cannot read /run and
+    # nuxel-web rejects symlinks that escape its docroot, so publish a second,
+    # regular file under the PWA docroot for the same-origin status fetch.
+    _atomic_json(cfg.paths["overlay"], base)
+    status_path = cfg.paths.get("status")
+    if status_path is not None:
+        _atomic_json(status_path, base)
+
+
+def acquire_lock(cfg: Config, log: Logger):
+    lock_path = cfg.paths["lock"]
+    try:
+        lock_path.parent.mkdir(parents=True, exist_ok=True)
+        fh = lock_path.open("a+")
+        fcntl.flock(fh.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        fh.seek(0)
+        fh.truncate(0)
+        fh.write("%d\n" % os.getpid())
+        fh.flush()
+        return fh
+    except BlockingIOError:
+        log.log("WARN", "duplicate_instance", lock=str(lock_path))
+        return None
+    except OSError as exc:
+        log.log("WARN", "lock_unavailable", lock=str(lock_path), error=str(exc))
+        # A read-only runtime should not prevent the fallback-safe controller.
+        return False
+
+
+def _release_lock(fh) -> None:
+    if fh and fh is not False:
+        try:
+            fcntl.flock(fh.fileno(), fcntl.LOCK_UN)
+            fh.close()
+        except OSError:
+            pass
+
+
+def _session_owns_overlay(cfg: Config) -> bool:
+    """True when nuxel-session.sh owns this boot's pre-lockscreen overlay.
+
+    The systemd unit is a fallback for images that do not start the phone
+    session.  On the S10+ image the session always starts; if the unit also
+    runs it can write the one-shot .done marker (or hold the controller lock)
+    before the session controller, which suppresses the video entirely.
+    """
+    return (cfg.paths["session_owner"].exists() or
+            cfg.paths["session_log"].exists())
+
+
+def run(argv: list[str] | None = None) -> int:
+    cfg = load_config(argv or sys.argv[1:])
+    early = bool(cfg.get("early"))
+    if early:
+        # In the early session launch the launcher host has not started yet, so
+        # /run/nuxel-home.state cannot carry boot=os.  The session wrapper is
+        # only executed by phoc on the phone boot path, so this is safe and
+        # avoids waiting for a marker that does not exist yet.
+        cfg.values["require_boot_os"] = False
+    log = Logger(cfg.paths["log"])
+    started_wall = now_iso()
+    log.log("INFO", "controller_start", config=str(cfg.paths["config"]),
+            asset=str(cfg.get("asset")), enabled=cfg.get("enabled"),
+            early=early)
+
+    overlay_state = {"state": "unstarted"}
+
+    def mark_overlay(state: str, **fields: Any) -> None:
+        overlay_state["state"] = state
+        _write_overlay(cfg, {"state": state, **fields})
+
+    if not cfg.get("enabled"):
+        mark_overlay("fallback", reason="config-disabled")
+        _write_receipt(cfg, {"verdict": "DISABLED", "reason": "config-disabled",
+                             "started_at": started_wall})
+        log.log("INFO", "fallback", reason="config-disabled")
+        return 0
+
+    # The phone session owns the overlay.  Yield before taking the lock or
+    # writing the one-shot marker; the early session controller will play the
+    # clip above the launcher and release the PWA cover.
+    if not early and _session_owns_overlay(cfg):
+        _write_receipt(cfg, {"verdict": "YIELD_SESSION",
+                             "reason": "nuxel-session-owns-overlay",
+                             "started_at": started_wall})
+        log.log("INFO", "yield_session", reason="session-owns-overlay")
+        return 0
+
+    # One presentation per boot.  /run is a tmpfs and is cleared at boot; this
+    # marker means a later `systemctl start` (for example after the user has
+    # unlocked the phone) cannot paint the boot clip over the desktop.
+    if cfg.paths["done"].exists():
+        _write_receipt(cfg, {"verdict": "ALREADY_RAN",
+                             "reason": "one-shot-boot-marker-present",
+                             "marker": str(cfg.paths["done"]),
+                             "started_at": started_wall})
+        log.log("INFO", "already_ran", marker=str(cfg.paths["done"]))
+        return 0
+
+    lock = acquire_lock(cfg, log)
+    if lock is None:
+        _write_receipt(cfg, {"verdict": "DUPLICATE", "reason": "instance-lock-held",
+                             "started_at": started_wall})
+        return 0
+
+    # Re-check after taking the lock: the session may have started while this
+    # fallback unit was probing.  Yield without writing .done.
+    if not early and _session_owns_overlay(cfg):
+        mark_overlay("fallback", reason="session-owns-overlay")
+        _write_receipt(cfg, {"verdict": "YIELD_SESSION",
+                             "reason": "nuxel-session-owns-overlay",
+                             "started_at": started_wall})
+        log.log("INFO", "yield_session", reason="session-owns-overlay-after-lock")
+        return 0
+
+    try:
+        mark_overlay("starting", asset=str(cfg.get("asset")), early=early,
+                     started_at=started_wall)
+    except OSError as exc:
+        log.log("WARN", "overlay_status_unavailable", error=exc)
+    # Do NOT write the one-shot .done marker yet.  A systemd-unit start that
+    # fails the display/boot-mode gate must leave the marker absent so the
+    # session controller can still own the clip.
+
+    proc: subprocess.Popen | None = None
+    ipc: MpvIPC | None = None
+    runtime_dir = cfg.paths["runtime_dir"]
+    ipc_path = runtime_dir / "preload-cinema.sock"
+    mpv_log = runtime_dir / "preload-cinema-mpv.log"
+    try:
+        asset = Path(str(cfg.get("asset")))
+        if not asset.is_file():
+            _write_receipt(cfg, {"verdict": "FALLBACK", "reason": "asset-missing",
+                                 "asset": str(asset), "started_at": started_wall})
+            log.log("WARN", "fallback", reason="asset-missing", asset=str(asset))
+            return 0
+        if asset.stat().st_size <= 0:
+            _write_receipt(cfg, {"verdict": "FALLBACK", "reason": "asset-empty",
+                                 "asset": str(asset), "started_at": started_wall})
+            log.log("WARN", "fallback", reason="asset-empty", asset=str(asset))
+            return 0
+        if not os.access(asset, os.R_OK):
+            _write_receipt(cfg, {"verdict": "FALLBACK", "reason": "asset-unreadable",
+                                 "asset": str(asset), "started_at": started_wall})
+            log.log("WARN", "fallback", reason="asset-unreadable", asset=str(asset))
+            return 0
+
+        asset_bytes = asset.stat().st_size
+        try:
+            asset_hash = sha256_file(asset)
+        except OSError as exc:
+            _write_receipt(cfg, {"verdict": "FALLBACK", "reason": "asset-hash-read-failed",
+                                 "asset": str(asset), "error": str(exc),
+                                 "started_at": started_wall})
+            log.log("WARN", "fallback", reason="asset-hash-read-failed", error=exc)
+            return 0
+        expected = str(cfg.get("asset_sha256") or "").strip().lower()
+        sidecar = asset.with_name(asset.name + ".sha256")
+        if not expected and sidecar.is_file():
+            sidecar_words = _read_text(sidecar, 4096).split()
+            expected = sidecar_words[0].lower() if sidecar_words else ""
+        if expected and expected != asset_hash:
+            _write_receipt(cfg, {"verdict": "FALLBACK", "reason": "asset-hash-mismatch",
+                                 "asset": str(asset), "asset_sha256": asset_hash,
+                                 "expected_sha256": expected, "started_at": started_wall})
+            log.log("WARN", "fallback", reason="asset-hash-mismatch",
+                    expected=expected, actual=asset_hash)
+            return 0
+        duration = mp4_duration_seconds(asset)
+        log.log("INFO", "asset_verified", asset=str(asset), bytes=asset_bytes,
+                sha256=asset_hash, duration_s=duration)
+
+        runtime_dir.mkdir(parents=True, exist_ok=True)
+        try:
+            if ipc_path.exists() or ipc_path.is_symlink():
+                ipc_path.unlink()
+        except OSError:
+            pass
+
+        # Display and launch-mode gates.  In normal (systemd) mode the compositor
+        # and display bridge must already be proven up before mpv is spawned; in
+        # early mode mpv is spawned immediately from nuxel-session.sh so its
+        # surface is mapped BEFORE nuxel-pwa-host constructs the lockscreen.
+        # The later readiness loop still holds the overlay until the lockscreen
+        # is genuinely ready (or the hard bound expires).
+        if not early:
+            deadline = time.monotonic() + int(cfg.get("start_timeout_ms")) / 1000.0
+            initial = read_readiness(cfg, time.monotonic())
+            while time.monotonic() < deadline:
+                initial = read_readiness(cfg, time.monotonic())
+                if initial.wlfb_ready and initial.display_on and (initial.boot_os or not cfg.get("require_boot_os")):
+                    break
+                time.sleep(0.1)
+            if not initial.wlfb_ready or not initial.display_on:
+                _write_receipt(cfg, {"verdict": "FALLBACK", "reason": "display-not-ready",
+                                     "asset": str(asset), "asset_sha256": asset_hash,
+                                     "readiness": initial.as_dict(), "started_at": started_wall})
+                log.log("WARN", "fallback", reason="display-not-ready",
+                        readiness=json.dumps(initial.as_dict(), sort_keys=True))
+                return 0
+            if cfg.get("require_boot_os") and not initial.boot_os:
+                _write_receipt(cfg, {"verdict": "FALLBACK", "reason": "not-os-boot-mode",
+                                     "asset": str(asset), "readiness": initial.as_dict(),
+                                     "started_at": started_wall})
+                log.log("WARN", "fallback", reason="not-os-boot-mode")
+                return 0
+        else:
+            # Early mode: the PWA cover is already opaque; do not start mpv
+            # until WebKit has mapped (launcher_ready), otherwise the launcher
+            # maps last and hides the video.  This waits ONLY for the launcher
+            # marker, never for the display bridge or a full lockscreen.
+            wait_s = int(cfg.get("early_wait_launcher_ms")) / 1000.0
+            wait_deadline = time.monotonic() + wait_s
+            wait_started = time.monotonic()
+            initial = read_readiness(cfg, wait_started)
+            while (not initial.launcher_ready and
+                   time.monotonic() < wait_deadline):
+                time.sleep(int(cfg.get("poll_ms")) / 1000.0)
+                initial = read_readiness(cfg, wait_started)
+            log.log("INFO", "early_launcher_wait",
+                    ready=initial.launcher_ready,
+                    elapsed_s=round(time.monotonic() - wait_started, 3),
+                    bound_ms=int(cfg.get("early_wait_launcher_ms")))
+            # Let WebKit finish its own map/fullscreen commits.  Only worth
+            # waiting when the launcher actually appeared; a missing launcher
+            # must still fall through to the bounded failure paths.
+            if initial.launcher_ready:
+                map_delay = max(0, int(cfg.get("early_map_delay_ms"))) / 1000.0
+                if map_delay:
+                    time.sleep(map_delay)
+                    log.log("INFO", "early_map_delay",
+                            seconds=round(map_delay, 3),
+                            reason="let-launcher-settle-before-mpv-maps")
+
+        if early:
+            # Early mode is racing the launcher host for the first composited
+            # frame, so do not spend preflight time decoding a probe frame.  The
+            # real mpv spawn + IPC connect below is the authoritative failure
+            # detector, and every failure path still releases to the lockscreen.
+            log.log("INFO", "preflight_skipped", reason="early-session-fast-path")
+            ok, why = True, "early-skip"
+        else:
+            ok, why = preflight(cfg, log)
+        if not ok:
+            _write_receipt(cfg, {"verdict": "FALLBACK", "reason": why,
+                                 "asset": str(asset), "asset_sha256": asset_hash,
+                                 "asset_bytes": asset_bytes, "duration_s": duration,
+                                 "started_at": started_wall})
+            log.log("WARN", "fallback", reason=why)
+            return 0
+
+        # Commit to presenting the clip: only now write the one-shot marker.
+        # A later manual start must not paint the clip over the desktop.
+        try:
+            cfg.paths["done"].parent.mkdir(parents=True, exist_ok=True)
+            cfg.paths["done"].write_text(
+                "%s boot_id=%s pid=%d\n" % (
+                    now_iso(),
+                    _read_text(Path("/proc/sys/kernel/random/boot_id"), 200).strip(),
+                    os.getpid()),
+                encoding="utf-8")
+        except OSError as exc:
+            log.log("WARN", "done_marker_unavailable", error=exc)
+
+        try:
+            mpv_log.unlink()
+        except OSError:
+            pass
+        env = dict(os.environ)
+        env["XDG_RUNTIME_DIR"] = str(cfg.paths["wayland_runtime_dir"])
+        env["WAYLAND_DISPLAY"] = cfg.wayland_display
+        env["XDG_SESSION_TYPE"] = "wayland"
+        env["LIBGL_ALWAYS_SOFTWARE"] = "1"
+        cmd = player_command(cfg, ipc_path, mpv_log, asset)
+        log.log("INFO", "player_starting", vo=cfg.get("video_output"),
+                pid=None, asset=str(asset), duration_s=duration)
+        try:
+            proc = subprocess.Popen(cmd, env=env, stdin=subprocess.DEVNULL,
+                                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                                    start_new_session=True)
+        except OSError as exc:
+            _write_receipt(cfg, {"verdict": "FALLBACK", "reason": "player-spawn-failed",
+                                 "asset": str(asset), "error": str(exc),
+                                 "started_at": started_wall})
+            log.log("WARN", "fallback", reason="player-spawn-failed", error=exc)
+            return 0
+        log.log("INFO", "player_started", pid=proc.pid)
+
+        ipc = MpvIPC(ipc_path)
+        if not ipc.connect(time.monotonic() + 2.0):
+            rc = proc.poll()
+            tail = _read_text(mpv_log, 4096)[-500:].replace("\n", " ")
+            _write_receipt(cfg, {"verdict": "FALLBACK", "reason": "player-ipc-unavailable",
+                                 "asset": str(asset), "rc": rc, "mpv_log_tail": tail,
+                                 "started_at": started_wall})
+            log.log("WARN", "fallback", reason="player-ipc-unavailable", rc=rc,
+                    mpv_log_tail=tail)
+            _stop_player(proc, ipc, log, "ipc-unavailable")
+            return 0
+
+        t0 = time.monotonic()
+        eof = False
+        held = False
+        readiness = initial
+        readiness_at: float | None = None
+        last_sig = None
+        stop_reason = "video-and-lockscreen-ready"
+        bounded = False
+        display_lost = False
+        while True:
+            now = time.monotonic()
+            elapsed = now - t0
+            if proc.poll() is not None:
+                rc = proc.returncode
+                tail = _read_text(mpv_log, 4096)[-500:].replace("\n", " ")
+                if rc == 0 and eof:
+                    log.log("INFO", "player_exited_after_eof", rc=rc)
+                else:
+                    _write_receipt(cfg, {"verdict": "FALLBACK", "reason": "player-exited",
+                                         "asset": str(asset), "asset_sha256": asset_hash,
+                                         "asset_bytes": asset_bytes, "duration_s": duration,
+                                         "rc": rc, "mpv_log_tail": tail,
+                                         "elapsed_s": round(elapsed, 3),
+                                         "readiness": readiness.as_dict(),
+                                         "started_at": started_wall})
+                    log.log("WARN", "fallback", reason="player-exited", rc=rc,
+                            mpv_log_tail=tail)
+                    _stop_player(proc, ipc, log, "player-exited")
+                    return 0
+                break
+
+            reply = ipc.command(["get_property", "eof-reached"], timeout=0.35)
+            if reply and reply.get("error") == "success":
+                eof = bool(reply.get("data"))
+
+            # Publish the first presented frame only after the display bridge
+            # is genuinely scanning.  Before nuxel-wl-fb owns /dev/fb0 the
+            # panel still shows the pre-boot framebuffer; releasing the cover
+            # on mpv's playback-time alone produced the owner-reported
+            # "one second of lockscreen" flash (measured 2026-10-28).
+            readiness = read_readiness(cfg, t0)
+            if overlay_state["state"] == "starting":
+                pt_reply = ipc.command(["get_property", "playback-time"], timeout=0.35)
+                if pt_reply and pt_reply.get("error") == "success":
+                    pt = pt_reply.get("data")
+                    try:
+                        pt_value = float(pt) if pt is not None else 0.0
+                    except (TypeError, ValueError):
+                        pt_value = 0.0
+                    if pt_value > 0.0 and readiness.wlfb_ready:
+                        mark_overlay("covered", first_frame_s=round(pt_value, 3),
+                                     elapsed_s=round(elapsed, 3),
+                                     wlfb_ready=True)
+                        log.log("INFO", "overlay_covered",
+                                first_frame_s=round(pt_value, 3),
+                                elapsed_s=round(elapsed, 3),
+                                wlfb_ready=True)
+            if eof and not held:
+                log.log("INFO", "video_eof", elapsed_s=round(elapsed, 3))
+            if eof and duration is None:
+                duration = elapsed
+
+            readiness = read_readiness(cfg, t0)
+            if readiness.signature() != last_sig:
+                last_sig = readiness.signature()
+                log.log("INFO", "readiness", ready=readiness.ready,
+                        critical=readiness.critical,
+                        launcher_ready=readiness.launcher_ready,
+                        boot_os=readiness.boot_os,
+                        wlfb_ready=readiness.wlfb_ready,
+                        display_on=readiness.display_on,
+                        touch_settled=readiness.touch_settled,
+                        touch_unknown=readiness.touch_unknown,
+                        touch_last=readiness.detail.get("touch_last_line", ""))
+            if readiness.ready and readiness_at is None:
+                readiness_at = elapsed
+                log.log("INFO", "lockscreen_ready", elapsed_s=round(elapsed, 3))
+
+            if not readiness.display_on and readiness.wlfb_ready:
+                display_lost = True
+                stop_reason = "display-off"
+                log.log("WARN", "display_off_during_playback")
+                break
+
+            max_s = int(cfg.get("max_display_ms")) / 1000.0
+            hard_s = int(cfg.get("hard_timeout_ms")) / 1000.0
+            if eof and readiness.ready:
+                break
+            if elapsed >= max_s and not held:
+                # Bound the moving-video interval.  Keep the final frame (a
+                # still presentation) only while a critical readiness gate is
+                # still genuinely pending; release it at the hard bound.
+                held = True
+                bounded = True
+                if not eof:
+                    ipc.command(["set_property", "pause", True], timeout=0.35)
+                    log.log("INFO", "video_paused_at_bound", elapsed_s=round(elapsed, 3))
+                if readiness.ready:
+                    break
+            if elapsed >= hard_s:
+                bounded = True
+                stop_reason = ("hard-timeout-readiness-pending"
+                               if not readiness.ready else "video-and-lockscreen-ready")
+                log.log("WARN", "hard_timeout", elapsed_s=round(elapsed, 3),
+                        ready=readiness.ready)
+                break
+            time.sleep(int(cfg.get("poll_ms")) / 1000.0)
+
+        _stop_player(proc, ipc, log, stop_reason)
+        proc = None
+        ipc = None
+        mark_overlay("done", reason=stop_reason, video_eof=bool(eof),
+                     elapsed_s=round(time.monotonic() - t0, 3))
+        _write_receipt(cfg, {
+            "verdict": "PLAYED",
+            "reason": stop_reason,
+            "asset": str(asset),
+            "asset_sha256": asset_hash,
+            "asset_bytes": asset_bytes,
+            "duration_s": duration,
+            "started_at": started_wall,
+            "elapsed_s": round(time.monotonic() - t0, 3),
+            "video_eof": bool(eof),
+            "video_held": bool(held),
+            "bounded": bool(bounded),
+            "display_lost": bool(display_lost),
+            "readiness": readiness.as_dict(),
+            "readiness_ready_at_s": (round(readiness_at, 3) if readiness_at is not None else None),
+            "max_display_ms": int(cfg.get("max_display_ms")),
+            "hard_timeout_ms": int(cfg.get("hard_timeout_ms")),
+            "audio": "disabled",
+            "fullscreen": True,
+        })
+        log.log("INFO", "controller_done", verdict="PLAYED", reason=stop_reason)
+        return 0
+    except Exception as exc:  # noqa: BLE001 - a presentation layer must fail open
+        try:
+            mark_overlay("fallback", reason="controller-exception")
+            _write_receipt(cfg, {"verdict": "FALLBACK", "reason": "controller-exception",
+                                 "error": "%s: %s" % (type(exc).__name__, exc),
+                                 "started_at": started_wall})
+            log.log("ERROR", "controller_exception", error="%s: %s" % (type(exc).__name__, exc))
+        except Exception:
+            pass
+        return 0
+    finally:
+        if proc is not None or ipc is not None:
+            _stop_player(proc, ipc, log, "finally")
+        if overlay_state.get("state") == "starting":
+            # The player never presented a frame.  Release the launcher cover
+            # immediately instead of making it wait for its own timeout.
+            try:
+                mark_overlay("fallback", reason="exited-before-first-frame")
+            except Exception:
+                pass
+        for path in (ipc_path, mpv_log):
+            try:
+                if path.exists() and path.name.endswith(".sock"):
+                    path.unlink()
+            except OSError:
+                pass
+        _release_lock(lock)
+
+
+def main(argv: list[str] | None = None) -> int:
+    args = list(argv if argv is not None else sys.argv[1:])
+    if "--version" in args:
+        print("nuxel-preload-cinema 1 (PWNAGE-31000)")
+        return 0
+    if "--help" in args or "-h" in args:
+        print(__doc__)
+        return 0
+    if "--early" in args:
+        os.environ["NUXEL_PRELOAD_EARLY"] = "1"
+        args = [a for a in args if a != "--early"]
+    return run(args)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

@@ -1,0 +1,52 @@
+[
+  {
+    "group": "preload-cinema-runtime",
+    "n": 1,
+    "risk": "low",
+    "script": "scripts/001-nuxel-preload-cinema.sh",
+    "service": null,
+    "source": "services/nuxel-preload-cinema/nuxel-preload-cinema",
+    "source_sha256": "488d9cc8333faf2bae474c00f509db73bec35e76a661e2ae4a7178f89086f6e0",
+    "target": "/usr/lib/nuxel/nuxel-preload-cinema"
+  },
+  {
+    "group": "preload-cinema-runtime",
+    "n": 2,
+    "risk": "low",
+    "script": "scripts/002-preload-cinema.json.sh",
+    "service": null,
+    "source": "configs/nuxel/boot/preload-cinema.json",
+    "source_sha256": "fc1f578ceee799e86130833325fab75f80c92e414233ce04cd743594dfb8810b",
+    "target": "/etc/nuxel/boot/preload-cinema.json"
+  },
+  {
+    "group": "preload-cinema-runtime",
+    "n": 3,
+    "risk": "low",
+    "script": "scripts/003-nuxel-preloading-screen.mp4.sh",
+    "service": null,
+    "source": "assets/nuxel-preloading-screen.mp4",
+    "source_sha256": "b059f121e62b167fde8664e24c879ca443df8740d95441e7948abdbcc6cdbbf1",
+    "target": "/usr/share/nuxel/preload/nuxel-preloading-screen.mp4"
+  },
+  {
+    "group": "preload-cinema-runtime",
+    "n": 4,
+    "risk": "low",
+    "script": "scripts/004-nuxel-preload-cinema.service.sh",
+    "service": null,
+    "source": "services/nuxel-preload-cinema/nuxel-preload-cinema.service",
+    "source_sha256": "070566f55b4cdd9dcc792e2d02026d1b57bd468d20a62bf98acb72b02f07d865",
+    "target": "/etc/systemd/system/nuxel-preload-cinema.service"
+  },
+  {
+    "group": "preload-cinema-runtime",
+    "n": 5,
+    "risk": "low",
+    "script": "scripts/005-PWNAGE-31000.md.sh",
+    "service": null,
+    "source": "docs/pwnage-31000/IMPLEMENTATION.md",
+    "source_sha256": "eaa1859f238142cacccacb38de63391427fdc47ccfe427cc449bf50055570079",
+    "target": "/usr/share/nuxel/doc/PWNAGE-31000.md"
+  }
+]

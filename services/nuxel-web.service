@@ -1,7 +1,9 @@
 [Unit]
 Description=Nuxel PWA Static Web Server (nuxel-home launcher on :8000)
 Documentation=https://nuxel.org
-After=network.target nuxel-http-bridge.service
+# PWNAGE-32000 (boot regression): the static server is loopback-only and must
+# not wait for network.target/NetworkManager to reach the launcher.
+After=nuxel-http-bridge.service
 Wants=nuxel-http-bridge.service
 # The docroot is resolved by the shim: /usr/share/nuxel on the phone rootfs,
 # /home/nuxel/nuxel on the flash-free deploy mirror (or $NUXEL_WEBROOT).

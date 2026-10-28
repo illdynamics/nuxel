@@ -66,11 +66,13 @@ document is `VERIFIED_ON_S10PLUS`, and nothing here was promoted from a unit tes
 | `nuxel-native-settings` | Native Settings shell app | system | native | `shell/nuxel-shell/nuxel-settings` | present/full | bg-06-core-phone-apps |
 | `settings-surface.mobile` | Mobile Settings | system | settings-surface | `pwa/nuxel-apps/settings` | present/partial | bg-03-connectivity-time-audio-buttons |
 | `settings-surface.network` | Network Settings | system | settings-surface | `pwa/nuxel-apps/settings` | present/partial | bg-03-connectivity-time-audio-buttons |
-| `org.nuxel.NuXtore` | NuXtore (app store) | system | pwa | `pwa/nuxel-apps/nuxtore` | present/full | bg-07-specialty-apps |
+| `org.nuxel.Nuxtore` | NuxTore (app store) | system | pwa | `pwa/nuxel-apps/nuxtore` | present/full | bg-07-specialty-apps |
 | `nuxel-permissions` | Permissions manager | system | native | `shell/nuxel-shell/nuxel-permissions` | present/full | bg-05-security-permissions |
 | `tool.firewall` | Firewall application | system | tool | `tools/s10plus/a33/nuxel-firewall.sh` | present/partial | bg-05-security-permissions |
 | `nuxel-devmgmt` | DevMgmt | system | pwa | `pwa/nuxel-apps/devmgmt` | present/full | bg-07-specialty-apps |
 | `org.nuxel.LiveConsole` | Live Console | system | pwa | `pwa/nuxel-apps/console` | present/partial | bg-07-specialty-apps |
+| `org.nuxel.USBSSHConsole` | USB SSH Console | system | pwa | `pwa/nuxel-apps/console-usb` | present/partial | bg-07-specialty-apps |
+| `org.nuxel.WiFiSSHConsole` | Wi-Fi SSH Console | system | pwa | `pwa/nuxel-apps/console-wifi` | present/partial | bg-07-specialty-apps |
 | `tool.system-monitor` | System Monitor / Diagnostics | system | tool | `tools/s10plus/a33/nuxelctl` | present/full | bg-06-core-phone-apps |
 | `tool.security-audit` | Security auditor | system | tool | `tools/s10plus/a33/nuxel-security-audit.sh` | present/partial | bg-05-security-permissions |
 | `nuxel-cleanup` | Safe Cleanup | system | pwa | `pwa/nuxel-apps/cleanup` | present/full | bg-07-specialty-apps |
@@ -443,7 +445,10 @@ exactly what remains.
       "owner_group": "bg-02 / bg-08 / bg-06 (joint)",
       "package_type": "pwa",
       "path": "pwa/nuxel-apps/settings",
-      "permissions": [],
+      "permissions": [
+        "location:read",
+        "location:manage"
+      ],
       "source": "pwa/nuxel-apps/settings",
       "status": "present/partial",
       "tests": [
@@ -525,19 +530,15 @@ exactly what remains.
         "nuxel-bridge"
       ],
       "hardware": [],
-      "id": "org.nuxel.NuXtore",
+      "id": "org.nuxel.Nuxtore",
       "implementation": "PWA: index.html, manifest.json, sw.js",
       "launch": "/pwa/nuxel-apps/nuxtore/index.html",
-      "name": "NuXtore (app store)",
+      "name": "NuxTore (app store)",
       "offline": "service-worker cache",
       "owner_group": "bg-07-specialty-apps",
       "package_type": "pwa",
       "path": "pwa/nuxel-apps/nuxtore",
-      "permissions": [
-        "catalog:read",
-        "catalog:install",
-        "catalog:remove"
-      ],
+      "permissions": [],
       "source": "pwa/nuxel-apps/nuxtore",
       "status": "present/full",
       "tests": [
@@ -887,17 +888,14 @@ exactly what remains.
       "owner_group": "bg-07-specialty-apps",
       "package_type": "pwa",
       "path": "pwa/nuxel-apps/snekbyte",
-      "permissions": [
-        "input:keyboard",
-        "input:touch"
-      ],
+      "permissions": [],
       "source": "pwa/nuxel-apps/snekbyte",
       "status": "present/full",
       "tests": [
         "pwa/nuxel-apps/snekbyte/tests/test-snek-engine.js"
       ],
       "type": "pwa",
-      "version": "0.0.0"
+      "version": "1.1.0-a58"
     },
     {
       "category": "connectivity",
@@ -1171,6 +1169,48 @@ exactly what remains.
       ],
       "type": "tool",
       "version": "0.1.0"
+    },
+    {
+      "category": "system",
+      "dependencies": [],
+      "hardware": [],
+      "id": "org.nuxel.USBSSHConsole",
+      "implementation": "PWA: index.html, manifest.json",
+      "launch": "/pwa/nuxel-apps/console-usb/index.html",
+      "name": "USB SSH Console",
+      "offline": "no service worker",
+      "owner_group": "bg-07-specialty-apps",
+      "package_type": "pwa",
+      "path": "pwa/nuxel-apps/console-usb",
+      "permissions": [],
+      "source": "pwa/nuxel-apps/console-usb",
+      "status": "present/partial",
+      "tests": [
+        "tools/s10plus/a33/tests/test-core-apps.py"
+      ],
+      "type": "pwa",
+      "version": "0.0.0"
+    },
+    {
+      "category": "system",
+      "dependencies": [],
+      "hardware": [],
+      "id": "org.nuxel.WiFiSSHConsole",
+      "implementation": "PWA: index.html, manifest.json",
+      "launch": "/pwa/nuxel-apps/console-wifi/index.html",
+      "name": "Wi-Fi SSH Console",
+      "offline": "no service worker",
+      "owner_group": "bg-07-specialty-apps",
+      "package_type": "pwa",
+      "path": "pwa/nuxel-apps/console-wifi",
+      "permissions": [],
+      "source": "pwa/nuxel-apps/console-wifi",
+      "status": "present/partial",
+      "tests": [
+        "tools/s10plus/a33/tests/test-core-apps.py"
+      ],
+      "type": "pwa",
+      "version": "0.0.0"
     }
   ],
   "gaps": [

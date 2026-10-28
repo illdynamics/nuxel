@@ -17,7 +17,10 @@ Group=root
 NoNewPrivileges=yes
 PrivateTmp=yes
 ProtectSystem=strict
-ProtectHome=yes
+# The Files app and Recorder operate on the real session user home.  The
+# bridge is still loopback-only, root-owned and ProtectSystem=strict; only the
+# explicit home path below is writable.
+ProtectHome=no
 # The lockhead indicator reads sysfs and validates the console process's tty
 # fd.  PrivateDevices=yes hides /dev/ttyGS0 from this process, which would make a
 # real live console read as inactive through the HTTP path.  The service is still
@@ -25,7 +28,7 @@ ProtectHome=yes
 PrivateDevices=no
 RestrictAddressFamilies=AF_INET AF_UNIX
 ReadOnlyPaths=/
-ReadWritePaths=/var/lib/nuxel /var/log/nuxel
+ReadWritePaths=/var/lib/nuxel /var/log/nuxel /home/nuxel
 LogsDirectory=nuxel
 Environment=NUXEL_HTTP_BIND=127.0.0.1
 Environment=NUXEL_HTTP_PORT=8080
@@ -35,8 +38,10 @@ Environment=NUXEL_PATHS_CONF=/etc/nuxel/paths.conf
 # shell use, so /api/v1/apps/registry cannot drift from the launcher.
 Environment=NUXEL_APP_REGISTRY=/usr/share/nuxel/pwa/nuxel-common/app-registry.json
 Environment=NUXEL_BRIDGE_PROTOCOL_VERSION=1
-Environment=NUXEL_BRIDGE_VERSION=0.7.1-beta
+Environment=NUXEL_BRIDGE_VERSION=0.7.2-beta
 Environment=NUXEL_API_ALLOW_ORIGIN=http://127.0.0.1:8000,http://localhost:8000
+Environment=NUXEL_SESSION_USER=nuxel
+Environment=NUXEL_FILES_ROOT=/home/nuxel
 
 [Install]
 WantedBy=multi-user.target

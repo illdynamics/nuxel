@@ -12,6 +12,56 @@ The canonical version lives in [`VERSION`](VERSION) and is bumped in lockstep
 across the shell apps, the PWA manifest, the device `APKBUILD`s, the VM tooling
 and the OTA builder (see *Versioning* below).
 
+## [v0.7.2-beta] - 2026-10-28 - *Release: PWNAGE-31000..36000 UI reliability + S10+ hardware fixes*
+
+- **PWNAGE-31000 preload cinema.** The supplied 1080x1920 clip plays over the
+  real lockscreen only after the wayland/web/display readiness gates pass.
+  Startup services continue concurrently; a one-shot marker, a bounded
+  `max_display`/`hard_timeout`, a 15 s fail-open cover and a `FALLBACK` receipt
+  prevent a decoder failure, stale state or a later boot from blocking unlock.
+- **PWNAGE-32000 keyboard, navigation and battery.** The intended
+  grey/black/white keyboard is restored, including haptics and contenteditable
+  fields; Back/Home/Recents work outside the browser; the lower screen band is
+  a valid unlock surface; charger/LPM boots explain the missing touch device;
+  battery 100%→0% flicker is debounced in both lockscreen and status bar.
+- **PWNAGE-33000 app resurrection.** Contacts, Messages and Phone now launch
+  through repaired native registration. Camera/Browser/Weather keep the system
+  top bar and navigation. Files has a real breadcrumbed explorer with CRUD,
+  copy/move, ZIP and upload; Mail gains settings and compact folder navigation;
+  Photos is Gallery with playback; Recorder writes a 16-bit PCM WAV under the
+  user home; Nuxtore keeps the empty-store state; desktop/drawer icons share
+  one canonical set; the standard home folders and canonical console banner are
+  installed.
+- **PWNAGE-34000 connection modes.** The dock/navigation icons render through a
+  deterministic path; serial, USB and WLAN consoles each show a live indicator;
+  a file-transfer indicator reflects the real mode; the lockscreen
+  Charging/File Transfer selector is usable without unlocking; the storage
+  state machine refuses unsafe raw exports and preserves recovery transports.
+- **PWNAGE-35000 Buttersmooth.** Idle lockscreen filters and redundant polling
+  are removed, input/render work is bounded, global Back now follows app
+  lifecycle before returning Home, reboot is bounded, and Wi-Fi startup,
+  autoconnect and quick-settings actions use readiness-aware ordering.
+- **PWNAGE-36000 S10+ reflash fixes.** The ABOX boot-done hard-IRQ panic is
+  patched (`kernel/s10plus/patches/0004-nuxel-abox-boot-done-and-bt-hciuart.patch`).
+  HCIUART/H4 plus `btattach` create `hci0` and pass a peer scan; RDMA1 audio
+  routing produces advancing playback; charger/LPM recovery and early device
+  permissions are installed; GPS remains `BLOCKED_FIRMWARE`; boot capture
+  tooling is included.
+- **Terminal.** New `nuxel-zsh` package with four prompt themes, validated
+  system/per-user configuration, `nuxel-theme`, the canonical `/etc/banner`,
+  nested/non-interactive suppression and rollback. Bash and recovery access are
+  preserved; the default shell changes only with `--set-shell`.
+- **Whole-repo lockstep bump to `v0.7.2-beta`** across `VERSION`, device
+  `APKBUILD`s, PWA/bridge manifests, service/version pins, shell apps, OTA/VM
+  tooling, release provenance and documentation. Launcher cache namespace:
+  `v54-v072-release`.
+- **Verification:** the PWNAGE-31000/33000 pytest suites, the zsh suite, the
+  lockscreen/keyboard/navigation JS suites, the S10 hardware-fix checks and
+  `tools/beta/run-all-tests.sh` were run locally. The GitHub release workflow
+  rebuilds the S10+ image set from this exact merged commit. Physical
+  touch/haptic/microphone and laptop-side file-transfer acceptance remain the
+  owner's tests.
+
 ## [v0.7.1-beta] - 2026-10-27 - *Release: PWNAGE-30000 application suite + live USB deployment*
 
 - **PWNAGE-30000 application suite.** Calendar, Clock, Contacts, Files, Mail,

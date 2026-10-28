@@ -1,0 +1,75 @@
+{
+  "at": "2026-10-28T09:14:38+0100",
+  "baseline_deltas": [
+    {
+      "expected": "HTTP 200",
+      "item": "pwa-registry",
+      "observed": "403",
+      "severity": "regression-signal"
+    },
+    {
+      "expected": "0",
+      "item": "failed-units",
+      "observed": [
+        "\u25cf NetworkManager-wait-online.service loaded failed failed Network Manager Wait Online"
+      ],
+      "severity": "regression-signal"
+    }
+  ],
+  "blocked_reason": null,
+  "briq": "briq-10a-live-reachability-preflight",
+  "console": {
+    "callout": "/dev/ttyACM0",
+    "dialin": "/dev/ttyACM0",
+    "match_stage": "vid+pid",
+    "pid": 20199,
+    "tty_base": "ttyACM",
+    "tty_device": "ttyACM0",
+    "tty_suffix": "0",
+    "vid": 6353
+  },
+  "evidence_dir": "/x/nuxel/docs/beta-finalization/live/evidence/baseline-20261028T091438+0100",
+  "exit_code": 0,
+  "fake_console": false,
+  "probe": {
+    "at": "2026-10-28T09:14:38+0100",
+    "bytes_in": 131,
+    "dev": "/dev/ttyACM0",
+    "echo_ok": true,
+    "elapsed_s": 0.305,
+    "error": null,
+    "reachable": true,
+    "sample": "^[[?2004hsh-5.3# 7,25476\n\u001b[?2004lsh: :s^[[?2004hsh-5.3# 7,25476: substitution failed\n\u001b[?2004hsh-5.3# \n\u001b[?2004l\u001b[?2004hsh-5.3# "
+  },
+  "pwa_drift": [],
+  "pwa_files": [
+    "pwa/nuxel-home/index.html",
+    "pwa/nuxel-home/manifest.json",
+    "pwa/nuxel-home/sw.js",
+    "pwa/nuxel-home/colour-test.html",
+    "pwa/nuxel-home/css/launcher.css",
+    "pwa/nuxel-home/css/search.css",
+    "pwa/nuxel-home/css/status-bar.css",
+    "pwa/nuxel-home/css/style.css",
+    "pwa/nuxel-home/js/app.js",
+    "pwa/nuxel-home/js/touch-keyboard.js",
+    "pwa/nuxel-home/js/apps.js",
+    "pwa/nuxel-home/js/bootlog.js",
+    "pwa/nuxel-home/js/bridge.js",
+    "pwa/nuxel-home/js/host-bridge.js",
+    "pwa/nuxel-home/js/launcher.js",
+    "pwa/nuxel-home/js/osd.js",
+    "pwa/nuxel-home/js/qs.js",
+    "pwa/nuxel-home/js/recents.js",
+    "pwa/nuxel-home/js/safe-zones.js",
+    "pwa/nuxel-home/js/search.js",
+    "pwa/nuxel-home/js/settings-store.js",
+    "pwa/nuxel-home/js/status-bar.js"
+  ],
+  "reachable": true,
+  "verdict": "DEPLOYED_UNVERIFIED",
+  "verdict_note": "baseline read from the running device; this is a read-only observation and proves nothing about hardware that reports no evidence (e.g. a registered sec_ts driver is not proof of a working touchscreen)",
+  "verdicts": {
+    "briq-10a-live-reachability-preflight": "DEPLOYED_UNVERIFIED"
+  }
+}

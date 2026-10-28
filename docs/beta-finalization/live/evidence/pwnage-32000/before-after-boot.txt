@@ -1,0 +1,38 @@
+# PWNAGE-32000 boot stage measurements (device /proc + systemd-analyze + journal)
+
+BEFORE (live, 2026-10-28 ~09:31, pre-fix):
+systemd-analyze:
+  Startup finished in 3.757s (kernel) + 1min 53.235s (userspace) = 1min 56.992s
+  multi-user.target reached after 1min 53.231s in userspace.
+systemd-analyze blame:
+  1min 36ms  NetworkManager-wait-online.service
+  4.023s     nuxel-fallback.service
+  2.481s     NetworkManager.service
+critical-chain (multi-user.target):
+  nuxel-button-manager @1min49.189
+  nuxel-wl-fb @1min48.135 (+1.034s)
+  nuxel-wayland @1min48.060 (+57ms)
+  nuxel-web @1min48.057
+  nuxel-http-bridge @1min48.049
+  nuxel-bridge @1min48.043
+  network-online.target @1min48.034
+  network.target @47.990
+  NetworkManager @45.507
+
+AFTER (live reboot, 2026-10-28 ~10:10, post-fix):
+journal (short-monotonic):
+  [5.817855] Started nuxel-touch-arm
+  [6.868766] Started nuxel-bridge
+  [6.870731] Started nuxel-http-bridge
+  [6.873543] Started nuxel-web
+  [6.892094] Started nuxel-wayland
+  [7.912958] Started nuxel-wl-fb
+  [51.795696] Reached network.target
+  [51.866982] Reached multi-user.target
+systemd-analyze:
+  Startup finished in 3.761s (kernel) + 1min 48.102s (userspace) = 1min 51.863s
+  multi-user.target reached after 48.105s in userspace.
+  (The overall "Startup finished" remains ~1:48 because NetworkManager-wait-online
+   still runs/fails as a wanted unit; the launcher no longer waits for it.)
+
+UI readiness improvement: nuxel-wayland start 1:48.060 -> 6.892s (~101s faster).

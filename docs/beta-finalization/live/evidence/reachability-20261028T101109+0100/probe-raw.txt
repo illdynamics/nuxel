@@ -1,0 +1,7 @@
+dev=/dev/ttyACM0 bytes_in=224 echo_ok=True error=None elapsed=0.303s
+sample:
+^[[?200415426,-;usb: set
+4,7107,47228803,-;usb: dwc3_gadget_linksts_change_interrupt : evtinfo = 0x10 link state = 0
+[?2004lsh: :s^[[?200415426,-;usb: set: substitution failed
+[?2004hsh-5.3# 
+[?2004l[?2004hsh-5.3# 

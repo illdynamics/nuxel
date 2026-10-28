@@ -1,0 +1,12 @@
+[
+  {
+    "group": "pwnage32000-manifest-parity",
+    "n": 1,
+    "risk": "low",
+    "script": "scripts/001-manifest.json.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/manifest.json",
+    "source_sha256": "ecabebc41b976aa69d08491d18eaff4dd150346537f9abd5e7bf0dfdc6690f0b",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/manifest.json"
+  }
+]

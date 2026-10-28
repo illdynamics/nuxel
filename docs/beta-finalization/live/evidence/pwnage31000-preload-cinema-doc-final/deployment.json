@@ -1,0 +1,88 @@
+{
+  "apply": true,
+  "at": "2026-10-28T11:07:36+0100",
+  "blocked_reason": "console lost after 8 reconnects during staging step 1: cannot create parent directory for /usr/lib/nuxel/nuxel-preload-cinema.nuxel-staged ()",
+  "boot_id_after": null,
+  "boot_id_before": null,
+  "boot_id_changed": null,
+  "briq": "briq-10b-live-deploy-userspace",
+  "cancelled": false,
+  "evidence_dir": "/x/nuxel/docs/beta-finalization/live/evidence/pwnage31000-preload-cinema-doc-final",
+  "exit_code": 3,
+  "finished_at": "2026-10-28T11:08:48+0100",
+  "groups": [
+    {
+      "declared_reload": "systemctl daemon-reload && systemctl enable nuxel-preload-cinema.service",
+      "declared_reload_source": "group",
+      "group": "preload-cinema-runtime",
+      "priority": 1,
+      "restart_service": null,
+      "risk": "low",
+      "risk_rank": 0,
+      "steps": 5
+    }
+  ],
+  "host": "dextronux",
+  "journal": "/x/nuxel/docs/beta-finalization/live/evidence/pwnage31000-preload-cinema-doc-final/transaction.jsonl",
+  "manifest": "tools/beta/live/nuxel-31000-preload-cinema-manifest.json",
+  "operation_id": "deploy-20261028T110736-2849278",
+  "order": "manifest",
+  "pid": 2849278,
+  "pid_start": "40360819",
+  "probe": {
+    "at": "2026-10-28T11:07:37+0100",
+    "bytes_in": 54,
+    "dev": "/dev/ttyACM0",
+    "echo_ok": true,
+    "elapsed_s": 0.303,
+    "error": null,
+    "reachable": true,
+    "sample": "\n\u001b[?2004l\u001b[?2004hsh-5.3# \n\u001b[?2004l\u001b[?2004hsh-5.3# "
+  },
+  "reconnects": [
+    {
+      "at": "step 1",
+      "error": "cannot create parent directory for /usr/lib/nuxel/nuxel-preload-cinema.nuxel-staged ()"
+    },
+    {
+      "at": "step 1",
+      "error": "cannot create parent directory for /usr/lib/nuxel/nuxel-preload-cinema.nuxel-staged ()"
+    },
+    {
+      "at": "step 1",
+      "error": "cannot create parent directory for /usr/lib/nuxel/nuxel-preload-cinema.nuxel-staged ()"
+    },
+    {
+      "at": "step 1",
+      "error": "cannot create parent directory for /usr/lib/nuxel/nuxel-preload-cinema.nuxel-staged ()"
+    },
+    {
+      "at": "step 1",
+      "error": "cannot create parent directory for /usr/lib/nuxel/nuxel-preload-cinema.nuxel-staged ()"
+    },
+    {
+      "at": "step 1",
+      "error": "cannot create parent directory for /usr/lib/nuxel/nuxel-preload-cinema.nuxel-staged ()"
+    },
+    {
+      "at": "step 1",
+      "error": "cannot create parent directory for /usr/lib/nuxel/nuxel-preload-cinema.nuxel-staged ()"
+    },
+    {
+      "at": "step 1",
+      "error": "cannot create parent directory for /usr/lib/nuxel/nuxel-preload-cinema.nuxel-staged ()"
+    }
+  ],
+  "results": [],
+  "risk_envelope": {
+    "low": 5
+  },
+  "skipped": [],
+  "steps": 5,
+  "transfer": {},
+  "verdict": "BLOCKED_EXTERNAL_RESOURCE",
+  "verdicts": {
+    "briq-10b-live-deploy-userspace": "BLOCKED_EXTERNAL_RESOURCE"
+  },
+  "violations": []
+}

@@ -1,0 +1,72 @@
+# console /dev/ttyACM0
+===== id   [rc=0 frame=a5e6c476 sha_ok=yes]
+    uid=0(root) gid=0(root) groups=0(root)
+===== uname -a   [rc=0 frame=d2e0c477 sha_ok=yes]
+    Linux fedora 4.14.253 #15 SMP PREEMPT Thu Oct 15 22:29:25 UTC 2026 aarch64 GNU/Linux
+===== cat /proc/sys/kernel/random/boot_id   [rc=0 frame=64a1c478 sha_ok=yes]
+    fd90d418-cb94-4130-91da-83c5c3b49a25
+===== tr -d '\000' < /proc/device-tree/model 2>/dev/null; echo   [rc=0 frame=488fc479 sha_ok=yes]
+    Samsung BEYOND2LTE EUR OPEN 26 board based on EXYNOS9820
+===== cat /etc/os-release | head -5   [rc=0 frame=dd03c47a sha_ok=yes]
+    NAME="Fedora Linux"
+    VERSION="43 (Forty Three)"
+    RELEASE_TYPE=stable
+    ID=fedora
+    VERSION_ID=43
+===== command -v mpv   [rc=0 frame=0082c47b sha_ok=yes]
+    /usr/sbin/mpv
+===== /usr/bin/mpv --version | head -4   [rc=0 frame=1cafc47c sha_ok=yes]
+    mpv v0.40.0 Copyright © 2000-2025 mpv/MPlayer/mplayer2 projects
+    libplacebo version: v7.351.0
+    FFmpeg version: 7.1.1 (runtime 7.1.5)
+    FFmpeg library versions:
+===== rpm -q mpv   [rc=0 frame=4891c47e sha_ok=yes]
+    mpv-0.40.0-3.fc43.aarch64
+===== systemctl is-system-running   [rc=1 frame=5105c47f sha_ok=yes]
+    degraded
+===== systemctl is-active nuxel-wayland nuxel-wl-fb nuxel-touch-arm nuxel-button-manager nuxel-bridge nuxel-portal nuxel-notifications nuxel-web   [rc=0 frame=b884c480 sha_ok=yes]
+    active
+    active
+    active
+    active
+    active
+    active
+    active
+    active
+===== systemctl is-enabled nuxel-preload-cinema 2>&1 || true   [rc=0 frame=e3d2c481 sha_ok=yes]
+    not-found
+===== test -e /usr/lib/nuxel/nuxel-preload-cinema && echo PRELOAD_CONTROLLER=EXISTS || echo PRELOAD_CONTROLLER=ABSENT   [rc=0 frame=00dfc482 sha_ok=yes]
+    PRELOAD_CONTROLLER=ABSENT
+===== test -e /etc/nuxel/boot/preload-cinema.json && echo PRELOAD_CONFIG=EXISTS || echo PRELOAD_CONFIG=ABSENT   [rc=0 frame=8bcfc483 sha_ok=yes]
+    PRELOAD_CONFIG=ABSENT
+===== test -e /etc/systemd/system/nuxel-preload-cinema.service && echo PRELOAD_UNIT=EXISTS || echo PRELOAD_UNIT=ABSENT   [rc=0 frame=643ec485 sha_ok=yes]
+    PRELOAD_UNIT=ABSENT
+===== test -e /usr/share/nuxel/preload/nuxel-preloading-screen.mp4 && echo PRELOAD_ASSET=EXISTS || echo PRELOAD_ASSET=ABSENT   [rc=0 frame=d8c6c486 sha_ok=yes]
+    PRELOAD_ASSET=ABSENT
+===== sha256sum /usr/share/nuxel/boot/nuxel-boot-animation.mp4   [rc=0 frame=5928c487 sha_ok=yes]
+    280e094fb3efe54eaf15f0d964bf8ad834eeebde2e34901e1bf1e3520b95184c  /usr/share/nuxel/boot/nuxel-boot-animation.mp4
+===== tail -3 /run/nuxel-home.state 2>/dev/null | tr -d '\000'   [rc=0 frame=a27dc487 sha_ok=yes]
+    1793180820 HOST_CONFIG_GET name=battery-status bytes=5
+    1793180820 HOST_CONFIG_GET name=battery-capacity bytes=4
+    1793180820 HOST_CONFIG_GET name=battery-status bytes=5
+===== tail -3 /run/nuxel-wl-fb.state 2>/dev/null | tr -d '\000'   [rc=0 frame=1a29c488 sha_ok=yes]
+    1793180821 FRAMES_OK total=11560 fps_1s=27 failures=0 blits=740 present_skipped=10819 blit_avg_ms=46 idle_ms=623 out=720x1520 src=720x1520 scale=2 panel=1440x3040 owner=nuxel-wl-fb display=on src_format=0x00000001 colour=R@0,G@8,B@16_abgr8888_override=1 decon_pan_ok=741 decon_pan_failed=0
+===== tail -3 /run/nuxel-touch-arm.state 2>/dev/null | tr -d '\000'   [rc=0 frame=1326c489 sha_ok=yes]
+    2026-10-28T09:46:26Z TOUCH_POINT slot=0 n=340
+    2026-10-28T09:46:26Z TOUCH_POINT slot=0 n=341
+    2026-10-28T09:46:26Z TOUCH_POINT slot=0 n=342
+===== ls -l /run/nuxel-launcher-ready 2>&1 || true   [rc=0 frame=8397c48b sha_ok=yes]
+    -rw-r--r-- 1 root root 69 Oct 28 10:36 /run/nuxel-launcher-ready
+===== cat /run/nuxel/preload-cinema.receipt 2>/dev/null || echo PRELOAD_RECEIPT=ABSENT   [rc=0 frame=a870c48c sha_ok=yes]
+    PRELOAD_RECEIPT=ABSENT
+===== free -m   [rc=0 frame=e51cc48d sha_ok=yes]
+                   total        used        free      shared  buff/cache   available
+    Mem:            7420        1070        5860          31         580        6349
+    Swap:              0           0           0
+===== df -h /usr /var /run   [rc=0 frame=5d69c48e sha_ok=yes]
+    Filesystem      Size  Used Avail Use% Mounted on
+    /dev/sda31      3.9G  3.3G  433M  89% /
+    /dev/sda31      3.9G  3.3G  433M  89% /
+    tmpfs           1.4G  388K  1.4G   1% /run
+===== timeout 20 /usr/bin/mpv --no-config --no-audio --mute=yes --vo=null --frames=1 --really-quiet --no-terminal --hwdec=no -- /usr/share/nuxel/boot/nuxel-boot-animation.mp4; echo mpv_probe_rc=$?   [rc=0 frame=e2e8c48e sha_ok=yes]
+    mpv_probe_rc=0

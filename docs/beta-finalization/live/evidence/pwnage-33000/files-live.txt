@@ -1,0 +1,29 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+PASS home resolves to /home/nuxel
+PASS list-dir shows real home entries
+PASS mkdir
+PASS write-file
+PASS copy
+PASS move
+PASS rename
+PASS archive-create
+PASS archive-extract
+PASS file content preserved
+PASS zip valid
+PASS extracted file exists
+PASS name conflict refused (EXISTS)
+PASS cleanup
+PASS gallery write
+PASS gallery discovers real photo
+PASS media stream Range 206
+PASS gallery file user-owned
+PASS gallery cleanup
+RESULT 19 / 19

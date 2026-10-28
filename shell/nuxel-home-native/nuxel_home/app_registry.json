@@ -1,6 +1,6 @@
 {
   "schema": "nuxel.app-registry.native-consumer/1",
-  "version": 6,
+  "version": 7,
   "generated_from": "pwa/nuxel-common/app-registry.json",
   "bridge_version": "1",
   "do_not_edit": "Rendered by tools/s10plus/a33/verify-app-registry.py --sync-native. Edit the canonical registry instead.",
@@ -68,7 +68,7 @@
       "native_binary": "/usr/lib/nuxel/nuxel-camera-native/nuxel_camera_native.py",
       "color": "#795548",
       "category": "media",
-      "description": "Take photos and videos",
+      "description": "Camera UI with honest hardware status; backend capture is deferred",
       "capabilities": [
         "camera:capture",
         "camera:preview"
@@ -89,8 +89,7 @@
       "capabilities": [
         "notifications:send",
         "notifications:receive",
-        "storage:read",
-        "storage:write"
+        "storage:persistent"
       ],
       "bridge_version": "1",
       "status": "implemented"
@@ -107,8 +106,7 @@
       "description": "Calendar and events",
       "capabilities": [
         "notifications:send",
-        "storage:read",
-        "storage:write"
+        "storage:persistent"
       ],
       "bridge_version": "1",
       "status": "implemented"
@@ -123,7 +121,9 @@
       "color": "#607D8B",
       "category": "productivity",
       "description": "Take notes",
-      "capabilities": [],
+      "capabilities": [
+        "storage:persistent"
+      ],
       "bridge_version": "1",
       "status": "implemented"
     },
@@ -220,48 +220,142 @@
       "id": "org.nuxel.Browser",
       "name": "Browser",
       "icon": "\ud83c\udf10",
-      "kind": "pwa",
-      "url": "http://127.0.0.1:8000/pwa/nuxel-apps/browser/index.html",
-      "native_binary": null,
-      "color": "#297ad7",
-      "category": "tools",
-      "description": "WebKit page viewer; HTTPS external navigation requires explicit opt-in",
-      "capabilities": [
-        "network:outbound"
-      ],
-      "bridge_version": "1",
-      "status": "implemented-source-only"
-    },
-    {
-      "id": "org.nuxel.BrowserNative",
-      "name": "Nuxel Browser",
-      "icon": "\ud83c\udf10",
       "kind": "native",
-      "url": "org.nuxel.BrowserNative://",
+      "url": "/pwa/nuxel-apps/browser/index.html",
       "native_binary": "/usr/lib/nuxel/nuxel-browser-native/nuxel_browser_native.py",
       "color": "#297ad7",
       "category": "tools",
-      "description": "Real top-level WebKitGTK browser (HTTPS, Back/Forward/Reload/Home)",
+      "description": "Real top-level WebKitGTK browser (HTTPS); shell navigation remains visible",
       "capabilities": [
+        "network:outbound",
+        "storage:persistent"
+      ],
+      "bridge_version": "1",
+      "status": "implemented"
+    },
+    {
+      "id": "org.nuxel.Calculator",
+      "name": "Calculator",
+      "icon": "\ud83e\uddee",
+      "kind": "pwa",
+      "url": "http://127.0.0.1:8000/pwa/nuxel-apps/calculator/index.html",
+      "native_binary": null,
+      "color": "#009688",
+      "category": "tools",
+      "description": "Offline expression calculator",
+      "capabilities": [],
+      "bridge_version": "1",
+      "status": "implemented"
+    },
+    {
+      "id": "org.nuxel.Clock",
+      "name": "Clock",
+      "icon": "\u23f0",
+      "kind": "pwa",
+      "url": "http://127.0.0.1:8000/pwa/nuxel-apps/clock/index.html",
+      "native_binary": null,
+      "color": "#455A64",
+      "category": "tools",
+      "description": "Clock, alarms and timers",
+      "capabilities": [
+        "notifications:send",
+        "storage:persistent"
+      ],
+      "bridge_version": "1",
+      "status": "implemented"
+    },
+    {
+      "id": "org.nuxel.Photos",
+      "name": "Gallery",
+      "icon": "\ud83d\uddbc\ufe0f",
+      "kind": "pwa",
+      "url": "http://127.0.0.1:8000/pwa/nuxel-apps/photos/index.html",
+      "native_binary": null,
+      "color": "#F06292",
+      "category": "media",
+      "description": "Photo and video gallery over real user media folders",
+      "capabilities": [
+        "storage:persistent"
+      ],
+      "bridge_version": "1",
+      "status": "implemented"
+    },
+    {
+      "id": "org.nuxel.Weather",
+      "name": "Weather",
+      "icon": "\u26c5",
+      "kind": "pwa",
+      "url": "http://127.0.0.1:8000/pwa/nuxel-apps/weather/index.html",
+      "native_binary": null,
+      "color": "#29B6F6",
+      "category": "tools",
+      "description": "Weather forecast with manual locations",
+      "capabilities": [
+        "storage:persistent",
         "network:outbound"
       ],
       "bridge_version": "1",
       "status": "implemented"
     },
     {
-      "id": "org.nuxel.CameraNative",
-      "name": "Nuxel Camera",
-      "icon": "\ud83d\udcf7",
-      "kind": "native",
-      "url": "org.nuxel.CameraNative://",
-      "native_binary": "/usr/lib/nuxel/nuxel-camera-native/nuxel_camera_native.py",
-      "color": "#795548",
-      "category": "media",
-      "description": "Custom Nuxel Camera native app with honest hardware status",
+      "id": "org.nuxel.Maps",
+      "name": "Maps",
+      "icon": "\ud83d\uddfa\ufe0f",
+      "kind": "pwa",
+      "url": "http://127.0.0.1:8000/pwa/nuxel-apps/maps/index.html",
+      "native_binary": null,
+      "color": "#7CB342",
+      "category": "tools",
+      "description": "Maps and navigation",
       "capabilities": [
-        "camera:capture",
-        "camera:preview"
+        "location:read",
+        "storage:persistent",
+        "network:outbound"
       ],
+      "bridge_version": "1",
+      "status": "implemented"
+    },
+    {
+      "id": "org.nuxel.Nuxtore",
+      "name": "NuxTore",
+      "icon": "\ud83d\udecd\ufe0f",
+      "kind": "pwa",
+      "url": "http://127.0.0.1:8000/pwa/nuxel-apps/nuxtore/index.html",
+      "native_binary": null,
+      "color": "#FF7043",
+      "category": "tools",
+      "description": "Nuxel app catalog (honest empty installed state)",
+      "capabilities": [],
+      "bridge_version": "1",
+      "status": "implemented"
+    },
+    {
+      "id": "org.nuxel.Recorder",
+      "name": "Recorder",
+      "icon": "\ud83c\udf99\ufe0f",
+      "kind": "pwa",
+      "url": "http://127.0.0.1:8000/pwa/nuxel-apps/recorder/index.html",
+      "native_binary": null,
+      "color": "#D32F2F",
+      "category": "media",
+      "description": "Voice recorder saving to ~/VoiceRecordings",
+      "capabilities": [
+        "storage:persistent"
+      ],
+      "bridge_version": "1",
+      "status": "implemented"
+    },
+    {
+      "id": "org.nuxel.SnekByte",
+      "name": "SnekByte",
+      "icon": "\ud83d\udc0d",
+      "kind": "pwa",
+      "url": "http://127.0.0.1:8000/pwa/nuxel-apps/snekbyte/index.html",
+      "native_binary": null,
+      "color": "#66BB6A",
+      "category": "games",
+      "description": "Nuxel Arcade",
+      "capabilities": [],
       "bridge_version": "1",
       "status": "implemented"
     }

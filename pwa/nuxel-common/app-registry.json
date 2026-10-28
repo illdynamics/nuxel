@@ -1,6 +1,6 @@
 {
   "schema": "nuxel.app-registry/1",
-  "registry_version": 6,
+  "registry_version": 7,
   "bridge_version": "1",
   "bridge_version_pin": "pwa/nuxel-common/bridge-version.json",
   "url_base": "http://127.0.0.1:8000",
@@ -13,14 +13,14 @@
   },
   "contract": {
     "one_registry": "This file is the canonical launcher registry. The PWA launcher (apps.js), the native shell (app_registry.json) and the HTTP bridge all serve the SAME app set; verify-app-registry.py fails on any drift between them.",
-    "capability_source": "services/nuxel-bridge/src/capabilities.py (Capability enum) — an app may not declare a capability the bridge does not know.",
+    "capability_source": "services/nuxel-bridge/src/capabilities.py (Capability enum) \u2014 an app may not declare a capability the bridge does not know.",
     "manifest_rule": "every pwa entry must resolve to a real index.html AND a manifest.json carrying nuxel.capabilities (list) and nuxel.bridge_version equal to the pin."
   },
   "apps": [
     {
       "id": "nuxel-dialer",
       "name": "Phone",
-      "icon": "📞",
+      "icon": "\ud83d\udcde",
       "color": "#4CAF50",
       "category": "communication",
       "type": "native",
@@ -43,7 +43,7 @@
     {
       "id": "nuxel-messages",
       "name": "Messages",
-      "icon": "💬",
+      "icon": "\ud83d\udcac",
       "color": "#2196F3",
       "category": "communication",
       "type": "native",
@@ -65,7 +65,7 @@
     {
       "id": "nuxel-contacts",
       "name": "Contacts",
-      "icon": "👤",
+      "icon": "\ud83d\udc64",
       "color": "#9C27B0",
       "category": "communication",
       "type": "native",
@@ -85,15 +85,15 @@
     {
       "id": "nuxel-camera",
       "name": "Camera",
-      "icon": "📷",
+      "icon": "\ud83d\udcf7",
       "color": "#795548",
       "category": "media",
       "type": "native",
       "url": "nuxel-camera://",
       "native_binary": "/usr/lib/nuxel/nuxel-camera-native/nuxel_camera_native.py",
       "binary_source": "shell/nuxel-camera-native",
-      "desktop_entry": null,
-      "description": "Take photos and videos",
+      "desktop_entry": "shell/nuxel-camera-native/org.nuxel.CameraNative.desktop",
+      "description": "Camera UI with honest hardware status; backend capture is deferred",
       "capabilities": [
         "camera:capture",
         "camera:preview"
@@ -106,7 +106,7 @@
     {
       "id": "org.nuxel.Mail",
       "name": "Mail",
-      "icon": "✉️",
+      "icon": "\u2709\ufe0f",
       "color": "#FF9800",
       "category": "productivity",
       "type": "pwa",
@@ -117,8 +117,7 @@
       "capabilities": [
         "notifications:send",
         "notifications:receive",
-        "storage:read",
-        "storage:write"
+        "storage:persistent"
       ],
       "bridge_version": "1",
       "docked": false
@@ -126,7 +125,7 @@
     {
       "id": "org.nuxel.Calendar",
       "name": "Calendar",
-      "icon": "📅",
+      "icon": "\ud83d\udcc5",
       "color": "#E91E63",
       "category": "productivity",
       "type": "pwa",
@@ -136,8 +135,7 @@
       "description": "Calendar and events",
       "capabilities": [
         "notifications:send",
-        "storage:read",
-        "storage:write"
+        "storage:persistent"
       ],
       "bridge_version": "1",
       "docked": false
@@ -145,7 +143,7 @@
     {
       "id": "org.nuxel.Notes",
       "name": "Notes",
-      "icon": "📝",
+      "icon": "\ud83d\udcdd",
       "color": "#607D8B",
       "category": "productivity",
       "type": "pwa",
@@ -153,14 +151,16 @@
       "entry": "pwa/nuxel-apps/notes/index.html",
       "manifest": "pwa/nuxel-apps/notes/manifest.json",
       "description": "Take notes",
-      "capabilities": [],
+      "capabilities": [
+        "storage:persistent"
+      ],
       "bridge_version": "1",
       "docked": false
     },
     {
       "id": "org.nuxel.Files",
       "name": "Files",
-      "icon": "📁",
+      "icon": "\ud83d\udcc1",
       "color": "#3F51B5",
       "category": "tools",
       "type": "pwa",
@@ -175,7 +175,7 @@
     {
       "id": "nuxel-settings",
       "name": "Settings",
-      "icon": "⚙️",
+      "icon": "\u2699\ufe0f",
       "color": "#78909C",
       "category": "system",
       "type": "pwa",
@@ -193,7 +193,7 @@
     {
       "id": "org.nuxel.Terminal",
       "name": "Terminal",
-      "icon": "🖥️",
+      "icon": "\ud83d\udda5\ufe0f",
       "color": "#263238",
       "category": "system",
       "type": "pwa",
@@ -210,7 +210,7 @@
     {
       "id": "org.nuxel.LiveConsole",
       "name": "Serial Live Console",
-      "icon": "📟",
+      "icon": "\ud83d\udcdf",
       "color": "#37474F",
       "category": "system",
       "type": "pwa",
@@ -227,7 +227,7 @@
     {
       "id": "org.nuxel.USBSSHConsole",
       "name": "USB SSH Console",
-      "icon": "🔌",
+      "icon": "\ud83d\udd0c",
       "color": "#6D4C41",
       "category": "system",
       "type": "pwa",
@@ -245,7 +245,7 @@
     {
       "id": "org.nuxel.WiFiSSHConsole",
       "name": "Wi-Fi SSH Console",
-      "icon": "📶",
+      "icon": "\ud83d\udcf6",
       "color": "#0288D1",
       "category": "system",
       "type": "pwa",
@@ -262,58 +262,159 @@
     {
       "id": "org.nuxel.Browser",
       "name": "Browser",
-      "icon": "🌐",
+      "icon": "\ud83c\udf10",
       "color": "#297ad7",
       "category": "tools",
-      "type": "pwa",
+      "type": "native",
       "url": "/pwa/nuxel-apps/browser/index.html",
-      "description": "WebKit page viewer; HTTPS external navigation requires explicit opt-in",
+      "description": "Real top-level WebKitGTK browser (HTTPS); shell navigation remains visible",
       "capabilities": [
-        "network:outbound"
+        "network:outbound",
+        "storage:persistent"
       ],
       "bridge_version": "1",
       "docked": false,
-      "status": "implemented-source-only",
+      "status": "implemented",
       "runtime_state": "NEEDS_OWNER_TEST (HTTPS iframe restrictions on some websites)",
       "entry": "pwa/nuxel-apps/browser/index.html",
-      "manifest": "pwa/nuxel-apps/browser/manifest.json"
-    },
-    {
-      "id": "org.nuxel.BrowserNative",
-      "name": "Nuxel Browser",
-      "icon": "🌐",
-      "color": "#297ad7",
-      "category": "tools",
-      "type": "native",
-      "url": "org.nuxel.BrowserNative://",
+      "manifest": "pwa/nuxel-apps/browser/manifest.json",
       "native_binary": "/usr/lib/nuxel/nuxel-browser-native/nuxel_browser_native.py",
       "binary_source": "shell/nuxel-browser-native",
-      "description": "Real top-level WebKitGTK browser (HTTPS, Back/Forward/Reload/Home)",
-      "capabilities": [
-        "network:outbound"
-      ],
-      "bridge_version": "1",
-      "docked": false,
-      "status": "implemented"
+      "desktop_entry": "shell/nuxel-browser-native/org.nuxel.BrowserNative.desktop"
     },
     {
-      "id": "org.nuxel.CameraNative",
-      "name": "Nuxel Camera",
-      "icon": "📷",
-      "color": "#795548",
-      "category": "media",
-      "type": "native",
-      "url": "org.nuxel.CameraNative://",
-      "native_binary": "/usr/lib/nuxel/nuxel-camera-native/nuxel_camera_native.py",
-      "binary_source": "shell/nuxel-camera-native",
-      "description": "Custom Nuxel Camera native app with honest hardware status",
-      "capabilities": [
-        "camera:capture",
-        "camera:preview"
-      ],
-      "bridge_version": "1",
+      "name": "Calculator",
+      "icon": "\ud83e\uddee",
+      "color": "#009688",
+      "category": "tools",
+      "type": "pwa",
+      "url": "/pwa/nuxel-apps/calculator/index.html",
+      "entry": "pwa/nuxel-apps/calculator/index.html",
+      "manifest": "pwa/nuxel-apps/calculator/manifest.json",
+      "description": "Offline expression calculator",
+      "capabilities": [],
       "docked": false,
-      "status": "implemented"
+      "id": "org.nuxel.Calculator",
+      "bridge_version": "1"
+    },
+    {
+      "name": "Clock",
+      "icon": "\u23f0",
+      "color": "#455A64",
+      "category": "tools",
+      "type": "pwa",
+      "url": "/pwa/nuxel-apps/clock/index.html",
+      "entry": "pwa/nuxel-apps/clock/index.html",
+      "manifest": "pwa/nuxel-apps/clock/manifest.json",
+      "description": "Clock, alarms and timers",
+      "capabilities": [
+        "notifications:send",
+        "storage:persistent"
+      ],
+      "docked": false,
+      "id": "org.nuxel.Clock",
+      "bridge_version": "1"
+    },
+    {
+      "name": "Gallery",
+      "icon": "\ud83d\uddbc\ufe0f",
+      "color": "#F06292",
+      "category": "media",
+      "type": "pwa",
+      "url": "/pwa/nuxel-apps/photos/index.html",
+      "entry": "pwa/nuxel-apps/photos/index.html",
+      "manifest": "pwa/nuxel-apps/photos/manifest.json",
+      "description": "Photo and video gallery over real user media folders",
+      "capabilities": [
+        "storage:persistent"
+      ],
+      "docked": false,
+      "id": "org.nuxel.Photos",
+      "bridge_version": "1"
+    },
+    {
+      "name": "Weather",
+      "icon": "\u26c5",
+      "color": "#29B6F6",
+      "category": "tools",
+      "type": "pwa",
+      "url": "/pwa/nuxel-apps/weather/index.html",
+      "entry": "pwa/nuxel-apps/weather/index.html",
+      "manifest": "pwa/nuxel-apps/weather/manifest.json",
+      "description": "Weather forecast with manual locations",
+      "capabilities": [
+        "storage:persistent",
+        "network:outbound"
+      ],
+      "docked": false,
+      "id": "org.nuxel.Weather",
+      "bridge_version": "1"
+    },
+    {
+      "name": "Maps",
+      "icon": "\ud83d\uddfa\ufe0f",
+      "color": "#7CB342",
+      "category": "tools",
+      "type": "pwa",
+      "url": "/pwa/nuxel-apps/maps/index.html",
+      "entry": "pwa/nuxel-apps/maps/index.html",
+      "manifest": "pwa/nuxel-apps/maps/manifest.json",
+      "description": "Maps and navigation",
+      "capabilities": [
+        "location:read",
+        "storage:persistent",
+        "network:outbound"
+      ],
+      "docked": false,
+      "id": "org.nuxel.Maps",
+      "bridge_version": "1"
+    },
+    {
+      "name": "NuxTore",
+      "icon": "\ud83d\udecd\ufe0f",
+      "color": "#FF7043",
+      "category": "tools",
+      "type": "pwa",
+      "url": "/pwa/nuxel-apps/nuxtore/index.html",
+      "entry": "pwa/nuxel-apps/nuxtore/index.html",
+      "manifest": "pwa/nuxel-apps/nuxtore/manifest.json",
+      "description": "Nuxel app catalog (honest empty installed state)",
+      "capabilities": [],
+      "docked": false,
+      "id": "org.nuxel.Nuxtore",
+      "bridge_version": "1"
+    },
+    {
+      "name": "Recorder",
+      "icon": "\ud83c\udf99\ufe0f",
+      "color": "#D32F2F",
+      "category": "media",
+      "type": "pwa",
+      "url": "/pwa/nuxel-apps/recorder/index.html",
+      "entry": "pwa/nuxel-apps/recorder/index.html",
+      "manifest": "pwa/nuxel-apps/recorder/manifest.json",
+      "description": "Voice recorder saving to ~/VoiceRecordings",
+      "capabilities": [
+        "storage:persistent"
+      ],
+      "docked": false,
+      "id": "org.nuxel.Recorder",
+      "bridge_version": "1"
+    },
+    {
+      "name": "SnekByte",
+      "icon": "\ud83d\udc0d",
+      "color": "#66BB6A",
+      "category": "games",
+      "type": "pwa",
+      "url": "/pwa/nuxel-apps/snekbyte/index.html",
+      "entry": "pwa/nuxel-apps/snekbyte/index.html",
+      "manifest": "pwa/nuxel-apps/snekbyte/manifest.json",
+      "description": "Nuxel Arcade",
+      "capabilities": [],
+      "docked": false,
+      "id": "org.nuxel.SnekByte",
+      "bridge_version": "1"
     }
   ],
   "tree_apps": [
@@ -524,7 +625,7 @@
     }
   ],
   "notes": {
-    "revision": "A59 rescue: native Browser + native Camera registered; launcher surface extended.",
+    "revision": "PWNAGE-33000: launcher apps.js and registry unified; Gallery/Photos, Recorder, Nuxtore and utility apps registered.",
     "tree_apps_states": "complete | in_progress | shared-assets-not-an-app (the dir MUST exist) | planned (must NOT exist yet; DEFER until it lands). Enforced by tools/s10plus/a33/verify-app-registry.py - a dangling directory in a present-state entry is a FAILED verdict, never a warning.",
     "required_apps_not_yet_in_tree": "Concept-level inventory of mission-required apps with no tree directory yet. Each entry names the owning build group and its ledger briq; the verifier fails if that briq file does not exist in docs/beta-finalization/workqueue/ or if the briq's component does not match owner_group.",
     "registry_version_6_tri_link": "NUXEL-28000 registers three distinct console entries in apps[] and apps.js; the registry revision is 6 so launcher/native/HTTP consumers cannot drift silently."

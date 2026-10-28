@@ -306,9 +306,9 @@ on_add_contact_clicked(GtkWidget *btn, gpointer user_data)
 {
     NuxelContacts *app = (NuxelContacts *)user_data;
     gtk_stack_set_visible_child_name(GTK_STACK(app->stack), "edit");
-    gtk_entry_set_text(GTK_ENTRY(app->edit_name_entry), "");
-    gtk_entry_set_text(GTK_ENTRY(app->edit_phone_entry), "");
-    gtk_entry_set_text(GTK_ENTRY(app->edit_email_entry), "");
+    gtk_editable_set_text(GTK_EDITABLE(app->edit_name_entry), "");
+    gtk_editable_set_text(GTK_EDITABLE(app->edit_phone_entry), "");
+    gtk_editable_set_text(GTK_EDITABLE(app->edit_email_entry), "");
     app->active_contact = NULL;
 }
 
@@ -385,7 +385,10 @@ on_save_clicked(GtkWidget *btn, gpointer user_data)
         Contact *c = g_ptr_array_index(app->contacts, i);
         GtkWidget *row = gtk_list_box_row_new();
         GtkWidget *box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 12);
-        gtk_widget_set_margin(box, 8);
+        gtk_widget_set_margin_start(box, 8);
+    gtk_widget_set_margin_end(box, 8);
+    gtk_widget_set_margin_top(box, 8);
+    gtk_widget_set_margin_bottom(box, 8);
         
         GtkWidget *avatar = adw_avatar_new(32, c->name ? g_strndup(c->name, 1) : "?", TRUE);
         gtk_box_append(GTK_BOX(box), avatar);
@@ -476,7 +479,10 @@ activate_cb(GtkApplication *gtk_app, gpointer user_data)
     pango_attr_list_insert(tattrs, pango_attr_weight_new(PANGO_WEIGHT_BOLD));
     gtk_label_set_attributes(GTK_LABEL(title), tattrs);
     pango_attr_list_unref(tattrs);
-    gtk_widget_set_margin(title, 12);
+    gtk_widget_set_margin_start(title, 12);
+    gtk_widget_set_margin_end(title, 12);
+    gtk_widget_set_margin_top(title, 12);
+    gtk_widget_set_margin_bottom(title, 12);
     gtk_box_append(GTK_BOX(header), title);
     
     GtkWidget *spacer = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
@@ -542,7 +548,10 @@ activate_cb(GtkApplication *gtk_app, gpointer user_data)
     
     /* Avatar and details */
     GtkWidget *detail_content = gtk_box_new(GTK_ORIENTATION_VERTICAL, 8);
-    gtk_widget_set_margin(detail_content, 16);
+    gtk_widget_set_margin_start(detail_content, 16);
+    gtk_widget_set_margin_end(detail_content, 16);
+    gtk_widget_set_margin_top(detail_content, 16);
+    gtk_widget_set_margin_bottom(detail_content, 16);
     gtk_widget_set_valign(detail_content, GTK_ALIGN_START);
     
     app->detail_avatar = adw_avatar_new(72, "?", TRUE);
@@ -590,7 +599,10 @@ activate_cb(GtkApplication *gtk_app, gpointer user_data)
     gtk_box_append(GTK_BOX(edit_page), edit_header);
     
     GtkWidget *edit_form = gtk_box_new(GTK_ORIENTATION_VERTICAL, 8);
-    gtk_widget_set_margin(edit_form, 16);
+    gtk_widget_set_margin_start(edit_form, 16);
+    gtk_widget_set_margin_end(edit_form, 16);
+    gtk_widget_set_margin_top(edit_form, 16);
+    gtk_widget_set_margin_bottom(edit_form, 16);
     
     app->edit_name_entry = gtk_entry_new();
     gtk_entry_set_placeholder_text(GTK_ENTRY(app->edit_name_entry), "Name");
@@ -618,7 +630,10 @@ activate_cb(GtkApplication *gtk_app, gpointer user_data)
         Contact *c = g_ptr_array_index(app->contacts, i);
         GtkWidget *row = gtk_list_box_row_new();
         GtkWidget *box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 12);
-        gtk_widget_set_margin(box, 8);
+        gtk_widget_set_margin_start(box, 8);
+    gtk_widget_set_margin_end(box, 8);
+    gtk_widget_set_margin_top(box, 8);
+    gtk_widget_set_margin_bottom(box, 8);
         
         GtkWidget *avatar = adw_avatar_new(32, c->name ? g_strndup(c->name, 1) : "?", TRUE);
         gtk_box_append(GTK_BOX(box), avatar);

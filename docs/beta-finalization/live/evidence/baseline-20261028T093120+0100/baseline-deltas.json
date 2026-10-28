@@ -1,0 +1,16 @@
+[
+  {
+    "expected": "HTTP 200",
+    "item": "pwa-registry",
+    "observed": "403",
+    "severity": "regression-signal"
+  },
+  {
+    "expected": "0",
+    "item": "failed-units",
+    "observed": [
+      "\u25cf NetworkManager-wait-online.service loaded failed failed Network Manager Wait Online"
+    ],
+    "severity": "regression-signal"
+  }
+]

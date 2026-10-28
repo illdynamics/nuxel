@@ -7,7 +7,7 @@
 // REGISTRY_VERSION that the launcher publishes on its evidence channel and that
 // tools/s10plus/a33/tests/launcher-registry-test.js asserts ("org.nuxel.Terminal"
 // and "nuxel-settings" present, every PWA served under /pwa/nuxel-apps/).
-const NUXEL_REGISTRY_VERSION = 6;
+const NUXEL_REGISTRY_VERSION = 7;
 
 const NUXEL_APPS = {
     // Native shell apps
@@ -212,10 +212,10 @@ const NUXEL_APPS = {
         capabilities: ['notifications:send', 'storage:persistent'], docked: false,
     },
     'org.nuxel.Photos': {
-        id: 'org.nuxel.Photos', name: 'Photos', icon: '🖼️', color: '#F06292',
+        id: 'org.nuxel.Photos', name: 'Gallery', icon: '🖼️', color: '#F06292',
         category: 'media', type: 'pwa',
         url: '/pwa/nuxel-apps/photos/index.html',
-        description: 'Browse your photos', capabilities: ['storage:persistent'], docked: false,
+        description: 'Browse photos and videos', capabilities: ['storage:persistent'], docked: false,
     },
     'org.nuxel.Weather': {
         id: 'org.nuxel.Weather', name: 'Weather', icon: '⛅', color: '#29B6F6',
@@ -251,16 +251,6 @@ const NUXEL_APPS = {
         description: 'SnekByte — Nuxel Arcade',
         capabilities: ['input:keyboard', 'input:touch'], docked: false,
     },
-    'org.gnome.Snapshot': {
-        id: 'org.gnome.Snapshot', name: 'Camera (GNOME Snapshot)', icon: '📸', color: '#8D6E63',
-        category: 'media', type: 'native',
-        url: 'org.gnome.Snapshot://',
-        nativeAppId: 'org.gnome.Snapshot',
-        native_binary: '/usr/bin/snapshot',
-        installed: true,
-        description: 'GNOME Snapshot native camera (installed; camera feed needs PipeWire/libcamera)',
-        capabilities: ['camera:capture', 'camera:preview'], docked: false,
-    },
 };
 
 // Launcher artwork is intentionally separate from the canonical app registry:
@@ -270,18 +260,24 @@ const NUXEL_APP_ICON_ASSETS = {
     'nuxel-dialer': '/assets/nuxel-applications-icon-pack/01-08_phone.png?v=a37',
     'nuxel-messages': '/assets/nuxel-applications-icon-pack/02-01_messages.png?v=a37',
     'nuxel-contacts': '/assets/nuxel-applications-icon-pack/02-02_contacts.png?v=a37',
-    'org.nuxel.Mail': '/assets/nuxel-applications-icon-pack/01-06_pixel-envelope.png?v=a37',
-    'org.nuxel.Calendar': '/assets/nuxel-applications-icon-pack/02-03_day-calendar.png?v=a37',
-    'org.nuxel.Browser': '/assets/nuxel-applications-icon-pack/01-09_browser-swirl.png?v=a43',
-    'org.nuxel.Notes': '/assets/nuxel-applications-icon-pack/02-09_notes.png?v=a37',
-    'org.nuxel.Files': '/assets/nuxel-applications-icon-pack/02-06_file-explorer.png?v=a37',
-    'nuxel-camera': '/assets/nuxel-applications-icon-pack/03-01_camera.png?v=a37',
     'nuxel-settings': '/assets/nuxel-applications-icon-pack/01-11_settings.png?v=a37',
     'org.nuxel.Terminal': '/assets/nuxel-applications-icon-pack/01-01_terminal.png?v=a37',
     'org.nuxel.LiveConsole': '/assets/nuxel-applications-icon-pack/05-05_live-console.png?v=a80',
     'org.nuxel.USBSSHConsole': '/assets/nuxel-applications-icon-pack/06-05_usb-connection.png?v=a80',
     'org.nuxel.WiFiSSHConsole': '/assets/nuxel-quicksettings-icon-pack/01-wifi.png?v=a80',
     'org.nuxel.SnekByte': '/assets/nuxel-applications-icon-pack/01-02_snekbyte.png?v=a63',
+    'org.nuxel.Calculator': '/assets/nuxel-applications-icon-pack/06-02_calculator.png?v=p33000',
+    'org.nuxel.Clock': '/assets/nuxel-applications-icon-pack/06-03_clock.png?v=p33000',
+    'org.nuxel.Photos': '/assets/nuxel-applications-icon-pack/03-02_gallery.png?v=p33000',
+    'org.nuxel.Nuxtore': '/assets/nuxel-applications-icon-pack/02-07_nuxtore.png?v=p33000',
+    'org.nuxel.Recorder': '/assets/nuxel-applications-icon-pack/06-01_recorder.png?v=p33000',
+    'org.nuxel.Maps': '/assets/nuxel-applications-icon-pack/03-05_maps.png?v=p33000',
+    'org.nuxel.Calendar': '/assets/nuxel-applications-icon-pack/02-03_day-calendar.png?v=p33000',
+    'org.nuxel.Mail': '/assets/nuxel-applications-icon-pack/01-06_pixel-envelope.png?v=p33000',
+    'org.nuxel.Files': '/assets/nuxel-applications-icon-pack/02-06_file-explorer.png?v=p33000',
+    'org.nuxel.Notes': '/assets/nuxel-applications-icon-pack/02-09_notes.png?v=p33000',
+    'nuxel-camera': '/assets/nuxel-applications-icon-pack/03-01_camera.png?v=p33000',
+    'org.nuxel.Browser': '/assets/nuxel-applications-icon-pack/01-09_browser-swirl.png?v=p33000',
 };
 
 function nuxelAppIcon(app) {

@@ -1,0 +1,112 @@
+[
+  {
+    "path": "pwa/nuxel-apps/media/app.json",
+    "sha256": "cf026a0f7ab93c2e469aacb677b144f7e2d065bb4e5bc2707c1ae76deb899b6c",
+    "size": 415
+  },
+  {
+    "path": "pwa/nuxel-apps/media/css/media.css",
+    "sha256": "02664d79bc4953146d3761c781328ebecf79f0e40ac1d5b72fb04b7ce10f4134",
+    "size": 5453
+  },
+  {
+    "path": "pwa/nuxel-apps/media/icons/icon-128.png",
+    "sha256": "6279e2b6582fb1c588d689701ca0255af25956f2eb355132b5f55cc9734010a4",
+    "size": 2748
+  },
+  {
+    "path": "pwa/nuxel-apps/media/icons/icon-144.png",
+    "sha256": "2ba857cdb3ed6df4924b173f9a86efe8b3283398eca17c11d397258671de8d9a",
+    "size": 3107
+  },
+  {
+    "path": "pwa/nuxel-apps/media/icons/icon-152.png",
+    "sha256": "44099c22a8704ca73ad914ba4680f9ab9c16ab525485cbc2055468973041c48c",
+    "size": 3378
+  },
+  {
+    "path": "pwa/nuxel-apps/media/icons/icon-192.png",
+    "sha256": "9e369564b579db44789f523e531538a8094a80c21e5573b60f73f6cdbbc70a0a",
+    "size": 4205
+  },
+  {
+    "path": "pwa/nuxel-apps/media/icons/icon-384.png",
+    "sha256": "a5ed59712fe7123d16f514de2b6806003c4b324bbac1bb6040938c3366efe5bf",
+    "size": 8531
+  },
+  {
+    "path": "pwa/nuxel-apps/media/icons/icon-48.png",
+    "sha256": "34456be7688bdd3bf772179ddc69330f325b0007d93fc4114b9aa4fa7827b1b7",
+    "size": 986
+  },
+  {
+    "path": "pwa/nuxel-apps/media/icons/icon-512.png",
+    "sha256": "d60e07a45db21d5f64832885198e948f50a311171817ff2c4bed476b4779bc5a",
+    "size": 11340
+  },
+  {
+    "path": "pwa/nuxel-apps/media/icons/icon-72.png",
+    "sha256": "73b6cb0462068875bbaf168fe1ca079938cdaf1172af65739bd8ef13e2b43732",
+    "size": 1331
+  },
+  {
+    "path": "pwa/nuxel-apps/media/icons/icon-96.png",
+    "sha256": "241d393d0a88a5daaf990a3965eb01d48835769e548901ae7bebaf5244ddf30f",
+    "size": 1992
+  },
+  {
+    "path": "pwa/nuxel-apps/media/icons/icon.svg",
+    "sha256": "55c3b12259372417cb784e76c0d098f57dc0d215a37c07fdf42c0f60780a5b3b",
+    "size": 400
+  },
+  {
+    "path": "pwa/nuxel-apps/media/index.html",
+    "sha256": "c689a6adceca4f04a6ba643c5ddbeae65563f72ce8c6af47725e15f681335ca6",
+    "size": 6757
+  },
+  {
+    "path": "pwa/nuxel-apps/media/js/media-library.js",
+    "sha256": "e70e07def30be16afbad87e94b38133bcccd78db203f82ee5eec9d2c23add521",
+    "size": 8848
+  },
+  {
+    "path": "pwa/nuxel-apps/media/js/media.js",
+    "sha256": "ee325b07cc45c14aba4c4477350f51f6ce3fa71316e4f76ad4adfbb04feb09ad",
+    "size": 15864
+  },
+  {
+    "path": "pwa/nuxel-apps/media/manifest.json",
+    "sha256": "9e64105ec87afaa7c9c469b2b1183712b0371b660a789716a805294c29e597f9",
+    "size": 983
+  },
+  {
+    "path": "pwa/nuxel-apps/media/samples/cover-tone.svg",
+    "sha256": "e2064fa5c44acd0631093a00fffc863e4ada6b178eb12638f39e1ef197805500",
+    "size": 663
+  },
+  {
+    "path": "pwa/nuxel-apps/media/samples/library.json",
+    "sha256": "fe949d78fb8c583f222c65c90bda7bc772778a012abeb47af47c45c871b786fc",
+    "size": 3023
+  },
+  {
+    "path": "pwa/nuxel-apps/media/samples/tone-440.wav",
+    "sha256": "940d094f04d24371f4b51619613058543db8a934c4a0926990e6536a7999b386",
+    "size": 32044
+  },
+  {
+    "path": "pwa/nuxel-apps/media/samples/tone-880.wav",
+    "sha256": "25420ab3170596a7a85dd12b84abe7062b3f0c28693e995b9dfb4bc5752b46f6",
+    "size": 32044
+  },
+  {
+    "path": "pwa/nuxel-apps/media/sw.js",
+    "sha256": "66f2a0878cc831af46b148cf3d77062a64343ac4ec9d911ce5722f596a45077e",
+    "size": 1164
+  },
+  {
+    "path": "pwa/nuxel-apps/media/tests/test-media-library.js",
+    "sha256": "cffc193304424d617af4d9fc019c5fdf4245e75b7caa58e344a750cae2b3bcb7",
+    "size": 6808
+  }
+]

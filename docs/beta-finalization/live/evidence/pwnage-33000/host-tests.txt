@@ -1,0 +1,343 @@
+/home/wicked/.asdf/installs/python/3.11.8/lib/python3.11/site-packages/requests/__init__.py:113: RequestsDependencyWarning: urllib3 (2.6.3) or chardet (7.4.3)/charset_normalizer (3.5.0) doesn't match a supported version!
+  warnings.warn(
+...................................                                      [100%]
+35 passed in 0.15s
+--- phone apps ---
+== Nuxel phone-app offline acceptance (briq-06c) ==
+PASS data layer test runner exists
+PASS a C compiler is available for the data layer
+PASS data layer suite passes (== phone data layer OK ==)
+PASS header declares the shared API
+PASS nuxel-dialer: includes the shared data layer
+PASS nuxel-dialer: every data-layer symbol it calls is declared (7 used)
+PASS nuxel-dialer: declares its desktop entry contract
+PASS nuxel-contacts: includes the shared data layer
+PASS nuxel-contacts: every data-layer symbol it calls is declared (7 used)
+PASS nuxel-contacts: declares its desktop entry contract
+PASS nuxel-messages: includes the shared data layer
+PASS nuxel-messages: every data-layer symbol it calls is declared (8 used)
+PASS nuxel-messages: declares its desktop entry contract
+PASS dialer: capability sentence comes from the probe, not a constant
+PASS dialer: spells out the no-modem case
+PASS dialer: records a refusal instead of a fake call
+PASS dialer: no unconditional "Calling/Connected" claim
+PASS contacts: vCard export is exposed
+PASS contacts: vCard import is exposed
+PASS contacts: store is persisted (atomic save path)
+PASS messages: uses the shared thread model
+PASS messages: has a queued/not-sent state for an unavailable transport
+PASS messages: capability line is probe-derived
+PASS messages: does not claim a sent SMS without a transport
+PASS mail PWA exists with index+manifest+store+transport
+PASS mail: transport never fabricates a connection state
+PASS mail: a queued send is labelled queued, not sent
+PASS mail: import/export of the local store is implemented
+PASS registry keeps nuxel-dialer
+PASS registry nuxel-dialer: capability list is a list
+PASS registry nuxel-dialer: binary source is the shell tree
+PASS registry keeps nuxel-contacts
+PASS registry nuxel-contacts: capability list is a list
+PASS registry nuxel-contacts: binary source is the shell tree
+PASS registry keeps nuxel-messages
+PASS registry nuxel-messages: capability list is a list
+PASS registry nuxel-messages: binary source is the shell tree
+
+RESULT: PASS=37 FAIL=0 verdict=OFFLINE_TESTED
+--- registry ---
+OK    capability_gaps documented: shell:local-pty, storage:read, storage:write
+OK    native nuxel-dialer -> /usr/bin/nuxel-dialer (source shell/nuxel-shell/nuxel-dialer)
+OK    native nuxel-messages -> /usr/bin/nuxel-messages (source shell/nuxel-shell/nuxel-messages)
+OK    native nuxel-contacts -> /usr/bin/nuxel-contacts (source shell/nuxel-shell/nuxel-contacts)
+OK    native nuxel-camera -> /usr/lib/nuxel/nuxel-camera-native/nuxel_camera_native.py (source shell/nuxel-camera-native)
+OK    pwa org.nuxel.Mail -> pwa/nuxel-apps/mail/index.html + pwa/nuxel-apps/mail/manifest.json
+OK    pwa org.nuxel.Calendar -> pwa/nuxel-apps/calendar/index.html + pwa/nuxel-apps/calendar/manifest.json
+OK    pwa org.nuxel.Notes -> pwa/nuxel-apps/notes/index.html + pwa/nuxel-apps/notes/manifest.json
+OK    pwa org.nuxel.Files -> pwa/nuxel-apps/files/index.html + pwa/nuxel-apps/files/manifest.json
+OK    pwa nuxel-settings -> pwa/nuxel-apps/settings/index.html + pwa/nuxel-apps/settings/manifest.json
+OK    pwa org.nuxel.Terminal -> pwa/nuxel-apps/terminal/index.html + pwa/nuxel-apps/terminal/manifest.json
+OK    pwa org.nuxel.LiveConsole -> pwa/nuxel-apps/console/index.html + pwa/nuxel-apps/console/manifest.json
+OK    pwa org.nuxel.USBSSHConsole -> pwa/nuxel-apps/console-usb/index.html + pwa/nuxel-apps/console-usb/manifest.json
+OK    pwa org.nuxel.WiFiSSHConsole -> pwa/nuxel-apps/console-wifi/index.html + pwa/nuxel-apps/console-wifi/manifest.json
+OK    native org.nuxel.Browser -> /usr/lib/nuxel/nuxel-browser-native/nuxel_browser_native.py (source shell/nuxel-browser-native)
+OK    pwa org.nuxel.Calculator -> pwa/nuxel-apps/calculator/index.html + pwa/nuxel-apps/calculator/manifest.json
+OK    pwa org.nuxel.Clock -> pwa/nuxel-apps/clock/index.html + pwa/nuxel-apps/clock/manifest.json
+OK    pwa org.nuxel.Photos -> pwa/nuxel-apps/photos/index.html + pwa/nuxel-apps/photos/manifest.json
+OK    pwa org.nuxel.Weather -> pwa/nuxel-apps/weather/index.html + pwa/nuxel-apps/weather/manifest.json
+OK    pwa org.nuxel.Maps -> pwa/nuxel-apps/maps/index.html + pwa/nuxel-apps/maps/manifest.json
+OK    pwa org.nuxel.Nuxtore -> pwa/nuxel-apps/nuxtore/index.html + pwa/nuxel-apps/nuxtore/manifest.json
+OK    pwa org.nuxel.Recorder -> pwa/nuxel-apps/recorder/index.html + pwa/nuxel-apps/recorder/manifest.json
+OK    pwa org.nuxel.SnekByte -> pwa/nuxel-apps/snekbyte/index.html + pwa/nuxel-apps/snekbyte/manifest.json
+OK    capability 'shell:local-pty' is declared by org.nuxel.Terminal but not yet in the bridge enum — documented gap (owner bg-06-core-phone-apps, status not-in-capabilities.py-enum): The Terminal's PTY is opened by the native PWA host (tools/s10plus/a3x/nuxel-pwa-host.c), NOT through the bridge capability model, so no bridge enum e
+OK    launcher apps.js serves exactly the canonical 22 apps (registry_version 7)
+OK    native shell copy matches the canonical registry (22 apps)
+OK    required app not yet in the tree: Permissions & Privacy manager (owner bg-05-security-permissions, briq-05a-permission-manager, status not-started/in_progress)
+OK    required app not yet in the tree: Firewall manager (owner bg-05-security-permissions, briq-05b-firewall-app, status not-started/in_progress)
+OK    required app not yet in the tree: VPN, Tor and remote access (owner bg-05-security-permissions, briq-05c-vpn-tor-remote, status not-started/in_progress)
+OK    required app not yet in the tree: Security auditor (owner bg-05-security-permissions, briq-05d-security-auditor, status not-started/pending)
+OK    required app not yet in the tree: System monitor / diagnostics (owner bg-06-core-phone-apps, briq-06b-missing-core-apps, status not-started/in_progress)
+OK    tree_apps documents pwa/nuxel-apps/_shared (no index.html yet: shared-assets-not-an-app)
+OK    tree_apps documents pwa/nuxel-apps/penguinterface (no index.html yet: in_progress)
+OK    tree_apps documents pwa/nuxel-apps/privacy (no index.html yet: planned)
+OK    bridge.js NUXEL_BRIDGE_VERSION == pin (1)
+DEFER pwa/nuxel-apps/privacy: declared planned, not landed yet (owners: bg-05-security-permissions, ledger: briq-05a-permission-manager) — declared `planned`: the owner group has not landed the app tree in this revision. Recorded as a DEFER (never a silent pass); the entry is promoted automatically when index.html + manifest.json appear.
+apps=22 problems=0 warnings=0 deferred=1 required_apps_pending=5 verdict=OFFLINE_TESTED_WITH_DEFERRALS
+--- inventory ---
+== Nuxel core application inventory verification (briq-06a / mission area 30) ==
+document: docs/beta-finalization/apps/APP-INVENTORY.md
+apps: 44  gaps: 14
+OK    the inventory data block parses as JSON
+OK    entry nuxel-dialer (native, present/partial) is consistent with the tree
+OK    entry nuxel-messages (native, present/partial) is consistent with the tree
+OK    entry nuxel-contacts (native, present/full) is consistent with the tree
+OK    entry org.nuxel.Mail (pwa, present/full) is consistent with the tree
+OK    entry org.nuxel.Calendar (pwa, present/full) is consistent with the tree
+OK    entry org.nuxel.Notes (pwa, present/full) is consistent with the tree
+OK    entry org.nuxel.Calculator (pwa, present/full) is consistent with the tree
+OK    entry org.nuxel.Clock (pwa, present/full) is consistent with the tree
+OK    entry org.nuxel.Files (pwa, present/full) is consistent with the tree
+OK    entry org.nuxel.Terminal (pwa, present/full) is consistent with the tree
+OK    entry nuxel-settings (pwa, present/partial) is consistent with the tree
+OK    entry nuxel-native-settings (native, present/full) is consistent with the tree
+OK    entry settings-surface.mobile (settings-surface, present/partial) is consistent with the tree
+OK    entry settings-surface.network (settings-surface, present/partial) is consistent with the tree
+OK    entry org.nuxel.Nuxtore (pwa, present/full) is consistent with the tree
+OK    entry nuxel-permissions (native, present/full) is consistent with the tree
+OK    entry tool.firewall (tool, present/partial) is consistent with the tree
+OK    entry nuxel-devmgmt (pwa, present/full) is consistent with the tree
+OK    entry org.nuxel.LiveConsole (pwa, present/partial) is consistent with the tree
+OK    entry tool.system-monitor (tool, present/full) is consistent with the tree
+OK    entry tool.security-audit (tool, present/partial) is consistent with the tree
+OK    entry nuxel-cleanup (pwa, present/full) is consistent with the tree
+OK    entry nuxel-rootcontrol (pwa, present/full) is consistent with the tree
+OK    entry org.nuxel.Camera (pwa, present/partial) is consistent with the tree
+OK    entry nuxel-camera (placeholder, present/partial) is consistent with the tree
+OK    entry org.nuxel.Photos (pwa, present/full) is consistent with the tree
+OK    entry nuxel-media (pwa, present/full) is consistent with the tree
+OK    entry org.nuxel.Recorder (pwa, present/partial) is consistent with the tree
+OK    entry nuxel-downloader (pwa, present/full) is consistent with the tree
+OK    entry org.nuxel.SnekByte (pwa, present/full) is consistent with the tree
+OK    entry org.nuxel.Maps (pwa, present/full) is consistent with the tree
+OK    entry settings-surface.bluetooth (settings-surface, present/partial) is consistent with the tree
+OK    entry settings-surface.vpn (settings-surface, present/partial) is consistent with the tree
+OK    entry settings-surface.remote (settings-surface, present/partial) is consistent with the tree
+OK    entry nuxel-authenticator (pwa, present/full) is consistent with the tree
+OK    entry tool.tor (tool, present/partial) is consistent with the tree
+OK    entry nuxel-penguinterface (pwa, present/partial) is consistent with the tree
+OK    entry org.nuxel.Browser (pwa, present/full) is consistent with the tree
+OK    entry org.nuxel.Weather (pwa, present/full) is consistent with the tree
+OK    entry tool.keyboard (tool, present/full) is consistent with the tree
+OK    entry org.nuxel.USBSSHConsole (pwa, present/partial) is consistent with the tree
+OK    entry org.nuxel.WiFiSSHConsole (pwa, present/partial) is consistent with the tree
+OK    every app directory with an index.html is inventoried (nothing hidden)
+OK    every canonical-registry application is inventoried
+OK    every inventoried app id appears in the human tables
+OK    14 documented gap(s); none of them is an open gap owned by bg-06-core-phone-apps
+WARN  entry org.nuxel.Terminal: capability id(s) ['shell:local-pty'] are not in the bridge enum (services/nuxel-bridge/src/capabilities.py) — see the gap table
+WARN  entry nuxel-devmgmt: capability id(s) ['system:inspect'] are not in the bridge enum (services/nuxel-bridge/src/capabilities.py) — see the gap table
+WARN  entry nuxel-cleanup: capability id(s) ['storage:cleanup'] are not in the bridge enum (services/nuxel-bridge/src/capabilities.py) — see the gap table
+WARN  entry nuxel-rootcontrol: capability id(s) ['system:inspect'] are not in the bridge enum (services/nuxel-bridge/src/capabilities.py) — see the gap table
+WARN  entry org.nuxel.Camera: capability id(s) ['camera:read'] are not in the bridge enum (services/nuxel-bridge/src/capabilities.py) — see the gap table
+WARN  entry nuxel-media: capability id(s) ['audio:playback', 'media:library'] are not in the bridge enum (services/nuxel-bridge/src/capabilities.py) — see the gap table
+WARN  entry nuxel-downloader: capability id(s) ['download:queue'] are not in the bridge enum (services/nuxel-bridge/src/capabilities.py) — see the gap table
+WARN  entry nuxel-authenticator: capability id(s) ['storage:encrypted'] are not in the bridge enum (services/nuxel-bridge/src/capabilities.py) — see the gap table
+
+checks=47 warnings=8 problems=0 verdict=OFFLINE_TESTED_WITH_WARNINGS
+--- launcher ---
+PASS registry loaded
+PASS registry carries a machine-readable revision
+PASS registry has org.nuxel.Terminal
+PASS registry has nuxel-settings
+PASS registry has canonical org.nuxel.SnekByte
+PASS SnekByte uses the supplied launcher icon
+PASS old SnekByte recents id is migrated
+PASS A32 registry entry kept: nuxel-dialer
+PASS A32 registry entry kept: nuxel-messages
+PASS A32 registry entry kept: nuxel-contacts
+PASS A32 registry entry kept: org.nuxel.Mail
+PASS A32 registry entry kept: org.nuxel.Calendar
+PASS A32 registry entry kept: org.nuxel.Notes
+PASS A32 registry entry kept: org.nuxel.Files
+PASS A32 registry entry kept: nuxel-camera
+PASS entry nuxel-dialer is launchable (id/name/url/type/category)
+PASS entry nuxel-messages is launchable (id/name/url/type/category)
+PASS entry nuxel-contacts is launchable (id/name/url/type/category)
+PASS entry org.nuxel.Mail is launchable (id/name/url/type/category)
+PASS entry org.nuxel.Calendar is launchable (id/name/url/type/category)
+PASS entry org.nuxel.Browser is launchable (id/name/url/type/category)
+PASS entry org.nuxel.Notes is launchable (id/name/url/type/category)
+PASS entry org.nuxel.Files is launchable (id/name/url/type/category)
+PASS entry nuxel-camera is launchable (id/name/url/type/category)
+PASS entry nuxel-settings is launchable (id/name/url/type/category)
+PASS entry org.nuxel.Terminal is launchable (id/name/url/type/category)
+PASS entry org.nuxel.LiveConsole is launchable (id/name/url/type/category)
+PASS entry org.nuxel.USBSSHConsole is launchable (id/name/url/type/category)
+PASS entry org.nuxel.WiFiSSHConsole is launchable (id/name/url/type/category)
+PASS entry org.nuxel.Calculator is launchable (id/name/url/type/category)
+PASS entry org.nuxel.Clock is launchable (id/name/url/type/category)
+PASS entry org.nuxel.Photos is launchable (id/name/url/type/category)
+PASS entry org.nuxel.Weather is launchable (id/name/url/type/category)
+PASS entry org.nuxel.Maps is launchable (id/name/url/type/category)
+PASS entry org.nuxel.Nuxtore is launchable (id/name/url/type/category)
+PASS entry org.nuxel.Recorder is launchable (id/name/url/type/category)
+PASS entry org.nuxel.SnekByte is launchable (id/name/url/type/category)
+PASS settings is a served PWA, not the native placeholder
+PASS terminal is a served PWA under the authoritative tree
+PASS every PWA url lives under /pwa/nuxel-apps/
+PASS served asset exists for org.nuxel.Mail (/pwa/nuxel-apps/mail/index.html)
+PASS app manifest valid for org.nuxel.Mail
+PASS served asset exists for org.nuxel.Calendar (/pwa/nuxel-apps/calendar/index.html)
+PASS app manifest valid for org.nuxel.Calendar
+PASS served asset exists for org.nuxel.Notes (/pwa/nuxel-apps/notes/index.html)
+PASS app manifest valid for org.nuxel.Notes
+PASS served asset exists for org.nuxel.Files (/pwa/nuxel-apps/files/index.html)
+PASS app manifest valid for org.nuxel.Files
+PASS served asset exists for nuxel-settings (/pwa/nuxel-apps/settings/index.html)
+PASS app manifest valid for nuxel-settings
+PASS served asset exists for org.nuxel.Terminal (/pwa/nuxel-apps/terminal/index.html)
+PASS app manifest valid for org.nuxel.Terminal
+PASS registry entry org.nuxel.LiveConsole is served with a valid manifest
+PASS registry entry org.nuxel.USBSSHConsole is served with a valid manifest
+PASS registry entry org.nuxel.WiFiSSHConsole is served with a valid manifest
+PASS registry entry org.nuxel.Calculator is served with a valid manifest
+PASS registry entry org.nuxel.Clock is served with a valid manifest
+PASS registry entry org.nuxel.Photos is served with a valid manifest
+PASS registry entry org.nuxel.Weather is served with a valid manifest
+PASS registry entry org.nuxel.Maps is served with a valid manifest
+PASS registry entry org.nuxel.Nuxtore is served with a valid manifest
+PASS registry entry org.nuxel.Recorder is served with a valid manifest
+PASS registry entry org.nuxel.SnekByte is served with a valid manifest
+PASS nuxel-apps/settings frontend is runnable (index.html + js)
+PASS launcher manifest.json parses
+PASS manifest carries nuxel.pwa_version
+PASS manifest carries nuxel.cache_version
+PASS manifest declares this tree the single source of truth
+PASS status-bar.js exposes a machine-readable VERSION
+PASS status-bar.js VERSION == manifest pwa_version (0.7.1-beta)
+PASS status-bar.js reports a newer revision than the stale v0.3.2 device copy
+PASS sw.js declares an explicit CACHE_VERSION
+PASS sw.js CACHE_VERSION == manifest cache_version (v53-pwnage-33000)
+PASS sw.js cache namespace advanced past the A32 baseline v3-a32
+PASS sw.js activate deletes the previous namespaces
+PASS sw.js keeps the A32 network-first rule for code assets
+PASS precache list contains ./js/status-bar.js
+PASS precache list contains ./js/qs.js
+PASS precache list contains ./js/safe-zones.js
+PASS precache list contains ./js/settings-store.js
+PASS precache list contains ./js/bootlog.js
+PASS precache list contains ./manifest.json
+PASS precache list contains ./assets/nuxel-background.png
+PASS every precached asset exists in the tree
+PASS index.html loads js/apps.js
+PASS index.html loads js/status-bar.js
+PASS index.html loads js/qs.js
+PASS index.html loads js/safe-zones.js
+PASS index.html loads js/settings-store.js
+PASS index.html loads js/app.js
+PASS manifest exposes shortcuts (Terminal/Settings/Console)
+PASS shortcut "Terminal" points at a registry id
+PASS shortcut "Settings" points at a registry id
+PASS shortcut "Serial Live Console" points at a registry id
+PASS shortcut "USB SSH Console" points at a registry id
+PASS shortcut "Wi-Fi SSH Console" points at a registry id
+PASS manifest settings_documents lists /etc/nuxel/boot/verbose-boot.json
+PASS manifest settings_documents lists /etc/nuxel/boot/animation-handoff.json
+PASS manifest settings_documents lists /etc/nuxel/display/statusbar-safezones.json
+PASS manifest settings_documents lists /etc/nuxel/input/buttons.json
+PASS manifest apps_in_registry matches the registry ids
+PASS manifest registry_version matches the registry revision
+PASS no stale duplicate launcher asset pwa/nuxel-home/js/status-bar.js.orig
+PASS no stale duplicate launcher asset pwa/nuxel-home/status-bar.js
+PASS no stale duplicate launcher asset pwa/nuxel-home/js/bundle.js
+PASS no v0.3.2 launcher version constant survives under pwa/nuxel-home/js
+PASS the registry is exposed to the launcher host (window.appRegistry)
+PASS the real controller booted and bound its events
+PASS activation dispatches app:launch for the requested id
+PASS activation records the app in the recents list
+PASS activation actually opens the app frame (real controller, not a mock)
+PASS the opened frame points at the app url from the registry
+PASS app content reserves the system status and Home bar, below Quick Settings
+PASS opening an app enters LAUNCHING
+PASS the frame load transition enters ACTIVE
+PASS a hidden active app enters BACKGROUND
+PASS a visible background app returns ACTIVE
+PASS a labeled Home control is created outside the app document
+PASS Home backgrounds the frame and returns to the launcher
+PASS Home backgrounds the app bar with its frame
+PASS Home preserves the resumable surface in BACKGROUND state
+PASS activation leaves exactly one visible app surface
+PASS the logical "home" action closes overlays (return-home)
+PASS the launcher exposes the same-origin app close hook
+PASS the status bar wires a real vertical pull to gesture:qs
+PASS unanswered startup services cannot swallow app activation
+PASS Home closes the actual Quick Settings instance
+PASS switching from native Terminal requests host surface cleanup
+PASS late Terminal acknowledgement cannot overwrite the new app
+PASS an empty query returns no results
+PASS search finds the Terminal by name
+PASS a name match is ranked as a name match
+PASS search is case-insensitive
+PASS search matches the category too
+PASS a nonsense query returns nothing (no fake results)
+PASS the search UI delegates to the registry matcher (no second implementation)
+PASS the #app=<id> deeplink launches that registry app
+PASS an unknown deeplink is refused, not launched into a blank frame
+PASS every manifest shortcut id is launchable from the deeplink path
+PASS the launcher grid is a scrollable container
+PASS the grid keeps touch momentum scrolling on the phone
+PASS the app grid is a real CSS grid (4 columns as shipped)
+PASS the launcher page declares the fullscreen viewport-fit the cutout needs
+PASS the app grid container exists in the page
+PASS the search results list is scrollable too
+
+launcher registry/parity tests passed
+--- nuxtore py ---
+NuxTore offline test suite
+  PASS T1 ed25519 matches RFC 8032 vectors (sign, verify, reject tampered)
+  PASS T2 python/JS canonical JSON identical  — {"flag":true,"id":"org.nuxel.Test","nested":{"a":[3,1],"b":2},"none":null,"schema_version":1,"size":4096}
+  PASS T3a staged+signature-valid catalog verifies  — SIGNED_VERIFIED
+  PASS T3b a changed field breaks the signature  — SIGNATURE_INVALID
+  PASS T4 a tampered staged file is caught by the digest check  — DIGEST_MISMATCH
+  PASS T5a unsigned package is refused without confirmation  — UNSIGNED_REFUSED
+  PASS T5b unsigned package installs only after explicit confirmation  — UNSIGNED_ALLOWED
+  PASS T5c JS install gate agrees with the Python gate  — igest and verdict
+  PASS T5 remove clears installed state and records it
+  PASS T5 activity log is bounded and append-only
+  PASS T5 plan separates blocked from available packages
+
+18 passed, 0 failed
+  PASS T6a shipped catalog verifies without integrity failures  — 10 packages
+  PASS T6b every signed package in the shipped catalog verifies  — SIGNED_VERIFIED, UNSIGNED_REFUSED
+  PASS T6c the deliberately unsigned demo entry is refused  — UNSIGNED_REFUSED
+  PASS T6d external publishing is structurally forbidden in the policy
+
+12 passed, 0 failed
+--- nuxtore js ---
+  PASS T2 canonical JSON identical to Python
+  PASS T2 bundle digest identical to Python
+  PASS T1 sha256 matches the NIST vector for "abc"
+  PASS T1 in-page Ed25519 accepts a valid signature
+  PASS T1 in-page Ed25519 rejects a tampered signature
+  PASS T1 in-page Ed25519 rejects a tampered payload
+  PASS T5 signed package installs with no extra confirmation
+  PASS T5 unsigned package refused with the signature-required reason
+  PASS T5 unsigned package refused even when the operator enabled unsigned installs
+  PASS T5 unsigned package installs only after the id is typed by hand
+  PASS T5 typed confirmation must match this exact package
+  PASS T5 engine without Ed25519 also needs explicit confirmation
+  PASS T5 integrity failure is never installable, even with confirmation
+  PASS T5 no install path exists without a user decision
+  PASS T5 install records version, digest and verdict
+  PASS T5 remove clears installed state and records it
+  PASS T5 activity log is bounded and append-only
+  PASS T5 plan separates blocked from available packages
+
+18 passed, 0 failed
+--- recorder wav ---
+PASS encoder returns a Uint8Array
+PASS WAV header is valid RIFF/WAVE/fmt
+PASS WAV declares mono
+PASS WAV declares 16-bit PCM
+PASS WAV declares the requested sample rate
+PASS data chunk size matches samples
+PASS total size matches header + data
+PASS rejects mismatched channel lengths

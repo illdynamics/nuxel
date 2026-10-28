@@ -1,7 +1,10 @@
 [Unit]
 Description=Nuxel Portal Daemon
 Documentation=https://nuxel.org/docs/portal
-After=network.target dbus.service
+# PWNAGE-32000 (boot regression): network.target pulls NetworkManager (which
+# waits for the vendor Wi-Fi wlan0.device) into the launcher chain.  The
+# portal is a local consent daemon and does not need network.target.
+After=dbus.service
 Before=phosh.service nuxel-bridge.service
 Wants=dbus.service
 

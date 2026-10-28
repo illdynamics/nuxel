@@ -11,6 +11,7 @@ and testing; production PWAs should use D-Bus directly via xdg-desktop-portal.
 """
 
 import json
+import mimetypes
 import re
 import uuid
 import hmac
@@ -81,7 +82,7 @@ HTTP_MODE = os.environ.get('NUXEL_HTTP_MODE', 'dev')
 # downgrade. NUXEL_BRIDGE_VERSION is the host IMPLEMENTATION version and is
 # allowed to move independently.
 BRIDGE_PROTOCOL_VERSION = os.environ.get('NUXEL_BRIDGE_PROTOCOL_VERSION', '1')
-BRIDGE_HOST_VERSION = os.environ.get('NUXEL_BRIDGE_VERSION', '0.7.1-beta')
+BRIDGE_HOST_VERSION = os.environ.get('NUXEL_BRIDGE_VERSION', '0.7.2-beta')
 
 # Canonical launcher registry, shared with the PWA (pwa/nuxel-common/app-registry.json)
 # and the native shell. The rootfs installs it at /etc/nuxel/app-registry/.
@@ -150,7 +151,7 @@ TOKEN_FILE = os.path.join(TOKEN_DIR, 'token')
 SESSION_TOKENS = {}
 SESSION_TTL_SECONDS = 3600  # 1 hour
 
-MAX_REQUEST_SIZE = 1_000_000  # 1 MB
+MAX_REQUEST_SIZE = 128 * 1024 * 1024  # 128 MB (file writes/recordings are loopback-only)
 
 
 def _get_token():
@@ -228,6 +229,65 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
                 status=400,
             )
             return None
+
+    def _send_storage_file(self, path):
+        """Stream a real file from the user's home with HTTP Range support.
+
+        Gallery uses this for thumbnails and video playback.  It is loopback-only
+        (the handler's auth already allows loopback dev requests) and every path
+        is resolved through PwaStore's traversal/symlink checks.
+        """
+        try:
+            store = self._app_store()
+            target = store.storage_media_file(path)
+            size = target.stat().st_size
+            mime = mimetypes.guess_type(target.name)[0] or "application/octet-stream"
+            start, end = 0, size - 1
+            status = 200
+            rng = self.headers.get('Range') if hasattr(self, 'headers') else None
+            if rng and rng.startswith('bytes='):
+                spec = rng[6:].split(',', 1)[0].strip()
+                a, _, b = spec.partition('-')
+                try:
+                    if a:
+                        start = int(a)
+                        end = int(b) if b else size - 1
+                    elif b:
+                        start = max(0, size - int(b))
+                    if start < 0 or end < start or start >= size:
+                        raise ValueError
+                    end = min(end, size - 1)
+                    status = 206
+                except ValueError:
+                    self.send_response(416)
+                    self.send_header('Content-Range', 'bytes */%d' % size)
+                    self.end_headers()
+                    return
+            length = end - start + 1
+            self.send_response(status)
+            self.send_header('Content-Type', mime)
+            self.send_header('Content-Length', str(length))
+            self.send_header('Accept-Ranges', 'bytes')
+            self.send_header('Cache-Control', 'no-store')
+            origin = self.headers.get('Origin', '')
+            cors_origin = _get_cors_origin(origin if origin else None)
+            if cors_origin:
+                self.send_header('Access-Control-Allow-Origin', cors_origin)
+            if status == 206:
+                self.send_header('Content-Range', 'bytes %d-%d/%d' % (start, end, size))
+            self.end_headers()
+            with target.open('rb') as fh:
+                fh.seek(start)
+                remaining = length
+                while remaining > 0:
+                    chunk = fh.read(min(262144, remaining))
+                    if not chunk:
+                        break
+                    self.wfile.write(chunk)
+                    remaining -= len(chunk)
+        except Exception as exc:
+            logger.warning('storage file read failed for %r: %s', path, exc)
+            self._send_json({'success': False, 'error': str(exc)}, 404)
 
     def _send_json(self, data, status=200):
         response = json.dumps(data).encode('utf-8')
@@ -494,6 +554,18 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
         "nuxel-messages": ["/usr/bin/nuxel-messages"],
     }
 
+    # Apps that must write user-owned data (contacts, call log, message store)
+    # are launched as the real session user.  Browser/camera need root-owned
+    # /run state/FIFOs and keep the session's existing root launch context.
+    NATIVE_AS_SESSION_USER = {"nuxel-contacts", "nuxel-messages", "nuxel-dialer"}
+
+    def _session_home(self):
+        try:
+            store = self._app_store()
+            return str(store.files_root)
+        except Exception:
+            return "/home/nuxel"
+
     def _exec_native_app(self, target_id):
         """Launch a native app from the fixed allowlist (never a client path)."""
         if not isinstance(target_id, str) or not APP_ID_RE.match(target_id):
@@ -521,6 +593,7 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
         # a private /tmp and dies. Launch via a systemd transient unit, which
         # runs in the system manager's normal (unsandboxed) context.
         import time as _t
+        home = self._session_home()
         unit = "nuxel-app-" + target_id.rsplit(".", 1)[-1].lower() + "-%d" % int(_t.time() * 1000)
         cmd = ["/usr/bin/systemd-run", "--unit=%s" % unit, "--collect",
                "--setenv=XDG_RUNTIME_DIR=/run/nuxel-wayland",
@@ -529,8 +602,16 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
                "--setenv=LIBGL_ALWAYS_SOFTWARE=1",
                "--setenv=WEBKIT_DISABLE_COMPOSITING_MODE=1",
                "--setenv=GDK_BACKEND=wayland",
+               "--setenv=DBUS_SESSION_BUS_ADDRESS=unix:path=/run/nuxel-wayland/bus",
                "--setenv=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
-               "--setenv=HOME=/root"] + argv
+               "--setenv=HOME=%s" % home,
+               "--setenv=XDG_DATA_HOME=%s/.local/share" % home]
+        if target_id in self.NATIVE_AS_SESSION_USER:
+            user = self._app_store().session_user
+            if user:
+                cmd += ["--uid=%s" % user, "--gid=%s" % user,
+                        "--property=SupplementaryGroups=audio"]
+        cmd += argv
         try:
             proc = subprocess.run(cmd, capture_output=True, timeout=15)
         except (OSError, subprocess.TimeoutExpired) as exc:
@@ -562,6 +643,104 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
         logger.info("home action rc=%s out=%s", proc.returncode, out.strip())
         return ({"success": True, "action": "home", "rc": proc.returncode,
                  "output": out.strip()}, 200)
+
+    def _close_foreground_action(self):
+        """Close the activated non-Home toplevel (long Back). Never closes Home
+        or the launcher host, and the fixed argv is resolved here (no client
+        path). Uses the compositor's foreign-toplevel `close`, not a kill."""
+        env = dict(os.environ)
+        env.update({"XDG_RUNTIME_DIR": "/run/nuxel-wayland",
+                    "WAYLAND_DISPLAY": "wayland-0"})
+        argv = ["/usr/lib/nuxel/nuxel-foreign-toplevel", "close-foreground"]
+        try:
+            proc = subprocess.run(argv, env=env, capture_output=True, timeout=10)
+        except (OSError, subprocess.TimeoutExpired) as exc:
+            logger.error("close-foreground action failed: %s", exc)
+            return ({"success": False, "error": "close_foreground_failed",
+                     "detail": str(exc)}, 500)
+        out = (proc.stdout or b"").decode("utf-8", "replace")
+        logger.info("close-foreground action rc=%s out=%s", proc.returncode, out.strip())
+        return ({"success": True, "action": "close-foreground", "rc": proc.returncode,
+                 "output": out.strip()}, 200)
+
+    def _native_back_action(self):
+        """Short Back for the foreground native app: navigate the app's own
+        history first, and only report at-root when it has no more back step.
+
+        The compositor's foreign-toplevel manager reports the activated
+        non-Home toplevel.  Only the native browser owns an in-app history the
+        shell can drive (via its control FIFO); any other native app reports
+        at-root so the launcher's short Back falls through to Home."""
+        env = dict(os.environ)
+        env.update({"XDG_RUNTIME_DIR": "/run/nuxel-wayland",
+                    "WAYLAND_DISPLAY": "wayland-0"})
+        try:
+            proc = subprocess.run(["/usr/lib/nuxel/nuxel-foreign-toplevel", "list"],
+                                  env=env, capture_output=True, timeout=10)
+        except (OSError, subprocess.TimeoutExpired) as exc:
+            logger.error("native back list failed: %s", exc)
+            return ({"success": False, "error": "back_list_failed",
+                     "detail": str(exc)}, 500)
+        out = (proc.stdout or b"").decode("utf-8", "replace")
+        foreground = None
+        for line in out.splitlines():
+            if line.startswith("WIN ") and " act=1 " in line and "app_id=nuxel-pwa-host" not in line:
+                foreground = line
+        if not foreground:
+            # No foreground native app: already Home, nothing to navigate back.
+            return ({"success": True, "handled": False, "at_root": True,
+                     "foreground": None}, 200)
+        app_id = ""
+        m = re.search(r"app_id=(\S+)", foreground)
+        if m:
+            app_id = m.group(1)
+        if "browser" not in app_id.lower():
+            return ({"success": True, "handled": False, "at_root": True,
+                     "foreground": app_id}, 200)
+        # Browser: read its published navigation state and, if it can go back,
+        # send `back` over its control FIFO.
+        state = {}
+        try:
+            with open("/run/nuxel-browser.state", "r") as f:
+                state = json.loads(f.read())
+        except (OSError, ValueError):
+            state = {}
+        can_go_back = bool(state.get("can_go_back", False))
+        if not can_go_back:
+            return ({"success": True, "handled": False, "at_root": True,
+                     "foreground": app_id, "can_go_back": False}, 200)
+        ctrl = "/run/nuxel-browser.cmd"
+        try:
+            fd = os.open(ctrl, os.O_WRONLY | os.O_NONBLOCK)
+            try:
+                os.write(fd, b"back\n")
+            finally:
+                os.close(fd)
+        except OSError as exc:
+            logger.error("native back fifo write failed: %s", exc)
+            return ({"success": False, "error": "back_fifo_write_failed",
+                     "detail": str(exc)}, 500)
+        logger.info("native back handled foreground=%s", app_id)
+        return ({"success": True, "handled": True, "at_root": False,
+                 "foreground": app_id}, 200)
+
+    def _activate_toplevel(self, app_id):
+        """Activate a specific native toplevel by app_id (recents switch)."""
+        if not app_id or not re.match(r"^[A-Za-z0-9._-]+$", app_id):
+            return ({"success": False, "error": "invalid_app_id"}, 400)
+        env = dict(os.environ)
+        env.update({"XDG_RUNTIME_DIR": "/run/nuxel-wayland",
+                    "WAYLAND_DISPLAY": "wayland-0"})
+        try:
+            proc = subprocess.run(["/usr/lib/nuxel/nuxel-foreign-toplevel", "activate", app_id],
+                                  env=env, capture_output=True, timeout=10)
+        except (OSError, subprocess.TimeoutExpired) as exc:
+            logger.error("activate action failed: %s", exc)
+            return ({"success": False, "error": "activate_failed",
+                     "detail": str(exc)}, 500)
+        out = (proc.stdout or b"").decode("utf-8", "replace")
+        return ({"success": True, "action": "activate", "app_id": app_id,
+                 "rc": proc.returncode, "output": out.strip()}, 200)
 
     def _classify_backends(self):
         """Probe live D-Bus backend providers to classify each data source.
@@ -692,7 +871,11 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
         # file reads "Battery", which works for both naming schemes, and report
         # the real current full capacity so the UI can represent it honestly.
         bat_source = "mock"
-        bat_info = {"level": 100, "charging": True, "available": False}
+        # An unreadable battery is UNKNOWN.  The old 100%-charging default was a
+        # fabricated value and is exactly what made a transient sysfs 0 look like
+        # a 100% -> 0% jump on the lockscreen.
+        bat_info = {"level": None, "charging": False, "available": False,
+                    "status": "unknown"}
         try:
             bat_dir = None
             for d in sorted(_os.listdir("/sys/class/power_supply")):
@@ -718,12 +901,30 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
                 status_file = base + "status"
                 full_file = base + "charge_full"
                 design_file = base + "charge_full_design"
-                if _os.path.exists(cap_file):
-                    with open(cap_file) as f:
-                        bat_info["level"] = int(f.read().strip())
+                status_text = "unknown"
                 if _os.path.exists(status_file):
-                    with open(status_file) as f:
-                        bat_info["charging"] = f.read().strip() in ("Charging", "Full")
+                    try:
+                        with open(status_file) as f:
+                            status_text = f.read().strip() or "unknown"
+                    except Exception:
+                        status_text = "unknown"
+                bat_info["status"] = status_text
+                # Only the kernel's exact Charging state earns the charging
+                # glyph; Full is externally powered but no longer charging.
+                bat_info["charging"] = status_text.lower() == "charging"
+                if _os.path.exists(cap_file):
+                    try:
+                        with open(cap_file) as f:
+                            level = int(float(f.read().strip()))
+                        if 0 <= level <= 100:
+                            # A "Full" pack cannot truthfully be 0%.  The S10+
+                            # fuel gauge can expose a single 0 sample while the
+                            # charger/PMIC re-initialises; keep the reading
+                            # unknown rather than publish that flicker.
+                            if not (level == 0 and status_text.lower() == "full"):
+                                bat_info["level"] = level
+                    except Exception:
+                        pass
                 # Actual capacity representation (microampere-hours as reported
                 # by the fuel gauge).  charge_full is the currently usable full
                 # capacity; charge_full_design is the factory design capacity.
@@ -859,6 +1060,9 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
                 result.setdefault("bridge_version", BRIDGE_PROTOCOL_VERSION)
                 result.setdefault("version", BRIDGE_HOST_VERSION)
             self._send_json(result)
+
+        elif path == '/api/v1/storage/file':
+            self._send_storage_file(parse_qs(parsed.query).get('path', [''])[0])
 
         elif path == '/api/v1/apps/registry':
             self._send_json(self._load_app_registry())
@@ -1060,6 +1264,8 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
             if verb == 'set-muted':
                 return self._audio_provider.set_muted(
                     bool(params.get('muted', False)) if isinstance(params, dict) else False)
+            if verb == 'capture-route':
+                return self._audio_provider.capture_route()
         if namespace == 'display' and verb == 'status':
             if hw_providers is None:
                 return {'success': False, 'error': 'display provider unavailable'}
@@ -1153,8 +1359,13 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
                 return client.discover(params.get('email', ''))
             if verb == 'test-connection':
                 return client.test_connection(params.get('account', ''), params.get('password', ''))
+            if verb == 'test-config':
+                return client.test_config(params.get('config') or {}, params.get('password', ''))
             if verb == 'imap-list':
                 return client.imap_list(params.get('account', ''), params.get('password', ''),
+                                        params.get('folder', 'INBOX'))
+            if verb == 'pop3-list':
+                return client.pop3_list(params.get('account', ''), params.get('password', ''),
                                         params.get('folder', 'INBOX'))
             if verb == 'smtp-send':
                 return client.smtp_send(params.get('account', ''), params.get('password', ''),
@@ -1182,6 +1393,10 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
                     return store.storage_write(params.get('key', ''), params.get('data'))
                 if verb == 'list-dir':
                     return store.storage_list_dir(params.get('path', '/'))
+                if verb == 'home':
+                    return store.home_info()
+                if verb == 'media-list':
+                    return store.storage_media_list()
                 if verb == 'mkdir':
                     return store.storage_mkdir(params.get('path', ''))
                 if verb == 'rename':
@@ -1327,6 +1542,21 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
         elif path == '/api/v1/apps/home':
             # Authoritative Penguin Home: minimize native windows, never kill.
             result, code = self._home_action()
+            self._send_json(result, code)
+
+        elif path == '/api/v1/apps/close-foreground':
+            # Long Back: close the activated non-Home toplevel, never kill.
+            result, code = self._close_foreground_action()
+            self._send_json(result, code)
+
+        elif path == '/api/v1/apps/back':
+            # Short Back: in-app navigation first; only at root may Home follow.
+            result, code = self._native_back_action()
+            self._send_json(result, code)
+
+        elif path == '/api/v1/windows/activate':
+            # Recents/Tabs switch: activate a backgrounded native toplevel.
+            result, code = self._activate_toplevel(body.get('app_id'))
             self._send_json(result, code)
 
         elif path == '/api/v1/capabilities/revoke':

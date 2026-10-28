@@ -1,0 +1,55 @@
+diff --git a/arch/arm64/configs/exynos9820-beyond2lte_defconfig b/arch/arm64/configs/exynos9820-beyond2lte_defconfig
+index e31623d4d897..aa2acd0b19e8 100644
+--- a/arch/arm64/configs/exynos9820-beyond2lte_defconfig
++++ b/arch/arm64/configs/exynos9820-beyond2lte_defconfig
+@@ -1234,7 +1234,9 @@ CONFIG_BT_DEBUGFS=y
+ #
+ # CONFIG_BT_HCIBTUSB is not set
+ # CONFIG_BT_HCIBTSDIO is not set
+-# CONFIG_BT_HCIUART is not set
++CONFIG_BT_HCIUART=y
++CONFIG_BT_HCIUART_H4=y
++CONFIG_BT_HCIUART_3WIRE=y
+ # CONFIG_BT_HCIBCM203X is not set
+ # CONFIG_BT_HCIBFUSB is not set
+ # CONFIG_BT_HCIVHCI is not set
+diff --git a/sound/soc/samsung/abox/abox.c b/sound/soc/samsung/abox/abox.c
+index 50b43be81227..913e6ac8a3c0 100644
+--- a/sound/soc/samsung/abox/abox.c
++++ b/sound/soc/samsung/abox/abox.c
+@@ -1595,15 +1595,18 @@ static void abox_cache_components(struct device *dev, struct abox_data *data)
+ 	}
+ }
+ 
+-static bool abox_is_calliope_incompatible(struct device *dev)
++static bool abox_is_calliope_incompatible(unsigned int version)
+ {
+-	struct abox_data *data = dev_get_drvdata(dev);
+-	ABOX_IPC_MSG msg;
+-	struct IPC_SYSTEM_MSG *system_msg = &msg.msg.system;
+-
+-	memcpy(&msg, data->sram_base + 0x30040, 0x3C);
+-
+-	return ((system_msg->param3 >> 24) == 'A');
++	/*
++	 * The boot-done IPC already carries the Calliope version in param3.
++	 * Reading the duplicate copy at SRAM+0x30040 from hard IRQ context is
++	 * not safe: on beyond2lte the ABOX SRAM mapping can fault there while
++	 * the DSP is coming out of reset, which panics the kernel about a
++	 * minute into boot (abox_is_calliope_incompatible ->
++	 * abox_system_ipc_handler -> abox_ipc_irq_handler).  Use the message
++	 * value we already copied to normal memory instead.
++	 */
++	return ((version >> 24) == 'A');
+ }
+ 
+ static int abox_set_profiling_ipc(struct abox_data *data)
+@@ -1783,7 +1786,7 @@ static void abox_system_ipc_handler(struct device *dev,
+ 
+ 	switch (system_msg->msgtype) {
+ 	case ABOX_BOOT_DONE:
+-		if (abox_is_calliope_incompatible(dev))
++		if (abox_is_calliope_incompatible(system_msg->param3))
+ 			dev_err(dev, "Calliope is not compatible with the driver\n");
+ 
+ 		abox_boot_done(dev, system_msg->param3);

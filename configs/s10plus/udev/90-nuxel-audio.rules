@@ -1,0 +1,5 @@
+# Nuxel S10+ (Exynos 9820 / beyond2lte): the downstream ALSA driver creates
+# controlC*/pcmC* root-only.  The graphical session and nuxel user need the
+# standard audio group access; the timer node is already audio:audio.
+SUBSYSTEM=="sound", GROUP="audio", MODE="0660"
+KERNEL=="timer", SUBSYSTEM=="sound", GROUP="audio", MODE="0660"

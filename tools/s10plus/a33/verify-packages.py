@@ -161,6 +161,12 @@ ESSENTIAL_GROUPS: "List[Tuple[str, str, List[dict]]]" = [
     ("power", "Power/session peripherals", [
         {"name": "upower"},
     ]),
+    ("media", "Video playback for the PWNAGE-31000 pre-lockscreen cinema", [
+        # mpv + the FFmpeg-free decode chain.  The controller invokes
+        # /usr/bin/mpv with --vo=wlshm --no-audio; WebKit media is deliberately
+        # disabled on this image, and there is no second player/decoder path.
+        {"name": "mpv"},
+    ]),
 ]
 
 

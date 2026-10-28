@@ -450,13 +450,19 @@ create_message_widget(Message *msg)
     GtkWidget *text = gtk_label_new(msg->text);
     gtk_label_set_wrap(GTK_LABEL(text), TRUE);
     gtk_label_set_xalign(GTK_LABEL(text), 0.0);
-    gtk_widget_set_margin(bubble, 8);
+    gtk_widget_set_margin_start(bubble, 8);
+    gtk_widget_set_margin_end(bubble, 8);
+    gtk_widget_set_margin_top(bubble, 8);
+    gtk_widget_set_margin_bottom(bubble, 8);
     gtk_box_append(GTK_BOX(bubble), text);
     
     GtkWidget *time = gtk_label_new(msg->timestamp);
     gtk_widget_add_css_class(time, "caption");
     gtk_label_set_xalign(GTK_LABEL(time), 1.0);
-    gtk_widget_set_margin(bubble, 8);
+    gtk_widget_set_margin_start(bubble, 8);
+    gtk_widget_set_margin_end(bubble, 8);
+    gtk_widget_set_margin_top(bubble, 8);
+    gtk_widget_set_margin_bottom(bubble, 8);
     gtk_box_append(GTK_BOX(bubble), time);
     
     if (msg->incoming) {
@@ -729,7 +735,10 @@ activate_cb(GtkApplication *gtk_app, gpointer user_data)
     pango_attr_list_insert(tattrs, pango_attr_weight_new(PANGO_WEIGHT_BOLD));
     gtk_label_set_attributes(GTK_LABEL(list_title), tattrs);
     pango_attr_list_unref(tattrs);
-    gtk_widget_set_margin(list_title, 12);
+    gtk_widget_set_margin_start(list_title, 12);
+    gtk_widget_set_margin_end(list_title, 12);
+    gtk_widget_set_margin_top(list_title, 12);
+    gtk_widget_set_margin_bottom(list_title, 12);
     gtk_box_append(GTK_BOX(list_header), list_title);
     gtk_box_append(GTK_BOX(list_page), list_header);
     
@@ -769,7 +778,10 @@ activate_cb(GtkApplication *gtk_app, gpointer user_data)
     gtk_label_set_attributes(GTK_LABEL(app->thread_header), hattrs);
     pango_attr_list_unref(hattrs);
     gtk_box_append(GTK_BOX(thread_header_box), app->thread_header);
-    gtk_widget_set_margin(thread_header_box, 8);
+    gtk_widget_set_margin_start(thread_header_box, 8);
+    gtk_widget_set_margin_end(thread_header_box, 8);
+    gtk_widget_set_margin_top(thread_header_box, 8);
+    gtk_widget_set_margin_bottom(thread_header_box, 8);
     gtk_box_append(GTK_BOX(thread_page), thread_header_box);
     
     /* Messages container */
@@ -785,7 +797,10 @@ activate_cb(GtkApplication *gtk_app, gpointer user_data)
     
     /* Input area */
     GtkWidget *input_box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
-    gtk_widget_set_margin(input_box, 8);
+    gtk_widget_set_margin_start(input_box, 8);
+    gtk_widget_set_margin_end(input_box, 8);
+    gtk_widget_set_margin_top(input_box, 8);
+    gtk_widget_set_margin_bottom(input_box, 8);
     
     app->message_entry = gtk_entry_new();
     gtk_entry_set_placeholder_text(GTK_ENTRY(app->message_entry), "Message");

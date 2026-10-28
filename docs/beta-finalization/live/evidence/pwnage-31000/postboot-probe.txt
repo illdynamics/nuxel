@@ -1,0 +1,109 @@
+# console /dev/ttyACM0
+===== echo BOOT_ID=$(cat /proc/sys/kernel/random/boot_id)   [rc=0 frame=7db6c7e8 sha_ok=yes]
+    BOOT_ID=c20cd499-0fcb-4b00-847e-01d49899a6d1
+===== cat /proc/uptime   [rc=0 frame=ac65c7e9 sha_ok=yes]
+    180.82 1034.05
+===== date +%s   [rc=0 frame=a1a3c7ea sha_ok=yes]
+    1793181686
+===== systemd-analyze time   [rc=0 frame=657cc7eb sha_ok=yes]
+    Startup finished in 3.763s (kernel) + 1min 48.022s (userspace) = 1min 51.786s
+    multi-user.target reached after 48.065s in userspace.
+===== systemd-analyze blame | head -15   [rc=0 frame=5e57c7ec sha_ok=yes]
+    1min 23ms NetworkManager-wait-online.service
+       3.013s nuxel-fallback.service
+       2.420s NetworkManager.service
+       1.014s nuxel-wl-fb.service
+        816ms systemd-udev-trigger.service
+        778ms systemd-journald.service
+        727ms rtkit-daemon.service
+        724ms systemd-hostnamed.service
+        682ms polkit.service
+        290ms systemd-tmpfiles-setup.service
+        247ms systemd-journal-flush.service
+        217ms nuxel-orientationd.service
+        137ms systemd-logind.service
+        125ms ModemManager.service
+         93ms systemd-tmpfiles-setup-dev-early.service
+===== systemctl --failed --no-pager   [rc=0 frame=0db0c7f0 sha_ok=yes]
+      UNIT                               LOAD   ACTIVE SUB    DESCRIPTION
+    ● NetworkManager-wait-online.service loaded failed failed Network Manager Wait Online
+    Legend: LOAD   → Reflects whether the unit definition was properly loaded.
+            ACTIVE → The high-level unit activation state, i.e. generalization of SUB.
+            SUB    → The low-level unit activation state, values depend on unit type.
+    1 loaded units listed.
+===== systemctl is-active nuxel-preload-cinema nuxel-wayland nuxel-wl-fb nuxel-touch-arm nuxel-bridge nuxel-http-bridge nuxel-web nuxel-portal nuxel-notifications   [rc=0 frame=3dfcc7f1 sha_ok=yes]
+    inactive
+    active
+    active
+    active
+    active
+    active
+    active
+    active
+    active
+===== systemctl is-enabled nuxel-preload-cinema   [rc=0 frame=a360c7f2 sha_ok=yes]
+    enabled
+===== stat -c '%y %n' /run/nuxel-launcher-ready /run/nuxel/preload-cinema.done /run/nuxel/preload-cinema.receipt /var/log/nuxel/preload-cinema.log   [rc=0 frame=161ec7f3 sha_ok=yes]
+    2026-10-28 10:58:34.891999993 +0100 /run/nuxel-launcher-ready
+    2026-10-28 10:58:32.039999996 +0100 /run/nuxel/preload-cinema.done
+    2026-10-28 10:58:53.591999980 +0100 /run/nuxel/preload-cinema.receipt
+    2026-10-28 10:58:53.591999980 +0100 /var/log/nuxel/preload-cinema.log
+===== ls -l /run/nuxel/preload-cinema.sock 2>&1 || true   [rc=0 frame=cd28c7f4 sha_ok=yes]
+    ls: cannot access '/run/nuxel/preload-cinema.sock': No such file or directory
+===== pgrep -a mpv || echo NO_MPV   [rc=0 frame=bdc2c7f5 sha_ok=yes]
+    NO_MPV
+===== grep -aE 'LOCKS\[|unlock' /run/nuxel-home.state | tail -5   [rc=0 frame=6e64c7f6 sha_ok=yes]
+    1793181688 NUXEL_INPUT LOCKS[a45.1] touch-warning show=0 last=2026-10-28T09:59:02Z TOUCH_POINT slot=0 n=7
+    1793181690 NUXEL_INPUT LOCKS[a45.1] touch-warning show=0 last=2026-10-28T09:59:02Z TOUCH_POINT slot=0 n=7
+    1793181693 NUXEL_INPUT LOCKS[a45.1] touch-warning show=0 last=2026-10-28T09:59:02Z TOUCH_POINT slot=0 n=7
+    1793181694 NUXEL_INPUT LOCKS[a45.1] touch-warning show=0 last=2026-10-28T09:59:02Z TOUCH_POINT slot=0 n=7
+    1793181697 NUXEL_INPUT LOCKS[a45.1] touch-warning show=0 last=2026-10-28T09:59:02Z TOUCH_POINT slot=0 n=7
+===== cat /run/nuxel/preload-cinema.receipt   [rc=0 frame=42cec7f7 sha_ok=yes]
+    {
+      "asset": "/usr/share/nuxel/preload/nuxel-preloading-screen.mp4",
+      "asset_bytes": 7630092,
+      "asset_sha256": "b059f121e62b167fde8664e24c879ca443df8740d95441e7948abdbcc6cdbbf1",
+      "audio": "disabled",
+      "boot_id": "c20cd499-0fcb-4b00-847e-01d49899a6d1",
+      "bounded": false,
+      "controller_pid": 5445,
+      "display_lost": false,
+      "duration_s": 6.016,
+      "elapsed_s": 6.327,
+      "finished_at": "2026-10-28T10:58:53+0100",
+      "framebuffer_owner": "nuxel-wl-fb",
+      "fullscreen": true,
+      "hard_timeout_ms": 45000,
+      "max_display_ms": 20000,
+      "milestone": "PWNAGE-31000",
+      "readiness": {
+        "boot_os": true,
+        "critical": true,
+        "detail": {
+          "display_off": false,
+          "display_state": "DISPLAY_ON",
+          "display_state_fresh": true,
+          "display_state_path": "/var/lib/nuxel/display",
+          "home_state_path": "/run/nuxel-home.state",
+          "launcher_ready_path": "/run/nuxel-launcher-ready",
+          "touch_last_line": "2026-10-28T09:58:31Z ARMED_OK path=/dev/input/event2 name='sec_touchscreen' mt=1 direct=1 btn=1 slots=10 x=[0.4095] y=[0.4095] tsp_before='mutual:1, hover:0, co",
+          "touch_state_path": "/run/nuxel-touch-arm.state",
+          "wlfb_state": "1793181533 FRAMES_OK total=221 fps_1s=30 failures=0 blits=146 present_skipped=74 blit_avg_ms=22 idle_ms=11 out=720x1520 src=720x1520 scale=2 panel=1440x3040 owner=nuxel-wl-fb display=on src_format=0x0",
+          "wlfb_state_path": "/run/nuxel-wl-fb.state"
+        },
+        "display_on": true,
+        "launcher_ready": true,
+        "ready": true,
+        "touch_settled": true,
+        "touch_unknown": false,
+        "wlfb_ready": true
+      },
+      "readiness_ready_at_s": 0.0,
+      "reason": "video-and-lockscreen-ready",
+      "schema_version": 1,
+      "started_at": "2026-10-28T10:58:32+0100",
+      "unlock_actions": 0,
+      "verdict": "PLAYED",
+      "video_eof": true,
+      "video_held": false
+    }

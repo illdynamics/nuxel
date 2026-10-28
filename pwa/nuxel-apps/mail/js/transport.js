@@ -71,10 +71,11 @@
 
   // Fetch messages for a folder. Never invents messages: when the transport is
   // unavailable, the caller's local store contents are returned unchanged.
-  Transport.prototype.fetch = function (account, folder, localMessages) {
+  Transport.prototype.fetch = function (account, folder, localMessages, password) {
     var self = this;
     this.last_verb = 'imap-list';
-    return this._call('imap-list', { app_id: APP_ID, account: account.id, folder: folder }, null)
+    var verb = account.incoming_type === 'pop3' ? 'pop3-list' : 'imap-list';
+    return this._call(verb, { app_id: APP_ID, account: account.id, folder: folder, password: password || '' }, null)
       .then(function (res) {
         if (res && Array.isArray(res.messages)) {
           self.state = 'bridge';
@@ -98,7 +99,7 @@
   // Send. The result state is exactly one of:
   //   sent   — the bridge confirmed the SMTP send (message_id present)
   //   queued — stored in OUTBOX, NOT sent (the reason travels with it)
-  Transport.prototype.send = function (account, msg) {
+  Transport.prototype.send = function (account, msg, password) {
     var self = this;
     this.last_verb = 'smtp-send';
     var payload = {
@@ -106,7 +107,8 @@
       account: account.id,
       to: Array.isArray(msg.to) ? msg.to : [msg.to],
       subject: msg.subject,
-      body: msg.body
+      body: msg.body,
+      password: password || ''
     };
     return this._call('smtp-send', payload, null).then(function (res) {
       if (res && res.success !== false && (res.accepted || res.message_id)) {

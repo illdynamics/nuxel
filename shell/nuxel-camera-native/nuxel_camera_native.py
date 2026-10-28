@@ -104,7 +104,7 @@ class CameraNativeWindow(Gtk.ApplicationWindow):
             root = Adw.ToolbarView()
             self.set_child(root)
             content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=16)
-            content.set_margin_top(16)
+            content.set_margin_top(8)
             content.set_margin_bottom(16)
             content.set_margin_start(16)
             content.set_margin_end(16)
@@ -113,6 +113,25 @@ class CameraNativeWindow(Gtk.ApplicationWindow):
             root = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=16)
             content = root
             self.set_child(root)
+
+        # Native system bar: a native xdg_toplevel is a separate Wayland
+        # surface and cannot render the PWA DOM status bar.  Keep the same
+        # truthful status and a guaranteed exit here; the layer-shell nav dock
+        # remains the authoritative Back/Home/Recents control.
+        system_bar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        title = Gtk.Label(label="Nuxel Camera")
+        title.set_xalign(0.0)
+        self.status_label = Gtk.Label(label=self._status_line())
+        self.status_label.set_xalign(0.0)
+        self.status_label.set_hexpand(True)
+        home = Gtk.Button(label="⌂")
+        close = Gtk.Button(label="✕")
+        for w in (title, self.status_label, home, close):
+            system_bar.append(w)
+        content.append(system_bar)
+        home.connect("clicked", lambda _b: self._go_home())
+        close.connect("clicked", lambda _b: self.close())
+        GLib.timeout_add_seconds(15, self._refresh_status_line)
 
         # Viewfinder placeholder: honest, never a synthetic live preview.
         viewfinder = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
@@ -161,6 +180,36 @@ class CameraNativeWindow(Gtk.ApplicationWindow):
         close.connect("clicked", lambda _b: self.close())
         btn_row.append(close)
         content.append(btn_row)
+
+    def _status_line(self) -> str:
+        try:
+            wifi = open("/sys/class/net/wlan0/operstate").read().strip()
+        except OSError:
+            wifi = "unknown"
+        battery = "?"
+        for name in ("battery", "bq27541-0", "max77865-charger"):
+            try:
+                battery = open("/sys/class/power_supply/%s/capacity" % name).read().strip() + "%"
+                break
+            except OSError:
+                continue
+        return "%s  ·  Wi-Fi %s  ·  Battery %s" % (__import__("time").strftime("%H:%M"), wifi, battery)
+
+    def _refresh_status_line(self):
+        if getattr(self, "status_label", None) is not None:
+            self.status_label.set_text(self._status_line())
+        return True
+
+    def _go_home(self):
+        env = dict(os.environ)
+        env.setdefault("XDG_RUNTIME_DIR", "/run/nuxel-wayland")
+        env.setdefault("WAYLAND_DISPLAY", "wayland-0")
+        try:
+            subprocess.Popen(["/usr/lib/nuxel/nuxel-foreign-toplevel", "home"],
+                             env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        except OSError:
+            pass
+        self.close()
 
     def _refresh(self):
         # Rebuild the content with a fresh status read.

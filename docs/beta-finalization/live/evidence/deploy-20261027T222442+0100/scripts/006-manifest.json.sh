@@ -1,0 +1,18 @@
+#!/bin/sh
+# Lockscreen touch warning, battery guard, wider unlock band and filter-free idle rendering -> /usr/share/nuxel/pwa/nuxel-home/manifest.json (service: nuxel-wayland, risk: low)
+# staged source: pwa/nuxel-home/manifest.json
+# previous-hash: a8d59d10b4886ace928fca19f299a2309243dfd80c9b8134d0978180a54d6b00
+set -u
+_NXL_ROLLBACK() { _rc=$?; if [ "$_rc" -ne 0 ]; then if [ -e /usr/share/nuxel/pwa/nuxel-home/manifest.json.nuxel-rollback.pre-deploy-20261027T222442-2425280 ]; then cp -a /usr/share/nuxel/pwa/nuxel-home/manifest.json.nuxel-rollback.pre-deploy-20261027T222442-2425280 /usr/share/nuxel/pwa/nuxel-home/manifest.json; fi; echo "ROLLED-BACK rc=$_rc"; fi; }
+trap _NXL_ROLLBACK EXIT
+set -e
+if [ -e /usr/share/nuxel/pwa/nuxel-home/manifest.json ]; then printf 'PREV=%s\n' "$(sha256sum /usr/share/nuxel/pwa/nuxel-home/manifest.json | cut -d' ' -f1)"; else echo PREV=NONE; fi
+mkdir -p "$(dirname /usr/share/nuxel/pwa/nuxel-home/manifest.json)"
+if [ -e /usr/share/nuxel/pwa/nuxel-home/manifest.json ] && [ ! -e /usr/share/nuxel/pwa/nuxel-home/manifest.json.nuxel-rollback ]; then cp -a /usr/share/nuxel/pwa/nuxel-home/manifest.json /usr/share/nuxel/pwa/nuxel-home/manifest.json.nuxel-rollback; fi
+if [ -e /usr/share/nuxel/pwa/nuxel-home/manifest.json ] && [ ! -e /usr/share/nuxel/pwa/nuxel-home/manifest.json.nuxel-rollback.pre-deploy-20261027T222442-2425280 ]; then cp -a /usr/share/nuxel/pwa/nuxel-home/manifest.json /usr/share/nuxel/pwa/nuxel-home/manifest.json.nuxel-rollback.pre-deploy-20261027T222442-2425280; fi
+test -f /usr/share/nuxel/pwa/nuxel-home/manifest.json.nuxel-staged
+printf '%s  %s\n' a8d59d10b4886ace928fca19f299a2309243dfd80c9b8134d0978180a54d6b00 /usr/share/nuxel/pwa/nuxel-home/manifest.json.nuxel-staged > /var/tmp/nxl-verify.sha256
+sha256sum -c /var/tmp/nxl-verify.sha256
+mv -f /usr/share/nuxel/pwa/nuxel-home/manifest.json.nuxel-staged /usr/share/nuxel/pwa/nuxel-home/manifest.json
+sha256sum /usr/share/nuxel/pwa/nuxel-home/manifest.json | grep -q a8d59d10b4886ace928fca19f299a2309243dfd80c9b8134d0978180a54d6b00
+echo INSTALL-OK

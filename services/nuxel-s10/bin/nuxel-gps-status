@@ -1,0 +1,44 @@
+#!/bin/sh
+# Honest GPS/location status for the S10+ (BCM4773 over SPI / ttyBCM).
+#
+# The SPI driver and the GPS power rail work.  The chip speaks Broadcom BBD/LHD
+# RPC, not NMEA, so a stock gpsd on /dev/ttyBCM cannot produce a fix.  Geoclue's
+# Wi-Fi/IP sources can still provide a network location; this tool reports both
+# facts instead of pretending the GNSS path is fixed.
+set -u
+LOCATE=0
+POWER=""
+for a in "$@"; do
+    case "$a" in
+        --locate) LOCATE=1 ;;
+        --power-on) POWER=1 ;;
+        --power-off) POWER=0 ;;
+        -h|--help) echo "usage: nuxel-gps-status [--locate] [--power-on|--power-off]"; exit 0 ;;
+    esac
+done
+
+GPIO=/sys/devices/virtual/sec/gps/GPS_PWR_EN/value
+echo "device=/dev/ttyBCM present=$([ -e /dev/ttyBCM ] && echo yes || echo no)"
+echo "spi_driver=$(readlink -f /sys/bus/spi/devices/spi17.0/driver 2>/dev/null | sed 's#.*/##')"
+echo "power_rail=$GPIO value=$(cat "$GPIO" 2>/dev/null || echo unavailable)"
+echo "geoclue=$(systemctl is-active geoclue 2>/dev/null || true)"
+
+if [ "$POWER" = "1" ]; then
+    echo 1 >"$GPIO" 2>/dev/null && echo "action=power-on" || echo "action=power-on-failed"
+elif [ "$POWER" = "0" ]; then
+    echo 0 >"$GPIO" 2>/dev/null && echo "action=power-off" || echo "action=power-off-failed"
+fi
+
+if [ "$LOCATE" = "1" ]; then
+    echo "--- geoclue network location (bounded 35s) ---"
+    if command -v geoclue-where-am-i >/dev/null 2>&1; then
+        timeout 35 geoclue-where-am-i 2>&1 || echo "geoclue=no-fix"
+    else
+        echo "geoclue=client-missing"
+    fi
+fi
+
+if grep -q 'gps' /proc/devices 2>/dev/null || [ -e /dev/ttyBCM ]; then
+    echo "gnss_verdict=BLOCKED_FIRMWARE (BCM4773 BBD/LHD needs vendor gpsd; ttyBCM is not NMEA)"
+fi
+echo "note=network location may work via geoclue [wifi]+[ip]; GNSS fix does not"

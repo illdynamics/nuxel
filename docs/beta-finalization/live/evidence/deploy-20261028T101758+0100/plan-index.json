@@ -1,0 +1,122 @@
+[
+  {
+    "group": "pwnage32000-keyboard-session",
+    "n": 1,
+    "risk": "low",
+    "script": "scripts/001-nuxel-session.sh.sh",
+    "service": "nuxel-wayland",
+    "source": "tools/s10plus/a29/nuxel-session.sh",
+    "source_sha256": "9fef778096913d63aa2b75221bf5f553487218a9431b63327287275438d1ae07",
+    "target": "/usr/lib/nuxel/nuxel-session.sh"
+  },
+  {
+    "group": "pwnage32000-keyboard-pwa",
+    "n": 2,
+    "risk": "low",
+    "script": "scripts/002-touch-keyboard.js.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/js/touch-keyboard.js",
+    "source_sha256": "725f6bc00ce14120dc2bc131d862d420e17d59183b1a1f89da2bfa35cdb79d94",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/js/touch-keyboard.js"
+  },
+  {
+    "group": "pwnage32000-keyboard-pwa",
+    "n": 3,
+    "risk": "low",
+    "script": "scripts/003-index.html.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/index.html",
+    "source_sha256": "81d2b033c5d754e189e8da44b8e98e7c499e28626af2b4d60684903f692e0b4f",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/index.html"
+  },
+  {
+    "group": "pwnage32000-keyboard-pwa",
+    "n": 4,
+    "risk": "low",
+    "script": "scripts/004-sw.js.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/sw.js",
+    "source_sha256": "1ce1f82cd471f4a50823177d15a89fd863299d2481b8b9255fd12fd90f7692d1",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/sw.js"
+  },
+  {
+    "group": "pwnage32000-keyboard-pwa",
+    "n": 5,
+    "risk": "low",
+    "script": "scripts/005-manifest.json.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/manifest.json",
+    "source_sha256": "ecabebc41b976aa69d08491d18eaff4dd150346537f9abd5e7bf0dfdc6690f0b",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/manifest.json"
+  },
+  {
+    "group": "pwnage32000-nav-bridge",
+    "n": 6,
+    "risk": "medium",
+    "script": "scripts/006-api.py.sh",
+    "service": "nuxel-http-bridge",
+    "source": "services/nuxel-bridge/src/api.py",
+    "source_sha256": "6bfe6c850186965214c3c42178e6b976b78bd95b7ccb69eec61b8dc5378d26d3",
+    "target": "/usr/lib/nuxel/nuxel-bridge/api.py"
+  },
+  {
+    "group": "pwnage32000-nav-app-pwa",
+    "n": 7,
+    "risk": "medium",
+    "script": "scripts/007-app.js.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/js/app.js",
+    "source_sha256": "4193e03f019185dc6ff780d41ee0757e0d1704a8382a641f0b1b6e654b930868",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/js/app.js"
+  },
+  {
+    "group": "pwnage32000-browser-native",
+    "n": 8,
+    "risk": "low",
+    "script": "scripts/008-nuxel_browser_native.py.sh",
+    "service": null,
+    "source": "shell/nuxel-browser-native/nuxel_browser_native.py",
+    "source_sha256": "190a811d75bf629532fb7abb7c6b017977a751a3a92dc8d004718ae2eabf5700",
+    "target": "/usr/lib/nuxel/nuxel-browser-native/nuxel_browser_native.py"
+  },
+  {
+    "group": "pwnage32000-boot-units",
+    "n": 9,
+    "risk": "medium",
+    "script": "scripts/009-nuxel-bridge.service.sh",
+    "service": null,
+    "source": "services/nuxel-bridge/systemd/nuxel-bridge.service",
+    "source_sha256": "23a90fe9eeb6497fd1aad3cbcadae618e41003246c2dc56c4e24916035ec2fb8",
+    "target": "/etc/systemd/system/nuxel-bridge.service"
+  },
+  {
+    "group": "pwnage32000-boot-units",
+    "n": 10,
+    "risk": "medium",
+    "script": "scripts/010-nuxel-portal.service.sh",
+    "service": null,
+    "source": "services/nuxel-portal/systemd/nuxel-portal.service",
+    "source_sha256": "d113c2e5a7be5ad9a0d1ad36170a520c3319a9c22ec18246b2822c6c46fb0b94",
+    "target": "/etc/systemd/system/nuxel-portal.service"
+  },
+  {
+    "group": "pwnage32000-boot-units",
+    "n": 11,
+    "risk": "medium",
+    "script": "scripts/011-nuxel-web.service.sh",
+    "service": null,
+    "source": "services/nuxel-web.service",
+    "source_sha256": "dfee7a3807d687ea5ff8edc653f84ee46241e9c96c1298c07e7a5188ff00c8a4",
+    "target": "/etc/systemd/system/nuxel-web.service"
+  },
+  {
+    "group": "pwnage32000-perf-wlfb",
+    "n": 12,
+    "risk": "medium",
+    "script": "scripts/012-nuxel-wl-fb.sh",
+    "service": "nuxel-wl-fb",
+    "source": "build/out/s10plus/a67/nuxel-wl-fb",
+    "source_sha256": "693bcde0788a6bbf856aee3f57bb707ace36f0feaa06cc5ecf9cfc33c9b2455e",
+    "target": "/usr/lib/nuxel/nuxel-wl-fb"
+  }
+]

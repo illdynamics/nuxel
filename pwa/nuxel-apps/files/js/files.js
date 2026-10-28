@@ -6,12 +6,13 @@
 (function () {
   'use strict';
   var el = {};
-  ['back-btn','refresh-btn','select-btn','selection-bar','selection-label','sel-all','sel-none','sel-cancel',
-   'toolbar','new-folder-btn','upload-btn','rename-btn','delete-btn','copy-btn','cut-btn','paste-btn',
-   'archive-btn','extract-btn','clipboard-info','file-grid','status','file-input',
+  ['back-btn','home-btn','refresh-btn','select-btn','selection-bar','selection-label','sel-all','sel-none','sel-cancel',
+   'toolbar','new-folder-btn','rename-btn','delete-btn','copy-btn','cut-btn','paste-btn',
+   'archive-btn','extract-btn','clipboard-info','file-grid','status','cwd-abs',
    'prompt-dialog','prompt-title','prompt-input','prompt-error','prompt-cancel','prompt-ok',
    'confirm-dialog','confirm-text','confirm-cancel','confirm-ok','breadcrumb'].forEach(function (id) {
     el[id] = document.getElementById(id);
+    el[id.replace(/-([a-z])/g, function (_m, c) { return c.toUpperCase(); })] = el[id];
   });
 
   function bridgeCall(ns, verb, params) {
@@ -23,6 +24,7 @@
 
   var app = {
     cwd: '/',
+    home: '/home/nuxel',
     entries: [],
     selected: new Set(),
     selecting: false,
@@ -32,12 +34,15 @@
 
     init: async function () {
       this.bind();
+      var info = await bridgeCall('storage', 'home', {});
+      if (info && info.success !== false && info.home) this.home = info.home;
       await this.refresh();
     },
 
     bind: function () {
       var self = this;
       el.backBtn.addEventListener('click', function () { self.goUp(); });
+      el.homeBtn.addEventListener('click', function () { self.cwd = '/'; self.refresh(); });
       el.refreshBtn.addEventListener('click', function () { self.refresh(); });
       el.selectBtn.addEventListener('click', function () { self.toggleSelect(); });
       el.selAll.addEventListener('click', function () { self.entries.forEach(function (e) { self.selected.add(e.path); }); self.render(); });
@@ -47,8 +52,6 @@
       el.newFolderBtn.addEventListener('click', function () {
         self.openPrompt('mkdir', 'New folder', 'Folder name', function (name) { return self.mkdir(name); });
       });
-      el.uploadBtn.addEventListener('click', function () { el.fileInput.click(); });
-      el.fileInput.addEventListener('change', function (ev) { self.upload(ev.target.files); ev.target.value = ''; });
       el.renameBtn.addEventListener('click', function () {
         var one = self.oneSelected(); if (!one) return;
         self.openPrompt('rename', 'Rename', 'New name', function (name) { return self.rename(one, name); });
@@ -80,6 +83,7 @@
       if (res && res.success !== false && Array.isArray(res.entries)) {
         this.entries = res.entries;
         this.selected = new Set(Array.from(this.selected).filter(function (p) { return res.entries.some(function (e) { return e.path === p; }); }));
+        if (res.home) this.home = res.home;
         this.status(res.count ? (res.count + ' item(s)') : 'Folder is empty');
       } else {
         this.entries = [];
@@ -90,6 +94,7 @@
 
     render() {
       this.renderBreadcrumb();
+      el.cwdAbs.textContent = this.absolutePath();
       var self = this;
       el.selectionBar.classList.toggle('hidden', !this.selecting);
       el.selectionLabel.textContent = this.selected.size + ' selected';
@@ -103,13 +108,13 @@
       el.clipboardInfo.textContent = this.clipboard ? ((this.clipboard.mode === 'cut' ? 'Moving: ' : 'Copying: ') + this.clipboard.paths.length) : '';
 
       if (!this.entries.length) {
-        el.fileGrid.innerHTML = '<div class="empty-state"><div class="empty-icon">📁</div><p>This folder is empty</p><p class="hint">Use New folder or Upload to add content. Listing comes from the Nuxel bridge storage store — nothing is invented.</p></div>';
+        el.fileGrid.innerHTML = '<div class="empty-state"><div class="empty-icon">📁</div><p>This folder is empty</p><p class="hint">Use New folder to add content. The listing is the real filesystem: nothing is invented.</p></div>';
         return;
       }
       el.fileGrid.innerHTML = this.entries.map(function (f) {
         var isSel = self.selected.has(f.path);
-        var icon = f.type === 'folder' ? '📁' : self.iconFor(f.name);
-        var meta = f.type === 'folder' ? 'Folder' : self.formatSize(f.size);
+        var icon = f.type === 'folder' ? '📁' : (f.type === 'symlink' ? '🔗' : self.iconFor(f.name));
+        var meta = f.type === 'folder' ? 'Folder' : (f.type === 'symlink' ? 'Symlink' : self.formatSize(f.size)) + (f.modified ? ' · ' + new Date(f.modified * 1000).toLocaleDateString() : '');
         return '<div class="file-item' + (isSel ? ' selected' : '') + (f.type === 'unreadable' ? ' unreadable' : '') + '" data-path="' + self.esc(f.path) + '" data-type="' + self.esc(f.type) + '">' +
           '<div class="file-icon">' + icon + '</div>' +
           '<div class="file-name">' + self.esc(f.name) + '</div>' +
@@ -122,7 +127,7 @@
 
     renderBreadcrumb() {
       var parts = this.cwd.split('/').filter(Boolean);
-      var html = '<span data-path="/">Files</span>';
+      var html = '<span data-path="/" title="' + this.esc(this.home) + '">~</span>';
       var cum = '';
       parts.forEach(function (p) {
         cum += '/' + p;
@@ -142,7 +147,8 @@
         return;
       }
       if (type === 'folder') { this.cwd = path; this.refresh(); }
-      else this.status('Open file "' + path + '" with the platform handler (bridge stores metadata, not an inline viewer).');
+      else if (type === 'symlink') this.status('Symlink "' + path + '" — select it to rename, copy or delete the link.');
+      else this.status('File "' + path + '" — use Gallery for photos/videos or another app to open this type.');
     },
 
     goUp() {
@@ -253,20 +259,8 @@
       this.status(res && res.success !== false ? 'Extracted' : ('Extract failed: ' + (res && res.error)));
       await this.refresh();
     },
-    async upload(files) {
-      var done = 0, failed = 0;
-      for (var i = 0; i < files.length; i++) {
-        var f = files[i];
-        var path = (this.cwd === '/' ? '' : this.cwd) + '/' + f.name;
-        try {
-          var b64 = await readAsDataURL(f);
-          var comma = b64.indexOf(',');
-          var res = await bridgeCall('storage', 'write-file', { path: path, data_b64: comma >= 0 ? b64.slice(comma + 1) : b64 });
-          if (res && res.success !== false) done++; else failed++;
-        } catch (e) { failed++; }
-      }
-      this.status('Uploaded ' + done + (failed ? ', ' + failed + ' failed' : ''));
-      await this.refresh();
+    absolutePath() {
+      return this.cwd === '/' ? this.home : this.home.replace(/\/$/, '') + this.cwd;
     },
 
     iconFor(name) {
@@ -294,15 +288,6 @@
       return d.innerHTML;
     }
   };
-
-  function readAsDataURL(file) {
-    return new Promise(function (resolve, reject) {
-      var r = new FileReader();
-      r.onload = function () { resolve(r.result); };
-      r.onerror = function () { reject(r.error); };
-      r.readAsDataURL(file);
-    });
-  }
 
   window.nuxelFiles = { app: function () { return app; } };
   document.addEventListener('DOMContentLoaded', function () { app.init(); });

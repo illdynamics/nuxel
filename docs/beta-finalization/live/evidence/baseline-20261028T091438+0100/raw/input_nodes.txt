@@ -1,0 +1,4 @@
+cmd: ls -l /dev/input/by-path/ 2>&1
+ok: True rc: 2 framed: True sha_ok: True
+---
+ls: cannot access '/dev/input/by-path/': No such file or directory

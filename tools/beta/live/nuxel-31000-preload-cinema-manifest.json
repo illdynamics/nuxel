@@ -1,0 +1,78 @@
+{
+  "schema_version": 1,
+  "id": "pwnage-31000-preload-cinema",
+  "component": "PWNAGE-31000 pre-lockscreen cinematic video controller",
+  "note": "Fail-open presentation overlay over the real Nuxel lockscreen. Installs the controller, systemd unit, durable config and the supplied H.264/AAC clip (audio deliberately disabled). The HUD is a Wayland client over the already-running lockscreen; every failure path leaves the real lockscreen usable.",
+  "device": {
+    "codename": "beyond2lte",
+    "model": "SM-G975F",
+    "soc": "Exynos 9820",
+    "os": "Nuxel (Fedora 43 ARM64, kernel 4.14.253)"
+  },
+  "invariants": [
+    "No write may resolve onto a raw partition block device, a BOOT/USERDATA/SYSTEM/RECOVERY/DTB/DTBO/VBMETA image, the radio/modem, EFS/SEC_EFS/calibration/IMEI/PIT or any partition metadata.",
+    "nuxel-wl-fb remains the single /dev/fb0 owner; the controller starts an mpv Wayland client and never opens the framebuffer.",
+    "The controller never calls the unlock action, never modifies the lockscreen, and never starts application services.",
+    "Every failure path exits 0 and leaves the real lockscreen/fallback available.",
+    "Stage -> verify SHA-256 -> atomic install -> deliberate daemon-reload -> health check -> automatic rollback on failure."
+  ],
+  "groups": [
+    {
+      "id": "preload-cinema-runtime",
+      "component": "Bounded pre-lockscreen video controller, systemd unit, durable config and supplied clip",
+      "priority": 1,
+      "risk": "low",
+      "restart_service": null,
+      "declared_reload": "systemctl daemon-reload && systemctl enable nuxel-preload-cinema.service",
+      "pre": [],
+      "health_check": "test -x /usr/lib/nuxel/nuxel-preload-cinema && test -f /etc/nuxel/boot/preload-cinema.json && test -f /etc/systemd/system/nuxel-preload-cinema.service && test -s /usr/share/nuxel/preload/nuxel-preloading-screen.mp4 && test \"$(sha256sum /usr/share/nuxel/preload/nuxel-preloading-screen.mp4 | cut -d' ' -f1)\" = b059f121e62b167fde8664e24c879ca443df8740d95441e7948abdbcc6cdbbf1 && grep -q '\"asset_sha256\": \"b059f121e62b167fde8664e24c879ca443df8740d95441e7948abdbcc6cdbbf1\"' /etc/nuxel/boot/preload-cinema.json && test -x /usr/bin/mpv && python3 -m py_compile /usr/lib/nuxel/nuxel-preload-cinema && systemctl is-enabled --quiet nuxel-preload-cinema.service",
+      "rollback": "disable nuxel-preload-cinema.service and remove its multi-user.target.wants symlink; remove the controller, unit, config, runtime clip, sidecar and doc (they did not exist before this feature), including .nuxel-staged/.nuxel-rollback copies; run systemctl daemon-reload",
+      "files": [
+        {
+          "source": "services/nuxel-preload-cinema/nuxel-preload-cinema",
+          "target": "/usr/lib/nuxel/nuxel-preload-cinema",
+          "mode": "0755"
+        },
+        {
+          "source": "configs/nuxel/boot/preload-cinema.json",
+          "target": "/etc/nuxel/boot/preload-cinema.json",
+          "mode": "0644"
+        },
+        {
+          "source": "assets/nuxel-preloading-screen.mp4",
+          "target": "/usr/share/nuxel/preload/nuxel-preloading-screen.mp4",
+          "mode": "0644",
+          "sha256": "b059f121e62b167fde8664e24c879ca443df8740d95441e7948abdbcc6cdbbf1",
+          "verify": "sha256sum /usr/share/nuxel/preload/nuxel-preloading-screen.mp4"
+        },
+        {
+          "source": "services/nuxel-preload-cinema/nuxel-preload-cinema.service",
+          "target": "/etc/systemd/system/nuxel-preload-cinema.service",
+          "mode": "0644"
+        },
+        {
+          "source": "docs/pwnage-31000/IMPLEMENTATION.md",
+          "target": "/usr/share/nuxel/doc/PWNAGE-31000.md",
+          "mode": "0644"
+        }
+      ]
+    }
+  ],
+  "non_deployable": [],
+  "install_procedures": [
+    {
+      "path": "docs/pwnage-31000/IMPLEMENTATION.md",
+      "summary": "Architecture, verified asset metadata/hash, readiness gates, failure policy and rollback."
+    }
+  ],
+  "validation_notes": {
+    "runtime_mapping": "The phone launches the launcher with ?boot=os; /run/nuxel-launcher-ready and /run/nuxel-home.state are the readiness receipts.",
+    "player": "mpv 0.40.0-3.fc43 is packaged in the image and measured live at /usr/bin/mpv; vo=wlshm and software H.264 decode are the selected path.",
+    "audio": "The clip contains AAC-LC stereo, but playback always uses --no-audio --mute=yes; no boot-audio setting is invented and no audio device failure can block video.",
+    "asset": "H.264 High 1080x1920 24 fps, 144 frames, 6.016 s, 7,630,092 bytes; SHA-256 b059f121e62b167fde8664e24c879ca443df8740d95441e7948abdbcc6cdbbf1. The original bytes are packaged unchanged.",
+    "bounded": "max_display_ms=20000, hard_timeout_ms=45000, no fixed startup sleep and no post-readiness delay.",
+    "readiness": "Only launcher document, boot=os, display bridge FRAMES_OK/display=on and settled touch are gates; NetworkManager/Bluetooth/GNSS/audio are not.",
+    "one_shot": "A /run/nuxel/preload-cinema.done tmpfs marker makes later manual starts return ALREADY_RAN; the unit has Restart=no."
+  },
+  "asset_sha256": "b059f121e62b167fde8664e24c879ca443df8740d95441e7948abdbcc6cdbbf1"
+}

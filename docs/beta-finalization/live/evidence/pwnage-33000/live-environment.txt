@@ -1,0 +1,59 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+Wed Oct 28 16:33:28 UTC 2026
+Linux 4.14.253-gf7194c1d15ed-dirty aarch64
+NAME="Fedora Linux"
+VERSION="43 (Forty Three)"
+RELEASE_TYPE=stable
+ID=fedora
+uid=1000(nuxel) gid=1000(nuxel) groups=1000(nuxel),10(wheel),63(audio)
+nuxel:x:1000:1000::/home/nuxel:/bin/bash
+---home---
+drwx------ 18 nuxel nuxel 4096 Oct 28 17:18 /home/nuxel
+drwxr-xr-x  2 nuxel nuxel 4096 Oct 28 17:15 /home/nuxel/Config
+drwxr-xr-x  2 nuxel nuxel 4096 Oct 28 17:15 /home/nuxel/Desktop
+drwxr-xr-x  2 nuxel nuxel 4096 Oct 28 17:15 /home/nuxel/Documents
+drwxr-xr-x  2 nuxel nuxel 4096 Oct 28 17:15 /home/nuxel/Downloads
+drwxr-xr-x  2 nuxel nuxel 4096 Oct 28 17:27 /home/nuxel/Gallery
+drwxr-xr-x  2 nuxel nuxel 4096 Oct 28 17:15 /home/nuxel/Music
+drwxr-xr-x  2 nuxel nuxel 4096 Oct 28 17:15 /home/nuxel/Pictures
+drwxr-xr-x  2 nuxel nuxel 4096 Oct 28 17:15 /home/nuxel/Videos
+drwxr-xr-x  2 nuxel nuxel 4096 Oct 28 17:28 /home/nuxel/VoiceRecordings
+---services---
+  NetworkManager.service                        loaded active running Network Manager
+  nuxel-app-browsernative-1793204869639.service loaded active running [systemd-run] /usr/lib/nuxel/nuxel-browser-native/nuxel_browser_native.py
+  nuxel-app-cameranative-1793204864537.service  loaded active running [systemd-run] /usr/lib/nuxel/nuxel-camera-native/nuxel_camera_native.py
+  nuxel-bluetooth.service                       loaded active running Nuxel BCM4375 Bluetooth HCI bring-up (patchram + H4 attach)
+  nuxel-bridge.service                          loaded active running Nuxel Bridge - PWA to Native Phone Service Mediator
+  nuxel-button-manager.service                  loaded active running Nuxel hardware button and gesture manager (single owner of gpio_keys)
+  nuxel-haptics.service                         loaded active running Nuxel Samsung timed-output haptics service
+  nuxel-http-bridge.service                     loaded active running Nuxel HTTP Bridge API
+  nuxel-notifications.service                   loaded active running Nuxel Notification Hub
+  nuxel-portal.service                          loaded active running Nuxel Portal Daemon
+  nuxel-touch-arm.service                       loaded active running Nuxel S10+ touchscreen arming (sec_ts stop->start, then hold open)
+  nuxel-watchdog-keep.service                   loaded active running Nuxel software watchdog keep-alive (softdog.soft_margin=100)
+  nuxel-wayland.service                         loaded active running Nuxel phone Wayland session (phoc headless + Nuxel Home launcher)
+  nuxel-web.service                             loaded active running Nuxel PWA Static Web Server (nuxel-home launcher on :8000)
+  nuxel-wl-fb.service                           loaded active running Nuxel display bridge (Wayland screencopy -> /dev/fb0 AMOLED)
+  sshd.service                                  loaded active running OpenSSH server daemon
+  wpa_supplicant.service                        loaded active running WPA supplicant
+---wifi---
+wlan0:connected:Nuxel Snoerbreuk
+p2p-dev-wlan0:disconnected:
+wlan0            UP             10.20.30.16/24 fd4e:3732:3532:0:78ce:d55e:e952:4dc3/64 2a02:a472:fcbc:0:1b0c:b777:2d3b:74ff/64 fe80::892f:ad34:9723:8904/64 
+---banner---
+4c5d10a5f31f4fa8e4406630479135497932343e2c6c06c1f5cd28344b425821  /etc/banner
+/etc/banner
+/etc/ssh/sshd_config.d/50-nuxel-banner.conf:Banner /etc/banner
+---bins---
+-rwxr-xr-x 1 root root 80000 Oct 28 17:15 /usr/bin/nuxel-contacts
+-rwxr-xr-x 1 root root 78264 Oct 28 17:15 /usr/bin/nuxel-dialer
+-rwxr-xr-x 1 root root 80544 Oct 28 17:15 /usr/bin/nuxel-messages
+-rwxr-xr-x 1 root root 79816 Oct 28 17:15 /usr/lib/nuxel/nuxel-pwa-host
