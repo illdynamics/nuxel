@@ -15,15 +15,40 @@
     <link rel="apple-touch-icon" href="icons/icon-192.png">
     <title>Nuxel</title>
     <link rel="stylesheet" href="../nuxel-common/theme.css?v=a81">
-    <link rel="stylesheet" href="css/style.css?v=a47">
+    <link rel="stylesheet" href="css/style.css?v=a84-pwnage36000">
     <link rel="stylesheet" href="css/launcher.css?v=a47">
     <link rel="stylesheet" href="css/search.css">
     <link rel="stylesheet" href="css/status-bar.css?v=a54">
     <link rel="stylesheet" href="css/home-settings.css">
     <link rel="stylesheet" href="css/widgets.css?v=a81">
-    <link rel="stylesheet" href="css/lockscreen.css?v=a72">
+    <link rel="stylesheet" href="css/lockscreen.css?v=a85-v072">
+    <link rel="preload" as="image" href="assets/nuxel-preload-cover.jpg">
+    <script>
+    // PWNAGE-36000: in phone boot mode the separate mpv preloading-screen
+    // overlay maps ~1 s after WebKit paints.  Keep an opaque cover over the
+    // lockscreen until that overlay publishes its first frame, so the user
+    // never sees a one-second lockscreen flash.  The 15 s timer is an absolute
+    // fail-open backstop even if app.js never runs; the early controller waits
+    // for launcher_ready so mpv maps above WebKit, then releases this cover.
+    (function () {
+        'use strict';
+        try {
+            if (new URLSearchParams(window.location.search).get('boot') === 'os') {
+                document.documentElement.classList.add('nuxel-boot-os');
+                window.setTimeout(function () {
+                    if (document.body) document.body.classList.add('preload-ready');
+                }, 15000);
+            }
+        } catch (e) { /* no cover; the normal lockscreen remains */ }
+    })();
+    </script>
 </head>
 <body>
+    <!-- PWNAGE-36000 pre-lockscreen cover.  It is shown only in ?boot=os mode
+         (html.nuxel-boot-os) and is released by js/app.js when the mpv overlay
+         reports its first presented frame, or by the bounded 15 s fail-open
+         timer. -->
+    <div id="preload-cover" aria-hidden="true"></div>
     <!-- Boot animation splash (nuxel-boot-animation.mp4) — shown while the
          home PWA boots; faded out by js/app.js once the app is ready. -->
     <div id="boot-splash" aria-hidden="true">
@@ -175,6 +200,11 @@
             <span class="lockscreen-indicator live-ind" id="lockscreen-indicator-live"
                   role="img" aria-label="Live console active" aria-live="polite" aria-hidden="true"><span class="lockscreen-indicator-glow" aria-hidden="true"></span><img src="/assets/nuxel-live-console-active.png?v=a77.1" alt="" draggable="false"></span>
         </div>
+        <div class="lockscreen-touch-warning" id="lockscreen-touch-warning"
+             role="alert" aria-live="assertive" hidden>
+            <strong>Touch unavailable</strong>
+            <span id="lockscreen-touch-warning-detail">Charging-mode boot: unplug the charger, then hold POWER to restart.</span>
+        </div>
     </div>
 
     <script>
@@ -219,10 +249,10 @@
     </script>
     <script src="../nuxel-common/theme.js?v=a81"></script>
     <script src="../nuxel-common/haptics.js?v=a81"></script>
-    <script src="js/apps.js?v=a80"></script>
+    <script src="js/apps.js?v=p33000"></script>
     <script src="js/layout-model.js"></script>
     <script src="js/launcher.js?v=a81"></script>
-    <script src="js/status-bar.js?v=a81"></script>
+    <script src="js/status-bar.js?v=a85-v072"></script>
     <script src="js/search.js"></script>
     <script type="module" src="../nuxel-common/bridge.js"></script>
     <script src="js/bridge.js?v=a63"></script>
@@ -237,16 +267,16 @@
     <script src="js/safe-zones.js"></script>
     <script src="js/osd.js?v=a47"></script>
     <script src="js/bootlog.js"></script>
-    <script src="js/touch-keyboard.js?v=a81"></script>
+    <script src="js/touch-keyboard.js?v=a85-v072"></script>
     <script src="js/lockscreen-indicators.js?v=a77.1"></script>
-    <script src="js/lockscreen.js?v=a77.1"></script>
-    <script src="js/navigation.js?v=a47"></script>
+    <script src="js/lockscreen.js?v=a85-v072"></script>
+    <script src="js/navigation.js?v=a85-v072"></script>
     <script src="js/gestures.js"></script>
     <script src="js/widgets.js?v=a81"></script>
-    <script src="js/home-settings.js?v=a81"></script>
+    <script src="js/home-settings.js?v=a85-v072"></script>
     <script src="js/system-monitor.js?v=a47"></script>
     <script src="js/scroll-indicators.js"></script>
     <!-- A44: one-shot in-engine icon/WebKit/cache health report to nuxelDiag. -->
-    <script src="js/app.js?v=a81"></script>
+    <script src="js/app.js?v=a85-v072"></script>
 </body>
 </html>

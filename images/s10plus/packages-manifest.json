@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "schema": "nuxel.packages-manifest/1",
-  "generated": "2026-10-16T18:57:13Z",
+  "generated": "2026-10-28T09:42:05Z",
   "source": {
     "distribution": "fedora",
     "release": "43",
@@ -23,25 +23,25 @@
           "compressed_bytes": 14837955,
           "decompressed_sha256": "02d247f25e10add65533a4e76462fe390ebf2b77fcc4e60fe53c2c172ce2d680"
         },
-        "source": "network (dl.fedoraproject.org)",
+        "source": "offline cache",
         "nevra_count": 68135
       },
       {
         "repo": "https://dl.fedoraproject.org/pub/fedora/linux/updates/43/Everything/aarch64",
         "repomd": {
-          "sha256": "0a1fda3e791e0d0b61940d075fd4a503031419a54848ae84a22871f90beec7af"
+          "sha256": "d943b75ec1ab358459b6780d5d501632c9eaa5506626789c2b5e3f1c5b879f59"
         },
         "primary": {
-          "href": "repodata/7ca220d0970a83663d177d49f88307ab4cea8151b9d67cd36e337a0bf2af89dc-primary.xml.zst",
-          "compressed_sha256": "7ca220d0970a83663d177d49f88307ab4cea8151b9d67cd36e337a0bf2af89dc",
-          "compressed_bytes": 5594019,
-          "decompressed_sha256": "a3505a4b18b100c7b9ada971cef70d2dadf010ff8a9efefb01f5a07a79f48fbd"
+          "href": "repodata/0cc3a22789afa389201dc8edd21206fc76e4ff89840b4833cbcf0c5ab7aa0d3f-primary.xml.zst",
+          "compressed_sha256": "0cc3a22789afa389201dc8edd21206fc76e4ff89840b4833cbcf0c5ab7aa0d3f",
+          "compressed_bytes": 5609460,
+          "decompressed_sha256": "476f9e0c2fcf871c463a009a5b15d74479b49fe3a02aec3c6425ab51f7f313e4"
         },
-        "source": "network (dl.fedoraproject.org)",
-        "nevra_count": 25856
+        "source": "offline cache",
+        "nevra_count": 25943
       }
     ],
-    "package_count": 93991
+    "package_count": 94078
   },
   "policy": {
     "no_skip_unavailable": true,
@@ -55,11 +55,11 @@
       "version_satisfaction": "delegated to dnf's solver: this verifier matches names/capabilities, it does not compare EVR strings",
       "file_requirements": "'kind=file' requirements (/usr/bin/sh) cannot be resolved from primary.xml - Fedora keeps file provides in filelists.xml, which this verifier deliberately does not download; they are counted, never reported as verified"
     },
-    "essential_packages": 50,
-    "requirements_total": 1220,
+    "essential_packages": 52,
+    "requirements_total": 1221,
     "by_kind": {
       "file": 52,
-      "capability": 1062,
+      "capability": 1063,
       "package": 95,
       "rich": 11
     },
@@ -199,7 +199,7 @@
         "unresolved": []
       },
       "curl": {
-        "nevra": "curl-8.15.0-10.fc43.aarch64",
+        "nevra": "curl-8.15.0-12.fc43.aarch64",
         "total": 6,
         "by_kind": {
           "capability": 6
@@ -302,6 +302,13 @@
         "package_requirements": [
           "dbus"
         ],
+        "unresolved": []
+      },
+      "glib-networking": {
+        "nevra": "glib-networking-2.80.1-3.fc43.aarch64",
+        "total": 0,
+        "by_kind": {},
+        "package_requirements": [],
         "unresolved": []
       },
       "glibc": {
@@ -448,6 +455,13 @@
           "rich": 1,
           "capability": 7
         },
+        "package_requirements": [],
+        "unresolved": []
+      },
+      "mpv": {
+        "nevra": "mpv-0.40.0-3.fc43.aarch64",
+        "total": 0,
+        "by_kind": {},
         "package_requirements": [],
         "unresolved": []
       },
@@ -687,11 +701,11 @@
         "unresolved": []
       },
       "webkit2gtk4.1": {
-        "nevra": "webkit2gtk4.1-2.52.5-1.fc43.aarch64",
-        "total": 119,
+        "nevra": "webkit2gtk4.1-2.54.1-1.fc43.aarch64",
+        "total": 120,
         "by_kind": {
           "package": 3,
-          "capability": 116
+          "capability": 117
         },
         "package_requirements": [
           "bubblewrap",
@@ -1008,7 +1022,7 @@
         },
         {
           "name": "curl",
-          "nevra": "curl-8.15.0-10.fc43.aarch64",
+          "nevra": "curl-8.15.0-12.fc43.aarch64",
           "requires": {
             "total": 6,
             "by_kind": {
@@ -1309,12 +1323,12 @@
         },
         {
           "name": "webkit2gtk4.1",
-          "nevra": "webkit2gtk4.1-2.52.5-1.fc43.aarch64",
+          "nevra": "webkit2gtk4.1-2.54.1-1.fc43.aarch64",
           "requires": {
-            "total": 119,
+            "total": 120,
             "by_kind": {
               "package": 3,
-              "capability": 116
+              "capability": 117
             },
             "packages": [
               "bubblewrap",
@@ -1349,6 +1363,16 @@
             "by_kind": {
               "capability": 19
             },
+            "packages": [],
+            "unresolved": []
+          }
+        },
+        {
+          "name": "glib-networking",
+          "nevra": "glib-networking-2.80.1-3.fc43.aarch64",
+          "requires": {
+            "total": 0,
+            "by_kind": {},
             "packages": [],
             "unresolved": []
           }
@@ -1578,10 +1602,26 @@
           }
         }
       ]
+    },
+    {
+      "id": "media",
+      "description": "Video playback for the PWNAGE-31000 pre-lockscreen cinema",
+      "packages": [
+        {
+          "name": "mpv",
+          "nevra": "mpv-0.40.0-3.fc43.aarch64",
+          "requires": {
+            "total": 0,
+            "by_kind": {},
+            "packages": [],
+            "unresolved": []
+          }
+        }
+      ]
     }
   ],
   "unavailable": [],
   "pin_mismatches": [],
   "verdict": "resolved",
-  "resolved_count": 50
+  "resolved_count": 52
 }

@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "id": "nuxel-a82-lock-battery-perf",
+  "component": "Lockscreen touch recovery banner, battery flicker guard and software-render performance fix",
+  "note": "Live userspace delta: lockscreen battery/touch handling, status-bar battery guard, real API battery fallback, and removal of alpha filters that forced continuous llvmpipe rasterisation. No kernel, partition, modem, DTB or USB gadget mutation.",
+  "invariants": [
+    "No write may resolve onto a raw partition block device, a BOOT/USERDATA/SYSTEM/RECOVERY/DTB/DTBO/VBMETA image, the radio/modem, EFS/SEC_EFS/calibration/IMEI/PIT or any partition metadata.",
+    "Every deploy target must live under an allowed userspace root (assert_userspace_path).",
+    "Stage -> verify SHA-256 -> atomic install -> restart the smallest affected service -> health check -> automatic rollback on failure.",
+    "Sources must resolve INSIDE this repository (no absolute path, no '..')."
+  ],
+  "groups": [
+    {
+      "id": "a82-lockscreen-pwa",
+      "component": "Lockscreen touch warning, battery guard, wider unlock band and filter-free idle rendering",
+      "priority": 1,
+      "risk": "low",
+      "restart_service": "nuxel-wayland",
+      "declared_reload": null,
+      "pre": [],
+      "health_check": "test \"$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8000/pwa/nuxel-home/index.html)\" = 200 && grep -q 'css/lockscreen.css?v=a82' /usr/share/nuxel/pwa/nuxel-home/index.html && grep -q 'js/lockscreen.js?v=a82' /usr/share/nuxel/pwa/nuxel-home/index.html && grep -q 'js/status-bar.js?v=a82' /usr/share/nuxel/pwa/nuxel-home/index.html && grep -q 'lockscreen-touch-warning' /usr/share/nuxel/pwa/nuxel-home/index.html && grep -q 'v50-a82-lock-battery-perf' /usr/share/nuxel/pwa/nuxel-home/sw.js && systemctl is-active --quiet nuxel-wayland",
+      "rollback": "restore each <target>.nuxel-rollback and restart nuxel-wayland",
+      "files": [
+        {"source": "pwa/nuxel-home/index.html", "target": "/usr/share/nuxel/pwa/nuxel-home/index.html", "mode": "0644"},
+        {"source": "pwa/nuxel-home/css/lockscreen.css", "target": "/usr/share/nuxel/pwa/nuxel-home/css/lockscreen.css", "mode": "0644"},
+        {"source": "pwa/nuxel-home/js/lockscreen.js", "target": "/usr/share/nuxel/pwa/nuxel-home/js/lockscreen.js", "mode": "0644"},
+        {"source": "pwa/nuxel-home/js/status-bar.js", "target": "/usr/share/nuxel/pwa/nuxel-home/js/status-bar.js", "mode": "0644"},
+        {"source": "pwa/nuxel-home/sw.js", "target": "/usr/share/nuxel/pwa/nuxel-home/sw.js", "mode": "0644"},
+        {"source": "pwa/nuxel-home/manifest.json", "target": "/usr/share/nuxel/pwa/nuxel-home/manifest.json", "mode": "0644"}
+      ]
+    },
+    {
+      "id": "a82-battery-api",
+      "component": "Bridge phone-status battery fallback and Full-vs-Charging truth",
+      "priority": 2,
+      "risk": "low",
+      "restart_service": "nuxel-http-bridge",
+      "declared_reload": null,
+      "pre": [],
+      "health_check": "systemctl is-active --quiet nuxel-http-bridge && curl -fsS http://127.0.0.1:8080/api/v1/ping >/dev/null && python3 -m py_compile /usr/lib/nuxel/nuxel-bridge/api.py && grep -q 'status_text' /usr/lib/nuxel/nuxel-bridge/api.py",
+      "rollback": "restore /usr/lib/nuxel/nuxel-bridge/api.py.nuxel-rollback and restart nuxel-http-bridge",
+      "files": [
+        {"source": "services/nuxel-bridge/src/api.py", "target": "/usr/lib/nuxel/nuxel-bridge/api.py", "mode": "0644"}
+      ]
+    }
+  ]
+}

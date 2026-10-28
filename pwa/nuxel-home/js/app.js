@@ -18,6 +18,7 @@ class NuxelHome {
         this._lastAction = null;
         this._lastActionAt = 0;
         this._suppressBackUntil = 0;
+        this._backBusy = false;
         this._init();
     }
 
@@ -196,6 +197,7 @@ class NuxelHome {
                 const splash = document.getElementById('boot-splash');
                 if (splash && splash.parentNode) splash.parentNode.removeChild(splash);
                 hide();
+                this._holdPreloadCover();
                 return;
             }
         } catch (e) { /* URLSearchParams unavailable: fall through to normal path */ }
@@ -218,6 +220,65 @@ class NuxelHome {
         });
         video.addEventListener('error', hide);
         setTimeout(hide, 12000);
+    }
+
+    /* PWNAGE-36000: hold the opaque first-frame cover until the mpv preload
+       overlay has actually presented a frame.  The native controller writes
+       /run/nuxel/preload-cinema.overlay; the session exposes it as the
+       same-origin preload-status.json.  States:
+         starting -> keep waiting
+         covered  -> reveal the real lockscreen underneath the video
+         fallback/done -> reveal the lockscreen (fail-open)
+       A 15 s poll deadline and a 15 s hard stop make a missing/stuck marker
+       harmless; the early controller waits for launcher_ready before it maps
+       mpv, so this cover is what hides WebKit until the video is on top. */
+    _holdPreloadCover() {
+        if (this._preloadCoverDone) return;
+        const cover = document.getElementById('preload-cover');
+        if (!cover) return;
+        const started = Date.now();
+        const reveal = (why) => {
+            if (this._preloadCoverDone) return;
+            this._preloadCoverDone = true;
+            document.body.classList.add('preload-ready');
+            try { console.log('[Nuxel] preload cover released: ' + why); } catch (e) {}
+        };
+        const endpoint = new URL('preload-status.json', window.location.href);
+        const timeoutMs = 15000;
+        // The controller can publish "covered" before this document has even
+        // committed (mpv maps first, the PWA loads a few hundred ms later).
+        // Releasing on the first poll then exposed the lockscreen while the
+        // video was still compositing.  Hold the poster frame for a short
+        // bounded grace period so the first video frames are on the panel.
+        const minHoldMs = 900;
+        const poll = () => {
+            if (this._preloadCoverDone) return;
+            const elapsed = Date.now() - started;
+            endpoint.searchParams.set('_', String(Date.now()));
+            fetch(endpoint.toString(), { cache: 'no-store' })
+                .then((r) => (r && r.ok) ? r.json() : null)
+                .then((doc) => {
+                    const terminal = doc && (doc.state === 'fallback' || doc.state === 'done');
+                    const covered = doc && doc.state === 'covered';
+                    if (terminal) { reveal('marker:' + doc.state); return; }
+                    if (covered) {
+                        if (elapsed < minHoldMs) {
+                            setTimeout(poll, Math.min(100, minHoldMs - elapsed));
+                            return;
+                        }
+                        reveal('marker:covered');
+                        return;
+                    }
+                    if (elapsed >= timeoutMs) { reveal('timeout'); return; }
+                    setTimeout(poll, 100);
+                })
+                .catch(() => {
+                    if (elapsed >= timeoutMs) { reveal('timeout-fetch-error'); return; }
+                    setTimeout(poll, 150);
+                });
+        };
+        poll();
+        setTimeout(() => reveal('hard-timeout'), 15000);
     }
 
     async _registerServiceWorker() {
@@ -648,11 +709,34 @@ class NuxelHome {
                 if (back) { back.click(); return; }
             } catch (err) { /* cross-origin iframe: no authority to read history */ }
         }
+        // Native apps own a separate top-level Wayland surface (browser,
+        // camera, ...): Back must first navigate that app's own history before
+        // it may background to Home.  The bridge drives the foreground native
+        // app's back contract and reports whether it was handled or at root.
+        if (!frame && this.appSession.app && this.appSession.state === 'ACTIVE' &&
+            this.appSession.app.type === 'native') {
+            if (this._backBusy) return;
+            this._backBusy = true;
+            this._inputTrace('back:native-request');
+            this._httpBridge('POST', '/api/v1/apps/back', {
+                app_id: 'org.nuxel.Home', source: 'short-back',
+            }).then((res) => {
+                this._backBusy = false;
+                if (res && res.handled) {
+                    this._inputTrace('back:native-handled');
+                    return;   // app stays foreground, unobscured
+                }
+                this._inputTrace('back:native-at-root');
+                this.home();
+            });
+            return;
+        }
         this.home();
     }
 
     home() {
         if (this._isLocked()) return;
+        this._setNavDock(true);
         try {
             this._closeOverlays();
         } catch (error) {
@@ -862,6 +946,15 @@ class NuxelHome {
         if (!app) return;
         if (window.NuxelTouchKeyboard) window.NuxelTouchKeyboard.hide();
         if (this.sessions) this.sessions.close(app.id);
+        // A native app owns a separate top-level Wayland surface (browser,
+        // camera, ...): clearing the DOM session does not close that surface.
+        // Route the close through the compositor's fixed verb, which closes
+        // ONLY the activated non-Home toplevel and never kills Home/daemons.
+        if (!this.appSession.frame) {
+            this._httpBridge('POST', '/api/v1/apps/close-foreground', {
+                app_id: 'org.nuxel.Home', source: 'long-back',
+            });
+        }
         this._closeAppSurface();
         this.home();
     }

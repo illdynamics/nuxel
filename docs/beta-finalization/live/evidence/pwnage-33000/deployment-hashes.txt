@@ -1,0 +1,41 @@
+backup: /root/nuxel-pwnage33000-backup/pre-pwnage33000.tar
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+4c5d10a5f31f4fa8e4406630479135497932343e2c6c06c1f5cd28344b425821  /etc/banner
+856e73a80f8533847f9e2dd752d85de7c6eaf277527a9d0d44a43186d8163377  /etc/sudoers.d/90-nuxel
+26beb1c617dc5b5efc29521aa4fdf4e616a99ff5dbcfca464310c8e331be2573  /usr/bin/nuxel-contacts
+af163add6d5edaa807cf8d7c415833447304e8ad22b520922a483d5bbdee5c53  /usr/bin/nuxel-messages
+6ec73cf5da084e46ad801cc15949c3ca4ca6dc5ce667a57f7dce5b306800cc1d  /usr/bin/nuxel-dialer
+2c6f4eb6bec0cf8e39b96cf0c1d71457fe28d8cf8a8195dc25481257ed9470a0  /usr/lib/nuxel/nuxel-pwa-host
+f131ad06fd9a50799058fde4e0033c4c27d6c0a9c918d203f9a2a971e20fc975  /usr/lib/nuxel/nuxel-bridge/api.py
+4c220f1985e89c372cc0cb4f2f684f3a35f2b1a0022f26edd0bf7e49c0c76f08  /usr/lib/nuxel/nuxel-bridge/pwa_store.py
+6b666f8e5b4fba4f407b033f82e3c790d6d45316fd653ec26392a73458cbed2e  /usr/lib/nuxel/nuxel-bridge/mail_client.py
+306a16e7061a81f1eaba2ca0ade8d973252b8cfcd6f82d47ad14790c5c5d698b  /usr/lib/nuxel/nuxel-bridge/hw_providers.py
+40f8bc891f6b3fcfc41b6d0f5bdf97bea8a471dc6e01e801ebbc02f2fed403f2  /usr/share/nuxel/pwa/nuxel-common/app-registry.json
+bc6eb5ebdcc997d7224d60052585ec695203142725b8cd87252d86d7640a736f  /usr/share/nuxel/nuxel-home/js/apps.js
+0b7a59d6763cbc46f5362b6ce78b02328cd2f7fee4c15bab9462ec054474d64f  /usr/share/nuxel/pwa/nuxel-apps/files/js/files.js
+211345d016d15c587f956dea843efe708a1a77c9ce0f1bfbc93196ffc5012da6  /usr/share/nuxel/pwa/nuxel-apps/mail/js/mail.js
+20266f42e4644b39aecff7a85a9bb96653f7e3915fe0d2f2ee326e569de08b47  /usr/share/nuxel/pwa/nuxel-apps/photos/js/photos.js
+9ac946b1666aa142781682029e6685048a15c60fa88f2ee03bd8e905d066d8d9  /usr/share/nuxel/pwa/nuxel-apps/recorder/js/recorder.js
+8b39a6ba3551ee3b558c1750c0e1da82d2c55cfd43a281de932a269f57e3b709  /usr/share/nuxel/pwa/nuxel-apps/nuxtore/catalog/nuxtore-catalog.json
+40b43e091b45aae7cd04344ba11f6ef1f2abded4535c42f8e5e5228d2372f416  /etc/systemd/system/nuxel-network-udev-seed.service
+247c8f95e6a7859599d6fd25b1c9f3d53248381e0bfee89acb35f411b559a9f0  /usr/libexec/nuxel/nuxel-network-udev-seed
+a6ee6246de05426ac03b4278c118e0063219e593a8dd04dd82e740bb11c953e1  /etc/systemd/system/nuxel-http-bridge.service
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+/etc/sudoers.d/90-nuxel: parsed OK
+SSHD_CONFIG_OK

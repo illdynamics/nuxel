@@ -31,7 +31,8 @@
     "comment": "The card is located by NAME first and by index only as a fallback; a hard-coded card index is never assumed.",
     "prefer_name": "beyond-madera",
     "fallback_card_index": 0,
-    "pcm_playback_candidates": ["hw:0,0", "default", "plughw:0,0"],
+    "pcm_playback_candidates": ["hw:0,1", "plughw:0,1", "hw:0,0", "plughw:0,0", "default"],
+    "measured_working_route": "hw:0,1 (RDMA1) at 44100 Hz, verified with a bounded low-level tone through the static PipeWire sink; RDMA0 rejects 48 kHz on this unit. The static sink is configs/s10plus/pipewire/50-nuxel-s10-alsa.conf.",
     "must_not_assume": ["card index 0", "a PCM named 'pcmC0D0p' as the only playback PCM", "a mixer element named 'Master'"]
   },
 

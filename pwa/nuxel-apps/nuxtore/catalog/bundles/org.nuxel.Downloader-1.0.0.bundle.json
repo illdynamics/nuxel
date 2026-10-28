@@ -1,0 +1,97 @@
+[
+  {
+    "path": "pwa/nuxel-apps/downloader/app.json",
+    "sha256": "0d841b0639ec4745165c9829da507e2a575371a0060136fa5b171dfdfe39e59f",
+    "size": 417
+  },
+  {
+    "path": "pwa/nuxel-apps/downloader/css/downloader.css",
+    "sha256": "9eafbb8b313733df443bb61b26c9de9990ec7c99a63a1a0064f9adc5369817c1",
+    "size": 4107
+  },
+  {
+    "path": "pwa/nuxel-apps/downloader/icons/icon-128.png",
+    "sha256": "1b22487b5c86788ed913480c89e16f8ccb9a3e73bc0fdb422acb6060ed4b7740",
+    "size": 3445
+  },
+  {
+    "path": "pwa/nuxel-apps/downloader/icons/icon-144.png",
+    "sha256": "ddfc884da81d9df26ba965217c1be441b007cbdc85e534fae639cd2d035f359d",
+    "size": 3798
+  },
+  {
+    "path": "pwa/nuxel-apps/downloader/icons/icon-152.png",
+    "sha256": "433d89d09481c6da2e20ff429827500dab4af20f5163cf47a952b3a159edaf81",
+    "size": 4193
+  },
+  {
+    "path": "pwa/nuxel-apps/downloader/icons/icon-192.png",
+    "sha256": "ce7d1770d62dadb340ee9d4e6f6496e65515112cffd956c22f636360a74c4a25",
+    "size": 5375
+  },
+  {
+    "path": "pwa/nuxel-apps/downloader/icons/icon-384.png",
+    "sha256": "b7994603802652e641d16841245c024b000adf7d44c3ca57ce36b9ca4d8b4a6a",
+    "size": 10957
+  },
+  {
+    "path": "pwa/nuxel-apps/downloader/icons/icon-48.png",
+    "sha256": "6e4ecab11eb5cdb3e3c7587ca1d3911dd1af5533dac0f3289ae3602a44bdaae3",
+    "size": 1096
+  },
+  {
+    "path": "pwa/nuxel-apps/downloader/icons/icon-512.png",
+    "sha256": "6ee79d65019731e06f73fe16eed7325dc570c3b0764264450137ddcb411be664",
+    "size": 14670
+  },
+  {
+    "path": "pwa/nuxel-apps/downloader/icons/icon-72.png",
+    "sha256": "ed88de3bd8a9c8f7f85805c130a2307b5517c508790717d22f3fee0c0892cebf",
+    "size": 1654
+  },
+  {
+    "path": "pwa/nuxel-apps/downloader/icons/icon-96.png",
+    "sha256": "e8d235ab1ae82cc02a02618449a2dadec6bb2e5305f3cb2cd1abc9ec7a7b5109",
+    "size": 2401
+  },
+  {
+    "path": "pwa/nuxel-apps/downloader/icons/icon.svg",
+    "sha256": "f9c305c65b41ccc11ed4b26c983359ffb16f460af5b9bb5244dcc9b362a68d2c",
+    "size": 405
+  },
+  {
+    "path": "pwa/nuxel-apps/downloader/index.html",
+    "sha256": "d5f4ce8e741ff8f4480200666216045cce8ac167ef9e6a703e42342a3caf1c72",
+    "size": 5694
+  },
+  {
+    "path": "pwa/nuxel-apps/downloader/js/download-queue.js",
+    "sha256": "074bcf4345f4e9bfb5e9d74c62f3b0cf0cb29cb6decc57402461ee54a56fdb43",
+    "size": 10673
+  },
+  {
+    "path": "pwa/nuxel-apps/downloader/js/downloader.js",
+    "sha256": "646921f789ba4a2c4e1a66f28bda0ddd62fbdddb2460a54a8e47ccb7ecc89256",
+    "size": 11175
+  },
+  {
+    "path": "pwa/nuxel-apps/downloader/manifest.json",
+    "sha256": "ffc13eeac7e437bd9500b0f51eedcc555220de023ea657689aa13a74c977f9a1",
+    "size": 945
+  },
+  {
+    "path": "pwa/nuxel-apps/downloader/samples/queue-examples.json",
+    "sha256": "c6a4cb3820bef5edc7d037c4a403074a1499f1db255c905c7876c89f629a4d60",
+    "size": 1043
+  },
+  {
+    "path": "pwa/nuxel-apps/downloader/sw.js",
+    "sha256": "173694f62fc0e01df334bccdd72a3f2320b40abc8d314a7e45f1196602374376",
+    "size": 1152
+  },
+  {
+    "path": "pwa/nuxel-apps/downloader/tests/test-download-queue.js",
+    "sha256": "e91e254b8b65e7b9051bd6cb04de53b359eaa995f2712f83ace9bd2d6be51f34",
+    "size": 8880
+  }
+]

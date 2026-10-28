@@ -1,0 +1,47 @@
+{
+  "at": "2026-10-28T09:14:32+0100",
+  "blocked_reason": "cannot take the console: cannot open/configure /dev/ttyACM0: [Errno 13] Permission denied: '/dev/ttyACM0'",
+  "briq": "briq-10a-live-reachability-preflight",
+  "console": {
+    "callout": "/dev/ttyACM0",
+    "dialin": "/dev/ttyACM0",
+    "match_stage": "vid+pid",
+    "pid": 20199,
+    "tty_base": "ttyACM",
+    "tty_device": "ttyACM0",
+    "tty_suffix": "0",
+    "vid": 6353
+  },
+  "evidence_dir": "/x/nuxel/docs/beta-finalization/live/evidence/baseline-20261028T091432+0100",
+  "exit_code": 3,
+  "fake_console": false,
+  "pwa_files": [
+    "pwa/nuxel-home/index.html",
+    "pwa/nuxel-home/manifest.json",
+    "pwa/nuxel-home/sw.js",
+    "pwa/nuxel-home/colour-test.html",
+    "pwa/nuxel-home/css/launcher.css",
+    "pwa/nuxel-home/css/search.css",
+    "pwa/nuxel-home/css/status-bar.css",
+    "pwa/nuxel-home/css/style.css",
+    "pwa/nuxel-home/js/app.js",
+    "pwa/nuxel-home/js/touch-keyboard.js",
+    "pwa/nuxel-home/js/apps.js",
+    "pwa/nuxel-home/js/bootlog.js",
+    "pwa/nuxel-home/js/bridge.js",
+    "pwa/nuxel-home/js/host-bridge.js",
+    "pwa/nuxel-home/js/launcher.js",
+    "pwa/nuxel-home/js/osd.js",
+    "pwa/nuxel-home/js/qs.js",
+    "pwa/nuxel-home/js/recents.js",
+    "pwa/nuxel-home/js/safe-zones.js",
+    "pwa/nuxel-home/js/search.js",
+    "pwa/nuxel-home/js/settings-store.js",
+    "pwa/nuxel-home/js/status-bar.js"
+  ],
+  "reachable": false,
+  "verdict": "BLOCKED_EXTERNAL_RESOURCE",
+  "verdicts": {
+    "briq-10a-live-reachability-preflight": "BLOCKED_EXTERNAL_RESOURCE"
+  }
+}

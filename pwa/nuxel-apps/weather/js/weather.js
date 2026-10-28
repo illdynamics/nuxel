@@ -249,13 +249,14 @@
 
   function esc(s) { var d = document.createElement('div'); d.textContent = String(s == null ? '' : s); return d.innerHTML; }
 
-  renderCache();
-
-  // On first open, if auto-location is enabled, attempt it (honest failure
-  // falls back to a manual city prompt rather than inventing coordinates).
-  if (settings.autoLoc !== false) {
-    useMyLocation();
+  function bootWeather() {
+    renderCache();
+    // On first open, if auto-location is enabled, attempt it (honest failure
+    // falls back to a manual city prompt rather than inventing coordinates).
+    if (settings.autoLoc !== false) useMyLocation();
   }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bootWeather, { once: true });
+  else bootWeather();
 
   window.nuxelWeather = { geocode: geocode, weatherFor: weatherFor, condLabel: condLabel, toDisplayC: toDisplayC };
 })();

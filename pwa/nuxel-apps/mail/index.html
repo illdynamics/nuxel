@@ -9,77 +9,87 @@
 <link rel="icon" type="image/png" href="icons/icon-192.png">
 <title>Nuxel Mail</title>
 <link rel="stylesheet" href="../../nuxel-common/theme.css">
-<link rel="stylesheet" href="css/mail.css">
+<link rel="stylesheet" href="css/mail.css?v=pwnage33000b">
 </head>
 <body>
 <div id="app-root">
-  <!-- Sidebar / accounts + local data -->
+  <!-- Compact accounts/settings drawer.  It stays a drawer on a phone; no
+       desktop three-column layout is forced onto the narrow viewport. -->
   <div id="sidebar" class="sidebar hidden">
     <div class="sidebar-header">
-      <h2>Accounts</h2>
+      <h2>Mail</h2>
       <button id="sidebar-close" class="icon-btn" title="Close">✕</button>
     </div>
-    <div id="account-list" class="account-list"></div>
-    <button id="add-account-btn" class="btn-primary">Add account</button>
-    <div class="sidebar-section">
-      <h3>Local data</h3>
-      <p id="storage-report" class="storage-report">checking storage backend…</p>
-      <div class="row-actions">
-        <button id="data-export" class="btn-ghost">Export JSON</button>
-        <button id="data-import" class="btn-ghost">Import JSON</button>
+    <div class="sidebar-scroll">
+      <button id="add-account-btn" class="btn-primary wide">Add account</button>
+      <div id="account-list" class="account-list"></div>
+      <div class="sidebar-section">
+        <h3>Local data</h3>
+        <p id="storage-report" class="storage-report">checking storage backend…</p>
+        <div class="row-actions">
+          <button id="data-export" class="btn-ghost">Export JSON</button>
+          <button id="data-import" class="btn-ghost">Import JSON</button>
+        </div>
+        <input type="file" id="data-file" accept="application/json" hidden>
+        <button id="data-clear" class="btn-danger">Delete local mail</button>
       </div>
-      <input type="file" id="data-file" accept="application/json" hidden>
-      <button id="data-clear" class="btn-danger">Delete local mail</button>
     </div>
   </div>
 
-  <!-- Main view -->
   <div id="main-view" class="main-view">
     <div class="top-bar">
       <button id="menu-btn" class="icon-btn" title="Accounts and local data">☰</button>
-      <h1 id="mail-title">Inbox</h1>
+      <div class="title-box">
+        <h1 id="mail-title">Inbox</h1>
+        <span id="account-label" class="account-label">local mail</span>
+      </div>
       <div class="top-bar-actions">
         <button id="refresh-btn" class="icon-btn" title="Refresh from transport">↻</button>
         <button id="compose-btn" class="icon-btn" title="New message">✏️</button>
+        <button id="mail-settings-btn" class="icon-btn" title="Mail settings">⚙</button>
       </div>
     </div>
 
-    <!-- Honest transport banner: the state is reported, never implied -->
     <div id="transport-banner" class="transport-banner">Transport: checking…</div>
 
-    <nav class="folders" id="folders">
-      <button class="folder active" data-folder="INBOX">Inbox <span id="count-INBOX">0</span></button>
-      <button class="folder" data-folder="OUTBOX">Outbox <span id="count-OUTBOX">0</span></button>
-      <button class="folder" data-folder="SENT">Sent <span id="count-SENT">0</span></button>
-      <button class="folder" data-folder="ARCHIVE">Archive <span id="count-ARCHIVE">0</span></button>
-    </nav>
+    <div class="folder-bar">
+      <label for="folder-select" class="folder-label">Folder</label>
+      <select id="folder-select" class="folder-select" aria-label="Mail folder">
+        <option value="INBOX">Inbox</option>
+        <option value="SENT">Sent</option>
+        <option value="DRAFTS">Drafts</option>
+        <option value="ARCHIVE">Archive</option>
+        <option value="TRASH">Trash</option>
+        <option value="OUTBOX">Outbox (not sent)</option>
+      </select>
+      <span id="folder-count" class="folder-count">0</span>
+    </div>
 
     <div id="message-list" class="message-list">
       <div class="loading">Loading local mail…</div>
     </div>
 
-    <!-- Compose view -->
     <div id="compose-view" class="compose-view hidden">
       <div class="compose-header">
         <button id="compose-back" class="icon-btn" title="Back">←</button>
-        <h2>New message</h2>
+        <h2 id="compose-title">New message</h2>
         <button id="send-btn" class="btn-primary">Send</button>
       </div>
       <div class="compose-form">
-        <input type="email" id="compose-to" placeholder="To" class="compose-input">
-        <input type="text" id="compose-subject" placeholder="Subject" class="compose-input">
+        <input type="email" id="compose-to" placeholder="To" class="compose-input" autocomplete="off">
+        <input type="text" id="compose-subject" placeholder="Subject" class="compose-input" autocomplete="off">
         <textarea id="compose-body" placeholder="Message…" class="compose-body"></textarea>
-        <p id="compose-status" class="compose-status">This build has no credentials stored: if the mail transport is
-          unavailable the message is kept in Outbox and clearly marked as not sent.</p>
+        <p id="compose-status" class="compose-status">A send that the configured transport cannot complete is kept in Outbox and marked “not sent”.</p>
       </div>
     </div>
 
-    <!-- Message detail view -->
     <div id="message-view" class="message-view hidden">
       <div class="msg-header">
-        <button id="msg-back" class="icon-btn" title="Back">←</button>
+        <button id="msg-back" class="icon-btn" title="Back to folder">←</button>
+        <h2>Message</h2>
         <div class="msg-actions">
           <button id="msg-reply" class="icon-btn" title="Reply">↩</button>
+          <button id="msg-forward" class="icon-btn" title="Forward">↪</button>
           <button id="msg-archive" class="icon-btn" title="Archive">📁</button>
           <button id="msg-delete" class="icon-btn" title="Delete">🗑️</button>
         </div>
@@ -88,26 +98,76 @@
     </div>
   </div>
 
-  <!-- Account form (no window.prompt: it is blocked in several phone webviews) -->
-  <div id="account-form" class="modal hidden">
+  <!-- Real account configuration.  Password is only held in memory for the
+       current page lifetime; the local store and bridge persist config only. -->
+  <div id="account-form" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="account-form-title">
     <div class="modal-card">
-      <h2>Add mail account</h2>
-      <p class="hint">Only the account configuration is stored. Passwords are <b>not</b> stored by this app
-        (a credential store is not implemented in this revision), so a transport that needs one will report
-        NEEDS_CREDENTIALS instead of pretending to sign in.</p>
-      <label>Email <input id="acct-email" type="email" placeholder="you@example.org"></label>
-      <label>IMAP host <input id="acct-imap-host" type="text" placeholder="imap.example.org"></label>
-      <label>IMAP port <input id="acct-imap-port" type="number" value="993"></label>
-      <label>SMTP host <input id="acct-smtp-host" type="text" placeholder="smtp.example.org"></label>
-      <label>SMTP port <input id="acct-smtp-port" type="number" value="587"></label>
-      <label class="check"><input id="acct-tls" type="checkbox" checked> Require TLS</label>
-      <label>Password (test/send only — never stored) <input id="acct-password" type="password" autocomplete="new-password"></label>
-      <button id="acct-discover" class="btn-ghost">Auto-fill Gmail / Microsoft</button>
-      <button id="acct-test" class="btn-ghost">Test connection</button>
+      <h2 id="account-form-title">Mail account</h2>
+      <p class="hint">Account settings are stored locally. The password is <b>never</b> written to disk,
+        IndexedDB, localStorage or logs — it is used only for the connection test and this session's
+        fetch/send calls. TLS certificate verification is always on.</p>
+
+      <label>Display name <input id="acct-name" type="text" placeholder="Ada Lovelace" autocomplete="name"></label>
+      <label>Sender name <input id="acct-sender-name" type="text" placeholder="Ada" autocomplete="name"></label>
+      <label>Email address <input id="acct-email" type="email" placeholder="you@example.org" autocomplete="email"></label>
+
+      <fieldset class="form-group">
+        <legend>Incoming</legend>
+        <label>Protocol
+          <select id="acct-protocol">
+            <option value="imap">IMAP</option>
+            <option value="pop3">POP3</option>
+          </select>
+        </label>
+        <label>Server host <input id="acct-imap-host" type="text" placeholder="imap.example.org" autocomplete="off"></label>
+        <div class="two-up">
+          <label>Port <input id="acct-imap-port" type="number" min="1" max="65535" value="993"></label>
+          <label>TLS mode
+            <select id="acct-incoming-tls">
+              <option value="ssl">SSL/TLS</option>
+              <option value="starttls">STARTTLS</option>
+              <option value="none">None (not recommended)</option>
+            </select>
+          </label>
+        </div>
+        <label>Username <input id="acct-username" type="text" placeholder="usually the email address" autocomplete="username"></label>
+      </fieldset>
+
+      <fieldset class="form-group">
+        <legend>Outgoing (SMTP)</legend>
+        <label>Server host <input id="acct-smtp-host" type="text" placeholder="smtp.example.org" autocomplete="off"></label>
+        <div class="two-up">
+          <label>Port <input id="acct-smtp-port" type="number" min="1" max="65535" value="587"></label>
+          <label>TLS mode
+            <select id="acct-smtp-tls">
+              <option value="starttls">STARTTLS</option>
+              <option value="ssl">SSL/TLS</option>
+              <option value="none">None (not recommended)</option>
+            </select>
+          </label>
+        </div>
+        <label>Username <input id="acct-smtp-username" type="text" placeholder="defaults to incoming username" autocomplete="username"></label>
+      </fieldset>
+
+      <label>Authentication
+        <select id="acct-auth-method">
+          <option value="password">Password / app password</option>
+          <option value="oauth2" disabled>OAuth2 (not implemented in this build)</option>
+        </select>
+      </label>
+      <label>Password for test/fetch/send (never stored)
+        <input id="acct-password" type="password" autocomplete="new-password" placeholder="session only"></label>
+      <label class="check"><input id="acct-default" type="checkbox"> Default account</label>
+
+      <div class="row-actions">
+        <button id="acct-discover" class="btn-ghost">Auto-fill known provider</button>
+        <button id="acct-test" class="btn-ghost">Test connection</button>
+      </div>
       <p id="acct-test-result" class="state"></p>
       <p id="acct-error" class="error hidden"></p>
       <div class="row-actions">
         <button id="acct-save" class="btn-primary">Save account</button>
+        <button id="acct-delete" class="btn-danger hidden">Remove account</button>
         <button id="acct-cancel" class="btn-ghost">Cancel</button>
       </div>
     </div>
@@ -119,6 +179,6 @@
 <script type="module" src="../../nuxel-common/bridge.js"></script>
 <script src="js/storage.js"></script>
 <script src="js/transport.js"></script>
-<script src="js/mail.js"></script>
+<script src="js/mail.js?v=pwnage33000b"></script>
 </body>
 </html>

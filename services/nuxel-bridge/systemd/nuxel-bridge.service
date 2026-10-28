@@ -9,7 +9,12 @@ Documentation=https://github.com/nuxel/nuxel/docs/architecture.md
 # failed on it). The hub is the producer, the bridge is the consumer:
 #   nuxel-notifications.service -> nuxel-bridge.service
 Wants=dbus.service ModemManager.service nuxel-portal.service nuxel-notifications.service
-After=dbus.service ModemManager.service nuxel-portal.service nuxel-notifications.service network-online.target
+# PWNAGE-32000 (boot regression): network-online.target previously pulled the
+# whole launcher chain behind NetworkManager-wait-online.service, which waits
+# a full minute (timeout) before multi-user.target reaches the UI.  The bridge
+# is a D-Bus mediator and does not need the network to be online to start;
+# network connectivity is consumed asynchronously by the apps that need it.
+After=dbus.service ModemManager.service nuxel-portal.service nuxel-notifications.service
 Before=phosh.service
 # Restart-burst bound ([Unit], not [Service]).
 StartLimitIntervalSec=120
@@ -24,7 +29,7 @@ ExecStart=/usr/bin/nuxel-bridge
 #   NUXEL_BRIDGE_PROTOCOL_VERSION = the pinned PWA<->host contract ("1")
 #   NUXEL_BRIDGE_VERSION          = the host implementation version
 Environment=NUXEL_BRIDGE_PROTOCOL_VERSION=1
-Environment=NUXEL_BRIDGE_VERSION=0.7.1-beta
+Environment=NUXEL_BRIDGE_VERSION=0.7.2-beta
 Environment=NUXEL_PATHS_CONF=/etc/nuxel/paths.conf
 Restart=on-failure
 RestartSec=5

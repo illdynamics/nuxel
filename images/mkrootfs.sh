@@ -155,6 +155,23 @@ install_core_services() {
             install -Dm644 "${NUXEL_ROOT}/services/nuxel-web.service"             "${ROOTFS_DIR}/usr/lib/systemd/system/nuxel-web.service"
             log_info "  ✓ nuxel-web.service (systemd)"
         fi
+        # PWNAGE-31000: bounded, fail-open pre-lockscreen video controller.
+        # It is installed with the launcher, never on an image that has no
+        # nuxel-wl-fb owner.  The video asset itself is installed in
+        # install_assets() only when the owner supplied it.
+        if [ -f "${NUXEL_ROOT}/services/nuxel-preload-cinema/nuxel-preload-cinema" ]; then
+            install -Dm755 "${NUXEL_ROOT}/services/nuxel-preload-cinema/nuxel-preload-cinema" \
+                "${ROOTFS_DIR}/usr/lib/nuxel/nuxel-preload-cinema"
+            install -Dm644 "${NUXEL_ROOT}/services/nuxel-preload-cinema/nuxel-preload-cinema.service" \
+                "${ROOTFS_DIR}/etc/systemd/system/nuxel-preload-cinema.service"
+            install -Dm644 "${NUXEL_ROOT}/docs/pwnage-31000/IMPLEMENTATION.md" \
+                "${ROOTFS_DIR}/usr/share/nuxel/doc/PWNAGE-31000.md"
+            if [ ! -f "${ROOTFS_DIR}/etc/nuxel/boot/preload-cinema.json" ]; then
+                install -Dm644 "${NUXEL_ROOT}/configs/nuxel/boot/preload-cinema.json" \
+                    "${ROOTFS_DIR}/etc/nuxel/boot/preload-cinema.json"
+            fi
+            log_info "  ✓ nuxel-preload-cinema (systemd)"
+        fi
         log_info "  ✓ systemd units installed (NUXEL_INIT=systemd)"
     elif [ x"${NUXEL_INIT}" = xopenrc ]; then
         mkdir -p "${ROOTFS_DIR}/etc/init.d"
@@ -383,6 +400,26 @@ install_assets() {
     else
         log_warn "  ✗ nuxel-boot-animation.mp4 not found"
     fi
+
+    # PWNAGE-31000 supplied pre-lockscreen asset.  It is deliberately NOT a
+    # replacement for nuxel-boot-animation.mp4 and is never synthesised: a
+    # missing file is an honest fallback to the existing lockscreen.
+    if [ -f "${NUXEL_ROOT}/assets/nuxel-preloading-screen.mp4" ]; then
+        install -Dm644 "${NUXEL_ROOT}/assets/nuxel-preloading-screen.mp4" \
+            "${ROOTFS_DIR}/usr/share/nuxel/preload/nuxel-preloading-screen.mp4"
+        _preload_sha="$(sha256sum "${ROOTFS_DIR}/usr/share/nuxel/preload/nuxel-preloading-screen.mp4" | cut -d' ' -f1)"
+        _preload_want="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("asset_sha256") or "")' \
+            "${NUXEL_ROOT}/configs/nuxel/boot/preload-cinema.json")"
+        if [ -n "${_preload_want}" ] && [ "${_preload_sha}" != "${_preload_want}" ]; then
+            log_error "nuxel-preloading-screen.mp4 sha256 ${_preload_sha} != configured ${_preload_want}"
+            exit 1
+        fi
+        printf '%s  %s\n' "${_preload_sha}" nuxel-preloading-screen.mp4 \
+            > "${ROOTFS_DIR}/usr/share/nuxel/preload/nuxel-preloading-screen.mp4.sha256"
+        log_info "  ✓ nuxel-preloading-screen.mp4 (${_preload_sha})"
+    else
+        log_warn "  ✗ nuxel-preloading-screen.mp4 not supplied — preload cinema falls back"
+    fi
     
     # Create symlink for Phosh wallpaper
     mkdir -p "${ROOTFS_DIR}/usr/share/backgrounds/nuxel"
@@ -476,6 +513,13 @@ setup_directories() {
     # mustang target. Only the selected init system is set up here.
     if [ x"${NUXEL_INIT}" = xsystemd ]; then
         mkdir -p "${ROOTFS_DIR}/etc/systemd/system/multi-user.target.wants"
+        if [ -f "${ROOTFS_DIR}/etc/systemd/system/nuxel-preload-cinema.service" ] && \
+           [ -x "${ROOTFS_DIR}/usr/lib/nuxel/nuxel-wl-fb" ] && \
+           [ -x "${ROOTFS_DIR}/usr/bin/mpv" ]; then
+            ln -sf ../nuxel-preload-cinema.service \
+                "${ROOTFS_DIR}/etc/systemd/system/multi-user.target.wants/nuxel-preload-cinema.service"
+            log_info "  ✓ nuxel-preload-cinema.service enabled (launcher image + mpv)"
+        fi
     elif [ x"${NUXEL_INIT}" = xopenrc ]; then
         mkdir -p "${ROOTFS_DIR}/etc/init.d"
         for srv in nuxel-bridge nuxel-portal nuxel-notifications nuxel-firstboot; do

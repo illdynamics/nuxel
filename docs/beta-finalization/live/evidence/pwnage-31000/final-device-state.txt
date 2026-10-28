@@ -1,0 +1,44 @@
+# console /dev/ttyACM0
+===== echo BOOT_ID=$(cat /proc/sys/kernel/random/boot_id)   [rc=0 frame=31f7cb7f sha_ok=yes]
+    BOOT_ID=91dfb631-bd6b-40ed-aa8f-30beb9cef6fd
+===== cat /proc/uptime   [rc=0 frame=c6d4cb80 sha_ok=yes]
+    254.28 1582.55
+===== systemctl is-system-running   [rc=1 frame=9750cb81 sha_ok=yes]
+    degraded
+===== systemd-analyze time   [rc=0 frame=b357cb82 sha_ok=yes]
+    Startup finished in 3.764s (kernel) + 1min 47.953s (userspace) = 1min 51.717s
+    multi-user.target reached after 47.972s in userspace.
+===== systemctl --failed --no-pager   [rc=0 frame=4ececb83 sha_ok=yes]
+      UNIT                               LOAD   ACTIVE SUB    DESCRIPTION
+    ● NetworkManager-wait-online.service loaded failed failed Network Manager Wait Online
+    Legend: LOAD   → Reflects whether the unit definition was properly loaded.
+            ACTIVE → The high-level unit activation state, i.e. generalization of SUB.
+            SUB    → The low-level unit activation state, values depend on unit type.
+    1 loaded units listed.
+===== systemctl is-enabled nuxel-preload-cinema   [rc=0 frame=1158cb84 sha_ok=yes]
+    enabled
+===== systemctl is-active nuxel-preload-cinema   [rc=3 frame=e55ccb85 sha_ok=yes]
+    inactive
+===== systemctl is-active nuxel-wayland nuxel-wl-fb nuxel-touch-arm nuxel-bridge nuxel-http-bridge nuxel-web   [rc=0 frame=d3d2cb86 sha_ok=yes]
+    active
+    active
+    active
+    active
+    active
+    active
+===== sha256sum /usr/lib/nuxel/nuxel-preload-cinema /etc/nuxel/boot/preload-cinema.json /etc/systemd/system/nuxel-preload-cinema.service /usr/share/nuxel/preload/nuxel-preloading-screen.mp4 /usr/share/nuxel/doc/PWNAGE-31000.md   [rc=0 frame=959ccb87 sha_ok=yes]
+    9c93c58dfa0ce19bb3747fb094812a21fc16118caeec1979d5301d66ff655dc5  /usr/lib/nuxel/nuxel-preload-cinema
+    23a2d7a01970d6ec4889c1502d181ecabed57cf685458ad5d557b48d4fd2b262  /etc/nuxel/boot/preload-cinema.json
+    070566f55b4cdd9dcc792e2d02026d1b57bd468d20a62bf98acb72b02f07d865  /etc/systemd/system/nuxel-preload-cinema.service
+    b059f121e62b167fde8664e24c879ca443df8740d95441e7948abdbcc6cdbbf1  /usr/share/nuxel/preload/nuxel-preloading-screen.mp4
+    c36ce8eb39554cc75fad3da5e81af792c97ae845413f6d3ba142850807c9065d  /usr/share/nuxel/doc/PWNAGE-31000.md
+===== ls -l /run/nuxel/preload-cinema.done /run/nuxel/preload-cinema.receipt 2>&1 || true   [rc=0 frame=99dfcb88 sha_ok=yes]
+    -rw-r--r-- 1 root root  79 Oct 28 11:12 /run/nuxel/preload-cinema.done
+    -rw-r--r-- 1 root root 404 Oct 28 11:15 /run/nuxel/preload-cinema.receipt
+===== pgrep -a mpv || echo NO_MPV   [rc=0 frame=45efcb89 sha_ok=yes]
+    NO_MPV
+===== grep -aE 'LOCKS\[|unlock' /run/nuxel-home.state | tail -4   [rc=0 frame=d90bcb8a sha_ok=yes]
+    1793182503 NUXEL_INPUT EVT unlock:complete gen=1 locked=0 visible=0 ts=1793182503846
+    1793182503 NUXEL_INPUT EVT unlock:home reason=penguin-host-event ts=1793182503847
+    1793182503 NUXEL_INPUT LOCKS[a45.1] gesture=unlock-ack id=1 backend=UNLOCKED stateAfter=UNLOCKED lockedAfter=0 visibleAfter=0
+    1793182504 NUXEL_INPUT LOCKS[a45.1] hide version=a45.1 state=UNLOCKED locked=0 visible=0

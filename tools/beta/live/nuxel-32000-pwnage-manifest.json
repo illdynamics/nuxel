@@ -1,0 +1,165 @@
+{
+  "schema_version": 1,
+  "id": "nuxel-32000-pwnage",
+  "component": "PWNAGE-32000 keyboard/back/boot/perf/charging fixes",
+  "note": "Safe userspace delta: restore Stevia keyboard+native nav dock, add native in-app Back, remove network-online/network.target boot blockers, deploy optimized framebridge. No kernel, partition, modem, DTB or USB gadget mutation.",
+  "invariants": [
+    "No write may resolve onto a raw partition block device, a BOOT/USERDATA/SYSTEM/RECOVERY/DTB/DTBO/VBMETA image, the radio/modem, EFS/SEC_EFS/calibration/IMEI/PIT or any partition metadata.",
+    "Every deploy target must live under an allowed userspace root (assert_userspace_path).",
+    "Stage -> verify SHA-256 -> atomic install -> restart the smallest affected service -> health check -> automatic rollback on failure.",
+    "Sources must resolve INSIDE this repository (no absolute path, no '..')."
+  ],
+  "groups": [
+    {
+      "id": "pwnage32000-keyboard-session",
+      "component": "Start native Stevia OSK + nuxel-navdock from the phone session",
+      "priority": 1,
+      "risk": "low",
+      "restart_service": "nuxel-wayland",
+      "declared_reload": null,
+      "pre": [],
+      "health_check": "systemctl is-active --quiet nuxel-wayland && grep -q 'starting A45 nav dock + Stevia OSK' /usr/lib/nuxel/nuxel-session.sh && grep -q 'phosh-osk-stevia' /usr/lib/nuxel/nuxel-session.sh",
+      "rollback": "restore /usr/lib/nuxel/nuxel-session.sh.nuxel-rollback and restart nuxel-wayland",
+      "files": [
+        {
+          "source": "tools/s10plus/a29/nuxel-session.sh",
+          "target": "/usr/lib/nuxel/nuxel-session.sh",
+          "mode": "0755"
+        }
+      ]
+    },
+    {
+      "id": "pwnage32000-keyboard-pwa",
+      "component": "Disable DOM keyboard fallback when Stevia provider is present; bump PWA cache",
+      "priority": 2,
+      "risk": "low",
+      "restart_service": "nuxel-wayland",
+      "declared_reload": null,
+      "pre": [],
+      "health_check": "test \"$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8000/pwa/nuxel-home/index.html)\" = 200 && grep -q 'v51-pwnage-32000' /usr/share/nuxel/pwa/nuxel-home/sw.js && grep -q 'touch-keyboard.js?v=a83-pwnage32000' /usr/share/nuxel/pwa/nuxel-home/index.html && grep -q 'app.js?v=a83-pwnage32000' /usr/share/nuxel/pwa/nuxel-home/index.html && systemctl is-active --quiet nuxel-wayland",
+      "rollback": "restore each <target>.nuxel-rollback and restart nuxel-wayland",
+      "files": [
+        {
+          "source": "pwa/nuxel-home/js/touch-keyboard.js",
+          "target": "/usr/share/nuxel/pwa/nuxel-home/js/touch-keyboard.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/index.html",
+          "target": "/usr/share/nuxel/pwa/nuxel-home/index.html",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/sw.js",
+          "target": "/usr/share/nuxel/pwa/nuxel-home/sw.js",
+          "mode": "0644"
+        },
+        {
+          "source": "pwa/nuxel-home/manifest.json",
+          "target": "/usr/share/nuxel/pwa/nuxel-home/manifest.json",
+          "mode": "0644"
+        }
+      ]
+    },
+    {
+      "id": "pwnage32000-nav-bridge",
+      "component": "Add native in-app Back, activate, and close-foreground bridge routes",
+      "priority": 3,
+      "risk": "medium",
+      "restart_service": "nuxel-http-bridge",
+      "declared_reload": null,
+      "pre": [],
+      "health_check": "systemctl is-active --quiet nuxel-http-bridge && python3 -m py_compile /usr/lib/nuxel/nuxel-bridge/api.py && grep -q '/api/v1/apps/back' /usr/lib/nuxel/nuxel-bridge/api.py && curl -fsS http://127.0.0.1:8080/api/v1/ping >/dev/null",
+      "rollback": "restore /usr/lib/nuxel/nuxel-bridge/api.py.nuxel-rollback and restart nuxel-http-bridge",
+      "files": [
+        {
+          "source": "services/nuxel-bridge/src/api.py",
+          "target": "/usr/lib/nuxel/nuxel-bridge/api.py",
+          "mode": "0644"
+        }
+      ]
+    },
+    {
+      "id": "pwnage32000-nav-app-pwa",
+      "component": "Route short Back through the bridge for native apps and close native toplevel on long Back",
+      "priority": 4,
+      "risk": "medium",
+      "restart_service": "nuxel-wayland",
+      "declared_reload": null,
+      "pre": [],
+      "health_check": "systemctl is-active --quiet nuxel-wayland && grep -q 'back:native-request' /usr/share/nuxel/pwa/nuxel-home/js/app.js && grep -q '/api/v1/apps/close-foreground' /usr/share/nuxel/pwa/nuxel-home/js/app.js",
+      "rollback": "restore /usr/share/nuxel/pwa/nuxel-home/js/app.js.nuxel-rollback and restart nuxel-wayland",
+      "files": [
+        {
+          "source": "pwa/nuxel-home/js/app.js",
+          "target": "/usr/share/nuxel/pwa/nuxel-home/js/app.js",
+          "mode": "0644"
+        }
+      ]
+    },
+    {
+      "id": "pwnage32000-browser-native",
+      "component": "Native browser control FIFO and can_go_back/can_go_forward state",
+      "priority": 5,
+      "risk": "low",
+      "restart_service": null,
+      "declared_reload": "true",
+      "pre": [],
+      "health_check": "python3 -m py_compile /usr/lib/nuxel/nuxel-browser-native/nuxel_browser_native.py && grep -q 'CTRL_FIFO' /usr/lib/nuxel/nuxel-browser-native/nuxel_browser_native.py",
+      "rollback": "restore /usr/lib/nuxel/nuxel-browser-native/nuxel_browser_native.py.nuxel-rollback",
+      "files": [
+        {
+          "source": "shell/nuxel-browser-native/nuxel_browser_native.py",
+          "target": "/usr/lib/nuxel/nuxel-browser-native/nuxel_browser_native.py",
+          "mode": "0755"
+        }
+      ]
+    },
+    {
+      "id": "pwnage32000-boot-units",
+      "component": "Decouple launcher chain from network-online/network.target",
+      "priority": 6,
+      "risk": "medium",
+      "restart_service": null,
+      "declared_reload": "systemctl daemon-reload && systemctl restart nuxel-bridge.service nuxel-http-bridge.service nuxel-web.service && systemctl is-active nuxel-bridge.service nuxel-http-bridge.service nuxel-web.service",
+      "pre": [],
+      "health_check": "systemctl is-active --quiet nuxel-bridge.service && systemctl is-active --quiet nuxel-http-bridge.service && systemctl is-active --quiet nuxel-web.service && ! grep -q '^After=.*network-online.target' /etc/systemd/system/nuxel-bridge.service && ! grep -q '^After=.*network.target' /etc/systemd/system/nuxel-web.service",
+      "rollback": "restore each <target>.nuxel-rollback, run systemctl daemon-reload, and restart the affected services",
+      "files": [
+        {
+          "source": "services/nuxel-bridge/systemd/nuxel-bridge.service",
+          "target": "/etc/systemd/system/nuxel-bridge.service",
+          "mode": "0644"
+        },
+        {
+          "source": "services/nuxel-portal/systemd/nuxel-portal.service",
+          "target": "/etc/systemd/system/nuxel-portal.service",
+          "mode": "0644"
+        },
+        {
+          "source": "services/nuxel-web.service",
+          "target": "/etc/systemd/system/nuxel-web.service",
+          "mode": "0644"
+        }
+      ]
+    },
+    {
+      "id": "pwnage32000-perf-wlfb",
+      "component": "Optimized nuxel-wl-fb blit (a67) to reduce frame-bridge latency",
+      "priority": 7,
+      "risk": "medium",
+      "restart_service": "nuxel-wl-fb",
+      "declared_reload": null,
+      "pre": [],
+      "health_check": "systemctl is-active --quiet nuxel-wl-fb && test -x /usr/lib/nuxel/nuxel-wl-fb && grep -q 'owner=nuxel-wl-fb' /run/nuxel-wl-fb.state",
+      "rollback": "restore /usr/lib/nuxel/nuxel-wl-fb.nuxel-rollback and restart nuxel-wl-fb",
+      "files": [
+        {
+          "source": "build/out/s10plus/a67/nuxel-wl-fb",
+          "target": "/usr/lib/nuxel/nuxel-wl-fb",
+          "mode": "0755"
+        }
+      ]
+    }
+  ]
+}

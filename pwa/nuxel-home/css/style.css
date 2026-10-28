@@ -403,6 +403,38 @@ body.ready #boot-splash {
     }
 }
 
+/* ── PWNAGE-36000 pre-lockscreen cover ──────────────────────────────────
+   The first frame of nuxel-preloading-screen.mp4, letterboxed exactly like
+   mpv's 1080x1920 -> 720x1280 wlshm surface on the 720x1520 compositor.
+   It is visible only on the phone boot path (?boot=os).  js/app.js removes it
+   when the overlay reports state=covered; the inline 4 s timer is the hard
+   fail-open backstop. */
+#preload-cover {
+    position: fixed;
+    inset: 0;
+    z-index: 100000;
+    display: none;
+    background-color: #000;
+    background-image: url("../assets/nuxel-preload-cover.jpg");
+    background-position: center center;
+    background-repeat: no-repeat;
+    background-size: contain;
+    opacity: 1;
+    visibility: visible;
+    transition: opacity 0.28s ease, visibility 0s linear 0.28s;
+}
+html.nuxel-boot-os #preload-cover {
+    display: block;
+}
+body.preload-ready #preload-cover {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+}
+@media (prefers-reduced-motion: reduce) {
+    #preload-cover { transition: none; }
+}
+
 /* A43: prevent accidental zoom gestures on the launcher without disabling scrolling inside apps. */
 html:has(#app-grid), body:has(#app-grid) { overscroll-behavior: none; }
 body:not(.app-drawer-open) #app-grid { touch-action:pan-x pan-y; }

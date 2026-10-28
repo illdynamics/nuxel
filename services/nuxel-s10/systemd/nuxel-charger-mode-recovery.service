@@ -1,0 +1,18 @@
+[Unit]
+Description=Nuxel charger/LPM boot recovery (normal reboot so touch binds)
+Documentation=file:/usr/share/doc/nuxel/touch/CHARGER-MODE-ROOTCAUSE.md
+After=local-fs.target
+Before=nuxel-wayland.service
+ConditionPathExists=/proc/cmdline
+StartLimitIntervalSec=0
+
+[Service]
+Type=oneshot
+ExecStart=/usr/lib/nuxel/nuxel-charger-mode-recovery.sh
+RemainAfterExit=yes
+TimeoutStartSec=30
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

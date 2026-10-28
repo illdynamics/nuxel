@@ -1,0 +1,92 @@
+=== native app launch (canonical API) ===
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+--- nuxel-contacts ---
+{"success": true, "launched": true, "app_id": "nuxel-contacts", "unit": "nuxel-app-nuxel-contacts-1793205228025", "action": "exec", "argv": ["/usr/bin/nuxel-contacts"]}
+WINDOWS=4
+WIN title=Nuxel app_id=nuxel-pwa-host max=0 min=0 act=0 fs=1
+WIN title=Nuxel Camera app_id=org.nuxel.CameraNative max=1 min=0 act=0 fs=0
+WIN title=Nuxel Browser app_id=nuxel_browser_native.py max=1 min=0 act=0 fs=0
+WIN title=Contacts app_id=nuxel-contacts max=1 min=0 act=1 fs=0
+--- nuxel-messages ---
+{"success": true, "launched": true, "app_id": "nuxel-messages", "unit": "nuxel-app-nuxel-messages-1793205233139", "action": "exec", "argv": ["/usr/bin/nuxel-messages"]}
+WINDOWS=5
+WIN title=Nuxel app_id=nuxel-pwa-host max=0 min=0 act=0 fs=1
+WIN title=Nuxel Camera app_id=org.nuxel.CameraNative max=1 min=0 act=0 fs=0
+WIN title=Nuxel Browser app_id=nuxel_browser_native.py max=1 min=0 act=0 fs=0
+WIN title=Contacts app_id=nuxel-contacts max=1 min=0 act=0 fs=0
+WIN title=Messages app_id=nuxel-messages max=1 min=0 act=1 fs=0
+--- nuxel-dialer ---
+{"success": true, "launched": true, "app_id": "nuxel-dialer", "unit": "nuxel-app-nuxel-dialer-1793205238245", "action": "exec", "argv": ["/usr/bin/nuxel-dialer"]}
+WINDOWS=6
+WIN title=Nuxel app_id=nuxel-pwa-host max=0 min=0 act=0 fs=1
+WIN title=Nuxel Camera app_id=org.nuxel.CameraNative max=1 min=0 act=0 fs=0
+WIN title=Nuxel Browser app_id=nuxel_browser_native.py max=1 min=0 act=0 fs=0
+WIN title=Contacts app_id=nuxel-contacts max=1 min=0 act=0 fs=0
+WIN title=Messages app_id=nuxel-messages max=1 min=0 act=0 fs=0
+WIN title=Phone app_id=nuxel-dialer max=1 min=0 act=1 fs=0
+--- org.nuxel.BrowserNative ---
+{"success": true, "launched": true, "app_id": "org.nuxel.BrowserNative", "unit": "nuxel-app-browsernative-1793205243342", "action": "exec", "argv": ["/usr/lib/nuxel/nuxel-browser-native/nuxel_browser_native.py"]}
+WINDOWS=7
+WIN title=Nuxel app_id=nuxel-pwa-host max=0 min=0 act=0 fs=1
+WIN title=Nuxel Camera app_id=org.nuxel.CameraNative max=1 min=0 act=0 fs=0
+WIN title=Nuxel Browser app_id=nuxel_browser_native.py max=1 min=0 act=0 fs=0
+WIN title=Contacts app_id=nuxel-contacts max=1 min=0 act=0 fs=0
+WIN title=Messages app_id=nuxel-messages max=1 min=0 act=0 fs=0
+WIN title=Phone app_id=nuxel-dialer max=1 min=0 act=0 fs=0
+WIN title=Nuxel Browser app_id=nuxel_browser_native.py max=1 min=0 act=1 fs=0
+--- org.nuxel.CameraNative ---
+{"success": true, "launched": true, "app_id": "org.nuxel.CameraNative", "unit": "nuxel-app-cameranative-1793205248434", "action": "exec", "argv": ["/usr/lib/nuxel/nuxel-camera-native/nuxel_camera_native.py"]}
+WINDOWS=8
+WIN title=Nuxel app_id=nuxel-pwa-host max=0 min=0 act=0 fs=1
+WIN title=Nuxel Camera app_id=org.nuxel.CameraNative max=1 min=0 act=0 fs=0
+WIN title=Nuxel Browser app_id=nuxel_browser_native.py max=1 min=0 act=0 fs=0
+WIN title=Contacts app_id=nuxel-contacts max=1 min=0 act=0 fs=0
+WIN title=Messages app_id=nuxel-messages max=1 min=0 act=0 fs=0
+WIN title=Phone app_id=nuxel-dialer max=1 min=0 act=0 fs=0
+WIN title=Nuxel Browser app_id=nuxel_browser_native.py max=1 min=0 act=0 fs=0
+WIN title=Nuxel Camera app_id=org.nuxel.CameraNative max=1 min=0 act=1 fs=0
+--- after Home ---
+WINDOWS=8
+WIN title=Nuxel app_id=nuxel-pwa-host max=0 min=0 act=1 fs=1
+WIN title=Nuxel Camera app_id=org.nuxel.CameraNative max=1 min=0 act=0 fs=0
+WIN title=Nuxel Browser app_id=nuxel_browser_native.py max=1 min=0 act=0 fs=0
+WIN title=Contacts app_id=nuxel-contacts max=1 min=0 act=0 fs=0
+WIN title=Messages app_id=nuxel-messages max=1 min=0 act=0 fs=0
+WIN title=Phone app_id=nuxel-dialer max=1 min=0 act=0 fs=0
+WIN title=Nuxel Browser app_id=nuxel_browser_native.py max=1 min=0 act=0 fs=0
+WIN title=Nuxel Camera app_id=org.nuxel.CameraNative max=1 min=0 act=0 fs=0
+=== nav actions ===
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+1793205245 NUXEL_INPUT NAVOWNER native-dock=present
+1793205247 HOST_ACTION home -> launcher page
+1793205247 HOST_ACTION nav-show -> navdock fifo
+1793205247 NUXEL_INPUT EVT home:complete state=CLOSED page=0 ts=1793205247460
+1793205248 NUXEL_INPUT NAVOWNER native-dock=present
+1793205250 NUXEL_INPUT NAVOWNER native-dock=present
+1793205252 NUXEL_INPUT NAVOWNER native-dock=present
+1793205252 HOST_ACTION home -> launcher page
+1793205252 HOST_ACTION nav-show -> navdock fifo
+1793205252 NUXEL_INPUT EVT home:complete state=CLOSED page=0 ts=1793205252546
+1793205253 HOST_ACTION recents -> launcher page
+1793205253 NUXEL_INPUT RECENTS state=OPEN reason=system-nav ts=1793205253911
+1793205254 NUXEL_INPUT NAVOWNER native-dock=present
+1793205254 HOST_ACTION home -> launcher page
+1793205254 HOST_ACTION nav-show -> navdock fifo
+1793205254 NUXEL_INPUT RECENTS state=CLOSED reason=home ts=1793205254909
+1793205254 NUXEL_INPUT EVT home:complete state=CLOSED page=0 ts=1793205254941

@@ -1,0 +1,14 @@
+{
+  "blocked_reason": "activation/health check failed; every changed file was restored to its recorded previous hash",
+  "changed_steps": 1,
+  "exit_code": 5,
+  "finished_at": "2026-10-28T10:19:00+0100",
+  "host": "dextronux",
+  "no_op": false,
+  "operation_id": "deploy-20261028T101758-2799662",
+  "pid": 2799662,
+  "pid_start": "40063019",
+  "rollback_ok": true,
+  "state": "COMPLETE",
+  "verdict": "FAILED"
+}

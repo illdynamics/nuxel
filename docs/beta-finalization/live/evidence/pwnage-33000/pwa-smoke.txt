@@ -1,0 +1,22 @@
+=== WebKit app smoke (real WebKitGTK, HTTP-served pages) ===
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+--- files ---
+SMOKE_OK {"home":"/home/nuxel","cwd":"/","entries":19,"status":"19 item(s)","path":"/home/nuxel","upload":false}
+--- gallery ---
+SMOKE_OK {"title":"Nuxel Gallery","badge":"media: 0 item(s)","items":0}
+--- mail ---
+SMOKE_OK {"title":"Nuxel Mail","backend":"indexeddb","settingsButton":true,"folders":6}
+--- nuxtore ---
+SMOKE_OK {"seal":"catalog: 10 packages, integrity OK","installed":"No packages from this catalog are installed yet. Open Available to install one.","installedCount":"0","availableCount":"10"}
+--- recorder Start with no routed capture source ---
+SMOKE_OK {"mic":"microphone: unavailable (no capture route)","capability":"Recording unavailable: no capture source is routed by the session audio server.","button":"Start recording"}
+--- home nav/status containers ---
+SMOKE_OK {"statusBar":true,"nav":true,"gallery":1,"icons":"function"}

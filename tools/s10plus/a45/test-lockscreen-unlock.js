@@ -90,6 +90,8 @@ function makeHarness(options) {
     'lockscreen-time': element('lockscreen-time'),
     'lockscreen-date': element('lockscreen-date'),
     'lockscreen-battery': element('lockscreen-battery'),
+    'lockscreen-touch-warning': element('lockscreen-touch-warning'),
+    'lockscreen-touch-warning-detail': element('lockscreen-touch-warning-detail'),
     launcher: element('launcher'),
   };
   const documentTarget = target();
@@ -104,7 +106,13 @@ function makeHarness(options) {
   });
 
   const hostCalls = [];
-  const hostState = { wlfb: options.wlfb || 'DISPLAY_ON', unlockResult: options.unlockResult || { ok: true, action: 'unlock' } };
+  const hostState = {
+    wlfb: options.wlfb || 'DISPLAY_ON',
+    unlockResult: options.unlockResult || { ok: true, action: 'unlock' },
+    batteryLevel: options.batteryLevel === undefined ? 100 : options.batteryLevel,
+    batteryStatus: options.batteryStatus || 'Full',
+    touchState: options.touchState || '2026-10-27T20:00:00Z ARMED_OK path=/dev/input/event2',
+  };
   const host = options.host || {
     available: options.hostAvailable !== false,
     action(action) {
@@ -114,6 +122,9 @@ function makeHarness(options) {
     },
     statusRead(name) {
       hostCalls.push('status:' + name);
+      if (name === 'battery-capacity') return Promise.resolve({ ok: true, text: String(hostState.batteryLevel) });
+      if (name === 'battery-status') return Promise.resolve({ ok: true, text: hostState.batteryStatus });
+      if (name === 'touch-arm-state') return Promise.resolve({ ok: true, text: hostState.touchState });
       return Promise.resolve({ ok: true, text: hostState.wlfb });
     },
   };
@@ -637,8 +648,98 @@ async function gesture(h, options) {
 
     const index = fs.readFileSync(INDEX_HTML, 'utf8');
     check('boot gate still keys on ?boot=os', /get\('boot'\)\s*!==\s*'os'/.test(index));
-    check('lockscreen script uses the current cache-busting revision', /lockscreen\.js\?v=a77\.1/.test(index));
-    check('app controller uses the current cache-busting revision', /app\.js\?v=a81/.test(index));
+    check('lockscreen script uses the current cache-busting revision', /lockscreen\.js\?v=a82/.test(index));
+    check('app controller uses the current cache-busting revision', /app\.js\?v=a84-pwnage36000/.test(index));
+  }
+
+  // 18. Battery 100% -> 0% flicker guard.
+  {
+    const h = makeHarness({ batteryLevel: 100, batteryStatus: 'Full' });
+    const ls = new h.sandbox.NuxelLockscreen();
+    ls.show('test');
+    await h.microtasks();
+    check('a valid Full reading paints 100%',
+          /100%/.test(h.els['lockscreen-battery'].textContent),
+          h.els['lockscreen-battery'].textContent);
+
+    // A Full pack cannot be 0%.  One sample is rejected outright.
+    h.hostState.batteryLevel = 0;
+    h.hostState.batteryStatus = 'Full';
+    ls._updateBattery();
+    await h.microtasks();
+    check('a Full 0% sample never replaces 100%',
+          /100%/.test(h.els['lockscreen-battery'].textContent),
+          h.els['lockscreen-battery'].textContent);
+
+    // A charging pack needs three consecutive zero samples.
+    h.hostState.batteryStatus = 'Charging';
+    ls._updateBattery();
+    await h.microtasks();
+    check('first charging 0% sample is rejected',
+          /100%/.test(h.els['lockscreen-battery'].textContent),
+          h.els['lockscreen-battery'].textContent);
+    ls._updateBattery();
+    await h.microtasks();
+    check('second charging 0% sample is rejected',
+          /100%/.test(h.els['lockscreen-battery'].textContent),
+          h.els['lockscreen-battery'].textContent);
+    ls._updateBattery();
+    await h.microtasks();
+    check('third consecutive charging 0% sample is accepted',
+          /0%/.test(h.els['lockscreen-battery'].textContent) &&
+          !/100%/.test(h.els['lockscreen-battery'].textContent),
+          h.els['lockscreen-battery'].textContent);
+
+    // A normal small change is accepted immediately.
+    h.hostState.batteryLevel = 1;
+    h.hostState.batteryStatus = 'Discharging';
+    ls._updateBattery();
+    await h.microtasks();
+    check('a normal 1% change is accepted immediately',
+          /1%/.test(h.els['lockscreen-battery'].textContent),
+          h.els['lockscreen-battery'].textContent);
+  }
+
+  // 19. A charger/LPM boot (no touch device) is explained on the lockscreen.
+  {
+    const h = makeHarness({
+      touchState: '2026-10-27T20:00:00Z NO_TOUCH_DEVICE devices=7',
+    });
+    const ls = new h.sandbox.NuxelLockscreen();
+    ls.show('test');
+    await h.microtasks();
+    check('no-touch boot shows the warning banner',
+          h.els['lockscreen-touch-warning'].hidden === false,
+          String(h.els['lockscreen-touch-warning'].hidden));
+    check('warning tells the owner to unplug and restart',
+          /unplug/i.test(h.els['lockscreen-touch-warning-detail'].textContent) &&
+          /POWER/i.test(h.els['lockscreen-touch-warning-detail'].textContent),
+          h.els['lockscreen-touch-warning-detail'].textContent);
+
+    h.hostState.touchState = '2026-10-27T20:00:10Z ARMED_OK path=/dev/input/event2 name=\'sec_touchscreen\'';
+    ls._updateTouchWarning();
+    await h.microtasks();
+    check('a successful ARMED_OK receipt hides the warning',
+          h.els['lockscreen-touch-warning'].hidden === true,
+          String(h.els['lockscreen-touch-warning'].hidden));
+  }
+
+  // 20. A swipe that starts in the lower band (not exactly on the artwork)
+  //     uses the same unlock state machine.
+  {
+    const h = makeHarness();
+    const ls = new h.sandbox.NuxelLockscreen();
+    h.sandbox.nuxel = makeController(ls, 'ok');
+    ls.show('test');
+    const base = { isTrusted: true, pointerId: 31, button: 0, clientX: 40, clientY: 600 };
+    h.els.lockscreen.dispatch('pointerdown', base);
+    h.sandbox.dispatch('pointermove', Object.assign({}, base, { clientY: 450 }));
+    h.sandbox.dispatch('pointerup', Object.assign({}, base, { clientY: 300 }));
+    await h.microtasks();
+    await h.flushTimers();
+    check('a lower-band swipe away from the artwork unlocks',
+          ls.isLocked() === false && h.els.lockscreen.hidden === true,
+          JSON.stringify({ locked: ls.isLocked(), hidden: h.els.lockscreen.hidden }));
   }
 
   console.log('\nNOTE: all checks above are MOCKED/OFFLINE.  Wayland/phoc/WebKitGTK');

@@ -1,0 +1,17 @@
+[Unit]
+Description=Nuxel S10+ ABOX playback route (RDMA1 -> UAIF1/SIFS1)
+After=sound.target
+ConditionPathExists=/dev/snd/controlC0
+StartLimitIntervalSec=0
+
+[Service]
+Type=oneshot
+ExecStart=/usr/lib/nuxel/nuxel-audio-route.sh
+RemainAfterExit=yes
+Restart=no
+TimeoutStartSec=30
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

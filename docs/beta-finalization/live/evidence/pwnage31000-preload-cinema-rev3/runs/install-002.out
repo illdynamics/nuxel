@@ -1,0 +1,7 @@
+pushed={"acked_bytes": 1569, "b64_chars": 2092, "bytes": 1569, "decoded_sha256": "8831a18dde5a39d547bf64ecc7a93622a2ae8bb41f46596ce35d5dd1db5fccb7", "frames": 17, "mode": "frame", "parts": 17, "path": "/var/tmp/nxl-install-002.sh", "raw_writes": 0, "retries": 0}
+ok=True rc=0
+---
+PREV=43efe695788c8480e0ad116faa02f2683c0b45d395b3833c06899021464c5e65
+/etc/nuxel/boot/preload-cinema.json.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

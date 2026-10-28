@@ -1,0 +1,41 @@
+# console /dev/ttyACM0
+===== systemctl --failed --no-pager   [rc=0 frame=2e49c4b2 sha_ok=yes]
+      UNIT                               LOAD   ACTIVE SUB    DESCRIPTION
+    ● NetworkManager-wait-online.service loaded failed failed Network Manager Wait Online
+    Legend: LOAD   → Reflects whether the unit definition was properly loaded.
+            ACTIVE → The high-level unit activation state, i.e. generalization of SUB.
+            SUB    → The low-level unit activation state, values depend on unit type.
+    1 loaded units listed.
+===== systemd-analyze time 2>&1 || true   [rc=0 frame=6876c4b3 sha_ok=yes]
+    Startup finished in 3.771s (kernel) + 1min 47.885s (userspace) = 1min 51.657s
+    multi-user.target reached after 47.905s in userspace.
+===== systemd-analyze blame 2>&1 | head -12 || true   [rc=0 frame=5a06c4b4 sha_ok=yes]
+    1min 51ms NetworkManager-wait-online.service
+       3.019s nuxel-fallback.service
+       2.317s NetworkManager.service
+       1.015s nuxel-wl-fb.service
+        816ms systemd-udev-trigger.service
+        790ms systemd-journald.service
+        685ms polkit.service
+        671ms systemd-hostnamed.service
+        606ms rtkit-daemon.service
+        283ms systemd-tmpfiles-setup.service
+        225ms nuxel-orientationd.service
+        215ms bluetooth.service
+===== grep -a 'boot=os\|NUXEL_HOME_BOOT_OWNER' /run/nuxel-home.state | head -5   [rc=0 frame=b004c4b7 sha_ok=yes]
+    1793180209 NUXEL_HOME_BOOT_OWNER os_animation=1 splash_removed_by_launcher=1
+    1793180209 NUXEL_HOME_OPEN url=http://127.0.0.1:8000/pwa/nuxel-home/index.html?boot=os&v=1793193653 engine=WebKitGTK/2.54
+    1793180209 NUXEL_HOME_NAV uri=http://127.0.0.1:8000/pwa/nuxel-home/index.html?boot=os&v=1793193653
+    1793180210 NUXEL_HOME_COMMITTED uri=http://127.0.0.1:8000/pwa/nuxel-home/index.html?boot=os&v=1793193653
+    1793180211 NUXEL_HOME_READY uri=http://127.0.0.1:8000/pwa/nuxel-home/index.html?boot=os&v=1793193653
+===== grep -a 'FRAMES_OK' /run/nuxel-wl-fb.state | tail -1   [rc=0 frame=7ba6c4b8 sha_ok=yes]
+    1793180869 FRAMES_OK total=12297 fps_1s=10 failures=0 blits=758 present_skipped=11538 blit_avg_ms=46 idle_ms=4054 out=720x1520 src=720x1520 scale=2 panel=1440x3040 owner=nuxel-wl-fb display=on src_format=0x00000001 colour=R@0,G@8,B@16_abgr8888_override=1 decon_pan_ok=759 decon_pan_failed=0
+===== grep -a 'ARMED_OK' /run/nuxel-touch-arm.state | tail -1 | cut -c1-120   [rc=0 frame=a474c4b9 sha_ok=yes]
+    2026-10-28T09:36:48Z ARMED_OK path=/dev/input/event2 name='sec_touchscreen' mt=1 direct=1 btn=1 slots=10 x=[0.4095] y=[0
+===== cat /proc/uptime   [rc=0 frame=09c1c4ba sha_ok=yes]
+    669.78 4693.70
+===== ls -ld /usr/share/nuxel/preload 2>&1 || true   [rc=0 frame=e52ac4bb sha_ok=yes]
+    ls: cannot access '/usr/share/nuxel/preload': No such file or directory
+===== df -i /usr   [rc=0 frame=64e0c4bc sha_ok=yes]
+    Filesystem     Inodes  IUsed  IFree IUse% Mounted on
+    /dev/sda31     262144 140652 121492   54% /

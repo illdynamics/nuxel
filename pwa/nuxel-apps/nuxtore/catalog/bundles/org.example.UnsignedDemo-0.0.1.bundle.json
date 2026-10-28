@@ -1,0 +1,122 @@
+[
+  {
+    "path": "pwa/nuxel-apps/nuxtore/app.json",
+    "sha256": "4fc00cbead3dc346f644c43c22541082adddfa461f7dfb1d4e9462bd57719469",
+    "size": 406
+  },
+  {
+    "path": "pwa/nuxel-apps/nuxtore/css/nuxtore.css",
+    "sha256": "3a9f02d78e62d8a62daf09301b7a06da2ef3b131bb34ca76a0faef8a4329c417",
+    "size": 4773
+  },
+  {
+    "path": "pwa/nuxel-apps/nuxtore/icons/icon-128.png",
+    "sha256": "304553aef4d5743f2679c1e08791b0ed98b5dc1a63a6ebd7fd2d2a139780d964",
+    "size": 6163
+  },
+  {
+    "path": "pwa/nuxel-apps/nuxtore/icons/icon-144.png",
+    "sha256": "ea5d25b4eac3b669e2bbcb0f9b7a436897f5e3e313a98fd7ae7f4cf03022a580",
+    "size": 6799
+  },
+  {
+    "path": "pwa/nuxel-apps/nuxtore/icons/icon-152.png",
+    "sha256": "07de2231aafeb0c0d0284c7f39a1456b95c44199f29a52f58c76fee299ef00d7",
+    "size": 7140
+  },
+  {
+    "path": "pwa/nuxel-apps/nuxtore/icons/icon-192.png",
+    "sha256": "e535d53e3630f9bd03cc8a21a773cc5ef58914bc9d92f51164bd497d5c5b8b70",
+    "size": 9029
+  },
+  {
+    "path": "pwa/nuxel-apps/nuxtore/icons/icon-384.png",
+    "sha256": "afc9b55933fdfc9a04c61f024043dddb94be42033990647084733030432441a3",
+    "size": 18614
+  },
+  {
+    "path": "pwa/nuxel-apps/nuxtore/icons/icon-48.png",
+    "sha256": "967eb3dc032e2b49fae637aaf5ab584165ca5f2b17b666dd834b32ecde1e701c",
+    "size": 2224
+  },
+  {
+    "path": "pwa/nuxel-apps/nuxtore/icons/icon-512.png",
+    "sha256": "c24ff4d15e8c8c5dd09d52aa05872ddcdba186084ac29e9ff899a33fd6293973",
+    "size": 24625
+  },
+  {
+    "path": "pwa/nuxel-apps/nuxtore/icons/icon-72.png",
+    "sha256": "2e1da222295f8749e6a78082d056941ad4b7e0d8aa7ca611c47d7bacbb8fbe17",
+    "size": 3365
+  },
+  {
+    "path": "pwa/nuxel-apps/nuxtore/icons/icon-96.png",
+    "sha256": "7b29f3f43a0b5f8f65e59843bcaff9fabffd72e2be96e071f02f7c627254bd59",
+    "size": 4640
+  },
+  {
+    "path": "pwa/nuxel-apps/nuxtore/icons/icon.svg",
+    "sha256": "f28c30f7f1e536e59840c0b5ad37aa7eb768a09864d0fe1891b4f90252220446",
+    "size": 401
+  },
+  {
+    "path": "pwa/nuxel-apps/nuxtore/index.html",
+    "sha256": "aeee92fd2d56a849fcf5d45cfcf3f94dcf829e3b93e6bcb47c3847bf5ab057d2",
+    "size": 5321
+  },
+  {
+    "path": "pwa/nuxel-apps/nuxtore/js/nuxtore-catalog.js",
+    "sha256": "3f15bdacd9d52cff5e1d5b5a3ee7c1a390e97d01b3cf8af6ce2106f7490a7b6f",
+    "size": 14177
+  },
+  {
+    "path": "pwa/nuxel-apps/nuxtore/js/nuxtore-crypto.js",
+    "sha256": "5188686f876631ffa2378a355e518a3fdb3b0ba3df68d751e19982bfb1e05409",
+    "size": 4720
+  },
+  {
+    "path": "pwa/nuxel-apps/nuxtore/js/nuxtore.js",
+    "sha256": "3d6184a00e062c5f5cc7c0c2fdebefb3e9689367f237532db082ca41b7ea75d0",
+    "size": 18904
+  },
+  {
+    "path": "pwa/nuxel-apps/nuxtore/manifest.json",
+    "sha256": "8854e591f61aa8e3afbc3f0920159518fc2d93253a61b31e91ab86de4e80a0fc",
+    "size": 1637
+  },
+  {
+    "path": "pwa/nuxel-apps/nuxtore/sw.js",
+    "sha256": "fc44a84037265202aa621a62cc9733c702c57e2b61d588de17ded4ba50b9a0e7",
+    "size": 1358
+  },
+  {
+    "path": "pwa/nuxel-apps/nuxtore/tests/test-catalog.js",
+    "sha256": "9926bc3f05b77fbb78d11840ba128ccfb5b9695421eff7f75e13f4363a5d49d1",
+    "size": 6608
+  },
+  {
+    "path": "pwa/nuxel-apps/nuxtore/tests/test-catalog.py",
+    "sha256": "3ba2b5957bc89bc20fcbae664119ad17ec1305d13a0e31a84b8ebaabba4eeaf7",
+    "size": 10481
+  },
+  {
+    "path": "pwa/nuxel-apps/nuxtore/tools/ed25519_ref.py",
+    "sha256": "a42086550266e6674adc9db775e69f0a645aed95ceabc1d31df5318dd3c73645",
+    "size": 4411
+  },
+  {
+    "path": "pwa/nuxel-apps/nuxtore/tools/nuxtore-stage.py",
+    "sha256": "28214ccc4bbd9c938417490026543a1483a4841a319a5a8cdef18e88dfd77571",
+    "size": 6392
+  },
+  {
+    "path": "pwa/nuxel-apps/nuxtore/tools/nuxtore-verify.py",
+    "sha256": "e4b8f9fbf7e9d67cd8f41e889f069527a3711b05e5fe82fd3c49ba06dfe0f063",
+    "size": 8727
+  },
+  {
+    "path": "pwa/nuxel-apps/nuxtore/tools/nuxtore_common.py",
+    "sha256": "9f1b147b4973567790be047e1a4c3341d8ddafc77889c68bad497d992ab828b3",
+    "size": 3493
+  }
+]

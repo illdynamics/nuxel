@@ -63,18 +63,30 @@
       const host = global.NuxelHost;
       if (!host || !host.available || typeof host.statusRead !== 'function') return;
       try { document.documentElement.classList.add('native-nav-pending'); } catch (e) {}
-      Promise.resolve(host.statusRead('navdock-state')).then((res) => {
-        const text = (res && (res.text || res.value)) || '';
-        const ready = /NAV_DOCK_READY/.test(text);
-        this.nativeDock = ready;
-        try {
-          document.documentElement.classList.toggle('native-nav-present', ready);
-          document.documentElement.classList.toggle('native-nav-pending', !ready);
-        } catch (e) {}
-        this._traceNs('native-dock=' + (ready ? 'present' : 'absent'));
-      }).catch(() => {
-        try { document.documentElement.classList.remove('native-nav-pending'); } catch (e) {}
-      });
+      const sync = () => {
+        Promise.resolve(host.statusRead('navdock-state')).then((res) => {
+          const text = (res && (res.text || res.value)) || '';
+          const ready = /NAV_DOCK_READY/.test(text);
+          // READY only proves the dock mapped once.  It can be hidden while the
+          // lockscreen is up; the LAST visibility event is the truth.  If it is
+          // hidden or the client is gone, show the DOM fallback so navigation is
+          // never missing, and never leave both hosts hidden.
+          const last = text.trim().split(/\n/).filter(Boolean).pop() || '';
+          const visible = ready && !/NAV_DOCK_HIDE/.test(last);
+          this.nativeDock = visible;
+          try {
+            document.documentElement.classList.toggle('native-nav-present', visible);
+            document.documentElement.classList.toggle('native-nav-pending', false);
+            document.documentElement.classList.add('nav-fallback-safe');
+          } catch (e) {}
+          this._traceNs('native-dock=' + (visible ? 'present' : 'hidden/absent'));
+        }).catch(() => {
+          // statusRead unavailable: the DOM strip is the only host; leave it up.
+          try { document.documentElement.classList.remove('native-nav-present', 'native-nav-pending'); } catch (e) {}
+        });
+      };
+      sync();
+      if (!this._navSyncTimer) this._navSyncTimer = setInterval(sync, 2000);
     }
     _traceNs(message) {
       try {

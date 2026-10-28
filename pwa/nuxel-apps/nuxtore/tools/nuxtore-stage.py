@@ -109,6 +109,15 @@ def main(argv=None):
             "capabilities": s.get("capabilities", []),
             "state_hint": s.get("state_hint", "available"),
         }
+        # Every package, including the deliberately unsigned refusal fixture,
+        # needs its content bundle: the verifier must be able to re-hash it and
+        # then still refuse installation on the signature gate.
+        if not args.check:
+            nc.save_json(os.path.join(CATALOG, bundle_rel), files)
+        elif os.path.exists(os.path.join(CATALOG, bundle_rel)):
+            old = nc.load_json(os.path.join(CATALOG, bundle_rel))
+            if old != files:
+                drift.append(s["id"])
         if s.get("unsigned"):
             packages.append(pkg)                     # deliberately unsigned demo entry
             continue
@@ -118,12 +127,6 @@ def main(argv=None):
             "value": ed.b64e(ed.signature(nc.canonical(pkg), seed, pub)),
         }
         packages.append(pkg)
-        if not args.check:
-            nc.save_json(os.path.join(CATALOG, bundle_rel), files)
-        elif os.path.exists(os.path.join(CATALOG, bundle_rel)):
-            old = nc.load_json(os.path.join(CATALOG, bundle_rel))
-            if old != files:
-                drift.append(s["id"])
 
     catalog = {
         "schema_version": 1,

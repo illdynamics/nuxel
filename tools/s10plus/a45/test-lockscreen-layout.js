@@ -114,6 +114,19 @@ check('indicator row follows the handle block as a lockscreen-level sibling',
       INDEX.indexOf('id="lockscreen-indicators"') > INDEX.indexOf('id="lockscreen-handle-wrap"') &&
       /id="lockscreen-hint"[\s\S]*?<\/div>\s*<\/div>\s*<div class="lockscreen-indicators"/.test(INDEX));
 
+// A82 performance regression: alpha filters on the idle handle/indicator art
+// force WebKit's software rasteriser to run every frame on the S10+ (measured
+// ~440% -> ~78% WebKitWebProcess CPU when removed).  Interaction feedback may
+// keep its short-lived drop-shadow.
+const handleBlock = (CSS.match(/\.lockscreen-handle\s*\{([\s\S]*?)\}/) || [])[1] || '';
+const indicatorBlock = (CSS.match(/\.lockscreen-indicator\s*\{([\s\S]*?)\}/) || [])[1] || '';
+check('idle lockhead has no software filter', !/filter\s*:/.test(handleBlock), handleBlock.slice(0, 200));
+check('idle indicators have no software filter', !/filter\s*:/.test(indicatorBlock), indicatorBlock.slice(0, 200));
+check('drag feedback keeps the short-lived lockhead drop-shadow',
+      /\.lockscreen-handle\.grabbed\s*\{[^}]*filter\s*:/.test(CSS));
+check('armed feedback keeps the short-lived lockhead drop-shadow',
+      /\.lockscreen-handle\.armed\s*\{[^}]*filter\s*:/.test(CSS));
+
 // Robustness across plausible viewport sizes/rotations.
 const variants = [[360, 760], [760, 360], [320, 640], [430, 900]];
 for (const [w, h] of variants) {

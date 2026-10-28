@@ -1425,7 +1425,22 @@ static void on_permission(WebKitWebView *v, WebKitPermissionRequest *r, gpointer
   } else if (WEBKIT_IS_NOTIFICATION_PERMISSION_REQUEST(r)) {
     allow = TRUE; reason = "allowed-notifications";
   } else if (WEBKIT_IS_USER_MEDIA_PERMISSION_REQUEST(r)) {
-    reason = "denied-no-camera-or-microphone";
+    /* PWNAGE-33000: the Recorder is a real getUserMedia capture client.  Allow
+       audio only, only from the local recorder page.  Video/camera remains
+       denied because the camera backend is explicitly deferred. */
+    gboolean audio = webkit_user_media_permission_is_for_audio_device(
+        WEBKIT_USER_MEDIA_PERMISSION_REQUEST(r));
+    gboolean video = webkit_user_media_permission_is_for_video_device(
+        WEBKIT_USER_MEDIA_PERMISSION_REQUEST(r));
+    if (audio && !video && uri &&
+        (g_strstr_len(uri, -1, "/pwa/nuxel-apps/recorder/") != NULL)) {
+      allow = TRUE;
+      reason = "allowed-microphone-recorder";
+    } else if (video) {
+      reason = "denied-camera-backend-deferred";
+    } else {
+      reason = "denied-microphone-not-recorder";
+    }
   } else {
     reason = "denied-not-required-by-launcher";
   }

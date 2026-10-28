@@ -1,0 +1,8 @@
+cmd: for u in nuxel-wayland nuxel-wl-fb nuxel-button-manager nuxel-touch-arm seatd;do printf '%s=%s\n' $u $(systemctl is-active $u 2>&1);done
+ok: True rc: 0 framed: True sha_ok: True
+---
+nuxel-wayland=active
+nuxel-wl-fb=active
+nuxel-button-manager=active
+nuxel-touch-arm=active
+seatd=active

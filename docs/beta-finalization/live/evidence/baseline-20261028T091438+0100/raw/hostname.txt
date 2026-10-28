@@ -1,0 +1,4 @@
+cmd: hostname
+ok: True rc: 127 framed: True sha_ok: True
+---
+sh: hostname: command not found

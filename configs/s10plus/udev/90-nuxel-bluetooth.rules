@@ -1,0 +1,5 @@
+# Nuxel S10+ Bluetooth: BCM4375 HCI is bound to the Samsung high-speed UART
+# ttySAC1 (hci0).  Keep the node accessible and make a soft rfkill block
+# self-clearing at boot.
+KERNEL=="ttySAC1", SUBSYSTEM=="tty", TAG+="uaccess", MODE="0660"
+SUBSYSTEM=="rfkill", ACTION=="change", RUN+="/usr/bin/rfkill unblock bluetooth"

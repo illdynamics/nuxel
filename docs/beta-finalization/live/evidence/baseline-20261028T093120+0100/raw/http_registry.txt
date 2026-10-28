@@ -1,0 +1,4 @@
+cmd: curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:8000/ 2>&1
+ok: True rc: 0 framed: True sha_ok: True
+---
+403

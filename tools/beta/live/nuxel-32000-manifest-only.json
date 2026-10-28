@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "id": "nuxel-32000-manifest-parity",
+  "component": "PWNAGE-32000 manifest cache_version parity",
+  "note": "Safe userspace delta: align deployed manifest.json cache_version with sw.js. No kernel/partition changes.",
+  "invariants": [
+    "No write may resolve onto a raw partition block device, a BOOT/USERDATA/SYSTEM/RECOVERY/DTB/DTBO/VBMETA image, the radio/modem, EFS/SEC_EFS/calibration/IMEI/PIT or any partition metadata.",
+    "Every deploy target must live under an allowed userspace root (assert_userspace_path).",
+    "Stage -> verify SHA-256 -> atomic install -> health check -> automatic rollback on failure.",
+    "Sources must resolve INSIDE this repository (no absolute path, no '..')."
+  ],
+  "groups": [
+    {
+      "id": "pwnage32000-manifest-parity",
+      "component": "Deployed launcher manifest cache_version",
+      "priority": 1,
+      "risk": "low",
+      "restart_service": null,
+      "declared_reload": "true",
+      "pre": [],
+      "health_check": "grep -q '\"cache_version\": \"v51-pwnage-32000\"' /usr/share/nuxel/pwa/nuxel-home/manifest.json",
+      "rollback": "restore /usr/share/nuxel/pwa/nuxel-home/manifest.json.nuxel-rollback",
+      "files": [
+        {
+          "source": "pwa/nuxel-home/manifest.json",
+          "target": "/usr/share/nuxel/pwa/nuxel-home/manifest.json",
+          "mode": "0644"
+        }
+      ]
+    }
+  ]
+}

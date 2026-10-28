@@ -24,11 +24,14 @@
 // fix, the hardware Settings pages and the version lockstep bump.
 // v0.7.1 bumps to v49 for the PWNAGE-30000 app suite, widgets.js/widgets.css,
 // the shared theme/haptics clients and the version lockstep bump.
+// v0.7.2 bumps to v54-v072-release for the PWNAGE-31000..36000 launcher work:
+// the preload cover, restored keyboard/haptics, global Back/navigation, the
+// connection-mode UI, the battery/touch guards and the version lockstep bump.
 // A77/v0.6.7 bumps to v46: the lockscreen indicator script and the status
 // receives the A77 USB-detach truth (UDC speed + wired VBUS vetoes) and the
 // three indicator assets carry a new cache-buster, so a launcher restored from
 // the v44 namespace would keep showing the ghost PC/console penguins.
-const CACHE_VERSION = 'v49-v071-release';
+const CACHE_VERSION = 'v54-v072-release';
 const CACHE_NAME = 'nuxel-home-' + CACHE_VERSION;   // version marker sent to clients
 const STATIC_CACHE = 'nuxel-static-' + CACHE_VERSION;
 const DYNAMIC_CACHE = 'nuxel-dynamic-' + CACHE_VERSION;
@@ -74,6 +77,7 @@ const PRECACHE_ASSETS = [
     './icons/icon-192.png',
     './icons/icon-512.png',
     './assets/nuxel-boot-animation.mp4',
+    './assets/nuxel-preload-cover.jpg',
     // The real home-screen wallpaper (assets/nuxel-background.png). It is
     // referenced by css/style.css as ../assets/nuxel-background.png, so a
     // missing copy at this path means the launcher renders with no wallpaper.
@@ -168,6 +172,12 @@ self.addEventListener('fetch', (event) => {
     // Bridge API calls are live state and must never be cached.
     if (request.url.includes('/api/v1/')) {
         event.respondWith(fetch(request));
+        return;
+    }
+    // PWNAGE-36000 preload overlay state is live boot state.  It must never be
+    // served from the service-worker or HTTP cache.
+    if (request.url.includes('/preload-status.json')) {
+        event.respondWith(fetch(request, { cache: 'no-store' }));
         return;
     }
     if (request.url.startsWith('nuxel-')) {

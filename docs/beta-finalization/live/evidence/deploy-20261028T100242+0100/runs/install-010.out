@@ -1,0 +1,7 @@
+pushed={"acked_bytes": 1607, "b64_chars": 2144, "bytes": 1607, "decoded_sha256": "d2f4be8c729699e0de8c679e65b565057d734743cab3623a36c320445897b373", "frames": 17, "mode": "frame", "parts": 17, "path": "/var/tmp/nxl-install-010.sh", "raw_writes": 0, "retries": 0}
+ok=True rc=0
+---
+PREV=b11e5ae7788b40843b541a10be4486d72753554c564812cb656e34d96aaf10f3
+/etc/systemd/system/nuxel-web.service.nuxel-staged: OK
+INSTALL-OK
+NXLSCRIPT-RC=0

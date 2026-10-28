@@ -1,0 +1,4 @@
+cmd: systemctl --failed --no-legend --no-pager
+ok: True rc: 0 framed: True sha_ok: True
+---
+● NetworkManager-wait-online.service loaded failed failed Network Manager Wait Online

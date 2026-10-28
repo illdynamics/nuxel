@@ -1,0 +1,16 @@
+[Unit]
+Description=Nuxel device-node permissions (udev fallback for kernel 4.14)
+After=local-fs.target
+Before=nuxel-audio-route.service nuxel-bluetooth.service nuxel-wayland.service
+ConditionPathExists=/dev
+
+[Service]
+Type=oneshot
+ExecStart=/usr/lib/nuxel/nuxel-device-permissions.sh
+RemainAfterExit=yes
+TimeoutStartSec=20
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

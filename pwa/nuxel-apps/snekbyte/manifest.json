@@ -70,10 +70,7 @@
     "app_type": "games",
     "offline_first": true,
     "network": "none",
-    "capabilities": [
-      "input:keyboard",
-      "input:touch"
-    ],
+    "capabilities": [],
     "source": "Original Python/Pygame game in repo root; pure JavaScript parity engine",
     "features": [
       "Wrap Walls default ON",
@@ -81,7 +78,8 @@
       "WoNQ five-food meter",
       "offline touch and keyboard play",
       "Classic Walls Python parity"
-    ]
+    ],
+    "bridge_version": "1"
   },
   "version": "1.1.0-a58"
 }

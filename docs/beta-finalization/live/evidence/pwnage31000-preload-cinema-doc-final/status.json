@@ -1,0 +1,14 @@
+{
+  "blocked_reason": "console lost after 8 reconnects during staging step 1: cannot create parent directory for /usr/lib/nuxel/nuxel-preload-cinema.nuxel-staged ()",
+  "changed_steps": null,
+  "exit_code": 3,
+  "finished_at": "2026-10-28T11:08:48+0100",
+  "host": "dextronux",
+  "no_op": null,
+  "operation_id": "deploy-20261028T110736-2849278",
+  "pid": 2849278,
+  "pid_start": "40360819",
+  "rollback_ok": null,
+  "state": "COMPLETE",
+  "verdict": "BLOCKED_EXTERNAL_RESOURCE"
+}

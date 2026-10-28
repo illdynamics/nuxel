@@ -10,6 +10,7 @@
 #ifdef HAVE_MM_GLIB
 #include <libmm-glib.h>
 #endif /* HAVE_MM_GLIB */
+#include <adwaita.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

@@ -26,6 +26,9 @@ BINARIES=(
     '/usr/local/bin/nuxel-wl-snapshot',
     # A40/A44 socket-activated Home hardware monitor, built from repo source.
     '/usr/lib/nuxel/nuxel-metricsd',
+    # PWNAGE-31000: the pre-lockscreen controller invokes this exact absolute
+    # path (mpv 0.40 + FFmpeg-free chain).  A fresh image must contain it.
+    '/usr/bin/mpv',
 )
 FILES=(
     '/etc/udev/rules.d/90-nuxel-beyond2lte.rules',
@@ -54,6 +57,15 @@ FILES=(
     '/etc/systemd/system/nuxel-metrics.service',
     '/etc/systemd/system/nuxel-metrics.socket',
     '/etc/systemd/system/sockets.target.wants/nuxel-metrics.socket',
+    # PWNAGE-31000 pre-lockscreen controller.  The supplied clip is installed
+    # under /usr/share/nuxel/boot (not the static webroot) and its bytes are
+    # checked against the checkout by SOURCE_PARITY below.
+    '/usr/lib/nuxel/nuxel-preload-cinema',
+    '/etc/nuxel/boot/preload-cinema.json',
+    '/etc/systemd/system/nuxel-preload-cinema.service',
+    '/usr/share/nuxel/doc/PWNAGE-31000.md',
+    '/usr/share/nuxel/preload/nuxel-preloading-screen.mp4',
+    '/usr/share/nuxel/preload/nuxel-preloading-screen.mp4.sha256',
 )
 
 # Runtime-critical files copied verbatim by the rootfs builder.  Comparing the
@@ -105,6 +117,11 @@ SOURCE_PARITY = {
     '/etc/systemd/system/nuxel-metrics.service': 'services/nuxel-metrics/nuxel-metrics.service',
     '/etc/systemd/system/nuxel-metrics.socket': 'services/nuxel-metrics/nuxel-metrics.socket',
     '/etc/systemd/system/sockets.target.wants/nuxel-metrics.socket': 'services/nuxel-metrics/nuxel-metrics.socket',
+    '/usr/lib/nuxel/nuxel-preload-cinema': 'services/nuxel-preload-cinema/nuxel-preload-cinema',
+    '/etc/nuxel/boot/preload-cinema.json': 'configs/nuxel/boot/preload-cinema.json',
+    '/etc/systemd/system/nuxel-preload-cinema.service': 'services/nuxel-preload-cinema/nuxel-preload-cinema.service',
+    '/usr/share/nuxel/doc/PWNAGE-31000.md': 'docs/pwnage-31000/IMPLEMENTATION.md',
+    '/usr/share/nuxel/preload/nuxel-preloading-screen.mp4': 'assets/nuxel-preloading-screen.mp4',
 }
 
 

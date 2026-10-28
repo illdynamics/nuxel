@@ -40,6 +40,10 @@ __pycache__/
 *.bak
 *.orig
 *.rej
+# Editor backups left by the A82/PWNAGE repair passes (the sources they shadow
+# are the canonical files; these snapshots are local-only).
+*.pwnage-*-bak
+*.a[0-9][0-9]-bak
 *~
 *.swp
 *.swo

@@ -1,0 +1,70 @@
++ uname -smr
+Linux 4.14.253-gf7194c1d15ed-dirty aarch64
++ cat /etc/os-release
++ head -4
+NAME="Fedora Linux"
+VERSION="43 (Forty Three)"
+RELEASE_TYPE=stable
+ID=fedora
++ id nuxel
+uid=1000(nuxel) gid=1000(nuxel) groups=1000(nuxel),63(audio)
++ getent passwd nuxel
+nuxel:x:1000:1000::/home/nuxel:/bin/bash
++ ls -la /usr/bin/nuxel-contacts /usr/bin/nuxel-messages /usr/bin/nuxel-dialer
+ls: cannot access '/usr/bin/nuxel-contacts': No such file or directory
+ls: cannot access '/usr/bin/nuxel-messages': No such file or directory
+ls: cannot access '/usr/bin/nuxel-dialer': No such file or directory
++ ls -ld /home/nuxel /var/lib/nuxel/app-data /var/lib/nuxel/app-data/files
+ls: cannot access '/var/lib/nuxel/app-data': No such file or directory
+ls: cannot access '/var/lib/nuxel/app-data/files': No such file or directory
+drwx------ 5 nuxel nuxel 4096 Oct 27 22:11 /home/nuxel
++ sort
++ find /home/nuxel -maxdepth 1 -printf '%M %u %g %f\n'
+-rw------- nuxel nuxel .bash_history
+-rw-r--r-- nuxel nuxel .bash_logout
+-rw-r--r-- nuxel nuxel nuxel27000.tar.gz
+drwx------ nuxel nuxel .config
+drwx------ nuxel nuxel .ssh
+drwx------ nuxel nuxel nuxel
+drwxr-xr-x root root nuxel27000
++ systemctl is-active NetworkManager wpa_supplicant sshd nuxel-bridge nuxel-http-bridge nuxel-wayland
+active
+active
+active
+active
+active
+active
++ nmcli -t -f DEVICE,STATE,CONNECTION device
+wlan0:connected:Nuxel Snoerbreuk
+wlan1:disconnected:
+p2p-dev-wlan0:disconnected:
+p2p-dev-wlan1:disconnected:
+p2p0:unmanaged:
+ip6_vti0:unmanaged:
+ip6tnl0:unmanaged:
+ip_vti0:unmanaged:
+sit0:unmanaged:
+lo:unmanaged:
+rmnet0:unmanaged:
+rmnet1:unmanaged:
+rmnet2:unmanaged:
+rmnet3:unmanaged:
+rmnet4:unmanaged:
+rmnet5:unmanaged:
+rmnet6:unmanaged:
+rmnet7:unmanaged:
+umts_dm0:unmanaged:
+mcps0:unmanaged:
+0: bcm43xx Bluetooth: Bluetooth
+	Soft blocked: no
+	Hard blocked: no
+1: phy0: Wireless LAN
+	Soft blocked: no
+	Hard blocked: no
+2: brcmfmac-wifi: Wireless LAN
+	Soft blocked: no
+	Hard blocked: no
+3: hci0: Bluetooth
+	Soft blocked: no
+	Hard blocked: no
++ rfkill list

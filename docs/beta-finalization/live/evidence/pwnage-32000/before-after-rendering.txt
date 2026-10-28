@@ -1,0 +1,16 @@
+# PWNAGE-32000 rendering/self-reported bridge metrics (/run/nuxel-wl-fb.state)
+
+BEFORE (pre-fix, display on):
+  FRAMES_OK total=32517 fps_1s=9 failures=0 blits=1914 present_skipped=30601
+  blit_avg_ms=56 idle_ms=2638 out=720x1520 src=720x1520 scale=2 panel=1440x3040
+  display=on decon_pan_ok=1915 decon_pan_failed=0
+
+AFTER (post-fix, display on, sampled after screen-on):
+  FRAMES_OK total=378 fps_1s=27 failures=0 blits=31 present_skipped=346
+  blit_avg_ms=56 idle_ms=11 out=720x1520 src=720x1520 scale=2 panel=1440x3040
+  display=on decon_pan_ok=32 decon_pan_failed=0
+  (earlier post-reboot sample showed fps_1s=30, blit_avg_ms=32)
+
+Interpretation: frame presentation rate (device-reported fps_1s) improved
+9 -> 27-30 fps. blit_avg_ms is a composite bridge/committed-present proxy and
+did not materially change; no FPS/latency claim beyond this metric is made.

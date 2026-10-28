@@ -1,0 +1,14 @@
+[Unit]
+Description=Nuxel boot framebuffer capture (diagnostic; never writes /dev/fb0)
+After=nuxel-wl-fb.service
+Wants=nuxel-wl-fb.service
+ConditionPathExists=/dev/fb0
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/nuxel-bootcap --out /var/lib/nuxel/bootcap --duration 24 --interval 0.5
+Nice=15
+IOSchedulingClass=idle
+
+[Install]
+WantedBy=multi-user.target

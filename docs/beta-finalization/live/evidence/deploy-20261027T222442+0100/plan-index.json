@@ -1,0 +1,72 @@
+[
+  {
+    "group": "a82-lockscreen-pwa",
+    "n": 1,
+    "risk": "low",
+    "script": "scripts/001-index.html.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/index.html",
+    "source_sha256": "e82bfd4584cd9bf93b0b325484955c93cb9b15dca21850ffa5b3d8ccd34d622d",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/index.html"
+  },
+  {
+    "group": "a82-lockscreen-pwa",
+    "n": 2,
+    "risk": "low",
+    "script": "scripts/002-lockscreen.css.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/css/lockscreen.css",
+    "source_sha256": "777e1349aa774d802dff6700b82a6360fd8fb777ad73fcef34a40bf9d9c7af2e",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/css/lockscreen.css"
+  },
+  {
+    "group": "a82-lockscreen-pwa",
+    "n": 3,
+    "risk": "low",
+    "script": "scripts/003-lockscreen.js.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/js/lockscreen.js",
+    "source_sha256": "88d0034bd0648ed626dcb2f3cf2010be0332e2331f6054d4ff80295146f0f522",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/js/lockscreen.js"
+  },
+  {
+    "group": "a82-lockscreen-pwa",
+    "n": 4,
+    "risk": "low",
+    "script": "scripts/004-status-bar.js.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/js/status-bar.js",
+    "source_sha256": "23030cef1e8681333d8316e3af5ccefb899e08aedc8ac306a1d672faa9a1acff",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/js/status-bar.js"
+  },
+  {
+    "group": "a82-lockscreen-pwa",
+    "n": 5,
+    "risk": "low",
+    "script": "scripts/005-sw.js.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/sw.js",
+    "source_sha256": "6a416c4593c9bd240f461bc89b8036fb1b3426bbae51053ef92a854f0f4e6dad",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/sw.js"
+  },
+  {
+    "group": "a82-lockscreen-pwa",
+    "n": 6,
+    "risk": "low",
+    "script": "scripts/006-manifest.json.sh",
+    "service": "nuxel-wayland",
+    "source": "pwa/nuxel-home/manifest.json",
+    "source_sha256": "a8d59d10b4886ace928fca19f299a2309243dfd80c9b8134d0978180a54d6b00",
+    "target": "/usr/share/nuxel/pwa/nuxel-home/manifest.json"
+  },
+  {
+    "group": "a82-battery-api",
+    "n": 7,
+    "risk": "low",
+    "script": "scripts/007-api.py.sh",
+    "service": "nuxel-http-bridge",
+    "source": "services/nuxel-bridge/src/api.py",
+    "source_sha256": "5e2323bd88eb6df47711ed42293e0b08f7d87d7ad9681b480585bafdd625c2d9",
+    "target": "/usr/lib/nuxel/nuxel-bridge/api.py"
+  }
+]

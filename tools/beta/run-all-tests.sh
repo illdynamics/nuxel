@@ -382,7 +382,13 @@ for tree in PIPELINE_TREES:
                 continue
             text = open(path, encoding="utf-8", errors="replace").read()
             for rel in FLASH_DOC_ALLOWLIST:
-                if os.path.basename(rel) in text or rel in text:
+                # Match the allow-listed path or its filename as a whole token.
+                # A substring test falsely flags a different, legitimately named
+                # script such as nuxel-charger-mode-recovery.sh.
+                base = os.path.basename(rel)
+                token = re.compile(r"(?<![A-Za-z0-9_.-])(?:%s|%s)(?![A-Za-z0-9_.-])"
+                                   % (re.escape(base), re.escape(rel)))
+                if token.search(text):
                     problems.append("%s: allow-listed flash file IS referenced by the beta "
                                     "pipeline: %s" % (rel, path))
 
@@ -638,6 +644,9 @@ add_suite U-adb-pack-mock unit release 600 hard "$PY" \
 add_suite U-pwa-assets unit bg-02-boot-animation-launcher 300 hard bash \
   "launcher assets referenced by HTML/CSS/manifest all exist" \
   'bash tools/verify-pwa-assets.sh'
+add_suite U-pwnage31000-preload-cinema unit bg-02-boot-animation-launcher 900 hard "$PY" \
+  "PWNAGE-31000 bounded pre-lockscreen controller: readiness, timing, fallback, cleanup, supplied-asset packaging/hash" \
+  'python3 -m pytest -q tests/pwnage31000 && python3 tools/pwnage31000/verify-preload-cinema.py'
 add_suite U-soak-harness unit release 300 hard bash \
   "the soak/performance harness works offline (plan, sampling, verdicts)" \
   'bash tools/beta/soak.sh --selftest'

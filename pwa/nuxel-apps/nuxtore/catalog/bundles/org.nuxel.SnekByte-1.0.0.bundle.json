@@ -1,0 +1,102 @@
+[
+  {
+    "path": "pwa/nuxel-apps/snekbyte/app.json",
+    "sha256": "b69dc3965d4fbd640bb05b56e0bec51899269dab349e2c8b96faf3a578b1d3c9",
+    "size": 620
+  },
+  {
+    "path": "pwa/nuxel-apps/snekbyte/css/snekbyte.css",
+    "sha256": "aac630566f0b5977b8a53656bbb0bc4bc27b774d4300aae5eebc0a0667f8c05d",
+    "size": 9547
+  },
+  {
+    "path": "pwa/nuxel-apps/snekbyte/icons/icon-128.png",
+    "sha256": "91199487afea3433ddcc673c180741427a3a30fb346dc6381688083eb6c1bdb0",
+    "size": 13409
+  },
+  {
+    "path": "pwa/nuxel-apps/snekbyte/icons/icon-144.png",
+    "sha256": "107d87c823f53f2f95e47b4993455619b7f14fef9dde43bc5bdcece07c23c64d",
+    "size": 14280
+  },
+  {
+    "path": "pwa/nuxel-apps/snekbyte/icons/icon-152.png",
+    "sha256": "45d05a0f769023ce039ef94d54dd7cc044e5cf17ced0bacb637760f2bfdf3f28",
+    "size": 14672
+  },
+  {
+    "path": "pwa/nuxel-apps/snekbyte/icons/icon-192.png",
+    "sha256": "c05c0c1f1d2b9574ea768ecc5fbe7f61953ee4bb4dec01a4ac084211191515f0",
+    "size": 16181
+  },
+  {
+    "path": "pwa/nuxel-apps/snekbyte/icons/icon-384.png",
+    "sha256": "6ab3c194810ce0ed5f086f827cfcd3c7164803602ded410460d0a15b32ace3f0",
+    "size": 19492
+  },
+  {
+    "path": "pwa/nuxel-apps/snekbyte/icons/icon-48.png",
+    "sha256": "daa504caa0c0f2ae3303ec9c5c0793812ba697a3ced1f4ec910b64d95d58aec3",
+    "size": 2542
+  },
+  {
+    "path": "pwa/nuxel-apps/snekbyte/icons/icon-512.png",
+    "sha256": "0b76817efead516f1c3773f228b28dff6e428d734a0014fa8ada0dbffb3bcb45",
+    "size": 21079
+  },
+  {
+    "path": "pwa/nuxel-apps/snekbyte/icons/icon-72.png",
+    "sha256": "f26f5548c1dea86a1c146eee533c439007eaa53e4b338d987f5bf14055ae896b",
+    "size": 4995
+  },
+  {
+    "path": "pwa/nuxel-apps/snekbyte/icons/icon-96.png",
+    "sha256": "f7ea476d2519e512081dd27ca3b04590c16ee160ac0227440648ce9125a0a149",
+    "size": 8042
+  },
+  {
+    "path": "pwa/nuxel-apps/snekbyte/icons/icon.svg",
+    "sha256": "e4a0aab254f2c1ae8f38bf358effad921fcce90c5d569defe0f1c3af444140e1",
+    "size": 18084
+  },
+  {
+    "path": "pwa/nuxel-apps/snekbyte/index.html",
+    "sha256": "5a55a88693a5d5e3fbe2f7295c2eed7529f9ff25be4956c065a4e06cab046b62",
+    "size": 6581
+  },
+  {
+    "path": "pwa/nuxel-apps/snekbyte/js/snek-controls.js",
+    "sha256": "73cb92a07047ca785039cc13632bdca77b4c5d8de7eeb21b1575657813b22621",
+    "size": 3395
+  },
+  {
+    "path": "pwa/nuxel-apps/snekbyte/js/snek-engine.js",
+    "sha256": "f6995b5495f0a0f3aabc893dcc08359603d7c816aaf2e3f5df21de5f6e7b980d",
+    "size": 10240
+  },
+  {
+    "path": "pwa/nuxel-apps/snekbyte/js/snekbyte.js",
+    "sha256": "1236a8447757436cb2ba653748039a725a8264eeb876d60dd2b63fb993c0ba8c",
+    "size": 24131
+  },
+  {
+    "path": "pwa/nuxel-apps/snekbyte/manifest.json",
+    "sha256": "a94c2b32215749c52c4d52242dc630f6030f171998af2d780110e2e4b248140a",
+    "size": 1998
+  },
+  {
+    "path": "pwa/nuxel-apps/snekbyte/sw.js",
+    "sha256": "69d90173ac177ca1c191efc0a3e8843fdd377e2742deedbfc6c2fb4930677701",
+    "size": 1352
+  },
+  {
+    "path": "pwa/nuxel-apps/snekbyte/tests/test-a58.js",
+    "sha256": "19d617d09cc243c252ed8e72b61119604c6b3e3164ccaac4b12b575ef625805e",
+    "size": 7015
+  },
+  {
+    "path": "pwa/nuxel-apps/snekbyte/tests/test-snek-engine.js",
+    "sha256": "c5e7bcf82b872cb97c8a45213ddb286b12dac64ba3baa9f4ca562dec71663b5f",
+    "size": 12945
+  }
+]

@@ -1,0 +1,4 @@
+cmd: sha256sum /usr/share/nuxel/pwa/nuxel-home/js/bridge.js 2>&1
+ok: True rc: 0 framed: True sha_ok: True
+---
+b84f2789fb3687b514b1fb7d6915e100b8887b877b0aff4d870228e622122585  /usr/share/nuxel/pwa/nuxel-home/js/bridge.js

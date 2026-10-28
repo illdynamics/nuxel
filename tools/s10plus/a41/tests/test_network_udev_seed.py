@@ -61,6 +61,11 @@ class NetworkUdevSeedTests(unittest.TestCase):
         self.assertIn("Before=NetworkManager.service", text)
         self.assertIn("RequiredBy=NetworkManager.service", text)
         self.assertIn("ExecStart=/usr/libexec/nuxel/nuxel-network-udev-seed", text)
+        # systemd-udevd is masked on this kernel, so the device unit never
+        # appears; depending on it used to cost the full 50 s device timeout
+        # before Wi-Fi could start.
+        self.assertNotIn("Wants=sys-subsystem-net-devices-wlan0.device", text)
+        self.assertNotIn("After=local-fs.target sys-subsystem-net-devices-wlan0.device", text)
 
 
 if __name__ == "__main__":

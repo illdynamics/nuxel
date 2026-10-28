@@ -1,0 +1,47 @@
+# console /dev/ttyACM0
+===== set -x; cp -a /run/nuxel/preload-cinema.receipt /tmp/pwnage31000-boot-receipt.json 2>/dev/null || true; cp -a /var/log/nuxel/preload-cinema.log /tmp/pwnage31000-boot-controller.log 2>/dev/null || true; cp -a /run/nuxel/preload-cinema-mpv.log /tmp/pwnage31000-boot-mpv.log 2>/dev/null || true; mv /usr/share/nuxel/preload/nuxel-preloading-screen.mp4 /usr/share/nuxel/preload/nuxel-preloading-screen.mp4.pw31000-testbak; rm -f /run/nuxel/preload-cinema.done /run/nuxel/preload-cinema.receipt; systemctl start nuxel-preload-cinema; sleep 2; echo ---FALLBACK-RECEIPT---; cat /run/nuxel/preload-cinema.receipt; echo ---FALLBACK-LOG---; tail -5 /var/log/nuxel/preload-cinema.log; echo ---RESTORING---; mv /usr/share/nuxel/preload/nuxel-preloading-screen.mp4.pw31000-testbak /usr/share/nuxel/preload/nuxel-preloading-screen.mp4; chown 0:0 /usr/share/nuxel/preload/nuxel-preloading-screen.mp4; chmod 0644 /usr/share/nuxel/preload/nuxel-preloading-screen.mp4; sha256sum /usr/share/nuxel/preload/nuxel-preloading-screen.mp4; rm -f /run/nuxel/preload-cinema.done /run/nuxel/preload-cinema.receipt; pgrep -a mpv || echo NO_MPV; systemctl is-active nuxel-wayland nuxel-wl-fb   [rc=0 frame=3e5dc80f sha_ok=yes]
+    + cp -a /run/nuxel/preload-cinema.receipt /tmp/pwnage31000-boot-receipt.json
+    + cp -a /var/log/nuxel/preload-cinema.log /tmp/pwnage31000-boot-controller.log
+    + cp -a /run/nuxel/preload-cinema-mpv.log /tmp/pwnage31000-boot-mpv.log
+    + mv /usr/share/nuxel/preload/nuxel-preloading-screen.mp4 /usr/share/nuxel/preload/nuxel-preloading-screen.mp4.pw31000-testbak
+    + rm -f /run/nuxel/preload-cinema.done /run/nuxel/preload-cinema.receipt
+    + systemctl start nuxel-preload-cinema
+    + sleep 2
+    + echo ---FALLBACK-RECEIPT---
+    ---FALLBACK-RECEIPT---
+    + cat /run/nuxel/preload-cinema.receipt
+    {
+      "asset": "/usr/share/nuxel/preload/nuxel-preloading-screen.mp4",
+      "boot_id": "c20cd499-0fcb-4b00-847e-01d49899a6d1",
+      "controller_pid": 7064,
+      "finished_at": "2026-10-28T11:02:03+0100",
+      "framebuffer_owner": "nuxel-wl-fb",
+      "milestone": "PWNAGE-31000",
+      "reason": "asset-missing",
+      "schema_version": 1,
+      "started_at": "2026-10-28T11:02:03+0100",
+      "unlock_actions": 0,
+      "verdict": "FALLBACK"
+    }
+    + echo ---FALLBACK-LOG---
+    ---FALLBACK-LOG---
+    + tail -5 /var/log/nuxel/preload-cinema.log
+    2026-10-28T10:58:53+0100 PRELOAD_CINEMA INFO video_eof elapsed_s=6.309
+    2026-10-28T10:58:53+0100 PRELOAD_CINEMA INFO player_stopped pid=6169 reason=video-and-lockscreen-ready
+    2026-10-28T10:58:53+0100 PRELOAD_CINEMA INFO controller_done reason=video-and-lockscreen-ready verdict=PLAYED
+    2026-10-28T11:02:03+0100 PRELOAD_CINEMA INFO controller_start asset=/usr/share/nuxel/preload/nuxel-preloading-screen.mp4 config=/etc/nuxel/boot/preload-cinema.json enabled=1
+    2026-10-28T11:02:03+0100 PRELOAD_CINEMA WARN fallback asset=/usr/share/nuxel/preload/nuxel-preloading-screen.mp4 reason=asset-missing
+    + echo ---RESTORING---
+    ---RESTORING---
+    + mv /usr/share/nuxel/preload/nuxel-preloading-screen.mp4.pw31000-testbak /usr/share/nuxel/preload/nuxel-preloading-screen.mp4
+    + chown 0:0 /usr/share/nuxel/preload/nuxel-preloading-screen.mp4
+    + chmod 0644 /usr/share/nuxel/preload/nuxel-preloading-screen.mp4
+    + sha256sum /usr/share/nuxel/preload/nuxel-preloading-screen.mp4
+    b059f121e62b167fde8664e24c879ca443df8740d95441e7948abdbcc6cdbbf1  /usr/share/nuxel/preload/nuxel-preloading-screen.mp4
+    + rm -f /run/nuxel/preload-cinema.done /run/nuxel/preload-cinema.receipt
+    + pgrep -a mpv
+    + echo NO_MPV
+    NO_MPV
+    + systemctl is-active nuxel-wayland nuxel-wl-fb
+    active
+    active

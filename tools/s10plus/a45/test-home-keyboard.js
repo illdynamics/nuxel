@@ -194,12 +194,18 @@ submitField.form = form;
 kb.edit(submitField, 'Enter');
 check('Enter submits an input form through its owner', form.submitted === 1, form.submitted);
 
-// The fallback must be off when a native input-method provider is live, so the
-// compositor OSK and this HTML surface can never both appear.
+// The fallback is eligible only while a Nuxel host is present.  nativeProvider
+// is a separate ASYNCHRONOUS fact: deciding it synchronously inside `enabled`
+// was how the old blue DOM keyboard appeared on top of the working Stevia OSK.
+// A confirmed provider instead discards the fallback panel (two keyboards must
+// never exist), and removing that fact never re-creates the panel.
+check('host presence keeps the fallback eligible', kb.enabled === true);
 kb.nativeProvider = true;
-check('native provider disables the HTML fallback', kb.enabled === false);
+check('nativeProvider alone does not synchronously change eligibility', kb.enabled === true);
+kb._discardFallback();
+check('a confirmed native provider discards the fallback panel', kb.panel === null);
 kb.nativeProvider = false;
-check('HTML fallback returns when the native provider is absent', kb.enabled === true);
+check('HTML fallback eligibility is unchanged when the provider is absent', kb.enabled === true);
 
 // No decorative caret element may be created: the only injected style changes
 // the engine caret colour, and hide() does not fabricate a blinking cursor.

@@ -1,0 +1,695 @@
+pushed={"acked_bytes": 116, "b64_chars": 156, "bytes": 116, "decoded_sha256": "9ba87875cd7c766d4223deaee20d7a55a2f2d75f1f06d9f625f34d0f38b9e385", "frames": 2, "mode": "frame", "parts": 2, "path": "/var/tmp/nxl-restart-001-1.sh", "raw_writes": 0, "retries": 0}
+ok=False rc=None
+---
+_N=7648bdd6;rm -f /var/tmp/nxl-7648bdd6;{ sh /var/tmp/nxl-restart-001-1.s
+sh 2>&1; echo NXLSCRIPT-RC=$? ;} >/var/tmp/nxl-7648bdd6 2>&1 </dev/null;_R=$?;pri
+intf '\n@@B%s@@\n' $_N;printf '@@R%s:%s@@\n' $_N $_R;base64 -w0 </var/tmp/nxl-764
+48bdd6 2>/dev/null|tr -d '\n';printf '\n@@S%s:%s@@\n' $_N "$(sha256sum </var/tmp/
+/nxl-7648bdd6 2>/dev/null|cut -d' ' -f1)";printf '@@E%s@@\n' $_N
+[?2004l
+6,13784,472414137,-;s3c2410-wdt 10050000.watchdog_cl0: Watchdog cluster 0 keepalive!, wtcnt = fff5
+ SUBSYSTEM=platform
+ DEVICE=+platform:10050000.watchdog_cl0
+6,13785,472414192,-;Watchdog: s3c2410wdt_keepalive RTC 2026-10-28 09:18:25 UTC
+2,13786,472414263,-;watchdog: watchdog0: watchdog did not stop!
+6,13787,472414304,-;s3c2410-wdt 10050000.watchdog_cl0: Watchdog cluster 0 keepalive!, wtcnt = fff5
+ SUBSYSTEM=platform
+ DEVICE=+platform:10050000.watchdog_cl0
+6,13788,472414328,-;Watchdog: s3c2410wdt_keepalive RTC 2026-10-28 09:18:25 UTC
+4,13789,473239724,c;CFG80211-INFO) wl_cfg80211_event : 
+4,13790,473239767,c;CFG80211-INFO) wl_print_event_data : 
+4,13791,473239790,c;Enqueing escan completion (0). WQ state:0x2 
+4,13792,473239814,c;event_type (69), ifidx: 16777216 bssidx: 33554432 scan_type:0
+4,13793,473239850,c;CFG80211-INFO) wl_escan_handler : ESCAN COMPLETED
+4,13794,473239880,c;CFG80211-TRACE) wl_escan_handler : SCAN COMPLETED: scanned AP count=9
+4,13795,473251444,c;CFG80211-INFO) wl_notify_escan_complete : [wlan1] Report scan done.
+4,13796,473251498,-;dhd_set_rpm_state: 1
+4,13797,474382529,-;dhd_runtimepm_state: DHD Idle state!! -  idletime :11, wdtick :100, PS mode off dur: 0 sec 
+4,13798,474382590,-;__dhd_txflowcontrol: Stop Netif Queue
+4,13799,474382617,-;__dhd_txflowcontrol: Stop Netif Queue
+4,13800,474382649,-;dhdpcie_bus_suspend: Entering suspend state
+4,13801,474385725,-;dhdpcie_send_mb_data: send H2D_HOST_D3_INFORM to dongle
+4,13802,474400106,-;D2H_MB_DATA: D3 ACK
+4,13803,474400481,-;dhd_bus_handle_d3_ack: D3_ACK Recieved
+4,13804,474400936,-;dhdpci_bus_read_frames: Bus is in power save state (2). Skip processing rest of ring buffers.
+4,13805,474401002,-;dhdpcie_bus_suspend: Got D3 Ack 
+4,13806,474401051,-;dhdpcie_dump_resource: BAR0(VA): 0x0000000000000000, BAR0(PA): 0x0000000014400000, SIZE: 32768
+4,13807,474401084,-;dhdpcie_dump_resource: BAR1(VA): 0x0000000000000000, BAR1(PA): 0x0000000014000000, SIZE: 4194304
+4,13808,474401123,-;dhdpcie_suspend_dev: Enter: TS(2610280918270731)
+4,13809,474401148,-;dhdpcie_suspend_dev: Disable L1ss EP side
+6,13810,474401188,-;exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: START (state = 0x0, id = 0x10, enable = 0)
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+6,13811,474401395,-;exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: END (state = 0x10, id = 0x10, enable = 0)
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+4,13812,474401928,-;BEFORE_EP_SUSPEND: BaseAddress0(0x10)=0x14400004, BaseAddress1(0x18)=0x14000004 PCIE_CFG_PMCSR(0x4c)=0x4108 PCI_BAR1_WIN(0x84)=(0x0)
+4,13813,474424279,-;AFTER_EP_SUSPEND: BaseAddress0(0x10)=0x14400004, BaseAddress1(0x18)=0x14000004 PCIE_CFG_PMCSR(0x4c)=0x410b PCI_BAR1_WIN(0x84)=(0x0)
+6,13814,474426322,-;exynos-pcie 13ed0000.pcie0: exynos_pcie_poweroff, start of poweroff, pcie state: 2
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+6,13815,474426371,-;exynos-pcie 13ed0000.pcie0: exynos_pcie_send_pme_turn_off: link state:d
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+3,13816,474426398,-;exynos-pcie 13ed0000.pcie0: Current LTSSM State is 0xd with retry_cnt =0.
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+3,13817,474426554,-;exynos-pcie 13ed0000.pcie0: ack message is ok
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+3,13818,474426593,-;exynos-pcie 13ed0000.pcie0: received Enter_L23_READY DLLP packet
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+6,13819,474426625,-;SysMMU alloc num : 866(Max:883), lv2_alloc : 23, fault : 0
+6,13820,474426680,-;exynos-pcie 13ed0000.pcie0: exynos_pcie_poweroff: Set PERST to LOW, gpio val = 0
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+6,13821,474426773,-;exynos-pcie 13ed0000.pcie0: exynos_pcie_poweroff, end of poweroff, pcie state: 0
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+4,13822,474426786,-;dhd_runtimepm_state, update suspend states
+4,13823,474426802,-;__dhd_txflowcontrol: Start Netif Queue
+4,13824,474426816,-;__dhd_txflowcontrol: Start Netif Queue
+6,13825,474852029,-;fps_qbt2000_work_func_debug: ldo:0,ipc:0,wuhb:0,tz:1,type:qbt2000,int:0,0
+4,13826,475008734,-;Runtime Resume is called in dhd_wl_ioctl
+4,13827,475008774,-;[Repeats 0 times]
+4,13828,475009145,-;dhdpcie_bus_suspend: Entering resume state
+6,13829,475009197,-;exynos-pcie 13ed0000.pcie0: exynos_pcie_poweron, start of poweron, pcie state: 0
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+3,13830,475009225,-;exynos-pcie 13ed0000.pcie0: pcie clk enable, ret value = 0
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+6,13831,475009453,-;exynos-pcie 13ed0000.pcie0: exynos_pcie_establish_link: Set PERST to HIGH, gpio val = 1
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+3,13832,475030237,-;exynos-pcie 13ed0000.pcie0: phy clk enable, ret value = 0
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+6,13833,475030701,-;exynos-pcie 13ed0000.pcie0: Set I/A for CDR reset.
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+6,13834,475030957,-;exynos-pcie 13ed0000.pcie0: D state: 0, f62b00
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+6,13835,475031066,-;exynos-pcie 13ed0000.pcie0: exynos_pcie_establish_link: Link up:389b711
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+6,13836,475031095,-;exynos-pcie 13ed0000.pcie0: Current Link Speed is GEN1 (MAX GEN1)
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+3,13837,475031431,-;exynos-pcie 13ed0000.pcie0: l1ss disabled(0x10)
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+6,13838,475031472,-;exynos-pcie 13ed0000.pcie0: exynos_pcie_poweron, end of poweron, pcie state: 3
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+4,13839,475031511,-;dhdpcie_resume_dev: Enter: TS(2610280918280362)
+4,13840,475032758,-;AFTER_EP_RESUME: BaseAddress0(0x10)=0x14400004, BaseAddress1(0x18)=0x14000004 PCIE_CFG_PMCSR(0x4c)=0x4108 PCI_BAR1_WIN(0x84)=(0x0)
+4,13841,475033243,-;dhdpcie_resume_dev: Enable L1ss EP side
+6,13842,475033278,-;exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: START (state = 0x10, id = 0x10, enable = 1)
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+6,13843,475033346,-;exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: END (state = 0x0, id = 0x10, enable = 1)
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+4,13844,475033677,-;dhdpcie_dump_resource: BAR0(VA): 0x0000000000000000, BAR0(PA): 0x0000000014400000, SIZE: 32768
+4,13845,475033708,-;dhdpcie_dump_resource: BAR1(VA): 0x0000000000000000, BAR1(PA): 0x0000000014000000, SIZE: 4194304
+4,13846,475034350,-;dhd_bus_hostready : Read PCICMD Reg: 0x00100006
+4,13847,475034847,-;dhd_bus_dump_dar_registers: dar_clk_ctrl(0xa08:0x1070040) dar_pwr_ctrl(0xa0c:0xb0000) dar_intstat(0xa10:0x4000000)
+4,13848,475035220,-;dhd_bus_dump_dar_registers: dar_errlog(0xa60:0x0) dar_erraddr(0xa64:0x0) dar_pcie_mbint(0xa68:0x0)
+4,13849,475036071,-;dhd_bus_hostready: Ring Hostready:91
+4,13850,475036162,-;dhd_runtimepm_state : runtime resume ended 
+6,13851,475875974,-;[SSP]: debug_work_func(0) - Sensor state: 0x3feff, RC: 0(0, 0, 0), CC: 0, TC: 0 NSC: 0 EC: 0 GPS: false
+4,13852,476012576,c;CFG80211-TRACE) __wl_cfg80211_scan : START SCAN
+4,13853,476012631,-;dhd_set_rpm_state: 0
+4,13854,476020458,c;CFG80211-INFO) wl_scan_prep : n_channels:38 n_ssids:1
+4,13855,476048827,c;CFG80211-INFO) wl_run_escan : LEGACY_SCAN sync ID: 15, bssidx: 2
+4,13856,479841448,c;CFG80211-INFO) wl_cfg80211_event : Enqueing escan completion (0). WQ state:0x1 
+4,13857,479841754,c;CFG80211-INFO) wl_print_event_data : event_type (69), ifidx: 16777216 bssidx: 33554432 scan_type:0
+4,13858,479841808,c;CFG80211-INFO) wl_escan_handler : ESCAN COMPLETED
+4,13859,479841925,c;CFG80211-TRACE) wl_escan_handler : SCAN COMPLETED: scanned AP count=10
+4,13860,479853669,c;CFG80211-INFO) wl_notify_escan_complete : [wlan1] Report scan done.
+4,13861,479853766,-;dhd_set_rpm_state: 1
+4,13862,480966258,-;dhd_runtimepm_state: DHD Idle state!! -  idletime :11, wdtick :100, PS mode off dur: 0 sec 
+4,13863,480966316,-;__dhd_txflowcontrol: Stop Netif Queue
+4,13864,480966341,-;__dhd_txflowcontrol: Stop Netif Queue
+4,13865,480966371,-;dhdpcie_bus_suspend: Entering suspend state
+4,13866,480969073,-;dhdpcie_send_mb_data: send H2D_HOST_D3_INFORM to dongle
+4,13867,480982791,-;D2H_MB_DATA: D3 ACK
+4,13868,480983135,-;dhd_bus_handle_d3_ack: D3_ACK Recieved
+4,13869,480983528,-;dhdpcie_bus_suspend: Got D3 Ack 
+4,13870,480983570,-;dhdpcie_dump_resource: BAR0(VA): 0x0000000000000000, BAR0(PA): 0x0000000014400000, SIZE: 32768
+4,13871,480983591,-;dhdpci_bus_read_frames: Bus is in power save state (2). Skip processing rest of ring buffers.
+4,13872,480983625,-;dhdpcie_dump_resource: BAR1(VA): 0x0000000000000000, BAR1(PA): 0x0000000014000000, SIZE: 4194304
+4,13873,480983665,-;dhdpcie_suspend_dev: Enter: TS(2610280918340314)
+4,13874,480983688,-;dhdpcie_suspend_dev: Disable L1ss EP side
+6,13875,480983736,-;exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: START (state = 0x0, id = 0x10, enable = 0)
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+6,13876,480983939,-;exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: END (state = 0x10, id = 0x10, enable = 0)
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+4,13877,480984418,-;BEFORE_EP_SUSPEND: BaseAddress0(0x10)=0x14400004, BaseAddress1(0x18)=0x14000004 PCIE_CFG_PMCSR(0x4c)=0x4108 PCI_BAR1_WIN(0x84)=(0x0)
+4,13878,481004248,-;AFTER_EP_SUSPEND: BaseAddress0(0x10)=0x14400004, BaseAddress1(0x18)=0x14000004 PCIE_CFG_PMCSR(0x4c)=0x410b PCI_BAR1_WIN(0x84)=(0x0)
+6,13879,481006268,-;exynos-pcie 13ed0000.pcie0: exynos_pcie_poweroff, start of poweroff, pcie state: 2
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+6,13880,481006315,-;exynos-pcie 13ed0000.pcie0: exynos_pcie_send_pme_turn_off: link state:d
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+3,13881,481006340,-;exynos-pcie 13ed0000.pcie0: Current LTSSM State is 0xd with retry_cnt =0.
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+3,13882,481006374,-;exynos-pcie 13ed0000.pcie0: ack message is ok
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+3,13883,481006423,-;exynos-pcie 13ed0000.pcie0: received Enter_L23_READY DLLP packet
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+6,13884,481006459,-;SysMMU alloc num : 865(Max:883), lv2_alloc : 24, fault : 0
+6,13885,481006515,-;exynos-pcie 13ed0000.pcie0: exynos_pcie_poweroff: Set PERST to LOW, gpio val = 0
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+6,13886,481006623,-;exynos-pcie 13ed0000.pcie0: exynos_pcie_poweroff, end of poweroff, pcie state: 0
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+4,13887,481006634,-;dhd_runtimepm_state, update suspend states
+4,13888,481006649,-;__dhd_txflowcontrol: Start Netif Queue
+4,13889,481006660,-;__dhd_txflowcontrol: Start Netif Queue
+4,13890,481006820,-;Runtime Resume is called in dhd_wl_ioctl
+4,13891,481007527,-;[Repeats 0 times]
+4,13892,481007880,-;dhdpcie_bus_suspend: Entering resume state
+6,13893,481007902,-;exynos-pcie 13ed0000.pcie0: exynos_pcie_poweron, start of poweron, pcie state: 0
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+3,13894,481007913,-;exynos-pcie 13ed0000.pcie0: pcie clk enable, ret value = 0
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+6,13895,481008035,-;exynos-pcie 13ed0000.pcie0: exynos_pcie_establish_link: Set PERST to HIGH, gpio val = 1
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+3,13896,481028332,-;exynos-pcie 13ed0000.pcie0: phy clk enable, ret value = 0
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+6,13897,481028652,-;exynos-pcie 13ed0000.pcie0: Set I/A for CDR reset.
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+6,13898,481028855,-;exynos-pcie 13ed0000.pcie0: D state: 0, 918c00
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+6,13899,481028950,-;exynos-pcie 13ed0000.pcie0: exynos_pcie_establish_link: Link up:379a611
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+6,13900,481028967,-;exynos-pcie 13ed0000.pcie0: Current Link Speed is GEN1 (MAX GEN1)
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+3,13901,481029211,-;exynos-pcie 13ed0000.pcie0: l1ss disabled(0x10)
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+6,13902,481029229,-;exynos-pcie 13ed0000.pcie0: exynos_pcie_poweron, end of poweron, pcie state: 3
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+4,13903,481029249,-;dhdpcie_resume_dev: Enter: TS(2610280918340359)
+4,13904,481030378,-;AFTER_EP_RESUME: BaseAddress0(0x10)=0x14400004, BaseAddress1(0x18)=0x14000004 PCIE_CFG_PMCSR(0x4c)=0x4108 PCI_BAR1_WIN(0x84)=(0x0)
+4,13905,481030837,-;dhdpcie_resume_dev: Enable L1ss EP side
+6,13906,481030851,-;exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: START (state = 0x10, id = 0x10, enable = 1)
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+6,13907,481030887,-;exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: END (state = 0x0, id = 0x10, enable = 1)
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+4,13908,481030909,-;dhdpcie_dump_resource: BAR0(VA): 0x0000000000000000, BAR0(PA): 0x0000000014400000, SIZE: 32768
+4,13909,481030921,-;dhdpcie_dump_resource: BAR1(VA): 0x0000000000000000, BAR1(PA): 0x0000000014000000, SIZE: 4194304
+4,13910,481031328,-;dhd_bus_hostready : Read PCICMD Reg: 0x00100006
+4,13911,481031773,-;dhd_bus_dump_dar_registers: dar_clk_ctrl(0xa08:0x1010040) dar_pwr_ctrl(0xa0c:0x30000) dar_intstat(0xa10:0x4000000)
+4,13912,481031786,-;dhd_bus_dump_dar_registers: dar_errlog(0xa60:0x0) dar_erraddr(0xa64:0x0) dar_pcie_mbint(0xa68:0x0)
+4,13913,481031815,-;dhd_bus_hostready: Ring Hostready:92
+4,13914,481031887,-;dhd_runtimepm_state : runtime resume ended 
+6,13915,481763981,-;[SSP]: debug_work_func(0) - Sensor state: 0x3feff, RC: 0(0, 0, 0), CC: 0, TC: 0 NSC: 0 EC: 0 GPS: false
+4,13916,482218509,-;dhd_runtimepm_state: DHD Idle state!! -  idletime :11, wdtick :100, PS mode off dur: 0 sec 
+4,13917,482218555,-;__dhd_txflowcontrol: Stop Netif Queue
+4,13918,482218579,-;__dhd_txflowcontrol: Stop Netif Queue
+4,13919,482218607,-;dhdpcie_bus_suspend: Entering suspend state
+4,13920,482221312,-;dhdpcie_send_mb_data: send H2D_HOST_D3_INFORM to dongle
+4,13921,482235938,-;D2H_MB_DATA: D3 ACK
+4,13922,482236319,-;dhd_bus_handle_d3_ack: D3_ACK Recieved
+4,13923,482236733,-;dhdpcie_bus_suspend: Got D3 Ack 
+4,13924,482236772,-;dhdpci_bus_read_frames: Bus is in power save state (2). Skip processing rest of ring buffers.
+4,13925,482236794,-;dhdpcie_dump_resource: BAR0(VA): 0x0000000000000000, BAR0(PA): 0x0000000014400000, SIZE: 32768
+4,13926,482236827,-;dhdpcie_dump_resource: BAR1(VA): 0x0000000000000000, BAR1(PA): 0x0000000014000000, SIZE: 4194304
+4,13927,482236869,-;dhdpcie_suspend_dev: Enter: TS(2610280918350567)
+4,13928,482236895,-;dhdpcie_suspend_dev: Disable L1ss EP side
+6,13929,482236932,-;exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: START (state = 0x0, id = 0x10, enable = 0)
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+6,13930,482237130,-;exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: END (state = 0x10, id = 0x10, enable = 0)
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+4,13931,482237596,-;BEFORE_EP_SUSPEND: BaseAddress0(0x10)=0x14400004, BaseAddress1(0x18)=0x14000004 PCIE_CFG_PMCSR(0x4c)=0x4108 PCI_BAR1_WIN(0x84)=(0x0)
+4,13932,482260265,-;AFTER_EP_SUSPEND: BaseAddress0(0x10)=0x14400004, BaseAddress1(0x18)=0x14000004 PCIE_CFG_PMCSR(0x4c)=0x410b PCI_BAR1_WIN(0x84)=(0x0)
+6,13933,482262300,-;exynos-pcie 13ed0000.pcie0: exynos_pcie_poweroff, start of poweroff, pcie state: 2
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+6,13934,482262345,-;exynos-pcie 13ed0000.pcie0: exynos_pcie_send_pme_turn_off: link state:d
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+3,13935,482262372,-;exynos-pcie 13ed0000.pcie0: Current LTSSM State is 0xd with retry_cnt =0.
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+3,13936,482262526,-;exynos-pcie 13ed0000.pcie0: ack message is ok
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+3,13937,482262568,-;exynos-pcie 13ed0000.pcie0: received Enter_L23_READY DLLP packet
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+6,13938,482262602,-;SysMMU alloc num : 865(Max:883), lv2_alloc : 24, fault : 0
+6,13939,482262654,-;exynos-pcie 13ed0000.pcie0: exynos_pcie_poweroff: Set PERST to LOW, gpio val = 0
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+6,13940,482262765,-;exynos-pcie 13ed0000.pcie0: exynos_pcie_poweroff, end of poweroff, pcie state: 0
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+4,13941,482262781,-;dhd_runtimepm_state, update suspend states
+4,13942,482262796,-;__dhd_txflowcontrol: Start Netif Queue
+4,13943,482262808,-;__dhd_txflowcontrol: Start Netif Queue
+6,13944,482418148,-;s3c2410-wdt 10050000.watchdog_cl0: Watchdog cluster 0 keepalive!, wtcnt = fff5
+ SUBSYSTEM=platform
+ DEVICE=+platform:10050000.watchdog_cl0
+6,13945,482418190,-;Watchdog: s3c2410wdt_keepalive RTC 2026-10-28 09:18:35 UTC
+2,13946,482418256,-;watchdog: watchdog0: watchdog did not stop!
+6,13947,482418296,-;s3c2410-wdt 10050000.watchdog_cl0: Watchdog cluster 0 keepalive!, wtcnt = fff5
+ SUBSYSTEM=platform
+ DEVICE=+platform:10050000.watchdog_cl0
+6,13948,482418318,-;Watchdog: s3c2410wdt_keepalive RTC 2026-10-28 09:18:35 UTC
+4,13949,485015746,c;CFG80211-TRACE) __wl_cfg80211_scan : START SCAN
+4,13950,485015806,-;dhd_set_rpm_state: 0
+4,13951,485015893,-;dhdpcie_bus_suspend: Entering resume state
+6,13952,485016018,-;exynos-pcie 13ed0000.pcie0: exynos_pcie_poweron, start of poweron, pcie state: 0
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+3,13953,485016041,-;exynos-pcie 13ed0000.pcie0: pcie clk enable, ret value = 0
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+6,13954,485016240,-;exynos-pcie 13ed0000.pcie0: exynos_pcie_establish_link: Set PERST to HIGH, gpio val = 1
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+3,13955,485036644,-;exynos-pcie 13ed0000.pcie0: phy clk enable, ret value = 0
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+6,13956,485037016,-;exynos-pcie 13ed0000.pcie0: Set I/A for CDR reset.
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+6,13957,485037265,-;exynos-pcie 13ed0000.pcie0: D state: 0, faf00
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+6,13958,485037375,-;exynos-pcie 13ed0000.pcie0: exynos_pcie_establish_link: Link up:3c25711
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+6,13959,485037403,-;exynos-pcie 13ed0000.pcie0: Current Link Speed is GEN1 (MAX GEN1)
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+3,13960,485037738,-;exynos-pcie 13ed0000.pcie0: l1ss disabled(0x10)
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+6,13961,485037780,-;exynos-pcie 13ed0000.pcie0: exynos_pcie_poweron, end of poweron, pcie state: 3
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+4,13962,485037815,-;dhdpcie_resume_dev: Enter: TS(2610280918380368)
+4,13963,485039263,-;AFTER_EP_RESUME: BaseAddress0(0x10)=0x14400004, BaseAddress1(0x18)=0x14000004 PCIE_CFG_PMCSR(0x4c)=0x4108 PCI_BAR1_WIN(0x84)=(0x0)
+4,13964,485039741,-;dhdpcie_resume_dev: Enable L1ss EP side
+6,13965,485039772,-;exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: START (state = 0x10, id = 0x10, enable = 1)
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+6,13966,485039832,-;exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: END (state = 0x0, id = 0x10, enable = 1)
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+4,13967,485040161,-;dhdpcie_dump_resource: BAR0(VA): 0x0000000000000000, BAR0(PA): 0x0000000014400000, SIZE: 32768
+4,13968,485040187,-;dhdpcie_dump_resource: BAR1(VA): 0x0000000000000000, BAR1(PA): 0x0000000014000000, SIZE: 4194304
+4,13969,485040611,-;dhd_bus_hostready : Read PCICMD Reg: 0x00100006
+4,13970,485041077,-;dhd_bus_dump_dar_registers: dar_clk_ctrl(0xa08:0x1010040) dar_pwr_ctrl(0xa0c:0x30000) dar_intstat(0xa10:0x4000000)
+4,13971,485041107,-;dhd_bus_dump_dar_registers: dar_errlog(0xa60:0x0) dar_erraddr(0xa64:0x0) dar_pcie_mbint(0xa68:0x0)
+4,13972,485041445,-;dhd_bus_hostready: Ring Hostready:93
+4,13973,485042004,-;dhd_runtimepm_state : runtime resume ended 
+4,13974,485056212,c;CFG80211-INFO) wl_scan_prep : n_channels:38 n_ssids:1
+4,13975,485084459,c;CFG80211-INFO) wl_run_escan : LEGACY_SCAN sync ID: 16, bssidx: 2
+6,13976,485314230,-;[FG] 0080h,ff9bh,7f80h,ff01h,1900h,0f32h,6400h,5e3dh,1999h,d792h,0000h,0004h,0065h,67fdh,641fh,0f37h,0ed2h,ffffh,3200h,5f00h,04a0h,0148h,19a6h,0005h,0f76h,d78ch,1e15h,d8cch,0ae5h,0314h,0500h,0ed2h,0000h,6200h,1c00h,0e93h,1403h,1e05h,18edh,7f24h,2606h,cea4h,043ch,0890h,e3e1h,290eh,0400h,0001h,551fh,498fh,0b82h,ffffh,1e4eh,0f32h,0c0fh,05e0h,0038h,1527h,a7e2h,0050h,1680h,5408h,e430h,e000h,07fch,0000h,0902h,01a0h,d78fh,0024h,01efh,015eh,66b5h,2241h,0f07h,0149h,003dh,003eh,8862h,0f37h,0000h,6c38h,0006h,2e9ah,7f80h,0005h,0f40h,0600h,0000h,006bh,090ch,0055h,0000h,0204h,000bh,0000h,05a2h,0000h,0000h,0000h,0000h,0000h,0000h,0000h,0000h,0000h,0000h,0010h,001dh,ffffh,641fh,0f1ah,1da4h,0000h,f18ah,0008h,0015h,fa67h,fa67h,0003h,4b4eh,0008h,46a8h,0000h,4000h,0000h,a630h,0620h,ffffh,ffffh,ffffh,ffffh,20b1h,0000h,0300h,f03ah,3f91h,5b92h,ffffh,d78eh,0034h,2910h,d78ch,66b5h,
+6,13977,485319667,-;max77705_fg_read_qh : QH(62000)
+6,13978,485319699,-;[FG power] ISYS(130mA),ISYSAVG(102mA),VSYS(4328mV),IIN(180mA),VBYP(5085mV) QH(62000 uah)
+7,13979,485320081,-;max77705_fg_read_current: current=0mA
+7,13980,485320730,-;max77705_fg_read_avg_current: avg_current=1mA
+6,13981,485322422,-;sec-battery battery: sec_bat_get_value_by_adc:[2] Temp(256), Temp-ADC(1988)
+ SUBSYSTEM=platform
+ DEVICE=+platform:battery
+6,13982,485323544,-;sec-battery battery: sec_bat_get_value_by_adc:[12] Temp(257), Temp-ADC(1965)
+ SUBSYSTEM=platform
+ DEVICE=+platform:battery
+6,13983,485324488,-;sec-battery battery: sec_bat_get_value_by_adc:[6] Temp(265), Temp-ADC(1919)
+ SUBSYSTEM=platform
+ DEVICE=+platform:battery
+6,13984,485325365,-;sec-battery battery: sec_bat_get_value_by_adc:[10] Temp(256), Temp-ADC(1988)
+ SUBSYSTEM=platform
+ DEVICE=+platform:battery
+7,13985,485325575,-;max77705_fg_write_temp: temperature to (256, 0x1999)
+7,13986,485327344,-;max77705_fg_read_avg_current: avg_current=1mA
+7,13987,485327363,-;max77705_get_fuelgauge_soc: soc(1000)
+6,13988,485327383,-;max77705_fg_get_scaled_capacity : capacity_max (1000) scaled capacity(100.0), raw_soc(100.0)
+7,13989,485327687,-;max77705_fg_read_rawsoc: raw capacity (0.01%) (10000)
+6,13990,485328281,-;max77705_fg_read_qh : QH(62000)
+7,13991,485328301,-;max77705_fg_get_atomic_capacity : NOW(100), OLD(100)
+6,13992,485328324,-;sec_bat_get_battery_info:Vnow(4311mV),Vavg(4310mV),Inow(0mA),Iavg(1mA),Isysavg(102mA),Imax(2700mA),Ichg(2850mA),SOC(100%),Tbat(256),Tusb(257),Tchg(265),Twpc(256)
+6,13993,485328368,-;sec_bat_check_step_charging
+6,13994,485328392,-;sec-battery battery: sec_bat_check_recharge: recharging voltage (4280)
+ SUBSYSTEM=platform
+ DEVICE=+platform:battery
+6,13995,485328412,-;sec_bat_swelling_check: swelling highblock(410), highrecov(390)
+7,13996,485328690,-;max77705_get_float_voltage: battery cv reg : 0x13, float voltage val : 4350
+6,13997,485328711,-;sec_bat_swelling_check: status(Full), swell_mode(Swelling None), chg_block(1), low_temp_event(0x0), vfloat(4350)mV, temp(256)'C
+6,13998,485328731,-;sec_bat_set_current_event: current event before(0x8100), after(0x8100)
+6,13999,485328749,-;sec_bat_check_mix_temp: mix_limit(0), temp(256), chg_temp(265), input_current(2700)
+6,14000,485328763,-;sec_bat_check_pdic_temp: cable_type(19), chg_limit(0)
+6,14001,485328777,-;sec_bat_get_charging_current_by_siop: incurr(2700), chgcurr(2850)
+6,14002,485333212,-;max77705 : [0xb1]0x1a, [0xb2]0xdf, [0xb3]0xe0, [0xb4]0x38, [0xb5]0x00, [0xb6]0xff, [0xb7]0x14, [0xb8]0x38, [0xb9]0x79, [0xba]0x9d, [0xbb]0x13, [0xbc]0x6c, [0xbd]0x6c, [0xbe]0x34, [0xbf]0x02, [0xc0]0xeb, [0xc1]0x14, [0xc2]0x00, [0xc3]0x68, 
+6,14003,485333666,-;max77705_chg_monitor_work: [CHG] MODE(0x4), B2SOVRC(0xc), otg_on(0)
+6,14004,485333714,-;sec_bat_monitor_work: Status(Full), mode(None), Health(Good), Cable(PDIC, PDIC, 0, 0), rp(3), level(100%), lcd(0), slate_mode(0), store_mode(0), HV(PDIC, 0), sleep_mode(0), Cycle(-1)
+6,14005,485333746,-;sec-battery battery: sec_bat_set_polling: Polling time 30/30 sec.
+ SUBSYSTEM=platform
+ DEVICE=+platform:battery
+6,14006,485333815,-;sec_bat_get_property cable type = 19 sleep_mode = 0
+7,14007,485334115,-;max77705_fg_read_current: current=0mA
+7,14008,485334744,-;max77705_fg_read_avg_current: avg_current=1mA
+6,14009,485859964,-;fps_qbt2000_work_func_debug: ldo:0,ipc:0,wuhb:0,tz:1,type:qbt2000,int:0,0
+6,14010,487908119,-;[SSP]: debug_work_func(0) - Sensor state: 0x3feff, RC: 0(0, 0, 0), CC: 0, TC: 0 NSC: 0 EC: 0 GPS: false
+4,14011,488877511,c;CFG80211-INFO) wl_cfg80211_event : Enqueing escan completion (0). WQ state:0x1 
+4,14012,488877801,c;CFG80211-INFO) wl_print_event_data : event_type (69), ifidx: 16777216 bssidx: 33554432 scan_type:0
+4,14013,488877938,c;CFG80211-INFO) wl_escan_handler : ESCAN COMPLETED
+4,14014,488877968,c;CFG80211-TRACE) wl_escan_handler : SCAN COMPLETED: scanned AP count=9
+4,14015,488887790,c;CFG80211-INFO) wl_notify_escan_complete : [wlan1] Report scan done.
+4,14016,488887880,-;dhd_set_rpm_state: 1
+4,14017,489934309,-;dhd_runtimepm_state: DHD Idle state!! -  idletime :11, wdtick :100, PS mode off dur: 0 sec 
+4,14018,489934368,-;__dhd_txflowcontrol: Stop Netif Queue
+4,14019,489934396,-;__dhd_txflowcontrol: Stop Netif Queue
+4,14020,489934424,-;dhdpcie_bus_suspend: Entering suspend state
+4,14021,489937128,-;dhdpcie_send_mb_data: send H2D_HOST_D3_INFORM to dongle
+4,14022,489952142,-;D2H_MB_DATA: D3 ACK
+4,14023,489952479,-;dhd_bus_handle_d3_ack: D3_ACK Recieved
+4,14024,489952875,-;dhdpcie_bus_suspend: Got D3 Ack 
+4,14025,489952921,-;dhdpcie_dump_resource: BAR0(VA): 0x0000000000000000, BAR0(PA): 0x0000000014400000, SIZE: 32768
+4,14026,489952959,-;dhdpcie_dump_resource: BAR1(VA): 0x0000000000000000, BAR1(PA): 0x0000000014000000, SIZE: 4194304
+4,14027,489952979,-;dhdpci_bus_read_frames: Bus is in power save state (2). Skip processing rest of ring buffers.
+4,14028,489953021,-;dhdpcie_suspend_dev: Enter: TS(2610280918430283)
+4,14029,489953045,-;dhdpcie_suspend_dev: Disable L1ss EP side
+6,14030,489953084,-;exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: START (state = 0x0, id = 0x10, enable = 0)
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+6,14031,489953293,-;exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: END (state = 0x10, id = 0x10, enable = 0)
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+4,14032,489953772,-;BEFORE_EP_SUSPEND: BaseAddress0(0x10)=0x14400004, BaseAddress1(0x18)=0x14000004 PCIE_CFG_PMCSR(0x4c)=0x4108 PCI_BAR1_WIN(0x84)=(0x0)
+4,14033,489976347,-;AFTER_EP_SUSPEND: BaseAddress0(0x10)=0x14400004, BaseAddress1(0x18)=0x14000004 PCIE_CFG_PMCSR(0x4c)=0x410b PCI_BAR1_WIN(0x84)=(0x0)
+6,14034,489978366,-;exynos-pcie 13ed0000.pcie0: exynos_pcie_poweroff, start of poweroff, pcie state: 2
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+6,14035,489978412,-;exynos-pcie 13ed0000.pcie0: exynos_pcie_send_pme_turn_off: link state:d
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+3,14036,489978437,-;exynos-pcie 13ed0000.pcie0: Current LTSSM State is 0xd with retry_cnt =0.
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+3,14037,489978595,-;exynos-pcie 13ed0000.pcie0: ack message is ok
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+3,14038,489978634,-;exynos-pcie 13ed0000.pcie0: received Enter_L23_READY DLLP packet
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+6,14039,489978670,-;SysMMU alloc num : 865(Max:883), lv2_alloc : 25, fault : 0
+6,14040,489978725,-;exynos-pcie 13ed0000.pcie0: exynos_pcie_poweroff: Set PERST to LOW, gpio val = 0
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+6,14041,489978853,-;exynos-pcie 13ed0000.pcie0: exynos_pcie_poweroff, end of poweroff, pcie state: 0
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+4,14042,489978884,-;dhd_runtimepm_state, update suspend states
+4,14043,489978913,-;__dhd_txflowcontrol: Start Netif Queue
+4,14044,489978938,-;__dhd_txflowcontrol: Start Netif Queue
+4,14045,490193854,-;Runtime Resume is called in wlan_oob_irq
+4,14046,490193987,-;[Repeats 1 times]
+4,14047,490194403,-;dhdpcie_bus_suspend: Entering resume state
+6,14048,490194454,-;exynos-pcie 13ed0000.pcie0: exynos_pcie_poweron, start of poweron, pcie state: 0
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+3,14049,490194481,-;exynos-pcie 13ed0000.pcie0: pcie clk enable, ret value = 0
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+6,14050,490194678,-;exynos-pcie 13ed0000.pcie0: exynos_pcie_establish_link: Set PERST to HIGH, gpio val = 1
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+3,14051,490215185,-;exynos-pcie 13ed0000.pcie0: phy clk enable, ret value = 0
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+6,14052,490215538,-;exynos-pcie 13ed0000.pcie0: Set I/A for CDR reset.
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+6,14053,490215786,-;exynos-pcie 13ed0000.pcie0: D state: 0, a1bd00
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+6,14054,490215898,-;exynos-pcie 13ed0000.pcie0: exynos_pcie_establish_link: Link up:386a511
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+6,14055,490215925,-;exynos-pcie 13ed0000.pcie0: Current Link Speed is GEN1 (MAX GEN1)
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+3,14056,490216249,-;exynos-pcie 13ed0000.pcie0: l1ss disabled(0x10)
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+6,14057,490216291,-;exynos-pcie 13ed0000.pcie0: exynos_pcie_poweron, end of poweron, pcie state: 3
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+4,14058,490216324,-;dhdpcie_resume_dev: Enter: TS(2610280918430546)
+4,14059,490217561,-;AFTER_EP_RESUME: BaseAddress0(0x10)=0x14400004, BaseAddress1(0x18)=0x14000004 PCIE_CFG_PMCSR(0x4c)=0xc108 PCI_BAR1_WIN(0x84)=(0x0)
+4,14060,490218151,-;dhdpcie_resume_dev: Enable L1ss EP side
+6,14061,490218189,-;exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: START (state = 0x10, id = 0x10, enable = 1)
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+6,14062,490218928,-;exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: END (state = 0x0, id = 0x10, enable = 1)
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+4,14063,490219511,-;dhdpcie_dump_resource: BAR0(VA): 0x0000000000000000, BAR0(PA): 0x0000000014400000, SIZE: 32768
+4,14064,490219604,-;dhdpcie_dump_resource: BAR1(VA): 0x0000000000000000, BAR1(PA): 0x0000000014000000, SIZE: 4194304
+4,14065,490220032,-;dhd_bus_hostready : Read PCICMD Reg: 0x00100006
+4,14066,490220491,-;dhd_bus_dump_dar_registers: dar_clk_ctrl(0xa08:0x1010040) dar_pwr_ctrl(0xa0c:0x30000) dar_intstat(0xa10:0x4000000)
+4,14067,490220508,-;dhd_bus_dump_dar_registers: dar_errlog(0xa60:0x0) dar_erraddr(0xa64:0x0) dar_pcie_mbint(0xa68:0x0)
+4,14068,490220539,-;dhd_bus_hostready: Ring Hostready:94
+4,14069,490220601,-;dhd_runtimepm_state : runtime resume ended 
+4,14070,491366521,-;dhd_runtimepm_state: DHD Idle state!! -  idletime :11, wdtick :100, PS mode off dur: 0 sec 
+4,14071,491366574,-;__dhd_txflowcontrol: Stop Netif Queue
+4,14072,491366599,-;__dhd_txflowcontrol: Stop Netif Queue
+4,14073,491366626,-;dhdpcie_bus_suspend: Entering suspend state
+4,14074,491369315,-;dhdpcie_send_mb_data: send H2D_HOST_D3_INFORM to dongle
+4,14075,491383940,-;D2H_MB_DATA: D3 ACK
+4,14076,491384277,-;dhd_bus_handle_d3_ack: D3_ACK Recieved
+4,14077,491384670,-;dhdpcie_bus_suspend: Got D3 Ack 
+4,14078,491384716,-;dhdpci_bus_read_frames: Bus is in power save state (2). Skip processing rest of ring buffers.
+4,14079,491384741,-;dhdpcie_dump_resource: BAR0(VA): 0x0000000000000000, BAR0(PA): 0x0000000014400000, SIZE: 32768
+4,14080,491384774,-;dhdpcie_dump_resource: BAR1(VA): 0x0000000000000000, BAR1(PA): 0x0000000014000000, SIZE: 4194304
+4,14081,491384820,-;dhdpcie_suspend_dev: Enter: TS(2610280918440715)
+4,14082,491384843,-;dhdpcie_suspend_dev: Disable L1ss EP side
+6,14083,491384878,-;exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: START (state = 0x0, id = 0x10, enable = 0)
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+6,14084,491385081,-;exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: END (state = 0x10, id = 0x10, enable = 0)
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+4,14085,491385569,-;BEFORE_EP_SUSPEND: BaseAddress0(0x10)=0x14400004, BaseAddress1(0x18)=0x14000004 PCIE_CFG_PMCSR(0x4c)=0xc108 PCI_BAR1_WIN(0x84)=(0x0)
+4,14086,491408232,-;AFTER_EP_SUSPEND: BaseAddress0(0x10)=0x14400004, BaseAddress1(0x18)=0x14000004 PCIE_CFG_PMCSR(0x4c)=0x410b PCI_BAR1_WIN(0x84)=(0x0)
+6,14087,491410253,-;exynos-pcie 13ed0000.pcie0: exynos_pcie_poweroff, start of poweroff, pcie state: 2
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+6,14088,491410298,-;exynos-pcie 13ed0000.pcie0: exynos_pcie_send_pme_turn_off: link state:d
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+3,14089,491410325,-;exynos-pcie 13ed0000.pcie0: Current LTSSM State is 0xd with retry_cnt =0.
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+3,14090,491410368,-;exynos-pcie 13ed0000.pcie0: ack message is ok
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+3,14091,491410428,-;exynos-pcie 13ed0000.pcie0: received Enter_L23_READY DLLP packet
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+6,14092,491410462,-;SysMMU alloc num : 864(Max:883), lv2_alloc : 25, fault : 0
+6,14093,491410513,-;exynos-pcie 13ed0000.pcie0: exynos_pcie_poweroff: Set PERST to LOW, gpio val = 0
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+6,14094,491410624,-;exynos-pcie 13ed0000.pcie0: exynos_pcie_poweroff, end of poweroff, pcie state: 0
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+4,14095,491410652,-;dhd_runtimepm_state, update suspend states
+4,14096,491410680,-;__dhd_txflowcontrol: Start Netif Queue
+4,14097,491410713,-;__dhd_txflowcontrol: Start Netif Queue
+6,14098,492422624,-;s3c2410-wdt 10050000.watchdog_cl0: Watchdog cluster 0 keepalive!, wtcnt = fff5
+ SUBSYSTEM=platform
+ DEVICE=+platform:10050000.watchdog_cl0
+6,14099,492422670,-;Watchdog: s3c2410wdt_keepalive RTC 2026-10-28 09:18:45 UTC
+2,14100,492422742,-;watchdog: watchdog0: watchdog did not stop!
+6,14101,492422784,-;s3c2410-wdt 10050000.watchdog_cl0: Watchdog cluster 0 keepalive!, wtcnt = fff5
+ SUBSYSTEM=platform
+ DEVICE=+platform:10050000.watchdog_cl0
+6,14102,492422806,-;Watchdog: s3c2410wdt_keepalive RTC 2026-10-28 09:18:45 UTC
+4,14103,493011373,-;dhdpcie_bus_suspend: Entering resume state
+6,14104,493011443,-;exynos-pcie 13ed0000.pcie0: exynos_pcie_poweron, start of poweron, pcie state: 0
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+3,14105,493011467,-;exynos-pcie 13ed0000.pcie0: pcie clk enable, ret value = 0
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+6,14106,493011689,-;exynos-pcie 13ed0000.pcie0: exynos_pcie_establish_link: Set PERST to HIGH, gpio val = 1
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+3,14107,493030391,-;exynos-pcie 13ed0000.pcie0: phy clk enable, ret value = 0
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+6,14108,493030750,-;exynos-pcie 13ed0000.pcie0: Set I/A for CDR reset.
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+6,14109,493030998,-;exynos-pcie 13ed0000.pcie0: D state: 0, 3300
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+6,14110,493031109,-;exynos-pcie 13ed0000.pcie0: exynos_pcie_establish_link: Link up:3a8cf11
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+6,14111,493031137,-;exynos-pcie 13ed0000.pcie0: Current Link Speed is GEN1 (MAX GEN1)
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+3,14112,493031468,-;exynos-pcie 13ed0000.pcie0: l1ss disabled(0x10)
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+6,14113,493031510,-;exynos-pcie 13ed0000.pcie0: exynos_pcie_poweron, end of poweron, pcie state: 3
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+4,14114,493031546,-;dhdpcie_resume_dev: Enter: TS(2610280918460362)
+4,14115,493032789,-;AFTER_EP_RESUME: BaseAddress0(0x10)=0x14400004, BaseAddress1(0x18)=0x14000004 PCIE_CFG_PMCSR(0x4c)=0x4108 PCI_BAR1_WIN(0x84)=(0x0)
+4,14116,493033274,-;dhdpcie_resume_dev: Enable L1ss EP side
+6,14117,493033312,-;exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: START (state = 0x10, id = 0x10, enable = 1)
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+6,14118,493033379,-;exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: END (state = 0x0, id = 0x10, enable = 1)
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+4,14119,493033531,-;dhdpcie_dump_resource: BAR0(VA): 0x0000000000000000, BAR0(PA): 0x0000000014400000, SIZE: 32768
+4,14120,493033562,-;dhdpcie_dump_resource: BAR1(VA): 0x0000000000000000, BAR1(PA): 0x0000000014000000, SIZE: 4194304
+4,14121,493034240,-;dhd_bus_hostready : Read PCICMD Reg: 0x00100006
+4,14122,493035575,-;dhd_bus_dump_dar_registers: dar_clk_ctrl(0xa08:0x1010040) dar_pwr_ctrl(0xa0c:0x30000) dar_intstat(0xa10:0x4000000)
+4,14123,493035594,-;dhd_bus_dump_dar_registers: dar_errlog(0xa60:0x0) dar_erraddr(0xa64:0x0) dar_pcie_mbint(0xa68:0x0)
+4,14124,493035927,-;dhd_bus_hostready: Ring Hostready:95
+4,14125,493036016,-;dhd_runtimepm_state : runtime resume ended 
+6,14126,493795966,-;[SSP]: debug_work_func(0) - Sensor state: 0x3feff, RC: 0(0, 0, 0), CC: 0, TC: 0 NSC: 0 EC: 0 GPS: false
+4,14127,494182525,-;dhd_runtimepm_state: DHD Idle state!! -  idletime :11, wdtick :100, PS mode off dur: 0 sec 
+4,14128,494182570,-;__dhd_txflowcontrol: Stop Netif Queue
+4,14129,494182595,-;__dhd_txflowcontrol: Stop Netif Queue
+4,14130,494182623,-;dhdpcie_bus_suspend: Entering suspend state
+4,14131,494182994,-;dhdpcie_send_mb_data: send H2D_HOST_D3_INFORM to dongle
+4,14132,494194638,-;D2H_MB_DATA: D3 ACK
+4,14133,494195042,-;dhd_bus_handle_d3_ack: D3_ACK Recieved
+4,14134,494195467,-;dhdpci_bus_read_frames: Bus is in power save state (2). Skip processing rest of ring buffers.
+4,14135,494195797,-;dhdpcie_bus_suspend: Got D3 Ack 
+4,14136,494195846,-;dhdpcie_dump_resource: BAR0(VA): 0x0000000000000000, BAR0(PA): 0x0000000014400000, SIZE: 32768
+4,14137,494195916,-;dhdpcie_dump_resource: BAR1(VA): 0x0000000000000000, BAR1(PA): 0x0000000014000000, SIZE: 4194304
+4,14138,494196004,-;dhdpcie_suspend_dev: Enter: TS(2610280918470526)
+4,14139,494196017,-;dhdpcie_suspend_dev: Disable L1ss EP side
+6,14140,494196107,-;exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: START (state = 0x0, id = 0x10, enable = 0)
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+6,14141,494196320,-;exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: END (state = 0x10, id = 0x10, enable = 0)
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+4,14142,494196776,-;BEFORE_EP_SUSPEND: BaseAddress0(0x10)=0x14400004, BaseAddress1(0x18)=0x14000004 PCIE_CFG_PMCSR(0x4c)=0x4108 PCI_BAR1_WIN(0x84)=(0x0)
+4,14143,494216225,-;AFTER_EP_SUSPEND: BaseAddress0(0x10)=0x14400004, BaseAddress1(0x18)=0x14000004 PCIE_CFG_PMCSR(0x4c)=0x410b PCI_BAR1_WIN(0x84)=(0x0)
+6,14144,494218274,-;exynos-pcie 13ed0000.pcie0: exynos_pcie_poweroff, start of poweroff, pcie state: 2
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+6,14145,494218321,-;exynos-pcie 13ed0000.pcie0: exynos_pcie_send_pme_turn_off: link state:d
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+3,14146,494218348,-;exynos-pcie 13ed0000.pcie0: Current LTSSM State is 0xd with retry_cnt =0.
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+3,14147,494218503,-;exynos-pcie 13ed0000.pcie0: ack message is ok
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+3,14148,494218542,-;exynos-pcie 13ed0000.pcie0: received Enter_L23_READY DLLP packet
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+6,14149,494218577,-;SysMMU alloc num : 864(Max:883), lv2_alloc : 25, fault : 0
+6,14150,494218625,-;exynos-pcie 13ed0000.pcie0: exynos_pcie_poweroff: Set PERST to LOW, gpio val = 0
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+6,14151,494218863,-;exynos-pcie 13ed0000.pcie0: exynos_pcie_poweroff, end of poweroff, pcie state: 0
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+4,14152,494218874,-;dhd_runtimepm_state, update suspend states
+4,14153,494218890,-;__dhd_txflowcontrol: Start Netif Queue
+4,14154,494218904,-;__dhd_txflowcontrol: Start Netif Queue
+6,14155,496867958,-;fps_qbt2000_work_func_debug: ldo:0,ipc:0,wuhb:0,tz:1,type:qbt2000,int:0,0
+4,14156,498016588,c;CFG80211-TRACE) __wl_cfg80211_scan : START SCAN
+4,14157,498016656,-;dhd_set_rpm_state: 0
+4,14158,498016712,-;Runtime Resume is called in __wl_cfg80211_scan
+4,14159,498016747,-;[Repeats 1 times]
+4,14160,498017715,-;dhdpcie_bus_suspend: Entering resume state
+6,14161,498017762,-;exynos-pcie 13ed0000.pcie0: exynos_pcie_poweron, start of poweron, pcie state: 0
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+3,14162,498017783,-;exynos-pcie 13ed0000.pcie0: pcie clk enable, ret value = 0
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+6,14163,498018833,-;exynos-pcie 13ed0000.pcie0: exynos_pcie_establish_link: Set PERST to HIGH, gpio val = 1
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+3,14164,498038344,-;exynos-pcie 13ed0000.pcie0: phy clk enable, ret value = 0
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+6,14165,498038704,-;exynos-pcie 13ed0000.pcie0: Set I/A for CDR reset.
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+6,14166,498038951,-;exynos-pcie 13ed0000.pcie0: D state: 0, 347300
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+6,14167,498039059,-;exynos-pcie 13ed0000.pcie0: exynos_pcie_establish_link: Link up:3999811
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+6,14168,498039087,-;exynos-pcie 13ed0000.pcie0: Current Link Speed is GEN1 (MAX GEN1)
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+3,14169,498039408,-;exynos-pcie 13ed0000.pcie0: l1ss disabled(0x10)
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+6,14170,498039453,-;exynos-pcie 13ed0000.pcie0: exynos_pcie_poweron, end of poweron, pcie state: 3
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+4,14171,498039489,-;dhdpcie_resume_dev: Enter: TS(2610280918510370)
+4,14172,498040780,-;AFTER_EP_RESUME: BaseAddress0(0x10)=0x14400004, BaseAddress1(0x18)=0x14000004 PCIE_CFG_PMCSR(0x4c)=0x4108 PCI_BAR1_WIN(0x84)=(0x0)
+4,14173,498041266,-;dhdpcie_resume_dev: Enable L1ss EP side
+6,14174,498041302,-;exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: START (state = 0x10, id = 0x10, enable = 1)
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+6,14175,498041370,-;exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: END (state = 0x0, id = 0x10, enable = 1)
+ SUBSYSTEM=platform
+ DEVICE=+platform:13ed0000.pcie0
+4,14176,498041696,-;dhdpcie_dump_resource: BAR0(VA): 0x0000000000000000, BAR0(PA): 0x0000000014400000, SIZE: 32768
+4,14177,498041730,-;dhdpcie_dump_resource: BAR1(VA): 0x0000000000000000, BAR1(PA): 0x0000000014000000, SIZE: 4194304
+4,14178,498042357,-;dhd_bus_hostready : Read PCICMD Reg: 0x00100006
+4,14179,498042837,-;dhd_bus_dump_dar_registers: dar_clk_ctrl(0xa08:0x1010040) dar_pwr_ctrl(0xa0c:0x30000) dar_intstat(0xa10:0x4000000)
+4,14180,498042873,-;dhd_bus_dump_dar_registers: dar_errlog(0xa60:0x0) dar_erraddr(0xa64:0x0) dar_pcie_mbint(0xa68:0x0)
+4,14181,498043221,-;dhd_bus_hostready: Ring Hostready:96
+4,14182,498043681,-;dhd_runtimepm_state : runtime resume ended 
+4,14183,498058327,c;CFG80211-INFO) wl_scan_prep : n_channels:38 n_ssids:1
+4,14184,498086795,c;CFG80211-INFO) wl_run_escan : LEGACY_SCAN sync ID: 17, bssidx: 2
+6,14185,499940057,-;[SSP]: debug_work_func(0) - Sensor state: 0x3feff, RC: 0(0, 0, 0), CC: 0, TC: 0 NSC: 0 EC: 0 GPS: false
+4,14186,501877631,c;CFG80211-INFO) wl_cfg80211_event : Enqueing escan completion (0). WQ state:0x1 
+4,14187,501877931,c;CFG80211-INFO) wl_print_event_data : event_type (69), ifidx: 16777216 bssidx: 33554432 scan_type:0
+4,14188,501877988,c;CFG80211-INFO) wl_escan_handler : ESCAN COMPLETED
+4,14189,501878019,c;CFG80211-TRACE) wl_escan_handler : SCAN COMPLETED: scanned AP count=11
+4,14190,501889431,c;CFG80211-INFO) wl_notify_escan_complete : [wlan1] Report scan done.
+4,14191,501889533,-;dhd_set_rpm_state: 1
+^C
+[?2004hsh-5.3# 

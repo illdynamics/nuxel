@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "_comment": "PWNAGE-31000 pre-lockscreen cinema. The controller (/usr/lib/nuxel/nuxel-preload-cinema) plays this asset as a fullscreen, audio-free Wayland client over the real Nuxel lockscreen, then releases it only after video EOF and lockscreen readiness. Every failure path falls back to the existing lockscreen. max_display_ms bounds the moving-video interval; hard_timeout_ms bounds the final-frame hold if readiness is still pending. early_map_delay_ms lets WebKit finish its map/fullscreen commits after launcher_ready before mpv maps, so mpv is the top toplevel; covered is published only after nuxel-wl-fb is actually scanning. audio=never is deliberate: the supplied clip contains an AAC track, but Nuxel has no verified boot-audio output route and mute is the safe policy, so the controller always passes --no-audio --mute=yes.",
+  "enabled": true,
+  "asset": "/usr/share/nuxel/preload/nuxel-preloading-screen.mp4",
+  "asset_sha256": "b059f121e62b167fde8664e24c879ca443df8740d95441e7948abdbcc6cdbbf1",
+  "player": "/usr/bin/mpv",
+  "video_output": "wlshm",
+  "max_display_ms": 20000,
+  "start_timeout_ms": 30000,
+  "readiness_grace_ms": 12000,
+  "hard_timeout_ms": 25000,
+  "poll_ms": 100,
+  "preflight_timeout_ms": 8000,
+  "early_wait_launcher_ms": 4000,
+  "require_boot_os": true,
+  "audio": "never",
+  "_asset": {
+    "source": "assets/nuxel-preloading-screen.mp4",
+    "bytes": 7630092,
+    "container": "ISO-BMFF (mp4/mov)",
+    "duration_ms": 6016,
+    "video": "H.264 High, 1080x1920, 24 fps, 144 frames, yuv420p, bt709/tv",
+    "audio": "AAC-LC, 48000 Hz, stereo; deliberately not played",
+    "decode": "software decode via mpv/FFmpeg-free; verified with ffmpeg -f null on the build host"
+  },
+  "_readiness": {
+    "launcher_ready": "/run/nuxel-launcher-ready",
+    "boot_mode_marker": "boot=os in /run/nuxel-home.state",
+    "display": "FRAMES_OK/owner=nuxel-wl-fb in /run/nuxel-wl-fb.state, with a fresh DISPLAY_ON + owner=nuxel-wl-fb in /var/lib/nuxel/display (stale receipts ignored)",
+    "touch": "an ARMED_OK status receipt (later TOUCH_POINT event lines are ignored), or an honest NO_TOUCH_DEVICE/SCAN_FAIL warning in /run/nuxel-touch-arm.state"
+  },
+  "early_map_delay_ms": 1200
+}
