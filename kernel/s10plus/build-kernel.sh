@@ -130,6 +130,64 @@ if [[ $DO_CLONE -eq 1 || ! -d "${KSRC}/.git" ]]; then
     fi
 fi
 
+# --- apply this repository's kernel patches (idempotent + auditable) --------
+# The toolchain README previously claimed this wrapper applied patches, but
+# the implementation had no git-apply step.  Keep patch application explicit:
+# sorted order, skip documentation-only stubs, detect already-applied patches,
+# and allow a per-patch .required sidecar to make a patch failure fatal.
+apply_kernel_patches() {
+    local patch_dir="${NUXEL_ROOT}/kernel/s10plus/patches"
+    local patch log required
+    local -a patches=()
+    log="${KOUT}/patch-application.log"
+    : > "${log}"
+    if [[ ! -d "${patch_dir}" ]]; then
+        echo "[kernel-patches] no patch directory: ${patch_dir}" | tee -a "${log}"
+        return 0
+    fi
+    shopt -s nullglob
+    patches=("${patch_dir}"/*.patch)
+    shopt -u nullglob
+    if [[ ${#patches[@]} -eq 0 ]]; then
+        echo "[kernel-patches] no *.patch files found" | tee -a "${log}"
+        return 0
+    fi
+
+    for patch in "${patches[@]}"; do
+        required="${patch}.required"
+        if grep -qE '^# STUB([[:space:]]|$)' "${patch}" 2>/dev/null; then
+            echo "[kernel-patches] SKIP documentation stub: $(basename "${patch}")" | tee -a "${log}"
+            continue
+        fi
+
+        if git -C "${KSRC}" apply --reverse --check "${patch}" >/dev/null 2>&1; then
+            echo "[kernel-patches] ALREADY_APPLIED: $(basename "${patch}")" | tee -a "${log}"
+            continue
+        fi
+
+        if git -C "${KSRC}" apply --check "${patch}" >/dev/null 2>&1; then
+            echo "[kernel-patches] APPLY: $(basename "${patch}")" | tee -a "${log}"
+            if git -C "${KSRC}" apply "${patch}" >>"${log}" 2>&1 \
+                && git -C "${KSRC}" apply --reverse --check "${patch}" >/dev/null 2>&1; then
+                echo "[kernel-patches] APPLIED_AND_VERIFIED: $(basename "${patch}")" | tee -a "${log}"
+                continue
+            fi
+            echo "[kernel-patches] ERROR: apply did not verify: $(basename "${patch}")" | tee -a "${log}"
+        else
+            echo "[kernel-patches] CONFLICT: $(basename "${patch}")" | tee -a "${log}"
+        fi
+
+        if [[ -f "${required}" ]]; then
+            echo "[kernel-patches] REQUIRED patch failed; aborting build: $(basename "${patch}")" | tee -a "${log}"
+            return 1
+        fi
+        echo "[kernel-patches] WARN: optional patch not applied; see ${log} and adjacent .README: $(basename "${patch}")" | tee -a "${log}"
+    done
+    echo "[kernel-patches] summary: ${log}"
+}
+
+apply_kernel_patches
+
 # --- GCC-13 warning hardening (root-cause fix) ------------------------------
 # The downstream 4.14 tree hard-codes -Werror in two places a KCFLAGS
 # relaxation cannot reach: per-category `$(call cc-option,-Werror=<diag>)` in

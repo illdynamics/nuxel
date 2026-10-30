@@ -92,3 +92,36 @@ word `works`, corroborated by the app's saved store.
   rounds completed with rc=0 and a focused/editable Title; no `works` appeared
   and no input event reached the Notes WebView. Physical audibility remains
   unclaimed, exactly as required.
+
+## Superseding speaker-path continuation — 2026-10-30
+
+The later owner-supervised evidence in
+`docs/beta-finalization/live/evidence/pwnage-43000/05-speaker-path-audibility-experiments.md`
+supersedes the older Notes-input blocker above. In that later session the
+Notes Title preflight passed and the owner explicitly typed `no` for the
+speaker tests. Therefore these are valid negative acoustic tests, not merely
+missing Notes input.
+
+| # | New item | Result | Status |
+|---|---|---|---|
+| 19 | ABOX Sound Type SPEAKER (1), sink 25% | Owner did not hear output | VERIFIED NEGATIVE |
+| 20 | ABOX Sound Type SPEAKER (1), sink 55% | Owner typed `no` | VERIFIED NEGATIVE |
+| 21 | PCM Source ASP → DSP, SPEAKER mode | Owner typed `no`; DSP1/PCM Source DAPM widgets changed On | VERIFIED NEGATIVE |
+| 22 | Restore baseline | Sound Type VOICE (0), PCM Source ASP (0), sink 0.25; route check passes | VERIFIED |
+| 23 | Final amplifier/boost output path | Exact topology-specific cause not yet established | OPEN |
+| 24 | Read-only amplifier diagnostic | Added `tools/s10plus/a33/nuxel-cs35l41-speaker-diag.sh`; captures live DT/boost properties, controls, DAPM, DSP, PipeWire, PCM and concurrent output-power/SoundBoost telemetry | IMPLEMENTED; LIVE RUN PENDING |
+| 25 | Kernel build patch application | Wrapper now applies sorted patches idempotently and logs outcomes; no audio driver patch added yet | IMPLEMENTED; BUILD NOT RUN |
+
+Important correction: the older report's statements about 19/19 cold-boot gain
+and 12/12 being the current deployed setting refer to earlier, different runs.
+The latest 05 experiment records 12/12 during the supervised tests and its
+restored baseline. Always read the handset before assuming either value.
+
+## Current next action
+
+Deploy the patched read-only diagnostic over Wi-Fi SSH. Identify live boost
+topology for both CS35L40-compatible amplifiers, inspect ABOX SoundBoost
+semantics, and sample CS35L41 speaker output-power telemetry during one POW.
+Do not port an external-boost-only driver sequence until the live hardware is
+positively identified as external boost. Continue with one POW and a 30-second
+Notes response window per test.

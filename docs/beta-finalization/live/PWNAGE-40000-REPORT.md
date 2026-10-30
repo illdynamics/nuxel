@@ -51,3 +51,36 @@ The remaining blocker is the human confirmation itself, not the audio route.
 - `systemd-udevd` not re-enabled.
 - Stub UCM not filled with invented controls.
 - No amplifier gain copied from an old capture beyond the measured 12 (0x193).
+
+---
+
+## Superseding physical speaker experiments — 2026-10-30
+
+The later PWNAGE-43000 evidence file
+`docs/beta-finalization/live/evidence/pwnage-43000/05-speaker-path-audibility-experiments.md`
+supersedes the older report's Notes-input-only blocker. The input preflight
+passed in that later session and the owner explicitly typed `no` after the
+SPEAKER-mode/volume and DSP-source tests. Therefore the physical speaker is
+not merely unconfirmed because the detector failed: these later experiments
+are valid negative audible results.
+
+The digital path remains substantially verified, but the remaining failure
+has narrowed to the final amplifier/boost/output stage or physical speaker
+endpoint. The ABOX Sound Type SPEAKER experiment, 55% PipeWire sink experiment
+and PCM Source DSP experiment all failed to produce audible output.
+
+The current evidence-led next step is a read-only capture of live boost
+configuration for both CS35L40-compatible amplifiers, DSP output-power
+telemetry during playback, ABOX SoundBoost controls and the Right AMP physical
+SPEAKER path. The new diagnostic is:
+
+`tools/s10plus/a33/nuxel-cs35l41-speaker-diag.sh`
+
+The diagnostic has an optional concurrent PCM/output-power watcher and does
+not write hardware or play audio. No speculative external-boost driver patch
+has been added. The pinned downstream driver lacks the newer external-boost
+speaker-output sequence, but the live S10+ boost topology must be established
+before that sequence can safely be ported.
+
+No physical speaker audibility is claimed. No TWRP reflash, kernel flash,
+boot-image flash or firmware-partition write was performed.

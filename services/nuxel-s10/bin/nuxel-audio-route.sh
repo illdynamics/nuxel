@@ -196,6 +196,9 @@ route_controls_ready() {
     want_ctl 'ABOX UAIF1 SPK' 2 '(SIFS1)' || ok=0
     want_ctl 'ABOX SIFS1 OUT Switch' on || ok=0
     want_ctl 'ABOX UAIF1 Switch' on || ok=0
+    want_ctl 'ABOX UAIF1 Rate' 48000 '(48 kHz)' || ok=0
+    want_ctl 'ABOX UAIF1 Width' 16 '(16 bit)' || ok=0
+    want_ctl 'ABOX UAIF1 Channel' 2 '(2 ch)' || ok=0
     [ "$ok" -eq 1 ]
 }
 
@@ -247,13 +250,37 @@ set_ctl 'Left AMP Enable'        'Left AMP Enable Switch' on || fail_state 'left
 set_ctl 'Right AMP Enable'       'Right AMP Enable Switch' on || fail_state 'right AMP enable failed'
 set_ctl 'Left AMP Unmute'        'Left AMP Mute' 1 || fail_state 'left AMP unmute failed'
 set_ctl 'Right AMP Unmute'       'Right AMP Mute' 1 || fail_state 'right AMP unmute failed'
-# Amplifier digital trim.  The live unit is silent at the cold-boot value 19
-# (kernel logs GAIN_CTRL=0x273); the proven 2026-10-29 value 12 logs
-# GAIN_CTRL=0x193 and is the only value that has ever produced confirmed sound.
+# Amplifier digital trim.  The live route has been measured at 12 on both
+# amps (kernel logs GAIN_CTRL=0x193), and the persistent route restores that
+# measured state.  IMPORTANT: later owner-supervised tests at this setting
+# still produced no audible speaker output, so this is a verified register
+# configuration, NOT an acoustically confirmed gain value.  The physical
+# SPEAKER endpoint is fed by Right AMP SPK; do not infer speaker audibility
+# from the left/receiver path or from gain readback alone.
 set_ctl 'Left AMP PCM Gain=12'   'Left AMP PCM Gain' 12 || fail_state 'left AMP gain failed'
 set_ctl 'Right AMP PCM Gain=12'  'Right AMP PCM Gain' 12 || fail_state 'right AMP gain failed'
 set_ctl 'Left PCM Source=ASP'    'Left PCM Source' 0 || fail_state 'left PCM source failed'
 set_ctl 'Right PCM Source=ASP'   'Right PCM Source' 0 || fail_state 'right PCM source failed'
+
+# CS35L41 amplifier clock/boost patch (owner-confirmed 2026-10-30).
+# The DT programs ampclk=6.144MHz, but ABOX UAIF1 actually clocks 1.536MHz
+# (16-bit stereo 48k), so the CS35L41 PLL was fed the wrong reference and the
+# protection DSP never drove the speaker.  Re-lock both amps to the real wire
+# rate and force the 0 dB PCM/unmute and output stage at register level.
+CS35_PATCH_HELPER=${NUXEL_CS35_HELPER:-/usr/local/bin/nuxel-cs35.py}
+cs35_patch() {
+    [ -x "$CS35_PATCH_HELPER" ] || { say "CS35L41 patch helper missing; leaving amp registers untouched"; return 0; }
+    for a in 0x40 0x41; do
+        timeout -k 1 4 "$CS35_PATCH_HELPER" "$a" 0x4804 0x1b >/dev/null 2>&1 || return 1
+        timeout -k 1 4 "$CS35_PATCH_HELPER" "$a" 0x2c04 0x370 >/dev/null 2>&1 || return 1
+        timeout -k 1 4 "$CS35_PATCH_HELPER" "$a" 0x6000 0x8000 >/dev/null 2>&1 || return 1
+        timeout -k 1 4 "$CS35_PATCH_HELPER" "$a" 0x2024 0x0 >/dev/null 2>&1 || return 1
+    done
+    say "CS35L41 clock/boost patch applied (4804=0x1b 2c04=0x370 6000=0x8000 2024=0x0)"
+    return 0
+}
+
+cs35_patch || fail_state 'CS35L41 clock/boost patch failed'
 
 # ABOX crossbar: RDMA1 -> SPUS IN1 -> SPUS OUT1 -> SIFS1 -> UAIF1 SPK.
 set_ctl 'SPUS IN1=RDMA'    'ABOX SPUS IN1' 0 || fail_state 'SPUS IN1 failed'
@@ -261,6 +288,9 @@ set_ctl 'SPUS OUT1=SIFS1'  'ABOX SPUS OUT1' 0 || fail_state 'SPUS OUT1 failed'
 set_ctl 'SIFS1=SPUS OUT1'  'ABOX SIFS1' 1 || fail_state 'SIFS1 routing failed'
 set_ctl 'UAIF1 SPK=SIFS1'  'ABOX UAIF1 SPK' 2 || fail_state 'UAIF1 SPK routing failed'
 set_ctl 'SIFS1 OUT on'     'ABOX SIFS1 OUT Switch' on || fail_state 'SIFS1 OUT switch failed'
+set_ctl 'UAIF1 Rate 48k'   'ABOX UAIF1 Rate' 48000 || fail_state 'UAIF1 rate failed'
+set_ctl 'UAIF1 Width 16'   'ABOX UAIF1 Width' 16 || fail_state 'UAIF1 width failed'
+set_ctl 'UAIF1 Ch 2'       'ABOX UAIF1 Channel' 2 || fail_state 'UAIF1 channel failed'
 set_ctl 'UAIF1 on'         'ABOX UAIF1 Switch' on || fail_state 'UAIF1 switch failed'
 set_ctl 'Speaker path on'  'ABOX SPKAMP_EN' 1 || fail_state 'SPKAMP_EN failed'
 set_ctl 'SPKAMP_A=RDMA1'   'ABOX SPKAMP_A' 2 || fail_state 'SPKAMP_A failed'

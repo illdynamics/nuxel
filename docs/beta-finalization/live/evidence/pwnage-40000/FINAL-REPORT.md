@@ -116,3 +116,30 @@ at 300 s, Wi-Fi active. The startup cue ran once
 - 25 % ceiling enforced at the sink and re-checked before every play.
 - Wi-Fi SSH and the serial recovery path were left intact.
 - Offline regressions: 87 tests pass, including 14 new PWNAGE-40000 tests.
+
+---
+
+## Superseding owner-supervised speaker tests — 2026-10-30
+
+The later test record is:
+`docs/beta-finalization/live/evidence/pwnage-43000/05-speaker-path-audibility-experiments.md`.
+It supersedes this report's older claim that the Notes input path never worked.
+The later input preflight passed and the owner explicitly entered `no` after
+the SPEAKER Sound Type, 55% sink-volume and DSP-source experiments. These are
+valid negative audibility results.
+
+The latest speaker-path state from that record is:
+
+- Sound Type SPEAKER (1) was tested at 25% and 55%; no audible sound.
+- PCM Source DSP was tested in SPEAKER mode; no audible sound.
+- The tested gain was 12/12 (`GAIN_CTRL=0x193`).
+- The configuration was restored to Sound Type VOICE (0), PCM Source ASP (0),
+  PipeWire volume 0.25, with route applied.
+
+The current unresolved stage is the final CS35L40-compatible amplifier
+power/boost/output path or physical loudspeaker endpoint. A read-only
+diagnostic has been added in `tools/s10plus/a33/nuxel-cs35l41-speaker-diag.sh`
+to capture live DT boost properties, SoundBoost controls, DAPM, DSP and
+speaker output-power telemetry concurrently with the short playback window.
+No speculative external-boost sequence has been applied because the active
+S10+ boost topology has not yet been proven.
