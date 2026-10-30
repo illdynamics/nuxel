@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
 """Nuxel S10+ UI sound cues: no raw hardware writes or persistent volume changes.
 
-BOOT plays ONCE per boot only after the bridge's *actual* UI ownership receipt.
-VOLUME is launched after a successful ALSA mixer change by the button manager.
-Sound levels: boot MP3 decoder PCM gain = 44%; volume MP3 decoder PCM gain =
-100% of the CURRENT protected ALSA mixer setting, not another attenuation.
-The physical speaker path is unverified; failures are logged, never faked.
+BOOT plays ONCE per boot only after the bridge's *actual* UI ownership receipt
+and a live `nuxel-audio-route.sh --check` readiness probe (Calliope MUB0, both
+CS35L41 DSP1s booted/running, every route control, the 48 kHz static sink, the
+default sink, and the volume ceiling).  VOLUME is launched after a successful
+PipeWire default-sink change by the button manager.  Both cues play
+nuxel-pow.mp3 at 100% decoder gain into a sink that is itself capped at 25%, so
+there is exactly one attenuation stage.  Failures are logged, never faked; a
+player exit code is never recorded as audible.
 """
 import argparse
 import fcntl
@@ -43,9 +46,32 @@ ALSA_DEVICE = os.environ.get('NUXEL_SOUND_ALSA_DEVICE', '').strip()
 # asset as the volume feedback and the Test Audio button.
 BOOT_FILE = 'nuxel-pow.mp3'
 VOL_FILE = 'nuxel-pow.mp3'
-BOOT_PCM_PERCENT = 44
+BOOT_PCM_PERCENT = 100
 WAIT_SECONDS = 180
 LOG = os.environ.get('NUXEL_SOUND_LOG', '/var/log/nuxel/sound-cues.log')
+ROUTE_CHECK = os.environ.get('NUXEL_AUDIO_ROUTE_CHECK', '/usr/lib/nuxel/nuxel-audio-route.sh')
+SOUND_AT_CAP = 0.25
+
+
+def audio_route_ready():
+    """Use the route script's live, read-only readiness probe.
+
+    This verifies the ABOX Calliope version, both CS35L41 DSP1s, every required
+    mixer readback, the static PipeWire sink, the real default sink, and the
+    volume ceiling.  Merely finding /run/nuxel-audio-route.state is not proof.
+    """
+    if not os.path.isfile(ROUTE_CHECK):
+        return False, 'route check missing: %s' % ROUTE_CHECK
+    try:
+        proc = subprocess.run([ROUTE_CHECK, '--check'], stdout=subprocess.PIPE,
+                              stderr=subprocess.STDOUT, text=True, timeout=20,
+                              env=dict(os.environ, XDG_RUNTIME_DIR='/run/nuxel-wayland',
+                                       PIPEWIRE_RUNTIME_DIR='/run/nuxel-wayland',
+                                       PULSE_SERVER='unix:/run/nuxel-wayland/pulse/native'))
+    except (OSError, subprocess.SubprocessError) as exc:
+        return False, 'route check failed to run: %s' % exc
+    text = (proc.stdout or '').strip()
+    return proc.returncode == 0, text[-600:]
 
 
 def record(event, result, **kw):
@@ -81,6 +107,10 @@ def play(event, percentage):
         record(event, 'missing_file', path=str(src)); return 3
     if not PLAYER:
         record(event, 'player_unavailable', detail='Install mpg123 in the Fedora rootfs'); return 4
+    ready, detail = audio_route_ready()
+    if not ready:
+        record(event, 'route_not_ready', detail=detail, audible='unverified')
+        return 9
     if not normal_sound_mode():
         record(event, 'muted_policy'); return 0
     # No ALSA mixer volume adjustment is made here: retain the button-manager
@@ -176,11 +206,20 @@ def do_boot():
         if done_file.exists():
             record('boot', 'already_attempted'); return 0
         deadline = time.monotonic() + WAIT_SECONDS
-        while not ready_handoff():
+        handoff = False
+        route_detail = 'not checked'
+        route_ok = False
+        while True:
+            handoff = ready_handoff()
+            if handoff:
+                route_ok, route_detail = audio_route_ready()
+                if route_ok:
+                    break
             if time.monotonic() >= deadline:
-                record('boot', 'handoff_not_seen', waited_seconds=WAIT_SECONDS)
+                record('boot', 'not_ready_before_deadline', waited_seconds=WAIT_SECONDS,
+                       handoff=handoff, detail=route_detail)
                 return 7
-            time.sleep(0.25)
+            time.sleep(0.5)
         # Only one attempt per boot even if playback fails. Prevents repeated
         # loud restart loops when the audio device is broken or unavailable.
         done_file.write_text(str(int(time.time())) + '\n')
@@ -196,7 +235,8 @@ def do_volume(level):
         except BlockingIOError:
             return 0  # suppress overlapping feedback while last cue plays
         # The actual ALSA mixer was already set to level by button manager.
-        # Play the MP3 at unity PCM gain; the mixer determines the output.
+        # The PipeWire sink is held at or below the 25% safety ceiling; do not
+        # multiply that by a second software attenuation.
         return play('volume', 100)
 
 

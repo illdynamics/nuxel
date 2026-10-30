@@ -17,12 +17,37 @@
 // visible instead of surprising the operator after a reboot.
 
 class QuickSettings {
+    // A missing Wi-Fi field is NOT evidence that the radio is off.  Only an
+    // explicit NetworkManager WirelessEnabled false (or wifi_state=disabled)
+    // may render OFF; everything else stays CHECKING/UNKNOWN.
+    static wifiRadioState(network) {
+        if (!network || typeof network !== 'object') return null;
+        if (typeof network.wifi_enabled === 'boolean') return network.wifi_enabled;
+        if (network.wifi_state === 'disabled') return false;
+        if (network.wifi_connected === true) return true;
+        if (['internet', 'connected', 'enabled_disconnected', 'connecting', 'associating']
+            .includes(network.wifi_state)) return true;
+        return null;
+    }
+
+    // Link state is deliberately separate from radio state.  A radio can be ON
+    // while no network is connected, and that must not turn the tile OFF.
+    static wifiLinkState(network) {
+        if (!network || typeof network !== 'object') return null;
+        if (['disabled', 'unavailable', 'unmanaged'].includes(network.wifi_state)) return false;
+        if (['internet', 'connected'].includes(network.wifi_state)) return true;
+        if (typeof network.wifi_connected === 'boolean') return network.wifi_connected;
+        if (network.type === 'wifi' && network.connected === true) return true;
+        return null;
+    }
+
     constructor() {
         this.panel = document.getElementById('quick-settings');
         this.isOpen = false;
         this.expanded = false;
+        // null means UNKNOWN/CHECKING, never a fabricated OFF.
         this.state = {
-            wifi: false,
+            wifi: null,
             bluetooth: false,
             mobile: false,
             location: false,
@@ -30,15 +55,16 @@ class QuickSettings {
             flashlight: false,
             rotate: false,
         };
+        this.wifiConnected = null;
         this._init();
     }
 
     _init() {
         this._bindEvents();
         this._bindIconAssets();
-        // Wired radios can come up a beat after the launcher.  Sync once at
-        // startup so the Wi-Fi tile reflects the live NetworkManager state
-        // instead of the pre-flight 'off' default until the panel is opened.
+        // Radios can come up a beat after the launcher.  Sync once at startup
+        // so the Wi-Fi tile reflects live NetworkManager state without ever
+        // inventing a false OFF from the pre-flight placeholder.
         this._syncState();
     }
 
@@ -270,7 +296,11 @@ class QuickSettings {
 
     async _toggle(id) {
         if (id === 'wifi') {
-            await this._setWifiEnabled(!this.state.wifi);
+            // Unknown is not OFF.  Resolve once before deciding; if the bridge
+            // still cannot report the radio, request ON and let NetworkManager
+            // confirm the resulting state.
+            if (this.state.wifi === null) await this._syncState();
+            await this._setWifiEnabled(this.state.wifi !== true);
             return;
         }
         if (id === 'rotate') {
@@ -302,6 +332,9 @@ class QuickSettings {
             }
             this.state.wifi = Boolean(result.wifi_enabled);
             this._updateUI();
+            // Refresh the link separately; the radio result already confirmed
+            // ON/OFF and must not be overwritten by a missing network field.
+            this._syncState({ preserveRadio: true });
             document.dispatchEvent(new CustomEvent('qs:toggle', {
                 detail: { id: 'wifi', enabled: this.state.wifi }, bubbles: true,
             }));
@@ -414,14 +447,48 @@ class QuickSettings {
     }
 
     // ---- Bluetooth (A73): real BlueZ/rfkill/HCI status + powered toggle ----
+    //
+    // The provider reports a tri-state:
+    //   powered=true   radio ON
+    //   powered=false  BlueZ says the adapter is Powered=false
+    //   powered=null   controller/service not ready yet -> UNKNOWN, never OFF
+    // A registered hci0 plus a powered BlueZ adapter is the verified S10+
+    // state; a missing adapter shows the real kernel/firmware blocker.
+    static bluetoothRadioState(st) {
+        if (!st || typeof st !== 'object') return null;
+        if (typeof st.powered === 'boolean') return st.powered;
+        if (st.state === 'off') return false;
+        if (st.state === 'on' || st.state === 'discovering') return true;
+        return null;
+    }
+
     _bluetoothLabel(st) {
-        if (!st) return 'Bluetooth';
+        if (!st) return 'Bluetooth<br>unknown';
         const s = st.state;
-        if (s === 'on') return st.discovering ? 'Bluetooth<br>discovering' : 'Bluetooth';
-        if (s === 'off') return 'Bluetooth';
+        if (s === 'on') return st.discovering ? 'Bluetooth<br>discovering' : 'Bluetooth<br>on';
+        if (s === 'off') return 'Bluetooth<br>off';
         if (s === 'hardware_blocked') return 'Bluetooth<br>blocked';
         if (s === 'service_unavailable') return 'Bluetooth<br>no radio';
-        return 'Bluetooth';
+        if (s === 'unknown') return 'Bluetooth<br>checking';
+        return 'Bluetooth<br>unknown';
+    }
+
+    _bluetoothDetail(st) {
+        if (!st) return 'Bluetooth: status unavailable';
+        const lines = ['Bluetooth: ' + (st.state || 'unknown')];
+        if (st.adapter_present === false) lines.push('controller: no hci0 registered');
+        else if (st.hci_devices && st.hci_devices.length) lines.push('controller: ' + st.hci_devices.join(', '));
+        if (st.adapter_address) lines.push('address: ' + st.adapter_address);
+        if (st.rfkill_present) {
+            lines.push('rfkill: ' + (st.rfkill_soft_blocked ? 'soft-blocked' : 'unblocked') +
+                (st.rfkill_hard_blocked ? ', HARD-blocked' : ''));
+        }
+        if (st.discovering === true) lines.push('discovery: active');
+        else if (st.discovering === false) lines.push('discovery: idle');
+        if (st.blocker) lines.push('blocker: ' + st.blocker);
+        if (st.detail) lines.push(st.detail);
+        lines.push('Tap = power on/off (real BlueZ/rfkill state)');
+        return lines.join('\n');
     }
 
     async _syncBluetooth() {
@@ -429,19 +496,38 @@ class QuickSettings {
         if (!tile) return;
         try {
             const st = await bridge.call('bluetooth', 'status', {});
-            this.state.bluetooth = !!(st && st.powered === true);
-            tile.dataset.enabled = this.state.bluetooth ? 'true' : 'false';
-            tile.dataset.state = (st && st.state) ? st.state : 'unknown';
-            if (st && st.adapter_present === false) tile.dataset.state = 'no_adapter';
+            if (!st || st.success === false) {
+                // A bridge/provider failure is UNKNOWN, never a fabricated OFF.
+                this.state.bluetooth = null;
+                tile.dataset.enabled = 'unknown';
+                tile.dataset.state = 'unavailable';
+                const label = tile.querySelector('.qs-label');
+                if (label) label.innerHTML = 'Bluetooth<br>unknown';
+                tile.title = 'Bluetooth status unavailable' +
+                    (st && st.error ? (': ' + st.error) : '');
+                return;
+            }
+            const radio = QuickSettings.bluetoothRadioState(st);
+            this.state.bluetooth = radio;
+            const known = typeof radio === 'boolean';
+            tile.dataset.enabled = known ? (radio ? 'true' : 'false') : 'unknown';
+            tile.dataset.state = (st.state) ? st.state : 'unknown';
+            tile.dataset.adapterPresent = st.adapter_present === true ? 'true' : 'false';
+            if (st.adapter_present === false) tile.dataset.state = 'no_adapter';
+            if (st.discovering === true) tile.dataset.discovering = 'true';
+            else delete tile.dataset.discovering;
             const label = tile.querySelector('.qs-label');
             if (label) label.innerHTML = this._bluetoothLabel(st);
-            tile.title = 'Bluetooth: ' + ((st && st.state) || 'unknown')
-                + (st && st.blocker ? ('\nblocker: ' + st.blocker) : '')
-                + (st && st.detail ? '\n' + st.detail : '')
-                + '\nTap = power on/off (real BlueZ/rfkill state)';
+            tile.title = this._bluetoothDetail(st);
         } catch (e) {
-            tile.dataset.enabled = 'false';
+            // Never turn a failed status read into OFF.
+            this.state.bluetooth = null;
+            tile.dataset.enabled = 'unknown';
             tile.dataset.state = 'error';
+            const label = tile.querySelector('.qs-label');
+            if (label) label.innerHTML = 'Bluetooth<br>unknown';
+            tile.title = 'Bluetooth status read failed: ' +
+                (e && e.message ? e.message : 'bridge error');
         }
     }
 
@@ -458,7 +544,7 @@ class QuickSettings {
             this.state.bluetooth = Boolean(result.powered);
             this._updateUI();
             this._hapticSwitch();
-            this._syncBluetooth();
+            await this._syncBluetooth();
         } catch (error) {
             await this._syncBluetooth();
             this._osdNotice('Bluetooth unchanged: ' + (error && error.message ? error.message : 'backend unavailable'));
@@ -552,32 +638,89 @@ class QuickSettings {
         this._syncLocation();
     }
 
-    async _syncState() {
+    async _syncState(options) {
+        const preserveRadio = !!(options && options.preserveRadio);
+        const retainRadio = preserveRadio && typeof this.state.wifi === 'boolean';
         try {
             const status = await bridge.getPhoneStatus();
-            if (status.network) {
+            const hasNetwork = status && status.network &&
+                typeof status.network === 'object';
+            if (hasNetwork) {
                 const net = status.network;
-                const connectedState = net.wifi_state === 'connected' || net.wifi_state === 'internet';
-                this.state.wifi = Boolean(net.wifi_enabled) || Boolean(net.wifi_connected) || connectedState;
+                // Preserve the tri-state: missing fields remain UNKNOWN.
+                const radio = QuickSettings.wifiRadioState(net);
+                if (radio !== null || !retainRadio) this.state.wifi = radio;
+                const link = QuickSettings.wifiLinkState(net);
+                if (link !== null || !preserveRadio) this.wifiConnected = link;
+            } else {
+                if (!retainRadio) this.state.wifi = null;
+                if (!preserveRadio) this.wifiConnected = null;
             }
-            if (status.modem) {
+            if (status && status.modem) {
                 this.state.mobile = status.modem.connected || false;
             }
-            this._updateUI();
         } catch (e) {
-            // Use defaults
+            // An unavailable bridge is UNKNOWN, not a fabricated OFF.
+            if (!retainRadio) this.state.wifi = null;
+            if (!preserveRadio) this.wifiConnected = null;
         }
+        this._updateUI();
         this._syncBluetooth();
         this._syncLocation();
     }
 
+    _wifiLinkLabel() {
+        if (this.wifiConnected === null) return 'network unknown';
+        return this.wifiConnected ? 'network connected' : 'radio on, not connected';
+    }
+
+    // State-only diagnostic for the live launcher log.  It emits when the
+    // effective radio/link state changes, never on every poll, and never
+    // includes an SSID, address or credential.
+    _traceWifiState() {
+        const radio = typeof this.state.wifi === 'boolean'
+            ? (this.state.wifi ? 'ON' : 'OFF') : 'UNKNOWN';
+        const link = typeof this.wifiConnected === 'boolean'
+            ? (this.wifiConnected ? 'CONNECTED' : 'DISCONNECTED') : 'UNKNOWN';
+        const key = radio + '/' + link;
+        if (key === this._wifiTraceKey) return;
+        this._wifiTraceKey = key;
+        const line = 'QS_WIFI radio=' + radio + ' link=' + link;
+        try {
+            const diag = window.webkit && window.webkit.messageHandlers &&
+                window.webkit.messageHandlers.nuxelDiag;
+            if (diag) diag.postMessage(line);
+            else if (window.NuxelHost && window.NuxelHost.available && window.NuxelHost.statusRead) {
+                // No native diag channel on the desktop/VM host.
+            } else if (console && console.log) console.log('[qs] ' + line);
+        } catch (e) { /* evidence must never break the tile */ }
+    }
+
     _updateUI() {
         for (const [id, enabled] of Object.entries(this.state)) {
+            if (id === 'wifi') continue;
             const el = document.getElementById(`qs-${id}`);
-            if (el) {
-                el.dataset.enabled = enabled ? 'true' : 'false';
-            }
+            if (el) el.dataset.enabled = enabled ? 'true' : 'false';
         }
+
+        const wifi = document.getElementById('qs-wifi');
+        if (!wifi) return;
+        const radioKnown = typeof this.state.wifi === 'boolean';
+        const linkKnown = typeof this.wifiConnected === 'boolean';
+        wifi.dataset.enabled = radioKnown ? (this.state.wifi ? 'true' : 'false') : 'unknown';
+        wifi.dataset.radioEnabled = radioKnown ? (this.state.wifi ? 'true' : 'false') : 'unknown';
+        wifi.dataset.connected = linkKnown ? (this.wifiConnected ? 'true' : 'false') : 'unknown';
+        const label = wifi.querySelector('.qs-label');
+        if (label) {
+            if (!radioKnown) label.innerHTML = 'WiFi<br>checking';
+            else if (!this.state.wifi) label.innerHTML = 'WiFi<br>off';
+            else if (this.wifiConnected === true) label.innerHTML = 'WiFi<br>linked';
+            else label.innerHTML = 'WiFi<br>on';
+        }
+        const radio = radioKnown ? (this.state.wifi ? 'ON' : 'OFF') : 'CHECKING/UNKNOWN';
+        wifi.title = 'Wi-Fi radio: ' + radio + ' | ' + this._wifiLinkLabel()
+            + '\nTap = turn the Wi-Fi radio on/off';
+        this._traceWifiState();
     }
 }
 

@@ -90,7 +90,7 @@ HTTP_MODE = os.environ.get('NUXEL_HTTP_MODE', 'dev')
 # downgrade. NUXEL_BRIDGE_VERSION is the host IMPLEMENTATION version and is
 # allowed to move independently.
 BRIDGE_PROTOCOL_VERSION = os.environ.get('NUXEL_BRIDGE_PROTOCOL_VERSION', '1')
-BRIDGE_HOST_VERSION = os.environ.get('NUXEL_BRIDGE_VERSION', '0.7.3-beta')
+BRIDGE_HOST_VERSION = os.environ.get('NUXEL_BRIDGE_VERSION', '0.2.1')
 
 # Canonical launcher registry, shared with the PWA (pwa/nuxel-common/app-registry.json)
 # and the native shell. The rootfs installs it at /etc/nuxel/app-registry/.
@@ -1365,6 +1365,35 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
                 return bp.remove(params.get('mac', ''), timeout=params.get('timeout', 20.0))
             if verb == 'info':
                 return bp._info(params.get('mac', ''))
+        # Publish the authoritative Bluetooth provider state for the lockhead
+        # indicator and the native host.  This is a read, so it needs no write
+        # capability; a failure is never written as OFF.
+        if namespace == 'bluetooth' and verb == 'status':
+            try:
+                st = self._call_bridge('BluetoothGetStatus', app_id)
+            except Exception as exc:  # noqa: BLE001
+                st = {'success': False, 'error': str(exc)}
+            if isinstance(st, dict) and st.get('success') is not False:
+                try:
+                    import tempfile
+                    doc = {
+                        'powered': st.get('powered'),
+                        'state': st.get('state') or 'unknown',
+                        'discovering': bool(st.get('discovering')),
+                        'source': 'bridge:BluetoothGetStatus',
+                        'timestamp': st.get('timestamp'),
+                    }
+                    target = '/run/nuxel/bluetooth-indicator.json'
+                    os.makedirs(os.path.dirname(target), exist_ok=True)
+                    fd, tmp = tempfile.mkstemp(dir=os.path.dirname(target),
+                                                prefix='.bluetooth-indicator.')
+                    with os.fdopen(fd, 'w') as fh:
+                        json.dump(doc, fh)
+                    os.chmod(tmp, 0o644)
+                    os.replace(tmp, target)
+                except Exception as exc:  # noqa: BLE001
+                    logger.warning('bluetooth indicator publish failed: %s', exc)
+            return st
         method = self.RPC_METHODS.get((namespace, verb))
         if method is None:
             logger.warning("Unknown RPC %s.%s", namespace, verb)

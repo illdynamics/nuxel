@@ -12,6 +12,50 @@ The canonical version lives in [`VERSION`](VERSION) and is bumped in lockstep
 across the shell apps, the PWA manifest, the device `APKBUILD`s, the VM tooling
 and the OTA builder (see *Versioning* below).
 
+## [v0.2.1] - 2026-10-30 - *Feature truth, confirmed Bluetooth and near-complete audio*
+
+- **Bluetooth is confirmed working on the S10+.** `CONFIG_BT_HCIUART`/H4 plus
+  `btattach -B /dev/ttySAC1 -P h4 -S 115200` register `hci0`; BlueZ reports the
+  BCM4375 controller (`43:75:B1:00:1F:AC`) powered, and a 12-second
+  `bluetoothctl scan on` discovers a peer. Settings exposes the real controller,
+  rfkill, adapter and discovery state and supports bounded scan, list, pair,
+  connect, disconnect, trust and remove; every action reports the actual BlueZ
+  result. A specific headset/keyboard profile remains an owner check.
+- **Bluetooth overlays are tri-state and truthful.** Quick Settings no longer
+  defaults to OFF: `powered=true` shows ON, an explicit BlueZ false shows OFF,
+  and a missing/unreadable provider field stays UNKNOWN. The tile names
+  discovery and the concrete blocker when no adapter exists. The status bar and
+  lockscreen add proof-only Bluetooth glyphs that light only for a powered
+  adapter. The obsolete Settings paragraph claiming `CONFIG_BT_HCIUART` is not
+  set has been removed.
+- **Audio is almost complete.** The complete route is verified live: ABOX
+  Calliope `MUB0`, both CS35L41 DSP1 protection images running, `ABOX RDMA1_EN=1`,
+  the RDMA1→SPUS→SIFS1→UAIF1 crossbar, `Left/Right AMP PCM Gain=12/12`, the
+  48 kHz `alsa_output.hw_0_1` default sink and an advancing `hw_ptr`. `pw-play`,
+  the boot cue and Settings → Sound → Test Audio succeed. Physical audibility is
+  still not owner-confirmed, so the API continues to report
+  `audible=unverified`.
+- **Wi-Fi boot/UI truth.** NetworkManager enables Wi-Fi after a normal boot and
+  the helper verifies the readback; saved profiles autoconnect; a manual OFF is
+  respected for the current session. Quick Settings separates radio ON from
+  network connected, renders CHECKING/UNKNOWN while the bridge starts, and never
+  converts a missing field to OFF.
+- **Canonical feature documentation.** New `docs/features/README.md` records
+  each function as `WORKING`, `ALMOST`, `PARTIAL`, `BLOCKED` or `NOT STARTED`
+  with evidence anchors. The README readiness table, PWA manifest feature list,
+  capability manifest and overlays now describe the same state.
+- **Overlay/application limits documented honestly.** Camera capture, GNSS,
+  cellular modem, external display and microphone/headset/USB-C audio remain
+  blocked or unstarted; the UI reports the concrete blocker instead of a
+  placeholder success.
+- **Whole-repo lockstep bump to `v0.2.1`** across `VERSION`, device
+  `APKBUILD`s, PWA/bridge manifests, service/version pins, shell apps, OTA/VM
+  tooling and documentation. Launcher cache: `v58-p021-bluetooth`.
+- **Verification:** Wi-Fi/Bluetooth Quick Settings mapper, status-bar and
+  lockscreen indicator suites; system-indicator payload tests; PWNAGE-37000
+  Bluetooth/audio and PWNAGE-40000 audio persistence suites; capability-manifest
+  validation; and the A43 source-contract version lockstep.
+
 ## [v0.7.3-beta] - 2026-10-30 - *Release: PWNAGE-37000/38000 boot, Wi-Fi, audio and exact image parity*
 
 - **PWNAGE-37000 Butterscotch.** Cold boot dropped from 1 min 22.5 s to

@@ -1,0 +1,27 @@
+{
+  "at": 1793359182.0076053,
+  "title": "",
+  "entries": [
+    {
+      "name": "Title",
+      "focused": true,
+      "showing": true,
+      "editable": true,
+      "text": "",
+      "is_title": true
+    },
+    {
+      "name": "Start writing...",
+      "focused": false,
+      "showing": true,
+      "editable": true,
+      "text": "",
+      "is_title": false
+    }
+  ],
+  "applications": [
+    "nuxel-pwa-host"
+  ],
+  "at_spi_bus": "unix:path=/run/nuxel-wayland/at-spi/bus",
+  "note": "baseline captured before the confirmation playback"
+}

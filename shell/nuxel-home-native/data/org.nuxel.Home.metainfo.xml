@@ -47,20 +47,19 @@
   </screenshots>
 
   <releases>
-    <release version="0.7.3-beta" date="2026-10-30">
-      <url>https://github.com/illdynamics/nuxel/releases/tag/v0.7.3-beta</url>
+    <release version="0.2.1" date="2026-10-30">
+      <url>https://github.com/illdynamics/nuxel/releases/tag/v0.2.1</url>
       <description>
-        <p>Nuxel Home v0.7.3-beta — aligned with Nuxel Phone OS v0.7.3-beta
-        (PWNAGE-37000/38000: Butterscotch boot latency, owner-controlled Wi-Fi,
-        dual-band audio verification, ABOX firmware reload, and the exact
-        installed-image release capture).</p>
+        <p>Nuxel Home v0.2.1 — aligned with Nuxel Phone OS v0.2.1
+        (current-state feature list, truthful Bluetooth/audio/Wi-Fi overlays,
+        and the confirmed S10+ Bluetooth bring-up).</p>
         <ul>
-          <li>Faster cold boot: deterministic Wayland stop and no UI-critical Wi-Fi wait</li>
-          <li>Wi-Fi stays off when the owner turned it off</li>
-          <li>Audio uses the real PipeWire sink at 48 kHz with an honest Test Audio action</li>
-          <li>First light no longer paints the legacy diagnostic splash</li>
-          <li>Launcher cache advanced to v56-v073-release</li>
-          <li>Whole-repo version bump in lockstep with Nuxel OS v0.7.3-beta</li>
+          <li>Bluetooth tile is tri-state (ON/OFF/UNKNOWN) and reports real hci0/BlueZ state</li>
+          <li>Status bar and lockscreen show a proof-only Bluetooth indicator</li>
+          <li>Audio route verifies MUB0, both CS35L41 DSP1s, RDMA1 and a 48 kHz sink</li>
+          <li>Wi-Fi radio and network-link state are separate; manual OFF is respected</li>
+          <li>Canonical feature-status matrix with per-feature evidence anchors</li>
+          <li>Launcher cache v58-p021-bluetooth and whole-repo v0.2.1 bump</li>
         </ul>
       </description>
     </release>

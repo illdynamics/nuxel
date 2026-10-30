@@ -1,0 +1,30 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+2026-10-30T13:01:10Z nuxel-audio-route: READY: calliope=MUB0 dsp1=2/2 route=verified sink=alsa_output.hw_0_1 rate=48000 default=verified volume<=0.25
+detector_pid=10349 final-round start=2026-10-30T13:01:11Z
+POW 1 rc=0 at=2026-10-30T13:01:12Z
+POW 2 rc=0 at=2026-10-30T13:01:12Z
+POW 3 rc=0 at=2026-10-30T13:01:13Z
+detector_rc=1
+{
+  "result": "TIMEOUT",
+  "at": 1793365311.6826193,
+  "baseline": "",
+  "last_title": "",
+  "changed_away": false,
+  "at_spi_bus": "unix:path=/run/nuxel-wayland/at-spi/bus"
+}
+=== poll ===
+{"at": 1793365271.6292827, "baseline": "", "editable": true, "focused": true, "showing": true, "title": ""}
+=== touch activity tail ===
+2026-10-30T12:59:50Z TOUCH_POINT slot=0 n=60
+2026-10-30T12:59:50Z TOUCH_POINT slot=0 n=61
+2026-10-30T12:59:52Z TOUCH_POINT slot=0 n=62
+2026-10-30T12:59:52Z TOUCH_POINT slot=0 n=63

@@ -13,10 +13,12 @@ verifies them with `tools/release/verify-installed-image.py`.
 - `INSTALLED-IMAGES.json` — provenance, header fields, payload hashes and the
   full-partition readback hash.
 
-The captured BOOT image and userspace inventory are the ones the v0.7.3-beta
-release publishes. The root filesystem is a live mounted ext4 filesystem; no
-consistent block snapshot is claimed. See
+The captured BOOT image and userspace inventory are the bytes published with
+Nuxel v0.2.1. They were originally captured for the v0.7.3-beta handset image;
+this release carries them forward because `v0.2.1` is a documentation and
+launcher-overlay update, not a new BOOT/kernel build. The root filesystem is a
+live mounted ext4 filesystem; no consistent block snapshot is claimed. See
 [`docs/a61-penguin-eyes/INSTALLED-IMAGE-RELEASE.md`](../docs/a61-penguin-eyes/INSTALLED-IMAGE-RELEASE.md)
 for the original capture design and
-[`docs/releases/v0.7.3-beta.md`](../docs/releases/v0.7.3-beta.md) for this
-release's refresh.
+[`docs/releases/v0.2.1.md`](../docs/releases/v0.2.1.md) for this
+release's current-state notes.

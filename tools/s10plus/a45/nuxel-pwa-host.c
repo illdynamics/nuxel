@@ -620,6 +620,26 @@ static void indicators_json(char *out, size_t outn) {
   ind_ssh_tcp(&wlan, &ssh_sessions);
   int ft_active = 0;
   ind_json_bool_field("/run/nuxel/usb-mode.state", "active", &ft_active);
+  /* Bluetooth is proof-only: the authoritative bridge/provider writes this
+     document.  A missing or malformed document leaves it UNKNOWN (null), which
+     hides the indicator; it is never interpreted as OFF. */
+  int bt_powered = 0, bt_discovering = 0, bt_known = 0;
+  char bt_state[32] = "unknown";
+  char bt_source[96] = "unavailable:no-provider-state";
+  const char *btpath = ind_root("NUXEL_BLUETOOTH_INDICATOR",
+                                "/run/nuxel/bluetooth-indicator.json");
+  if (ind_path_exists(btpath)) {
+    if (ind_json_bool_field(btpath, "powered", &bt_powered)) bt_known = 1;
+    ind_json_bool_field(btpath, "discovering", &bt_discovering);
+    if (ind_json_str_field(btpath, "state", bt_state, sizeof bt_state)) {
+      if (strcmp(bt_state, "on") && strcmp(bt_state, "off") &&
+          strcmp(bt_state, "discovering") && strcmp(bt_state, "unknown") &&
+          strcmp(bt_state, "hardware_blocked") && strcmp(bt_state, "service_unavailable")) {
+        strcpy(bt_state, "unknown");
+      }
+    }
+    snprintf(bt_source, sizeof bt_source, "bridge:bluetooth-indicator");
+  }
   char mode[32] = "charging";
   if (!ind_json_str_field("/run/nuxel/connection-mode.json", "mode", mode, sizeof mode)) {
     strcpy(mode, "charging");
@@ -652,11 +672,14 @@ static void indicators_json(char *out, size_t outn) {
       "\"usb\":{\"active\":0,\"source\":\"blocked-kernel-usb-network\",\"sessions\":0},"
       "\"wlan\":{\"active\":%d,\"source\":\"%s\",\"sessions\":%d}},"
     "\"file_transfer\":{\"active\":%d,\"selected\":\"%s\",\"endpoint_state\":\"%s\",\"source\":\"%s\",\"error\":null},"
+    "\"bluetooth\":{\"powered\":%s,\"state\":\"%s\",\"discovering\":%s,\"source\":\"%s\"},"
     "\"connection_mode\":{\"selected\":\"%s\",\"transition_in_progress\":0,\"host_connected\":%d,\"endpoint_state\":\"%s\",\"last_error\":null}}",
     external_power, charging, level, pc, pcsrc, live, armed, pc, live,
     live, (live ? "proc:nuxel-console:tty" : "inactive:no-console-session"),
     wlan, (wlan ? "wlan:sshd-listening" : "inactive:no-ssh-listener"), ssh_sessions,
     ft_active, mode, (ft_active ? "active" : "inactive"), (ft_active ? "usb-mode-helper" : "unavailable:not-activated"),
+    (bt_known ? (bt_powered ? "true" : "false") : "null"), bt_state,
+    (bt_discovering ? "true" : "false"), bt_source,
     mode, pc, (ft_active ? "active" : "inactive"));
 }
 
@@ -711,11 +734,14 @@ static char ind_last_signature[256];
 static guint ind_fallback_timer;
 
 static void ind_signature(char *out, size_t outn) {
-  int power = 0, charging = 0, pc = 0, live = 0;
+  int power = 0, charging = 0, pc = 0, live = 0, bt = 0;
   ind_power(&power, &charging);
   pc = ind_pc_connected();
   live = ind_live_console();
-  snprintf(out, outn, "p%d c%d pc%d l%d", power, charging, pc, live);
+  ind_json_bool_field(ind_root("NUXEL_BLUETOOTH_INDICATOR",
+                               "/run/nuxel/bluetooth-indicator.json"),
+                      "powered", &bt);
+  snprintf(out, outn, "p%d c%d pc%d l%d bt%d", power, charging, pc, live, bt);
 }
 
 static gboolean ind_signature_tick(gpointer data) {

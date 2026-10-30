@@ -1,0 +1,35 @@
+=== PRE-REBOOT ===
+2026-10-30T09:57:11Z
+boot_id_before=818321b9-d486-48fe-9f1c-6501b56b148f
+--- route state ---
+state=applied
+card=0
+calliope=MUB0
+dsp1=2/2
+route=verified
+sink=alsa_output.hw_0_1
+rate=48000
+default=alsa_output.hw_0_1
+volume_cap=0.25
+at=2026-10-30T09:52:43Z
+--- source hashes deployed ---
+418e37463e17dc77cf4b736cf8f6f40de82cf4c1a934274d23de1972c365df05  /usr/lib/nuxel/nuxel-audio-route.sh
+6fc0bd197cdd7dd168ab4a2cdab0b9cd90eba58cba08a1e01303bf94d53794d8  /usr/lib/nuxel/nuxel-abox-firmware-reload-boot.sh
+76e9cbe433d8e3c338c39f409602c663d0d8daecd129e5d976292b0747c45338  /etc/systemd/system/nuxel-boot-sound.service
+a782461af9c9cfb3e15d291c3dad6b473c68e380a70d56a88e1477d71028cd9d  /usr/libexec/nuxel/nuxel-sound-cue
+c3be52b8865aecba7337012ac50787dc3a5e1f8ef29753be3aec5d720f292754  /usr/local/bin/nuxel-notes-works-detector
+ca90e91eba3d32420e1d7faa146dca589dfd801e56d43ee13ce56b7eb0ce78f7  /etc/pipewire/pipewire.conf.d/99-nuxel-s10.conf
+1d09355e85845c1b236254cc7e7f42c48b9f01870eb30f2127ef81ade8ab0162  /usr/lib/nuxel/nuxel-bridge/hw_providers.py
+--- enabled state ---
+enabled
+enabled
+enabled
+enabled
+enabled
+enabled
+--- boot-sound per-boot marker ---
+cat: /run/nuxel/boot-sound-attempted: No such file or directory
+--- wifi ---
+active
+wlan0            UP             192.168.178.167/24 2001:1c00:4d09:8a00:162b:e49d:dc7c:4128/64 fe80::cf53:12a2:1c07:fbe9/64 
+--- reboot ---

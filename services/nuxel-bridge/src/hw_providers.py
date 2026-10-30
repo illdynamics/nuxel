@@ -272,19 +272,60 @@ class AudioProvider:
         return mode not in ("silent", "vibrate")
 
     def _ensure_default_sink(self):
-        """Make the static RDMA1 sink the PipeWire default node.
+        """Make the static RDMA1 sink the PipeWire default node, then verify it.
 
         After a cold boot WirePlumber can publish the sink without selecting a
         default.  ``pw-play`` then fails with "Translate ID error: '-1' is not
         a valid ID (returned by default-nodes-api)" while the sink is present.
-        Selecting by stable node name is idempotent and works before any
-        client has asked for a default.
+        Selecting by stable node name is idempotent.  A successful pactl exit
+        code alone is not enough: read the live default back and require the
+        exact node name, so playback cannot silently land on another output.
+
+        Three conditions must hold, not just the exit code:
+          * the sink exists AND is the RDMA1 48 kHz node (a graph/sink rate
+            mismatch would resample despite the hardware capability);
+          * ``set-default-sink`` returned success;
+          * ``get-default-sink`` reads back exactly the expected name.  A
+            literal ``null`` (what WirePlumber prints when no default node is
+            selected) is a failure, not a selected sink.
         """
+        expected = "alsa_output.hw_0_1"
         proc, err = self._run_bounded(
-            ["pactl", "set-default-sink", "alsa_output.hw_0_1"], timeout=4.0)
+            ["pactl", "list", "short", "sinks"], timeout=4.0)
         if err or proc is None or proc.returncode != 0:
             return False
-        return True
+        sink_line = None
+        for line in (proc.stdout or "").splitlines():
+            cols = line.split("\t")
+            if len(cols) > 3 and cols[1] == expected:
+                sink_line = line
+                break
+        if sink_line is None:
+            return False
+        # cols[3] is the sample spec, e.g. "s16le 2ch 48000Hz".
+        if "48000Hz" not in sink_line:
+            return False
+        proc, err = self._run_bounded(
+            ["pactl", "set-default-sink", expected], timeout=4.0)
+        if err or proc is None or proc.returncode != 0:
+            return False
+        proc, err = self._run_bounded(
+            ["pactl", "get-default-sink"], timeout=4.0)
+        if err or proc is None or proc.returncode != 0:
+            return False
+        value = (proc.stdout or "").strip()
+        return value == expected
+
+    def _sink_volume_within_cap(self):
+        """Return the current default-sink volume, or None if it cannot be read."""
+        proc, err = self._run_bounded(
+            ["wpctl", "get-volume", "@DEFAULT_AUDIO_SINK@"], timeout=4.0)
+        if err or proc is None or proc.returncode != 0:
+            return None
+        m = re.search(r"Volume:\s*([0-9]*\.?[0-9]+)", proc.stdout or "")
+        if not m:
+            return None
+        return float(m.group(1))
 
     def _pipewire_play(self, asset, gain_percent):
         """Play an MP3 through the default PipeWire sink with ``pw-play``.
@@ -307,7 +348,17 @@ class AudioProvider:
             return False, "missing asset %s" % asset
         if not self._sound_mode_ok():
             return False, "sound mode muted"
-        self._ensure_default_sink()
+        if not self._ensure_default_sink():
+            return False, "PipeWire default sink alsa_output.hw_0_1 is unavailable or could not be selected"
+        volume = self._sink_volume_within_cap()
+        if volume is None:
+            return False, "cannot read the PipeWire default-sink volume"
+        cap = self.volume_cap / 100.0
+        if volume > cap + 0.0001:
+            # The route script owns the hardware/session setup.  Do not silently
+            # raise or lower a live level here; refuse playback above the safety
+            # ceiling and let the caller surface the real routing defect.
+            return False, "PipeWire sink volume %.3f exceeds safety cap %.2f; reapply the audio route" % (volume, cap)
         gain = max(0.0, min(1.0, max(0, int(gain_percent)) / 100.0))
         player = shutil.which("pw-play") or "/usr/bin/pw-play"
         argv = [player, "--volume", "%.3f" % gain, asset]
@@ -610,7 +661,10 @@ class AudioProvider:
         percent = max(0, min(self.volume_cap, percent))
 
         if self._pipewire_available():
-            self._ensure_default_sink()
+            if not self._ensure_default_sink():
+                return {"success": False,
+                        "error": "PipeWire default sink alsa_output.hw_0_1 is unavailable or could not be selected",
+                        "control": "pipewire:@DEFAULT_AUDIO_SINK@"}
             vol = percent / 100.0
             proc, err = self._run_bounded(
                 ["wpctl", "set-volume", "@DEFAULT_AUDIO_SINK@", "%.3f" % vol])
@@ -693,19 +747,48 @@ class AudioProvider:
             "error": rerr,
         }
 
+    def _route_ready(self, timeout=30.0):
+        """Read-only route readiness via the same probe the boot cue uses.
+
+        Settings -> Test Audio must not play into a half-applied route: a
+        successful pw-play exit says nothing when Calliope is not MUB0 or a
+        CS35L41 DSP1 has not booted.  The script itself is the single source
+        of truth (`nuxel-audio-route.sh --check`), so no mixer names are
+        duplicated here.
+        """
+        script = "/usr/lib/nuxel/nuxel-audio-route.sh"
+        if not os.path.isfile(self._abs(script)):
+            return False, "route check missing: %s" % script
+        proc, err = self._run_bounded(
+            [self._abs(script), "--wait", "%.0f" % max(1.0, timeout)],
+            timeout=timeout + 10.0)
+        if err or proc is None:
+            return False, "route check failed: %s" % (err or "no process")
+        text = ((proc.stderr or "") + (proc.stdout or "")).strip()
+        if proc.returncode != 0:
+            return False, "audio route not ready: %s" % text[-400:]
+        return True, "route verified (MUB0, both DSP1s, 48 kHz sink)"
+
     def test_audio(self, asset="/usr/share/nuxel/assets/nuxel-pow.mp3", gain_percent=25):
         """Play the test asset through the currently selected output.
 
         Returns an HONEST result: 'played' means the player exited zero after
-        sending the stream to the selected PipeWire sink; it does NOT assert
+        sending the stream to the verified PipeWire sink; it does NOT assert
         that a human heard the sound."""
         if not self._sound_mode_ok():
             return {"success": False, "played": False,
                     "error": "sound mode is silent or vibrate",
                     "audible": "unverified"}
         if self._pipewire_available():
+            ready, route_detail = self._route_ready()
+            if not ready:
+                return {"success": False, "played": False,
+                        "error": route_detail,
+                        "route": "pipewire:@DEFAULT_AUDIO_SINK@",
+                        "asset": asset, "audible": "unverified"}
             ok, detail = self._pipewire_play(asset, gain_percent)
-            return {"success": ok, "played": ok, "detail": detail,
+            return {"success": ok, "played": ok,
+                    "detail": route_detail + "; " + detail,
                     "route": "pipewire:@DEFAULT_AUDIO_SINK@",
                     "asset": asset, "audible": "unverified"}
         return {"success": False, "played": False,

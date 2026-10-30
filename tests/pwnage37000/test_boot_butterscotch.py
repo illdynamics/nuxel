@@ -21,9 +21,16 @@ def _read(path: Path) -> str:
 
 
 def test_abox_unit_does_not_want_multi_user():
-    unit = _read(ROOT / "services" / "nuxel-s10" / "systemd" / "nuxel-abox-firmware-reload.service")
-    assert "WantedBy=nuxel-wayland.service" in unit
-    assert "WantedBy=multi-user.target" not in unit
+    reload_unit = _read(ROOT / "services" / "nuxel-s10" / "systemd" / "nuxel-abox-firmware-reload.service")
+    assert "WantedBy=nuxel-wayland.service" in reload_unit
+    assert "WantedBy=multi-user.target" not in reload_unit
+    # Ordering the route after the reload would form a cycle (reload is after
+    # nuxel-wayland, which wants the route).  The route script itself must
+    # refuse until MUB0, and the boot cue must order after both units.
+    route_unit = _read(ROOT / "services" / "nuxel-s10" / "systemd" / "nuxel-audio-route.service")
+    assert "After=sound.target nuxel-abox-firmware-reload.service" not in route_unit
+    cue = _read(ROOT / "services" / "nuxel-session" / "systemd" / "nuxel-boot-sound.service")
+    assert "nuxel-abox-firmware-reload.service" in cue.splitlines()[2]
 
 
 def test_wayland_fast_stop_drop_in():
@@ -53,3 +60,7 @@ def test_audio_route_does_not_block_multi_user():
     unit = _read(ROOT / "services" / "nuxel-s10" / "systemd" / "nuxel-audio-route.service")
     assert "WantedBy=nuxel-wayland.service" in unit
     assert "WantedBy=multi-user.target" not in unit
+    # The route is fail-open/deferred until MUB0.  Do not order it after the
+    # ABOX reload: that unit is After=nuxel-wayland, which wants the route, so
+    # the edge is a boot-order cycle.
+    assert "After=sound.target\n" in unit

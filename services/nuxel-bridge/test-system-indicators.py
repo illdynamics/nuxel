@@ -63,6 +63,8 @@ class FakeSystem:
             "NUXEL_ANDROID_USB_STATE": os.path.join(self.android_usb, "state"),
             "NUXEL_SYS_TYPEC": self.typec,
             "NUXEL_DEBUGFS": self.debugfs,
+            "NUXEL_BLUETOOTH_STATE": os.path.join(self.run, "nuxel",
+                                                   "bluetooth-indicator.json"),
         })
 
     def write(self, rel: str, value: str) -> None:
@@ -176,6 +178,33 @@ def main() -> int:
               "empty system: charging source is unavailable, not a assumed value")
         check(ind["usb_data"]["source"].startswith("unavailable:"),
               "empty system: USB source is unavailable")
+        check(ind["bluetooth"]["powered"] is None,
+              "empty system: Bluetooth is UNKNOWN, never a fabricated OFF")
+        check(ind["bluetooth"]["source"].startswith("unavailable:"),
+              "empty system: Bluetooth source names the missing provider state")
+
+        # 1b. Bluetooth provider state: powered, off, and discoverable.  A
+        # malformed document must not be coerced to OFF.
+        fake.write("run/nuxel/bluetooth-indicator.json",
+                   '{"powered": true, "state": "on", "discovering": true, '
+                   '"source": "bridge:BluetoothGetStatus"}')
+        ind = mod.get_indicators()
+        check(ind["bluetooth"]["powered"] is True,
+              "powered Bluetooth adapter is reported true")
+        check(ind["bluetooth"]["discovering"] is True,
+              "discovering Bluetooth adapter is reported true")
+        check(ind["bluetooth"]["source"] == "bridge:BluetoothGetStatus",
+              "Bluetooth source is the authoritative bridge")
+        fake.write("run/nuxel/bluetooth-indicator.json",
+                   '{"powered": false, "state": "off", "discovering": false}')
+        check(mod.get_indicators()["bluetooth"]["powered"] is False,
+              "explicit BlueZ OFF is reported as false")
+        fake.write("run/nuxel/bluetooth-indicator.json", "not-json")
+        check(mod.get_indicators()["bluetooth"]["powered"] is None,
+              "malformed Bluetooth state is UNKNOWN, not OFF")
+        fake.write("run/nuxel/bluetooth-indicator.json", "{}")
+        check(mod.get_indicators()["bluetooth"]["powered"] is None,
+              "missing Powered property is UNKNOWN, not OFF")
 
         # 2. Charging-only cable. This is the explicit false-PC test.
         fake.battery("Discharging")

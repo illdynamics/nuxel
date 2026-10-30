@@ -1,0 +1,15 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+bash: line 3: warning: command substitution: ignored null byte in input
+2026-10-30T12:59:36Z calliope=MUB0 route=state=applied gain=12 rdma1_en=1 sink=alsa_output.hw_0_1 dsp= codec:cs35l41-codec.0.auto:b=Y/r=Y codec:cs35l41-codec.4.auto:b=Y/r=Y
+READY at 2026-10-30T12:59:36Z
+--- readiness check ---
+2026-10-30T12:59:36Z nuxel-audio-route: verify ABOX UAIF1 Switch=on 
+2026-10-30T12:59:36Z nuxel-audio-route: READY: calliope=MUB0 dsp1=2/2 route=verified sink=alsa_output.hw_0_1 rate=48000 default=verified volume<=0.25

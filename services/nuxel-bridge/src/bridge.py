@@ -120,7 +120,7 @@ def read_battery_status():
 # PWA<->host protocol pin (briq-04c). Same env names as the systemd units and the
 # HTTP layer, so `systemctl show -p Environment` shows exactly what is enforced.
 BRIDGE_PROTOCOL_VERSION = os.environ.get('NUXEL_BRIDGE_PROTOCOL_VERSION', '1')
-BRIDGE_HOST_VERSION = os.environ.get('NUXEL_BRIDGE_VERSION', '0.7.3-beta')
+BRIDGE_HOST_VERSION = os.environ.get('NUXEL_BRIDGE_VERSION', '0.2.1')
 OBJECT_PATH = '/org/nuxel/Bridge'
 PORTAL_BUS_NAME = 'org.nuxel.Portal'
 PORTAL_OBJECT_PATH = '/org/nuxel/Portal'
@@ -377,10 +377,14 @@ class NetworkManagerConnector:
     AP_SEC_KEY_MGMT_PSK = 0x8
     AP_SEC_KEY_MGMT_SAE = 0x400
 
+    RETRY_SECONDS = float(os.environ.get('NUXEL_NM_RETRY', '5.0'))
+
     def __init__(self):
         self.bus = None
         self.nm_proxy = None
         self.connected = False
+        self.last_error = None
+        self.last_attempt = 0.0
 
     # ------------------------------------------------------------------ infra
 
@@ -392,13 +396,23 @@ class NetworkManagerConnector:
                                             '/org/freedesktop/NetworkManager')
         self.connected = True
 
-    def connect(self):
+    def connect(self, force=False):
+        now = time.time()
+        if self.connected:
+            return True
+        if not force and self.last_error and (now - self.last_attempt) < self.RETRY_SECONDS:
+            return False
+        self.last_attempt = now
         try:
             self._refresh_proxy()
+            self.last_error = None
             logger.info("NetworkManager connected")
+            return True
         except Exception as e:
             self.connected = False
+            self.last_error = str(e)
             logger.error("NetworkManager connect failed: %s", e)
+            return False
 
     @staticmethod
     def _security(rsn, wpa, flags):
@@ -691,10 +705,11 @@ class NetworkManagerConnector:
     # ------------------------------------------------------------- public API
 
     def get_status(self):
-        if not self.connected:
+        if not self.connected and not self.connect():
             return {'available': False, 'connected': False,
                     'wifi_available': False, 'wifi_connected': False,
-                    'wifi_state': 'unavailable', 'wifi_stage': 'unavailable'}
+                    'wifi_state': 'unavailable', 'wifi_stage': 'unavailable',
+                    'error': self.last_error or 'NetworkManager unavailable'}
         try:
             self._refresh_proxy()
             props = dbus.Interface(self.nm_proxy, self.PROPS)
@@ -753,6 +768,8 @@ class NetworkManagerConnector:
 
     def set_wifi_enabled(self, enabled):
         """Set NM's real WirelessEnabled property and confirm its readback."""
+        if not self.connected and not self.connect():
+            return {'success': False, 'error': self.last_error or 'NetworkManager unavailable'}
         try:
             self._refresh_proxy()
             props = dbus.Interface(self.nm_proxy, self.PROPS)
@@ -1164,8 +1181,8 @@ class BluetoothConnector:
         ``CONFIG_BT_BCM43XX`` is only the Samsung power/rfkill driver; it does
         not create an HCI transport.  Without ``CONFIG_BT_HCIUART`` (or a USB
         transport) the controller can be powered but can never register hci0.
-        This is the measured S10+ 4.14.253 configuration: BCM43XX=y,
-        HCIUART is not set.
+        The verified S10+ image builds HCIUART/H4 and starts ``btattach``, so
+        ``hci0`` registers; a false value here still names the exact blocker.
         """
         cfg = self._kernel_config()
         if not cfg:
@@ -1297,6 +1314,8 @@ class BluetoothConnector:
             'kernel_bt_driver': driver,
             'kernel_hci_transport': hci_transport,
             'adapters': adapters,
+            'adapter_address': adapters[0]['address'] if adapters else None,
+            'adapter_name': adapters[0]['name'] if adapters else None,
             'firmware_present': firmware['present'],
             'firmware_found': firmware['found'],
             'blocker': blocker,
@@ -2424,7 +2443,7 @@ class NuxelBridgeService(dbus.service.Object):
 
 
 def main():
-    logger.info("Starting Nuxel Bridge v0.7.3-beta...")
+    logger.info("Starting Nuxel Bridge v0.2.1...")
     
     dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
     bus = dbus.SystemBus()

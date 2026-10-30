@@ -1,0 +1,5 @@
+run=PWNAGE-40000 continuation
+started=2026-10-30T09:36:17Z
+host=macOS Darwin infranux 24.6.0 Darwin Kernel Version 24.6.0: Tue Jul 21 20:51:05 PDT 2026; root:xnu-11417.140.69.711.44~1/RELEASE_ARM64_T6000 arm64
+target=root@192.168.178.167
+key=~/.ssh/wicked_wqn_id_rsa

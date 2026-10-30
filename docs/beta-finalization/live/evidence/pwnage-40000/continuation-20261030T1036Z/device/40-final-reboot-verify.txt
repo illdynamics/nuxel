@@ -1,0 +1,39 @@
+=== FINAL REBOOT VERIFY 2026-10-30T10:05:39Z boot=542fd9b1-1f16-42bc-ae9f-88bc8c5c6f3b ===
+--- graph clock config ---
+    default.clock.rate = 48000
+--- effective graph rate ---
+Default Sample Specification: float32le 2ch 48000Hz
+--- sink ---
+31	alsa_output.hw_0_1	PipeWire	s16le 2ch 48000Hz	SUSPENDED
+--- default ---
+alsa_output.hw_0_1
+--- calliope ---
+MUB0
+--- dsp1 ---
+codec:cs35l41-codec.0.auto booted=Y running=Y fw=cs35l40-bot-dsp1-spk-prot.bin
+codec:cs35l41-codec.4.auto booted=Y running=Y fw=cs35l40-rcv-dsp1-spk-prot.bin
+--- route controls ---
+ABOX RDMA1_EN          1
+ABOX SPKAMP_EN         1
+ABOX SPKAMP_A          2
+ABOX SPKAMP_B          2
+ABOX SIFS1             1
+ABOX UAIF1 SPK         2
+Left DSP1 Firmware     9
+Right DSP1 Firmware    9
+--- route check ---
+2026-10-30T10:05:39Z nuxel-audio-route: READY: calliope=MUB0 dsp1=2/2 route=verified sink=alsa_output.hw_0_1 rate=48000 default=verified volume<=0.25
+--- boot-sound ---
+Result=success
+ExecMainStatus=0
+     Active: activating (start) since Fri 2026-10-30 11:05:35 CET; 4s ago
+    Process: 7642 ExecStartPre=/usr/lib/nuxel/nuxel-audio-route.sh --wait 200 (code=exited, status=0/SUCCESS)
+--- boot cue entries ---
+--- marker ---
+1793354739
+--- volume ---
+Volume: 0.25
+--- screen timeout ---
+{"timeout_ms": 300000, "never": false}
+--- wifi ---
+active

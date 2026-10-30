@@ -42,6 +42,13 @@
     flex: 0 0 auto;
 }
 
+/* `hidden` must win over the per-icon display rules below.  The status bar uses
+   `hidden` for proof-only indicators (Bluetooth, cellular), and an inline-flex
+   rule would otherwise override the UA `[hidden]` style. */
+.status-right .status-icon[hidden] {
+    display: none !important;
+}
+
 /* Each status cell is a fixed, non-shrinking box; drawing happens INSIDE it. */
 .status-right .status-icon {
     flex: 0 0 auto;
@@ -154,6 +161,32 @@
     border-left-color: transparent;
 }
 
+/* Bluetooth indicator: only drawn when the adapter is ON.  UNKNOWN and OFF
+   hide the glyph; this is a state indicator, not a toggle. */
+.bluetooth-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--bluetooth-colour, #4CAF50);
+}
+.bluetooth-icon::before {
+    content: '';
+    width: 9px;
+    height: 9px;
+    border-left: 2px solid currentColor;
+    border-top: 2px solid currentColor;
+    transform: rotate(45deg) skew(-8deg, -8deg);
+}
+.bluetooth-icon::after {
+    content: '';
+    position: absolute;
+    width: 9px;
+    height: 9px;
+    border-right: 2px solid currentColor;
+    border-bottom: 2px solid currentColor;
+    transform: rotate(45deg) skew(-8deg, -8deg);
+}
+
 /* Battery icon */
 .battery-icon {
     position: relative;
@@ -256,6 +289,17 @@
 
 .qs-item[data-enabled="true"] .qs-icon {
     color: var(--text-accent);
+}
+
+/* Unknown is not OFF: keep the checking state visually neutral until a
+   hardware-backed radio reading arrives. */
+.qs-item[data-enabled="unknown"] {
+    background: var(--bg-accent);
+    opacity: 0.72;
+}
+
+.qs-item[data-enabled="unknown"] .qs-label {
+    font-style: italic;
 }
 
 .qs-icon {

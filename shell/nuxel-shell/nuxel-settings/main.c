@@ -313,7 +313,7 @@ create_about_page(NuxelSettings *app)
     GtkWidget *about_group = create_settings_group("About");
     adw_preferences_page_add(ADW_PREFERENCES_PAGE(page), about_group);
     
-    app->about_version = gtk_label_new("Nuxel OS v0.7.3-beta");
+    app->about_version = gtk_label_new("Nuxel OS v0.2.1");
     adw_preferences_group_add(ADW_PREFERENCES_GROUP(about_group),
         create_action_row("OS Version", "", app->about_version));
     

@@ -50,8 +50,27 @@ stop_session() {
 
 start_session() {
     log "restarting Nuxel audio route/session"
-    systemctl --no-block start nuxel-audio-route.service 2>/dev/null || true
+    # Start the session FIRST: it publishes the PipeWire runtime/socket the
+    # route script verifies.  Starting the route before PipeWire exists made
+    # the route defer with "static PipeWire sink absent" on every cold boot.
     systemctl --no-block start nuxel-wayland.service 2>/dev/null || true
+    n=0
+    while [ "$n" -lt 100 ]; do
+        [ -S /run/nuxel-wayland/pipewire-0 ] && break
+        n=$((n + 1))
+        sleep 0.1
+    done
+    if [ -S /run/nuxel-wayland/pipewire-0 ]; then
+        log "PipeWire session socket ready; applying the audio route"
+    else
+        log "PipeWire session socket not ready after 10s; route will rely on its retry timer"
+    fi
+    # Synchronous and bounded by the route unit's TimeoutStartSec.  The boot cue
+    # is ordered After=this unit; returning before the route has applied made a
+    # one-shot 45 s cue fail on a cold boot even though the route succeeded
+    # ~27 s later.
+    systemctl start nuxel-audio-route.service 2>/dev/null || \
+        log "audio route not ready yet; retry timer will re-apply it"
 }
 
 # Fast path: the kernel already loaded the core blobs (CONFIG_EXTRA_FIRMWARE, or

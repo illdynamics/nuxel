@@ -1,0 +1,37 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+=== FIX: set AMP PCM Gain 19 -> 12 (proven live value) ===
+numid=629,iface=MIXER,name='Left AMP PCM Gain'
+  ; type=INTEGER,access=rw---R--,values=1,min=0,max=20,step=0
+  : values=12
+  | dBscale-min=0.00dB,step=0.01dB,mute=1
+numid=649,iface=MIXER,name='Right AMP PCM Gain'
+  ; type=INTEGER,access=rw---R--,values=1,min=0,max=20,step=0
+  : values=12
+  | dBscale-min=0.00dB,step=0.01dB,mute=1
+  : values=12
+  : values=12
+2026-10-30T12:42:53Z nuxel-audio-route: READY: calliope=MUB0 dsp1=2/2 route=verified sink=alsa_output.hw_0_1 rate=48000 default=verified volume<=0.25
+detector_pid=13489 round=2 start=2026-10-30T12:42:54Z
+POW 1 rc=0 at=2026-10-30T12:42:54Z
+POW 2 rc=0 at=2026-10-30T12:42:55Z
+POW 3 rc=0 at=2026-10-30T12:42:55Z
+=== dmesg gain/trigger delta ===
+detector_rc=1
+{
+  "result": "TIMEOUT",
+  "at": 1793364205.7209516,
+  "baseline": "",
+  "last_title": "",
+  "changed_away": false,
+  "at_spi_bus": "unix:path=/run/nuxel-wayland/at-spi/bus"
+}
+=== poll ===
+{"at": 1793364173.7708907, "baseline": "", "editable": true, "focused": true, "showing": true, "title": ""}

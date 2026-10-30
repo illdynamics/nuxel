@@ -1,0 +1,17 @@
+# PWNAGE-39000 P0 pre-reboot evidence (2026-10-30)
+target: root@192.168.178.167 (beyond2lte, kernel 4.14.253)
+transport: Wi-Fi SSH, key ~/.ssh/wicked_wqn_id_rsa
+
+Findings:
+- NetworkManager running:connected, wlan0 connected SSID "Nuxel Ziggo5501109"
+- nmcli radio: WIFI-HW enabled, WIFI enabled
+- /var/lib/NetworkManager/NetworkManager.state:
+  NetworkingEnabled=true, WirelessEnabled=true, WWANEnabled=true
+- nuxel-wifi.service enabled + active(exited) 0/SUCCESS
+- /usr/lib/nuxel/nuxel-wifi-up.sh = repo PWNAGE-41000 radio-ON-by-default policy
+- all 4 saved profiles connection.autoconnect=yes
+- live bridge GET /api/v1/phone/status -> network.wifi_enabled=true,
+  wifi_connected=true, wifi_state=internet, wifi_stage=online
+- live PWA qs.js/bridge.js md5 match repo working tree (tri-state Wi-Fi fix)
+- Boot journal: NM autoconnect started wlan0 at ~10.5s, activated at ~13.2s,
+  DHCP lease ~14.1s (address 192.168.178.167)

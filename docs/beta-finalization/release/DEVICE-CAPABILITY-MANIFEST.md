@@ -4,7 +4,7 @@
 **Machine-readable twin:** [`DEVICE-CAPABILITY-MANIFEST.json`](DEVICE-CAPABILITY-MANIFEST.json) · **Schema:** [`DEVICE-CAPABILITY-MANIFEST.schema.json`](DEVICE-CAPABILITY-MANIFEST.schema.json) · **Validator:** `tools/beta/validate-capability-manifest.py`
 **Companion:** [`../testing/TEST-STRATEGY.md`](../testing/TEST-STRATEGY.md) (L1–L6) · [`SOAK-AND-PERFORMANCE.md`](../testing/SOAK-AND-PERFORMANCE.md) · [`REBOOT-ROLLBACK.md`](REBOOT-ROLLBACK.md) · [`ROLLBACK.md`](ROLLBACK.md) · [`../BETA-MANUAL-PROOF-CHECKLIST.md`](../BETA-MANUAL-PROOF-CHECKLIST.md)
 
-**Version:** `v0.5.2-beta` · **git head at generation:** `94d68b13e64ed195e0c3f3f6d2e21a07f3ae3b19` · **generated:** `2026-10-16T21:02:28+0200`
+**Version:** `v0.2.1` · **git head at generation:** the `v0.2.1` release commit · **generated:** `2026-10-30T16:00:00+0100`
 
 ---
 
@@ -28,7 +28,7 @@ strength:  NOT_SUPPORTED_ON_DEVICE = DEFERRED = FAILED = BLOCKED_* = 0
            VERIFIED_ON_S10PLUS = 5      (live-device evidence only)
 ```
 
-This is why the table below contains a lot of `1`s and `2`s and no `5`s: nothing has been promoted on the strength of a file existing. `VERIFIED_ON_S10PLUS` requires live-device evidence for the *promoted* claim, and the live preflight in this pass was read-only.
+This is why the table below contains a lot of `1`s and `2`s and no `5`s: nothing has been promoted on the strength of a file existing. `VERIFIED_ON_S10PLUS` requires live-device evidence for the *promoted* claim. Bluetooth is **confirmed working on the handset** (hci0, powered adapter and peer scan), but the evidence-gated work-queue record still caps its row at `NEEDS_OWNER_TEST` until one concrete headset/keyboard profile is exercised. Audio's full software route is verified, while physical audibility remains owner-only.
 
 ## 2. Device
 
@@ -60,7 +60,7 @@ This is why the table below contains a lot of `1`s and `2`s and no `5`s: nothing
 | `verbose_boot_setting` | **NEEDS_OWNER_TEST** | `briq-02b-verbose-boot-setting` (implemented) | Verbose boot setting and the one-time Bixby early-hold override |
 | `boot_mode_guard` | **BLOCKED_KERNEL** | `briq-01c-chargermode-bootmode` (implemented) | Charger/LPM boot-mode detection and the initramfs-side fix |
 | `wifi` | **IMPLEMENTED_NOT_DEPLOYED** | `briq-03a-wifi` (in_progress) | Wi-Fi (Broadcom brcmfmac) enumeration, scan and association |
-| `bluetooth` | **NEEDS_OWNER_TEST** | `briq-08d-bluetooth` (pending) | Bluetooth (BlueZ) controller, pairing and profiles |
+| `bluetooth` | **NEEDS_OWNER_TEST** (working; profile acceptance open) | `briq-08d-bluetooth` (pending) | Bluetooth (BlueZ) controller, pairing and profiles |
 | `modem_sim` | **NEEDS_OWNER_TEST** | `briq-08i-sim-microsd-modem` (pending) | Shannon LTE modem and SIM (beyond2lte) |
 | `microsd` | **NEEDS_OWNER_TEST** | `briq-08i-sim-microsd-modem` (pending) | microSD controller, insertion and safe mount/eject |
 | `audio_speaker` | **NEEDS_OWNER_TEST** | `briq-03c-audio-speaker` (in_progress) | Speaker / earpiece audio path (Madera + ABox + CS35L40) |
@@ -177,10 +177,10 @@ This is why the table below contains a lot of `1`s and `2`s and no `5`s: nothing
 
 * **Verdict:** `NEEDS_OWNER_TEST`  ·  **record:** `briq-08d-bluetooth` (state `pending`, verdict `none`)
 * **Hardware present:** yes
-* **Hardware evidence:** `rfkill: bcm43xx Bluetooth Soft blocked: yes`
-* **Repository evidence:** `configs/nuxel/bluetooth/bluetooth.json`; `configs/nuxel/bluetooth/main.conf.d/60-nuxel.conf`
-* **Owner action:** Enable Bluetooth and pair a known headset/phone; checklist section 11
-* **Notes:** A Bluetooth controller exists in the kernel (rfkill entry 'bcm43xx Bluetooth') but it is SOFT BLOCKED and no BlueZ service was observed running in the live preflight, so no scan, pair, profile or reconnection claim can be made yet. Real pairing needs a second device, which is an owner step.
+* **Hardware evidence:** `nuxel-bluetooth.service active`; `btattach -B /dev/ttySAC1 -P h4 -S 115200`; `/sys/class/bluetooth/hci0 -> .../ttySAC1/hci0`; `Controller 43:75:B1:00:1F:AC (public), Powered: yes`; a 12 s scan discovered `67:BC:9D:9D:37:7F`
+* **Repository evidence:** `configs/nuxel/bluetooth/bluetooth.json`; `configs/nuxel/bluetooth/main.conf.d/60-nuxel.conf`; `services/nuxel-bridge/src/bridge.py`; `services/nuxel-bridge/src/hw_providers.py`; `pwa/nuxel-home/js/qs.js`
+* **Owner action:** The controller, scan and Settings actions are verified. Pair/connect a specific headset or keyboard and report the profile result.
+* **Notes:** **Bluetooth is confirmed working.** `CONFIG_BT_HCIUART`/H4 plus `btattach` register `hci0`, BlueZ powers the BCM4375 controller, and a bounded scan discovers peers. The bridge exposes a tri-state provider and Quick Settings, the status bar, the lockscreen and Settings read the same state without fabricating OFF. Pair/connect/disconnect/trust/remove are implemented and return the real BlueZ result; one concrete peer/profile acceptance remains the owner step that keeps this evidence-gated row at `NEEDS_OWNER_TEST`.
 
 #### `modem_sim` — Shannon LTE modem and SIM (beyond2lte)
 
@@ -204,10 +204,10 @@ This is why the table below contains a lot of `1`s and `2`s and no `5`s: nothing
 
 * **Verdict:** `NEEDS_OWNER_TEST`  ·  **record:** `briq-03c-audio-speaker` (state `in_progress`, verdict `none`)
 * **Hardware present:** yes
-* **Hardware evidence:** `/proc/asound/cards: 0 beyond-madera, 1 abox_vdma, 2 abox_dump`; `aplay: command not found (alsa-utils absent)`
-* **Repository evidence:** `configs/alsa-ucm/`; `configs/pipewire/`; `configs/wireplumber/`; `tools/s10plus/a33/nuxel-audio-diag.sh`; `docs/beta-finalization/preflight/live/batch-3-audio-radio-power.out`
-* **Owner action:** Listen for a low-volume test tone with an ear to the earpiece; checklist section 6
-* **Notes:** The ALSA cards register (beyond-madera, abox_vdma, abox_dump) with playback and capture PCMs. pipewire, wireplumber and alsa-utils are NOT installed on the phone yet and the live preflight shows no audible-output test, so the honest state is 'codec registered, audibility unproven'. Only low-volume safe tests are permitted; amplifier protection and thermal limits are never disabled.
+* **Hardware evidence:** ABOX Calliope `MUB0`; both CS35L41 DSP1 `booted=Y running=Y`; `ABOX RDMA1_EN=1`; `Left/Right AMP PCM Gain=12/12`; `alsa_output.hw_0_1` at 48 kHz; RDMA1 `state=RUNNING` with advancing `hw_ptr`; `pw-play` rc=0
+* **Repository evidence:** `configs/alsa-ucm/`; `configs/pipewire/`; `configs/wireplumber/`; `services/nuxel-s10/bin/nuxel-audio-route.sh`; `services/nuxel-bridge/src/hw_providers.py`; `docs/beta-finalization/live/PWNAGE-40000-REPORT.md`; `audio.md`
+* **Owner action:** Play the three-POW cue, then type `works` in the focused Notes title so the detector can record a fresh owner confirmation.
+* **Notes:** **Audio is almost complete.** The full software path is verified live: Calliope MUB0, both CS35L41 DSP1s running, the RDMA1 crossbar enabled, amplifier gain 12, a 48 kHz PipeWire sink with advancing `hw_ptr`, and a successful `pw-play`. The boot cue, Settings → Sound → Test Audio and the volume keys share that route and the 25 % safety ceiling. Physical audibility remains unconfirmed because the owner-confirmation entry was never made; microphone, headset and USB-C capture are also untested.
 
 #### `headphones` — Headphones and USB-C audio accessories
 
@@ -447,9 +447,9 @@ This is why the table below contains a lot of `1`s and `2`s and no `5`s: nothing
 * Touch controller: present in hardware, deliberately NOT initialised in LPM/charger mode; no touch evdev node in the last boot.
 * Display: no DRM/KMS; DECON framebuffer with a userspace Wayland->fb bridge; ABGR8888 proven in the commit path.
 * Wi-Fi: brcmfmac enumerates (phy0, wlan0/wlan1/p2p0) and is unblocked but DOWN; association unproven.
-* Bluetooth: controller present (bcm43xx) but soft-blocked; no BlueZ service observed running.
+* Bluetooth: **CONFIRMED WORKING.** HCIUART/H4 + `btattach` register `hci0`, the controller is powered and a bounded scan discovers a peer. A specific headset/keyboard profile remains an owner check.
 * Modem: Shannon net devices exposed (rmnet0-7, umts_dm0, mcps0); ModemManager finds no modem object.
-* Audio: beyond-madera / abox_vdma / abox_dump cards registered; pipewire, wireplumber and alsa-utils absent; audibility unproven.
+* Audio: **ALMOST COMPLETE.** Calliope MUB0, both CS35L41 DSP1s, `RDMA1_EN=1`, gain 12/12, a 48 kHz sink and advancing `hw_ptr` are verified; `pw-play` succeeds. Physical audibility and capture are not owner-confirmed.
 * Haptics: /sys/class/timed_output/vibrator present (owner must feel it).
 * Torch: /sys/class/leds/torch-sec1 present; RGB notification LED not proven (NOT_SUPPORTED_ON_DEVICE for per-colour config).
 * Sensors: grip_sensor, ssp_context, hall, certify_hall as evdev sources; no confirmed IIO motion/light/proximity device.

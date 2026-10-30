@@ -1,0 +1,28 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+=== display/backlight ===
+4
+12800
+183
+=== locks ===
+1793363120 HOST_ACTION unlock -> launcher page
+1793363458 HOST_ACTION unlock -> launcher page
+--- input state tail ---
+1793363505 HOST_CONFIG_GET name=wlfb-state bytes=290
+1793363505 HOST_CONFIG_GET name=battery-capacity bytes=3
+1793363505 HOST_CONFIG_GET name=battery-status bytes=12
+1793363505 HOST_CONFIG_GET name=battery-capacity bytes=3
+1793363505 HOST_CONFIG_GET name=battery-status bytes=12
+=== notes app processes ===
+6596 /usr/lib/nuxel/nuxel-pwa-host
+6731 /usr/libexec/webkit2gtk-4.1/WebKitNetworkProcess 2 18
+6732 /usr/libexec/webkit2gtk-4.1/WebKitWebProcess 4 21
+=== detector baseline probe (timeout 3) ===
+python3: can't open file '/usr/libexec/nuxel/notes-works-detector.py': [Errno 2] No such file or directory

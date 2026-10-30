@@ -614,6 +614,43 @@ def _established_ssh_sessions(proc_root: str = "/proc", port: int = 22) -> List[
 _TRANSPORT_CACHE: Dict[str, Any] = {"at": 0.0}
 _TRANSPORT_CACHE_TTL_S = 5.0
 
+def bluetooth_indicator() -> Dict[str, Any]:
+    """Return proof-only Bluetooth state for the lockscreen indicator.
+
+    This module is imported by both the native host and the loopback HTTP
+    bridge, so it must not open BlueZ directly: that would duplicate the
+    authoritative ``BluetoothConnector`` logic.  The bridge/server injects the
+    provider result through ``NUXEL_BLUETOOTH_STATE``; without a fresh value the
+    indicator is explicitly UNKNOWN and stays hidden.
+
+    Expected JSON: ``{"powered": true|false|null, "state": "...",
+    "discovering": bool, "source": "..."}``.  A malformed or absent document is
+    never interpreted as OFF.
+    """
+    path = os.environ.get("NUXEL_BLUETOOTH_STATE", "/run/nuxel/bluetooth-indicator.json")
+    raw = _read(path)
+    if not raw:
+        return {"powered": None, "state": "unknown", "discovering": False,
+                "source": "unavailable:no-provider-state"}
+    try:
+        import json as _json
+        doc = _json.loads(raw)
+    except Exception as exc:  # noqa: BLE001
+        return {"powered": None, "state": "unknown", "discovering": False,
+                "source": "unavailable:invalid-provider-state:%s" % exc}
+    if not isinstance(doc, dict):
+        return {"powered": None, "state": "unknown", "discovering": False,
+                "source": "unavailable:invalid-provider-state"}
+    powered = doc.get("powered")
+    if powered not in (True, False, None):
+        powered = None
+    return {
+        "powered": powered,
+        "state": str(doc.get("state") or ("on" if powered else "off" if powered is False else "unknown")),
+        "discovering": bool(doc.get("discovering")),
+        "source": str(doc.get("source") or "provider-state"),
+    }
+
 
 def _cached_tri_link_facts() -> Dict[str, Any]:
     global _TRANSPORT_CACHE
@@ -736,7 +773,14 @@ def get_indicators() -> Dict[str, Any]:
     console = live_console(bool(usb["pc_connected"]))
     transports = console_transports(console)
     mode = connection_mode_state()
+    bluetooth = bluetooth_indicator()
     return {
+        "bluetooth": {
+            "powered": bluetooth["powered"],
+            "state": bluetooth["state"],
+            "discovering": bluetooth["discovering"],
+            "source": bluetooth["source"],
+        },
         "charging": {
             "external_power": bool(power["external_power"]),
             "charging": bool(power["charging"]),
@@ -797,6 +841,7 @@ def get_indicators() -> Dict[str, Any]:
             "console_usb": transports["usb"]["source"],
             "console_wlan": transports["wlan"]["source"],
             "file_transfer": mode["source"],
+            "bluetooth": bluetooth["source"],
         },
     }
 

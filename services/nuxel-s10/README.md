@@ -26,9 +26,12 @@ Installed files (phone rootfs):
   48 kHz (44.1 kHz leaves `hw_ptr` at 0 and returns EIO).  The ALSA default points at `hw:0,1`, the static PipeWire sink is
   `alsa_output.hw_0_1`, and the route script stops after the first blocked
   `amixer` open instead of accumulating D-state processes.
-* **Wi-Fi**: `nuxel-wifi.service` unblocks the radio, enables every stored
-  Wi-Fi profile for autoconnect, and brings up a profile when needed.  This is
-  what keeps the WLAN SSH console reachable after a reboot.
+* **Wi-Fi**: `nuxel-wifi.service` enables NetworkManager's Wi-Fi radio by
+  default on every normal boot and verifies the readback.  NetworkManager
+  autoconnects saved profiles; the helper never selects a profile, rewrites
+  autoconnect flags, or starts a second supplicant.  A manual OFF during a
+  session is respected until the next normal boot.  This keeps the WLAN SSH
+  console reachable after a reboot without overriding session control.
 * **Charger/LPM**: `sec_ts` refuses to bind on a charger-mode boot.  The
   recovery unit detects the LPM cmdline markers and performs one normal
   `systemctl reboot`, with a 600 s persisted cooldown.

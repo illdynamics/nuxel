@@ -1,0 +1,10 @@
+{
+  "at": 1793354359.8337262,
+  "title": null,
+  "entries": [],
+  "applications": [
+    "nuxel-pwa-host"
+  ],
+  "at_spi_bus": "unix:path=/run/nuxel-wayland/at-spi/bus",
+  "note": "baseline captured before the confirmation playback"
+}
