@@ -72,7 +72,7 @@
       '#nuxel-bootlog{position:fixed;left:8px;right:8px;top:calc(env(safe-area-inset-top,0px) + 34px);',
       'bottom:calc(env(safe-area-inset-bottom,0px) + 12px);z-index:9000;display:flex;flex-direction:column;',
       'background:rgba(6,12,20,.94);border:1px solid #33e0ff55;border-radius:12px;',
-      'box-shadow:0 8px 40px #000c;color:#cfe9ff;font:12px/1.45 ui-monospace,monospace;overflow:hidden}',
+      'box-shadow:0 2px 4px #000c;color:#cfe9ff;font:12px/1.45 ui-monospace,monospace;overflow:hidden}',
       '#nuxel-bootlog[hidden]{display:none}',
       '.nuxel-bootlog-hd{display:flex;align-items:center;gap:8px;padding:8px 10px;background:#0d1b2a;',
       'border-bottom:1px solid #33e0ff33}',

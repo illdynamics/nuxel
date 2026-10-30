@@ -630,12 +630,13 @@ class QuickSettings {
     }
 
     _render() {
-        // Update all toggle states from bridge
+        // Update all toggle states from bridge. `_syncState` already refreshes
+        // Bluetooth and Location itself, so do not issue those same provider
+        // calls a second time here (a duplicated open-path request cost two
+        // extra bridge round-trips and two extra label repaints).
         this._syncState();
         this._syncVerboseBoot();
         this._syncRotate();
-        this._syncBluetooth();
-        this._syncLocation();
     }
 
     async _syncState(options) {

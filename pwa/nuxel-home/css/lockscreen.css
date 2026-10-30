@@ -33,7 +33,7 @@
     margin-top: calc(44px + env(safe-area-inset-top, 0px));
     text-align: center;
     color: #eaf4ff;
-    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.7);
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
     pointer-events: none;
 }
 .lockscreen-time { font-size: 64px; font-weight: 600; line-height: 1; letter-spacing: -1px; }
@@ -118,7 +118,7 @@ body.display-off .lockscreen-hint::before { animation-play-state: paused; }
     color: rgba(234, 244, 255, 0.82);
     font-size: 13px;
     letter-spacing: .12em;
-    text-shadow: 0 1px 6px rgba(0, 0, 0, 0.7);
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
     pointer-events: none;
 }
 .lockscreen-hint::before {
@@ -239,9 +239,12 @@ body.display-off .lockscreen-hint::before { animation-play-state: paused; }
     visibility: visible;
     opacity: 1;
 }
+/* PERF (PWNAGE-37000): the radial glow was a continuous software-rasterised
+   animation. Keep the accent as a STATIC low-opacity glow (crisp pixel art
+   around the icon still reads as a status light) and remove the infinite
+   breathe loop; the charging/PC/live icon pulses below remain lightweight. */
 .lockscreen-indicator.active .lockscreen-indicator-glow {
-    opacity: .78;
-    animation: nuxel-indicator-breathe 3.4s ease-in-out infinite;
+    opacity: .55;
 }
 .lockscreen-indicator.charging-ind.active.charging img {
     animation: nuxel-indicator-charge 1.45s ease-in-out infinite;
@@ -253,10 +256,6 @@ body.display-off .lockscreen-hint::before { animation-play-state: paused; }
     animation: nuxel-indicator-live 1.9s ease-in-out infinite;
 }
 
-@keyframes nuxel-indicator-breathe {
-    0%, 100% { opacity: .34; transform: translate(-50%, -50%) scale(.94); }
-    50%      { opacity: .78; transform: translate(-50%, -50%) scale(1.05); }
-}
 @keyframes nuxel-indicator-charge {
     0%, 100% { opacity: .82; transform: scale(.96); }
     50%      { opacity: 1;   transform: scale(1.04); }
@@ -385,7 +384,6 @@ body.display-off .lockscreen-indicator .lockscreen-indicator-glow {
 }
 .lockscreen-transport.file-transfer-ind { width: 42px; height: 42px; }
 .lockscreen-transport.bluetooth-transport img {
-    filter: drop-shadow(0 0 6px rgba(96, 165, 250, 0.75));
     opacity: 0.95;
 }
 
@@ -441,7 +439,7 @@ body.display-off .lockscreen-indicator .lockscreen-indicator-glow {
     border: 1px solid rgba(127, 212, 255, 0.4);
     border-radius: 18px;
     padding: 16px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.45);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.45);
     color: #eaf4ff;
 }
 .connection-mode-sheet h2 {

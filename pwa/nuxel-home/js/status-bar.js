@@ -676,8 +676,8 @@ class StatusBar {
             panel.style.cssText =
                 'position:fixed;top:calc(var(--status-bar-height,40px) + 6px);right:14px;' +
                 'min-width:280px;max-width:92vw;max-height:70vh;overflow-y:auto;' +
-                'background:rgba(26,26,46,0.98);backdrop-filter:blur(16px);border:1px solid ' +
-                'rgba(255,255,255,0.08);border-radius:14px;box-shadow:0 16px 48px rgba(0,0,0,0.5);' +
+                'background:rgba(26,26,46,0.98);border:1px solid ' +
+                'rgba(255,255,255,0.08);border-radius:14px;box-shadow:0 2px 4px rgba(0,0,0,0.5);' +
                 'color:var(--text-primary, #e8e8f0);z-index:120;padding:10px 0;display:none;';
             document.body.appendChild(panel);
             this._notificationElements.panel = panel;

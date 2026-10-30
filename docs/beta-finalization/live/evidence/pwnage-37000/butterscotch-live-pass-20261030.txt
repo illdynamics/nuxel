@@ -1,0 +1,46 @@
+PWNAGE-37000 BUTTERSCOTCH LIVE PASS 2026-10-30
+host: infranux Darwin 24.6.0 arm64
+device: 192.168.178.167 (SSH key ~/.ssh/wicked_wqn_id_rsa)
+
+=== Before (deployed v58 launcher, screen OFF) ===
+WebKitWebProcess RSS: 617504 kB (sampled just before session restart)
+system instantaneous top: 78-88% idle (screen off)
+
+=== Before (deployed v58 launcher, screen ON, first restart settle) ===
+top %Cpu(s): 26.2 us / 28.8 us -> ~68% idle; wlfb fps_1s=28
+WebKitWebProcess RSS: 473332 kB
+
+=== After (v59-p37000-butterscotch, screen ON, idle) ===
+top %Cpu(s): 4.1/2.5/2.0/0.9/10.7 us -> 83-95% idle (median ~93% idle)
+wlfb-state: display=on fps_1s=5 blits=10 idle_ms=14263 present_skipped=287
+WebKitWebProcess RSS: 426580 kB
+nuxel-pwa-host RSS: 158408 kB; phoc RSS: 37404 kB; nuxel-wl-fb RSS: 6580 kB
+
+=== Static render-cost scan (tools/perf/butterscotch-scan.py) ===
+before -> after:
+backdrop_filter_js 1 -> 0
+blur_px_js 1 -> 0
+box_shadow_blur_px_max 20 -> 8
+box_shadow_blur_px_gt8 5 -> 0
+filter_css 3 -> 2
+will_change_css 7 -> 5
+infinite_animations_css 7 -> 6
+nav_art_used_total_bytes 2506721 -> 12253
+nav_art_used_rgba_est_bytes 18874464 -> 110592
+
+=== Deploy backup ===
+/var/backups/nuxel/pwnage37000-butter-20261030T152347
+13 files deployed (index, manifest, sw, 5 CSS, 2 JS, 3 new button PNGs)
+
+=== Rollback ===
+scp back the .prev files from /var/backups/nuxel/pwnage37000-butter-20261030T152347/
+then: systemctl restart nuxel-wayland.service
+
+=== FINAL after-restart snapshot (2026-10-30 ~15:29 CET) ===
+screen ON, lockscreen visible, 6 x 2s top samples:
+%Cpu(s) id: 95.8, 84.4, 62.5, 93.4, 94.9, 91.5  (one 33% us spike = scheduled wiggle/poll)
+wlfb-state: display=on fps_1s=5 blits=44 idle_ms=17474 present_skipped=544
+WebKitWebProcess RSS: 481152 kB
+nuxel-pwa-host RSS: 158804 kB
+phoc RSS: 37424 kB
+nuxel-wl-fb RSS: 6576 kB
