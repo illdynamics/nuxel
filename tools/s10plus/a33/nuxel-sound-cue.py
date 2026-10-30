@@ -111,6 +111,22 @@ def play(event, percentage):
     if not ready:
         record(event, 'route_not_ready', detail=detail, audible='unverified')
         return 9
+    # The CS35L41 output stage is left muted by the previous playback's
+    # hw_free. Re-apply the owner-confirmed clock/boost/output patch before
+    # every cue so a volume key or Test Audio press can never play silently.
+    patch_path = '/usr/lib/nuxel/nuxel-cs35l41-apply.sh'
+    if os.path.isfile(patch_path) and os.access(patch_path, os.X_OK):
+        try:
+            patch = subprocess.run([patch_path], stdout=subprocess.DEVNULL,
+                                   stderr=subprocess.PIPE, timeout=10)
+            if patch.returncode != 0:
+                record(event, 'cs35_patch_failed',
+                       detail=(patch.stderr or b'').decode('utf-8', 'replace')[-200:],
+                       audible='unverified')
+                return 10
+        except (OSError, subprocess.SubprocessError) as exc:
+            record(event, 'cs35_patch_failed', detail=str(exc), audible='unverified')
+            return 10
     if not normal_sound_mode():
         record(event, 'muted_policy'); return 0
     # No ALSA mixer volume adjustment is made here: retain the button-manager

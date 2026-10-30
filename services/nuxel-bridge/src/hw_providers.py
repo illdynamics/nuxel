@@ -327,6 +327,26 @@ class AudioProvider:
             return None
         return float(m.group(1))
 
+
+    def _cs35l41_output_patch(self):
+        """Re-apply the owner-confirmed CS35L41 clock/boost/output patch.
+
+        The CS35L41 driver's hw_free mutes the amplifier output stage after
+        every completed playback (DIG_VOL_CTRL leaves 0 dB and AMP_OUT_MUTE
+        re-asserts), so the next playback starts silent.  Re-apply the proven
+        four-register sequence through the same helper the button-manager cue
+        uses immediately before pw-play.  The values are the exact
+        owner-confirmed settings and the helper is the single audited path.
+        """
+        script = "/usr/lib/nuxel/nuxel-cs35l41-apply.sh"
+        if not os.path.isfile(self._abs(script)) or not os.access(self._abs(script), os.X_OK):
+            return False, "CS35L41 patch helper missing at %s" % script
+        proc, err = self._run_bounded([self._abs(script)], timeout=12.0)
+        if err or proc is None or proc.returncode != 0:
+            detail = ((proc.stderr or "").strip() or (proc.stdout or "").strip()) if proc is not None else (err or "no process")
+            return False, "CS35L41 patch re-apply failed: %s" % detail[-200:]
+        return True, "CS35L41 output stage re-applied"
+
     def _pipewire_play(self, asset, gain_percent):
         """Play an MP3 through the default PipeWire sink with ``pw-play``.
 
@@ -359,6 +379,9 @@ class AudioProvider:
             # raise or lower a live level here; refuse playback above the safety
             # ceiling and let the caller surface the real routing defect.
             return False, "PipeWire sink volume %.3f exceeds safety cap %.2f; reapply the audio route" % (volume, cap)
+        patched, patch_detail = self._cs35l41_output_patch()
+        if not patched:
+            return False, patch_detail
         gain = max(0.0, min(1.0, max(0, int(gain_percent)) / 100.0))
         player = shutil.which("pw-play") or "/usr/bin/pw-play"
         argv = [player, "--volume", "%.3f" % gain, asset]
