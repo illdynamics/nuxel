@@ -1,0 +1,16 @@
+PWNAGE-34000/35000 on-device reachability audit
+at: 2026-10-28T21:09:31Z
+host: Darwin 24.6.0 arm64
+host_primary_ip: 10.17.239.211/24 (en0 Wi-Fi, office SSID)
+host_alias: 10.20.30.22/32 (en0)
+target_ssh: nuxel@10.17.239.166:22 (Nuxel banner confirmed; port 22 open)
+target_configured_wlan: 10.20.30.16/24 (private owner WLAN 'Nuxel Snoerbreuk')
+sshd_allowusers: nuxel/root @ 10.20.30.0/24, 10.15.19.0/24, 127.0.0.1/32
+---
+SSH result: Permission denied (publickey) for wicked_wqn_id_rsa, nuxel-tri-link_ed25519, id_rsa, as both nuxel and root.
+Root cause: source IP 10.17.239.211 is outside sshd AllowUsers CIDRs.
+Attempted source bind to 10.20.30.22 -> connect timeout (no return route).
+Direct host route 10.20.30.16 via en0 -> ping 100%% loss (private AP not L2-reachable).
+USB serial: none enumerated (no /dev/ttyACM*, empty USB tree).
+Saved WiFi profile 'Snoerbreuk' present but not currently in range (networksetup: could not find network).
+Verdict: BLOCKED_EXTERNAL_RESOURCE (on-device deploy/physical verification impossible from this host)

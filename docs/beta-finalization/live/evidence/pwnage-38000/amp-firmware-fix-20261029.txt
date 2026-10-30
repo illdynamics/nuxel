@@ -1,0 +1,48 @@
+PWNAGE-38000 follow-up — CS35L41 DSP firmware was the silent-speaker blocker
+host: macOS, target: root@192.168.178.167 (S10+ beyond2lte)
+date: 2026-10-29 ~18:53-19:05 CET
+
+== Root cause ==
+RDMA1->UAIF1->CS35L41 stream was reaching the amps, but every stream logged:
+  cs35l41 11-0040/0041: Timout waiting for DSP to set mbox cmd
+  cs35l41 11-0040/0041: Failed to set mailbox(cmd: 1, sts: 0)
+and debugfs showed:
+  codec:cs35l41-codec.*/dsp1/booted = N
+  codec:cs35l41-codec.*/dsp1/running = N
+  wmfw_file_name = <empty>
+=> the CS35L41 protection DSP was never booted; the amps had no mailbox peer,
+   so the speaker stayed silent even though ABOX hw_params/mute were correct.
+
+== Fix ==
+Select the shipped protection firmware and power the DSP preloader on each amp:
+  Left DSP1 Firmware = 9 (Protection)
+  Right DSP1 Firmware = 9 (Protection)
+  Left DSP1 Preload Switch = on
+  Right DSP1 Preload Switch = on
+
+== Deployed ==
+/usr/lib/nuxel/nuxel-audio-route.sh now applies the four controls every route
+application (firmware selection before preload, followed by AMP unmute/PCM gain
+and the ABOX SPKAMP crossbar).  Pre-change backup:
+/var/backups/nuxel/pwnage38000-ampfw/.
+
+== Verification ==
+dmesg:
+  cs35l41 11-0041: DSP1: cs35l40-rcv-dsp1-spk-prot.wmfw ...
+  cs35l41 11-0040: DSP1: cs35l40-bot-dsp1-spk-prot.wmfw ...
+  cs35l41 11-0040/0041: DSP1: Execution started
+  cs35l41 11-0040/0041: cs35l41_dsp_power_ev: loaded
+debugfs:
+  left/right dsp1/booted=Y, dsp1/running=Y
+playback:
+  gst-launch-1.0 ... nuxel-pow.mp3 ! pulsesink -> RC=0
+  cs35l41 pcm_mute: Unmuted on both amps, no mailbox timeout in latest stream
+Physical audibility: still owner-ear test (Test Audio button / Refresh).
+
+== Wi-Fi boot ==
+Deployed updated /usr/lib/nuxel/nuxel-wifi-up.sh (bounded 25s explicit-up and
+8s settle path instead of 45s/30s).  Live status: nuxel-wifi.service active,
+wlan0 connected, NM radio enabled.
+PWA qs.js now syncs once at startup and treats NM wifi_state
+connected/internet as radio-on, so the quick-settings tile does not show an
+off default while the boot service is still finishing.

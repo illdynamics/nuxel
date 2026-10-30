@@ -5,8 +5,8 @@
     "model": "Samsung Galaxy S10+ SM-G975F",
     "codename": "beyond2lte",
     "card_name": "beyond-madera",
-    "codec": "Cirrus Logic CS47L93 (MADERA ASoC)",
-    "amplifiers": ["CS35L40", "CS35L40"],
+    "codec": "Cirrus Logic CS47L92/CS47L93 (MADERA ASoC)",
+    "amplifiers": ["CS35L41", "CS35L41"],
     "soc_audio_subsystem": "Exynos 9820 ABox",
     "card_name_note": "beyond-madera is the ALSA card name (what /proc/asound/cards reports) and therefore also the UCM2 directory name. It is the anchor: a config that names any other card is wrong for this device."
   },
@@ -32,7 +32,7 @@
     "prefer_name": "beyond-madera",
     "fallback_card_index": 0,
     "pcm_playback_candidates": ["hw:0,1", "plughw:0,1", "hw:0,0", "plughw:0,0", "default"],
-    "measured_working_route": "hw:0,1 (RDMA1) at 44100 Hz, verified with a bounded low-level tone through the static PipeWire sink; RDMA0 rejects 48 kHz on this unit. The static sink is configs/s10plus/pipewire/50-nuxel-s10-alsa.conf.",
+    "measured_working_route": "hw:0,1 (RDMA1) at 48000 Hz, verified with a bounded low-level aplay (hw_ptr advances, rc=0); 44100 Hz leaves hw_ptr at 0 and returns EIO. RDMA0 does not advance at any tested rate. The static sink is configs/s10plus/pipewire/50-nuxel-s10-alsa.conf.",
     "must_not_assume": ["card index 0", "a PCM named 'pcmC0D0p' as the only playback PCM", "a mixer element named 'Master'"]
   },
 

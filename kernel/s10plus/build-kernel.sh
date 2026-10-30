@@ -145,6 +145,36 @@ fi
 # scratch tree's source Makefiles (idempotent; kbuild-internal scripts/* kept).
 bash "${NUXEL_ROOT}/tools/kernel-relax-werror.sh" "${KSRC}"
 
+# --- ABOX Calliope core firmware: build into the kernel ----------------------
+# The S10+ ABOX is probed before the rootfs is mounted (Samsung SAR_RD loads the
+# ramdisk late), so request_firmware_direct() cannot see /lib/firmware at the
+# first abox_enable().  Embedding the four core Calliope blobs as
+# CONFIG_EXTRA_FIRMWARE makes the first probe succeed without any userspace PM
+# workaround.  The files are the same proprietary blobs already shipped in the
+# Nuxel rootfs /vendor/firmware and /lib/firmware; they are never downloaded
+# from a third party by the build.
+EMBED_FW_DIR="${NUXEL_EMBED_FW_DIR:-${NUXEL_ROOT}/build/out/s10plus/pwnage38000/firmware}"
+EMBED_FW_NAMES="calliope_sram.bin calliope_sram_2.bin calliope_dram.bin calliope_dram_2.bin"
+if [ -d "$EMBED_FW_DIR" ]; then
+    _fw_ok=1
+    for _fw in $EMBED_FW_NAMES; do
+        [ -r "$EMBED_FW_DIR/$_fw" ] || _fw_ok=0
+    done
+    if [ "$_fw_ok" = 1 ]; then
+        DEFCONFIG_FILE="${KSRC}/arch/arm64/configs/${DEFCONFIG}"
+        grep -q '^CONFIG_EXTRA_FIRMWARE=' "$DEFCONFIG_FILE" 2>/dev/null || \
+            printf 'CONFIG_EXTRA_FIRMWARE="%s"\n' "$EMBED_FW_NAMES" >> "$DEFCONFIG_FILE"
+        grep -q '^CONFIG_EXTRA_FIRMWARE_DIR=' "$DEFCONFIG_FILE" 2>/dev/null || \
+            printf 'CONFIG_EXTRA_FIRMWARE_DIR="%s"\n' "$EMBED_FW_DIR" >> "$DEFCONFIG_FILE"
+        echo "[nuxel-s10plus-kernel] embedding ABOX Calliope core firmware from $EMBED_FW_DIR"
+    else
+        echo "[nuxel-s10plus-kernel] WARN: EMBED_FW_DIR exists but is missing core Calliope blobs; not embedding"
+    fi
+else
+    echo "[nuxel-s10plus-kernel] WARN: EMBED_FW_DIR $EMBED_FW_DIR does not exist; not embedding core Calliope blobs"
+fi
+
+
 # --- configure ---
 cd "${KSRC}"
 make O="${KOUT}" ARCH=arm64 CROSS_COMPILE="${CROSS_COMPILE}" \

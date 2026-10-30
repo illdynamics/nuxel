@@ -5,10 +5,10 @@
     "model": "Samsung Galaxy S10+ SM-G975F",
     "codename": "beyond2lte",
     "card_name": "beyond-madera",
-    "codec": "Cirrus Logic CS47L93 (MADERA)",
+    "codec": "Cirrus Logic CS47L92/CS47L93 (MADERA)",
     "amps": [
-      "CS35L40",
-      "CS35L40"
+      "CS35L41",
+      "CS35L41"
     ],
     "soc_audio": "Exynos 9820 ABox"
   },
@@ -31,7 +31,7 @@
     "softvol_layer": "configs/pipewire/asound-nuxel-safe.conf (softvol max_dB = -6.0)",
     "step_per_press": "5% of the element range (range / 20, floored at 1) - the same formula the A32 button manager and the FSM use",
     "never": [
-      "disable the CS35L40 amplifier protection or the thermal limits",
+      "disable the CS35L41 amplifier protection or the thermal limits",
       "run a tone longer than the bounded duration or above the cap",
       "claim audibility from a mixer write"
     ]
@@ -85,7 +85,7 @@
       "status": "IMPLEMENTED_NOT_DEPLOYED",
       "read_api": "nuxelctl audio settings (sink list when a session manager answers) + nuxelctl headphone route",
       "outputs": [
-        "Speaker (CS35L40 x2)",
+        "Speaker (CS35L41 x2)",
         "Earpiece",
         "Headphones (3.5 mm jack)",
         "USB-C UAC adapter",
@@ -131,7 +131,7 @@
   ],
   "never_claims": [
     "that sound is audible because a control accepted a value: a writable control is not audibility",
-    "that the CS35L40 amplifiers are driven correctly because the DAC reports RUNNING",
+    "that the CS35L41 amplifiers are driven correctly because the DAC reports RUNNING",
     "that the headphone jack silences the speaker because a route rule exists (that is NEEDS_OWNER_TEST)",
     "that Bluetooth A2DP playback implies A2DP microphone support"
   ],

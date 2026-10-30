@@ -436,7 +436,7 @@ def main():
     args = parse_args()
     setup_logging(debug=args.debug)
 
-    logger.info("Starting Nuxel Home v0.7.2-beta")
+    logger.info("Starting Nuxel Home v0.7.3-beta")
     if args.debug:
         logger.info("Debug logging enabled")
     if args.reset_layout:

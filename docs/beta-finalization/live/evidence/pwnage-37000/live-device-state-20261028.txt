@@ -1,0 +1,46 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+===uname===
+4.14.253-gf7194c1d15ed-dirty
+===wlan0 IP + MAC===
+    inet 10.17.239.166/24 brd 10.17.239.255 scope global dynamic noprefixroute wlan0
+a2:24:64:59:32:f1
+===sshd AllowUsers===
+# capability report). Do not replace this with a wildcard AllowUsers entry.
+AllowUsers nuxel@10.20.30.0/24 root@10.20.30.0/24 nuxel@10.15.19.0/24 root@10.15.19.0/24 nuxel@10.17.239.0/24 root@10.17.239.0/24 nuxel@127.0.0.1/32 root@127.0.0.1/32
+===audio route active===
+active
+===audio controls===
+Left AMP Enable Switch: 1
+Right AMP Enable Switch: 1
+ABOX SPUS IN1: 1,items=2
+ABOX SPUS OUT1: 1,items=7
+ABOX SIFS1: 1,items=12
+ABOX UAIF1 SPK: 1,items=13
+ABOX SIFS1 OUT Switch: 1
+ABOX UAIF1 Switch: 1
+===bluetooth===
+	Name: fedora
+	Powered: yes
+	Discovering: no
+===bt scan (6s)===
+[[0;92mNEW[0m] Device 77:87:74:4A:98:B7 77-87-74-4A-98-B7
+[[0;92mNEW[0m] Device 6F:2B:C3:BF:E6:DC 6F-2B-C3-BF-E6-DC
+[[0;92mNEW[0m] Device 1E:B7:27:3E:25:A7 1E-B7-27-3E-25-A7
+[[0;92mNEW[0m] Device 15:92:90:30:72:95 15-92-90-30-72-95
+[[0;92mNEW[0m] Device C8:C8:3F:85:82:02 C8-C8-3F-85-82-02
+[[0;92mNEW[0m] Device 23:4B:64:2A:0F:63 23-4B-64-2A-0F-63
+[[0;92mNEW[0m] Device C4:C0:CF:E9:C7:11 TP357S (C711)
+===gnss===
+{"device":"beyond2lte","tool":"nuxel-gnss-diag","stages":{"device_node":"node:/dev/ttyBCM","module":"bound:/sys/bus/spi/drivers/brcm gps spi/spi17.0","firmware":"missing","stream":"readable:/dev/ttyBCM","userspace":"no-consumer"},"first_failing_stage":"firmware","state":"BLOCKED_FIRMWARE","fix_verified":false,"owner_test":"docs/beta-finalization/manual-proof/13-gps.md"}
+===gallery===
+/home/nuxel/Gallery/nuxel-charging.png
+/home/nuxel/Gallery/nuxel-wallpaper.png
+/home/nuxel/Videos/nuxel-boot-animation.mp4

@@ -1,0 +1,73 @@
+== ABOX DAPM widgets ==
+-----ABOX RDMA1 Playback
+cat: 'ABOX RDMA1 Playback': No such file or directory
+-----ABOX SPUS IN1
+ABOX SPUS IN1: On  in 1 out 2
+ out  "static" "ABOX SPUS ASRC1"
+ in  "RDMA" "ABOX RDMA1 Playback"
+-----ABOX SPUS OUT1
+ABOX SPUS OUT1: On  in 1 out 2
+ out  "SIFS1" "ABOX SPUS OUT1-SIFS1"
+ in  "static" "ABOX SPUS ASRC1"
+-----ABOX SIFS1
+ABOX SIFS1: On  in 1 out 2
+ out  "Switch" "ABOX SIFS1 OUT"
+ in  "static" "ABOX SIFS1 Capture"
+ in  "SPUS OUT1" "ABOX SPUS OUT1-SIFS1"
+-----ABOX SIFS1 OUT
+ABOX SIFS1 OUT: On  in 1 out 2
+ out  "SIFS1" "ABOX UAIF1 SPK"
+ in  "Switch" "ABOX SIFS1"
+-----ABOX UAIF1 SPK
+ABOX UAIF1 SPK: On  in 1 out 2
+ out  "UAIF1 Switch" "ABOX UAIF1 PLA"
+ in  "SIFS1" "ABOX SIFS1 OUT"
+-----ABOX UAIF1 PLA
+ABOX UAIF1 PLA: On  in 1 out 2
+ out  "static" "ABOX UAIF1 Playback"
+ in  "UAIF1 Switch" "ABOX UAIF1 SPK"
+-----ABOX UAIF1 Playback
+cat: 'ABOX UAIF1 Playback': No such file or directory
+== CS35L41 amp DAPM widgets ==
+-----codec:cs35l41-codec.4.auto/dapm/Left AMP Playback
+Left AMP Playback: On  in 1 out 1
+ stream AMP Playback active
+ out  "Switch" "Left AMP Enable"
+ in  "static" "ABOX UAIF1 Playback"
+-----codec:cs35l41-codec.4.auto/dapm/Left ASPRX1
+Left ASPRX1: On  in 1 out 1 - R18432(0x4800) mask 0x10000
+ out  "ASP" "Left PCM Source"
+ out  "static" "Left VBSTMON ADC"
+ out  "static" "Left TEMPMON ADC"
+ out  "static" "Left VPMON ADC"
+ out  "static" "Left IMON ADC"
+ out  "static" "Left VMON ADC"
+ out  "static" "Left DSP1"
+ in  "static" "Left AMP Enable"
+-----codec:cs35l41-codec.4.auto/dapm/Left PCM Source
+Left PCM Source: On  in 1 out 1
+ out  "static" "Left CLASS H"
+ in  "ASP" "Left ASPRX1"
+-----codec:cs35l41-codec.4.auto/dapm/Left Main AMP
+Left Main AMP: On  in 1 out 1 - R8216(0x2018) mask 0x1
+ out  "static" "Left AMP SPK"
+ in  "static" "Left DRE"
+ in  "static" "Left CLASS H"
+-----codec:cs35l41-codec.4.auto/dapm/Left AMP SPK
+Left AMP SPK: On  in 1 out 1
+ out  "static" "RECEIVER"
+ in  "static" "Left Main AMP"
+-----codec:cs35l41-codec.0.auto/dapm/Right AMP Playback
+Right AMP Playback: On  in 1 out 1
+ stream AMP Playback active
+ out  "Switch" "Right AMP Enable"
+ in  "static" "ABOX UAIF1 Playback"
+-----codec:cs35l41-codec.0.auto/dapm/Right Main AMP
+Right Main AMP: On  in 1 out 1 - R8216(0x2018) mask 0x1
+ out  "static" "Right AMP SPK"
+ in  "static" "Right DRE"
+ in  "static" "Right CLASS H"
+-----codec:cs35l41-codec.0.auto/dapm/Right AMP SPK
+Right AMP SPK: On  in 1 out 1
+ out  "static" "SPEAKER"
+ in  "static" "Right Main AMP"

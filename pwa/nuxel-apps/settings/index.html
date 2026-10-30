@@ -141,6 +141,19 @@
       <pre id="bt-state" class="state">Checking Bluetooth…</pre>
       <p id="bt-detail" class="hint">—</p>
     </div>
+
+    <div class="card">
+      <h3>Devices</h3>
+      <p class="hint">Real BlueZ scan and device actions. Pairing/connecting is owner-initiated
+        and reports the actual BlueZ result; a listed peer is not a successful connection.</p>
+      <div class="row">
+        <button id="bt-scan">Scan 8 s</button>
+        <button id="bt-list">List known</button>
+      </div>
+      <pre id="bt-devices" class="state">No scan yet.</pre>
+      <div id="bt-device-actions" class="row"></div>
+      <p id="bt-action-result" class="hint">—</p>
+    </div>
   </section>
 
   <!-- ── DISPLAYS (29000) ──────────────────────────────────────────────── -->
@@ -163,8 +176,12 @@
       <h3>Audio devices &amp; service</h3>
       <p class="hint">Real ALSA cards, playback/capture endpoints and audio-service state from the
         Nuxel hardware provider. A listed card is not an audible claim.</p>
-      <div class="row"><button id="audio-refresh">Refresh</button></div>
+      <div class="row">
+        <button id="audio-refresh">Refresh</button>
+        <button id="audio-test" class="primary">Test Audio</button>
+      </div>
       <pre id="audio-state" class="state">Checking audio hardware…</pre>
+      <p id="test-audio-state" class="hint">Press Test Audio to play nuxel-pow.mp3 through the selected output.</p>
     </div>
     <div class="card">
       <h3>Output volume &amp; mute</h3>

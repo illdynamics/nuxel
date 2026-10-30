@@ -180,14 +180,23 @@ fi
         echo "The release also ships the BOOT image read back from the owner's"
         echo "Samsung Galaxy S10+ (SM-G975F), byte-for-byte:"
         echo
-        echo "- \`nuxel-installed-s10plus-boot.img.gz\` — the installed A27 boot image"
-        echo "  (sha256 \`48ad61afa91b6fe50278443ecae0695724f706a80de383e0acb021d030620cea\`,"
-        echo "  51,605,504 bytes). The CI-built A25 image inside the device archive is"
-        echo "  a source rebuild and is **not** byte-identical to this installed image."
-        echo "- \`nuxel-installed-s10plus-userspace-files.txt.gz\` — SHA-256 inventory"
-        echo "  of the installed userspace files."
-        echo "- \`INSTALLED-IMAGES.json\` — capture provenance, header fields, kernel"
-        echo "  and ramdisk hashes, and the full BOOT-partition readback hash."
+        python3 - "${OUT_DIR}/INSTALLED-IMAGES.json" <<'PYJSON'
+import json, sys
+m = json.load(open(sys.argv[1], encoding="utf-8"))
+b = m.get("installed_boot_image", {})
+u = m.get("installed_userspace_manifest", {})
+print("- `%s` — the installed boot image" % b.get("file", "nuxel-installed-s10plus-boot.img.gz"))
+print("  (sha256 `%s`," % b.get("sha256", "unknown"))
+print("  %s bytes). The CI source rebuild inside the device archive is" %
+      format(int(b.get("bytes", 0)), ","))
+print("  **not** byte-identical to this installed image.")
+print("- `%s` — SHA-256 inventory" % u.get("file", "nuxel-installed-s10plus-userspace-files.txt.gz"))
+ent = u.get("entries", {})
+print("  of the installed userspace files (%s entries: %s files + %s symlinks)." %
+      (u.get("lines", "?"), ent.get("files", "?"), ent.get("symlinks", "?")))
+print("- `INSTALLED-IMAGES.json` — capture provenance, header fields, kernel")
+print("  and ramdisk hashes, and the full BOOT-partition readback hash.")
+PYJSON
         echo
     fi
     echo "## Checksums"

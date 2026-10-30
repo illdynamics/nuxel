@@ -23,7 +23,11 @@
   var ICONS = {
     charging: '/assets/nuxel-charging.png?v=a77.1',
     usb: '/assets/nuxel-connected-pc.png?v=a77.1',
-    live: '/assets/nuxel-live-console-active.png?v=a77.1'
+    live: '/assets/nuxel-live-console-active.png?v=a77.1',
+    serial: '/assets/nuxel-console-serial.png?v=p34000',
+    usbConsole: '/assets/nuxel-console-usb.png?v=p34000',
+    wlan: '/assets/nuxel-console-wlan.png?v=p34000',
+    fileTransfer: '/assets/nuxel-file-transfer.png?v=p34000'
   };
 
   function el(id) { return global.document ? global.document.getElementById(id) : null; }
@@ -33,15 +37,28 @@
     var charging = data.charging || {};
     var usb = data.usb_data || {};
     var live = data.live_console || {};
+    var transports = data.console_transports || {};
+    var transfer = data.file_transfer || {};
+    var mode = data.connection_mode || {};
     return {
       externalPower: Boolean(charging.external_power),
       charging: Boolean(charging.charging),
       pcConnected: Boolean(usb.pc_connected),
       liveConsole: Boolean(live.active),
+      serialConsole: Boolean((transports.serial || {}).active),
+      usbConsole: Boolean((transports.usb || {}).active),
+      wlanConsole: Boolean((transports.wlan || {}).active),
+      fileTransfer: Boolean(transfer.active),
+      modeSelected: String(mode.selected || transfer.selected || 'charging'),
+      modeBusy: Boolean(mode.transition_in_progress),
       sources: {
         power: String(charging.source || ''),
         usb: String(usb.source || ''),
-        live: String(live.source || '')
+        live: String(live.source || ''),
+        serial: String((transports.serial || {}).source || ''),
+        usbConsole: String((transports.usb || {}).source || ''),
+        wlan: String((transports.wlan || {}).source || ''),
+        transfer: String(transfer.source || '')
       }
     };
   }
@@ -51,9 +68,19 @@
            a.charging === b.charging &&
            a.pcConnected === b.pcConnected &&
            a.liveConsole === b.liveConsole &&
+           a.serialConsole === b.serialConsole &&
+           a.usbConsole === b.usbConsole &&
+           a.wlanConsole === b.wlanConsole &&
+           a.fileTransfer === b.fileTransfer &&
+           a.modeSelected === b.modeSelected &&
+           a.modeBusy === b.modeBusy &&
            a.sources.power === b.sources.power &&
            a.sources.usb === b.sources.usb &&
-           a.sources.live === b.sources.live;
+           a.sources.live === b.sources.live &&
+           a.sources.serial === b.sources.serial &&
+           a.sources.usbConsole === b.sources.usbConsole &&
+           a.sources.wlan === b.sources.wlan &&
+           a.sources.transfer === b.sources.transfer;
   }
 
   /* Calls fn with a value or a rejection handler, without relying on optional
@@ -71,18 +98,31 @@
     this._generation = 0;
 
     this.container = el('lockscreen-indicators');
+    this.transportContainer = el('lockscreen-transports');
     this.els = {
       charging: el('lockscreen-indicator-charging'),
       usb: el('lockscreen-indicator-usb'),
       live: el('lockscreen-indicator-live')
     };
+    this.transportEls = {
+      serial: el('lockscreen-transport-serial'),
+      usb: el('lockscreen-transport-usb'),
+      wlan: el('lockscreen-transport-wlan'),
+      fileTransfer: el('lockscreen-file-transfer')
+    };
+    this.modeButton = el('lockscreen-connection-mode');
+    this.modeOverlay = el('connection-mode-overlay');
+    this.modeStatus = el('connection-mode-status');
     this.state = {
       externalPower: false, charging: false, pcConnected: false, liveConsole: false,
-      sources: { power: '', usb: '', live: '' }
+      serialConsole: false, usbConsole: false, wlanConsole: false,
+      fileTransfer: false, modeSelected: 'charging', modeBusy: false,
+      sources: { power: '', usb: '', live: '', serial: '', usbConsole: '', wlan: '', transfer: '' }
     };
 
     this._ensureImages();
     this._wireEvents();
+    this._wireModeSelector();
     this._render();
   }
 
@@ -94,6 +134,19 @@
       var img = node.querySelector ? node.querySelector('img') : null;
       if (img && !img.getAttribute('src')) img.setAttribute('src', ICONS[key]);
     });
+    Object.keys(this.transportEls).forEach(function (key) {
+      var node = self.transportEls[key];
+      if (!node) return;
+      var img = node.querySelector ? node.querySelector('img') : null;
+      var icon = key === 'fileTransfer' ? ICONS.fileTransfer :
+                 key === 'serial' ? ICONS.serial :
+                 key === 'usb' ? ICONS.usbConsole : ICONS.wlan;
+      if (img && !img.getAttribute('src')) img.setAttribute('src', icon);
+    });
+    if (this.modeButton) {
+      var modeImg = this.modeButton.querySelector('img');
+      if (modeImg && !modeImg.getAttribute('src')) modeImg.setAttribute('src', '/assets/nuxel-connection-mode.png?v=p34000');
+    }
   };
 
   LockscreenIndicators.prototype._read = function () {
@@ -168,16 +221,28 @@
         /* PC and console are proof-only indicators.  A failed read cannot keep
            an old positive assertion glowing after detach; charging retains its
            last good power-subsystem reading. */
-        if (self.state.pcConnected || self.state.liveConsole) {
+        if (self.state.pcConnected || self.state.liveConsole ||
+            self.state.serialConsole || self.state.usbConsole ||
+            self.state.wlanConsole || self.state.fileTransfer) {
           self.state = {
             externalPower: self.state.externalPower,
             charging: self.state.charging,
             pcConnected: false,
             liveConsole: false,
+            serialConsole: false,
+            usbConsole: false,
+            wlanConsole: false,
+            fileTransfer: false,
+            modeSelected: self.state.modeSelected,
+            modeBusy: false,
             sources: {
               power: self.state.sources.power,
               usb: 'unavailable:read-failed',
-              live: 'unavailable:read-failed'
+              live: 'unavailable:read-failed',
+              serial: 'unavailable:read-failed',
+              usbConsole: 'unavailable:read-failed',
+              wlan: 'unavailable:read-failed',
+              transfer: 'unavailable:read-failed'
             }
           };
           self._render();
@@ -262,14 +327,131 @@
     this._apply(this.els.charging, 'charging', this.state.charging);
     this._apply(this.els.usb, 'active', this.state.pcConnected);
     this._apply(this.els.live, 'active', this.state.liveConsole);
+    this._apply(this.transportEls.serial, 'active', this.state.serialConsole);
+    this._apply(this.transportEls.usb, 'active', this.state.usbConsole);
+    this._apply(this.transportEls.wlan, 'active', this.state.wlanConsole);
+    this._apply(this.transportEls.fileTransfer, 'active', this.state.fileTransfer);
     try {
       if (this.container) {
         this.container.dataset.powerSource = this.state.sources.power;
         this.container.dataset.usbSource = this.state.sources.usb;
         this.container.dataset.liveSource = this.state.sources.live;
       }
+      if (this.transportContainer) {
+        this.transportContainer.dataset.serialSource = this.state.sources.serial;
+        this.transportContainer.dataset.usbSource = this.state.sources.usbConsole;
+        this.transportContainer.dataset.wlanSource = this.state.sources.wlan;
+        this.transportContainer.dataset.transferSource = this.state.sources.transfer;
+      }
     } catch (e) {}
+    this._renderModeOverlay();
     this._traceGeometry();
+  };
+
+  LockscreenIndicators.prototype._renderModeOverlay = function () {
+    if (!this.modeOverlay) return;
+    var selected = this.state.modeSelected === 'file_transfer' ? 'file_transfer' : 'charging';
+    var buttons = this.modeOverlay.querySelectorAll('[data-mode]');
+    for (var i = 0; i < buttons.length; i++) {
+      var b = buttons[i];
+      var on = b.getAttribute('data-mode') === selected;
+      try { b.classList.toggle('selected', on); } catch (e) {}
+      try { b.setAttribute('aria-pressed', on ? 'true' : 'false'); } catch (e) {}
+      try { b.disabled = !!this.state.modeBusy; } catch (e) {}
+    }
+    if (this.modeStatus) {
+      if (this.state.modeBusy) this.modeStatus.textContent = 'Changing mode…';
+      else if (selected === 'file_transfer') {
+        this.modeStatus.textContent = this.state.fileTransfer
+          ? 'File transfer active'
+          : 'File transfer selected, not active';
+      } else {
+        this.modeStatus.textContent = 'Charging selected';
+      }
+    }
+  };
+
+  /* ---- PWNAGE-34000: lockscreen connection-mode selector --------------- */
+  LockscreenIndicators.prototype._wireModeSelector = function () {
+    var self = this;
+    if (this._modeWired) return;
+    this._modeWired = true;
+    if (this.modeButton && this.modeOverlay) {
+      this.modeButton.addEventListener('click', function (e) {
+        e.stopPropagation();
+        self._openModeOverlay();
+      });
+      var dismiss = self.modeOverlay.querySelector('#connection-mode-dismiss');
+      if (dismiss) dismiss.addEventListener('click', function (e) {
+        e.stopPropagation();
+        self._closeModeOverlay();
+      });
+      var options = self.modeOverlay.querySelectorAll('[data-mode]');
+      for (var i = 0; i < options.length; i++) {
+        (function (btn) {
+          btn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            var mode = btn.getAttribute('data-mode');
+            self._setMode(mode === 'file_transfer' ? 'file_transfer' : 'charging');
+          });
+        })(options[i]);
+      }
+      // Tap outside the sheet dismisses it; tapping the sheet keeps it open.
+      this.modeOverlay.addEventListener('pointerdown', function (e) {
+        if (e.target === self.modeOverlay) self._closeModeOverlay();
+      });
+    }
+  };
+
+  LockscreenIndicators.prototype._openModeOverlay = function () {
+    if (!this.modeOverlay) return;
+    this.modeOverlay.hidden = false;
+    if (this.modeButton) this.modeButton.setAttribute('aria-expanded', 'true');
+    this._renderModeOverlay();
+  };
+
+  LockscreenIndicators.prototype._closeModeOverlay = function () {
+    if (!this.modeOverlay) return;
+    this.modeOverlay.hidden = true;
+    if (this.modeButton) this.modeButton.setAttribute('aria-expanded', 'false');
+  };
+
+  LockscreenIndicators.prototype._setMode = function (mode) {
+    var self = this;
+    this.state.modeBusy = true;
+    this._renderModeOverlay();
+    // The authoritative mode actuator is the loopback HTTP bridge.  The native
+    // host has no usb-mode verb and would refuse it, so always use the bridge
+    // (same-origin, key-authenticated) rather than routing through NuxelHost.
+    var request;
+    if (typeof global.fetch === 'function') {
+      request = global.fetch('http://127.0.0.1:8080/api/v1/usb-mode/set-mode', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode: mode }),
+        cache: 'no-store',
+      }).then(function (res) {
+        return res.json().catch(function () { return {}; });
+      }).catch(function (err) { return { success: false, error: String(err && err.message || err) }; });
+    } else {
+      request = Promise.resolve({ success: false, error: 'no-fetch' });
+    }
+    request.then(function (res) {
+      self.state.modeBusy = false;
+      self.state.modeSelected = (res && res.mode) ? res.mode : (res && res.selected) || self.state.modeSelected;
+      self.state.fileTransfer = !!(res && res.active);
+      if (!res || res.success !== true) {
+        self.state.fileTransfer = false;
+        if (self.modeStatus) self.modeStatus.textContent = 'Mode change failed' + ((res && res.error) ? (': ' + res.error) : '');
+      }
+      self._renderModeOverlay();
+      self.refresh();
+    }, function (err) {
+      self.state.modeBusy = false;
+      if (self.modeStatus) self.modeStatus.textContent = 'Mode change failed: ' + (err && err.message ? err.message : err);
+      self._renderModeOverlay();
+      self.refresh();
+    });
   };
 
   LockscreenIndicators.prototype._apply = function (node, className, on) {

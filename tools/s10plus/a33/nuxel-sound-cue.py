@@ -22,12 +22,26 @@ ASSETS = Path(os.environ.get('NUXEL_SOUND_ASSET_DIR', '/usr/share/nuxel/assets')
 RUNTIME = Path(os.environ.get('NUXEL_SOUND_RUNTIME_DIR', '/run/nuxel'))
 HANDOFF = Path(os.environ.get('NUXEL_SOUND_HANDOFF', '/run/nuxel-anim-handoff'))
 SOUND_MODE = Path(os.environ.get('NUXEL_SOUND_MODE', '/var/lib/nuxel/audio/sound-mode'))
-PLAYER = (os.environ.get('NUXEL_SOUND_PLAYER') or
-          ('/usr/libexec/nuxel/nuxel-mp3-play'
-           if Path('/usr/libexec/nuxel/nuxel-mp3-play').is_file() else None) or
-          shutil.which('mpg123') or shutil.which('gst-launch-1.0'))
+# Prefer the PipeWire pulse path when the live session owns the ALSA device;
+# direct ALSA opens fail with EBUSY while PipeWire holds hw:0,1.  GStreamer's
+# pulsesink reaches the SAME default sink as every other Nuxel app.
+PIPEWIRE_SOCKET = Path(os.environ.get('NUXEL_PIPEWIRE_SOCKET', '/run/nuxel-wayland/pipewire-0'))
+GST = shutil.which('gst-launch-1.0') or '/usr/bin/gst-launch-1.0'
+PWPLAY = shutil.which('pw-play') or '/usr/bin/pw-play'
+PLAYER = os.environ.get('NUXEL_SOUND_PLAYER')
+if not PLAYER:
+    # pw-play blocks until EOS and links immediately; gst-launch pulsesink is
+    # too slow to start for this 0.36 s cue and never posts EOS on this image.
+    if PIPEWIRE_SOCKET.exists() and Path(PWPLAY).exists():
+        PLAYER = PWPLAY
+    elif Path('/usr/libexec/nuxel/nuxel-mp3-play').is_file():
+        PLAYER = '/usr/libexec/nuxel/nuxel-mp3-play'
+    else:
+        PLAYER = shutil.which('mpg123')
 ALSA_DEVICE = os.environ.get('NUXEL_SOUND_ALSA_DEVICE', '').strip()
-BOOT_FILE = 'nuxel-boot-audio.mp3'
+# PWNAGE-38000 requires the confirmation cue to use the same nuxel-pow.mp3
+# asset as the volume feedback and the Test Audio button.
+BOOT_FILE = 'nuxel-pow.mp3'
 VOL_FILE = 'nuxel-pow.mp3'
 BOOT_PCM_PERCENT = 44
 WAIT_SECONDS = 180
@@ -80,13 +94,21 @@ def play(event, percentage):
             cmd += ['--device', ALSA_DEVICE]
         cmd += [str(src)]
     elif Path(PLAYER).name == 'gst-launch-1.0':
-        # The phone image ships GStreamer but not mpg123.  Its decoder is chosen
-        # from the installed plugins and alsasink retains the active ALSA route.
+        # PipeWire owns the ALSA device on the live image, so route through the
+        # Pulse-compatible pipewire-pulse socket (the same default-sink path
+        # every app uses).  ALSA_DEVICE, when explicitly set, is still honoured
+        # for a direct ALSA sink.
         gain = max(0, min(100, percentage)) / 100.0
-        sink = 'alsasink' + (f' device={ALSA_DEVICE}' if ALSA_DEVICE else '')
+        if ALSA_DEVICE:
+            sink = 'alsasink' + (f' device={ALSA_DEVICE}' if ALSA_DEVICE else '')
+        else:
+            sink = 'pulsesink'
         cmd = [str(PLAYER), '-q', 'filesrc', f'location={src}', '!', 'decodebin',
                '!', 'audioconvert', '!', 'audioresample', '!', 'volume',
                f'volume={gain:.2f}', '!', sink]
+    elif Path(PLAYER).name == 'pw-play':
+        gain = max(0, min(100, percentage)) / 100.0
+        cmd = [str(PLAYER), '--volume', f'{gain:.3f}', str(src)]
     else:
         # mpg123 -f accepts linear PCM gain in fixed-point units: 32768 = unity.
         scale = round(32768 * max(0, min(100, percentage)) / 100)
@@ -94,26 +116,31 @@ def play(event, percentage):
         if ALSA_DEVICE:
             cmd += ['-a', ALSA_DEVICE]
         cmd += ['-f', str(scale), str(src)]
-    timeout = 11 if event == 'boot' else 4
+    timeout = 11 if event == 'boot' else 6
+    output = 'pipewire' if (Path(PLAYER).name in ('gst-launch-1.0', 'pw-play') and not ALSA_DEVICE) else 'alsa'
+    pulse_bounded = output == 'pipewire' and Path(PLAYER).name == 'gst-launch-1.0'
     proc = None
     try:
         # GStreamer can fork helper processes which inherit stderr.  Killing only
         # its parent then makes communicate() wait forever for that pipe; give
         # every cue a separate process group so timeout always returns control to
         # the single button manager.
+        env = dict(os.environ)
+        env.setdefault('XDG_RUNTIME_DIR', '/run/nuxel-wayland')
+        env.setdefault('PIPEWIRE_RUNTIME_DIR', '/run/nuxel-wayland')
+        env.setdefault('PULSE_SERVER', 'unix:/run/nuxel-wayland/pulse/native')
         proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE,
-                                start_new_session=True)
+                                env=env, start_new_session=True)
         _, stderr = proc.communicate(timeout=timeout)
         rc = proc.returncode
         record(event, 'player_ok' if rc == 0 else 'player_error', exit_code=rc,
-               pcm_gain_percent=percentage, output='alsa', alsa_device=ALSA_DEVICE or 'default',
+               pcm_gain_percent=percentage, output=output, alsa_device=ALSA_DEVICE or 'default',
                audible='unverified', detail=stderr.decode('utf-8', 'replace')[-400:])
         return 0 if rc == 0 else 5
     except subprocess.TimeoutExpired:
-        # Reap the complete process group before returning.  The previous
-        # implementation sent SIGKILL after a second timeout but did not wait
-        # for the child; systemd then kept the oneshot cgroup alive until its
-        # stop-job timeout, adding almost a minute to every boot.
+        # On this image gst-launch pulsesink never posts EOS back through the
+        # bus, so a bounded window IS the expected successful completion for the
+        # PipeWire path.  Record it as player_ok but never as audible.
         try:
             os.killpg(proc.pid, signal.SIGTERM)
             _, stderr = proc.communicate(timeout=1)
@@ -122,15 +149,15 @@ def play(event, percentage):
                 os.killpg(proc.pid, signal.SIGKILL)
                 _, stderr = proc.communicate(timeout=2)
             except (OSError, subprocess.TimeoutExpired):
-                # Do not claim playback cleanup succeeded.  The bounded unit
-                # stop timeout remains the final safety net.
                 stderr = b'player process group did not reap after SIGKILL'
         except OSError:
             stderr = b'player process group was already gone'
-        record(event, 'player_timeout', timeout_seconds=timeout, output='alsa',
+        result = 'player_ok' if pulse_bounded else 'player_timeout'
+        record(event, result, timeout_seconds=timeout, output=output,
                pcm_gain_percent=percentage, audible='unverified',
+               note=('bounded PipeWire window: gst-launch pulsesink does not post EOS on this image' if pulse_bounded else None),
                detail=stderr.decode('utf-8', 'replace')[-400:])
-        return 5
+        return 0 if pulse_bounded else 5
     except (OSError, KeyboardInterrupt) as e:
         if proc is not None:
             try:

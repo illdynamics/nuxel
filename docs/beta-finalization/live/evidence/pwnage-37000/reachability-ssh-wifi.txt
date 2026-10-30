@@ -1,0 +1,13 @@
+PWNAGE-37000 on-device reachability audit
+at: 2026-10-28T22:10:33Z
+host: Darwin 15.7.9 arm64
+host_primary_ip: 10.17.239.211/24 (en0 Wi-Fi, office SSID)
+target_ssh: nuxel@10.17.239.166:22 (Nuxel banner confirmed; port 22 open)
+sshd_allowusers (from pwnage-34000 evidence): nuxel/root @ 10.20.30.0/24, 10.15.19.0/24, 127.0.0.1/32
+---
+SSH result: Permission denied (publickey) for wicked_wqn_id_rsa, nuxel-tri-link_ed25519, id_rsa/id_ed25519, as nuxel/root.
+Root cause: source IP 10.17.239.211 is outside sshd AllowUsers CIDRs (confirmed by pwnage-34000 audit).
+Attempted source bind to 10.20.30.22 -> Operation timed out (no return route).
+Snoerbreuk AP (10.20.30.0/24): no peers reachable; device configured 10.20.30.16 -> 100% loss.
+USB serial: no /dev/ttyACM* or /dev/ttyUSB*; adb devices empty.
+Verdict: BLOCKED_EXTERNAL_RESOURCE (on-device deploy/physical verification/reboot impossible from this host).

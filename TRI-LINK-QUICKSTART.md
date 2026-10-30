@@ -1,6 +1,6 @@
 # Nuxel Tri-Link Consoles — Quickstart
 
-_Status as of 2026-10-28 · Nuxel v0.7.2-beta_
+_Status as of 2026-10-28 · Nuxel v0.7.3-beta_
 
 A step-by-step guide to the three Nuxel S10+ console entries:
 

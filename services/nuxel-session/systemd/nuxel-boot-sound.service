@@ -1,14 +1,12 @@
 [Unit]
 Description=Nuxel startup cue after confirmed boot-animation to launcher handoff
-After=nuxel-wayland.service nuxel-wl-fb.service sound.target nuxel-button-manager.service
-Wants=nuxel-wayland.service nuxel-wl-fb.service
+After=nuxel-wayland.service nuxel-wl-fb.service sound.target nuxel-button-manager.service nuxel-audio-route.service
+Wants=nuxel-wayland.service nuxel-wl-fb.service nuxel-audio-route.service
 ConditionPathExists=/usr/share/nuxel/assets/nuxel-boot-audio.mp3
-# The speaker route has not passed a physical owner check yet.  A failed
-# diagnostic cue used to leave a player process in this boot transaction for
-# over a minute.  An explicit verification marker lets the normal boot cue
-# resume only after the actual ALSA/UCM/amp route is confirmed; manual audio
-# diagnostics remain available regardless of this condition.
-ConditionPathExists=/var/lib/nuxel/audio/speaker-verified
+# The live route state file is the honest readiness signal: the boot cue
+# plays once the ABOX/amp route is applied.  The sound-cue binary records
+# audibility as unverified; no physical claim is made.
+ConditionPathExists=/run/nuxel-audio-route.state
 
 [Service]
 Type=oneshot

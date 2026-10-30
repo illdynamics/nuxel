@@ -191,6 +191,14 @@
       if (!this.locked || this.gesture) return;
       if (this.handle && typeof this.handle.contains === 'function' &&
           e && e.target && this.handle.contains(e.target)) return; /* handle owns it */
+      /* PWNAGE-34000: the connection-mode button/overlay are a limited system
+         action.  Tapping them must open/control the mode sheet, not start an
+         unlock gesture and not accidentally dismiss the lockscreen. */
+      if (e && e.target && typeof e.target.closest === 'function') {
+        try {
+          if (e.target.closest('#lockscreen-connection-mode, #connection-mode-overlay')) return;
+        } catch (err) { /* ignore closest failures */ }
+      }
       const y = Number(e && e.clientY);
       const baseTop = Number.isFinite(this.baseTop) ? this.baseTop : (global.innerHeight || 760) * 0.62;
       if (Number.isFinite(y) && y >= baseTop - 80) this._pointerDown(e);

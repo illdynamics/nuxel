@@ -6,20 +6,20 @@
     "serial": "R58M75KDB2X"
   },
   "source": {
-    "captured_from": "BOOT partition /dev/sda14 captured 2026-10-23; userspace inventory refreshed 2026-10-26 from the running phone after the A77 deployment from v0.6.6-beta sources; republished unchanged with v0.7.2-beta while the PWNAGE-30000..36000 live userspace deltas were deployed separately",
-    "captured_at": "2026-10-26T17:55:00+01:00",
-    "repository_head": "the commit named by the annotated v0.7.2-beta tag (created by the release workflow from the merged main commit)",
+    "captured_from": "BOOT partition /dev/sda14 (live device readback) and the running userspace captured 2026-10-30 while the phone was running the PWNAGE-37000/38000 fixes; this release publishes those exact bytes",
+    "captured_at": "2026-10-30T08:22:33+01:00",
+    "repository_head": "the commit named by the annotated v0.7.3-beta tag (created by the release workflow from the merged main commit)",
     "branch": "main",
-    "repository_version": "v0.7.2-beta"
+    "repository_version": "v0.7.3-beta"
   },
   "installed_boot_image": {
     "file": "nuxel-installed-s10plus-boot.img.gz",
-    "gz_sha256": "174cd2d1ac39848af06fbbd9b77be19ce99928e77df834d8af24bc3e88ee12e7",
-    "gz_bytes": 22610918,
-    "bytes": 51605504,
-    "sha256": "48ad61afa91b6fe50278443ecae0695724f706a80de383e0acb021d030620cea",
-    "content": "the first 51,605,504 bytes of the installed BOOT partition; a complete, flashable A27 boot image",
-    "note": "unchanged by v0.7.2-beta: this release did not rewrite BOOT; the archive hash was re-verified on 2026-10-26 (full partition 07041ba7..., image 48ad61af...)"
+    "gz_sha256": "3794731c5c05df5aa500762060bdd208b467c8867dd633447d661060ae22d76b",
+    "gz_bytes": 18514818,
+    "bytes": 57671680,
+    "sha256": "6e998acf0ab90c4923af2b8692efb129e12a743aac394f4b4eb4827267606bc8",
+    "content": "the complete live BOOT partition read back from /dev/sda14 on the phone; a complete, flashable boot image",
+    "note": "captured 2026-10-30 from the running handset after the PWNAGE-38000 splash/audio fixes; the full partition and the shipped image are the same bytes"
   },
   "boot_header": {
     "magic": "ANDROID!",
@@ -27,57 +27,52 @@
     "header_version": 1,
     "header_size": 1648,
     "os_version": "0x18000171",
-    "kernel_bytes": 48912392,
+    "kernel_bytes": 45570056,
     "kernel_addr": "0x10008000",
-    "ramdisk_bytes": 2686976,
+    "ramdisk_bytes": 2402137,
     "ramdisk_addr": "0x11000000",
     "tags_addr": "0x10000100",
     "cmdline": "buildvariant=userdebug nuxel.device=s10plus root=/dev/block/platform/13d60000.ufs/by-name/userdata rootfstype=ext4 rootwait rw"
   },
   "payloads": {
-    "kernel_sha256": "e104da7e9be713f8b45f84561ba50e614f7f8ff4e9ba2ba4c9a6c0978309cd1e",
-    "ramdisk_sha256": "83c4f8cc1ef029f3e105acfaf6d5477999bbd4e045225fa0668160baaad5405d",
-    "declared_image_end": 51603456,
+    "kernel_sha256": "106c4021608cd94feeb4da1f04695dcd996e865e90e4ae7c99ed8bdc3d8f27f6",
+    "ramdisk_sha256": "5ce8992b9d63819010729d1010320347c43e98235e58dad628fb509a401bc5cf",
+    "declared_image_end": 47976448,
     "arm64_magic_at_56": "ARMd"
   },
   "installed_userspace_manifest": {
     "file": "nuxel-installed-s10plus-userspace-files.txt.gz",
-    "gz_sha256": "20aa0946cfdcc8ca750331b9fa94afcb6f9f8bc8c406747f24f782e728ccad6f",
-    "gz_bytes": 129475,
-    "bytes": 366654,
-    "sha256": "fa8c3d61b2edd81146433bf399811312c72af935dd925a3f591b352e0d427528",
-    "lines": 2959,
+    "gz_sha256": "da024bd0d5253124920bab4da2fe69da21f51dff914faad52c6d5121ed589a27",
+    "gz_bytes": 186103,
+    "bytes": 569267,
+    "sha256": "4b6a3dd37babdd3edb339e5ceb5c330f82ad90087626de0f7f1e9d075068d631",
+    "lines": 4238,
     "entries": {
-      "files": 2831,
-      "symlinks": 128
+      "files": 4062,
+      "symlinks": 176
     },
-    "format": "one entry per line: \"F <sha256> <bytes> <path>\" or \"L <target-sha256> <path>\"",
-    "note": "A77 refresh: the inventory includes the A77 bridge/native-host/PWA bytes running after that deployment. v0.7.2-beta republishes it unchanged; the newer PWNAGE-30000..36000 deltas were deployed live and are not a block snapshot. It is a hash inventory, not a rootfs snapshot."
+    "format": "one entry per line: \"F <sha256> <bytes> <path>\" or \"L <target-entry-sha256> <path>\"",
+    "note": "live capture from the running phone on 2026-10-30; includes the PWNAGE-37000/38000 deployed userspace. It is a hash inventory, not a rootfs block snapshot."
   },
   "ci_built_image": {
-    "release": "v0.6.0-beta",
-    "asset": "nuxel-v0.6.0-beta-s10plus.tar.gz",
-    "boot_image_sha256": "9a71dcc0ffa7a0aea5aab03483e402794efb4de6b10c5b076eb0c7c7e2aef5c0",
-    "boot_image_bytes": 51718144,
-    "kernel_sha256": "ad37422c4aa81b47ff256f30837e7cd94eebb279244cf39246b3e0899bf0ec52",
-    "initramfs_sha256": "be7c2f83abe57aa8d7c1a373ae1c6a83e3c6e4b254829b01c24748e054807d73",
-    "rootfs_sha256": "bb46fcb3a6fca3e609dd647ca7d5e17079e7afb52b1ff8ddde14b7c0aed9d708",
-    "note": "This records the last inventory of a CI-built source image (v0.6.0-beta). It is NOT the image installed on the phone. Every release rebuilds the current sources and publishes the resulting archive separately; the installed image is the A27 boot image above (48ad61af...), whose kernel and initramfs differ from the CI artifact."
+    "release": "v0.7.3-beta",
+    "asset": "nuxel-v0.7.3-beta-s10plus.tar.gz",
+    "note": "The workflow rebuilds the current repository sources for this release and publishes that archive next to these captured live bytes. It is NOT byte-identical to the installed image; the captured image above is the exact handset image."
   },
   "rootfs": {
     "note": "The root filesystem is a live, mounted read-write ext4 filesystem. A consistent block-device snapshot needs an owner-approved freeze/remount; this release therefore does not present a live rootfs copy as an exact installed image. It ships the exact installed BOOT image and a hash inventory of the installed userspace files instead."
   },
   "provenance": {
-    "boot_partition_read": "dd if=/dev/sda14 bs=1M count=55 on the device; sha256sum produced 07041ba77e273ba220cc399bcf50be808adf1941c47eb214dd3f0eb8dad5375c for the full partition",
-    "trimmed_image_read": "the first 51,605,504 bytes are the installed A27 boot image, sha256 48ad61afa91b6fe50278443ecae0695724f706a80de383e0acb021d030620cea, matching docs/s10plus-autonomous-boot-repair/A27-BOOT-FLASH-RECEIPT.md",
-    "workflow_note": "The CI image builder produces an A25 boot image from repository sources; it is NOT byte-identical to the A27 image installed on the phone. The release workflow publishes the captured installed image (these assets) alongside the CI-built image and labels both explicitly.",
-    "verification": "The gzip streams were integrity-tested and decompressed locally; the boot image was parsed as a v1 ANDROID! container and its kernel/ramdisk payload hashes recorded."
+    "boot_partition_read": "dd if=/dev/sda14 bs=1M status=none | gzip -9 -n on the device; decompressed sha256 6e998acf0ab90c4923af2b8692efb129e12a743aac394f4b4eb4827267606bc8 for the complete 57671680-byte partition",
+    "trimmed_image_read": "not applicable: the shipped image is the complete BOOT partition, not a trimmed prefix",
+    "workflow_note": "The CI image builder produces a source rebuild for the current repository; the release workflow also publishes the captured installed image and labels both explicitly.",
+    "verification": "gzip integrity, decompressed size/SHA-256, ANDROID! v1 header, page size, raw arm64 Image, kernel/ramdisk hashes and the full-partition readback hash were verified locally before commit."
   },
   "installed_boot_partition": {
     "captured": true,
     "bytes": 57671680,
-    "sha256": "07041ba77e273ba220cc399bcf50be808adf1941c47eb214dd3f0eb8dad5375c",
-    "shipped": false,
-    "note": "The full BOOT partition is 57,671,680 bytes: the 51,605,504-byte image plus 6,066,176 stale trailing bytes from an older, larger candidate. S-Boot reads only header-declared sizes, so the released boot.img.gz is the exact installed image. The full-partition hash is recorded here for readback verification; the extra stale bytes are not shipped because they are not part of the image."
+    "sha256": "6e998acf0ab90c4923af2b8692efb129e12a743aac394f4b4eb4827267606bc8",
+    "shipped": true,
+    "note": "The complete BOOT partition is shipped; no stale trailing bytes are omitted."
   }
 }

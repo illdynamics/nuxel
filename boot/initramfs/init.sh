@@ -504,15 +504,24 @@ nuxel_first_light() {
     #    player's own).  A missing or malformed asset is named by the painter and it
     #    falls back to the A16 diagnostic frame, so the panel is never left
     #    unpainted and "cannot execute" is never confused with "no panel".
+    #    REGRESSION (found 2026-10-29 on hardware): when the NUXSPL01 asset is
+    #    missing from the initramfs the painter shows the obsolete A16 diagnostic
+    #    penguin for the whole first-light window.  The operator saw exactly that:
+    #    the OLD Nuxel splash for ~2 s before the spinning-penguin animation came
+    #    in.  The animation itself is fine, so the diagnostic frame must never be
+    #    painted in place of it.  If the asset is absent we skip the paint and let
+    #    the MP4 player light the panel: a sub-second black panel is honest, an
+    #    obsolete splash is not.
     if [ -f /opt/nuxel/nuxel-firstlight.rawspl ]; then
         diag "FIRSTLIGHT asset present: /opt/nuxel/nuxel-firstlight.rawspl (NUXSPL01 = animation frame 0)"
+        /opt/nuxel/nuxel-fb-phone --firstlight=/opt/nuxel/nuxel-firstlight.rawspl > /dev/kmsg 2>&1
+        _fbrc=$?
+        diag "FIRSTLIGHT exit=${_fbrc}"
+        [ "${_fbrc}" = 0 ] && nuxel_marker FIRSTLIGHT_FRAME_WRITTEN
     else
-        diag "FIRSTLIGHT asset ABSENT from this initramfs -> A16 diagnostic frame"
+        diag "FIRSTLIGHT asset ABSENT from this initramfs -> NOT painting the A16 diagnostic frame; the MP4 player lights the panel"
+        nuxel_marker FIRSTLIGHT_ASSET_MISSING_NO_LEGACY_PAINT
     fi
-    /opt/nuxel/nuxel-fb-phone --firstlight=/opt/nuxel/nuxel-firstlight.rawspl > /dev/kmsg 2>&1
-    _fbrc=$?
-    diag "FIRSTLIGHT exit=${_fbrc}"
-    [ "${_fbrc}" = 0 ] && nuxel_marker FIRSTLIGHT_FRAME_WRITTEN
 
     # 2) Resident painter: DEFERRED to nuxel_start_hold_painter() (A21).
     #

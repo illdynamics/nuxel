@@ -1,0 +1,24 @@
+[Unit]
+Description=Nuxel S10+ ABOX Calliope core-firmware reload
+Documentation=https://nuxel.local/docs/pwnage-38000.md
+# The Wayland session starts PipeWire, which opens hw:0,1 and holds an ABOX
+# runtime-PM reference.  The reload therefore runs after nuxel-wayland is up,
+# stops it briefly, reloads the core blobs, and restarts it.  Boot sound is
+# ordered after this unit so it never plays against an uninitialised DSP.
+After=nuxel-wayland.service local-fs.target
+Before=nuxel-boot-sound.service
+Wants=local-fs.target nuxel-wayland.service
+ConditionPathExists=/sys/devices/platform/18c50000.abox/power/control
+StartLimitIntervalSec=0
+
+[Service]
+Type=oneshot
+ExecStart=/usr/lib/nuxel/nuxel-abox-firmware-reload-boot.sh
+RemainAfterExit=yes
+# Up to 4 verified PM cycles, each bounded at 60 s, plus the session stop/start.
+TimeoutStartSec=300
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=nuxel-wayland.service

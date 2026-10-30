@@ -1,0 +1,108 @@
+Nuxel S10+ audio — third pass (owner has not confirmed audibility)
+Device: nuxel@192.168.178.167 (beyond2lte, Fedora 43, kernel 4.14.253)
+Date:   2026-10-29 ~20:12 CET
+
+WHAT WAS ACTUALLY BROKEN IN THE UI TEST PATH
+--------------------------------------------
+The manual pw-play path reached the sink, but Settings' Test Audio did not
+produce any samples at all.  dmesg showed no abox_uaif_trigger after the owner
+tapped audio-test at 19:45:30, while a direct pw-play immediately produced
+abox_uaif_trigger[P](1).
+
+Root cause: hw_providers._pipewire_play() used
+  gst-launch-1.0 filesrc ! decodebin ! audioconvert ! audioresample ! volume
+  ! pulsesink
+and killed it after a 2.5 s bounded window.  On this image pulsesink never
+posts EOS and gst-launch/decodebin had not linked before the window closed.
+A second multiplier made it worse: Settings sent gain_percent=25, and the sink
+volume was 0.20, so the effective level was 0.20 * 0.25 = 0.05 (5%).
+
+FIXES DEPLOYED
+--------------
+1. services/nuxel-bridge/src/hw_providers.py
+   _pipewire_play() now runs
+     pw-play --volume <gain> <asset>
+   which blocks until EOS (0.36 s cue), exits 0, and is the same player that
+   was already proven to open hw:0,1 and advance the ABox.  Detail string is
+   now "pw-play completed" (honest: rc=0 is not an audibility claim).
+   AudioProvider._ensure_default_sink() selects alsa_output.hw_0_1 by stable
+   name before playback/volume, because after a cold boot WirePlumber can
+   publish the sink without a default node; pw-play then failed with
+   "Translate ID error: '-1' is not a valid ID (returned by
+   default-nodes-api)".
+   Deployed to /usr/lib/nuxel/nuxel-bridge/hw_providers.py; service restarted.
+
+2. pwa/nuxel-apps/settings/hardware-settings.js
+   Test Audio and volume-preview gain_percent 25 -> 100.  The PipeWire sink
+   volume (20%) is now the only attenuation, instead of 20% * 25% = 5%.
+   Deployed to /usr/share/nuxel/pwa/nuxel-apps/settings/hardware-settings.js.
+
+3. services/nuxel-s10/bin/nuxel-audio-route.sh
+   - sets Left/Right PCM Source = ASP (direct path; DSP stays booted/running)
+   - sets ABOX Sound Type = 0 (VOICE, the boot default)
+   - sets Left/Right AMP PCM Gain = 12 (driver default 4 dB; at a 20% sink
+     level the default was inaudible)
+   - sets PCM digital volume 817 (0 dB), unchanged
+   - sets default sink by name, then sink volume 0.20
+   - verification now reads the real ": values=" line instead of the
+     ENUMERATED type line (old code printed "1,items=11")
+   Deployed to /usr/lib/nuxel/nuxel-audio-route.sh; ran successfully:
+     default sink set
+     sink volume set to 20%
+     route applied
+     verify Left/Right DSP1 Firmware=9
+     verify ABOX RDMA1_EN=1
+
+4. tools/s10plus/a45/nuxel-button-manager.c (built on device, deployed)
+   Hardware volume keys now call
+     wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+
+     wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-
+   instead of the accidental ALSA element "ABOX PCM ext Out Fade Start"
+   (range 0..1, which made every press jump 0%/100%).
+   Verified live: 20 -> 25 -> 30 -> 35 -> 30 -> 25 -> 20.
+   Volume preview cue is throttled to one per 500 ms, stopping the
+   "pow nonstop" autorepeat storm.
+
+5. tools/s10plus/a33/nuxel-sound-cue.py
+   volume/boot cue now uses pw-play too (same EOS/starter reason as above).
+   Deployed to /usr/libexec/nuxel/nuxel-sound-cue.
+
+6. services/nuxel-s10/systemd/nuxel-audio-route.timer / -retry.service
+   retries at 45/90/150 s and every 300 s; retry unit has
+   TimeoutStopSec=5 and SendSIGKILL=yes so the old D-state amixer child can
+   no longer leave it "failed (Result: timeout)".
+
+FINAL SOFTWARE STATE AT 20:12:41Z
+---------------------------------
+default_sink   = alsa_output.hw_0_1
+sink_volume    = 0.20
+AMP PCM gain   = 12 / 12
+PCM Source     = ASP / ASP
+ABOX Sound Type= 0 (VOICE)
+DSP1           = cs35l40-bot... and cs35l40-rcv..., booted=Y running=Y
+3 x bridge test-audio at 20:12:41..45 -> HTTP 200,
+  {"success":true,"played":true,"detail":"pw-play completed",...}
+dmesg confirms each one:
+  cs35l41 ... GAIN_CTRL = 0x193
+  abox_uaif_trigger[P](1) / abox_rdma_trigger[1](1)
+  ... trigger(0) after the cue
+
+OWNER CONFIRMATION
+------------------
+NOT CONFIRMED.  The owner's required signals were watched in the same turn:
+  - 3 x "action=home" in /run/nuxel-navdock.state: 0
+  - "works" in the Notes store/localStorage: 0
+The owner last interacted at 19:45:30 (Settings Test Audio/Refresh); after that
+the screen slept and was force-woken.  No audibility claim is made.
+
+SIDE ISSUE
+----------
+Forcing the panel on with wl-fb after an idle sleep fails
+("BL_POWER ... write=-1 readback=4"); direct sysfs
+  echo 0 > /sys/class/backlight/panel/bl_power
+  echo 48600 > /sys/class/backlight/panel/brightness
+brings actual_brightness to 800 but can wedge hsi2c 10990000 (i2c-10) with
+SDA/SCL-low timeouts.  A reboot cleared it.  The screen timeout is currently
+"never" to keep the test surface visible; restore
+/etc/nuxel/display/screen-timeout.json from
+/tmp/screen-timeout.json.orig when done.

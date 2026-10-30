@@ -1,0 +1,22 @@
+{
+  "adb_devices": [],
+  "at": "2026-10-28T21:14:48+0100",
+  "blocked_reason": "no CDC-ACM USB serial gadget enumerated on the host (VID 0x18d1 PID 0x4ee7)",
+  "capability": {
+    "pid": "0x4ee7",
+    "serial": "NUXEL-S10PLUS-0001",
+    "vid": "0x18d1"
+  },
+  "evidence_dir": "/Users/wicked/x/nuxel/docs/beta-finalization/live/evidence/reachability-20261028T211448+0100",
+  "exit_code": 3,
+  "finished": "2026-10-28T21:14:48+0100",
+  "gadget_descriptor_present": false,
+  "host": "Darwin 24.6.0",
+  "nodes": [],
+  "reachable": false,
+  "steps": [],
+  "verdict": "BLOCKED_EXTERNAL_RESOURCE",
+  "verdicts": {
+    "briq-10a-live-reachability-preflight": "BLOCKED_EXTERNAL_RESOURCE"
+  }
+}

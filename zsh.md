@@ -198,3 +198,25 @@ Update the documentation with installation, theme selection, configuration optio
 Finally, run the relevant tests, inspect the diff and report the files changed, test results, installation command, and how to switch between all four themes.
 
 **Acceptance criterion:** Nuxel boots and logs in with the existing penguin banner, starts Zsh with Option 1 by default, and allows users to switch between all four themes persistently without manually editing `.zshrc`.
+
+---
+
+## Implementation status (verified 2026-10-28)
+
+The feature described above is already implemented and tested in-repo:
+
+- Runtime: `services/nuxel-zsh/nuxel.zsh`
+- Installer: `services/nuxel-zsh/install-nuxel-zsh.sh`
+- Theme selector: `services/nuxel-zsh/nuxel-theme`
+- Canonical banner: `services/nuxel-zsh/nuxel-banner`
+- System defaults: `services/nuxel-zsh/nuxel-zsh.conf`
+- Tests: `tests/nuxel-zsh/test_nuxel_zsh.py` (17 tests)
+
+Verified on zsh 5.9: all four themes render correctly (Option 1 three-arrow
+success/error, Option 2 diamond, Option 3 block segments, Option 4 Git branch
+including detached/named branches), `nuxel-theme` selects and persists themes,
+and the installer is idempotent and backs up `/etc/zshrc`. Run:
+
+```sh
+python3 -m pytest tests/nuxel-zsh -q
+```

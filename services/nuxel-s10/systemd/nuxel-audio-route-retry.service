@@ -1,0 +1,15 @@
+[Unit]
+Description=Nuxel S10+ ABOX playback route — deferred retry run
+After=sound.target
+ConditionPathExists=/dev/snd/controlC0
+
+[Service]
+Type=oneshot
+ExecStart=/usr/lib/nuxel/nuxel-audio-route.sh
+RemainAfterExit=no
+TimeoutStartSec=15
+TimeoutStopSec=5
+KillMode=control-group
+SendSIGKILL=yes
+StandardOutput=journal
+StandardError=journal

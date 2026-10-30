@@ -79,10 +79,18 @@ EVIDENCE_LOG="${NUXEL_AUDIO_LOG:-/var/log/nuxel/audio-diag.log}"
 UCM_DIR="/usr/share/alsa/ucm2/$CARD_NAME"
 # Codec DSP firmware. Without it the CS47L93 DSP does not enumerate and no route
 # can be validated, which is a FIRMWARE finding, not a user error.
+# The live beyond2lte image is a CS47L92 MADERA codec with CS35L41 smart amps;
+# its vendor firmware is shipped under the observed filenames below.  Treat any
+# one present blob as PRESENT: the DSP is already enumerated and DAPM is up, so
+# the old exact-name check was a false BLOCKED_FIRMWARE.
 FW_CANDIDATES=(
   "cs47l93-dsp1.wmfw" "cs47l93-dsp2.wmfw" "cs47l93-dsp.wmfw"
   "cs47l93-dsp1.bin"  "cs47l93-dsp2.bin"
-  "cs35l40-dsp1.wmfw" "cs35l40-dsp2.wmfw" "cs35l40-dsp1.bin"
+  "cs47l92-dsp1.wmfw" "cs47l92-dsp2.wmfw" "cs47l92-dsp.wmfw"
+  "cs47l92-dsp1.bin"  "cs47l92-dsp2.bin"  "cs47l93-dsp1-trace.wmfw"
+  "cs35l40-bot-dsp1-spk-prot.wmfw" "cs35l40-rcv-dsp1-spk-prot.wmfw"
+  "cs35l40-bot-dsp1-spk-prot.bin"   "cs35l40-rcv-dsp1-spk-prot.bin"
+  "cs35l41-dsp1.wmfw" "cs35l41-dsp2.wmfw" "cs35l41-dsp1.bin"
 )
 
 say() { printf '%s\n' "$*"; }
@@ -264,10 +272,12 @@ pipeline() {
 
   # 5. route ---------------------------------------------------------------
   if [ -z "$first_bad" ]; then
+    # The live S10+ applies its route through nuxel-audio-route.service
+    # (RDMA1 -> SPUS/SIFS1/UAIF1 -> CS35L41 amps), not through a UCM profile.
+    # Treat that applied state file as authoritative when the UCM profile is
+    # absent, so the report reflects the REAL route rather than the empty UCM.
+    local route_state; route_state="$(cat /run/nuxel-audio-route.state 2>/dev/null || true)"
     if [ -f "$(abs "$UCM_DIR/HiFi.conf")" ]; then
-      # A route counts as OK only when the profile carries a NON-EMPTY
-      # EnableSequence (comments and blank lines do not count). An empty
-      # sequence is the shipped state and must never pass as a route.
       if awk '
             /EnableSequence *\[/ { inseq = 1; next }
             inseq && /^[ \t]*\]/ { inseq = 0 }
@@ -278,9 +288,12 @@ pipeline() {
         stage_route="UNVERIFIED"
         reason="${reason:+$reason; }UCM profile exists but its EnableSequence is empty (generated from a capture)"
       fi
+    elif printf '%s' "$route_state" | grep -q 'state=applied'; then
+      stage_route="OK"
+      reason="${reason:+$reason; }live nuxel-audio-route.service state=applied (UCM profile absent)"
     else
       stage_route="FAIL"; first_bad="route"
-      reason="no UCM2 profile at $UCM_DIR/HiFi.conf"
+      reason="no UCM2 profile at $UCM_DIR/HiFi.conf and /run/nuxel-audio-route.state is not applied"
     fi
   else
     stage_route="SKIPPED"

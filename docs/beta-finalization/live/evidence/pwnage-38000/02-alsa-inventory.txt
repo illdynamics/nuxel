@@ -1,0 +1,70 @@
+== /proc/asound/cards ==
+ 0 [beyondmadera   ]: beyond-madera - beyond-madera
+                      beyond-madera
+ 1 [aboxvdma       ]: abox_vdma - abox_vdma
+                      abox_vdma
+ 2 [aboxdump       ]: abox_dump - abox_dump
+                      abox_dump
+== /proc/asound/pcm ==
+00-00: RDMA0 (*) :  : playback 1
+00-01: RDMA1 (*) :  : playback 1
+00-02: RDMA2 (*) :  : playback 1
+00-03: RDMA3 (*) :  : playback 1
+00-04: RDMA4 (*) :  : playback 1
+00-06: RDMA6 (*) :  : playback 1
+00-07: RDMA7 (*) :  : playback 1
+00-08: RDMA8 (*) :  : playback 1
+00-09: RDMA9 (*) :  : playback 1
+00-10: RDMA10 (*) :  : playback 1
+00-11: RDMA11 (*) :  : playback 1
+00-12: WDMA0 (*) :  : capture 1
+00-13: WDMA1 (*) :  : capture 1
+00-14: WDMA2 (*) :  : capture 1
+00-15: WDMA3 (*) :  : capture 1
+00-16: WDMA4 (*) :  : capture 1
+00-17: WDMA5 (*) :  : capture 1
+00-18: WDMA6 (*) :  : capture 1
+00-19: WDMA7 (*) :  : capture 1
+00-20: VTS-Trigger snd-soc-dummy-dai-20 :  : capture 1
+00-21: VTS-Record snd-soc-dummy-dai-21 :  : capture 1
+00-22: DP Audio snd-soc-dummy-dai-22 :  : playback 1
+== aplay -l ==
+**** List of PLAYBACK Hardware Devices ****
+card 0: beyondmadera [beyond-madera], device 0: RDMA0 (*) []
+  Subdevices: 1/1
+  Subdevice #0: subdevice #0
+card 0: beyondmadera [beyond-madera], device 1: RDMA1 (*) []
+  Subdevices: 0/1
+  Subdevice #0: subdevice #0
+card 0: beyondmadera [beyond-madera], device 2: RDMA2 (*) []
+  Subdevices: 1/1
+  Subdevice #0: subdevice #0
+card 0: beyondmadera [beyond-madera], device 3: RDMA3 (*) []
+  Subdevices: 1/1
+  Subdevice #0: subdevice #0
+card 0: beyondmadera [beyond-madera], device 4: RDMA4 (*) []
+  Subdevices: 1/1
+  Subdevice #0: subdevice #0
+card 0: beyondmadera [beyond-madera], device 6: RDMA6 (*) []
+  Subdevices: 1/1
+  Subdevice #0: subdevice #0
+card 0: beyondmadera [beyond-madera], device 7: RDMA7 (*) []
+  Subdevices: 1/1
+  Subdevice #0: subdevice #0
+card 0: beyondmadera [beyond-madera], device 8: RDMA8 (*) []
+  Subdevices: 1/1
+  Subdevice #0: subdevice #0
+card 0: beyondmadera [beyond-madera], device 9: RDMA9 (*) []
+  Subdevices: 1/1
+  Subdevice #0: subdevice #0
+card 0: beyondmadera [beyond-madera], device 10: RDMA10 (*) []
+  Subdevices: 1/1
+  Subdevice #0: subdevice #0
+card 0: beyondmadera [beyond-madera], device 11: RDMA11 (*) []
+  Subdevices: 1/1
+  Subdevice #0: subdevice #0
+card 0: beyondmadera [beyond-madera], device 22: DP Audio snd-soc-dummy-dai-22 []
+  Subdevices: 1/1
+  Subdevice #0: subdevice #0
+== route state ==
+state=applied card=0

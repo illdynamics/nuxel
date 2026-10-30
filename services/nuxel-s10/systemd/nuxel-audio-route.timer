@@ -1,0 +1,16 @@
+[Unit]
+Description=Nuxel S10+ ABOX playback route — deferred retry after boot
+
+[Timer]
+# The ABox can stay asleep for the first minute or two after boot; one 45 s
+# shot was not enough.  Retry a few times, then keep a slow safety re-apply so
+# a later DSP/codec reset cannot leave the route unprogrammed.
+OnBootSec=45s
+OnBootSec=90s
+OnBootSec=150s
+OnUnitActiveSec=300s
+AccuracySec=5s
+Unit=nuxel-audio-route-retry.service
+
+[Install]
+WantedBy=timers.target

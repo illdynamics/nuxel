@@ -6,7 +6,11 @@
     "button": "power_long",
     "fsm_action": "power-menu",
     "timeout_ms": 15000,
-    "dismiss_on": ["back", "home", "timeout"]
+    "dismiss_on": [
+      "back",
+      "home",
+      "timeout"
+    ]
   },
   "entries": [
     {
@@ -25,11 +29,11 @@
       "label": "Restart",
       "icon": "restart",
       "action": "restart",
-      "trigger_allowed": false,
+      "trigger_allowed": true,
       "gate": "/etc/nuxel/buttons/reboot-gate.json",
       "execution": "systemctl reboot",
       "requires_owner_confirmation": true,
-      "refusal_reason": "gated — reboot-gate.json is closed because the owner is absent and no repository-side reboot policy has authorised a restart in this cycle. An ordinary reboot is permitted ONLY with a known-working userspace rollback path and the pre/post-reboot checklist.",
+      "refusal_reason": "refused by reboot gate or owner confirmation",
       "note": "A restart must return to Nuxel. After three failed returns, stop rebooting and change diagnostic strategy."
     },
     {
@@ -37,11 +41,11 @@
       "label": "Power off",
       "icon": "power",
       "action": "poweroff",
-      "trigger_allowed": false,
+      "trigger_allowed": true,
       "gate": "/etc/nuxel/buttons/reboot-gate.json",
       "execution": "systemctl poweroff",
       "requires_owner_confirmation": true,
-      "refusal_reason": "gated — powering the handset off with no owner present would strand the mission and cannot be undone remotely."
+      "refusal_reason": "refused by reboot gate or owner confirmation"
     },
     {
       "id": "recovery",
@@ -50,7 +54,7 @@
       "action": "boot-recovery",
       "trigger_allowed": false,
       "requires_owner_confirmation": true,
-      "refusal_reason": "NO_FLASH_INVARIANT — entering Recovery means leaving Linux for the Samsung bootloader. This mission triggers no bootloader interface of any kind.",
+      "refusal_reason": "NO_FLASH_INVARIANT \u2014 entering Recovery means leaving Linux for the Samsung bootloader. This mission triggers no bootloader interface of any kind.",
       "note": "The entry exists so the menu is honest about the device's capabilities; it is offline-tested as a REFUSAL and is never triggered by any automated path."
     },
     {
@@ -60,7 +64,7 @@
       "action": "boot-download-mode",
       "trigger_allowed": false,
       "requires_owner_confirmation": true,
-      "refusal_reason": "NO_FLASH_INVARIANT — Download Mode exists only to flash, and this mission performs no flashing of any kind (no Heimdall/Odin/wrappers, no partition writes).",
+      "refusal_reason": "NO_FLASH_INVARIANT \u2014 Download Mode exists only to flash, and this mission performs no flashing of any kind (no Heimdall/Odin/wrappers, no partition writes).",
       "note": "Present for completeness and offline-tested as a refusal; never triggered."
     }
   ],

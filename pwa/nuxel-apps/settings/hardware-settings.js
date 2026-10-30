@@ -79,6 +79,77 @@
     });
   }
 
+  // ---- Bluetooth device manager (PWNAGE 37000) --------------------------
+  var BT_CACHE = [];
+  function renderBluetoothDevices(devices) {
+    var el = $('bt-devices');
+    BT_CACHE = devices || [];
+    if (!el) return;
+    if (!devices || !devices.length) {
+      setText('bt-devices', 'No devices found. Run a scan or power the controller.');
+      var actions = $('bt-device-actions');
+      if (actions) actions.innerHTML = '';
+      return;
+    }
+    var lines = devices.map(function (d, i) {
+      return i + '. ' + (d.mac || '?') + '  ' + (d.alias || '') +
+        '  paired=' + (d.paired === true ? 'yes' : (d.paired === false ? 'no' : '?')) +
+        ' trusted=' + (d.trusted === true ? 'yes' : (d.trusted === false ? 'no' : '?')) +
+        ' connected=' + (d.connected === true ? 'yes' : (d.connected === false ? 'no' : '?'));
+    });
+    setText('bt-devices', lines.join('\n'));
+    var box = $('bt-device-actions');
+    if (box) {
+      box.innerHTML = '';
+      devices.forEach(function (d, i) {
+        var mac = d.mac;
+        if (!mac) return;
+        var wrap = document.createElement('div');
+        wrap.className = 'row';
+        [['Pair', 'pair'], ['Connect', 'connect'], ['Disconnect', 'disconnect'],
+         ['Trust', 'trust'], ['Remove', 'remove']].forEach(function (pair) {
+          var b = document.createElement('button');
+          b.type = 'button';
+          b.textContent = pair[0] + ' #' + i;
+          b.addEventListener('click', function () {
+            btAction(pair[1], mac);
+          });
+          wrap.appendChild(b);
+        });
+        box.appendChild(wrap);
+      });
+    }
+  }
+  function refreshBluetoothDevices() {
+    setText('bt-devices', 'Listing known devices…');
+    return call('bluetooth', 'list-devices', {}).then(function (r) {
+      if (r && r.success === false) { setText('bt-devices', 'List failed: ' + (r.error || 'unknown')); return; }
+      renderBluetoothDevices(r && r.devices);
+    });
+  }
+  function scanBluetooth() {
+    setText('bt-devices', 'Scanning for Bluetooth devices (8 s)…');
+    return call('bluetooth', 'scan', { duration: 8 }).then(function (r) {
+      if (r && r.success === false) { setText('bt-devices', 'Scan failed: ' + (r.error || 'unknown')); return; }
+      renderBluetoothDevices(r && r.devices);
+      return refreshBluetoothDevices();
+    });
+  }
+  function btAction(verb, mac) {
+    setText('bt-action-result', verb + ' ' + mac + ' …');
+    var params = { mac: mac };
+    if (verb === 'trust') params.trusted = true;
+    return call('bluetooth', verb, params).then(function (r) {
+      setText('bt-action-result', verb + ' ' + mac + ': ' +
+        (r && r.success === false ? ('failed: ' + (r.error || 'unknown'))
+          : ((r && r.success === true) ? 'ok' : 'no confirmation') + (r && r.raw ? (' — ' + r.raw) : '')));
+      return refreshBluetoothDevices();
+    }).catch(function (e) {
+      setText('bt-action-result', verb + ' ' + mac + ' error: ' + (e && e.message ? e.message : e));
+      return refreshBluetoothDevices();
+    });
+  }
+
   // ---- Displays ----------------------------------------------------------
   function renderDisplays(st) {
     if (!st || st.success === false) {
@@ -135,6 +206,14 @@
     ];
     if (st.mute_supported === false && st.mute_blocker) lines.push('mute blocker   : ' + st.mute_blocker);
     if (st.detail) lines.push('detail         : ' + st.detail);
+    var outputs = st.outputs || [];
+    if (outputs.length) {
+      lines.push('outputs        : ' + outputs.map(function (o) {
+        return (o.default ? '★ ' : '') + (o.description || ('id ' + o.id));
+      }).join(' | '));
+    }
+    if (st.selected_output) lines.push('selected       : ' + st.selected_output.description);
+    if (st.playback_available === false) lines.push('playback       : unavailable');
     setText('audio-state', lines.join('\n'));
     return st;
   }
@@ -155,14 +234,58 @@
     setText('volume-state', base + (st.mute_supported === false && st.mute_blocker
       ? ('\nMute unavailable: ' + st.mute_blocker) : ''));
   }
+
+  // ---- Test Audio (PWNAGE-38000) ---------------------------------------
+  var testAudioBusy = false;
+  function testAudio() {
+    if (testAudioBusy) return;
+    testAudioBusy = true;
+    var btn = $('audio-test');
+    if (btn) btn.disabled = true;
+    setText('test-audio-state', 'Playing nuxel-pow.mp3 through the selected output…');
+    return call('audio', 'test-audio', { asset: '/usr/share/nuxel/assets/nuxel-pow.mp3', gain_percent: 100 }).then(function (r) {
+      testAudioBusy = false;
+      if (btn) btn.disabled = false;
+      if (r && r.success === false) {
+        setText('test-audio-state', 'Test audio failed: ' + (r.error || 'playback error') +
+          (r.detail ? (' — ' + r.detail) : ''));
+      } else {
+        setText('test-audio-state', 'Playback request completed. ' +
+          (r && r.detail ? r.detail : '') +
+          ' Confirm audibility with the physical speaker/headphones.');
+      }
+      return refreshAudio();
+    }).catch(function (e) {
+      testAudioBusy = false;
+      if (btn) btn.disabled = false;
+      setText('test-audio-state', 'Test audio error: ' + (e && e.message ? e.message : e));
+      return refreshAudio();
+    });
+  }
+
+  // Play the same sound after a GENUINE volume change (coalesced/debounced).
+  var volumeSoundTimer = null;
+  function scheduleVolumeSound(previousPercent, nextPercent) {
+    if (typeof previousPercent !== 'number' || typeof nextPercent !== 'number') return;
+    if (previousPercent === nextPercent) return;
+    if (volumeSoundTimer) clearTimeout(volumeSoundTimer);
+    volumeSoundTimer = setTimeout(function () {
+      volumeSoundTimer = null;
+      call('audio', 'play-sound', { asset: '/usr/share/nuxel/assets/nuxel-pow.mp3', gain_percent: 100 }).catch(function () {});
+    }, 120);
+  }
   function setVolume(delta) {
     return call('audio', 'status', {}).then(function (st) {
       var cur = (st && typeof st.volume_percent === 'number') ? st.volume_percent : 10;
-      var next = Math.max(0, Math.min((st && st.volume_cap_percent) || 25, cur + delta));
+      var cap = (st && st.volume_cap_percent) || 25;
+      var next = Math.max(0, Math.min(cap, cur + delta));
       return call('audio', 'set-volume', { volume: next }).then(function (r) {
-        setText('volume-state', (r && r.success === false)
-          ? ('Volume unchanged: ' + (r.error || 'backend error'))
-          : ('Volume set to ' + (r.volume_percent !== undefined ? r.volume_percent + '%' : next + '%')));
+        if (r && r.success === false) {
+          setText('volume-state', 'Volume unchanged: ' + (r.error || 'backend error'));
+        } else {
+          setText('volume-state', 'Volume set to ' + (r.volume_percent !== undefined ? r.volume_percent + '%' : next + '%'));
+          scheduleVolumeSound(cur, next);
+        }
         return refreshAudio();
       });
     });
@@ -187,10 +310,16 @@
     if (btRefresh) btRefresh.addEventListener('click', refreshBluetooth);
     var btPower = $('bt-power');
     if (btPower) btPower.addEventListener('click', toggleBluetooth);
+    var btScan = $('bt-scan');
+    if (btScan) btScan.addEventListener('click', scanBluetooth);
+    var btList = $('bt-list');
+    if (btList) btList.addEventListener('click', refreshBluetoothDevices);
     var dRef = $('display-refresh');
     if (dRef) dRef.addEventListener('click', refreshDisplays);
     var aRef = $('audio-refresh');
     if (aRef) aRef.addEventListener('click', refreshAudio);
+    var aTest = $('audio-test');
+    if (aTest) aTest.addEventListener('click', testAudio);
     var vDown = $('volume-down');
     if (vDown) vDown.addEventListener('click', function () { setVolume(-5); });
     var vUp = $('volume-up');
@@ -209,6 +338,7 @@
     }
     bridgeTries = 0;
     refreshBluetooth();
+    refreshBluetoothDevices();
     refreshDisplays();
     refreshAudio();
   }

@@ -1,0 +1,15 @@
+........................................................................ [ 72%]
+...........................                                              [100%]
+99 passed in 4.14s
+--- preload asset decode ---
+ffmpeg_decode_rc=0
+--- mp4 metadata ---
+codec_name=h264
+codec_type=video
+width=1080
+height=1920
+pix_fmt=yuv420p
+codec_name=aac
+codec_type=audio
+duration=6.016000
+size=7630092

@@ -113,8 +113,21 @@ install_preload() {
     [ -f "$STAGE/session/nuxel-session.sh" ] && inst "$STAGE/session/nuxel-session.sh" /usr/lib/nuxel/nuxel-session.sh 0755 || true
     [ -f "$STAGE/nuxel-preload-cinema/nuxel-preload-cinema" ] && inst "$STAGE/nuxel-preload-cinema/nuxel-preload-cinema" /usr/lib/nuxel/nuxel-preload-cinema 0755 || true
     [ -f "$STAGE/nuxel-preload-cinema/nuxel-preload-cinema.service" ] && inst "$STAGE/nuxel-preload-cinema/nuxel-preload-cinema.service" /etc/systemd/system/nuxel-preload-cinema.service 0644 || true
+    # Launcher assets are installed ONLY when the staged copy is newer than the
+    # deployed file.  This bootstrap runs --files-only on every boot; an
+    # unconditional install silently reverted live PWNAGE fixes (measured
+    # 2026-10-29: the fixed app.js/style.css/index.html were overwritten by this
+    # stage's older copies).  `-nt` keeps a same-run deploy intact and still lets
+    # a genuinely updated stage roll forward.
     for f in index.html css/style.css js/app.js sw.js; do
-        [ -f "$STAGE/pwa/$f" ] && inst "$STAGE/pwa/$f" "/usr/share/nuxel/pwa/nuxel-home/$f" 0644 || true
+        src="$STAGE/pwa/$f"; dst="/usr/share/nuxel/pwa/nuxel-home/$f"
+        if [ -f "$src" ]; then
+            if [ ! -f "$dst" ] || [ "$src" -nt "$dst" ]; then
+                inst "$src" "$dst" 0644 || true
+            else
+                say "kept newer deployed $dst (stage copy is older)"
+            fi
+        fi
     done
     # The early session controller owns the one-shot video.  The systemd unit
     # raced it and could write the .done marker before the launcher existed.
@@ -151,6 +164,9 @@ files_only() {
     for f in "$STAGE"/nuxel-s10/systemd/*.service; do
         [ -f "$f" ] && inst "$f" "/etc/systemd/system/$(basename "$f")" 0644 || true
     done
+    # SSH allowlist for the owner's current LAN.  Installed as a drop-in so the
+    # 26000 Tri-Link policy keeps its public-key-only rules.
+    [ -f "$STAGE/nuxel-s10/ssh/61-nuxel-lan38.conf" ] &&         inst "$STAGE/nuxel-s10/ssh/61-nuxel-lan38.conf" /etc/ssh/sshd_config.d/61-nuxel-lan38.conf 0644 || true
     [ -f "$STAGE/nuxel-s10/wireplumber/99-nuxel-s10.conf" ] && \
         inst "$STAGE/nuxel-s10/wireplumber/99-nuxel-s10.conf" /etc/wireplumber/wireplumber.conf.d/99-nuxel-s10.conf 0644 || true
     [ -f "$STAGE/nuxel-s10/pipewire/99-nuxel-s10.conf" ] && \
@@ -192,26 +208,35 @@ services() {
 
     run "daemon-reload" systemctl daemon-reload
     run "disable preload unit" systemctl disable nuxel-preload-cinema.service
+    # Bootcap is a 24 s diagnostic capture.  It must not hold multi-user.target
+    # or compete with the display bridge on a normal boot.
+    run "disable bootcap unit" systemctl disable nuxel-bootcap.service
     run "enable services" systemctl enable bluetooth.service nuxel-bluetooth.service geoclue.service \
         nuxel-wifi.service nuxel-device-permissions.service nuxel-audio-route.service \
         nuxel-charger-mode-recovery.service
     run "rfkill bluetooth" rfkill unblock bluetooth
-    run "rfkill wifi" rfkill unblock wifi
-    run "restart bluetooth bring-up" systemctl restart nuxel-bluetooth.service
-    run "restart bluetooth" systemctl restart bluetooth.service
+    # nuxel-bluetooth.service is ordered Before=bluetooth.service and is still
+    # running its one-time patchram download when this transient unit executes.
+    # Restarting it here made systemd stop the active service, wait the 30 s
+    # SIGTERM timeout, abort, and re-run the whole bring-up.  That put the
+    # patchram download behind multi-user.target (measured 2026-10-29: 51 s
+    # userspace).  Leave the bring-up alone once it is active; only start it
+    # when the unit is genuinely not running.
+    if ! systemctl is-active --quiet nuxel-bluetooth.service; then
+        run "start bluetooth bring-up" systemctl start nuxel-bluetooth.service
+    else
+        say "bluetooth bring-up already active; not restarting"
+    fi
+    if ! systemctl is-active --quiet bluetooth.service; then
+        run "start bluetooth" systemctl start bluetooth.service
+    fi
     run "restart geoclue" systemctl restart geoclue.service
     run "restart wifi" systemctl restart nuxel-wifi.service
     run "start audio route" systemctl start nuxel-audio-route.service
-    run "wifi radio" nmcli radio wifi on
-    # Make every stored profile autoconnect again after the unit restart.
-    nmcli -t -f NAME,TYPE connection show 2>/dev/null | while IFS=: read -r name type; do
-        [ "$type" = wifi ] || continue
-        nmcli connection modify "$name" connection.autoconnect yes connection.autoconnect-retries 0 >/dev/null 2>&1 || true
-    done
-    if ! nmcli -t -f DEVICE,STATE device 2>/dev/null | grep -q '^wlan0:connected'; then
-        name=$(nmcli -t -f NAME,TYPE,AUTOCONNECT connection show 2>/dev/null | awk -F: '$2=="wifi" && $3=="yes" {print $1; exit}')
-        [ -n "${name:-}" ] && run "wifi connect $name" timeout 45 nmcli connection up "$name" || true
-    fi
+    # PWNAGE-37000 BUTTERSCOTCH: Wi-Fi is owner-controlled.  nuxel-wifi.service
+    # now only brings up a saved autoconnect profile when the radio is already
+    # enabled; this installer must not re-enable the radio or rewrite profile
+    # autoconnect flags behind the owner's back.
     say "bluetooth: $(hciconfig 2>&1 | head -2 | tr '\n' ' ')"
     say "wifi: $(ip -4 -brief addr show wlan0 2>/dev/null | awk '{print $3}')"
     say "audio: $(nuxel-audio-status 2>&1 | tr '\n' ' ')"

@@ -1,0 +1,89 @@
+== key ABOX route controls ==
+--- ABOX SPUS IN1
+  ; Item #0 'RDMA'
+  ; Item #1 'SIFSM'
+  : values=0
+--- ABOX SPUS OUT1
+  ; Item #0 'SIFS1'
+  ; Item #1 'SIFS0'
+  ; Item #2 'SIFS2'
+  ; Item #3 'RESERVED'
+  ; Item #4 'SIFS3'
+  ; Item #5 'RESERVED'
+  ; Item #6 'SIFS4'
+  : values=0
+--- ABOX SIFS1
+  ; Item #0 'SPUS OUT0'
+  ; Item #1 'SPUS OUT1'
+  ; Item #2 'SPUS OUT2'
+  ; Item #3 'SPUS OUT3'
+  ; Item #4 'SPUS OUT4'
+  ; Item #5 'SPUS OUT5'
+  ; Item #6 'SPUS OUT6'
+  ; Item #7 'SPUS OUT7'
+  ; Item #8 'SPUS OUT8'
+  ; Item #9 'SPUS OUT9'
+  ; Item #10 'SPUS OUT10'
+  ; Item #11 'SPUS OUT11'
+  : values=1
+--- ABOX UAIF1 SPK
+  ; Item #0 'RESERVED'
+  ; Item #1 'SIFS0'
+  ; Item #2 'SIFS1'
+  ; Item #3 'SIFS2'
+  ; Item #4 'SIFS3'
+  ; Item #5 'SIFS4'
+  ; Item #6 'RESERVED'
+  ; Item #7 'RESERVED'
+  ; Item #8 'RESERVED'
+  ; Item #9 'RESERVED'
+  ; Item #10 'RESERVED'
+  ; Item #11 'RESERVED'
+  ; Item #12 'SIFMS'
+  : values=2
+--- ABOX SIFS1 OUT Switch
+  : values=on
+--- ABOX UAIF1 Switch
+  : values=on
+== codec output switches ==
+--- SPKDAT1
+  Playback channels: Front Left - Front Right
+  Mono:
+  Front Left: Playback [on]
+  Front Right: Playback [on]
+--- SPKDAT1 Digital
+  Playback channels: Front Left - Front Right
+  Capture channels: Front Left - Front Right
+  Front Left: 128 [67%] [0.00dB] Playback [off]
+  Front Right: 128 [67%] [0.00dB] Playback [off]
+--- SPKDAT1 High Performance
+  Mono: Playback [off]
+--- Left AMP Enable
+  Mono: Playback [on]
+--- Right AMP Enable
+  Mono: Playback [on]
+--- Left AMP Mute
+  Items: 'Muted' 'Unmuted'
+  Item0: 'Unmuted'
+--- Right AMP Mute
+  Items: 'Muted' 'Unmuted'
+  Item0: 'Unmuted'
+--- Left AMP PCM Gain
+  Mono: 19 [95%] [0.19dB]
+--- Right AMP PCM Gain
+  Mono: 19 [95%] [0.19dB]
+--- HPOUT1 Digital
+  Playback channels: Front Left - Front Right
+  Capture channels: Front Left - Front Right
+  Front Left: 128 [67%] [0.00dB] Playback [off]
+  Front Right: 128 [67%] [0.00dB] Playback [off]
+--- HPOUT2 Digital
+  Playback channels: Front Left - Front Right
+  Capture channels: Front Left - Front Right
+  Front Left: 128 [67%] [0.00dB] Playback [off]
+  Front Right: 128 [67%] [0.00dB] Playback [off]
+--- HPOUT3 Digital
+  Playback channels: Front Left - Front Right
+  Capture channels: Front Left - Front Right
+  Front Left: 128 [67%] [0.00dB] Playback [off]
+  Front Right: 128 [67%] [0.00dB] Playback [off]

@@ -648,8 +648,8 @@ async function gesture(h, options) {
 
     const index = fs.readFileSync(INDEX_HTML, 'utf8');
     check('boot gate still keys on ?boot=os', /get\('boot'\)\s*!==\s*'os'/.test(index));
-    check('lockscreen script uses the current cache-busting revision', /lockscreen\.js\?v=a82/.test(index));
-    check('app controller uses the current cache-busting revision', /app\.js\?v=a84-pwnage36000/.test(index));
+    check('lockscreen script uses the current cache-busting revision', /lockscreen\.js\?v=a85-v072/.test(index));
+    check('app controller uses the current cache-busting revision', /app\.js\?v=a86-fix38/.test(index));
   }
 
   // 18. Battery 100% -> 0% flicker guard.

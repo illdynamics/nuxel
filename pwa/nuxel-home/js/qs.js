@@ -36,6 +36,10 @@ class QuickSettings {
     _init() {
         this._bindEvents();
         this._bindIconAssets();
+        // Wired radios can come up a beat after the launcher.  Sync once at
+        // startup so the Wi-Fi tile reflects the live NetworkManager state
+        // instead of the pre-flight 'off' default until the panel is opened.
+        this._syncState();
     }
 
     // One decode/error owner for custom tile artwork.  The label remains usable
@@ -552,7 +556,9 @@ class QuickSettings {
         try {
             const status = await bridge.getPhoneStatus();
             if (status.network) {
-                this.state.wifi = status.network.wifi_enabled || false;
+                const net = status.network;
+                const connectedState = net.wifi_state === 'connected' || net.wifi_state === 'internet';
+                this.state.wifi = Boolean(net.wifi_enabled) || Boolean(net.wifi_connected) || connectedState;
             }
             if (status.modem) {
                 this.state.mobile = status.modem.connected || false;

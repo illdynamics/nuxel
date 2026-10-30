@@ -12,7 +12,8 @@
     "location:read",
     "location:manage",
     "bluetooth:manage",
-    "bluetooth:scan"
+    "bluetooth:scan",
+    "bluetooth:connect"
   ],
   "bridge_version": "1",
   "docked": true,

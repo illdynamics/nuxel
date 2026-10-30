@@ -25,6 +25,13 @@ CONTROLLER = ROOT / "services/nuxel-preload-cinema/nuxel-preload-cinema"
 SUPPLIED_ASSET = ROOT / "assets/nuxel-preloading-screen.mp4"
 EXISTING_MP4 = ROOT / "assets/nuxel-boot-animation.mp4"
 
+# The controller is exercised offline on macOS too.  These tests inspect or
+# depend on Linux boot facts (/proc uptime, boot_id, process table); they remain
+# authoritative on the handset, but must not report a false failure merely
+# because the dev host has no /proc.
+LINUX_PROC = Path("/proc").is_dir()
+linux_only = pytest.mark.skipif(not LINUX_PROC, reason="requires Linux /proc")
+
 FAKE_MPV = r'''#!/usr/bin/env python3
 import json, os, signal, socket, sys, time
 
@@ -301,7 +308,8 @@ def test_overlay_cover_marker_is_published_before_release(tmp_path):
     assert final["state"] in ("covered", "done")
     served = json.loads(h.status.read_text(encoding="utf-8"))
     assert served["state"] in ("covered", "done")
-    assert served["boot_id"]
+    if Path("/proc/sys/kernel/random/boot_id").is_file():
+        assert served["boot_id"]
 
 
 def test_missing_asset_publishes_fallback_overlay_marker(tmp_path):
@@ -478,6 +486,7 @@ def test_display_off_skips_playback(tmp_path):
     assert h.receipt_doc()["reason"] == "display-not-ready"
 
 
+@linux_only
 def test_static_screen_display_sleep_line_does_not_override_live_panel(tmp_path):
     # Measured on the S10+ at boot: /run/nuxel-wl-fb.state last said
     # "DISPLAY_SLEEP ... display=off" while /var/lib/nuxel/display said
@@ -495,6 +504,7 @@ def test_static_screen_display_sleep_line_does_not_override_live_panel(tmp_path)
     assert r["readiness"]["detail"]["display_state_fresh"] is True
 
 
+@linux_only
 def test_live_display_off_receipt_wins_over_frames_line(tmp_path):
     h = Harness(tmp_path)
     h.wlfb_state.write_text(
@@ -508,6 +518,7 @@ def test_live_display_off_receipt_wins_over_frames_line(tmp_path):
     assert h.receipt_doc()["reason"] == "display-not-ready"
 
 
+@linux_only
 def test_stale_display_receipt_is_ignored(tmp_path):
     h = Harness(tmp_path)
     h.wlfb_state.write_text(
@@ -631,6 +642,7 @@ def test_no_post_readiness_delay(tmp_path):
     assert elapsed < 2.5
 
 
+@linux_only
 def test_no_player_process_survives_handoff(tmp_path):
     h = Harness(tmp_path)
     out = h.run()
@@ -650,36 +662,79 @@ def test_no_player_process_survives_handoff(tmp_path):
     assert survivors == [], survivors
 
 
-def test_early_mode_waits_for_launcher_but_not_display(tmp_path):
-    # The early session launch still does not require the display bridge or a
-    # boot-mode marker, but it waits (bounded) for the launcher's WebKit surface
-    # to map first.  That makes mpv the LAST toplevel, so the video is above the
-    # lockscreen instead of behind it.  The PWA cover hides the lockscreen.
-    h = Harness(tmp_path, ready=False, boot_os=False, wlfb=False,
-                display_on=False, touch=False,
+def test_early_mode_waits_for_launcher_and_display_before_start(tmp_path):
+    # Early mode still races the launcher for stacking, but the one-shot clip
+    # must not start until the display bridge owns the panel.  With both ready
+    # the order is: launcher wait -> display wait -> player start.
+    h = Harness(tmp_path, ready=True, boot_os=False, wlfb=True,
+                display_on=True, touch=False,
                 extra_config={"early_wait_launcher_ms": 250,
+                              "early_map_delay_ms": 0,
                               "max_display_ms": 2000,
                               "hard_timeout_ms": 5000})
-    t0 = time.monotonic()
     out = h.run(NUXEL_PRELOAD_EARLY="1")
-    elapsed = time.monotonic() - t0
     assert out.returncode == 0, out.stderr
-    assert elapsed >= 0.20, elapsed
     r = h.receipt_doc()
     assert r["verdict"] == "PLAYED"
-    assert r["video_eof"] is True
-    assert r["reason"] == "hard-timeout-readiness-pending"
-    assert r["readiness"]["wlfb_ready"] is False
-    assert r["readiness"]["display_on"] is False
-    assert r["readiness"]["boot_os"] is True  # boot_os gate is waived in early mode
+    assert r["readiness"]["wlfb_ready"] is True
+    assert r["readiness"]["display_on"] is True
     log = h.log.read_text(encoding="utf-8")
-    assert "early_launcher_wait" in log and "ready=0" in log
-    assert "early_launcher_wait" in log and "bound_ms=250" in log
+    assert "early_launcher_wait" in log and "ready=1" in log
+    assert "early_display_wait" in log and "ready=1" in log
+    assert log.index("early_launcher_wait") < log.index("early_display_wait")
+    assert log.index("early_display_wait") < log.index("player_starting")
+
+
+def test_early_mode_waits_for_the_display_bridge_before_playing(tmp_path):
+    # Measured 2026-10-29 on the S10+: early mode spawned mpv while the
+    # initramfs animation still owned /dev/fb0.  mpv reached playback-time
+    # 5.958 s before the bridge published its first frame, so only the final
+    # instant of the 6.016 s clip was ever on the glass.  Early mode must wait
+    # for wlfb_ready + display_on (bounded) before it spends the one-shot clip.
+    h = Harness(tmp_path, ready=True, boot_os=False, wlfb=False,
+                display_on=False, touch=False,
+                extra_config={"early_wait_launcher_ms": 250,
+                              "start_timeout_ms": 4000,
+                              "max_display_ms": 3000,
+                              "hard_timeout_ms": 6000})
+    env = h.env(NUXEL_PRELOAD_EARLY="1", FAKE_MPV_EOF_MS="150")
+    proc = subprocess.Popen([sys.executable, str(CONTROLLER)], env=env,
+                            stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    time.sleep(0.9)
+    # The display bridge is not ready yet: no playback may have started.
+    assert h.playback_args() == []
+    h.wlfb_state.write_text(
+        "FRAMES_OK total=10 owner=nuxel-wl-fb display=on out=720x1520\n",
+        encoding="utf-8")
+    h.display_state.write_text(
+        "DISPLAY_ON\nbrightness=12800\nowner=nuxel-wl-fb\n", encoding="utf-8")
+    out, err = proc.communicate(timeout=8)
+    assert proc.returncode == 0, err
+    r = h.receipt_doc()
+    assert r["verdict"] == "PLAYED"
+    assert r["readiness"]["wlfb_ready"] is True
+    log = h.log.read_text(encoding="utf-8")
+    assert "early_display_wait" in log and "ready=1" in log
+
+
+def test_early_mode_falls_back_if_the_display_never_arrives(tmp_path):
+    h = Harness(tmp_path, ready=True, boot_os=False, wlfb=False,
+                display_on=False, touch=False,
+                extra_config={"early_wait_launcher_ms": 100,
+                              "start_timeout_ms": 350,
+                              "max_display_ms": 2000,
+                              "hard_timeout_ms": 3000})
+    out = h.run(NUXEL_PRELOAD_EARLY="1")
+    assert out.returncode == 0, out.stderr
+    r = h.receipt_doc()
+    assert r["verdict"] == "FALLBACK"
+    assert r["reason"] == "display-not-ready"
+    assert h.playback_args() == []
 
 
 def test_early_mode_records_launcher_ready_before_player(tmp_path):
-    h = Harness(tmp_path, ready=True, boot_os=False, wlfb=False,
-                display_on=False, touch=False,
+    h = Harness(tmp_path, ready=True, boot_os=False, wlfb=True,
+                display_on=True, touch=False,
                 extra_config={"early_wait_launcher_ms": 1000,
                               "max_display_ms": 2000,
                               "hard_timeout_ms": 5000})

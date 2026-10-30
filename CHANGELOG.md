@@ -12,6 +12,43 @@ The canonical version lives in [`VERSION`](VERSION) and is bumped in lockstep
 across the shell apps, the PWA manifest, the device `APKBUILD`s, the VM tooling
 and the OTA builder (see *Versioning* below).
 
+## [v0.7.3-beta] - 2026-10-30 - *Release: PWNAGE-37000/38000 boot, Wi-Fi, audio and exact image parity*
+
+- **PWNAGE-37000 Butterscotch.** Cold boot dropped from 1 min 22.5 s to
+  58.9 s and `multi-user.target` from 1 min 18.1 s to 17.5 s: the ABOX
+  firmware-reload unit no longer blocks the UI target, `nuxel-wayland` stops
+  deterministically in 8 s instead of ~46 s in `final-sigterm`, and
+  `nuxel-wifi.service` no longer serialises behind NetworkManager autoconnect.
+  With the radio disabled by the owner, the boot script leaves it disabled.
+- **PWNAGE-38000 audio.** The bridge, sound cue and Settings UI now share the
+  real PipeWire default sink, and the S10+ static sink plus graph clock run at
+  48 kHz — RDMA1 returns EIO and stalls `hw_ptr` at 44.1 kHz on this unit. The
+  new Audio Settings **Test Audio** action plays `nuxel-pow.mp3` at a bounded
+  volume and reports `audible=unverified` honestly. The ABOX Calliope
+  core-firmware reload runs at boot with bounded, verified PM cycles.
+- **PWNAGE-38000 first light.** `boot/initramfs/init.sh` never paints the A16
+  diagnostic splash when the first-light asset is absent, and
+  `tools/s10plus/a27/repack-splashfix.sh` packs the animation's frame 0 back
+  into the ramdisk, so the first lit frame is the real boot animation.
+- **PWNAGE-34000 connection modes.** Lockscreen transport/file-transfer
+  indicators, the Charging/File Transfer selector and the safe USB state
+  machine ship in the launcher and bridge.
+- **Exact installed-image parity.** `release/s10plus/` was re-captured from the
+  live handset on 2026-10-30: the boot image is the complete BOOT partition
+  (`6e998acf…`, 57,671,680 bytes) and the userspace inventory covers 4,238
+  entries. `tools/release/verify-installed-image.py` gates the release on those
+  bytes; `tools/package-release.sh` now derives the published hashes from the
+  manifest instead of hard-coding the retired A27 capture.
+- **Whole-repo lockstep bump to `v0.7.3-beta`** across `VERSION`, device
+  `APKBUILD`s, PWA/bridge manifests, service/version pins, shell apps, OTA/VM
+  tooling and documentation. Launcher cache: `v56-v073-release`.
+- **Verification:** the preload-cinema, connection-mode, PWNAGE-37000/38000,
+  A69/A72/A80 pytest suites, the lockscreen/keyboard/indicator JS suites, the
+  touch and A40 gates pass locally (the `/proc`-dependent preload tests are
+  Linux-only and were run with a Linux-compatible temp path). The GitHub
+  workflow rebuilds the S10+ image set from this merged commit and publishes
+  the captured phone bytes alongside it.
+
 ## [v0.7.2-beta] - 2026-10-28 - *Release: PWNAGE-31000..36000 UI reliability + S10+ hardware fixes*
 
 - **PWNAGE-31000 preload cinema.** The supplied 1080x1920 clip plays over the

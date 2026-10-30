@@ -1,0 +1,74 @@
+PWNAGE-38000 follow-up — audio rate + boot splash
+host: macOS, target: root@192.168.178.167 (S10+ beyond2lte)
+date: 2026-10-29 ~17:05-17:15 CET
+
+== 1. RDMA rate sweep (the actual "no audio" blocker) ==
+for n in 0 1 2 3 4 6 7 8 9 10 11 (48 kHz):
+  only RDMA1: rc=0, hw_ptr 12000 -> 30000 -> 48000 -> 66000
+  others: "ASoC: no backend DAIs enabled"
+
+RDMA1 at 44.1 kHz:
+  aplay -D hw:0,1 /tmp/tone.wav (44.1k)
+  hw_ptr=0 appl_ptr=22050 for 2 s, then:
+  aplay: pcm_write:2191: write error: Input/output error   (rc=1)
+
+RDMA1 at 48 kHz, through PipeWire (gst-launch ... ! pulsesink):
+  hw_params: rate: 48000 (48000/1), S16_LE, 2ch, period 1024
+  state=RUNNING, hw_ptr 1060 -> 16436
+  dmesg: RDMA1-0 Playback:Total=131072 ... rate=48000
+  dmesg: cs35l41 11-0040/0041 cs35l41_pcm_mute mute=0 / Unmuted
+  dmesg: no "Invalid calliope state" (calliope_version = MUB0)
+
+bridge:
+  POST /api/v1/rpc {"namespace":"audio","verb":"test-audio",...}
+  -> {"success": true, "played": true,
+      "detail": "stream linked to default PipeWire sink; ...",
+      "route": "pipewire:@DEFAULT_AUDIO_SINK@", "audible": "unverified"}
+
+wpctl:
+  * 31. S10+ speaker (RDMA1, 48 kHz)  [vol: 0.30]
+
+changed (source -> device):
+  configs/s10plus/pipewire/50-nuxel-s10-alsa.conf       audio.rate 44100 -> 48000
+  services/nuxel-s10/pipewire/99-nuxel-s10.conf         default.clock.rate 44100 -> 48000
+  services/nuxel-s10/alsa/99-nuxel-s10-default.conf     comment only (device 1 kept)
+  configs/s10plus/alsa/asound.conf                      comment only (device 1 kept)
+  configs/nuxel/audio/audio.json                        measured_working_route -> 48000
+
+== 2. boot splash ==
+Pre-fix kmsg (flashed image nuxel-boot-pwnage38000-audio-initramfs-gz.img):
+  [ 2.019785] FIRSTLIGHT asset ABSENT from this initramfs -> A16 diagnostic frame
+  [ 6.739577] NUXEL_FB_DRAW_SUCCESS first-light frame + penguin animation written
+  [ 7.090958] ORIGINAL_MP4_ANIMATION_STARTING
+  [ 8.092544] ANIMATION ownership: MP4 first frame committed after 1s
+  => the obsolete diagnostic splash held the panel ~2 s before the animation.
+
+MP4 analysis (assets/nuxel-boot-animation.mp4, 1080x1920, 24 fps, 192 frames):
+  frame 0 MAE vs assets/nuxel-background.png = 1.16  (static base artwork)
+  per-frame delta in the logo band, frames 0-103 = 4.53
+  per-frame delta in the logo band, frames 137-192 = 0.32
+  => the animation itself shows the spinning penguin from frame 0; it was NOT
+     the source of the old splash.
+
+fix 1: boot/initramfs/init.sh
+  - painter invoked ONLY inside the `[ -f ...rawspl ]` branch
+  - absent asset -> FIRSTLIGHT_ASSET_MISSING_NO_LEGACY_PAINT (no legacy paint)
+fix 2: tools/s10plus/a27/repack-splashfix.sh
+  - regenerates NUXSPL01 from build/out/s10plus/nuxel-animation.nux
+  - inserts opt/nuxel/nuxel-firstlight.rawspl (2,074,144 bytes,
+    sha256 128e9f0250ef0e4a0a372744bbd85d2ab1c4be8561511e2da906920ed9be06fc)
+  - adds the patched /init; kernel/cmdline/addresses/DTB preserved;
+    output keeps the exact 57,671,680-byte partition size; reproducible (gzip -n)
+
+offline gates:
+  tools/s10plus/a27/test-firstlight.sh -> A27_FIRSTLIGHT_TESTS_OK
+  (renderer == python reference, palette order, 11 malformed-asset rejections)
+
+flashed:
+  build/out/s10plus/pwnage38000/nuxel-boot-pwnage38000-splashfix.img
+  sha256 6e998acf0ab90c4923af2b8692efb129e12a743aac394f4b4eb4827267606bc8
+  dd -> /dev/sda14, read-back sha256 identical
+  pre-change partition backup: /tmp/boot-live-backup.img
+  sha256 64cad60bb99f9f883824b42c6c4536ee55b966d0087881d68c6d98a25cc4f0ef
+
+Pending: reboot to observe the first-light window on the glass.

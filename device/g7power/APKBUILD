@@ -18,7 +18,7 @@
 # shellcheck shell=bash
 # shellcheck disable=SC2034,SC2148,SC2154
 pkgname="device-motorola-ocean"
-pkgver="0.7.2-beta"
+pkgver="0.7.3-beta"
 pkgrel="0"
 pkgdesc="Motorola Moto G7 Power (ocean, SDM632/msm8953) — Nuxel Phone OS"
 url="https://nuxel.org"

@@ -1,0 +1,104 @@
+PWNAGE-37000 BUTTERSCOTCH BUTTERSMOOTH — live S10+ pass
+=======================================================
+date: 2026-10-29
+device: Samsung Galaxy S10+ beyond2lte, Linux 4.14.253-gf7194c1d15ed-dirty
+transport: WLAN SSH root@192.168.178.167 (key ~/.ssh/wicked_wqn_id_rsa)
+
+1. Wi-Fi boot policy (fixed first)
+----------------------------------
+problem: nuxel-wifi.service ran `rfkill unblock wifi` + `nmcli radio wifi on`
+unconditionally on every boot, re-enabling a radio the owner had turned off.
+
+fix:
+- services/nuxel-s10/bin/nuxel-wifi-up.sh: read the authoritative
+  `nmcli -t -f WIFI radio` state; exit immediately when disabled. Never
+  rfkill-unblock, never `nmcli radio wifi on`, never rewrite
+  connection.autoconnect, never run a blocking `nmcli connection up`.
+- services/nuxel-s10/systemd/nuxel-wifi.service: description updated.
+- services/nuxel-s10/bin/nuxel-apply-pwnage36000.sh: removed forced
+  `rfkill unblock wifi`, `nmcli radio wifi on` and profile autoconnect rewrite.
+
+verified on-device:
+- systemd-run transient: radio off -> script ran -> after-script-radio=disabled
+  -> re-enabled -> radio=enabled. Log:
+    nuxel-wifi: Wi-Fi radio disabled by owner; leaving it off
+    after-script-radio=disabled
+    after-reenable-radio=enabled
+- after reboot the saved "Nuxel Ziggo5501109" profile autoconnected without the
+  unit forcing the radio on.
+
+2. Boot latency (spinning-penguin path)
+---------------------------------------
+problem: multi-user.target was serialized behind nuxel-abox-firmware-reload and
+nuxel-audio-route, and nuxel-wayland took the default 90 s stop timeout when the
+ABOX reload stopped/restarted the session. On a session restart the preload
+controller's already_ran path returned without republishing the PWA status file,
+so the launcher's opaque preload cover polled a missing preload-status.json for
+its full 40 s hard timeout.
+
+fixes:
+- services/nuxel-s10/systemd/nuxel-wayland.service.d/30-fast-stop.conf:
+  TimeoutStopSec=8, SendSIGKILL=yes, KillMode=control-group. The ABOX wrapper
+  restarts the session immediately after stopping it.
+- removed stale multi-user.target.wants symlinks for
+  nuxel-abox-firmware-reload.service and nuxel-audio-route.service on the
+  device; both remain started via nuxel-wayland.service.wants /
+  nuxel-boot-sound wants so audio still initializes, just not on the UI path.
+- services/nuxel-s10/systemd/nuxel-audio-route.service:
+  WantedBy changed to nuxel-wayland.service.
+- services/nuxel-s10/bin/nuxel-abox-firmware-reload.sh:
+  bounded the `echo on > power/control` resume write with timeout (mirrors the
+  already-bounded suspend write).
+- services/nuxel-preload-cinema/nuxel-preload-cinema:
+  already_ran path now republishes a terminal `done` overlay/status file.
+- pwa/nuxel-home/js/app.js:
+  preload-cover poll backs off exponentially (100 ms -> 1 s) on missing
+  preload-status.json instead of hammering every 100 ms for 40 s.
+
+measured before (this pass, wifi fix already applied):
+  Startup finished in 3.482s (kernel) + 1min 19.034s (userspace) = 1min 22.516s
+  multi-user.target reached after 1min 18.088s in userspace.
+  top: nuxel-abox-firmware-reload.service 1min 14.370s
+
+measured after (true final reboot):
+  Startup finished in 3.447s (kernel) + 55.488s (userspace) = 58.936s
+  multi-user.target reached after 17.485s in userspace.
+  top: nuxel-abox-firmware-reload.service 51.609s (background, not on critical
+  path), nuxel-fallback.service 14.049s, nuxel-wl-fb.service 6.280s,
+  nuxel-wifi.service 156ms.
+  critical chain: multi-user.target -> nuxel-wl-fb -> nuxel-wayland -> nuxel-web
+  -> nuxel-http-bridge -> nuxel-bridge -> ModemManager -> polkit -> basic.
+
+  multi-user target: 78.088s -> 17.485s
+  total boot: 82.516s -> 58.936s
+
+preload overlay on final reboot:
+  /run/nuxel/preload-cinema.overlay -> {"state":"done","reason":"already-ran"}
+  (terminal status now published on the session-restart path).
+
+3. Automated regression tests
+-----------------------------
+python3 -m pytest tests/pwnage37000 tests/nuxel-zsh tests/a72 tests/a69 tests/a52 \
+    tests/a80 tests/pwnage30000 tests/pwnage33000 tests/pwnage34000 -q
+152 passed in 4.23s
+
+new tests:
+- tests/pwnage37000/test_wifi_owner_controlled.py
+- tests/pwnage37000/test_boot_butterscotch.py
+- tests/pwnage37000/test_bluetooth_audio_37000.py (existing, repo audio-route
+  script synced to the deployed corrected version)
+
+4. Rollback
+-----------
+device backups: /var/backups/nuxel/pwnage37000/
+- nuxel-wifi-up.sh, nuxel-wifi.service, stage copies
+- nuxel-preload-cinema, stage copy
+- app.js (launcher), stage copy
+- nuxel-abox-firmware-reload.sh, stage copy
+- 30-fast-stop.conf
+- nuxel-audio-route.service + stage copy
+- apply-pwnage36000.sh stage copies
+
+To restore any file, copy the matching *.bak-<ts> file back and run:
+  systemctl daemon-reload
+  systemctl reboot

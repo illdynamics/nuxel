@@ -383,15 +383,28 @@ export class NuxelBridgeClient {
             case 'bluetooth.status':
             case 'bluetooth.set-powered':
             case 'bluetooth.power':
+            case 'bluetooth.list-devices':
+            case 'bluetooth.scan':
+            case 'bluetooth.pair':
+            case 'bluetooth.connect':
+            case 'bluetooth.disconnect':
+            case 'bluetooth.trust':
+            case 'bluetooth.remove':
+            case 'bluetooth.info':
             case 'audio.status':
             case 'audio.set-volume':
             case 'audio.set-muted':
+            case 'audio.test-audio':
+            case 'audio.play-sound':
+            case 'audio.sinks':
             case 'display.status':
             case 'location.status':
             case 'location.request':
             case 'location.get-status':
             case 'location.set-enabled':
             case 'location.acquire':
+            case 'location.gnss-probe':
+            case 'location.gnss-power':
                 return { success: false, offline: true,
                     state: 'unavailable',
                     error: 'Nuxel bridge location provider is unavailable; ' + key + ' was not performed' };

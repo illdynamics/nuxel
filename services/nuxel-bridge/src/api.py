@@ -45,6 +45,14 @@ except Exception as _e:  # pragma: no cover - optional module
     tri_link_status = None
     logger.warning('tri_link_status unavailable: %s', _e)
 
+# USB connection-mode state machine (Charging / File Transfer). It only
+# activates a real endpoint through the dedicated helper and reports the result.
+try:
+    import usb_mode
+except Exception as _e:  # pragma: no cover - optional module
+    usb_mode = None
+    logger.warning('usb_mode unavailable: %s', _e)
+
 # Privileged hardware providers (audio mixer, Type-C/display inventory, and the
 # Bluetooth rfkill/systemctl actuator).  These run in this ROOT process because
 # the D-Bus bridge is sandboxed away from /dev/snd and /sys/class/rfkill writes.
@@ -82,7 +90,7 @@ HTTP_MODE = os.environ.get('NUXEL_HTTP_MODE', 'dev')
 # downgrade. NUXEL_BRIDGE_VERSION is the host IMPLEMENTATION version and is
 # allowed to move independently.
 BRIDGE_PROTOCOL_VERSION = os.environ.get('NUXEL_BRIDGE_PROTOCOL_VERSION', '1')
-BRIDGE_HOST_VERSION = os.environ.get('NUXEL_BRIDGE_VERSION', '0.7.2-beta')
+BRIDGE_HOST_VERSION = os.environ.get('NUXEL_BRIDGE_VERSION', '0.7.3-beta')
 
 # Canonical launcher registry, shared with the PWA (pwa/nuxel-common/app-registry.json)
 # and the native shell. The rootfs installs it at /etc/nuxel/app-registry/.
@@ -1076,6 +1084,16 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
             result = self._call_bridge('GetPhoneStatus', app_id)
             self._send_json(result)
 
+        elif path == '/api/v1/system/usb-mode':
+            if usb_mode is not None:
+                try:
+                    self._send_json(usb_mode.current_state())
+                except Exception as exc:  # noqa: BLE001
+                    logger.error('usb-mode state read failed: %s', exc)
+                    self._send_json({'success': False, 'error': str(exc)}, 500)
+            else:
+                self._send_json({'success': False, 'error': 'usb_mode unavailable'}, 503)
+
         elif path == '/api/v1/system/tri-link':
             if tri_link_status is not None:
                 try:
@@ -1266,10 +1284,35 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
                     bool(params.get('muted', False)) if isinstance(params, dict) else False)
             if verb == 'capture-route':
                 return self._audio_provider.capture_route()
+            if verb == 'sinks':
+                st = self._audio_provider.get_status()
+                return {'success': True,
+                        'backend': st.get('backend'),
+                        'sound_server': st.get('sound_server'),
+                        'outputs': st.get('outputs', []),
+                        'selected_output': st.get('selected_output'),
+                        'capture_sources': st.get('capture_sources', [])}
+            if verb in ('test-audio', 'play-sound'):
+                return self._audio_provider.test_audio(
+                    asset=params.get('asset', '/usr/share/nuxel/assets/nuxel-pow.mp3') if isinstance(params, dict) else '/usr/share/nuxel/assets/nuxel-pow.mp3',
+                    gain_percent=params.get('gain_percent', 25) if isinstance(params, dict) else 25)
         if namespace == 'display' and verb == 'status':
             if hw_providers is None:
                 return {'success': False, 'error': 'display provider unavailable'}
             return hw_providers.DisplayProvider().get_status()
+        if namespace == 'location' and verb in ('gnss-probe', 'gnss-power'):
+            if hw_providers is None:
+                return {'success': False, 'error': 'gnss provider unavailable'}
+            perm = self._call_bridge('CheckPermission', app_id, 'location:read')
+            if not (perm and perm.get('granted')):
+                return {'success': False, 'error': 'Capability not granted: location:read',
+                        'error_code': 'CAPABILITY_DENIED'}
+            gnss = hw_providers.GnssProvider()
+            if verb == 'gnss-power':
+                return gnss.power_rail(enabled=bool(params.get('enabled', True)),
+                                       timeout=params.get('timeout', 5.0))
+            return gnss.sample_nmea(seconds=params.get('duration', 5),
+                                    timeout=params.get('timeout', 12.0))
         if namespace == 'bluetooth' and verb == 'power':
             if hw_providers is None:
                 return {'success': False, 'error': 'bluetooth power provider unavailable'}
@@ -1291,6 +1334,37 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
             st.update(act)
             st['success'] = bool(act.get('success'))
             return st
+        if namespace == 'bluetooth' and verb in (
+                'list-devices', 'scan', 'pair', 'connect', 'disconnect',
+                'trust', 'remove', 'info'):
+            if hw_providers is None:
+                return {'success': False, 'error': 'bluetooth provider unavailable'}
+            cap = 'bluetooth:connect' if verb in (
+                'pair', 'connect', 'disconnect', 'trust', 'remove') else 'bluetooth:scan'
+            perm = self._call_bridge('CheckPermission', app_id, cap)
+            if not (perm and perm.get('granted')):
+                return {'success': False, 'error': 'Capability not granted: ' + cap,
+                        'error_code': 'CAPABILITY_DENIED'}
+            if getattr(self, '_bluetooth_provider', None) is None:
+                self._bluetooth_provider = hw_providers.BluetoothManagerProvider()
+            bp = self._bluetooth_provider
+            if verb == 'list-devices':
+                return bp.list_devices(paired_only=bool(params.get('paired_only', False)))
+            if verb == 'scan':
+                return bp.scan(params.get('duration', 8))
+            if verb == 'pair':
+                return bp.pair(params.get('mac', ''), timeout=params.get('timeout', 30.0))
+            if verb == 'connect':
+                return bp.connect(params.get('mac', ''), timeout=params.get('timeout', 30.0))
+            if verb == 'disconnect':
+                return bp.disconnect(params.get('mac', ''), timeout=params.get('timeout', 20.0))
+            if verb == 'trust':
+                return bp.trust(params.get('mac', ''), trusted=params.get('trusted', True),
+                                timeout=params.get('timeout', 20.0))
+            if verb == 'remove':
+                return bp.remove(params.get('mac', ''), timeout=params.get('timeout', 20.0))
+            if verb == 'info':
+                return bp._info(params.get('mac', ''))
         method = self.RPC_METHODS.get((namespace, verb))
         if method is None:
             logger.warning("Unknown RPC %s.%s", namespace, verb)
@@ -1492,7 +1566,22 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
 
         app_id = body.get('app_id', 'unknown')
 
-        if path == '/api/v1/rpc':
+        if path == '/api/v1/usb-mode/set-mode':
+            if usb_mode is None:
+                self._send_json({'success': False, 'error': 'usb_mode unavailable'}, 503)
+            else:
+                length = int(self.headers.get('Content-Length', '0') or 0)
+                raw = self.rfile.read(length) if length > 0 else b'{}'
+                try:
+                    payload = json.loads(raw.decode('utf-8') or '{}')
+                except Exception as exc:  # noqa: BLE001
+                    self._send_json({'success': False, 'error': 'invalid-json: %s' % exc}, 400)
+                    return
+                mode = str(payload.get('mode', ''))
+                result = usb_mode.set_mode(mode)
+                self._send_json(result, 200 if result.get('success') else 409)
+
+        elif path == '/api/v1/rpc':
             result = self._handle_rpc(app_id, body)
             self._send_json({'result': result})
             return
