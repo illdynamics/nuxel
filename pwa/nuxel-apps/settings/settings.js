@@ -37,6 +37,88 @@
       document.getElementById('tab-' + t.dataset.tab).classList.add('active');
     });
   });
+  // ---------- power tab (battery modes + power menu) ----------
+  // The table and the profiles are the SAME documents the hardware menu and
+  // nuxel-power-diag.sh read.  A click asks the host for the logical action; the
+  // host/manager then applies the reboot gate or the host action, and only the
+  // returned verdict is shown (never an invented success).
+  var POWER = { menu: null, policy: null, active: 'balanced' };
+  function renderPowerModes() {
+    var box = document.getElementById('pm-modes');
+    if (!box) return;
+    box.innerHTML = '';
+    var list = (POWER.policy && POWER.policy.list) || {};
+    Object.keys(list).forEach(function (id) {
+      var m = list[id] || {};
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.dataset.mode = id;
+      if (id === POWER.active) b.classList.add('primary');
+      b.textContent = (m.label || id);
+      b.title = m.summary || '';
+      b.addEventListener('click', function () {
+        var st = document.getElementById('pm-mode-status');
+        if (st) st.textContent = 'applying ' + id + '…';
+        call('power.apply-profile', { mode: id }).then(function (r) {
+          if (!st) return;
+          if (r && r.offline) { st.textContent = 'host unavailable — profile NOT applied'; return; }
+          if (r && r.ok === false) { st.textContent = 'refused: ' + (r.error || r.reason || 'unknown'); return; }
+          POWER.active = id;
+          renderPowerModes();
+          st.textContent = 'profile ' + id + ' applied and persisted';
+        });
+      });
+      box.appendChild(b);
+    });
+  }
+  function renderPowerMenu() {
+    var box = document.getElementById('pm-entries');
+    if (!box || !POWER.menu) return;
+    box.innerHTML = '';
+    (POWER.menu.entries || []).forEach(function (e) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.dataset.entry = e.id;
+      b.textContent = e.label || e.id;
+      if (!e.trigger_allowed) { b.disabled = true; b.title = e.refusal_reason || 'refused'; }
+      b.addEventListener('click', function () {
+        var out = document.getElementById('pm-result');
+        if (!e.trigger_allowed) { if (out) out.textContent = (e.label || e.id) + ' refused: ' + (e.refusal_reason || 'policy'); return; }
+        if (out) out.textContent = (e.label || e.id) + '…';
+        // The Settings surface talks to the SAME host action names the hardware
+        // menu dispatches; restart/poweroff are executed by the button manager.
+        act(e.action).then(function (r) {
+          if (!out) return;
+          out.textContent = (r && r.offline) ? 'host unavailable — no action taken'
+            : (r && r.ok === false) ? ((e.label || e.id) + ' refused: ' + (r.error || r.reason || 'unknown'))
+            : ((e.label || e.id) + (r && r.pending ? ' requested' : ' done'));
+        });
+      });
+      box.appendChild(b);
+    });
+  }
+  function loadPower() {
+    return Promise.all([
+      call('config.get', { name: 'power-menu', path: '/etc/nuxel/power/power-menu.json' }),
+      call('config.get', { name: 'power', path: '/etc/nuxel/power/power.json' })
+    ]).then(function (r) {
+      var menuRes = r[0] || {}, polRes = r[1] || {};
+      if (typeof menuRes.text === 'string' && menuRes.text) {
+        try { POWER.menu = JSON.parse(menuRes.text); } catch (e) { POWER.menu = null; }
+      }
+      if (typeof polRes.text === 'string' && polRes.text) {
+        try { var p = JSON.parse(polRes.text); if (p && p.profiles && p.profiles.list) POWER.policy = { default: p.profiles.default, list: p.profiles.list }; } catch (e) {}
+      }
+      if (POWER.policy && POWER.policy.default) POWER.active = POWER.policy.default;
+      renderPowerModes();
+      renderPowerMenu();
+    });
+  }
+  document.querySelectorAll('.tab').forEach(function (t) {
+    if (t.dataset.tab === 'power') t.addEventListener('click', function () { loadPower(); });
+  });
+  loadPower();
+
   var closeBtn = document.getElementById('close');
   if (closeBtn) closeBtn.addEventListener('click', function () {
     var f = window.frameElement;

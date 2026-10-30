@@ -46,6 +46,8 @@
 #include <time.h>
 #include <unistd.h>
 #include <pty.h>
+#include <pwd.h>
+#include <zlib.h>
 
 /* REVISION A31 (2026-10-16, beta finalizer) - three corrections:
  *   1. BOOT ANIMATION OWNERSHIP (mission 9).  On the S10+ the OS has already
@@ -827,6 +829,12 @@ static const struct cfgfile CFG[] = {
   { "display-timeout",     "/etc/nuxel/display/screen-timeout.json",      1 },
   /* A68 lockhead indicators: computed in-process from sysfs, not a file read. */
   { "system-indicators",   NULL,                                           0 },
+  /* Power surface (Settings > Power and power-menu.html): the menu table and
+     the battery-mode profiles are the SAME documents nuxel-button-manager and
+     nuxel-power-diag.sh read.  Read-only here; the actions go through the
+     manager's reboot gate / host action path. */
+  { "power-menu",          "/etc/nuxel/power/power-menu.json",            0 },
+  { "power",               "/etc/nuxel/power/power.json",                 0 },
   { NULL, NULL, 0 }
 };
 
@@ -994,9 +1002,19 @@ static int json_str(const char *js, const char *key, char *out, size_t outn) {
  * session (nuxel-wayland -> this host) while the host was still blocked inside
  * action_perform, so shutdown sat until a timeout.  Forking decouples the two.
  * ------------------------------------------------------------------------- */
+#define REBOOT_GATE_PATH "/etc/nuxel/buttons/reboot-gate.json"
+
+/* Read the WHOLE gate document.  The old code used ind_read_line() (fgets), so it
+ * only ever saw line 1 of the pretty-printed JSON and `allow_restart` /
+ * `allow_poweroff` could never be found -> every Settings Restart was refused
+ * with reboot-gate-closed even though the gate was open. */
 static int ind_gate_allows(const char *key) {
-  char buf[4096];
-  if (!ind_read_line("/etc/nuxel/buttons/reboot-gate.json", buf, sizeof buf)) return 0;
+  FILE *f = fopen(REBOOT_GATE_PATH, "rb");
+  if (!f) return 0;
+  char buf[8192];
+  size_t n = fread(buf, 1, sizeof buf - 1, f);
+  fclose(f);
+  buf[n] = 0;
   char pat[96];
   snprintf(pat, sizeof pat, "\"%s\":", key);
   char *p = strstr(buf, pat);
@@ -1017,6 +1035,153 @@ static void run_async_systemctl(const char *verb) {
   }
 }
 
+/* ---------------------------------------------------------------------------
+ * POWER MENU: "Take screenshot".
+ *
+ * The hardware-button manager dispatches `action screenshot` to
+ * /run/nuxel-pwa-host.cmd (chord Power+VolumeDown and the menu entry).  The host
+ * used to answer `unknown-action`, so the entry and the chord did nothing.
+ *
+ * The capture runs nuxel-screenshot (wlr-screencopy; never opens /dev/fb0),
+ * converts the PPM to a real PNG with zlib in-process, and stores the file in
+ * the session user's Gallery so the Gallery app indexes it.  Nothing is claimed
+ * when the capture fails: the caller gets ok:false with the reason.
+ * ------------------------------------------------------------------------- */
+#define SHOT_BIN "/usr/lib/nuxel/nuxel-screenshot"
+#define SHOT_DIR "/home/nuxel/Gallery"
+
+static void png_be32(unsigned char *p, uint32_t v) {
+  p[0] = (unsigned char)(v >> 24); p[1] = (unsigned char)(v >> 16);
+  p[2] = (unsigned char)(v >> 8);  p[3] = (unsigned char)v;
+}
+
+static int png_chunk(FILE *f, const char *type, const unsigned char *data, size_t n) {
+  unsigned char hdr[8], crc[4];
+  png_be32(hdr, (uint32_t)n);
+  memcpy(hdr + 4, type, 4);
+  uLong c = crc32(0L, Z_NULL, 0);
+  c = crc32(c, (const Bytef *)type, 4);
+  if (n) c = crc32(c, (const Bytef *)data, (uInt)n);
+  png_be32(crc, (uint32_t)c);
+  if (fwrite(hdr, 1, 8, f) != 8) return -1;
+  if (n && fwrite(data, 1, n, f) != n) return -1;
+  return (fwrite(crc, 1, 4, f) == 4) ? 0 : -1;
+}
+
+/* PPM (P6, 8-bit) -> PNG.  Returns 0 on success. */
+static int ppm_to_png(const char *ppm_path, const char *png_path, int *out_w, int *out_h) {
+  FILE *in = fopen(ppm_path, "rb");
+  if (!in) return -1;
+  char magic[3] = {0};
+  int w = 0, h = 0, maxv = 0;
+  if (fscanf(in, "%2s", magic) != 1 || strcmp(magic, "P6") ||
+      fscanf(in, "%d %d %d", &w, &h, &maxv) != 3 || w <= 0 || h <= 0 || maxv != 255) {
+    fclose(in);
+    return -1;
+  }
+  int c = fgetc(in);              /* exactly one whitespace byte after maxval */
+  if (c == EOF) { fclose(in); return -1; }
+  size_t rowbytes = (size_t)w * 3;
+  unsigned char *row = g_malloc(rowbytes + 1);
+  unsigned char *raw = g_malloc((rowbytes + 1) * (size_t)h);
+  if (!row || !raw) { g_free(row); g_free(raw); fclose(in); return -1; }
+  for (int y = 0; y < h; y++) {
+    size_t off = (rowbytes + 1) * (size_t)y;
+    raw[off] = 0;                 /* filter type 0 (None) */
+    if (fread(row, 1, rowbytes, in) != rowbytes) {
+      g_free(row); g_free(raw); fclose(in); return -1;
+    }
+    memcpy(raw + off + 1, row, rowbytes);
+  }
+  fclose(in);
+  g_free(row);
+
+  uLongf zlen = compressBound((uLong)((rowbytes + 1) * (size_t)h));
+  unsigned char *zbuf = g_malloc(zlen);
+  if (!zbuf || compress2(zbuf, &zlen, raw, (uLong)((rowbytes + 1) * (size_t)h), 6) != Z_OK) {
+    g_free(zbuf); g_free(raw); return -1;
+  }
+  g_free(raw);
+
+  FILE *out = fopen(png_path, "wb");
+  if (!out) { g_free(zbuf); return -1; }
+  static const unsigned char sig[8] = {0x89, 'P', 'N', 'G', '\r', '\n', 0x1a, '\n'};
+  unsigned char ihdr[13];
+  png_be32(ihdr, (uint32_t)w);
+  png_be32(ihdr + 4, (uint32_t)h);
+  ihdr[8] = 8;   /* bit depth */
+  ihdr[9] = 2;   /* colour type: truecolour */
+  ihdr[10] = 0; ihdr[11] = 0; ihdr[12] = 0;
+  int ok = (fwrite(sig, 1, 8, out) == 8) &&
+           png_chunk(out, "IHDR", ihdr, sizeof ihdr) == 0 &&
+           png_chunk(out, "IDAT", zbuf, (size_t)zlen) == 0 &&
+           png_chunk(out, "IEND", NULL, 0) == 0;
+  fclose(out);
+  g_free(zbuf);
+  if (!ok) { unlink(png_path); return -1; }
+  *out_w = w; *out_h = h;
+  return 0;
+}
+
+/* Capture the current composited frame into the Gallery.  Returns 0 on success
+ * and fills `out_path`; never invents success. */
+static int nuxel_capture_screenshot(char *out_path, size_t outn, int *out_w, int *out_h,
+                                    char *err, size_t errn) {
+  char tmpl[] = "/run/nuxel-shot-XXXXXX";
+  int fd = mkstemp(tmpl);
+  if (fd < 0) { snprintf(err, errn, "tempfile-failed"); return -1; }
+  close(fd);
+  unlink(tmpl);
+  char ppm[256];
+  snprintf(ppm, sizeof ppm, "%s.ppm", tmpl);
+  err[0] = 0;
+
+  pid_t pid = fork();
+  if (pid < 0) { snprintf(err, errn, "fork-failed"); unlink(ppm); return -1; }
+  if (pid == 0) {
+    (void)setsid();
+    int devnull = open("/dev/null", O_WRONLY);
+    if (devnull >= 0) { dup2(devnull, 2); close(devnull); }
+    execl(SHOT_BIN, "nuxel-screenshot", ppm, (char *)NULL);
+    _exit(127);
+  }
+  int status = 0;
+  for (int i = 0; i < 100; i++) {          /* bounded: 10 s max */
+    pid_t r = waitpid(pid, &status, WNOHANG);
+    if (r == pid) break;
+    if (r < 0) break;
+    usleep(100000);
+    if (i == 99) { kill(pid, SIGKILL); waitpid(pid, NULL, 0); }
+  }
+  if (!WIFEXITED(status) || WEXITSTATUS(status) != 0) {
+    snprintf(err, errn, "capture-failed rc=%d", WIFEXITED(status) ? WEXITSTATUS(status) : -1);
+    unlink(ppm);
+    return -1;
+  }
+
+  mkdir(SHOT_DIR, 0750);
+  char stamp[32];
+  time_t now = time(NULL);
+  struct tm tm;
+  gmtime_r(&now, &tm);
+  strftime(stamp, sizeof stamp, "%Y%m%dT%H%M%SZ", &tm);
+  snprintf(out_path, outn, SHOT_DIR "/nuxel-screenshot-%s.png", stamp);
+
+  int w = 0, h = 0;
+  if (ppm_to_png(ppm, out_path, &w, &h) != 0) {
+    snprintf(err, errn, "convert-failed");
+    unlink(ppm);
+    return -1;
+  }
+  unlink(ppm);
+  chmod(out_path, 0640);
+  struct passwd *pw = getpwnam("nuxel");
+  if (pw && geteuid() == 0) { if (chown(out_path, pw->pw_uid, pw->pw_gid) != 0) { /* best effort */ } }
+  if (out_w) *out_w = w;
+  if (out_h) *out_h = h;
+  return 0;
+}
+
 static void action_perform(const char *action, char *result, size_t rn) {
   if (!strcmp(action, "screen-lock")) {
     /* Lock is the display bridge's verb; the launcher also sends screen-off. */
@@ -1026,6 +1191,18 @@ static void action_perform(const char *action, char *result, size_t rn) {
     close(fd);
     st("HOST_ACTION screen-lock -> nuxel-wl-fb control fifo");
     snprintf(result, rn, "{\"ok\":true,\"action\":\"screen-lock\"}");
+    return;
+  }
+  if (!strcmp(action, "screenshot") || !strcmp(action, "take-screenshot")) {
+    char path[512], err[128];
+    int w = 0, h = 0;
+    if (nuxel_capture_screenshot(path, sizeof path, &w, &h, err, sizeof err) != 0) {
+      st("HOST_SCREENSHOT_FAILED %s", err);
+      snprintf(result, rn, "{\"ok\":false,\"error\":\"screenshot-failed\",\"reason\":\"%s\"}", err);
+      return;
+    }
+    st("HOST_SCREENSHOT_SAVED path=%s %dx%d", path, w, h);
+    snprintf(result, rn, "{\"ok\":true,\"action\":\"screenshot\",\"path\":\"%s\",\"width\":%d,\"height\":%d}", path, w, h);
     return;
   }
   if (!strcmp(action, "restart") || !strcmp(action, "poweroff")) {
@@ -1246,6 +1423,93 @@ static void on_host_message(WebKitUserContentManager *m, WebKitJavascriptResult 
     }
     action_perform(action, result, sizeof result);
     host_reply(v, id, result[0] ? 1 : 0, result);
+    g_free(js);
+    return;
+  }
+  /* Power surface: the console tool is the single implementation.  The host only
+   * runs it with a VALIDATED profile name and returns its real output, so the
+   * Settings surface can never disagree with `nuxel-power-diag.sh`. */
+  if (!strcmp(method, "power.status")) {
+    FILE *pf = popen("/usr/local/bin/nuxel-power-diag.sh status --json 2>/dev/null", "r");
+    char sbuf[4096];
+    size_t sn = 0;
+    if (pf) { sn = fread(sbuf, 1, sizeof sbuf - 1, pf); pclose(pf); }
+    sbuf[sn] = 0;
+    while (sn && (sbuf[sn-1] == '\n' || sbuf[sn-1] == '\r' || sbuf[sn-1] == ' ')) sbuf[--sn] = 0;
+    if (!sn || sbuf[0] != '{') {
+      host_reply(v, id, 0, "{\"error\":\"power-status-unavailable\"}");
+      st("HOST_POWER_STATUS unavailable");
+      g_free(js);
+      return;
+    }
+    host_reply(v, id, 1, sbuf);
+    st("HOST_POWER_STATUS ok bytes=%zu", sn);
+    g_free(js);
+    return;
+  }
+  if (!strcmp(method, "power.apply-profile")) {
+    char mode[32] = "";
+    json_str(js, "mode", mode, sizeof mode);
+    /* Validate against the shipped document: adaptive|balanced|performance only. */
+    int okmode = 0;
+    FILE *mf = fopen("/etc/nuxel/power/power.json", "rb");
+    if (mf) {
+      char mbuf[8192];
+      size_t mn = fread(mbuf, 1, sizeof mbuf - 1, mf);
+      fclose(mf);
+      mbuf[mn] = 0;
+      char pat[64];
+      snprintf(pat, sizeof pat, "\"%s\": {", mode);
+      okmode = mode[0] && strstr(mbuf, pat) != NULL;
+    }
+    if (!okmode) {
+      host_reply(v, id, 0, "{\"ok\":false,\"error\":\"unknown-profile\"}");
+      st("HOST_POWER_PROFILE_REFUSED mode=%s", mode);
+      g_free(js);
+      return;
+    }
+    char cmdline[256];
+    snprintf(cmdline, sizeof cmdline,
+             "/usr/local/bin/nuxel-power-diag.sh mode %s >/dev/null 2>&1", mode);
+    int rc = system(cmdline);
+    /* Read the persisted profile back instead of claiming success. */
+    char applied[64] = "";
+    FILE *af = fopen("/var/lib/nuxel/power/profile.json", "rb");
+    if (af) {
+      char abuf[1024];
+      size_t an = fread(abuf, 1, sizeof abuf - 1, af);
+      fclose(af);
+      abuf[an] = 0;
+      char *pp = strstr(abuf, "\"profile\"");
+      if (pp) {
+        char *q = strchr(pp, ':');
+        if (q) {
+          q++;
+          while (*q == ' ' || *q == '\t') q++;
+          if (*q == '"') {
+            q++;
+            size_t i = 0;
+            while (*q && *q != '"' && i + 1 < sizeof applied) applied[i++] = *q++;
+            applied[i] = 0;
+          }
+        }
+      }
+    }
+    if (rc == 0 && !strcmp(applied, mode)) {
+      GString *out = g_string_new("");
+      g_string_append_printf(out, "{\"ok\":true,\"mode\":\"%s\",\"persisted\":true}", mode);
+      host_reply(v, id, 1, out->str);
+      g_string_free(out, TRUE);
+      st("HOST_POWER_PROFILE mode=%s persisted=1", mode);
+    } else {
+      GString *out = g_string_new("");
+      g_string_append_printf(out,
+        "{\"ok\":false,\"error\":\"profile-not-applied\",\"mode\":\"%s\",\"readback\":\"%s\",\"rc\":%d}",
+        mode, applied, rc);
+      host_reply(v, id, 0, out->str);
+      g_string_free(out, TRUE);
+      st("HOST_POWER_PROFILE mode=%s persisted=0 rc=%d readback=%s", mode, rc, applied);
+    }
     g_free(js);
     return;
   }

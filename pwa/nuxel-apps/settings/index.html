@@ -23,6 +23,7 @@
   <button class="tab" data-tab="sound">Sound</button>
   <button class="tab" data-tab="buttons">Buttons &amp; Gestures</button>
   <button class="tab" data-tab="location">Location &amp; Maps</button>
+  <button class="tab" data-tab="power">Power</button>
   <button class="tab" data-tab="dev">Developer</button>
 </nav>
 
@@ -235,6 +236,28 @@
     <p id="buttons-report" class="state">—</p>
   </section>
 
+
+  <!-- ── POWER (battery modes + power menu) ──────────────────────────── -->
+  <section id="tab-power" class="panel">
+    <h2>Power</h2>
+    <div class="card">
+      <h3>Battery mode</h3>
+      <p class="hint">The three profiles map to a real cpufreq governor and cgroup CPU weight and are
+        persisted across reboots.</p>
+      <div id="pm-modes" class="row"></div>
+      <p id="pm-mode-status" class="state" role="status" aria-live="polite">—</p>
+    </div>
+    <div class="card">
+      <h3>Power menu</h3>
+      <p class="hint">The same table the hardware POWER long-press menu uses. Restart, Power off and the
+        one-shot reboot variants are executed only through the reboot gate; Recovery and Download Mode are
+        refused by the NO-FLASH invariant.</p>
+      <div id="pm-entries" class="row"></div>
+      <p id="pm-result" class="state" role="status" aria-live="polite">—</p>
+    </div>
+    <p class="hint"><a href="power-menu.html">Open the full Power surface</a> (battery detail, governor
+      readback, complete menu table).</p>
+  </section>
 
   <!-- ── LOCATION & MAPS (27000) ──────────────────────────────────────── -->
   <section id="tab-location" class="panel">

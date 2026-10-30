@@ -1,1731 +1,1506 @@
 # FULL-PWNAGE-40000
-# NUXEL S10+ — ULTIMATE AUDIO REPAIR, ROUTING, FIRMWARE READINESS AND BOOT PERSISTENCE
+# NUXEL S10+ — FINAL BUILT-IN SPEAKER AUDIO REPAIR
+## ACTUAL SPEAKER OUTPUT, HUMAN AUDIBLE CONFIRMATION, ITERATIVE FIXING AND PERSISTENCE
 
-**Mission:** PWNAGE-40000  
-**Target:** Samsung Galaxy S10+ SM-G975F / beyond2lte  
-**OS:** Nuxel — custom Fedora-based ARM64 Linux  
-**SSH transport:** Existing Wi-Fi SSH connection  
-**SSH identity:** `~wicked/.ssh/wicked_wqn_id_rsa`  
-**Primary playback asset:** `./assets/nuxel-pow.mp3`
-
----
-
-# 0. MISSION OBJECTIVE
-
-Finish the Nuxel audio system.
-
-The objective is to make actual physical audio playback work reliably, persistently, and automatically after boot.
-
-This is not a new audio architecture project. The repository already contains a substantial amount of S10+-specific audio work, and yesterday we heard actual test audio.
-
-The latest human report is that:
-
-- A 440 Hz tone was audible.
-- Another diagnostic tone was audible.
-- Multiple plays of `nuxel-pow.mp3` were audible.
-
-Therefore, an actual hardware output path has worked.
-
-The problem is to identify the successful live configuration, reconcile it with the repository, fix the remaining boot and routing problems, and make the working configuration persistent.
-
-**Do not throw away the known-working path and start again with generic Linux audio instructions.**
-
-Your mission is to inspect the running device, identify the actual state, implement the missing corrections, deploy safely, and prove audible playback.
-
-## 0.1 Important evidence distinction
-
-The uploaded repository contains older evidence, including `audio.md` dated 2026-10-29 20:12Z, which records that human audibility had not yet been confirmed at that point.
-
-The user's later report that they heard the test tones and POWs is newer evidence and supersedes that older status.
-
-Record the user's latest confirmation in the mission timeline. However, the exact output device and exact configuration used during the successful later test are not yet identified. Recover them from the live device, shell history, logs, and current service state.
-
-Do not tell the user that audio has never worked.
-
-Do not claim that every output route has worked merely because one route produced sound.
+**Mission:** PWNAGE-40000 FINAL SPEAKER FIX
+**Target device:** Samsung Galaxy S10+ SM-G975F / beyond2lte
+**SoC:** Exynos 9820
+**OS:** Nuxel Fedora-based ARM64 Linux
+**Kernel:** Existing installed kernel — do not replace or flash
+**Access:** Existing Wi-Fi SSH
+**SSH key:** Use the working key and target from the latest deployment; current archive records `~/.ssh/wicked_wqn_id_rsa` and `root@192.168.178.167`. Verify the actual working address and route before connecting.
+**Source asset:** `./assets/nuxel-pow.mp3`
+**Deployed asset:** `/usr/share/nuxel/assets/nuxel-pow.mp3`
+**Target output:** Physical built-in loudspeaker, not earpiece, headphones, Bluetooth or USB.
 
 ---
 
-# 1. THE MOST IMPORTANT REPOSITORY FINDINGS
+# 0. THE MISSION
 
-The following findings are based on inspection of the uploaded repository snapshot. Verify each one against the actual running handset before changing it.
+Previous PWNAGE-40000 work has successfully repaired much of the S10+ audio initialization and playback infrastructure.
 
-## 1.1 Confirmed source/deployment mismatch: ABOX RDMA1_EN
+The latest uploaded repository contains live evidence that:
+
+- The ABOX Calliope core can reach `MUB0`.
+- Both CS35L41 DSP1 protection processors can reach `booted=Y running=Y`.
+- The ABOX RDMA1 gate can be enabled.
+- The complete RDMA1 → SPUS → SIFS1 → UAIF1 route can be programmed.
+- Left and right amplifier PCM gains can be set to 12.
+- PipeWire can create and select the static RDMA1 sink.
+- The actual ALSA hardware stream can run at 48 kHz.
+- The hardware pointer can advance during playback.
+- `pw-play` can decode and complete the POW asset.
+- The startup sound service can run after a route readiness gate.
+
+Yet the latest report explicitly does not claim that the physical speaker has been heard and confirmed.
+
+**Your mission is to finish the remaining speaker output problem, not to repeat every completed audio initialization task.**
+
+We know actual sound was previously audible during live experiments, including diagnostic tones and Nuxel POW playback.
+
+Therefore:
+
+- Do not assume the hardware is fundamentally broken.
+- Do not discard the existing working path.
+- Do not make a TWRP reflash the first response.
+- Do not rebuild or replace the kernel without compelling new evidence and separate authorization.
+- Investigate the missing speaker-specific route and output-level conditions first.
+- Keep iterating until the owner confirms physical sound through Notes.
+
+This mission is not complete until the owner hears the POW and confirms it.
+
+---
+
+# 1. WHAT THE CURRENT REPOSITORY ALREADY PROVES
+
+The latest archive contains:
+
+- `audio.md`
+- `docs/beta-finalization/live/PWNAGE-40000-TODO.md`
+- `docs/beta-finalization/live/PWNAGE-40000-REPORT.md`
+- `docs/beta-finalization/live/evidence/pwnage-40000/FINAL-REPORT.md`
+- `docs/beta-finalization/live/evidence/pwnage-40000/SOURCE-RECONCILIATION.md`
+- Two live continuation runs and their device logs.
+- The deployed-route source.
+- The Notes confirmation detector.
+- PipeWire and WirePlumber configuration.
+
+Read these before changing anything.
+
+## 1.1 Current verified hardware path
+
+The latest report records:
+
+| Component | Verified state |
+|---|---|
+| ABOX Calliope | `MUB0` |
+| CS35L41 DSP1 left | `booted=Y running=Y` |
+| CS35L41 DSP1 right | `booted=Y running=Y` |
+| ABOX RDMA1_EN | `1` |
+| ABOX SPKAMP_EN | `1` |
+| ABOX SPKAMP_A | `2` / RDMA1 |
+| ABOX SPKAMP_B | `2` / RDMA1 |
+| Left/Right AMP PCM Gain | `12 / 12` |
+| PipeWire sink | `alsa_output.hw_0_1` |
+| Sink format | `S16LE, 2 channels, 48000 Hz` |
+| Default sink | `alsa_output.hw_0_1` |
+| RDMA1 stream | `48000 Hz` |
+| Hardware pointer | Previously observed advancing during playback |
+| Startup cue | Attempted once after readiness |
+
+These are valuable completed milestones.
+
+Do not rebuild this architecture unless a live check shows it has regressed.
+
+## 1.2 The remaining distinction
+
+The evidence shows successful playback through parts of the software and hardware pipeline.
+
+It does not prove:
+
+- Correct ABOX speaker sound mode.
+- Correct channel-to-physical-speaker selection.
+- Correct final amplifier output.
+- Audible sound reaching the owner.
+
+The new mission must focus on those final missing stages.
+
+---
+
+# 2. PRIORITY ROOT-CAUSE HYPOTHESIS — ABOX SOUND TYPE
+
+## 2.1 The control found in the repository
+
+The archived ALSA mixer snapshot contains:
+
+`ABOX Sound Type`
+
+Its actual enumerated choices are:
+
+```text
+0 = VOICE
+1 = SPEAKER
+2 = HEADSET
+3 = BTVOICE
+4 = USB
+5 = CALLFWD
+```
+
+The earlier live correction in:
+
+`docs/beta-finalization/live/evidence/pwnage-38000/audio-fix-20261029c.txt`
+
+explicitly set:
+
+`ABOX Sound Type = 0`
+
+This was described as:
+
+`VOICE, the boot default`
+
+However, our actual output objective is the phone's built-in loudspeaker.
+
+## 2.2 The persistent route script omits this control
 
 Inspect:
 
 `services/nuxel-s10/bin/nuxel-audio-route.sh`
 
-The script currently contains a comment claiming:
+The current route implementation applies and verifies:
 
-> There is no 'ABOX RDMA0_EN' / 'ABOX RDMA1_EN' mixer control on this card.
+- ABOX RDMA1_EN.
+- SPKAMP_EN.
+- SPKAMP_A/B.
+- Amplifier enables.
+- Amplifier unmute state.
+- DSP1 firmware and preload.
+- Amplifier PCM gains.
+- PCM Source.
+- SPUS routing.
+- SIFS1 routing.
+- UAIF1 routing.
+- PipeWire sink and rate.
+- Default sink.
+- Volume cap.
 
-It never sets `ABOX RDMA1_EN`.
+But it does not set or verify:
 
-However, the later live evidence file:
+`ABOX Sound Type`
 
-`docs/beta-finalization/live/evidence/pwnage-38000/live-audio-evidence-20261029b.txt`
+This is a significant gap in a speaker-specific route.
 
-records an actual control:
+## 2.3 FIRST TARGETED EXPERIMENT
 
-`ABOX RDMA1_EN`
+Before changing unrelated controls, capture the actual live value and allowed choices.
 
-The evidence identifies it as numid 1031 and shows it OFF during the silent test. The live correction included setting it ON and verifying the result.
+Then test:
 
-This is the strongest confirmed source-level defect in the archive.
+`ABOX Sound Type = SPEAKER`
 
-**Required action:**
+Use the actual enumerated name if supported:
 
-- Re-query the actual control namespace on the live device.
-- Confirm whether `ABOX RDMA1_EN` exists on the currently running card.
-- Read its actual control type and allowed values.
-- If present as in the previous evidence, ensure it is enabled as part of the persistent RDMA1 route.
-- Verify the resulting value by control name.
-- Update the checked-in route script.
-- Remove the false comment.
-- Update the relevant tests.
-- Verify that every fresh boot applies this control before playback is declared ready.
+```bash
+amixer -c CARD cset name='ABOX Sound Type' SPEAKER
+```
 
-Do not rely on numid 1031 as a permanent identifier. Use the real control name and verify it on the current card.
+If the driver only accepts an index, use the verified index:
 
-If the control does not exist on the actual running hardware revision, reconcile that discrepancy rather than forcing a guessed control.
+`1`
 
-Do not overwrite a live configuration that already has this control correctly enabled with the older checked-in script.
+Immediately read the control back by name.
 
-## 1.2 The S10+ uses a specific playback PCM
+Record:
 
-The evidence identifies:
+- Previous mode.
+- New mode.
+- Actual readback.
+- Other affected mixer controls.
+- DAPM changes.
+- PipeWire state.
+- Audio route readiness.
 
-- ALSA card: `beyond-madera`.
-- Main codec path: live sysfs identifies `cs47l92-codec`.
-- Two CS35L41 amplifier devices on I2C-11, addresses `0x40` and `0x41`.
-- Known working playback path: RDMA1, device 1, normally `hw:0,1`.
+Do not assume that the write succeeded just because the command returned zero.
 
-The tested behavior:
+Do not set the persistent route permanently until the owner confirms that this mode actually produces audible speaker output.
 
-- RDMA0 does not advance its hardware pointer.
-- RDMA1 at 44.1 kHz produced `EIO` with the hardware pointer stuck at zero.
-- RDMA1 at 48 kHz produced a running stream and advancing hardware pointer.
-- Other tested RDMA devices returned backend-DAI errors.
+If it does, add `ABOX Sound Type=SPEAKER` to:
 
-Therefore:
+- The persistent route application.
+- The readback validation.
+- The boot readiness gate.
+- The diagnostic output.
+- The relevant regression tests.
 
-**Do not route Nuxel's internal speaker playback to a generic `default` PCM without verifying what that default actually resolves to.**
+If it does not, continue controlled investigation and retain the ability to restore the previous value.
 
-Use the measured RDMA1 route and 48 kHz settings.
+**This is the first major experiment because the previous route used VOICE while the current requirement is SPEAKER.**
 
-Discover the actual card name and current card index at runtime. The archived system uses card index 0, but do not assume that a card index can never change.
+---
 
-## 1.3 PipeWire static sink exists for a reason
+# 3. PHYSICAL OUTPUT MAPPING — RIGHT AMP SPEAKER, LEFT AMP RECEIVER
+
+The repository's live DAPM evidence identifies two separate output paths:
+
+- `Right AMP SPK` → `SPEAKER`
+- `Left AMP SPK` → `RECEIVER`
+
+Both have previously reported their DAPM widgets ON.
+
+This distinction matters.
+
+The goal is the external built-in loudspeaker, not merely the receiver/earpiece.
+
+Inspect the current real DAPM graph and map the physical output path.
+
+Verify:
+
+- Right amplifier output connects to the physical SPEAKER endpoint.
+- Left amplifier output connects to the RECEIVER endpoint.
+- The expected channel is delivering audio samples.
+- The correct amplifier remains enabled.
+- The correct amplifier is unmuted.
+- Its DSP1 is booted and running.
+- Its PCM Source is correct.
+- Its output selection is correct.
+- Speaker-specific routing is active.
+
+Do not treat a DAPM widget being ON as proof of audible sound.
+
+## 3.1 Inspect channel content
+
+The archive's `nuxel-pow.mp3` asset is:
+
+- 44.1 kHz.
+- Stereo.
+- Approximately 0.366 seconds.
+- Both channels contain very similar audio content.
+
+The source file is not obviously corrupt.
+
+Nevertheless, verify the installed asset checksum and decoded signal.
+
+Inspect the PipeWire stream's actual channel map and channel delivery.
+
+Ensure the channel mapped to the right amplifier and physical SPEAKER path is not silent, muted or discarded.
+
+Do not change channel mapping blindly.
+
+Test the physical right-speaker path first.
+
+If necessary, use controlled one-channel routing experiments with the same supplied POW asset, while preserving the original route for rollback.
+
+Do not use a receiver-only success as proof of speaker success.
+
+---
+
+# 4. PRESERVE THE KNOWN-GOOD AMPLIFIER GAIN
+
+This is already a measured correction.
+
+The latest report identifies:
+
+- Gain 19 logs `GAIN_CTRL = 0x273`.
+- Gain 12 logs `GAIN_CTRL = 0x193`.
+- The cold-boot default 19 was associated with silence.
+- The corrected persistent route now sets 12.
+
+Inspect:
+
+- `Left AMP PCM Gain`
+- `Right AMP PCM Gain`
+
+Verify both are currently 12.
+
+Do not blindly raise these mixer controls.
+
+Do not bypass CS35L41 protection.
+
+Do not disable thermal protection or DSP1 protection firmware.
+
+The current value 12 is the known-good starting point and should remain unchanged while investigating ABOX mode and PipeWire routing.
+
+If a different physical amplifier gain is genuinely required, establish it from the actual allowed range and driver semantics, use a reversible controlled test, and record the precise evidence.
+
+Do not guess.
+
+---
+
+# 5. VERIFY THE CORRECT PIPEWIRE ROUTE
+
+## 5.1 Preserve the existing static RDMA1 sink
 
 Inspect:
 
 `configs/s10plus/pipewire/50-nuxel-s10-alsa.conf`
 
-The repository has a static PipeWire ALSA sink:
+The static sink is:
 
 `alsa_output.hw_0_1`
 
-with the S10+ RDMA1 device and 48 kHz format.
+It uses:
 
-This was introduced because the image does not run the normal `systemd-udevd` path. WirePlumber's regular udev ALSA monitor therefore misses the MADERA card and can fall back to Dummy Output.
+- `api.alsa.pcm.sink`
+- Hardware device `hw:0,1`
+- S16LE
+- Two channels
+- 48000 Hz
 
-The static node bypasses that discovery dependency.
+This exists because the image does not use the usual udev ALSA discovery path.
 
-Preserve this approach unless live evidence proves that the architecture has changed.
+Preserve it.
 
-Do not blindly enable `systemd-udevd` on the vendor 4.14 image. The existing project documents problems with its udev service and boot behavior.
+Do not replace it with generic autodetection.
 
-For external USB Audio Class devices, add a carefully scoped hotplug solution if necessary rather than changing the whole udev architecture without testing.
+Do not re-enable `systemd-udevd` as a shortcut.
 
-## 1.4 PipeWire default-sink selection is not checked correctly
+Do not use RDMA0.
 
-Inspect:
+## 5.2 Use PipeWire for playback
 
-`services/nuxel-bridge/src/hw_providers.py`
+The live system uses PipeWire 1.4.11 and WirePlumber.
 
-The function `_ensure_default_sink()` selects:
+PipeWire owns the RDMA1 hardware device.
+
+Direct ALSA attempts can encounter `EBUSY`.
+
+Use:
+
+`pw-play`
+
+through the actual PipeWire default sink.
+
+The correct environment on the phone is normally based on:
+
+```text
+XDG_RUNTIME_DIR=/run/nuxel-wayland
+PIPEWIRE_RUNTIME_DIR=/run/nuxel-wayland
+PULSE_SERVER=unix:/run/nuxel-wayland/pulse/native
+```
+
+Verify the real runtime socket and process context before using them.
+
+## 5.3 Default sink must be read back
+
+The expected sink is:
 
 `alsa_output.hw_0_1`
-
-using `pactl set-default-sink`.
-
-However, `_pipewire_play()` currently calls:
-
-`self._ensure_default_sink()`
-
-without checking whether it succeeded.
-
-This creates an avoidable failure mode: the player can be started even though no valid default sink has been established.
-
-Fix this.
-
-Requirements:
-
-- Verify the PipeWire socket is available.
-- Verify the expected sink node exists.
-- Set the default sink.
-- Check the command result.
-- Read back the actual default sink.
-- Refuse to report playback success if routing is not established.
-- Return an explicit error containing the real failure.
-- Do not silently fall through to an unrelated output.
-
-Also confirm that the actual stream is routed to the expected sink, not merely that the sink appears in `wpctl status`.
-
-## 1.5 The correct S10+ ALSA hardware rate must remain 48 kHz
-
-Inspect:
-
-- `configs/s10plus/pipewire/50-nuxel-s10-alsa.conf`
-- `services/nuxel-s10/pipewire/99-nuxel-s10.conf`
-- `services/nuxel-s10/alsa/99-nuxel-s10-default.conf`
-- `configs/s10plus/alsa/asound.conf`
-- `configs/nuxel/audio/audio.json`
-
-The repository documents that RDMA1 is the measured working PCM at 48 kHz.
-
-There are older evidence snapshots that describe 44.1 kHz, while later evidence shows the corrected 48 kHz hardware stream.
-
-Resolve this inconsistency using the actual live runtime state.
-
-Do not merely grep a configuration file and call the sample rate correct.
-
-During playback, inspect:
-
-`/proc/asound/card0/pcm1p/sub0/hw_params`
-
-and the corresponding status file.
 
 Verify:
 
-- `rate: 48000`.
-- `state=RUNNING`.
-- `hw_ptr` advances during actual playback.
-- The ABOX playback trigger is activated.
-- The stream closes cleanly.
+1. Sink exists.
+2. PipeWire native socket accepts connections.
+3. Default sink is selected by stable name.
+4. `pactl get-default-sink` reads back the expected node.
+5. The actual test stream connects to that node.
+6. The stream is linked to the expected hardware route.
 
-Do not claim that the speaker is working solely because `pw-play` returns zero.
+Do not mistake a sink's existence for default routing.
 
-## 1.6 Two distinct DSP firmware systems must be checked
+Do not accept `null` as the default sink.
 
-There are two separate firmware concerns.
+Do not ignore `_ensure_default_sink()` failure in the bridge.
 
-### A. Samsung ABOX Calliope core firmware
+## 5.4 Avoid the old GStreamer test-path failure
 
-The Samsung ABOX is probed early during boot, before the root filesystem is mounted.
+The prior Settings Test Audio implementation used:
 
-The kernel's early `request_firmware_direct()` therefore fails to find the firmware under `/lib/firmware` or `/usr/lib/firmware`.
+`gst-launch-1.0 ... pulsesink`
 
-The repository records failures involving:
+and terminated before the stream was actually linked.
 
-- `calliope_sram.bin`
-- `calliope_sram_2.bin`
-- `calliope_dram.bin`
-- `calliope_dram_2.bin`
+This path failed to produce playback samples.
 
-This can leave the Calliope core in `Invalid calliope state: 0`.
+The corrected implementation uses:
 
-The relevant live readiness indicator is:
+`pw-play`
 
-`/sys/devices/platform/18c50000.abox/calliope_version`
+Keep this implementation.
 
-A valid ready state reports:
+Do not reintroduce the old short GStreamer window as a test path.
 
-`MUB0`
-
-The repository contains:
-
-- `nuxel-abox-firmware-reload.sh`
-- `nuxel-abox-firmware-reload-boot.sh`
-- `nuxel-abox-firmware-reload.service`
-
-The userspace workaround tries to force an ABOX runtime suspend/resume cycle after the root filesystem becomes available.
-
-It can work manually when PipeWire and the Wayland session have released the PCM.
-
-However, cold-boot loading has been unreliable.
-
-Do not treat the reload script's exit code as proof that firmware loaded. The helper itself can exit zero while reporting that readiness is not confirmed. The boot wrapper attempts to verify `MUB0`, but the actual boot and retry lifecycle must still be validated.
-
-### B. CS35L41 amplifier DSP1 protection firmware
-
-The CS35L41 amplifiers have their own DSP firmware and preload requirements.
-
-The archived investigation found that both protection DSPs had previously failed to boot and experienced mailbox timeouts.
-
-The live correction included selecting the correct DSP1 firmware and enabling preload. Evidence then recorded both amplifier DSPs as booted and running, with the expected WMFW files loaded.
-
-Verify both amplifier instances independently.
-
-Inspect the real control namespace and verify:
-
-- Correct DSP1 firmware selection.
-- Preload switch state.
-- Actual firmware file loaded.
-- DSP booted.
-- DSP running.
-- No fresh mailbox timeout.
-
-Do not confuse these CS35L41 DSPs with the ABOX Calliope core.
-
-**Both firmware layers must be ready for a genuine internal speaker route.**
-
-## 1.7 Boot-sound readiness is currently too weak
-
-Inspect:
-
-`services/nuxel-session/systemd/nuxel-boot-sound.service`
-
-and:
-
-`tools/s10plus/a33/nuxel-sound-cue.py`
-
-The boot service currently uses the existence of:
-
-`/run/nuxel-audio-route.state`
-
-as a readiness condition.
-
-However, the route script can record deferred state, and a file's existence is not proof that all mandatory controls have been configured.
-
-The service also checks for:
-
-`/usr/share/nuxel/assets/nuxel-boot-audio.mp3`
-
-while `nuxel-sound-cue.py` actually uses:
-
-`nuxel-pow.mp3`
-
-Correct this mismatch.
-
-The boot cue must only run after the actual audio route is ready.
-
-A correct boot readiness gate must verify, as applicable:
-
-- ABOX Calliope `MUB0`.
-- Both CS35L41 DSP1 instances ready.
-- RDMA1 routing controls read back correctly.
-- `ABOX RDMA1_EN` enabled.
-- Required ABOX crossbar and amplifier paths enabled.
-- PipeWire running.
-- Static RDMA1 sink present.
-- Actual default sink equals the intended sink.
-- The route state explicitly says APPLIED and includes successful readbacks.
-
-Do not use a stale state file from a previous attempt.
-
-The startup POW must not play against Dummy Output or an uninitialized ABOX.
-
-## 1.8 Existing audio bridge and test path
-
-The archive documents that the previous Settings → Test Audio path used GStreamer with `pulsesink`, then killed the player after a 2.5-second window.
-
-On this device, that test path did not reliably establish a working stream.
-
-The bridge was changed to use:
-
-`pw-play --volume <gain> /usr/share/nuxel/assets/nuxel-pow.mp3`
-
-This is the preferred current PipeWire path.
-
-Preserve the `pw-play` implementation and remove any stale production references to the broken GStreamer test path unless a separately validated reason exists.
-
-Do not use direct ALSA playback when PipeWire owns `hw:0,1`; the archived evidence records EBUSY behavior in that situation.
+Use one consistent playback backend for the actual speaker confirmation.
 
 ---
 
-# 2. SSH ACCESS AND MISSION INITIALIZATION
+# 6. PIPEWIRE VOLUME — VERIFY THE REAL ATTENUATION
 
-Connect through the existing Wi-Fi SSH path using:
+The existing configuration deliberately imposed a 25% default ceiling.
 
-`~wicked/.ssh/wicked_wqn_id_rsa`
+The relevant files include:
 
-Example:
+- `configs/nuxel/audio/audio.json`
+- `configs/s10plus/pipewire/50-nuxel-s10-alsa.conf`
+- `configs/pipewire/asound-nuxel-safe.conf`
+- `services/nuxel-s10/bin/nuxel-audio-route.sh`
+- `services/nuxel-bridge/src/hw_providers.py`
+- `tools/s10plus/a33/nuxel-sound-cue.py`
 
-```bash
-ssh -i ~wicked/.ssh/wicked_wqn_id_rsa nuxel@PHONE_IP
-```
+## 6.1 Important implementation distinction
 
-Use the existing known phone IP and account.
+`configs/pipewire/asound-nuxel-safe.conf` documents an ALSA `softvol` cap for ALSA consumers that open `default`.
 
-Do not guess the IP.
-
-Do not expose or copy the private key.
-
-Preserve SSH host-key verification.
-
-Do not switch to USB or serial as a workaround.
-
-If the key or network access fails, stop and report the exact failure.
-
-## 2.1 Initial inventory
-
-Record:
-
-- OS release.
-- Kernel version.
-- Device model.
-- ALSA cards.
-- PCM devices.
-- Mixer controls.
-- Codec and amplifier sysfs devices.
-- ABOX runtime-PM state.
-- Calliope firmware version.
-- CS35L41 DSP status.
-- PipeWire and WirePlumber status.
-- PipeWire socket.
-- Available sinks.
-- Current default sink.
-- ALSA hardware parameters.
-- Installed audio utilities.
-- Relevant systemd units.
-- Recent audio-related logs.
-
-Use the real device state rather than trusting old evidence.
-
-## 2.2 Create the TODO
-
-Create:
-
-`docs/beta-finalization/live/PWNAGE-40000-TODO.md`
-
-Create the evidence directory:
-
-`docs/beta-finalization/live/evidence/pwnage-40000/`
-
-Record all work before changing files.
-
-Every item must have:
-
-- Diagnosis.
-- Relevant source path.
-- Current deployed path.
-- Planned fix.
-- Test.
-- Result.
-- Status: TODO / IN PROGRESS / BLOCKED / VERIFIED.
-
----
-
-# 3. CRITICAL SAFETY: RECONCILE THE LIVE PHONE WITH THE REPOSITORY
-
-Before deploying anything, compare the repository version with the running handset.
-
-This is mandatory because the archive contains an older route script that contradicts later live evidence.
-
-Compare:
-
-- Repository route script.
-- Deployed `/usr/lib/nuxel/nuxel-audio-route.sh`.
-- Systemd unit files.
-- PipeWire configuration.
-- WirePlumber configuration.
-- ALSA configuration.
-- Audio asset location.
-- Sound-cue script.
-- Bridge audio provider.
-- Audio settings frontend.
-- ABOX reload scripts and services.
-- Live mixer values.
-- Live service state.
-
-Use hashes and timestamps where useful.
-
-Create a source/deployment reconciliation table.
-
-**Never overwrite a working live setting with an older checked-in version simply because the repository contains it.**
-
-If the handset currently contains a configuration that produced the audible POW, preserve it first.
-
-Identify the exact source and setting differences, then bring the repository up to the verified live configuration.
-
-Preserve uncommitted development work.
-
-Back up all files before changing them.
-
----
-
-# 4. RECONSTRUCT THE LAST KNOWN-WORKING PLAYBACK PATH
-
-The user's newer report establishes that sound has been heard.
-
-Find the most recent successful live experiment.
-
-Inspect:
-
-- Shell history.
-- Current and previous logs.
-- Mission evidence.
-- `pw-play` invocation history.
-- `aplay` invocation history.
-- Audio bridge logs.
-- ALSA mixer state.
-- PipeWire node state.
-- ABOX control state.
-- DSP firmware state.
-- Systemd journal.
-- Temporary test scripts.
-- Existing audio validation output.
-
-Search for:
-
-- `ABOX RDMA1_EN`
-- `nuxel-pow.mp3`
-- `pw-play`
-- `hw:0,1`
-- `48000`
-- `MUB0`
-- `abox_uaif_trigger`
-- `abox_rdma_trigger`
-- `CS35L41`
-- `DSP1`
-- `SPKAMP`
-- `AMP PCM Gain`
-- `PCM Source`
-- `Sound Type`
-
-The aim is to identify:
-
-1. Which physical output produced the audible sound.
-2. Which PCM was used.
-3. Which sample rate was active.
-4. Which amplifier/DSP path was selected.
-5. Which crossbar controls were configured.
-6. Whether the ABOX core firmware was loaded.
-7. Whether CS35L41 protection firmware was running.
-8. Which PipeWire sink was the default.
-9. Which player was used.
-10. Which settings were temporary and which were already persistent.
-
-Do not reset controls before capturing the known-good state.
-
-If the precise successful run cannot be reconstructed, state that clearly and use the archived working route evidence as the best starting point.
-
----
-
-# 5. FIX THE PERSISTENT ABOX PLAYBACK ROUTE
-
-## 5.1 Correct the missing RDMA1 enable
-
-The checked-in route script explicitly denies the existence of `ABOX RDMA1_EN`.
-
-Later live evidence demonstrates that this control existed and was OFF.
-
-This must be resolved first in the persistent route implementation.
-
-Use the current ALSA card's actual control namespace.
-
-Inspect the control type, values, and allowed choices.
-
-If the control exists as in the previous live evidence:
-
-- Set it to the correct enabled state.
-- Read it back.
-- Record its verified state.
-- Ensure it is configured on every boot.
-- Ensure route readiness fails if this mandatory control cannot be set.
-
-Do not hardcode the archived numid.
-
-Do not trust the current script's comment.
-
-Do not pretend the route is applied if RDMA1 remains disabled.
-
-## 5.2 Preserve the rest of the proven ABOX route
-
-Inspect and verify the route controls, including:
-
-- `ABOX SPUS IN1`
-- `ABOX SPUS OUT1`
-- `ABOX SIFS1`
-- `ABOX UAIF1 SPK`
-- `ABOX SIFS1 OUT Switch`
-- `ABOX UAIF1 Switch`
-- `ABOX RDMA1_EN`
-
-Also inspect:
-
-- `ABOX SPKAMP_EN`
-- `ABOX SPKAMP_A`
-- `ABOX SPKAMP_B`
-- Left and Right AMP enable controls.
-- Left and Right PCM Source.
-- ABOX Sound Type.
-- Relevant CS35L41 amplifier playback and mute controls.
-
-The archive's later live correction records:
-
-- Left/Right PCM Source set to ASP.
-- ABOX Sound Type set to 0.
-- SPKAMP routing assigned to RDMA1.
-- Left/Right AMP enable.
-- PipeWire default sink `alsa_output.hw_0_1`.
-
-The evidence also contains different observed PCM Gain values in different captures. One later status reports gain 12; another capture shows 19.
-
-Therefore:
-
-**Do not blindly hardcode a historical AMP PCM Gain value.**
-
-Read the actual control range and current value. Use measured, safe adjustments only if necessary.
-
-Do not set every mixer switch to maximum or unmute unrelated controls.
-
-## 5.3 Fix the route script's state handling
-
-Inspect:
-
-`services/nuxel-s10/bin/nuxel-audio-route.sh`
-
-The existing script has several paths where a failed mandatory mixer operation can exit with status zero.
-
-It can also write a route-state file whose mere existence does not prove that all necessary controls were successfully configured.
-
-Repair this behavior.
-
-Requirements:
-
-- Identify all mandatory controls.
-- Execute bounded operations.
-- Read back each mandatory value.
-- Record each actual result.
-- Record `state=deferred` when hardware is not ready.
-- Record `state=failed` when a mandatory control cannot be applied.
-- Record `state=applied` only after every mandatory control passes readback.
-- Include device/card identity, route name, and readiness details.
-- Remove stale state before starting a new application attempt.
-- Never leave a previous `applied` state visible after a failed retry.
-- Ensure a deferred retry does not leave orphaned mixer processes in D-state.
-- Keep boot non-blocking and bounded.
-
-A service returning zero is not sufficient if the actual route failed.
-
-## 5.4 Preserve the real codec identity
-
-The live evidence identifies:
-
-`cs47l92-codec`
-
-Some documentation refers to CS47L93.
-
-Use the actual live sysfs, ALSA and driver information as truth.
-
-Reconcile stale references.
-
-Do not choose a generic codec profile based on a stale model name.
-
-## 5.5 UCM profile
-
-Inspect:
-
-`configs/s10plus/alsa-ucm/SamsungBeyond2/HiFi.conf`
-
-The current profile is deliberately a stub with empty enable/disable sequences.
-
-Do not invent codec mixer controls or copy a generic Samsung profile.
-
-If UCM is required:
-
-- Capture real controls.
-- Derive sequences from the actual current hardware.
-- Back up the prior profile.
-- Validate every generated control name.
-- Install only after tests.
-- Roll back if the new profile breaks the known-good route.
-
-The route must be verified through real mixer values and actual hardware operation, not merely by the presence of a UCM file.
-
----
-
-# 6. FIX AND VERIFY BOTH DSP FIRMWARE LAYERS
-
-## 6.1 ABOX Calliope core
-
-The initial kernel probe occurs before the root filesystem is mounted.
-
-The four relevant core blobs are:
-
-- `calliope_sram.bin`
-- `calliope_sram_2.bin`
-- `calliope_dram.bin`
-- `calliope_dram_2.bin`
-
-Verify all required files exist in the actual deployed firmware directory.
-
-Inspect:
-
-- `/sys/devices/platform/18c50000.abox/power/control`
-- `/sys/devices/platform/18c50000.abox/power/runtime_status`
-- `/sys/devices/platform/18c50000.abox/calliope_version`
-- `dmesg`
-- ABOX systemd units.
-- The actual kernel firmware-loading messages.
-
-The readiness condition is the actual Calliope version:
-
-`MUB0`
-
-Do not accept:
-
-- A successful shell command.
-- An exit code of zero.
-- A runtime-PM status of active.
-- An ABOX device directory existing.
-
-None of these alone proves that the Calliope core firmware was loaded.
-
-## 6.2 Audit the userspace reload sequence
-
-Inspect:
-
-- `services/nuxel-s10/bin/nuxel-abox-firmware-reload.sh`
-- `services/nuxel-s10/bin/nuxel-abox-firmware-reload-boot.sh`
-- `services/nuxel-s10/systemd/nuxel-abox-firmware-reload.service`
-
-The current design stops Wayland/PipeWire and the audio route before attempting a PM cycle, because active audio components can hold a runtime-PM reference.
-
-Verify that the actual service:
-
-- Stops the right services.
-- Waits for PipeWire to release the device.
-- Performs a valid PM cycle.
-- Waits for the real firmware response.
-- Retries a bounded number of times.
-- Rechecks `MUB0`.
-- Restores the audio session on success and failure.
-- Does not leave Wayland stopped.
-- Does not create an ordering loop or repeated service restart.
-- Does not report readiness when the firmware is missing.
-
-Review the systemd transaction and journal, not only the shell script.
-
-The service is currently associated with the Wayland startup lifecycle and stops/restarts that session as part of its work. Verify that behavior on the actual system and simplify it safely if possible.
-
-Do not create a boot-time deadlock.
-
-## 6.3 Kernel firmware embedding is outside current authorization
-
-The archive suggests that embedding the four Calliope blobs with `CONFIG_EXTRA_FIRMWARE` could solve the rootfs-too-late problem at its true source.
-
-However, this requires a kernel build and potentially replacing/flashing a boot image.
-
-**Do not build and flash or replace the kernel as part of this mission without separate explicit authorization.**
-
-Do not alter the bootloader, firmware partitions, DTB, or boot image.
-
-First pursue and validate the existing safe userspace workaround.
-
-If the only reliable solution is a kernel-level firmware-loading change:
-
-- Document the exact reason.
-- Provide the required firmware list and configuration proposal.
-- Explain why userspace cannot guarantee cold-boot readiness.
-- Mark it `BLOCKED_KERNEL_AUTHORIZATION`.
-- Leave the running kernel untouched.
-
-## 6.4 CS35L41 DSP1 protection firmware
-
-Independently verify both amplifier DSPs.
-
-The archived fix used the appropriate DSP1 firmware selection and preload switch.
-
-Check:
-
-- Correct DSP1 firmware enum.
-- Preload switch.
-- Firmware file availability.
-- Firmware load messages.
-- DSP booted state.
-- DSP running state.
-- Mailbox errors.
-
-Both left and right amplifier DSPs must be ready.
-
-Do not confuse a CS35L41 DSP firmware success with Calliope `MUB0`.
-
-They are separate readiness requirements.
-
----
-
-# 7. VERIFY THE ACTUAL 48 KHZ RDMA1 PLAYBACK PATH
-
-The known device-specific path is:
-
-`RDMA1 → ABOX SPUS → SIFS1 → UAIF1 → CS35L41 amplifiers`
-
-Expected PCM:
+However, the static PipeWire sink opens:
 
 `hw:0,1`
 
-Expected hardware rate:
+directly.
 
-`48000 Hz`
+PipeWire therefore bypasses the ALSA `default` plugin chain.
 
-## 7.1 PipeWire configuration
+Do not assume the ALSA softvol plugin limits the static PipeWire sink.
 
-Preserve and inspect:
+The actual runtime volume path must be measured.
 
-- `configs/s10plus/pipewire/50-nuxel-s10-alsa.conf`
-- `services/nuxel-s10/pipewire/99-nuxel-s10.conf`
-- `services/nuxel-s10/wireplumber/99-nuxel-s10.conf`
+The current Nuxel route script and bridge enforce a PipeWire sink volume ceiling of 25%.
 
-The static ALSA node exists because normal udev discovery is unavailable on this image.
+This is separate from the amplifier digital trim.
+
+## 6.2 Owner-authorized controlled volume ramp
+
+The owner explicitly authorizes the necessary normal software volume changes to make the speaker audible.
+
+Start from the current volume.
+
+First test the current configured level.
+
+If the owner reports no audible sound:
+
+- Inspect the actual PipeWire sink volume.
+- Verify the test player's decoder gain.
+- Verify there is exactly one attenuation stage.
+- Increase the PipeWire sink volume in measured increments.
+
+Use a controlled progression, for example:
+
+```text
+25%
+35%
+45%
+55%
+65%
+75%
+85%
+90%
+100% (only if still required)
+```
+
+Each level is a separate playback test with its own 30-second owner-response window.
+
+Do not jump directly to maximum.
+
+Do not continuously play the file.
+
+Do not combine high digital gain with arbitrary changes to amplifier PCM Gain.
+
+Do not disable DSP1 protection or thermal protection.
+
+If the owner confirms sound at a higher volume, record the exact level.
+
+Update the persistent volume policy only as required to make ordinary Nuxel playback audible.
+
+Do not silently lower the level back to an inaudible 25% after confirmation.
+
+Preserve a user-adjustable volume control and document the chosen default and ceiling.
+
+## 6.3 Avoid double attenuation
+
+Use:
+
+`pw-play --volume 1.0 /usr/share/nuxel/assets/nuxel-pow.mp3`
+
+The PipeWire sink's own volume is the attenuation stage.
+
+Do not also pass `gain_percent=25` to the player when the sink is already at 25%.
+
+The earlier implementation multiplied these values and produced only 5% effective level.
+
+The manual test must have exactly one deliberate attenuation stage.
+
+---
+
+# 7. SOUND MODE, MUTE AND PLAYBACK POLICY
+
+Inspect:
+
+`/var/lib/nuxel/audio/sound-mode`
+
+The playback provider rejects sound when the current mode is:
+
+- `silent`
+- `vibrate`
+
+Check this before every test.
+
+For speaker testing, the system must be in normal audible sound mode.
+
+If the existing mode is silent/vibrate:
+
+- Record it.
+- Temporarily switch to normal sound for the explicit owner-authorized test.
+- Restore the intended user mode after testing unless the owner chooses otherwise.
 
 Verify:
 
-- The static sink is created.
-- The node name is `alsa_output.hw_0_1` or the validated current equivalent.
-- The node points to RDMA1.
-- The node has the intended 48 kHz clock.
-- The actual default sink is that node.
-- The PipeWire graph is not silently using Dummy Output.
+- Both AMP Mute controls are unmuted.
+- PipeWire sink mute state is false.
+- The selected sink volume is above zero.
+- Nuxel sound policy permits audio.
+- No extra attenuation path reduces the signal to near silence.
 
-## 7.2 Runtime verification
+Do not report success when the `sound-mode` policy deliberately suppressed playback.
 
-During every diagnostic playback, verify:
+Do not let the manual confirmation sound trigger overlapping volume-preview or notification sounds.
 
-- Actual PipeWire default sink.
-- Actual stream route.
-- Active ALSA PCM.
-- `hw_params` reports 48 kHz.
-- PCM status reports RUNNING.
-- `hw_ptr` advances.
-- ABOX playback trigger occurs.
-- No new `Invalid calliope state: 0`.
-- No RDMA errors.
-- No CS35L41 mailbox timeouts.
-- PCM returns to idle cleanly after playback.
+During the test loop, suppress all unrelated Nuxel audio feedback.
 
-Do not mark the route as ready based on static configuration alone.
-
-Do not use RDMA0 or another PCM as a random guess.
-
-Only explore alternate RDMA paths if current live evidence proves the original RDMA1 path cannot be recovered.
+The only audible test sound should be `nuxel-pow.mp3`.
 
 ---
 
-# 8. PIPEWIRE PLAYBACK AND BRIDGE REPAIR
+# 8. HUMAN CONFIRMATION — NEW SINGLE-PLAY / 30-SECOND TEST LOOP
 
-## 8.1 Use one consistent playback backend
+The previous three-POW confirmation loop is superseded.
 
-PipeWire owns the current internal speaker PCM during normal operation.
+The owner's new agreement is:
 
-Direct ALSA playback can therefore fail with EBUSY.
+**One MP3 playback per test, followed by 30 seconds for the owner to react.**
 
-Use `pw-play` through the intended PipeWire sink for the normal Nuxel audio path.
+## 8.1 Owner response vocabulary
 
-Do not use the old GStreamer `pulsesink` test implementation as the main Test Audio path. The archived evidence shows it failed to produce a stream during the bounded test window.
+The user will keep Notes open, with the Title field focused.
 
-Do not fall back to direct `nuxel-mp3-play` while PipeWire owns the device.
+Possible responses:
 
-## 8.2 Fix default-sink validation
+| Notes Title | Interpretation |
+|---|---|
+| `yes` | Audible success |
+| `works` | Audible success |
+| `no` | Explicit audible failure |
+| Empty after 30 seconds | No audible response |
+| Anything else | Unknown / needs interpretation |
 
-In `services/nuxel-bridge/src/hw_providers.py`:
+Comparison is case-insensitive and trims surrounding whitespace.
 
-- Check the return value of `_ensure_default_sink()`.
-- Verify the requested sink exists.
-- Verify PipeWire is actually available.
-- Verify the selected default after the change.
-- Return a proper failure if routing cannot be established.
-- Never start `pw-play` on an unknown default route and report success.
+A positive result must be a fresh title change after the current playback test.
 
-Use a stable node name rather than a transient numeric sink ID.
+## 8.2 One test iteration
 
-## 8.3 Honest playback result
-
-A successful `pw-play` exit code means that the player completed.
-
-It does not mean that a human heard sound.
-
-Expose this distinction in the bridge.
-
-The bridge may report:
-
-- Player launched.
-- Stream completed.
-- Sink selected.
-- PCM active.
-- Hardware pointer advanced.
-- DSP ready.
-- Audible confirmation pending.
-
-Only the Notes handshake or another validated human confirmation can establish audible success.
-
----
-
-# 9. HUMAN-IN-THE-LOOP NOTES CONFIRMATION
-
-This is mandatory.
-
-## 9.1 The agreed workflow
-
-The user will:
-
-1. Unlock the phone.
-2. Open Nuxel Notes.
-3. Focus the empty Title field.
-4. Leave Notes visible.
-
-After a manual test batch is played, the user will type:
-
-`works`
-
-into the Title field if the POW sound was audible.
-
-The agent must detect the new value.
-
-## 9.2 The archive contains an existing detection opportunity
-
-Inspect:
-
-`pwa/nuxel-apps/notes/js/notes.js`
-
-The source contains:
-
-- Title input ID: `note-title`.
-- Notes store key: `nuxel-notes`.
-- An application interface exposed as `window.nuxelNotes`.
-- A current application model available through `window.nuxelNotes.app()`.
-
-The Notes application captures title input into the current note model and persists it through its storage mechanism.
-
-Inspect the complete source and determine the live storage/backend implementation.
-
-Use the least invasive method to observe only the current active note's title.
-
-Possible mechanisms:
-
-- Live Notes application model.
-- Existing Nuxel storage bridge.
-- Current note record in the Notes storage model.
-- Live screenshot/accessibility capture as a fallback.
-
-Do not assume that SSH directly exposes the graphical screen.
-
-Do not read unrelated note contents.
-
-Do not transmit or dump the entire Notes database.
-
-## 9.3 Validate the observer
-
-Before starting audio tests:
-
-1. Confirm the Notes app is open.
-2. Identify the active note.
-3. Confirm that its current title is empty.
-4. Record a baseline of the active note ID/state.
-5. Determine how to detect a new title value.
-6. Validate that the watcher sees a title-field change rather than an old saved note.
-7. Ensure the observer remains alive through multiple audio test batches.
-
-The exact word `works` must appear in the currently active note title after the current test.
-
-A stale `works` in another note is not a confirmation.
-
-A screenshot captured before the test is not a confirmation.
-
-A text string somewhere else in the UI is not a confirmation.
-
-## 9.4 Exactly three plays per manual batch
-
-Every manual confirmation test must play the exact asset:
-
-`./assets/nuxel-pow.mp3`
-
-three times sequentially.
-
-The playback mechanism must wait for each invocation to finish.
+Every test must follow this exact sequence:
 
 ```text
-MANUAL TEST BATCH
-       |
-       v
-PLAY nuxel-pow.mp3 — 1
-       |
-       v
-WAIT FOR COMPLETION
-       |
-       v
-PLAY nuxel-pow.mp3 — 2
-       |
-       v
-WAIT FOR COMPLETION
-       |
-       v
-PLAY nuxel-pow.mp3 — 3
-       |
-       v
-WAIT FOR COMPLETION
-       |
-       v
-WAIT FOR NOTES CONFIRMATION
-       |
-       +---- NEW TITLE = works ----> RECORD PASS
-       |
-       +---- NO CONFIRMATION ------> DIAGNOSE AND FIX
-                                      |
-                                      v
-                                  NEXT BATCH
+CONFIRM NOTES IS READY
+        |
+        v
+RECORD TEST NUMBER AND ROUTE
+        |
+        v
+ANNOUNCE: TEST #N — LISTEN NOW
+        |
+        v
+PLAY nuxel-pow.mp3 EXACTLY ONCE
+        |
+        v
+START 30-SECOND MONOTONIC TIMER
+        |
+        v
+WATCH NOTES TITLE FIELD
+        |
+        +---- yes / works ----> OWNER CONFIRMED
+        |
+        +---- no --------------> NEGATIVE RESULT
+        |
+        +---- EMPTY AFTER 30s -> NEGATIVE RESULT
+        |
+        v
+SAVE EVIDENCE
+        |
+        v
+IF NEGATIVE: FIX NEXT ISSUE
+        |
+        v
+NEXT SINGLE-PLAY TEST
 ```
 
-The agent must:
+Do not play a second sound during the 30-second response interval.
 
-- Play exactly three times per batch.
-- Never overlap players.
-- Never create a playback backlog.
-- Never play extra diagnostic tones during the batch.
-- Never play additional boot or volume feedback sounds during the batch.
-- Wait until the batch has finished before waiting for `works`.
-- Record the active output route and configuration.
-- Keep the same validation session running between batches.
+Do not start the next test early.
 
-Do not replace the three separate plays with a previously generated combined three-burst WAV. The agreement is three plays of the actual supplied MP3 asset.
+Do not compress the 30-second window.
 
-## 9.5 Confirmation watcher
+Do not run three or more repetitions of the sound inside one test.
 
-Build or reuse a persistent watcher if necessary.
+## 8.3 Before each sound
 
-Suggested directory:
+The owner must know when to listen.
 
-`scripts/audio-validation/pwnage-40000/`
+Print a visible message such as:
 
-Suggested outputs:
+`PWNAGE-40000 TEST 07 — SPEAKER MODE / 45% — PLAYING NOW`
 
-- `session.json`
-- `batches.jsonl`
-- `current-route.json`
-- `notes-confirmation.json`
-- Diagnostic logs.
+Start the single playback.
 
-Keep the watcher lightweight and event-driven where possible.
+Then provide the full 30-second response opportunity.
 
-If polling is necessary, use a modest interval and stop polling when there is no active test batch.
+## 8.4 Positive confirmation
 
-Record:
-
-- Batch number.
-- Output route.
-- Start time.
-- Three individual playback results.
-- Hardware state.
-- Notes active note identifier.
-- Previous title.
-- New title.
-- Confirmation timestamp.
-- PASS/FAIL.
-
-When `works` is detected:
+When the new active Title contains exactly `yes` or `works`:
 
 - Record PASS.
-- Do not clear the title.
-- Do not overwrite the note.
-- Do not keep testing that same route unnecessarily.
-- Preserve the configuration that produced the audible result.
+- Record the test number.
+- Record the exact route configuration.
+- Record PipeWire output volume.
+- Record time.
+- Record the Notes note ID.
+- Record the live Title.
+- Corroborate against the Notes application model/store.
+- Stop changing the currently confirmed route.
 
-If the agent cannot establish a reliable Notes-state observer, it must report that and request a clearly explained fallback. It must never fake a detection.
+Do not immediately overwrite the successful speaker settings.
 
-## 9.6 Reboot behavior
+Preserve the exact configuration that produced sound.
 
-A reboot will close Notes.
+## 8.5 Negative confirmation
 
-Before rebooting:
+If the owner enters `no`:
 
-- Save the current mission and test state.
-- Record every confirmed route.
-- Tell the user that Notes must be reopened.
-- After boot, reconnect over Wi-Fi SSH.
-- Ask the user to unlock the phone and refocus an empty Title field.
-- Re-establish the watcher without discarding earlier results.
-- Resume the same mission rather than restarting from scratch.
-
----
-
-# 10. INTERNAL SPEAKER FIRST
-
-The internal speaker is the primary route.
-
-Do not spend the initial test cycles on Bluetooth or HDMI.
-
-First recover the known RDMA1-to-amplifier path.
-
-Verify the following in sequence:
-
-1. Calliope `MUB0`.
-2. CS35L41 left DSP1 booted/running.
-3. CS35L41 right DSP1 booted/running.
-4. `ABOX RDMA1_EN` enabled.
-5. RDMA1 selected as the intended source.
-6. ABOX crossbar path correct.
-7. SPKAMP routing correct.
-8. Amplifier enables correct.
-9. PipeWire static sink present.
-10. PipeWire default sink selected.
-11. 48 kHz hardware PCM parameters.
-12. PCM actually running with advancing hardware pointer.
-
-Then run one three-POW confirmation batch.
-
-If the user does not enter `works`:
-
-- Preserve the complete current evidence.
-- Identify the earliest failing layer.
-- Change one logically related set of controls.
+- Record an explicit NO-AUDIBLE-SOUND result.
+- Do not claim success.
+- Diagnose the next failure layer.
+- Change one logical variable or group of related controls.
 - Validate the change.
-- Run the next three-POW batch.
+- Play one fresh POW.
+- Start another 30-second response window.
 
-Do not randomly change multiple amplifier, DAPM and crossbar values at once.
+## 8.6 Empty Title
 
-Once audible:
+The owner has explicitly agreed that leaving the Title blank for the whole 30-second window means the sound was not heard.
 
-- Record the exact configuration.
-- Preserve it.
-- Update the source implementation.
-- Reapply it from the persistent service.
-- Verify a service restart does not break the sound.
+However, use this interpretation only if the Notes input channel has passed its preflight.
+
+If Notes focus, keyboard input or display state is broken, the absence of text is an input-channel failure, not evidence of audio failure.
 
 ---
 
-# 11. SAFE GAIN STAGING AND VOLUME
+# 9. NOTES CONFIRMATION CHANNEL — FIX THE EARLIER FAILURE
 
-Inspect:
+The archived Notes implementation provides:
 
-`configs/nuxel/audio/audio.json`
+- Title field: `#note-title`
+- Store key: `nuxel-notes`
+- Application interface: `window.nuxelNotes.app()`
+- Current note model: `app.currentNote`
+- Input listener: title input event.
+- Autosave: approximately one second after changes.
 
-The repository establishes a safe-volume policy, including a maximum intended output ceiling of 25%.
+The application captures the Title value into its model and then persists the note.
 
-Respect that limit.
+The previous detector required a fresh `works` value and app-store corroboration.
 
-Do not increase the physical output beyond the existing safe cap.
+The new detector must support:
 
-Important technical detail:
+- Positive: `yes`, `works`
+- Negative: `no`
+- Empty after 30 seconds: no audible response
 
-The static PipeWire hardware sink can bypass the ALSA `softvol` plugin configuration. Therefore an ALSA softvol ceiling alone does not guarantee a safe PipeWire sink level.
+## 9.1 Existing detector path discrepancy
 
-Enforce and verify the real PipeWire sink limit.
+The archived source/deployment reconciliation records:
+
+`/usr/local/bin/nuxel-notes-works-detector`
+
+However, another baseline log attempted:
+
+`/usr/libexec/nuxel/notes-works-detector.py`
+
+That path did not exist.
+
+Resolve the path mismatch.
+
+There must be one documented, executable, deployed watcher path.
+
+Do not silently invoke an old missing filename.
+
+## 9.2 Preflight before audio
+
+The previous mission observed:
+
+- Notes Title visible.
+- Notes Title focused.
+- Notes Title editable.
+- AT-SPI connected.
+
+But there were zero key/text input events reaching the WebView.
+
+That meant the previous 30-second/three-play detector could not reliably distinguish the user's response from a broken input channel.
+
+Before the first playback:
+
+1. Confirm lockscreen is unlocked.
+2. Confirm Notes is open.
+3. Confirm Title field is focused.
+4. Confirm display is awake.
+5. Confirm touchscreen/keyboard interaction is possible.
+6. Confirm the on-screen keyboard appears or the intended keyboard input source works.
+7. Ask the owner to type a preflight word such as `ready`.
+8. Verify that the live Title changes to `ready`.
+9. Verify the Notes model captures the new value.
+10. Verify the save succeeds after the normal autosave delay.
+11. Preserve the preflight evidence.
+12. Reset to an empty Title field and establish a fresh test baseline.
+
+Do not start the audio loop until this input channel passes.
+
+Do not fake the preflight by injecting text programmatically.
+
+The owner must perform the actual typing.
+
+## 9.3 Notes watcher
+
+Build or repair a lightweight test watcher.
+
+It must observe:
+
+- Current active Notes application.
+- Current active note ID.
+- Actual Title field.
+- Field focused state.
+- Field editable state.
+- Field visible state.
+- Freshness relative to the current iteration.
+- Current Title value.
+- Corresponding application model/storage value.
+
+Use AT-SPI or the Notes application's actual live model.
+
+Set the correct session accessibility bus address before initializing the AT-SPI library.
+
+The archived working session uses:
+
+`/run/nuxel-wayland/at-spi/bus`
+
+Do not assume the bus path without checking the live session.
+
+Do not inspect unrelated note bodies or dump the complete Notes database.
+
+Store only the necessary confirmation metadata.
+
+## 9.4 Freshness and response classification
+
+For each test iteration:
+
+1. Capture baseline Title and note ID.
+2. Record the test start time.
+3. Play once.
+4. Wait up to 30 seconds.
+5. Detect a fresh input change.
+6. Confirm the current active Title.
+7. Wait for Notes autosave if applicable.
+8. Corroborate the actual store only when available and relevant.
+9. Record the result.
+
+Do not accept an old `yes` or `works` from a previous note.
+
+Do not accept text from the Notes body.
+
+Do not accept a random UI string.
+
+## 9.5 Reset for the next test
+
+After recording `no`, or after a 30-second empty response:
+
+- Preserve the result.
+- Establish a fresh empty Title.
+- Ensure it remains focused and editable.
+- Confirm the screen stays awake.
+- Start the next iteration only after the baseline is clean.
+
+Use a dedicated PWNAGE-40000 test note or a safe fresh test note.
+
+Do not modify or delete unrelated user notes.
+
+---
+
+# 10. SCREEN AND INPUT STABILITY DURING THE TEST SESSION
+
+The previous PWNAGE-40000 run encountered screen blanking at:
+
+`IDLE_SCREEN_OFF timeout_ms=300000`
+
+The system set:
+
+`/sys/class/backlight/panel/bl_power=4`
+
+There was also an earlier problematic direct backlight manipulation that triggered I2C bus instability and eventually required reboot.
+
+Do not repeat that mistake.
 
 Requirements:
 
-- Keep sink volume within the 25% ceiling.
-- Use a low initial test level.
-- Respect the user-selected volume.
-- Do not silently increase gain to maximum.
-- Do not change amplifier gain controls blindly.
-- Read their actual ranges and enumerated values.
-- Do not assume an old PCM Gain value applies to the current driver state.
-- Record all gain changes.
+- Keep the screen visible during the human test session.
+- Use a supported Nuxel/system idle inhibitor where available.
+- Alternatively, temporarily change the normal Nuxel screen timeout using its supported configuration interface.
+- Record the original value.
+- Restore the original value after testing.
+- Do not write directly to panel backlight or `bl_power` sysfs nodes merely to wake the display.
+- Do not permanently leave screen timeout set to `never`.
+- Do not break touchscreen functionality.
+- Do not lock the screen during testing.
 
-The asset is short and already exists:
-
-`assets/nuxel-pow.mp3`
-
-The archived evidence records successful decoding and 48 kHz stereo output.
-
-Verify the current asset checksum and deployed copy.
-
-Do not convert or replace it unless a genuine decoding problem is found.
+A single 30-second response window must be long enough for the owner to hear the sound and enter the response.
 
 ---
 
-# 12. PERSISTENT AUDIO SERVICE DESIGN
+# 11. REAL-TIME PCM AND HARDWARE OBSERVABILITY
 
-## 12.1 Required boot sequence
+The previous test logs sometimes captured the ALSA state only after playback ended.
 
-The ideal boot sequence is:
+That left the PCM at:
 
-```text
-KERNEL AND ROOTFS INITIALIZE
-              |
-              v
-AUDIO HARDWARE DISCOVERED
-              |
-              v
-CALLIOPE FIRMWARE READY
-              |
-              v
-MUB0 VERIFIED
-              |
-              v
-CS35L41 DSP1 FIRMWARE VERIFIED
-              |
-              v
-RDMA1 ROUTE APPLIED
-              |
-              v
-MANDATORY CONTROL READBACKS PASS
-              |
-              v
-PIPEWIRE AND WIREPLUMBER READY
-              |
-              v
-STATIC RDMA1 SINK AVAILABLE
-              |
-              v
-DEFAULT SINK VERIFIED
-              |
-              v
-Nuxel UI / LOCKSCREEN READY
-              |
-              v
-SINGLE STARTUP POW
-```
+`state=SETUP`
 
-The actual systemd dependency graph may differ, but it must produce the same readiness guarantees.
+with a stationary pointer.
 
-Do not create circular dependencies.
+This is not enough to determine what happened during the actual short playback.
 
-Do not make the UI wait indefinitely for audio.
+The asset is only about 0.366 seconds long.
 
-Do not let a failed optional audio route block the entire phone boot.
+The diagnostic must sample while the player is alive.
 
-## 12.2 Repair route-state semantics
+## 11.1 Concurrent one-play capture
 
-The current state file:
+For each test:
 
-`/run/nuxel-audio-route.state`
+1. Record the current PCM state and hardware pointer.
+2. Start one `pw-play` process.
+3. While it is running, concurrently sample:
+   - PipeWire sink.
+   - Stream node.
+   - Active links.
+   - ALSA `hw_params`.
+   - ALSA PCM status.
+   - Hardware pointer.
+   - ABOX trigger messages where available.
+   - DAPM speaker/amp widgets.
+4. Wait for `pw-play` to exit.
+5. Record its exit status.
+6. Confirm all processes exited.
+7. Record the final PCM state.
 
-must represent real readiness.
+Use sufficiently frequent polling to catch the approximately 0.366-second sample.
 
-Do not write `state=applied` before mandatory route controls have passed readback.
+A short-interval Python monitor is acceptable.
 
-Use explicit states such as:
+Do not use `bc` because the archive's previous test runner encountered:
 
-- `absent`
-- `deferred`
-- `firmware_not_ready`
-- `route_failed`
-- `applied`
+`bc: command not found`
 
-Include evidence for each mandatory control.
+Use the available Python, `awk`, or shell arithmetic.
 
-The boot-sound service must not merely check whether the state file exists.
+## 11.2 Required evidence
 
-It must check whether it contains the current boot's valid applied state.
+During a successful playback attempt, seek evidence such as:
 
-Do not accept a stale file from an earlier boot.
+- PipeWire stream active.
+- Stream linked to `alsa_output.hw_0_1`.
+- RDMA1 PCM `state=RUNNING`.
+- Actual `hw_ptr` advancement.
+- 48000 Hz hardware parameters.
+- ABOX RDMA1 trigger start and stop.
+- Right AMP DAPM path active.
+- Physical SPEAKER output path active.
+- No errors.
+- Player completes normally.
 
-## 12.3 Repair startup sound asset condition
+Do not confuse these with audible confirmation.
 
-The systemd unit currently checks for `nuxel-boot-audio.mp3`, while the sound-cue script uses `nuxel-pow.mp3`.
-
-Make the asset checks consistent.
-
-Verify:
-
-- Deployed path.
-- File permissions.
-- Checksum.
-- Decoder support.
-- Player location.
-- PipeWire runtime path.
-
-Do not make startup audio dependent on the current shell directory.
-
-## 12.4 Startup POW behavior
-
-After the audio route genuinely becomes ready:
-
-- Play `nuxel-pow.mp3` once.
-- Use the existing sound-cue mechanism or a correctly integrated replacement.
-- Respect silent/vibration mode.
-- Respect the safe gain cap.
-- Do not hold the critical boot path hostage.
-- Do not replay after every service restart.
-- Do not play repeatedly if readiness polling runs again.
-- Do not overlap manual confirmation tests.
-
-The cue currently uses a once-per-boot attempted marker. Inspect its behavior carefully.
-
-Do not permanently record a successful boot sound merely because the player was attempted.
-
-Record attempted, player-completed and human-confirmed as different states.
-
-A player completion is not an audible confirmation.
-
-The startup sound must happen after `MUB0`, CS35L41 readiness, the RDMA1 route, and the default PipeWire sink have been verified.
+They locate the remaining failure.
 
 ---
 
-# 13. AUDIO SETTINGS AND TEST AUDIO
+# 12. ITERATIVE FIXING STRATEGY
+
+The user has authorized you to make the necessary audio software and routing changes.
+
+Do not stop at the first `READY` result.
+
+Do not simply write a report saying the software pipeline works.
+
+Continue fixing and testing.
+
+## Phase A — Preserve current known-good state
+
+- Reconnect over Wi-Fi SSH.
+- Check current route state.
+- Check current firmware readiness.
+- Check current PCM state.
+- Check current mixer values.
+- Check current PipeWire sink and volume.
+- Back up all affected files.
+- Record existing volume and sound mode.
+- Record the ABOX Sound Type.
+- Create TODO and evidence directories.
+
+Do not overwrite the latest live route with an older copy from the repository.
+
+## Phase B — First targeted test: SPEAKER mode
+
+- Verify `ABOX Sound Type` options.
+- Capture previous value.
+- Set `SPEAKER` / enum 1.
+- Read it back.
+- Revalidate the actual route.
+- Confirm Right AMP → SPEAKER.
+- Run one `nuxel-pow.mp3`.
+- Wait 30 seconds.
+
+If `yes`/`works` appears:
+
+- Preserve this mode.
+- Make it persistent.
+- Extend readiness checks to verify the mode.
+
+If `no` or blank:
+
+- Record the negative result.
+- Preserve the configuration for comparison.
+- Move to the next controlled hypothesis.
+
+## Phase C — Verify sound policy and volume
 
 Inspect:
 
-- `services/nuxel-bridge/src/hw_providers.py`
-- `pwa/nuxel-apps/settings/hardware-settings.js`
-- The related Settings HTML/UI.
-- Bridge audio API handlers.
+- Current sound mode.
+- PipeWire sink mute.
+- Sink volume.
+- `pw-play` gain.
+- AMP mute controls.
+- Left/Right AMP PCM Gain.
+- The bridge and sound-cue policy.
 
-The earlier Test Audio implementation used GStreamer `pulsesink` and did not reliably create a real hardware stream before the timeout.
+Temporarily use normal audible mode for the test if needed.
 
-The updated bridge uses PipeWire `pw-play`.
+Start from the existing volume.
 
-Preserve the known-good backend.
+If no audible output:
 
-Fix default sink error handling as described above.
+- Increase PipeWire sink volume in the controlled progression.
+- Use one POW and one 30-second response per level.
+- Monitor PCM and DAPM during each play.
+- Record the exact setting at which the owner first hears sound.
 
-## 13.1 Test Audio button
+Do not jump to maximum volume.
 
-The Settings application must have a working Test Audio button.
+Do not change AMP protection or thermal settings.
 
-It must:
+## Phase D — Verify speaker route and channel delivery
 
-1. Use the currently selected output route.
-2. Use the deployed `nuxel-pow.mp3`.
-3. Run the same exact three-play manual test batch.
-4. Report actual backend and route status.
-5. Never claim that the owner heard the sound without confirmation.
-6. Prevent overlapping tests.
-7. Wait for user confirmation.
+If the correct ABOX mode and volume do not produce sound:
 
-Show useful states:
+- Re-examine ABOX Sound Type.
+- Inspect all speaker-related mixer enumerations.
+- Inspect Right AMP SPK route.
+- Inspect the right amplifier PCM Source.
+- Inspect ABOX SPKAMP mapping.
+- Inspect output channel routing.
+- Inspect DAPM graphs during playback.
+- Inspect CS35L41 logs.
+- Inspect speaker output enable and amplifier mute.
+- Inspect any required codec state established by the original vendor configuration.
 
-- Audio system starting.
-- Output unavailable.
-- Route ready.
-- Playing test batch.
-- Waiting for confirmation.
-- Audible confirmation received.
-- Playback failed.
-- Hardware route blocked.
+Change one meaningful group at a time.
 
-Do not use a fake success indicator.
+Do not invent mixer controls.
 
-## 13.2 Audio state
+Do not randomly turn every mixer switch ON.
 
-The UI must distinguish:
+Do not use arbitrary register writes.
 
-- Audio service available.
-- Output device present.
-- Output selected.
-- Stream completed.
-- Physical audibility confirmed.
+Do not disable amplifier protection.
 
-Do not represent one as another.
+## Phase E — Keep iterating
+
+The loop is:
+
+```text
+DIAGNOSE NEXT FAILURE
+        |
+        v
+CHANGE ONE LOGICAL SETTING
+        |
+        v
+READ BACK THE CHANGE
+        |
+        v
+VERIFY ROUTE READINESS
+        |
+        v
+ANNOUNCE TEST
+        |
+        v
+PLAY nuxel-pow.mp3 ONCE
+        |
+        v
+WAIT 30 SECONDS
+        |
+        v
+READ NOTES: YES / WORKS / NO / EMPTY
+        |
+        +---- YES / WORKS ----> OWNER CONFIRMED
+        |
+        +---- NO / EMPTY -----> NEXT DIAGNOSTIC ITERATION
+```
+
+The validation session must stay alive between attempts.
+
+Do not require the owner to restart the SSH session or rerun the entire mission after each test.
+
+Do not play additional diagnostic tones during the owner's 30-second response period.
 
 ---
 
-# 14. VOLUME FEEDBACK
+# 13. SPECIFIC DEFECTS ALREADY FIXED — DO NOT REINTRODUCE THEM
 
-Preserve the existing working volume-control improvements.
+## 13.1 Wrong audio test backend
 
-The archive records a previous defect where the volume handler selected:
+Old GStreamer `pulsesink` test path:
+
+- Did not reliably post EOS.
+- Was killed before stream linking completed.
+- Produced no samples in Settings testing.
+
+Corrected path:
+
+`pw-play`
+
+Preserve it.
+
+## 13.2 Wrong volume control
+
+The previous volume implementation selected:
 
 `ABOX PCM ext Out Fade Start`
 
-as the first writable control. That control has a 0..1 range and caused volume keys to jump between extremes.
+as the first writable ALSA control.
 
-The later correction uses the PipeWire default sink:
+This has a 0..1 range and caused volume keys to jump between extremes.
+
+The corrected implementation uses PipeWire volume control:
 
 ```bash
 wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+
 wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-
 ```
 
-Preserve the measured 5% step behavior.
+Preserve this behavior.
 
-The user wants `nuxel-pow.mp3` as volume feedback.
+## 13.3 Wrong amplifier PCM gain
 
-Requirements:
+Cold-boot value 19 was associated with a silent state.
 
-- Play the asset only after a genuine volume change.
-- Use the selected PipeWire output.
-- Respect mute and sound mode.
-- Do not alter the user's configured volume.
-- Do not force full volume.
-- Coalesce rapid volume-key events.
-- Avoid overlapping players.
-- Avoid creating a backlog.
-- Preserve responsive volume changes.
+Current route now uses 12.
 
-The archive contains existing throttling/locking work in the sound-cue script and button handling.
+Preserve and verify 12.
 
-Inspect and preserve it rather than creating a parallel sound system.
+## 13.4 Incorrect 44.1 kHz graph clock at boot
 
-During a manual confirmation batch:
+A staged bundle previously overwrote the correct 48 kHz graph configuration with 44.1 kHz.
 
-- Suppress volume-feedback POWs.
-- Suppress duplicate boot cues.
-- Suppress unrelated test tones.
-- Allow only the three requested asset plays.
+This was fixed in repository, deployed config, and stage.
 
----
+Do not reintroduce 44.1 kHz as the S10+ hardware sink rate.
 
-# 15. EXTERNAL AUDIO ROUTES
+The input MP3 is 44.1 kHz and PipeWire can resample it.
 
-After the internal speaker is confirmed and persistent, inspect other available outputs.
+The hardware route must remain at 48 kHz.
 
-Do not let optional routes destabilize the primary route.
+## 13.5 Stale default sink
 
-## 15.1 3.5 mm wired headphones
+Cold boot could publish the static sink without a default node.
 
-The archive reports a headphone jack path but no physical accessory was inserted during the earlier test.
+The current bridge selects the sink by stable name and reads it back.
 
-Check actual jack detection and route controls.
+Preserve this behavior.
 
-When connected:
+## 13.6 Cold-boot DSP readiness
 
-- Detect the route.
-- Select the correct hardware path.
-- Verify audio output.
-- Switch back when unplugged.
+The route is now gated on:
 
-A headphone PCM or codec output existing in ALSA does not prove a physical headphone path works.
+- Calliope `MUB0`.
+- Both CS35L41 DSP1 processors booted and running.
+- Required route controls.
+- PipeWire sink.
+- Default sink.
+- 48 kHz rate.
+- Native PipeWire connection.
 
-Use a separate three-POW Notes confirmation batch.
-
-## 15.2 Bluetooth audio
-
-The archive shows BlueZ active but no paired/connected audio device in the earlier test.
-
-Do not confuse Bluetooth connectivity with Bluetooth audio.
-
-Verify:
-
-- A paired and connected device.
-- Audio profile.
-- PipeWire BlueZ node.
-- Selected sink.
-- Stream routing.
-- Actual playback.
-
-Preserve existing pairings.
-
-Do not introduce unnecessary re-pairing.
-
-Use a three-POW confirmation batch when an audio device is connected.
-
-## 15.3 USB-C active DAC / USB Audio Class
-
-The kernel configuration enables USB Audio Class support, but the archive did not show a UAC card physically connected.
-
-Normal udev-based hotplug discovery is unavailable on this image.
-
-A safe solution may require a dedicated userspace monitor that observes actual device/card appearance and exposes a PipeWire sink.
-
-Do not blindly unmask `systemd-udevd`.
-
-Do not confuse an active USB DAC with a passive analog adapter.
-
-Do not claim support without connecting and testing an actual adapter.
-
-The S10+ USB-C role and existing USB console/gadget use may conflict with USB host audio. Preserve the recovery console and inspect the current Type-C role before changing it.
-
-Do not change USB role or disable an existing recovery path without a safe restoration plan.
-
-## 15.4 USB-C passive analog adapter
-
-A passive adapter is not the same as a USB Audio Class DAC.
-
-Inspect the hardware accessory and actual codec routing.
-
-Do not assume that a USB DAC result proves passive analog compatibility.
-
-Test separately if the required physical adapter is available.
-
-## 15.5 USB-C HDMI / DisplayPort audio
-
-The archive reports:
-
-- `CONFIG_DRM` is unset.
-- `/sys/class/drm` is absent.
-- The current display path uses framebuffer.
-- An ALSA DP Audio PCM appears, but there is no working DRM/DP audio path.
-
-This suggests that genuine DP/HDMI audio is blocked by the current kernel/display stack.
-
-Do not claim that a present PCM device makes HDMI audio operational.
-
-Do not attempt a kernel replacement or firmware flash under this mission.
-
-Mark HDMI/DP audio `BLOCKED_KERNEL` unless the live system shows a newly available, real endpoint that can be tested safely.
+Do not replace this with an optimistic one-time status-file check.
 
 ---
 
-# 16. AUDIO DIAGNOSTICS AND ACCEPTANCE
+# 14. NOTES DETECTOR IMPLEMENTATION REQUIREMENTS
 
-Use the existing device diagnostic architecture:
+Inspect:
 
-`tools/s10plus/a33/nuxel-audio-diag.sh`
+`tools/s10plus/a33/notes-works-detector.py`
 
-Inspect its current commands and behavior before extending it.
+Current deployed path is recorded as:
 
-It already supports a staged pipeline approach:
+`/usr/local/bin/nuxel-notes-works-detector`
 
-1. Card.
-2. PCM.
-3. Controls.
-4. DAPM.
-5. Route.
-6. Actual PCM running.
+Make the watcher support the new interaction protocol.
 
-Preserve the important rule that writable controls and DAPM widgets being ON are not proof of physical sound.
+Suggested output states:
 
-The diagnostic should identify the first broken stage and report its real evidence.
+- `PREFLIGHT_READY`
+- `PREFLIGHT_FAILED`
+- `WAITING`
+- `OWNER_YES`
+- `OWNER_WORKS`
+- `OWNER_NO`
+- `OWNER_NO_RESPONSE`
+- `INPUT_CHANNEL_BROKEN`
+- `NOTES_UNAVAILABLE`
+- `INVALID_RESPONSE`
 
-Do not make `nuxelctl audio status` report an unqualified OK when the speaker has not been confirmed.
+The watcher must:
 
----
+- Use a 30-second deadline per individual test.
+- Use a monotonic clock for elapsed time.
+- Accept `yes` and `works` as positive.
+- Accept `no` as explicit negative.
+- Treat an empty field after the full window as no audible response if preflight succeeded.
+- Record live Title focus, visibility and editability.
+- Detect a fresh change after the current test.
+- Corroborate against Notes current model/storage.
+- Use the actual deployed path.
+- Keep the watcher alive through multiple iterations.
+- Never create an artificial positive result.
+- Never interpret an old title from a previous note as current confirmation.
 
-# 17. REQUIRED TEST SEQUENCE
+Preserve only the necessary test metadata.
 
-## Phase A — Recover and persist the internal speaker
-
-- Reconcile live/repository settings.
-- Fix RDMA1_EN.
-- Verify ABOX Calliope readiness.
-- Verify both CS35L41 DSP1 instances.
-- Verify the rest of the speaker route.
-- Verify PipeWire default sink.
-- Verify 48 kHz.
-- Perform the Notes-confirmed three-POW test.
-- Preserve the working configuration.
-
-## Phase B — Process and service persistence
-
-Verify sound after:
-
-- The manual test process exits.
-- The bridge request ends.
-- Nuxel UI restarts.
-- Audio route service restarts.
-- PipeWire/WirePlumber restart through a controlled test.
-
-The audio must not depend on a foreground terminal or the temporary validation runner.
-
-## Phase C — Boot persistence
-
-Once the route is working and persistent:
-
-1. Save the validated configuration.
-2. Confirm service enablement and dependencies.
-3. Confirm boot readiness gates.
-4. Confirm that startup POW is configured to run only once.
-5. Perform a normal reboot.
-6. Allow Wi-Fi SSH to disconnect.
-7. Reconnect using the specified key.
-8. Verify `MUB0`.
-9. Verify both CS35L41 DSPs.
-10. Verify `ABOX RDMA1_EN`.
-11. Verify route-state readbacks.
-12. Verify PipeWire default sink.
-13. Verify 48 kHz hardware parameters.
-14. Verify the startup cue was attempted only after readiness.
-15. Have the user reopen Notes with an empty focused Title field.
-16. Run a fresh three-play batch.
-17. Wait for the new `works` value.
-
-Do not claim persistence based only on service enablement.
-
-## Phase D — Other output routes
-
-Test each physically available route independently.
-
-Every physically tested route requires its own confirmation.
-
-Do not claim that the internal speaker confirmation proves Bluetooth, wired headphones, USB DAC, or HDMI audio.
+Do not log unrelated user notes.
 
 ---
 
-# 18. SAFETY, ROLLBACK AND RESOURCE USE
+# 15. REPAIR THE PERSISTENT ROUTE AFTER THE OWNER CONFIRMS SOUND
 
-Before every deployment:
+Once the owner confirms the working configuration:
 
-- Back up the existing source and live configuration.
-- Preserve current working mixer values.
-- Preserve the known-good default sink.
-- Preserve the existing audio service definitions.
-- Review exact changed files.
-- Validate service syntax.
-- Validate shell and Python code.
-- Test route logic with readbacks.
-- Maintain Wi-Fi SSH.
-- Provide rollback.
+Update the source implementation and actual deployed files.
+
+Primary source:
+
+`services/nuxel-s10/bin/nuxel-audio-route.sh`
+
+Other relevant areas:
+
+- `services/nuxel-s10/systemd/nuxel-audio-route.service`
+- `services/nuxel-s10/systemd/nuxel-audio-route-retry.service`
+- `services/nuxel-s10/systemd/nuxel-audio-route.timer`
+- `services/nuxel-s10/bin/nuxel-abox-firmware-reload-boot.sh`
+- `services/nuxel-bridge/src/hw_providers.py`
+- `tools/s10plus/a33/nuxel-sound-cue.py`
+- `services/nuxel-session/systemd/nuxel-boot-sound.service`
+- Relevant PipeWire and WirePlumber configuration.
+- `configs/nuxel/audio/audio.json`.
+
+## 15.1 Add the confirmed speaker mode
+
+If `ABOX Sound Type=SPEAKER` is the confirmed fix:
+
+- Set it in the persistent route.
+- Read it back.
+- Add it to `route_controls_ready()`.
+- Require it in `--check`.
+- Log it in route state.
+- Ensure it is reapplied after cold boot.
+- Ensure the retry timer cannot revert it.
+
+Do not leave the only working setting as a manual terminal command.
+
+## 15.2 Add the confirmed speaker output checks
+
+Readiness must verify:
+
+- Correct ABOX Sound Type.
+- Right AMP route to physical SPEAKER.
+- Correct ABOX mapping.
+- Correct amplifier gain.
+- Correct unmuted state.
+- Required DAPM path.
+- PipeWire sink.
+- 48 kHz rate.
+- Default sink.
+
+Do not mark the route APPLIED if any mandatory speaker-path control is missing.
+
+## 15.3 Persistent volume policy
+
+If the speaker only becomes audible above the previous 25% limit:
+
+- Record the first confirmed audible level.
+- Correct the effective PipeWire volume policy.
+- Update the bridge and Settings clamps consistently.
+- Keep a user-adjustable volume range.
+- Ensure boot route restoration does not force an inaudibly low value.
+- Ensure periodic route retries do not overwrite a deliberately quieter user setting.
+- Preserve amplifier protection and DSP1 firmware.
+
+The actual PipeWire sink is the important output level for this static sink.
+
+Do not assume the ALSA softvol plugin protects the direct PipeWire `hw:0,1` route.
+
+---
+
+# 16. BOOT PERSISTENCE — ONLY AFTER MANUAL SPEAKER CONFIRMATION
+
+Avoid additional unnecessary reboots during the diagnostic iteration process.
+
+The current repository already has a working firmware reload/route readiness sequence.
+
+Once the owner has confirmed sound:
+
+1. Preserve the verified speaker settings.
+2. Apply them persistently.
+3. Validate the boot readiness gate.
+4. Verify the startup sound is gated on the corrected speaker route.
+5. Verify there is only one startup sound attempt per boot.
+6. Preserve the 48 kHz graph.
+7. Verify the sound policy and default volume.
+8. Back up all files and settings.
+9. Perform one normal reboot.
+10. Reconnect over Wi-Fi SSH.
+11. Verify ABOX and both amplifier DSPs.
+12. Verify ABOX Sound Type.
+13. Verify the right amplifier's speaker mapping.
+14. Verify gain 12.
+15. Verify the default PipeWire sink.
+16. Verify the 48 kHz hardware rate.
+17. Verify startup cue readiness and event log.
+
+Then reopen the owner confirmation workflow.
+
+The owner will unlock Notes, focus an empty Title field and perform one fresh post-boot test.
+
+Play `nuxel-pow.mp3` once.
+
+Wait 30 seconds.
+
+Require a fresh `yes` or `works`.
+
+A successful startup player exit code is not a substitute for post-boot human confirmation.
+
+---
+
+# 17. DEPLOYMENT AND SAFETY
+
+The user authorizes necessary non-destructive software, route, mixer and service modifications required to obtain physical speaker output.
+
+This includes:
+
+- Correcting ALSA mixer state.
+- Correcting supported ABOX enum values.
+- Reconfiguring PipeWire and WirePlumber.
+- Correcting route scripts and systemd ordering.
+- Rebuilding userspace programs when required.
+- Correcting bridge and Nuxel audio APIs.
+- Adjusting normal PipeWire volume within controlled test steps.
+- Safely restarting audio services where necessary.
+
+However:
+
+**TWRP reflash is not authorized or expected.**
 
 Do not:
 
-- Flash firmware.
-- Replace or flash the kernel.
-- Change the bootloader.
-- Modify device-tree or boot partitions.
+- Flash a TWRP backup.
+- Reflash the ROM or rootfs partition.
+- Replace the kernel.
+- Flash a boot image.
+- Modify bootloader settings.
 - Repartition storage.
-- Force all mixer controls to maximum.
-- Unmute unrelated paths.
-- Re-enable udev indiscriminately.
-- Remove Bluetooth pairings.
-- Break USB console/recovery.
-- Leave long-running test processes.
-- Create permanent high-frequency polling.
-- Introduce repeated audio playback loops.
+- Write to modem or EFS partitions.
+- Disable amplifier thermal protection.
+- Disable DSP1 protection.
+- Write arbitrary hardware registers.
+- Raise amplifier analog gain blindly.
+- Force all mixer controls ON.
 
-If the only complete fix requires kernel-level firmware embedding, document it and request separate authorization.
+The previous live software route produced working hardware DMA and once produced audible sound. A TWRP reflash is not a rational first-line fix.
 
-Audio must not create a battery-draining background service or make Nuxel less responsive.
+If you find new evidence that a kernel/firmware change is genuinely unavoidable, document the exact blocker and stop before flashing anything.
+
+Before deployment:
+
+- Back up every changed live file.
+- Preserve source/stage/deployed parity.
+- Validate systemd units.
+- Verify config syntax.
+- Deploy staged files.
+- Verify SHA-256 hashes.
+- Preserve Wi-Fi SSH.
+- Keep a rollback path.
+
+Do not overwrite unrelated changes.
 
 ---
 
-# 19. ACCEPTANCE TEST MATRIX
+# 18. FINAL ACCEPTANCE MATRIX
 
 Use PASS / FAIL / BLOCKED / NOT TESTED.
 
-A PASS requires the stated evidence.
-
-| ID | Test | Required evidence |
+| ID | Requirement | Evidence |
 |---|---|---|
-| SOURCE-01 | Live/source route reconciliation | Hashes and difference report |
-| ROUTE-01 | ABOX RDMA1_EN | Correct real control value |
-| ROUTE-02 | ABOX SPUS/SIFS1/UAIF1 route | Readback of each mandatory control |
-| ROUTE-03 | SPKAMP routing | Correct verified routing |
-| ROUTE-04 | AMP enable and mute | Actual current values |
-| ROUTE-05 | PCM Source / Sound Type | Verified route values |
-| DSP-01 | Calliope firmware | `MUB0` |
-| DSP-02 | CS35L41 left DSP1 | Firmware loaded, booted and running |
-| DSP-03 | CS35L41 right DSP1 | Firmware loaded, booted and running |
-| PCM-01 | RDMA1 | Correct PCM selected |
-| PCM-02 | Sample rate | Actual 48000 Hz |
-| PCM-03 | Hardware pointer | Advances during playback |
-| PCM-04 | ABOX trigger | Real playback trigger evidence |
-| PW-01 | PipeWire sink | Expected static sink exists |
-| PW-02 | Default sink | Readback confirms correct sink |
-| PW-03 | Playback backend | `pw-play` completes through intended sink |
-| PW-04 | Failed sink selection | Correct failure, no false success |
-| SPEAKER-01 | Internal speaker | Fresh Notes `works` confirmation |
-| LIFE-01 | Test process exit | Audio remains functional |
-| LIFE-02 | UI restart | Audio remains functional |
-| LIFE-03 | Audio service restart | Audio recovers |
-| BOOT-01 | ABOX cold-boot readiness | `MUB0` after reboot |
-| BOOT-02 | Route after boot | Mandatory controls verified |
-| BOOT-03 | Startup POW | Single correctly gated attempt |
-| BOOT-04 | Post-boot audible test | Fresh Notes `works` confirmation |
-| SET-01 | Test Audio button | Three real POW plays |
-| VOL-01 | Volume control | Correct 5% increments |
-| VOL-02 | Volume feedback | No overlaps or backlog |
-| OUT-01 | Wired headphones | Physical test and confirmation, if available |
-| OUT-02 | Bluetooth audio | Physical test and confirmation, if available |
-| OUT-03 | Active USB DAC | Physical test and confirmation, if available |
-| OUT-04 | Passive USB-C analog | Physical test and confirmation, if available |
-| OUT-05 | HDMI/DP | Real endpoint and physical test, or documented kernel blocker |
-| SAFE-01 | Volume ceiling | Actual PipeWire sink stays within 25% |
-| SAFE-02 | Resource use | No runaway playback or polling |
+| BASE-01 | Current route inventory | Complete device evidence |
+| BASE-02 | Existing live route preserved | Backup and hashes |
+| MODE-01 | ABOX Sound Type | Live enum and verified readback |
+| MODE-02 | SPEAKER mode experiment | Owner response after one test |
+| AMP-01 | Left AMP PCM Gain | Verified 12 |
+| AMP-02 | Right AMP PCM Gain | Verified 12 |
+| AMP-03 | Both DSP1 processors | Booted and running |
+| AMP-04 | Speaker amplifier unmuted | Verified readback |
+| ROUTE-01 | ABOX RDMA1_EN | Verified ON |
+| ROUTE-02 | SPKAMP mapping | RDMA1 |
+| ROUTE-03 | Right AMP physical speaker route | Verified |
+| ROUTE-04 | DAPM speaker path | Active during test |
+| PCM-01 | PipeWire sink | Correct node exists |
+| PCM-02 | Default output | Correct sink readback |
+| PCM-03 | Runtime format | 48 kHz S16LE stereo |
+| PCM-04 | Stream activity | RUNNING during playback |
+| PCM-05 | Hardware pointer | Advances during playback |
+| PCM-06 | Actual active links | Stream to intended speaker path |
+| VOL-01 | Single attenuation stage | No double attenuation |
+| VOL-02 | Volume testing | Controlled owner-supervised ramp |
+| ASSET-01 | POW file | Valid deployed asset/hash |
+| TEST-01 | One playback per iteration | Exactly one invocation |
+| TEST-02 | Response window | Full 30 seconds |
+| TEST-03 | Notes preflight | Actual typing verified |
+| TEST-04 | Positive confirmation | Fresh `yes` or `works` |
+| TEST-05 | Negative response | `no` or empty classified correctly |
+| TEST-06 | Repeated iteration | Same session stays active |
+| PERSIST-01 | Route source updated | Confirmed settings committed |
+| PERSIST-02 | Readiness gate | Speaker mode included |
+| PERSIST-03 | Boot initialization | Correct mode and route restored |
+| BOOT-01 | Fresh reboot | Successful |
+| BOOT-02 | Post-boot route | Correct readback |
+| BOOT-03 | Post-boot playback | New audible confirmation |
+| SAFE-01 | Amp protections | Preserved |
+| SAFE-02 | Recovery and SSH | Preserved |
+| SAFE-03 | TWRP reflash | Not performed |
 
 ---
 
-# 20. REQUIRED EVIDENCE
-
-Use:
-
-`docs/beta-finalization/live/evidence/pwnage-40000/`
-
-Capture:
-
-- Initial device and kernel inventory.
-- Actual ALSA card and PCM inventory.
-- Actual mixer control namespace.
-- Current route readbacks.
-- ABOX Calliope status.
-- Firmware load errors and recovery.
-- Both CS35L41 DSP status reports.
-- PipeWire sink and default-sink readback.
-- ALSA `hw_params` and PCM status during playback.
-- Hardware pointer before and after playback.
-- ABOX trigger evidence.
-- Source-versus-live comparison.
-- Each route-script test.
-- Every three-POW batch.
-- Notes confirmation record.
-- Boot sound readiness and logs.
-- Reboot results.
-- Post-boot audible confirmation.
-- External route results and limitations.
-
-Do not store unrelated Notes content.
-
-Store only the active test title, its relevant note identifier, and the confirmation timestamp.
+# 19. EVIDENCE AND REPORTS
 
 Create:
 
-`docs/beta-finalization/live/PWNAGE-40000-REPORT.md`
-
-Keep:
-
 `docs/beta-finalization/live/PWNAGE-40000-TODO.md`
 
-up to date.
+Update the existing mission report:
+
+`docs/beta-finalization/live/PWNAGE-40000-REPORT.md`
+
+Store new evidence under:
+
+`docs/beta-finalization/live/evidence/pwnage-40000/`
+
+Use a fresh run directory for this final speaker investigation.
+
+Include:
+
+- Live route inventory.
+- Current ABOX Sound Type value.
+- All enum choices.
+- SPEAKER-mode experiment and readback.
+- Left/right amplifier routing.
+- DAPM state.
+- Gain values.
+- PipeWire default sink and volume.
+- Runtime PCM observations.
+- Hardware pointer capture.
+- The exact playback command.
+- Every one-play test number.
+- Every 30-second response result.
+- Notes preflight evidence.
+- First successful human confirmation.
+- Confirmed volume level.
+- Persistent route changes.
+- Post-boot route and mode.
+- Fresh post-boot confirmation.
+
+Never log unrelated note content.
+
+Do not record exact private data beyond the confirmation metadata required for the test.
 
 ---
 
-# 21. FINAL REPORT
+# 20. FINAL REPORT FORMAT
 
-Report these sections:
+## 1. Root cause
 
-## A. Actual root cause
+Explain exactly which speaker-specific setting, route, volume or lifecycle condition prevented sound.
 
-Explain whether the missing `ABOX RDMA1_EN` setting was a direct cause on the live phone.
+Give priority to the ABOX Sound Type experiment.
 
-Explain any additional route, firmware, or startup readiness defects.
+## 2. Current live speaker route
 
-## B. Source/deployment mismatch
+Document:
 
-List the old repository behavior and the corrected persistent behavior.
+- ABOX mode.
+- RDMA1.
+- SPUS/SIFS1/UAIF1.
+- SPKAMP mapping.
+- Right AMP physical speaker endpoint.
+- DSP1.
+- Amplifier gain.
+- PipeWire sink.
+- Volume.
 
-## C. ABOX firmware
+## 3. Test history
 
-Explain whether Calliope reaches `MUB0` on every cold boot.
+For every iteration, record:
 
-## D. Amplifier firmware
+| Test | Change | Volume | Playback result | PCM evidence | Notes response |
+|---|---|---:|---|---|---|
+| 1 | Initial SPEAKER test | ... | ... | ... | ... |
+| 2 | ... | ... | ... | ... | ... |
 
-Report left and right CS35L41 DSP1 firmware readiness independently.
+## 4. Human confirmation
 
-## E. PCM and PipeWire
+Record the first fresh `yes` or `works`.
 
-Report actual PCM, 48 kHz rate, default sink and hardware-pointer behavior.
+That exact successful configuration becomes the known-good speaker configuration.
 
-## F. Human confirmation
+## 5. Persistent implementation
 
-For every route:
+List all files and services changed.
 
-- Exact output.
-- Test-batch number.
-- Three playback results.
-- Notes observer method.
-- Whether the fresh `works` title was detected.
+## 6. Reboot verification
 
-## G. Startup behavior
+Report post-boot mode, route, PCM, sink, and fresh human confirmation.
 
-Report whether the single startup POW is genuinely gated on audio readiness and whether the post-reboot audible test passed.
+## 7. Remaining issues
 
-## H. Output support
+List any genuine unresolved hardware or audio problems.
 
-List every physically tested output and all blocked routes.
+## 8. Rollback
 
-## I. Remaining issues
-
-Be honest about anything that remains unverified or requires kernel authorization.
-
-## J. Evidence and rollback
-
-Provide exact paths to reports, logs, modified files and rollback backups.
+Provide exact backup and recovery paths.
 
 ---
 
-# FINAL NON-NEGOTIABLE INSTRUCTIONS
+# FINAL EXECUTION RULES
 
-1. Do not start from scratch.
-2. Preserve the most recent human-confirmed working audio path.
-3. Do not deploy the stale route script over a better live configuration.
-4. Resolve the `ABOX RDMA1_EN` contradiction.
-5. Do not confuse Calliope core firmware with CS35L41 DSP1 protection firmware.
-6. Require Calliope `MUB0` before considering the ABOX ready.
-7. Use RDMA1 at 48 kHz and verify the actual runtime hardware parameters.
-8. Verify the PipeWire default sink and handle failure correctly.
-9. Use `pw-play` through the intended sink.
-10. Play exactly THREE `nuxel-pow.mp3` invocations per manual confirmation batch.
-11. Wait for the user's fresh `works` title in Notes.
-12. Keep the same diagnostic session alive between batches.
-13. Make the route and initialization persistent.
-14. Reboot and verify audio after a fresh boot.
-15. Do not make unauthorized kernel or firmware changes.
-16. Never claim audible success based only on software logs.
+1. Do not restart the entire audio project.
+2. Preserve the verified ABOX, CS35L41 and PipeWire work.
+3. Investigate `ABOX Sound Type` first.
+4. Do not overlook the possibility that VOICE mode is being used for a SPEAKER task.
+5. Preserve the verified amplifier gain 12.
+6. Verify Right AMP → physical SPEAKER.
+7. Use one `nuxel-pow.mp3` playback per test.
+8. Give the owner a full 30 seconds after each playback.
+9. Accept fresh `yes` or `works` as positive.
+10. Accept `no` or a full empty response as negative only after Notes input preflight passes.
+11. Keep fixing after negative results.
+12. Do not restart the SSH session between iterations.
+13. Do not claim sound based on player success or DMA activity.
+14. Do not stop at software readiness.
+15. Do not TWRP reflash.
+16. Do not flash the kernel or firmware.
+17. Preserve all working recovery access.
+18. Persist the first actually confirmed speaker configuration.
+19. Reboot only after the working route is confirmed and persistent.
+20. Require a fresh post-boot audible confirmation.
 
-**We already heard Nuxel make sound. Find the working route, fix the missing persistent pieces, and make the penguin POW automatically and reliably.**
+**THIS MISSION IS NOT COMPLETE UNTIL THE BUILT-IN S10+ SPEAKER MAKES THE NUXEL POW SOUND AND THE OWNER TYPES YES OR WORKS IN NOTES.**
 
-# PWNAGE-40000 — FINISH THE AUDIO. 🐧🔊
+No more READY-but-silent reports.
+
+No more player-exited-successfully claims.
+
+No more stopping at DMA evidence.
+
+**KEEP ITERATING. FIX THE SPEAKER. WAIT 30 SECONDS. GET THE HUMAN CONFIRMATION.**
+
+# PWNAGE-40000 — MAKE IT ACTUALLY POW. 🐧🔊

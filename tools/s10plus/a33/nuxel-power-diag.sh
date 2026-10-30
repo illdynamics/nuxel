@@ -156,6 +156,28 @@ PY
 }
 apply_profile() {
   local prof="$1" gov applied=0 p
+  # Refuse an unknown profile BEFORE writing anything.  Without this check
+  # `mode banana` persisted a profile name that does not exist in power.json and
+  # the boot applier then had no governor preference to map.
+  if ! python3 - "$POLICY" "$prof" <<'PY'
+import json, sys
+try:
+    doc = json.load(open(sys.argv[1]))
+except Exception:
+    sys.exit(2)
+sys.exit(0 if sys.argv[2] in (doc.get("profiles", {}).get("list") or {}) else 1)
+PY
+  then
+    say "unknown profile '$prof' (power.json lists: $(python3 - "$POLICY" <<'PY'
+import json,sys
+try:
+    print(", ".join((json.load(open(sys.argv[1])).get("profiles",{}).get("list") or {}).keys()))
+except Exception:
+    print("(power.json unreadable)")
+PY
+))"
+    return 2
+  fi
   gov="$(profile_governor "$prof")"
   if [ -n "$gov" ]; then
     for p in 0 4 7; do
@@ -186,11 +208,19 @@ try:
 except Exception as e:
     print("power-menu.json unreadable (%s) — falling back to the built-in table" % e)
     doc = {"entries": [
+        {"id": "cancel", "label": "Cancel", "trigger_allowed": True, "refusal_reason": ""},
         {"id": "lock", "label": "Lock screen", "trigger_allowed": True, "refusal_reason": ""},
-        {"id": "restart", "label": "Restart", "trigger_allowed": False,
-         "refusal_reason": "gated - reboot-gate.json is closed (owner absent)"},
-        {"id": "power-off", "label": "Power off", "trigger_allowed": False,
-         "refusal_reason": "gated - powering off with no owner present would strand the mission"},
+        {"id": "screenshot", "label": "Take screenshot", "trigger_allowed": True, "refusal_reason": ""},
+        {"id": "restart", "label": "Restart", "trigger_allowed": True, "refusal_reason": ""},
+        {"id": "power-off", "label": "Power off", "trigger_allowed": True, "refusal_reason": ""},
+        {"id": "reboot-verbose", "label": "Reboot Verbose", "trigger_allowed": True, "refusal_reason": ""},
+        {"id": "reboot-safe-mode", "label": "Safe Mode", "trigger_allowed": True, "refusal_reason": ""},
+        {"id": "reboot-diag", "label": "Reboot Diag", "trigger_allowed": True, "refusal_reason": ""},
+        {"id": "reboot-debug", "label": "Reboot Debug", "trigger_allowed": True, "refusal_reason": ""},
+        {"id": "back", "label": "Back", "trigger_allowed": True, "refusal_reason": ""},
+        {"id": "forward", "label": "Forward", "trigger_allowed": True, "refusal_reason": ""},
+        {"id": "stop", "label": "Stop loading", "trigger_allowed": True, "refusal_reason": ""},
+        {"id": "reload-launcher", "label": "Reload launcher", "trigger_allowed": True, "refusal_reason": ""},
         {"id": "recovery", "label": "Recovery", "trigger_allowed": False,
          "refusal_reason": "NO_FLASH_INVARIANT - no bootloader interface is triggered"},
         {"id": "download-mode", "label": "Download Mode", "trigger_allowed": False,

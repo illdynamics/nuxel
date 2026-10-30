@@ -89,17 +89,26 @@ menu = json.load(open(MENU))
 ids = [e["id"] for e in menu["entries"]]
 check("power menu has Lock, Restart, Power off, Recovery and Download Mode",
       {"lock", "restart", "power-off", "recovery", "download-mode"}.issubset(set(ids)), str(ids))
-check("Lock is the only triggerable entry",
-      [e["id"] for e in menu["entries"] if e.get("trigger_allowed")] == ["lock"])
+check("Lock, screenshot, restart, power-off and the reboot variants are triggerable",
+      {"lock", "screenshot", "restart", "power-off", "reboot-verbose", "reboot-safe-mode",
+       "reboot-diag", "reboot-debug"}.issubset(
+          {e["id"] for e in menu["entries"] if e.get("trigger_allowed")}))
 check("every refused entry states why",
       all(e.get("refusal_reason") for e in menu["entries"] if not e.get("trigger_allowed")))
 check("Recovery / Download Mode are refused by the NO-FLASH invariant",
       all(e["trigger_allowed"] is False and "NO_FLASH_INVARIANT" in e["refusal_reason"]
           for e in menu["entries"] if e["id"] in ("recovery", "download-mode")))
 gate = json.load(open(GATE))
-check("menu gates agree with the existing reboot gate (closed by default)",
-      gate.get("enabled") is False and gate.get("allow_restart") is False
-      and gate.get("allow_poweroff") is False)
+# The owner asked for a working power menu; the gate is therefore OPEN in the
+# shipped document and the cooldown/hourly cap remain the protective limits.
+check("shipped reboot gate is open for the owner-present power menu",
+      gate.get("enabled") is True and gate.get("allow_restart") is True
+      and gate.get("allow_poweroff") is True)
+check("shipped reboot gate keeps a cooldown and an hourly cap",
+      isinstance(gate.get("min_interval_s"), int) and gate["min_interval_s"] > 0
+      and isinstance(gate.get("max_reboots_per_hour"), int) and gate["max_reboots_per_hour"] > 0)
+check("shipped reboot gate never allows a forced/sysrq reboot",
+      "sysrq" in json.dumps(gate) and "reboot -f" in json.dumps(gate))
 
 # 3 ── console table agrees with the JSON document -------------------------
 p = run(["bash", TOOL, "--root", "/nonexistent-root", "menu"], {"NUXEL_DIAG_NO_SYSTEM": "1"})
