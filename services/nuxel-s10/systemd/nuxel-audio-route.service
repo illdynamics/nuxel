@@ -3,13 +3,17 @@ Description=Nuxel S10+ ABOX playback route (RDMA1 -> UAIF1/SIFS1)
 After=sound.target
 ConditionPathExists=/dev/snd/controlC0
 StartLimitIntervalSec=0
+# The route script verifies calliope_version=MUB0 itself and defers if the
+# ABOX reload has not finished.  Do NOT order this unit after
+# nuxel-abox-firmware-reload.service: that unit runs after nuxel-wayland, which
+# wants this one, so the edge would create a boot-order cycle.
 
 [Service]
 Type=oneshot
 ExecStart=/usr/lib/nuxel/nuxel-audio-route.sh
 RemainAfterExit=yes
 Restart=no
-TimeoutStartSec=30
+TimeoutStartSec=45
 StandardOutput=journal
 StandardError=journal
 

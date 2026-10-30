@@ -18,7 +18,7 @@
     <link rel="stylesheet" href="css/style.css?v=a86-fix38">
     <link rel="stylesheet" href="css/launcher.css?v=a47">
     <link rel="stylesheet" href="css/search.css">
-    <link rel="stylesheet" href="css/status-bar.css?v=a54">
+    <link rel="stylesheet" href="css/status-bar.css?v=p021">
     <link rel="stylesheet" href="css/home-settings.css">
     <link rel="stylesheet" href="css/widgets.css?v=a81">
     <link rel="stylesheet" href="css/lockscreen.css?v=a85-v072">
@@ -69,6 +69,8 @@
         <div class="status-right">
             <span id="status-signal" class="status-icon signal-icon"></span>
             <span id="status-wifi" class="status-icon wifi-icon"></span>
+            <span id="status-bluetooth" class="status-icon bluetooth-icon" hidden
+                  role="img" aria-label="Bluetooth off"></span>
             <span id="status-battery" class="status-icon battery-icon"></span>
             <span id="status-battery-pct" hidden></span>
         </div>
@@ -111,13 +113,13 @@
     <!-- Quick Settings -->
     <div id="quick-settings" class="quick-settings hidden">
         <div class="qs-row">
-            <div class="qs-item" id="qs-wifi" data-enabled="false">
+            <div class="qs-item" id="qs-wifi" data-enabled="unknown" data-radio-enabled="unknown" data-connected="unknown">
                 <img class="qs-icon" src="/assets/nuxel-quicksettings-icon-pack/01-wifi.png?v=a44" alt="" onerror="this.hidden=true">
-                <span class="qs-label">WiFi</span>
+                <span class="qs-label">WiFi<br>checking</span>
             </div>
-            <div class="qs-item" id="qs-bluetooth" data-enabled="false">
-                <img class="qs-icon" src="/assets/nuxel-quicksettings-icon-pack/04-bluetooth.png?v=a44" alt="" onerror="this.hidden=true">
-                <span class="qs-label">BT</span>
+            <div class="qs-item" id="qs-bluetooth" data-enabled="unknown" data-adapter-present="false" data-state="unknown">
+                <img class="qs-icon" src="/assets/nuxel-quicksettings-icon-pack/04-bluetooth.png?v=p021" alt="" onerror="this.hidden=true">
+                <span class="qs-label">Bluetooth<br>checking</span>
             </div>
             <div class="qs-item" id="qs-mobile" data-enabled="false">
                 <img class="qs-icon" src="/assets/nuxel-quicksettings-icon-pack/02-mobile-signal.png?v=a44" alt="" onerror="this.hidden=true">
@@ -214,6 +216,8 @@
                   role="img" aria-label="WLAN console active" aria-hidden="true"><img src="/assets/nuxel-console-wlan.png?v=p34000" alt="" draggable="false"></span>
             <span class="lockscreen-transport file-transfer-ind" id="lockscreen-file-transfer"
                   role="img" aria-label="File transfer active" aria-hidden="true"><img src="/assets/nuxel-file-transfer.png?v=p34000" alt="" draggable="false"></span>
+            <span class="lockscreen-transport bluetooth-transport" id="lockscreen-bluetooth"
+                  role="img" aria-label="Bluetooth on" aria-hidden="true"><img src="/assets/nuxel-quicksettings-icon-pack/04-bluetooth.png?v=p021" alt="" draggable="false"></span>
         </div>
         <button type="button" id="lockscreen-connection-mode" class="lockscreen-connection-mode"
                 aria-label="Connection mode" aria-haspopup="dialog" aria-expanded="false">
@@ -295,7 +299,7 @@
     <script type="module" src="../nuxel-common/bridge.js"></script>
     <script src="js/bridge.js?v=a63"></script>
     <script src="js/recents.js"></script>
-    <script src="js/qs.js?v=a74-wifi-boot-sync"></script>
+    <script src="js/qs.js?v=p021"></script>
     <!-- A32: host backend (settings/buttons/terminal) + status-bar safe zones.
          Both are inert without a host, so the VM/desktop launcher is unchanged. -->
     <script src="js/host-bridge.js"></script>

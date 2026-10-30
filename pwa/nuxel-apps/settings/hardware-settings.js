@@ -42,20 +42,26 @@
       'radio name     : ' + ((st.rfkill_names && st.rfkill_names.length) ? st.rfkill_names.join(', ') : 'none'),
       'kernel driver  : ' + (st.kernel_bt_driver || 'unknown'),
       'HCI transport  : ' + (st.kernel_hci_transport === false
-        ? 'MISSING (CONFIG_BT_HCIUART is not set)'
+        ? 'MISSING (no HCI UART/USB transport in this kernel build)'
         : (st.kernel_hci_transport === true ? 'present' : 'unknown')),
       'HCD firmware   : ' + (st.firmware_present ? (st.firmware_found || []).join(', ') : 'missing'),
       'BlueZ adapters : ' + (st.adapters && st.adapters.length ? st.adapters.length : 0),
-      'powered        : ' + (st.powered === true ? 'on' : (st.powered === false ? 'off' : 'unknown'))
+      'powered        : ' + (st.powered === true ? 'on' : (st.powered === false ? 'off' : 'unknown')),
+      'discovering    : ' + (st.discovering === true ? 'active' : (st.discovering === false ? 'idle' : 'unknown'))
     ];
+    if (st.adapter_address) lines.push('address        : ' + st.adapter_address);
     if (st.blocker) lines.push('blocker        : ' + st.blocker);
     if (st.detail) lines.push('detail         : ' + st.detail);
     setText('bt-state', lines.join('\n'));
     setText('bt-detail', st.blocker === 'BLOCKED_KERNEL'
-      ? 'The BCM4375 radio and its HCD can be powered, but this 4.14.253 kernel was built with CONFIG_BT_HCIUART not set. bcm43xx_bluetooth is only the power/rfkill driver, so no HCI transport can register hci0 and scanning cannot return devices. This is a kernel-configuration blocker, not a missing blob or a UI bug; fixing it requires a scoped kernel rebuild (never a userspace fake).'
+      ? 'No HCI transport is present in this kernel build, so a controller cannot register hci0. The verified S10+ image enables CONFIG_BT_HCIUART + H4 and starts btattach; if this row appears on a rebuilt image, that kernel config or the btattach unit is missing.'
       : (st.blocker === 'BLOCKED_FIRMWARE'
         ? 'The Broadcom BCM43xx HCD firmware blob is missing from /lib/firmware/brcm, so the controller powers on but never registers hci0. Deploying that blob is a userspace file step (never a kernel/partition flash) and needs an owner-verified, licence-validated file.'
-        : (st.adapter_present ? 'Use the Bluetooth Quick Setting or this button to power the controller.' : 'No hci0 is registered. This page reports the real blocker; it does not pretend the radio works.')));
+        : (st.adapter_present
+          ? 'Controller ' + (st.hci_devices || []).join(', ') + ' is registered' +
+            (st.powered === true ? ' and powered.' : ' but BlueZ does not report it powered.') +
+            ' Use Scan to discover peers; pairing and connection actions report the actual BlueZ result.'
+          : 'No hci0 is registered. This page reports the real blocker; it does not pretend the radio works.')));
   }
   function refreshBluetooth() {
     setText('bt-state', 'Checking Bluetooth…');

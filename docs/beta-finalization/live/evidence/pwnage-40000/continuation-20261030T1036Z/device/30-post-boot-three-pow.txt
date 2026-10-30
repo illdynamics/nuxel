@@ -1,0 +1,14 @@
+2026-10-30T09:59:18Z
+2026-10-30T09:59:19Z nuxel-audio-route: READY: calliope=MUB0 dsp1=2/2 route=verified sink=alsa_output.hw_0_1 rate=48000 default=verified volume<=0.25
+POW 1 rc=0 at=2026-10-30T09:59:21Z
+POW 2 rc=0 at=2026-10-30T09:59:23Z
+POW 3 rc=0 at=2026-10-30T09:59:24Z
+detector_rc=2
+{
+  "result": "NO_TITLE_ENTRY",
+  "at": 1793354359.8362238,
+  "entries": [],
+  "applications": [
+    "nuxel-pwa-host"
+  ]
+}

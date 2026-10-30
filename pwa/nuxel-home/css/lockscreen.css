@@ -384,6 +384,10 @@ body.display-off .lockscreen-indicator .lockscreen-indicator-glow {
     opacity: 1;
 }
 .lockscreen-transport.file-transfer-ind { width: 42px; height: 42px; }
+.lockscreen-transport.bluetooth-transport img {
+    filter: drop-shadow(0 0 6px rgba(96, 165, 250, 0.75));
+    opacity: 0.95;
+}
 
 /* ==========================================================================
    PWNAGE-34000 lockscreen connection-mode button + selector overlay

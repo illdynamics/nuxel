@@ -1,26 +1,35 @@
 [Unit]
 Description=Nuxel startup cue after confirmed boot-animation to launcher handoff
-After=nuxel-wayland.service nuxel-wl-fb.service sound.target nuxel-button-manager.service nuxel-audio-route.service
-Wants=nuxel-wayland.service nuxel-wl-fb.service nuxel-audio-route.service
-ConditionPathExists=/usr/share/nuxel/assets/nuxel-boot-audio.mp3
-# The live route state file is the honest readiness signal: the boot cue
-# plays once the ABOX/amp route is applied.  The sound-cue binary records
-# audibility as unverified; no physical claim is made.
-ConditionPathExists=/run/nuxel-audio-route.state
+After=nuxel-wayland.service nuxel-abox-firmware-reload.service nuxel-audio-route.service nuxel-wl-fb.service sound.target nuxel-button-manager.service
+Wants=nuxel-wayland.service nuxel-abox-firmware-reload.service nuxel-audio-route.service nuxel-wl-fb.service
+ConditionPathExists=/usr/share/nuxel/assets/nuxel-pow.mp3
+# The sound-cue binary requires a live, read-only route check before playing.
+# It records audibility as unverified; no physical claim is made here.
 
 [Service]
 Type=oneshot
+# --wait polls the SAME read-only checks (calliope MUB0, both DSP1s,
+# every route control, 48 kHz sink, default sink, volume cap) for up to
+# 200 s.  A one-shot --check here failed at 09:35:45Z, 0.1 s after the
+# ABOX reload, before the CS35L41 DSP1 download had finished.
+ExecStartPre=/usr/lib/nuxel/nuxel-audio-route.sh --wait 200
 ExecStart=/usr/libexec/nuxel/nuxel-sound-cue boot
+# The cue process itself repeats the read-only `nuxel-audio-route.sh --check`
+# readiness gate immediately before playback; a stale state file is
+# deliberately NOT sufficient.
 # Playback is diagnostic until the physical route is verified. It must never
 # hold the boot target hostage; nuxel-sound-cue itself bounds a player attempt
 # to 11 seconds and reaps its process group.
-TimeoutStartSec=18
-TimeoutStopSec=6
+# The cue waits (bounded, 180 s inside the program) for the live route check
+# first.  A cold boot needs the ABOX PM reload plus both CS35L41 DSP1 firms to
+# boot; the old 45 s service timeout killed the cue before that could finish,
+# which is exactly what failed on 2026-10-30 09:35:45Z.  pw-play is separately
+# bounded inside nuxel-sound-cue.
+TimeoutStartSec=240
+TimeoutStopSec=10
 StandardOutput=journal
 StandardError=journal
 # Deliberately NOT Restart=always: play once, not on every bridge crash.
 
 [Install]
-# Start only after the launcher unit is active. This places the non-essential
-# cue outside the multi-user critical path so Home becomes usable first.
 WantedBy=nuxel-wayland.service

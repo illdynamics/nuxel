@@ -493,19 +493,40 @@ static int pwctl_volume_get(int *out_pct) {
 }
 
 static int pwctl_volume_step(int dir) {
+  int before = -1;
+  if (!pwctl_volume_get(&before)) {
+    audit("VOLUME_STEP_PIPEWIRE_NO_READBACK dir=%d", dir);
+    return 0;
+  }
+  /* Absolute 5% steps with the SAME safety ceiling the Settings bridge uses.
+   * The old relative `5%+` path ignored volume_cap_percent and let a key press
+   * move the sink from 25% to 30%, above the mandated output ceiling. */
+  int next = before + (dir > 0 ? 5 : -5);
+  if (next > vol_cap_pct) next = vol_cap_pct;
+  if (next < 0) next = 0;
   char cmd[320];
   snprintf(cmd, sizeof cmd,
-           "env " PW_ENV " /usr/bin/wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%%%s",
-           dir > 0 ? "+" : "-");
+           "env " PW_ENV " /usr/bin/wpctl set-volume @DEFAULT_AUDIO_SINK@ %.3f",
+           next / 100.0);
   int rc = system(cmd);
   if (rc != 0) { audit("WPCTL_VOLUME_STEP_FAIL dir=%d rc=%d", dir, rc); return 0; }
   int pct = -1;
   if (pwctl_volume_get(&pct)) {
+    if (pct > vol_cap_pct && dir > 0) {
+      char capcmd[320];
+      snprintf(capcmd, sizeof capcmd,
+               "env " PW_ENV " /usr/bin/wpctl set-volume @DEFAULT_AUDIO_SINK@ %.3f",
+               vol_cap_pct / 100.0);
+      system(capcmd);
+      pwctl_volume_get(&pct);
+      audit("VOLUME_STEP_PIPEWIRE_CAPPED requested=%d cap=%d readback=%d",
+            next, vol_cap_pct, pct);
+    }
     char txt[64];
-    snprintf(txt, sizeof txt, "%d%%", pct);
+    snprintf(txt, sizeof txt, "%d%%%s", pct, pct >= vol_cap_pct ? " (safety cap)" : "");
     osd_publish("volume", txt, pct, 100);
-    publish("VOLUME_SOURCE=pipewire step_percent=5 value=%d", pct);
-    audit("VOLUME_STEP_PIPEWIRE dir=%d percent=%d", dir, pct);
+    publish("VOLUME_SOURCE=pipewire step_percent=5 value=%d cap=%d", pct, vol_cap_pct);
+    audit("VOLUME_STEP_PIPEWIRE dir=%d percent=%d cap=%d", dir, pct, vol_cap_pct);
     cue_volume_preview(pct);
   } else {
     audit("VOLUME_STEP_PIPEWIRE_NO_READBACK dir=%d", dir);

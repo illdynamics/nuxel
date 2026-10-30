@@ -1,0 +1,27 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+=== ROUND 4: temporary audible level 0.90 (matches 2026-10-29 confirmed path), restore 0.25 after ===
+volume_now=Volume: 0.90
+detector_pid=15248 round=4 start=2026-10-30T12:49:26Z
+POW 1 rc=0 at=2026-10-30T12:49:27Z
+POW 2 rc=0 at=2026-10-30T12:49:27Z
+POW 3 rc=0 at=2026-10-30T12:49:27Z
+detector_rc=1
+{
+  "result": "TIMEOUT",
+  "at": 1793364598.2556846,
+  "baseline": "",
+  "last_title": "",
+  "changed_away": false,
+  "at_spi_bus": "unix:path=/run/nuxel-wayland/at-spi/bus"
+}
+=== poll ===
+{"at": 1793364566.3671079, "baseline": "", "editable": true, "focused": true, "showing": true, "title": ""}
+volume_restored=Volume: 0.25

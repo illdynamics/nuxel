@@ -1,0 +1,51 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+2026-10-30T12:33:52Z nuxel-audio-route: READY: calliope=MUB0 dsp1=2/2 route=verified sink=alsa_output.hw_0_1 rate=48000 default=verified volume<=0.25
+detector_pid=12217
+round=1 start=2026-10-30T12:33:53Z
+bash: line 18: bc: command not found
+POW 1 rc=0 at=2026-10-30T12:33:53Z dur=
+POW 2 rc=0 at=2026-10-30T12:33:54Z dur=
+bash: line 18: bc: command not found
+POW 3 rc=0 at=2026-10-30T12:33:54Z dur=
+=== hw_params ===
+access: MMAP_INTERLEAVED
+format: S16_LE
+subformat: STD
+channels: 2
+rate: 48000 (48000/1)
+period_size: 1024
+buffer_size: 32768
+=== status ===
+state: SETUP
+owner_pid   : 6615
+trigger_time: 1335.022097737
+tstamp      : 1335.058370776
+delay       : 0
+avail       : 28678
+avail_max   : 30726
+-----
+hw_ptr      : 16390
+appl_ptr    : 20480
+=== dmesg playback delta ===
+[ 1335.028160] samsung-abox-rdma 18c51100.abox-rdma: abox_rdma_trigger[1](0)
+=== waiting for detector ===
+bash: line 18: bc: command not found
+detector_rc=1
+{
+  "result": "TIMEOUT",
+  "at": 1793363665.2201495,
+  "baseline": "",
+  "last_title": "",
+  "changed_away": false,
+  "at_spi_bus": "unix:path=/run/nuxel-wayland/at-spi/bus"
+}
+=== poll log ===
+{"at": 1793363633.1954207, "baseline": "", "editable": true, "focused": true, "showing": true, "title": ""}

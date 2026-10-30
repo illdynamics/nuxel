@@ -146,8 +146,26 @@ files_only() {
 
     # nuxel-s10 binaries.  The real permissions script is installed under a
     # distinct name because the live path is the early wrapper.
+    #
+    # PWN-40000: this bootstrap runs --files-only on EVERY boot.  The first
+    # revision unconditionally installed its staged nuxel-audio-route.sh and
+    # silently reverted the verified RDMA1 route (and the staged unit file) at
+    # 2026-10-30T09:19Z.  Keep a newer deployed route script, and never replace
+    # a script that contains the proven ABOX RDMA1_EN gate with an older staged
+    # copy that lacks it.  The same content guard applies to the route units.
     for f in nuxel-audio-route.sh nuxel-wifi-up.sh nuxel-charger-mode-recovery.sh; do
-        [ -f "$STAGE/nuxel-s10/bin/$f" ] && inst "$STAGE/nuxel-s10/bin/$f" "/usr/lib/nuxel/$f" 0755 || true
+        src="$STAGE/nuxel-s10/bin/$f"; dst="/usr/lib/nuxel/$f"
+        [ -f "$src" ] || continue
+        if [ "$f" = nuxel-audio-route.sh ] && [ -f "$dst" ] && \
+           grep -q "ABOX RDMA1_EN" "$dst" && ! grep -q "ABOX RDMA1_EN" "$src"; then
+            say "kept proven deployed $dst (staged copy lacks ABOX RDMA1_EN)"
+            continue
+        fi
+        if [ -f "$dst" ] && [ "$dst" -nt "$src" ]; then
+            say "kept newer deployed $dst (stage copy is older)"
+            continue
+        fi
+        inst "$src" "$dst" 0755 || true
     done
     [ -f "$STAGE/nuxel-s10/bin/nuxel-device-permissions.sh" ] && \
         inst "$STAGE/nuxel-s10/bin/nuxel-device-permissions.sh" /usr/lib/nuxel/nuxel-device-permissions.sh.real-36000 0755 || true
@@ -162,7 +180,18 @@ files_only() {
     [ -f "$STAGE/nuxel-s10/bin/nuxel-verify-pwnage36000.sh" ] && \
         inst "$STAGE/nuxel-s10/bin/nuxel-verify-pwnage36000.sh" /usr/local/bin/nuxel-verify-pwnage36000 0755 || true
     for f in "$STAGE"/nuxel-s10/systemd/*.service; do
-        [ -f "$f" ] && inst "$f" "/etc/systemd/system/$(basename "$f")" 0644 || true
+        [ -f "$f" ] || continue
+        dst="/etc/systemd/system/$(basename "$f")"
+        # Never let the boot bootstrap replace a newer live unit (measured
+        # 2026-10-30: it reverted the route unit's 45 s bound and ordering
+        # comments).  Also refuse an empty staged unit: one zero-byte copy
+        # silently masked nuxel-audio-route-retry.service on 2026-10-30.
+        [ -s "$f" ] || { say "skipped empty staged unit $f"; continue; }
+        if [ -f "$dst" ] && [ "$dst" -nt "$f" ]; then
+            say "kept newer deployed $dst (stage copy is older)"
+            continue
+        fi
+        inst "$f" "$dst" 0644 || true
     done
     # SSH allowlist for the owner's current LAN.  Installed as a drop-in so the
     # 26000 Tri-Link policy keeps its public-key-only rules.
@@ -233,10 +262,12 @@ services() {
     run "restart geoclue" systemctl restart geoclue.service
     run "restart wifi" systemctl restart nuxel-wifi.service
     run "start audio route" systemctl start nuxel-audio-route.service
-    # PWNAGE-37000 BUTTERSCOTCH: Wi-Fi is owner-controlled.  nuxel-wifi.service
-    # now only brings up a saved autoconnect profile when the radio is already
-    # enabled; this installer must not re-enable the radio or rewrite profile
-    # autoconnect flags behind the owner's back.
+    # PWNAGE-41000: Wi-Fi is ON by default after every normal boot.
+    # nuxel-wifi.service enables NetworkManager's Wi-Fi radio and verifies the
+    # readback; it does not select profiles, rewrite autoconnect flags, touch
+    # passwords, or start a second supplicant.  A manual OFF is respected until
+    # the next normal boot.  This installer therefore leaves the boot policy to
+    # the unit and never rewrites saved profiles.
     say "bluetooth: $(hciconfig 2>&1 | head -2 | tr '\n' ' ')"
     say "wifi: $(ip -4 -brief addr show wlan0 2>/dev/null | awk '{print $3}')"
     say "audio: $(nuxel-audio-status 2>&1 | tr '\n' ' ')"

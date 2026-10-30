@@ -32,7 +32,11 @@
 // receives the A77 USB-detach truth (UDC speed + wired VBUS vetoes) and the
 // three indicator assets carry a new cache-buster, so a launcher restored from
 // the v44 namespace would keep showing the ghost PC/console penguins.
-const CACHE_VERSION = 'v56-v073-release';
+// v0.2.1 bumps to v58 for the feature/overlay truth pass: the Bluetooth Quick
+// Setting is now tri-state (ON/OFF/UNKNOWN) and reports the real hci0/BlueZ
+// state instead of defaulting to OFF, and the status/manifest feature list
+// names the verified Bluetooth and near-complete audio surface.
+const CACHE_VERSION = 'v58-p021-bluetooth';
 const CACHE_NAME = 'nuxel-home-' + CACHE_VERSION;   // version marker sent to clients
 const STATIC_CACHE = 'nuxel-static-' + CACHE_VERSION;
 const DYNAMIC_CACHE = 'nuxel-dynamic-' + CACHE_VERSION;

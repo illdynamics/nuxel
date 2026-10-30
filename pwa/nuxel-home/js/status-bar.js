@@ -1,4 +1,4 @@
-// Nuxel Status Bar — v0.7.3-beta
+// Nuxel Status Bar — v0.2.1
 //
 // SINGLE SOURCE OF TRUTH (briq-02d).  The handset used to serve a stale
 // v0.3.2 copy of this file while the repo (and the UTM VM) was on v0.4.x, so the
@@ -17,7 +17,7 @@
 class StatusBar {
     // Keep in sync with manifest.json ("nuxel.pwa_version") and sw.js
     // (CACHE_VERSION) - the registry test fails if the three ever diverge.
-    static get VERSION() { return '0.7.3-beta'; }
+    static get VERSION() { return '0.2.1'; }
 
     constructor() {
         this.state = {
@@ -31,6 +31,13 @@ class StatusBar {
             operator: '',
             wifiConnected: false,
             wifiState: 'unavailable',
+            // Bluetooth is a real radio fact, independent of Wi-Fi.  null is
+            // UNKNOWN: the indicator stays hidden until a hardware-backed
+            // reading says the adapter is powered.
+            bluetoothOn: null,
+            bluetoothState: 'unknown',
+            bluetoothDiscovering: false,
+            bluetoothAddress: '',
             batteryLevel: null,
             batteryCharging: false,
             batteryCapacityUah: null,
@@ -48,6 +55,7 @@ class StatusBar {
             time: document.getElementById('status-time'),
             signal: document.getElementById('status-signal'),
             wifi: document.getElementById('status-wifi'),
+            bluetooth: document.getElementById('status-bluetooth'),
             battery: document.getElementById('status-battery'),
             batteryPct: document.getElementById('status-battery-pct'),
         };
@@ -90,6 +98,7 @@ class StatusBar {
         this._hydrateBatteryFromHost();
         this._renderSignal();
         this._renderWifi();
+        this._renderBluetooth();
         this._buildNotificationsUI();
         // A34 TOUCHDOWN: the Quick Settings panel has always listened for
         // `gesture:qs`, but nothing in the launcher ever dispatched it (measured
@@ -100,8 +109,10 @@ class StatusBar {
         // Update local time every second (no bridge needed)
         setInterval(() => this._updateTime(), 1000);
 
-        // Poll phone status every 5 seconds (dev mode)
+        // Poll phone status every 5 seconds (dev mode).  Bluetooth has its own
+        // provider and cadence because phone/status does not carry BlueZ.
         this._pollPhoneStatus();
+        this._pollBluetooth();
         this._pollTimer = setInterval(() => this._pollPhoneStatus(), 10000);
 
         // Poll notifications from the same JSON source (canonical
@@ -113,6 +124,7 @@ class StatusBar {
             this._updateTime();
             this._hydrateBatteryFromHost();
             this._pollPhoneStatus();
+            this._pollBluetooth();
             this._pollNotifications();
         });
 
@@ -200,7 +212,7 @@ class StatusBar {
     // cell and report any intersecting pair.  This is the same geometry the
     // physical panel renders; a PASS means no two indicators share pixels.
     _assertNoOverlap() {
-        const ids = ['status-signal', 'status-wifi', 'status-battery', 'status-battery-pct'];
+        const ids = ['status-signal', 'status-wifi', 'status-bluetooth', 'status-battery', 'status-battery-pct'];
         const boxes = [];
         ids.forEach((id) => {
             const el = document.getElementById(id);
@@ -300,6 +312,60 @@ class StatusBar {
         this.elements.wifi.setAttribute('aria-label', labels[state] || labels.unavailable);
         this.elements.wifi.style.opacity = connected ? '1' : (connecting ? '0.7' : '0.4');
         this.elements.wifi.style.setProperty('--wifi-colour', connected ? '#4CAF50' : (connecting ? '#d9a441' : '#666'));
+    }
+
+    // Bluetooth is drawn only when a real powered adapter is present.  OFF and
+    // UNKNOWN both hide the glyph; the Quick Settings tile carries the detailed
+    // blocker/state.  An unreadable provider never becomes a false OFF.
+    _renderBluetooth() {
+        if (!this.elements.bluetooth) return;
+        const on = this.state.bluetoothOn === true;
+        this.elements.bluetooth.hidden = !on;
+        this.elements.bluetooth.dataset.bluetoothState = this.state.bluetoothState;
+        this.elements.bluetooth.dataset.discovering =
+            this.state.bluetoothDiscovering ? 'true' : 'false';
+        if (!on) {
+            this.elements.bluetooth.replaceChildren();
+            this.elements.bluetooth.setAttribute('aria-label', 'Bluetooth off or unavailable');
+            this._applySafeZones();
+            return;
+        }
+        const label = this.state.bluetoothDiscovering
+            ? 'Bluetooth on, discovering'
+            : 'Bluetooth on';
+        this.elements.bluetooth.setAttribute('aria-label',
+            label + (this.state.bluetoothAddress ? (', ' + this.state.bluetoothAddress) : ''));
+        this.elements.bluetooth.title = label +
+            (this.state.bluetoothAddress ? (' · ' + this.state.bluetoothAddress) : '');
+        this._applySafeZones();
+    }
+
+    async _pollBluetooth() {
+        if (this._displayOff()) return;
+        try {
+            if (typeof bridge === 'undefined' || !bridge.call) return;
+            const st = await bridge.call('bluetooth', 'status', {});
+            if (!st || st.success === false) {
+                // Provider unavailable is UNKNOWN.  Do not keep a stale ON glyph
+                // after a failure, and do not assert OFF either.
+                this.state.bluetoothOn = null;
+                this.state.bluetoothState = 'unavailable';
+                this.state.bluetoothDiscovering = false;
+                this._renderBluetooth();
+                return;
+            }
+            const known = typeof st.powered === 'boolean';
+            this.state.bluetoothOn = known ? st.powered : null;
+            this.state.bluetoothState = st.state || (known ? (st.powered ? 'on' : 'off') : 'unknown');
+            this.state.bluetoothDiscovering = st.discovering === true;
+            this.state.bluetoothAddress = st.adapter_address || '';
+            this._renderBluetooth();
+        } catch (e) {
+            this.state.bluetoothOn = null;
+            this.state.bluetoothState = 'error';
+            this.state.bluetoothDiscovering = false;
+            this._renderBluetooth();
+        }
     }
 
     setBatteryStyle(style) {

@@ -22,6 +22,9 @@ class SoundCueTests(unittest.TestCase):
         (self.root/'assets/nuxel-pow.mp3').write_bytes(b'mock pow')
         (self.root/'mode').write_text('normal\n')
         (self.root/'handoff').write_text(json.dumps({'owner':'anim','stage':'ANIMATION_STOP_REQUESTED'}))
+        route=self.root/'route-ok'
+        route.write_text('#!/bin/sh\nexit 0\n')
+        route.chmod(0o755)
         # Fake decoder merely records the requested PCM scale and path.
         player=self.root/'mpg123'
         player.write_text('#!/usr/bin/env python3\nimport os,sys\nwith open(os.environ["FAKE_PLAYER_LOG"],"a") as f: f.write(" ".join(sys.argv[1:])+"\\n")\n')
@@ -33,6 +36,7 @@ class SoundCueTests(unittest.TestCase):
                        NUXEL_SOUND_MODE=str(self.root/'mode'),
                        NUXEL_SOUND_PLAYER=str(player),
                        NUXEL_SOUND_LOG=str(self.root/'sound.log'),
+                       NUXEL_AUDIO_ROUTE_CHECK=str(self.root/'route-ok'),
                        FAKE_PLAYER_LOG=str(self.root/'player.log'))
     def invoke(self,*args):
         return subprocess.run([sys.executable,str(CUE),*args], env=self.env, text=True,
@@ -44,8 +48,8 @@ class SoundCueTests(unittest.TestCase):
         (self.root/'handoff').write_text(json.dumps({'owner':'ui','stage':'LAUNCHER_DISPLAY_OWNER'}))
         self.assertEqual(self.invoke('boot').returncode,0)
         self.assertEqual(len(self.lines()),1)
-        self.assertIn('-f 14418 ',self.lines()[0])
-        self.assertIn('nuxel-boot-audio.mp3',self.lines()[0])
+        self.assertIn('-f 32768 ',self.lines()[0])
+        self.assertIn('nuxel-pow.mp3',self.lines()[0])
         self.assertEqual(self.invoke('boot').returncode,0)
         self.assertEqual(len(self.lines()),1)
     def test_volume_uses_current_mixer_level_not_duplicate_gain(self):

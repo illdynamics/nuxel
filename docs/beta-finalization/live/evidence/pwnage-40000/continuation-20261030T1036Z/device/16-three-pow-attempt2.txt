@@ -1,0 +1,17 @@
+attempt=2 started=2026-10-30T09:50:44Z
+2026-10-30T09:50:45Z nuxel-audio-route: READY: calliope=MUB0 dsp1=2/2 route=verified sink=alsa_output.hw_0_1 rate=48000 default=verified volume<=0.25
+POW 1 start=2026-10-30T09:50:47Z
+POW 1 rc=0 end=2026-10-30T09:50:47Z
+POW 2 start=2026-10-30T09:50:48Z
+POW 2 rc=0 end=2026-10-30T09:50:49Z
+POW 3 start=2026-10-30T09:50:50Z
+POW 3 rc=0 end=2026-10-30T09:50:50Z
+detector_rc=1
+{
+  "result": "TIMEOUT",
+  "at": 1793354146.2074087,
+  "baseline": "",
+  "last_title": "",
+  "changed_away": false,
+  "at_spi_bus": "unix:path=/run/nuxel-wayland/at-spi/bus"
+}

@@ -1,0 +1,32 @@
+attempt=6 started=2026-10-30T10:19:27Z
+2026-10-30T10:19:28Z nuxel-audio-route: READY: calliope=MUB0 dsp1=2/2 route=verified sink=alsa_output.hw_0_1 rate=48000 default=verified volume<=0.25
+POW 1 rc=0 at=2026-10-30T10:19:31Z
+POW 2 rc=0 at=2026-10-30T10:19:32Z
+POW 3 rc=0 at=2026-10-30T10:19:34Z
+detector_rc=1
+{
+  "result": "TIMEOUT",
+  "at": 1793355809.6672025,
+  "baseline": "",
+  "last_title": "",
+  "changed_away": false,
+  "at_spi_bus": "unix:path=/run/nuxel-wayland/at-spi/bus"
+}
+
+--- poll ---
+{"at": 1793353473.6011138, "baseline": "", "editable": true, "focused": true, "showing": true, "title": ""}
+{"at": 1793353483.9821036, "baseline": "", "editable": true, "focused": true, "showing": true, "title": ""}
+{"at": 1793353534.7631054, "baseline": "", "editable": true, "focused": true, "showing": true, "title": ""}
+{"at": 1793353846.2418623, "baseline": "", "editable": true, "focused": true, "showing": true, "title": ""}
+{"at": 1793354787.5223851, "baseline": "", "editable": true, "focused": true, "showing": true, "title": ""}
+{"at": 1793355170.9827788, "baseline": "", "editable": true, "focused": true, "showing": true, "title": ""}
+{"at": 1793355569.4727104, "baseline": "", "editable": true, "focused": true, "showing": true, "title": ""}
+--- result ---
+{
+  "result": "TIMEOUT",
+  "at": 1793355809.6672025,
+  "baseline": "",
+  "last_title": "",
+  "changed_away": false,
+  "at_spi_bus": "unix:path=/run/nuxel-wayland/at-spi/bus"
+}

@@ -3,25 +3,26 @@
 
 ![Nuxel](./nuxel.jpg)
 
-**v0.7.3-beta** — _Build the bunker first. Add the rave lights later._
+**v0.2.1** — _Build the bunker first. Add the rave lights later._
 
-> **v0.7.3-beta (2026-10-30).** This release ships **PWNAGE-37000/38000**:
-> the Butterscotch boot-latency work, owner-controlled Wi-Fi, a verified ABOX
-> firmware reload, PipeWire-routed 48 kHz audio with a real Test Audio action,
-> and the first-light splash fix. The release also publishes the exact BOOT
-> image and userspace inventory captured from the physical Galaxy S10+ on
-> 2026-10-30. GNSS remains honestly `BLOCKED_FIRMWARE`; HDMI/DRM, the camera
-> backend, laptop-side file transfer and owner audibility/touch/haptic/
-> microphone acceptance remain open. See
-> [`docs/releases/v0.7.3-beta.md`](docs/releases/v0.7.3-beta.md).
+> **v0.2.1 (2026-10-30).** This is the current-state truth pass. It updates the
+> feature list, launcher overlays and documentation to match the handset:
+> **Bluetooth is confirmed working** (`hci0` registers, the controller powers on,
+> a peer scan succeeds, and Settings can scan/pair/connect); **audio is almost
+> there** (the full ABOX/CS35L41/RDMA1/PipeWire path is verified at 48 kHz, while
+> owner audibility is the remaining check); Wi-Fi is ON by default at boot; and
+> Quick Settings/status/lockscreen overlays distinguish ON, OFF and UNKNOWN
+> instead of inventing an OFF state. See
+> [`docs/features/README.md`](docs/features/README.md) and
+> [`docs/releases/v0.2.1.md`](docs/releases/v0.2.1.md).
 
 > **Samsung S10+ engineering reality.** The active `beyond2lte` port is Fedora
 > 43 aarch64 on Samsung Linux 4.14.253. Its launcher is Nuxel Home in WebKitGTK,
 > running under headless Phoc and presented through the DECON framebuffer
-> screencopy bridge; it is not native DRM/KMS acceleration. A34 captured real
-> finger taps opening Mail and Calendar. Sustained touch navigation, the system
-> keyboard, cold-boot presentation and Power behavior still require owner
-> acceptance for full hardware sign-off in `v0.7.3-beta`; see
+> screencopy bridge; it is not native DRM/KMS acceleration. Real finger taps
+> open apps, Bluetooth works, and the audio route is live. Sustained interaction,
+> physical audibility, microphone capture, camera, GNSS, the cellular modem and
+> full Phosh acceptance remain open for `v0.2.1`; see
 > [`docs/beta-finalization/v0.5.2/RELEASE-VERDICT.md`](docs/beta-finalization/v0.5.2/RELEASE-VERDICT.md).
 
 A hardened, GrapheneOS-spirited **Linux phone operating system** built from
@@ -165,6 +166,38 @@ NUXEL_DEVICE=mustang bash boot/flash.sh --unlock --wipe
 | `firmware/` | Per-device firmware manifests, install/verify, blobs |
 | `ci/` | Build validation |
 | `assets/` | Wallpaper + boot animation |
+
+## What's new in v0.2.1
+
+- **Bluetooth is confirmed working.** The S10+ kernel carries
+  `CONFIG_BT_HCIUART`/H4, `btattach -B /dev/ttySAC1 -P h4` creates `hci0`,
+  BlueZ reports the BCM4375 controller powered, and a 12-second
+  `bluetoothctl scan on` discovers a peer. Settings exposes the real controller,
+  rfkill and adapter state plus bounded scan, pair, connect, disconnect, trust,
+  remove and known-device listing. Every action reports the actual BlueZ
+  readback.
+- **Bluetooth overlays tell the truth.** The Quick Settings tile is now
+  tri-state (ON/OFF/UNKNOWN), shows discovery and the concrete blocker when no
+  adapter exists, and never maps a missing bridge field to OFF. The top status
+  bar and lockscreen have proof-only Bluetooth indicators that light only for a
+  powered adapter; UNKNOWN and OFF both stay dark.
+- **Audio is almost complete.** `nuxel-audio-route.sh` verifies Calliope `MUB0`,
+  both CS35L41 DSP1s (`booted=Y running=Y`), `ABOX RDMA1_EN=1`, the full
+  RDMA1→SPUS→SIFS1→UAIF1 crossbar, `Left/Right AMP PCM Gain=12`, the 48 kHz
+  `alsa_output.hw_0_1` sink and the 25 % volume ceiling. Settings → Sound →
+  **Test Audio**, the boot cue and the volume keys share that route and still
+  report `audible=unverified` until the owner hears it.
+- **Wi-Fi boot and UI state are honest.** NetworkManager remains the only radio
+  owner, enables Wi-Fi after a normal boot and verifies the readback. Quick
+  Settings separates radio ON from network connected, shows UNKNOWN while the
+  bridge starts, and respects a manual OFF for the current session.
+- **Feature and overlay documentation is canonical.** The new
+  [`docs/features/README.md`](docs/features/README.md) lists each function with
+  `WORKING`/`ALMOST`/`PARTIAL`/`BLOCKED` status and its evidence anchor. The
+  PWA manifest feature list, README readiness table, Quick Settings, status bar,
+  lockscreen, native host and bridge provider now describe the same state.
+- **Release tooling.** Launcher cache `v58-p021-bluetooth`; whole-repo lockstep
+  at `v0.2.1`.
 
 ## What's new in v0.7.3-beta
 
@@ -584,23 +617,33 @@ remaining interactive gap. The Moto G7 Power is flashed but still hangs at a
 black screen; the Pixel 10 Pro XL is still a scaffold. The UTM VM demo boots
 (display + network + sound).
 
-## Honest Status — v0.7.3-beta
+## Honest Status — v0.2.1
 
-**S10+ (SM-G975F, beyond2lte) — NUXEL BOOTS AND TOUCH INPUT WORKS.**
+**S10+ (SM-G975F, beyond2lte) — NUXEL BOOTS, TOUCH WORKS AND BLUETOOTH WORKS.**
 S-Boot loads the raw arm64 `Image` with the initramfs embedded, the Fedora 43
 ext4 rootfs mounts, `switch_root` hands over to **systemd 258 as PID 1**, the
 service graph reaches `running`, and the panel shows the boot animation before
 the launcher takes ownership. The **touchscreen produces real finger contact
-events** and they are delivered through evdev → libinput → phoc → WebKit.
-Unlock → Home, the three Tri-Link console entries and app launching are
-physically verified. **Bluetooth scanning cannot work on this kernel**:
-`CONFIG_BT_HCIUART` is not set and `bcm43xx_bluetooth` is only the power/rfkill
-driver, so even with the verified BCM4375 HCD no `hci0` can register. GNSS has
-no firmware/reader, USB-C HDMI needs `CONFIG_DRM` plus a Type-C DP Alt Mode
-stack, and the MADERA `HPOUT1 Digital` unmute path wedges in kernel D-state.
-**Audio inventory and low-volume control are real; audible output still needs
-the owner's physical confirmation.** Camera, radio/modem and the remaining
-sensors stay unproven.
+events** through evdev → libinput → phoc → WebKit. Unlock → Home, app launching
+and the Tri-Link console entries are physically verified.
+
+**Bluetooth is no longer a blocker.** `CONFIG_BT_HCIUART`/H4 and
+`btattach -P h4` register `hci0`; BlueZ reports the controller powered and a
+12-second scan discovers a peer. The bridge, Quick Settings, Settings app,
+status bar and lockscreen all read that same adapter state. Pairing and
+connection actions are implemented and return the real BlueZ result; a specific
+headset/keyboard profile test is still an owner step.
+
+**Audio is almost there.** The ABOX Calliope core reaches `MUB0`, both CS35L41
+DSP1 protection images run, `ABOX RDMA1_EN=1`, the amplifier gain is 12/12, the
+default sink is `alsa_output.hw_0_1` at 48 kHz, `hw_ptr` advances and `pw-play`
+completes with rc=0. The boot cue and Settings **Test Audio** refuse to play
+unless the route passes a live readiness gate. **Physical audibility is still
+not owner-confirmed**, and microphone/headset/USB-C capture is untested.
+
+GNSS has no firmware/reader, USB-C HDMI needs `CONFIG_DRM` plus a Type-C DP Alt
+Mode stack, camera capture has no usable V4L2 node, and the Shannon modem has
+no ModemManager object. Those remain honestly blocked rather than simulated.
 
 **PWNAGE-36000 live fixes were proven on the connected S10+ on 2026-10-28.**
 The ABOX boot-done hard-IRQ panic is patched and the rebuilt BOOT image stayed
@@ -621,29 +664,31 @@ and an `INSTALLED-IMAGES.json` provenance manifest. The separately built
 is explicitly labelled as such: it is not byte-identical to the installed
 image. See
 [`docs/a61-penguin-eyes/INSTALLED-IMAGE-RELEASE.md`](docs/a61-penguin-eyes/INSTALLED-IMAGE-RELEASE.md)
-and [`docs/releases/v0.7.3-beta.md`](docs/releases/v0.7.3-beta.md).
+and [`docs/releases/v0.2.1.md`](docs/releases/v0.2.1.md).
 
 | Area | Score | Notes |
 |---|---|---|
 | Design/docs | 85% | Architecture, security model, PWA spec, three device bundles, plus the A25–A34 hardware evidence set |
 | Repo structure | 90% | Legacy scratch trees and duplicate guides removed; canonical images only |
-| PWA apps | 75% | PWNAGE-31000..38000 ships preload cinema, keyboard/navigation, connection modes, the app repairs and the boot/audio fixes; physical app interaction and hardware acceptance remain open |
+| PWA apps | 78% | Preload cinema, keyboard/navigation, connection modes, Feature-status docs, Bluetooth/audio/Wi-Fi overlays and app repairs ship; physical app interaction and hardware acceptance remain open |
 | Flatpak app model | 20% | Manifests + launcher exist (`pwa/flatpak/`, `org.nuxel.Platform`); runtime not built or integration-tested |
-| Native GTK apps | 30% | C source exists; not yet proven end-to-end in the phone UI |
-| D-Bus bridge/portal | 55% | Bridge persistence, mail transport and provider routes are live; deeper portal integration is still partial |
+| Native GTK apps | 32% | C source exists; Bluetooth/audio providers are live, but full end-to-end native app acceptance is open |
+| D-Bus bridge/portal | 60% | Bridge persistence, Bluetooth/audio/Wi-Fi providers, mail transport and runtime state publication are live; deeper portal integration is still partial |
 | Sandbox/security | 25% | Configs exist; enforcement is not wired end-to-end |
 | Build system | 90% | Fail-closed CI builds the current boot image and **compiles the current userspace from repo sources**; artifact verification is content-based and the release also ships the captured phone bytes |
 | Flashable images | 90% | S10+ boot + Fedora rootfs and G7 Power lk2nd/boot/rootfs are byte-verified on hardware; S10+ boots |
 | Pixel 10 Pro XL (mustang) | 5% | UART/initramfs-level only; no boot artifact yet |
-| Galaxy S10+ (beyond2lte) | 90% | **Boots Nuxel; touchscreen works; clickable UI is the remaining gate.** Display, animation, launcher, systemd service graph and single framebuffer owner are proven. Sound is expected but unproven; radio/camera/sensors/Phosh remain open |
+| Galaxy S10+ (beyond2lte) | 92% | **Boots Nuxel; touchscreen works; Bluetooth is verified working.** Display, animation, launcher, systemd service graph and single framebuffer owner are proven. Audio software path is verified but physical audibility is pending; radio/camera/sensors/Phosh remain open |
 | Moto G7 Power (ocean) | 40% | Images flashed (lk2nd + boot + ext4 rootfs); still hangs at a black/flashy screen |
 | UTM VM | 70% | Boots Fedora 43 + Phosh at 720×1440 with working network and **audio** (local, gitignored artifact) |
 
-**Overall: ~72% MVP.** One of three phones (S10+) boots a Nuxel-built image,
-its display path is live, and its **touchscreen delivers real contacts**; the
-phone is not yet a usable interactive device because clicking/navigation is not
-signed off. G7 Power still hangs at a black screen; mustang is UART/initramfs
-level only. The UTM VM demo boots and works (display, network, sound).
+**Overall: ~74% MVP.** One of three phones (S10+) boots a Nuxel-built image,
+its display path is live, its touchscreen delivers real contacts, and Bluetooth
+now registers, powers and scans. The main remaining daily-driver gaps are
+physical audio confirmation, camera/GNSS/modem bring-up and sustained app
+interaction. G7 Power still hangs at a black screen; mustang is
+UART/initramfs level only. The UTM VM demo boots and works (display, network,
+sound).
 
 ### What this repo IS:
 - A well-documented architecture blueprint for a Linux phone OS
@@ -674,8 +719,8 @@ level only. The UTM VM demo boots and works (display, network, sound).
   + the Fedora 43 ARM64 rootfs) is flashed, boots, and its userspace is live.
 
 ### What this repo IS NOT YET:
-- A fully interactive phone: S10+ clicking/navigation is not yet signed off and
-  audio is expected but unproven.
+- A fully interactive phone: S10+ sustained app interaction is not fully signed
+  off, and speaker audibility/microphone capture are not owner-confirmed.
 - A flashable Pixel ROM (`mustang` has no boot artifact yet)
 - A daily-driver phone
 - A built Flatpak PWA runtime
@@ -831,7 +876,8 @@ The other two bring-up targets are the **Samsung Galaxy S10+** (Exynos 9820,
 
 | Document | Description |
 |---|---|
-| [CHANGELOG.md](CHANGELOG.md) | Release notes — everything from v0.1.0 to v0.7.3-beta + readiness |
+| [CHANGELOG.md](CHANGELOG.md) | Release notes — everything from v0.1.0 to v0.2.1 + readiness |
+| [docs/features/README.md](docs/features/README.md) | Canonical feature-status matrix with evidence anchors |
 | [prompts/QUICKSTART.md](prompts/QUICKSTART.md) | Get running in 5 minutes |
 | [design/nuxel-linux-phone-design.md](design/nuxel-linux-phone-design.md) | Design bible — the full vision |
 | [design/Nuxel Phone OS Project Plan and Architecture.md](design/Nuxel%20Phone%20OS%20Project%20Plan%20and%20Architecture.md) | Technical architecture + component map |

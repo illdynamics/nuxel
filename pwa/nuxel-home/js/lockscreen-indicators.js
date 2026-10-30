@@ -17,7 +17,7 @@
 (function (global) {
   'use strict';
 
-  var VERSION = 'a77.1';
+  var VERSION = 'p021';
   var SAFETY_MS = 3000;
   var API_PATH = 'http://127.0.0.1:8080/api/v1/system/indicators';
   var ICONS = {
@@ -27,7 +27,8 @@
     serial: '/assets/nuxel-console-serial.png?v=p34000',
     usbConsole: '/assets/nuxel-console-usb.png?v=p34000',
     wlan: '/assets/nuxel-console-wlan.png?v=p34000',
-    fileTransfer: '/assets/nuxel-file-transfer.png?v=p34000'
+    fileTransfer: '/assets/nuxel-file-transfer.png?v=p34000',
+    bluetooth: '/assets/nuxel-quicksettings-icon-pack/04-bluetooth.png?v=p021'
   };
 
   function el(id) { return global.document ? global.document.getElementById(id) : null; }
@@ -40,6 +41,10 @@
     var transports = data.console_transports || {};
     var transfer = data.file_transfer || {};
     var mode = data.connection_mode || {};
+    var bt = data.bluetooth || {};
+    // null is UNKNOWN (provider absent/bridge still starting); only an explicit
+    // boolean may turn the proof-only indicator on or off.
+    var btPowered = (bt.powered === true || bt.powered === false) ? bt.powered : null;
     return {
       externalPower: Boolean(charging.external_power),
       charging: Boolean(charging.charging),
@@ -49,6 +54,8 @@
       usbConsole: Boolean((transports.usb || {}).active),
       wlanConsole: Boolean((transports.wlan || {}).active),
       fileTransfer: Boolean(transfer.active),
+      bluetooth: btPowered,
+      bluetoothDiscovering: Boolean(bt.discovering),
       modeSelected: String(mode.selected || transfer.selected || 'charging'),
       modeBusy: Boolean(mode.transition_in_progress),
       sources: {
@@ -58,7 +65,8 @@
         serial: String((transports.serial || {}).source || ''),
         usbConsole: String((transports.usb || {}).source || ''),
         wlan: String((transports.wlan || {}).source || ''),
-        transfer: String(transfer.source || '')
+        transfer: String(transfer.source || ''),
+        bluetooth: String(bt.source || '')
       }
     };
   }
@@ -72,6 +80,8 @@
            a.usbConsole === b.usbConsole &&
            a.wlanConsole === b.wlanConsole &&
            a.fileTransfer === b.fileTransfer &&
+           a.bluetooth === b.bluetooth &&
+           a.bluetoothDiscovering === b.bluetoothDiscovering &&
            a.modeSelected === b.modeSelected &&
            a.modeBusy === b.modeBusy &&
            a.sources.power === b.sources.power &&
@@ -80,7 +90,8 @@
            a.sources.serial === b.sources.serial &&
            a.sources.usbConsole === b.sources.usbConsole &&
            a.sources.wlan === b.sources.wlan &&
-           a.sources.transfer === b.sources.transfer;
+           a.sources.transfer === b.sources.transfer &&
+           a.sources.bluetooth === b.sources.bluetooth;
   }
 
   /* Calls fn with a value or a rejection handler, without relying on optional
@@ -108,7 +119,8 @@
       serial: el('lockscreen-transport-serial'),
       usb: el('lockscreen-transport-usb'),
       wlan: el('lockscreen-transport-wlan'),
-      fileTransfer: el('lockscreen-file-transfer')
+      fileTransfer: el('lockscreen-file-transfer'),
+      bluetooth: el('lockscreen-bluetooth')
     };
     this.modeButton = el('lockscreen-connection-mode');
     this.modeOverlay = el('connection-mode-overlay');
@@ -116,8 +128,10 @@
     this.state = {
       externalPower: false, charging: false, pcConnected: false, liveConsole: false,
       serialConsole: false, usbConsole: false, wlanConsole: false,
-      fileTransfer: false, modeSelected: 'charging', modeBusy: false,
-      sources: { power: '', usb: '', live: '', serial: '', usbConsole: '', wlan: '', transfer: '' }
+      fileTransfer: false, bluetooth: null, bluetoothDiscovering: false,
+      modeSelected: 'charging', modeBusy: false,
+      sources: { power: '', usb: '', live: '', serial: '', usbConsole: '', wlan: '',
+                 transfer: '', bluetooth: '' }
     };
 
     this._ensureImages();
@@ -139,6 +153,7 @@
       if (!node) return;
       var img = node.querySelector ? node.querySelector('img') : null;
       var icon = key === 'fileTransfer' ? ICONS.fileTransfer :
+                 key === 'bluetooth' ? ICONS.bluetooth :
                  key === 'serial' ? ICONS.serial :
                  key === 'usb' ? ICONS.usbConsole : ICONS.wlan;
       if (img && !img.getAttribute('src')) img.setAttribute('src', icon);
@@ -223,7 +238,8 @@
            last good power-subsystem reading. */
         if (self.state.pcConnected || self.state.liveConsole ||
             self.state.serialConsole || self.state.usbConsole ||
-            self.state.wlanConsole || self.state.fileTransfer) {
+            self.state.wlanConsole || self.state.fileTransfer ||
+            self.state.bluetooth === true) {
           self.state = {
             externalPower: self.state.externalPower,
             charging: self.state.charging,
@@ -233,6 +249,8 @@
             usbConsole: false,
             wlanConsole: false,
             fileTransfer: false,
+            bluetooth: null,
+            bluetoothDiscovering: false,
             modeSelected: self.state.modeSelected,
             modeBusy: false,
             sources: {
@@ -242,7 +260,8 @@
               serial: 'unavailable:read-failed',
               usbConsole: 'unavailable:read-failed',
               wlan: 'unavailable:read-failed',
-              transfer: 'unavailable:read-failed'
+              transfer: 'unavailable:read-failed',
+              bluetooth: 'unavailable:read-failed'
             }
           };
           self._render();
@@ -331,6 +350,19 @@
     this._apply(this.transportEls.usb, 'active', this.state.usbConsole);
     this._apply(this.transportEls.wlan, 'active', this.state.wlanConsole);
     this._apply(this.transportEls.fileTransfer, 'active', this.state.fileTransfer);
+    this._apply(this.transportEls.bluetooth, 'active', this.state.bluetooth === true);
+    if (this.transportEls.bluetooth) {
+      this.transportEls.bluetooth.dataset.bluetoothState =
+        this.state.bluetooth === null ? 'unknown' :
+        (this.state.bluetooth ? 'on' : 'off');
+      this.transportEls.bluetooth.dataset.discovering =
+        this.state.bluetoothDiscovering ? 'true' : 'false';
+      this.transportEls.bluetooth.setAttribute(
+        'aria-label',
+        this.state.bluetooth === null ? 'Bluetooth status unknown' :
+        (this.state.bluetooth ? (this.state.bluetoothDiscovering
+          ? 'Bluetooth on, discovering' : 'Bluetooth on') : 'Bluetooth off'));
+    }
     try {
       if (this.container) {
         this.container.dataset.powerSource = this.state.sources.power;
@@ -342,6 +374,7 @@
         this.transportContainer.dataset.usbSource = this.state.sources.usbConsole;
         this.transportContainer.dataset.wlanSource = this.state.sources.wlan;
         this.transportContainer.dataset.transferSource = this.state.sources.transfer;
+        this.transportContainer.dataset.bluetoothSource = this.state.sources.bluetooth;
       }
     } catch (e) {}
     this._renderModeOverlay();

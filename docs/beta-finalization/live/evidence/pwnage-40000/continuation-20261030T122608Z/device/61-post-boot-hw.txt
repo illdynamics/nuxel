@@ -1,0 +1,16 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+S1 hw: closed  | 
+S2 hw: access: MMAP_INTERLEAVED format: S16_LE subformat: STD channels: 2 rate: 48000 (48000/1) period_size: 1024 buffer_size: 32768  | state: SETUP hw_ptr      : 0 
+S3 hw: access: MMAP_INTERLEAVED format: S16_LE subformat: STD channels: 2 rate: 48000 (48000/1) period_size: 1024 buffer_size: 32768  | state: RUNNING hw_ptr      : 7182 
+S4 hw: access: MMAP_INTERLEAVED format: S16_LE subformat: STD channels: 2 rate: 48000 (48000/1) period_size: 1024 buffer_size: 32768  | state: RUNNING hw_ptr      : 13362 
+S5 hw: access: MMAP_INTERLEAVED format: S16_LE subformat: STD channels: 2 rate: 48000 (48000/1) period_size: 1024 buffer_size: 32768  | state: SETUP hw_ptr      : 16388 
+S6 hw: access: MMAP_INTERLEAVED format: S16_LE subformat: STD channels: 2 rate: 48000 (48000/1) period_size: 1024 buffer_size: 32768  | state: SETUP hw_ptr      : 16388 
+done

@@ -89,19 +89,23 @@ def test_audio_route_uses_real_control_names():
                  "ABOX SPUS IN1", "ABOX SPUS OUT1", "ABOX SIFS1",
                  "ABOX UAIF1 SPK", "ABOX SIFS1 OUT Switch", "ABOX UAIF1 Switch"):
         assert good in script
-    # The old probe/controls never existed on the beyond-madera card, so the
-    # script must not attempt an amixer read/write against them.
-    assert "cget name='ABOX RDMA1_EN'" not in script
-    assert "cset name='ABOX RDMA1_EN'" not in script
+    # PWNAGE-40000: ABOX RDMA1_EN DOES exist (numid=1031, enum Off/On) on the
+    # live beyond-madera card.  With it Off, hw_ptr advances but ABOX clocks no
+    # samples into SPUS.  Pin the mandatory gate by name; never by numid.
+    assert "ABOX RDMA1_EN" in script
+    assert "RDMA1 gate on" in script
     assert "cset name='ABOX RDMA0_EN'" not in script
     assert "Left AMP Enable Switch' on" in script
-    assert "cset name='ABOX UAIF1 SPK' 2" in script
+    assert "'ABOX UAIF1 SPK' 2" in script
+    assert "'ABOX RDMA1_EN' 1" in script
 
 
 def test_audio_route_service_keeps_bounded_timeout():
     unit = _read(ROOT / "services" / "nuxel-s10" / "systemd" / "nuxel-audio-route.service")
-    assert "TimeoutStartSec=30" in unit
+    # Bounded, but long enough for the verified ABOX cold-boot PM cycle.
+    assert "TimeoutStartSec=45" in unit
     assert "Restart=no" in unit
+    assert "After=sound.target\n" in unit
 
 
 # ── GNSS power-rail probe wiring ───────────────────────────────────────────

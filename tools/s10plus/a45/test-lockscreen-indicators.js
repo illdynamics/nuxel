@@ -49,6 +49,12 @@ function harness(payload) {
     'lockscreen-indicator-charging': makeNode('lockscreen-indicator-charging'),
     'lockscreen-indicator-usb': makeNode('lockscreen-indicator-usb'),
     'lockscreen-indicator-live': makeNode('lockscreen-indicator-live'),
+    'lockscreen-transports': makeNode('lockscreen-transports'),
+    'lockscreen-transport-serial': makeNode('lockscreen-transport-serial'),
+    'lockscreen-transport-usb': makeNode('lockscreen-transport-usb'),
+    'lockscreen-transport-wlan': makeNode('lockscreen-transport-wlan'),
+    'lockscreen-file-transfer': makeNode('lockscreen-file-transfer'),
+    'lockscreen-bluetooth': makeNode('lockscreen-bluetooth'),
   };
   const intervals = [];
   let listens = 0;
@@ -213,6 +219,47 @@ async function flush() { for (let i = 0; i < 12; i++) await Promise.resolve(); }
     check('a failed read leaves usb dim', !h.nodes['lockscreen-indicator-usb'].classList.contains('active'));
     check('a failed read leaves console dim', !h.nodes['lockscreen-indicator-live'].classList.contains('active'));
     ind.stop();
+  }
+
+  // Bluetooth is a proof-only transport indicator: powered=true lights it,
+  // powered=false and an absent/unknown provider both leave it dim, and the
+  // explicit UNKNOWN state is visible to the UI/tests.
+  {
+    const on = harness({
+      charging: {}, usb_data: {}, live_console: {},
+      bluetooth: { powered: true, state: 'on', discovering: true, source: 'bridge:BluetoothGetStatus' },
+    });
+    const indOn = new on.sandbox.NuxelLockscreenIndicators();
+    indOn.start();
+    await flush();
+    const btOn = on.nodes['lockscreen-bluetooth'];
+    check('powered Bluetooth lights the lockscreen indicator', btOn.classList.contains('active'));
+    check('Bluetooth discovery is exposed on the indicator', btOn.dataset.discovering === 'true');
+    check('Bluetooth indicator names its state', btOn.dataset.bluetoothState === 'on');
+    indOn.stop();
+
+    const off = harness({
+      charging: {}, usb_data: {}, live_console: {},
+      bluetooth: { powered: false, state: 'off', source: 'bridge:BluetoothGetStatus' },
+    });
+    const indOff = new off.sandbox.NuxelLockscreenIndicators();
+    indOff.start();
+    await flush();
+    check('explicit Bluetooth OFF leaves the indicator dim',
+          !off.nodes['lockscreen-bluetooth'].classList.contains('active'));
+    check('explicit Bluetooth OFF is distinguishable from unknown',
+          off.nodes['lockscreen-bluetooth'].dataset.bluetoothState === 'off');
+    indOff.stop();
+
+    const unknown = harness({ charging: {}, usb_data: {}, live_console: {} });
+    const indUnknown = new unknown.sandbox.NuxelLockscreenIndicators();
+    indUnknown.start();
+    await flush();
+    check('missing Bluetooth provider leaves the indicator dim, not OFF',
+          !unknown.nodes['lockscreen-bluetooth'].classList.contains('active'));
+    check('missing Bluetooth provider reports UNKNOWN',
+          unknown.nodes['lockscreen-bluetooth'].dataset.bluetoothState === 'unknown');
+    indUnknown.stop();
   }
 
   console.log('\n' + (failures ? failures + ' FAILURES' : 'ALL PASS'));

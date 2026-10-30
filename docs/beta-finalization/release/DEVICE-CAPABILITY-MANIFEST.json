@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-10-16T21:02:28+0200",
+  "generated_at": "2026-10-30T16:00:00+0100",
   "tool": "tools/beta/validate-capability-manifest.py",
-  "version": "v0.5.2-beta",
+  "version": "v0.2.1",
   "git_head": "94d68b13e64ed195e0c3f3f6d2e21a07f3ae3b19",
   "scope": "Galaxy S10+ (SM-G975F / beyond2lte / Exynos 9820) Nuxel beta candidate",
   "device": {
@@ -249,13 +249,22 @@
       "blocked_by": null,
       "evidence": [
         "configs/nuxel/bluetooth/bluetooth.json",
-        "configs/nuxel/bluetooth/main.conf.d/60-nuxel.conf"
+        "configs/nuxel/bluetooth/main.conf.d/60-nuxel.conf",
+        "docs/s10plus-live-fixes-20261028.md",
+        "docs/beta-finalization/live/PWNAGE-39000-TODO.md",
+        "pwa/nuxel-home/js/qs.js",
+        "services/nuxel-bridge/src/bridge.py",
+        "services/nuxel-bridge/src/hw_providers.py"
       ],
       "hardware_evidence": [
-        "rfkill: bcm43xx Bluetooth Soft blocked: yes"
+        "nuxel-bluetooth.service active; btattach -B /dev/ttySAC1 -P h4 -S 115200",
+        "/sys/class/bluetooth/hci0 -> .../ttySAC1/hci0",
+        "Controller 43:75:B1:00:1F:AC (public), Powered: yes",
+        "12 s bluetoothctl scan discovered peer 67:BC:9D:9D:37:7F",
+        "kernel CONFIG_BT_HCIUART=y + HCIUART_H4=y"
       ],
-      "owner_action": "Enable Bluetooth and pair a known headset/phone; checklist section 11",
-      "notes": "A Bluetooth controller exists in the kernel (rfkill entry 'bcm43xx Bluetooth') but it is SOFT BLOCKED and no BlueZ service was observed running in the live preflight, so no scan, pair, profile or reconnection claim can be made yet. Real pairing needs a second device, which is an owner step."
+      "owner_action": "The controller, scan and Settings actions are verified. Pair/connect a specific headset or keyboard and report the profile result.",
+      "notes": "Bluetooth is confirmed working on the S10+: HCIUART/H4 plus btattach register hci0, BlueZ powers the BCM4375 controller, and a bounded scan discovers peers. The bridge exposes a tri-state provider (ON/OFF/UNKNOWN), and the Quick Settings, status bar, lockscreen and Settings app read that same state without fabricating OFF. Pairing/connect/disconnect/trust/remove are implemented and return the real BlueZ result; one concrete peer/profile acceptance remains an owner step, which is why the evidence-gated row stays NEEDS_OWNER_TEST."
     },
     {
       "id": "modem_sim",
@@ -890,9 +899,9 @@
     "Touch controller: present in hardware, deliberately NOT initialised in LPM/charger mode; no touch evdev node in the last boot.",
     "Display: no DRM/KMS; DECON framebuffer with a userspace Wayland->fb bridge; ABGR8888 proven in the commit path.",
     "Wi-Fi: brcmfmac enumerates (phy0, wlan0/wlan1/p2p0) and is unblocked but DOWN; association unproven.",
-    "Bluetooth: controller present (bcm43xx) but soft-blocked; no BlueZ service observed running.",
+    "Bluetooth: CONFIRMED WORKING. HCIUART/H4 + btattach register hci0, the controller is powered and a bounded scan discovers a peer; a specific headset/keyboard profile remains an owner check.",
     "Modem: Shannon net devices exposed (rmnet0-7, umts_dm0, mcps0); ModemManager finds no modem object.",
-    "Audio: beyond-madera / abox_vdma / abox_dump cards registered; pipewire, wireplumber and alsa-utils absent; audibility unproven.",
+    "Audio: ALMOST COMPLETE. Calliope MUB0, both CS35L41 DSP1s, RDMA1_EN=1, gain 12/12, a 48 kHz sink and advancing hw_ptr are verified; pw-play succeeds. Physical audibility and capture are not owner-confirmed.",
     "Haptics: /sys/class/timed_output/vibrator present (owner must feel it).",
     "Torch: /sys/class/leds/torch-sec1 present; RGB notification LED not proven (NOT_SUPPORTED_ON_DEVICE for per-colour config).",
     "Sensors: grip_sensor, ssp_context, hall, certify_hall as evdev sources; no confirmed IIO motion/light/proximity device.",

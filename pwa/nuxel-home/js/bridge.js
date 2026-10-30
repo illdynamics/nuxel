@@ -68,12 +68,16 @@
         getPhoneStatus: async function () {
             try { return await shared().call('phone', 'status', { app_id: this.appId }); }
             catch (e) {
-                // A bridge outage is not evidence for a battery percentage or
-                // charge state.  Keep it unknown until a hardware-backed path
-                // (HTTP bridge or NuxelHost) returns a valid reading.
+                // A bridge outage is not evidence for a battery percentage,
+                // charge state, or radio state.  Keep all of them unknown until
+                // a hardware-backed path returns a valid reading.  An empty
+                // network object is deliberate: consumers must not turn a
+                // missing wifi_enabled field into a false OFF.
                 return {
+                    success: false,
+                    unavailable: true,
                     modem: { connected: false },
-                    network: { connected: false },
+                    network: {},
                     battery: { available: false, level: null, charging: false },
                 };
             }

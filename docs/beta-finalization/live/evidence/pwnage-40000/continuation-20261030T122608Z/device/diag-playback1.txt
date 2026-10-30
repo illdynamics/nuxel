@@ -1,0 +1,105 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+=== asset ===
+-rw-r--r-- 1 root root 6103 Oct 19 16:02 /usr/share/nuxel/assets/nuxel-pow.mp3
+a46429a8accf09fb1dc2f95b397e8d3f7795354579e366ce43fab6456190a670  /usr/share/nuxel/assets/nuxel-pow.mp3
+=== sink before ===
+31	alsa_output.hw_0_1	PipeWire	s16le 2ch 48000Hz	SUSPENDED
+=== default ===
+alsa_output.hw_0_1
+=== volume ===
+Volume: 0.25
+dmesg_before=8223
+pwplay_pid=11135
+SAMPLE 1 hw: closed 
+SAMPLE 1 status: closed 
+SAMPLE 2 hw: closed 
+SAMPLE 2 status: state: OPEN owner_pid   : 6615 trigger_time: 0.000000000 tstamp      : 0.000000000 delay       : 0 avail       : 0 avail_max   : 0 ----- hw_ptr      : 0 appl_ptr    : 0 
+SAMPLE 3 hw: access: MMAP_INTERLEAVED format: S16_LE subformat: STD channels: 2 rate: 48000 (48000/1) period_size: 1024 buffer_size: 32768 
+SAMPLE 3 status: state: RUNNING owner_pid   : 6615 trigger_time: 1125.899688579 tstamp      : 1125.931328271 delay       : 3044 avail       : 29724 avail_max   : 29724 ----- hw_ptr      : 1052 appl_ptr    : 4096 
+SAMPLE 4 hw: access: MMAP_INTERLEAVED format: S16_LE subformat: STD channels: 2 rate: 48000 (48000/1) period_size: 1024 buffer_size: 32768 
+SAMPLE 4 status: state: RUNNING owner_pid   : 6615 trigger_time: 1125.899688579 tstamp      : 1125.997764964 delay       : 4062 avail       : 28706 avail_max   : 29758 ----- hw_ptr      : 4130 appl_ptr    : 8192 
+SAMPLE 5 hw: access: MMAP_INTERLEAVED format: S16_LE subformat: STD channels: 2 rate: 48000 (48000/1) period_size: 1024 buffer_size: 32768 
+SAMPLE 5 status: state: RUNNING owner_pid   : 6615 trigger_time: 1125.899688579 tstamp      : 1126.062292963 delay       : 3036 avail       : 29732 avail_max   : 30720 ----- hw_ptr      : 7204 appl_ptr    : 10240 
+SAMPLE 6 hw: access: MMAP_INTERLEAVED format: S16_LE subformat: STD channels: 2 rate: 48000 (48000/1) period_size: 1024 buffer_size: 32768 
+SAMPLE 6 status: state: RUNNING owner_pid   : 6615 trigger_time: 1125.899688579 tstamp      : 1126.127692656 delay       : 4056 avail       : 28712 avail_max   : 30720 ----- hw_ptr      : 10280 appl_ptr    : 14336 
+SAMPLE 7 hw: access: MMAP_INTERLEAVED format: S16_LE subformat: STD channels: 2 rate: 48000 (48000/1) period_size: 1024 buffer_size: 32768 
+SAMPLE 7 status: state: RUNNING owner_pid   : 6615 trigger_time: 1125.899688579 tstamp      : 1126.193383425 delay       : 3026 avail       : 29742 avail_max   : 30722 ----- hw_ptr      : 13358 appl_ptr    : 16384 
+SAMPLE 8 hw: access: MMAP_INTERLEAVED format: S16_LE subformat: STD channels: 2 rate: 48000 (48000/1) period_size: 1024 buffer_size: 32768 
+SAMPLE 8 status: state: SETUP owner_pid   : 6615 trigger_time: 1126.248748310 tstamp      : 1126.270951886 delay       : 0 avail       : 28674 avail_max   : 30722 ----- hw_ptr      : 16386 appl_ptr    : 20480 
+SAMPLE 9 hw: access: MMAP_INTERLEAVED format: S16_LE subformat: STD channels: 2 rate: 48000 (48000/1) period_size: 1024 buffer_size: 32768 
+SAMPLE 9 status: state: SETUP owner_pid   : 6615 trigger_time: 1126.248748310 tstamp      : 1126.334707886 delay       : 0 avail       : 28674 avail_max   : 0 ----- hw_ptr      : 16386 appl_ptr    : 20480 
+SAMPLE 10 hw: access: MMAP_INTERLEAVED format: S16_LE subformat: STD channels: 2 rate: 48000 (48000/1) period_size: 1024 buffer_size: 32768 
+SAMPLE 10 status: state: SETUP owner_pid   : 6615 trigger_time: 1126.248748310 tstamp      : 1126.401443194 delay       : 0 avail       : 28674 avail_max   : 0 ----- hw_ptr      : 16386 appl_ptr    : 20480 
+SAMPLE 11 hw: access: MMAP_INTERLEAVED format: S16_LE subformat: STD channels: 2 rate: 48000 (48000/1) period_size: 1024 buffer_size: 32768 
+SAMPLE 11 status: state: SETUP owner_pid   : 6615 trigger_time: 1126.248748310 tstamp      : 1126.465140194 delay       : 0 avail       : 28674 avail_max   : 0 ----- hw_ptr      : 16386 appl_ptr    : 20480 
+SAMPLE 12 hw: access: MMAP_INTERLEAVED format: S16_LE subformat: STD channels: 2 rate: 48000 (48000/1) period_size: 1024 buffer_size: 32768 
+SAMPLE 12 status: state: SETUP owner_pid   : 6615 trigger_time: 1126.248748310 tstamp      : 1126.533482771 delay       : 0 avail       : 28674 avail_max   : 0 ----- hw_ptr      : 16386 appl_ptr    : 20480 
+SAMPLE 13 hw: access: MMAP_INTERLEAVED format: S16_LE subformat: STD channels: 2 rate: 48000 (48000/1) period_size: 1024 buffer_size: 32768 
+SAMPLE 13 status: state: SETUP owner_pid   : 6615 trigger_time: 1126.248748310 tstamp      : 1126.598290771 delay       : 0 avail       : 28674 avail_max   : 0 ----- hw_ptr      : 16386 appl_ptr    : 20480 
+SAMPLE 14 hw: access: MMAP_INTERLEAVED format: S16_LE subformat: STD channels: 2 rate: 48000 (48000/1) period_size: 1024 buffer_size: 32768 
+SAMPLE 14 status: state: SETUP owner_pid   : 6615 trigger_time: 1126.248748310 tstamp      : 1126.664503578 delay       : 0 avail       : 28674 avail_max   : 0 ----- hw_ptr      : 16386 appl_ptr    : 20480 
+SAMPLE 15 hw: access: MMAP_INTERLEAVED format: S16_LE subformat: STD channels: 2 rate: 48000 (48000/1) period_size: 1024 buffer_size: 32768 
+SAMPLE 15 status: state: SETUP owner_pid   : 6615 trigger_time: 1126.248748310 tstamp      : 1126.733538694 delay       : 0 avail       : 28674 avail_max   : 0 ----- hw_ptr      : 16386 appl_ptr    : 20480 
+SAMPLE 16 hw: access: MMAP_INTERLEAVED format: S16_LE subformat: STD channels: 2 rate: 48000 (48000/1) period_size: 1024 buffer_size: 32768 
+SAMPLE 16 status: state: SETUP owner_pid   : 6615 trigger_time: 1126.248748310 tstamp      : 1126.803686386 delay       : 0 avail       : 28674 avail_max   : 0 ----- hw_ptr      : 16386 appl_ptr    : 20480 
+SAMPLE 17 hw: access: MMAP_INTERLEAVED format: S16_LE subformat: STD channels: 2 rate: 48000 (48000/1) period_size: 1024 buffer_size: 32768 
+SAMPLE 17 status: state: SETUP owner_pid   : 6615 trigger_time: 1126.248748310 tstamp      : 1126.867017386 delay       : 0 avail       : 28674 avail_max   : 0 ----- hw_ptr      : 16386 appl_ptr    : 20480 
+SAMPLE 18 hw: access: MMAP_INTERLEAVED format: S16_LE subformat: STD channels: 2 rate: 48000 (48000/1) period_size: 1024 buffer_size: 32768 
+SAMPLE 18 status: state: SETUP owner_pid   : 6615 trigger_time: 1126.248748310 tstamp      : 1126.929481001 delay       : 0 avail       : 28674 avail_max   : 0 ----- hw_ptr      : 16386 appl_ptr    : 20480 
+SAMPLE 19 hw: access: MMAP_INTERLEAVED format: S16_LE subformat: STD channels: 2 rate: 48000 (48000/1) period_size: 1024 buffer_size: 32768 
+SAMPLE 19 status: state: SETUP owner_pid   : 6615 trigger_time: 1126.248748310 tstamp      : 1126.991493655 delay       : 0 avail       : 28674 avail_max   : 0 ----- hw_ptr      : 16386 appl_ptr    : 20480 
+SAMPLE 20 hw: access: MMAP_INTERLEAVED format: S16_LE subformat: STD channels: 2 rate: 48000 (48000/1) period_size: 1024 buffer_size: 32768 
+SAMPLE 20 status: state: SETUP owner_pid   : 6615 trigger_time: 1126.248748310 tstamp      : 1127.055374732 delay       : 0 avail       : 28674 avail_max   : 0 ----- hw_ptr      : 16386 appl_ptr    : 20480 
+SAMPLE 21 hw: access: MMAP_INTERLEAVED format: S16_LE subformat: STD channels: 2 rate: 48000 (48000/1) period_size: 1024 buffer_size: 32768 
+SAMPLE 21 status: state: SETUP owner_pid   : 6615 trigger_time: 1126.248748310 tstamp      : 1127.119545963 delay       : 0 avail       : 28674 avail_max   : 0 ----- hw_ptr      : 16386 appl_ptr    : 20480 
+SAMPLE 22 hw: access: MMAP_INTERLEAVED format: S16_LE subformat: STD channels: 2 rate: 48000 (48000/1) period_size: 1024 buffer_size: 32768 
+SAMPLE 22 status: state: SETUP owner_pid   : 6615 trigger_time: 1126.248748310 tstamp      : 1127.183602347 delay       : 0 avail       : 28674 avail_max   : 0 ----- hw_ptr      : 16386 appl_ptr    : 20480 
+SAMPLE 23 hw: access: MMAP_INTERLEAVED format: S16_LE subformat: STD channels: 2 rate: 48000 (48000/1) period_size: 1024 buffer_size: 32768 
+SAMPLE 23 status: state: SETUP owner_pid   : 6615 trigger_time: 1126.248748310 tstamp      : 1127.247514886 delay       : 0 avail       : 28674 avail_max   : 0 ----- hw_ptr      : 16386 appl_ptr    : 20480 
+SAMPLE 24 hw: access: MMAP_INTERLEAVED format: S16_LE subformat: STD channels: 2 rate: 48000 (48000/1) period_size: 1024 buffer_size: 32768 
+SAMPLE 24 status: state: SETUP owner_pid   : 6615 trigger_time: 1126.248748310 tstamp      : 1127.313183770 delay       : 0 avail       : 28674 avail_max   : 0 ----- hw_ptr      : 16386 appl_ptr    : 20480 
+SAMPLE 25 hw: access: MMAP_INTERLEAVED format: S16_LE subformat: STD channels: 2 rate: 48000 (48000/1) period_size: 1024 buffer_size: 32768 
+SAMPLE 25 status: state: SETUP owner_pid   : 6615 trigger_time: 1126.248748310 tstamp      : 1127.377290463 delay       : 0 avail       : 28674 avail_max   : 0 ----- hw_ptr      : 16386 appl_ptr    : 20480 
+SAMPLE 26 hw: access: MMAP_INTERLEAVED format: S16_LE subformat: STD channels: 2 rate: 48000 (48000/1) period_size: 1024 buffer_size: 32768 
+SAMPLE 26 status: state: SETUP owner_pid   : 6615 trigger_time: 1126.248748310 tstamp      : 1127.438737193 delay       : 0 avail       : 28674 avail_max   : 0 ----- hw_ptr      : 16386 appl_ptr    : 20480 
+SAMPLE 27 hw: access: MMAP_INTERLEAVED format: S16_LE subformat: STD channels: 2 rate: 48000 (48000/1) period_size: 1024 buffer_size: 32768 
+SAMPLE 27 status: state: SETUP owner_pid   : 6615 trigger_time: 1126.248748310 tstamp      : 1127.502943193 delay       : 0 avail       : 28674 avail_max   : 0 ----- hw_ptr      : 16386 appl_ptr    : 20480 
+SAMPLE 28 hw: access: MMAP_INTERLEAVED format: S16_LE subformat: STD channels: 2 rate: 48000 (48000/1) period_size: 1024 buffer_size: 32768 
+SAMPLE 28 status: state: SETUP owner_pid   : 6615 trigger_time: 1126.248748310 tstamp      : 1127.566908501 delay       : 0 avail       : 28674 avail_max   : 0 ----- hw_ptr      : 16386 appl_ptr    : 20480 
+SAMPLE 29 hw: access: MMAP_INTERLEAVED format: S16_LE subformat: STD channels: 2 rate: 48000 (48000/1) period_size: 1024 buffer_size: 32768 
+SAMPLE 29 status: state: SETUP owner_pid   : 6615 trigger_time: 1126.248748310 tstamp      : 1127.632779655 delay       : 0 avail       : 28674 avail_max   : 0 ----- hw_ptr      : 16386 appl_ptr    : 20480 
+SAMPLE 30 hw: access: MMAP_INTERLEAVED format: S16_LE subformat: STD channels: 2 rate: 48000 (48000/1) period_size: 1024 buffer_size: 32768 
+SAMPLE 30 status: state: SETUP owner_pid   : 6615 trigger_time: 1126.248748310 tstamp      : 1127.694328424 delay       : 0 avail       : 28674 avail_max   : 0 ----- hw_ptr      : 16386 appl_ptr    : 20480 
+SAMPLE 31 hw: access: MMAP_INTERLEAVED format: S16_LE subformat: STD channels: 2 rate: 48000 (48000/1) period_size: 1024 buffer_size: 32768 
+SAMPLE 31 status: state: SETUP owner_pid   : 6615 trigger_time: 1126.248748310 tstamp      : 1127.757170885 delay       : 0 avail       : 28674 avail_max   : 0 ----- hw_ptr      : 16386 appl_ptr    : 20480 
+SAMPLE 32 hw: access: MMAP_INTERLEAVED format: S16_LE subformat: STD channels: 2 rate: 48000 (48000/1) period_size: 1024 buffer_size: 32768 
+SAMPLE 32 status: state: SETUP owner_pid   : 6615 trigger_time: 1126.248748310 tstamp      : 1127.820299693 delay       : 0 avail       : 28674 avail_max   : 0 ----- hw_ptr      : 16386 appl_ptr    : 20480 
+SAMPLE 33 hw: access: MMAP_INTERLEAVED format: S16_LE subformat: STD channels: 2 rate: 48000 (48000/1) period_size: 1024 buffer_size: 32768 
+SAMPLE 33 status: state: SETUP owner_pid   : 6615 trigger_time: 1126.248748310 tstamp      : 1127.883261616 delay       : 0 avail       : 28674 avail_max   : 0 ----- hw_ptr      : 16386 appl_ptr    : 20480 
+SAMPLE 34 hw: access: MMAP_INTERLEAVED format: S16_LE subformat: STD channels: 2 rate: 48000 (48000/1) period_size: 1024 buffer_size: 32768 
+SAMPLE 34 status: state: SETUP owner_pid   : 6615 trigger_time: 1126.248748310 tstamp      : 1127.945980962 delay       : 0 avail       : 28674 avail_max   : 0 ----- hw_ptr      : 16386 appl_ptr    : 20480 
+SAMPLE 35 hw: access: MMAP_INTERLEAVED format: S16_LE subformat: STD channels: 2 rate: 48000 (48000/1) period_size: 1024 buffer_size: 32768 
+SAMPLE 35 status: state: SETUP owner_pid   : 6615 trigger_time: 1126.248748310 tstamp      : 1128.012448577 delay       : 0 avail       : 28674 avail_max   : 0 ----- hw_ptr      : 16386 appl_ptr    : 20480 
+SAMPLE 36 hw: access: MMAP_INTERLEAVED format: S16_LE subformat: STD channels: 2 rate: 48000 (48000/1) period_size: 1024 buffer_size: 32768 
+SAMPLE 36 status: state: SETUP owner_pid   : 6615 trigger_time: 1126.248748310 tstamp      : 1128.074084039 delay       : 0 avail       : 28674 avail_max   : 0 ----- hw_ptr      : 16386 appl_ptr    : 20480 
+SAMPLE 37 hw: access: MMAP_INTERLEAVED format: S16_LE subformat: STD channels: 2 rate: 48000 (48000/1) period_size: 1024 buffer_size: 32768 
+SAMPLE 37 status: state: SETUP owner_pid   : 6615 trigger_time: 1126.248748310 tstamp      : 1128.135067308 delay       : 0 avail       : 28674 avail_max   : 0 ----- hw_ptr      : 16386 appl_ptr    : 20480 
+SAMPLE 38 hw: access: MMAP_INTERLEAVED format: S16_LE subformat: STD channels: 2 rate: 48000 (48000/1) period_size: 1024 buffer_size: 32768 
+SAMPLE 38 status: state: SETUP owner_pid   : 6615 trigger_time: 1126.248748310 tstamp      : 1128.197388308 delay       : 0 avail       : 28674 avail_max   : 0 ----- hw_ptr      : 16386 appl_ptr    : 20480 
+SAMPLE 39 hw: access: MMAP_INTERLEAVED format: S16_LE subformat: STD channels: 2 rate: 48000 (48000/1) period_size: 1024 buffer_size: 32768 
+SAMPLE 39 status: state: SETUP owner_pid   : 6615 trigger_time: 1126.248748310 tstamp      : 1128.261719077 delay       : 0 avail       : 28674 avail_max   : 0 ----- hw_ptr      : 16386 appl_ptr    : 20480 
+SAMPLE 40 hw: access: MMAP_INTERLEAVED format: S16_LE subformat: STD channels: 2 rate: 48000 (48000/1) period_size: 1024 buffer_size: 32768 
+SAMPLE 40 status: state: SETUP owner_pid   : 6615 trigger_time: 1126.248748310 tstamp      : 1128.324984808 delay       : 0 avail       : 28674 avail_max   : 0 ----- hw_ptr      : 16386 appl_ptr    : 20480 
+=== pwplay out ===
+PWPLAY_RC=0
+=== dmesg delta ===
+=== sink after ===
+31	alsa_output.hw_0_1	PipeWire	s16le 2ch 48000Hz	IDLE
