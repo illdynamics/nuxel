@@ -72,7 +72,11 @@
 #define FSM_JSON     "/etc/nuxel/input/button-fsm.json"
 #define GATE_JSON    "/etc/nuxel/buttons/reboot-gate.json"
 #define POLICY_JSON  "/var/lib/nuxel/reboot/policy.json"
-#define GATE_STATE   "/var/lib/nuxel/buttons/reboot-gate.json"
+#define GATE_STATE   "/var/lib/nuxel/reboot/last-reboot"
+/* The manager state file is /var/lib/nuxel/buttons (a FILE).  The gate
+ * bookkeeping therefore lives in its own directory: a path below a regular
+ * file can never be created, and the old value made every write fail. */
+#define GATE_STATE_DIR "/var/lib/nuxel/reboot"
 #define AUDIO_JSON   "/etc/nuxel/audio/audio.json"
 #define BRINGUP_FLAG "/var/lib/nuxel/audio/bringup-incomplete"
 #define CTRL_FIFO    "/run/nuxel-buttons.cmd"
@@ -450,7 +454,7 @@ static void cue_volume_preview(int pct) {
   int64_t now = now_ms();
   if (last_cue_ms && now - last_cue_ms < 500) return;
   last_cue_ms = now;
-  char b[8];
+  char b[16];
   snprintf(b, sizeof b, "%d", pct);
   pid_t pid = fork();
   if (pid < 0) { audit("VOLUME_CUE_FORK_FAILED errno=%d", errno); return; }
@@ -645,8 +649,10 @@ static void verbose_boot_note_once(void) {
 }
 
 /* The ONLY place a userspace reboot/power-off is ever executed, and it executes
- * nothing unless the gate allows it. No other path in this program can reboot. */
-static int gated_system_action(const char *what) {
+ * nothing unless the gate allows it.  `pre_exec` (optional) runs AFTER the gate
+ * allows the action and BEFORE the systemctl job is forked, so a one-shot boot
+ * flag is always on disk before the reboot can begin. */
+static int gated_system_action_pre(const char *what, void (*pre_exec)(void *), void *arg) {
   int is_poweroff = (strstr(what, "poweroff") != NULL);
   const char *reason = NULL;
   int ok = nuxel_fsm_gate_decide(&GATE, is_poweroff, (int64_t)time(NULL), &reason);
@@ -659,9 +665,10 @@ static int gated_system_action(const char *what) {
   audit("REBOOT_ALLOWED action=%s reason=%s -> executing through the userspace path", what, reason);
   publish("REBOOT_ALLOWED action=%s reason=%s", what, reason);
   /* record the attempt so the min-interval rule can see it */
-  mkdir("/var/lib/nuxel/buttons", 0755);
+  mkdir(GATE_STATE_DIR, 0755);
   FILE *f = fopen(GATE_STATE, "w");
   if (f) { fprintf(f, "%lld\n", (long long)time(NULL)); fclose(f); }
+  if (pre_exec) pre_exec(arg);
   pid_t pid = fork();
   if (pid == 0) {
     execl("/usr/bin/systemctl", "systemctl", is_poweroff ? "poweroff" : "reboot", (char *)NULL);
@@ -670,18 +677,28 @@ static int gated_system_action(const char *what) {
   return 1;
 }
 
-static void reboot_mode_once(const char *flagpath, const char *what) {
-  int allowed = gated_system_action(what);
-  if (!allowed) return;
+static int gated_system_action(const char *what) {
+  return gated_system_action_pre(what, NULL, NULL);
+}
+
+/* Runs inside the gate chokepoint BEFORE `systemctl reboot` is forked. */
+static void reboot_mode_write_flag(void *arg) {
+  const char *flagpath = (const char *)arg;
   mkdir(BOOT_FLAG_DIR, 0755);
   FILE *f = fopen(flagpath, "w");
   if (f) {
-    fprintf(f, "requested_by=nuxel-button-manager at=%lld reason=%s\n",
-            (long long)time(NULL), what);
+    fprintf(f, "requested_by=nuxel-button-manager at=%lld\n", (long long)time(NULL));
     fclose(f);
   }
+  sync();
   audit("REBOOT_MODE_ONCE flag=%s", flagpath);
   publish("REBOOT_MODE_ONCE flag=%s", flagpath);
+}
+
+static void reboot_mode_once(const char *flagpath, const char *what) {
+  /* The flag MUST exist before the reboot job starts: writing it after the fork
+     raced systemd and the one-shot consumer could miss it. */
+  gated_system_action_pre(what, reboot_mode_write_flag, (void *)flagpath);
 }
 
 static void live_console_toggle(void) {
@@ -743,13 +760,11 @@ static void perform(const char *action, const char *source) {
   if (!strcmp(action, "reboot-debug"))     { reboot_mode_once(REBOOT_DEBUG_FLAG, "systemctl-reboot"); return; }
   if (!strcmp(action, "live-console-toggle")) { live_console_toggle(); return; }
   if (!strcmp(action, "open-terminal")) { fifo_send(HOST_FIFO, "open-terminal\n"); return; }
-  /* A34 TOUCHDOWN: the launcher has no back stack, and pwa-host does not
-   * implement `back` (it logged HOST_ACTION_REFUSED back).  The launcher's own
-   * `home` action now dismisses an app iframe, so an edge-back gesture closes
-   * the current app instead of doing nothing.  This is a translation of the
-   * existing gesture, not a new UI or a second compositor. */
-  if (!strcmp(action, "back")) { fifo_send(HOST_FIFO, "action home\n"); return; }
-  if (!strcmp(action, "home") || !strcmp(action, "recents") ||
+  /* `back` is a real launcher action (app history -> in-app back -> Home).
+   * It used to be translated to `home` because the A34 host did not implement
+   * it; the current host does, so the menu Back entry and the edge gesture now
+   * perform an actual Back instead of always jumping Home. */
+  if (!strcmp(action, "back") || !strcmp(action, "home") || !strcmp(action, "recents") ||
       !strcmp(action, "search") || !strcmp(action, "settings") || !strcmp(action, "lock") ||
       !strcmp(action, "screenshot") || !strcmp(action, "camera") || !strcmp(action, "voice-input") ||
       !strcmp(action, "notifications-panel") || !strcmp(action, "all-apps")) {

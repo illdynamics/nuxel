@@ -3,7 +3,11 @@ Description=Nuxel one-shot boot mode consumer (verbose/safe/diag/debug flags)
 Documentation=file:/usr/share/doc/nuxel/
 After=local-fs.target
 Before=nuxel-wayland.service nuxel-ui.service
-ConditionPathExists=/var/lib/nuxel/boot
+# PWNAGE: the flag directory is CREATED by the consumer script.  A
+# ConditionPathExists on it made the unit skip itself whenever the directory did
+# not exist yet (the default state), so the power-menu one-shot reboot flags
+# (verbose / safe / diag / debug) were never consumed.
+ExecStartPre=/bin/mkdir -p /var/lib/nuxel/boot
 
 [Service]
 Type=oneshot

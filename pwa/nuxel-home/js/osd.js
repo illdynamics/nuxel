@@ -41,7 +41,7 @@
       'position:fixed', 'left:50%', 'top:calc(var(--status-bar-height, 36px) + 18px)',
       'transform:translateX(-50%)', 'background:rgba(10,22,40,0.92)',
       'border:1px solid rgba(96,165,250,0.35)', 'border-radius:14px',
-      'padding:10px 16px', 'min-width:132px', 'text-align:center', 'z-index:100001',
+      'padding:10px 16px', 'min-width:132px', 'max-width:86vw', 'text-align:center', 'z-index:100001',
       'color:#e8f0ff', 'font:600 14px/1.35 -apple-system,system-ui,sans-serif',
       'box-shadow:0 2px 4px rgba(0,0,0,0.45)', 'opacity:0',
       'transition:opacity 180ms ease', 'pointer-events:none'
@@ -50,7 +50,7 @@
     return el;
   }
 
-  function show(kind, text, value, max) {
+  function show(kind, text, value, max, holdMs) {
     var e = ensure();
     var label = kind === 'volume' ? 'Volume' : (kind === 'power' ? 'Power' : kind);
     e.innerHTML = '<div style="font-size:11px;letter-spacing:.06em;text-transform:uppercase;' +
@@ -61,7 +61,7 @@
                           Math.max(0, Math.min(100, Math.round((value / max) * 100))) + '%"></div></div>') : '');
     e.style.opacity = '1';
     clearTimeout(hideTimer);
-    hideTimer = setTimeout(function () { e.style.opacity = '0'; }, 1800);
+    hideTimer = setTimeout(function () { e.style.opacity = '0'; }, holdMs || 1800);
   }
 
   function hideMenu() {
@@ -104,7 +104,9 @@
       'border-radius:18px;box-shadow:0 2px 4px rgba(0,0,0,.6);overflow:hidden">' +
       '<div style="padding:14px 16px 10px;font-size:12px;letter-spacing:.08em;' +
       'text-transform:uppercase;color:#9fd0ff;border-bottom:1px solid rgba(96,165,250,.18)">Power</div>' +
-      '<div style="padding:8px">';
+      /* The merged 15-entry menu is taller than the panel on small screens;
+       * the card scrolls, and the selected row is scrolled into view below. */
+      '<div style="padding:8px;max-height:62vh;overflow-y:auto">';
     for (var i = 0; i < entries.length; i++) {
       var e = entries[i] || {};
       var sel = (i === idx);
@@ -127,12 +129,18 @@
 
     var rows = m.querySelectorAll('[data-idx]');
     for (var k = 0; k < rows.length; k++) {
-      (function (ix) {
-        rows[k].addEventListener('click', function (ev) {
+      (function (ix, row) {
+        row.addEventListener('click', function (ev) {
           ev.stopPropagation();
+          // Ask the manager to select this exact row (it owns the FSM index).
           hostAction('menu-select ' + ix);
         });
-      })(parseInt(rows[k].getAttribute('data-idx'), 10));
+      })(parseInt(rows[k].getAttribute('data-idx'), 10), rows[k]);
+    }
+    /* Keep the highlighted row visible without moving the whole page. */
+    var selRow = rows[idx];
+    if (selRow && selRow.scrollIntoView) {
+      try { selRow.scrollIntoView({ block: 'nearest' }); } catch (e) { /* old WebKit */ }
     }
   }
 
@@ -153,7 +161,8 @@
             hideMenu();
             if (j.ts !== lastTs) {
               lastTs = j.ts;
-              if (j.text) show('power', j.text, 0, 0);
+              // A refusal reason is shown as a full-width OSD line, not hidden.
+              if (j.text) show('power', j.text, 0, 0, 7000);
             }
           }
           return;

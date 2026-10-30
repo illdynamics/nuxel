@@ -1,107 +1,143 @@
-# PWNAGE-40000 — FINISH NUXEL AUDIO PROPERLY
-## The Penguin Must POW on Demand and After Every Boot
+# PWNAGE-40000 — FINAL SPEAKER AUDIO FIX
+## Get the S10+ Loudspeaker to Actually POW — and Prove It
 
-**Device:** Samsung Galaxy S10+ SM-G975F / beyond2lte
+**Target:** Samsung Galaxy S10+ SM-G975F / beyond2lte / Exynos 9820
 **OS:** Nuxel, Fedora-based ARM64
-**Connection:** Wi-Fi SSH
-**SSH key:** `~wicked/.ssh/wicked_wqn_id_rsa`
-**Test asset:** `./assets/nuxel-pow.mp3`
+**Connection:** Existing Wi-Fi SSH
+**SSH key:** Use the existing working identity recorded by the latest PWNAGE-40000 deployment. The latest evidence identifies `~/.ssh/wicked_wqn_id_rsa`.
+**Audio asset:** `./assets/nuxel-pow.mp3`
+**Objective:** Actual audible playback through the built-in phone loudspeaker.
 
-## THE IMPORTANT DISCOVERY
+## THE CURRENT STATE — WE ARE CLOSE
 
-We already heard audio during yesterday's experiments: a 440 Hz tone, another diagnostic tone, and multiple POWs. This proves that at least one actual hardware output path has worked. The archive's earlier statement that physical audio was unconfirmed predates that newer human confirmation.
+Previous work has already established:
 
-The repository contains several concrete clues explaining why audio is not reliably persistent:
+- Calliope firmware reaches `MUB0`.
+- Both CS35L41 amplifier DSP1s report booted and running.
+- `ABOX RDMA1_EN=1`.
+- The ABOX RDMA1 → SPUS → SIFS1 → UAIF1 route is configured.
+- Left/Right AMP PCM Gain is persistently set to 12.
+- PipeWire's default sink is `alsa_output.hw_0_1`.
+- The sink and hardware stream use 48 kHz.
+- The RDMA1 hardware pointer advances during playback.
+- The startup cue has been attempted after the boot readiness gate.
 
-### 1. A missing critical mixer control in the checked-in route script
+However, **physical speaker audibility is still not confirmed**.
 
-`services/nuxel-s10/bin/nuxel-audio-route.sh` explicitly says that `ABOX RDMA1_EN` does not exist.
+A successful `pw-play` exit code is not proof that the speaker made sound.
 
-However, the later live evidence `live-audio-evidence-20261029b.txt` records that control as present and OFF. Setting it ON was part of the live routing correction.
+## THE MOST IMPORTANT NEW DISCOVERY
 
-**The checked-in boot script must be reconciled with the proven live route. Do not deploy the stale script over the working live configuration.**
+The live mixer namespace contains:
 
-### 2. A cold-boot ABOX firmware problem
+`ABOX Sound Type`
 
-The ABOX is probed before the root filesystem is mounted. Its Calliope core firmware is therefore unavailable during the initial kernel probe.
+Its enumerated values are:
 
-The userspace suspend/resume workaround sometimes reloads it, but audio must not be considered ready until:
+- `0 = VOICE`
+- `1 = SPEAKER`
+- `2 = HEADSET`
+- `3 = BTVOICE`
+- `4 = USB`
+- `5 = CALLFWD`
 
-`/sys/devices/platform/18c50000.abox/calliope_version` reports `MUB0`.
+The previous PWNAGE-38000 correction selected `0 = VOICE`, even though our current task is to play through the built-in loudspeaker.
 
-### 3. An unreliable audio-ready test
+The current persistent route script does not set or verify this control.
 
-The boot cue currently relies partly on the existence of `/run/nuxel-audio-route.state`, which does not necessarily prove that the route is applied. Its asset existence condition also checks `nuxel-boot-audio.mp3`, while the sound-cue program actually plays `nuxel-pow.mp3`.
+**FIRST TARGETED EXPERIMENT: Set `ABOX Sound Type` to `SPEAKER` (enum value 1), read it back, and perform an actual loudspeaker test.**
 
-Fix the real readiness conditions.
+Do not assume this is the answer until the owner confirms hearing the sound. Preserve the original value and make the change reversible.
 
-### 4. A highly device-specific playback path
+Other confirmed details:
 
-The known working hardware PCM is RDMA1 (`hw:0,1`) at 48 kHz. RDMA0 does not advance its hardware pointer, and the tested RDMA1 44.1 kHz path returns EIO.
+- `Right AMP SPK` maps to the physical SPEAKER output.
+- `Left AMP SPK` maps to the RECEIVER output.
+- Both output DAPM paths have previously been observed ON.
+- `Left/Right AMP PCM Gain=12` corresponds to the previously working `GAIN_CTRL=0x193`.
+- Gain 19 corresponds to the silent cold-boot state `GAIN_CTRL=0x273`.
 
-Preserve the static PipeWire RDMA1 sink and verify the actual runtime sample rate.
+Preserve the verified amplifier gain of 12 unless live measurement establishes a different requirement.
 
-## THE HUMAN CONFIRMATION AGREEMENT
+## OUR HUMAN CONFIRMATION AGREEMENT
 
-I will unlock the phone, open Notes, and leave an empty Title field focused.
+I will have the Nuxel Notes application open with the Title field focused.
 
-You will:
+For every test:
 
-1. Fix and deploy the next audio improvement.
-2. Play `./assets/nuxel-pow.mp3` exactly THREE times, sequentially.
-3. Wait for me to hear it.
-4. Detect the literal word `works` appearing in the currently focused Notes Title field.
-5. Record PASS only when that fresh entry is detected.
-6. If it is not detected, continue diagnosing and fixing without restarting the entire mission.
+1. Announce the test number and what is being tested.
+2. Play `./assets/nuxel-pow.mp3` exactly ONCE.
+3. Give me 30 seconds to hear it and react.
+4. Watch the active Notes Title field.
 
-The Notes implementation already exposes useful interfaces: `#note-title`, the `nuxel-notes` store, and `window.nuxelNotes.app()`. Inspect and use the actual live application model/storage where possible. Do not rely on stale saved text.
+My responses:
 
-**A successful playback command is not confirmation that I heard the sound.**
+- `yes` = I heard it.
+- `works` = I heard it.
+- `no` = I did not hear it.
+- Empty Title for the full 30 seconds = I did not hear it.
 
-## REQUIRED ORDER
+After `yes` or `works`, record a positive human confirmation and stop the repair loop for the current route.
 
-1. Connect over Wi-Fi SSH using the specified key.
-2. Create the TODO and evidence directories.
-3. Compare the running phone's audio configuration with the checked-in repository. Protect any working live configuration.
-4. Establish the Notes `works` detection mechanism.
-5. Repair the actual ABOX/CS35L41 routing, starting with the missing `ABOX RDMA1_EN` configuration.
-6. Fix persistent Calliope firmware readiness and verify `MUB0`.
-7. Verify RDMA1 at 48 kHz, actual PipeWire default-sink selection, and real hardware-pointer progress.
-8. Run the three-POW confirmation loop until the internal speaker is audibly confirmed.
-9. Make all working mixer settings, services, routing and playback persistent.
-10. Make the startup POW run once, only after genuine audio readiness.
-11. Repair Audio Settings → Test Audio and volume feedback to use the same working PipeWire playback path.
-12. Test other physically available output routes.
-13. Reboot, reconnect over Wi-Fi SSH, and repeat the three-POW confirmation after boot.
+After `no` or an empty 30-second response, record a negative test and continue diagnosing and fixing.
 
-## TECHNICAL NON-NEGOTIABLES
+**Do not play another sound during the 30-second response window.**
 
-- Distinguish Samsung ABOX Calliope firmware from the separate CS35L41 amplifier DSP1 protection firmware.
-- Verify both amplifier DSPs are actually booted and running.
-- Do not assume DAPM widgets being ON means the speaker is audible.
-- Do not accept `pw-play` exit code zero as proof of audibility.
-- Check the return value of PipeWire default-sink selection; the current bridge calls `_ensure_default_sink()` but ignores its result.
-- Use `pw-play` through PipeWire when PipeWire owns RDMA1. Do not use a direct ALSA player against a PCM already held by PipeWire.
-- Keep the hardware clock and RDMA1 stream at 48 kHz.
-- Keep a safe output-volume ceiling of 25%. Do not blindly copy amplifier gain values from old captures.
-- Do not fill the S10+ stub UCM profile with invented mixer controls.
-- Do not re-enable `systemd-udevd` blindly.
-- Do not flash firmware, rebuild/replace/flash the kernel, alter the bootloader, or repartition storage without separate explicit authorization.
+Every iteration is one playback, one 30-second response window, one recorded result, and then the next repair.
+
+## IMPORTANT NOTES INPUT PREFLIGHT
+
+Previous PWNAGE-40000 tests failed to observe any Notes keystrokes, even though AT-SPI reported that the Title field was focused, showing and editable.
+
+Before the first audio test:
+
+- Verify the screen is awake.
+- Verify Notes is unlocked and open.
+- Verify the Title field is actually focused.
+- Verify the on-screen keyboard or intended typing device is working.
+- Verify that a fresh title change reaches the live Notes model and storage.
+- Perform a one-time `ready` input preflight and confirm that it is detected.
+- Clear the test Title and establish a fresh empty baseline.
+
+If this cannot be verified, fix the confirmation channel before treating a blank Title as evidence of no sound.
+
+## FIRST FIX PRIORITIES
+
+1. Verify current boot route and preserve the working configuration.
+2. Investigate and test `ABOX Sound Type = SPEAKER (1)`.
+3. Confirm Right AMP → physical SPEAKER routing and stereo channel delivery.
+4. Verify AMP PCM Gain is 12/12, not 19/19.
+5. Verify normal sound mode, unmuted amplifiers and a valid PipeWire sink.
+6. Test `nuxel-pow.mp3` at the current output volume.
+7. If necessary, progressively raise the normal PipeWire sink volume in controlled steps.
+8. Continue one-play / 30-second confirmation iterations until I type `yes` or `works`.
+9. Update the persistent route and readiness checks with the settings that actually produced audible sound.
+10. Reboot only after a working configuration has been confirmed, then repeat the audible test after boot.
+
+## NON-NEGOTIABLES
+
+- Focus ONLY on the internal loudspeaker for this mission.
+- Preserve the correct RDMA1 48 kHz playback path.
+- Use `pw-play` through PipeWire; do not fight PipeWire by opening its occupied PCM directly through ALSA.
+- Use `pw-play --volume 1.0` so there is no accidental second attenuation stage.
+- Preserve CS35L41 DSP1 protection firmware and thermal protections.
+- Do not blindly set amplifier gain to maximum.
+- You are authorized to make the necessary normal userspace, ALSA, mixer, PipeWire, service and source-code changes.
+- You may temporarily increase the normal PipeWire output volume in measured steps during owner-supervised tests.
+- No TWRP reflash.
+- No kernel, boot-image, bootloader or firmware-partition flashing.
+- No destructive reset or repartitioning.
 - Preserve Wi-Fi SSH and recovery access.
+- Do not mark audibility verified until a fresh `yes` or `works` appears in Notes.
 
 ## DEFINITION OF DONE
 
-- The proven live audio route is present in source and deployed configuration.
-- `ABOX RDMA1_EN` and the other required routing controls have correct verified values.
-- The ABOX Calliope core reports `MUB0` on cold boot.
-- CS35L41 DSP1 protection firmware is loaded and running for both amplifiers.
-- RDMA1 operates at 48 kHz, with actual hardware pointer advancement.
-- The internal speaker produces audible POWs confirmed using Notes.
-- Audio survives ending the test process, restarting Nuxel, and rebooting.
-- A single startup POW plays after audio is genuinely ready.
-- Settings Test Audio uses the working playback backend.
-- Volume feedback works without overlapping playback or draining the battery.
-- Other supported outputs are tested honestly; unavailable routes are documented.
-- Final reboot and post-boot audible confirmation pass.
+The internal S10+ loudspeaker must actually produce the Nuxel POW sound.
 
-**This is a persistence and boot-readiness repair, not another temporary audio experiment. Make the working path permanent.** 🐧
+I must hear it and type `yes` or `works` in the Notes Title field.
+
+The configuration must then survive a fresh boot and another successful audible test.
+
+**Do not stop at READY, RUNNING, DMA ADVANCING, or PLAYER_OK. Stop when the speaker makes sound and I confirm it.**
+
+🐧 **MAKE THE PENGUIN POW.**

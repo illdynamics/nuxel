@@ -100,7 +100,7 @@
     "chord_power_volume_down": "screenshot"
   },
   "power_menu": {
-    "comment": "Long-press power opens this menu. It is a real state machine with selection, not a placeholder: the OSD document carries the entries and the highlighted item, and the control FIFO accepts up/down/select so a finger tap or the console can drive it. Recovery and Download-Mode EXIST as entries and can be selected in the offline harness, but execution is hard-refused: the NO FLASHING invariant of this mission forbids entering Download Mode or the bootloader at all.",
+    "comment": "Long-press power opens this menu. It is a real state machine with selection, not a placeholder: the OSD document carries the entries and the highlighted item, and the control FIFO accepts up/down/select so a finger tap or the console can drive it. Restart/Power-off and the one-shot reboot variants are executed only by nuxel-button-manager and only when reboot-gate.json allows them. Recovery and Download-Mode EXIST as entries and can be selected in the offline harness, but execution is hard-refused: the NO FLASHING invariant of this mission forbids entering Download Mode or the bootloader at all.",
     "osd_file": "/usr/share/nuxel/runtime/osd.json",
     "timeout_ms": 15000,
     "comment_timeout": "An untouched open menu closes itself after timeout_ms, so a stray long press can never leave a modal menu on the glass.",
@@ -110,8 +110,7 @@
         "label": "Cancel",
         "action": "menu-close",
         "dispatch": "internal",
-        "trigger_allowed": true,
-        "why": "A34 TOUCHDOWN: explicit cancel, first and initially selected; menu-close only dismisses the overlay."
+        "trigger_allowed": true
       },
       {
         "id": "lock-screen",
@@ -119,7 +118,7 @@
         "action": "lock",
         "dispatch": "host-fifo",
         "trigger_allowed": true,
-        "implemented_by": "launcher host (nuxel-pwa-host) screen-lock"
+        "implemented_by": "launcher host (nuxel-pwa-host) action lock -> launcher _lock()"
       },
       {
         "id": "screenshot",
@@ -127,7 +126,7 @@
         "action": "screenshot",
         "dispatch": "host-fifo",
         "trigger_allowed": true,
-        "implemented_by": "launcher host"
+        "implemented_by": "launcher host (nuxel-pwa-host) action screenshot -> wlr-screencopy PNG into /home/nuxel/Gallery"
       },
       {
         "id": "restart",
@@ -136,7 +135,7 @@
         "dispatch": "userspace",
         "trigger_allowed": true,
         "gate": "/etc/nuxel/buttons/reboot-gate.json",
-        "why_gated": "A userspace reboot is allowed by the mission only after the reboot policy allows it and only with a healthy rollback path. While the owner is absent the gate stays closed by default."
+        "why_gated": "Executed only by nuxel-button-manager after reboot-gate.json allows it (enabled + allow_restart + cooldown + hourly cap + rollback path)."
       },
       {
         "id": "power-off",
@@ -145,7 +144,7 @@
         "dispatch": "userspace",
         "trigger_allowed": true,
         "gate": "/etc/nuxel/buttons/reboot-gate.json",
-        "why_gated": "Powering the handset off with no owner present would strand the mission with no way to turn it back on."
+        "why_gated": "Executed only by nuxel-button-manager after reboot-gate.json allows it (enabled + allow_poweroff + cooldown + rollback path)."
       },
       {
         "id": "reboot-verbose",
@@ -153,7 +152,8 @@
         "action": "reboot-verbose",
         "dispatch": "userspace",
         "trigger_allowed": true,
-        "gate": "/etc/nuxel/buttons/reboot-gate.json"
+        "gate": "/etc/nuxel/buttons/reboot-gate.json",
+        "why_gated": "Writes its one-shot flag BEFORE the gated reboot job is forked, so the flag is always consumed by nuxel-bootmode-oneshot on the next boot."
       },
       {
         "id": "reboot-safe-mode",
@@ -161,7 +161,8 @@
         "action": "reboot-safe-mode",
         "dispatch": "userspace",
         "trigger_allowed": true,
-        "gate": "/etc/nuxel/buttons/reboot-gate.json"
+        "gate": "/etc/nuxel/buttons/reboot-gate.json",
+        "why_gated": "Writes its one-shot flag BEFORE the gated reboot job is forked, so the flag is always consumed by nuxel-bootmode-oneshot on the next boot."
       },
       {
         "id": "reboot-diag",
@@ -169,7 +170,8 @@
         "action": "reboot-diag",
         "dispatch": "userspace",
         "trigger_allowed": true,
-        "gate": "/etc/nuxel/buttons/reboot-gate.json"
+        "gate": "/etc/nuxel/buttons/reboot-gate.json",
+        "why_gated": "Writes its one-shot flag BEFORE the gated reboot job is forked, so the flag is always consumed by nuxel-bootmode-oneshot on the next boot."
       },
       {
         "id": "reboot-debug",
@@ -177,7 +179,8 @@
         "action": "reboot-debug",
         "dispatch": "userspace",
         "trigger_allowed": true,
-        "gate": "/etc/nuxel/buttons/reboot-gate.json"
+        "gate": "/etc/nuxel/buttons/reboot-gate.json",
+        "why_gated": "Writes its one-shot flag BEFORE the gated reboot job is forked, so the flag is always consumed by nuxel-bootmode-oneshot on the next boot."
       },
       {
         "id": "back",
@@ -185,7 +188,7 @@
         "action": "back",
         "dispatch": "host-fifo",
         "trigger_allowed": true,
-        "implemented_by": "launcher system navigation"
+        "implemented_by": "launcher Back: app history -> in-app back -> Home"
       },
       {
         "id": "forward",
@@ -193,7 +196,7 @@
         "action": "forward",
         "dispatch": "host-fifo",
         "trigger_allowed": true,
-        "implemented_by": "foreground PWA history"
+        "implemented_by": "foreground PWA history forward"
       },
       {
         "id": "stop",
@@ -201,7 +204,7 @@
         "action": "stop",
         "dispatch": "host-fifo",
         "trigger_allowed": true,
-        "implemented_by": "foreground PWA document"
+        "implemented_by": "foreground PWA document stop"
       },
       {
         "id": "reload-launcher",
@@ -209,30 +212,26 @@
         "action": "reload-launcher",
         "dispatch": "host-fifo",
         "trigger_allowed": true,
-        "implemented_by": "launcher document"
+        "implemented_by": "launcher document reload (never terminates the host)"
       },
       {
         "id": "recovery",
         "label": "Recovery (Samsung)",
         "action": "enter-recovery",
         "dispatch": "bootloader",
-        "trigger_allowed": false,
-        "refusal": "NO_FLASH_INVARIANT",
-        "why_refused": "Entering Recovery means leaving Linux for the Samsung bootloader. The mission forbids triggering Recovery/Download Mode. The entry is implemented so the menu is complete and so the refusal is observable, never to be used."
+        "trigger_allowed": false
       },
       {
         "id": "download-mode",
         "label": "Download Mode (Odin)",
         "action": "enter-download-mode",
         "dispatch": "bootloader",
-        "trigger_allowed": false,
-        "refusal": "NO_FLASH_INVARIANT",
-        "why_refused": "Download Mode exists only to flash. This mission performs no flashing of any kind; the entry is present for completeness and is refused, and nothing in this tool ever opens a bootloader interface."
+        "trigger_allowed": false
       }
     ]
   },
   "reboot_gate": {
-    "comment": "Very long press (>= very_long_min_ms) opens the reboot class, but the action only executes when this gate allows it. The gate is closed by default. bg-09 (integration/release) owns the reboot policy; when /var/lib/nuxel/reboot/policy.json exists and carries allow_reboot: true, that file is honoured in addition to this one.",
+    "comment": "Very long press (>= very_long_min_ms) opens the reboot class, but the action only executes when the gate allows it. The shipped gate is OPEN because the owner explicitly requested a working power menu; the cooldown (min_interval_s) and the hourly cap (max_reboots_per_hour) remain the protective limits. bg-09 (integration/release) owns the reboot policy; when /var/lib/nuxel/reboot/policy.json exists and carries allow_reboot: true, that file is honoured in addition to this one.",
     "config": "/etc/nuxel/buttons/reboot-gate.json",
     "policy_source": "/var/lib/nuxel/reboot/policy.json",
     "state_file": "/var/lib/nuxel/buttons/reboot-gate.json",
@@ -291,7 +290,8 @@
     "control_fifo": "/run/nuxel-buttons.cmd",
     "display_fifo": "/run/nuxel-wl-fb.cmd",
     "host_fifo": "/run/nuxel-pwa-host.cmd",
-    "offline_replay": "nuxel-button-manager --fsm-sim <trace.json> (replays a recorded event trace through the REAL state machine)"
+    "offline_replay": "nuxel-button-manager --fsm-sim <trace.json> (replays a recorded event trace through the REAL state machine)",
+    "gate_state_file": "/var/lib/nuxel/reboot/last-reboot"
   },
   "volume_hold": {
     "comment": "A volume HOLD is the long-press class (a panel), not a key repeat. The A32 autorepeat cadence is preserved, not deleted: remap volume_up_long/volume_down_long to the *-autorepeat actions, or set volume_repeat_enabled=1, and the 400 ms / 250 ms cadence runs exactly as A32 did.",

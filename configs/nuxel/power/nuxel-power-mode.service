@@ -5,6 +5,10 @@ After=local-fs.target systemd-udev-settle.service
 Wants=systemd-udev-settle.service
 # One-shot and harmless: it re-applies the profile the owner chose, then exits.
 # It never touches the reboot gate and never powers the device off.
+# PWNAGE: the tool is installed at /usr/local/bin/nuxel-power-diag.sh (see
+# tools/beta/live/deploy-manifest.json).  The old /usr/libexec/nuxel path does
+# not exist on the handset, so the unit failed to start and the chosen battery
+# mode was silently not re-applied on the next boot.
 ConditionPathExists=/etc/nuxel/power/power.json
 
 [Service]
@@ -14,8 +18,8 @@ Environment=NUXEL_POWER_NO_BLOCK=1
 # `apply` reads power.json, maps the persisted profile to a REAL governor and a
 # cgroup weight, refuses to write anything not listed in the policy, and logs
 # what it observed. Exit 0 even when no knob is writable (the report says so).
-ExecStart=/usr/libexec/nuxel/nuxel-power-diag.sh apply-persisted
-ExecStartPost=/usr/libexec/nuxel/nuxel-power-diag.sh report --quiet
+ExecStart=/usr/local/bin/nuxel-power-diag.sh apply-persisted
+ExecStartPost=/usr/local/bin/nuxel-power-diag.sh report --quiet
 Nice=5
 # Only the runtime knobs named in power.json are ever written; the unit carries
 # no partition, block-device or bootloader surface (NO FLASHING invariant).

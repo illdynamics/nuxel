@@ -30,7 +30,8 @@ import urllib.request
 from datetime import datetime
 from pathlib import Path
 
-WORD = re.compile(r'(?<!\w)works(?!\w)', re.IGNORECASE)
+POSITIVE = re.compile(r'(?<!\w)(?:yes|works)(?!\w)', re.IGNORECASE)
+NEGATIVE = re.compile(r'(?<!\w)no(?!\w)', re.IGNORECASE)
 API = os.environ.get('NUXEL_API_URL', 'http://127.0.0.1:8080/api/v1/rpc')
 
 
@@ -239,7 +240,21 @@ def main():
                 changed_away = True
             fresh = (state is not None and state != baseline) or (changed_away and state == baseline)
             if title and title['focused'] and title['showing'] and title['editable'] \
-                    and fresh and WORD.search(state or ''):
+                    and fresh and NEGATIVE.search((state or '').strip()):
+                result = {
+                    'result': 'NEGATIVE', 'at': time.time(), 'title': state,
+                    'baseline': baseline, 'changed_away': changed_away,
+                    'focused': True, 'showing': True, 'editable': True,
+                    'on_change': last_event_at > 0,
+                    'at_spi_bus': os.environ.get('AT_SPI_BUS_ADDRESS'),
+                    'applications': apps,
+                    'evidence': 'owner typed no: no audible sound',
+                }
+                result_path.write_text(json.dumps(result, indent=2) + '\n')
+                print(json.dumps(result))
+                return 3
+            if title and title['focused'] and title['showing'] and title['editable'] \
+                    and fresh and POSITIVE.search((state or '').strip()):
                 # The app autosaves about one second after input.  Wait briefly
                 # for the bridge store to corroborate the same fresh Title.
                 matched = None
@@ -270,7 +285,7 @@ def main():
                     'store_detail': detail,
                     'at_spi_bus': os.environ.get('AT_SPI_BUS_ADDRESS'),
                     'applications': apps,
-                    'evidence': 'live focused Title contains the whole word works '
+                    'evidence': 'live focused Title contains yes/works '
                                 'and is fresh relative to the baseline',
                 }
                 result_path.write_text(json.dumps(result, indent=2) + '\n')

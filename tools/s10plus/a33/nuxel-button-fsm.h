@@ -263,12 +263,12 @@ static const nuxel_fsm_menu_entry nuxel_fsm_menu[] = {
   { "cancel",        "Cancel",            "menu-close",            1, NULL },
   { "lock-screen",   "Lock screen",       "lock",                  1, NULL },
   { "screenshot",    "Take screenshot",   "screenshot",            1, NULL },
-  { "restart",       "Restart",           "systemctl-reboot",      1, "gate-closed-owner-absent" },
-  { "power-off",     "Power off",         "systemctl-poweroff",    1, "gate-closed-owner-absent" },
-  { "reboot-verbose","Reboot Verbose",    "reboot-verbose",        1, "gate-closed-owner-absent" },
-  { "reboot-safe-mode","Safe Mode",       "reboot-safe-mode",      1, "gate-closed-owner-absent" },
-  { "reboot-diag",   "Reboot Diag",       "reboot-diag",           1, "gate-closed-owner-absent" },
-  { "reboot-debug",  "Reboot Debug",      "reboot-debug",          1, "gate-closed-owner-absent" },
+  { "restart",       "Restart",           "systemctl-reboot",      1, "reboot-gate-refused" },
+  { "power-off",     "Power off",         "systemctl-poweroff",    1, "reboot-gate-refused" },
+  { "reboot-verbose","Reboot Verbose",    "reboot-verbose",        1, "reboot-gate-refused" },
+  { "reboot-safe-mode","Safe Mode",       "reboot-safe-mode",      1, "reboot-gate-refused" },
+  { "reboot-diag",   "Reboot Diag",       "reboot-diag",           1, "reboot-gate-refused" },
+  { "reboot-debug",  "Reboot Debug",      "reboot-debug",          1, "reboot-gate-refused" },
   /* Browser-style controls deliberately live here, not in a long-press menu
    * on the wallpaper.  They operate only on the foreground PWA; Reload
    * launcher is explicit and never terminates the launcher process. */
