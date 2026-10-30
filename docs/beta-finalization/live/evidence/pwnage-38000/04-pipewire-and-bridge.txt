@@ -1,0 +1,217 @@
+== PipeWire/wpctl status ==
+PipeWire 'pipewire-0' [1.4.11, root@fedora, cookie:3242368449]
+ └─ Clients:
+        33. WirePlumber                         [1.4.11, root@fedora, pid:5923]
+        34. pipewire                            [1.4.11, root@fedora, pid:5925]
+        35. wpctl                               [1.4.11, root@2001-1c00-4d09-8a00-162b-e49d-dc7c-4128, pid:25758]
+        47. WirePlumber [export]                [1.4.11, root@fedora, pid:5923]
+
+Audio
+ ├─ Devices:
+ │  
+ ├─ Sinks:
+ │  *   31. S10+ speaker (RDMA1, 44.1 kHz)      [vol: 0.25]
+ │  
+ ├─ Sources:
+ │  
+ ├─ Filters:
+ │  
+ └─ Streams:
+
+Video
+ ├─ Devices:
+ │  
+ ├─ Sinks:
+ │  
+ ├─ Sources:
+ │  
+ ├─ Filters:
+ │  
+ └─ Streams:
+
+Settings
+ └─ Default Configured Devices:
+         0. Audio/Sink    alsa_output_hw_0_1
+== default sink volume ==
+Volume: 0.25
+== audio.status via bridge ==
+{
+  "success": true,
+  "state": "present",
+  "backend": "pipewire",
+  "sound_server": "pipewire",
+  "sound_server_units_present": [
+    "pipewire",
+    "pipewire-pulse",
+    "wireplumber"
+  ],
+  "sound_server_units_active": [
+    "pipewire",
+    "pipewire-pulse",
+    "wireplumber"
+  ],
+  "cards": [
+    {
+      "index": 0,
+      "id": "beyondmadera",
+      "name": "beyond-madera - beyond-madera"
+    },
+    {
+      "index": 1,
+      "id": "aboxvdma",
+      "name": "abox_vdma - abox_vdma"
+    },
+    {
+      "index": 2,
+      "id": "aboxdump",
+      "name": "abox_dump - abox_dump"
+    }
+  ],
+  "playback_devices": [
+    {
+      "card": 0,
+      "device": 0,
+      "id": "RDMA0"
+    },
+    {
+      "card": 0,
+      "device": 1,
+      "id": "RDMA1"
+    },
+    {
+      "card": 0,
+      "device": 2,
+      "id": "RDMA2"
+    },
+    {
+      "card": 0,
+      "device": 3,
+      "id": "RDMA3"
+    },
+    {
+      "card": 0,
+      "device": 4,
+      "id": "RDMA4"
+    },
+    {
+      "card": 0,
+      "device": 6,
+      "id": "RDMA6"
+    },
+    {
+      "card": 0,
+      "device": 7,
+      "id": "RDMA7"
+    },
+    {
+      "card": 0,
+      "device": 8,
+      "id": "RDMA8"
+    },
+    {
+      "card": 0,
+      "device": 9,
+      "id": "RDMA9"
+    },
+    {
+      "card": 0,
+      "device": 10,
+      "id": "RDMA10"
+    },
+    {
+      "card": 0,
+      "device": 11,
+      "id": "RDMA11"
+    },
+    {
+      "card": 0,
+      "device": 22,
+      "id": "DP"
+    }
+  ],
+  "capture_devices": [
+    {
+      "card": 0,
+      "device": 12,
+      "id": "WDMA0"
+    },
+    {
+      "card": 0,
+      "device": 13,
+      "id": "WDMA1"
+    },
+    {
+      "card": 0,
+      "device": 14,
+      "id": "WDMA2"
+    },
+    {
+      "card": 0,
+      "device": 15,
+      "id": "WDMA3"
+    },
+    {
+      "card": 0,
+      "device": 16,
+      "id": "WDMA4"
+    },
+    {
+      "card": 0,
+      "device": 17,
+      "id": "WDMA5"
+    },
+    {
+      "card": 0,
+      "device": 18,
+      "id": "WDMA6"
+    },
+    {
+      "card": 0,
+      "device": 19,
+      "id": "WDMA7"
+    },
+    {
+      "card": 0,
+      "device": 20,
+      "id": "VTS-Trigger"
+    },
+    {
+      "card": 0,
+      "device": 21,
+      "id": "VTS-Record"
+    }
+  ],
+  "volume_cap_percent": 25,
+  "timestamp": 1793276543.1927464,
+  "outputs": [
+    {
+      "id": 31,
+      "description": "S10+ speaker (RDMA1, 44.1 kHz)",
+      "default": true
+    }
+  ],
+  "selected_output": {
+    "id": 31,
+    "description": "S10+ speaker (RDMA1, 44.1 kHz)",
+    "default": true
+  },
+  "capture_sources": [],
+  "volume_control": "pipewire:@DEFAULT_AUDIO_SINK@",
+  "volume_percent": 25,
+  "volume_real_percent": 25,
+  "muted": false,
+  "volume_supported": true,
+  "mute_supported": true,
+  "mute_blocker": null,
+  "unmute_supported": true,
+  "playback_available": true,
+  "detail": "PipeWire default sink: S10+ speaker (RDMA1, 44.1 kHz)"
+}
+TEST {
+  "success": true,
+  "played": true,
+  "detail": "stream linked to default PipeWire sink; bounded PipeWire playback window completed",
+  "route": "pipewire:@DEFAULT_AUDIO_SINK@",
+  "asset": "/usr/share/nuxel/assets/nuxel-pow.mp3",
+  "audible": "unverified"
+}

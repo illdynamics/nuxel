@@ -27,5 +27,11 @@
     "granted_at": 0,
     "portal_type": "bluetooth",
     "source": "first-party-system-grant: Settings Bluetooth scanning (29000)"
+  },
+  "bluetooth:connect": {
+    "duration": "always",
+    "granted_at": 0,
+    "portal_type": "bluetooth",
+    "source": "first-party-system-grant: Settings Bluetooth connect (37000)"
   }
 }

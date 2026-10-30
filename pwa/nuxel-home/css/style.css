@@ -192,7 +192,7 @@ html, body {
     color: var(--text-primary);
     padding: 12px 24px;
     border-radius: var(--button-radius);
-    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.4);
     z-index: 1000;
     animation: slideUp 0.3s ease;
     font-size: 14px;
@@ -444,3 +444,35 @@ body.app-drawer-open #app-grid { animation:nuxel-drawer-enter .22s cubic-bezier(
 @keyframes nuxel-shade-enter { from { opacity:.7; transform:translate3d(0,-18px,0); } to {opacity:1;transform:translate3d(0,0,0);} }
 @keyframes nuxel-drawer-enter { from {opacity:.8;transform:translate3d(0,28px,0)} to {opacity:1;transform:translate3d(0,0,0)} }
 @media(prefers-reduced-motion:reduce){#quick-settings:not(.hidden),body.app-drawer-open #app-grid {animation:none}}
+
+/* App lifecycle hiding must beat the author-level `display: block !important`
+   on .pwa-frame.  A `[hidden]` attribute alone loses to that rule, so a Back
+   press marked the session BACKGROUND but left the iframe (and the Home dock
+   that reappears for BACKGROUND) painted over the app.  Keep a backgrounded,
+   closed or failed app surface fully out of the compositing and hit-test path;
+   one of the Home chrome layers may then own the glass. */
+.pwa-frame[hidden],
+.pwa-frame[data-nuxel-backgrounded="true"],
+body[data-app-state="BACKGROUND"] .pwa-frame,
+body[data-app-state="CLOSED"] .pwa-frame,
+body[data-app-state="FAILED"] .pwa-frame {
+    display: none !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+}
+.pwa-app-bar[hidden],
+.pwa-app-status[hidden],
+body[data-app-state="BACKGROUND"] .pwa-app-bar,
+body[data-app-state="CLOSED"] .pwa-app-bar,
+body[data-app-state="FAILED"] .pwa-app-bar {
+    display: none !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+}
+/* Home chrome is only for Home.  ACTIVE/LAUNCHING were already covered, and
+   the BACKGROUND/CLOSING states above make the rule complete for every
+   lifecycle transition instead of relying on the frame hiding first. */
+body[data-app-state="CLOSING"] #dock,
+body[data-app-state="CLOSING"] #app-grid,
+body[data-app-state="FAILED"] #dock,
+body[data-app-state="FAILED"] #app-grid { display: none; }

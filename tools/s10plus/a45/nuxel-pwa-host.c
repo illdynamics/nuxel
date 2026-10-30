@@ -533,6 +533,82 @@ static int ind_console_service_armed(void) {
   return armed;
 }
 
+/* ---------------------------------------------------------------------------
+ * PWNAGE-34000: independent console transports + file-transfer/mode truth.
+ * Serial is the existing live-console predicate.  WLAN is a reachable key-only
+ * sshd listener on a non-loopback address (with a separate established-session
+ * count so a listening-but-idle console is not mislabelled).  USB network is
+ * blocked on this kernel and is therefore never presented as active.
+ * ------------------------------------------------------------------------- */
+static int ind_json_bool_field(const char *path, const char *key, int *out) {
+  char buf[2048];
+  if (!ind_read_line(path, buf, sizeof buf)) return 0;
+  char pat[80];
+  snprintf(pat, sizeof pat, "\"%s\":", key);
+  char *p = strstr(buf, pat);
+  if (!p) return 0;
+  p += strlen(pat);
+  while (*p == ' ' || *p == '\t') p++;
+  if (!strncmp(p, "true", 4)) { *out = 1; return 1; }
+  if (!strncmp(p, "false", 5)) { *out = 0; return 1; }
+  return 0;
+}
+
+static int ind_json_str_field(const char *path, const char *key, char *out, size_t outn) {
+  char buf[2048];
+  if (!ind_read_line(path, buf, sizeof buf)) return 0;
+  char pat[80];
+  snprintf(pat, sizeof pat, "\"%s\":", key);
+  char *p = strstr(buf, pat);
+  if (!p) return 0;
+  p += strlen(pat);
+  while (*p == ' ' || *p == '\t') p++;
+  if (*p != '"') return 0;
+  p++;
+  size_t i = 0;
+  while (*p && *p != '"' && i + 1 < outn) out[i++] = *p++;
+  out[i] = 0;
+  return 1;
+}
+
+static void ind_ssh_tcp(int *listening, int *established) {
+  *listening = 0;
+  *established = 0;
+  const char *files[] = {"/proc/net/tcp", "/proc/net/tcp6"};
+  for (int fi = 0; fi < 2; fi++) {
+    FILE *f = fopen(files[fi], "r");
+    if (!f) continue;
+    char line[512];
+    int first = 1;
+    while (fgets(line, sizeof line, f)) {
+      if (first) { first = 0; continue; }
+      char *save = NULL;
+      char *sl = strtok_r(line, " \t\n", &save);
+      if (!sl) continue;
+      char *local = strtok_r(NULL, " \t\n", &save);
+      if (!local) continue;
+      char *rem = strtok_r(NULL, " \t\n", &save);
+      if (!rem) continue;
+      char *st = strtok_r(NULL, " \t\n", &save);
+      if (!st) continue;
+      char *colon = strchr(local, ':');
+      if (!colon) continue;
+      int port = (int)strtol(colon + 1, NULL, 16);
+      if (port != 22) continue;
+      size_t alen = (size_t)(colon - local);
+      char addr[40] = {0};
+      if (alen >= sizeof addr) alen = sizeof addr - 1;
+      memcpy(addr, local, alen);
+      int state = (int)strtol(st, NULL, 16);
+      int loop = (strcmp(addr, "0100007F") == 0) ||
+                 (strcmp(addr, "00000000000000000000000001000000") == 0);
+      if (state == 0x0A && !loop) *listening = 1;
+      if (state == 0x01) (*established)++;
+    }
+    fclose(f);
+  }
+}
+
 static void indicators_json(char *out, size_t outn) {
   int external_power = 0, charging = 0;
   ind_power(&external_power, &charging);
@@ -540,6 +616,14 @@ static void indicators_json(char *out, size_t outn) {
   int pc = ind_pc_connected_ex(pcsrc, sizeof pcsrc);
   int live = ind_live_console();
   int armed = ind_console_service_armed();
+  int wlan = 0, ssh_sessions = 0;
+  ind_ssh_tcp(&wlan, &ssh_sessions);
+  int ft_active = 0;
+  ind_json_bool_field("/run/nuxel/usb-mode.state", "active", &ft_active);
+  char mode[32] = "charging";
+  if (!ind_json_str_field("/run/nuxel/connection-mode.json", "mode", mode, sizeof mode)) {
+    strcpy(mode, "charging");
+  }
   int level = -1;
   char levelbuf[32] = "";
   /* Level is informational only; the icon is driven by the booleans. */
@@ -562,8 +646,18 @@ static void indicators_json(char *out, size_t outn) {
   snprintf(out, outn,
     "{\"charging\":{\"external_power\":%d,\"charging\":%d,\"battery_level\":%d,\"source\":\"sysfs\"},"
     "\"usb_data\":{\"pc_connected\":%d,\"source\":\"%s\"},"
-    "\"live_console\":{\"active\":%d,\"service_armed\":%d,\"transport_connected\":%d,\"session_active\":%d,\"source\":\"proc:nuxel-console:tty\"}}",
-    external_power, charging, level, pc, pcsrc, live, armed, pc, live);
+    "\"live_console\":{\"active\":%d,\"service_armed\":%d,\"transport_connected\":%d,\"session_active\":%d,\"source\":\"proc:nuxel-console:tty\"},"
+    "\"console_transports\":{"
+      "\"serial\":{\"active\":%d,\"source\":\"%s\"},"
+      "\"usb\":{\"active\":0,\"source\":\"blocked-kernel-usb-network\",\"sessions\":0},"
+      "\"wlan\":{\"active\":%d,\"source\":\"%s\",\"sessions\":%d}},"
+    "\"file_transfer\":{\"active\":%d,\"selected\":\"%s\",\"endpoint_state\":\"%s\",\"source\":\"%s\",\"error\":null},"
+    "\"connection_mode\":{\"selected\":\"%s\",\"transition_in_progress\":0,\"host_connected\":%d,\"endpoint_state\":\"%s\",\"last_error\":null}}",
+    external_power, charging, level, pc, pcsrc, live, armed, pc, live,
+    live, (live ? "proc:nuxel-console:tty" : "inactive:no-console-session"),
+    wlan, (wlan ? "wlan:sshd-listening" : "inactive:no-ssh-listener"), ssh_sessions,
+    ft_active, mode, (ft_active ? "active" : "inactive"), (ft_active ? "usb-mode-helper" : "unavailable:not-activated"),
+    mode, pc, (ft_active ? "active" : "inactive"));
 }
 
 /* Event-driven refresh: the kernel's kobject uevent stream tells us the exact
@@ -587,17 +681,22 @@ static gboolean ind_push_event(gpointer data) {
 static gboolean ind_uevent_in(GIOChannel *ch, GIOCondition cond, gpointer data) {
   (void)data;
   if (cond & (G_IO_HUP | G_IO_ERR)) return TRUE;
-  char buf[4096];
-  gsize got = 0;
-  GError *err = NULL;
-  if (g_io_channel_read_chars(ch, buf, sizeof buf - 1, &got, &err) != G_IO_STATUS_NORMAL) {
-    if (err) g_error_free(err);
-    return TRUE;
-  }
-  buf[got] = 0;
-  if (strstr(buf, "power_supply") || strstr(buf, "usb") || strstr(buf, "udc") ||
-      strstr(buf, "typec") || strstr(buf, "ttyGS0") || strstr(buf, "dwc3")) {
-    if (!ind_uevent_timeout) ind_uevent_timeout = (guint)g_timeout_add(120, ind_push_event, NULL);
+  /* Drain the whole datagram queue.  A kobject burst used to leave one
+   * GLib callback per datagram, each scheduling the same 120 ms refresh. */
+  for (;;) {
+    char buf[4096];
+    gsize got = 0;
+    GError *err = NULL;
+    GIOStatus rc = g_io_channel_read_chars(ch, buf, sizeof buf - 1, &got, &err);
+    if (rc != G_IO_STATUS_NORMAL) {
+      if (err) g_error_free(err);
+      break;
+    }
+    buf[got] = 0;
+    if (strstr(buf, "power_supply") || strstr(buf, "usb") || strstr(buf, "udc") ||
+        strstr(buf, "typec") || strstr(buf, "ttyGS0") || strstr(buf, "dwc3")) {
+      if (!ind_uevent_timeout) ind_uevent_timeout = (guint)g_timeout_add(120, ind_push_event, NULL);
+    }
   }
   return TRUE;
 }
@@ -658,8 +757,12 @@ static void uevent_open(void) {
 
 static void indicator_fallback_start(void) {
   ind_signature(ind_last_signature, sizeof ind_last_signature);
-  ind_fallback_timer = (guint)g_timeout_add(250, ind_signature_tick, NULL);
-  st("HOST_INDICATOR_FALLBACK interval=250ms push-on-change=1");
+  /* The kobject uevent socket is the primary path.  This signature fallback is
+   * only for kernels where a non-root session cannot bind it; 1 s is still
+   * event-driven at the UI boundary (it pushes only on a real state change) and
+   * removes four wakeups/second while the phone is idle. */
+  ind_fallback_timer = (guint)g_timeout_add(1000, ind_signature_tick, NULL);
+  st("HOST_INDICATOR_FALLBACK interval=1000ms push-on-change=1");
 }
 
 struct cfgfile { const char *name; const char *path; int writable; };
@@ -858,7 +961,58 @@ static int json_str(const char *js, const char *key, char *out, size_t outn) {
   return 1;
 }
 
+/* ---------------------------------------------------------------------------
+ * PWNAGE-35000: acknowledge power actions immediately and let systemd run the
+ * reboot/poweroff job in the background.  Running `systemctl reboot` synchronously
+ * in this GTK process was the black-screen stall: systemd could not stop the
+ * session (nuxel-wayland -> this host) while the host was still blocked inside
+ * action_perform, so shutdown sat until a timeout.  Forking decouples the two.
+ * ------------------------------------------------------------------------- */
+static int ind_gate_allows(const char *key) {
+  char buf[4096];
+  if (!ind_read_line("/etc/nuxel/buttons/reboot-gate.json", buf, sizeof buf)) return 0;
+  char pat[96];
+  snprintf(pat, sizeof pat, "\"%s\":", key);
+  char *p = strstr(buf, pat);
+  if (!p) return 0;
+  p += strlen(pat);
+  while (*p == ' ' || *p == '\t') p++;
+  return !strncmp(p, "true", 4);
+}
+
+static void run_async_systemctl(const char *verb) {
+  pid_t pid = fork();
+  if (pid < 0) return;
+  if (pid == 0) {
+    if (setsid() < 0) { /* best effort; exec still runs */ }
+    const char *argv[] = {"/usr/bin/systemctl", verb, NULL};
+    execv(argv[0], (char *const *)argv);
+    _exit(127);
+  }
+}
+
 static void action_perform(const char *action, char *result, size_t rn) {
+  if (!strcmp(action, "screen-lock")) {
+    /* Lock is the display bridge's verb; the launcher also sends screen-off. */
+    int fd = open("/run/nuxel-wl-fb.cmd", O_WRONLY | O_NONBLOCK);
+    if (fd < 0) { snprintf(result, rn, "{\"ok\":false,\"error\":\"bridge-fifo-absent\"}"); return; }
+    dprintf(fd, "lock\n");
+    close(fd);
+    st("HOST_ACTION screen-lock -> nuxel-wl-fb control fifo");
+    snprintf(result, rn, "{\"ok\":true,\"action\":\"screen-lock\"}");
+    return;
+  }
+  if (!strcmp(action, "restart") || !strcmp(action, "poweroff")) {
+    if (!ind_gate_allows(!strcmp(action, "restart") ? "allow_restart" : "allow_poweroff")) {
+      snprintf(result, rn, "{\"ok\":false,\"error\":\"reboot-gate-closed\"}");
+      return;
+    }
+    run_async_systemctl(!strcmp(action, "restart") ? "reboot" : "poweroff");
+    /* Acknowledge immediately: the orderly systemd job runs in the background.
+       The page shows the accepted state; the next boot confirms completion. */
+    snprintf(result, rn, "{\"ok\":true,\"action\":\"%s\",\"pending\":true}", action);
+    return;
+  }
   if (!strcmp(action, "screen-off") || !strcmp(action, "screen-on") || !strcmp(action, "screen-toggle")) {
     int fd = open("/run/nuxel-wl-fb.cmd", O_WRONLY | O_NONBLOCK);
     if (fd < 0) { snprintf(result, rn, "{\"ok\":false,\"error\":\"bridge-fifo-absent\"}"); return; }
@@ -1480,8 +1634,12 @@ static gboolean audio_sink_available(void) {
 
 static WebKitWebView *view_new(void) {
   gboolean media = audio_sink_available();
+  /* Input diagnostics are an opt-in engineering tool.  They were opt-out and
+   * injected five document-level listeners plus per-move elementFromPoint()
+   * work into every tap on the shipping phone.  That is observer cost on the
+   * exact path we are trying to make immediate, and it never changes UI state. */
   const char *diag_env = getenv("NUXEL_INPUT_DIAG");
-  gboolean diag = !(diag_env && diag_env[0] == '0');
+  gboolean diag = (diag_env && diag_env[0] == '1');
   st("NUXEL_HOME_MEDIA enable_media=%d audio_sink=%d", media ? 1 : 0, media ? 1 : 0);
   WebKitSettings *s = webkit_settings_new_with_settings(
       "enable-javascript", TRUE,
@@ -1513,7 +1671,9 @@ static WebKitWebView *view_new(void) {
         WEBKIT_USER_SCRIPT_INJECT_AT_DOCUMENT_START, NULL, NULL);
     webkit_user_content_manager_add_script(ucm, us);
     webkit_user_script_unref(us);
-    st("NUXEL_INPUT_DIAG enabled=1 (user-script observer; launcher source unmodified)");
+    st("NUXEL_INPUT_DIAG enabled=1 (explicit NUXEL_INPUT_DIAG=1; launcher source unmodified)");
+  } else {
+    st("NUXEL_INPUT_DIAG disabled=1 (set NUXEL_INPUT_DIAG=1 to enable)");
   }
   WebKitWebView *v = WEBKIT_WEB_VIEW(
       webkit_web_view_new_with_user_content_manager(ucm));

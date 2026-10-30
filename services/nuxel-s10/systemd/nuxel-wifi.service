@@ -1,5 +1,5 @@
 [Unit]
-Description=Nuxel Wi-Fi boot enable and known-profile autoconnect
+Description=Nuxel Wi-Fi boot bridge (owner-controlled, autoconnect only when enabled)
 After=NetworkManager.service network.target
 Wants=NetworkManager.service
 StartLimitIntervalSec=0

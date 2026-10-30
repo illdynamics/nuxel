@@ -1,0 +1,56 @@
+# PWNAGE-37000 final boot verification — 2026-10-29 00:0x CET
+
+Device: Samsung Galaxy S10+ beyond2lte, Linux 4.14.253, Fedora userspace
+Transport: WLAN SSH root@10.17.239.166 (key ~/.ssh/wicked_wqn_id_rsa)
+MAC: a2:24:64:59:32:f1
+
+## Boot-time audio route (the original timeout is fixed)
+- nuxel-audio-route.service: active
+- /run/nuxel-audio-route.state: state=applied card=0
+- Journal:
+    00:00:21 Starting nuxel-audio-route.service
+    00:00:24 runtime-pm write deferred (not ready)   <- bounded, fail-open
+    00:00:25 ok Left AMP Enable Switch
+    00:00:25 ok Right AMP Enable Switch
+    00:00:25 ok SPUS IN1=RDMA
+    00:00:25 ok SPUS OUT1=SIFS1
+    00:00:26 ok SIFS1=SPUS OUT1
+    00:00:26 ok UAIF1 SPK=SIFS1
+    00:00:26 ok SIFS1 OUT on
+    00:00:26 ok UAIF1 on
+    00:00:26 route applied
+    00:00:26 Finished (no timeout)
+
+## Audio mixer controls (verified)
+Left/Right AMP Enable Switch = on
+ABOX SPUS IN1 = 0 (RDMA)
+ABOX SPUS OUT1 = 0 (SIFS1)
+ABOX SIFS1 = 1 (SPUS OUT1)
+ABOX UAIF1 SPK = 2 (SIFS1)
+ABOX SIFS1 OUT Switch = on
+ABOX UAIF1 Switch = on
+
+## Bluetooth manager (via HTTP bridge /api/v1/rpc)
+- bluetooth.status: state=on, powered=true, adapter_present=true,
+  firmware_present=true, blocker=null
+- bluetooth.scan: returns real discovered peers (MAC + alias)
+- bluetooth.list-devices: success
+- bluetooth.info: returns real BlueZ device state
+
+## GNSS (honest)
+- nuxel-gnss-diag status --json: BLOCKED_FIRMWARE (ttyBCM + brcm gps spi
+  bound to spi17.0, no firmware, no NMEA consumer)
+- location.gnss-probe: success, /dev/ttyBCM, bytes=0, stream=empty
+  (power rail toggled on then off; no invented fix)
+
+## Gallery
+- /home/nuxel/Gallery/nuxel-wallpaper.png
+- /home/nuxel/Gallery/nuxel-charging.png
+- /home/nuxel/Videos/nuxel-boot-animation.mp4
+- 3 camera-store sample photos
+
+## Preloading screen
+- /run/nuxel-preload-cinema.out: video_eof events, verdict=PLAYED
+
+## Debug discovery script (host)
+- scripts/nuxel-find-device.sh: serial IP + nmap MAC match -> 10.17.239.166

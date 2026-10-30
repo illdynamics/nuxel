@@ -1,0 +1,70 @@
+Nuxel S10+ live audio playback evidence — 2026-10-29 (second pass)
+Device: root@192.168.178.167 (SM-G975F beyond2lte, Fedora 43, kernel 4.14.253)
+Asset:  /usr/share/nuxel/assets/nuxel-pow.mp3 (6103 bytes; decoded 0.366 s, 48 kHz stereo, peak -4.05 dBFS)
+
+ROOT CAUSE FOUND
+----------------
+`ABOX RDMA1_EN` (amixer numid=1031, enum Off/On, card 0) was `values=0` (Off).
+Every other gate was already correct (AMP enables on, AMP Mute Unmuted, DSP1
+Protection firmware item 9 + preload on, SPKAMP_EN on, SPKAMP_A/B=RDMA1,
+SPUS IN1=RDMA, SPUS OUT1=SIFS1, SIFS1=SPUS OUT1, UAIF1 SPK=SIFS1, SIFS1 OUT
+and UAIF1 switches on). With RDMA1_EN=Off, aplay/pw-play return 0 and hw_ptr
+advances, but the ABOX never clocks RDMA1 samples into SPUS, so the CS35L41s
+stay silent.
+
+The previous 2026-10-28 route script had been "corrected" with the comment
+"There is no 'ABOX RDMA0_EN' / 'ABOX RDMA1_EN' mixer control on this card",
+which was wrong for RDMA1_EN, so the script stopped programming it.
+
+FIX
+---
+services/nuxel-s10/bin/nuxel-audio-route.sh now issues:
+    mix 'RDMA1_EN on' cset name='ABOX RDMA1_EN' 1
+and verifies it in the read-back loop. Deployed to
+/usr/lib/nuxel/nuxel-audio-route.sh (backup kept as .bak-<epoch>).
+
+VERIFIED STATE AFTER FIX
+------------------------
+ABOX RDMA1_EN                  : values=1
+ABOX SPKAMP_EN                 : values=1
+ABOX SPKAMP_A                  : values=2 (RDMA1)
+ABOX SPKAMP_B                  : values=2 (RDMA1)
+Left/Right AMP Enable Switch   : on
+Left/Right AMP Mute            : values=1 (Unmuted)
+Left/Right DSP1 Firmware       : values=9 (Protection)
+Left/Right DSP1 Preload Switch : on
+PipeWire sink                  : 31. S10+ speaker (RDMA1, 48 kHz) [vol 0.80..0.90]
+PipeWire sink path             : alsa_output_hw_0_1 (hw:0,1, S16LE, 48000, 2ch)
+
+KERNEL LOG DURING PLAYBACK
+--------------------------
+cs35l41 11-0040: cs35l41_pcm_mute: Unmuted
+cs35l41 11-0040: PWR_CTRL1 = 0x1 ; PWR_CTRL2 = 0x21 ; DIG_VOL_CTRL = 0x8000
+samsung-abox-if ...abox-uaif: abox_if_hw_params_fixup: UAIF1: 16 bit, 2 channel, 48000Hz
+samsung-abox-if ...abox-uaif: abox_uaif_trigger[P](1)
+samsung-abox-rdma ...abox-rdma: abox_rdma_trigger[1](1)
+... abox_uaif_trigger[P](0) / abox_rdma_trigger[1](0)
+Left/Right DSP1 Protection cd CSPL_STATE = 0x00,0x00,0x00,0x00
+Left/Right DSP1 Protection 400a4 HALO_STATE = 0x00,0x00,0x00,0x02
+Left/Right DSP1 Protection cd CSPL_ENABLE = 0x00,0x00,0x00,0x01
+
+PLAYBACK COMMANDS RUN
+---------------------
+aplay -D hw:0,1 /tmp/nuxel-pow.wav        -> rc=0
+aplay -D hw:0,1 /tmp/nuxel-pow-3x.wav     -> rc=0
+aplay -D hw:0,1 /tmp/tone-440.wav         -> rc=0 (2 s 440 Hz reference)
+pw-play /tmp/nuxel-pow-3x.wav             -> rc=0 (PipeWire default sink)
+6 x pw-play sequence at 19:41:02..19:41:17, sink volume 0.90
+
+UI Test Audio path
+------------------
+pwa settings calls audio.test-audio {asset=nuxel-pow.mp3, gain_percent=25};
+nuxel-bridge hw_providers._pipewire_play() runs gst-launch filesrc ! decodebin
+! audioconvert ! audioresample ! volume=0.25 ! pulsesink against
+XDG_RUNTIME_DIR=/run/nuxel-wayland. /var/lib/nuxel/audio/sound-mode=normal.
+Installed hw_providers.py sha256 c91aa110... matches repo.
+
+AUDIBILITY
+----------
+Software path verified end to end. Physical audibility is owner-confirmed only;
+the 19:41 playback run is the acceptance test.

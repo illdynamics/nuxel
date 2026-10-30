@@ -24,14 +24,15 @@
 // fix, the hardware Settings pages and the version lockstep bump.
 // v0.7.1 bumps to v49 for the PWNAGE-30000 app suite, widgets.js/widgets.css,
 // the shared theme/haptics clients and the version lockstep bump.
-// v0.7.2 bumps to v54-v072-release for the PWNAGE-31000..36000 launcher work:
+// v0.7.3 bumps to v56-v073-release for the PWNAGE-37000/38000 boot, audio and
+// session work (this supersedes the v55-fix38 live cache):
 // the preload cover, restored keyboard/haptics, global Back/navigation, the
 // connection-mode UI, the battery/touch guards and the version lockstep bump.
 // A77/v0.6.7 bumps to v46: the lockscreen indicator script and the status
 // receives the A77 USB-detach truth (UDC speed + wired VBUS vetoes) and the
 // three indicator assets carry a new cache-buster, so a launcher restored from
 // the v44 namespace would keep showing the ghost PC/console penguins.
-const CACHE_VERSION = 'v54-v072-release';
+const CACHE_VERSION = 'v56-v073-release';
 const CACHE_NAME = 'nuxel-home-' + CACHE_VERSION;   // version marker sent to clients
 const STATIC_CACHE = 'nuxel-static-' + CACHE_VERSION;
 const DYNAMIC_CACHE = 'nuxel-dynamic-' + CACHE_VERSION;

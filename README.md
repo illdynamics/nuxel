@@ -3,18 +3,17 @@
 
 ![Nuxel](./nuxel.jpg)
 
-**v0.7.2-beta** — _Build the bunker first. Add the rave lights later._
+**v0.7.3-beta** — _Build the bunker first. Add the rave lights later._
 
-> **v0.7.2-beta (2026-10-28).** This release ships **PWNAGE-31000..36000**:
-> a bounded pre-lockscreen cinema, the restored system keyboard and haptics,
-> global Back/Home/Recents, the app-registration/Files/Mail/Gallery/Recorder
-> repairs, Charging/File Transfer connection modes, and the S10+ hardware
-> fixes. On the physical Galaxy S10+ the ABOX boot-done panic is gone,
-> Bluetooth now registers `hci0` and completes a peer scan, and audio playback
-> works through RDMA1. GNSS remains honestly `BLOCKED_FIRMWARE`; HDMI/DRM,
-> the camera backend, laptop-side file transfer and owner touch/haptic/
+> **v0.7.3-beta (2026-10-30).** This release ships **PWNAGE-37000/38000**:
+> the Butterscotch boot-latency work, owner-controlled Wi-Fi, a verified ABOX
+> firmware reload, PipeWire-routed 48 kHz audio with a real Test Audio action,
+> and the first-light splash fix. The release also publishes the exact BOOT
+> image and userspace inventory captured from the physical Galaxy S10+ on
+> 2026-10-30. GNSS remains honestly `BLOCKED_FIRMWARE`; HDMI/DRM, the camera
+> backend, laptop-side file transfer and owner audibility/touch/haptic/
 > microphone acceptance remain open. See
-> [`docs/releases/v0.7.2-beta.md`](docs/releases/v0.7.2-beta.md).
+> [`docs/releases/v0.7.3-beta.md`](docs/releases/v0.7.3-beta.md).
 
 > **Samsung S10+ engineering reality.** The active `beyond2lte` port is Fedora
 > 43 aarch64 on Samsung Linux 4.14.253. Its launcher is Nuxel Home in WebKitGTK,
@@ -22,7 +21,7 @@
 > screencopy bridge; it is not native DRM/KMS acceleration. A34 captured real
 > finger taps opening Mail and Calendar. Sustained touch navigation, the system
 > keyboard, cold-boot presentation and Power behavior still require owner
-> acceptance for full hardware sign-off in `v0.7.2-beta`; see
+> acceptance for full hardware sign-off in `v0.7.3-beta`; see
 > [`docs/beta-finalization/v0.5.2/RELEASE-VERDICT.md`](docs/beta-finalization/v0.5.2/RELEASE-VERDICT.md).
 
 A hardened, GrapheneOS-spirited **Linux phone operating system** built from
@@ -166,6 +165,31 @@ NUXEL_DEVICE=mustang bash boot/flash.sh --unlock --wipe
 | `firmware/` | Per-device firmware manifests, install/verify, blobs |
 | `ci/` | Build validation |
 | `assets/` | Wallpaper + boot animation |
+
+## What's new in v0.7.3-beta
+
+- **PWNAGE-37000 Butterscotch.** Cold boot fell from 1 min 22.5 s to 58.9 s
+  and `multi-user.target` from 1 min 18.1 s to 17.5 s. The ABOX reload no
+  longer blocks the UI target, `nuxel-wayland` has a deterministic 8 s stop,
+  and Wi-Fi boot no longer serialises behind NetworkManager autoconnect. A
+  radio the owner disabled stays disabled.
+- **PWNAGE-38000 audio.** The bridge, sound cue and Settings UI now share the
+  real PipeWire default sink at 48 kHz (RDMA1 stalls and returns EIO at
+  44.1 kHz on this unit). Audio Settings has a real **Test Audio** action that
+  plays `nuxel-pow.mp3` and reports `audible=unverified`; the ABOX Calliope
+  firmware reload runs at boot with bounded, verified PM cycles.
+- **PWNAGE-38000 first light.** The initramfs no longer paints the obsolete A16
+  diagnostic frame when the first-light asset is absent, and the repack tool
+  ships frame 0 of the real animation, so the first lit frame is the animation.
+- **PWNAGE-34000 connection modes.** Lockscreen console-transport and
+  file-transfer indicators, the Charging/File Transfer selector and the safe
+  USB mode state machine are part of the launcher/bridge sources.
+- **Exact installed-image parity.** `release/s10plus/` now holds the BOOT
+  partition read back from the handset on 2026-10-30 (`6e998acf…`,
+  57,671,680 bytes) and a 4,238-entry userspace inventory. The release tooling
+  derives its published hashes from `INSTALLED-IMAGES.json`.
+- **Release tooling.** Launcher cache `v56-v073-release`; whole-repo lockstep
+  at `v0.7.3-beta`.
 
 ## What's new in v0.7.2-beta
 
@@ -560,7 +584,7 @@ remaining interactive gap. The Moto G7 Power is flashed but still hangs at a
 black screen; the Pixel 10 Pro XL is still a scaffold. The UTM VM demo boots
 (display + network + sound).
 
-## Honest Status — v0.7.2-beta
+## Honest Status — v0.7.3-beta
 
 **S10+ (SM-G975F, beyond2lte) — NUXEL BOOTS AND TOUCH INPUT WORKS.**
 S-Boot loads the raw arm64 `Image` with the initramfs embedded, the Fedora 43
@@ -589,25 +613,26 @@ touch-driven app flows, keyboard/haptic feel, microphone/WAV capture, the full
 preload-cinema sequence and laptop-side file transfer remains open.
 
 **The release ships the exact image installed on the handset.** The workflow
-publishes `nuxel-installed-s10plus-boot.img.gz` — the byte-exact A27 BOOT image
-read back from the owner's SM-G975F (`48ad61af…`, 51,605,504 bytes) — together
-with a hash inventory of the installed userspace and an
-`INSTALLED-IMAGES.json` provenance manifest. The separately built
-`nuxel-<version>-s10plus.tar.gz` contains the reproducible **A25** source
-rebuild and is explicitly labelled as such: it is not byte-identical to the
-installed A27 image. See
-[`docs/a61-penguin-eyes/INSTALLED-IMAGE-RELEASE.md`](docs/a61-penguin-eyes/INSTALLED-IMAGE-RELEASE.md).
+publishes `nuxel-installed-s10plus-boot.img.gz` — the complete BOOT partition
+read back from the owner's SM-G975F on 2026-10-30 (`6e998acf…`, 57,671,680
+bytes) — together with a 4,238-entry hash inventory of the installed userspace
+and an `INSTALLED-IMAGES.json` provenance manifest. The separately built
+`nuxel-<version>-s10plus.tar.gz` contains the reproducible source rebuild and
+is explicitly labelled as such: it is not byte-identical to the installed
+image. See
+[`docs/a61-penguin-eyes/INSTALLED-IMAGE-RELEASE.md`](docs/a61-penguin-eyes/INSTALLED-IMAGE-RELEASE.md)
+and [`docs/releases/v0.7.3-beta.md`](docs/releases/v0.7.3-beta.md).
 
 | Area | Score | Notes |
 |---|---|---|
 | Design/docs | 85% | Architecture, security model, PWA spec, three device bundles, plus the A25–A34 hardware evidence set |
 | Repo structure | 90% | Legacy scratch trees and duplicate guides removed; canonical images only |
-| PWA apps | 75% | PWNAGE-31000..36000 ships preload cinema, keyboard/navigation, connection modes and the app repairs; physical app interaction and hardware acceptance remain open |
+| PWA apps | 75% | PWNAGE-31000..38000 ships preload cinema, keyboard/navigation, connection modes, the app repairs and the boot/audio fixes; physical app interaction and hardware acceptance remain open |
 | Flatpak app model | 20% | Manifests + launcher exist (`pwa/flatpak/`, `org.nuxel.Platform`); runtime not built or integration-tested |
 | Native GTK apps | 30% | C source exists; not yet proven end-to-end in the phone UI |
 | D-Bus bridge/portal | 55% | Bridge persistence, mail transport and provider routes are live; deeper portal integration is still partial |
 | Sandbox/security | 25% | Configs exist; enforcement is not wired end-to-end |
-| Build system | 90% | Fail-closed CI builds the A25 boot image and **compiles the current A34 userspace from repo sources**; artifact verification is content-based |
+| Build system | 90% | Fail-closed CI builds the current boot image and **compiles the current userspace from repo sources**; artifact verification is content-based and the release also ships the captured phone bytes |
 | Flashable images | 90% | S10+ boot + Fedora rootfs and G7 Power lk2nd/boot/rootfs are byte-verified on hardware; S10+ boots |
 | Pixel 10 Pro XL (mustang) | 5% | UART/initramfs-level only; no boot artifact yet |
 | Galaxy S10+ (beyond2lte) | 90% | **Boots Nuxel; touchscreen works; clickable UI is the remaining gate.** Display, animation, launcher, systemd service graph and single framebuffer owner are proven. Sound is expected but unproven; radio/camera/sensors/Phosh remain open |
@@ -806,7 +831,7 @@ The other two bring-up targets are the **Samsung Galaxy S10+** (Exynos 9820,
 
 | Document | Description |
 |---|---|
-| [CHANGELOG.md](CHANGELOG.md) | Release notes — everything from v0.1.0 to v0.7.2-beta + readiness |
+| [CHANGELOG.md](CHANGELOG.md) | Release notes — everything from v0.1.0 to v0.7.3-beta + readiness |
 | [prompts/QUICKSTART.md](prompts/QUICKSTART.md) | Get running in 5 minutes |
 | [design/nuxel-linux-phone-design.md](design/nuxel-linux-phone-design.md) | Design bible — the full vision |
 | [design/Nuxel Phone OS Project Plan and Architecture.md](design/Nuxel%20Phone%20OS%20Project%20Plan%20and%20Architecture.md) | Technical architecture + component map |

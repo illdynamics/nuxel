@@ -1,5 +1,11 @@
 [Unit]
-Description=Nuxel boot framebuffer capture (diagnostic; never writes /dev/fb0)
+Description=Nuxel boot framebuffer capture (manual diagnostic; never writes /dev/fb0)
+Documentation=file:/var/lib/nuxel/bootcap
+# This capture runs for 24 seconds and is diagnostic only.  It used to be
+# enabled at every boot, where it held multi-user.target for its full duration
+# (systemd-analyze blame: 24.9 s) and competed with the display bridge for
+# panel reads.  It is now opt-in: start it explicitly when early-boot evidence
+# is needed, and never as part of the normal boot graph.
 After=nuxel-wl-fb.service
 Wants=nuxel-wl-fb.service
 ConditionPathExists=/dev/fb0
@@ -9,6 +15,3 @@ Type=oneshot
 ExecStart=/usr/local/bin/nuxel-bootcap --out /var/lib/nuxel/bootcap --duration 24 --interval 0.5
 Nice=15
 IOSchedulingClass=idle
-
-[Install]
-WantedBy=multi-user.target

@@ -444,6 +444,12 @@ static void osd_volume(void) {
  * bring-up cap. The wrapper is optional on older deployed phone revisions. */
 static void cue_volume_preview(int pct) {
   if (pct <= 0 || access("/usr/libexec/nuxel/nuxel-sound-cue", X_OK) != 0) return;
+  /* One preview per gesture: holding the key used to spawn a fresh pow for
+   * every autorepeat event, which the owner rightly called "pow nonstop". */
+  static int64_t last_cue_ms = 0;
+  int64_t now = now_ms();
+  if (last_cue_ms && now - last_cue_ms < 500) return;
+  last_cue_ms = now;
   char b[8];
   snprintf(b, sizeof b, "%d", pct);
   pid_t pid = fork();
@@ -463,7 +469,52 @@ static void cue_volume_preview(int pct) {
   while (waitpid(pid, &status, 0) < 0 && errno == EINTR) {}
 }
 
+/* ---- PipeWire volume: absolute 5 % steps (owner request) ----------------- *
+ * The ALSA fallback below selected the first writable element on this card,
+ * which happened to be "ABOX PCM ext Out Fade Start" (range 0..1).  Every
+ * key press therefore jumped between 0 % and 100 %.  The live UI and every
+ * app use the PipeWire default sink, so hardware keys drive the SAME node in
+ * absolute 5 % steps: 0.20 -> 0.25 -> 0.30 ... and 0.20 -> 0.15 ... */
+#define PW_ENV "XDG_RUNTIME_DIR=/run/nuxel-wayland PIPEWIRE_RUNTIME_DIR=/run/nuxel-wayland PULSE_SERVER=unix:/run/nuxel-wayland/pulse/native"
+
+static int pwctl_volume_get(int *out_pct) {
+  FILE *f = popen("env " PW_ENV " /usr/bin/wpctl get-volume @DEFAULT_AUDIO_SINK@ 2>/dev/null", "r");
+  if (!f) return 0;
+  char line[128] = "";
+  int got = fgets(line, sizeof line, f) ? 1 : 0;
+  pclose(f);
+  if (!got) return 0;
+  double v = 0.0;
+  if (sscanf(line, "Volume: %lf", &v) != 1) return 0;
+  if (v < 0.0) v = 0.0;
+  if (v > 1.0) v = 1.0;
+  *out_pct = (int)(v * 100.0 + 0.5);
+  return 1;
+}
+
+static int pwctl_volume_step(int dir) {
+  char cmd[320];
+  snprintf(cmd, sizeof cmd,
+           "env " PW_ENV " /usr/bin/wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%%%s",
+           dir > 0 ? "+" : "-");
+  int rc = system(cmd);
+  if (rc != 0) { audit("WPCTL_VOLUME_STEP_FAIL dir=%d rc=%d", dir, rc); return 0; }
+  int pct = -1;
+  if (pwctl_volume_get(&pct)) {
+    char txt[64];
+    snprintf(txt, sizeof txt, "%d%%", pct);
+    osd_publish("volume", txt, pct, 100);
+    publish("VOLUME_SOURCE=pipewire step_percent=5 value=%d", pct);
+    audit("VOLUME_STEP_PIPEWIRE dir=%d percent=%d", dir, pct);
+    cue_volume_preview(pct);
+  } else {
+    audit("VOLUME_STEP_PIPEWIRE_NO_READBACK dir=%d", dir);
+  }
+  return 1;
+}
+
 static void volume_step(int dir) {
+  if (pwctl_volume_step(dir)) return;
   if (mixer_open_dev() < 0 || !selem) { osd_volume(); return; }
   long step = nuxel_fsm_volume_step(vol_min, vol_max);   /* same formula as A32 */
   long ceiling = vol_cap_ceiling();

@@ -120,8 +120,13 @@ class NuxelHome {
         }
         // Remember the user's intent for an app that is still loading.  Its
         // load handler must not flip an intentionally backgrounded surface back
-        // to ACTIVE and paint over Home.
+        // to ACTIVE and paint over Home.  The data attribute is the CSS hook:
+        // .pwa-frame carries an author-level `display: block !important`, so
+        // the boolean `hidden` property alone cannot win against it.  Setting
+        // both is what actually removes the app iframe from the glass and from
+        // hit-testing before Home's dock is shown.
         frame.__nuxelBackgrounded = true;
+        if (typeof frame.setAttribute === 'function') frame.setAttribute('data-nuxel-backgrounded', 'true');
         this._setAppState('BACKGROUND', app, frame);
         if (this.sessions && app) this.sessions.home();
         return true;
@@ -136,6 +141,7 @@ class NuxelHome {
         });
         if (surface.frame) {
             surface.frame.__nuxelBackgrounded = false;
+            if (typeof surface.frame.removeAttribute === 'function') surface.frame.removeAttribute('data-nuxel-backgrounded');
             this._observeAppFrame(surface.frame, app);
         }
         this._setAppState('ACTIVE', app, surface.frame);
@@ -244,13 +250,18 @@ class NuxelHome {
             try { console.log('[Nuxel] preload cover released: ' + why); } catch (e) {}
         };
         const endpoint = new URL('preload-status.json', window.location.href);
-        const timeoutMs = 15000;
+        const timeoutMs = 40000;
         // The controller can publish "covered" before this document has even
         // committed (mpv maps first, the PWA loads a few hundred ms later).
         // Releasing on the first poll then exposed the lockscreen while the
         // video was still compositing.  Hold the poster frame for a short
         // bounded grace period so the first video frames are on the panel.
         const minHoldMs = 900;
+        let backoffMs = 100;
+        const schedule = (fn, delayMs) => {
+            if (this._preloadCoverDone) return;
+            setTimeout(fn, delayMs);
+        };
         const poll = () => {
             if (this._preloadCoverDone) return;
             const elapsed = Date.now() - started;
@@ -258,27 +269,32 @@ class NuxelHome {
             fetch(endpoint.toString(), { cache: 'no-store' })
                 .then((r) => (r && r.ok) ? r.json() : null)
                 .then((doc) => {
+                    backoffMs = 100;
                     const terminal = doc && (doc.state === 'fallback' || doc.state === 'done');
                     const covered = doc && doc.state === 'covered';
                     if (terminal) { reveal('marker:' + doc.state); return; }
                     if (covered) {
                         if (elapsed < minHoldMs) {
-                            setTimeout(poll, Math.min(100, minHoldMs - elapsed));
+                            schedule(poll, Math.min(100, minHoldMs - elapsed));
                             return;
                         }
                         reveal('marker:covered');
                         return;
                     }
                     if (elapsed >= timeoutMs) { reveal('timeout'); return; }
-                    setTimeout(poll, 100);
+                    schedule(poll, 100);
                 })
                 .catch(() => {
                     if (elapsed >= timeoutMs) { reveal('timeout-fetch-error'); return; }
-                    setTimeout(poll, 150);
+                    // A missing status file (404) or fetch error is the common
+                    // warm-boot case. Back off instead of hammering nuxel-web
+                    // every 100 ms while the hard timeout still bounds the cover.
+                    backoffMs = Math.min(1000, Math.max(100, backoffMs * 2));
+                    schedule(poll, backoffMs);
                 });
         };
         poll();
-        setTimeout(() => reveal('hard-timeout'), 15000);
+        setTimeout(() => reveal('hard-timeout'), 40000);
     }
 
     async _registerServiceWorker() {
@@ -698,12 +714,25 @@ class NuxelHome {
         }
         const frame = this.appSession.frame;
         if (frame && this.appSession.state === 'ACTIVE') {
-            // Same-origin PWAs use their own browser history. Never terminate the
-            // iframe just because Back was pressed. If there is no meaningful
-            // previous entry, background it and restore Home instead.
+            // Same-origin PWAs use their own browser history.  Track the
+            // baseline history length when the app surface first loads, so a
+            // just-opened app (or one that has returned to its root) minimises
+            // to Home instead of navigating back to about:blank or a stale
+            // in-app entry and appearing to stay foreground while the dock
+            // paints over it.
             try {
-                const hist = frame.contentWindow && frame.contentWindow.history;
-                if (hist && hist.length > 1) { hist.back(); return; }
+                const win = frame.contentWindow;
+                const hist = win && win.history;
+                if (hist) {
+                    if (typeof frame.__nuxelNavBase !== 'number') {
+                        frame.__nuxelNavBase = hist.length;
+                    }
+                    if (hist.length > frame.__nuxelNavBase) {
+                        frame.__nuxelNavBase = hist.length - 1;
+                        hist.back();
+                        return;
+                    }
+                }
                 const doc = frame.contentDocument;
                 const back = doc && doc.querySelector('[data-action="back"], [data-nav="back"], .settings-back');
                 if (back) { back.click(); return; }

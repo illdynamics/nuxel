@@ -1,0 +1,54 @@
+== bluetoothctl show ==
+Controller 43:75:B1:00:1F:AC (public)
+	Manufacturer: 0x000f (15)
+	Version: 0x09 (9)
+	Name: fedora
+	Alias: fedora
+	Class: 0x00000000 (0)
+	Powered: yes
+	PowerState: on
+	Discoverable: no
+	DiscoverableTimeout: 0x000000b4 (180)
+	Pairable: no
+	UUID: Generic Attribute Profile (00001801-0000-1000-8000-00805f9b34fb)
+	UUID: Generic Access Profile    (00001800-0000-1000-8000-00805f9b34fb)
+	UUID: PnP Information           (00001200-0000-1000-8000-00805f9b34fb)
+	UUID: A/V Remote Control Target (0000110c-0000-1000-8000-00805f9b34fb)
+	UUID: A/V Remote Control        (0000110e-0000-1000-8000-00805f9b34fb)
+	UUID: Device Information        (0000180a-0000-1000-8000-00805f9b34fb)
+	Modalias: usb:v1D6Bp0246d0557
+	Discovering: no
+	Roles: central
+	Roles: peripheral
+Advertising Features:
+	ActiveInstances: 0x00 (0)
+	SupportedInstances: 0x05 (5)
+	SupportedIncludes: tx-power
+	SupportedIncludes: appearance
+	SupportedIncludes: local-name
+	SupportedCapabilities.MaxAdvLen: 0x1f (31)
+	SupportedCapabilities.MaxScnRspLen: 0x1f (31)
+== bluetooth devices ==
+== bluez service ==
+active
+● bluetooth.service - Bluetooth service
+     Loaded: loaded (/usr/lib/systemd/system/bluetooth.service; enabled; preset: enabled)
+    Drop-In: /usr/lib/systemd/system/service.d
+             └─10-timeout-abort.conf
+     Active: active (running) since Thu 2026-10-29 12:33:39 CET; 49min ago
+ Invocation: 4707018d22994bc78151b64051bd9a71
+       Docs: man:bluetoothd(8)
+   Main PID: 5788 (bluetoothd)
+== wireplumber bluez spa ==
+total 1400
+drwxr-xr-x  2 root root   4096 Oct 25 17:37 .
+drwxr-xr-x 13 root root   4096 Oct 25 17:37 ..
+-rwxr-xr-x  1 root root 865032 Mar 19  2026 libspa-bluez5.so
+-rwxr-xr-x  1 root root  69432 Mar 19  2026 libspa-codec-bluez5-aac.so
+-rwxr-xr-x  1 root root  69464 Mar 19  2026 libspa-codec-bluez5-faststream.so
+-rwxr-xr-x  1 root root  69304 Mar 19  2026 libspa-codec-bluez5-g722.so
+-rwxr-xr-x  1 root root  69544 Mar 19  2026 libspa-codec-bluez5-lc3.so
+-rwxr-xr-x  1 root root  69424 Mar 19  2026 libspa-codec-bluez5-ldac.so
+-rwxr-xr-x  1 root root  69384 Mar 19  2026 libspa-codec-bluez5-opus-g.so
+-rwxr-xr-x  1 root root  69504 Mar 19  2026 libspa-codec-bluez5-opus.so
+-rwxr-xr-x  1 root root  69408 Mar 19  2026 libspa-codec-bluez5-sbc.so

@@ -7,8 +7,6 @@
     right: 0;
     height: var(--status-bar-height);
     background: rgba(26, 26, 46, 0.95);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
     display: grid;
     /* A54: left column owns the clock; the right column is a single measured
        flex cluster for signal/Wi-Fi/battery/percent.  One cluster = one owner,
@@ -211,13 +209,11 @@
     left: 0;
     right: 0;
     background: var(--bg-secondary);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
     padding: 16px;
     z-index: 99;
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
     animation: slideDown 0.25s ease;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06);
     max-height: min(300px, calc(100dvh - var(--status-bar-height) - var(--system-nav-height)));
     overflow: hidden;
     touch-action: pan-y;
@@ -270,7 +266,7 @@
     align-items: center;
     justify-content: center;
 }
-.qs-item img.qs-icon { object-fit: contain; filter: drop-shadow(0 1px 1px rgba(0,0,0,.35)); }
+.qs-item img.qs-icon { object-fit: contain; }
 
 .qs-label {
     font-size: 11px;

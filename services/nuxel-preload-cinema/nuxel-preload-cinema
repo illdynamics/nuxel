@@ -784,6 +784,13 @@ def run(argv: list[str] | None = None) -> int:
                              "marker": str(cfg.paths["done"]),
                              "started_at": started_wall})
         log.log("INFO", "already_ran", marker=str(cfg.paths["done"]))
+        # The session controller removes the PWA-facing status file before each
+        # session start. If a later session restart sees the one-shot marker it
+        # must still publish a terminal status so the launcher's opaque first-
+        # frame cover releases immediately instead of polling a missing file
+        # until its 40 s hard timeout (measured on the S10+ after the ABOX
+        # firmware reload restarts nuxel-wayland).
+        mark_overlay("done", reason="already-ran")
         return 0
 
     lock = acquire_lock(cfg, log)
@@ -920,6 +927,37 @@ def run(argv: list[str] | None = None) -> int:
                     log.log("INFO", "early_map_delay",
                             seconds=round(map_delay, 3),
                             reason="let-launcher-settle-before-mpv-maps")
+
+            # Early mode must still wait for the display bridge to own the
+            # panel before mpv starts.  The boot-animation player keeps /dev/fb0
+            # until nuxel-wl-fb has taken over; starting mpv before that point
+            # plays the whole clip invisibly (measured 2026-10-29: playback-time
+            # 5.958 s when the bridge published its first frame, so only the
+            # last ~60 ms was ever visible).  Wait for the same display gate the
+            # normal mode uses, bounded by start_timeout_ms.  The launcher's
+            # opaque preload cover hides the lockscreen while we wait.
+            display_wait_started = time.monotonic()
+            display_deadline = display_wait_started + int(cfg.get("start_timeout_ms")) / 1000.0
+            initial = read_readiness(cfg, display_wait_started)
+            while (not (initial.wlfb_ready and initial.display_on) and
+                   time.monotonic() < display_deadline):
+                time.sleep(int(cfg.get("poll_ms")) / 1000.0)
+                initial = read_readiness(cfg, display_wait_started)
+            log.log("INFO", "early_display_wait",
+                    ready=bool(initial.wlfb_ready and initial.display_on),
+                    wlfb_ready=initial.wlfb_ready,
+                    display_on=initial.display_on,
+                    elapsed_s=round(time.monotonic() - display_wait_started, 3),
+                    bound_ms=int(cfg.get("start_timeout_ms")))
+            if not initial.wlfb_ready or not initial.display_on:
+                _write_receipt(cfg, {"verdict": "FALLBACK",
+                                     "reason": "display-not-ready",
+                                     "asset": str(asset),
+                                     "readiness": initial.as_dict(),
+                                     "started_at": started_wall})
+                log.log("WARN", "fallback", reason="display-not-ready",
+                        phase="early-display-wait")
+                return 0
 
         if early:
             # Early mode is racing the launcher host for the first composited

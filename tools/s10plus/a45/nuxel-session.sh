@@ -21,11 +21,37 @@
 # Software rendering is forced because this kernel has no DRM/EGL device.
 set -eu
 export XDG_SESSION_TYPE=wayland
+# Native communication apps run as the real session user (see the HTTP bridge's
+# NATIVE_AS_SESSION_USER list), so the compositor runtime directory must be
+# traversable.  The Wayland socket itself is already 0755.
+chmod 0755 /run/nuxel-wayland 2>/dev/null || true
+# Native communication apps run as the session user.  Give that user access to
+# the compositor socket (write permission is required to connect to a Unix
+# socket); the runtime directory itself stays non-world-writable.
+if getent group nuxel >/dev/null 2>&1; then
+  chgrp nuxel /run/nuxel-wayland 2>/dev/null || true
+  chmod 0750 /run/nuxel-wayland 2>/dev/null || true
+  if [ -S /run/nuxel-wayland/wayland-0 ]; then
+    chgrp nuxel /run/nuxel-wayland/wayland-0 2>/dev/null || true
+    chmod 0660 /run/nuxel-wayland/wayland-0 2>/dev/null || true
+    chgrp nuxel /run/nuxel-wayland/wayland-0.lock 2>/dev/null || true
+    chmod 0640 /run/nuxel-wayland/wayland-0.lock 2>/dev/null || true
+  fi
+  # GTK/dconf writes $XDG_RUNTIME_DIR/dconf/user; give the session user that
+  # per-user scratch directory, not root ownership.
+  mkdir -p /run/nuxel-wayland/dconf 2>/dev/null || true
+  chown -R nuxel:nuxel /run/nuxel-wayland/dconf 2>/dev/null || true
+  chmod 0700 /run/nuxel-wayland/dconf 2>/dev/null || true
+fi
 export GDK_BACKEND=wayland
 export WEBKIT_DISABLE_COMPOSITING_MODE=1
 export LIBGL_ALWAYS_SOFTWARE=1
 export GSK_RENDERER=cairo
 LOG=/run/nuxel-session.log
+# Claim the boot overlay before the systemd fallback unit can write the
+# one-shot marker.  The controller yields to this marker; it is per-boot
+# because /run is a tmpfs.
+: > /run/nuxel-preload-session.owner 2>/dev/null || true
 say() { echo "$(date -u +%FT%TZ) $*" >>"$LOG"; }
 
 DOCROOT=/usr/share/nuxel
@@ -46,8 +72,26 @@ fi
 BRIDGE="$DOCROOT${HOME_REL%/*}/nuxel-common/bridge.js"
 if [ -f "$BRIDGE" ]; then BRIDGE_OK=yes; else BRIDGE_OK=no; fi
 
+# PWNAGE-36000: the preload controller publishes its first-frame state as a
+# regular file under the PWA docroot (nuxel-web refuses symlink escapes from
+# the docroot, so /run cannot be linked in).  Remove any status file
+# unconditionally BEFORE this boot's controller starts.  A previous controller
+# (or the old systemd unit) can leave a current-boot-id "fallback" document
+# behind; the launcher would then release the cover immediately and expose the
+# lockscreen for the first second.  The session controller owns this file for
+# the whole boot and rewrites it atomically from "starting" onward.
+PRELOAD_STATUS_FILE="$DOCROOT$HOME_REL/preload-status.json"
+rm -f "$PRELOAD_STATUS_FILE" 2>/dev/null || true
+[ -L "$PRELOAD_STATUS_FILE" ] && rm -f "$PRELOAD_STATUS_FILE" 2>/dev/null || true
+
 say() { echo "$(date -u +%FT%TZ) $*" >>"$LOG"; }
 say "session start WAYLAND_DISPLAY=${WAYLAND_DISPLAY:-?} layout=$HOME_REL bridge_ok=$BRIDGE_OK url=$NUXEL_HOME_URL"
+if [ -x /usr/lib/nuxel/nuxel-home-layout.sh ]; then
+  /usr/lib/nuxel/nuxel-home-layout.sh >>"$LOG" 2>&1 || say "home layout setup failed"
+fi
+if [ -x /usr/lib/nuxel/nuxel-gstreamer-guard.sh ]; then
+  /usr/lib/nuxel/nuxel-gstreamer-guard.sh >>"$LOG" 2>&1 || say "gstreamer guard failed"
+fi
 
 if ! curl -fsS -o /dev/null "$NUXEL_HOME_URL" 2>/dev/null; then
   # nuxel-web.service owns :8000.  Never bind that port here: a fallback on
@@ -70,16 +114,83 @@ if ! curl -fsS -o /dev/null "$NUXEL_HOME_URL" 2>/dev/null; then
 else
   say "web server already serving on :$WEB_PORT"
 fi
-# A45 KEYBOARD: the persistent Back/Home/Recents dock is a native
+# PWNAGE-31000 PRE-LOCKSCREEN CINEMA (early): map the preloading video BEFORE
+# the launcher host constructs the lockscreen, so the first composited frame
+# shows the video rather than a one-second lockscreen flash.  The controller is
+# a fail-open presentation overlay: it never blocks the launcher and falls back
+# to the normal lockscreen on every failure path.
+if [ -x /usr/lib/nuxel/nuxel-preload-cinema ]; then
+  # The early controller waits for /run/nuxel-launcher-ready, then maps mpv
+  # above the launcher.  Give that marker a generous bound: the cover is
+  # opaque until the controller publishes its first presented frame, so a
+  # slower audio/navdock startup can never expose the lockscreen.
+  NUXEL_PRELOAD_EARLY=1 \
+  NUXEL_PRELOAD_EARLY_WAIT_LAUNCHER_MS="${NUXEL_PRELOAD_EARLY_WAIT_LAUNCHER_MS:-6000}" \
+  NUXEL_PRELOAD_EARLY_MAP_DELAY_MS="${NUXEL_PRELOAD_EARLY_MAP_DELAY_MS:-800}" \
+  NUXEL_PRELOAD_WAYLAND_DISPLAY="${WAYLAND_DISPLAY:-wayland-0}" \
+  nohup /usr/lib/nuxel/nuxel-preload-cinema --early \
+      </dev/null >/run/nuxel-preload-cinema.out 2>&1 &
+  say "starting pre-lockscreen cinema overlay pid=$!"
+fi
+
+# PWNAGE-32000 KEYBOARD: the persistent Back/Home/Recents dock is a native
 # zwlr_layer_shell_v1 OVERLAY surface with an exclusive zone, so the native
-# Stevia OSK (the working keyboard) stops above it instead of covering it.
-# Start both as session Wayland clients, before the launcher host takes the
-# foreground.  Stevia is started inside a session D-Bus so its OSK provider
-# registration succeeds.
+# Stevia OSK (the working grey/black/white keyboard) stops above it instead
+# of covering it.  Start both as session Wayland clients before the launcher
+# host takes the foreground.  Stevia is started inside a session D-Bus so its
+# OSK provider registration succeeds.
 say "starting A45 nav dock + Stevia OSK"
 nohup /usr/lib/nuxel/nuxel-navdock </dev/null >/run/nuxel-navdock.out 2>&1 &
 if [ -x /usr/bin/phosh-osk-stevia ]; then
   nohup dbus-run-session -- /usr/bin/phosh-osk-stevia </dev/null >/run/stevia.out 2>&1 &
+fi
+
+# PWNAGE-36000 AUDIO: this phone session runs as root and has no logind user
+# session, so the stock `systemctl --user pipewire` path does not exist.  Run
+# one private session bus + PipeWire/WirePlumber in the compositor's runtime
+# directory.  The exports are inherited by nuxel-pwa-host and every app it
+# launches.  This image has no udev daemon, so the udev rule is a fallback;
+# the session re-applies the /dev/snd group/mode itself on every boot.
+AUDIO_RUNTIME="${XDG_RUNTIME_DIR:-/run/nuxel-wayland}"
+export XDG_RUNTIME_DIR="$AUDIO_RUNTIME"
+export PIPEWIRE_RUNTIME_DIR="$AUDIO_RUNTIME"
+export PULSE_SERVER="${PULSE_SERVER:-unix:$AUDIO_RUNTIME/pulse/native}"
+if [ -z "${DBUS_SESSION_BUS_ADDRESS:-}" ]; then
+  BUS_SOCKET="$AUDIO_RUNTIME/bus"
+  if [ -S "$BUS_SOCKET" ]; then rm -f "$BUS_SOCKET" 2>/dev/null || true; fi
+  if dbus-daemon --session --fork --address="unix:path=$BUS_SOCKET" --nopidfile >/run/nuxel-dbus.out 2>&1; then
+    export DBUS_SESSION_BUS_ADDRESS="unix:path=$BUS_SOCKET"
+    say "audio session bus $BUS_SOCKET"
+  else
+    say "audio session bus unavailable"
+  fi
+fi
+chgrp -R audio /dev/snd 2>/dev/null || true
+chmod -R g+rw /dev/snd 2>/dev/null || true
+if command -v pipewire >/dev/null 2>&1; then
+  nohup pipewire >/run/nuxel-pipewire.out 2>&1 &
+  say "pipewire started pid=$!"
+  # Do not start WirePlumber before the PipeWire socket exists; otherwise the
+  # session manager logs a failed connection and wpctl can hang on first use.
+  _pw_i=0
+  while [ "$_pw_i" -lt 30 ]; do
+    [ -S "$AUDIO_RUNTIME/pipewire-0" ] && break
+    sleep 0.1
+    _pw_i=$((_pw_i + 1))
+  done
+  if [ -S "$AUDIO_RUNTIME/pipewire-0" ]; then
+    say "pipewire socket ready"
+  else
+    say "pipewire socket missing after 3s"
+  fi
+  if command -v wireplumber >/dev/null 2>&1; then
+    nohup wireplumber >/run/nuxel-wireplumber.out 2>&1 &
+    say "wireplumber started pid=$!"
+  fi
+  if command -v pipewire-pulse >/dev/null 2>&1; then
+    nohup pipewire-pulse >/run/nuxel-pipewire-pulse.out 2>&1 &
+    say "pipewire-pulse started pid=$!"
+  fi
 fi
 
 say "starting launcher host url=$NUXEL_HOME_URL"

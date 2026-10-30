@@ -100,8 +100,8 @@
     "app_type": "home",
     "native_fallback": false,
     "bridge_version": "1",
-    "pwa_version": "0.7.2-beta",
-    "cache_version": "v54-v072-release",
+    "pwa_version": "0.7.3-beta",
+    "cache_version": "v56-v073-release",
     "registry_version": 7,
     "single_source_of_truth": "pwa/nuxel-home (index.html, css/, js/, manifest.json, sw.js)",
     "apps_in_registry": [
@@ -140,7 +140,7 @@
       "safe_zones": 10,
       "safe_zone_profile": "s10plus"
     },
-    "host_version": "0.7.2-beta"
+    "host_version": "0.7.3-beta"
   },
   "id": "/pwa/nuxel-home/",
   "display_override": [

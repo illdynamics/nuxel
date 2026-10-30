@@ -45,3 +45,33 @@ def test_lockscreen_battery_prefers_host_and_converges_fast():
     assert "global.setTimeout(() => this._updateBattery(), 3000);" in js
     # No fabricated 0% default: null still renders the neutral em dash.
     assert "shown === null ? '—'" in js
+
+
+def test_backgrounded_app_is_fully_removed_from_the_glass():
+    """A Back/HOME press must not leave the app frame painted under the dock.
+
+    .pwa-frame declares `display: block !important`, so the `hidden` IDL
+    property alone is overridden by the cascade.  The lifecycle must therefore
+    have both a JS attribute and a matching !important CSS rule for every
+    non-foreground state.
+    """
+    css = read("pwa/nuxel-home/css/style.css")
+    js = read("pwa/nuxel-home/js/app.js")
+    for selector in (
+        '.pwa-frame[hidden],',
+        '.pwa-frame[data-nuxel-backgrounded="true"],',
+        'body[data-app-state="BACKGROUND"] .pwa-frame,',
+        'body[data-app-state="CLOSED"] .pwa-frame,',
+    ):
+        assert selector in css
+    assert 'display: none !important;' in css
+    assert "frame.setAttribute('data-nuxel-backgrounded', 'true');" in js
+    assert "surface.frame.removeAttribute('data-nuxel-backgrounded');" in js
+
+
+def test_home_chrome_hides_while_an_app_owns_or_is_leaving_the_glass():
+    css = read("pwa/nuxel-home/css/style.css")
+    # BACKGROUND is Home's own state: the app frame is gone and the dock must
+    # return.  It is therefore deliberately NOT part of the hide list.
+    for state in ("ACTIVE", "LAUNCHING", "CLOSING", "FAILED"):
+        assert f"body[data-app-state=\"{state}\"] #dock" in css

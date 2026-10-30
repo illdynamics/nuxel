@@ -140,7 +140,7 @@ def test_gnss_diag_bcm_fixture_and_selftest():
 def test_first_party_system_grants_are_explicit_and_scoped():
     expected = {
         "org.nuxel.Home.json": {"location:manage", "location:read", "network:manage", "bluetooth:manage"},
-        "nuxel-settings.json": {"location:manage", "location:read", "network:manage", "bluetooth:manage", "bluetooth:scan"},
+        "nuxel-settings.json": {"location:manage", "location:read", "network:manage", "bluetooth:manage", "bluetooth:scan", "bluetooth:connect"},
         "org.nuxel.Maps.json": {"location:read"},
     }
     for name, caps in expected.items():

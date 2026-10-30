@@ -31,8 +31,18 @@ def to_argb(path, size):
     for y in range(size):
         for x in range(size):
             r, g, b, a = px[x, y]
-            # ARGB8888 little-endian: uint32 = A<<24 | R<<16 | G<<8 | B
-            out.append((a << 24) | (r << 16) | (g << 8) | b)
+            # Wayland WL_SHM_FORMAT_ARGB8888 is PREMULTIPLIED alpha (the alpha
+            # byte is the most significant byte, stored first in memory on
+            # little-endian).  Multiply colour by alpha so partially-transparent
+            # edge pixels never add un-premultiplied colour bleed and the icons
+            # render identically on every boot instead of intermittently
+            # chopping/washing out at the 1-2px edges.
+            a8 = a
+            if a8:
+                r = (r * a8 + 127) // 255
+                g = (g * a8 + 127) // 255
+                b = (b * a8 + 127) // 255
+            out.append((a8 << 24) | (r << 16) | (g << 8) | b)
     return out
 
 def main():

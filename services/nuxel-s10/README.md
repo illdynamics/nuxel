@@ -23,7 +23,7 @@ Installed files (phone rootfs):
 ## Why
 
 * **Audio**: RDMA0 never advances `hw_ptr`; RDMA1 -> SIFS1 -> UAIF1 works at
-  44.1 kHz.  The ALSA default points at `hw:0,1`, the static PipeWire sink is
+  48 kHz (44.1 kHz leaves `hw_ptr` at 0 and returns EIO).  The ALSA default points at `hw:0,1`, the static PipeWire sink is
   `alsa_output.hw_0_1`, and the route script stops after the first blocked
   `amixer` open instead of accumulating D-state processes.
 * **Wi-Fi**: `nuxel-wifi.service` unblocks the radio, enables every stored

@@ -95,7 +95,7 @@
     70% { transform: rotate(-0.8deg) translateX(0); }
     74% { transform: rotate(0.4deg) translateX(0); }
 }
-.lockscreen-handle.grabbed { will-change: transform; filter: drop-shadow(0 6px 22px rgba(80, 200, 255, 0.55)); cursor: grabbing; }
+.lockscreen-handle.grabbed { will-change: transform; filter: brightness(1.12); cursor: grabbing; }
 /* Stop the invitation the instant a real drag starts; the drag gesture owns
    the container transform and this child stays still until the gesture ends. */
 .lockscreen-handle.grabbed .lockscreen-lockhead-motion,
@@ -105,7 +105,7 @@ body.display-off .lockscreen-lockhead-motion,
 body.display-off .lockscreen-hint::before { animation-play-state: paused; }
 /* Subtle armed acknowledgement once the upward distance reaches the threshold.
    Geometry, position and artwork are untouched. */
-.lockscreen-handle.armed { will-change: transform; filter: drop-shadow(0 0 24px rgba(120, 220, 255, 0.85)); }
+.lockscreen-handle.armed { will-change: transform; filter: brightness(1.18); }
 .lockscreen-handle.unlocking { will-change: transform, opacity; opacity: 0; transform: translateY(-160px) scale(1.15); transition: transform .28s ease-out, opacity .28s ease-out; }
 .lockscreen-handle.wiggling .lockscreen-lockhead-motion { will-change: transform; }
 @media (prefers-reduced-motion: reduce) {
@@ -331,4 +331,165 @@ body.display-off .lockscreen-indicator .lockscreen-indicator-glow {
         transition: none !important;
     }
     .lockscreen-indicator.active .lockscreen-indicator-glow { opacity: .6; }
+}
+
+/* ==========================================================================
+   PWNAGE-34000 console-transport + file-transfer indicators
+   --------------------------------------------------------------------------
+   The main row keeps the charging / PC / live-console artwork.  This second
+   compact row reports the independent console transports (serial / USB / WLAN)
+   and file-transfer state.  It is a deliberate responsive row, not an overflow
+   of the primary row, so every active transport stays visible simultaneously.
+   ========================================================================== */
+.lockscreen-transports {
+    position: absolute;
+    top: 252px;
+    left: 0;
+    right: 0;
+    z-index: 3;
+    min-height: 40px;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 0 10px;
+    pointer-events: none;
+    -webkit-user-select: none;
+    user-select: none;
+}
+.lockscreen-transport {
+    display: none;
+    flex: 0 0 auto;
+    width: 40px;
+    height: 40px;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity .2s ease;
+}
+.lockscreen-transport img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    pointer-events: none;
+    -webkit-user-drag: none;
+}
+.lockscreen-transport.active {
+    display: block;
+    visibility: visible;
+    opacity: 1;
+}
+.lockscreen-transport.file-transfer-ind { width: 42px; height: 42px; }
+
+/* ==========================================================================
+   PWNAGE-34000 lockscreen connection-mode button + selector overlay
+   --------------------------------------------------------------------------
+   The button is placed on the right in comfortable thumb reach.  The overlay is
+   a limited system action: it never unlocks the desktop or exposes files.
+   ========================================================================== */
+.lockscreen-connection-mode {
+    position: absolute;
+    right: 12px;
+    bottom: calc(84px + env(safe-area-inset-bottom, 0px));
+    z-index: 4;
+    width: 64px;
+    height: 64px;
+    padding: 6px;
+    border: 1px solid rgba(127, 212, 255, 0.55);
+    border-radius: 16px;
+    background: rgba(4, 18, 31, 0.72);
+    color: inherit;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+}
+.lockscreen-connection-mode img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    pointer-events: none;
+    -webkit-user-drag: none;
+}
+.lockscreen-connection-mode:active { transform: scale(.94); background: rgba(20, 48, 72, 0.85); }
+
+.connection-mode-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 600;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding: 14px;
+    background: rgba(0, 0, 0, 0.42);
+}
+.connection-mode-overlay[hidden] { display: none; }
+.connection-mode-sheet {
+    width: 100%;
+    max-width: 340px;
+    background: #0b192d;
+    border: 1px solid rgba(127, 212, 255, 0.4);
+    border-radius: 18px;
+    padding: 16px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.45);
+    color: #eaf4ff;
+}
+.connection-mode-sheet h2 {
+    margin: 0 0 6px;
+    font-size: 20px;
+    font-weight: 600;
+    letter-spacing: .02em;
+}
+.connection-mode-hint {
+    margin: 0 0 12px;
+    font-size: 13px;
+    color: rgba(234, 244, 255, 0.78);
+}
+.connection-mode-option {
+    display: block;
+    width: 100%;
+    margin: 8px 0;
+    padding: 12px 14px;
+    text-align: left;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.06);
+    color: inherit;
+    cursor: pointer;
+    touch-action: manipulation;
+}
+.connection-mode-option.selected {
+    border-color: rgba(127, 212, 255, 0.85);
+    background: rgba(56, 116, 168, 0.32);
+}
+.connection-mode-option:disabled { opacity: .55; }
+.cm-name { display: block; font-size: 16px; font-weight: 600; }
+.cm-desc { display: block; margin-top: 3px; font-size: 12px; color: rgba(234, 244, 255, 0.75); }
+.connection-mode-status {
+    margin: 10px 0 4px;
+    font-size: 12px;
+    color: #b4d8ff;
+}
+.connection-mode-dismiss {
+    width: 100%;
+    margin-top: 8px;
+    padding: 12px;
+    border: 0;
+    border-radius: 12px;
+    background: #203c60;
+    color: #fff;
+    font-weight: 600;
+    cursor: pointer;
+    touch-action: manipulation;
+}
+@media (orientation: landscape) and (max-height: 500px) {
+    .lockscreen-transports { top: auto; bottom: 10px; right: 12px; left: auto; min-height: 0; flex-direction: column; gap: 3px; padding: 0; }
+    .lockscreen-transport { width: 30px; height: 30px; }
+    .lockscreen-connection-mode { width: 52px; height: 52px; right: 10px; bottom: 10px; }
 }

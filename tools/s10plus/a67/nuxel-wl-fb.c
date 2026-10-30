@@ -1347,6 +1347,13 @@ int main(int argc, char **argv) {
     }
     stop_requested = (d.request_stop && pid > 0) ? 1 : 0;
     if (stop_requested) {
+      /* nuxel-anim-player watches ANIM_STOP (/var/lib/nuxel/anim-stop); the
+         first-light hold painter watches HOLD_STOP.  Writing only HOLD_STOP
+         left the MP4 player running until the identity-verified SIGTERM 10 s
+         later, which is the reported "spinning penguin takes forever" delay.
+         Write both stop files so the animation exits on its own first frame
+         boundary and the confirmation wait is normally a few milliseconds. */
+      wr_state(ANIM_STOP, "ANIMATION_STOP_REQUESTED\n");
       wr_state(HOLD_STOP, "ANIMATION_STOP_REQUESTED\n");
       owner_record("ANIMATION_STOP_REQUESTED", 0, d.reason);
       kmsg_write("%s requested=1 painter_pid=%ld loops=%d/%d reason=%s",

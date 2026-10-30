@@ -39,7 +39,7 @@ def test_canonical_registry_has_exactly_the_three_console_entries_once():
     ids = [a["id"] for a in consoles]
     assert Counter(ids) == Counter({aid: 1 for aid in EXPECTED}), ids
     assert len(ids) == len(set(ids)) == 3
-    assert doc["registry_version"] == 6
+    assert doc["registry_version"] == 7
     for app in consoles:
         exp = EXPECTED[app["id"]]
         assert app["name"] == exp["name"]

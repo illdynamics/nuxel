@@ -1,0 +1,4 @@
+== final installed checksums (post nuxel-pow boot-asset change) ==
+5617baf53fc451bff2e5ef56a00bb816271b026862789f538c0548eeef24ce2d  /usr/libexec/nuxel/nuxel-sound-cue
+c91aa110655ea444bba1fc1b5d6fc14fccfd5f0c1e7ba5a0d0b03a9c055926f8  /usr/lib/nuxel/nuxel-bridge/hw_providers.py
+52540a1ab20b108b423dc57930db73181c4a61cb6fa3bf7ec6d56f0853086a7e  /usr/lib/nuxel/nuxel-bridge/api.py

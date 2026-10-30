@@ -577,10 +577,165 @@ def live_console(pc_connected: Optional[bool] = None) -> Dict[str, Any]:
     }
 
 
+
+def _proc_net_sockets(proc_root: str = "/proc") -> List[Dict[str, Any]]:
+    """Return TCP socket lines from /proc/net/tcp and /proc/net/tcp6."""
+    out: List[Dict[str, Any]] = []
+    for name in ("tcp", "tcp6"):
+        text = _read(os.path.join(proc_root, "net", name))
+        if not text:
+            continue
+        for line in text.splitlines():
+            if "local_address" in line:
+                continue
+            fields = line.split()
+            if len(fields) < 4:
+                continue
+            host_hex, _, port_hex = fields[1].partition(":")
+            try:
+                port = int(port_hex, 16)
+            except ValueError:
+                continue
+            out.append({
+                "proto": name,
+                "local_hex": host_hex,
+                "port": port,
+                "state": fields[3].upper(),
+            })
+    return out
+
+
+def _established_ssh_sessions(proc_root: str = "/proc", port: int = 22) -> List[Dict[str, Any]]:
+    """Return ESTABLISHED TCP connections on the SSH port (state 01)."""
+    return [s for s in _proc_net_sockets(proc_root)
+            if s["port"] == int(port) and s["state"] == "01"]
+
+
+_TRANSPORT_CACHE: Dict[str, Any] = {"at": 0.0}
+_TRANSPORT_CACHE_TTL_S = 5.0
+
+
+def _cached_tri_link_facts() -> Dict[str, Any]:
+    global _TRANSPORT_CACHE
+    import time as _time
+    now = _time.monotonic()
+    cached = _TRANSPORT_CACHE
+    if cached.get("at") and now - cached.get("at", 0.0) < _TRANSPORT_CACHE_TTL_S:
+        return cached
+    facts: Dict[str, Any] = {"wifi_status": "unknown", "usb_status": "unknown"}
+    try:
+        import importlib
+        tl = importlib.import_module("tri_link_status")
+        wl = tl.wifi_status()
+        us = tl.usb_status()
+        facts["wifi_status"] = wl.get("status", "unknown")
+        facts["usb_status"] = us.get("status", "unknown")
+    except Exception as exc:  # noqa: BLE001
+        facts["wifi_status"] = "tri-link-status-unavailable"
+        facts["usb_status"] = "tri-link-status-unavailable"
+        facts["error"] = str(exc)
+    facts["at"] = now
+    _TRANSPORT_CACHE = facts
+    return facts
+
+
+def console_transports(serial_live: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    """Return independent transport states for the lockscreen console icons.
+
+    Semantics (documented deliberately):
+
+      serial_active   the USB CDC-ACM live console has an actual session: the
+                      nuxel-console process holds the console tty fd (or a
+                      validated serving lease) AND the USB data link is up.
+                      This is exactly the existing live-console display predicate.
+
+      wlan_active     the project defines a live WLAN console as a reachable,
+                      key-only sshd listener on a non-loopback Wi-Fi interface.
+                      It is true when that listener is present; the number of
+                      currently ESTABLISHED SSH sessions is reported separately
+                      so a listening-but-idle console is not conflated with an
+                      active remote session.
+
+      usb_active      an SSH listener over a USB network interface.  On the
+                      current 4.14.253 kernel the USB-network gadget is blocked
+                      (NCM teardown panic), so this is reported as blocked and
+                      never presented as active.
+    """
+    if serial_live is None:
+        serial_live = live_console()
+    serial_active = bool(serial_live.get("active"))
+    serial_source = serial_live.get("source", "unknown")
+
+    # WLAN/USB reachability uses the tri-link module's definition, cached for a
+    # few seconds so status polling never re-reads /proc/config.gz on every tick.
+    facts = _cached_tri_link_facts()
+    wifi_detail = facts.get("wifi_status", "unknown")
+    wifi_ready = wifi_detail == "AVAILABLE"
+    usb_detail = facts.get("usb_status", "blocked-kernel")
+    usb_ready = usb_detail == "AVAILABLE"
+
+    established = _established_ssh_sessions()
+
+    return {
+        "serial": {
+            "active": serial_active,
+            "source": serial_source,
+            "pids": serial_live.get("pids", []),
+        },
+        "usb": {
+            "active": usb_ready,
+            "source": usb_detail,
+            "sessions": 0,
+        },
+        "wlan": {
+            "active": wifi_ready,
+            "source": wifi_detail,
+            "sessions": len(established),
+        },
+    }
+
+
+def _read_state_file(path: str) -> Dict[str, Any]:
+    raw = _read(path)
+    if not raw:
+        return {}
+    try:
+        import json as _json
+        data = _json.loads(raw)
+        return data if isinstance(data, dict) else {}
+    except Exception:
+        return {}
+
+
+def connection_mode_state(run_root: str = "/run") -> Dict[str, Any]:
+    """Read the persisted connection-mode selection and activation result.
+
+    Selection is persisted at /run/nuxel/connection-mode.json; activation truth
+    is written by the USB-mode helper at /run/nuxel/usb-mode.state.  A selected
+    File Transfer mode is NOT "active" until the helper records success.
+    """
+    base = os.path.join(run_root, "nuxel")
+    selection = _read_state_file(os.path.join(base, "connection-mode.json"))
+    activation = _read_state_file(os.path.join(base, "usb-mode.state"))
+    selected = str(selection.get("mode", "charging"))
+    if selected not in ("charging", "file_transfer"):
+        selected = "charging"
+    return {
+        "selected": selected,
+        "transition_in_progress": bool(selection.get("transition_in_progress")),
+        "host_connected": bool(usb_connection()["pc_connected"]),
+        "endpoint_state": activation.get("endpoint_state", "inactive"),
+        "active": bool(activation.get("active")),
+        "source": activation.get("source", "unavailable:not-activated"),
+        "last_error": activation.get("error"),
+    }
+
 def get_indicators() -> Dict[str, Any]:
     power = power_state()
     usb = usb_connection()
     console = live_console(bool(usb["pc_connected"]))
+    transports = console_transports(console)
+    mode = connection_mode_state()
     return {
         "charging": {
             "external_power": bool(power["external_power"]),
@@ -603,10 +758,45 @@ def get_indicators() -> Dict[str, Any]:
             "source": console["source"],
             "pids": console.get("pids", []),
         },
+        "console_transports": {
+            "serial": {
+                "active": bool(transports["serial"]["active"]),
+                "source": transports["serial"]["source"],
+                "pids": transports["serial"].get("pids", []),
+            },
+            "usb": {
+                "active": bool(transports["usb"]["active"]),
+                "source": transports["usb"]["source"],
+                "sessions": transports["usb"].get("sessions", 0),
+            },
+            "wlan": {
+                "active": bool(transports["wlan"]["active"]),
+                "source": transports["wlan"]["source"],
+                "sessions": transports["wlan"].get("sessions", 0),
+            },
+        },
+        "file_transfer": {
+            "active": bool(mode["active"]),
+            "selected": mode["selected"],
+            "endpoint_state": mode["endpoint_state"],
+            "source": mode["source"],
+            "error": mode["last_error"],
+        },
+        "connection_mode": {
+            "selected": mode["selected"],
+            "transition_in_progress": mode["transition_in_progress"],
+            "host_connected": mode["host_connected"],
+            "endpoint_state": mode["endpoint_state"],
+            "last_error": mode["last_error"],
+        },
         "sources": {
             "power": power["source"],
             "usb": usb["source"],
             "live_console": console["source"],
+            "console_serial": transports["serial"]["source"],
+            "console_usb": transports["usb"]["source"],
+            "console_wlan": transports["wlan"]["source"],
+            "file_transfer": mode["source"],
         },
     }
 
