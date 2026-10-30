@@ -36,7 +36,7 @@
 // Setting is now tri-state (ON/OFF/UNKNOWN) and reports the real hci0/BlueZ
 // state instead of defaulting to OFF, and the status/manifest feature list
 // names the verified Bluetooth and near-complete audio surface.
-const CACHE_VERSION = 'v58-p021-bluetooth';
+const CACHE_VERSION = 'v59-p37000-butterscotch';
 const CACHE_NAME = 'nuxel-home-' + CACHE_VERSION;   // version marker sent to clients
 const STATIC_CACHE = 'nuxel-static-' + CACHE_VERSION;
 const DYNAMIC_CACHE = 'nuxel-dynamic-' + CACHE_VERSION;

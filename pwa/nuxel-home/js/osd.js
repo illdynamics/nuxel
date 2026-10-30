@@ -43,7 +43,7 @@
       'border:1px solid rgba(96,165,250,0.35)', 'border-radius:14px',
       'padding:10px 16px', 'min-width:132px', 'text-align:center', 'z-index:100001',
       'color:#e8f0ff', 'font:600 14px/1.35 -apple-system,system-ui,sans-serif',
-      'box-shadow:0 10px 30px rgba(0,0,0,0.45)', 'opacity:0',
+      'box-shadow:0 2px 4px rgba(0,0,0,0.45)', 'opacity:0',
       'transition:opacity 180ms ease', 'pointer-events:none'
     ].join(';');
     document.body.appendChild(el);
@@ -101,7 +101,7 @@
     var html = '<div id="nuxel-power-card" style="position:absolute;left:50%;top:50%;' +
       'transform:translate(-50%,-50%);min-width:250px;max-width:86vw;' +
       'background:rgba(12,22,38,0.98);border:1px solid rgba(96,165,250,.35);' +
-      'border-radius:18px;box-shadow:0 24px 70px rgba(0,0,0,.6);overflow:hidden">' +
+      'border-radius:18px;box-shadow:0 2px 4px rgba(0,0,0,.6);overflow:hidden">' +
       '<div style="padding:14px 16px 10px;font-size:12px;letter-spacing:.08em;' +
       'text-transform:uppercase;color:#9fd0ff;border-bottom:1px solid rgba(96,165,250,.18)">Power</div>' +
       '<div style="padding:8px">';

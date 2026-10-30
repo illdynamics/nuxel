@@ -1,4 +1,73 @@
 # PWNAGE-37000 🐧 BUTTERSCOTCH BUTTERSMOOTH — Implementation Report
+# PWNAGE-37000 🐧 BUTTERSCOTCH BUTTERSMOOTH — 2026-10-30 arcade-profile + live pass
+
+## Summary
+Deployed a focused, measurable Butterscotch pass to the live S10+
+(`192.168.178.167`, SSH key `~/.ssh/wicked_wqn_id_rsa`). Rendering backend is
+unchanged: WebKitGTK 2.54 home PWA with software rendering
+(`WEBKIT_DISABLE_COMPOSITING_MODE=1`, `GSK_RENDERER=cairo`, `LIBGL_ALWAYS_SOFTWARE=1`)
+composited by `nuxel-wl-fb` to the AMOLED. The pass targets the real costs of that
+backend: CPU rasterised blur/shadows, persistent compositing layers, continuous
+idle animation, duplicated provider calls, and oversized decoded navigation art.
+
+## What changed
+- **Lockscreen idle animation**: the radial status glow was a continuous
+  `opacity+scale` loop; it is now a static low-opacity accent. The charging/PC/
+  live icon pulses remain (bounded, nonblocking, display-off paused).
+- **Persistent compositing layers removed**: `#quick-settings` and `.recents-view`
+  no longer hold `will-change` while hidden.
+- **Remaining blur removed**: the notification panel's inline
+  `backdrop-filter: blur(16px)` is gone.
+- **Shadows made crisp**: all panel/icon/toast/OSD/bootlog shadows reduced from
+  12-70px blur radii to 2-8px crisp shadows; pixel borders keep separation.
+- **Navigation art de-bloated**: the DOM nav dock loaded three ~1MB/1536px PNGs
+  for 48px buttons. Three 96px pre-scaled pixel-art PNGs now load from
+  `pwa/nuxel-home/assets/` (2.5 MB -> 12 KB encoded; ~18.9 MB -> ~108 KB decoded).
+- **Quick Settings de-duplicated**: `open()` no longer issues duplicate
+  Bluetooth/Location bridge calls (`_syncState` already refreshes them).
+- **Service-worker cache**: bumped to `v59-p37000-butterscotch`; index resource
+  query strings bumped to `?v=p37000` so a redeploy cannot serve stale CSS/JS.
+
+## Measurements
+Static scanner `tools/perf/butterscotch-scan.py`:
+
+| metric | before | after |
+|---|---|---|
+| backdrop-filter (JS inline) | 1 | 0 |
+| blur() filters | 1 | 0 |
+| max box-shadow blur | 20px | 8px |
+| box-shadow blurs >8px | 5 | 0 |
+| persistent `will-change` | 7 | 5 |
+| infinite idle animations | 7 | 6 |
+| DOM nav art (encoded) | 2,506,721 B | 12,253 B |
+| DOM nav art (decoded RGBA est.) | ~18,874,464 B | ~110,592 B |
+
+Live device (screen ON, lockscreen idle):
+- WebKitWebProcess RSS: 617,504 kB (pre-restart) -> 481,152 kB after deploy.
+- `nuxel-wl-fb` state: `display=on fps_1s=5 blits=44 idle_ms=17474` — the static
+  lockscreen is not continuously compositing.
+- `top` idle samples: 62.5-95.8% idle (median ~93% idle) vs ~68% idle at first
+  screen-on settle before the changes. One periodic spike is the bounded 9s
+  wiggle/status poll, not a continuous loop.
+
+## Tests
+`python3 -m pytest tests/pwnage37000 tests/a72 tests/a69 tests/a52 tests/a80 tests/pwnage30000 tests/pwnage33000 tests/pwnage34000 -q`
+-> **199 passed**.
+New coverage: `tests/pwnage37000/test_butterscotch_perf.py` (60 checks) pins the
+arcade profile invariants. `tests/nuxel-zsh` still fails 2 macOS-only zsh color
+tests unrelated to this pass (256-color escape mismatch on the local zsh build).
+
+## Deployment & rollback
+Deployed over SSH with per-file `.prev` backups to
+`/var/backups/nuxel/pwnage37000-butter-20261030T152347/` (13 files + 4 second-stage
+updates), then `systemctl restart nuxel-wayland.service`. Rollback: copy `.prev`
+files back and restart the session. No kernel, firmware, partition, bootloader,
+or graphics-stack changes were made.
+
+Evidence:
+`docs/beta-finalization/live/evidence/pwnage-37000/butterscotch-live-pass-20261030.txt`
+
+---
 
 ## 2026-10-29 live S10+ pass (Wi-Fi boot policy + boot latency)
 
