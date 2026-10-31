@@ -4,7 +4,7 @@
 **Target:** Galaxy S10+ SM-G975F (`beyond2lte`), Fedora 43 ARM64, kernel 4.14.253.
 **Live host:** `root@192.168.178.167`, key `~/.ssh/wicked_wqn_id_rsa`.
 **Base:** `dfd9e76` (`feature/pwnage-43000-final`; the pre-existing dirty tree was preserved, not reset).
-**Commit:** `77c3890` — `feat(pwnage-44000): home drag, sticky notes, 15-entry power menu, screenshot, gallery, files and status truth`.
+**Commit:** `100c689` (implementation + evidence); final docs-hash commit follows — `feat(pwnage-44000): home drag, sticky notes, 15-entry power menu, screenshot, gallery, files and status truth`.
 
 ## 1. Implemented
 
