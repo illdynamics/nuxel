@@ -1,0 +1,42 @@
+Warning: Permanently added '192.168.178.167' (ED25519) to the list of known hosts.
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+phoc pid=12095
+7f9a3c0000-7f9bb1e000 r-xp 00000000 103:0f 3412052                       /usr/lib64/libgallium_dri.so
+7f9bb1e000-7f9bb27000 ---p 0175e000 103:0f 3412052                       /usr/lib64/libgallium_dri.so
+7f9bb27000-7f9bbc0000 r--p 01767000 103:0f 3412052                       /usr/lib64/libgallium_dri.so
+7f9bbc0000-7f9bbcc000 rw-p 01800000 103:0f 3412052                       /usr/lib64/libgallium_dri.so
+7f9bc00000-7f9bc47000 r-xp 00000000 103:0f 7128                          /usr/lib64/libEGL_mesa.so.0.0.0
+7f9bc47000-7f9bc54000 ---p 00047000 103:0f 7128                          /usr/lib64/libEGL_mesa.so.0.0.0
+7f9bc54000-7f9bc60000 r--p 00054000 103:0f 7128                          /usr/lib64/libEGL_mesa.so.0.0.0
+7f9bc60000-7f9bc61000 rw-p 00060000 103:0f 7128                          /usr/lib64/libEGL_mesa.so.0.0.0
+7f9cf40000-7f9cf63000 r-xp 00000000 103:0f 7138                          /usr/lib64/libGLESv2.so.2.1.0
+7f9cf63000-7f9cf7e000 ---p 00023000 103:0f 7138                          /usr/lib64/libGLESv2.so.2.1.0
+7f9cf7e000-7f9cf80000 r--p 0002e000 103:0f 7138                          /usr/lib64/libGLESv2.so.2.1.0
+7f9cf80000-7f9cf81000 rw-p 00030000 103:0f 7138                          /usr/lib64/libGLESv2.so.2.1.0
+
+lrwx------. 1 root root 64 Oct 31 23:08 13 -> /dev/mali0
+lrwx------. 1 root root 64 Oct 31 23:08 14 -> /dev/mali0
+lrwx------. 1 root root 64 Oct 31 23:08 15 -> /dev/mali0
+lrwx------. 1 root root 64 Oct 31 23:08 16 -> /dev/udmabuf
+lrwx------. 1 root root 64 Oct 31 23:08 26 -> anon_inode:dmabuf_udmabuf
+
+WLR_HEADLESS_OUTPUTS=1
+NUXEL_GPU=1
+MESA_LOADER_DRIVER_OVERRIDE=panfrost
+WLR_LIBINPUT_NO_DEVICES=1
+WLR_RENDERER=gles2
+WLR_BACKENDS=headless,libinput
+LIBGL_DRIVERS_PATH=/usr/lib64/dri
+MESA_SHADER_CACHE_DISABLE=1
+MESA_KBASE_NODE=/dev/mali0
+
+mali0                   1696
+  kctx-0xffffff80114fd000       1696 | tgid=     12095 | pid=     12095  | name=                phoc

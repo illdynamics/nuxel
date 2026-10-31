@@ -1,0 +1,39 @@
+# Nuxel S10+ - DRM core + kbase GPU acceleration.
+#
+# CONFIG_DRM is enabled so Mesa and wlroots see a DRM-capable kernel build and
+# can use DMA-BUF.  The pinned 4.14 tree's Exynos7 DECON DRM driver is NOT the
+# Exynos 9820 DPU20 display driver and, when enabled, registers the same
+# "exynos-decon" platform driver name as the working vendor fbdev driver.  It
+# wins that registration and removes /dev/fb0, leaving the panel dark.  Keep it
+# off; the panel continues to be driven by EXYNOS_DPU20 (fbdev) while the Mali
+# GPU is driven through ARM kbase (/dev/mali0).
+CONFIG_DRM=y
+CONFIG_DRM_KMS_HELPER=y
+CONFIG_DRM_KMS_FB_HELPER=y
+CONFIG_DRM_FBDEV_EMULATION=y
+CONFIG_DRM_FBDEV_OVERALLOC=100
+CONFIG_DRM_MIPI_DSI=y
+CONFIG_DRM_EXYNOS=n
+CONFIG_DRM_PANEL=y
+CONFIG_DRM_BRIDGE=y
+
+# Buffer sharing: Mesa panfrost <-> kbase <-> wlroots udmabuf allocator.
+CONFIG_DMA_SHARED_BUFFER=y
+CONFIG_DMA_CMA=y
+CONFIG_CMA=y
+CONFIG_CMA_SIZE_MBYTES=64
+CONFIG_SYNC_FILE=y
+CONFIG_UDMABUF=y
+
+# Vendor Mali-G76 (Bifrost) kbase, unchanged from the working image.
+CONFIG_MALI_MIDGARD=y
+CONFIG_MALI_BIFROST_R26P0=y
+CONFIG_MALI_REAL_HW=y
+CONFIG_MALI_DEBUG_SYS=y
+
+# Panel/fbdev path that must keep owning the AMOLED.
+CONFIG_FB=y
+CONFIG_EXYNOS_DPU20=y
+CONFIG_EXYNOS_MIPI_DSIM=y
+CONFIG_ION=y
+CONFIG_ION_EXYNOS=y

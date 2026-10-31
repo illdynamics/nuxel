@@ -10,8 +10,8 @@ Before=nuxel-wl-fb.service nuxel-fallback.service
 
 [Service]
 Type=simple
-# phoc with wlroots 0.19: headless backend + pixman renderer is the only Wayland
-# output this kernel (CONFIG_DRM unset) can offer.
+# phoc with wlroots 0.19.  The wrapper tries Mali-G76 GLES2 through Mesa
+# panfrost on ARM kbase first, and falls back to pixman if that path fails.
 Environment=WLR_BACKENDS=headless,libinput
 # The handset has NO VT (/dev/tty0, /sys/class/vtconsole, /proc/consoles all
 # absent), so a VT-bound seat can never activate; libseat's noop backend
@@ -28,13 +28,12 @@ Environment=WLR_LIBINPUT_NO_DEVICES=1
 # /dev/input/eventN node that carries INPUT_PROP_DIRECT.  Real evdev, real
 # libinput parsing, real wl_touch - no synthesised events.
 Environment=LD_PRELOAD=/usr/lib/nuxel/libnuxel-libinput-path.so
-Environment=WLR_RENDERER=pixman
 Environment=WLR_HEADLESS_OUTPUTS=1
 Environment=XDG_RUNTIME_DIR=/run/nuxel-wayland
 Environment=XDG_SESSION_TYPE=wayland
 ExecStartPre=/bin/mkdir -p /run/nuxel-wayland
 ExecStartPre=/bin/chmod 700 /run/nuxel-wayland
-ExecStart=/usr/sbin/phoc --no-xwayland -C /etc/nuxel/phoc-phone.ini -E /usr/lib/nuxel/nuxel-session.sh
+ExecStart=/usr/lib/nuxel/nuxel-wayland-gpu-wrapper.sh
 Restart=on-failure
 RestartSec=3
 

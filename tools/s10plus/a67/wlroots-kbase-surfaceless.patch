@@ -1,0 +1,71 @@
+diff --git a/render/egl.c b/render/egl.c
+index 6f3e9c8..a27569e 100644
+--- a/render/egl.c
++++ b/render/egl.c
+@@ -301,16 +301,21 @@ static bool egl_init_display(struct wlr_egl *egl, EGLDisplay display,
+ 		EGLAttrib device_attrib;
+ 		if (!egl->procs.eglQueryDisplayAttribEXT(egl->display,
+ 				EGL_DEVICE_EXT, &device_attrib)) {
+-			wlr_log(WLR_ERROR, "eglQueryDisplayAttribEXT(EGL_DEVICE_EXT) failed");
+-			return false;
+-		}
+-		egl->device = (EGLDeviceEXT)device_attrib;
+-
+-		device_exts_str =
+-			egl->procs.eglQueryDeviceStringEXT(egl->device, EGL_EXTENSIONS);
+-		if (device_exts_str == NULL) {
+-			wlr_log(WLR_ERROR, "eglQueryDeviceStringEXT(EGL_EXTENSIONS) failed");
+-			return false;
++			if (getenv("MESA_KBASE_NODE") == NULL) {
++				wlr_log(WLR_ERROR, "eglQueryDisplayAttribEXT(EGL_DEVICE_EXT) failed");
++				return false;
++			}
++			wlr_log(WLR_INFO, "No EGL device (kbase); continuing without DRM identity");
++			egl->device = EGL_NO_DEVICE_EXT;
++			device_exts_str = "";
++		} else {
++			egl->device = (EGLDeviceEXT)device_attrib;
++			device_exts_str =
++				egl->procs.eglQueryDeviceStringEXT(egl->device, EGL_EXTENSIONS);
++			if (device_exts_str == NULL) {
++				wlr_log(WLR_ERROR, "eglQueryDeviceStringEXT(EGL_EXTENSIONS) failed");
++				return false;
++			}
+ 		}
+ 
+ #ifdef EGL_DRIVER_NAME_EXT
+@@ -582,6 +587,15 @@ struct wlr_egl *wlr_egl_create_with_drm_fd(int drm_fd) {
+ 		wlr_log(WLR_DEBUG, "EXT_platform_device not supported");
+ 	}
+ 
++	/* Nuxel: kbase has no DRM node.  Mesa panfrost can still bring up a
++	 * surfaceless EGL display on /dev/mali0; MESA_KBASE_NODE gates it. */
++	if (drm_fd < 0 && getenv("MESA_KBASE_NODE") != NULL) {
++		if (egl_init(egl, EGL_PLATFORM_SURFACELESS_MESA, EGL_DEFAULT_DISPLAY, allow_software)) {
++			wlr_log(WLR_DEBUG, "Using EGL_PLATFORM_SURFACELESS_MESA (kbase)");
++			return egl;
++		}
++	}
++
+ 	if (egl->exts.KHR_platform_gbm && drm_fd >= 0) {
+ 		int gbm_fd = open_render_node(drm_fd);
+ 		if (gbm_fd < 0) {
+diff --git a/render/wlr_renderer.c b/render/wlr_renderer.c
+index e65314c..16da161 100644
+--- a/render/wlr_renderer.c
++++ b/render/wlr_renderer.c
+@@ -232,9 +232,13 @@ static struct wlr_renderer *renderer_autocreate(struct wlr_backend *backend, int
+ 	bool own_drm_fd = false;
+ 
+ 	if ((is_auto && WLR_HAS_GLES2_RENDERER) || strcmp(renderer_name, "gles2") == 0) {
+-		if (!open_preferred_drm_fd(backend, &drm_fd, &own_drm_fd)) {
++		bool kbase = getenv("MESA_KBASE_NODE") != NULL;
++		if (!open_preferred_drm_fd(backend, &drm_fd, &own_drm_fd) && !kbase) {
+ 			log_creation_failure(is_auto, "Cannot create GLES2 renderer: no DRM FD available");
+ 		} else {
++			if (kbase && drm_fd < 0) {
++				wlr_log(WLR_INFO, "No DRM FD; using Mesa kbase surfaceless GLES2");
++			}
+ #if WLR_HAS_GLES2_RENDERER
+ 			renderer = wlr_gles2_renderer_create_with_drm_fd(drm_fd);
+ #else
