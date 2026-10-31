@@ -7,7 +7,7 @@
 // REGISTRY_VERSION that the launcher publishes on its evidence channel and that
 // tools/s10plus/a33/tests/launcher-registry-test.js asserts ("org.nuxel.Terminal"
 // and "nuxel-settings" present, every PWA served under /pwa/nuxel-apps/).
-const NUXEL_REGISTRY_VERSION = 7;
+const NUXEL_REGISTRY_VERSION = 8;
 
 const NUXEL_APPS = {
     // Native shell apps
@@ -251,6 +251,73 @@ const NUXEL_APPS = {
         description: 'SnekByte — Nuxel Arcade',
         capabilities: ['input:keyboard', 'input:touch'], docked: false,
     },
+
+    // PWNAGE-43000: real Flatpak applications and lightweight native tools.
+    // Each entry has a launchable executable plus its real desktop/icon source.
+    'org.mozilla.firefox': {
+        id: 'org.mozilla.firefox', name: 'Firefox', icon: '🦊', color: '#ff7139',
+        category: 'tools', type: 'native',
+        url: 'org.mozilla.firefox://',
+        native_binary: '/usr/lib/nuxel/nuxel-flatpak-firefox',
+        description: 'Firefox (Fedora aarch64 RPM; Flatpak blocked by CONFIG_USER_NS=n)',
+        capabilities: ['network:outbound', 'storage:persistent'], docked: false,
+    },
+    'org.videolan.VLC': {
+        id: 'org.videolan.VLC', name: 'VLC', icon: '🎬', color: '#ff8800',
+        category: 'media', type: 'native',
+        url: 'org.videolan.VLC://',
+        native_binary: '/usr/lib/nuxel/nuxel-flatpak-vlc',
+        description: 'VLC (Fedora aarch64 RPM; Flatpak blocked by CONFIG_USER_NS=n)',
+        capabilities: ['storage:persistent', 'audio:output'], docked: false,
+    },
+    'org.signal.Signal': {
+        id: 'org.signal.Signal', name: 'Signal', icon: '💬', color: '#3a76f0',
+        category: 'communication', type: 'native',
+        url: 'org.signal.Signal://',
+        native_binary: '/usr/lib/nuxel/nuxel-flatpak-signal',
+        description: 'Signal Desktop (aarch64 Flatpak installed; BLOCKED: no USER_NS)',
+        capabilities: ['network:outbound', 'storage:persistent'], docked: false,
+    },
+    'com.stremio.Stremio': {
+        id: 'com.stremio.Stremio', name: 'Stremio', icon: '🍿', color: '#7b5cff',
+        category: 'media', type: 'native',
+        url: 'com.stremio.Stremio://',
+        native_binary: '/usr/lib/nuxel/nuxel-flatpak-stremio',
+        description: 'Stremio (aarch64 Flatpak installed; BLOCKED: no USER_NS)',
+        capabilities: ['network:outbound', 'storage:persistent'], docked: false,
+    },
+    'org.gnome.FileRoller': {
+        id: 'org.gnome.FileRoller', name: 'Archive Manager', icon: '🗜️', color: '#d6a45c',
+        category: 'tools', type: 'native',
+        url: 'org.gnome.FileRoller://',
+        native_binary: '/usr/bin/file-roller',
+        description: 'Archive manager (Fedora aarch64 RPM)',
+        capabilities: ['storage:persistent'], docked: false,
+    },
+    'org.gnome.Loupe': {
+        id: 'org.gnome.Loupe', name: 'Image Viewer', icon: '🖼️', color: '#4a90e2',
+        category: 'media', type: 'native',
+        url: 'org.gnome.Loupe://',
+        native_binary: '/usr/bin/loupe',
+        description: 'GNOME Loupe image viewer (Fedora aarch64 RPM)',
+        capabilities: ['storage:persistent'], docked: false,
+    },
+    'org.gnome.Papers': {
+        id: 'org.gnome.Papers', name: 'Document Viewer', icon: '📄', color: '#e05d5d',
+        category: 'productivity', type: 'native',
+        url: 'org.gnome.Papers://',
+        native_binary: '/usr/bin/papers',
+        description: 'GNOME Papers PDF/document viewer (Fedora aarch64 RPM)',
+        capabilities: ['storage:persistent'], docked: false,
+    },
+    'org.gnome.SystemMonitor': {
+        id: 'org.gnome.SystemMonitor', name: 'System Monitor', icon: '📈', color: '#4caf50',
+        category: 'system', type: 'native',
+        url: 'org.gnome.SystemMonitor://',
+        native_binary: '/usr/bin/gnome-system-monitor',
+        description: 'Live CPU/memory/process monitor (Fedora aarch64 RPM)',
+        capabilities: [], docked: false,
+    },
 };
 
 // Launcher artwork is intentionally separate from the canonical app registry:
@@ -278,13 +345,21 @@ const NUXEL_APP_ICON_ASSETS = {
     'org.nuxel.Notes': '/assets/nuxel-applications-icon-pack/02-09_notes.png?v=p33000',
     'nuxel-camera': '/assets/nuxel-applications-icon-pack/03-01_camera.png?v=p33000',
     'org.nuxel.Browser': '/assets/nuxel-applications-icon-pack/01-09_browser-swirl.png?v=p33000',
+    'org.mozilla.firefox': '/assets/nuxel-applications-icon-pack/05-07_web-window.png',
+    'org.videolan.VLC': '/assets/nuxel-applications-icon-pack/03-04_video-player.png',
+    'org.signal.Signal': '/assets/nuxel-applications-icon-pack/01-06_pixel-envelope.png',
+    'com.stremio.Stremio': '/assets/nuxel-applications-icon-pack/06-04_casting-screen.png',
+    'org.gnome.FileRoller': '/assets/nuxel-applications-icon-pack/02-05_folders.png',
+    'org.gnome.Loupe': '/assets/nuxel-applications-icon-pack/03-02_gallery.png',
+    'org.gnome.Papers': '/assets/nuxel-applications-icon-pack/02-04_reader.png',
+    'org.gnome.SystemMonitor': '/assets/nuxel-applications-icon-pack/05-02_system-monitor.png',
 };
 
 function nuxelAppIcon(app) {
     const src = (app && (app.iconAsset || NUXEL_APP_ICON_ASSETS[app.id])) || '';
     if (!src) return '<span>' + ((app && app.icon) || '📱') + '</span>';
     const name = String((app && app.name) || 'App').replace(/[&<>'"]/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#39;', '"':'&quot;' }[c]));
-    return '<img src="' + src + '" alt="' + name + '" draggable="false" onerror="this.hidden=true;this.nextElementSibling.hidden=false"><span class="nuxel-icon-fallback" hidden>' + ((app && app.icon) || '📱') + '</span>';
+    return '<img src="' + src + '" alt="' + name + '" draggable="false" decoding="async" onerror="this.hidden=true;this.nextElementSibling.hidden=false"><span class="nuxel-icon-fallback" hidden>' + ((app && app.icon) || '📱') + '</span>';
 }
 try { window.NuxelAppIcon = nuxelAppIcon; } catch (e) { /* non-DOM registry test */ }
 

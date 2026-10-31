@@ -1,0 +1,54 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+=== status after acquisition ===
+{
+  "success": true,
+  "state": "fixed",
+  "provider_ready": true,
+  "fix_source": "network_wifi",
+  "fix_source_detail": "ipf fallback (from WiFi data)",
+  "fix_kind": "network",
+  "gnss_fix": false,
+  "network_fix": true,
+  "accuracy": 25000.0,
+  "latitude": 51.4005,
+  "longitude": 5.47196,
+  "last_fix_timestamp": 1793405390.0,
+  "last_fix_age_s": 10.628306865692139,
+  "active_clients": 1
+}
+=== stop lease; provider must disconnect ===
+s "{\"success\": true, \"active_clients\": 0, \"acquiring\": false, \"state\": \"no_fix\"}"
+geoclue=active
+=== wait 65s ===
+geoclue=inactive
+=== status after idle (must not reconnect) ===
+{
+  "state": "no_fix",
+  "provider_ready": false,
+  "provider_available": true,
+  "provider_detail": "GeoClue2 is installed but idle; an authorized acquisition will start it (provider_ready=false)",
+  "active_clients": 0
+}
+geoclue=inactive
+=== second acquire after idle (must restart provider) ===
+{
+  "success": true,
+  "state": "stale",
+  "provider_ready": true,
+  "fix_source": "network_wifi",
+  "fix_kind": "network",
+  "gnss_fix": false,
+  "network_fix": true,
+  "accuracy": 25000.0,
+  "latitude": 51.4005,
+  "longitude": 5.47196,
+  "active_clients": 1
+}

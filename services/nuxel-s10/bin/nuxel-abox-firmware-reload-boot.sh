@@ -30,30 +30,37 @@ calliope_ready() {
 }
 
 stop_session() {
-    systemctl stop nuxel-wayland.service 2>/dev/null || true
+    # PWNAGE-43000: stop ONLY the audio stack.  The compositor and the single
+    # framebuffer bridge must stay alive; tearing them down was the measured
+    # cause of the 30-second spinning-penguin / black-screen boot storm.
     systemctl stop nuxel-audio-route.service 2>/dev/null || true
     systemctl stop nuxel-audio-route-retry.service 2>/dev/null || true
+    systemctl stop nuxel-audio-session.service 2>/dev/null || true
     local n=0
-    while systemctl is-active nuxel-wayland.service nuxel-audio-route.service >/dev/null 2>&1; do
+    while systemctl is-active nuxel-audio-session.service >/dev/null 2>&1; do
         n=$((n + 1))
         [ "$n" -lt 80 ] || break
         sleep 0.1
     done
     n=0
-    while pgrep -f 'pipewire|wireplumber|gst-launch|pulseaudio' >/dev/null 2>&1; do
+    while pgrep -x pipewire >/dev/null 2>&1 || pgrep -x wireplumber >/dev/null 2>&1 || pgrep -x pipewire-pulse >/dev/null 2>&1; do
+        if [ "$n" -ge 30 ]; then
+            pkill -9 -x pipewire 2>/dev/null || true
+            pkill -9 -x wireplumber 2>/dev/null || true
+            pkill -9 -x pipewire-pulse 2>/dev/null || true
+            break
+        fi
         n=$((n + 1))
-        [ "$n" -lt 60 ] || break
         sleep 0.1
     done
-    sleep 0.5
+    sleep 0.2
 }
 
 start_session() {
-    log "restarting Nuxel audio route/session"
-    # Start the session FIRST: it publishes the PipeWire runtime/socket the
-    # route script verifies.  Starting the route before PipeWire exists made
-    # the route defer with "static PipeWire sink absent" on every cold boot.
-    systemctl --no-block start nuxel-wayland.service 2>/dev/null || true
+    log "restarting Nuxel standalone audio session"
+    # Start the audio session (its own cgroup) FIRST: it publishes the PipeWire
+    # runtime/socket the route script verifies.  Never start/stop wayland here.
+    systemctl --no-block start nuxel-audio-session.service 2>/dev/null || true
     n=0
     while [ "$n" -lt 100 ]; do
         [ -S /run/nuxel-wayland/pipewire-0 ] && break
@@ -96,7 +103,9 @@ while [ "$attempt" -lt "$ATTEMPTS" ]; do
     fi
     # BOOT_DONE IPC is asynchronous after the resume; poll instead of guessing.
     n=0
-    while [ "$n" -lt 40 ]; do
+    # The first PM cycle can return before calliope_sram_2/dram_2 are ready;
+    # retry promptly instead of burning 10 s on the known-incomplete attempt.
+    while [ "$n" -lt 20 ]; do
         if calliope_ready; then rc=0; break; fi
         n=$((n + 1))
         sleep 0.25
@@ -106,6 +115,7 @@ while [ "$attempt" -lt "$ATTEMPTS" ]; do
     # A later attempt needs the session gone again (PipeWire may have grabbed the
     # card between attempts on a retry path).
     stop_session
+    sleep 0.3
 done
 
 if [ "$rc" -eq 0 ]; then

@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Stremio
+Comment=Stremio — installed Flatpak; launch BLOCKED on this kernel (CONFIG_USER_NS=n, bubblewrap cannot create a user namespace)
+Exec=/usr/lib/nuxel/nuxel-flatpak-stremio
+Icon=stremio
+Terminal=false
+Categories=AudioVideo;Video;Player;
+StartupNotify=true

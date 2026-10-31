@@ -1,4 +1,166 @@
 # PWNAGE-37000 🐧 BUTTERSCOTCH BUTTERSMOOTH — Implementation Report
+
+
+# PWNAGE-37000B 🐧 BUTTERSCOTCH SMOOTH — 2026-10-31 responsiveness pass
+
+## 1. Architecture findings (measured live)
+
+- **UI:** Nuxel Home PWA (`pwa/nuxel-home`) served from `127.0.0.1:8000` by
+  `nuxel-web` and rendered by WebKitGTK 2.54 inside `nuxel-pwa-host`.
+- **Renderer:** software, not fbdev directly and not EGL:
+  `WEBKIT_DISABLE_COMPOSITING_MODE=1`, `GSK_RENDERER=cairo`,
+  `LIBGL_ALWAYS_SOFTWARE=1`, phoc/wlroots 0.19 headless + Pixman.
+- **Scanout:** `nuxel-wl-fb` is the single `/dev/fb0` writer. It takes
+  720x1520 compositor frames via `zwlr_screencopy_manager_v1`, converts
+  XRGB8888 -> the DECON's ABGR order, scales 2x to 1440x3040, and commits with
+  `FBIOPAN_DISPLAY`. `/dev/dri`/DRM is not available on this kernel
+  (`CONFIG_DRM` unset); fbdev is the *presentation target*, not the UI toolkit.
+- **Input:** libinput -> phoc -> WebKit pointer/touch events. The hardware
+  Back/Home/Recents dock is `nuxel-navdock` (layer-shell), but the same actions
+  also arrive through the host control FIFO.
+- **Measured baseline bottleneck:** two infinite lockscreen indicator animations
+  (`nuxel-indicator-usb`, `nuxel-indicator-live`) on 1.0-1.4 MP PNGs. WebKit sat
+  at **141-145% CPU**, phoc at **33.5%**, `nuxel-wl-fb` at **17.5%**, RSS
+  **766-768 MB**, and the bridge committed/considered a full changed frame every
+  second even with no user input.
+- **Secondary bottlenecks:** drawer rebuilt 30 tiles/29 images on every open
+  (39-57 ms synchronous); Home Settings rebuilt on first open (168 ms, including
+  oversized dock preview decodes); status bar ran 5/10 s provider polls and two
+  nested rAF safe-zone layout passes per update behind the lockscreen; nav owner
+  polled every 2 s; the bridge slept through idle periods instead of waking on
+  Wayland commits.
+
+## 2. Visual / rendering optimizations
+
+- Indicator motion is now **discrete/static** (state class + colour/icon swap).
+  The only lockscreen motion is ONE short greeting wiggle per lock/wake.
+  `document.getAnimations()` on the idle lockscreen returns `[]`.
+- Removed the permanent `will-change`/opacity transition from the indicator glow,
+  added `contain: layout style paint` to the indicator row, the drawer, and the
+  Home Settings sheet.
+- Removed the full-screen `nuxel-drawer-enter` transform/opacity animation; the
+  drawer now opens by visibility toggle only.
+- Reduced 30 s wiggle/transition timings: wiggle is 0.9 s once; snap-back 160 ms;
+  accepted-unlock acknowledgement 70 ms.
+- Downscaled oversized art **in place** (same filenames/artwork, display-sized):
+  - charging 1254² -> 192² (908 KB -> 42 KB)
+  - connected-pc 1374×1145 -> 224×187 (950 KB -> 45 KB)
+  - live-console 1254² -> 192² (836 KB -> 38 KB)
+  - console transport/file icons 1024-1254² -> 96² (~1.1 MB -> 7-14 KB)
+  - connection-mode 1024² -> 160² (1.8 MB -> 27 KB)
+  - bottom bar 2172×724 -> 1086×362 and 1837×576 -> 919×288
+    (1.47 MB -> 266 KB combined; root and PWA copies remain byte-identical)
+- App icons now request `decoding="async"`.
+- No CSS blur, backdrop-filter, large glow, or continuous animation was added.
+
+## 3. Code changes
+
+| File | Change / reason |
+|---|---|
+| `pwa/nuxel-home/css/lockscreen.css` | Static indicator state; no infinite animations, no permanent will-change; paint containment; faster snap-back. |
+| `pwa/nuxel-home/js/lockscreen.js` | One-shot greeting wiggle; clock/battery work only while locked+display-on; 70/160 ms acknowledgements; emits `nuxel:lockscreen-hidden` on reveal. |
+| `pwa/nuxel-home/js/launcher.js` | Cached `#drawer-list`; drawer is built once and toggled; Home grid is not re-parsed on drawer open/close; restores Home scroll position. |
+| `pwa/nuxel-home/js/app.js` | Idle warm-up builds, decodes, and force-lays-out the hidden drawer and Home Settings; one-time work only. |
+| `pwa/nuxel-home/js/home-settings.js` | Additive `prime()` (build/decode/layout hidden); widget/notes listener bound once instead of every open. |
+| `pwa/nuxel-home/js/status-bar.js` | Clock on a minute boundary (not 1 s); provider polls 15/10/20 s and paused while the lockscreen covers the bar; single coalesced safe-zone rAF. |
+| `pwa/nuxel-home/js/navigation.js` | Nav-owner poll 2 s -> 5 s; DOM classes only when ownership actually changes. |
+| `pwa/nuxel-home/js/apps.js` | Async icon decode. |
+| `pwa/nuxel-home/css/launcher.css`, `css/style.css`, `css/home-settings.css` | Hidden-drawer rule, paint containment, removed full-screen drawer transition. |
+| `pwa/nuxel-home/index.html`, `manifest.json`, `sw.js` | Cache-busting `p37000e` and SW `v65-p37000e`. |
+| `assets/*.png/jpg`, `pwa/nuxel-home/assets/nuxel-bottom-bar*` | Display-sized artwork variants; same filenames and identity. |
+| `tools/s10plus/a34/nuxel-wl-fb.c` (synced to `a67/nuxel-wl-fb.c`) | Damage-range blit (`frame_damage_rows`/`frame_blit_damage`), row-range NEON expansion, idle poll-wake on `wl_display_get_fd`, 10/5/2 fps idle pacing, damage telemetry. |
+| `tests/pwnage37000/test_butterscotch_smooth.py` | New regression coverage for all of the above. |
+| `tools/s10plus/a45/test-lockscreen-unlock.js` | Cache-bust assertions updated to the current revision. |
+
+No kernel, firmware, bootloader, partition, or graphics-stack replacement was
+performed.
+
+## 4. Before / after results (live S10+, same device/session)
+
+| Metric | Before | After |
+|---|---|---|
+| WebKitWebProcess CPU (idle lockscreen) | 141-145% | **1.8-2.7%** |
+| phoc CPU | 33.5% | **11.2-13.2%** |
+| `nuxel-wl-fb` CPU | 17.5% | **5.3-6.5%** |
+| WebKit RSS | 766-768 MB | **392-400 MB** |
+| Lockscreen CSS animations | 2 infinite | **0** |
+| Drawer first open (synchronous) | 39-57 ms | **16 ms** |
+| Drawer close / reopen | 8-9 / 47 ms | **8 / 10-19 ms** |
+| Home Settings first open | 168 ms cold | **36-40 ms** (primed) |
+| Home Settings reopen | 1-5 ms (cached) / 31 ms cold-bench | **16-22 ms** |
+| Idle bridge commits | full changed frame ~every second | **blits=2 over ~52 s idle** |
+| Bridge failures | 0 | **0** |
+| `FBIOPAN_DISPLAY` failures | 0 | **0** |
+| Post-reboot settled WebKit CPU | 143% (pre-pass baseline) | **2.3%** |
+| Post-reboot settled phoc / bridge CPU | 33.5% / 17.5% | **10.8% / 5.7%** |
+| Post-reboot no-new-blit window | continuous changed frames | **48.7 s idle, blits unchanged** |
+| Boot (kernel+userspace) | 58.9 s previous cycle | **32.9 s** (16.14 s to multi-user) |
+
+Measurements are from `/proc/<pid>/stat` deltas over 6 s and
+`/run/nuxel-wl-fb.state`. The damage-blit average remains ~49-56 ms because it
+includes `FBIOPAN_DISPLAY`; the copy itself is narrowed to the dirty rows
+(observed ranges e.g. `105-283` and `1191-1328` source rows). No frames-per-second
+number is claimed for glass photons; compositor capture is the measured loop.
+
+## 5. Testing
+
+- `python3 -m pytest tests/pwnage37000 tests/a80 tests/a69 tests/a72 tests/a52 tests/pwnage30000 tests/pwnage34000 tests/pwnage42000 -q`
+  -> **203 passed, 2 failed**. Both failures are caused by unrelated existing
+  uncommitted worktree drift (session-script copy and app-registry JSON); both
+  pass on a clean detached HEAD worktree.
+- Node suites: launcher drag, status indicators, lockscreen unlock, lockscreen
+  indicators, launcher registry -> **all rc=0**.
+- `tools/s10plus/a34/tests/test-decon-presentation-contract.py`,
+  `a33` colour-order, boot-surface contract -> **PASS**.
+- Live: clean restart of `nuxel-wayland` + `nuxel-wl-fb`, 30 s settle, 6 s CPU
+  samples, 52 s no-input state, memory sample, Home/Back/Recents host action
+  smoke, screenshot capture.
+- Not performed: physical finger-tap photon timing (no high-speed camera in this
+  session). Touch path correctness is covered by existing input/navigation tests
+  and the live host-action smoke.
+
+## 6. Deployment and rollback
+
+- Deployed over Wi-Fi SSH to `root@192.168.178.167` with key
+  `~/.ssh/wicked_wqn_id_rsa`.
+- Backups (per-file, timestamped):
+  - `/root/pwnage-37000b/deploy-20261031T085000Z`
+  - `/root/pwnage-37000b/deploy2-20261031T085639Z`
+  - `/root/pwnage-37000b/deploy3-20261031T090109Z`
+- Bridge backups: `/usr/lib/nuxel/nuxel-wl-fb.prev-p37000b*` (original at
+  `/usr/lib/nuxel/nuxel-wl-fb.prev-p37000b`).
+- Build identifier: repository `HEAD=2e48849` plus the PWNAGE-37000B working-tree
+  patch set. No commit was created because this worktree contains unrelated
+  uncommitted work; the deployed file hashes are the authoritative build ID.
+- Deployed bridge SHA-256:
+  `fb5b77e4b7adc67881d67966b24b937ce0b910288cc2d9b91e20e9a8506c2c8b`
+  (78968 B, compiled natively on the phone from the patched A34 source).
+- Every deployed PWA/asset file was hash-verified against the local source
+  (25/25 OK in the first deploy; second/third deploys 0 mismatches).
+- Rollback: copy the files from the timestamped backup directory back, restore
+  `/usr/lib/nuxel/nuxel-wl-fb.prev-p37000b`, then
+  `systemctl restart nuxel-wayland nuxel-wl-fb`. No kernel/firmware rollback
+  is needed.
+- Final reboot performed: boot_id `df736b53-13b8-49a1-ba5f-d7f7c0b1853f`,
+  userspace 29.482 s, multi-user 16.140 s, launcher ready at +3.6 s, SSH back
+  in ~35 s. Normal Nuxel lockscreen restored; all five core services active.
+
+## 7. Remaining limitations / next safe steps
+
+- The DECON commit (`FBIOPAN_DISPLAY`) still costs ~40-55 ms per changed frame.
+  Damage-range copies reduce CPU work but cannot reduce the Samsung panel commit
+  cost; this is a driver/panel-layer limit.
+- A 720x1520 software compositor still redraws the full surface when WebKit
+  paints. The pass removes idle redraws and shrinks per-frame copy work; it does
+  not turn the stack into a GPU compositor (forbidden by this mission).
+- `nuxel-boot-sound.service` and `NetworkManager-wait-online.service` are failed
+  in the current live tree; they are unrelated to this pass and were not
+  modified.
+- One physical-device limitation remains: exact glass-photon latency cannot be
+  measured without an external camera. The host/UI-side latencies above are
+  reproducible and are not presented as photon timing.
+
+
 # PWNAGE-37000 🐧 BUTTERSCOTCH BUTTERSMOOTH — 2026-10-30 arcade-profile + live pass
 
 ## Summary
@@ -175,7 +337,8 @@ navigation or lockscreen logic changed.
 
 Root cause found and fixed in-repo:
 
-- The canonical session `tools/s10plus/a29/nuxel-session.sh` correctly creates
+- The canonical session `tools/s10plus/a45/nuxel-session.sh` (mirrored
+  byte-for-byte at `tools/s10plus/a29/nuxel-session.sh`) correctly creates
   `/run/nuxel-preload-session.owner` and launches
   `nuxel-preload-cinema --early` before the launcher.
 - `tools/s10plus/a45/nuxel-session.sh` had drifted into a **stripped copy** that

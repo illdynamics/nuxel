@@ -1,0 +1,39 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+=== as nuxel-bridge ===
+Traceback (most recent call last):
+  File "/tmp/gc_bridge_test.py", line 4, in <module>
+    mgr=dbus.Interface(bus.get_object(BUS,MP,follow_name_owner_changes=True),'org.freedesktop.GeoClue2.Manager')
+                       ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib64/python3.14/site-packages/dbus/bus.py", line 221, in get_object
+    self._require_main_loop()   # we don't get the signals otherwise
+    ~~~~~~~~~~~~~~~~~~~~~~~^^
+RuntimeError: To make asynchronous calls, receive signals or export objects, D-Bus connections must be attached to a main loop by passing mainloop=... to the constructor or calling dbus.set_default_main_loop(...)
+rc=1
+=== journal geoclue ===
+Oct 31 01:08:36 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping geoclue.service - Location Lookup Service...
+Oct 31 01:08:36 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: geoclue.service: Deactivated successfully.
+Oct 31 01:08:36 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopped geoclue.service - Location Lookup Service.
+Oct 31 01:08:36 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Starting geoclue.service - Location Lookup Service...
+Oct 31 01:08:37 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Started geoclue.service - Location Lookup Service.
+Oct 31 01:09:02 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping geoclue.service - Location Lookup Service...
+Oct 31 01:09:02 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: geoclue.service: Deactivated successfully.
+Oct 31 01:09:02 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopped geoclue.service - Location Lookup Service.
+Oct 31 01:09:02 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Starting geoclue.service - Location Lookup Service...
+Oct 31 01:09:02 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Started geoclue.service - Location Lookup Service.
+=== journal agent ===
+Oct 31 01:08:36 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 python3[51804]: 2026-10-31 01:08:36,966 [INFO] nuxel-geoclue-agent: GeoClue exited; agent will re-register on next start
+Oct 31 01:08:37 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 python3[51804]: 2026-10-31 01:08:37,318 [INFO] nuxel-geoclue-agent: GeoClue appeared (:1.222); registering agent
+Oct 31 01:08:38 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 python3[51804]: 2026-10-31 01:08:38,652 [INFO] nuxel-geoclue-agent: registering GeoClue agent for org.nuxel.Bridge
+Oct 31 01:08:38 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 python3[51804]: 2026-10-31 01:08:38,684 [INFO] nuxel-geoclue-agent: GeoClue agent registered for org.nuxel.Bridge
+Oct 31 01:09:02 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 python3[51804]: 2026-10-31 01:09:02,201 [INFO] nuxel-geoclue-agent: GeoClue exited; agent will re-register on next start
+Oct 31 01:09:02 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 python3[51804]: 2026-10-31 01:09:02,482 [INFO] nuxel-geoclue-agent: GeoClue appeared (:1.226); registering agent
+Oct 31 01:09:03 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 python3[51804]: 2026-10-31 01:09:03,651 [INFO] nuxel-geoclue-agent: registering GeoClue agent for org.nuxel.Bridge
+Oct 31 01:09:03 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 python3[51804]: 2026-10-31 01:09:03,682 [INFO] nuxel-geoclue-agent: GeoClue agent registered for org.nuxel.Bridge

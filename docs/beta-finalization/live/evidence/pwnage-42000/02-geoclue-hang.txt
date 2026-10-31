@@ -1,0 +1,227 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+PID=46179
+=== cmdline/status ===
+/usr/libexec/geoclue 
+Name:	geoclue
+Umask:	0022
+State:	S (sleeping)
+Tgid:	46179
+Ngid:	0
+Pid:	46179
+PPid:	1
+TracerPid:	0
+Uid:	999	999	999	999
+Gid:	999	999	999	999
+FDSize:	256
+Groups:	999 
+NStgid:	46179
+NSpid:	46179
+NSpgid:	46179
+NSsid:	46179
+VmPeak:	  757928 kB
+VmSize:	  692524 kB
+VmLck:	       0 kB
+VmPin:	       0 kB
+VmHWM:	   10260 kB
+VmRSS:	    9832 kB
+RssAnon:	    1560 kB
+RssFile:	    8272 kB
+RssShmem:	       0 kB
+=== wchan/tasks ===
+-- /proc/46179/task/46179 geoclue wchan=do_sys_poll state=S
+-- /proc/46179/task/46182 pool-spawner wchan=futex_wait_queue_me state=S
+-- /proc/46179/task/46183 gmain wchan=do_sys_poll state=S
+-- /proc/46179/task/46184 pool-0 wchan=futex_wait_queue_me state=S
+-- /proc/46179/task/46185 gdbus wchan=do_sys_poll state=S
+-- /proc/46179/task/46186 pool-1 wchan=futex_wait_queue_me state=S
+-- /proc/46179/task/46187 pool-2 wchan=futex_wait_queue_me state=S
+-- /proc/46179/task/46188 pool-3 wchan=futex_wait_queue_me state=S
+-- /proc/46179/task/46189 pool-4 wchan=futex_wait_queue_me state=S
+-- /proc/46179/task/46191 pool-5 wchan=futex_wait_queue_me state=S
+=== introspect with 3s timeout ===
+NAME                                TYPE      SIGNATURE RESULT/VALUE FLAGS
+org.freedesktop.DBus.Introspectable interface -         -            -
+.Introspect                         method    -         s            -
+org.freedesktop.DBus.Peer           interface -         -            -
+.GetMachineId                       method    -         s            -
+.Ping                               method    -         -            -
+org.freedesktop.DBus.Properties     interface -         -            -
+.Get                                method    ss        v            -
+.GetAll                             method    s         a{sv}        -
+.Set                                method    ssv       -            -
+.PropertiesChanged                  signal    sa{sv}as  -            -
+org.freedesktop.GeoClue2.Manager    interface -         -            -
+.AddAgent                           method    s         -            -
+.CreateClient                       method    -         o            -
+.DeleteClient                       method    o         -            -
+.GetClient                          method    -         o            -
+.AvailableAccuracyLevel             property  u         6            emits-change
+.InUse                              property  b         false        emits-change
+rc=0
+=== call with 3s timeout ===
+rc=124
+=== tasks after call ===
+-- /proc/46179/task/46179 geoclue wchan=do_sys_poll
+-- /proc/46179/task/46182 pool-spawner wchan=futex_wait_queue_me
+-- /proc/46179/task/46183 gmain wchan=do_sys_poll
+-- /proc/46179/task/46184 pool-0 wchan=futex_wait_queue_me
+-- /proc/46179/task/46185 gdbus wchan=do_sys_poll
+-- /proc/46179/task/46186 pool-1 wchan=futex_wait_queue_me
+-- /proc/46179/task/46187 pool-2 wchan=futex_wait_queue_me
+-- /proc/46179/task/46188 pool-3 wchan=futex_wait_queue_me
+-- /proc/46179/task/46189 pool-4 wchan=futex_wait_queue_me
+-- /proc/46179/task/46191 pool-5 wchan=futex_wait_queue_me
+=== strace 3s during call (background) ===
+[pid 46185] ppoll([{fd=5, events=POLLIN}], 1, {tv_sec=0, tv_nsec=0}, NULL, 0 <unfinished ...>
+[pid 46179] read(3, "\2\0\0\0\0\0\0\0", 8) = 8
+[pid 46185] <... ppoll resumed>)        = 0 (Timeout)
+[pid 46185] write(6, "\1\0\0\0\0\0\0\0", 8) = 8
+[pid 46185] ppoll([{fd=5, events=POLLIN}, {fd=6, events=POLLIN}], 2, NULL, NULL, 8 <unfinished ...>
+[pid 46179] write(6, "\1\0\0\0\0\0\0\0", 8 <unfinished ...>
+[pid 46185] <... ppoll resumed>)        = 1 ([{fd=6, revents=POLLIN}])
+[pid 46179] <... write resumed>)        = 8
+[pid 46185] futex(0x7f84005ce0, FUTEX_WAIT_PRIVATE, 2, NULL <unfinished ...>
+[pid 46179] futex(0x7f84005ce0, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+[pid 46185] <... futex resumed>)        = 0
+[pid 46179] <... futex resumed>)        = 1
+[pid 46185] read(6, "\2\0\0\0\0\0\0\0", 8) = 8
+[pid 46185] futex(0x7f84005ce0, FUTEX_WAKE_PRIVATE, 1) = 0
+[pid 46179] write(6, "\1\0\0\0\0\0\0\0", 8 <unfinished ...>
+[pid 46185] futex(0x7f84005ce0, FUTEX_WAIT_PRIVATE, 2, NULL <unfinished ...>
+[pid 46179] <... write resumed>)        = 8
+[pid 46179] futex(0x7f84005ce0, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+[pid 46185] <... futex resumed>)        = 0
+[pid 46179] <... futex resumed>)        = 1
+[pid 46185] futex(0x7f84005ce0, FUTEX_WAKE_PRIVATE, 1) = 0
+[pid 46185] futex(0x5564b7e468, FUTEX_WAIT_PRIVATE, 2, NULL <unfinished ...>
+[pid 46179] futex(0x5564b7e468, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+[pid 46185] <... futex resumed>)        = -1 EAGAIN (Resource temporarily unavailable)
+[pid 46179] <... futex resumed>)        = 0
+[pid 46185] futex(0x5564b7e468, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+[pid 46179] ppoll([{fd=3, events=POLLIN}, {fd=7, events=POLLIN}], 2, {tv_sec=0, tv_nsec=0}, NULL, 8 <unfinished ...>
+[pid 46185] <... futex resumed>)        = 0
+[pid 46179] <... ppoll resumed>)        = 0 (Timeout)
+[pid 46185] sendmsg(5, {msg_name=NULL, msg_namelen=0, msg_iov=[{iov_base="l\3\1\1&\0\0\0004\0\0\0P\0\0\0\4\1s\0'\0\0\0org.free"..., iov_len=134}], msg_iovlen=1, msg_controllen=0, msg_flags=0}, MSG_NOSIGNAL <unfinished ...>
+[pid 46179] ppoll([{fd=3, events=POLLIN}, {fd=7, events=POLLIN}], 2, {tv_sec=53, tv_nsec=486978000}, NULL, 8 <unfinished ...>
+[pid 46185] <... sendmsg resumed>)      = 134
+[pid 46185] ppoll([{fd=5, events=POLLIN}, {fd=6, events=POLLIN}], 2, {tv_sec=0, tv_nsec=0}, NULL, 8) = 1 ([{fd=6, revents=POLLIN}], left {tv_sec=0, tv_nsec=0})
+[pid 46185] read(6, "\1\0\0\0\0\0\0\0", 8) = 8
+[pid 46185] sendmsg(5, {msg_name=NULL, msg_namelen=0, msg_iov=[{iov_base="l\1\0\1\244\0\0\0005\0\0\0|\0\0\0\1\1o\0\25\0\0\0/org/fre"..., iov_len=308}], msg_iovlen=1, msg_controllen=0, msg_flags=0}, MSG_NOSIGNAL) = 308
+[pid 46185] ppoll([{fd=5, events=POLLIN}, {fd=6, events=POLLIN}], 2, {tv_sec=0, tv_nsec=0}, NULL, 8) = 0 (Timeout)
+[pid 46185] sendmsg(5, {msg_name=NULL, msg_namelen=0, msg_iov=[{iov_base="l\1\0\1n\0\0\0006\0\0\0|\0\0\0\1\1o\0\25\0\0\0/org/fre"..., iov_len=254}], msg_iovlen=1, msg_controllen=0, msg_flags=0}, MSG_NOSIGNAL) = 254
+[pid 46185] ppoll([{fd=5, events=POLLIN}, {fd=6, events=POLLIN}], 2, {tv_sec=0, tv_nsec=0}, NULL, 8) = 1 ([{fd=5, revents=POLLIN}], left {tv_sec=0, tv_nsec=0})
+[pid 46185] write(6, "\1\0\0\0\0\0\0\0", 8) = 8
+[pid 46185] recvmsg(5, {msg_name=NULL, msg_namelen=0, msg_iov=[{iov_base="l\3\1\1;\0\0\0000\0\0\0u\0\0\0", iov_len=16}], msg_iovlen=1, msg_controllen=0, msg_flags=MSG_CMSG_CLOEXEC}, MSG_CMSG_CLOEXEC) = 16
+[pid 46185] ppoll([{fd=5, events=POLLIN}], 1, {tv_sec=0, tv_nsec=0}, NULL, 0) = 1 ([{fd=5, revents=POLLIN}], left {tv_sec=0, tv_nsec=0})
+[pid 46185] recvmsg(5, {msg_name=NULL, msg_namelen=0, msg_iov=[{iov_base="\6\1s\0\6\0\0\0:1.165\0\0\4\1s\0)\0\0\0org.free"..., iov_len=179}], msg_iovlen=1, msg_controllen=0, msg_flags=MSG_CMSG_CLOEXEC}, MSG_CMSG_CLOEXEC) = 179
+[pid 46185] write(6, "\1\0\0\0\0\0\0\0", 8) = 8
+[pid 46185] write(6, "\1\0\0\0\0\0\0\0", 8) = 8
+[pid 46185] sendmsg(5, {msg_name=NULL, msg_namelen=0, msg_iov=[{iov_base="l\1\0\1\226\0\0\0007\0\0\0|\0\0\0\1\1o\0\25\0\0\0/org/fre"..., iov_len=294}], msg_iovlen=1, msg_controllen=0, msg_flags=0}, MSG_NOSIGNAL) = 294
+[pid 46185] ppoll([{fd=6, events=POLLIN}], 1, {tv_sec=0, tv_nsec=0}, NULL, 8) = 1 ([{fd=6, revents=POLLIN}], left {tv_sec=0, tv_nsec=0})
+[pid 46185] read(6, "\3\0\0\0\0\0\0\0", 8) = 8
+[pid 46185] ppoll([{fd=5, events=POLLIN}], 1, {tv_sec=0, tv_nsec=0}, NULL, 0) = 1 ([{fd=5, revents=POLLIN}], left {tv_sec=0, tv_nsec=0})
+[pid 46185] recvmsg(5, {msg_name=NULL, msg_namelen=0, msg_iov=[{iov_base="l\2\1\1\0\0\0\0001\0\0\0005\0\0\0", iov_len=16}], msg_iovlen=1, msg_controllen=0, msg_flags=MSG_CMSG_CLOEXEC}, MSG_CMSG_CLOEXEC) = 16
+[pid 46185] ppoll([{fd=6, events=POLLIN}], 1, {tv_sec=0, tv_nsec=0}, NULL, 8) = 0 (Timeout)
+[pid 46185] ppoll([{fd=5, events=POLLIN}], 1, {tv_sec=0, tv_nsec=0}, NULL, 0) = 1 ([{fd=5, revents=POLLIN}], left {tv_sec=0, tv_nsec=0})
+[pid 46185] recvmsg(5, {msg_name=NULL, msg_namelen=0, msg_iov=[{iov_base="\6\1s\0\6\0\0\0:1.165\0\0\5\1u\0005\0\0\0\7\1s\0\24\0\0\0"..., iov_len=56}], msg_iovlen=1, msg_controllen=0, msg_flags=MSG_CMSG_CLOEXEC}, MSG_CMSG_CLOEXEC) = 56
+[pid 46185] ppoll([{fd=6, events=POLLIN}], 1, {tv_sec=0, tv_nsec=0}, NULL, 8) = 0 (Timeout)
+[pid 46185] ppoll([{fd=5, events=POLLIN}], 1, {tv_sec=0, tv_nsec=0}, NULL, 0) = 1 ([{fd=5, revents=POLLIN}], left {tv_sec=0, tv_nsec=0})
+[pid 46185] recvmsg(5, {msg_name=NULL, msg_namelen=0, msg_iov=[{iov_base="l\2\1\1\0\0\0\0002\0\0\0005\0\0\0", iov_len=16}], msg_iovlen=1, msg_controllen=0, msg_flags=MSG_CMSG_CLOEXEC}, MSG_CMSG_CLOEXEC) = 16
+[pid 46185] ppoll([{fd=6, events=POLLIN}], 1, {tv_sec=0, tv_nsec=0}, NULL, 8) = 0 (Timeout)
+[pid 46185] ppoll([{fd=5, events=POLLIN}], 1, {tv_sec=0, tv_nsec=0}, NULL, 0) = 1 ([{fd=5, revents=POLLIN}], left {tv_sec=0, tv_nsec=0})
+[pid 46185] recvmsg(5, {msg_name=NULL, msg_namelen=0, msg_iov=[{iov_base="\6\1s\0\6\0\0\0:1.165\0\0\5\1u\0006\0\0\0\7\1s\0\24\0\0\0"..., iov_len=56}], msg_iovlen=1, msg_controllen=0, msg_flags=MSG_CMSG_CLOEXEC}, MSG_CMSG_CLOEXEC) = 56
+[pid 46185] ppoll([{fd=6, events=POLLIN}], 1, {tv_sec=0, tv_nsec=0}, NULL, 8) = 0 (Timeout)
+[pid 46185] ppoll([{fd=5, events=POLLIN}], 1, {tv_sec=0, tv_nsec=0}, NULL, 0) = 1 ([{fd=5, revents=POLLIN}], left {tv_sec=0, tv_nsec=0})
+[pid 46185] recvmsg(5, {msg_name=NULL, msg_namelen=0, msg_iov=[{iov_base="l\2\1\1\0\0\0\0003\0\0\0005\0\0\0", iov_len=16}], msg_iovlen=1, msg_controllen=0, msg_flags=MSG_CMSG_CLOEXEC}, MSG_CMSG_CLOEXEC) = 16
+[pid 46185] ppoll([{fd=6, events=POLLIN}], 1, {tv_sec=0, tv_nsec=0}, NULL, 8) = 0 (Timeout)
+[pid 46185] ppoll([{fd=5, events=POLLIN}], 1, {tv_sec=0, tv_nsec=0}, NULL, 0) = 1 ([{fd=5, revents=POLLIN}], left {tv_sec=0, tv_nsec=0})
+[pid 46185] recvmsg(5, {msg_name=NULL, msg_namelen=0, msg_iov=[{iov_base="\6\1s\0\6\0\0\0:1.165\0\0\5\1u\0007\0\0\0\7\1s\0\24\0\0\0"..., iov_len=56}], msg_iovlen=1, msg_controllen=0, msg_flags=MSG_CMSG_CLOEXEC}, MSG_CMSG_CLOEXEC) = 56
+[pid 46185] ppoll([{fd=6, events=POLLIN}], 1, {tv_sec=0, tv_nsec=0}, NULL, 8) = 0 (Timeout)
+[pid 46185] ppoll([{fd=5, events=POLLIN}], 1, {tv_sec=0, tv_nsec=0}, NULL, 0) = 0 (Timeout)
+[pid 46185] write(6, "\1\0\0\0\0\0\0\0", 8) = 8
+[pid 46185] ppoll([{fd=5, events=POLLIN}, {fd=6, events=POLLIN}], 2, NULL, NULL, 8) = 1 ([{fd=6, revents=POLLIN}])
+[pid 46185] read(6, "\1\0\0\0\0\0\0\0", 8) = 8
+[pid 46185] ppoll([{fd=5, events=POLLIN}, {fd=6, events=POLLIN}], 2, NULL, NULL, 8strace: Process 46189 detached
+strace: Process 46191 detached
+strace: Process 46188 detached
+strace: Process 46187 detached
+strace: Process 46186 detached
+strace: Process 46185 detached
+ <detached ...>
+strace: Process 46184 detached
+strace: Process 46183 detached
+strace: Process 46182 detached
+strace: Process 46179 detached
+=== journal ===
+Oct 30 23:03:58 fedora systemd[1]: Stopped geoclue.service - Location Lookup Service.
+Oct 30 23:03:58 fedora systemd[1]: Starting geoclue.service - Location Lookup Service...
+Oct 30 23:03:59 fedora systemd[1]: Started geoclue.service - Location Lookup Service.
+Oct 30 23:04:59 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 geoclue[6116]: Service not used for 60 seconds. Shutting down..
+Oct 30 23:04:59 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: geoclue.service: Deactivated successfully.
+Oct 30 23:26:52 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Starting geoclue.service - Location Lookup Service...
+Oct 30 23:26:52 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Started geoclue.service - Location Lookup Service.
+Oct 30 23:27:52 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 geoclue[16662]: Service not used for 60 seconds. Shutting down..
+Oct 30 23:27:52 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: geoclue.service: Deactivated successfully.
+Oct 30 23:30:17 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Starting geoclue.service - Location Lookup Service...
+Oct 30 23:30:17 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Started geoclue.service - Location Lookup Service.
+Oct 30 23:31:17 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 geoclue[17329]: Service not used for 60 seconds. Shutting down..
+Oct 30 23:31:17 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: geoclue.service: Deactivated successfully.
+Oct 30 23:44:01 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Starting geoclue.service - Location Lookup Service...
+Oct 30 23:44:02 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Started geoclue.service - Location Lookup Service.
+Oct 30 23:45:02 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 geoclue[32415]: Service not used for 60 seconds. Shutting down..
+Oct 30 23:45:02 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: geoclue.service: Deactivated successfully.
+-- Boot bc2246c400af48038f093f499c8da4fb --
+Oct 31 00:06:26 fedora systemd[1]: Starting geoclue.service - Location Lookup Service...
+Oct 31 00:06:27 fedora systemd[1]: Started geoclue.service - Location Lookup Service.
+Oct 31 00:06:31 fedora systemd[1]: Stopping geoclue.service - Location Lookup Service...
+Oct 31 00:06:31 fedora systemd[1]: geoclue.service: Deactivated successfully.
+Oct 31 00:06:31 fedora systemd[1]: Stopped geoclue.service - Location Lookup Service.
+Oct 31 00:06:31 fedora systemd[1]: Starting geoclue.service - Location Lookup Service...
+Oct 31 00:06:32 fedora systemd[1]: Started geoclue.service - Location Lookup Service.
+-- Boot 93e7ecf7a75e4adeb641ea63d5c20957 --
+Oct 31 00:07:20 fedora systemd[1]: Starting geoclue.service - Location Lookup Service...
+Oct 31 00:07:21 fedora systemd[1]: Started geoclue.service - Location Lookup Service.
+Oct 31 00:07:25 fedora systemd[1]: Stopping geoclue.service - Location Lookup Service...
+Oct 31 00:07:25 fedora systemd[1]: geoclue.service: Deactivated successfully.
+Oct 31 00:07:25 fedora systemd[1]: Stopped geoclue.service - Location Lookup Service.
+Oct 31 00:07:25 fedora systemd[1]: Starting geoclue.service - Location Lookup Service...
+Oct 31 00:07:25 fedora systemd[1]: Started geoclue.service - Location Lookup Service.
+Oct 31 00:08:25 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 geoclue[6828]: Service not used for 60 seconds. Shutting down..
+Oct 31 00:08:25 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: geoclue.service: Deactivated successfully.
+Oct 31 00:29:29 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Starting geoclue.service - Location Lookup Service...
+Oct 31 00:29:29 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Started geoclue.service - Location Lookup Service.
+Oct 31 00:30:29 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 geoclue[35954]: Service not used for 60 seconds. Shutting down..
+Oct 31 00:30:29 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: geoclue.service: Deactivated successfully.
+Oct 31 00:43:02 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Starting geoclue.service - Location Lookup Service...
+Oct 31 00:43:02 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Started geoclue.service - Location Lookup Service.
+Oct 31 00:44:02 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 geoclue[44769]: Service not used for 60 seconds. Shutting down..
+Oct 31 00:44:02 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: geoclue.service: Deactivated successfully.
+Oct 31 00:47:07 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Starting geoclue.service - Location Lookup Service...
+Oct 31 00:47:07 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Started geoclue.service - Location Lookup Service.
+Oct 31 00:47:19 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: geoclue.service: Failed to get CPU usage: No such file or directory
+Oct 31 00:47:28 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping geoclue.service - Location Lookup Service...
+Oct 31 00:47:28 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: geoclue.service: Deactivated successfully.
+Oct 31 00:47:28 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopped geoclue.service - Location Lookup Service.
+Oct 31 00:47:28 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Starting geoclue.service - Location Lookup Service...
+Oct 31 00:47:28 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Started geoclue.service - Location Lookup Service.
+Oct 31 00:47:29 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: geoclue.service: Failed to get CPU usage: No such file or directory
+=== lsof ===
+total 0
+lr-x------. 1 geoclue geoclue 64 Oct 31 00:47 0 -> /dev/null
+lrwx------. 1 geoclue geoclue 64 Oct 31 00:47 1 -> socket:[148811]
+lrwx------. 1 geoclue geoclue 64 Oct 31 00:47 2 -> socket:[148811]
+lrwx------. 1 geoclue geoclue 64 Oct 31 00:47 3 -> anon_inode:[eventfd]
+lrwx------. 1 geoclue geoclue 64 Oct 31 00:47 4 -> anon_inode:[eventfd]
+lrwx------. 1 geoclue geoclue 64 Oct 31 00:47 5 -> socket:[147192]
+lrwx------. 1 geoclue geoclue 64 Oct 31 00:47 6 -> anon_inode:[eventfd]
+lrwx------. 1 geoclue geoclue 64 Oct 31 00:47 7 -> socket:[150185]
+=== children ===
+    PID    PPID STAT COMMAND         COMMAND

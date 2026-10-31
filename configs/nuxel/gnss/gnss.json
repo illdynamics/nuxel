@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "comment": "GNSS/GPS policy for the S10+ (beyond2lte), Exynos 9820 platform. Read by tools/s10plus/a33/nuxel-gnss-diag.sh. The BCM4773 sensor-hub path is enumerated as well as generic GNSS nodes: device node -> driver binding -> firmware -> NMEA stream -> fix. The first failing stage is reported. A device node existing is not a fix and a fix cannot be observed indoors: outside-sky observation is the owner's, so the terminal verdict is NEEDS_OWNER_TEST and no coordinate is ever fabricated.",
+  "comment": "GNSS/GPS policy for the S10+ (beyond2lte), Exynos 9820. The BCM4773 receiver is reached through the Broadcom BBD/LHD RPC stack: /dev/ttyBCM is the BBD packet transport, NOT an NMEA serial port; /dev/bbd_patch is the sensor-hub patch firmware loader used by the vendor lhd daemon; the vendor gpsd/lhd pair is Android/Bionic + HIDL. Stages are device node -> driver binding -> compatible firmware -> BBD/LHD userspace -> protocol exchange -> position fix. A readable node, a bound SPI driver or an SPI register response is never a fix. No coordinate is ever fabricated; an outdoor owner test is required for GNSS PASS.",
   "device": {
     "model": "Samsung Galaxy S10+ SM-G975F",
     "codename": "beyond2lte",
@@ -18,7 +18,8 @@
     "sysfs": [
       "/sys/class/gnss",
       "/sys/kernel/debug/gnss",
-      "/sys/class/misc/ttyBCM"
+      "/sys/class/misc/ttyBCM",
+      "/sys/bus/spi/drivers/brcm gps spi"
     ],
     "modules": [
       "/proc/modules"
@@ -50,64 +51,116 @@
       "bcm47755.bin"
     ],
     "stream": {
-      "baud": 9600,
-      "protocol": "NMEA-0183",
-      "sentence_hints": [
-        "$GPGGA",
-        "$GNGGA",
-        "$GPRMC",
-        "$GNRMC"
-      ]
+      "protocol": "broadcom-bbd-lhd-rpc",
+      "baud": null,
+      "sentence_hints": [],
+      "note": "Do not parse NMEA on /dev/ttyBCM; use the BBD/LHD userspace provider."
     },
     "userspace": {
       "daemon_candidates": [
+        "nuxel-gnss-provider.service",
+        "lhd",
         "gpsd.service",
         "gpsd.socket"
+      ],
+      "vendor_daemons": [
+        "/vendor/bin/hw/lhd",
+        "/vendor/bin/hw/gpsd"
       ],
       "client_candidates": [
         "gpsmon",
         "cgps",
         "gpspipe",
         "gpsd"
-      ]
+      ],
+      "protocol_reader": null,
+      "protocol_reader_blocker": "No native BBD/LHD RPC decoder in the repository; the vendor implementations are Android/Bionic."
     },
-    "driver_bindings": [],
-    "driver_globs": []
+    "driver_bindings": [
+      "/sys/bus/spi/drivers/brcm gps spi/spi17.0"
+    ],
+    "driver_globs": [],
+    "protocol": {
+      "name": "broadcom-bbd-lhd-rpc",
+      "transport_node": "/dev/ttyBCM",
+      "patch_node": "/dev/bbd_patch",
+      "control_node": "/dev/bbd_control",
+      "sensor_node": "/dev/bbd_sensor",
+      "vendor_hint": "lhd.conf: PortName=tcp:127.0.0.1:300; LheName=bbd; LhePatch=/dev/bbd_patch",
+      "nmea_over_ttybcm": false,
+      "stock_gpsd_can_decode": false,
+      "android_vendor_runtime_required": true
+    },
+    "firmware_device_candidates": [
+      "/dev/bbd_patch",
+      "/vendor/firmware/bcm_sensorhub_a1.patch",
+      "/system/bin/bcm_sensorhub_a1.patch",
+      "bcm_sensorhub_a1.patch",
+      "bcm4773_sensorhub.patch",
+      "gnss/bcm4773_sensorhub.patch"
+    ],
+    "firmware_absent_reason": "The vendor blob set contains lhd/gpsd/lhd.conf/gps.xml but no BBD sensor-hub patch. The stock BBD patch is an Android system/vendor artifact (lhd.conf comments reference /system/bin/bcm_sensorhub_a1.patch) and is not present on the Nuxel Fedora rootfs.",
+    "vendor_runtime": {
+      "lhd": [
+        "/vendor/bin/hw/lhd"
+      ],
+      "gpsd": [
+        "/vendor/bin/hw/gpsd"
+      ],
+      "android_linker": [
+        "/system/bin/linker64"
+      ],
+      "lhd_config": [
+        "/vendor/etc/sensor/lhd.conf"
+      ],
+      "gps_config": [
+        "/vendor/etc/gnss/gps.xml"
+      ],
+      "gnss_hidl_impl": [
+        "/vendor/lib64/vendor.samsung.hardware.gnss@2.0.so"
+      ]
+    }
   },
   "first_failing_stage_order": [
     "device_node",
     "module",
     "firmware",
+    "vendor_runtime",
+    "userspace",
     "stream",
     "fix"
   ],
   "verdicts": {
-    "READY_FOR_SKY": "device node present, driver bound, NMEA sentences observed \u2014 an owner outdoors may wait for a fix (still NEEDS_OWNER_TEST)",
+    "READY_FOR_SKY": "compatible protocol provider is running and protocol-valid position data was observed; an owner outdoors may wait for a fix (still NEEDS_OWNER_TEST)",
     "BLOCKED_KERNEL": "no GNSS device node and no GNSS driver module bound",
-    "BLOCKED_FIRMWARE": "driver/node path exists but no GNSS firmware blob is present",
-    "BLOCKED_EXTERNAL_RESOURCE": "kernel GNSS up but no userspace consumer (gpsd/gpspipe) installed",
-    "NO_FIX": "a stream is present but no position sentence has been decoded yet (indoors or cold start)",
-    "PARTIAL": "some stages present, some missing \u2014 read the per-stage lines"
+    "BLOCKED_FIRMWARE": "driver/node path exists but no compatible BCM4773 BBD sensor-hub patch firmware is present",
+    "BLOCKED_EXTERNAL_RESOURCE": "kernel GNSS up but no compatible userspace consumer/reader is installed",
+    "NO_FIX": "a valid protocol stream exists but no fresh position has been decoded",
+    "PARTIAL": "some stages present, some missing - read the per-stage lines",
+    "BLOCKED_VENDOR_RUNTIME": "firmware/provider prerequisites exist but the Android/Bionic lhd+gpsd+HIDL runtime is missing",
+    "BLOCKED_PROTOCOL": "BCM4773 BBD/LHD transport exists but no compatible protocol implementation is available; NMEA/gpsd is not a substitute"
   },
   "fix_test": {
-    "comment": "Owner procedure only. The repository scripts the monitor and the sentence counting; it never prints a coordinate it did not read, and it never claims a fix indoors.",
+    "comment": "Owner procedure only. The repository scripts the monitor and protocol diagnostics; it never prints a coordinate it did not read, never treats BBD bytes or SPI responses as a fix, and never claims a fix indoors.",
     "outdoors_required": true,
     "cold_start_timeout_s": 300,
     "warm_start_timeout_s": 60,
     "max_accuracy_m_for_pass": 50,
     "steps": [
-      "go outdoors with a clear view of the sky (or to a window with a wide view); a metal/glass-roofed space will not do",
-      "nuxel-gnss-diag.sh monitor 180      # bounded: prints sentence counts and any decoded fix",
-      "wait for $GNGGA/$GPGGA with a non-empty latitude/longitude and a fix quality of 1 (GPS) or 2 (DGPS)",
-      "cross-check the coordinate against the offline OSM map (nuxel-maps with A? tiles)",
-      "record the coordinate, accuracy, time-to-first-fix and sentence totals in this fragment"
+      "go outdoors with a clear view of the sky",
+      "start the BBD/LHD provider (native or isolated vendor runtime) and a bounded cold-start acquisition",
+      "wait up to 300 s for a provider GPS/GNSS source and a provider timestamp",
+      "cross-check the coordinate against the offline OSM map",
+      "record coordinate, accuracy, time-to-first-fix and source in the restricted evidence file"
     ],
     "evidence_required_for_promotion": [
-      "monitor prints decoded sentences of at least one NMEA type",
-      "a position sentence with a non-empty lat/lon and fix quality >= 1 is observed",
-      "the coordinate agrees with the offline map within the reported accuracy",
-      "time-to-first-fix is recorded (cold vs warm start stated)"
-    ]
+      "BBD/LHD provider reports protocol exchange success",
+      "a fresh position with provider timestamp and source=gps/gnss",
+      "accuracy is provider-reported (no fabricated value)",
+      "coordinate agrees with the offline map within reported accuracy",
+      "time-to-first-fix and cold/warm start are recorded"
+    ],
+    "protocol": "broadcom-bbd-lhd-rpc"
   },
   "offline_map": {
     "comment": "Offline-first OSM integration: the Maps app must work with cached/offline tiles and must NOT require network for a cached area. The repository ships the tile layout policy and the attribution; it ships no fabricated map data.",

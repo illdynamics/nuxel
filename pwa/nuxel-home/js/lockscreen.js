@@ -28,8 +28,8 @@
   const THRESHOLD_FRACTION = 0.22; /* of viewport height, per mission 11 */
   const DRAG_SLOP = 4;         /* px before a contact is a drag */
   const SAFE_TOP = 24;         /* px of usable travel reserved above the handle */
-  const RETURN_MS = 240;       /* snap-back animation */
-  const DISMISS_MS = 120;      /* let the accepted unlock animation finish */
+  const RETURN_MS = 160;       /* snap-back animation (snappier) */
+  const DISMISS_MS = 70;       /* accepted unlock: one short acknowledgement */
 
   class Lockscreen {
     constructor() {
@@ -79,7 +79,6 @@
       this._startClock();
       this._startBattery();
       this._startTouchWarning();
-      this._startWiggle();
       this._initIndicators();
       this._positionHandle();
       try {
@@ -330,7 +329,7 @@
       this.handle.classList.remove('armed');
       this.handle.classList.remove('unlocking');
       this.handle.style.opacity = '';
-      this.handle.style.transition = 'transform .22s ease-out';
+      this.handle.style.transition = 'transform .16s ease-out';
       this.handle.style.transform = 'translateY(0)';
       if (this._returnTimer) global.clearTimeout(this._returnTimer);
       this._returnTimer = global.setTimeout(() => {
@@ -455,6 +454,7 @@
       this._updateBattery();
       this._updateTouchWarning();
       this._startIndicators();
+      this._wiggleOnce(this._displayOff() ? 2500 : 900);
       this._trace('show version=' + VERSION + ' reason=' + (reason || 'unknown') +
                   ' locked=1 visible=1 threshold=' + this._effectiveThreshold());
     }
@@ -482,6 +482,9 @@
         this.touchWarningEl.hidden = true;
         try { this.touchWarningEl.classList.remove('visible'); } catch (e) {}
       }
+      /* The status bar paused its provider polls while covered.  Tell it to
+         refresh once, now that it is visible again. */
+      try { document.dispatchEvent(new CustomEvent('nuxel:lockscreen-hidden')); } catch (e) {}
       this._trace('hide version=' + VERSION + ' state=UNLOCKED locked=0 visible=0');
     }
 
@@ -524,11 +527,14 @@
       if (this.dateEl.textContent !== dateText) this.dateEl.textContent = dateText;
     }
 
-    _startWiggle() {
+    /* PWNAGE-37000B: ONE greeting wiggle per lock/wake, not an endless timer.
+       The old 12 s interval produced a 1.1 s continuous repaint of the
+       lockhead and kept the display bridge committing unchanged glass.  The
+       penguin still greets the owner, then the lockscreen is truly idle. */
+    _wiggleOnce(delayMs) {
       if (this._reducedMotion || this._wiggleTimer) return;
-      // Low-frequency scheduler: at most one short compositor-friendly wiggle
-      // per ~9 s.  It never runs while dragged, unlocked, or display-off.
-      this._wiggleTimer = global.setInterval(() => {
+      this._wiggleTimer = global.setTimeout(() => {
+        this._wiggleTimer = null;
         if (!this.locked || this.state !== 'IDLE' || this._displayOff()) return;
         if (!this.handle || this.handle.classList.contains('grabbed')) return;
         this.handle.classList.add('wiggling');
@@ -536,13 +542,24 @@
         this._wiggleStopTimer = global.setTimeout(() => {
           this._wiggleStopTimer = null;
           if (this.handle) this.handle.classList.remove('wiggling');
-        }, 1400);
-      }, 9000);
+        }, 900);
+      }, delayMs == null ? 900 : delayMs);
     }
 
     _startClock() {
       this._updateClock();
-      global.setInterval(() => this._updateClock(), 1000);
+      // Align to the next minute boundary instead of waking the WebProcess
+      // every second.  The clock keeps displaying HH:MM, so a minute cadence is
+      // the exact resolution it needs.
+      const tick = () => {
+        if (this.locked && !this._displayOff()) this._updateClock();
+        const now = new Date();
+        const delay = Math.max(1000, 60000 - (now.getSeconds() * 1000 + now.getMilliseconds()));
+        this._clockTimer = global.setTimeout(tick, delay);
+      };
+      const now = new Date();
+      this._clockTimer = global.setTimeout(tick,
+        Math.max(1000, 60000 - (now.getSeconds() * 1000 + now.getMilliseconds())));
     }
 
     _acceptBattery(level, charging, status) {
@@ -631,7 +648,7 @@
     }
 
     _updateBattery() {
-      if (!this.batteryEl || this._displayOff() || this._batteryInFlight) return;
+      if (!this.locked || !this.batteryEl || this._displayOff() || this._batteryInFlight) return;
       this._batteryInFlight = true;
       const finish = (reading) => {
         if (reading) this._acceptBattery(reading.level, reading.charging, reading.status);

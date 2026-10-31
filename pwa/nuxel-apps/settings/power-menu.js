@@ -231,6 +231,24 @@
     });
   }
 
+  function showRebootOverlay(label) {
+    var o = document.getElementById('nuxel-reboot-overlay');
+    if (!o) {
+      o = document.createElement('div');
+      o.id = 'nuxel-reboot-overlay';
+      o.className = 'nuxel-reboot-overlay';
+      o.setAttribute('role', 'alert');
+      o.innerHTML = '<div class="nuxel-reboot-card"><div class="nuxel-reboot-penguin">\uD83D\uDC27</div>' +
+        '<div class="nuxel-reboot-title"></div><div class="nuxel-reboot-sub">The phone will restart in a moment.</div>' +
+        '<div class="nuxel-reboot-bar"><i></i></div></div>';
+      document.body.appendChild(o);
+    }
+    var t = o.querySelector('.nuxel-reboot-title');
+    if (t) t.textContent = label || 'Rebooting Nuxel…';
+    o.hidden = false;
+    try { document.dispatchEvent(new CustomEvent('nuxel:overlay-changed')); } catch (err) {}
+  }
+
   function fire(e, node) {
     var out = el('menu-result');
     if (!e.trigger_allowed) {
@@ -244,11 +262,17 @@
       if (out) out.textContent = e.label + ' cancelled';
       return;
     }
+    var rebooting = (e.action === 'restart' || e.action === 'poweroff');
+    if (rebooting) showRebootOverlay(e.action === 'poweroff' ? 'Powering off…' : 'Rebooting Nuxel…');
     action(e.action, { entry: e.id }).then(function (r) {
       if (out) {
         out.textContent = (r && r.offline) ? 'host unavailable — no action taken'
           : (r && r.ok === false) ? (e.label + ' refused: ' + (r.error || r.reason || 'unknown'))
-          : e.label + ' done';
+          : e.label + ' accepted';
+      }
+      if (rebooting && r && r.ok === false) {
+        var o = document.getElementById('nuxel-reboot-overlay');
+        if (o) o.hidden = true;
       }
     });
   }

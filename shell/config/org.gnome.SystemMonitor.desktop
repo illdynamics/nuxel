@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=System Monitor
+Comment=Nuxel installed system monitor (Fedora aarch64 RPM)
+Exec=/usr/bin/gnome-system-monitor
+Icon=org.gnome.SystemMonitor
+Terminal=false
+Categories=System;Monitor;
+StartupNotify=true

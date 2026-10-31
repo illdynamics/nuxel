@@ -1,0 +1,52 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+=== boot ===
+2026-10-31T01:23:50+01:00
+6b872a08-715e-4810-b9aa-89ee9186ecea
+ 01:23:50 up 0 min,  0 user,  load average: 8.64, 2.10, 0.70
+=== config persisted ===
+6:whitelist=org.nuxel.Bridge;geoclue-demo-agent;gnome-shell;io.elementary.desktop.agent-geoclue2;sm.puri.Phosh;lipstick
+ec11fb1248f78b339f6dd75f9e47a9e3b8abc4736e33848a7640a210fa2d1de0  /etc/geoclue/geoclue.conf
+=== services ===
+active
+active
+active
+active
+=== agent registration this boot ===
+Oct 31 01:23:21 fedora systemd[1]: Started nuxel-geoclue-agent.service - Nuxel GeoClue2 agent for the nuxel-bridge UID.
+Oct 31 01:23:22 fedora python3[5336]: 2026-10-31 01:23:22,637 [INFO] nuxel-geoclue-agent: registering GeoClue agent for org.nuxel.Bridge
+Oct 31 01:23:22 fedora python3[5336]: 2026-10-31 01:23:22,643 [INFO] nuxel-geoclue-agent: GeoClue agent registered for org.nuxel.Bridge
+Oct 31 01:23:25 fedora python3[5336]: 2026-10-31 01:23:25,813 [INFO] nuxel-geoclue-agent: GeoClue exited; agent will re-register on next start
+Oct 31 01:23:25 fedora python3[5336]: 2026-10-31 01:23:25,981 [INFO] nuxel-geoclue-agent: GeoClue appeared (:1.30); registering agent
+Oct 31 01:23:27 fedora python3[5336]: 2026-10-31 01:23:27,638 [INFO] nuxel-geoclue-agent: registering GeoClue agent for org.nuxel.Bridge
+Oct 31 01:23:27 fedora python3[5336]: 2026-10-31 01:23:27,644 [INFO] nuxel-geoclue-agent: GeoClue agent registered for org.nuxel.Bridge
+=== policy/rail ===
+{"enabled": false, "updated": 1793406119.534518}
+0
+=== enable + acquire after second reboot ===
+{
+  "state": "fixed",
+  "provider_ready": true,
+  "fix_source": "network_wifi",
+  "fix_source_detail": "ipf fallback (from WiFi data)",
+  "fix_kind": "network",
+  "gnss_fix": false,
+  "network_fix": true,
+  "accuracy": 25000.0,
+  "latitude": 51.4408,
+  "longitude": 5.47778,
+  "last_fix_timestamp": 1793406237.0,
+  "active_clients": 1
+}
+=== restore final OFF ===
+{"enabled": false, "updated": 1793406238.4889543}
+0
+=== final diagnostic ===
+{"device":"beyond2lte","tool":"nuxel-gnss-diag","protocol":"bbd","stages":{"device_node":"node:/dev/ttyBCM","module":"bound:/sys/bus/spi/drivers/brcm gps spi/spi17.0","firmware":"loader-only:/dev/bbd_patch","vendor_runtime":"missing:lhd,gpsd,android_linker,lhd_config,gps_config,gnss_hidl_impl","userspace":"no-native-bbd-lhd-decoder","stream":"bbd-transport:/dev/ttyBCM"},"first_failing_stage":"firmware","state":"BLOCKED_FIRMWARE","fix_verified":false,"nmea_stream":false,"owner_test":"docs/beta-finalization/manual-proof/13-gps.md"}

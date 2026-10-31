@@ -81,9 +81,8 @@
     -webkit-user-drag: none;
     transform-origin: 50% 72%;
 }
-/* One short wiggle every ~9 s (driven by a low-frequency JS scheduler).  An
-   infinite CSS animation kept WebKit/phoc compositing every frame even during
-   the "pause" segments on this software-rendered phone. */
+/* One short wiggle every ~12 s (driven by a low-frequency JS scheduler).
+   It runs once (iteration count 1), never on a continuous loop. */
 .lockscreen-handle.wiggling .lockscreen-lockhead-motion {
     animation: nuxel-lockhead-wiggle 1.35s cubic-bezier(.36,.07,.19,.97) 1;
 }
@@ -173,6 +172,7 @@ body.display-off .lockscreen-hint::before { animation-play-state: paused; }
     pointer-events: none;
     -webkit-user-select: none;
     user-select: none;
+    contain: layout style paint;
 }
 
 .lockscreen-indicator {
@@ -214,8 +214,9 @@ body.display-off .lockscreen-hint::before { animation-play-state: paused; }
     opacity: 0;
     z-index: 0;
     pointer-events: none;
-    transition: opacity .34s ease;
-    will-change: opacity;
+    /* PWNAGE-37000B: a static accent.  The old opacity transition (and the
+       permanent will-change) kept a composited layer alive on a 68px image
+       that was itself a 1254px source. */
 }
 
 .lockscreen-indicator.charging-ind { --glow: rgba(124, 224, 138, 0.82); }
@@ -239,42 +240,26 @@ body.display-off .lockscreen-hint::before { animation-play-state: paused; }
     visibility: visible;
     opacity: 1;
 }
-/* PERF (PWNAGE-37000): the radial glow was a continuous software-rasterised
-   animation. Keep the accent as a STATIC low-opacity glow (crisp pixel art
-   around the icon still reads as a status light) and remove the infinite
-   breathe loop; the charging/PC/live icon pulses below remain lightweight. */
+/* PWNAGE-37000B BUTTERSCOTCH: indicator state is now DISCRETE.
+   The old charging/PC/live pulses were infinite opacity+transform animations
+   on top of 1.0-1.4 MP decoded PNGs.  On the S10+ that kept WebKit's software
+   rasteriser and phoc awake every frame even while the lockscreen was idle
+   (measured: WebKit 143% CPU, 5 fps of redundant composite frames).  A
+   static glow plus the state colour/icon swap keeps the arcade status-light
+   language without any continuously scheduled work. */
 .lockscreen-indicator.active .lockscreen-indicator-glow {
     opacity: .55;
 }
 .lockscreen-indicator.charging-ind.active.charging img {
-    animation: nuxel-indicator-charge 1.45s ease-in-out infinite;
-}
-.lockscreen-indicator.usb-ind.active img {
-    animation: nuxel-indicator-usb 3.0s ease-in-out infinite;
-}
-.lockscreen-indicator.live-ind.active img {
-    animation: nuxel-indicator-live 1.9s ease-in-out infinite;
+    opacity: 1;
 }
 
-@keyframes nuxel-indicator-charge {
-    0%, 100% { opacity: .82; transform: scale(.96); }
-    50%      { opacity: 1;   transform: scale(1.04); }
-}
-@keyframes nuxel-indicator-usb {
-    0%, 100% { opacity: .84; transform: translateY(0); }
-    50%      { opacity: 1;   transform: translateY(-1px); }
-}
-@keyframes nuxel-indicator-live {
-    0%, 100% { opacity: .78; }
-    45%      { opacity: 1; }
-    55%      { opacity: .9; }
-}
-
-/* The display-off / unlocked surface must not composite hidden animation. */
+/* No indicator owns a running animation, so display-off needs no pause rule.
+   Keep a hard guard for any future bounded accent. */
 body.display-off .lockscreen-indicator,
 body.display-off .lockscreen-indicator img,
 body.display-off .lockscreen-indicator .lockscreen-indicator-glow {
-    animation-play-state: paused !important;
+    animation: none !important;
 }
 
 /* Charger/LPM boot warning.  On a charger-mode boot the vendor kernel does

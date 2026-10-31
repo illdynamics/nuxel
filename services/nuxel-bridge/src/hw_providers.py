@@ -14,16 +14,19 @@ a device, or claims a fix/route is audible without an observation.
 from __future__ import annotations
 
 import fcntl
+import json
 import os
 import re
 import select
 import subprocess
+import threading
 import time
 
-# Low-volume bring-up cap, shared with configs/nuxel/audio/audio.json
-# (``safety.volume_cap_percent``).  A Settings/QS volume request is clamped to
-# this ceiling until an owner raises it deliberately.
-DEFAULT_VOLUME_CAP_PERCENT = 25
+# Owner-approved ceiling, shared with configs/nuxel/audio/audio.json
+# (``safety.volume_cap_percent``).  The 25% low-volume bring-up cap was retired
+# on 2026-10-30 after the CS35L41 speaker path became owner-confirmed audible.
+# The default level is 50%.
+DEFAULT_VOLUME_CAP_PERCENT = 100
 
 # MADERA/CS47L93 playback-volume control names, in priority order.  These are
 # only ever used as *candidates*; the provider runs ``amixer scontrols`` on the
@@ -333,10 +336,10 @@ class AudioProvider:
 
         The CS35L41 driver's hw_free mutes the amplifier output stage after
         every completed playback (DIG_VOL_CTRL leaves 0 dB and AMP_OUT_MUTE
-        re-asserts), so the next playback starts silent.  Re-apply the proven
-        four-register sequence through the same helper the button-manager cue
-        uses immediately before pw-play.  The values are the exact
-        owner-confirmed settings and the helper is the single audited path.
+        re-asserts).  A cold DAPM speaker path can also swallow the 366 ms cue.
+        The helper repairs the driver cache, applies the proven registers and
+        keeps an inaudible stream on the speaker path until DAPM SPEAKER=On.
+        It is the single audited pre-play path for every short cue.
         """
         script = "/usr/lib/nuxel/nuxel-cs35l41-apply.sh"
         if not os.path.isfile(self._abs(script)) or not os.access(self._abs(script), os.X_OK):
@@ -792,7 +795,7 @@ class AudioProvider:
             return False, "audio route not ready: %s" % text[-400:]
         return True, "route verified (MUB0, both DSP1s, 48 kHz sink)"
 
-    def test_audio(self, asset="/usr/share/nuxel/assets/nuxel-pow.mp3", gain_percent=25):
+    def test_audio(self, asset="/usr/share/nuxel/assets/nuxel-pow.mp3", gain_percent=50):
         """Play the test asset through the currently selected output.
 
         Returns an HONEST result: 'played' means the player exited zero after
@@ -1202,79 +1205,366 @@ class BluetoothManagerProvider:
 
 
 class GnssProvider:
-    """Root-owned GNSS bring-up: power rail + bounded NMEA sampling.
+    """Root-owned BCM4773 BBD/LHD lifecycle; no NMEA assumptions.
 
-    The BCM4773 GNSS path on beyond2lte is present in the kernel
-    (``/dev/ttyBCM`` + ``brcm gps spi`` bound to ``spi17.0`` + the ``GPS_PWR_EN``
-    gpio rail), but the receiver does not emit NMEA until the vendor firmware
-    and the Android bionic ``gpsd``/``lhd`` userspace are available.  This
-    provider powers the rail safely for a bounded acquisition window and reads
-    back whatever the serial node produces; it never invents a coordinate or
-    a fix.
+    The S10+ GNSS receiver is a BCM4773 behind the Broadcom BBD/LHD RPC
+    stack.  The kernel exposes ``/dev/ttyBCM`` (BBD packet transport),
+    ``/dev/bbd_patch`` (sensor-hub patch loader) and friends, plus the
+    ``GPS_PWR_EN`` GPIO145 rail.  The vendor userspace consists of the
+    Android/Bionic ``lhd`` and ``gpsd`` daemons; stock Linux gpsd cannot
+    decode this protocol and no compatible patch firmware is present in the
+    Nuxel image.
+
+    This provider therefore implements the truthful, battery-safe subset:
+    verified power-rail control, lease/refcount ownership with bounded
+    deadlines, hardware/protocol inventory, and a bounded byte observation on
+    the BBD transport.  It never parses NMEA, never invents a coordinate and
+    never reports a fix.
     """
 
     POWER_RAIL = "/sys/devices/virtual/sec/gps/GPS_PWR_EN/value"
-    NMEA_NODE = "/dev/ttyBCM"
+    BBD_PACKET_NODE = "/dev/ttyBCM"
+    BBD_NODES = ("/dev/bbd_patch", "/dev/bbd_control",
+                 "/dev/bbd_sensor", "/dev/bbd_urgent_patch")
+    VENDOR_FILES = {
+        "lhd": ("/vendor/bin/hw/lhd", "/vendor/bin/lhd"),
+        "gpsd": ("/vendor/bin/hw/gpsd", "/vendor/bin/gpsd"),
+        "android_linker": ("/system/bin/linker64",),
+        "lhd_config": ("/vendor/etc/sensor/lhd.conf",),
+        "gps_config": ("/vendor/etc/gnss/gps.xml",),
+        "gnss_impl": ("/vendor/lib64/vendor.samsung.hardware.gnss@2.0.so",),
+    }
+    POLICY_PATH = os.environ.get("NUXEL_LOCATION_POLICY",
+                                 "/var/lib/nuxel/permissions/location-policy.json")
+    MAX_LEASE_SECONDS = 300.0
 
-    def power_rail(self, enabled=True, timeout=5.0):
-        enabled = bool(enabled)
-        try:
-            with open(self.POWER_RAIL, "w") as f:
-                f.write("1" if enabled else "0")
-        except OSError as exc:
-            return {"success": False, "enabled": None, "error": str(exc)}
+    _rail_lock = threading.Lock()
+    _rail_owners = set()
+    _rail_initial_state = None
+    _lease_seq = 0
+
+    # ------------------------------------------------------------------ power
+    def _read_rail(self):
         try:
             with open(self.POWER_RAIL) as f:
-                state = int(f.read().strip()) == 1
-        except (OSError, ValueError):
-            state = None
-        return {"success": True, "requested": enabled, "enabled": state}
+                raw = f.read().strip()
+            return int(raw) == 1, None
+        except (OSError, ValueError) as exc:
+            return None, str(exc)
 
-    def sample_nmea(self, seconds=5, timeout=12.0):
-        """Power the rail, read /dev/ttyBCM bounded, then power it back off.
+    def power_rail(self, enabled=True, timeout=5.0):
+        """Set the rail and require an exact readback.
 
-        Returns the raw text and a count of NMEA sentences observed; an empty
-        stream is reported as ``stream=empty`` rather than as a fix.
+        ``success`` is never true unless the state actually read back equals
+        the requested state.  A write error, a missing readback or a mismatch
+        is reported with the concrete reason.
+        """
+        enabled = bool(enabled)
+        requested = "1" if enabled else "0"
+        result = {
+            "success": False,
+            "requested": enabled,
+            "enabled": None,
+            "actual": None,
+            "write_ok": False,
+            "readback_ok": False,
+            "readback": None,
+            "error": None,
+            "protocol": "broadcom-bbd-lhd-rpc",
+        }
+        deadline = time.monotonic() + max(0.1, float(timeout or 5.0))
+        try:
+            with open(self.POWER_RAIL, "w") as f:
+                f.write(requested)
+                f.flush()
+                try:
+                    os.fsync(f.fileno())
+                except OSError:
+                    pass
+            result["write_ok"] = True
+        except OSError as exc:
+            result["error"] = "write %s: %s" % (self.POWER_RAIL, exc)
+            return result
+        # Read back immediately; sysfs GPIO writes are synchronous, but retry
+        # briefly so we do not misreport a real state transition as a failure.
+        while time.monotonic() <= deadline:
+            state, err = self._read_rail()
+            result["readback"] = state
+            result["actual"] = state
+            result["enabled"] = state
+            if err is None and state == enabled:
+                result["readback_ok"] = True
+                result["success"] = True
+                return result
+            if err is not None:
+                result["error"] = "readback %s: %s" % (self.POWER_RAIL, err)
+            time.sleep(0.02)
+        if result["error"] is None:
+            result["error"] = ("readback mismatch: requested %s, actual %r"
+                               % (requested, result["readback"]))
+        return result
+
+    # ----------------------------------------------------------------- leases
+    def _policy_enabled(self):
+        try:
+            with open(self.POLICY_PATH) as f:
+                return bool(json.load(f).get("enabled", False))
+        except (OSError, ValueError, AttributeError):
+            return False
+
+    def acquire(self, seconds=30, timeout=60.0):
+        """Acquire GNSS power under a lease only when a consumer exists.
+
+        Returns a lease dict.  If the BBD/LHD/RPC userspace and firmware are
+        absent, no rail power is applied: powering a receiver with no consumer
+        only drains the battery and cannot produce a fix.
         """
         try:
-            seconds = int(seconds)
+            seconds = float(seconds)
         except (TypeError, ValueError):
-            seconds = 5
-        seconds = max(1, min(30, seconds))
-        self.power_rail(True)
+            seconds = 30.0
+        try:
+            timeout = float(timeout)
+        except (TypeError, ValueError):
+            timeout = 60.0
+        start = time.monotonic()
+        deadline = start + max(1.0, min(seconds, timeout, self.MAX_LEASE_SECONDS))
+        inventory = self.inventory()
+        result = {
+            "success": False,
+            "acquired": False,
+            "lease_id": None,
+            "protocol": "broadcom-bbd-lhd-rpc",
+            "deadline": deadline,
+            "inventory": inventory,
+            "fix": None,
+            "stream": "not_opened",
+            "error": None,
+        }
+        if not self._policy_enabled():
+            result["error"] = "global location policy is OFF"
+            result["error_code"] = "LOCATION_DISABLED"
+            return result
+        if not inventory["vendor_runtime_complete"]:
+            result["error"] = inventory["blocker"]
+            result["error_code"] = "UNSUPPORTED_PROTOCOL"
+            return result
+        with self._rail_lock:
+            first_owner = not self._rail_owners
+            if not self._rail_owners:
+                self._rail_initial_state = self._read_rail()[0]
+            self._lease_seq += 1
+            lease_id = "gnss-%d" % self._lease_seq
+            self._rail_owners.add(lease_id)
+        if first_owner:
+            powered = self.power_rail(True, timeout=max(1.0, deadline - time.monotonic()))
+        else:
+            powered = {"success": True, "enabled": True, "already_powered": True}
+        result["power"] = powered
+        if not powered.get("success"):
+            self.release(lease_id)
+            result["error"] = powered.get("error") or "GPS rail power-on failed"
+            result["error_code"] = "POWER_FAILED"
+            return result
+        result.update(success=True, acquired=True, lease_id=lease_id)
+        # Observe a bounded window.  The transport is BBD RPC, so bytes are
+        # evidence of traffic only; they are never decoded as NMEA here.
+        observed = self._observe_bbd(deadline)
+        result.update(observed)
+        result["fix"] = None
+        result["error"] = ("valid BBD/LHD frames require the vendor lhd/gpsd "
+                           "runtime; no fix is claimed") if observed.get("bytes") else None
+        result["error_code"] = "NO_FIX" if observed.get("bytes") else "NO_DATA"
+        return result
+
+    def release(self, lease_id):
+        """Release one lease; power off only when the last owner leaves."""
+        with self._rail_lock:
+            if lease_id not in self._rail_owners:
+                return {"success": True, "released": False,
+                        "reason": "lease not owned", "owners": len(self._rail_owners)}
+            self._rail_owners.discard(lease_id)
+            last = not self._rail_owners
+            restore = self._rail_initial_state
+            if last:
+                self._rail_initial_state = None
+        if not last:
+            return {"success": True, "released": True, "powered": True,
+                    "owners": self._active_owners()}
+        if restore is True:
+            return {"success": True, "released": True, "powered": True,
+                    "restored_initial_state": True, "owners": 0}
+        powered = self.power_rail(False)
+        return {"success": bool(powered.get("success")), "released": True,
+                "powered": False, "power": powered, "owners": 0,
+                "error": powered.get("error")}
+
+    @classmethod
+    def _active_owners(cls):
+        with cls._rail_lock:
+            return len(cls._rail_owners)
+
+    def _observe_bbd(self, deadline):
+        out = {"bytes": 0, "stream": "no_data", "node": self.BBD_PACKET_NODE,
+               "protocol": "broadcom-bbd-lhd-rpc", "nmea": False}
+        if not os.path.exists(self.BBD_PACKET_NODE):
+            out["stream"] = "node_absent"
+            return out
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            out["stream"] = "deadline_expired"
+            return out
+        try:
+            fd = os.open(self.BBD_PACKET_NODE, os.O_RDONLY | os.O_NONBLOCK)
+        except OSError as exc:
+            out.update(stream="open_failed", error=str(exc))
+            return out
         data = b""
         try:
-            fd = os.open(self.NMEA_NODE, os.O_RDONLY | os.O_NONBLOCK)
-        except OSError as exc:
-            self.power_rail(False)
-            return {"success": False, "error": "open %s: %s" % (self.NMEA_NODE, exc)}
-        try:
-            t0 = time.time()
-            while time.time() - t0 < seconds:
+            while time.monotonic() < deadline and len(data) < 65536:
                 r, _, _ = select.select([fd], [], [], 0.25)
-                if r:
-                    try:
-                        chunk = os.read(fd, 4096)
-                    except OSError:
-                        break
-                    if not chunk:
-                        break
-                    data += chunk
+                if not r:
+                    continue
+                try:
+                    chunk = os.read(fd, 4096)
+                except OSError:
+                    break
+                if not chunk:
+                    break
+                data += chunk
         finally:
             try:
                 os.close(fd)
             except OSError:
                 pass
-            self.power_rail(False)
-        text = data.decode("utf-8", "replace")
-        sentences = re.findall(r"\$G[A-Z]{2,4}", text)
+        out["bytes"] = len(data)
+        if data:
+            out["stream"] = "bbd_bytes_observed"
+            out["hex_prefix"] = data[:64].hex()
+            # Deliberately no NMEA parsing: a $G match inside a BBD packet
+            # would not make the stream NMEA or a fix.
+            out["nmea"] = False
+        return out
+
+    # -------------------------------------------------------------- inventory
+    def inventory(self):
+        vendor = {}
+        for name, candidates in self.VENDOR_FILES.items():
+            vendor[name] = any(os.path.exists(p) for p in candidates)
+        vendor_complete = all(vendor.values())
+        nodes = [n for n in (self.BBD_PACKET_NODE,) + self.BBD_NODES if os.path.exists(n)]
+        firmware = []
+        for d in ("/lib/firmware/gnss", "/lib/firmware", "/vendor/firmware"):
+            try:
+                for name in sorted(os.listdir(d)):
+                    low = name.lower()
+                    if (("bcm477" in low or low.startswith(("gps", "gnss", "ssp")) or
+                         "sensorhub" in low) and
+                            not low.endswith((".hcd", ".txt", ".conf", ".json", ".cer"))):
+                        firmware.append(os.path.join(d, name))
+            except OSError:
+                continue
+        spi_bound = []
+        driver_dir = "/sys/bus/spi/drivers/brcm gps spi"
+        try:
+            spi_bound = [os.path.join(driver_dir, n)
+                         for n in sorted(os.listdir(driver_dir)) if n.startswith("spi")]
+        except OSError:
+            pass
+        rail_state, rail_err = self._read_rail()
+        blocker = None
+        if not nodes and not spi_bound:
+            blocker = "no BCM4773 BBD node and no brcm gps spi binding"
+        elif not firmware:
+            blocker = "no compatible BCM4773 BBD sensor-hub patch firmware"
+        elif not vendor_complete:
+            missing = [k for k, v in vendor.items() if not v]
+            blocker = "vendor BBD/LHD runtime missing: " + ", ".join(missing)
+        else:
+            blocker = ("BCM4773 BBD/LHD stack present but not initialized; "
+                       "no fix has been verified")
         return {
-            "success": True,
-            "node": self.NMEA_NODE,
-            "sample_seconds": seconds,
-            "bytes": len(data),
-            "nmea_sentence_count": len(sentences),
-            "sentences": list(dict.fromkeys(sentences))[:16],
-            "stream": "nmea" if sentences else "empty",
-            "raw": text[:500],
+            "protocol": "broadcom-bbd-lhd-rpc",
+            "nmea": False,
+            "nodes": nodes,
+            "bbd_patch_node": "/dev/bbd_patch" if os.path.exists("/dev/bbd_patch") else None,
+            "spi_bindings": spi_bound,
+            "power_rail": self.POWER_RAIL,
+            "power_rail_state": rail_state,
+            "power_rail_readable": rail_err is None,
+            "power_rail_error": rail_err,
+            "active_leases": self._active_owners(),
+            "firmware": firmware,
+            "firmware_present": bool(firmware),
+            "firmware_loaded": False,
+            "vendor_files": vendor,
+            "vendor_runtime_complete": vendor_complete,
+            "android_linker": vendor["android_linker"],
+            "vendor_userspace": vendor["lhd"] and vendor["gpsd"],
+            "fix_supported": False,
+            "blocker": blocker,
         }
+
+    def probe(self, seconds=3, timeout=8.0, power=False):
+        """Bounded, read-only-by-default diagnostic probe (never a fix)."""
+        try:
+            seconds = max(0.2, min(30.0, float(seconds)))
+        except (TypeError, ValueError):
+            seconds = 3.0
+        try:
+            timeout = max(0.2, float(timeout))
+        except (TypeError, ValueError):
+            timeout = 8.0
+        started = time.monotonic()
+        deadline = started + min(seconds, timeout)
+        inv = self.inventory()
+        out = {
+            "success": True,
+            "protocol": "broadcom-bbd-lhd-rpc",
+            "node": self.BBD_PACKET_NODE,
+            "nmea_stream": False,
+            "inventory": inv,
+            "power": None,
+            "stream": "not_opened",
+            "bytes": 0,
+            "fix": None,
+            "error": None,
+            "error_code": None,
+            "elapsed_s": 0.0,
+        }
+        if power:
+            if self._active_owners() > 0:
+                out.update(success=False,
+                           error='GNSS rail is owned by an active lease',
+                           error_code='BUSY')
+                out['elapsed_s'] = round(time.monotonic() - started, 3)
+                return out
+            if not inv.get("vendor_runtime_complete"):
+                out.update(success=False, error=inv["blocker"],
+                           error_code="UNSUPPORTED_PROTOCOL")
+            else:
+                initial_rail = inv.get("power_rail_state")
+                powered = self.power_rail(True, timeout=min(2.0, deadline - time.monotonic()))
+                out["power"] = powered
+                if not powered.get("success"):
+                    out.update(success=False, error=powered.get("error"),
+                               error_code="POWER_FAILED")
+                else:
+                    out.update(self._observe_bbd(deadline))
+                    # Restore the exact pre-probe state, not a hard-coded OFF.
+                    self.power_rail(True if initial_rail is True else False)
+        else:
+            out.update(self._observe_bbd(deadline))
+        if out["bytes"]:
+            out.update(success=False, stream="bbd_bytes_observed",
+                       error="bytes observed on BBD transport; no BBD/LHD decoder available",
+                       error_code="UNSUPPORTED_PROTOCOL")
+        elif out.get("success"):
+            out.update(error=inv["blocker"], error_code="NO_DATA")
+        out["elapsed_s"] = round(time.monotonic() - started, 3)
+        out["fix"] = None
+        return out
+
+    def sample_nmea(self, seconds=5, timeout=12.0):
+        """Deprecated compatibility entry point; deliberately never claims NMEA."""
+        return self.probe(seconds=seconds, timeout=timeout, power=False)

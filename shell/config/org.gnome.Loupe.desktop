@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Image Viewer
+Comment=Nuxel installed image viewer (Fedora aarch64 RPM)
+Exec=/usr/bin/loupe %U
+Icon=org.gnome.Loupe
+Terminal=false
+Categories=Graphics;Viewer;
+MimeType=image/png;image/jpeg;image/webp;image/gif;
+StartupNotify=true

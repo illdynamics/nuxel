@@ -293,18 +293,30 @@ def main(argv=None) -> int:
         elif app.get("type") == "native":
             src = app.get("binary_source")
             binp = app.get("native_binary")
-            if not src or not binp:
+            if not src and not binp:
                 if app.get("status") == "placeholder" and app.get("implementation_note"):
                     rep.warn("app %s: native placeholder with no binary (%s)" % (aid, app.get("implementation_note")[:90]))
                 else:
                     rep.fail("app %s: native entry without binary_source/native_binary and not documented as a placeholder" % aid)
-            elif not os.path.exists(os.path.join(ROOT, src)):
+            elif not binp:
+                rep.fail("app %s: native entry has binary_source but no install target" % aid)
+            elif src and not os.path.exists(os.path.join(ROOT, src)):
                 rep.fail("app %s: binary_source %r does not exist" % (aid, src))
             else:
+                # An entry ships EITHER repository source (compiled/installed by
+                # the image builder) OR a package install target (a Fedora RPM or
+                # the Nuxel Flatpak/RPM wrapper already installed on the handset).
+                # Both must name a real desktop entry so the launcher can hand the
+                # application to the session.
                 desktop = app.get("desktop_entry")
-                if desktop and not os.path.exists(os.path.join(ROOT, desktop)):
+                if desktop and not desktop.startswith("flatpak:") \
+                        and not os.path.exists(os.path.join(ROOT, desktop)):
                     rep.fail("app %s: desktop_entry %r does not exist" % (aid, desktop))
-                rep.ok("native %s -> %s (source %s)" % (aid, binp, src))
+                if src:
+                    rep.ok("native %s -> %s (source %s)" % (aid, binp, src))
+                else:
+                    rep.ok("native %s -> %s (installed package; desktop %s)"
+                           % (aid, binp, desktop))
         else:
             rep.fail("app %s: unknown type %r" % (aid, app.get("type")))
 

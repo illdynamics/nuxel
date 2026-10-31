@@ -217,6 +217,33 @@ int main(int argc, char **argv) {
         _roundtrip(g_display);
         printf("HOME_ACTION minimized=%d raised=%d\n", minimized, raised);
     }
+    /* PWNAGE-43000: bring a launched native app to the glass.  The Home
+       surface is a FULLSCREEN toplevel, so a normal app window would otherwise
+       map underneath it even after activation.  Minimize Home, then
+       unminimize/activate/fullscreen the requested app (or every non-Home
+       window when no app id is supplied). */
+    if (!strcmp(mode, "focus") || !strcmp(mode, "fullscreen")) {
+        const char *want = (argc > 2) ? argv[2] : NULL;
+        int focused=0, minimized=0;
+        for (struct window *w=windows;w;w=w->next) {
+            int is_home = !strcmp(w->app_id, "nuxel-pwa-host") || !strcmp(w->title, "Nuxel");
+            if (is_home) {
+                /* A fullscreen Home is the reason set_minimized looked
+                   ineffective.  Leave fullscreen first, then minimize. */
+                _marshal(w->handle, 9, &fto_handle_interface, 3, 0);  /* unset_fullscreen */
+                _marshal(w->handle, 2, &fto_handle_interface, 3, 0);  /* set_minimized */
+                minimized++;
+                continue;
+            }
+            if (want && *want && strcmp(w->app_id, want) && strcmp(w->title, want)) continue;
+            _marshal(w->handle, 3, &fto_handle_interface, 3, 0);  /* unset_minimized */
+            _marshal(w->handle, 0, &fto_handle_interface, 3, 0);  /* set_maximized */
+            focused++;
+        }
+        _roundtrip(g_display);
+        printf("FOCUS_ACTION focused=%d home_minimized=%d want=%s\n",
+               focused, minimized, want ? want : "*");
+    }
     _disconnect(g_display);
     return 0;
 }

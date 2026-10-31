@@ -1,0 +1,70 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+dbus python OK 1.4.0
+Traceback (most recent call last):
+  File "/tmp/gcagent.py", line 25, in <module>
+    name = dbus.service.BusName('org.nuxel.GeoClueAgent', bus)
+  File "/usr/lib64/python3.14/site-packages/dbus/service.py", line 134, in __new__
+    retval = bus.request_name(name, name_flags)
+  File "/usr/lib64/python3.14/site-packages/dbus/bus.py", line 299, in request_name
+    return self.call_blocking(BUS_DAEMON_NAME, BUS_DAEMON_PATH,
+           ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                              BUS_DAEMON_IFACE, 'RequestName',
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                              'su', (name, flags))
+                              ^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib64/python3.14/site-packages/dbus/connection.py", line 696, in call_blocking
+    reply_message = self.send_message_with_reply_and_block(
+        message, timeout)
+dbus.exceptions.DBusException: org.freedesktop.DBus.Error.AccessDenied: Connection ":1.172" is not allowed to own the service "org.nuxel.GeoClueAgent" due to security policies in the configuration file
+agent_rc=1
+=== geoclue debug journal ===
+Oct 30 23:45:02 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 geoclue[32415]: Service not used for 60 seconds. Shutting down..
+Oct 30 23:45:02 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: geoclue.service: Deactivated successfully.
+-- Boot bc2246c400af48038f093f499c8da4fb --
+Oct 31 00:06:26 fedora systemd[1]: Starting geoclue.service - Location Lookup Service...
+Oct 31 00:06:27 fedora systemd[1]: Started geoclue.service - Location Lookup Service.
+Oct 31 00:06:31 fedora systemd[1]: Stopping geoclue.service - Location Lookup Service...
+Oct 31 00:06:31 fedora systemd[1]: geoclue.service: Deactivated successfully.
+Oct 31 00:06:31 fedora systemd[1]: Stopped geoclue.service - Location Lookup Service.
+Oct 31 00:06:31 fedora systemd[1]: Starting geoclue.service - Location Lookup Service...
+Oct 31 00:06:32 fedora systemd[1]: Started geoclue.service - Location Lookup Service.
+-- Boot 93e7ecf7a75e4adeb641ea63d5c20957 --
+Oct 31 00:07:20 fedora systemd[1]: Starting geoclue.service - Location Lookup Service...
+Oct 31 00:07:21 fedora systemd[1]: Started geoclue.service - Location Lookup Service.
+Oct 31 00:07:25 fedora systemd[1]: Stopping geoclue.service - Location Lookup Service...
+Oct 31 00:07:25 fedora systemd[1]: geoclue.service: Deactivated successfully.
+Oct 31 00:07:25 fedora systemd[1]: Stopped geoclue.service - Location Lookup Service.
+Oct 31 00:07:25 fedora systemd[1]: Starting geoclue.service - Location Lookup Service...
+Oct 31 00:07:25 fedora systemd[1]: Started geoclue.service - Location Lookup Service.
+Oct 31 00:08:25 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 geoclue[6828]: Service not used for 60 seconds. Shutting down..
+Oct 31 00:08:25 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: geoclue.service: Deactivated successfully.
+Oct 31 00:29:29 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Starting geoclue.service - Location Lookup Service...
+Oct 31 00:29:29 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Started geoclue.service - Location Lookup Service.
+Oct 31 00:30:29 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 geoclue[35954]: Service not used for 60 seconds. Shutting down..
+Oct 31 00:30:29 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: geoclue.service: Deactivated successfully.
+Oct 31 00:43:02 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Starting geoclue.service - Location Lookup Service...
+Oct 31 00:43:02 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Started geoclue.service - Location Lookup Service.
+Oct 31 00:44:02 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 geoclue[44769]: Service not used for 60 seconds. Shutting down..
+Oct 31 00:44:02 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: geoclue.service: Deactivated successfully.
+Oct 31 00:47:07 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Starting geoclue.service - Location Lookup Service...
+Oct 31 00:47:07 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Started geoclue.service - Location Lookup Service.
+Oct 31 00:47:19 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: geoclue.service: Failed to get CPU usage: No such file or directory
+Oct 31 00:47:28 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping geoclue.service - Location Lookup Service...
+Oct 31 00:47:28 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: geoclue.service: Deactivated successfully.
+Oct 31 00:47:28 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopped geoclue.service - Location Lookup Service.
+Oct 31 00:47:28 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Starting geoclue.service - Location Lookup Service...
+Oct 31 00:47:28 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Started geoclue.service - Location Lookup Service.
+Oct 31 00:47:29 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: geoclue.service: Failed to get CPU usage: No such file or directory
+Oct 31 00:47:42 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping geoclue.service - Location Lookup Service...
+Oct 31 00:47:42 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: geoclue.service: Deactivated successfully.
+Oct 31 00:47:42 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopped geoclue.service - Location Lookup Service.
+Oct 31 00:48:55 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Starting geoclue.service - Location Lookup Service...
+Oct 31 00:48:55 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Started geoclue.service - Location Lookup Service.

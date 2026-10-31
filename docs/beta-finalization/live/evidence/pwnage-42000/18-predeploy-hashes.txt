@@ -1,0 +1,31 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+backup_ts=20261031T000116Z
+104564a386472aa2a14bdc3b7743c392e726f5b0cd949972cb3f0f9f0c3733cb  /usr/lib/nuxel/nuxel-bridge/bridge.py
+cd616bfef15289d53a31e1269cf2dab4091c41c7dfa23a91461c62607bd3c2dc  /usr/lib/nuxel/nuxel-bridge/api.py
+3b69e4e81bbf5199d2ca1011ba9876d2b5b4dabca0bd7d0abcf7614a55c16d13  /usr/lib/nuxel/nuxel-bridge/hw_providers.py
+c451b588240022537ca2ff29d8c2eb301b18dfad388f0dbfeda6306280980d64  /usr/share/nuxel/pwa/nuxel-common/geolocation.js
+cbdb330b04d1304b56f3299bc0cb857e2b49de3456e4bd0a95bf7ff5724409b8  /usr/share/nuxel/pwa/nuxel-common/bridge.js
+2ad0cbd20d4553118101ccafadabcb9d3dba0647eec2de035465fedca89bf53a  /usr/share/nuxel/pwa/nuxel-common/maps-core.js
+f0e303322f6eb3e48145fd553392d548e81867d6ecf0866c8b45c1083b316964  /usr/share/nuxel/pwa/nuxel-apps/maps/js/maps.js
+b0cfeefe39aaf11355e9220ab864a1155eda30ffba9cb4e718e848e652411a6e  /usr/share/nuxel/pwa/nuxel-apps/settings/location-maps.js
+1081b863543f45add6c8dcac1616a41b6444813c19e99a7d530b2686742c39c1  /usr/share/nuxel/pwa/nuxel-home/index.html
+621c5c89626741ac8f621339a809b59cb2f8c2a71e7bdc47148b18151527b297  /usr/share/nuxel/pwa/nuxel-home/js/qs.js
+8c796c653ffacd5f25666a1180fd33777b8c409a741559870ac930878d57a3c1  /usr/share/nuxel/pwa/nuxel-home/js/status-bar.js
+15d6c352b8c2929c0d4afd5302a530edec332020642d2f77f35ce6a693a4ec03  /usr/share/nuxel/pwa/nuxel-home/css/status-bar.css
+cd638209a34f20a4aba5cd2f954e659f7fe8d89a38d308de05fd1df146a013c4  /etc/geoclue/geoclue.conf
+d93092a6647fd938af9f3fba1b39dcf0efb941996ed2235883cfc7c46b91a5ef  /usr/local/bin/nuxel-gnss-diag.sh
+f7286633090abe321c9d50d48d1eb04299a6a59c947e391f3b21bf8d0ab6c61b  /etc/nuxel/gnss/gnss.json
+=== service states before ===
+active
+active
+inactive
+=== policy before ===
+{"enabled": true, "updated": 1793126571.5030842}

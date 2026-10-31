@@ -73,20 +73,25 @@
           // never missing, and never leave both hosts hidden.
           const last = text.trim().split(/\n/).filter(Boolean).pop() || '';
           const visible = ready && !/NAV_DOCK_HIDE/.test(last);
+          const changed = this.nativeDock !== visible || this._navSyncInit !== true;
           this.nativeDock = visible;
-          try {
-            document.documentElement.classList.toggle('native-nav-present', visible);
-            document.documentElement.classList.toggle('native-nav-pending', false);
-            document.documentElement.classList.add('nav-fallback-safe');
-          } catch (e) {}
-          this._traceNs('native-dock=' + (visible ? 'present' : 'hidden/absent'));
+          this._navSyncInit = true;
+          if (changed) {
+            try {
+              document.documentElement.classList.toggle('native-nav-present', visible);
+              document.documentElement.classList.toggle('native-nav-pending', false);
+              document.documentElement.classList.add('nav-fallback-safe');
+            } catch (e) {}
+            this._traceNs('native-dock=' + (visible ? 'present' : 'hidden/absent'));
+          }
         }).catch(() => {
           // statusRead unavailable: the DOM strip is the only host; leave it up.
           try { document.documentElement.classList.remove('native-nav-present', 'native-nav-pending'); } catch (e) {}
         });
       };
       sync();
-      if (!this._navSyncTimer) this._navSyncTimer = setInterval(sync, 2000);
+      /* State changes are rare; 2 s statusRead polling was pure idle churn. */
+      if (!this._navSyncTimer) this._navSyncTimer = setInterval(sync, 5000);
     }
     _traceNs(message) {
       try {

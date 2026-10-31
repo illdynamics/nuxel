@@ -151,10 +151,11 @@ check("policy keeps the on-unplug revert rule",
       pol["revert"]["on_unplug"] is True
       and pol["revert"]["never_leave_routed_to_absent_device"] is True
       and "Speaker" in pol["revert"]["always_restore"])
-check("policy re-applies the low-volume cap on every route change",
-      pol["safety"]["low_volume_only"] is True
+check("policy keeps the 100% ceiling and the 50% default on every route change",
+      pol["safety"]["low_volume_only"] is False
       and pol["safety"]["cap_on_route_change"] is True
-      and int(pol["safety"]["volume_cap_percent"]) <= 25)
+      and int(pol["safety"]["volume_cap_percent"]) == 100
+      and int(pol["safety"].get("default_volume_percent", 0)) == 50)
 
 # bounded watch: logs transitions and applies NOTHING (runs on a writable copy,
 # because watch appends to its evidence log)

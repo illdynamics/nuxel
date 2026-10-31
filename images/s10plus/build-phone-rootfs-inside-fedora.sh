@@ -80,7 +80,7 @@ dnf -y --installroot="$STAGE" --releasever=43 --use-host-config \
     filesystem setup fedora-release glibc glibc-langpack-en \
     bash coreutils util-linux findutils grep sed gawk \
     systemd-258.11-1.fc43 systemd-udev systemd-networkd dbus-broker dbus-daemon \
-    python3 phosh phoc stevia stevia-phosh-osk-provider seatd \
+    python3 python3-dbus python3-gobject phosh phoc stevia stevia-phosh-osk-provider seatd \
     NetworkManager NetworkManager-wifi wpa_supplicant libnl3 libnl3-cli iw wireless-regdb ModemManager geoclue2 geoclue2-demos bluez bluez-deprecated bluez-obexd \
     mesa-dri-drivers mesa-libEGL mesa-libgbm libinput \
     gtk3 webkit2gtk4.1 gtk4 libadwaita glib-networking libproxy \
@@ -336,10 +336,30 @@ install -d "$STAGE/etc/nuxel/buttons" "$STAGE/etc/nuxel/leds" "$STAGE/var/cache/
 install -m 0644 /nuxel/configs/nuxel/buttons/reboot-gate.json "$STAGE/etc/nuxel/buttons/reboot-gate.json"
 install -m 0644 /nuxel/configs/nuxel/leds/leds.json          "$STAGE/etc/nuxel/leds/leds.json"
 install -m 0755 /nuxel/tools/s10plus/a45/nuxel-session.sh            "$STAGE/usr/lib/nuxel/nuxel-session.sh"
+# Desktop entries for the installed native applications.  pwa/nuxel-common/
+# app-registry.json names these files, so a launcher entry can never point at a
+# desktop file that the image does not ship.
+install -d "$STAGE/usr/share/applications"
+for _desk in org.mozilla.firefox org.videolan.VLC org.signal.Signal com.stremio.Stremio \
+             org.gnome.FileRoller org.gnome.Loupe org.gnome.Papers org.gnome.SystemMonitor; do
+  install -m 0644 "/nuxel/shell/config/$_desk.desktop" "$STAGE/usr/share/applications/$_desk.desktop"
+done
 install -m 0755 "$B/nuxel-navdock"            "$STAGE/usr/lib/nuxel/nuxel-navdock"
 install -m 0755 "$B/nuxel-statusbar"          "$STAGE/usr/lib/nuxel/nuxel-statusbar"
 install -m 0755 "$B/nuxel-foreign-toplevel"   "$STAGE/usr/lib/nuxel/nuxel-foreign-toplevel"
 install -m 0755 /nuxel/services/nuxel-s10/bin/nuxel-focus-app.sh "$STAGE/usr/lib/nuxel/nuxel-focus-app.sh"
+# PWNAGE-40000 pre-play amplifier/DAPM warm-up.  It starts an inaudible 8 s
+# stream, repairs the CS35L41 driver cache and waits for DAPM SPEAKER=On so the
+# 366 ms boot/volume cue is not swallowed by a cold speaker path.  The raw I2C
+# register writer (/usr/local/bin/nuxel-cs35.py) is device-only and deliberately
+# absent from a fresh image; the helper degrades to the driver-cache path and
+# logs that the raw patch was not applied.
+install -m 0755 /nuxel/services/nuxel-s10/bin/nuxel-audio-warmup "$STAGE/usr/lib/nuxel/nuxel-audio-warmup"
+install -m 0755 /nuxel/services/nuxel-s10/bin/nuxel-cs35l41-apply.sh "$STAGE/usr/lib/nuxel/nuxel-cs35l41-apply.sh"
+install -m 0644 /nuxel/assets/nuxel-silence-8s.wav "$STAGE/usr/share/nuxel/assets/nuxel-silence-8s.wav"
+install -d "$STAGE/etc/systemd/system/nuxel-boot-sound.service.d"
+install -m 0644 /nuxel/services/nuxel-session/systemd/nuxel-boot-sound.service.d/20-warmup-keepalive.conf \
+    "$STAGE/etc/systemd/system/nuxel-boot-sound.service.d/20-warmup-keepalive.conf"
 # PWNAGE-43000 standalone audio + ABOX reload + Wi-Fi/charger policy
 install -m 0755 /nuxel/services/nuxel-s10/bin/nuxel-audio-session.sh "$STAGE/usr/lib/nuxel/nuxel-audio-session.sh"
 install -m 0755 /nuxel/services/nuxel-s10/bin/nuxel-abox-firmware-reload.sh "$STAGE/usr/lib/nuxel/nuxel-abox-firmware-reload.sh"
@@ -350,6 +370,8 @@ install -m 0755 /nuxel/services/nuxel-s10/bin/nuxel-charger-mode-recovery.sh "$S
 install -m 0755 /nuxel/services/nuxel-s10/bin/nuxel-device-permissions.sh "$STAGE/usr/lib/nuxel/nuxel-device-permissions.sh"
 install -m 0755 /nuxel/services/nuxel-s10/bin/nuxel-usb-mode.sh "$STAGE/usr/lib/nuxel/nuxel-usb-mode.sh"
 install -m 0755 /nuxel/services/nuxel-s10/bin/nuxel-mtp-server "$STAGE/usr/lib/nuxel/nuxel-mtp-server"
+install -m 0755 /nuxel/services/nuxel-s10/bin/nuxel-gps-status "$STAGE/usr/local/bin/nuxel-gps-status"
+install -m 0755 /nuxel/services/nuxel-s10/bin/nuxel-audio-status "$STAGE/usr/local/bin/nuxel-audio-status"
 for _w in firefox vlc signal stremio; do
   install -m 0755 "/nuxel/services/nuxel-s10/bin/nuxel-flatpak-$_w" "$STAGE/usr/lib/nuxel/nuxel-flatpak-$_w"
 done
@@ -363,6 +385,14 @@ install -m 0644 /nuxel/services/nuxel-s10/systemd/nuxel-charger-mode-recovery.se
 install -m 0644 /nuxel/services/nuxel-s10/systemd/nuxel-device-permissions.service "$STAGE/etc/systemd/system/nuxel-device-permissions.service"
 install -m 0644 /nuxel/services/nuxel-s10/systemd/nuxel-mtp.service "$STAGE/etc/systemd/system/nuxel-mtp.service"
 install -m 0644 /nuxel/services/nuxel-s10/systemd/nuxel-usb-mode-monitor.service "$STAGE/etc/systemd/system/nuxel-usb-mode-monitor.service"
+# PWNAGE-42000: GeoClue2 queues Manager.GetClient until an agent is registered
+# for the calling UID.  The agent must run in its own process (the bridge's
+# single-threaded D-Bus loop deadlocks on the callback), as the same UID.
+install -d "$STAGE/etc/systemd/system/geoclue.service.d"
+install -m 0644 /nuxel/services/nuxel-s10/systemd/geoclue.service.d/10-nuxel-network.conf \
+    "$STAGE/etc/systemd/system/geoclue.service.d/10-nuxel-network.conf"
+install -m 0644 /nuxel/services/nuxel-bridge/systemd/nuxel-geoclue-agent.service \
+    "$STAGE/etc/systemd/system/nuxel-geoclue-agent.service"
 install -d "$STAGE/etc/systemd/system/nuxel-abox-firmware-reload.service.d" \
            "$STAGE/etc/systemd/system/nuxel-wl-fb.service.d"
 install -m 0644 /nuxel/services/nuxel-s10/systemd/nuxel-abox-firmware-reload.service.d/10-boot-priority.conf \
@@ -382,6 +412,7 @@ ln -sf ../nuxel-wifi.service "$STAGE/etc/systemd/system/multi-user.target.wants/
 ln -sf ../nuxel-charger-mode-recovery.service "$STAGE/etc/systemd/system/multi-user.target.wants/nuxel-charger-mode-recovery.service"
 ln -sf ../nuxel-device-permissions.service "$STAGE/etc/systemd/system/multi-user.target.wants/nuxel-device-permissions.service"
 ln -sf ../nuxel-usb-mode-monitor.service "$STAGE/etc/systemd/system/multi-user.target.wants/nuxel-usb-mode-monitor.service"
+ln -sf ../nuxel-geoclue-agent.service "$STAGE/etc/systemd/system/multi-user.target.wants/nuxel-geoclue-agent.service"
 # PWNAGE-36000: S10+ audio/geoclue runtime configuration.
 #   * static PipeWire ALSA sink on RDMA1 (hw:0,1, 44.1 kHz): the image has no
 #     udev daemon, so WirePlumber's api.alsa.enum.udev monitor cannot enumerate

@@ -1,0 +1,44 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+=== selinux ===
+drwxr-xr-x 7 root root 0 Jan  1  1970 /sys/fs/selinux
+0bash: line 2: sestatus: command not found
+=== selinux avc ===
+=== sysctl ===
+net.ipv4.ping_group_range = 0	2147483647
+net.ipv4.ip_unprivileged_port_start = 1024
+kernel.unprivileged_bpf_disabled = 0
+=== root sockets ===
+uid 0
+inet dgram OK
+inet stream OK
+inet6 dgram OK
+=== nuxel sockets ===
+uid 1000
+inet dgram FAIL [Errno 13] Permission denied
+inet stream FAIL [Errno 13] Permission denied
+inet6 dgram FAIL [Errno 13] Permission denied
+=== geoclue sockets ===
+uid 999
+inet dgram FAIL [Errno 13] Permission denied
+inet stream FAIL [Errno 13] Permission denied
+inet6 dgram FAIL [Errno 13] Permission denied
+=== userns? ===
+=== caps root ===
+Current: =ep
+Bounding set =cap_chown,cap_dac_override,cap_dac_read_search,cap_fowner,cap_fsetid,cap_kill,cap_setgid,cap_setuid,cap_setpcap,cap_linux_immutable,cap_net_bind_service,cap_net_broadcast,cap_net_admin,cap_net_raw,cap_ipc_lock,cap_ipc_owner,cap_sys_module,cap_sys_rawio,cap_sys_chroot,cap_sys_ptrace,cap_sys_pacct,cap_sys_admin,cap_sys_boot,cap_sys_nice,cap_sys_resource,cap_sys_time,cap_sys_tty_config,cap_mknod,cap_lease,cap_audit_write,cap_audit_control,cap_setfcap,cap_mac_override,cap_mac_admin,cap_syslog,cap_wake_alarm,cap_block_suspend,cap_audit_read
+Ambient set =
+Current IAB: 
+Securebits: 00/0x0/1'b0 (no-new-privs=0)
+=== apparmor ===
+bash: line 19: aa-status: command not found
+=== nft rules ===
+bash: line 20: nft: command not found
+bash: line 20: iptables: command not found

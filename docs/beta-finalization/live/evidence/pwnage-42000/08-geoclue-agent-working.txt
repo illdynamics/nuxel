@@ -1,0 +1,51 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+AddAgent OK
+GetClient OK /org/freedesktop/GeoClue2/Client/1
+Introspect ERR org.freedesktop.DBus.Error.UnknownMethod: No such method “Introspect”
+DONE
+rc=0
+=== debug log (filtered) ===
+(geoclue:47504): Geoclue-DEBUG: 00:50:46.525: Loading config: /etc/geoclue/geoclue.conf
+(geoclue:47504): Geoclue-DEBUG: 00:50:46.525: GeoClue configuration:
+(geoclue:47504): Geoclue-DEBUG: 00:50:46.525: Allowed agents:
+(geoclue:47504): Geoclue-DEBUG: 00:50:46.525: 	geoclue-demo-agent
+(geoclue:47504): Geoclue-DEBUG: 00:50:46.525: 	gnome-shell
+(geoclue:47504): Geoclue-DEBUG: 00:50:46.525: 	io.elementary.desktop.agent-geoclue2
+(geoclue:47504): Geoclue-DEBUG: 00:50:46.525: 	sm.puri.Phosh
+(geoclue:47504): Geoclue-DEBUG: 00:50:46.525: 	lipstick
+(geoclue:47504): Geoclue-DEBUG: 00:50:46.525: Network NMEA source: disabled
+(geoclue:47504): Geoclue-DEBUG: 00:50:46.525: 	Network NMEA socket: none
+(geoclue:47504): Geoclue-DEBUG: 00:50:46.525: 3G source: disabled
+(geoclue:47504): Geoclue-DEBUG: 00:50:46.525: CDMA source: disabled
+(geoclue:47504): Geoclue-DEBUG: 00:50:46.525: Modem GPS source: disabled
+(geoclue:47504): Geoclue-DEBUG: 00:50:46.525: WiFi source: enabled
+(geoclue:47504): Geoclue-DEBUG: 00:50:46.525: 	WiFi locate URL: https://api.beacondb.net/v1/geolocate
+(geoclue:47504): Geoclue-DEBUG: 00:50:46.525: 	WiFi submit data: disabled
+(geoclue:47504): Geoclue-DEBUG: 00:50:46.525: 	WiFi submission nickname: geoclue
+(geoclue:47504): Geoclue-DEBUG: 00:50:46.525: Static source: disabled
+(geoclue:47504): Geoclue-DEBUG: 00:50:46.525: IP source: enabled
+(geoclue:47504): Geoclue-DEBUG: 00:50:46.525: 	IP method: ichnaea
+(geoclue:47504): Geoclue-DEBUG: 00:50:46.525: 	IP URL: (method default)
+(geoclue:47504): Geoclue-DEBUG: 00:50:46.525: 	IP accuracy: (method default)
+(geoclue:47504): Geoclue-DEBUG: 00:50:46.525: Compass: disabled
+(geoclue:47504): Geoclue-DEBUG: 00:50:46.525: Application configs:
+(geoclue:47504): GLib-GIO-DEBUG: 00:50:46.543: Failed to initialize portal (GNetworkMonitorPortal) for gio-network-monitor: Not using portals
+(geoclue:47504): GLib-GIO-DEBUG: 00:50:46.552: _g_io_module_get_default: Found default implementation networkmanager (GNetworkMonitorNM) for ‘gio-network-monitor’
+(geoclue:47504): GLib-GIO-DEBUG: 00:50:46.553: _g_io_module_get_default: Found default implementation dummy (GDummyProxyResolver) for ‘gio-proxy-resolver’
+(geoclue:47504): Geoclue-DEBUG: 00:50:46.567: Submit URL not reachable, but Internet is available, overriding
+(geoclue:47504): Geoclue-DEBUG: 00:50:46.576: WiFi device 'wlan1' added.
+(geoclue:47504): Geoclue-DEBUG: 00:50:48.674: New agent for user ID '0'
+(geoclue:47504): Geoclue-DEBUG: 00:50:48.691: Service now in use
+(geoclue:47504): Geoclue-DEBUG: 00:50:48.691: Number of connected clients: 1
+(geoclue:47504): Geoclue-DEBUG: 00:50:48.785: Agent for user '0' vanished
+(geoclue:47504): Geoclue-DEBUG: 00:50:48.785: Client `:1.183` vanished. Dropping associated client objects
+(geoclue:47504): Geoclue-DEBUG: 00:50:48.786: Service not in use
+(geoclue:47504): Geoclue-DEBUG: 00:50:48.786: Number of connected clients: 0

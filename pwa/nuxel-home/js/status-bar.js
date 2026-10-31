@@ -1,4 +1,4 @@
-// Nuxel Status Bar — v0.2.2
+// Nuxel Status Bar — v0.7.4-beta
 //
 // SINGLE SOURCE OF TRUTH (briq-02d).  The handset used to serve a stale
 // v0.3.2 copy of this file while the repo (and the UTM VM) was on v0.4.x, so the
@@ -17,7 +17,7 @@
 class StatusBar {
     // Keep in sync with manifest.json ("nuxel.pwa_version") and sw.js
     // (CACHE_VERSION) - the registry test fails if the three ever diverge.
-    static get VERSION() { return '0.2.2'; }
+    static get VERSION() { return '0.7.4-beta'; }
 
     constructor() {
         this.state = {
@@ -123,32 +123,45 @@ class StatusBar {
         this._bindQuickSettingsGesture();
 
         // Update local time every second (no bridge needed)
-        setInterval(() => this._updateTime(), 1000);
+        // HH:MM only needs a minute cadence.  The old 1 s timer woke the
+        // WebProcess 60x/min to rewrite identical text.
+        this._scheduleClock();
 
-        // Poll phone status every 5 seconds (dev mode).  Bluetooth has its own
-        // provider and cadence because phone/status does not carry BlueZ.
+        // Poll phone status slowly; these are provider/daemon states, not
+        // frame-rate signals.  Every read is skipped while covered by the
+        // lockscreen and refreshed on unlock.
         this._pollPhoneStatus();
         this._pollBluetooth();
-        this._pollTimer = setInterval(() => this._pollPhoneStatus(), 10000);
+        this._pollTimer = setInterval(() => { if (!this._statusInactive()) this._pollPhoneStatus(); }, 15000);
         this._pollLocation();
         this._locationPollTimer = setInterval(() => {
-            if (!this._displayOff()) this._pollLocation();
-        }, 5000);
+            if (!this._statusInactive()) this._pollLocation();
+        }, 10000);
         // Sound mode + wired USB/file-transfer/console state.  One canonical
         // in-process read; no second high-frequency poller is created.
         this._pollSystemIndicators();
         this._indicatorPollTimer = setInterval(() => {
-            if (!this._displayOff()) this._pollSystemIndicators();
-        }, 5000);
+            if (!this._statusInactive()) this._pollSystemIndicators();
+        }, 10000);
 
         // Poll notifications from the same JSON source (canonical
         // /var/lib/nuxel/notifications.json surfaced via the bridge).
         this._pollNotifications();
-        this._notifPollTimer = setInterval(() => this._pollNotifications(), 10000);
+        this._notifPollTimer = setInterval(() => { if (!this._statusInactive()) this._pollNotifications(); }, 20000);
         // A wake is an event: refresh immediately instead of waiting a poll.
         document.addEventListener('nuxel:display-on', () => {
             this._updateTime();
             this._hydrateBatteryFromHost();
+            this._pollPhoneStatus();
+            this._pollBluetooth();
+            this._pollLocation();
+            this._pollSystemIndicators();
+            this._pollNotifications();
+        });
+        // Unlock reveals the bar without a display OFF->ON transition; refresh
+        // the authoritative state once instead of polling behind the lock.
+        document.addEventListener('nuxel:lockscreen-hidden', () => {
+            this._updateTime();
             this._pollPhoneStatus();
             this._pollBluetooth();
             this._pollLocation();
@@ -168,6 +181,18 @@ class StatusBar {
         window.addEventListener('resize', () => this._applySafeZones());
         window.addEventListener('orientationchange', () => setTimeout(() => this._applySafeZones(), 120));
         document.addEventListener('nuxel:safezones-changed', () => this._applySafeZones());
+    }
+
+    _scheduleClock() {
+        const tick = () => {
+            if (!this._statusInactive()) this._updateTime();
+            const now = new Date();
+            const delay = Math.max(1000, 60000 - (now.getSeconds() * 1000 + now.getMilliseconds()));
+            this._clockTimer = setTimeout(tick, delay);
+        };
+        const now = new Date();
+        this._clockTimer = setTimeout(tick,
+            Math.max(1000, 60000 - (now.getSeconds() * 1000 + now.getMilliseconds())));
     }
 
     _bindQuickSettingsGesture() {
@@ -223,17 +248,17 @@ class StatusBar {
     }
 
     _applySafeZones() {
-        if (window.NuxelSafeZones && typeof window.NuxelSafeZones.applyLayout === 'function') {
-            // two frames: the item widths must be measured after the DOM update
-            requestAnimationFrame(() => {
-                try {
-                    window.NuxelSafeZones.applyLayout();
-                    requestAnimationFrame(() => {
-                        try { window.NuxelSafeZones.applyLayout(); } catch (e) {}
-                    });
-                } catch (e) { console.warn('safe zones:', e.message || e); }
-            });
-        }
+        if (!window.NuxelSafeZones || typeof window.NuxelSafeZones.applyLayout !== 'function') return;
+        // Many render paths call this within one state update.  Coalesce them
+        // into ONE measurement/paint instead of two nested rAF layout passes
+        // per caller (the old code could run 10+ forced layouts per poll).
+        if (this._safeZonesScheduled) return;
+        this._safeZonesScheduled = true;
+        requestAnimationFrame(() => {
+            this._safeZonesScheduled = false;
+            try { window.NuxelSafeZones.applyLayout(); }
+            catch (e) { console.warn('safe zones:', e.message || e); }
+        });
     }
 
     // A54: deterministic collision assertion.  Measure every VISIBLE status
@@ -274,6 +299,18 @@ class StatusBar {
     _displayOff() {
         try { return document.body.classList.contains('display-off'); } catch (e) { return false; }
     }
+
+    /* The status bar is physically covered by the lockscreen.  Its 5/10 s
+       provider polls were still running behind it; pause them until unlock.
+       A wake or an explicit lockscreen-hidden event refreshes immediately. */
+    _coveredByLock() {
+        try {
+            if (document.body.classList.contains('lockscreen-active')) return true;
+            const ls = document.getElementById('lockscreen');
+            return !!(ls && !ls.hidden);
+        } catch (e) { return false; }
+    }
+    _statusInactive() { return this._displayOff() || this._coveredByLock(); }
 
     _updateTime() {
         if (this._displayOff()) return;
@@ -370,7 +407,7 @@ class StatusBar {
     }
 
     async _pollBluetooth() {
-        if (this._displayOff()) return;
+        if (this._statusInactive()) return;
         try {
             if (typeof bridge === 'undefined' || !bridge.call) return;
             const st = await bridge.call('bluetooth', 'status', {});
@@ -428,7 +465,7 @@ class StatusBar {
     }
 
     async _pollLocation() {
-        if (this._displayOff()) return;
+        if (this._statusInactive()) return;
         if (typeof bridge === 'undefined' || !bridge.call) return;
         try {
             const st = await bridge.call('location', 'get-status', {});
@@ -516,7 +553,7 @@ class StatusBar {
     }
 
     async _pollSystemIndicators() {
-        if (this._displayOff()) return;
+        if (this._statusInactive()) return;
         try {
             if (typeof bridge === 'undefined' || !bridge.call) return;
             const ind = await bridge.call('system', 'indicators', {});
@@ -652,7 +689,7 @@ class StatusBar {
     }
 
     async _pollPhoneStatus() {
-        if (this._displayOff()) return;
+        if (this._statusInactive()) return;
         try {
             if (typeof bridge === 'undefined' || !bridge.getPhoneStatus) {
                 console.warn('StatusBar: bridge not available for phone status');
@@ -788,7 +825,7 @@ class StatusBar {
     }
 
     async _pollNotifications() {
-        if (this._displayOff()) return;
+        if (this._statusInactive()) return;
         try {
             if (typeof bridge === 'undefined' || !bridge.getNotifications) {
                 return;

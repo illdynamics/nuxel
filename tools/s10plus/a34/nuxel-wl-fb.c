@@ -248,13 +248,129 @@ static int fb_open(void) {
 static uint16_t *xmap;      /* dest x -> source x (A31: one integer divide per
                                frame instead of one per destination pixel) */
 static int xmap_w, xmap_sx;
+static uint32_t *rowbuf;    /* A67: one converted, horizontally-expanded row */
+static size_t rowbuf_n;
 
-static void blit(const uint8_t *src, int sw, int sh, int stride, uint32_t format) {
+#if defined(__aarch64__)
+#include <arm_neon.h>
+#endif
+
+/* A67: build one colour-converted, horizontally-expanded output row for the
+   exact 2x path.  The A34 loop converted every source pixel four times
+   (2 horizontally x 2 vertically).  This converts once per source pixel and
+   replicates the row, and (on AArch64) uses NEON for the byte shuffle and 2x
+   expansion.  The arithmetic is byte-identical to color_convert(). */
+static void row_expand2(const uint32_t *s, int sw, int convert) {
+  uint32_t *o = rowbuf;
+  int x = 0;
+#if defined(__aarch64__)
+  if (convert) {
+    for (; x + 4 <= sw; x += 4) {
+      uint32x4_t v = vld1q_u32(s + x);
+      uint32x4_t b = vandq_u32(v, vdupq_n_u32(0x000000ffu));
+      uint32x4_t g = vandq_u32(v, vdupq_n_u32(0x0000ff00u));
+      uint32x4_t r = vandq_u32(v, vdupq_n_u32(0x00ff0000u));
+      uint32x4_t c = vorrq_u32(vorrq_u32(vshlq_n_u32(b, 16), g), vshrq_n_u32(r, 16));
+      c = vorrq_u32(c, vdupq_n_u32(0xff000000u));
+      uint32x4x2_t ex = vzipq_u32(c, c);
+      vst1q_u32(o + x * 2, ex.val[0]);
+      vst1q_u32(o + x * 2 + 4, ex.val[1]);
+    }
+  } else {
+    for (; x + 4 <= sw; x += 4) {
+      uint32x4_t v = vld1q_u32(s + x);
+      uint32x4_t c = vorrq_u32(v, vdupq_n_u32(0xff000000u));
+      uint32x4x2_t ex = vzipq_u32(c, c);
+      vst1q_u32(o + x * 2, ex.val[0]);
+      vst1q_u32(o + x * 2 + 4, ex.val[1]);
+    }
+  }
+#endif
+  for (; x < sw; x++) {
+    uint32_t c = convert ? color_convert(s[x]) : (s[x] | 0xff000000u);
+    o[x * 2] = c;
+    o[x * 2 + 1] = c;
+  }
+}
+
+static void blit_rows(const uint8_t *src, int sw, int sh, int stride, uint32_t format,
+                      int sy0, int sy1) {
   if (fb.bpp != 32 || !fb.map) return;
+  if (sy0 < 0) sy0 = 0;
+  if (sy1 > sh) sy1 = sh;
+  if (sy1 <= sy0) return;
   if (format != src_fmt) color_build(format);
   int sx = (int)fb.w / sw, sy = (int)fb.h / sh;
   if (sx < 1) sx = 1;
   if (sy < 1) sy = 1;
+  int convert = (format == WL_SHM_FORMAT_XRGB8888 || format == WL_SHM_FORMAT_ARGB8888);
+  int known   = convert || format == WL_SHM_FORMAT_XBGR8888 || format == WL_SHM_FORMAT_ABGR8888;
+  if (!known && !color_warned) {
+    color_warned = 1;
+    st("COLOR_UNKNOWN_SRC_FORMAT=0x%08x passthrough", format);
+  }
+
+  /* A67 fast path: exact integer 2x/2x (720x1520 -> 1440x3040). */
+  if (sx == 2 && sy == 2 && (int)fb.w == sw * 2 && (int)fb.h == sh * 2) {
+    if (!rowbuf || rowbuf_n < (size_t)fb.w) {
+      free(rowbuf);
+      rowbuf = malloc(sizeof(uint32_t) * (fb.w ? fb.w : 1));
+      rowbuf_n = fb.w;
+      if (!rowbuf) return;
+    }
+    for (int srcrow = sy0; srcrow < sy1; srcrow++) {
+      uint32_t ty = (uint32_t)srcrow * 2u;
+      if (srcrow >= sh) srcrow = sh - 1;
+      const uint32_t *s = (const uint32_t *)(src + (size_t)srcrow * stride);
+      row_expand2(s, sw, convert);
+      uint32_t *d0 = (uint32_t *)(fb.map + (size_t)ty * fb.line);
+      uint32_t *d1 = (uint32_t *)(fb.map + (size_t)(ty + 1u) * fb.line);
+      memcpy(d0, rowbuf, (size_t)fb.w * sizeof(uint32_t));
+      memcpy(d1, rowbuf, (size_t)fb.w * sizeof(uint32_t));
+    }
+    return;
+  }
+
+  /* A67 generic integer vertical scale: convert each source row once and
+     replicate it to its `sy` destination rows (no per-pixel re-conversion). */
+  if (sy > 1 && (int)(fb.h % sy) == 0) {
+    if (!rowbuf || rowbuf_n < (size_t)fb.w) {
+      free(rowbuf);
+      rowbuf = malloc(sizeof(uint32_t) * (fb.w ? fb.w : 1));
+      rowbuf_n = fb.w;
+      if (!rowbuf) return;
+    }
+    if (!xmap || xmap_w != (int)fb.w || xmap_sx != sx) {
+      free(xmap);
+      xmap = malloc(sizeof(uint16_t) * (fb.w ? fb.w : 1));
+      if (!xmap) return;
+      for (uint32_t x = 0; x < fb.w; x++) {
+        int tx = (int)(x / (uint32_t)sx); if (tx >= sw) tx = sw - 1;
+        xmap[x] = (uint16_t)tx;
+      }
+      xmap_w = (int)fb.w; xmap_sx = sx;
+    }
+    for (int srcrow = sy0; srcrow < sy1; srcrow++) {
+      uint32_t ty = (uint32_t)srcrow * (uint32_t)sy;
+      if (srcrow >= sh) srcrow = sh - 1;
+      const uint32_t *s = (const uint32_t *)(src + (size_t)srcrow * stride);
+      if (convert) {
+        for (uint32_t x = 0; x < fb.w; x++) rowbuf[x] = color_convert(s[xmap[x]]);
+      } else {
+        for (uint32_t x = 0; x < fb.w; x++) rowbuf[x] = s[xmap[x]] | 0xff000000u;
+      }
+      for (int d = 0; d < sy; d++) {
+        uint32_t *dst = (uint32_t *)(fb.map + (size_t)(ty + (uint32_t)d) * fb.line);
+        memcpy(dst, rowbuf, (size_t)fb.w * sizeof(uint32_t));
+      }
+    }
+    return;
+  }
+
+  /* Original generic path (1x vertical, or non-integer scales).  It is not
+     used on the S10+; force the full range so a partial damage request can
+     never leave stale rows on an exotic output mode. */
+  if (sy0 != 0 || sy1 != sh) { sy0 = 0; sy1 = sh; }
   if (!xmap || xmap_w != (int)fb.w || xmap_sx != sx) {
     free(xmap);
     xmap = malloc(sizeof(uint16_t) * (fb.w ? fb.w : 1));
@@ -264,16 +380,6 @@ static void blit(const uint8_t *src, int sw, int sh, int stride, uint32_t format
       xmap[x] = (uint16_t)tx;
     }
     xmap_w = (int)fb.w; xmap_sx = sx;
-  }
-  /* XRGB/ARGB 8888 arrive as 0xXXRRGGBB and must be re-ordered; XBGR/ABGR 8888 are
-     already 0xAABBGGRR, which is this panel's order, so they only need the alpha
-     forced opaque.  Anything else is logged and passed through rather than
-     silently mis-converted. */
-  int convert = (format == WL_SHM_FORMAT_XRGB8888 || format == WL_SHM_FORMAT_ARGB8888);
-  int known   = convert || format == WL_SHM_FORMAT_XBGR8888 || format == WL_SHM_FORMAT_ABGR8888;
-  if (!known && !color_warned) {
-    color_warned = 1;
-    st("COLOR_UNKNOWN_SRC_FORMAT=0x%08x passthrough", format);
   }
   for (uint32_t y = 0; y < fb.h; y++) {
     int ty = (int)(y / (uint32_t)sy); if (ty >= sh) ty = sh - 1;
@@ -285,6 +391,10 @@ static void blit(const uint8_t *src, int sw, int sh, int stride, uint32_t format
       for (uint32_t x = 0; x < fb.w; x++) d[x] = s[xmap[x]] | 0xff000000u;
     }
   }
+}
+
+static void blit(const uint8_t *src, int sw, int sh, int stride, uint32_t format) {
+  blit_rows(src, sw, sh, stride, format, 0, sh);
 }
 
 /* ---- shm buffer ---- */
@@ -956,9 +1066,19 @@ static int panel_commit_frame(const char *why) {
   return -1;
 }
 
+static int damage_y0, damage_y1;
 static int frame_blit_once(void) {
   blit(frame_buf.data, frame_buf.w, frame_buf.h, frame_buf.stride, frame_buf.format);
   return panel_commit_frame("frame");
+}
+
+/* Partial framebuffer update for a verified damage range.  The DECON commit
+   (FBIOPAN_DISPLAY) still happens after every changed frame; only the CPU copy
+   is narrowed. */
+static int frame_blit_damage(void) {
+  blit_rows(frame_buf.data, frame_buf.w, frame_buf.h, frame_buf.stride, frame_buf.format,
+            damage_y0, damage_y1);
+  return panel_commit_frame("frame-damage");
 }
 
 /* A47: source-frame fingerprint.  wlr-screencopy is damage-driven only in name:
@@ -966,20 +1086,47 @@ static int frame_blit_once(void) {
    the 1440x3040 panel costs ~60 ms.  At 30 fps that alone kept the phone hot even
    when the image was perfectly static.  Hash the captured source and skip the
    expensive blit/pan when nothing changed; pace idle captures down as well. */
-static uint64_t frame_source_hash(void) {
-  const unsigned char *p = (const unsigned char *)frame_buf.data;
-  size_t n = frame_buf.len;
-  uint64_t h = 1469598103934665603ULL;
-  while (n >= 8) {
-    uint64_t v;
-    memcpy(&v, p, sizeof v);
-    h ^= v;
-    h *= 1099511628211ULL;
-    p += 8;
-    n -= 8;
+/* PWNAGE-37000B DAMAGE: keep the previous composited source frame and report
+   the dirty SOURCE row range.  The S10+ blit expands 720x1520 -> 1440x3040 at
+   ~50 ms for a changed frame; a clock tick or battery glyph change once paid
+   that full cost.  Only rows that actually differ are re-expanded now.
+   Returns 1 when the frame changed (damage_y0/y1 valid), 0 when identical.
+   NUXEL_WLFB_DAMAGE=0 restores the previous full-blit behaviour. */
+static uint8_t *prev_src;
+static size_t prev_src_len;
+static int prev_src_w, prev_src_h, prev_src_stride;
+static int damage_ready(void) {
+  const char *v = getenv("NUXEL_WLFB_DAMAGE");
+  return !(v && v[0] == '0');
+}
+static int frame_damage_rows(void) {
+  if (!damage_ready() || !prev_src || prev_src_len < frame_buf.len ||
+      prev_src_w != frame_buf.w || prev_src_h != frame_buf.h ||
+      prev_src_stride != frame_buf.stride) {
+    free(prev_src);
+    prev_src_len = frame_buf.len ? frame_buf.len : 1;
+    prev_src = malloc(prev_src_len);
+    if (!prev_src) return 1;                 /* fall back to a full blit */
+    prev_src_w = frame_buf.w; prev_src_h = frame_buf.h; prev_src_stride = frame_buf.stride;
+    if (frame_buf.data && frame_buf.len) memcpy(prev_src, frame_buf.data, frame_buf.len);
+    damage_y0 = 0; damage_y1 = frame_buf.h;
+    return 1;
   }
-  while (n--) { h ^= *p++; h *= 1099511628211ULL; }
-  return h;
+  const size_t rowbytes = (size_t)frame_buf.w * 4u;
+  const size_t stride = (size_t)frame_buf.stride;
+  int first = -1, last = -1;
+  for (int y = 0; y < frame_buf.h; y++) {
+    const uint8_t *a = frame_buf.data + (size_t)y * stride;
+    const uint8_t *b = prev_src + (size_t)y * stride;
+    if (memcmp(a, b, rowbytes)) {
+      if (first < 0) first = y;
+      last = y;
+    }
+  }
+  if (first < 0) return 0;
+  memcpy(prev_src, frame_buf.data, frame_buf.len);
+  damage_y0 = first; damage_y1 = last + 1;
+  return 1;
 }
 
 static int64_t mono_ms(void) {
@@ -1248,6 +1395,13 @@ int main(int argc, char **argv) {
     }
     stop_requested = (d.request_stop && pid > 0) ? 1 : 0;
     if (stop_requested) {
+      /* nuxel-anim-player watches ANIM_STOP (/var/lib/nuxel/anim-stop); the
+         first-light hold painter watches HOLD_STOP.  Writing only HOLD_STOP
+         left the MP4 player running until the identity-verified SIGTERM 10 s
+         later, which is the reported "spinning penguin takes forever" delay.
+         Write both stop files so the animation exits on its own first frame
+         boundary and the confirmation wait is normally a few milliseconds. */
+      wr_state(ANIM_STOP, "ANIMATION_STOP_REQUESTED\n");
       wr_state(HOLD_STOP, "ANIMATION_STOP_REQUESTED\n");
       owner_record("ANIMATION_STOP_REQUESTED", 0, d.reason);
       kmsg_write("%s requested=1 painter_pid=%ld loops=%d/%d reason=%s",
@@ -1355,7 +1509,7 @@ int main(int argc, char **argv) {
   int consec_fail = 0;
   unsigned long long blit_ns_sum = 0;
   unsigned long long blits = 0, present_skipped = 0;
-  uint64_t last_hash = 0;
+  unsigned long long damage_blits = 0, damage_blit_ns_sum = 0;
   int have_hash = 0;
   int64_t last_change_ms = mono_ms();
   time_t now = time(NULL);
@@ -1399,21 +1553,33 @@ int main(int argc, char **argv) {
       frames++; consec_fail = 0;
     }
     else {
-      uint64_t h = frame_source_hash();
-      int changed = force_present || !have_hash || h != last_hash;
+      int changed;
+      if (force_present || !have_hash) {
+        changed = 1;
+        /* Prime the damage baseline even when this frame is a forced repaint;
+           if the baseline already exists, use its real dirty span. */
+        if (!frame_damage_rows()) { damage_y0 = 0; damage_y1 = frame_buf.h; }
+        have_hash = 1;
+      } else {
+        changed = frame_damage_rows();
+      }
       if (changed) {
-        last_hash = h; have_hash = 1; force_present = 0;
+        force_present = 0;
         last_change_ms = mono_ms();
         /* Command-mode Samsung DECON: every changed frame MUST be committed.
            Merely blitting to mmap() is not enough (A35 stale-display fix). */
-        int pan_rc = frame_blit_once();
+        int partial = !(damage_y0 == 0 && damage_y1 == frame_buf.h);
+        int pan_rc = partial ? frame_blit_damage() : frame_blit_once();
         blits++;
-        if (pan_rc != 0) { failures++; consec_fail++; }
-        else consec_fail = 0;
         struct timespec t_end;
         clock_gettime(CLOCK_MONOTONIC, &t_end);
-        blit_ns_sum += (unsigned long long)(t_end.tv_sec - t_start.tv_sec) * 1000000000ull
-                     + (unsigned long long)(t_end.tv_nsec - t_start.tv_nsec);
+        unsigned long long elapsed_ns =
+            (unsigned long long)(t_end.tv_sec - t_start.tv_sec) * 1000000000ull
+          + (unsigned long long)(t_end.tv_nsec - t_start.tv_nsec);
+        blit_ns_sum += elapsed_ns;
+        if (partial) { damage_blits++; damage_blit_ns_sum += elapsed_ns; }
+        if (pan_rc != 0) { failures++; consec_fail++; }
+        else consec_fail = 0;
       } else {
         present_skipped++;
         consec_fail = 0;
@@ -1431,8 +1597,10 @@ int main(int argc, char **argv) {
     now = time(NULL);
     if (now != last) {
       int avg_ms = blits ? (int)(blit_ns_sum / blits / 1000000ull) : 0;
-      st("FRAMES_OK total=%d fps_1s=%d failures=%d blits=%llu present_skipped=%llu blit_avg_ms=%d idle_ms=%lld out=%dx%d src=%dx%d scale=%d panel=%ux%u owner=nuxel-wl-fb display=%s src_format=0x%08x colour=R@%u,G@%u,B@%u_abgr8888_override=%d decon_pan_ok=%llu decon_pan_failed=%llu",
-         frames, fps, failures, blits, present_skipped, avg_ms, (long long)(mono_ms() - last_change_ms),
+      int dmg_ms = damage_blits ? (int)(damage_blit_ns_sum / damage_blits / 1000000ull) : 0;
+      st("FRAMES_OK total=%d fps_1s=%d failures=%d blits=%llu present_skipped=%llu blit_avg_ms=%d damage=%d-%d damage_blits=%llu damage_avg_ms=%d idle_ms=%lld out=%dx%d src=%dx%d scale=%d panel=%ux%u owner=nuxel-wl-fb display=%s src_format=0x%08x colour=R@%u,G@%u,B@%u_abgr8888_override=%d decon_pan_ok=%llu decon_pan_failed=%llu",
+         frames, fps, failures, blits, present_skipped, avg_ms, damage_y0, damage_y1,
+         damage_blits, dmg_ms, (long long)(mono_ms() - last_change_ms),
          o->w, o->h, o->w, o->h, o->scale, fb.w, fb.h,
          display_on ? "on" : "off", src_fmt, hw_r_off, hw_g_off, hw_b_off, hw_order_override,
          decon_pan_ok, decon_pan_failed);
@@ -1461,14 +1629,30 @@ int main(int argc, char **argv) {
     long idle = (long)(mono_ms() - last_change_ms);
     int pace = fps_target;
     if (idle > 1200) pace = 10;
+    /* Poll-wake makes a lower capture cadence invisible to touch: a compositor
+       commit wakes the bridge immediately.  Static glass can therefore settle
+       to 5 fps after 8 s and 2 fps after a minute. */
     if (idle > 8000) pace = 5;
+    if (idle > 60000) pace = 2;
     long pace_ns = 1000000000L / (pace > 0 ? pace : 1);
     long rest_ns = pace_ns - used_ns;
     if (rest_ns > 0) {
-      struct timespec ts;
-      ts.tv_sec = rest_ns / 1000000000L;
-      ts.tv_nsec = rest_ns % 1000000000L;
-      nanosleep(&ts, NULL);
+      /* PWNAGE-37000B WAKE: the old nanosleep made an idle 5 fps bridge wait
+         up to 200 ms after a touch before it even noticed the new frame.
+         Wait on the Wayland socket instead; a compositor commit wakes us
+         immediately and the next capture presents it at full rate.  The
+         timeout still bounds a genuinely idle loop. */
+      struct pollfd wp = { .fd = wl_display_get_fd(dpy), .events = POLLIN, .revents = 0 };
+      int ms = (int)(rest_ns / 1000000L);
+      if (ms < 1) ms = 1;
+      if (wp.fd >= 0) {
+        (void)poll(&wp, 1, ms);
+      } else {
+        struct timespec ts;
+        ts.tv_sec = rest_ns / 1000000000L;
+        ts.tv_nsec = rest_ns % 1000000000L;
+        nanosleep(&ts, NULL);
+      }
     }
   }
 }

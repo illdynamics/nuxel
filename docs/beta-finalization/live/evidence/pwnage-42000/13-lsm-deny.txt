@@ -1,0 +1,94 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+=== lsm ===
+cat: /sys/kernel/security/lsm: No such file or directory
+ls: cannot access '/sys/kernel/security': No such file or directory
+=== seccomp status root/new ===
+CapEff:	0000003fffffffff
+CapBnd:	0000003fffffffff
+NoNewPrivs:	0
+Seccomp:	0
+=== test with sudo -u nuxel ===
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+    import socket; socket.socket(socket.AF_INET,socket.SOCK_DGRAM); print("OK")
+                   ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib64/python3.14/socket.py", line 236, in __init__
+    _socket.socket.__init__(self, family, type, proto, fileno)
+    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+PermissionError: [Errno 13] Permission denied
+=== su shell ===
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+    import socket; socket.socket(socket.AF_INET,socket.SOCK_DGRAM); print("OK")
+                   ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib64/python3.14/socket.py", line 236, in __init__
+    _socket.socket.__init__(self, family, type, proto, fileno)
+    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+PermissionError: [Errno 13] Permission denied
+=== capsh drop ===
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+    import socket; socket.socket(socket.AF_INET,socket.SOCK_DGRAM); print("OK")
+                   ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib64/python3.14/socket.py", line 236, in __init__
+    _socket.socket.__init__(self, family, type, proto, fileno)
+    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+PermissionError: [Errno 13] Permission denied
+=== setpriv ===
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+    import socket; socket.socket(socket.AF_INET,socket.SOCK_DGRAM); print("OK")
+                   ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib64/python3.14/socket.py", line 236, in __init__
+    _socket.socket.__init__(self, family, type, proto, fileno)
+    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+PermissionError: [Errno 13] Permission denied
+=== nsenter net? ===
+net:[4026531988]
+net:[4026531988]
+=== getcap python ===
+=== audit ===
+=== dmesg tail ===
+[ 2678.148486] exynos-pcie 13ed0000.pcie0: phy clk enable, ret value = 0
+[ 2678.148860] exynos-pcie 13ed0000.pcie0: Set I/A for CDR reset.
+[ 2678.149120] exynos-pcie 13ed0000.pcie0: D state: 0, d94b00
+[ 2678.149230] exynos-pcie 13ed0000.pcie0: exynos_pcie_establish_link: Link up:3271c11
+[ 2678.149260] exynos-pcie 13ed0000.pcie0: Current Link Speed is GEN1 (MAX GEN1)
+[ 2678.149611] exynos-pcie 13ed0000.pcie0: l1ss disabled(0x10)
+[ 2678.149653] exynos-pcie 13ed0000.pcie0: exynos_pcie_poweron, end of poweron, pcie state: 3
+[ 2678.149693] dhdpcie_resume_dev: Enter: TS(2610302351530793)
+[ 2678.151225] AFTER_EP_RESUME: BaseAddress0(0x10)=0x14400004, BaseAddress1(0x18)=0x14000004 PCIE_CFG_PMCSR(0x4c)=0xc108 PCI_BAR1_WIN(0x84)=(0x0)
+[ 2678.151684] dhdpcie_resume_dev: Enable L1ss EP side
+[ 2678.151705] exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: START (state = 0x10, id = 0x10, enable = 1)
+[ 2678.151748] exynos-pcie 13ed0000.pcie0: exynos_pcie_set_l1ss: END (state = 0x0, id = 0x10, enable = 1)
+[ 2678.151774] dhdpcie_dump_resource: BAR0(VA): 0x0000000000000000, BAR0(PA): 0x0000000014400000, SIZE: 32768
+[ 2678.151788] dhdpcie_dump_resource: BAR1(VA): 0x0000000000000000, BAR1(PA): 0x0000000014000000, SIZE: 4194304
+[ 2678.152199] dhd_bus_hostready : Read PCICMD Reg: 0x00100006
+[ 2678.152649] dhd_bus_dump_dar_registers: dar_clk_ctrl(0xa08:0x1030040) dar_pwr_ctrl(0xa0c:0xb0000) dar_intstat(0xa10:0x4000000)
+[ 2678.152666] dhd_bus_dump_dar_registers: dar_errlog(0xa60:0x0) dar_erraddr(0xa64:0x0) dar_pcie_mbint(0xa68:0x0)
+[ 2678.152700] dhd_bus_hostready: Ring Hostready:549
+[ 2678.152782] dhd_runtimepm_state : runtime resume ended 
+[ 2678.217359] audit_log_lost: 54 callbacks suppressed
+[ 2678.217378] audit: audit_lost=4578 audit_rate_limit=0 audit_backlog_limit=64
+[ 2678.217390] audit: kauditd hold queue overflow
+[ 2678.220360] audit: audit_lost=4579 audit_rate_limit=0 audit_backlog_limit=64
+[ 2678.220376] audit: kauditd hold queue overflow
+[ 2678.352835] audit: audit_lost=4580 audit_rate_limit=0 audit_backlog_limit=64
+[ 2678.352858] audit: kauditd hold queue overflow
+[ 2678.352893] audit: audit_lost=4581 audit_rate_limit=0 audit_backlog_limit=64
+[ 2678.352901] audit: kauditd hold queue overflow
+[ 2678.402946] audit: audit_lost=4582 audit_rate_limit=0 audit_backlog_limit=64
+[ 2678.402963] audit: kauditd hold queue overflow
+=== sysctl dmesg_restrict / unpriv ===
+kernel.dmesg_restrict = 0
+kernel.kptr_restrict = 4
+=== selinux booleans? ===
+/sys/fs/selinux/policy

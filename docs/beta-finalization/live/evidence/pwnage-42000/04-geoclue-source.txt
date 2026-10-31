@@ -1,0 +1,15 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+=== https://gitlab.freedesktop.org/geoclue/geoclue/-/raw/main/src/gclue-manager.c ===
+=== https://gitlab.freedesktop.org/geoclue/geoclue/-/raw/master/src/gclue-manager.c ===
+curl: (22) The requested URL returned error: 404
+=== https://raw.githubusercontent.com/geoclue/geoclue/main/src/gclue-manager.c ===
+curl: (22) The requested URL returned error: 404
+curl: (22) The requested URL returned error: 404

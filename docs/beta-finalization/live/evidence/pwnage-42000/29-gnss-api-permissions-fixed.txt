@@ -1,0 +1,21 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+=== Maps gnss-probe (location:read, no power) ===
+{"result": {"success": true, "protocol": "broadcom-bbd-lhd-rpc", "node": "/dev/ttyBCM", "nmea_stream": false, "inventory": {"protocol": "broadcom-bbd-lhd-rpc", "nmea": false, "nodes": ["/dev/ttyBCM", "/dev/bbd_patch", "/dev/bbd_control", "/dev/bbd_sensor", "/dev/bbd_urgent_patch"], "bbd_patch_node": "/dev/bbd_patch", "spi_bindings": ["/sys/bus/spi/drivers/brcm gps spi/spi17.0"], "power_rail": "/sys/devices/virtual/sec/gps/GPS_PWR_EN/value", "power_rail_state": false, "power_rail_readable": true, "power_rail_error": null, "active_leases": 0, "firmware": [], "firmware_present": false, "firmware_loaded": false, "vendor_files": {"lhd": false, "gpsd": false, "android_linker": false, "lhd_config": false, "gps_config": false, "gnss_impl": false}, "vendor_runtime_complete": false, "android_linker": false, "vendor_userspace": false, "fix_supported": false, "blocker": "no compatible BCM4773 BBD sensor-hub patch firmware"}, "power": null, "stream": "no_data", "bytes": 0, "fix": null, "error": "no compatible BCM4773 BBD sensor-hub patch firmware", "error_code": "NO_DATA", "elapsed_s": 1.009, "nmea": false}}
+=== Maps gnss-power (must be CAPABILITY_DENIED) ===
+{"result": {"success": false, "error": "Capability not granted: location:manage", "error_code": "CAPABILITY_DENIED"}}
+=== settings gnss-power OFF ===
+{"result": {"success": true, "requested": false, "enabled": false, "actual": false, "write_ok": true, "readback_ok": true, "readback": false, "error": null, "protocol": "broadcom-bbd-lhd-rpc"}}
+=== settings gnss-power ON bounded ===
+{"result": {"success": true, "requested": true, "enabled": true, "actual": true, "write_ok": true, "readback_ok": true, "readback": true, "error": null, "protocol": "broadcom-bbd-lhd-rpc"}}
+rail=1
+=== settings gnss-power OFF ===
+{"result": {"success": true, "requested": false, "enabled": false, "actual": false, "write_ok": true, "readback_ok": true, "readback": false, "error": null, "protocol": "broadcom-bbd-lhd-rpc"}}
+rail=0

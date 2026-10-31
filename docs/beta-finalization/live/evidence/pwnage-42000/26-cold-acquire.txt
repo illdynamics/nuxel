@@ -1,0 +1,51 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+=== acquire fresh after restart ===
+{
+  "success": true,
+  "state": "unavailable",
+  "provider_ready": false,
+  "provider_detail": "GeoClue2 is installed but unavailable: org.freedesktop.DBus.Error.UnknownMethod: Object does not exist at path \u201c/org/freedesktop/GeoClue2/Client/1\u201d",
+  "last_error": "org.freedesktop.DBus.Error.UnknownMethod: Object does not exist at path \u201c/org/freedesktop/GeoClue2/Client/1\u201d",
+  "fix_source": null,
+  "fix_kind": null,
+  "gnss_fix": false,
+  "network_fix": false,
+  "accuracy": null,
+  "latitude": null,
+  "longitude": null,
+  "last_fix_timestamp": null,
+  "active_clients": 0
+}
+
+real	0m0.078s
+user	0m0.070s
+sys	0m0.031s
+=== bridge journal ===
+Oct 31 01:09:01 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-bridge[52055]: 2026-10-31 01:09:01,734 [INFO] nuxel-bridge: Nuxel Bridge started | session=57148c4e-adc6-444e-8a09-a8ea59f77423
+Oct 31 01:09:01 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-bridge[52055]: 2026-10-31 01:09:01,734 [INFO] nuxel-bridge: bridge_version=1 host_version=0.7.1-beta
+Oct 31 01:09:01 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-bridge[52055]: 2026-10-31 01:09:01,734 [INFO] nuxel-bridge: Nuxel Bridge running with portal integration...
+Oct 31 01:09:01 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-bridge[52055]: 2026-10-31 01:09:01,734 [INFO] nuxel-bridge: Connected to nuxel-portal
+Oct 31 01:09:01 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-bridge[52055]: 2026-10-31 01:09:01,740 [ERROR] nuxel-bridge: ModemManager connect failed: org.freedesktop.DBus.Error.InvalidArgs: No such property “Modems”
+Oct 31 01:09:01 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-bridge[52055]: 2026-10-31 01:09:01,741 [INFO] nuxel-bridge: NetworkManager connected
+Oct 31 01:09:01 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-bridge[52055]: 2026-10-31 01:09:01,758 [INFO] nuxel-bridge: GeoClue connected client=/org/freedesktop/GeoClue2/Client/1 accuracy=6
+Oct 31 01:09:24 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping nuxel-bridge.service - Nuxel Bridge - PWA to Native Phone Service Mediator...
+Oct 31 01:09:24 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-bridge.service: Deactivated successfully.
+Oct 31 01:09:24 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopped nuxel-bridge.service - Nuxel Bridge - PWA to Native Phone Service Mediator.
+Oct 31 01:09:24 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Started nuxel-bridge.service - Nuxel Bridge - PWA to Native Phone Service Mediator.
+Oct 31 01:09:25 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-bridge[52166]: 2026-10-31 01:09:25,158 [INFO] nuxel-bridge: Starting Nuxel Bridge v0.2.1...
+Oct 31 01:09:25 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-bridge[52166]: 2026-10-31 01:09:25,163 [INFO] nuxel-bridge: Claimed D-Bus name: org.nuxel.Bridge
+Oct 31 01:09:25 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-bridge[52166]: 2026-10-31 01:09:25,164 [INFO] nuxel-bridge: Nuxel Bridge started | session=c652dcdd-4602-4a69-88ce-17d95ed634e5
+Oct 31 01:09:25 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-bridge[52166]: 2026-10-31 01:09:25,164 [INFO] nuxel-bridge: bridge_version=1 host_version=0.7.1-beta
+Oct 31 01:09:25 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-bridge[52166]: 2026-10-31 01:09:25,164 [INFO] nuxel-bridge: Nuxel Bridge running with portal integration...
+Oct 31 01:09:25 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-bridge[52166]: 2026-10-31 01:09:25,167 [INFO] nuxel-bridge: Connected to nuxel-portal
+Oct 31 01:09:25 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-bridge[52166]: 2026-10-31 01:09:25,172 [ERROR] nuxel-bridge: ModemManager connect failed: org.freedesktop.DBus.Error.InvalidArgs: No such property “Modems”
+Oct 31 01:09:25 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-bridge[52166]: 2026-10-31 01:09:25,174 [INFO] nuxel-bridge: NetworkManager connected
+Oct 31 01:09:25 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-bridge[52166]: 2026-10-31 01:09:25,188 [INFO] nuxel-bridge: GeoClue connected client=/org/freedesktop/GeoClue2/Client/1 accuracy=6

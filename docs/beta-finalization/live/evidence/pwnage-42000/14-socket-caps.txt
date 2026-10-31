@@ -1,0 +1,100 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+=== test caps with setpriv ===
+--- caps='cap_net_raw'
+setpriv: unknown capability "cap_net_raw"
+--- caps='cap_net_admin'
+setpriv: unknown capability "cap_net_admin"
+--- caps='cap_net_bind_service'
+setpriv: unknown capability "cap_net_bind_service"
+--- caps='cap_net_broadcast'
+setpriv: unknown capability "cap_net_broadcast"
+--- caps='cap_net_raw,cap_net_admin'
+setpriv: unknown capability "cap_net_raw"
+--- caps=''
+PermissionError: [Errno 13] Permission denied
+=== running process caps ===
+--- pid 5378 /usr/bin/NetworkManager --no-daemon  uid=0
+CapEff:	00000000200534e2
+CapAmb:	0000000000000000
+NoNewPrivs:	0
+--- pid 5779 /usr/bin/python3 /usr/lib/nuxel/nuxel-bridge/bridge.py  uid=993
+CapEff:	0000000000000000
+CapAmb:	0000000000000000
+NoNewPrivs:	1
+--- pid 43828 /usr/bin/python3 /usr/lib/nuxel/nuxel-bridge/api.py  uid=0
+CapEff:	0000003fffffff7f
+CapAmb:	0000000000000000
+NoNewPrivs:	1
+--- pid 44041 /usr/lib/nuxel/nuxel-pwa-host  uid=0
+CapEff:	0000003fffffffff
+CapAmb:	0000000000000000
+NoNewPrivs:	0
+--- pid 44187 /usr/libexec/webkit2gtk-4.1/WebKitNetworkProcess 2 18  uid=0
+CapEff:	0000003fffffffff
+CapAmb:	0000000000000000
+NoNewPrivs:	0
+--- pid 44188 /usr/libexec/webkit2gtk-4.1/WebKitWebProcess 4 21  uid=0
+CapEff:	0000003fffffffff
+CapAmb:	0000000000000000
+NoNewPrivs:	0
+=== systemd default ambient ===
+=== existing units with CapabilityBoundingSet ===
+/etc/systemd/system/nuxel-button-manager.service:78:CapabilityBoundingSet=CAP_CHOWN CAP_DAC_OVERRIDE
+/etc/systemd/system/nuxel-button-manager.service:79:AmbientCapabilities=
+/etc/systemd/system/dbus-org.bluez.service:13:CapabilityBoundingSet=CAP_NET_RAW CAP_NET_ADMIN CAP_NET_BIND_SERVICE
+/etc/systemd/system/graphical.target.wants/rtkit-daemon.service:26:CapabilityBoundingSet=CAP_SYS_NICE CAP_DAC_READ_SEARCH CAP_SYS_PTRACE CAP_SYS_CHROOT CAP_SETGID CAP_SETUID
+/etc/systemd/system/bluetooth.target.wants/bluetooth.service:13:CapabilityBoundingSet=CAP_NET_RAW CAP_NET_ADMIN CAP_NET_BIND_SERVICE
+/etc/systemd/system/nuxel-bridge.service.nuxel-rollback.pre-v070-delta-release:44:CapabilityBoundingSet=
+/etc/systemd/system/nuxel-bridge.service.nuxel-rollback.pre-v070-delta-release:45:AmbientCapabilities=
+/etc/systemd/system/multi-user.target.wants/nuxel-button-manager.service:78:CapabilityBoundingSet=CAP_CHOWN CAP_DAC_OVERRIDE
+/etc/systemd/system/multi-user.target.wants/nuxel-button-manager.service:79:AmbientCapabilities=
+/etc/systemd/system/multi-user.target.wants/nuxel-bridge.service:49:CapabilityBoundingSet=
+/etc/systemd/system/multi-user.target.wants/nuxel-bridge.service:50:AmbientCapabilities=
+/etc/systemd/system/multi-user.target.wants/ModemManager.service:13:CapabilityBoundingSet=CAP_SYS_ADMIN CAP_NET_ADMIN
+/etc/systemd/system/multi-user.target.wants/NetworkManager.service:22:CapabilityBoundingSet=CAP_NET_ADMIN CAP_DAC_OVERRIDE CAP_NET_RAW CAP_NET_BIND_SERVICE CAP_SETGID CAP_SETUID CAP_SYS_MODULE CAP_AUDIT_WRITE CAP_KILL CAP_SYS_CHROOT
+/etc/systemd/system/nuxel-bridge.service.nuxel-rollback.pre-deploy-20261028T095726-2718843:44:CapabilityBoundingSet=
+/etc/systemd/system/nuxel-bridge.service.nuxel-rollback.pre-deploy-20261028T095726-2718843:45:AmbientCapabilities=
+/etc/systemd/system/nuxel-bridge.service:49:CapabilityBoundingSet=
+/etc/systemd/system/nuxel-bridge.service:50:AmbientCapabilities=
+/etc/systemd/system/nuxel-bridge.service.nuxel-rollback:44:CapabilityBoundingSet=
+/etc/systemd/system/nuxel-bridge.service.nuxel-rollback:45:AmbientCapabilities=
+/etc/systemd/system/nuxel-bridge.service.nuxel-rollback.pre-v070-delta-release3:44:CapabilityBoundingSet=
+/etc/systemd/system/nuxel-bridge.service.nuxel-rollback.pre-v070-delta-release3:45:AmbientCapabilities=
+/etc/systemd/system/nuxel-bridge.service.nuxel-rollback.pre-a75-bridge-version-restore-recover-n25000:44:CapabilityBoundingSet=
+/etc/systemd/system/nuxel-bridge.service.nuxel-rollback.pre-a75-bridge-version-restore-recover-n25000:45:AmbientCapabilities=
+/etc/systemd/system/nuxel-bridge.service.nuxel-rollback.pre-v070-delta-release4:44:CapabilityBoundingSet=
+/etc/systemd/system/nuxel-bridge.service.nuxel-rollback.pre-v070-delta-release4:45:AmbientCapabilities=
+/etc/systemd/system/nuxel-bridge.service.nuxel-rollback.pre-v070-delta-release2:44:CapabilityBoundingSet=
+/etc/systemd/system/nuxel-bridge.service.nuxel-rollback.pre-v070-delta-release2:45:AmbientCapabilities=
+/etc/systemd/system/nuxel-bridge.service.nuxel-rollback.pre-deploy-20261027T214530-2399261:44:CapabilityBoundingSet=
+/etc/systemd/system/nuxel-bridge.service.nuxel-rollback.pre-deploy-20261027T214530-2399261:45:AmbientCapabilities=
+/etc/systemd/system/dbus-org.freedesktop.ModemManager1.service:13:CapabilityBoundingSet=CAP_SYS_ADMIN CAP_NET_ADMIN
+/etc/systemd/system/nuxel-bridge.service.nuxel-rollback.pre-deploy-20261028T100242-2721366:44:CapabilityBoundingSet=
+/etc/systemd/system/nuxel-bridge.service.nuxel-rollback.pre-deploy-20261028T100242-2721366:45:AmbientCapabilities=
+/etc/systemd/system/nuxel-bridge.service.nuxel-rollback.pre-deploy-20261028T095324-2716875:44:CapabilityBoundingSet=
+/etc/systemd/system/nuxel-bridge.service.nuxel-rollback.pre-deploy-20261028T095324-2716875:45:AmbientCapabilities=
+/etc/systemd/system/nuxel-bridge.service.nuxel-rollback.pre-deploy-20261028T100542-2722856:44:CapabilityBoundingSet=
+/etc/systemd/system/nuxel-bridge.service.nuxel-rollback.pre-deploy-20261028T100542-2722856:45:AmbientCapabilities=
+/usr/lib/systemd/system/ModemManager.service:13:CapabilityBoundingSet=CAP_SYS_ADMIN CAP_NET_ADMIN
+/usr/lib/systemd/system/NetworkManager.service:22:CapabilityBoundingSet=CAP_NET_ADMIN CAP_DAC_OVERRIDE CAP_NET_RAW CAP_NET_BIND_SERVICE CAP_SETGID CAP_SETUID CAP_SYS_MODULE CAP_AUDIT_WRITE CAP_KILL CAP_SYS_CHROOT
+/usr/lib/systemd/system/colord.service:24:CapabilityBoundingSet=~CAP_SETUID CAP_SETGID CAP_SETPCAP CAP_SYS_ADMIN CAP_SYS_PTRACE CAP_CHOWN CAP_FSETID CAP_SETFCAP CAP_DAC_OVERRIDE CAP_DAC_READ_SEARCH CAP_FOWNER CAP_IPC_OWNER CAP_NET_ADMIN CAP_SYS_RAWIO CAP_SYS_TIME CAP_AUDIT_CONTROL CAP_AUDIT_READ CAP_AUDIT_WRITE CAP_KILL CAP_MKNOD CAP_NET_BIND_SERVICE CAP_NET_BROADCAST CAP_NET_RAW CAP_SYS_NICE CAP_SYS_RESOURCE CAP_MAC_ADMIN CAP_MAC_OVERRIDE CAP_SYS_BOOT CAP_LINUX_IMMUTABLE CAP_IPC_LOCK CAP_SYS_CHROOT CAP_BLOCK_SUSPEND CAP_LEASE CAP_SYS_PACCT CAP_SYS_TTY_CONFIG CAP_WAKE_ALARM
+/usr/lib/systemd/system/dbus-org.freedesktop.hostname1.service:20:CapabilityBoundingSet=CAP_SYS_ADMIN
+=== does root without caps create socket? ===
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+    import socket; socket.socket(socket.AF_INET,socket.SOCK_DGRAM); print("OK")
+                   ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib64/python3.14/socket.py", line 236, in __init__
+    _socket.socket.__init__(self, family, type, proto, fileno)
+    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+PermissionError: [Errno 13] Permission denied
+=== root with only net_raw ===
+Unable to set inheritable capabilities: Operation not permitted

@@ -27,7 +27,16 @@
     // lockscreen, or an actually powered-down panel hides Home.
     var state = document.body.dataset.appState;
     var off = document.body.dataset.displayOff === '1' || document.body.classList.contains('display-off');
-    var locked = document.body.classList.contains('lockscreen-active');
+    var locked = document.body.classList.contains('lockscreen-active') ||
+      (document.getElementById('lockscreen') && !document.getElementById('lockscreen').hidden);
+    // Quick Settings / Applications drawer / Recents are interactive overlays.
+    // Their open animation must not compete with a metrics fetch + four DOM
+    // meter writes; the loop resumes on the next lifecycle/visibility event.
+    var qs = document.getElementById('quick-settings');
+    if (qs && !qs.classList.contains('hidden')) return false;
+    if (document.body.classList.contains('app-drawer-open')) return false;
+    var recents = document.getElementById('recents-view');
+    if (recents && !recents.classList.contains('hidden')) return false;
     return document.visibilityState === 'visible' && state !== 'ACTIVE' &&
       state !== 'LAUNCHING' && state !== 'CLOSING' && !off && !locked;
   }
@@ -124,6 +133,7 @@
     widget.dataset.reducedMotion = global.matchMedia && global.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'true' : 'false';
     document.addEventListener('visibilitychange', function () { configure(config); });
     document.addEventListener('app:lifecycle', function () { configure(config); });
+    document.addEventListener('nuxel:overlay-changed', function () { configure(config); });
     configure(appearance());
   }
   global.NuxelSystemMonitor = { configure: configure, stop: stop, _normalize: normalize, _shouldPoll: shouldPoll };

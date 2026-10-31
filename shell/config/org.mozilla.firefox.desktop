@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Firefox
+Comment=Nuxel installed browser (Fedora aarch64 RPM; Flatpak is blocked by CONFIG_USER_NS=n)
+Exec=/usr/bin/firefox %U
+Icon=firefox
+Terminal=false
+Categories=Network;WebBrowser;
+MimeType=text/html;x-scheme-handler/http;x-scheme-handler/https;
+StartupNotify=true

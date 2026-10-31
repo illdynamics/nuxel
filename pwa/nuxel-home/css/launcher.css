@@ -76,6 +76,7 @@
 }
 
 /* App List */
+.app-list[hidden] { display: none !important; }
 .app-list {
     display: grid;
     /* Static fallback also documents the shipped 4-wide default. */
@@ -328,6 +329,8 @@ body.launcher-dragging .app-item {
 .folder-card input { width: calc(100% - 70px); margin: 0 8px 16px 0; padding: 10px; color: white; background: #122952; border: 1px solid #60a5fa; border-radius: 10px; }
 .folder-items { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }.folder-items button { border: 0; color: #dbeafe; background: transparent; }.folder-items img { width: 52px; height: 52px; border-radius: 12px; }.folder-items span { display: block; font-size: 11px; overflow: hidden; text-overflow: ellipsis; }
 body.app-drawer-open .app-grid { z-index: 80; background: var(--bg-primary); top: var(--status-bar-height); bottom: var(--system-nav-height); }
+/* The drawer is a cached sibling list; opening it never re-parses Home. */
+.drawer-list { padding-bottom: 26px; contain: content; }
 body.app-drawer-open .app-grid-title::after { content: 'All apps'; margin-left: 10px; font-size: 14px; color: var(--text-secondary); -webkit-text-fill-color: var(--text-secondary); }
 
 /* A37: fall back to a readable native glyph if an asset genuinely fails to load. */

@@ -1,0 +1,5 @@
+#!/bin/sh
+# Stremio has no official aarch64 RPM.  The aarch64 Flathub package is
+# installed, but Flatpak cannot launch on this kernel (CONFIG_USER_NS=n).
+echo "Stremio requires Flatpak/bubblewrap user namespaces; this 4.14 kernel has CONFIG_USER_NS=n." >&2
+exit 2

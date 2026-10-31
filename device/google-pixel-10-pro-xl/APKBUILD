@@ -1,6 +1,6 @@
 # Maintainer: Nuxel Project <nuxel@nuxel.org>
 pkgname="device-google-mustang"
-pkgver="0.2.1"
+pkgver="0.7.4-beta"
 pkgrel="0"
 pkgdesc="Google Pixel 10 Pro XL (mustang) — Nuxel Phone OS"
 url="https://nuxel.org"

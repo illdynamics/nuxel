@@ -50,7 +50,7 @@
             console.warn('[Nuxel] Missing/corrupt dock artwork:', artwork);
         };
         image.onload = () => docks.forEach(dock => { if (dock.dataset.background === value) delete dock.dataset.backgroundFallback; });
-        image.src = artwork + '?v=0.2.1';
+        image.src = artwork + '?v=0.7.4-beta';
         document.dispatchEvent(new CustomEvent('nuxel:dock-background', {detail:{id:value,path:artwork}}));
     }
     const DEFAULT_WALLPAPER = "url('assets/nuxel-background.png')";
@@ -257,7 +257,11 @@
         panel.querySelector('[data-home-restore]').onclick = () => { if (launcher) launcher.restoreHiddenApps(); };
         panel.querySelector('[data-home-reset]').onclick = () => { if (launcher) launcher.resetOrder(); close(); };
 
-        if (global.NuxelWidgets) {
+        // Bind the widget controls and the notes listener exactly once.  The
+        // previous code re-added `nuxel:notes-updated` on every open, so
+        // repeated Home Settings visits accumulated handlers.
+        if (global.NuxelWidgets && panel.dataset.widgetsBound !== '1') {
+            panel.dataset.widgetsBound = '1';
             refreshWidgetControls(panel);
             panel.querySelector('[data-widgets-enabled]').onchange = event => {
                 global.NuxelWidgets.setEnabled(event.target.checked);
@@ -311,6 +315,25 @@
         document.addEventListener('pointermove', event => { if (start && event.pointerId === start.id && (Math.abs(event.clientX - start.x) > 8 || Math.abs(event.clientY - start.y) > 8)) { clearTimeout(timer); timer = null; } });
         ['pointerup', 'pointercancel'].forEach(type => document.addEventListener(type, () => { clearTimeout(timer); timer = null; start = null; }));
     }
-    global.NuxelHomeSettings = { open, close, apply, dockChoice, dockPaths: DOCKS };
+    // PWNAGE-37000B: build the panel once during an idle slice so the first
+    // owner tap is not charged the 120-170 ms DOM+image-decode cost.  open()
+    // and close() are called in the SAME task, so no frame can paint the
+    // priming panel; the cached hydration path is left untouched.
+    function prime() {
+        try {
+            const panel = document.getElementById('home-settings');
+            if (panel && panel.dataset.nuxelBuilt === '1') return false;
+            open();
+            // Pay the one-time panel layout now; it is still hidden immediately
+            // afterwards, so this cannot flash over the launcher.
+            void panel.offsetHeight;
+            close();
+            return true;
+        } catch (e) {
+            try { close(); } catch (e2) {}
+            return false;
+        }
+    }
+    global.NuxelHomeSettings = { open, close, apply, prime, dockChoice, dockPaths: DOCKS };
     document.addEventListener('DOMContentLoaded', () => { apply(); bindLongPress(); });
 })(window);

@@ -31,6 +31,12 @@ class Launcher {
         this.pointerCaptureEl = null;
         this._dragSnapshot = null;
         this._dropIndex = -1;
+        // PWNAGE-37000B: the drawer is built once and toggled, not rebuilt on
+        // every open.  The old open/close path reparsed 30 tiles and 29 image
+        // elements (measured 39-57 ms of synchronous main-thread work).
+        this.drawerList = null;
+        this._drawerSignature = '';
+        this._homeScrollTop = 0;
 
         this._init();
     }
@@ -234,7 +240,15 @@ class Launcher {
         const totalPages = this._pageCount();
         if (this.currentPage >= totalPages) this.currentPage = totalPages - 1;
         const page = this._pageEntries(this.currentPage);
-        if (this.drawerOpen) { this._renderDrawerApps(); this._updatePageDots(totalPages); return; }
+        if (this.drawerOpen) {
+            this._renderDrawerApps();
+            if (this.drawerList) this.drawerList.hidden = false;
+            this.appList.hidden = true;
+            this._updatePageDots(totalPages);
+            return;
+        }
+        if (this.drawerList) this.drawerList.hidden = true;
+        this.appList.hidden = false;
 
         this.appList.innerHTML = page.map(app => app.type === 'folder'
             ? '<div class="app-item app-folder" data-folder-id="' + app.id + '" tabindex="0" role="button" aria-label="' + app.name + '"><div class="app-icon folder-icon">' + app.apps.slice(0, 4).map(a => this._appIcon(a)).join('') + '</div><span class="app-label">' + app.name + '</span></div>'
@@ -245,10 +259,38 @@ class Launcher {
         this._updatePageDots(totalPages);
     }
 
-    _renderDrawerApps() {
+    _drawerContainer() {
+        if (this.drawerList && this.drawerList.isConnected) return this.drawerList;
+        const grid = document.getElementById('app-grid');
+        if (!grid) return null;
+        let el = document.getElementById('drawer-list');
+        if (!el) {
+            el = document.createElement('div');
+            el.id = 'drawer-list';
+            el.className = 'app-list drawer-list';
+            el.hidden = true;
+            const anchor = this.appList || document.getElementById('app-list');
+            if (anchor && anchor.parentNode === grid) grid.insertBefore(el, anchor.nextSibling);
+            else grid.appendChild(el);
+        }
+        this.drawerList = el;
+        return el;
+    }
+
+    _renderDrawerApps(force) {
         // Drawer is authoritative ALL apps, not a duplicate of the current Home
         // page. Hidden shortcuts are still discoverable and may be restored.
-        this.appList.innerHTML = appRegistry.getAllApps().map((app) =>
+        const list = this._drawerContainer();
+        if (!list) return;
+        const apps = appRegistry.getAllApps();
+        // Rebuild only when the registry output actually changes (install,
+        // rename, icon/colour edit).  Normal opens are a class/hidden toggle.
+        const signature = apps.map((app) =>
+            [app.id, app.name, app.icon, app.color, app.category, app.type].join(':')
+        ).join('|');
+        if (!force && signature === this._drawerSignature && list.childElementCount) return;
+        this._drawerSignature = signature;
+        list.innerHTML = apps.map((app) =>
             '<div class="app-item drawer-app" data-app-id="' + app.id + '" role="button" tabindex="0" aria-label="' + app.name + '">' +
             '<div class="app-icon" style="background:' + app.color + '33">' + this._appIcon(app) + '</div>' +
             '<span class="app-label">' + app.name + '</span></div>'
@@ -802,11 +844,30 @@ class Launcher {
         render(); document.body.appendChild(sheet);
     }
 
-    openDrawer() { this.drawerOpen = true; document.body.classList.add('app-drawer-open'); this._renderAppGrid(); try { document.dispatchEvent(new CustomEvent('nuxel:overlay-changed')); } catch (e) {} }
+    openDrawer() {
+        if (this.drawerOpen) return;
+        this.drawerOpen = true;
+        document.body.classList.add('app-drawer-open');
+        this._renderDrawerApps();
+        const grid = document.getElementById('app-grid');
+        if (grid) { this._homeScrollTop = grid.scrollTop; grid.scrollTop = 0; }
+        if (this.drawerList) this.drawerList.hidden = false;
+        if (this.appList) this.appList.hidden = true;
+        this._updatePageDots(this._pageCount());
+        if (window.NuxelWidgets) { try { window.NuxelWidgets.renderPage(this.currentPage); } catch (e) {} }
+        try { document.dispatchEvent(new CustomEvent('nuxel:overlay-changed')); } catch (e) {}
+    }
     closeDrawer() {
-        this.drawerOpen = false; document.body.classList.remove('app-drawer-open');
+        const wasOpen = this.drawerOpen;
+        this.drawerOpen = false;
+        document.body.classList.remove('app-drawer-open');
         const menu = document.getElementById('nuxel-drawer-context'); if (menu) menu.remove();
-        this._renderAppGrid();
+        if (this.drawerList) this.drawerList.hidden = true;
+        if (this.appList) this.appList.hidden = false;
+        if (wasOpen) {
+            const grid = document.getElementById('app-grid');
+            if (grid) grid.scrollTop = this._homeScrollTop || 0;
+        }
         try { document.dispatchEvent(new CustomEvent('nuxel:overlay-changed')); } catch (e) {}
     }
     advanceDrawer() { if (this.drawerOpen) { this.closeDrawer(); appRegistry.launchApp('nuxel-settings'); } else this.openDrawer(); }

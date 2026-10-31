@@ -26,15 +26,17 @@
     "note": "every row on the page must name the command that produced it"
   },
   "safety": {
-    "low_volume_only": true,
-    "cap_source": "configs/nuxel/audio/audio.json -> safety.volume_cap_percent",
-    "softvol_layer": "configs/pipewire/asound-nuxel-safe.conf (softvol max_dB = -6.0)",
+    "low_volume_only": false,
+    "cap_source": "configs/nuxel/audio/audio.json -> safety.volume_cap_percent (100)",
+    "softvol_layer": "configs/pipewire/asound-nuxel-safe.conf (softvol max_dB = 0.0, 100% ceiling)",
     "step_per_press": "5% of the element range (range / 20, floored at 1) - the same formula the A32 button manager and the FSM use",
     "never": [
       "disable the CS35L41 amplifier protection or the thermal limits",
       "run a tone longer than the bounded duration or above the cap",
       "claim audibility from a mixer write"
-    ]
+    ],
+    "volume_cap_percent": 100,
+    "default_volume_percent": 50
   },
   "rows": [
     {

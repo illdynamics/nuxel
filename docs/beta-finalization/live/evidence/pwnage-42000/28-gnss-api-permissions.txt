@@ -1,0 +1,40 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+=== Maps gnss-probe (location:read; no power) ===
+{"result": {"success": true, "node": "/dev/ttyBCM", "sample_seconds": 1, "bytes": 0, "nmea_sentence_count": 0, "sentences": [], "stream": "empty", "raw": ""}}
+=== Maps gnss-power (must be CAPABILITY_DENIED: no location:manage) ===
+{"result": {"success": true, "requested": false, "enabled": false}}
+=== settings gnss-power OFF (location:manage) ===
+{"result": {"success": true, "requested": false, "enabled": false}}
+=== settings gnss-power ON (bounded diagnostic, verified readback) ===
+{"result": {"success": true, "requested": true, "enabled": true}}
+=== rail readback ===
+1
+=== settings gnss-power OFF again ===
+{"result": {"success": true, "requested": false, "enabled": false}}
+=== rail final ===
+0
+=== CLI diagnostic status ===
+{"device":"beyond2lte","tool":"nuxel-gnss-diag","protocol":"bbd","stages":{"device_node":"node:/dev/ttyBCM","module":"bound:/sys/bus/spi/drivers/brcm gps spi/spi17.0","firmware":"loader-only:/dev/bbd_patch","vendor_runtime":"missing:lhd,gpsd,android_linker,lhd_config,gps_config,gnss_hidl_impl","userspace":"no-native-bbd-lhd-decoder","stream":"bbd-transport:/dev/ttyBCM"},"first_failing_stage":"firmware","state":"BLOCKED_FIRMWARE","fix_verified":false,"nmea_stream":false,"owner_test":"docs/beta-finalization/manual-proof/13-gps.md"}
+=== CLI text ===
+device : beyond2lte   GNSS : BCM4773 (Broadcom BBD/LHD RPC, not NMEA)
+
+stages:
+  device_node   : node:/dev/ttyBCM
+  module        : bound:/sys/bus/spi/drivers/brcm gps spi/spi17.0
+  firmware      : loader-only:/dev/bbd_patch
+  vendor_runtime: missing:lhd,gpsd,android_linker,lhd_config,gps_config,gnss_hidl_impl
+  userspace     : no-native-bbd-lhd-decoder
+  stream        : bbd-transport:/dev/ttyBCM
+
+first failing stage : firmware
+verdict             : BLOCKED_FIRMWARE
+  driver/node present but no compatible BCM4773 BBD sensor-hub patch firmware.
+  /dev/bbd_patch is only a loader node, not firmware. Do not rename an unrelated blob.

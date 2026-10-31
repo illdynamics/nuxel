@@ -29,7 +29,9 @@ set -u
 AMIXER=${NUXEL_AMIXER:-amixer}
 PW_RUNTIME=${NUXEL_PW_RUNTIME:-/run/nuxel-wayland}
 SINK=${NUXEL_AUDIO_SINK:-alsa_output.hw_0_1}
-VOLUME_CAP=${NUXEL_AUDIO_VOLUME_CAP:-0.25}
+VOLUME_CAP=${NUXEL_AUDIO_VOLUME_CAP:-1.0}
+DEFAULT_VOLUME=${NUXEL_AUDIO_DEFAULT_VOLUME:-0.50}
+VOLUME_INIT=/run/nuxel-audio-default-volume-applied
 STATE=/run/nuxel-audio-route.state
 ABOX=/sys/devices/platform/18c50000.abox
 VERSION="$ABOX/calliope_version"
@@ -262,6 +264,15 @@ set_ctl 'Right AMP PCM Gain=12'  'Right AMP PCM Gain' 12 || fail_state 'right AM
 set_ctl 'Left PCM Source=ASP'    'Left PCM Source' 0 || fail_state 'left PCM source failed'
 set_ctl 'Right PCM Source=ASP'   'Right PCM Source' 0 || fail_state 'right PCM source failed'
 
+# Driver-cached amplifier PCM trim.  In the pinned CS35L41 driver, control
+# value 817 maps exactly to DIG_VOL_CTRL=0x8000 (0 dB).  The driver's own
+# cs35l41_pcm_mute(0) re-applies this cached value and clears AMP_OUT_MUTE on
+# every playback start, which is what lets the owner-confirmed output stage
+# survive the hw_free mute between playbacks and across reboots.  Keep these
+# controls at 817 / Unmuted; do not use the raw 0x6000/0x2024 writes alone.
+set_ctl 'Left digital PCM 0dB (driver cache)'  'Left Digital PCM Volume' 817 || fail_state 'left PCM volume cache failed'
+set_ctl 'Right digital PCM 0dB (driver cache)' 'Right Digital PCM Volume' 817 || fail_state 'right PCM volume cache failed'
+
 # CS35L41 amplifier clock/boost patch (owner-confirmed 2026-10-30).
 # The DT programs ampclk=6.144MHz, but ABOX UAIF1 actually clocks 1.536MHz
 # (16-bit stereo 48k), so the CS35L41 PLL was fed the wrong reference and the
@@ -309,14 +320,28 @@ dsp_ready || fail_state 'CS35L41 DSP1 not booted/running on both amplifiers'
 route_controls_ready || fail_state 'route control readback mismatch'
 
 # PipeWire owns hw:0,1.  This script only selects its static sink; playback is
-# done by pw-play.  At 25% the sink is the one attenuation stage.
+# done by pw-play.  The owner-approved ceiling is 100% (low-volume-only retired
+# 2026-10-30); the first route application after boot restores the 50% default.
 ensure_default_sink || fail_state 'PipeWire default sink not established'
 sink_rate_ok || fail_state 'static PipeWire sink is not running at 48000 Hz'
 pipewire_connectable || fail_state 'PipeWire native socket is not accepting connections'
-# Only lower a level that is ABOVE the safety ceiling.  The retry timer must
-# not silently override a user who deliberately chose a quieter level.
 current_volume=$(sink_volume)
 [ -n "$current_volume" ] || fail_state 'PipeWire sink volume is unreadable'
+# First successful route application after boot restores the owner default
+# (50%).  Later timer runs leave a deliberately chosen user level alone, except
+# for the 100% ceiling.
+if [ ! -e "$VOLUME_INIT" ]; then
+    pw_env timeout 4 wpctl set-mute @DEFAULT_AUDIO_SINK@ 0 >/dev/null 2>&1 || true
+    if pw_env timeout 4 wpctl set-volume @DEFAULT_AUDIO_SINK@ "$DEFAULT_VOLUME" >/dev/null 2>&1; then
+        : >"$VOLUME_INIT" 2>/dev/null || true
+        say "default sink volume set to $DEFAULT_VOLUME (first apply after boot)"
+        current_volume=$(sink_volume)
+    else
+        say "default sink volume could not be set to $DEFAULT_VOLUME"
+    fi
+fi
+# Only lower a level that is ABOVE the safety ceiling.  The retry timer must
+# not silently override a user who deliberately chose a quieter level.
 if awk -v v="$current_volume" -v cap="$VOLUME_CAP" 'BEGIN { exit !(v + 0 > cap + 0.0001) }'; then
     if pw_env timeout 4 wpctl set-volume @DEFAULT_AUDIO_SINK@ "$VOLUME_CAP" >/dev/null 2>&1; then
         say "sink volume lowered to cap $VOLUME_CAP (was $current_volume)"

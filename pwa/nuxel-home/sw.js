@@ -36,7 +36,11 @@
 // Setting is now tri-state (ON/OFF/UNKNOWN) and reports the real hci0/BlueZ
 // state instead of defaulting to OFF, and the status/manifest feature list
 // names the verified Bluetooth and near-complete audio surface.
-const CACHE_VERSION = 'v61-p44000';
+// v0.7.4 bumps to v66-v074-release for PWNAGE-41000..44000: Home drag/reorder,
+// the 15-entry power menu, screenshot/Gallery thumbnails, Files share, the
+// flashlight owner, the location/sound/USB status truth, and the version
+// lockstep bump.
+const CACHE_VERSION = 'v66-v074-release';
 const CACHE_NAME = 'nuxel-home-' + CACHE_VERSION;   // version marker sent to clients
 const STATIC_CACHE = 'nuxel-static-' + CACHE_VERSION;
 const DYNAMIC_CACHE = 'nuxel-dynamic-' + CACHE_VERSION;

@@ -5,8 +5,15 @@
   "detection": {
     "jack_kcontrols": {
       "comment": "The CS47L93 exposes jack detection as ALSA kcontrols. The exact names are discovered from `amixer -c <card> contents` and from the codec pin files; a name is used only after it has been seen.",
-      "name_patterns": ["Headphone Jack", "Headset Jack", "Jack", "Mic Jack"],
-      "pin_state_files": ["/proc/asound/card*/codec#*"],
+      "name_patterns": [
+        "Headphone Jack",
+        "Headset Jack",
+        "Jack",
+        "Mic Jack"
+      ],
+      "pin_state_files": [
+        "/proc/asound/card*/codec#*"
+      ],
       "require_observed_name": true
     },
     "usbc": {
@@ -22,45 +29,62 @@
   "rules": [
     {
       "id": "jack-insert-headphones",
-      "when": {"jack": "inserted", "has_mic": false},
+      "when": {
+        "jack": "inserted",
+        "has_mic": false
+      },
       "select_device": "Headphones",
       "reason": "3.5 mm stereo plug: route playback to the CS47L93 headphone driver, speaker amplifiers disabled."
     },
     {
       "id": "jack-insert-headset",
-      "when": {"jack": "inserted", "has_mic": true},
+      "when": {
+        "jack": "inserted",
+        "has_mic": true
+      },
       "select_device": "Headset",
       "reason": "TRRS headset: the same playback path plus the headset microphone input."
     },
     {
       "id": "jack-remove",
-      "when": {"jack": "removed"},
+      "when": {
+        "jack": "removed"
+      },
       "select_device": "Speaker",
       "reason": "Unplug returns to the CS35L40 speaker path. This is the revert rule and must always exist."
     },
     {
       "id": "usbc-digital-headset",
-      "when": {"usbc": "present", "class": "audio"},
+      "when": {
+        "usbc": "present",
+        "class": "audio"
+      },
       "select_device": "USB-C Headset (UAC)",
       "reason": "A UAC accessory takes over as a separate card; the codec route is left untouched rather than being reconfigured blindly."
     },
     {
       "id": "usbc-analog-headset",
-      "when": {"usbc": "present", "class": "analog"},
+      "when": {
+        "usbc": "present",
+        "class": "analog"
+      },
       "select_device": "Headset",
       "reason": "Analog USB-C accessory drives the codec AUX pins; treat it as a headset on the codec."
     }
   ],
   "revert": {
     "on_unplug": true,
-    "always_restore": ["Speaker"],
+    "always_restore": [
+      "Speaker"
+    ],
     "never_leave_routed_to_absent_device": true
   },
   "safety": {
-    "low_volume_only": true,
-    "volume_cap_percent": 25,
+    "low_volume_only": false,
+    "volume_cap_percent": 100,
     "cap_on_route_change": true,
-    "comment": "A route change must not restore a stored high volume: every route switch re-applies the low-volume cap before the first sample is rendered."
+    "comment": "Route changes keep the 100% ceiling and restore the owner default of 50%; no low-volume-only clamp.",
+    "default_volume_percent": 50
   },
   "evidence": {
     "state_file": "/var/lib/nuxel/audio/jack-state.json",

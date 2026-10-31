@@ -356,13 +356,23 @@
     if (p.x < -20 || p.x > viewWidth() + 20 || p.y < -20 || p.y > viewHeight() + 20) return;
     ctx.save();
     ctx.lineWidth = 1.5;
-    if (kind === 'gps') {
+    if (kind === 'gnss') {
       ctx.fillStyle = '#3fb950';
       ctx.strokeStyle = '#06140c';
       ctx.beginPath(); ctx.arc(p.x, p.y, 7, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
       ctx.strokeStyle = 'rgba(63,185,80,0.55)';
       ctx.beginPath(); ctx.arc(p.x, p.y, 13, 0, Math.PI * 2); ctx.stroke();
-    } else if (kind === 'stale-gps') {
+    } else if (kind === 'network') {
+      // Approximate network/Wi-Fi/IP location is deliberately a different
+      // marker from a satellite fix: blue dashed halo, never the GNSS glyph.
+      ctx.fillStyle = '#58a6ff';
+      ctx.strokeStyle = '#04101f';
+      ctx.beginPath(); ctx.arc(p.x, p.y, 7, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      ctx.setLineDash([3, 3]);
+      ctx.strokeStyle = 'rgba(88,166,255,0.7)';
+      ctx.beginPath(); ctx.arc(p.x, p.y, 14, 0, Math.PI * 2); ctx.stroke();
+      ctx.setLineDash([]);
+    } else if (kind === 'stale-gnss' || kind === 'stale-network') {
       ctx.fillStyle = '#8b949e';
       ctx.strokeStyle = '#06140c';
       ctx.beginPath(); ctx.arc(p.x, p.y, 6, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
@@ -436,9 +446,20 @@
     });
     // Current position only when the provider returned real coordinates.
     if (state.provider && state.provider.fix) {
-      drawMarker(state.provider.fix.lat, state.provider.fix.lon,
-        state.provider.state === 'fixed' ? 'gps' : 'stale-gps',
-        state.provider.state === 'fixed' ? 'provider position' : 'last provider position (stale)');
+      var fx = state.provider.fix;
+      var kind = fx.gnss ? 'gnss' : (fx.network ? 'network' : 'provider');
+      var label;
+      if (state.provider.state !== 'fixed') {
+        kind = fx.gnss ? 'stale-gnss' : (fx.network ? 'stale-network' : 'pin');
+        label = 'last provider position (stale)';
+      } else if (fx.gnss) {
+        label = 'GNSS position' + (fx.accuracy === null ? '' : ' ±' + Math.round(fx.accuracy) + ' m');
+      } else if (fx.network) {
+        label = 'approximate network location' + (fx.accuracy === null ? '' : ' ±' + Math.round(fx.accuracy) + ' m');
+      } else {
+        label = 'provider position';
+      }
+      drawMarker(fx.lat, fx.lon, kind, label);
     }
 
     var a = screenToLatLon(w / 2, h / 2), b = screenToLatLon(w / 2 + 80, h / 2);

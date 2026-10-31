@@ -1,8 +1,14 @@
 # Nuxel feature status
 
 Canonical, human-readable feature list for the current repository state
-(`v0.2.1`, 2026-10-30). It describes what the code and the physical Galaxy S10+
-actually do, not what is merely planned.
+(`v0.7.4-beta`, 2026-10-31). It describes what the code and the physical Galaxy
+S10+ actually do, not what is merely planned.
+
+**v0.7.4-beta changes the headline verdicts:** speaker audio is now `WORKING`
+(owner-confirmed audible), GNSS is `ALMOST` (real network location works;
+satellite fixes remain `BLOCKED`), and the Flatpak/GTK application model is
+`ALMOST` (installed and truthful, but `CONFIG_USER_NS=n` blocks the Flatpak
+sandbox and the handset runs the WebKit PWA shell).
 
 **Status legend**
 
@@ -28,14 +34,14 @@ actually do, not what is merely planned.
 | Quick Settings | `WORKING` | Wi-Fi tri-state, Bluetooth power/status, mobile, location policy, do-not-disturb, flashlight, rotation menu and verbose-boot tile. |
 | Bluetooth | `WORKING` | BCM4375 HCD + `CONFIG_BT_HCIUART` + `btattach` register `hci0`; controller powers on and a 12 s scan discovers peers. Settings supports list, scan, pair, connect, disconnect, trust and remove. |
 | Wi-Fi | `WORKING` | BCM4390/brcmfmac, NetworkManager as sole owner, radio ON after normal boot, saved profiles autoconnect, radio/link state separated in the UI, manual OFF respected for the session. |
-| Audio playback | `ALMOST` | ABOX Calliope `MUB0`, both CS35L41 DSP1s running, RDMA1 enabled, gain 12/12, 48 kHz default sink and advancing `hw_ptr`. `pw-play`/boot cue/Test Audio return success. Physical audibility is not yet owner-confirmed. |
-| Audio volume | `WORKING` | Hardware keys and UI share the PipeWire default sink; absolute 5 % steps, 25 % safety ceiling, OSD and throttled preview cue. |
-| Boot sound | `ALMOST` | One gated POW per boot after UI ownership and route readiness. Same audibility caveat as playback. |
+| Audio playback | `WORKING` | Owner-confirmed audible. ABOX Calliope `MUB0`, both CS35L41 DSP1s running, RDMA1 enabled, gain 12/12, 48 kHz default sink and advancing `hw_ptr`. Root cause of the silent speaker was the CS35L41 PLL reference: the DT programs 6.144 MHz while ABOX UAIF1 clocks 1.536 MHz; `0x4804=0x1b`, `0x2c04=0x370`, `0x6000=0x8000`, `0x2024=0x0` on both amps, kept alive by the driver cache (`Digital PCM Volume=817`, `AMP Mute=Unmuted`). Owner typed `works` for boot cue, volume cue, Test Audio and after a full reboot. |
+| Audio volume | `WORKING` | Hardware keys and UI share the PipeWire default sink; absolute 5 % steps, **100 % ceiling**, **50 % first-boot default**, OSD and throttled preview cue. |
+| Boot sound | `WORKING` | One gated POW per boot after UI ownership and route readiness. `nuxel-audio-warmup` powers the DAPM speaker path with an inaudible 8 s stream first, so the 366 ms cue is not swallowed; owner-confirmed audible. |
 | Microphone capture | `NOT STARTED` | Capture devices enumerate, but no real recording/WAV acceptance has been performed. |
 | Wired headset | `NOT STARTED` | Jack detection exists; route and audibility are unverified. |
 | USB-C audio | `NOT STARTED` | No DAC/accessory test; USB role conflicts with the console gadget remain. |
 | Camera | `BLOCKED` | No usable V4L2 capture node; UI reports the blocker instead of showing fake frames. |
-| GNSS | `BLOCKED` | BCM4773 SPI rail responds, but the Broadcom BBD/LHD userspace is absent. Network/IP location is labelled separately. |
+| GNSS (satellite) | `BLOCKED` | BCM4773 SPI rail, `/dev/ttyBCM` and the GPIO145 rail are real, but the BBD sensor-hub patch firmware and the Android/Bionic `lhd`+`gpsd`+HIDL runtime are absent. Verdict `BLOCKED_FIRMWARE`; no satellite fix is claimed. |
 | Cellular modem | `BLOCKED` | Shannon net devices exist; ModemManager finds no modem object, so calls/SMS/data are unavailable. |
 | NFC | `BLOCKED` | No controller/firmware path. |
 | Sensors/haptics | `PARTIAL` | Input devices enumerate and the haptics writer path exists; real feel and motion-sensor integration need owner tests. |
@@ -50,18 +56,18 @@ actually do, not what is merely planned.
 | Feature | Status | Current detail |
 |---|---|---|
 | PWA launcher/runtime | `WORKING` | Hardened WebKitGTK, isolated app contexts, local static server, version-pinned bridge. |
-| Native GTK4 apps | `PARTIAL` | Dialer/Messages/Contacts/Settings sources exist; hardware-dependent flows are limited by modem and audio confirmation. |
+| Native GTK4 apps | `ALMOST` | Dialer/Messages/Contacts/Settings/Permissions sources build with GTK4 + libadwaita; the S10+ Launcher is the WebKit PWA shell and the image does not compile the GTK apps into `/usr/bin`. Calls/SMS remain blocked by the missing modem object. `nuxel-statusbar` (cairo/Pango layer-shell) ships so fullscreen native apps keep the top strip. |
 | Notes | `WORKING` | File-backed notes, title/body editing and store persistence; used as the audio-confirmation surface. |
 | Mail/Calendar/Files | `WORKING` | File-backed persistence, folder/attachment handling, file explorer with CRUD/copy/move/ZIP/upload. |
 | Media/Gallery/Recorder | `PARTIAL` | Media playback and Gallery work; Recorder writes a real WAV; microphone/speaker acceptance is open. |
 | Browser | `WORKING` | Real HTTPS browser with system chrome/navigation; fullscreen/native-layer edge cases remain owner checks. |
 | Camera app | `BLOCKED` | Honest hardware status; capture backend deferred. |
-| Maps/Location UI | `PARTIAL` | Real provider state and privacy policy; satellite fix blocked, network location depends on GeoClue. |
+| Maps/Location UI | `WORKING` | Network location is verified live (`51.4005, 5.47196 ±25 km`, source `network_wifi`) through the per-UID GeoClue agent; Maps and Quick Settings distinguish GNSS, network and stale fixes, and the shim never invents coordinates, timestamps or accuracy. Satellite fix remains blocked. |
 | Weather/Clock/Calculator | `WORKING` | Functional PWAs with offline states. |
 | SnekByte | `WORKING` | Bundled offline game with touch controls and system navigation. |
 | Settings | `WORKING` | Display/safe zones, status bar, Wi-Fi, Bluetooth, audio, location, input, buttons, theme/haptics, power, developer and About. |
 | Nuxtore | `PARTIAL` | Honest store/empty state and local verification; install backend is incomplete. |
-| Flatpak app model | `PARTIAL` | Manifests and sandbox configuration exist; no built runtime or end-to-end sandbox acceptance. |
+| Flatpak app model | `ALMOST` | aarch64 Firefox/VLC/Signal/Stremio packages are installed, but `CONFIG_USER_NS=n` means bubblewrap cannot create a user namespace. Firefox/VLC wrappers exec the genuine Fedora aarch64 RPMs; Signal/Stremio report the blocker and exit 2. |
 | Permission portal | `PARTIAL` | Capability checks, grants and prompts are wired; deeper XDG portal integration remains. |
 
 ## Security and system
@@ -80,7 +86,10 @@ actually do, not what is merely planned.
 
 - `README.md` — release summary and readiness table.
 - `audio.md` — detailed audio state and remaining checks.
-- `CHANGELOG.md` / `docs/releases/v0.2.1.md` — what changed in this release.
+- `CHANGELOG.md` / `docs/releases/v0.7.4-beta.md` — what changed in this release.
+- `out.md` — owner-confirmed audio root cause and the `works` confirmations.
+- `docs/beta-finalization/live/PWNAGE-42000-REPORT.md` — GeoClue agent and network-location evidence.
+- `docs/beta-finalization/live/PWNAGE-44000-REPORT.md` — Home/hardware UI work and measurements.
 - `docs/s10plus-live-fixes-20261028.md` — Bluetooth and RDMA1 first hardware proof.
 - `docs/beta-finalization/live/PWNAGE-40000-REPORT.md` — audio persistence and readiness evidence.
 - `docs/beta-finalization/live/PWNAGE-39000-TODO.md` — Wi-Fi, Bluetooth and overlay state.

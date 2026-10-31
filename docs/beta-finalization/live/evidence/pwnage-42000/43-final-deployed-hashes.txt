@@ -1,0 +1,34 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+e58f083aa225f7858b0ff434dc4ab1bd6aaf5faeba1052fbb6a0ffcce8d363cc  /usr/lib/nuxel/nuxel-bridge/bridge.py
+6677e8ee49bb56453d9ad11dc6666b02dc74b462bcda40cccbaaea8544f66f37  /usr/lib/nuxel/nuxel-bridge/api.py
+4d3c7be5d646509ed172c9e645bdaebfcf74e4e1042f587819c65fc61bd2a7b5  /usr/lib/nuxel/nuxel-bridge/hw_providers.py
+c2d94f4bb68c57b50c1c24483490eb9ad63bdb78761f063cbb8417f8c13b642a  /usr/lib/nuxel/nuxel-bridge/geoclue_agent.py
+fdf0d8c2f39b3205d14427da1b2e72ac4026cd741f756cad64322a324a65f024  /etc/systemd/system/nuxel-geoclue-agent.service
+ec11fb1248f78b339f6dd75f9e47a9e3b8abc4736e33848a7640a210fa2d1de0  /etc/geoclue/geoclue.conf
+ec11fb1248f78b339f6dd75f9e47a9e3b8abc4736e33848a7640a210fa2d1de0  /usr/lib/nuxel/stage36000/nuxel-s10/geoclue/geoclue.conf
+9ff1e41b13fb182c95f09d11e08034917377f8e3bb17d350b9574878e1348931  /etc/systemd/system/geoclue.service.d/10-nuxel-network.conf
+063e05870eec31a127e685e3559eb96046c2f062cb2e38a9f7c3d2fa7e64bc68  /usr/local/bin/nuxel-gps-status
+063e05870eec31a127e685e3559eb96046c2f062cb2e38a9f7c3d2fa7e64bc68  /usr/lib/nuxel/stage36000/nuxel-s10/bin/nuxel-gps-status
+6409f6236ce1f136fd79b16b44b3586e85be863aa6d1b802f57616f33bffc799  /etc/nuxel/gnss/gnss.json
+d8a216ec284d260fff6a6f6115fa9cd122bef1481e37eb794a089d9a2e854595  /usr/share/nuxel/pwa/nuxel-common/geolocation.js
+d49f1fc4aec3d8c87db21a5a39302d41eabdf1ccb20075690bac9a5fa5d03c8a  /usr/share/nuxel/pwa/nuxel-common/bridge.js
+0fdc67bba460bec9de45a8ff6b8cc4d60172399d813922c8266ca383d23bce84  /usr/share/nuxel/pwa/nuxel-common/maps-core.js
+4de52cf509099c531ff693c478c5c778af97efafcc264ddb5ca0bcf34a162749  /usr/share/nuxel/pwa/nuxel-apps/maps/js/maps.js
+37711466be47417857b666518deb374a76df635359ebaf8a1266174ab178252c  /usr/share/nuxel/pwa/nuxel-apps/maps/index.html
+940b91021b5e17bb103d65020948862b40c78a6d1434a0441460bde3b18ad51e  /usr/share/nuxel/pwa/nuxel-apps/maps/sw.js
+3bf883d49c17d335f1ee9e44966f831ac83c342147721ae6e266d6db3610b4d6  /usr/share/nuxel/pwa/nuxel-apps/settings/location-maps.js
+5645a4216b53726c30f0d2f0366bfd1cc241c1fc43cc35bb3b6724dc7abeb611  /usr/share/nuxel/pwa/nuxel-apps/settings/index.html
+7c79ed724ebda83b7b264b530a8419b2063f7cb7a4f21b489e253575ed897bc5  /usr/share/nuxel/pwa/nuxel-home/index.html
+b3e764cb230a44e9a56bb9c15e5936c25a273c3217bed3d775526f7bc045391b  /usr/share/nuxel/pwa/nuxel-home/js/qs.js
+e9d865728d218c3e0e1c6bf3cd9ba27c319fc64482a07dd9d2d0ae8060cd4b4c  /usr/share/nuxel/pwa/nuxel-home/js/status-bar.js
+34891d072fadf90cd33066576af1cef272eb06f5de90f35b25d671e22aa5ab38  /usr/share/nuxel/pwa/nuxel-home/css/status-bar.css
+128121a086b8c8bf5057d3523e3df9861454f2347dc09147a87deecc5dbfa3d6  /usr/share/nuxel/pwa/nuxel-home/sw.js
+ce886928282844239bc62d5027d523d691f601fbad7e40d94eaa0ed180db325e  /usr/local/bin/nuxel-gnss-diag.sh
