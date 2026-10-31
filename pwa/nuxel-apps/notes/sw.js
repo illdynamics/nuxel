@@ -1,4 +1,4 @@
-const CACHE_NAME = 'nuxel-notes-v1';
+const CACHE_NAME = 'nuxel-notes-v2-p44000';
 const ASSETS = [
   '/',
   '/index.html',

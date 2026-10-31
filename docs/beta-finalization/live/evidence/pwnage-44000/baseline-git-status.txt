@@ -1,0 +1,103 @@
+ M configs/alsa-ucm/nuxel-sound-settings.json
+ M configs/nuxel/audio/audio.json
+ M configs/nuxel/audio/jack-routes.json
+ M configs/nuxel/gnss/gnss.json
+ M configs/pipewire/asound-nuxel-safe.conf
+ M configs/s10plus/geoclue/geoclue.conf
+ M docs/beta-finalization/live/PWNAGE-43000-TODO.md
+ M images/s10plus/build-phone-rootfs-inside-fedora.sh
+ M pwa/nuxel-apps/maps/index.html
+ M pwa/nuxel-apps/maps/js/maps.js
+ M pwa/nuxel-apps/maps/sw.js
+ M pwa/nuxel-apps/settings/hardware-settings.js
+ M pwa/nuxel-apps/settings/index.html
+ M pwa/nuxel-apps/settings/location-maps.js
+ M pwa/nuxel-apps/settings/power-menu.css
+ M pwa/nuxel-apps/settings/power-menu.js
+ M pwa/nuxel-common/app-registry.json
+ M pwa/nuxel-common/bridge.js
+ M pwa/nuxel-common/geolocation.js
+ M pwa/nuxel-common/maps-core.js
+ M pwa/nuxel-home/css/status-bar.css
+ M pwa/nuxel-home/css/style.css
+ M pwa/nuxel-home/index.html
+ M pwa/nuxel-home/js/app.js
+ M pwa/nuxel-home/js/apps.js
+ M pwa/nuxel-home/js/home-settings.js
+ M pwa/nuxel-home/js/launcher.js
+ M pwa/nuxel-home/js/lockscreen-indicators.js
+ M pwa/nuxel-home/js/lockscreen.js
+ M pwa/nuxel-home/js/qs.js
+ M pwa/nuxel-home/js/status-bar.js
+ M pwa/nuxel-home/js/system-monitor.js
+ M pwa/nuxel-home/sw.js
+ M services/nuxel-bridge/src/api.py
+ M services/nuxel-bridge/src/bridge.py
+ M services/nuxel-bridge/src/hw_providers.py
+ M services/nuxel-bridge/src/usb_mode.py
+ M services/nuxel-bridge/systemd/nuxel-http-bridge.service
+ M services/nuxel-s10/bin/nuxel-abox-firmware-reload-boot.sh
+ M services/nuxel-s10/bin/nuxel-audio-route.sh
+ M services/nuxel-s10/bin/nuxel-cs35l41-apply.sh
+ M services/nuxel-s10/bin/nuxel-gps-status
+ M services/nuxel-s10/bin/nuxel-usb-mode.sh
+ M services/nuxel-s10/geoclue/geoclue.conf
+ M services/nuxel-s10/systemd/nuxel-abox-firmware-reload.service
+ M shell/nuxel-home-native/nuxel_home/app_registry.json
+ M tests/a72/test_location_provider.py
+ M tests/a72/test_maps_location_integration.py
+ M tools/s10plus/a29/nuxel-session.sh
+ M tools/s10plus/a33/notes-works-detector.py
+ M tools/s10plus/a33/nuxel-audio-diag.sh
+ M tools/s10plus/a33/nuxel-gnss-diag.sh
+ M tools/s10plus/a33/nuxel-sound-cue.py
+ M tools/s10plus/a33/tests/hw-subsystems/test-gnss-diag.py
+ M tools/s10plus/a33/tests/test-audio-diag.py
+ M tools/s10plus/a33/tests/test-headphone-route.py
+ M tools/s10plus/a45/nuxel-pwa-host.c
+ M tools/s10plus/a45/nuxel-session.sh
+ M tools/s10plus/a59/nuxel-foreign-toplevel.c
+?? assets/nuxel-silence-8s.wav
+?? docs/beta-finalization/live/PWNAGE-42000-REPORT.md
+?? docs/beta-finalization/live/PWNAGE-42000-TODO.md
+?? docs/beta-finalization/live/PWNAGE-44000-TODO.md
+?? docs/beta-finalization/live/evidence/pwnage-42000/
+?? docs/beta-finalization/live/evidence/pwnage-43000/firefox-final.png
+?? docs/beta-finalization/live/evidence/pwnage-43000/firefox-focus2.png
+?? docs/beta-finalization/live/evidence/pwnage-43000/firefox-focused.png
+?? docs/beta-finalization/live/evidence/pwnage-43000/firefox-kiosk-bottom.png
+?? docs/beta-finalization/live/evidence/pwnage-43000/firefox-kiosk-top.png
+?? docs/beta-finalization/live/evidence/pwnage-43000/firefox-kiosk.png
+?? docs/beta-finalization/live/evidence/pwnage-43000/firefox-unlocked.png
+?? docs/beta-finalization/live/evidence/pwnage-43000/firefox-with-chrome.png
+?? docs/beta-finalization/live/evidence/pwnage-43000/home-with-dock.png
+?? docs/beta-finalization/live/evidence/pwnage-43000/screen-after-ui.png
+?? docs/beta-finalization/live/evidence/pwnage-43000/screen-initial.png
+?? docs/beta-finalization/live/evidence/pwnage-43000/vlc-final.png
+?? docs/beta-finalization/live/evidence/pwnage-43000/vlc2.png
+?? docs/beta-finalization/live/evidence/pwnage-44000/
+?? full-pwnage-44000.md
+?? heard.md
+?? out.md
+?? pwnage-44000.md
+?? services/nuxel-bridge/src/geoclue_agent.py
+?? services/nuxel-bridge/src/hw_providers.py.bak-pwnage40000-20261030T204830Z
+?? services/nuxel-bridge/systemd/nuxel-geoclue-agent.service
+?? services/nuxel-s10/bin/nuxel-audio-session.sh
+?? services/nuxel-s10/bin/nuxel-audio-warmup
+?? services/nuxel-s10/bin/nuxel-flatpak-firefox
+?? services/nuxel-s10/bin/nuxel-flatpak-signal
+?? services/nuxel-s10/bin/nuxel-flatpak-stremio
+?? services/nuxel-s10/bin/nuxel-flatpak-vlc
+?? services/nuxel-s10/bin/nuxel-focus-app.sh
+?? services/nuxel-s10/bin/nuxel-mtp-server
+?? services/nuxel-s10/systemd/fast-stop/
+?? services/nuxel-s10/systemd/geoclue.service.d/
+?? services/nuxel-s10/systemd/nuxel-abox-firmware-reload.service.d/
+?? services/nuxel-s10/systemd/nuxel-audio-session.service
+?? services/nuxel-s10/systemd/nuxel-mtp.service
+?? services/nuxel-s10/systemd/nuxel-usb-mode-monitor.service
+?? services/nuxel-s10/systemd/nuxel-wl-fb.service.d/
+?? services/nuxel-session/systemd/nuxel-boot-sound.service.d/
+?? tests/pwnage42000/
+?? tools/s10plus/a45/nuxel-statusbar.c

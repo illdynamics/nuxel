@@ -1,0 +1,19 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+backup=/root/pwnage-44000/backup-20261031T054927Z
+active
+active
+active
+active
+2227030fb17f83769f819fa97b185b55913aa22b88901e724204b773ea9194b1  /usr/lib/nuxel/nuxel-pwa-host
+e914612c10d24efa1c4e47af55c2e84ac71e16b0f7f2185be8aad845a8035b1e  /usr/lib/nuxel/nuxel-button-manager
+35b55190dd7d5f3d446f2b0c0f3461586ff1231c5ab143c61d3e7dd7615b645b  /usr/lib/nuxel/nuxel-screenshot
+{"sound_mode": {"mode": "normal", "selected": "normal", "source": "/var/lib/nuxel/audio/sound-mode", "haptics_verified": false, "note": "selected sound mode; physical vibration is not claimed"}, "bluetooth": {"powered": null, "state": "unknown", "discovering": false, "source": "unavailable:no-provider-state"}, "charging": {"external_power": true, "charging": false, "battery_level": 100, "source": "sysfs"}, "usb_data": {"pc_connected": true, "source": "sysfs:udc:10c00000.dwc3:configured", "physical": ["typec:device-role"], "vbus_present": true, "udc_speeds": {"10c00000.dwc3": "high-speed"}}, "live_console": {"active": true, "service_armed": true, "transport_connected": true, "session_active": true, "source": "proc:nuxel-console:tty", "pids": [3505, 3506]}, "console_transports": {"serial": {"active": true, "source": "proc:nuxel-console:tty", "pids": [3505, 3506]}, "usb": {"active": false, "source": "SUPPORTED_NOT_ENABLED", "sessions": 0}, "wlan": {"active": true, "source": "AVAILABLE", "sessions": 1}}, "file_transfer": {"active": false, "selected": "charging", "endpoint_state": "inactive", "source": "unavailable:not-activated", "error": null}, "connection_mode": {"selected": "charging", "transition_in_progress": false, "host_connected": true, "endpoint_state": "inactive", "last_error": null}, "sources": {"power": "sysfs", "usb": "sysfs:udc:10c00000.dwc3:configured", "live_console": "proc:nuxel-console:tty", "console_serial": "proc:nuxel-console:tty", "console_usb": "SUPPORTED_NOT_ENABLED", "console_wlan": "AVAILABLE", "file_transfer": "unavailable:not-activated", "bluetooth": "unavailable:no-provider-state"}}
+{"success": true, "supported": true, "state": "OFF", "on": false, "led_path": "/sys/class/leds/torch-sec1/brightness", "led_name": "torch-sec1", "max_on_seconds": 60.0, "camera_active": false, "thermal_blocked": false, "reason": "explicit-off", "source": "flashlight_provider"}

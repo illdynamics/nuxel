@@ -13,7 +13,7 @@ trap cleanup EXIT
 trap 'rm -f "$OUT" "$OUT.sha256"' ERR
 # DNF packages are resolved for Fedora 43/aarch64 by an ARM64 Fedora container.
 # A dependency error must abort, rather than emitting a deceptive bare /etc tree.
-dnf -y install e2fsprogs findutils coreutils file rpm shadow-utils python3 \
+dnf -y install e2fsprogs findutils coreutils file rpm shadow-utils python3 python3-pillow \
     gcc make pkgconf-pkg-config kernel-headers \
     wayland-devel wayland-protocols-devel \
     gtk3-devel webkit2gtk4.1-devel alsa-lib-devel git
@@ -81,7 +81,7 @@ dnf -y --installroot="$STAGE" --releasever=43 --use-host-config \
     bash coreutils util-linux findutils grep sed gawk \
     systemd-258.11-1.fc43 systemd-udev systemd-networkd dbus-broker dbus-daemon \
     python3 phosh phoc stevia stevia-phosh-osk-provider seatd \
-    NetworkManager NetworkManager-wifi wpa_supplicant libnl3 libnl3-cli iw wireless-regdb ModemManager geoclue2 geoclue2-demos bluez bluez-deprecated \
+    NetworkManager NetworkManager-wifi wpa_supplicant libnl3 libnl3-cli iw wireless-regdb ModemManager geoclue2 geoclue2-demos bluez bluez-deprecated bluez-obexd \
     mesa-dri-drivers mesa-libEGL mesa-libgbm libinput \
     gtk3 webkit2gtk4.1 gtk4 libadwaita glib-networking libproxy \
     pipewire wireplumber pipewire-utils alsa-lib mpg123 mpv \
@@ -137,6 +137,16 @@ gcc $CFLAGS_COMMON $(pkg-config --cflags wayland-client) \
     "$B/wlr-screencopy-unstable-v1-protocol.c" \
     $(pkg-config --libs wayland-client)
 
+# PWNAGE-44000: the A45 PWA host executes SHOT_BIN=/usr/lib/nuxel/nuxel-screenshot
+# with one argument (destination PPM).  The A68 helper has exactly that contract
+# and bounded screencopy waits, so compile it from source and install it at the
+# path the host actually uses.  It is a Wayland screencopy client, never a
+# framebuffer writer.
+gcc $CFLAGS_COMMON $(pkg-config --cflags wayland-client) \
+    -o "$B/nuxel-screenshot" /nuxel/tools/s10plus/a68/nuxel-screenshot.c \
+    "$B/wlr-screencopy-unstable-v1-protocol.c" \
+    $(pkg-config --libs wayland-client)
+
 # A45 PWA host: the current terminal-window close + host-action fixes, the
 # lockscreen/navdock actions, and the lockhead indicator reader (sysfs + /proc,
 # with an event-driven uevent refresh).  The source is deliberately compiled from
@@ -145,6 +155,28 @@ gcc $CFLAGS_COMMON $(pkg-config --cflags gtk+-3.0 webkit2gtk-4.1) \
     -I /nuxel/tools/s10plus/a45 -I /nuxel/tools/s10plus/a33 -o "$B/nuxel-pwa-host" \
     /nuxel/tools/s10plus/a45/nuxel-pwa-host.c \
     $(pkg-config --libs gtk+-3.0 webkit2gtk-4.1) -lutil
+
+# PWNAGE-43000: persistent nav dock + top status strip + foreign-toplevel
+# controller.  All three are built from the same sources the handset runs.
+cp -a /nuxel/tools/s10plus/a45 "$B/a45"
+python3 "$B/a45/gen-navdock-art.py"
+wayland-scanner client-header \
+    /nuxel/tools/s10plus/a45/wlr-layer-shell-unstable-v1.xml \
+    "$B/wlr-layer-shell-unstable-v1-client-protocol.h"
+wayland-scanner private-code \
+    /nuxel/tools/s10plus/a45/wlr-layer-shell-unstable-v1.xml \
+    "$B/wlr-layer-shell-unstable-v1-protocol.c"
+wayland-scanner client-header /nuxel/tools/s10plus/a45/xdg-shell.xml "$B/xdg-shell-client-protocol.h"
+wayland-scanner private-code  /nuxel/tools/s10plus/a45/xdg-shell.xml "$B/xdg-shell-protocol.c"
+gcc $CFLAGS_COMMON -I "$B/a45" $(pkg-config --cflags wayland-client) \
+    -o "$B/nuxel-navdock" "$B/a45/nuxel-navdock.c" \
+    "$B/wlr-layer-shell-unstable-v1-protocol.c" "$B/xdg-shell-protocol.c" \
+    $(pkg-config --libs wayland-client)
+gcc $CFLAGS_COMMON $(pkg-config --cflags wayland-client cairo pangocairo) \
+    -o "$B/nuxel-statusbar" /nuxel/tools/s10plus/a45/nuxel-statusbar.c \
+    "$B/wlr-layer-shell-unstable-v1-protocol.c" "$B/xdg-shell-protocol.c" \
+    $(pkg-config --libs wayland-client cairo pangocairo)
+gcc $CFLAGS_COMMON -o "$B/nuxel-foreign-toplevel" /nuxel/tools/s10plus/a59/nuxel-foreign-toplevel.c -ldl
 
 # A34 button manager: SYN_REPORT touch translation, power menu, Bixby cancel.
 gcc $CFLAGS_COMMON $(pkg-config --cflags alsa) -I /nuxel/tools/s10plus/a34 \
@@ -162,13 +194,15 @@ gcc $CFLAGS_COMMON -shared -fPIC -o "$B/libnuxel-libinput-path.so" \
 gcc -std=c11 -O2 -Wall -Wextra -Werror -o "$B/nuxel-metricsd" \
     /nuxel/services/nuxel-metrics/nuxel-metricsd.c
 
-for _b in nuxel-wl-fb nuxel-wl-snapshot nuxel-pwa-host \
-          nuxel-button-manager libnuxel-libinput-path.so nuxel-metricsd; do
+for _b in nuxel-wl-fb nuxel-wl-snapshot nuxel-screenshot nuxel-pwa-host \
+          nuxel-button-manager libnuxel-libinput-path.so nuxel-metricsd \
+          nuxel-navdock nuxel-statusbar nuxel-foreign-toplevel; do
   file "$B/$_b" | grep -q 'ARM aarch64' || { echo "ERROR: $_b is not aarch64" >&2; exit 1; }
 done
-sha256sum "$B"/nuxel-wl-fb "$B"/nuxel-wl-snapshot "$B"/nuxel-pwa-host \
+sha256sum "$B"/nuxel-wl-fb "$B"/nuxel-wl-snapshot "$B"/nuxel-screenshot "$B"/nuxel-pwa-host \
           "$B"/nuxel-button-manager "$B"/libnuxel-libinput-path.so \
-          "$B"/nuxel-metricsd \
+          "$B"/nuxel-metricsd "$B"/nuxel-navdock "$B"/nuxel-statusbar \
+          "$B"/nuxel-foreign-toplevel \
   | tee /tmp/nuxel-current-userspace.sha256
 
 # Keep Nuxel's native phone-specific bits; do not import the G7 Power staging.
@@ -289,6 +323,7 @@ install -m 0755 "$B/nuxel-button-manager"      "$STAGE/usr/lib/nuxel/nuxel-butto
 install -m 0755 "$B/libnuxel-libinput-path.so" "$STAGE/usr/lib/nuxel/libnuxel-libinput-path.so"
 install -d "$STAGE/usr/local/bin"
 install -m 0755 "$B/nuxel-wl-snapshot"         "$STAGE/usr/local/bin/nuxel-wl-snapshot"
+install -m 0755 "$B/nuxel-screenshot"          "$STAGE/usr/lib/nuxel/nuxel-screenshot"
 # console control for the same configuration the Settings app uses
 install -m 0755 /nuxel/tools/s10plus/a32/nuxelctl                     "$STAGE/usr/bin/nuxelctl"
 # default device configuration: the S10+ port starts from its own profile, and a
@@ -297,9 +332,56 @@ install -d "$STAGE/etc/nuxel/display" "$STAGE/etc/nuxel/input"
 install -m 0644 /nuxel/configs/nuxel/statusbar-safezones.json "$STAGE/etc/nuxel/display/statusbar-safezones.json"
 install -m 0644 /nuxel/configs/nuxel/buttons.json             "$STAGE/etc/nuxel/input/buttons.json"
 install -m 0644 /nuxel/configs/nuxel/input/button-fsm.json    "$STAGE/etc/nuxel/input/button-fsm.json"
-install -d "$STAGE/etc/nuxel/buttons"
+install -d "$STAGE/etc/nuxel/buttons" "$STAGE/etc/nuxel/leds" "$STAGE/var/cache/nuxel/thumbnails"
 install -m 0644 /nuxel/configs/nuxel/buttons/reboot-gate.json "$STAGE/etc/nuxel/buttons/reboot-gate.json"
-install -m 0755 /nuxel/tools/s10plus/a29/nuxel-session.sh            "$STAGE/usr/lib/nuxel/nuxel-session.sh"
+install -m 0644 /nuxel/configs/nuxel/leds/leds.json          "$STAGE/etc/nuxel/leds/leds.json"
+install -m 0755 /nuxel/tools/s10plus/a45/nuxel-session.sh            "$STAGE/usr/lib/nuxel/nuxel-session.sh"
+install -m 0755 "$B/nuxel-navdock"            "$STAGE/usr/lib/nuxel/nuxel-navdock"
+install -m 0755 "$B/nuxel-statusbar"          "$STAGE/usr/lib/nuxel/nuxel-statusbar"
+install -m 0755 "$B/nuxel-foreign-toplevel"   "$STAGE/usr/lib/nuxel/nuxel-foreign-toplevel"
+install -m 0755 /nuxel/services/nuxel-s10/bin/nuxel-focus-app.sh "$STAGE/usr/lib/nuxel/nuxel-focus-app.sh"
+# PWNAGE-43000 standalone audio + ABOX reload + Wi-Fi/charger policy
+install -m 0755 /nuxel/services/nuxel-s10/bin/nuxel-audio-session.sh "$STAGE/usr/lib/nuxel/nuxel-audio-session.sh"
+install -m 0755 /nuxel/services/nuxel-s10/bin/nuxel-abox-firmware-reload.sh "$STAGE/usr/lib/nuxel/nuxel-abox-firmware-reload.sh"
+install -m 0755 /nuxel/services/nuxel-s10/bin/nuxel-abox-firmware-reload-boot.sh "$STAGE/usr/lib/nuxel/nuxel-abox-firmware-reload-boot.sh"
+install -m 0755 /nuxel/services/nuxel-s10/bin/nuxel-audio-route.sh "$STAGE/usr/lib/nuxel/nuxel-audio-route.sh"
+install -m 0755 /nuxel/services/nuxel-s10/bin/nuxel-wifi-up.sh "$STAGE/usr/lib/nuxel/nuxel-wifi-up.sh"
+install -m 0755 /nuxel/services/nuxel-s10/bin/nuxel-charger-mode-recovery.sh "$STAGE/usr/lib/nuxel/nuxel-charger-mode-recovery.sh"
+install -m 0755 /nuxel/services/nuxel-s10/bin/nuxel-device-permissions.sh "$STAGE/usr/lib/nuxel/nuxel-device-permissions.sh"
+install -m 0755 /nuxel/services/nuxel-s10/bin/nuxel-usb-mode.sh "$STAGE/usr/lib/nuxel/nuxel-usb-mode.sh"
+install -m 0755 /nuxel/services/nuxel-s10/bin/nuxel-mtp-server "$STAGE/usr/lib/nuxel/nuxel-mtp-server"
+for _w in firefox vlc signal stremio; do
+  install -m 0755 "/nuxel/services/nuxel-s10/bin/nuxel-flatpak-$_w" "$STAGE/usr/lib/nuxel/nuxel-flatpak-$_w"
+done
+install -m 0644 /nuxel/services/nuxel-s10/systemd/nuxel-audio-session.service "$STAGE/etc/systemd/system/nuxel-audio-session.service"
+install -m 0644 /nuxel/services/nuxel-s10/systemd/nuxel-abox-firmware-reload.service "$STAGE/etc/systemd/system/nuxel-abox-firmware-reload.service"
+install -m 0644 /nuxel/services/nuxel-s10/systemd/nuxel-audio-route.service "$STAGE/etc/systemd/system/nuxel-audio-route.service"
+install -m 0644 /nuxel/services/nuxel-s10/systemd/nuxel-audio-route-retry.service "$STAGE/etc/systemd/system/nuxel-audio-route-retry.service"
+install -m 0644 /nuxel/services/nuxel-s10/systemd/nuxel-audio-route.timer "$STAGE/etc/systemd/system/nuxel-audio-route.timer"
+install -m 0644 /nuxel/services/nuxel-s10/systemd/nuxel-wifi.service "$STAGE/etc/systemd/system/nuxel-wifi.service"
+install -m 0644 /nuxel/services/nuxel-s10/systemd/nuxel-charger-mode-recovery.service "$STAGE/etc/systemd/system/nuxel-charger-mode-recovery.service"
+install -m 0644 /nuxel/services/nuxel-s10/systemd/nuxel-device-permissions.service "$STAGE/etc/systemd/system/nuxel-device-permissions.service"
+install -m 0644 /nuxel/services/nuxel-s10/systemd/nuxel-mtp.service "$STAGE/etc/systemd/system/nuxel-mtp.service"
+install -m 0644 /nuxel/services/nuxel-s10/systemd/nuxel-usb-mode-monitor.service "$STAGE/etc/systemd/system/nuxel-usb-mode-monitor.service"
+install -d "$STAGE/etc/systemd/system/nuxel-abox-firmware-reload.service.d" \
+           "$STAGE/etc/systemd/system/nuxel-wl-fb.service.d"
+install -m 0644 /nuxel/services/nuxel-s10/systemd/nuxel-abox-firmware-reload.service.d/10-boot-priority.conf \
+    "$STAGE/etc/systemd/system/nuxel-abox-firmware-reload.service.d/10-boot-priority.conf"
+install -m 0644 /nuxel/services/nuxel-s10/systemd/nuxel-wl-fb.service.d/10-display-priority.conf \
+    "$STAGE/etc/systemd/system/nuxel-wl-fb.service.d/10-display-priority.conf"
+for _svc in nuxel-boot-sound nuxel-bridge nuxel-button-manager nuxel-http-bridge nuxel-touch-arm nuxel-web nuxel-wl-fb; do
+  install -d "$STAGE/etc/systemd/system/$_svc.service.d"
+  install -m 0644 "/nuxel/services/nuxel-s10/systemd/fast-stop/$_svc.service.d.conf" \
+      "$STAGE/etc/systemd/system/$_svc.service.d/20-fast-stop.conf"
+done
+ln -sf ../nuxel-audio-session.service "$STAGE/etc/systemd/system/multi-user.target.wants/nuxel-audio-session.service"
+ln -sf ../nuxel-audio-route.service "$STAGE/etc/systemd/system/multi-user.target.wants/nuxel-audio-route.service"
+install -d "$STAGE/etc/systemd/system/timers.target.wants"
+ln -sf ../nuxel-audio-route.timer "$STAGE/etc/systemd/system/timers.target.wants/nuxel-audio-route.timer"
+ln -sf ../nuxel-wifi.service "$STAGE/etc/systemd/system/multi-user.target.wants/nuxel-wifi.service"
+ln -sf ../nuxel-charger-mode-recovery.service "$STAGE/etc/systemd/system/multi-user.target.wants/nuxel-charger-mode-recovery.service"
+ln -sf ../nuxel-device-permissions.service "$STAGE/etc/systemd/system/multi-user.target.wants/nuxel-device-permissions.service"
+ln -sf ../nuxel-usb-mode-monitor.service "$STAGE/etc/systemd/system/multi-user.target.wants/nuxel-usb-mode-monitor.service"
 # PWNAGE-36000: S10+ audio/geoclue runtime configuration.
 #   * static PipeWire ALSA sink on RDMA1 (hw:0,1, 44.1 kHz): the image has no
 #     udev daemon, so WirePlumber's api.alsa.enum.udev monitor cannot enumerate
@@ -482,6 +564,10 @@ ln -sf ../nuxel-notifications.service "$STAGE/etc/systemd/system/multi-user.targ
 ln -sf ../nuxel-portal.service        "$STAGE/etc/systemd/system/multi-user.target.wants/nuxel-portal.service"
 ln -sf ../nuxel-bridge.service        "$STAGE/etc/systemd/system/multi-user.target.wants/nuxel-bridge.service"
 ln -sf ../nuxel-http-bridge.service   "$STAGE/etc/systemd/system/multi-user.target.wants/nuxel-http-bridge.service"
+# BlueZ OBEX Object Push (Files -> Send) is D-Bus activated from
+# /usr/share/dbus-1/services/org.bluez.obex.service (Fedora ships the unit in
+# /usr/lib/systemd/user/).  No system-unit symlink is created; the bridge's
+# session-bus address is configured in nuxel-http-bridge.service.
 ln -sf ../nuxel-web.service           "$STAGE/etc/systemd/system/multi-user.target.wants/nuxel-web.service"
 install -Dm0644 /nuxel/images/s10plus/nuxel-firstlight.service \
     "$STAGE/etc/systemd/system/nuxel-firstlight.service"

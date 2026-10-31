@@ -1,0 +1,10 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+{"schema_version":1,"kind":"power-menu","index":0,"count":15,"ts":1793425962,"entries":[{"id":"cancel","label":"Cancel","allowed":true},{"id":"lock-screen","label":"Lock screen","allowed":true},{"id":"screenshot","label":"Take screenshot","allowed":true},{"id":"restart","label":"Restart","allowed":true},{"id":"power-off","label":"Power off","allowed":true},{"id":"reboot-verbose","label":"Reboot Verbose","allowed":true},{"id":"reboot-safe-mode","label":"Safe Mode","allowed":true},{"id":"reboot-diag","label":"Reboot Diag","allowed":true},{"id":"reboot-debug","label":"Reboot Debug","allowed":true},{"id":"back","label":"Back","allowed":true},{"id":"forward","label":"Forward","allowed":true},{"id":"stop","label":"Stop loading","allowed":true},{"id":"reload-launcher","label":"Reload launcher","allowed":true},{"id":"recovery","label":"Recovery (Samsung)","allowed":false},{"id":"download-mode","label":"Download Mode (Odin)","allowed":false}]}

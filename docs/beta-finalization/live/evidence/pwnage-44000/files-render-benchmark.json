@@ -1,0 +1,16 @@
+{
+  "entries": 1000,
+  "iterations": 20,
+  "legacy": {
+    "p50": 21.85,
+    "p95": 46.78,
+    "avg": 22.6
+  },
+  "progressive": {
+    "p50": 23.97,
+    "p95": 32.44,
+    "avg": 23.92
+  },
+  "p50_improvement_pct": -9.7,
+  "p95_improvement_pct": 30.7
+}

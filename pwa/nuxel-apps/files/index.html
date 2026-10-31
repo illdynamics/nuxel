@@ -8,7 +8,7 @@
 <link rel="manifest" href="manifest.json">
 <title>Nuxel Files</title>
 <link rel="stylesheet" href="../../nuxel-common/theme.css">
-<link rel="stylesheet" href="css/files.css?v=pwnage33000d">
+<link rel="stylesheet" href="css/files.css?v=p44000">
 </head>
 <body>
 <header class="top-bar">
@@ -36,6 +36,7 @@
   <button id="paste-btn" disabled>Paste</button>
   <button id="archive-btn" disabled>Zip</button>
   <button id="extract-btn" disabled>Extract</button>
+  <button id="send-btn" disabled>Send</button>
   <button id="clipboard-info" class="ghost"></button>
 </div>
 
@@ -65,9 +66,31 @@
   </div>
 </div>
 
+<div id="send-dialog" class="dialog-overlay hidden">
+  <div class="dialog send-dialog">
+    <h3>Send files</h3>
+    <p id="send-summary" class="hint">0 files selected</p>
+    <div class="share-methods" role="group" aria-label="Share method">
+      <button id="share-bluetooth" type="button" class="share-method selected" aria-pressed="true">Bluetooth</button>
+      <button id="share-wifi" type="button" class="share-method" disabled title="Coming soon">Wi-Fi Direct · Coming soon</button>
+      <button id="share-nearby" type="button" class="share-method" disabled title="Coming soon">Nearby · Coming soon</button>
+    </div>
+    <label class="send-device-label">Receiving device
+      <select id="send-device"></select>
+    </label>
+    <progress id="send-progress" max="100" value="0" hidden></progress>
+    <p id="send-status" class="hint">Choose a paired device.</p>
+    <p id="send-error" class="error"></p>
+    <div class="dialog-actions">
+      <button id="send-close" class="btn-secondary">Cancel</button>
+      <button id="send-ok" class="btn-primary" disabled>Send</button>
+    </div>
+  </div>
+</div>
+
 <script src="../../nuxel-common/theme.js"></script>
 <script src="../../nuxel-common/haptics.js"></script>
 <script type="module" src="../../nuxel-common/bridge.js"></script>
-<script src="js/files.js?v=pwnage33000d"></script>
+<script src="js/files.js?v=p44000"></script>
 </body>
 </html>

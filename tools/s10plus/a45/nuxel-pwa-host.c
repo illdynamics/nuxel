@@ -1182,6 +1182,31 @@ static int nuxel_capture_screenshot(char *out_path, size_t outn, int *out_w, int
   return 0;
 }
 
+/* Visible acknowledgement for actions initiated by the hardware chord (there is
+ * no RPC caller to receive the JSON result).  The launcher renders this as a
+ * transient, pointer-inert OSD.  Never claim success before the PNG is written. */
+/* Hardware-button flashlight requests are routed to the HTTP bridge's single
+ * LED owner.  This process never opens an LED node. */
+static void run_async_flashlight(const char *verb) {
+  gchar *argv[] = { (gchar *)"/usr/bin/nuxel-flashlight-rpc", (gchar *)verb, NULL };
+  GError *err = NULL;
+  if (!g_spawn_async(NULL, argv, NULL, G_SPAWN_SEARCH_PATH, NULL, NULL, NULL, &err)) {
+    st("HOST_FLASHLIGHT_SPAWN_FAILED %s", err ? err->message : "unknown");
+    if (err) g_error_free(err);
+  }
+}
+
+static void host_toast(const char *text) {
+  if (!g_main_view) return;
+  char *esc = json_escape(text, strlen(text));
+  GString *g = g_string_new("");
+  g_string_append_printf(g,
+    "window.dispatchEvent(new CustomEvent('nuxel:toast',{detail:{text:%s}}));", esc);
+  webkit_web_view_evaluate_javascript(g_main_view, g->str, -1, NULL, NULL, NULL, NULL, NULL);
+  g_string_free(g, TRUE);
+  g_free(esc);
+}
+
 static void action_perform(const char *action, char *result, size_t rn) {
   if (!strcmp(action, "screen-lock")) {
     /* Lock is the display bridge's verb; the launcher also sends screen-off. */
@@ -1193,15 +1218,24 @@ static void action_perform(const char *action, char *result, size_t rn) {
     snprintf(result, rn, "{\"ok\":true,\"action\":\"screen-lock\"}");
     return;
   }
+  if (!strcmp(action, "flashlight")) {
+    run_async_flashlight("toggle");
+    snprintf(result, rn, "{\"ok\":true,\"action\":\"flashlight\",\"pending\":true}");
+    return;
+  }
   if (!strcmp(action, "screenshot") || !strcmp(action, "take-screenshot")) {
     char path[512], err[128];
     int w = 0, h = 0;
     if (nuxel_capture_screenshot(path, sizeof path, &w, &h, err, sizeof err) != 0) {
       st("HOST_SCREENSHOT_FAILED %s", err);
+      char msg[192];
+      snprintf(msg, sizeof msg, "Screenshot failed: %s", err);
+      host_toast(msg);
       snprintf(result, rn, "{\"ok\":false,\"error\":\"screenshot-failed\",\"reason\":\"%s\"}", err);
       return;
     }
     st("HOST_SCREENSHOT_SAVED path=%s %dx%d", path, w, h);
+    host_toast("Screenshot saved to Gallery");
     snprintf(result, rn, "{\"ok\":true,\"action\":\"screenshot\",\"path\":\"%s\",\"width\":%d,\"height\":%d}", path, w, h);
     return;
   }
@@ -1285,6 +1319,27 @@ static void action_perform(const char *action, char *result, size_t rn) {
     term_open_window();
     snprintf(result, rn, "{\"ok\":true,\"action\":\"open-terminal\"}");
     return;
+  }
+  /* PWNAGE-43000: Home must dismiss the COMPOSITOR's keyboard even when a
+   * native top-level app (Firefox/VLC) owns text-input focus.  The launcher
+   * page cannot blur another client's field, so ask the foreign-toplevel
+   * controller to minimize every non-Home window and raise Home now.  This is
+   * the same trusted controller the HTTP bridge uses, invoked directly on the
+   * button path so it cannot be delayed by a busy WebKit page. */
+  if (!strcmp(action, "home") || !strcmp(action, "dismiss-keyboard")) {
+    pid_t pid = fork();
+    if (pid == 0) {
+      setsid();
+      execl("/usr/lib/nuxel/nuxel-foreign-toplevel",
+            "nuxel-foreign-toplevel", "home", (char *)NULL);
+      _exit(127);
+    }
+    if (g_main_window) gtk_window_present(GTK_WINDOW(g_main_window));
+    st("HOST_ACTION %s -> foreign-toplevel home + raise", action);
+    if (!strcmp(action, "dismiss-keyboard")) {
+      snprintf(result, rn, "{\"ok\":true,\"action\":\"dismiss-keyboard\"}");
+      return;
+    }
   }
   if (!strcmp(action, "nav-hide") || !strcmp(action, "nav-show")) {
     int nf = open("/run/nuxel-navdock.cmd", O_WRONLY | O_NONBLOCK);

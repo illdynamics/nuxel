@@ -645,12 +645,16 @@ static void perform(const char *action, const char *source) {
   if (!strcmp(action, "reboot-debug"))     { reboot_mode_once(REBOOT_DEBUG_FLAG, "systemctl-reboot"); return; }
   if (!strcmp(action, "live-console-toggle")) { live_console_toggle(); return; }
   if (!strcmp(action, "open-terminal")) { fifo_send(HOST_FIFO, "open-terminal\n"); return; }
-  /* A34 TOUCHDOWN: the launcher has no back stack, and pwa-host does not
-   * implement `back` (it logged HOST_ACTION_REFUSED back).  The launcher's own
-   * `home` action now dismisses an app iframe, so an edge-back gesture closes
-   * the current app instead of doing nothing.  This is a translation of the
-   * existing gesture, not a new UI or a second compositor. */
-  if (!strcmp(action, "back")) { fifo_send(HOST_FIFO, "action home\n"); return; }
+  /* Browser-style controls: nuxel-pwa-host implements all four by
+   * dispatching nuxel:action to the launcher, which owns the app-frame back
+   * stack.  A missing foreground target remains a truthful host no-op. */
+  if (!strcmp(action, "back") || !strcmp(action, "forward") ||
+      !strcmp(action, "stop") || !strcmp(action, "reload-launcher")) {
+    char l[64];
+    snprintf(l, sizeof l, "action %s\n", action);
+    fifo_send(HOST_FIFO, l);
+    return;
+  }
   if (!strcmp(action, "home") || !strcmp(action, "recents") ||
       !strcmp(action, "search") || !strcmp(action, "settings") || !strcmp(action, "lock") ||
       !strcmp(action, "screenshot") || !strcmp(action, "camera") || !strcmp(action, "voice-input") ||

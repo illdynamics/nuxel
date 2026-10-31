@@ -1,0 +1,696 @@
+
+==== node pwa/nuxel-home/tests/test-widgets.js ====
+PASS widget module exposes NuxelWidgets
+PASS widgets default enabled, empty, schema 2
+PASS add() returns a widget and persists it
+PASS persisted desktop is one-based 2
+PASS desktop 1 (page index 0) hides the desktop-2 widget
+PASS desktop 2 (page index 1) renders the widget
+PASS widget shows the selected note title
+PASS widget body is text, not interpolated HTML
+PASS add() defaults to currentPage + 1
+PASS resize persists width/height
+PASS move persists desktop
+PASS widget reflects edited note body
+PASS deleted note leaves a reselect state, not stale text
+PASS add() with no notes returns null
+PASS schema 1 -> 2 migration preserves desktop 2
+PASS disabled widgets hide the layer
+PASS remove() deletes the widget from persisted state
+
+==== node pwa/nuxel-home/tests/test-launcher-drag.js ====
+PASS primary press enters PRESS_PENDING
+PASS stationary 450ms hold starts exactly one drag
+PASS pointer capture is taken on the stable grid
+PASS cancel releases pointer capture
+PASS movement before the hold cancels the timer
+PASS secondary contact does not cancel or hijack the primary
+PASS secondary pointerup cannot end the primary drag
+PASS primary pointerup ends the drag exactly once
+PASS pointercancel rolls back through _endDrag(cancelled) once
+PASS lostpointercapture is bound
+PASS drag hit-testing uses elementFromPoint
+PASS single pointer source (no second drag framework)
+
+==== node pwa/nuxel-home/tests/test-status-indicators.js ====
+PASS accepts Charging as active charging
+PASS full is NOT active charging
+PASS not-charging status is not active charging
+PASS displaying is not active charging
+PASS battery icon has no charging class when Full
+PASS battery icon gets charging class only while charging
+PASS active file transfer wins the USB label
+PASS selected-but-inactive file transfer does not label file
+PASS active charging gets chrg
+PASS external power + Full shows a cable without a false chrg tag
+PASS detached USB hides the glyph
+PASS normal sound mode is visible and labelled
+PASS vibrate mode is selected, not a haptics claim
+PASS silent mode renders silent
+PASS unknown sound mode is hidden rather than guessed normal
+PASS top bar declares Location, sound and USB cells
+PASS overlap assertion includes the new cells
+PASS charging bolt exists in CSS
+PASS USB label CSS has file/term/chrg precedence states
+
+==== node pwa/nuxel-home/tests/test-qs-indicators.js ====
+PASS active charging shown as Charging
+PASS no USB host link is not file transfer
+PASS external power + Full is not active charging
+PASS selected-but-inactive transfer is labelled selected/inactive
+PASS active file transfer shown distinctly
+PASS armed console is not named connected
+PASS transports list only active links
+PASS live console connected is active
+PASS provider failure renders UNKNOWN, not OFF
+PASS QS close stops the panel timers
+PASS stale indicator responses are discarded after close
+PASS deeper pull expands instead of closing
+PASS flashlight uses the privileged provider
+
+==== node pwa/nuxel-home/tests/test-qs-wifi-state.js ====
+PASS explicit enabled + connected renders ON
+PASS connected link is distinct from radio ON
+PASS tile title names radio ON
+PASS QS emits state-only radio/link evidence
+PASS QS evidence contains no network identity
+PASS enabled radio without a link stays ON
+PASS enabled radio without a link is marked disconnected
+PASS label distinguishes on/not-connected
+PASS genuine disabled state renders OFF
+PASS genuine disabled state is not checking
+PASS missing wifi_enabled renders UNKNOWN
+PASS missing wifi_enabled is labelled checking
+PASS missing wifi_enabled is not OFF
+PASS absent network object renders UNKNOWN
+PASS radio mapper rejects generic connected:false
+PASS radio mapper accepts explicit false
+PASS radio mapper accepts enabled_disconnected
+PASS BT mapper accepts powered adapter
+PASS BT mapper accepts discovery as ON
+PASS BT mapper accepts explicit OFF
+PASS BT mapper keeps a missing Powered property UNKNOWN
+PASS BT mapper keeps a missing adapter UNKNOWN
+PASS BT mapper keeps a provider failure UNKNOWN
+PASS status bar shows a powered Bluetooth adapter
+PASS status bar exposes discovery state
+
+==== node pwa/nuxel-apps/notes/tests/test-notes-save.js ====
+PASS bridge save succeeds
+PASS bridge received the new content
+PASS dirty flag clears after confirmed save
+PASS local cache has the saved document
+PASS bridge failure is reported honestly
+PASS failed save keeps dirty state
+PASS failed save keeps content in the local cache
+PASS race keeps the newest body dirty until its own write completes
+PASS race persisted both snapshots in order
+PASS newest local cache is the second body
+
+==== python3 tests/pwnage44000/test_flashlight_provider.py ====
+PASS fixture torch is discovered
+PASS no auto-on at boot
+PASS ON writes max brightness
+PASS explicit OFF writes zero
+PASS camera owns the LED -> BLOCKED_CAMERA
+PASS thermal guard -> THERMAL_LIMIT
+PASS ON before timeout
+PASS policy timeout forces an explicit OFF
+PASS missing LED class is NOT_SUPPORTED_ON_DEVICE
+PASS JavaScript contains no LED brightness write
+
+0 failing check(s)
+
+==== python3 tests/pwnage44000/test_media_thumbnails.py ====
+PASS photo is not decoded by a video helper
+PASS video thumbnail generated server-side
+PASS video thumbnail is a real cached file
+PASS second request is served from cache
+PASS thumbnail_file returns controlled image/jpeg
+PASS changed source invalidates the cache key
+PASS deleted source is rejected
+PASS missing source is INVALID_PATH
+PASS symlink escape is rejected
+PASS traversal is rejected
+PASS unsupported extension is rejected
+PASS zero-byte video is rejected or truthfully unavailable
+PASS no installed decoder -> THUMBNAIL_UNAVAILABLE
+PASS Gallery grid uses still thumbnails, not <video> elements
+PASS viewer is the only on-demand <video> path
+
+0 failing check(s)
+
+==== python3 tests/pwnage44000/test_files_send_and_render.py ====
+PASS Send button exists
+PASS Send button is enabled only by selection
+PASS future share methods are disabled placeholders
+PASS grid uses ONE delegated click listener
+PASS selection changes do not rebuild the grid
+PASS large directories render in progressive batches
+PASS stale render batches are cancelled
+PASS Bluetooth send uses the backend provider
+PASS success is not claimed before the provider returns
+PASS traversal source rejected
+PASS symlink escape rejected
+PASS invalid peer address rejected
+PASS valid source with no OBEX daemon reports DBUS_UNAVAILABLE honestly
+PASS missing source rejected
+
+0 failing check(s)
+
+==== node tools/s10plus/a33/tests/launcher-registry-test.js ====
+PASS registry loaded
+PASS registry carries a machine-readable revision
+PASS registry has org.nuxel.Terminal
+PASS registry has nuxel-settings
+PASS registry has canonical org.nuxel.SnekByte
+PASS SnekByte uses the supplied launcher icon
+PASS old SnekByte recents id is migrated
+PASS A32 registry entry kept: nuxel-dialer
+PASS A32 registry entry kept: nuxel-messages
+PASS A32 registry entry kept: nuxel-contacts
+PASS A32 registry entry kept: org.nuxel.Mail
+PASS A32 registry entry kept: org.nuxel.Calendar
+PASS A32 registry entry kept: org.nuxel.Notes
+PASS A32 registry entry kept: org.nuxel.Files
+PASS A32 registry entry kept: nuxel-camera
+PASS entry nuxel-dialer is launchable (id/name/url/type/category)
+PASS entry nuxel-messages is launchable (id/name/url/type/category)
+PASS entry nuxel-contacts is launchable (id/name/url/type/category)
+PASS entry org.nuxel.Mail is launchable (id/name/url/type/category)
+PASS entry org.nuxel.Calendar is launchable (id/name/url/type/category)
+PASS entry org.nuxel.Browser is launchable (id/name/url/type/category)
+PASS entry org.nuxel.Notes is launchable (id/name/url/type/category)
+PASS entry org.nuxel.Files is launchable (id/name/url/type/category)
+PASS entry nuxel-camera is launchable (id/name/url/type/category)
+PASS entry nuxel-settings is launchable (id/name/url/type/category)
+PASS entry org.nuxel.Terminal is launchable (id/name/url/type/category)
+PASS entry org.nuxel.LiveConsole is launchable (id/name/url/type/category)
+PASS entry org.nuxel.USBSSHConsole is launchable (id/name/url/type/category)
+PASS entry org.nuxel.WiFiSSHConsole is launchable (id/name/url/type/category)
+PASS entry org.nuxel.Calculator is launchable (id/name/url/type/category)
+PASS entry org.nuxel.Clock is launchable (id/name/url/type/category)
+PASS entry org.nuxel.Photos is launchable (id/name/url/type/category)
+PASS entry org.nuxel.Weather is launchable (id/name/url/type/category)
+PASS entry org.nuxel.Maps is launchable (id/name/url/type/category)
+PASS entry org.nuxel.Nuxtore is launchable (id/name/url/type/category)
+PASS entry org.nuxel.Recorder is launchable (id/name/url/type/category)
+PASS entry org.nuxel.SnekByte is launchable (id/name/url/type/category)
+PASS entry org.mozilla.firefox is launchable (id/name/url/type/category)
+PASS entry org.videolan.VLC is launchable (id/name/url/type/category)
+PASS entry org.signal.Signal is launchable (id/name/url/type/category)
+PASS entry com.stremio.Stremio is launchable (id/name/url/type/category)
+PASS entry org.gnome.FileRoller is launchable (id/name/url/type/category)
+PASS entry org.gnome.Loupe is launchable (id/name/url/type/category)
+PASS entry org.gnome.Papers is launchable (id/name/url/type/category)
+PASS entry org.gnome.SystemMonitor is launchable (id/name/url/type/category)
+PASS settings is a served PWA, not the native placeholder
+PASS terminal is a served PWA under the authoritative tree
+PASS every PWA url lives under /pwa/nuxel-apps/
+PASS served asset exists for org.nuxel.Mail (/pwa/nuxel-apps/mail/index.html)
+PASS app manifest valid for org.nuxel.Mail
+PASS served asset exists for org.nuxel.Calendar (/pwa/nuxel-apps/calendar/index.html)
+PASS app manifest valid for org.nuxel.Calendar
+PASS served asset exists for org.nuxel.Notes (/pwa/nuxel-apps/notes/index.html)
+PASS app manifest valid for org.nuxel.Notes
+PASS served asset exists for org.nuxel.Files (/pwa/nuxel-apps/files/index.html)
+PASS app manifest valid for org.nuxel.Files
+PASS served asset exists for nuxel-settings (/pwa/nuxel-apps/settings/index.html)
+PASS app manifest valid for nuxel-settings
+PASS served asset exists for org.nuxel.Terminal (/pwa/nuxel-apps/terminal/index.html)
+PASS app manifest valid for org.nuxel.Terminal
+PASS registry entry org.nuxel.LiveConsole is served with a valid manifest
+PASS registry entry org.nuxel.USBSSHConsole is served with a valid manifest
+PASS registry entry org.nuxel.WiFiSSHConsole is served with a valid manifest
+PASS registry entry org.nuxel.Calculator is served with a valid manifest
+PASS registry entry org.nuxel.Clock is served with a valid manifest
+PASS registry entry org.nuxel.Photos is served with a valid manifest
+PASS registry entry org.nuxel.Weather is served with a valid manifest
+PASS registry entry org.nuxel.Maps is served with a valid manifest
+PASS registry entry org.nuxel.Nuxtore is served with a valid manifest
+PASS registry entry org.nuxel.Recorder is served with a valid manifest
+PASS registry entry org.nuxel.SnekByte is served with a valid manifest
+PASS nuxel-apps/settings frontend is runnable (index.html + js)
+PASS launcher manifest.json parses
+PASS manifest carries nuxel.pwa_version
+PASS manifest carries nuxel.cache_version
+PASS manifest declares this tree the single source of truth
+PASS status-bar.js exposes a machine-readable VERSION
+PASS status-bar.js VERSION == manifest pwa_version (0.2.2)
+PASS status-bar.js reports a newer revision than the stale v0.3.2 device copy
+PASS sw.js declares an explicit CACHE_VERSION
+PASS sw.js CACHE_VERSION == manifest cache_version (v61-p44000)
+PASS sw.js cache namespace advanced past the A32 baseline v3-a32
+PASS sw.js activate deletes the previous namespaces
+PASS sw.js keeps the A32 network-first rule for code assets
+PASS precache list contains ./js/status-bar.js
+PASS precache list contains ./js/qs.js
+PASS precache list contains ./js/safe-zones.js
+PASS precache list contains ./js/settings-store.js
+PASS precache list contains ./js/bootlog.js
+PASS precache list contains ./manifest.json
+PASS precache list contains ./assets/nuxel-background.png
+PASS every precached asset exists in the tree
+PASS index.html loads js/apps.js
+PASS index.html loads js/status-bar.js
+PASS index.html loads js/qs.js
+PASS index.html loads js/safe-zones.js
+PASS index.html loads js/settings-store.js
+PASS index.html loads js/app.js
+PASS manifest exposes shortcuts (Terminal/Settings/Console)
+PASS shortcut "Terminal" points at a registry id
+PASS shortcut "Settings" points at a registry id
+PASS shortcut "Serial Live Console" points at a registry id
+PASS shortcut "USB SSH Console" points at a registry id
+PASS shortcut "Wi-Fi SSH Console" points at a registry id
+PASS manifest settings_documents lists /etc/nuxel/boot/verbose-boot.json
+PASS manifest settings_documents lists /etc/nuxel/boot/animation-handoff.json
+PASS manifest settings_documents lists /etc/nuxel/display/statusbar-safezones.json
+PASS manifest settings_documents lists /etc/nuxel/input/buttons.json
+PASS manifest apps_in_registry matches the registry ids
+PASS manifest registry_version matches the registry revision
+PASS no stale duplicate launcher asset pwa/nuxel-home/js/status-bar.js.orig
+PASS no stale duplicate launcher asset pwa/nuxel-home/status-bar.js
+PASS no stale duplicate launcher asset pwa/nuxel-home/js/bundle.js
+PASS no v0.3.2 launcher version constant survives under pwa/nuxel-home/js
+PASS the registry is exposed to the launcher host (window.appRegistry)
+PASS the real controller booted and bound its events
+PASS activation dispatches app:launch for the requested id
+PASS activation records the app in the recents list
+PASS activation actually opens the app frame (real controller, not a mock)
+PASS the opened frame points at the app url from the registry
+PASS app content reserves the system status and native Home bar, below Quick Settings
+PASS opening an app enters LAUNCHING
+PASS the frame load transition enters ACTIVE
+PASS a hidden active app enters BACKGROUND
+PASS a visible background app returns ACTIVE
+PASS no redundant app-owned title bar is created
+PASS Home backgrounds the frame and returns to the launcher
+PASS Home preserves the resumable surface in BACKGROUND state
+PASS activation leaves exactly one visible app surface
+PASS the logical "home" action closes overlays (return-home)
+PASS the launcher exposes the same-origin app close hook
+PASS the status bar wires a real vertical pull to gesture:qs
+PASS unanswered startup services cannot swallow app activation
+PASS Home closes the actual Quick Settings instance
+PASS switching from native Terminal requests host surface cleanup
+PASS late Terminal acknowledgement cannot overwrite the new app
+PASS an empty query returns no results
+PASS search finds the Terminal by name
+PASS a name match is ranked as a name match
+PASS search is case-insensitive
+PASS search matches the category too
+PASS a nonsense query returns nothing (no fake results)
+PASS the search UI delegates to the registry matcher (no second implementation)
+PASS the #app=<id> deeplink launches that registry app
+PASS an unknown deeplink is refused, not launched into a blank frame
+PASS every manifest shortcut id is launchable from the deeplink path
+PASS the launcher grid is a scrollable container
+PASS the grid keeps touch momentum scrolling on the phone
+PASS the app grid is a real CSS grid (4 columns as shipped)
+PASS the launcher page declares the fullscreen viewport-fit the cutout needs
+PASS the app grid container exists in the page
+PASS the search results list is scrollable too
+
+launcher registry/parity tests passed
+
+==== python3 tools/s10plus/a33/tests/test-button-fsm.py ====
+PASS header defines the FSM constants
+PASS JSON == C: NUXEL_FSM_BIXBY_DEBOUNCE_MS = 20
+PASS JSON == C: NUXEL_FSM_BIXBY_DOUBLE_GAP_MS = 400
+PASS JSON == C: NUXEL_FSM_BIXBY_EARLY_WINDOW_MS = 2000
+PASS JSON == C: NUXEL_FSM_BIXBY_LONG_MIN_MS = 1500
+PASS JSON == C: NUXEL_FSM_BIXBY_SHORT_MAX_MS = 1500
+PASS JSON == C: NUXEL_FSM_BOTTOM_ZONE_PX = 48
+PASS JSON == C: NUXEL_FSM_CHORD_HOLD_MIN_MS = 500
+PASS JSON == C: NUXEL_FSM_DEFAULT_AXIS_MAX_X = 1439
+PASS JSON == C: NUXEL_FSM_DEFAULT_AXIS_MAX_Y = 3039
+PASS JSON == C: NUXEL_FSM_EDGE_BACK_MAX_MS = 400
+PASS JSON == C: NUXEL_FSM_EDGE_ZONE_PX = 24
+PASS JSON == C: NUXEL_FSM_HOLD_MAX_DRIFT_PX = 24
+PASS JSON == C: NUXEL_FSM_HOLD_MS = 500
+PASS JSON == C: NUXEL_FSM_KEY_BIXBY = 703
+PASS JSON == C: NUXEL_FSM_KEY_POWER = 116
+PASS JSON == C: NUXEL_FSM_KEY_VOLUMEDOWN = 114
+PASS JSON == C: NUXEL_FSM_KEY_VOLUMEUP = 115
+PASS JSON == C: NUXEL_FSM_MENU_TIMEOUT_MS = 15000
+PASS JSON == C: NUXEL_FSM_MIN_TRAVEL_PX = 90
+PASS JSON == C: NUXEL_FSM_POWER_DEBOUNCE_MS = 30
+PASS JSON == C: NUXEL_FSM_POWER_DOUBLE_GAP_MS = 400
+PASS JSON == C: NUXEL_FSM_POWER_LONG_MIN_MS = 2000
+PASS JSON == C: NUXEL_FSM_POWER_SHORT_MAX_MS = 2000
+PASS JSON == C: NUXEL_FSM_POWER_VERY_LONG_MIN_MS = 8000
+PASS JSON == C: NUXEL_FSM_REBOOT_MAX_PER_HOUR = 1
+PASS JSON == C: NUXEL_FSM_REBOOT_MIN_INTERVAL_S = 1800
+PASS JSON == C: NUXEL_FSM_STALE_TRACK_MS = 1500
+PASS JSON == C: NUXEL_FSM_SWIPE_MAX_MS = 600
+PASS JSON == C: NUXEL_FSM_VOLUME_DEBOUNCE_MS = 20
+PASS JSON == C: NUXEL_FSM_VOLUME_LONG_MIN_MS = 500
+PASS JSON == C: NUXEL_FSM_VOLUME_REPEAT_DELAY_MS = 400
+PASS JSON == C: NUXEL_FSM_VOLUME_REPEAT_INTERVAL_MS = 250
+PASS JSON == C: NUXEL_FSM_VOLUME_STEP_DIVISOR = 20
+PASS JSON == C: NUXEL_FSM_VOLUME_STEP_MIN = 1
+PASS A32 source is the reference implementation of the press windows
+PASS A32 parity: power short window (30 ms .. 2000 ms)
+PASS A32 parity: power long threshold (2000 ms)
+PASS A32 parity: bixby short window (20 ms .. 1500 ms)
+PASS A32 parity: bixby long threshold (1500 ms)
+PASS A32 parity: volume autorepeat cadence (400 ms then 250 ms)
+PASS A32 parity: volume step = 5 % of the range (range / 20, floored at 1)
+PASS A32 parity: assistant key code 703
+PASS baseline register still has INV-4-button-manager
+PASS A32 protected asset unchanged: tools/s10plus/a32/nuxel-button-manager.c
+PASS A32 protected asset unchanged: tools/s10plus/a32/nuxel-button-manager.service
+INFO soft-pinned unchanged configs/nuxel/buttons.json
+PASS manager never assumes a fixed /dev/input/eventN
+PASS manager selects the key device by capability
+PASS manager selects the touch device by capability and DIRECT property
+PASS manager never grabs the touchscreen (no EVIOCGRAB -> libinput keeps its events)
+PASS manager has no flashing/bootloader surface for '\\bheimdall\\b'
+PASS manager has no flashing/bootloader surface for '\\bodin\\b'
+PASS manager has no flashing/bootloader surface for 'fastboot'
+PASS manager has no flashing/bootloader surface for '/dev/block'
+PASS manager has no flashing/bootloader surface for '\\bdd if='
+PASS manager has no flashing/bootloader surface for 'sysrq-trigger'
+PASS manager has no flashing/bootloader surface for 'reboot\\s+-f'
+PASS manager has no flashing/bootloader surface for 'write to raw partition'
+PASS manager refuses Recovery and Download Mode in code
+PASS every reboot/power-off goes through the gate (single chokepoint)
+PASS service unit exists and is restart-guarded
+PASS service unit starts the A33 manager binary
+PASS service unit documents the single-owner rule for gpio_keys
+PASS the FSM core compiles standalone (no libasound, no linux/input.h)
+PASS sim binary agrees with the header constants
+PASS sim computes the A32 volume step (5 % of range, floored at 1)
+PASS menu table in C == menu entries in button-fsm.json
+PASS menu entry 'cancel' allowed=1 matches the spec
+PASS menu entry 'lock-screen' allowed=1 matches the spec
+PASS menu entry 'screenshot' allowed=1 matches the spec
+PASS menu entry 'restart' allowed=1 matches the spec
+PASS menu entry 'power-off' allowed=1 matches the spec
+PASS menu entry 'reboot-verbose' allowed=1 matches the spec
+PASS menu entry 'reboot-safe-mode' allowed=1 matches the spec
+PASS menu entry 'reboot-diag' allowed=1 matches the spec
+PASS menu entry 'reboot-debug' allowed=1 matches the spec
+PASS menu entry 'back' allowed=1 matches the spec
+PASS menu entry 'forward' allowed=1 matches the spec
+PASS menu entry 'stop' allowed=1 matches the spec
+PASS menu entry 'reload-launcher' allowed=1 matches the spec
+PASS menu entry 'recovery' allowed=0 matches the spec
+PASS menu entry 'download-mode' allowed=0 matches the spec
+PASS menu entry 'recovery' can never be triggered
+PASS menu entry 'download-mode' can never be triggered
+PASS the refused bootloader entries are labelled with the invariant
+PASS there are recorded event traces to replay
+PASS replay bixby-double -> ['flashlight']
+PASS replay bixby-early-hold -> ['verbose-boot-note']
+PASS replay bixby-long -> ['disabled']
+PASS replay bixby-single -> ['open-terminal']
+PASS replay boundary-chord-hold -> ['volume-down', 'screenshot']
+PASS replay boundary-power-debounce -> ['screen-toggle']
+PASS replay boundary-power-long -> ['screen-toggle', 'menu-open', 'menu-close-timeout']
+PASS replay chord-cancelled-step -> ['volume-down', 'menu-open', 'menu-close-timeout']
+PASS replay chord-power-voldown-screenshot -> ['screenshot']
+PASS replay chord-power-volup-soundmode -> ['volume-up', 'sound-mode-cycle']
+PASS replay gesture-edge-back -> ['back']
+PASS replay gesture-swipe-up-hold-recents -> ['recents']
+PASS replay gesture-swipe-up-home -> ['home']
+PASS replay interrupted-press -> ['volume-up', 'screen-toggle']
+PASS replay interrupted-touch-gesture -> []
+PASS replay menu-navigate -> ['menu-open', 'menu-move-down', 'menu-move-down', 'menu-move-down', 'menu-select:restart', 'systemctl-reboot']
+PASS replay menu-recovery-refused -> ['menu-open', 'menu-move-up', 'menu-refused:download-mode', 'menu-close-timeout']
+PASS replay menu-select-screenshot -> ['menu-open', 'menu-move-down', 'menu-move-down', 'menu-select:screenshot', 'screenshot']
+PASS replay power-double -> ['camera']
+PASS replay power-long-menu -> ['menu-open', 'menu-close-timeout']
+PASS replay power-short -> ['screen-toggle']
+PASS replay power-very-long-reboot -> ['menu-open', 'menu-close', 'reboot-request']
+PASS replay volume-down-long-all-apps -> ['volume-down', 'all-apps']
+PASS replay volume-hold-autorepeat -> ['volume-up', 'volume-up', 'volume-up']
+PASS replay volume-hold-panel -> ['volume-up', 'notifications-panel']
+PASS no fixture ever dispatches a bootloader entry
+PASS the gated reboot class is reachable but marked as a request, not an action
+PASS gate refuses when disabled
+PASS gate refuses without a rollback path
+PASS gate refuses when the minimum interval has not elapsed
+PASS gate refuses when the hourly cap is reached
+PASS gate refuses when bg-09's policy denies the reboot
+PASS gate allows only when every condition holds
+PASS power-off is refused unless it is separately allowed
+PASS the shipped gate config is OPEN for the owner-present power menu
+PASS the shipped gate forbids the unsafe execution paths
+PASS buttons.json (A32, owner-remappable) still maps bixby_short -> an action
+PASS buttons.json still maps power_short -> screen-toggle (A32 invariant)
+PASS the FSM spec declares gestures for home/recents/back
+PASS the FSM spec documents that the touch node is never grabbed
+PASS the FSM spec forbids the rebound of an owner remap by the FSM defaults
+PASS BUTTONS-GESTURES.md covers 'Power'
+PASS BUTTONS-GESTURES.md covers 'Volume'
+PASS BUTTONS-GESTURES.md covers 'Bixby'
+PASS BUTTONS-GESTURES.md covers 'Recovery'
+PASS BUTTONS-GESTURES.md covers 'Download Mode'
+PASS BUTTONS-GESTURES.md covers 'swipe'
+PASS BUTTONS-GESTURES.md covers 'edge'
+PASS BUTTONS-GESTURES.md covers 'NEEDS_OWNER_TEST'
+PASS BUTTONS-GESTURES.md covers 'NO FLASHING'
+PASS BUTTONS-GESTURES.md covers 'eventN'
+PASS mapping: bixby_double -> flashlight
+PASS mapping: bixby_early_hold -> verbose-boot-note
+PASS mapping: bixby_short -> open-terminal
+PASS mapping: chord_power_volume_down -> screenshot
+PASS mapping: chord_power_volume_up -> sound-mode-cycle
+PASS mapping: power_double -> camera
+PASS mapping: power_long -> power-menu
+PASS mapping: power_short -> screen-toggle
+PASS mapping: volume_down -> volume-down
+PASS mapping: volume_down_long -> all-apps
+PASS mapping: volume_up -> volume-up
+PASS mapping: volume_up_long -> notifications-panel
+PASS mapping: no double-press volume class exists at all
+PASS mapping: the volume long window is documented and matches the C
+PASS arbitration order is stated highest-first, hardware combos first
+PASS the spec records that the A32 autorepeat cadence survives as an opt-in
+PASS the spec records that Samsung emergency combos are never intercepted
+PASS the early-hold is documented as needing the early boot stage (honest limit)
+PASS daemon: the daemon implements the Power+VolDn chord
+PASS daemon: the daemon implements the Power+VolUp chord
+PASS daemon: the daemon implements the sound-mode cycle
+PASS daemon: the daemon implements the notifications panel action
+PASS daemon: the daemon implements the all-apps action
+PASS daemon: the daemon implements the flashlight dispatch
+PASS daemon: the daemon implements the verbose-boot note
+PASS daemon: the daemon syncs the held-key state at start-up (early hold)
+PASS daemon: the sound mode is a persisted, shared contract
+PASS FSM: the chord is decided BEFORE the long-press classes in the feed order
+PASS FSM: a chord in progress silences the volume class entirely
+PASS FSM: a chord suppresses the very-long reboot class for the rest of the hold
+PASS FSM: the buffered volume step is delivered when a chord does not complete
+PASS FSM: a volume hold uses a repeat cadence only when it is asked for
+PASS FSM: the early window is measured from the manager's first event
+PASS settings surface exposes every mapping the FSM implements
+PASS settings surface names its renderer and its persistence store
+PASS daemon syntax gate: nuxel-button-manager.c parses (stub alsa header, syntax only)
+PASS daemon syntax gate: negative control fails (the gate really parses the file)
+PASS fixture chord-power-voldown-screenshot.trace exists with an expectation
+PASS fixture chord-power-volup-soundmode.trace exists with an expectation
+PASS fixture chord-cancelled-step.trace exists with an expectation
+PASS fixture volume-hold-panel.trace exists with an expectation
+PASS fixture volume-down-long-all-apps.trace exists with an expectation
+PASS fixture bixby-early-hold.trace exists with an expectation
+
+== 0 failing check(s), 0 skipped leg(s) ==
+
+==== python3 tools/s10plus/a33/tests/hw-subsystems/test-led-diag.py ====
+PASS fixture class verdicts (torch / notif-only / none) match
+PASS policy declares the three classes
+PASS edge lighting is modelled as a display overlay, not a hardware LED
+PASS policy forbids auto-on at boot and caps the torch
+PASS torch fixture: flashlight present with the real path
+PASS absent notification class is NOT_SUPPORTED_ON_DEVICE
+PASS visible light is never claimed (flashlight_verified=false)
+PASS torch on a class-less device is refused (exit 2, NOT_SUPPORTED_ON_DEVICE)
+PASS torch without --yes is refused (exit 4)
+PASS `off` forces brightness 0 on every class found
+PASS notify without a notification class is refused and names the display fallback
+PASS notify uses the enumerated notification class when it exists
+PASS LED tool has no flashing/partition surface
+PASS no boot-time auto-on path exists in the tool
+PASS manual-proof fragment exists
+PASS fragment has '## 1. Feature'
+PASS fragment has '## 2. Why'
+PASS fragment has '## 3. Preparation'
+PASS fragment has '## 4. Exact action'
+PASS fragment has '## 5. Expected result'
+PASS fragment has '## 6. Failure symptoms'
+PASS fragment has '## 7. Diagnostic'
+PASS fragment has '## 8. PASS / FAIL'
+PASS fragment documents the explicit OFF and the --yes gate
+PASS fragment marks visible light NEEDS_OWNER_TEST
+PASS fragment states NOT_SUPPORTED_ON_DEVICE for absent classes
+
+all checks PASS — OFFLINE_TESTED for control logic; NEEDS_OWNER_TEST for visible light
+
+==== bash tools/s10plus/a34/tests/run-a34-tests.sh ====
+
+==================== sh /Users/wicked/x/nuxel/tools/s10plus/a34/tests/test-fsm-power-bixby.sh ====================
+ACTION t=280 name=screen-toggle
+SUMMARY actions=1 emitted=1 menu_open=0
+NOTE state machine replayed from the real FSM core
+PASS: Power emits screen-toggle and cancels the deferred open-terminal
+
+==================== python3 /Users/wicked/x/nuxel/tools/s10plus/a34/tests/test-a34-power-menu.py ====================
+PASS active A34 FSM compiles
+PASS configured menu has 15 entries
+PASS active A34 MENU_COUNT is 15
+PASS active A34 table length is 15
+PASS entry 0 id cancel
+PASS entry 0 action menu-close
+PASS entry 0 allowed True
+PASS entry 1 id lock-screen
+PASS entry 1 action lock
+PASS entry 1 allowed True
+PASS entry 2 id screenshot
+PASS entry 2 action screenshot
+PASS entry 2 allowed True
+PASS entry 3 id restart
+PASS entry 3 action systemctl-reboot
+PASS entry 3 allowed True
+PASS entry 4 id power-off
+PASS entry 4 action systemctl-poweroff
+PASS entry 4 allowed True
+PASS entry 5 id reboot-verbose
+PASS entry 5 action reboot-verbose
+PASS entry 5 allowed True
+PASS entry 6 id reboot-safe-mode
+PASS entry 6 action reboot-safe-mode
+PASS entry 6 allowed True
+PASS entry 7 id reboot-diag
+PASS entry 7 action reboot-diag
+PASS entry 7 allowed True
+PASS entry 8 id reboot-debug
+PASS entry 8 action reboot-debug
+PASS entry 8 allowed True
+PASS entry 9 id back
+PASS entry 9 action back
+PASS entry 9 allowed True
+PASS entry 10 id forward
+PASS entry 10 action forward
+PASS entry 10 allowed True
+PASS entry 11 id stop
+PASS entry 11 action stop
+PASS entry 11 allowed True
+PASS entry 12 id reload-launcher
+PASS entry 12 action reload-launcher
+PASS entry 12 allowed True
+PASS entry 13 id recovery
+PASS entry 13 action enter-recovery
+PASS entry 13 allowed False
+PASS entry 13 carries NO_FLASH_INVARIANT
+PASS entry 14 id download-mode
+PASS entry 14 action enter-download-mode
+PASS entry 14 allowed False
+PASS entry 14 carries NO_FLASH_INVARIANT
+PASS dispatcher forwards the four browser controls to the host
+PASS dispatcher keeps NO_FLASH_INVARIANT refusal
+
+0 failing check(s)
+
+==================== sh /Users/wicked/x/nuxel/tools/s10plus/a34/tests/test-screenshot-chord.sh ====================
+ACTION t=800 name=screenshot
+SUMMARY actions=1 emitted=1 menu_open=0
+NOTE state machine replayed from the real FSM core
+PASS: Power+VolumeDown maps to screenshot and suppresses single-key classes
+
+==================== python3 /Users/wicked/x/nuxel/tools/s10plus/a34/tests/test-screenshot-helper.py ====================
+PASS host SHOT_BIN is the installed path
+PASS build compiles the screenshot helper from source
+PASS build installs the exact SHOT_BIN path
+PASS helper takes the destination PPM as argv[1]
+PASS helper emits P6 PPM (host conversion contract)
+PASS helper never opens /dev/fb0
+PASS host never opens /dev/fb0 for screenshots
+PASS host writes PNG under the Gallery directory
+PASS host bounds the helper and kills only its child
+
+0 failing check(s)
+
+==================== python3 /Users/wicked/x/nuxel/tools/s10plus/a34/tests/test-touch-syn-translation.py ====================
+PASS pending-down latch exists
+PASS pending-up latch exists
+PASS active-contact latch exists
+PASS phase is an int (matches nuxel_fsm_event.phase)
+PASS ABS_MT_TRACKING_ID case present
+PASS TRACKING_ID case does NOT feed the FSM
+PASS TRACKING_ID case does NOT emit TOUCH_DOWN
+PASS TRACKING_ID>=0 sets pending-down
+PASS TRACKING_ID<0 sets pending-up
+PASS SYN_REPORT branch present
+PASS SYN_REPORT branch emits TOUCH_DOWN
+PASS SYN_REPORT branch emits TOUCH_UP
+PASS SYN_REPORT branch emits TOUCH_MOVE
+PASS SYN_REPORT branch feeds the FSM
+PASS no feed call inside TRACKING_ID case (old defect absent)
+SELFTEST: PASS (15 assertion(s), 0 failed)
+
+==================== sh /Users/wicked/x/nuxel/tools/s10plus/a34/tests/run-decon-tests.sh ====================
+PASS A35 source-to-rootfs commit/blank/startup contract
+SKIP A35 mock-ioctl C test: Wayland C headers unavailable at /usr/include
+
+==================== node /Users/wicked/x/nuxel/tools/s10plus/a34/tests/test-qs-gesture.js ====================
+PASS StatusBar constructed
+PASS status-bar version matches VERSION (0.2.2)
+PASS vertical pull dispatches gesture:qs
+PASS one contact = one gesture
+PASS short tap does not open QS
+PASS diagonal drag is rejected
+PASS: Quick Settings pull-down gesture wired and single-fire
+
+==================== node /Users/wicked/x/nuxel/tools/s10plus/a34/tests/test-touch-keyboard.js ====================
+PASS touchscreen keyboard enters NUXEL and emits one input per key
+PASS selection replacement and backspace preserve cursor
+PASS Unicode deletion, maxlength, beforeinput cancellation and readonly
+PASS Search Enter and multiline newline keep their distinct behavior
+
+==================== python3 /Users/wicked/x/nuxel/tools/s10plus/a34/tests/test-terminal-keyboard.py ====================
+PASS Shift has an explicit state and one-shot reset
+PASS symbols switch has ABC return path
+PASS Backspace updates the tracked command line
+PASS history is handled before the generic Ctrl/key byte path
+PASS history restores the tracked line and replaces the PTY line
+PASS keyboard has a dismiss control and a tap-to-restore path
+PASS Enter, Space and printable characters still reach the PTY
+PASS physical Backspace keeps history tracking correct
+TERMINAL-KEYBOARD: ALL PASS
+
+==================== python3 /Users/wicked/x/nuxel/tools/s10plus/a34/tests/test-terminal-lifecycle.py ====================
+test_close_ack_precedes_view_destruction (__main__.TerminalLifecycle.test_close_ack_precedes_view_destruction) ... ok
+test_teardown_before_reopen_and_old_child_exit (__main__.TerminalLifecycle.test_teardown_before_reopen_and_old_child_exit) ... ok
+
+----------------------------------------------------------------------
+Ran 2 tests in 0.052s
+
+OK
+
+==================== sh /Users/wicked/x/nuxel/tools/s10plus/a34/tests/../../../touchable/run-tests.sh ====================
+PASS grid child hit invokes the registered app once
+PASS dock taps open their app
+PASS cancel then release never opens an app
+PASS release over a different icon does not launch
+PASS motion is not a tap
+PASS secondary contact cannot release primary tap
+PASS repeated taps reopen the same app without duplicate compatibility click
+PASS keyboard activation opens focused dock item
+.
+----------------------------------------------------------------------
+Ran 1 test in 0.611s
+
+OK
+....
+----------------------------------------------------------------------
+Ran 4 tests in 0.002s
+
+OK
+SKIP synthetic browser coverage: set TOUCHABLE_BROWSER_TESTS=1 after installing Playwright in build/touchable/browser
+
+A34-TESTS: ALL PASS
+
+PWNAGE-44000 TESTS: ALL PASS

@@ -51,6 +51,9 @@
   }
 
   function show(kind, text, value, max, holdMs) {
+    // One-argument form is the host toast contract (screenshot acknowledgement,
+    // refusals): treat the single string as the message, not as a kind.
+    if (text === undefined && holdMs === undefined) { text = kind; kind = 'toast'; }
     var e = ensure();
     var label = kind === 'volume' ? 'Volume' : (kind === 'power' ? 'Power' : kind);
     e.innerHTML = '<div style="font-size:11px;letter-spacing:.06em;text-transform:uppercase;' +

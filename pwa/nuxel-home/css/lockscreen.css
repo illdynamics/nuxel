@@ -495,3 +495,9 @@ body.display-off .lockscreen-indicator .lockscreen-indicator-glow {
     .lockscreen-transport { width: 30px; height: 30px; }
     .lockscreen-connection-mode { width: 52px; height: 52px; right: 10px; bottom: 10px; }
 }
+
+/* PWNAGE-44000: the display bridge can keep the WebProcess alive while the
+   panel is blanked. Stop every continuous indicator animation in that state. */
+body.display-off .lockscreen-indicator,
+body.display-off .lockscreen-lockhead-motion,
+body.display-off .lockscreen-hint::before { animation: none !important; }

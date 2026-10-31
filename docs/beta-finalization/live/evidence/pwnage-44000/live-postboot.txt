@@ -1,0 +1,22 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+boot_id=e24edfba-51a8-4a30-823e-4780fbe52c4e
+uptime_since=2026-10-31 06:56:46
+active
+active
+active
+active
+inactive
+pwa_pid=5882
+2227030fb17f83769f819fa97b185b55913aa22b88901e724204b773ea9194b1  /usr/lib/nuxel/nuxel-pwa-host
+fb_owner=1
+{"success": true, "supported": true, "state": "OFF", "on": false, "led_path": "/sys/class/leds/torch-sec1/brightness", "led_name": "torch-sec1", "max_on_seconds": 60.0, "camera_active": false, "thermal_blocked": false, "reason": "not requested", "source": "flashlight_provider"}
+/home/nuxel/Gallery/nuxel-screenshot-20261031T055115Z.png
+/home/nuxel/Gallery/nuxel-screenshot-20261031T055814Z.png

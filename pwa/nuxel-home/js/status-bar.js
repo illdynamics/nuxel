@@ -1,4 +1,4 @@
-// Nuxel Status Bar — v0.2.1
+// Nuxel Status Bar — v0.2.2
 //
 // SINGLE SOURCE OF TRUTH (briq-02d).  The handset used to serve a stale
 // v0.3.2 copy of this file while the repo (and the UTM VM) was on v0.4.x, so the
@@ -17,7 +17,7 @@
 class StatusBar {
     // Keep in sync with manifest.json ("nuxel.pwa_version") and sw.js
     // (CACHE_VERSION) - the registry test fails if the three ever diverge.
-    static get VERSION() { return '0.2.1'; }
+    static get VERSION() { return '0.2.2'; }
 
     constructor() {
         this.state = {
@@ -42,6 +42,19 @@ class StatusBar {
             batteryCharging: false,
             batteryCapacityUah: null,
             batteryDesignCapacityUah: null,
+            // Location is a provider fact, independent of the privacy toggle.
+            // state 'unknown' keeps the glyph hidden until the bridge answers.
+            locationState: 'unknown',
+            locationKind: null,
+            locationSource: null,
+            locationEnabled: false,
+            locationAge: null,
+            locationAccuracy: null,
+            soundMode: 'unknown',
+            // Canonical single-owner system indicator snapshot (same data the
+            // lockscreen consumes).  null means UNKNOWN, never a guessed OFF.
+            indicators: null,
+            usbLabel: '',
         };
         /* The same 100% -> 0% guard the lockscreen uses.  A one-sample gauge
            reset must not replace a known-good reading. */
@@ -56,6 +69,9 @@ class StatusBar {
             signal: document.getElementById('status-signal'),
             wifi: document.getElementById('status-wifi'),
             bluetooth: document.getElementById('status-bluetooth'),
+            location: document.getElementById('status-location'),
+            sound: document.getElementById('status-sound'),
+            usb: document.getElementById('status-usb'),
             battery: document.getElementById('status-battery'),
             batteryPct: document.getElementById('status-battery-pct'),
         };
@@ -114,6 +130,16 @@ class StatusBar {
         this._pollPhoneStatus();
         this._pollBluetooth();
         this._pollTimer = setInterval(() => this._pollPhoneStatus(), 10000);
+        this._pollLocation();
+        this._locationPollTimer = setInterval(() => {
+            if (!this._displayOff()) this._pollLocation();
+        }, 5000);
+        // Sound mode + wired USB/file-transfer/console state.  One canonical
+        // in-process read; no second high-frequency poller is created.
+        this._pollSystemIndicators();
+        this._indicatorPollTimer = setInterval(() => {
+            if (!this._displayOff()) this._pollSystemIndicators();
+        }, 5000);
 
         // Poll notifications from the same JSON source (canonical
         // /var/lib/nuxel/notifications.json surfaced via the bridge).
@@ -125,6 +151,8 @@ class StatusBar {
             this._hydrateBatteryFromHost();
             this._pollPhoneStatus();
             this._pollBluetooth();
+            this._pollLocation();
+            this._pollSystemIndicators();
             this._pollNotifications();
         });
 
@@ -212,7 +240,8 @@ class StatusBar {
     // cell and report any intersecting pair.  This is the same geometry the
     // physical panel renders; a PASS means no two indicators share pixels.
     _assertNoOverlap() {
-        const ids = ['status-signal', 'status-wifi', 'status-bluetooth', 'status-battery', 'status-battery-pct'];
+        const ids = ['status-signal', 'status-wifi', 'status-location', 'status-bluetooth',
+                     'status-sound', 'status-usb', 'status-battery', 'status-battery-pct'];
         const boxes = [];
         ids.forEach((id) => {
             const el = document.getElementById(id);
@@ -368,6 +397,147 @@ class StatusBar {
         }
     }
 
+    // Location indicator: the glyph reflects real provider state, not the
+    // Location tile's optimistic label.  Network/Wi-Fi/IP positions are shown
+    // as approximate (blue); only a provider-confirmed GNSS source is green.
+    _renderLocation() {
+        const el = this.elements.location;
+        if (!el) return;
+        const state = this.state.locationState || 'unknown';
+        const visible = this.state.locationEnabled && state !== 'unknown' && state !== 'disabled';
+        el.hidden = !visible;
+        el.dataset.state = state;
+        el.dataset.kind = this.state.locationKind || 'unknown';
+        let label;
+        if (!this.state.locationEnabled) label = 'Location off (privacy policy)';
+        else if (state === 'fixed' && this.state.locationKind === 'satellite') label = 'GNSS satellite fix';
+        else if (state === 'fixed' && this.state.locationKind === 'network') label = 'Approximate network location';
+        else if (state === 'fixed') label = 'Location provider fix';
+        else if (state === 'stale') label = 'Location fix is stale';
+        else if (state === 'searching') label = 'Location searching for a fix';
+        else if (state === 'unavailable') label = 'Location provider unavailable';
+        else if (state === 'error') label = 'Location provider error';
+        else label = 'No location fix';
+        const parts = [label];
+        if (this.state.locationSource) parts.push('source=' + this.state.locationSource);
+        if (typeof this.state.locationAccuracy === 'number') parts.push('±' + Math.round(this.state.locationAccuracy) + ' m');
+        if (typeof this.state.locationAge === 'number') parts.push(Math.round(this.state.locationAge) + ' s old');
+        el.title = parts.join(' · ');
+        el.setAttribute('aria-label', label);
+        this._applySafeZones();
+    }
+
+    async _pollLocation() {
+        if (this._displayOff()) return;
+        if (typeof bridge === 'undefined' || !bridge.call) return;
+        try {
+            const st = await bridge.call('location', 'get-status', {});
+            if (!st || st.success === false) {
+                this.state.locationState = 'unavailable';
+                this.state.locationEnabled = !!st.enabled;
+                this.state.locationKind = null;
+                this.state.locationSource = null;
+                this._renderLocation();
+                return;
+            }
+            this.state.locationEnabled = st.enabled === true;
+            this.state.locationState = st.state || (st.enabled ? 'no_fix' : 'disabled');
+            this.state.locationKind = st.fix_kind || null;
+            this.state.locationSource = st.fix_source || null;
+            this.state.locationAge = (typeof st.last_fix_age_s === 'number') ? st.last_fix_age_s : null;
+            this.state.locationAccuracy = (typeof st.accuracy === 'number') ? st.accuracy : null;
+            this._renderLocation();
+        } catch (e) {
+            this.state.locationState = 'unavailable';
+            this.state.locationKind = null;
+            this.state.locationSource = null;
+            this._renderLocation();
+        }
+    }
+
+    _renderSound() {
+        const el = this.elements.sound;
+        if (!el) return;
+        const mode = this.state.soundMode;
+        const known = mode === 'normal' || mode === 'vibrate' || mode === 'silent';
+        el.hidden = !known;
+        el.dataset.mode = known ? mode : 'unknown';
+        if (!known) {
+            el.setAttribute('aria-label', 'Sound mode unknown');
+            el.title = 'Sound mode unknown (provider has not reported)';
+            this._applySafeZones();
+            return;
+        }
+        const labels = {
+            normal: 'Sound mode: normal',
+            vibrate: 'Sound mode: vibrate (selected; haptics not claimed)',
+            silent: 'Sound mode: silent',
+        };
+        el.setAttribute('aria-label', labels[mode]);
+        el.title = labels[mode] + ' · Power + Volume Up cycles normal → vibrate → silent';
+        this._applySafeZones();
+    }
+
+    _renderUsb() {
+        const el = this.elements.usb;
+        if (!el) return;
+        const ind = this.state.indicators;
+        let label = '';
+        let visible = false;
+        if (ind) {
+            const usb = ind.usb_data || {};
+            const transfer = ind.file_transfer || {};
+            const transports = ind.console_transports || {};
+            const charging = ind.charging || {};
+            // Deterministic precedence: active file transfer > active USB
+            // console > active charge > enumerated data link.
+            if (transfer.active === true) { label = 'file'; visible = true; }
+            else if (transports.usb && transports.usb.active === true) { label = 'term'; visible = true; }
+            else if (charging.charging === true && (usb.pc_connected === true || charging.external_power === true)) { label = 'chrg'; visible = true; }
+            else if (usb.pc_connected === true) { label = ''; visible = true; }
+        }
+        this.state.usbLabel = label;
+        el.hidden = !visible;
+        el.dataset.state = visible ? (label || 'connected') : 'unknown';
+        const tag = el.querySelector('.usb-label');
+        if (tag) tag.textContent = label;
+        if (!visible) {
+            el.setAttribute('aria-label', 'USB not connected');
+            el.title = 'USB: no wired data link reported';
+        } else {
+            const detail = label === 'file' ? 'File transfer endpoint active'
+                : label === 'term' ? 'USB console active'
+                : label === 'chrg' ? 'Charging over USB'
+                : 'USB data link to host';
+            el.setAttribute('aria-label', 'USB: ' + detail);
+            el.title = 'USB: ' + detail;
+        }
+        this._applySafeZones();
+    }
+
+    async _pollSystemIndicators() {
+        if (this._displayOff()) return;
+        try {
+            if (typeof bridge === 'undefined' || !bridge.call) return;
+            const ind = await bridge.call('system', 'indicators', {});
+            if (!ind || ind.success === false) {
+                // Keep the last-known snapshot only briefly; on provider failure
+                // mark the USB glyph UNKNOWN rather than inventing a disconnect.
+                this.state.indicators = null;
+                this._renderUsb();
+                return;
+            }
+            this.state.indicators = ind;
+            const sound = ind.sound_mode && ind.sound_mode.mode;
+            this.state.soundMode = (sound === 'normal' || sound === 'vibrate' || sound === 'silent') ? sound : 'unknown';
+            this._renderSound();
+            this._renderUsb();
+        } catch (e) {
+            this.state.indicators = null;
+            this._renderUsb();
+        }
+    }
+
     setBatteryStyle(style) {
         this.batteryStyle = ['inside', 'percentage', 'bar'].includes(style) ? style : 'inside';
         this._renderBattery();
@@ -438,7 +608,10 @@ class StatusBar {
         }
 
         this.state.batteryLevel = next;
-        this.state.batteryCharging = !!charging || st === 'charging' || st === 'full';
+        // 'Full' means externally powered and topped up, NOT actively charging.
+        // Only a canonical charging===true or the kernel status 'charging' may
+        // light the bolt.
+        this.state.batteryCharging = charging === true || st === 'charging';
         return true;
     }
 

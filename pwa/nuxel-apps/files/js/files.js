@@ -8,9 +8,11 @@
   var el = {};
   ['back-btn','home-btn','refresh-btn','select-btn','selection-bar','selection-label','sel-all','sel-none','sel-cancel',
    'toolbar','new-folder-btn','rename-btn','delete-btn','copy-btn','cut-btn','paste-btn',
-   'archive-btn','extract-btn','clipboard-info','file-grid','status','cwd-abs',
+   'archive-btn','extract-btn','send-btn','clipboard-info','file-grid','status','cwd-abs',
    'prompt-dialog','prompt-title','prompt-input','prompt-error','prompt-cancel','prompt-ok',
-   'confirm-dialog','confirm-text','confirm-cancel','confirm-ok','breadcrumb'].forEach(function (id) {
+   'confirm-dialog','confirm-text','confirm-cancel','confirm-ok','breadcrumb',
+   'send-dialog','send-summary','send-device','send-progress','send-status','send-error',
+   'send-close','send-ok','share-bluetooth','share-wifi','share-nearby'].forEach(function (id) {
     el[id] = document.getElementById(id);
     el[id.replace(/-([a-z])/g, function (_m, c) { return c.toUpperCase(); })] = el[id];
   });
@@ -31,6 +33,8 @@
     clipboard: null,           // {mode:'copy'|'cut', paths:[...]}
     busy: false,
     prompt: null,              // {kind, title, placeholder, ok}
+    _renderToken: 0,
+    _sendTargets: [],
 
     init: async function () {
       this.bind();
@@ -45,9 +49,29 @@
       el.homeBtn.addEventListener('click', function () { self.cwd = '/'; self.refresh(); });
       el.refreshBtn.addEventListener('click', function () { self.refresh(); });
       el.selectBtn.addEventListener('click', function () { self.toggleSelect(); });
-      el.selAll.addEventListener('click', function () { self.entries.forEach(function (e) { self.selected.add(e.path); }); self.render(); });
-      el.selNone.addEventListener('click', function () { self.selected.clear(); self.render(); });
+      el.selAll.addEventListener('click', function () { self.entries.forEach(function (e) { self.selected.add(e.path); }); self.updateSelection(); });
+      el.selNone.addEventListener('click', function () { self.selected.clear(); self.updateSelection(); });
       el.selCancel.addEventListener('click', function () { self.selecting = false; self.selected.clear(); self.render(); });
+
+      // ONE delegated grid listener instead of one listener per tile.
+      el.fileGrid.addEventListener('click', function (ev) {
+        var item = ev.target.closest && ev.target.closest('.file-item');
+        if (item) self.onItem(item);
+      });
+      // ONE delegated breadcrumb listener.
+      el.breadcrumb.addEventListener('click', function (ev) {
+        var sp = ev.target.closest && ev.target.closest('span[data-path]');
+        if (!sp) return;
+        self.cwd = sp.dataset.path || '/';
+        self.refresh();
+      });
+      el.sendBtn.addEventListener('click', function () { self.openSend(); });
+      el.sendClose.addEventListener('click', function () { self.closeSend(); });
+      el.sendOk.addEventListener('click', function () { self.sendSelected(); });
+      el.shareBluetooth.addEventListener('click', function () { /* only working method */ });
+      [el.shareWifi, el.shareNearby].forEach(function (b) {
+        b.addEventListener('click', function (ev) { ev.preventDefault(); });
+      });
 
       el.newFolderBtn.addEventListener('click', function () {
         self.openPrompt('mkdir', 'New folder', 'Folder name', function (name) { return self.mkdir(name); });
@@ -95,55 +119,98 @@
     render() {
       this.renderBreadcrumb();
       el.cwdAbs.textContent = this.absolutePath();
-      var self = this;
+      this._syncControls();
+      var token = ++this._renderToken;
+      if (!this.entries.length) {
+        el.fileGrid.innerHTML = '<div class="empty-state"><div class="empty-icon">📁</div><p>This folder is empty</p><p class="hint">Use New folder to add content. The listing is the real filesystem: nothing is invented.</p></div>';
+        return;
+      }
+      // Progressive rendering: a 1000-entry directory must not create a
+      // thousand nodes (and force layout) in one long task.  Each batch is
+      // appended as a fragment; the scroll container keeps its native range as
+      // the batches arrive.  A new directory/render cancels the old token.
+      el.fileGrid.textContent = '';
+      var rows = this.entries;
+      var batch = 120;
+      var index = 0;
+      var append = function () {
+        if (token !== app._renderToken) return;
+        var frag = document.createDocumentFragment();
+        var end = Math.min(rows.length, index + batch);
+        for (; index < end; index++) frag.appendChild(app.itemNode(rows[index]));
+        el.fileGrid.appendChild(frag);
+        if (index < rows.length) {
+          if (window.requestAnimationFrame) requestAnimationFrame(append);
+          else setTimeout(append, 0);
+        }
+      };
+      var raf = window.requestAnimationFrame || function (fn) { return setTimeout(fn, 0); };
+      raf(append);
+    },
+
+    itemNode(f) {
+      var isSel = this.selected.has(f.path);
+      var node = document.createElement('div');
+      node.className = 'file-item' + (isSel ? ' selected' : '') + (f.type === 'unreadable' ? ' unreadable' : '');
+      node.dataset.path = f.path;
+      node.dataset.type = f.type;
+      var icon = f.type === 'folder' ? '📁' : (f.type === 'symlink' ? '🔗' : this.iconFor(f.name));
+      var meta = f.type === 'folder' ? 'Folder'
+        : (f.type === 'symlink' ? 'Symlink' : this.formatSize(f.size)) +
+          (f.modified ? ' · ' + new Date(f.modified * 1000).toLocaleDateString() : '');
+      var ic = document.createElement('div'); ic.className = 'file-icon'; ic.textContent = icon;
+      var name = document.createElement('div'); name.className = 'file-name'; name.textContent = f.name;
+      var mm = document.createElement('div'); mm.className = 'file-meta'; mm.textContent = meta;
+      node.appendChild(ic); node.appendChild(name); node.appendChild(mm);
+      return node;
+    },
+
+    _syncControls() {
       el.selectionBar.classList.toggle('hidden', !this.selecting);
       el.selectionLabel.textContent = this.selected.size + ' selected';
       el.renameBtn.disabled = this.selected.size !== 1;
       el.deleteBtn.disabled = this.selected.size === 0;
       el.copyBtn.disabled = this.selected.size === 0;
       el.cutBtn.disabled = this.selected.size === 0;
+      el.sendBtn.disabled = this.selected.size === 0;
       el.pasteBtn.disabled = !this.clipboard || this.clipboard.paths.length === 0;
       el.archiveBtn.disabled = this.selected.size === 0;
       el.extractBtn.disabled = this.selected.size !== 1;
       el.clipboardInfo.textContent = this.clipboard ? ((this.clipboard.mode === 'cut' ? 'Moving: ' : 'Copying: ') + this.clipboard.paths.length) : '';
+    },
 
-      if (!this.entries.length) {
-        el.fileGrid.innerHTML = '<div class="empty-state"><div class="empty-icon">📁</div><p>This folder is empty</p><p class="hint">Use New folder to add content. The listing is the real filesystem: nothing is invented.</p></div>';
-        return;
-      }
-      el.fileGrid.innerHTML = this.entries.map(function (f) {
-        var isSel = self.selected.has(f.path);
-        var icon = f.type === 'folder' ? '📁' : (f.type === 'symlink' ? '🔗' : self.iconFor(f.name));
-        var meta = f.type === 'folder' ? 'Folder' : (f.type === 'symlink' ? 'Symlink' : self.formatSize(f.size)) + (f.modified ? ' · ' + new Date(f.modified * 1000).toLocaleDateString() : '');
-        return '<div class="file-item' + (isSel ? ' selected' : '') + (f.type === 'unreadable' ? ' unreadable' : '') + '" data-path="' + self.esc(f.path) + '" data-type="' + self.esc(f.type) + '">' +
-          '<div class="file-icon">' + icon + '</div>' +
-          '<div class="file-name">' + self.esc(f.name) + '</div>' +
-          '<div class="file-meta">' + self.esc(meta) + '</div></div>';
-      }).join('');
-      el.fileGrid.querySelectorAll('.file-item').forEach(function (item) {
-        item.addEventListener('click', function () { self.onItem(item); });
+    // Selection changes toggle only the affected tiles and the summary row;
+    // they never rebuild the file grid.
+    updateSelection() {
+      var self = this;
+      el.fileGrid.querySelectorAll('.file-item').forEach(function (node) {
+        node.classList.toggle('selected', self.selected.has(node.dataset.path));
       });
+      this._syncControls();
     },
 
     renderBreadcrumb() {
       var parts = this.cwd.split('/').filter(Boolean);
-      var html = '<span data-path="/" title="' + this.esc(this.home) + '">~</span>';
+      var frag = document.createDocumentFragment();
+      var root = document.createElement('span');
+      root.dataset.path = '/'; root.title = this.home; root.textContent = '~';
+      frag.appendChild(root);
       var cum = '';
       parts.forEach(function (p) {
         cum += '/' + p;
-        html += '<span class="sep">/</span><span data-path="' + cum + '">' + app.esc(p) + '</span>';
+        var sep = document.createElement('span'); sep.className = 'sep'; sep.textContent = '/';
+        var sp = document.createElement('span'); sp.dataset.path = cum; sp.textContent = p;
+        frag.appendChild(sep); frag.appendChild(sp);
       });
-      el.breadcrumb.innerHTML = html;
-      el.breadcrumb.querySelectorAll('span[data-path]').forEach(function (sp) {
-        sp.addEventListener('click', function () { app.cwd = sp.dataset.path || '/'; app.refresh(); });
-      });
+      el.breadcrumb.textContent = '';
+      el.breadcrumb.appendChild(frag);
     },
 
     onItem(item) {
       var path = item.dataset.path, type = item.dataset.type;
       if (this.selecting) {
         if (this.selected.has(path)) this.selected.delete(path); else this.selected.add(path);
-        this.render();
+        this.updateSelection();
         return;
       }
       if (type === 'folder') { this.cwd = path; this.refresh(); }
@@ -259,6 +326,100 @@
       this.status(res && res.success !== false ? 'Extracted' : ('Extract failed: ' + (res && res.error)));
       await this.refresh();
     },
+    // ---- Send -> Bluetooth OBEX -----------------------------------------
+    openSend() {
+      var paths = Array.from(this.selected);
+      if (!paths.length) { this.status('Select one or more files first'); return; }
+      this._sendPaths = paths;
+      el.sendSummary.textContent = paths.length + ' file(s) selected';
+      el.sendError.textContent = '';
+      el.sendStatus.textContent = 'Reading paired Bluetooth devices…';
+      el.sendProgress.hidden = true;
+      el.sendProgress.value = 0;
+      el.sendOk.disabled = true;
+      el.sendDialog.classList.remove('hidden');
+      this.loadSendTargets();
+    },
+
+    closeSend() {
+      el.sendDialog.classList.add('hidden');
+      el.sendOk.disabled = true;
+      this._sending = false;
+    },
+
+    async loadSendTargets() {
+      var res = await bridgeCall('bluetooth', 'send-targets', {});
+      if (!res || res.success === false) {
+        this._sendTargets = [];
+        el.sendDevice.innerHTML = '<option value="">No devices</option>';
+        el.sendStatus.textContent = 'Bluetooth OBEX unavailable';
+        el.sendError.textContent = (res && (res.error || res.error_code)) || 'provider error';
+        el.sendOk.disabled = true;
+        return;
+      }
+      this._sendTargets = (res.devices || []).filter(function (d) { return d.paired; });
+      if (!this._sendTargets.length) {
+        this._sendTargets = res.devices || [];
+      }
+      el.sendDevice.replaceChildren();
+      if (!this._sendTargets.length) {
+        var empty = document.createElement('option');
+        empty.value = ''; empty.textContent = 'No paired devices';
+        el.sendDevice.appendChild(empty);
+        el.sendStatus.textContent = 'Pair a receiving device in Settings → Bluetooth first.';
+        el.sendOk.disabled = true;
+        return;
+      }
+      this._sendTargets.forEach(function (d) {
+        var o = document.createElement('option');
+        o.value = d.address;
+        o.textContent = d.name + ' · ' + d.address + (d.paired ? '' : ' (not paired)');
+        el.sendDevice.appendChild(o);
+      });
+      el.sendStatus.textContent = 'Transfers use BlueZ OBEX Object Push.';
+      el.sendOk.disabled = false;
+    },
+
+    async sendSelected() {
+      if (this._sending) return;
+      var address = el.sendDevice.value;
+      if (!address) { el.sendError.textContent = 'Choose a receiving device'; return; }
+      this._sending = true;
+      el.sendOk.disabled = true;
+      el.sendError.textContent = '';
+      el.sendProgress.hidden = false;
+      el.sendProgress.value = 10;
+      el.sendStatus.textContent = 'Sending ' + this._sendPaths.length + ' file(s)…';
+      try {
+        if (window.bridge && typeof window.bridge.requestCapability === 'function') {
+          var grant = await window.bridge.requestCapability('bluetooth:connect', 'Send files over Bluetooth');
+          if (grant === false || (grant && grant.granted === false)) {
+            throw new Error('Bluetooth send permission denied');
+          }
+        }
+        var res = await bridgeCall('bluetooth', 'send-files', { paths: this._sendPaths, address: address });
+        if (!res || res.success === false) {
+          el.sendProgress.hidden = true;
+          el.sendError.textContent = (res && res.error) || 'transfer failed';
+          var rows = (res && res.files) || [];
+          var sent = rows.filter(function (r) { return r.success; }).length;
+          el.sendStatus.textContent = 'Sent ' + sent + ' of ' + (rows.length || this._sendPaths.length) +
+            ' · failed ' + (rows.length ? rows.length - sent : this._sendPaths.length);
+          this.status(el.sendStatus.textContent);
+        } else {
+          el.sendProgress.value = 100;
+          el.sendStatus.textContent = 'Sent ' + res.sent + ' file(s) over Bluetooth';
+          this.status('Bluetooth send complete: ' + res.sent + ' file(s)');
+          setTimeout(function () { el.sendDialog.classList.add('hidden'); }, 900);
+        }
+      } catch (e) {
+        el.sendError.textContent = e && e.message ? e.message : 'transfer error';
+      } finally {
+        this._sending = false;
+        el.sendOk.disabled = false;
+      }
+    },
+
     absolutePath() {
       return this.cwd === '/' ? this.home : this.home.replace(/\/$/, '') + this.cwd;
     },

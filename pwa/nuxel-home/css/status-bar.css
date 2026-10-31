@@ -65,6 +65,42 @@
     text-align: right;
 }
 
+/* Top-bar location indicator.  It reflects the REAL provider state and
+   distinguishes a satellite fix from an approximate network position.  OFF
+   hides it; searching pulses; network fixed is blue; GNSS fixed is green. */
+.status-right #status-location {
+    width: 16px;
+    height: 16px;
+    background: url('/assets/nuxel-quicksettings-icon-pack/09-location.png') center/14px 14px no-repeat;
+    opacity: 0.45;
+    filter: grayscale(1);
+}
+.status-right #status-location[data-state="searching"] {
+    opacity: 0.8;
+    animation: nuxel-location-pulse 1.6s ease-in-out infinite;
+}
+.status-right #status-location[data-state="fixed"][data-kind="network"] {
+    opacity: 1;
+    filter: none;
+}
+.status-right #status-location[data-state="fixed"][data-kind="satellite"] {
+    opacity: 1;
+    filter: hue-rotate(95deg) saturate(1.5);
+}
+.status-right #status-location[data-state="stale"] {
+    opacity: 0.55;
+    filter: grayscale(0.7);
+}
+.status-right #status-location[data-state="unavailable"],
+.status-right #status-location[data-state="error"] {
+    opacity: 0.35;
+    filter: grayscale(1);
+}
+@keyframes nuxel-location-pulse {
+    0%, 100% { transform: scale(1); opacity: 0.45; }
+    50% { transform: scale(0.88); opacity: 0.9; }
+}
+
 #status-time {
     font-weight: 600;
     font-size: 13px;
@@ -546,3 +582,137 @@
     color: #cfe4ff;
 }
 .qs-rotate-item:active { background: rgba(255, 255, 255, 0.10); }
+
+/* ---- PWNAGE-44000: sound mode, wired USB and charging bolt --------------- */
+.status-right #status-sound,
+.status-right #status-usb {
+    position: relative;
+    color: var(--text-primary);
+}
+.status-right #status-sound[hidden],
+.status-right #status-usb[hidden] { display: none !important; }
+
+/* Speaker body (currentColor, no external font/emoji dependency). */
+#status-sound::before {
+    content: '';
+    position: absolute;
+    left: 1px; top: 4px;
+    width: 10px; height: 8px;
+    background: currentColor;
+    clip-path: polygon(0 32%, 38% 32%, 38% 12%, 100% 0, 100% 100%, 38% 88%, 38% 68%, 0 68%);
+}
+#status-sound::after {
+    content: '';
+    position: absolute;
+    right: 0; top: 3px;
+    width: 4px; height: 10px;
+    border-right: 1.5px solid currentColor;
+    border-radius: 0 50% 50% 0;
+}
+#status-sound[data-mode="silent"]::after {
+    border: 0; top: 7px; right: 0; width: 12px; height: 1.5px;
+    background: currentColor; border-radius: 1px; transform: rotate(-45deg);
+}
+#status-sound[data-mode="normal"] { opacity: 0.85; }
+#status-sound[data-mode="vibrate"]::after {
+    border: 0; top: 3px; right: 0; width: 5px; height: 10px;
+    background: repeating-linear-gradient(90deg, currentColor 0 1.5px, transparent 1.5px 3px);
+    border-radius: 0; transform: none;
+}
+#status-sound[data-mode="vibrate"] { color: #f5c451; }
+
+/* Compact USB cable glyph + optional file/term/chrg tag. */
+.status-right #status-usb {
+    width: auto;
+    min-width: 16px;
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+}
+#status-usb::before {
+    content: '';
+    width: 9px; height: 6px;
+    border: 1.5px solid currentColor;
+    border-radius: 2px;
+    box-sizing: border-box;
+    position: relative;
+}
+#status-usb::after {
+    content: '';
+    width: 4px; height: 2px;
+    border-left: 1.5px solid currentColor;
+    border-right: 1.5px solid currentColor;
+    position: absolute;
+    left: 9px; top: 7px;
+}
+#status-usb .usb-label {
+    font: 700 8px/1 ui-monospace, "DejaVu Sans Mono", monospace;
+    letter-spacing: .02em;
+    color: #9fd4ff;
+}
+#status-usb[data-state="file"] .usb-label { color: #5eead4; }
+#status-usb[data-state="term"] .usb-label { color: #fde68a; }
+#status-usb[data-state="chrg"] .usb-label { color: #86efac; }
+
+/* Lightning bolt only while the canonical provider says ACTIVE charging.
+   'Full' is externally powered, not charging, and never lights this. */
+.battery-icon.charging::after {
+    content: '';
+    position: absolute;
+    left: 50%; top: 50%;
+    width: 10px; height: 13px;
+    z-index: 1;
+    transform: translate(-50%, -50%);
+    background: #fff7b0;
+    clip-path: polygon(62% 0, 20% 56%, 46% 56%, 36% 100%, 82% 42%, 54% 42%, 72% 0);
+    filter: none;
+}
+
+/* ---- PWNAGE-44000: expanded Quick Settings connection strip ------------ */
+.qs-expand-toggle {
+    width: 100%;
+    margin: 4px 0 0;
+    padding: 8px 10px;
+    border: 1px solid rgba(125, 211, 252, .28);
+    border-radius: 8px;
+    background: rgba(10, 28, 52, .65);
+    color: #bfdbfe;
+    font: 600 12px/1.2 system-ui, sans-serif;
+    touch-action: manipulation;
+}
+.qs-details {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    margin-top: 8px;
+}
+.qs-details[hidden] { display: none !important; }
+.qs-detail {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    padding: 7px 8px;
+    border-radius: 8px;
+    background: rgba(7, 18, 35, .72);
+    border: 1px solid rgba(96, 165, 250, .22);
+    color: #93a9c4;
+    font: 600 10px/1.25 system-ui, sans-serif;
+}
+.qs-detail-wide { grid-column: 1 / -1; }
+.qs-detail-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.qs-detail.active { color: #d7ffe9; border-color: rgba(74, 222, 128, .55); }
+.qs-detail.selected, .qs-detail.armed { color: #fde68a; border-color: rgba(245, 196, 81, .45); }
+.qs-detail.unknown { color: #b9c4d4; border-style: dashed; }
+.qs-detail-icon { width: 12px; height: 12px; flex: 0 0 auto; border: 1.5px solid currentColor; border-radius: 3px; }
+.qs-detail.active .qs-detail-icon { background: currentColor; }
+.charging-glyph { border-radius: 2px; }
+.file-glyph { border-radius: 1px 4px 1px 1px; }
+.console-glyph { border-radius: 50%; }
+.qs-detail[data-state="active"] { background: rgba(16, 70, 50, .62); }
+
+/* Idle CPU guard: no continuous animation while the panel is off. */
+body.display-off #status-location,
+body.display-off .lockscreen-indicator,
+body.display-off .lockscreen-lockhead-motion,
+body.display-off .lockscreen-hint::before { animation: none !important; }

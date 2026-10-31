@@ -16,6 +16,9 @@ run() {
 }
 
 run sh "$HERE/test-fsm-power-bixby.sh"
+run python3 "$HERE/test-a34-power-menu.py"
+run sh "$HERE/test-screenshot-chord.sh"
+run python3 "$HERE/test-screenshot-helper.py"
 run python3 "$HERE/test-touch-syn-translation.py"
 run sh "$HERE/run-decon-tests.sh"
 run node "$HERE/test-qs-gesture.js"
