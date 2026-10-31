@@ -23,22 +23,24 @@ echo "spi_driver=$(readlink -f /sys/bus/spi/devices/spi17.0/driver 2>/dev/null |
 echo "power_rail=$GPIO value=$(cat "$GPIO" 2>/dev/null || echo unavailable)"
 echo "geoclue=$(systemctl is-active geoclue 2>/dev/null || true)"
 
-if [ "$POWER" = "1" ]; then
-    echo 1 >"$GPIO" 2>/dev/null && echo "action=power-on" || echo "action=power-on-failed"
-elif [ "$POWER" = "0" ]; then
-    echo 0 >"$GPIO" 2>/dev/null && echo "action=power-off" || echo "action=power-off-failed"
+set_rail() { # requested must equal readback
+    req="$1"; echo "$req" >"$GPIO" 2>/dev/null || { echo "action=power-${2}-write-failed"; return 1; }
+    got="$(cat "$GPIO" 2>/dev/null || echo unknown)"
+    if [ "$got" = "$req" ]; then echo "action=power-$2 verified value=$got"; else echo "action=power-$2-readback-mismatch requested=$req actual=$got"; return 1; fi
+}
+if [ "$POWER" = "1" ]; then set_rail 1 on
+elif [ "$POWER" = "0" ]; then set_rail 0 off
 fi
 
 if [ "$LOCATE" = "1" ]; then
-    echo "--- geoclue network location (bounded 35s) ---"
-    if command -v geoclue-where-am-i >/dev/null 2>&1; then
-        timeout 35 geoclue-where-am-i 2>&1 || echo "geoclue=no-fix"
-    else
-        echo "geoclue=client-missing"
-    fi
+    echo "--- nuxel-bridge location (bounded 25s; source-aware) ---"
+    timeout 25 busctl --system call org.nuxel.Bridge /org/nuxel/Bridge \
+        org.nuxel.Bridge LocationAcquire s org.nuxel.Maps 2>&1 | \
+        python3 -c 'import sys,json; s=sys.stdin.read(); s=s[s.find(chr(34)):]; d=json.loads(json.loads(s)); print("state=%s source=%s kind=%s gnss=%s network=%s accuracy=%s" % (d.get("state"),d.get("fix_source"),d.get("fix_kind"),d.get("gnss_fix"),d.get("network_fix"),d.get("accuracy")))' \
+        2>/dev/null || echo "location=no-reply"
 fi
 
 if grep -q 'gps' /proc/devices 2>/dev/null || [ -e /dev/ttyBCM ]; then
     echo "gnss_verdict=BLOCKED_FIRMWARE (BCM4773 BBD/LHD needs vendor gpsd; ttyBCM is not NMEA)"
 fi
-echo "note=network location may work via geoclue [wifi]+[ip]; GNSS fix does not"
+echo "note=network location works via GeoClue [wifi]+[ip]; GNSS needs compatible BBD patch firmware + vendor lhd/gpsd runtime"

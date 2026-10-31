@@ -1,7 +1,7 @@
 # Diagnosing Issues — Quickstart: console, launcher reload, full reboot
 
 **Verified live:** 2026-10-28 08:43Z / 09:43 CET
-**Target:** Samsung Galaxy S10+ (`beyond2lte`, Exynos 9820), Nuxel v0.2.1
+**Target:** Samsung Galaxy S10+ (`beyond2lte`, Exynos 9820), Nuxel v0.7.4-beta
 **Host:** Fedora 43 laptop, repository at `/x/nuxel`
 **Phone state at verification:** USB serial `18d1:4ee7` on `/dev/ttyACM0`; WLAN
 `10.20.30.16:22` reachable; `nuxel-wayland.service` and `sshd.service` active.

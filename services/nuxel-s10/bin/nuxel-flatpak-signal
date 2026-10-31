@@ -1,0 +1,7 @@
+#!/bin/sh
+# Signal Desktop has no official Fedora aarch64 RPM.  The aarch64 Flathub
+# package is installed, but Flatpak cannot launch on this kernel: CONFIG_USER_NS
+# is not set, so bubblewrap cannot create its sandbox.  Report the blocker
+# truthfully instead of starting a fake web shortcut.
+echo "Signal requires Flatpak/bubblewrap user namespaces; this 4.14 kernel has CONFIG_USER_NS=n." >&2
+exit 2

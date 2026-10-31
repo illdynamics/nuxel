@@ -1,0 +1,164 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+=== mounts ===
+tracefs on /sys/kernel/tracing type tracefs (rw,nosuid,nodev,noexec,relatime)
+ramfs on /run/credentials/systemd-journald.service type ramfs (ro,nosuid,nodev,noexec,relatime,mode=700)
+=== block devices ===
+NAME      SIZE FSTYPE MOUNTPOINT LABEL
+sda     119.2G                   
+|-sda1    4.5M                   
+|-sda2    7.5M                   
+|-sda3     20M                   
+|-sda4      8M                   
+|-sda5      8M                   
+|-sda6    512K                   
+|-sda7     20M                   
+|-sda8      8M                   
+|-sda9      4M                   
+|-sda10     2M                   
+|-sda11     4M                   
+|-sda12     8M                   
+|-sda13     8M                   
+|-sda14    55M                   
+|-sda15  64.5M                   
+|-sda16    50M                   
+|-sda17     1M                   
+|-sda18   512K                   
+|-sda19     1M                   
+|-sda20    16M                   
+|-sda21    16M                   
+|-sda22    16M                   
+|-sda23    64K                   
+|-sda24   1.4M                   
+|-sda25   5.6G                   
+|-sda26   1.1G                   
+|-sda27   620M                   
+|-sda28   600M                   
+|-sda29    50M                   
+|-sda30     5M                   
+`-sda31 110.9G        /          
+sdb         4M                   
+sdc         4M                   
+sdd         8M                   
+`-sdd1      6M                   
+sde         8M                   
+zram0       0B                   
+=== /vendor ===
+drwxr-xr-x root:root 4096 /vendor
+drwxr-xr-x root:root 4096 /vendor/firmware
+-rw-r--r-- root:root 4296 /vendor/firmware/cs35l40-rcv-dsp1-spk-prot.bin
+-rw-r--r-- root:root 9312 /vendor/firmware/cs47l93-dsp1-trace.wmfw
+-rw-r--r-- root:root 28380 /vendor/firmware/cs35l40-rcv-dsp1-spk-prot.wmfw
+-rw-r--r-- root:root 4296 /vendor/firmware/cs35l40-bot-dsp1-spk-prot.bin
+-rw-r--r-- root:root 227344 /vendor/firmware/calliope_dram_2.bin
+-rw-r--r-- root:root 1056 /vendor/firmware/cs35l40-bot-dsp1-spk-prot-calib.bin
+-rw-r--r-- root:root 50708 /vendor/firmware/calliope_sram.bin
+-rw-r--r-- root:root 1971296 /vendor/firmware/calliope_dram.bin
+-rw-r--r-- root:root 174493 /vendor/firmware/bcm4375B1_semco.hcd
+-rw-r--r-- root:root 1056 /vendor/firmware/cs35l40-rcv-dsp1-spk-prot-calib.bin
+-rw-r--r-- root:root 7620 /vendor/firmware/calliope2.dt
+-rw-r--r-- root:root 52236 /vendor/firmware/calliope_sram_2.bin
+-rw-r--r-- root:root 28380 /vendor/firmware/cs35l40-bot-dsp1-spk-prot.wmfw
+=== candidate gps firmware anywhere ===
+11436 /home/nuxel/nuxel27000/tools/s10plus/a33/nuxel-gnss-diag.sh
+4717 /home/nuxel/nuxel27000/configs/nuxel/gnss/gnss.json
+4847 /var/lib/nuxel/a72/rollback-fast-20261027T161037+0100/etc_nuxel_gnss_gnss.json
+4155 /var/lib/nuxel/a72/rollback-fast-20261027T160958+0100/etc_nuxel_gnss_gnss.json
+10306 /var/lib/nuxel/a72/rollback-fast-20261027T160958+0100/usr_local_bin_nuxel-gnss-diag.sh
+11436 /usr/local/bin/nuxel-gnss-diag.sh
+4717 /etc/nuxel/gnss/gnss.json
+=== android dirs ===
+ls: cannot access '/system': No such file or directory
+ls: cannot access '/system/bin': No such file or directory
+ls: cannot access '/system/lib64': No such file or directory
+ls: cannot access '/vendor/bin': No such file or directory
+ls: cannot access '/vendor/lib64': No such file or directory
+ls: cannot access '/vendor/etc': No such file or directory
+=== firmware dir contents ===
+/lib/firmware:
+total 9184
+drwxr-xr-x  3 root  root     4096 Oct 28 15:04 .
+drwxr-xr-x 39 nuxel nuxel    4096 Oct 28 14:30 ..
+-rw-r--r--  1 root  root     5898 Oct 28 14:54 APBargeIn_AUDIO_SLSI.bin
+-rw-r--r--  1 root  root      984 Oct 28 14:54 APBiBF_AUDIO_SLSI.bin
+-rw-r--r--  1 root  root   172170 Oct 28 14:54 APDV_AUDIO_SLSI.bin
+-rw-r--r--  1 root  root   112506 Oct 28 14:54 APSV_AUDIO_SLSI.bin
+-rw-r--r--  1 root  root     3674 Oct 28 14:54 APTV_AUDIO_SLSI.bin
+-rw-r--r--  1 root  root    96720 Oct 28 14:54 AP_AUDIO_SLSI.bin
+-rw-r--r--  1 root  root   174493 Oct 27 18:28 BCM4375B1.hcd
+-rw-r--r--  1 root  root     8568 Oct 28 14:54 SoundBoosterParam.bin
+-rw-r--r--  1 root  root   421712 Oct 28 15:04 a2dpcom.bin
+-rw-r--r--  1 root  root   174493 Oct 27 18:28 bcm4375B1_semco.hcd
+-rw-r--r--  1 root  root    29012 Oct 20 10:30 bcmdhd_clm.blob
+-rw-r--r--  1 root  root  1295982 Oct 20 10:35 bcmdhd_sta.bin_b1
+-rw-r--r--  1 root  root   296896 Oct 28 14:54 bidirmic.bin
+drwxr-xr-x  2 root  root     4096 Oct 27 18:28 brcm
+-rw-r--r--  1 root  root     7620 Oct 28 13:06 calliope2.dt
+-rw-r--r--  1 root  root  1971296 Oct 28 13:06 calliope_dram.bin
+-rw-r--r--  1 root  root   227344 Oct 28 13:07 calliope_dram_2.bin
+-rw-r--r--  1 root  root    50708 Oct 28 13:06 calliope_sram.bin
+-rw-r--r--  1 root  root    52236 Oct 28 13:07 calliope_sram_2.bin
+-rw-r--r--  1 root  root     1056 Oct 28 13:04 cs35l40-bot-dsp1-spk-prot-calib.bin
+-rw-r--r--  1 root  root     4296 Oct 28 13:04 cs35l40-bot-dsp1-spk-prot.bin
+-rw-r--r--  1 root  root    28380 Oct 28 13:04 cs35l40-bot-dsp1-spk-prot.wmfw
+-rw-r--r--  1 root  root     1056 Oct 28 13:04 cs35l40-rcv-dsp1-spk-prot-calib.bin
+-rw-r--r--  1 root  root     4296 Oct 28 13:04 cs35l40-rcv-dsp1-spk-prot.bin
+-rw-r--r--  1 root  root    28380 Oct 28 13:04 cs35l40-rcv-dsp1-spk-prot.wmfw
+-rw-r--r--  1 root  root     9312 Oct 28 13:04 cs47l93-dsp1-trace.wmfw
+-rw-r--r--  1 root  root  1976344 Oct 28 14:54 dnn.bin
+-rw-r--r--  1 root  root   161120 Oct 28 14:54 fmsb.bin
+-rw-r--r--  1 root  root    12225 Oct 20 10:36 nvram.txt_CS01_semco_b1
+-rw-r--r--  1 root  root     6348 Sep  3 02:00 regulatory.db
+-rw-r--r--  1 root  root     1085 Sep  3 02:00 regulatory.db.p7s
+-rw-r--r--  1 root  root   297728 Oct 28 14:54 rxse.bin
+-rw-r--r--  1 root  root   634800 Oct 28 14:54 txse1.bin
+-rw-r--r--  1 root  root    55408 Oct 28 14:54 txse2.bin
+-rw-r--r--  1 root  root   971712 Oct 28 14:54 txse3.bin
+-rw-r--r--  1 root  root     8648 Oct 28 14:54 usbin.bin
+-rw-r--r--  1 root  root     9184 Oct 28 14:54 usbout.bin
+
+/lib/firmware/brcm:
+total 352
+drwxr-xr-x 2 root root   4096 Oct 27 18:28 .
+drwxr-xr-x 3 root root   4096 Oct 28 15:04 ..
+-rw-r--r-- 1 root root 174493 Oct 27 18:28 BCM4375B1.hcd
+-rw-r--r-- 1 root root 174493 Oct 27 18:28 bcm4375B1_semco.hcd
+
+/vendor/firmware:
+total 2536
+drwxr-xr-x 2 root root    4096 Oct 29 14:07 .
+drwxr-xr-x 3 root root    4096 Oct 27 18:28 ..
+-rw-r--r-- 1 root root  174493 Oct 27 18:28 bcm4375B1_semco.hcd
+-rw-r--r-- 1 root root    7620 Oct 28 13:06 calliope2.dt
+-rw-r--r-- 1 root root 1971296 Oct 28 13:06 calliope_dram.bin
+-rw-r--r-- 1 root root  227344 Oct 28 13:07 calliope_dram_2.bin
+-rw-r--r-- 1 root root   50708 Oct 28 13:06 calliope_sram.bin
+-rw-r--r-- 1 root root   52236 Oct 28 13:07 calliope_sram_2.bin
+-rw-r--r-- 1 root root    1056 Oct 28 13:04 cs35l40-bot-dsp1-spk-prot-calib.bin
+-rw-r--r-- 1 root root    4296 Oct 28 13:04 cs35l40-bot-dsp1-spk-prot.bin
+-rw-r--r-- 1 root root   28380 Oct 28 13:04 cs35l40-bot-dsp1-spk-prot.wmfw
+-rw-r--r-- 1 root root    1056 Oct 28 13:04 cs35l40-rcv-dsp1-spk-prot-calib.bin
+-rw-r--r-- 1 root root    4296 Oct 28 13:04 cs35l40-rcv-dsp1-spk-prot.bin
+-rw-r--r-- 1 root root   28380 Oct 28 13:04 cs35l40-rcv-dsp1-spk-prot.wmfw
+-rw-r--r-- 1 root root    9312 Oct 28 13:04 cs47l93-dsp1-trace.wmfw
+=== root/home images ===
+28252160 /root/nuxel-pwnage33000-backup/pre-pwnage33000.tar
+360300 /root/fp-old/debdeps/data.tar.xz
+1924 /root/fp-old/debdeps/control.tar.xz
+115228 /root/fp-old/bubblewrap-0.11.0.tar.xz
+1323352 /root/fp-old/deb114/data.tar.xz
+5320 /root/fp-old/deb114/control.tar.xz
+146312 /root/fp-old/bubblewrap-0.6.2.tar.xz
+52 /home/nuxel/received-1793399785.bin
+101075 /home/nuxel/nuxel27000.tar.gz
+8388608 /home/nuxel/big file ü.bin
+=== repo firmware manifest ===
+=== by-name gps-related ===
+ls: cannot access '/dev/block/by-name': No such file or directory

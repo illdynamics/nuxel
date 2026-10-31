@@ -1,0 +1,70 @@
+PWNAGE-37000B Butterscotch Smooth — live evidence 2026-10-31
+target: Samsung Galaxy S10+ SM-G975F / beyond2lte
+build: 2026-10-31T09:03:04Z live Fedora 43, kernel 4.14.253-gf7194c1d15ed-dirty
+
+== BASELINE (before this pass, live device) ==
+WebKitWebProcess: 141-145% CPU, RSS 766-768 MB
+phoc: 33.5% CPU; nuxel-wl-fb: 17.5% CPU
+wlfb: blits=41261, present_skipped=194836, blit_avg_ms=50, fps_1s=5, idle_ms=39747
+lockscreen animations: nuxel-indicator-usb (3s infinite), nuxel-indicator-live (1.9s infinite)
+drawer first open: 57ms (cold), 39-50ms warm; Home Settings first open: 168ms (cold)
+
+== AFTER (final deployed build) ==
+WebKitWebProcess: 1.8-2.7% CPU, RSS 392-400 MB
+phoc: 11.2-13.2% CPU; nuxel-wl-fb: 5.3-6.5% CPU
+lockscreen animations: none (document.getAnimations() == [])
+explicit idle: blits=2 since session start, present_skipped=590, idle_ms=52511, fps_1s=5
+drawer first open: 16ms; close 8ms; drawer reopen 10-19ms
+Home Settings first open: 36-40ms; reopen 16-22ms
+asset payload: 12 oversized PNG/JPEGs reduced to display-size variants
+bridge: damage-range blits active (damage rows e.g. 105-283), no failures
+
+== TEST MATRIX ==
+pytest rc=1
+        ids        = ['org.nuxel.LiveConsole', 'org.nuxel.USBSSHConsole', 'org.nuxel.WiFiSSHConsole']
+=========================== short test summary info ============================
+FAILED tests/pwnage37000/test_pwnage37000.py::test_a29_and_a45_session_scripts_are_identical
+FAILED tests/a80/test_tri_link_console.py::test_canonical_registry_has_exactly_the_three_console_entries_once
+2 failed, 203 passed in 5.27s
+
+== NODE TESTS ==
+launcher-drag rc=0
+status-indicators rc=0
+lockscreen-unlock rc=0
+lockscreen-indicators rc=0
+launcher-registry rc=0
+
+== PRE-EXISTING WORKTREE FAILURES ==
+The two failures above reproduce only in this working tree:
+- tests/pwnage37000::test_a29_and_a45_session_scripts_are_identical (uncommitted tool/s10plus/a45/nuxel-session.sh drift)
+- tests/a80::test_canonical_registry_has_exactly_the_three_console_entries_once (uncommitted pwa/nuxel-common/app-registry.json drift)
+Both PASS on a clean detached HEAD worktree (verified 2026-10-31); they are unrelated to PWNAGE-37000B.
+
+== FINAL DEPLOYED HASHES (pre-reboot) ==
+480b11327f4a5dd631da62bca93e70a8a6b0d8418d45e3ec379b6f37ccce27a5  index.html
+4e615d521caa6ccc0adc9dade53eb9a97f1b191522f36a327f3e486057d28600  js/app.js
+bb7a92580d87399aef148bffaa8d585ce5b8e5c86fa54517a0d9bc731c365ae0  js/lockscreen.js
+fb5b77e4b7adc67881d67966b24b937ce0b910288cc2d9b91e20e9a8506c2c8b  /usr/lib/nuxel/nuxel-wl-fb
+No PERF_BENCH/PERF2 diagnostic marker remains in the deployed index.
+Diagnostic inspector drop-in removed; only 30-fast-stop.conf remains.
+
+== FINAL IDLE SAMPLE ==
+WebKitWebProcess 1.8-2.7% CPU, RSS ~392 MB
+phoc 11.2-13.2%, nuxel-wl-fb 5.3-6.5%
+FRAMES_OK: fps_1s=5, blits=2, present_skipped=590, idle_ms=52511, failures=0
+No CSS animations on the locked surface (document.getAnimations() == []).
+
+== POST-REBOOT VERIFICATION (boot_id df736b53-13b8-49a1-ba5f-d7f7c0b1853f) ==
+Startup finished in 3.440s (kernel) + 29.482s (userspace) = 32.923s
+multi-user.target reached after 16.140s in userspace
+nuxel-wayland/nuxel-wl-fb active 10:04:52, launcher ready 10:04:56.576
+SSH reachable ~35s after reboot request.
+Services: nuxel-wayland, nuxel-wl-fb, nuxel-web, nuxel-bridge, nuxel-http-bridge all active.
+Settled idle (50s after boot):
+  WebKitWebProcess 2.3% CPU, RSS 390 MB
+  phoc 10.8% CPU
+  nuxel-wl-fb 5.7% CPU
+  FRAMES_OK total=890 fps_1s=5 failures=0 blits=150 present_skipped=739
+  idle_ms=48673 (no new blit during the whole sample window)
+  decon_pan_failed=0
+Only failed unit: NetworkManager-wait-online.service (pre-existing, unrelated).

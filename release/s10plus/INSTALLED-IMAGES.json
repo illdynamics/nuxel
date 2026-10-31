@@ -8,10 +8,10 @@
   "source": {
     "captured_from": "BOOT partition /dev/sda14 (live device readback) and the running userspace captured 2026-10-30 while the phone was running the PWNAGE-37000/38000 fixes; this release publishes those exact bytes",
     "captured_at": "2026-10-30T08:22:33+01:00",
-    "repository_head": "the commit named by the annotated v0.2.1 tag (created by the release workflow from the merged main commit)",
+    "repository_head": "the commit named by the annotated v0.7.4-beta tag (created by the release workflow from the merged main commit)",
     "branch": "main",
-    "repository_version": "v0.2.1",
-    "carried_forward_from": "v0.7.3-beta: this release updates documentation and launcher overlays only; the captured BOOT/userspace bytes are unchanged from the verified 2026-10-30 handset capture"
+    "repository_version": "v0.7.4-beta",
+    "carried_forward_from": "v0.7.3-beta: the v0.7.4-beta release updates userspace sources, audio/NSS/location runtime and documentation only; the captured BOOT bytes are unchanged from the verified 2026-10-30 handset capture"
   },
   "installed_boot_image": {
     "file": "nuxel-installed-s10plus-boot.img.gz",
@@ -56,8 +56,8 @@
     "note": "live capture from the running phone on 2026-10-30; includes the PWNAGE-37000/38000 deployed userspace. It is a hash inventory, not a rootfs block snapshot."
   },
   "ci_built_image": {
-    "release": "v0.2.1",
-    "asset": "nuxel-v0.2.1-s10plus.tar.gz",
+    "release": "v0.7.4-beta",
+    "asset": "nuxel-v0.7.4-beta-s10plus.tar.gz",
     "note": "The workflow rebuilds the current repository sources for this release and publishes that archive next to these captured live bytes. It is NOT byte-identical to the installed image; the captured image above is the exact handset image and is carried forward unchanged from the verified v0.7.3-beta capture."
   },
   "rootfs": {

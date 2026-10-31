@@ -403,6 +403,7 @@ export class NuxelBridgeClient {
             case 'location.get-status':
             case 'location.set-enabled':
             case 'location.acquire':
+            case 'location.stop':
             case 'location.gnss-probe':
             case 'location.gnss-power':
                 return { success: false, offline: true,

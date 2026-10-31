@@ -1,14 +1,43 @@
-# Nuxel S10+ audio — current status (2026-10-30, after speaker-path experiments)
+# Nuxel S10+ audio — current status (2026-10-31, v0.7.4-beta)
 
 Device: Samsung Galaxy S10+ SM-G975F / `beyond2lte` / Exynos 9820
 Userspace: Fedora 43 aarch64, PipeWire + WirePlumber
 
 ## Verdict
 
-**Digital playback path verified; physical built-in speaker still silent in
-owner-supervised tests and not fixed.** This is now a confirmed negative
-result, not merely a missing confirmation: the PWNAGE-43000 speaker-path test
-passed the Notes input preflight and the owner typed `no` during tests.
+**The built-in speaker is audible and owner-confirmed.** This supersedes the
+earlier "digital path verified, speaker silent" verdict. The PWNAGE-43000
+experiments below tested the wrong variable (ABOX Sound Type, PCM Source and
+sink level); the actual fault was the CS35L41 PLL reference.
+
+The owner-confirmed fix (PWNAGE-40000, 2026-10-30) is applied by
+`nuxel-audio-route.sh`: the device tree programs `ampclk=6.144 MHz`, but ABOX
+UAIF1 clocks both amplifiers at 1.536 MHz (16-bit stereo 48 kHz), so the amps
+were locked to the wrong reference. On both amps (`0x40`, `0x41`):
+`SP_RATE_CTRL 0x4804=0x1b`, `PLL_CLK_CTRL 0x2c04=0x370`,
+`AMP_DIG_VOL_CTRL 0x6000=0x8000`, `AMP_OUT_MUTE 0x2024=0x0`.
+
+The durable path is the driver cache, because `cs35l41_pcm_mute(1)` on
+`hw_free` rewrites `0x6000`/`0x2024` after every stream:
+`Left/Right Digital PCM Volume = 817` (→ `0x8000`, 0 dB) and
+`Left/Right AMP Mute = Unmuted`. `cs35l41_pcm_mute(0)` re-applies them on the
+next playback.
+
+The 366 ms cue is protected by `nuxel-audio-warmup`, which plays an inaudible
+8 s 48 kHz stream at volume 0.0, waits for DAPM `SPEAKER=On`, re-applies the
+cache/registers and only then lets the caller play the real POW.
+
+**Owner confirmations (Notes title = reply channel):** `works` at 21:56Z
+(manual warm-up + POW), 21:58Z (production volume cue), 22:00Z (Settings Test
+Audio), 22:05Z (after full reboot) and 22:06Z (frozen helper build).
+
+**Volume policy:** ceiling 100 %, first-boot default 50 %, `softvol max_dB=0.0`.
+
+**Honest limit:** the raw I2C writer `/usr/local/bin/nuxel-cs35.py` is a
+device-only artifact. A fresh image logs that the raw patch was not applied and
+uses the driver-cache path.
+
+### Historical record: PWNAGE-43000 experiments (all measured silent)
 
 The complete digital path is substantially verified:
 

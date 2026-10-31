@@ -33,6 +33,20 @@
           "command": "test -e configs/wireplumber/",
           "result": "present at seed time (presence is not a verdict)",
           "at": "2026-10-16T16:07:13+02:00"
+        },
+        {
+          "kind": "observation",
+          "path": "out.md",
+          "command": "owner typed `works` in the Notes title during/after each cue",
+          "result": "owner-confirmed audible: manual warm-up + POW 21:56Z, volume cue 21:58Z, Test Audio 22:00Z, after reboot 22:05Z, frozen helper 22:06Z",
+          "at": "2026-10-30T22:06:41Z"
+        },
+        {
+          "kind": "observation",
+          "path": "services/nuxel-s10/bin/nuxel-audio-route.sh",
+          "command": "grep -n 'Digital PCM Volume' services/nuxel-s10/bin/nuxel-audio-route.sh",
+          "result": "driver-cache 817 (0 dB) + Unmuted applied on route setup; PLL 0x4804=0x1b / 0x2c04=0x370",
+          "at": "2026-10-31T10:00:00+02:00"
         }
       ],
       "intended_changes": [
@@ -47,9 +61,9 @@
       ],
       "risk": "medium",
       "rollback": "git revert the commit(s) touching this task's expected files; the change is repository-only and alters no device state",
-      "verdict": null,
+      "verdict": "VERIFIED_ON_S10PLUS",
       "offline_ceiling": null,
-      "owner_action": "",
+      "owner_action": "Optional re-confirmation: play Settings -> Sound -> Test Audio and type `works` in the Notes title. Microphone, wired headset and USB-C audio remain separate owner tests.",
       "expected_files": [
         "configs/alsa-ucm/",
         "configs/pipewire/",
@@ -57,7 +71,7 @@
         "tools/s10plus/a33/nuxel-audio-diag.sh",
         "docs/beta-finalization/manual-proof/06-audio.md"
       ],
-      "note": "seeded from the QonQrete plan; 3/5 expected file(s) already present in the tree",
+      "note": "v0.7.4-beta: the speaker is owner-confirmed audible. Root cause was the CS35L41 PLL reference (DT 6.144 MHz vs ABOX UAIF1 1.536 MHz), fixed by four register writes on both amps plus the driver-cached 0 dB/unmute path and the nuxel-audio-warmup pre-play stream. The raw I2C writer is device-only; a fresh image logs the gap and uses the driver-cache path.",
       "source": "plan.json",
       "revision": 1,
       "at": "2026-10-16T16:07:13+02:00",

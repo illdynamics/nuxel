@@ -1,0 +1,33 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+=== authorized status (Maps) ===
+{
+  "state": "fixed",
+  "fix_source": "network_wifi",
+  "fix_kind": "network",
+  "gnss_fix": false,
+  "network_fix": true,
+  "latitude": 51.4005,
+  "longitude": 5.47196,
+  "accuracy": 25000.0
+}
+=== unauthorized status (no location:read) ===
+{
+  "state": "fixed",
+  "fix_source": "network_wifi",
+  "fix_kind": "network",
+  "latitude": null,
+  "longitude": null,
+  "accuracy": null
+}
+=== unauthorized GetLocation ===
+s "{\"success\": false, \"error\": \"Capability not granted: location:read\", \"error_code\": \"CAPABILITY_DENIED\"}"
+=== stop + disable ===
+{"enabled": false, "updated": 1793405791.0584593}

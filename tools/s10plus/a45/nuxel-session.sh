@@ -48,6 +48,22 @@ export WEBKIT_DISABLE_COMPOSITING_MODE=1
 export LIBGL_ALWAYS_SOFTWARE=1
 export GSK_RENDERER=cairo
 LOG=/run/nuxel-session.log
+# Native GUI applications run as the real nuxel user (uid 1000) so Firefox,
+# VLC and the GNOME tools do not refuse a root session.  They need the
+# compositor socket and a user-owned XDG_RUNTIME_DIR; create that runtime view
+# without ever copying the socket or weakening the compositor directory.
+mkdir -p /run/user/1000 2>/dev/null || true
+chown 1000:1000 /run/user/1000 2>/dev/null || true
+chmod 0700 /run/user/1000 2>/dev/null || true
+chgrp nuxel /run/nuxel-wayland 2>/dev/null || true
+chmod 0750 /run/nuxel-wayland 2>/dev/null || true
+if [ -S /run/nuxel-wayland/wayland-0 ]; then
+  chgrp nuxel /run/nuxel-wayland/wayland-0 /run/nuxel-wayland/wayland-0.lock 2>/dev/null || true
+  chmod 0660 /run/nuxel-wayland/wayland-0 2>/dev/null || true
+  chmod 0640 /run/nuxel-wayland/wayland-0.lock 2>/dev/null || true
+  ln -sfn /run/nuxel-wayland/wayland-0 /run/user/1000/wayland-0 2>/dev/null || true
+  ln -sfn /run/nuxel-wayland/wayland-0.lock /run/user/1000/wayland-0.lock 2>/dev/null || true
+fi
 # Claim the boot overlay before the systemd fallback unit can write the
 # one-shot marker.  The controller yields to this marker; it is per-boot
 # because /run is a tmpfs.
@@ -141,57 +157,37 @@ fi
 # OSK provider registration succeeds.
 say "starting A45 nav dock + Stevia OSK"
 nohup /usr/lib/nuxel/nuxel-navdock </dev/null >/run/nuxel-navdock.out 2>&1 &
+# Persistent top status strip over fullscreen native clients (Firefox/VLC/...).
+# It has an empty input region, so Home's DOM status-bar gestures still work.
+if [ -x /usr/lib/nuxel/nuxel-statusbar ]; then
+  nohup /usr/lib/nuxel/nuxel-statusbar </dev/null >/run/nuxel-statusbar.out 2>&1 &
+fi
 if [ -x /usr/bin/phosh-osk-stevia ]; then
   nohup dbus-run-session -- /usr/bin/phosh-osk-stevia </dev/null >/run/stevia.out 2>&1 &
 fi
 
-# PWNAGE-36000 AUDIO: this phone session runs as root and has no logind user
-# session, so the stock `systemctl --user pipewire` path does not exist.  Run
-# one private session bus + PipeWire/WirePlumber in the compositor's runtime
-# directory.  The exports are inherited by nuxel-pwa-host and every app it
-# launches.  This image has no udev daemon, so the udev rule is a fallback;
-# the session re-applies the /dev/snd group/mode itself on every boot.
-AUDIO_RUNTIME="${XDG_RUNTIME_DIR:-/run/nuxel-wayland}"
-export XDG_RUNTIME_DIR="$AUDIO_RUNTIME"
-export PIPEWIRE_RUNTIME_DIR="$AUDIO_RUNTIME"
-export PULSE_SERVER="${PULSE_SERVER:-unix:$AUDIO_RUNTIME/pulse/native}"
+# PWNAGE-43000 AUDIO: PipeWire runs in its own systemd cgroup, not inside the
+# phoc/WebKit cgroup.  The ABOX core-firmware reload can therefore drop the
+# ALSA runtime-PM reference by stopping only the audio unit, without tearing
+# down the compositor, framebuffer bridge or launcher (the old cold-boot storm).
+# Session D-Bus for GTK/Qt/Flatpak-independent native apps.  It never owns
+# audio and never starts/stops with the ABOX reload, so this restores the bus
+# that the old in-session audio block used to create without re-coupling them.
 if [ -z "${DBUS_SESSION_BUS_ADDRESS:-}" ]; then
-  BUS_SOCKET="$AUDIO_RUNTIME/bus"
-  if [ -S "$BUS_SOCKET" ]; then rm -f "$BUS_SOCKET" 2>/dev/null || true; fi
+  BUS_SOCKET=/run/nuxel-wayland/bus
+  [ -S "$BUS_SOCKET" ] && rm -f "$BUS_SOCKET" 2>/dev/null || true
   if dbus-daemon --session --fork --address="unix:path=$BUS_SOCKET" --nopidfile >/run/nuxel-dbus.out 2>&1; then
     export DBUS_SESSION_BUS_ADDRESS="unix:path=$BUS_SOCKET"
-    say "audio session bus $BUS_SOCKET"
+    say "session dbus $BUS_SOCKET"
   else
-    say "audio session bus unavailable"
+    say "session dbus unavailable"
   fi
 fi
+say "starting standalone audio session"
+systemctl --no-block start nuxel-audio-session.service 2>/dev/null || \
+  say "audio session service unavailable; audio route retry remains"
 chgrp -R audio /dev/snd 2>/dev/null || true
 chmod -R g+rw /dev/snd 2>/dev/null || true
-if command -v pipewire >/dev/null 2>&1; then
-  nohup pipewire >/run/nuxel-pipewire.out 2>&1 &
-  say "pipewire started pid=$!"
-  # Do not start WirePlumber before the PipeWire socket exists; otherwise the
-  # session manager logs a failed connection and wpctl can hang on first use.
-  _pw_i=0
-  while [ "$_pw_i" -lt 30 ]; do
-    [ -S "$AUDIO_RUNTIME/pipewire-0" ] && break
-    sleep 0.1
-    _pw_i=$((_pw_i + 1))
-  done
-  if [ -S "$AUDIO_RUNTIME/pipewire-0" ]; then
-    say "pipewire socket ready"
-  else
-    say "pipewire socket missing after 3s"
-  fi
-  if command -v wireplumber >/dev/null 2>&1; then
-    nohup wireplumber >/run/nuxel-wireplumber.out 2>&1 &
-    say "wireplumber started pid=$!"
-  fi
-  if command -v pipewire-pulse >/dev/null 2>&1; then
-    nohup pipewire-pulse >/run/nuxel-pipewire-pulse.out 2>&1 &
-    say "pipewire-pulse started pid=$!"
-  fi
-fi
 
 say "starting launcher host url=$NUXEL_HOME_URL"
 exec /usr/lib/nuxel/nuxel-pwa-host

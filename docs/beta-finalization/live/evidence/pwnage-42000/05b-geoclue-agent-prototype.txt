@@ -1,0 +1,63 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+calling AddAgent
+Traceback (most recent call last):
+  File "/tmp/gcagent2.py", line 26, in <module>
+    mgr.AddAgent('geoclue-demo-agent', timeout=5)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib64/python3.14/site-packages/dbus/proxies.py", line 72, in __call__
+    return self._proxy_method(*args, **keywords)
+           ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib64/python3.14/site-packages/dbus/proxies.py", line 141, in __call__
+    return self._connection.call_blocking(self._named_service,
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+                                          self._object_path,
+                                          ^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+                                          args,
+                                          ^^^^^
+                                          **keywords)
+                                          ^^^^^^^^^^^
+  File "/usr/lib64/python3.14/site-packages/dbus/connection.py", line 696, in call_blocking
+    reply_message = self.send_message_with_reply_and_block(
+        message, timeout)
+dbus.exceptions.DBusException: org.freedesktop.DBus.Error.NoReply: Did not receive a reply. Possible causes include: the remote application did not send a reply, the message bus security policy blocked the reply, the reply timeout expired, or the network connection was broken.
+agent_rc=1
+=== geoclue recent journal ===
+Oct 31 00:30:29 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 geoclue[35954]: Service not used for 60 seconds. Shutting down..
+Oct 31 00:30:29 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: geoclue.service: Deactivated successfully.
+Oct 31 00:43:02 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Starting geoclue.service - Location Lookup Service...
+Oct 31 00:43:02 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Started geoclue.service - Location Lookup Service.
+Oct 31 00:44:02 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 geoclue[44769]: Service not used for 60 seconds. Shutting down..
+Oct 31 00:44:02 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: geoclue.service: Deactivated successfully.
+Oct 31 00:47:07 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Starting geoclue.service - Location Lookup Service...
+Oct 31 00:47:07 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Started geoclue.service - Location Lookup Service.
+Oct 31 00:47:19 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: geoclue.service: Failed to get CPU usage: No such file or directory
+Oct 31 00:47:28 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping geoclue.service - Location Lookup Service...
+Oct 31 00:47:28 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: geoclue.service: Deactivated successfully.
+Oct 31 00:47:28 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopped geoclue.service - Location Lookup Service.
+Oct 31 00:47:28 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Starting geoclue.service - Location Lookup Service...
+Oct 31 00:47:28 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Started geoclue.service - Location Lookup Service.
+Oct 31 00:47:29 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: geoclue.service: Failed to get CPU usage: No such file or directory
+Oct 31 00:47:42 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping geoclue.service - Location Lookup Service...
+Oct 31 00:47:42 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: geoclue.service: Deactivated successfully.
+Oct 31 00:47:42 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopped geoclue.service - Location Lookup Service.
+Oct 31 00:48:55 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Starting geoclue.service - Location Lookup Service...
+Oct 31 00:48:55 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Started geoclue.service - Location Lookup Service.
+Oct 31 00:49:03 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping geoclue.service - Location Lookup Service...
+Oct 31 00:49:03 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: geoclue.service: Deactivated successfully.
+Oct 31 00:49:03 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopped geoclue.service - Location Lookup Service.
+Oct 31 00:49:04 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Starting geoclue.service - Location Lookup Service...
+Oct 31 00:49:04 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Started geoclue.service - Location Lookup Service.
+=== gdbus clients? ===
+└─ /org
+  └─ /org/freedesktop
+    └─ /org/freedesktop/GeoClue2
+      └─ /org/freedesktop/GeoClue2/Manager

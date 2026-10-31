@@ -43,6 +43,22 @@ try:
     import tri_link_status
 except Exception as _e:  # pragma: no cover - optional module
     tri_link_status = None
+
+# Single privileged torch owner.  PWAs and the button manager request a state;
+# only this in-process provider writes the LED brightness node.
+try:
+    import flashlight_provider
+except Exception as _e:  # pragma: no cover - optional module
+    flashlight_provider = None
+    logger.warning('flashlight_provider unavailable: %s', _e)
+
+# BlueZ OBEX Object Push is the ONE Files "Send" transport.  It is D-Bus based
+# and never implemented as a private raw protocol.
+try:
+    import bluetooth_obex
+except Exception as _e:  # pragma: no cover - optional module
+    bluetooth_obex = None
+    logger.warning('bluetooth_obex unavailable: %s', _e)
     logger.warning('tri_link_status unavailable: %s', _e)
 
 # USB connection-mode state machine (Charging / File Transfer). It only
@@ -90,7 +106,7 @@ HTTP_MODE = os.environ.get('NUXEL_HTTP_MODE', 'dev')
 # downgrade. NUXEL_BRIDGE_VERSION is the host IMPLEMENTATION version and is
 # allowed to move independently.
 BRIDGE_PROTOCOL_VERSION = os.environ.get('NUXEL_BRIDGE_PROTOCOL_VERSION', '1')
-BRIDGE_HOST_VERSION = os.environ.get('NUXEL_BRIDGE_VERSION', '0.2.1')
+BRIDGE_HOST_VERSION = os.environ.get('NUXEL_BRIDGE_VERSION', '0.7.4-beta')
 
 # Canonical launcher registry, shared with the PWA (pwa/nuxel-common/app-registry.json)
 # and the native shell. The rootfs installs it at /etc/nuxel/app-registry/.
@@ -296,6 +312,38 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
         except Exception as exc:
             logger.warning('storage file read failed for %r: %s', path, exc)
             self._send_json({'success': False, 'error': str(exc)}, 404)
+
+    def _send_storage_thumbnail(self, path):
+        """Serve a bounded, cached JPEG still for Gallery video cells.
+
+        This is the only decoder entry point used by the grid.  Path validation,
+        traversal/symlink rejection and decode timeouts live in PwaStore.
+        """
+        if not path:
+            self._send_json({'success': False, 'error': 'path required'}, 400)
+            return
+        try:
+            store = self._app_store()
+            thumb, mime = store.thumbnail_file(path)
+            data = thumb.read_bytes()
+        except StoreError as exc:
+            self._send_json({'success': False, 'error': str(exc),
+                             'error_code': 'THUMBNAIL_UNAVAILABLE'}, 404)
+            return
+        except Exception as exc:  # noqa: BLE001
+            logger.warning('thumbnail failed for %r: %s', path, exc)
+            self._send_json({'success': False, 'error': 'thumbnail unavailable'}, 500)
+            return
+        self.send_response(200)
+        self.send_header('Content-Type', mime)
+        self.send_header('Content-Length', str(len(data)))
+        self.send_header('Cache-Control', 'private, max-age=86400')
+        self.send_header('X-Content-Type-Options', 'nosniff')
+        self.end_headers()
+        try:
+            self.wfile.write(data)
+        except OSError:
+            pass
 
     def _send_json(self, data, status=200):
         response = json.dumps(data).encode('utf-8')
@@ -560,12 +608,30 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
         "nuxel-contacts": ["/usr/bin/nuxel-contacts"],
         "nuxel-dialer": ["/usr/bin/nuxel-dialer"],
         "nuxel-messages": ["/usr/bin/nuxel-messages"],
+        # PWNAGE-43000: Flatpak (aarch64) and native Fedora applications.
+        "org.mozilla.firefox": ["/usr/lib/nuxel/nuxel-flatpak-firefox"],
+        "org.videolan.VLC": ["/usr/lib/nuxel/nuxel-flatpak-vlc"],
+        "org.signal.Signal": ["/usr/lib/nuxel/nuxel-flatpak-signal"],
+        "com.stremio.Stremio": ["/usr/lib/nuxel/nuxel-flatpak-stremio"],
+        "org.gnome.FileRoller": ["/usr/bin/file-roller"],
+        "org.gnome.Loupe": ["/usr/bin/loupe"],
+        "org.gnome.Papers": ["/usr/bin/papers"],
+        "org.gnome.SystemMonitor": ["/usr/bin/gnome-system-monitor"],
     }
 
     # Apps that must write user-owned data (contacts, call log, message store)
     # are launched as the real session user.  Browser/camera need root-owned
     # /run state/FIFOs and keep the session's existing root launch context.
-    NATIVE_AS_SESSION_USER = {"nuxel-contacts", "nuxel-messages", "nuxel-dialer"}
+    NATIVE_AS_SESSION_USER = {
+        "nuxel-contacts", "nuxel-messages", "nuxel-dialer",
+        # PWNAGE-43000: Firefox/VLC/native GNOME tools refuse a root session.
+        # Run them as the real nuxel user (uid 1000) with the session's Wayland
+        # runtime; the a45 session script grants that user the socket.
+        "org.mozilla.firefox", "org.videolan.VLC",
+        "org.signal.Signal", "com.stremio.Stremio",
+        "org.gnome.FileRoller", "org.gnome.Loupe",
+        "org.gnome.Papers", "org.gnome.SystemMonitor",
+    }
 
     def _session_home(self):
         try:
@@ -603,18 +669,23 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
         import time as _t
         home = self._session_home()
         unit = "nuxel-app-" + target_id.rsplit(".", 1)[-1].lower() + "-%d" % int(_t.time() * 1000)
+        as_user = target_id in self.NATIVE_AS_SESSION_USER
+        runtime = "/run/user/1000" if as_user else "/run/nuxel-wayland"
         cmd = ["/usr/bin/systemd-run", "--unit=%s" % unit, "--collect",
-               "--setenv=XDG_RUNTIME_DIR=/run/nuxel-wayland",
+               "--setenv=XDG_RUNTIME_DIR=%s" % runtime,
                "--setenv=WAYLAND_DISPLAY=wayland-0",
                "--setenv=GSK_RENDERER=cairo",
                "--setenv=LIBGL_ALWAYS_SOFTWARE=1",
                "--setenv=WEBKIT_DISABLE_COMPOSITING_MODE=1",
                "--setenv=GDK_BACKEND=wayland",
+               "--setenv=QT_QPA_PLATFORM=wayland",
                "--setenv=DBUS_SESSION_BUS_ADDRESS=unix:path=/run/nuxel-wayland/bus",
+               "--setenv=PULSE_SERVER=unix:/run/nuxel-wayland/pulse/native",
+               "--setenv=PIPEWIRE_RUNTIME_DIR=/run/nuxel-wayland",
                "--setenv=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
                "--setenv=HOME=%s" % home,
                "--setenv=XDG_DATA_HOME=%s/.local/share" % home]
-        if target_id in self.NATIVE_AS_SESSION_USER:
+        if as_user:
             user = self._app_store().session_user
             if user:
                 cmd += ["--uid=%s" % user, "--gid=%s" % user,
@@ -631,6 +702,19 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
             logger.error("native launch refused id=%s rc=%s err=%s", target_id, proc.returncode, err)
             return ({"success": False, "error": "launch_failed",
                      "app_id": target_id, "detail": err or ("rc=%s" % proc.returncode)}, 500)
+        # The Home surface is a fullscreen toplevel.  A newly launched native
+        # app maps behind it unless we (a) leave Home fullscreen/minimize it and
+        # (b) maximize the app.  Do that asynchronously once the toplevel exists;
+        # the layer-shell top bar and nav dock then remain visible over it.
+        try:
+            subprocess.Popen(
+                ["/usr/lib/nuxel/nuxel-focus-app.sh", target_id],
+                env=dict(os.environ, XDG_RUNTIME_DIR="/run/nuxel-wayland",
+                         WAYLAND_DISPLAY="wayland-0"),
+                stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL, start_new_session=True)
+        except OSError as exc:
+            logger.warning("native focus helper failed for %s: %s", target_id, exc)
         logger.info("native app launched id=%s unit=%s argv=%s", target_id, unit, argv)
         return ({"success": True, "launched": True, "app_id": target_id,
                  "unit": unit, "action": "exec", "argv": argv}, 200)
@@ -1072,6 +1156,9 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
         elif path == '/api/v1/storage/file':
             self._send_storage_file(parse_qs(parsed.query).get('path', [''])[0])
 
+        elif path == '/api/v1/storage/thumbnail':
+            self._send_storage_thumbnail(parse_qs(parsed.query).get('path', [''])[0])
+
         elif path == '/api/v1/apps/registry':
             self._send_json(self._load_app_registry())
 
@@ -1084,7 +1171,7 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
             result = self._call_bridge('GetPhoneStatus', app_id)
             self._send_json(result)
 
-        elif path == '/api/v1/system/usb-mode':
+        elif path in ('/api/v1/system/usb-mode', '/api/v1/usb-mode/status'):
             if usb_mode is not None:
                 try:
                     self._send_json(usb_mode.current_state())
@@ -1103,6 +1190,17 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
                     self._send_json({'success': False, 'error': str(exc)}, 500)
             else:
                 self._send_json({'success': False, 'error': 'tri_link_status unavailable'}, 503)
+
+        elif path == '/api/v1/system/flashlight':
+            # Read-only state (toggle/off go through the authenticated RPC).
+            if flashlight_provider is not None:
+                try:
+                    self._send_json(flashlight_provider.handle('status', {}))
+                except Exception as exc:  # noqa: BLE001
+                    self._send_json({'success': False, 'state': 'ERROR', 'error': str(exc)}, 500)
+            else:
+                self._send_json({'success': False, 'state': 'UNKNOWN',
+                                 'error': 'flashlight provider unavailable'}, 503)
 
         elif path == '/api/v1/system/indicators':
             # Lockhead status indicators.  These read real kernel state
@@ -1172,6 +1270,7 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
         ("location", "get-status"): "LocationGetStatus",
         ("location", "set-enabled"): "LocationSetEnabled",
         ("location", "acquire"): "LocationAcquire",
+        ("location", "stop"): "LocationStop",
         ("bluetooth", "status"): "BluetoothGetStatus",
         ("bluetooth", "set-powered"): "BluetoothSetPowered",
         ("permissions", "request"): "RequestCapability",
@@ -1218,6 +1317,7 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
         "LocationGetStatus": lambda app_id, params: [app_id],
         "LocationSetEnabled": lambda app_id, params: [app_id, bool((params or {}).get("enabled", False))],
         "LocationAcquire": lambda app_id, params: [app_id],
+        "LocationStop": lambda app_id, params: [app_id],
         "BluetoothGetStatus": lambda app_id, params: [app_id],
         "BluetoothSetPowered": lambda app_id, params: [app_id, bool((params or {}).get("enabled", False))],
         "RequestCapability": lambda app_id, params: [app_id, params.get("capability", "")],
@@ -1257,6 +1357,15 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
                 except Exception as exc:  # noqa: BLE001
                     return {'success': False, 'error': str(exc)}
             return {'success': False, 'error': 'system_indicators unavailable'}
+        if namespace == 'flashlight':
+            if flashlight_provider is None:
+                return {'success': False, 'state': 'UNKNOWN',
+                        'error': 'flashlight provider unavailable'}
+            try:
+                return flashlight_provider.handle(verb, params)
+            except Exception as exc:  # noqa: BLE001
+                logger.warning('flashlight RPC %s failed: %s', verb, exc)
+                return {'success': False, 'state': 'ERROR', 'error': str(exc)}
         if namespace == 'system' and verb == 'tri-link':
             if tri_link_status is not None:
                 try:
@@ -1295,7 +1404,7 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
             if verb in ('test-audio', 'play-sound'):
                 return self._audio_provider.test_audio(
                     asset=params.get('asset', '/usr/share/nuxel/assets/nuxel-pow.mp3') if isinstance(params, dict) else '/usr/share/nuxel/assets/nuxel-pow.mp3',
-                    gain_percent=params.get('gain_percent', 25) if isinstance(params, dict) else 25)
+                    gain_percent=params.get('gain_percent', 50) if isinstance(params, dict) else 50)
         if namespace == 'display' and verb == 'status':
             if hw_providers is None:
                 return {'success': False, 'error': 'display provider unavailable'}
@@ -1303,16 +1412,25 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
         if namespace == 'location' and verb in ('gnss-probe', 'gnss-power'):
             if hw_providers is None:
                 return {'success': False, 'error': 'gnss provider unavailable'}
-            perm = self._call_bridge('CheckPermission', app_id, 'location:read')
+            # Direct rail control is a hardware-management operation.  A
+            # read-only location grant must never be able to toggle GPIO145.
+            capability = ('location:manage' if verb == 'gnss-power'
+                          else 'location:read')
+            perm = self._call_bridge('CheckPermission', app_id, capability)
             if not (perm and perm.get('granted')):
-                return {'success': False, 'error': 'Capability not granted: location:read',
+                return {'success': False,
+                        'error': 'Capability not granted: ' + capability,
                         'error_code': 'CAPABILITY_DENIED'}
             gnss = hw_providers.GnssProvider()
             if verb == 'gnss-power':
                 return gnss.power_rail(enabled=bool(params.get('enabled', True)),
                                        timeout=params.get('timeout', 5.0))
-            return gnss.sample_nmea(seconds=params.get('duration', 5),
-                                    timeout=params.get('timeout', 12.0))
+            # There is no NMEA stream on this hardware.  Probe the real
+            # BBD/LHD path and report the first missing dependency; only an
+            # explicit location:manage caller may apply rail power here.
+            return gnss.probe(seconds=params.get('duration', 3),
+                              timeout=params.get('timeout', 8.0),
+                              power=bool(params.get('power', False)))
         if namespace == 'bluetooth' and verb == 'power':
             if hw_providers is None:
                 return {'success': False, 'error': 'bluetooth power provider unavailable'}
@@ -1334,6 +1452,23 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
             st.update(act)
             st['success'] = bool(act.get('success'))
             return st
+        if namespace == 'bluetooth' and verb in ('send-targets', 'send-files'):
+            if bluetooth_obex is None:
+                return {'success': False, 'error': 'Bluetooth OBEX provider unavailable',
+                        'error_code': 'OBEX_UNAVAILABLE'}
+            if verb == 'send-targets':
+                return bluetooth_obex.list_targets()
+            perm = self._call_bridge('CheckPermission', app_id, 'bluetooth:connect')
+            if isinstance(perm, dict) and perm.get('granted') is False:
+                return {'success': False, 'error': 'Capability not granted: bluetooth:connect',
+                        'error_code': 'CAPABILITY_DENIED'}
+            try:
+                root = self._app_store().files_root
+            except Exception as exc:  # noqa: BLE001
+                return {'success': False, 'error': 'Files store unavailable: %s' % exc}
+            return bluetooth_obex.send_files(root, params.get('paths') or [],
+                                             params.get('address', ''),
+                                             timeout=params.get('timeout_s', 180))
         if namespace == 'bluetooth' and verb in (
                 'list-devices', 'scan', 'pair', 'connect', 'disconnect',
                 'trust', 'remove', 'info'):
@@ -1365,35 +1500,6 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
                 return bp.remove(params.get('mac', ''), timeout=params.get('timeout', 20.0))
             if verb == 'info':
                 return bp._info(params.get('mac', ''))
-        # Publish the authoritative Bluetooth provider state for the lockhead
-        # indicator and the native host.  This is a read, so it needs no write
-        # capability; a failure is never written as OFF.
-        if namespace == 'bluetooth' and verb == 'status':
-            try:
-                st = self._call_bridge('BluetoothGetStatus', app_id)
-            except Exception as exc:  # noqa: BLE001
-                st = {'success': False, 'error': str(exc)}
-            if isinstance(st, dict) and st.get('success') is not False:
-                try:
-                    import tempfile
-                    doc = {
-                        'powered': st.get('powered'),
-                        'state': st.get('state') or 'unknown',
-                        'discovering': bool(st.get('discovering')),
-                        'source': 'bridge:BluetoothGetStatus',
-                        'timestamp': st.get('timestamp'),
-                    }
-                    target = '/run/nuxel/bluetooth-indicator.json'
-                    os.makedirs(os.path.dirname(target), exist_ok=True)
-                    fd, tmp = tempfile.mkstemp(dir=os.path.dirname(target),
-                                                prefix='.bluetooth-indicator.')
-                    with os.fdopen(fd, 'w') as fh:
-                        json.dump(doc, fh)
-                    os.chmod(tmp, 0o644)
-                    os.replace(tmp, target)
-                except Exception as exc:  # noqa: BLE001
-                    logger.warning('bluetooth indicator publish failed: %s', exc)
-            return st
         method = self.RPC_METHODS.get((namespace, verb))
         if method is None:
             logger.warning("Unknown RPC %s.%s", namespace, verb)
@@ -1500,6 +1606,8 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
                     return store.home_info()
                 if verb == 'media-list':
                     return store.storage_media_list()
+                if verb == 'thumbnail':
+                    return store.storage_thumbnail(params.get('path', ''))
                 if verb == 'mkdir':
                     return store.storage_mkdir(params.get('path', ''))
                 if verb == 'rename':
@@ -1599,13 +1707,11 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
             if usb_mode is None:
                 self._send_json({'success': False, 'error': 'usb_mode unavailable'}, 503)
             else:
-                length = int(self.headers.get('Content-Length', '0') or 0)
-                raw = self.rfile.read(length) if length > 0 else b'{}'
-                try:
-                    payload = json.loads(raw.decode('utf-8') or '{}')
-                except Exception as exc:  # noqa: BLE001
-                    self._send_json({'success': False, 'error': 'invalid-json: %s' % exc}, 400)
-                    return
+                # The body was already consumed by _get_json_body() above.  The
+                # old second rfile.read(Content-Length) blocked forever on a
+                # keep-alive connection (the exact "File Transfer never
+                # switches" symptom); reuse the parsed document.
+                payload = body if isinstance(body, dict) else {}
                 mode = str(payload.get('mode', ''))
                 result = usb_mode.set_mode(mode)
                 self._send_json(result, 200 if result.get('success') else 409)

@@ -57,6 +57,8 @@ def current_state() -> Dict[str, Any]:
     if selected not in _ALLOWED:
         selected = "charging"
     return {
+        "success": True,
+        "mode": selected,
         "selected": selected,
         "transition_in_progress": bool(selection.get("transition_in_progress")),
         "endpoint_state": activation.get("endpoint_state", "inactive"),

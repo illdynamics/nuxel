@@ -26,6 +26,9 @@
     currentNote: null,
     dirty: false,
     saving: false,
+    _revision: 0,
+    _saveChain: Promise.resolve(),
+    _lastTransport: 'unknown',
 
     init: async function () {
       await this.load();
@@ -37,23 +40,57 @@
       var res = await bridgeCall('storage', 'read', { key: STORE_KEY });
       if (res && res.success !== false && Array.isArray(res.data)) {
         this.notes = res.data;
+        this._lastTransport = 'bridge';
         saveLocal(this.notes);
       } else {
         this.notes = loadLocal();
+        this._lastTransport = res && res.offline ? 'local-offline' : 'local-cache';
       }
+      // A widget tap records the requested note before launching the app.
+      try {
+        var wanted = localStorage.getItem('nuxel.notes.open');
+        if (wanted) {
+          localStorage.removeItem('nuxel.notes.open');
+          var note = this.notes.find(function (n) { return n.id === wanted; });
+          if (note) setTimeout(function () { app.openEditor(note); }, 0);
+        }
+      } catch (e) {}
     },
 
     // Compatibility with notes-io.js (it calls _saveNotes when pinning/importing).
     _saveNotes: function () { return this.persist(); },
 
+    // Serialized writes: an older completion can never mark newer text as
+    // saved. localStorage is written first as a durable offline cache; the
+    // bridge remains the canonical store while it is available.
+    _enqueueWrite(snapshot, revision) {
+      var self = this;
+      var run = function () {
+        return bridgeCall('storage', 'write', { key: STORE_KEY, data: snapshot }).then(function (res) {
+          var ok = !(res && res.success === false);
+          if (ok) {
+            self._lastTransport = (res && res.offline) ? 'local-offline' : 'bridge';
+            self._savedRevision = Math.max(self._savedRevision || 0, revision);
+          }
+          return { ok: ok, transport: self._lastTransport, error: res && res.error, revision: revision };
+        });
+      };
+      this._saveChain = this._saveChain.then(run, run);
+      return this._saveChain;
+    },
+
     async persist() {
-      var notes = this.notes.slice();
+      var notes = JSON.parse(JSON.stringify(this.notes));
       saveLocal(notes);
-      var res = await bridgeCall('storage', 'write', { key: STORE_KEY, data: notes });
-      if (res && res.success === false) {
-        return { ok: false, error: res.error || 'storage write failed' };
-      }
-      return { ok: true };
+      this._revision++;
+      var res = await this._enqueueWrite(notes, this._revision);
+      if (res.ok) this._announce(notes);
+      return res;
+    },
+
+    _announce(notes) {
+      try { document.dispatchEvent(new CustomEvent('nuxel:notes-updated', { detail: { notes: notes } })); } catch (e) {}
+      try { window.dispatchEvent(new CustomEvent('nuxel:notes-updated', { detail: { notes: notes } })); } catch (e) {}
     },
 
     renderList: function () {
@@ -95,7 +132,12 @@
       var meta = document.getElementById('note-meta');
       if (this.saving) meta.textContent = 'Saving…';
       else if (this.dirty) meta.textContent = 'Unsaved changes';
-      else meta.textContent = this.currentNote ? ('Saved · ' + this.formatDate(this.currentNote.updatedAt)) : '';
+      else if (this.currentNote) {
+        var how = this._lastTransport === 'bridge' ? 'Saved'
+          : this._lastTransport === 'local-offline' ? 'Saved locally (bridge offline)'
+          : this._lastTransport === 'local-cache' ? 'Saved locally (cache)' : 'Saved';
+        meta.textContent = how + ' · ' + this.formatDate(this.currentNote.updatedAt);
+      } else meta.textContent = '';
     },
 
     capture: function () {
@@ -105,24 +147,34 @@
       this.currentNote.updatedAt = new Date().toISOString();
       var idx = this.notes.findIndex(function (n) { return n.id === app.currentNote.id; });
       if (idx >= 0) this.notes[idx] = this.currentNote; else this.notes.push(this.currentNote);
+      this._revision++;
       this.dirty = true;
       this.updateMeta();
     },
 
     async save() {
-      if (!this.currentNote || this.saving) return { ok: true };
+      if (!this.currentNote) return { ok: true };
+      // Capture first even if a write is already in flight: the queued write
+      // uses this snapshot and a newer revision, so text is never dropped.
       this.capture();
+      var rev = this._revision;
+      var snapshot = JSON.parse(JSON.stringify(this.notes));
       this.saving = true;
       this.updateMeta();
-      var res = await this.persist();
-      this.saving = false;
-      if (res.ok) {
-        this.dirty = false;
-        this.updateMeta();
-        this.renderList();
-      } else {
-        this.updateMeta();
-        this.showStatus('Save failed: ' + (res.error || 'unknown error') + '. Your content is kept.');
+      saveLocal(snapshot);
+      var res = await this._enqueueWrite(snapshot, rev);
+      // Only the newest revision may clear the dirty flag / print "Saved".
+      if (rev === this._revision) {
+        this.saving = false;
+        if (res.ok) {
+          this.dirty = false;
+          this.updateMeta();
+          this.renderList();
+          this._announce(snapshot);
+        } else {
+          this.updateMeta();
+          this.showStatus('Save failed: ' + (res.error || 'unknown error') + '. Your content is kept.');
+        }
       }
       return res;
     },
@@ -144,6 +196,24 @@
 
     bind: function () {
       var self = this;
+      var openFromHome = function (ev) {
+        var id = ev && ev.detail && ev.detail.noteId;
+        var note = id ? self.notes.find(function (n) { return n.id === id; }) : null;
+        if (note) {
+          document.getElementById('note-editor').classList.remove('hidden');
+          self.openEditor(note);
+        }
+      };
+      document.addEventListener('nuxel:notes-open', openFromHome);
+      if (typeof window.addEventListener === 'function') window.addEventListener('nuxel:notes-open', openFromHome);
+      // Cross-WebView deep link: Home writes the requested note id to the
+      // shared origin storage, which fires here even when Notes is already open.
+      if (typeof window.addEventListener === 'function') window.addEventListener('storage', function (ev) {
+        if (!ev || ev.key !== 'nuxel.notes.open' || !ev.newValue) return;
+        try { localStorage.removeItem('nuxel.notes.open'); } catch (e) {}
+        var note = self.notes.find(function (n) { return n.id === ev.newValue; });
+        if (note) { document.getElementById('note-editor').classList.remove('hidden'); self.openEditor(note); }
+      });
       document.getElementById('new-note-btn').addEventListener('click', function () { self.openEditor(null); });
       document.getElementById('editor-back').addEventListener('click', function () {
         if (self.dirty) self.saveAndClose(); else { document.getElementById('note-editor').classList.add('hidden'); self.currentNote = null; }

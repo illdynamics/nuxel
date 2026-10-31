@@ -1,0 +1,4 @@
+#!/bin/sh
+# PWNAGE-43000: Flatpak cannot create a user namespace on this kernel
+# (CONFIG_USER_NS=n).  Use the genuine Fedora aarch64 VLC RPM.
+exec /usr/bin/vlc "$@"

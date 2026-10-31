@@ -1,0 +1,68 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+=== users ===
+nuxel:x:1000:1000::/home/nuxel:/bin/bash
+geoclue:x:999:999::/var/lib/geoclue:/usr/sbin/nologin
+=== root cat resolv ===
+rc=0
+=== root getent hosts ===
+2a01:4f8:1c17:4f88:: hz16gb0.beacondb.net api.beacondb.net
+rc=0
+=== root getent ahostsv4 ===
+49.13.72.183    STREAM hz16gb0.beacondb.net
+49.13.72.183    DGRAM  
+49.13.72.183    RAW    
+rc=0
+=== geoclue cat resolv ===
+rc=0
+=== geoclue getent hosts ===
+rc=2
+=== geoclue getent ahostsv4 ===
+rc=0
+=== nuxel cat resolv ===
+rc=0
+=== nuxel getent hosts ===
+rc=2
+=== nuxel getent ahostsv4 ===
+rc=0
+=== nss module files ===
+-rwxr-xr-x 1 root root  68576 Sep 29 02:00 /usr/lib64/libnss_dns.so.2
+-rwxr-xr-x 1 root root 269032 Sep 15 02:00 /usr/lib64/libnss_resolve.so.2
+=== resolve runtime ===
+ls: cannot access '/run/systemd/resolve': No such file or directory
+ls: cannot access '/run/systemd/resolve/io.systemd.Resolve': No such file or directory
+=== strace geoclue getent (filtered) ===
+47762 openat(AT_FDCWD, "/etc/nsswitch.conf", O_RDONLY|O_CLOEXEC) = 3
+47762 openat(AT_FDCWD, "/lib64/libresolv.so.2", O_RDONLY|O_CLOEXEC) = 4
+47762 socket(AF_NETLINK, SOCK_RAW|SOCK_CLOEXEC, NETLINK_AUDIT) = 3
+47762 socket(AF_UNIX, SOCK_DGRAM|SOCK_CLOEXEC, 0) = 3
+47762 connect(3, {sa_family=AF_UNIX, sun_path="/dev/log"}, 110) = 0
+47762 socket(AF_NETLINK, SOCK_RAW|SOCK_CLOEXEC, NETLINK_AUDIT) = 4
+47763 socket(AF_NETLINK, SOCK_RAW|SOCK_CLOEXEC, NETLINK_ROUTE) = 3
+47763 openat(AT_FDCWD, "/etc/nsswitch.conf", O_RDONLY|O_CLOEXEC) = 3
+47763 openat(AT_FDCWD, "/etc/resolv.conf", O_RDONLY|O_CLOEXEC) = 3
+47763 openat(AT_FDCWD, "/lib64/libnss_myhostname.so.2", O_RDONLY|O_CLOEXEC) = 3
+47763 openat(AT_FDCWD, "/lib64/libnss_resolve.so.2", O_RDONLY|O_CLOEXEC) = 3
+47763 socket(AF_UNIX, SOCK_STREAM|SOCK_CLOEXEC|SOCK_NONBLOCK, 0) = 3
+47763 connect(3, {sa_family=AF_UNIX, sun_path="/run/systemd/resolve/io.systemd.Resolve"}, 42) = -1 ENOENT (No such file or directory)
+47763 socket(AF_INET, SOCK_DGRAM|SOCK_CLOEXEC|SOCK_NONBLOCK, IPPROTO_IP) = -1 EACCES (Permission denied)
+47763 socket(AF_INET, SOCK_DGRAM|SOCK_CLOEXEC|SOCK_NONBLOCK, IPPROTO_IP) = -1 EACCES (Permission denied)
+47762 socket(AF_NETLINK, SOCK_RAW|SOCK_CLOEXEC, NETLINK_AUDIT) = 4
+47762 socket(AF_NETLINK, SOCK_RAW|SOCK_CLOEXEC, NETLINK_AUDIT) = 4
+=== strace root getent (filtered) ===
+47770 socket(AF_NETLINK, SOCK_RAW|SOCK_CLOEXEC, NETLINK_ROUTE) = 3
+47770 openat(AT_FDCWD, "/etc/nsswitch.conf", O_RDONLY|O_CLOEXEC) = 3
+47770 openat(AT_FDCWD, "/etc/resolv.conf", O_RDONLY|O_CLOEXEC) = 3
+47770 openat(AT_FDCWD, "/lib64/libnss_myhostname.so.2", O_RDONLY|O_CLOEXEC) = 3
+47770 openat(AT_FDCWD, "/lib64/libnss_resolve.so.2", O_RDONLY|O_CLOEXEC) = 3
+47770 socket(AF_UNIX, SOCK_STREAM|SOCK_CLOEXEC|SOCK_NONBLOCK, 0) = 3
+47770 connect(3, {sa_family=AF_UNIX, sun_path="/run/systemd/resolve/io.systemd.Resolve"}, 42) = -1 ENOENT (No such file or directory)
+47770 socket(AF_INET, SOCK_DGRAM|SOCK_CLOEXEC|SOCK_NONBLOCK, IPPROTO_IP) = 3
+47770 connect(3, {sa_family=AF_INET, sin_port=htons(53), sin_addr=inet_addr("62.179.104.196")}, 16) = 0

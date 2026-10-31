@@ -1,5 +1,5 @@
 // Nuxel Calculator service worker - cache-first (the app is fully offline).
-const CACHE_NAME = 'nuxel-photos-v1';
+const CACHE_NAME = 'nuxel-photos-v2-p44000';
 const ASSETS = [
   './',
   './index.html',

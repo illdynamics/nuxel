@@ -1,0 +1,78 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+=== agent log ===
+Oct 31 01:08:05 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-geoclue-agent.service: Scheduled restart job, restart counter is at 2.
+Oct 31 01:08:05 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Started nuxel-geoclue-agent.service - Nuxel GeoClue2 agent for the nuxel-bridge UID.
+Oct 31 01:08:06 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 python3[51778]: Traceback (most recent call last):
+Oct 31 01:08:06 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 python3[51778]:   File "/usr/lib/nuxel/nuxel-bridge/geoclue_agent.py", line 135, in <module>
+Oct 31 01:08:06 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 python3[51778]:     main()
+Oct 31 01:08:06 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 python3[51778]:     ~~~~^^
+Oct 31 01:08:06 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 python3[51778]:   File "/usr/lib/nuxel/nuxel-bridge/geoclue_agent.py", line 118, in main
+Oct 31 01:08:06 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 python3[51778]:     bus.connect_to_signal('NameOwnerChanged', registrar.on_name_owner_changed,
+Oct 31 01:08:06 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 python3[51778]:     ^^^^^^^^^^^^^^^^^^^^^
+Oct 31 01:08:06 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 python3[51778]: AttributeError: 'SystemBus' object has no attribute 'connect_to_signal'
+Oct 31 01:08:06 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-geoclue-agent.service: Main process exited, code=exited, status=1/FAILURE
+Oct 31 01:08:06 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-geoclue-agent.service: Failed with result 'exit-code'.
+Oct 31 01:08:09 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopped nuxel-geoclue-agent.service - Nuxel GeoClue2 agent for the nuxel-bridge UID.
+Oct 31 01:08:09 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Started nuxel-geoclue-agent.service - Nuxel GeoClue2 agent for the nuxel-bridge UID.
+Oct 31 01:08:11 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 python3[51804]: 2026-10-31 01:08:11,654 [INFO] nuxel-geoclue-agent: registering GeoClue agent for org.nuxel.Bridge
+Oct 31 01:08:11 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 python3[51804]: 2026-10-31 01:08:11,685 [INFO] nuxel-geoclue-agent: GeoClue agent registered for org.nuxel.Bridge
+Oct 31 01:08:16 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-geoclue-agent.service: Failed to get CPU usage: No such file or directory
+Oct 31 01:08:21 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 python3[51804]: 2026-10-31 01:08:21,705 [INFO] nuxel-geoclue-agent: GeoClue exited; agent will re-register on next start
+Oct 31 01:08:22 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 python3[51804]: 2026-10-31 01:08:22,626 [INFO] nuxel-geoclue-agent: GeoClue appeared (:1.219); registering agent
+Oct 31 01:08:23 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 python3[51804]: 2026-10-31 01:08:23,652 [INFO] nuxel-geoclue-agent: registering GeoClue agent for org.nuxel.Bridge
+Oct 31 01:08:23 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 python3[51804]: 2026-10-31 01:08:23,683 [INFO] nuxel-geoclue-agent: GeoClue agent registered for org.nuxel.Bridge
+=== acquire with agent ready ===
+{
+  "success": true,
+  "state": "error",
+  "fix_source": null,
+  "fix_kind": null,
+  "gnss_fix": false,
+  "network_fix": false,
+  "accuracy": null,
+  "latitude": null,
+  "longitude": null,
+  "last_fix_timestamp": null,
+  "active_clients": 0
+}
+=== bridge journal ===
+Oct 31 01:07:57 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: /etc/systemd/system/nuxel-bridge.service:56: Unknown system call group, ignoring: @dbus
+Oct 31 01:07:57 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-bridge.service: Service has RestartMaxDelaySec= but no RestartSteps= setting. Ignoring.
+Oct 31 01:07:57 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: /etc/systemd/system/nuxel-bridge.service:56: Unknown system call group, ignoring: @dbus
+Oct 31 01:07:57 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-bridge.service: Service has RestartMaxDelaySec= but no RestartSteps= setting. Ignoring.
+Oct 31 01:08:00 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping nuxel-bridge.service - Nuxel Bridge - PWA to Native Phone Service Mediator...
+Oct 31 01:08:00 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-bridge.service: Deactivated successfully.
+Oct 31 01:08:00 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopped nuxel-bridge.service - Nuxel Bridge - PWA to Native Phone Service Mediator.
+Oct 31 01:08:00 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Started nuxel-bridge.service - Nuxel Bridge - PWA to Native Phone Service Mediator.
+Oct 31 01:08:00 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-bridge[51754]: 2026-10-31 01:08:00,959 [INFO] nuxel-bridge: Starting Nuxel Bridge v0.2.1...
+Oct 31 01:08:00 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-bridge[51754]: 2026-10-31 01:08:00,968 [INFO] nuxel-bridge: Claimed D-Bus name: org.nuxel.Bridge
+Oct 31 01:08:00 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-bridge[51754]: 2026-10-31 01:08:00,970 [INFO] nuxel-bridge: Nuxel Bridge started | session=4ec648d5-5240-4d52-aa8c-b518548e0501
+Oct 31 01:08:00 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-bridge[51754]: 2026-10-31 01:08:00,970 [INFO] nuxel-bridge: bridge_version=1 host_version=0.7.1-beta
+Oct 31 01:08:00 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-bridge[51754]: 2026-10-31 01:08:00,971 [INFO] nuxel-bridge: Nuxel Bridge running with portal integration...
+Oct 31 01:08:00 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-bridge[51754]: 2026-10-31 01:08:00,974 [INFO] nuxel-bridge: Connected to nuxel-portal
+Oct 31 01:08:00 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-bridge[51754]: 2026-10-31 01:08:00,979 [ERROR] nuxel-bridge: ModemManager connect failed: org.freedesktop.DBus.Error.InvalidArgs: No such property “Modems”
+Oct 31 01:08:00 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-bridge[51754]: 2026-10-31 01:08:00,981 [INFO] nuxel-bridge: NetworkManager connected
+Oct 31 01:08:11 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-bridge[51754]: 2026-10-31 01:08:11,699 [INFO] nuxel-bridge: GeoClue connected client=/org/freedesktop/GeoClue2/Client/1 accuracy=6
+=== geoclue journal ===
+
+real	0m0.068s
+user	0m0.063s
+sys	0m0.020s
+Oct 31 01:07:57 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping geoclue.service - Location Lookup Service...
+Oct 31 01:07:57 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: geoclue.service: Deactivated successfully.
+Oct 31 01:07:57 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopped geoclue.service - Location Lookup Service.
+Oct 31 01:07:57 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Starting geoclue.service - Location Lookup Service...
+Oct 31 01:07:58 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Started geoclue.service - Location Lookup Service.
+Oct 31 01:08:21 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping geoclue.service - Location Lookup Service...
+Oct 31 01:08:21 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: geoclue.service: Deactivated successfully.
+Oct 31 01:08:21 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopped geoclue.service - Location Lookup Service.
+Oct 31 01:08:22 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Starting geoclue.service - Location Lookup Service...
+Oct 31 01:08:22 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Started geoclue.service - Location Lookup Service.

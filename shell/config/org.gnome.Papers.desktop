@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Document Viewer
+Comment=Nuxel installed document viewer (Fedora aarch64 RPM)
+Exec=/usr/bin/papers %U
+Icon=org.gnome.Papers
+Terminal=false
+Categories=Office;Viewer;
+MimeType=application/pdf;
+StartupNotify=true

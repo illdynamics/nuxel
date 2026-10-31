@@ -4,7 +4,7 @@
 **Machine-readable twin:** [`DEVICE-CAPABILITY-MANIFEST.json`](DEVICE-CAPABILITY-MANIFEST.json) · **Schema:** [`DEVICE-CAPABILITY-MANIFEST.schema.json`](DEVICE-CAPABILITY-MANIFEST.schema.json) · **Validator:** `tools/beta/validate-capability-manifest.py`
 **Companion:** [`../testing/TEST-STRATEGY.md`](../testing/TEST-STRATEGY.md) (L1–L6) · [`SOAK-AND-PERFORMANCE.md`](../testing/SOAK-AND-PERFORMANCE.md) · [`REBOOT-ROLLBACK.md`](REBOOT-ROLLBACK.md) · [`ROLLBACK.md`](ROLLBACK.md) · [`../BETA-MANUAL-PROOF-CHECKLIST.md`](../BETA-MANUAL-PROOF-CHECKLIST.md)
 
-**Version:** `v0.2.1` · **git head at generation:** the `v0.2.1` release commit · **generated:** `2026-10-30T16:00:00+0100`
+**Version:** `v0.7.4-beta` · **git head at generation:** the `v0.7.4-beta` release commit · **generated:** `2026-10-31T12:00:00+0100`
 
 ---
 
@@ -28,7 +28,7 @@ strength:  NOT_SUPPORTED_ON_DEVICE = DEFERRED = FAILED = BLOCKED_* = 0
            VERIFIED_ON_S10PLUS = 5      (live-device evidence only)
 ```
 
-This is why the table below contains a lot of `1`s and `2`s and no `5`s: nothing has been promoted on the strength of a file existing. `VERIFIED_ON_S10PLUS` requires live-device evidence for the *promoted* claim. Bluetooth is **confirmed working on the handset** (hci0, powered adapter and peer scan), but the evidence-gated work-queue record still caps its row at `NEEDS_OWNER_TEST` until one concrete headset/keyboard profile is exercised. Audio's full software route is verified, while physical audibility remains owner-only.
+This is why most rows still carry `1`s and `2`s: nothing is promoted on the strength of a file existing. `VERIFIED_ON_S10PLUS` requires live-device evidence for the *promoted* claim. **Speaker audio is now `VERIFIED_ON_S10PLUS`**: the owner typed `works` in the Notes title for the boot cue, volume cue, Settings Test Audio and after a full reboot (PWNAGE-40000, 2026-10-30). Bluetooth is **confirmed working on the handset** (hci0, powered adapter and peer scan), but its evidence-gated record still caps that row at `NEEDS_OWNER_TEST` until one concrete headset/keyboard profile is exercised. Network location works; satellite GNSS stays `BLOCKED_FIRMWARE`.
 
 ## 2. Device
 
@@ -63,7 +63,7 @@ This is why the table below contains a lot of `1`s and `2`s and no `5`s: nothing
 | `bluetooth` | **NEEDS_OWNER_TEST** (working; profile acceptance open) | `briq-08d-bluetooth` (pending) | Bluetooth (BlueZ) controller, pairing and profiles |
 | `modem_sim` | **NEEDS_OWNER_TEST** | `briq-08i-sim-microsd-modem` (pending) | Shannon LTE modem and SIM (beyond2lte) |
 | `microsd` | **NEEDS_OWNER_TEST** | `briq-08i-sim-microsd-modem` (pending) | microSD controller, insertion and safe mount/eject |
-| `audio_speaker` | **NEEDS_OWNER_TEST** | `briq-03c-audio-speaker` (in_progress) | Speaker / earpiece audio path (Madera + ABox + CS35L40) |
+| `audio_speaker` | **VERIFIED_ON_S10PLUS** | `briq-03c-audio-speaker` (in_progress) | Speaker / earpiece audio path (Madera + ABox + CS35L40) |
 | `headphones` | **NEEDS_OWNER_TEST** | `briq-03d-headphones-usbc` (pending) | Headphones and USB-C audio accessories |
 | `buttons` | **IMPLEMENTED_NOT_DEPLOYED** | `briq-03e-buttons-gestures` (pending) | Hardware buttons: power, volume, Bixby (A32 manager + gesture FSM) |
 | `power_menu` | **IMPLEMENTED_NOT_DEPLOYED** | `briq-03e-buttons-gestures` (pending) | Nuxel power menu (lock, off, restart, recovery, Download Mode entries) |
@@ -202,12 +202,12 @@ This is why the table below contains a lot of `1`s and `2`s and no `5`s: nothing
 
 #### `audio_speaker` — Speaker / earpiece audio path (Madera + ABox + CS35L40)
 
-* **Verdict:** `NEEDS_OWNER_TEST`  ·  **record:** `briq-03c-audio-speaker` (state `in_progress`, verdict `none`)
+* **Verdict:** `VERIFIED_ON_S10PLUS`  ·  **record:** `briq-03c-audio-speaker` (state `in_progress`, verdict `VERIFIED_ON_S10PLUS`)
 * **Hardware present:** yes
-* **Hardware evidence:** ABOX Calliope `MUB0`; both CS35L41 DSP1 `booted=Y running=Y`; `ABOX RDMA1_EN=1`; `Left/Right AMP PCM Gain=12/12`; `alsa_output.hw_0_1` at 48 kHz; RDMA1 `state=RUNNING` with advancing `hw_ptr`; `pw-play` rc=0
-* **Repository evidence:** `configs/alsa-ucm/`; `configs/pipewire/`; `configs/wireplumber/`; `services/nuxel-s10/bin/nuxel-audio-route.sh`; `services/nuxel-bridge/src/hw_providers.py`; `docs/beta-finalization/live/PWNAGE-40000-REPORT.md`; `audio.md`
-* **Owner action:** Play the three-POW cue, then type `works` in the focused Notes title so the detector can record a fresh owner confirmation.
-* **Notes:** **Audio is almost complete.** The full software path is verified live: Calliope MUB0, both CS35L41 DSP1s running, the RDMA1 crossbar enabled, amplifier gain 12, a 48 kHz PipeWire sink with advancing `hw_ptr`, and a successful `pw-play`. The boot cue, Settings → Sound → Test Audio and the volume keys share that route and the 25 % safety ceiling. Physical audibility remains unconfirmed because the owner-confirmation entry was never made; microphone, headset and USB-C capture are also untested.
+* **Hardware evidence:** ABOX Calliope `MUB0`; both CS35L41 DSP1 `booted=Y running=Y`; `ABOX RDMA1_EN=1`; `Left/Right AMP PCM Gain=12/12`; `alsa_output.hw_0_1` at 48 kHz; RDMA1 `state=RUNNING` with advancing `hw_ptr`; `pw-play` rc=0; owner typed `works` in the Notes title at 21:56Z, 21:58Z, 22:00Z, 22:05Z (after reboot) and 22:06Z
+* **Repository evidence:** `configs/alsa-ucm/`; `configs/pipewire/`; `configs/wireplumber/`; `services/nuxel-s10/bin/nuxel-audio-route.sh`; `services/nuxel-s10/bin/nuxel-audio-warmup`; `services/nuxel-bridge/src/hw_providers.py`; `docs/beta-finalization/live/PWNAGE-40000-REPORT.md`; `audio.md`; `out.md`
+* **Owner action:** Optional re-confirmation via Settings → Sound → Test Audio. Microphone, wired headset and USB-C audio remain separate owner tests.
+* **Notes:** **Speaker audio works and is owner-confirmed.** The silent speaker was a CS35L41 PLL reference fault: the device tree programs 6.144 MHz while ABOX UAIF1 clocks the amplifiers at 1.536 MHz, so the protection DSP never drove the output. The fix writes `0x4804=0x1b`, `0x2c04=0x370`, `0x6000=0x8000`, `0x2024=0x0` on both amps and keeps them alive through the driver cache (`Digital PCM Volume=817` → `0x8000`, `AMP Mute=Unmuted`). `nuxel-audio-warmup` powers the DAPM speaker path with an inaudible stream before the 366 ms cue. Volume ceiling 100 %, default 50 %. The raw I2C writer is device-only, so a fresh image logs the gap and uses the driver-cache path.
 
 #### `headphones` — Headphones and USB-C audio accessories
 
@@ -296,12 +296,12 @@ This is why the table below contains a lot of `1`s and `2`s and no `5`s: nothing
 
 #### `gnss` — GNSS / location and the Nuxel Maps app
 
-* **Verdict:** `NEEDS_OWNER_TEST`  ·  **record:** `briq-08f-gps-gnss` (state `pending`, verdict `none`)
+* **Verdict:** `NEEDS_OWNER_TEST`  ·  **record:** `briq-08f-gps-gnss` (state `pending`, verdict `NEEDS_OWNER_TEST`)
 * **Hardware present:** yes
-* **Hardware evidence:** `no GNSS/gnss device was observed in the preflight captures`
-* **Repository evidence:** `configs/nuxel/gnss/gnss.json`; `configs/nuxel/gnss/osm-tiles.json`; `pwa/nuxel-apps/`
-* **Owner action:** Go outdoors, wait for a fix and check the coordinates; checklist section 13
-* **Notes:** No GNSS interface was enumerated in the live preflight, so no position fix is claimed. Maps is built on OpenStreetMap-compatible data with search, zoom/pan, manual location fallback, bookmarks, OSM attribution and a responsible tile-caching policy, and no Google location service is used or required. A fix requires sky view and an owner.
+* **Hardware evidence:** `spi17.0` bound to `brcm gps spi`; `/dev/ttyBCM` (BBD RPC transport), `/dev/bbd_patch`, `/dev/bbd_control`; `GPS_PWR_EN` GPIO145 readback verified 0→1→0; SSP reports `GPS: false`
+* **Repository evidence:** `configs/nuxel/gnss/gnss.json`; `configs/nuxel/gnss/91-*.conf`; `services/nuxel-bridge/src/geoclue_agent.py`; `services/nuxel-bridge/src/hw_providers.py`; `tools/s10plus/a33/nuxel-gnss-diag.sh`; `docs/beta-finalization/live/PWNAGE-42000-REPORT.md`
+* **Owner action:** Network location needs no owner action. A satellite fix is blocked until a compatible BCM4773 BBD sensor-hub patch and a BBD/LHD runtime exist; the outdoor procedure (`docs/beta-finalization/manual-proof/13-gps.md`) stays `BLOCKED_FIRMWARE`.
+* **Notes:** **Network location works; satellite GNSS is blocked.** A genuine GeoClue Wi-Fi/IP fix (`51.4005, 5.47196 ±25000 m`, source `network_wifi`) was verified across two reboot cycles after adding the per-UID `nuxel-geoclue-agent` and a narrow `CAP_NET_RAW` grant for GeoClue. `/dev/ttyBCM` is Broadcom BBD/LHD RPC, not NMEA, so stock `gpsd` cannot decode it. No satellite fix, coordinate, accuracy value or satellite count is claimed.
 
 #### `nfc` — NFC controller and tag support
 

@@ -1,6 +1,6 @@
 {
   "schema": "nuxel.app-registry/1",
-  "registry_version": 7,
+  "registry_version": 8,
   "bridge_version": "1",
   "bridge_version_pin": "pwa/nuxel-common/bridge-version.json",
   "url_base": "http://127.0.0.1:8000",
@@ -415,6 +415,183 @@
       "docked": false,
       "id": "org.nuxel.SnekByte",
       "bridge_version": "1"
+    },
+    {
+      "id": "org.mozilla.firefox",
+      "name": "Firefox",
+      "icon": "\ud83e\udd8a",
+      "iconAsset": "/assets/nuxel-applications-icon-pack/05-07_web-window.png",
+      "color": "#ff7139",
+      "category": "tools",
+      "type": "native",
+      "url": "org.mozilla.firefox://",
+      "native_binary": "/usr/lib/nuxel/nuxel-flatpak-firefox",
+      "desktop_entry": "shell/config/org.mozilla.firefox.desktop",
+      "description": "Firefox (Fedora aarch64 RPM; Flatpak blocked by CONFIG_USER_NS=n)",
+      "capabilities": [
+        "network:outbound",
+        "storage:persistent"
+      ],
+      "bridge_version": "1",
+      "docked": false,
+      "status": "installed",
+      "runtime_state": "native Fedora aarch64 RPM (launchable)",
+      "install_source": "/usr/lib/nuxel/nuxel-flatpak-firefox",
+      "binary_source": "services/nuxel-s10/bin/nuxel-flatpak-firefox"
+    },
+    {
+      "id": "org.videolan.VLC",
+      "name": "VLC",
+      "icon": "\ud83c\udfac",
+      "iconAsset": "/assets/nuxel-applications-icon-pack/03-04_video-player.png",
+      "color": "#ff8800",
+      "category": "media",
+      "type": "native",
+      "url": "org.videolan.VLC://",
+      "native_binary": "/usr/lib/nuxel/nuxel-flatpak-vlc",
+      "desktop_entry": "shell/config/org.videolan.VLC.desktop",
+      "description": "VLC (Fedora aarch64 RPM; Flatpak blocked by CONFIG_USER_NS=n)",
+      "capabilities": [
+        "storage:persistent"
+      ],
+      "bridge_version": "1",
+      "docked": false,
+      "status": "installed",
+      "runtime_state": "native Fedora aarch64 RPM (launchable)",
+      "install_source": "/usr/lib/nuxel/nuxel-flatpak-vlc",
+      "binary_source": "services/nuxel-s10/bin/nuxel-flatpak-vlc"
+    },
+    {
+      "id": "org.signal.Signal",
+      "name": "Signal",
+      "icon": "\ud83d\udcac",
+      "iconAsset": "/assets/nuxel-applications-icon-pack/01-06_pixel-envelope.png",
+      "color": "#3a76f0",
+      "category": "communication",
+      "type": "native",
+      "url": "org.signal.Signal://",
+      "native_binary": "/usr/lib/nuxel/nuxel-flatpak-signal",
+      "desktop_entry": "shell/config/org.signal.Signal.desktop",
+      "description": "Signal Desktop (aarch64 Flatpak installed; BLOCKED: kernel CONFIG_USER_NS=n)",
+      "capabilities": [
+        "network:outbound",
+        "storage:persistent"
+      ],
+      "bridge_version": "1",
+      "docked": false,
+      "status": "installed",
+      "runtime_state": "aarch64 Flatpak installed; BLOCKED by CONFIG_USER_NS=n",
+      "install_source": "/usr/lib/nuxel/nuxel-flatpak-signal",
+      "binary_source": "services/nuxel-s10/bin/nuxel-flatpak-signal"
+    },
+    {
+      "id": "com.stremio.Stremio",
+      "name": "Stremio",
+      "icon": "\ud83c\udf7f",
+      "iconAsset": "/assets/nuxel-applications-icon-pack/06-04_casting-screen.png",
+      "color": "#7b5cff",
+      "category": "media",
+      "type": "native",
+      "url": "com.stremio.Stremio://",
+      "native_binary": "/usr/lib/nuxel/nuxel-flatpak-stremio",
+      "desktop_entry": "shell/config/com.stremio.Stremio.desktop",
+      "description": "Stremio (aarch64 Flatpak installed; BLOCKED: kernel CONFIG_USER_NS=n)",
+      "capabilities": [
+        "network:outbound",
+        "storage:persistent"
+      ],
+      "bridge_version": "1",
+      "docked": false,
+      "status": "installed",
+      "runtime_state": "aarch64 Flatpak installed; BLOCKED by CONFIG_USER_NS=n",
+      "install_source": "/usr/lib/nuxel/nuxel-flatpak-stremio",
+      "binary_source": "services/nuxel-s10/bin/nuxel-flatpak-stremio"
+    },
+    {
+      "id": "org.gnome.FileRoller",
+      "name": "Archive Manager",
+      "icon": "\ud83d\udddc\ufe0f",
+      "iconAsset": "/assets/nuxel-applications-icon-pack/02-05_folders.png",
+      "color": "#d6a45c",
+      "category": "tools",
+      "type": "native",
+      "url": "org.gnome.FileRoller://",
+      "native_binary": "/usr/bin/file-roller",
+      "desktop_entry": "shell/config/org.gnome.FileRoller.desktop",
+      "description": "Archive manager (Fedora aarch64 RPM)",
+      "capabilities": [
+        "storage:persistent"
+      ],
+      "bridge_version": "1",
+      "docked": false,
+      "status": "installed",
+      "runtime_state": "Fedora 43 aarch64",
+      "install_source": "/usr/bin/file-roller",
+      "package": "fedora43-aarch64-rpm"
+    },
+    {
+      "id": "org.gnome.Loupe",
+      "name": "Image Viewer",
+      "icon": "\ud83d\uddbc\ufe0f",
+      "iconAsset": "/assets/nuxel-applications-icon-pack/03-02_gallery.png",
+      "color": "#4a90e2",
+      "category": "media",
+      "type": "native",
+      "url": "org.gnome.Loupe://",
+      "native_binary": "/usr/bin/loupe",
+      "desktop_entry": "shell/config/org.gnome.Loupe.desktop",
+      "description": "GNOME Loupe image viewer (Fedora aarch64 RPM)",
+      "capabilities": [
+        "storage:persistent"
+      ],
+      "bridge_version": "1",
+      "docked": false,
+      "status": "installed",
+      "runtime_state": "Fedora 43 aarch64",
+      "install_source": "/usr/bin/loupe",
+      "package": "fedora43-aarch64-rpm"
+    },
+    {
+      "id": "org.gnome.Papers",
+      "name": "Document Viewer",
+      "icon": "\ud83d\udcc4",
+      "iconAsset": "/assets/nuxel-applications-icon-pack/02-04_reader.png",
+      "color": "#e05d5d",
+      "category": "productivity",
+      "type": "native",
+      "url": "org.gnome.Papers://",
+      "native_binary": "/usr/bin/papers",
+      "desktop_entry": "shell/config/org.gnome.Papers.desktop",
+      "description": "GNOME Papers PDF/document viewer (Fedora aarch64 RPM)",
+      "capabilities": [
+        "storage:persistent"
+      ],
+      "bridge_version": "1",
+      "docked": false,
+      "status": "installed",
+      "runtime_state": "Fedora 43 aarch64",
+      "install_source": "/usr/bin/papers",
+      "package": "fedora43-aarch64-rpm"
+    },
+    {
+      "id": "org.gnome.SystemMonitor",
+      "name": "System Monitor",
+      "icon": "\ud83d\udcc8",
+      "iconAsset": "/assets/nuxel-applications-icon-pack/05-02_system-monitor.png",
+      "color": "#4caf50",
+      "category": "system",
+      "type": "native",
+      "url": "org.gnome.SystemMonitor://",
+      "native_binary": "/usr/bin/gnome-system-monitor",
+      "desktop_entry": "shell/config/org.gnome.SystemMonitor.desktop",
+      "description": "Live CPU/memory/process monitor (Fedora aarch64 RPM)",
+      "capabilities": [],
+      "bridge_version": "1",
+      "docked": false,
+      "status": "installed",
+      "runtime_state": "Fedora 43 aarch64",
+      "install_source": "/usr/bin/gnome-system-monitor",
+      "package": "fedora43-aarch64-rpm"
     }
   ],
   "tree_apps": [
@@ -584,6 +761,16 @@
       "bridge_enum_equivalent": null,
       "owner_group": "bg-06-core-phone-apps",
       "note": "The Terminal's PTY is opened by the native PWA host (tools/s10plus/a3x/nuxel-pwa-host.c), NOT through the bridge capability model, so no bridge enum entry exists. Recorded so the gap is visible instead of implied."
+    },
+    {
+      "capability": "audio:output",
+      "declared_by": [
+        "pwa/nuxel-apps/media/manifest.json"
+      ],
+      "status": "not-in-capabilities.py-enum",
+      "bridge_enum_equivalent": null,
+      "owner_group": "bg-04-media",
+      "note": "VLC and the Media PWA play audio through the native PWA host and PipeWire, not through a bridge capability. v0.7.4-beta removed the bogus audio:output declaration from the org.videolan.VLC registry entry; no bridge enum entry is needed."
     }
   ],
   "launcher_manifest_notes": [],
@@ -625,7 +812,7 @@
     }
   ],
   "notes": {
-    "revision": "PWNAGE-33000: launcher apps.js and registry unified; Gallery/Photos, Recorder, Nuxtore and utility apps registered.",
+    "revision": "PWNAGE-44000/v0.7.4-beta: registry_version 8 adds the installed native applications (Firefox, VLC, Signal, Stremio, Archive Manager, Image Viewer, Document Viewer, System Monitor). Each names its install path and a real desktop entry in shell/config/, so the verifier checks that packaged applications are registered instead of requiring a source tree for every entry.",
     "tree_apps_states": "complete | in_progress | shared-assets-not-an-app (the dir MUST exist) | planned (must NOT exist yet; DEFER until it lands). Enforced by tools/s10plus/a33/verify-app-registry.py - a dangling directory in a present-state entry is a FAILED verdict, never a warning.",
     "required_apps_not_yet_in_tree": "Concept-level inventory of mission-required apps with no tree directory yet. Each entry names the owning build group and its ledger briq; the verifier fails if that briq file does not exist in docs/beta-finalization/workqueue/ or if the briq's component does not match owner_group.",
     "registry_version_6_tri_link": "NUXEL-28000 registers three distinct console entries in apps[] and apps.js; the registry revision is 6 so launcher/native/HTTP consumers cannot drift silently."

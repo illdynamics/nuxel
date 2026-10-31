@@ -1,0 +1,63 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+--- uid999 caps=net_raw
+uid 999
+socket OK
+--- uid999 caps=net_admin
+PermissionError: [Errno 13] Permission denied
+uid 999
+--- uid999 caps=net_bind_service
+PermissionError: [Errno 13] Permission denied
+uid 999
+--- uid999 caps=net_broadcast
+PermissionError: [Errno 13] Permission denied
+uid 999
+--- uid999 caps=net_raw,net_admin
+setpriv: bad capability string
+--- uid999 caps=net_raw,net_bind_service
+setpriv: bad capability string
+--- uid999 caps=net_admin,net_raw,net_bind_service
+setpriv: bad capability string
+--- uid999 caps=net_raw,net_admin,net_bind_service,dac_override
+setpriv: bad capability string
+=== root cap matrix ===
+--- root caps=net_raw
+socket OK
+--- root caps=net_admin
+socket OK
+--- root caps=net_raw,net_admin
+setpriv: bad capability string
+=== dmesg defex/knox ===
+=== kernel config security ===
+CONFIG_KNOX_NCM=y
+CONFIG_FAT_VIRTUAL_XATTR_SELINUX_LABEL="u:object_r:sdcard_external:s0"
+# CONFIG_SDCARD_FS_SUPPORT_KNOX is not set
+# CONFIG_SECURITY_DMESG_RESTRICT is not set
+CONFIG_SECURITY_PERF_EVENTS_RESTRICT=y
+CONFIG_SECURITY=y
+# CONFIG_SECURITY_WRITABLE_HOOKS is not set
+# CONFIG_SECURITYFS is not set
+CONFIG_SECURITY_NETWORK=y
+# CONFIG_SECURITY_NETWORK_XFRM is not set
+# CONFIG_SECURITY_PATH is not set
+CONFIG_SECURITY_SELINUX=y
+# CONFIG_SECURITY_SELINUX_BOOTPARAM is not set
+# CONFIG_SECURITY_SELINUX_DISABLE is not set
+CONFIG_SECURITY_SELINUX_DEVELOP=y
+CONFIG_SECURITY_SELINUX_AVC_STATS=y
+CONFIG_SECURITY_SELINUX_CHECKREQPROT_VALUE=0
+# CONFIG_SECURITY_SMACK is not set
+# CONFIG_SECURITY_TOMOYO is not set
+# CONFIG_SECURITY_APPARMOR is not set
+# CONFIG_SECURITY_LOADPIN is not set
+# CONFIG_SECURITY_YAMA is not set
+CONFIG_DEFAULT_SECURITY_SELINUX=y
+=== modules ===
+Module                  Size  Used by

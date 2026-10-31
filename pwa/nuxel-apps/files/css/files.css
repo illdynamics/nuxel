@@ -56,3 +56,17 @@ body { display: flex; flex-direction: column; padding-top: env(safe-area-inset-t
   .toolbar button { padding: 6px 8px; font-size: 11px; }
   .file-item { padding: 10px; gap: 8px; }
 }
+
+/* PWNAGE-44000: Send sheet (touch-first, no desktop file picker). */
+.send-dialog { max-width: 420px; }
+.share-methods { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 12px; }
+.share-method {
+  flex: 1 1 30%; min-height: 40px; padding: 8px;
+  border: 1px solid rgba(125, 211, 252, .35); border-radius: 9px;
+  background: #10233f; color: #dbeafe; font: 600 12px/1.2 system-ui, sans-serif;
+}
+.share-method.selected { background: #134e4a; border-color: #5eead4; color: #d1fae5; }
+.share-method:disabled { opacity: .42; }
+.send-device-label { display: block; margin: 8px 0; font-size: 12px; color: #bfdbfe; }
+.send-device-label select { width: 100%; margin-top: 4px; padding: 9px; border-radius: 8px; background: #0b1c33; color: #e6f1ff; border: 1px solid #2b4c75; }
+#send-progress { width: 100%; height: 8px; margin: 8px 0; }

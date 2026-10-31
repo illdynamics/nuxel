@@ -56,15 +56,20 @@ html, body {
     height: 100%;
     overflow: hidden;
     font-family: var(--font-family);
-    /* Background: tries deployed path first, falls back to repo-relative for dev server */
-    background-color: #1a1a2e;
+    /* PWNAGE-43000: the pre-video cover, lockscreen and app frame share this
+       base colour.  It is never white, so a destroyed mpv surface cannot expose
+       WebKit's default white page between the preloading clip and the lock. */
+    background-color: #04121f;
     background-image: url('../assets/nuxel-background.png');
     /* In deployed OS, the wallpaper is at /usr/share/nuxel/wallpapers/.
        For dev testing with http.server, copy nuxel-background.png to pwa/nuxel-home/assets/ */
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
-    background-attachment: fixed;
+    /* No background-attachment: fixed — on the software rasteriser it forced
+       a full-viewport repaint on every scroll/transition.  The Home grid owns
+       its own scroll surface, so the wallpaper does not need to be pinned. */
+    background-attachment: scroll;
     color: var(--text-primary);
     font-size: 16px;
     line-height: 1.5;
@@ -232,12 +237,12 @@ html, body {
 /* App content starts below system status and its persistent Home/title bar. */
 .pwa-frame {
     position: fixed !important;
-    top: calc(var(--status-bar-height, 36px) + 56px) !important;
+    top: var(--status-bar-height, 36px) !important;
     left: 0 !important;
     right: 0 !important;
     bottom: var(--system-nav-height) !important;
     width: 100vw !important;
-    height: calc(100dvh - var(--status-bar-height, 36px) - 56px - var(--system-nav-height)) !important;
+    height: calc(100dvh - var(--status-bar-height, 36px) - var(--system-nav-height)) !important;
     min-height: 0 !important;
     border: 0 !important;
     z-index: 60 !important;
@@ -246,6 +251,7 @@ html, body {
 }
 
 .pwa-app-bar {
+    display: none !important;
     position: fixed;
     top: var(--status-bar-height, 36px);
     left: 0;
@@ -293,7 +299,7 @@ html, body {
 .touch-keyboard-open .search-overlay { bottom: 280px; }
 .touch-keyboard-open .pwa-frame {
     bottom: calc(280px + var(--system-nav-height)) !important;
-    height: calc(100dvh - var(--status-bar-height, 36px) - 336px - var(--system-nav-height)) !important;
+    height: calc(100dvh - var(--status-bar-height, 36px) - 280px - var(--system-nav-height)) !important;
 }
 
 /* Persistent Android-like navigation. The supplied artwork has a black matte
@@ -441,10 +447,8 @@ body:not(.app-drawer-open) #app-grid { touch-action:pan-x pan-y; }
 /* PERF: no persistent layer for the hidden Quick Settings panel. */
 #quick-settings { }
 #quick-settings:not(.hidden) { animation:nuxel-shade-enter .20s cubic-bezier(.2,.8,.2,1) both; }
-body.app-drawer-open #app-grid { animation:nuxel-drawer-enter .22s cubic-bezier(.2,.8,.2,1) both; }
 @keyframes nuxel-shade-enter { from { opacity:.7; transform:translate3d(0,-18px,0); } to {opacity:1;transform:translate3d(0,0,0);} }
-@keyframes nuxel-drawer-enter { from {opacity:.8;transform:translate3d(0,28px,0)} to {opacity:1;transform:translate3d(0,0,0)} }
-@media(prefers-reduced-motion:reduce){#quick-settings:not(.hidden),body.app-drawer-open #app-grid {animation:none}}
+@media(prefers-reduced-motion:reduce){#quick-settings:not(.hidden){animation:none}}
 
 /* App lifecycle hiding must beat the author-level `display: block !important`
    on .pwa-frame.  A `[hidden]` attribute alone loses to that rule, so a Back

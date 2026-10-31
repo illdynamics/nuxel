@@ -1,0 +1,58 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+=== acquire 1 ===
+s "{\"success\": true, \"state\": \"fixed\", \"enabled\": true, \"permission_enabled\": true, \"provider\": \"geoclue2\", \"provider_available\": true, \"provider_ready\": true, \"provider_detail\": null, \"detail\": null, \"location_fix_available\": true, \"fix_valid\": true, \"stale\": false, \"fix_source\": \"network_wifi\", \"fix_source_detail\": \"ipf fallback (from WiFi data)\", \"fix_kind\": \"network\", \"gnss_fix\": false, \"network_fix\": true, \"fix_timestamp\": 1793404912.0, \"last_fix_timestamp\": 1793404912.0, \"last_fix_age_s\": 7.834213018417358, \"accuracy\": 25000.0, \"latitude\": 51.4005, \"longitude\": 5.47196, \"freshness_seconds\": 60.0, \"stale_after_seconds\": 600.0, \"acquiring\": false, \"acquisition_started_at\": 1793404906.8393917, \"active_clients\": 1, \"last_error\": null, \"gnss\": {\"present\": true, \"nodes\": [], \"node_visible_to_bridge\": false, \"bbd_nodes\": [], \"private_devices\": true, \"driver\": \"brcm gps spi\", \"driver_bound\": true, \"spi_bindings\": [\"/sys/bus/spi/drivers/brcm gps spi/spi17.0\"], \"protocol\": \"broadcom-bbd-lhd-rpc\", \"nmea_stream\": false, \"firmware_present\": false, \"firmware\": [], \"firmware_loaded\": false,
+=== get-status ===
+s "{\"success\": true, \"state\": \"fixed\", \"enabled\": true, \"permission_enabled\": true, \"provider\": \"geoclue2\", \"provider_available\": true, \"provider_ready\": true, \"provider_detail\": null, \"detail\": null, \"location_fix_available\": true, \"fix_valid\": true, \"stale\": false, \"fix_source\": \"network_wifi\", \"fix_source_detail\": \"ipf fallback (from WiFi data)\", \"fix_kind\": \"network\", \"gnss_fix\": false, \"network_fix\": true, \"fix_timestamp\": 1793404921.0, \"last_fix_timestamp\": 1793404921.0, \"last_fix_age_s\": 6.884296894073486, \"accuracy\": 25000.0, \"latitude\": 51.4005, \"longitude\": 5.47196, \"freshness_seconds\": 60.0, \"stale_after_seconds\": 600.0, \"acquiring\": false, \"acquisition_started_at\": 1793404906.8393917, \"active_clients\": 1, \"last_error\": null, \"gnss\": {\"present\": true, \"nodes\": [], \"node_visible_to_bridge\": false, \"bbd_nodes\": [], \"private_devices\": true, \"driver\": \"brcm gps spi\", \"driver_bound\": true, \"spi_bindings\": [\"/sys/bus/spi/drivers/brcm gps spi/spi17.0\"], \"protocol\": \"broadcom-bbd-lhd-rpc\", \"nmea_stream\": false, \"firmware_present\": false, \"firmware\": [], \"firmware_loaded\": false, \"vendor_runtime\": {\"lhd\": false, \"gpsd\": false, \"android_linker\": false, \"hidl_gnss_lib\": false, \"lhd_config\": false, \"gps_config\": false, \"complete\": false}, \"userspace_provider\": null, \"hardware_responds\": null, \"fix_supported\": false, \"blocker\": \"no compatible BCM4773 BBD sensor-hub patch firmware (vendor lhd expects /dev/bbd_patch)\"}, \"timestamp\": 1793404927.884297
+=== GetLocation ===
+s "{\"success\": true, \"latitude\": 51.4005, \"longitude\": 5.47196, \"accuracy\": 25000.0, \"timestamp\": 1793404921.0, \"source\": \"network_wifi\", \"source_detail\": \"ipf fallback (from WiFi data)\", \"kind\": \"network\", \"gnss\": false, \"network\": true, \"state\": \"fixed\"}"
+
+=== geoclue journal ===
+Oct 31 00:47:42 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopped geoclue.service - Location Lookup Service.
+Oct 31 00:48:55 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Starting geoclue.service - Location Lookup Service...
+Oct 31 00:48:55 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Started geoclue.service - Location Lookup Service.
+Oct 31 00:49:03 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping geoclue.service - Location Lookup Service...
+Oct 31 00:49:03 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: geoclue.service: Deactivated successfully.
+Oct 31 00:49:03 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopped geoclue.service - Location Lookup Service.
+Oct 31 00:49:04 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Starting geoclue.service - Location Lookup Service...
+Oct 31 00:49:04 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Started geoclue.service - Location Lookup Service.
+Oct 31 00:49:17 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping geoclue.service - Location Lookup Service...
+Oct 31 00:49:17 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: geoclue.service: Deactivated successfully.
+Oct 31 00:49:17 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopped geoclue.service - Location Lookup Service.
+Oct 31 00:52:28 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Starting geoclue.service - Location Lookup Service...
+Oct 31 00:52:29 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Started geoclue.service - Location Lookup Service.
+Oct 31 00:52:30 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: geoclue.service: Failed to get CPU usage: No such file or directory
+Oct 31 00:53:33 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 geoclue[48133]: Service not used for 60 seconds. Shutting down..
+Oct 31 00:53:33 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: geoclue.service: Deactivated successfully.
+Oct 31 01:01:33 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Starting geoclue.service - Location Lookup Service...
+Oct 31 01:01:33 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Started geoclue.service - Location Lookup Service.
+Oct 31 01:01:36 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: geoclue.service: Failed to get CPU usage: No such file or directory
+Oct 31 01:01:36 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: geoclue.service: Failed to get CPU usage: No such file or directory
+=== bridge journal ===
+Oct 31 00:52:28 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-bridge.service: Service has RestartMaxDelaySec= but no RestartSteps= setting. Ignoring.
+Oct 31 01:01:27 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: /etc/systemd/system/nuxel-bridge.service:56: Unknown system call group, ignoring: @dbus
+Oct 31 01:01:27 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-bridge.service: Service has RestartMaxDelaySec= but no RestartSteps= setting. Ignoring.
+Oct 31 01:01:33 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: /etc/systemd/system/nuxel-bridge.service:56: Unknown system call group, ignoring: @dbus
+Oct 31 01:01:33 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-bridge.service: Service has RestartMaxDelaySec= but no RestartSteps= setting. Ignoring.
+Oct 31 01:01:33 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping nuxel-bridge.service - Nuxel Bridge - PWA to Native Phone Service Mediator...
+Oct 31 01:01:34 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-bridge.service: Deactivated successfully.
+Oct 31 01:01:34 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopped nuxel-bridge.service - Nuxel Bridge - PWA to Native Phone Service Mediator.
+Oct 31 01:01:34 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Started nuxel-bridge.service - Nuxel Bridge - PWA to Native Phone Service Mediator.
+Oct 31 01:01:34 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-bridge[50392]: 2026-10-31 01:01:34,708 [INFO] nuxel-bridge: Starting Nuxel Bridge v0.2.1...
+Oct 31 01:01:34 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-bridge[50392]: 2026-10-31 01:01:34,716 [INFO] nuxel-bridge: Claimed D-Bus name: org.nuxel.Bridge
+Oct 31 01:01:34 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-bridge[50392]: 2026-10-31 01:01:34,719 [INFO] nuxel-bridge: Nuxel Bridge started | session=32b1058b-7856-451e-b1d0-2566f0465caa
+Oct 31 01:01:34 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-bridge[50392]: 2026-10-31 01:01:34,719 [INFO] nuxel-bridge: bridge_version=1 host_version=0.7.1-beta
+Oct 31 01:01:34 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-bridge[50392]: 2026-10-31 01:01:34,719 [INFO] nuxel-bridge: Nuxel Bridge running with portal integration...
+Oct 31 01:01:34 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-bridge[50392]: 2026-10-31 01:01:34,722 [INFO] nuxel-bridge: Connected to nuxel-portal
+Oct 31 01:01:34 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-bridge[50392]: 2026-10-31 01:01:34,727 [ERROR] nuxel-bridge: ModemManager connect failed: org.freedesktop.DBus.Error.InvalidArgs: No such property “Modems”
+Oct 31 01:01:34 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-bridge[50392]: 2026-10-31 01:01:34,728 [INFO] nuxel-bridge: NetworkManager connected
+Oct 31 01:01:36 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-bridge.service: Failed to get CPU usage: No such file or directory
+Oct 31 01:01:46 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-bridge[50392]: 2026-10-31 01:01:46,747 [WARNING] nuxel-bridge: GeoClue connect failed: org.freedesktop.DBus.Error.NoReply: Did not receive a reply. Possible causes include: the remote application did not send a reply, the message bus security policy blocked the reply, the reply timeout expired, or the network connection was broken.
+Oct 31 01:01:46 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-bridge[50392]: 2026-10-31 01:01:46,780 [INFO] nuxel-bridge: GeoClue connected client=/org/freedesktop/GeoClue2/Client/1 accuracy=6

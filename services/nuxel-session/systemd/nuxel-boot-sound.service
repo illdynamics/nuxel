@@ -3,8 +3,13 @@ Description=Nuxel startup cue after confirmed boot-animation to launcher handoff
 After=nuxel-wayland.service nuxel-abox-firmware-reload.service nuxel-audio-route.service nuxel-wl-fb.service sound.target nuxel-button-manager.service
 Wants=nuxel-wayland.service nuxel-abox-firmware-reload.service nuxel-audio-route.service nuxel-wl-fb.service
 ConditionPathExists=/usr/share/nuxel/assets/nuxel-pow.mp3
-# The sound-cue binary requires a live, read-only route check before playing.
-# It records audibility as unverified; no physical claim is made here.
+# Cheap early gate on the *live* route state.  nuxel-audio-route.service writes
+# this file before it exits, so a boot where the route script never ran at all
+# does not start the cue.  The state file is only a gate, never proof: the cue
+# below re-runs the read-only --check immediately before playback.
+ConditionPathExists=/run/nuxel-audio-route.state
+# The sound-cue binary records audibility as unverified; no physical claim is
+# made here.
 
 [Service]
 Type=oneshot

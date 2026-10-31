@@ -1,0 +1,50 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+=== geoclue proc ===
+PID=50589
+ActiveEnterTimestamp=Sat 2026-10-31 01:02:26 CET
+NRestarts=0
+=== manual agent against live service ===
+AddAgent OK
+GetClient OK /org/freedesktop/GeoClue2/Client/3
+SetDesktopId ERR org.freedesktop.DBus.Error.UnknownMethod: No such method “SetDesktopId”
+DONE
+rc=0
+=== geoclue journal ===
+Oct 31 00:47:29 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: geoclue.service: Failed to get CPU usage: No such file or directory
+Oct 31 00:47:42 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping geoclue.service - Location Lookup Service...
+Oct 31 00:47:42 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: geoclue.service: Deactivated successfully.
+Oct 31 00:47:42 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopped geoclue.service - Location Lookup Service.
+Oct 31 00:48:55 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Starting geoclue.service - Location Lookup Service...
+Oct 31 00:48:55 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Started geoclue.service - Location Lookup Service.
+Oct 31 00:49:03 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping geoclue.service - Location Lookup Service...
+Oct 31 00:49:03 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: geoclue.service: Deactivated successfully.
+Oct 31 00:49:03 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopped geoclue.service - Location Lookup Service.
+Oct 31 00:49:04 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Starting geoclue.service - Location Lookup Service...
+Oct 31 00:49:04 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Started geoclue.service - Location Lookup Service.
+Oct 31 00:49:17 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping geoclue.service - Location Lookup Service...
+Oct 31 00:49:17 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: geoclue.service: Deactivated successfully.
+Oct 31 00:49:17 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopped geoclue.service - Location Lookup Service.
+Oct 31 00:52:28 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Starting geoclue.service - Location Lookup Service...
+Oct 31 00:52:29 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Started geoclue.service - Location Lookup Service.
+Oct 31 00:52:30 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: geoclue.service: Failed to get CPU usage: No such file or directory
+Oct 31 00:53:33 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 geoclue[48133]: Service not used for 60 seconds. Shutting down..
+Oct 31 00:53:33 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: geoclue.service: Deactivated successfully.
+Oct 31 01:01:33 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Starting geoclue.service - Location Lookup Service...
+Oct 31 01:01:33 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Started geoclue.service - Location Lookup Service.
+Oct 31 01:01:36 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: geoclue.service: Failed to get CPU usage: No such file or directory
+Oct 31 01:01:36 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: geoclue.service: Failed to get CPU usage: No such file or directory
+Oct 31 01:02:26 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping geoclue.service - Location Lookup Service...
+Oct 31 01:02:26 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: geoclue.service: Deactivated successfully.
+Oct 31 01:02:26 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopped geoclue.service - Location Lookup Service.
+Oct 31 01:02:26 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Starting geoclue.service - Location Lookup Service...
+Oct 31 01:02:26 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Started geoclue.service - Location Lookup Service.
+Oct 31 01:07:24 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: geoclue.service: Failed to get CPU usage: No such file or directory
+Oct 31 01:07:24 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: geoclue.service: Failed to get CPU usage: No such file or directory

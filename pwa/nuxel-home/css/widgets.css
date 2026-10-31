@@ -1,4 +1,5 @@
-/* Nuxel home-screen widgets (PWNAGE-30000). */
+/* Nuxel home-screen widgets (PWNAGE-44000). Software-rasterizer friendly:
+   no blur, no filters, short transform/opacity transitions only. */
 .widgets-layer {
   display: grid;
   gap: 10px;
@@ -7,16 +8,26 @@
 }
 .widgets-layer[hidden] { display: none; }
 .nx-widget {
-  background: var(--nx-surface);
-  border: 1px solid var(--nx-border);
-  border-radius: 14px;
-  padding: 10px 12px;
-  color: var(--nx-text);
+  position: relative;
+  background: #fff7bf;
+  border: 1px solid #d8c768;
+  border-radius: 12px;
+  padding: 10px 12px 20px;
+  color: #1d2438;
   overflow: hidden;
   cursor: default;
   min-height: 0;
+  box-shadow: none;
 }
-.nx-widget:active { border-color: var(--nx-primary); }
-.nx-widget-title { font-size: 12px; font-weight: 600; color: var(--nx-accent); margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.nx-widget-body { font-size: 13px; line-height: 1.45; white-space: pre-wrap; overflow: hidden; color: var(--nx-text); }
-.nx-widget-body.dim { color: var(--nx-text-dim); }
+.nx-widget[data-moving="true"] { outline: 2px solid #3b82f6; outline-offset: 2px; }
+.nx-widget-title { font-size: 12px; font-weight: 700; color: #4b3d06; margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nx-widget-body { font-size: 13px; line-height: 1.4; white-space: pre-wrap; overflow: hidden; color: #1d2438; max-height: 100%; }
+.nx-widget-body.dim { color: #6b6250; }
+.nx-widget-controls { position: absolute; right: 4px; bottom: 3px; display: flex; gap: 2px; }
+.nx-widget-control {
+  width: 26px; height: 24px; padding: 0; border: 0; border-radius: 6px;
+  background: rgba(60, 45, 5, .16); color: #3b3008; font: 600 15px/1 system-ui, sans-serif;
+  touch-action: none;
+}
+.nx-widget-resize { cursor: nwse-resize; }
+.nx-widget-remove { cursor: pointer; }

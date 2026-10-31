@@ -28,7 +28,7 @@ ProtectHome=no
 PrivateDevices=no
 RestrictAddressFamilies=AF_INET AF_UNIX
 ReadOnlyPaths=/
-ReadWritePaths=/run/nuxel /var/lib/nuxel /var/log/nuxel /home/nuxel
+ReadWritePaths=/run/nuxel /var/lib/nuxel /var/log/nuxel /var/cache/nuxel /home/nuxel /sys/kernel/config/usb_gadget /sys/class/leds
 # The lockhead Bluetooth indicator is a provider-state document consumed by
 # both the native host and this service.  /run/nuxel already holds the
 # connection-mode and USB-mode state, so it is the canonical runtime location.
@@ -41,10 +41,15 @@ Environment=NUXEL_PATHS_CONF=/etc/nuxel/paths.conf
 # shell use, so /api/v1/apps/registry cannot drift from the launcher.
 Environment=NUXEL_APP_REGISTRY=/usr/share/nuxel/pwa/nuxel-common/app-registry.json
 Environment=NUXEL_BRIDGE_PROTOCOL_VERSION=1
-Environment=NUXEL_BRIDGE_VERSION=0.2.1
+Environment=NUXEL_BRIDGE_VERSION=0.7.4-beta
 Environment=NUXEL_API_ALLOW_ORIGIN=http://127.0.0.1:8000,http://localhost:8000
 Environment=NUXEL_SESSION_USER=nuxel
 Environment=NUXEL_FILES_ROOT=/home/nuxel
+Environment=NUXEL_THUMBNAIL_DIR=/var/cache/nuxel/thumbnails
+Environment=NUXEL_LED_POLICY=/etc/nuxel/leds/leds.json
+# BlueZ OBEX (org.bluez.obex) is a session-bus service on Fedora; the Nuxel
+# session bus is the root-owned socket under /run/nuxel-wayland.
+Environment=DBUS_SESSION_BUS_ADDRESS=unix:path=/run/nuxel-wayland/bus
 
 [Install]
 WantedBy=multi-user.target

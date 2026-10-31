@@ -767,6 +767,29 @@ def connection_mode_state(run_root: str = "/run") -> Dict[str, Any]:
         "last_error": activation.get("error"),
     }
 
+def sound_mode_state() -> Dict[str, Any]:
+    """Read the hardware chord's persisted sound mode truthfully.
+
+    The button manager writes normal|vibrate|silent to
+    /var/lib/nuxel/audio/sound-mode.  A missing/unreadable file is UNKNOWN,
+    never a guessed 'normal'.  'vibrate' is a SELECTED mode; it is not proof
+    that a physical vibrator actuated.
+    """
+    root = _root("NUXEL_AUDIO_DIR", "/var/lib/nuxel/audio")
+    path = os.path.join(root, "sound-mode")
+    raw = _read(path)
+    if raw is None:
+        return {"mode": "unknown", "selected": None, "source": "unavailable:%s" % path,
+                "haptics_verified": False}
+    mode = raw.strip().lower()
+    if mode not in ("normal", "vibrate", "silent"):
+        return {"mode": "unknown", "selected": None, "source": "invalid:%s" % path,
+                "haptics_verified": False}
+    return {"mode": mode, "selected": mode, "source": path,
+            "haptics_verified": False,
+            "note": "selected sound mode; physical vibration is not claimed"}
+
+
 def get_indicators() -> Dict[str, Any]:
     power = power_state()
     usb = usb_connection()
@@ -774,7 +797,9 @@ def get_indicators() -> Dict[str, Any]:
     transports = console_transports(console)
     mode = connection_mode_state()
     bluetooth = bluetooth_indicator()
+    sound = sound_mode_state()
     return {
+        "sound_mode": sound,
         "bluetooth": {
             "powered": bluetooth["powered"],
             "state": bluetooth["state"],

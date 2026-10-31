@@ -52,9 +52,11 @@ check("fixture verdicts (absent / nofw / partial / ready) match", p.returncode =
 
 pol = json.load(open(POLICY))
 check("policy declares the stage order and verdict set",
-      pol["first_failing_stage_order"] == ["device_node", "module", "firmware", "stream", "fix"]
+      pol["first_failing_stage_order"][:3] == ["device_node", "module", "firmware"]
+      and pol["first_failing_stage_order"][-2:] == ["stream", "fix"]
       and set(pol["verdicts"]) >= {"READY_FOR_SKY", "BLOCKED_KERNEL", "BLOCKED_FIRMWARE",
-                                   "BLOCKED_EXTERNAL_RESOURCE", "NO_FIX", "PARTIAL"})
+                                   "BLOCKED_EXTERNAL_RESOURCE", "NO_FIX", "PARTIAL",
+                                   "BLOCKED_PROTOCOL", "BLOCKED_VENDOR_RUNTIME"})
 check("policy requires an OUTDOORS owner test and never a fabricated fix",
       pol["fix_test"]["outdoors_required"] is True and "no coordinate" in pol["comment"].lower())
 check("policy states the offline map is network-optional and cached-area capable",

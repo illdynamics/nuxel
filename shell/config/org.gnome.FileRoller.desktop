@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Archive Manager
+Comment=Nuxel installed archive tool (Fedora aarch64 RPM)
+Exec=/usr/bin/file-roller %U
+Icon=org.gnome.FileRoller
+Terminal=false
+Categories=Utility;Archiving;
+MimeType=application/zip;application/x-tar;application/x-compressed-tar;
+StartupNotify=true

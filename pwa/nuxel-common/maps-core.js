@@ -327,6 +327,10 @@
 
     // A state without real provider coordinates can never be a fix marker.
     if (!hasCoord && (state === 'fixed' || state === 'stale')) state = 'no_fix';
+    // A fix without a provider timestamp has no freshness evidence.  Keep the
+    // real coordinate but never present it as current/fresh (poll time is not
+    // a location time): downgrade to stale.
+    if (ts === null && state === 'fixed') state = 'stale';
     if (state === 'fixed' && age !== null && age > freshSeconds) state = 'stale';
 
     var labels = {
@@ -344,8 +348,10 @@
         lat: lat, lon: lon, accuracy: accuracy,
         timestamp: ts, ageSeconds: age,
         source: st.fix_source || 'provider',
+        sourceDetail: st.fix_source_detail || null,
         kind: st.fix_kind || 'provider',
         gnss: st.gnss_fix === true,
+        network: st.network_fix === true || (st.fix_kind === 'network'),
         fresh: state === 'fixed',
         stale: state === 'stale'
       };
@@ -425,7 +431,8 @@
     if (view.state === 'unavailable') return 'Location provider unavailable' + (view.detail ? ': ' + view.detail : '');
     if (view.state === 'error') return 'Location provider error' + (view.lastError ? ': ' + view.lastError : '');
     if (view.state === 'fixed' && view.fix) {
-      return 'Fresh provider fix, ' + (view.fix.accuracy === null ? 'accuracy unknown' : '±' + Math.round(view.fix.accuracy) + ' m') +
+      var sourceLabel = view.fix.gnss ? 'GNSS fix' : (view.fix.network ? 'approximate network location' : 'provider fix');
+      return 'Fresh ' + sourceLabel + ', ' + (view.fix.accuracy === null ? 'accuracy unknown' : '±' + Math.round(view.fix.accuracy) + ' m') +
         ', age ' + Math.round(view.fix.ageSeconds) + ' s';
     }
     if (view.state === 'stale' && view.fix) {

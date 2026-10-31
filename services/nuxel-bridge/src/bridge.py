@@ -120,7 +120,7 @@ def read_battery_status():
 # PWA<->host protocol pin (briq-04c). Same env names as the systemd units and the
 # HTTP layer, so `systemctl show -p Environment` shows exactly what is enforced.
 BRIDGE_PROTOCOL_VERSION = os.environ.get('NUXEL_BRIDGE_PROTOCOL_VERSION', '1')
-BRIDGE_HOST_VERSION = os.environ.get('NUXEL_BRIDGE_VERSION', '0.2.1')
+BRIDGE_HOST_VERSION = os.environ.get('NUXEL_BRIDGE_VERSION', '0.7.4-beta')
 OBJECT_PATH = '/org/nuxel/Bridge'
 PORTAL_BUS_NAME = 'org.nuxel.Portal'
 PORTAL_OBJECT_PATH = '/org/nuxel/Portal'
@@ -975,35 +975,46 @@ class NetworkManagerConnector:
             return {'success': False, 'error': str(exc)}
 
 class GeoClueConnector:
-    """Bounded GeoClue2 client.
+    """Bounded GeoClue2 client with the required per-UID agent.
 
-    GeoClue is the canonical location provider on a normal Linux userspace, but
-    it is not always present or responsive on the S10+ port.  Every D-Bus call
-    here is bounded: a missing GPS backend must produce an honest provider
-    status, not a 25-second D-Bus timeout that also stalls Quick Settings.
+    Version-specific API note (GeoClue 2.8.2): ``DesktopId`` and
+    ``RequestedAccuracyLevel`` are read/write properties (Properties.Set) and
+    the fix is exposed through the read-only ``Location`` property.  There is
+    no ``GetLocation`` method.  Calls here stay bounded so a wedged provider
+    cannot stall Quick Settings.
     """
 
-    DBUS_TIMEOUT = float(os.environ.get('NUXEL_GEOCLUE_TIMEOUT', '2.0'))
+    BUS = 'org.freedesktop.GeoClue2'
+    MANAGER_PATH = '/org/freedesktop/GeoClue2/Manager'
+    DESKTOP_ID = 'org.nuxel.Bridge'
+    DBUS_TIMEOUT = float(os.environ.get('NUXEL_GEOCLUE_TIMEOUT', '3.0'))
+    CONNECT_TIMEOUT = float(os.environ.get('NUXEL_GEOCLUE_CONNECT_TIMEOUT', '12.0'))
     RETRY_SECONDS = float(os.environ.get('NUXEL_GEOCLUE_RETRY', '20.0'))
+    REQUESTED_ACCURACY = int(os.environ.get('NUXEL_GEOCLUE_ACCURACY', '6'))
     SERVICE_FILE = '/usr/share/dbus-1/system-services/org.freedesktop.GeoClue2.service'
 
     def __init__(self):
         self.bus = None
         self.client = None
+        self.client_path = None
         self.client_iface = None
+        self.client_props = None
+        self.agent = None
         self.connected = False
         self.present = False
         self.last_error = None
         self.last_attempt = 0.0
         self.acquiring = False
         self.acquire_started_at = None
+        self.source = None
+        self.source_detail = None
 
     @classmethod
     def service_installed(cls):
         return os.path.exists(cls.SERVICE_FILE)
 
-    def _call(self, iface, method, *args):
-        return getattr(iface, method)(*args, timeout=self.DBUS_TIMEOUT)
+    def _call(self, iface, method, *args, timeout=None):
+        return getattr(iface, method)(*args, timeout=timeout or self.DBUS_TIMEOUT)
 
     def connect(self, force=False):
         now = time.time()
@@ -1014,29 +1025,40 @@ class GeoClueConnector:
         self.last_attempt = now
         try:
             self.bus = dbus.SystemBus()
-            geo_obj = self.bus.get_object('org.freedesktop.GeoClue2',
-                                          '/org/freedesktop/GeoClue2/Manager')
+            geo_obj = self.bus.get_object(self.BUS, self.MANAGER_PATH, follow_name_owner_changes=True)
             manager = dbus.Interface(geo_obj, 'org.freedesktop.GeoClue2.Manager')
-            client_path = self._call(manager, 'GetClient')
-            self.client = self.bus.get_object('org.freedesktop.GeoClue2', client_path)
+            # The agent is a separate process running as this same UID
+            # (nuxel-geoclue-agent.service).  It must NOT live in this
+            # single-threaded bridge loop: GeoClue calls back into the agent
+            # while GetClient is still blocked.
+            client_path = self._call(manager, 'GetClient',
+                                     timeout=max(self.DBUS_TIMEOUT, self.CONNECT_TIMEOUT))
+            self.client = self.bus.get_object(self.BUS, client_path, follow_name_owner_changes=True)
+            self.client_path = str(client_path)
             self.client_iface = dbus.Interface(self.client, 'org.freedesktop.GeoClue2.Client')
-            self._call(self.client_iface, 'SetDesktopId', 'org.nuxel.Bridge')
-            self._call(self.client_iface, 'SetRequestedAccuracyLevel', 1)
+            self.client_props = dbus.Interface(self.client, dbus.PROPERTIES_IFACE)
+            # These are properties in GeoClue >= 2.5, not methods.
+            self._call(self.client_props, 'Set', 'org.freedesktop.GeoClue2.Client',
+                       'DesktopId', dbus.String(self.DESKTOP_ID))
+            self._call(self.client_props, 'Set', 'org.freedesktop.GeoClue2.Client',
+                       'RequestedAccuracyLevel', dbus.UInt32(self.REQUESTED_ACCURACY))
             self.connected = True
             self.present = True
             self.last_error = None
-            logger.info('GeoClue connected')
+            logger.info('GeoClue connected client=%s accuracy=%s',
+                        client_path, self.REQUESTED_ACCURACY)
             return True
         except Exception as exc:
             self.connected = False
             self.client_iface = None
+            self.client_props = None
             self.last_error = str(exc)
             logger.warning('GeoClue connect failed: %s', exc)
             return False
 
     def start_acquisition(self):
         """Ask GeoClue to start locating.  Returns (ok, error), never a fix."""
-        if not self.connected and not self.connect():
+        if not self.connected and not self.connect(force=True):
             return False, self.last_error or 'GeoClue not connected'
         try:
             self._call(self.client_iface, 'Start')
@@ -1044,9 +1066,80 @@ class GeoClueConnector:
             self.acquire_started_at = time.time()
             return True, None
         except Exception as exc:
+            # GeoClue may have exited/restarted since GetClient (its idle
+            # auto-stop and D-Bus activation are normal).  Drop the stale
+            # client and retry exactly once on a fresh connection.
+            logger.info('GeoClue Start failed (%s); reconnecting once', exc)
+            self._reset_client()
+            if not self.connect(force=True):
+                return False, self.last_error or str(exc)
+            try:
+                self._call(self.client_iface, 'Start')
+                self.acquiring = True
+                self.acquire_started_at = time.time()
+                return True, None
+            except Exception as exc2:
+                self._reset_client()
+                self.last_error = str(exc2)
+                return False, str(exc2)
+
+    def _reset_client(self):
+        self.client = None
+        self.client_path = None
+        self.client_iface = None
+        self.client_props = None
+        self.connected = False
+        self.acquiring = False
+        self.acquire_started_at = None
+
+    def stop_acquisition(self):
+        try:
+            if self.client_iface is not None:
+                self._call(self.client_iface, 'Stop')
+        except Exception as exc:
+            logger.info('GeoClue Stop: %s', exc)
+        finally:
             self.acquiring = False
-            self.last_error = str(exc)
-            return False, str(exc)
+            self.acquire_started_at = None
+
+    def disconnect(self):
+        """Release the GeoClue client object so an idle provider can stop."""
+        try:
+            if self.client_path and self.bus is not None:
+                manager = dbus.Interface(
+                    self.bus.get_object(self.BUS, self.MANAGER_PATH, follow_name_owner_changes=True),
+                    'org.freedesktop.GeoClue2.Manager')
+                self._call(manager, 'DeleteClient', self.client_path)
+        except Exception as exc:
+            logger.info('GeoClue DeleteClient: %s', exc)
+        finally:
+            self.client = None
+            self.client_path = None
+            self.client_iface = None
+            self.client_props = None
+            self.connected = False
+            self.acquiring = False
+            self.acquire_started_at = None
+
+    @staticmethod
+    def _classify_source(description):
+        """Map GeoClue's free-text Description to an honest source enum.
+
+        GeoClue 2.8 has no machine-readable source property.  We only claim
+        GNSS when the backend actually says GPS/GNSS; anything that looks like
+        Wi-Fi or GeoIP is labelled network, and an unrecognised backend stays
+        ``geoclue_unknown`` instead of being promoted to satellite GPS.
+        """
+        text = str(description or '').strip().lower()
+        if any(k in text for k in ('gps', 'gnss', 'satellite')):
+            return 'gnss', 'satellite'
+        if any(k in text for k in ('wifi', 'wi-fi', 'wlan', 'access point')):
+            return 'network_wifi', 'network'
+        if any(k in text for k in ('geoip', 'geo-ip', 'ip address', 'ichnaea', 'ip')):
+            return 'network_ip', 'network'
+        if text:
+            return 'geoclue_unknown', 'unknown'
+        return 'geoclue_unknown', 'unknown'
 
     def get_location(self):
         """Read the provider's current location, bounded by DBUS_TIMEOUT.
@@ -1058,12 +1151,13 @@ class GeoClueConnector:
             return {'success': False, 'error': self.last_error or 'GeoClue not connected',
                     'error_code': 'PROVIDER_UNAVAILABLE'}
         try:
-            location_path = self._call(self.client_iface, 'GetLocation')
-            if not location_path or location_path == '/':
+            location_path = self._call(self.client_props, 'Get',
+                                       'org.freedesktop.GeoClue2.Client', 'Location')
+            if not location_path or str(location_path) == '/':
                 return {'success': False, 'error': 'No location available',
                         'error_code': 'NO_FIX'}
-            loc_obj = self.bus.get_object('org.freedesktop.GeoClue2', location_path)
-            loc_props = dbus.Interface(loc_obj, 'org.freedesktop.DBus.Properties')
+            loc_obj = self.bus.get_object(self.BUS, location_path, follow_name_owner_changes=True)
+            loc_props = dbus.Interface(loc_obj, dbus.PROPERTIES_IFACE)
             props = self._call(loc_props, 'GetAll', 'org.freedesktop.GeoClue2.Location')
             lat = props.get('Latitude')
             lon = props.get('Longitude')
@@ -1071,23 +1165,43 @@ class GeoClueConnector:
                 return {'success': False, 'error': 'Provider returned no coordinates',
                         'error_code': 'NO_FIX'}
             timestamp = props.get('Timestamp')
+            # GeoClue Timestamp is (seconds, microseconds); older versions used
+            # a plain double.  Preserve the provider value in either form.
             try:
-                timestamp = float(timestamp) if timestamp is not None else None
+                if isinstance(timestamp, (tuple, list)) and len(timestamp) >= 2:
+                    timestamp = float(timestamp[0]) + float(timestamp[1]) / 1e6
+                else:
+                    timestamp = float(timestamp) if timestamp is not None else None
             except (TypeError, ValueError):
                 timestamp = None
+            accuracy = props.get('Accuracy')
+            try:
+                accuracy = float(accuracy) if accuracy is not None else None
+            except (TypeError, ValueError):
+                accuracy = None
+            if accuracy is not None and (not math.isfinite(accuracy) or accuracy < 0):
+                accuracy = None
+            description = str(props.get('Description') or '')
+            source, kind = self._classify_source(description)
+            self.source = source
+            self.source_detail = description or None
             self.last_error = None
             return {
                 'success': True,
                 'latitude': float(lat),
                 'longitude': float(lon),
-                'accuracy': float(props.get('Accuracy')) if props.get('Accuracy') is not None else None,
+                'accuracy': accuracy,
                 'altitude': float(props.get('Altitude')) if props.get('Altitude') is not None else None,
                 'timestamp': timestamp,
                 'observed_at': time.time(),
-                'source': 'geoclue2',
+                'source': source,
+                'source_detail': description or None,
+                'kind': kind,
+                'gnss': source == 'gnss',
             }
         except Exception as exc:
             self.last_error = str(exc)
+            self._reset_client()
             return {'success': False, 'error': str(exc), 'error_code': 'PROVIDER_ERROR'}
 
 
@@ -1408,12 +1522,17 @@ class LocationConnector:
     FRESH_SECONDS = float(os.environ.get('NUXEL_LOCATION_FRESH_SECONDS', '60'))
     STALE_SECONDS = float(os.environ.get('NUXEL_LOCATION_STALE_SECONDS', '600'))
     SEARCH_WINDOW_SECONDS = float(os.environ.get('NUXEL_LOCATION_SEARCH_WINDOW', '600'))
+    CLIENT_LEASE_SECONDS = float(os.environ.get('NUXEL_LOCATION_LEASE_SECONDS', '600'))
 
     def __init__(self):
         self.geoclue = None  # set by NuxelBridgeService after connect()
         self._last_fix = None
         self._last_error = None
         self._acquisition_started_at = None
+        # app_id -> {'count': int, 'expires': float}.  A location request is a
+        # lease, not a permanent subscription; the provider stops when the last
+        # lease expires or releases.
+        self._leases = {}
 
     def _read_policy(self):
         try:
@@ -1464,10 +1583,20 @@ class LocationConnector:
             return False
 
     def _gnss_hardware(self):
-        """Read-only GNSS path inventory; never a fix claim."""
+        """Read-only GNSS path inventory; never a fix claim.
+
+        The S10+ GNSS receiver is a BCM4773 reached through the Broadcom
+        BBD/LHD RPC stack.  /dev/ttyBCM is the BBD packet transport, NOT an
+        NMEA serial port, and /dev/bbd_patch is where the sensor-hub patch
+        firmware is loaded by the vendor lhd daemon.  A bound SPI driver or a
+        readable tty is therefore hardware evidence only, never a fix.
+        """
         nodes = [n for n in ('/dev/ttyBCM', '/dev/ssp_sensorhub',
                              '/dev/ssp_data_injection', '/dev/bbd_sensor')
                  if os.path.exists(n)]
+        bbd_nodes = [n for n in ('/dev/bbd_patch', '/dev/bbd_control',
+                                 '/dev/bbd_sensor', '/dev/bbd_urgent_patch')
+                     if os.path.exists(n)]
         spi_dir = '/sys/bus/spi/drivers/brcm gps spi'
         bound = []
         try:
@@ -1477,26 +1606,51 @@ class LocationConnector:
         except OSError:
             pass
         firmware = []
-        for d in ('/lib/firmware/gnss', '/lib/firmware'):
+        for d in ('/lib/firmware/gnss', '/lib/firmware', '/vendor/firmware'):
             try:
                 for name in sorted(os.listdir(d)):
                     low = name.lower()
-                    if ('bcm477' in low or low.startswith('gps') or low.startswith('gnss')):
+                    if (('bcm477' in low or low.startswith('gps') or
+                         low.startswith('gnss') or 'sensorhub' in low or
+                         low.startswith('ssp')) and
+                            not low.endswith(('.hcd', '.txt', '.conf', '.json'))):
                         firmware.append(os.path.join(d, name))
             except OSError:
                 continue
+        # The vendor lhd daemon loads a BBD patch from /dev/bbd_patch (see
+        # beyond2lte vendor/etc/sensor/lhd.conf).  Without that exact patch and
+        # the Android/Bionic lhd+gpsd pair, no BBD/LHD RPC exchange is possible.
+        vendor_runtime = {
+            'lhd': any(os.path.exists(p) for p in
+                       ('/vendor/bin/hw/lhd', '/vendor/bin/lhd')),
+            'gpsd': any(os.path.exists(p) for p in
+                        ('/vendor/bin/hw/gpsd', '/vendor/bin/gpsd')),
+            'android_linker': os.path.exists('/system/bin/linker64'),
+            'hidl_gnss_lib': any(os.path.exists(p) for p in
+                                 ('/vendor/lib64/vendor.samsung.hardware.gnss@2.0.so',
+                                  '/vendor/lib64/vendor.samsung.hardware.gnss@2.0-impl.so')),
+            'lhd_config': os.path.exists('/vendor/etc/sensor/lhd.conf'),
+            'gps_config': os.path.exists('/vendor/etc/gnss/gps.xml'),
+        }
+        vendor_runtime['complete'] = all(vendor_runtime.values())
         blocker = None
         if not nodes and not bound:
             blocker = 'no GNSS device node or BCM GPS SPI driver binding'
         elif not bound:
             blocker = 'no BCM GPS SPI driver binding'
         if blocker is None and not firmware:
-            blocker = 'no GNSS/sensor-hub firmware in /lib/firmware'
+            blocker = ('no compatible BCM4773 BBD sensor-hub patch firmware '
+                       '(vendor lhd expects /dev/bbd_patch)')
+        if blocker is None and not vendor_runtime['complete']:
+            missing = [k for k, v in vendor_runtime.items() if not v]
+            blocker = ('GNSS firmware/RPC stack incomplete: missing ' +
+                       ', '.join(missing))
         if blocker is None and not nodes:
             blocker = ('GNSS driver is bound but /dev is private to the bridge; '
-                       'no GNSS userspace provider is wired')
+                       'no BBD/LHD userspace provider is wired')
         if blocker is None:
-            blocker = 'no GNSS userspace reader (NMEA/gpsd) is wired'
+            blocker = ('BCM4773 BBD/LHD userspace provider is not wired '
+                       '(stock gpsd cannot decode this RPC protocol)')
         return {
             # The bridge unit has PrivateDevices=true, so a node may exist in
             # the real /dev while being hidden here.  A bound SPI device is
@@ -1504,12 +1658,19 @@ class LocationConnector:
             'present': bool(nodes or bound),
             'nodes': nodes,
             'node_visible_to_bridge': bool(nodes),
+            'bbd_nodes': bbd_nodes,
             'private_devices': True,
             'driver': 'brcm gps spi',
             'driver_bound': bool(bound),
             'spi_bindings': bound,
+            'protocol': 'broadcom-bbd-lhd-rpc',
+            'nmea_stream': False,
             'firmware_present': bool(firmware),
             'firmware': firmware,
+            'firmware_loaded': False,
+            'vendor_runtime': vendor_runtime,
+            'userspace_provider': None,
+            'hardware_responds': None,
             'fix_supported': False,
             'blocker': blocker,
         }
@@ -1534,8 +1695,10 @@ class LocationConnector:
             'accuracy': loc.get('accuracy'),
             'timestamp': float(ts),
             'timestamp_source': ts_source,
-            'source': loc.get('source') or 'geoclue2',
-            'kind': 'provider',
+            'source': loc.get('source') or 'geoclue_unknown',
+            'source_detail': loc.get('source_detail'),
+            'kind': loc.get('kind') or 'unknown',
+            'gnss': bool(loc.get('gnss')),
         }
         self._last_error = None
         return self._last_fix
@@ -1595,11 +1758,55 @@ class LocationConnector:
             self._last_error = err or 'provider did not start acquisition'
         return ok, self._last_error
 
+    def _prune_leases(self, now=None):
+        now = time.time() if now is None else now
+        expired = [k for k, v in self._leases.items() if v.get('expires', 0) <= now]
+        for key in expired:
+            self._leases.pop(key, None)
+        return bool(self._leases)
+
+    def begin_acquisition(self, app_id, max_seconds=None):
+        """Reference-counted acquisition for one authorized client."""
+        now = time.time()
+        self._prune_leases(now)
+        ttl = max(5.0, float(max_seconds or self.CLIENT_LEASE_SECONDS))
+        if self._leases:
+            # Repeated polls from one app (watchPosition) refresh the same
+            # lease instead of accumulating an unbounded count.
+            self._leases[app_id] = {'count': 1, 'expires': now + ttl}
+            return True, None
+        ok, err = self.start_acquisition()
+        if ok:
+            self._leases[app_id] = {'count': 1, 'expires': now + ttl}
+        return ok, err
+
+    def end_acquisition(self, app_id):
+        """Drop one client lease; stop GeoClue only when nobody needs it."""
+        entry = self._leases.get(app_id)
+        if entry is not None:
+            entry['count'] -= 1
+            if entry['count'] <= 0:
+                self._leases.pop(app_id, None)
+        self._prune_leases()
+        if not self._leases:
+            if self.geoclue is not None and getattr(self.geoclue, 'connected', False):
+                try:
+                    self.geoclue.stop_acquisition()
+                    self.geoclue.disconnect()
+                except Exception as exc:
+                    logger.info('GeoClue stop on lease release: %s', exc)
+            self._acquisition_started_at = None
+            return {'success': True, 'active_clients': 0, 'acquiring': False}
+        return {'success': True, 'active_clients': sum(
+            max(0, int(v.get('count', 0))) for v in self._leases.values()), 'acquiring': True}
+
     def _state(self, enabled, provider_ready, provider_installed, fix, now):
         if not enabled:
             return 'disabled'
         if not provider_ready:
-            return 'unavailable'
+            if not provider_installed or self._last_error:
+                return 'unavailable'
+            return 'no_fix'
         if self._last_error and not fix:
             return 'error'
         if fix:
@@ -1614,8 +1821,10 @@ class LocationConnector:
         enabled = self._read_policy()
         provider_ready = self._provider_ready()
         provider_installed = self._provider_installed()
-        if enabled:
-            provider_ready = self._ensure_provider()
+        # Status polling must not keep an idle GeoClue client alive.  Only an
+        # explicit acquisition reconnects; an installed but idle provider is
+        # reported as not ready, not as broken.
+        if enabled and provider_ready:
             self._current_fix()
         fix = self._fix_view(now)
         state = self._state(enabled, provider_ready, provider_installed, fix, now)
@@ -1632,6 +1841,9 @@ class LocationConnector:
                 detail = 'GeoClue2 is not installed'
         elif state == 'error':
             detail = self._last_error or 'location provider error'
+        elif not provider_ready and provider_installed:
+            detail = ('GeoClue2 is installed but idle; an authorized acquisition '
+                      'will start it (provider_ready=false)')
         elif state == 'searching':
             detail = 'acquisition requested; waiting for the provider to produce a fix'
         elif state in ('no_fix', 'stale'):
@@ -1654,8 +1866,10 @@ class LocationConnector:
             'fix_valid': state == 'fixed',
             'stale': state == 'stale',
             'fix_source': expose['source'] if expose else None,
-            'fix_kind': expose.get('kind', 'provider') if expose else None,
-            'gnss_fix': False,
+            'fix_source_detail': expose.get('source_detail') if expose else None,
+            'fix_kind': expose.get('kind', 'unknown') if expose else None,
+            'gnss_fix': bool(expose and expose.get('gnss')),
+            'network_fix': bool(expose and expose.get('kind') == 'network'),
             'fix_timestamp': expose['timestamp'] if expose else None,
             'last_fix_timestamp': expose['timestamp'] if expose else None,
             'last_fix_age_s': expose['age_seconds'] if expose else None,
@@ -1666,6 +1880,7 @@ class LocationConnector:
             'stale_after_seconds': self.STALE_SECONDS,
             'acquiring': state == 'searching',
             'acquisition_started_at': self._acquisition_started_at,
+            'active_clients': len(self._leases),
             'last_error': self._last_error,
             'gnss': gnss,
             'timestamp': now,
@@ -1679,10 +1894,16 @@ class LocationConnector:
         else:
             if self.geoclue is not None and getattr(self.geoclue, 'connected', False):
                 try:
-                    self.geoclue.client_iface.Stop(timeout=getattr(self.geoclue, 'DBUS_TIMEOUT', 2.0))
+                    self.geoclue.stop_acquisition()
                 except Exception:
                     pass
             self._acquisition_started_at = None
+            self._leases.clear()
+            # Turning location OFF invalidates the last known position: it must
+            # not continue to be displayed as a current/stale fix after the
+            # privacy policy has been revoked.
+            self._last_fix = None
+            self._last_error = None
         # The policy toggle itself is not a position read; never echo a
         # coordinate from this administrative response.
         st = self.get_status(include_coordinates=False)
@@ -1892,7 +2113,9 @@ class NuxelBridgeService(dbus.service.Object):
             self.portals.connect()
             self.modem.connect()
             self.network.connect()
-            self.geoclue.connect()
+            # GeoClue is connected on demand by an authorized acquisition.
+            # Connecting at boot kept an idle client alive and made the
+            # provider appear to be in use even when Location was OFF.
         thread = threading.Thread(target=_connect, daemon=True)
         thread.start()
     
@@ -2224,12 +2447,23 @@ class NuxelBridgeService(dbus.service.Object):
                                'error': 'Location is disabled (global policy)',
                                'error_code': 'LOCATION_DISABLED',
                                'enabled': False, 'state': 'disabled'})
-        ok, err = self.location.start_acquisition()
+        ok, err = self.location.begin_acquisition(app_id)
         st = self.location.get_status()
         st['acquire_requested'] = bool(ok)
         if not ok:
             st['last_error'] = err or st.get('last_error')
         return json.dumps(st)
+
+    @dbus.service.method(INTERFACE_NAME, in_signature='s', out_signature='s')
+    def LocationStop(self, app_id):
+        """Release this client's acquisition lease (e.g. after clearWatch)."""
+        if not self._check_capability(app_id, 'location:read'):
+            return json.dumps({'success': False,
+                               'error': 'Capability not granted: location:read',
+                               'error_code': 'CAPABILITY_DENIED'})
+        result = self.location.end_acquisition(app_id)
+        result['state'] = self.location.get_status(include_coordinates=False).get('state')
+        return json.dumps(result)
 
     # ---------- D-Bus: Location ----------
     
@@ -2259,6 +2493,10 @@ class NuxelBridgeService(dbus.service.Object):
             'accuracy': st.get('accuracy'),
             'timestamp': st.get('last_fix_timestamp'),
             'source': st.get('fix_source'),
+            'source_detail': st.get('fix_source_detail'),
+            'kind': st.get('fix_kind'),
+            'gnss': bool(st.get('gnss_fix')),
+            'network': bool(st.get('network_fix')),
             'state': st.get('state'),
         })
     
@@ -2443,7 +2681,7 @@ class NuxelBridgeService(dbus.service.Object):
 
 
 def main():
-    logger.info("Starting Nuxel Bridge v0.2.1...")
+    logger.info("Starting Nuxel Bridge v0.7.4-beta...")
     
     dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
     bus = dbus.SystemBus()

@@ -1,0 +1,41 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+=== time/uptime ===
+2026-10-31T01:18:55+01:00
+ 01:18:55 up  1:11,  0 user,  load average: 11.64, 11.68, 11.80
+=== services ===
+enabled
+enabled
+enabled
+enabled
+active
+inactive
+active
+active
+=== bridge sandbox ===
+CapabilityBoundingSet=
+AmbientCapabilities=
+User=nuxel-bridge
+PrivateDevices=yes
+=== policy ===
+{"enabled": false, "updated": 1793405860.9917078}
+=== rail ===
+0
+=== geoclue whitelist ===
+6:whitelist=org.nuxel.Bridge;geoclue-demo-agent;gnome-shell;io.elementary.desktop.agent-geoclue2;sm.puri.Phosh;lipstick
+87:[org.nuxel.Bridge]
+=== gps units ===
+none
+=== deployed versions ===
+e58f083aa225f7858b0ff434dc4ab1bd6aaf5faeba1052fbb6a0ffcce8d363cc  /usr/lib/nuxel/nuxel-bridge/bridge.py
+c2d94f4bb68c57b50c1c24483490eb9ad63bdb78761f063cbb8417f8c13b642a  /usr/lib/nuxel/nuxel-bridge/geoclue_agent.py
+30ce81321efc83878c928c4079e1a359532d17901ed2d9ae1bd3916216493c0e  /usr/share/nuxel/pwa/nuxel-common/geolocation.js
+=== diagnostic ===
+{"device":"beyond2lte","tool":"nuxel-gnss-diag","protocol":"bbd","stages":{"device_node":"node:/dev/ttyBCM","module":"bound:/sys/bus/spi/drivers/brcm gps spi/spi17.0","firmware":"loader-only:/dev/bbd_patch","vendor_runtime":"missing:lhd,gpsd,android_linker,lhd_config,gps_config,gnss_hidl_impl","userspace":"no-native-bbd-lhd-decoder","stream":"bbd-transport:/dev/ttyBCM"},"first_failing_stage":"firmware","state":"BLOCKED_FIRMWARE","fix_verified":false,"nmea_stream":false,"owner_test":"docs/beta-finalization/manual-proof/13-gps.md"}

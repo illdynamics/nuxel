@@ -26,12 +26,15 @@ NUXEL_APP_DATA_DIR so no real user data is ever touched.
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import mimetypes
 import os
 import pwd
 import re
 import shutil
+import subprocess
+import tempfile
 import time
 import zipfile
 from pathlib import Path
@@ -46,6 +49,7 @@ DEFAULT_DATA_DIR = "/var/lib/nuxel/app-data"
 # Media extensions Gallery can browser without guessing file types from bytes.
 IMAGE_EXTS = {".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp", ".heic", ".heif", ".avif"}
 VIDEO_EXTS = {".mp4", ".m4v", ".mov", ".webm", ".mkv", ".avi", ".3gp"}
+THUMB_EXTS = {".jpg", ".jpeg", ".png", ".webp"}
 
 
 def _session_user():
@@ -597,6 +601,152 @@ class PwaStore:
     # The haptics daemon owns /run/nuxel-haptics/haptics.cmd.  We only write a
     # single newline-terminated command through the FIFO; we never invent a
     # vibrator node and never claim the motor was felt.
+    # ---- video thumbnails -------------------------------------------------
+    @property
+    def thumbnail_root(self) -> Path:
+        configured = os.environ.get("NUXEL_THUMBNAIL_DIR")
+        return Path(configured).expanduser().resolve() if configured else Path("/var/cache/nuxel/thumbnails")
+
+    def _thumbnail_key(self, target: Path) -> str:
+        st = target.stat()
+        raw = "%s\0%d\0%d\0%d" % (str(target), st.st_size, int(st.st_mtime_ns), 320)
+        return hashlib.sha256(raw.encode("utf-8")).hexdigest()[:32]
+
+    def _thumbnail_input(self, path: str) -> Path:
+        """Resolve a media path and prove it stays inside the media root."""
+        if not path:
+            raise StoreError("no media path supplied")
+        target = Path(path)
+        # Bridge media paths are home-root-relative with a leading slash
+        # ("/Gallery/a.mp4").  Accept those and genuine absolute paths, but
+        # never let either resolve outside the Files root.
+        if not target.is_absolute():
+            target = self.files_root / path.lstrip("/")
+        elif not target.exists():
+            target = self.files_root / path.lstrip("/")
+        try:
+            resolved = target.resolve(strict=True)
+            root = self.files_root.resolve()
+            if os.path.commonpath([str(root), str(resolved)]) != str(root):
+                raise StoreError("media path escapes the user's media root")
+        except FileNotFoundError:
+            raise StoreError("media file not found")
+        except OSError as exc:
+            raise StoreError("media path check failed: %s" % exc)
+        if not resolved.is_file():
+            raise StoreError("not a media file")
+        if resolved.suffix.lower() not in (IMAGE_EXTS | VIDEO_EXTS):
+            raise StoreError("unsupported media type")
+        # Refuse to decode a file a symlink swapped after validation.
+        if resolved.is_symlink():
+            raise StoreError("symlinked media is not decoded")
+        return resolved
+
+    @staticmethod
+    def _decoder_available(name: str) -> bool:
+        return shutil.which(name) is not None
+
+    def _generate_thumbnail(self, target: Path, out: Path) -> bool:
+        """Generate a still with the first installed decoder.
+
+        ffmpeg is preferred when present; mpv and GStreamer are both shipped on
+        the current S10+ image.  Subprocesses use argv arrays (shell=False) with
+        a hard timeout.  A missing/corrupt codec returns False; the caller keeps
+        the poster and reports the real playback limitation.
+        """
+        out.parent.mkdir(parents=True, exist_ok=True)
+        tmpdir = tempfile.mkdtemp(prefix="nuxel-thumb-", dir=str(out.parent))
+        try:
+            # 1) ffmpeg
+            if self._decoder_available("ffmpeg"):
+                cmd = ["ffmpeg", "-hide_banner", "-loglevel", "error", "-nostdin",
+                       "-ss", "1", "-i", str(target), "-frames:v", "1",
+                       "-vf", "scale=320:-2", "-y", str(out)]
+                try:
+                    r = subprocess.run(cmd, capture_output=True, timeout=20, shell=False)
+                    if r.returncode == 0 and out.is_file() and out.stat().st_size > 0:
+                        return True
+                except (OSError, subprocess.SubprocessError):
+                    pass
+            # 2) mpv image output
+            if self._decoder_available("mpv"):
+                cmd = ["mpv", "--no-config", "--really-quiet", "--no-audio",
+                       "--start=1", "--frames=1", "--vo=image",
+                       "--vo-image-format=jpg", "--vo-image-outdir=" + tmpdir,
+                       "--vf=scale=320:-2", str(target)]
+                try:
+                    r = subprocess.run(cmd, capture_output=True, timeout=20, shell=False)
+                    produced = sorted(Path(tmpdir).glob("*.jpg")) + sorted(Path(tmpdir).glob("*.jpeg"))
+                    if r.returncode == 0 and produced:
+                        os.replace(produced[0], out)
+                        return out.stat().st_size > 0
+                except (OSError, subprocess.SubprocessError):
+                    pass
+            # 3) GStreamer decodebin -> jpeg
+            if self._decoder_available("gst-launch-1.0"):
+                cmd = ["gst-launch-1.0", "-q", "filesrc", "location=" + str(target),
+                       "!", "decodebin", "!", "videoconvert", "!", "videoscale",
+                       "!", "video/x-raw,width=320", "!", "jpegenc", "!",
+                       "filesink", "location=" + str(out)]
+                try:
+                    r = subprocess.run(cmd, capture_output=True, timeout=25, shell=False)
+                    return r.returncode == 0 and out.is_file() and out.stat().st_size > 0
+                except (OSError, subprocess.SubprocessError):
+                    pass
+            return False
+        finally:
+            shutil.rmtree(tmpdir, ignore_errors=True)
+            if out.exists() and out.stat().st_size == 0:
+                try: out.unlink()
+                except OSError: pass
+
+    def storage_thumbnail(self, path: str) -> dict:
+        try:
+            target = self._thumbnail_input(path)
+        except StoreError as exc:
+            return {"success": False, "error": str(exc), "error_code": "INVALID_PATH"}
+        if target.suffix.lower() in IMAGE_EXTS:
+            # Photos are already stills; the grid can use the normal file URL.
+            return {"success": True, "thumbnail": False, "kind": "photo",
+                    "path": path, "mime": mimetypes.guess_type(target.name)[0]}
+        try:
+            key = self._thumbnail_key(target)
+        except OSError as exc:
+            return {"success": False, "error": str(exc), "error_code": "STAT_FAILED"}
+        out = self.thumbnail_root / (key + ".jpg")
+        if out.is_file() and out.stat().st_size > 0:
+            return {"success": True, "thumbnail": True, "cached": True,
+                    "path": path, "key": key, "mime": "image/jpeg"}
+        tmp = out.with_suffix(".jpg.tmp.%d" % os.getpid())
+        ok = self._generate_thumbnail(target, tmp)
+        if not ok:
+            try: tmp.unlink()
+            except OSError: pass
+            return {"success": False, "error": "no installed decoder could extract a frame",
+                    "error_code": "THUMBNAIL_UNAVAILABLE",
+                    "path": path, "name": target.name}
+        os.replace(tmp, out)
+        try: os.chmod(out, 0o644)
+        except OSError: pass
+        return {"success": True, "thumbnail": True, "cached": False,
+                "path": path, "key": key, "mime": "image/jpeg"}
+
+    def thumbnail_file(self, path: str):
+        """Return (Path, mime) for an existing cached thumbnail, or raise."""
+        try:
+            target = self._thumbnail_input(path)
+        except StoreError as exc:
+            raise StoreError(str(exc))
+        if target.suffix.lower() in IMAGE_EXTS:
+            return target, mimetypes.guess_type(target.name)[0] or "image/jpeg"
+        key = self._thumbnail_key(target)
+        out = self.thumbnail_root / (key + ".jpg")
+        if not out.is_file() or out.stat().st_size == 0:
+            result = self.storage_thumbnail(path)
+            if not result.get("success"):
+                raise StoreError(result.get("error", "thumbnail unavailable"))
+        return out, "image/jpeg"
+
     @property
     def haptics_fifo(self) -> Path:
         return Path(os.environ.get("NUXEL_HAPTICS_FIFO", "/run/nuxel-haptics/haptics.cmd"))

@@ -250,7 +250,10 @@ def test_provider_disappearance_changes_state_without_destroying_last_fix():
         assert lc.get_status()["state"] == "fixed"
         geo.connected = False
         st = lc.get_status()
-        assert st["state"] == "unavailable"
+        # An installed-but-idle/stopped provider is not permanently "broken":
+        # it may be restarted by an authorized acquisition.  The fix must still
+        # stop being presented as current.
+        assert st["state"] in ("unavailable", "no_fix")
         assert st["provider_ready"] is False
         assert st["location_fix_available"] is False
         # The last real fix may still be known, but it is not presented as current.

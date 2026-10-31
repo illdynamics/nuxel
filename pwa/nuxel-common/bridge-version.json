@@ -1,7 +1,7 @@
 {
   "schema": "nuxel.bridge-version/1",
   "bridge_version": "1",
-  "host_version": "0.2.1",
+  "host_version": "0.7.4-beta",
   "policy": "reject-on-mismatch",
   "pinned_on": "2026-10-16",
   "app_manifest_field": "nuxel.bridge_version",
@@ -9,10 +9,10 @@
   "dbus_property": "org.nuxel.Bridge.BridgeVersion",
   "canonical_registry": "pwa/nuxel-common/app-registry.json",
   "enforcement": {
-    "pwa_client": "pwa/nuxel-common/bridge.js (NUXEL_BRIDGE_VERSION) — a ping that does not declare this version is a version MISMATCH, never a silent mock downgrade",
-    "http_bridge": "services/nuxel-bridge/src/api.py — /api/v1/ping and /api/v1/health publish bridge_version; a request carrying a mismatching X-Nuxel-Bridge-Version is answered 409 version_mismatch (loud, never silently rejected)",
-    "dbus_bridge": "services/nuxel-bridge/src/bridge.py — Ping() publishes bridge_version",
-    "verifier": "tools/s10plus/a33/verify-app-registry.py — asserts this file, bridge.js's NUXEL_BRIDGE_VERSION, every app manifest's nuxel.bridge_version and the installed systemd Environment= pins all agree"
+    "pwa_client": "pwa/nuxel-common/bridge.js (NUXEL_BRIDGE_VERSION) \u2014 a ping that does not declare this version is a version MISMATCH, never a silent mock downgrade",
+    "http_bridge": "services/nuxel-bridge/src/api.py \u2014 /api/v1/ping and /api/v1/health publish bridge_version; a request carrying a mismatching X-Nuxel-Bridge-Version is answered 409 version_mismatch (loud, never silently rejected)",
+    "dbus_bridge": "services/nuxel-bridge/src/bridge.py \u2014 Ping() publishes bridge_version",
+    "verifier": "tools/s10plus/a33/verify-app-registry.py \u2014 asserts this file, bridge.js's NUXEL_BRIDGE_VERSION, every app manifest's nuxel.bridge_version and the installed systemd Environment= pins all agree"
   },
   "history": [
     {

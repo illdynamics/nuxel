@@ -1,0 +1,132 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+AddAgent OK
+GetClient OK /org/freedesktop/GeoClue2/Client/1
+CLIENT INTROSPECT
+<!DOCTYPE node PUBLIC "-//freedesktop//DTD D-BUS Object Introspection 1.0//EN"
+                      "http://www.freedesktop.org/standards/dbus/1.0/introspect.dtd">
+<!-- GDBus 2.86.5 -->
+<node>
+  <interface name="org.freedesktop.DBus.Properties">
+    <method name="Get">
+      <arg type="s" name="interface_name" direction="in"/>
+      <arg type="s" name="property_name" direction="in"/>
+      <arg type="v" name="value" direction="out"/>
+    </method>
+    <method name="GetAll">
+      <arg type="s" name="interface_name" direction="in"/>
+      <arg type="a{sv}" name="properties" direction="out"/>
+    </method>
+    <method name="Set">
+      <arg type="s" name="interface_name" direction="in"/>
+      <arg type="s" name="property_name" direction="in"/>
+      <arg type="v" name="value" direction="in"/>
+    </method>
+    <signal name="PropertiesChanged">
+      <arg type="s" name="interface_name"/>
+      <arg type="a{sv}" name="changed_properties"/>
+      <arg type="as" name="invalidated_properties"/>
+    </signal>
+  </interface>
+  <interface name="org.freedesktop.DBus.Introspectable">
+    <method name="Introspect">
+      <arg type="s" name="xml_data" direction="out"/>
+    </method>
+  </interface>
+  <interface name="org.freedesktop.DBus.Peer">
+    <method name="Ping"/>
+    <method name="GetMachineId">
+      <arg type="s" name="machine_uuid" direction="out"/>
+    </method>
+  </interface>
+  <interface name="org.freedesktop.GeoClue2.Client">
+    <method name="Start"/>
+    <method name="Stop"/>
+    <signal name="LocationUpdated">
+      <arg type="o" name="old"/>
+      <arg type="o" name="new"/>
+    </signal>
+    <property type="o" name="Location" access="read"/>
+    <property type="u" name="DistanceThreshold" access="readwrite">
+      <annotation name="org.freedesktop.Accounts.DefaultValue" value="0"/>
+    </property>
+    <property type="u" name="TimeThreshold" access="readwrite">
+      <annotation name="org.freedesktop.Accounts.DefaultValue" value="0"/>
+    </property>
+    <property type="s" name="DesktopId" access="readwrite"/>
+    <property type="u" name="RequestedAccuracyLevel" access="readwrite"/>
+    <property type="b" name="Active" access="read"/>
+  </interface>
+</node>
+
+SetDesktopId OK
+SetAcc OK
+Start OK
+GetLocation ERR org.freedesktop.DBus.Error.UnknownMethod: No such method “GetLocation”
+GetLocation ERR org.freedesktop.DBus.Error.UnknownMethod: No such method “GetLocation”
+GetLocation ERR org.freedesktop.DBus.Error.UnknownMethod: No such method “GetLocation”
+GetLocation ERR org.freedesktop.DBus.Error.UnknownMethod: No such method “GetLocation”
+GetLocation ERR org.freedesktop.DBus.Error.UnknownMethod: No such method “GetLocation”
+GetLocation ERR org.freedesktop.DBus.Error.UnknownMethod: No such method “GetLocation”
+poll limit
+Stop OK
+DONE
+rc=0
+=== debug log (filtered) ===
+(geoclue:47565): Geoclue-DEBUG: 00:51:04.726: SSID for WiFi AP 'fa:8f:ca:34:aa:db' missing or has '_nomap' suffix., Ignoring..
+(geoclue:47565): Geoclue-DEBUG: 00:51:04.727: Got WiFi AP 'ZiggoD1FF8FA'
+(geoclue:47565): Geoclue-DEBUG: 00:51:04.727: WiFi AP 'ZiggoD1FF8FA' added.
+(geoclue:47565): Geoclue-DEBUG: 00:51:04.727: Got WiFi AP 'TMNL-5306F1'
+(geoclue:47565): Geoclue-DEBUG: 00:51:04.727: WiFi AP '08:26:97:53:06:f1' has very low strength (-97 dBm), ignoring for now…
+(geoclue:47565): Geoclue-DEBUG: 00:51:08.507: WiFi AP 'Odido-050418' removed.
+(geoclue:47565): Geoclue-DEBUG: 00:51:08.508: WiFi scan done, next scheduled in 300 seconds
+(geoclue:47565): Geoclue-DEBUG: 00:51:08.514: WiFi AP '08:26:97:57:f7:91' still has very low strength (-93 dBm), ignoring again…
+(geoclue:47565): Geoclue-DEBUG: 00:51:08.515: WiFi AP 'f8:0d:a9:17:61:98' still has very low strength (-97 dBm), ignoring again…
+(geoclue:47565): Geoclue-DEBUG: 00:51:08.522: WiFi AP 'f8:0d:a9:13:78:2a' still has very low strength (-93 dBm), ignoring again…
+(geoclue:47565): Geoclue-DEBUG: 00:51:08.526: SSID for WiFi AP '16:cf:0e:27:10:16' missing or has '_nomap' suffix., Ignoring..
+(geoclue:47565): Geoclue-DEBUG: 00:51:08.535: Got WiFi AP 'Ziggo6270335'
+(geoclue:47565): Geoclue-DEBUG: 00:51:08.535: WiFi AP 'Ziggo6270335' added.
+(geoclue:47565): Geoclue-DEBUG: 00:51:08.535: Got WiFi AP 'Ziggo3191038'
+(geoclue:47565): Geoclue-DEBUG: 00:51:08.535: WiFi AP '8c:9a:8f:45:67:c3' has very low strength (-94 dBm), ignoring for now…
+(geoclue:47565): Geoclue-DEBUG: 00:51:08.535: Got WiFi AP 'Ziggo8542018'
+(geoclue:47565): Geoclue-DEBUG: 00:51:08.535: WiFi AP 'b0:5b:99:f0:ba:cd' has very low strength (-95 dBm), ignoring for now…
+(geoclue:47565): Geoclue-DEBUG: 00:51:08.536: Got WiFi AP 'Ziggo3838092'
+(geoclue:47565): Geoclue-DEBUG: 00:51:08.536: WiFi AP 'a0:55:1f:cd:78:80' has very low strength (-95 dBm), ignoring for now…
+(geoclue:47565): Geoclue-DEBUG: 00:51:08.536: SSID for WiFi AP '16:49:bc:84:c4:48' missing or has '_nomap' suffix., Ignoring..
+(geoclue:47565): Geoclue-DEBUG: 00:51:09.651: WiFi BSS list changed, refreshing location…
+(geoclue:47565): Geoclue-DEBUG: 00:51:09.652: Cache miss for key (99, '', 0, 0, [[0x10, 0x71, 0xb3, 0x8e, 0x61, 0xd0], [0x54, 0x67, 0x51, 0x0d, 0x79, 0x58], [0x54, 0x67, 0x51, 0x0d, 0x79, 0x62], [0x68, 0x02, 0xb8, 0x06, 0x59, 0x13], [0x68, 0x02, 0xb8, 0x06, 0x59, 0x1b], [0x94, 0x3c, 0x96, 0xb3, 0x16, 0xa2], [0xac, 0x22, 0x05, 0x50, 0x50, 0xfc], [0xd8, 0xcf, 0x61, 0x15, 0x64, 0x2d], [0xd8, 0xcf, 0x61, 0x15, 0x64, 0x2e], [0xda, 0xcf, 0x61, 0x15, 0x64, 0x28], [0xda, 0xcf, 0x61, 0x15, 0x65, 0x29], [0xf8, 0x0d, 0xa9, 0x0e, 0x4c, 0xd0]])
+(geoclue:47565): Geoclue-DEBUG: 00:51:09.653: Will skip 3GPP tower in query due to our accuracy level
+(geoclue:47565): Geoclue-DEBUG: 00:51:09.658: Sending following request to 'https://api.beacondb.net/v1/geolocate':
+{"wifiAccessPoints":[{"macAddress":"10:71:b3:8e:61:d0","ssid":"TMNL-8E61D0","signalStrength":-83,"age":0},{"macAddress":"94:3c:96:b3:16:a2","ssid":"Ziggo6270335","signalStrength":-88,"age":0},{"macAddress":"da:cf:61:15:64:28","ssid":"Gast-Tan-Beckers","signalStrength":-58,"age":0},{"macAddress":"ac:22:05:50:50:fc","ssid":"ZiggoA47A8FE","signalStrength":-86,"age":0},{"macAddress":"54:67:51:0d:79:62","ssid":"ZiggoD1FF8FA","signalStrength":-91,"age":0},{"macAddress":"68:02:b8:06:59:1b","ssid":"Ziggo5501109","signalStrength":-54,"age":0},{"macAddress":"f8:0d:a9:0e:4c:d0","ssid":"TMNL-0E4CD0","signalStrength":-80,"age":0},{"macAddress":"54:67:51:0d:79:58","ssid":"ZiggoD1FF8FA","signalStrength":-89,"age":35000},{"macAddress":"d8:cf:61:15:64:2e","ssid":"Tan-Beckers01","signalStrength":-71,"age":0},{"macAddress":"d8:cf:61:15:64:2d","ssid":"Tan-Beckers01","signalStrength":-58,"age":0},{"macAddress":"da:cf:61:15:65:29","ssid":"Gast-Tan-Beckers","signalStrength":-71,"age":0},{"macAddress":"68:02:b8:06:59:13","ssid":"Ziggo5501109","signalStrength":-61,"age":0}]}
+(geoclue:47565): libsoup-DEBUG: 00:51:09.658: [SESSION QUEUE] [0x5593ad1150] [STARTING] Processing item, paused=0 state=0
+(geoclue:47565): GLib-GIO-DEBUG: 00:51:09.659: g_socket_client_connect_async: starting new g_socket_client_connect_async() with GTask 0x5593af6380 and GSocketClientAsyncConnectData 0x5593afcf00
+(geoclue:47565): GLib-GIO-DEBUG: 00:51:09.659: GSocketClient: Starting new address enumeration
+(geoclue:47565): GLib-GIO-DEBUG: 00:51:09.661: GSocketClient: Address enumeration completed (out of addresses)
+(geoclue:47565): GLib-GIO-DEBUG: 00:51:09.661: GSocketClient: Address enumeration failed: Error resolving “api.beacondb.net”: Name or service not known
+(geoclue:47565): GLib-GIO-DEBUG: 00:51:09.661: GSocketClient: Connection failed: Error resolving “api.beacondb.net”: Name or service not known
+(geoclue:47565): libsoup-DEBUG: 00:51:09.662: [SESSION QUEUE] [0x5593ad1150] [READY] Processing item, paused=0 state=4
+(geoclue:47565): libsoup-DEBUG: 00:51:09.662: [SESSION QUEUE] [0x5593ad1150] [FINISHING] Processing item, paused=0 state=9
+
+(geoclue:47565): Geoclue-WARNING **: 00:51:09.662: Failed to query location: Error resolving “api.beacondb.net”: Name or service not known
+(geoclue:47565): Geoclue-DEBUG: 00:51:18.657: GClueIp now inactive
+(geoclue:47565): Geoclue-DEBUG: 00:51:18.657: GClueWifi now inactive
+(geoclue:47565): Geoclue-DEBUG: 00:51:18.657: Cancelling WiFi requests
+(geoclue:47565): Geoclue-DEBUG: 00:51:18.667: Disconnecting cache prune timeout
+(geoclue:47565): Geoclue-DEBUG: 00:51:18.667: Pruned cache (old size: 0, new size: 0, removed elements: 0)
+(geoclue:47565): Geoclue-DEBUG: 00:51:18.667: Removed us as the WiFi source on stop
+(geoclue:47565): Geoclue-DEBUG: 00:51:18.667: GClueWifi already inactive, not stopping.
+(geoclue:47565): Geoclue-DEBUG: 00:51:18.668: Disconnecting cache prune timeout
+(geoclue:47565): Geoclue-DEBUG: 00:51:18.668: Pruned cache (old size: 0, new size: 0, removed elements: 0)
+(geoclue:47565): Geoclue-DEBUG: 00:51:18.668: Disconnecting cache prune timeout
+(geoclue:47565): Geoclue-DEBUG: 00:51:18.668: Pruned cache (old size: 0, new size: 0, removed elements: 0)
+(geoclue:47565): Geoclue-DEBUG: 00:51:18.668: GClueLocator now inactive
+(geoclue:47565): Geoclue-DEBUG: 00:51:18.669: 'org.nuxel.Bridge' stopped.
+(geoclue:47565): Geoclue-DEBUG: 00:51:18.839: Agent for user '0' vanished
+(geoclue:47565): Geoclue-DEBUG: 00:51:18.839: Client `:1.185` vanished. Dropping associated client objects

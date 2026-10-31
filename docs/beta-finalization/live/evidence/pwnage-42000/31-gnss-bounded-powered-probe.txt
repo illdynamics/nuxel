@@ -1,0 +1,26 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+=== rail before ===
+0
+=== bounded powered BBD probe (3s, location:manage) ===
+{"result": {"success": false, "protocol": "broadcom-bbd-lhd-rpc", "node": "/dev/ttyBCM", "nmea_stream": false, "inventory": {"protocol": "broadcom-bbd-lhd-rpc", "nmea": false, "nodes": ["/dev/ttyBCM", "/dev/bbd_patch", "/dev/bbd_control", "/dev/bbd_sensor", "/dev/bbd_urgent_patch"], "bbd_patch_node": "/dev/bbd_patch", "spi_bindings": ["/sys/bus/spi/drivers/brcm gps spi/spi17.0"], "power_rail": "/sys/devices/virtual/sec/gps/GPS_PWR_EN/value", "power_rail_state": false, "power_rail_readable": true, "power_rail_error": null, "active_leases": 0, "firmware": [], "firmware_present": false, "firmware_loaded": false, "vendor_files": {"lhd": false, "gpsd": false, "android_linker": false, "lhd_config": false, "gps_config": false, "gnss_impl": false}, "vendor_runtime_complete": false, "android_linker": false, "vendor_userspace": false, "fix_supported": false, "blocker": "no compatible BCM4773 BBD sensor-hub patch firmware"}, "power": null, "stream": "not_opened", "bytes": 0, "fix": null, "error": "no compatible BCM4773 BBD sensor-hub patch firmware", "error_code": "UNSUPPORTED_PROTOCOL", "elapsed_s": 0.002}}
+=== rail after (must be 0) ===
+0
+=== SSP/gps kernel tail ===
+[ 3966.950491] [SSP]: debug_work_func(0) - Sensor state: 0x3feff, RC: 0(0, 0, 0), CC: 0, TC: 0 NSC: 0 EC: 0 GPS: false
+[ 3972.834983] [SSP]: debug_work_func(0) - Sensor state: 0x3feff, RC: 0(0, 0, 0), CC: 0, TC: 0 NSC: 0 EC: 0 GPS: false
+[ 3978.979412] [SSP]: debug_work_func(0) - Sensor state: 0x3feff, RC: 0(0, 0, 0), CC: 0, TC: 0 NSC: 0 EC: 0 GPS: false
+[ 3984.867226] [SSP]: debug_work_func(0) - Sensor state: 0x3feff, RC: 0(0, 0, 0), CC: 0, TC: 0 NSC: 0 EC: 0 GPS: false
+[ 3991.011119] [SSP]: debug_work_func(0) - Sensor state: 0x3feff, RC: 0(0, 0, 0), CC: 0, TC: 0 NSC: 0 EC: 0 GPS: false
+[ 3996.898746] [SSP]: debug_work_func(0) - Sensor state: 0x3feff, RC: 0(0, 0, 0), CC: 0, TC: 0 NSC: 0 EC: 0 GPS: false
+[ 4002.787914] [SSP]: debug_work_func(0) - Sensor state: 0x3feff, RC: 0(0, 0, 0), CC: 0, TC: 0 NSC: 0 EC: 0 GPS: false
+[ 4008.931073] [SSP]: debug_work_func(0) - Sensor state: 0x3feff, RC: 0(0, 0, 0), CC: 0, TC: 0 NSC: 0 EC: 0 GPS: false
+[ 4014.819245] [SSP]: debug_work_func(0) - Sensor state: 0x3feff, RC: 0(0, 0, 0), CC: 0, TC: 0 NSC: 0 EC: 0 GPS: false
+[ 4020.963211] [SSP]: debug_work_func(0) - Sensor state: 0x3feff, RC: 0(0, 0, 0), CC: 0, TC: 0 NSC: 0 EC: 0 GPS: false

@@ -26,7 +26,9 @@
   };
 
   var state = { items: [], filter: '', album: '', index: 0, online: false, cache: {}, order: [] };
+  var sharedObserver = null;
   var FILE_BASE = 'http://127.0.0.1:8080/api/v1/storage/file?path=';
+  var THUMB_BASE = 'http://127.0.0.1:8080/api/v1/storage/thumbnail?path=';
 
   function toast(msg) {
     els.toast.textContent = msg;
@@ -144,6 +146,49 @@
     return FILE_BASE + encodeURIComponent(item.path || '');
   }
 
+  function thumbnailUrl(item) {
+    return THUMB_BASE + encodeURIComponent(item.path || '');
+  }
+
+  // Grid/card still.  A video card NEVER instantiates <video>: that created a
+  // decoder per cell.  The server generates a real JPEG frame (ffmpeg/mpv/
+  // GStreamer, whichever is installed) and caches it by path+size+mtime.
+  function thumbEl(item) {
+    if (item.kind === 'video') {
+      var wrap = document.createElement('div');
+      wrap.className = 'thumb-wrap';
+      if (item.source === 'storage' && item.path) {
+        var img = document.createElement('img');
+        img.src = thumbnailUrl(item);
+        img.alt = 'Still frame from ' + item.name;
+        img.loading = 'lazy';
+        img.decoding = 'async';
+        img.className = 'media';
+        img.addEventListener('error', function () {
+          img.replaceWith(placeholder('No thumbnail (codec unavailable)'));
+        }, { once: true });
+        wrap.appendChild(img);
+        var badge = document.createElement('span');
+        badge.className = 'video-badge';
+        badge.textContent = '▶';
+        wrap.appendChild(badge);
+        return wrap;
+      }
+      return placeholder('Video thumbnail unavailable');
+    }
+    var photo = document.createElement('img');
+    photo.src = storageUrl(item);
+    photo.alt = item.name;
+    photo.loading = 'lazy';
+    photo.decoding = 'async';
+    photo.className = 'media';
+    photo.style.imageOrientation = 'from-image';
+    photo.addEventListener('error', function () {
+      photo.replaceWith(placeholder('Image could not be decoded (format unsupported)'));
+    }, { once: true });
+    return photo;
+  }
+
   async function cameraDataUrl(item) {
     if (state.cache[item.id]) return state.cache[item.id];
     var res = await call('camera', 'open', { id: item.cameraId }, null);
@@ -174,11 +219,25 @@
       v.src = url;
       v.muted = !full;
       v.playsInline = true;
-      v.preload = 'metadata';
+      v.preload = full ? 'metadata' : 'none';
       v.controls = !!full;
       v.className = 'media';
+      if (full && item.source === 'storage' && item.path) v.poster = thumbnailUrl(item);
       v.addEventListener('error', function () {
-        v.replaceWith(placeholder('Video could not be decoded (' + item.name + ')'));
+        // Keep the still visible and report the real codec limitation.  A
+        // generated thumbnail is not proof that WebKit can play the video.
+        var box = document.createElement('div');
+        box.className = 'playback-error';
+        var poster = document.createElement('img');
+        poster.className = 'media';
+        poster.alt = 'Poster for ' + item.name;
+        if (item.source === 'storage' && item.path) poster.src = thumbnailUrl(item);
+        box.appendChild(poster);
+        var note = document.createElement('p');
+        note.textContent = 'Playback unavailable: WebKit cannot decode ' + item.name +
+          '. The still frame is shown; use a native player for this codec.';
+        box.appendChild(note);
+        v.replaceWith(box);
       }, { once: true });
       return v;
     }
@@ -219,20 +278,29 @@
       cap.className = 'cap';
       cap.textContent = (item.kind === 'video' ? '▶ ' : '') + item.name;
       cell.appendChild(cap);
+      var loaded = false;
       var loadMedia = function () {
-        mediaUrl(item).then(function (url) {
-          if (!url) return;
-          cell.replaceChild(mediaEl(item, url, false), ph);
-        });
+        if (loaded) return;
+        loaded = true;
+        var node = thumbEl(item);
+        if (cell.firstChild === ph) cell.replaceChild(node, ph);
+        else cell.insertBefore(node, cap);
       };
+      // One shared observer instead of one per card.  This bounds the number
+      // of live observers for a 2000-item Gallery and only loads visible stills.
       if ('IntersectionObserver' in window) {
-        var io = new IntersectionObserver(function (entries) {
-          entries.forEach(function (en) {
-            if (!en.isIntersecting) return;
-            io.disconnect(); loadMedia();
-          });
-        });
-        io.observe(cell);
+        if (!sharedObserver) {
+          sharedObserver = new IntersectionObserver(function (entries) {
+            entries.forEach(function (en) {
+              if (!en.isIntersecting) return;
+              sharedObserver.unobserve(en.target);
+              var fn = en.target.__nuxelLoad;
+              if (fn) { en.target.__nuxelLoad = null; fn(); }
+            });
+          }, { rootMargin: '160px' });
+        }
+        cell.__nuxelLoad = loadMedia;
+        sharedObserver.observe(cell);
       } else loadMedia();
       cell.addEventListener('click', function () { openViewer(item); });
       els.grid.appendChild(cell);

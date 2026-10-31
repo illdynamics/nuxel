@@ -6,7 +6,7 @@ and a live `nuxel-audio-route.sh --check` readiness probe (Calliope MUB0, both
 CS35L41 DSP1s booted/running, every route control, the 48 kHz static sink, the
 default sink, and the volume ceiling).  VOLUME is launched after a successful
 PipeWire default-sink change by the button manager.  Both cues play
-nuxel-pow.mp3 at 100% decoder gain into a sink that is itself capped at 25%, so
+nuxel-pow.mp3 at 100% decoder gain into the verified default sink (owner policy: 100% ceiling, 50% default), so
 there is exactly one attenuation stage.  Failures are logged, never faked; a
 player exit code is never recorded as audible.
 """
@@ -50,7 +50,7 @@ BOOT_PCM_PERCENT = 100
 WAIT_SECONDS = 180
 LOG = os.environ.get('NUXEL_SOUND_LOG', '/var/log/nuxel/sound-cues.log')
 ROUTE_CHECK = os.environ.get('NUXEL_AUDIO_ROUTE_CHECK', '/usr/lib/nuxel/nuxel-audio-route.sh')
-SOUND_AT_CAP = 0.25
+SOUND_AT_CAP = 1.0  # owner-approved ceiling (100%)
 
 
 def audio_route_ready():
@@ -112,8 +112,9 @@ def play(event, percentage):
         record(event, 'route_not_ready', detail=detail, audible='unverified')
         return 9
     # The CS35L41 output stage is left muted by the previous playback's
-    # hw_free. Re-apply the owner-confirmed clock/boost/output patch before
-    # every cue so a volume key or Test Audio press can never play silently.
+    # hw_free, and a cold speaker DAPM path can swallow this 366 ms cue.
+    # The helper repairs the cache, applies the proven registers and keeps an
+    # inaudible stream on the speaker path until DAPM SPEAKER=On.
     patch_path = '/usr/lib/nuxel/nuxel-cs35l41-apply.sh'
     if os.path.isfile(patch_path) and os.access(patch_path, os.X_OK):
         try:
@@ -251,8 +252,8 @@ def do_volume(level):
         except BlockingIOError:
             return 0  # suppress overlapping feedback while last cue plays
         # The actual ALSA mixer was already set to level by button manager.
-        # The PipeWire sink is held at or below the 25% safety ceiling; do not
-        # multiply that by a second software attenuation.
+        # The PipeWire sink follows the owner policy (100% ceiling, 50% default);
+        # do not multiply it by a second software attenuation.
         return play('volume', 100)
 
 

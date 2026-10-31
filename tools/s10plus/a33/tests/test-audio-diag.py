@@ -13,7 +13,7 @@ WHAT IS PROVEN HERE (OFFLINE_TESTED)
      reported DAC_NOT_RUNNING (fixture audio-dacidle), never OK.
   3. The low-volume default is enforced, not promised: a tone is refused without
      --yes, `safe-volume` refuses a level above the policy cap, and the ALSA
-     softvol ceiling (max_dB = -6.0) is present in the shipped config.
+     softvol ceiling (max_dB = 0.0) is present in the shipped config.
   4. The concrete UCM EnableSequence is generated from OBSERVED control names and
      the SHIPPED UCM profile carries empty sequences — nothing is invented.
   5. The tool contains no flashing/partition-write surface (NO FLASHING
@@ -144,24 +144,25 @@ p = run(["bash", TOOL, "tone", "500", "--yes"], {"NUXEL_DIAG_ROOT": fx("audio-no
 check("tone refuses when the anchor card is absent", p.returncode == 1 and "BLOCKED" in p.stdout,
       p.stdout[-300:])
 
-p = run(["bash", TOOL, "safe-volume", "90"], {"NUXEL_DIAG_ROOT": fx("audio-ok")})
-check("safe-volume refuses a level above the policy cap",
+p = run(["bash", TOOL, "safe-volume", "101"], {"NUXEL_DIAG_ROOT": fx("audio-ok")})
+check("safe-volume refuses a level above the 100% policy ceiling",
       p.returncode == 1 and "REFUSED" in p.stdout, p.stdout[-300:])
 
 p = run(["bash", TOOL, "safe-volume"], {"NUXEL_DIAG_ROOT": fx("audio-ok")})
-check("the reported softvol ceiling equals the policy cap", "cap=25%" in p.stdout, p.stdout[-300:])
+check("the reported softvol ceiling equals the policy cap", "cap=100%" in p.stdout, p.stdout[-300:])
 
 pol = json.load(open(AUDIO_JSON))
-check("policy default is low-volume-only at <= 25%",
-      pol["safety"]["low_volume_only"] is True and int(pol["safety"]["volume_cap_percent"]) <= 25)
+check("policy ceiling is the owner-approved 100% (25% cap retired)",
+      pol["safety"]["low_volume_only"] is False and int(pol["safety"]["volume_cap_percent"]) == 100
+      and int(pol["safety"].get("default_volume_percent", 0)) == 50)
 check("policy first tone level is a small fraction of range",
       int(pol["safety"]["first_tone_default_percent"]) <= 12)
 check("policy bans unbounded aplay invocations",
       any("aplay" in b and "bounded" in b for b in pol["safety"]["banned_by_default"]))
 
 atxt = open(ASOUND).read()
-check("ALSA softvol ceiling is installed config (max_dB = -6.0)",
-      "softvol" in atxt and re.search(r"max_dB\s+-6\.0", atxt) is not None)
+check("ALSA softvol ceiling is installed config (max_dB = 0.0)",
+      "softvol" in atxt and re.search(r"max_dB\s+0\.0", atxt) is not None)
 wptxt = open(WP).read()
 check("WirePlumber keeps UCM authoritative for beyond-madera and disables autosuspend",
       "beyond-madera" in wptxt and "api.alsa.use-ucm" in wptxt
@@ -213,8 +214,8 @@ with tempfile.TemporaryDirectory() as tmp:
                 if mx:
                     rng[cur] = int(mx.group(1))
         pairs = re.findall(r"cset \"name='([^']*)' (\d+)\"", g)
-        check("every generated volume value is clamped to the low-volume cap",
-              bool(pairs) and all(rng.get(n) is not None and int(v) <= (rng[n] * 25) // 100 + 1
+        check("every generated volume value is clamped to the 100% policy ceiling",
+              bool(pairs) and all(rng.get(n) is not None and int(v) <= rng[n]
                                   for n, v in pairs), str(pairs))
 
 # 5 ── manual proof fragment + capability manifest ----------------------------------
@@ -249,8 +250,9 @@ if os.path.exists(SPEC3):
     need_rows = {"volume", "mute", "sound-mode", "outputs", "per-app-volume", "mic-input", "notifications"}
     check("sound-settings spec covers every required user-facing row",
           need_rows.issubset(rows), str(sorted(need_rows - rows)))
-    check("sound-settings spec keeps the low-volume safety rule",
-          spec3["safety"]["low_volume_only"] is True and
+    check("sound-settings spec keeps the 100% ceiling and amplifier protection rule",
+          spec3["safety"]["low_volume_only"] is False and
+          int(spec3["safety"]["volume_cap_percent"]) == 100 and
           "amplifier protection" in " ".join(spec3["safety"]["never"]))
     check("sound-settings spec states the shared sound-mode state file",
           any(r.get("state_file") == "/var/lib/nuxel/audio/sound-mode" for r in spec3["rows"]))

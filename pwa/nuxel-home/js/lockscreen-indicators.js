@@ -18,7 +18,7 @@
   'use strict';
 
   var VERSION = 'p021';
-  var SAFETY_MS = 3000;
+  var SAFETY_MS = 5000;
   var API_PATH = 'http://127.0.0.1:8080/api/v1/system/indicators';
   var ICONS = {
     charging: '/assets/nuxel-charging.png?v=a77.1',
@@ -500,6 +500,7 @@
 
   LockscreenIndicators.prototype._traceGeometry = function () {
     var self = this;
+    if (!global.__NUXEL_DIAG_GEOMETRY) return;   /* forced layout is opt-in */
     if (!this._visible || !this.container || !this.container.getBoundingClientRect) return;
     var schedule = global.requestAnimationFrame || function (fn) { global.setTimeout(fn, 0); };
     schedule(function () {

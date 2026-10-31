@@ -1,0 +1,109 @@
+#!/bin/sh
+# Nuxel S10+ pre-play amplifier/DAPM warm-up.
+#
+# Owner-confirmed 2026-10-30: nuxel-pow.mp3 is only ~366 ms.  A cold CS35L41
+# DAPM speaker path powers up in the same instant the clip ends, so the very
+# short cue can be swallowed.  A silent PipeWire stream powers SPEAKER/Right
+# AMP in ~150 ms; this helper starts that stream first, repairs the register
+# state while it links, then waits for DAPM SPEAKER=On before returning.
+#
+# This is the single pre-play path for the boot cue, volume feedback and
+# Settings -> Test Audio.  It never emits a user-visible sound.
+set -u
+
+CARD=${NUXEL_AUDIO_CARD:-0}
+CS35=${NUXEL_CS35_HELPER:-/usr/local/bin/nuxel-cs35.py}
+PW_ENV_DIR=${NUXEL_PW_RUNTIME:-/run/nuxel-wayland}
+DAPM_SPEAKER=${NUXEL_DAPM_SPEAKER:-/sys/kernel/debug/asoc/beyond-madera/dapm/SPEAKER}
+PIDFILE=${NUXEL_WARMUP_PIDFILE:-/run/nuxel-audio-warmup.pid}
+SILENCE_WAV=${NUXEL_SILENCE_WAV:-/usr/share/nuxel/assets/nuxel-silence-8s.wav}
+fail=0
+
+log() { echo "nuxel-audio-warmup: $*" >&2; }
+
+speaker_on() {
+    [ -r "$DAPM_SPEAKER" ] && grep -q '^SPEAKER: On' "$DAPM_SPEAKER" 2>/dev/null
+}
+
+start_keepalive() {
+    [ -f "$SILENCE_WAV" ] || { log "silence asset missing: $SILENCE_WAV"; return 1; }
+    if [ -r "$PIDFILE" ]; then
+        oldpid=$(cat "$PIDFILE" 2>/dev/null || true)
+        if [ -n "$oldpid" ] && kill -0 "$oldpid" 2>/dev/null && \
+           tr '\0' ' ' <"/proc/$oldpid/cmdline" 2>/dev/null | grep -q 'nuxel-silence'; then
+            return 0
+        fi
+        rm -f "$PIDFILE" 2>/dev/null || true
+    fi
+    env XDG_RUNTIME_DIR="$PW_ENV_DIR" PIPEWIRE_RUNTIME_DIR="$PW_ENV_DIR" \
+        PULSE_SERVER="unix:$PW_ENV_DIR/pulse/native" \
+        setsid timeout -k 1 9 pw-play --volume 0.0 "$SILENCE_WAV" \
+        >/dev/null 2>&1 &
+    echo $! >"$PIDFILE" 2>/dev/null || true
+}
+
+cset() {
+    timeout -k 1 4 amixer -c "$CARD" cset name="$1" "$2" >/dev/null 2>&1 || return 1
+}
+
+raw_patch() {
+    for a in 0x40 0x41; do
+        timeout -k 1 4 "$CS35" "$a" 0x4804 0x1b >/dev/null 2>&1 || return 1
+        timeout -k 1 4 "$CS35" "$a" 0x2c04 0x370 >/dev/null 2>&1 || return 1
+        timeout -k 1 4 "$CS35" "$a" 0x6000 0x8000 >/dev/null 2>&1 || return 1
+        timeout -k 1 4 "$CS35" "$a" 0x2024 0x0 >/dev/null 2>&1 || return 1
+    done
+}
+
+# 1) Start the inaudible speaker-path stream first so its power-up overlaps
+# the register work below instead of adding latency to every short cue.
+warm_started=0
+if ! speaker_on; then
+    start_keepalive || fail=1
+    warm_started=1
+fi
+
+# 2) Seed the driver cache.  These control names contain spaces; pass them as
+# single, quoted arguments (the old word-splitting helper failed every cset).
+cset 'Left Digital PCM Volume' 817 || { log 'left digital volume failed'; fail=1; }
+cset 'Right Digital PCM Volume' 817 || { log 'right digital volume failed'; fail=1; }
+cset 'Left AMP Mute' 1 || { log 'left amp unmute failed'; fail=1; }
+cset 'Right AMP Mute' 1 || { log 'right amp unmute failed'; fail=1; }
+
+# 3) Proven PLL/output-stage registers (owner-confirmed audible).
+#    The raw I2C writer (/usr/local/bin/nuxel-cs35.py) is installed by the
+#    owner-supervised live deployment, not by the rootfs builder.  A fresh
+#    image therefore logs the gap and continues with the durable path: the
+#    driver-cache controls above (Digital PCM Volume 817 = 0 dB, AMP Mute
+#    unmuted) are re-applied by cs35l41_pcm_mute(0) on every playback, and
+#    the route service applies the same controls on boot.  Never claim the
+#    register patch ran when the writer is absent.
+if [ -x "$CS35" ]; then
+    raw_patch || { log 'CS35L41 register patch failed'; fail=1; }
+else
+    log "CS35L41 raw register writer missing ($CS35); using driver-cache 0 dB/unmute path only"
+fi
+
+# 4) Require the speaker DAPM path to be live before the caller plays its
+# 366 ms cue.  The keepalive stays up for ~9 s, covering the subsequent play.
+if ! speaker_on; then
+    n=0
+    while [ "$n" -lt 40 ]; do
+        speaker_on && break
+        n=$((n + 1))
+        sleep 0.05
+    done
+fi
+if ! speaker_on; then
+    log 'speaker DAPM path did not power up'
+    fail=1
+fi
+
+# 5) DAPM power-up may re-run the driver PMU path; re-assert the proven output
+# state so the next cue starts at 0 dB with an unmuted output stage.
+if [ "$warm_started" -eq 1 ] && [ -x "$CS35" ]; then
+    raw_patch >/dev/null 2>&1 || fail=1
+fi
+[ -x "$CS35" ] || log 'RAW REGISTER PATCH NOT APPLIED: image ships without the device-only CS35L41 writer'
+
+exit $fail

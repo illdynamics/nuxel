@@ -1,0 +1,61 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+=== acquire to obtain a network fix ===
+{
+  "success": true,
+  "state": "fixed",
+  "fix_source": "network_wifi",
+  "fix_kind": "network",
+  "gnss_fix": false,
+  "network_fix": true,
+  "last_fix_timestamp": 1793404966.0,
+  "accuracy": 25000.0,
+  "latitude": 51.4005,
+  "longitude": 5.47196
+}
+=== stop lease ===
+s "{\"success\": true, \"active_clients\": 0, \"acquiring\": false, \"state\": \"fixed\"}"
+=== status after stop (coordinate must be redacted) ===
+{
+  "state": "fixed",
+  "latitude": 51.4005,
+  "longitude": 5.47196,
+  "location_fix_available": true,
+  "active_clients": 0,
+  "acquiring": false
+}
+=== wait for GeoClue idle auto-stop ===
+active
+=== disable via location:manage (nuxel-settings) ===
+s "{\"success\": true, \"state\": \"disabled\", \"enabled\": false, \"permission_enabled\": false, \"provider\": \"geoclue2\", \"provider_available\": true, \"provider_ready\": true, \"provider_detail\": null, \"detail\": null, \"location_fix_available\": false, \"fix_valid\": false, \"stale\": false, \"fix_source\": null, \"fix_source_detail\": null, \"fix_kind\": null, \"gnss_fix\": false, \"network_fix\": false, \"fix_timestamp\": null, \"last_fix_timestamp\": null, \"last_fix_age_s\": null, \"accuracy\": null, \"latitude\": null, \"longitude\": null, \"freshness_seconds\": 60.0, \"stale_after_seconds\": 600.0, \"acquiring\": false, \"acquisition_started_at\": null, \"active_clients\": 0,
+=== policy file ===
+{"enabled": false, "updated": 1793405042.5967014}=== status while OFF ===
+{
+  "state": "disabled",
+  "enabled": false,
+  "latitude": null,
+  "longitude": null,
+  "location_fix_available": false,
+  "active_clients": 0
+}
+=== enable again ===
+s "{\"success\": true, \"state\": \"stale\", \"enabled\": true, \"permission_enabled\": true, \"provider\": \"geoclue2\", \"provider_available\": true, \"provider_ready\": true, \"provider_detail\": \"no compatible BCM4773 BBD sensor-hub patch firmware (vendor lhd expects /dev/bbd_patch)\", \"detail\": \"no compatible BCM4773 BBD sensor-hub patch firmware (vendor lhd expects /dev/bbd_patch)\", \"l
+=== acquire after re-enable ===
+{
+  "success": true,
+  "state": "stale",
+  "fix_source": "network_ip",
+  "fix_kind": "network",
+  "gnss_fix": false,
+  "network_fix": true,
+  "accuracy": 25000.0,
+  "latitude": 51.4005,
+  "longitude": 5.47196
+}

@@ -3,26 +3,33 @@
 
 ![Nuxel](./nuxel.jpg)
 
-**v0.2.1** — _Build the bunker first. Add the rave lights later._
+**v0.7.4-beta** — _Build the bunker first. Add the rave lights later._
 
-> **v0.2.1 (2026-10-30).** This is the current-state truth pass. It updates the
-> feature list, launcher overlays and documentation to match the handset:
-> **Bluetooth is confirmed working** (`hci0` registers, the controller powers on,
-> a peer scan succeeds, and Settings can scan/pair/connect); **audio is almost
-> there** (the full ABOX/CS35L41/RDMA1/PipeWire path is verified at 48 kHz, while
-> owner audibility is the remaining check); Wi-Fi is ON by default at boot; and
-> Quick Settings/status/lockscreen overlays distinguish ON, OFF and UNKNOWN
-> instead of inventing an OFF state. See
+> **v0.7.4-beta (2026-10-31).** **Audio works on the handset.** The speaker was
+> silent because the CS35L41 PLL was locked to the device tree's 6.144 MHz
+> reference while ABOX UAIF1 clocks the amplifiers at 1.536 MHz; four register
+> writes plus the driver-cached 0 dB/unmute path make it audible, persistent
+> across playback and reboot, and owner-confirmed (`works` typed in the Notes
+> title). **GNSS is almost there:** genuine network location works
+> (`51.4005, 5.47196 ±25 km`, source `network_wifi`) through a new per-UID
+> GeoClue agent, while satellite GNSS stays `BLOCKED_FIRMWARE` (no BBD patch
+> firmware and no Android `lhd`/`gpsd` runtime). **GTK and Flatpak are almost
+> there:** the GTK4 sources build and the handset runs the WebKit PWA shell;
+> Flatpak packages are installed but `CONFIG_USER_NS=n` blocks bubblewrap, so
+> Firefox/VLC use the real Fedora RPMs and Signal/Stremio report the blocker.
+> Quick Settings, status bar and lockscreen overlays distinguish ON, OFF and
+> UNKNOWN instead of inventing an OFF state. This release also repairs the
+> Release workflow that had failed on `main` since 2026-10-30. See
 > [`docs/features/README.md`](docs/features/README.md) and
-> [`docs/releases/v0.2.1.md`](docs/releases/v0.2.1.md).
+> [`docs/releases/v0.7.4-beta.md`](docs/releases/v0.7.4-beta.md).
 
 > **Samsung S10+ engineering reality.** The active `beyond2lte` port is Fedora
 > 43 aarch64 on Samsung Linux 4.14.253. Its launcher is Nuxel Home in WebKitGTK,
 > running under headless Phoc and presented through the DECON framebuffer
 > screencopy bridge; it is not native DRM/KMS acceleration. Real finger taps
 > open apps, Bluetooth works, and the audio route is live. Sustained interaction,
-> physical audibility, microphone capture, camera, GNSS, the cellular modem and
-> full Phosh acceptance remain open for `v0.2.1`; see
+> microphone capture, camera, satellite GNSS, the cellular modem and full Phosh
+> acceptance remain open for `v0.7.4-beta`; see
 > [`docs/beta-finalization/v0.5.2/RELEASE-VERDICT.md`](docs/beta-finalization/v0.5.2/RELEASE-VERDICT.md).
 
 A hardened, GrapheneOS-spirited **Linux phone operating system** built from
@@ -166,6 +173,40 @@ NUXEL_DEVICE=mustang bash boot/flash.sh --unlock --wipe
 | `firmware/` | Per-device firmware manifests, install/verify, blobs |
 | `ci/` | Build validation |
 | `assets/` | Wallpaper + boot animation |
+
+## What's new in v0.7.4-beta
+
+- **Audio is working and owner-confirmed.** The CS35L41 PLL reference was the
+  root cause: the device tree says 6.144 MHz, ABOX UAIF1 actually clocks
+  1.536 MHz, so the protection DSP never drove the speaker. The fix writes
+  `SP_RATE_CTRL=0x1b`, `PLL_CLK_CTRL=0x370`, `AMP_DIG_VOL_CTRL=0x8000` and
+  `AMP_OUT_MUTE=0x0` on both amps, and keeps them alive through the driver
+  cache (`Digital PCM Volume=817`, `AMP Mute=Unmuted`).
+  `nuxel-audio-warmup` powers the DAPM speaker path with an inaudible stream
+  before the 366 ms cue, so boot, volume keys and Test Audio all actually play.
+  Volume ceiling 100 %, default 50 %.
+- **GNSS is almost there.** Real network location works through a new
+  per-UID GeoClue agent plus a narrow `CAP_NET_RAW` grant, with a bridge that
+  uses the real GeoClue 2.8.2 property API and a PWA shim that never invents
+  coordinates, timestamps or accuracy. Satellite GNSS stays
+  `BLOCKED_FIRMWARE`; no fix is claimed.
+- **GTK and Flatpak apps are almost there.** The GTK4/libadwaita sources
+  build; the handset runs the WebKit PWA shell, and modem-dependent flows are
+  blocked. Flatpak packages are installed but `CONFIG_USER_NS=n` blocks
+  bubblewrap: Firefox/VLC launch the real Fedora RPMs and Signal/Stremio report
+  the blocker instead of faking a launch.
+- **PWNAGE-44000 Home and hardware.** Reliable long-press drag/reorder with
+  pointer-cancel rollback, a real sticky Notes widget, the full 15-entry power
+  menu, Power+Volume Down screenshots into Gallery, server-side video
+  thumbnails, a Bluetooth Files Send flow, a single-owner flashlight and
+  truthful Location/sound/USB status cells. Files p95 improved 42.6 %.
+- **`main` is green again.** The Release workflow had failed since the v0.2.1
+  merge on the A40 boot-sound contract, a stale launcher assertion, registry
+  version drift and a missing CHANGELOG heading. All four are fixed, and the
+  rootfs builder now installs the audio warm-up, GeoClue agent, desktop entries
+  and Python D-Bus dependencies a fresh image needs.
+- **Release tooling.** Launcher cache `v66-v074-release`; whole-repo lockstep
+  at `v0.7.4-beta`; registry revision 8 with eight installed native apps.
 
 ## What's new in v0.2.1
 
@@ -617,9 +658,10 @@ remaining interactive gap. The Moto G7 Power is flashed but still hangs at a
 black screen; the Pixel 10 Pro XL is still a scaffold. The UTM VM demo boots
 (display + network + sound).
 
-## Honest Status — v0.2.1
+## Honest Status — v0.7.4-beta
 
-**S10+ (SM-G975F, beyond2lte) — NUXEL BOOTS, TOUCH WORKS AND BLUETOOTH WORKS.**
+**S10+ (SM-G975F, beyond2lte) — NUXEL BOOTS, TOUCH WORKS, BLUETOOTH AND
+SPEAKER AUDIO WORK, AND NETWORK LOCATION WORKS.**
 S-Boot loads the raw arm64 `Image` with the initramfs embedded, the Fedora 43
 ext4 rootfs mounts, `switch_root` hands over to **systemd 258 as PID 1**, the
 service graph reaches `running`, and the panel shows the boot animation before
@@ -634,16 +676,28 @@ status bar and lockscreen all read that same adapter state. Pairing and
 connection actions are implemented and return the real BlueZ result; a specific
 headset/keyboard profile test is still an owner step.
 
-**Audio is almost there.** The ABOX Calliope core reaches `MUB0`, both CS35L41
-DSP1 protection images run, `ABOX RDMA1_EN=1`, the amplifier gain is 12/12, the
-default sink is `alsa_output.hw_0_1` at 48 kHz, `hw_ptr` advances and `pw-play`
-completes with rc=0. The boot cue and Settings **Test Audio** refuse to play
-unless the route passes a live readiness gate. **Physical audibility is still
-not owner-confirmed**, and microphone/headset/USB-C capture is untested.
+**Audio works and is owner-confirmed.** The ABOX Calliope core reaches
+`MUB0`, both CS35L41 DSP1 protection images run, `ABOX RDMA1_EN=1`, the
+amplifier gain is 12/12, the default sink is `alsa_output.hw_0_1` at 48 kHz and
+`hw_ptr` advances. The silent speaker was a **PLL reference** fault: the device
+tree programs 6.144 MHz while ABOX UAIF1 clocks the amps at 1.536 MHz. The fix
+writes `0x4804=0x1b`, `0x2c04=0x370`, `0x6000=0x8000` and `0x2024=0x0` on both
+amps and keeps them alive through the driver cache (`Digital PCM Volume=817`,
+`AMP Mute=Unmuted`). `nuxel-audio-warmup` powers the DAPM speaker path with an
+inaudible 8 s stream before the 366 ms cue. The owner typed `works` for the
+boot cue, the volume cue, Settings Test Audio and after a full reboot. Volume
+ceiling is 100 % with a 50 % first-boot default. Microphone/headset/USB-C
+capture is still untested.
 
-GNSS has no firmware/reader, USB-C HDMI needs `CONFIG_DRM` plus a Type-C DP Alt
-Mode stack, camera capture has no usable V4L2 node, and the Shannon modem has
-no ModemManager object. Those remain honestly blocked rather than simulated.
+**Network location works; satellite GNSS is blocked.** A new per-UID GeoClue
+agent plus a narrow `CAP_NET_RAW` grant produce a real Wi-Fi/IP fix
+(`51.4005, 5.47196 ±25 km`, source `network_wifi`) across reboots, and the PWA
+shim never invents coordinates, timestamps or accuracy. Satellite GNSS stays
+`BLOCKED_FIRMWARE`: there is no BBD sensor-hub patch and no Android
+`lhd`/`gpsd`/HIDL runtime, so no satellite fix is claimed. USB-C HDMI needs
+`CONFIG_DRM` plus a Type-C DP Alt Mode stack, camera capture has no usable
+V4L2 node, and the Shannon modem has no ModemManager object. Those remain
+honestly blocked rather than simulated.
 
 **PWNAGE-36000 live fixes were proven on the connected S10+ on 2026-10-28.**
 The ABOX boot-done hard-IRQ panic is patched and the rebuilt BOOT image stayed
@@ -664,31 +718,31 @@ and an `INSTALLED-IMAGES.json` provenance manifest. The separately built
 is explicitly labelled as such: it is not byte-identical to the installed
 image. See
 [`docs/a61-penguin-eyes/INSTALLED-IMAGE-RELEASE.md`](docs/a61-penguin-eyes/INSTALLED-IMAGE-RELEASE.md)
-and [`docs/releases/v0.2.1.md`](docs/releases/v0.2.1.md).
+and [`docs/releases/v0.7.4-beta.md`](docs/releases/v0.7.4-beta.md).
 
 | Area | Score | Notes |
 |---|---|---|
 | Design/docs | 85% | Architecture, security model, PWA spec, three device bundles, plus the A25–A34 hardware evidence set |
 | Repo structure | 90% | Legacy scratch trees and duplicate guides removed; canonical images only |
 | PWA apps | 78% | Preload cinema, keyboard/navigation, connection modes, Feature-status docs, Bluetooth/audio/Wi-Fi overlays and app repairs ship; physical app interaction and hardware acceptance remain open |
-| Flatpak app model | 20% | Manifests + launcher exist (`pwa/flatpak/`, `org.nuxel.Platform`); runtime not built or integration-tested |
-| Native GTK apps | 32% | C source exists; Bluetooth/audio providers are live, but full end-to-end native app acceptance is open |
+| Flatpak app model | 45% | aarch64 Firefox/VLC/Signal/Stremio packages are installed and registered, but `CONFIG_USER_NS=n` blocks bubblewrap; Firefox/VLC fall back to the genuine Fedora RPMs and Signal/Stremio report the blocker |
+| Native GTK apps | 45% | GTK4/libadwaita sources build and the installed native applications have registry + desktop entries; the handset launcher is the WebKit PWA shell and modem-dependent flows remain blocked |
 | D-Bus bridge/portal | 60% | Bridge persistence, Bluetooth/audio/Wi-Fi providers, mail transport and runtime state publication are live; deeper portal integration is still partial |
 | Sandbox/security | 25% | Configs exist; enforcement is not wired end-to-end |
 | Build system | 90% | Fail-closed CI builds the current boot image and **compiles the current userspace from repo sources**; artifact verification is content-based and the release also ships the captured phone bytes |
 | Flashable images | 90% | S10+ boot + Fedora rootfs and G7 Power lk2nd/boot/rootfs are byte-verified on hardware; S10+ boots |
 | Pixel 10 Pro XL (mustang) | 5% | UART/initramfs-level only; no boot artifact yet |
-| Galaxy S10+ (beyond2lte) | 92% | **Boots Nuxel; touchscreen works; Bluetooth is verified working.** Display, animation, launcher, systemd service graph and single framebuffer owner are proven. Audio software path is verified but physical audibility is pending; radio/camera/sensors/Phosh remain open |
+| Galaxy S10+ (beyond2lte) | 94% | **Boots Nuxel; touchscreen, Bluetooth and speaker audio are verified working; network location works.** Display, animation, launcher, systemd service graph and single framebuffer owner are proven. Satellite GNSS, camera, modem, sensors and full Phosh acceptance remain open |
 | Moto G7 Power (ocean) | 40% | Images flashed (lk2nd + boot + ext4 rootfs); still hangs at a black/flashy screen |
 | UTM VM | 70% | Boots Fedora 43 + Phosh at 720×1440 with working network and **audio** (local, gitignored artifact) |
 
-**Overall: ~74% MVP.** One of three phones (S10+) boots a Nuxel-built image,
-its display path is live, its touchscreen delivers real contacts, and Bluetooth
-now registers, powers and scans. The main remaining daily-driver gaps are
-physical audio confirmation, camera/GNSS/modem bring-up and sustained app
-interaction. G7 Power still hangs at a black screen; mustang is
-UART/initramfs level only. The UTM VM demo boots and works (display, network,
-sound).
+**Overall: ~76% MVP.** One of three phones (S10+) boots a Nuxel-built image,
+its display path is live, its touchscreen delivers real contacts, Bluetooth
+registers/powers/scans, and the speaker is owner-confirmed audible. Network
+location works; satellite GNSS, camera and modem bring-up and sustained app
+interaction are the remaining daily-driver gaps. G7 Power still hangs at a
+black screen; mustang is UART/initramfs level only. The UTM VM demo boots and
+works (display, network, sound).
 
 ### What this repo IS:
 - A well-documented architecture blueprint for a Linux phone OS
@@ -876,7 +930,7 @@ The other two bring-up targets are the **Samsung Galaxy S10+** (Exynos 9820,
 
 | Document | Description |
 |---|---|
-| [CHANGELOG.md](CHANGELOG.md) | Release notes — everything from v0.1.0 to v0.2.1 + readiness |
+| [CHANGELOG.md](CHANGELOG.md) | Release notes — everything from v0.1.0 to v0.7.4-beta + readiness |
 | [docs/features/README.md](docs/features/README.md) | Canonical feature-status matrix with evidence anchors |
 | [prompts/QUICKSTART.md](prompts/QUICKSTART.md) | Get running in 5 minutes |
 | [design/nuxel-linux-phone-design.md](design/nuxel-linux-phone-design.md) | Design bible — the full vision |

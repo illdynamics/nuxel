@@ -47,6 +47,24 @@
   </screenshots>
 
   <releases>
+    <release version="0.7.4-beta" date="2026-10-31">
+      <url>https://github.com/illdynamics/nuxel/releases/tag/v0.7.4-beta</url>
+      <description>
+        <p>Nuxel Home v0.7.4-beta — aligned with Nuxel Phone OS v0.7.4-beta
+        (owner-confirmed speaker audio, working network location, truthful
+        native/Flatpak application entries, and the PWNAGE-44000 Home and
+        hardware-control pass).</p>
+        <ul>
+          <li>Speaker audio works: CS35L41 PLL/driver-cache fix plus the 8 s inaudible warm-up</li>
+          <li>Network location works through a per-UID GeoClue agent; satellite GNSS stays BLOCKED_FIRMWARE</li>
+          <li>Long-press drag/reorder with pointer-cancel rollback</li>
+          <li>Sticky Notes widget, 15-entry power menu, screenshot into Gallery</li>
+          <li>Server-side Gallery thumbnails, Bluetooth Files Send, single-owner flashlight</li>
+          <li>Location, sound-mode and USB status cells with a charging-only battery bolt</li>
+          <li>Launcher cache v66-v074-release, registry revision 8 and whole-repo v0.7.4-beta bump</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.2.1" date="2026-10-30">
       <url>https://github.com/illdynamics/nuxel/releases/tag/v0.2.1</url>
       <description>

@@ -20,8 +20,15 @@ def require(text, needle, label):
 
 launcher = source("pwa/nuxel-home/js/launcher.js")
 require(launcher, "this.dragState = 'IDLE'", "drag lifecycle has an explicit idle state")
-require(launcher, "layoutBefore:", "drawer drag snapshots the model before unmount")
-require(launcher, "hiddenBefore:", "drawer drag snapshots hidden shortcuts")
+# The drag snapshot is one object taken in _startDrag before any render, and
+# _endDrag restores it on cancel.  It covers Home reorder and drawer->Home
+# moves (the older per-drag layoutBefore/hiddenBefore fields were replaced).
+require(launcher, "this._dragSnapshot = {", "drag snapshots the model before any render")
+require(launcher, "layout: this.layout ? this.layout.snapshot() : null,",
+        "drawer drag snapshots the layout before unmount")
+require(launcher, "hidden: Array.from(this.hiddenAppIds),",
+        "drawer drag snapshots hidden shortcuts")
+require(launcher, "if (cancelled && snapshot)", "cancel restores the drag snapshot")
 require(launcher, "pointerEvents = 'none'", "drag ghost cannot intercept Home hit testing")
 require(launcher, "_endDrag(null, true)", "pointer cancellation takes the cancel path")
 require(launcher, "if (!cancelled) this._saveLayout();", "cancelled drawer drags do not persist")

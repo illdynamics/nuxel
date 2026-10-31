@@ -1,0 +1,32 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+=== network fix after reboot with corrected stage config ===
+{
+  "state": "fixed",
+  "provider_ready": true,
+  "fix_source": "network_wifi",
+  "fix_source_detail": "ipf fallback (from WiFi data)",
+  "fix_kind": "network",
+  "gnss_fix": false,
+  "network_fix": true,
+  "accuracy": 25000.0,
+  "latitude": 51.4005,
+  "longitude": 5.47196,
+  "last_fix_timestamp": 1793406112.0,
+  "active_clients": 1
+}
+=== stop + OFF ===
+{"enabled": false, "updated": 1793406119.534518}
+0
+=== stage/current config hashes ===
+ec11fb1248f78b339f6dd75f9e47a9e3b8abc4736e33848a7640a210fa2d1de0  /etc/geoclue/geoclue.conf
+ec11fb1248f78b339f6dd75f9e47a9e3b8abc4736e33848a7640a210fa2d1de0  /usr/lib/nuxel/stage36000/nuxel-s10/geoclue/geoclue.conf
+cfc09f05bca84dbd4b99a7d0517b022a8a3cf5c324a31fb325ce10e8689bfef4  /usr/local/bin/nuxel-gps-status
+063e05870eec31a127e685e3559eb96046c2f062cb2e38a9f7c3d2fa7e64bc68  /usr/lib/nuxel/stage36000/nuxel-s10/bin/nuxel-gps-status

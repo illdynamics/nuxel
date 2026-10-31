@@ -41,6 +41,9 @@
       'last provider fix: ' + fmtAge(v.fix ? v.fix.ageSeconds : null) +
         (v.fix && typeof v.fix.accuracy === 'number' ? (' | accuracy ±' + Math.round(v.fix.accuracy) + ' m') : '') +
         ' | GNSS fix: ' + (raw && raw.gnss_fix === true ? 'yes' : 'no (provider data only)'),
+      'source         : ' + ((raw && raw.fix_source) || 'none') +
+        ' | kind: ' + ((raw && raw.fix_kind) || 'none') +
+        (raw && raw.fix_source_detail ? (' | ' + raw.fix_source_detail) : ''),
       'freshness limit: ' + (raw && raw.freshness_seconds ? raw.freshness_seconds + ' s' : '60 s') +
         ' | stale after: ' + (raw && raw.stale_after_seconds ? raw.stale_after_seconds + ' s' : '600 s')
     ];
@@ -51,8 +54,12 @@
       lines.push('');
       lines.push('GNSS path:');
       lines.push('  nodes        : ' + ((g.nodes && g.nodes.length) ? g.nodes.join(', ') : 'none detected'));
+      lines.push('  protocol     : ' + (g.protocol || 'unknown') + ' | NMEA stream: ' + (g.nmea_stream ? 'yes' : 'no'));
       lines.push('  driver       : ' + (g.driver || 'unknown') + ' | bound: ' + (g.driver_bound ? 'yes' : 'no'));
+      lines.push('  BBD nodes    : ' + ((g.bbd_nodes && g.bbd_nodes.length) ? g.bbd_nodes.join(', ') : 'none detected'));
       lines.push('  firmware     : ' + (g.firmware_present ? (g.firmware || []).join(', ') : 'missing'));
+      lines.push('  vendor stack : ' + (g.vendor_runtime && g.vendor_runtime.complete ? 'complete' :
+        ('missing ' + Object.keys((g.vendor_runtime || {})).filter(function (k) { return k !== 'complete' && !g.vendor_runtime[k]; }).join(', '))));
       lines.push('  fix support  : ' + (g.fix_supported ? 'reported by provider path' : 'not wired (no fix claimed)'));
       if (g.blocker) lines.push('  blocker      : ' + g.blocker);
     }
@@ -61,7 +68,9 @@
     var detail = $('location-detail');
     if (detail) {
       detail.textContent = (v.state === 'fixed' && v.fix)
-        ? 'Fresh provider fix. Accuracy and age are provider values; no GNSS or satellite count is fabricated.'
+        ? (v.fix.gnss
+          ? 'Fresh provider GNSS fix. Accuracy and age are provider values; no satellite count is fabricated.'
+          : 'Fresh approximate network location (Wi-Fi/IP via GeoClue). This is not a satellite GPS fix.')
         : (v.state === 'disabled'
           ? 'Location is disabled by the global privacy/provider policy. Enable it with the Location Quick Setting.'
           : 'No current fix is being claimed. This panel shows the real provider state and blocker.');

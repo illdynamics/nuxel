@@ -32,12 +32,25 @@ def test_registry_is_consistent_and_exactly_matches_launcher():
 
 
 def test_native_registrations_point_to_real_sources_and_install_targets():
+    # An entry ships EITHER a repository source that the image builder compiles
+    # (GTK/Python apps) OR a package install target (a Fedora RPM, or the Nuxel
+    # Flatpak/RPM wrapper in services/nuxel-s10/bin).  Both are real; what must
+    # never happen is an install target with no source and no desktop entry.
     for app in _registry()['apps']:
         if app['type'] != 'native':
             continue
         assert app['native_binary'].startswith('/usr/')
-        src = ROOT / app['binary_source']
-        assert src.exists(), (app['id'], src)
+        src = app.get('binary_source')
+        installed = app.get('install_source')
+        assert src or installed, (app['id'], 'native entry without a source, wrapper or package')
+        if src:
+            assert (ROOT / src).exists(), (app['id'], src)
+        if installed:
+            assert installed.startswith('/usr/'), (app['id'], installed)
+        desktop = app.get('desktop_entry')
+        assert desktop, (app['id'], 'native entry without a desktop entry')
+        if not desktop.startswith('flatpak:'):
+            assert (ROOT / desktop).exists(), (app['id'], desktop)
 
 
 def test_gallery_visible_name_and_no_photos_label():

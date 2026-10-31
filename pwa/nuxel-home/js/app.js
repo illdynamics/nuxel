@@ -180,6 +180,62 @@ class NuxelHome {
         this._requestCoreCapabilities().catch(error => {
             console.warn('[Nuxel] Core capabilities unavailable:', error);
         });
+        this._warmLauncherChrome();
+    }
+
+    /* PWNAGE-37000B: move the first-open DOM/decode cost of the drawer and
+       Home Settings off the owner's tap.  This runs once, in an idle slice
+       after the launcher is interactive, and never delays first paint. */
+    _warmLauncherChrome() {
+        const warm = () => {
+            try {
+                if (window.launcher && window.launcher._renderDrawerApps) {
+                    // Build the cached drawer markup without showing it.
+                    window.launcher._renderDrawerApps();
+                }
+            } catch (e) { /* optional warm-up */ }
+            try {
+                if (window.NuxelHomeSettings && window.NuxelHomeSettings.prime) {
+                    window.NuxelHomeSettings.prime();
+                }
+            } catch (e) { /* optional warm-up */ }
+            // Decode the warmed hidden images now.  Building the DOM alone did
+            // not pay the first-open decode cost (measured 168 ms); the second
+            // open was 3 ms because the bitmaps were then resident.
+            const decodeAll = (root) => {
+                if (!root || !root.querySelectorAll) return;
+                root.querySelectorAll('img').forEach((img) => {
+                    if (!img || !img.decode) return;
+                    try {
+                        const p = img.decode();
+                        if (p && p.catch) p.catch(() => {});
+                    } catch (e) { /* decode is best-effort */ }
+                });
+            };
+            decodeAll(document.getElementById('drawer-list'));
+            decodeAll(document.getElementById('home-settings'));
+            // Force the one-time grid/sheet layout while both are invisible.
+            // No frame can paint inside this task, and the owner's first tap
+            // then only toggles visibility (the layout cache is warm).
+            const drawer = document.getElementById('drawer-list');
+            if (drawer && drawer.hidden) {
+                drawer.hidden = false;
+                void drawer.offsetHeight;
+                drawer.hidden = true;
+            }
+            const sheet = document.getElementById('home-settings');
+            if (sheet && sheet.hidden) {
+                sheet.hidden = false;
+                void sheet.offsetHeight;
+                sheet.hidden = true;
+            }
+        };
+        const schedule = window.requestIdleCallback
+            ? () => window.requestIdleCallback(warm, { timeout: 4000 })
+            : () => setTimeout(warm, 2200);
+        // Give the lockscreen/boot handoff a settled first frame before doing
+        // optional work.
+        setTimeout(schedule, 1800);
     }
 
     _finishBootSplash() {
@@ -243,12 +299,44 @@ class NuxelHome {
         const cover = document.getElementById('preload-cover');
         if (!cover) return;
         const started = Date.now();
+        let revealing = false;
         const reveal = (why) => {
-            if (this._preloadCoverDone) return;
-            this._preloadCoverDone = true;
-            document.body.classList.add('preload-ready');
-            try { console.log('[Nuxel] preload cover released: ' + why); } catch (e) {}
+            if (this._preloadCoverDone || revealing) return;
+            revealing = true;
+            preloadLockscreen().then(() => new Promise((resolve) => {
+                const raf = window.requestAnimationFrame || ((fn) => setTimeout(fn, 0));
+                raf(() => raf(resolve));
+            })).then(() => {
+                if (this._preloadCoverDone) return;
+                this._preloadCoverDone = true;
+                document.body.classList.add('preload-ready');
+                try { console.log('[Nuxel] preload cover released: ' + why); } catch (e) {}
+            });
         };
+        // The preloading clip is composited ABOVE this WebView.  When mpv exits
+        // the panel shows whatever WebKit last painted, so the lockscreen
+        // wallpaper/lockhead must already be decoded.  Waiting for a real image
+        // decode here is what removes the black/white frame between the MP4 and
+        // the lockscreen; it is bounded and never blocks first paint.
+        const preloadLockscreen = () => new Promise((resolve) => {
+            const urls = ['/assets/nuxel-lockscreen.jpg', '/assets/nuxel-lockhead.png',
+                          '/assets/nuxel-connection-mode.png', '/assets/nuxel-file-transfer.png'];
+            let left = urls.length;
+            const done = () => { if (--left <= 0) resolve(); };
+            urls.forEach((src) => {
+                const img = new Image();
+                img.onload = () => {
+                    if (img.decode) img.decode().then(done, done);
+                    else done();
+                };
+                img.onerror = done;
+                img.src = src;
+                if (img.complete && img.naturalWidth) {
+                    if (img.decode) img.decode().then(done, done); else done();
+                }
+            });
+            setTimeout(resolve, 2500);
+        });
         const endpoint = new URL('preload-status.json', window.location.href);
         const timeoutMs = 40000;
         // The controller can publish "covered" before this document has even
@@ -256,7 +344,7 @@ class NuxelHome {
         // Releasing on the first poll then exposed the lockscreen while the
         // video was still compositing.  Hold the poster frame for a short
         // bounded grace period so the first video frames are on the panel.
-        const minHoldMs = 900;
+        const minHoldMs = 1400;
         let backoffMs = 100;
         const schedule = (fn, delayMs) => {
             if (this._preloadCoverDone) return;
@@ -506,10 +594,12 @@ class NuxelHome {
         frame.setAttribute('title', app.name);
         frame.style.cssText = `
             position: fixed !important;
-            top: calc(var(--status-bar-height, 36px) + 56px) !important;
+            top: var(--status-bar-height, 36px) !important;
             left: 0 !important;
             right: 0 !important;
             width: 100vw !important;
+            bottom: var(--system-nav-height) !important;
+            height: calc(100dvh - var(--status-bar-height, 36px) - var(--system-nav-height)) !important;
             min-height: 0 !important;
             border: 0 !important;
             margin: 0 !important;
@@ -551,22 +641,11 @@ class NuxelHome {
             this._setAppState('FAILED', app, frame);
         }, { once: true });
 
-        // Keep navigation below the camera/status area and outside app content.
-        // A floating upper-right glyph covered Calendar's Save button and the
-        // S10+ cutout. The status bar remains reachable for Quick Settings.
-        const appBar = document.createElement('div');
-        appBar.className = 'pwa-app-bar';
-        const closeBtn = document.createElement('button');
-        closeBtn.className = 'pwa-close-btn';
-        closeBtn.textContent = 'Home';
-        closeBtn.setAttribute('aria-label', `Close ${app.name} and return Home`);
-        closeBtn.onclick = () => this._backgroundForegroundApp();
-        appBar.appendChild(closeBtn);
-        const appTitle = document.createElement('span');
-        appTitle.textContent = app.name;
-        appBar.appendChild(appTitle);
-        document.body.appendChild(appBar);
-        this.appSurfaces.set(app.id, { frame, bar: appBar, status });
+        // PWNAGE-43000: no second in-app title bar.  The status bar above and
+        // the native Back/Home/Recents layer are the only chrome; an app-owned
+        // "Home + app name" strip is redundant and cost 56 px of every app.
+        // The surface record keeps `bar: null` so lifecycle hiding is uniform.
+        this.appSurfaces.set(app.id, { frame, bar: null, status });
         if (this.sessions) this.sessions.register(app, this.appSurfaces.get(app.id));
     }
 
@@ -578,6 +657,10 @@ class NuxelHome {
             return;
         }
         this._dismissLauncherChrome();
+        // Native applications are fullscreen top-level Wayland clients; the
+        // layer-shell nav dock is what keeps Back/Home/Recents (and the top
+        // status bar in the Home surface) available over them.
+        this._setNavDock(true);
         const target = app.nativeAppId || app.id;
         this._setAppState('LAUNCHING', app, null);
 
@@ -765,6 +848,12 @@ class NuxelHome {
 
     home() {
         if (this._isLocked()) return;
+        // PWNAGE-43000: Home is a real navigation action, so the active IME
+        // must be dismissed FIRST.  Merely hiding the Home overlay left an
+        // invisible Stevia/DOM keyboard intercepting the next touch.  Blur the
+        // focused control (which asks the compositor's text-input to close),
+        // hide the DOM fallback, then continue the normal Home transition.
+        this._dismissKeyboard();
         this._setNavDock(true);
         try {
             this._closeOverlays();
@@ -937,9 +1026,12 @@ class NuxelHome {
                 } else if (this._lastDisplayOff === true && window.NuxelSystemMonitor && window.NuxelSystemMonitor.configure) {
                     window.NuxelSystemMonitor.configure();
                 }
-                /* A wake is an event, not a reason to wait for the next poll:
-                   refresh the lockhead indicators as soon as the panel is ON. */
-                if (!off) {
+                /* A wake is an event, not a reason to wait for the next poll.
+                   Dispatch it ONLY on an actual OFF -> ON transition: the old
+                   unconditional dispatch every 2 s re-ran battery, touch and
+                   status reads forever while the display was already on. */
+                const woke = (this._lastDisplayOff === true && !off);
+                if (woke) {
                     try {
                         document.dispatchEvent(new CustomEvent('nuxel:display-on'));
                         if (this.lockscreen && typeof this.lockscreen.refreshIndicators === 'function') {
@@ -1019,6 +1111,32 @@ class NuxelHome {
             const sel = window.getSelection && window.getSelection();
             if (sel && sel.removeAllRanges) sel.removeAllRanges();
         } catch (e) { /* losing focus is best-effort and must never break lock */ }
+    }
+
+    _dismissKeyboard() {
+        // Preserve the typed value: blur only, never clear the field.  This is
+        // intentionally synchronous so Home cannot raise the desktop in the
+        // same frame as an still-focused input surface.
+        try { this._blurActiveField(); } catch (e) {}
+        try {
+            const active = document.activeElement;
+            if (active && active !== document.body && typeof active.blur === 'function') active.blur();
+        } catch (e) {}
+        try {
+            if (window.NuxelTouchKeyboard && typeof window.NuxelTouchKeyboard.hide === 'function') {
+                window.NuxelTouchKeyboard.hide();
+            }
+        } catch (e) {}
+        // The compositor keyboard belongs to whichever client owns text-input
+        // focus.  Ask the trusted host to raise Home/minimize the native app,
+        // which makes phoc send text-input leave to the app and closes Stevia.
+        try {
+            const host = window.NuxelHost;
+            if (host && host.available && typeof host.action === 'function') {
+                Promise.resolve(host.action('dismiss-keyboard')).catch(() => {});
+            }
+        } catch (e) {}
+        try { window.dispatchEvent(new CustomEvent('nuxel:dismiss-keyboard')); } catch (e) {}
     }
 
     openHomeSettings() {

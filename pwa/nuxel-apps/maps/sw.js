@@ -1,11 +1,12 @@
 // Nuxel Maps service worker - cache-first app shell; map tiles use IndexedDB.
-const CACHE_NAME = 'nuxel-maps-v4';
+const CACHE_NAME = 'nuxel-maps-v5-p42000';
 const ASSETS = [
   './',
   './index.html',
   './css/maps.css',
   './js/maps.js',
   '../../nuxel-common/maps-core.js',
+  '../../nuxel-common/geolocation.js',
   './manifest.json',
   '../../nuxel-common/bridge.js',
   './icons/icon-48.png',

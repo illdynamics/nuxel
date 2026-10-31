@@ -91,7 +91,9 @@ class QuickSettings {
 
     _bindEvents() {
         // Toggle on status bar swipe down
-        document.addEventListener('gesture:qs', () => this.toggle());
+        // First pull opens the compact panel; a deeper/second pull expands it
+        // instead of closing it.  Closing stays an explicit action/back.
+        document.addEventListener('gesture:qs', () => this.pull());
 
         // Individual toggle clicks
         const toggles = ['wifi', 'bluetooth', 'mobile', 'location', 'dnd', 'flashlight', 'rotate'];
@@ -116,6 +118,12 @@ class QuickSettings {
 
         // A33: the verbose-boot tile (created dynamically, see header comment)
         this._buildVerboseBootTile();
+
+        const expandBtn = document.getElementById('qs-expand-toggle');
+        if (expandBtn) expandBtn.addEventListener('click', (ev) => {
+            ev.stopPropagation();
+            if (this.expanded) this.collapseOrClose(); else this.expand();
+        });
 
         // Settings button
         const settingsBtn = document.getElementById('qs-settings');
@@ -268,12 +276,17 @@ class QuickSettings {
         this.isOpen = true;
         this.expanded = false;
         this._render();
-        this._syncVerboseBoot();
         this.panel.classList.remove('hidden');
-        // Bounded refresh while the panel is visible: provider state can change
-        // (searching -> fix, or provider disappearance) without excessive polling.
+        this._setExpandedUI(false);
+        try { document.dispatchEvent(new CustomEvent('nuxel:overlay-changed')); } catch (e) {}
+        // Bounded refresh while the panel is visible.  Every timer is owned by
+        // the panel and stopped in close(); a hidden panel never polls.
         if (!this._locationTimer) {
-            this._locationTimer = setInterval(() => { if (this.isOpen) this._syncLocation(); }, 5000);
+            this._locationTimer = setInterval(() => {
+                if (!this.isOpen) return;
+                this._syncLocation();
+                if (this.expanded) this._syncIndicators();
+            }, 5000);
         }
     }
 
@@ -283,11 +296,37 @@ class QuickSettings {
         this.expanded = false;
         this.panel.classList.remove('expanded');
         this.panel.classList.add('hidden');
+        this._setExpandedUI(false);
         if (this._locationTimer) { clearInterval(this._locationTimer); this._locationTimer = null; }
+        // Stale indicator responses are ignored by the generation check.
+        this._indicatorGeneration = (this._indicatorGeneration || 0) + 1;
+        try { document.dispatchEvent(new CustomEvent('nuxel:overlay-changed')); } catch (e) {}
     }
 
-    expand() { if (!this.isOpen) return this.open(); this.expanded = true; this.panel.classList.add('expanded'); }
-    collapseOrClose() { if (this.expanded) { this.expanded = false; this.panel.classList.remove('expanded'); } else this.close(); }
+    pull() {
+        if (!this.isOpen) this.open();
+        else if (!this.expanded) this.expand();
+        else this.close();
+    }
+
+    _setExpandedUI(on) {
+        const details = document.getElementById('qs-details');
+        const btn = document.getElementById('qs-expand-toggle');
+        if (details) details.hidden = !on;
+        if (btn) {
+            btn.setAttribute('aria-expanded', on ? 'true' : 'false');
+            btn.textContent = on ? 'Hide connection status' : 'More connection status';
+        }
+    }
+
+    expand() {
+        if (!this.isOpen) return this.open();
+        this.expanded = true;
+        this.panel.classList.add('expanded');
+        this._setExpandedUI(true);
+        this._syncIndicators();
+    }
+    collapseOrClose() { if (this.expanded) { this.expanded = false; this.panel.classList.remove('expanded'); this._setExpandedUI(false); } else this.close(); }
 
     toggle() {
         if (this.isOpen) this.close();
@@ -315,9 +354,141 @@ class QuickSettings {
             await this._setLocationEnabled(!this.state.location);
             return;
         }
+        if (id === 'flashlight') {
+            await this._toggleFlashlight();
+            return;
+        }
         // A tile must not become a decorative switch.  Keep unintegrated
         // controls honest until their hardware backend is landed.
         this._osdNotice(`${id} control is unavailable on this build`);
+    }
+
+    // ---- expanded canonical connection indicators ---------------------
+    async _syncIndicators() {
+        if (!this.isOpen || !this.expanded) return;
+        if (this._indicatorInFlight) return;
+        this._indicatorInFlight = true;
+        const gen = this._indicatorGeneration || 0;
+        try {
+            const ind = await bridge.call('system', 'indicators', {});
+            if (!this.isOpen || !this.expanded || gen !== (this._indicatorGeneration || 0)) return;
+            if (!ind || ind.success === false) {
+                this._setDetail('qs-detail-charging', 'unknown', 'Power: unknown');
+                this._setDetail('qs-detail-usb', 'unknown', 'USB: unknown');
+                this._setDetail('qs-detail-file', 'unknown', 'File transfer: unknown');
+                this._setDetail('qs-detail-console', 'unknown', 'Live console: unknown');
+                this._setDetail('qs-detail-transports', 'unknown', 'Console transports: unknown');
+                return;
+            }
+            const charging = ind.charging || {};
+            const usb = ind.usb_data || {};
+            const file = ind.file_transfer || {};
+            const live = ind.live_console || {};
+            const tr = ind.console_transports || {};
+            if (charging.charging === true) this._setDetail('qs-detail-charging', 'active', 'Charging · ' + (charging.battery_level == null ? 'level unknown' : charging.battery_level + '%'));
+            else if (charging.external_power === true) this._setDetail('qs-detail-charging', 'external', 'External power · not charging');
+            else this._setDetail('qs-detail-charging', 'inactive', 'Battery');
+            if (usb.pc_connected === true) this._setDetail('qs-detail-usb', 'active', 'USB data link to host');
+            else this._setDetail('qs-detail-usb', 'inactive', 'No USB host link');
+            if (file.active === true) this._setDetail('qs-detail-file', 'active', 'File transfer active');
+            else if (file.selected === 'file_transfer') this._setDetail('qs-detail-file', 'selected', 'File transfer selected · inactive');
+            else this._setDetail('qs-detail-file', 'inactive', 'File transfer inactive');
+            if (live.active === true) this._setDetail('qs-detail-console', 'active', 'Live console connected');
+            else if (live.service_armed === true) this._setDetail('qs-detail-console', 'armed', 'Live console armed · not connected');
+            else this._setDetail('qs-detail-console', 'inactive', 'Live console inactive');
+            const parts = [];
+            if ((tr.usb || {}).active) parts.push('USB');
+            if ((tr.serial || {}).active) parts.push('Serial');
+            if ((tr.wlan || {}).active) parts.push('WLAN');
+            this._setDetail('qs-detail-transports',
+                parts.length ? 'active' : 'inactive',
+                'Console transports: ' + (parts.length ? parts.join(' + ') : 'none active'));
+        } catch (e) {
+            if (this.isOpen && this.expanded) {
+                this._setDetail('qs-detail-charging', 'unknown', 'Power: provider error');
+                this._setDetail('qs-detail-usb', 'unknown', 'USB: provider error');
+            }
+        } finally {
+            this._indicatorInFlight = false;
+        }
+    }
+
+    _setDetail(id, state, text) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.dataset.state = state;
+        const label = el.querySelector('.qs-detail-label');
+        if (label) label.textContent = text;
+        el.setAttribute('aria-label', text);
+    }
+
+    // ---- flashlight: one safe privileged owner ------------------------
+    async _syncFlashlight() {
+        const tile = document.getElementById('qs-flashlight');
+        if (!tile) return;
+        try {
+            const st = await bridge.call('flashlight', 'status', {});
+            if (!st || st.success === false) {
+                this.state.flashlight = null;
+                tile.dataset.enabled = 'unknown';
+                tile.dataset.state = 'unavailable';
+                const l = tile.querySelector('.qs-label'); if (l) l.innerHTML = 'Flash<br>unknown';
+                tile.title = 'Flashlight status unavailable' + (st && st.error ? (': ' + st.error) : '');
+                return;
+            }
+            const supported = st.supported === true || ['ON', 'OFF', 'BLOCKED_CAMERA', 'THERMAL_LIMIT'].includes(st.state);
+            this.state.flashlight = st.state === 'ON';
+            tile.dataset.state = st.state || 'UNKNOWN';
+            tile.dataset.enabled = !supported ? 'unsupported' : (st.state === 'ON' ? 'true' : 'false');
+            const l = tile.querySelector('.qs-label');
+            if (l) l.innerHTML = !supported ? 'Flash<br>unsupported'
+                : st.state === 'ON' ? 'Flash<br>on'
+                : st.state === 'BLOCKED_CAMERA' ? 'Flash<br>camera busy'
+                : st.state === 'THERMAL_LIMIT' ? 'Flash<br>thermal'
+                : st.state === 'OFF' ? 'Flash<br>off' : 'Flash<br>unknown';
+            tile.title = (st.reason || ('Flashlight: ' + (st.state || 'unknown')))
+                + (st.max_on_seconds ? ('\nPolicy max on: ' + st.max_on_seconds + ' s') : '')
+                + '\nTap = toggle through the privileged owner';
+        } catch (e) {
+            this.state.flashlight = null;
+            tile.dataset.enabled = 'unknown';
+            tile.dataset.state = 'error';
+            const l = tile.querySelector('.qs-label'); if (l) l.innerHTML = 'Flash<br>unknown';
+            tile.title = 'Flashlight provider error: ' + (e && e.message ? e.message : 'bridge error');
+        }
+    }
+
+    async _toggleFlashlight() {
+        const tile = document.getElementById('qs-flashlight');
+        if (tile) tile.dataset.pending = 'true';
+        try {
+            // Always ask the owner; never paint ON optimistically.
+            const res = await bridge.call('flashlight', 'toggle', {});
+            if (!res || res.success === false) {
+                throw new Error((res && (res.reason || res.error)) || 'flashlight owner unavailable');
+            }
+            if (res.state === 'UNSUPPORTED' || res.state === 'NOT_SUPPORTED_ON_DEVICE') {
+                this._osdNotice('Flashlight not supported on this device');
+            } else if (res.state === 'BLOCKED_CAMERA') {
+                this._osdNotice('Flashlight blocked: camera owns the LED');
+            } else if (res.state === 'THERMAL_LIMIT') {
+                this._osdNotice('Flashlight blocked by the thermal policy');
+            } else if (res.state === 'ON') {
+                this._osdNotice('Flashlight on (bounded by the LED policy)');
+                this._hapticSwitch();
+            } else if (res.state === 'OFF') {
+                this._osdNotice('Flashlight off');
+                this._hapticSwitch();
+            } else {
+                this._osdNotice('Flashlight: ' + (res.state || 'unknown state'));
+            }
+            await this._syncFlashlight();
+        } catch (error) {
+            await this._syncFlashlight();
+            this._osdNotice('Flashlight unchanged: ' + (error && error.message ? error.message : 'owner unavailable'));
+        } finally {
+            if (tile) delete tile.dataset.pending;
+        }
     }
 
     async _setWifiEnabled(enabled) {
@@ -556,9 +727,17 @@ class QuickSettings {
     // ---- Location (A73/27000): canonical provider state, never a fix claim ----
     _locationLabel(st) {
         const state = (st && st.state) || (!st ? 'unavailable' : (st.enabled ? 'no_fix' : 'disabled'));
+        const kind = st && (st.fix_kind || '');
+        const source = st && String(st.fix_source || '');
+        const isNetwork = kind === 'network' || /^(network|wifi|ip)/.test(source);
         switch (state) {
-            case 'fixed': return 'Location<br>provider fix';
-            case 'stale': return 'Location<br>stale fix';
+            case 'fixed':
+                if (kind === 'satellite' || st.gnss_fix === true) return 'Location<br>GNSS fix';
+                if (isNetwork) return 'Location<br>network fix';
+                return 'Location<br>provider fix';
+            case 'stale':
+                if (isNetwork) return 'Location<br>network stale';
+                return 'Location<br>stale fix';
             case 'searching': return 'Location<br>searching';
             case 'no_fix': return 'Location<br>no fix';
             case 'disabled': return 'Location<br>off';
@@ -583,9 +762,10 @@ class QuickSettings {
             const age = (typeof st.last_fix_age_s === 'number') ? (' | last provider fix ' + Math.round(st.last_fix_age_s) + ' s ago') : '';
             const acc = (typeof st.accuracy === 'number') ? (' | accuracy ±' + Math.round(st.accuracy) + ' m') : '';
             const provider = (st.provider || 'unknown') + ' (' + (st.provider_ready ? 'ready' : (st.provider_available ? 'installed, not answering' : 'unavailable')) + ')';
+            const source = st.fix_source ? (' | source=' + st.fix_source + (st.fix_kind ? ' (' + st.fix_kind + ')' : '')) : '';
             tile.title = 'Location: ' + state
                 + ' | provider=' + provider
-                + age + acc
+                + source + age + acc
                 + (st.detail ? ('\n' + st.detail) : '')
                 + (st.gnss && st.gnss.blocker ? ('\nGNSS: ' + st.gnss.blocker) : '')
                 + '\nTap = global location permission/provider ON/OFF (independent of a position fix)';
@@ -630,16 +810,34 @@ class QuickSettings {
     }
 
     _render() {
-        // Update all toggle states from bridge. `_syncState` already refreshes
-        // Bluetooth and Location itself, so do not issue those same provider
-        // calls a second time here (a duplicated open-path request cost two
-        // extra bridge round-trips and two extra label repaints).
-        this._syncState();
+        // PWNAGE-43000: paint the panel from cached state first, then refresh
+        // providers on the next frame.  The panel must become interactive
+        // immediately even if NetworkManager/BlueZ/GeoClue are slow.
         this._syncVerboseBoot();
-        this._syncRotate();
+        const now = Date.now();
+        const refresh = () => {
+            if (!this.isOpen) return;
+            if (!this._lastSyncAt || now - this._lastSyncAt > 15000) {
+                this._lastSyncAt = Date.now();
+                this._syncState();
+                this._syncRotate();
+            }
+        };
+        const raf = (window.requestAnimationFrame || (fn => setTimeout(fn, 0)));
+        raf(() => raf(refresh));
     }
 
     async _syncState(options) {
+        // One provider refresh at a time.  Opening the panel while the
+        // startup refresh was still in flight used to start a second
+        // NetworkManager/BlueZ/GeoClue round-trip and repaint every tile twice.
+        if (this._stateSyncPromise) return this._stateSyncPromise;
+        this._stateSyncPromise = this._syncStateOnce(options);
+        try { return await this._stateSyncPromise; }
+        finally { this._stateSyncPromise = null; }
+    }
+
+    async _syncStateOnce(options) {
         const preserveRadio = !!(options && options.preserveRadio);
         const retainRadio = preserveRadio && typeof this.state.wifi === 'boolean';
         try {
@@ -668,6 +866,7 @@ class QuickSettings {
         this._updateUI();
         this._syncBluetooth();
         this._syncLocation();
+        this._syncFlashlight();
     }
 
     _wifiLinkLabel() {
@@ -701,7 +900,9 @@ class QuickSettings {
         for (const [id, enabled] of Object.entries(this.state)) {
             if (id === 'wifi') continue;
             const el = document.getElementById(`qs-${id}`);
-            if (el) el.dataset.enabled = enabled ? 'true' : 'false';
+            if (!el) continue;
+            const next = enabled ? 'true' : 'false';
+            if (el.dataset.enabled !== next) el.dataset.enabled = next;
         }
 
         const wifi = document.getElementById('qs-wifi');

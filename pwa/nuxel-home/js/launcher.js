@@ -26,6 +26,17 @@ class Launcher {
         this.dragStartTime = 0;
         this.longPressTimer = null;
         this.hasMoved = false;
+        this.lastPointerX = 0;
+        this.lastPointerY = 0;
+        this.pointerCaptureEl = null;
+        this._dragSnapshot = null;
+        this._dropIndex = -1;
+        // PWNAGE-37000B: the drawer is built once and toggled, not rebuilt on
+        // every open.  The old open/close path reparsed 30 tiles and 29 image
+        // elements (measured 39-57 ms of synchronous main-thread work).
+        this.drawerList = null;
+        this._drawerSignature = '';
+        this._homeScrollTop = 0;
 
         this._init();
     }
@@ -229,7 +240,15 @@ class Launcher {
         const totalPages = this._pageCount();
         if (this.currentPage >= totalPages) this.currentPage = totalPages - 1;
         const page = this._pageEntries(this.currentPage);
-        if (this.drawerOpen) { this._renderDrawerApps(); this._updatePageDots(totalPages); return; }
+        if (this.drawerOpen) {
+            this._renderDrawerApps();
+            if (this.drawerList) this.drawerList.hidden = false;
+            this.appList.hidden = true;
+            this._updatePageDots(totalPages);
+            return;
+        }
+        if (this.drawerList) this.drawerList.hidden = true;
+        this.appList.hidden = false;
 
         this.appList.innerHTML = page.map(app => app.type === 'folder'
             ? '<div class="app-item app-folder" data-folder-id="' + app.id + '" tabindex="0" role="button" aria-label="' + app.name + '"><div class="app-icon folder-icon">' + app.apps.slice(0, 4).map(a => this._appIcon(a)).join('') + '</div><span class="app-label">' + app.name + '</span></div>'
@@ -240,10 +259,38 @@ class Launcher {
         this._updatePageDots(totalPages);
     }
 
-    _renderDrawerApps() {
+    _drawerContainer() {
+        if (this.drawerList && this.drawerList.isConnected) return this.drawerList;
+        const grid = document.getElementById('app-grid');
+        if (!grid) return null;
+        let el = document.getElementById('drawer-list');
+        if (!el) {
+            el = document.createElement('div');
+            el.id = 'drawer-list';
+            el.className = 'app-list drawer-list';
+            el.hidden = true;
+            const anchor = this.appList || document.getElementById('app-list');
+            if (anchor && anchor.parentNode === grid) grid.insertBefore(el, anchor.nextSibling);
+            else grid.appendChild(el);
+        }
+        this.drawerList = el;
+        return el;
+    }
+
+    _renderDrawerApps(force) {
         // Drawer is authoritative ALL apps, not a duplicate of the current Home
         // page. Hidden shortcuts are still discoverable and may be restored.
-        this.appList.innerHTML = appRegistry.getAllApps().map((app) =>
+        const list = this._drawerContainer();
+        if (!list) return;
+        const apps = appRegistry.getAllApps();
+        // Rebuild only when the registry output actually changes (install,
+        // rename, icon/colour edit).  Normal opens are a class/hidden toggle.
+        const signature = apps.map((app) =>
+            [app.id, app.name, app.icon, app.color, app.category, app.type].join(':')
+        ).join('|');
+        if (!force && signature === this._drawerSignature && list.childElementCount) return;
+        this._drawerSignature = signature;
+        list.innerHTML = apps.map((app) =>
             '<div class="app-item drawer-app" data-app-id="' + app.id + '" role="button" tabindex="0" aria-label="' + app.name + '">' +
             '<div class="app-icon" style="background:' + app.color + '33">' + this._appIcon(app) + '</div>' +
             '<span class="app-label">' + app.name + '</span></div>'
@@ -290,10 +337,23 @@ class Launcher {
     // ── Pointer Events (mouse + touch, unified) ────────────────────
 
     _bindPointerEvents() {
+        // One authoritative pointer stream.  The old code also listened to
+        // touchstart/touchend for page swipes; those are passive observers and
+        // never drive the icon drag.  Pointer capture is taken on a STABLE
+        // element (the grid) once the long press fires, not on an app tile
+        // that may be replaced by a rerender mid-gesture.
         document.addEventListener('pointerdown', (e) => this._onPointerDown(e));
-        document.addEventListener('pointermove', (e) => this._onPointerMove(e));
+        document.addEventListener('pointermove', (e) => this._onPointerMove(e), { passive: false });
         document.addEventListener('pointerup', (e) => this._onPointerUp(e));
-        document.addEventListener('pointercancel', () => this._cancelPointer());
+        document.addEventListener('pointercancel', (e) => this._cancelPointer(e && e.pointerId));
+        document.addEventListener('lostpointercapture', (e) => {
+            // Capture can be lost without a pointercancel (window switch,
+            // target teardown).  Roll back a real drag, but ignore the normal
+            // release path where _endDrag already cleared isDragging.
+            if (this.isDragging && e && e.pointerId === this.pressedPointer) {
+                this._cancelPointer(e.pointerId);
+            }
+        });
         document.addEventListener('keydown', (e) => {
             const item = e.target.closest && e.target.closest('.app-item');
             if (item && (e.key === 'Enter' || e.key === ' ')) {
@@ -309,16 +369,62 @@ class Launcher {
             const item = e.target.closest && e.target.closest('.app-item');
             if (item) appRegistry.launchApp(item.dataset.appId);
         });
-        // Swipe for page change
+        // Page swipes. Passive and deliberately separate from the pointer drag
+        // state; a drag clears swipeStart so the release cannot also paginate.
         document.addEventListener('touchstart', (e) => this._onTouchStart(e), { passive: true });
         document.addEventListener('touchend', (e) => this._onTouchEnd(e), { passive: true });
+
+        // Visible host acknowledgement (screenshot, refused action, ...).
+        const showToast = (ev) => {
+            const text = ev && ev.detail && ev.detail.text;
+            if (!text) return;
+            if (window.NuxelOSD && typeof window.NuxelOSD.show === 'function') {
+                window.NuxelOSD.show(String(text));
+                return;
+            }
+            let t = document.getElementById('nuxel-host-toast');
+            if (!t) {
+                t = document.createElement('div');
+                t.id = 'nuxel-host-toast';
+                t.className = 'toast';
+                t.style.pointerEvents = 'none';
+                t.style.zIndex = '12000';
+                document.body.appendChild(t);
+            }
+            t.textContent = String(text);
+            clearTimeout(this._hostToastTimer);
+            this._hostToastTimer = setTimeout(() => t.remove(), 3200);
+        };
+        document.addEventListener('nuxel:toast', showToast);
+        if (typeof window.addEventListener === 'function') window.addEventListener('nuxel:toast', showToast);
+    }
+
+    _capturePointer(pointerId) {
+        const grid = document.getElementById('app-grid') || document.documentElement;
+        try {
+            grid.setPointerCapture(pointerId);
+            this.pointerCaptureEl = grid;
+        } catch (e) {
+            // Capture is an enhancement; document-level listeners still see
+            // the stream on engines without element capture.
+            this.pointerCaptureEl = null;
+        }
+        this._capturedPointer = pointerId;
+    }
+
+    _releasePointer() {
+        if (this.pointerCaptureEl && this._capturedPointer !== null && this._capturedPointer !== undefined) {
+            try { this.pointerCaptureEl.releasePointerCapture(this._capturedPointer); } catch (e) {}
+        }
+        this.pointerCaptureEl = null;
+        this._capturedPointer = null;
     }
 
     _onPointerDown(e) {
-        if (e.isPrimary === false || (e.button !== undefined && e.button !== 0)) {
-            this._cancelPointer();
-            return;
-        }
+        // A second finger must not cancel or hijack the primary interaction.
+        if (this.pressedPointer !== null && this.pressedPointer !== undefined &&
+            e.pointerId !== this.pressedPointer) return;
+        if (e.isPrimary === false || (e.button !== undefined && e.button !== 0)) return;
         this._cancelPointer();
         const item = e.target.closest && e.target.closest('.app-item');
         if (!item) return;
@@ -327,40 +433,49 @@ class Launcher {
         this.dragTarget = item;
         this.dragState = 'PRESS_PENDING';
         this.pressedPointer = e.pointerId;
-        this.dragStartX = e.clientX;
-        this.dragStartY = e.clientY;
+        this.dragStartX = this.lastPointerX = e.clientX;
+        this.dragStartY = this.lastPointerY = e.clientY;
         this.dragStartTime = Date.now();
         this.hasMoved = false;
 
-        if (this.drawerOpen) {
+        const afterHold = (fn) => {
             this.longPressTimer = setTimeout(() => {
+                this.longPressTimer = null;
+                fn();
+            }, 450);
+        };
+        if (this.drawerOpen) {
+            afterHold(() => {
                 if (this.isHomeLocked()) { this._lockedNotice(); return; }
                 this.drawerHold = true;
                 this._showDrawerMenu(item.dataset.appId);
                 if (window.NuxelHost && window.NuxelHost.available) window.NuxelHost.action('haptics-long');
-            }, 450);
+            });
             return;
         }
         if (this.isHomeLocked() && !item.closest('#dock-items')) {
-            this.longPressTimer = setTimeout(() => this._lockedNotice(), 450);
+            afterHold(() => this._lockedNotice());
             return;
         }
         // Dock items still activate on release; long press selects them for
-        // removal but does not turn the fixed dock into a surprise reordering UI.
+        // removal but does not turn the fixed dock into a reordering UI.
         if (item.closest('#dock-items')) {
-            this.longPressTimer = setTimeout(() => this._enterEditMode(item.dataset.appId), 450);
+            afterHold(() => this._enterEditMode(item.dataset.appId));
             return;
         }
-        // Long-press to start drag
-        clearTimeout(this.longPressTimer);
-        this.longPressTimer = setTimeout(() => {
+        afterHold(() => {
+            // The originating event object is gone by now. Use the last seen
+            // pointer coordinates, never a stale event field.
             this._enterEditMode(item.dataset.appId);
-            this._startDrag(item, e);
-        }, 450);
+            this._startDrag(item, { clientX: this.lastPointerX, clientY: this.lastPointerY, pointerId: this.pressedPointer });
+        });
     }
 
     _onPointerMove(e) {
-        if (this.pressedPointer !== e.pointerId) return;
+        if (this.pressedPointer === null || this.pressedPointer === undefined) return;
+        if (e.pointerId !== this.pressedPointer) return;
+        this.lastPointerX = e.clientX;
+        this.lastPointerY = e.clientY;
         if (!this.isDragging) {
             if (this.drawerOpen && this.drawerHold && this.dragTarget &&
                 Math.hypot(e.clientX - this.dragStartX, e.clientY - this.dragStartY) > 12) {
@@ -368,25 +483,26 @@ class Launcher {
                 this._updateDrag(e);
                 return;
             }
-            // Check if moved beyond threshold before long-press fires
+            // A finger that moves before the 450 ms hold expires is scrolling
+            // or swiping, not dragging. Cancel the pending hold exactly once.
             if (this.dragTarget && !this.hasMoved) {
                 const dx = Math.abs(e.clientX - this.dragStartX);
                 const dy = Math.abs(e.clientY - this.dragStartY);
                 if (dx > 8 || dy > 8) {
                     this.hasMoved = true;
-                    clearTimeout(this.longPressTimer);
+                    if (this.longPressTimer) { clearTimeout(this.longPressTimer); this.longPressTimer = null; }
                 }
             }
             return;
         }
-
-        e.preventDefault();
+        if (e.cancelable) e.preventDefault();
         this._updateDrag(e);
     }
 
     _onPointerUp(e) {
-        if (this.pressedPointer !== e.pointerId || e.isPrimary === false) return;
-        clearTimeout(this.longPressTimer);
+        if (this.pressedPointer === null || this.pressedPointer === undefined) return;
+        if (e.pointerId !== this.pressedPointer) return;
+        if (this.longPressTimer) { clearTimeout(this.longPressTimer); this.longPressTimer = null; }
 
         if (this.isDragging) {
             this._endDrag(e);
@@ -403,10 +519,12 @@ class Launcher {
             this.suppressClickUntil = Date.now() + 500;
             return; // Keep the Add to Home context button visible.
         }
-        // Normal tap either chooses an icon to edit or launches it.
-        const released = e.target.closest && e.target.closest('.app-item');
-        if (!this.hasMoved && this.dragTarget && released === this.dragTarget) {
-            const appId = this.dragTarget.dataset.appId;
+        // Normal tap either chooses an icon to edit or launches it. The release
+        // target is re-hit-tested so WebKit retargeting cannot launch a
+        // different icon under the finger.
+        const released = e.target && e.target.closest ? e.target.closest('.app-item') : null;
+        if (!this.hasMoved && released && released === this.dragTarget) {
+            const appId = released.dataset.appId;
             if (appId && this.editMode) this._selectForEdit(appId);
             else if (appId) appRegistry.launchApp(appId);
         }
@@ -414,16 +532,22 @@ class Launcher {
         this.dragTarget = null;
         this.pressedPointer = null;
         this.hasMoved = false;
+        this.dragState = 'IDLE';
     }
 
-    _cancelPointer() {
-        clearTimeout(this.longPressTimer);
+    _cancelPointer(pointerId) {
+        if (pointerId !== undefined && pointerId !== null &&
+            this.pressedPointer !== null && this.pressedPointer !== undefined &&
+            pointerId !== this.pressedPointer) return;
+        if (this.longPressTimer) { clearTimeout(this.longPressTimer); this.longPressTimer = null; }
         if (this.isDragging) this._endDrag(null, true);
+        this._releasePointer();
         this.dragTarget = null;
         this.pressedPointer = null;
         this.hasMoved = false;
         this.drawerHold = false;
-        if (!this.isDragging) this.dragState = 'IDLE';
+        this.swipeStart = null;
+        this.dragState = 'IDLE';
     }
 
     _showDrawerMenu(appId) {
@@ -441,31 +565,34 @@ class Launcher {
     _startDrag(item, e, fromDrawer = false) {
         if (this.isHomeLocked()) { this._lockedNotice(); return; }
         this.drawerHold = false;
+        this.swipeStart = null;
         this.isDragging = true;
         this.dragState = 'DRAGGING';
-        // A drawer item is deliberately unmounted to reveal Home.  Keep the
-        // drag session in model state, not in that soon-to-be-dead element.
-        // The snapshot makes pointercancel a real cancel rather than an
-        // accidental Add-to-Home operation.
+        // Snapshot the complete model before any render: pointercancel must be
+        // a true rollback for both a Home reorder and a drawer->Home drag.
+        this._dragSnapshot = {
+            layout: this.layout ? this.layout.snapshot() : null,
+            assignments: Object.assign({}, this.pageAssignments),
+            hidden: Array.from(this.hiddenAppIds),
+            page: this.currentPage,
+        };
         this.dragData = {
             id: item.dataset.appId,
             el: item,
             fromDrawer,
-            layoutBefore: fromDrawer && this.layout ? this.layout.snapshot() : null,
-            assignmentsBefore: fromDrawer ? Object.assign({}, this.pageAssignments) : null,
-            hiddenBefore: fromDrawer ? Array.from(this.hiddenAppIds) : null,
         };
         this._positionedThisDrag = false;
+        this._dropIndex = -1;
         item.classList.add('dragging');
         document.body.classList.add('launcher-dragging');
+        this._capturePointer(e.pointerId);
 
-        // Create ghost
+        // One stable ghost, mounted to <body>; pointer-events:none is set in
+        // CSS so it can never steal hit-testing from Home icons.
         this.dragGhost = item.cloneNode(true);
         this.dragGhost.classList.add('drag-ghost');
         this.dragGhost.style.position = 'fixed';
         this.dragGhost.style.zIndex = '99999';
-        // The document remains the event owner; the ghost must never become
-        // the drop target or steal hit tests from Home icons.
         this.dragGhost.style.pointerEvents = 'none';
         this.dragGhost.style.opacity = '0.85';
         this.dragGhost.style.transform = 'scale(1.1)';
@@ -496,26 +623,28 @@ class Launcher {
             clearTimeout(this._dragPageTimer);
             this._dragEdge = edge;
             if (edge) this._dragPageTimer = setTimeout(() => {
+                if (!this.isDragging) return;
                 const next = this.currentPage + edge;
                 if (next >= 0 && next < this._pageCount()) {
                     this.currentPage = next; this._renderAppGrid();
                     this.folderHover = null; this._positionedThisDrag = false;
+                    this._dropIndex = -1;
                 }
             }, 550);
         }
         this.dragGhost.style.left = (e.clientX - 32) + 'px';
         this.dragGhost.style.top = (e.clientY - 32) + 'px';
 
-        // Find target under pointer. A folder target needs deliberate centered
-        // dwell; ordinary near-edge drops always use insertion/reflow.
+        // Hit-test by live coordinates. `event.target` is the captured element
+        // during a drag and cannot identify the tile under the finger.
         const under = document.elementFromPoint(e.clientX, e.clientY);
-
         const targetItem = under ? under.closest('.app-item') : null;
-        if (targetItem && targetItem !== this.dragData.el && targetItem.closest('#app-list')) {
-            const rect = targetItem.getBoundingClientRect();
-            const centered = Math.abs(e.clientX - (rect.left + rect.width / 2)) < rect.width * .24 && Math.abs(e.clientY - (rect.top + rect.height / 2)) < rect.height * .24;
+        if (targetItem && targetItem.closest('#app-list')) {
             const targetId = targetItem.dataset.appId;
-            if (centered && targetId) {
+            const rect = targetItem.getBoundingClientRect();
+            const centered = Math.abs(e.clientX - (rect.left + rect.width / 2)) < rect.width * .24 &&
+                             Math.abs(e.clientY - (rect.top + rect.height / 2)) < rect.height * .24;
+            if (centered && targetId && targetId !== this.dragData.id) {
                 if (!this.folderHover || this.folderHover.id !== targetId) this.folderHover = { id: targetId, since: Date.now() };
                 if (Date.now() - this.folderHover.since >= 350) targetItem.classList.add('folder-target');
             } else {
@@ -523,18 +652,38 @@ class Launcher {
                 document.querySelectorAll('.folder-target').forEach(el => el.classList.remove('folder-target'));
                 this._insertAtTarget(targetItem, e.clientX, e.clientY);
             }
+        } else if (under && under.closest('#app-grid')) {
+            // Empty area of the current desktop: append at the end. This gives
+            // "drop after the last icon" a deterministic meaning.
+            this._insertAtEnd();
         }
     }
 
     _insertAtTarget(target, x, y) {
         const id = this.dragData && this.dragData.id, targetId = target.dataset.appId;
-        if (!id || !targetId) return;
+        if (!id || !targetId || id === targetId) return;
         const entries = this._entries();
         const targetIndex = entries.findIndex(entry => entry && entry.id === targetId);
         if (targetIndex < 0) return;
         const rect = target.getBoundingClientRect();
+        const insertIndex = targetIndex + (y > rect.top + rect.height / 2 ? 1 : 0);
+        if (this._positionedThisDrag && this._dropIndex === insertIndex) return;
         this.pageAssignments[id] = this.currentPage;
-        this._ensureLayout().insertApp(id, targetIndex + (y > rect.top + rect.height / 2 ? 1 : 0));
+        this._ensureLayout().insertApp(id, insertIndex);
+        this._dropIndex = insertIndex;
+        this._positionedThisDrag = true;
+        this._renderAppGrid();
+    }
+
+    _insertAtEnd() {
+        const id = this.dragData && this.dragData.id;
+        if (!id) return;
+        const entries = this._entries();
+        const pos = entries.length;
+        if (this._positionedThisDrag && this._dropIndex === pos) return;
+        this.pageAssignments[id] = this.currentPage;
+        this._ensureLayout().insertApp(id, pos);
+        this._dropIndex = pos;
         this._positionedThisDrag = true;
         this._renderAppGrid();
     }
@@ -565,8 +714,10 @@ class Launcher {
     }
 
     _endDrag(e, cancelled = false) {
+        const snapshot = this._dragSnapshot;
         this.isDragging = false;
         clearTimeout(this._dragPageTimer); this._dragEdge = 0;
+        this._releasePointer();
 
         if (this.dragData && this.dragData.el && this.dragData.el.isConnected) {
             this.dragData.el.style.opacity = '';
@@ -578,16 +729,20 @@ class Launcher {
         }
 
         document.body.classList.remove('launcher-dragging');
-        document.querySelectorAll('.app-item').forEach(el => el.classList.remove('drag-over'));
-
         const folder = document.querySelector('.folder-target');
-        if (cancelled && this.dragData && this.dragData.fromDrawer) {
-            // Closing the drawer must not convert a cancelled gesture into a
-            // layout change. Restore both the model and page placement.
-            this.hiddenAppIds = new Set(this.dragData.hiddenBefore || []);
+        document.querySelectorAll('.app-item').forEach(el => el.classList.remove('drag-over', 'folder-target'));
+        // Releasing outside the app grid is not a valid Home drop. Treat it as
+        // a cancel so an accidental edge release cannot silently append.
+        if (!cancelled && e && this.dragData) {
+            const under = document.elementFromPoint(e.clientX, e.clientY);
+            if (!under || !under.closest('#app-grid')) cancelled = true;
+        }
+        if (cancelled && snapshot) {
+            this.hiddenAppIds = new Set(snapshot.hidden || []);
             this.layout = new window.NuxelHomeLayout(
-                this._getOrderedApps().map(app => app.id), this.dragData.layoutBefore || {});
-            this.pageAssignments = this.dragData.assignmentsBefore || {};
+                this._getOrderedApps().map(app => app.id), snapshot.layout || {});
+            this.pageAssignments = Object.assign({}, snapshot.assignments || {});
+            this.currentPage = snapshot.page;
         } else if (this.dragData) {
             const id = this.dragData.id;
             this.pageAssignments[id] = this.currentPage;
@@ -609,6 +764,8 @@ class Launcher {
         this.dragData = null;
         this.folderHover = null;
         this._positionedThisDrag = false;
+        this._dropIndex = -1;
+        this._dragSnapshot = null;
         this.dragState = 'IDLE';
     }
 
@@ -687,11 +844,31 @@ class Launcher {
         render(); document.body.appendChild(sheet);
     }
 
-    openDrawer() { this.drawerOpen = true; document.body.classList.add('app-drawer-open'); this._renderAppGrid(); }
+    openDrawer() {
+        if (this.drawerOpen) return;
+        this.drawerOpen = true;
+        document.body.classList.add('app-drawer-open');
+        this._renderDrawerApps();
+        const grid = document.getElementById('app-grid');
+        if (grid) { this._homeScrollTop = grid.scrollTop; grid.scrollTop = 0; }
+        if (this.drawerList) this.drawerList.hidden = false;
+        if (this.appList) this.appList.hidden = true;
+        this._updatePageDots(this._pageCount());
+        if (window.NuxelWidgets) { try { window.NuxelWidgets.renderPage(this.currentPage); } catch (e) {} }
+        try { document.dispatchEvent(new CustomEvent('nuxel:overlay-changed')); } catch (e) {}
+    }
     closeDrawer() {
-        this.drawerOpen = false; document.body.classList.remove('app-drawer-open');
+        const wasOpen = this.drawerOpen;
+        this.drawerOpen = false;
+        document.body.classList.remove('app-drawer-open');
         const menu = document.getElementById('nuxel-drawer-context'); if (menu) menu.remove();
-        this._renderAppGrid();
+        if (this.drawerList) this.drawerList.hidden = true;
+        if (this.appList) this.appList.hidden = false;
+        if (wasOpen) {
+            const grid = document.getElementById('app-grid');
+            if (grid) grid.scrollTop = this._homeScrollTop || 0;
+        }
+        try { document.dispatchEvent(new CustomEvent('nuxel:overlay-changed')); } catch (e) {}
     }
     advanceDrawer() { if (this.drawerOpen) { this.closeDrawer(); appRegistry.launchApp('nuxel-settings'); } else this.openDrawer(); }
 

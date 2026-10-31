@@ -1,9 +1,10 @@
-> **Current capture (v0.7.3-beta, 2026-10-30).** This document records the
+> **Current capture (v0.7.4-beta, 2026-10-31).** The captured BOOT bytes are
+> carried forward unchanged from the 2026-10-30 handset capture. This document records the
 > original A61/A27 capture design. The checked-in `release/s10plus/` assets were
 > refreshed from the live phone on 2026-10-30: the BOOT image is now
 > `6e998acf…` (57,671,680 bytes, the complete partition) and the userspace
 > inventory is `da024bd0…` gz / 4,238 entries. See
-> [`docs/releases/v0.7.3-beta.md`](../releases/v0.7.3-beta.md).
+> [`docs/releases/v0.7.4-beta.md`](../releases/v0.7.4-beta.md).
 
 # Release output: the exact image installed on the S10+
 

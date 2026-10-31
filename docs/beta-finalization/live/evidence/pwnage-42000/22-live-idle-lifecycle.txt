@@ -1,0 +1,64 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+=== initial status (must not start provider) ===
+{
+  "state": "no_fix",
+  "provider_ready": false,
+  "provider_available": true,
+  "provider_detail": "GeoClue2 is installed but idle; an authorized acquisition will start it (provider_ready=false)",
+  "active_clients": 0
+}
+=== geoclue active? ===
+active
+=== acquire ===
+{
+  "success": true,
+  "state": "unavailable",
+  "fix_source": null,
+  "fix_kind": null,
+  "gnss_fix": false,
+  "network_fix": false,
+  "accuracy": null,
+  "latitude": null,
+  "longitude": null,
+  "last_fix_timestamp": null,
+  "active_clients": 0
+}
+=== stop ===
+s "{\"success\": true, \"active_clients\": 0, \"acquiring\": false, \"state\": \"unavailable\"}"
+=== geoclue right after stop ===
+active
+=== wait 65s for idle auto-stop ===
+=== geoclue after idle ===
+active
+=== status after idle (no reconnect) ===
+{
+  "state": "unavailable",
+  "provider_ready": false,
+  "provider_available": true,
+  "provider_detail": "GeoClue2 is installed but unavailable: org.freedesktop.DBus.Error.NoReply: Did not receive a reply. Possible causes include: the remote application did not send a reply, the message bus security policy blocked the reply, the reply timeout expired, or the network connection was broken.",
+  "active_clients": 0,
+  "last_fix_age_s": null
+}
+=== geoclue after status poll still idle ===
+active
+=== bridge journal tail ===
+Oct 31 01:05:58 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Started nuxel-bridge.service - Nuxel Bridge - PWA to Native Phone Service Mediator.
+Oct 31 01:05:58 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-bridge[51250]: 2026-10-31 01:05:58,764 [INFO] nuxel-bridge: Starting Nuxel Bridge v0.2.1...
+Oct 31 01:05:58 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-bridge[51250]: 2026-10-31 01:05:58,769 [INFO] nuxel-bridge: Claimed D-Bus name: org.nuxel.Bridge
+Oct 31 01:05:58 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-bridge[51250]: 2026-10-31 01:05:58,770 [INFO] nuxel-bridge: Nuxel Bridge started | session=5dca02ec-1115-4358-96f8-ff8b2cc48708
+Oct 31 01:05:58 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-bridge[51250]: 2026-10-31 01:05:58,771 [INFO] nuxel-bridge: bridge_version=1 host_version=0.7.1-beta
+Oct 31 01:05:58 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-bridge[51250]: 2026-10-31 01:05:58,771 [INFO] nuxel-bridge: Nuxel Bridge running with portal integration...
+Oct 31 01:05:58 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-bridge[51250]: 2026-10-31 01:05:58,776 [INFO] nuxel-bridge: Connected to nuxel-portal
+Oct 31 01:05:58 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-bridge[51250]: 2026-10-31 01:05:58,781 [ERROR] nuxel-bridge: ModemManager connect failed: org.freedesktop.DBus.Error.InvalidArgs: No such property “Modems”
+Oct 31 01:05:58 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-bridge[51250]: 2026-10-31 01:05:58,782 [INFO] nuxel-bridge: NetworkManager connected
+Oct 31 01:05:58 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-bridge[51250]: 2026-10-31 01:05:58,784 [INFO] nuxel-bridge: GeoClue agent requested for org.nuxel.Bridge
+Oct 31 01:06:10 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-bridge[51250]: 2026-10-31 01:06:10,792 [WARNING] nuxel-bridge: GeoClue AddAgent failed: org.freedesktop.DBus.Error.NoReply: Did not receive a reply. Possible causes include: the remote application did not send a reply, the message bus security policy blocked the reply, the reply timeout expired, or the network connection was broken.
+Oct 31 01:06:10 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-bridge[51250]: 2026-10-31 01:06:10,796 [WARNING] nuxel-bridge: GeoClue connect failed: org.freedesktop.DBus.Error.NoReply: Did not receive a reply. Possible causes include: the remote application did not send a reply, the message bus security policy blocked the reply, the reply timeout expired, or the network connection was broken.

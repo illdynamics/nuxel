@@ -282,8 +282,8 @@
   }
   function setVolume(delta) {
     return call('audio', 'status', {}).then(function (st) {
-      var cur = (st && typeof st.volume_percent === 'number') ? st.volume_percent : 10;
-      var cap = (st && st.volume_cap_percent) || 25;
+      var cur = (st && typeof st.volume_percent === 'number') ? st.volume_percent : 50;
+      var cap = (st && st.volume_cap_percent) || 100;
       var next = Math.max(0, Math.min(cap, cur + delta));
       return call('audio', 'set-volume', { volume: next }).then(function (r) {
         if (r && r.success === false) {

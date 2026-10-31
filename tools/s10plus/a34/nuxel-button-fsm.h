@@ -269,6 +269,13 @@ static const nuxel_fsm_menu_entry nuxel_fsm_menu[] = {
   { "reboot-safe-mode","Safe Mode",       "reboot-safe-mode",      1, "gate-closed-owner-absent" },
   { "reboot-diag",   "Reboot Diag",       "reboot-diag",           1, "gate-closed-owner-absent" },
   { "reboot-debug",  "Reboot Debug",      "reboot-debug",          1, "gate-closed-owner-absent" },
+  /* Browser-style controls operate only on the foreground PWA through the
+   * existing host-fifo contract.  They are part of the 15-entry configured
+   * menu; omitting them from the active A34 build was PWNAGE-44000 defect #3. */
+  { "back",          "Back",              "back",                  1, NULL },
+  { "forward",       "Forward",           "forward",               1, NULL },
+  { "stop",          "Stop loading",      "stop",                  1, NULL },
+  { "reload-launcher","Reload launcher",  "reload-launcher",       1, NULL },
   { "recovery",      "Recovery (Samsung)","enter-recovery",        0, "NO_FLASH_INVARIANT" },
   { "download-mode", "Download Mode (Odin)","enter-download-mode", 0, "NO_FLASH_INVARIANT" }
 };

@@ -1,13 +1,12 @@
 [Unit]
 Description=Nuxel S10+ ABOX Calliope core-firmware reload
 Documentation=https://nuxel.local/docs/pwnage-38000.md
-# The Wayland session starts PipeWire, which opens hw:0,1 and holds an ABOX
-# runtime-PM reference.  The reload therefore runs after nuxel-wayland is up,
-# stops it briefly, reloads the core blobs, and restarts it.  Boot sound is
-# ordered after this unit so it never plays against an uninitialised DSP.
-After=nuxel-wayland.service local-fs.target
+# PWNAGE-43000: audio now lives in nuxel-audio-session.service.  The reload
+# stops ONLY that unit (its own cgroup), never the compositor, so the launcher
+# and display bridge remain live while the ABOX core blobs are re-downloaded.
+After=nuxel-wayland.service nuxel-audio-session.service local-fs.target
 Before=nuxel-boot-sound.service
-Wants=local-fs.target nuxel-wayland.service
+Wants=local-fs.target nuxel-wayland.service nuxel-audio-session.service
 ConditionPathExists=/sys/devices/platform/18c50000.abox/power/control
 StartLimitIntervalSec=0
 

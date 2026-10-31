@@ -12,7 +12,15 @@
       "dependencies": [
         "briq-08a-power-management"
       ],
-      "evidence": [],
+      "evidence": [
+        {
+          "kind": "observation",
+          "path": "docs/beta-finalization/live/evidence/pwnage-42000/",
+          "command": "GeoClue network fix after full reboot",
+          "result": "network location 51.4005, 5.47196 +/-25000 m source=network_wifi (real, not fabricated)",
+          "at": "2026-10-31T00:00:00+01:00"
+        }
+      ],
       "intended_changes": [
         "configs/nuxel/gnss/",
         "docs/beta-finalization/manual-proof/13-gps.md"
@@ -22,14 +30,14 @@
       ],
       "risk": "medium",
       "rollback": "git revert the commit(s) touching this task's expected files; the change is repository-only and alters no device state",
-      "verdict": null,
+      "verdict": "NEEDS_OWNER_TEST",
       "offline_ceiling": "NEEDS_OWNER_TEST",
-      "owner_action": "OWNER TEST REQUIRED: see docs/beta-finalization/BETA-MANUAL-PROOF-CHECKLIST.md",
+      "owner_action": "Network location needs no owner action. A satellite fix requires a compatible BCM4773 BBD sensor-hub patch and a BBD/LHD runtime, which do not exist in the rootfs; the outdoor procedure in docs/beta-finalization/manual-proof/13-gps.md stays BLOCKED until they do.",
       "expected_files": [
         "configs/nuxel/gnss/",
         "docs/beta-finalization/manual-proof/13-gps.md"
       ],
-      "note": "seeded from the QonQrete plan; 0/2 expected file(s) already present in the tree",
+      "note": "v0.7.4-beta: network/Wi-Fi location works through nuxel-geoclue-agent + a narrow CAP_NET_RAW grant. Satellite GNSS is BLOCKED_FIRMWARE: no bcm_sensorhub_a1.patch and no Android lhd/gpsd/HIDL runtime. No satellite fix, coordinate, accuracy or satellite count is claimed.",
       "source": "plan.json",
       "revision": 1,
       "at": "2026-10-16T16:07:13+02:00",

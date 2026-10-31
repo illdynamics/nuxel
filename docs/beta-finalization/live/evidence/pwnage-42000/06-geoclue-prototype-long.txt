@@ -1,0 +1,75 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+AddAgent ERR org.freedesktop.DBus.Error.NoReply: Did not receive a reply. Possible causes include: the remote application did not send a reply, the message bus security policy blocked the reply, the reply timeout expired, or the network connection was broken.
+GetClient OK 0.0s /org/freedesktop/GeoClue2/Client/1
+step2 ERR org.freedesktop.DBus.Error.UnknownMethod: No such method “SetDesktopId”
+DONE
+rc=0
+=== debug log (noise filtered) ===
+(geoclue:46858): Geoclue-DEBUG: 00:49:41.201: IP source: enabled
+(geoclue:46858): Geoclue-DEBUG: 00:49:41.201: 	IP method: ichnaea
+(geoclue:46858): Geoclue-DEBUG: 00:49:41.201: 	IP URL: (method default)
+(geoclue:46858): Geoclue-DEBUG: 00:49:41.201: 	IP accuracy: (method default)
+(geoclue:46858): Geoclue-DEBUG: 00:49:41.201: Compass: disabled
+(geoclue:46858): Geoclue-DEBUG: 00:49:41.201: Application configs:
+(geoclue:46858): Geoclue-DEBUG: 00:49:41.201: 	ID: geoclue-where-am-i
+(geoclue:46858): Geoclue-DEBUG: 00:49:41.201: 		Allowed: yes
+(geoclue:46858): Geoclue-DEBUG: 00:49:41.201: 		System: yes
+(geoclue:46858): Geoclue-DEBUG: 00:49:41.201: 		Users: all
+(geoclue:46858): Geoclue-DEBUG: 00:49:41.201: 	ID: geoclue-demo-agent
+(geoclue:46858): Geoclue-DEBUG: 00:49:41.201: 		Allowed: yes
+(geoclue:46858): Geoclue-DEBUG: 00:49:41.201: 		System: yes
+(geoclue:46858): Geoclue-DEBUG: 00:49:41.201: 		Users: all
+(geoclue:46858): Geoclue-DEBUG: 00:49:41.201: 	ID: lipstick
+(geoclue:46858): Geoclue-DEBUG: 00:49:41.201: 		Allowed: yes
+(geoclue:46858): Geoclue-DEBUG: 00:49:41.202: 		System: yes
+(geoclue:46858): Geoclue-DEBUG: 00:49:41.202: 		Users: all
+(geoclue:46858): Geoclue-DEBUG: 00:49:41.202: 	ID: firefox
+(geoclue:46858): Geoclue-DEBUG: 00:49:41.202: 		Allowed: yes
+(geoclue:46858): Geoclue-DEBUG: 00:49:41.202: 		System: no
+(geoclue:46858): Geoclue-DEBUG: 00:49:41.202: 		Users: all
+(geoclue:46858): Geoclue-DEBUG: 00:49:41.202: 	ID: epiphany
+(geoclue:46858): Geoclue-DEBUG: 00:49:41.202: 		Allowed: yes
+(geoclue:46858): Geoclue-DEBUG: 00:49:41.202: 		System: no
+(geoclue:46858): Geoclue-DEBUG: 00:49:41.202: 		Users: all
+(geoclue:46858): Geoclue-DEBUG: 00:49:41.202: 	ID: sm.puri.Phosh
+(geoclue:46858): Geoclue-DEBUG: 00:49:41.202: 		Allowed: yes
+(geoclue:46858): Geoclue-DEBUG: 00:49:41.202: 		System: yes
+(geoclue:46858): Geoclue-DEBUG: 00:49:41.202: 		Users: all
+(geoclue:46858): Geoclue-DEBUG: 00:49:41.202: 	ID: io.elementary.desktop.agent-geoclue2
+(geoclue:46858): Geoclue-DEBUG: 00:49:41.202: 		Allowed: yes
+(geoclue:46858): Geoclue-DEBUG: 00:49:41.202: 		System: yes
+(geoclue:46858): Geoclue-DEBUG: 00:49:41.202: 		Users: all
+(geoclue:46858): Geoclue-DEBUG: 00:49:41.202: 	ID: org.gnome.Shell
+(geoclue:46858): Geoclue-DEBUG: 00:49:41.202: 		Allowed: yes
+(geoclue:46858): Geoclue-DEBUG: 00:49:41.202: 		System: yes
+(geoclue:46858): Geoclue-DEBUG: 00:49:41.202: 		Users: all
+(geoclue:46858): Geoclue-DEBUG: 00:49:41.202: 	ID: gnome-color-panel
+(geoclue:46858): Geoclue-DEBUG: 00:49:41.202: 		Allowed: yes
+(geoclue:46858): Geoclue-DEBUG: 00:49:41.202: 		System: yes
+(geoclue:46858): Geoclue-DEBUG: 00:49:41.202: 		Users: all
+(geoclue:46858): Geoclue-DEBUG: 00:49:41.202: 	ID: gnome-datetime-panel
+(geoclue:46858): Geoclue-DEBUG: 00:49:41.202: 		Allowed: yes
+(geoclue:46858): Geoclue-DEBUG: 00:49:41.202: 		System: yes
+(geoclue:46858): Geoclue-DEBUG: 00:49:41.202: 		Users: all
+(geoclue:46858): GLib-GIO-DEBUG: 00:49:41.222: Failed to initialize portal (GNetworkMonitorPortal) for gio-network-monitor: Not using portals
+(geoclue:46858): GLib-GIO-DEBUG: 00:49:41.230: _g_io_module_get_default: Found default implementation networkmanager (GNetworkMonitorNM) for ‘gio-network-monitor’
+(geoclue:46858): GLib-GIO-DEBUG: 00:49:41.230: _g_io_module_get_default: Found default implementation dummy (GDummyProxyResolver) for ‘gio-proxy-resolver’
+(geoclue:46858): Geoclue-DEBUG: 00:49:41.250: Available accuracy level from GClueIp: 4
+(geoclue:46858): Geoclue-DEBUG: 00:49:41.250: Submit URL not reachable, but Internet is available, overriding
+(geoclue:46858): Geoclue-DEBUG: 00:49:41.259: WiFi device 'wlan1' added.
+(geoclue:46858): Geoclue-DEBUG: 00:49:41.259: Available accuracy level from GClueWifi: 6
+(geoclue:46858): Geoclue-DEBUG: 00:50:09.675: New agent for user ID '0'
+(geoclue:46858): Geoclue-DEBUG: 00:50:09.691: Service now in use
+(geoclue:46858): Geoclue-DEBUG: 00:50:09.691: Number of connected clients: 1
+(geoclue:46858): Geoclue-DEBUG: 00:50:09.850: Agent for user '0' vanished
+(geoclue:46858): Geoclue-DEBUG: 00:50:09.850: Client `:1.179` vanished. Dropping associated client objects
+(geoclue:46858): Geoclue-DEBUG: 00:50:09.851: Service not in use
+(geoclue:46858): Geoclue-DEBUG: 00:50:09.851: Number of connected clients: 0

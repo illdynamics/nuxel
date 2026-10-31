@@ -15,13 +15,13 @@
     <link rel="apple-touch-icon" href="icons/icon-192.png">
     <title>Nuxel</title>
     <link rel="stylesheet" href="../nuxel-common/theme.css?v=a81">
-    <link rel="stylesheet" href="css/style.css?v=p37000">
-    <link rel="stylesheet" href="css/launcher.css?v=p37000">
+    <link rel="stylesheet" href="css/style.css?v=p37000b">
+    <link rel="stylesheet" href="css/launcher.css?v=p37000b">
     <link rel="stylesheet" href="css/search.css">
-    <link rel="stylesheet" href="css/status-bar.css?v=p37000">
-    <link rel="stylesheet" href="css/home-settings.css?v=p37000">
+    <link rel="stylesheet" href="css/status-bar.css?v=p44000">
+    <link rel="stylesheet" href="css/home-settings.css?v=p37000c">
     <link rel="stylesheet" href="css/widgets.css?v=a81">
-    <link rel="stylesheet" href="css/lockscreen.css?v=p37000">
+    <link rel="stylesheet" href="css/lockscreen.css?v=p37000b">
     <link rel="preload" as="image" href="assets/nuxel-preload-cover.jpg">
     <script>
     // PWNAGE-36000: in phone boot mode the separate mpv preloading-screen
@@ -49,12 +49,11 @@
          reports its first presented frame, or by the bounded 15 s fail-open
          timer. -->
     <div id="preload-cover" aria-hidden="true"></div>
-    <!-- Boot animation splash (nuxel-boot-animation.mp4) — shown while the
-         home PWA boots; faded out by js/app.js once the app is ready. -->
-    <div id="boot-splash" aria-hidden="true">
-        <video id="boot-splash-video" src="assets/nuxel-boot-animation.mp4"
-               muted autoplay playsinline loop preload="auto"></video>
-    </div>
+    <!-- PWNAGE-43000: no second HTML boot animation.  The initramfs already
+         owns the real Nuxel MP4 before this document exists; leaving a
+         5.5 MB <video preload=auto> here made WebKit parse/fetch a surface it
+         then had to remove, delaying LOAD_FINISHED and risking a flash over
+         the launcher.  The preloading-cinema mpv overlay is the only video. -->
 
     <!-- Status Bar -->
     <!-- A54: one right-hand cluster owns signal/Wi-Fi/battery/percent.  Each
@@ -69,8 +68,14 @@
         <div class="status-right">
             <span id="status-signal" class="status-icon signal-icon"></span>
             <span id="status-wifi" class="status-icon wifi-icon"></span>
+            <span id="status-location" class="status-icon location-icon" hidden
+                  role="img" aria-label="Location off" title="Location off"></span>
             <span id="status-bluetooth" class="status-icon bluetooth-icon" hidden
                   role="img" aria-label="Bluetooth off"></span>
+            <span id="status-sound" class="status-icon sound-icon" data-mode="unknown"
+                  role="img" aria-label="Sound mode unknown" title="Sound mode unknown"></span>
+            <span id="status-usb" class="status-icon usb-icon" data-state="unknown" hidden
+                  role="img" aria-label="USB not connected"><span class="usb-label"></span></span>
             <span id="status-battery" class="status-icon battery-icon"></span>
             <span id="status-battery-pct" hidden></span>
         </div>
@@ -148,6 +153,28 @@
                 <span class="qs-label">Settings</span>
             </div>
         </div>
+        <button type="button" id="qs-expand-toggle" class="qs-expand-toggle" aria-expanded="false">More connection status</button>
+        <section id="qs-details" class="qs-details" hidden aria-label="Connection details">
+            <div class="qs-detail" id="qs-detail-charging" data-state="unknown">
+                <span class="qs-detail-icon charging-glyph"></span>
+                <span class="qs-detail-label">Power: checking…</span>
+            </div>
+            <div class="qs-detail" id="qs-detail-usb" data-state="unknown">
+                <span class="qs-detail-icon usb-glyph"></span>
+                <span class="qs-detail-label">USB: checking…</span>
+            </div>
+            <div class="qs-detail" id="qs-detail-file" data-state="inactive">
+                <span class="qs-detail-icon file-glyph"></span>
+                <span class="qs-detail-label">File transfer: inactive</span>
+            </div>
+            <div class="qs-detail" id="qs-detail-console" data-state="inactive">
+                <span class="qs-detail-icon console-glyph"></span>
+                <span class="qs-detail-label">Live console: inactive</span>
+            </div>
+            <div class="qs-detail qs-detail-wide" id="qs-detail-transports" data-state="unknown">
+                <span class="qs-detail-label">Console transports: unknown</span>
+            </div>
+        </section>
     </div>
 
     <!-- Recents -->
@@ -291,15 +318,16 @@
     </script>
     <script src="../nuxel-common/theme.js?v=a81"></script>
     <script src="../nuxel-common/haptics.js?v=a81"></script>
-    <script src="js/apps.js?v=p33000"></script>
+    <script src="../nuxel-common/geolocation.js?v=p42000"></script>
+    <script src="js/apps.js?v=p37000b"></script>
     <script src="js/layout-model.js"></script>
-    <script src="js/launcher.js?v=a81"></script>
-    <script src="js/status-bar.js?v=p37000"></script>
+    <script src="js/launcher.js?v=p37000b"></script>
+    <script src="js/status-bar.js?v=p37000b"></script>
     <script src="js/search.js"></script>
     <script type="module" src="../nuxel-common/bridge.js"></script>
     <script src="js/bridge.js?v=a63"></script>
     <script src="js/recents.js"></script>
-    <script src="js/qs.js?v=p37000"></script>
+    <script src="js/qs.js?v=p44000"></script>
     <!-- A32: host backend (settings/buttons/terminal) + status-bar safe zones.
          Both are inert without a host, so the VM/desktop launcher is unchanged. -->
     <script src="js/host-bridge.js"></script>
@@ -310,15 +338,15 @@
     <script src="js/osd.js?v=p37000"></script>
     <script src="js/bootlog.js?v=p37000"></script>
     <script src="js/touch-keyboard.js?v=a85-v072"></script>
-    <script src="js/lockscreen-indicators.js?v=a77.1"></script>
-    <script src="js/lockscreen.js?v=a85-v072"></script>
-    <script src="js/navigation.js?v=a86-fix38"></script>
+    <script src="js/lockscreen-indicators.js?v=p37000b"></script>
+    <script src="js/lockscreen.js?v=p37000e"></script>
+    <script src="js/navigation.js?v=p37000b"></script>
     <script src="js/gestures.js"></script>
     <script src="js/widgets.js?v=a81"></script>
-    <script src="js/home-settings.js?v=a85-v072"></script>
-    <script src="js/system-monitor.js?v=a47"></script>
+    <script src="js/home-settings.js?v=p37000d"></script>
+    <script src="js/system-monitor.js?v=p43000"></script>
     <script src="js/scroll-indicators.js"></script>
     <!-- A44: one-shot in-engine icon/WebKit/cache health report to nuxelDiag. -->
-    <script src="js/app.js?v=a86-fix38"></script>
+    <script src="js/app.js?v=p37000d"></script>
 </body>
 </html>

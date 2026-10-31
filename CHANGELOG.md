@@ -12,6 +12,189 @@ The canonical version lives in [`VERSION`](VERSION) and is bumped in lockstep
 across the shell apps, the PWA manifest, the device `APKBUILD`s, the VM tooling
 and the OTA builder (see *Versioning* below).
 
+## [v0.7.4-beta] - 2026-10-31 - *Release: working audio, near-complete GNSS, GTK/Flatpak apps and the PWNAGE-41000..44000 UI pass*
+
+**This is the release where the S10+ speaker became owner-confirmed audible.**
+It also ships the network-location repair, the PWNAGE-44000 Home/hardware UI
+work, and the first fully green CI run on `main` since 2026-10-30.
+
+### Audio — WORKING (owner-confirmed)
+
+- **The speaker is audible on the handset.** The root cause was the CS35L41
+  PLL reference: the device tree programs `ampclk=6.144 MHz`, but ABOX UAIF1
+  clocks the amplifiers at **1.536 MHz** (16-bit stereo 48 kHz), so the
+  protection DSP was locked to the wrong reference and never drove the
+  speaker. Four register writes on both amps (`0x40`/`0x41`) fix it:
+  `SP_RATE_CTRL 0x4804=0x1b`, `PLL_CLK_CTRL 0x2c04=0x370`,
+  `AMP_DIG_VOL_CTRL 0x6000=0x8000`, `AMP_OUT_MUTE 0x2024=0x0`.
+- **The fix persists across playback and reboot.** The old raw write was wiped
+  by the driver's own `cs35l41_pcm_mute(1)` on `hw_free`. The durable path is
+  the driver cache: `Left/Right Digital PCM Volume = 817` (maps to
+  `DIG_VOL_CTRL=0x8000`, 0 dB) and `AMP Mute = Unmuted`, which
+  `cs35l41_pcm_mute(0)` re-applies on every playback start.
+  `nuxel-audio-route.sh` now sets those controls on route application.
+- **New `nuxel-audio-warmup`** (`/usr/lib/nuxel/nuxel-audio-warmup`, with
+  `nuxel-cs35l41-apply.sh` as its compatibility entry point) fixes the
+  remaining swallow of the 366 ms `nuxel-pow.mp3` cue: it starts an inaudible
+  8 s 48 kHz stream at volume 0.0, repairs the driver cache, applies the proven
+  registers and waits for DAPM `SPEAKER=On` before the caller plays the real
+  cue. It is wired into the sound cue (boot cue + volume keys), Settings →
+  Test Audio (`AudioProvider.test_audio`) and the boot service drop-in
+  `nuxel-boot-sound.service.d/20-warmup-keepalive.conf`.
+- **Owner confirmations (2026-10-30, Notes title as the reply channel):**
+  manual warm-up + POW `works` at 21:56Z, production volume cue `works` at
+  21:58Z, Settings Test Audio `works` at 22:00Z, volume cue after a full
+  reboot `works` at 22:05Z and the frozen helper build `works` at 22:06Z.
+  Evidence: `out.md`, `/root/pwnage-40000/frozen-state/` on the device.
+- **Volume policy raised to the owner-approved ceiling.** The 25 %
+  low-volume bring-up cap is retired: ceiling **100 %**, first-boot default
+  **50 %**, live sink 50 %, `max_dB = 0.0`. The bridge reports
+  `volume_cap_percent=100`.
+- **Honest limits.** The raw I2C writer (`/usr/local/bin/nuxel-cs35.py`) is a
+  device-only deployment artifact and is deliberately **not** in a fresh
+  image; `nuxel-audio-warmup` logs that the raw patch was not applied and uses
+  the driver-cache 0 dB/unmute path. The PWNAGE-43000 variants (ABOX Sound
+  Type SPEAKER, PCM Source DSP, 55 % volume) were measured **silent** and were
+  rolled back to the known-good configuration — they are not claimed working.
+- Microphone capture, wired headset and USB-C audio remain **NOT STARTED**.
+
+### GNSS and location — ALMOST (network location working)
+
+- **Real network location is verified live.** GeoClue 2.8.2 returned
+  `51.4005, 5.47196 ±25000 m`, source `network_wifi`, after a full reboot.
+  Two root causes were fixed:
+  1. GeoClue queues `Manager.GetClient` until an **agent** is registered for
+     the calling UID. The agent cannot live in the bridge's single-threaded
+     D-Bus loop (`GetClient` deadlocks on the callback), so the new
+     `nuxel-geoclue-agent.service` runs as the `nuxel-bridge` user, exports
+     `org.freedesktop.GeoClue2.Agent`, authorizes only `org.nuxel.Bridge` and
+     re-registers after a GeoClue restart.
+  2. The Samsung 4.14 kernel denies `AF_INET` socket creation without
+     `CAP_NET_RAW`; GeoIP/DNS needs it, so
+     `geoclue.service.d/10-nuxel-network.conf` grants that single ambient
+     capability to GeoClue only.
+- **The bridge uses the real GeoClue API.** `DesktopId`,
+  `RequestedAccuracyLevel` and the read-only `Location` property are accessed
+  through `org.freedesktop.DBus.Properties` (there is no `GetLocation`
+  method), the `(seconds, microseconds)` timestamp is parsed, and the client
+  reconnects once after a provider restart.
+- **The PWA side is truthful.** `pwa/nuxel-common/geolocation.js` rejects
+  missing/NaN/out-of-range coordinates (never `0,0`), preserves a missing
+  provider timestamp instead of substituting `Date.now()`, leaves unknown
+  accuracy `null`, maps W3C options, and keeps one shared polling watch that
+  stops every timer when the last watch is cleared or policy goes OFF.
+  `maps-core.js`/`maps.js` distinguish GNSS, network and stale fixes; the
+  location tile and top-bar indicator are source-aware.
+- **`nuxel-gnss-diag.sh` and `configs/nuxel/gnss/gnss.json` are protocol-aware.**
+  `/dev/ttyBCM` is Broadcom BBD/LHD RPC, **not** NMEA; stock `gpsd` cannot
+  decode it. Stages are device node → module → firmware → vendor runtime →
+  userspace → stream → fix, and the first failing stage is reported.
+- **Still blocked:** satellite GNSS. The BCM4773 needs a compatible BBD
+  sensor-hub patch (`bcm_sensorhub_a1.patch`) and the Android/Bionic
+  `lhd`+`gpsd`+HIDL runtime; neither exists in the Nuxel rootfs. The verdict is
+  `BLOCKED_FIRMWARE`, `gnss_fix=false`, `fix_supported=false`. **No satellite
+  fix, coordinate, accuracy or satellite count is claimed.** An outdoor owner
+  test (`docs/beta-finalization/manual-proof/13-gps.md`) remains.
+
+### GTK applications — ALMOST
+
+- The GTK4/libadwaita sources (dialer, messages, contacts, settings,
+  permissions) build with `shell/nuxel-shell/meson.build`, and
+  `shell/nuxel-home-native` provides the GTK/Python Home twin.
+- The S10+ launcher is the WebKitGTK PWA (`nuxel-pwa-host`), not the GTK
+  shell; the release image does not compile the GTK apps into `/usr/bin`.
+- Dialer/messages remain limited by the modem: ModemManager finds no modem
+  object on this port, so calls/SMS are unavailable and the apps report that
+  honestly.
+- `nuxel-statusbar.c` (cairo/Pango, layer-shell, empty input region) is now
+  compiled into the image so a fullscreen native app keeps the Nuxel top strip.
+
+### Flatpak applications — ALMOST
+
+- The aarch64 Flatpak packages for Firefox, VLC, Signal and Stremio are
+  installed, **but Flatpak cannot launch on this kernel**: `CONFIG_USER_NS=n`,
+  so bubblewrap cannot create its user namespace.
+- Truthful per-app wrappers now exist and are installed:
+  `nuxel-flatpak-firefox` and `nuxel-flatpak-vlc` exec the genuine Fedora
+  aarch64 RPMs; `nuxel-flatpak-signal` and `nuxel-flatpak-stremio` exit 2 with
+  the `CONFIG_USER_NS=n` explanation instead of faking a launch.
+- The registry (revision 8) registers all eight installed native applications
+  (Firefox, VLC, Signal, Stremio, Archive Manager, Image Viewer, Document
+  Viewer, System Monitor) with their real install paths and
+  `shell/config/*.desktop` entries.
+
+### PWNAGE-44000 — Home, hardware controls, gallery and file sharing
+
+- **Home drag/reorder repaired.** One pointer state machine, primary-pointer
+  ownership, pointer capture on the stable `#app-grid`, a full model snapshot
+  (`_dragSnapshot`) taken before any render and restored on
+  `pointercancel`/`lostpointercapture`, live hit-testing, edge-hover page
+  switching, and a drop outside the grid that cancels instead of appending.
+  Tap-to-launch still requires release over the same icon.
+- **Notes and widgets.** One-based desktop mapping (schema-1 documents migrate
+  losslessly), a real sticky Notes widget with add/remove/select/open,
+  resize and long-press move, serialized saves through a revision queue, and
+  `nuxel:notes-updated` synchronisation with an already-open Notes app.
+- **15-entry power menu.** `tools/s10plus/a34/nuxel-button-fsm.h` now matches
+  the configured JSON/OSD (Back, Forward, Stop, Reload launcher included);
+  Recovery/Download remain refused with `NO_FLASH_INVARIANT`, and the reboot
+  gate, cooldown, hourly cap and rollback-path checks are untouched.
+- **Screenshot.** `tools/s10plus/a68/nuxel-screenshot.c` is compiled by the
+  image builder to `/usr/lib/nuxel/nuxel-screenshot` (the path
+  `nuxel-pwa-host` calls), captures through Wayland screencopy, and the host
+  publishes a real PNG into `/home/nuxel/Gallery` before raising a toast.
+- **Gallery thumbnails.** Server-side still generation
+  (`ffmpeg` → `mpv` → GStreamer, argv + `shell=False` + hard timeouts) is
+  cached by path/size/mtime and served by `storage.thumbnail`; the grid uses
+  one shared `IntersectionObserver` instead of a `<video>` per cell.
+- **Files and Bluetooth send.** Delegated listeners, `DocumentFragment`
+  batches and stale-render tokens (measured 1000-entry p95 59.74 ms → 34.27
+  ms), plus a Send flow over BlueZ `org.bluez.obex` ObjectPush1 with
+  traversal/symlink/`>20 files`/`>512 MB` guards and honest completion states.
+- **Flashlight.** One owner (`flashlight_provider.py`) writes the real
+  `torch-sec1` brightness with a 60 s cap, explicit OFF, camera arbitration
+  and thermal guard, reporting `NOT_SUPPORTED_ON_DEVICE`/`BLOCKED_CAMERA`/
+  `THERMAL_LIMIT` instead of a fake ON.
+- **Status truth.** Location, sound mode and compact USB (`file`/`term`/
+  `chrg`) cells, a charging-only lightning bolt, and expanded Quick Settings
+  for charging/external power, USB host, file transfer and live console.
+
+### Build and CI — main is green again
+
+- **`nuxel-boot-sound.service` gates on the live route state again.** The
+  `v0.2.1` merge (`e68958d`) replaced `ConditionPathExists=/run/nuxel-audio-route.state`
+  with the player asset alone, which broke the A40 contract assertion and kept
+  the S10+ regression step red on every `main` run since 2026-10-30. The unit
+  now carries the early state gate as well as the cue's own live
+  `nuxel-audio-route.sh --check`.
+- **Stale launcher contract corrected.** `test_launcher_contract.py` still
+  looked for the retired per-drag `layoutBefore:`/`hiddenBefore:` fields; it
+  now asserts the shipped `_dragSnapshot` model (layout, hidden set, cancel
+  restore) so the test guards the code that exists instead of a previous
+  implementation.
+- **Registry drift fixed.** `apps.js` `NUXEL_REGISTRY_VERSION`,
+  `manifest.json` `registry_version` and the canonical registry now agree at
+  revision 8; the verifier's native-entry rule accepts an installed package
+  with a real desktop entry instead of demanding a repository source tree for
+  RPM/Flatpak applications.
+- **Fresh images carry the new runtime.** The rootfs builder now installs
+  `python3-dbus`/`python3-gobject` (the bridge and GeoClue agent import them
+  unconditionally), `nuxel-audio-warmup`, `nuxel-cs35l41-apply.sh`, the
+  8 s silence asset, the boot-sound warm-up drop-in, `nuxel-gps-status`,
+  `nuxel-audio-status`, the eight desktop entries, the GeoClue agent unit and
+  its `CAP_NET_RAW` drop-in, and enables the agent.
+- **Verification:** local runs of the CI steps are green — libinput shim,
+  A34, A33 touch quick gate, A40 (metrics + launcher contract), system
+  indicators, A45 lockscreen indicators (Python + node), `pwnage30000`
+  (21 passed), `pwnage44000` (full gate), app registry (0 problems),
+  service graph (0 problems), boot-surface contract, A72 location/maps
+  (30 passed), `pwnage42000` GNSS provider + geolocation shim, capability
+  manifest (VALID), and `verify-installed-image.py` (PASS).
+- **Whole-repo lockstep bump to `v0.7.4-beta`** across `VERSION`, device
+  `APKBUILD`s, PWA/bridge manifests, bridge/notification/portal services,
+  systemd pins, shell apps, OTA/VM tooling and documentation. Launcher cache:
+  `v66-v074-release`.
+
 ## [v0.2.1] - 2026-10-30 - *Feature truth, confirmed Bluetooth and near-complete audio*
 
 - **Bluetooth is confirmed working on the S10+.** `CONFIG_BT_HCIUART`/H4 plus

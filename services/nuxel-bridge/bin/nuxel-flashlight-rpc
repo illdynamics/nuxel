@@ -1,0 +1,41 @@
+#!/usr/bin/env python3
+"""Relay a hardware-button flashlight request to the ONE privileged owner.
+
+The button manager never writes an LED node.  It asks nuxel-pwa-host, which
+runs this tiny client; the HTTP bridge's in-process flashlight provider is the
+only process that writes /sys/class/leds/*/brightness.  No shell is involved.
+"""
+import json
+import os
+import sys
+import urllib.request
+
+
+def main():
+    verb = sys.argv[1] if len(sys.argv) > 1 else "toggle"
+    if verb not in ("toggle", "on", "off", "status"):
+        print(json.dumps({"success": False, "error": "invalid verb"}))
+        return 2
+    port = os.environ.get("NUXEL_HTTP_PORT", "8080")
+    body = json.dumps({
+        "app_id": "org.nuxel.Home",
+        "namespace": "flashlight",
+        "verb": verb,
+        "params": {"requested_by": "hardware-button"},
+    }).encode()
+    req = urllib.request.Request(
+        "http://127.0.0.1:%s/api/v1/rpc" % port, data=body,
+        headers={"Content-Type": "application/json"}, method="POST")
+    try:
+        with urllib.request.urlopen(req, timeout=5) as r:
+            out = json.loads(r.read().decode() or "{}")
+    except Exception as exc:  # noqa: BLE001
+        print(json.dumps({"success": False, "state": "UNKNOWN", "error": str(exc)}))
+        return 1
+    result = out.get("result", out)
+    print(json.dumps(result, sort_keys=True))
+    return 0 if result.get("success") else 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())

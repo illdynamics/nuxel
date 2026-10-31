@@ -1,0 +1,112 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+GPID=46365
+=== call ===
+rc=124
+=== ss unix ===
+u_str ESTAB  0      0                                                 * 150921            * 0    users:(("geoclue",pid=46367,fd=5))                                                                                                                                                                                                                                     
+=== ss all ===
+nl    UNCONN 0      0                                              rtnl:geoclue/46367                        *                                                                                                                                                                                                                                                                              
+u_str ESTAB  0      0                                                 * 150921                              * 0      users:(("geoclue",pid=46367,fd=5))                                                                                                                                                                                                                                     
+=== lsof net ===
+=== debug log ===
+(geoclue:46367): Geoclue-DEBUG: 00:47:43.486: Loading config: /etc/geoclue/geoclue.conf
+(geoclue:46367): Geoclue-DEBUG: 00:47:43.486: GeoClue configuration:
+(geoclue:46367): Geoclue-DEBUG: 00:47:43.486: Allowed agents:
+(geoclue:46367): Geoclue-DEBUG: 00:47:43.486: 	geoclue-demo-agent
+(geoclue:46367): Geoclue-DEBUG: 00:47:43.486: 	gnome-shell
+(geoclue:46367): Geoclue-DEBUG: 00:47:43.486: 	io.elementary.desktop.agent-geoclue2
+(geoclue:46367): Geoclue-DEBUG: 00:47:43.486: 	sm.puri.Phosh
+(geoclue:46367): Geoclue-DEBUG: 00:47:43.487: 	lipstick
+(geoclue:46367): Geoclue-DEBUG: 00:47:43.487: Network NMEA source: disabled
+(geoclue:46367): Geoclue-DEBUG: 00:47:43.487: 	Network NMEA socket: none
+(geoclue:46367): Geoclue-DEBUG: 00:47:43.487: 3G source: disabled
+(geoclue:46367): Geoclue-DEBUG: 00:47:43.487: CDMA source: disabled
+(geoclue:46367): Geoclue-DEBUG: 00:47:43.487: Modem GPS source: disabled
+(geoclue:46367): Geoclue-DEBUG: 00:47:43.487: WiFi source: enabled
+(geoclue:46367): Geoclue-DEBUG: 00:47:43.487: 	WiFi locate URL: https://api.beacondb.net/v1/geolocate
+(geoclue:46367): Geoclue-DEBUG: 00:47:43.487: 	WiFi submit URL: https://api.beacondb.net/v2/geosubmit
+(geoclue:46367): Geoclue-DEBUG: 00:47:43.487: 	WiFi submit data: disabled
+(geoclue:46367): Geoclue-DEBUG: 00:47:43.487: 	WiFi submission nickname: geoclue
+(geoclue:46367): Geoclue-DEBUG: 00:47:43.487: Static source: disabled
+(geoclue:46367): Geoclue-DEBUG: 00:47:43.487: IP source: enabled
+(geoclue:46367): Geoclue-DEBUG: 00:47:43.487: 	IP method: ichnaea
+(geoclue:46367): Geoclue-DEBUG: 00:47:43.487: 	IP URL: (method default)
+(geoclue:46367): Geoclue-DEBUG: 00:47:43.487: 	IP accuracy: (method default)
+(geoclue:46367): Geoclue-DEBUG: 00:47:43.487: Compass: disabled
+(geoclue:46367): Geoclue-DEBUG: 00:47:43.487: Application configs:
+(geoclue:46367): Geoclue-DEBUG: 00:47:43.487: 	ID: geoclue-where-am-i
+(geoclue:46367): Geoclue-DEBUG: 00:47:43.487: 		Allowed: yes
+(geoclue:46367): Geoclue-DEBUG: 00:47:43.487: 		System: yes
+(geoclue:46367): Geoclue-DEBUG: 00:47:43.487: 		Users: all
+(geoclue:46367): Geoclue-DEBUG: 00:47:43.487: 	ID: geoclue-demo-agent
+(geoclue:46367): Geoclue-DEBUG: 00:47:43.487: 		Allowed: yes
+(geoclue:46367): Geoclue-DEBUG: 00:47:43.487: 		System: yes
+(geoclue:46367): Geoclue-DEBUG: 00:47:43.487: 		Users: all
+(geoclue:46367): Geoclue-DEBUG: 00:47:43.487: 	ID: lipstick
+(geoclue:46367): Geoclue-DEBUG: 00:47:43.487: 		Allowed: yes
+(geoclue:46367): Geoclue-DEBUG: 00:47:43.487: 		System: yes
+(geoclue:46367): Geoclue-DEBUG: 00:47:43.487: 		Users: all
+(geoclue:46367): Geoclue-DEBUG: 00:47:43.487: 	ID: firefox
+(geoclue:46367): Geoclue-DEBUG: 00:47:43.487: 		Allowed: yes
+(geoclue:46367): Geoclue-DEBUG: 00:47:43.487: 		System: no
+(geoclue:46367): Geoclue-DEBUG: 00:47:43.487: 		Users: all
+(geoclue:46367): Geoclue-DEBUG: 00:47:43.487: 	ID: epiphany
+(geoclue:46367): Geoclue-DEBUG: 00:47:43.487: 		Allowed: yes
+(geoclue:46367): Geoclue-DEBUG: 00:47:43.487: 		System: no
+(geoclue:46367): Geoclue-DEBUG: 00:47:43.487: 		Users: all
+(geoclue:46367): Geoclue-DEBUG: 00:47:43.487: 	ID: sm.puri.Phosh
+(geoclue:46367): Geoclue-DEBUG: 00:47:43.487: 		Allowed: yes
+(geoclue:46367): Geoclue-DEBUG: 00:47:43.487: 		System: yes
+(geoclue:46367): Geoclue-DEBUG: 00:47:43.487: 		Users: all
+(geoclue:46367): Geoclue-DEBUG: 00:47:43.487: 	ID: io.elementary.desktop.agent-geoclue2
+(geoclue:46367): Geoclue-DEBUG: 00:47:43.487: 		Allowed: yes
+(geoclue:46367): Geoclue-DEBUG: 00:47:43.487: 		System: yes
+(geoclue:46367): Geoclue-DEBUG: 00:47:43.487: 		Users: all
+(geoclue:46367): Geoclue-DEBUG: 00:47:43.487: 	ID: org.gnome.Shell
+(geoclue:46367): Geoclue-DEBUG: 00:47:43.487: 		Allowed: yes
+(geoclue:46367): Geoclue-DEBUG: 00:47:43.487: 		System: yes
+(geoclue:46367): Geoclue-DEBUG: 00:47:43.487: 		Users: all
+(geoclue:46367): Geoclue-DEBUG: 00:47:43.487: 	ID: gnome-color-panel
+(geoclue:46367): Geoclue-DEBUG: 00:47:43.487: 		Allowed: yes
+(geoclue:46367): Geoclue-DEBUG: 00:47:43.487: 		System: yes
+(geoclue:46367): Geoclue-DEBUG: 00:47:43.487: 		Users: all
+(geoclue:46367): Geoclue-DEBUG: 00:47:43.487: 	ID: gnome-datetime-panel
+(geoclue:46367): Geoclue-DEBUG: 00:47:43.487: 		Allowed: yes
+(geoclue:46367): Geoclue-DEBUG: 00:47:43.487: 		System: yes
+(geoclue:46367): Geoclue-DEBUG: 00:47:43.487: 		Users: all
+(geoclue:46367): GLib-GIO-DEBUG: 00:47:43.516: Failed to initialize portal (GNetworkMonitorPortal) for gio-network-monitor: Not using portals
+(geoclue:46367): GLib-GIO-DEBUG: 00:47:43.524: _g_io_module_get_default: Found default implementation networkmanager (GNetworkMonitorNM) for ‘gio-network-monitor’
+(geoclue:46367): GLib-GIO-DEBUG: 00:47:43.524: _g_io_module_get_default: Found default implementation dummy (GDummyProxyResolver) for ‘gio-proxy-resolver’
+(geoclue:46367): GLib-GIO-DEBUG: 00:47:43.532: lookup_by_name_with_flags_async: starting new lookup for api.beacondb.net with GTask 0x558d435500, LookupData 0x558d4568c0
+(geoclue:46367): GLib-GIO-DEBUG: 00:47:43.533: lookup_by_name_with_flags_async: starting new lookup for api.beacondb.net with GTask 0x558d457700, LookupData 0x558d456800
+(geoclue:46367): GLib-GIO-DEBUG: 00:47:43.534: lookup_by_name_with_flags_async: starting new lookup for api.beacondb.net with GTask 0x558d457ce0, LookupData 0x558d44e6b0
+(geoclue:46367): GLib-GIO-DEBUG: 00:47:43.538: lookup_by_name_with_flags_async: starting new lookup for api.beacondb.net with GTask 0x558d458070, LookupData 0x558d452250
+(geoclue:46367): GLib-GIO-DEBUG: 00:47:43.540: lookup_by_name_with_flags_async: starting new lookup for api.beacondb.net with GTask 0x558d453470, LookupData 0x558d4479c0
+(geoclue:46367): GLib-GIO-DEBUG: 00:47:43.540: lookup_by_name_with_flags_async: starting new lookup for api.beacondb.net with GTask 0x558d45c740, LookupData 0x558d45b5b0
+(geoclue:46367): GLib-GIO-DEBUG: 00:47:43.540: IPv6 DNS error: Error resolving “api.beacondb.net”: Temporary failure in name resolution
+(geoclue:46367): GLib-GIO-DEBUG: 00:47:43.540: IPv6 DNS error: Error resolving “api.beacondb.net”: Temporary failure in name resolution
+(geoclue:46367): GLib-GIO-DEBUG: 00:47:43.540: IPv4 DNS error: Error resolving “api.beacondb.net”: Name or service not known
+(geoclue:46367): Geoclue-DEBUG: 00:47:43.540: Locate URL not reachable, but Internet is available, overriding
+(geoclue:46367): Geoclue-DEBUG: 00:47:43.540: Network changed: Enabling locate URL queries
+(geoclue:46367): Geoclue-DEBUG: 00:47:43.540: Network changed: Refreshing
+(geoclue:46367): GLib-GIO-DEBUG: 00:47:43.542: IPv4 DNS error: Error resolving “api.beacondb.net”: Name or service not known
+(geoclue:46367): Geoclue-DEBUG: 00:47:43.542: Submit URL not reachable, but Internet is available, overriding
+(geoclue:46367): Geoclue-DEBUG: 00:47:43.542: Network changed: Enabling submit URL queries
+(geoclue:46367): GLib-GIO-DEBUG: 00:47:43.542: IPv6 DNS error: Error resolving “api.beacondb.net”: Temporary failure in name resolution
+(geoclue:46367): GLib-GIO-DEBUG: 00:47:43.542: IPv4 DNS error: Error resolving “api.beacondb.net”: Name or service not known
+(geoclue:46367): Geoclue-DEBUG: 00:47:43.542: Locate URL not reachable, but Internet is available, overriding
+(geoclue:46367): Geoclue-DEBUG: 00:47:43.542: Network changed: Enabling locate URL queries
+(geoclue:46367): Geoclue-DEBUG: 00:47:43.542: Network changed: Refreshing
+(geoclue:46367): Geoclue-DEBUG: 00:47:43.542: Available accuracy level from GClueIp: 4
+(geoclue:46367): Geoclue-DEBUG: 00:47:43.551: WiFi device 'wlan1' added.
+(geoclue:46367): Geoclue-DEBUG: 00:47:43.551: Available accuracy level from GClueWifi: 6
+(geoclue:46367): Geoclue-DEBUG: 00:47:44.982: Client `:1.170` waiting for agent for user ID '0'
+(geoclue:46367): Geoclue-DEBUG: 00:47:49.961: Client `:1.170` vanished before agent appeared

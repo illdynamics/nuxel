@@ -134,7 +134,7 @@ policy_int() {
   [ -n "$v" ] || v="$dflt"
   printf '%s' "$v"
 }
-CAP_PCT="$(policy_int volume_cap_percent 25)"
+CAP_PCT="$(policy_int volume_cap_percent 100)"
 TONE_PCT="$(policy_int first_tone_default_percent 8)"
 
 # ---------------------------------------------------------------- card / PCM
@@ -515,7 +515,7 @@ cmd_safe_volume() {
   fi
   case "$want" in ''|*[!0-9]*) say "usage: $SELF safe-volume [0-100]"; return 2 ;; esac
   if [ "$want" -gt "$CAP_PCT" ]; then
-    say "REFUSED: $want% exceeds the low-volume cap ${CAP_PCT}% (configs/nuxel/audio/audio.json)."
+    say "REFUSED: $want% exceeds the policy ceiling ${CAP_PCT}% (configs/nuxel/audio/audio.json)."
     say "         Raise the cap in the policy deliberately, or change it on the bench — not here."
     return 1
   fi

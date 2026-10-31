@@ -1,0 +1,6 @@
+#!/bin/sh
+# PWNAGE-43000: the aarch64 Flathub Firefox is installed, but this 4.14
+# Exynos kernel has CONFIG_USER_NS=n, so bubblewrap/Flatpak cannot create its
+# user namespace.  Launch the genuine Fedora aarch64 Firefox RPM instead (same
+# application, native package, launched as the session user by the bridge).
+exec /usr/bin/firefox "$@"

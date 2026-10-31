@@ -1,0 +1,87 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+=== boot identity ===
+2026-10-31T01:19:57+01:00
+6423ccef-4598-41ea-9a9e-4337dafa2d1f
+Linux 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 4.14.253-gf7194c1d15ed-dirty #8 SMP PREEMPT Wed Oct 28 14:55:36 CET 2026 aarch64 GNU/Linux
+ 01:19:57 up 0 min,  0 user,  load average: 7.75, 1.93, 0.65
+=== services ===
+active
+active
+active
+active
+enabled
+enabled
+enabled
+enabled
+=== policy at boot ===
+{"enabled": false, "updated": 1793405860.9917078}
+=== rail at boot ===
+0
+=== bridge sandbox ===
+CapabilityBoundingSet=
+User=nuxel-bridge
+PrivateDevices=yes
+=== agent registration log ===
+Oct 31 01:09:42 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 python3[51804]: 2026-10-31 01:09:42,682 [INFO] nuxel-geoclue-agent: GeoClue agent registered for org.nuxel.Bridge
+Oct 31 01:11:00 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 python3[51804]: 2026-10-31 01:11:00,666 [INFO] nuxel-geoclue-agent: GeoClue exited; agent will re-register on next start
+Oct 31 01:11:07 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 python3[51804]: 2026-10-31 01:11:07,301 [INFO] nuxel-geoclue-agent: GeoClue appeared (:1.239); registering agent
+Oct 31 01:11:08 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 python3[51804]: 2026-10-31 01:11:08,650 [INFO] nuxel-geoclue-agent: registering GeoClue agent for org.nuxel.Bridge
+Oct 31 01:11:08 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 python3[51804]: 2026-10-31 01:11:08,685 [INFO] nuxel-geoclue-agent: GeoClue agent registered for org.nuxel.Bridge
+Oct 31 01:16:11 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 python3[51804]: 2026-10-31 01:16:11,668 [INFO] nuxel-geoclue-agent: GeoClue exited; agent will re-register on next start
+Oct 31 01:16:23 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 python3[51804]: 2026-10-31 01:16:23,869 [INFO] nuxel-geoclue-agent: GeoClue appeared (:1.255); registering agent
+Oct 31 01:16:24 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 python3[51804]: 2026-10-31 01:16:24,651 [INFO] nuxel-geoclue-agent: registering GeoClue agent for org.nuxel.Bridge
+Oct 31 01:16:24 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 python3[51804]: 2026-10-31 01:16:24,683 [INFO] nuxel-geoclue-agent: GeoClue agent registered for org.nuxel.Bridge
+Oct 31 01:18:41 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 python3[51804]: 2026-10-31 01:18:41,712 [INFO] nuxel-geoclue-agent: GeoClue exited; agent will re-register on next start
+Oct 31 01:19:02 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping nuxel-geoclue-agent.service - Nuxel GeoClue2 agent for the nuxel-bridge UID...
+Oct 31 01:19:02 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-geoclue-agent.service: Deactivated successfully.
+Oct 31 01:19:02 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopped nuxel-geoclue-agent.service - Nuxel GeoClue2 agent for the nuxel-bridge UID.
+-- Boot 6423ccef459841ea9a9e4337dafa2d1f --
+Oct 31 01:19:26 fedora systemd[1]: Started nuxel-geoclue-agent.service - Nuxel GeoClue2 agent for the nuxel-bridge UID.
+Oct 31 01:19:27 fedora python3[5335]: 2026-10-31 01:19:27,656 [INFO] nuxel-geoclue-agent: registering GeoClue agent for org.nuxel.Bridge
+Oct 31 01:19:27 fedora python3[5335]: 2026-10-31 01:19:27,663 [INFO] nuxel-geoclue-agent: GeoClue agent registered for org.nuxel.Bridge
+Oct 31 01:19:30 fedora python3[5335]: 2026-10-31 01:19:30,735 [INFO] nuxel-geoclue-agent: GeoClue exited; agent will re-register on next start
+Oct 31 01:19:30 fedora python3[5335]: 2026-10-31 01:19:30,905 [INFO] nuxel-geoclue-agent: GeoClue appeared (:1.30); registering agent
+Oct 31 01:19:32 fedora python3[5335]: 2026-10-31 01:19:32,654 [INFO] nuxel-geoclue-agent: registering GeoClue agent for org.nuxel.Bridge
+Oct 31 01:19:32 fedora python3[5335]: 2026-10-31 01:19:32,659 [WARNING] nuxel-geoclue-agent: AddAgent failed: org.freedesktop.DBus.Error.AccessDenied: org.nuxel.Bridge not allowed to act as agent
+=== initial location status (must not start GeoClue) ===
+{
+  "state": "disabled",
+  "enabled": false,
+  "provider_ready": false,
+  "provider_available": true,
+  "detail": "GeoClue2 is installed but idle; an authorized acquisition will start it (provider_ready=false)",
+  "latitude": null,
+  "longitude": null
+}
+geoclue=active
+=== enable + acquire network location after reboot ===
+{
+  "state": "unavailable",
+  "enabled": true,
+  "provider_ready": false,
+  "fix_source": null,
+  "fix_source_detail": null,
+  "fix_kind": null,
+  "gnss_fix": false,
+  "network_fix": false,
+  "accuracy": null,
+  "latitude": null,
+  "longitude": null,
+  "last_fix_timestamp": null,
+  "active_clients": 0
+}
+=== stop and restore privacy OFF ===
+{"enabled": false, "updated": 1793406018.4109085}
+0
+=== diagnostic verdict ===
+{"device":"beyond2lte","tool":"nuxel-gnss-diag","protocol":"bbd","stages":{"device_node":"node:/dev/ttyBCM","module":"bound:/sys/bus/spi/drivers/brcm gps spi/spi17.0","firmware":"loader-only:/dev/bbd_patch","vendor_runtime":"missing:lhd,gpsd,android_linker,lhd_config,gps_config,gnss_hidl_impl","userspace":"no-native-bbd-lhd-decoder","stream":"bbd-transport:/dev/ttyBCM"},"first_failing_stage":"firmware","state":"BLOCKED_FIRMWARE","fix_verified":false,"nmea_stream":false,"owner_test":"docs/beta-finalization/manual-proof/13-gps.md"}
+=== gps units ===
+none

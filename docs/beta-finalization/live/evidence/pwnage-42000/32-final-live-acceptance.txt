@@ -1,0 +1,130 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+=== policy before ===
+{"enabled": true, "updated": 1793405042.719472}
+=== ensure OFF via manage ===
+{
+  "success": true,
+  "state": "disabled",
+  "enabled": false,
+  "provider_ready": false,
+  "provider_available": true,
+  "detail": "GeoClue2 is installed but idle; an authorized acquisition will start it (provider_ready=false)",
+  "fix_source": null,
+  "fix_source_detail": null,
+  "fix_kind": null,
+  "gnss_fix": false,
+  "network_fix": false,
+  "accuracy": null,
+  "latitude": null,
+  "longitude": null,
+  "last_fix_timestamp": null,
+  "last_fix_age_s": null,
+  "active_clients": 0,
+  "acquiring": false
+}
+=== rail after OFF ===
+0
+=== redacted status for app WITHOUT location:read ===
+{
+  "success": true,
+  "state": "disabled",
+  "enabled": false,
+  "provider_ready": false,
+  "provider_available": true,
+  "detail": "GeoClue2 is installed but idle; an authorized acquisition will start it (provider_ready=false)",
+  "fix_source": null,
+  "fix_source_detail": null,
+  "fix_kind": null,
+  "gnss_fix": false,
+  "network_fix": false,
+  "accuracy": null,
+  "latitude": null,
+  "longitude": null,
+  "last_fix_timestamp": null,
+  "last_fix_age_s": null,
+  "active_clients": 0,
+  "acquiring": false
+}
+=== position request without read (must deny) ===
+s "{\"success\": false, \"error\": \"Location is disabled (global policy)\", \"error_code\": \"LOCATION_DISABLED\", \"state\": \"disabled\"}"
+=== enable via manage ===
+=== acquire via read (Maps) ===
+{
+  "success": true,
+  "state": "fixed",
+  "enabled": true,
+  "provider_ready": true,
+  "provider_available": true,
+  "detail": null,
+  "fix_source": "network_wifi",
+  "fix_source_detail": "ipf fallback (from WiFi data)",
+  "fix_kind": "network",
+  "gnss_fix": false,
+  "network_fix": true,
+  "accuracy": 25000.0,
+  "latitude": 51.4005,
+  "longitude": 5.47196,
+  "last_fix_timestamp": 1793405706.0,
+  "last_fix_age_s": 5.254812479019165,
+  "active_clients": 1,
+  "acquiring": false
+}
+=== GetLocation canonical response ===
+s "{\"success\": true, \"latitude\": 51.4005, \"longitude\": 5.47196, \"accuracy\": 25000.0, \"timestamp\": 1793405706.0, \"source\": \"network_wifi\", \"source_detail\": \"ipf fallback (from WiFi data)\", \"kind\": \"network\", \"gnss\": false, \"network\": true, \"state\": \"fixed\"}"
+=== stop lease, wait for GeoClue idle stop ===
+geoclue=inactive
+=== status after idle (no reconnect) ===
+{
+  "success": true,
+  "state": "no_fix",
+  "enabled": true,
+  "provider_ready": false,
+  "provider_available": true,
+  "detail": "GeoClue2 is installed but idle; an authorized acquisition will start it (provider_ready=false)",
+  "fix_source": null,
+  "fix_source_detail": null,
+  "fix_kind": null,
+  "gnss_fix": false,
+  "network_fix": false,
+  "accuracy": null,
+  "latitude": null,
+  "longitude": null,
+  "last_fix_timestamp": null,
+  "last_fix_age_s": null,
+  "active_clients": 0,
+  "acquiring": false
+}
+geoclue=inactive
+=== final privacy OFF ===
+{"enabled": false, "updated": 1793405776.6208158}
+{
+  "success": true,
+  "state": "disabled",
+  "enabled": false,
+  "provider_ready": false,
+  "provider_available": true,
+  "detail": "GeoClue2 is installed but idle; an authorized acquisition will start it (provider_ready=false)",
+  "fix_source": null,
+  "fix_source_detail": null,
+  "fix_kind": null,
+  "gnss_fix": false,
+  "network_fix": false,
+  "accuracy": null,
+  "latitude": null,
+  "longitude": null,
+  "last_fix_timestamp": null,
+  "last_fix_age_s": null,
+  "active_clients": 0,
+  "acquiring": false
+}
+rail=0
+=== units with GPS in name / active ===
+no gps/gnss service unit

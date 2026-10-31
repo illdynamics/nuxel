@@ -50,7 +50,7 @@
             console.warn('[Nuxel] Missing/corrupt dock artwork:', artwork);
         };
         image.onload = () => docks.forEach(dock => { if (dock.dataset.background === value) delete dock.dataset.backgroundFallback; });
-        image.src = artwork + '?v=0.2.1';
+        image.src = artwork + '?v=0.7.4-beta';
         document.dispatchEvent(new CustomEvent('nuxel:dock-background', {detail:{id:value,path:artwork}}));
     }
     const DEFAULT_WALLPAPER = "url('assets/nuxel-background.png')";
@@ -62,6 +62,38 @@
     ];
     const read = () => { try { return JSON.parse(localStorage.getItem(KEY) || '{}'); } catch (e) { return {}; } };
     const save = data => { try { localStorage.setItem(KEY, JSON.stringify(data)); } catch (e) {} };
+    const widgetDesktopDefault = () => {
+        // Widget documents store ONE-BASED desktop numbers. Prefer desktop 2
+        // when it exists (the owner's requested sticky-note desktop); otherwise
+        // use the desktop currently in front of the user.
+        const launcher = global.launcher;
+        const count = launcher && launcher.settings ? Number(launcher.settings.desktopCount) || 1 : 1;
+        if (count >= 2) return 2;
+        return Math.max(1, (launcher ? Number(launcher.currentPage) || 0 : 0) + 1);
+    };
+    const refreshWidgetControls = (panel) => {
+        if (!global.NuxelWidgets) return;
+        const notes = global.NuxelWidgets.notes();
+        const sel = panel.querySelector('[data-widget-note]');
+        const add = panel.querySelector('[data-add-notes-widget]');
+        if (sel) {
+            const keep = sel.value;
+            sel.replaceChildren();
+            const auto = document.createElement('option');
+            auto.value = ''; auto.textContent = 'Most recent note';
+            sel.appendChild(auto);
+            notes.forEach(n => {
+                const o = document.createElement('option');
+                o.value = n.id; o.textContent = n.title || 'Untitled';
+                sel.appendChild(o);
+            });
+            if (notes.some(n => n.id === keep)) sel.value = keep;
+        }
+        if (add) {
+            add.disabled = notes.length === 0;
+            add.textContent = notes.length ? 'Add Notes widget' : 'Add Notes widget (no notes yet)';
+        }
+    };
     function apply() {
         const data = read();
         document.body.style.backgroundImage = data.wallpaper || DEFAULT_WALLPAPER;
@@ -80,6 +112,39 @@
         const launcher = global.launcher;
         const settings = launcher ? launcher.settings : { gridColumns: 4, gridRows: 5, dockColumns: 5 };
         const appearance = read();
+        // PWNAGE-43000: this panel is static once built.  Rebuilding it on
+        // every open re-decoded the dock artwork and reparsed every control,
+        // which made Home Settings feel sluggish.  Hydrate the existing
+        // controls instead; the expensive preview images stay decoded.
+        if (panel.dataset.nuxelBuilt === '1' && panel.firstElementChild) {
+            const setVal = (sel, val) => { const e = panel.querySelector(sel); if (e) e.value = String(val); };
+            const setChk = (sel, val) => { const e = panel.querySelector(sel); if (e) e.checked = !!val; };
+            setVal('[data-grid-columns]', settings.gridColumns);
+            setVal('[data-grid-rows]', settings.gridRows);
+            setVal('[data-desktop-count]', settings.desktopCount || 2);
+            setChk('[data-home-locked]', settings.homeLocked === true);
+            setVal('[data-battery-style]', appearance.batteryStyle || 'inside');
+            setChk('[data-system-monitor-enabled]', appearance.systemMonitorEnabled !== false);
+            setVal('[data-system-monitor-interval]', Number(appearance.systemMonitorInterval || 3));
+            setChk('[data-system-monitor-detailed]', appearance.systemMonitorDetailed !== false);
+            const wd = panel.querySelector('[data-widget-desktop]');
+            if (wd) { wd.min = '1'; wd.max = String(settings.desktopCount || 2); }
+            refreshWidgetControls(panel);
+            const lockSel = panel.querySelector('[data-lock-after-off]');
+            const host = global.NuxelHost;
+            if (lockSel && host && host.available && typeof host.configGet === 'function') {
+                host.configGet('display-timeout').then((r) => {
+                    try {
+                        const doc = JSON.parse((r && r.text) || '{}');
+                        const v = String(doc.lock_after_off_ms == null ? 0 : doc.lock_after_off_ms);
+                        if ([...lockSel.options].some(o => o.value === v)) lockSel.value = v;
+                    } catch (e) {}
+                }).catch(() => {});
+            }
+            panel.hidden = false;
+            try { document.dispatchEvent(new CustomEvent('nuxel:overlay-changed')); } catch (e) {}
+            return;
+        }
         const selectedDock = dockChoice(appearance.dockBackground);
         const widgetState = global.NuxelWidgets ? global.NuxelWidgets.state() : { enabled: true, items: [] };
         const widgetsEnabled = widgetState.enabled !== false;
@@ -114,16 +179,18 @@
             '<p class="home-setting-hint">3 seconds is recommended. One-second updates can use more battery.</p></div>' +
             '<h3>Widgets</h3>' +
             '<div class="home-setting-row"><label>Enable widgets <input type="checkbox" data-widgets-enabled' + (widgetsEnabled ? ' checked' : '') + '></label>' +
-            '<label>Desktop <input type="number" min="1" max="8" value="2" data-widget-desktop></label></div>' +
+            '<label>Desktop (1-based) <input type="number" min="1" max="' + (settings.desktopCount || 2) + '" value="' + widgetDesktopDefault() + '" data-widget-desktop></label></div>' +
             '<div class="home-setting-row"><label>Note <select data-widget-note>' + noteOptions + '</select></label></div>' +
-            '<div class="row"><button type="button" data-add-notes-widget>Add Notes widget</button></div>' +
+            '<div class="row"><button type="button" data-add-notes-widget' + (widgetNotes.length ? '' : ' disabled') + '>' + (widgetNotes.length ? 'Add Notes widget' : 'Add Notes widget (no notes yet)') + '</button></div>' +
             '<p class="home-setting-hint">The Notes widget shows a chosen note on the selected desktop and opens the full editor when tapped.</p>' +
             '<h3>Lock &amp; display</h3><div class="home-setting-row"><label>Lock after screen turns off <select data-lock-after-off>' +
             [['0','Immediately'],['5000','After 5 seconds'],['15000','After 15 seconds'],['30000','After 30 seconds'],['60000','After 1 minute'],['300000','After 5 minutes']].map(v => '<option value="' + v[0] + '">' + v[1] + '</option>').join('') +
             '</select></label></div>' +
             '<p class="home-setting-hint">Immediately is the secure default. A delay keeps the session briefly while the panel is off.</p>' +
             '<footer><button type="button" data-home-restore>Restore hidden apps</button><button type="button" class="reset-home" data-home-reset>Reset launcher layout</button></footer></div>';
+        panel.dataset.nuxelBuilt = '1';
         panel.hidden = false;
+        try { document.dispatchEvent(new CustomEvent('nuxel:overlay-changed')); } catch (e) {}
         panel.querySelector('[data-home-close]').onclick = close;
         panel.querySelectorAll('[data-wallpaper]').forEach(button => button.onclick = () => {
             const data = read(); data.wallpaper = presets[Number(button.dataset.wallpaper)][1]; save(data); apply();
@@ -190,31 +257,53 @@
         panel.querySelector('[data-home-restore]').onclick = () => { if (launcher) launcher.restoreHiddenApps(); };
         panel.querySelector('[data-home-reset]').onclick = () => { if (launcher) launcher.resetOrder(); close(); };
 
-        if (global.NuxelWidgets) {
+        // Bind the widget controls and the notes listener exactly once.  The
+        // previous code re-added `nuxel:notes-updated` on every open, so
+        // repeated Home Settings visits accumulated handlers.
+        if (global.NuxelWidgets && panel.dataset.widgetsBound !== '1') {
+            panel.dataset.widgetsBound = '1';
+            refreshWidgetControls(panel);
             panel.querySelector('[data-widgets-enabled]').onchange = event => {
                 global.NuxelWidgets.setEnabled(event.target.checked);
             };
             panel.querySelector('[data-add-notes-widget]').onclick = () => {
                 var noteSel = panel.querySelector('[data-widget-note]');
                 var noteId = noteSel ? noteSel.value : '';
-                var desktop = Number(panel.querySelector('[data-widget-desktop]').value || 2);
-                var item = global.NuxelWidgets.add('notes', { desktop: desktop, noteId: noteId });
-                if (item) {
-                    var note = noteId ? (global.NuxelWidgets.notes().find(n => n.id === noteId)) : null;
-                    if (!note) note = global.NuxelWidgets.notes()[0];
-                    if (!note) {
-                        global.NuxelWidgets.notes; // noop to keep linters honest
-                        alert('No note exists yet. Create one in the Notes app first.');
-                    }
+                var notes = global.NuxelWidgets.notes();
+                if (!noteId && notes.length) noteId = notes[0].id;
+                if (!noteId) {
+                    alert('No note exists yet. Create one in the Notes app first.');
+                    return;
                 }
+                var desktopEl = panel.querySelector('[data-widget-desktop]');
+                var desktop = Number(desktopEl && desktopEl.value ? desktopEl.value : widgetDesktopDefault());
+                var maxDesktop = settings.desktopCount || 2;
+                if (!Number.isInteger(desktop) || desktop < 1 || desktop > maxDesktop) {
+                    alert('Choose a desktop from 1 to ' + maxDesktop + '.');
+                    return;
+                }
+                var item = global.NuxelWidgets.add('notes', { desktop: desktop, noteId: noteId });
+                if (!item) {
+                    alert('That note no longer exists. Choose another note.');
+                    return;
+                }
+                // The widget is persisted for its own desktop; if the user is
+                // not there, move Home to it so the result is visible at once.
+                if (global.launcher && global.launcher.currentPage !== desktop - 1) {
+                    global.launcher.currentPage = desktop - 1;
+                    global.launcher._renderAppGrid();
+                    global.NuxelWidgets.renderPage(global.launcher.currentPage);
+                }
+                refreshWidgetControls(panel);
             };
+            document.addEventListener('nuxel:notes-updated', () => refreshWidgetControls(panel));
         }
     }
     function options(min, max, selected) {
         let out = ''; for (let i = min; i <= max; i++) out += '<option value="' + i + '"' + (i === selected ? ' selected' : '') + '>' + i + '</option>';
         return out;
     }
-    function close() { const panel = document.getElementById('home-settings'); if (panel) panel.hidden = true; }
+    function close() { const panel = document.getElementById('home-settings'); if (panel) panel.hidden = true; try { document.dispatchEvent(new CustomEvent('nuxel:overlay-changed')); } catch (e) {} }
     function bindLongPress() {
         let timer = null, start = null;
         document.addEventListener('pointerdown', event => {
@@ -226,6 +315,25 @@
         document.addEventListener('pointermove', event => { if (start && event.pointerId === start.id && (Math.abs(event.clientX - start.x) > 8 || Math.abs(event.clientY - start.y) > 8)) { clearTimeout(timer); timer = null; } });
         ['pointerup', 'pointercancel'].forEach(type => document.addEventListener(type, () => { clearTimeout(timer); timer = null; start = null; }));
     }
-    global.NuxelHomeSettings = { open, close, apply, dockChoice, dockPaths: DOCKS };
+    // PWNAGE-37000B: build the panel once during an idle slice so the first
+    // owner tap is not charged the 120-170 ms DOM+image-decode cost.  open()
+    // and close() are called in the SAME task, so no frame can paint the
+    // priming panel; the cached hydration path is left untouched.
+    function prime() {
+        try {
+            const panel = document.getElementById('home-settings');
+            if (panel && panel.dataset.nuxelBuilt === '1') return false;
+            open();
+            // Pay the one-time panel layout now; it is still hidden immediately
+            // afterwards, so this cannot flash over the launcher.
+            void panel.offsetHeight;
+            close();
+            return true;
+        } catch (e) {
+            try { close(); } catch (e2) {}
+            return false;
+        }
+    }
+    global.NuxelHomeSettings = { open, close, apply, prime, dockChoice, dockPaths: DOCKS };
     document.addEventListener('DOMContentLoaded', () => { apply(); bindLongPress(); });
 })(window);

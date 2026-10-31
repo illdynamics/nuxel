@@ -40,6 +40,7 @@ def test_default_tile_source_matches_shipped_contract():
 def test_maps_page_loads_shared_core_and_shows_attribution():
     html = read("pwa/nuxel-apps/maps/index.html")
     assert "nuxel-common/maps-core.js" in html
+    assert "nuxel-common/geolocation.js" in html
     assert 'id="tile-badge"' in html
     assert 'class="attribution"' in html
     assert "OpenStreetMap contributors" in html
@@ -68,7 +69,19 @@ def test_quick_setting_has_all_provider_states():
     for state in ("fixed", "stale", "searching", "no_fix", "disabled", "error", "unavailable"):
         assert "'" + state + "'" in qs, state
     assert "last provider fix" in qs
+    assert "network fix" in qs
+    assert "GNSS fix" in qs
     assert "Location<br>no fix" not in qs or "no_fix" in qs
+
+
+def test_top_bar_location_indicator_is_source_aware():
+    html = read("pwa/nuxel-home/index.html")
+    assert 'id="status-location"' in html
+    js = read("pwa/nuxel-home/js/status-bar.js")
+    assert "_pollLocation" in js
+    assert "dataset.kind" in js
+    assert "Approximate network location" in js
+    assert "GNSS satellite fix" in js
 
 
 def test_settings_has_location_and_maps_diagnostics():

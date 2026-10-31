@@ -1,0 +1,903 @@
+#!/usr/bin/env python3
+"""Nuxel MTP responder over the vendor f_mtp gadget device (/dev/mtp_usb).
+
+This is a real MTP 1.0 responder, not a UI stub.  The Samsung 4.14 kernel
+function exposes /dev/mtp_usb with read/write for MTP containers and three
+ioctls for file payloads.  Storage is restricted to NUXEL_MTP_ROOT (default
+/home/nuxel); dotfiles and symlinks that escape that root are never exposed.
+
+The daemon writes an honest JSON state file after every state change:
+  /run/nuxel/mtp.state
+It is started/stopped by nuxel-usb-mode.sh.  No WebView can write gadget nodes.
+"""
+from __future__ import annotations
+
+import errno
+import fcntl
+import json
+import os
+import stat
+import struct
+import sys
+import time
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple
+
+DEV = os.environ.get("NUXEL_MTP_DEV", "/dev/mtp_usb")
+ROOT = Path(os.environ.get("NUXEL_MTP_ROOT", "/home/nuxel")).resolve()
+STATE = Path(os.environ.get("NUXEL_MTP_STATE", "/run/nuxel/mtp.state"))
+STORAGE_ID = 0x00010001
+ROOT_HANDLE = 0x00000000
+MAX_BULK = 16384
+
+# MTP container types
+TYPE_COMMAND = 1
+TYPE_DATA = 2
+TYPE_RESPONSE = 3
+TYPE_EVENT = 4
+
+# MTP operation codes
+OP_GET_DEVICE_INFO = 0x1001
+OP_OPEN_SESSION = 0x1002
+OP_CLOSE_SESSION = 0x1003
+OP_GET_STORAGE_IDS = 0x1004
+OP_GET_STORAGE_INFO = 0x1005
+OP_GET_NUM_OBJECTS = 0x1006
+OP_GET_OBJECT_HANDLES = 0x1007
+OP_GET_OBJECT_INFO = 0x1008
+OP_GET_OBJECT = 0x1009
+OP_GET_DEVICE_PROP_DESC = 0x1014
+OP_GET_DEVICE_PROP_VALUE = 0x1015
+OP_SET_DEVICE_PROP_VALUE = 0x1016
+OP_RESET_DEVICE = 0x1010
+OP_GET_OBJECT_PROP_DESC = 0x9804
+OP_GET_OBJECT_PROP_VALUE = 0x9805
+OP_GET_OBJECT_PROP_LIST = 0x9806
+OP_GET_OBJECT_SIZE = 0x9803
+OP_DELETE_OBJECT = 0x100B
+OP_SEND_OBJECT_INFO = 0x100C
+OP_SEND_OBJECT = 0x100D
+OP_GET_PARTIAL_OBJECT = 0x101B
+OP_GET_OBJECT_PROPS_SUPPORTED = 0x9801
+OP_GET_DEVICE_PROP_DESC = 0x1014
+
+# MTP response codes
+OK = 0x2001
+GENERAL_ERROR = 0x2002
+SESSION_NOT_OPEN = 0x2003
+OPERATION_NOT_SUPPORTED = 0x2005
+INVALID_STORAGE_ID = 0x2008
+INVALID_OBJECT_HANDLE = 0x2009
+INVALID_PARENT_OBJECT = 0x200A
+INVALID_PARAMETER = 0x201D
+STORE_FULL = 0x200C
+ACCESS_DENIED = 0x200F
+
+# Object formats
+FMT_UNDEFINED = 0x3000
+FMT_ASSOCIATION = 0x3001
+FMT_TEXT = 0x3004
+FMT_HTML = 0x3005
+FMT_JPEG = 0x3801
+FMT_PNG = 0x380B
+FMT_MP3 = 0x3009
+FMT_MP4 = 0x300B
+FMT_WAV = 0x3008
+FMT_PDF = 0x3000
+FMT_APK = 0x3000
+
+# Object properties
+PROP_STORAGE_ID = 0xDC01
+PROP_OBJECT_FORMAT = 0xDC02
+PROP_PROTECTION_STATUS = 0xDC03
+PROP_OBJECT_SIZE = 0xDC04
+PROP_OBJECT_FILE_NAME = 0xDC07
+PROP_DATE_CREATED = 0xDC08
+PROP_DATE_MODIFIED = 0xDC09
+PROP_PARENT_OBJECT = 0xDC0B
+PROP_ASSOCIATION_TYPE = 0xDC0C
+PROP_ASSOCIATION_DESC = 0xDC0D
+
+# ioctl numbers: _IOW('M', nr, struct mtp_file_range) (size 32 on 64-bit)
+MTP_SEND_FILE = 0x40204D00
+MTP_RECEIVE_FILE = 0x40204D01
+MTP_SEND_EVENT = 0x40084D03
+MTP_SEND_FILE_WITH_HEADER = 0x40204D04
+
+
+def log(msg: str) -> None:
+    print(f"{time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())} {msg}", flush=True)
+
+
+def write_state(**fields: Any) -> None:
+    doc = {
+        "pid": os.getpid(),
+        "storage": str(ROOT),
+        "session_open": False,
+        "running": True,
+        "host_connected": False,
+        "last_error": None,
+        "updated_at": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
+    }
+    doc.update(fields)
+    try:
+        STATE.parent.mkdir(parents=True, exist_ok=True)
+        tmp = STATE.with_name(STATE.name + ".tmp")
+        tmp.write_text(json.dumps(doc, indent=2, sort_keys=True) + "\n")
+        os.replace(tmp, STATE)
+    except OSError as exc:
+        log(f"state write failed: {exc}")
+
+
+def u8(v: int) -> bytes:
+    return struct.pack("<B", v & 0xFF)
+
+
+def u16(v: int) -> bytes:
+    return struct.pack("<H", v & 0xFFFF)
+
+
+def u32(v: int) -> bytes:
+    return struct.pack("<I", v & 0xFFFFFFFF)
+
+
+def u64(v: int) -> bytes:
+    return struct.pack("<Q", v & 0xFFFFFFFFFFFFFFFF)
+
+
+def mtp_string(text: str) -> bytes:
+    """MTP string: u8 character count (including NUL) + UTF-16LE + NUL."""
+    if not text:
+        return u8(0)
+    data = text.encode("utf-16-le") + b"\x00\x00"
+    count = len(data) // 2
+    if count > 255:
+        data = data[:510]
+        count = 255
+    return u8(count) + data
+
+
+def mtp_datetime(ts: float) -> str:
+    return time.strftime("%Y%m%dT%H%M%S", time.localtime(ts))
+
+
+def mime_format(path: Path) -> int:
+    ext = path.suffix.lower()
+    return {
+        ".jpg": FMT_JPEG, ".jpeg": FMT_JPEG, ".png": FMT_PNG,
+        ".txt": FMT_TEXT, ".html": FMT_HTML, ".htm": FMT_HTML,
+        ".mp3": FMT_MP3, ".mp4": FMT_MP4, ".m4v": FMT_MP4,
+        ".wav": FMT_WAV,
+    }.get(ext, FMT_UNDEFINED)
+
+
+def is_hidden(path: Path) -> bool:
+    return any(part.startswith(".") for part in path.relative_to(ROOT).parts)
+
+
+def resolve_inside(path: Path) -> Optional[Path]:
+    try:
+        real = path.resolve()
+        real.relative_to(ROOT)
+        return real if real.exists() else None
+    except (OSError, ValueError):
+        return None
+
+
+@dataclass
+class ObjectInfo:
+    handle: int
+    path: Path
+    is_dir: bool
+    parent: int
+
+
+class MtpServer:
+    def __init__(self, fd: int):
+        self.fd = fd
+        self.session_id: Optional[int] = None
+        self._next_handle = 1
+        self._by_handle: Dict[int, ObjectInfo] = {}
+        self._by_path: Dict[str, int] = {}
+        self._pending_send: Optional[Tuple[Path, int]] = None
+        self._scan_root()
+
+    # ---- path/handle bookkeeping -----------------------------------------
+    def _scan_root(self) -> None:
+        self._by_handle.clear()
+        self._by_path.clear()
+        self._next_handle = 1
+        try:
+            self._scan_dir(ROOT, ROOT_HANDLE)
+        except OSError as exc:
+            log(f"root scan failed: {exc}")
+
+    def _scan_dir(self, directory: Path, parent_handle: int) -> None:
+        try:
+            entries = list(directory.iterdir())
+        except OSError:
+            return
+        for child in sorted(entries, key=lambda p: (not p.is_dir(), p.name.lower())):
+            try:
+                if child.name.startswith("."):
+                    continue
+                if child.is_symlink():
+                    continue
+                if not child.is_dir() and not child.is_file():
+                    continue
+            except OSError:
+                continue
+            handle = self._handle_for(child, parent_handle)
+            if child.is_dir():
+                self._scan_dir(child, handle)
+
+    def _handle_for(self, path: Path, parent_handle: int) -> int:
+        key = str(path)
+        if key in self._by_path:
+            return self._by_path[key]
+        handle = self._next_handle
+        self._next_handle += 1
+        self._by_path[key] = handle
+        self._by_handle[handle] = ObjectInfo(handle, path, path.is_dir(), parent_handle)
+        return handle
+
+    def _refresh(self) -> None:
+        # Preserve handles for paths that still exist; add new children and drop
+        # vanished paths.  Handles stay stable for the life of the session.
+        seen = set()
+        stack = [(ROOT, ROOT_HANDLE)]
+        while stack:
+            directory, parent = stack.pop()
+            try:
+                entries = list(directory.iterdir())
+            except OSError:
+                continue
+            for child in sorted(entries, key=lambda p: (not p.is_dir(), p.name.lower())):
+                try:
+                    if child.name.startswith(".") or child.is_symlink():
+                        continue
+                    if not (child.is_dir() or child.is_file()):
+                        continue
+                except OSError:
+                    continue
+                handle = self._handle_for(child, parent)
+                seen.add(handle)
+                if child.is_dir():
+                    stack.append((child, handle))
+        for handle in list(self._by_handle):
+            if handle not in seen:
+                self._by_handle.pop(handle, None)
+        for key in list(self._by_path):
+            try:
+                p = Path(key)
+                if not p.exists() or is_hidden(p):
+                    self._by_path.pop(key, None)
+            except OSError:
+                self._by_path.pop(key, None)
+
+    def _parent_handle(self, path: Path) -> int:
+        if path == ROOT:
+            return 0
+        key = str(path.parent)
+        return self._by_path.get(key, ROOT_HANDLE)
+
+    # ---- low level IO -----------------------------------------------------
+    def read_container(self) -> Optional[Tuple[int, int, int, bytes]]:
+        """Read one MTP container; returns (type, code, transaction, payload)."""
+        first = os.read(self.fd, MAX_BULK)
+        if not first:
+            return None
+        if len(first) < 12:
+            return None
+        length, ctype, code, txid = struct.unpack_from("<IHHI", first, 0)
+        if length < 12 or length > 64 * 1024 * 1024:
+            log(f"bad container length={length} type={ctype} code=0x{code:04x}")
+            return None
+        payload = bytearray(first[12:min(length, len(first))])
+        while len(payload) < length - 12:
+            chunk = os.read(self.fd, min(MAX_BULK, length - 12 - len(payload)))
+            if not chunk:
+                break
+            payload.extend(chunk)
+        return ctype, code, txid, bytes(payload)
+
+    def send_container(self, ctype: int, code: int, txid: int, payload: bytes = b"", params: Optional[List[int]] = None) -> None:
+        body = bytearray(payload)
+        if params:
+            for p in params:
+                body.extend(u32(p))
+        total = 12 + len(body)
+        data = struct.pack("<IHHI", total, ctype, code & 0xFFFF, txid & 0xFFFFFFFF) + body
+        os.write(self.fd, data)
+
+    def respond(self, txid: int, code: int = OK, params: Optional[List[int]] = None) -> None:
+        self.send_container(TYPE_RESPONSE, code, txid, b"", params)
+
+    # ---- MTP datasets -----------------------------------------------------
+    def device_info(self) -> bytes:
+        ops = [
+            OP_GET_DEVICE_INFO, OP_OPEN_SESSION, OP_CLOSE_SESSION,
+            OP_GET_STORAGE_IDS, OP_GET_STORAGE_INFO, OP_GET_NUM_OBJECTS,
+            OP_GET_OBJECT_HANDLES, OP_GET_OBJECT_INFO, OP_GET_OBJECT,
+            OP_GET_PARTIAL_OBJECT, OP_DELETE_OBJECT,
+            OP_SEND_OBJECT_INFO, OP_SEND_OBJECT,
+            OP_GET_OBJECT_PROP_LIST, OP_GET_OBJECT_PROPS_SUPPORTED,
+            OP_GET_OBJECT_SIZE, OP_RESET_DEVICE,
+            OP_GET_DEVICE_PROP_DESC, OP_GET_DEVICE_PROP_VALUE,
+            OP_SET_DEVICE_PROP_VALUE,
+        ]
+        formats = [FMT_UNDEFINED, FMT_ASSOCIATION, FMT_TEXT, FMT_HTML,
+                   FMT_JPEG, FMT_PNG, FMT_MP3, FMT_MP4, FMT_WAV]
+        out = bytearray()
+        out += u16(100)                       # StandardVersion
+        out += u32(0x00000006)                # VendorExtensionID (Microsoft)
+        out += u16(100)                       # VendorExtensionVersion
+        out += mtp_string("microsoft.com: 1.0")  # VendorExtensionDesc
+        out += u16(0)                         # FunctionalMode
+        out += u32(len(ops))
+        for op in ops:
+            out += u16(op)
+        out += u32(0)                         # EventsSupported
+        out += u32(0)                         # DevicePropertiesSupported
+        out += u32(0)                         # CaptureFormats
+        # Listing ImageFormats makes libmtp probe GetObjectPropDesc for every
+        # format.  The responder reports the real format in ObjectInfo, so an
+        # empty capability list is correct and avoids a false panic in libmtp.
+        out += u32(0)                         # ImageFormats
+        out += mtp_string("Nuxel")            # Manufacturer
+        out += mtp_string("Nuxel S10+")       # Model
+        out += mtp_string("PWNAGE-43000")     # DeviceVersion
+        out += mtp_string("NUXEL-S10PLUS-0001")  # SerialNumber
+        return bytes(out)
+
+    def storage_info(self) -> bytes:
+        try:
+            st = os.statvfs(ROOT)
+            capacity = st.f_blocks * st.f_frsize
+            free = st.f_bavail * st.f_frsize
+        except OSError:
+            capacity = free = 0
+        return (u16(0x0004) + u16(0x0002) + u16(0x0000) +
+                u64(capacity) + u64(free) + u32(0) +
+                mtp_string("Nuxel user storage") + mtp_string("nuxel"))
+
+    def object_info(self, handle: int) -> Optional[bytes]:
+        obj = self._by_handle.get(handle)
+        if not obj:
+            return None
+        try:
+            st = obj.path.stat()
+        except OSError:
+            return None
+        fmt = FMT_ASSOCIATION if obj.is_dir else mime_format(obj.path)
+        size = 0 if obj.is_dir else st.st_size
+        parent = self._parent_handle(obj.path)
+        out = bytearray()
+        out += u32(STORAGE_ID)
+        out += u16(fmt)
+        out += u16(0)                         # ProtectionStatus
+        out += u32(size & 0xFFFFFFFF)
+        out += u16(0)                         # ThumbFormat
+        out += u32(0)                         # ThumbCompressedSize
+        out += u32(0) + u32(0) + u32(0) + u32(0)  # thumb/image dims
+        out += u32(0)                         # ImageBitDepth
+        out += u32(parent)
+        out += u16(0x0001 if obj.is_dir else 0x0000)  # AssociationType
+        out += u32(0)                         # AssociationDesc
+        out += u32(0)                         # SequenceNumber
+        out += mtp_string(obj.path.name)
+        out += mtp_string(mtp_datetime(st.st_mtime))  # DateCreated
+        out += mtp_string(mtp_datetime(st.st_mtime))  # DateModified
+        out += mtp_string("")
+        return bytes(out)
+
+    def prop_value(self, handle: int, prop: int) -> Optional[bytes]:
+        obj = self._by_handle.get(handle)
+        if not obj:
+            return None
+        try:
+            st = obj.path.stat()
+        except OSError:
+            return None
+        if prop == PROP_STORAGE_ID:
+            return u32(STORAGE_ID)
+        if prop == PROP_OBJECT_FORMAT:
+            return u16(FMT_ASSOCIATION if obj.is_dir else mime_format(obj.path))
+        if prop == PROP_PROTECTION_STATUS:
+            return u16(0)
+        if prop == PROP_OBJECT_SIZE:
+            return u32(0 if obj.is_dir else st.st_size & 0xFFFFFFFF)
+        if prop == PROP_OBJECT_FILE_NAME:
+            return mtp_string(obj.path.name)
+        if prop == PROP_DATE_CREATED:
+            return mtp_string(mtp_datetime(st.st_mtime))
+        if prop == PROP_DATE_MODIFIED:
+            return mtp_string(mtp_datetime(st.st_mtime))
+        if prop == PROP_PARENT_OBJECT:
+            return u32(self._parent_handle(obj.path))
+        if prop == PROP_ASSOCIATION_TYPE:
+            return u16(0x0001 if obj.is_dir else 0)
+        if prop == PROP_ASSOCIATION_DESC:
+            return u32(0)
+        return None
+
+    def prop_list(self, handle: int) -> Optional[bytes]:
+        props = [PROP_STORAGE_ID, PROP_OBJECT_FORMAT, PROP_PROTECTION_STATUS,
+                 PROP_OBJECT_SIZE, PROP_OBJECT_FILE_NAME, PROP_DATE_CREATED,
+                 PROP_DATE_MODIFIED, PROP_PARENT_OBJECT, PROP_ASSOCIATION_TYPE,
+                 PROP_ASSOCIATION_DESC]
+        out = bytearray()
+        present = 0
+        chunks = bytearray()
+        for prop in props:
+            val = self.prop_value(handle, prop)
+            if val is None:
+                continue
+            present += 1
+            chunks += u32(prop) + u16(0) + val
+        out += u32(present)
+        out += chunks
+        return bytes(out)
+
+    def prop_desc(self, prop: int) -> Optional[bytes]:
+        types = {
+            PROP_STORAGE_ID: 0x0006, PROP_OBJECT_FORMAT: 0x0004,
+            PROP_PROTECTION_STATUS: 0x0004, PROP_OBJECT_SIZE: 0x0006,
+            PROP_OBJECT_FILE_NAME: 0xFFFF, PROP_DATE_CREATED: 0xFFFF,
+            PROP_DATE_MODIFIED: 0xFFFF, PROP_PARENT_OBJECT: 0x0006,
+            PROP_ASSOCIATION_TYPE: 0x0004, PROP_ASSOCIATION_DESC: 0x0006,
+        }
+        dtype = types.get(prop)
+        if dtype is None:
+            return None
+        out = bytearray()
+        out += u16(prop)
+        out += u16(dtype)
+        out += u8(0x01)                    # Get/Set: get only
+        if dtype == 0xFFFF:
+            out += mtp_string("")
+        elif dtype == 0x0004:
+            out += u16(0)
+        else:
+            out += u32(0)
+        out += u32(0)                      # GroupCode
+        out += u8(0)                       # FormFlag: none
+        return bytes(out)
+
+    # ---- file payload ioctls ---------------------------------------------
+    def send_file(self, path: Path, offset: int, length: int, command: int, txid: int) -> int:
+        try:
+            fd = os.open(path, os.O_RDONLY | os.O_CLOEXEC)
+        except OSError as exc:
+            log(f"send_file open failed {path}: {exc}")
+            return -1
+        try:
+            # struct mtp_file_range: int fd; pad; loff_t offset; int64 length;
+            # uint16 command; pad; uint32 transaction_id
+            buf = struct.pack("<i4xqQH2xI", fd, offset, length, command & 0xFFFF, txid & 0xFFFFFFFF)
+            fcntl.ioctl(self.fd, MTP_SEND_FILE_WITH_HEADER, buf, True)
+            return 0
+        except OSError as exc:
+            log(f"send_file ioctl failed {path}: {exc}")
+            return -1
+        finally:
+            try:
+                os.close(fd)
+            except OSError:
+                pass
+
+    def receive_file(self, path: Path, length: int, offset: int = 0) -> int:
+        # Android's MtpServer reads the 12-byte data container header plus the
+        # initial payload itself, writes that prefix to the file, then asks the
+        # kernel to append the remaining bytes at `offset`.  Keeping that
+        # contract is what stops the MTP header from being stored in the file.
+        try:
+            fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_CLOEXEC, 0o644)
+        except OSError as exc:
+            log(f"receive_file open failed {path}: {exc}")
+            return -1
+        try:
+            buf = struct.pack("<i4xqQH2xI", fd, int(offset), int(length), 0, 0)
+            fcntl.ioctl(self.fd, MTP_RECEIVE_FILE, buf, True)
+            return 0
+        except OSError as exc:
+            log(f"receive_file ioctl failed {path}: {exc}")
+            return -1
+        finally:
+            try:
+                os.close(fd)
+            except OSError:
+                pass
+
+    # ---- command handling -------------------------------------------------
+    def run(self) -> None:
+        write_state(session_open=False, host_connected=True)
+        log(f"MTP responder ready dev={DEV} root={ROOT}")
+        while True:
+            got = self.read_container()
+            if got is None:
+                log("device read returned empty; waiting for reconnect")
+                write_state(session_open=False, host_connected=False,
+                            last_error="device-read-empty")
+                time.sleep(0.5)
+                continue
+            ctype, code, txid, payload = got
+            if ctype != TYPE_COMMAND:
+                log(f"ignoring container type={ctype} code=0x{code:04x}")
+                continue
+            try:
+                self.handle_command(code, txid, payload)
+            except Exception as exc:  # noqa: BLE001 - responder must stay alive
+                log(f"command 0x{code:04x} failed: {type(exc).__name__}: {exc}")
+                self.respond(txid, GENERAL_ERROR)
+
+    def handle_command(self, code: int, txid: int, payload: bytes) -> None:
+        count = len(payload) // 4
+        params = list(struct.unpack_from("<%dI" % count, payload, 0)) if count else []
+
+        if code == OP_OPEN_SESSION:
+            if len(params) >= 1:
+                self.session_id = params[0]
+            else:
+                self.session_id = 1
+            self._refresh()
+            write_state(session_open=True, host_connected=True,
+                        session_id=self.session_id)
+            log(f"OpenSession id={self.session_id} objects={len(self._by_handle)}")
+            self.respond(txid, OK)
+            return
+        if code == OP_CLOSE_SESSION:
+            log("CloseSession")
+            self.session_id = None
+            write_state(session_open=False, host_connected=True)
+            self.respond(txid, OK)
+            return
+        if code == OP_RESET_DEVICE:
+            self.session_id = None
+            self._refresh()
+            write_state(session_open=False, host_connected=True)
+            self.respond(txid, OK)
+            return
+        if code == OP_GET_DEVICE_INFO:
+            data = self.device_info()
+            self.send_container(TYPE_DATA, OP_GET_DEVICE_INFO, txid, data)
+            self.respond(txid, OK)
+            return
+        if code == OP_GET_STORAGE_IDS:
+            self.send_container(TYPE_DATA, OP_GET_STORAGE_IDS, txid, u32(1) + u32(STORAGE_ID))
+            self.respond(txid, OK)
+            return
+        if code == OP_GET_STORAGE_INFO:
+            self.send_container(TYPE_DATA, OP_GET_STORAGE_INFO, txid, self.storage_info())
+            self.respond(txid, OK)
+            return
+
+        if not self.session_id and code not in (OP_GET_DEVICE_INFO,):
+            self.respond(txid, SESSION_NOT_OPEN)
+            return
+
+        if code == OP_GET_NUM_OBJECTS:
+            if len(params) >= 3 and params[0] != STORAGE_ID:
+                self.respond(txid, INVALID_STORAGE_ID)
+                return
+            parent = params[2] if len(params) >= 3 else 0
+            self._refresh()
+            n = 0
+            if parent == 0:
+                n = len([o for o in self._by_handle.values() if o.path.parent == ROOT])
+            else:
+                obj = self._by_handle.get(parent)
+                if obj and obj.is_dir:
+                    n = len([o for o in self._by_handle.values() if o.path.parent == obj.path])
+            self.send_container(TYPE_DATA, OP_GET_NUM_OBJECTS, txid, u32(n))
+            self.respond(txid, OK)
+            return
+
+        if code == OP_GET_OBJECT_HANDLES:
+            if len(params) >= 1 and params[0] != STORAGE_ID:
+                self.respond(txid, INVALID_STORAGE_ID)
+                return
+            parent = params[2] if len(params) >= 3 else 0
+            if parent == 0xFFFFFFFF:
+                parent = 0
+            self._refresh()
+            if parent == 0:
+                handles = [o.handle for o in self._by_handle.values() if o.path.parent == ROOT]
+            else:
+                obj = self._by_handle.get(parent)
+                if not obj:
+                    self.respond(txid, INVALID_OBJECT_HANDLE)
+                    return
+                if not obj.is_dir:
+                    self.respond(txid, INVALID_PARENT_OBJECT)
+                    return
+                handles = [o.handle for o in self._by_handle.values() if o.path.parent == obj.path]
+            body = u32(len(handles)) + b"".join(u32(h) for h in handles)
+            self.send_container(TYPE_DATA, OP_GET_OBJECT_HANDLES, txid, body)
+            self.respond(txid, OK)
+            return
+
+        if code == OP_GET_OBJECT_INFO:
+            if not params:
+                self.respond(txid, INVALID_PARAMETER)
+                return
+            data = self.object_info(params[0])
+            if data is None:
+                self.respond(txid, INVALID_OBJECT_HANDLE)
+                return
+            self.send_container(TYPE_DATA, OP_GET_OBJECT_INFO, txid, data)
+            self.respond(txid, OK)
+            return
+
+        if code in (OP_GET_OBJECT, OP_GET_PARTIAL_OBJECT):
+            if not params:
+                self.respond(txid, INVALID_PARAMETER)
+                return
+            obj = self._by_handle.get(params[0])
+            if not obj or obj.is_dir:
+                self.respond(txid, INVALID_OBJECT_HANDLE)
+                return
+            try:
+                size = obj.path.stat().st_size
+            except OSError:
+                self.respond(txid, ACCESS_DENIED)
+                return
+            offset = 0
+            length = size
+            if code == OP_GET_PARTIAL_OBJECT and len(params) >= 3:
+                offset = params[1]
+                length = min(params[2], max(0, size - offset))
+            if self.send_file(obj.path, offset, length, code, txid) != 0:
+                self.respond(txid, ACCESS_DENIED)
+                return
+            self.respond(txid, OK)
+            return
+
+        if code == OP_DELETE_OBJECT:
+            if not params:
+                self.respond(txid, INVALID_PARAMETER)
+                return
+            obj = self._by_handle.get(params[0])
+            if not obj:
+                self.respond(txid, INVALID_OBJECT_HANDLE)
+                return
+            try:
+                if obj.is_dir:
+                    obj.path.rmdir()
+                else:
+                    obj.path.unlink()
+            except OSError as exc:
+                log(f"delete failed {obj.path}: {exc}")
+                self.respond(txid, ACCESS_DENIED)
+                return
+            self._refresh()
+            self.respond(txid, OK)
+            return
+
+        if code == OP_SEND_OBJECT_INFO:
+            if not params:
+                self.respond(txid, INVALID_PARAMETER)
+                return
+            storage, parent_handle = params[0], params[1]
+            if storage != STORAGE_ID:
+                self.respond(txid, INVALID_STORAGE_ID)
+                return
+            if parent_handle == 0xFFFFFFFF:
+                parent_handle = 0
+            if parent_handle != 0:
+                parent_obj = self._by_handle.get(parent_handle)
+                if not parent_obj or not parent_obj.is_dir:
+                    self.respond(txid, INVALID_PARENT_OBJECT)
+                    return
+                parent_dir = parent_obj.path
+            else:
+                parent_dir = ROOT
+            # host sends ObjectInfo as the data phase
+            got = self.read_container()
+            if not got or got[0] != TYPE_DATA:
+                log("SendObjectInfo missing data phase")
+                self.respond(txid, INVALID_PARAMETER)
+                return
+            info = got[3]
+            try:
+                # ObjectInfo fixed part: storage(4), format(2), protection(2),
+                # size(4), ...  Reading <HHI from offset 0 was a real bug: it
+                # decoded storage+format as the size and truncated large files.
+                storage_info = struct.unpack_from("<I", info, 0)[0]
+                fmt = struct.unpack_from("<H", info, 4)[0]
+                _prot = struct.unpack_from("<H", info, 6)[0]
+                size = struct.unpack_from("<I", info, 8)[0]
+                if storage_info != STORAGE_ID:
+                    self.respond(txid, INVALID_STORAGE_ID)
+                    return
+                name = self._parse_object_info_name(info)
+            except Exception:
+                self.respond(txid, INVALID_PARAMETER)
+                return
+            safe_name = "".join(ch for ch in name if ch not in "/\\\x00").strip()
+            if not safe_name or safe_name in (".", ".."):
+                safe_name = "received-%d.bin" % int(time.time())
+            target = parent_dir / safe_name
+            base = target
+            i = 1
+            while target.exists():
+                target = base.with_name(f"{base.stem}-{i}{base.suffix}")
+                i += 1
+            try:
+                # Create the file only when the host actually sends SendObject.
+                self._pending_send = (target, int(size))
+                handle = self._handle_for(target, parent_handle)
+                self._by_handle[handle] = ObjectInfo(handle, target, False, parent_handle)
+            except OSError as exc:
+                log(f"SendObjectInfo prepare failed: {exc}")
+                self.respond(txid, ACCESS_DENIED)
+                return
+            self.respond(txid, OK, [STORAGE_ID, parent_handle, handle, fmt])
+            return
+
+        if code == OP_SEND_OBJECT:
+            if not self._pending_send:
+                self.respond(txid, INVALID_PARAMETER)
+                return
+            target, declared = self._pending_send
+            length = declared
+            if params:
+                length = params[0]
+            length = min(int(length), int(declared) if declared > 0 else int(length))
+            if length < 0:
+                self.respond(txid, INVALID_PARAMETER)
+                return
+            # Read the data-container header + initial payload exactly as
+            # Android's MtpServer does; only the payload is written to disk.
+            got = self.read_container()
+            initial = b""
+            if got and got[0] == TYPE_DATA:
+                initial = got[3][:length]
+            try:
+                with open(target, "wb") as fh:
+                    fh.write(initial)
+            except OSError as exc:
+                log(f"SendObject prefix write failed {target}: {exc}")
+                self._pending_send = None
+                self.respond(txid, ACCESS_DENIED)
+                return
+            remaining = max(0, length - len(initial))
+            if remaining:
+                if self.receive_file(target, remaining, offset=len(initial)) != 0:
+                    try:
+                        target.unlink(missing_ok=True)
+                    except OSError:
+                        pass
+                    self._pending_send = None
+                    self.respond(txid, GENERAL_ERROR)
+                    return
+            handle = self._handle_for(target, self._parent_handle(target))
+            self._by_handle[handle] = ObjectInfo(handle, target, False,
+                                                 self._parent_handle(target))
+            self._pending_send = None
+            self._refresh()
+            log(f"SendObject stored {target} bytes={length} initial={len(initial)}")
+            self.respond(txid, OK, [handle])
+            return
+
+        if code in (OP_GET_OBJECT_PROP_VALUE, OP_GET_OBJECT_SIZE):
+            if len(params) < 1:
+                self.respond(txid, INVALID_PARAMETER)
+                return
+            if code == OP_GET_OBJECT_SIZE:
+                obj = self._by_handle.get(params[0])
+                if not obj:
+                    self.respond(txid, INVALID_OBJECT_HANDLE)
+                    return
+                try:
+                    size = 0 if obj.is_dir else obj.path.stat().st_size
+                except OSError:
+                    size = 0
+                self.send_container(TYPE_DATA, OP_GET_OBJECT_SIZE, txid, u32(size & 0xFFFFFFFF))
+                self.respond(txid, OK)
+                return
+            if len(params) < 2:
+                self.respond(txid, INVALID_PARAMETER)
+                return
+            val = self.prop_value(params[0], params[1])
+            if val is None:
+                self.respond(txid, INVALID_PARAMETER)
+                return
+            self.send_container(TYPE_DATA, OP_GET_OBJECT_PROP_VALUE, txid, val)
+            self.respond(txid, OK)
+            return
+
+        if code == OP_GET_OBJECT_PROP_LIST:
+            if len(params) < 2:
+                self.respond(txid, INVALID_PARAMETER)
+                return
+            val = self.prop_list(params[1] if params[1] != 0xFFFFFFFF else params[0])
+            if val is None:
+                self.respond(txid, INVALID_OBJECT_HANDLE)
+                return
+            self.send_container(TYPE_DATA, OP_GET_OBJECT_PROP_LIST, txid, val)
+            self.respond(txid, OK)
+            return
+
+        if code == OP_GET_OBJECT_PROPS_SUPPORTED:
+            props = [PROP_STORAGE_ID, PROP_OBJECT_FORMAT, PROP_PROTECTION_STATUS,
+                     PROP_OBJECT_SIZE, PROP_OBJECT_FILE_NAME, PROP_DATE_CREATED,
+                     PROP_DATE_MODIFIED, PROP_PARENT_OBJECT, PROP_ASSOCIATION_TYPE]
+            body = u32(len(props)) + b"".join(u16(p) for p in props)
+            self.send_container(TYPE_DATA, OP_GET_OBJECT_PROPS_SUPPORTED, txid, body)
+            self.respond(txid, OK)
+            return
+
+        if code == OP_GET_OBJECT_PROP_DESC:
+            if len(params) < 1:
+                self.respond(txid, INVALID_PARAMETER)
+                return
+            desc = self.prop_desc(params[0])
+            if desc is None:
+                self.respond(txid, OPERATION_NOT_SUPPORTED)
+                return
+            self.send_container(TYPE_DATA, OP_GET_OBJECT_PROP_DESC, txid, desc)
+            self.respond(txid, OK)
+            return
+
+        if code == OP_GET_DEVICE_PROP_DESC:
+            # No device properties are advertised; be explicit rather than fake.
+            self.respond(txid, OPERATION_NOT_SUPPORTED)
+            return
+        if code in (OP_GET_DEVICE_PROP_VALUE, OP_SET_DEVICE_PROP_VALUE):
+            self.respond(txid, OPERATION_NOT_SUPPORTED)
+            return
+
+        log(f"unsupported operation 0x{code:04x} params={params}")
+        self.respond(txid, OPERATION_NOT_SUPPORTED)
+
+    def _parse_object_info_name(self, info: bytes) -> str:
+        # ObjectInfo fixed part is 52 bytes (ImageBitDepth is part of it);
+        # the dataset begins at offset 52.
+        off = 52
+        # The fixed part layout is: storage(4), format(2), prot(2), size(4),
+        # thumbfmt(2), thumbsize(4), thumbw/h(8), imagew/h(8), parent(4),
+        # assoc_type(2), assoc_desc(4), seq(4) = 52.
+        if off >= len(info):
+            return ""
+        n = info[off]
+        off += 1
+        if n == 0 or off + n * 2 > len(info):
+            return ""
+        raw = info[off:off + n * 2]
+        try:
+            text = raw.decode("utf-16-le")
+        except UnicodeDecodeError:
+            return ""
+        return text.split("\x00", 1)[0]
+
+
+def main() -> int:
+    ROOT.mkdir(parents=True, exist_ok=True)
+    write_state(session_open=False, running=False, host_connected=False,
+                last_error="starting")
+    while True:
+        try:
+            fd = os.open(DEV, os.O_RDWR | os.O_CLOEXEC)
+        except OSError as exc:
+            write_state(session_open=False, running=False, host_connected=False,
+                        last_error=f"open {DEV}: {exc}")
+            log(f"open {DEV} failed: {exc}; retrying")
+            time.sleep(1.0)
+            continue
+        try:
+            server = MtpServer(fd)
+            server.run()
+        finally:
+            try:
+                os.close(fd)
+            except OSError:
+                pass
+
+
+if __name__ == "__main__":
+    try:
+        raise SystemExit(main())
+    except KeyboardInterrupt:
+        raise SystemExit(0)

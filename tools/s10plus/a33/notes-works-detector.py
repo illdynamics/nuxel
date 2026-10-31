@@ -101,7 +101,10 @@ def store_notes():
         return None, False, 'store read failed: %s' % (result or doc)
     data = result.get('data')
     if data is None:
-        return [], True, 'store key missing'
+        # The Notes store key is absent on a fresh/empty profile.  There is
+        # nothing to corroborate against, so treat the store as unavailable
+        # rather than as an always-failing match.
+        return None, True, 'store key missing'
     if not isinstance(data, list):
         return [], True, 'store data is not a note list'
     return data, True, 'store readable'
@@ -119,7 +122,7 @@ def parse_iso(value):
 def store_match(title, baseline_epoch):
     """Return (matched, detail, available, updated_at)."""
     notes, available, detail = store_notes()
-    if not available:
+    if not available or notes is None:
         return None, detail, False, None
     for note in notes or []:
         if not isinstance(note, dict):

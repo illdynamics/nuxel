@@ -1,0 +1,24 @@
+[Unit]
+Description=Nuxel standalone PipeWire/WirePlumber audio session
+Documentation=file:/usr/share/doc/nuxel/AUDIO.md
+After=local-fs.target
+StartLimitIntervalSec=60
+StartLimitBurst=8
+
+[Service]
+Type=simple
+Environment=XDG_RUNTIME_DIR=/run/nuxel-wayland
+Environment=PIPEWIRE_RUNTIME_DIR=/run/nuxel-wayland
+Environment=DBUS_SESSION_BUS_ADDRESS=unix:path=/run/nuxel-wayland/bus
+Environment=PULSE_SERVER=unix:/run/nuxel-wayland/pulse/native
+ExecStart=/usr/lib/nuxel/nuxel-audio-session.sh
+Restart=on-failure
+RestartSec=2
+TimeoutStopSec=8
+KillMode=control-group
+SendSIGKILL=yes
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

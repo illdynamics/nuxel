@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Signal
+Comment=Signal Desktop — installed Flatpak; launch BLOCKED on this kernel (CONFIG_USER_NS=n, bubblewrap cannot create a user namespace)
+Exec=/usr/lib/nuxel/nuxel-flatpak-signal
+Icon=signal-desktop
+Terminal=false
+Categories=Network;InstantMessaging;
+StartupNotify=true

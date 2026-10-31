@@ -373,9 +373,13 @@ function loadLauncher(startHash) {
   check('the opened frame points at the app url from the registry',
         frames.length === 1 && frames[0].src === (reg.getApp('nuxel-settings').url || reg.getApp('nuxel-settings').url),
         frames.length === 1 ? frames[0].src : '');
-  check('app content reserves the system status and Home bar, below Quick Settings',
+  // PWNAGE-43000 intentionally removed the app-owned 56 px title bar: the
+  // native Back/Home/Recents layer is the only chrome.  The frame therefore
+  // reserves the status bar and the native navigation strip, not a title bar.
+  check('app content reserves the system status and native Home bar, below Quick Settings',
         frames.length === 1 && /position:\s*fixed/.test(frames[0].style.cssText)
-        && /top:\s*calc\(var\(--status-bar-height, 36px\) \+ 56px\)/.test(frames[0].style.cssText)
+        && /top:\s*var\(--status-bar-height, 36px\)/.test(frames[0].style.cssText)
+        && /bottom:\s*var\(--system-nav-height\)/.test(frames[0].style.cssText)
         && /z-index:\s*60/.test(frames[0].style.cssText));
   check('opening an app enters LAUNCHING',
         vm.runInContext('window.nuxel.appSession.state', dom.sandbox) === 'LAUNCHING');
@@ -390,17 +394,16 @@ function loadLauncher(startHash) {
   dom.document.dispatchEvent({ type: 'visibilitychange' });
   check('a visible background app returns ACTIVE',
         vm.runInContext('window.nuxel.appSession.state', dom.sandbox) === 'ACTIVE');
-  // --- 7b. close-and-return-home ---
-  const closeBtn = dom.document.querySelectorAll('.pwa-close-btn')[0];
-  check('a labeled Home control is created outside the app document',
-        !!closeBtn && closeBtn.textContent === 'Home' && closeBtn.parentNode.className === 'pwa-app-bar');
-  closeBtn.onclick();
+  // --- 7b. return-home through the native nav action ---
+  // PWNAGE-43000 removed the in-app "Home + app name" strip.  Home is the
+  // native layer-shell control and reaches the launcher as nuxel:action.
+  check('no redundant app-owned title bar is created',
+        dom.document.querySelectorAll('.pwa-app-bar').length === 0 &&
+        dom.document.querySelectorAll('.pwa-close-btn').length === 0);
+  vm.runInContext('window.nuxel._backgroundForegroundApp()', dom.sandbox);
   check('Home backgrounds the frame and returns to the launcher',
         dom.document.querySelectorAll('.pwa-frame').length === 1 &&
         dom.document.querySelectorAll('.pwa-frame')[0].hidden === true);
-  check('Home backgrounds the app bar with its frame',
-        dom.document.querySelectorAll('.pwa-close-btn').length === 1 &&
-        dom.document.querySelectorAll('.pwa-app-bar')[0].hidden === true);
   check('Home preserves the resumable surface in BACKGROUND state',
         vm.runInContext('window.nuxel.appSession.state', dom.sandbox) === 'BACKGROUND');
   // Opening another app may retain background surfaces, but exactly one can be
