@@ -1,0 +1,18 @@
+[
+  {
+    "DisplayName": "nux-rdp",
+    "ProtocolTypeCode": 0,
+    "TcpHostName": "127.0.0.1",
+    "TcpPort": 13389,
+    "file": "Computer - nux-rdp - AF19A67A-73D0-4D91-9495-F138A66CFB33.jump",
+    "password_saved": false
+  },
+  {
+    "DisplayName": "nux-vnc",
+    "ProtocolTypeCode": 1,
+    "TcpHostName": "127.0.0.1",
+    "TcpPort": 15900,
+    "file": "Computer - nux-vnc - A015911F-E79C-4191-BD7A-51EDF61974D2.jump",
+    "password_saved": false
+  }
+]

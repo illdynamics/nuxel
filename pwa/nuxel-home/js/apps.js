@@ -7,7 +7,7 @@
 // REGISTRY_VERSION that the launcher publishes on its evidence channel and that
 // tools/s10plus/a33/tests/launcher-registry-test.js asserts ("org.nuxel.Terminal"
 // and "nuxel-settings" present, every PWA served under /pwa/nuxel-apps/).
-const NUXEL_REGISTRY_VERSION = 8;
+const NUXEL_REGISTRY_VERSION = 9;
 
 const NUXEL_APPS = {
     // Native shell apps
@@ -195,6 +195,41 @@ const NUXEL_APPS = {
         docked: false,
         consoleTransport: 'wifi',
     },
+    // PWNAGE-47000 GUI Tri-Link: three graphical remote-access entries.  They
+    // are separate from the serial/SSH console entries and never auto-start.
+    'org.nuxel.RemoteDesktopXRDP': {
+        id: 'org.nuxel.RemoteDesktopXRDP',
+        name: 'XRDP Remote Desktop',
+        icon: '🖥️',
+        color: '#5db7ff',
+        category: 'system',
+        type: 'pwa',
+        url: '/pwa/nuxel-apps/remote-xrdp/index.html',
+        description: 'Separate authenticated RDP/TLS X11 session (Wi-Fi preferred)',
+        capabilities: [], docked: false, remoteService: 'xrdp',
+    },
+    'org.nuxel.RemoteDesktopVNC': {
+        id: 'org.nuxel.RemoteDesktopVNC',
+        name: 'VNC Screen Sharing',
+        icon: '🖵',
+        color: '#48d597',
+        category: 'system',
+        type: 'pwa',
+        url: '/pwa/nuxel-apps/remote-vnc/index.html',
+        description: 'Share the actual Phoc/Wayland screen (Wi-Fi preferred)',
+        capabilities: [], docked: false, remoteService: 'vnc',
+    },
+    'org.nuxel.ScrcpyMirror': {
+        id: 'org.nuxel.ScrcpyMirror',
+        name: 'scrcpy (Android)',
+        icon: '📱',
+        color: '#b68cff',
+        category: 'system',
+        type: 'pwa',
+        url: '/pwa/nuxel-apps/remote-scrcpy/index.html',
+        description: 'Official scrcpy for Android ADB targets only',
+        capabilities: [], docked: false, remoteService: 'scrcpy',
+    },
 
     // A59: user-facing apps authored in pwa/nuxel-apps but previously missing
     // from the launcher. Each resolves to a real index.html + manifest.json.
@@ -332,6 +367,9 @@ const NUXEL_APP_ICON_ASSETS = {
     'org.nuxel.LiveConsole': '/assets/nuxel-applications-icon-pack/05-05_live-console.png?v=a80',
     'org.nuxel.USBSSHConsole': '/assets/nuxel-applications-icon-pack/06-05_usb-connection.png?v=a80',
     'org.nuxel.WiFiSSHConsole': '/assets/nuxel-quicksettings-icon-pack/01-wifi.png?v=a80',
+    'org.nuxel.RemoteDesktopXRDP': '/assets/nuxel-applications-icon-pack/05-07_web-window.png?v=p47000',
+    'org.nuxel.RemoteDesktopVNC': '/assets/nuxel-applications-icon-pack/06-04_casting-screen.png?v=p47000',
+    'org.nuxel.ScrcpyMirror': '/assets/nuxel-applications-icon-pack/01-12_phone-alternative.png?v=p47000',
     'org.nuxel.SnekByte': '/assets/nuxel-applications-icon-pack/01-02_snekbyte.png?v=a63',
     'org.nuxel.Calculator': '/assets/nuxel-applications-icon-pack/06-02_calculator.png?v=p33000',
     'org.nuxel.Clock': '/assets/nuxel-applications-icon-pack/06-03_clock.png?v=p33000',

@@ -72,6 +72,7 @@ class StatusBar {
             location: document.getElementById('status-location'),
             sound: document.getElementById('status-sound'),
             usb: document.getElementById('status-usb'),
+            remote: document.getElementById('status-remote'),
             battery: document.getElementById('status-battery'),
             batteryPct: document.getElementById('status-battery-pct'),
         };
@@ -552,6 +553,25 @@ class StatusBar {
         this._applySafeZones();
     }
 
+    _renderRemote(remote) {
+        const el = this.elements.remote;
+        if (!el) return;
+        const active = !!(remote && remote.active === true);
+        el.hidden = !active;
+        el.dataset.state = active ? 'active' : 'off';
+        const tag = el.querySelector('.remote-label');
+        if (tag) tag.textContent = active ? 'R' : '';
+        if (active) {
+            const names = remote.services ? Object.keys(remote.services).filter((k) => remote.services[k] && remote.services[k].active).join(', ') : '';
+            el.setAttribute('aria-label', 'Remote desktop active' + (names ? ': ' + names : ''));
+            el.title = 'REMOTE DESKTOP ACTIVE' + (names ? ' · ' + names : '') + ' — open a remote app for the kill switch';
+        } else {
+            el.setAttribute('aria-label', 'Remote desktop off');
+            el.title = 'Remote desktop off';
+        }
+        this._applySafeZones();
+    }
+
     async _pollSystemIndicators() {
         if (this._statusInactive()) return;
         try {
@@ -569,6 +589,7 @@ class StatusBar {
             this.state.soundMode = (sound === 'normal' || sound === 'vibrate' || sound === 'silent') ? sound : 'unknown';
             this._renderSound();
             this._renderUsb();
+            this._renderRemote(ind.remote_desktop);
         } catch (e) {
             this.state.indicators = null;
             this._renderUsb();

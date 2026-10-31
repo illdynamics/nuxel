@@ -167,6 +167,13 @@ ESSENTIAL_GROUPS: "List[Tuple[str, str, List[dict]]]" = [
         # disabled on this image, and there is no second player/decoder path.
         {"name": "mpv"},
     ]),
+    ("remote-desktop", "PWNAGE-47000 GUI remote access (XRDP + Phoc VNC + Android ADB)", [
+        {"name": "wayvnc"}, {"name": "wayland-utils"},
+        {"name": "xrdp"}, {"name": "xorgxrdp"},
+        {"name": "xorg-x11-server-Xorg"}, {"name": "openbox"},
+        {"name": "xterm"}, {"name": "firefox"}, {"name": "android-tools"},
+    ]),
+
 ]
 
 

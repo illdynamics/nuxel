@@ -1,0 +1,17 @@
+{
+  "id": "org.nuxel.ScrcpyMirror",
+  "name": "scrcpy (Android)",
+  "icon": "\ud83d\udda5\ufe0f",
+  "color": "#5db7ff",
+  "category": "system",
+  "type": "pwa",
+  "url": "/pwa/nuxel-apps/remote-scrcpy/index.html",
+  "entry": "pwa/nuxel-apps/remote-scrcpy/index.html",
+  "manifest": "pwa/nuxel-apps/remote-scrcpy/manifest.json",
+  "description": "Official Android ADB mirroring only \u00b7 USB ADB preferred \u00b7 Wi-Fi/TCP-IP optional \u00b7 not native Nuxel",
+  "capabilities": [],
+  "bridge_version": "1",
+  "docked": false,
+  "remote_service": "scrcpy",
+  "status": "implemented"
+}

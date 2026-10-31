@@ -107,8 +107,8 @@
     "native_fallback": false,
     "bridge_version": "1",
     "pwa_version": "0.7.4-beta",
-    "cache_version": "v66-v074-release",
-    "registry_version": 8,
+    "cache_version": "v67-p47000",
+    "registry_version": 9,
     "single_source_of_truth": "pwa/nuxel-home (index.html, css/, js/, manifest.json, sw.js)",
     "apps_in_registry": [
       "nuxel-dialer",
@@ -140,7 +140,10 @@
       "org.gnome.FileRoller",
       "org.gnome.Loupe",
       "org.gnome.Papers",
-      "org.gnome.SystemMonitor"
+      "org.gnome.SystemMonitor",
+      "org.nuxel.RemoteDesktopXRDP",
+      "org.nuxel.RemoteDesktopVNC",
+      "org.nuxel.ScrcpyMirror"
     ],
     "settings_documents": [
       "/etc/nuxel/boot/verbose-boot.json",

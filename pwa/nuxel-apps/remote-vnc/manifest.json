@@ -1,0 +1,40 @@
+{
+  "display": "fullscreen",
+  "orientation": "any",
+  "background_color": "#061323",
+  "theme_color": "#061323",
+  "lang": "en",
+  "dir": "ltr",
+  "categories": [
+    "utilities",
+    "system",
+    "remote-desktop"
+  ],
+  "name": "VNC Screen Sharing",
+  "short_name": "VNC Screen Sharing",
+  "description": "Real Phoc/Wayland screen sharing \u00b7 Wi-Fi preferred \u00b7 USB blocked by kernel evidence",
+  "start_url": "/pwa/nuxel-apps/remote-vnc/index.html",
+  "scope": "/pwa/nuxel-apps/remote-vnc/",
+  "icons": [
+    {
+      "src": "icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "nuxel": {
+    "bridge_version": "1",
+    "capabilities": [],
+    "app_type": "remote-desktop",
+    "service": "vnc",
+    "read_only_status": false,
+    "off_by_default": true,
+    "privacy_indicator": "REMOTE DESKTOP ACTIVE",
+    "facilities": [
+      "real Bridge status/start/stop/diagnose/connection-info",
+      "preferred transport selection with USB gated by kernel evidence",
+      "loopback listener reached through the owner's pinned-key SSH tunnel"
+    ]
+  }
+}

@@ -1,0 +1,17 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+{"success": true, "service": "vnc", "state": "READY", "transport": "wlan", "bind_address": "127.0.0.1", "port": 5900}
+{"success": true, "service": "xrdp", "state": "READY", "transport": "wlan", "bind_address": "127.0.0.1", "port": 3389}
+---LISTEN
+LISTEN 0      2          127.0.0.1:3389      0.0.0.0:*
+LISTEN 0      16         127.0.0.1:5900      0.0.0.0:*
+---STATUS
+{'vnc': ('WAITING_FOR_CLIENT', True), 'xrdp': ('WAITING_FOR_CLIENT', True), 'scrcpy': ('NOT_APPLICABLE_NATIVE_NUXEL', False)}
+{'active': True, 'indicator': 'REMOTE DESKTOP ACTIVE', 'kill_switch_available': True}

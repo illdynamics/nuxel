@@ -44,6 +44,15 @@ try:
 except Exception as _e:  # pragma: no cover - optional module
     tri_link_status = None
 
+# PWNAGE-47000: GUI remote access (XRDP/VNC/scrcpy) is a SEPARATE provider from
+# the read-only SSH/serial Tri-Link status.  It owns the fixed start/stop helper
+# and never accepts a command, path, address or executable from JavaScript.
+try:
+    import remote_desktop
+except Exception as _e:  # pragma: no cover - optional module
+    remote_desktop = None
+    logger.warning('remote_desktop unavailable: %s', _e)
+
 # Single privileged torch owner.  PWAs and the button manager request a state;
 # only this in-process provider writes the LED brightness node.
 try:
@@ -1191,6 +1200,16 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
             else:
                 self._send_json({'success': False, 'error': 'tri_link_status unavailable'}, 503)
 
+        elif path == '/api/v1/system/remote-desktop':
+            if remote_desktop is not None:
+                try:
+                    self._send_json(remote_desktop.get_status())
+                except Exception as exc:  # noqa: BLE001
+                    logger.error('remote-desktop status read failed: %s', exc)
+                    self._send_json({'success': False, 'error': str(exc)}, 500)
+            else:
+                self._send_json({'success': False, 'error': 'remote_desktop unavailable'}, 503)
+
         elif path == '/api/v1/system/flashlight':
             # Read-only state (toggle/off go through the authenticated RPC).
             if flashlight_provider is not None:
@@ -1210,7 +1229,11 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
             # live-console indicator.
             if system_indicators is not None:
                 try:
-                    self._send_json(system_indicators.get_indicators())
+                    doc = system_indicators.get_indicators()
+                    if remote_desktop is not None:
+                        doc = dict(doc)
+                        doc['remote_desktop'] = remote_desktop.privacy_summary()
+                    self._send_json(doc)
                 except Exception as exc:  # noqa: BLE001
                     logger.error('system indicators read failed: %s', exc)
                     self._send_json({'success': False, 'error': str(exc)}, 500)
@@ -1353,7 +1376,11 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
         if namespace == 'system' and verb == 'indicators':
             if system_indicators is not None:
                 try:
-                    return system_indicators.get_indicators()
+                    doc = system_indicators.get_indicators()
+                    if remote_desktop is not None:
+                        doc = dict(doc)
+                        doc['remote_desktop'] = remote_desktop.privacy_summary()
+                    return doc
                 except Exception as exc:  # noqa: BLE001
                     return {'success': False, 'error': str(exc)}
             return {'success': False, 'error': 'system_indicators unavailable'}
@@ -1373,6 +1400,20 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
                 except Exception as exc:  # noqa: BLE001
                     return {'success': False, 'error': str(exc)}
             return {'success': False, 'error': 'tri_link_status unavailable'}
+        if namespace == 'system' and verb == 'remote-desktop':
+            if remote_desktop is None:
+                return {'success': False, 'error': 'remote_desktop unavailable',
+                        'error_code': 'PROVIDER_UNAVAILABLE'}
+            action = params.get('action') if isinstance(params, dict) else None
+            if not action:
+                return {'success': False, 'error': 'action is required',
+                        'error_code': 'INVALID_ACTION'}
+            try:
+                return remote_desktop.handle(action, params, app_id)
+            except Exception as exc:  # noqa: BLE001
+                logger.error('remote-desktop RPC %s failed: %s', action, exc)
+                return {'success': False, 'error': str(exc),
+                        'error_code': 'PROVIDER_ERROR'}
         # Privileged hardware control.  These verbs are handled in this root
         # process (never forwarded to the sandboxed D-Bus bridge) because they
         # read /dev/snd or write /sys/class/rfkill.

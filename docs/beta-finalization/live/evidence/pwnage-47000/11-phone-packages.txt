@@ -1,0 +1,28 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+Linux 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 4.14.253-gf7194c1d15ed-dirty #8 SMP PREEMPT Wed Oct 28 14:55:36 CET 2026 aarch64 GNU/Linux
+
+xrdp-0.10.6.1-3.fc43.aarch64
+xorgxrdp-0.10.5-1.fc43.aarch64
+wayvnc-0.9.1-3.fc43.aarch64
+selinux-policy-targeted-43.10-1.fc43.noarch
+firefox-157.0.1-1.fc43.aarch64
+openbox-3.6.1-29.fc43.aarch64
+android-tools-37.0.0p1-1.fc43.aarch64
+openssl-3.5.9-1.fc43.aarch64
+
+SELinux: Permissive
+inet:x:3003:nuxel,nuxel-remote
+
+credential:
+-rw-------. 1 root root 29 Oct 31 13:58 /etc/nuxel/remote-desktop/xrdp/credential
+
+listeners:
+none

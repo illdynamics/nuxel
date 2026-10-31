@@ -1,0 +1,40 @@
+{
+  "display": "fullscreen",
+  "orientation": "any",
+  "background_color": "#061323",
+  "theme_color": "#061323",
+  "lang": "en",
+  "dir": "ltr",
+  "categories": [
+    "utilities",
+    "system",
+    "remote-desktop"
+  ],
+  "name": "XRDP Remote Desktop",
+  "short_name": "XRDP Remote Desktop",
+  "description": "Separate authenticated X11 session over RDP/TLS \u00b7 Wi-Fi preferred \u00b7 USB blocked by kernel evidence",
+  "start_url": "/pwa/nuxel-apps/remote-xrdp/index.html",
+  "scope": "/pwa/nuxel-apps/remote-xrdp/",
+  "icons": [
+    {
+      "src": "icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "nuxel": {
+    "bridge_version": "1",
+    "capabilities": [],
+    "app_type": "remote-desktop",
+    "service": "xrdp",
+    "read_only_status": false,
+    "off_by_default": true,
+    "privacy_indicator": "REMOTE DESKTOP ACTIVE",
+    "facilities": [
+      "real Bridge status/start/stop/diagnose/connection-info",
+      "preferred transport selection with USB gated by kernel evidence",
+      "loopback listener reached through the owner's pinned-key SSH tunnel"
+    ]
+  }
+}

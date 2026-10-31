@@ -87,7 +87,28 @@ dnf -y --installroot="$STAGE" --releasever=43 --use-host-config \
     pipewire wireplumber pipewire-utils alsa-lib mpg123 mpv \
     polkit nftables upower greetd \
     iproute procps-ng kmod e2fsprogs \
-    shadow-utils ca-certificates curl
+    shadow-utils ca-certificates curl \
+    wayvnc wayland-utils xrdp xorgxrdp xorg-x11-server-Xorg \
+    openbox xterm firefox android-tools openssl
+# PWNAGE-47000 BOOT SAFETY: Nuxel runs systemd PID 1 and the initramfs live
+# console from a kernel_t context.  The graphical remote-access packages
+# (xrdp/xorgxrdp/tigervnc-selinux) pull in selinux-policy-targeted as a weak
+# dependency; when that policy is loaded in enforcing mode, PID 1 cannot exec
+# journald/udevd and the phone loops on the boot animation forever (measured on
+# 2026-10-31).  Nuxel is documented as "SELinux not enabled by default", so pin
+# the shipped image to disabled after the package transaction.  This is a
+# rootfs configuration file, not a kernel argument; no bootloader change.
+install -d "$STAGE/etc/selinux"
+printf 'SELINUX=permissive\nSELINUXTYPE=targeted\n' > "$STAGE/etc/selinux/config"
+chmod 0644 "$STAGE/etc/selinux/config"
+grep -qx 'SELINUX=permissive' "$STAGE/etc/selinux/config" || {
+  echo 'ERROR: SELinux guard failed to disable policy loading' >&2
+  exit 1
+}
+# A newly installed policy must never be able to turn enforcement back on via a
+# preset/autorelabel path.  The config above is authoritative for systemd.
+rm -f "$STAGE/.autorelabel" 2>/dev/null || true
+
 # The pinned systemd must be what actually landed, or the carried 4.14
 # libsystemd-shared patch and the installed binaries do not line up.
 INSTALLED_SYSTEMD="$(rpm --root "$STAGE" -q systemd)"
@@ -538,6 +559,60 @@ done
 # verify-service-graph.py can prove install + enablement from the script text.
 install -m 0644 /nuxel/services/nuxel-bridge/systemd/nuxel-bridge.service             "$STAGE/etc/systemd/system/nuxel-bridge.service"
 install -m 0644 /nuxel/services/nuxel-bridge/systemd/nuxel-http-bridge.service        "$STAGE/etc/systemd/system/nuxel-http-bridge.service"
+# PWNAGE-47000 GUI remote access: separate provider, on-demand services and
+# loopback-only listeners.  Nothing here is enabled at boot.
+install -d "$STAGE/usr/local/libexec/nuxel" "$STAGE/etc/nuxel/remote-desktop/vnc" \
+         "$STAGE/etc/nuxel/remote-desktop/xrdp" "$STAGE/var/lib/nuxel/remote-desktop" \
+         "$STAGE/usr/share/nuxel/remote-desktop"
+install -m 0755 /nuxel/services/nuxel-remote-desktop/bin/nuxel-remote-desktop-ctl \
+    "$STAGE/usr/local/libexec/nuxel/nuxel-remote-desktop-ctl"
+install -m 0644 /nuxel/services/nuxel-remote-desktop/config/wayvnc.conf.example \
+    "$STAGE/etc/nuxel/remote-desktop/vnc/wayvnc.conf"
+install -m 0644 /nuxel/services/nuxel-remote-desktop/systemd/nuxel-remote-vnc.service \
+    "$STAGE/etc/systemd/system/nuxel-remote-vnc.service"
+# XRDP is a SEPARATE X11 session.  The account has no sudo, no root login and
+# no access to the active Wayland runtime socket.
+chroot "$STAGE" /usr/sbin/useradd --create-home --shell /bin/bash nuxel-remote 2>/dev/null || true
+chroot "$STAGE" /usr/sbin/usermod -aG inet nuxel-remote
+# PWNAGE-47000: every image gets its own strong RDP password for the
+# restricted account.  The value is never echoed by this script; it is written
+# only to a root-only 0600 file inside the image so the owner can read it once.
+install -d -m 0700 "$STAGE/etc/nuxel/remote-desktop/xrdp"
+_rdpw="$(openssl rand -hex 14)"
+[ "${#_rdpw}" -eq 28 ] || { echo 'ERROR: RDP credential generation failed' >&2; exit 1; }
+printf 'nuxel-remote:%s\n' "$_rdpw" | chroot "$STAGE" /usr/sbin/chpasswd
+( umask 077; printf '%s\n' "$_rdpw" > "$STAGE/etc/nuxel/remote-desktop/xrdp/credential" )
+chmod 0600 "$STAGE/etc/nuxel/remote-desktop/xrdp/credential"
+chown 0:0 "$STAGE/etc/nuxel/remote-desktop/xrdp/credential"
+unset _rdpw
+[ -s "$STAGE/etc/nuxel/remote-desktop/xrdp/credential" ] || {
+  echo 'ERROR: RDP credential file missing' >&2; exit 1; }
+install -d "$STAGE/home/nuxel-remote/.config/openbox" "$STAGE/home/nuxel-remote/.mozilla/firefox/xrdp"
+install -m 0644 /nuxel/services/nuxel-remote-desktop/config/xrdp.ini \
+    "$STAGE/etc/xrdp/xrdp.ini"
+install -m 0644 /nuxel/services/nuxel-remote-desktop/config/sesman.ini \
+    "$STAGE/etc/xrdp/sesman.ini"
+install -m 0644 /nuxel/services/nuxel-remote-desktop/config/xorg.conf \
+    "$STAGE/etc/xrdp/xorg-nuxel.conf"
+install -m 0755 /nuxel/services/nuxel-remote-desktop/bin/nuxel-xrdp-session \
+    "$STAGE/usr/local/bin/nuxel-xrdp-session"
+install -m 0644 /nuxel/services/nuxel-remote-desktop/config/launcher.html \
+    "$STAGE/usr/share/nuxel/remote-desktop/launcher.html"
+# Generate a per-image TLS certificate for xrdp.  Never ship a shared key.
+openssl req -x509 -newkey rsa:2048 -nodes -days 825 -subj '/CN=nuxel-remote-desktop' \
+    -keyout "$STAGE/etc/xrdp/nuxel-key.pem" -out "$STAGE/etc/xrdp/nuxel-cert.pem" >/dev/null 2>&1
+chmod 0640 "$STAGE/etc/xrdp/nuxel-key.pem" "$STAGE/etc/xrdp/nuxel-cert.pem"
+chgrp xrdp "$STAGE/etc/xrdp/nuxel-key.pem" "$STAGE/etc/xrdp/nuxel-cert.pem" 2>/dev/null || true
+# Clean-rootfs assertions: the supported binaries, unit and configs must exist.
+for _rd in /usr/bin/wayvnc /usr/bin/wayvncctl /usr/bin/xrdp /usr/libexec/Xorg \
+           /usr/bin/openbox /usr/bin/firefox /usr/local/bin/nuxel-xrdp-session \
+           /usr/local/libexec/nuxel/nuxel-remote-desktop-ctl \
+           /etc/systemd/system/nuxel-remote-vnc.service \
+           /etc/nuxel/remote-desktop/vnc/wayvnc.conf /etc/xrdp/xrdp.ini \
+           /etc/xrdp/sesman.ini /etc/xrdp/xorg-nuxel.conf; do
+  [ -e "$STAGE$_rd" ] || { echo "ERROR: remote-desktop missing $_rd" >&2; exit 1; }
+done
+# The remote services are activation-driven; do NOT create boot wants.
 install -m 0644 /nuxel/services/nuxel-bridge/polkit/50-nuxel-bridge-network.rules     "$STAGE/etc/polkit-1/rules.d/50-nuxel-bridge-network.rules"
 install -m 0644 /nuxel/services/nuxel-portal/systemd/nuxel-portal.service             "$STAGE/etc/systemd/system/nuxel-portal.service"
 install -m 0644 /nuxel/services/nuxel-notifications/systemd/nuxel-notifications.service "$STAGE/etc/systemd/system/nuxel-notifications.service"
@@ -614,6 +689,13 @@ ln -sfn /usr/lib/systemd/system/multi-user.target "$STAGE/etc/systemd/system/def
 [[ -e "$STAGE/sbin/init" ]] || { echo 'ERROR: missing Fedora /sbin/init' >&2; exit 1; }
 # User for later phone session; login locked until recovery path established.
 chroot "$STAGE" /usr/sbin/useradd -m -s /bin/bash nuxel
+# PWNAGE-47000: this Android-derived 4.14 kernel is built with
+# CONFIG_ANDROID_PARANOID_NETWORK=y.  A non-root process may only create an
+# AF_INET socket when its supplementary groups include gid 3003 ("inet").
+# Without this, unprivileged sshd sessions cannot open local port forwards and
+# the GUI remote-access apps can never reach the loopback-bound servers.
+chroot "$STAGE" /usr/sbin/groupadd -f -g 3003 inet
+chroot "$STAGE" /usr/sbin/usermod -aG inet nuxel
 mkdir -p "$STAGE/etc/nuxel"
 cat > "$STAGE/etc/nuxel/phone-runtime-status" <<'STATUS'
 NUXEL_DEVICE=s10plus

@@ -1,0 +1,8 @@
+# Nuxel VNC screen sharing (PWNAGE-47000)
+# Loopback only.  Reach it through the owner's pinned-key SSH local forward:
+#   ssh -i ~/.ssh/wicked_wqn_id_rsa -N -L 5900:127.0.0.1:5900 root@<phone-lan-ip>
+# wayvnc attaches to the active Phoc/Wayland session and captures it with
+# zwlr_screencopy_manager_v1; input uses wlr virtual pointer/keyboard.
+address=127.0.0.1
+port=5900
+enable_auth=false

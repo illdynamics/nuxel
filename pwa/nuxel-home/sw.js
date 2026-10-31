@@ -40,7 +40,7 @@
 // the 15-entry power menu, screenshot/Gallery thumbnails, Files share, the
 // flashlight owner, the location/sound/USB status truth, and the version
 // lockstep bump.
-const CACHE_VERSION = 'v66-v074-release';
+const CACHE_VERSION = 'v67-p47000';
 const CACHE_NAME = 'nuxel-home-' + CACHE_VERSION;   // version marker sent to clients
 const STATIC_CACHE = 'nuxel-static-' + CACHE_VERSION;
 const DYNAMIC_CACHE = 'nuxel-dynamic-' + CACHE_VERSION;

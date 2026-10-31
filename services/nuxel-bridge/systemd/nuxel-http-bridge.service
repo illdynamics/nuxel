@@ -28,7 +28,7 @@ ProtectHome=no
 PrivateDevices=no
 RestrictAddressFamilies=AF_INET AF_UNIX
 ReadOnlyPaths=/
-ReadWritePaths=/run/nuxel /var/lib/nuxel /var/log/nuxel /var/cache/nuxel /home/nuxel /sys/kernel/config/usb_gadget /sys/class/leds
+ReadWritePaths=/run/nuxel /var/lib/nuxel /var/log/nuxel /var/cache/nuxel /home/nuxel /sys/kernel/config/usb_gadget /sys/class/leds /etc/nuxel/remote-desktop
 # The lockhead Bluetooth indicator is a provider-state document consumed by
 # both the native host and this service.  /run/nuxel already holds the
 # connection-mode and USB-mode state, so it is the canonical runtime location.

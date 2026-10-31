@@ -716,3 +716,22 @@ body.display-off #status-location,
 body.display-off .lockscreen-indicator,
 body.display-off .lockscreen-lockhead-motion,
 body.display-off .lockscreen-hint::before { animation: none !important; }
+
+/* PWNAGE-47000: persistent GUI remote-access indicator. */
+.status-right #status-remote {
+    width: auto; min-width: 18px; display: inline-flex; align-items: center; gap: 2px;
+    color: #ff8a8a;
+}
+.status-right #status-remote[hidden] { display: none !important; }
+#status-remote::before {
+    content: ''; width: 11px; height: 8px; border: 1.5px solid currentColor;
+    border-radius: 2px; box-sizing: border-box;
+}
+#status-remote::after {
+    content: ''; width: 5px; height: 1.5px; background: currentColor;
+    position: absolute; left: 4px; bottom: 2px; box-shadow: 0 0 6px currentColor;
+}
+#status-remote .remote-label {
+    font: 800 8px/1 ui-monospace, "DejaVu Sans Mono", monospace;
+    letter-spacing: .04em; color: #ffb3b3;
+}
