@@ -283,8 +283,11 @@ make O="${KOUT}" ARCH=arm64 CROSS_COMPILE="${CROSS_COMPILE}" \
 echo "[kernel] Done."
 if [[ "${USE_FRAGMENT}" = "1" ]]; then
     echo "[kernel] capability parity:"
-    python3 "${NUXEL_ROOT}/tools/s10plus/verify-kernel-config.py" \\
-        --config "${KOUT}/.config" --quiet || echo "[kernel] WARN: capability parity failed (release gate will fail)" >&2
+    if ! python3 "${NUXEL_ROOT}/tools/s10plus/verify-kernel-config.py" \
+            --config "${KOUT}/.config" --quiet; then
+        echo "[kernel] ERROR: built .config is not the live S10+ capability set" >&2
+        exit 1
+    fi
 fi
 ls -lh "${KOUT}/arch/arm64/boot/Image.gz" 2>/dev/null || echo "[kernel] WARN: Image.gz missing"
 find "${KOUT}/arch/arm64/boot/dts" -name 'exynos9820-beyond2lte*.dtb' 2>/dev/null || true
