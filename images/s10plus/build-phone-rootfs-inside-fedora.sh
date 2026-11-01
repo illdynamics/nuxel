@@ -13,10 +13,13 @@ trap cleanup EXIT
 trap 'rm -f "$OUT" "$OUT.sha256"' ERR
 # DNF packages are resolved for Fedora 43/aarch64 by an ARM64 Fedora container.
 # A dependency error must abort, rather than emitting a deceptive bare /etc tree.
+# PWNAGE-54000: nuxel-contacts / nuxel-messages / nuxel-dialer are compiled
+# from repo sources into the image and need the GTK4 + libadwaita headers.
 dnf -y install e2fsprogs findutils coreutils file rpm shadow-utils acl python3 python3-pillow \
     gcc make pkgconf-pkg-config kernel-headers \
     wayland-devel wayland-protocols-devel \
-    gtk3-devel webkit2gtk4.1-devel alsa-lib-devel git openssl
+    gtk3-devel webkit2gtk4.1-devel alsa-lib-devel git openssl \
+    gtk4-devel libadwaita-devel
 # --- BOTH Fedora 43 aarch64 repositories are REQUIRED (briq-04a) --------------
 # The GA "Everything" repo alone is NOT enough and the failure is not cosmetic:
 #   * `stevia` / `stevia-phosh-osk-provider` (the phosh on-screen keyboard) do
