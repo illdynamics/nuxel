@@ -27,10 +27,14 @@ mkdir -p "$(dirname "$OUT")"
 OUTDIR="$(cd "$(dirname "$OUT")" && pwd)"
 NAME="$(basename "$OUT")"
 echo "[nuxel] Fedora 43 aarch64 mobile image -> $OUT ($MB MiB)"
+# Pass the kbase-GPU requirement through to the container.  Without this the
+# inside-Fedora builder only *warns* that the pinned Mesa/wlroots set is absent
+# and ships an llvmpipe image while the caller believes it enforced the gate.
 podman run --rm --platform linux/arm64 --user root \
   --mount "type=bind,source=$ROOT,target=/nuxel,readonly" \
   --mount "type=bind,source=$OUTDIR,target=/deliver" \
   -e "NUXEL_IMAGE_NAME=$NAME" -e "NUXEL_IMAGE_MB=$MB" \
+  -e "NUXEL_REQUIRE_KBASE=${NUXEL_REQUIRE_KBASE:-0}" \
   --entrypoint /bin/bash fedora:43 \
   /nuxel/images/s10plus/build-phone-rootfs-inside-fedora.sh
 [[ -s "$OUT" ]] || { echo 'ERROR: container returned without image' >&2; exit 1; }
