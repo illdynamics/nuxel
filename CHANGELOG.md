@@ -1,9 +1,3 @@
-## A39 — Smart dock / Home settings (2026-10-19)
-
-- Default dock artwork now uses `assets/nuxel-bottom-bar2.png`; `Home Settings → Dock Background` switches BG1 JPEG / BG2 PNG instantly and persists across restarts. Both images are copied byte-for-byte to the PWA webroot and included in deployment checks.
-- Added layout lock, independently assigned Home desktop pages (two by default), Home returning to primary page, drawer Add to Home interactions, 4-position stationary dock and fixed wallpaper, slim inert scrollbar indicators, and live battery display styles.
-- Preserved A37 asset/haptics handling. Strengthened userspace manifest and included a separate hash-manifested A39 payload. Speaker output remains an on-device ALSA/UCM diagnostic blocker, not a tested success.
-
 # Changelog
 
 All notable changes to the Nuxel Phone OS repository are documented here.
@@ -1642,3 +1636,11 @@ Status at v0.1.0: ~25–30% MVP scaffold, **0% verified flashable**, ~35–45%
 patchable VM demo. See [`docs/repo-audit.md`](docs/repo-audit.md) for the
 measured code footprint and [`docs/milestones.md`](docs/milestones.md) for the
 programme view.
+
+---
+
+## A39 — Smart dock / Home settings (2026-10-19)
+
+- Default dock artwork now uses `assets/nuxel-bottom-bar2.png`; `Home Settings → Dock Background` switches BG1 JPEG / BG2 PNG instantly and persists across restarts. Both images are copied byte-for-byte to the PWA webroot and included in deployment checks.
+- Added layout lock, independently assigned Home desktop pages (two by default), Home returning to primary page, drawer Add to Home interactions, 4-position stationary dock and fixed wallpaper, slim inert scrollbar indicators, and live battery display styles.
+- Preserved A37 asset/haptics handling. Strengthened userspace manifest and included a separate hash-manifested A39 payload. Speaker output remains an on-device ALSA/UCM diagnostic blocker, not a tested success.
