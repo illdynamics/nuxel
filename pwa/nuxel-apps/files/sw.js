@@ -1,4 +1,4 @@
-const CACHE_NAME = 'nuxel-files-v2-p44000';
+const CACHE_NAME = 'nuxel-files-v3-p54000';
 const ASSETS = [
   '/',
   '/index.html',

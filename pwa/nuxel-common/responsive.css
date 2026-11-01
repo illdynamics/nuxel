@@ -1,0 +1,32 @@
+/* Nuxel phone-width contract (PWNAGE-52000).
+   Loaded by every installed PWA.  The page itself never pans sideways on the
+   S10+; intentional internal scrollers (code/log/table) keep their own
+   overflow.  Vertical touch scrolling and native form controls are untouched. */
+html, body {
+  max-width: 100%;
+  min-width: 0;
+}
+body { overflow-x: clip; }
+@supports not (overflow-x: clip) { body { overflow-x: hidden; } }
+main, section, article, .card, .panel, .app, .container, .content, .page {
+  min-width: 0;
+  max-width: 100%;
+}
+img, video, canvas, svg { max-width: 100%; }
+input, select, textarea, button { max-width: 100%; min-width: 0; }
+pre, code, .log, .output, .terminal, table { max-width: 100%; }
+pre, code, .log, .output { overflow-wrap: anywhere; }
+.dialog, .modal, [role="dialog"] {
+  max-width: calc(100vw - 24px);
+  max-height: calc(100dvh - 24px);
+  overflow: auto;
+}
+@media (max-width: 380px) {
+  body { font-size: 15px; }
+  .row, .toolbar, .actions { flex-wrap: wrap; }
+  .card, .panel { padding-left: 10px; padding-right: 10px; }
+}
+@media (orientation: landscape) and (max-height: 430px) {
+  .toolbar, .actions { flex-wrap: wrap; }
+  .dialog, .modal, [role="dialog"] { max-height: calc(100dvh - 12px); }
+}

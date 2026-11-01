@@ -1,0 +1,212 @@
+#!/usr/bin/env python3
+"""Nuxel Software — a small native GTK3 front-end to PackageKit.
+
+GNOME Software 49 segfaults on this image (GB10/4.14 userspace), so this app is
+the supported native RPM surface.  It invokes the real `pkcon` PackageKit client
+with fixed argv (never a shell), previews the transaction and requires an
+explicit confirmation.  PackageKit/polkit performs authorization through the
+session's graphical agent (lxpolkit).  Flatpak is reported blocked because this
+kernel has CONFIG_USER_NS=n; no sandbox weakening is attempted.
+"""
+from __future__ import annotations
+
+import os
+import shutil
+import subprocess
+
+import gi
+
+gi.require_version("Gtk", "3.0")
+from gi.repository import Gtk, GLib, Pango  # noqa: E402
+
+
+class SoftwareWindow(Gtk.Window):
+    def __init__(self):
+        super().__init__(title="Nuxel Software")
+        self.set_default_size(380, 700)
+        self.flatpak_ok, self.flatpak_reason = self._flatpak_status()
+        self.packages = []
+
+        header = Gtk.HeaderBar()
+        header.set_show_close_button(True)
+        header.props.title = "Nuxel Software"
+        self.set_titlebar(header)
+        refresh = Gtk.Button(label="Refresh")
+        refresh.connect("clicked", lambda *_: self.refresh())
+        header.pack_end(refresh)
+
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+        box.set_border_width(10)
+        self.add(box)
+
+        self.search = Gtk.SearchEntry()
+        self.search.set_placeholder_text("Search RPM packages…")
+        self.search.connect("activate", lambda *_: self.refresh())
+        box.pack_start(self.search, False, False, 0)
+
+        self.status = Gtk.Label(label="PackageKit: checking…")
+        self.status.set_xalign(0)
+        self.status.set_line_wrap(True)
+        box.pack_start(self.status, False, False, 0)
+
+        fp = Gtk.Label()
+        fp.set_xalign(0)
+        fp.set_line_wrap(True)
+        fp.set_markup("<b>Flatpak:</b> " + (
+            "available" if self.flatpak_ok else "BLOCKED — " + self.flatpak_reason))
+        box.pack_start(fp, False, False, 0)
+
+        scroller = Gtk.ScrolledWindow()
+        scroller.set_vexpand(True)
+        self.store = Gtk.ListStore(str, str, str, bool)  # id, name, version, installed
+        view = Gtk.TreeView(model=self.store)
+        for title, idx, expand in (("Package", 0, True), ("Version", 2, False),
+                                   ("State", 3, False)):
+            if idx == 3:
+                renderer = Gtk.CellRendererToggle()
+                renderer.set_property("activatable", False)
+                col = Gtk.TreeViewColumn("Installed", renderer, active=3)
+            else:
+                renderer = Gtk.CellRendererText()
+                renderer.set_property("ellipsize", Pango.EllipsizeMode.END)
+                col = Gtk.TreeViewColumn(title, renderer, text=idx)
+            col.set_expand(expand)
+            view.append_column(col)
+        view.connect("row-activated", self._row_activated)
+        scroller.add(view)
+        box.pack_start(scroller, True, True, 0)
+
+        row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        self.install_btn = Gtk.Button(label="Install selected")
+        self.install_btn.connect("clicked", lambda *_: self._act("install"))
+        self.remove_btn = Gtk.Button(label="Remove selected")
+        self.remove_btn.connect("clicked", lambda *_: self._act("remove"))
+        row.pack_start(self.install_btn, True, True, 0)
+        row.pack_start(self.remove_btn, True, True, 0)
+        box.pack_start(row, False, False, 0)
+
+        self.log = Gtk.Label(label="")
+        self.log.set_xalign(0)
+        self.log.set_line_wrap(True)
+        self.log.set_selectable(True)
+        box.pack_start(self.log, False, False, 0)
+
+        self.refresh()
+
+    def _flatpak_status(self):
+        if not shutil.which("flatpak"):
+            return False, "flatpak executable missing"
+        try:
+            p = subprocess.run(["unshare", "-U", "true"], capture_output=True, timeout=3)
+            if p.returncode != 0:
+                return False, "CONFIG_USER_NS is not set (unshare -U failed)"
+        except (OSError, subprocess.TimeoutExpired):
+            return False, "cannot probe user namespaces"
+        if not shutil.which("bwrap"):
+            return False, "bubblewrap missing"
+        if not (shutil.which("xdg-desktop-portal") or os.path.exists("/usr/libexec/xdg-desktop-portal")):
+            return False, "xdg-desktop-portal missing"
+        return True, "sandbox prerequisites reported present"
+
+    def _run(self, argv, timeout=120):
+        try:
+            p = subprocess.run(argv, capture_output=True, text=True, timeout=timeout)
+            return p.returncode, (p.stdout or "") + (p.stderr or "")
+        except (OSError, subprocess.TimeoutExpired) as exc:
+            return 127, str(exc)
+
+    def refresh(self):
+        q = self.search.get_text().strip()
+        argv = ["pkcon", "search", "name", q] if q else ["pkcon", "get-packages"]
+        rc, out = self._run(argv + ["--filter=installed"] if not q else argv, timeout=60)
+        # `pkcon search name q` already includes installed state; fall back to
+        # the installed list when the search is empty.
+        if not q:
+            rc, out = self._run(["pkcon", "get-packages", "--filter=installed"], timeout=60)
+        self.store.clear()
+        self.packages = []
+        for line in out.splitlines():
+            line = line.strip()
+            if not line or line.startswith("Loading") or line.startswith("Querying"):
+                continue
+            parts = line.split()
+            if len(parts) >= 2 and ("\t" in line or parts[0].lower() in ("installed", "available")):
+                continue
+            # pkcon lines look like: "name;version;arch;repo;summary"
+            fields = [f.strip() for f in line.split(";")]
+            if len(fields) >= 3:
+                name = fields[0].split(".")[0]
+                version = fields[1]
+                repo = fields[3] if len(fields) > 3 else ""
+                installed = repo.lower().startswith("installed")
+                self.store.append([name, name, version, installed])
+                self.packages.append({"id": name, "version": version,
+                                      "repo": repo, "installed": installed})
+        self.status.set_text("PackageKit: %d package row(s)%s" % (
+            len(self.packages), (" for “%s”" % q) if q else ""))
+        if not self.packages:
+            self.log.set_text("No matching RPM package rows. The configured Fedora repositories remain the source of truth.")
+
+    def _selected(self):
+        sel = None
+        view = None
+        for child in self.get_children():
+            pass
+        # Find the TreeView through the hierarchy.
+        def walk(w):
+            nonlocal view
+            if isinstance(w, Gtk.TreeView):
+                view = w
+            if isinstance(w, Gtk.Container):
+                for c in w.get_children():
+                    walk(c)
+        walk(self)
+        if view is None:
+            return None
+        model, it = view.get_selection().get_selected()
+        if it is None:
+            return None
+        return {"id": model[it][0], "version": model[it][2], "installed": model[it][3]}
+
+    def _row_activated(self, view, path, column):
+        self._act("install" if not self._selected() or not self._selected()["installed"] else "remove")
+
+    def _act(self, action):
+        pkg = self._selected()
+        if not pkg:
+            self.log.set_text("Select a package row first.")
+            return
+        if action == "remove" and not pkg["installed"]:
+            self.log.set_text("That package is not installed.")
+            return
+        if action == "install" and pkg["installed"]:
+            self.log.set_text("That package is already installed.")
+            return
+        verb = "install" if action == "install" else "remove"
+        dlg = Gtk.MessageDialog(
+            transient_for=self, modal=True, message_type=Gtk.MessageType.QUESTION,
+            buttons=Gtk.ButtonsType.OK_CANCEL,
+            text="%s %s?" % (verb.capitalize(), pkg["id"]))
+        dlg.format_secondary_text(
+            "PackageKit will resolve dependencies and ask polkit for authorization. "
+            "Verify the repository/version before continuing.\n\nVersion: %s" % pkg["version"])
+        if dlg.run() != Gtk.ResponseType.OK:
+            dlg.destroy()
+            return
+        dlg.destroy()
+        argv = ["pkcon", verb, "-y", pkg["id"]]
+        self.log.set_text("Running: " + " ".join(argv))
+        rc, out = self._run(argv, timeout=600)
+        self.log.set_text(out.strip()[-1200:] or ("exit %d" % rc))
+        self.refresh()
+
+
+def main():
+    win = SoftwareWindow()
+    win.connect("destroy", Gtk.main_quit)
+    win.show_all()
+    Gtk.main()
+
+
+if __name__ == "__main__":
+    main()

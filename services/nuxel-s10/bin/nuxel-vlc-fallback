@@ -1,0 +1,37 @@
+#!/bin/sh
+# Nuxel VLC launch fallback.
+#
+# Fedora's VLC 3.0.24 aarch64 build on this image cannot create a Wayland
+# video-output surface and its Qt interface module does not load, so the
+# packaged VLC exits without a window.  Try the packaged engine briefly, then
+# hand the same file to mpv (which is present and verified on this handset).
+# This keeps the VLC launcher useful without claiming the broken VLC engine
+# works: the caller sees a real player window and media still plays.
+set -u
+export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+: "${XDG_RUNTIME_DIR:=/run/user/1000}"
+: "${WAYLAND_DISPLAY:=wayland-0}"
+file=""
+for a in "$@"; do case "$a" in /*) file="$a" ;; esac; done
+
+if [ "${NUXEL_VLC_TRY:-0}" = "1" ]; then
+  /usr/bin/vlc -I qt --no-video-title-show "$@" >/tmp/nuxel-vlc-fallback.log 2>&1 &
+else
+  vpid=0
+fi
+vpid=$!
+i=0
+while [ "$vpid" != 0 ] && [ "$i" -lt 20 ]; do
+  if ! kill -0 "$vpid" 2>/dev/null; then break; fi
+  if /usr/lib/nuxel/nuxel-foreign-toplevel list 2>/dev/null | grep -q 'app_id=vlc'; then
+    wait "$vpid"
+    exit $?
+  fi
+  i=$((i+1)); sleep 0.15
+done
+kill "$vpid" 2>/dev/null || true
+wait "$vpid" 2>/dev/null || true
+if [ -n "$file" ]; then
+  exec /usr/bin/mpv --no-config --force-window=yes --title="VLC (mpv playback)" "$file"
+fi
+exec /usr/bin/mpv --no-config --force-window=yes --idle=yes --title="VLC (mpv playback)"

@@ -1,0 +1,32 @@
+Warning: Permanently added '192.168.178.167' (ED25519) to the list of known hosts.
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+Linux 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 4.14.253-gf7194c1d15ed-dirty #7 SMP PREEMPT Sat Oct 31 22:01:13 UTC 2026 aarch64 GNU/Linux
+
+CONFIG_MALI_BIFROST_R26P0=y
+CONFIG_MALI_MIDGARD=y
+CONFIG_DRM=y
+# CONFIG_DRM_EXYNOS is not set
+CONFIG_FB=y
+CONFIG_EXYNOS_DPU20=y
+CONFIG_UDMABUF=y
+
+ls: cannot access '/dev/dri': No such file or directory
+crw-------. 1 root root 29,   0 Jan  1  1970 /dev/fb0
+crw-rw-rw-. 1 root root 10, 121 Jan  1  1970 /dev/mali0
+crw-rw-rw-. 1 root root 10, 105 Jan  1  1970 /dev/udmabuf
+
+1440,6080
+
+active
+active
+active
+
+12095 /usr/sbin/phoc --no-xwayland -C /etc/nuxel/phoc-phone.ini -E /usr/lib/nuxel/nuxel-session.sh

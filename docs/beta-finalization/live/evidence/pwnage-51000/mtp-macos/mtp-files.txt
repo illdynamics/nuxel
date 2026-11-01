@@ -1,0 +1,85 @@
+Device 0 (VID=18d1 and PID=4ee7) is UNKNOWN in libmtp v1.1.23.
+Please report this VID/PID and the device model to the libmtp development team
+libmtp version: 1.1.23
+
+mtp-files: Successfully connected
+Listing File Information on Device with name: (NULL) [SN:NUXEL-S10PLUS-0001]
+File ID: 3
+   Filename: nuxel-charging.png
+   File size 907565 (0x00000000000DD92D) bytes
+   Parent ID: 2
+   Storage ID: 0x00010001
+   Filetype: Portable Network Graphics
+File ID: 4
+   Filename: nuxel-screenshot-20261031T055115Z.png
+   File size 2514716 (0x0000000000265F1C) bytes
+   Parent ID: 2
+   Storage ID: 0x00010001
+   Filetype: Portable Network Graphics
+File ID: 5
+   Filename: nuxel-screenshot-20261031T055814Z.png
+   File size 2508401 (0x0000000000264671) bytes
+   Parent ID: 2
+   Storage ID: 0x00010001
+   Filetype: Portable Network Graphics
+File ID: 6
+   Filename: nuxel-screenshot-20261031T234752Z.png
+   File size 710236 (0x00000000000AD65C) bytes
+   Parent ID: 2
+   Storage ID: 0x00010001
+   Filetype: Portable Network Graphics
+File ID: 7
+   Filename: nuxel-screenshot-20261101T000825Z.png
+   File size 998312 (0x00000000000F3BA8) bytes
+   Parent ID: 2
+   Storage ID: 0x00010001
+   Filetype: Portable Network Graphics
+File ID: 8
+   Filename: nuxel-screenshot-20261101T075618680Z.png
+   File size 2286478 (0x000000000022E38E) bytes
+   Parent ID: 2
+   Storage ID: 0x00010001
+   Filetype: Portable Network Graphics
+File ID: 9
+   Filename: nuxel-screenshot-20261101T080028159Z.png
+   File size 964816 (0x00000000000EB8D0) bytes
+   Parent ID: 2
+   Storage ID: 0x00010001
+   Filetype: Portable Network Graphics
+File ID: 10
+   Filename: nuxel-screenshot-20261101T080109549Z.png
+   File size 964654 (0x00000000000EB82E) bytes
+   Parent ID: 2
+   Storage ID: 0x00010001
+   Filetype: Portable Network Graphics
+File ID: 11
+   Filename: nuxel-screenshot-20261101T085609721Z.png
+   File size 18207 (0x000000000000471F) bytes
+   Parent ID: 2
+   Storage ID: 0x00010001
+   Filetype: Portable Network Graphics
+File ID: 12
+   Filename: nuxel-screenshot-20261101T093637895Z.png
+   File size 739080 (0x00000000000B4708) bytes
+   Parent ID: 2
+   Storage ID: 0x00010001
+   Filetype: Portable Network Graphics
+File ID: 13
+   Filename: nuxel-screenshot-20261101T100645585Z.png
+   File size 1014376 (0x00000000000F7A68) bytes
+   Parent ID: 2
+   Storage ID: 0x00010001
+   Filetype: Portable Network Graphics
+File ID: 16
+   Filename: nuxel-boot-animation.mp4
+   File size 5474699 (0x000000000053898B) bytes
+   Parent ID: 15
+   Storage ID: 0x00010001
+   Filetype: MPEG video stream
+File ID: 17
+   Filename: nuxel-mtp-test.txt
+   File size 44 (0x000000000000002C) bytes
+   Parent ID: 0
+   Storage ID: 0x00010001
+   Filetype: Text file
+OK.

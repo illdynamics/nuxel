@@ -4,7 +4,7 @@
   "description": "Email client with IMAP/SMTP support",
   "start_url": "/pwa/nuxel-apps/mail/index.html",
   "display": "standalone",
-  "orientation": "portrait",
+  "orientation": "any",
   "background_color": "#1a1a2e",
   "theme_color": "#FF9800",
   "icons": [

@@ -1,0 +1,23 @@
+PASS missing coordinates never become 0,0
+PASS NaN coordinates rejected
+PASS out-of-range latitude rejected
+PASS out-of-range longitude rejected
+PASS missing timestamp stays null, not Date.now()
+PASS provider timestamp converted seconds->ms and preserved
+PASS invalid accuracy becomes null (no fabricated default)
+PASS negative accuracy becomes null
+PASS network source is labelled network, not GPS
+PASS GNSS source is labelled gnss
+PASS W3C enableHighAccuracy/timeout/maximumAge mapping
+PASS permission denied maps to W3C code 1
+PASS maps-core keeps network fix labelled network (not GNSS)
+PASS maps-core keeps GNSS fix labelled GNSS
+PASS maps-core never presents a fix without a provider timestamp as fresh
+PASS getCurrentPosition delivers a real network position and releases one-shot lease
+PASS watchPosition produces repeated updates
+PASS clearWatch stops future location requests
+PASS multiple watches update independently
+PASS clearing one watch keeps the other active
+PASS global policy OFF stops an active watch timer immediately
+
+ALL PASS — geolocation shim validates data, preserves provider time, labels sources and stops watches

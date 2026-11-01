@@ -40,6 +40,8 @@
 #define HOST_FIFO  "/run/nuxel-pwa-host.cmd"
 #define HAP_FIFO   "/run/nuxel-haptics/haptics.cmd"
 #define CMD_FIFO   "/run/nuxel-navdock.cmd"
+#define LOCK_STATE "/run/nuxel/security/lock-state.json"
+#define LAUNCHER_READY "/run/nuxel-launcher-ready"
 
 static struct wl_display *display;
 static struct wl_registry *registry;
@@ -54,8 +56,9 @@ static struct wl_surface *surface;
 static struct zwlr_layer_surface_v1 *layer_surface;
 static struct wl_buffer *buffer;
 static int cmd_fd = -1;
-static int dock_visible = 1;
+static int dock_visible = 0;   /* fail closed until lock state is ready */
 static int touch_down = 0;
+static int long_fired = 0;              /* one action per gesture */
 static const struct zwlr_layer_surface_v1_listener layer_listener;
 static int32_t scale = 2;
 static int32_t out_w = 720, out_h = 1520;
@@ -72,6 +75,49 @@ static void audit(const char *fmt, ...) {
   time_t t = time(NULL);
   dprintf(fd, "%lld %s\n", (long long)t, b);
   close(fd);
+}
+
+/* ---- authoritative lock state ------------------------------------------- */
+/* Return 2 = unlocked, 1 = locked, 0 = unknown/unreadable.  The contract is
+ * fail-closed: a missing/partially-written document or a missing lock-state
+ * owner never lets the native dock map over the lockscreen. */
+static int lock_state_read(void) {
+  char buf[512];
+  int fd = open(LOCK_STATE, O_RDONLY | O_CLOEXEC);
+  if (fd < 0) return 0;
+  ssize_t n = read(fd, buf, sizeof buf - 1);
+  close(fd);
+  if (n <= 0) return 0;
+  buf[n] = 0;
+  char *p = strstr(buf, "\"locked\"");
+  if (!p) return 0;
+  p = strchr(p, ':');
+  if (!p) return 0;
+  p++;
+  while (*p == ' ' || *p == '\t') p++;
+  if (!strncmp(p, "false", 5)) return 2;
+  if (!strncmp(p, "true", 4)) return 1;
+  return 0;
+}
+
+static void dock_show(void);
+static void dock_hide(void);
+
+static int home_ready(void) {
+  return access(LAUNCHER_READY, F_OK) == 0;
+}
+
+static void dock_resolve_startup(void) {
+  int st = lock_state_read();
+  if (st == 2 && home_ready()) {
+    dock_show();
+    audit("NAV_DOCK_START visible=1 lock=unlocked home=ready");
+  } else {
+    dock_hide();
+    audit("NAV_DOCK_START visible=0 lock=%s home=%s",
+          st == 2 ? "unlocked" : st == 1 ? "locked" : "unknown",
+          home_ready() ? "ready" : "not-ready");
+  }
 }
 
 /* ---- shared-memory buffer (single wl_shm pool per frame) ---------------- */
@@ -166,10 +212,17 @@ static void dock_destroy(void) {
 }
 
 static void dock_show(void) {
+  int st = lock_state_read();
+  if (st != 2) {
+    // Fail closed: an explicit show during lock/unknown is refused.
+    dock_hide();
+    audit("NAV_DOCK_SHOW_REFUSED lock=%s", st == 1 ? "locked" : "unknown");
+    return;
+  }
   if (dock_visible && surface) return;
   dock_visible = 1;
   dock_create();
-  audit("NAV_DOCK_SHOW");
+  audit("NAV_DOCK_SHOW lock=unlocked");
 }
 
 static void dock_hide(void) {
@@ -206,17 +259,25 @@ static void cmd_open(void) {
 }
 
 /* ---- actions ------------------------------------------------------------- */
+static void send_haptic(const char *name) {
+  int hf = open(HAP_FIFO, O_WRONLY | O_NONBLOCK);
+  if (hf < 0) return;
+  dprintf(hf, "%s\n", name);
+  close(hf);
+}
+
+/* Exactly one haptic per logical action.  A long Back gets the distinct
+ * `long` pattern; the ordinary navigation tick is never also sent. */
 static void forward(const char *action) {
   if (!dock_visible || !layer_surface) return;
-  /* One subtle navigation haptic, mirroring the DOM dock's own feedback. */
-  int hf = open(HAP_FIFO, O_WRONLY | O_NONBLOCK);
-  if (hf >= 0) { dprintf(hf, "navigation\n"); close(hf); }
+  send_haptic(!strcmp(action, "back-long") ? "long" : "navigation");
 
   int fd = open(HOST_FIFO, O_WRONLY | O_NONBLOCK);
   if (fd < 0) { audit("HOST_FIFO_OPEN_FAIL errno=%d action=%s", errno, action); return; }
   dprintf(fd, "action %s\n", action);
   close(fd);
-  audit("NAV_DOCK action=%s width=%d height=%d scale=%d", action, width, height, scale);
+  audit("NAV_DOCK action=%s haptic=%s width=%d height=%d scale=%d", action,
+        !strcmp(action, "back-long") ? "long" : "navigation", width, height, scale);
 }
 
 static int64_t now_ms(void) {
@@ -225,22 +286,27 @@ static int64_t now_ms(void) {
   return (int64_t)ts.tv_sec * 1000 + ts.tv_nsec / 1000000;
 }
 
-static void tap_at(int32_t x, int32_t y, int64_t held_ms) {
-  if (width <= 0 || !dock_visible) return;
+static int cell_at(int32_t x) {
+  if (width <= 0) return -1;
   int cell = x * 3 / width;
   if (cell < 0) cell = 0;
   if (cell > 2) cell = 2;
-  (void)y;
-  /* Long Back closes only the current foreground app.  The short action is
-     deliberately suppressed after a long hold: exactly one action per gesture. */
-  if (cell == 0 && held_ms >= 700) { forward("back-long"); return; }
+  return cell;
+}
+
+static void tap_at(int32_t x, int32_t y, int64_t held_ms) {
+  if (width <= 0 || !dock_visible) return;
+  (void)y; (void)held_ms;
   const char *actions[3] = { "back", "home", "recents" };
-  forward(actions[cell]);
+  forward(actions[cell_at(x)]);
 }
 
 /* ---- touch (single-finger) ---------------------------------------------- */
 static int32_t down_x = 0, down_y = 0, last_x = 0, last_y = 0;
 static int64_t down_ms = 0;
+
+#define LONG_HOLD_MS 700
+#define TAP_SLOP_PX  24
 
 static void touch_down_cb(void *d, struct wl_touch *t, uint32_t serial,
                           uint32_t time, struct wl_surface *surf, int32_t id,
@@ -249,6 +315,7 @@ static void touch_down_cb(void *d, struct wl_touch *t, uint32_t serial,
   if (!dock_visible) return;
   if (!touch_down) {
     touch_down = 1;
+    long_fired = 0;
     down_ms = now_ms();
     down_x = last_x = wl_fixed_to_int(x);
     down_y = last_y = wl_fixed_to_int(y);
@@ -257,12 +324,14 @@ static void touch_down_cb(void *d, struct wl_touch *t, uint32_t serial,
 static void touch_up_cb(void *d, struct wl_touch *t, uint32_t serial,
                         uint32_t time, int32_t id) {
   (void)d; (void)t; (void)serial; (void)time; (void)id;
-  if (touch_down) {
-    touch_down = 0;
-    int dx = last_x - down_x, dy = last_y - down_y;
-    /* A tap is a mostly-stationary contact: treat drags as non-actions. */
-    if (dx < 24 && dx > -24 && dy < 24 && dy > -24) tap_at(down_x, down_y, now_ms() - down_ms);
-  }
+  if (!touch_down) return;
+  touch_down = 0;
+  if (long_fired) { long_fired = 0; return; }   /* never double-fire */
+  int dx = last_x - down_x, dy = last_y - down_y;
+  /* A tap is a mostly-stationary contact: treat drags as non-actions. */
+  if (dx < TAP_SLOP_PX && dx > -TAP_SLOP_PX &&
+      dy < TAP_SLOP_PX && dy > -TAP_SLOP_PX)
+    tap_at(down_x, down_y, now_ms() - down_ms);
 }
 static void touch_motion_cb(void *d, struct wl_touch *t, uint32_t time, int32_t id,
                             wl_fixed_t x, wl_fixed_t y) {
@@ -272,12 +341,36 @@ static void touch_motion_cb(void *d, struct wl_touch *t, uint32_t time, int32_t 
 }
 static void touch_frame_cb(void *d, struct wl_touch *t) { (void)d; (void)t; }
 static void touch_cancel_cb(void *d, struct wl_touch *t) {
-  (void)d; (void)t; touch_down = 0;
+  (void)d; (void)t; touch_down = 0; long_fired = 0;
 }
 static const struct wl_touch_listener touch_listener = {
   .down = touch_down_cb, .up = touch_up_cb, .motion = touch_motion_cb,
   .frame = touch_frame_cb, .cancel = touch_cancel_cb,
 };
+
+/* Timer-driven threshold: the long pulse and the close request fire while the
+ * finger is still down, not on release.  Movement beyond the tap slop or a
+ * pointer cancel disarms it, so a scroll across the dock never closes an app. */
+static void maybe_long_press(void) {
+  if (!touch_down || long_fired || !dock_visible) return;
+  if (cell_at(down_x) != 0) return;
+  int dx = last_x - down_x, dy = last_y - down_y;
+  if (dx >= TAP_SLOP_PX || dx <= -TAP_SLOP_PX ||
+      dy >= TAP_SLOP_PX || dy <= -TAP_SLOP_PX) return;
+  if (now_ms() - down_ms < LONG_HOLD_MS) return;
+  long_fired = 1;
+  forward("back-long");
+}
+
+static int long_press_timeout_ms(void) {
+  if (!touch_down || long_fired || !dock_visible || cell_at(down_x) != 0) return -1;
+  int dx = last_x - down_x, dy = last_y - down_y;
+  if (dx >= TAP_SLOP_PX || dx <= -TAP_SLOP_PX ||
+      dy >= TAP_SLOP_PX || dy <= -TAP_SLOP_PX) return -1;
+  int64_t elapsed = now_ms() - down_ms;
+  if (elapsed >= LONG_HOLD_MS) return 0;
+  return (int)(LONG_HOLD_MS - elapsed);
+}
 
 /* ---- seat ----------------------------------------------------------------- */
 static void seat_caps(void *d, struct wl_seat *s, uint32_t caps) {
@@ -364,7 +457,7 @@ int main(void) {
   wl_display_roundtrip(display);   /* collect output mode/scale */
 
   cmd_open();
-  dock_create();
+  dock_resolve_startup();
   wl_display_roundtrip(display);   /* receive configure -> render + map */
 
   audit("NAV_DOCK_READY width=%d height=%d scale=%d out=%dx%d",
@@ -380,12 +473,18 @@ int main(void) {
       { .fd = cmd_fd, .events = POLLIN, .revents = 0 }
     };
     int nfds = cmd_fd >= 0 ? 2 : 1;
-    int pr = poll(pf, (nfds_t)nfds, -1);
+    int timeout = long_press_timeout_ms();
+    int pr = poll(pf, (nfds_t)nfds, timeout);
     if (pr < 0) {
       wl_display_cancel_read(display);
       if (errno == EINTR) continue;
       audit("NAV_DOCK_EXIT poll errno=%d", errno);
       return 0;
+    }
+    if (pr == 0) {
+      wl_display_cancel_read(display);
+      maybe_long_press();
+      continue;
     }
     if (pf[0].revents & POLLIN) {
       if (wl_display_read_events(display) < 0) { audit("NAV_DOCK_EXIT read"); return 0; }
@@ -394,6 +493,7 @@ int main(void) {
       wl_display_cancel_read(display);
     }
     if (cmd_fd >= 0 && (pf[1].revents & (POLLIN | POLLHUP))) cmd_pump();
+    maybe_long_press();
   }
   audit("NAV_DOCK_EXIT");
   return 0;

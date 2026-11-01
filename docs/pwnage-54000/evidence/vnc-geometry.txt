@@ -1,0 +1,40 @@
+VNC RFB ServerInit geometry (live Phoc mirror, 2026-11-01)
+portrait: 720x1520
+landscape: 1520x720
+wayvnc service stayed active; detach/attach+output-set refresh
+
+remote.json:
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+{
+  "effective_orientation": 0,
+  "last_error": "",
+  "schema": "nuxel.orientation.remote/1",
+  "sequence": 160,
+  "updated_epoch": 1793554681.4783282,
+  "vnc": {
+    "active": true,
+    "capture_buffer_height": 1520,
+    "capture_buffer_width": 720,
+    "clients": 0,
+    "dynamic_resize": "wayvnc detach/attach re-reads the current transform; existing clients receive RFB DesktopSize; a client without DesktopSize support keeps its window and may letterbox",
+    "height": 760,
+    "last_refresh_sequence": 160,
+    "output": "HEADLESS-1",
+    "refresh_error": "",
+    "sequence": 160,
+    "session_mode": "current-phoc-wayland-session",
+    "status": "mirrored",
+    "transform_refreshed": false,
+    "width": 360
+  },
+  "vnc_status": "mirrored",
+  "xrdp_sessions": []
+}

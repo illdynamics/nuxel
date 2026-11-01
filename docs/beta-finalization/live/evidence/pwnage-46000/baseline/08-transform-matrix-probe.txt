@@ -1,0 +1,25 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+normal rc=0
+    720x1520 px (current)
+  Transform: normal
+grim-normal rc=0
+/tmp/pwnage46000-normal.png (720, 1520)
+180 rc=0
+    720x1520 px (current)
+  Transform: 180
+grim-180 rc=0
+/tmp/pwnage46000-180.png (720, 1520)
+270 rc=0
+    720x1520 px (current)
+  Transform: 270
+grim-270 rc=0
+/tmp/pwnage46000-270.png (1520, 720)
+restore_rc=0

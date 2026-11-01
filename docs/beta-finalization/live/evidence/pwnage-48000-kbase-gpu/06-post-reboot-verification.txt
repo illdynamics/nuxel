@@ -1,0 +1,40 @@
+Warning: Permanently added '192.168.178.167' (ED25519) to the list of known hosts.
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+Linux fedora 4.14.253-gf7194c1d15ed-dirty #7 SMP PREEMPT Sat Oct 31 22:01:13 UTC 2026 aarch64 GNU/Linux
+
+active
+active
+active
+
+ls: cannot access '/run/nuxel-gpu-fallback': No such file or directory
+
+phoc=5866
+7f85c90000-7f873ee000 r-xp 00000000 103:0f 3412052                       /usr/lib64/libgallium_dri.so
+7f873ee000-7f873f7000 ---p 0175e000 103:0f 3412052                       /usr/lib64/libgallium_dri.so
+7f873f7000-7f87490000 r--p 01767000 103:0f 3412052                       /usr/lib64/libgallium_dri.so
+7f87490000-7f8749c000 rw-p 01800000 103:0f 3412052                       /usr/lib64/libgallium_dri.so
+lrwx------. 1 root root 64 Oct 31 23:11 13 -> /dev/mali0
+lrwx------. 1 root root 64 Oct 31 23:11 14 -> /dev/mali0
+lrwx------. 1 root root 64 Oct 31 23:11 15 -> /dev/mali0
+lrwx------. 1 root root 64 Oct 31 23:11 16 -> /dev/udmabuf
+lrwx------. 1 root root 64 Oct 31 23:11 28 -> anon_inode:dmabuf_udmabuf
+
+1793484704 FRAMES_OK total=274 fps_1s=25 failures=0 blits=163 present_skipped=110 blit_avg_ms=21 damage=230-231 damage_blits=162 damage_avg_ms=21 idle_ms=1520 out=720x1520 src=720x1520 scale=2 panel=1440x3040 owner=nuxel-wl-fb display=on src_format=0x34324258 colour=R@0,G@8,B@16_abgr8888_override=1 decon_pan_ok=164 decon_pan_failed=0
+
+NUXEL_GPU=1
+WLR_RENDERER=gles2
+MESA_KBASE_NODE=/dev/mali0
+
+GL_VERSION=OpenGL ES 3.2 Mesa 26.3.0-devel (git-a5010bb447)
+GL_RENDERER=Mali-G76 MC12 (Panfrost)
+GL_VENDOR=Mesa
+frames=2962 elapsed=1.-188s pixel=33cc4dff
+glGetError=0x0

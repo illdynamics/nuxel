@@ -1,0 +1,118 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+APP=org.nuxel.Notes
+HTTP/1.0 200 OK
+Server: BaseHTTP/0.6 Python/3.14.7
+Date: Sat, 31 Oct 2026 16:56:37 GMT
+Content-Type: application/json
+Content-Length: 60
+Access-Control-Allow-Origin: http://127.0.0.1:8000
+
+{"result": {"success": true, "data": null, "missing": true}}
+/var/lib/nuxel/anim-stop
+/var/lib/nuxel/ui-settings.ppm
+/var/lib/nuxel/rollback-pwnage36000-20261029T145506/usr/local/bin/nuxel-gps-status
+/var/lib/nuxel/rollback-pwnage36000-20261029T145506/usr/local/bin/nuxel-audio-status
+/var/lib/nuxel/rollback-pwnage36000-20261029T145506/usr/local/bin/nuxel-verify-pwnage36000
+/var/lib/nuxel/rollback-pwnage36000-20261029T145506/usr/local/bin/nuxel-theme
+/var/lib/nuxel/rollback-pwnage36000-20261029T145506/usr/lib/nuxel/nuxel-preload-cinema
+/var/lib/nuxel/rollback-pwnage36000-20261029T145506/usr/lib/nuxel/nuxel-audio-route.sh
+/var/lib/nuxel/rollback-pwnage36000-20261029T145506/usr/lib/nuxel/nuxel-session.sh
+/var/lib/nuxel/rollback-pwnage36000-20261029T145506/usr/lib/nuxel/nuxel-charger-mode-recovery.sh
+/var/lib/nuxel/rollback-pwnage36000-20261029T145506/usr/lib/nuxel/nuxel-device-permissions.sh.real-36000
+/var/lib/nuxel/rollback-pwnage36000-20261029T145506/usr/lib/nuxel/nuxel-wifi-up.sh
+/var/lib/nuxel/rollback-pwnage36000-20261029T145506/etc/pipewire/pipewire.conf.d/99-nuxel-s10.conf
+/var/lib/nuxel/rollback-pwnage36000-20261029T145506/etc/dbus-1/system.d/99-geoclue-nuxel.conf
+/var/lib/nuxel/rollback-pwnage36000-20261029T145506/etc/systemd/system/nuxel-device-permissions.service
+/var/lib/nuxel/rollback-pwnage36000-20261029T145506/etc/systemd/system/nuxel-audio-route.service
+/var/lib/nuxel/rollback-pwnage36000-20261029T145506/etc/systemd/system/nuxel-preload-cinema.service
+/var/lib/nuxel/rollback-pwnage36000-20261029T145506/etc/systemd/system/nuxel-charger-mode-recovery.service
+/var/lib/nuxel/rollback-pwnage36000-20261029T145506/etc/systemd/system/nuxel-wifi.service
+/var/lib/nuxel/rollback-pwnage36000-20261029T145506/etc/alsa/conf.d/99-nuxel-s10-default.conf
+/var/lib/nuxel/rollback-pwnage36000-20261029T145506/etc/geoclue/geoclue.conf
+/var/lib/nuxel/rollback-pwnage36000-20261029T145506/etc/wireplumber/wireplumber.conf.d/99-nuxel-s10.conf
+/var/lib/nuxel/rollback-pwnage36000-20261029T145506/etc/profile.d/nuxel-banner.sh
+/var/lib/nuxel/rollback-pwnage36000-20261029T150820/usr/local/bin/nuxel-gps-status
+/var/lib/nuxel/rollback-pwnage36000-20261029T150820/usr/local/bin/nuxel-audio-status
+/var/lib/nuxel/rollback-pwnage36000-20261029T150820/usr/local/bin/nuxel-verify-pwnage36000
+/var/lib/nuxel/rollback-pwnage36000-20261029T150820/usr/local/bin/nuxel-theme
+/var/lib/nuxel/rollback-pwnage36000-20261029T150820/usr/lib/nuxel/nuxel-preload-cinema
+/var/lib/nuxel/rollback-pwnage36000-20261029T150820/usr/lib/nuxel/nuxel-audio-route.sh
+/var/lib/nuxel/rollback-pwnage36000-20261029T150820/usr/lib/nuxel/nuxel-session.sh
+/var/lib/nuxel/rollback-pwnage36000-20261029T150820/usr/lib/nuxel/nuxel-charger-mode-recovery.sh
+/var/lib/nuxel/rollback-pwnage36000-20261029T150820/usr/lib/nuxel/nuxel-device-permissions.sh.real-36000
+/var/lib/nuxel/rollback-pwnage36000-20261029T150820/usr/lib/nuxel/nuxel-wifi-up.sh
+/var/lib/nuxel/rollback-pwnage36000-20261029T150820/etc/pipewire/pipewire.conf.d/99-nuxel-s10.conf
+/var/lib/nuxel/rollback-pwnage36000-20261029T150820/etc/dbus-1/system.d/99-geoclue-nuxel.conf
+/var/lib/nuxel/rollback-pwnage36000-20261029T150820/etc/systemd/system/nuxel-device-permissions.service
+/var/lib/nuxel/rollback-pwnage36000-20261029T150820/etc/systemd/system/nuxel-audio-route.service
+/var/lib/nuxel/rollback-pwnage36000-20261029T150820/etc/systemd/system/nuxel-preload-cinema.service
+/var/lib/nuxel/rollback-pwnage36000-20261029T150820/etc/systemd/system/nuxel-charger-mode-recovery.service
+/var/lib/nuxel/rollback-pwnage36000-20261029T150820/etc/systemd/system/nuxel-wifi.service
+/var/lib/nuxel/rollback-pwnage36000-20261029T150820/etc/alsa/conf.d/99-nuxel-s10-default.conf
+/var/lib/nuxel/rollback-pwnage36000-20261029T150820/etc/geoclue/geoclue.conf
+/var/lib/nuxel/rollback-pwnage36000-20261029T150820/etc/wireplumber/wireplumber.conf.d/99-nuxel-s10.conf
+/var/lib/nuxel/rollback-pwnage36000-20261029T150820/etc/profile.d/nuxel-banner.sh
+/var/lib/nuxel/rollback-pwnage36000-20261029T164951/usr/local/bin/nuxel-gps-status
+/var/lib/nuxel/rollback-pwnage36000-20261029T164951/usr/local/bin/nuxel-audio-status
+/var/lib/nuxel/rollback-pwnage36000-20261029T164951/usr/local/bin/nuxel-verify-pwnage36000
+/var/lib/nuxel/rollback-pwnage36000-20261029T164951/usr/local/bin/nuxel-theme
+/var/lib/nuxel/rollback-pwnage36000-20261029T164951/usr/lib/nuxel/nuxel-preload-cinema
+/var/lib/nuxel/rollback-pwnage36000-20261029T164951/usr/lib/nuxel/nuxel-audio-route.sh
+/var/lib/nuxel/rollback-pwnage36000-20261029T164951/usr/lib/nuxel/nuxel-session.sh
+/var/lib/nuxel/rollback-pwnage36000-20261029T164951/usr/lib/nuxel/nuxel-charger-mode-recovery.sh
+/var/lib/nuxel/rollback-pwnage36000-20261029T164951/usr/lib/nuxel/nuxel-device-permissions.sh.real-36000
+/var/lib/nuxel/rollback-pwnage36000-20261029T164951/usr/lib/nuxel/nuxel-wifi-up.sh
+/var/lib/nuxel/rollback-pwnage36000-20261029T164951/etc/pipewire/pipewire.conf.d/99-nuxel-s10.conf
+/var/lib/nuxel/rollback-pwnage36000-20261029T164951/etc/dbus-1/system.d/99-geoclue-nuxel.conf
+/var/lib/nuxel/rollback-pwnage36000-20261029T164951/etc/systemd/system/nuxel-device-permissions.service
+/var/lib/nuxel/rollback-pwnage36000-20261029T164951/etc/systemd/system/nuxel-audio-route.service
+/var/lib/nuxel/rollback-pwnage36000-20261029T164951/etc/systemd/system/nuxel-preload-cinema.service
+/var/lib/nuxel/rollback-pwnage36000-20261029T164951/etc/systemd/system/nuxel-charger-mode-recovery.service
+/var/lib/nuxel/rollback-pwnage36000-20261029T164951/etc/systemd/system/nuxel-wifi.service
+/var/lib/nuxel/rollback-pwnage36000-20261029T164951/etc/alsa/conf.d/99-nuxel-s10-default.conf
+/var/lib/nuxel/rollback-pwnage36000-20261029T164951/etc/geoclue/geoclue.conf
+/var/lib/nuxel/rollback-pwnage36000-20261029T164951/etc/wireplumber/wireplumber.conf.d/99-nuxel-s10.conf
+/var/lib/nuxel/rollback-pwnage36000-20261029T164951/etc/profile.d/nuxel-banner.sh
+/var/lib/nuxel/crop.b64
+/var/lib/nuxel/push-33470.new
+/var/lib/nuxel/ui.log.a26
+/var/lib/nuxel/rollback-pwnage36000-20261029T225045/usr/local/bin/nuxel-gps-status
+/var/lib/nuxel/rollback-pwnage36000-20261029T225045/usr/local/bin/nuxel-audio-status
+/var/lib/nuxel/rollback-pwnage36000-20261029T225045/usr/local/bin/nuxel-verify-pwnage36000
+/var/lib/nuxel/rollback-pwnage36000-20261029T225045/usr/local/bin/nuxel-theme
+/var/lib/nuxel/rollback-pwnage36000-20261029T225045/usr/lib/nuxel/nuxel-preload-cinema
+/var/lib/nuxel/rollback-pwnage36000-20261029T225045/usr/lib/nuxel/nuxel-audio-route.sh
+/var/lib/nuxel/rollback-pwnage36000-20261029T225045/usr/lib/nuxel/nuxel-session.sh
+/var/lib/nuxel/rollback-pwnage36000-20261029T225045/usr/lib/nuxel/nuxel-charger-mode-recovery.sh
+/var/lib/nuxel/rollback-pwnage36000-20261029T225045/usr/lib/nuxel/nuxel-device-permissions.sh.real-36000
+/var/lib/nuxel/rollback-pwnage36000-20261029T225045/usr/lib/nuxel/nuxel-wifi-up.sh
+/var/lib/nuxel/rollback-pwnage36000-20261029T225045/etc/pipewire/pipewire.conf.d/99-nuxel-s10.conf
+/var/lib/nuxel/rollback-pwnage36000-20261029T225045/etc/dbus-1/system.d/99-geoclue-nuxel.conf
+/var/lib/nuxel/rollback-pwnage36000-20261029T225045/etc/systemd/system/nuxel-device-permissions.service
+/var/lib/nuxel/rollback-pwnage36000-20261029T225045/etc/systemd/system/nuxel-audio-route.service
+/var/lib/nuxel/rollback-pwnage36000-20261029T225045/etc/systemd/system/nuxel-preload-cinema.service
+/var/lib/nuxel/rollback-pwnage36000-20261029T225045/etc/systemd/system/nuxel-charger-mode-recovery.service
+/var/lib/nuxel/rollback-pwnage36000-20261029T225045/etc/systemd/system/nuxel-wifi.service
+/var/lib/nuxel/rollback-pwnage36000-20261029T225045/etc/ssh/sshd_config.d/61-nuxel-lan38.conf
+/var/lib/nuxel/rollback-pwnage36000-20261029T225045/etc/alsa/conf.d/99-nuxel-s10-default.conf
+/var/lib/nuxel/rollback-pwnage36000-20261029T225045/etc/geoclue/geoclue.conf
+/var/lib/nuxel/rollback-pwnage36000-20261029T225045/etc/wireplumber/wireplumber.conf.d/99-nuxel-s10.conf
+/var/lib/nuxel/rollback-pwnage36000-20261029T225045/etc/profile.d/nuxel-banner.sh
+/var/lib/nuxel/apps/files/Gallery/nuxel-charging.png
+/var/lib/nuxel/apps/files/Gallery/nuxel-wallpaper.png
+/var/lib/nuxel/rollback-pwnage36000-20261028T235646/usr/local/bin/nuxel-gps-status
+/var/lib/nuxel/rollback-pwnage36000-20261028T235646/usr/local/bin/nuxel-audio-status
+/var/lib/nuxel/rollback-pwnage36000-20261028T235646/usr/local/bin/nuxel-verify-pwnage36000
+/var/lib/nuxel/rollback-pwnage36000-20261028T235646/usr/local/bin/nuxel-theme
+/var/lib/nuxel/rollback-pwnage36000-20261028T235646/usr/lib/nuxel/nuxel-preload-cinema
+/var/lib/nuxel/rollback-pwnage36000-20261028T235646/usr/lib/nuxel/nuxel-audio-route.sh
+/var/lib/nuxel/rollback-pwnage36000-20261028T235646/usr/lib/nuxel/nuxel-session.sh
+/var/lib/nuxel/rollback-pwnage36000-20261028T235646/usr/lib/nuxel/nuxel-charger-mode-recovery.sh

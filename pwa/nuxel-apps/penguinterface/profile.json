@@ -1,0 +1,21 @@
+{
+  "schema": "nuxel.device-profile/1",
+  "id": "s10plus-beyond2lte",
+  "device": "Samsung Galaxy S10+ (SM-G975F)",
+  "codename": "beyond2lte",
+  "soc": "Exynos 9820",
+  "kernel": "4.14.253",
+  "os": "Nuxel (Fedora 43 aarch64)",
+  "capabilities": {
+    "usb_serial_console": {"state": "supported", "evidence": "CDC-ACM acm.usb0 present"},
+    "usb_mtp": {"state": "supported_kernel", "evidence": "CONFIG_USB_F_MTP=y; responder installed", "note": "host enumeration needs physical owner test"},
+    "usb_network": {"state": "blocked_kernel_panic", "evidence": "NCM teardown panic on 4.14.253"},
+    "native_rpm": {"state": "supported", "evidence": "Fedora 43 aarch64 + DNF"},
+    "flatpak": {"state": "blocked_kernel", "evidence": "CONFIG_USER_NS is not set"},
+    "nfc": {"state": "blocked_kernel", "evidence": "CONFIG_NFC is not set"},
+    "fingerprint": {"state": "blocked_secure_provider", "evidence": "qbt2000 driver present; no TEE enrollment provider"},
+    "torch": {"state": "supported_policy_bounded", "evidence": "torch-sec1 LED class"},
+    "notification_led": {"state": "not_supported_on_device", "evidence": "no front notification LED/RGB class"},
+    "edge_lighting": {"state": "display_fallback", "evidence": "bounded overlay via nuxel-wl-fb"}
+  }
+}

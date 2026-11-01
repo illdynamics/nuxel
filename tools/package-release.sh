@@ -208,7 +208,23 @@ PYJSON
         echo
         echo "## Changelog"
         echo
-        sed -n '1,60p' "${NUXEL_ROOT}/CHANGELOG.md"
+        # Current release section only.  A fixed `sed -n 1,60p` used to print
+        # whatever happened to be at the top of the file rather than this
+        # release's notes (it shipped a stale A39 block before the title).
+        python3 - "${NUXEL_ROOT}/CHANGELOG.md" "${VER_TAG}" <<'PYCHANGELOG'
+import re, sys
+path, version = sys.argv[1], sys.argv[2]
+text = open(path, encoding="utf-8").read()
+m = re.search(r"^## \[" + re.escape("v" + version.lstrip("v")) + r"\].*$", text, re.M)
+if not m:
+    m = re.search(r"^## \[.*$", text, re.M)
+if not m:
+    print("(no changelog section found)")
+    raise SystemExit(0)
+rest = text[m.start():]
+nxt = re.search(r"^## \[", rest[1:], re.M)
+print(rest[:nxt.start() + 1].rstrip() if nxt else rest.rstrip())
+PYCHANGELOG
     fi
 } > "${OUT_DIR}/RELEASE-NOTES.md"
 

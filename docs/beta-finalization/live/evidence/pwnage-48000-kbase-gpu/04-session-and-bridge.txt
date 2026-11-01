@@ -1,0 +1,70 @@
+Warning: Permanently added '192.168.178.167' (ED25519) to the list of known hosts.
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+Oct 31 23:05:00 fedora systemd[1]: Starting nuxel-wayland.service - Nuxel phone Wayland session (phoc headless + Nuxel Home launcher)...
+Oct 31 23:05:00 fedora systemd[1]: Started nuxel-wayland.service - Nuxel phone Wayland session (phoc headless + Nuxel Home launcher).
+Oct 31 23:05:00 fedora phoc[5865]: [render/wlr_renderer.c:100] drmGetDevices2 failed: No such file or directory
+Oct 31 23:05:01 fedora nuxel-wayland-gpu-wrapper.sh[5865]: MESA-LOADER: failed to retrieve device information
+Oct 31 23:05:01 fedora systemd[1]: Starting nuxel-wl-fb.service - Nuxel display bridge (Wayland screencopy -> /dev/fb0 AMOLED)...
+Oct 31 23:05:01 fedora phoc[5865]: [EGL] command: eglQueryDisplayAttribEXT, error: EGL_BAD_DEVICE_EXT (0x322b), message: "eglQueryDeviceStringEXT"
+Oct 31 23:05:01 fedora phoc[5865]: [types/wlr_drm.c:211] Failed to get DRM FD from renderer
+Oct 31 23:05:01 fedora phoc[5865]: [types/wlr_linux_dmabuf_v1.c:1094] Failed to get renderer DRM FD
+Oct 31 23:05:01 fedora nuxel-wayland-gpu-wrapper.sh[5865]: Running compositor on wayland display 'wayland-0'
+Oct 31 23:05:01 fedora phoc[5865]: Output 'HEADLESS-1' added ('(null)'/'(null)'/'(null)'), 0mm x 0mm
+Oct 31 23:05:01 fedora phoc[5865]: Failed to get screensaver session proxy: Cannot autolaunch D-Bus without X11 $DISPLAY
+Oct 31 23:05:02 fedora systemd[1]: Started nuxel-wl-fb.service - Nuxel display bridge (Wayland screencopy -> /dev/fb0 AMOLED).
+Oct 31 23:05:02 fedora nuxel-pwa-host[5952]: Disabled hardware acceleration because GTK failed to initialize GL: No GL implementation is available.
+Oct 31 23:06:23 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping nuxel-wayland.service - Nuxel phone Wayland session (phoc headless + Nuxel Home launcher)...
+Oct 31 23:06:23 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping nuxel-wl-fb.service - Nuxel display bridge (Wayland screencopy -> /dev/fb0 AMOLED)...
+Oct 31 23:06:23 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 phoc[5865]: Session terminated: Child process killed by signal 15 (0)
+Oct 31 23:06:23 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-wl-fb.service: Deactivated successfully.
+Oct 31 23:06:23 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopped nuxel-wl-fb.service - Nuxel display bridge (Wayland screencopy -> /dev/fb0 AMOLED).
+Oct 31 23:06:31 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-wayland.service: State 'final-sigterm' timed out. Aborting.
+Oct 31 23:06:31 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-wayland.service: Failed with result 'timeout'.
+Oct 31 23:06:31 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopped nuxel-wayland.service - Nuxel phone Wayland session (phoc headless + Nuxel Home launcher).
+Oct 31 23:06:31 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Starting nuxel-wayland.service - Nuxel phone Wayland session (phoc headless + Nuxel Home launcher)...
+Oct 31 23:06:31 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Started nuxel-wayland.service - Nuxel phone Wayland session (phoc headless + Nuxel Home launcher).
+Oct 31 23:06:31 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Starting nuxel-wl-fb.service - Nuxel display bridge (Wayland screencopy -> /dev/fb0 AMOLED)...
+Oct 31 23:06:31 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 phoc[10107]: [render/wlr_renderer.c:100] drmGetDevices2 failed: No such file or directory
+Oct 31 23:06:31 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-wayland-gpu-wrapper.sh[10107]: MESA-LOADER: failed to retrieve device information
+Oct 31 23:06:31 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 phoc[10107]: [EGL] command: eglQueryDisplayAttribEXT, error: EGL_BAD_DEVICE_EXT (0x322b), message: "eglQueryDeviceStringEXT"
+Oct 31 23:06:31 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 phoc[10107]: [types/wlr_drm.c:211] Failed to get DRM FD from renderer
+Oct 31 23:06:31 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 phoc[10107]: [types/wlr_linux_dmabuf_v1.c:1094] Failed to get renderer DRM FD
+Oct 31 23:06:31 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-wayland-gpu-wrapper.sh[10107]: Running compositor on wayland display 'wayland-0'
+Oct 31 23:06:31 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 phoc[10107]: Output 'HEADLESS-1' added ('(null)'/'(null)'/'(null)'), 0mm x 0mm
+Oct 31 23:06:32 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 phoc[10107]: Failed to get screensaver session proxy: Cannot autolaunch D-Bus without X11 $DISPLAY
+Oct 31 23:06:32 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Started nuxel-wl-fb.service - Nuxel display bridge (Wayland screencopy -> /dev/fb0 AMOLED).
+Oct 31 23:06:32 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-pwa-host[10117]: Disabled hardware acceleration because GTK failed to initialize GL: No GL implementation is available.
+Oct 31 23:06:37 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 phoc[10107]: Timeout (3000ms) expired with 1 configures pending
+Oct 31 23:08:43 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping nuxel-wayland.service - Nuxel phone Wayland session (phoc headless + Nuxel Home launcher)...
+Oct 31 23:08:43 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopping nuxel-wl-fb.service - Nuxel display bridge (Wayland screencopy -> /dev/fb0 AMOLED)...
+Oct 31 23:08:43 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 phoc[10107]: Session terminated: Child process killed by signal 15 (0)
+Oct 31 23:08:43 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-wl-fb.service: Deactivated successfully.
+Oct 31 23:08:43 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopped nuxel-wl-fb.service - Nuxel display bridge (Wayland screencopy -> /dev/fb0 AMOLED).
+Oct 31 23:08:51 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-wayland.service: State 'final-sigterm' timed out. Aborting.
+Oct 31 23:08:51 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: nuxel-wayland.service: Failed with result 'timeout'.
+Oct 31 23:08:51 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Stopped nuxel-wayland.service - Nuxel phone Wayland session (phoc headless + Nuxel Home launcher).
+Oct 31 23:08:51 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Starting nuxel-wayland.service - Nuxel phone Wayland session (phoc headless + Nuxel Home launcher)...
+Oct 31 23:08:51 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Started nuxel-wayland.service - Nuxel phone Wayland session (phoc headless + Nuxel Home launcher).
+Oct 31 23:08:51 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Starting nuxel-wl-fb.service - Nuxel display bridge (Wayland screencopy -> /dev/fb0 AMOLED)...
+Oct 31 23:08:51 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 phoc[12095]: [render/wlr_renderer.c:100] drmGetDevices2 failed: No such file or directory
+Oct 31 23:08:51 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-wayland-gpu-wrapper.sh[12095]: MESA-LOADER: failed to retrieve device information
+Oct 31 23:08:51 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 phoc[12095]: [EGL] command: eglQueryDisplayAttribEXT, error: EGL_BAD_DEVICE_EXT (0x322b), message: "eglQueryDeviceStringEXT"
+Oct 31 23:08:51 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 phoc[12095]: [types/wlr_drm.c:211] Failed to get DRM FD from renderer
+Oct 31 23:08:51 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 phoc[12095]: [types/wlr_linux_dmabuf_v1.c:1094] Failed to get renderer DRM FD
+Oct 31 23:08:51 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-wayland-gpu-wrapper.sh[12095]: Running compositor on wayland display 'wayland-0'
+Oct 31 23:08:51 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 phoc[12095]: Output 'HEADLESS-1' added ('(null)'/'(null)'/'(null)'), 0mm x 0mm
+Oct 31 23:08:52 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 phoc[12095]: Failed to get screensaver session proxy: Cannot autolaunch D-Bus without X11 $DISPLAY
+Oct 31 23:08:52 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 systemd[1]: Started nuxel-wl-fb.service - Nuxel display bridge (Wayland screencopy -> /dev/fb0 AMOLED).
+Oct 31 23:08:53 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 nuxel-pwa-host[12105]: Disabled hardware acceleration because GTK failed to initialize GL: No GL implementation is available.
+
+1793484610 FRAMES_OK total=860 fps_1s=5 failures=0 blits=67 present_skipped=792 blit_avg_ms=36 damage=144-145 damage_blits=55 damage_avg_ms=36 idle_ms=9835 out=720x1520 src=720x1520 scale=2 panel=1440x3040 owner=nuxel-wl-fb display=on src_format=0x34324258 colour=R@0,G@8,B@16_abgr8888_override=1 decon_pan_ok=68 decon_pan_failed=0
+
+ls: cannot access '/run/nuxel-gpu-fallback': No such file or directory

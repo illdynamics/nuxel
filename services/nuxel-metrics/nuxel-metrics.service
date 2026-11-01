@@ -13,4 +13,10 @@ ProtectHome=yes
 RestrictAddressFamilies=AF_INET AF_UNIX
 MemoryDenyWriteExecute=yes
 SystemCallArchitectures=native
+# PWNAGE-52000: kbase's authoritative used_pages table lives under
+# /sys/kernel/debug (directory 0700 root).  The collector needs ONLY read/traverse
+# access; it never writes a kernel node.  Keep DynamicUser and grant the narrow
+# capability instead of running the whole collector as root.
+CapabilityBoundingSet=CAP_DAC_READ_SEARCH
+AmbientCapabilities=CAP_DAC_READ_SEARCH
 

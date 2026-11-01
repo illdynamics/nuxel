@@ -1,0 +1,53 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+== systemd-analyze time ==
+Startup finished in 3.446s (kernel) + 10.027s (userspace) = 13.473s 
+multi-user.target reached after 9.996s in userspace.
+== blame ==
+18.743s nuxel-boot-sound.service
+17.570s nuxel-abox-firmware-reload.service
+ 5.083s nuxel-usb-mode-restore.service
+ 4.023s nuxel-fallback.service
+ 3.261s nuxel-http-bridge.service
+ 3.030s NetworkManager-wait-online.service
+ 2.212s nuxel-audio-route-retry.service
+ 2.099s NetworkManager.service
+  938ms systemd-udev-trigger.service
+  842ms systemd-journald.service
+  822ms polkit.service
+  788ms rtkit-daemon.service
+  763ms systemd-hostnamed.service
+  739ms nuxel-device-permissions.service
+  625ms systemd-journal-flush.service
+  418ms systemd-tmpfiles-setup.service
+  358ms nuxel-orientationd.service
+  276ms geoclue.service
+  259ms ModemManager.service
+  217ms nuxel-wifi.service
+== critical-chain ==
+The time when unit became active or started is printed after the "@" character.
+The time the unit took to start is printed after the "+" character.
+
+multi-user.target @9.996s
+└─nuxel-wifi.service @9.169s +217ms
+  └─network.target @6.394s
+    └─NetworkManager.service @4.294s +2.099s
+      └─dbus-daemon.service @4.213s
+        └─basic.target @4.207s
+          └─sockets.target @4.206s
+            └─systemd-logind-varlink.socket @4.205s +198us
+              └─sysinit.target @4.192s
+                └─systemd-update-utmp.service @4.177s +14ms
+                  └─systemd-tmpfiles-setup.service @3.755s +418ms
+                    └─systemd-journal-flush.service @3.126s +625ms
+                      └─systemd-journald.service @2.282s +842ms
+                        └─systemd-journald.socket @2.269s +265us
+                          └─-.mount @2.253s
+                            └─-.slice @2.254s

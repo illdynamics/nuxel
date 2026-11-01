@@ -62,6 +62,12 @@ typedef struct {
     NuxelPhoneCapabilities caps;
     gchar *store_path;
     GtkWidget *capability_label;
+
+    /* SIM message mirror.  There is no ModemManager SIM SMS API on this
+     * target, so this is explicit local storage that can be imported/synced
+     * on demand and copied to a real SIM when the modem path exists. */
+    NuxelPhoneStore sim_store;
+    gchar *sim_path;
 } NuxelMessages;
 
 /* ============================================================
@@ -77,6 +83,7 @@ static void messages_update_capabilities(NuxelMessages *app);
 static void messages_persist(NuxelMessages *app);
 static void messages_hydrate_from_store(NuxelMessages *app);
 static void message_free(gpointer data);
+static void messages_import_sim(NuxelMessages *app, gboolean merge_only);
 
 /* ============================================================
  * Helper functions
@@ -573,6 +580,81 @@ messages_hydrate_from_store(NuxelMessages *app)
     }
 }
 
+static void
+messages_merge_store(NuxelMessages *app, NuxelPhoneStore *store, size_t *added)
+{
+    for (size_t i = 0; i < store->n_messages; i++) {
+        NuxelMessage *stored = &store->messages[i];
+        Conversation *conv = find_or_create_conversation(app, stored->peer);
+        gboolean duplicate = FALSE;
+        for (guint m = 0; m < conv->messages->len; m++) {
+            Message *have = g_ptr_array_index(conv->messages, m);
+            if (g_strcmp0(have->text, stored->body) == 0) {
+                duplicate = TRUE;
+                break;
+            }
+        }
+        if (duplicate) continue;
+        Message *msg = message_new(stored->peer, stored->body,
+                                   g_strcmp0(stored->direction, "in") == 0);
+        g_ptr_array_add(conv->messages, msg);
+        conv->last_message = msg;
+        (*added)++;
+    }
+}
+
+static void
+messages_import_sim(NuxelMessages *app, gboolean merge_only)
+{
+    nuxel_phone_store_free(&app->sim_store);
+    nuxel_phone_store_init(&app->sim_store);
+    int rc = app->sim_path ? nuxel_phone_store_load(&app->sim_store, app->sim_path) : -1;
+    if (rc == -1 || app->sim_store.n_messages == 0) {
+        gtk_label_set_text(GTK_LABEL(app->capability_label),
+            "SIM message mirror is empty. Set messages are stored locally; "
+            "physical SIM SMS access is unavailable on this build.");
+        return;
+    }
+    size_t added = 0;
+    messages_merge_store(app, &app->sim_store, &added);
+    if (!merge_only) {
+        /* Copy local messages into the SIM mirror for later export. */
+        for (size_t i = 0; i < app->store.n_messages; i++) {
+            NuxelMessage *m = &app->store.messages[i];
+            gboolean exists = FALSE;
+            for (size_t j = 0; j < app->sim_store.n_messages; j++) {
+                NuxelMessage *s = &app->sim_store.messages[j];
+                if (g_strcmp0(s->peer, m->peer) == 0 && g_strcmp0(s->body, m->body) == 0) {
+                    exists = TRUE; break;
+                }
+            }
+            if (!exists) nuxel_phone_add_message(&app->sim_store, m->peer, m->body,
+                                                 m->direction, m->state);
+        }
+        if (app->sim_path) nuxel_phone_store_save(&app->sim_store, app->sim_path);
+    }
+    char msg[256];
+    g_snprintf(msg, sizeof msg,
+               "SIM mirror: loaded %zu message(s)%s. Physical SIM access is not available yet.",
+               added, merge_only ? "" : ", synced local messages to mirror");
+    gtk_label_set_text(GTK_LABEL(app->capability_label), msg);
+    render_conversations(app);
+}
+
+static void
+on_import_sim_clicked(GtkWidget *btn, gpointer user_data)
+{
+    (void)btn;
+    messages_import_sim((NuxelMessages *)user_data, TRUE);
+}
+
+static void
+on_sync_sim_clicked(GtkWidget *btn, gpointer user_data)
+{
+    (void)btn;
+    messages_import_sim((NuxelMessages *)user_data, FALSE);
+}
+
 /* Honest capability banner: rebuilt from the probe only. */
 static void
 messages_update_capabilities(NuxelMessages *app)
@@ -694,6 +776,8 @@ activate_cb(GtkApplication *gtk_app, gpointer user_data)
     app->window = adw_application_window_new(gtk_app);
     gtk_window_set_title(GTK_WINDOW(app->window), "Messages");
     gtk_window_set_default_size(GTK_WINDOW(app->window), 400, 700);
+    AdwStyleManager *style = adw_style_manager_get_default();
+    adw_style_manager_set_color_scheme(style, ADW_COLOR_SCHEME_FORCE_DARK);
     
     /* CSS */
     GtkCssProvider *provider = gtk_css_provider_new();
@@ -716,9 +800,11 @@ activate_cb(GtkApplication *gtk_app, gpointer user_data)
         gchar *dir = g_build_filename(g_get_user_data_dir(), "nuxel-contacts", NULL);
         g_mkdir_with_parents(dir, 0755);
         app->store_path = g_build_filename(dir, "contacts.json", NULL);
+        app->sim_path = g_build_filename(dir, "sim-messages.json", NULL);
         g_free(dir);
     }
     nuxel_phone_store_init(&app->store);
+    nuxel_phone_store_init(&app->sim_store);
     nuxel_phone_capabilities_init(&app->caps);
 
     /* Stack for list/thread views */
@@ -740,6 +826,17 @@ activate_cb(GtkApplication *gtk_app, gpointer user_data)
     gtk_widget_set_margin_top(list_title, 12);
     gtk_widget_set_margin_bottom(list_title, 12);
     gtk_box_append(GTK_BOX(list_header), list_title);
+    GtkWidget *spacer = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
+    gtk_widget_set_hexpand(spacer, TRUE);
+    gtk_box_append(GTK_BOX(list_header), spacer);
+    GtkWidget *import_sim = gtk_button_new_with_label("Import SIM");
+    gtk_widget_add_css_class(import_sim, "flat");
+    g_signal_connect(import_sim, "clicked", G_CALLBACK(on_import_sim_clicked), app);
+    gtk_box_append(GTK_BOX(list_header), import_sim);
+    GtkWidget *sync_sim = gtk_button_new_with_label("Sync SIM");
+    gtk_widget_add_css_class(sync_sim, "flat");
+    g_signal_connect(sync_sim, "clicked", G_CALLBACK(on_sync_sim_clicked), app);
+    gtk_box_append(GTK_BOX(list_header), sync_sim);
     gtk_box_append(GTK_BOX(list_page), list_header);
     
     app->conversation_list = gtk_list_box_new();
@@ -820,6 +917,10 @@ activate_cb(GtkApplication *gtk_app, gpointer user_data)
     
     /* Load data */
     load_conversations(app);
+    /* "Ready to import from a SIM": when a SIM mirror exists, merge it
+     * automatically on startup so a newly inserted/replaced SIM's stored
+     * messages appear without a manual step. */
+    messages_import_sim(app, TRUE);
     messages_update_capabilities(app);
     render_conversations(app);
 

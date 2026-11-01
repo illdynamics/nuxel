@@ -278,7 +278,7 @@
 
 /* App install/uninstall animation */
 .app-item.installing {
-    animation: pulse 1s ease infinite;
+    animation: pulse 1s ease 3;
 }
 
 .app-item.removing {
@@ -330,7 +330,7 @@ body.launcher-dragging .app-item {
 .folder-items { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }.folder-items button { border: 0; color: #dbeafe; background: transparent; }.folder-items img { width: 52px; height: 52px; border-radius: 12px; }.folder-items span { display: block; font-size: 11px; overflow: hidden; text-overflow: ellipsis; }
 body.app-drawer-open .app-grid { z-index: 80; background: var(--bg-primary); top: var(--status-bar-height); bottom: var(--system-nav-height); }
 /* The drawer is a cached sibling list; opening it never re-parses Home. */
-.drawer-list { padding-bottom: 26px; contain: content; }
+.drawer-list { padding-bottom: 26px; contain: content; touch-action: pan-y; overscroll-behavior: contain; }
 body.app-drawer-open .app-grid-title::after { content: 'All apps'; margin-left: 10px; font-size: 14px; color: var(--text-secondary); -webkit-text-fill-color: var(--text-secondary); }
 
 /* A37: fall back to a readable native glyph if an asset genuinely fails to load. */
@@ -367,3 +367,21 @@ body.app-drawer-open .app-grid-title::after { content: 'All apps'; margin-left: 
 .app-grid.page-changing .app-list { animation:nuxel-page-slide .22s cubic-bezier(.22,.8,.2,1) both; }
 @keyframes nuxel-page-slide { from {opacity:.65;transform:translate3d(var(--page-slide-from,16px),0,0)} to {opacity:1;transform:translate3d(0,0,0)} }
 @media(prefers-reduced-motion:reduce){.app-grid.page-changing .app-list{animation:none!important}}
+
+/* PWNAGE-54000 performance: a drawer with dozens of apps must not lay out or
+ * paint off-screen tiles, and icon decoding must never block the first frame.
+ * `content-visibility` keeps scrolling immediate; fixed intrinsic size prevents
+ * scrollbar/jump drift while off-screen items are skipped. */
+.app-item {
+  content-visibility: auto;
+  contain-intrinsic-size: 92px 104px;
+  contain: layout style paint;
+}
+.app-item img, .nuxel-icon-fallback {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+}
+@media (prefers-reduced-motion: reduce) {
+  .app-item, .app-icon, .app-list, .drawer-list { animation: none !important; transition: none !important; }
+}

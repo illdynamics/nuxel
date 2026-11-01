@@ -1,0 +1,332 @@
+diff --git a/src/egl/drivers/dri2/platform_wayland.c b/src/egl/drivers/dri2/platform_wayland.c
+index cdc790b..f439999 100644
+--- a/src/egl/drivers/dri2/platform_wayland.c
++++ b/src/egl/drivers/dri2/platform_wayland.c
+@@ -2671,6 +2671,42 @@ dri2_initialize_wayland_drm_extensions(struct dri2_egl_display *dri2_dpy)
+    return true;
+ }
+ 
++/* MESA_KBASE_NODE: bring up Wayland EGL on the vendor kbase node.
++ *
++ * The ordinary Wayland WSI opens a DRM render node.  A Samsung kbase device
++ * has only /dev/mali0, so there is no render node to open and no wl_drm
++ * authentication to do.  The compositor speaks linux-dmabuf, and kbase can
++ * import a dma-buf; the panfrost backend exports Wayland buffers through a
++ * sealed memfd + udmabuf.  This is opt-in and never replaces the DRM path.
++ */
++static bool
++wayland_kbase_probe(struct dri2_egl_display *dri2_dpy)
++{
++   const char *node = getenv("MESA_KBASE_NODE");
++   if (!node)
++      return false;
++
++   dri2_dpy->fd_render_gpu = loader_open_device(node);
++   if (dri2_dpy->fd_render_gpu < 0) {
++      _eglLog(_EGL_WARNING, "wayland-egl: cannot open %s", node);
++      return false;
++   }
++   dri2_dpy->fd_display_gpu = dri2_dpy->fd_render_gpu;
++
++   dri2_dpy->driver_name = loader_get_driver_for_fd(dri2_dpy->fd_render_gpu);
++   if (!dri2_dpy->driver_name) {
++      const char *override = getenv("MESA_LOADER_DRIVER_OVERRIDE");
++      dri2_dpy->driver_name = strdup(override ? override : "panfrost");
++   }
++   if (!dri2_dpy->driver_name) {
++      close(dri2_dpy->fd_render_gpu);
++      dri2_dpy->fd_render_gpu = -1;
++      dri2_dpy->fd_display_gpu = -1;
++      return false;
++   }
++   return true;
++}
++
+ static EGLBoolean
+ dri2_initialize_wayland_drm(_EGLDisplay *disp)
+ {
+@@ -2708,8 +2744,37 @@ dri2_initialize_wayland_drm(_EGLDisplay *disp)
+    if (roundtrip(dri2_dpy) < 0)
+       goto cleanup;
+ 
+-   if (!dri2_initialize_wayland_drm_extensions(dri2_dpy))
++   const bool kbase = wayland_kbase_probe(dri2_dpy);
++   _eglLog(_EGL_WARNING, "nuxel: kbase=%d fd=%d driver=%s", kbase,
++           dri2_dpy->fd_render_gpu,
++           dri2_dpy->driver_name ? dri2_dpy->driver_name : "(null)");
++
++   if (!dri2_initialize_wayland_drm_extensions(dri2_dpy)) {
++      _eglLog(_EGL_WARNING, "nuxel: wayland drm extensions failed");
+       goto cleanup;
++   }
++
++   if (kbase) {
++      dri2_dpy->is_render_node = false;
++      dri2_detect_swrast_kopper(disp);
++      dri2_dpy->loader_extensions = dri2_dpy->kopper ? kopper_loader_extensions
++                                                     : dri2_loader_extensions;
++      if (!dri2_create_screen(disp)) {
++         _eglLog(_EGL_WARNING, "nuxel: kbase screen failed driver=%s fd=%d",
++                 dri2_dpy->driver_name, dri2_dpy->fd_render_gpu);
++         goto cleanup;
++      }
++      _eglLog(_EGL_WARNING, "nuxel: kbase screen up");
++      dri2_setup_screen(disp);
++      dri2_wl_setup_swap_interval(disp);
++      dri2_wl_add_configs_for_visuals(disp);
++      disp->Extensions.EXT_buffer_age = EGL_TRUE;
++      disp->Extensions.EXT_swap_buffers_with_damage = EGL_TRUE;
++      disp->Extensions.EXT_present_opaque = EGL_TRUE;
++      dri2_dpy->vtbl = dri2_dpy->kopper ? &dri2_wl_kopper_display_vtbl
++                                        : &dri2_wl_display_vtbl;
++      return EGL_TRUE;
++   }
+ 
+    loader_get_user_preferred_fd(&dri2_dpy->fd_render_gpu,
+                                 &dri2_dpy->fd_display_gpu);
+diff --git a/src/gallium/drivers/panfrost/pan_bo.c b/src/gallium/drivers/panfrost/pan_bo.c
+index 5f93a2c..c76d22d 100644
+--- a/src/gallium/drivers/panfrost/pan_bo.c
++++ b/src/gallium/drivers/panfrost/pan_bo.c
+@@ -60,9 +60,15 @@ panfrost_bo_alloc(struct panfrost_device *dev, size_t size, uint32_t flags,
+       !(flags & PAN_BO_SHAREABLE) ? dev->kmod.vm : NULL;
+    struct pan_kmod_bo *kmod_bo;
+    struct panfrost_bo *bo;
++   uint32_t kmod_flags = to_kmod_bo_flags(flags);
+ 
+-   kmod_bo = pan_kmod_bo_alloc(dev->kmod.dev, exclusive_vm, size,
+-                               to_kmod_bo_flags(flags));
++   /* kbase has no exportable native BO.  Only client processes that ask for
++    * Wayland WSI (NUXEL_KBASE_WSI=1) pay for the memfd+udmabuf round-trip;
++    * the compositor keeps its proven native allocations. */
++   if ((flags & PAN_BO_SHAREABLE) && getenv("NUXEL_KBASE_WSI") != NULL)
++      kmod_flags |= PAN_KMOD_BO_FLAG_EXPORTABLE;
++
++   kmod_bo = pan_kmod_bo_alloc(dev->kmod.dev, exclusive_vm, size, kmod_flags);
+ 
+    if (kmod_bo == NULL)
+       goto err_alloc;
+diff --git a/src/panfrost/lib/kmod/kbase_kmod.c b/src/panfrost/lib/kmod/kbase_kmod.c
+index fa7b684..72257ce 100644
+--- a/src/panfrost/lib/kmod/kbase_kmod.c
++++ b/src/panfrost/lib/kmod/kbase_kmod.c
+@@ -137,6 +137,69 @@ union kbase_ioctl_mem_import {
+ #define KBASE_MEM_FLAGS_RW   (0x204full | BASE_MEM_COHERENT_LOCAL)
+ #define KBASE_MEM_FLAGS_EXEC 0x17ull
+ 
++/* Exportable buffers for native Wayland WSI.
++ *
++ * kbase can IMPORT a dma-buf but has no GEM handle namespace and cannot EXPORT
++ * one (panfrost_init_screen_caps documents DRM_PRIME_CAP_IMPORT only).  Native
++ * Wayland needs an fd it can hand to the compositor.  udmabuf is the kernel's
++ * supported bridge: a sealed memfd's pages become a dma-buf that can be
++ * imported by kbase, rendered into, and then attached as a wl_buffer.  Only
++ * memory this process allocated and sealed is used; no arbitrary pages are
++ * exposed.
++ */
++struct nuxel_udmabuf_create {
++   uint32_t memfd;
++   uint32_t flags;
++   uint64_t offset;
++   uint64_t size;
++};
++#define NUXEL_UDMABUF_CREATE _IOW('u', 0x42, struct nuxel_udmabuf_create)
++
++static int
++kbase_kmod_create_exportable_bo(struct pan_kmod_dev *dev, uint64_t size)
++{
++   const uint64_t aligned = (size + 4095) & ~UINT64_C(4095);
++   int memfd = memfd_create("nuxel-kbase-wsi",
++                            MFD_CLOEXEC | MFD_ALLOW_SEALING);
++   if (memfd < 0) {
++      mesa_loge("kbase: memfd_create failed (err=%d)", errno);
++      return -1;
++   }
++   if (ftruncate(memfd, aligned) != 0) {
++      mesa_loge("kbase: ftruncate(%" PRIu64 ") failed (err=%d)", aligned, errno);
++      close(memfd);
++      return -1;
++   }
++   if (fcntl(memfd, F_ADD_SEALS, F_SEAL_SHRINK | F_SEAL_GROW | F_SEAL_SEAL) != 0) {
++      mesa_loge("kbase: sealing exportable memfd failed (err=%d)", errno);
++      close(memfd);
++      return -1;
++   }
++
++   int udmabuf = open("/dev/udmabuf", O_RDWR | O_CLOEXEC);
++   if (udmabuf < 0) {
++      mesa_loge("kbase: /dev/udmabuf unavailable (err=%d)", errno);
++      close(memfd);
++      return -1;
++   }
++   struct nuxel_udmabuf_create create = {
++      .memfd = (uint32_t)memfd,
++      .flags = 0,
++      .offset = 0,
++      .size = aligned,
++   };
++   int dmabuf_fd = ioctl(udmabuf, NUXEL_UDMABUF_CREATE, &create);
++   if (dmabuf_fd < 0) {
++      mesa_loge("kbase: UDMABUF_CREATE failed (err=%d)", errno);
++      close(udmabuf);
++      close(memfd);
++      return -1;
++   }
++   close(udmabuf);
++   close(memfd);
++   return dmabuf_fd;
++}
++
+ /* Bit 11, which the vendor also passes (its other captured shape is 0x380f). Without it the
+  * GPU's own units are not coherent with one another on this memory: the tiler did not see what
+  * an earlier tiler job left in the shared tiler context, so of several draws in one render pass
+@@ -254,8 +317,19 @@ struct kbase_kmod_bo {
+     * the allocation's. NULL for an executable one, whose address comes from the kernel. */
+    void *anchor;
+    bool exec;
++   int export_fd;
+ };
+ 
++static int
++kbase_kmod_bo_export_fd(struct pan_kmod_bo *bo)
++{
++   struct kbase_kmod_bo *kbase_bo = container_of(bo, struct kbase_kmod_bo, base);
++   if (kbase_bo->export_fd < 0)
++      return -1;
++   return fcntl(kbase_bo->export_fd, F_DUPFD_CLOEXEC, 0);
++}
++
++
+ struct kbase_kmod_vm {
+    struct pan_kmod_vm base;
+ };
+@@ -521,6 +595,9 @@ kbase_kmod_dev_query_user_va_range(const struct pan_kmod_dev *dev)
+  * pan_kmod still wants a u32 handle to key its BO table on, so one is synthesised per device.
+  */
+ 
++static struct pan_kmod_bo *kbase_kmod_bo_import_fd(struct pan_kmod_dev *dev,
++                                                          int fd, uint64_t size);
++
+ static struct pan_kmod_bo *
+ kbase_kmod_bo_alloc(struct pan_kmod_dev *dev, struct pan_kmod_vm *exclusive_vm, uint64_t size,
+                     uint32_t flags)
+@@ -533,11 +610,27 @@ kbase_kmod_bo_alloc(struct pan_kmod_dev *dev, struct pan_kmod_vm *exclusive_vm,
+       return NULL;
+ 
+    const bool exec = flags & PAN_KMOD_BO_FLAG_EXECUTABLE;
++
++   if (!exec && (flags & PAN_KMOD_BO_FLAG_EXPORTABLE)) {
++      int fd = kbase_kmod_create_exportable_bo(dev, size);
++      if (fd < 0)
++         return NULL;
++      struct pan_kmod_bo *base = kbase_kmod_bo_import_fd(dev, fd, size);
++      if (!base) {
++         close(fd);
++         return NULL;
++      }
++      struct kbase_kmod_bo *kbo = container_of(base, struct kbase_kmod_bo, base);
++      kbo->export_fd = fd;
++      return base;
++   }
+    const bool grow = !exec && (flags & PAN_KMOD_BO_FLAG_ALLOC_ON_FAULT);
+ 
+    struct kbase_kmod_bo *bo = pan_kmod_dev_alloc(dev, sizeof(*bo));
+    if (!bo)
+       return NULL;
++   bo->export_fd = -1;
++   bo->export_fd = -1;
+ 
+    const uint64_t pages = DIV_ROUND_UP(size, 4096);
+    union kbase_ioctl_mem_alloc req = {
+@@ -590,6 +683,9 @@ kbase_kmod_bo_free(struct pan_kmod_bo *bo)
+ {
+    struct kbase_kmod_bo *kbase_bo = container_of(bo, struct kbase_kmod_bo, base);
+ 
++   if (kbase_bo->export_fd >= 0)
++      close(kbase_bo->export_fd);
++
+    if (kbase_bo->exec) {
+       struct kbase_ioctl_mem_free req = {.gpu_addr = kbase_bo->gpu_va};
+       if (pan_kmod_ioctl(bo->dev->fd, KBASE_IOCTL_MEM_FREE, &req))
+@@ -1602,6 +1698,7 @@ const struct pan_kmod_ops kbase_kmod_ops = {
+    .bo_free = kbase_kmod_bo_free,
+    .bo_import = kbase_kmod_bo_import,
+    .bo_import_fd = kbase_kmod_bo_import_fd,
++   .bo_export_fd = kbase_kmod_bo_export_fd,
+    .bo_get_mmap_offset = kbase_kmod_bo_get_mmap_offset,
+    .bo_wait = kbase_kmod_bo_wait,
+    .vm_create = kbase_kmod_vm_create,
+diff --git a/src/panfrost/lib/kmod/pan_kmod.h b/src/panfrost/lib/kmod/pan_kmod.h
+index 43bc3ee..6424822 100644
+--- a/src/panfrost/lib/kmod/pan_kmod.h
++++ b/src/panfrost/lib/kmod/pan_kmod.h
+@@ -129,6 +129,9 @@ enum pan_kmod_bo_flags {
+     * the KMD to force non-coherent mappings on IO coherent setup.
+     */
+    PAN_KMOD_BO_FLAG_IO_COHERENT = BITFIELD_BIT(7),
++
++   /* kbase only: allocate through udmabuf so the buffer can be exported. */
++   PAN_KMOD_BO_FLAG_EXPORTABLE = BITFIELD_BIT(8),
+ };
+ 
+ /* Allowed group priority flags. */
+@@ -187,6 +190,9 @@ struct pan_kmod_bo {
+ 
+    /* User private data. Use pan_kmod_bo_{set,get}_user_priv() to access it. */
+    void *user_priv;
++
++   /* kbase: the dma-buf fd handed to the compositor; -1 if not exportable. */
++   int export_fd;
+ };
+ 
+ /* List of GPU properties needed by the UMD. */
+@@ -496,6 +502,9 @@ struct pan_kmod_ops {
+     */
+    int (*bo_export)(struct pan_kmod_bo *bo, int dmabuf_fd);
+ 
++   /* Optional backend export hook for devices with no DRM handle namespace. */
++   int (*bo_export_fd)(struct pan_kmod_bo *bo);
++
+    /* Get the file offset to use to mmap() a buffer object. */
+    off_t (*bo_get_mmap_offset)(struct pan_kmod_bo *bo);
+ 
+@@ -625,6 +634,9 @@ struct pan_kmod_dev {
+ 
+    /* User private data. Use pan_kmod_dev_{set,get}_user_priv() to access it. */
+    void *user_priv;
++
++   /* kbase: the dma-buf fd handed to the compositor; -1 if not exportable. */
++   int export_fd;
+ };
+ 
+ #define pan_kmod_ioctl(fd, op, arg)                                          \
+@@ -710,10 +722,14 @@ pan_kmod_bo_export(struct pan_kmod_bo *bo)
+ {
+    PAN_TRACE_FUNC(PAN_TRACE_LIB_KMOD);
+ 
+-   int fd;
++   int fd = -1;
+ 
+-   if (drmPrimeHandleToFD(bo->dev->fd, bo->handle, DRM_CLOEXEC | DRM_RDWR,
+-                          &fd)) {
++   if (bo->dev->ops->bo_export_fd) {
++      fd = bo->dev->ops->bo_export_fd(bo);
++      if (fd < 0)
++         return -1;
++   } else if (drmPrimeHandleToFD(bo->dev->fd, bo->handle,
++                                 DRM_CLOEXEC | DRM_RDWR, &fd)) {
+       mesa_loge("drmPrimeHandleToFD() failed (err=%d)", errno);
+       return -1;
+    }
+diff --git a/src/panfrost/lib/kmod/pan_kmod_backend.h b/src/panfrost/lib/kmod/pan_kmod_backend.h
+index 8a3ad16..f93ed86 100644
+--- a/src/panfrost/lib/kmod/pan_kmod_backend.h
++++ b/src/panfrost/lib/kmod/pan_kmod_backend.h
+@@ -93,6 +93,7 @@ pan_kmod_bo_init(struct pan_kmod_bo *bo, struct pan_kmod_dev *dev,
+    bo->size = size;
+    bo->flags = flags;
+    bo->handle = handle;
++   bo->export_fd = -1;
+    p_atomic_set(&bo->refcnt, 1);
+ }
+ 

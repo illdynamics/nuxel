@@ -46,7 +46,10 @@ const FAST = { iterations: V.MIN_ITERATIONS };
   let add = V.addAccount([], good);
   check('a valid account is added', add.ok === true && add.accounts.length === 1);
   check('defaults are applied (SHA1/6/30)', add.account.algorithm === 'SHA1' && add.account.digits === 6 && add.account.period === 30);
-  check('the account id is stable for the same inputs', V.idFor(add.account) === add.account.id);
+  check('account ids are opaque and do not encode the secret',
+        /^acct-[0-9a-f]{32}$/.test(add.account.id) &&
+        String(add.account.id).indexOf(good.secret.slice(0, 6)) === -1 &&
+        V.idFor(add.account) !== V.idFor(add.account));
   let dup = V.addAccount(add.accounts, good);
   check('a duplicate account is refused', dup.ok === false && dup.duplicate === true);
   check('a missing account name is refused', V.addAccount([], { secret: good.secret }).ok === false);

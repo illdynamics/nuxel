@@ -1,0 +1,35 @@
+#!/bin/bash
+# PWNAGE-47000 Nuxel separate RDP X11 session.
+set -u
+export XDG_SESSION_TYPE=x11
+export XDG_CURRENT_DESKTOP=NuxelRemote
+export XDG_RUNTIME_DIR="$(mktemp -d /tmp/nuxel-xrdp-runtime.XXXXXX)"
+chmod 700 "$XDG_RUNTIME_DIR"
+# Run as the local desktop identity (same nuxel account as SSH/VNC), so
+# xrdp-sesman reconciles by UID and does not race with the Wayland session.
+# Fail closed if a legacy account ever reaches the session launcher.
+if [ "$(id -u)" -ne 1000 ] || [ "$(id -un)" != "nuxel" ]; then
+    echo "nuxel-xrdp-session: refusing non-nuxel identity $(id -un) uid $(id -u)" >&2
+    exit 1
+fi
+case "$HOME" in
+  /home/nuxel-remote|/home/nuxel-remote/*)
+    echo "nuxel-xrdp-session: refusing the retired nuxel-remote HOME" >&2
+    exit 1
+    ;;
+esac
+mkdir -p "$HOME/.config/openbox" "$HOME/.mozilla/firefox/xrdp"
+cat > "$HOME/.config/openbox/rc.xml" <<XML
+<?xml version="1.0" encoding="UTF-8"?>
+<openbox_config xmlns="http://openbox.org/3.4/rc">
+  <theme><name>Clearlooks</name><font place="ActiveWindow"><name>sans</name><size>10</size></font></theme>
+  <desktops><number>1</number><firstdesktop>1</firstdesktop></desktops>
+  <menu><file>/etc/xdg/openbox/menu.xml</file></menu>
+  <keyboard><chainQuitKey>C-g</chainQuitKey></keyboard>
+</openbox_config>
+XML
+openbox --config-file "$HOME/.config/openbox/rc.xml" &
+OB=$!
+sleep 0.5
+# A real, useful remote desktop surface: local Nuxel status page in a kiosk browser.
+exec dbus-run-session -- firefox --no-remote --profile "$HOME/.mozilla/firefox/xrdp" --kiosk file:///usr/share/nuxel/remote-desktop/launcher.html

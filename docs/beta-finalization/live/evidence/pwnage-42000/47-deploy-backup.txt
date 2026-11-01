@@ -1,0 +1,7 @@
+usr/lib/nuxel/nuxel-bridge/bridge.py 125371
+usr/share/nuxel/pwa/nuxel-home/css/status-bar.css 20596
+usr/share/nuxel/pwa/nuxel-home/index.html 22913
+usr/share/nuxel/pwa/nuxel-home/js/status-bar.js 49076
+usr/share/nuxel/pwa/nuxel-home/manifest.json 5490
+usr/share/nuxel/pwa/nuxel-home/sw.js 15467
+BACKUP=/var/lib/nuxel/pwnage42000-backup-20261031T194255Z

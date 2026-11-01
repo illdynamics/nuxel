@@ -1,0 +1,12 @@
+[Unit]
+Description=Deferred Nuxel S10+ ABOX core-firmware reload after Home
+Documentation=https://nuxel.local/docs/pwnage-38000.md
+After=nuxel-wayland.service nuxel-wl-fb.service
+
+[Timer]
+OnBootSec=20s
+Unit=nuxel-abox-firmware-reload.service
+AccuracySec=1s
+
+[Install]
+WantedBy=timers.target

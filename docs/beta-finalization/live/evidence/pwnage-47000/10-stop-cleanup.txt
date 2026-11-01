@@ -1,0 +1,21 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+{"success": true, "services": [{"success": true, "service": "vnc", "state": "OFF", "listener_closed": true}, {"success": true, "service": "xrdp", "state": "OFF", "listener_closed": true, "killed_x_servers": []}], "state": "OFF"}
+---LISTEN
+none
+---PROCS
+no_wayvnc
+no_xorg
+no_sesexec
+---PHOC
+5821 /usr/sbin/phoc --no-xwayland -C /etc/nuxel/phoc-phone.ini -E /usr/lib/nuxel/nuxel-session.sh
+---FB
+                     USER        PID ACCESS COMMAND
+/dev/fb0:            root       5933 F.... nuxel-wl-fb

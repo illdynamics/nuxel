@@ -1,0 +1,83 @@
+=== acquire and read a real GeoClue network location (coordinates redacted) ===
+{
+  "accuracy": 25000.0,
+  "acquire_requested": true,
+  "acquiring": false,
+  "acquisition_started_at": 1793475448.6892273,
+  "active_clients": 1,
+  "detail": "no compatible BCM4773 BBD sensor-hub patch firmware (vendor lhd expects /dev/bbd_patch)",
+  "enabled": true,
+  "fix_kind": "network",
+  "fix_source": "network_wifi",
+  "fix_source_detail": "ipf fallback (from WiFi data)",
+  "fix_timestamp": 1793475085.0,
+  "fix_valid": false,
+  "freshness_seconds": 60.0,
+  "gnss": {
+    "bbd_nodes": [],
+    "blocker": "no compatible BCM4773 BBD sensor-hub patch firmware (vendor lhd expects /dev/bbd_patch)",
+    "driver": "brcm gps spi",
+    "driver_bound": true,
+    "firmware": [],
+    "firmware_loaded": false,
+    "firmware_present": false,
+    "fix_supported": false,
+    "hardware_responds": null,
+    "nmea_stream": false,
+    "node_visible_to_bridge": false,
+    "nodes": [],
+    "present": true,
+    "private_devices": true,
+    "protocol": "broadcom-bbd-lhd-rpc",
+    "spi_bindings": [
+      "/sys/bus/spi/drivers/brcm gps spi/spi17.0"
+    ],
+    "userspace_provider": null,
+    "vendor_runtime": {
+      "android_linker": false,
+      "complete": false,
+      "gps_config": false,
+      "gpsd": false,
+      "hidl_gnss_lib": false,
+      "lhd": false,
+      "lhd_config": false
+    }
+  },
+  "gnss_fix": false,
+  "last_error": null,
+  "last_fix_age_s": 363.68928360939026,
+  "last_fix_timestamp": 1793475085.0,
+  "latitude": null,
+  "location_fix_available": false,
+  "longitude": null,
+  "network_fix": true,
+  "permission_enabled": true,
+  "provider": "geoclue2",
+  "provider_available": true,
+  "provider_detail": "no compatible BCM4773 BBD sensor-hub patch firmware (vendor lhd expects /dev/bbd_patch)",
+  "provider_ready": true,
+  "stale": true,
+  "stale_after_seconds": 600.0,
+  "state": "stale",
+  "success": true,
+  "timestamp": 1793475448.6892836
+}
+{
+  "accuracy": 25000.0,
+  "gnss": false,
+  "kind": "network",
+  "latitude": null,
+  "longitude": null,
+  "network": true,
+  "source": "network_wifi",
+  "source_detail": "ipf fallback (from WiFi data)",
+  "state": "fixed",
+  "success": true,
+  "timestamp": 1793475453.0
+}
+
+=== source must be network, never gnss ===
+state=fixed source=network_wifi kind=network gnss_fix=False network_fix=True accuracy=25000.0 timestamp=1793475453.0
+
+=== release ===
+{"result": {"success": true, "active_clients": 0, "acquiring": false, "state": "no_fix"}}

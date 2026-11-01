@@ -29,6 +29,9 @@
 
 #define BAR_HEIGHT 36
 #define STATE_FILE "/run/nuxel-statusbar.state"
+#define LOCK_STATE "/run/nuxel/security/lock-state.json"
+#define LOCATION_POLICY "/var/lib/nuxel/permissions/location-policy.json"
+#define FT_BIN "/usr/lib/nuxel/nuxel-foreign-toplevel"
 
 static struct wl_display *display;
 static struct wl_registry *registry;
@@ -61,6 +64,52 @@ static int read_text(const char *path, char *out, size_t n) {
   return l > 0;
 }
 
+/* PWNAGE-45000 follow-up: the native overlay top bar must never cover the
+ * lockscreen.  /run/nuxel/security/lock-state.json is the authoritative
+ * session lock flag written by the root bridge.  Missing/unreadable state is
+ * treated as LOCKED (fail closed), matching security_provider.py. */
+static int session_locked(void) {
+  FILE *f = fopen(LOCK_STATE, "r");
+  if (!f) return 1;
+  char b[4096];
+  size_t n = fread(b, 1, sizeof b - 1, f);
+  fclose(f);
+  b[n] = 0;
+  char *p = strstr(b, "\"locked\"");
+  if (!p) return 1;
+  p += 8;
+  while (*p == ' ' || *p == '\t' || *p == '\n' || *p == '\r') p++;
+  if (*p != ':') return 1;
+  p++;
+  while (*p == ' ' || *p == '\t' || *p == '\n' || *p == '\r') p++;
+  return strncmp(p, "true", 4) == 0;
+}
+
+/* PWNAGE-49000: one top bar, never two.  The Home WebView draws the proper
+ * full status bar; this native overlay exists only to keep chrome over a
+ * separate GTK/Flatpak toplevel.  Ask the compositor which toplevel is
+ * activated and show the overlay only when it is a non-Home app.  The helper
+ * is the same trusted foreign-toplevel tool used by Back/Home; it is a short
+ * bounded child, not a poller inside the render path. */
+static int native_foreground(void) {
+  FILE *p = popen(FT_BIN " list 2>/dev/null", "r");
+  if (!p) return 0;
+  char line[512];
+  int found = 0;
+  while (fgets(line, sizeof line, p)) {
+    if (strncmp(line, "WIN ", 4) != 0) continue;
+    /* phoc reports activation for normal focus, while the launch helper
+       raises by unminimizing/maximizing; accept either as "on glass". */
+    if (!strstr(line, " act=1 ") && !strstr(line, " min=0 ")) continue;
+    if (strstr(line, "app_id=nuxel-pwa-host")) continue;
+    if (strstr(line, "title=Nuxel")) continue;
+    found = 1;
+    break;
+  }
+  pclose(p);
+  return found;
+}
+
 static int wifi_up(void) {
   char b[64];
   if (read_text("/sys/class/net/wlan0/operstate", b, sizeof b))
@@ -79,6 +128,78 @@ static int battery_charging(void) {
   char b[64];
   return read_text("/sys/class/power_supply/battery/status", b, sizeof b) &&
          (!strcasecmp(b, "Charging") || !strcasecmp(b, "Full"));
+}
+
+
+/* PWNAGE-42000: real, high-contrast top-bar glyphs.  The old overlay rendered
+ * only text; on a dark strip the Wi-Fi/location state could read as a dim grey
+ * smear.  These are explicit Cairo shapes, not theme-dependent text. */
+static int location_enabled(void) {
+  FILE *f = fopen(LOCATION_POLICY, "r");
+  if (!f) return 0;
+  char b[4096];
+  size_t n = fread(b, 1, sizeof b - 1, f);
+  fclose(f);
+  b[n] = 0;
+  char *p = strstr(b, "\"enabled\"");
+  if (!p) return 0;
+  p += 9;
+  while (*p == ' ' || *p == '\t' || *p == '\n' || *p == '\r') p++;
+  if (*p != ':') return 0;
+  p++;
+  while (*p == ' ' || *p == '\t' || *p == '\n' || *p == '\r') p++;
+  return strncmp(p, "true", 4) == 0;
+}
+
+static void draw_wifi(cairo_t *cr, double cx, double cy, int up) {
+  cairo_set_line_width(cr, 2.0);
+  cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND);
+  if (up) cairo_set_source_rgba(cr, 0.49, 0.89, 0.60, 1.0);
+  else    cairo_set_source_rgba(cr, 0.78, 0.85, 0.94, 0.90);
+  cairo_arc(cr, cx, cy + 4.0, 7.6, M_PI * 1.16, M_PI * 1.84);
+  cairo_stroke(cr);
+  cairo_set_line_width(cr, 1.9);
+  cairo_arc(cr, cx, cy + 4.0, 4.3, M_PI * 1.16, M_PI * 1.84);
+  cairo_stroke(cr);
+  cairo_arc(cr, cx, cy + 3.2, 1.7, 0, 2 * M_PI);
+  cairo_fill(cr);
+}
+
+static void draw_location(cairo_t *cr, double cx, double cy) {
+  cairo_set_source_rgba(cr, 0.41, 0.72, 1.0, 1.0);
+  cairo_set_line_width(cr, 1.5);
+  cairo_arc(cr, cx, cy, 7.2, 0, 2 * M_PI);
+  cairo_stroke(cr);
+  cairo_arc(cr, cx, cy, 4.0, 0, 2 * M_PI);
+  cairo_fill(cr);
+}
+
+static void draw_battery(cairo_t *cr, double x, double cy, int level, int chg) {
+  const double w = 27.0, h = 13.0;
+  double top = cy - h / 2.0;
+  cairo_set_source_rgba(cr, 0.96, 0.98, 1.0, 1.0);
+  cairo_set_line_width(cr, 1.6);
+  cairo_rectangle(cr, x, top, w, h);
+  cairo_stroke(cr);
+  cairo_rectangle(cr, x + w + 1.0, top + 4.0, 2.8, 5.0);
+  cairo_fill(cr);
+  double pct = (level < 0 ? 0 : (level > 100 ? 100 : level)) / 100.0;
+  if (pct > 0) {
+    cairo_set_source_rgba(cr, 0.45, 0.88, 0.60, 1.0);
+    cairo_rectangle(cr, x + 2.0, top + 2.0, (w - 4.0) * pct, h - 4.0);
+    cairo_fill(cr);
+  }
+  if (chg) {
+    cairo_set_source_rgba(cr, 1.0, 0.96, 0.68, 1.0);
+    cairo_move_to(cr, x + w * 0.55, top + 1.0);
+    cairo_line_to(cr, x + w * 0.30, top + h * 0.55);
+    cairo_line_to(cr, x + w * 0.50, top + h * 0.55);
+    cairo_line_to(cr, x + w * 0.40, top + h - 1.0);
+    cairo_line_to(cr, x + w * 0.72, top + h * 0.40);
+    cairo_line_to(cr, x + w * 0.52, top + h * 0.40);
+    cairo_close_path(cr);
+    cairo_fill(cr);
+  }
 }
 
 static int create_shm(size_t size) {
@@ -106,24 +227,34 @@ static void render(void) {
 
   char timebuf[16]; time_t t = time(NULL); struct tm tm; localtime_r(&t, &tm);
   strftime(timebuf, sizeof timebuf, "%H:%M", &tm);
-  char right[96]; int lvl = battery_level();
+  int lvl = battery_level();
   int chg = battery_charging();
-  snprintf(right, sizeof right, "%s%s %d%%", wifi_up() ? "Wi-Fi  " : "", chg ? "⚡" : "", lvl >= 0 ? lvl : 0);
+  int loc_on = location_enabled();
+  int wifi_on = wifi_up();
+  char pctbuf[16];
+  snprintf(pctbuf, sizeof pctbuf, "%d%%", lvl >= 0 ? lvl : 0);
 
   PangoLayout *layout = pango_cairo_create_layout(cr);
   PangoFontDescription *desc = pango_font_description_from_string("Nuxel Sans 13");
   pango_layout_set_font_description(layout, desc);
-  cairo_set_source_rgb(cr, 0.92, 0.96, 1.0);
+  cairo_set_source_rgb(cr, 0.96, 0.98, 1.0);
 
   pango_layout_set_text(layout, timebuf, -1);
   int tw = 0, th = 0; pango_layout_get_pixel_size(layout, &tw, &th);
   cairo_move_to(cr, 14, (height - th) / 2.0 - 1);
   pango_cairo_show_layout(cr, layout);
 
-  pango_layout_set_text(layout, right, -1);
+  pango_layout_set_text(layout, pctbuf, -1);
   pango_layout_get_pixel_size(layout, &tw, &th);
-  cairo_move_to(cr, width - tw - 14, (height - th) / 2.0 - 1);
+  double pct_x = width - tw - 12.0;
+  cairo_move_to(cr, pct_x, (height - th) / 2.0 - 1);
   pango_cairo_show_layout(cr, layout);
+  double battery_x = pct_x - 34.0;
+  draw_battery(cr, battery_x, height / 2.0, lvl, chg);
+  double wifi_x = battery_x - 22.0;
+  draw_wifi(cr, wifi_x, height / 2.0, wifi_on);
+  double loc_x = wifi_x - 20.0;
+  if (loc_on) draw_location(cr, loc_x, height / 2.0);
 
   pango_font_description_free(desc);
   g_object_unref(layout);
@@ -144,6 +275,44 @@ static void render(void) {
   close(fd);
 }
 
+static const struct zwlr_layer_surface_v1_listener layer_listener;
+
+static void bar_hide(void) {
+  if (!layer_surface) return;
+  zwlr_layer_surface_v1_destroy(layer_surface);
+  layer_surface = NULL;
+  if (surface) {
+    wl_surface_attach(surface, NULL, 0, 0);
+    wl_surface_commit(surface);
+    wl_surface_destroy(surface);
+    surface = NULL;
+  }
+  configured = 0;
+  audit("STATUSBAR_HIDDEN reason=lock_or_home");
+}
+
+static void bar_show(void) {
+  if (layer_surface || !compositor || !layer_shell || !output) return;
+  if (!surface) surface = wl_compositor_create_surface(compositor);
+  if (!surface) return;
+  layer_surface = zwlr_layer_shell_v1_get_layer_surface(
+      layer_shell, surface, output, ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY, "nuxel-statusbar");
+  zwlr_layer_surface_v1_set_anchor(layer_surface,
+      ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP | ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT |
+      ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT);
+  zwlr_layer_surface_v1_set_size(layer_surface, 0, BAR_HEIGHT);
+  zwlr_layer_surface_v1_set_exclusive_zone(layer_surface, BAR_HEIGHT);
+  zwlr_layer_surface_v1_set_keyboard_interactivity(layer_surface,
+      ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_NONE);
+  struct wl_region *empty = wl_compositor_create_region(compositor);
+  wl_surface_set_input_region(surface, empty);
+  wl_region_destroy(empty);
+  zwlr_layer_surface_v1_add_listener(layer_surface, &layer_listener, NULL);
+  wl_surface_commit(surface);
+  configured = 0;
+  audit("STATUSBAR_SHOWN locked=0");
+}
+
 static void layer_configure(void *d, struct zwlr_layer_surface_v1 *ls,
                             uint32_t serial, uint32_t w, uint32_t h) {
   (void)d;
@@ -154,7 +323,9 @@ static void layer_configure(void *d, struct zwlr_layer_surface_v1 *ls,
   render();
 }
 static void layer_closed(void *d, struct zwlr_layer_surface_v1 *ls) {
-  (void)d; (void)ls; audit("LAYER_CLOSED");
+  (void)d;
+  if (ls == layer_surface) { layer_surface = NULL; configured = 0; }
+  audit("LAYER_CLOSED");
 }
 static const struct zwlr_layer_surface_v1_listener layer_listener = {
   .configure = layer_configure, .closed = layer_closed,
@@ -208,26 +379,21 @@ int main(void) {
   wl_output_add_listener(output, &output_listener, NULL);
   wl_display_roundtrip(display);
 
+  /* The overlay owns presentation only while ALL of these are true:
+     - the session is unlocked (never over the lockscreen; the DOM bar owns
+       that surface), and
+     - a non-Home Wayland toplevel is activated (never double the Home bar). */
   surface = wl_compositor_create_surface(compositor);
-  layer_surface = zwlr_layer_shell_v1_get_layer_surface(
-      layer_shell, surface, output, ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY, "nuxel-statusbar");
-  zwlr_layer_surface_v1_set_anchor(layer_surface,
-      ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP | ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT |
-      ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT);
-  zwlr_layer_surface_v1_set_size(layer_surface, 0, BAR_HEIGHT);
-  zwlr_layer_surface_v1_set_exclusive_zone(layer_surface, BAR_HEIGHT);
-  zwlr_layer_surface_v1_set_keyboard_interactivity(layer_surface,
-      ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_NONE);
-  /* Empty input region: taps pass through to Home's own status bar (Quick
-     Settings gesture) while Home is visible, and to the app otherwise. */
-  struct wl_region *empty = wl_compositor_create_region(compositor);
-  wl_surface_set_input_region(surface, empty);
-  wl_region_destroy(empty);
-  zwlr_layer_surface_v1_add_listener(layer_surface, &layer_listener, NULL);
-  wl_surface_commit(surface);
-  wl_display_roundtrip(display);
-
-  audit("STATUSBAR_READY width=%d height=%d scale=%d", width, height, scale);
+  int locked = session_locked();
+  int shown = 0;
+  if (!locked && native_foreground()) {
+    bar_show();
+    shown = 1;
+    wl_display_roundtrip(display);
+    audit("STATUSBAR_READY width=%d height=%d scale=%d", width, height, scale);
+  } else {
+    audit("STATUSBAR_START_HIDDEN locked=%d home=%d", locked, !locked && !shown);
+  }
   time_t last = 0;
   for (;;) {
     while (wl_display_prepare_read(display) != 0) {
@@ -235,12 +401,21 @@ int main(void) {
     }
     wl_display_flush(display);
     struct pollfd pf = { .fd = wl_display_get_fd(display), .events = POLLIN };
-    int pr = poll(&pf, 1, 5000);
+    int pr = poll(&pf, 1, 500);
     if (pr < 0) { wl_display_cancel_read(display); if (errno == EINTR) continue; return 0; }
     if (pr == 0) {
       wl_display_cancel_read(display);
+      int now_locked = session_locked();
+      int want = 0;
+      /* Only spend a list query while unlocked. */
+      if (!now_locked) want = native_foreground();
+      if (now_locked != locked || want != shown) {
+        locked = now_locked;
+        shown = want;
+        if (shown) bar_show(); else bar_hide();
+      }
       time_t now = time(NULL);
-      if (now - last >= 10) { last = now; render(); }
+      if (shown && now - last >= 10) { last = now; render(); }
       continue;
     }
     if (pf.revents & POLLIN) {

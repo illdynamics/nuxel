@@ -1,0 +1,2 @@
+{"result": {"success": true, "latitude": 51.429037, "longitude": 5.459872, "accuracy": 48.0, "timestamp": 1793475462.0, "source": "network_wifi", "source_detail": "WiFi", "kind": "network", "gnss": false, "network": true, "state": "fixed"}}
+{"result": {"success": true, "active_clients": 0, "acquiring": false, "state": "no_fix"}}

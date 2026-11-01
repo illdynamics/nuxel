@@ -1,0 +1,24 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Nuxel Remote Desktop</title>
+<style>
+:root{color-scheme:dark}html,body{margin:0;height:100%;background:#071426;color:#e8f1fb;font-family:system-ui,sans-serif}
+body{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:32px;box-sizing:border-box}
+.card{max-width:820px;background:#0d2038;border:1px solid #23405f;border-radius:18px;padding:26px 30px}
+h1{margin:0 0 6px;font-size:26px}p{line-height:1.5;color:#b8cbe0;margin:10px 0}
+.tag{display:inline-block;background:#13304e;color:#5db7ff;border-radius:999px;padding:5px 12px;font-size:13px;font-weight:700;letter-spacing:.04em}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-top:18px}
+.box{background:#0a1a2e;border:1px solid #1d3a58;border-radius:12px;padding:14px}
+.box b{color:#7dd3fc;display:block;margin-bottom:6px}.small{font-size:13px;color:#9fb3c8}
+a{color:#5db7ff}
+</style></head><body>
+<div class="card">
+<span class="tag">SEPARATE X11 SESSION</span>
+<h1>Nuxel Remote Desktop</h1>
+<p>This is a separate authenticated Xorg session. It does <b>not</b> mirror the phone&rsquo;s physical Phoc/Wayland screen and it does not own <code>/dev/fb0</code>.</p>
+<div class="grid">
+<div class="box"><b>Remote browser</b><span class="small">Use Firefox in this session for documentation, diagnostics and local web content.</span></div>
+<div class="box"><b>Terminal</b><span class="small">Right-click the desktop and choose <i>Terminal</i>, or run <code>xterm</code> from the Openbox menu.</span></div>
+<div class="box"><b>Connection</b><span class="small">RDP is reachable directly on the owner LAN over TLS; sign in as the local nuxel account.</span></div>
+<div class="box"><b>Clean logout</b><span class="small">Close this browser window or log out to end the isolated session; xrdp-sesman cleans the X server.</span></div>
+</div>
+<p class="small">Nuxel PWNAGE-47000 · RDP/TLS · owner LAN only · no root desktop.</p>
+</div></body></html>

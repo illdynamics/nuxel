@@ -1,0 +1,144 @@
+{
+  "ok": true,
+  "test_id": "L2-LANDSCAPE-90",
+  "updatedAt": "2026-10-31T17:40:43.920816Z"
+}
+{
+  "_daemon_live": true,
+  "allowed": [
+    90
+  ],
+  "applied": true,
+  "auto": false,
+  "auto_state": "fixed",
+  "calibration": {
+    "gravity_reference": "unverified",
+    "mount_matrix": "unverified"
+  },
+  "compositor": {
+    "backend": "wlr-randr",
+    "error": "",
+    "output": "HEADLESS-1",
+    "touch_calibration_verified": false,
+    "transform": "90",
+    "transform_available": true,
+    "transform_map_verified": false
+  },
+  "display": {
+    "after": {
+      "applied": true,
+      "backend": "wlr-randr",
+      "enabled": true,
+      "error": "",
+      "logical_height": 720,
+      "logical_width": 1520,
+      "output": "HEADLESS-1",
+      "outputs": [
+        "HEADLESS-1"
+      ],
+      "physical_height": 1520,
+      "physical_width": 720,
+      "scale": 2.0,
+      "transform": "90"
+    },
+    "applied": true,
+    "backend": "wlr-randr",
+    "before": {
+      "applied": true,
+      "backend": "wlr-randr",
+      "enabled": true,
+      "error": "",
+      "logical_height": 1520,
+      "logical_width": 720,
+      "output": "HEADLESS-1",
+      "outputs": [
+        "HEADLESS-1"
+      ],
+      "physical_height": 1520,
+      "physical_width": 720,
+      "scale": 2.0,
+      "transform": "normal"
+    },
+    "dry_run": false,
+    "error": "",
+    "logical_height": 720,
+    "logical_width": 1520,
+    "output": "HEADLESS-1",
+    "physical_height": 1520,
+    "physical_width": 720,
+    "requested_transform": "90",
+    "scale": 2.0,
+    "transform": "90"
+  },
+  "effective_orientation": 90,
+  "last_error": "",
+  "last_good": {
+    "effective_orientation": 0,
+    "mode": "portrait",
+    "requested_orientation": 0,
+    "transform": "normal"
+  },
+  "last_orientation": 90,
+  "last_request_id": "req-16447-1793468444165",
+  "mode": "landscape",
+  "mode_label": "Landscape",
+  "pid": 16421,
+  "requested_orientation": 90,
+  "sensor": {
+    "available": false,
+    "preferred": null,
+    "sources": [
+      {
+        "auto_capable": false,
+        "available": false,
+        "reason": "IIO device present but no readable scale",
+        "source": "iio-accel"
+      },
+      {
+        "auto_capable": false,
+        "available": false,
+        "reason": "iio-sensor-proxy unavailable: org.freedesktop.DBus.Error.ServiceUnknown: The name net.hadess.SensorProxy was not provided by any .service files",
+        "source": "iio-sensor-proxy"
+      },
+      {
+        "auto_capable": false,
+        "available": true,
+        "reason": "",
+        "source": "manual"
+      }
+    ],
+    "unverified": true
+  },
+  "status_age_seconds": 0,
+  "success": true,
+  "touch": {
+    "mechanism": "wlroots maps libinput through the output transform; nuxel-wl-fb rotates the logical screencopy frame back to the portrait AMOLED scanout",
+    "transform_available": true,
+    "verified": false
+  },
+  "trial": {
+    "deadline_epoch": 1793468534.3316536,
+    "effective_orientation": 90,
+    "id": "req-16447-1793468444165",
+    "last_result": "pending",
+    "mode": "landscape",
+    "pending_confirmation": true,
+    "request_id": "req-16447-1793468444165",
+    "started_epoch": 1793468444.3316536
+  },
+  "updated_epoch": 1793468444.4075582
+}
+===presenter
+transform=90
+presenter_rotation=90
+effective_orientation=90
+output=HEADLESS-1
+logical_width=1520
+logical_height=720
+backend=wlr-randr
+applied=1
+===wlstate
+1793468444 FRAMES_OK total=27621 fps_1s=2 failures=0 blits=1604 present_skipped=26014 blit_avg_ms=47 damage=0-1520 damage_blits=1558 damage_avg_ms=46 idle_ms=14 out=720x1520 src=720x1520 scale=2 panel=1440x3040 owner=nuxel-wl-fb display=on src_format=0x00000001 colour=R@0,G@8,B@16_abgr8888_override=1 decon_pan_ok=1605 decon_pan_failed=0
+===hashes
+b9a3fd5925d28d081ce7da8ab8c844f4e7ed8dc82ce1c346571cce8d740bc885  /etc/nuxel/orientation/orientation.json
+9a39eee9bf6b5311d1e38f85268ec307762eba948dd534f7edbcb709c00965fd  /usr/libexec/nuxel/nuxel-orientationd

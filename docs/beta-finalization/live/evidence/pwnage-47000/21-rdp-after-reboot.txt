@@ -1,0 +1,37 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+=== RDP active after reboot ===
+11175 /usr/libexec/Xorg :10 -auth .Xauthority -config /etc/xrdp/xorg-nuxel.conf -noreset -nolisten tcp -logfile .xorgxrdp.%s.log
+11171 xrdp-sesexec
+11717 bash -c echo "=== RDP active after reboot ==="; pgrep -a Xorg; pgrep -a xrdp-sesexec; pgrep -af nuxel-xrdp-session | head -1; pgrep -a firefox | head -1; ps -eo pid,comm,%cpu,rss,args --sort=-%cpu | grep -E "Xorg|firefox|xrdp|wayvnc|phoc" | grep -v grep; curl -s http://127.0.0.1:8080/api/v1/system/remote-desktop | python3 -c "import sys,json;d=json.load(sys.stdin);print({k:(v.get(\"state\"),v.get(\"authenticated_clients\")) for k,v in d[\"services\"].items()})"
+11198 /usr/lib64/firefox/firefox --no-remote --profile /home/nuxel-remote/.mozilla/firefox/xrdp --kiosk file:///usr/share/nuxel/remote-desktop/launcher.html
+  11198 firefox         88.0 452260 /usr/lib64/firefox/firefox --no-remote --profile /home/nuxel-remote/.mozilla/firefox/xrdp --kiosk file:///usr/share/nuxel/remote-desktop/launcher.html
+  11605 Privileged Cont 27.5 194996 /usr/lib64/firefox/firefox -contentproc -isForBrowser -prefsHandle 0:52088 -prefMapHandle 1:295647 -jsInitHandle 2:162336 -parentBuildID 20261007092626 -sandboxReporter 3 -ipcHandle 4 -initialChannelId {c2a75542-a421-4073-99ac-1872a2b674cf} -parentPid 11198 -greomni /usr/lib64/firefox/omni.ja -appomni /usr/lib64/firefox/browser/omni.ja -appDir /usr/lib64/firefox/browser 10 tab
+   5821 phoc            13.6 37176 /usr/sbin/phoc --no-xwayland -C /etc/nuxel/phoc-phone.ini -E /usr/lib/nuxel/nuxel-session.sh
+  11413 WebExtensions   11.4 120828 /usr/lib64/firefox/firefox -contentproc -isForBrowser -prefsHandle 0:34760 -prefMapHandle 1:295647 -jsInitHandle 2:162336 -parentBuildID 20261007092626 -sandboxReporter 3 -ipcHandle 4 -initialChannelId {17155147-19a5-4a73-b9ee-c5364b5c1ed3} -parentPid 11198 -greomni /usr/lib64/firefox/omni.ja -appomni /usr/lib64/firefox/browser/omni.ja -appDir /usr/lib64/firefox/browser 3 tab
+  11466 file:// Content  3.7 101824 /usr/lib64/firefox/firefox -contentproc -isForBrowser -prefsHandle 0:34885 -prefMapHandle 1:295647 -jsInitHandle 2:162336 -parentBuildID 20261007092626 -sandboxReporter 3 -ipcHandle 4 -initialChannelId {f9ea34ad-4241-4edb-906e-71610d2dc799} -parentPid 11198 -greomni /usr/lib64/firefox/omni.ja -appomni /usr/lib64/firefox/browser/omni.ja -appDir /usr/lib64/firefox/browser 5 tab
+  11175 Xorg             3.1 56824 /usr/libexec/Xorg :10 -auth .Xauthority -config /etc/xrdp/xorg-nuxel.conf -noreset -nolisten tcp -logfile .xorgxrdp.%s.log
+  11138 xrdp             2.9 22252 /usr/bin/xrdp --nodaemon
+  11583 Web Content      2.6 76480 /usr/lib64/firefox/firefox -contentproc -isForBrowser -prefsHandle 0:49054 -prefMapHandle 1:295647 -jsInitHandle 2:162336 -parentBuildID 20261007092626 -sandboxReporter 3 -ipcHandle 4 -initialChannelId {e28c9c6f-0393-4d68-82b0-f330c01cf5a2} -parentPid 11198 -greomni /usr/lib64/firefox/omni.ja -appomni /usr/lib64/firefox/browser/omni.ja -appDir /usr/lib64/firefox/browser 9 tab
+  11521 Web Content      1.8 76572 /usr/lib64/firefox/firefox -contentproc -isForBrowser -prefsHandle 0:48895 -prefMapHandle 1:295647 -jsInitHandle 2:162336 -parentBuildID 20261007092626 -sandboxReporter 3 -ipcHandle 4 -initialChannelId {53dbc8e1-3c11-4a66-b67e-17e95aecbe16} -parentPid 11198 -greomni /usr/lib64/firefox/omni.ja -appomni /usr/lib64/firefox/browser/omni.ja -appDir /usr/lib64/firefox/browser 7 tab
+  11516 Web Content      1.8 76584 /usr/lib64/firefox/firefox -contentproc -isForBrowser -prefsHandle 0:48895 -prefMapHandle 1:295647 -jsInitHandle 2:162336 -parentBuildID 20261007092626 -sandboxReporter 3 -ipcHandle 4 -initialChannelId {23821c9d-56af-4086-a13b-6cff73497115} -parentPid 11198 -greomni /usr/lib64/firefox/omni.ja -appomni /usr/lib64/firefox/browser/omni.ja -appDir /usr/lib64/firefox/browser 6 tab
+  11390 Socket Process   1.2 34188 /usr/lib64/firefox/firefox -contentproc -parentBuildID 20261007092626 -prefsHandle 0:34695 -prefMapHandle 1:295647 -sandboxReporter 2 -ipcHandle 3 -initialChannelId {0c0a5705-31ab-4396-85d7-b109a9039505} -parentPid 11198 -appDir /usr/lib64/firefox/browser 2 socket
+  11350 forkserver       0.7 25760 /usr/lib64/firefox/firefox -contentproc -ipcHandle 0 -signalPipe 1 -initialChannelId {2c102829-0deb-4fd1-b843-55d40151addc} -parentPid 11198 -greomni /usr/lib64/firefox/omni.ja -appomni /usr/lib64/firefox/browser/omni.ja -appDir /usr/lib64/firefox/browser 1 forkserver
+  11421 RDD Process      0.7 38512 /usr/lib64/firefox/firefox -contentproc -parentBuildID 20261007092626 -prefsHandle 0:34760 -prefMapHandle 1:295647 -sandboxReporter 2 -ipcHandle 3 -initialChannelId {37424474-9951-4bac-8c9f-ae1edda0a4a0} -parentPid 11198 -appDir /usr/lib64/firefox/browser 4 rdd
+  11171 xrdp-sesexec     0.3  5976 xrdp-sesexec
+  11371 bwrap            0.2  1296 bwrap --unshare-all --die-with-parent --chdir / --ro-bind /usr /usr --dev /dev --ro-bind-try /etc/ld.so.cache /etc/ld.so.cache --ro-bind-try /nix/store /nix/store --tmpfs /tmp-home --tmpfs /tmp-run --clearenv --setenv HOME /tmp-home --setenv XDG_RUNTIME_DIR /tmp-run --setenv XDG_RUNTIME_DIR /tmp/nuxel-xrdp-runtime.zCNDib --symlink /usr/lib64 /lib64 --symlink /usr/lib /lib --seccomp 72 /usr/libexec/glycin-loaders/2+/glycin-image-rs --dbus-fd 71
+  11577 Utility Process  0.1 29620 /usr/lib64/firefox/firefox -contentproc -parentBuildID 20261007092626 -sandboxingKind 0 -prefsHandle 0:52034 -prefMapHandle 1:295647 -sandboxReporter 2 -ipcHandle 3 -initialChannelId {9c281f28-86a0-4668-b359-b8a810629a92} -parentPid 11198 -appDir /usr/lib64/firefox/browser 8 utility
+  11128 xrdp             0.1  8696 /usr/bin/xrdp --nodaemon
+  11185 dbus-run-sessio  0.1  1328 dbus-run-session -- firefox --no-remote --profile /home/nuxel-remote/.mozilla/firefox/xrdp --kiosk file:///usr/share/nuxel/remote-desktop/launcher.html
+  11186 xrdp-chansrv     0.1  3628 /usr/bin/xrdp-chansrv
+  11382 bwrap            0.1  1584 bwrap --unshare-all --die-with-parent --chdir / --ro-bind /usr /usr --dev /dev --ro-bind-try /etc/ld.so.cache /etc/ld.so.cache --ro-bind-try /nix/store /nix/store --tmpfs /tmp-home --tmpfs /tmp-run --clearenv --setenv HOME /tmp-home --setenv XDG_RUNTIME_DIR /tmp-run --setenv XDG_RUNTIME_DIR /tmp/nuxel-xrdp-runtime.zCNDib --symlink /usr/lib64 /lib64 --symlink /usr/lib /lib --seccomp 72 /usr/libexec/glycin-loaders/2+/glycin-image-rs --dbus-fd 71
+  11126 xrdp-sesman      0.0  2316 /usr/bin/xrdp-sesman --nodaemon
+  11309 fusermount3      0.0   780 fusermount3 -o rw,nosuid,nodev,fsname=portal,auto_unmount,subtype=portal -- /tmp/nuxel-xrdp-runtime.zCNDib/doc
+{'vnc': ('OFF', 0), 'xrdp': ('CONNECTED', 1), 'scrcpy': ('NOT_APPLICABLE_NATIVE_NUXEL', 0)}

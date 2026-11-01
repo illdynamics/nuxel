@@ -1,0 +1,9 @@
+=== unlock for owner-facing visual check ===
+{"result": {"success": true, "unlocked": true, "locked": false}}
+=== enable + acquire a real network fix ===
+{"accuracy": 25000.0, "gnss": false, "kind": "network", "latitude": null, "longitude": null, "network": true, "source": "network_wifi", "source_detail": "ipf fallback (from WiFi data)", "state": "fixed", "success": true, "timestamp": 1793476469.0, "timestamp_source": "provider"}
+screenshot_bytes=1519185
+=== return to privacy-safe OFF and lock ===
+{'success': True, 'enabled': False, 'state': 'disabled', 'latitude': None, 'longitude': None, 'active_clients': 0}
+{"enabled": false, "updated": 1793476485.2938857}
+GPS_PWR_EN=0

@@ -7,7 +7,7 @@
 // REGISTRY_VERSION that the launcher publishes on its evidence channel and that
 // tools/s10plus/a33/tests/launcher-registry-test.js asserts ("org.nuxel.Terminal"
 // and "nuxel-settings" present, every PWA served under /pwa/nuxel-apps/).
-const NUXEL_REGISTRY_VERSION = 8;
+const NUXEL_REGISTRY_VERSION = 10;
 
 const NUXEL_APPS = {
     // Native shell apps
@@ -49,6 +49,18 @@ const NUXEL_APPS = {
     },
 
     // PWA apps
+    'org.nuxel.Clipper': {
+        id: 'org.nuxel.Clipper',
+        name: 'Clipper',
+        icon: '📋',
+        color: '#00BCD4',
+        category: 'tools',
+        type: 'pwa',
+        url: '/pwa/nuxel-apps/clipper/index.html',
+        description: 'Clipboard history and quick copy manager',
+        capabilities: ['clipboard:read', 'clipboard:write'],
+        docked: false,
+    },
     'org.nuxel.Mail': {
         id: 'org.nuxel.Mail',
         name: 'Mail',
@@ -195,6 +207,41 @@ const NUXEL_APPS = {
         docked: false,
         consoleTransport: 'wifi',
     },
+    // PWNAGE-47000 GUI Tri-Link: three graphical remote-access entries.  They
+    // are separate from the serial/SSH console entries and never auto-start.
+    'org.nuxel.RemoteDesktopXRDP': {
+        id: 'org.nuxel.RemoteDesktopXRDP',
+        name: 'XRDP Remote Desktop',
+        icon: '🖥️',
+        color: '#5db7ff',
+        category: 'system',
+        type: 'pwa',
+        url: '/pwa/nuxel-apps/remote-xrdp/index.html',
+        description: 'Separate authenticated RDP/TLS X11 session (Wi-Fi preferred)',
+        capabilities: [], docked: false, remoteService: 'xrdp',
+    },
+    'org.nuxel.RemoteDesktopVNC': {
+        id: 'org.nuxel.RemoteDesktopVNC',
+        name: 'VNC Screen Sharing',
+        icon: '🖵',
+        color: '#48d597',
+        category: 'system',
+        type: 'pwa',
+        url: '/pwa/nuxel-apps/remote-vnc/index.html',
+        description: 'Share the actual Phoc/Wayland screen (Wi-Fi preferred)',
+        capabilities: [], docked: false, remoteService: 'vnc',
+    },
+    'org.nuxel.ScrcpyMirror': {
+        id: 'org.nuxel.ScrcpyMirror',
+        name: 'scrcpy (Android)',
+        icon: '📱',
+        color: '#b68cff',
+        category: 'system',
+        type: 'pwa',
+        url: '/pwa/nuxel-apps/remote-scrcpy/index.html',
+        description: 'Official scrcpy for Android ADB targets only',
+        capabilities: [], docked: false, remoteService: 'scrcpy',
+    },
 
     // A59: user-facing apps authored in pwa/nuxel-apps but previously missing
     // from the launcher. Each resolves to a real index.html + manifest.json.
@@ -258,7 +305,7 @@ const NUXEL_APPS = {
         id: 'org.mozilla.firefox', name: 'Firefox', icon: '🦊', color: '#ff7139',
         category: 'tools', type: 'native',
         url: 'org.mozilla.firefox://',
-        native_binary: '/usr/lib/nuxel/nuxel-flatpak-firefox',
+        native_binary: '/usr/bin/firefox',
         description: 'Firefox (Fedora aarch64 RPM; Flatpak blocked by CONFIG_USER_NS=n)',
         capabilities: ['network:outbound', 'storage:persistent'], docked: false,
     },
@@ -266,7 +313,7 @@ const NUXEL_APPS = {
         id: 'org.videolan.VLC', name: 'VLC', icon: '🎬', color: '#ff8800',
         category: 'media', type: 'native',
         url: 'org.videolan.VLC://',
-        native_binary: '/usr/lib/nuxel/nuxel-flatpak-vlc',
+        native_binary: '/usr/lib/nuxel/nuxel-vlc-fallback',
         description: 'VLC (Fedora aarch64 RPM; Flatpak blocked by CONFIG_USER_NS=n)',
         capabilities: ['storage:persistent', 'audio:output'], docked: false,
     },
@@ -275,16 +322,16 @@ const NUXEL_APPS = {
         category: 'communication', type: 'native',
         url: 'org.signal.Signal://',
         native_binary: '/usr/lib/nuxel/nuxel-flatpak-signal',
-        description: 'Signal Desktop (aarch64 Flatpak installed; BLOCKED: no USER_NS)',
-        capabilities: ['network:outbound', 'storage:persistent'], docked: false,
+        description: 'Signal Desktop is NOT installed (no official aarch64 RPM; Flatpak blocked by CONFIG_USER_NS=n)',
+        capabilities: ['network:outbound', 'storage:persistent'], docked: false, status: 'unsupported',
     },
     'com.stremio.Stremio': {
         id: 'com.stremio.Stremio', name: 'Stremio', icon: '🍿', color: '#7b5cff',
         category: 'media', type: 'native',
         url: 'com.stremio.Stremio://',
         native_binary: '/usr/lib/nuxel/nuxel-flatpak-stremio',
-        description: 'Stremio (aarch64 Flatpak installed; BLOCKED: no USER_NS)',
-        capabilities: ['network:outbound', 'storage:persistent'], docked: false,
+        description: 'Stremio is NOT launchable: Flatpak blocked by CONFIG_USER_NS=n',
+        capabilities: ['network:outbound', 'storage:persistent'], docked: false, status: 'unsupported',
     },
     'org.gnome.FileRoller': {
         id: 'org.gnome.FileRoller', name: 'Archive Manager', icon: '🗜️', color: '#d6a45c',
@@ -318,6 +365,50 @@ const NUXEL_APPS = {
         description: 'Live CPU/memory/process monitor (Fedora aarch64 RPM)',
         capabilities: [], docked: false,
     },
+    // PWNAGE-45000: shipped local catalog apps and the native Software center.
+    'org.nuxel.Media': {
+        id: 'org.nuxel.Media', name: 'Media Player', icon: '🎬', color: '#e05d5d',
+        category: 'media', type: 'pwa', url: '/pwa/nuxel-apps/media/index.html',
+        description: 'Local audio/video playback through PipeWire/ALSA',
+        capabilities: ['audio:playback', 'media:library'], docked: false,
+    },
+    'org.nuxel.Downloader': {
+        id: 'org.nuxel.Downloader', name: 'Media Downloader', icon: '⬇️', color: '#4a90e2',
+        category: 'media', type: 'pwa', url: '/pwa/nuxel-apps/downloader/index.html',
+        description: 'Bounded download queue with checksums',
+        capabilities: ['download:queue'], docked: false,
+    },
+    'org.nuxel.Authenticator': {
+        id: 'org.nuxel.Authenticator', name: 'Authenticator', icon: '🔐', color: '#7e57c2',
+        category: 'security', type: 'pwa', url: '/pwa/nuxel-apps/authenticator/index.html',
+        description: 'Encrypted on-device TOTP authenticator',
+        capabilities: ['storage:encrypted'], docked: false,
+    },
+    'org.nuxel.Cleanup': {
+        id: 'org.nuxel.Cleanup', name: 'Safe Cleanup', icon: '🧹', color: '#26a69a',
+        category: 'tools', type: 'pwa', url: '/pwa/nuxel-apps/cleanup/index.html',
+        description: 'Preview-then-delete allowlisted cache cleanup',
+        capabilities: ['storage:cleanup'], docked: false,
+    },
+    'org.nuxel.DevMgmt': {
+        id: 'org.nuxel.DevMgmt', name: 'DevMgmt', icon: '🛠️', color: '#00695c',
+        category: 'tools', type: 'pwa', url: '/pwa/nuxel-apps/devmgmt/index.html',
+        description: 'Read-only device and peripheral inspection',
+        capabilities: ['system:inspect'], docked: false,
+    },
+    'org.nuxel.PenguInterface': {
+        id: 'org.nuxel.PenguInterface', name: 'PenguInterface', icon: '🐧', color: '#3f51b5',
+        category: 'system', type: 'pwa', url: '/pwa/nuxel-apps/penguinterface/index.html',
+        description: 'Validated per-device compatibility profiles',
+        capabilities: ['system:inspect'], docked: false,
+    },
+    'org.gnome.Software': {
+        id: 'org.gnome.Software', name: 'Software', icon: '🛍️', color: '#2ec27e',
+        category: 'system', type: 'native', url: 'org.gnome.Software://',
+        native_binary: '/usr/lib/nuxel/nuxel-software',
+        description: 'Native Fedora RPM management (PackageKit/DNF + polkit)',
+        capabilities: [], docked: false,
+    },
 };
 
 // Launcher artwork is intentionally separate from the canonical app registry:
@@ -332,6 +423,9 @@ const NUXEL_APP_ICON_ASSETS = {
     'org.nuxel.LiveConsole': '/assets/nuxel-applications-icon-pack/05-05_live-console.png?v=a80',
     'org.nuxel.USBSSHConsole': '/assets/nuxel-applications-icon-pack/06-05_usb-connection.png?v=a80',
     'org.nuxel.WiFiSSHConsole': '/assets/nuxel-quicksettings-icon-pack/01-wifi.png?v=a80',
+    'org.nuxel.RemoteDesktopXRDP': '/assets/nuxel-applications-icon-pack/05-07_web-window.png?v=p47000',
+    'org.nuxel.RemoteDesktopVNC': '/assets/nuxel-applications-icon-pack/06-04_casting-screen.png?v=p47000',
+    'org.nuxel.ScrcpyMirror': '/assets/nuxel-applications-icon-pack/01-12_phone-alternative.png?v=p47000',
     'org.nuxel.SnekByte': '/assets/nuxel-applications-icon-pack/01-02_snekbyte.png?v=a63',
     'org.nuxel.Calculator': '/assets/nuxel-applications-icon-pack/06-02_calculator.png?v=p33000',
     'org.nuxel.Clock': '/assets/nuxel-applications-icon-pack/06-03_clock.png?v=p33000',
@@ -345,21 +439,29 @@ const NUXEL_APP_ICON_ASSETS = {
     'org.nuxel.Notes': '/assets/nuxel-applications-icon-pack/02-09_notes.png?v=p33000',
     'nuxel-camera': '/assets/nuxel-applications-icon-pack/03-01_camera.png?v=p33000',
     'org.nuxel.Browser': '/assets/nuxel-applications-icon-pack/01-09_browser-swirl.png?v=p33000',
-    'org.mozilla.firefox': '/assets/nuxel-applications-icon-pack/05-07_web-window.png',
-    'org.videolan.VLC': '/assets/nuxel-applications-icon-pack/03-04_video-player.png',
+    'org.mozilla.firefox': '/assets/native-app-icons/firefox.png?v=p50000',
+    'org.videolan.VLC': '/assets/native-app-icons/vlc.png?v=p50000',
     'org.signal.Signal': '/assets/nuxel-applications-icon-pack/01-06_pixel-envelope.png',
-    'com.stremio.Stremio': '/assets/nuxel-applications-icon-pack/06-04_casting-screen.png',
-    'org.gnome.FileRoller': '/assets/nuxel-applications-icon-pack/02-05_folders.png',
-    'org.gnome.Loupe': '/assets/nuxel-applications-icon-pack/03-02_gallery.png',
-    'org.gnome.Papers': '/assets/nuxel-applications-icon-pack/02-04_reader.png',
-    'org.gnome.SystemMonitor': '/assets/nuxel-applications-icon-pack/05-02_system-monitor.png',
+    'com.stremio.Stremio': '/assets/native-app-icons/stremio.svg?v=p50000',
+    'org.gnome.FileRoller': '/assets/native-app-icons/org.gnome.FileRoller.svg?v=p50000',
+    'org.gnome.Loupe': '/assets/native-app-icons/org.gnome.Loupe.svg?v=p50000',
+    'org.gnome.Papers': '/assets/native-app-icons/org.gnome.Papers.svg?v=p50000',
+    'org.gnome.SystemMonitor': '/assets/native-app-icons/org.gnome.SystemMonitor.svg?v=p50000',
+    'org.nuxel.Media': '/assets/nuxel-applications-icon-pack/03-04_video-player.png',
+    'org.nuxel.Downloader': '/assets/nuxel-applications-icon-pack/06-04_casting-screen.png',
+    'org.nuxel.Authenticator': '/assets/nuxel-applications-icon-pack/01-06_pixel-envelope.png',
+    'org.nuxel.Cleanup': '/assets/nuxel-applications-icon-pack/02-05_folders.png',
+    'org.nuxel.DevMgmt': '/assets/nuxel-applications-icon-pack/05-02_system-monitor.png',
+    'org.nuxel.PenguInterface': '/assets/nuxel-app-penguinterface.png?v=p54000',
+    'org.nuxel.Clipper': '/assets/nuxel-applications-icon-pack/05-09_clipboard.png?v=p54000',
+    'org.gnome.Software': '/assets/native-app-icons/org.gnome.Software.svg?v=p50000',
 };
 
 function nuxelAppIcon(app) {
     const src = (app && (app.iconAsset || NUXEL_APP_ICON_ASSETS[app.id])) || '';
     if (!src) return '<span>' + ((app && app.icon) || '📱') + '</span>';
     const name = String((app && app.name) || 'App').replace(/[&<>'"]/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#39;', '"':'&quot;' }[c]));
-    return '<img src="' + src + '" alt="' + name + '" draggable="false" decoding="async" onerror="this.hidden=true;this.nextElementSibling.hidden=false"><span class="nuxel-icon-fallback" hidden>' + ((app && app.icon) || '📱') + '</span>';
+    return '<img src="' + src + '" alt="' + name + '" width="48" height="48" loading="lazy" fetchpriority="low" draggable="false" decoding="async" onerror="this.hidden=true;this.nextElementSibling.hidden=false"><span class="nuxel-icon-fallback" hidden>' + ((app && app.icon) || '📱') + '</span>';
 }
 try { window.NuxelAppIcon = nuxelAppIcon; } catch (e) { /* non-DOM registry test */ }
 
@@ -371,6 +473,50 @@ class AppRegistry {
         this.recentApps = [];
         this.maxRecentApps = 10;
         this._loadState();
+    }
+
+    /* PWNAGE-45000: merge the canonical Bridge/registry file into Home.
+       Static entries remain the offline baseline; the registry is authoritative
+       for status/paths and adds local catalog apps NuxTore has registered.
+       Case-only aliases are collapsed onto one canonical id. */
+    applyCanonicalRegistry(doc) {
+        const aliases = { 'org.nuxel.NuxTore': 'org.nuxel.Nuxtore',
+                          'org.nuxel.Snekbyte': 'org.nuxel.SnekByte' };
+        const canonical = (id) => aliases[id] || id;
+        const incoming = Array.isArray(doc && doc.apps) ? doc.apps : [];
+        let changed = false;
+        for (const raw of incoming) {
+            if (!raw || !raw.id) continue;
+            const id = canonical(raw.id);
+            if (id !== raw.id) changed = true;
+            const prev = this.apps.get(id) || {};
+            const merged = Object.assign({}, prev, raw, { id });
+            if (!merged.name) merged.name = id;
+            if (!merged.type) merged.type = 'pwa';
+            if (!merged.url && merged.native_binary) merged.url = id + '://';
+            this.apps.set(id, merged);
+        }
+        // Drop legacy case variants if both somehow exist.
+        for (const legacy of Object.keys(aliases)) {
+            if (legacy !== aliases[legacy] && this.apps.has(legacy)) {
+                this.apps.delete(legacy); changed = true;
+            }
+        }
+        if (changed || incoming.length) {
+            try { document.dispatchEvent(new CustomEvent('nuxel:app-registry-changed', { detail: { count: incoming.length } })); } catch (e) {}
+        }
+        return incoming.length;
+    }
+
+    async refreshFromBridge() {
+        try {
+            const res = await fetch('/api/v1/apps/registry', { cache: 'no-store' });
+            if (!res.ok) return 0;
+            const doc = await res.json();
+            const n = this.applyCanonicalRegistry(doc);
+            try { if (window.launcher && window.launcher._renderDrawerApps) window.launcher._renderDrawerApps(true); } catch (e) {}
+            return n;
+        } catch (e) { return 0; }
     }
 
     getAllApps() {

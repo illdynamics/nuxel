@@ -47,6 +47,11 @@ class Capability(str, Enum):
     CAMERA_CAPTURE = 'camera:capture'
     CAMERA_PREVIEW = 'camera:preview'
     
+    # Media
+    AUDIO_PLAYBACK = 'audio:playback'
+    MEDIA_LIBRARY = 'media:library'
+    DOWNLOAD_QUEUE = 'download:queue'
+
     # Notifications
     NOTIFICATIONS_SEND = 'notifications:send'
     NOTIFICATIONS_RECEIVE = 'notifications:receive'
@@ -63,6 +68,11 @@ class Capability(str, Enum):
     
     # Storage
     STORAGE_PERSISTENT = 'storage:persistent'
+    STORAGE_ENCRYPTED = 'storage:encrypted'
+    STORAGE_CLEANUP = 'storage:cleanup'
+
+    # Device inspection (read-only)
+    SYSTEM_INSPECT = 'system:inspect'
     
     # Background
     BACKGROUND_EXECUTION = 'background:execution'

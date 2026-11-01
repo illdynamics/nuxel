@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<link rel="stylesheet" href="../../nuxel-common/responsive.css?v=p52000">
 <meta name="theme-color" content="#0b1020">
 <meta name="nuxel-app-id" content="org.nuxel.Clock">
 <title>Nuxel Clock</title>
@@ -58,7 +59,7 @@
     <div class="card">
       <h3>New alarm</h3>
       <div class="add-row">
-        <label>Time <input id="alarm-time" type="time" value="07:00"></label>
+        <label>Time <input id="alarm-time" type="text" inputmode="numeric" pattern="[0-9:]*" maxlength="5" autocomplete="off" value="07:00" title="Alarm time (HH:MM)"></label>
         <label>Label <input id="alarm-label" type="text" placeholder="Wake up"></label>
         <button id="add-alarm" class="primary">Add</button>
       </div>
@@ -100,8 +101,8 @@
       <button class="preset" data-sec="1500">25 min</button>
     </div>
     <div class="add-row">
-      <label>Minutes <input id="tm-min" type="number" min="0" max="999" value="5"></label>
-      <label>Seconds <input id="tm-sec" type="number" min="0" max="59" value="0"></label>
+      <label>Minutes <input id="tm-min" type="number" inputmode="numeric" min="0" max="999" value="5"></label>
+      <label>Seconds <input id="tm-sec" type="number" inputmode="numeric" min="0" max="59" value="0"></label>
       <button id="tm-set">Set</button>
     </div>
     <div class="row">

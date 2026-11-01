@@ -1,0 +1,11 @@
+backend=wlr-randr
+output=HEADLESS-1
+requested_transform=270
+compositor_transform=3
+capture=720x1520
+panel=1440x3040
+effective_orientation=90
+scale=1
+frame_ok=1
+presenter_rotation=0
+double_rotation=0

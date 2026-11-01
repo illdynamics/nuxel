@@ -1,0 +1,75 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+=== date
+2026-11-01T12:35:02+01:00
+ 12:35:02 up 0 min,  0 user,  load average: 8.67, 2.46, 0.84
+=== kernel
+Linux 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 4.14.253-gf7194c1d15ed-dirty #8 SMP PREEMPT Sun Nov 1 10:16:28 UTC 2026 aarch64 GNU/Linux
+=== cmdline
+ console=ram loglevel=4 sec_debug.pcb_offset=7346944 sec_debug.smd_offset=7348992 sec_debug.lpddr4_size=8 sec_debug.dram_info=01,06,03,8G sec_debug.pwrsrc_rs=0x0000000820000000 sec_debug.reset_reason=7 sec_reset.reset_reason=7 sec_debug.reset_rwc=0 sec_debug.level=0 sec_watchdog.sec_pet=5 androidboot.debug_level=0x4f4c androidboot.force_upload=0x0 softdog.soft_margin=100 softdog.soft_panic=1 sec_debug.dump_sink=0x0 sec_debug.upload_count=0 androidboot.dram_info=01,06,03,8G androidboot.fmm_lock=48 sec_debug.fmm_lock_offset=7340600 sec_debug.sjl=1 androidboot.sn.param.offset=7343024 androidboot.prototype.param.offset=7351040 androidboot.recovery_offset=7355136 printk.devkmsg=on ess_setup=0xfd900000 sec_avc_log=0x40000@0x91202000 sec_tsp_log=0x40000@0x91244000 sec_disp_log=0x100000@0x91286000 sec_debug_next=0x800000@0x91388000 charging_mode=0x3030 s3cfb.bootloaderfb=0xca000000 lcdtype=10555411 androidboot.carrierid.param.offset=7340608 androidboot.carrierid=PHN consoleblank=0 ehci_hcd.park=3 oops=panic pmic_info=43 ccic_info=1 fg_reset=0 androidboot.emmc_checksum=3 androidboot.sales.param.offset=7340572 sales_code=PHN androidboot.odin_download=1 androidboot.bootloader=G975FXXSEFUL1 androidboot.selinux=enforcing androidboot.ucs_mode=0 androidboot.revision=26 androidboot.hardware=exynos9820 androidboot.warranty_bit=1 androidboot.wb.hs=0e03 androidboot.rp=14 androidboot.wb.snapQB=34489444R sec_debug.bin=A androidboot.hmac_mismatch=0 androidboot.sec_atd.tty=/dev/ttySAC0 androidboot.serialno=R58M75KDB2X androidboot.ap_serial=0x10764E6460BA snd_soc_core.pmdown_time=1000 androidboot.cp_reserved_mem=off rootwait ro init=/init root=/dev/sda25 androidboot.dtbo_idx=9 androidboot.fmp_config=0 androidboot.em.did=2010764e6460ba11 androidboot.em.model=SM-G975F androidboot.em.status=0x0 androidboot.sb.debug0=0x0 androidboot.verifiedbootstate=orange androidboot.svb.ver=SVB1.0 bcm_setup= reserve-fimc= firmware_class.path=/vendor/firmware ecd_setup=disable region1=EUR region2=OPEN factory_mode=0 androidboot.ulcnt=1 android.nonce=ca8624affba3cd9291986eb8284a24a8 root=PARTUUID=52444E41-494F-2044-7379-7374656D0000 
+=== touch
+N: Name="sec_touchscreen"
+P: Phys=sec_touchscreen/input1
+S: Sysfs=/devices/platform/104b0000.hsi2c/i2c-4/4-0048/input/input2
+U: Uniq=
+H: Handlers=sec_key_notifier event2 
+/sys/class/sec/tsp
+=== services
+active
+active
+active
+active
+active
+active
+=== lock
+{
+  "locked": true,
+  "owner": "security_provider",
+  "reason": "host",
+  "schema_version": 1,
+  "updated_at": 1793532894.2532892
+}
+=== navdock
+1793532855 CMD_FIFO_READY /run/nuxel-navdock.cmd
+1793532855 NAV_DOCK_START visible=0 lock=unknown home=not-ready
+1793532855 NAV_DOCK_READY width=720 height=62 scale=2 out=720x1520
+1793532891 NAV_DOCK_SHOW lock=unlocked
+1793532894 NAV_DOCK_HIDE
+=== wlfb
+1793532902 DISPLAY_SLEEP total=411 failures=0 owner=nuxel-wl-fb display=off capture=stopped
+=== metrics
+{"cpu_percent":16.7,"cpu_status":"ok","cpu_frequency_mhz":1734,"cpu_frequency_status":"ok","memory_percent":14.3,"memory_status":"ok","memory_used_kib":1089220,"memory_total_kib":7597708,"gpu_percent":0.0,"gpu_status":"ok","gpu_util_source":"/sys/devices/platform/18500000.mali/utilization","gpu_frequency_mhz":0,"gpu_frequency_status":"ok","gpu_frequency_source":"/sys/devices/platform/18500000.mali/clock","gpu_memory_kib":11652,"gpu_memory_total_kib":7597708,"gpu_memory_status":"ok_shared_budget_reference","gpu_memory_kind":"tracked_shared_allocations","gpu_memory_source":"/sys/kernel/debug/mali/gpu_memory","gpu_memory_pages":2913,"gpu_memory_page_size":4096,"gpu_memory_budget_kind":"system_ram_upper_bound","timestamp_ms":1793532902907}
+=== graphics
+{"result": {"success": true, "schema": "nuxel.graphics-status/1", "source": "nuxel-bridge:graphics-status", "timestamp": 1793532903.2329884, "verdict": "PARTIAL", "acceleration_label": "PARTIAL", "gpu": {"hardware": "Mali-G76 MP12", "kernel_driver": "mali_kbase", "device_present": true, "device_node": "/dev/mali0", "context_owner": "phoc", "context_opened_by_compositor": true, "dri_render_node": false}, "phoc": {"pid": 5860, "renderer": "mali-kbase", "wlr_renderer": "gles2", "mali_fds": 3, "udmabuf_fds": 2, "fallback_marker": false, "accelerated": true}, "egl": {"library": "/usr/lib64/libEGL_mesa.so.0.0.0", "sha256": "3800718931c0b359be31374c8ab0ce10ee6b1926992a7d8646a8746176a0f71e", "vendor": null, "version": null, "init": null, "gles_renderer": null, "gles_version": null, "probe_wayland": false, "probe_surfaceless": false}, "gtk_gl": {"status": "NOT_MEASURED", "gtk3": "gtk3-3.24.52-1.fc43.aarch64", "gtk4": "gtk4-4.20.4-1.fc43.aarch64", "gsk_renderer": null, "detail": "GTK GL is independent of the Phoc kbase context; no bounded GTK probe was run"}, "webkitgtk": {"process_running": true, "status": "SOFTWARE_FALLBACK", "accelerated": false, "compositing_env": {"LIBGL_ALWAYS_SOFTWARE": "1", "WEBKIT_DISABLE_COMPOSITING_MODE": "1", "MESA_KBASE_NODE": "/dev/mali0"}, "detail": "WebKit acceleration is not enabled: the Phoc kbase session does not advertise linux-dmabuf, so the GTK UI process cannot share accelerated WebKit backing-store buffers with the compositor."}, "dmabuf": {"udmabuf_device": true, "udmabuf_proven": null, "linux_dmabuf_global": null, "status": "device_present_import_not_proven"}, "display_bridge": {"process": "nuxel-wl-fb", "fb_virtual_size": "1440,6080", "fb_stride": "5760", "frames_ok": false, "decon_pan_failed": null, "path": "screencopy -> nuxel-wl-fb -> fbdev/DECON", "cpu_copy": true}, "fbdev_drm": {"fb0": true, "drm_render_node": false, "active_path": "fbdev/DECON"}, "probes": {}, "blocked_reason": "WebKit acceleration is not enabled: the Phoc kbase session does not advertise linux-dmabuf, so the GTK UI process cannot share accelerated WebKit backing-store buffers with the compositor.", "honest_summary": "Phoc compositor is kbase-accelerated; WebKitGTK remains software (no linux-dmabuf path) and nuxel-wl-fb performs a CPU copy into fbdev/DECON. The GUI is PARTIAL, not fully accelerated."}}
+=== privacy
+{"result": {"success": true, "schema": "nuxel.camera-privacy/1", "supported": true, "hardware_present": true, "capture_supported": false, "blocked": false, "state": "ALLOWED", "active_sessions": 0, "active_session_tracking": "bridge_camera_capture_only", "scope": "Nuxel Bridge camera capture API; native V4L2 clients must also honour the same policy document (no kernel LSM gate exists)", "video_nodes": ["/dev/video10", "/dev/video101", "/dev/video102", "/dev/video103", "/dev/video104", "/dev/video105", "/dev/video106", "/dev/video11", "/dev/video110", "/dev/video111", "/dev/video112", "/dev/video113", "/dev/video114", "/dev/video12", "/dev/video120", "/dev/video121", "/dev/video122", "/dev/video123", "/dev/video124", "/dev/video130", "/dev/video131", "/dev/video132", "/dev/video140", "/dev/video141", "/dev/video142", "/dev/video148", "/dev/video149", "/dev/video155", "/dev/video160", "/dev/video161", "/dev/video170", "/dev/video171", "/dev/video172", "/dev/video173", "/dev/video174", "/dev/video175", "/dev/video180", "/dev/video210", "/dev/video211", "/dev/video212", "/dev/video213", "/dev/video214", "/dev/video215", "/dev/video216", "/dev/video217", "/dev/video218", "/dev/video219", "/dev/video220", "/dev/video221", "/dev/video222", "/dev/video223", "/dev/video224", "/dev/video225", "/dev/video226", "/dev/video227", "/dev/video228", "/dev/video229", "/dev/video230", "/dev/video231", "/dev/video232", "/dev/video233", "/dev/video250", "/dev/video251", "/dev/video50", "/dev/video6", "/dev/video7", "/dev/video8", "/dev/video9"], "detail": "FIMC-IS nodes enumerate but the vendor media graph is blocked; no frame capture is available", "source": "privacy_provider", "updated_at": 0}}
+=== nfc
+{"result": {"success": true, "schema": "nuxel.nfc-status/1", "supported": false, "enabled": null, "state": "BLOCKED_KERNEL", "verdict": "BLOCKED_KERNEL", "controller": {"expected": "Samsung sec-nfc / S3FWRN5 family (I2C 0x27)", "kernel_nfc": false, "i2c_0x27": true, "interfaces": ["/sys/class/nfc/nfc_support"], "bound": true}, "firmware": {"present": false}, "userspace": {"neard": false, "libnfc": false, "nfctool": false, "nci_devices": []}, "mode": "off", "blocker": "CONFIG_NFC is not set in the running 4.14.253 kernel", "detail": "CONFIG_NFC is not set in the running 4.14.253 kernel", "tag_test_supported": false, "last_tag": null, "payment": {"supported": false, "note": "card emulation/payment is not implemented and must not be inferred from a tag read"}, "source": "nfc_provider", "config_present": true}}
+=== fingerprint
+{"result": {"success": true, "schema": "nuxel.fingerprint-status/1", "supported": false, "ready": false, "state": "BLOCKED_SECURE_PROVIDER", "sensor": {"detected": true, "devices": ["/dev/qbt2000_fd", "/dev/qbt2000_ipc"], "driver": true}, "provider": {"fprintd": false, "libfprint": false, "secure_tee": false}, "enrolled": 0, "slots": [], "enrollment_supported": false, "deletion_supported": false, "test_supported": false, "pin_fallback_required": true, "template_policy": "templates remain inside the secure provider/TEE; no import/export", "blocker": "sensor/driver is present but no verified TEE-backed enrollment provider exists for this qbt2000 sensor", "detail": "sensor/driver is present but no verified TEE-backed enrollment provider exists for this qbt2000 sensor", "source": "fingerprint_provider"}}
+=== configs
+-rw-r--r--. 1 501 games 305 Nov  1 12:05 /etc/nuxel/display/statusbar-icons.json
+-rw-r--r--. 1 501 games  88 Nov  1 12:08 /etc/nuxel/privacy/camera.json
+-rw-r--r--. 1 501 games  86 Nov  1 12:08 /etc/nuxel/privacy/microphone.json
+-rw-r--r--. 1 501 games  88 Nov  1 12:08 /etc/nuxel/security/biometric-unlock.json
+=== hashes
+6732ba3a0d2b02865fb5cf751c67325e2cafee2c3b56005214cb5ed0272d2fea  /usr/lib/nuxel/nuxel-metricsd
+368f96e9b749195b3a91d5b809239924cd53738719a41cc882bb814672b48faa  /usr/lib/nuxel/nuxel-navdock
+a49fec9be266873aa2ba90cf30a9a45ecea0aee10eb2dbfbbc812d0f4d1ed139  /usr/lib/nuxel/nuxel-pwa-host
+3d88c5c735621c8fe0536b1461259adb598d9a5fd8085a045dcbe307f63f88e5  /usr/share/nuxel/pwa/nuxel-home/js/status-bar.js
+e6036663fefe4f8069cfd58edfd5190aff1436b4ff7c92773e8e209099caea75  /usr/share/nuxel/pwa/nuxel-home/js/qs.js
+ccede63b881cd951432d5d16ef9f9484ff9b54102441c7ddb65fa263871f045a  /usr/share/nuxel/pwa/nuxel-home/js/app.js
+fc94babd1fab08b53ff2e022974f5e10d3c402c836f5da01c498cf8a1c184db2  /usr/share/nuxel/pwa/nuxel-home/sw.js
+756d11b28722f1500541d833f80a4b1584ab40b228333a7c813cd16d29d49d04  /usr/share/nuxel/pwa/nuxel-apps/settings/index.html
+9291802c8349f6fd32e52b9de23cc7d315d168379331c8e9bfaec0c376ab3bac  /usr/share/nuxel/pwa/nuxel-apps/settings/settings.js
+5f534fc83f4df4e746f7e55cf41e74dd1bff51210ab466de79292645817a6575  /usr/share/nuxel/pwa/nuxel-apps/settings/graphics-diagnostics.js
+9c2f955949999a4253cc91f138cc7fa8ec0496e5cf48f0c8eda998b67ac2765a  /usr/lib/nuxel/nuxel-bridge/api.py
+2fd155504fe1b6e42de4289bb131f63489e08721bc0a1d8ee77593d21bcf2b6b  /usr/lib/nuxel/nuxel-bridge/privacy_provider.py
+9090fe55d9492d48a1d5ee45fbe9aa218003b00f1253e5eb42baf91fc1daa69d  /usr/lib/nuxel/nuxel-bridge/security_provider.py

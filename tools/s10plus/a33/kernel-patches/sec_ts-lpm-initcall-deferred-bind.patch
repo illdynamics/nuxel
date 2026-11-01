@@ -1,3 +1,18 @@
+SUPERSEDED PROPOSAL — DO NOT APPLY.
+===================================
+
+The exact-source replacement is:
+    kernel/s10plus/patches/0006-sec-ts-lpm-bind.patch
+
+Reason: this reconstructed proposal used non-existent helpers
+(`sec_bat_lpm_flag()`, `sec_ts_start_device(struct i2c_driver *)`) and a
+deferred work item that is not needed.  The real `sec_ts_probe()` has no
+`lpcharge` gate; removing only the initcall `-ENODEV` binds the ordinary probe
+path safely.  See docs/beta-finalization/live/PWNAGE-52000-LPM-AUDIT.md.
+
+The original text is preserved below for history, but it is NOT evidence of a
+buildable or deployed change.
+
 Offline patch PROPOSAL - NOT APPLIED, NOT DEPLOYED, NOT FLASHED.
 ===============================================================
 

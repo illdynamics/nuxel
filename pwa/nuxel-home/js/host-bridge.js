@@ -18,6 +18,7 @@
 //                                             volume-up|volume-down|volume-mute|
 //                                             haptics-tap|haptics-navigation|
 //                                             haptics-switch|haptics-long
+//   NuxelHost.micAuthorize()        -> {ok, grant, ttl_ms} one-shot local mic grant
 //   NuxelHost.termInput(data)      -> {ok}
 //   NuxelHost.termOpen() / termClose()
 //   NuxelHost.onEvent(cb)          -> subscription to host-pushed events
@@ -103,6 +104,7 @@
     configSet: function (name, text) { return this.call('config.set', { name: name, text: text }); },
     statusRead: function (name) { return this.call('status.read', { name: name }); },
     action: function (action) { return this.call('system.action', { action: action }); },
+    micAuthorize: function () { return this.call('media.mic-authorize', {}); },
     termInput: function (data) { return this.call('term.input', { data: data }); },
     termOpen: function () { return this.call('term.open', {}); },
     termClose: function () { return this.call('term.close', {}); },

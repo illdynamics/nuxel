@@ -1,0 +1,13 @@
+{
+  "id": "org.nuxel.Clipper",
+  "name": "Clipper",
+  "icon": "CL",
+  "color": "#00BCD4",
+  "category": "tools",
+  "type": "pwa",
+  "url": "/pwa/nuxel-apps/clipper/index.html",
+  "description": "Clipboard history and quick copy manager",
+  "capabilities": ["clipboard:read", "clipboard:write"],
+  "docked": false,
+  "default_mode": "local-only"
+}

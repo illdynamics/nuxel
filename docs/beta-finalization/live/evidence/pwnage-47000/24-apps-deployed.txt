@@ -1,0 +1,25 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+revision 9
+org.nuxel.LiveConsole pwa/nuxel-apps/console/index.html None None
+org.nuxel.USBSSHConsole pwa/nuxel-apps/console-usb/index.html None None
+org.nuxel.WiFiSSHConsole pwa/nuxel-apps/console-wifi/index.html None None
+org.nuxel.RemoteDesktopXRDP pwa/nuxel-apps/remote-xrdp/index.html xrdp wlan
+org.nuxel.RemoteDesktopVNC pwa/nuxel-apps/remote-vnc/index.html vnc wlan
+org.nuxel.ScrcpyMirror pwa/nuxel-apps/remote-scrcpy/index.html scrcpy android-adb-usb
+remote-xrdp OK
+remote-vnc OK
+remote-scrcpy OK
+console OK
+console-usb OK
+console-wifi OK
+remote-xrdp 200
+remote-vnc 200
+remote-scrcpy 200

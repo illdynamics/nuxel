@@ -1,0 +1,76 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+=== output protocol dev ===
+/usr/bin/wayland-scanner
+/usr/bin/gcc
+/usr/bin/pkg-config
+ -lwayland-client -lm
+=== wayland protocols pkg ===
+libwayland-client-1.26.0-1.fc43.aarch64
+libwayland-cursor-1.26.0-1.fc43.aarch64
+libwayland-server-1.26.0-1.fc43.aarch64
+libwayland-egl-1.26.0-1.fc43.aarch64
+xorg-x11-server-Xwayland-24.1.13-1.fc43.aarch64
+wlroots-0.19.3-1.fc43.aarch64
+phoc-0.54.0-1.fc43.aarch64
+wayland-devel-1.26.0-1.fc43.aarch64
+qt6-qtwayland-6.10.3-1.fc43.aarch64
+wayland-utils-1.3.0-2.fc43.aarch64
+=== phoc strings transform ===
+g_value_transform
+wlr_output_state_set_transform
+wlr_output_state_set_adaptive_sync_enabled
+wlr_output_transformed_resolution
+wlr_output_transform_invert
+wlr_region_transform
+wlr_box_transform
+wlr_output_transform_compose
+got unknown transform value: %s
+adaptive-sync
+PhocOutputAdaptiveSync
+Got invalid output adaptive-sync value: %s
+PHOC_OUTPUT_ADAPTIVE_SYNC_NONE
+PHOC_OUTPUT_ADAPTIVE_SYNC_ENABLED
+PHOC_OUTPUT_ADAPTIVE_SYNC_DISABLED
+transform
+%s%s: (%d,%d) (%dx%d@%.2f), enabled: %d, scale: %f, transform: %s, vrr: %d
+Use wlr-output-management protocol instead
+HEADLESS-
+phoc_utils_transform_to_str
+phoc_output_transform_damage
+phoc_output_transform_box
+transformed_corner_pos
+=== nuxel-wl-fb source hash/version ===
+fb5b77e4b7adc67881d67966b24b937ce0b910288cc2d9b91e20e9a8506c2c8b  /usr/lib/nuxel/nuxel-wl-fb
+/run/nuxel-wl-fb.state
+nuxel-wl-fb
+owner=nuxel-wl-fb
+/nuxel-wl-fb-%d
+owner=nuxel-wl-fb
+ANIM_OWNER=nuxel-wl-fb
+%s owner=nuxel-wl-fb receipt=%s loops=%d/%d
+/run/nuxel-wl-fb.cmd
+DISPLAY_SLEEP total=%d failures=%d owner=nuxel-wl-fb display=off capture=stopped
+FRAMES_OK total=%d fps_1s=%d failures=%d blits=%llu present_skipped=%llu blit_avg_ms=%d damage=%d-%d damage_blits=%llu damage_avg_ms=%d idle_ms=%lld out=%dx%d src=%dx%d scale=%d panel=%ux%u owner=nuxel-wl-fb display=%s src_format=0x%08x colour=R@%u,G@%u,B@%u_abgr8888_override=%d decon_pan_ok=%llu decon_pan_failed=%llu
+ANIMATION_RESURRECTED pid=%d owner=nuxel-wl-fb stop_rearmed=1
+zwlr_screencopy_frame_v1
+zwlr_screencopy_manager_v1
+nuxel-wl-fb.c
+zwlr_screencopy_frame_v1_destroy
+zwlr_screencopy_frame_v1_copy
+wlr-screencopy-unstable-v1-protocol.c
+zwlr_screencopy_frame_v1_requests
+zwlr_screencopy_frame_v1_events
+wlr_screencopy_unstable_v1_types
+zwlr_screencopy_manager_v1_requests
+zwlr_screencopy_manager_v1_interface
+zwlr_screencopy_frame_v1_interface
+=== fb direct geometry via python ioctl ===
+/dev/fb0 buffer overflow

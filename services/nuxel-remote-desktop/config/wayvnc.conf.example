@@ -1,0 +1,8 @@
+# Nuxel VNC screen sharing
+# Direct owner-LAN/ZeroTier listener. wayvnc 0.9.1 in Fedora offers no VNC
+# password auth, and Jump Desktop 9.1.21 cannot negotiate its RSA-AES or
+# VeNCrypt modes, so this listener is unauthenticated. Restrict it to the
+# owner LAN / ZeroTier; use RDP for authenticated access.
+address=0.0.0.0
+port=5900
+enable_auth=false

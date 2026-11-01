@@ -40,7 +40,9 @@
 // the 15-entry power menu, screenshot/Gallery thumbnails, Files share, the
 // flashlight owner, the location/sound/USB status truth, and the version
 // lockstep bump.
-const CACHE_VERSION = 'v66-v074-release';
+// PWNAGE-46000 bumps to v69-p46000 to remove the duplicate blue DOM keyboard
+// behind Stevia and allow the manifest/viewport to follow all seven modes.
+const CACHE_VERSION = 'v82-p54000-apps';
 const CACHE_NAME = 'nuxel-home-' + CACHE_VERSION;   // version marker sent to clients
 const STATIC_CACHE = 'nuxel-static-' + CACHE_VERSION;
 const DYNAMIC_CACHE = 'nuxel-dynamic-' + CACHE_VERSION;
@@ -61,6 +63,7 @@ const PRECACHE_ASSETS = [
     './css/search.css',
     './css/lockscreen.css',
     './js/lockscreen.js',
+    './js/security-lock.js',
     './js/lockscreen-indicators.js',
     './js/apps.js',
     './js/layout-model.js',
@@ -69,6 +72,8 @@ const PRECACHE_ASSETS = [
     './js/search.js',
     './js/bridge.js',
     '../nuxel-common/geolocation.js',
+    '../nuxel-common/responsive.css',
+    '../nuxel-common/statusbar-icons.js',
     './js/recents.js',
     './js/qs.js',
     './js/host-bridge.js',
@@ -78,6 +83,7 @@ const PRECACHE_ASSETS = [
     './js/bootlog.js',
     './js/app.js',
     './js/touch-keyboard.js',
+    './keyboard-provider.json',
     './js/navigation.js',
     './js/gestures.js',
     './js/home-settings.js',

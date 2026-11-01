@@ -1,4 +1,4 @@
-# Nuxel S10+ audio — current status (2026-10-31, v0.7.4-beta)
+# Nuxel S10+ audio — current status (2026-11-01, v0.7.5-beta)
 
 Device: Samsung Galaxy S10+ SM-G975F / `beyond2lte` / Exynos 9820
 Userspace: Fedora 43 aarch64, PipeWire + WirePlumber

@@ -1,0 +1,20 @@
+diff --git a/drivers/nfc/sec_nfc.c b/drivers/nfc/sec_nfc.c
+index b87dc2fee..edf84db84 100644
+--- a/drivers/nfc/sec_nfc.c
++++ b/drivers/nfc/sec_nfc.c
+@@ -1001,7 +1001,14 @@ static int __sec_nfc_probe(struct device *dev)
+ 			NFC_LOG_ERR("NFC: failed to create attr_test\n");
+ 	}
+ #endif
+-	nfc_class = class_create(THIS_MODULE, "nfc");
++	/*
++	 * NUXEL: with CONFIG_NFC=y the generic NFC core already registers
++	 * /sys/class/nfc.  Creating a second class with the same name makes
++	 * sysfs_warn_dup() BUG and panics the kernel during early boot
++	 * (measured 2026-11-01).  Keep the vendor support attribute under a
++	 * device-private class name instead of colliding with the subsystem.
++	 */
++	nfc_class = class_create(THIS_MODULE, "sec_nfc");
+ 	if (IS_ERR(&nfc_class))
+ 		NFC_LOG_ERR("NFC: failed to create nfc class\n");
+ 	else {

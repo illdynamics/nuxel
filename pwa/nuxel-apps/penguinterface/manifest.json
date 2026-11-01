@@ -1,0 +1,36 @@
+{
+  "name": "PenguInterface",
+  "short_name": "Pengu",
+  "description": "Per-device compatibility profiles with strict isolation",
+  "start_url": "/pwa/nuxel-apps/penguinterface/index.html",
+  "scope": "/pwa/nuxel-apps/penguinterface/",
+  "display": "standalone",
+  "background_color": "#0a1628",
+  "theme_color": "#3F51B5",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ],
+  "nuxel": {
+    "bridge_version": "1",
+    "app_id": "org.nuxel.PenguInterface",
+    "capabilities": [
+      "system:inspect"
+    ],
+    "app_type": "system",
+    "writes": false
+  }
+}

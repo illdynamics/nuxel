@@ -132,3 +132,149 @@ Verdict: `BLOCKED_FIRMWARE`, first failing stage `firmware`.
 Outdoor satellite acceptance requires a compatible S10+ BBD sensor-hub patch
 and a safe BBD/LHD runtime. Until then, the outdoor procedure in
 `docs/beta-finalization/manual-proof/13-gps.md` remains `BLOCKED_FIRMWARE`.
+
+---
+
+## Re-run addendum — 2026-10-31 (root cause, top-bar contrast, Podman rebuild)
+
+### 1. Why Location looked disabled even when the policy file said ON
+
+The bridge was not lying about its own state; it could not read the policy. The
+shared data directory was:
+
+```
+/var/lib/nuxel            0770 root:nuxel-notifications
+/var/lib/nuxel/permissions 0770 nuxel:nuxel
+```
+
+`nuxel-bridge` is in group `nuxel`, but it had no execute/traverse permission on
+the parent `0770 root:nuxel-notifications` directory. Therefore both
+`LocationConnector._read_policy()` and `_load_all_grants()` failed closed:
+`enabled` became `false` and every first-party capability grant disappeared.
+This is why `Manager.GetClient` itself was healthy after the earlier agent fix,
+yet the bridge still reported `Location is disabled` and `CAPABILITY_DENIED`.
+
+Repair (source + live):
+
+- `chmod 0771 /var/lib/nuxel` (traverse, not listable by unrelated users)
+- narrow ACL `u:nuxel-bridge:r-x` on `/var/lib/nuxel`
+- narrow ACL `u:nuxel-bridge:rwx` on `/var/lib/nuxel/permissions`
+- `acl` added to the Fedora package set and the image builder
+- the same operations added to `nuxel-provision-services.sh` for future live
+  deployments
+
+The fresh ext4 image was inspected with `debugfs`: the `system.posix_acl_access`
+xattr is present on both directories, so the fix is carried by the image and not
+only by the live handset.
+
+### 2. Location provider result
+
+Live bridge response after the repair:
+
+```
+success=true state=fixed source=network_wifi kind=network
+gnss=false network=true accuracy=48.0 m timestamp=<provider seconds>
+```
+
+A second observation returned the same network source with ±25000 m (the
+provider-reported coarse fallback). Neither result is labelled GNSS. After
+policy OFF, the position was cleared, the client disconnected, and GeoClue
+exited after its normal 60-second idle window. The BCM4773 rail remained `0`.
+
+### 3. Missing timestamps are no longer made fresh
+
+`LocationConnector._remember_fix()` previously substituted `observed_at` when
+GeoClue omitted `Timestamp`. That made an un-timed coordinate look fresh. It now
+stores `timestamp: null` with `timestamp_source: missing` (or `invalid`), and
+`_fix_view()` classifies it as stale with `freshness_evidence=false`. The API
+exposes `fix_timestamp_source` and `freshness_evidence` so Maps/Settings can
+make the same distinction.
+
+### 4. Top-bar icon visibility repair
+
+The dark-grey/invisible glyphs had concrete causes:
+
+- disconnected Wi-Fi was drawn `#666` at opacity `0.4`
+- the location artwork was a mid-grey PNG rendered with
+  `filter: grayscale(1)` and opacity `0.45`
+- sound/USB/location glyphs inherited theme text tokens
+
+The status bar now has a final, explicit high-contrast palette. Location uses the
+same artwork as a CSS mask, so the source PNG's grey pixels cannot dim it:
+neutral is visible grey-blue, network is `#69b7ff`, GNSS is `#6ee7a8`. Wi-Fi
+neutral is `#c8d7ea`; connected Wi-Fi remains green. Quick Settings artwork is
+brightness-lifted without changing its files. The PWA cache key is
+`v72-p42000`.
+
+WebKit computed-style evidence from the live image:
+
+```
+locBg=rgb(105, 183, 255)  locMask=url(.../09-location.png)  locOp=1
+soundColor=rgb(245, 249, 255)  wifiColor=#7ee29a  wifiOp=1
+```
+
+The native A45 layer-shell bar (`nuxel-statusbar`) was also repaired: it now
+draws explicit Cairo Wi-Fi, location and battery glyphs instead of a text-only
+muted `Wi-Fi 100%` string. The live compositor capture
+`71-topbar-final-unlocked.png` contains the expected saturated pixels:
+`(115,225,153)` green Wi-Fi and, when Location is ON, `(104,184,255)` blue
+location. The deployed binary is
+`f98f5584c6e057d09925a85734f1a3fea18cc9bd841df647689e988fec8385b4`.
+
+### 5. Satellite GNSS truth
+
+No satellite fix was obtained. The BCM4773 SPI driver is bound and the GPIO145
+rail is readable, but:
+
+- `/dev/ttyBCM` is a BBD/LHD RPC transport, not NMEA
+- the rootfs/image contains no compatible `bcm_sensorhub_a1.patch`
+- it contains no Android `lhd`, `gpsd`, linker64, HIDL GNSS implementation or
+  vendor runtime
+- SSP continues to report `GPS: false`
+
+The diagnostic therefore reports `BLOCKED_FIRMWARE` at the `firmware` stage.
+This is a genuine external-artifact blocker, not a software pass.
+
+### 6. Full Podman rebuild
+
+A clean Fedora 43 aarch64 rootfs was built in container `nuxel-build-42000`:
+
+```
+build/out/s10plus/nuxel-beyond2lte-rootfs-fedora-phone-p42000.img
+sha256 150a9518984048a85ec0f1c40ab0ec48f1f474e7f875491066f8b677333f6116
+```
+
+`e2fsck -fn` and the offline rootfs verifier passed. Source parity for
+`bridge.py`, `status-bar.css`, `status-bar.js`, `index.html`, `manifest.json`
+and `sw.js` was checked against the staged image; the ACL fix was verified in
+the image with `debugfs`.
+
+### 7. Evidence
+
+- `evidence/pwnage-42000/40-permission-store-root-cause.txt`
+- `41-geoclue-network-location.txt`
+- `42-network-location-RESTRICTED.txt` (owner-only full coordinates)
+- `43-gnss-truth.txt`
+- `45-podman-rootfs-build.log`
+- `46-new-image-sha256.txt`
+- `49-live-provider-lifecycle.txt`
+- `50`–`54`, `56`, `64`, `68`, `71` top-bar capture series
+  (`68-statusbar-final-image.png` shows blue network + green Wi-Fi; `71-topbar-final-unlocked.png`
+  is the post-reboot live capture with Location OFF and a visible green Wi-Fi glyph)
+- `57-tests-pytest.txt`, `58-tests-geolocation-shim.txt`,
+  `58b-tests-maps-core.txt`
+
+### 8. Final privacy state
+
+The final policy is OFF. Stale coordinates are cleared, no acquisition lease
+remains, GeoClue auto-stops when idle, and `GPS_PWR_EN` is `0`.
+
+### 9. Final post-reboot state
+
+The handset rebooted and returned on Wi-Fi SSH. All core units were active;
+`location-policy.json` is `{"enabled": false}`, `GPS_PWR_EN=0`, the bridge
+reports `state=disabled` with null coordinates, and the native status bar is
+hidden while the session is locked. The final live status-bar binary hash is
+`f98f5584c6e057d09925a85734f1a3fea18cc9bd841df647689e988fec8385b4`.
+Evidence: `69-final-post-reboot.txt`, `70-final-topbar-unlocked.txt`,
+`71-topbar-final-unlocked.png`.

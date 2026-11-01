@@ -171,6 +171,15 @@ class NuxelHome {
         this.initialized = true;
         console.log('[Nuxel] Nuxel Home initialized');
 
+        // PWNAGE-45000: the canonical registry file is authoritative.  Merge it
+        // after first paint so NuxTore-installed local apps appear without a
+        // reboot and static fallback entries cannot drift from the device.
+        try {
+            if (window.appRegistry && window.appRegistry.refreshFromBridge) {
+                window.appRegistry.refreshFromBridge();
+            }
+        } catch (e) { /* first paint must not depend on the bridge */ }
+
         // Boot animation splash: fade out once the app is ready (see below)
         this._finishBootSplash();
 
@@ -468,6 +477,7 @@ class NuxelHome {
             const action = event.detail && event.detail.action;
             console.log('[Nuxel] logical action:', action);
             if (!action) return;
+            this._inputTrace('nav:action ' + action + ' locked=' + (this._isLocked() ? 1 : 0));
             const _now = Date.now();
             // Coalesce the same logical action that arrives twice from the two
             // registered targets or from the nav dock's pointerup + click.  The
@@ -487,7 +497,21 @@ class NuxelHome {
             }
             if (action === 'lock') { this._lock('host'); return; }
             if (action === 'unlock') {
-                if (this._isLocked()) { this._unlock(); return; }
+                if (this._isLocked()) {
+                    // PWNAGE-52000: a host/dock unlock must pass the SAME
+                    // authoritative credential check as the penguin gesture.
+                    // Otherwise the visible overlay hid while
+                    // /run/nuxel/security/lock-state.json stayed locked, and
+                    // the native dock correctly refused to map.
+                    const verify = (window.NuxelSecurityLock && window.NuxelSecurityLock.verifyUnlock)
+                        ? Promise.resolve(window.NuxelSecurityLock.verifyUnlock())
+                        : Promise.resolve({ ok: true, legacy: true });
+                    verify.then((v) => {
+                        if (v && v.ok === true) this._unlock('host-verified');
+                        else this._inputTrace('unlock:host-rejected ' + ((v && (v.error || v.detail)) || 'unknown'));
+                    }).catch((e) => this._inputTrace('unlock:host-error ' + (e && e.message ? e.message : e)));
+                    return;
+                }
                 // A45 pwa-host bug: the native nav dock's long-press Back
                 // ("back-long") is dispatched as "unlock" (its js_action map
                 // never added a back-long entry).  A session that is already
@@ -496,7 +520,19 @@ class NuxelHome {
                 this.terminateForeground();
                 return;
             }
-            if (this._isLocked()) return;   // locked: navigation/app actions are inert
+            if (this._isLocked()) {
+                // The local lockscreen is only a cache.  If a host/dock action
+                // arrives while it still says locked, reconcile with the
+                // authoritative security provider and replay the action ONLY
+                // after the provider confirms unlocked.  A real lock returns
+                // true and nothing is replayed.
+                this._inputTrace('nav:locked-reconcile action=' + action);
+                if (this._reconcileLockThenRetry(() => {
+                    this._lastAction = null;
+                    try { window.dispatchEvent(new CustomEvent('nuxel:action', { detail: { action } })); } catch (e) {}
+                })) return;
+                return;
+            }
             if (action === 'home') this.home();
             else if (action === 'back') this.back();
             else if (action === 'back-long' || action === 'terminate') this.terminateForeground();
@@ -560,6 +596,7 @@ class NuxelHome {
         // again after the boot unlock, which always lands on Home.
         if (this._isLocked()) {
             this._inputTrace(`launch:blocked-locked app=${app.id}`);
+            if (this._reconcileLockThenRetry(() => this._openPwa(app, url))) return;
             return;
         }
         this._dismissLauncherChrome();
@@ -654,6 +691,7 @@ class NuxelHome {
         // Same lock gate for registry/host deep links as _openPwa().
         if (this._isLocked()) {
             this._inputTrace(`launch:blocked-locked app=${app.id}`);
+            if (this._reconcileLockThenRetry(() => this._launchNative(app, url))) return;
             return;
         }
         this._dismissLauncherChrome();
@@ -665,13 +703,15 @@ class NuxelHome {
         this._setAppState('LAUNCHING', app, null);
 
         // Installed state check for apps that may not be present (e.g. Snapshot).
-        if (app.installed === false) {
+        if (app.installed === false || app.status === 'unsupported') {
             this._setAppState('FAILED', app, null);
             const toast = document.createElement('div');
             toast.className = 'toast';
-            toast.textContent = `${app.name} is not installed on this device`;
+            toast.textContent = app.status === 'unsupported'
+                ? `${app.name}: not supported on this device (${app.description || 'unavailable'})`
+                : `${app.name} is not installed on this device`;
             document.body.appendChild(toast);
-            setTimeout(() => toast.remove(), 4000);
+            setTimeout(() => toast.remove(), 5000);
             return;
         }
 
@@ -682,7 +722,7 @@ class NuxelHome {
             target: target,
             app_id: 'org.nuxel.Home',
             source: 'launcher',
-        }).then((res) => {
+        }, 30000).then((res) => {
             if (!res || res.success !== true) {
                 const err = new Error((res && (res.error || res.detail)) || 'launch refused');
                 err.detail = (res && res.detail) || null;
@@ -705,12 +745,16 @@ class NuxelHome {
         });
     }
 
-    _httpBridge(method, path, body) {
+    _httpBridge(method, path, body, timeoutMs) {
         // Minimal, bounded client for the local HTTP bridge (dev mode on
         // 127.0.0.1). The launcher origin (http://127.0.0.1:8000) is on the
         // bridge's explicit CORS allowlist. Never a general-purpose proxy.
+        // Native launches legitimately take several seconds: the bridge starts
+        // a transient unit and waits for a real Wayland surface.  The old 8 s
+        // ceiling reported a false "timeout" for VLC/Firefox while the app was
+        // still mapping.
         return new Promise((resolve) => {
-            const timeout = setTimeout(() => resolve({ success: false, error: 'timeout' }), 8000);
+            const timeout = setTimeout(() => resolve({ success: false, error: 'timeout' }), timeoutMs || 8000);
             const options = { method: method, headers: { 'Content-Type': 'application/json' } };
             if (body) options.body = JSON.stringify(body);
             fetch('http://127.0.0.1:8080' + path, options)
@@ -820,13 +864,20 @@ class NuxelHome {
                 const back = doc && doc.querySelector('[data-action="back"], [data-nav="back"], .settings-back');
                 if (back) { back.click(); return; }
             } catch (err) { /* cross-origin iframe: no authority to read history */ }
+            // PWNAGE-54000: Back is the system Back contract.  When the app
+            // itself has no further history step, close the foreground app
+            // gracefully by returning to Home.  This is a normal background
+            // transition (state is preserved); it is not a kill or a crash.
+            this._inputTrace('back:pwa-at-root-close-to-home');
+            this.home();
+            return;
         }
         // Native apps own a separate top-level Wayland surface (browser,
         // camera, ...): Back must first navigate that app's own history before
         // it may background to Home.  The bridge drives the foreground native
         // app's back contract and reports whether it was handled or at root.
         if (!frame && this.appSession.app && this.appSession.state === 'ACTIVE' &&
-            this.appSession.app.type === 'native') {
+            (this.appSession.app.type === 'native' || this.appSession.app.type === 'flatpak')) {
             if (this._backBusy) return;
             this._backBusy = true;
             this._inputTrace('back:native-request');
@@ -838,7 +889,16 @@ class NuxelHome {
                     this._inputTrace('back:native-handled');
                     return;   // app stays foreground, unobscured
                 }
-                this._inputTrace('back:native-at-root');
+                if (res && res.at_root && res.foreground) {
+                    // The native app has no internal back step: close it
+                    // gracefully by returning Home (the app keeps its data and
+                    // is not killed; the compositor's close path is long-Back).
+                    this._inputTrace('back:native-at-root-close-to-home');
+                    this.home();
+                    return;
+                }
+                // No foreground native surface (it already closed): return Home.
+                this._inputTrace('back:native-no-foreground');
                 this.home();
             });
             return;
@@ -887,12 +947,51 @@ class NuxelHome {
 
     _isLocked() { return !!(this.lockscreen && this.lockscreen.isLocked()); }
 
+    /* The local LockScreen instance is a cache.  A WebKit reload/resume can
+       leave it at locked while the root Bridge (the authority) has already
+       accepted the unlock, which produced the false "unlock the phone first"
+       refusal for native apps while Archive Manager still opened.  Reconcile
+       once and retry the exact launch; a genuinely locked session stays
+       blocked.  Never clears the gate without a success from the provider. */
+    _reconcileLockThenRetry(retry) {
+        if (this._lockReconcileInFlight) return true;
+        const sec = window.NuxelSecurityLock;
+        if (!sec || typeof sec.status !== 'function') return false;
+        this._lockReconcileInFlight = true;
+        Promise.resolve(sec.status()).then((st) => {
+            this._lockReconcileInFlight = false;
+            if (st && st.success !== false && st.locked === false) {
+                this._inputTrace('launch:lock-authority-unlocked-stale-local');
+                this._unlock('lock-authority-refresh');
+                try { retry(); } catch (e) {}
+            } else {
+                this._inputTrace('launch:blocked-locked-confirmed');
+            }
+        }).catch(() => { this._lockReconcileInFlight = false; });
+        return true;
+    }
+
     _lock(reason) {
         this._inputTrace(`lock reason=${reason}`);
-        if (this.lockscreen) this.lockscreen.show(reason);
+        // PWNAGE-52000 order is deliberate: hide every chrome layer (top bar,
+        // DOM nav, Home content) AND unmap the native layer-shell dock BEFORE
+        // the lockscreen surface is revealed.  CSS alone cannot hide the
+        // native dock; z-index alone cannot prevent a one-frame flash.
+        try {
+            document.body.classList.add('lockscreen-active');
+            document.documentElement.classList.add('nuxel-boot-locked');
+        } catch (e) {}
         this._blurActiveField();
         if (window.NuxelTouchKeyboard) window.NuxelTouchKeyboard.hide();
         this._setNavDock(false);
+        if (this.lockscreen) this.lockscreen.show(reason);
+        // Persist the authoritative locked state in the root bridge; the JS
+        // overlay is only the presentation of that decision.
+        try {
+            if (window.NuxelSecurityLock && window.NuxelSecurityLock.lock) {
+                window.NuxelSecurityLock.lock(reason || 'screen-lock');
+            }
+        } catch (e) { /* fail closed: the overlay remains */ }
         /* A lock always blanks the panel: idempotent for a display-off lock. */
         const host = window.NuxelHost;
         if (host && host.available && typeof host.action === 'function') {
@@ -906,13 +1005,17 @@ class NuxelHome {
         if (!ls) return { ok: false, error: 'no-lockscreen' };
         if (!ls.isLocked()) return { ok: true, already: true, state: ls.state };
         ls.hide();
-        this._setNavDock(true);
+        try { document.documentElement.classList.remove('nuxel-boot-locked'); } catch (e) {}
         // Boot/unlock navigation contract: a successful unlock is an explicit
         // transition to the canonical Home desktop.  Hiding the overlay alone
         // revealed whatever route was underneath it (notably the Applications
         // drawer kept open before locking).  Do this synchronously with hide()
         // so there is no frame in which stale chrome can paint.
         this._enterHomeAfterUnlock(reason || 'unlock');
+        // The native dock is restored only after authentication succeeded and
+        // the Home surface has been requested.  One animation frame lets the
+        // lockscreen removal commit before the layer-shell surface maps.
+        requestAnimationFrame(() => this._setNavDock(true));
         /* The system monitor pauses while the panel is locked or display-off.
            The boot-lock path never passed through a display ON transition, so
            its poll loop stayed stopped after unlock (a real startup race).
@@ -973,22 +1076,36 @@ class NuxelHome {
             }
             return this._unlock('penguin-gesture');
         };
+        // Credential verification happens in the root Bridge before any
+        // surface/nav transition.  A failure leaves the session locked.
+        const verify = () => {
+            if (window.NuxelSecurityLock && window.NuxelSecurityLock.verifyUnlock) {
+                return Promise.resolve(window.NuxelSecurityLock.verifyUnlock());
+            }
+            return Promise.resolve({ ok: true, legacy: true });
+        };
         const host = window.NuxelHost;
         if (host && host.available && typeof host.action === 'function') {
-            return Promise.resolve(host.action('unlock')).then((res) => {
-                if (!res || res.ok === false) {
-                    this._inputTrace(`unlock:backend-rejected ${(res && (res.error || res.timeout)) || 'unknown'}`);
-                    return { ok: false, error: 'backend-unlock-failed', backend: res || null };
+            return verify().then((v) => {
+                if (!v || v.ok !== true) {
+                    this._inputTrace(`unlock:credential-rejected ${(v && (v.error || v.detail)) || 'unknown'}`);
+                    return v || { ok: false, error: 'credential-rejected' };
                 }
-                return commit();
+                return Promise.resolve(host.action('unlock')).then((res) => {
+                    if (!res || res.ok === false) {
+                        this._inputTrace(`unlock:backend-rejected ${(res && (res.error || res.timeout)) || 'unknown'}`);
+                        return { ok: false, error: 'backend-unlock-failed', backend: res || null };
+                    }
+                    return commit();
+                });
             }).catch((err) => {
                 this._inputTrace(`unlock:backend-error ${err && err.message ? err.message : err}`);
                 return { ok: false, error: 'backend-unlock-error' };
             });
         }
         /* VM/desktop launcher: there is no native lock surface to release, so
-           the launcher controller itself is authoritative. */
-        return Promise.resolve(commit());
+           the launcher controller itself is authoritative after verification. */
+        return verify().then((v) => (v && v.ok === true) ? commit() : v);
     }
 
     _initLockscreen() {
@@ -997,6 +1114,20 @@ class NuxelHome {
            launch mode (?boot=os), so mark the session locked. */
         if (this.lockscreen && this.lockscreen.el && !this.lockscreen.el.hidden) {
             this.lockscreen.show('boot');
+        }
+        // The boot HTML gate is not authority.  If the root security provider
+        // already reports unlocked (e.g. the session was resumed), hide the
+        // stale local overlay so Back/Home/Tabs are not inert behind it.
+        const sec = window.NuxelSecurityLock;
+        if (sec && typeof sec.status === 'function') {
+            Promise.resolve(sec.status()).then((st) => {
+                if (st && st.success !== false && st.locked === false && this.lockscreen) {
+                    this.lockscreen.hide();
+                    try { document.documentElement.classList.remove('nuxel-boot-locked'); } catch (e) {}
+                    this._setNavDock(true);
+                    this._inputTrace('lockscreen:boot-authority-unlocked');
+                }
+            }).catch(() => {});
         }
         this._inputTrace(`lockscreen-controller version=a45.1 device=${window.NuxelHost && window.NuxelHost.available ? 'phone' : 'local'}`);
         if (this._isLocked()) this._setNavDock(false);
@@ -1081,6 +1212,9 @@ class NuxelHome {
     }
 
     _setNavDock(visible) {
+        // Fail closed: never map the native dock while the lockscreen is
+        // active, even if a caller passes true during a race.
+        if (visible && this._isLocked()) return;
         const host = window.NuxelHost;
         if (!host || !host.available || typeof host.action !== 'function') return;
         try { Promise.resolve(host.action(visible ? 'nav-show' : 'nav-hide')).catch(() => {}); }

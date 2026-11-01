@@ -1,0 +1,1 @@
+150a9518984048a85ec0f1c40ab0ec48f1f474e7f875491066f8b677333f6116  build/out/s10plus/nuxel-beyond2lte-rootfs-fedora-phone-p42000.img

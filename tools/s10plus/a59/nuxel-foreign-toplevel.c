@@ -10,10 +10,15 @@
  * whose layout matches wayland-client-core.h exactly.
  *
  * Modes:
- *   list      print every toplevel (title, app_id, states)
- *   home      minimize every non-Home toplevel, unset_minimized(raise) Home
+ *   list               print every toplevel (title, app_id, states)
+ *   home               minimize every non-Home toplevel, raise Home
+ *   activate <app_id>  unminimize/maximize/activate one app and minimize Home
+ *   close <app_id>     ask one non-Home toplevel to close (exact identity)
+ *   close-foreground   ask the activated non-Home toplevel to close
  *
- * Never kills a client, never touches the framebuffer.
+ * `close-foreground` uses the compositor's close request (opcode 5); the
+ * Bridge follows it with a bounded stop of that app's transient systemd units.
+ * It never kills Home, the launcher host or a daemon, and never writes /dev/fb0.
  */
 #define _GNU_SOURCE
 #include <dlfcn.h>
@@ -58,6 +63,7 @@ static int load_wayland(void) {
 
 /* ---- interface tables (types arrays name new_id targets) ----------------- */
 static struct wl_interface wl_registry_interface;
+static struct wl_interface wl_seat_interface;
 static struct wl_interface fto_manager_interface;
 static struct wl_interface fto_handle_interface;
 
@@ -83,6 +89,11 @@ static struct wl_message wl_registry_events[] = {
 };
 static struct wl_interface wl_registry_interface = {
     "wl_registry", 1, 1, wl_registry_messages, 2, wl_registry_events,
+};
+/* Minimal table used only to bind a wl_seat so foreign-toplevel activate()
+ * can name the seat whose focus should move.  No seat events are consumed. */
+static struct wl_interface wl_seat_interface = {
+    "wl_seat", 7, 0, NULL, 0, NULL,
 };
 
 static struct wl_message fto_manager_messages[] = { { "stop", "", NULL } };
@@ -128,7 +139,7 @@ struct window {
     struct window *next;
 };
 static struct window *windows;
-static void *g_display, *g_registry, *g_manager;
+static void *g_display, *g_registry, *g_manager, *g_seat;
 static int have_manager;
 
 static struct window *find_win(void *h) {
@@ -166,7 +177,10 @@ static void (*manager_listener[])(void) = { (void(*)(void))on_toplevel, (void(*)
 static void on_global(void *d, void *r, uint32_t name, const char *iface, uint32_t ver) {
     (void)d;(void)r;
     fprintf(stderr, "GLOBAL name=%u iface=%s ver=%u\n", name, iface, ver);
-    if (!strcmp(iface, "zwlr_foreign_toplevel_manager_v1")) {
+    if (!strcmp(iface, "wl_seat") && !g_seat) {
+        g_seat = _marshal(g_registry, 0, &wl_seat_interface, ver < 7 ? ver : 7, 0,
+                          name, "wl_seat", ver < 7 ? ver : 7, NULL);
+    } else if (!strcmp(iface, "zwlr_foreign_toplevel_manager_v1")) {
         have_manager = 1;
         /* bind: registry opcode 0 ("usun"); new_id target set via types[3] */
         g_manager = _marshal(g_registry, 0, &fto_manager_interface, ver < 3 ? ver : 3, 0,
@@ -208,6 +222,8 @@ int main(int argc, char **argv) {
             int is_home = !strcmp(w->app_id, "nuxel-pwa-host") || !strcmp(w->title, "Nuxel");
             if (is_home) {
                 _marshal(w->handle, 3, &fto_handle_interface, 3, 0);  /* unset_minimized */
+                _marshal(w->handle, 0, &fto_handle_interface, 3, 0);  /* set_maximized */
+                if (g_seat) _marshal(w->handle, 4, &fto_handle_interface, 3, 0, g_seat); /* activate */
                 raised++;
             } else {
                 _marshal(w->handle, 2, &fto_handle_interface, 3, 0);  /* set_minimized */
@@ -222,7 +238,7 @@ int main(int argc, char **argv) {
        map underneath it even after activation.  Minimize Home, then
        unminimize/activate/fullscreen the requested app (or every non-Home
        window when no app id is supplied). */
-    if (!strcmp(mode, "focus") || !strcmp(mode, "fullscreen")) {
+    if (!strcmp(mode, "focus") || !strcmp(mode, "fullscreen") || !strcmp(mode, "activate")) {
         const char *want = (argc > 2) ? argv[2] : NULL;
         int focused=0, minimized=0;
         for (struct window *w=windows;w;w=w->next) {
@@ -238,11 +254,48 @@ int main(int argc, char **argv) {
             if (want && *want && strcmp(w->app_id, want) && strcmp(w->title, want)) continue;
             _marshal(w->handle, 3, &fto_handle_interface, 3, 0);  /* unset_minimized */
             _marshal(w->handle, 0, &fto_handle_interface, 3, 0);  /* set_maximized */
+            /* The protocol requires a wl_seat for activate(); without this
+               call wlroots may update the requested size but keep keyboard
+               focus and stacking on the shell surface. */
+            if (g_seat) _marshal(w->handle, 4, &fto_handle_interface, 3, 0, g_seat);
             focused++;
         }
         _roundtrip(g_display);
         printf("FOCUS_ACTION focused=%d home_minimized=%d want=%s\n",
                focused, minimized, want ? want : "*");
+    }
+    if (!strcmp(mode, "close")) {
+        const char *want = (argc > 2) ? argv[2] : NULL;
+        int closed = 0;
+        if (want && *want) {
+            for (struct window *w = windows; w; w = w->next) {
+                int is_home = !strcmp(w->app_id, "nuxel-pwa-host") ||
+                              !strcmp(w->title, "Nuxel");
+                if (is_home) continue;
+                if (strcmp(w->app_id, want) && strcmp(w->title, want)) continue;
+                _marshal(w->handle, 5, &fto_handle_interface, 3, 0);  /* close */
+                printf("CLOSE_ACTION app_id=%s title=%s closed=1\n", w->app_id, w->title);
+                closed++;
+            }
+            _roundtrip(g_display);
+        }
+        printf("CLOSE_TARGET closed=%d want=%s\n", closed, want ? want : "*");
+    }
+    /* Long Back: close ONLY the activated non-Home toplevel.  Home, the
+       pwa-host and every daemon are excluded by identity, not by index. */
+    if (!strcmp(mode, "close-foreground")) {
+        int closed = 0, skipped_home = 0;
+        for (struct window *w = windows; w; w = w->next) {
+            int is_home = !strcmp(w->app_id, "nuxel-pwa-host") ||
+                          !strcmp(w->title, "Nuxel");
+            if (is_home) { skipped_home++; continue; }
+            if (!w->activated) continue;
+            _marshal(w->handle, 5, &fto_handle_interface, 3, 0);  /* close */
+            printf("CLOSE_ACTION app_id=%s title=%s closed=1\n", w->app_id, w->title);
+            closed++;
+        }
+        _roundtrip(g_display);
+        printf("CLOSE_FOREGROUND closed=%d home_skipped=%d\n", closed, skipped_home);
     }
     _disconnect(g_display);
     return 0;

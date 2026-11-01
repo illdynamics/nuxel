@@ -1,0 +1,30 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+=== dnf wlr-randr ===
+Available packages
+Name           : wlr-randr
+Epoch          : 0
+Version        : 0.5.0
+Release        : 2.fc43
+Architecture   : aarch64
+Download size  : 21.7 KiB
+Installed size : 70.6 KiB
+Source         : wlr-randr-0.5.0-2.fc43.src.rpm
+Repository     : fedora
+Summary        : An xrandr clone for wlroots compositors
+URL            : https://gitlab.freedesktop.org/emersion/wlr-randr
+License        : MIT
+Description    : wlr-randr is an xrandr clone for wlroots compositors
+Vendor         : Fedora Project
+=== repoquery ===
+wlr-randr-0:0.5.0-2.fc43.aarch64
+=== wayland protocol XML available ===
+ls: cannot access '/usr/share/wayland-protocols/stable/xdg-output/*.xml': No such file or directory
+ls: cannot access '/usr/share/wlr-protocols/unstable/wlr-output-management-unstable-v1.xml': No such file or directory

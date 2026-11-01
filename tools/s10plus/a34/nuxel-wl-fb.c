@@ -127,6 +127,7 @@
 #define STATE "/run/nuxel-wl-fb.state"
 #define MAX_OUT 4
 #define CTRL_FIFO  "/run/nuxel-wl-fb.cmd"
+#define ORIENT_STATE "/run/nuxel-wl-fb-orientation"
 #define DISP_STATE "/var/lib/nuxel/display"
 #define BACKLIGHT  "/sys/class/backlight/panel/brightness"
 #define BL_MAX     "/sys/class/backlight/panel/max_brightness"
@@ -393,8 +394,117 @@ static void blit_rows(const uint8_t *src, int sw, int sh, int stride, uint32_t f
   }
 }
 
+static int force_present;
+static uint8_t *prev_src;
+static size_t prev_src_len;
+static int prev_src_w, prev_src_h, prev_src_stride;
+
+/* PWNAGE-46000: the compositor rotates its logical output through wlr-randr
+   (HEADLESS-1).  The AMOLED scanout is still a portrait 1440x3040 memory, so a
+   landscape capture is 1520x720 and must be rotated back while being scaled.
+   The daemon publishes the exact compositor transform; this presenter applies
+   the SAME quarter turn exactly once.  Touch is untouched here: wlroots maps
+   libinput coordinates through the output transform before delivering events. */
+static int present_rotation;
+static long present_rotation_mtime;
+
+static int read_present_rotation(void) {
+  struct stat sb;
+  if (stat(ORIENT_STATE, &sb) != 0) return 0;
+  if (present_rotation_mtime == (long)sb.st_mtime) return present_rotation;
+  present_rotation_mtime = (long)sb.st_mtime;
+  FILE *f = fopen(ORIENT_STATE, "r");
+  if (!f) return present_rotation;
+  char line[256];
+  int angle = 0;
+  while (fgets(line, sizeof line, f)) {
+    int v;
+    if (sscanf(line, "transform=%d", &v) == 1 ||
+        sscanf(line, "presenter_rotation=%d", &v) == 1) {
+      if (v == 0 || v == 90 || v == 180 || v == 270) angle = v;
+    }
+  }
+  fclose(f);
+  if (angle != present_rotation) {
+    /* force the first frame after a rotation through the full path and refresh
+       the damage baseline so an otherwise-identical source cannot be skipped */
+    force_present = 1;
+    free(prev_src); prev_src = NULL; prev_src_len = 0;
+    prev_src_w = prev_src_h = prev_src_stride = 0;
+  }
+  present_rotation = angle;
+  return angle;
+}
+
+/* Rotate one captured frame into the portrait scanout.  `angle` is the exact
+   wlroots transform (90/270 are counter-clockwise output rotation), and the
+   inverse quarter-turn maps the already-upright logical framebuffer back to
+   panel memory.  Destination dimensions are selected by the quarter turn:
+   1520x720 becomes 720x1520 before the usual integer 2x panel scale. */
+static void rotate_map(int angle, int sw, int sh, int rx, int ry,
+                        int *x, int *y) {
+  int tx, ty;
+  switch (angle) {
+    case 90:  tx = sw - 1 - ry; ty = rx; break;
+    case 270: tx = ry;          ty = sh - 1 - rx; break;
+    case 180: tx = sw - 1 - rx; ty = sh - 1 - ry; break;
+    default:  tx = rx;          ty = ry; break;
+  }
+  if (tx < 0) tx = 0;
+  if (tx >= sw) tx = sw - 1;
+  if (ty < 0) ty = 0;
+  if (ty >= sh) ty = sh - 1;
+  *x = tx; *y = ty;
+}
+
+/* Offline mapping test: a symmetric image cannot catch mirrored transforms.
+   These corner receipts make the rotation direction explicit. */
+static int rotation_selftest(void) {
+  static const int angles[] = {0, 90, 180, 270};
+  int fail = 0;
+  for (unsigned i = 0; i < sizeof angles / sizeof angles[0]; i++) {
+    int a = angles[i], x, y;
+    rotate_map(a, 4, 2, 0, 0, &x, &y);
+    int ok = (a == 0 && x == 0 && y == 0) ||
+             (a == 90 && x == 3 && y == 0) ||
+             (a == 180 && x == 3 && y == 1) ||
+             (a == 270 && x == 0 && y == 1);
+    printf("%s rotation %d top-left -> %d,%d\n", ok ? "PASS" : "FAIL", a, x, y);
+    if (!ok) fail++;
+  }
+  return fail ? 1 : 0;
+}
+
+static void blit_rotated(const uint8_t *src, int sw, int sh, int stride,
+                         uint32_t format, int angle) {
+  if (fb.bpp != 32 || !fb.map || sw <= 0 || sh <= 0) return;
+  if (format != src_fmt) color_build(format);
+  int rw = (angle == 90 || angle == 270) ? sh : sw;
+  int rh = (angle == 90 || angle == 270) ? sw : sh;
+  int sx = (int)fb.w / rw;
+  int sy = (int)fb.h / rh;
+  if (sx < 1) sx = 1;
+  if (sy < 1) sy = 1;
+  int convert = (format == WL_SHM_FORMAT_XRGB8888 || format == WL_SHM_FORMAT_ARGB8888);
+  for (uint32_t dy = 0; dy < fb.h; dy++) {
+    int ry = (int)(dy / (uint32_t)sy);
+    if (ry >= rh) ry = rh - 1;
+    uint32_t *d = (uint32_t *)(fb.map + (size_t)dy * fb.line);
+    for (uint32_t dx = 0; dx < fb.w; dx++) {
+      int rx = (int)(dx / (uint32_t)sx);
+      if (rx >= rw) rx = rw - 1;
+      int x, y;
+      rotate_map(angle, sw, sh, rx, ry, &x, &y);
+      const uint32_t *row = (const uint32_t *)(src + (size_t)y * stride);
+      d[dx] = convert ? color_convert(row[x]) : (row[x] | 0xff000000u);
+    }
+  }
+}
+
 static void blit(const uint8_t *src, int sw, int sh, int stride, uint32_t format) {
-  blit_rows(src, sw, sh, stride, format, 0, sh);
+  int angle = read_present_rotation();
+  if (angle == 0) blit_rows(src, sw, sh, stride, format, 0, sh);
+  else blit_rotated(src, sw, sh, stride, format, angle);
 }
 
 /* ---- shm buffer ---- */
@@ -904,7 +1014,7 @@ static int kmsg_max_loops(void) {
    needed on wake). */
 static int ctrl_fd = -1;
 static int display_on = 1;
-static int force_present = 1;   /* A47: always paint the first frame after wake */
+/* force_present is declared before the rotated presenter (PWNAGE-46000). */
 static int saved_brightness = -1;
 static int max_brightness = -1;
 
@@ -984,6 +1094,11 @@ static void display_set(int on, const char *why) {
   display_publish();
 }
 
+/* Forward declarations: the control FIFO is pumped before the render helper
+ * definitions below. */
+static void edge_set(uint8_t r, uint8_t g, uint8_t b, int duration_ms);
+static void edge_off(const char *why);
+
 static void ctrl_pump(void) {
   char buf[1024];
   if (ctrl_fd < 0) return;
@@ -997,6 +1112,13 @@ static void ctrl_pump(void) {
       if (!strncmp(q, "screen-off", 10))       display_set(0, "control-fifo");
       else if (!strncmp(q, "screen-on", 9))    display_set(1, "control-fifo");
       else if (!strncmp(q, "screen-toggle", 13)) display_set(!display_on, "control-fifo");
+      else if (!strncmp(q, "edge-light-off", 14)) edge_off("control-fifo");
+      else if (!strncmp(q, "edge-light ", 11)) {
+        unsigned int er = 0, eg = 0, eb = 0, ems = 0;
+        if (sscanf(q + 11, "%x %x %x %u", &er, &eg, &eb, &ems) == 4)
+          edge_set((uint8_t)er, (uint8_t)eg, (uint8_t)eb, (int)ems);
+        else st("EDGE_LIGHT_BAD_REQUEST %s", q);
+      }
       else if (!strncmp(q, "status", 6))       display_publish();
       q = nl ? nl + 1 : NULL;
     }
@@ -1067,8 +1189,79 @@ static int panel_commit_frame(const char *why) {
 }
 
 static int damage_y0, damage_y1;
+
+/* PWNAGE-45000: bounded software edge-light for the notification provider.
+ * The S10+ exposes no front notification LED class on this kernel, so the
+ * notification owner asks the ONE framebuffer owner to paint a short coloured
+ * border.  This is explicitly a display effect, never a hardware LED claim. */
+static volatile int edge_active;
+static volatile uint32_t edge_color;
+static struct timespec edge_until;
+static int edge_thickness = 18;
+
+static uint32_t edge_hw_pixel(uint8_t r, uint8_t g, uint8_t b) {
+  return (uint32_t)0xff000000u |
+         ((uint32_t)r << hw_r_off) |
+         ((uint32_t)g << hw_g_off) |
+         ((uint32_t)b << hw_b_off);
+}
+
+static int edge_expired(void) {
+  if (!edge_active) return 0;
+  struct timespec now;
+  clock_gettime(CLOCK_MONOTONIC, &now);
+  if (now.tv_sec > edge_until.tv_sec ||
+      (now.tv_sec == edge_until.tv_sec && now.tv_nsec >= edge_until.tv_nsec)) {
+    edge_active = 0;
+    return 1;
+  }
+  return 0;
+}
+
+static void edge_paint(void) {
+  if (!edge_active || !fb.map || fb.bpp != 32) return;
+  if (edge_expired()) return;
+  uint32_t px = edge_color;
+  int t = edge_thickness;
+  if (t < 2) t = 2;
+  if ((uint32_t)t * 2u > fb.h || (uint32_t)t * 2u > fb.w) return;
+  for (uint32_t y = 0; y < fb.h; y++) {
+    int border = (y < (uint32_t)t) || (y >= fb.h - (uint32_t)t);
+    uint32_t *row = (uint32_t *)(fb.map + (size_t)y * fb.line);
+    if (border) {
+      for (uint32_t x = 0; x < fb.w; x++) row[x] = px;
+    } else {
+      for (uint32_t x = 0; x < (uint32_t)t; x++) row[x] = px;
+      for (uint32_t x = fb.w - (uint32_t)t; x < fb.w; x++) row[x] = px;
+    }
+  }
+}
+
+static void edge_set(uint8_t r, uint8_t g, uint8_t b, int duration_ms) {
+  if (duration_ms < 1) duration_ms = 1;
+  if (duration_ms > 60000) duration_ms = 60000;
+  edge_color = edge_hw_pixel(r, g, b);
+  clock_gettime(CLOCK_MONOTONIC, &edge_until);
+  edge_until.tv_sec += duration_ms / 1000;
+  edge_until.tv_nsec += (long)(duration_ms % 1000) * 1000000L;
+  if (edge_until.tv_nsec >= 1000000000L) {
+    edge_until.tv_sec += 1;
+    edge_until.tv_nsec -= 1000000000L;
+  }
+  edge_active = 1;
+  force_present = 1;
+  st("EDGE_LIGHT_ON rgb=%02x%02x%02x duration_ms=%d owner=nuxel-wl-fb", r, g, b, duration_ms);
+}
+
+static void edge_off(const char *why) {
+  edge_active = 0;
+  force_present = 1;
+  st("EDGE_LIGHT_OFF why=%s owner=nuxel-wl-fb", why ? why : "request");
+}
+
 static int frame_blit_once(void) {
   blit(frame_buf.data, frame_buf.w, frame_buf.h, frame_buf.stride, frame_buf.format);
+  edge_paint();
   return panel_commit_frame("frame");
 }
 
@@ -1076,8 +1269,16 @@ static int frame_blit_once(void) {
    (FBIOPAN_DISPLAY) still happens after every changed frame; only the CPU copy
    is narrowed. */
 static int frame_blit_damage(void) {
-  blit_rows(frame_buf.data, frame_buf.w, frame_buf.h, frame_buf.stride, frame_buf.format,
-            damage_y0, damage_y1);
+  if (read_present_rotation() != 0) {
+    blit(frame_buf.data, frame_buf.w, frame_buf.h, frame_buf.stride, frame_buf.format);
+  } else {
+    blit_rows(frame_buf.data, frame_buf.w, frame_buf.h, frame_buf.stride, frame_buf.format,
+              damage_y0, damage_y1);
+  }
+  edge_paint();
+  /* An expired edge-light must trigger a clean full-frame repaint so the
+   * coloured border cannot remain on the glass after the timeout. */
+  if (edge_expired()) force_present = 1;
   return panel_commit_frame("frame-damage");
 }
 
@@ -1092,9 +1293,6 @@ static int frame_blit_damage(void) {
    that full cost.  Only rows that actually differ are re-expanded now.
    Returns 1 when the frame changed (damage_y0/y1 valid), 0 when identical.
    NUXEL_WLFB_DAMAGE=0 restores the previous full-blit behaviour. */
-static uint8_t *prev_src;
-static size_t prev_src_len;
-static int prev_src_w, prev_src_h, prev_src_stride;
 static int damage_ready(void) {
   const char *v = getenv("NUXEL_WLFB_DAMAGE");
   return !(v && v[0] == '0');
@@ -1197,6 +1395,7 @@ static int colour_dump(void) {
 int main(int argc, char **argv) {
   if (argc > 1 && !strcmp(argv[1], "--colour-selftest")) return colour_selftest();
   if (argc > 1 && !strcmp(argv[1], "--colour-dump")) return colour_dump();
+  if (argc > 1 && !strcmp(argv[1], "--rotation-selftest")) return rotation_selftest();
   /* A33 offline modes: no framebuffer, no Wayland, no handset. */
   if (argc > 1 && !strcmp(argv[1], "--handoff-selftest")) return nuxel_handoff_selftest(stdout) ? 1 : 0;
   if (argc > 1 && !strcmp(argv[1], "--receipt-print")) {
@@ -1273,6 +1472,7 @@ int main(int argc, char **argv) {
                 kmsg_max_loops(), g_min_cycles, 1, painter_alive(), "launcher_ready");
 
   /* --- 2. take ONE composited frame and hold it ---------------------------- */
+  force_present = 1;
   int frames = 0, failures = 0;
   time_t t0 = time(NULL), last = t0;
   int got = 0;
@@ -1536,6 +1736,7 @@ int main(int argc, char **argv) {
     struct timespec t_start;
     clock_gettime(CLOCK_MONOTONIC, &t_start);
     ctrl_pump();                      /* A32: screen on/off + status requests */
+    read_present_rotation();          /* PWNAGE-46000: presenter quarter-turn */
     struct zwlr_screencopy_frame_v1 *frame = zwlr_screencopy_manager_v1_capture_output(scm, 0, o->wl);
     frame_ready = frame_failed = have_pending = 0;
     zwlr_screencopy_frame_v1_add_listener(frame, &frame_listener, NULL);
@@ -1569,6 +1770,7 @@ int main(int argc, char **argv) {
         /* Command-mode Samsung DECON: every changed frame MUST be committed.
            Merely blitting to mmap() is not enough (A35 stale-display fix). */
         int partial = !(damage_y0 == 0 && damage_y1 == frame_buf.h);
+        if (read_present_rotation() != 0) partial = 0;
         int pan_rc = partial ? frame_blit_damage() : frame_blit_once();
         blits++;
         struct timespec t_end;
@@ -1601,9 +1803,12 @@ int main(int argc, char **argv) {
       st("FRAMES_OK total=%d fps_1s=%d failures=%d blits=%llu present_skipped=%llu blit_avg_ms=%d damage=%d-%d damage_blits=%llu damage_avg_ms=%d idle_ms=%lld out=%dx%d src=%dx%d scale=%d panel=%ux%u owner=nuxel-wl-fb display=%s src_format=0x%08x colour=R@%u,G@%u,B@%u_abgr8888_override=%d decon_pan_ok=%llu decon_pan_failed=%llu",
          frames, fps, failures, blits, present_skipped, avg_ms, damage_y0, damage_y1,
          damage_blits, dmg_ms, (long long)(mono_ms() - last_change_ms),
-         o->w, o->h, o->w, o->h, o->scale, fb.w, fb.h,
+         o->w, o->h, frame_buf.w, frame_buf.h, o->scale, fb.w, fb.h,
          display_on ? "on" : "off", src_fmt, hw_r_off, hw_g_off, hw_b_off, hw_order_override,
          decon_pan_ok, decon_pan_failed);
+      FILE *of = fopen("/run/nuxel-wl-fb.orient.state", "w");
+      if (of) { fprintf(of, "presenter_rotation=%d src=%dx%d out=%dx%d src_format=0x%08x\n",
+                        present_rotation, frame_buf.w, frame_buf.h, o->w, o->h, src_fmt); fclose(of); }
       fps = 0;
       last = now;
       int intruder = painter_alive();

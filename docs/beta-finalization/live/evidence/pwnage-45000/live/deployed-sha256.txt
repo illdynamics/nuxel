@@ -1,0 +1,37 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+11d82345e85b8283cdd33be0974da8cd3306443cafd1c4fd7962d8867e0c3dfa  /usr/lib/nuxel/nuxel-wl-fb
+02aaa70dd52ed502a2664946e07a9daa7fa16f3c3331d5f27abd9279e28414a9  /usr/lib/nuxel/nuxel-navdock
+3e90efcf8d3e9895c2f46d2b288e9d495e6e879d7be67d01c19103af0bff9663  /usr/lib/nuxel/nuxel-bridge/api.py
+f7c665355ef02d84e2951d7a253cbe14a5d96d28dbecc8f47a6ecf26ac43e192  /usr/lib/nuxel/nuxel-bridge/dnd_provider.py
+ca118484868651c43daaa7fdb3445bb3e2217552549db3761e5e2936ea6b967a  /usr/lib/nuxel/nuxel-bridge/nfc_provider.py
+a89de47576df4c0fbed73c31c458edecea1f2da4c11b2f46b40687640ac3313e  /usr/lib/nuxel/nuxel-bridge/fingerprint_provider.py
+3ff298e59cfacce39075575737d84310b538b9b1a8e7613683b9d12c0071d709  /usr/lib/nuxel/nuxel-bridge/security_provider.py
+3ba6a297d9b2ddb426bc7f299a5937318b8e76454fb74c9eff29541210c7877e  /usr/lib/nuxel/nuxel-bridge/led_notification_provider.py
+464a9031ea569e9084d3cbc92026a3c59c42527a73b759489dfcd877e393e4c5  /usr/lib/nuxel/nuxel-bridge/app_manager.py
+028bd2f6f93e8afff5bd1abf3ee0312246e4bbe921ade38ab4c6fdd57cbd291d  /usr/lib/nuxel/nuxel-bridge/software_provider.py
+6173230fe5a12dbcbacec261f4c8f3036cefc1977364ab8ed5d20735c63b8f0b  /usr/lib/nuxel/nuxel-notifications/notifications.py
+abeaabcd3450ae9ab3c12098369dad615220aea12b435dd968d473bf3dd6654c  /usr/lib/nuxel/nuxel-usb-mode.sh
+9b0b19155a73e6c50fe530320a39f5847ff177624f48fee9dd540bc9899fe880  /usr/lib/nuxel/nuxel-mtp-server
+af2b0f6a2b3a41b7c65661dd2cc6ed860a8a9efad1071d45f7c4327b4943b9e0  /usr/lib/nuxel/nuxel-session.sh
+3b312e41b01dc531287ff969cbef21ef4efe46694ab61c41527be8186b707990  /usr/lib/nuxel/nuxel-software
+97bd8d2008c71c02db294bd7a8e8b24459da22338d9c5d892c86bf87730a22c6  /usr/share/nuxel/pwa/nuxel-home/index.html
+856167895a53224926e1f69f1f0317a500597ac1854d9c1cae06a7209eaf3e2b  /usr/share/nuxel/pwa/nuxel-home/css/lockscreen.css
+1856d79c25552961820594740c031e695bdb5f64d402d5d48cd9e8260377f23d  /usr/share/nuxel/pwa/nuxel-home/js/security-lock.js
+03ab43f22e7582115dd6ffaeda00f01f48c93b715c435bbd9735076b9fa39db3  /usr/share/nuxel/pwa/nuxel-common/app-registry.json
+c6a7575d759ac6c2f890dbe89c0c731713d6a3d3e0f5bdc95dc0b2fb00ceb5db  /etc/nuxel/app-registry/app_registry.json
+
+# PWNAGE-45001 follow-up (2026-10-31)
+ddcf5092a5dae376f95f47fc99ceec438adcc34454d98fd90cba2b598223c812  /usr/lib/nuxel/nuxel-statusbar
+fda4ff8494c97bd0d799eb652f2455d03e3759f7f43d98eb144951496810c648  /usr/share/nuxel/pwa/nuxel-home/index.html
+53eafc68fd717642f226d8a2474a5b37ec1d252f66d0a633adfc38901d565e34  /usr/share/nuxel/pwa/nuxel-home/css/status-bar.css
+5acbf761e961da18fc6603f359780b3ae5148b1d0e3bf001ddf10bb17ee59821  /usr/share/nuxel/pwa/nuxel-home/sw.js
+8908c2dd7bb22d030266d7a060213805ddcd7ffddeea9e65634720879dd767c3  /usr/share/nuxel/pwa/nuxel-home/manifest.json
+4f91d673e2e46528acb1ddc029c819140832d1e4bfb0c8f8588ebb89af89e1e1  build/out/s10plus/nuxel-beyond2lte-rootfs-fedora-phone-p45001.img

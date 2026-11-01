@@ -1,0 +1,139 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+===GLOBALS===
++ echo ===GLOBALS===
++ ls -l /run/user/1000/wayland-0 /run/user/1000/wayland-0.lock
+lrwxrwxrwx. 1 root root 28 Nov  1 14:06 /run/user/1000/wayland-0 -> /run/nuxel-wayland/wayland-0
+lrwxrwxrwx. 1 root root 33 Nov  1 14:06 /run/user/1000/wayland-0.lock -> /run/nuxel-wayland/wayland-0.lock
+===FB===
++ echo ===FB===
++ cat /sys/class/graphics/fb0/virtual_size /sys/class/graphics/fb0/stride
+1440,6080
+5760
+===STATE===
++ echo ===STATE===
++ cat /run/nuxel-wl-fb.state
+1793539943 FRAMES_OK total=21999 fps_1s=10 failures=0 blits=713 present_skipped=21284 blit_avg_ms=44 damage=617-997 damage_blits=707 damage_avg_ms=44 idle_ms=3241 out=720x1520 src=720x1520 scale=2 panel=1440x3040 owner=nuxel-wl-fb display=on src_format=0x34324258 colour=R@0,G@8,B@16_abgr8888_override=1 decon_pan_ok=714 decon_pan_failed=0
++ ls -l /run/nuxel-gpu-fallback
+fallback absent
+===MALI===
++ echo 'fallback absent'
++ echo ===MALI===
++ ls -l /dev/mali0 /dev/udmabuf /dev/dri
+ls: cannot access '/dev/dri': No such file or directory
+crw-rw-rw-. 1 root root 10, 121 Jan  1  1970 /dev/mali0
+crw-rw-rw-. 1 root root 10, 105 Jan  1  1970 /dev/udmabuf
+===PROCS===
++ echo ===PROCS===
++ ps -eo pid,ppid,stat,%cpu,%mem,comm,args --sort=-%cpu
++ head -25
+    PID    PPID STAT %CPU %MEM COMMAND         COMMAND
+  22100   22091 R     200  0.0 ps              ps -eo pid,ppid,stat,%cpu,%mem,comm,args --sort=-%cpu
+   6298    5995 SLl   124  9.6 WebKitWebProces /usr/libexec/webkit2gtk-4.1/WebKitWebProcess 4 23
+   5851    5847 Sl   32.2  1.8 phoc            /usr/sbin/phoc --no-xwayland -C /etc/nuxel/phoc-phone.ini -E /usr/lib/nuxel/nuxel-session.sh
+  22083    5926 Ss   17.1  0.1 sshd-session    sshd-session: root [priv]
+  22082    5926 Ss   16.6  0.1 sshd-session    sshd-session: root [priv]
+   5990       1 S<s   9.3  0.1 nuxel-wl-fb     /usr/lib/nuxel/nuxel-wl-fb
+   2192       2 S     4.6  0.0 sugov:6         [sugov:6]
+   6820       1 Ssl   4.0  0.4 python3         /usr/bin/python3 /usr/lib/nuxel/nuxel-bridge/api.py
+   5995    5851 Sl    3.0  2.3 nuxel-pwa-host  /usr/lib/nuxel/nuxel-pwa-host
+   2188       2 S     2.9  0.0 sugov:0         [sugov:0]
+   2190       2 S     2.4  0.0 sugov:4         [sugov:4]
+      1       0 Ss    1.9  0.5 systemd         sbin/init
+   5862       1 Ss    1.6  0.2 python3         python3 /usr/libexec/nuxel/nuxel-orientationd daemon
+   3566       1 Ss    1.5  0.7 systemd-journal /usr/lib/systemd/systemd-journald
+   6297    5995 SLl   1.4  0.7 WebKitNetworkPr /usr/libexec/webkit2gtk-4.1/WebKitNetworkProcess 2 20
+   5358       1 Ss    1.3  0.0 dbus-daemon     /usr/bin/dbus-daemon --system --address=systemd: --nofork --nopidfile --systemd-activation --syslog-only
+   5840       1 Ss    0.6  0.4 python3         /usr/bin/python3 /usr/lib/nuxel/nuxel-bridge/bridge.py
+    408       2 I     0.5  0.0 kworker/u17:0   [kworker/u17:0]
+   5415       1 Ssl   0.5  0.2 NetworkManager  /usr/bin/NetworkManager --no-daemon
+   7362       2 I     0.5  0.0 kworker/u17:3   [kworker/u17:3]
+  12546       2 I     0.4  0.0 kworker/u17:1   [kworker/u17:1]
+      8       2 I     0.3  0.0 rcu_preempt     [rcu_preempt]
+  14835       2 I     0.3  0.0 kworker/u17:2   [kworker/u17:2]
+      9       2 I     0.3  0.0 rcu_sched       [rcu_sched]
+===ENVGRAPHICS===
++ echo ===ENVGRAPHICS===
+++ pgrep -f 'phoc|nuxel-web|WebKit|nuxel-pwa|nuxel-wl-fb'
++ for p in $(pgrep -f "phoc|nuxel-web|WebKit|nuxel-pwa|nuxel-wl-fb")
+++ cat /proc/5842/comm
+--- 5842 python3
++ echo '--- 5842 python3'
++ tr '\0' '\n'
++ grep -E '^(GDK_|GTK_|EGL_|MESA_|LIBGL|WEBKIT|WPE|WAYLAND|XDG_RUNTIME|MUTTER|CLUTTER)'
++ for p in $(pgrep -f "phoc|nuxel-web|WebKit|nuxel-pwa|nuxel-wl-fb")
+++ cat /proc/5851/comm
+--- 5851 phoc
++ echo '--- 5851 phoc'
++ tr '\0' '\n'
++ grep -E '^(GDK_|GTK_|EGL_|MESA_|LIBGL|WEBKIT|WPE|WAYLAND|XDG_RUNTIME|MUTTER|CLUTTER)'
+MESA_LOADER_DRIVER_OVERRIDE=panfrost
+LIBGL_DRIVERS_PATH=/usr/lib64/dri
+XDG_RUNTIME_DIR=/run/nuxel-wayland
+MESA_SHADER_CACHE_DISABLE=1
+MESA_KBASE_NODE=/dev/mali0
++ for p in $(pgrep -f "phoc|nuxel-web|WebKit|nuxel-pwa|nuxel-wl-fb")
+++ cat /proc/5990/comm
+--- 5990 nuxel-wl-fb
+XDG_RUNTIME_DIR=/run/nuxel-wayland
++ echo '--- 5990 nuxel-wl-fb'
++ tr '\0' '\n'
++ grep -E '^(GDK_|GTK_|EGL_|MESA_|LIBGL|WEBKIT|WPE|WAYLAND|XDG_RUNTIME|MUTTER|CLUTTER)'
++ for p in $(pgrep -f "phoc|nuxel-web|WebKit|nuxel-pwa|nuxel-wl-fb")
+++ cat /proc/5995/comm
++ echo '--- 5995 nuxel-pwa-host'
+--- 5995 nuxel-pwa-host
++ tr '\0' '\n'
++ grep -E '^(GDK_|GTK_|EGL_|MESA_|LIBGL|WEBKIT|WPE|WAYLAND|XDG_RUNTIME|MUTTER|CLUTTER)'
+MESA_LOADER_DRIVER_OVERRIDE=panfrost
+WAYLAND_DISPLAY=wayland-0
+LIBGL_DRIVERS_PATH=/usr/lib64/dri
+LIBGL_ALWAYS_SOFTWARE=1
+XDG_RUNTIME_DIR=/run/nuxel-wayland
+GDK_BACKEND=wayland
+WEBKIT_DISABLE_COMPOSITING_MODE=1
+MESA_SHADER_CACHE_DISABLE=1
+MESA_KBASE_NODE=/dev/mali0
+--- 6297 WebKitNetworkPr
++ for p in $(pgrep -f "phoc|nuxel-web|WebKit|nuxel-pwa|nuxel-wl-fb")
+++ cat /proc/6297/comm
++ echo '--- 6297 WebKitNetworkPr'
++ tr '\0' '\n'
+MESA_LOADER_DRIVER_OVERRIDE=panfrost
+WAYLAND_DISPLAY=wayland-0
+LIBGL_DRIVERS_PATH=/usr/lib64/dri
+LIBGL_ALWAYS_SOFTWARE=1
+XDG_RUNTIME_DIR=/run/nuxel-wayland
+GDK_BACKEND=wayland
+WEBKIT_DISABLE_COMPOSITING_MODE=1
+MESA_SHADER_CACHE_DISABLE=1
+MESA_KBASE_NODE=/dev/mali0
++ grep -E '^(GDK_|GTK_|EGL_|MESA_|LIBGL|WEBKIT|WPE|WAYLAND|XDG_RUNTIME|MUTTER|CLUTTER)'
++ for p in $(pgrep -f "phoc|nuxel-web|WebKit|nuxel-pwa|nuxel-wl-fb")
+++ cat /proc/6298/comm
+--- 6298 WebKitWebProces
++ echo '--- 6298 WebKitWebProces'
++ tr '\0' '\n'
++ grep -E '^(GDK_|GTK_|EGL_|MESA_|LIBGL|WEBKIT|WPE|WAYLAND|XDG_RUNTIME|MUTTER|CLUTTER)'
+MESA_LOADER_DRIVER_OVERRIDE=panfrost
+WAYLAND_DISPLAY=wayland-0
+LIBGL_DRIVERS_PATH=/usr/lib64/dri
+LIBGL_ALWAYS_SOFTWARE=1
+XDG_RUNTIME_DIR=/run/nuxel-wayland
+GDK_BACKEND=wayland
+WEBKIT_DISABLE_COMPOSITING_MODE=1
+MESA_SHADER_CACHE_DISABLE=1
+MESA_KBASE_NODE=/dev/mali0
++ for p in $(pgrep -f "phoc|nuxel-web|WebKit|nuxel-pwa|nuxel-wl-fb")
+++ cat /proc/22091/comm
+--- 22091 bash
++ echo '--- 22091 bash'
++ tr '\0' '\n'
++ grep -E '^(GDK_|GTK_|EGL_|MESA_|LIBGL|WEBKIT|WPE|WAYLAND|XDG_RUNTIME|MUTTER|CLUTTER)'

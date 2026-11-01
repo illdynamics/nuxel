@@ -1,0 +1,27 @@
+# PWNAGE-50000 kbase Wayland-WSI canary — successful observation
+# Date: 2026-11-01 10:31 CET
+# Setup: a SECOND headless Phoc on /run/nuxel-test using the patched wlroots
+# (linux-dmabuf v3) and the experimental Mesa Wayland build staged under
+# /usr/local/lib/nuxel-gpu.  The live Phoc session and /dev/fb0 were untouched.
+#
+# wayland-info on the canary:
+#   interface: 'zwp_linux_dmabuf_v1', version: 3
+#
+# probe result (source code: tools/s10plus/a67/nuxel-wayland-egl-probe.c):
+MESA-EGL: warning: nuxel: kbase=1 fd=4 driver=panfrost
+MESA-LOADER: failed to retrieve device information
+MESA-EGL: warning: nuxel: kbase screen up
+MESA: info: kbase: exportable BO request 4583424 bytes (aligned 4583424)
+MESA: info: kbase: udmabuf test memfd=7 udmabuf=8 sizeof=24 req=0x40187542 aligned=4583424
+MESA: info: kbase: udmabuf create fields memfd=7 flags=0 off=0 size=4583424
+MESA: info: kbase: udmabuf fd=10
+{"probe":"wayland-egl","wayland_display":"wayland-0","xdg_runtime_dir":"/run/nuxel-test","frames_requested":1}
+{"egl_vendor":"Mesa Project","egl_version":"1.5","egl_client_extensions":"...EGL_EXT_platform_wayland EGL_KHR_platform_wayland..."}
+{"gl_version":"OpenGL ES 3.2 Mesa 26.3.0-devel (git-a5010bb447)","gl_renderer":"Mali-G76 MC12 (Panfrost)","gl_vendor":"Mesa","egl_extensions":"...EGL_EXT_buffer_age...EGL_KHR_swap_buffers_with_damage..."}
+{"swapbuffers":1,"result":"PASS"}
+#
+# This proves the userspace WSI and buffer allocation/export/import sequence.
+# It does NOT prove the live Phoc session can advertise linux-dmabuf without
+# crashing: enabling that global on the live kbase compositor produced a
+# SIGSEGV/SIGBUS in phoc (coredump 17951/19302/29214).  The live session was
+# reverted to the proven surfaceless kbase compositor.

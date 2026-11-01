@@ -1,0 +1,1 @@
+backup=/var/lib/nuxel/pwnage42000-statusbar-backup-20261031T195625Z

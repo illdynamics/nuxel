@@ -1,0 +1,76 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+===== modem =====
+grep: //: Is a directory
+device            : beyond2lte (S10+ SM-G975F, Exynos 9820)
+modem             : Samsung Shannon LTE (integrated; NO upstream ModemManager plugin)
+CP host interfaces: NONE
+possible netdevs  : NONE
+MM plugins        : NONE
+mmcli             : not installed
+SIM (real source) : absent
+signal/operator   : unavailable — never printed unless read from a live ModemManager API
+data connection   : none (no supported modem stack)
+first failing st. : host_transport  (no CP host interface and no ModemManager plugin for the Samsung Shannon LTE modem)
+verdict           : NOT_SUPPORTED_ON_DEVICE
+VoLTE/calls/SMS   : NOT implemented — see docs/volte-carrier-strategy.md
+owner procedure   : docs/beta-finalization/manual-proof/16-sim-mobile-data.md
+===== camera =====
+device            : beyond2lte (S10+ SM-G975F, Exynos 9820)
+video nodes       : /dev/video10 /dev/video101 /dev/video102 /dev/video103 /dev/video104 /dev/video105 /dev/video106 /dev/video11 /dev/video110 /dev/video111 /dev/video112 /dev/video113 /dev/video114 /dev/video12 /dev/video120 /dev/video121 /dev/video122 /dev/video123 /dev/video124 /dev/video130 /dev/video131 /dev/video132 /dev/video140 /dev/video141 /dev/video142 /dev/video148 /dev/video149 /dev/video155 /dev/video160 /dev/video161 /dev/video170 /dev/video171 /dev/video172 /dev/video173 /dev/video174 /dev/video175 /dev/video180 /dev/video210 /dev/video211 /dev/video212 /dev/video213 /dev/video214 /dev/video215 /dev/video216 /dev/video217 /dev/video218 /dev/video219 /dev/video220 /dev/video221 /dev/video222 /dev/video223 /dev/video224 /dev/video225 /dev/video226 /dev/video227 /dev/video228 /dev/video229 /dev/video230 /dev/video231 /dev/video232 /dev/video233 /dev/video250 /dev/video251 /dev/video50 /dev/video6 /dev/video7 /dev/video8 /dev/video9
+subdev nodes      : NONE
+media nodes       : NONE
+sensor names      : exynos-fimc-is-ss0 exynos-fimc-is-ss1 exynos-fimc-is-ss2 exynos-fimc-is-ss3 exynos-fimc-is-ss4 exynos-fimc-is-ss5 exynos-fimc-is-30s exynos-fimc-is-30c exynos-fimc-is-30p exynos-fimc-is-30f exynos-fimc-is-30g exynos-fimc-is-31s exynos-fimc-is-31c exynos-fimc-is-31p exynos-fimc-is-31f exynos-fimc-is-31g exynos-fimc-is-i0s exynos-fimc-is-i0c exynos-fimc-is-i0p exynos-fimc-is-i1s exynos-fimc-is-i1c exynos-fimc-is-i1p exynos-fimc-is-me0c exynos-fimc-is-me1c exynos-fimc-is-m0s exynos-fimc-is-m1s exynos-fimc-is-m0p exynos-fimc-is-m1p exynos-fimc-is-m2p exynos-fimc-is-m3p exynos-fimc-is-m4p exynos-fimc-is-m5p exynos-fimc-is-vra exynos-fimc-is-ssinstancevc0 exynos-fimc-is-ssinstancevc1 exynos-fimc-is-ssinstancevc2 exynos-fimc-is-ssinstancevc3 exynos-fimc-is-32s exynos-fimc-is-32p
+media graph       : no
+expected sensors  : (expected_on_s10plus = shipped hardware, NOT an observation)
+                    rear      s5k2l4             not-observed
+                    rear      s5k3m3             not-observed
+                    rear      s5k3p9             not-observed
+                    front     s5k3j1             not-observed
+                    front     s5k4h7             not-observed
+firmware present  : none
+firmware missing  : s5k2l4_setfile.bin s5k3m3_setfile.bin s5k3p9_setfile.bin s5k3j1_setfile.bin s5k4h7_setfile.bin exynos9820_camera.bin is-camera.bin is-camera-3.bin camera_calibration.bin setfile.bin
+first failing st. : firmware  (sensor identity present but none of the expected firmware blobs exist under the search paths)
+verdict           : BLOCKED_FIRMWARE
+frame captured    : NO — a frame is the owner's observation (NEEDS_OWNER_TEST); nothing is ever claimed.
+portal            : shell/nuxel-camera-portal (session unit; synthetic videotestsrc on the VM proves the CHAIN, never the S10+ camera)
+owner procedure   : docs/beta-finalization/manual-proof/15-camera.md
+===== nfc =====
+device   : beyond2lte   controller : sec-nfc (S3FWRN5-family) @ I2C 0x27 + eSE
+
+stages:
+  controller : chardev:/dev/sec-nfc
+  firmware   : missing
+  subsystem  : up:nfc_support   (kernel NFC class / netlink)
+  stack      : no-stack
+
+first failing stage : firmware
+verdict             : BLOCKED_FIRMWARE
+  controller/module path present but no NFC firmware blob found. Deploy into
+  /lib/firmware/nfc (repository-only); never a partition write.
+===== sensors =====
+device: beyond2lte — sensor enumeration (IIO + input + hub drivers)
+
+  accelerometer   present-unreadable   /sys/bus/iio/devices/iio:device1
+  gyroscope       present-unreadable   /sys/bus/iio/devices/iio:device4
+  magnetometer    present-unreadable   /sys/bus/iio/devices/iio:device2
+  proximity       present-unreadable   /sys/bus/iio/devices/iio:device11
+  ambient_light   present-unreadable   hub-input:ssp_context
+  barometer       present-unreadable   /sys/bus/iio/devices/iio:device7
+  heart_rate      present-unreadable   input:
+  grip            present-unreadable   input:
+  hall            present-unreadable   input:
+
+readable classes : 0
+present (no raw) : 9
+not supported    : 0
+
+verdict: PRESENT_UNREADABLE — sensors are enumerated but expose no raw channel.
+observed motion/orientation is NEEDS_OWNER_TEST (manual-proof/14-sensors.md)

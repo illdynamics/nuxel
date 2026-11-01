@@ -1,0 +1,12 @@
+PWNAGE-45000 USB MTP composition probe (no host cable attached)
+- UDC before: not attached
+- mkdir functions/mtp.gs0: OK
+- symlink configs/c.1/mtp.gs0: OK
+- both functions present after rebind: acm.usb0, mtp.gs0
+- /dev/mtp_usb created: crw------- root root 10,43
+- /dev/ttyGS0 (CDC-ACM) still present: crw------- root root 243,0
+- nuxel-mtp.service: active; /run/nuxel/mtp.state running=true,
+  storage=/home/nuxel/Shared
+- restore: nuxel-usb-mode.sh charging removed mtp.gs0 and rebound acm-only;
+  /run/nuxel/usb-mode.state endpoint_state=acm, active=false
+- Host enumeration/copy: NEEDS_OWNER_TEST (no USB data cable/host attached in this run)

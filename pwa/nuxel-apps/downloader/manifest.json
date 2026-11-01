@@ -8,17 +8,41 @@
   "background_color": "#061a18",
   "theme_color": "#00796B",
   "icons": [
-    {"src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png"},
-    {"src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png"},
-    {"src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml"}
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
   ],
-  "nuxel": { "bridge_version": 1,
+  "nuxel": {
+    "bridge_version": "1",
     "app_id": "org.nuxel.Downloader",
-    "capabilities": ["download:queue"],
+    "capabilities": [
+      "download:queue"
+    ],
     "app_type": "media",
     "offline_first": true,
     "network": "optional",
-    "storage": ["localStorage"],
-    "features": ["persistent queue", "resume", "per-item sha256", "retry with strategy change", "legal-use gate", "no third-party service"]
+    "storage": [
+      "localStorage"
+    ],
+    "features": [
+      "persistent queue",
+      "resume",
+      "per-item sha256",
+      "retry with strategy change",
+      "legal-use gate",
+      "no third-party service"
+    ]
   }
 }

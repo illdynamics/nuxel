@@ -1,0 +1,8 @@
+{
+  "native": true,
+  "provider": "stevia",
+  "executable": "/usr/bin/phosh-osk-stevia",
+  "text_input_protocol": "zwp_text_input_manager_v3",
+  "input_method_protocol": "zwp_input_method_manager_v2",
+  "note": "Native Phosh OSK. The launcher's in-page keyboard disables itself when this reports native=true."
+}

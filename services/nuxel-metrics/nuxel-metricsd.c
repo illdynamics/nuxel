@@ -19,6 +19,10 @@
 #define GPU_CLOCK_PATH "/sys/devices/platform/18500000.mali/clock"
 #define GPU_BUSY_PATH "/sys/kernel/gpu/gpu_busy"
 #define GPU_MEMORY_PATH "/sys/kernel/gpu/gpu_memory"
+/* The vendor kbase debugfs table reports used_pages (not bytes).  This is the
+ * authoritative Mali accounting on this kernel; /sys/kernel/gpu/gpu_memory is
+ * a legacy compatibility table and currently reports a stale zero for Phoc. */
+#define GPU_MEMORY_DEBUGFS "/sys/kernel/debug/mali/gpu_memory"
 #define IDLE_TIMEOUT_MS 30000
 #define CPU_SAMPLE_NS 150000000L
 
@@ -140,16 +144,46 @@ static int read_gpu_frequency(double *mhz) {
   return 1;
 }
 
-/* The Mali driver accounts every GPU allocation in this table.  On the S10+
- * GPU memory is shared with system RAM (there is no dedicated VRAM), so the
- * usable budget is MemTotal.  A readable header with no rows is a valid zero,
- * not an unavailable source. */
-static int read_gpu_memory(unsigned long long *used_kib) {
-  FILE *f = fopen(GPU_MEMORY_PATH, "r");
-  char line[256];
+/* The vendor kbase debugfs table reports used_pages.  Convert with the real
+ * system page size.  Summing per-kctx rows would double count: the first line
+ * for each device is the device total (and equals the sum of its contexts when
+ * no shared allocation is counted separately).  The legacy sysfs table is only
+ * a fallback; on this image it reports zero for a live Phoc context.
+ *
+ * GPU memory is SHARED system RAM: gpu_memory_total_kib is MemTotal as an
+ * upper-bound reference, never dedicated VRAM. */
+static int read_gpu_memory(unsigned long long *used_kib,
+                           unsigned long long *used_pages,
+                           unsigned long long *page_size,
+                           const char **source) {
+  FILE *f = fopen(GPU_MEMORY_DEBUGFS, "r");
+  char line[512];
+  if (f) {
+    int found = 0;
+    while (fgets(line, sizeof(line), f)) {
+      /* Device total line: "<devname>   <used_pages>" with no kctx prefix. */
+      char name[64];
+      unsigned long long pages;
+      if (line[0] == ' ' || line[0] == '\t') continue;
+      if (sscanf(line, "%63s %llu", name, &pages) == 2) {
+        long ps = sysconf(_SC_PAGESIZE);
+        if (ps <= 0) ps = 4096;
+        *used_pages = pages;
+        *page_size = (unsigned long long)ps;
+        *used_kib = pages * (unsigned long long)ps / 1024ULL;
+        *source = GPU_MEMORY_DEBUGFS;
+        found = 1;
+        break;
+      }
+    }
+    fclose(f);
+    if (found) return 1;
+  }
+  /* Legacy compatibility table: "tgid pid bytes". */
+  f = fopen(GPU_MEMORY_PATH, "r");
+  if (!f) return 0;
   unsigned long long tgid, pid, bytes, total_bytes = 0;
   int saw_header = 0;
-  if (!f) return 0;
   while (fgets(line, sizeof(line), f)) {
     if (strstr(line, "mem_used")) { saw_header = 1; continue; }
     if (sscanf(line, "%llu %llu %llu", &tgid, &pid, &bytes) == 3) {
@@ -160,6 +194,9 @@ static int read_gpu_memory(unsigned long long *used_kib) {
   fclose(f);
   if (!saw_header) return 0;
   *used_kib = total_bytes / 1024ULL;
+  *used_pages = 0;
+  *page_size = 4096ULL;
+  *source = GPU_MEMORY_PATH;
   return 1;
 }
 
@@ -167,7 +204,10 @@ static void make_json(char *out, size_t cap) {
   struct cpu_sample now = {0};
   double cpu = 0, memory = 0, gpu = 0, cpu_mhz = 0, gpu_mhz = 0;
   unsigned long long memory_used_kib = 0, memory_total_kib = 0;
-  unsigned long long gpu_memory_used_kib = 0;
+  unsigned long long gpu_memory_used_kib = 0, gpu_memory_pages = 0, gpu_memory_page_size = 0;
+  const char *gpu_util_source = "unavailable";
+  const char *gpu_frequency_source = "unavailable";
+  const char *gpu_memory_source = "unavailable";
   char cpu_json[32], memory_json[32], gpu_json[32], cpu_mhz_json[32], gpu_mhz_json[32];
   char gpu_memory_json[32], gpu_memory_total_json[32];
   const char *cpu_status = "unavailable";
@@ -197,29 +237,47 @@ static void make_json(char *out, size_t cap) {
     previous = now;
   }
   if (read_memory(&memory, &memory_used_kib, &memory_total_kib)) mem_status = "ok";
-  if (read_gpu(&gpu)) gpu_status = "ok";
+  if (read_gpu(&gpu)) {
+    gpu_status = "ok";
+    FILE *gf = fopen(GPU_UTIL_PATH, "r");
+    if (gf) { fclose(gf); gpu_util_source = GPU_UTIL_PATH; }
+    else { gf = fopen(GPU_BUSY_PATH, "r"); if (gf) { fclose(gf); gpu_util_source = GPU_BUSY_PATH; } }
+  }
   if (read_cpu_frequency(&cpu_mhz)) cpu_frequency_status = "ok";
-  if (read_gpu_frequency(&gpu_mhz)) gpu_frequency_status = "ok";
-  if (read_gpu_memory(&gpu_memory_used_kib)) {
-    gpu_memory_status = !strcmp(mem_status, "ok") ? "ok" : "unavailable_shared_memory";
+  if (read_gpu_frequency(&gpu_mhz)) { gpu_frequency_status = "ok"; gpu_frequency_source = GPU_CLOCK_PATH; }
+  if (read_gpu_memory(&gpu_memory_used_kib, &gpu_memory_pages, &gpu_memory_page_size, &gpu_memory_source)) {
+    gpu_memory_status = !strcmp(mem_status, "ok") ? "ok_shared_budget_reference" : "unavailable_shared_memory";
   }
   if (!strcmp(cpu_status, "ok")) snprintf(cpu_json, sizeof(cpu_json), "%.1f", cpu); else strcpy(cpu_json, "null");
   if (!strcmp(mem_status, "ok")) snprintf(memory_json, sizeof(memory_json), "%.1f", memory); else strcpy(memory_json, "null");
   if (!strcmp(gpu_status, "ok")) snprintf(gpu_json, sizeof(gpu_json), "%.1f", gpu); else strcpy(gpu_json, "null");
   if (!strcmp(cpu_frequency_status, "ok")) snprintf(cpu_mhz_json, sizeof(cpu_mhz_json), "%.0f", cpu_mhz); else strcpy(cpu_mhz_json, "null");
   if (!strcmp(gpu_frequency_status, "ok")) snprintf(gpu_mhz_json, sizeof(gpu_mhz_json), "%.0f", gpu_mhz); else strcpy(gpu_mhz_json, "null");
-  if (!strcmp(gpu_memory_status, "ok")) snprintf(gpu_memory_json, sizeof(gpu_memory_json), "%llu", gpu_memory_used_kib); else strcpy(gpu_memory_json, "null");
-  if (!strcmp(gpu_memory_status, "ok")) snprintf(gpu_memory_total_json, sizeof(gpu_memory_total_json), "%llu", memory_total_kib); else strcpy(gpu_memory_total_json, "null");
+  if (strcmp(gpu_memory_status, "unavailable") && strcmp(gpu_memory_status, "unavailable_shared_memory")) {
+    snprintf(gpu_memory_json, sizeof(gpu_memory_json), "%llu", gpu_memory_used_kib);
+    snprintf(gpu_memory_total_json, sizeof(gpu_memory_total_json), "%llu", memory_total_kib);
+  } else {
+    strcpy(gpu_memory_json, "null");
+    strcpy(gpu_memory_total_json, "null");
+  }
   snprintf(out, cap,
-    "{\"cpu_percent\":%s,\"cpu_status\":\"%s\",\"cpu_frequency_mhz\":%s,\"cpu_frequency_status\":\"%s\",\"memory_percent\":%s,\"memory_status\":\"%s\",\"memory_used_kib\":%llu,\"memory_total_kib\":%llu,\"gpu_percent\":%s,\"gpu_status\":\"%s\",\"gpu_frequency_mhz\":%s,\"gpu_frequency_status\":\"%s\",\"gpu_memory_kib\":%s,\"gpu_memory_total_kib\":%s,\"gpu_memory_status\":\"%s\",\"timestamp_ms\":%lld}",
+    "{\"cpu_percent\":%s,\"cpu_status\":\"%s\",\"cpu_frequency_mhz\":%s,\"cpu_frequency_status\":\"%s\","
+    "\"memory_percent\":%s,\"memory_status\":\"%s\",\"memory_used_kib\":%llu,\"memory_total_kib\":%llu,"
+    "\"gpu_percent\":%s,\"gpu_status\":\"%s\",\"gpu_util_source\":\"%s\","
+    "\"gpu_frequency_mhz\":%s,\"gpu_frequency_status\":\"%s\",\"gpu_frequency_source\":\"%s\","
+    "\"gpu_memory_kib\":%s,\"gpu_memory_total_kib\":%s,\"gpu_memory_status\":\"%s\","
+    "\"gpu_memory_kind\":\"tracked_shared_allocations\",\"gpu_memory_source\":\"%s\","
+    "\"gpu_memory_pages\":%llu,\"gpu_memory_page_size\":%llu,\"gpu_memory_budget_kind\":\"system_ram_upper_bound\","
+    "\"timestamp_ms\":%lld}",
     cpu_json, cpu_status, cpu_mhz_json, cpu_frequency_status, memory_json, mem_status,
-    memory_used_kib, memory_total_kib, gpu_json, gpu_status, gpu_mhz_json,
-    gpu_frequency_status, gpu_memory_json, gpu_memory_total_json,
-    gpu_memory_status, timestamp_ms());
+    memory_used_kib, memory_total_kib, gpu_json, gpu_status, gpu_util_source,
+    gpu_mhz_json, gpu_frequency_status, gpu_frequency_source,
+    gpu_memory_json, gpu_memory_total_json, gpu_memory_status, gpu_memory_source,
+    gpu_memory_pages, gpu_memory_page_size, timestamp_ms());
 }
 
 static void respond(int fd) {
-  char request[1024], json[1024], header[1536], date[64];
+  char request[1024], json[2048], header[2560], date[64];
   ssize_t n = read(fd, request, sizeof(request) - 1);
   if (n <= 0) return;
   request[n] = '\0';
@@ -267,6 +325,9 @@ static int self_test(void) {
   if (!read_cpu(&sample) || sample.total == 0) return 1;
   unsigned long long used_kib, total_kib;
   if (!read_memory(&mem, &used_kib, &total_kib) || mem < 0 || mem > 100 || used_kib > total_kib) return 2;
+  unsigned long long gpu_used_kib = 0, gpu_pages = 0, gpu_page_size = 0;
+  const char *gpu_src = "unavailable";
+  (void)read_gpu_memory(&gpu_used_kib, &gpu_pages, &gpu_page_size, &gpu_src);
   /* GPU availability is hardware-specific; absence is an expected success path. */
   if (read_gpu(&gpu) && (gpu < 0 || gpu > 100)) return 3;
   return 0;
@@ -275,7 +336,7 @@ static int self_test(void) {
 int main(int argc, char **argv) {
   if (argc == 2 && !strcmp(argv[1], "--self-test")) return self_test();
   if (argc == 2 && !strcmp(argv[1], "--json")) {
-    char snapshot[1024];
+    char snapshot[2048];
     make_json(snapshot, sizeof(snapshot));
     puts(snapshot);
     return 0;

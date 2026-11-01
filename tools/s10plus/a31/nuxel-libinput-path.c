@@ -141,6 +141,8 @@ _Static_assert(NUXEL_INPUT_PROP_DIRECT == INPUT_PROP_DIRECT, "INPUT_PROP_DIRECT 
 #endif
 
 #define STATE_FILE      "/run/nuxel-libinput-path.state"
+#define ORIENT_INPUT_FILE "/run/nuxel-orientation/input.json"
+#define TOUCH_CAL_STATE "/run/nuxel-touch-calibration.state"
 #define DEV_INPUT_DIR   "/dev/input"
 #define NODE_PREFIX     "event"
 #define UDEV_DATA_DIR   "/run/udev/data"
@@ -469,6 +471,80 @@ static int scan_nodes(const char *fixture_root, struct cand out[], int maxout, i
 }
 
 /* ==========================================================================
+ * PART 1b — ONE touch calibration owner
+ *
+ * MEASURED (Phoc 0.54.0 + wlroots 0.19.3): wlroots applies an output transform
+ * to absolute POINTER devices, but wlr_touch events remain raw libinput
+ * coordinates.  Phoc calls wlr_cursor_absolute_to_layout_coords() directly, so
+ * a rotated Phoc desktop has portrait-mapped touch unless the touch device is
+ * calibrated.  libinput's calibration matrix is the compositor-owned input
+ * transform; this shim is already the single input-discovery owner, so it also
+ * consumes /run/nuxel-orientation/input.json and applies that matrix exactly
+ * once.  No daemon, second listener, or framebuffer rotation is introduced.
+ * ==========================================================================*/
+static int matrix_valid(const float m[6]) {
+  for (int i = 0; i < 6; i++) {
+    if (!(m[i] >= -4.0f && m[i] <= 4.0f)) return 0;  /* rejects NaN/Inf */
+  }
+  /* The calibration affine transform must be invertible. */
+  float det = m[0] * m[4] - m[1] * m[3];
+  if (det < 0) det = -det;
+  return det > 0.0001f;
+}
+
+static void matrix_identity(float m[6]) {
+  m[0] = 1.0f; m[1] = 0.0f; m[2] = 0.0f;
+  m[3] = 0.0f; m[4] = 1.0f; m[5] = 0.0f;
+}
+
+static int matrix_equal(const float a[6], const float b[6]) {
+  for (int i = 0; i < 6; i++) {
+    float d = a[i] - b[i];
+    if (d < 0) d = -d;
+    if (d > 0.0001f) return 0;
+  }
+  return 1;
+}
+
+/* Parse the compact JSON document written by nuxel-orientationd.  The file is
+ * ours, but parsing is still defensive: a missing/invalid document restores
+ * the identity and never leaves a guessed transform active. */
+static int parse_input_state(const char *buf, float m[6], int *transform, int *applied) {
+  const char *p = strstr(buf, "\"matrix\"");
+  if (!p) return 0;
+  p = strchr(p, '[');
+  if (!p) return 0;
+  p++;
+  float v[6];
+  for (int i = 0; i < 6; i++) {
+    char *end = NULL;
+    v[i] = strtof(p, &end);
+    if (end == p) return 0;
+    p = end;
+    while (*p == ' ' || *p == '\t' || *p == ',' || *p == '\n' || *p == '\r') p++;
+  }
+  if (*p != ']' || !matrix_valid(v)) return 0;
+  memcpy(m, v, sizeof v);
+  p = strstr(buf, "\"transform\"");
+  *transform = -1;
+  if (p) {
+    p = strchr(p, ':');
+    if (p) *transform = (int)strtol(p + 1, NULL, 10);
+  }
+  p = strstr(buf, "\"applied\"");
+  *applied = 0;
+  if (p) {
+    p = strchr(p, ':');
+    if (p) {
+      p++;
+      while (*p == ' ' || *p == '\t') p++;
+      *applied = (strncmp(p, "true", 4) == 0);
+    }
+  }
+  return 1;
+}
+
+/* ==========================================================================
  * PART 2 — hotplug queue and the tracked-device table
  *
  * Pure logic on purpose: this is the part the offline tests exercise, and the
@@ -588,6 +664,31 @@ extern int libseat_close_device(struct libseat *, int);
 static struct libinput *g_li;
 static int g_aux_fd[MAX_TRACKED];
 
+extern int libinput_device_config_calibration_has_matrix(struct libinput_device *);
+extern int libinput_device_config_calibration_get_matrix(struct libinput_device *, float[6]);
+extern int libinput_device_config_calibration_set_matrix(struct libinput_device *, const float[6]);
+
+static float g_touch_matrix[6] = {1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f};
+static float g_touch_applied[6] = {1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f};
+static int g_touch_matrix_valid;
+static int g_touch_transform = -1;
+static int g_touch_state_applied;
+static long long g_touch_state_mtime_ns = -1;
+static long long g_touch_last_poll_ms;
+static int g_touch_identity_applied;
+/* libinput applies a calibration change to the device state used by its next
+ * read(2)/dispatch.  A matrix set before the device pair is fully initialised
+ * (the path backend initialises it during the first dispatch) is accepted by
+ * set_matrix() but is not the effective calibration for that first event.
+ * The startup path therefore keeps a one-shot force flag and re-applies after
+ * the first real dispatch.  This is why a correctly logged matrix could still
+ * behave as identity after boot until the first touch/rotation. */
+static int g_touch_force_apply = 1;
+static unsigned g_touch_dispatch_count;
+static pthread_mutex_t g_cal_lock = PTHREAD_MUTEX_INITIALIZER;
+static void calibration_tick_unlocked(void);
+static void calibration_tick(void);
+
 static void aux_remember(int fd) {
   for (int i = 0; i < MAX_TRACKED; i++) if (g_aux_fd[i] == 0) { g_aux_fd[i] = fd; return; }
 }
@@ -686,9 +787,180 @@ static void seed_udev_db(const char *path) {
 }
 
 /* --- the interposers wlroots calls -------------------------------------- */
+static int is_touch_screen_name(const char *name) {
+  if (!name || !*name) return 0;
+  if (strstr(name, "proximity") || strstr(name, "proximity_sensor")) return 0;
+  return strstr(name, "touch") != NULL || strstr(name, "Touch") != NULL;
+}
+
+static void calibrate_device(const char *name, void *dev, const float m[6], const char *why) {
+  if (!dev || !is_touch_screen_name(name)) return;
+  struct libinput_device *d = (struct libinput_device *)dev;
+  if (!libinput_device_config_calibration_has_matrix(d)) {
+    st("TOUCH_MATRIX_UNSUPPORTED device='%s' why=%s", name, why);
+    return;
+  }
+  float before[6] = {0};
+  libinput_device_config_calibration_get_matrix(d, before);
+  int rc = libinput_device_config_calibration_set_matrix(d, m);
+  float after[6] = {0};
+  libinput_device_config_calibration_get_matrix(d, after);
+  int ok = (rc == 0 && matrix_equal(after, m));
+  st("TOUCH_MATRIX_APPLY device='%s' why=%s rc=%d ok=%d matrix=%.4f,%.4f,%.4f,%.4f,%.4f,%.4f before=%.4f,%.4f,%.4f,%.4f,%.4f,%.4f",
+     name, why, rc, ok, after[0], after[1], after[2], after[3], after[4], after[5],
+     before[0], before[1], before[2], before[3], before[4], before[5]);
+  FILE *f = fopen(TOUCH_CAL_STATE, "w");
+  if (f) {
+    fprintf(f, "device=%s\nwhy=%s\napplied=%d\nmatrix=%.4f,%.4f,%.4f,%.4f,%.4f,%.4f\n"
+               "transform=%d\nsource=%s\nowner=libnuxel-libinput-path.so\n",
+            name, why, ok, after[0], after[1], after[2], after[3], after[4], after[5],
+            g_touch_transform, ORIENT_INPUT_FILE);
+    fclose(f);
+  }
+}
+
+static void calibrate_all(const char *why) {
+  for (int i = 0; i < MAX_TRACKED; i++) {
+    if (g_tracked[i].used) calibrate_device(g_tracked[i].name, g_tracked[i].dev, g_touch_matrix, why);
+  }
+  memcpy(g_touch_applied, g_touch_matrix, sizeof g_touch_applied);
+}
+
+static long long mono_ms_now(void) {
+  struct timespec ts;
+  clock_gettime(CLOCK_MONOTONIC, &ts);
+  return (long long)ts.tv_sec * 1000 + ts.tv_nsec / 1000000;
+}
+
+/* Called on the compositor's thread before libinput_dispatch().  The state file
+ * is atomically replaced, so polling its mtime is sufficient; no watcher thread
+ * is needed and no input call happens off the compositor thread. */
+static void calibration_tick_unlocked(void) {
+  long long now = mono_ms_now();
+  if (now - g_touch_last_poll_ms < 250) return;
+  g_touch_last_poll_ms = now;
+  struct stat sb;
+  if (stat(ORIENT_INPUT_FILE, &sb) != 0) {
+    if (!g_touch_identity_applied) {
+      matrix_identity(g_touch_matrix);
+      g_touch_matrix_valid = 1;
+      g_touch_transform = -1;
+      g_touch_state_applied = 0;
+      calibrate_all("state-missing-identity");
+      g_touch_identity_applied = 1;
+    }
+    return;
+  }
+  long long mtime_ns = (long long)sb.st_mtim.tv_sec * 1000000000LL + sb.st_mtim.tv_nsec;
+  if (mtime_ns == g_touch_state_mtime_ns &&
+      matrix_equal(g_touch_applied, g_touch_matrix)) return;
+  char buf[1024];
+  int fd = open(ORIENT_INPUT_FILE, O_RDONLY | O_CLOEXEC);
+  if (fd < 0) return;
+  ssize_t n = read(fd, buf, sizeof buf - 1);
+  close(fd);
+  if (n <= 0) return;
+  buf[n] = 0;
+  float m[6];
+  int transform = -1, applied = 0;
+  if (!parse_input_state(buf, m, &transform, &applied)) {
+    st("TOUCH_MATRIX_PARSE_FAIL file=%s (identity retained)", ORIENT_INPUT_FILE);
+    return;
+  }
+  g_touch_state_mtime_ns = mtime_ns;
+  g_touch_matrix_valid = 1;
+  g_touch_transform = transform;
+  g_touch_state_applied = applied;
+  memcpy(g_touch_matrix, m, sizeof g_touch_matrix);
+  g_touch_identity_applied = 0;
+  if (!matrix_equal(g_touch_applied, g_touch_matrix)) {
+    g_touch_force_apply = 1;
+    calibrate_all("orientation-state");
+  }
+}
+
+static void calibration_tick(void) {
+  pthread_mutex_lock(&g_cal_lock);
+  calibration_tick_unlocked();
+  if (g_touch_force_apply && g_touch_matrix_valid) {
+    calibrate_all("deferred-after-dispatch");
+    g_touch_force_apply = 0;
+  }
+  pthread_mutex_unlock(&g_cal_lock);
+}
+
+/* The compositor's Wayland loop only calls libinput_dispatch() when a libinput
+ * fd is readable.  An idle screen therefore has no dispatch call to notice a
+ * rotation.  This tiny inotify thread consumes the daemon's atomically replaced
+ * input.json and updates the libinput calibration in place.  It makes no
+ * orientation decision, never opens the framebuffer, and is not a second
+ * authority: it only mirrors the already-verified transform into libinput. */
+static void *calibration_watch_thread(void *arg) {
+  (void)arg;
+  int fd = inotify_init1(IN_NONBLOCK | IN_CLOEXEC);
+  if (fd < 0) { st("TOUCH_MATRIX_WATCH_UNAVAILABLE errno=%d", errno); return NULL; }
+  int runwd = inotify_add_watch(fd, "/run", IN_CREATE | IN_MOVED_TO | IN_ONLYDIR);
+  int dirwd = inotify_add_watch(fd, "/run/nuxel-orientation",
+                                IN_CLOSE_WRITE | IN_MOVED_TO | IN_CREATE | IN_MODIFY);
+  st("TOUCH_MATRIX_WATCH_READY runwd=%d dirwd=%d", runwd, dirwd);
+  char buf[4096] __attribute__((aligned(__alignof__(struct inotify_event))));
+  for (;;) {
+    ssize_t len = read(fd, buf, sizeof buf);
+    if (len <= 0) {
+      if (len < 0 && (errno == EAGAIN || errno == EWOULDBLOCK)) { usleep(200000); continue; }
+      if (len < 0 && errno == EINTR) continue;
+      break;
+    }
+    int relevant = 0;
+    for (char *p = buf; p < buf + len; ) {
+      struct inotify_event *ev = (struct inotify_event *)p;
+      p += sizeof(struct inotify_event) + ev->len;
+      if (ev->wd == runwd && ev->len && !strcmp(ev->name, "nuxel-orientation")) {
+        if (dirwd < 0) {
+          dirwd = inotify_add_watch(fd, "/run/nuxel-orientation",
+                                    IN_CLOSE_WRITE | IN_MOVED_TO | IN_CREATE | IN_MODIFY);
+          st("TOUCH_MATRIX_WATCH_DIR_ADDED wd=%d", dirwd);
+        }
+        relevant = 1;
+      } else if (ev->wd == dirwd && ev->len && !strcmp(ev->name, "input.json")) {
+        relevant = 1;
+      }
+    }
+    if (relevant) {
+      pthread_mutex_lock(&g_cal_lock);
+      g_touch_last_poll_ms = 0;
+      calibration_tick_unlocked();
+      /* The shim's watcher may update libinput immediately, but libinput is
+       * owned by the compositor thread.  Force a second application from the
+       * next dispatch so the effective calibration cannot remain stale even
+       * when set_matrix() ran before the pair was fully initialised. */
+      g_touch_force_apply = 1;
+      pthread_mutex_unlock(&g_cal_lock);
+    }
+  }
+  close(fd);
+  return NULL;
+}
+
+static void calibration_watch_start(void) {
+  static int started;
+  if (started) return;
+  started = 1;
+  pthread_t th;
+  if (pthread_create(&th, NULL, calibration_watch_thread, NULL) == 0) pthread_detach(th);
+  else st("TOUCH_MATRIX_WATCH_THREAD_FAIL");
+}
+
 static void *shim_libinput_add(const char *path) {
   seed_udev_db(path);
-  return libinput_path_add_device(g_li, path);
+  void *dev = libinput_path_add_device(g_li, path);
+  if (dev) {
+    /* Best-effort immediate calibration.  calibration_tick() re-applies after
+     * the orientation daemon publishes its first verified state. */
+    const char *base = strrchr(path, '/');
+    (void)base;
+  }
+  return dev;
 }
 static void shim_libinput_remove(void *dev) { libinput_path_remove_device((struct libinput_device *)dev); }
 
@@ -711,18 +983,36 @@ int libinput_udev_assign_seat(struct libinput *li, const char *seat_id) {
   for (int i = 0; i < seen; i++) {
     void *dev = shim_libinput_add(sel[i].path);
     st("PATH_ADD node=%s order=%d name='%s' accepted=%d", sel[i].path, sel[i].order, sel[i].name, dev != NULL);
-    if (dev && tracked_add(sel[i].name, dev)) added++;
+    if (dev && tracked_add(sel[i].name, dev)) {
+      added++;
+      calibrate_device(sel[i].name, dev, g_touch_matrix, "device-add");
+    }
   }
   st("PATH_ASSIGN_SEAT seat='%s' direct_devices_seen=%d added=%d db_seeded=%d tracked=%d",
      seat_id ? seat_id : "(null)", seen, added, db_seeded, tracked_count());
+  calibration_watch_start();
   watch_start();
+  g_touch_force_apply = 1;
   return 0;   /* wlroots treats 0 as "seat assigned"; ZERO_DEVICES is not an error here */
 }
 
 int libinput_dispatch(struct libinput *li) {
   static int (*real)(struct libinput *);
   if (!real) real = dlsym(RTLD_NEXT, "libinput_dispatch");
+  calibration_tick();
   int rc = real ? real(li) : -1;
+  /* libinput's path backend finishes device initialization inside the first
+   * dispatch.  Re-assert the matrix afterwards; the pre-dispatch application
+   * on the very first call is accepted by set_matrix() but is not effective
+   * for the first input frame.  Three passes cover startup and a hotplug. */
+  if (g_touch_dispatch_count < 3) {
+    g_touch_dispatch_count++;
+    pthread_mutex_lock(&g_cal_lock);
+    g_touch_force_apply = 1;
+    /* calibration_tick() would re-lock the same non-recursive mutex. */
+    calibration_tick_unlocked();
+    pthread_mutex_unlock(&g_cal_lock);
+  }
   hq_drain();
   return rc;
 }
@@ -759,6 +1049,9 @@ static void shim_apply(int op, const char *name) {
 #endif
     if (dev) {
       tracked_add(name, dev);
+#ifndef NUXEL_SHIM_SELFTEST
+      calibrate_device(name, dev, g_touch_matrix, "hotplug-add");
+#endif
       st("HOTPLUG_ADD node=%s accepted=1 tracked=%d", c.path, tracked_count());
       if (g_hotplug_stdout) printf("HOTPLUG ADD %s ACCEPT tracked=%d\n", name, tracked_count());
     } else {

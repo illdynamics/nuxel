@@ -249,6 +249,30 @@ case "${DEVICE}" in
         else
             _fail "$(basename "${live_payload}"): live userspace payload verification FAILED"
         fi
+        # Fail-closed kernel capability parity: the built .config must carry the
+        # kbase/UDMABUF/userns/NFC set read back from the running handset.
+        if [ -s "${KOUT}/.config" ]; then
+            if python3 "${NUXEL_ROOT}/tools/s10plus/verify-kernel-config.py" \
+                    --config "${KOUT}/.config" --quiet; then
+                _ok "kernel .config: live S10+ capability parity"
+            else
+                _fail "kernel .config is not the capability set running on the handset"
+            fi
+        else
+            _fail "missing built kernel config: ${KOUT}/.config"
+        fi
+        # The pinned kbase GPU userspace is a release input, so its bytes must
+        # still be the ones recorded from the phone.
+        if [ -f "${NUXEL_ROOT}/release/s10plus/gpu/SHA256SUMS" ]; then
+            if ( cd "${NUXEL_ROOT}/release/s10plus/gpu" && \
+                 { sha256sum -c SHA256SUMS >/dev/null 2>&1 || shasum -a 256 -c SHA256SUMS >/dev/null 2>&1; } ); then
+                _ok "release/s10plus/gpu: kbase Mesa/wlroots hashes match the capture"
+            else
+                _fail "release/s10plus/gpu does not match its SHA256SUMS (not the phone's GPU set)"
+            fi
+        else
+            _fail "missing release/s10plus/gpu/SHA256SUMS (kbase GPU release input)"
+        fi
         if [ "${NUXEL_S10PLUS_UBOOT:-0}" = "1" ]; then
             _require_boot_image "${OUT}/u-boot-beyond2lte.img" "u-boot-beyond2lte.img (mainline set)"
         fi

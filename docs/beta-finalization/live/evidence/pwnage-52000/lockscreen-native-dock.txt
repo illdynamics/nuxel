@@ -1,0 +1,27 @@
+PWNAGE-52000 lock/native-dock evidence (live S10+, 2026-11-01)
+================================================================
+Post-reboot boot (no security state yet):
+  NAV_DOCK_START visible=0 lock=unknown home=not-ready
+  -> fail-closed: native dock is not mapped.
+
+Unlock through host action (swipe mode, root security provider):
+  locked:false  reason:swipe
+  NAV_DOCK_SHOW lock=unlocked
+
+Re-lock:
+  locked:true   reason:host
+  NAV_DOCK_HIDE
+
+Earlier transition capture (same binaries):
+  NAV_DOCK_START visible=0 lock=locked home=ready
+  NAV_DOCK_SHOW lock=unlocked
+  NAV_DOCK_HIDE
+  NAV_DOCK_SHOW_REFUSED lock=locked
+
+Screenshots:
+  locked-on-p52000.ppm   (screen on, locked)
+  unlocked-on-p52000.ppm (screen on, unlocked)
+  The locked top 40 rows are wallpaper (mean luminance 111.5), not the dark
+  36 px status strip; the unlocked frame's top rows are the status strip
+  (mean 46.0).  Native dock state is independently proven by NAV_DOCK_HIDE
+  and the dock process's refusal to map while lock-state is locked.

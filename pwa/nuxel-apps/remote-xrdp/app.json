@@ -1,0 +1,17 @@
+{
+  "id": "org.nuxel.RemoteDesktopXRDP",
+  "name": "XRDP Remote Desktop",
+  "icon": "\ud83d\udda5\ufe0f",
+  "color": "#5db7ff",
+  "category": "system",
+  "type": "pwa",
+  "url": "/pwa/nuxel-apps/remote-xrdp/index.html",
+  "entry": "pwa/nuxel-apps/remote-xrdp/index.html",
+  "manifest": "pwa/nuxel-apps/remote-xrdp/manifest.json",
+  "description": "Separate authenticated X11 session over RDP/TLS \u00b7 Wi-Fi preferred \u00b7 USB blocked by kernel evidence",
+  "capabilities": [],
+  "bridge_version": "1",
+  "docked": false,
+  "remote_service": "xrdp",
+  "status": "implemented"
+}

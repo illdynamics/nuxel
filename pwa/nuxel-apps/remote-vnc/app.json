@@ -1,0 +1,17 @@
+{
+  "id": "org.nuxel.RemoteDesktopVNC",
+  "name": "VNC Screen Sharing",
+  "icon": "\ud83d\udda5\ufe0f",
+  "color": "#5db7ff",
+  "category": "system",
+  "type": "pwa",
+  "url": "/pwa/nuxel-apps/remote-vnc/index.html",
+  "entry": "pwa/nuxel-apps/remote-vnc/index.html",
+  "manifest": "pwa/nuxel-apps/remote-vnc/manifest.json",
+  "description": "Real Phoc/Wayland screen sharing \u00b7 Wi-Fi preferred \u00b7 USB blocked by kernel evidence",
+  "capabilities": [],
+  "bridge_version": "1",
+  "docked": false,
+  "remote_service": "vnc",
+  "status": "implemented"
+}

@@ -1,0 +1,112 @@
+{
+  "_daemon_live": true,
+  "allowed": [
+    90
+  ],
+  "applied": true,
+  "auto": false,
+  "auto_state": "fixed",
+  "calibration": {
+    "gravity_reference": "unverified",
+    "mount_matrix": "unverified"
+  },
+  "compositor": {
+    "backend": "wlr-randr",
+    "error": "",
+    "output": "HEADLESS-1",
+    "touch_calibration_verified": false,
+    "transform": "270",
+    "transform_available": true,
+    "transform_map_verified": false
+  },
+  "display": {
+    "applied": true,
+    "backend": "wlr-randr",
+    "enabled": true,
+    "error": "",
+    "logical_height": 720,
+    "logical_width": 1520,
+    "output": "HEADLESS-1",
+    "outputs": [
+      "HEADLESS-1"
+    ],
+    "physical_height": 1520,
+    "physical_width": 720,
+    "presenter_rotation": 0,
+    "scale": 1.0,
+    "transform": "270",
+    "transform_map": {
+      "0": "normal",
+      "180": "180",
+      "270": "90",
+      "90": "270"
+    },
+    "verified": false
+  },
+  "display_verified": true,
+  "effective_orientation": 90,
+  "last_error": "",
+  "last_good": {
+    "effective_orientation": 90,
+    "mode": "landscape",
+    "requested_orientation": 90,
+    "saved_epoch": 1793546921.183913,
+    "transform": "270"
+  },
+  "last_orientation": 90,
+  "last_request_id": "req-11689-1793546774973",
+  "mode": "landscape",
+  "mode_label": "Locked (LS)",
+  "pid": 5863,
+  "remote_error": "",
+  "remote_updated_epoch": 1793546941.5743876,
+  "requested_orientation": 90,
+  "sensor": {
+    "available": false,
+    "preferred": null,
+    "sources": [
+      {
+        "auto_capable": false,
+        "available": false,
+        "reason": "IIO device present but no readable scale",
+        "source": "iio-accel"
+      },
+      {
+        "auto_capable": false,
+        "available": false,
+        "reason": "iio-sensor-proxy unavailable: org.freedesktop.DBus.Error.ServiceUnknown: The name net.hadess.SensorProxy was not provided by any .service files",
+        "source": "iio-sensor-proxy"
+      },
+      {
+        "auto_capable": false,
+        "available": true,
+        "reason": "",
+        "source": "manual"
+      }
+    ],
+    "unverified": true
+  },
+  "sequence": 56,
+  "status_age_seconds": 1,
+  "success": true,
+  "touch": {
+    "double_rotation": false,
+    "mechanism": "single wlroots output transform: phoc transforms the logical frame and libinput together; nuxel-wl-fb adds no second rotation",
+    "owner": "phoc/wlroots output transform",
+    "transform_available": true,
+    "verification": "single-transform architecture; physical corner test pending",
+    "verified": false
+  },
+  "transition_id": "tx-1793546921164-56",
+  "transition_state": "verified",
+  "trial": {
+    "pending_confirmation": false
+  },
+  "updated_epoch": 1793546945.3332982,
+  "vnc": {
+    "active": false,
+    "status": "off"
+  },
+  "vnc_status": "off",
+  "xrdp_sessions": []
+}

@@ -1,0 +1,16 @@
+{
+  "id": "org.nuxel.PenguInterface",
+  "name": "PenguInterface",
+  "icon": "/assets/nuxel-app-penguinterface.png",
+  "color": "#3F51B5",
+  "category": "system",
+  "type": "pwa",
+  "url": "/pwa/nuxel-apps/penguinterface/index.html",
+  "description": "Validated per-device compatibility profiles",
+  "capabilities": [
+    "system:inspect"
+  ],
+  "docked": false,
+  "default_mode": "read-only",
+  "icon_asset": "/assets/nuxel-app-penguinterface.png"
+}

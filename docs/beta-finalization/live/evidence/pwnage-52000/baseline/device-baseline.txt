@@ -1,0 +1,119 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+=== date/uname
+2026-11-01T12:03:31+01:00
+Linux 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 4.14.253-gf7194c1d15ed-dirty #8 SMP PREEMPT Sun Nov 1 10:16:28 UTC 2026 aarch64 GNU/Linux
+=== cmdline
+ console=ram loglevel=4 sec_debug.pcb_offset=7346944 sec_debug.smd_offset=7348992 sec_debug.lpddr4_size=8 sec_debug.dram_info=01,06,03,8G sec_debug.pwrsrc_rs=0x0000000820000000 sec_debug.reset_reason=7 sec_reset.reset_reason=7 sec_debug.reset_rwc=0 sec_debug.level=0 sec_watchdog.sec_pet=5 androidboot.debug_level=0x4f4c androidboot.force_upload=0x0 softdog.soft_margin=100 softdog.soft_panic=1 sec_debug.dump_sink=0x0 sec_debug.upload_count=0 androidboot.dram_info=01,06,03,8G androidboot.fmm_lock=48 sec_debug.fmm_lock_offset=7340600 sec_debug.sjl=1 androidboot.sn.param.offset=7343024 androidboot.prototype.param.offset=7351040 androidboot.recovery_offset=7355136 printk.devkmsg=on ess_setup=0xfd900000 sec_avc_log=0x40000@0x91202000 sec_tsp_log=0x40000@0x91244000 sec_disp_log=0x100000@0x91286000 sec_debug_next=0x800000@0x91388000 charging_mode=0x3030 s3cfb.bootloaderfb=0xca000000 lcdtype=10555411 androidboot.carrierid.param.offset=7340608 androidboot.carrierid=PHN consoleblank=0 ehci_hcd.park=3 oops=panic pmic_info=43 ccic_info=1 fg_reset=0 androidboot.emmc_checksum=3 androidboot.sales.param.offset=7340572 sales_code=PHN androidboot.odin_download=1 androidboot.bootloader=G975FXXSEFUL1 androidboot.selinux=enforcing androidboot.ucs_mode=0 androidboot.revision=26 androidboot.hardware=exynos9820 androidboot.warranty_bit=1 androidboot.wb.hs=0e03 androidboot.rp=14 androidboot.wb.snapQB=34489444R sec_debug.bin=A androidboot.hmac_mismatch=0 androidboot.sec_atd.tty=/dev/ttySAC0 androidboot.serialno=R58M75KDB2X androidboot.ap_serial=0x10764E6460BA snd_soc_core.pmdown_time=1000 androidboot.cp_reserved_mem=off rootwait ro init=/init root=/dev/sda25 androidboot.dtbo_idx=9 androidboot.fmp_config=0 androidboot.em.did=2010764e6460ba11 androidboot.em.model=SM-G975F androidboot.em.status=0x0 androidboot.sb.debug0=0x0 androidboot.verifiedbootstate=orange androidboot.svb.ver=SVB1.0 bcm_setup= reserve-fimc= firmware_class.path=/vendor/firmware ecd_setup=disable region1=EUR region2=OPEN factory_mode=0 androidboot.ulcnt=1 android.nonce=6f9b103d38dbd9b564dddd6869462e2f root=PARTUUID=52444E41-494F-2044-7379-7374656D0000 
+=== bootmode
+cat: /run/nuxel-bootmode.state: No such file or directory
+
+cat: /run/nuxel-bootmode.json: No such file or directory
+=== touch
+total 0
+crw-rw----. 1 root audio 13, 64 Jan  1  1970 event0
+crw-rw----. 1 root audio 13, 65 Jan  1  1970 event1
+crw-rw----. 1 root audio 13, 74 Jan  1  1970 event10
+crw-rw----. 1 root audio 13, 66 Jan  1  1970 event2
+crw-rw----. 1 root audio 13, 67 Jan  1  1970 event3
+crw-rw----. 1 root audio 13, 68 Jan  1  1970 event4
+crw-rw----. 1 root audio 13, 69 Jan  1  1970 event5
+crw-rw----. 1 root audio 13, 70 Jan  1  1970 event6
+crw-rw----. 1 root audio 13, 71 Jan  1  1970 event7
+crw-rw----. 1 root audio 13, 72 Jan  1  1970 event8
+crw-rw----. 1 root audio 13, 73 Jan  1  1970 event9
+N: Name="sec_touchscreen"
+P: Phys=sec_touchscreen/input1
+S: Sysfs=/devices/platform/104b0000.hsi2c/i2c-4/4-0048/input/input2
+U: Uniq=
+H: Handlers=sec_key_notifier event2 
+B: PROP=2
+B: EV=2b
+B: KEY=4000000000000000 0 0 80 0 420 0 0 8000 0 0
+B: ABS=4263800000000003
+P: Phys=sec_touchscreen/input1
+S: Sysfs=/devices/platform/104b0000.hsi2c/i2c-4/4-0048/input/input3
+U: Uniq=
+H: Handlers=sec_key_notifier event3 
+B: PROP=1
+B: EV=2b
+B: KEY=4000000000000000 0 0 80 0 e520 0 0 8000 0 0
+B: ABS=4263800000000003
+B: SW=0
+=== display
+1793531011 FRAMES_OK total=3324 fps_1s=5 failures=0 blits=81 present_skipped=3242 blit_avg_ms=33 damage=14-24 damage_blits=71 damage_avg_ms=33 idle_ms=29214 out=720x1520 src=720x1520 scale=2 panel=1440x3040 owner=nuxel-wl-fb display=on src_format=0x34324258 colour=R@0,G@8,B@16_abgr8888_override=1 decon_pan_ok=82 decon_pan_failed=0
+=== services
+active
+active
+active
+active
+active
+=== locks
+{
+  "locked": false,
+  "owner": "security_provider",
+  "reason": "swipe",
+  "schema_version": 1,
+  "updated_at": 1793530477.4078379
+}
+=== navdock
+1793530530 CMD_FIFO_READY /run/nuxel-navdock.cmd
+1793530530 NAV_DOCK_READY width=360 height=62 scale=2 out=720x1520
+1793530531 NAV_DOCK_HIDE
+=== metrics
+{"cpu_percent":22.2,"cpu_status":"ok","cpu_frequency_mhz":913,"cpu_frequency_status":"ok","memory_percent":14.4,"memory_status":"ok","memory_used_kib":1093608,"memory_total_kib":7597708,"gpu_percent":0.0,"gpu_status":"ok","gpu_frequency_mhz":0,"gpu_frequency_status":"ok","gpu_memory_kib":0,"gpu_memory_total_kib":7597708,"gpu_memory_status":"ok","timestamp_ms":1793531012396}=== gpu mem
+mali0                   2901
+  kctx-0xffffff8013375000       2901 | tgid=     15247 | pid=     15247  | name=                phoc
+=== gpu busy
+  0%
+0
+0
+=== configs
+total 12
+-rw-r--r-- 1 root root  39 Oct 30 14:02 screen-timeout.json
+-rw-r--r-- 1 root root  54 Oct 23 12:37 screen-timeout.json.prev
+-rw-r--r-- 1 root root 973 Oct 19 02:28 statusbar-safezones.json
+{
+  "schema_version": 1,
+  "zones": 10,
+  "profiles": {
+    "s10plus": {
+      "portrait": [
+        9,
+        10
+      ],
+      "landscape_left": [],
+      "landscape_right": []
+    },
+    "pixel_center": {
+      "portrait": [
+        5,
+        6
+      ],
+      "landscape_left": [],
+      "landscape_right": []
+    },
+    "none": {
+      "portrait": [],
+      "landscape_left": [],
+      "landscape_right": []
+    },
+    "left_camera": {
+      "portrait": [
+        1,
+        2
+      ],
+=== hashes
+04775ce4542fea5480a1aecf264f949270c61861560bada465ca92355f73fa3d  /usr/share/nuxel/pwa/nuxel-home/js/status-bar.js
+bcb2562903aa89cb112ba9e7855a1a151bd79961d204ce329a8db2479491e9c3  /usr/share/nuxel/pwa/nuxel-home/js/qs.js
+b6bff5128d2af22f5771b9314be207f1086f14c8639c2b40405b86f0d2e2e9f8  /usr/share/nuxel/pwa/nuxel-apps/settings/settings.js
+7b276080ee7ac501112154d6f4f50cf81b535bc2208ba54077b4de4d4ba27778  /usr/lib/nuxel/nuxel-metricsd
+e2e2c395d8a0c90873f3a0c98369524664242e31a16897aedc8f4113d5cf51fb  /usr/lib/nuxel/nuxel-navdock
+eea49df4480ef88fcf15f95033a85b92cb7a121afc64372890c454fa2e131505  /usr/lib/nuxel/nuxel-pwa-host

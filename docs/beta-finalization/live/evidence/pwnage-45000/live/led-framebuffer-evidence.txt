@@ -1,0 +1,8 @@
+PWNAGE-45000 display edge-light verification (read directly from /dev/fb0)
+The kernel has no front notification LED / RGB class. The LED provider reports
+hardware_led=false and sends a bounded edge-light command to nuxel-wl-fb (the only
+framebuffer owner). Sampled pixels at (8,8), (720,8), (1432,8), (8,1520):
+red   -> 0xff0000ff at all sampled border pixels (ABGR8888)
+green -> 0xff00ff00
+blue  -> 0xffff0000
+off   -> 0xffedebeb (normal launcher surface; no edge border)

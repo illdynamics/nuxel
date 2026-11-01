@@ -2,13 +2,13 @@
 
 Seven named modes exactly:
 
-    auto                -> {0, 90, 180, 270}   (Auto)
-    auto_portrait       -> {0, 180}            (Auto Portrait)
-    auto_landscape      -> {90, 270}           (Auto Landscape)
-    portrait            -> {0}                 (Forced Portrait)
-    landscape           -> {90}                (Forced Landscape)
-    reverse_portrait    -> {180}               (advanced)
-    reverse_landscape   -> {270}               (advanced)
+    auto                -> {0, 90, 180, 270}   (Auto (FULL))
+    auto-portrait       -> {0, 180}            (Auto (PT))
+    auto-landscape      -> {90, 270}           (Auto (LS))
+    portrait            -> {0}                 (Locked (PT))
+    landscape           -> {90}                (Locked (LS))
+    reverse-portrait    -> {180}               (Locked (RPT))
+    reverse-landscape   -> {270}               (Locked (RLS))
 
 A mode is either *fixed* (one allowed orientation) or *auto* (more than one,
 sensor-gated). The policy guarantees the effective orientation is always a
@@ -38,18 +38,18 @@ MODE_ALIASES = {
 # The seven modes and their allowed orientation sets. Order is not significant
 # except that SEVEN_MODES is the exhaustive, authoritative list.
 SEVEN_MODES = {
-    "portrait":          {"label": "Forced Portrait",    "allowed": (0,)},
-    "reverse-portrait":  {"label": "Reverse Portrait",   "allowed": (180,)},
-    "landscape":         {"label": "Forced Landscape",   "allowed": (90,)},
-    "reverse-landscape": {"label": "Reverse Landscape",  "allowed": (270,)},
-    "auto":              {"label": "Auto",               "allowed": (0, 90, 180, 270)},
-    "auto-portrait":     {"label": "Auto Portrait",      "allowed": (0, 180)},
-    "auto-landscape":    {"label": "Auto Landscape",     "allowed": (90, 270)},
+    "portrait":          {"label": "Locked (PT)",  "allowed": (0,)},
+    "reverse-portrait":  {"label": "Locked (RPT)", "allowed": (180,)},
+    "landscape":         {"label": "Locked (LS)",  "allowed": (90,)},
+    "reverse-landscape": {"label": "Locked (RLS)", "allowed": (270,)},
+    "auto":              {"label": "Auto (FULL)",  "allowed": (0, 90, 180, 270)},
+    "auto-portrait":     {"label": "Auto (PT)",   "allowed": (0, 180)},
+    "auto-landscape":    {"label": "Auto (LS)",   "allowed": (90, 270)},
 }
 
 MODE_ORDER = [
-    # A53: the five owner-requested primary modes come first; reverse poses are
-    # preserved as advanced options and must never displace/hide the core five.
+    # Exact owner-facing order. All seven are primary choices; reverse poses
+    # are not hidden behind an "advanced" submenu.
     "auto", "auto-portrait", "auto-landscape",
     "portrait", "landscape",
     "reverse-portrait", "reverse-landscape",

@@ -1,0 +1,19 @@
+PASS default tile source is valid, HTTPS and attributed OSM
+PASS missing, invalid scheme and missing placeholders are rejected with codes
+PASS tile URL substitution and cache key
+PASS legacy config migrates without losing offline-only choice
+PASS default config enables the valid OSM source
+PASS tile outcomes distinguish cache, offline miss, HTTP error and network error
+PASS tile source view reports missing and invalid configuration
+PASS provider states are distinct and never inferred from a coordinate alone
+PASS fixed requires a real validity window; stale is not fresh
+PASS invalid coordinates cannot become a fix marker
+PASS search results are transient and de-duplicated
+PASS repeated identical searches replace, never append, search results
+PASS late asynchronous search responses are discarded
+PASS saved pins reject exact duplicates and invalid coordinates
+PASS duplicate display pins are de-duplicated without mutating input
+PASS labels are clamped inside the viewport
+PASS a fresh provider summary reports accuracy and age without satellites
+
+ALL PASS (17 passed)

@@ -120,7 +120,7 @@ def read_battery_status():
 # PWA<->host protocol pin (briq-04c). Same env names as the systemd units and the
 # HTTP layer, so `systemctl show -p Environment` shows exactly what is enforced.
 BRIDGE_PROTOCOL_VERSION = os.environ.get('NUXEL_BRIDGE_PROTOCOL_VERSION', '1')
-BRIDGE_HOST_VERSION = os.environ.get('NUXEL_BRIDGE_VERSION', '0.7.4-beta')
+BRIDGE_HOST_VERSION = os.environ.get('NUXEL_BRIDGE_VERSION', '0.7.5-beta')
 OBJECT_PATH = '/org/nuxel/Bridge'
 PORTAL_BUS_NAME = 'org.nuxel.Portal'
 PORTAL_OBJECT_PATH = '/org/nuxel/Portal'
@@ -226,6 +226,12 @@ CAPABILITY_PORTAL_MAP = {
 # ============================================================
 # System Service Connectors
 # ============================================================
+
+# PWNAGE-52000: camera capture privacy gate (policy document).
+try:
+    import privacy_provider
+except Exception:  # pragma: no cover - optional module
+    privacy_provider = None
 
 class ModemManagerConnector:
     def __init__(self):
@@ -1676,24 +1682,30 @@ class LocationConnector:
         }
 
     def _remember_fix(self, loc):
+        """Remember a provider result without inventing freshness.
+
+        PWNAGE-42000: a missing provider timestamp must stay missing.  The old
+        code substituted ``observed_at`` and then exposed it as if GeoClue had
+        supplied a timestamp, which made an un-timed result look fresh.  Such a
+        result is retained only as a stale/undated last-known position; it is
+        never promoted to a current fix.
+        """
         ts = loc.get('timestamp')
         if ts is None:
-            # Do not pretend GeoClue supplied a time.  Use the observation time
-            # only when the coordinate is new; a repeated UI poll of the same
-            # coordinate must not refresh its age.
-            same = (self._last_fix is not None and
-                    self._last_fix.get('latitude') == loc.get('latitude') and
-                    self._last_fix.get('longitude') == loc.get('longitude') and
-                    self._last_fix.get('timestamp_source') == 'observed')
-            ts = self._last_fix['timestamp'] if same else (loc.get('observed_at') or time.time())
-            ts_source = 'observed'
+            ts = None
+            ts_source = 'missing'
         else:
-            ts_source = 'provider'
+            try:
+                ts = float(ts)
+                ts_source = 'provider'
+            except (TypeError, ValueError):
+                ts = None
+                ts_source = 'invalid'
         self._last_fix = {
             'latitude': loc['latitude'],
             'longitude': loc['longitude'],
             'accuracy': loc.get('accuracy'),
-            'timestamp': float(ts),
+            'timestamp': ts,
             'timestamp_source': ts_source,
             'source': loc.get('source') or 'geoclue_unknown',
             'source_detail': loc.get('source_detail'),
@@ -1707,14 +1719,21 @@ class LocationConnector:
         fix = self._last_fix
         if not fix:
             return None
-        age = max(0.0, now - fix['timestamp'])
+        ts = fix.get('timestamp')
+        if ts is None:
+            # No provider time => no freshness evidence.  Keep the coordinate
+            # only as stale last-known data and never label it current.
+            return dict(fix, age_seconds=None, freshness='stale',
+                        freshness_evidence=False)
+        age = max(0.0, now - ts)
         if age <= self.FRESH_SECONDS:
             freshness = 'fresh'
         elif age <= self.STALE_SECONDS:
             freshness = 'stale'
         else:
             return None
-        return dict(fix, age_seconds=age, freshness=freshness)
+        return dict(fix, age_seconds=age, freshness=freshness,
+                    freshness_evidence=True)
 
     def _current_fix(self):
         """Return the provider's real fix, if any.  No coordinate is invented."""
@@ -1871,6 +1890,9 @@ class LocationConnector:
             'gnss_fix': bool(expose and expose.get('gnss')),
             'network_fix': bool(expose and expose.get('kind') == 'network'),
             'fix_timestamp': expose['timestamp'] if expose else None,
+            'fix_timestamp_source': expose.get('timestamp_source') if expose else None,
+            'fix_freshness': expose.get('freshness') if expose else None,
+            'freshness_evidence': bool(expose and expose.get('freshness_evidence')) if expose else False,
             'last_fix_timestamp': expose['timestamp'] if expose else None,
             'last_fix_age_s': expose['age_seconds'] if expose else None,
             'accuracy': expose['accuracy'] if (expose and include_coordinates) else None,
@@ -1897,6 +1919,10 @@ class LocationConnector:
                     self.geoclue.stop_acquisition()
                 except Exception:
                     pass
+                try:
+                    self.geoclue.disconnect()
+                except Exception as exc:
+                    logger.info('GeoClue disconnect on policy OFF: %s', exc)
             self._acquisition_started_at = None
             self._leases.clear()
             # Turning location OFF invalidates the last known position: it must
@@ -1928,7 +1954,7 @@ class OrientationConnector:
         try:
             proc = subprocess.run(
                 [self.BIN, *args, "--json"], capture_output=True,
-                text=True, timeout=6)
+                text=True, timeout=15)
         except (OSError, subprocess.SubprocessError) as exc:
             return {"success": False, "error": "orientation daemon unavailable: %s" % exc}
         if not proc.stdout.strip():
@@ -1949,7 +1975,10 @@ class OrientationConnector:
     def set_mode(self, mode):
         if not isinstance(mode, str) or not mode.strip():
             return {"success": False, "error": "invalid mode value"}
-        return self._run("set", mode.strip())
+        # A mode selection is a request to APPLY a safe trial, not merely a
+        # persisted enum.  The daemon owns the transaction, 60-90 second
+        # watchdog and rollback; this proxy must not hide a failed transform.
+        return self._run("set", mode.strip(), "--apply")
 
 # ============================================================
 # Nuxel Portal Interface
@@ -2492,6 +2521,7 @@ class NuxelBridgeService(dbus.service.Object):
             'longitude': st.get('longitude'),
             'accuracy': st.get('accuracy'),
             'timestamp': st.get('last_fix_timestamp'),
+            'timestamp_source': st.get('fix_timestamp_source'),
             'source': st.get('fix_source'),
             'source_detail': st.get('fix_source_detail'),
             'kind': st.get('fix_kind'),
@@ -2571,9 +2601,16 @@ class NuxelBridgeService(dbus.service.Object):
             except OSError:
                 nodes = []
         # capture_verified is NEVER claimed without a real decoded frame.
+        private = False
+        try:
+            if privacy_provider is not None:
+                private = bool(privacy_provider.get_provider().camera_status().get("blocked"))
+        except Exception:
+            private = False
         return {
             "success": True,
             "camera_present": len(nodes) > 0,
+            "privacy_blocked": private,
             "capture_verified": False,
             "error": None if nodes else "NO_CAMERA",
             "source": source,
@@ -2613,6 +2650,15 @@ class NuxelBridgeService(dbus.service.Object):
         if not self._check_capability(app_id, 'camera:capture'):
             return json.dumps({'success': False, 'error': 'Capability not granted: camera:capture',
                                'error_code': 'PERMISSION_DENIED'})
+        # PWNAGE-52000: the camera privacy gate is enforced before a new
+        # capture can be stored.  Existing captures remain readable.
+        try:
+            if privacy_provider is not None and privacy_provider.camera_capture_blocked():
+                return json.dumps({'success': False,
+                                   'error': 'Camera privacy gate is blocking capture',
+                                   'error_code': 'CAMERA_PRIVACY_BLOCKED'})
+        except Exception:
+            pass
         try:
             import base64
             data = base64.b64decode(data_b64)
@@ -2681,7 +2727,7 @@ class NuxelBridgeService(dbus.service.Object):
 
 
 def main():
-    logger.info("Starting Nuxel Bridge v0.7.4-beta...")
+    logger.info("Starting Nuxel Bridge v0.7.5-beta...")
     
     dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
     bus = dbus.SystemBus()

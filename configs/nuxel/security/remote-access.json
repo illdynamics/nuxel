@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated": "2026-10-16",
+  "updated": "2026-10-31",
   "enabled": false,
   "description": "Remote-access policy for Nuxel. OFF by default. When enabled, access is restricted to the owner console path, never to the open network.",
   "indicator": {
@@ -16,8 +16,14 @@
       "bind_interface": "usb0",
       "bind_address": "10.15.19.82",
       "port": 22,
-      "accepts": ["publickey"],
-      "refuses": ["password", "keyboard-interactive", "root-login-with-password"],
+      "accepts": [
+        "publickey"
+      ],
+      "refuses": [
+        "password",
+        "keyboard-interactive",
+        "root-login-with-password"
+      ],
       "authorized_keys": "/etc/nuxel/security/remote-access/authorized_keys",
       "note": "The USB gadget interface only. Binding 0.0.0.0 would expose the phone on whatever network it is joined to; the CLI refuses a wildcard bind."
     },
@@ -66,5 +72,78 @@
       "evidence": "docs/beta-finalization/live/evidence/n26000-usb-ncm-panic/",
       "note": "CONFIG_USB_F_NCM/CONFIG_USB_CONFIGFS_NCM are compiled in, but the NCM function teardown (ncm_free_inst -> misc_deregister) panicked the kernel and the watchdog rebooted the phone. No USB network transport is claimed."
     }
+  },
+  "gui_remote_desktop": {
+    "mission": "PWNAGE-47000",
+    "enabled": false,
+    "description": "Graphical remote access (XRDP/VNC/scrcpy) is a separate group from the serial/SSH Tri-Link. OFF by default; no service starts at boot.",
+    "services": {
+      "xrdp": {
+        "provider": "xrdp + xorgxrdp",
+        "port": 3389,
+        "bind": "0.0.0.0",
+        "session": "separate-x11-session",
+        "account": "nuxel",
+        "root_login": false,
+        "tls": true,
+        "default_transport": "wlan",
+        "usb": "BLOCKED_KERNEL_PANIC",
+        "note": "TLS + PAM as the local nuxel account; direct LAN/ZeroTier access; no SSH tunnel required."
+      },
+      "vnc": {
+        "provider": "wayvnc",
+        "port": 5900,
+        "bind": "0.0.0.0",
+        "session": "current-wayland-session",
+        "capture": "zwlr_screencopy_manager_v1",
+        "input": [
+          "zwlr_virtual_pointer_manager_v1",
+          "zwp_virtual_keyboard_manager_v1"
+        ],
+        "encryption": "none (trusted LAN/ZeroTier only)",
+        "default_transport": "wlan",
+        "usb": "BLOCKED_KERNEL_PANIC",
+        "note": "Jump Desktop 9.1.21 cannot negotiate wayvnc 0.9.1 RSA-AES/VeNCrypt and this build has no VNC password auth; do not expose 5900 to the Internet."
+      },
+      "scrcpy": {
+        "provider": "official scrcpy + Android ADB",
+        "targets": "Android API 21+ only",
+        "native_nuxel": "NOT_APPLICABLE_NATIVE_NUXEL",
+        "default_transport": "android-adb-usb",
+        "optional_transport": "android-adb-tcpip",
+        "waydroid": "not installed and not installed automatically"
+      }
+    },
+    "allowed_interfaces": [
+      "wlan0",
+      "0.0.0.0",
+      "127.0.0.1"
+    ],
+    "forbidden": [
+      "root desktop login",
+      "USB NCM teardown on kernel 4.14.253",
+      "cellular/rmnet/public Internet exposure",
+      "Internet port-forwarding of 3389/5900",
+      "storing service passwords in PWA localStorage, URLs, QR codes or logs"
+    ],
+    "indicator": {
+      "required": true,
+      "text": "REMOTE DESKTOP ACTIVE",
+      "status": "system.remote-desktop + Home status bar",
+      "kill_switch": "system.remote-desktop stop-all"
+    },
+    "session_limits": {
+      "max_xrdp_sessions": 2,
+      "xrdp_idle_timeout_seconds": 900,
+      "xrdp_disconnected_cleanup_seconds": 60,
+      "vnc_max_fps": 20
+    },
+    "usb_network": {
+      "status": "BLOCKED_KERNEL_PANIC",
+      "kernel": "4.14.253",
+      "evidence": "docs/beta-finalization/live/evidence/n26000-usb-ncm-panic/",
+      "note": "Do not retry NCM, mutate configfs or rebind the UDC. USB RDP/VNC requires an independently safe non-NCM route and a macOS host test before it may be offered."
+    },
+    "notes": "VNC mirrors the actual Phoc session and must respect the Nuxel lock policy. XRDP is a separate X session and never claims to mirror the physical display. Direct listeners are for the owner LAN / ZeroTier only."
   }
 }

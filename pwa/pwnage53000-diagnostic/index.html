@@ -1,0 +1,12 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>PWNAGE-53000 diagnostic</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+html,body{margin:0;height:100%;background:#101820;color:#fff;font:28px system-ui,sans-serif;overflow:hidden}
+.box{position:absolute;width:260px;height:260px;background:linear-gradient(135deg,#0f6,#08f);border-radius:32px;animation:spin 2s linear infinite}
+@keyframes spin{from{transform:translate(80px,200px) rotate(0)}to{transform:translate(80px,200px) rotate(360deg)}}
+#t{position:absolute;left:40px;bottom:60px}
+</style></head><body>
+<div class="box"></div><div id="t">PWNAGE-53000 WebKit GPU diagnostic</div>
+<script>let n=0;setInterval(()=>{document.getElementById('t').textContent='frame '+(++n)},250)</script>
+</body></html>

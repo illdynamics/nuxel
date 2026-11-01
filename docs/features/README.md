@@ -1,14 +1,16 @@
 # Nuxel feature status
 
 Canonical, human-readable feature list for the current repository state
-(`v0.7.4-beta`, 2026-10-31). It describes what the code and the physical Galaxy
+(`v0.7.5-beta`, 2026-11-01). It describes what the code and the physical Galaxy
 S10+ actually do, not what is merely planned.
 
-**v0.7.4-beta changes the headline verdicts:** speaker audio is now `WORKING`
-(owner-confirmed audible), GNSS is `ALMOST` (real network location works;
-satellite fixes remain `BLOCKED`), and the Flatpak/GTK application model is
-`ALMOST` (installed and truthful, but `CONFIG_USER_NS=n` blocks the Flatpak
-sandbox and the handset runs the WebKit PWA shell).
+**v0.7.5-beta changes the headline verdicts:** rotation is `WORKING`
+(owner-confirmed, transform+scale as one transaction, touch calibration follows
+it), GPU acceleration is `PARTIAL` (Phoc and WebKit render on the Mali-G76,
+WebKit presents through SHM, and WebKit DMA-BUF / zero-copy presentation are
+`BLOCKED_KERNEL_ABI`), and Flatpak is `WORKING` (kernel user namespaces plus a
+`bwrap` fd-bind shim). Speaker audio and network location remain `WORKING`;
+satellite GNSS remains `BLOCKED_FIRMWARE`.
 
 **Status legend**
 
@@ -86,7 +88,7 @@ sandbox and the handset runs the WebKit PWA shell).
 
 - `README.md` — release summary and readiness table.
 - `audio.md` — detailed audio state and remaining checks.
-- `CHANGELOG.md` / `docs/releases/v0.7.4-beta.md` — what changed in this release.
+- `CHANGELOG.md` / `docs/releases/v0.7.5-beta.md` — what changed in this release.
 - `out.md` — owner-confirmed audio root cause and the `works` confirmations.
 - `docs/beta-finalization/live/PWNAGE-42000-REPORT.md` — GeoClue agent and network-location evidence.
 - `docs/beta-finalization/live/PWNAGE-44000-REPORT.md` — Home/hardware UI work and measurements.

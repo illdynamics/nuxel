@@ -1,0 +1,75 @@
+Warning: Permanently added '[127.0.0.1]:52861' (ED25519) to the list of known hosts.
+/var/home/core/.local/share/containers/storage/volumes/nuxel-build/_data/src/kernel/cred.c:579:	if (clone_flags & CLONE_NEWUSER) {
+/var/home/core/.local/share/containers/storage/volumes/nuxel-build/_data/src/kernel/cred.c:580:		ret = create_user_ns(new);
+/var/home/core/.local/share/containers/storage/volumes/nuxel-build/_data/src/kernel/events/core.c:6890:			       task, &userns_operations);
+/var/home/core/.local/share/containers/storage/volumes/nuxel-build/_data/src/kernel/fork.c:1654:	if ((clone_flags & (CLONE_NEWUSER|CLONE_FS)) == (CLONE_NEWUSER|CLONE_FS))
+/var/home/core/.local/share/containers/storage/volumes/nuxel-build/_data/src/kernel/fork.c:1687:		if ((clone_flags & (CLONE_NEWUSER | CLONE_NEWPID)) ||
+/var/home/core/.local/share/containers/storage/volumes/nuxel-build/_data/src/kernel/fork.c:2373:				CLONE_NEWUSER|CLONE_NEWPID|CLONE_NEWCGROUP))
+/var/home/core/.local/share/containers/storage/volumes/nuxel-build/_data/src/kernel/fork.c:2457:	if (unshare_flags & CLONE_NEWUSER)
+/var/home/core/.local/share/containers/storage/volumes/nuxel-build/_data/src/kernel/fork.c:2491:	err = unshare_userns(unshare_flags, &new_cred);
+/var/home/core/.local/share/containers/storage/volumes/nuxel-build/_data/src/kernel/groups.c:182:		userns_may_setgroups(user_ns);
+/var/home/core/.local/share/containers/storage/volumes/nuxel-build/_data/src/kernel/pid_namespace.c:105:	if (!in_userns(parent_pid_ns->user_ns, user_ns))
+/var/home/core/.local/share/containers/storage/volumes/nuxel-build/_data/src/kernel/signal.c:1034:static inline void userns_fixup_signal_uid(struct siginfo *info, struct task_struct *t)
+/var/home/core/.local/share/containers/storage/volumes/nuxel-build/_data/src/kernel/signal.c:1048:static inline void userns_fixup_signal_uid(struct siginfo *info, struct task_struct *t)
+/var/home/core/.local/share/containers/storage/volumes/nuxel-build/_data/src/kernel/signal.c:1127:		userns_fixup_signal_uid(&q->info, t);
+/var/home/core/.local/share/containers/storage/volumes/nuxel-build/_data/src/kernel/ucount.c:86:bool setup_userns_sysctls(struct user_namespace *ns)
+/var/home/core/.local/share/containers/storage/volumes/nuxel-build/_data/src/kernel/ucount.c:108:void retire_userns_sysctls(struct user_namespace *ns)
+/var/home/core/.local/share/containers/storage/volumes/nuxel-build/_data/src/kernel/ucount.c:241:	BUG_ON(!setup_userns_sysctls(&init_user_ns));
+/var/home/core/.local/share/containers/storage/volumes/nuxel-build/_data/src/kernel/user.c:24: * userns count is 1 for root user, 1 for init_uts_ns,
+/var/home/core/.local/share/containers/storage/volumes/nuxel-build/_data/src/kernel/user.c:57:	.ns.ops = &userns_operations,
+/var/home/core/.local/share/containers/storage/volumes/nuxel-build/_data/src/kernel/user_namespace.c:28:static DEFINE_MUTEX(userns_state_mutex);
+/var/home/core/.local/share/containers/storage/volumes/nuxel-build/_data/src/kernel/user_namespace.c:72:int create_user_ns(struct cred *new)
+/var/home/core/.local/share/containers/storage/volumes/nuxel-build/_data/src/kernel/user_namespace.c:115:	ns->ns.ops = &userns_operations;
+/var/home/core/.local/share/containers/storage/volumes/nuxel-build/_data/src/kernel/user_namespace.c:130:	mutex_lock(&userns_state_mutex);
+/var/home/core/.local/share/containers/storage/volumes/nuxel-build/_data/src/kernel/user_namespace.c:132:	mutex_unlock(&userns_state_mutex);
+/var/home/core/.local/share/containers/storage/volumes/nuxel-build/_data/src/kernel/user_namespace.c:138:	if (!setup_userns_sysctls(ns))
+/var/home/core/.local/share/containers/storage/volumes/nuxel-build/_data/src/kernel/user_namespace.c:165:int unshare_userns(unsigned long unshare_flags, struct cred **new_cred)
+/var/home/core/.local/share/containers/storage/volumes/nuxel-build/_data/src/kernel/user_namespace.c:170:	if (!(unshare_flags & CLONE_NEWUSER))
+/var/home/core/.local/share/containers/storage/volumes/nuxel-build/_data/src/kernel/user_namespace.c:175:		err = create_user_ns(cred);
+/var/home/core/.local/share/containers/storage/volumes/nuxel-build/_data/src/kernel/user_namespace.c:193:		retire_userns_sysctls(ns);
+/var/home/core/.local/share/containers/storage/volumes/nuxel-build/_data/src/kernel/user_namespace.c:674:	 * The userns_state_mutex serializes all writes to any given map.
+/var/home/core/.local/share/containers/storage/volumes/nuxel-build/_data/src/kernel/user_namespace.c:692:	mutex_lock(&userns_state_mutex);
+/var/home/core/.local/share/containers/storage/volumes/nuxel-build/_data/src/kernel/user_namespace.c:804:	mutex_unlock(&userns_state_mutex);
+/var/home/core/.local/share/containers/storage/volumes/nuxel-build/_data/src/kernel/user_namespace.c:902:	unsigned long userns_flags = ACCESS_ONCE(ns->flags);
+/var/home/core/.local/share/containers/storage/volumes/nuxel-build/_data/src/kernel/user_namespace.c:905:		   (userns_flags & USERNS_SETGROUPS_ALLOWED) ?
+/var/home/core/.local/share/containers/storage/volumes/nuxel-build/_data/src/kernel/user_namespace.c:950:	mutex_lock(&userns_state_mutex);
+/var/home/core/.local/share/containers/storage/volumes/nuxel-build/_data/src/kernel/user_namespace.c:965:	mutex_unlock(&userns_state_mutex);
+/var/home/core/.local/share/containers/storage/volumes/nuxel-build/_data/src/kernel/user_namespace.c:973:	mutex_unlock(&userns_state_mutex);
+/var/home/core/.local/share/containers/storage/volumes/nuxel-build/_data/src/kernel/user_namespace.c:977:bool userns_may_setgroups(const struct user_namespace *ns)
+/var/home/core/.local/share/containers/storage/volumes/nuxel-build/_data/src/kernel/user_namespace.c:981:	mutex_lock(&userns_state_mutex);
+/var/home/core/.local/share/containers/storage/volumes/nuxel-build/_data/src/kernel/user_namespace.c:988:	mutex_unlock(&userns_state_mutex);
+/var/home/core/.local/share/containers/storage/volumes/nuxel-build/_data/src/kernel/user_namespace.c:997:bool in_userns(const struct user_namespace *ancestor,
+/var/home/core/.local/share/containers/storage/volumes/nuxel-build/_data/src/kernel/user_namespace.c:1006:bool current_in_userns(const struct user_namespace *target_ns)
+/var/home/core/.local/share/containers/storage/volumes/nuxel-build/_data/src/kernel/user_namespace.c:1008:	return in_userns(target_ns, current_user_ns());
+/var/home/core/.local/share/containers/storage/volumes/nuxel-build/_data/src/kernel/user_namespace.c:1016:static struct ns_common *userns_get(struct task_struct *task)
+/var/home/core/.local/share/containers/storage/volumes/nuxel-build/_data/src/kernel/user_namespace.c:1027:static void userns_put(struct ns_common *ns)
+/var/home/core/.local/share/containers/storage/volumes/nuxel-build/_data/src/kernel/user_namespace.c:1032:static int userns_install(struct nsproxy *nsproxy, struct ns_common *ns)
+/var/home/core/.local/share/containers/storage/volumes/nuxel-build/_data/src/kernel/user_namespace.c:1081:static struct user_namespace *userns_owner(struct ns_common *ns)
+/var/home/core/.local/share/containers/storage/volumes/nuxel-build/_data/src/kernel/user_namespace.c:1086:const struct proc_ns_operations userns_operations = {
+/var/home/core/.local/share/containers/storage/volumes/nuxel-build/_data/src/kernel/user_namespace.c:1088:	.type		= CLONE_NEWUSER,
+/var/home/core/.local/share/containers/storage/volumes/nuxel-build/_data/src/kernel/user_namespace.c:1089:	.get		= userns_get,
+/var/home/core/.local/share/containers/storage/volumes/nuxel-build/_data/src/kernel/user_namespace.c:1090:	.put		= userns_put,
+/var/home/core/.local/share/containers/storage/volumes/nuxel-build/_data/src/kernel/user_namespace.c:1091:	.install	= userns_install,
+/var/home/core/.local/share/containers/storage/volumes/nuxel-build/_data/src/kernel/user_namespace.c:1092:	.owner		= userns_owner,
+/var/home/core/.local/share/containers/storage/volumes/nuxel-build/_data/src/security/apparmor/include/policy.h:39:extern int unprivileged_userns_apparmor_policy;
+/var/home/core/.local/share/containers/storage/volumes/nuxel-build/_data/src/security/apparmor/lsm.c:1095:		.procname       = "unprivileged_userns_apparmor_policy",
+/var/home/core/.local/share/containers/storage/volumes/nuxel-build/_data/src/security/apparmor/lsm.c:1096:		.data           = &unprivileged_userns_apparmor_policy,
+/var/home/core/.local/share/containers/storage/volumes/nuxel-build/_data/src/security/apparmor/policy.c:95:int unprivileged_userns_apparmor_policy = 1;
+/var/home/core/.local/share/containers/storage/volumes/nuxel-build/_data/src/security/apparmor/policy.c:652:	     (unprivileged_userns_apparmor_policy != 0 &&
+/var/home/core/.local/share/containers/storage/volumes/nuxel-build/_data/src/security/commoncap.c:739:	if (!current_in_userns(bprm->file->f_path.mnt->mnt_sb->s_user_ns))
+/var/home/core/.local/share/containers/storage/volumes/nuxel-build/_data/src/security/selinux/include/classmap.h:174:	{ "cap_userns",
+/var/home/core/.local/share/containers/storage/volumes/nuxel-build/_data/src/security/selinux/include/classmap.h:176:	{ "cap2_userns",
+/var/home/core/.local/share/containers/storage/volumes/nuxel-build/_data/src/fs/kernfs/mount.c:325:	sb = sget_userns(fs_type, kernfs_test_super, kernfs_set_super, flags,
+/var/home/core/.local/share/containers/storage/volumes/nuxel-build/_data/src/fs/libfs.c:253:	s = sget_userns(fs_type, NULL, set_anon_super, MS_KERNMOUNT|MS_NOUSER,
+/var/home/core/.local/share/containers/storage/volumes/nuxel-build/_data/src/fs/namespace.c:4248:	       current_in_userns(mnt->mnt_sb->s_user_ns);
+/var/home/core/.local/share/containers/storage/volumes/nuxel-build/_data/src/fs/nsfs.c:183:		if (ns->ops->type != CLONE_NEWUSER)
+/var/home/core/.local/share/containers/storage/volumes/nuxel-build/_data/src/fs/posix_acl.c:665:static void posix_acl_fix_xattr_userns(
+/var/home/core/.local/share/containers/storage/volumes/nuxel-build/_data/src/fs/posix_acl.c:709:	posix_acl_fix_xattr_userns(&init_user_ns, user_ns, value, size);
+/var/home/core/.local/share/containers/storage/volumes/nuxel-build/_data/src/fs/posix_acl.c:717:	posix_acl_fix_xattr_userns(user_ns, &init_user_ns, value, size);
+/var/home/core/.local/share/containers/storage/volumes/nuxel-build/_data/src/fs/proc/namespaces.c:30:	&userns_operations,
+/var/home/core/.local/share/containers/storage/volumes/nuxel-build/_data/src/fs/super.c:468: *	sget_userns -	find or create a superblock
+/var/home/core/.local/share/containers/storage/volumes/nuxel-build/_data/src/fs/super.c:476:struct super_block *sget_userns(struct file_system_type *type,
+/var/home/core/.local/share/containers/storage/volumes/nuxel-build/_data/src/fs/super.c:543:EXPORT_SYMBOL(sget_userns);
+/var/home/core/.local/share/containers/storage/volumes/nuxel-build/_data/src/fs/super.c:572:	return sget_userns(type, test, set, flags, user_ns, data);
+/var/home/core/.local/share/containers/storage/volumes/nuxel-build/_data/src/fs/super.c:1071:	sb = sget_userns(fs_type, ns_test_super, ns_set_super, flags,
+/var/home/core/.local/share/containers/storage/volumes/nuxel-build/_data/src/fs/super.c:1108:	sb = sget_userns(fs_type, ns_test_super, ns_set_super, flags,

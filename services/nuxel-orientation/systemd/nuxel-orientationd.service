@@ -1,30 +1,34 @@
 [Unit]
-Description=Nuxel Orientation Policy Service
-Documentation=https://github.com/nuxel/nuxel/docs/A49
-# The orientation service only READS the compositor transform state and WRITES
-# its own state file; it must start after the Wayland session owns outputs.
-After=nuxel-wayland.service phosh.service
+Description=Nuxel orientation owner (seven-mode policy, transform, auto sensor)
+Documentation=file:/usr/share/doc/nuxel/PWNAGE-46000.md
+After=nuxel-wayland.service
 Wants=nuxel-wayland.service
+Before=nuxel-wl-fb.service
+StartLimitIntervalSec=120
+StartLimitBurst=6
 
 [Service]
-Type=oneshot
-ExecStart=/usr/libexec/nuxel/nuxel-orientationd status
-RemainAfterExit=yes
+Type=simple
+ExecStartPre=/bin/install -d -o root -g nuxel -m 0775 /run/nuxel-orientation
+ExecStart=/usr/libexec/nuxel/nuxel-orientationd daemon
+ExecStartPre=/usr/libexec/nuxel/nuxel-orientationd selftest
 Environment=NUXEL_ROOT=/
-Restart=no
-
-# Orientation never needs to write to block devices, flash or reboot. It only
-# writes /var/lib/nuxel/orientation/state.json and reads sensor sysfs.
-User=nuxel
-Group=nuxel
+Environment=PYTHONUNBUFFERED=1
+Restart=on-failure
+RestartSec=3
+User=root
+Group=root
 NoNewPrivileges=true
-PrivateTmp=true
+PrivateTmp=false
 ProtectSystem=full
-ProtectHome=true
-ReadOnlyPaths=/
-ReadWritePaths=/var/lib/nuxel
+# XRDP sessions live in the host /tmp/.X11-unix namespace and their
+# Xauthority file is under /home/nuxel; the async remote sync helper must be
+# able to SEE them.  It still never writes either path.
+ProtectHome=read-only
+ReadWritePaths=/var/lib/nuxel /run
+# The compositor is a root-owned headless session at /run/nuxel-wayland.
+# wlr-randr needs its socket; /dev/fb0 is deliberately NOT opened here.
 DevicePolicy=closed
-SystemCallFilter=@system-service
 
 [Install]
 WantedBy=multi-user.target

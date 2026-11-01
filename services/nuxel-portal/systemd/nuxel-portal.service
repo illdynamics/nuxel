@@ -23,6 +23,11 @@ RestartSec=5
 # 'nuxel' user (and root, for older deployments) to own org.nuxel.Portal.
 User=nuxel
 Group=nuxel
+# /var/lib/nuxel is 0770 root:nuxel-notifications.  The portal owns
+# /var/lib/nuxel/permissions, so it needs traverse access to the parent even if
+# a deployed image lost the per-user ACL from an older build.  This group grants
+# traverse only; the permissions directory remains nuxel:nuxel 0770.
+SupplementaryGroups=nuxel-notifications
 
 # Security hardening for portal daemon
 # relaxed from strict to full — GTK4/Wayland/DBus need /usr access

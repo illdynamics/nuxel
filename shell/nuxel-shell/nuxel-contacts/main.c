@@ -54,6 +54,13 @@ typedef struct {
     NuxelPhoneStore store;
     gchar *store_path;
     GtkWidget *status_label;
+
+    /* SIM phonebook mirror.  This build has no ModemManager SIM phonebook
+     * API, so the mirror is explicit local storage: it is imported/synced on
+     * demand and can be copied to a real SIM when the modem path exists.  The
+     * UI never claims the physical SIM was written. */
+    NuxelPhoneStore sim_store;
+    gchar *sim_path;
 } NuxelContacts;
 
 /* ============================================================
@@ -63,6 +70,11 @@ typedef struct {
 static void save_contacts(NuxelContacts *app);
 static void load_contacts(NuxelContacts *app);
 static void on_vcard_chosen(GObject *source, GAsyncResult *res, gpointer user_data);
+static void rebuild_contact_rows(NuxelContacts *app);
+static void on_edit_contact_clicked(GtkWidget *btn, gpointer user_data);
+static void on_save_to_sim_clicked(GtkWidget *btn, gpointer user_data);
+static void on_import_sim_clicked(GtkWidget *btn, gpointer user_data);
+static void on_sync_sim_clicked(GtkWidget *btn, gpointer user_data);
 
 /* ============================================================
  * Contact lifecycle
@@ -189,7 +201,7 @@ load_contacts(NuxelContacts *app)
             c->avatar_color = g_strdup(sc->avatar_color);
         }
         g_ptr_array_add(app->contacts, c);
-        g_hash_table_insert(app->contacts_by_id, c->id, c);
+        g_hash_table_insert(app->contacts_by_id, g_strdup(c->id), c);
     }
 }
 
@@ -284,7 +296,7 @@ on_vcard_chosen(GObject *source, GAsyncResult *res, gpointer user_data)
             g_free(c->id);
             c->id = g_strdup(sc->id);
             g_ptr_array_add(app->contacts, c);
-            g_hash_table_insert(app->contacts_by_id, c->id, c);
+            g_hash_table_insert(app->contacts_by_id, g_strdup(c->id), c);
         }
         gchar *msg = g_strdup_printf("Imported %d contact(s) from %s",
                                      imported, path);
@@ -295,6 +307,159 @@ on_vcard_chosen(GObject *source, GAsyncResult *res, gpointer user_data)
     g_free(text);
     g_free(path);
     g_object_unref(file);
+}
+
+/* ============================================================
+ * SIM phonebook mirror
+ * ============================================================ */
+
+static gboolean
+sim_contact_exists(NuxelPhoneStore *store, const gchar *name, const gchar *phone)
+{
+    if (phone && *phone && nuxel_phone_find_contact_by_number(store, phone))
+        return TRUE;
+    for (size_t i = 0; i < store->n_contacts; i++) {
+        if (g_strcmp0(store->contacts[i].name, name) == 0)
+            return TRUE;
+    }
+    return FALSE;
+}
+
+static void
+sim_load(NuxelContacts *app)
+{
+    nuxel_phone_store_free(&app->sim_store);
+    nuxel_phone_store_init(&app->sim_store);
+    if (app->sim_path)
+        nuxel_phone_store_load(&app->sim_store, app->sim_path);
+}
+
+static void
+sim_save(NuxelContacts *app)
+{
+    if (!app->sim_path) return;
+    nuxel_phone_store_save(&app->sim_store, app->sim_path);
+}
+
+static void
+rebuild_contact_rows(NuxelContacts *app)
+{
+    GtkWidget *child = gtk_widget_get_first_child(app->contact_list);
+    while (child) {
+        GtkWidget *next = gtk_widget_get_next_sibling(child);
+        gtk_list_box_remove(GTK_LIST_BOX(app->contact_list), child);
+        child = next;
+    }
+    for (guint i = 0; i < app->contacts->len; i++) {
+        Contact *c = g_ptr_array_index(app->contacts, i);
+        GtkWidget *row = gtk_list_box_row_new();
+        GtkWidget *box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 12);
+        gtk_widget_set_margin_start(box, 8);
+        gtk_widget_set_margin_end(box, 8);
+        gtk_widget_set_margin_top(box, 8);
+        gtk_widget_set_margin_bottom(box, 8);
+        gchar *initial = c->name ? g_strndup(c->name, 1) : g_strdup("?");
+        GtkWidget *avatar = adw_avatar_new(32, initial, TRUE);
+        g_free(initial);
+        gtk_box_append(GTK_BOX(box), avatar);
+        GtkWidget *name_label = gtk_label_new(c->name);
+        gtk_widget_add_css_class(name_label, "heading");
+        gtk_label_set_xalign(GTK_LABEL(name_label), 0.0);
+        gtk_box_append(GTK_BOX(box), name_label);
+        GtkWidget *phone_label = gtk_label_new(c->phone ? c->phone : "");
+        gtk_widget_add_css_class(phone_label, "caption");
+        gtk_label_set_xalign(GTK_LABEL(phone_label), 0.0);
+        gtk_box_append(GTK_BOX(box), phone_label);
+        gtk_list_box_row_set_child(GTK_LIST_BOX_ROW(row), box);
+        g_object_set_data(G_OBJECT(row), "contact", c);
+        gtk_list_box_append(GTK_LIST_BOX(app->contact_list), row);
+    }
+}
+
+static void
+on_import_sim_clicked(GtkWidget *btn, gpointer user_data)
+{
+    NuxelContacts *app = (NuxelContacts *)user_data;
+    (void)btn;
+    sim_load(app);
+    if (app->sim_store.n_contacts == 0) {
+        contacts_status(app, "SIM mirror is empty. Save a contact to the SIM mirror first, "
+                              "or insert a SIM with an accessible phonebook.");
+        return;
+    }
+    size_t added = 0;
+    for (size_t i = 0; i < app->sim_store.n_contacts; i++) {
+        NuxelContact *sc = &app->sim_store.contacts[i];
+        if (sim_contact_exists(&app->store, sc->name, sc->phone)) continue;
+        if (nuxel_phone_add_contact(&app->store, sc->name, sc->phone, sc->email)) added++;
+    }
+    if (added) {
+        nuxel_phone_store_save(&app->store, app->store_path);
+        load_contacts(app);
+        rebuild_contact_rows(app);
+    }
+    gchar *msg = g_strdup_printf("Imported %zu contact(s) from the SIM mirror. "
+                                 "No physical SIM write was attempted.", added);
+    contacts_status(app, msg);
+    g_free(msg);
+}
+
+static void
+on_sync_sim_clicked(GtkWidget *btn, gpointer user_data)
+{
+    NuxelContacts *app = (NuxelContacts *)user_data;
+    (void)btn;
+    sim_load(app);
+    size_t to_local = 0, to_sim = 0;
+    for (size_t i = 0; i < app->sim_store.n_contacts; i++) {
+        NuxelContact *sc = &app->sim_store.contacts[i];
+        if (!sim_contact_exists(&app->store, sc->name, sc->phone)) {
+            if (nuxel_phone_add_contact(&app->store, sc->name, sc->phone, sc->email)) to_local++;
+        }
+    }
+    for (guint i = 0; i < app->contacts->len; i++) {
+        Contact *c = g_ptr_array_index(app->contacts, i);
+        if (!sim_contact_exists(&app->sim_store, c->name, c->phone)) {
+            if (nuxel_phone_add_contact(&app->sim_store, c->name, c->phone, c->email)) to_sim++;
+        }
+    }
+    nuxel_phone_store_save(&app->store, app->store_path);
+    sim_save(app);
+    load_contacts(app);
+    rebuild_contact_rows(app);
+    gchar *msg = g_strdup_printf("SIM mirror synced: %zu to local, %zu to SIM mirror. "
+                                 "Physical SIM access is unavailable on this build.", to_local, to_sim);
+    contacts_status(app, msg);
+    g_free(msg);
+}
+
+static void
+on_save_to_sim_clicked(GtkWidget *btn, gpointer user_data)
+{
+    NuxelContacts *app = (NuxelContacts *)user_data;
+    (void)btn;
+    Contact *c = app->active_contact;
+    if (!c) { contacts_status(app, "Open a contact first, then save it to the SIM mirror."); return; }
+    sim_load(app);
+    if (!sim_contact_exists(&app->sim_store, c->name, c->phone)) {
+        nuxel_phone_add_contact(&app->sim_store, c->name, c->phone, c->email);
+        sim_save(app);
+    }
+    gchar *msg = g_strdup_printf("Saved %s to the SIM mirror (%s).", c->name, app->sim_path);
+    contacts_status(app, msg);
+    g_free(msg);
+}
+
+static void
+on_edit_contact_clicked(GtkWidget *btn, gpointer user_data)
+{
+    NuxelContacts *app = (NuxelContacts *)user_data;
+    (void)btn;
+    if (!app->active_contact) return;
+    gtk_editable_set_text(GTK_EDITABLE(app->edit_name_entry), app->active_contact->name);
+    gtk_editable_set_text(GTK_EDITABLE(app->edit_phone_entry), app->active_contact->phone);
+    gtk_editable_set_text(GTK_EDITABLE(app->edit_email_entry), app->active_contact->email);
+    gtk_stack_set_visible_child_name(GTK_STACK(app->stack), "edit");
 }
 
 /* ============================================================
@@ -366,43 +531,14 @@ on_save_clicked(GtkWidget *btn, gpointer user_data)
         /* Create new */
         Contact *c = contact_new(name, phone, email);
         g_ptr_array_add(app->contacts, c);
-        g_hash_table_insert(app->contacts_by_id, c->id, c);
+        g_hash_table_insert(app->contacts_by_id, g_strdup(c->id), c);
     }
     
     save_contacts(app);
     
-    /* Rebuild list */
+    /* Keep the active contact object valid after sorting, then rebuild once. */
     g_ptr_array_sort_with_data(app->contacts, (GCompareDataFunc)contacts_compare, NULL);
-    /* Remove all rows and re-add */
-    GtkWidget *child = gtk_widget_get_first_child(app->contact_list);
-    while (child) {
-        GtkWidget *next = gtk_widget_get_next_sibling(child);
-        gtk_list_box_remove(GTK_LIST_BOX(app->contact_list), child);
-        child = next;
-    }
-    
-    for (guint i = 0; i < app->contacts->len; i++) {
-        Contact *c = g_ptr_array_index(app->contacts, i);
-        GtkWidget *row = gtk_list_box_row_new();
-        GtkWidget *box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 12);
-        gtk_widget_set_margin_start(box, 8);
-    gtk_widget_set_margin_end(box, 8);
-    gtk_widget_set_margin_top(box, 8);
-    gtk_widget_set_margin_bottom(box, 8);
-        
-        GtkWidget *avatar = adw_avatar_new(32, c->name ? g_strndup(c->name, 1) : "?", TRUE);
-        gtk_box_append(GTK_BOX(box), avatar);
-        
-        GtkWidget *name_label = gtk_label_new(c->name);
-        gtk_widget_add_css_class(name_label, "heading");
-        gtk_label_set_xalign(GTK_LABEL(name_label), 0.0);
-        gtk_box_append(GTK_BOX(box), name_label);
-        
-        gtk_list_box_row_set_child(GTK_LIST_BOX_ROW(row), box);
-        g_object_set_data(G_OBJECT(row), "contact", c);
-        gtk_list_box_append(GTK_LIST_BOX(app->contact_list), row);
-    }
-    
+    rebuild_contact_rows(app);
     gtk_stack_set_visible_child_name(GTK_STACK(app->stack), "list");
 }
 
@@ -412,8 +548,12 @@ on_delete_clicked(GtkWidget *btn, gpointer user_data)
     NuxelContacts *app = (NuxelContacts *)user_data;
     if (!app->active_contact) return;
     
+    /* g_ptr_array_remove() invokes contact_free(), so the id must be copied
+     * before the hash lookup.  The old order was a use-after-free. */
+    gchar *id = g_strdup(app->active_contact->id);
+    g_hash_table_remove(app->contacts_by_id, id);
     g_ptr_array_remove(app->contacts, app->active_contact);
-    g_hash_table_remove(app->contacts_by_id, app->active_contact->id);
+    g_free(id);
     app->active_contact = NULL;
     save_contacts(app);
     gtk_stack_set_visible_child_name(GTK_STACK(app->stack), "list");
@@ -442,10 +582,12 @@ activate_cb(GtkApplication *gtk_app, gpointer user_data)
     /* Authoritative store: same file the A32 build intended to write, now written
      * through the shared phone data layer (atomic tmp+rename, schema_version 1). */
     app->store_path = g_build_filename(app->data_dir, "contacts.json", NULL);
+    app->sim_path = g_build_filename(app->data_dir, "sim-contacts.json", NULL);
     nuxel_phone_store_init(&app->store);
+    nuxel_phone_store_init(&app->sim_store);
     
     app->contacts = g_ptr_array_new_with_free_func(contact_free);
-    app->contacts_by_id = g_hash_table_new(g_str_hash, g_str_equal);
+    app->contacts_by_id = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, NULL);
     
     /* Create window */
     app->window = adw_application_window_new(gtk_app);
@@ -499,8 +641,18 @@ activate_cb(GtkApplication *gtk_app, gpointer user_data)
     g_signal_connect(export_btn, "clicked", G_CALLBACK(on_export_vcard_clicked), app);
     gtk_box_append(GTK_BOX(header), export_btn);
 
-    GtkWidget *add_btn = gtk_button_new_with_label("+");
-    gtk_widget_add_css_class(add_btn, "flat");
+    GtkWidget *import_sim_btn = gtk_button_new_with_label("Import SIM");
+    gtk_widget_add_css_class(import_sim_btn, "flat");
+    g_signal_connect(import_sim_btn, "clicked", G_CALLBACK(on_import_sim_clicked), app);
+    gtk_box_append(GTK_BOX(header), import_sim_btn);
+
+    GtkWidget *sync_sim_btn = gtk_button_new_with_label("Sync SIM");
+    gtk_widget_add_css_class(sync_sim_btn, "flat");
+    g_signal_connect(sync_sim_btn, "clicked", G_CALLBACK(on_sync_sim_clicked), app);
+    gtk_box_append(GTK_BOX(header), sync_sim_btn);
+
+    GtkWidget *add_btn = gtk_button_new_with_label("New");
+    gtk_widget_add_css_class(add_btn, "suggested-action");
     g_signal_connect(add_btn, "clicked", G_CALLBACK(on_add_contact_clicked), app);
     gtk_box_append(GTK_BOX(header), add_btn);
     
@@ -536,9 +688,14 @@ activate_cb(GtkApplication *gtk_app, gpointer user_data)
     
     GtkWidget *edit_btn = gtk_button_new_with_label("Edit");
     gtk_widget_add_css_class(edit_btn, "flat");
-    g_signal_connect(edit_btn, "clicked", G_CALLBACK(on_add_contact_clicked), app);
+    g_signal_connect(edit_btn, "clicked", G_CALLBACK(on_edit_contact_clicked), app);
     gtk_box_append(GTK_BOX(det_header), edit_btn);
     
+    GtkWidget *save_sim_btn = gtk_button_new_with_label("Save to SIM");
+    gtk_widget_add_css_class(save_sim_btn, "flat");
+    g_signal_connect(save_sim_btn, "clicked", G_CALLBACK(on_save_to_sim_clicked), app);
+    gtk_box_append(GTK_BOX(det_header), save_sim_btn);
+
     GtkWidget *delete_btn = gtk_button_new_with_label("Delete");
     gtk_widget_add_css_class(delete_btn, "flat");
     g_signal_connect(delete_btn, "clicked", G_CALLBACK(on_delete_clicked), app);
@@ -622,32 +779,30 @@ activate_cb(GtkApplication *gtk_app, gpointer user_data)
     
     adw_application_window_set_content(ADW_APPLICATION_WINDOW(app->window), app->stack);
     
+    /* Dark by default: these phone apps must match the dark Nuxel shell. */
+    AdwStyleManager *style = adw_style_manager_get_default();
+    adw_style_manager_set_color_scheme(style, ADW_COLOR_SCHEME_FORCE_DARK);
+
     /* Load contacts */
     load_contacts(app);
-    
-    /* Populate list */
-    for (guint i = 0; i < app->contacts->len; i++) {
-        Contact *c = g_ptr_array_index(app->contacts, i);
-        GtkWidget *row = gtk_list_box_row_new();
-        GtkWidget *box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 12);
-        gtk_widget_set_margin_start(box, 8);
-    gtk_widget_set_margin_end(box, 8);
-    gtk_widget_set_margin_top(box, 8);
-    gtk_widget_set_margin_bottom(box, 8);
-        
-        GtkWidget *avatar = adw_avatar_new(32, c->name ? g_strndup(c->name, 1) : "?", TRUE);
-        gtk_box_append(GTK_BOX(box), avatar);
-        
-        GtkWidget *name_label = gtk_label_new(c->name);
-        gtk_widget_add_css_class(name_label, "heading");
-        gtk_label_set_xalign(GTK_LABEL(name_label), 0.0);
-        gtk_box_append(GTK_BOX(box), name_label);
-        
-        gtk_list_box_row_set_child(GTK_LIST_BOX_ROW(row), box);
-        g_object_set_data(G_OBJECT(row), "contact", c);
-        gtk_list_box_append(GTK_LIST_BOX(app->contact_list), row);
+
+    /* "Load from SIM automatically when one is added": this build has no
+     * ModemManager SIM phonebook.  When the local address book is empty and a
+     * SIM mirror already exists, import it automatically and say so. */
+    sim_load(app);
+    if (app->store.n_contacts == 0 && app->sim_store.n_contacts > 0) {
+        size_t added = 0;
+        for (size_t i = 0; i < app->sim_store.n_contacts; i++) {
+            NuxelContact *sc = &app->sim_store.contacts[i];
+            if (nuxel_phone_add_contact(&app->store, sc->name, sc->phone, sc->email)) added++;
+        }
+        if (added) {
+            nuxel_phone_store_save(&app->store, app->store_path);
+            load_contacts(app);
+        }
     }
-    
+
+    rebuild_contact_rows(app);
     gtk_window_present(GTK_WINDOW(app->window));
 }
 

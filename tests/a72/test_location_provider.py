@@ -90,6 +90,13 @@ class FakeGeoClue:
         self.acquire_calls += 1
         return (self.acquire_ok, None if self.acquire_ok else "acquire failed")
 
+    def stop_acquisition(self):
+        self.stop_calls = getattr(self, "stop_calls", 0) + 1
+
+    def disconnect(self):
+        self.disconnect_calls = getattr(self, "disconnect_calls", 0) + 1
+        self.connected = False
+
     def get_location(self):
         if self.error:
             return {"success": False, "error": self.error, "error_code": "PROVIDER_ERROR"}
@@ -122,6 +129,22 @@ def test_disabled_is_not_no_fix():
         assert st["state"] == "disabled"
         assert st["enabled"] is False
         assert st["location_fix_available"] is False
+        assert st["latitude"] is None and st["longitude"] is None
+
+
+def test_policy_off_stops_and_disconnects_the_provider():
+    with tempfile.TemporaryDirectory() as d:
+        geo = FakeGeoClue()
+        lc = connector(d, geo)
+        lc.set_enabled(True)
+        geo.locations = [fix()]
+        assert lc.get_status()["state"] == "fixed"
+        st = lc.set_enabled(False)
+        assert st["enabled"] is False
+        assert st["state"] == "disabled"
+        assert getattr(geo, "stop_calls", 0) == 1
+        assert getattr(geo, "disconnect_calls", 0) == 1
+        assert lc._last_fix is None
         assert st["latitude"] is None and st["longitude"] is None
 
 
@@ -225,20 +248,23 @@ def test_invalid_provider_coordinates_are_rejected():
         assert "invalid provider fix" in (st["last_error"] or "")
 
 
-def test_missing_timestamp_is_not_refreshed_by_a_poll():
+def test_missing_timestamp_stays_missing_and_is_not_fresh():
     with tempfile.TemporaryDirectory() as d:
         geo = FakeGeoClue()
         geo.locations = [fix(timestamp=False), fix(timestamp=False)]
         lc = connector(d, geo)
         lc.set_enabled(True)
         st1 = lc.get_status()
-        first_ts = st1["last_fix_timestamp"]
-        assert first_ts is not None
-        assert lc._last_fix["timestamp_source"] == "observed"
+        assert st1["last_fix_timestamp"] is None
+        assert st1["fix_timestamp_source"] == "missing"
+        assert st1["freshness_evidence"] is False
+        assert st1["state"] == "stale", "no provider time can never be a fresh fix"
+        assert st1["last_fix_age_s"] is None
+        assert lc._last_fix["timestamp_source"] == "missing"
         time.sleep(0.05)
         st2 = lc.get_status()
-        assert st2["last_fix_timestamp"] == first_ts, "a poll must not refresh a missing provider timestamp"
-        assert st2["state"] == "fixed"
+        assert st2["last_fix_timestamp"] is None
+        assert st2["state"] == "stale"
 
 
 def test_provider_disappearance_changes_state_without_destroying_last_fix():

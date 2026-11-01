@@ -18,7 +18,8 @@
 # nuxel-home (no pwa/ level, no nuxel-common), which 404'd the index and the
 # bridge module; this script now resolves the layout and says which one it used.
 #
-# Software rendering is forced because this kernel has no DRM/EGL device.
+# GPU policy: the nuxel-wayland-gpu-wrapper exports NUXEL_GPU=1 when phoc is
+# running on Mali-G76 through Mesa panfrost/kbase, and 0 on the pixman fallback.
 set -eu
 export XDG_SESSION_TYPE=wayland
 # Native communication apps run as the real session user (see the HTTP bridge's
@@ -44,9 +45,18 @@ if getent group nuxel >/dev/null 2>&1; then
   chmod 0700 /run/nuxel-wayland/dconf 2>/dev/null || true
 fi
 export GDK_BACKEND=wayland
-export WEBKIT_DISABLE_COMPOSITING_MODE=1
-export LIBGL_ALWAYS_SOFTWARE=1
-export GSK_RENDERER=cairo
+if [ "${NUXEL_GPU:-0}" = 1 ]; then
+  # The renderer and output buffers are GPU-backed (kbase + UDMABUF).  Let
+  # WebKitGTK/GTK use the same EGL/GLES stack instead of forcing CPU paint.
+  export WEBKIT_DISABLE_COMPOSITING_MODE=0
+  unset LIBGL_ALWAYS_SOFTWARE
+  export GSK_RENDERER=gl
+else
+  # Proven fallback for a failed GPU probe: no DRM/EGL device is assumed.
+  export WEBKIT_DISABLE_COMPOSITING_MODE=1
+  export LIBGL_ALWAYS_SOFTWARE=1
+  export GSK_RENDERER=cairo
+fi
 LOG=/run/nuxel-session.log
 # Native GUI applications run as the real nuxel user (uid 1000) so Firefox,
 # VLC and the GNOME tools do not refuse a root session.  They need the
@@ -159,9 +169,9 @@ say "starting A45 nav dock + Stevia OSK"
 nohup /usr/lib/nuxel/nuxel-navdock </dev/null >/run/nuxel-navdock.out 2>&1 &
 # Persistent top status strip over fullscreen native clients (Firefox/VLC/...).
 # It has an empty input region, so Home's DOM status-bar gestures still work.
-if [ -x /usr/lib/nuxel/nuxel-statusbar ]; then
-  nohup /usr/lib/nuxel/nuxel-statusbar </dev/null >/run/nuxel-statusbar.out 2>&1 &
-fi
+# PWNAGE-50000: the Home DOM status bar is the only top bar.  The native
+# reduced overlay is obsolete and must never be started (it hid the proper
+# clock/radio/location/USB/NFC row on the glass).
 if [ -x /usr/bin/phosh-osk-stevia ]; then
   nohup dbus-run-session -- /usr/bin/phosh-osk-stevia </dev/null >/run/stevia.out 2>&1 &
 fi

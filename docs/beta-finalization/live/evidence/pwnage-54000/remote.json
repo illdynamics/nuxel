@@ -1,0 +1,13 @@
+{
+  "effective_orientation": 90,
+  "last_error": "",
+  "schema": "nuxel.orientation.remote/1",
+  "sequence": 46,
+  "updated_epoch": 1793546506.834977,
+  "vnc": {
+    "active": false,
+    "status": "off"
+  },
+  "vnc_status": "off",
+  "xrdp_sessions": []
+}

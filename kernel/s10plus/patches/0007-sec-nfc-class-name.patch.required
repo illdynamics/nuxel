@@ -1,0 +1,3 @@
+Required with CONFIG_NFC=y: without this rename the generic NFC core and the
+Samsung sec_nfc driver both create /sys/class/nfc and sysfs_warn_dup() panics
+the kernel during early boot.

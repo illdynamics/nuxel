@@ -1,0 +1,53 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+linux-dmabuf version=3
+{"loops":10,"accepted":0,"rejected":0,"failed_events":0}
+PASS
+[destroyed object]: error 6: invalid offset 2147483647 for plane 0
+{"malformed_offset":"disconnect_ok","display_error":71}
+linux-dmabuf version=3
+{"loops":10,"accepted":10,"rejected":0,"failed_events":0}
+PASS
+MESA-LOADER: failed to retrieve device information
+EGL 1.5
+GL_VERSION=OpenGL ES 3.2 Mesa 26.3.0-devel (git-a5010bb447)
+GL_RENDERER=Mali-G76 MC12 (Panfrost)
+GL_VENDOR=Mesa
+EGL_EXTENSIONS=EGL_ANDROID_blob_cache EGL_ANDROID_native_fence_sync EGL_EXT_config_select_group EGL_EXT_image_dma_buf_import EGL_EXT_image_dma_buf_import_modifiers EGL_EXT_surface_compression EGL_IMG_context_priority EGL_KHR_cl_event2 EGL_KHR_config_attribs EGL_KHR_context_flush_control EGL_KHR_create_context EGL_KHR_create_context_no_error EGL_KHR_fence_sync EGL_KHR_get_all_proc_addresses EGL_KHR_gl_colorspace EGL_KHR_gl_renderbuffer_image EGL_KHR_gl_texture_2D_image EGL_KHR_gl_texture_3D_image EGL_KHR_gl_texture_cubemap_image EGL_KHR_image_base EGL_KHR_no_config_context EGL_KHR_partial_update EGL_KHR_reusable_sync EGL_KHR_surfaceless_context EGL_EXT_pixel_format_float EGL_KHR_wait_sync EGL_MESA_configless_context EGL_MESA_gl_interop EGL_MESA_query_driver EGL_MESA_x11_native_visual_id 
+frames=1 elapsed=0.003s pixel=33cc4dff
+glGetError=0x0
+MESA-EGL: warning: nuxel: kbase=1 fd=4 driver=panfrost
+MESA-LOADER: failed to retrieve device information
+MESA-EGL: warning: nuxel: kbase screen up
+STEP compositor=0x36e47380
+client ext=EGL_EXT_device_base EGL_EXT_device_enumeration EGL_EXT_device_query EGL_EXT_platform_base EGL_KHR_client_get_all_proc_addresses EGL_EXT_client_extensions EGL_KHR_debug EGL_EXT_platform_device EGL_EXT_explicit_device EGL_EXT_platform_wayland EGL_KHR_platform_wayland EGL_MESA_platform_surfaceless
+STEP display=0x36eb5e50 err=0x3000
+STEP eglInitialize 1.5 vendor=Mesa Project version=1.5
+display ext=EGL_ANDROID_blob_cache EGL_ANDROID_native_fence_sync EGL_EXT_buffer_age EGL_EXT_config_select_group EGL_EXT_image_dma_buf_import EGL_EXT_image_dma_buf_import_modifiers EGL_EXT_present_opaque EGL_EXT_surface_compression EGL_EXT_swap_buffers_with_damage EGL_IMG_context_priority EGL_KHR_cl_event2 EGL_KHR_config_attribs EGL_KHR_context_flush_control EGL_KHR_create_context EGL_KHR_create_context_no_error EGL_KHR_fence_sync EGL_KHR_get_all_proc_addresses EGL_KHR_gl_colorspace EGL_KHR_gl_renderbuffer_image EGL_KHR_gl_texture_2D_image EGL_KHR_gl_texture_3D_image EGL_KHR_gl_texture_cubemap_image EGL_KHR_image_base EGL_KHR_no_config_context EGL_KHR_partial_update EGL_KHR_reusable_sync EGL_KHR_surfaceless_context EGL_KHR_swap_buffers_with_damage EGL_EXT_pixel_format_float EGL_KHR_wait_sync EGL_MESA_configless_context EGL_MESA_gl_interop EGL_MESA_query_driver EGL_MESA_x11_native_visual_id 
+STEP chooseConfig n=4
+STEP windowSurface=0x36ede240 err=0x3000
+STEP context=0x36ede8f0 err=0x3000
+STEP renderer=Mali-G76 MC12 (Panfrost) version=OpenGL ES 3.2 Mesa 26.3.0-devel (git-a5010bb447) vendor=Mesa
+STEP clear ok err=0x0
+STEP makeCurrent none
+STEP destroySurface
+PASS
+MESA-EGL: warning: nuxel: kbase=1 fd=18 driver=panfrost
+MESA-LOADER: failed to retrieve device information
+MESA-EGL: warning: nuxel: kbase screen up
+{"gdk_display":"GdkWaylandDisplay"}
+{"gtk3_gl":"REALIZE","error":"none"}
+{"gtk3_gl":"PASS","gl_version":"OpenGL ES 3.2 Mesa 26.3.0-devel (git-a5010bb447)","gl_renderer":"Mali-G76 MC12 (Panfrost)","gl_vendor":"Mesa"}
+{"gtk3_gl":"PASS","gl_version":"OpenGL ES 3.2 Mesa 26.3.0-devel (git-a5010bb447)","gl_renderer":"Mali-G76 MC12 (Panfrost)","gl_vendor":"Mesa"}
+{"gtk3_gl":"PASS","gl_version":"OpenGL ES 3.2 Mesa 26.3.0-devel (git-a5010bb447)","gl_renderer":"Mali-G76 MC12 (Panfrost)","gl_vendor":"Mesa"}
+MESA-EGL: warning: nuxel: kbase=1 fd=16 driver=panfrost
+MESA-LOADER: failed to retrieve device information
+MESA-EGL: warning: nuxel: kbase screen up
+MESA-LOADER: failed to retrieve device information

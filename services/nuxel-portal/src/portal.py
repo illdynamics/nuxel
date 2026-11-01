@@ -31,7 +31,7 @@ import time
 import uuid
 
 # Configure logging
-NUXEL_PORTAL_VERSION = "0.7.4-beta"
+NUXEL_PORTAL_VERSION = "0.7.5-beta"
 
 logging.basicConfig(
     level=logging.INFO,
@@ -161,7 +161,15 @@ class PermissionStore:
 
     def __init__(self, permissions_dir=PERMISSIONS_DIR):
         self.permissions_dir = permissions_dir
-        os.makedirs(permissions_dir, exist_ok=True)
+        try:
+            os.makedirs(permissions_dir, mode=0o770, exist_ok=True)
+        except OSError as exc:
+            # Never silently continue with an in-memory-only grant store: that
+            # makes every consent request look transient and hides a broken
+            # deployed directory from the service state.
+            logger.error("Cannot create permission store %s: %s",
+                         permissions_dir, exc)
+            raise
         self._lock = threading.Lock()
 
     def _app_path(self, app_id):

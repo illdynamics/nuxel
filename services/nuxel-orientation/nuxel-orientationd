@@ -1,39 +1,35 @@
 #!/usr/bin/env python3
-"""nuxel-orientationd — the ONE authoritative orientation policy service (A49).
+"""nuxel-orientationd - the ONE authoritative orientation owner.
 
-Persistence, mode validation, sensor bring-up and compositor apply/revert live
-here so Quick Settings, Settings, nuxelctl and the compositor share one source of
-truth. Manual/fixed modes work with no sensor; auto modes report
-``sensor_unavailable`` when no verified source exists. Nothing flashes, writes
-partitions, or reboots.
+Seven stable modes, exact owner-facing labels, one policy implementation.  The
+daemon owns persistence, the compositor transform, the continuous sensor loop
+for auto modes, the visible trial/rollback transaction and truthful status.
 
-CLI:
-    nuxel-orientationd status [--json]      mode + effective + sensor + compositor
-    nuxel-orientationd get                  selected mode
-    nuxel-orientationd modes                the seven named modes + allowed sets
-    nuxel-orientationd set <mode> [--apply] validate, persist, attempt transform
-    nuxel-orientationd selftest             offline policy/sensor sanity
-    nuxel-orientationd watch [seconds]      bounded auto-rotation loop (hardware)
-
-Paths resolve through NUXEL_ROOT (default /) so the offline harness runs the REAL
-code against a fake root. The exact mount matrix / transform mapping stay
-``unverified`` until an owner physically proves them.
+Design rules this file enforces:
+  * a persisted mode is not the same thing as an applied transform;
+  * manual modes work with no accelerometer;
+  * a real sensor is required for an auto mode to move the screen;
+  * every mode change is a bounded trial that rolls back on ``no``, a saved
+    blank answer, timeout, compositor loss or daemon restart;
+  * one process owns the loop.  UI clients only read status and send requests.
 """
-
 from __future__ import annotations
 
 import json
 import os
+import signal
+import subprocess
 import sys
 import time
+import traceback
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 
 from nuxel_orientation.policy import (  # noqa: E402
     MODE_ORDER, SEVEN_MODES, Orientator, PolicyError,
-    choose_initial_orientation, is_auto, mode_from_document,
-    normalize_mode, validate_mode,
+    allowed_orientations, choose_initial_orientation, is_auto,
+    mode_from_document, normalize_mode, validate_mode,
 )
 from nuxel_orientation import sensors as sensor_mod  # noqa: E402
 from nuxel_orientation import apply as apply_mod  # noqa: E402
@@ -42,10 +38,13 @@ ROOT = os.environ.get("NUXEL_ROOT", "/").rstrip("/")
 
 
 def P(path):
-    return ROOT + path if ROOT else path
+    return (ROOT + path) if ROOT else path
 
 
 CONFIG_PATH = "/etc/nuxel/orientation/orientation.json"
+REQUEST_PATH = "/run/nuxel-orientation/request.json"
+STATUS_PATH = "/run/nuxel-orientation/status.json"
+PID_PATH = "/run/nuxel-orientation/daemon.pid"
 DEFAULT_CONFIG = {
     "schema_version": 1,
     "default_mode": "portrait",
@@ -54,36 +53,60 @@ DEFAULT_CONFIG = {
     "policy": {"hysteresis_ms": 450, "cooldown_ms": 250, "debounce_ms": 60,
                "flat_gravity_ratio": 0.55, "weak_gravity_ms2": 2.0,
                "sample_interval_ms": 100, "last_good_on_flat": True},
-    "sensor": {"sources": ["iio-accel", "iio-sensor-proxy", "manual"],
+    "sensor": {"sources": ["iio-sysfs-accel", "iio-accel", "iio-sensor-proxy", "manual"],
+               "sensor_hub": {"raw_data": "/sys/class/sensors/accelerometer_sensor/raw_data",
+                              "enable": "/sys/class/sensors/ssp_sensor/enable",
+                              "mcu_power": "/sys/class/sec/sensorhub/mcu_power",
+                              "bbd_control": "/dev/bbd_control",
+                              "enable_bit": 1,
+                              "lhd_paths": ["/vendor/bin/hw/lhd", "/vendor/bin/lhd"],
+                              "linker_paths": ["/system/bin/linker64"],
+                              "auto_start": True,
+                              "startup_timeout_ms": 1500,
+                              "retry_interval_ms": 30000},
                "mount_matrix": {"matrix": [1, 0, 0, 0, 1, 0, 0, 0, 1],
                                 "calibration_status": "unverified"},
                "gravity_reference": {
                    "0": [0.0, -1.0, 0.0], "90": [1.0, 0.0, 0.0],
                    "180": [0.0, 1.0, 0.0], "270": [-1.0, 0.0, 0.0],
                    "calibration_status": "unverified"}},
-    "compositor": {"backend": "auto", "output": "DSI-1",
+    "compositor": {"backend": "auto", "output": "auto",
+                   "runtime_dir": "/run/nuxel-wayland",
+                   "wayland_display": "wayland-0",
                    "transform_map": {"0": "normal", "90": "270",
                                      "180": "180", "270": "90"},
-                   "revert_after_ms": 4000},
+                   "portrait_scale": 2, "landscape_scale": 1,
+                   "transform_map_verified": True,
+                   "commit_verified": True,
+                   "revert_after_ms": 15000, "trial_seconds": 0,
+                   "verify_timeout_ms": 2500,
+                   "touch": {"verified": False, "matrix_available": False}},
     "paths": {"state_file": "/var/lib/nuxel/orientation/state.json",
+              "last_good_file": "/var/lib/nuxel/orientation/last-good.json",
               "control_fifo": "/run/nuxel-orientation.cmd",
               "log": "/var/log/nuxel/orientation.log"},
 }
 
+MANUAL_SOURCES = {"manual"}
+
 
 def load_config():
-    path = P(CONFIG_PATH)
     try:
-        with open(path) as f:
+        with open(P(CONFIG_PATH)) as f:
             doc = json.load(f)
     except (OSError, ValueError):
         doc = {}
     merged = json.loads(json.dumps(DEFAULT_CONFIG))
     if isinstance(doc, dict):
         for key in ("modes", "policy", "sensor", "compositor", "paths",
-                    "mode_order", "default_mode"):
+                    "mode_order", "default_mode", "device"):
             if key in doc:
-                merged[key] = doc[key]
+                if isinstance(doc[key], dict) and isinstance(merged.get(key), dict):
+                    # Preserve defaults (for example the sensor_hub control
+                    # paths) when a user config only overrides one sub-key.
+                    merged[key] = {**merged[key], **doc[key]}
+                else:
+                    merged[key] = doc[key]
     merged["modes"] = {**SEVEN_MODES, **merged.get("modes", {})}
     merged["mode_order"] = MODE_ORDER
     return merged
@@ -94,44 +117,156 @@ def state_path(config):
            "/var/lib/nuxel/orientation/state.json"))
 
 
-def load_state(config):
-    path = state_path(config)
+def last_good_path(config):
+    return P(config.get("paths", {}).get("last_good_file",
+           "/var/lib/nuxel/orientation/last-good.json"))
+
+
+def _read_json(path, default=None):
     try:
         with open(path) as f:
-            doc = json.load(f)
+            return json.load(f)
     except (OSError, ValueError):
-        doc = {}
-    if not isinstance(doc, dict):
-        doc = {}
-    return doc
+        return default
 
 
-def save_state(config, doc):
-    path = state_path(config)
+def ensure_runtime_dir():
+    """Create the request/status directory writable by the Bridge user.
+
+    nuxel-bridge (group nuxel) must be able to drop a request; the daemon is
+    root because the compositor runtime socket is root-only.
+    """
+    path = os.path.dirname(P(REQUEST_PATH))
+    try:
+        os.makedirs(path, exist_ok=True)
+        os.chmod(path, 0o775)
+        try:
+            import grp
+            os.chown(path, 0, grp.getgrnam("nuxel").gr_gid)
+        except (KeyError, OSError):
+            pass
+    except OSError:
+        pass
+
+
+def _write_json(path, doc):
     os.makedirs(os.path.dirname(path), exist_ok=True)
     tmp = path + ".tmp"
     with open(tmp, "w") as f:
-        json.dump(doc, f, indent=2)
+        json.dump(doc, f, indent=2, sort_keys=True)
         f.write("\n")
+        f.flush()
+        os.fsync(f.fileno())
     os.replace(tmp, path)
 
 
-def sensor_probe(config):
+def load_state(config):
+    doc = _read_json(state_path(config), {})
+    return doc if isinstance(doc, dict) else {}
+
+
+def save_state(config, doc):
+    _write_json(state_path(config), doc)
+
+
+def load_last_good(config):
+    doc = _read_json(last_good_path(config), {})
+    return doc if isinstance(doc, dict) else {}
+
+
+def save_last_good(config, doc):
+    _write_json(last_good_path(config), doc)
+
+
+def _trial_seconds(config):
+    """Confirmation window for an explicit owner trial.
+
+    PWNAGE-54000: a verified mode change is COMMITTED, not left pending.  The
+    old 75 s default silently reverted every successful rotation because no
+    client ever called confirm.  Trials are now opt-in (--trial) and bounded to
+    15..90 s; the normal set path passes trial=False.
+    """
+    comp = config.get("compositor", {})
+    try:
+        seconds = float(comp.get("trial_seconds", 0) or 0)
+    except (TypeError, ValueError):
+        seconds = 0.0
+    if seconds <= 0:
+        return 0.0
+    return max(15.0, min(90.0, seconds))
+
+
+def _read_text(path, default=""):
+    try:
+        with open(P(path)) as f:
+            return f.read().strip()
+    except OSError:
+        return default
+
+
+def sensor_hub_state(config=None):
+    """Truthful MCU/hub state for the S10+ Broadcom sensor hub.
+
+    A raw_data node existing is not a live sensor.  The hub MCU must be
+    initialized by the Broadcom LHD patch loader and the accelerometer bit must
+    be enabled before raw_data changes.  This report lets Settings state exactly
+    why Auto is blocked instead of showing a green Auto that never rotates.
+    """
+    cfg = config or load_config()
+    hub_cfg = dict(((cfg.get("sensor", {}) or {}).get("sensor_hub", {}) or {}))
+    hub_cfg.setdefault("root", ROOT or "/")
+    cfg = dict(cfg)
+    cfg["sensor"] = dict(cfg.get("sensor", {}))
+    cfg["sensor"]["sensor_hub"] = hub_cfg
+    status = sensor_mod.hub_control_from_config(cfg, root=ROOT or "/").status()
+    sensor_state = _read_text("/sys/class/sensors/ssp_sensor/sensor_state", "")
+    out = {
+        "device": "BCM47752KUB1G / LSM6DSO",
+        "raw_data": status.get("raw_data") or "unavailable",
+        "raw_live": bool(status.get("raw_live")),
+        "accelerometer_enabled": bool(status.get("accelerometer_enabled")),
+        "enable_bits": status.get("enable_bits"),
+        "sensor_state": sensor_state,
+        "mcu_powered": bool(status.get("mcu_powered")),
+        "lhd_present": bool(status.get("lhd_present")),
+        "lhd_path": status.get("lhd_path"),
+        "android_linker_present": bool(status.get("android_linker_present")),
+        "patch_loader": ("vendor Android lhd present" if status.get("lhd_present")
+                         else "Broadcom LHD sensor-hub patch loader (not installed)"),
+        "auto_blocked_reason": "" if status.get("raw_live") else status.get("reason", ""),
+    }
+    return out
+
+
+def sensor_probe(config, start=False):
     """Per-source availability, honestly, without fabricating a reading.
 
-    ``available`` reflects ONLY auto-capable sources (a real gravity source),
-    never the diagnostic `manual` source, so an auto mode is reported
-    ``sensor_unavailable`` unless a verified live accelerometer exists.
+    ``start=True`` is the production Auto path: it asks the sensor-hub kernel
+    control nodes to wake the MCU and enable the accelerometer *before* probing
+    raw_data.  Without the vendor LHD runtime this is reported as blocked and
+    no synthetic reading is ever supplied.
     """
+    hub_start = None
+    if start:
+        try:
+            hub_start = sensor_mod.ensure_sensor_hub(config, root=ROOT or "/")
+        except Exception as exc:
+            hub_start = {"streaming": False, "reason": "sensor-hub start failed: %s" % exc}
+        if hub_start.get("streaming"):
+            time.sleep(0.12)  # let the kernel publish the first sample
     report = sensor_mod.probe_sources(config)
     capable = [s for s in report if s.get("auto_capable")]
-    return {
+    out = {
         "sources": report,
         "available": bool(capable),
         "preferred": capable[0]["source"] if capable else None,
         "unverified": (config.get("sensor", {}).get("mount_matrix", {})
                        .get("calibration_status", "unverified") == "unverified"),
+        "hub": sensor_hub_state(config),
     }
+    if hub_start is not None:
+        out["hub_start"] = hub_start
+    return out
 
 
 def sensor_reading(config, source_name):
@@ -139,72 +274,247 @@ def sensor_reading(config, source_name):
     return src.read()
 
 
-def do_status(config):
-    state = load_state(config)
+def _calibration(config):
+    sensor_cfg = config.get("sensor", {})
+    return {
+        "mount_matrix": sensor_cfg.get("mount_matrix", {}).get(
+            "calibration_status", "unverified"),
+        "gravity_reference": sensor_cfg.get("gravity_reference", {}).get(
+            "calibration_status", "unverified"),
+    }
+
+
+def _display_snapshot(config):
+    snap = apply_mod.output_status(config)
+    comp = config.get("compositor", {})
+    snap["backend"] = snap.get("backend", "none")
+    snap["transform_map"] = comp.get("transform_map", {})
+    snap["verified"] = bool(comp.get("transform_map_verified", False))
+    snap["presenter_rotation"] = _presenter_rotation(comp, _transform_quarter(snap))
+    return snap
+
+
+def _presenter_rotation(comp, angle):
+    return 0 if comp.get("screencopy_already_transformed", True) else angle
+
+
+def _transform_quarter(display):
+    value = str((display or {}).get("transform") or "normal")
+    if value.startswith("flipped"):
+        value = value[len("flipped-"):] if value != "flipped" else "normal"
+    return int(value) if value in ("0", "90", "180", "270") else 0
+
+
+def _input_matrix_for(config, transform):
+    """Return the libinput calibration matrix for a verified compositor transform.
+
+    Phoc 0.54 feeds raw touch coordinates to
+    wlr_cursor_absolute_to_layout_coords(); it does not rotate touch with the
+    output.  The existing Nuxel libinput shim is the touch owner, so it applies
+    this matrix exactly once before Phoc sees the coordinates.
+    """
+    comp = config.get("compositor", {})
+    mapping = comp.get("input_matrix_map", {})
+    matrix = mapping.get(str(transform))
+    if not isinstance(matrix, (list, tuple)) or len(matrix) != 6:
+        matrix = (1, 0, 0, 0, 1, 0)
+    try:
+        return [float(v) for v in matrix]
+    except (TypeError, ValueError):
+        return [1.0, 0.0, 0.0, 0.0, 1.0, 0.0]
+
+
+def _emit_input_state(config, display, effective=None):
+    """Publish the single libinput calibration owner's current matrix.
+
+    This file is consumed by libnuxel-libinput-path.so inside Phoc.  It does
+    not rotate the framebuffer, poll a sensor, or act as an orientation
+    authority: it is the verified transform translated into the one input
+    transform Phoc can consume.
+    """
+    comp = config.get("compositor", {})
+    path = P(comp.get("input_state", "/run/nuxel-orientation/input.json"))
+    transform = _transform_quarter(display)
+    matrix = _input_matrix_for(config, transform)
+    doc = {
+        "schema": "nuxel.orientation.input/1",
+        "owner": "libnuxel-libinput-path.so",
+        "device_name": "sec_touchscreen",
+        "transform": transform,
+        "effective_orientation": effective if effective is not None else "",
+        "applied": bool(display.get("applied")),
+        "matrix": matrix,
+        "note": "libinput calibration only; Phoc consumes mapped touch; presenter rotates no pixels",
+    }
+    try:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        tmp = path + ".tmp"
+        with open(tmp, "w") as f:
+            json.dump(doc, f, sort_keys=True)
+            f.write("\n")
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(tmp, path)
+    except OSError:
+        pass
+
+
+def _emit_presenter_state(config, display, effective=None):
+    """Publish the exact scanout compensation nuxel-wl-fb must apply.
+
+    The presenter must not infer the direction from image dimensions.  This is
+    one small atomic text file; JSON parsing in the C bridge would be brittle.
+    """
+    comp = config.get("compositor", {})
+    path = P(comp.get("presenter_state", "/run/nuxel-wl-fb-orientation"))
+    angle = _transform_quarter(display)
+    # Hardware probe (test pattern, raw nuxel-wl-snapshot): phoc screencopy
+    # already returns the transformed frame in its 720x1520 binding.  A 90/270
+    # wlr transform rotates that frame inside the portrait-sized buffer, so the
+    # presenter must scale it directly.  Rotating it again was the double-
+    # transform defect.
+    presenter_rotation = _presenter_rotation(comp, angle)
+    doc = (
+        "transform=%d\n"
+        "presenter_rotation=%d\n"
+        "effective_orientation=%s\n"
+        "output=%s\n"
+        "logical_width=%s\n"
+        "logical_height=%s\n"
+        "backend=%s\n"
+        "applied=%d\n"
+    ) % (
+        angle, presenter_rotation, effective if effective is not None else "",
+        display.get("output") or "", display.get("logical_width") or "",
+        display.get("logical_height") or "", display.get("backend") or "none",
+        1 if display.get("applied") else 0,
+    )
+    try:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        tmp = path + ".tmp"
+        with open(tmp, "w") as f:
+            f.write(doc)
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(tmp, path)
+    except OSError:
+        pass
+    _emit_input_state(config, display, effective)
+
+
+def _remote_snapshot():
+    """Asynchronous VNC/XRDP synchronization status, never local authority."""
+    doc = _read_json(P("/run/nuxel-orientation/remote.json"), {})
+    if not isinstance(doc, dict):
+        doc = {}
+    return {
+        "vnc_status": doc.get("vnc_status", "not_configured"),
+        "vnc": doc.get("vnc") or {"status": "not_configured"},
+        "xrdp_sessions": doc.get("xrdp_sessions") or [],
+        "remote_updated_epoch": doc.get("updated_epoch"),
+        "remote_error": doc.get("last_error", ""),
+    }
+
+
+def _touch_snapshot(config):
+    comp = config.get("compositor", {})
+    touch = comp.get("touch", {})
+    # Phoc 0.54 does not transform touch with the output.  The LD_PRELOADed
+    # Nuxel libinput shim owns the single calibration and consumes the verified
+    # matrix published in /run/nuxel-orientation/input.json.  The presenter only
+    # scales the already-oriented capture and never touches input.
+    return {
+        "owner": touch.get("owner", "libnuxel-libinput-path.so"),
+        "transform_available": bool(touch.get("matrix_available", True)),
+        "verified": bool(touch.get("verified", False)),
+        "verification": (touch.get("calibration_status") or
+                         "matrix-derived-and-applied-from-live-transform; physical corner test pending"),
+        "double_rotation": False,
+        "matrix_source": P(comp.get("input_state", "/run/nuxel-orientation/input.json")),
+        "mechanism": touch.get(
+            "mechanism",
+            "libinput calibration matrix driven by the verified compositor transform; presenter adds no second rotation"),
+    }
+
+
+def _mode_label(mode):
+    return SEVEN_MODES.get(mode, {}).get("label", mode)
+
+
+def _base_status(config, state=None):
+    state = state or load_state(config)
     mode, effective, last = normalize_mode(state)
     sensor = sensor_probe(config)
-    comp = config.get("compositor", {})
-    result = {
+    display = _display_snapshot(config)
+    _emit_presenter_state(config, display, effective)
+    requested = state.get("requested_orientation", effective)
+    if requested not in allowed_orientations(mode):
+        requested = effective
+    try:
+        scale_ok = abs(float(display.get("scale") or 0) -
+                       apply_mod.scale_for(effective, config)) < 0.001
+    except (TypeError, ValueError):
+        scale_ok = False
+    applied = bool(display.get("output") and display.get("transform") ==
+                   apply_mod.transform_for(effective, config) and scale_ok)
+    auto_blocked = bool(is_auto(mode) and not sensor.get("available"))
+    last_error = state.get("last_error") or display.get("error") or ""
+    trial_doc = state.get("trial") or {}
+    if auto_blocked and not trial_doc.get("pending_confirmation"):
+        last_error = last_error or "sensor unavailable: auto rotation is blocked"
+    remote = _remote_snapshot()
+    return {
+        "success": True,
         "mode": mode,
-        "mode_label": SEVEN_MODES.get(mode, {}).get("label", mode),
+        "mode_label": _mode_label(mode),
+        "sequence": int(state.get("sequence", 0) or 0),
+        "transition_id": state.get("transition_id"),
+        "transition_state": state.get("transition_state", "idle"),
         "auto": is_auto(mode),
-        "allowed": list(SEVEN_MODES.get(mode, {}).get("allowed", [])),
+        "auto_state": ("blocked_sensor_unavailable" if auto_blocked
+                       else ("active" if is_auto(mode) else "fixed")),
+        "allowed": list(allowed_orientations(mode)),
         "effective_orientation": effective,
-        "last_orientation": last,
+        "requested_orientation": requested,
+        "last_orientation": last if last is not None else effective,
+        "applied": applied,
         "sensor": sensor,
+        "calibration": _calibration(config),
+        "display": display,
+        "touch": _touch_snapshot(config),
+        "trial": state.get("trial") or {"pending_confirmation": False},
+        "last_good": load_last_good(config) or None,
+        "last_error": last_error,
+        "display_verified": bool(applied),
+        **remote,
+        # Compatibility fields consumed by the shipped Settings panel.
         "compositor": {
-            "output": comp.get("output", "DSI-1"),
-            "transform_available": apply_mod.wlr_randr_available(),
-            "transform_map_verified": False,
-            "touch_calibration_verified": False,
-        },
-        "calibration": {
-            "mount_matrix": config.get("sensor", {}).get("mount_matrix", {})
-                                .get("calibration_status", "unverified"),
-            "gravity_reference": config.get("sensor", {}).get("gravity_reference", {})
-                                     .get("calibration_status", "unverified"),
+            "output": display.get("output") or config.get("compositor", {}).get("output", "auto"),
+            "backend": display.get("backend", "none"),
+            "transform": display.get("transform"),
+            "transform_available": bool(display.get("output")),
+            "transform_map_verified": bool(config.get("compositor", {}).get(
+                "transform_map_verified", False)),
+            "touch_calibration_verified": bool(config.get("compositor", {}).get(
+                "touch", {}).get("verified", False)),
+            "error": display.get("error", ""),
         },
     }
-    return result
 
 
-def do_set(config, mode, apply_now=False):
-    mode = validate_mode(mode)
+def do_status(config):
+    runtime = _read_json(P(STATUS_PATH), None)
     state = load_state(config)
-    _, _, last = normalize_mode(state)
-    sensor_orient = None
-    if apply_now and is_auto(mode):
-        # Choose a sensor-consistent initial pose when we can, never fabricate.
-        probe = sensor_probe(config)
-        pref = probe.get("preferred")
-        if pref:
-            try:
-                reading = sensor_reading(config, pref)
-                if reading.available:
-                    from nuxel_orientation.policy import Orientator
-                    o = Orientator(mode, config)
-                    sensor_orient, _ = o.classify(reading.vector())
-            except Exception:
-                sensor_orient = None
-    initial = choose_initial_orientation(mode, last, sensor_orient)
-    next_state = {
-        "schema_version": 1,
-        "mode": mode,
-        "effective_orientation": initial,
-        "last_orientation": initial,
-        "set_by": "nuxel-orientationd",
-        "updated_at": int(time.time()),
-    }
-    save_state(config, next_state)
-
-    apply_result = None
-    if apply_now:
-        apply_result = apply_mod.apply_transform(initial, config)
-    result = {"success": True, "mode": mode, "effective_orientation": initial,
-              "auto": is_auto(mode)}
-    if apply_result is not None:
-        result["compositor"] = apply_result
-    return result
+    if isinstance(runtime, dict) and runtime.get("_daemon_live"):
+        # The daemon is the only process allowed to query the root-owned
+        # compositor socket.  A Bridge client must NOT re-query it: running as
+        # nuxel-bridge would fail to connect and overwrite a healthy status with
+        # a false "failed to connect to display".  The daemon refreshes display
+        # truth every two seconds and on every apply.
+        runtime["status_age_seconds"] = max(
+            0, int(time.time() - float(runtime.get("updated_epoch", time.time()))))
+        return runtime
+    return _base_status(config, state)
 
 
 def do_modes():
@@ -216,24 +526,606 @@ def do_modes():
     ]
 
 
-def do_watch(config, seconds):
-    probe = sensor_probe(config)
-    if not probe.get("available"):
-        print("sensor_unavailable: " + json.dumps(probe))
-        return 2
-    pref = probe["preferred"]
+def _write_request(config, request):
+    ensure_runtime_dir()
+    path = P(REQUEST_PATH)
+    request = dict(request)
+    request.setdefault("request_id", "req-%d-%d" % (os.getpid(), int(time.time() * 1000)))
+    request.setdefault("created_epoch", time.time())
+    _write_json(path, request)
+    return request
+
+
+def _daemon_alive():
+    pid = None
+    try:
+        with open(P(PID_PATH)) as f:
+            pid = int(f.read().strip())
+    except (OSError, ValueError):
+        return False
+    if not pid:
+        return False
+    # A non-root Bridge client cannot signal a root-owned daemon, so signal 0
+    # would falsely report "not running" (and then fall into an unwritable
+    # direct path).  /proc visibility is the portable liveness check here.
+    if os.path.isdir("/proc/%d" % pid):
+        return True
+    try:
+        os.kill(pid, 0)
+        return True
+    except OSError:
+        return False
+
+
+def _wait_for_request(config, request, timeout=12.0):
+    """Return only a terminal result, never the transient "applying" snapshot."""
+    deadline = time.monotonic() + timeout
+    last = None
+    while time.monotonic() < deadline:
+        st = do_status(config)
+        last = st
+        trial = st.get("trial") or {}
+        rid = request["request_id"]
+        if trial.get("request_id") == rid:
+            return st
+        if not request.get("trial") and st.get("last_request_id") == rid:
+            state = st.get("transition_state")
+            if state not in ("applying", "rollback"):
+                return st
+        time.sleep(0.1)
+    return last if last is not None else do_status(config)
+
+
+def request_set(config, mode, apply_now=True, trial=False, trial_seconds=None):
+    mode = validate_mode(mode)
+    req = _write_request(config, {
+        "action": "set_mode", "mode": mode, "apply": bool(apply_now),
+        "trial": bool(trial), "trial_seconds": trial_seconds or _trial_seconds(config),
+    })
+    if _daemon_alive():
+        doc = _wait_for_request(config, req)
+        if apply_now:
+            doc["success"] = bool(doc.get("display_verified"))
+            if not doc["success"]:
+                doc["error"] = doc.get("last_error") or "transform not verified"
+        return doc
+    # Direct apply is only safe for a root diagnostic.  The Bridge runs as
+    # nuxel-bridge and must never write the root-owned state or claim success
+    # when the single owner is absent.
+    if os.geteuid() == 0 or ROOT:
+        return _set_mode_direct(config, mode, apply_now=apply_now, trial=trial,
+                                trial_seconds=req["trial_seconds"], request_id=req["request_id"])
+    return {"success": False, "mode": mode,
+            "error": "orientation daemon is not running",
+            "request_id": req["request_id"]}
+
+
+def _set_mode_direct(config, mode, apply_now=True, trial=False,
+                     trial_seconds=None, request_id=None):
+    mode = validate_mode(mode)
     state = load_state(config)
-    mode, _, last = normalize_mode(state)
+    old_mode, old_effective, last = normalize_mode(state)
+    sensor_orient = None
+    probe = sensor_probe(config)
+    if is_auto(mode) and probe.get("preferred"):
+        try:
+            reading = sensor_reading(config, probe["preferred"])
+            if reading.available:
+                sensor_orient, _ = Orientator(mode, config).classify(reading.vector())
+        except Exception:
+            sensor_orient = None
+    requested = choose_initial_orientation(mode, last, sensor_orient)
+    auto_blocked = bool(is_auto(mode) and not probe.get("available"))
+    last_good = load_last_good(config)
+    if not last_good:
+        last_good = {"mode": old_mode, "effective_orientation": old_effective,
+                     "transform": apply_mod.transform_for(old_effective, config)}
+    if trial and not auto_blocked:
+        save_last_good(config, last_good)
+    apply_result = None
+    if apply_now:
+        apply_result = apply_mod.apply_transform(requested, config)
+    displayed = bool(apply_result and apply_result.get("applied"))
+    next_state = {
+        "schema_version": 1,
+        "mode": mode,
+        "requested_orientation": requested,
+        "effective_orientation": requested if displayed or not apply_now else old_effective,
+        "last_orientation": requested,
+        "set_by": "nuxel-orientationd",
+        "updated_at": int(time.time()),
+        "last_request_id": request_id,
+        "last_error": "" if displayed or not apply_now else (
+            (apply_result or {}).get("error") or "transform not applied"),
+        "trial": None,
+    }
+    if auto_blocked:
+        next_state["last_error"] = ("sensor unavailable: %s is blocked until a "
+                                    "live gravity source exists" % _mode_label(mode))
+        next_state["trial"] = None
+    elif trial and displayed:
+        now = time.time()
+        next_state["trial"] = {
+            "pending_confirmation": True,
+            "request_id": request_id,
+            "id": request_id,
+            "mode": mode,
+            "effective_orientation": requested,
+            "started_epoch": now,
+            "deadline_epoch": now + float(trial_seconds or _trial_seconds(config)),
+            "last_result": "pending",
+        }
+    save_state(config, next_state)
+    _emit_presenter_state(config, apply_result or _display_snapshot(config), next_state.get("effective_orientation"))
+    result = _base_status(config, next_state)
+    result["request_id"] = request_id
+    if apply_result is not None:
+        result["display"] = apply_result
+        result["compositor"].update({
+            "output": apply_result.get("output"),
+            "backend": apply_result.get("backend"),
+            "transform": apply_result.get("transform"),
+            "applied": apply_result.get("applied"),
+            "error": apply_result.get("error", ""),
+        })
+        result["applied"] = bool(apply_result.get("applied"))
+    if apply_now:
+        result["success"] = bool(apply_result.get("applied"))
+        if not result["success"]:
+            result["error"] = (apply_result or {}).get("error") or "transform not applied"
+    return result
+
+
+class Runtime:
+    def __init__(self, config):
+        self.config = config
+        self.running = True
+        self.state = load_state(config)
+        self.mode, self.effective, self.last = normalize_mode(self.state)
+        self.requested = self.state.get("requested_orientation", self.effective)
+        self.trial = self.state.get("trial") or None
+        self.last_good = load_last_good(config)
+        self.last_error = self.state.get("last_error", "")
+        self.sensor = sensor_probe(config, start=is_auto(self.mode))
+        self.display = _display_snapshot(config)
+        self.orientator = Orientator(self.mode, config)
+        self.orientator.current = self.effective
+        self.last_sample = 0.0
+        self.last_output_check = 0.0
+        self.last_sensor_read = None
+        self.last_sensor_quality = None
+        self._last_request = None
+        self._stop_requested = False
+        self.sequence = int(self.state.get("sequence", 0) or 0)
+        self.transition_id = self.state.get("transition_id")
+        self.transition_state = self.state.get("transition_state", "idle")
+        self._remote_sequence = -1
+        self._remote_child = None
+        self._remote_last_tick = 0.0
+        self._trial_good = None
+        # A pending trial from a previous daemon process is unsafe: nobody can
+        # be sure the owner saw the screen.  Restore the saved last-good.
+        if self.trial and self.trial.get("pending_confirmation"):
+            self.last_error = "rollback: daemon restarted with an unconfirmed trial"
+            self._rollback_trial("daemon_restart")
+
+    def _spawn_remote_sync(self):
+        """One asynchronous consumer refresh; never blocks or rolls back local."""
+        helper = "/usr/libexec/nuxel/nuxel-orientation-remote-sync"
+        if not os.path.exists(helper):
+            return
+        if self._remote_child is not None and self._remote_child.poll() is None:
+            return
+        try:
+            self._remote_child = subprocess.Popen(
+                [helper], stdin=subprocess.DEVNULL,
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                start_new_session=True)
+        except OSError:
+            pass
+
+    def _publish(self):
+        doc = _base_status(self.config, self.state)
+        doc["_daemon_live"] = True
+        doc["pid"] = os.getpid()
+        doc["updated_epoch"] = time.time()
+        doc["mode"] = self.mode
+        doc["mode_label"] = _mode_label(self.mode)
+        doc["auto"] = is_auto(self.mode)
+        doc["allowed"] = list(allowed_orientations(self.mode))
+        doc["effective_orientation"] = self.effective
+        doc["requested_orientation"] = self.requested
+        doc["last_orientation"] = self.last if self.last is not None else self.effective
+        try:
+            scale_ok = abs(float(self.display.get("scale") or 0) -
+                           apply_mod.scale_for(self.effective, self.config)) < 0.001
+        except (TypeError, ValueError):
+            scale_ok = False
+        doc["applied"] = bool(
+            self.display.get("output") and
+            self.display.get("transform") ==
+            apply_mod.transform_for(self.effective, self.config) and scale_ok)
+        doc["auto_state"] = (
+            "blocked_sensor_unavailable" if is_auto(self.mode) and not self.sensor.get("available")
+            else ("active" if is_auto(self.mode) else "fixed"))
+        doc["sensor"] = self.sensor
+        doc["display"] = self.display
+        doc["touch"] = _touch_snapshot(self.config)
+        doc["trial"] = self.trial or {"pending_confirmation": False}
+        doc["last_good"] = self.last_good or None
+        doc["last_error"] = self.last_error
+        doc["last_request_id"] = self.state.get("last_request_id")
+        doc["sequence"] = self.sequence
+        doc["transition_id"] = self.transition_id
+        doc["transition_state"] = self.transition_state
+        doc["display_verified"] = bool(
+            self.display.get("output") and self.display.get("transform") ==
+            apply_mod.transform_for(self.effective, self.config) and scale_ok)
+        doc.update(_remote_snapshot())
+        _emit_presenter_state(self.config, self.display, self.effective)
+        doc["compositor"] = {
+            "output": self.display.get("output"),
+            "backend": self.display.get("backend"),
+            "transform": self.display.get("transform"),
+            "transform_available": bool(self.display.get("output")),
+            "transform_map_verified": bool(self.config.get("compositor", {}).get(
+                "transform_map_verified", False)),
+            "touch_calibration_verified": bool(self.config.get("compositor", {}).get(
+                "touch", {}).get("verified", False)),
+            "error": self.display.get("error", ""),
+        }
+        _write_json(P(STATUS_PATH), doc)
+        # Remote sessions are asynchronous consumers of the verified local
+        # state.  One short-lived helper per committed sequence; no polling
+        # loop, no blocking, and a remote failure cannot alter the phone.
+        if self.sequence != self._remote_sequence:
+            self._remote_sequence = self.sequence
+            self._spawn_remote_sync()
+
+    def _persist(self, trial=True):
+        self.state = {
+            "schema_version": 1,
+            "mode": self.mode,
+            "requested_orientation": self.requested,
+            "effective_orientation": self.effective,
+            "last_orientation": self.last if self.last is not None else self.effective,
+            "set_by": "nuxel-orientationd",
+            "updated_at": int(time.time()),
+            "last_request_id": self.state.get("last_request_id"),
+            "last_error": self.last_error,
+            "trial": self.trial,
+            "sequence": self.sequence,
+            "transition_id": self.transition_id,
+            "transition_state": self.transition_state,
+        }
+        save_state(self.config, self.state)
+
+    def _snapshot_good(self):
+        self.last_good = {
+            "mode": self.mode,
+            "effective_orientation": self.effective,
+            "transform": apply_mod.transform_for(self.effective, self.config),
+            "requested_orientation": self.requested,
+            "saved_epoch": time.time(),
+        }
+        save_last_good(self.config, self.last_good)
+
+    def _apply(self, orientation, reason="", commit_last_good=True):
+        """Apply one verified orientation transaction.
+
+        The local display is the authority.  A verified transform is committed
+        immediately (no invisible 75 s confirmation window).  If the transform
+        cannot be read back, the previous verified transform is restored and
+        the effective angle is NOT advanced.  Remote sessions are consumers and
+        can never invalidate a successful local rotation.
+        """
+        previous = self.effective
+        previous_display = self.display
+        self.transition_state = "applying"
+        self.transition_id = "tx-%d-%d" % (int(time.time() * 1000), self.sequence + 1)
+        self._publish()
+        result = apply_mod.apply_transform(orientation, self.config)
+        self.display = result
+        if result.get("applied"):
+            self.effective = orientation
+            self.requested = orientation
+            self.orientator.current = orientation
+            self.last = orientation
+            self.last_error = ""
+            self.transition_state = "verified"
+            self.sequence += 1
+            if commit_last_good:
+                self._snapshot_good()
+        else:
+            self.last_error = result.get("error") or ("%s: transform not applied" % reason)
+            self.transition_state = "rollback"
+            # Never leave a half-applied compositor state behind.  Restore the
+            # last verified angle and verify that restore as well.
+            restore = apply_mod.apply_transform(previous, self.config)
+            if restore.get("applied"):
+                self.display = restore
+                self.effective = self.requested = previous
+                self.orientator.current = previous
+                self.last_error += "; restored previous orientation %d" % previous
+                self.transition_state = "rolled_back"
+            else:
+                self.display = result
+                self.transition_state = "failed"
+        self._persist()
+        self._publish()
+        return bool(result.get("applied"))
+
+    def set_mode(self, mode, apply_now=True, arm_trial=False, trial_seconds=None,
+                 request_id=None):
+        mode = validate_mode(mode)
+        old = {"mode": self.mode, "effective_orientation": self.effective,
+               "transform": apply_mod.transform_for(self.effective, self.config),
+               "requested_orientation": self.requested}
+        self.sensor = sensor_probe(self.config, start=is_auto(mode))
+        sensor_orient = None
+        if is_auto(mode) and self.sensor.get("preferred"):
+            try:
+                reading = sensor_reading(self.config, self.sensor["preferred"])
+                if reading.available:
+                    sensor_orient, _ = Orientator(mode, self.config).classify(reading.vector())
+            except Exception:
+                sensor_orient = None
+        requested = choose_initial_orientation(mode, self.last, sensor_orient)
+        # An auto policy with no live gravity source is selectable, but it can
+        # never perform an automatic rotation.  Do not arm a human-confirmation
+        # trial for a transform that no sensor can drive: a timeout rollback
+        # would fight the owner's explicit selection and the UI would imply
+        # auto-rotation was active.  Apply the safe legal initial pose, hold it,
+        # and report auto_state=blocked_sensor_unavailable truthfully.
+        auto_blocked = bool(is_auto(mode) and not self.sensor.get("available"))
+        self.mode = mode
+        self.requested = requested
+        self.orientator.set_mode(mode, sensor_orient)
+        self.state["last_request_id"] = request_id
+        self.trial = None
+        if arm_trial:
+            self._trial_good = old
+            self.last_good = old
+            save_last_good(self.config, old)
+        ok = self._apply(requested, "mode-set",
+                        commit_last_good=not arm_trial) if apply_now else True
+        if apply_now and not ok:
+            # A failed application leaves the last-known-good POLICY and
+            # orientation intact, not just the pixels.  The UI may retry.
+            self.mode = old["mode"]
+            self.effective = self.requested = old["effective_orientation"]
+            self.last = old["effective_orientation"]
+            self.orientator.set_mode(self.mode, self.effective)
+            self.transition_state = "rolled_back"
+        if auto_blocked:
+            self.last_error = ("sensor unavailable: %s is blocked until a live "
+                               "gravity source exists" % _mode_label(mode))
+            self.trial = None
+            self._persist()
+            self._publish()
+        elif arm_trial and ok:
+            now = time.time()
+            self.trial = {
+                "pending_confirmation": True,
+                "request_id": request_id,
+                "id": request_id,
+                "mode": mode,
+                "effective_orientation": requested,
+                "started_epoch": now,
+                "deadline_epoch": now + float(trial_seconds or _trial_seconds(self.config)),
+                "last_result": "pending",
+            }
+            self._persist()
+            self._publish()
+        return self.status()
+
+    def _rollback_trial(self, reason):
+        good = self._trial_good or self.last_good or {}
+        self._trial_good = None
+        self.trial = None
+        self.mode = validate_mode(good.get("mode", "portrait"))
+        orientation = good.get("effective_orientation", 0)
+        if orientation not in allowed_orientations(self.mode):
+            orientation = choose_initial_orientation(self.mode, None)
+        self.orientator = Orientator(self.mode, self.config)
+        self.orientator.current = orientation
+        self.effective = self.requested = orientation
+        self.last = orientation
+        result = apply_mod.apply_transform(orientation, self.config)
+        if not result.get("applied"):
+            # Last resort: normal portrait is the only safe orientation whose
+            # presenter mapping is known.  Still report the failure honestly.
+            fallback = apply_mod.apply_transform(0, self.config)
+            self.display = fallback
+            if fallback.get("applied"):
+                self.mode = "portrait"
+                self.effective = self.requested = self.last = 0
+                self.orientator = Orientator("portrait", self.config)
+                self.orientator.current = 0
+            else:
+                self.display = result
+        else:
+            self.display = result
+        self.last_error = "trial rollback: %s" % reason
+        _emit_presenter_state(self.config, self.display, self.effective)
+        self._persist()
+        self._publish()
+
+    def confirm(self, trial_id, answer, request_id=None):
+        answer = (answer or "").strip().lower()
+        pending = self.trial if isinstance(self.trial, dict) else {}
+        if not pending.get("pending_confirmation"):
+            return self.status()
+        if trial_id and pending.get("id") not in (None, trial_id) and \
+                pending.get("request_id") not in (None, trial_id):
+            return self.status()
+        if answer in ("yes", "works", "pass"):
+            pending["pending_confirmation"] = False
+            pending["last_result"] = "confirmed"
+            pending["confirmed_epoch"] = time.time()
+            self.trial = pending
+            self._trial_good = None
+            self._snapshot_good()
+            self.last_error = ""
+            self._persist()
+            self._publish()
+        elif answer in ("no", "fail", "failed", "blank", ""):
+            self._rollback_trial("owner_feedback_%s" % (answer or "blank"))
+        else:
+            pending["last_result"] = "unknown_answer"
+            self._persist()
+            self._publish()
+        return self.status()
+
+    def _trial_watchdog(self):
+        trial = self.trial
+        if not isinstance(trial, dict) or not trial.get("pending_confirmation"):
+            return
+        if time.time() >= float(trial.get("deadline_epoch", 0)):
+            self._rollback_trial("no_feedback_timeout")
+
+    def _handle_request(self):
+        path = P(REQUEST_PATH)
+        doc = _read_json(path, None)
+        if not isinstance(doc, dict):
+            return
+        rid = doc.get("request_id")
+        if not rid or rid == self._last_request:
+            return
+        self._last_request = rid
+        try:
+            action = doc.get("action")
+            if action == "set_mode":
+                self.set_mode(doc.get("mode"), apply_now=bool(doc.get("apply", True)),
+                              arm_trial=bool(doc.get("trial", False)),
+                              trial_seconds=doc.get("trial_seconds"),
+                              request_id=rid)
+            elif action == "confirm":
+                self.confirm(doc.get("trial_id"), doc.get("answer"), rid)
+            elif action == "status":
+                self._publish()
+            try:
+                os.unlink(path)
+            except OSError:
+                pass
+        except Exception as exc:
+            self.last_error = "request failed: %s" % exc
+            self._persist()
+            self._publish()
+
+    def _sensor_tick(self):
+        if not is_auto(self.mode) or (self.trial and self.trial.get("pending_confirmation")):
+            return
+        if not self.sensor.get("available"):
+            return
+        now = time.monotonic()
+        interval = float(self.config.get("policy", {}).get("sample_interval_ms", 100)) / 1000.0
+        if now - self.last_sample < interval:
+            return
+        self.last_sample = now
+        try:
+            reading = sensor_reading(self.config, self.sensor["preferred"])
+            if not reading.available:
+                raise sensor_mod.SourceUnavailable(reading.reason or "source unavailable")
+            orientation, quality = self.orientator.classify(reading.vector())
+            self.last_sensor_read = reading.as_dict()
+            self.last_sensor_quality = quality
+            changed = self.orientator.update(reading.vector(), now)
+            if changed is not None and changed in allowed_orientations(self.mode):
+                if self._apply(changed, "auto-sensor"):
+                    self._snapshot_good()
+        except Exception as exc:
+            self.sensor = sensor_probe(self.config)
+            self.last_error = "sensor read failed: %s" % exc
+            self._publish()
+
+    def _output_tick(self):
+        now = time.monotonic()
+        # Detect a new/reconnected XRDP session and prune a vanished one even
+        # when the orientation itself has not changed.  This is one shared
+        # 10 s consumer refresh, not a per-session loop and not an authority.
+        if now - self._remote_last_tick >= 10.0:
+            self._remote_last_tick = now
+            self._spawn_remote_sync()
+        if now - self.last_output_check < 2.0:
+            return
+        self.last_output_check = now
+        if is_auto(self.mode) and not self.sensor.get("available"):
+            self.sensor = sensor_probe(self.config, start=True)
+        elif is_auto(self.mode):
+            self.sensor = sensor_probe(self.config)
+        latest = _display_snapshot(self.config)
+        wanted = apply_mod.transform_for(self.effective, self.config)
+        if latest.get("output") and latest.get("transform") != wanted and not (
+                self.trial and self.trial.get("pending_confirmation")):
+            # Compositor restarted or lost the transform.  Reassert the known
+            # good orientation once; _apply publishes the truthful result.
+            self._apply(self.effective, "output-recovery")
+        else:
+            self.display = latest
+            self._publish()
+
+    def status(self):
+        self._publish()
+        return _read_json(P(STATUS_PATH), _base_status(self.config, self.state))
+
+    def run(self):
+        ensure_runtime_dir()
+        os.makedirs(os.path.dirname(P(PID_PATH)), exist_ok=True)
+        with open(P(PID_PATH), "w") as f:
+            f.write("%d\n" % os.getpid())
+        # Startup restore: if a pending trial survived an unclean stop the
+        # constructor already rolled it back.  Otherwise reapply the persisted
+        # mode without creating a new trial.
+        ok = self._apply(self.effective, "startup-restore")
+        if not ok:
+            self.last_error = self.last_error or "startup transform not applied"
+        self._publish()
+        signal.signal(signal.SIGTERM, self._on_signal)
+        signal.signal(signal.SIGINT, self._on_signal)
+        while self.running:
+            try:
+                self._handle_request()
+                self._trial_watchdog()
+                self._sensor_tick()
+                self._output_tick()
+                time.sleep(0.20)
+            except Exception:
+                self.last_error = "daemon loop: " + traceback.format_exc(limit=2)
+                self._publish()
+                time.sleep(0.5)
+        self._publish()
+        try:
+            os.unlink(P(PID_PATH))
+        except OSError:
+            pass
+        return 0
+
+    def _on_signal(self, signum, frame):
+        self.running = False
+
+    def stop(self):
+        self._stop_requested = True
+
+
+def do_watch(config, seconds):
+    probe = sensor_probe(config, start=True)
+    state = load_state(config)
+    mode, effective, last = normalize_mode(state)
     if not is_auto(mode):
         print("mode %s is fixed; nothing to auto-rotate" % mode)
         return 0
+    if not probe.get("available"):
+        print("sensor_unavailable: " + json.dumps(probe))
+        return 2
     orientator = Orientator(mode, config)
+    orientator.current = effective
     interval = float(config.get("policy", {}).get("sample_interval_ms", 100)) / 1000.0
     deadline = time.monotonic() + float(seconds)
     n = 0
     while time.monotonic() < deadline:
         try:
-            reading = sensor_reading(config, pref)
+            reading = sensor_reading(config, probe["preferred"])
         except Exception as exc:
             print("sensor read failed: %s" % exc)
             return 2
@@ -241,74 +1133,114 @@ def do_watch(config, seconds):
         n += 1
         if changed is not None:
             print("orientation -> %d (samples=%d)" % (changed, n))
-            save_state(config, {"mode": mode, "effective_orientation": changed,
-                                "last_orientation": changed,
-                                "updated_at": int(time.time())})
+            result = apply_mod.apply_transform(changed, config)
+            state = {"schema_version": 1, "mode": mode,
+                     "effective_orientation": changed if result.get("applied") else effective,
+                     "requested_orientation": changed,
+                     "last_orientation": changed,
+                     "last_error": result.get("error", ""),
+                     "updated_at": int(time.time())}
+            save_state(config, state)
+            if result.get("applied"):
+                effective = changed
         time.sleep(interval)
-    print("watch done: %d samples, effective=%d"
-          % (n, orientator.status()["effective_orientation"]))
+    print("watch done: %d samples, effective=%d" % (n, effective))
     return 0
 
 
-def do_selftest():
-    # Offline sanity: the real tests live in tests/; this is a no-network smoke.
-    ok = True
-    ok = ok and len(SEVEN_MODES) == 7
-    ok = ok and len(MODE_ORDER) == 7
-    for m in MODE_ORDER:
-        ok = ok and m in SEVEN_MODES
-    o = Orientator("auto")
-    ok = ok and o.classify((0, -9.8, 0))[0] == 0
-    ok = ok and o.classify((0, 9.8, 0))[0] == 180
-    print("selftest %s" % ("PASS" if ok else "FAIL"))
-    return 0 if ok else 1
+def selftest(config):
+    failures = 0
+    if len(SEVEN_MODES) != 7 or len(MODE_ORDER) != 7:
+        print("FAIL seven modes")
+        failures += 1
+    expected_labels = {
+        "auto": "Auto (FULL)", "auto-portrait": "Auto (PT)",
+        "auto-landscape": "Auto (LS)", "portrait": "Locked (PT)",
+        "landscape": "Locked (LS)", "reverse-portrait": "Locked (RPT)",
+        "reverse-landscape": "Locked (RLS)"}
+    for mode, label in expected_labels.items():
+        if SEVEN_MODES[mode]["label"] != label:
+            print("FAIL label %s=%r" % (mode, SEVEN_MODES[mode]["label"]))
+            failures += 1
+    if allowed_orientations("auto-portrait") != (0, 180):
+        print("FAIL auto-portrait allowed set"); failures += 1
+    if allowed_orientations("auto-landscape") != (90, 270):
+        print("FAIL auto-landscape allowed set"); failures += 1
+    for mode in ("portrait", "landscape", "reverse-portrait", "reverse-landscape"):
+        if is_auto(mode):
+            print("FAIL fixed mode reported auto: %s" % mode); failures += 1
+    print("PASS orientation policy (7 modes, exact labels, legal sets)"
+          if failures == 0 else "FAIL orientation policy (%d)" % failures)
+    return 0 if failures == 0 else 1
 
 
-def main(argv):
-    args = list(argv)
-    json_out = "--json" in args
-    args = [a for a in args if a != "--json"]
-    apply_now = "--apply" in args
-    args = [a for a in args if a != "--apply"]
-    cmd = args[0] if args else "status"
-    rest = args[1:]
+def _strip_json(argv):
+    return [a for a in argv if a != "--json"]
 
-    try:
-        config = load_config()
-        if cmd == "status":
-            out = do_status(config)
-        elif cmd == "get":
-            out = do_status(config)["mode"]
-        elif cmd == "modes":
-            out = do_modes()
-        elif cmd == "set":
-            if not rest:
-                print("usage: nuxel-orientationd set <mode> [--apply]")
-                return 2
-            try:
-                out = do_set(config, rest[0], apply_now)
-            except PolicyError as exc:
-                out = {"success": False, "error": str(exc)}
-        elif cmd == "watch":
-            seconds = int(rest[0]) if rest else 10
-            return do_watch(config, min(seconds, 120))
-        elif cmd == "selftest":
-            return do_selftest()
-        elif cmd in ("help", "-h", "--help"):
-            print(__doc__)
-            return 0
-        else:
-            print("unknown command: %s" % cmd)
+
+def main(argv=None):
+    argv = list(sys.argv[1:] if argv is None else argv)
+    as_json = "--json" in argv
+    argv = _strip_json(argv)
+    config = load_config()
+    if not argv:
+        print(__doc__)
+        return 0
+    cmd = argv.pop(0)
+    if cmd == "daemon":
+        return Runtime(config).run()
+    if cmd == "status":
+        doc = do_status(config)
+        print(json.dumps(doc, indent=2, sort_keys=True))
+        return 0
+    if cmd == "get":
+        mode, _, _ = normalize_mode(load_state(config))
+        print(json.dumps(mode) if as_json else mode)
+        return 0
+    if cmd == "modes":
+        print(json.dumps(do_modes(), indent=2, sort_keys=True))
+        return 0
+    if cmd in ("sensor", "probe"):
+        print(json.dumps(sensor_probe(config, start=("--start" in argv)),
+                         indent=2, sort_keys=True))
+        return 0
+    if cmd == "set":
+        if not argv:
             return 2
-    except Exception as exc:  # noqa: BLE001 — a daemon must report, not trace
-        out = {"success": False, "error": "%s: %s" % (type(exc).__name__, exc)}
-
-    if json_out or isinstance(out, (dict, list)):
-        print(json.dumps(out, indent=2, sort_keys=True))
-    else:
-        print(out)
-    return 0 if not (isinstance(out, dict) and out.get("success") is False) else 1
+        mode = argv[0]
+        apply_now = "--apply" in argv
+        trial = "--trial" in argv
+        seconds = None
+        for i, arg in enumerate(argv):
+            if arg == "--trial-seconds" and i + 1 < len(argv):
+                seconds = float(argv[i + 1])
+        try:
+            doc = request_set(config, mode, apply_now=apply_now,
+                              trial=trial, trial_seconds=seconds)
+        except PolicyError as exc:
+            doc = {"success": False, "error": str(exc)}
+        print(json.dumps(doc, indent=2, sort_keys=True))
+        return 0 if doc.get("success", True) else 2
+    if cmd == "confirm":
+        if len(argv) < 2:
+            print("usage: nuxel-orientationd confirm <trial-id> yes|no|blank", file=sys.stderr)
+            return 2
+        req = _write_request(config, {"action": "confirm", "trial_id": argv[0],
+                                      "answer": argv[1]})
+        if _daemon_alive():
+            doc = _wait_for_request(config, req)
+        else:
+            doc = {"success": False, "error": "orientation daemon is not running"}
+        print(json.dumps(doc, indent=2, sort_keys=True))
+        return 0 if doc.get("success", True) else 2
+    if cmd == "selftest":
+        return selftest(config)
+    if cmd == "watch":
+        seconds = float(argv[0]) if argv else 20.0
+        return do_watch(config, seconds)
+    print("unknown command: %s" % cmd, file=sys.stderr)
+    return 2
 
 
 if __name__ == "__main__":
-    sys.exit(main(sys.argv[1:]))
+    sys.exit(main())

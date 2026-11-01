@@ -84,3 +84,38 @@ def test_status_reports_sensor_unavailable_without_hardware(tmp_path):
     doc = json.loads(r.stdout)
     # no real IIO/DBus sensor on this host -> iio-accel and proxy unavailable
     assert doc["sensor"]["available"] is False
+
+
+def test_failed_apply_restores_last_verified_orientation(tmp_path, monkeypatch):
+    """A failed transform must never advance effective_orientation."""
+    import importlib.util
+    import importlib.machinery
+    loader = importlib.machinery.SourceFileLoader("nuxel_orientationd_test", DAEMON)
+    spec = importlib.util.spec_from_loader(loader.name, loader)
+    mod = importlib.util.module_from_spec(spec)
+    loader.exec_module(mod)
+    cfg = mod.DEFAULT_CONFIG
+    cfg = dict(cfg)
+    cfg["compositor"] = dict(cfg["compositor"])
+    rt = mod.Runtime(cfg)
+    rt.mode = "landscape"
+    rt.effective = rt.requested = 90
+    rt.orientator.current = 90
+    rt.display = {"output": "HEADLESS-1", "transform": "270", "scale": 1.0,
+                  "logical_width": 1520, "logical_height": 720, "applied": True}
+    calls = []
+    def fake_apply(orientation, config=None, **kwargs):
+        calls.append(orientation)
+        if orientation == 180:
+            return {"applied": False, "error": "simulated compositor rejection"}
+        return {"applied": True, "output": "HEADLESS-1", "transform": "270",
+                "scale": 1.0, "logical_width": 1520, "logical_height": 720}
+    monkeypatch.setattr(mod.apply_mod, "apply_transform", fake_apply)
+    monkeypatch.setattr(rt, "_persist", lambda: None)
+    monkeypatch.setattr(rt, "_publish", lambda: None)
+    monkeypatch.setattr(rt, "_snapshot_good", lambda: None)
+    assert rt._apply(180) is False
+    assert calls == [180, 90]
+    assert rt.effective == 90
+    assert rt.requested == 90
+    assert rt.transition_state == "rolled_back"

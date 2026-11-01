@@ -113,7 +113,8 @@ ESSENTIAL_GROUPS: "List[Tuple[str, str, List[dict]]]" = [
         {"name": "bash"}, {"name": "coreutils"}, {"name": "util-linux"},
         {"name": "findutils"}, {"name": "grep"}, {"name": "sed"}, {"name": "gawk"},
         {"name": "shadow-utils"}, {"name": "procps-ng"}, {"name": "kmod"},
-        {"name": "e2fsprogs"}, {"name": "ca-certificates"}, {"name": "curl"},
+        {"name": "e2fsprogs"}, {"name": "acl"},
+        {"name": "ca-certificates"}, {"name": "curl"},
         # systemd is PINNED: the carried kernel-4.14 libsystemd-shared patch
         # ships as libsystemd-shared-<ver>-<rel>.fc43.so and the SONAME contains
         # that exact version-release, so a drift here silently ignores the patch
@@ -167,6 +168,18 @@ ESSENTIAL_GROUPS: "List[Tuple[str, str, List[dict]]]" = [
         # disabled on this image, and there is no second player/decoder path.
         {"name": "mpv"},
     ]),
+    ("software", "PWNAGE-45000 native software center (RPM/PackageKit + polkit agent)", [
+        {"name": "gnome-software"}, {"name": "PackageKit"},
+        {"name": "PackageKit-command-not-found"}, {"name": "lxpolkit"}, {"name": "xfce-polkit"},
+        {"name": "appstream"}, {"name": "appstream-data"},
+    ]),
+    ("remote-desktop", "PWNAGE-47000 GUI remote access (XRDP + Phoc VNC + Android ADB)", [
+        {"name": "wayvnc"}, {"name": "wayland-utils"},
+        {"name": "xrdp"}, {"name": "xorgxrdp"},
+        {"name": "xorg-x11-server-Xorg"}, {"name": "openbox"},
+        {"name": "xterm"}, {"name": "firefox"}, {"name": "android-tools"},
+    ]),
+
 ]
 
 

@@ -127,6 +127,8 @@
 #define STATE "/run/nuxel-wl-fb.state"
 #define MAX_OUT 4
 #define CTRL_FIFO  "/run/nuxel-wl-fb.cmd"
+#define ORIENT_STATE "/run/nuxel-wl-fb-orientation"
+#define ORIENT_PROOF  "/run/nuxel-wl-fb.orientation"
 #define DISP_STATE "/var/lib/nuxel/display"
 #define BACKLIGHT  "/sys/class/backlight/panel/brightness"
 #define BL_MAX     "/sys/class/backlight/panel/max_brightness"
@@ -195,7 +197,7 @@ static void st(const char *fmt, ...) {
 
 struct out {
   struct wl_output *wl;
-  int32_t x, y, w, h, scale;
+  int32_t x, y, w, h, scale, transform;
   int have_mode;
 };
 
@@ -213,6 +215,39 @@ static struct {
   uint32_t w, h, bpp, line;
   struct fb_var_screeninfo var;
 } fb = {.fd = -1};
+
+/* PWNAGE-54000: the orientation daemon publishes the exact compositor state.
+   This bridge is a PRESENTER, not an orientation authority.  It records what
+   the compositor + capture actually produced so a rotation can be proven from
+   the glass-side state file and never relies on a transform exit code alone. */
+static void publish_orientation_proof(int src_w, int src_h, int frame_ok) {
+  int transform = 0, eff = -1;
+  char output[64] = "", backend[64] = "", line[192];
+  FILE *f = fopen(ORIENT_STATE, "r");
+  if (f) {
+    while (fgets(line, sizeof line, f)) {
+      int v;
+      if (sscanf(line, "transform=%d", &v) == 1 &&
+          (v == 0 || v == 90 || v == 180 || v == 270)) transform = v;
+      else if (sscanf(line, "effective_orientation=%d", &v) == 1) eff = v;
+      else if (!strncmp(line, "output=", 7)) sscanf(line + 7, "%63s", output);
+      else if (!strncmp(line, "backend=", 8)) sscanf(line + 8, "%63s", backend);
+    }
+    fclose(f);
+  }
+  int actual_transform = (nouts > 0) ? outs[0].transform : -1;
+  FILE *o = fopen(ORIENT_PROOF, "w");
+  if (!o) return;
+  fprintf(o,
+          "backend=%s\noutput=%s\nrequested_transform=%d\n"
+          "compositor_transform=%d\ncapture=%dx%d\npanel=%ux%u\n"
+          "effective_orientation=%d\nscale=%d\nframe_ok=%d\n"
+          "presenter_rotation=0\ndouble_rotation=0\n",
+          backend, output, transform, actual_transform,
+          src_w, src_h, fb.w, fb.h, eff,
+          (nouts > 0) ? outs[0].scale : -1, frame_ok);
+  fclose(o);
+}
 
 static int fb_open(void) {
   fb.fd = open("/dev/fb0", O_RDWR);
@@ -460,8 +495,8 @@ static const struct zwlr_screencopy_frame_v1_listener frame_listener = {
 static void out_geometry(void *d, struct wl_output *o, int32_t x, int32_t y,
                          int32_t pw, int32_t ph, int32_t sub, const char *make,
                          const char *model, int32_t tr) {
-  (void)o; (void)pw; (void)ph; (void)sub; (void)make; (void)model; (void)tr;
-  struct out *v = d; v->x = x; v->y = y;
+  (void)o; (void)pw; (void)ph; (void)sub; (void)make; (void)model;
+  struct out *v = d; v->x = x; v->y = y; v->transform = tr;
 }
 static void out_mode(void *d, struct wl_output *o, uint32_t flags, int32_t w, int32_t h, int32_t r) {
   (void)o; (void)r;
@@ -1585,6 +1620,7 @@ int main(int argc, char **argv) {
         consec_fail = 0;
       }
       frames++;
+      publish_orientation_proof(frame_buf.w, frame_buf.h, frame_buf.data != NULL);
     }
     zwlr_screencopy_frame_v1_destroy(frame);
     if (frame_buf.wl) { wl_buffer_destroy(frame_buf.wl); munmap(frame_buf.data, frame_buf.len); frame_buf.wl = NULL; }
@@ -1604,6 +1640,7 @@ int main(int argc, char **argv) {
          o->w, o->h, o->w, o->h, o->scale, fb.w, fb.h,
          display_on ? "on" : "off", src_fmt, hw_r_off, hw_g_off, hw_b_off, hw_order_override,
          decon_pan_ok, decon_pan_failed);
+      publish_orientation_proof(frame_buf.w, frame_buf.h, frame_buf.data != NULL);
       fps = 0;
       last = now;
       int intruder = painter_alive();
@@ -1628,12 +1665,13 @@ int main(int argc, char **argv) {
        returns to full rate.  This is measurement-driven, not a timer guess. */
     long idle = (long)(mono_ms() - last_change_ms);
     int pace = fps_target;
-    if (idle > 1200) pace = 10;
-    /* Poll-wake makes a lower capture cadence invisible to touch: a compositor
-       commit wakes the bridge immediately.  Static glass can therefore settle
-       to 5 fps after 8 s and 2 fps after a minute. */
-    if (idle > 8000) pace = 5;
-    if (idle > 60000) pace = 2;
+    /* PWNAGE-54000: static glass is the normal state.  Poll-wake makes the
+       lower cadence invisible to touch (a compositor commit wakes this loop
+       immediately), so settle quickly: 20 fps while interacting, 8 fps after
+       500 ms, 3 fps after 2 s and 1 fps after 6 s. */
+    if (idle > 500) pace = 8;
+    if (idle > 2000) pace = 3;
+    if (idle > 6000) pace = 1;
     long pace_ns = 1000000000L / (pace > 0 ? pace : 1);
     long rest_ns = pace_ns - used_ns;
     if (rest_ns > 0) {

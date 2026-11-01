@@ -8,7 +8,7 @@
   var el = {};
   ['back-btn','home-btn','refresh-btn','select-btn','selection-bar','selection-label','sel-all','sel-none','sel-cancel',
    'toolbar','new-folder-btn','rename-btn','delete-btn','copy-btn','cut-btn','paste-btn',
-   'archive-btn','extract-btn','send-btn','clipboard-info','file-grid','status','cwd-abs',
+   'archive-btn','extract-btn','send-btn','copy-text-btn','clipboard-info','file-grid','status','cwd-abs',
    'prompt-dialog','prompt-title','prompt-input','prompt-error','prompt-cancel','prompt-ok',
    'confirm-dialog','confirm-text','confirm-cancel','confirm-ok','breadcrumb',
    'send-dialog','send-summary','send-device','send-progress','send-status','send-error',
@@ -82,6 +82,7 @@
       });
       el.deleteBtn.addEventListener('click', function () { self.confirmDelete(); });
       el.copyBtn.addEventListener('click', function () { self.clipboard = { mode: 'copy', paths: Array.from(self.selected) }; self.render(); });
+      el.copyTextBtn.addEventListener('click', function () { self.copySelectedText(); });
       el.cutBtn.addEventListener('click', function () { self.clipboard = { mode: 'cut', paths: Array.from(self.selected) }; self.render(); });
       el.pasteBtn.addEventListener('click', function () { self.paste(); });
       el.archiveBtn.addEventListener('click', function () {
@@ -171,6 +172,11 @@
       el.renameBtn.disabled = this.selected.size !== 1;
       el.deleteBtn.disabled = this.selected.size === 0;
       el.copyBtn.disabled = this.selected.size === 0;
+      var only = this.selected.size === 1 ? this.selectedFile() : null;
+      var textLike = !!(only && only.type === 'file' && this.isTextEntry(only));
+      el.copyTextBtn.disabled = !textLike;
+      el.copyTextBtn.title = textLike ? ('Copy the text contents of ' + only.name + ' to the clipboard')
+        : 'Select one text file (not a binary)';
       el.cutBtn.disabled = this.selected.size === 0;
       el.sendBtn.disabled = this.selected.size === 0;
       el.pasteBtn.disabled = !this.clipboard || this.clipboard.paths.length === 0;
@@ -434,6 +440,58 @@
       if (['pdf'].includes(ext)) return '📄';
       if (['json','xml','yaml','yml'].includes(ext)) return '📋';
       return '📄';
+    },
+    selectedFile() {
+      if (this.selected.size !== 1) return null;
+      var path = this.selected.values().next().value;
+      if (!path) return null;
+      var list = Array.isArray(this.entries) ? this.entries : [];
+      return list.find(function (f) { return f.path === path; }) || null;
+    },
+    isTextEntry(entry) {
+      if (!entry) return false;
+      var mime = String(entry.mime || '').toLowerCase();
+      if (mime.indexOf('text/') === 0) return true;
+      if (mime === 'application/json' || mime === 'application/xml' || mime === 'application/javascript' ||
+          mime === 'application/x-sh' || mime === 'application/x-yaml') return true;
+      var name = String(entry.name || '').toLowerCase();
+      return /\.(txt|md|markdown|json|js|mjs|cjs|ts|tsx|jsx|css|html|htm|xml|yml|yaml|toml|ini|conf|cfg|log|csv|tsv|sh|bash|zsh|py|rs|c|h|cc|cpp|hpp|java|kt|go|rb|php|sql|desktop|service|txt)$/.test(name);
+    },
+    async copySelectedText() {
+      var entry = this.selectedFile();
+      if (!entry || !this.isTextEntry(entry)) { this.status('Select one text file, not a binary'); return; }
+      var res = await bridgeCall('storage', 'read-file', { path: entry.path });
+      if (!res || res.success === false) { this.status('Cannot read ' + entry.name + ': ' + ((res && res.error) || 'bridge unavailable')); return; }
+      try {
+        var bytes = Uint8Array.from(atob(res.data_b64 || ''), function (c) { return c.charCodeAt(0); });
+        var text = new TextDecoder('utf-8', { fatal: false }).decode(bytes);
+        if (!text || text.indexOf('\u0000') >= 0) { this.status('Refusing to copy binary data from ' + entry.name); return; }
+        var copied = false;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          try { await navigator.clipboard.writeText(text); copied = true; } catch (e) { copied = false; }
+        }
+        if (!copied) {
+          var ta = document.createElement('textarea');
+          ta.value = text; ta.setAttribute('readonly', ''); ta.style.position = 'fixed'; ta.style.left = '-9999px';
+          document.body.appendChild(ta); ta.select(); ta.setSelectionRange(0, ta.value.length);
+          copied = document.execCommand && document.execCommand('copy');
+          document.body.removeChild(ta);
+        }
+        this.status(copied ? ('Copied ' + text.length + ' characters from ' + entry.name)
+          : 'Clipboard write was refused; the file was not changed');
+        try {
+          if (copied && window.nuxelClipper) window.nuxelClipper.addClip(text, 'files');
+          else if (copied) {
+            var key = 'nuxel.clipper.history.v1';
+            var clips = JSON.parse(localStorage.getItem(key) || '[]');
+            if (!Array.isArray(clips)) clips = [];
+            clips.unshift({ id: 'clip-' + Date.now(), text: text, source: 'files', at: Date.now(), pinned: false });
+            localStorage.setItem(key, JSON.stringify(clips.slice(0, 100)));
+          }
+        } catch (e) { /* history is best-effort; the clipboard is the contract */ }
+      } catch (e) {
+        this.status('Could not decode ' + entry.name + ' as UTF-8 text: ' + e.message);
+      }
     },
     formatSize(n) {
       if (!n && n !== 0) return '';

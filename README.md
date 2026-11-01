@@ -3,33 +3,33 @@
 
 ![Nuxel](./nuxel.jpg)
 
-**v0.7.4-beta** — _Build the bunker first. Add the rave lights later._
+**v0.7.5-beta** — _Build the bunker first. Add the rave lights later._
 
-> **v0.7.4-beta (2026-10-31).** **Audio works on the handset.** The speaker was
-> silent because the CS35L41 PLL was locked to the device tree's 6.144 MHz
-> reference while ABOX UAIF1 clocks the amplifiers at 1.536 MHz; four register
-> writes plus the driver-cached 0 dB/unmute path make it audible, persistent
-> across playback and reboot, and owner-confirmed (`works` typed in the Notes
-> title). **GNSS is almost there:** genuine network location works
-> (`51.4005, 5.47196 ±25 km`, source `network_wifi`) through a new per-UID
-> GeoClue agent, while satellite GNSS stays `BLOCKED_FIRMWARE` (no BBD patch
-> firmware and no Android `lhd`/`gpsd` runtime). **GTK and Flatpak are almost
-> there:** the GTK4 sources build and the handset runs the WebKit PWA shell;
-> Flatpak packages are installed but `CONFIG_USER_NS=n` blocks bubblewrap, so
-> Firefox/VLC use the real Fedora RPMs and Signal/Stremio report the blocker.
-> Quick Settings, status bar and lockscreen overlays distinguish ON, OFF and
-> UNKNOWN instead of inventing an OFF state. This release also repairs the
-> Release workflow that had failed on `main` since 2026-10-30. See
+> **v0.7.5-beta (2026-11-01).** **Rotation works and the GPU is really in the
+> render path.** The compositor now runs on the vendor **Mali-G76** through Mesa
+> panfrost (not llvmpipe), transform and scale are applied as one transaction,
+> and touch follows the display because the libinput calibration matrix is
+> applied in the same change. **GPU acceleration is partial and is described as
+> partial:** Phoc and WebKit render on the GPU, WebKit presents through SHM, and
+> true zero-copy DMA-BUF presentation is `BLOCKED_KERNEL_ABI` on this board (no
+> DRM/GBM node, `CONFIG_DRM_VGEM` unset, no `/dev/dri`). This release also ships
+> the PWNAGE-47000..54000 work: GUI tri-link remote desktop, working
+> Flatpak/bubblewrap through kernel user namespaces, microphone capture, NFC
+> kernel bring-up (userspace reader still blocked), and Contacts/Messages/Dialer
+> compiled into the image. The Release workflow now builds the **same kernel
+> capability set the phone runs** and fails closed if it drifts. The release
+> publishes the **exact installed BOOT image** re-captured from the handset
+> (`2cbc5085…`). See
 > [`docs/features/README.md`](docs/features/README.md) and
-> [`docs/releases/v0.7.4-beta.md`](docs/releases/v0.7.4-beta.md).
+> [`docs/releases/v0.7.5-beta.md`](docs/releases/v0.7.5-beta.md).
 
 > **Samsung S10+ engineering reality.** The active `beyond2lte` port is Fedora
 > 43 aarch64 on Samsung Linux 4.14.253. Its launcher is Nuxel Home in WebKitGTK,
 > running under headless Phoc and presented through the DECON framebuffer
-> screencopy bridge; it is not native DRM/KMS acceleration. Real finger taps
-> open apps, Bluetooth works, and the audio route is live. Sustained interaction,
-> microphone capture, camera, satellite GNSS, the cellular modem and full Phosh
-> acceptance remain open for `v0.7.4-beta`; see
+> screencopy bridge (GPU render, CPU scanout copy — not DRM/KMS zero-copy).
+> Real finger taps open apps, rotation and touch-follow work, Bluetooth works,
+> the audio route and microphone capture are live. Camera, satellite GNSS, the
+> cellular modem and full Phosh acceptance remain open for `v0.7.5-beta`; see
 > [`docs/beta-finalization/v0.5.2/RELEASE-VERDICT.md`](docs/beta-finalization/v0.5.2/RELEASE-VERDICT.md).
 
 A hardened, GrapheneOS-spirited **Linux phone operating system** built from
@@ -174,6 +174,59 @@ NUXEL_DEVICE=mustang bash boot/flash.sh --unlock --wipe
 | `ci/` | Build validation |
 | `assets/` | Wallpaper + boot animation |
 
+## What's new in v0.7.5-beta
+
+- **Rotation works, and it holds.** The live Phoc session exposes
+  `HEADLESS-1` (720x1520), so `wlr-randr` is the only truthful output
+  inventory. Transform and scale are now applied as one transaction (0°/180° at
+  scale 2, 90°/270° at scale 1 → a real 1520×720 desktop), and the reverse
+  90/270 mapping is the physical mapping recovered from the historical config.
+  Successful rotations used to revert after 75 s because the "owner
+  confirmation" trial ran on the normal path; a `set` now commits only after
+  live readback and restores the previous verified transform on failure.
+- **Touch follows the rotation.** Phoc feeds raw libinput touch coordinates;
+  wlroots rotates the rendered scene and screencopy buffer, not touch. The
+  single LD_PRELOADed `libnuxel-libinput-path.so` now applies the measured
+  calibration matrix (`0 1 0 / -1 0 1` for transform 270) through
+  `libinput_device_config_calibration_set_matrix()`, reads it back, and
+  re-applies it from an inotify thread while the screen is idle. `nuxel-wl-fb`
+  stays the sole `/dev/fb0` writer and does **not** rotate a second time.
+- **GPU acceleration is partial, and measured.** Phoc renders on the vendor
+  **Mali-G76** through Mesa panfrost (three `/dev/mali0` contexts, zero llvmpipe
+  threads); `zwp_linux_dmabuf_v1` v3 advertises LINEAR formats only and validates
+  every buffer before import; WebKit is GPU-rendered (`gpu-rendered-shm-presented`,
+  186 `KBASE_IOCTL_JOB_SUBMIT` calls in 3 s) but presents through SHM.
+  WebKit DMA-BUF and true zero-copy presentation are `BLOCKED_KERNEL_ABI`
+  (`drmMainDevice()` is null, `CONFIG_DRM_VGEM` unset, no `/dev/dri`). Active
+  userspace CPU fell from 47.0 % to 27.8–31.3 % of one core; blit 45 ms → 20–38 ms.
+- **Triple navigation unblocked.** A stale launcher boot-gate cache discarded
+  every Back/Home/Recents request while the authoritative lock state said
+  unlocked. The launcher reconciles against `security.status` and replays the
+  action only after the provider confirms `locked=false`. Recents also gained
+  the missing GET route, a real Close button and left-swipe close.
+- **PWNAGE-47000..53000.** GUI tri-link remote desktop (VNC mirrors the Phoc
+  session, XRDP is a separate X11 session, scrcpy is Android-only) over
+  loopback listeners reached through a pinned-key SSH tunnel; kernel user
+  namespaces + the `STATX_MNT_ID` backport + a `bwrap` fd-bind shim make
+  Flatpak work; real WDMA1 microphone capture with an enforceable privacy mute;
+  NFC kernel/controller/firmware up but `BLOCKED_EXTERNAL_RESOURCE` (no
+  userspace NCI reader); Contacts/Messages/Dialer compiled from source into the
+  image; Clipper PWA shipped.
+- **Release engineering.** The workflow now applies
+  `kernel/s10plus/configs/nuxel-drm-kbase.fragment` (DRM core, UDMABUF, Mali
+  Bifrost kbase, user namespaces, SECCOMP, NFC) and fails closed via
+  `tools/s10plus/verify-kernel-config.py` if the built `.config` is not the
+  capability set read back from the phone. The hash-pinned kbase Mesa/wlroots
+  set lives in `release/s10plus/gpu/` and must match its `SHA256SUMS`. The exact
+  installed BOOT image (`2cbc5085…`, 57,671,680 bytes) and a 5,873-entry
+  userspace inventory were re-captured from the handset with
+  `tools/release/capture-installed-image.sh`.
+- **CI repair.** `gen-navdock-art.py` now resolves its repository root from a
+  build copy (the v0.7.4-beta `main` failure was `missing art
+  /assets/button-left.png`), the A34 decon contract reads the active A67 bridge,
+  the launcher input harness stubs `getElementById`, and the home cache version
+  matches its manifest again.
+
 ## What's new in v0.7.4-beta
 
 - **Audio is working and owner-confirmed.** The CS35L41 PLL reference was the
@@ -206,7 +259,7 @@ NUXEL_DEVICE=mustang bash boot/flash.sh --unlock --wipe
   rootfs builder now installs the audio warm-up, GeoClue agent, desktop entries
   and Python D-Bus dependencies a fresh image needs.
 - **Release tooling.** Launcher cache `v66-v074-release`; whole-repo lockstep
-  at `v0.7.4-beta`; registry revision 8 with eight installed native apps.
+  at `v0.7.5-beta`; registry revision 11 with the remote-desktop, Clipper and native phone apps.
 
 ## What's new in v0.2.1
 
@@ -658,7 +711,7 @@ remaining interactive gap. The Moto G7 Power is flashed but still hangs at a
 black screen; the Pixel 10 Pro XL is still a scaffold. The UTM VM demo boots
 (display + network + sound).
 
-## Honest Status — v0.7.4-beta
+## Honest Status — v0.7.5-beta
 
 **S10+ (SM-G975F, beyond2lte) — NUXEL BOOTS, TOUCH WORKS, BLUETOOTH AND
 SPEAKER AUDIO WORK, AND NETWORK LOCATION WORKS.**
@@ -709,16 +762,30 @@ userspace is absent. This is a hardware-fix receipt; owner acceptance for
 touch-driven app flows, keyboard/haptic feel, microphone/WAV capture, the full
 preload-cinema sequence and laptop-side file transfer remains open.
 
+**Rotation and touch-follow are working, and the GPU is partially
+accelerated.** All seven orientation modes apply as one transform+scale
+transaction and survive live readback; the libinput calibration matrix follows
+the compositor transform, so landscape touches land where the finger lands.
+Phoc renders on the vendor Mali-G76 through Mesa panfrost and WebKit is
+GPU-rendered with SHM presentation. WebKit DMA-BUF and zero-copy presentation
+remain `BLOCKED_KERNEL_ABI`: `drmMainDevice()` is null, `CONFIG_DRM_VGEM` is
+unset and there is no `/dev/dri`. `nuxel-wl-fb` still copies the frame into
+`/dev/fb0`, which is disclosed and not called zero-copy. Flatpak/bubblewrap now
+works through kernel user namespaces, and microphone capture is a real WDMA1
+source.
+
 **The release ships the exact image installed on the handset.** The workflow
 publishes `nuxel-installed-s10plus-boot.img.gz` — the complete BOOT partition
-read back from the owner's SM-G975F on 2026-10-30 (`6e998acf…`, 57,671,680
-bytes) — together with a 4,238-entry hash inventory of the installed userspace
-and an `INSTALLED-IMAGES.json` provenance manifest. The separately built
-`nuxel-<version>-s10plus.tar.gz` contains the reproducible source rebuild and
-is explicitly labelled as such: it is not byte-identical to the installed
-image. See
+read back from the owner's SM-G975F on 2026-11-01 (`2cbc5085…`, 57,671,680
+bytes) — together with a 5,873-entry hash inventory of the installed userspace
+and an `INSTALLED-IMAGES.json` provenance manifest.
+`tools/release/capture-installed-image.sh` reproduces the capture read-only.
+The separately built `nuxel-<version>-s10plus.tar.gz` contains the reproducible
+source rebuild and is explicitly labelled as such: it is not byte-identical to
+the installed image. The kbase Mesa/wlroots bytes running on the phone are
+shipped as the hash-pinned `release/s10plus/gpu/` input. See
 [`docs/a61-penguin-eyes/INSTALLED-IMAGE-RELEASE.md`](docs/a61-penguin-eyes/INSTALLED-IMAGE-RELEASE.md)
-and [`docs/releases/v0.7.4-beta.md`](docs/releases/v0.7.4-beta.md).
+and [`docs/releases/v0.7.5-beta.md`](docs/releases/v0.7.5-beta.md).
 
 | Area | Score | Notes |
 |---|---|---|
@@ -930,7 +997,7 @@ The other two bring-up targets are the **Samsung Galaxy S10+** (Exynos 9820,
 
 | Document | Description |
 |---|---|
-| [CHANGELOG.md](CHANGELOG.md) | Release notes — everything from v0.1.0 to v0.7.4-beta + readiness |
+| [CHANGELOG.md](CHANGELOG.md) | Release notes — everything from v0.1.0 to v0.7.5-beta + readiness |
 | [docs/features/README.md](docs/features/README.md) | Canonical feature-status matrix with evidence anchors |
 | [prompts/QUICKSTART.md](prompts/QUICKSTART.md) | Get running in 5 minutes |
 | [design/nuxel-linux-phone-design.md](design/nuxel-linux-phone-design.md) | Design bible — the full vision |

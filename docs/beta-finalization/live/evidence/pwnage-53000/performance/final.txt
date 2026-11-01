@@ -1,0 +1,24 @@
+Sun Nov  1 15:26:47 CET 2026
+Linux 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 4.14.253-gf7194c1d15ed-dirty #5 SMP PREEMPT Sun Nov 1 13:38:15 CET 2026 aarch64 GNU/Linux
+=== load (note: 11 Samsung TrustZone/secure D-state kthreads inflate this) ===
+12.42 12.43 12.54 1/417 58880
+11
+=== idle capture rate (10s) ===
+captures=68 in 10s
+=== state ===
+1793543217 FRAMES_OK total=1675 fps_1s=10 failures=0 blits=462 present_skipped=1212 blit_avg_ms=38 damage=340-352 damage_blits=454 damage_avg_ms=38 idle_ms=2618 out=720x1520 src=720x1520 scale=2 panel=1440x3040 owner=nuxel-wl-fb display=on src_format=0x34324258 colour=R@0,G@8,B@16_abgr8888_override=1 decon_pan_ok=463 decon_pan_failed=0
+=== CPU over 15s ===
+56516 phoc 17.2%
+56629 nuxel-wl-fb 8.9%
+56757 WebKitWebProces 3.1%
+56529 nuxel-pwa-host 2.1%
+56752 WebKitNetworkPr 0.8%
+=== GPU ===
+suspended
+391696
+=== fb/single owner ===
+1440,6080
+                     USER        PID ACCESS COMMAND
+/dev/fb0:            root      56629 F.... nuxel-wl-fb
+=== fallback ===
+ls: cannot access '/run/nuxel-gpu-fallback': No such file or directory

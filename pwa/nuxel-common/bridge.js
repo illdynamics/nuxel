@@ -340,6 +340,12 @@ export class NuxelBridgeClient {
             // Graceful mock fallback when the bridge is unreachable.
             this.connected = false;
             this.mockMode = true;
+            // Remote access is a real device capability.  A demo fallback here
+            // would let an app display a fabricated connected state.
+            if (namespace === 'system' && verb === 'remote-desktop') {
+                return { success: false, offline: true, state: 'unavailable',
+                    error: 'Nuxel bridge is unreachable; remote-desktop status/control was not performed' };
+            }
             return this._mockCall(namespace, verb, payload.params);
         }
     }
@@ -415,6 +421,10 @@ export class NuxelBridgeClient {
                 return { success: false, offline: true,
                     state: 'unavailable',
                     error: 'Nuxel bridge is unreachable; tri-link status was not read' };
+            case 'system.remote-desktop':
+                return { success: false, offline: true,
+                    state: 'unavailable',
+                    error: 'Nuxel bridge is unreachable; remote-desktop status/control was not performed' };
             default:
                 return { success: true, mock: true, _key: key };
         }

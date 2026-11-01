@@ -30,6 +30,18 @@
   }
 
   function pad(n) { return String(n).padStart(2, '0'); }
+  // Text time fields use the numeric OSK.  Accept "9", "930", "0930" and
+  // "09:30" and normalise to the stored HH:MM form.
+  function normaliseTime(value) {
+    var v = String(value == null ? '' : value).trim();
+    if (!v) return '';
+    var digits = v.replace(/[^0-9]/g, '');
+    if (digits.length === 3) digits = '0' + digits;
+    if (digits.length !== 4) return null;
+    var h = Number(digits.slice(0, 2)), m = Number(digits.slice(2));
+    if (h > 23 || m > 59) return null;
+    return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0');
+  }
   function dateKey(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
 
   var app = {
@@ -54,6 +66,12 @@
       el.editorSave.addEventListener('click', function () { app.save(); });
       el.editorDelete.addEventListener('click', function () { app.removeCurrent(); });
       el.eventAllDay.addEventListener('change', function () { app.toggleAllDay(); });
+      [el.eventStart, el.eventEnd].forEach(function (input) {
+        input.addEventListener('blur', function () {
+          var n = normaliseTime(input.value);
+          if (n != null) input.value = n;
+        });
+      });
       document.querySelectorAll('.color-opt').forEach(function (c) {
         c.addEventListener('click', function () {
           document.querySelectorAll('.color-opt').forEach(function (x) { x.classList.remove('selected'); });
@@ -195,9 +213,11 @@
       if (!title) return 'A title is required.';
       if (!el.eventDate.value) return 'Pick a date.';
       if (!el.eventAllDay.checked) {
-        if (el.eventStart.value && el.eventEnd.value && el.eventEnd.value <= el.eventStart.value) {
-          return 'End time must be after start time.';
-        }
+        var st = normaliseTime(el.eventStart.value);
+        var en = normaliseTime(el.eventEnd.value);
+        if (el.eventStart.value && st == null) return 'Start time must be HH:MM (24-hour).';
+        if (el.eventEnd.value && en == null) return 'End time must be HH:MM (24-hour).';
+        if (st && en && en <= st) return 'End time must be after start time.';
       }
       return null;
     },
@@ -211,8 +231,8 @@
         id: this.editingId || ('evt-' + Date.now()),
         title: title,
         date: el.eventDate.value,
-        startTime: el.eventAllDay.checked ? '' : el.eventStart.value,
-        endTime: el.eventAllDay.checked ? '' : el.eventEnd.value,
+        startTime: el.eventAllDay.checked ? '' : (normaliseTime(el.eventStart.value) || ''),
+        endTime: el.eventAllDay.checked ? '' : (normaliseTime(el.eventEnd.value) || ''),
         allDay: el.eventAllDay.checked,
         location: el.eventLocation.value.trim(),
         description: el.eventDesc.value,

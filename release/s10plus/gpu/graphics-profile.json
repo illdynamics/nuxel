@@ -1,0 +1,53 @@
+{
+  "schema_version": 2,
+  "default_profile": "software-safe",
+  "compositor": {
+    "profile": "kbase-gles2-udmabuf-linear-dmabuf",
+    "allow_change": false,
+    "evidence": "PWNAGE-53000: phoc maps libgallium_dri.so + 3x /dev/mali0; linux-dmabuf v3 advertises LINEAR only"
+  },
+  "profiles": {
+    "software-safe": {
+      "available": true,
+      "measured": true,
+      "webkitgtk": "software",
+      "gtk3": "software",
+      "note": "Baseline fallback. WebKit SHM, no EGL in the web process."
+    },
+    "gpu-rendered-shm-presented": {
+      "available": true,
+      "measured": true,
+      "webkitgtk": "gpu-rendered-shm-presented",
+      "gtk3": "enabled",
+      "note": "Mali EGL in web/UI process, KBASE_IOCTL_JOB_SUBMIT observed, 0 udmabuf/dmabuf fds (WebKit Hardware transport gated on drmMainDevice)."
+    },
+    "gpu-rendered-dmabuf-presented": {
+      "available": false,
+      "reason": "WebKit 2.54.1 requires drmMainDevice() for RendererBufferTransportMode::Hardware; CONFIG_DRM_VGEM is unset and /dev/dri is absent. Phoc can import LINEAR DMA-BUF; WebKit cannot allocate/export one.",
+      "webkitgtk": "software",
+      "gtk3": "software"
+    },
+    "fully-accelerated": {
+      "available": false,
+      "reason": "DMA-BUF presentation blocked as above; nuxel-wl-fb still CPU-copies/scales 720x1520 -> 1440x3040 into /dev/fb0.",
+      "webkitgtk": "software",
+      "gtk3": "software"
+    }
+  },
+  "webkitgtk": { "profile": "software-safe", "fallback": "software-safe" },
+  "gtk3": { "profile": "software-safe", "fallback": "software-safe" },
+  "gtk4": { "mode": "auto", "renderer": "auto", "fallback": "cairo" },
+  "presentation": {
+    "mode": "current-wl-fb",
+    "target_fps": 24,
+    "allow_dma_path": false,
+    "idle_capture_fps": 1
+  },
+  "apps": {
+    "pwnage53000-diagnostic": {
+      "profile": "gpu-rendered-shm-presented",
+      "toolkit": "gtk3",
+      "webkit": true
+    }
+  }
+}

@@ -69,3 +69,33 @@
   border-radius: 999px;
   padding: 3px 9px;
 }
+
+/* PWNAGE-52000 phone width contract for every PWA.
+   The document must never pan sideways on the S10+ (320..430 CSS px).  Apps
+   may keep an intentional internal horizontal scroller (tables, logs, code),
+   but the page/body itself is constrained.  Vertical touch scrolling stays
+   untouched. */
+html, body {
+  max-width: 100%;
+  min-width: 0;
+}
+body { overflow-x: clip; }
+@supports not (overflow-x: clip) { body { overflow-x: hidden; } }
+main, section, article, .card, .panel, .app, .container, .content {
+  min-width: 0;
+  max-width: 100%;
+}
+img, video, canvas, svg { max-width: 100%; }
+pre, code, .log, .output, .terminal {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+input, select, textarea, button {
+  max-width: 100%;
+  min-width: 0;
+}
+.dialog, .modal, [role="dialog"] {
+  max-width: calc(100vw - 24px);
+  max-height: calc(100dvh - 24px);
+  overflow: auto;
+}

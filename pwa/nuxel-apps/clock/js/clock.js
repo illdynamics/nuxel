@@ -92,7 +92,38 @@
   }
 
   /* ---------- clock face ---------- */
+  /* ---------- alarm audio ---------- */
+  // The owner asset is the canonical alarm.  WebAudio beeps remain a fallback
+  // only when the MP3 cannot be decoded/played, and the UI says which happened.
+  var alarmAudio = null;
+  function playAlarmSound() {
+    try {
+      if (!alarmAudio) {
+        alarmAudio = new Audio('../../../assets/nuxel-alarm.mp3');
+        alarmAudio.loop = true;
+        alarmAudio.preload = 'auto';
+      }
+      alarmAudio.currentTime = 0;
+      var p = alarmAudio.play();
+      if (p && p.catch) p.catch(function () { beep(3); });
+      return true;
+    } catch (e) {
+      return beep(3);
+    }
+  }
+  function stopAlarmSound() {
+    if (alarmAudio) { try { alarmAudio.pause(); alarmAudio.currentTime = 0; } catch (e) {} }
+  }
   function pad(n, w) { return String(n).padStart(w || 2, '0'); }
+  function normaliseClockTime(value) {
+    var v = String(value == null ? '' : value).trim();
+    var digits = v.replace(/[^0-9]/g, '');
+    if (digits.length === 3) digits = '0' + digits;
+    if (digits.length !== 4) return null;
+    var h = Number(digits.slice(0, 2)), m = Number(digits.slice(2));
+    if (h > 23 || m > 59) return null;
+    return pad(h) + ':' + pad(m);
+  }
   function fmtOffset(minutes) {
     var sign = minutes < 0 ? '-' : '+';
     var m = Math.abs(minutes);
@@ -280,8 +311,9 @@
   }
 
   el.addAlarm.addEventListener('click', function () {
-    var t = el.alarmTime.value || '07:00';
-    if (!/^\d{2}:\d{2}$/.test(t)) { toast('Pick a valid time'); return; }
+    var t = normaliseClockTime(el.alarmTime.value || '07:00');
+    if (!t) { toast('Enter a time as HH:MM (24-hour)'); return; }
+    el.alarmTime.value = t;
     alarms.push({
       id: 'alarm-' + Date.now(),
       time: t,
@@ -322,8 +354,8 @@
     if (vibrate && window.NuxelHaptics && window.NuxelHaptics.alarm) {
       window.NuxelHaptics.alarm();
     }
-    var ok = beep(a.repeat ? 3 : 1);
-    if (!ok) toast('Alarm ringing, but no audio device is available for the tone');
+    var ok = playAlarmSound();
+    if (!ok) toast('Alarm ringing, but no audio device is available for the alarm sound');
     if (window.NuxelBridge && window.NuxelBridge.sendNotification) {
       window.NuxelBridge.sendNotification('Alarm ' + a.time, a.label || 'Nuxel Clock').catch(function () { /* notifications are best-effort */ });
     }
@@ -336,6 +368,7 @@
   el.snooze.addEventListener('click', function () {
     snoozeUntil = Date.now() + 5 * 60000;
     ringing = null;
+    stopAlarmSound();
     el.ringStatus.textContent = 'Snoozed until ' + new Date(snoozeUntil).toLocaleTimeString();
     el.snooze.disabled = true; el.stopRing.disabled = true;
     toast('Snoozed for 5 minutes');
@@ -343,6 +376,7 @@
   });
   el.stopRing.addEventListener('click', function () {
     ringing = null; snoozeUntil = 0;
+    stopAlarmSound();
     el.ringStatus.textContent = 'Stopped.';
     el.snooze.disabled = true; el.stopRing.disabled = true;
     renderAlarms();
@@ -442,8 +476,8 @@
       timer.remaining = Math.max(0, timer.endsAt - Date.now());
       if (timer.remaining === 0) {
         timer.running = false;
-        var ok = beep(3);
-        el.tmState.textContent = ok ? 'Finished' : 'Finished (no audio device)';
+        var ok = playAlarmSound();
+        el.tmState.textContent = ok ? 'Finished — alarm playing' : 'Finished (no audio device)';
         if (window.NuxelBridge && window.NuxelBridge.sendNotification) {
           window.NuxelBridge.sendNotification('Timer finished', 'Nuxel Clock').catch(function () { /* best effort */ });
         }
@@ -464,5 +498,5 @@
   });
 
   // headless smoke-test hook
-  window.nuxelClock = { tick: tick, alarms: alarms, beep: beep, fmtSw: fmtSw, fmtOffset: fmtOffset, parseOffsetMinutes: parseOffsetMinutes };
+  window.nuxelClock = { tick: tick, alarms: alarms, beep: beep, playAlarmSound: playAlarmSound, stopAlarmSound: stopAlarmSound, normaliseClockTime: normaliseClockTime, fmtSw: fmtSw, fmtOffset: fmtOffset, parseOffsetMinutes: parseOffsetMinutes };
 })();

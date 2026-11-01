@@ -1,0 +1,75 @@
+{
+  "ok": true,
+  "test_id": "L3-LANDSCAPE-90-READY",
+  "updatedAt": "2026-10-31T17:44:25.943176Z"
+}
+{
+  "ok": true,
+  "id": "pwnage-46000-rotation-feedback",
+  "title": "PWNAGE-46000 Rotation Test Feedback",
+  "updatedAt": "2026-10-31T17:44:25.943176Z",
+  "test": "L3-LANDSCAPE-90-READY",
+  "answer": "WAITING"
+}
+{
+  "mode": "portrait",
+  "effective_orientation": 0,
+  "applied": true,
+  "last_error": "",
+  "trial": {
+    "pending_confirmation": false
+  }
+}
+{"event": "baseline", "updatedAt": "2026-10-31T17:44:25.943176Z", "answer": "WAITING", "test": "L3-LANDSCAPE-90-READY"}
+{"event": "timeout", "test_id": "L3-LANDSCAPE-90-READY", "polls": 313}
+WAIT_RC=1
+{
+  "ok": true,
+  "id": "pwnage-46000-rotation-feedback",
+  "title": "PWNAGE-46000 Rotation Test Feedback",
+  "updatedAt": "2026-10-31T17:44:25.943176Z",
+  "test": "L3-LANDSCAPE-90-READY",
+  "answer": "WAITING"
+}
+===status
+{
+  "mode": "portrait",
+  "effective_orientation": 0,
+  "applied": true,
+  "display": {
+    "applied": true,
+    "backend": "wlr-randr",
+    "enabled": true,
+    "error": "",
+    "logical_height": 1520,
+    "logical_width": 720,
+    "output": "HEADLESS-1",
+    "outputs": [
+      "HEADLESS-1"
+    ],
+    "physical_height": 1520,
+    "physical_width": 720,
+    "presenter_rotation": 0,
+    "scale": 2.0,
+    "transform": "normal",
+    "transform_map": {
+      "0": "normal",
+      "180": "180",
+      "270": "270",
+      "90": "90"
+    },
+    "verified": false
+  },
+  "trial": {
+    "pending_confirmation": false
+  },
+  "last_error": ""
+}
+transform=0
+presenter_rotation=0
+effective_orientation=0
+output=HEADLESS-1
+logical_width=720
+logical_height=1520
+backend=wlr-randr
+applied=1

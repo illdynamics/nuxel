@@ -4,7 +4,7 @@
 This is a real MTP 1.0 responder, not a UI stub.  The Samsung 4.14 kernel
 function exposes /dev/mtp_usb with read/write for MTP containers and three
 ioctls for file payloads.  Storage is restricted to NUXEL_MTP_ROOT (default
-/home/nuxel); dotfiles and symlinks that escape that root are never exposed.
+/home/nuxel/Shared); dotfiles and symlinks that escape that root are never exposed.
 
 The daemon writes an honest JSON state file after every state change:
   /run/nuxel/mtp.state
@@ -25,7 +25,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 DEV = os.environ.get("NUXEL_MTP_DEV", "/dev/mtp_usb")
-ROOT = Path(os.environ.get("NUXEL_MTP_ROOT", "/home/nuxel")).resolve()
+ROOT = Path(os.environ.get("NUXEL_MTP_ROOT", "/home/nuxel/Shared")).resolve()
 STATE = Path(os.environ.get("NUXEL_MTP_STATE", "/run/nuxel/mtp.state"))
 STORAGE_ID = 0x00010001
 ROOT_HANDLE = 0x00000000
@@ -196,6 +196,7 @@ class ObjectInfo:
 class MtpServer:
     def __init__(self, fd: int):
         self.fd = fd
+        self._host_seen = False
         self.session_id: Optional[int] = None
         self._next_handle = 1
         self._by_handle: Dict[int, ObjectInfo] = {}
@@ -500,6 +501,14 @@ class MtpServer:
         try:
             buf = struct.pack("<i4xqQH2xI", fd, int(offset), int(length), 0, 0)
             fcntl.ioctl(self.fd, MTP_RECEIVE_FILE, buf, True)
+            # Host-written files must be owned by the session user, not root,
+            # or the Files app cannot edit/delete them after a Mac transfer.
+            try:
+                import pwd
+                pw = pwd.getpwnam("nuxel")
+                os.fchown(fd, pw.pw_uid, pw.pw_gid)
+            except (ImportError, KeyError, OSError):
+                pass
             return 0
         except OSError as exc:
             log(f"receive_file ioctl failed {path}: {exc}")
@@ -512,7 +521,7 @@ class MtpServer:
 
     # ---- command handling -------------------------------------------------
     def run(self) -> None:
-        write_state(session_open=False, host_connected=True)
+        write_state(session_open=False, host_connected=False)
         log(f"MTP responder ready dev={DEV} root={ROOT}")
         while True:
             got = self.read_container()
@@ -523,6 +532,11 @@ class MtpServer:
                 time.sleep(0.5)
                 continue
             ctype, code, txid, payload = got
+            # A first command is real host activity; the bare /dev/mtp_usb
+            # node existing is not.
+            if not self._host_seen:
+                self._host_seen = True
+                write_state(session_open=False, host_connected=True)
             if ctype != TYPE_COMMAND:
                 log(f"ignoring container type={ctype} code=0x{code:04x}")
                 continue

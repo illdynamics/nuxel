@@ -664,6 +664,7 @@ static void indicator_fallback_start(void) {
 struct cfgfile { const char *name; const char *path; int writable; };
 static const struct cfgfile CFG[] = {
   { "statusbar-safezones", "/etc/nuxel/display/statusbar-safezones.json", 1 },
+  { "statusbar-icons",     "/etc/nuxel/display/statusbar-icons.json",     1 },
   { "buttons",             "/etc/nuxel/input/buttons.json",               1 },
   { "display",             "/etc/nuxel/display/display.json",             1 },
   /* A33 boot surface: the ONE writable boot document (verbose boot, briq-02b)
@@ -687,7 +688,7 @@ static const struct cfgfile CFG[] = {
      document) and is read-only here - no new verb, no new write path, no change
      to the terminal, the buttons or the boot surface. */
   { "keyboard-state",      "/run/nuxel-keyboard.state",                    0 },
-  { "lock-state",          "/run/nuxel-lock.state",                        0 },
+  { "lock-state",          "/run/nuxel/security/lock-state.json",            0 },
   { "navdock-state",       "/run/nuxel-navdock.state",                     0 },
   { "battery-capacity",    "/sys/class/power_supply/battery/capacity",     0 },
   { "battery-status",      "/sys/class/power_supply/battery/status",       0 },

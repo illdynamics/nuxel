@@ -44,7 +44,8 @@ require(nav, "global.nuxel.terminateForeground()", "Back long press owns foregro
 
 keyboard = source("pwa/nuxel-home/js/touch-keyboard.js")
 require(keyboard, "el.focus({ preventScroll: true })", "keyboard restores target focus before editing")
-require(keyboard, "this.panel.hidden = true", "Hide Keyboard changes OSK visibility")
+require(keyboard, "get enabled() { return false; }", "duplicate blue DOM keyboard is permanently disabled")
+require(keyboard, "this._discardFallback();", "hide/show remove any stale DOM keyboard node")
 require(keyboard, "haptics-tap", "keyboard requests one haptic path")
 
 calendar_css = source("pwa/nuxel-apps/calendar/css/calendar.css")

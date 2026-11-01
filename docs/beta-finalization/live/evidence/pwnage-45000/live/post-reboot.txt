@@ -1,0 +1,38 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+PWNAGE-45000 post-reboot verification 2026-10-31T19:43:44+01:00
+up 2 minutes
+4.14.253-gf7194c1d15ed-dirty
+--- socket
+drwxr-x---. 6 root  nuxel 260 Oct 31 19:43 /run/nuxel-wayland
+drwx------. 2 nuxel nuxel  60 Oct 31 19:41 /run/nuxel-wayland/dconf
+drwx------. 3 nuxel nuxel 100 Oct 31 19:43 /run/user/1000
+drwx------. 2 nuxel nuxel  60 Oct 31 19:43 /run/user/1000/dconf
+srw-rw----. 1 root nuxel  0 Oct 31 19:43 /run/nuxel-wayland/wayland-0
+lrwxrwxrwx. 1 root root  28 Oct 31 19:43 /run/user/1000/wayland-0 -> /run/nuxel-wayland/wayland-0
+--- units
+active
+active
+active
+active
+--- polkit agent
+10490 runuser -u nuxel -- env XDG_RUNTIME_DIR=/run/nuxel-wayland WAYLAND_DISPLAY=wayland-0 DBUS_SESSION_BUS_ADDRESS=unix:path=/run/nuxel-wayland/bus GDK_BACKEND=wayland GSK_RENDERER=cairo LIBGL_ALWAYS_SOFTWARE=1 HOME=/home/nuxel /usr/libexec/xfce-polkit
+10495 /usr/libexec/xfce-polkit
+
+** (xfce-polkit:10495): CRITICAL **: 19:43:07.408: polkit_agent_listener_register_with_options: assertion 'POLKIT_IS_SUBJECT (subject)' failed
+--- security
+{"success": true, "schema": "nuxel.security-status/1", "mode": "swipe", "credential_set": true, "pin_fallback_set": false, "locked": false, "reason": "swipe", "fingerprint": {"provider_ready": false, "selectable": false}, "rate_limit": {"failures": 0, "locked_until": 0.0, "locked_out": false, "remai
+--- native/package providers
+{"success": true, "schema": "nuxel.software-status/1", "native": {"dnf5": true, "dnf": true, "rpm": true, "packagekitd": true, "gnome_software": true, "nuxel_software": true, "appstream": true}, "native_ready": true, "native_backend": "DNF5", "native_ui": "/usr/lib/nuxel/nuxel-software", "polkit": true, "flatpak": {"flatpak": true, "bwrap": true, "portal": true, "user_namespace": {"ok": false, "detail": "unshare: unshare failed: Invalid argument"}}, "flatpak_ready": false, "flatpak_blocker": "CONFIG_USER_NS is not set; Flatpak/Bubblewrap sandbox cannot be created", "source_policy": "local/NuxTore only for this mission; native RPM uses configu
+--- navdock
+1793472187 NAV_DOCK_READY width=360 height=62 scale=2 out=720x1520
+1793472190 NAV_DOCK_HIDE
+--- torch
+0

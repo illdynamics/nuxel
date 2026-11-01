@@ -1,0 +1,65 @@
+# Nuxel S10+ - DRM core + kbase GPU acceleration.
+#
+# CONFIG_DRM is enabled so Mesa and wlroots see a DRM-capable kernel build and
+# can use DMA-BUF.  The pinned 4.14 tree's Exynos7 DECON DRM driver is NOT the
+# Exynos 9820 DPU20 display driver and, when enabled, registers the same
+# "exynos-decon" platform driver name as the working vendor fbdev driver.  It
+# wins that registration and removes /dev/fb0, leaving the panel dark.  Keep it
+# off; the panel continues to be driven by EXYNOS_DPU20 (fbdev) while the Mali
+# GPU is driven through ARM kbase (/dev/mali0).
+CONFIG_DRM=y
+CONFIG_DRM_KMS_HELPER=y
+CONFIG_DRM_KMS_FB_HELPER=y
+CONFIG_DRM_FBDEV_EMULATION=y
+CONFIG_DRM_FBDEV_OVERALLOC=100
+CONFIG_DRM_MIPI_DSI=y
+CONFIG_DRM_EXYNOS=n
+CONFIG_DRM_PANEL=y
+CONFIG_DRM_BRIDGE=y
+
+# Buffer sharing: Mesa panfrost <-> kbase <-> wlroots udmabuf allocator.
+CONFIG_DMA_SHARED_BUFFER=y
+CONFIG_DMA_CMA=y
+CONFIG_CMA=y
+CONFIG_CMA_SIZE_MBYTES=64
+CONFIG_SYNC_FILE=y
+CONFIG_UDMABUF=y
+
+# Vendor Mali-G76 (Bifrost) kbase, unchanged from the working image.
+CONFIG_MALI_MIDGARD=y
+CONFIG_MALI_BIFROST_R26P0=y
+CONFIG_MALI_REAL_HW=y
+CONFIG_MALI_DEBUG_SYS=y
+
+# Panel/fbdev path that must keep owning the AMOLED.
+CONFIG_FB=y
+CONFIG_EXYNOS_DPU20=y
+CONFIG_EXYNOS_MIPI_DSIM=y
+CONFIG_ION=y
+CONFIG_ION_EXYNOS=y
+
+# Flatpak / Bubblewrap: unprivileged user namespaces and the namespace/
+# seccomp/cgroup prerequisites.  This is necessary but NOT sufficient on this
+# Samsung 4.14 tree: create_user_ns() also carries a CONFIG_LOD_SEC runtime gate
+# and a current_chrooted() check.  The live status is decided by
+# `unshare -Ur true` and a real Flatpak launch, never by this fragment alone.
+CONFIG_MULTIUSER=y
+CONFIG_NAMESPACES=y
+CONFIG_USER_NS=y
+CONFIG_UTS_NS=y
+CONFIG_IPC_NS=y
+CONFIG_PID_NS=y
+CONFIG_NET_NS=y
+CONFIG_SECCOMP=y
+CONFIG_SECCOMP_FILTER=y
+CONFIG_CGROUPS=y
+
+# NFC (PWNAGE-53000): vendor S3NRN82 controller.  The sec_nfc driver class is
+# renamed by patches/0007-sec-nfc-class-name.patch; without that rename the
+# generic NFC core and sec_nfc both register /sys/class/nfc and sysfs panics.
+CONFIG_NFC=y
+CONFIG_NFC_DIGITAL=y
+CONFIG_NFC_NCI=y
+CONFIG_SAMSUNG_NFC=y
+CONFIG_SEC_NFC=y
+CONFIG_SEC_NFC_LOGGER=y

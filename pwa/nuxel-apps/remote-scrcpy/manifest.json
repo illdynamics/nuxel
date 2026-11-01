@@ -1,0 +1,40 @@
+{
+  "display": "fullscreen",
+  "orientation": "any",
+  "background_color": "#061323",
+  "theme_color": "#061323",
+  "lang": "en",
+  "dir": "ltr",
+  "categories": [
+    "utilities",
+    "system",
+    "remote-desktop"
+  ],
+  "name": "scrcpy (Android)",
+  "short_name": "scrcpy (Android)",
+  "description": "Official Android ADB mirroring only \u00b7 USB ADB preferred \u00b7 Wi-Fi/TCP-IP optional \u00b7 not native Nuxel",
+  "start_url": "/pwa/nuxel-apps/remote-scrcpy/index.html",
+  "scope": "/pwa/nuxel-apps/remote-scrcpy/",
+  "icons": [
+    {
+      "src": "icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "nuxel": {
+    "bridge_version": "1",
+    "capabilities": [],
+    "app_type": "remote-desktop",
+    "service": "scrcpy",
+    "read_only_status": false,
+    "off_by_default": true,
+    "privacy_indicator": "REMOTE DESKTOP ACTIVE",
+    "facilities": [
+      "real Bridge status/start/stop/diagnose/connection-info",
+      "preferred transport selection with USB gated by kernel evidence",
+      "loopback listener reached through the owner's pinned-key SSH tunnel"
+    ]
+  }
+}

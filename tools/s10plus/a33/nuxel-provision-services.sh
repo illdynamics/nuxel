@@ -32,6 +32,18 @@ chmod 0770 /var/lib/nuxel/permissions
 # The portal owns this store as nuxel; the bridge needs group-only write access
 # to persist the grants it successfully brokers.  Do not make it world writable.
 usermod -a -G nuxel nuxel-bridge
-echo "directories ready: /var/lib/nuxel/permissions (nuxel:nuxel, 0770; bridge supplementary group nuxel), /var/log/nuxel"
+# PWNAGE-42000: /var/lib/nuxel itself may be 0770 root:nuxel-notifications for
+# the notification hub.  Group membership alone is not enough: the bridge needs
+# execute (traverse) on the parent and read/write on the permissions directory.
+chmod 0771 /var/lib/nuxel
+if command -v setfacl >/dev/null 2>&1; then
+    setfacl -m u:nuxel-bridge:r-x /var/lib/nuxel
+    setfacl -m u:nuxel-bridge:rwx /var/lib/nuxel/permissions
+    getfacl -p /var/lib/nuxel /var/lib/nuxel/permissions
+else
+    echo "ERROR: acl/setfacl is required so nuxel-bridge can read the permission store" >&2
+    exit 1
+fi
+echo "directories ready: /var/lib/nuxel/permissions (nuxel:nuxel, 0770; nuxel-bridge ACL rwx), /var/log/nuxel"
 
 echo "provisioning complete"

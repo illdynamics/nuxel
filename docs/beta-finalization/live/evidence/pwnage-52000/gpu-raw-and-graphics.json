@@ -1,0 +1,22 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+== debugfs gpu_memory
+mali0                   2913
+  kctx-0xffffff802178e000       2913 | tgid=      5860 | pid=      5860  | name=                phoc
+== sysfs utilization/clock
+0
+0
+== dvfs_table
+ 702000 650000 572000 433000 377000 325000 260000 200000 156000
+
+== metrics
+{"cpu_percent":1.7,"cpu_status":"ok","cpu_frequency_mhz":582,"cpu_frequency_status":"ok","memory_percent":14.1,"memory_status":"ok","memory_used_kib":1071732,"memory_total_kib":7597708,"gpu_percent":0.0,"gpu_status":"ok","gpu_util_source":"/sys/devices/platform/18500000.mali/utilization","gpu_frequency_mhz":0,"gpu_frequency_status":"ok","gpu_frequency_source":"/sys/devices/platform/18500000.mali/clock","gpu_memory_kib":11652,"gpu_memory_total_kib":7597708,"gpu_memory_status":"ok_shared_budget_reference","gpu_memory_kind":"tracked_shared_allocations","gpu_memory_source":"/sys/kernel/debug/mali/gpu_memory","gpu_memory_pages":2913,"gpu_memory_page_size":4096,"gpu_memory_budget_kind":"system_ram_upper_bound","timestamp_ms":1793532975851}
+== graphics
+{"result": {"success": true, "schema": "nuxel.graphics-status/1", "source": "nuxel-bridge:graphics-status", "timestamp": 1793532976.3099608, "verdict": "PARTIAL", "acceleration_label": "PARTIAL", "gpu": {"hardware": "Mali-G76 MP12", "kernel_driver": "mali_kbase", "device_present": true, "device_node": "/dev/mali0", "context_owner": "phoc", "context_opened_by_compositor": true, "dri_render_node": false}, "phoc": {"pid": 5860, "renderer": "mali-kbase", "wlr_renderer": "gles2", "mali_fds": 3, "udmabuf_fds": 2, "fallback_marker": false, "accelerated": true}, "egl": {"library": "/usr/lib64/libEGL_mesa.so.0.0.0", "sha256": "3800718931c0b359be31374c8ab0ce10ee6b1926992a7d8646a8746176a0f71e", "vendor": null, "version": null, "init": null, "gles_renderer": null, "gles_version": null, "probe_wayland": false, "probe_surfaceless": false}, "gtk_gl": {"status": "NOT_MEASURED", "gtk3": "gtk3-3.24.52-1.fc43.aarch64", "gtk4": "gtk4-4.20.4-1.fc43.aarch64", "gsk_renderer": null, "detail": "GTK GL is independent of the Phoc kbase context; no bounded GTK probe was run"}, "webkitgtk": {"process_running": true, "status": "SOFTWARE_FALLBACK", "accelerated": false, "compositing_env": {"LIBGL_ALWAYS_SOFTWARE": "1", "WEBKIT_DISABLE_COMPOSITING_MODE": "1", "MESA_KBASE_NODE": "/dev/mali0"}, "detail": "WebKit acceleration is not enabled: the Phoc kbase session does not advertise linux-dmabuf, so the GTK UI process cannot share accelerated WebKit backing-store buffers with the compositor."}, "dmabuf": {"udmabuf_device": true, "udmabuf_proven": null, "linux_dmabuf_global": null, "status": "device_present_import_not_proven"}, "display_bridge": {"process": "nuxel-wl-fb", "fb_virtual_size": "1440,6080", "fb_stride": "5760", "frames_ok": false, "decon_pan_failed": null, "path": "screencopy -> nuxel-wl-fb -> fbdev/DECON", "cpu_copy": true}, "fbdev_drm": {"fb0": true, "drm_render_node": false, "active_path": "fbdev/DECON"}, "probes": {}, "blocked_reason": "WebKit acceleration is not enabled: the Phoc kbase session does not advertise linux-dmabuf, so the GTK UI process cannot share accelerated WebKit backing-store buffers with the compositor.", "honest_summary": "Phoc compositor is kbase-accelerated; WebKitGTK remains software (no linux-dmabuf path) and nuxel-wl-fb performs a CPU copy into fbdev/DECON. The GUI is PARTIAL, not fully accelerated."}}

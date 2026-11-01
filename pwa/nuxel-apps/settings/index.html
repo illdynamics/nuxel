@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<link rel="stylesheet" href="../../nuxel-common/responsive.css?v=p52000">
 <meta name="nuxel-app-id" content="nuxel-settings">
 <title>Nuxel Settings</title>
 <link rel="manifest" href="manifest.json">
@@ -20,10 +21,19 @@
   <button class="tab" data-tab="bluetooth">Bluetooth</button>
   <button class="tab" data-tab="displays">Displays</button>
   <button class="tab" data-tab="network">Wi-Fi</button>
+  <button class="tab" data-tab="mobile">Mobile network</button>
+  <button class="tab" data-tab="camera">Camera</button>
+  <button class="tab" data-tab="sensors">Sensors</button>
+  <button class="tab" data-tab="graphics">Graphics</button>
   <button class="tab" data-tab="sound">Sound</button>
   <button class="tab" data-tab="buttons">Buttons &amp; Gestures</button>
   <button class="tab" data-tab="location">Location &amp; Maps</button>
   <button class="tab" data-tab="power">Power</button>
+  <button class="tab" data-tab="notifications">Notifications</button>
+  <button class="tab" data-tab="nfc">NFC</button>
+  <button class="tab" data-tab="fingerprint">Fingerprint</button>
+  <button class="tab" data-tab="security">Security</button>
+  <button class="tab" data-tab="software">Software</button>
   <button class="tab" data-tab="dev">Developer</button>
 </nav>
 
@@ -40,7 +50,21 @@
         <button data-action="screen-on">Screen on</button>
         <button data-action="screen-toggle">Toggle</button>
       </div>
-      <pre id="display-state" class="state">—</pre>
+      <pre id="screen-state" class="state">—</pre>
+    </div>
+
+    <div class="card" id="statusbar-icons-card">
+      <h3>Status Bar Icons</h3>
+      <p class="hint">Choose which indicators may appear in the top bar. Hiding an icon never
+        turns off Wi-Fi, Bluetooth, NFC, location or any other service. Provider OFF/unsupported
+        state still wins over a user "show" choice, and icons are hidden while the device is locked.</p>
+      <div id="statusbar-icon-list" class="statusbar-icon-list" role="group" aria-label="Status bar icon visibility"></div>
+      <div class="row">
+        <button id="statusbar-icons-save" class="primary">Save</button>
+        <button id="statusbar-icons-defaults">Restore Defaults</button>
+        <button id="statusbar-icons-preview">Live preview</button>
+      </div>
+      <pre id="statusbar-icons-state" class="state" role="status" aria-live="polite">Reading icon preferences…</pre>
     </div>
 
     <div class="card">
@@ -157,16 +181,33 @@
     </div>
   </section>
 
-  <!-- ── DISPLAYS (29000) ──────────────────────────────────────────────── -->
+  <!-- ── DISPLAYS (29000 / PWNAGE-52000) ───────────────────────────────── -->
   <section id="tab-displays" class="panel">
     <h2>Displays</h2>
+
+    <!-- Graphics Acceleration is FIRST and independent of external connector
+         discovery.  It never waits for the DisplayProvider (Type-C/DRM scan). -->
+    <div class="card" id="graphics-acceleration-card">
+      <h3>Graphics Acceleration</h3>
+      <p class="hint">Live, per-layer graphics truth. The Phoc kbase compositor, GTK GL and
+        WebKitGTK are reported separately; one accelerated layer is not proof that every
+        layer is accelerated.</p>
+      <div class="row">
+        <button id="graphics-accel-refresh" class="primary">Refresh graphics status</button>
+        <button id="graphics-accel-test">Run Graphics Test</button>
+      </div>
+      <pre id="graphics-acceleration-state" class="state" role="status" aria-live="polite">Reading GPU, Phoc, EGL, GTK, WebKit and framebuffer path…</pre>
+      <p id="graphics-acceleration-detail" class="hint">—</p>
+      <pre id="graphics-acceleration-verdict" class="state" role="status" aria-live="polite">—</pre>
+    </div>
+
     <div class="card">
       <h3>External display (USB-C / HDMI)</h3>
       <p class="hint">Actual DRM, Type-C and extcon state. Mirror and Desktop are only offered when
         the kernel and compositor genuinely support an independent external output.</p>
-      <div class="row"><button id="display-refresh">Refresh</button></div>
-      <pre id="display-state" class="state">Checking display path…</pre>
-      <p id="display-detail" class="hint">—</p>
+      <div class="row"><button id="display-refresh">Refresh connectors</button></div>
+      <pre id="external-display-state" class="state">Checking external connector path…</pre>
+      <p id="external-display-detail" class="hint">—</p>
     </div>
   </section>
 
@@ -303,6 +344,155 @@
     </div>
   </section>
 
+
+  <!-- ── NOTIFICATIONS / DND / LED (PWNAGE-45000) ───────────────────── -->
+  <section id="tab-notifications" class="panel">
+    <h2>Notifications</h2>
+    <div class="card">
+      <h3>Do Not Disturb</h3>
+      <p class="hint">Persistent system policy. DND suppresses popups, sound, haptics and notification lights; it never deletes notification history.</p>
+      <div class="row"><button id="dnd-refresh">Refresh</button><button id="dnd-toggle" class="primary">Toggle DND</button></div>
+      <pre id="dnd-state" class="state">Checking DND…</pre>
+      <p id="dnd-detail" class="hint">—</p>
+    </div>
+    <div class="card">
+      <h3>Notification light</h3>
+      <p class="hint">A hardware RGB notification LED is only used if the kernel exposes a real class. The S10+ currently has no front notification LED class; the display bridge can render a bounded, clearly-labelled software edge light instead.</p>
+      <pre id="led-state" class="state">Checking LED capability…</pre>
+      <div class="row wrap" id="led-color-buttons"></div>
+      <p id="led-result" class="state" role="status">—</p>
+    </div>
+  </section>
+
+  <!-- ── NFC (PWNAGE-45000) ───────────────────────────────────────────── -->
+  <section id="tab-nfc" class="panel">
+    <h2>NFC</h2>
+    <div class="card">
+      <h3>Controller &amp; reader</h3>
+      <p class="hint">Real kernel/driver/firmware/userspace state. Expected S10+ controller: Samsung sec-nfc / S3FWRN5 family at I2C 0x27. Only a physical tag read proves reader operation; payment/emulation is not claimed.</p>
+      <div class="row"><button id="nfc-refresh">Refresh diagnostics</button><button id="nfc-toggle" class="primary">Enable / disable</button></div>
+      <pre id="nfc-state" class="state" role="status">Checking NFC…</pre>
+      <p id="nfc-detail" class="hint">—</p>
+      <div class="row"><button id="nfc-test" disabled>Test tag read</button></div>
+      <p id="nfc-test-result" class="state">Tag test requires a supported reader.</p>
+    </div>
+  </section>
+
+  <!-- ── FINGERPRINT (PWNAGE-45000) ───────────────────────────────────── -->
+  <section id="tab-fingerprint" class="panel">
+    <h2>Fingerprint</h2>
+    <div class="card">
+      <h3>Secure biometric provider</h3>
+      <p class="hint">The S10+ sensor is ultrasonic under-display. Enrollment is enabled only after a verified secure/TEE provider exists. Templates never leave the provider; PIN fallback is mandatory.</p>
+      <div class="row"><button id="fp-refresh">Refresh</button></div>
+      <pre id="fp-state" class="state" role="status">Checking fingerprint provider…</pre>
+      <p id="fp-detail" class="hint">—</p>
+      <div class="row"><button id="fp-enroll" disabled>Enroll fingerprint</button><button id="fp-test" disabled>Test verification</button></div>
+      <p id="fp-result" class="state">—</p>
+    </div>
+  </section>
+
+  <!-- ── SECURITY LOCK (PWNAGE-45000) ─────────────────────────────────── -->
+  <section id="tab-security" class="panel">
+    <h2>Security</h2>
+    <div class="card">
+      <h3>Screen lock method</h3>
+      <p class="hint">The credential verifier is owned by the root bridge (scrypt, constant-time, persistent rate limit). A JavaScript overlay cannot unlock the session by itself.</p>
+      <pre id="sec-state" class="state" role="status">Checking lock policy…</pre>
+      <div class="row wrap" id="sec-modes"></div>
+      <div id="sec-credential-form">
+        <label>Current credential (required when changing) <input id="sec-current" type="password" autocomplete="off"></label>
+        <label>New PIN / pattern <input id="sec-secret" type="password" autocomplete="new-password" inputmode="numeric"></label>
+        <label>PIN fallback (fingerprint mode only) <input id="sec-fallback" type="password" autocomplete="new-password" inputmode="numeric"></label>
+        <label class="check"><input id="sec-downgrade" type="checkbox"> I understand selecting Swipe removes the current credential</label>
+        <div class="row"><button id="sec-apply" class="primary">Apply lock method</button></div>
+      </div>
+      <p id="sec-result" class="state" role="status">—</p>
+      <p class="hint">Fingerprint mode is refused unless the secure provider is ready and a PIN fallback has been verified.</p>
+    </div>
+  </section>
+
+  <!-- ── SOFTWARE (PWNAGE-45000) ──────────────────────────────────────── -->
+  <section id="tab-software" class="panel">
+    <h2>Software</h2>
+    <div class="card">
+      <h3>Native Fedora RPM packages</h3>
+      <p class="hint">The native Software center is GNOME Software with the real PackageKit/DNF backend and polkit authorization. It is launched as the session user; NuxTore local bundles remain a separate offline source.</p>
+      <pre id="software-state" class="state" role="status">Checking package backend…</pre>
+      <div class="row"><button id="software-refresh">Refresh</button><button id="software-open" class="primary">Open Software</button></div>
+      <p id="software-detail" class="hint">—</p>
+    </div>
+    <div class="card">
+      <h3>Flatpak</h3>
+      <pre id="flatpak-state" class="state">Checking Flatpak prerequisites…</pre>
+      <p class="hint">Flatpak is never enabled with weakened sandboxing. Status is taken from the live kernel test (`unshare -Ur true` + Bubblewrap). A config flag alone is not treated as support.</p>
+    </div>
+  </section>
+
+
+  <!-- ── MOBILE NETWORK DRIVER STATUS (PWNAGE-50000) ──────────────────── -->
+  <section id="tab-mobile" class="panel">
+    <h2>Mobile network</h2>
+    <div class="card">
+      <h3>Shannon LTE transport &amp; driver</h3>
+      <p class="hint">Read-only driver truth from the same diagnostic the live console uses.
+        A CP node or netdev is a transport, never proof of registration or data.</p>
+      <div class="row"><button id="mobile-refresh" class="primary">Refresh driver status</button></div>
+      <pre id="mobile-state" class="state" role="status" aria-live="polite">Checking mobile transport…</pre>
+    </div>
+  </section>
+
+  <!-- ── CAMERA DRIVER STATUS (PWNAGE-50000) ──────────────────────────── -->
+  <section id="tab-camera" class="panel">
+    <h2>Camera</h2>
+    <div class="card">
+      <h3>FIMC-IS / V4L2 driver status</h3>
+      <p class="hint">Node, sensor, firmware, media-graph and first-failing-stage evidence.
+        A bound driver is not a captured frame.</p>
+      <div class="row"><button id="camera-refresh" class="primary">Refresh driver status</button></div>
+      <pre id="camera-state" class="state" role="status" aria-live="polite">Checking camera pipeline…</pre>
+    </div>
+  </section>
+
+  <!-- ── SENSORS DRIVER STATUS (PWNAGE-50000) ─────────────────────────── -->
+  <section id="tab-sensors" class="panel">
+    <h2>Sensors</h2>
+    <div class="card">
+      <h3>Sensor-hub classes</h3>
+      <p class="hint">Accelerometer, gyroscope, magnetometer, proximity, light, pressure and
+        the other classes the kernel actually enumerates. Raw reads are shown only when the
+        kernel exposes a readable channel.</p>
+      <div class="row wrap">
+        <button id="sensors-refresh" class="primary">Refresh all classes</button>
+        <button id="sensors-read-accel">Read accelerometer</button>
+        <button id="sensors-read-gyro">Read gyroscope</button>
+      </div>
+      <pre id="sensors-state" class="state" role="status" aria-live="polite">Checking sensor classes…</pre>
+    </div>
+  </section>
+
+  <!-- ── GRAPHICS / LAYERED GPU TRUTH (PWNAGE-50000) ──────────────────── -->
+  <section id="tab-graphics" class="panel">
+    <h2>Graphics</h2>
+    <div class="card">
+      <h3>Layered status</h3>
+      <p class="hint">Each layer is reported separately. A compositor GPU context is not
+        proof that WebKit or a GTK app is accelerated; <em>null</em> means not measured.</p>
+      <div class="row"><button id="graphics-refresh" class="primary">Refresh graphics status</button></div>
+      <pre id="graphics-state" class="state" role="status" aria-live="polite">Reading GPU, compositor, EGL, WebKit and display layers…</pre>
+    </div>
+    <div class="card">
+      <h3>Diagnostic probes</h3>
+      <p class="hint">Surfaceless EGL and Wayland EGL probes write results to
+        /run/nuxel-graphics-probes.json. They never write the framebuffer.</p>
+      <div class="row wrap">
+        <button id="graphics-probe-surfaceless">Run surfaceless EGL probe</button>
+        <button id="graphics-probe-wayland">Run Wayland EGL probe</button>
+      </div>
+      <pre id="graphics-probes" class="state" role="status" aria-live="polite">No probe run in this boot.</pre>
+    </div>
+  </section>
+
   <!-- ── DEVELOPER ────────────────────────────────────────────────────── -->
   <section id="tab-dev" class="panel">
     <h2>Developer</h2>
@@ -362,11 +552,15 @@
 <script src="../../nuxel-common/haptics.js"></script>
 <script src="../../nuxel-common/maps-core.js"></script>
 <script src="../../nuxel-common/geolocation.js"></script>
+<script src="../../nuxel-common/statusbar-icons.js?v=p52000"></script>
 <script type="module" src="../../nuxel-common/bridge.js"></script>
-<script src="settings.js"></script>
-<script src="theme-settings.js"></script>
-<script src="wifi-settings.js"></script>
+<script src="settings.js?v=p52000"></script>
+<script src="theme-settings.js?v=p50002"></script>
+<script src="wifi-settings.js?v=p50002"></script>
 <script src="location-maps.js"></script>
-<script src="hardware-settings.js"></script>
+<script src="hardware-settings.js?v=p52000"></script>
+<script src="pwange45000-settings.js?v=p50002"></script>
+<script src="driver-diagnostics.js?v=p50002"></script>
+<script src="graphics-diagnostics.js?v=p52000"></script>
 </body>
 </html>

@@ -1,0 +1,26 @@
+{
+  "error": null,
+  "path": "/etc/nuxel/graphics/graphics-profile.json",
+  "profiles": {
+    "fully-accelerated": {
+      "available": false,
+      "measured": false,
+      "reason": "DMA-BUF presentation blocked as above; nuxel-wl-fb still CPU-copies/scales 720x1520 -> 1440x3040 into /dev/fb0."
+    },
+    "gpu-rendered-dmabuf-presented": {
+      "available": false,
+      "measured": false,
+      "reason": "WebKit 2.54.1 requires drmMainDevice() for RendererBufferTransportMode::Hardware; CONFIG_DRM_VGEM is unset and /dev/dri is absent. Phoc can import LINEAR DMA-BUF; WebKit cannot allocate/export one."
+    },
+    "gpu-rendered-shm-presented": {
+      "available": true,
+      "measured": true,
+      "reason": null
+    },
+    "software-safe": {
+      "available": true,
+      "measured": true,
+      "reason": null
+    }
+  }
+}

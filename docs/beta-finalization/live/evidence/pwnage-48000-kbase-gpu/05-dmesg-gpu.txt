@@ -1,0 +1,20 @@
+Warning: Permanently added '192.168.178.167' (ED25519) to the list of known hosts.
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+[    5.834859] systemd[1]: modprobe@drm.service - Load Kernel Module drm skipped, unmet condition check ConditionKernelModuleLoaded=!drm
+[    8.863460] mali 18500000.mali: Unknown ioctl 0xc010640c nr:12
+[   44.029523] mali 18500000.mali: Unknown ioctl 0xc010640c nr:12
+[   99.343749] mali 18500000.mali: Unknown ioctl 0xc010640c nr:12
+[  156.832639] mali 18500000.mali: Unknown ioctl 0xc010640c nr:12
+[  178.459328] mali 18500000.mali: Unknown ioctl 0xc010640c nr:12
+[  199.578853] mali 18500000.mali: Unknown ioctl 0xc010640c nr:12
+[  214.903723] mali 18500000.mali: Unknown ioctl 0xc010640c nr:12
+[  239.609051] mali 18500000.mali: Unknown ioctl 0xc010640c nr:12
+[  315.369756] mali 18500000.mali: Unknown ioctl 0xc010640c nr:12

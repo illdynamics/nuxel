@@ -1,0 +1,52 @@
+# PWNAGE-45000 follow-up: lockscreen top bar removal + podman rebuild
+date=2026-10-31T19:17:29Z
+image=4294967296 bytes
+image_sha256=4f91d673e2e46528acb1ddc029c819140832d1e4bfb0c8f8588ebb89af89e1e1
+statusbar_sha256=ddcf5092a5dae376f95f47fc99ceec438adcc34454d98fd90cba2b598223c812
+
+## Source changes
+- native statusbar hides its layer surface while /run/nuxel/security/lock-state.json is locked; recreates it on unlock
+- DOM fallback status bar hidden via body.lockscreen-active .status-bar
+- navdock generator resolves repository root from copied build location; build does not mutate source fallbacks
+- build deps include openssl; inet gid 3003 is created before usermod
+
+## Build
+podman container: nuxel-build-45001 (fedora:43, linux/arm64)
+command: podman exec nuxel-build-45001 /bin/bash /nuxel/images/s10plus/build-phone-rootfs-inside-fedora.sh
+result: PASS (image exists, e2fsck clean, offline rootfs verification PASS)
+
+## Live deployment
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+ddcf5092a5dae376f95f47fc99ceec438adcc34454d98fd90cba2b598223c812  /usr/lib/nuxel/nuxel-statusbar
+fda4ff8494c97bd0d799eb652f2455d03e3759f7f43d98eb144951496810c648  /usr/share/nuxel/pwa/nuxel-home/index.html
+53eafc68fd717642f226d8a2474a5b37ec1d252f66d0a633adfc38901d565e34  /usr/share/nuxel/pwa/nuxel-home/css/status-bar.css
+5acbf761e961da18fc6603f359780b3ae5148b1d0e3bf001ddf10bb17ee59821  /usr/share/nuxel/pwa/nuxel-home/sw.js
+8908c2dd7bb22d030266d7a060213805ddcd7ffddeea9e65634720879dd767c3  /usr/share/nuxel/pwa/nuxel-home/manifest.json
+BACKUP=/var/lib/nuxel/pwnage45000-followup-20261031T191613Z
+
+## Native statusbar locked/unlocked proof
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+2026-10-31T20:16:28 STATUSBAR_SHOWN locked=0
+2026-10-31T20:16:37 STATUSBAR_HIDDEN locked=1
+2026-10-31T20:16:39 STATUSBAR_SHOWN locked=0
+2026-10-31T20:16:56 STATUSBAR_HIDDEN locked=1
+2026-10-31T20:16:58 STATUSBAR_SHOWN locked=0
+
+## Lockscreen screenshot
+docs/beta-finalization/live/evidence/pwnage-45000/screenshots/lockscreen-no-topbar-p45001.png (720x1520 compositor capture)

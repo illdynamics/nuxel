@@ -268,7 +268,7 @@ body.display-off .lockscreen-indicator .lockscreen-indicator-glow {
    not a fake control (there is deliberately no button that cannot be tapped). */
 .lockscreen-touch-warning {
     position: absolute;
-    top: 264px;
+    top: 348px;
     left: 16px;
     right: 16px;
     z-index: 3;
@@ -305,6 +305,13 @@ body.display-off .lockscreen-indicator .lockscreen-indicator-glow {
     .lockscreen-indicator { width: 44px; height: 44px; }
     .lockscreen-indicator.usb-ind { width: 59px; height: 49px; }   /* same painted height as 44px charging */
     .lockscreen-indicator.live-ind { width: 53px; height: 53px; } /* same painted height as 44px charging */
+    .lockscreen-transports {
+        top: 176px;
+        flex-direction: column;
+        gap: 6px;
+    }
+    .lockscreen-transport { width: 44px; height: 44px; }
+    .lockscreen-transport.file-transfer-ind { width: 60px; height: 44px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -327,17 +334,21 @@ body.display-off .lockscreen-indicator .lockscreen-indicator-glow {
    ========================================================================== */
 .lockscreen-transports {
     position: absolute;
-    top: 252px;
+    /* PWNAGE-49000: sit the console-transport penguins in the gap between the
+       charging/PC/live row (184..252) and the wallpaper's Nuxel wordmark.
+       The previous 286px row crowded the wordmark; 258px keeps a 6 px gap
+       under the primary row without moving the artwork over it. */
+    top: 258px;
     left: 0;
     right: 0;
     z-index: 3;
-    min-height: 40px;
+    min-height: 56px;
     display: flex;
     flex-direction: row;
     flex-wrap: wrap;
     align-items: center;
     justify-content: center;
-    gap: 6px;
+    gap: 10px;
     padding: 0 10px;
     pointer-events: none;
     -webkit-user-select: none;
@@ -346,8 +357,11 @@ body.display-off .lockscreen-indicator .lockscreen-indicator-glow {
 .lockscreen-transport {
     display: none;
     flex: 0 0 auto;
-    width: 40px;
-    height: 40px;
+    /* PWNAGE-45000: modestly larger source artwork, still below the primary
+       row.  The transparent parent is not the visible size; the source PNGs
+       are alpha-cropped so the painted penguin grows with the cell. */
+    width: 56px;
+    height: 56px;
     opacity: 0;
     visibility: hidden;
     transition: opacity .2s ease;
@@ -367,7 +381,7 @@ body.display-off .lockscreen-indicator .lockscreen-indicator-glow {
     visibility: visible;
     opacity: 1;
 }
-.lockscreen-transport.file-transfer-ind { width: 42px; height: 42px; }
+.lockscreen-transport.file-transfer-ind { width: 76px; height: 56px; }
 .lockscreen-transport.bluetooth-transport img {
     opacity: 0.95;
 }
@@ -477,7 +491,8 @@ body.display-off .lockscreen-indicator .lockscreen-indicator-glow {
 }
 @media (orientation: landscape) and (max-height: 500px) {
     .lockscreen-transports { top: auto; bottom: 10px; right: 12px; left: auto; min-height: 0; flex-direction: column; gap: 3px; padding: 0; }
-    .lockscreen-transport { width: 30px; height: 30px; }
+    .lockscreen-transport { width: 36px; height: 36px; }
+    .lockscreen-transport.file-transfer-ind { width: 50px; height: 36px; }
     .lockscreen-connection-mode { width: 52px; height: 52px; right: 10px; bottom: 10px; }
 }
 
@@ -486,3 +501,24 @@ body.display-off .lockscreen-indicator .lockscreen-indicator-glow {
 body.display-off .lockscreen-indicator,
 body.display-off .lockscreen-lockhead-motion,
 body.display-off .lockscreen-hint::before { animation: none !important; }
+
+/* PWNAGE-52000 lock privacy: the DOM top bar, system-navigation dock and all
+   Home chrome are hidden before the lockscreen is revealed.  The native
+   Back/Home/Recents layer-shell dock is hidden separately via
+   /run/nuxel-navdock.cmd and starts hidden until authoritative unlock. */
+body.lockscreen-active #status-bar,
+body.lockscreen-active #system-navigation,
+body.lockscreen-active #dock,
+body.lockscreen-active #app-grid,
+body.lockscreen-active #quick-settings,
+body.lockscreen-active #recents-view,
+body.lockscreen-active #search-overlay,
+body.lockscreen-active #phone-status,
+html.nuxel-boot-locked #status-bar,
+html.nuxel-boot-locked #system-navigation,
+html.nuxel-boot-locked #dock,
+html.nuxel-boot-locked #app-grid {
+    display: none !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+}

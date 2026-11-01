@@ -1,0 +1,462 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+=== installed orientationd head ===
+bash: line 2: file: command not found
+#!/usr/bin/env python3
+"""nuxel-orientationd — the ONE authoritative orientation policy service (A49).
+
+Persistence, mode validation, sensor bring-up and compositor apply/revert live
+here so Quick Settings, Settings, nuxelctl and the compositor share one source of
+truth. Manual/fixed modes work with no sensor; auto modes report
+``sensor_unavailable`` when no verified source exists. Nothing flashes, writes
+partitions, or reboots.
+
+CLI:
+    nuxel-orientationd status [--json]      mode + effective + sensor + compositor
+    nuxel-orientationd get                  selected mode
+    nuxel-orientationd modes                the seven named modes + allowed sets
+    nuxel-orientationd set <mode> [--apply] validate, persist, attempt transform
+    nuxel-orientationd selftest             offline policy/sensor sanity
+    nuxel-orientationd watch [seconds]      bounded auto-rotation loop (hardware)
+
+Paths resolve through NUXEL_ROOT (default /) so the offline harness runs the REAL
+code against a fake root. The exact mount matrix / transform mapping stay
+``unverified`` until an owner physically proves them.
+"""
+
+from __future__ import annotations
+
+import json
+import os
+import sys
+import time
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, HERE)
+
+from nuxel_orientation.policy import (  # noqa: E402
+    MODE_ORDER, SEVEN_MODES, Orientator, PolicyError,
+    choose_initial_orientation, is_auto, mode_from_document,
+    normalize_mode, validate_mode,
+)
+from nuxel_orientation import sensors as sensor_mod  # noqa: E402
+from nuxel_orientation import apply as apply_mod  # noqa: E402
+
+ROOT = os.environ.get("NUXEL_ROOT", "/").rstrip("/")
+
+
+def P(path):
+    return ROOT + path if ROOT else path
+
+
+CONFIG_PATH = "/etc/nuxel/orientation/orientation.json"
+DEFAULT_CONFIG = {
+    "schema_version": 1,
+    "default_mode": "portrait",
+    "mode_order": MODE_ORDER,
+    "modes": SEVEN_MODES,
+    "policy": {"hysteresis_ms": 450, "cooldown_ms": 250, "debounce_ms": 60,
+               "flat_gravity_ratio": 0.55, "weak_gravity_ms2": 2.0,
+               "sample_interval_ms": 100, "last_good_on_flat": True},
+    "sensor": {"sources": ["iio-accel", "iio-sensor-proxy", "manual"],
+               "mount_matrix": {"matrix": [1, 0, 0, 0, 1, 0, 0, 0, 1],
+                                "calibration_status": "unverified"},
+               "gravity_reference": {
+                   "0": [0.0, -1.0, 0.0], "90": [1.0, 0.0, 0.0],
+                   "180": [0.0, 1.0, 0.0], "270": [-1.0, 0.0, 0.0],
+                   "calibration_status": "unverified"}},
+    "compositor": {"backend": "auto", "output": "DSI-1",
+                   "transform_map": {"0": "normal", "90": "270",
+                                     "180": "180", "270": "90"},
+                   "revert_after_ms": 4000},
+    "paths": {"state_file": "/var/lib/nuxel/orientation/state.json",
+              "control_fifo": "/run/nuxel-orientation.cmd",
+              "log": "/var/log/nuxel/orientation.log"},
+}
+
+
+def load_config():
+    path = P(CONFIG_PATH)
+    try:
+        with open(path) as f:
+            doc = json.load(f)
+    except (OSError, ValueError):
+        doc = {}
+    merged = json.loads(json.dumps(DEFAULT_CONFIG))
+    if isinstance(doc, dict):
+        for key in ("modes", "policy", "sensor", "compositor", "paths",
+                    "mode_order", "default_mode"):
+            if key in doc:
+                merged[key] = doc[key]
+    merged["modes"] = {**SEVEN_MODES, **merged.get("modes", {})}
+    merged["mode_order"] = MODE_ORDER
+    return merged
+
+
+def state_path(config):
+    return P(config.get("paths", {}).get("state_file",
+           "/var/lib/nuxel/orientation/state.json"))
+
+
+def load_state(config):
+    path = state_path(config)
+    try:
+        with open(path) as f:
+            doc = json.load(f)
+    except (OSError, ValueError):
+        doc = {}
+    if not isinstance(doc, dict):
+        doc = {}
+    return doc
+
+
+def save_state(config, doc):
+    path = state_path(config)
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    tmp = path + ".tmp"
+    with open(tmp, "w") as f:
+        json.dump(doc, f, indent=2)
+        f.write("\n")
+    os.replace(tmp, path)
+
+
+def sensor_probe(config):
+    """Per-source availability, honestly, without fabricating a reading.
+
+    ``available`` reflects ONLY auto-capable sources (a real gravity source),
+    never the diagnostic `manual` source, so an auto mode is reported
+    ``sensor_unavailable`` unless a verified live accelerometer exists.
+    """
+    report = sensor_mod.probe_sources(config)
+    capable = [s for s in report if s.get("auto_capable")]
+    return {
+        "sources": report,
+        "available": bool(capable),
+        "preferred": capable[0]["source"] if capable else None,
+        "unverified": (config.get("sensor", {}).get("mount_matrix", {})
+                       .get("calibration_status", "unverified") == "unverified"),
+    }
+
+
+def sensor_reading(config, source_name):
+    src = sensor_mod.resolve_source(source_name, config)
+    return src.read()
+
+
+def do_status(config):
+    state = load_state(config)
+    mode, effective, last = normalize_mode(state)
+    sensor = sensor_probe(config)
+    comp = config.get("compositor", {})
+    result = {
+        "mode": mode,
+        "mode_label": SEVEN_MODES.get(mode, {}).get("label", mode),
+        "auto": is_auto(mode),
+        "allowed": list(SEVEN_MODES.get(mode, {}).get("allowed", [])),
+        "effective_orientation": effective,
+        "last_orientation": last,
+        "sensor": sensor,
+        "compositor": {
+            "output": comp.get("output", "DSI-1"),
+            "transform_available": apply_mod.wlr_randr_available(),
+            "transform_map_verified": False,
+            "touch_calibration_verified": False,
+        },
+        "calibration": {
+            "mount_matrix": config.get("sensor", {}).get("mount_matrix", {})
+                                .get("calibration_status", "unverified"),
+            "gravity_reference": config.get("sensor", {}).get("gravity_reference", {})
+                                     .get("calibration_status", "unverified"),
+        },
+    }
+    return result
+
+
+def do_set(config, mode, apply_now=False):
+    mode = validate_mode(mode)
+    state = load_state(config)
+    _, _, last = normalize_mode(state)
+    sensor_orient = None
+    if apply_now and is_auto(mode):
+        # Choose a sensor-consistent initial pose when we can, never fabricate.
+        probe = sensor_probe(config)
+        pref = probe.get("preferred")
+        if pref:
+            try:
+                reading = sensor_reading(config, pref)
+                if reading.available:
+                    from nuxel_orientation.policy import Orientator
+                    o = Orientator(mode, config)
+                    sensor_orient, _ = o.classify(reading.vector())
+            except Exception:
+                sensor_orient = None
+    initial = choose_initial_orientation(mode, last, sensor_orient)
+    next_state = {
+        "schema_version": 1,
+        "mode": mode,
+        "effective_orientation": initial,
+        "last_orientation": initial,
+        "set_by": "nuxel-orientationd",
+        "updated_at": int(time.time()),
+    }
+    save_state(config, next_state)
+
+    apply_result = None
+    if apply_now:
+        apply_result = apply_mod.apply_transform(initial, config)
+    result = {"success": True, "mode": mode, "effective_orientation": initial,
+              "auto": is_auto(mode)}
+    if apply_result is not None:
+        result["compositor"] = apply_result
+    return result
+
+
+def do_modes():
+    return [
+        {"mode": name, "label": SEVEN_MODES[name]["label"],
+         "allowed": list(SEVEN_MODES[name]["allowed"]),
+         "auto": len(SEVEN_MODES[name]["allowed"]) > 1}
+        for name in MODE_ORDER
+    ]
+
+
+def do_watch(config, seconds):
+    probe = sensor_probe(config)
+    if not probe.get("available"):
+        print("sensor_unavailable: " + json.dumps(probe))
+        return 2
+    pref = probe["preferred"]
+    state = load_state(config)
+    mode, _, last = normalize_mode(state)
+    if not is_auto(mode):
+        print("mode %s is fixed; nothing to auto-rotate" % mode)
+        return 0
+    orientator = Orientator(mode, config)
+    interval = float(config.get("policy", {}).get("sample_interval_ms", 100)) / 1000.0
+    deadline = time.monotonic() + float(seconds)
+    n = 0
+    while time.monotonic() < deadline:
+        try:
+            reading = sensor_reading(config, pref)
+        except Exception as exc:
+            print("sensor read failed: %s" % exc)
+            return 2
+        changed = orientator.update(reading.vector())
+        n += 1
+        if changed is not None:
+            print("orientation -> %d (samples=%d)" % (changed, n))
+            save_state(config, {"mode": mode, "effective_orientation": changed,
+                                "last_orientation": changed,
+                                "updated_at": int(time.time())})
+        time.sleep(interval)
+    print("watch done: %d samples, effective=%d"
+          % (n, orientator.status()["effective_orientation"]))
+    return 0
+
+
+def do_selftest():
+    # Offline sanity: the real tests live in tests/; this is a no-network smoke.
+    ok = True
+    ok = ok and len(SEVEN_MODES) == 7
+    ok = ok and len(MODE_ORDER) == 7
+    for m in MODE_ORDER:
+        ok = ok and m in SEVEN_MODES
+    o = Orientator("auto")
+=== python package paths ===
+/usr/libexec/nuxel/__pycache__/notes-works-detector.cpython-314.pyc
+/usr/libexec/nuxel/__pycache__/nuxel-sound-cuecpython-314.pyc
+/usr/libexec/nuxel/notes-works-detector.py
+/usr/libexec/nuxel/nuxel-anim-handoff.py
+/usr/libexec/nuxel/nuxel-bootmode-guard.py
+/usr/libexec/nuxel/nuxel-mp3-play
+/usr/libexec/nuxel/nuxel-network-udev-seed
+/usr/libexec/nuxel/nuxel-orientationd
+/usr/libexec/nuxel/nuxel-sound-cue
+/usr/libexec/nuxel/nuxel-sound-cue.bak-1793390564
+/usr/libexec/nuxel/nuxel-sound-cue.bak-20261029T205851
+/usr/libexec/nuxel/nuxel-sound-cue.bak-warmup-1793397472
+/usr/libexec/nuxel/nuxel-touch-trace.py
+/usr/libexec/nuxel/nuxel-v4l2-capture-test.py
+/usr/libexec/nuxel/nuxel-v4l2-probe.py
+/usr/libexec/nuxel/nuxel-verbose-boot
+/usr/libexec/nuxel/nuxel_orientation/__init__.py
+/usr/libexec/nuxel/nuxel_orientation/__pycache__/__init__.cpython-314.pyc
+/usr/libexec/nuxel/nuxel_orientation/__pycache__/apply.cpython-314.pyc
+/usr/libexec/nuxel/nuxel_orientation/__pycache__/policy.cpython-314.pyc
+/usr/libexec/nuxel/nuxel_orientation/__pycache__/sensors.cpython-314.pyc
+/usr/libexec/nuxel/nuxel_orientation/apply.py
+/usr/libexec/nuxel/nuxel_orientation/policy.py
+/usr/libexec/nuxel/nuxel_orientation/policy.py.nuxel-a54-rollback
+/usr/libexec/nuxel/nuxel_orientation/sensors.py
+=== bridge orientation installed ===
+1910-        st['requested'] = enabled
+1911-        st['success'] = (st['enabled'] == enabled)
+1912-        return st
+1913-
+1914-
+1915:class OrientationConnector:
+1916-    """Proxy to the ONE orientation policy implementation (nuxel-orientationd).
+1917-
+1918-    The bridge must not re-implement the seven-mode table or the hysteresis
+1919-    policy; it delegates to the daemon (subprocess) exactly as nuxelctl
+1920-    delegates to the diag scripts, so there is a single source of truth. A
+1921-    missing daemon / failed call is reported honestly (``success: False``),
+1922-    never replaced with a mock mode.
+1923-    """
+1924-
+1925-    BIN = os.environ.get("NUXEL_ORIENTATIOND", "/usr/libexec/nuxel/nuxel-orientationd")
+1926-
+1927-    def _run(self, *args):
+1928-        try:
+1929-            proc = subprocess.run(
+1930-                [self.BIN, *args, "--json"], capture_output=True,
+1931-                text=True, timeout=6)
+1932-        except (OSError, subprocess.SubprocessError) as exc:
+1933-            return {"success": False, "error": "orientation daemon unavailable: %s" % exc}
+1934-        if not proc.stdout.strip():
+1935-            return {"success": False, "error": "orientation daemon returned no output",
+1936-                    "stderr": proc.stderr.strip()}
+1937-        try:
+1938-            return json.loads(proc.stdout)
+1939-        except ValueError:
+1940-            return {"success": False, "error": "orientation daemon returned non-JSON",
+1941-                    "stderr": proc.stderr.strip()[:200]}
+1942-
+1943-    def get_status(self):
+1944-        return self._run("status")
+1945-
+1946-    def modes(self):
+1947-        return self._run("modes")
+1948-
+1949-    def set_mode(self, mode):
+1950-        if not isinstance(mode, str) or not mode.strip():
+1951-            return {"success": False, "error": "invalid mode value"}
+1952-        return self._run("set", mode.strip())
+1953-
+1954-# ============================================================
+1955-# Nuxel Portal Interface
+1956-# ============================================================
+1957-
+1958-class PortalClient:
+1959-    """Client for the nuxel-portal D-Bus service."""
+1960-    
+1961-    def __init__(self):
+1962-        self.bus = None
+1963-        self.portal_obj = None
+1964-        self.connected = False
+1965-    
+1966-    def connect(self):
+1967-        try:
+1968-            self.bus = dbus.SystemBus()
+1969-            self.portal_obj = self.bus.get_object(PORTAL_BUS_NAME, PORTAL_OBJECT_PATH)
+1970-            self.portal_iface = dbus.Interface(self.portal_obj, PORTAL_BUS_NAME)
+1971-            self.connected = True
+1972-            logger.info("Connected to nuxel-portal")
+1973-        except Exception as e:
+1974-            logger.warning(f"nuxel-portal not available: {e}")
+1975-            self.connected = False
+1976-    
+1977-    def check_permission(self, app_id, capability):
+1978-        """Check if a permission is granted (non-interactive)."""
+1979-        if not self.connected:
+1980-            self.connect()
+1981-        if not self.connected:
+1982-            return {'granted': False, 'duration': None}
+1983-        try:
+1984-            portal_type = CAPABILITY_PORTAL_MAP.get(capability, capability)
+1985-            result_json = self.portal_iface.CheckPermission(app_id, portal_type,
+1986-                                                              timeout=PORTAL_DBUS_TIMEOUT_SECONDS)
+1987-            return json.loads(result_json)
+1988-        except Exception as e:
+1989-            logger.error(f"Portal CheckPermission failed: {e}")
+1990-            return {'granted': False, 'duration': None}
+1991-    
+1992-    def request_permission(self, app_id, capability):
+1993-        """Request a permission through the portal (shows dialog)."""
+1994-        if not self.connected:
+1995-            self.connect()
+1996-        if not self.connected:
+1997-            # Fallback: grant automatically if portal not available
+1998-            logger.warning(f"Portal not available, auto-granting {capability} for {app_id}")
+1999-            return {'granted': True, 'duration': 'session'}
+2000-        
+2001-        portal_type = CAPABILITY_PORTAL_MAP.get(capability, capability)
+2002-        
+2003-        try:
+2004-            if portal_type == 'call':
+2005-                result_json = self.portal_iface.RequestCall(app_id, '',
+=== bridge api installed orientation ===
+1306-        ("camera", "status"): "CameraStatus",
+1307-        ("camera", "open"): "CameraOpen",
+1308-        ("camera", "delete"): "CameraDelete",
+1309-        ("caldav", "list"): "CaldavList",
+1310-        ("caldav", "put"): "CaldavPut",
+1311-        ("storage", "list-dir"): "StorageListDir",
+1312-        ("storage", "write"): "StorageWrite",
+1313-        ("storage", "read"): "StorageRead",
+1314-        ("mail", "imap-list"): "MailImapList",
+1315-        ("mail", "smtp-send"): "MailSmtpSend",
+1316:        ("orientation", "get"): "OrientationGet",
+1317:        ("orientation", "modes"): "OrientationModes",
+1318:        ("orientation", "set"): "OrientationSet",
+1319-    }
+1320-
+1321-    # Map an RPC method to the D-Bus positional args it needs. The bridge's
+1322-    # D-Bus methods take explicit positional args (in_signatures 's'/'ss'/'sss'),
+1323-    # NOT (app_id, params); passing the raw params dict broke every /rpc call
+1324-    # (e.g. Ping: "Fewer items found in D-Bus signature than in Python
+1325-    # arguments" - 2 Python args for a 1-arg 's' method).
+1326-    RPC_ARG_BUILDERS = {
+1327-        "Ping": lambda app_id, params: [params.get("message") if isinstance(params, dict) and params.get("message") is not None else app_id],
+1328-        "GetPhoneStatus": lambda app_id, params: [app_id],
+1329-        "NetworkWifiSetEnabled": lambda app_id, params: [app_id, bool(params.get("enabled", False))],
+1330-        "NetworkWifiScan": lambda app_id, params: [app_id],
+1331-        "NetworkWifiConnect": lambda app_id, params: [app_id, params.get("ssid", ""), params.get("password", ""), params.get("security", "wpa2"), params.get("ap_path", ""), params.get("bssid", ""), params.get("device", ""), params.get("ssid_hex", "")],
+1332-        "NetworkWifiDisconnect": lambda app_id, params: [app_id],
+1333-        "NetworkWifiSaved": lambda app_id, params: [app_id],
+1334-        "NetworkWifiForget": lambda app_id, params: [app_id, params.get("connection", "")],
+1335-        "GetNotifications": lambda app_id, params: [],
+1336-        "GetAppCapabilities": lambda app_id, params: [app_id],
+1337-        "SmsGetMessages": lambda app_id, params: [app_id],
+1338-        "CallEnd": lambda app_id, params: [app_id, params.get("call_id", "")],
+--
+1346-        "RequestCapability": lambda app_id, params: [app_id, params.get("capability", "")],
+1347-        "RevokeCapability": lambda app_id, params: [app_id, params.get("capability", "")],
+1348-        "CallInitiate": lambda app_id, params: [app_id, params.get("number", "")],
+1349-        "SmsSend": lambda app_id, params: [app_id, params.get("number", ""), params.get("text", "")],
+1350-        "SendNotification": lambda app_id, params: [app_id, params.get("title", ""), params.get("body", "")],
+1351-        "CameraStatus": lambda app_id, params: [app_id],
+1352-        "CameraListCaptures": lambda app_id, params: [app_id, (params.get("kind") or "") if isinstance(params, dict) else ""],
+1353-        "CameraCapture": lambda app_id, params: [app_id, (params.get("kind") or "photo") if isinstance(params, dict) else "photo", (params.get("mime") or "") if isinstance(params, dict) else "", (params.get("data_b64") or "") if isinstance(params, dict) else ""],
+1354-        "CameraOpen": lambda app_id, params: [app_id, (params.get("id") or "") if isinstance(params, dict) else ""],
+1355-        "CameraDelete": lambda app_id, params: [app_id, (params.get("id") or "") if isinstance(params, dict) else ""],
+1356:        "OrientationGet": lambda app_id, params: [app_id],
+1357-        "OrientationModes": lambda app_id, params: [app_id],
+1358:        "OrientationSet": lambda app_id, params: [app_id, params.get("mode", "")],
+1359-    }
+1360-
+1361-    def _handle_rpc(self, app_id, body):
+1362-        """Dispatch a generic bridge RPC (namespace/verb/params)."""
+1363-        namespace = body.get('namespace', '')
+1364-        verb = body.get('verb', '')
+1365-        params = body.get('params', {}) or {}
+1366-        # PWA persistence is served in-process from the root-owned store.  The
+1367-        # sandboxed D-Bus bridge has no storage/caldav/contacts implementation,
+1368-        # and routing these verbs to it made every calendar/notes/files save
+1369-        # fail with a dbus-error.  Handle them here with the same honest error
+1370-        # shape instead.
+1371-        if namespace in ('storage', 'caldav', 'contacts', 'haptics', 'mail'):
+1372-            return self._handle_app_store_rpc(namespace, verb, params)
+1373-        # Lockhead indicators are computed in-process from kernel state; they
+1374-        # are deliberately NOT routed to D-Bus (the D-Bus bridge has no such
+1375-        # method and a dbus-error fallback would make the UI dim real states).
+1376-        if namespace == 'system' and verb == 'indicators':
+1377-            if system_indicators is not None:
+1378-                try:

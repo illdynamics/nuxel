@@ -1,0 +1,20 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+ 14:07:58 up 2 min,  0 user,  load average: 11.35, 4.66, 1.74
+degraded
+● NetworkManager-wait-online.service loaded failed failed Network Manager Wait Online
+
+17: wlan0    inet 192.168.178.167/24 brd 192.168.178.255 scope global dynamic noprefixroute wlan0\       valid_lft 86279sec preferred_lft 86279sec
+
+-rw-r--r--. 1 root root 423 Oct 31 14:05 /run/nuxel-anim-handoff
+-rw-r--r--. 1 root root  69 Oct 31 14:05 /run/nuxel-launcher-ready
+5821 /usr/sbin/phoc --no-xwayland -C /etc/nuxel/phoc-phone.ini -E /usr/lib/nuxel/nuxel-session.sh
+5933 /usr/lib/nuxel/nuxel-wl-fb
+no_anim

@@ -1,0 +1,544 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+=== date/host/kernel ===
+2026-10-31T19:09:40+01:00
+2001-1c00-4d09-8a00-162b-e49d-dc7c-4128
+Linux 2001-1c00-4d09-8a00-162b-e49d-dc7c-4128 4.14.253-gf7194c1d15ed-dirty #8 SMP PREEMPT Wed Oct 28 14:55:36 CET 2026 aarch64 GNU/Linux
+NAME="Fedora Linux"
+VERSION="43 (Forty Three)"
+RELEASE_TYPE=stable
+ID=fedora
+VERSION_ID=43
+VERSION_CODENAME=""
+PRETTY_NAME="Fedora Linux 43 (Forty Three)"
+ANSI_COLOR="0;38;2;60;110;180"
+=== nuxel version/pwa ===
+/usr/share/nuxel/pwa/nuxel-home/manifest.json
+{
+  "name": "Nuxel Home",
+  "short_name": "Nuxel",
+  "description": "Nuxel Phone Launcher - PWA-first phone OS",
+  "start_url": "./index.html",
+  "display": "fullscreen",
+  "orientation": "any",
+  "scope": "./",
+  "background_color": "#1a1a2e",
+  "theme_color": "#1a1a2e",
+  "categories": [
+    "launcher",
+    "productivity",
+    "utilities"
+  ],
+  "lang": "en",
+  "dir": "ltr",
+  "icons": [
+    {
+      "src": "icons/icon-48.png",
+=== services ===
+  UNIT                           LOAD   ACTIVE SUB     DESCRIPTION
+  bluetooth.service              loaded active running Bluetooth service
+  dbus-daemon.service            loaded active running D-Bus System Message Bus
+  ModemManager.service           loaded active running Modem Manager
+  NetworkManager.service         loaded active running Network Manager
+  nuxel-audio-session.service    loaded active running Nuxel standalone PipeWire/WirePlumber audio session
+  nuxel-bluetooth.service        loaded active running Nuxel BCM4375 Bluetooth HCI bring-up (patchram + H4 attach)
+  nuxel-bridge.service           loaded active running Nuxel Bridge - PWA to Native Phone Service Mediator
+  nuxel-button-manager.service   loaded active running Nuxel hardware button and gesture manager (single owner of gpio_keys)
+  nuxel-geoclue-agent.service    loaded active running Nuxel GeoClue2 agent for the nuxel-bridge UID
+  nuxel-haptics.service          loaded active running Nuxel Samsung timed-output haptics service
+  nuxel-http-bridge.service      loaded active running Nuxel HTTP Bridge API
+  nuxel-notifications.service    loaded active running Nuxel Notification Hub
+  nuxel-orientationd.service     loaded active running Nuxel orientation owner (seven-mode policy, transform, auto sensor)
+  nuxel-portal.service           loaded active running Nuxel Portal Daemon
+  nuxel-touch-arm.service        loaded active running Nuxel S10+ touchscreen arming (sec_ts stop->start, then hold open)
+  nuxel-usb-mode-monitor.service loaded active running Nuxel USB mode host-disconnect monitor
+  nuxel-watchdog-keep.service    loaded active running Nuxel software watchdog keep-alive (softdog.soft_margin=100)
+  nuxel-wayland.service          loaded active running Nuxel phone Wayland session (phoc headless + Nuxel Home launcher)
+  nuxel-web.service              loaded active running Nuxel PWA Static Web Server (nuxel-home launcher on :8000)
+  nuxel-wl-fb.service            loaded active running Nuxel display bridge (Wayland screencopy -> /dev/fb0 AMOLED)
+  polkit.service                 loaded active running Authorization Manager
+  rtkit-daemon.service           loaded active running RealtimeKit Scheduling Policy Service
+  seatd.service                  loaded active running Nuxel seat daemon (seatd) — backend session for wlroots/phoc input
+  sshd.service                   loaded active running OpenSSH server daemon
+  systemd-journald.service       loaded active running Journal Service
+  systemd-logind.service         loaded active running User Login Management
+  wpa_supplicant.service         loaded active running WPA supplicant
+
+Legend: LOAD   → Reflects whether the unit definition was properly loaded.
+        ACTIVE → The high-level unit activation state, i.e. generalization of SUB.
+        SUB    → The low-level unit activation state, values depend on unit type.
+
+27 loaded units listed.
+=== kernel config relevant ===
+CONFIG_USB_CONFIGFS=y
+CONFIG_USB_CONFIGFS_F_FS=y
+CONFIG_USB_F_FS=y
+CONFIG_USB_CONFIGFS_F_MTP=y
+CONFIG_USB_F_MTP=y
+CONFIG_USB_GADGET=y
+# CONFIG_USER_NS is not set
+# CONFIG_NFC is not set
+CONFIG_NFC_S3FWRN5=UNKNOWN
+CONFIG_NFC_NCI=UNKNOWN
+CONFIG_LEDS_CLASS=y
+CONFIG_LEDS_TRIGGERS=y
+=== udc ===
+total 0
+lrwxrwxrwx 1 root root 0 Oct 31 18:51 10c00000.dwc3 -> ../../devices/platform/10c00000.usb/10c00000.dwc3/udc/10c00000.dwc3
+/sys/class/udc/10c00000.dwc3 state=not attached
+=== configfs gadget ===
+/sys/kernel/config/usb_gadget
+/sys/kernel/config/usb_gadget/nuxel
+/sys/kernel/config/usb_gadget/nuxel/os_desc
+/sys/kernel/config/usb_gadget/nuxel/os_desc/qw_sign
+/sys/kernel/config/usb_gadget/nuxel/os_desc/b_vendor_code
+/sys/kernel/config/usb_gadget/nuxel/os_desc/use
+/sys/kernel/config/usb_gadget/nuxel/strings
+/sys/kernel/config/usb_gadget/nuxel/strings/0x409
+/sys/kernel/config/usb_gadget/nuxel/configs
+/sys/kernel/config/usb_gadget/nuxel/configs/c.1
+/sys/kernel/config/usb_gadget/nuxel/functions
+/sys/kernel/config/usb_gadget/nuxel/functions/acm.usb0
+/sys/kernel/config/usb_gadget/nuxel/UDC
+/sys/kernel/config/usb_gadget/nuxel/bcdUSB
+/sys/kernel/config/usb_gadget/nuxel/bcdDevice
+/sys/kernel/config/usb_gadget/nuxel/idProduct
+/sys/kernel/config/usb_gadget/nuxel/idVendor
+/sys/kernel/config/usb_gadget/nuxel/bMaxPacketSize0
+/sys/kernel/config/usb_gadget/nuxel/bDeviceProtocol
+/sys/kernel/config/usb_gadget/nuxel/bDeviceSubClass
+/sys/kernel/config/usb_gadget/nuxel/bDeviceClass
+-- /sys/kernel/config/usb_gadget/nuxel
+0x18d1
+0x4ee7
+10c00000.dwc3
+acm.usb0
+c.1
+=== ffs ===
+=== acm ===
+crw-------. 1 root root 243, 0 Oct 31 18:51 /dev/ttyGS0
+=== usb gadgets modules ===
+=== apps ===
+/usr/local/share/applications:
+total 0
+
+/usr/share/applications:
+total 272
+-rw-r--r--. 1 root root  6460 Jul 23  2025 gcr-prompter.desktop
+-rw-r--r--. 1 root root  1838 Jul 23  2025 gcr-viewer.desktop
+-rw-r--r--. 1 root root   549 Jul  9 02:00 geoclue-demo-agent.desktop
+-rw-r--r--  1 root root   797 Jul  9 02:00 geoclue-where-am-i.desktop
+-rw-r--r--. 1 root root  7180 Feb 10  2026 gnome-mimeapps.list
+-rw-r--r--  1 root root 22588 Oct 10  2025 gnome-system-monitor-kde.desktop
+-rw-r--r--  1 root root   201 Mar 23  2026 gtk3-demo.desktop
+-rw-r--r--  1 root root   198 Mar 23  2026 gtk3-icon-browser.desktop
+-rw-r--r--  1 root root   246 Mar 23  2026 gtk3-widget-factory.desktop
+-rw-r--r--  1 root root  2546 Apr 11  2025 htop.desktop
+-rw-r--r--. 1 root root 17325 Jul 25  2025 mimeapps.list
+-rw-r--r--. 1 root root   172 Apr 20  2026 mobi.phosh.Phoc.desktop
+-rw-r--r--. 1 root root  5904 Apr 20  2026 mobi.phosh.Shell.desktop
+-rw-r--r--  1 root root  3855 Jul 29  2025 mpv.desktop
+-rw-r--r--  1 root root   281 Oct 28 17:15 nuxel-contacts.desktop
+-rw-r--r--  1 root root   326 Oct 28 17:15 nuxel-dialer.desktop
+-rw-r--r--  1 root root   294 Oct 28 17:15 nuxel-messages.desktop
+-rw-r--r--. 1 root root   338 Apr 17  2013 openbox.desktop
+-rw-r--r--. 1 root root   196 Jul  8 02:00 org.freedesktop.Xwayland.desktop
+-rw-r--r--. 1 root root  2241 Jan 30  2026 org.gnome.Evolution-alarm-notify.desktop
+-rw-r--r--  1 root root 19691 Jun 22 02:00 org.gnome.FileRoller.desktop
+-rw-r--r--  1 root root  7869 Jan  7  2026 org.gnome.Loupe.desktop
+-rw-r--r--  1 root root  7063 Sep 15 02:00 org.gnome.Papers-previewer.desktop
+-rw-r--r--  1 root root 16169 Sep 15 02:00 org.gnome.Papers.desktop
+-rw-r--r--  1 root root  8792 Sep 15  2025 org.gnome.Snapshot.desktop
+-rw-r--r--  1 root root 24081 Oct 10  2025 org.gnome.SystemMonitor.desktop
+-rw-r--r--. 1 root root  3180 Jan 30  2026 org.gnome.evolution-data-server.OAuth2-handler.desktop
+-rw-r--r--  1 root root  9523 Oct  7 02:00 org.mozilla.firefox.desktop
+-rw-r--r--. 1 root root   809 Apr 21  2026 sm.puri.OSK0.desktop
+-rw-r--r--  1 root root   198 Sep 23 02:00 vlc-openbd.desktop
+-rw-r--r--  1 root root   195 Sep 23 02:00 vlc-opencda.desktop
+-rw-r--r--  1 root root   188 Sep 23 02:00 vlc-opendvd.desktop
+-rw-r--r--  1 root root   209 Sep 23 02:00 vlc-openvcd.desktop
+-rw-r--r--  1 root root 14822 Sep 23 02:00 vlc.desktop
+-rw-r--r--. 1 root root  1971 Aug 27 02:00 xterm.desktop
+=== binaries ===
+/usr/bin/firefox
+/usr/bin/vlc
+signal-desktop MISSING
+gnome-software MISSING
+packagekitd MISSING
+pkcon MISSING
+/usr/bin/dnf
+/usr/bin/dnf5
+/usr/bin/flatpak
+/usr/bin/bwrap
+xdg-desktop-portal MISSING
+nuxel-wl-fb MISSING
+/usr/bin/phoc
+/usr/bin/wayvnc
+neard MISSING
+umtprd MISSING
+mtp-server MISSING
+/usr/bin/gio
+/usr/bin/gtk-launch
+=== packages ===
+bubblewrap-0.12.0-1.fc43.aarch64
+firefox-157.0.1-1.fc43.aarch64
+flatpak-1.16.6-2.fc43.aarch64
+flatpak-selinux-1.16.6-2.fc43.noarch
+flatpak-session-helper-1.16.6-2.fc43.aarch64
+vlc-3.0.24-1.fc43.aarch64
+vlc-cli-3.0.24-1.fc43.aarch64
+vlc-gui-qt-3.0.24-1.fc43.aarch64
+vlc-libs-3.0.24-1.fc43.aarch64
+vlc-plugin-lua-3.0.24-1.fc43.aarch64
+vlc-plugin-pulseaudio-3.0.24-1.fc43.aarch64
+vlc-plugins-base-3.0.24-1.fc43.aarch64
+vlc-plugins-video-out-3.0.24-1.fc43.aarch64
+xdg-desktop-portal-1.20.4-1.fc43.aarch64
+=== registry ===
+total 92
+-rw-r--r-- 1 root root  4598 Sep 15 02:40 README-app-registry.md
+-rw-r--r-- 1 root root  6040 Sep 15 02:40 app-registry.schema.json
+-rw-r--r-- 1 root root 33796 Oct 31 13:20 app_registry.json
+-rw-r--r-- 1 root root 17592 Oct 17 02:08 app_registry.json.a59-bak-20261022T202602
+-rw-r--r-- 1 root root 17592 Sep 15 02:39 app_registry.json.nuxel-rollback
+{
+  "schema": "nuxel.app-registry/1",
+  "registry_version": 9,
+  "bridge_version": "1",
+  "bridge_version_pin": "pwa/nuxel-common/bridge-version.json",
+  "url_base": "http://127.0.0.1:8000",
+  "consumers": {
+    "pwa_launcher": "pwa/nuxel-home/js/apps.js",
+    "native_shell": "shell/nuxel-home-native/nuxel_home/app_registry.json",
+    "http_bridge": "services/nuxel-bridge/src/api.py (GET /api/v1/apps/registry)",
+    "installed_copy": "/etc/nuxel/app-registry/app_registry.json (rootfs builder, briq-04b)",
+    "verifier": "tools/s10plus/a33/verify-app-registry.py"
+  },
+  "contract": {
+    "one_registry": "This file is the canonical launcher registry. The PWA launcher (apps.js), the native shell (app_registry.json) and the HTTP bridge all serve the SAME app set; verify-app-registry.py fails on any drift between them.",
+    "capability_source": "services/nuxel-bridge/src/capabilities.py (Capability enum) — an app may not declare a capability the bridge does not know.",
+    "manifest_rule": "every pwa entry must resolve to a real index.html AND a manifest.json carrying nuxel.capabilities (list) and nuxel.bridge_version equal to the pin."
+  },
+  "apps": [
+    {
+      "id": "nuxel-dialer",
+      "name": "Phone",
+      "icon": "📞",
+      "color": "#4CAF50",
+      "category": "communication",
+      "type": "native",
+      "url": "nuxel-dialer://",
+      "native_binary": "/usr/bin/nuxel-dialer",
+      "binary_source": "shell/nuxel-shell/nuxel-dialer",
+      "desktop_entry": "shell/config/nuxel-dialer.desktop",
+      "description": "Make phone calls",
+      "capabilities": [
+        "call:initiate",
+        "call:end",
+        "call:status",
+        "contacts:read"
+      ],
+      "bridge_version": "1",
+      "docked": true,
+      "status": "implemented",
+      "runtime_state": "NEEDS_OWNER_TEST (real call needs a SIM and a carrier)"
+    },
+    {
+      "id": "nuxel-messages",
+      "name": "Messages",
+      "icon": "💬",
+      "color": "#2196F3",
+      "category": "communication",
+      "type": "native",
+      "url": "nuxel-messages://",
+      "native_binary": "/usr/bin/nuxel-messages",
+      "binary_source": "shell/nuxel-shell/nuxel-messages",
+      "desktop_entry": "shell/config/nuxel-messages.desktop",
+      "description": "Send and receive SMS",
+      "capabilities": [
+        "sms:send",
+        "sms:receive",
+        "contacts:read"
+      ],
+      "bridge_version": "1",
+      "docked": true,
+      "status": "implemented",
+      "runtime_state": "NEEDS_OWNER_TEST (real SMS needs a SIM and a carrier)"
+    },
+    {
+      "id": "nuxel-contacts",
+      "name": "Contacts",
+      "icon": "👤",
+      "color": "#9C27B0",
+      "category": "communication",
+      "type": "native",
+      "url": "nuxel-contacts://",
+      "native_binary": "/usr/bin/nuxel-contacts",
+      "binary_source": "shell/nuxel-shell/nuxel-contacts",
+      "desktop_entry": "shell/config/nuxel-contacts.desktop",
+      "description": "Manage your contacts",
+      "capabilities": [
+        "contacts:read",
+        "contacts:write"
+      ],
+=== nuxtore installs ===
+/var/lib/nuxel/apps
+/var/lib/nuxel/a69-backup/app.js
+/var/lib/nuxel/rollback/a68/app.js.flat.bak-20261024T002406Z
+/var/lib/nuxel/rollback/a68/app.js.pwa.bak-20261024T002406Z
+/var/lib/nuxel/remote-desktop/deploy-backup-20261031T131954/_usr_share_nuxel_pwa_nuxel-home_js_apps.js
+/var/lib/nuxel/remote-desktop/deploy-backup-20261031T131954/_usr_share_nuxel_pwa_nuxel-common_app-registry.json
+/var/lib/nuxel/rollback-pwnage36000/app.js
+/var/lib/nuxel/a45.1-penguin-unlock-20261020T214950Z/pwa/js/app.js
+/var/lib/nuxel/a45.1-penguin-unlock-20261020T214950Z/flat/js/app.js
+/var/lib/nuxel/app-data
+/var/lib/nuxel/a45/rollback-20261020T191510Z/js/app.js
+/var/lib/nuxel/a66-15000/app.js.flat.bak-20261023T152419
+/var/lib/nuxel/a66-15000/app.js.pwa.bak-20261023T152419
+/var/lib/nuxel/a66-15000/app.js.pwa.bak-20261023T153820
+/var/lib/nuxel/a72-backup-20261025T152149Z/app.js
+/var/lib/nuxel/a72/rollback-fast-20261027T161844+0100/usr_share_nuxel_pwa_nuxel-apps_settings_location-maps.js
+/var/lib/nuxel/a72/rollback-fast-20261027T161844+0100/usr_share_nuxel_pwa_nuxel-apps_maps_js_maps.js
+/var/lib/nuxel/a72/rollback-20261027T160340+0100/usr_share_nuxel_pwa_nuxel-apps_settings_manifest.json
+/var/lib/nuxel/a72/rollback-20261027T160340+0100/usr_share_nuxel_pwa_nuxel-apps_settings_index.html
+/var/lib/nuxel/a72/rollback-20261027T160340+0100/usr_share_nuxel_pwa_nuxel-apps_maps_sw.js
+/var/lib/nuxel/a72/rollback-20261027T160340+0100/usr_share_nuxel_pwa_nuxel-apps_maps_index.html
+/var/lib/nuxel/a72/rollback-20261027T160340+0100/usr_share_nuxel_pwa_nuxel-apps_maps_css_maps.css
+/var/lib/nuxel/a72/rollback-20261027T160340+0100/usr_share_nuxel_pwa_nuxel-apps_maps_manifest.json
+/var/lib/nuxel/a72/rollback-20261027T160340+0100/usr_share_nuxel_pwa_nuxel-apps_settings_settings.js
+/var/lib/nuxel/a72/rollback-20261027T160340+0100/usr_share_nuxel_pwa_nuxel-apps_maps_js_maps.js
+/var/lib/nuxel/a72/rollback-20261027T160340+0100/usr_share_nuxel_pwa_nuxel-apps_maps_app.json
+/var/lib/nuxel/a72/rollback-20261027T160340+0100/usr_share_nuxel_pwa_nuxel-apps_settings_app.json
+/var/lib/nuxel/a72/rollback-fast-20261027T162707+0100/usr_share_nuxel_pwa_nuxel-common_app-registry.json
+/var/lib/nuxel/a72/rollback-fast-20261027T162707+0100/etc_nuxel_app-registry_app_registry.json
+/var/lib/nuxel/a72/rollback-fast-20261027T161634+0100/usr_share_nuxel_pwa_nuxel-apps_maps_js_maps.js
+/var/lib/nuxel/a72/rollback-fast-20261027T161235+0100/usr_share_nuxel_pwa_nuxel-apps_settings_location-maps.js
+/var/lib/nuxel/a72/rollback-fast-20261027T161235+0100/usr_share_nuxel_pwa_nuxel-apps_maps_js_maps.js
+/var/lib/nuxel/a72/rollback-fast-20261027T162501+0100/usr_share_nuxel_pwa_nuxel-apps_settings_location-maps.js
+/var/lib/nuxel/a72/rollback-fast-20261027T162353+0100/usr_share_nuxel_pwa_nuxel-apps_settings_index.html
+/var/lib/nuxel/a72/rollback-fast-20261027T162353+0100/usr_share_nuxel_pwa_nuxel-apps_settings_location-maps.js
+/var/lib/nuxel/a72/rollback-fast-20261027T162353+0100/usr_share_nuxel_pwa_nuxel-apps_maps_js_maps.js
+/var/lib/nuxel/a48-backup-20261021T094936Z/app.js
+/var/lib/nuxel/apply-pwnage36000.log
+/var/lib/nuxel/touch-capture/owner-post-appjs-20261018T1138
+/var/lib/nuxel/snekbyte-a58-before/app.json
+=== nfc diag ===
+no nfc diag at known path
+-rwxr-xr-x  1 root root   1287 Oct 19 16:03 /usr/local/bin/nuxel-a37-check
+-rwxr-xr-x  1 root root  31297 Oct 30 22:45 /usr/local/bin/nuxel-audio-diag.sh
+-rwxr-xr-x. 1 root root    804 Oct 31 18:51 /usr/local/bin/nuxel-audio-status
+-rwxr-xr-x  1 root root  10007 Sep 15 02:42 /usr/local/bin/nuxel-bluetooth-diag.sh
+-rwxr-xr-x  1 root root   3389 Sep 15 02:08 /usr/local/bin/nuxel-boot-stage-verbose.sh
+-rwxr-xr-x  1 root root   3389 Sep 15 02:42 /usr/local/bin/nuxel-boot-stage-verbose.sh.nuxel-rollback
+-rwxr-xr-x  1 root root   3171 Oct 28 16:22 /usr/local/bin/nuxel-bootcap
+-rwxr-xr-x  1 root root   1182 Oct 17 02:39 /usr/local/bin/nuxel-bootmode-oneshot.sh
+-rwxr-xr-x  1 root root    706 Oct 17 12:27 /usr/local/bin/nuxel-button-trace.sh
+-rwxr-xr-x  1 root root  17246 Sep 15 02:42 /usr/local/bin/nuxel-camera-diag.sh
+-rwxr-xr-x  1 root root   5818 Oct 27 18:26 /usr/local/bin/nuxel-cast-diag.sh
+-rwxr-xr-x  1 root root   2162 Oct 29 19:59 /usr/local/bin/nuxel-cs35.py
+-rwxr-xr-x  1 root root  13642 Oct 30 18:56 /usr/local/bin/nuxel-cs35l41-speaker-diag.sh
+-rwxr-xr-x  1 root root   2848 Oct 17 02:39 /usr/local/bin/nuxel-diag-pack.sh
+-rwxr-xr-x  1 root root   1756 Oct 17 12:26 /usr/local/bin/nuxel-display-frame-trace.sh
+-rwxr-xr-x  1 root root   3784 Sep 15 03:10 /usr/local/bin/nuxel-fb-owner-assert.sh
+-rwxr-xr-x  1 root root   1497 Oct 17 05:36 /usr/local/bin/nuxel-fb-snap.py
+-rwxr-xr-x  1 root root   1070 Oct 17 05:36 /usr/local/bin/nuxel-fb-snap.py.prev
+-rwxr-xr-x  1 root root  42302 Sep 15 02:43 /usr/local/bin/nuxel-firewall.sh
+-rwxr-xr-x  1 root root  15430 Oct 31 01:01 /usr/local/bin/nuxel-gnss-diag.sh
+-rwxr-xr-x  1 root root  11436 Oct 27 16:10 /usr/local/bin/nuxel-gnss-diag.sh.bak-pwnage42000-20261031T000116Z
+-rwxr-xr-x. 1 root root   2353 Oct 31 18:51 /usr/local/bin/nuxel-gps-status
+-rwxr-xr-x  1 root root  23837 Sep 15 02:43 /usr/local/bin/nuxel-haptics-bridge.py
+-rwxr-xr-x  1 root root  15559 Sep 15 02:43 /usr/local/bin/nuxel-haptics-diag.sh
+-rwxr-xr-x  1 root root  17322 Sep 15 02:43 /usr/local/bin/nuxel-headphone-diag.sh
+-rwxr-xr-x  1 root root   1073 Sep 15 02:46 /usr/local/bin/nuxel-home-kiosk
+-rwxr-xr-x  1 root root  26520 Sep 15 02:43 /usr/local/bin/nuxel-keyboard-apply.sh
+-rwxr-xr-x  1 root root   9476 Sep 15 02:43 /usr/local/bin/nuxel-led-diag.sh
+-rwxr-xr-x  1 root root  19891 Sep 15 02:43 /usr/local/bin/nuxel-microsd-diag.sh
+-rwxr-xr-x  1 root root   8131 Sep 15 02:43 /usr/local/bin/nuxel-nfc-diag.sh
+-rwxr-xr-x  1 root root  12609 Oct 30 22:37 /usr/local/bin/nuxel-notes-works-detector
+-rwxr-xr-x  1 root root  20532 Sep 15 02:43 /usr/local/bin/nuxel-osm-tiles.py
+-rwxr-xr-x  1 root root  15066 Sep 15 02:43 /usr/local/bin/nuxel-power-diag.sh
+-rwxr-xr-x  1 root root   7377 Sep 15 02:47 /usr/local/bin/nuxel-privacy-tor-control.py
+-rwxr-xr-x  1 root root    944 Oct 17 02:39 /usr/local/bin/nuxel-reboot-mode.sh
+-rwxr-xr-x. 1 root root  11969 Oct 31 19:07 /usr/local/bin/nuxel-rotation-notes
+-rwxr-xr-x  1 root root  12455 Sep 15 02:47 /usr/local/bin/nuxel-sandbox-nftables.sh
+-rwxr-xr-x  1 root root  24833 Sep 15 02:43 /usr/local/bin/nuxel-security-audit.sh
+-rwxr-xr-x  1 root root  11091 Oct 17 02:11 /usr/local/bin/nuxel-sensors-diag.sh
+-rwxr-xr-x  1 root root  11091 Sep 15 02:43 /usr/local/bin/nuxel-sensors-diag.sh.nuxel-rollback
+-rwxr-xr-x  1 root root   8338 Oct 23 14:01 /usr/local/bin/nuxel-sound-cue.py
+-rwxr-xr-x. 1 root root   3543 Oct 31 18:51 /usr/local/bin/nuxel-theme
+-rwxr-xr-x  1 root root  34298 Sep 15 02:43 /usr/local/bin/nuxel-time.sh
+-rwxr-xr-x  1 root root  12394 Oct 18 11:21 /usr/local/bin/nuxel-touch-capture.sh
+-rwxr-xr-x  1 root root 117050 Oct 17 12:09 /usr/local/bin/nuxel-touch-trace.py
+-rwxr-xr-x  1 root root   5594 Oct 27 18:26 /usr/local/bin/nuxel-typec-diag.sh
+-rwxr-xr-x  1 root root   4316 Oct 17 12:10 /usr/local/bin/nuxel-uinput-touch-probe.py
+-rwxr-xr-x  1 root root  18887 Sep 15 02:48 /usr/local/bin/nuxel-uninstall-helper.sh
+-rwxr-xr-x  1 root root   2566 Oct 17 12:26 /usr/local/bin/nuxel-usb-input-audit.sh
+-rwxr-xr-x. 1 root root   4101 Oct 31 18:51 /usr/local/bin/nuxel-verify-pwnage36000
+-rwxr-xr-x  1 root root  42741 Sep 15 02:44 /usr/local/bin/nuxel-vpn-tor.sh
+-rwxr-xr-x  1 root root  29318 Sep 15 02:44 /usr/local/bin/nuxel-wifi-diag.sh
+-rwxr-xr-x  1 root root  74576 Oct 17 13:44 /usr/local/bin/nuxel-wl-snapshot
+-rwxr-xr-x. 1 root root   1576 Oct 31 17:24 /usr/local/bin/nuxel-xrdp-session
+
+/usr/local/libexec/nuxel/:
+total 20
+drwxr-xr-x. 2 root root  4096 Oct 31 16:40 __pycache__
+-rwxr-xr-x. 1 root root 13755 Oct 31 17:03 nuxel-remote-desktop-ctl
+=== i2c/nfc ===
+0-0010
+1-002d
+1-0051
+10-0051
+11-0040
+11-0041
+12-0056
+13-0060
+14-0025
+14-0036
+14-0062
+14-0066
+14-0069
+15-003b
+16-0000
+16-0001
+16-0002
+16-000f
+17-0000
+17-0001
+17-000f
+2-0010
+3-000c
+3-000f
+3-0050
+4-0048
+5-0028
+6-0010
+6-002d
+7-0027
+7-0057
+8-000c
+8-0051
+9-0059
+i2c-0
+i2c-1
+i2c-10
+i2c-11
+i2c-12
+i2c-13
+i2c-14
+i2c-15
+i2c-16
+i2c-17
+i2c-2
+i2c-3
+i2c-4
+i2c-5
+i2c-6
+i2c-7
+i2c-8
+i2c-9
+nfc_support
+=== leds ===
+leds-sec1 max=15 bright=0
+torch-sec1 max=15 bright=0
+=== fingerprint ===
+fingerprint
+spi1.0
+spi17.0
+spi2.0
+spi7.0
+[  693.996272] fps_qbt2000_work_func_debug: ldo:0,ipc:0,wuhb:0,tz:1,type:qbt2000,int:0,0
+[  704.748642] fps_qbt2000_work_func_debug: ldo:0,ipc:0,wuhb:0,tz:1,type:qbt2000,int:0,0
+[  715.756552] fps_qbt2000_work_func_debug: ldo:0,ipc:0,wuhb:0,tz:1,type:qbt2000,int:0,0
+[  726.764387] fps_qbt2000_work_func_debug: ldo:0,ipc:0,wuhb:0,tz:1,type:qbt2000,int:0,0
+[  737.770977] fps_qbt2000_work_func_debug: ldo:0,ipc:0,wuhb:0,tz:1,type:qbt2000,int:0,0
+[  748.780323] fps_qbt2000_work_func_debug: ldo:0,ipc:0,wuhb:0,tz:1,type:qbt2000,int:0,0
+[  759.788396] fps_qbt2000_work_func_debug: ldo:0,ipc:0,wuhb:0,tz:1,type:qbt2000,int:0,0
+[  770.797233] fps_qbt2000_work_func_debug: ldo:0,ipc:0,wuhb:0,tz:1,type:qbt2000,int:0,0
+[  781.804293] fps_qbt2000_work_func_debug: ldo:0,ipc:0,wuhb:0,tz:1,type:qbt2000,int:0,0
+[  792.812348] fps_qbt2000_work_func_debug: ldo:0,ipc:0,wuhb:0,tz:1,type:qbt2000,int:0,0
+[  803.820041] fps_qbt2000_work_func_debug: ldo:0,ipc:0,wuhb:0,tz:1,type:qbt2000,int:0,0
+[  814.828650] fps_qbt2000_work_func_debug: ldo:0,ipc:0,wuhb:0,tz:1,type:qbt2000,int:0,0
+[  825.836692] fps_qbt2000_work_func_debug: ldo:0,ipc:0,wuhb:0,tz:1,type:qbt2000,int:0,0
+[  836.844404] fps_qbt2000_work_func_debug: ldo:0,ipc:0,wuhb:0,tz:1,type:qbt2000,int:0,0
+[  847.852479] fps_qbt2000_work_func_debug: ldo:0,ipc:0,wuhb:0,tz:1,type:qbt2000,int:0,0
+[  858.860419] fps_qbt2000_work_func_debug: ldo:0,ipc:0,wuhb:0,tz:1,type:qbt2000,int:0,0
+[  869.868509] fps_qbt2000_work_func_debug: ldo:0,ipc:0,wuhb:0,tz:1,type:qbt2000,int:0,0
+[  880.876539] fps_qbt2000_work_func_debug: ldo:0,ipc:0,wuhb:0,tz:1,type:qbt2000,int:0,0
+[  891.884616] fps_qbt2000_work_func_debug: ldo:0,ipc:0,wuhb:0,tz:1,type:qbt2000,int:0,0
+[  902.892401] fps_qbt2000_work_func_debug: ldo:0,ipc:0,wuhb:0,tz:1,type:qbt2000,int:0,0
+[  913.900519] fps_qbt2000_work_func_debug: ldo:0,ipc:0,wuhb:0,tz:1,type:qbt2000,int:0,0
+[  924.908256] fps_qbt2000_work_func_debug: ldo:0,ipc:0,wuhb:0,tz:1,type:qbt2000,int:0,0
+[  935.916474] fps_qbt2000_work_func_debug: ldo:0,ipc:0,wuhb:0,tz:1,type:qbt2000,int:0,0
+[  946.924593] fps_qbt2000_work_func_debug: ldo:0,ipc:0,wuhb:0,tz:1,type:qbt2000,int:0,0
+[  957.932429] fps_qbt2000_work_func_debug: ldo:0,ipc:0,wuhb:0,tz:1,type:qbt2000,int:0,0
+[  968.940508] fps_qbt2000_work_func_debug: ldo:0,ipc:0,wuhb:0,tz:1,type:qbt2000,int:0,0
+[  979.948488] fps_qbt2000_work_func_debug: ldo:0,ipc:0,wuhb:0,tz:1,type:qbt2000,int:0,0
+[  990.956553] fps_qbt2000_work_func_debug: ldo:0,ipc:0,wuhb:0,tz:1,type:qbt2000,int:0,0
+[ 1001.964526] fps_qbt2000_work_func_debug: ldo:0,ipc:0,wuhb:0,tz:1,type:qbt2000,int:0,0
+[ 1012.972661] fps_qbt2000_work_func_debug: ldo:0,ipc:0,wuhb:0,tz:1,type:qbt2000,int:0,0
+[ 1023.980493] fps_qbt2000_work_func_debug: ldo:0,ipc:0,wuhb:0,tz:1,type:qbt2000,int:0,0
+[ 1034.988661] fps_qbt2000_work_func_debug: ldo:0,ipc:0,wuhb:0,tz:1,type:qbt2000,int:0,0
+[ 1045.996442] fps_qbt2000_work_func_debug: ldo:0,ipc:0,wuhb:0,tz:1,type:qbt2000,int:0,0
+[ 1056.748653] fps_qbt2000_work_func_debug: ldo:0,ipc:0,wuhb:0,tz:1,type:qbt2000,int:0,0
+[ 1067.756484] fps_qbt2000_work_func_debug: ldo:0,ipc:0,wuhb:0,tz:1,type:qbt2000,int:0,0
+[ 1078.764689] fps_qbt2000_work_func_debug: ldo:0,ipc:0,wuhb:0,tz:1,type:qbt2000,int:0,0
+[ 1089.772424] fps_qbt2000_work_func_debug: ldo:0,ipc:0,wuhb:0,tz:1,type:qbt2000,int:0,0
+[ 1100.780202] fps_qbt2000_work_func_debug: ldo:0,ipc:0,wuhb:0,tz:1,type:qbt2000,int:0,0
+[ 1111.788347] fps_qbt2000_work_func_debug: ldo:0,ipc:0,wuhb:0,tz:1,type:qbt2000,int:0,0
+[ 1122.794914] fps_qbt2000_work_func_debug: ldo:0,ipc:0,wuhb:0,tz:1,type:qbt2000,int:0,0
+=== notifications/dnd ===
+=== security ===
+   131947      8 -rw-r--r--   1 root     root         4589 Sep 15 02:41 /etc/nuxel/security/privacy-config.json
+   142301      8 -rw-r--r--   1 root     root         6131 Oct 31 13:20 /etc/nuxel/security/remote-access.json
+   142212      4 -rw-r--r--   1 root     root         1950 Sep 15 02:41 /etc/nuxel/security/remote-access.json.nuxel-rollback
+   142226      4 -rw-r--r--   1 root     root         1950 Sep 15 02:41 /etc/nuxel/security/remote-access.json.nuxel-rollback.pre-v070-delta-release
+   142248      4 -rw-r--r--   1 root     root         1950 Sep 15 02:41 /etc/nuxel/security/remote-access.json.nuxel-rollback.pre-v070-delta-release3
+   131946      4 -rw-r--r--   1 root     root         1770 Sep 15 02:41 /etc/nuxel/security/README.md
+   142260      4 -rw-r--r--   1 root     root         1950 Sep 15 02:41 /etc/nuxel/security/remote-access.json.nuxel-rollback.pre-v070-delta-release4
+   142234      4 -rw-r--r--   1 root     root         1950 Sep 15 02:41 /etc/nuxel/security/remote-access.json.nuxel-rollback.pre-v070-delta-release2
+   131950      4 -rw-r--r--   1 root     root         2457 Sep 15 02:41 /etc/nuxel/security/tor/torrc
+=== wayland/session ===
+SESSION UID USER SEAT LEADER CLASS TTY IDLE SINCE
+No sessions.
+root        3470  0.0  0.0   4044  3072 ?        S    18:51   0:00 sh /usr/lib/nuxel/nuxel-postboot.sh 20
+root        3502  0.0  0.0    844    44 ?        S    18:51   0:00 /opt/nuxel/nuxel-console /newroot
+root        3503  0.0  0.0    844    44 ?        S    18:51   0:00 /opt/nuxel/nuxel-console /newroot
+nuxel-b+    5337  0.0  0.3  47260 25468 ?        Ss   18:51   0:00 /usr/bin/python3 /usr/lib/nuxel/nuxel-bridge/geoclue_agent.py
+root        5340  0.0  0.1  16072 11216 ?        Ss   18:51   0:00 python3 /usr/lib/nuxel/nuxel-hapticsd.py
+nuxel-n+    5342  0.0  0.3  47552 26040 ?        Ss   18:51   0:00 /usr/bin/python3 /usr/lib/nuxel/nuxel-notifications/notifications.py
+nuxel       5345  0.0  0.3  48284 26804 ?        Ss   18:51   0:00 /usr/bin/python3 /usr/lib/nuxel/nuxel-portal/portal.py
+root        5349  0.0  0.0   2304  1072 ?        Ss   18:51   0:00 /usr/lib/nuxel/nuxel-touch-arm
+root        5356  0.1  0.0   4608  3376 ?        Ss   18:51   0:01 bash /usr/lib/nuxel/nuxel-usb-mode.sh monitor
+nuxel-b+    5806  0.1  0.4 129748 35096 ?        Ss   18:51   0:01 /usr/bin/python3 /usr/lib/nuxel/nuxel-bridge/bridge.py
+nuxel       5808  0.4  0.2 464108 20456 ?        Ssl  18:51   0:04 /usr/bin/python3 /usr/lib/nuxel/nuxel-web-server.py
+root        5813 17.4  0.4 514692 32764 ?        Rsl  18:51   3:14 /usr/sbin/phoc --no-xwayland -C /etc/nuxel/phoc-phone.ini -E /usr/lib/nuxel/nuxel-session.sh
+root        5845  9.1  0.1  46692 11040 ?        S<s  18:51   1:41 /usr/lib/nuxel/nuxel-wl-fb
+root        5846  0.1  0.0   4228  1160 ?        Ss   18:51   0:01 /usr/lib/nuxel/nuxel-button-manager
+root        5875  2.8  2.0 73567936 152852 ?     Sl   18:51   0:31 /usr/lib/nuxel/nuxel-pwa-host
+root        5892  0.2  0.0   2808  1496 ?        S    18:51   0:03 /usr/lib/nuxel/nuxel-navdock
+root        5901  0.0  0.0   7176  2668 ?        Ss   18:51   0:00 dbus-daemon --session --fork --address=unix:path=/run/nuxel-wayland/bus --nopidfile
+root        5976  0.0  0.0   7044  3632 ?        S    18:51   0:00 /usr/bin/dbus-daemon --config-file=/usr/share/defaults/at-spi2/accessibility.conf --nofork --print-address 13 --address=unix:path=/run/nuxel-wayland/at-spi/bus
+root        6008  0.0  0.0   7044  3628 ?        S    18:51   0:00 /usr/bin/dbus-daemon --config-file=/usr/share/defaults/at-spi2/accessibility.conf --nofork --print-address 12 --address=unix:path=/run/nuxel-wayland/at-spi/bus
+root        6795  0.5  0.4  48872 36336 ?        Ss   18:51   0:05 /usr/bin/python3 /usr/lib/nuxel/nuxel-bridge/api.py
+root        7571  0.0  0.0   4476  3288 ?        Ss   18:51   0:00 /bin/sh /usr/lib/nuxel/nuxel-audio-session.sh
+root        9311  0.0  0.0      0     0 ?        Zs   18:51   0:00 [nuxel-foreign-t] <defunct>
+root        9312  0.0  0.0      0     0 ?        Zs   18:51   0:00 [nuxel-foreign-t] <defunct>
+root        9435  0.0  0.0      0     0 ?        Zs   18:52   0:00 [nuxel-foreign-t] <defunct>
+root        9437  0.0  0.0      0     0 ?        Zs   18:52   0:00 [nuxel-foreign-t] <defunct>
+root       14558  1.9  0.2  26944 19344 ?        Ss   19:06   0:03 python3 /usr/libexec/nuxel/nuxel-orientationd daemon
+=== bridge routes ===
+
+=== pwa roots ===
+/usr/share/nuxel/nuxel-home
+/root/n33000-stage.1A2Ehb/pwa/nuxel-home
+=== disk ===
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/sda31      111G   14G   93G  13% /
+/dev/sda31      111G   14G   93G  13% /

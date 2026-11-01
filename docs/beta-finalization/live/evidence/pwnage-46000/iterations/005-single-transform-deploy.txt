@@ -1,0 +1,44 @@
+{
+  "mode": "portrait",
+  "effective_orientation": 0,
+  "applied": true,
+  "display": {
+    "applied": true,
+    "backend": "wlr-randr",
+    "enabled": true,
+    "error": "",
+    "logical_height": 1520,
+    "logical_width": 720,
+    "output": "HEADLESS-1",
+    "outputs": [
+      "HEADLESS-1"
+    ],
+    "physical_height": 1520,
+    "physical_width": 720,
+    "presenter_rotation": 0,
+    "scale": 2.0,
+    "transform": "normal",
+    "transform_map": {
+      "0": "normal",
+      "180": "180",
+      "270": "270",
+      "90": "90"
+    },
+    "verified": false
+  },
+  "trial": {
+    "pending_confirmation": false
+  },
+  "last_error": ""
+}
+transform=0
+presenter_rotation=0
+effective_orientation=0
+output=HEADLESS-1
+logical_width=720
+logical_height=1520
+backend=wlr-randr
+applied=1
+1793468615 FRAMES_OK total=28680 fps_1s=10 failures=0 blits=1616 present_skipped=27061 blit_avg_ms=47 damage=1432-1486 damage_blits=1559 damage_avg_ms=46 idle_ms=5334 out=720x1520 src=720x1520 scale=2 panel=1440x3040 owner=nuxel-wl-fb display=on src_format=0x00000001 colour=R@0,G@8,B@16_abgr8888_override=1 decon_pan_ok=1617 decon_pan_failed=0
+b2094689581a41b8fcea7d2527a1476b6cb3de4b0a70035f4148b9fc3cfc8f72  /etc/nuxel/orientation/orientation.json
+e92f64b41ee1468cc7bf47d847740b566d26accbc5a16946fdd54138a4307069  /usr/libexec/nuxel/nuxel-orientationd

@@ -1,0 +1,84 @@
+=== 320 x 640
+{
+  "tabs": 18,
+  "fail": [],
+  "sw": 320,
+  "cw": 320,
+  "tabRail": {
+    "scrollWidth": 1568,
+    "clientWidth": 320,
+    "overflowX": "auto"
+  }
+}
+=== 360 x 760
+{
+  "tabs": 18,
+  "fail": [],
+  "sw": 360,
+  "cw": 360,
+  "tabRail": {
+    "scrollWidth": 1568,
+    "clientWidth": 360,
+    "overflowX": "auto"
+  }
+}
+=== 384 x 832
+{
+  "tabs": 18,
+  "fail": [],
+  "sw": 384,
+  "cw": 384,
+  "tabRail": {
+    "scrollWidth": 1568,
+    "clientWidth": 384,
+    "overflowX": "auto"
+  }
+}
+=== 393 x 852
+{
+  "tabs": 18,
+  "fail": [],
+  "sw": 393,
+  "cw": 393,
+  "tabRail": {
+    "scrollWidth": 1568,
+    "clientWidth": 393,
+    "overflowX": "auto"
+  }
+}
+=== 430 x 932
+{
+  "tabs": 18,
+  "fail": [],
+  "sw": 430,
+  "cw": 430,
+  "tabRail": {
+    "scrollWidth": 1568,
+    "clientWidth": 430,
+    "overflowX": "auto"
+  }
+}
+=== 640 x 320
+{
+  "tabs": 18,
+  "fail": [],
+  "sw": 640,
+  "cw": 640,
+  "tabRail": {
+    "scrollWidth": 1568,
+    "clientWidth": 640,
+    "overflowX": "auto"
+  }
+}
+=== 760 x 360
+{
+  "tabs": 18,
+  "fail": [],
+  "sw": 760,
+  "cw": 760,
+  "tabRail": {
+    "scrollWidth": 1568,
+    "clientWidth": 760,
+    "overflowX": "auto"
+  }
+}

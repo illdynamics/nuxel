@@ -1,0 +1,294 @@
+#!/usr/bin/env python3
+"""Synchronize remote desktop sessions with Nuxel's verified orientation.
+
+This is a CONSUMER of /run/nuxel-orientation/status.json, never an orientation
+authority.  A remote failure is written to remote.json and can never roll back a
+successful local rotation.
+
+VNC: wayvnc mirrors the actual Phoc output.  This helper records the real
+captured geometry and connected-client count; wayvnc owns RFB DesktopSize.
+
+XRDP: each active X display is handled independently.  xrandr rotation/resize is
+attempted on that exact display only.  Sessions/applications are never killed,
+logged out or restarted.  Unsupported capability is reported honestly.
+"""
+from __future__ import annotations
+
+import glob
+import json
+import os
+import re
+import shutil
+import subprocess
+import sys
+import time
+
+STATUS = "/run/nuxel-orientation/status.json"
+OUT = "/run/nuxel-orientation/remote.json"
+WAYLAND_RUNTIME = "/run/nuxel-wayland"
+WAYLAND_DISPLAY = "wayland-0"
+VNC_CTL = "/usr/bin/wayvncctl"
+VNC_SOCKET = "/run/nuxel-wayland/wayvncctl"
+
+
+def _run(args, env=None, timeout=6):
+    try:
+        p = subprocess.run(args, capture_output=True, text=True, timeout=timeout,
+                           stdin=subprocess.DEVNULL, env=env)
+        return p.returncode, (p.stdout or ""), (p.stderr or "")
+    except (OSError, subprocess.SubprocessError) as exc:
+        return 127, "", str(exc)
+
+
+def _read_status():
+    try:
+        with open(STATUS) as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return {}
+
+
+def _write(doc):
+    os.makedirs(os.path.dirname(OUT), exist_ok=True)
+    tmp = OUT + ".tmp"
+    with open(tmp, "w") as f:
+        json.dump(doc, f, indent=2, sort_keys=True)
+        f.write("\n")
+        f.flush()
+        os.fsync(f.fileno())
+    os.replace(tmp, OUT)
+
+
+def _vnc(seq, status):
+    env = dict(os.environ, XDG_RUNTIME_DIR=WAYLAND_RUNTIME,
+               WAYLAND_DISPLAY=WAYLAND_DISPLAY)
+    active = _run(["systemctl", "is-active", "nuxel-remote-vnc.service"])[1].strip() == "active"
+    if not active:
+        return {"status": "off", "active": False}
+    if not os.path.exists(VNC_SOCKET):
+        return {"status": "degraded", "active": True,
+                "error": "wayvnc control socket absent"}
+    # wayvnc 0.9.1 caches the output transform used for RFB ServerInit.  A live
+    # Phoc transform does not re-advertise the new desktop size by itself.
+    # `output-set <name>` re-reads the CURRENT output/transform and updates the
+    # RFB desktop without restarting wayvnc or dropping clients (verified on
+    # wayvnc 0.9.1: portrait 720x1520 -> landscape 1520x720, service stayed
+    # active).  This is a consumer-side refresh, not another orientation
+    # authority.  A failure is reported here and never affects the phone.
+    previous = None
+    previous_doc = {}
+    try:
+        with open(OUT) as f:
+            previous_doc = json.load(f)
+            previous = previous_doc.get("sequence")
+    except (OSError, ValueError):
+        previous = None
+    refreshed = False
+    refresh_error = ""
+    last_refresh_sequence = previous_doc.get("vnc", {}).get("last_refresh_sequence")
+    if previous is not None and int(previous) != int(seq):
+        display = status.get("display") or {}
+        target = display.get("output") or "HEADLESS-1"
+        # wayvnc only re-reads the transform when capture is reattached.
+        # detach/attach keeps the RFB client connection alive on this build
+        # (measured), while output-set alone can keep a stale ServerInit.
+        rc, _out, err = _run([VNC_CTL, "-S", VNC_SOCKET, "detach"], env=env)
+        if rc == 0:
+            time.sleep(0.25)
+            rc2, _out2, err2 = _run([VNC_CTL, "-S", VNC_SOCKET, "attach", "wayland-0"], env=env)
+            if rc2 == 0:
+                time.sleep(0.25)
+                rc3, _out3, err3 = _run([VNC_CTL, "-S", VNC_SOCKET, "output-set", target], env=env)
+                refreshed = rc3 == 0
+                if not refreshed:
+                    refresh_error = (err3 or "wayvnc output-set failed").strip()
+            else:
+                refresh_error = (err2 or "wayvnc attach failed").strip()
+        else:
+            refresh_error = (err or "wayvnc detach failed").strip()
+    last_refresh_sequence = (seq if refreshed else
+                             (previous_doc.get("vnc") or {}).get("last_refresh_sequence"))
+    rc, out, err = _run([VNC_CTL, "-S", VNC_SOCKET, "-j", "output-list"], env=env)
+    outputs = []
+    if rc == 0:
+        try:
+            outputs = json.loads(out)
+        except ValueError:
+            outputs = []
+    crc, cout, _ = _run([VNC_CTL, "-S", VNC_SOCKET, "-j", "client-list"], env=env)
+    clients = []
+    if crc == 0:
+        try:
+            clients = json.loads(cout)
+        except ValueError:
+            clients = []
+    captured = next((o for o in outputs if isinstance(o, dict) and o.get("captured")), None)
+    if not captured:
+        return {"status": "degraded", "active": True,
+                "error": err.strip() or "no captured output", "sequence": seq}
+    display = status.get("display") or {}
+    # wayvncctl output-list reports the capture BUFFER (720x1520).  The RFB
+    # ServerInit a client receives follows the logical desktop: a live probe of
+    # wayvnc 0.9.1 returned 1520x720 for transform 90/270 at scale 1 and
+    # 720x1520 for portrait.  Report the verified logical geometry, and keep the
+    # buffer dimensions as separate evidence.
+    rfb_w = display.get("logical_width") or captured.get("width")
+    rfb_h = display.get("logical_height") or captured.get("height")
+    return {
+        "status": "mirrored",
+        "active": True,
+        "session_mode": "current-phoc-wayland-session",
+        "output": captured.get("name"),
+        "width": rfb_w,
+        "height": rfb_h,
+        "capture_buffer_width": captured.get("width"),
+        "capture_buffer_height": captured.get("height"),
+        "clients": len(clients),
+        "dynamic_resize": ("wayvnc detach/attach re-reads the current transform; existing "
+                           "clients receive RFB DesktopSize; a client without "
+                           "DesktopSize support keeps its window and may letterbox"),
+        "sequence": seq,
+        "transform_refreshed": refreshed,
+        "last_refresh_sequence": last_refresh_sequence,
+        "refresh_error": refresh_error,
+    }
+
+
+def _xrandr_rotation(degrees):
+    return {0: "normal", 90: "right", 180: "inverted", 270: "left"}.get(int(degrees), "normal")
+
+
+def _xrdp_sessions(seq, effective):
+    sessions = []
+    for sock in sorted(glob.glob("/tmp/.X11-unix/X*")):
+        m = re.search(r"X(\d+)$", sock)
+        if not m:
+            continue
+        num = int(m.group(1))
+        if num < 10:
+            continue
+        display = ":%d" % num
+        env = dict(os.environ, DISPLAY=display)
+        # Xorg runs as the local desktop identity with an Xauthority file in
+        # its HOME.  The orientation daemon is root, so name the file
+        # explicitly instead of pretending the display is reachable.
+        for auth in ("/home/nuxel/.Xauthority", "/root/.Xauthority",
+                     os.path.expanduser("~/.Xauthority")):
+            if os.path.exists(auth):
+                env["XAUTHORITY"] = auth
+                break
+        qrc, qout, qerr = _run(["xrandr", "--query"], env=env)
+        if qrc != 0:
+            sessions.append({"display": display, "status": "unreachable",
+                             "error": (qerr or qout).strip()[:300]})
+            continue
+        outputs = []
+        for line in qout.splitlines():
+            mm = re.match(r"^(\S+)\s+connected(?:\s+primary)?\s+(\d+)x(\d+)\+", line)
+            if mm:
+                outputs.append({"name": mm.group(1), "width": int(mm.group(2)),
+                                "height": int(mm.group(3))})
+        if not outputs:
+            sessions.append({"display": display, "status": "no_output",
+                             "error": "xrandr reported no connected output"})
+            continue
+        target = outputs[0]
+        rotation = _xrandr_rotation(effective)
+        landscape = int(effective) in (90, 270)
+        # TigerVNC's Xvnc backend implements RandR mode changes; xorgxrdp's
+        # rdp0 does not.  Prefer the supported mode switch when the output is
+        # VNC-N, and never touch the session if the operation is unsupported.
+        if target["name"].startswith("VNC-"):
+            want_w, want_h = (1520, 720) if landscape else (720, 1520)
+            mode = "%dx%d" % (want_w, want_h)
+            if not any(m["width"] == want_w and m["height"] == want_h for m in outputs):
+                # A CVT-ish modeline accepted by Xvnc for both axes.
+                clock = "75.00" if want_w > want_h else "150.00"
+                _run(["xrandr", "--newmode", mode, clock,
+                      str(want_w), str(want_w + 8), str(want_w + 16), str(want_w + 80),
+                      str(want_h), str(want_h + 3), str(want_h + 8), str(want_h + 30),
+                      "+hsync", "+vsync"], env=env)
+                _run(["xrandr", "--addmode", target["name"], mode], env=env)
+            arc, aout, aerr = _run(["xrandr", "--output", target["name"],
+                                    "--mode", mode], env=env)
+        else:
+            arc, aout, aerr = _run(["xrandr", "--output", target["name"],
+                                    "--rotate", rotation, "--auto"], env=env)
+        # Read back the actual geometry/rotation rather than trusting rc.
+        rrc, rout, _ = _run(["xrandr", "--query"], env=env)
+        applied = None
+        for line in rout.splitlines():
+            if line.startswith(target["name"] + " "):
+                applied = line.strip()
+                break
+        # xorgxrdp 0.10 exposes RandR but does not implement server-side
+        # output rotation/resize (measured: BadMatch RRSetCrtcTransform).
+        # Never kill the session to force a size.  Report the live geometry,
+        # whether it already matches the requested axis, and the unsupported
+        # operation explicitly.  `applied` stays false unless geometry changed.
+        current_landscape = target["width"] > target["height"]
+        geometry_matches = landscape == current_landscape
+        if target["name"].startswith("VNC-"):
+            m = re.search(r"\b(\d+)x(\d+)\+", applied or "")
+            now_w, now_h = (int(m.group(1)), int(m.group(2))) if m else (0, 0)
+            geometry_matches = ((now_w > now_h) == landscape) and now_w > 0
+            # Xvnc's RandR can change the axis but not rotate/invert the
+            # framebuffer.  0 and 90 are therefore native; 180 and 270 keep the
+            # correct axis but are reported as an unsupported reverse pose.
+            native_rotation = bool(arc == 0 and geometry_matches and
+                                   int(effective) in (0, 90))
+        else:
+            native_rotation = False
+        status = ("synchronized" if native_rotation else
+                  ("geometry_axis_matches_rotation_unsupported" if geometry_matches
+                   else "resize_unsupported"))
+        sessions.append({
+            "display": display,
+            "output": target["name"],
+            "requested_degrees": effective,
+            "xrandr_rotation": rotation,
+            "requested_width": target["width"],
+            "requested_height": target["height"],
+            "current_width": (now_w if target["name"].startswith("VNC-") else target["width"]),
+            "current_height": (now_h if target["name"].startswith("VNC-") else target["height"]),
+            "geometry_matches_orientation": bool(geometry_matches),
+            "status": status,
+            "applied": bool(native_rotation),
+            "orientation_exact": bool(native_rotation and int(effective) in (0, 90)),
+            "xrandr": applied,
+            "error": "" if native_rotation else
+                     (("xorgxrdp rejected server-side rotation/resize (geometry unchanged)" if not target["name"].startswith("VNC-") else
+                       (aerr or aout).strip()) or "geometry not verified")[:240],
+            "sequence": seq,
+            "native_rotation": native_rotation,
+            "session_preserved": True,
+            "fallback": ("native Xvnc RandR mode switch" if int(effective) in (0, 90)
+                         else "axis-correct desktop only; Xvnc/Xorg cannot invert the framebuffer; session preserved"),
+        })
+    return sessions
+
+
+def main():
+    status = _read_status()
+    seq = int(status.get("sequence", 0) or 0)
+    effective = int(status.get("effective_orientation", 0) or 0)
+    vnc = _vnc(seq, status)
+    sessions = _xrdp_sessions(seq, effective)
+    doc = {
+        "schema": "nuxel.orientation.remote/1",
+        "sequence": seq,
+        "effective_orientation": effective,
+        "updated_epoch": time.time(),
+        "vnc_status": vnc.get("status", "unknown"),
+        "vnc": vnc,
+        "xrdp_sessions": sessions,
+        "last_error": vnc.get("error", "") if vnc.get("status") == "degraded" else "",
+    }
+    _write(doc)
+    if "--json" in sys.argv:
+        print(json.dumps(doc, indent=2, sort_keys=True))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
