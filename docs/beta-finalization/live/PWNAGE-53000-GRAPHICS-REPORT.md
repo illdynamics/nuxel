@@ -135,6 +135,14 @@ offset, stride and bounds. Invalid offset/dimensions produce a Wayland protocol
 error that closes **only the offending client**; Phoc keeps the same PID and
 continues presenting. `evidence/.../dmabuf/` and `deployment/live-test-output.txt`.
 
+**Synchronization:** protocol **v3** is bound, which has no explicit fence
+transport. This path therefore uses **implicit synchronization** only; the
+buffer lifetime contract is `wl_buffer.release`. No fence FD is negotiated or
+invented. The regression client exercises repeated create/destroy (20 cycles),
+an unsupported modifier, an out-of-range offset, absurd dimensions and a clean
+client disconnect. Delayed *release* is what the earlier client stall exposed;
+the LINEAR fix removes the mismatch that caused it.
+
 ## 7. GTK3 / GTK4
 
 - GTK3 `GtkGLArea` on the live session:

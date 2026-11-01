@@ -17,7 +17,7 @@ Evidence: `evidence/pwnage-53000/{baseline,crash,dmabuf,egl,gtk,webkit,performan
 | 3 | Reproduce exact failure with a non-WebKit client | **PASS** | ARM modifier `0x0800000000000062` selected for a LINEAR udmabuf; client stalls, Phoc alive. `crash/` |
 | 4 | Separate Phoc crash vs client protocol failure | **PASS** | Phoc PID unchanged through malformed/disconnect tests; no core in this repro |
 | 5 | Stop advertising unproven tiled/AFBC modifiers | **PASS** | `wlroots-kbase-linear-dmabuf.patch`; `dmabuf/formats.txt` shows LINEAR only |
-| 6 | Validate planes/offset/stride/dimensions before import | **PASS** | valid 20/20 accepted; malformed offset/dim disconnect only that client; Phoc survives |
+| 6 | Validate planes/offset/stride/dimensions before import | **PASS** | valid 20/20 accepted; malformed offset/dim disconnect only that client; Phoc survives; protocol v3 = implicit sync, no fence FD claimed |
 | 7 | EGL surfaceless on Mali | **PASS** | `GL_RENDERER=Mali-G76 MC12 (Panfrost)`, GLES 3.2 |
 | 8 | EGL_PLATFORM_WAYLAND window surface + swap | **PASS** | `egl/egl-wayland-live.log` → `PASS` |
 | 9 | Phoc on real kbase Mali | **PASS** | maps `libgallium_dri.so`, 3× `/dev/mali0`, 0 llvmpipe threads |
