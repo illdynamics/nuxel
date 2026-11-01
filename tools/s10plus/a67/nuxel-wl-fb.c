@@ -1628,12 +1628,12 @@ int main(int argc, char **argv) {
        returns to full rate.  This is measurement-driven, not a timer guess. */
     long idle = (long)(mono_ms() - last_change_ms);
     int pace = fps_target;
-    if (idle > 1200) pace = 10;
+    if (idle > 800) pace = 10;
     /* Poll-wake makes a lower capture cadence invisible to touch: a compositor
        commit wakes the bridge immediately.  Static glass can therefore settle
        to 5 fps after 8 s and 2 fps after a minute. */
-    if (idle > 8000) pace = 5;
-    if (idle > 60000) pace = 2;
+    if (idle > 3500) pace = 3;
+    if (idle > 12000) pace = 1;
     long pace_ns = 1000000000L / (pace > 0 ? pace : 1);
     long rest_ns = pace_ns - used_ns;
     if (rest_ns > 0) {

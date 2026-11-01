@@ -19,10 +19,12 @@ if [ ! -d "$SRC/.git" ]; then
     https://gitlab.freedesktop.org/wlroots/wlroots.git "$SRC"
 fi
 
-PATCH="$ROOT/tools/s10plus/a67/wlroots-kbase-surfaceless.patch"
-if ! git -C "$SRC" apply --reverse --check "$PATCH" >/dev/null 2>&1; then
-  git -C "$SRC" apply "$PATCH"
-fi
+for PATCH in "$ROOT/tools/s10plus/a67/wlroots-kbase-surfaceless.patch" \
+             "$ROOT/tools/s10plus/a67/wlroots-kbase-dmabuf.patch"; do
+  if ! git -C "$SRC" apply --reverse --check "$PATCH" >/dev/null 2>&1; then
+    git -C "$SRC" apply "$PATCH"
+  fi
+done
 
 dnf -y install meson ninja-build wayland-devel wayland-protocols-devel \
   pixman-devel libxkbcommon-devel libinput-devel libseat-devel \

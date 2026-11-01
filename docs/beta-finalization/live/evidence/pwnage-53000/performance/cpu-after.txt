@@ -1,0 +1,6 @@
+48947 phoc 20.2%
+51254 nuxel-wl-fb 9.5%
+49462 WebKitWebProces 3.1%
+49135 nuxel-pwa-host 2.1%
+49457 WebKitNetworkPr 0.7%
+52206  -63.7%

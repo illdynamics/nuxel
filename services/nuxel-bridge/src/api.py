@@ -25,6 +25,7 @@ from urllib.parse import urlparse, parse_qs
 import dbus
 import dbus.mainloop.glib
 import subprocess
+import shlex
 
 logger = logging.getLogger('nuxel-http-bridge')
 
@@ -68,7 +69,17 @@ try:
 except Exception as _e:  # pragma: no cover - optional module
     bluetooth_obex = None
     logger.warning('bluetooth_obex unavailable: %s', _e)
-    logger.warning('tri_link_status unavailable: %s', _e)
+
+# PWNAGE-45000 providers.  Each is a real capability probe/owner; none reports
+# an ON state without hardware evidence.
+for _modname in ('dnd_provider', 'nfc_provider', 'fingerprint_provider',
+                 'security_provider', 'led_notification_provider', 'app_manager',
+                 'software_provider', 'privacy_provider'):
+    try:
+        globals()[_modname] = __import__(_modname)
+    except Exception as _e:  # pragma: no cover - optional module
+        globals()[_modname] = None
+        logger.warning('%s unavailable: %s', _modname, _e)
 
 # USB connection-mode state machine (Charging / File Transfer). It only
 # activates a real endpoint through the dedicated helper and reports the result.
@@ -588,16 +599,56 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
     NATIVE_LAUNCH_ENV = {
         "XDG_RUNTIME_DIR": "/run/nuxel-wayland",
         "WAYLAND_DISPLAY": "wayland-0",
-        "GSK_RENDERER": "cairo",
-        "LIBGL_ALWAYS_SOFTWARE": "1",
-        "WEBKIT_DISABLE_COMPOSITING_MODE": "1",
+        # Graphics keys are added per app by _graphics_env_for().  They are not
+        # a blanket environment: GSK_RENDERER is meaningless to GTK3/WebKit and
+        # LIBGL_ALWAYS_SOFTWARE must never be inherited by a proven accelerated
+        # process.
         "GDK_BACKEND": "wayland",
-        # The graphical session units run with a minimal PATH lacking /usr/sbin,
-        # where Fedora installs python3/gtk-launch. A `#!/usr/bin/env python3`
-        # shebang fails under that PATH, so restore the standard search path.
         "PATH": "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
         "HOME": "/root",
     }
+
+    GRAPHICS_PROFILE_TOOL = "/usr/lib/nuxel/nuxel-graphics-profile"
+    GRAPHICS_ENV_KEYS = {
+        "GDK_BACKEND", "GSK_RENDERER", "LIBGL_ALWAYS_SOFTWARE",
+        "WEBKIT_DISABLE_COMPOSITING_MODE", "WEBKIT_FORCE_COMPOSITING_MODE",
+        "MESA_KBASE_NODE", "MESA_LOADER_DRIVER_OVERRIDE", "NUXEL_KBASE_WSI",
+        "NUXEL_GRAPHICS_FALLBACK_REASON", "GDK_GL", "LIBGL_DRIVERS_PATH",
+        "__EGL_VENDOR_LIBRARY_FILENAMES",
+    }
+
+    def _graphics_env_for(self, target_id):
+        """Resolve the validated per-app graphics profile.
+
+        The helper is a fixed path and only emits keys from its own closed
+        schema.  A missing/failed helper falls back to explicit software, never
+        to "hope GL works" and never to an empty environment.
+        """
+        env = {}
+        try:
+            proc = subprocess.run(
+                [self.GRAPHICS_PROFILE_TOOL, "env", "native:%s" % target_id],
+                capture_output=True, text=True, timeout=4,
+                env={"PATH": "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"})
+            if proc.returncode == 0:
+                for line in proc.stdout.splitlines():
+                    if not line.startswith("export "):
+                        continue
+                    key, _, raw = line[7:].partition("=")
+                    if key not in self.GRAPHICS_ENV_KEYS:
+                        continue
+                    try:
+                        value = shlex.split(raw)
+                    except ValueError:
+                        continue
+                    if len(value) == 1:
+                        env[key] = value[0]
+        except (OSError, subprocess.TimeoutExpired) as exc:
+            logger.warning("graphics profile helper failed for %s: %s", target_id, exc)
+        if "LIBGL_ALWAYS_SOFTWARE" not in env and "GSK_RENDERER" not in env:
+            env.setdefault("LIBGL_ALWAYS_SOFTWARE", "1")
+            env["NUXEL_GRAPHICS_FALLBACK_REASON"] = "profile helper unavailable"
+        return env
 
     # Registry ids that may be launched natively, with their fixed launch argv.
     # The dict is the ONLY launch authority; nothing else is exec'd on this path.
@@ -618,14 +669,30 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
         "nuxel-dialer": ["/usr/bin/nuxel-dialer"],
         "nuxel-messages": ["/usr/bin/nuxel-messages"],
         # PWNAGE-43000: Flatpak (aarch64) and native Fedora applications.
-        "org.mozilla.firefox": ["/usr/lib/nuxel/nuxel-flatpak-firefox"],
-        "org.videolan.VLC": ["/usr/lib/nuxel/nuxel-flatpak-vlc"],
+        "org.mozilla.firefox": ["/usr/bin/firefox"],
+        # VLC 3.0.24's aarch64 Fedora build cannot create a Wayland video
+        # output or load its Qt interface on this image.  The wrapper tries
+        # VLC briefly and then hands the file to mpv, which is verified.
+        "org.videolan.VLC": ["/usr/lib/nuxel/nuxel-vlc-fallback"],
+        "org.nuxel.MediaPlayer": ["/usr/bin/mpv", "--no-config",
+                                  "--force-window=yes", "--idle=yes"],
         "org.signal.Signal": ["/usr/lib/nuxel/nuxel-flatpak-signal"],
         "com.stremio.Stremio": ["/usr/lib/nuxel/nuxel-flatpak-stremio"],
         "org.gnome.FileRoller": ["/usr/bin/file-roller"],
         "org.gnome.Loupe": ["/usr/bin/loupe"],
         "org.gnome.Papers": ["/usr/bin/papers"],
         "org.gnome.SystemMonitor": ["/usr/bin/gnome-system-monitor"],
+        # PWNAGE-45000 native Software center (GTK3 + PackageKit/polkit).
+        "org.gnome.Software": ["/usr/lib/nuxel/nuxel-software"],
+    }
+
+    # Wayland app_id reported by nuxel-foreign-toplevel (may differ from the
+    # registry id).
+    NATIVE_SURFACE_ID = {
+        "org.gnome.Software": "nuxel-software",
+        "org.mozilla.firefox": "org.mozilla.firefox",
+        "org.videolan.VLC": "mpv",
+        "org.nuxel.MediaPlayer": "mpv",
     }
 
     # Apps that must write user-owned data (contacts, call log, message store)
@@ -637,10 +704,53 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
         # Run them as the real nuxel user (uid 1000) with the session's Wayland
         # runtime; the a45 session script grants that user the socket.
         "org.mozilla.firefox", "org.videolan.VLC",
+        "org.nuxel.MediaPlayer",
         "org.signal.Signal", "com.stremio.Stremio",
         "org.gnome.FileRoller", "org.gnome.Loupe",
         "org.gnome.Papers", "org.gnome.SystemMonitor",
+        "org.gnome.Software",
     }
+
+    def _ensure_xwayland(self):
+        """Start one rootless Xwayland for Qt/X11-native applications.
+
+        VLC's Qt6 interface plugin does not initialise on this image's Wayland
+        QPA and exits into its console interface.  Xwayland is already shipped
+        and phoc accepts it as a normal client; start it on demand so the
+        normal Home session does not pay for an X server when no X app is open.
+        """
+        import time as _t
+        sock = "/tmp/.X11-unix/X0"
+        if os.path.exists(sock):
+            return True
+        try:
+            probe = subprocess.run(["/usr/bin/pgrep", "-f", "Xwayland :0"],
+                                   capture_output=True, timeout=3)
+            if probe.returncode == 0:
+                return True
+        except (OSError, subprocess.TimeoutExpired):
+            pass
+        env = dict(os.environ)
+        env.update({"XDG_RUNTIME_DIR": "/run/user/1000",
+                    "WAYLAND_DISPLAY": "wayland-0",
+                    "HOME": "/home/nuxel"})
+        cmd = ["/usr/bin/runuser", "-u", "nuxel", "--",
+               "/usr/bin/env", "XDG_RUNTIME_DIR=/run/user/1000",
+               "WAYLAND_DISPLAY=wayland-0", "HOME=/home/nuxel",
+               "/usr/bin/Xwayland", ":0", "-rootless", "-noreset", "-nolisten", "tcp"]
+        try:
+            subprocess.Popen(cmd, env=env, stdin=subprocess.DEVNULL,
+                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                             start_new_session=True)
+        except OSError as exc:
+            logger.warning("Xwayland start failed: %s", exc)
+            return False
+        for _ in range(30):
+            if os.path.exists(sock):
+                return True
+            _t.sleep(0.1)
+        logger.warning("Xwayland socket %s did not appear", sock)
+        return False
 
     def _session_home(self):
         try:
@@ -649,12 +759,32 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
         except Exception:
             return "/home/nuxel"
 
-    def _exec_native_app(self, target_id):
-        """Launch a native app from the fixed allowlist (never a client path)."""
+    def _exec_native_app(self, target_id, extra_args=None):
+        """Launch a native app from the fixed allowlist (never a client path).
+
+        ``extra_args`` is reserved for the closed media-open path; the only
+        accepted shape is one already-validated file path for VLC.
+        """
+        # The session lock is authoritative in the root bridge, not in a JS
+        # overlay: no native surface may start while the device is locked.
+        try:
+            if security_provider is not None:
+                _lock = security_provider.handle("status", {})
+                if _lock.get("locked", True):
+                    return ({"success": False, "error": "session_locked",
+                             "app_id": target_id,
+                             "detail": "unlock the device before launching apps"}, 423)
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("security lock check failed: %s", exc)
         if not isinstance(target_id, str) or not APP_ID_RE.match(target_id):
             return ({"success": False, "error": "invalid_app_id",
                      "detail": "an app id is an identifier, never a path or a command"}, 400)
         argv = self.NATIVE_LAUNCH.get(target_id)
+        if argv and extra_args:
+            if target_id not in ("org.videolan.VLC", "org.nuxel.MediaPlayer") or len(extra_args) != 1:
+                return ({"success": False, "error": "extra_args_denied",
+                         "app_id": target_id}, 400)
+            argv = list(argv) + [str(extra_args[0])]
         if not argv:
             app, _info = self._lookup_registry_app(target_id)
             if app and app.get("type") == "native" and app.get("native_binary"):
@@ -665,6 +795,15 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
             if not argv:
                 return ({"success": False, "error": "not_native_or_unknown",
                          "app_id": target_id}, 404)
+        # A registry entry can be known-unsupported (e.g. Signal aarch64 has no
+        # official RPM and Flatpak is blocked by CONFIG_USER_NS=n).  Refuse
+        # before spawning anything and state the real reason.
+        _reg_app, _info = self._lookup_registry_app(target_id)
+        if _reg_app and _reg_app.get("status") in ("unsupported", "blocked"):
+            return ({"success": False, "error": "unsupported_on_device",
+                     "app_id": target_id,
+                     "detail": _reg_app.get("runtime_state") or _reg_app.get("description")
+                               or "not supported on this device"}, 409)
         # A clear, honest failure for an unbuilt/absent native binary is more
         # useful than a systemd-run rc!=0 (which masked the real cause).
         if not os.path.exists(argv[0]):
@@ -679,13 +818,20 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
         home = self._session_home()
         unit = "nuxel-app-" + target_id.rsplit(".", 1)[-1].lower() + "-%d" % int(_t.time() * 1000)
         as_user = target_id in self.NATIVE_AS_SESSION_USER
+        # Session-user apps use the standard per-user runtime so dconf and
+        # other $XDG_RUNTIME_DIR consumers work; the session script creates it
+        # and symlinks the Phoc socket from /run/nuxel-wayland.  Root-owned
+        # native tools (browser/camera) keep the compositor runtime directly.
         runtime = "/run/user/1000" if as_user else "/run/nuxel-wayland"
+        use_x11 = target_id == "org.videolan.VLC"
+        if use_x11 and not self._ensure_xwayland():
+            logger.warning("VLC launch continuing without a verified Xwayland socket")
         cmd = ["/usr/bin/systemd-run", "--unit=%s" % unit, "--collect",
                "--setenv=XDG_RUNTIME_DIR=%s" % runtime,
                "--setenv=WAYLAND_DISPLAY=wayland-0",
-               "--setenv=GSK_RENDERER=cairo",
-               "--setenv=LIBGL_ALWAYS_SOFTWARE=1",
-               "--setenv=WEBKIT_DISABLE_COMPOSITING_MODE=1",
+               "--setenv=XDG_SESSION_TYPE=wayland",
+               "--setenv=XDG_CURRENT_DESKTOP=Nuxel",
+               "--setenv=MOZ_ENABLE_WAYLAND=1",
                "--setenv=GDK_BACKEND=wayland",
                "--setenv=QT_QPA_PLATFORM=wayland",
                "--setenv=DBUS_SESSION_BUS_ADDRESS=unix:path=/run/nuxel-wayland/bus",
@@ -694,6 +840,12 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
                "--setenv=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
                "--setenv=HOME=%s" % home,
                "--setenv=XDG_DATA_HOME=%s/.local/share" % home]
+        gfx_env = self._graphics_env_for(target_id)
+        for key, value in sorted(gfx_env.items()):
+            cmd.append("--setenv=%s=%s" % (key, value))
+        if use_x11:
+            cmd += ["--setenv=DISPLAY=:0", "--setenv=QT_QPA_PLATFORM=xcb",
+                    "--setenv=QT_X11_NO_MITSHM=1"]
         if as_user:
             user = self._app_store().session_user
             if user:
@@ -715,18 +867,74 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
         # app maps behind it unless we (a) leave Home fullscreen/minimize it and
         # (b) maximize the app.  Do that asynchronously once the toplevel exists;
         # the layer-shell top bar and nav dock then remain visible over it.
+        surface_id = self.NATIVE_SURFACE_ID.get(target_id, target_id)
         try:
             subprocess.Popen(
-                ["/usr/lib/nuxel/nuxel-focus-app.sh", target_id],
+                ["/usr/lib/nuxel/nuxel-focus-app.sh", surface_id],
                 env=dict(os.environ, XDG_RUNTIME_DIR="/run/nuxel-wayland",
                          WAYLAND_DISPLAY="wayland-0"),
                 stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL, start_new_session=True)
         except OSError as exc:
             logger.warning("native focus helper failed for %s: %s", target_id, exc)
-        logger.info("native app launched id=%s unit=%s argv=%s", target_id, unit, argv)
+
+        # Evidence, not optimism: distinguish "systemd started a process" from
+        # "a real Wayland toplevel exists".  A short bounded poll keeps the
+        # launch response useful without blocking the UI for the app lifetime.
+        process_alive = False
+        surface_seen = False
+        outcome = "started"
+        for _ in range(20):
+            try:
+                st = subprocess.run(
+                    ["/usr/bin/systemctl", "show", unit, "--property=ActiveState",
+                     "--property=Result", "--property=MainPID", "--no-pager"],
+                    capture_output=True, timeout=2, text=True)
+                fields = dict(line.split("=", 1) for line in st.stdout.splitlines() if "=" in line)
+                process_alive = fields.get("ActiveState") in ("active", "activating")
+                if fields.get("Result") not in (None, "success"):
+                    outcome = "exited:" + fields.get("Result", "unknown")
+                    break
+            except (OSError, subprocess.TimeoutExpired, ValueError):
+                pass
+            try:
+                tl = subprocess.run(
+                    ["/usr/lib/nuxel/nuxel-foreign-toplevel", "list"],
+                    env=dict(os.environ, XDG_RUNTIME_DIR="/run/nuxel-wayland",
+                             WAYLAND_DISPLAY="wayland-0"),
+                    capture_output=True, timeout=2, text=True)
+                surface_seen = ("app_id=%s" % surface_id) in (tl.stdout or "")
+            except (OSError, subprocess.TimeoutExpired):
+                pass
+            if surface_seen:
+                outcome = "visible"
+                break
+            import time as _sleep
+            _sleep.sleep(0.5)
+        logger.info("native app launched id=%s unit=%s argv=%s process_alive=%s surface_seen=%s outcome=%s",
+                    target_id, unit, argv, process_alive, surface_seen, outcome)
+        if not process_alive and not surface_seen:
+            # Do not claim a visible launch.  Read the bounded journal tail so
+            # the UI can show the real reason (VLC's Qt GUI module, missing
+            # output plugin, early crash, ...).
+            detail = "process exited before a Wayland surface appeared"
+            try:
+                jl = subprocess.run(
+                    ["/usr/bin/journalctl", "-u", unit, "-n", "8", "--no-pager",
+                     "-o", "cat"], capture_output=True, timeout=2, text=True)
+                tail = (jl.stdout or "").strip()
+                if tail:
+                    detail += ": " + tail[-700:]
+            except (OSError, subprocess.TimeoutExpired):
+                pass
+            return ({"success": False, "error": "exited_before_surface",
+                     "app_id": target_id, "unit": unit, "argv": argv,
+                     "process_alive": False, "surface_seen": False,
+                     "outcome": outcome or "exited", "detail": detail}, 502)
         return ({"success": True, "launched": True, "app_id": target_id,
-                 "unit": unit, "action": "exec", "argv": argv}, 200)
+                 "unit": unit, "action": "exec", "argv": argv,
+                 "process_alive": process_alive, "surface_seen": surface_seen,
+                 "outcome": outcome}, 200)
 
     def _home_action(self):
         """Minimize every non-Home toplevel via wlr-foreign-toplevel (no kill)."""
@@ -764,6 +972,25 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
         return ({"success": True, "action": "close-foreground", "rc": proc.returncode,
                  "output": out.strip()}, 200)
 
+    def _send_native_back_key(self, app_id):
+        env = dict(os.environ)
+        env.update({"XDG_RUNTIME_DIR": "/run/nuxel-wayland",
+                    "WAYLAND_DISPLAY": "wayland-0"})
+        if app_id == "vlc":
+            argv = ["/usr/bin/wtype", "-k", "Escape"]
+        else:
+            argv = ["/usr/bin/wtype", "-M", "alt", "-k", "Left", "-m", "alt"]
+        try:
+            proc = subprocess.run(argv, env=env, capture_output=True, timeout=5)
+        except (OSError, subprocess.TimeoutExpired) as exc:
+            logger.warning("native back key failed for %s: %s", app_id, exc)
+            return False
+        if proc.returncode != 0:
+            logger.warning("native back key rc=%s app=%s err=%s",
+                           proc.returncode, app_id,
+                           (proc.stderr or b"").decode("utf-8", "replace")[:300])
+        return proc.returncode == 0
+
     def _native_back_action(self):
         """Short Back for the foreground native app: navigate the app's own
         history first, and only report at-root when it has no more back step.
@@ -795,6 +1022,20 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
         m = re.search(r"app_id=(\S+)", foreground)
         if m:
             app_id = m.group(1)
+        # Native browsers and the native browser PWA expose no foreign-toplevel
+        # history API.  Send the application's own Back shortcut into the
+        # focused Wayland client.  This is a real key event (wtype uses
+        # zwp_virtual_keyboard_manager_v1), not a guessed state transition.
+        if app_id in ("org.mozilla.firefox", "org.nuxel.BrowserNative",
+                      "com.stremio.Stremio", "org.gnome.FileRoller",
+                      "org.gnome.Loupe", "org.gnome.Papers"):
+            ok = self._send_native_back_key(app_id)
+            return ({"success": True, "handled": bool(ok), "at_root": not ok,
+                     "foreground": app_id, "method": "key-alt-left"}, 200)
+        if app_id == "vlc":
+            ok = self._send_native_back_key(app_id)
+            return ({"success": True, "handled": bool(ok), "at_root": not ok,
+                     "foreground": app_id, "method": "key-escape"}, 200)
         if "browser" not in app_id.lower():
             return ({"success": True, "handled": False, "at_root": True,
                      "foreground": app_id}, 200)
@@ -824,6 +1065,41 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
         logger.info("native back handled foreground=%s", app_id)
         return ({"success": True, "handled": True, "at_root": False,
                  "foreground": app_id}, 200)
+
+    def _list_toplevels(self):
+        """Return the compositor's real toplevel inventory (read-only).
+
+        Recents needs native windows too; the PWA session map alone only knows
+        iframes.  This endpoint never acts on a window and never invents one.
+        """
+        env = dict(os.environ)
+        env.update({"XDG_RUNTIME_DIR": "/run/nuxel-wayland",
+                    "WAYLAND_DISPLAY": "wayland-0"})
+        try:
+            proc = subprocess.run(["/usr/lib/nuxel/nuxel-foreign-toplevel", "list"],
+                                  env=env, capture_output=True, timeout=10)
+        except (OSError, subprocess.TimeoutExpired) as exc:
+            return ({"success": False, "error": "toplevel_list_failed",
+                     "detail": str(exc)}, 500)
+        out = (proc.stdout or b"").decode("utf-8", "replace")
+        windows = []
+        for line in out.splitlines():
+            if not line.startswith("WIN "):
+                continue
+            item = {}
+            for part in line[4:].split(" "):
+                if "=" in part:
+                    k, v = part.split("=", 1)
+                    item[k] = v
+            item["maximized"] = item.get("max") == "1"
+            item["minimized"] = item.get("min") == "1"
+            item["activated"] = item.get("act") == "1"
+            item["fullscreen"] = item.get("fs") == "1"
+            item["home"] = (item.get("app_id") == "nuxel-pwa-host" or
+                            item.get("title") == "Nuxel")
+            windows.append(item)
+        return ({"success": proc.returncode == 0, "windows": windows,
+                 "count": len(windows), "source": "zwlr-foreign-toplevel"}, 200)
 
     def _activate_toplevel(self, app_id):
         """Activate a specific native toplevel by app_id (recents switch)."""
@@ -1210,6 +1486,18 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
             else:
                 self._send_json({'success': False, 'error': 'remote_desktop unavailable'}, 503)
 
+        elif path == '/api/v1/system/dnd':
+            self._send_json(dnd_provider.handle('status', {}) if dnd_provider else {'success': False, 'error': 'dnd provider unavailable'})
+        elif path == '/api/v1/system/nfc':
+            self._send_json(nfc_provider.handle('status', {}) if nfc_provider else {'success': False, 'error': 'nfc provider unavailable'})
+        elif path == '/api/v1/system/fingerprint':
+            self._send_json(fingerprint_provider.handle('status', {}) if fingerprint_provider else {'success': False, 'error': 'fingerprint provider unavailable'})
+        elif path == '/api/v1/system/security':
+            self._send_json(security_provider.handle('status', {}) if security_provider else {'success': False, 'error': 'security provider unavailable'})
+        elif path == '/api/v1/system/led-notification':
+            self._send_json(led_notification_provider.handle('status', {}) if led_notification_provider else {'success': False, 'error': 'led provider unavailable'})
+        elif path == '/api/v1/system/software':
+            self._send_json(software_provider.handle('status', {}) if software_provider else {'success': False, 'error': 'software provider unavailable'})
         elif path == '/api/v1/system/flashlight':
             # Read-only state (toggle/off go through the authenticated RPC).
             if flashlight_provider is not None:
@@ -1358,11 +1646,505 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
         "OrientationSet": lambda app_id, params: [app_id, params.get("mode", "")],
     }
 
+    def _graphics_diagnostics(self):
+        """Read-only, layered graphics truth.  No single green GPU badge.
+
+        Every field is derived from a real file/process/package; absent data is
+        reported as null/unavailable, never as zero or success.
+        """
+        import glob as _glob
+        import hashlib
+        import subprocess as _sp
+
+        def read(path, limit=65536):
+            try:
+                with open(path, "rb") as fh:
+                    return fh.read(limit).decode("utf-8", "replace").strip()
+            except OSError:
+                return None
+
+        def sha(path):
+            try:
+                h = hashlib.sha256()
+                with open(path, "rb") as fh:
+                    for chunk in iter(lambda: fh.read(1048576), b""):
+                        h.update(chunk)
+                return h.hexdigest()
+            except OSError:
+                return None
+
+        def run(argv, timeout=4):
+            try:
+                r = _sp.run(argv, capture_output=True, text=True, timeout=timeout)
+                return (r.stdout or "").strip() or (r.stderr or "").strip()
+            except (OSError, _sp.TimeoutExpired):
+                return None
+
+        # ---- files/devices
+        dev_mali = os.path.exists("/dev/mali0")
+        dev_udmabuf = os.path.exists("/dev/udmabuf")
+        dev_dri = os.path.isdir("/dev/dri")
+        fb_virtual = read("/sys/class/graphics/fb0/virtual_size")
+        fb_stride = read("/sys/class/graphics/fb0/stride")
+        fb_owner = read("/var/lib/nuxel/fb-owner")
+        fallback_marker = os.path.exists("/run/nuxel-gpu-fallback")
+
+        # ---- compositor: an actual context, not just an open fd
+        phoc = {}
+        pid = run(["/usr/bin/pgrep", "-n", "-x", "phoc"])
+        if pid and pid.isdigit():
+            pidn = int(pid)
+            fds = []
+            try:
+                for f in os.listdir("/proc/%d/fd" % pidn):
+                    try:
+                        fds.append(os.readlink("/proc/%d/fd/%s" % (pidn, f)))
+                    except OSError:
+                        continue
+            except OSError:
+                pass
+            phoc = {
+                "pid": pidn,
+                "mali_fds": sum(1 for x in fds if "mali0" in x),
+                "udmabuf_fds": sum(1 for x in fds if "udmabuf" in x),
+                "cmdline": read("/proc/%d/cmdline" % pidn, 4096),
+                "renderer": "mali-kbase" if any("mali0" in x for x in fds) else "unknown",
+            }
+            env = read("/proc/%d/environ" % pidn, 65536) or ""
+            phoc["wlr_renderer"] = None
+            phoc["mesa_kbase_node"] = None
+            for item in env.split("\0"):
+                if item.startswith("WLR_RENDERER="):
+                    phoc["wlr_renderer"] = item.split("=", 1)[1]
+                elif item.startswith("MESA_KBASE_NODE="):
+                    phoc["mesa_kbase_node"] = item.split("=", 1)[1]
+        # kbase context table (debugfs; only readable by root, bounded read)
+        kbase_ctx = None
+        try:
+            text = read("/sys/kernel/debug/mali/gpu_memory", 262144)
+            if text:
+                kbase_ctx = "phoc" in text
+        except OSError:
+            kbase_ctx = None
+
+        # ---- EGL libraries
+        egl_link = os.path.realpath("/usr/lib64/libEGL_mesa.so.0")
+        egl = {
+            "library": egl_link,
+            "sha256": sha(egl_link),
+            "gallium_sha256": sha("/usr/lib64/libgallium_dri.so"),
+            "server_glvnd": os.path.exists("/usr/share/glvnd/egl_vendor.d/50_mesa.json"),
+        }
+        probe_file = "/run/nuxel-graphics-probes.json"
+        probes = None
+        try:
+            with open(probe_file, "r", encoding="utf-8") as fh:
+                probes = json.load(fh)
+        except (OSError, ValueError):
+            probes = None
+
+        # ---- WebKit / GTK runtime (installed package truth)
+        pkgs = {}
+        for name in ("webkit2gtk4.1", "gtk3", "gtk4", "mesa-libEGL", "mesa-libGLES"):
+            out = run(["/usr/bin/rpm", "-q", name])
+            pkgs[name] = out if out and not out.startswith("package ") else None
+        webkit_processes = run(["/usr/bin/pgrep", "-af", "WebKitWebProcess"]) or ""
+        webkit_env = None
+        for line in webkit_processes.splitlines():
+            try:
+                wpid = int(line.split()[0])
+            except (ValueError, IndexError):
+                continue
+            env = read("/proc/%d/environ" % wpid, 65536) or ""
+            webkit_env = {}
+            for item in env.split("\0"):
+                if "=" in item:
+                    k, v = item.split("=", 1)
+                    if k in ("WEBKIT_DISABLE_COMPOSITING_MODE", "WEBKIT_FORCE_COMPOSITING_MODE",
+                             "LIBGL_ALWAYS_SOFTWARE", "MESA_KBASE_NODE", "NUXEL_KBASE_WSI"):
+                        webkit_env[k] = v
+            break
+
+        # ---- bridge/panel counters from its current status line
+        bridge_text = read("/run/nuxel-wl-fb.state", 8192)
+        if not bridge_text:
+            bridge_text = run(["/usr/bin/journalctl", "-u", "nuxel-wl-fb", "-b", "--no-pager", "-n", "1"], 5)
+        frames_ok = bool(bridge_text and "FRAMES_OK" in bridge_text)
+        pan_failed = None
+        if bridge_text:
+            import re as _re
+            m = _re.search(r"decon_pan_failed=(\d+)", bridge_text)
+            if m:
+                pan_failed = int(m.group(1))
+
+        return {
+            "success": True,
+            "source": "nuxel-bridge:graphics-diagnostics",
+            "timestamp": time.time(),
+            "gpu": {
+                "hardware": "Mali-G76 MP12" if dev_mali else None,
+                "kernel_driver": "mali_kbase" if dev_mali else None,
+                "device_present": dev_mali,
+                "device_opened_by_compositor": bool(phoc.get("mali_fds")),
+                "context_owner": "phoc" if kbase_ctx else (None if kbase_ctx is None else "not-found"),
+                "dri_render_node": dev_dri,
+                "dri_expected_absent": not dev_dri,
+            },
+            "compositor": {
+                "pid": phoc.get("pid"),
+                "renderer": phoc.get("renderer"),
+                "wlr_renderer": phoc.get("wlr_renderer"),
+                "mali_fds": phoc.get("mali_fds", 0),
+                "udmabuf_fds": phoc.get("udmabuf_fds", 0),
+                "fallback_marker": fallback_marker,
+            },
+            "egl": egl,
+            "webkitgtk": {
+                "packages": pkgs,
+                "process_running": bool(webkit_processes),
+                "compositing_env": webkit_env,
+                "dma_buf_backing_store": None,
+                "status": "SOFTWARE_FALLBACK" if (webkit_env or {}).get("WEBKIT_DISABLE_COMPOSITING_MODE") == "1" else "UNKNOWN",
+            },
+            "gtk3": {"package": pkgs.get("gtk3"), "gl_test": None,
+                      "note": "GTK3 WebKit host is independent of GSK_RENDERER"},
+            "gtk4": {"package": pkgs.get("gtk4"), "gsk_renderer": None,
+                      "note": "GTK4 GSK is not a WebKit or GTK3 signal"},
+            "buffer_sharing": {
+                "udmabuf_device": dev_udmabuf,
+                "udmabuf_proven": None,
+                "linux_dmabuf_global": None,
+            },
+            "display": {
+                "fb_virtual_size": fb_virtual,
+                "fb_stride": fb_stride,
+                "single_owner_record": fb_owner,
+                "frames_ok": frames_ok,
+                "decon_pan_failed": pan_failed,
+            },
+            "probes": probes,
+            "blocked_reason": (
+                "WebKit acceleration is not enabled: the Phoc kbase session does not "
+                "advertise linux-dmabuf, so the GTK UI process cannot share accelerated "
+                "WebKit backing-store buffers with the compositor."
+                if not fallback_marker and (webkit_env or {}).get("WEBKIT_DISABLE_COMPOSITING_MODE") == "1"
+                else None
+            ),
+        }
+
+    def _graphics_status(self):
+        """Fast, structured status for the Displays > Graphics Acceleration card.
+
+        This is deliberately separate from display.status (external Type-C/DRM
+        connector discovery) and from the expensive graphics-probe path.  A
+        missing subcomponent is reported as null/UNKNOWN; it never suppresses
+        the other layers, and it never claims whole-GUI acceleration.
+        """
+        doc = self._graphics_diagnostics()
+        if not isinstance(doc, dict) or doc.get("success") is False:
+            return doc
+        g = doc.get("gpu") or {}
+        c = doc.get("compositor") or {}
+        e = doc.get("egl") or {}
+        w = doc.get("webkitgtk") or {}
+        d = doc.get("display") or {}
+        b = doc.get("buffer_sharing") or {}
+        probes = doc.get("probes") or {}
+
+        def probe_text(kind):
+            item = probes.get(kind) if isinstance(probes, dict) else None
+            if not isinstance(item, dict):
+                return None
+            return (item.get("stdout") or "") + "\n" + (item.get("stderr") or "")
+
+        def first_match(text, patterns):
+            if not text:
+                return None
+            import re as _re
+            for pat in patterns:
+                m = _re.search(pat, text, _re.I | _re.M)
+                if m:
+                    return (m.group(1) or "").strip() or None
+            return None
+
+        wayland_text = probe_text("wayland")
+        surfaceless_text = probe_text("surfaceless")
+        combined = "\n".join(x for x in (wayland_text, surfaceless_text) if x)
+        gles_renderer = first_match(combined, [r"GL_RENDERER\s*[:=]\s*([^\n]+)",
+                                               r"renderer\s*[:=]\s*([^\n]+)"])
+        gles_version = first_match(combined, [r"GL_VERSION\s*[:=]\s*([^\n]+)",
+                                              r"GLES(?:2|3)?\s*[:=]\s*([^\n]+)"])
+        egl_vendor = first_match(combined, [r"EGL_VENDOR\s*[:=]\s*([^\n]+)",
+                                            r"vendor\s*[:=]\s*([^\n]+)"])
+        egl_version = first_match(combined, [r"EGL_VERSION\s*[:=]\s*([^\n]+)"])
+        egl_init = None
+        if wayland_text is not None:
+            egl_init = "ok" if first_match(wayland_text, [r"EGL_INIT\s*[:=]\s*ok"]) or                 first_match(wayland_text, [r"initialized\s*[:=]\s*(?:yes|true|ok)"]) else "failed"
+        elif surfaceless_text is not None:
+            egl_init = "ok" if first_match(surfaceless_text, [r"EGL_INIT\s*[:=]\s*ok"]) or                 first_match(surfaceless_text, [r"initialized\s*[:=]\s*(?:yes|true|ok)"]) else "failed"
+
+        phoc_accel = bool(c.get("mali_fds")) and not c.get("fallback_marker")
+        webkit_status = w.get("status") or "UNKNOWN"
+        webkit_accel = webkit_status == "ACCELERATED"
+        webkit_software = webkit_status == "SOFTWARE_FALLBACK"
+        if c.get("fallback_marker"):
+            verdict = "SOFTWARE"
+        elif phoc_accel and webkit_accel:
+            verdict = "ACCELERATED"
+        elif phoc_accel and webkit_software:
+            verdict = "PARTIAL"
+        elif phoc_accel:
+            verdict = "PARTIAL" if webkit_status == "UNKNOWN" else "PARTIAL"
+        else:
+            verdict = "UNKNOWN"
+
+        # GTK GL is a separate runtime from Phoc/kbase.  The pwa-host logs an
+        # explicit line when GTK falls back; use it when present, and otherwise
+        # keep NOT_MEASURED rather than inferring success.
+        gtk_status = "NOT_MEASURED"
+        gtk_detail = "GTK GL is independent of the Phoc kbase context; no bounded GTK probe was run"
+        try:
+            gtk_log = subprocess.run(
+                ["/usr/bin/journalctl", "-b", "-u", "nuxel-wayland", "--no-pager", "-n", "200"],
+                capture_output=True, text=True, timeout=3)
+            text = ((gtk_log.stdout or "") + (gtk_log.stderr or ""))
+            if "GTK failed to initialize GL" in text or "No GL implementation is available" in text:
+                gtk_status = "UNAVAILABLE"
+                gtk_detail = ("GTK3 host failed to initialize GL: No GL implementation is available; "
+                              "the pwa-host warning is present in this boot's journal")
+        except (OSError, subprocess.TimeoutExpired):
+            pass
+
+        return {
+            "success": True,
+            "schema": "nuxel.graphics-status/1",
+            "source": "nuxel-bridge:graphics-status",
+            "timestamp": time.time(),
+            "verdict": verdict,
+            "acceleration_label": "ACCELERATED" if verdict == "ACCELERATED" else (
+                "PARTIAL" if verdict == "PARTIAL" else verdict),
+            "gpu": {
+                "hardware": g.get("hardware"),
+                "kernel_driver": g.get("kernel_driver"),
+                "device_present": g.get("device_present"),
+                "device_node": "/dev/mali0" if g.get("device_present") else None,
+                "context_owner": g.get("context_owner"),
+                "context_opened_by_compositor": g.get("device_opened_by_compositor"),
+                "dri_render_node": g.get("dri_render_node"),
+            },
+            "phoc": {
+                "pid": c.get("pid"),
+                "renderer": c.get("renderer"),
+                "wlr_renderer": c.get("wlr_renderer"),
+                "mali_fds": c.get("mali_fds", 0),
+                "udmabuf_fds": c.get("udmabuf_fds", 0),
+                "fallback_marker": c.get("fallback_marker"),
+                "accelerated": phoc_accel,
+            },
+            "egl": {
+                "library": e.get("library"),
+                "sha256": e.get("sha256"),
+                "vendor": egl_vendor,
+                "version": egl_version,
+                "init": egl_init,
+                "gles_renderer": gles_renderer,
+                "gles_version": gles_version,
+                "probe_wayland": wayland_text is not None,
+                "probe_surfaceless": surfaceless_text is not None,
+            },
+            "gtk_gl": {
+                "status": gtk_status,
+                "gtk3": (doc.get("gtk3") or {}).get("package"),
+                "gtk4": (doc.get("gtk4") or {}).get("package"),
+                "gsk_renderer": (doc.get("gtk4") or {}).get("gsk_renderer"),
+                "detail": gtk_detail,
+            },
+            "webkitgtk": {
+                "process_running": w.get("process_running"),
+                "status": webkit_status,
+                "accelerated": webkit_accel,
+                "compositing_env": w.get("compositing_env"),
+                "detail": doc.get("blocked_reason"),
+            },
+            "dmabuf": {
+                "udmabuf_device": b.get("udmabuf_device"),
+                "udmabuf_proven": b.get("udmabuf_proven"),
+                "linux_dmabuf_global": b.get("linux_dmabuf_global"),
+                "status": "device_present_import_not_proven" if b.get("udmabuf_device") else "absent",
+            },
+            "display_bridge": {
+                "process": "nuxel-wl-fb",
+                "fb_virtual_size": d.get("fb_virtual_size"),
+                "fb_stride": d.get("fb_stride"),
+                "frames_ok": d.get("frames_ok"),
+                "decon_pan_failed": d.get("decon_pan_failed"),
+                "path": "screencopy -> nuxel-wl-fb -> fbdev/DECON",
+                "cpu_copy": True,
+            },
+            "fbdev_drm": {
+                "fb0": os.path.exists("/dev/fb0"),
+                "drm_render_node": os.path.isdir("/dev/dri"),
+                "active_path": "fbdev/DECON",
+            },
+            "probes": probes,
+            "blocked_reason": doc.get("blocked_reason"),
+            "honest_summary": (
+                "Phoc compositor is kbase-accelerated; WebKitGTK remains software "
+                "(no linux-dmabuf path) and nuxel-wl-fb performs a CPU copy into "
+                "fbdev/DECON. The GUI is PARTIAL, not fully accelerated."
+                if verdict == "PARTIAL" and webkit_software else
+                ("No live accelerated GUI path is proved." if verdict != "ACCELERATED"
+                 else "Every measured GUI layer is accelerated.")
+            ),
+        }
+
     def _handle_rpc(self, app_id, body):
         """Dispatch a generic bridge RPC (namespace/verb/params)."""
         namespace = body.get('namespace', '')
         verb = body.get('verb', '')
         params = body.get('params', {}) or {}
+        # PWNAGE-50000: driver-status diagnostics for Settings.  These are
+        # read-only allowlisted tools; the bridge never accepts a path or a
+        # command from the caller.  JSON status is passed through verbatim so
+        # the UI can show the real first failing stage.
+        if namespace == 'graphics' and verb in ('status', 'get'):
+            return self._graphics_status()
+        if namespace == 'graphics' and verb == 'test':
+            # Bounded, explicit test only.  Default to the Wayland probe in the
+            # same Phoc session; never run this on a passive refresh.  It is a
+            # resource-using action, so only the owner surfaces may request it.
+            if app_id not in ('nuxel-settings', 'org.nuxel.Home', 'org.nuxel.Nuxtore', 'org.nuxel.NuxTore'):
+                return {'success': False, 'error': 'capability_denied',
+                        'detail': 'graphics.test is limited to the local owner surfaces'}
+            kind = str((params or {}).get('kind', 'wayland'))
+            bins = {
+                'surfaceless': '/usr/local/bin/nuxel-kbase-egl-probe',
+                'wayland': '/usr/local/bin/nuxel-wayland-egl-probe',
+            }
+            exe = bins.get(kind)
+            if not exe:
+                return {'success': False, 'error': 'unknown_test_kind', 'kind': kind}
+            if not os.path.exists(exe):
+                return {'success': False, 'error': 'probe_not_installed', 'kind': kind, 'path': exe}
+            env = dict(os.environ)
+            env.update({
+                'XDG_RUNTIME_DIR': '/run/nuxel-wayland',
+                'WAYLAND_DISPLAY': 'wayland-0',
+                'MESA_KBASE_NODE': '/dev/mali0',
+                'MESA_LOADER_DRIVER_OVERRIDE': 'panfrost',
+                'LIBGL_DRIVERS_PATH': '/usr/lib64/dri',
+            })
+            started = time.time()
+            try:
+                proc = subprocess.run([exe, '1'], capture_output=True, text=True,
+                                      timeout=20, env=env)
+                doc = {
+                    'kind': kind,
+                    'exit_code': proc.returncode,
+                    'stdout': (proc.stdout or '')[-12000:],
+                    'stderr': (proc.stderr or '')[-12000:],
+                    'timestamp': time.time(),
+                    'elapsed_s': round(time.time() - started, 2),
+                    'success': proc.returncode == 0,
+                }
+            except (OSError, subprocess.TimeoutExpired) as exc:
+                doc = {'kind': kind, 'success': False, 'error': 'probe_timeout_or_failed',
+                       'detail': str(exc), 'elapsed_s': round(time.time() - started, 2),
+                       'timestamp': time.time()}
+            return doc
+        if namespace == 'system' and verb == 'diagnostics':
+            kind = str((params or {}).get('kind', 'sensors'))
+            if kind == 'graphics':
+                return self._graphics_diagnostics()
+            tools = {
+                'modem': '/usr/local/bin/nuxel-modem-diag.sh',
+                'camera': '/usr/local/bin/nuxel-camera-diag.sh',
+                'sensors': '/usr/local/bin/nuxel-sensors-diag.sh',
+                'nfc': '/usr/local/bin/nuxel-nfc-diag.sh',
+                'gnss': '/usr/local/bin/nuxel-gnss-diag.sh',
+            }
+            tool = tools.get(kind)
+            if not tool:
+                return {'success': False, 'error': 'unknown_diagnostic', 'kind': kind}
+            try:
+                proc = subprocess.run([tool, 'status', '--json'], capture_output=True,
+                                      text=True, timeout=25)
+                if proc.returncode != 0:
+                    return {'success': False, 'error': 'diagnostic_failed',
+                            'kind': kind, 'rc': proc.returncode,
+                            'detail': (proc.stderr or proc.stdout or '')[-1200:]}
+                doc = json.loads(proc.stdout or '{}')
+                if isinstance(doc, dict):
+                    doc.setdefault('success', True)
+                    doc['kind'] = kind
+                return doc
+            except (OSError, subprocess.TimeoutExpired, ValueError) as exc:
+                return {'success': False, 'error': 'diagnostic_unavailable',
+                        'kind': kind, 'detail': str(exc)}
+        if namespace == 'system' and verb == 'graphics-probe':
+            kind = str((params or {}).get('kind', 'surfaceless'))
+            bins = {
+                'surfaceless': '/usr/local/bin/nuxel-kbase-egl-probe',
+                'wayland': '/usr/local/bin/nuxel-wayland-egl-probe',
+            }
+            exe = bins.get(kind)
+            if not exe:
+                return {'success': False, 'error': 'unknown_probe', 'kind': kind}
+            if not os.path.exists(exe):
+                return {'success': False, 'error': 'probe_not_installed', 'kind': kind, 'path': exe}
+            env = dict(os.environ)
+            env.update({
+                'XDG_RUNTIME_DIR': '/run/nuxel-wayland',
+                'WAYLAND_DISPLAY': 'wayland-0',
+                'MESA_KBASE_NODE': '/dev/mali0',
+                'MESA_LOADER_DRIVER_OVERRIDE': 'panfrost',
+                'LIBGL_DRIVERS_PATH': '/usr/lib64/dri',
+            })
+            try:
+                proc = subprocess.run([exe, '1'], capture_output=True, text=True,
+                                      timeout=20, env=env)
+                doc = {
+                    'kind': kind,
+                    'exit_code': proc.returncode,
+                    'stdout': (proc.stdout or '')[-12000:],
+                    'stderr': (proc.stderr or '')[-12000:],
+                    'timestamp': time.time(),
+                    'success': proc.returncode == 0,
+                }
+            except (OSError, subprocess.TimeoutExpired) as exc:
+                doc = {'kind': kind, 'success': False, 'error': 'probe_timeout_or_failed',
+                       'detail': str(exc), 'timestamp': time.time()}
+            try:
+                path = '/run/nuxel-graphics-probes.json'
+                merged = {}
+                try:
+                    with open(path, 'r', encoding='utf-8') as fh:
+                        merged = json.load(fh) or {}
+                except (OSError, ValueError):
+                    merged = {}
+                merged[kind] = doc
+                tmp = path + '.tmp'
+                with open(tmp, 'w', encoding='utf-8') as fh:
+                    json.dump(merged, fh, indent=2)
+                os.replace(tmp, path)
+            except OSError:
+                pass
+            return doc
+        if namespace == 'system' and verb == 'sensor-read':
+            # Bounded raw sensor read.  Values are only what the kernel exposes.
+            cls = str((params or {}).get('class', 'accelerometer'))
+            if cls not in ('accelerometer', 'gyroscope', 'magnetometer', 'proximity',
+                           'ambient_light', 'barometer', 'heart_rate', 'grip', 'hall'):
+                return {'success': False, 'error': 'invalid_sensor_class'}
+            try:
+                proc = subprocess.run(['/usr/local/bin/nuxel-sensors-diag.sh', 'read', cls],
+                                      capture_output=True, text=True, timeout=15)
+                return {'success': proc.returncode == 0, 'class': cls,
+                        'output': (proc.stdout or '') + (proc.stderr or ''),
+                        'raw_only': True}
+            except (OSError, subprocess.TimeoutExpired) as exc:
+                return {'success': False, 'error': 'sensor_read_unavailable',
+                        'class': cls, 'detail': str(exc)}
         # PWA persistence is served in-process from the root-owned store.  The
         # sandboxed D-Bus bridge has no storage/caldav/contacts implementation,
         # and routing these verbs to it made every calendar/notes/files save
@@ -1417,6 +2199,29 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
         # Privileged hardware control.  These verbs are handled in this root
         # process (never forwarded to the sandboxed D-Bus bridge) because they
         # read /dev/snd or write /sys/class/rfkill.
+        if namespace in ('dnd', 'nfc', 'fingerprint', 'biometrics',
+                         'security', 'led-notification', 'apps', 'software', 'privacy'):
+            mod = {'dnd': dnd_provider, 'nfc': nfc_provider,
+                   'fingerprint': fingerprint_provider, 'biometrics': fingerprint_provider,
+                   'security': security_provider,
+                   'led-notification': led_notification_provider,
+                   'apps': app_manager, 'software': software_provider,
+                   'privacy': privacy_provider}.get(namespace)
+            if mod is None:
+                return {'success': False, 'error': namespace + ' provider unavailable',
+                        'error_code': 'PROVIDER_UNAVAILABLE'}
+            # Mutating lifecycle/lock verbs are restricted to the two local
+            # owner surfaces.  Read-only status stays available to all local apps.
+            _owner_ok = app_id in ("org.nuxel.Nuxtore", "org.nuxel.NuxTore", "org.nuxel.Home", "nuxel-settings")
+            if not _owner_ok and ((namespace == "apps" and verb in ("register", "unregister", "install", "remove")) or
+                                  (namespace == "security" and verb in ("set-mode", "set-credential", "set-pin", "set-pattern", "lock", "unlock"))):
+                return {"success": False, "error": "capability_denied",
+                        "detail": "this app may not mutate the app registry or device lock"}
+            try:
+                return mod.handle(verb, params)
+            except Exception as exc:  # noqa: BLE001
+                logger.warning('%s RPC %s failed: %s', namespace, verb, exc)
+                return {'success': False, 'error': str(exc), 'error_code': 'PROVIDER_ERROR'}
         if namespace == 'audio':
             if hw_providers is None:
                 return {'success': False, 'error': 'audio provider unavailable'}
@@ -1798,11 +2603,34 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
             result, code = self._activate_app(target, requester, body.get('source') or 'launcher')
             self._send_json(result, code)
 
+        elif path == '/api/v1/apps/open-media':
+            target = body.get('app_id') or ''
+            media_path = body.get('path') or ''
+            if target not in ('org.videolan.VLC', 'org.nuxel.MediaPlayer'):
+                self._send_json({'success': False, 'error': 'app_not_media_capable'}, 400)
+                return
+            try:
+                media = self._app_store().storage_media_file(media_path)
+            except Exception as exc:  # StoreError and path violations
+                self._send_json({'success': False, 'error': 'invalid_media_path',
+                                 'detail': str(exc)}, 400)
+                return
+            result, code = self._exec_native_app(target, [str(media)])
+            self._send_json(result, code)
+
         elif path == '/api/v1/apps/exec':
             # Launch a native app from the fixed allowlist / canonical registry.
             target = body.get('target') or body.get('app_target')
             result, code = self._exec_native_app(target)
             self._send_json(result, code)
+
+        elif path in ('/api/v1/apps/register', '/api/v1/apps/unregister',
+                      '/api/v1/apps/inventory'):
+            if app_manager is None:
+                self._send_json({'success': False, 'error': 'app manager unavailable'}, 503)
+                return
+            verb = path.rsplit('/', 1)[-1]
+            self._send_json(app_manager.handle(verb, body))
 
         elif path == '/api/v1/apps/home':
             # Authoritative Penguin Home: minimize native windows, never kill.
@@ -1817,6 +2645,10 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
         elif path == '/api/v1/apps/back':
             # Short Back: in-app navigation first; only at root may Home follow.
             result, code = self._native_back_action()
+            self._send_json(result, code)
+
+        elif path == '/api/v1/windows/list':
+            result, code = self._list_toplevels()
             self._send_json(result, code)
 
         elif path == '/api/v1/windows/activate':

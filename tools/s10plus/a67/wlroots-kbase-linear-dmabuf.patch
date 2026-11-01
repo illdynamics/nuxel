@@ -1,0 +1,207 @@
+diff --git a/include/wlr/types/wlr_linux_dmabuf_v1.h b/include/wlr/types/wlr_linux_dmabuf_v1.h
+index 2193f91..2ee1b85 100644
+--- a/include/wlr/types/wlr_linux_dmabuf_v1.h
++++ b/include/wlr/types/wlr_linux_dmabuf_v1.h
+@@ -86,6 +86,11 @@ struct wlr_linux_dmabuf_v1 *wlr_linux_dmabuf_v1_create(struct wl_display *displa
+ struct wlr_linux_dmabuf_v1 *wlr_linux_dmabuf_v1_create_with_renderer(struct wl_display *display,
+ 	uint32_t version, struct wlr_renderer *renderer);
+ 
++/* Explicit format table for devices (kbase) with no DRM feedback device. */
++struct wlr_linux_dmabuf_v1 *wlr_linux_dmabuf_v1_create_with_formats(
++	struct wl_display *display, uint32_t version,
++	const struct wlr_drm_format_set *formats);
++
+ /**
+  * Set the dmabuf import check callback
+  *
+diff --git a/render/egl.c b/render/egl.c
+index 6f3e9c8..286d3f5 100644
+--- a/render/egl.c
++++ b/render/egl.c
+@@ -300,17 +300,23 @@ static bool egl_init_display(struct wlr_egl *egl, EGLDisplay display,
+ 	if (egl->exts.EXT_device_query) {
+ 		EGLAttrib device_attrib;
+ 		if (!egl->procs.eglQueryDisplayAttribEXT(egl->display,
+-				EGL_DEVICE_EXT, &device_attrib)) {
+-			wlr_log(WLR_ERROR, "eglQueryDisplayAttribEXT(EGL_DEVICE_EXT) failed");
+-			return false;
+-		}
+-		egl->device = (EGLDeviceEXT)device_attrib;
+-
+-		device_exts_str =
+-			egl->procs.eglQueryDeviceStringEXT(egl->device, EGL_EXTENSIONS);
+-		if (device_exts_str == NULL) {
+-			wlr_log(WLR_ERROR, "eglQueryDeviceStringEXT(EGL_EXTENSIONS) failed");
+-			return false;
++				EGL_DEVICE_EXT, &device_attrib) ||
++				(EGLDeviceEXT)device_attrib == EGL_NO_DEVICE_EXT) {
++			if (getenv("MESA_KBASE_NODE") == NULL) {
++				wlr_log(WLR_ERROR, "eglQueryDisplayAttribEXT(EGL_DEVICE_EXT) failed");
++				return false;
++			}
++			wlr_log(WLR_INFO, "No EGL device (kbase); continuing without DRM identity");
++			egl->device = EGL_NO_DEVICE_EXT;
++			device_exts_str = "";
++		} else {
++			egl->device = (EGLDeviceEXT)device_attrib;
++			device_exts_str =
++				egl->procs.eglQueryDeviceStringEXT(egl->device, EGL_EXTENSIONS);
++			if (device_exts_str == NULL) {
++				wlr_log(WLR_ERROR, "eglQueryDeviceStringEXT(EGL_EXTENSIONS) failed");
++				return false;
++			}
+ 		}
+ 
+ #ifdef EGL_DRIVER_NAME_EXT
+@@ -582,6 +588,15 @@ struct wlr_egl *wlr_egl_create_with_drm_fd(int drm_fd) {
+ 		wlr_log(WLR_DEBUG, "EXT_platform_device not supported");
+ 	}
+ 
++	/* Nuxel: kbase has no DRM node.  Mesa panfrost can still bring up a
++	 * surfaceless EGL display on /dev/mali0; MESA_KBASE_NODE gates it. */
++	if (drm_fd < 0 && getenv("MESA_KBASE_NODE") != NULL) {
++		if (egl_init(egl, EGL_PLATFORM_SURFACELESS_MESA, EGL_DEFAULT_DISPLAY, allow_software)) {
++			wlr_log(WLR_DEBUG, "Using EGL_PLATFORM_SURFACELESS_MESA (kbase)");
++			return egl;
++		}
++	}
++
+ 	if (egl->exts.KHR_platform_gbm && drm_fd >= 0) {
+ 		int gbm_fd = open_render_node(drm_fd);
+ 		if (gbm_fd < 0) {
+diff --git a/render/wlr_renderer.c b/render/wlr_renderer.c
+index e65314c..e28cca4 100644
+--- a/render/wlr_renderer.c
++++ b/render/wlr_renderer.c
+@@ -84,10 +84,19 @@ bool wlr_renderer_init_wl_display(struct wlr_renderer *r,
+ 		return false;
+ 	}
+ 
+-	if (wlr_renderer_get_texture_formats(r, WLR_BUFFER_CAP_DMABUF) != NULL &&
+-			wlr_renderer_get_drm_fd(r) >= 0 &&
+-			wlr_linux_dmabuf_v1_create_with_renderer(wl_display, 4, r) == NULL) {
+-		return false;
++	const struct wlr_drm_format_set *dmabuf_formats =
++		wlr_renderer_get_texture_formats(r, WLR_BUFFER_CAP_DMABUF);
++	int drm_fd = wlr_renderer_get_drm_fd(r);
++	if (dmabuf_formats != NULL && getenv("MESA_KBASE_NODE") != NULL) {
++		if (wlr_linux_dmabuf_v1_create_with_formats(wl_display, 3,
++				dmabuf_formats) == NULL) {
++			return false;
++		}
++		wlr_log(WLR_INFO, "kbase Wayland linux-dmabuf global ready");
++	} else if (dmabuf_formats != NULL && drm_fd >= 0) {
++		if (wlr_linux_dmabuf_v1_create_with_renderer(wl_display, 4, r) == NULL) {
++			return false;
++		}
+ 	}
+ 
+ 	return true;
+@@ -232,9 +241,13 @@ static struct wlr_renderer *renderer_autocreate(struct wlr_backend *backend, int
+ 	bool own_drm_fd = false;
+ 
+ 	if ((is_auto && WLR_HAS_GLES2_RENDERER) || strcmp(renderer_name, "gles2") == 0) {
+-		if (!open_preferred_drm_fd(backend, &drm_fd, &own_drm_fd)) {
++		bool kbase = getenv("MESA_KBASE_NODE") != NULL;
++		if (!open_preferred_drm_fd(backend, &drm_fd, &own_drm_fd) && !kbase) {
+ 			log_creation_failure(is_auto, "Cannot create GLES2 renderer: no DRM FD available");
+ 		} else {
++			if (kbase && drm_fd < 0) {
++				wlr_log(WLR_INFO, "No DRM FD; using Mesa kbase surfaceless GLES2");
++			}
+ #if WLR_HAS_GLES2_RENDERER
+ 			renderer = wlr_gles2_renderer_create_with_drm_fd(drm_fd);
+ #else
+diff --git a/types/wlr_linux_dmabuf_v1.c b/types/wlr_linux_dmabuf_v1.c
+index 3165e88..d1d0177 100644
+--- a/types/wlr_linux_dmabuf_v1.c
++++ b/types/wlr_linux_dmabuf_v1.c
+@@ -991,6 +991,70 @@ error_linux_dmabuf:
+ 	return NULL;
+ }
+ 
++/* kbase has no DRM device to describe in dma-buf feedback, but the GLES2
++ * renderer can still import dma-bufs.  v3 carries the format table in the
++ * legacy format/modifier events, which is exactly what a client needs. */
++struct wlr_linux_dmabuf_v1 *wlr_linux_dmabuf_v1_create_with_formats(
++		struct wl_display *display, uint32_t version,
++		const struct wlr_drm_format_set *formats) {
++	struct wlr_linux_dmabuf_v1 *linux_dmabuf =
++		calloc(1, sizeof(*linux_dmabuf));
++	if (linux_dmabuf == NULL) {
++		wlr_log(WLR_ERROR, "could not create kbase dmabuf manager");
++		return NULL;
++	}
++	linux_dmabuf->main_device_fd = -1;
++	wl_list_init(&linux_dmabuf->surfaces);
++	wl_signal_init(&linux_dmabuf->events.destroy);
++
++	linux_dmabuf->global = wl_global_create(display,
++		&zwp_linux_dmabuf_v1_interface, version, linux_dmabuf,
++		linux_dmabuf_bind);
++	if (linux_dmabuf->global == NULL) {
++		wlr_log(WLR_ERROR, "could not create linux dmabuf v1 wl global");
++		free(linux_dmabuf);
++		return NULL;
++	}
++
++	/* Nuxel: /dev/mali0 has no DRM render node and the kbase BO path
++	 * exports ONLY linear, page-backed udmabuf memory.  Advertising the
++	 * renderer's ARM tiled/SPARSE modifiers here made Mesa select e.g.
++	 * AB24 + 0x0800000000000062 for a buffer that is physically linear,
++	 * so the compositor's import either failed or blocked forever.
++	 * Advertise only pairs we can actually allocate and import. */
++	struct wlr_drm_format_set linear_formats = {0};
++	for (size_t i = 0; i < formats->len; i++) {
++		const struct wlr_drm_format *fmt = &formats->formats[i];
++		if (!wlr_drm_format_set_has(formats, fmt->format,
++				DRM_FORMAT_MOD_LINEAR)) {
++			continue;
++		}
++		if (!wlr_drm_format_set_add(&linear_formats, fmt->format,
++				DRM_FORMAT_MOD_LINEAR)) {
++			wlr_drm_format_set_finish(&linear_formats);
++			wl_global_destroy(linux_dmabuf->global);
++			free(linux_dmabuf);
++			return NULL;
++		}
++	}
++	if (linear_formats.len == 0) {
++		wlr_log(WLR_ERROR, "kbase dmabuf: no linear RGB formats from renderer");
++		wl_global_destroy(linux_dmabuf->global);
++		free(linux_dmabuf);
++		return NULL;
++	}
++	linux_dmabuf->default_formats = linear_formats;
++	wlr_log(WLR_INFO, "kbase dmabuf: %zu linear formats advertised", linear_formats.len);
++
++	linux_dmabuf->display_destroy.notify = handle_display_destroy;
++	wl_display_add_destroy_listener(display, &linux_dmabuf->display_destroy);
++
++	wlr_linux_dmabuf_v1_set_check_dmabuf_callback(linux_dmabuf,
++		check_import_dmabuf, linux_dmabuf);
++	wlr_buffer_register_resource_interface(&buffer_resource_interface);
++	return linux_dmabuf;
++}
++
+ struct wlr_linux_dmabuf_v1 *wlr_linux_dmabuf_v1_create_with_renderer(struct wl_display *display,
+ 		uint32_t version, struct wlr_renderer *renderer) {
+ 	const struct wlr_linux_dmabuf_feedback_v1_init_options options = {
+@@ -998,6 +1062,17 @@ struct wlr_linux_dmabuf_v1 *wlr_linux_dmabuf_v1_create_with_renderer(struct wl_d
+ 	};
+ 	struct wlr_linux_dmabuf_feedback_v1 feedback = {0};
+ 	if (!wlr_linux_dmabuf_feedback_v1_init_with_options(&feedback, &options)) {
++		/* kbase has no DRM device identity, but the renderer's format
++		 * table is still enough for the v3 format/modifier events. */
++		if (getenv("MESA_KBASE_NODE") != NULL) {
++			const struct wlr_drm_format_set *formats =
++				wlr_renderer_get_texture_formats(renderer,
++					WLR_BUFFER_CAP_DMABUF);
++			if (formats != NULL) {
++				return wlr_linux_dmabuf_v1_create_with_formats(
++					display, 3, formats);
++			}
++		}
+ 		return NULL;
+ 	}
+ 	struct wlr_linux_dmabuf_v1 *linux_dmabuf =

@@ -13,10 +13,10 @@ trap cleanup EXIT
 trap 'rm -f "$OUT" "$OUT.sha256"' ERR
 # DNF packages are resolved for Fedora 43/aarch64 by an ARM64 Fedora container.
 # A dependency error must abort, rather than emitting a deceptive bare /etc tree.
-dnf -y install e2fsprogs findutils coreutils file rpm shadow-utils python3 python3-pillow \
+dnf -y install e2fsprogs findutils coreutils file rpm shadow-utils acl python3 python3-pillow \
     gcc make pkgconf-pkg-config kernel-headers \
     wayland-devel wayland-protocols-devel \
-    gtk3-devel webkit2gtk4.1-devel alsa-lib-devel git
+    gtk3-devel webkit2gtk4.1-devel alsa-lib-devel git openssl
 # --- BOTH Fedora 43 aarch64 repositories are REQUIRED (briq-04a) --------------
 # The GA "Everything" repo alone is NOT enough and the failure is not cosmetic:
 #   * `stevia` / `stevia-phosh-osk-provider` (the phosh on-screen keyboard) do
@@ -86,10 +86,12 @@ dnf -y --installroot="$STAGE" --releasever=43 --use-host-config \
     gtk3 webkit2gtk4.1 gtk4 libadwaita glib-networking libproxy \
     pipewire wireplumber pipewire-utils alsa-lib mpg123 mpv \
     polkit nftables upower greetd \
-    iproute procps-ng kmod e2fsprogs \
+    wlr-randr \
+    iproute procps-ng kmod e2fsprogs acl \
     shadow-utils ca-certificates curl \
-    wayvnc wayland-utils xrdp xorgxrdp xorg-x11-server-Xorg \
-    openbox xterm firefox android-tools openssl
+    wayvnc wayland-utils xrdp xorgxrdp xorg-x11-server-Xorg xorg-x11-server-Xwayland wtype \
+    openbox xterm firefox android-tools openssl \
+    gnome-software PackageKit PackageKit-command-not-found lxpolkit xfce-polkit appstream
 # PWNAGE-47000 BOOT SAFETY: Nuxel runs systemd PID 1 and the initramfs live
 # console from a kernel_t context.  The graphical remote-access packages
 # (xrdp/xorgxrdp/tigervnc-selinux) pull in selinux-policy-targeted as a weak
@@ -147,8 +149,10 @@ wayland-scanner private-code \
 
 # A35-patched A34 bridge: frame-by-frame DECON PAN commits, real AMOLED blank,
 # automatic first-frame presentation at boot, and current handoff/colour path.
+# PWNAGE-53000: A67 bridge (adaptive idle capture + NEON 2x blit) is the
+# active source.  The A34 file is kept for history only.
 gcc $CFLAGS_COMMON $(pkg-config --cflags wayland-client) \
-    -o "$B/nuxel-wl-fb" /nuxel/tools/s10plus/a34/nuxel-wl-fb.c \
+    -o "$B/nuxel-wl-fb" /nuxel/tools/s10plus/a67/nuxel-wl-fb.c \
     "$B/wlr-screencopy-unstable-v1-protocol.c" \
     $(pkg-config --libs wayland-client)
 
@@ -177,10 +181,10 @@ gcc $CFLAGS_COMMON $(pkg-config --cflags gtk+-3.0 webkit2gtk-4.1) \
     /nuxel/tools/s10plus/a45/nuxel-pwa-host.c \
     $(pkg-config --libs gtk+-3.0 webkit2gtk-4.1) -lutil
 
-# PWNAGE-43000: persistent nav dock + top status strip + foreign-toplevel
-# controller.  All three are built from the same sources the handset runs.
+# PWNAGE-43000/50000: persistent nav dock + native OSD + foreign-toplevel
+# controller.  All are built from the same sources the handset runs.
 cp -a /nuxel/tools/s10plus/a45 "$B/a45"
-python3 "$B/a45/gen-navdock-art.py"
+NUXEL_NAVDOCK_SKIP_FALLBACK=1 python3 "$B/a45/gen-navdock-art.py"
 wayland-scanner client-header \
     /nuxel/tools/s10plus/a45/wlr-layer-shell-unstable-v1.xml \
     "$B/wlr-layer-shell-unstable-v1-client-protocol.h"
@@ -197,7 +201,39 @@ gcc $CFLAGS_COMMON $(pkg-config --cflags wayland-client cairo pangocairo) \
     -o "$B/nuxel-statusbar" /nuxel/tools/s10plus/a45/nuxel-statusbar.c \
     "$B/wlr-layer-shell-unstable-v1-protocol.c" "$B/xdg-shell-protocol.c" \
     $(pkg-config --libs wayland-client cairo pangocairo)
+# Native OSD survives a fullscreen native toplevel.  Reads the same
+# /usr/share/nuxel/runtime/osd.json the PWA OSD used.
+gcc $CFLAGS_COMMON $(pkg-config --cflags wayland-client cairo pangocairo) \
+    -o "$B/nuxel-osd" /nuxel/tools/s10plus/a45/nuxel-osd.c \
+    "$B/wlr-layer-shell-unstable-v1-protocol.c" "$B/xdg-shell-protocol.c" \
+    $(pkg-config --libs wayland-client cairo pangocairo)
 gcc $CFLAGS_COMMON -o "$B/nuxel-foreign-toplevel" /nuxel/tools/s10plus/a59/nuxel-foreign-toplevel.c -ldl
+
+# PWNAGE-50000 graphics probes.  They are diagnostics only and are built when
+# the image build has the development headers; absence is not a boot failure.
+if pkg-config --exists egl glesv2 wayland-client wayland-egl; then
+  gcc $CFLAGS_COMMON -o "$B/nuxel-wayland-egl-probe" \
+      /nuxel/tools/s10plus/a67/nuxel-wayland-egl-probe.c \
+      $(pkg-config --cflags --libs egl glesv2 wayland-client wayland-egl) || true
+fi
+gcc $CFLAGS_COMMON -o "$B/nuxel-kbase-egl-probe" \
+    /nuxel/tools/s10plus/a67/nuxel-kbase-egl-probe.c \
+    $(pkg-config --cflags --libs egl glesv2) || true
+if pkg-config --exists gtk+-3.0 epoxy; then
+  gcc $CFLAGS_COMMON $(pkg-config --cflags gtk+-3.0 epoxy) \
+      -o "$B/nuxel-gtk3-gl-probe" /nuxel/tools/s10plus/a67/nuxel-gtk3-gl-probe.c \
+      $(pkg-config --libs gtk+-3.0 epoxy) || true
+fi
+if pkg-config --exists gtk4; then
+  gcc $CFLAGS_COMMON $(pkg-config --cflags gtk4) \
+      -o "$B/nuxel-gtk4-gsk-probe" /nuxel/tools/s10plus/a67/nuxel-gtk4-gsk-probe.c \
+      $(pkg-config --libs gtk4) || true
+fi
+if pkg-config --exists gtk+-3.0 webkit2gtk-4.1; then
+  gcc $CFLAGS_COMMON $(pkg-config --cflags gtk+-3.0 webkit2gtk-4.1) \
+      -o "$B/nuxel-webkit-probe" /nuxel/tools/s10plus/a67/nuxel-webkit-probe.c \
+      $(pkg-config --libs gtk+-3.0 webkit2gtk-4.1) || true
+fi
 
 # A34 button manager: SYN_REPORT touch translation, power menu, Bixby cancel.
 gcc $CFLAGS_COMMON $(pkg-config --cflags alsa) -I /nuxel/tools/s10plus/a34 \
@@ -217,13 +253,13 @@ gcc -std=c11 -O2 -Wall -Wextra -Werror -o "$B/nuxel-metricsd" \
 
 for _b in nuxel-wl-fb nuxel-wl-snapshot nuxel-screenshot nuxel-pwa-host \
           nuxel-button-manager libnuxel-libinput-path.so nuxel-metricsd \
-          nuxel-navdock nuxel-statusbar nuxel-foreign-toplevel; do
+          nuxel-navdock nuxel-statusbar nuxel-osd nuxel-foreign-toplevel; do
   file "$B/$_b" | grep -q 'ARM aarch64' || { echo "ERROR: $_b is not aarch64" >&2; exit 1; }
 done
 sha256sum "$B"/nuxel-wl-fb "$B"/nuxel-wl-snapshot "$B"/nuxel-screenshot "$B"/nuxel-pwa-host \
           "$B"/nuxel-button-manager "$B"/libnuxel-libinput-path.so \
           "$B"/nuxel-metricsd "$B"/nuxel-navdock "$B"/nuxel-statusbar \
-          "$B"/nuxel-foreign-toplevel \
+          "$B"/nuxel-osd "$B"/nuxel-foreign-toplevel \
   | tee /tmp/nuxel-current-userspace.sha256
 
 # Keep Nuxel's native phone-specific bits; do not import the G7 Power staging.
@@ -249,6 +285,11 @@ cp -a /nuxel/pwa "$STAGE/usr/share/nuxel/pwa"
 install -d "$STAGE/usr/share/nuxel/assets" "$STAGE/usr/share/nuxel/boot" \
     "$STAGE/usr/share/nuxel/preload"
 cp -a /nuxel/assets/. "$STAGE/usr/share/nuxel/assets/"
+# Native application artwork used by Home (Firefox/VLC/GNOME apps) is part of
+# the runtime asset tree, not a build-only input.
+if [ -d /nuxel/assets/native-app-icons ]; then
+  cp -a /nuxel/assets/native-app-icons "$STAGE/usr/share/nuxel/assets/"
+fi
 # PWNAGE-31000: the supplied pre-lockscreen clip is a runtime asset, not an
 # initramfs or boot-partition payload.  It is installed only when the owner has
 # supplied it; the controller's missing-asset path is the safe fallback.
@@ -347,26 +388,151 @@ install -m 0755 "$B/nuxel-wl-snapshot"         "$STAGE/usr/local/bin/nuxel-wl-sn
 install -m 0755 "$B/nuxel-screenshot"          "$STAGE/usr/lib/nuxel/nuxel-screenshot"
 # console control for the same configuration the Settings app uses
 install -m 0755 /nuxel/tools/s10plus/a32/nuxelctl                     "$STAGE/usr/bin/nuxelctl"
+# --- PWNAGE-46000: one orientation owner + policy + presenter contract ------
+# Bridge, Settings and Quick Settings all exec /usr/libexec/nuxel/nuxel-orientationd.
+# Install the daemon and its importable package together, at the exact path the
+# Bridge uses.  A clean image must never silently omit this feature again.
+install -d "$STAGE/usr/libexec/nuxel/nuxel_orientation"            "$STAGE/etc/nuxel/orientation"            "$STAGE/var/lib/nuxel/orientation"
+install -m 0755 /nuxel/services/nuxel-orientation/nuxel-orientationd     "$STAGE/usr/libexec/nuxel/nuxel-orientationd"
+for _of in __init__.py policy.py sensors.py apply.py; do
+  install -m 0644 "/nuxel/services/nuxel-orientation/nuxel_orientation/$_of"       "$STAGE/usr/libexec/nuxel/nuxel_orientation/$_of"
+done
+install -m 0644 /nuxel/configs/nuxel/orientation/orientation.json     "$STAGE/etc/nuxel/orientation/orientation.json"
+install -m 0644 /nuxel/configs/nuxel/orientation/orientation.schema.json     "$STAGE/etc/nuxel/orientation/orientation.schema.json"
+install -m 0644 /nuxel/services/nuxel-orientation/systemd/nuxel-orientationd.service     "$STAGE/etc/systemd/system/nuxel-orientationd.service"
+install -Dm0644 /nuxel/docs/beta-finalization/live/PWNAGE-46000-TODO.md     "$STAGE/usr/share/doc/nuxel/PWNAGE-46000.md"
+install -m 0755 /nuxel/tools/pwnage46000/rotation-notes.py \
+    "$STAGE/usr/local/bin/nuxel-rotation-notes"
+# The service imports `nuxel_orientation` from its own directory.  Prove the
+# installed copy is importable now, not after boot.
+PYTHONPATH="$STAGE/usr/libexec/nuxel" python3 -c     'from nuxel_orientation.policy import SEVEN_MODES, MODE_ORDER; assert len(MODE_ORDER)==7 and len(SEVEN_MODES)==7'
+test -x "$STAGE/usr/libexec/nuxel/nuxel-orientationd" || {
+  echo "ERROR: orientation daemon missing from rootfs" >&2; exit 1; }
+test -f "$STAGE/etc/nuxel/orientation/orientation.json" || {
+  echo "ERROR: orientation config missing from rootfs" >&2; exit 1; }
+test -f "$STAGE/etc/systemd/system/nuxel-orientationd.service" || {
+  echo "ERROR: orientation service unit missing from rootfs" >&2; exit 1; }
+# wlr-randr is the actual transform backend used by apply.py.  A rootfs with the
+# daemon but without this executable reports "applied: false" forever.
+test -x "$STAGE/usr/bin/wlr-randr" || {
+  echo "ERROR: wlr-randr missing from rootfs (orientation transform backend)" >&2; exit 1; }
 # default device configuration: the S10+ port starts from its own profile, and a
 # full rebuild must reproduce what the live deployment installed
 install -d "$STAGE/etc/nuxel/display" "$STAGE/etc/nuxel/input"
 install -m 0644 /nuxel/configs/nuxel/statusbar-safezones.json "$STAGE/etc/nuxel/display/statusbar-safezones.json"
+# PWNAGE-52000: UI-only icon visibility.  Never clobber the owner's document on
+# a rootfs refresh; the default is installed only when the file is absent.
+if [ ! -e "$STAGE/etc/nuxel/display/statusbar-icons.json" ]; then
+  install -m 0644 /nuxel/configs/nuxel/display/statusbar-icons.json "$STAGE/etc/nuxel/display/statusbar-icons.json"
+fi
 install -m 0644 /nuxel/configs/nuxel/buttons.json             "$STAGE/etc/nuxel/input/buttons.json"
 install -m 0644 /nuxel/configs/nuxel/input/button-fsm.json    "$STAGE/etc/nuxel/input/button-fsm.json"
 install -d "$STAGE/etc/nuxel/buttons" "$STAGE/etc/nuxel/leds" "$STAGE/var/cache/nuxel/thumbnails"
 install -m 0644 /nuxel/configs/nuxel/buttons/reboot-gate.json "$STAGE/etc/nuxel/buttons/reboot-gate.json"
 install -m 0644 /nuxel/configs/nuxel/leds/leds.json          "$STAGE/etc/nuxel/leds/leds.json"
+# PWNAGE-45000: hardware/provider policy + diagnostics + explicit MTP share root.
+install -d "$STAGE/etc/nuxel/notifications" "$STAGE/etc/nuxel/nfc" \
+           "$STAGE/etc/nuxel/security" "$STAGE/var/lib/nuxel/security" \
+           "$STAGE/var/lib/nuxel/notifications" "$STAGE/var/lib/nuxel/leds" \
+           "$STAGE/home/nuxel/Shared/Downloads" "$STAGE/home/nuxel/Shared/Pictures" \
+           "$STAGE/home/nuxel/Shared/Documents" "$STAGE/home/nuxel/Shared/Music" \
+           "$STAGE/home/nuxel/Shared/Videos"
+chmod 0700 "$STAGE/var/lib/nuxel/security"
+chown -R 1000:1000 "$STAGE/home/nuxel/Shared"
+install -d "$STAGE/usr/share/doc/nuxel"
+# The notification daemon runs as nuxel-notifications and must be able to
+# replace its canonical history file in /var/lib/nuxel without broad writes.
+chgrp nuxel-notifications "$STAGE/var/lib/nuxel" 2>/dev/null || true
+# 0771 = traverse for the bridge even if a future image tool drops POSIX ACLs;
+# the directory is not listable by other users and its children stay 0700/0770.
+chmod 0771 "$STAGE/var/lib/nuxel"
+install -m 0644 /nuxel/configs/nuxel/notifications/dnd.json "$STAGE/etc/nuxel/notifications/dnd.json"
+install -m 0644 /nuxel/configs/nuxel/notifications/README.md "$STAGE/usr/share/doc/nuxel/notifications-policy.md" 2>/dev/null || true
+install -m 0644 /nuxel/configs/nuxel/nfc/nfc.json "$STAGE/etc/nuxel/nfc/nfc.json"
+install -m 0644 /nuxel/configs/nuxel/nfc/README.md "$STAGE/usr/share/doc/nuxel/nfc.md" 2>/dev/null || true
+# Read-only hardware diagnostics used by Settings > Mobile network / Camera /
+# Sensors / NFC / GNSS and the LED pages.  A page whose tool is absent would
+# either lie or fail with ENOENT; ship the complete allowlisted set.
+install -d "$STAGE/etc/nuxel/modem" "$STAGE/etc/nuxel/camera" \
+           "$STAGE/etc/nuxel/sensors" "$STAGE/etc/nuxel/gnss"
+for _diag in nfc led modem camera sensors gnss power wifi bluetooth; do
+  install -m 0755 "/nuxel/tools/s10plus/a33/nuxel-${_diag}-diag.sh" \
+      "$STAGE/usr/local/bin/nuxel-${_diag}-diag.sh"
+done
+install -m 0644 /nuxel/configs/nuxel/modem/modem.json "$STAGE/etc/nuxel/modem/modem.json"
+install -m 0644 /nuxel/configs/nuxel/camera/camera.json "$STAGE/etc/nuxel/camera/camera.json"
+# PWNAGE-52000 system privacy gates (never clobber an owner choice).
+if [ ! -e "$STAGE/etc/nuxel/security/biometric-unlock.json" ]; then
+  install -Dm0644 /nuxel/configs/nuxel/security/biometric-unlock.json "$STAGE/etc/nuxel/security/biometric-unlock.json"
+fi
+for _priv in camera microphone; do
+  if [ ! -e "$STAGE/etc/nuxel/privacy/$_priv.json" ]; then
+    install -Dm0644 "/nuxel/configs/nuxel/privacy/$_priv.json" "$STAGE/etc/nuxel/privacy/$_priv.json"
+  fi
+done
+install -m 0644 /nuxel/configs/nuxel/sensors/sensors.json "$STAGE/etc/nuxel/sensors/sensors.json"
+install -m 0644 /nuxel/configs/nuxel/gnss/gnss.json "$STAGE/etc/nuxel/gnss/gnss.json"
 install -m 0755 /nuxel/tools/s10plus/a45/nuxel-session.sh            "$STAGE/usr/lib/nuxel/nuxel-session.sh"
+install -Dm0755 /nuxel/tools/s10plus/a45/nuxel-graphics-profile \
+    "$STAGE/usr/lib/nuxel/nuxel-graphics-profile"
+install -Dm0644 /nuxel/configs/nuxel/graphics/graphics-profile.json \
+    "$STAGE/etc/nuxel/graphics/graphics-profile.json"
+if [ -x "$B/nuxel-wayland-egl-probe" ]; then
+  install -m 0755 "$B/nuxel-wayland-egl-probe" "$STAGE/usr/lib/nuxel/nuxel-wayland-egl-probe"
+fi
+if [ -x "$B/nuxel-kbase-egl-probe" ]; then
+  install -m 0755 "$B/nuxel-kbase-egl-probe" "$STAGE/usr/lib/nuxel/nuxel-kbase-egl-probe"
+fi
+for _probe in nuxel-gtk3-gl-probe nuxel-gtk4-gsk-probe nuxel-webkit-probe; do
+  if [ -x "$B/$_probe" ]; then
+    install -m 0755 "$B/$_probe" "$STAGE/usr/lib/nuxel/$_probe"
+  fi
+done
+
+# PWNAGE-51000: the S10+ GPU baseline is the vendor kbase Mali-G76 path, not a
+# DRM render node.  Install the exact kbase Mesa/wlroots set from the pinned
+# build output (tools/s10plus/a67/build-mesa-kbase.sh + build-wlroots-kbase.sh).
+# Without these three files the compositor silently falls back to llvmpipe and
+# the UI remains usable but loses the known-good GPU path.
+KBASE_GPU=/nuxel/build/out/s10plus/kbase-gpu/lib
+if [ -f "$KBASE_GPU/libEGL_mesa.so.0.0.0" ] && \
+   [ -f "$KBASE_GPU/libgallium_dri.so" ] && \
+   [ -f "$KBASE_GPU/libwlroots-0.19.so" ]; then
+  install -m 0644 "$KBASE_GPU/libEGL_mesa.so.0.0.0" "$STAGE/usr/lib64/libEGL_mesa.so.0.0.0"
+  install -m 0755 "$KBASE_GPU/libgallium_dri.so"   "$STAGE/usr/lib64/libgallium_dri.so"
+  install -m 0644 "$KBASE_GPU/libwlroots-0.19.so"   "$STAGE/usr/lib64/libwlroots-0.19.so"
+  install -m 0644 /nuxel/build/out/s10plus/kbase-gpu/50_mesa.json \
+      "$STAGE/usr/share/glvnd/egl_vendor.d/50_mesa.json"
+  # PWNAGE-53000: pin the kbase EGL build by absolute path so a Mesa package
+  # update cannot silently reset the glvnd symlink to the stock library.
+  install -d -m 0755 "$STAGE/etc/nuxel"
+  printf '{\n  "file_format_version": "1.0.0",\n  "ICD": { "library_path": "/usr/lib64/libEGL_mesa.so.0.0.0" }\n}\n' \
+      > "$STAGE/etc/nuxel/egl-kbase.json"
+  ln -sfn libEGL_mesa.so.0.0.0 "$STAGE/usr/lib64/libEGL_mesa.so.0"
+  ln -sfn ../libgallium_dri.so "$STAGE/usr/lib64/dri/panfrost_dri.so"
+  ln -sfn ../libgallium_dri.so "$STAGE/usr/lib64/dri/exynos_dri.so"
+  echo "[nuxel-rootfs] kbase GPU userspace installed (Mali-G76 / Panfrost)"
+elif [ "${NUXEL_REQUIRE_KBASE:-0}" = 1 ]; then
+  echo "ERROR: kbase GPU userspace missing at $KBASE_GPU" >&2
+  exit 1
+else
+  echo "WARNING: kbase GPU userspace absent at $KBASE_GPU; image will use software GL" >&2
+fi
 # Desktop entries for the installed native applications.  pwa/nuxel-common/
 # app-registry.json names these files, so a launcher entry can never point at a
 # desktop file that the image does not ship.
 install -d "$STAGE/usr/share/applications"
 for _desk in org.mozilla.firefox org.videolan.VLC org.signal.Signal com.stremio.Stremio \
-             org.gnome.FileRoller org.gnome.Loupe org.gnome.Papers org.gnome.SystemMonitor; do
+             org.gnome.FileRoller org.gnome.Loupe org.gnome.Papers org.gnome.SystemMonitor \
+             nuxel-software; do
   install -m 0644 "/nuxel/shell/config/$_desk.desktop" "$STAGE/usr/share/applications/$_desk.desktop"
 done
 install -m 0755 "$B/nuxel-navdock"            "$STAGE/usr/lib/nuxel/nuxel-navdock"
-install -m 0755 "$B/nuxel-statusbar"          "$STAGE/usr/lib/nuxel/nuxel-statusbar"
+# PWNAGE-50000: the native statusbar duplicated (and hid) the DOM bar.
+# Keep the binary only as a disabled diagnostic artifact; never install it
+# under the executable path a service/autostart could pick up.
+install -m 0755 "$B/nuxel-statusbar"          "$STAGE/usr/lib/nuxel/nuxel-statusbar.disabled"
+install -m 0755 "$B/nuxel-osd"                "$STAGE/usr/lib/nuxel/nuxel-osd"
 install -m 0755 "$B/nuxel-foreign-toplevel"   "$STAGE/usr/lib/nuxel/nuxel-foreign-toplevel"
 install -m 0755 /nuxel/services/nuxel-s10/bin/nuxel-focus-app.sh "$STAGE/usr/lib/nuxel/nuxel-focus-app.sh"
 # PWNAGE-40000 pre-play amplifier/DAPM warm-up.  It starts an inaudible 8 s
@@ -386,11 +552,22 @@ install -m 0755 /nuxel/services/nuxel-s10/bin/nuxel-audio-session.sh "$STAGE/usr
 install -m 0755 /nuxel/services/nuxel-s10/bin/nuxel-abox-firmware-reload.sh "$STAGE/usr/lib/nuxel/nuxel-abox-firmware-reload.sh"
 install -m 0755 /nuxel/services/nuxel-s10/bin/nuxel-abox-firmware-reload-boot.sh "$STAGE/usr/lib/nuxel/nuxel-abox-firmware-reload-boot.sh"
 install -m 0755 /nuxel/services/nuxel-s10/bin/nuxel-audio-route.sh "$STAGE/usr/lib/nuxel/nuxel-audio-route.sh"
+install -m 0755 /nuxel/services/nuxel-s10/bin/nuxel-mic-route.sh "$STAGE/usr/lib/nuxel/nuxel-mic-route.sh"
 install -m 0755 /nuxel/services/nuxel-s10/bin/nuxel-wifi-up.sh "$STAGE/usr/lib/nuxel/nuxel-wifi-up.sh"
+# PWNAGE-52000: the existing boot-mode guard classifies charger/LPM and
+# publishes /run/nuxel-bootmode.{state,json}.  It never reboots by itself
+# (allow_reboot=false); the one-shot fallback below consumes its state.
+install -Dm0755 /nuxel/tools/s10plus/a33/nuxel-bootmode-guard.py "$STAGE/usr/libexec/nuxel/nuxel-bootmode-guard.py"
+install -Dm0644 /nuxel/configs/nuxel/touch/nuxel-bootmode-guard.service "$STAGE/etc/systemd/system/nuxel-bootmode-guard.service"
+install -Dm0644 /nuxel/configs/nuxel/bootmode/bootmode-guard.json "$STAGE/etc/nuxel/bootmode/bootmode-guard.json"
+install -Dm0644 /nuxel/configs/nuxel/touch/bootmode-guard.json "$STAGE/etc/nuxel/touch/bootmode-guard.json"
+ln -sf ../nuxel-bootmode-guard.service "$STAGE/etc/systemd/system/multi-user.target.wants/nuxel-bootmode-guard.service"
 install -m 0755 /nuxel/services/nuxel-s10/bin/nuxel-charger-mode-recovery.sh "$STAGE/usr/lib/nuxel/nuxel-charger-mode-recovery.sh"
 install -m 0755 /nuxel/services/nuxel-s10/bin/nuxel-device-permissions.sh "$STAGE/usr/lib/nuxel/nuxel-device-permissions.sh"
 install -m 0755 /nuxel/services/nuxel-s10/bin/nuxel-usb-mode.sh "$STAGE/usr/lib/nuxel/nuxel-usb-mode.sh"
 install -m 0755 /nuxel/services/nuxel-s10/bin/nuxel-mtp-server "$STAGE/usr/lib/nuxel/nuxel-mtp-server"
+install -m 0755 /nuxel/services/nuxel-s10/bin/nuxel-vlc-fallback "$STAGE/usr/lib/nuxel/nuxel-vlc-fallback"
+install -m 0755 /nuxel/services/nuxel-software/nuxel-software "$STAGE/usr/lib/nuxel/nuxel-software"
 install -m 0755 /nuxel/services/nuxel-s10/bin/nuxel-gps-status "$STAGE/usr/local/bin/nuxel-gps-status"
 install -m 0755 /nuxel/services/nuxel-s10/bin/nuxel-audio-status "$STAGE/usr/local/bin/nuxel-audio-status"
 for _w in firefox vlc signal stremio; do
@@ -401,11 +578,15 @@ install -m 0644 /nuxel/services/nuxel-s10/systemd/nuxel-abox-firmware-reload.ser
 install -m 0644 /nuxel/services/nuxel-s10/systemd/nuxel-audio-route.service "$STAGE/etc/systemd/system/nuxel-audio-route.service"
 install -m 0644 /nuxel/services/nuxel-s10/systemd/nuxel-audio-route-retry.service "$STAGE/etc/systemd/system/nuxel-audio-route-retry.service"
 install -m 0644 /nuxel/services/nuxel-s10/systemd/nuxel-audio-route.timer "$STAGE/etc/systemd/system/nuxel-audio-route.timer"
+install -m 0644 /nuxel/services/nuxel-s10/systemd/nuxel-mic-route.service "$STAGE/etc/systemd/system/nuxel-mic-route.service"
 install -m 0644 /nuxel/services/nuxel-s10/systemd/nuxel-wifi.service "$STAGE/etc/systemd/system/nuxel-wifi.service"
 install -m 0644 /nuxel/services/nuxel-s10/systemd/nuxel-charger-mode-recovery.service "$STAGE/etc/systemd/system/nuxel-charger-mode-recovery.service"
 install -m 0644 /nuxel/services/nuxel-s10/systemd/nuxel-device-permissions.service "$STAGE/etc/systemd/system/nuxel-device-permissions.service"
 install -m 0644 /nuxel/services/nuxel-s10/systemd/nuxel-mtp.service "$STAGE/etc/systemd/system/nuxel-mtp.service"
 install -m 0644 /nuxel/services/nuxel-s10/systemd/nuxel-usb-mode-monitor.service "$STAGE/etc/systemd/system/nuxel-usb-mode-monitor.service"
+
+install -d -m 0755 "$STAGE/etc/systemd/system/nuxel-wl-fb.service.d"
+install -m 0644 /nuxel/services/nuxel-s10/systemd/nuxel-wl-fb.service.d/15-idle-fps.conf "$STAGE/etc/systemd/system/nuxel-wl-fb.service.d/15-idle-fps.conf"
 # PWNAGE-42000: GeoClue2 queues Manager.GetClient until an agent is registered
 # for the calling UID.  The agent must run in its own process (the bridge's
 # single-threaded D-Bus loop deadlocks on the callback), as the same UID.
@@ -427,6 +608,7 @@ for _svc in nuxel-boot-sound nuxel-bridge nuxel-button-manager nuxel-http-bridge
 done
 ln -sf ../nuxel-audio-session.service "$STAGE/etc/systemd/system/multi-user.target.wants/nuxel-audio-session.service"
 ln -sf ../nuxel-audio-route.service "$STAGE/etc/systemd/system/multi-user.target.wants/nuxel-audio-route.service"
+ln -sf ../nuxel-mic-route.service "$STAGE/etc/systemd/system/multi-user.target.wants/nuxel-mic-route.service"
 install -d "$STAGE/etc/systemd/system/timers.target.wants"
 ln -sf ../nuxel-audio-route.timer "$STAGE/etc/systemd/system/timers.target.wants/nuxel-audio-route.timer"
 ln -sf ../nuxel-wifi.service "$STAGE/etc/systemd/system/multi-user.target.wants/nuxel-wifi.service"
@@ -446,12 +628,27 @@ ln -sf ../nuxel-geoclue-agent.service "$STAGE/etc/systemd/system/multi-user.targ
 #     treat it as the exclusive provider);
 #   * the udev rules are a fallback; nuxel-session.sh also re-applies /dev/snd
 #     group/mode every boot because this image does not run udev.
+# PWNAGE-52000: bwrap 0.12's --ro-bind-fd/--bind-fd path resolution fails on
+# the Samsung 4.14 kernel (it closes the source fd before resolving it, seen as
+# "Can't find source path /proc/self/fd/N").  Flatpak 1.16 uses those options for
+# every /usr and /app bind.  Install a transparent shim that rewrites them to
+# the fd's real path; the real binary stays alongside it.
+install -d "$STAGE/usr/libexec"
+if [ -x "$STAGE/usr/bin/bwrap" ]; then
+    install -m 0755 "$STAGE/usr/bin/bwrap" "$STAGE/usr/libexec/bwrap.real"
+    install -m 0755 /nuxel/tools/s10plus/nuxel-bwrap-compat.py "$STAGE/usr/bin/bwrap"
+fi
 install -d "$STAGE/etc/pipewire/pipewire.conf.d" \
            "$STAGE/etc/wireplumber/wireplumber.conf.d" \
            "$STAGE/etc/dbus-1/system.d" \
            "$STAGE/etc/geoclue"
 install -m 0644 /nuxel/configs/s10plus/pipewire/50-nuxel-s10-alsa.conf \
     "$STAGE/etc/pipewire/pipewire.conf.d/50-nuxel-s10-alsa.conf"
+# PWNAGE-52000: static capture source for the built-in mics (WDMA1) plus the
+# vendor-derived UAIF0 -> NSRC0 -> SIFM0/WDMA1 route.  Without this the privacy
+# provider correctly reports UNSUPPORTED_NO_CAPTURE_SOURCE.
+install -m 0644 /nuxel/configs/s10plus/pipewire/51-nuxel-s10-mic.conf \
+    "$STAGE/etc/pipewire/pipewire.conf.d/51-nuxel-s10-mic.conf"
 install -m 0644 /nuxel/configs/s10plus/wireplumber/99-nuxel-no-v4l2.conf \
     "$STAGE/etc/wireplumber/wireplumber.conf.d/99-nuxel-no-v4l2.conf"
 install -m 0644 /nuxel/configs/s10plus/alsa/asound.conf "$STAGE/etc/asound.conf"
@@ -476,6 +673,9 @@ install -m 0644 /nuxel/services/nuxel-session/systemd/seatd.service             
 install -m 0644 /nuxel/services/nuxel-session/systemd/nuxel-touch-arm.service      "$STAGE/etc/systemd/system/nuxel-touch-arm.service"
 install -m 0644 /nuxel/services/nuxel-session/systemd/nuxel-wayland.service        "$STAGE/etc/systemd/system/nuxel-wayland.service"
 install -m 0644 /nuxel/services/nuxel-session/systemd/nuxel-wl-fb.service          "$STAGE/etc/systemd/system/nuxel-wl-fb.service"
+install -d -m 0755 "$STAGE/etc/systemd/system/nuxel-wayland.service.d"
+install -m 0644 /nuxel/services/nuxel-session/systemd/nuxel-wayland.service.d/50-kbase-egl.conf \
+    "$STAGE/etc/systemd/system/nuxel-wayland.service.d/50-kbase-egl.conf"
 install -m 0644 /nuxel/services/nuxel-session/systemd/nuxel-fallback.service       "$STAGE/etc/systemd/system/nuxel-fallback.service"
 install -m 0644 /nuxel/services/nuxel-session/systemd/nuxel-button-manager.service "$STAGE/etc/systemd/system/nuxel-button-manager.service"
 install -m 0644 /nuxel/services/nuxel-animation/systemd/nuxel-animation.service \
@@ -522,6 +722,7 @@ if [ "${NUXEL_ENABLE_LAUNCHER:-1}" = "1" ]; then
   # seatd is the backend session provider the libinput backend needs (A31).
   # One explicit symlink per unit (verify-service-graph.py reads these lines).
   ln -sf ../seatd.service                "$STAGE/etc/systemd/system/multi-user.target.wants/seatd.service"
+  ln -sf ../nuxel-orientationd.service   "$STAGE/etc/systemd/system/multi-user.target.wants/nuxel-orientationd.service"
   ln -sf ../nuxel-wayland.service        "$STAGE/etc/systemd/system/multi-user.target.wants/nuxel-wayland.service"
   ln -sf ../nuxel-wl-fb.service          "$STAGE/etc/systemd/system/multi-user.target.wants/nuxel-wl-fb.service"
   ln -sf ../nuxel-fallback.service       "$STAGE/etc/systemd/system/multi-user.target.wants/nuxel-fallback.service"
@@ -572,6 +773,10 @@ install -m 0644 /nuxel/services/nuxel-remote-desktop/systemd/nuxel-remote-vnc.se
     "$STAGE/etc/systemd/system/nuxel-remote-vnc.service"
 # XRDP is a SEPARATE X11 session.  The account has no sudo, no root login and
 # no access to the active Wayland runtime socket.
+# Create gid 3003 before any supplementary-group lookup.  The Android 4.14
+# paranoid-network policy requires it for AF_INET sockets, and both the
+# restricted remote account and the interactive nuxel account use it.
+chroot "$STAGE" /usr/sbin/groupadd -f -g 3003 inet
 chroot "$STAGE" /usr/sbin/useradd --create-home --shell /bin/bash nuxel-remote 2>/dev/null || true
 chroot "$STAGE" /usr/sbin/usermod -aG inet nuxel-remote
 # PWNAGE-47000: every image gets its own strong RDP password for the
@@ -592,14 +797,19 @@ install -m 0644 /nuxel/services/nuxel-remote-desktop/config/xrdp.ini \
     "$STAGE/etc/xrdp/xrdp.ini"
 install -m 0644 /nuxel/services/nuxel-remote-desktop/config/sesman.ini \
     "$STAGE/etc/xrdp/sesman.ini"
+# RDP is restricted to the local nuxel account (uid 1000). The legacy
+# nuxel-remote account must not authenticate over RDP.
+install -m 0644 /nuxel/services/nuxel-remote-desktop/config/xrdp-sesman.pam \
+    "$STAGE/etc/pam.d/xrdp-sesman"
 install -m 0644 /nuxel/services/nuxel-remote-desktop/config/xorg.conf \
     "$STAGE/etc/xrdp/xorg-nuxel.conf"
 install -m 0755 /nuxel/services/nuxel-remote-desktop/bin/nuxel-xrdp-session \
     "$STAGE/usr/local/bin/nuxel-xrdp-session"
 install -m 0644 /nuxel/services/nuxel-remote-desktop/config/launcher.html \
     "$STAGE/usr/share/nuxel/remote-desktop/launcher.html"
-# Generate a per-image TLS certificate for xrdp.  Never ship a shared key.
+# Generate per-image TLS material for xrdp.  Never ship a shared key.
 openssl req -x509 -newkey rsa:2048 -nodes -days 825 -subj '/CN=nuxel-remote-desktop' \
+    -addext 'subjectAltName=DNS:nuxel,DNS:localhost,IP:127.0.0.1' \
     -keyout "$STAGE/etc/xrdp/nuxel-key.pem" -out "$STAGE/etc/xrdp/nuxel-cert.pem" >/dev/null 2>&1
 chmod 0640 "$STAGE/etc/xrdp/nuxel-key.pem" "$STAGE/etc/xrdp/nuxel-cert.pem"
 chgrp xrdp "$STAGE/etc/xrdp/nuxel-key.pem" "$STAGE/etc/xrdp/nuxel-cert.pem" 2>/dev/null || true
@@ -608,7 +818,8 @@ for _rd in /usr/bin/wayvnc /usr/bin/wayvncctl /usr/bin/xrdp /usr/libexec/Xorg \
            /usr/bin/openbox /usr/bin/firefox /usr/local/bin/nuxel-xrdp-session \
            /usr/local/libexec/nuxel/nuxel-remote-desktop-ctl \
            /etc/systemd/system/nuxel-remote-vnc.service \
-           /etc/nuxel/remote-desktop/vnc/wayvnc.conf /etc/xrdp/xrdp.ini \
+           /etc/nuxel/remote-desktop/vnc/wayvnc.conf \
+           /etc/xrdp/xrdp.ini \
            /etc/xrdp/sesman.ini /etc/xrdp/xorg-nuxel.conf; do
   [ -e "$STAGE$_rd" ] || { echo "ERROR: remote-desktop missing $_rd" >&2; exit 1; }
 done
@@ -630,6 +841,13 @@ install -m 0644 /nuxel/services/nuxel-web.service "$STAGE/etc/systemd/system/nux
 for u in nuxel-bridge nuxel-portal nuxel-notifications; do
   chroot "$STAGE" /usr/sbin/useradd --system --no-create-home --home-dir /       --shell /usr/sbin/nologin "$u" 2>/dev/null || true
 done
+# The notification daemon must replace its canonical history file.  Grant only
+# its group write on /var/lib/nuxel (the bridge remains root and owns policy).
+# The chgrp above can be a no-op when the build host does not know the target
+# group name; the authoritative numeric assignment happens AFTER the service
+# users are created below.
+chgrp nuxel-notifications "$STAGE/var/lib/nuxel" 2>/dev/null || true
+chmod 0770 "$STAGE/var/lib/nuxel"
 chroot "$STAGE" /usr/sbin/groupadd --system seat 2>/dev/null || true
 # D-Bus system policies: configs/dbus/ is the canonical combined directory.
 install -d "$STAGE/etc/dbus-1/system.d"
@@ -689,13 +907,71 @@ ln -sfn /usr/lib/systemd/system/multi-user.target "$STAGE/etc/systemd/system/def
 [[ -e "$STAGE/sbin/init" ]] || { echo 'ERROR: missing Fedora /sbin/init' >&2; exit 1; }
 # User for later phone session; login locked until recovery path established.
 chroot "$STAGE" /usr/sbin/useradd -m -s /bin/bash nuxel
+# PWNAGE-42000 ROOT CAUSE: /var/lib/nuxel is 0770 root:nuxel-notifications so
+# the notification hub can replace its history file.  nuxel-bridge is not in
+# that group, and without directory execute permission it could not read the
+# persisted Location policy or any capability grant.  The bridge therefore
+# silently reported Location OFF and CAPABILITY_DENIED.  Resolve the target
+# users' numeric IDs from the staged passwd/group files (never from the macOS
+# build host), then grant the bridge exactly:
+#   /var/lib/nuxel               r-x  (traverse only)
+#   /var/lib/nuxel/permissions   rwx  (read grants, persist its own policy)
+# The notification hub keeps its group-write path; nothing becomes world-readable.
+install -d -m 0770 "$STAGE/var/lib/nuxel/permissions"
+NUXEL_UID="$(awk -F: '$1=="nuxel"{print $3; exit}' "$STAGE/etc/passwd")"
+NUXEL_GID="$(awk -F: '$1=="nuxel"{print $4; exit}' "$STAGE/etc/passwd")"
+[ -n "$NUXEL_UID" ] && [ -n "$NUXEL_GID" ] || {
+  echo 'ERROR: nuxel interactive identity missing from staged passwd' >&2; exit 1; }
+chown "$NUXEL_UID:$NUXEL_GID" "$STAGE/var/lib/nuxel/permissions"
+chmod 0770 "$STAGE/var/lib/nuxel/permissions"
+NUXEL_BRIDGE_UID="$(awk -F: '$1=="nuxel-bridge"{print $3; exit}' "$STAGE/etc/passwd")"
+NUXEL_BRIDGE_GID="$(awk -F: '$1=="nuxel-bridge"{print $4; exit}' "$STAGE/etc/passwd")"
+NUXEL_NOTIFY_GID="$(awk -F: '$1=="nuxel-notifications"{print $3; exit}' "$STAGE/etc/group")"
+[ -n "$NUXEL_BRIDGE_UID" ] && [ -n "$NUXEL_BRIDGE_GID" ] || {
+  echo 'ERROR: nuxel-bridge identity missing from staged passwd' >&2; exit 1; }
+[ -n "$NUXEL_NOTIFY_GID" ] || {
+  echo 'ERROR: nuxel-notifications group missing from staged group' >&2; exit 1; }
+chown 0:"$NUXEL_NOTIFY_GID" "$STAGE/var/lib/nuxel"
+chmod 0771 "$STAGE/var/lib/nuxel"
+setfacl -m "u:${NUXEL_BRIDGE_UID}:r-x" "$STAGE/var/lib/nuxel"
+setfacl -m "u:${NUXEL_BRIDGE_UID}:rwx" "$STAGE/var/lib/nuxel/permissions"
+# Prove the exact access path the bridge needs.  If the build host kernel has no
+# ACL support this fails the build instead of shipping a silently broken policy.
+getfacl -p "$STAGE/var/lib/nuxel" "$STAGE/var/lib/nuxel/permissions"
 # PWNAGE-47000: this Android-derived 4.14 kernel is built with
 # CONFIG_ANDROID_PARANOID_NETWORK=y.  A non-root process may only create an
 # AF_INET socket when its supplementary groups include gid 3003 ("inet").
 # Without this, unprivileged sshd sessions cannot open local port forwards and
 # the GUI remote-access apps can never reach the loopback-bound servers.
-chroot "$STAGE" /usr/sbin/groupadd -f -g 3003 inet
-chroot "$STAGE" /usr/sbin/usermod -aG inet nuxel
+# Direct /etc/group edit: groupadd/usermod in this kernel-less chroot can
+# disagree through the NSS userdb path and abort a clean image build.  The
+# resulting file is the authoritative source for sshd's supplementary groups.
+python3 - "$STAGE/etc/group" <<'PYGROUP'
+import sys
+path = sys.argv[1]
+entries = open(path).read().splitlines()
+found = False
+out = []
+for line in entries:
+    parts = line.split(":")
+    if parts and parts[0] == "inet":
+        found = True
+        while len(parts) < 4:
+            parts.append("")
+        parts[2] = "3003"
+        members = [m for m in parts[3].split(",") if m and m != "nuxel"]
+        members.append("nuxel")
+        parts[3] = ",".join(members)
+        line = ":".join(parts)
+    out.append(line)
+if not found:
+    out.append("inet:x:3003:nuxel")
+with open(path, "w") as fh:
+    fh.write("\n".join(out) + "\n")
+PYGROUP
+grep -q '^inet:x:3003:.*nuxel' "$STAGE/etc/group" || {
+  echo 'ERROR: could not add nuxel to gid 3003 (inet)' >&2; exit 1;
+}
 mkdir -p "$STAGE/etc/nuxel"
 cat > "$STAGE/etc/nuxel/phone-runtime-status" <<'STATUS'
 NUXEL_DEVICE=s10plus

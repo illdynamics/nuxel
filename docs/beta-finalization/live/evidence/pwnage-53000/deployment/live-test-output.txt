@@ -1,0 +1,54 @@
+      .--.       ███╗   ██╗██╗   ██╗██╗  ██╗███████╗██╗
+     |o_o |      ████╗  ██║██║   ██║╚██╗██╔╝██╔════╝██║
+     |:_/ |      ██╔██╗ ██║██║   ██║ ╚███╔╝ █████╗  ██║
+    //   \ \     ██║╚██╗██║██║   ██║ ██╔██╗ ██╔══╝  ██║
+   (|     | )    ██║ ╚████║╚██████╔╝██╔╝ ██╗███████╗███████╗
+  /'\_   _/`\    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  \___)=(___/
+
+                  Mobile Linux for Control Freaks
+total 52
+-rw-r--r--. 1 root root    85 Nov  1 15:23 dmabuf-bad-mod.log
+-rw-r--r--. 1 root root   123 Nov  1 15:23 dmabuf-bad-offset.log
+-rw-r--r--. 1 root root  3949 Nov  1 15:23 dmabuf-formats.txt
+-rw-r--r--. 1 root root    86 Nov  1 15:23 dmabuf-valid.log
+-rw-r--r--. 1 root root  1023 Nov  1 15:23 egl-surfaceless.log
+-rw-r--r--. 1 root root  1750 Nov  1 15:23 egl-wayland.log
+-rw-r--r--. 1 root root   332 Nov  1 15:24 fb-state.txt
+-rw-r--r--. 1 root root   651 Nov  1 15:23 gtk3.log
+-rw-r--r--. 1 root root 13447 Nov  1 15:24 webkit-ioctl.txt
+-rw-r--r--. 1 root root   200 Nov  1 15:23 webkit.log
+--- /tmp/pwnage53000-live/dmabuf-bad-mod.log
+linux-dmabuf version=3
+{"loops":10,"accepted":0,"rejected":0,"failed_events":0}
+PASS
+--- /tmp/pwnage53000-live/dmabuf-bad-offset.log
+[destroyed object]: error 6: invalid offset 2147483647 for plane 0
+{"malformed_offset":"disconnect_ok","display_error":71}
+--- /tmp/pwnage53000-live/dmabuf-valid.log
+linux-dmabuf version=3
+{"loops":10,"accepted":10,"rejected":0,"failed_events":0}
+PASS
+--- /tmp/pwnage53000-live/egl-surfaceless.log
+GL_RENDERER=Mali-G76 MC12 (Panfrost)
+GL_VENDOR=Mesa
+EGL_EXTENSIONS=EGL_ANDROID_blob_cache EGL_ANDROID_native_fence_sync EGL_EXT_config_select_group EGL_EXT_image_dma_buf_import EGL_EXT_image_dma_buf_import_modifiers EGL_EXT_surface_compression EGL_IMG_context_priority EGL_KHR_cl_event2 EGL_KHR_config_attribs EGL_KHR_context_flush_control EGL_KHR_create_context EGL_KHR_create_context_no_error EGL_KHR_fence_sync EGL_KHR_get_all_proc_addresses EGL_KHR_gl_colorspace EGL_KHR_gl_renderbuffer_image EGL_KHR_gl_texture_2D_image EGL_KHR_gl_texture_3D_image EGL_KHR_gl_texture_cubemap_image EGL_KHR_image_base EGL_KHR_no_config_context EGL_KHR_partial_update EGL_KHR_reusable_sync EGL_KHR_surfaceless_context EGL_EXT_pixel_format_float EGL_KHR_wait_sync EGL_MESA_configless_context EGL_MESA_gl_interop EGL_MESA_query_driver EGL_MESA_x11_native_visual_id 
+frames=1 elapsed=0.011s pixel=33cc4dff
+glGetError=0x0
+--- /tmp/pwnage53000-live/egl-wayland.log
+STEP renderer=Mali-G76 MC12 (Panfrost) version=OpenGL ES 3.2 Mesa 26.3.0-devel (git-a5010bb447) vendor=Mesa
+STEP clear ok err=0x0
+STEP makeCurrent none
+STEP destroySurface
+PASS
+--- /tmp/pwnage53000-live/gtk3.log
+{"gdk_display":"GdkWaylandDisplay"}
+{"gtk3_gl":"REALIZE","error":"none"}
+{"gtk3_gl":"PASS","gl_version":"OpenGL ES 3.2 Mesa 26.3.0-devel (git-a5010bb447)","gl_renderer":"Mali-G76 MC12 (Panfrost)","gl_vendor":"Mesa"}
+{"gtk3_gl":"PASS","gl_version":"OpenGL ES 3.2 Mesa 26.3.0-devel (git-a5010bb447)","gl_renderer":"Mali-G76 MC12 (Panfrost)","gl_vendor":"Mesa"}
+{"gtk3_gl":"PASS","gl_version":"OpenGL ES 3.2 Mesa 26.3.0-devel (git-a5010bb447)","gl_renderer":"Mali-G76 MC12 (Panfrost)","gl_vendor":"Mesa"}
+--- /tmp/pwnage53000-live/webkit.log
+MESA-EGL: warning: nuxel: kbase=1 fd=16 driver=panfrost
+MESA-LOADER: failed to retrieve device information
+MESA-EGL: warning: nuxel: kbase screen up
+MESA-LOADER: failed to retrieve device information
