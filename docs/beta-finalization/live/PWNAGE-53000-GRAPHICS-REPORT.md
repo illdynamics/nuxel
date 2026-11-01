@@ -235,7 +235,7 @@ accelerated set was then redeployed and the full acceptance suite passed again.
 | `libgallium_dri.so` | `818bc380242006c158455241099b3b5185dfc70630f6f4c9cda5602a9196b800` |
 | `libwlroots-0.19.so` (linear-only) | `95e039a783bf4e9263542a01f9609e03ffb4b2f8d47ca9ec23c60a6803d2d4cc` |
 | `nuxel-wl-fb` | `dbb1c2149706f76c508f56a40433ee82df2fe338a4907fae26ac660141af1258` |
-| `nuxel-graphics-profile` | `14e40d5bea870b64dc138cfbe3c5d44efab71ad958ba37610aa9dcdcf0731e9b` |
+| `nuxel-graphics-profile` | `10a66e8431a118abfdbef307773eab8d724a90fbecf069c2b038a64d1188c04b` |
 | pre-change backup | `/var/backups/nuxel/p53000-20261101T143813` |
 | post-rollback backup | `/var/backups/nuxel/p53000-20261101T152336` |
 
